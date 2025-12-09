@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>최민규 - 총무(GA) 포트폴리오</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            scroll-behavior: smooth;
+        }
+        
+        .section-padding {
+            padding-top: 5rem;
+            padding-bottom: 5rem;
+        }
+
+        /* Timeline connector */
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 20px;
+            width: 2px;
+            background-color: #e2e8f0;
+            z-index: 0;
+        }
+
+        /* Clean Card Style */
+        .clean-card {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .clean-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Hover Effect for Vision Cards */
+        .vision-card:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Floating Action Button (FAB) Animation */
+        .fab-btn {
+            transition: transform 0.2s ease, background-color 0.2s;
+        }
+        .fab-btn:hover {
+            transform: scale(1.1);
+        }
+        .fab-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Image Placeholder Style */
+        .img-placeholder {
+            background-color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            border: 2px dashed #cbd5e1;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 relative">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <span class="font-bold text-xl text-slate-900">최민규<span class="text-slate-400 text-sm font-normal ml-2">General Affairs Portfolio</span></span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#about" class="text-slate-600 hover:text-slate-900 px-3 py-2 text-sm font-medium">소개</a>
+                    <a href="#career" class="text-slate-600 hover:text-slate-900 px-3 py-2 text-sm font-medium">경력기술</a>
+                    <a href="#skills" class="text-slate-600 hover:text-slate-900 px-3 py-2 text-sm font-medium">보유역량</a>
+                    <a href="#vision" class="text-slate-600 hover:text-slate-900 px-3 py-2 text-sm font-medium">업무철학</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section (Updated with Profile Image) -->
+    <section id="about" class="relative pt-32 pb-20 bg-white border-b border-slate-200">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row gap-12 items-center">
+                <!-- Text Area -->
+                <div class="flex-1 order-2 md:order-1">
+                    <div class="inline-block px-3 py-1 mb-4 text-xs font-semibold tracking-wider text-blue-800 uppercase bg-blue-50 rounded-full">
+                        General Affairs Specialist
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-6 leading-tight">
+                        데이터 기반의 효율적 운영과<br>
+                        안정적인 자산 관리를 지향합니다.
+                    </h1>
+                    <p class="text-lg text-slate-600 leading-relaxed mb-8">
+                        실무형 총무 전문가로서 부동산 임대차 관리, 자산 관리, 시설 운영 등<br>
+                        기업 운영의 기반이 되는 GA 핵심 업무를 주도적으로 수행해왔습니다.<br>
+                        데이터에 기반한 의사결정으로 비용 효율을 높이고, 안정적인 업무 환경을 조성합니다.
+                    </p>
+                    <div class="flex gap-4">
+                        <a href="#career" class="px-6 py-3 bg-slate-900 text-white rounded-lg font-bold hover:bg-slate-800 transition-colors">
+                            경력 자세히 보기
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Profile Image Area -->
+                <div class="w-full md:w-1/3 order-1 md:order-2 flex justify-center">
+                    <div class="relative w-64 h-64 md:w-72 md:h-72 rounded-full overflow-hidden border-4 border-white shadow-xl ring-1 ring-slate-100">
+                        <!-- 
+                             [사용자 가이드] 
+                             이력서 PDF의 사진을 캡처하여 'profile.jpg'로 저장 후 
+                             이 HTML 파일과 같은 폴더에 넣어주세요.
+                             이미지가 없으면 회색 박스가 보입니다.
+                        -->
+                        <img src="profile.jpg" alt="최민규 프로필 사진" class="w-full h-full object-cover bg-slate-100" onerror="this.src='https://via.placeholder.com/300x300?text=Profile+Image'">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Work Experience (Timeline) -->
+    <section id="career" class="section-padding bg-slate-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-12">
+                <h2 class="text-2xl font-bold text-slate-900">경력 기술서</h2>
+                <p class="text-slate-500 mt-2">상세 업무 내용 및 역할</p>
+            </div>
+
+            <!-- Education Section -->
+            <div class="mb-12 bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex items-start gap-4">
+                <div class="bg-blue-50 p-3 rounded-lg text-blue-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">중앙대학교 (서울)</h3>
+                    <p class="text-slate-600">국제물류학과 졸업</p>
+                    <p class="text-sm text-slate-400 mt-1">2012.03 - 2020.08</p>
+                </div>
+            </div>
+
+            <div class="relative timeline-line pl-8 md:pl-0">
+
+                <!-- Experience 1: Osstem Implant -->
+                <div class="relative mb-16 md:grid md:grid-cols-4 md:gap-8">
+                    <div class="md:col-span-1 pt-1 mb-2 md:mb-0">
+                        <p class="font-bold text-slate-900">2025.07 - 현재</p>
+                        <p class="text-sm text-slate-500">오스템임플란트(주)</p>
+                        <p class="text-xs text-slate-400 mt-1">시설계획팀 대리</p>
+                    </div>
+                    
+                    <div class="absolute left-[-5px] md:left-auto md:relative md:col-span-1 md:flex md:justify-center hidden md:flex">
+                        <div class="h-4 w-4 rounded-full bg-white border-4 border-blue-600 z-10"></div>
+                    </div>
+
+                    <div class="md:col-span-3 pl-4 md:pl-0">
+                        <div class="clean-card border-l-4 border-l-blue-600">
+                            <h3 class="text-lg font-bold text-slate-900 mb-1">부동산 임대차 및 시설 자산 관리</h3>
+                            <p class="text-sm text-slate-600 mb-4">전사 임직원 7,000명 규모 글로벌 헬스케어 기업의 시설 및 부동산 관리</p>
+                            <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5">
+                                <li><span class="font-medium">부동산 임대차 관리:</span> 국내외 거점 사무실 및 사옥 임대차 계약 실무 전반 수행.</li>
+                                <li><span class="font-medium">계약 검토:</span> 임대차 계약서 법률적 리스크 검토 및 특약 사항 조율.</li>
+                                <li><span class="font-medium">시설 관리:</span> 사옥 및 임차 시설 유지보수, 공간 효율화 계획 수립 및 실행.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Experience 2: Cheonjae Textbooks -->
+                <div class="relative mb-16 md:grid md:grid-cols-4 md:gap-8">
+                    <div class="md:col-span-1 pt-1 mb-2 md:mb-0">
+                        <p class="font-bold text-slate-900">2022.06 - 2025.06</p>
+                        <p class="text-sm text-slate-500">(주)천재교과서</p>
+                        <p class="text-xs text-slate-400 mt-1">총무팀 사원 / 3년 1개월</p>
+                    </div>
+                    
+                    <div class="absolute left-[-5px] md:left-auto md:relative md:col-span-1 md:flex md:justify-center hidden md:flex">
+                        <div class="h-4 w-4 rounded-full bg-white border-4 border-slate-400 z-10"></div>
+                    </div>
+
+                    <div class="md:col-span-3 pl-4 md:pl-0">
+                        <div class="clean-card">
+                            <h3 class="text-lg font-bold text-slate-900 mb-1">총무(GA) 전반 및 자산관리</h3>
+                            <p class="text-sm text-slate-600 mb-6">임직원 1,400명 규모 교육 기업의 자산, 사옥 이전, 행사 기획 담당</p>
+
+                            <div class="space-y-6">
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-800 mb-2">1. 자산 관리 및 비용 효율화</h4>
+                                    <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5 ml-1">
+                                        <li><span class="font-medium">IT 자산 구매 혁신:</span> 직무별 PC 표준 사양 수립 및 부품 직발주 도입 (전년 대비 구매비 31% 절감).</li>
+                                        <li><span class="font-medium">시스템 구축:</span> 구글 워크스페이스 기반 실시간 자산 대장 구축 및 자산 실사.</li>
+                                        <li><span class="font-medium">고정비 절감:</span> 정수기 렌탈 전환 효율성 분석을 통해 연간 1,300만 원 비용 절감.</li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-800 mb-2">2. 사무실 통합 이전 PM (179명 규모)</h4>
+                                    <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5 ml-1">
+                                        <li>분산된 4개 거점 사무실을 2개소로 통합하는 이전 프로젝트 총괄.</li>
+                                        <li>CAD 활용 공간 조닝(Zoning) 및 좌석 배치도 직접 설계.</li>
+                                        <li>이사업체 3단계 비교 견적 및 협상(네고)을 통해 예산 45% 절감.</li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-800 mb-2">3. 부동산 및 시설 운영</h4>
+                                    <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5 ml-1">
+                                        <li>임대차 계약 체결/만료 관리, 임대료/관리비 지출 결의 및 실적 보고.</li>
+                                        <li>계약 만료 시 원상복구 범위 협의 및 견적 검증 수행.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Evidence Gallery -->
+                            <div class="mt-8 pt-6 border-t border-slate-100">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Work Evidence (주요 증빙)</h4>
+                                </div>
+                                <div id="evidence-grid" class="grid grid-cols-2 gap-4">
+                                    <!-- Evidence Item 1 -->
+                                    <div class="group relative">
+                                        <div class="aspect-w-16 aspect-h-9 w-full overflow-hidden rounded-lg bg-slate-100 border border-slate-200">
+                                            <img src="project_layout.png" alt="사무실 도면 설계" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://via.placeholder.com/400x300?text=Office+Layout+Drawing'">
+                                        </div>
+                                        <p class="mt-2 text-xs text-slate-600 font-medium">사무실 레이아웃 및 조닝 설계</p>
+                                    </div>
+                                    <!-- Evidence Item 2 -->
+                                    <div class="group relative">
+                                        <div class="aspect-w-16 aspect-h-9 w-full overflow-hidden rounded-lg bg-slate-100 border border-slate-200">
+                                            <img src="asset_report.png" alt="자산/비용 분석 보고서" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://via.placeholder.com/400x300?text=Cost+Analysis+Report'">
+                                        </div>
+                                        <p class="mt-2 text-xs text-slate-600 font-medium">자산/비용 효율화 분석 데이터</p>
+                                    </div>
+                                    <!-- Dynamic Items will appear here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Experience 3: Compuzone -->
+                <div class="relative md:grid md:grid-cols-4 md:gap-8">
+                    <div class="md:col-span-1 pt-1 mb-2 md:mb-0">
+                        <p class="font-bold text-slate-900">2020.10 - 2021.05</p>
+                        <p class="text-sm text-slate-500">(주)컴퓨존</p>
+                        <p class="text-xs text-slate-400 mt-1">영업팀 / 7개월</p>
+                    </div>
+
+                    <div class="absolute left-[-5px] md:left-auto md:relative md:col-span-1 md:flex md:justify-center hidden md:flex">
+                        <div class="h-4 w-4 rounded-full bg-white border-4 border-slate-300 z-10"></div>
+                    </div>
+
+                    <div class="md:col-span-3 pl-4 md:pl-0">
+                        <div class="clean-card">
+                            <h3 class="text-lg font-bold text-slate-900 mb-1">IT 하드웨어 기술 영업</h3>
+                            <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5 mt-3">
+                                <li>PC 하드웨어 부품별 원가 구조 및 유통 마진 체계 이해.</li>
+                                <li>기업 고객(B2B) 대상 맞춤형 견적 산출 및 트러블슈팅.</li>
+                                <li><span class="text-slate-500 text-xs">* 해당 경험은 총무직 수행 시 IT 자산 관리 및 비용 절감의 기반이 됨.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Skills Grid -->
+    <section id="skills" class="section-padding bg-white border-t border-slate-200">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold text-slate-900 mb-8">핵심 보유 역량</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Skill 1 -->
+                <div class="p-6 rounded-xl bg-slate-50 border border-slate-100">
+                    <h3 class="font-bold text-slate-900 mb-3 flex items-center">
+                        <span class="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>부동산 및 시설 관리
+                    </h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        임대차 계약서 검토 및 특약 사항 조율 가능<br>
+                        등기부등본 권리 분석 및 리스크(근저당 등) 파악<br>
+                        원상복구 공사 범위 산정 및 견적 적정성 검토
+                    </p>
+                </div>
+
+                <!-- Skill 2 -->
+                <div class="p-6 rounded-xl bg-slate-50 border border-slate-100">
+                    <h3 class="font-bold text-slate-900 mb-3 flex items-center">
+                        <span class="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>비용 절감 및 자산 관리
+                    </h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        IT 하드웨어 스펙 분석 및 최적 단가 산출<br>
+                        구글 스프레드시트 활용 데이터 시각화 및 대장 관리<br>
+                        비교 견적 프로세스 정립 및 협력사(Vendor) 관리
+                    </p>
+                </div>
+
+                <!-- Skill 3 -->
+                <div class="p-6 rounded-xl bg-slate-50 border border-slate-100">
+                    <h3 class="font-bold text-slate-900 mb-3 flex items-center">
+                        <span class="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>공간 기획 (Space Planning)
+                    </h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        AutoCAD 활용 2D 도면 설계 및 수정 가능<br>
+                        사무실 레이아웃 조닝(Zoning) 및 계획 수립<br>
+                        이전 프로젝트 일정 관리 및 이슈 대응 (PM)
+                    </p>
+                </div>
+
+                <!-- Skill 4 -->
+                <div class="p-6 rounded-xl bg-slate-50 border border-slate-100">
+                    <h3 class="font-bold text-slate-900 mb-3 flex items-center">
+                        <span class="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>OA 및 협업 툴
+                    </h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Excel: 데이터 분석, 피벗 테이블, 함수 활용 상급<br>
+                        ERP/SAP: 전표 처리, 구매 품의, 비용 정산 가능<br>
+                        Notion/Slack: 협업 툴 관리 및 매뉴얼 페이지 제작
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Vision & Philosophy Section -->
+    <section id="vision" class="section-padding bg-slate-50 border-t border-slate-200">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">GA Philosophy & Vision</h2>
+                <p class="text-lg text-slate-600 max-w-3xl mx-auto">
+                    "혼자만의 성장이 아닌, 동료와 회사가 함께 성장하는 올바른 동기를 추구합니다."
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+                <!-- Card 1: 義 -->
+                <div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-slate-100 group vision-card">
+                    <div class="h-48 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800" alt="Teamwork" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="p-8">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xl">義</span>
+                            <h3 class="text-xl font-bold text-slate-900">올바른 동기</h3>
+                        </div>
+                        <p class="text-slate-600 text-sm leading-relaxed">
+                            총무 업무의 전문성을 키우는 동시에, 더 나은 업무 환경과 문화를 만드는 데 직접 기여하며 회사와 함께 성장하는 것을 목표로 합니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Card 2: 仁 -->
+                <div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-slate-100 group vision-card">
+                    <div class="h-48 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1573497620053-ea5300f94f21?auto=format&fit=crop&q=80&w=800" alt="Empathy" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="p-8">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold text-xl">仁</span>
+                            <h3 class="text-xl font-bold text-slate-900">공감과 협업</h3>
+                        </div>
+                        <p class="text-slate-600 text-sm leading-relaxed">
+                            구성원의 눈높이에서 문제 상황을 이해하고, 다양한 부서와 긴밀하게 소통하며 공감을 바탕으로 한 협업을 중시합니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Card 3: 成 -->
+                <div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-slate-100 group vision-card">
+                    <div class="h-48 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800" alt="Achievement" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="p-8">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xl">成</span>
+                            <h3 class="text-xl font-bold text-slate-900">가시적 성과</h3>
+                        </div>
+                        <p class="text-slate-600 text-sm leading-relaxed">
+                            자율과 책임 문화 속에서 주도적으로 목표를 설정하고, 시스템적 개선을 통해 최고의 성과를 달성합니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Detailed Aspirations (List Style with Icons) -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-8 md:p-12">
+                <h3 class="text-2xl font-bold text-slate-900 mb-8 text-center">GA 업무 추진 전략 및 포부</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                    <!-- Item 1 -->
+                    <div class="flex gap-4">
+                        <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl">📊</div>
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-900 mb-2">운영 프로세스 고도화</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                데이터 기반으로 총무 업무를 통합하여 효율적인 시스템을 구축하겠습니다. 정량적/정성적 데이터를 수집·분석하여 지표를 설계하고, 지속 가능한 방법으로 관련 자료를 고도화하겠습니다.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Item 2 -->
+                    <div class="flex gap-4">
+                        <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-green-100 text-green-600 flex items-center justify-center text-2xl">💰</div>
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-900 mb-2">비용 대비 최적 효용 창출</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                물품 구매, 외주 선정 시 다양한 옵션을 비교 분석하여 한정된 예산 내 최적의 솔루션을 도출하겠습니다. 효율적인 예산 계획과 집행으로 비용 절감과 효용을 극대화하겠습니다.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Item 3 -->
+                    <div class="flex gap-4">
+                        <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center text-2xl">🏢</div>
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-900 mb-2">업무 몰입 환경 조성</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                사무환경의 Pain Point를 파악하여 주도적으로 프로세스를 개선하겠습니다. 공간 조성 계획부터 가이드 제공까지, 구성원이 업무에만 몰입할 수 있는 환경을 꼼꼼하게 관리하겠습니다.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Item 4 -->
+                    <div class="flex gap-4">
+                        <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-2xl">🤝</div>
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-900 mb-2">구성원 경험(EX) 활성화</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                온보딩부터 복리후생, 조직문화 행사까지 전 과정을 주도적으로 운영하겠습니다. 'Why?'라는 질문을 통해 문제의 본질을 파악하고, 시스템적 개선으로 구성원의 회사 생활을 지원하겠습니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-300 py-12">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-2xl font-bold text-white mb-6">Contact</h2>
+            <div class="flex justify-center gap-8 mb-8">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                    <span>010-2815-5356</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    <span>chlalsrb63@naver.com</span>
+                </div>
+            </div>
+            <p class="text-sm text-slate-500">
+                본 포트폴리오는 실무 경험을 바탕으로 제작되었습니다.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ADDED: Admin/Upload Interface -->
+    <!-- Floating Action Button -->
+    <button id="add-btn" class="fixed bottom-8 right-8 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-3xl hover:bg-blue-700 fab-btn z-50 focus:outline-none focus:ring-4 focus:ring-blue-300" title="자료 추가 (현재 세션)">
+        +
+    </button>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all scale-100">
+            <h3 class="text-xl font-bold mb-2 text-slate-900">증빙 자료 추가</h3>
+            <p class="text-xs text-slate-500 mb-6 bg-yellow-50 p-2 rounded border border-yellow-200">
+                ⚠️ 주의: 이 기능은 현재 브라우저 세션에서만 미리보기용으로 작동합니다. (새로고침 시 초기화)
+            </p>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-slate-700 mb-2">파일 선택 (이미지, PDF)</label>
+                <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.pdf" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-700 mb-2">설명 (Caption)</label>
+                <input type="text" id="file-caption" placeholder="예: 2024 상반기 성과 보고서" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
+            </div>
+            
+            <div class="flex justify-end gap-3">
+                <button id="close-modal" class="px-4 py-2 text-slate-500 hover:text-slate-700 font-medium">취소</button>
+                <button id="save-file" class="px-4 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 shadow-md">추가하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script for File Upload Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const addBtn = document.getElementById('add-btn');
+            const modal = document.getElementById('upload-modal');
+            const closeBtn = document.getElementById('close-modal');
+            const saveBtn = document.getElementById('save-file');
+            const fileInput = document.getElementById('file-input');
+            const captionInput = document.getElementById('file-caption');
+            const grid = document.getElementById('evidence-grid');
+
+            // Toggle Modal
+            addBtn.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+            });
+
+            closeBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                resetForm();
+            });
+
+            // Close on outside click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                    resetForm();
+                }
+            });
+
+            function resetForm() {
+                fileInput.value = '';
+                captionInput.value = '';
+            }
+
+            // Save File
+            saveBtn.addEventListener('click', () => {
+                const file = fileInput.files[0];
+                const caption = captionInput.value || '무제 문서';
+
+                if (!file) {
+                    alert('파일을 선택해주세요.');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const result = e.target.result;
+                    const isPdf = file.type === 'application/pdf';
+                    let contentHtml = '';
+
+                    if (isPdf) {
+                        // PDF Layout
+                        contentHtml = `
+                            <div class="aspect-w-16 aspect-h-9 w-full overflow-hidden rounded-lg bg-red-50 border border-red-100 flex flex-col items-center justify-center group cursor-pointer" onclick="window.open('${result}', '_blank')">
+                                <svg class="w-12 h-12 text-red-500 mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                <span class="text-xs font-bold text-red-600">PDF 문서 열기</span>
+                            </div>
+                        `;
+                    } else {
+                        // Image Layout
+                        contentHtml = `
+                            <div class="aspect-w-16 aspect-h-9 w-full overflow-hidden rounded-lg bg-slate-100 border border-slate-200">
+                                <img src="${result}" alt="${caption}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+                            </div>
+                        `;
+                    }
+
+                    const itemHtml = `
+                        <div class="group relative animate-fade-in-up">
+                            ${contentHtml}
+                            <p class="mt-2 text-xs text-slate-600 font-medium">${caption}</p>
+                        </div>
+                    `;
+
+                    grid.insertAdjacentHTML('beforeend', itemHtml);
+                    modal.classList.add('hidden');
+                    resetForm();
+                };
+
+                reader.readAsDataURL(file);
+            });
+        });
+    </script>
+
+</body>
+</html>
