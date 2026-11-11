@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // BUILD / DEV CONFIG — NOT the deploy config. Used for local `wrangler dev`
+  // and `vitest`. The platform generates its own authoritative config from
+  // app.manifest.json at deploy and ignores everything here.
+  "name": "game-slug-placeholder",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "none"
+  },
+  "vars": { "HF_ENV": "dev", "APP_SLUG": "game-slug-placeholder" },
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "Room" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }]
+}

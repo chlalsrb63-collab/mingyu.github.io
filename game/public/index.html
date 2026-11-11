@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>루멘테일 온라인</title>
+    <meta name="description" content="도트 감성 탑다운 2D 온라인 RPG. 친구들과 같은 채널에서 사냥하고, 강화하고, 수정 군주에 도전하세요." />
+    <meta property="og:title" content="루멘테일 온라인" />
+    <meta property="og:description" content="도트 감성 탑다운 2D 온라인 RPG. 친구들과 같은 채널에서 사냥하고, 강화하고, 수정 군주에 도전하세요." />
+    <meta property="og:image" content="https://lumentale-online.higgsfield.app/cover.png" />
+    <meta name="theme-color" content="#16213e" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <canvas id="world"></canvas>
+    <canvas id="text"></canvas>
+
+    <!-- ── HUD ─────────────────────────────────────────── -->
+    <div id="hud" hidden>
+      <div id="status" class="win">
+        <div class="row"><span id="st-name"></span><span id="st-lv"></span></div>
+        <div class="bar hp"><i id="st-hp"></i><b id="st-hpt"></b></div>
+        <div class="bar mp"><i id="st-mp"></i><b id="st-mpt"></b></div>
+        <div id="st-buffs"></div>
+      </div>
+
+      <div id="topright">
+        <div id="mini" class="win">
+          <div id="mini-name"></div>
+          <canvas id="mini-cv"></canvas>
+          <div id="mini-info"></div>
+        </div>
+        <div id="menu">
+          <button data-win="inv" title="가방 (I)">가방</button>
+          <button data-win="char" title="캐릭터 (C)">캐릭터</button>
+          <button data-win="quest" title="의뢰 (L)">의뢰</button>
+          <button data-win="rank" title="랭킹">랭킹</button>
+          <button data-win="help" title="도움말">?</button>
+          <button id="btn-sound" title="소리 (M)">♪</button>
+        </div>
+      </div>
+
+      <div id="quest-track"></div>
+
+      <div id="chat">
+        <div id="chat-log"></div>
+        <form id="chat-form"><input id="chat-in" maxlength="80" placeholder="Enter 로 채팅" autocomplete="off" /></form>
+      </div>
+
+      <div id="prompt" class="win" hidden></div>
+      <div id="toasts"></div>
+      <div id="banner" hidden></div>
+
+      <div id="joy"><div id="joy-knob"></div></div>
+
+      <div id="actions">
+        <button class="act pot" id="b-hp"><img alt="" /><span class="n"></span><kbd>Q</kbd></button>
+        <button class="act pot" id="b-mp"><img alt="" /><span class="n"></span><kbd>E</kbd></button>
+        <button class="act auto" id="b-auto">자동<kbd>R</kbd></button>
+        <button class="act sk" id="b-s0"><span class="nm"></span><i class="cd"></i><kbd>1</kbd></button>
+        <button class="act sk" id="b-s1"><span class="nm"></span><i class="cd"></i><kbd>2</kbd></button>
+        <button class="act sk" id="b-s2"><span class="nm"></span><i class="cd"></i><kbd>3</kbd></button>
+        <button class="act atk" id="b-atk">공격<kbd>Space</kbd></button>
+      </div>
+
+      <div id="exp"><i id="exp-fill"></i><b id="exp-text"></b></div>
+    </div>
+
+    <!-- ── windows ─────────────────────────────────────── -->
+    <div id="windows">
+      <section class="win window" id="w-inv" hidden>
+        <header>가방 <span id="inv-gold" class="gold"></span><button class="x">×</button></header>
+        <div id="inv-grid" class="grid"></div>
+        <div id="inv-detail" class="detail"></div>
+      </section>
+
+      <section class="win window" id="w-char" hidden>
+        <header>캐릭터<button class="x">×</button></header>
+        <div class="charbox">
+          <canvas id="char-cv" width="16" height="22"></canvas>
+          <div>
+            <div id="char-title"></div>
+            <div class="eq"><div class="slot" id="eq-weapon"></div><div class="slot" id="eq-armor"></div></div>
+          </div>
+        </div>
+        <div id="char-stats" class="stats"></div>
+        <div id="char-skills"></div>
+      </section>
+
+      <section class="win window" id="w-shop" hidden>
+        <header>잡화상 리나<button class="x">×</button></header>
+        <p class="say">어서 와요! 필요한 건 다 있답니다. 가방에서 물건을 고르면 팔 수도 있어요.</p>
+        <div id="shop-list" class="list"></div>
+      </section>
+
+      <section class="win window" id="w-smith" hidden>
+        <header>대장장이 볼칸<button class="x">×</button></header>
+        <p class="say">장비를 두드려 주지. 강화석이랑 골드만 넉넉히 가져오라고!</p>
+        <div id="smith-list" class="list"></div>
+        <p class="hint">+5 이상에서 실패하면 강화 단계가 1 내려갑니다. 장비가 부서지지는 않습니다.</p>
+      </section>
+
+      <section class="win window" id="w-quest" hidden>
+        <header>의뢰<button class="x">×</button></header>
+        <div id="quest-body"></div>
+      </section>
+
+      <section class="win window" id="w-rank" hidden>
+        <header>모험가 랭킹<button class="x">×</button></header>
+        <div id="rank-list" class="list"></div>
+      </section>
+
+      <section class="win window" id="w-talk" hidden>
+        <header><span id="talk-name"></span><button class="x">×</button></header>
+        <p class="say" id="talk-text"></p>
+      </section>
+
+      <section class="win window" id="w-help" hidden>
+        <header>도움말<button class="x">×</button></header>
+        <div class="help">
+          <p><b>이동</b> 방향키 / WASD · 모바일은 왼쪽 조이스틱</p>
+          <p><b>공격</b> Space — 가까운 적을 자동으로 겨냥합니다</p>
+          <p><b>스킬</b> 1 · 2 · 3 &nbsp; <b>물약</b> Q(HP) · E(MP)</p>
+          <p><b>대화</b> F &nbsp; <b>자동사냥</b> R &nbsp; <b>채팅</b> Enter</p>
+          <p><b>창</b> I 가방 · C 캐릭터 · L 의뢰 · Esc 닫기</p>
+          <p>마을의 <b>촌장</b>에게 의뢰를 받고, <b>잡화상</b>에서 물약을, <b>대장장이</b>에게서 강화를 받으세요. 동쪽 문 밖이 사냥터입니다.</p>
+        </div>
+      </section>
+    </div>
+
+    <div id="dead" hidden>
+      <div class="win">
+        <h2>쓰러졌습니다</h2>
+        <p>마을에서 다시 일어납니다. (현재 경험치의 5%를 잃습니다)</p>
+        <button id="b-respawn" class="big">마을에서 부활</button>
+      </div>
+    </div>
+
+    <!-- ── title / character creation ──────────────────── -->
+    <div id="title">
+      <canvas id="title-cv"></canvas>
+      <div class="title-box">
+        <h1>루멘테일<small>온라인</small></h1>
+        <p class="sub">도트 감성 탑다운 온라인 RPG</p>
+        <div id="ch-pick">
+          <button data-ch="ch1" class="on">채널 1</button>
+          <button data-ch="ch2">채널 2</button>
+          <button data-ch="ch3">채널 3</button>
+        </div>
+        <button id="b-start" class="big">게임 시작</button>
+        <p id="title-msg"></p>
+      </div>
+    </div>
+
+    <div id="create" hidden>
+      <div class="win">
+        <h2>캐릭터 만들기</h2>
+        <div class="create-row">
+          <canvas id="create-cv" width="16" height="22"></canvas>
+          <div class="create-form">
+            <input id="c-name" maxlength="10" placeholder="이름 (한글·영문·숫자 2~10자)" autocomplete="off" />
+            <div class="pick" id="c-cls">
+              <button data-v="warrior" class="on">전사</button>
+              <button data-v="archer">궁수</button>
+              <button data-v="mage">마법사</button>
+            </div>
+            <p id="c-desc"></p>
+            <div class="pick sw" id="c-hair"></div>
+            <div class="pick sw" id="c-skin"></div>
+            <div class="pick" id="c-style">
+              <button data-v="0" class="on">짧은 머리</button>
+              <button data-v="1">긴 머리</button>
+            </div>
+          </div>
+        </div>
+        <button id="b-create" class="big">모험 시작</button>
+        <p id="create-msg"></p>
+      </div>
+    </div>
+
+    <script type="module" src="client.js"></script>
+  </body>
+</html>
