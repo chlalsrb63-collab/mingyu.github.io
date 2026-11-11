@@ -87,7 +87,7 @@ const G = {
   who: new Map(), players: new Map(), mobs: new Map(), drops: new Map(),
   fx: [], parts: [], texts: [], bubbles: new Map(), statics: [],
   cdEnd: [0, 0, 0], buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
-  auto: false, sel: -1, shake: 0, flash: 0, near: null,
+  auto: false, sel: -1, shake: 0, flash: 0, near: null, party: [], pinv: null,
 };
 const scenery = Art.buildScenery();
 const mobArt = Art.buildMobs();
@@ -132,7 +132,7 @@ function onMessage(msg) {
       if (!G.playing) {
         G.playing = true;
         addChat(`루멘테일 온라인에 오신 것을 환영합니다! (${channelName()})`, "sys");
-        addChat("촌장 엘더윈에게 말을 걸어 첫 의뢰를 받아 보세요. [?] 버튼에 조작법이 있습니다.", "sys");
+        addChat("관리자 엘더윈에게 말을 걸어 첫 의뢰를 받아 보세요. [?] 버튼에 조작법이 있습니다.", "sys");
       }
       break;
     case "snap": onSnap(msg); break;
@@ -165,12 +165,13 @@ function loadMap(m) {
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     const ch = m.o[y][x];
     let sp = scenery[ch];
+    if (Array.isArray(sp) && ch === "c") sp = sp[Math.floor(Art.hash(x, y, 3) * sp.length)];
     if (!sp || Array.isArray(sp)) continue;
     if (ch === "K" && Art.hash(x, y, 7) > 0.6) sp = scenery.K2;
     G.statics.push({ sp, x: x * T + 8, y: y * T + 15, glow: ch === "K" ? (sp === scenery.K2 ? "#c08af0" : "#6ae0f0") : ch === "L" ? "#ffe890" : null });
   }
   for (const b of m.big) {
-    if (b.t === "house") G.statics.push({ sp: scenery.house[b.v % 4], x: b.x * T + 32, y: (b.y + 3) * T - 2 });
+    if (b.t === "house") G.statics.push({ sp: scenery.house[b.v % 8], x: b.x * T + 32, y: (b.y + 3) * T - 2, win: b.v >= 4 });
     else if (b.t === "fountain") G.statics.push({ anim: scenery.fountain, x: b.x * T + 16, y: (b.y + 2) * T - 1 });
   }
   for (const n of m.npcs) n.sprite = Art.charSprite(Art.npcLook(n.look, n.role));
@@ -179,7 +180,7 @@ function loadMap(m) {
   $("#mini-name").textContent = m.name;
   Sound.bgm(m.bgm);
   banner(m.name, true);
-  closeWin("shop"); closeWin("smith"); closeWin("talk");
+  closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train");
 }
 
 function onSnap(s) {
@@ -193,13 +194,14 @@ function onSnap(s) {
 
   if (s.who) {
     G.who.clear();
-    for (const [eid, name, cls, lvl, look, tier] of s.who) {
-      G.who.set(eid, { name, cls, lvl, sprite: Art.charSprite(Art.playerLook(cls, look, tier)), look, tier });
+    for (const [eid, name, cls, lvl, look, tier, wt, party] of s.who) {
+      G.who.set(eid, { name, cls, lvl, sprite: Art.charSprite(Art.playerLook(cls, look, tier)), look, tier, wid: wt ? `w_${cls}_${wt}` : null, party });
     }
+    if (isOpen("party")) renderParty();
   }
   sync(G.players, s.P, (e, r) => { e.tx = r[1]; e.ty = r[2]; e.dir = r[3]; e.dead = !!r[4]; e.hp = r[5]; e.mhp = r[6]; }, t);
-  sync(G.mobs, s.M, (e, r) => { e.k = r[1]; e.tx = r[2]; e.ty = r[3]; e.dir = r[4]; e.hp = r[5]; }, t, 0);
-  sync(G.drops, s.D, (e, r) => { e.it = r[1]; e.tx = r[2]; e.ty = r[3]; }, t);
+  sync(G.mobs, s.M, (e, r) => { e.k = r[1]; e.tx = r[2]; e.ty = r[3]; e.dir = r[4]; e.hp = r[5]; e.el = r[6]; }, t);
+  sync(G.drops, s.D, (e, r) => { e.it = r[1]; e.tx = r[2]; e.ty = r[3]; e.q = r[4]; }, t);
 
   if (s.self) {
     G.self = s.self;
@@ -211,6 +213,9 @@ function onSnap(s) {
   if (s.chat) for (const c of s.chat) c.sys ? addChat(c.m, "sys") : addChat(c.m, "", c.n);
   if (s.gain) for (const gn of s.gain) onGain(gn);
   if (s.toast) for (const m of s.toast) toast(m);
+  const pk = JSON.stringify(s.party || []);
+  if (pk !== G.partyKey) { G.partyKey = pk; G.party = s.party || []; renderPartyHud(); if (isOpen("party")) renderParty(); }
+  if ((s.pinv || null) !== G.pinv) { G.pinv = s.pinv || null; renderInvite(); }
   hudBars();
 }
 
@@ -233,7 +238,8 @@ function entityPos(id) {
   return G.players.get(id) || G.mobs.get(id) || null;
 }
 
-const MOB_COL = { slime: "#74d85e", bslime: "#62b8f4", shroom: "#dc4c40", boar: "#a06e46", bat: "#74529a", skel: "#ecebf2", golem: "#6ae0f0", boss: "#ff6ad0" };
+const MOB_COL = { slime: "#5a9a4a", bslime: "#4a7aa8", shroom: "#8e3434", boar: "#6a4a34", bat: "#4a3862", drone: "#aab4c4", thug: "#5e2a2e", robot: "#7a808c", skel: "#d0d0d8", golem: "#5ac8d8", boss: "#e050b8" };
+const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * (m.el ? G.defs.eliteHp : 1));
 
 function onEvent(e, t) {
   switch (e[0]) {
@@ -266,7 +272,12 @@ function onEvent(e, t) {
       if (m) { burst(m.x, m.y - 6, MOB_COL[m.k] || "#fff", G.defs.mobs[m.k]?.boss ? 60 : 12, 70); Sound.play("die"); G.mobs.delete(e[1]); }
       break;
     }
-    case "m": { const m = G.mobs.get(e[1]); if (m) m.atkT = t; break; }
+    case "m": {
+      const m = G.mobs.get(e[1]);
+      if (m) { m.atkT = t; if (e.length > 2) { G.fx.push({ type: "proj", x: m.x, y: m.y - 16, x2: e[2], y2: e[3], t0: t, dur: 120, col: "#ff5a4a", size: 1 }); Sound.play("shoot"); } }
+      break;
+    }
+    case "d": G.fx.push({ type: "beam", x: e[2], y: e[3], x2: e[4], y2: e[5], t0: t, dur: 220, col: "#6a5a9a" }); burst(e[2], e[3], "#3a3550", 8, 30); break;
     case "t": G.fx.push({ type: "tele", x: e[1], y: e[2], r: e[3], t0: t, dur: e[4] }); Sound.play("warn"); break;
     case "b":
       G.fx.push({ type: "ring", x: e[1], y: e[2], r: e[3], t0: t, dur: 350, col: "#ff6ad0", fill: true });
@@ -280,7 +291,7 @@ function onEvent(e, t) {
     }
     case "pd": { const p = entityPos(e[1]); if (p) burst(p.x, p.y - 8, "#c8c8d8", 10, 40); break; }
     case "s": G.bubbles.set(e[1], { text: e[2], until: t + 4500 }); break;
-    case "u": { const p = entityPos(e[1]); if (p) sparkle(p.x, p.y - 10, e[2] ? "#7ab4ff" : "#ff8a8a", 8); if (e[1] === G.you) Sound.play("potion"); break; }
+    case "u": { const p = entityPos(e[1]); if (p) sparkle(p.x, p.y - 10, e[2] === 2 ? "#ffd84a" : e[2] ? "#7ab4ff" : "#ff8a8a", e[2] === 2 ? 14 : 8); if (e[1] === G.you) Sound.play(e[2] === 2 ? "buff" : "potion"); break; }
     case "e": {
       const p = entityPos(e[1]);
       if (p) { sparkle(p.x, p.y - 10, e[2] ? "#ffd84a" : "#8a8a9a", e[2] ? 26 : 10); if (e[2]) G.fx.push({ type: "ring", x: p.x, y: p.y - 8, r: 26, t0: t, dur: 400, col: "#ffd84a" }); }
@@ -294,7 +305,13 @@ function onGain([kind, a, b]) {
   const me = G.me;
   if (kind === "xp") floatText(`+${a} EXP`, me.x, me.y - 30, "#fff08a");
   else if (kind === "gold") { addChat(`골드 +${a}`, "loot"); Sound.play("coin"); }
-  else if (kind === "item") { addChat(`획득: ${G.defs.items[a].name}${b > 1 ? ` ×${b}` : ""}`, "loot"); Sound.play("item"); }
+  else if (kind === "item") {
+    const q = arguments[0][3] | 0;
+    const p = addChat(`획득: ${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${b > 1 ? ` ×${b}` : ""}`, "loot");
+    if (q) p.style.color = Art.RARITY_COL[q];
+    Sound.play(q >= 2 ? "ok" : "item");
+    if (q === 3) banner("전설 획득!", true);
+  }
   else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y - 40, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a}이(가) 되었습니다!`, "sys"); }
 }
 
@@ -318,8 +335,13 @@ function attackFx(kind, x, y, tx, ty, dir) {
   const t = now();
   const proj = (col, speed, size, then) => G.fx.push({ type: "proj", x, y, x2: tx, y2: ty, t0: t, dur: Math.max(60, (dist(x, y, tx, ty) / speed) * 1000), col, size, then });
   switch (kind) {
-    case 0: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 160, col: "#ffffff", r: 11 }); Sound.play("swing"); break;
-    case 1: proj("#f0e0a0", 420, 1); Sound.play("shoot"); break;
+    case 0: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 180, col: "#e8e8f0", r: 15 }); Sound.play("swing"); break;
+    case 1: proj("#fff0c0", 900, 1); burst(x + (tx - x) * 0.12, y + (ty - y) * 0.12, "#ffd84a", 3, 30); Sound.play("shoot"); break;
+    case 3: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 100, col: "#d8d8e8", r: 7 }); Sound.play("swing"); break;
+    case 18: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 200, col: "#c03048", r: 13 }); burst(tx, ty, "#c03048", 8, 60); Sound.play("crit"); break;
+    case 19: burst(x, y, "#3a3550", 8, 30); break;
+    case 20: for (let i = 0; i < 26; i++) G.parts.push({ x: x + Math.random() * 30 - 15, y: y + Math.random() * 20 - 4, vx: Math.random() * 20 - 10, vy: -8 - Math.random() * 10, life: 0.6 + Math.random() * 0.7, col: i % 2 ? "#6a6a78" : "#4a4a56", g: 0 }); Sound.play("buff"); break;
+    case 21: proj("#3a4a3a", 240, 3, () => { G.fx.push({ type: "ring", x: tx, y: ty, r: 42, t0: now(), dur: 320, col: "#ffb04a", fill: true }); burst(tx, ty, "#ffd84a", 24, 110); G.shake = Math.max(G.shake, 4); Sound.play("boom"); }); Sound.play("swing"); break;
     case 2: proj("#b08aff", 300, 2); Sound.play("magic"); break;
     case 10: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 220, col: "#ffd84a", r: 17 }); G.shake = Math.max(G.shake, 2); Sound.play("crit"); break;
     case 11: G.fx.push({ type: "ring", x, y: y + 4, r: 46, t0: t, dur: 260, col: "#ffffff" }); G.fx.push({ type: "ring", x, y: y + 4, r: 34, t0: t + 60, dur: 240, col: "#ffd84a" }); Sound.play("swing"); break;
@@ -356,6 +378,7 @@ addEventListener("keydown", (e) => {
     case "c": case "ㅊ": toggleWin("char"); break;
     case "l": case "ㅣ": toggleWin("quest"); break;
     case "r": case "ㄱ": toggleAuto(); break;
+    case "p": case "ㅔ": toggleWin("party"); break;
     case "m": case "ㅡ": toggleSound(); break;
     case "Enter": e.preventDefault(); $("#chat-in").focus(); break;
     case "Escape": closeAll(); break;
@@ -483,6 +506,7 @@ function interact() {
   if (n.role === "shop") { openWin("shop"); openWin("inv"); }
   else if (n.role === "smith") openWin("smith");
   else if (n.role === "elder") openWin("quest");
+  else if (n.role === "train") openWin("train");
   else { $("#talk-name").textContent = n.name; $("#talk-text").textContent = n.say || "…"; openWin("talk"); }
 }
 
@@ -569,7 +593,7 @@ function update(dt, t) {
     const p = $("#prompt");
     p.hidden = !near;
     if (near) { p.textContent = ""; p.append(el("b", "", document.body.classList.contains("touch") ? "▶ " : "F  "), near.name); }
-    else { closeWin("shop"); closeWin("smith"); closeWin("talk"); }
+    else { closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); }
   }
 }
 
@@ -580,14 +604,21 @@ function shadow(x, y, w) {
   wg.fillRect(Math.round(x - w / 2), Math.round(y - 1), w, 2);
   wg.fillRect(Math.round(x - w / 2) + 1, Math.round(y - 2), w - 2, 4);
 }
-function drawChar(sprite, x, y, dir, walkT, moving, atkT, t, alpha = 1) {
+function drawChar(sprite, x, y, dir, walkT, moving, atkT, t, alpha = 1, wid = null) {
   const frame = moving ? 1 + (Math.floor(walkT) % 2) : 0;
   let ox = 0, oy = 0;
   const a = t - atkT;
   if (a < 160) { const k = Math.sin((a / 160) * Math.PI) * 3; ox = [0, -1, 1, 0][dir] * k; oy = [1, 0, 0, -1][dir] * k; }
   shadow(x, y + 1, 10);
   if (alpha !== 1) wg.globalAlpha = alpha;
-  wg.drawImage(sprite[dir][frame], Math.round(x - 8 + ox), Math.round(y - 21 + oy));
+  const cx = Math.round(x - 8 + ox), cy = Math.round(y - Art.CHAR_H + 1 + oy);
+  // the weapon in hand: behind the body when facing away, raised during a swing
+  const icon = wid && G.icons ? (dir === 1 ? G.icons.left[wid] : G.icons.cv[wid]) : null;
+  const lift = a < 160 ? -3 : 0;
+  const wx = dir === 1 ? cx - 9 : cx + 9, wy = cy + 7 + lift + (frame ? 1 : 0);
+  if (icon && dir === 3) wg.drawImage(icon, wx, wy);
+  wg.drawImage(sprite[dir][frame], cx, cy);
+  if (icon && dir !== 3) wg.drawImage(icon, wx, wy);
   wg.globalAlpha = 1;
 }
 
@@ -651,6 +682,12 @@ function render(t) {
       const ic = G.icons.cv[o.d.it];
       const bob = Math.round(Math.sin(t / 220 + o.d.id) * 1.5);
       shadow(o.d.x, o.d.y, 8);
+      if (o.d.q) {
+        wg.fillStyle = Art.RARITY_COL[o.d.q];
+        wg.globalAlpha = 0.25 + 0.15 * Math.sin(t / 180 + o.d.id);
+        wg.fillRect(Math.round(o.d.x - 1), Math.round(o.d.y - 12 - o.d.q * 9), 2, o.d.q * 9 + 10);
+        wg.globalAlpha = 1;
+      }
       if (ic) wg.drawImage(ic, Math.round(o.d.x - 6), Math.round(o.d.y - 13 + bob), 12, 12);
     } else if (o.mob) {
       const mob = o.mob;
@@ -665,22 +702,27 @@ function render(t) {
       if (a < 200) ox = Math.sin((a / 200) * Math.PI) * 5 * (right ? 1 : -1);
       const fade = clamp((t - mob.born) / 300, 0, 1);
       shadow(mob.x, mob.y + 1, Math.min(22, img.width - 4));
+      if (mob.el) {
+        wg.strokeStyle = `rgba(255,190,60,${0.5 + 0.3 * Math.sin(t / 160)})`;
+        wg.beginPath(); wg.ellipse(mob.x, mob.y, 11, 5, 0, 0, Math.PI * 2); wg.stroke();
+        if (Math.random() < 0.2) G.parts.push({ x: mob.x + Math.random() * 14 - 7, y: mob.y - 2, vx: 0, vy: -20, life: 0.5, col: "#ffbe3c", g: 0 });
+      }
       wg.globalAlpha = fade;
       wg.drawImage(img, Math.round(mob.x - img.width / 2 + ox), Math.round(mob.y - img.height + 2 - art.lift));
       wg.globalAlpha = 1;
-      const max = G.defs.mobs[mob.k].hp;
+      const max = mobMax(mob);
       if (mob.hp < max) {
         const w = G.defs.mobs[mob.k].boss ? 40 : 16;
         const bx = Math.round(mob.x - w / 2), by = Math.round(mob.y - img.height - 3 - art.lift);
         wg.fillStyle = "#12142a"; wg.fillRect(bx - 1, by - 1, w + 2, 4);
-        wg.fillStyle = "#e8404c"; wg.fillRect(bx, by, Math.max(1, Math.round((w * mob.hp) / max)), 2);
+        wg.fillStyle = mob.el ? "#ffbe3c" : "#c8303c"; wg.fillRect(bx, by, Math.max(1, Math.round((w * mob.hp) / max)), 2);
       }
     } else if (o.p) {
       const w = G.who.get(o.eid);
-      if (w) drawChar(w.sprite, o.p.x, o.p.y, o.p.dir, o.p.walk, o.p.moving, o.p.atkT, t, o.p.dead ? 0.4 : 1);
+      if (w) drawChar(w.sprite, o.p.x, o.p.y, o.p.dir, o.p.walk, o.p.moving, o.p.atkT, t, o.p.dead ? 0.4 : 1, w.wid);
     } else if (o.me) {
       const w = G.who.get(G.you);
-      if (w) drawChar(w.sprite, me.x, me.y, me.dir, me.walk, me.moving, me.atkT, t, me.dead ? 0.4 : t - me.hurtT < 110 ? 0.6 : 1);
+      if (w) drawChar(w.sprite, me.x, me.y, me.dir, me.walk, me.moving, me.atkT, t, me.dead ? 0.4 : t - me.hurtT < 110 ? 0.6 : 1, w.wid);
     }
   }
 
@@ -731,9 +773,51 @@ function render(t) {
   }
   wg.globalAlpha = 1;
   wg.restore();
+  lighting(t, list);
   if (G.flash > 0) { wg.fillStyle = `rgba(255,40,60,${G.flash * 0.3})`; wg.fillRect(0, 0, vw, vh); }
 
   renderText(t, list);
+}
+
+// Mood: each world has its own ambient darkness, and lamps, crystals, lit
+// windows and the players themselves cut pools of light out of it.
+const AMBIENT = { town: ["#141a38", 0.3], meadow: ["#1a2030", 0.1], forest: ["#06141c", 0.46], city: ["#080a22", 0.62], cave: ["#04030e", 0.7] };
+const lightCv = document.createElement("canvas"), lg = lightCv.getContext("2d");
+function lighting(t, list) {
+  const [col, alpha] = AMBIENT[G.map.id] || AMBIENT.meadow;
+  if (lightCv.width !== vw || lightCv.height !== vh) { lightCv.width = vw; lightCv.height = vh; }
+  lg.globalCompositeOperation = "source-over";
+  lg.clearRect(0, 0, vw, vh);
+  lg.globalAlpha = alpha;
+  lg.fillStyle = col;
+  lg.fillRect(0, 0, vw, vh);
+  lg.globalAlpha = 1;
+  lg.globalCompositeOperation = "destination-out";
+  const hole = (x, y, r, k = 1) => {
+    const sx = x - cam.x, sy = y - cam.y;
+    if (sx < -r || sy < -r || sx > vw + r || sy > vh + r) return;
+    const gr = lg.createRadialGradient(sx, sy, 0, sx, sy, r);
+    gr.addColorStop(0, `rgba(0,0,0,${k})`); gr.addColorStop(1, "rgba(0,0,0,0)");
+    lg.fillStyle = gr;
+    lg.fillRect(sx - r, sy - r, r * 2, r * 2);
+  };
+  if (alpha > 0.2) {
+    hole(G.me.x, G.me.y - 10, 70, 0.9);
+    for (const o of list) {
+      if (o.p) hole(o.p.x, o.p.y - 10, 60, 0.8);
+      else if (o.s && o.s.glow) hole(o.s.x, o.s.y - 18, o.s.glow === "#ffe890" ? 58 : 34, 0.85 + 0.1 * Math.sin(t / 300 + o.s.x));
+      else if (o.s && o.s.win) hole(o.s.x, o.s.y - 20, 46, 0.55);
+      else if (o.d && o.d.q) hole(o.d.x, o.d.y - 6, 18, 0.7);
+    }
+    for (const p of G.map.portals) hole(p.x * T + 8, p.y * T + 8, 40, 0.8);
+    for (const f of G.fx) if (f.type === "ring" || f.type === "proj") hole(f.type === "proj" ? f.x2 : f.x, f.type === "proj" ? f.y2 : f.y, 50, 0.6);
+  }
+  wg.drawImage(lightCv, 0, 0);
+  // a soft vignette pulls the eye to the middle of the screen
+  const v = wg.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.45, vw / 2, vh / 2, Math.max(vw, vh) * 0.75);
+  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.42)");
+  wg.fillStyle = v;
+  wg.fillRect(0, 0, vw, vh);
 }
 
 // crisp text on its own full-resolution canvas, positioned in world space
@@ -770,34 +854,36 @@ function renderText(t, list) {
 
   for (const p of m.portals) if (p.y === m.portals.find((q) => q.to === p.to).y) label(`▸ ${p.to}`, p.x * T + 8, p.y * T - 4, "#e0c8ff");
   for (const n of m.npcs) {
-    label(n.name, n.x * T + 8, n.y * T - 12, "#ffd84a");
+    label(n.name, n.x * T + 8, n.y * T - 16, "#e8c860");
     if (n.role === "elder" && G.self) {
       const q = G.self.q, quest = G.defs.quests[q.i];
       if (quest) {
         const mark = q.st === 0 ? "!" : q.n >= quest.n ? "?" : "";
-        if (mark) label(mark, n.x * T + 8, n.y * T - 23 + Math.sin(t / 200) * 2, mark === "!" ? "#ffd84a" : "#8cff8c", 14);
+        if (mark) label(mark, n.x * T + 8, n.y * T - 27 + Math.sin(t / 200) * 2, mark === "!" ? "#ffd84a" : "#8cff8c", 14);
       }
     }
   }
   for (const o of list) {
     if (o.mob) {
       const d = G.defs.mobs[o.mob.k];
-      if (d.boss || o.mob.hp < d.hp) {
+      if (d.boss || o.mob.el || o.mob.hp < mobMax(o.mob)) {
         const art = mobArt[d.sp];
-        label(`Lv.${d.lv} ${d.name}`, o.mob.x, o.mob.y - art.frames[0].height - 7 - art.lift, d.boss ? "#ff9ae0" : "#ffe0e0");
+        label(`Lv.${d.lv} ${o.mob.el ? "정예 " : ""}${d.name}`, o.mob.x, o.mob.y - art.frames[0].height - 7 - art.lift, d.boss ? "#ff9ae0" : o.mob.el ? "#ffbe3c" : "#e8d8d8");
       }
+    } else if (o.d) {
+      if (o.d.q) label(G.defs.items[o.d.it].name, o.d.x, o.d.y - 16, Art.RARITY_COL[o.d.q]);
     } else if (o.p) {
       const w = G.who.get(o.eid);
-      if (w) label(`Lv.${w.lvl} ${w.name}`, o.p.x, o.p.y - 23, o.p.dead ? "#9a9aa8" : "#d8f0ff");
+      if (w) label(`Lv.${w.lvl} ${w.name}`, o.p.x, o.p.y - 28, o.p.dead ? "#9a9aa8" : w.party && w.party === G.who.get(G.you)?.party ? "#8cff8c" : "#d8e4f0");
     } else if (o.me) {
       const w = G.who.get(G.you);
-      if (w) label(`Lv.${w.lvl} ${w.name}`, me.x, me.y - 23, "#b8ffb8");
+      if (w) label(`Lv.${w.lvl} ${w.name}`, me.x, me.y - 28, "#f0e0a8");
     }
   }
   for (const [eid, b] of G.bubbles) {
     if (t > b.until) { G.bubbles.delete(eid); continue; }
     const p = entityPos(eid);
-    if (p) label(b.text.length > 22 ? b.text.slice(0, 22) + "…" : b.text, p.x, p.y - 38, "#12142a", 11, true);
+    if (p) label(b.text.length > 22 ? b.text.slice(0, 22) + "…" : b.text, p.x, p.y - 42, "#12142a", 11, true);
   }
   for (let i = G.texts.length - 1; i >= 0; i--) {
     const f = G.texts[i];
@@ -829,11 +915,12 @@ function renderMini(t) {
 
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
-const WIN = ["inv", "char", "shop", "smith", "quest", "rank", "talk", "help"];
+const WIN = ["inv", "char", "shop", "smith", "quest", "rank", "talk", "help", "train", "party"];
 const isOpen = (id) => !$(`#w-${id}`).hidden;
 function openWin(id) {
   $(`#w-${id}`).hidden = false;
   if (id === "rank") { $("#rank-list").textContent = "불러오는 중…"; act({ t: "rank" }); }
+  if (id === "party") renderParty();
   refreshUi();
 }
 function closeWin(id) { $(`#w-${id}`).hidden = true; }
@@ -864,6 +951,7 @@ function addChat(m, cls, name) {
   p.append(m);
   log.append(p);
   while (log.children.length > 40) log.firstChild.remove();
+  return p;
 }
 $("#chat-form").addEventListener("submit", (e) => {
   e.preventDefault();
@@ -892,7 +980,8 @@ function itemSlot(entry, onClick, selected) {
   const d = el("div", "slot");
   if (!entry) return d;
   const it = G.defs.items[entry.id];
-  if (it.tier > 1) d.classList.add(`t${it.tier}`);
+  if (entry.q) d.classList.add(`q${entry.q}`);
+  if (entry.sk) { const pips = el("span", "sk"); for (let i = 0; i < entry.sk; i++) pips.append(el("i", entry.ru && entry.ru[i] ? "on" : "")); d.append(pips); }
   if (selected) d.classList.add("sel");
   const img = el("img");
   img.src = G.icons.url[entry.id];
@@ -903,17 +992,51 @@ function itemSlot(entry, onClick, selected) {
   if (onClick) d.addEventListener("click", onClick);
   return d;
 }
+const GEAR = ["weapon", "armor", "acc"];
+const SLOT_NAME = { weapon: "무기", armor: "방어구", acc: "장신구" };
+const isGear = (id) => GEAR.includes(G.defs.items[id].type);
+function runewordOf(g) {
+  if (!g.sk || !g.ru || g.ru.length !== g.sk) return null;
+  return G.defs.runewords.find((rw) => rw.seq.length === g.sk && rw.seq.every((r, i) => g.ru[i] === r)) || null;
+}
+/** "+3 맹렬한 강철 양손검" — the first affix lends the item its prefix. */
 function itemName(entry) {
-  return (entry.enh > 0 ? `+${entry.enh} ` : "") + G.defs.items[entry.id].name;
+  const it = G.defs.items[entry.id];
+  const prefix = entry.af && entry.af.length ? G.defs.affix[entry.af[0][0]][1] + " " : "";
+  return (entry.enh > 0 ? `+${entry.enh} ` : "") + prefix + it.name;
 }
 function itemDesc(entry) {
   const it = G.defs.items[entry.id];
   const e = entry.enh || 0;
-  if (it.type === "weapon") return `공격력 +${Math.round(it.atk * (1 + 0.1 * e))} · 치명타 +${e}% · ${G.defs.classes[it.cls].name} 전용 · Lv.${it.req}`;
-  if (it.type === "armor") return `방어력 +${Math.round(it.def * (1 + 0.1 * e))} · HP +${it.hp + e * 8} · Lv.${it.req}`;
+  if (it.type === "weapon") return `공격력 +${Math.round(it.atk * (1 + 0.1 * e))} · ${G.defs.classes[it.cls].name} 전용 · Lv.${it.req}`;
+  if (it.type === "armor") return `방어력 +${Math.round(it.def * (1 + 0.1 * e))} · HP +${it.hp + e * 10} · Lv.${it.req}`;
+  if (it.type === "acc") return `장신구 · Lv.${it.req}`;
+  if (it.type === "rune") { const r = G.defs.runes[it.rune]; return `${G.defs.affix[r[1]][0]} +${r[2]} — 장착한 장비의 홈에 끼웁니다.`; }
   return it.desc || "";
 }
-const sellPrice = (entry) => Math.floor(G.defs.items[entry.id].price * 0.4 * (1 + 0.5 * (entry.enh || 0)));
+/** The full tooltip: base line, rolled affixes, sockets, runeword. */
+function describe(entry, host) {
+  const it = G.defs.items[entry.id];
+  const nm = el("div", "nm", itemName(entry));
+  nm.style.color = Art.RARITY_COL[entry.q || 0];
+  host.append(nm);
+  if (isGear(entry.id)) host.append(el("div", "rar", `${G.defs.rarity[entry.q || 0]} ${SLOT_NAME[it.type]}`));
+  host.append(el("div", "ds", itemDesc(entry)));
+  for (const [k, v] of entry.af || []) host.append(el("div", "af", `${G.defs.affix[k][0].replace(" %", "")} +${v}${G.defs.affix[k][0].includes("%") ? "%" : ""}`));
+  if (entry.sk) {
+    const names = [];
+    for (let i = 0; i < entry.sk; i++) { const r = entry.ru && entry.ru[i]; names.push(r ? G.defs.runes[r][0] : "빈 홈"); }
+    host.append(el("div", "so", `홈 ${entry.sk}개 [ ${names.join(" · ")} ]`));
+    for (const r of entry.ru || []) if (r) host.append(el("div", "af", `${G.defs.affix[G.defs.runes[r][1]][0].replace(" %", "")} +${G.defs.runes[r][2]}${G.defs.affix[G.defs.runes[r][1]][0].includes("%") ? "%" : ""}`));
+    const rw = runewordOf(entry);
+    if (rw) host.append(el("div", "rw", `룬어 「${rw.name}」 ${rw.add.map(([k, v]) => `${G.defs.affix[k][0].replace(" %", "")} +${v}`).join(", ")}`));
+  }
+}
+function sellPrice(entry) {
+  const it = G.defs.items[entry.id];
+  if (!isGear(entry.id)) return Math.floor(it.price * 0.4);
+  return Math.floor(it.price * 0.25 * (1 + 0.8 * (entry.q || 0)) * (1 + 0.3 * (entry.enh || 0)));
+}
 
 function refreshUi() {
   const s = G.self;
@@ -922,8 +1045,8 @@ function refreshUi() {
   $("#st-name").textContent = s.name;
   $("#st-lv").textContent = `Lv.${s.lvl} ${G.defs.classes[s.cls].name}`;
   const maxed = s.lvl >= G.defs.maxLv;
-  $("#exp-fill").style.width = maxed ? "100%" : `${(s.xp / s.need) * 100}%`;
-  $("#exp-text").textContent = maxed ? "MAX" : `EXP ${s.xp} / ${s.need} (${((s.xp / s.need) * 100).toFixed(1)}%)`;
+  $("#exp-fill").style.width = maxed ? "100%" : `${Math.min(100, (s.xp / s.need) * 100)}%`;
+  $("#exp-text").textContent = maxed ? `수련 경험치 ${s.xp.toLocaleString()}` : `EXP ${s.xp.toLocaleString()} / ${s.need.toLocaleString()} (${((s.xp / s.need) * 100).toFixed(1)}%)`;
   hudBars();
 
   // quick slots
@@ -946,9 +1069,9 @@ function refreshUi() {
   const quest = G.defs.quests[s.q.i];
   if (quest && s.q.st === 1) {
     const done = s.q.n >= quest.n;
-    qt.append(el("b", "", `[의뢰] ${quest.title}`), el("br"), el("span", done ? "done" : "", done ? "완료! 촌장에게 돌아가세요" : `${G.defs.mobs[quest.mob].name} ${s.q.n} / ${quest.n}`));
+    qt.append(el("b", "", `[의뢰] ${quest.title}`), el("br"), el("span", done ? "done" : "", done ? "완료! 관리자에게 돌아가세요" : `${G.defs.mobs[quest.mob].name} ${s.q.n} / ${quest.n}`));
   } else if (quest) {
-    qt.append(el("b", "", "[의뢰]"), " 촌장 엘더윈에게 새 의뢰가 있습니다");
+    qt.append(el("b", "", "[의뢰]"), " 관리자 엘더윈에게 새 의뢰가 있습니다");
   }
 
   if (isOpen("inv")) {
@@ -965,13 +1088,23 @@ function refreshUi() {
     if (!entry) det.append(el("div", "ds", "아이템을 고르면 설명이 나옵니다."));
     else {
       const d = it[entry.id];
-      const nm = el("div", "nm", itemName(entry));
-      nm.style.color = Art.TIER_COL[d.tier || 0];
-      det.append(nm, el("div", "ds", itemDesc(entry)));
+      describe(entry, det);
       const btns = el("div", "btns");
       const add = (label, fn, off) => { const b = el("button", "", label); b.disabled = !!off; b.addEventListener("click", fn); btns.append(b); };
       if (d.type === "pot") add("사용", () => act({ t: "use", id: entry.id }));
-      if (d.type === "weapon" || d.type === "armor") add("장착", () => { act({ t: "eq", s: G.sel }); G.sel = -1; }, (d.cls && d.cls !== s.cls) || s.lvl < d.req);
+      if (isGear(entry.id)) add("장착", () => { act({ t: "eq", s: G.sel }); G.sel = -1; }, (d.cls && d.cls !== s.cls) || s.lvl < d.req);
+      if (d.type === "rune") {
+        let any = false;
+        for (const k of GEAR) {
+          const g = s.eq[k];
+          for (let i = 0; g && i < g.sk; i++) {
+            any = true;
+            const cur = g.ru && g.ru[i];
+            add(`${SLOT_NAME[k]} 홈 ${i + 1}${cur ? ` (${G.defs.runes[cur][0]} 교체)` : ""}`, () => { act({ t: "rune", s: G.sel, k, i }); });
+          }
+        }
+        if (!any) btns.append(el("span", "ds", "홈이 있는 장비를 장착해야 끼울 수 있습니다."));
+      }
       if (isOpen("shop")) {
         const each = sellPrice(entry);
         add(`판매 (${each}G)`, () => act({ t: "sell", s: G.sel, n: 1 }));
@@ -984,19 +1117,21 @@ function refreshUi() {
   if (isOpen("char")) {
     const w = G.who.get(G.you);
     const cv = $("#char-cv"), cg = cv.getContext("2d");
-    cg.clearRect(0, 0, 16, 22);
+    cg.clearRect(0, 0, 16, 26);
     if (w) cg.drawImage(w.sprite[0][0], 0, 0);
     $("#char-title").textContent = `${s.name} · Lv.${s.lvl} ${G.defs.classes[s.cls].name}`;
-    for (const k of ["weapon", "armor"]) {
+    for (const k of GEAR) {
       const host = $(`#eq-${k}`);
       const slot = itemSlot(s.eq[k], s.eq[k] ? () => act({ t: "uneq", k }) : null);
       slot.id = `eq-${k}`;
-      slot.title = s.eq[k] ? `${itemName(s.eq[k])} — ${itemDesc(s.eq[k])} (눌러서 해제)` : k === "weapon" ? "무기 없음" : "방어구 없음";
+      slot.title = s.eq[k] ? `${itemName(s.eq[k])} (눌러서 해제)` : `${SLOT_NAME[k]} 없음`;
+      if (!s.eq[k]) slot.append(el("span", "ph", SLOT_NAME[k]));
       host.replaceWith(slot);
     }
     const st = $("#char-stats");
     st.textContent = "";
-    for (const [k, v] of [["공격력", s.atk], ["방어력", s.def], ["최대 HP", s.mhp], ["최대 MP", s.mmp], ["치명타", `${s.crit}%`], ["처치 수", s.kills], ["골드", s.gold.toLocaleString()], ["무기", s.eq.weapon ? itemName(s.eq.weapon) : "-"]]) {
+    for (const [k, v] of [["공격력", s.atk], ["방어력", s.def], ["최대 HP", s.mhp], ["최대 MP", s.mmp], ["치명타", `${s.crit}%`], ["치명타 피해", `${s.critd}%`], ["흡혈", `${s.ls}%`], ["경험치 보너스", `${s.xpb}%`], ["아이템 발견", `${s.mf}%`], ["처치 수", s.kills],
+      ["수련 · 힘", s.tr.str], ["수련 · 체력", s.tr.vit], ["수련 · 지력", s.tr.int], ["수련 · 수호", s.tr.grd]]) {
       const sp = el("span", "", k);
       sp.append(el("b", "", v));
       st.append(sp);
@@ -1019,7 +1154,6 @@ function refreshUi() {
       const row = el("div", "it");
       const img = el("img"); img.src = G.icons.url[id]; img.alt = "";
       const tx = el("div", "tx", d.name);
-      tx.style.color = Art.TIER_COL[d.tier || 0];
       tx.append(el("small", "", `${d.price}G · ${itemDesc({ id })}`));
       row.append(img, tx);
       const buy = (n) => { const b = el("button", "", n > 1 ? `×${n}` : "구매"); b.disabled = s.gold < d.price * n; b.addEventListener("click", () => act({ t: "buy", id: key, n })); row.append(b); };
@@ -1040,7 +1174,7 @@ function refreshUi() {
       const d = it[g.id];
       const img = el("img"); img.src = G.icons.url[g.id]; img.alt = "";
       const tx = el("div", "tx", itemName(g));
-      tx.style.color = Art.TIER_COL[d.tier];
+      tx.style.color = Art.RARITY_COL[g.q || 0];
       row.append(img, tx);
       if (g.enh >= 10) tx.append(el("small", "", "최대 강화 단계입니다"));
       else {
@@ -1049,6 +1183,27 @@ function refreshUi() {
         const b = el("button", "", "강화");
         b.disabled = s.gold < c.gold || stones < c.stone;
         b.addEventListener("click", () => act({ t: "enh", k }));
+        row.append(b);
+      }
+      list.append(row);
+    }
+  }
+
+  if (isOpen("train")) {
+    const list = $("#train-list");
+    list.textContent = "";
+    $("#train-xp").textContent = `보유 경험치 ${s.xp.toLocaleString()}`;
+    for (const k of Object.keys(G.defs.train)) {
+      const d = G.defs.train[k];
+      const row = el("div", "it");
+      const tx = el("div", "tx", `${d.name}  ${s.tr[k]}`);
+      tx.append(el("small", "", `${d.desc} · 1회 ${s.trc[k][0].toLocaleString()} EXP`));
+      row.append(tx);
+      for (const [n, cost] of [[1, s.trc[k][0]], [10, s.trc[k][1]]]) {
+        const b = el("button", "", `+${n}`);
+        b.disabled = s.xp < cost;
+        b.title = `${cost.toLocaleString()} EXP`;
+        b.addEventListener("click", () => act({ t: "train", k, n }));
         row.append(b);
       }
       list.append(row);
@@ -1069,12 +1224,72 @@ function refreshUi() {
       const b = el("button");
       if (s.q.st === 0) { b.textContent = "의뢰 수락"; b.addEventListener("click", () => { act({ t: "quest", a: "accept" }); Sound.play("ok"); }); }
       else { b.textContent = "의뢰 완료"; b.disabled = s.q.n < quest.n; b.addEventListener("click", () => { act({ t: "quest", a: "done" }); Sound.play("ok"); }); }
-      if (!atElder) { b.disabled = true; btns.append(b, el("span", "ds", " 촌장 엘더윈 근처에서만 가능합니다")); }
+      if (!atElder) { b.disabled = true; btns.append(b, el("span", "ds", " 관리자 엘더윈 근처에서만 가능합니다")); }
       else btns.append(b);
       body.append(btns);
     }
   }
 }
+
+// ── party ──
+function renderPartyHud() {
+  const box = $("#party-hud");
+  box.textContent = "";
+  for (const [eid, name, cls, lvl, hp, mhp, where] of G.party) {
+    if (eid === G.you) continue;
+    const row = el("div", "pm");
+    row.append(el("span", "", `Lv.${lvl} ${name}${where ? ` · ${where}` : ""}`));
+    const bar = el("div", "bar hp"), fill = el("i");
+    fill.style.width = `${clamp((hp / mhp) * 100, 0, 100)}%`;
+    bar.append(fill);
+    row.append(bar);
+    box.append(row);
+  }
+}
+function renderParty() {
+  const box = $("#party-body");
+  box.textContent = "";
+  const mine = G.party.length > 0;
+  box.append(el("p", "say", mine ? `파티원 ${G.party.length} / ${G.defs.partyMax} — 함께 잡으면 모두가 경험치와 전리품을 얻고, 인원이 많을수록 총 경험치가 늘어납니다.` : "파티에 속해 있지 않습니다. 주변의 모험가를 초대해 보세요. 강한 적과 정예 몬스터는 파티로 잡는 것이 훨씬 빠릅니다."));
+  const list = el("div", "list");
+  for (const [eid, name, cls, lvl, hp, mhp, where] of G.party) {
+    const row = el("div", "rk" + (eid === G.you ? " me" : ""));
+    row.append(el("b", "", name), el("span", "", `Lv.${lvl} ${G.defs.classes[cls].name}${where ? ` · ${where}` : ` · HP ${hp}/${mhp}`}`));
+    list.append(row);
+  }
+  const inParty = new Set(G.party.map((m) => m[0]));
+  const myParty = G.who.get(G.you)?.party;
+  let near = 0;
+  for (const [eid, w] of G.who) {
+    if (eid === G.you || inParty.has(eid)) continue;
+    near++;
+    const row = el("div", "it");
+    row.append(el("div", "tx", `Lv.${w.lvl} ${w.name} · ${G.defs.classes[w.cls].name}`));
+    const b = el("button", "", w.party ? "다른 파티" : "초대");
+    b.disabled = !!w.party || G.party.length >= G.defs.partyMax;
+    b.addEventListener("click", () => { act({ t: "pinv", e: eid }); Sound.play("ui"); });
+    row.append(b);
+    list.append(row);
+  }
+  if (!near) list.append(el("div", "ds", "같은 지역에 초대할 수 있는 모험가가 없습니다."));
+  box.append(list);
+  if (mine || myParty) {
+    const btns = el("div", "btns");
+    const b = el("button", "", "파티 탈퇴");
+    b.addEventListener("click", () => act({ t: "pleave" }));
+    btns.append(b);
+    box.append(btns);
+  }
+}
+function renderInvite() {
+  const box = $("#invite");
+  box.hidden = !G.pinv;
+  if (!G.pinv) return;
+  $("#invite-text").textContent = `${G.pinv}님이 파티에 초대했습니다.`;
+  Sound.play("ok");
+}
+$("#invite-yes").addEventListener("click", () => act({ t: "pacc" }));
+$("#invite-no").addEventListener("click", () => act({ t: "pdec" }));
 
 function renderRank(list) {
   const box = $("#rank-list");
@@ -1107,9 +1322,10 @@ function hudTick(t) {
 // ───────────────────────────── title & creation ─────────────────────────────
 
 const CLASS_DESC = {
-  warrior: "전사 — 튼튼한 체력과 방어력. 가까이 붙어 베고, 회전베기로 무리를 쓸어 버립니다.",
-  archer: "궁수 — 멀리서 빠르게 쏩니다. 관통 화살로 일직선의 적을 꿰뚫고, 바람처럼 달립니다.",
-  mage: "마법사 — 강력한 범위 마법과 치유. 체력은 약하지만 화력은 최고입니다.",
+  warrior: "전사 · 양손검 — 파티의 방패. 대검의 궤적이 주변 적까지 베고, 전투함성으로 파티 전체의 공격력을 올립니다.",
+  rogue: "도적 · 단검 — 가장 빠른 공격과 높은 치명타. 그림자 도약으로 적의 등 뒤를 잡고 연막으로 빠져나옵니다.",
+  ranger: "레인저 · 총 — 다른 세계의 화기를 다루는 원거리 딜러. 관통탄과 수류탄으로 무리를 정리합니다.",
+  mage: "마도사 · 지팡이 — 광역 마법과 치유. 체력은 약하지만 파티의 생존을 책임집니다.",
 };
 const draft = { cls: "warrior", hair: 0, skin: 0, style: 0 };
 function pick(sel, key, cast = (v) => v) {
@@ -1155,7 +1371,7 @@ $("#c-name").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#b-c
 const tcv = $("#title-cv"), tgx = tcv.getContext("2d");
 const parade = [
   Art.charSprite(Art.playerLook("warrior", [3, 0, 0], 0)), Art.charSprite(Art.playerLook("mage", [4, 0, 1], 0)),
-  Art.charSprite(Art.playerLook("archer", [2, 1, 0], 0)),
+  Art.charSprite(Art.playerLook("ranger", [2, 1, 0], 0)), Art.charSprite(Art.playerLook("rogue", [1, 2, 0], 0)),
 ];
 function renderTitle(t) {
   const s = Math.max(2, Math.round(Math.min(innerWidth / 300, innerHeight / 180)));
@@ -1163,7 +1379,7 @@ function renderTitle(t) {
   if (tcv.width !== w || tcv.height !== h) { tcv.width = w; tcv.height = h; }
   tgx.imageSmoothingEnabled = false;
   const sky = tgx.createLinearGradient(0, 0, 0, h);
-  sky.addColorStop(0, "#1a2a6c"); sky.addColorStop(0.6, "#5a78d0"); sky.addColorStop(1, "#ffc890");
+  sky.addColorStop(0, "#05060c"); sky.addColorStop(0.6, "#1a1c38"); sky.addColorStop(1, "#6a3a3a");
   tgx.fillStyle = sky; tgx.fillRect(0, 0, w, h);
   for (let i = 0; i < 50; i++) {
     const x = Math.floor(Art.hash(i, 1) * w), y = Math.floor(Art.hash(i, 2) * h * 0.55);
@@ -1171,24 +1387,24 @@ function renderTitle(t) {
     tgx.fillRect(x, y, 1, 1);
   }
   const gy = h - 34;
-  tgx.fillStyle = "#3c7a58";
+  tgx.fillStyle = "#16261e";
   for (let x = 0; x < w; x++) { const hh = 14 + Math.sin(x / 23) * 8 + Math.sin(x / 7) * 2; tgx.fillRect(x, gy - hh, 1, hh); }
-  tgx.fillStyle = "#6cbf4b"; tgx.fillRect(0, gy, w, 34);
-  tgx.fillStyle = "#58a83e"; for (let x = 0; x < w; x += 5) tgx.fillRect(x + ((x * 7) % 3), gy + 3 + ((x * 13) % 26), 2, 1);
-  tgx.fillStyle = "#e0c383"; tgx.fillRect(0, gy + 14, w, 9);
+  tgx.fillStyle = "#2c4a2a"; tgx.fillRect(0, gy, w, 34);
+  tgx.fillStyle = "#223a22"; for (let x = 0; x < w; x += 5) tgx.fillRect(x + ((x * 7) % 3), gy + 3 + ((x * 13) % 26), 2, 1);
+  tgx.fillStyle = "#5a4a34"; tgx.fillRect(0, gy + 14, w, 9);
   for (let i = 0; i < Math.ceil(w / 70) + 1; i++) {
     const x = ((i * 70 - (t / 40) % 70) + 70) % (w + 70) - 35;
     tgx.drawImage(i % 2 ? scenery.T : scenery.P, Math.round(x), gy - (i % 2 ? 26 : 30));
   }
   const cx = Math.round(w / 2);
-  parade.forEach((sp, i) => tgx.drawImage(sp[2][1 + (Math.floor(t / 160) % 2)], cx - 34 + i * 20, gy));
+  parade.forEach((sp, i) => tgx.drawImage(sp[2][1 + (Math.floor(t / 160) % 2)], cx - 50 + i * 20, gy - 4));
   const sl = mobArt.slime.right[Math.floor(t / 300) % 2];
   tgx.drawImage(sl, cx + 34, gy + 4 - Math.abs(Math.round(Math.sin(t / 250) * 5)));
   tgx.drawImage(mobArt.bslime.right[Math.floor(t / 300 + 1) % 2], cx + 54, gy + 4 - Math.abs(Math.round(Math.sin(t / 250 + 1) * 5)));
 }
 function renderCreate(t) {
   const g = $("#create-cv").getContext("2d");
-  g.clearRect(0, 0, 16, 22);
+  g.clearRect(0, 0, 16, 26);
   const sp = Art.charSprite(Art.playerLook(draft.cls, [draft.hair, draft.skin, draft.style], 0));
   g.drawImage(sp[Math.floor(t / 1600) % 4][1 + (Math.floor(t / 200) % 2)], 0, 0);
 }

@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>루멘테일 온라인</title>
-    <meta name="description" content="도트 감성 탑다운 2D 온라인 RPG. 친구들과 같은 채널에서 사냥하고, 강화하고, 수정 군주에 도전하세요." />
+    <meta name="description" content="판타지와 현대를 넘나드는 멀티버스 파티 RPG. 무작위 옵션 장비와 룬을 파밍하고, 경험치로 끝없이 수련하세요." />
     <meta property="og:title" content="루멘테일 온라인" />
-    <meta property="og:description" content="도트 감성 탑다운 2D 온라인 RPG. 친구들과 같은 채널에서 사냥하고, 강화하고, 수정 군주에 도전하세요." />
+    <meta property="og:description" content="판타지와 현대를 넘나드는 멀티버스 파티 RPG. 무작위 옵션 장비와 룬을 파밍하고, 경험치로 끝없이 수련하세요." />
     <meta property="og:image" content="https://lumentale-online.higgsfield.app/cover.png" />
     <meta name="theme-color" content="#16213e" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css" />
@@ -35,6 +35,7 @@
           <button data-win="inv" title="가방 (I)">가방</button>
           <button data-win="char" title="캐릭터 (C)">캐릭터</button>
           <button data-win="quest" title="의뢰 (L)">의뢰</button>
+          <button data-win="party" title="파티 (P)">파티</button>
           <button data-win="rank" title="랭킹">랭킹</button>
           <button data-win="help" title="도움말">?</button>
           <button id="btn-sound" title="소리 (M)">♪</button>
@@ -42,6 +43,8 @@
       </div>
 
       <div id="quest-track"></div>
+      <div id="party-hud"></div>
+      <div id="invite" class="win" hidden><span id="invite-text"></span><button id="invite-yes">수락</button><button id="invite-no">거절</button></div>
 
       <div id="chat">
         <div id="chat-log"></div>
@@ -78,10 +81,10 @@
       <section class="win window" id="w-char" hidden>
         <header>캐릭터<button class="x">×</button></header>
         <div class="charbox">
-          <canvas id="char-cv" width="16" height="22"></canvas>
+          <canvas id="char-cv" width="16" height="26"></canvas>
           <div>
             <div id="char-title"></div>
-            <div class="eq"><div class="slot" id="eq-weapon"></div><div class="slot" id="eq-armor"></div></div>
+            <div class="eq"><div class="slot" id="eq-weapon"></div><div class="slot" id="eq-armor"></div><div class="slot" id="eq-acc"></div></div>
           </div>
         </div>
         <div id="char-stats" class="stats"></div>
@@ -89,7 +92,7 @@
       </section>
 
       <section class="win window" id="w-shop" hidden>
-        <header>잡화상 리나<button class="x">×</button></header>
+        <header>보급상 리나<button class="x">×</button></header>
         <p class="say">어서 와요! 필요한 건 다 있답니다. 가방에서 물건을 고르면 팔 수도 있어요.</p>
         <div id="shop-list" class="list"></div>
       </section>
@@ -104,6 +107,19 @@
       <section class="win window" id="w-quest" hidden>
         <header>의뢰<button class="x">×</button></header>
         <div id="quest-body"></div>
+      </section>
+
+      <section class="win window" id="w-train" hidden>
+        <header>수련관 카이<button class="x">×</button></header>
+        <p class="say">경험은 레벨만 올리는 게 아니야. 쌓은 경험치를 바치면 네 육체 자체를 단련해 주지. 한계는 없다.</p>
+        <div id="train-xp" class="gold-line"></div>
+        <div id="train-list" class="list"></div>
+        <p class="hint">수련할수록 필요 경험치가 조금씩 늘어납니다. 레벨업에 쓸 경험치를 대신 써도 됩니다.</p>
+      </section>
+
+      <section class="win window" id="w-party" hidden>
+        <header>파티<button class="x">×</button></header>
+        <div id="party-body"></div>
       </section>
 
       <section class="win window" id="w-rank" hidden>
@@ -123,8 +139,11 @@
           <p><b>공격</b> Space — 가까운 적을 자동으로 겨냥합니다</p>
           <p><b>스킬</b> 1 · 2 · 3 &nbsp; <b>물약</b> Q(HP) · E(MP)</p>
           <p><b>대화</b> F &nbsp; <b>자동사냥</b> R &nbsp; <b>채팅</b> Enter</p>
-          <p><b>창</b> I 가방 · C 캐릭터 · L 의뢰 · Esc 닫기</p>
-          <p>마을의 <b>촌장</b>에게 의뢰를 받고, <b>잡화상</b>에서 물약을, <b>대장장이</b>에게서 강화를 받으세요. 동쪽 문 밖이 사냥터입니다.</p>
+          <p><b>창</b> I 가방 · C 캐릭터 · L 의뢰 · P 파티 · Esc 닫기</p>
+          <p><b>파밍</b> 장비는 일반 · <span style="color:#6a9cff">마법</span> · <span style="color:#f0d050">희귀</span> · <span style="color:#ff8a30">전설</span> 등급으로 떨어지며 옵션이 무작위로 붙습니다. 홈이 있는 장비에 <b>룬</b>을 순서대로 끼우면 <b>룬어</b>가 완성됩니다.</p>
+          <p><b>수련</b> 수련관에게 경험치를 바치면 능력치가 영구히 오릅니다. 한계가 없습니다.</p>
+          <p><b>파티</b> 금빛 테두리의 <b>정예</b>와 보스는 파티로 잡으세요. 함께 잡으면 모두 보상을 받습니다.</p>
+          <p>넥서스 광장 동쪽 문은 판타지 세계, 서쪽 문은 네온 시티로 이어집니다.</p>
         </div>
       </section>
     </div>
@@ -132,8 +151,8 @@
     <div id="dead" hidden>
       <div class="win">
         <h2>쓰러졌습니다</h2>
-        <p>마을에서 다시 일어납니다. (현재 경험치의 5%를 잃습니다)</p>
-        <button id="b-respawn" class="big">마을에서 부활</button>
+        <p>넥서스 광장에서 다시 일어납니다. (경험치를 조금 잃습니다)</p>
+        <button id="b-respawn" class="big">광장에서 부활</button>
       </div>
     </div>
 
@@ -142,7 +161,7 @@
       <canvas id="title-cv"></canvas>
       <div class="title-box">
         <h1>루멘테일<small>온라인</small></h1>
-        <p class="sub">도트 감성 탑다운 온라인 RPG</p>
+        <p class="sub">차원을 넘나드는 파티 헌팅 RPG</p>
         <div id="ch-pick">
           <button data-ch="ch1" class="on">채널 1</button>
           <button data-ch="ch2">채널 2</button>
@@ -157,13 +176,14 @@
       <div class="win">
         <h2>캐릭터 만들기</h2>
         <div class="create-row">
-          <canvas id="create-cv" width="16" height="22"></canvas>
+          <canvas id="create-cv" width="16" height="26"></canvas>
           <div class="create-form">
             <input id="c-name" maxlength="10" placeholder="이름 (한글·영문·숫자 2~10자)" autocomplete="off" />
             <div class="pick" id="c-cls">
               <button data-v="warrior" class="on">전사</button>
-              <button data-v="archer">궁수</button>
-              <button data-v="mage">마법사</button>
+              <button data-v="rogue">도적</button>
+              <button data-v="ranger">레인저</button>
+              <button data-v="mage">마도사</button>
             </div>
             <p id="c-desc"></p>
             <div class="pick sw" id="c-hair"></div>

@@ -82,22 +82,25 @@ function tinted(src, col) {
 // ───────────────────────────── ground ─────────────────────────────
 
 const GROUND = {
-  ".": ["#6cbf4b", "#58a83e", "#86d45e"],
-  ",": ["#6cbf4b", "#58a83e", "#86d45e"],
-  '"': ["#6cbf4b", "#58a83e", "#86d45e"],
-  ":": ["#4a9a50", "#3c8444", "#5cae5e"],
-  ";": ["#4a9a50", "#3c8444", "#5cae5e"],
-  p: ["#e0c383", "#cdae6c", "#edd59c"],
-  o: ["#c2bcae", "#9d968a", "#d8d3c6"],
-  s: ["#eedfa4", "#dcc986", "#f8eebc"],
-  w: ["#4f9ae6", "#3d84d4", "#9fd2ff"],
-  b: ["#a8743e", "#7c5228", "#c08a50"],
-  c: ["#6a6480", "#5a546e", "#7a7492"],
-  d: ["#6a6480", "#5a546e", "#7a7492"],
-  W: ["#2b2740", "#231f36", "#342f4c"],
+  ".": ["#4e8a3e", "#3f7434", "#62a04c"],
+  ",": ["#4e8a3e", "#3f7434", "#62a04c"],
+  '"': ["#4e8a3e", "#3f7434", "#62a04c"],
+  ":": ["#35693e", "#2a5633", "#44794a"],
+  ";": ["#35693e", "#2a5633", "#44794a"],
+  p: ["#b89a66", "#a38552", "#c8ac78"],
+  o: ["#8e8a84", "#6e6a66", "#a6a29a"],
+  s: ["#cdbd8a", "#b8a672", "#dccf9e"],
+  w: ["#3a6ea8", "#2e5c92", "#7fb0dc"],
+  b: ["#8a6034", "#644420", "#a07444"],
+  c: ["#4c475e", "#3f3a50", "#5a556e"],
+  d: ["#4c475e", "#3f3a50", "#5a556e"],
+  W: ["#1f1c2e", "#191626", "#28243a"],
+  a: ["#3a3d46", "#30333b", "#474a54"],
+  m: ["#3a3d46", "#30333b", "#474a54"],
+  k: ["#7c7f86", "#63666d", "#8f9299"],
 };
 const GRASSY = '.,":;';
-const FLOWERS = ["#fff6a0", "#ffffff", "#ff9ac0", "#ffd060"];
+const FLOWERS = ["#e8dc90", "#e8e8e8", "#d88aa8", "#e0b850"];
 
 function drawTile(g, m, tx, ty, frame) {
   const ch = m.g[ty][tx];
@@ -160,14 +163,23 @@ function drawTile(g, m, tx, ty, frame) {
       const x = 3 + Math.floor(hash(tx, ty, 30) * 6), y = 3 + Math.floor(hash(tx, ty, 31) * 6);
       g.fillRect(X + x, Y + y, 4, 1); g.fillRect(X + x + 3, Y + y + 1, 1, 3); g.fillRect(X + x + 4, Y + y + 3, 3, 1);
     }
+  } else if (ch === "a" || ch === "m") {
+    for (let i = 0; i < 8; i++) px(g, X + Math.floor(hash(tx, ty, i) * 16), Y + Math.floor(hash(tx, ty, i + 9) * 16), i % 2 ? dark : light);
+    if (ch === "m") { g.fillStyle = "#c8a83a"; g.fillRect(X + 2, Y, 12, 2); }
+    const n = at(tx, ty - 1), s2 = at(tx, ty + 1);
+    if (n === "k") { g.fillStyle = "#9a9da4"; g.fillRect(X, Y, 16, 2); g.fillStyle = "#24262c"; g.fillRect(X, Y + 2, 16, 1); }
+    if (s2 === "k") { g.fillStyle = "#24262c"; g.fillRect(X, Y + 15, 16, 1); }
+  } else if (ch === "k") {
+    g.fillStyle = dark; g.fillRect(X, Y + 15, 16, 1); g.fillRect(X + 15, Y, 1, 16);
+    for (let i = 0; i < 4; i++) px(g, X + Math.floor(hash(tx, ty, i) * 15), Y + Math.floor(hash(tx, ty, i + 9) * 15), i % 2 ? dark : light);
   } else if (ch === "W") {
     for (let i = 0; i < 5; i++) px(g, X + Math.floor(hash(tx, ty, i) * 16), Y + Math.floor(hash(tx, ty, i + 9) * 16), i % 2 ? dark : light);
     // a rock face where the wall meets open floor below it
     const below = at(tx, ty + 1);
     if (below === "c" || below === "d") {
-      g.fillStyle = "#4c4568"; g.fillRect(X, Y + 4, 16, 12);
-      g.fillStyle = "#5e5780"; g.fillRect(X, Y + 4, 16, 2);
-      g.fillStyle = "#3a3452";
+      g.fillStyle = "#383350"; g.fillRect(X, Y + 4, 16, 12);
+      g.fillStyle = "#484262"; g.fillRect(X, Y + 4, 16, 2);
+      g.fillStyle = "#2a2640";
       for (let i = 0; i < 4; i++) g.fillRect(X + Math.floor(hash(tx, ty, 40 + i) * 14), Y + 7 + i * 2, 3, 1);
       g.fillStyle = "#1c1830"; g.fillRect(X, Y + 15, 16, 1);
     }
@@ -191,7 +203,7 @@ function drawTile(g, m, tx, ty, frame) {
         else g.fillRect(X + 16 - depth, Y + i, depth, 1);
       }
       if (ch === "w") {
-        g.fillStyle = "#bfe2ff";
+        g.fillStyle = "#9cc4e8";
         if (s === 0) g.fillRect(X, Y + 2, 16, 1);
         else if (s === 2) g.fillRect(X + 2, Y, 1, 16);
       }
@@ -210,8 +222,8 @@ export function renderGround(m) {
   return out;
 }
 
-const MINI = { ".": "#5fb04a", ",": "#5fb04a", '"': "#6cc058", ":": "#3f8a48", ";": "#3f8a48", p: "#d9b97a", o: "#b9b3a8", s: "#ead9a0", w: "#4a90d9", b: "#a8743e", c: "#6a6480", d: "#625c78", W: "#221e34" };
-const MINI_OBJ = { T: "#2f7f33", P: "#235c3a", R: "#8a8a92", B: "#3f9a3c", h: "#c8563c", a: "#7fb8e8", K: "#6ae0f0", S: "#4a4560", F: "#8a5a30", L: "#e8d070", G: "#8a5a30" };
+const MINI = { ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86" };
+const MINI_OBJ = { T: "#2a6030", P: "#1d4a30", R: "#74747c", B: "#35803a", h: "#8a4a3a", a: "#6a9ac8", K: "#5ac8d8", S: "#3a3550", F: "#6a4628", L: "#c8b060", G: "#6a4628", Z: "#22242c", c: "#8a3a3a", y: "#a83a3a", x: "#4a4d56" };
 export function renderMini(m, s = 2) {
   const [c, g] = canvas(m.w * s, m.h * s);
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
@@ -227,12 +239,12 @@ function tree() {
   const [c, g] = canvas(26, 34);
   g.fillStyle = "#8a5a30"; g.fillRect(11, 22, 4, 10);
   g.fillStyle = "#6a4222"; g.fillRect(14, 22, 1, 10); g.fillRect(10, 31, 6, 1);
-  disc(g, 13, 13, 11, 11, "#2f7f33");
-  disc(g, 12, 11, 9.5, 9, "#3f9a3c");
-  disc(g, 10, 8, 6, 5, "#62b84c");
-  disc(g, 8, 6, 2.5, 2, "#8ad466");
-  for (let i = 0; i < 14; i++) px(g, 4 + Math.floor(hash(i, 1) * 18), 6 + Math.floor(hash(i, 2) * 15), i % 2 ? "#2f7f33" : "#62b84c");
-  outline(c, g, "#1f4a26");
+  disc(g, 13, 13, 11, 11, "#2a6a30");
+  disc(g, 12, 11, 9.5, 9, "#3a8038");
+  disc(g, 10, 8, 6, 5, "#549a46");
+  disc(g, 8, 6, 2.5, 2, "#74b45e");
+  for (let i = 0; i < 14; i++) px(g, 4 + Math.floor(hash(i, 1) * 18), 6 + Math.floor(hash(i, 2) * 15), i % 2 ? "#2a6a30" : "#549a46");
+  outline(c, g, "#152e1a");
   return c;
 }
 function pine() {
@@ -242,13 +254,13 @@ function pine() {
   const tier = (top, h, half) => {
     for (let y = 0; y < h; y++) {
       const w = Math.round(1 + (half * y) / (h - 1));
-      g.fillStyle = "#2d7046"; g.fillRect(12 - w, top + y, w * 2, 1);
-      g.fillStyle = "#3f8a56"; g.fillRect(12 - w, top + y, Math.max(1, Math.round(w * 0.6)), 1);
-      g.fillStyle = "#205638"; g.fillRect(12 + Math.round(w * 0.5), top + y, w - Math.round(w * 0.5), 1);
+      g.fillStyle = "#265a3c"; g.fillRect(12 - w, top + y, w * 2, 1);
+      g.fillStyle = "#34704a"; g.fillRect(12 - w, top + y, Math.max(1, Math.round(w * 0.6)), 1);
+      g.fillStyle = "#1a4430"; g.fillRect(12 + Math.round(w * 0.5), top + y, w - Math.round(w * 0.5), 1);
     }
   };
   tier(1, 11, 6); tier(8, 12, 8.5); tier(16, 13, 11);
-  outline(c, g, "#143826");
+  outline(c, g, "#0e2418");
   return c;
 }
 function rock(cols) {
@@ -262,11 +274,11 @@ function rock(cols) {
 }
 function bush() {
   const [c, g] = canvas(16, 14);
-  disc(g, 8, 8, 7, 5, "#2f7f33");
-  disc(g, 5, 7, 4, 4, "#3f9a3c"); disc(g, 11, 7, 4, 4, "#3f9a3c");
-  disc(g, 6, 5, 2.5, 2, "#62b84c");
-  for (const [x, y] of [[4, 8], [9, 6], [12, 9], [7, 10]]) { px(g, x, y, "#e84a5a"); px(g, x + 1, y, "#ff8a94"); }
-  outline(c, g, "#1f4a26");
+  disc(g, 8, 8, 7, 5, "#2a6a30");
+  disc(g, 5, 7, 4, 4, "#3a8038"); disc(g, 11, 7, 4, 4, "#3a8038");
+  disc(g, 6, 5, 2.5, 2, "#549a46");
+  for (const [x, y] of [[4, 8], [9, 6], [12, 9], [7, 10]]) { px(g, x, y, "#b83a48"); px(g, x + 1, y, "#d86a78"); }
+  outline(c, g, "#152e1a");
   return c;
 }
 function fence() {
@@ -322,13 +334,13 @@ function stalagmite() {
   outline(c, g, "#1c1830");
   return c;
 }
-const ROOFS = [["#d8503c", "#a8342c", "#f07a5c"], ["#4a78c8", "#34569a", "#6e9ae4"], ["#4f9a58", "#377040", "#72bc7a"], ["#8a5ac0", "#643e94", "#aa80dc"]];
+const ROOFS = [["#a84434", "#7c2c26", "#c4604a"], ["#3f5f96", "#2c4470", "#587ab0"], ["#42784a", "#2e5634", "#5a9462"], ["#6a4a90", "#4c336c", "#8464aa"]];
 function house(v) {
   const [c, g] = canvas(64, 66);
   const [roof, roofD, roofL] = ROOFS[v % ROOFS.length];
   // walls
-  g.fillStyle = "#f2e4c4"; g.fillRect(3, 30, 58, 34);
-  g.fillStyle = "#d8c8a4"; g.fillRect(3, 58, 58, 6);
+  g.fillStyle = "#d8ccb0"; g.fillRect(3, 30, 58, 34);
+  g.fillStyle = "#bcae90"; g.fillRect(3, 58, 58, 6);
   g.fillStyle = "#8a5a30";
   g.fillRect(3, 30, 2, 34); g.fillRect(59, 30, 2, 34); g.fillRect(3, 44, 58, 2); g.fillRect(20, 30, 2, 14); g.fillRect(42, 30, 2, 14);
   // door
@@ -359,6 +371,71 @@ function house(v) {
   outline(c, g, "#3a2414");
   return c;
 }
+const BLD = [["#5a5e6a", "#444852", "#ff4a8a"], ["#6a5448", "#4e3c34", "#4ae0e0"], ["#4a5464", "#363e4c", "#ffd04a"], ["#584a68", "#40344e", "#7aff8a"]];
+/** A flat-roofed city block with lit windows and a neon sign. */
+function building(v) {
+  const [c, g] = canvas(64, 70);
+  const [wall, wallD, neon] = BLD[v % BLD.length];
+  g.fillStyle = wall; g.fillRect(2, 6, 60, 62);
+  g.fillStyle = wallD; g.fillRect(2, 60, 60, 8); g.fillRect(56, 6, 6, 62);
+  g.fillStyle = "#2a2c34"; g.fillRect(0, 2, 64, 6);
+  g.fillStyle = "#3a3d48"; g.fillRect(0, 2, 64, 2);
+  for (let r = 0; r < 3; r++) for (let i = 0; i < 5; i++) {
+    const lit = hash(i, r, v) > 0.45;
+    g.fillStyle = "#1c1e26"; g.fillRect(6 + i * 11, 12 + r * 11, 8, 7);
+    g.fillStyle = lit ? (hash(i, r, v + 9) > 0.5 ? "#ffd880" : "#9fe0ff") : "#2c3340"; g.fillRect(7 + i * 11, 13 + r * 11, 6, 5);
+  }
+  g.fillStyle = "#1c1e26"; g.fillRect(24, 48, 16, 20);
+  g.fillStyle = "#3c4250"; for (let y = 50; y < 68; y += 3) g.fillRect(25, y, 14, 2);
+  g.fillStyle = "#14151a"; g.fillRect(5, 44, 54, 5);
+  g.fillStyle = neon; g.fillRect(8, 45, 14, 3); g.fillRect(26, 45, 4, 3); g.fillRect(34, 45, 10, 3); g.fillRect(48, 45, 8, 3);
+  outline(c, g, "#0c0d12");
+  return c;
+}
+const CARS = ["#8a3238", "#3a5a8a", "#c8c8cc", "#3a3a40", "#b89030"];
+function car(v) {
+  const [c, g] = canvas(26, 15);
+  const col = CARS[v % CARS.length];
+  g.fillStyle = col; g.fillRect(1, 5, 24, 7); g.fillRect(6, 1, 13, 5);
+  g.fillStyle = shadeHex(col); g.fillRect(1, 10, 24, 2);
+  g.fillStyle = "#1c2430"; g.fillRect(7, 2, 5, 3); g.fillRect(13, 2, 5, 3);
+  g.fillStyle = "#6a8aa8"; g.fillRect(7, 2, 2, 1); g.fillRect(13, 2, 2, 1);
+  g.fillStyle = "#ffe8a0"; g.fillRect(1, 6, 2, 2);
+  g.fillStyle = "#d83838"; g.fillRect(23, 6, 2, 2);
+  g.fillStyle = "#15161a"; g.fillRect(4, 11, 5, 3); g.fillRect(17, 11, 5, 3);
+  g.fillStyle = "#5a5c64"; g.fillRect(5, 12, 3, 1); g.fillRect(18, 12, 3, 1);
+  outline(c, g, "#0c0d12");
+  return c;
+}
+function shadeHex(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (x) => Math.round(x * 0.68).toString(16).padStart(2, "0");
+  return `#${f((n >> 16) & 255)}${f((n >> 8) & 255)}${f(n & 255)}`;
+}
+function hydrant() {
+  const [c, g] = canvas(10, 14);
+  g.fillStyle = "#a83232"; g.fillRect(3, 3, 4, 9); g.fillRect(1, 6, 8, 2); g.fillRect(2, 11, 6, 2);
+  g.fillStyle = "#d85a5a"; g.fillRect(3, 3, 1, 9); g.fillRect(3, 1, 4, 2);
+  outline(c, g, "#0c0d12");
+  return c;
+}
+function trash() {
+  const [c, g] = canvas(12, 15);
+  g.fillStyle = "#4a4d56"; g.fillRect(2, 4, 8, 10);
+  g.fillStyle = "#33363e"; g.fillRect(7, 4, 3, 10); g.fillRect(3, 6, 1, 7); g.fillRect(5, 6, 1, 7);
+  g.fillStyle = "#62656e"; g.fillRect(1, 2, 10, 2);
+  outline(c, g, "#0c0d12");
+  return c;
+}
+function brick() {
+  const [c, g] = canvas(16, 26);
+  g.fillStyle = "#2a2c36"; g.fillRect(0, 0, 16, 26);
+  g.fillStyle = "#353844"; g.fillRect(0, 0, 16, 9);
+  g.fillStyle = "#1c1e26";
+  for (let y = 11; y < 26; y += 4) { g.fillRect(0, y, 16, 1); g.fillRect((y % 8) + 2, y - 3, 1, 3); g.fillRect((y % 8) + 10, y - 3, 1, 3); }
+  g.fillStyle = "#14151a"; g.fillRect(0, 9, 16, 1); g.fillRect(0, 25, 16, 1);
+  return c;
+}
 function fountain(frame) {
   const [c, g] = canvas(34, 34);
   disc(g, 17, 20, 15, 11, "#8f897f");
@@ -379,130 +456,145 @@ export function buildScenery() {
   const s = {
     T: tree(), P: pine(), R: rock(["#a8a8b0", "#7a7a86", "#d0d0d8"]), B: bush(), F: fence(), L: lamp(), G: sign(),
     K: crystal("#6ae0f0", "#3aa8d8", "#d8fbff"), K2: crystal("#c08af0", "#8a5ad0", "#f0dcff"), S: stalagmite(),
-    house: [0, 1, 2, 3].map(house), fountain: [fountain(0), fountain(1)],
+    house: [house(0), house(1), house(2), house(3), building(0), building(1), building(2), building(3)], fountain: [fountain(0), fountain(1)],
+    c: [0, 1, 2, 3, 4].map(car), y: hydrant(), x: trash(), Z: brick(),
   };
   return s;
 }
 
 // ───────────────────────────── characters ─────────────────────────────
+// Taller than the classic two-head chibi: a 8px head on a 12px body reads as an
+// adult adventurer rather than a mascot.
 
 const C_DOWN = [
-  "....oooooooo....",
+  ".....oooooo.....",
+  "....ohhhhhho....",
   "...ohhhhhhhho...",
-  "..ohhhhhhhhhho..",
-  "..ohhhhhhhhhho..",
-  "..ohhhsssshhho..",
-  "..ohsessssesho..",
-  "..ossessssesso..",
+  "...ohhsssshho...",
+  "...ohsessesho...",
   "...osssssssso...",
-  "....oooooooo....",
-  "...occcccccco...",
-  "..osccxxxxccso..",
-  "..osccccccccso..",
-  "...oCCCCCCCCo...",
+  "....osssssso....",
+  "...oooccccooo...",
+  "..occcxccxccco..",
+  "..occcccccccco..",
+  "..ocCccccccCco..",
+  "..ocCcxxxxcCco..",
+  "..osoCCCCCCoso..",
+  "...ooccccccoo...",
   "....occoocco....",
+  "....occoocco....",
+  "....occoocco....",
+  "....obboobbo....",
   "....obboobbo....",
   ".....oo..oo.....",
 ];
 const C_UP = [
-  "....oooooooo....",
+  ".....oooooo.....",
+  "....ohhhhhho....",
   "...ohhhhhhhho...",
-  "..ohhhhhhhhhho..",
-  "..ohhhhhhhhhho..",
-  "..ohhhhhhhhhho..",
-  "..ohhhhhhhhhho..",
-  "..ohhHHHHHHhho..",
-  "...ohHHHHHHho...",
-  "....oooooooo....",
-  "...occcccccco...",
-  "..osccccccccso..",
-  "..osccccccccso..",
-  "...oCCCCCCCCo...",
+  "...ohhhhhhhho...",
+  "...ohhhhhhhho...",
+  "...ohhHHHHhho...",
+  "....ohHHHHho....",
+  "...oooccccooo...",
+  "..occcccccccco..",
+  "..occcccccccco..",
+  "..ocCccccccCco..",
+  "..ocCcxxxxcCco..",
+  "..osoCCCCCCoso..",
+  "...ooccccccoo...",
   "....occoocco....",
+  "....occoocco....",
+  "....occoocco....",
+  "....obboobbo....",
   "....obboobbo....",
   ".....oo..oo.....",
 ];
 const C_SIDE = [
-  "....oooooooo....",
+  ".....oooooo.....",
+  "....ohhhhhho....",
   "...ohhhhhhhho...",
-  "..ohhhhhhhhhho..",
-  "..ohhhhhhhhhho..",
-  "..osshhhhhhhho..",
-  "..osesshhhhhho..",
-  "..osesshhhhhho..",
-  "...ossssshhho...",
-  "....oooooooo....",
-  "....occcccco....",
-  "....occscxco....",
-  "....occscxco....",
-  "....oCCCCCCo....",
+  "...osshhhhhho...",
+  "...oseshhhhho...",
+  "...osssshhhho...",
+  "....ossshhho....",
+  ".....oocccoo....",
+  ".....occccco....",
+  ".....occccco....",
+  ".....ocsCcco....",
+  ".....ocxxcco....",
+  ".....ocsCcco....",
+  ".....oCCCCCo....",
   ".....occcco.....",
+  ".....occcco.....",
+  ".....occcco.....",
+  ".....obbbbo.....",
   ".....obbbbo.....",
   "......oooo......",
 ];
-const SIDE_STEP = ["....occoocco....", "...obbo..obbo...", "....oo....oo...."];
+const SIDE_STEP = ["....occoocco....", "...occo..occo...", "...occo..occo...", "..obbo....obbo..", "..obbo....obbo..", "...oo......oo..."];
+const LEG = 14;
+export const CHAR_H = 26;
 
-export const HAIR = [["#6a4630", "#4a3020"], ["#2a2a36", "#16161e"], ["#f0cc58", "#c89c30"], ["#d85a34", "#a83c20"], ["#f29ac0", "#c86a94"], ["#ecebf2", "#b8b6c8"]];
-export const SKIN = [["#ffd9b0", "#e8b088"], ["#f0b98a", "#cc9060"], ["#c68a5c", "#9c6440"]];
-const CLOTH = { warrior: ["#d0483c", "#9c2c28"], archer: ["#3f9a58", "#2a7040"], mage: ["#6a58c8", "#4838a0"] };
-const ARMOR = [null, null, ["#b07a40", "#855628"], ["#9aa6bc", "#6c7890"], ["#5cd4e4", "#30a0b8"]];
+export const HAIR = [["#5a3c2a", "#3e2a1c"], ["#26262e", "#15151b"], ["#c8a850", "#9a7c30"], ["#a8442c", "#7c2e1c"], ["#8a5a7a", "#623c58"], ["#d0d0d8", "#9c9cac"]];
+export const SKIN = [["#ecc8a4", "#c89c78"], ["#d8a47a", "#b07c54"], ["#a8724c", "#7e5034"]];
+const CLOTH = { warrior: ["#8a3030", "#5e1e22"], rogue: ["#3a3f4c", "#272a35"], ranger: ["#5a6a48", "#3d4a32"], mage: ["#4a3f8a", "#2f2860"] };
+const TRIM = { warrior: "#c8a040", rogue: "#a83242", ranger: "#c8b070", mage: "#7ad0e0" };
+const HOOD = { rogue: ["#2c2f3a", "#1c1e27"], ranger: ["#3d4a3a", "#2a3428"], mage: ["#3a2f6a", "#261f4a"] };
+const HOOD_ROWS = { rogue: 99, ranger: 3, mage: 3 };
+const ARMOR = [null, null, ["#7a5530", "#573a1e"], ["#7c8698", "#565e70"], ["#33373f", "#1f2228"], ["#3ab0c0", "#1f7888"]];
 
 function charFrame(base, o, legs, bob) {
-  const [c, g] = canvas(16, 22);
-  const rows = base.slice();
-  if (legs === "side") rows.splice(13, 3, ...SIDE_STEP);
-  const hair = HAIR[o.hair] || HAIR[0], skin = SKIN[o.skin] || SKIN[0];
+  const [c, g] = canvas(16, CHAR_H);
+  let rows = base.slice();
+  if (legs === "side") rows.splice(LEG, 6, ...SIDE_STEP);
+  // headgear is a recolour of the hair rows; a rogue also wears a mask
+  const hoodRows = HOOD_ROWS[o.hat] || 0;
+  rows = rows.map((r, i) => {
+    if (i < hoodRows && i < 7) r = r.replace(/h/g, "q").replace(/H/g, "Q");
+    if (o.hat === "rogue" && (i === 5 || i === 6)) r = r.replace(/s/g, "Q");
+    return r;
+  });
+  const hair = HAIR[o.hair] || HAIR[0], skin = SKIN[o.skin] || SKIN[0], hood = HOOD[o.hat] || hair;
   const pal = {
-    o: o.line || "#2a1a14", h: hair[0], H: hair[1], s: skin[0], S: skin[1], e: o.eye || "#2a1a14",
-    c: o.cloth[0], C: o.cloth[1], x: o.trim, b: o.boot || "#5a3a22",
+    o: o.line || "#17131a", h: hair[0], H: hair[1], q: hood[0], Q: hood[1], s: skin[0], S: skin[1], e: o.eye || "#17131a",
+    c: o.cloth[0], C: o.cloth[1], x: o.trim, b: o.boot || "#3a2a20",
   };
-  const oy = 6 + (bob ? 1 : 0);
-  // head + body share one bob; legs are painted separately so a foot can lift
-  paint(g, rows.slice(0, 13), pal, 0, oy);
-  const legRows = rows.slice(13);
+  const oy = CHAR_H - 20 + (bob ? 1 : 0);
+  paint(g, rows.slice(0, LEG), pal, 0, oy);
+  const legRows = rows.slice(LEG);
   for (let y = 0; y < legRows.length; y++) for (let x = 0; x < 16; x++) {
     const col = pal[legRows[y][x]];
     if (!col) continue;
     const lift = (legs === "l" && x < 8) || (legs === "r" && x >= 8) ? 1 : 0;
-    px(g, x, 6 + 13 + y - lift, col);
+    px(g, x, CHAR_H - 20 + LEG + y - lift, col);
   }
-  // long hair
-  if (o.style === 1 && !o.hat) {
+  if (o.style === 1 && !hoodRows) {
     g.fillStyle = hair[0];
-    if (base === C_SIDE) { g.fillRect(10, oy + 8, 3, 3); g.fillStyle = hair[1]; g.fillRect(12, oy + 8, 1, 3); }
-    else { g.fillRect(2, oy + 7, 2, 4); g.fillRect(12, oy + 7, 2, 4); if (base === C_UP) g.fillRect(4, oy + 8, 8, 2); }
+    if (base === C_SIDE) { g.fillRect(9, oy + 6, 3, 4); g.fillStyle = hair[1]; g.fillRect(11, oy + 6, 1, 4); }
+    else { g.fillRect(3, oy + 5, 1, 5); g.fillRect(12, oy + 5, 1, 5); if (base === C_UP) g.fillRect(4, oy + 6, 8, 3); }
   }
-  // headgear
-  if (o.hat === "warrior") {
-    g.fillStyle = "#c4ccd8"; g.fillRect(3, oy + 1, 10, 3); g.fillRect(4, oy, 8, 1);
-    g.fillStyle = "#8e98a8"; g.fillRect(3, oy + 3, 10, 1);
-    g.fillStyle = "#e8eef4"; g.fillRect(5, oy + 1, 3, 1);
-    g.fillStyle = "#d0483c"; g.fillRect(7, oy - 2, 2, 2);
-  } else if (o.hat === "archer") {
-    g.fillStyle = "#2f8048"; g.fillRect(3, oy + 1, 10, 3); g.fillRect(4, oy, 8, 1);
-    g.fillStyle = "#1f5c32"; g.fillRect(3, oy + 3, 10, 1);
-    g.fillStyle = "#fff0a0"; g.fillRect(11, oy - 2, 1, 3); g.fillRect(12, oy - 3, 1, 2);
-  } else if (o.hat === "mage") {
-    g.fillStyle = "#4a3aa8";
-    g.fillRect(1, oy + 2, 14, 2);
-    for (let i = 0; i < 6; i++) g.fillRect(4 + Math.floor(i / 2), oy + 1 - i, 8 - i - Math.floor(i / 2), 1);
-    g.fillStyle = "#ffd860"; g.fillRect(3, oy + 1, 10, 1);
-    g.fillStyle = "#32267c"; g.fillRect(1, oy + 3, 14, 1);
+  if (o.hat === "warrior" && base !== C_SIDE) {
+    // steel pauldrons
+    g.fillStyle = "#aab2c0"; g.fillRect(2, oy + 7, 3, 3); g.fillRect(11, oy + 7, 3, 3);
+    g.fillStyle = "#6e7686"; g.fillRect(2, oy + 9, 3, 1); g.fillRect(11, oy + 9, 3, 1);
+  } else if (o.hat === "warrior") {
+    g.fillStyle = "#aab2c0"; g.fillRect(6, oy + 7, 4, 3);
+    g.fillStyle = "#6e7686"; g.fillRect(6, oy + 9, 4, 1);
   }
+  if (o.hat === "ranger") { g.fillStyle = "#1c241a"; if (base === C_DOWN) g.fillRect(3, oy + 3, 10, 1); else if (base === C_SIDE) g.fillRect(2, oy + 3, 5, 1); }
+  if (o.hat === "mage" && base !== C_UP) { g.fillStyle = "#7ad0e0"; g.fillRect(base === C_SIDE ? 4 : 7, oy + 1, 2, 1); }
   if (o.beard) {
-    g.fillStyle = "#ecebf2";
-    if (base === C_DOWN) { g.fillRect(4, oy + 7, 8, 2); g.fillRect(5, oy + 9, 6, 1); }
-    else if (base === C_SIDE) g.fillRect(3, oy + 7, 4, 3);
+    g.fillStyle = "#d0d0d8";
+    if (base === C_DOWN) { g.fillRect(5, oy + 5, 6, 2); g.fillRect(6, oy + 7, 4, 1); }
+    else if (base === C_SIDE) g.fillRect(4, oy + 5, 3, 3);
   }
   outline(c, g, pal.o);
   return c;
 }
 
 const charCache = new Map();
-/**
- * A full character sheet: `[dir][frame]`, dir 0 down · 1 left · 2 right · 3 up,
- * frame 0 idle · 1/2 walking.
- */
+/** A full character sheet: `[dir][frame]`, dir 0 down · 1 left · 2 right · 3 up, frame 0 idle · 1/2 walking. */
 export function charSprite(o) {
   const key = JSON.stringify(o);
   let s = charCache.get(key);
@@ -520,16 +612,16 @@ export function charSprite(o) {
 export function playerLook(cls, look, armorTier) {
   return {
     hair: look[0] | 0, skin: look[1] | 0, style: look[2] | 0, hat: cls,
-    cloth: ARMOR[armorTier] || CLOTH[cls] || CLOTH.warrior, trim: (CLOTH[cls] || CLOTH.warrior)[0],
+    cloth: ARMOR[armorTier] || CLOTH[cls] || CLOTH.warrior, trim: TRIM[cls] || TRIM.warrior,
   };
 }
 export function npcLook(look, role) {
   const col = look[3] || "#888";
-  return { hair: look[0] | 0, skin: look[1] | 0, style: look[2] | 0, cloth: [col, shade(col)], trim: "#fff0c0", beard: role === "elder" };
+  return { hair: look[0] | 0, skin: look[1] | 0, style: look[2] | 0, cloth: [col, shade(col)], trim: "#c8b070", beard: role === "elder" };
 }
 function shade(hex) {
   const n = parseInt(hex.slice(1), 16);
-  const f = (v) => Math.round(v * 0.72).toString(16).padStart(2, "0");
+  const f = (v) => Math.round(v * 0.68).toString(16).padStart(2, "0");
   return `#${f((n >> 16) & 255)}${f((n >> 8) & 255)}${f(n & 255)}`;
 }
 
@@ -627,14 +719,32 @@ const M_GOLEM = [
   "...oGGGooGGGo...",
   "...oooo..oooo...",
 ];
+const M_DRONE_A = [
+  "................", "................", "................",
+  "ooo..........ooo",
+  "oppo........oppo",
+  ".oo..oooooo..oo.",
+  "..oooddddddooo..",
+  "..oddddddddddo..",
+  "..oddrrrrrrddo..",
+  "..oddrwwrrrddo..",
+  "..oddddddddddo..",
+  "...oDDDDDDDDo...",
+  "....oooooooo....",
+  "......oyyo......",
+  "................", "................",
+];
+const M_DRONE_B = M_DRONE_A.map((r, i) => (i === 3 ? ".oo..........oo." : i === 4 ? "opppo......opppo" : r));
 const PAL = {
-  slime: { o: "#1f5a2a", a: "#74d85e", A: "#48a840", l: "#d0f8b8", e: "#14301a" },
-  bslime: { o: "#1f3a6a", a: "#62b8f4", A: "#3a84d4", l: "#d0ecff", e: "#10244a" },
-  shroom: { o: "#4a1a1a", r: "#dc4c40", R: "#a8302c", w: "#fff4e0", c: "#f0e0c0", C: "#d0b890", e: "#2a1a1a" },
-  boar: { o: "#3a2414", b: "#a06e46", B: "#6a4428", p: "#eca4a4", w: "#ffffff", e: "#1a1010" },
-  bat: { o: "#2a1a3a", b: "#74529a", r: "#ff5050", w: "#ffffff" },
-  golem: { o: "#2a2540", g: "#908aae", G: "#6a6488", k: "#6ae0f0", e: "#ffe060" },
-  boss: { o: "#140f2a", g: "#6252a8", G: "#40347c", k: "#ff6ad0", e: "#ff5050" },
+  slime: { o: "#16321c", a: "#5a9a4a", A: "#3c7436", l: "#a8d090", e: "#0e1e12" },
+  bslime: { o: "#16243e", a: "#4a7aa8", A: "#30588a", l: "#a0c4e0", e: "#0c1628" },
+  shroom: { o: "#2e1214", r: "#8e3434", R: "#642224", w: "#d8ccb4", c: "#b8a888", C: "#8e8064", e: "#1c1010" },
+  boar: { o: "#1e140c", b: "#6a4a34", B: "#3e2a1c", p: "#b07a78", w: "#e8e4d8", e: "#d83030" },
+  bat: { o: "#17101f", b: "#4a3862", r: "#ff4040", w: "#e8e4d8" },
+  golem: { o: "#17142a", g: "#6a6688", G: "#4a4668", k: "#5ac8d8", e: "#ffd860" },
+  robot: { o: "#101216", g: "#7a808c", G: "#555a66", k: "#ff5a3a", e: "#ff3030" },
+  boss: { o: "#0c0818", g: "#4a3c88", G: "#2e2460", k: "#e050b8", e: "#ff4040" },
+  drone: { o: "#101216", d: "#5a606c", D: "#3c414b", r: "#23262d", w: "#ff4a4a", p: "#aab4c4", y: "#ffe070" },
 };
 
 function mobFrames(map, pal, scale = 1, extra = null) {
@@ -643,6 +753,7 @@ function mobFrames(map, pal, scale = 1, extra = null) {
   let a = c;
   if (scale !== 1 || extra) {
     const [c2, g2] = canvas(16 * scale, 16 * scale + (extra ? 8 : 0));
+    g2.imageSmoothingEnabled = false;
     g2.drawImage(c, 0, extra ? 8 : 0, 16 * scale, 16 * scale);
     if (extra) extra(g2);
     a = c2;
@@ -652,8 +763,9 @@ function mobFrames(map, pal, scale = 1, extra = null) {
   gb.drawImage(a, 0, 0, a.width, a.height, 0, scale, a.width, a.height - scale);
   return [a, b];
 }
+const sheet = (map, pal) => { const [c, g] = canvas(16, 16); paint(g, map, pal); return c; };
 
-/** `{ frames:[l0,l1], right:[r0,r1], white:[…] , lift }` per monster sprite id. */
+/** `{ frames, right, hurt, hurtR, lift }` per monster sprite id (frames face left). */
 export function buildMobs() {
   const out = {};
   const add = (id, frames, lift = 0) => {
@@ -663,17 +775,17 @@ export function buildMobs() {
   add("bslime", mobFrames(M_SLIME, PAL.bslime));
   add("shroom", mobFrames(M_SHROOM, PAL.shroom));
   add("boar", mobFrames(M_BOAR, PAL.boar));
-  const [ba, ga] = canvas(16, 16); paint(ga, M_BAT_A, PAL.bat);
-  const [bb, gb] = canvas(16, 16); paint(gb, M_BAT_B, PAL.bat);
-  add("bat", [ba, bb], 8);
-  const skel = charSprite({ hair: 5, skin: 0, style: 0, cloth: ["#5a5468", "#3e3a4c"], trim: "#3e3a4c", line: "#1c1826", eye: "#101018", boot: "#b8b6c8", skel: 1 });
-  // bones instead of skin
-  const bone = skel[1].map((f) => { const [c, g] = canvas(16, 22); g.drawImage(f, 0, 0); recolor(c, g, "#ffd9b0", "#ecebf2"); recolor(c, g, "#e8b088", "#b8b6c8"); return c; });
+  add("bat", [sheet(M_BAT_A, PAL.bat), sheet(M_BAT_B, PAL.bat)], 8);
+  add("drone", [sheet(M_DRONE_A, PAL.drone), sheet(M_DRONE_B, PAL.drone)], 10);
+  const thug = charSprite({ hair: 1, skin: 1, style: 0, hat: "rogue", cloth: ["#5e2a2e", "#3e1a1e"], trim: "#c8c8cc", boot: "#18181c" });
+  add("thug", [thug[1][1], thug[1][2]]);
+  const skel = charSprite({ hair: 5, skin: 0, style: 0, cloth: ["#3e3a4c", "#2a2736"], trim: "#5ac8d8", line: "#0e0c16", eye: "#5ac8d8", boot: "#9c9cac" });
+  const bone = skel[1].map((f) => { const [c, g] = canvas(f.width, f.height); g.drawImage(f, 0, 0); recolor(c, g, SKIN[0][0], "#d0d0d8"); recolor(c, g, SKIN[0][1], "#9c9cac"); return c; });
   add("skel", [bone[1], bone[2]]);
   add("golem", mobFrames(M_GOLEM, PAL.golem));
+  add("robot", mobFrames(M_GOLEM, PAL.robot));
   add("boss", mobFrames(M_GOLEM, PAL.boss, 2, (g) => {
-    // a crown of crystal shards
-    const sh = (x, h) => { for (let y = 0; y < h; y++) { g.fillStyle = y < 2 ? "#ffd0f0" : "#ff6ad0"; g.fillRect(x - Math.min(2, Math.floor(y / 2)), 8 - h + y, 1 + Math.min(2, Math.floor(y / 2)) * 2, 1); } };
+    const sh = (x, h) => { for (let y = 0; y < h; y++) { g.fillStyle = y < 2 ? "#ffc0e8" : "#e050b8"; g.fillRect(x - Math.min(2, Math.floor(y / 2)), 8 - h + y, 1 + Math.min(2, Math.floor(y / 2)) * 2, 1); } };
     sh(10, 6); sh(16, 8); sh(22, 6);
   }));
   return out;
@@ -692,19 +804,21 @@ function recolor(c, g, from, to) {
 
 // ───────────────────────────── icons ─────────────────────────────
 
-export const TIER_COL = ["#ffffff", "#e8e8e8", "#7be07b", "#6aa8ff", "#e680ff"];
-const METAL = [null, ["#c8ccd4", "#8e94a0"], ["#9be89b", "#4fa85a"], ["#8ab8ff", "#4a78d0"], ["#f0a0ff", "#b050d8"]];
+/** Rarity colours: common · magic · rare · legendary. */
+export const RARITY_COL = ["#d8d4c8", "#6a9cff", "#f0d050", "#ff8a30"];
+const METAL = [null, ["#a8acb4", "#74787f"], ["#c8ccd4", "#8e94a0"], ["#9ab8e0", "#5a78b0"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"]];
+const RUNE_COL = { ign: "#ff6a3a", aeg: "#8aa0c0", vit: "#e84a5a", men: "#4a8aff", cel: "#7ae8a0", acu: "#ffd84a", san: "#c03048", lum: "#fff0a0", fos: "#b07aff" };
 
 function potion(liquid, light, big) {
   const [c, g] = canvas(16, 16);
   const r = big ? 5.5 : 4.5;
-  disc(g, 8, 10, r, r, "#e8f6ff");
+  disc(g, 8, 10, r, r, "#c8d8e0");
   disc(g, 8, 10.5, r - 1, r - 1.2, liquid);
-  g.fillStyle = "#e8f6ff"; g.fillRect(6, 2, 4, 4);
-  g.fillStyle = "#a8743e"; g.fillRect(6, 1, 4, 2);
+  g.fillStyle = "#c8d8e0"; g.fillRect(6, 2, 4, 4);
+  g.fillStyle = "#7a5430"; g.fillRect(6, 1, 4, 2);
   px(g, 6, 9, light); px(g, 6, 10, light); px(g, 7, 8, light);
   if (big) { px(g, 10, 11, light); px(g, 9, 12, light); }
-  outline(c, g, "#1c1c2c");
+  outline(c, g, "#111118");
   return c;
 }
 function gem() {
@@ -712,65 +826,101 @@ function gem() {
   for (let y = 0; y < 11; y++) {
     const w = y < 4 ? 3 + y : 7 - (y - 4);
     if (w <= 0) continue;
-    g.fillStyle = "#6ae0f0"; g.fillRect(8 - w, 3 + y, w * 2, 1);
-    g.fillStyle = "#3aa8d8"; g.fillRect(8, 3 + y, w, 1);
+    g.fillStyle = "#5ac8d8"; g.fillRect(8 - w, 3 + y, w * 2, 1);
+    g.fillStyle = "#2a90b0"; g.fillRect(8, 3 + y, w, 1);
   }
-  g.fillStyle = "#d8fbff"; g.fillRect(5, 5, 2, 1); g.fillRect(4, 6, 1, 2);
-  outline(c, g, "#1a3a5a");
+  g.fillStyle = "#c8f4ff"; g.fillRect(5, 5, 2, 1); g.fillRect(4, 6, 1, 2);
+  outline(c, g, "#111118");
   return c;
 }
 function coin() {
   const [c, g] = canvas(16, 16);
-  disc(g, 8, 9, 4.5, 4.5, "#e8a820");
-  disc(g, 7.5, 8.5, 3.5, 3.5, "#ffd84a");
-  g.fillStyle = "#fff4b0"; g.fillRect(6, 6, 2, 1); g.fillRect(5, 7, 1, 2);
-  g.fillStyle = "#e8a820"; g.fillRect(8, 7, 1, 4);
-  outline(c, g, "#6a4a10");
+  disc(g, 8, 9, 4.5, 4.5, "#b88420");
+  disc(g, 7.5, 8.5, 3.5, 3.5, "#e8c040");
+  g.fillStyle = "#fff0a0"; g.fillRect(6, 6, 2, 1); g.fillRect(5, 7, 1, 2);
+  g.fillStyle = "#b88420"; g.fillRect(8, 7, 1, 4);
+  outline(c, g, "#3a2a08");
   return c;
 }
+function runeIcon(key) {
+  const [c, g] = canvas(16, 16);
+  disc(g, 8, 8.5, 5.5, 6, "#3a3d48");
+  disc(g, 7.5, 8, 4.5, 5, "#4c505c");
+  const col = RUNE_COL[key] || "#fff";
+  g.fillStyle = col;
+  const n = RUNE_KEYS_ART.indexOf(key);
+  g.fillRect(7, 4, 2, 9);
+  if (n % 3 === 0) { g.fillRect(5, 6, 6, 1); g.fillRect(9, 9, 2, 1); }
+  else if (n % 3 === 1) { g.fillRect(5, 5, 2, 1); g.fillRect(9, 8, 2, 1); g.fillRect(5, 11, 2, 1); }
+  else { g.fillRect(9, 5, 2, 2); g.fillRect(5, 9, 2, 2); }
+  if (n >= 3) px(g, 10, 12, col);
+  if (n >= 6) px(g, 5, 4, col);
+  outline(c, g, "#111118");
+  return c;
+}
+const RUNE_KEYS_ART = Object.keys(RUNE_COL);
+
 function weaponIcon(cls, tier) {
   const [c, g] = canvas(16, 16);
   const [m, md] = METAL[tier];
   if (cls === "warrior") {
-    for (let i = 0; i < 9; i++) { px(g, 12 - i, 3 + i, m); px(g, 13 - i, 3 + i, md); px(g, 12 - i, 2 + i, m); }
-    g.fillStyle = "#e8b840"; g.fillRect(2, 9, 2, 1); g.fillRect(3, 10, 2, 1); g.fillRect(4, 11, 2, 1); g.fillRect(5, 12, 2, 1);
-    g.fillStyle = "#8a5a30"; px(g, 3, 12, "#8a5a30"); px(g, 2, 13, "#8a5a30"); px(g, 1, 14, "#6a4222");
-  } else if (cls === "archer") {
-    for (let i = 0; i < 12; i++) {
-      const x = 4 + Math.round(Math.sin((i / 11) * Math.PI) * 6);
-      px(g, x, 2 + i, m); px(g, x + 1, 2 + i, md);
-    }
-    g.fillStyle = "#f0f0f0"; g.fillRect(4, 2, 1, 12);
-    g.fillStyle = "#8a5a30"; g.fillRect(9, 7, 2, 2);
+    // a greatsword: broad blade, long grip
+    for (let i = 0; i < 10; i++) { px(g, 13 - i, 2 + i, m); px(g, 14 - i, 2 + i, md); px(g, 13 - i, 1 + i, m); px(g, 12 - i, 2 + i, m); }
+    g.fillStyle = "#b08a38"; g.fillRect(1, 9, 3, 1); g.fillRect(2, 10, 3, 1); g.fillRect(3, 11, 3, 1); g.fillRect(4, 12, 3, 1);
+    px(g, 3, 12, "#5a3c22"); px(g, 2, 13, "#5a3c22"); px(g, 1, 14, "#3e2a18");
+  } else if (cls === "rogue") {
+    for (let i = 0; i < 6; i++) { px(g, 10 - i, 4 + i, m); px(g, 11 - i, 4 + i, md); }
+    g.fillStyle = "#a83242"; g.fillRect(3, 9, 3, 1); g.fillRect(4, 10, 3, 1);
+    px(g, 4, 11, "#2a2a30"); px(g, 3, 12, "#2a2a30"); px(g, 2, 13, "#2a2a30");
+  } else if (cls === "ranger") {
+    g.fillStyle = m; g.fillRect(2, 5, 12, 3);
+    g.fillStyle = md; g.fillRect(2, 7, 12, 1); g.fillRect(13, 4, 1, 1);
+    g.fillStyle = "#2a2a30"; g.fillRect(3, 8, 3, 5); g.fillRect(7, 8, 2, 2);
+    g.fillStyle = "#4a4a54"; g.fillRect(3, 8, 1, 5);
+    if (tier >= 3) { g.fillStyle = md; g.fillRect(8, 3, 4, 2); }
+    if (tier >= 4) { g.fillStyle = "#ffffff"; g.fillRect(14, 6, 1, 1); }
   } else {
-    for (let i = 0; i < 10; i++) { px(g, 4 + i, 13 - i, "#a8743e"); px(g, 5 + i, 13 - i, "#7c5228"); }
+    for (let i = 0; i < 10; i++) { px(g, 4 + i, 13 - i, "#7a5430"); px(g, 5 + i, 13 - i, "#573a1e"); }
     disc(g, 12, 4, 2.5, 2.5, md);
     disc(g, 11.6, 3.6, 1.5, 1.5, m);
     px(g, 11, 3, "#ffffff");
   }
-  outline(c, g, "#1c1c2c");
+  outline(c, g, "#111118");
   return c;
 }
 function armorIcon(tier) {
   const [c, g] = canvas(16, 16);
-  const cols = [null, ["#e8dcc0", "#c0b090"], ["#b07a40", "#855628"], ["#9aa6bc", "#6c7890"], ["#5cd4e4", "#30a0b8"]][tier];
+  const cols = [null, ["#b8ac90", "#8e8468"], ["#7a5530", "#573a1e"], ["#7c8698", "#565e70"], ["#33373f", "#1f2228"], ["#3ab0c0", "#1f7888"]][tier];
   g.fillStyle = cols[0]; g.fillRect(4, 4, 8, 10); g.fillRect(2, 4, 12, 4);
   g.fillStyle = cols[1]; g.fillRect(8, 4, 4, 10); g.fillRect(12, 4, 2, 4); g.fillRect(4, 12, 8, 2);
   g.clearRect(6, 4, 4, 2);
   g.fillStyle = METAL[tier][0]; g.fillRect(7, 8, 2, 2);
-  outline(c, g, "#1c1c2c");
+  outline(c, g, "#111118");
+  return c;
+}
+function accIcon(tier) {
+  const [c, g] = canvas(16, 16);
+  const [m, md] = [["#c88a50", "#8e5a2c"], ["#c8ccd4", "#8e94a0"], ["#e080f0", "#9a40c0"]][tier - 2] || METAL[2];
+  disc(g, 8, 9, 4.5, 4.5, md);
+  disc(g, 8, 9, 4.5, 4.5, m);
+  g.clearRect(6, 7, 4, 4);
+  g.fillStyle = md; g.fillRect(9, 6, 3, 1); g.fillRect(11, 7, 1, 5);
+  g.fillStyle = tier >= 4 ? "#70e0e8" : "#e84a5a"; g.fillRect(7, 3, 2, 2);
+  outline(c, g, "#111118");
   return c;
 }
 
-/** Item id → data URL (for the windows) and canvas (for loot on the ground). */
+/** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items) {
-  const cv = { gold: coin(), hp_s: potion("#e8404c", "#ffb0b4", false), hp_m: potion("#e8404c", "#ffb0b4", true), mp_s: potion("#4070e8", "#b0c8ff", false), mp_m: potion("#4070e8", "#b0c8ff", true), stone: gem() };
+  const cv = { gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem() };
   for (const id of Object.keys(items)) {
     const it = items[id];
     if (it.type === "weapon") cv[id] = weaponIcon(it.cls, it.tier);
     else if (it.type === "armor") cv[id] = armorIcon(it.tier);
+    else if (it.type === "acc") cv[id] = accIcon(it.tier);
+    else if (it.type === "rune") cv[id] = runeIcon(it.rune);
   }
-  const url = {};
-  for (const id of Object.keys(cv)) url[id] = cv[id].toDataURL();
-  return { cv, url };
+  const url = {}, left = {};
+  for (const id of Object.keys(cv)) { url[id] = cv[id].toDataURL(); left[id] = flip(cv[id]); }
+  return { cv, url, left };
 }

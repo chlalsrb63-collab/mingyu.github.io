@@ -235,3 +235,87 @@ h1 small { display: block; font-size: .42em; letter-spacing: .6em; margin-left: 
   #mini-cv { width: 84px; }
   #quest-track { top: 82px; width: 160px; }
 }
+
+/* ───────────── theme v2: dark steel & bronze — less toy, more grim ───────────── */
+:root {
+  --win-a: #23262f; --win-b: #15171d; --edge: #8a7448; --ink: #08090c; --gold: #e0b860;
+  --font: "Galmuri11", "Galmuri9", ui-monospace, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+}
+html, body { background: #050608; color: #d8d4c8; }
+.win {
+  background: linear-gradient(var(--win-a), var(--win-b)); border: 1px solid var(--edge); border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--ink), inset 0 0 0 1px rgba(255, 255, 255, .05), inset 0 0 22px rgba(0, 0, 0, .55), 0 6px 18px rgba(0, 0, 0, .55);
+  text-shadow: 1px 1px 0 var(--ink);
+}
+#status { width: 190px; padding: 7px 9px 8px; }
+.bar { height: 11px; border-radius: 1px; border-color: #000; background: #0b0c10; }
+.bar.hp i { background: linear-gradient(#c8404a, #7c1c24); }
+.bar.mp i { background: linear-gradient(#4a78d0, #1e3a84); }
+#st-buffs span { border-radius: 1px; color: var(--gold); }
+#mini-cv { border-color: #000; }
+#menu button {
+  background: linear-gradient(#2c303a, #191b22); border: 1px solid var(--edge); border-radius: 2px; color: #d8d4c8;
+  box-shadow: 0 0 0 1px var(--ink), 0 2px 0 rgba(0, 0, 0, .5);
+}
+#menu button:hover { color: var(--gold); border-color: var(--gold); }
+#chat-log { background: linear-gradient(transparent, rgba(0, 0, 0, .55)); border-radius: 0; }
+#chat-in { border-radius: 1px; border-color: #3a3d48; background: rgba(0, 0, 0, .6); }
+#chat-log .loot { color: #b8b4a8; } #chat-log .sys { color: var(--gold); } #chat-log .who { color: #9ab8d8; }
+#toasts p { border-radius: 1px; border-color: var(--edge); background: rgba(8, 9, 12, .9); }
+#banner { color: #f0d890; text-shadow: 2px 2px 0 #6a2a14, -2px 0 0 var(--ink), 0 -2px 0 var(--ink), 2px 0 0 var(--ink), 0 4px 0 var(--ink); letter-spacing: 4px; }
+#exp { background: #08090c; } #exp i { background: linear-gradient(#d8b860, #8a6a24); }
+.act {
+  background: radial-gradient(circle at 35% 30%, #3c4250, #14161c); border: 1px solid var(--edge); color: #d8d4c8;
+  box-shadow: 0 0 0 2px var(--ink), inset 0 0 10px rgba(0, 0, 0, .6), 0 3px 0 2px rgba(0, 0, 0, .45);
+}
+.act.atk { background: radial-gradient(circle at 35% 30%, #a83a34, #4a1214); color: #f0e0c8; }
+.act.auto { background: radial-gradient(circle at 35% 30%, #3a3d48, #14161c); }
+.act.auto.on { background: radial-gradient(circle at 35% 30%, #4a8a4a, #143418); }
+.act.sk .cd { background: rgba(0, 0, 0, .8); }
+.window { width: 276px; }
+.window header { background: var(--win-a); border-bottom: 1px solid var(--edge); color: var(--gold); letter-spacing: 1px; }
+.window header .x { background: #2a1416; border-color: #6a3a3a; border-radius: 1px; color: #d8a0a0; }
+.say, .detail, .stats, .list .it, .list .rk { background: rgba(0, 0, 0, .38); border-radius: 1px; }
+.grid { grid-template-columns: repeat(6, 1fr); }
+.slot { background: #0c0d11; border: 1px solid #343741; border-radius: 1px; box-shadow: inset 0 0 6px rgba(0, 0, 0, .8); }
+.slot.sel { border-color: #f0e8d0; background: #20232c; }
+.slot.q1 { border-color: #3c5c9c; box-shadow: inset 0 0 8px rgba(80, 130, 255, .35); }
+.slot.q2 { border-color: #9c8830; box-shadow: inset 0 0 8px rgba(240, 208, 80, .35); }
+.slot.q3 { border-color: #b8601c; box-shadow: inset 0 0 10px rgba(255, 138, 48, .5); }
+.slot .sk { position: absolute; left: 2px; bottom: 2px; display: flex; gap: 1px; }
+.slot .sk i { width: 4px; height: 4px; background: #000; border: 1px solid #777; border-radius: 50%; }
+.slot .sk i.on { background: #ffd84a; border-color: #fff; }
+.slot .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; opacity: .4; }
+.eq .slot { width: 42px; }
+.detail .rar { font-size: 10px; opacity: .65; }
+.detail .af { color: #8ab4ff; font-size: 11px; }
+.detail .so { color: #a8a498; font-size: 11px; margin-top: 2px; }
+.detail .rw { color: var(--gold); font-size: 11px; }
+.btns button, .list button, .pick button, .big, #invite button {
+  background: linear-gradient(#3a3d48, #22242c); color: #e8e0c8; border: 1px solid var(--edge); border-radius: 1px; text-shadow: 1px 1px 0 var(--ink);
+}
+.btns button:hover, .list button:hover, .big:hover { border-color: var(--gold); color: var(--gold); }
+.big { box-shadow: 0 3px 0 var(--ink); letter-spacing: 2px; }
+.gold-line { color: var(--gold); margin: 0 0 6px; }
+#party-hud { left: 8px; top: 132px; width: 150px; display: flex; flex-direction: column; gap: 4px; pointer-events: none; font-size: 10px; text-shadow: 1px 1px 0 #000; }
+#party-hud .pm span { color: #8cff8c; }
+#party-hud .bar { height: 6px; margin-top: 1px; }
+#invite { left: 50%; top: 96px; transform: translateX(-50%); padding: 6px 10px; display: flex; gap: 8px; align-items: center; white-space: nowrap; z-index: 15; }
+#quest-track b { color: var(--gold); }
+#dead { background: rgba(30, 0, 4, .6); }
+#title { background: #07080c; }
+h1 {
+  color: #e8dcc0; letter-spacing: 6px;
+  text-shadow: 2px 2px 0 #7a2a1c, 4px 4px 0 #1c0c10, -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink), 0 0 26px rgba(224, 120, 60, .35);
+}
+h1 small { color: #7ab0c8; text-shadow: 2px 2px 0 #14283a, 3px 3px 0 var(--ink); }
+#ch-pick button { border-radius: 1px; border: 1px solid #3a3d48; background: rgba(0, 0, 0, .6); }
+#ch-pick button.on { border-color: var(--gold); background: #23262f; color: var(--gold); }
+#create { background: rgba(0, 0, 0, .8); }
+#create .win { width: min(420px, calc(100vw - 20px)); }
+#c-name { border-radius: 1px; border: 1px solid #3a3d48; background: rgba(0, 0, 0, .6); }
+#char-cv, #create-cv { width: 64px; height: 104px; background: rgba(0, 0, 0, .45); border-radius: 1px; }
+.pick button.on { outline: 1px solid var(--gold); color: var(--gold); }
+#joy { background: rgba(255, 255, 255, .06); border: 1px solid rgba(138, 116, 72, .6); }
+#joy-knob { background: rgba(138, 116, 72, .5); border: 1px solid var(--edge); }
+@media (max-width: 560px) { #party-hud { top: 124px; } .window { width: 262px; } }
