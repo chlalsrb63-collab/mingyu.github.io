@@ -94,7 +94,7 @@ const GROUND = {
   b: ["#8a6034", "#644420", "#a07444"],
   c: ["#4c475e", "#3f3a50", "#5a556e"],
   d: ["#4c475e", "#3f3a50", "#5a556e"],
-  W: ["#1f1c2e", "#191626", "#28243a"],
+  W: ["#0b0914", "#090711", "#0e0c18"],
   a: ["#3a3d46", "#30333b", "#474a54"],
   m: ["#3a3d46", "#30333b", "#474a54"],
   k: ["#7c7f86", "#63666d", "#8f9299"],
@@ -174,15 +174,6 @@ function drawTile(g, m, tx, ty, frame) {
     for (let i = 0; i < 4; i++) px(g, X + Math.floor(hash(tx, ty, i) * 15), Y + Math.floor(hash(tx, ty, i + 9) * 15), i % 2 ? dark : light);
   } else if (ch === "W") {
     for (let i = 0; i < 5; i++) px(g, X + Math.floor(hash(tx, ty, i) * 16), Y + Math.floor(hash(tx, ty, i + 9) * 16), i % 2 ? dark : light);
-    // a rock face where the wall meets open floor below it
-    const below = at(tx, ty + 1);
-    if (below === "c" || below === "d") {
-      g.fillStyle = "#383350"; g.fillRect(X, Y + 4, 16, 12);
-      g.fillStyle = "#484262"; g.fillRect(X, Y + 4, 16, 2);
-      g.fillStyle = "#2a2640";
-      for (let i = 0; i < 4; i++) g.fillRect(X + Math.floor(hash(tx, ty, 40 + i) * 14), Y + 7 + i * 2, 3, 1);
-      g.fillStyle = "#1c1830"; g.fillRect(X, Y + 15, 16, 1);
-    }
   }
 
   // ragged grass creeping over the edge of paths, plazas, sand and water
@@ -211,15 +202,32 @@ function drawTile(g, m, tx, ty, frame) {
   }
 }
 
-/** The whole ground layer of a map, pre-rendered twice (water animates). */
+/** World → screen: the 2:1 diamond projection every drawable goes through. */
+export function iso(wx, wy) {
+  return [wx - wy, (wx + wy) / 2];
+}
+/** Screen → world, for clicks on the ground. */
+export function unIso(ix, iy) {
+  return [iy + ix / 2, iy - ix / 2];
+}
+
+/**
+ * The whole ground layer of a map, pre-rendered twice (water animates).
+ * Tiles are painted as a flat top-down sheet and that sheet is then projected
+ * onto the diamond grid in one go. `ox` is how far the sheet's world origin sits
+ * from the left edge of the result.
+ */
 export function renderGround(m) {
   const out = [];
   for (let f = 0; f < 2; f++) {
-    const [c, g] = canvas(m.w * TILE, m.h * TILE);
-    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) drawTile(g, m, x, y, f);
+    const [flat, fg] = canvas(m.w * TILE, m.h * TILE);
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) drawTile(fg, m, x, y, f);
+    const [c, g] = canvas((m.w + m.h) * TILE, ((m.w + m.h) * TILE) / 2);
+    g.setTransform(1, 0.5, -1, 0.5, m.h * TILE, 0);
+    g.drawImage(flat, 0, 0);
     out.push(c);
   }
-  return out;
+  return { frames: out, ox: m.h * TILE };
 }
 
 const MINI = { ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86" };
@@ -335,77 +343,129 @@ function stalagmite() {
   return c;
 }
 const ROOFS = [["#a84434", "#7c2c26", "#c4604a"], ["#3f5f96", "#2c4470", "#587ab0"], ["#42784a", "#2e5634", "#5a9462"], ["#6a4a90", "#4c336c", "#8464aa"]];
-function house(v) {
-  const [c, g] = canvas(64, 66);
-  const [roof, roofD, roofL] = ROOFS[v % ROOFS.length];
-  // walls
-  g.fillStyle = "#d8ccb0"; g.fillRect(3, 30, 58, 34);
-  g.fillStyle = "#bcae90"; g.fillRect(3, 58, 58, 6);
-  g.fillStyle = "#8a5a30";
-  g.fillRect(3, 30, 2, 34); g.fillRect(59, 30, 2, 34); g.fillRect(3, 44, 58, 2); g.fillRect(20, 30, 2, 14); g.fillRect(42, 30, 2, 14);
-  // door
-  g.fillStyle = "#8a5a30"; g.fillRect(26, 46, 12, 18);
-  g.fillStyle = "#a8743e"; g.fillRect(28, 48, 8, 16);
-  g.fillStyle = "#6a4222"; g.fillRect(31, 48, 1, 16);
-  px(g, 34, 56, "#ffe890");
-  // windows
-  for (const x of [8, 46]) {
-    g.fillStyle = "#8a5a30"; g.fillRect(x, 48, 11, 10);
-    g.fillStyle = "#9fd2ff"; g.fillRect(x + 1, 49, 9, 8);
-    g.fillStyle = "#e0f2ff"; g.fillRect(x + 2, 50, 3, 2);
-    g.fillStyle = "#8a5a30"; g.fillRect(x + 5, 49, 1, 8); g.fillRect(x + 1, 53, 9, 1);
-  }
-  // roof
-  for (let y = 0; y < 30; y++) {
-    const inset = Math.max(0, 10 - Math.floor(y / 2.4));
-    g.fillStyle = y % 6 === 5 ? roofD : roof;
-    g.fillRect(inset, 2 + y, 64 - inset * 2, 1);
-    g.fillStyle = roofL; g.fillRect(inset, 2 + y, 2, 1);
-    g.fillStyle = roofD; g.fillRect(62 - inset, 2 + y, 2, 1);
-  }
-  g.fillStyle = roofD; g.fillRect(0, 30, 64, 2);
-  g.fillStyle = roofL; g.fillRect(10, 2, 44, 1);
-  // chimney
-  g.fillStyle = "#b0a090"; g.fillRect(45, 0, 7, 9);
-  g.fillStyle = "#8a7c6e"; g.fillRect(50, 0, 2, 9); g.fillRect(45, 0, 7, 2);
-  outline(c, g, "#3a2414");
-  return c;
+
+/**
+ * Paint a box standing on the diamond grid. (nx, ny) is where its far (north)
+ * corner touches the ground; w and d are its world-space footprint, H its
+ * height. Each face callback draws in that face's own flat coordinates.
+ */
+function isoBox(g, nx, ny, w, d, H, top, left, right) {
+  g.setTransform(1, 0.5, -1, 0.5, nx, ny - H);
+  top(g, w, d);
+  g.setTransform(1, 0.5, 0, 1, nx - d, ny + d / 2 - H);
+  left(g, w, H);
+  g.setTransform(1, -0.5, 0, 1, nx + w - d, ny + (w + d) / 2 - H);
+  right(g, d, H);
+  g.setTransform(1, 0, 0, 1, 0, 0);
 }
+const fill = (col) => (g, a, b) => { g.fillStyle = col; g.fillRect(0, 0, a, b); };
+/** A sprite for a box with footprint w×d: `{ cv, ax, ay }`, (ax, ay) being the north ground corner. */
+function boxSprite(w, d, tall, draw, line) {
+  const [c, g] = canvas(w + d + 8, (w + d) / 2 + tall + 8);
+  const ax = d + 4, ay = tall + 4;
+  draw(g, ax, ay);
+  if (line) outline(c, g, line);
+  return { cv: c, ax, ay };
+}
+
+function house(v) {
+  const W = 64, D = 48, H = 22, R = 16;
+  const [roof, roofD, roofL] = ROOFS[v % ROOFS.length];
+  return boxSprite(W, D, H + R, (g, nx, ny) => {
+    isoBox(g, nx, ny, W, D, H, fill("#000"),
+      (g2, w, h) => {
+        g2.fillStyle = "#d0c4a8"; g2.fillRect(0, 0, w, h);
+        g2.fillStyle = "#7a5430"; g2.fillRect(0, 0, 2, h); g2.fillRect(w - 2, 0, 2, h); g2.fillRect(0, 9, w, 2); g2.fillRect(20, 0, 2, 9);
+        g2.fillStyle = "#5a3c22"; g2.fillRect(34, h - 14, 11, 14);
+        g2.fillStyle = "#8a6034"; g2.fillRect(36, h - 12, 7, 12);
+        g2.fillStyle = "#e8c860"; g2.fillRect(41, h - 7, 1, 1);
+        for (const x of [7, 51]) { g2.fillStyle = "#5a3c22"; g2.fillRect(x, 12, 9, 8); g2.fillStyle = "#f0d890"; g2.fillRect(x + 1, 13, 7, 6); g2.fillStyle = "#5a3c22"; g2.fillRect(x + 4, 13, 1, 6); }
+      },
+      (g2, w, h) => {
+        g2.fillStyle = "#a89c82"; g2.fillRect(0, 0, w, h);
+        g2.fillStyle = "#5e4024"; g2.fillRect(0, 0, 2, h); g2.fillRect(w - 2, 0, 2, h); g2.fillRect(0, 9, w, 2);
+        g2.fillStyle = "#4a3018"; g2.fillRect(18, 12, 10, 8); g2.fillStyle = "#c8b070"; g2.fillRect(19, 13, 8, 6);
+      });
+    // a hipped roof: two slopes face the camera, two fall away behind the ridge
+    const pt = (x, y, z) => [nx + x - y, ny + (x + y) / 2 - z];
+    const poly = (col, ...pts) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fill(); };
+    const o = 4;
+    const N = pt(-o, -o, H), E = pt(W + o, -o, H), S = pt(W + o, D + o, H), Wc = pt(-o, D + o, H);
+    const r1 = pt(D / 2, D / 2, H + R), r2 = pt(W - D / 2, D / 2, H + R);
+    poly(roofD, N, E, r2, r1);
+    poly(roofD, N, Wc, r1);
+    poly(roof, Wc, S, r2, r1);
+    poly(roofL, S, E, r2);
+    g.strokeStyle = roofD;
+    for (const t of [0.3, 0.6]) {
+      g.beginPath();
+      g.moveTo(Wc[0] + (r1[0] - Wc[0]) * t, Wc[1] + (r1[1] - Wc[1]) * t);
+      g.lineTo(S[0] + (r2[0] - S[0]) * t, S[1] + (r2[1] - S[1]) * t);
+      g.stroke();
+    }
+  }, "#1c120c");
+}
+
 const BLD = [["#5a5e6a", "#444852", "#ff4a8a"], ["#6a5448", "#4e3c34", "#4ae0e0"], ["#4a5464", "#363e4c", "#ffd04a"], ["#584a68", "#40344e", "#7aff8a"]];
 /** A flat-roofed city block with lit windows and a neon sign. */
 function building(v) {
-  const [c, g] = canvas(64, 70);
+  const W = 64, D = 48, H = 50;
   const [wall, wallD, neon] = BLD[v % BLD.length];
-  g.fillStyle = wall; g.fillRect(2, 6, 60, 62);
-  g.fillStyle = wallD; g.fillRect(2, 60, 60, 8); g.fillRect(56, 6, 6, 62);
-  g.fillStyle = "#2a2c34"; g.fillRect(0, 2, 64, 6);
-  g.fillStyle = "#3a3d48"; g.fillRect(0, 2, 64, 2);
-  for (let r = 0; r < 3; r++) for (let i = 0; i < 5; i++) {
-    const lit = hash(i, r, v) > 0.45;
-    g.fillStyle = "#1c1e26"; g.fillRect(6 + i * 11, 12 + r * 11, 8, 7);
-    g.fillStyle = lit ? (hash(i, r, v + 9) > 0.5 ? "#ffd880" : "#9fe0ff") : "#2c3340"; g.fillRect(7 + i * 11, 13 + r * 11, 6, 5);
-  }
-  g.fillStyle = "#1c1e26"; g.fillRect(24, 48, 16, 20);
-  g.fillStyle = "#3c4250"; for (let y = 50; y < 68; y += 3) g.fillRect(25, y, 14, 2);
-  g.fillStyle = "#14151a"; g.fillRect(5, 44, 54, 5);
-  g.fillStyle = neon; g.fillRect(8, 45, 14, 3); g.fillRect(26, 45, 4, 3); g.fillRect(34, 45, 10, 3); g.fillRect(48, 45, 8, 3);
-  outline(c, g, "#0c0d12");
-  return c;
+  const windows = (g2, w, h, seed, lit) => {
+    for (let r = 0; r < 3; r++) for (let x = 5; x + 7 <= w - 3; x += 11) {
+      const on = hash(x, r, v + seed) > 0.45;
+      g2.fillStyle = "#14161c"; g2.fillRect(x, 5 + r * 10, 8, 7);
+      g2.fillStyle = on ? (hash(x, r, v + seed + 9) > 0.5 ? lit : "#9fe0ff") : "#262c38"; g2.fillRect(x + 1, 6 + r * 10, 6, 5);
+    }
+  };
+  return boxSprite(W, D, H, (g, nx, ny) => {
+    isoBox(g, nx, ny, W, D, H,
+      (g2, w, d) => { g2.fillStyle = "#23252c"; g2.fillRect(0, 0, w, d); g2.fillStyle = "#30333c"; g2.fillRect(4, 4, w - 8, d - 8); g2.fillStyle = "#3c404a"; g2.fillRect(10, 10, 14, 10); },
+      (g2, w, h) => {
+        g2.fillStyle = wall; g2.fillRect(0, 0, w, h);
+        windows(g2, w, h, 0, "#ffd880");
+        g2.fillStyle = "#101116"; g2.fillRect(3, h - 16, w - 6, 5);
+        g2.fillStyle = neon; g2.fillRect(6, h - 15, 14, 3); g2.fillRect(24, h - 15, 5, 3); g2.fillRect(33, h - 15, 12, 3); g2.fillRect(49, h - 15, 8, 3);
+        g2.fillStyle = "#14161c"; g2.fillRect(24, h - 10, 16, 10);
+        g2.fillStyle = "#3c4250"; for (let y = h - 9; y < h; y += 3) g2.fillRect(25, y, 14, 2);
+      },
+      (g2, w, h) => { g2.fillStyle = wallD; g2.fillRect(0, 0, w, h); windows(g2, w, h, 40, "#e8c070"); g2.fillStyle = "rgba(0,0,0,.25)"; g2.fillRect(0, h - 11, w, 11); });
+  }, "#08090c");
+}
+/** One tile of wall, raised: cave rock or city brick. */
+function cube(kind) {
+  const H = kind === "rock" ? 15 : 20;
+  const c = kind === "rock" ? ["#3a3550", "#2c2842", "#201c32", "#463f60"] : ["#343742", "#282a34", "#1c1e26", "#40434e"];
+  return boxSprite(16, 16, H, (g, nx, ny) => {
+    isoBox(g, nx, ny, 16, 16, H,
+      (g2, w, d) => { g2.fillStyle = c[0]; g2.fillRect(0, 0, w, d); g2.fillStyle = c[3]; g2.fillRect(2, 3, 4, 2); g2.fillRect(9, 10, 3, 2); },
+      (g2, w, h) => {
+        g2.fillStyle = c[1]; g2.fillRect(0, 0, w, h);
+        g2.fillStyle = c[2];
+        if (kind === "rock") { g2.fillRect(3, 4, 5, 1); g2.fillRect(9, 9, 4, 1); g2.fillRect(2, 12, 3, 1); }
+        else for (let y = 4; y < h; y += 5) { g2.fillRect(0, y, w, 1); g2.fillRect(((y * 3) % 12) + 2, y - 4, 1, 4); }
+      },
+      (g2, w, h) => {
+        g2.fillStyle = c[2]; g2.fillRect(0, 0, w, h);
+        g2.fillStyle = "rgba(0,0,0,.3)";
+        if (kind === "rock") { g2.fillRect(4, 6, 5, 1); g2.fillRect(8, 11, 4, 1); }
+        else for (let y = 4; y < h; y += 5) g2.fillRect(0, y, w, 1);
+      });
+  }, null);
 }
 const CARS = ["#8a3238", "#3a5a8a", "#c8c8cc", "#3a3a40", "#b89030"];
 function car(v) {
-  const [c, g] = canvas(26, 15);
-  const col = CARS[v % CARS.length];
-  g.fillStyle = col; g.fillRect(1, 5, 24, 7); g.fillRect(6, 1, 13, 5);
-  g.fillStyle = shadeHex(col); g.fillRect(1, 10, 24, 2);
-  g.fillStyle = "#1c2430"; g.fillRect(7, 2, 5, 3); g.fillRect(13, 2, 5, 3);
-  g.fillStyle = "#6a8aa8"; g.fillRect(7, 2, 2, 1); g.fillRect(13, 2, 2, 1);
-  g.fillStyle = "#ffe8a0"; g.fillRect(1, 6, 2, 2);
-  g.fillStyle = "#d83838"; g.fillRect(23, 6, 2, 2);
-  g.fillStyle = "#15161a"; g.fillRect(4, 11, 5, 3); g.fillRect(17, 11, 5, 3);
-  g.fillStyle = "#5a5c64"; g.fillRect(5, 12, 3, 1); g.fillRect(18, 12, 3, 1);
-  outline(c, g, "#0c0d12");
-  return c;
+  const col = CARS[v % CARS.length], dark = shadeHex(col);
+  return boxSprite(26, 13, 12, (g, nx, ny) => {
+    g.fillStyle = "rgba(0,0,0,.35)";
+    g.beginPath(); g.ellipse(nx + 6, ny + 13, 20, 8, 0, 0, Math.PI * 2); g.fill();
+    isoBox(g, nx, ny - 2, 26, 13, 6, fill(col),
+      (g2, w, h) => { g2.fillStyle = dark; g2.fillRect(0, 0, w, h); g2.fillStyle = "#101116"; g2.fillRect(3, h - 2, 5, 2); g2.fillRect(18, h - 2, 5, 2); },
+      (g2, w, h) => { g2.fillStyle = shadeHex(dark); g2.fillRect(0, 0, w, h); g2.fillStyle = "#ffe8a0"; g2.fillRect(2, 1, 3, 2); g2.fillRect(w - 5, 1, 3, 2); });
+    isoBox(g, nx + 4, ny - 4, 13, 9, 5, fill(dark),
+      (g2, w, h) => { g2.fillStyle = "#1c2430"; g2.fillRect(0, 0, w, h); g2.fillStyle = "#4a6480"; g2.fillRect(1, 1, w - 2, 1); },
+      (g2, w, h) => { g2.fillStyle = "#141a24"; g2.fillRect(0, 0, w, h); });
+  }, "#08090c");
 }
 function shadeHex(hex) {
   const n = parseInt(hex.slice(1), 16);
@@ -425,15 +485,6 @@ function trash() {
   g.fillStyle = "#33363e"; g.fillRect(7, 4, 3, 10); g.fillRect(3, 6, 1, 7); g.fillRect(5, 6, 1, 7);
   g.fillStyle = "#62656e"; g.fillRect(1, 2, 10, 2);
   outline(c, g, "#0c0d12");
-  return c;
-}
-function brick() {
-  const [c, g] = canvas(16, 26);
-  g.fillStyle = "#2a2c36"; g.fillRect(0, 0, 16, 26);
-  g.fillStyle = "#353844"; g.fillRect(0, 0, 16, 9);
-  g.fillStyle = "#1c1e26";
-  for (let y = 11; y < 26; y += 4) { g.fillRect(0, y, 16, 1); g.fillRect((y % 8) + 2, y - 3, 1, 3); g.fillRect((y % 8) + 10, y - 3, 1, 3); }
-  g.fillStyle = "#14151a"; g.fillRect(0, 9, 16, 1); g.fillRect(0, 25, 16, 1);
   return c;
 }
 function fountain(frame) {
@@ -457,7 +508,7 @@ export function buildScenery() {
     T: tree(), P: pine(), R: rock(["#a8a8b0", "#7a7a86", "#d0d0d8"]), B: bush(), F: fence(), L: lamp(), G: sign(),
     K: crystal("#6ae0f0", "#3aa8d8", "#d8fbff"), K2: crystal("#c08af0", "#8a5ad0", "#f0dcff"), S: stalagmite(),
     house: [house(0), house(1), house(2), house(3), building(0), building(1), building(2), building(3)], fountain: [fountain(0), fountain(1)],
-    c: [0, 1, 2, 3, 4].map(car), y: hydrant(), x: trash(), Z: brick(),
+    c: [0, 1, 2, 3, 4].map(car), y: hydrant(), x: trash(), Z: cube("brick"), W: cube("rock"),
   };
   return s;
 }
@@ -510,29 +561,9 @@ const C_UP = [
   "....obboobbo....",
   ".....oo..oo.....",
 ];
-const C_SIDE = [
-  ".....oooooo.....",
-  "....ohhhhhho....",
-  "...ohhhhhhhho...",
-  "...osshhhhhho...",
-  "...oseshhhhho...",
-  "...osssshhhho...",
-  "....ossshhho....",
-  ".....oocccoo....",
-  ".....occccco....",
-  ".....occccco....",
-  ".....ocsCcco....",
-  ".....ocxxcco....",
-  ".....ocsCcco....",
-  ".....oCCCCCo....",
-  ".....occcco.....",
-  ".....occcco.....",
-  ".....occcco.....",
-  ".....obbbbo.....",
-  ".....obbbbo.....",
-  "......oooo......",
-];
-const SIDE_STEP = ["....occoocco....", "...occo..occo...", "...occo..occo...", "..obbo....obbo..", "..obbo....obbo..", "...oo......oo..."];
+/** Three-quarter views: the head turns toward the facing side, the body stays square-on. */
+const C_FR = C_DOWN.map((r, i) => ["...ohhhhsssso...", "...ohhhsesseo...", "...ohhsssssso...", "....ohssssso...."][i - 3] || r);
+const C_BK = C_UP.map((r, i) => ["...ohhhhhhhso...", "...ohhhhhhhso..."][i - 3] || r);
 const LEG = 14;
 export const CHAR_H = 26;
 
@@ -547,7 +578,7 @@ const ARMOR = [null, null, ["#7a5530", "#573a1e"], ["#7c8698", "#565e70"], ["#33
 function charFrame(base, o, legs, bob) {
   const [c, g] = canvas(16, CHAR_H);
   let rows = base.slice();
-  if (legs === "side") rows.splice(LEG, 6, ...SIDE_STEP);
+  const front = base === C_FR, back = base === C_BK;
   // headgear is a recolour of the hair rows; a rogue also wears a mask
   const hoodRows = HOOD_ROWS[o.hat] || 0;
   rows = rows.map((r, i) => {
@@ -571,39 +602,38 @@ function charFrame(base, o, legs, bob) {
   }
   if (o.style === 1 && !hoodRows) {
     g.fillStyle = hair[0];
-    if (base === C_SIDE) { g.fillRect(9, oy + 6, 3, 4); g.fillStyle = hair[1]; g.fillRect(11, oy + 6, 1, 4); }
-    else { g.fillRect(3, oy + 5, 1, 5); g.fillRect(12, oy + 5, 1, 5); if (base === C_UP) g.fillRect(4, oy + 6, 8, 3); }
+    g.fillRect(3, oy + 5, 1, 5); g.fillRect(front ? 4 : 12, oy + 5, 1, 5);
+    if (back) g.fillRect(4, oy + 6, 8, 3);
   }
-  if (o.hat === "warrior" && base !== C_SIDE) {
+  if (o.hat === "warrior") {
     // steel pauldrons
     g.fillStyle = "#aab2c0"; g.fillRect(2, oy + 7, 3, 3); g.fillRect(11, oy + 7, 3, 3);
     g.fillStyle = "#6e7686"; g.fillRect(2, oy + 9, 3, 1); g.fillRect(11, oy + 9, 3, 1);
-  } else if (o.hat === "warrior") {
-    g.fillStyle = "#aab2c0"; g.fillRect(6, oy + 7, 4, 3);
-    g.fillStyle = "#6e7686"; g.fillRect(6, oy + 9, 4, 1);
   }
-  if (o.hat === "ranger") { g.fillStyle = "#1c241a"; if (base === C_DOWN) g.fillRect(3, oy + 3, 10, 1); else if (base === C_SIDE) g.fillRect(2, oy + 3, 5, 1); }
-  if (o.hat === "mage" && base !== C_UP) { g.fillStyle = "#7ad0e0"; g.fillRect(base === C_SIDE ? 4 : 7, oy + 1, 2, 1); }
+  if (o.hat === "ranger") { g.fillStyle = "#1c241a"; if (front) g.fillRect(6, oy + 3, 8, 1); }
+  if (o.hat === "mage" && front) { g.fillStyle = "#7ad0e0"; g.fillRect(9, oy + 1, 2, 1); }
   if (o.beard) {
     g.fillStyle = "#d0d0d8";
-    if (base === C_DOWN) { g.fillRect(5, oy + 5, 6, 2); g.fillRect(6, oy + 7, 4, 1); }
-    else if (base === C_SIDE) g.fillRect(4, oy + 5, 3, 3);
+    if (front) { g.fillRect(6, oy + 5, 6, 2); g.fillRect(7, oy + 7, 4, 1); }
   }
   outline(c, g, pal.o);
   return c;
 }
 
 const charCache = new Map();
-/** A full character sheet: `[dir][frame]`, dir 0 down · 1 left · 2 right · 3 up, frame 0 idle · 1/2 walking. */
+/**
+ * A full character sheet: `[dir][frame]`, frame 0 idle · 1/2 walking. The four
+ * directions are the grid's axes, which on screen are the four diagonals:
+ * 0 down-left · 1 up-left · 2 down-right · 3 up-right.
+ */
 export function charSprite(o) {
   const key = JSON.stringify(o);
   let s = charCache.get(key);
   if (s) return s;
   const set = (base, legs) => [charFrame(base, o, null, false), charFrame(base, o, legs[0], true), charFrame(base, o, legs[1], true)];
-  const down = set(C_DOWN, ["l", "r"]);
-  const up = set(C_UP, ["l", "r"]);
-  const left = set(C_SIDE, ["side", null]);
-  s = [down, left, left.map(flip), up];
+  const fr = set(C_FR, ["l", "r"]);
+  const bk = set(C_BK, ["l", "r"]);
+  s = [fr.map(flip), bk.map(flip), fr, bk];
   charCache.set(key, s);
   return s;
 }
@@ -778,9 +808,9 @@ export function buildMobs() {
   add("bat", [sheet(M_BAT_A, PAL.bat), sheet(M_BAT_B, PAL.bat)], 8);
   add("drone", [sheet(M_DRONE_A, PAL.drone), sheet(M_DRONE_B, PAL.drone)], 10);
   const thug = charSprite({ hair: 1, skin: 1, style: 0, hat: "rogue", cloth: ["#5e2a2e", "#3e1a1e"], trim: "#c8c8cc", boot: "#18181c" });
-  add("thug", [thug[1][1], thug[1][2]]);
+  add("thug", [thug[0][1], thug[0][2]]);
   const skel = charSprite({ hair: 5, skin: 0, style: 0, cloth: ["#3e3a4c", "#2a2736"], trim: "#5ac8d8", line: "#0e0c16", eye: "#5ac8d8", boot: "#9c9cac" });
-  const bone = skel[1].map((f) => { const [c, g] = canvas(f.width, f.height); g.drawImage(f, 0, 0); recolor(c, g, SKIN[0][0], "#d0d0d8"); recolor(c, g, SKIN[0][1], "#9c9cac"); return c; });
+  const bone = skel[0].map((f) => { const [c, g] = canvas(f.width, f.height); g.drawImage(f, 0, 0); recolor(c, g, SKIN[0][0], "#d0d0d8"); recolor(c, g, SKIN[0][1], "#9c9cac"); return c; });
   add("skel", [bone[1], bone[2]]);
   add("golem", mobFrames(M_GOLEM, PAL.golem));
   add("robot", mobFrames(M_GOLEM, PAL.robot));

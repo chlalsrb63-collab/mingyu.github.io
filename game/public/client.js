@@ -87,7 +87,7 @@ const G = {
   who: new Map(), players: new Map(), mobs: new Map(), drops: new Map(),
   fx: [], parts: [], texts: [], bubbles: new Map(), statics: [],
   cdEnd: [0, 0, 0], buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
-  auto: false, sel: -1, shake: 0, flash: 0, near: null, party: [], pinv: null,
+  auto: false, sel: -1, shake: 0, flash: 0, near: null, party: [], pinv: null, path: null, mark: null,
 };
 const scenery = Art.buildScenery();
 const mobArt = Art.buildMobs();
@@ -155,24 +155,49 @@ function onMessage(msg) {
 }
 const channelName = () => `채널 ${channel.slice(2)}`;
 
+/** Grid position (plus a height above the ground) → where it lands in the projected world. */
+const P = (x, y, z = 0) => { const [ix, iy] = Art.iso(x, y); return [ix, iy - z]; };
+
 function loadMap(m) {
   G.map = m;
+  G.path = null;
   ground = Art.renderGround(m);
   mini = Art.renderMini(m);
   const cv = $("#mini-cv");
-  cv.width = mini.width; cv.height = mini.height;
+  cv.width = m.w + m.h; cv.height = Math.ceil((m.w + m.h) / 2);
   G.statics = [];
+  // Things that stand on one tile are flat sprites planted at its centre;
+  // buildings, walls and cars are solids drawn from their far ground corner.
+  const billboard = (sp, tx, ty, extra) => {
+    const [ix, iy] = P(tx * T + 8, ty * T + 8);
+    G.statics.push({ sp, dx: Math.round(ix - sp.width / 2), dy: Math.round(iy + 4 - sp.height), cx: ix, cy: iy, depth: (tx + ty) * T + 16, ...extra });
+  };
+  const box = (b, wx, wy, w, d, extra) => {
+    const [ix, iy] = P(wx, wy), [cx, cy] = P(wx + w / 2, wy + d / 2);
+    G.statics.push({ sp: b.cv, dx: Math.round(ix - b.ax), dy: Math.round(iy - b.ay), cx, cy, depth: wx + wy + (w + d) / 2, ...extra });
+  };
+  const open = (x, y) => x >= 0 && y >= 0 && x < m.w && y < m.h && m.g[y][x] !== "W" && m.o[y][x] !== "Z";
+  // only walls that border open ground are raised; the rest is darkness behind them
+  const edge = (x, y) => {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (open(x + dx, y + dy)) return true;
+    return false;
+  };
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     const ch = m.o[y][x];
+    if (m.g[y][x] === "W") { if (edge(x, y)) box(scenery.W, x * T, y * T, T, T); continue; }
+    if (ch === "Z") { if (edge(x, y)) box(scenery.Z, x * T, y * T, T, T); continue; }
+    if (ch === "c") { box(scenery.c[Math.floor(Art.hash(x, y, 3) * scenery.c.length)], x * T - 5, y * T + 1.5, 26, 13); continue; }
     let sp = scenery[ch];
-    if (Array.isArray(sp) && ch === "c") sp = sp[Math.floor(Art.hash(x, y, 3) * sp.length)];
-    if (!sp || Array.isArray(sp)) continue;
+    if (!sp || Array.isArray(sp) || sp.cv) continue;
     if (ch === "K" && Art.hash(x, y, 7) > 0.6) sp = scenery.K2;
-    G.statics.push({ sp, x: x * T + 8, y: y * T + 15, glow: ch === "K" ? (sp === scenery.K2 ? "#c08af0" : "#6ae0f0") : ch === "L" ? "#ffe890" : null });
+    billboard(sp, x, y, { glow: ch === "K" ? (sp === scenery.K2 ? "#c08af0" : "#6ae0f0") : ch === "L" ? "#ffe890" : null });
   }
   for (const b of m.big) {
-    if (b.t === "house") G.statics.push({ sp: scenery.house[b.v % 8], x: b.x * T + 32, y: (b.y + 3) * T - 2, win: b.v >= 4 });
-    else if (b.t === "fountain") G.statics.push({ anim: scenery.fountain, x: b.x * T + 16, y: (b.y + 2) * T - 1 });
+    if (b.t === "house") box(scenery.house[b.v % 8], b.x * T, b.y * T, 64, 48, { win: b.v >= 4 });
+    else if (b.t === "fountain") {
+      const [ix, iy] = P((b.x + 1) * T, (b.y + 1) * T);
+      G.statics.push({ anim: scenery.fountain, dx: Math.round(ix - 17), dy: Math.round(iy + 10 - 34), cx: ix, cy: iy, depth: (b.x + b.y + 2) * T });
+    }
   }
   for (const n of m.npcs) n.sprite = Art.charSprite(Art.npcLook(n.look, n.role));
   G.players.clear(); G.mobs.clear(); G.drops.clear();
@@ -249,7 +274,7 @@ function onEvent(e, t) {
       if (!src) break;
       if (eid !== G.you) { src.atkT = t; src.dir = e[5]; }
       else G.me.dir = e[5];
-      attackFx(kind, src.x, src.y - 8, tx, ty, e[5]);
+      attackFx(kind, P(src.x, src.y, 10), P(tx, ty + 6, 8), e[5]);
       break;
     }
     case "h": {
@@ -257,70 +282,93 @@ function onEvent(e, t) {
       const tgt = entityPos(id);
       if (!tgt) break;
       const big = isPlayer ? 0 : G.defs.mobs[tgt.k]?.boss ? 22 : 0;
-      if (dmg < 0) floatText(`+${-dmg}`, tgt.x, tgt.y - 22, "#8cff8c");
+      const [x, y] = P(tgt.x, tgt.y);
+      if (dmg < 0) floatText(`+${-dmg}`, x, y - 26, "#8cff8c");
       else {
-        floatText(crit ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 10 - 5), tgt.y - 20 - big, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit);
+        floatText(crit ? `${dmg}!` : String(dmg), x + (Math.random() * 10 - 5), y - 24 - big, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit);
         tgt.hurtT = t;
         if (id === G.you) { G.flash = 1; G.shake = Math.max(G.shake, 3); Sound.play("hurt"); }
         else if (!isPlayer) Sound.play(crit ? "crit" : "hit");
-        burst(tgt.x, tgt.y - 8 - big / 2, isPlayer ? "#ff7a7a" : "#ffffff", 4, 40);
+        burst(x, y - 10 - big / 2, isPlayer ? "#ff7a7a" : "#ffffff", 4, 40);
       }
       break;
     }
     case "k": {
       const m = G.mobs.get(e[1]);
-      if (m) { burst(m.x, m.y - 6, MOB_COL[m.k] || "#fff", G.defs.mobs[m.k]?.boss ? 60 : 12, 70); Sound.play("die"); G.mobs.delete(e[1]); }
+      if (m) { const [x, y] = P(m.x, m.y, 6); burst(x, y, MOB_COL[m.k] || "#fff", G.defs.mobs[m.k]?.boss ? 60 : 12, 70); Sound.play("die"); G.mobs.delete(e[1]); }
       break;
     }
     case "m": {
       const m = G.mobs.get(e[1]);
-      if (m) { m.atkT = t; if (e.length > 2) { G.fx.push({ type: "proj", x: m.x, y: m.y - 16, x2: e[2], y2: e[3], t0: t, dur: 120, col: "#ff5a4a", size: 1 }); Sound.play("shoot"); } }
+      if (m) {
+        m.atkT = t;
+        if (e.length > 2) {
+          const [x, y] = P(m.x, m.y, 16), [x2, y2] = P(e[2], e[3] + 8, 10);
+          G.fx.push({ type: "proj", x, y, x2, y2, t0: t, dur: 120, col: "#ff5a4a", size: 1 });
+          Sound.play("shoot");
+        }
+      }
       break;
     }
-    case "d": G.fx.push({ type: "beam", x: e[2], y: e[3], x2: e[4], y2: e[5], t0: t, dur: 220, col: "#6a5a9a" }); burst(e[2], e[3], "#3a3550", 8, 30); break;
+    case "d": {
+      const [x, y] = P(e[2], e[3] + 8, 8), [x2, y2] = P(e[4], e[5] + 8, 8);
+      G.fx.push({ type: "beam", x, y, x2, y2, t0: t, dur: 220, col: "#6a5a9a" });
+      burst(x, y, "#3a3550", 8, 30);
+      break;
+    }
     case "t": G.fx.push({ type: "tele", x: e[1], y: e[2], r: e[3], t0: t, dur: e[4] }); Sound.play("warn"); break;
-    case "b":
-      G.fx.push({ type: "ring", x: e[1], y: e[2], r: e[3], t0: t, dur: 350, col: "#ff6ad0", fill: true });
-      burst(e[1], e[2], "#ff6ad0", 30, 110);
+    case "b": {
+      const [x, y] = P(e[1], e[2]);
+      G.fx.push({ type: "ring", x, y, r: e[3], t0: t, dur: 350, col: "#ff6ad0", fill: true });
+      burst(x, y, "#ff6ad0", 30, 110);
       G.shake = 6; Sound.play("boom");
       break;
+    }
     case "l": {
       const p = entityPos(e[1]);
-      if (p) { G.fx.push({ type: "pillar", x: p.x, y: p.y, t0: t, dur: 900, ent: p }); if (e[1] !== G.you) floatText("LEVEL UP", p.x, p.y - 30, "#ffd84a", true); }
+      if (p) { G.fx.push({ type: "pillar", t0: t, dur: 900, ent: p }); if (e[1] !== G.you) { const [x, y] = P(p.x, p.y); floatText("LEVEL UP", x, y - 34, "#ffd84a", true); } }
       break;
     }
-    case "pd": { const p = entityPos(e[1]); if (p) burst(p.x, p.y - 8, "#c8c8d8", 10, 40); break; }
+    case "pd": { const p = entityPos(e[1]); if (p) { const [x, y] = P(p.x, p.y, 10); burst(x, y, "#c8c8d8", 10, 40); } break; }
     case "s": G.bubbles.set(e[1], { text: e[2], until: t + 4500 }); break;
-    case "u": { const p = entityPos(e[1]); if (p) sparkle(p.x, p.y - 10, e[2] === 2 ? "#ffd84a" : e[2] ? "#7ab4ff" : "#ff8a8a", e[2] === 2 ? 14 : 8); if (e[1] === G.you) Sound.play(e[2] === 2 ? "buff" : "potion"); break; }
+    case "u": {
+      const p = entityPos(e[1]);
+      if (p) { const [x, y] = P(p.x, p.y, 12); sparkle(x, y, e[2] === 2 ? "#ffd84a" : e[2] ? "#7ab4ff" : "#ff8a8a", e[2] === 2 ? 14 : 8); }
+      if (e[1] === G.you) Sound.play(e[2] === 2 ? "buff" : "potion");
+      break;
+    }
     case "e": {
       const p = entityPos(e[1]);
-      if (p) { sparkle(p.x, p.y - 10, e[2] ? "#ffd84a" : "#8a8a9a", e[2] ? 26 : 10); if (e[2]) G.fx.push({ type: "ring", x: p.x, y: p.y - 8, r: 26, t0: t, dur: 400, col: "#ffd84a" }); }
+      if (p) {
+        const [x, y] = P(p.x, p.y);
+        sparkle(x, y - 12, e[2] ? "#ffd84a" : "#8a8a9a", e[2] ? 26 : 10);
+        if (e[2]) G.fx.push({ type: "ring", x, y, r: 20, t0: t, dur: 400, col: "#ffd84a" });
+      }
       if (e[1] === G.you) Sound.play(e[2] ? "ok" : "fail");
       break;
     }
   }
 }
 
-function onGain([kind, a, b]) {
-  const me = G.me;
-  if (kind === "xp") floatText(`+${a} EXP`, me.x, me.y - 30, "#fff08a");
+function onGain([kind, a, b, q]) {
+  const [x, y] = P(G.me.x, G.me.y);
+  if (kind === "xp") floatText(`+${a} EXP`, x, y - 34, "#fff08a");
   else if (kind === "gold") { addChat(`골드 +${a}`, "loot"); Sound.play("coin"); }
   else if (kind === "item") {
-    const q = arguments[0][3] | 0;
     const p = addChat(`획득: ${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${b > 1 ? ` ×${b}` : ""}`, "loot");
     if (q) p.style.color = Art.RARITY_COL[q];
     Sound.play(q >= 2 ? "ok" : "item");
     if (q === 3) banner("전설 획득!", true);
-  }
-  else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y - 40, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a}이(가) 되었습니다!`, "sys"); }
+  } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, x, y - 44, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a}이(가) 되었습니다!`, "sys"); }
 }
 
 // ───────────────────────────── effects ─────────────────────────────
+// Effects, particles and floating text all live in projected space (see `P`).
 
 function burst(x, y, col, n, speed) {
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2, v = speed * (0.3 + Math.random() * 0.7);
-    G.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, life: 0.25 + Math.random() * 0.3, col, g: 160 });
+    G.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.6 - 20, life: 0.25 + Math.random() * 0.3, col, g: 160 });
   }
 }
 function sparkle(x, y, col, n) {
@@ -331,26 +379,29 @@ function sparkle(x, y, col, n) {
 function floatText(str, x, y, col, big) {
   G.texts.push({ str, x, y, col, big: !!big, t0: now() });
 }
-function attackFx(kind, x, y, tx, ty, dir) {
+/** `from` is the attacker's chest, `to` the point of impact — both already projected. */
+function attackFx(kind, [x, y], [tx, ty], dir) {
   const t = now();
+  const gy = y + 10; // the ground under the attacker, for rings
   const proj = (col, speed, size, then) => G.fx.push({ type: "proj", x, y, x2: tx, y2: ty, t0: t, dur: Math.max(60, (dist(x, y, tx, ty) / speed) * 1000), col, size, then });
+  const ring = (cx, cy, r, dur, col, fill, delay = 0) => G.fx.push({ type: "ring", x: cx, y: cy, r, t0: t + delay, dur, col, fill });
   switch (kind) {
     case 0: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 180, col: "#e8e8f0", r: 15 }); Sound.play("swing"); break;
     case 1: proj("#fff0c0", 900, 1); burst(x + (tx - x) * 0.12, y + (ty - y) * 0.12, "#ffd84a", 3, 30); Sound.play("shoot"); break;
+    case 2: proj("#b08aff", 300, 2); Sound.play("magic"); break;
     case 3: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 100, col: "#d8d8e8", r: 7 }); Sound.play("swing"); break;
+    case 10: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 220, col: "#ffd84a", r: 17 }); G.shake = Math.max(G.shake, 2); Sound.play("crit"); break;
+    case 11: ring(x, gy, 48, 260, "#ffffff"); ring(x, gy, 34, 240, "#ffd84a", false, 60); Sound.play("swing"); break;
+    case 12: ring(x, gy, 60, 500, "#ff7a5a"); sparkle(x, y, "#ff7a5a", 14); Sound.play("buff"); break;
+    case 13: G.fx.push({ type: "beam", x, y, x2: tx, y2: ty, t0: t, dur: 260, col: "#9fe8ff" }); Sound.play("shoot"); break;
+    case 14: sparkle(x, y + 6, "#b8ffd0", 16); ring(x, gy, 22, 400, "#b8ffd0"); Sound.play("buff"); break;
+    case 15: proj("#ff8a3a", 260, 3, () => { G.fx.push({ type: "ring", x: tx, y: ty + 8, r: 34, t0: now(), dur: 300, col: "#ff8a3a", fill: true }); burst(tx, ty, "#ffd84a", 18, 90); G.shake = Math.max(G.shake, 3); Sound.play("boom"); }); Sound.play("magic"); break;
+    case 16: ring(x, gy, 58, 420, "#9fe8ff", true); sparkle(x, y, "#d0f4ff", 20); Sound.play("ice"); break;
+    case 17: ring(x, gy, 90, 500, "#8cff8c"); sparkle(x, y, "#8cff8c", 20); Sound.play("heal"); break;
     case 18: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 200, col: "#c03048", r: 13 }); burst(tx, ty, "#c03048", 8, 60); Sound.play("crit"); break;
     case 19: burst(x, y, "#3a3550", 8, 30); break;
-    case 20: for (let i = 0; i < 26; i++) G.parts.push({ x: x + Math.random() * 30 - 15, y: y + Math.random() * 20 - 4, vx: Math.random() * 20 - 10, vy: -8 - Math.random() * 10, life: 0.6 + Math.random() * 0.7, col: i % 2 ? "#6a6a78" : "#4a4a56", g: 0 }); Sound.play("buff"); break;
-    case 21: proj("#3a4a3a", 240, 3, () => { G.fx.push({ type: "ring", x: tx, y: ty, r: 42, t0: now(), dur: 320, col: "#ffb04a", fill: true }); burst(tx, ty, "#ffd84a", 24, 110); G.shake = Math.max(G.shake, 4); Sound.play("boom"); }); Sound.play("swing"); break;
-    case 2: proj("#b08aff", 300, 2); Sound.play("magic"); break;
-    case 10: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 220, col: "#ffd84a", r: 17 }); G.shake = Math.max(G.shake, 2); Sound.play("crit"); break;
-    case 11: G.fx.push({ type: "ring", x, y: y + 4, r: 46, t0: t, dur: 260, col: "#ffffff" }); G.fx.push({ type: "ring", x, y: y + 4, r: 34, t0: t + 60, dur: 240, col: "#ffd84a" }); Sound.play("swing"); break;
-    case 12: G.fx.push({ type: "ring", x, y: y + 4, r: 30, t0: t, dur: 500, col: "#ff7a5a" }); sparkle(x, y, "#ff7a5a", 14); Sound.play("buff"); break;
-    case 13: G.fx.push({ type: "beam", x, y, x2: tx, y2: ty, t0: t, dur: 260, col: "#9fe8ff" }); Sound.play("shoot"); break;
-    case 14: sparkle(x, y + 6, "#b8ffd0", 16); G.fx.push({ type: "ring", x, y: y + 6, r: 22, t0: t, dur: 400, col: "#b8ffd0" }); Sound.play("buff"); break;
-    case 15: proj("#ff8a3a", 260, 3, () => { G.fx.push({ type: "ring", x: tx, y: ty, r: 34, t0: now(), dur: 300, col: "#ff8a3a", fill: true }); burst(tx, ty, "#ffd84a", 18, 90); G.shake = Math.max(G.shake, 3); Sound.play("boom"); }); Sound.play("magic"); break;
-    case 16: G.fx.push({ type: "ring", x, y: y + 4, r: 58, t0: t, dur: 420, col: "#9fe8ff", fill: true }); sparkle(x, y, "#d0f4ff", 20); Sound.play("ice"); break;
-    case 17: G.fx.push({ type: "ring", x, y: y + 4, r: 72, t0: t, dur: 500, col: "#8cff8c" }); sparkle(x, y, "#8cff8c", 20); Sound.play("heal"); break;
+    case 20: for (let i = 0; i < 26; i++) G.parts.push({ x: x + Math.random() * 40 - 20, y: y + Math.random() * 20 - 4, vx: Math.random() * 20 - 10, vy: -8 - Math.random() * 10, life: 0.6 + Math.random() * 0.7, col: i % 2 ? "#6a6a78" : "#4a4a56", g: 0 }); Sound.play("buff"); break;
+    case 21: proj("#3a4a3a", 240, 3, () => { G.fx.push({ type: "ring", x: tx, y: ty + 8, r: 42, t0: now(), dur: 320, col: "#ffb04a", fill: true }); burst(tx, ty, "#ffd84a", 24, 110); G.shake = Math.max(G.shake, 4); Sound.play("boom"); }); Sound.play("swing"); break;
   }
 }
 
@@ -387,16 +438,74 @@ addEventListener("keydown", (e) => {
 addEventListener("keyup", (e) => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
 addEventListener("blur", () => { keys.clear(); held.atk = false; });
 
+/**
+ * Which way to walk, in grid terms. The grid's axes are the screen's diagonals,
+ * so each arrow key walks one diagonal (up = up-right, right = down-right,
+ * down = down-left, left = up-left) and two keys together walk straight. The
+ * stick and click-to-move work in screen terms and are converted.
+ */
 function moveVector() {
   let x = 0, y = 0;
   if (keys.has("ArrowLeft") || keys.has("a") || keys.has("ㅁ")) x -= 1;
   if (keys.has("ArrowRight") || keys.has("d") || keys.has("ㅇ")) x += 1;
   if (keys.has("ArrowUp") || keys.has("w") || keys.has("ㅈ")) y -= 1;
   if (keys.has("ArrowDown") || keys.has("s") || keys.has("ㄴ")) y += 1;
-  if (joy.on) { x = joy.x; y = joy.y; }
+  if (joy.on) [x, y] = Art.unIso(joy.x, joy.y);
+  if (x || y) G.path = null;
+  else if (G.path) {
+    while (G.path.length && dist(G.me.x, G.me.y, G.path[0][0], G.path[0][1]) < 2.5) G.path.shift();
+    if (!G.path.length) G.path = null;
+    else { x = G.path[0][0] - G.me.x; y = G.path[0][1] - G.me.y; }
+  }
   const l = Math.hypot(x, y);
   return l > 0.2 ? [x / l, y / l] : [0, 0];
 }
+
+/**
+ * Click or tap the ground to walk there. A shortest-path search over the tile
+ * grid in which a diagonal step costs √2, so routes run straight where they can.
+ * If the spot cannot be reached, the route ends at the nearest tile that can.
+ */
+function pathTo(wx, wy) {
+  const m = G.map, n = m.w * m.h;
+  const free = (x, y) => x >= 0 && y >= 0 && x < m.w && y < m.h && m.o[y][x] === " " && !"wW".includes(m.g[y][x]);
+  const sx = Math.floor(G.me.x / T), sy = Math.floor((G.me.y - 2) / T);
+  const gx = clamp(Math.floor(wx / T), 0, m.w - 1), gy = clamp(Math.floor(wy / T), 0, m.h - 1);
+  const cost = new Float32Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1), done = new Uint8Array(n);
+  const start = sy * m.w + sx, goal = gy * m.w + gx;
+  cost[start] = 0;
+  const open = [start];
+  let best = start, bestD = Math.hypot(sx - gx, sy - gy);
+  while (open.length) {
+    let k = 0;
+    for (let i = 1; i < open.length; i++) if (cost[open[i]] < cost[open[k]]) k = i;
+    const cur = open[k];
+    open[k] = open[open.length - 1]; open.pop();
+    if (done[cur]) continue;
+    done[cur] = 1;
+    const cx = cur % m.w, cy = (cur - cx) / m.w;
+    const d = Math.hypot(cx - gx, cy - gy);
+    if (d < bestD) { bestD = d; best = cur; }
+    if (cur === goal) break;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const nx = cx + dx, ny = cy + dy, ni = ny * m.w + nx;
+      if (!free(nx, ny) || done[ni]) continue;
+      if (dx && dy && !(free(cx + dx, cy) && free(cx, cy + dy))) continue; // no cutting corners
+      const c = cost[cur] + (dx && dy ? 1.4142 : 1);
+      if (c < cost[ni]) { cost[ni] = c; prev[ni] = cur; open.push(ni); }
+    }
+  }
+  const path = [];
+  for (let cur = best; cur !== start && cur !== -1; cur = prev[cur]) path.unshift([(cur % m.w) * T + 8, Math.floor(cur / m.w) * T + 10]);
+  return path.length ? path : null;
+}
+world.addEventListener("pointerdown", (e) => {
+  if (!G.playing || !G.map || G.me.dead) return;
+  const [wx, wy] = Art.unIso(e.clientX / scale + cam.x, e.clientY / scale + cam.y);
+  G.path = pathTo(wx, wy);
+  if (G.path) G.mark = { at: now(), pos: G.path[G.path.length - 1] };
+});
 
 // virtual joystick + touch buttons
 const joyEl = $("#joy"), knob = $("#joy-knob");
@@ -522,7 +631,7 @@ function update(dt, t) {
   let wantAtk = !me.dead && !typing() && (keys.has(" ") || keys.has("j") || held.atk);
 
   // auto-hunt: walk at the nearest monster, hit it, drink when low
-  if (G.auto && !me.dead && mx === 0 && my === 0 && !G.map.safe) {
+  if (G.auto && !me.dead && mx === 0 && my === 0 && !G.path && !G.map.safe) {
     let best = null, bd = 1e9;
     for (const m of G.mobs.values()) { const d = dist(me.x, me.y, m.x, m.y); if (d < bd) { bd = d; best = m; } }
     if (best) {
@@ -598,97 +707,115 @@ function update(dt, t) {
 }
 
 // ───────────────────────────── render ─────────────────────────────
+// Everything is positioned on the grid and drawn through `P`, the diamond
+// projection; the camera works in projected space.
 
 function shadow(x, y, w) {
-  wg.fillStyle = "rgba(10, 14, 30, .28)";
+  wg.fillStyle = "rgba(4, 6, 14, .32)";
   wg.fillRect(Math.round(x - w / 2), Math.round(y - 1), w, 2);
-  wg.fillRect(Math.round(x - w / 2) + 1, Math.round(y - 2), w - 2, 4);
+  wg.fillRect(Math.round(x - w / 2) + 2, Math.round(y - 2), w - 4, 4);
 }
+/** Screen-space unit vector for each facing (the four diagonals). */
+const FACE = [[-1, 0.5], [-1, -0.5], [1, 0.5], [1, -0.5]];
 function drawChar(sprite, x, y, dir, walkT, moving, atkT, t, alpha = 1, wid = null) {
   const frame = moving ? 1 + (Math.floor(walkT) % 2) : 0;
   let ox = 0, oy = 0;
   const a = t - atkT;
-  if (a < 160) { const k = Math.sin((a / 160) * Math.PI) * 3; ox = [0, -1, 1, 0][dir] * k; oy = [1, 0, 0, -1][dir] * k; }
-  shadow(x, y + 1, 10);
+  if (a < 160) { const k = Math.sin((a / 160) * Math.PI) * 3; ox = FACE[dir][0] * k; oy = FACE[dir][1] * k; }
+  shadow(x, y + 1, 12);
   if (alpha !== 1) wg.globalAlpha = alpha;
-  const cx = Math.round(x - 8 + ox), cy = Math.round(y - Art.CHAR_H + 1 + oy);
+  const cx = Math.round(x - 8 + ox), cy = Math.round(y - Art.CHAR_H + 2 + oy);
   // the weapon in hand: behind the body when facing away, raised during a swing
-  const icon = wid && G.icons ? (dir === 1 ? G.icons.left[wid] : G.icons.cv[wid]) : null;
-  const lift = a < 160 ? -3 : 0;
-  const wx = dir === 1 ? cx - 9 : cx + 9, wy = cy + 7 + lift + (frame ? 1 : 0);
-  if (icon && dir === 3) wg.drawImage(icon, wx, wy);
+  const leftward = dir < 2, away = dir === 1 || dir === 3;
+  const icon = wid && G.icons ? (leftward ? G.icons.left[wid] : G.icons.cv[wid]) : null;
+  const wx = leftward ? cx - 9 : cx + 9, wy = cy + 7 + (a < 160 ? -3 : 0) + (frame ? 1 : 0);
+  if (icon && away) wg.drawImage(icon, wx, wy);
   wg.drawImage(sprite[dir][frame], cx, cy);
-  if (icon && dir !== 3) wg.drawImage(icon, wx, wy);
+  if (icon && !away) wg.drawImage(icon, wx, wy);
   wg.globalAlpha = 1;
+}
+/** A circle lying on the ground looks like a 2:1 ellipse from this angle. */
+function groundEllipse(x, y, r) {
+  wg.beginPath();
+  wg.ellipse(x, y, Math.max(0.5, r * 1.41), Math.max(0.5, r * 0.71), 0, 0, Math.PI * 2);
 }
 
 function render(t) {
   const m = G.map, me = G.me;
   if (!m || !ground) return;
-  const mw = m.w * T, mh = m.h * T;
-  cam.x = mw > vw ? clamp(Math.round(me.x - vw / 2), 0, mw - vw) : Math.round((mw - vw) / 2);
-  cam.y = mh > vh ? clamp(Math.round(me.y - 8 - vh / 2), 0, mh - vh) : Math.round((mh - vh) / 2);
+  const [mix, miy] = P(me.x, me.y);
+  cam.x = Math.round(mix - vw / 2);
+  cam.y = Math.round(miy - 12 - vh / 2);
   if (G.shake > 0.3) { cam.x += Math.round((Math.random() - 0.5) * G.shake); cam.y += Math.round((Math.random() - 0.5) * G.shake); }
 
-  wg.fillStyle = "#0d1020";
+  wg.fillStyle = "#050608";
   wg.fillRect(0, 0, vw, vh);
   wg.save();
   wg.translate(-cam.x, -cam.y);
-  wg.drawImage(ground[Math.floor(t / 500) % 2], 0, 0);
+  wg.drawImage(ground.frames[Math.floor(t / 500) % 2], -ground.ox, 0);
 
   // ground decals
   for (const p of m.portals) {
-    const px = p.x * T + 8, py = p.y * T + 9;
+    const [px, py] = P(p.x * T + 8, p.y * T + 9);
     for (let i = 0; i < 3; i++) {
       const ph = (t / 600 + i / 3) % 1;
       wg.strokeStyle = `rgba(${i % 2 ? "160,220,255" : "200,150,255"},${1 - ph})`;
-      wg.beginPath(); wg.ellipse(px, py, 3 + ph * 7, 2 + ph * 4, 0, 0, Math.PI * 2); wg.stroke();
+      wg.beginPath(); wg.ellipse(px, py, 5 + ph * 13, 2.5 + ph * 6.5, 0, 0, Math.PI * 2); wg.stroke();
     }
-    if (Math.random() < 0.15) G.parts.push({ x: px + Math.random() * 12 - 6, y: py, vx: 0, vy: -22, life: 0.6, col: "#d0b0ff", g: 0 });
+    if (Math.random() < 0.15) G.parts.push({ x: px + Math.random() * 20 - 10, y: py, vx: 0, vy: -22, life: 0.6, col: "#d0b0ff", g: 0 });
+  }
+  if (G.path && G.mark) {
+    const [px, py] = P(G.mark.pos[0], G.mark.pos[1]);
+    const k = ((t - G.mark.at) / 500) % 1;
+    wg.strokeStyle = `rgba(240,224,168,${1 - k * 0.7})`;
+    wg.beginPath(); wg.ellipse(px, py, 4 + k * 5, 2 + k * 2.5, 0, 0, Math.PI * 2); wg.stroke();
   }
   for (const f of G.fx) {
     if (f.type !== "tele") continue;
     const k = clamp((t - f.t0) / f.dur, 0, 1);
+    const [fx, fy] = P(f.x, f.y);
     wg.fillStyle = `rgba(255,60,120,${0.15 + 0.2 * Math.abs(Math.sin(t / 70))})`;
-    wg.beginPath(); wg.ellipse(f.x, f.y, f.r, f.r * 0.8, 0, 0, Math.PI * 2); wg.fill();
+    groundEllipse(fx, fy, f.r); wg.fill();
     wg.strokeStyle = "#ff6ad0";
-    wg.beginPath(); wg.ellipse(f.x, f.y, f.r * k, f.r * 0.8 * k, 0, 0, Math.PI * 2); wg.stroke();
+    groundEllipse(fx, fy, f.r * k); wg.stroke();
   }
 
-  // everything that stands up, sorted by its feet
+  // everything that stands up, drawn back to front along the view axis
   const list = [];
-  const x0 = cam.x - 40, x1 = cam.x + vw + 40, y0 = cam.y - 10, y1 = cam.y + vh + 70;
-  for (const s of G.statics) if (s.x > x0 && s.x < x1 && s.y > y0 && s.y < y1) list.push({ y: s.y, s });
-  for (const n of m.npcs) list.push({ y: n.y * T + 12, n });
-  for (const d of G.drops.values()) list.push({ y: d.y - 2, d });
-  for (const mob of G.mobs.values()) list.push({ y: mob.y, mob });
-  for (const [eid, p] of G.players) list.push({ y: p.y, p, eid });
-  list.push({ y: me.y, me: true });
-  list.sort((a, b) => a.y - b.y);
+  const x0 = cam.x - 70, x1 = cam.x + vw + 70, y0 = cam.y - 30, y1 = cam.y + vh + 90;
+  for (const s of G.statics) if (s.cx > x0 && s.cx < x1 && s.cy > y0 && s.cy < y1) list.push({ z: s.depth, s });
+  const put = (o, wx, wy) => { const [ix, iy] = P(wx, wy); o.ix = ix; o.iy = iy; o.z = wx + wy; list.push(o); };
+  for (const n of m.npcs) put({ n }, n.x * T + 8, n.y * T + 12);
+  for (const d of G.drops.values()) put({ d }, d.x, d.y - 2);
+  for (const mob of G.mobs.values()) put({ mob }, mob.x, mob.y);
+  for (const [eid, p] of G.players) put({ p, eid }, p.x, p.y);
+  put({ me: true }, me.x, me.y);
+  list.sort((a, b) => a.z - b.z);
 
   for (const o of list) {
+    const x = o.ix, y = o.iy;
     if (o.s) {
       const sp = o.s.anim ? o.s.anim[Math.floor(t / 300) % 2] : o.s.sp;
       if (o.s.glow) {
-        wg.globalAlpha = 0.14 + 0.06 * Math.sin(t / 400 + o.s.x);
+        wg.globalAlpha = 0.14 + 0.06 * Math.sin(t / 400 + o.s.cx);
         wg.fillStyle = o.s.glow;
-        wg.beginPath(); wg.arc(o.s.x, o.s.y - sp.height * (o.s.glow === "#ffe890" ? 0.85 : 0.6), 13, 0, Math.PI * 2); wg.fill();
+        wg.beginPath(); wg.arc(o.s.cx, o.s.dy + sp.height * (o.s.glow === "#ffe890" ? 0.18 : 0.45), 13, 0, Math.PI * 2); wg.fill();
         wg.globalAlpha = 1;
       }
-      wg.drawImage(sp, Math.round(o.s.x - sp.width / 2), Math.round(o.s.y - sp.height));
+      wg.drawImage(sp, o.s.dx, o.s.dy);
     } else if (o.n) {
-      drawChar(o.n.sprite, o.n.x * T + 8, o.n.y * T + 12, 0, 0, false, -1e9, t);
+      drawChar(o.n.sprite, x, y, 0, 0, false, -1e9, t);
     } else if (o.d) {
       const ic = G.icons.cv[o.d.it];
       const bob = Math.round(Math.sin(t / 220 + o.d.id) * 1.5);
-      shadow(o.d.x, o.d.y, 8);
+      shadow(x, y, 8);
       if (o.d.q) {
         wg.fillStyle = Art.RARITY_COL[o.d.q];
         wg.globalAlpha = 0.25 + 0.15 * Math.sin(t / 180 + o.d.id);
-        wg.fillRect(Math.round(o.d.x - 1), Math.round(o.d.y - 12 - o.d.q * 9), 2, o.d.q * 9 + 10);
+        wg.fillRect(Math.round(x - 1), Math.round(y - 12 - o.d.q * 9), 2, o.d.q * 9 + 10);
         wg.globalAlpha = 1;
       }
-      if (ic) wg.drawImage(ic, Math.round(o.d.x - 6), Math.round(o.d.y - 13 + bob), 12, 12);
+      if (ic) wg.drawImage(ic, Math.round(x - 6), Math.round(y - 13 + bob), 12, 12);
     } else if (o.mob) {
       const mob = o.mob;
       const art = mobArt[G.defs.mobs[mob.k].sp];
@@ -700,29 +827,28 @@ function render(t) {
       let ox = 0;
       const a = t - mob.atkT;
       if (a < 200) ox = Math.sin((a / 200) * Math.PI) * 5 * (right ? 1 : -1);
-      const fade = clamp((t - mob.born) / 300, 0, 1);
-      shadow(mob.x, mob.y + 1, Math.min(22, img.width - 4));
+      shadow(x, y + 1, Math.min(22, img.width - 4));
       if (mob.el) {
         wg.strokeStyle = `rgba(255,190,60,${0.5 + 0.3 * Math.sin(t / 160)})`;
-        wg.beginPath(); wg.ellipse(mob.x, mob.y, 11, 5, 0, 0, Math.PI * 2); wg.stroke();
-        if (Math.random() < 0.2) G.parts.push({ x: mob.x + Math.random() * 14 - 7, y: mob.y - 2, vx: 0, vy: -20, life: 0.5, col: "#ffbe3c", g: 0 });
+        wg.beginPath(); wg.ellipse(x, y, 13, 6, 0, 0, Math.PI * 2); wg.stroke();
+        if (Math.random() < 0.2) G.parts.push({ x: x + Math.random() * 14 - 7, y: y - 2, vx: 0, vy: -20, life: 0.5, col: "#ffbe3c", g: 0 });
       }
-      wg.globalAlpha = fade;
-      wg.drawImage(img, Math.round(mob.x - img.width / 2 + ox), Math.round(mob.y - img.height + 2 - art.lift));
+      wg.globalAlpha = clamp((t - mob.born) / 300, 0, 1);
+      wg.drawImage(img, Math.round(x - img.width / 2 + ox), Math.round(y - img.height + 3 - art.lift + ox * (right ? 0.5 : -0.5) * 0));
       wg.globalAlpha = 1;
       const max = mobMax(mob);
       if (mob.hp < max) {
         const w = G.defs.mobs[mob.k].boss ? 40 : 16;
-        const bx = Math.round(mob.x - w / 2), by = Math.round(mob.y - img.height - 3 - art.lift);
-        wg.fillStyle = "#12142a"; wg.fillRect(bx - 1, by - 1, w + 2, 4);
+        const bx = Math.round(x - w / 2), by = Math.round(y - img.height - 3 - art.lift);
+        wg.fillStyle = "#08090c"; wg.fillRect(bx - 1, by - 1, w + 2, 4);
         wg.fillStyle = mob.el ? "#ffbe3c" : "#c8303c"; wg.fillRect(bx, by, Math.max(1, Math.round((w * mob.hp) / max)), 2);
       }
     } else if (o.p) {
       const w = G.who.get(o.eid);
-      if (w) drawChar(w.sprite, o.p.x, o.p.y, o.p.dir, o.p.walk, o.p.moving, o.p.atkT, t, o.p.dead ? 0.4 : 1, w.wid);
+      if (w) drawChar(w.sprite, x, y, o.p.dir, o.p.walk, o.p.moving, o.p.atkT, t, o.p.dead ? 0.4 : 1, w.wid);
     } else if (o.me) {
       const w = G.who.get(G.you);
-      if (w) drawChar(w.sprite, me.x, me.y, me.dir, me.walk, me.moving, me.atkT, t, me.dead ? 0.4 : t - me.hurtT < 110 ? 0.6 : 1, w.wid);
+      if (w) drawChar(w.sprite, x, y, me.dir, me.walk, me.moving, me.atkT, t, me.dead ? 0.4 : t - me.hurtT < 110 ? 0.6 : 1, w.wid);
     }
   }
 
@@ -733,7 +859,7 @@ function render(t) {
     if (k < 0) continue;
     if (k >= 1) { G.fx.splice(i, 1); if (f.then) f.then(); continue; }
     if (f.type === "slash") {
-      const base = [Math.PI / 2, Math.PI, 0, -Math.PI / 2][f.dir] ?? 0;
+      const base = Math.atan2(FACE[f.dir][1], FACE[f.dir][0]);
       wg.strokeStyle = f.col; wg.lineWidth = 2; wg.globalAlpha = 1 - k;
       wg.beginPath(); wg.arc(f.x - Math.cos(base) * 6, f.y - Math.sin(base) * 6, f.r, base - 1.1 + k * 1.4, base - 0.3 + k * 1.4); wg.stroke();
       wg.lineWidth = 1; wg.globalAlpha = 1;
@@ -746,10 +872,10 @@ function render(t) {
       wg.fillStyle = "#ffffff"; wg.fillRect(Math.round(x) - 1, Math.round(y) - 1, f.size + 1, f.size + 1);
       if (f.size > 1 && Math.random() < 0.7) G.parts.push({ x, y, vx: 0, vy: 0, life: 0.2, col: f.col, g: 0 });
     } else if (f.type === "ring") {
+      if (f.fill) { wg.fillStyle = f.col; wg.globalAlpha = (1 - k) * 0.35; groundEllipse(f.x, f.y, f.r * k); wg.fill(); }
       wg.globalAlpha = 1 - k;
-      if (f.fill) { wg.fillStyle = f.col; wg.globalAlpha = (1 - k) * 0.35; wg.beginPath(); wg.ellipse(f.x, f.y, f.r * k, f.r * k * 0.8, 0, 0, Math.PI * 2); wg.fill(); wg.globalAlpha = 1 - k; }
       wg.strokeStyle = f.col; wg.lineWidth = 2;
-      wg.beginPath(); wg.ellipse(f.x, f.y, f.r * k, f.r * k * 0.8, 0, 0, Math.PI * 2); wg.stroke();
+      groundEllipse(f.x, f.y, f.r * k); wg.stroke();
       wg.lineWidth = 1; wg.globalAlpha = 1;
     } else if (f.type === "beam") {
       wg.globalAlpha = 1 - k; wg.strokeStyle = f.col; wg.lineWidth = 3;
@@ -758,12 +884,12 @@ function render(t) {
       wg.beginPath(); wg.moveTo(f.x, f.y); wg.lineTo(f.x2, f.y2); wg.stroke();
       wg.globalAlpha = 1;
     } else if (f.type === "pillar") {
-      const x = f.ent.x, y = f.ent.y;
+      const [x, y] = P(f.ent.x, f.ent.y);
       wg.globalAlpha = (1 - k) * 0.55; wg.fillStyle = "#fff08a";
-      wg.fillRect(Math.round(x - 7), Math.round(y - 60), 14, 62);
-      wg.fillStyle = "#ffffff"; wg.fillRect(Math.round(x - 3), Math.round(y - 60), 6, 62);
+      wg.fillRect(Math.round(x - 7), Math.round(y - 64), 14, 66);
+      wg.fillStyle = "#ffffff"; wg.fillRect(Math.round(x - 3), Math.round(y - 64), 6, 66);
       wg.globalAlpha = 1;
-      if (Math.random() < 0.6) sparkle(x, y - 10, "#ffd84a", 1);
+      if (Math.random() < 0.6) sparkle(x, y - 12, "#ffd84a", 1);
     }
   }
   for (const p of G.parts) {
@@ -802,14 +928,14 @@ function lighting(t, list) {
     lg.fillRect(sx - r, sy - r, r * 2, r * 2);
   };
   if (alpha > 0.2) {
-    hole(G.me.x, G.me.y - 10, 70, 0.9);
     for (const o of list) {
-      if (o.p) hole(o.p.x, o.p.y - 10, 60, 0.8);
-      else if (o.s && o.s.glow) hole(o.s.x, o.s.y - 18, o.s.glow === "#ffe890" ? 58 : 34, 0.85 + 0.1 * Math.sin(t / 300 + o.s.x));
-      else if (o.s && o.s.win) hole(o.s.x, o.s.y - 20, 46, 0.55);
-      else if (o.d && o.d.q) hole(o.d.x, o.d.y - 6, 18, 0.7);
+      if (o.me) hole(o.ix, o.iy - 10, 80, 0.9);
+      else if (o.p) hole(o.ix, o.iy - 10, 66, 0.8);
+      else if (o.s && o.s.glow) hole(o.s.cx, o.s.cy - 16, o.s.glow === "#ffe890" ? 64 : 36, 0.85 + 0.1 * Math.sin(t / 300 + o.s.cx));
+      else if (o.s && o.s.win) hole(o.s.cx, o.s.cy - 10, 56, 0.5);
+      else if (o.d && o.d.q) hole(o.ix, o.iy - 6, 18, 0.7);
     }
-    for (const p of G.map.portals) hole(p.x * T + 8, p.y * T + 8, 40, 0.8);
+    for (const p of G.map.portals) { const [x, y] = P(p.x * T + 8, p.y * T + 8); hole(x, y, 44, 0.8); }
     for (const f of G.fx) if (f.type === "ring" || f.type === "proj") hole(f.type === "proj" ? f.x2 : f.x, f.type === "proj" ? f.y2 : f.y, 50, 0.6);
   }
   wg.drawImage(lightCv, 0, 0);
@@ -820,25 +946,24 @@ function lighting(t, list) {
   wg.fillRect(0, 0, vw, vh);
 }
 
-// crisp text on its own full-resolution canvas, positioned in world space
+// crisp text on its own full-resolution canvas, positioned in projected space
 let fontK = 1;
-function label(str, wx, wy, col, size = 11, bg = false) {
+function label(str, ix, iy, col, size = 11, bg = false) {
   const S = scale * dpr;
-  const x = Math.round((wx - cam.x) * S), y = Math.round((wy - cam.y) * S);
+  const x = Math.round((ix - cam.x) * S), y = Math.round((iy - cam.y) * S);
   const px = size * fontK;
   tg.font = `${px}px Galmuri${size >= 14 ? 14 : 11}, "Galmuri11", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
   if (bg) {
     const w = tg.measureText(str).width + 10 * fontK;
-    tg.fillStyle = "rgba(255,255,255,.94)";
+    tg.fillStyle = "rgba(236,232,220,.95)";
     tg.fillRect(x - w / 2, y - px - 3 * fontK, w, px + 6 * fontK);
-    tg.fillStyle = "#12142a";
+    tg.fillStyle = "#08090c";
     tg.fillRect(x - w / 2, y + 3 * fontK, w, fontK);
     tg.fillRect(x - 2 * fontK, y + 4 * fontK, 4 * fontK, 2 * fontK);
-    tg.fillStyle = "#12142a";
     tg.fillText(str, x, y);
     return;
   }
-  tg.fillStyle = "#12142a";
+  tg.fillStyle = "#08090c";
   for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [1, 1]]) tg.fillText(str, x + dx * fontK, y + dy * fontK);
   tg.fillStyle = col;
   tg.fillText(str, x, y);
@@ -850,40 +975,45 @@ function renderText(t, list) {
   tg.clearRect(0, 0, text.width, text.height);
   tg.textAlign = "center";
   tg.textBaseline = "alphabetic";
-  const m = G.map, me = G.me;
+  const m = G.map;
+  const top = Art.CHAR_H + 3;
+  const myParty = G.who.get(G.you)?.party;
 
-  for (const p of m.portals) if (p.y === m.portals.find((q) => q.to === p.to).y) label(`▸ ${p.to}`, p.x * T + 8, p.y * T - 4, "#e0c8ff");
-  for (const n of m.npcs) {
-    label(n.name, n.x * T + 8, n.y * T - 16, "#e8c860");
-    if (n.role === "elder" && G.self) {
-      const q = G.self.q, quest = G.defs.quests[q.i];
-      if (quest) {
-        const mark = q.st === 0 ? "!" : q.n >= quest.n ? "?" : "";
-        if (mark) label(mark, n.x * T + 8, n.y * T - 27 + Math.sin(t / 200) * 2, mark === "!" ? "#ffd84a" : "#8cff8c", 14);
-      }
-    }
+  for (const p of m.portals) {
+    if (p !== m.portals.find((q) => q.to === p.to)) continue;
+    const [x, y] = P(p.x * T + 8, p.y * T + 8);
+    label(`▸ ${p.to}`, x, y - 16, "#e0c8ff");
   }
   for (const o of list) {
-    if (o.mob) {
+    if (o.n) {
+      label(o.n.name, o.ix, o.iy - top, "#e8c860");
+      if (o.n.role === "elder" && G.self) {
+        const q = G.self.q, quest = G.defs.quests[q.i];
+        const mark = !quest ? "" : q.st === 0 ? "!" : q.n >= quest.n ? "?" : "";
+        if (mark) label(mark, o.ix, o.iy - top - 11 + Math.sin(t / 200) * 2, mark === "!" ? "#ffd84a" : "#8cff8c", 14);
+      }
+    } else if (o.mob) {
       const d = G.defs.mobs[o.mob.k];
       if (d.boss || o.mob.el || o.mob.hp < mobMax(o.mob)) {
         const art = mobArt[d.sp];
-        label(`Lv.${d.lv} ${o.mob.el ? "정예 " : ""}${d.name}`, o.mob.x, o.mob.y - art.frames[0].height - 7 - art.lift, d.boss ? "#ff9ae0" : o.mob.el ? "#ffbe3c" : "#e8d8d8");
+        label(`Lv.${d.lv} ${o.mob.el ? "정예 " : ""}${d.name}`, o.ix, o.iy - art.frames[0].height - 7 - art.lift, d.boss ? "#ff9ae0" : o.mob.el ? "#ffbe3c" : "#e8d8d8");
       }
     } else if (o.d) {
-      if (o.d.q) label(G.defs.items[o.d.it].name, o.d.x, o.d.y - 16, Art.RARITY_COL[o.d.q]);
+      if (o.d.q) label(G.defs.items[o.d.it].name, o.ix, o.iy - 16, Art.RARITY_COL[o.d.q]);
     } else if (o.p) {
       const w = G.who.get(o.eid);
-      if (w) label(`Lv.${w.lvl} ${w.name}`, o.p.x, o.p.y - 28, o.p.dead ? "#9a9aa8" : w.party && w.party === G.who.get(G.you)?.party ? "#8cff8c" : "#d8e4f0");
+      if (w) label(`Lv.${w.lvl} ${w.name}`, o.ix, o.iy - top, o.p.dead ? "#9a9aa8" : w.party && w.party === myParty ? "#8cff8c" : "#d8e4f0");
     } else if (o.me) {
       const w = G.who.get(G.you);
-      if (w) label(`Lv.${w.lvl} ${w.name}`, me.x, me.y - 28, "#f0e0a8");
+      if (w) label(`Lv.${w.lvl} ${w.name}`, o.ix, o.iy - top, "#f0e0a8");
     }
   }
   for (const [eid, b] of G.bubbles) {
     if (t > b.until) { G.bubbles.delete(eid); continue; }
     const p = entityPos(eid);
-    if (p) label(b.text.length > 22 ? b.text.slice(0, 22) + "…" : b.text, p.x, p.y - 42, "#12142a", 11, true);
+    if (!p) continue;
+    const [x, y] = P(p.x, p.y);
+    label(b.text.length > 22 ? b.text.slice(0, 22) + "…" : b.text, x, y - top - 14, "#08090c", 11, true);
   }
   for (let i = G.texts.length - 1; i >= 0; i--) {
     const f = G.texts[i];
@@ -901,15 +1031,20 @@ function renderMini(t) {
   if (!mini || t - miniAt < 200) return;
   miniAt = t;
   const cv = $("#mini-cv"), g = cv.getContext("2d");
-  const s = mini.width / G.map.w;
+  const m = G.map;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.imageSmoothingEnabled = false;
+  // the same diamond projection as the world, one pixel per tile
+  g.setTransform(0.5, 0.25, -0.5, 0.25, m.h, 0);
   g.drawImage(mini, 0, 0);
-  const dot = (x, y, col, r = 2) => { g.fillStyle = col; g.fillRect(Math.round((x / T) * s - r / 2), Math.round((y / T) * s - r / 2), r, r); };
-  for (const p of G.map.portals) dot(p.x * T + 8, p.y * T + 8, "#e080ff", 3);
-  for (const n of G.map.npcs) dot(n.x * T + 8, n.y * T + 8, "#ffd84a", 3);
-  for (const m of G.mobs.values()) dot(m.x, m.y, "#ff5050");
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const dot = (x, y, col, r = 2) => { g.fillStyle = col; g.fillRect(Math.round((x - y) / T + m.h - r / 2), Math.round((x + y) / (2 * T) - r / 2), r, r); };
+  for (const p of m.portals) dot(p.x * T + 8, p.y * T + 8, "#e080ff", 3);
+  for (const n of m.npcs) dot(n.x * T + 8, n.y * T + 8, "#ffd84a", 3);
+  for (const mob of G.mobs.values()) dot(mob.x, mob.y, mob.el ? "#ffbe3c" : "#ff5050");
   for (const p of G.players.values()) dot(p.x, p.y, "#7ad8ff", 3);
-  if (Math.floor(t / 300) % 2) dot(G.me.x, G.me.y, "#ffffff", 4);
-  else dot(G.me.x, G.me.y, "#12142a", 4);
+  dot(G.me.x, G.me.y, Math.floor(t / 300) % 2 ? "#ffffff" : "#08090c", 3);
   $("#mini-info").textContent = `${channelName()} · ${G.who.size}명`;
 }
 
@@ -1428,4 +1563,4 @@ function frame() {
 requestAnimationFrame(frame);
 
 // handy for automated play-testing
-window.__game = { G, act };
+window.__game = { G, act, go: (wx, wy) => { G.path = pathTo(wx, wy); return !!G.path; } };

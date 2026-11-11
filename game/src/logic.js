@@ -25,7 +25,7 @@ const INV = 30;
 const MAXLV = 50;
 const STACK = 99;
 const VIEW_X = 280;
-const VIEW_Y = 200;
+const VIEW_Y = 280;
 const BASE_SPD = 72;
 const PARTY_MAX = 4;
 const PARTY_RANGE = 340;
@@ -1221,9 +1221,9 @@ export function applyAction(S, pid, a) {
       if (d > max || !canStand(m, a.x, a.y)) { p.fix = true; break; }
       p.x = a.x; p.y = a.y;
       if (a.d >= 0 && a.d <= 3) p.dir = a.d | 0;
-      const tx = Math.floor(p.x / T), ty = Math.floor((p.y - 2) / T);
+      // stepping anywhere on a gate tile (or brushing its edge) takes you through
       for (const pt of m.portals) {
-        if (pt.x === tx && pt.y === ty) { changeMap(S, p, pt.to, pt.tx * T + 8, pt.ty * T + 10); break; }
+        if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) < 12) { changeMap(S, p, pt.to, pt.tx * T + 8, pt.ty * T + 10); break; }
       }
       break;
     }
