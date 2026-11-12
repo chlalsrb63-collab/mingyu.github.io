@@ -1,7 +1,7 @@
 # 루멘테일 온라인 (Lumentale Online)
 
 판타지 세계와 현대 도시가 한 광장에 겹쳐 버린 멀티버스 파티 헌팅 RPG입니다. 테일즈위버 · 어둠의전설처럼
-대각선으로 걷는 쿼터뷰(2:1 아이소메트릭) 화면과 일러스트풍 SD 캐릭터에
+시점을 쿼터뷰로 고정한 3D 화면(실시간 조명·그림자, 코드로 만든 로우폴리 모델)에
 디아블로식 파밍, 룬, 그리고 "경험치로 능력치를 사는" 끝없는 성장을 얹었습니다.
 
 - **플레이**: https://lumentale-online.higgsfield.app (배포 대기 중)
@@ -28,7 +28,7 @@
 src/logic.js    게임 규칙 전부: 아이템·몬스터·스킬 표, 맵 4개, 전투·드랍·의뢰·강화 시뮬레이션
 src/room.ts     채널 하나 = Durable Object 하나. 소켓과 시계(초당 10틱)를 맡고 캐릭터를 저장
 src/worker.ts   /ws/<채널> 웹소켓을 해당 채널로 연결
-public/         브라우저: client.js(입력·그리기·창), chars.js(캐릭터 디자인), art.js(지형·건물·몬스터·아이콘), audio.js(칩튠 합성)
+public/         브라우저: client.js(입력·UI·이름표), scene3d.js(3D 지형·건물·캐릭터·몬스터·조명·이펙트), art.js(아이콘·미니맵), audio.js(칩튠 합성), vendor/three.min.js
 tests/          규칙 테스트 (node tests/sim.mjs · node tests/party.mjs)
 ```
 

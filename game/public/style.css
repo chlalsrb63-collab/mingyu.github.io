@@ -415,3 +415,10 @@ h1 small { font-family: var(--font); font-weight: 600; font-size: .2em; letter-s
 #joy { background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .25); } #joy-knob { background: rgba(226, 196, 134, .35); border: 1px solid var(--edge); }
 
 #party-hud { top: 150px; }
+
+/* ───────────── 3D: the title and creation screens sit over the live stage ───────────── */
+#title { background: radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(6, 7, 12, .55) 100%); align-items: flex-start; padding-top: 6vh; }
+#create { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; justify-content: flex-start; padding-left: max(16px, 5vw); }
+#create .win { width: min(360px, calc(100vw - 20px)); }
+.create-row { display: block; }
+@media (max-width: 760px) { #create { align-items: flex-end; justify-content: center; padding: 0 0 12px; } }

@@ -12,6 +12,7 @@
 
 import * as Art from "./art.js";
 import { Sound } from "./audio.js";
+import * as S3 from "./scene3d.js";
 
 const T = Art.TILE;
 const $ = (s) => document.querySelector(s);
@@ -89,32 +90,23 @@ const G = {
   cdEnd: [0, 0, 0], buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
   auto: false, sel: -1, shake: 0, flash: 0, near: null, party: [], pinv: null, path: null, mark: null,
 };
-// ?style=c|d previews alternative character art directions
-const STYLE_KEY = new URLSearchParams(location.search).get("style") || "";
-Art.setStyle({ tall: STYLE_KEY === "c" || STYLE_KEY === "d", flat: STYLE_KEY === "d" });
-const scenery = Art.buildScenery();
-const mobArt = Art.buildMobs();
-let ground = null, mini = null;
-let scale = 3, vw = 320, vh = 200, dpr = 1;
-const cam = { x: 0, y: 0 };
+let mini = null;
+let dpr = 1;
 
-const world = $("#world"), wg = world.getContext("2d");
+const world = $("#world");
 const text = $("#text"), tg = text.getContext("2d");
 
 function resize() {
   const W = innerWidth, H = innerHeight;
-  scale = Math.max(2, Math.round(Math.min(W / 340, H / 210)));
-  vw = Math.ceil(W / scale); vh = Math.ceil(H / scale);
-  // the world is drawn at full device resolution through a scale transform, so
-  // curves, glows and the illustrated characters stay smooth at any zoom
   dpr = Math.min(2, window.devicePixelRatio || 1);
-  world.width = Math.round(W * dpr); world.height = Math.round(H * dpr);
-  world.style.width = W + "px"; world.style.height = H + "px";
   text.width = Math.round(W * dpr); text.height = Math.round(H * dpr);
   text.style.width = W + "px"; text.style.height = H + "px";
+  S3.resize();
 }
 addEventListener("resize", resize);
+S3.init(world);
 resize();
+S3.showcase();
 
 // ───────────────────────────── messages ─────────────────────────────
 
@@ -123,6 +115,7 @@ function onMessage(msg) {
     case "need_char":
       $("#title").hidden = true;
       $("#create").hidden = false;
+      S3.showcase(draftLook());
       $("#c-name").focus();
       break;
     case "welcome":
@@ -147,6 +140,8 @@ function onMessage(msg) {
         G.playing = false;
         try { ws.close(); } catch { /* already closed */ }
         $("#hud").hidden = true; $("#create").hidden = true; $("#title").hidden = false;
+        tg.clearRect(0, 0, text.width, text.height);
+        S3.showcase();
         $("#title-msg").textContent = msg.error;
       } else if (!$("#create").hidden) {
         $("#create-msg").textContent = msg.error;
@@ -159,53 +154,17 @@ function onMessage(msg) {
 }
 const channelName = () => `채널 ${channel.slice(2)}`;
 
-/** Grid position (plus a height above the ground) → where it lands in the projected world. */
-const P = (x, y, z = 0) => { const [ix, iy] = Art.iso(x, y); return [ix, iy - z]; };
-
 function loadMap(m) {
   G.map = m;
   G.path = null;
-  ground = Art.renderGround(m);
+  S3.leaveStage();
+  S3.loadMap(m);
   mini = Art.renderMini(m);
   const cv = $("#mini-cv");
   cv.width = m.w + m.h; cv.height = Math.ceil((m.w + m.h) / 2);
-  G.statics = [];
-  // Things that stand on one tile are flat sprites planted at its centre;
-  // buildings, walls and cars are solids drawn from their far ground corner.
-  const billboard = (sp, tx, ty, extra) => {
-    const [ix, iy] = P(tx * T + 8, ty * T + 8);
-    G.statics.push({ sp, dx: Math.round(ix - sp.width / 2), dy: Math.round(iy + 4 - sp.height), cx: ix, cy: iy, depth: (tx + ty) * T + 16, ...extra });
-  };
-  const box = (b, wx, wy, w, d, extra) => {
-    const [ix, iy] = P(wx, wy), [cx, cy] = P(wx + w / 2, wy + d / 2);
-    G.statics.push({ sp: b.cv, dx: Math.round(ix - b.ax), dy: Math.round(iy - b.ay), cx, cy, depth: wx + wy + (w + d) / 2, ...extra });
-  };
-  const open = (x, y) => x >= 0 && y >= 0 && x < m.w && y < m.h && m.g[y][x] !== "W" && m.o[y][x] !== "Z";
-  // only walls that border open ground are raised; the rest is darkness behind them
-  const edge = (x, y) => {
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (open(x + dx, y + dy)) return true;
-    return false;
-  };
-  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
-    const ch = m.o[y][x];
-    if (m.g[y][x] === "W") { if (edge(x, y)) box(scenery.W, x * T, y * T, T, T); continue; }
-    if (ch === "Z") { if (edge(x, y)) box(scenery.Z, x * T, y * T, T, T); continue; }
-    if (ch === "c") { box(scenery.c[Math.floor(Art.hash(x, y, 3) * scenery.c.length)], x * T, y * T + 0.5, 32, 15); continue; }
-    let sp = scenery[ch];
-    if (!sp || Array.isArray(sp) || sp.cv) continue;
-    if (ch === "K" && Art.hash(x, y, 7) > 0.6) sp = scenery.K2;
-    billboard(sp, x, y, { glow: ch === "K" ? (sp === scenery.K2 ? "#c08af0" : "#6ae0f0") : ch === "L" ? "#ffe890" : null });
-  }
-  for (const b of m.big) {
-    if (b.t === "house") box(scenery.house[b.v % 8], b.x * T, b.y * T, 64, 48, { win: b.v >= 4 });
-    else if (b.t === "fountain") {
-      const [ix, iy] = P((b.x + 1) * T, (b.y + 1) * T);
-      G.statics.push({ anim: scenery.fountain, dx: Math.round(ix - 17), dy: Math.round(iy + 10 - 34), cx: ix, cy: iy, depth: (b.x + b.y + 2) * T });
-    }
-  }
-  for (const n of m.npcs) n.sprite = Art.charSprite(Art.npcLook(n.look, n.role));
   G.players.clear(); G.mobs.clear(); G.drops.clear();
-  G.fx.length = 0; G.parts.length = 0;
+  G.texts.length = 0;
+  G.snapCam = true;
   $("#mini-name").textContent = m.name;
   Sound.bgm(m.bgm);
   banner(m.name, true);
@@ -224,7 +183,7 @@ function onSnap(s) {
   if (s.who) {
     G.who.clear();
     for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, acc] of s.who) {
-      G.who.set(eid, { name, cls, lvl, sprite: Art.charSprite(Art.playerLook(cls, look, { at, wt, wq, we, acc })), look, party });
+      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, acc }, party });
     }
     if (isOpen("party")) renderParty();
   }
@@ -270,6 +229,9 @@ function entityPos(id) {
 const MOB_COL = { slime: "#5a9a4a", bslime: "#4a7aa8", shroom: "#8e3434", boar: "#6a4a34", bat: "#4a3862", drone: "#aab4c4", thug: "#5e2a2e", robot: "#7a808c", skel: "#d0d0d8", golem: "#5ac8d8", boss: "#e050b8" };
 const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * (m.el ? G.defs.eliteHp : 1));
 
+const YAW = [0, -Math.PI / 2, Math.PI / 2, Math.PI];
+const heightOf = (e) => e.h3 || 1.3;
+
 function onEvent(e, t) {
   switch (e[0]) {
     case "a": {
@@ -278,76 +240,56 @@ function onEvent(e, t) {
       if (!src) break;
       if (eid !== G.you) { src.atkT = t; src.dir = e[5]; }
       else G.me.dir = e[5];
-      attackFx(kind, P(src.x, src.y, 10), P(tx, ty + 6, 8), e[5]);
+      attackFx(kind, src, tx, ty + 6, e[5]);
       break;
     }
     case "h": {
       const [, id, dmg, crit, isPlayer] = e;
       const tgt = entityPos(id);
       if (!tgt) break;
-      const big = isPlayer ? 0 : G.defs.mobs[tgt.k]?.boss ? 22 : 0;
-      const [x, y] = P(tgt.x, tgt.y);
-      if (dmg < 0) floatText(`+${-dmg}`, x, y - 26, "#8cff8c");
+      const h = heightOf(tgt);
+      if (dmg < 0) floatText(`+${-dmg}`, tgt.x, tgt.y, h + 0.3, "#8cff8c");
       else {
-        floatText(crit ? `${dmg}!` : String(dmg), x + (Math.random() * 10 - 5), y - 24 - big, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit);
+        floatText(crit ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit);
         tgt.hurtT = t;
-        if (id === G.you) { G.flash = 1; G.shake = Math.max(G.shake, 3); Sound.play("hurt"); }
+        if (id === G.you) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
         else if (!isPlayer) Sound.play(crit ? "crit" : "hit");
-        burst(x, y - 10 - big / 2, isPlayer ? "#ff7a7a" : "#ffffff", 4, 40);
+        S3.fx.burst(tgt.x, tgt.y, h * 0.55, isPlayer ? "#ff7a7a" : "#ffffff", crit ? 9 : 5, 1.6);
       }
       break;
     }
     case "k": {
       const m = G.mobs.get(e[1]);
-      if (m) { const [x, y] = P(m.x, m.y, 6); burst(x, y, MOB_COL[m.k] || "#fff", G.defs.mobs[m.k]?.boss ? 60 : 12, 70); Sound.play("die"); G.mobs.delete(e[1]); }
+      if (m) { S3.fx.burst(m.x, m.y, heightOf(m) * 0.5, MOB_COL[m.k] || "#fff", G.defs.mobs[m.k]?.boss ? 70 : 16, 2.2); Sound.play("die"); G.mobs.delete(e[1]); }
       break;
     }
     case "m": {
       const m = G.mobs.get(e[1]);
       if (m) {
         m.atkT = t;
-        if (e.length > 2) {
-          const [x, y] = P(m.x, m.y, 16), [x2, y2] = P(e[2], e[3] + 8, 10);
-          G.fx.push({ type: "proj", x, y, x2, y2, t0: t, dur: 120, col: "#ff5a4a", size: 1 });
-          Sound.play("shoot");
-        }
+        if (e.length > 2) { S3.fx.proj(m.x, m.y, heightOf(m) * 0.75, e[2], e[3] + 8, 0.7, "#ff5a4a", 0.05, 34); Sound.play("shoot"); }
       }
       break;
     }
-    case "d": {
-      const [x, y] = P(e[2], e[3] + 8, 8), [x2, y2] = P(e[4], e[5] + 8, 8);
-      G.fx.push({ type: "beam", x, y, x2, y2, t0: t, dur: 220, col: "#6a5a9a" });
-      burst(x, y, "#3a3550", 8, 30);
-      break;
-    }
-    case "t": G.fx.push({ type: "tele", x: e[1], y: e[2], r: e[3], t0: t, dur: e[4] }); Sound.play("warn"); break;
-    case "b": {
-      const [x, y] = P(e[1], e[2]);
-      G.fx.push({ type: "ring", x, y, r: e[3], t0: t, dur: 350, col: "#ff6ad0", fill: true });
-      burst(x, y, "#ff6ad0", 30, 110);
-      G.shake = 6; Sound.play("boom");
-      break;
-    }
+    case "d": S3.fx.beam(e[2], e[3] + 8, e[4], e[5] + 8, "#8a78c8", 0.6); S3.fx.burst(e[2], e[3] + 8, 0.6, "#4a4468", 10, 1); break;
+    case "t": S3.fx.tele(e[1], e[2], e[3], e[4]); Sound.play("warn"); break;
+    case "b": S3.fx.ring(e[1], e[2], e[3], "#ff6ad0", 350, true); S3.fx.burst(e[1], e[2], 0.4, "#ff6ad0", 34, 3); S3.shake(6); Sound.play("boom"); break;
     case "l": {
       const p = entityPos(e[1]);
-      if (p) { G.fx.push({ type: "pillar", t0: t, dur: 900, ent: p }); if (e[1] !== G.you) { const [x, y] = P(p.x, p.y); floatText("LEVEL UP", x, y - 34, "#ffd84a", true); } }
+      if (p) { S3.fx.pillar(p.x, p.y); if (e[1] !== G.you) floatText("LEVEL UP", p.x, p.y, heightOf(p) + 0.5, "#ffd84a", true); }
       break;
     }
-    case "pd": { const p = entityPos(e[1]); if (p) { const [x, y] = P(p.x, p.y, 10); burst(x, y, "#c8c8d8", 10, 40); } break; }
+    case "pd": { const p = entityPos(e[1]); if (p) S3.fx.burst(p.x, p.y, 0.6, "#c8c8d8", 12, 1.4); break; }
     case "s": G.bubbles.set(e[1], { text: e[2], until: t + 4500 }); break;
     case "u": {
       const p = entityPos(e[1]);
-      if (p) { const [x, y] = P(p.x, p.y, 12); sparkle(x, y, e[2] === 2 ? "#ffd84a" : e[2] ? "#7ab4ff" : "#ff8a8a", e[2] === 2 ? 14 : 8); }
+      if (p) S3.fx.sparkle(p.x, p.y, 0.8, e[2] === 2 ? "#ffd84a" : e[2] ? "#7ab4ff" : "#ff8a8a", e[2] === 2 ? 16 : 10);
       if (e[1] === G.you) Sound.play(e[2] === 2 ? "buff" : "potion");
       break;
     }
     case "e": {
       const p = entityPos(e[1]);
-      if (p) {
-        const [x, y] = P(p.x, p.y);
-        sparkle(x, y - 12, e[2] ? "#ffd84a" : "#8a8a9a", e[2] ? 26 : 10);
-        if (e[2]) G.fx.push({ type: "ring", x, y, r: 20, t0: t, dur: 400, col: "#ffd84a" });
-      }
+      if (p) { S3.fx.sparkle(p.x, p.y, 0.8, e[2] ? "#ffd84a" : "#8a8a9a", e[2] ? 28 : 10); if (e[2]) S3.fx.ring(p.x, p.y, 20, "#ffd84a", 400); }
       if (e[1] === G.you) Sound.play(e[2] ? "ok" : "fail");
       break;
     }
@@ -355,57 +297,44 @@ function onEvent(e, t) {
 }
 
 function onGain([kind, a, b, q]) {
-  const [x, y] = P(G.me.x, G.me.y);
-  if (kind === "xp") floatText(`+${a} EXP`, x, y - 34, "#fff08a");
+  const me = G.me, h = heightOf(me);
+  if (kind === "xp") floatText(`+${a} EXP`, me.x, me.y, h + 0.55, "#fff08a");
   else if (kind === "gold") { addChat(`골드 +${a}`, "loot"); Sound.play("coin"); }
   else if (kind === "item") {
     const p = addChat(`획득: ${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${b > 1 ? ` ×${b}` : ""}`, "loot");
     if (q) p.style.color = Art.RARITY_COL[q];
     Sound.play(q >= 2 ? "ok" : "item");
     if (q === 3) banner("전설 획득!", true);
-  } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, x, y - 44, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a}이(가) 되었습니다!`, "sys"); }
+  } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y, h + 0.9, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a}이(가) 되었습니다!`, "sys"); }
 }
 
 // ───────────────────────────── effects ─────────────────────────────
-// Effects, particles and floating text all live in projected space (see `P`).
+// Effects live in the 3D scene; floating text is drawn over it and follows its point in the world.
 
-function burst(x, y, col, n, speed) {
-  for (let i = 0; i < n; i++) {
-    const a = Math.random() * Math.PI * 2, v = speed * (0.3 + Math.random() * 0.7);
-    G.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.6 - 20, life: 0.25 + Math.random() * 0.3, col, g: 160 });
-  }
+function floatText(str, x, y, h, col, big) {
+  G.texts.push({ str, x, y, h, col, big: !!big, t0: now() });
 }
-function sparkle(x, y, col, n) {
-  for (let i = 0; i < n; i++) {
-    G.parts.push({ x: x + Math.random() * 16 - 8, y: y + Math.random() * 12 - 4, vx: 0, vy: -18 - Math.random() * 24, life: 0.4 + Math.random() * 0.5, col, g: 0 });
-  }
-}
-function floatText(str, x, y, col, big) {
-  G.texts.push({ str, x, y, col, big: !!big, t0: now() });
-}
-/** `from` is the attacker's chest, `to` the point of impact — both already projected. */
-function attackFx(kind, [x, y], [tx, ty], dir) {
-  const t = now();
-  const gy = y + 10; // the ground under the attacker, for rings
-  const proj = (col, speed, size, then) => G.fx.push({ type: "proj", x, y, x2: tx, y2: ty, t0: t, dur: Math.max(60, (dist(x, y, tx, ty) / speed) * 1000), col, size, then });
-  const ring = (cx, cy, r, dur, col, fill, delay = 0) => G.fx.push({ type: "ring", x: cx, y: cy, r, t0: t + delay, dur, col, fill });
+/** `src` is the attacker, (tx, ty) the point of impact on the ground. */
+function attackFx(kind, src, tx, ty, dir) {
+  const yaw = YAW[dir] || 0, f = S3.fx;
+  const mx = src.x + (tx - src.x) * 0.6, my = src.y + (ty - src.y) * 0.6;
   switch (kind) {
-    case 0: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 180, col: "#e8e8f0", r: 15 }); Sound.play("swing"); break;
-    case 1: proj("#fff0c0", 900, 1); burst(x + (tx - x) * 0.12, y + (ty - y) * 0.12, "#ffd84a", 3, 30); Sound.play("shoot"); break;
-    case 2: proj("#b08aff", 300, 2); Sound.play("magic"); break;
-    case 3: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 100, col: "#d8d8e8", r: 7 }); Sound.play("swing"); break;
-    case 10: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 220, col: "#ffd84a", r: 17 }); G.shake = Math.max(G.shake, 2); Sound.play("crit"); break;
-    case 11: ring(x, gy, 48, 260, "#ffffff"); ring(x, gy, 34, 240, "#ffd84a", false, 60); Sound.play("swing"); break;
-    case 12: ring(x, gy, 60, 500, "#ff7a5a"); sparkle(x, y, "#ff7a5a", 14); Sound.play("buff"); break;
-    case 13: G.fx.push({ type: "beam", x, y, x2: tx, y2: ty, t0: t, dur: 260, col: "#9fe8ff" }); Sound.play("shoot"); break;
-    case 14: sparkle(x, y + 6, "#b8ffd0", 16); ring(x, gy, 22, 400, "#b8ffd0"); Sound.play("buff"); break;
-    case 15: proj("#ff8a3a", 260, 3, () => { G.fx.push({ type: "ring", x: tx, y: ty + 8, r: 34, t0: now(), dur: 300, col: "#ff8a3a", fill: true }); burst(tx, ty, "#ffd84a", 18, 90); G.shake = Math.max(G.shake, 3); Sound.play("boom"); }); Sound.play("magic"); break;
-    case 16: ring(x, gy, 58, 420, "#9fe8ff", true); sparkle(x, y, "#d0f4ff", 20); Sound.play("ice"); break;
-    case 17: ring(x, gy, 90, 500, "#8cff8c"); sparkle(x, y, "#8cff8c", 20); Sound.play("heal"); break;
-    case 18: G.fx.push({ type: "slash", x: tx, y: ty, dir, t0: t, dur: 200, col: "#c03048", r: 13 }); burst(tx, ty, "#c03048", 8, 60); Sound.play("crit"); break;
-    case 19: burst(x, y, "#3a3550", 8, 30); break;
-    case 20: for (let i = 0; i < 26; i++) G.parts.push({ x: x + Math.random() * 40 - 20, y: y + Math.random() * 20 - 4, vx: Math.random() * 20 - 10, vy: -8 - Math.random() * 10, life: 0.6 + Math.random() * 0.7, col: i % 2 ? "#6a6a78" : "#4a4a56", g: 0 }); Sound.play("buff"); break;
-    case 21: proj("#3a4a3a", 240, 3, () => { G.fx.push({ type: "ring", x: tx, y: ty + 8, r: 42, t0: now(), dur: 320, col: "#ffb04a", fill: true }); burst(tx, ty, "#ffd84a", 24, 110); G.shake = Math.max(G.shake, 4); Sound.play("boom"); }); Sound.play("swing"); break;
+    case 0: f.slash(mx, my, yaw, "#f4f4ff", 0.8); Sound.play("swing"); break;
+    case 1: f.proj(src.x, src.y, 0.75, tx, ty, 0.5, "#fff0c0", 0.04, 42); f.burst(src.x + (tx - src.x) * 0.15, src.y + (ty - src.y) * 0.15, 0.75, "#ffd84a", 4, 0.8); Sound.play("shoot"); break;
+    case 2: f.proj(src.x, src.y, 1.1, tx, ty, 0.5, "#b08aff", 0.09, 15); Sound.play("magic"); break;
+    case 3: f.slash(mx, my, yaw, "#dcdcec", 0.45); Sound.play("swing"); break;
+    case 10: f.slash(mx, my, yaw, "#ffd84a", 1.05); S3.shake(2); Sound.play("crit"); break;
+    case 11: f.ring(src.x, src.y, 48, "#ffffff", 260); f.ring(src.x, src.y, 34, "#ffd84a", 240, false, 60); Sound.play("swing"); break;
+    case 12: f.ring(src.x, src.y, 60, "#ff7a5a", 500); f.sparkle(src.x, src.y, 0.9, "#ff7a5a", 16); Sound.play("buff"); break;
+    case 13: f.beam(src.x, src.y, tx, ty, "#9fe8ff", 0.7); Sound.play("shoot"); break;
+    case 14: f.sparkle(src.x, src.y, 0.4, "#b8ffd0", 18); f.ring(src.x, src.y, 22, "#b8ffd0", 400); Sound.play("buff"); break;
+    case 15: f.proj(src.x, src.y, 1.1, tx, ty, 0.4, "#ff8a3a", 0.14, 13, () => { f.ring(tx, ty, 34, "#ff8a3a", 300, true); f.burst(tx, ty, 0.4, "#ffd84a", 22, 2.6); S3.shake(3); Sound.play("boom"); }); Sound.play("magic"); break;
+    case 16: f.ring(src.x, src.y, 58, "#9fe8ff", 420, true); f.sparkle(src.x, src.y, 0.6, "#d0f4ff", 22); Sound.play("ice"); break;
+    case 17: f.ring(src.x, src.y, 90, "#8cff8c", 500); f.sparkle(src.x, src.y, 0.6, "#8cff8c", 22); Sound.play("heal"); break;
+    case 18: f.slash(mx, my, yaw, "#e04860", 0.7); f.burst(tx, ty, 0.6, "#e04860", 10, 1.8); Sound.play("crit"); break;
+    case 19: f.burst(src.x, src.y, 0.6, "#4a4468", 10, 1); break;
+    case 20: f.burst(src.x, src.y, 0.5, "#8a8a98", 40, 1.2); Sound.play("buff"); break;
+    case 21: f.proj(src.x, src.y, 1, tx, ty, 0.2, "#6a7a5a", 0.1, 11, () => { f.ring(tx, ty, 42, "#ffb04a", 320, true); f.burst(tx, ty, 0.4, "#ffd84a", 28, 3); S3.shake(4); Sound.play("boom"); }); Sound.play("swing"); break;
   }
 }
 
@@ -506,9 +435,10 @@ function pathTo(wx, wy) {
 }
 world.addEventListener("pointerdown", (e) => {
   if (!G.playing || !G.map || G.me.dead) return;
-  const [wx, wy] = Art.unIso(e.clientX / scale + cam.x, e.clientY / scale + cam.y);
-  G.path = pathTo(wx, wy);
-  if (G.path) G.mark = { at: now(), pos: G.path[G.path.length - 1] };
+  const hit = S3.pick(e.clientX, e.clientY);
+  if (!hit) return;
+  G.path = pathTo(hit[0], hit[1]);
+  if (G.path) G.mark = { at: now(), pos: G.path[G.path.length - 1] }
 });
 
 // virtual joystick + touch buttons
@@ -711,338 +641,111 @@ function update(dt, t) {
 }
 
 // ───────────────────────────── render ─────────────────────────────
-// Everything is positioned on the grid and drawn through `P`, the diamond
-// projection; the camera works in projected space.
+// The world is drawn by the 3D scene; names, numbers and speech are drawn over
+// it on a 2D canvas, each pinned to its point in the world.
 
-function shadow(x, y, w) {
-  wg.fillStyle = "rgba(20, 24, 50, .28)";
-  wg.beginPath(); wg.ellipse(x, y, w / 2, w / 4.4, 0, 0, Math.PI * 2); wg.fill();
-}
-/** Screen-space unit vector for each facing (the four diagonals). */
-const FACE = [[-1, 0.5], [-1, -0.5], [1, 0.5], [1, -0.5]];
-function drawChar(sprite, x, y, dir, walkT, moving, atkT, t, alpha = 1) {
-  // attack (wind-up, then strike) > four-step walk cycle > slow idle breathing
-  const a = t - atkT;
-  const frame = a < 240 ? (a < 90 ? 6 : 7) : moving ? 2 + (Math.floor(walkT) % 4) : Math.floor(t / 650) % 2;
-  let ox = 0, oy = 0;
-  if (a < 240) { const k = Math.sin((a / 240) * Math.PI) * 3; ox = FACE[dir][0] * k; oy = FACE[dir][1] * k; }
-  shadow(x, y + 0.5, 14);
-  if (alpha !== 1) wg.globalAlpha = alpha;
-  wg.imageSmoothingEnabled = true;        // people are illustrations, not pixels
-  Art.drawFigure(wg, sprite, dir, frame, x - Art.FOOT_X + ox, y - Art.FOOT_Y + oy);
-  wg.imageSmoothingEnabled = false;
-  wg.globalAlpha = 1;
-}
-/** A circle lying on the ground looks like a 2:1 ellipse from this angle. */
-function groundEllipse(x, y, r) {
-  wg.beginPath();
-  wg.ellipse(x, y, Math.max(0.5, r * 1.41), Math.max(0.5, r * 0.71), 0, 0, Math.PI * 2);
+function render(t, dt) {
+  if (!G.map) return;
+  S3.sync(G, dt, t);
+  S3.render(G.me.x, G.me.y, dt, t, G.snapCam);
+  G.snapCam = false;
+  renderText(t);
 }
 
-function render(t) {
-  const m = G.map, me = G.me;
-  if (!m || !ground) return;
-  const [mix, miy] = P(me.x, me.y);
-  cam.x = Math.round(mix - vw / 2);
-  cam.y = Math.round(miy - 12 - vh / 2);
-  if (G.shake > 0.3) { cam.x += Math.round((Math.random() - 0.5) * G.shake); cam.y += Math.round((Math.random() - 0.5) * G.shake); }
-
-  wg.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
-  wg.imageSmoothingEnabled = false;       // scenery is pixel art: keep its edges crisp
-  wg.fillStyle = "#0b0d14";
-  wg.fillRect(0, 0, vw, vh);
-  wg.save();
-  wg.translate(-cam.x, -cam.y);
-  wg.drawImage(ground.frames[Math.floor(t / 500) % 2], -ground.ox, 0);
-
-  // ground decals
-  for (const p of m.portals) {
-    const [px, py] = P(p.x * T + 8, p.y * T + 9);
-    for (let i = 0; i < 3; i++) {
-      const ph = (t / 600 + i / 3) % 1;
-      wg.strokeStyle = `rgba(${i % 2 ? "160,220,255" : "200,150,255"},${1 - ph})`;
-      wg.beginPath(); wg.ellipse(px, py, 5 + ph * 13, 2.5 + ph * 6.5, 0, 0, Math.PI * 2); wg.stroke();
-    }
-    if (Math.random() < 0.15) G.parts.push({ x: px + Math.random() * 20 - 10, y: py, vx: 0, vy: -22, life: 0.6, col: "#d0b0ff", g: 0 });
-  }
-  if (G.path && G.mark) {
-    const [px, py] = P(G.mark.pos[0], G.mark.pos[1]);
-    const k = ((t - G.mark.at) / 500) % 1;
-    wg.strokeStyle = `rgba(240,224,168,${1 - k * 0.7})`;
-    wg.beginPath(); wg.ellipse(px, py, 4 + k * 5, 2 + k * 2.5, 0, 0, Math.PI * 2); wg.stroke();
-  }
-  for (const f of G.fx) {
-    if (f.type !== "tele") continue;
-    const k = clamp((t - f.t0) / f.dur, 0, 1);
-    const [fx, fy] = P(f.x, f.y);
-    wg.fillStyle = `rgba(255,60,120,${0.15 + 0.2 * Math.abs(Math.sin(t / 70))})`;
-    groundEllipse(fx, fy, f.r); wg.fill();
-    wg.strokeStyle = "#ff6ad0";
-    groundEllipse(fx, fy, f.r * k); wg.stroke();
-  }
-
-  // everything that stands up, drawn back to front along the view axis
-  const list = [];
-  const x0 = cam.x - 70, x1 = cam.x + vw + 70, y0 = cam.y - 30, y1 = cam.y + vh + 90;
-  for (const s of G.statics) if (s.cx > x0 && s.cx < x1 && s.cy > y0 && s.cy < y1) list.push({ z: s.depth, s });
-  const put = (o, wx, wy) => { const [ix, iy] = P(wx, wy); o.ix = ix; o.iy = iy; o.z = wx + wy; list.push(o); };
-  for (const n of m.npcs) put({ n }, n.x * T + 8, n.y * T + 12);
-  for (const d of G.drops.values()) put({ d }, d.x, d.y - 2);
-  for (const mob of G.mobs.values()) put({ mob }, mob.x, mob.y);
-  for (const [eid, p] of G.players) put({ p, eid }, p.x, p.y);
-  put({ me: true }, me.x, me.y);
-  list.sort((a, b) => a.z - b.z);
-
-  for (const o of list) {
-    const x = o.ix, y = o.iy;
-    if (o.s) {
-      const sp = o.s.anim ? o.s.anim[Math.floor(t / 300) % 2] : o.s.sp;
-      if (o.s.glow) {
-        wg.globalAlpha = 0.14 + 0.06 * Math.sin(t / 400 + o.s.cx);
-        wg.fillStyle = o.s.glow;
-        wg.beginPath(); wg.arc(o.s.cx, o.s.dy + (o.s.glow === "#ffe890" ? 7 : sp.height * 0.45), 13, 0, Math.PI * 2); wg.fill();
-        wg.globalAlpha = 1;
-      }
-      // anything tall standing in front of you turns translucent so you never lose yourself
-      const hides = sp.height > 40 && o.z > me.x + me.y && mix > o.s.dx + 2 && mix < o.s.dx + sp.width - 2 && miy - 14 > o.s.dy && miy - 14 < o.s.dy + sp.height;
-      if (hides) wg.globalAlpha = 0.38;
-      wg.drawImage(sp, o.s.dx, o.s.dy);
-      wg.globalAlpha = 1;
-    } else if (o.n) {
-      drawChar(o.n.sprite, x, y, 0, 0, false, -1e9, t);
-    } else if (o.d) {
-      const ic = G.icons.cv[o.d.it];
-      const bob = Math.round(Math.sin(t / 220 + o.d.id) * 1.5);
-      shadow(x, y, 8);
-      if (o.d.q) {
-        wg.fillStyle = Art.RARITY_COL[o.d.q];
-        wg.globalAlpha = 0.25 + 0.15 * Math.sin(t / 180 + o.d.id);
-        wg.fillRect(Math.round(x - 1), Math.round(y - 12 - o.d.q * 9), 2, o.d.q * 9 + 10);
-        wg.globalAlpha = 1;
-      }
-      if (ic) wg.drawImage(ic, Math.round(x - 6), Math.round(y - 13 + bob), 12, 12);
-    } else if (o.mob) {
-      const mob = o.mob;
-      const art = mobArt[G.defs.mobs[mob.k].sp];
-      if (!art) continue;
-      const f = Math.floor(t / 320 + mob.id) % 2;
-      const hurt = t - mob.hurtT < 110;
-      const right = mob.dir === 2;
-      const img = (hurt ? (right ? art.hurtR : art.hurt) : right ? art.right : art.frames)[f];
-      let ox = 0;
-      const a = t - mob.atkT;
-      if (a < 200) ox = Math.sin((a / 200) * Math.PI) * 5 * (right ? 1 : -1);
-      const k = art.k || 1, iw = img.width / k, ih = img.height / k;
-      shadow(x, y + 1, Math.min(26, iw * 0.6));
-      if (mob.el) {
-        wg.strokeStyle = `rgba(255,190,60,${0.5 + 0.3 * Math.sin(t / 160)})`;
-        wg.beginPath(); wg.ellipse(x, y, 13, 6, 0, 0, Math.PI * 2); wg.stroke();
-        if (Math.random() < 0.2) G.parts.push({ x: x + Math.random() * 14 - 7, y: y - 2, vx: 0, vy: -20, life: 0.5, col: "#ffbe3c", g: 0 });
-      }
-      wg.globalAlpha = clamp((t - mob.born) / 300, 0, 1);
-      wg.imageSmoothingEnabled = k > 1;
-      wg.drawImage(img, Math.round(x - iw / 2 + ox), Math.round(y - ih + 3 - art.lift), iw, ih);
-      wg.imageSmoothingEnabled = false;
-      wg.globalAlpha = 1;
-      const max = mobMax(mob);
-      if (mob.hp < max) {
-        const w = G.defs.mobs[mob.k].boss ? 40 : 16;
-        const bx = Math.round(x - w / 2), by = Math.round(y - ih * (k > 1 ? 0.86 : 1) - 3 - art.lift);
-        wg.fillStyle = "#08090c"; wg.fillRect(bx - 1, by - 1, w + 2, 4);
-        wg.fillStyle = mob.el ? "#ffbe3c" : "#c8303c"; wg.fillRect(bx, by, Math.max(1, Math.round((w * mob.hp) / max)), 2);
-      }
-    } else if (o.p) {
-      const w = G.who.get(o.eid);
-      if (w) drawChar(w.sprite, x, y, o.p.dir, o.p.walk, o.p.moving, o.p.atkT, t, o.p.dead ? 0.4 : 1);
-    } else if (o.me) {
-      const w = G.who.get(G.you);
-      if (w) drawChar(w.sprite, x, y, me.dir, me.walk, me.moving, me.atkT, t, me.dead ? 0.4 : t - me.hurtT < 110 ? 0.6 : 1);
-    }
-  }
-
-  // effects above everything
-  for (let i = G.fx.length - 1; i >= 0; i--) {
-    const f = G.fx[i];
-    const k = (t - f.t0) / f.dur;
-    if (k < 0) continue;
-    if (k >= 1) { G.fx.splice(i, 1); if (f.then) f.then(); continue; }
-    if (f.type === "slash") {
-      const base = Math.atan2(FACE[f.dir][1], FACE[f.dir][0]);
-      wg.strokeStyle = f.col; wg.lineWidth = 2; wg.globalAlpha = 1 - k;
-      wg.beginPath(); wg.arc(f.x - Math.cos(base) * 6, f.y - Math.sin(base) * 6, f.r, base - 1.1 + k * 1.4, base - 0.3 + k * 1.4); wg.stroke();
-      wg.lineWidth = 1; wg.globalAlpha = 1;
-    } else if (f.type === "proj") {
-      const x = f.x + (f.x2 - f.x) * k, y = f.y + (f.y2 - f.y) * k;
-      const d = dist(f.x, f.y, f.x2, f.y2) || 1, ux = (f.x2 - f.x) / d, uy = (f.y2 - f.y) / d;
-      wg.strokeStyle = f.col; wg.lineWidth = f.size;
-      wg.beginPath(); wg.moveTo(x - ux * 6, y - uy * 6); wg.lineTo(x, y); wg.stroke();
-      wg.lineWidth = 1;
-      wg.fillStyle = "#ffffff"; wg.fillRect(Math.round(x) - 1, Math.round(y) - 1, f.size + 1, f.size + 1);
-      if (f.size > 1 && Math.random() < 0.7) G.parts.push({ x, y, vx: 0, vy: 0, life: 0.2, col: f.col, g: 0 });
-    } else if (f.type === "ring") {
-      if (f.fill) { wg.fillStyle = f.col; wg.globalAlpha = (1 - k) * 0.35; groundEllipse(f.x, f.y, f.r * k); wg.fill(); }
-      wg.globalAlpha = 1 - k;
-      wg.strokeStyle = f.col; wg.lineWidth = 2;
-      groundEllipse(f.x, f.y, f.r * k); wg.stroke();
-      wg.lineWidth = 1; wg.globalAlpha = 1;
-    } else if (f.type === "beam") {
-      wg.globalAlpha = 1 - k; wg.strokeStyle = f.col; wg.lineWidth = 3;
-      wg.beginPath(); wg.moveTo(f.x, f.y); wg.lineTo(f.x2, f.y2); wg.stroke();
-      wg.strokeStyle = "#ffffff"; wg.lineWidth = 1;
-      wg.beginPath(); wg.moveTo(f.x, f.y); wg.lineTo(f.x2, f.y2); wg.stroke();
-      wg.globalAlpha = 1;
-    } else if (f.type === "pillar") {
-      const [x, y] = P(f.ent.x, f.ent.y);
-      wg.globalAlpha = (1 - k) * 0.55; wg.fillStyle = "#fff08a";
-      wg.fillRect(Math.round(x - 7), Math.round(y - 64), 14, 66);
-      wg.fillStyle = "#ffffff"; wg.fillRect(Math.round(x - 3), Math.round(y - 64), 6, 66);
-      wg.globalAlpha = 1;
-      if (Math.random() < 0.6) sparkle(x, y - 12, "#ffd84a", 1);
-    }
-  }
-  for (const p of G.parts) {
-    wg.globalAlpha = clamp(p.life * 3, 0, 1);
-    wg.fillStyle = p.col;
-    wg.fillRect(Math.round(p.x), Math.round(p.y), 2, 2);
-  }
-  wg.globalAlpha = 1;
-  wg.restore();
-  lighting(t, list);
-  if (G.flash > 0) { wg.fillStyle = `rgba(255,40,60,${G.flash * 0.3})`; wg.fillRect(0, 0, vw, vh); }
-
-  renderText(t, list);
-}
-
-// Mood: each world has its own ambient darkness, and lamps, crystals, lit
-// windows and the players themselves cut pools of light out of it.
-const AMBIENT = { town: ["#2a2050", 0.1], meadow: ["#1a2030", 0], forest: ["#0a2428", 0.26], city: ["#0c1036", 0.52], cave: ["#0a0820", 0.56] };
-const lightCv = document.createElement("canvas"), lg = lightCv.getContext("2d");
-function lighting(t, list) {
-  const [col, alpha] = AMBIENT[G.map.id] || AMBIENT.meadow;
-  if (lightCv.width !== vw || lightCv.height !== vh) { lightCv.width = vw; lightCv.height = vh; }
-  lg.globalCompositeOperation = "source-over";
-  lg.clearRect(0, 0, vw, vh);
-  lg.globalAlpha = alpha;
-  lg.fillStyle = col;
-  lg.fillRect(0, 0, vw, vh);
-  lg.globalAlpha = 1;
-  lg.globalCompositeOperation = "destination-out";
-  const hole = (x, y, r, k = 1) => {
-    const sx = x - cam.x, sy = y - cam.y;
-    if (sx < -r || sy < -r || sx > vw + r || sy > vh + r) return;
-    const gr = lg.createRadialGradient(sx, sy, 0, sx, sy, r);
-    gr.addColorStop(0, `rgba(0,0,0,${k})`); gr.addColorStop(1, "rgba(0,0,0,0)");
-    lg.fillStyle = gr;
-    lg.fillRect(sx - r, sy - r, r * 2, r * 2);
-  };
-  if (alpha > 0.15) {
-    for (const o of list) {
-      if (o.me) hole(o.ix, o.iy - 10, 80, 0.9);
-      else if (o.p) hole(o.ix, o.iy - 10, 66, 0.8);
-      else if (o.s && o.s.glow) hole(o.s.cx, o.s.glow === "#ffe890" ? o.s.dy + 8 : o.s.cy - 12, o.s.glow === "#ffe890" ? 64 : 36, 0.85 + 0.1 * Math.sin(t / 300 + o.s.cx));
-      else if (o.s && o.s.win) hole(o.s.cx, o.s.cy - 10, 56, 0.5);
-      else if (o.d && o.d.q) hole(o.ix, o.iy - 6, 18, 0.7);
-    }
-    for (const p of G.map.portals) { const [x, y] = P(p.x * T + 8, p.y * T + 8); hole(x, y, 44, 0.8); }
-    for (const f of G.fx) if (f.type === "ring" || f.type === "proj") hole(f.type === "proj" ? f.x2 : f.x, f.type === "proj" ? f.y2 : f.y, 50, 0.6);
-  }
-  wg.imageSmoothingEnabled = true;
-  wg.drawImage(lightCv, 0, 0, vw, vh);
-  wg.imageSmoothingEnabled = false;
-  // a warm key light from the upper left and a cool fill from the lower right:
-  // the scene reads as a lit diorama instead of a flat map
-  const sun = wg.createLinearGradient(0, 0, vw, vh);
-  sun.addColorStop(0, "rgba(255,206,140,.30)"); sun.addColorStop(0.5, "rgba(255,206,140,0)"); sun.addColorStop(1, "rgba(52,62,140,.28)");
-  wg.globalCompositeOperation = "soft-light";
-  wg.fillStyle = sun;
-  wg.fillRect(0, 0, vw, vh);
-  wg.globalCompositeOperation = "source-over";
-  // a soft vignette pulls the eye to the middle of the screen
-  const v = wg.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.45, vw / 2, vh / 2, Math.max(vw, vh) * 0.75);
-  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(10,8,30,.24)");
-  wg.fillStyle = v;
-  wg.fillRect(0, 0, vw, vh);
-}
-
-// crisp text on its own full-resolution canvas, positioned in projected space
-let fontK = 1;
-function label(str, ix, iy, col, size = 11, bg = false) {
-  const S = scale * dpr;
-  const x = Math.round((ix - cam.x) * S), y = Math.round((iy - cam.y) * S);
-  const px = Math.round(size * fontK * 1.04);
-  tg.font = `${size >= 14 ? 700 : 600} ${px}px Pretendard, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
+function label(str, sx, sy, col, size = 12, bg = false) {
+  const x = Math.round(sx * dpr), y = Math.round(sy * dpr);
+  const px = Math.round(size * dpr);
+  tg.font = `${size >= 15 ? 700 : 600} ${px}px Pretendard, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
   if (bg) {
-    const w = tg.measureText(str).width + 12 * fontK, h = px + 8 * fontK;
+    const w = tg.measureText(str).width + 14 * dpr, h = px + 9 * dpr;
     tg.fillStyle = "rgba(250,247,240,.96)";
-    tg.beginPath(); tg.roundRect(x - w / 2, y - px - 3 * fontK, w, h, 5 * fontK); tg.fill();
-    tg.beginPath(); tg.moveTo(x - 3 * fontK, y + 5 * fontK - 1); tg.lineTo(x, y + 9 * fontK); tg.lineTo(x + 3 * fontK, y + 5 * fontK - 1); tg.fill();
+    tg.beginPath(); tg.roundRect(x - w / 2, y - px - 3 * dpr, w, h, 6 * dpr); tg.fill();
+    tg.beginPath(); tg.moveTo(x - 4 * dpr, y + 6 * dpr - 1); tg.lineTo(x, y + 11 * dpr); tg.lineTo(x + 4 * dpr, y + 6 * dpr - 1); tg.fill();
     tg.fillStyle = "#1c1a22";
     tg.fillText(str, x, y);
     return;
   }
   tg.lineJoin = "round";
-  tg.lineWidth = 3 * fontK;
-  tg.strokeStyle = "rgba(16,14,22,.88)";
+  tg.lineWidth = 3.2 * dpr;
+  tg.strokeStyle = "rgba(16,14,22,.9)";
   tg.strokeText(str, x, y);
   tg.fillStyle = col;
   tg.fillText(str, x, y);
 }
+function bar(sx, sy, w, k, col) {
+  const x = Math.round((sx - w / 2) * dpr), y = Math.round(sy * dpr);
+  tg.fillStyle = "rgba(10,10,16,.85)";
+  tg.fillRect(x - dpr, y - dpr, w * dpr + 2 * dpr, 6 * dpr);
+  tg.fillStyle = col;
+  tg.fillRect(x, y, Math.max(dpr, w * dpr * k), 4 * dpr);
+}
 
-function renderText(t, list) {
-  const S = scale * dpr;
-  fontK = Math.max(Math.round(dpr), Math.round(S / 3.2));
+function renderText(t) {
   tg.clearRect(0, 0, text.width, text.height);
   tg.textAlign = "center";
   tg.textBaseline = "alphabetic";
-  const m = G.map;
-  const top = Art.CHAR_TOP + 2;
+  const m = G.map, me = G.me;
   const myParty = G.who.get(G.you)?.party;
+  const at = (x, y, h) => S3.project(x, y, h);
 
+  if (G.path && G.mark) {
+    const [x, y] = at(G.mark.pos[0], G.mark.pos[1], 0.02), k = ((t - G.mark.at) / 500) % 1;
+    tg.strokeStyle = `rgba(250,236,190,${1 - k * 0.7})`; tg.lineWidth = 2 * dpr;
+    tg.beginPath(); tg.ellipse(x * dpr, y * dpr, (8 + k * 10) * dpr, (4 + k * 5) * dpr, 0, 0, Math.PI * 2); tg.stroke();
+  }
   for (const p of m.portals) {
     if (p !== m.portals.find((q) => q.to === p.to)) continue;
-    const [x, y] = P(p.x * T + 8, p.y * T + 8);
-    label(`▸ ${p.to}`, x, y - 16, "#e0c8ff");
+    const [x, y] = at(p.x * T + 8, p.y * T + 8, 2.1);
+    label(`▸ ${p.to}`, x, y, "#e0c8ff");
   }
-  for (const o of list) {
-    if (o.n) {
-      label(o.n.name, o.ix, o.iy - top, "#e8c860");
-      if (o.n.role === "elder" && G.self) {
-        const q = G.self.q, quest = G.defs.quests[q.i];
-        const mark = !quest ? "" : q.st === 0 ? "!" : q.n >= quest.n ? "?" : "";
-        if (mark) label(mark, o.ix, o.iy - top - 11 + Math.sin(t / 200) * 2, mark === "!" ? "#ffd84a" : "#8cff8c", 14);
-      }
-    } else if (o.mob) {
-      const d = G.defs.mobs[o.mob.k];
-      if (d.boss || o.mob.el || o.mob.hp < mobMax(o.mob)) {
-        const art = mobArt[d.sp];
-        label(`Lv.${d.lv} ${o.mob.el ? "정예 " : ""}${d.name}`, o.ix, o.iy - (art.frames[0].height / (art.k || 1)) * (art.k ? 0.86 : 1) - 7 - art.lift, d.boss ? "#ff9ae0" : o.mob.el ? "#ffbe3c" : "#e8d8d8");
-      }
-    } else if (o.d) {
-      if (o.d.q) label(G.defs.items[o.d.it].name, o.ix, o.iy - 16, Art.RARITY_COL[o.d.q]);
-    } else if (o.p) {
-      const w = G.who.get(o.eid);
-      if (w) label(`Lv.${w.lvl} ${w.name}`, o.ix, o.iy - top, o.p.dead ? "#9a9aa8" : w.party && w.party === myParty ? "#8cff8c" : "#d8e4f0");
-    } else if (o.me) {
-      const w = G.who.get(G.you);
-      if (w) label(`Lv.${w.lvl} ${w.name}`, o.ix, o.iy - top, "#f0e0a8");
+  for (const n of m.npcs) {
+    const [x, y] = at(n.x * T + 8, n.y * T + 12, 1.55);
+    label(n.name, x, y, "#f0d48a");
+    if (n.role === "elder" && G.self) {
+      const q = G.self.q, quest = G.defs.quests[q.i];
+      const mark = !quest ? "" : q.st === 0 ? "!" : q.n >= quest.n ? "?" : "";
+      if (mark) label(mark, x, y - 18 + Math.sin(t / 200) * 3, mark === "!" ? "#ffd84a" : "#8cff8c", 18);
     }
   }
+  for (const mob of G.mobs.values()) {
+    const d = G.defs.mobs[mob.k], max = mobMax(mob);
+    if (!(d.boss || mob.el || mob.hp < max)) continue;
+    const [x, y] = at(mob.x, mob.y, (mob.h3 || 1) + 0.28);
+    label(`Lv.${d.lv} ${mob.el ? "정예 " : ""}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el ? "#ffbe3c" : "#ece0e0");
+    if (mob.hp < max) bar(x, y + 4, d.boss ? 90 : 42, mob.hp / max, mob.el ? "#ffbe3c" : "#d8404c");
+  }
+  for (const d of G.drops.values()) {
+    if (!d.q) continue;
+    const [x, y] = at(d.x, d.y, 0.6);
+    label(G.defs.items[d.it].name, x, y, Art.RARITY_COL[d.q]);
+  }
+  for (const [eid, p] of G.players) {
+    const w = G.who.get(eid);
+    if (!w) continue;
+    const [x, y] = at(p.x, p.y, (p.h3 || 1.32) + 0.22);
+    label(`Lv.${w.lvl} ${w.name}`, x, y, p.dead ? "#9a9aa8" : w.party && w.party === myParty ? "#8cff8c" : "#dce6f2");
+    if (p.hp < p.mhp && !p.dead) bar(x, y + 4, 40, p.hp / p.mhp, "#58c070");
+  }
+  const mine = G.who.get(G.you);
+  if (mine) { const [x, y] = at(me.x, me.y, (me.h3 || 1.32) + 0.22); label(`Lv.${mine.lvl} ${mine.name}`, x, y, "#f4e4b0"); }
   for (const [eid, b] of G.bubbles) {
     if (t > b.until) { G.bubbles.delete(eid); continue; }
     const p = entityPos(eid);
     if (!p) continue;
-    const [x, y] = P(p.x, p.y);
-    label(b.text.length > 22 ? b.text.slice(0, 22) + "…" : b.text, x, y - top - 14, "#08090c", 11, true);
+    const [x, y] = at(p.x, p.y, (p.h3 || 1.32) + 0.5);
+    label(b.text.length > 22 ? b.text.slice(0, 22) + "…" : b.text, x, y - 12, "#08090c", 12, true);
   }
   for (let i = G.texts.length - 1; i >= 0; i--) {
     const f = G.texts[i];
     const k = (t - f.t0) / 900;
     if (k >= 1) { G.texts.splice(i, 1); continue; }
     tg.globalAlpha = k > 0.7 ? (1 - k) / 0.3 : 1;
-    const pop = f.big && k < 0.15 ? -4 * Math.sin((k / 0.15) * Math.PI) : 0;
-    label(f.str, f.x, f.y - k * 16 + pop, f.col, f.big ? 14 : 11);
+    const [x, y] = at(f.x, f.y, f.h + k * 0.55);
+    const pop = f.big && k < 0.15 ? -6 * Math.sin((k / 0.15) * Math.PI) : 0;
+    label(f.str, x, y + pop, f.col, f.big ? 17 : 13);
   }
   tg.globalAlpha = 1;
+  if (G.flash > 0) { tg.fillStyle = `rgba(255,40,60,${G.flash * 0.22})`; tg.fillRect(0, 0, text.width, text.height); }
 }
 
 let miniAt = 0;
@@ -1269,10 +972,6 @@ function refreshUi() {
   }
 
   if (isOpen("char")) {
-    const w = G.who.get(G.you);
-    const cv = $("#char-cv"), cg = cv.getContext("2d");
-    cg.clearRect(0, 0, cv.width, cv.height);
-    if (w) Art.drawFigure(cg, w.sprite, 2, 0, 0, 0, cv.width, cv.height);
     $("#char-title").textContent = `${s.name} · Lv.${s.lvl} ${G.defs.classes[s.cls].name}`;
     for (const k of GEAR) {
       const host = $(`#eq-${k}`);
@@ -1493,8 +1192,8 @@ function pick(sel, key, cast = (v) => v) {
     });
   }
 }
-Art.HAIR.forEach((c, i) => { const b = el("button", i ? "" : "on"); b.dataset.v = i; b.style.background = c; $("#c-hair").append(b); });
-Art.SKIN.forEach((c, i) => { const b = el("button", i ? "" : "on"); b.dataset.v = i; b.style.background = c; $("#c-skin").append(b); });
+S3.SWATCH.HAIR.forEach((c, i) => { const b = el("button", i ? "" : "on"); b.dataset.v = i; b.style.background = c; $("#c-hair").append(b); });
+S3.SWATCH.SKIN.forEach((c, i) => { const b = el("button", i ? "" : "on"); b.dataset.v = i; b.style.background = c; $("#c-skin").append(b); });
 pick("#c-cls", "cls"); pick("#c-hair", "hair", Number); pick("#c-skin", "skin", Number); pick("#c-style", "style", Number);
 $("#c-desc").textContent = CLASS_DESC.warrior;
 
@@ -1521,52 +1220,10 @@ $("#b-create").addEventListener("click", () => {
 });
 $("#c-name").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#b-create").click(); });
 
-// a small living diorama behind the title
-const tcv = $("#title-cv"), tgx = tcv.getContext("2d");
-const parade = [
-  Art.charSprite(Art.playerLook("warrior", [3, 0, 0], { at: 3, wt: 3 })), Art.charSprite(Art.playerLook("mage", [4, 0, 1], { at: 2, wt: 3 })),
-  Art.charSprite(Art.playerLook("ranger", [2, 1, 2], { at: 2, wt: 3 })), Art.charSprite(Art.playerLook("rogue", [1, 2, 0], { at: 1, wt: 2 })),
-];
-function renderTitle(t) {
-  const s = Math.max(2, Math.round(Math.min(innerWidth / 300, innerHeight / 180)));
-  const w = Math.ceil(innerWidth / s), h = Math.ceil(innerHeight / s);
-  if (tcv.width !== w || tcv.height !== h) { tcv.width = w; tcv.height = h; }
-  tgx.imageSmoothingEnabled = false;
-  const sky = tgx.createLinearGradient(0, 0, 0, h);
-  sky.addColorStop(0, "#05060c"); sky.addColorStop(0.6, "#1a1c38"); sky.addColorStop(1, "#6a3a3a");
-  tgx.fillStyle = sky; tgx.fillRect(0, 0, w, h);
-  for (let i = 0; i < 50; i++) {
-    const x = Math.floor(Art.hash(i, 1) * w), y = Math.floor(Art.hash(i, 2) * h * 0.55);
-    tgx.fillStyle = Math.sin(t / 400 + i) > 0.2 ? "#ffffff" : "#9fb8ff";
-    tgx.fillRect(x, y, 1, 1);
-  }
-  const gy = h - 34;
-  tgx.fillStyle = "#16261e";
-  for (let x = 0; x < w; x++) { const hh = 14 + Math.sin(x / 23) * 8 + Math.sin(x / 7) * 2; tgx.fillRect(x, gy - hh, 1, hh); }
-  tgx.fillStyle = "#2c4a2a"; tgx.fillRect(0, gy, w, 34);
-  tgx.fillStyle = "#223a22"; for (let x = 0; x < w; x += 5) tgx.fillRect(x + ((x * 7) % 3), gy + 3 + ((x * 13) % 26), 2, 1);
-  tgx.fillStyle = "#5a4a34"; tgx.fillRect(0, gy + 14, w, 9);
-  for (let i = 0; i < Math.ceil(w / 70) + 1; i++) {
-    const x = ((i * 70 - (t / 40) % 70) + 70) % (w + 70) - 35;
-    tgx.drawImage(i % 2 ? scenery.T : scenery.P, Math.round(x), gy - (i % 2 ? 26 : 30));
-  }
-  const cx = Math.round(w / 2);
-  tgx.imageSmoothingEnabled = true;
-  parade.forEach((sp, i) => Art.drawFigure(tgx, sp, 2, 2 + (Math.floor(t / 150) % 4), cx - 74 + i * 26, gy + 22 - Art.FOOT_Y));
-  tgx.imageSmoothingEnabled = false;
-  const sl = mobArt.slime.right[Math.floor(t / 300) % 2];
-  tgx.drawImage(sl, cx + 34, gy + 4 - Math.abs(Math.round(Math.sin(t / 250) * 5)));
-  tgx.drawImage(mobArt.bslime.right[Math.floor(t / 300 + 1) % 2], cx + 54, gy + 4 - Math.abs(Math.round(Math.sin(t / 250 + 1) * 5)));
-}
-function renderCreate(t) {
-  const g = $("#create-cv").getContext("2d");
-  const cvs = $("#create-cv");
-  g.clearRect(0, 0, cvs.width, cvs.height);
-  const sp = Art.charSprite(Art.playerLook(draft.cls, [draft.hair, draft.skin, draft.style], {}));
-  // turn through the four facings, and show one swing in each
-  const dir = [2, 0, 1, 3][Math.floor(t / 2400) % 4], k = t % 2400;
-  Art.drawFigure(g, sp, dir, k > 1900 ? (k < 2050 ? 6 : 7) : k < 700 ? Math.floor(t / 650) % 2 : 2 + (Math.floor(t / 150) % 4), 0, 0, cvs.width, cvs.height);
-}
+/** The look being designed on the creation screen, shown on the 3D stage. */
+const draftLook = () => S3.playerLook(draft.cls, [draft.hair, draft.skin, draft.style], {});
+function stageDraft() { if (!$("#create").hidden) S3.showcase(draftLook()); }
+for (const b of $$("#create .pick button")) b.addEventListener("click", () => stageDraft());
 
 // ───────────────────────────── main loop ─────────────────────────────
 
@@ -1577,11 +1234,10 @@ function frame() {
   last = t;
   if (G.playing) {
     update(dt, t);
-    render(t);
+    render(t, dt);
     renderMini(t);
     hudTick(t);
-  } else if (!$("#title").hidden) renderTitle(t);
-  if (!$("#create").hidden) renderCreate(t);
+  } else S3.renderStage(dt, t, !$("#create").hidden);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
