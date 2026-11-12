@@ -62,10 +62,14 @@ for (let n = 0; n < 40; n++) {
   let bit = false;
   for (let i = 0; i < 90 && !bit; i++) { v = step(100); bit = (v.b.ev || []).some((e) => e[0] === "f" && e[1] === b.eid && e[2] === 2); }
   assert.ok(bit, "a bite comes within a few seconds");
-  assert.ok(act(B, { t: "reel" }).ok);
-  caught++;
+  assert.equal(act(B, { t: "hook" }).ok, true, "the bite can be hooked");
+  for (let i = 0; i < 30; i++) step(100);                        // play the fish in
+  assert.ok(act(B, { t: "reel", s: n < 3 ? 10 : 100 }).ok);
+  if (n >= 3) caught++;
 }
-assert.ok(b.ch.fish === caught && b.ch.inv.some((s) => s.id === "fish_s"), "minnows in the bag");
+assert.ok(b.ch.fish === caught, "a badly played fish gets away: " + b.ch.fish);
+assert.ok(b.ch.inv.some((s) => s.id === "fish_m"), "playing it well lands trout");
+b.ch.inv.push({ id: "fish_s", n: 6 });
 // a bite left alone gets away
 act(B, { t: "fish" });
 for (let i = 0; i < 100; i++) step(100);
@@ -75,8 +79,13 @@ assert.equal(b.fish, null);
 assert.equal(act(B, { t: "cook", id: "fish_s" }).ok, false);
 const mf = m.fires[0];
 b.x = mf.x + 8; b.y = mf.y + 10; b.mvAt = now;
-assert.ok(act(B, { t: "cook", id: "fish_s" }).ok);
-assert.ok(b.ch.inv.some((s) => s.id === "food_s"));
+const count = (id) => b.ch.inv.filter((s) => s.id === id).reduce((n, s) => n + s.n, 0);
+assert.ok(act(B, { t: "cook", id: "fish_s", s: 60 }).ok);
+assert.equal(count("food_s"), 1);
+assert.ok(act(B, { t: "cook", id: "fish_s", s: 100 }).ok);
+assert.equal(count("food_s"), 3, "a perfect pan feeds two");
+assert.ok(act(B, { t: "cook", id: "fish_s", s: 5 }).ok);
+assert.equal(count("burnt"), 1, "a mess burns");
 b.hp = 5; b.potAt = 0;
 assert.ok(act(B, { t: "use", id: "food_s" }).ok);
 b.dirty = true; v = step();

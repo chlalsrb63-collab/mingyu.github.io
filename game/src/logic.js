@@ -115,6 +115,7 @@ const ITEMS = {
   fish_s: { name: "송사리", type: "fish", cook: "food_s", price: 30, desc: "흔한 물고기. 모닥불에서 구울 수 있다." },
   fish_m: { name: "무지개 송어", type: "fish", cook: "food_m", price: 110, desc: "살이 오른 송어. 모닥불에서 구울 수 있다." },
   fish_l: { name: "황금 잉어", type: "fish", cook: "food_l", price: 800, desc: "좀처럼 낚이지 않는 귀한 물고기. 모닥불에서 요리할 수 있다." },
+  burnt: { name: "숯덩이가 된 생선", type: "food", heal: 15, buff: { xp: 0, atk: 0, min: 0 }, price: 1, desc: "너무 오래 구웠다. HP 15 회복." },
   food_s: { name: "구운 송사리", type: "food", heal: 80, buff: { xp: 5, atk: 0, min: 10 }, price: 40, desc: "HP 80 회복. 10분간 경험치 +5%." },
   food_m: { name: "송어 소금구이", type: "food", heal: 220, buff: { xp: 10, atk: 0, min: 10 }, price: 150, desc: "HP 220 회복. 10분간 경험치 +10%." },
   food_l: { name: "황금 잉어찜", type: "food", heal: 9999, buff: { xp: 15, atk: 8, min: 15 }, price: 1000, desc: "HP 전부 회복. 15분간 경험치 +15%, 공격력 +8%." },
@@ -1599,13 +1600,14 @@ export function validateAction(S, pid, a) {
       if (!waterNear(MAPS[p.map], p)) return bad("물가에서만 낚시할 수 있습니다");
       if (!canAdd(ch, "fish_s", 1)) return bad("가방이 가득 찼습니다");
       return OK;
+    case "hook": return p.fish && p.fish.bite && !p.fish.hook ? OK : bad("아직 입질이 없습니다");
     case "reel": return p.fish ? OK : bad("낚시 중이 아닙니다");
     case "cook": {
       const it = ITEMS[a.id];
       if (!it || it.type !== "fish") return bad("요리할 수 없는 아이템");
       if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
       if (!fireNear(S.maps[p.map], p)) return bad("모닥불 곁에서만 요리할 수 있습니다");
-      if (!canAdd(ch, it.cook, 1)) return bad("가방이 가득 찼습니다");
+      if (!canAdd(ch, it.cook, 2) || !canAdd(ch, "burnt", 1)) return bad("가방이 가득 찼습니다");
       return OK;
     }
     case "salv": {
@@ -1780,14 +1782,25 @@ export function applyAction(S, pid, a) {
       S.maps[p.map].ev.push(["f", p.eid, 1, wx, wy]);
       break;
     }
+    case "hook":
+      // the fish is on: the angler now plays it in, and reports how well that went
+      p.fish.hook = now;
+      S.maps[p.map].ev.push(["f", p.eid, 3]);
+      break;
     case "reel": {
-      const bite = p.fish.bite;
+      const { bite, hook } = p.fish;
       p.fish = null;
       S.maps[p.map].ev.push(["f", p.eid, 0]);
       if (!bite) { toast(p, "너무 일찍 당겼습니다…"); break; }
-      // mostly minnows; now and then a trout, a stone from the riverbed, or the golden carp
-      const r = rnd(S);
-      const id = r < 0.03 ? "fish_l" : r < 0.24 ? "fish_m" : r < 0.29 ? "stone" : "fish_s";
+      // how well the fish was played (0–100) decides what comes out of the water;
+      // a fight that ended implausibly fast counts for little
+      let score = hook ? clamp(a.s | 0, 0, 100) : 30;
+      if (hook && now - hook < 2500) score = Math.min(score, 40);
+      if (score < 30) { toast(p, "물고기가 줄을 끊고 달아났습니다."); break; }
+      const k = score / 100, r = rnd(S);
+      const gold = 0.01 + 0.07 * k * k, trout = 0.1 + 0.3 * k;
+      const id = r < gold ? "fish_l" : r < gold + trout ? "fish_m" : r < gold + trout + 0.04 ? "stone" : "fish_s";
+      if (score >= 95) toast(p, "완벽한 낚시!");
       if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, id === "fish_l" ? 3 : id === "fish_m" ? 1 : 0]);
       ch.fish++;
       if (id === "fish_l") sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`);
@@ -1797,8 +1810,12 @@ export function applyAction(S, pid, a) {
     case "cook": {
       const it = ITEMS[a.id];
       takeItem(ch, a.id, 1);
-      addItem(ch, it.cook, 1);
-      p.gain.push(["item", it.cook, 1, 0]);
+      // how neatly the pan was packed (0–100): a mess burns, a perfect fit feeds two
+      const score = clamp(a.s | 0, 0, 100);
+      const out = score < 35 ? "burnt" : it.cook, n = score >= 85 ? 2 : 1;
+      addItem(ch, out, n);
+      p.gain.push(["item", out, n, 0]);
+      toast(p, score < 35 ? "태워 버렸습니다…" : score >= 85 ? `완벽한 요리! ${ITEMS[out].name} 2개` : `${ITEMS[out].name} 완성`);
       S.maps[p.map].ev.push(["u", p.eid, 0]);
       p.dirty = true;
       break;
@@ -2118,7 +2135,7 @@ export function tick(S, now) {
       // a bite, then a short moment to reel it in
       const rt = S.maps[p.map];
       if (!p.fish.bite && now >= p.fish.at) { p.fish.bite = now; rt.ev.push(["f", p.eid, 2]); }
-      else if (p.fish.bite && now > p.fish.bite + 1600) { p.fish = null; rt.ev.push(["f", p.eid, 0]); toast(p, "물고기가 달아났습니다."); }
+      else if ((p.fish.bite && !p.fish.hook && now > p.fish.bite + 1800) || (p.fish.hook && now > p.fish.hook + 25000)) { p.fish = null; rt.ev.push(["f", p.eid, 0]); toast(p, "물고기가 달아났습니다."); }
     }
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;

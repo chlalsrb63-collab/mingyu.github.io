@@ -13,6 +13,7 @@
 import * as Art from "./art.js";
 import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
+import * as Mini from "./minigames.js";
 
 const T = Art.TILE;
 const $ = (s) => document.querySelector(s);
@@ -234,6 +235,7 @@ function entityPos(id) {
 const MOB_COL = { acorn: "#b07a40", potcrab: "#c8643c", puff: "#f4f0d8", capfrog: "#c84848", stump: "#7a5a3a", lantern: "#ffd060", yarn: "#d86a8a", eyecam: "#aab4c4", signbot: "#e0b040", vend: "#4a8ad0", tvhead: "#8ae0c0", candle: "#f4e8c8", geode: "#8a6ad8", prism: "#9ae8f4", boss: "#e050b8" };
 const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * G.defs.eliteHp[m.el | 0]);
 const RANK_NAME = ["", "정예 ", "우두머리 "];
+Mini.mount($("#mini"));
 
 const heightOf = (e) => e.h3 || 1.3;
 
@@ -306,7 +308,10 @@ function onEvent(e, t) {
         const b = G.bobs.get(e[1]);
         if (b) { b.bite = true; S3.fx.ring(b.x, b.y, 12, "#ffffff", 300); }
         if (e[1] === G.you) { Sound.play("ok"); banner("입질! F", true); }
-      } else G.bobs.delete(e[1]);
+      } else if (e[2] === 0) {
+        G.bobs.delete(e[1]);
+        if (e[1] === G.you) Mini.close();                    // it got away, or the catch is in
+      }
       break;
     }
     case "u": {
@@ -382,6 +387,7 @@ addEventListener("keydown", (e) => {
   Sound.unlock();
   if (!G.playing) return;
   if (typing()) { if (e.key === "Escape") document.activeElement.blur(); return; }
+  if (Mini.active()) return;               // a mini-game has the keyboard
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();
   if (e.repeat) return;
@@ -410,6 +416,7 @@ addEventListener("blur", () => { keys.clear(); held.atk = false; });
 /** Which way to walk: keys, the stick, or the next step of a clicked route. */
 function moveVector() {
   let x = 0, y = 0;
+  if (Mini.active()) { keys.clear(); G.path = null; return [0, 0]; }
   if (keys.has("ArrowLeft") || keys.has("a") || keys.has("ㅁ")) x -= 1;
   if (keys.has("ArrowRight") || keys.has("d") || keys.has("ㅇ")) x += 1;
   if (keys.has("ArrowUp") || keys.has("w") || keys.has("ㅈ")) y -= 1;
@@ -587,7 +594,15 @@ function interact() {
   const n = G.near;
   if (G.me.dead) return;
   // a line already out is reeled in; with nobody to talk to, water is for fishing
-  if (G.bobs.has(G.you)) { act({ t: "reel" }); return; }
+  const bob = G.bobs.get(G.you);
+  if (bob) {
+    if (!bob.bite) { act({ t: "reel" }); return; }           // too early: the line comes back empty
+    if (bob.hooked) return;
+    bob.hooked = true;
+    act({ t: "hook" });
+    Mini.fishing((score) => act({ t: "reel", s: score }));
+    return;
+  }
   if (!n) { if (waterNear()) { act({ t: "fish" }); Sound.play("ui"); } return; }
   Sound.play("ui");
   if (n.role === "shop") { openWin("shop"); openWin("inv"); }
@@ -606,7 +621,7 @@ function update(dt, t) {
   const me = G.me, s = G.self;
   if (!G.map || !s) return;
   let [mx, my] = me.dead ? [0, 0] : moveVector();
-  let wantAtk = !me.dead && !typing() && (keys.has(" ") || keys.has("j") || held.atk);
+  let wantAtk = !me.dead && !typing() && !Mini.active() && (keys.has(" ") || keys.has("j") || held.atk);
 
   // auto-hunt: walk at the nearest monster, hit it, drink when low
   if (G.auto && !me.dead && mx === 0 && my === 0 && !G.path && !G.map.safe) {
@@ -1024,7 +1039,7 @@ function refreshUi() {
       if (d.type === "food") add("먹기", () => act({ t: "use", id: entry.id }));
       if (d.type === "camp") add("모닥불 피우기", () => { act({ t: "use", id: entry.id }); closeWin("inv"); });
       if (d.type === "fish") {
-        add("굽기", () => act({ t: "cook", id: entry.id }), !fireNear());
+        add("굽기", () => { const id = entry.id; closeWin("inv"); Mini.cooking(G.defs.items[d.cook].name, (score) => act({ t: "cook", id, s: score })); }, !fireNear());
         if (!fireNear()) btns.append(el("span", "ds", " 모닥불 곁에서 구울 수 있습니다"));
       }
       if (isGear(entry.id)) {
@@ -1202,7 +1217,7 @@ function refreshUi() {
       row.append(tx, b);
       bl.append(row);
     }
-    const picks = Object.keys(mobs).filter((k) => !mobs[k].boss && mobs[k].lv <= s.lvl + 4 && (!s.bq || s.bq.k !== k)).sort((a, b) => mobs[b].lv - mobs[a].lv).slice(0, 4);
+    const picks = Object.keys(mobs).filter((k) => !mobs[k].boss && !mobs[k].chest && mobs[k].lv <= s.lvl + 4 && (!s.bq || s.bq.k !== k)).sort((a, b) => mobs[b].lv - mobs[a].lv).slice(0, 4);
     for (const k of picks) {
       const d = mobs[k];
       const row = el("div", "it");
@@ -1219,7 +1234,7 @@ function refreshUi() {
     body.append(el("div", "q-title sub", "토벌 숙련"));
     body.append(el("p", "ds", "같은 몬스터를 많이 잡을수록 그 몬스터에게 주는 피해(단계당 +3%)와 얻는 경험치(+2%)가 늘어납니다."));
     const steps = G.defs.mastery;
-    const known = Object.keys(mobs).filter((k) => s.mk[k]).sort((a, b) => mobs[a].lv - mobs[b].lv);
+    const known = Object.keys(mobs).filter((k) => s.mk[k] && !mobs[k].chest).sort((a, b) => mobs[a].lv - mobs[b].lv);
     if (!known.length) body.append(el("p", "ds", "아직 기록이 없습니다."));
     for (const k of known) {
       const n = s.mk[k];

@@ -476,3 +476,22 @@ h1 small { font-family: var(--font); font-weight: 600; font-size: .2em; letter-s
 #guild-body input { flex: 1; min-width: 0; padding: 6px 8px; background: rgba(0, 0, 0, .4); border: 1px solid rgba(255, 255, 255, .16); border-radius: 6px; color: inherit; font: inherit; }
 #guild-body .btns { display: flex; gap: 6px; align-items: center; }
 #guild-body .ds { font-size: 11px; opacity: .7; margin: 4px 0 8px; }
+
+/* ───────────── mini-games: the rhythm of the line, the pan to pack ───────────── */
+#mini { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(6, 8, 16, .45); }
+.mg { width: min(380px, calc(100vw - 20px)); padding: 14px 16px 16px; text-align: center; }
+.mg header { font-family: var(--serif, serif); font-size: 16px; color: var(--gold); margin-bottom: 4px; }
+.mg-hint { margin: 0 0 10px; font-size: 12px; opacity: .75; }
+.mg-lane { width: 100%; max-width: 340px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .18); image-rendering: auto; touch-action: manipulation; cursor: pointer; }
+.mg-info { min-height: 1.5em; margin-top: 8px; font-size: 13px; }
+.mg-time { height: 6px; background: rgba(0, 0, 0, .45); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+.mg-time i { display: block; height: 100%; width: 100%; }
+.mg-pan { display: grid; grid-template-columns: repeat(4, 44px); gap: 3px; justify-content: center; padding: 10px; margin: 0 auto 10px; width: max-content; background: #2a2c36; border-radius: 50% 50% 46% 46% / 18%; border: 3px solid #50525e; }
+.mg-pan .cell { width: 44px; height: 44px; border-radius: 6px; background: rgba(0, 0, 0, .35); cursor: pointer; }
+.mg-pan .cell.on { box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .18), inset 0 3px 0 rgba(255, 255, 255, .25); }
+.mg-pan .cell.ghost { opacity: .45; }
+.mg-tray { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; min-height: 64px; }
+.mg-tray .piece { display: grid; gap: 2px; padding: 6px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .05); cursor: pointer; }
+.mg-tray .piece.sel { border-color: var(--gold); background: rgba(226, 196, 134, .2); }
+.mg-tray .piece i { width: 14px; height: 14px; border-radius: 3px; }
+.mg .btns { justify-content: center; margin-top: 8px; }

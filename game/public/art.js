@@ -882,7 +882,7 @@ function armorIcon(tier) {
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items) {
   const cv = { camp: campIcon(), fish_s: fishIcon("#8ab4d8", "#e8f0f8", false), fish_m: fishIcon("#e88aa8", "#b8e8d8", false), fish_l: fishIcon("#f0c040", "#fff0a0", false),
-    food_s: fishIcon("#c88a4a", "#e8b878", true), food_m: fishIcon("#d87a5a", "#f0b890", true), food_l: fishIcon("#e8a030", "#ffe090", true), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem() };
+    food_s: fishIcon("#c88a4a", "#e8b878", true), food_m: fishIcon("#d87a5a", "#f0b890", true), food_l: fishIcon("#e8a030", "#ffe090", true), burnt: fishIcon("#3a3038", "#5a4a50", true), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem() };
   for (const id of Object.keys(items)) {
     const it = items[id];
     if (it.type === "weapon") cv[id] = weaponIcon(it.wk, it.tier);
