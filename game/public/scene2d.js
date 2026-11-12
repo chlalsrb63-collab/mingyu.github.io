@@ -542,7 +542,7 @@ export function renderStage(dt, t) {
   const cx = Math.round(vw / 2);
   stage.cast.forEach(({ s, i }) => {
     if (stage.draft) {
-      const k = (t % 3200) / 1000, dir = [2, 1, 3, 2][Math.floor(t / 3200) % 4], z = 10;
+      const k = (t % 3200) / 1000, dir = [2, 1, 3, 2][Math.floor(t / 3200) % 4], z = Math.max(3, Math.round(15 / Z));
       g.save(); g.translate(cx + Math.min(120, vw * 0.18), gy + 34); g.scale(z, z);
       drawPerson(s, { x: 0, y: 0, dir, moving: k > 1 && k < 2.2, atkT: k > 2.5 ? t - (k - 2.5) * 1000 : -1e9, dead: false, aim: k > 2.5 ? [dir === 1 ? -40 : 40, 6] : null }, t, dt, 0, 0);
       g.restore();
