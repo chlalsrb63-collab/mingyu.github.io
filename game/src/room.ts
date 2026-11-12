@@ -241,6 +241,21 @@ export class Room extends DurableObject<Env> {
       return;
     }
 
+    if (kind === "gcreate" && isRecord(action)) {
+      // A guild's name is claimed in the vault, so it is unique across every channel.
+      const world = await this.ready();
+      world.now = Date.now();
+      const first = logic.validateAction(world, pid, action);
+      if (!first.ok) return this.send(ws, { type: "error", error: first.error ?? "invalid action" });
+      const res = await this.callVault("guild", { name: String(action.name) });
+      if (!res.ok) return this.send(ws, { type: "error", error: res.error });
+      // The await let other frames in: check again before spending the gold.
+      world.now = Date.now();
+      if (!logic.validateAction(world, pid, action).ok) return;
+      logic.applyAction(world, pid, action);
+      return;
+    }
+
     const world = await this.ready();
     world.now = Date.now();
     const verdict = logic.validateAction(world, pid, action);
@@ -394,6 +409,13 @@ export class Room extends DurableObject<Env> {
 
     if (op === "rank") {
       return reply({ ok: true, list: (await store.get<RankRow[]>("rank")) ?? [] });
+    }
+
+    if (op === "guild") {
+      const key = `g:${String(body.name).toLowerCase()}`;
+      if (await store.get(key)) return reply({ ok: false, error: "이미 있는 길드 이름입니다" });
+      await store.put(key, { name: String(body.name), t: now });
+      return reply({ ok: true });
     }
     return reply({ ok: false, error: "unknown vault op" });
   }

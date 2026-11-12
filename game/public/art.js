@@ -798,6 +798,27 @@ function weaponIcon(cls, tier) {
   outline(c, g, "#111118");
   return c;
 }
+function campIcon() {
+  const [c, g] = canvas(16, 16);
+  g.fillStyle = "#7a5230"; g.fillRect(2, 11, 12, 3); g.fillStyle = "#94683c"; g.fillRect(3, 10, 4, 2); g.fillStyle = "#5e3e22"; g.fillRect(9, 10, 4, 2);
+  g.fillStyle = "#f0702a"; g.fillRect(5, 5, 6, 6); g.fillRect(6, 3, 4, 3); g.fillRect(7, 1, 2, 2);
+  g.fillStyle = "#ffb030"; g.fillRect(6, 6, 4, 5); g.fillRect(7, 4, 2, 2);
+  g.fillStyle = "#fff0a0"; g.fillRect(7, 8, 2, 3);
+  outline(c, g, "#111118");
+  return c;
+}
+/** A fish, raw (`cooked` false) or on a skewer. */
+function fishIcon(body, belly, cooked) {
+  const [c, g] = canvas(16, 16);
+  if (cooked) { g.fillStyle = "#8a6238"; g.fillRect(1, 8, 14, 1); }
+  disc(g, 7.5, 8, 5, 3, body);
+  g.fillStyle = belly; g.fillRect(4, 9, 7, 2);
+  g.fillStyle = body; g.fillRect(12, 6, 2, 5); g.fillRect(13, 5, 1, 7);
+  if (cooked) { g.fillStyle = "#5a3418"; g.fillRect(6, 6, 1, 4); g.fillRect(9, 6, 1, 4); }
+  else { px(g, 4, 7, "#111118"); px(g, 4, 6, "#ffffff"); }
+  outline(c, g, "#111118");
+  return c;
+}
 function helmIcon(tier) {
   const [c, g] = canvas(16, 16);
   const [m, md] = tier === 1 ? ["#b8ac90", "#8e8468"] : tier === 2 ? ["#8a6238", "#5e4022"] : METAL[tier];
@@ -860,7 +881,8 @@ function armorIcon(tier) {
 }
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items) {
-  const cv = { gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem() };
+  const cv = { camp: campIcon(), fish_s: fishIcon("#8ab4d8", "#e8f0f8", false), fish_m: fishIcon("#e88aa8", "#b8e8d8", false), fish_l: fishIcon("#f0c040", "#fff0a0", false),
+    food_s: fishIcon("#c88a4a", "#e8b878", true), food_m: fishIcon("#d87a5a", "#f0b890", true), food_l: fishIcon("#e8a030", "#ffe090", true), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem() };
   for (const id of Object.keys(items)) {
     const it = items[id];
     if (it.type === "weapon") cv[id] = weaponIcon(it.wk, it.tier);

@@ -467,3 +467,12 @@ h1 small { font-family: var(--font); font-weight: 600; font-size: .2em; letter-s
 #streak > i > i { display: block; height: 100%; background: #ffd060; }
 #streak.pop b { animation: streak-pop .25s ease-out; }
 @keyframes streak-pop { from { transform: scale(1.35); } to { transform: scale(1); } }
+
+/* ───────────── the cosy side: emotes, guild ───────────── */
+#emotes { position: fixed; right: 12px; top: 228px; z-index: 12; display: grid; grid-template-columns: repeat(4, 34px); gap: 4px; padding: 6px; }
+#emotes button { width: 34px; height: 34px; padding: 0; font-size: 18px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .14); border-radius: 8px; cursor: pointer; }
+#emotes button:hover { background: rgba(226, 196, 134, .25); }
+#chat-log .guild { color: #9af0ae; }
+#guild-body input { flex: 1; min-width: 0; padding: 6px 8px; background: rgba(0, 0, 0, .4); border: 1px solid rgba(255, 255, 255, .16); border-radius: 6px; color: inherit; font: inherit; }
+#guild-body .btns { display: flex; gap: 6px; align-items: center; }
+#guild-body .ds { font-size: 11px; opacity: .7; margin: 4px 0 8px; }

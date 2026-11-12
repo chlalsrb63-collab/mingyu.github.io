@@ -21,6 +21,8 @@
 | 성장 | 레벨 50 + 수련: 경험치를 바쳐 힘 · 체력 · 지력 · 수호를 한계 없이 올림 |
 | 반복 사냥 | 연속 처치(경험치 최대 +50%) · 몬스터별 토벌 숙련 5단계 · 스스로 갱신되는 반복 의뢰 · 60마리마다 나타나는 사냥터 우두머리 |
 | 몬스터 | 15종: 도토리 병정 · 화분 소라게 · 민들레 홀씨 · 버섯 개구리 · 그루터기 거북 · 털실 거미 · 초롱 반딧불 · 감시 눈알 · 신호등 보행기 · 브라운관 유령 · 자판기 미믹 · 촛농 유령 · 프리즘 해파리 · 정동 골렘 · 균열의 군주. 도약 · 원거리 · 내려찍기 · 자폭 등 저마다의 버릇 |
+| 쉬어 가기 | 모닥불(고정 + 꾸러미로 직접 피우기): 곁에 앉으면 빠른 회복과 온기(경험치 +10~20%). 물가 낚시 → 모닥불에서 요리 → 음식 버프. 감정표현 8종 |
+| 길드 | 창설 · 초대 · 길드 채팅(/g) · 이름 위 길드명. 길드원 곁에서 사냥하면 한 명당 경험치 +5% |
 | 파티 | 최대 4인. 경험치 · 의뢰 처치 · 전리품(개인별 굴림)을 공유, 인원이 많을수록 총 경험치 증가 |
 | 시점 | 탑다운. 방향키 여덟 방향, 땅을 클릭/터치하면 길을 찾아 걸어감 |
 | 조작 | 방향키/WASD · 클릭 이동 · Space 공격 · 1 2 3 4 스킬 · Q/E 물약 · F 대화 · R 자동사냥 · P 파티 · 모바일 터치 |
@@ -32,7 +34,7 @@ src/logic.js    게임 규칙 전부: 아이템·몬스터·스킬 표, 맵 4개
 src/room.ts     채널 하나 = Durable Object 하나. 소켓과 시계(초당 10틱)를 맡고 캐릭터를 저장
 src/worker.ts   /ws/<채널> 웹소켓을 해당 채널로 연결
 public/         브라우저: client.js(입력·UI·이름표), scene2d.js(탑다운 도트 지형·소품·이펙트·무기 휘두르기), sprites.js(32px 동물 캐릭터·무기·몬스터), art.js(아이콘·미니맵), audio.js(칩튠 합성)
-tests/          규칙 테스트 (node tests/sim.mjs · node tests/party.mjs · node tests/loot.mjs)
+tests/          규칙 테스트 (node tests/sim.mjs · party.mjs · loot.mjs · life.mjs)
 ```
 
 서버가 모든 판정을 합니다. 브라우저는 "이동/공격/구매" 같은 의도만 보내고, 서버는 위치·쿨타임·
@@ -43,5 +45,5 @@ tests/          규칙 테스트 (node tests/sim.mjs · node tests/party.mjs · 
 
 ```bash
 npx wrangler dev -c wrangler.local.jsonc   # http://localhost:8787 — 탭 두 개로 접속해 보세요
-node tests/sim.mjs && node tests/party.mjs && node tests/loot.mjs
+node tests/sim.mjs && node tests/party.mjs && node tests/loot.mjs && node tests/life.mjs
 ```

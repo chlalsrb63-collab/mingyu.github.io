@@ -10,7 +10,9 @@
  *     bounties that renew themselves, and a field boss the kills call out;
  *   - experience never stops mattering: it levels you up, and it can also be
  *     spent, without limit, on permanent training of your base stats;
- *   - hunting together pays: a party shares kills, quest credit and a bonus.
+ *   - hunting together pays: a party shares kills, quest credit and a bonus;
+ *   - and there is a quiet side: campfires to sit by, fish to catch and cook,
+ *     guilds, and a handful of emotes.
  *
  * This file is the single source of truth. The room (`room.ts`) only moves
  * bytes — it feeds actions and the clock in and fans per-player views out — and
@@ -39,11 +41,11 @@ const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 
 /** A weapon kind decides how a basic attack lands. */
 const WKIND = {
-  sword: { name: "양손검", cd: 700, range: 34, fx: 0, cleave: 3 },
-  dagger: { name: "단검", cd: 380, range: 26, fx: 3 },
-  spear: { name: "창", cd: 560, range: 54, fx: 4, line: 3 },
-  staff: { name: "마법지팡이", cd: 800, range: 100, fx: 2 },
-  book: { name: "마법책", cd: 620, range: 84, fx: 5, splash: 26, mult: 0.8 },
+  sword: { name: "양손검", cd: 700, range: 34, fx: 0, cleave: 3, kb: 8 },
+  dagger: { name: "단검", cd: 380, range: 26, fx: 3, kb: 3 },
+  spear: { name: "창", cd: 560, range: 54, fx: 4, line: 3, kb: 6 },
+  staff: { name: "마법지팡이", cd: 800, range: 100, fx: 2, kb: 5 },
+  book: { name: "마법책", cd: 620, range: 84, fx: 5, splash: 26, mult: 0.8, kb: 3 },
 };
 const CLASSES = {
   warrior: { name: "전사", arm: "양손검", wk: ["sword"], hp: [130, 24], mp: [30, 4], atk: [10, 2.6], def: [3, 0.9], crit: 8 },
@@ -109,6 +111,13 @@ const ITEMS = {
   mp_s: { name: "파란 물약", type: "pot", mana: 40, price: 25, desc: "MP를 40 회복한다." },
   mp_m: { name: "큰 파란 물약", type: "pot", mana: 140, price: 80, desc: "MP를 140 회복한다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
+  camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
+  fish_s: { name: "송사리", type: "fish", cook: "food_s", price: 30, desc: "흔한 물고기. 모닥불에서 구울 수 있다." },
+  fish_m: { name: "무지개 송어", type: "fish", cook: "food_m", price: 110, desc: "살이 오른 송어. 모닥불에서 구울 수 있다." },
+  fish_l: { name: "황금 잉어", type: "fish", cook: "food_l", price: 800, desc: "좀처럼 낚이지 않는 귀한 물고기. 모닥불에서 요리할 수 있다." },
+  food_s: { name: "구운 송사리", type: "food", heal: 80, buff: { xp: 5, atk: 0, min: 10 }, price: 40, desc: "HP 80 회복. 10분간 경험치 +5%." },
+  food_m: { name: "송어 소금구이", type: "food", heal: 220, buff: { xp: 10, atk: 0, min: 10 }, price: 150, desc: "HP 220 회복. 10분간 경험치 +10%." },
+  food_l: { name: "황금 잉어찜", type: "food", heal: 9999, buff: { xp: 15, atk: 8, min: 15 }, price: 1000, desc: "HP 전부 회복. 15분간 경험치 +15%, 공격력 +8%." },
 };
 for (const wk of Object.keys(WEAPON_NAMES)) {
   for (let t = 1; t <= 5; t++) {
@@ -180,8 +189,19 @@ const TRAIN = {
 };
 const trainCost = (n) => 120 + 40 * n;
 
-const SHOP = ["hp_s", "hp_m", "mp_s", "mp_m", "stone", "W1", "w_book_1", "h_1", "a_1", "g_1", "b_1"];
+const SHOP = ["hp_s", "hp_m", "mp_s", "mp_m", "camp", "stone", "W1", "w_book_1", "h_1", "a_1", "g_1", "b_1"];
 const ENH_RATE = [100, 95, 90, 80, 70, 55, 45, 35, 25, 15];
+
+// ── the cosy side: campfires, fishing, guilds
+/** Campfires that always burn, by map, in tiles. */
+const FIRES = { town: [[22, 22]], meadow: [[9, 19], [32, 24]], forest: [[9, 19], [45, 19]], city: [[48, 22]], cave: [[7, 33], [21, 31]] };
+const FIRE_R = 46, FIRE_MS = 180000, FIRE_MAX = 6;
+/** Sitting this long by a fire warms you: +10% experience for ten minutes, +2% per friend sitting there too. */
+const WARM_SEC = 6, WARM_MS = 600000;
+const GUILD_COST = 1000;
+/** Each guildmate hunting beside you adds this much experience, up to three. */
+const GUILD_XP = 0.05;
+const EMOTES = 8;
 
 // ── the hunt: what keeps a hunting ground worth another lap
 /** Kills in quick succession build a streak; each step adds 2% experience, up to +50%. */
@@ -202,7 +222,7 @@ const FIELD_BOSS = { meadow: "potcrab", forest: "stump", city: "vend", cave: "ge
 const MOBS = {
   acorn: { name: "도토리 병정", lv: 1, hp: 28, atk: 5, def: 0, spd: 24, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300 },
   potcrab: { name: "화분 소라게", lv: 3, hp: 60, atk: 9, def: 1, spd: 22, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300 },
-  puff: { name: "민들레 홀씨", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 56, range: 17, cd: 1200, fly: true },
+  puff: { name: "민들레 홀씨", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true },      // drifts by the pond and minds its own business, so the shore stays a fishing spot
   capfrog: { name: "버섯 개구리", lv: 8, hp: 170, atk: 23, def: 2, spd: 44, xp: 60, gold: [10, 22], aggro: 80, range: 18, cd: 1100, leap: 96 },
   stump: { name: "그루터기 거북", lv: 10, hp: 330, atk: 26, def: 8, spd: 22, xp: 92, gold: [12, 26], aggro: 60, range: 18, cd: 1400 },
   yarn: { name: "털실 거미", lv: 11, hp: 190, atk: 30, def: 2, spd: 58, xp: 92, gold: [12, 26], aggro: 88, range: 16, cd: 1000, leap: 80 },
@@ -587,7 +607,7 @@ export function newChar(name, cls, look) {
     eq: { weapon: plain(`w_${c}_1`), helm: null, armor: plain("a_1"), gloves: null, boots: null, ring1: null, ring2: null, amulet: null },
     tr: { str: 0, vit: 0, int: 0, grd: 0 },
     q: { i: 0, n: 0, st: 0 },
-    bq: null, bn: 0, mk: {},
+    bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
   };
 }
@@ -632,6 +652,9 @@ function migrate(ch) {
   const mk = {};
   if (isObj(ch.mk)) for (const k of Object.keys(ch.mk)) if (MOBS[k]) mk[k] = ch.mk[k] | 0;
   ch.mk = mk;
+  ch.guild = typeof ch.guild === "string" && NAME_RE.test(ch.guild) ? ch.guild : "";
+  ch.gm = ch.guild && ch.gm ? 1 : 0;
+  ch.fish = ch.fish | 0;
   ch.v = 3;
   return ch;
 }
@@ -698,9 +721,11 @@ function stats(p) {
     };
   }
   const now = p.S.now;
+  const food = p.food && p.food.until > now ? p.food : null;
   return {
-    mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, xp: c.xp, mf: c.mf, gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
-    atk: Math.round(c.atk0 * (p.atkBuff > now ? 1.25 : 1)),
+    mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf,
+    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
+    atk: Math.round(c.atk0 * (p.atkBuff > now ? 1.25 : 1) * (food ? 1 + food.atk / 100 : 1)),
     spd: c.spd0 * (p.spdBuff > now ? 1.4 : 1), spd0: c.spd0,
   };
 }
@@ -716,13 +741,56 @@ export function exportChar(S, pid) {
 
 // ───────────────────────────── world ─────────────────────────────
 
+/** The nearest tile to (tx, ty) a player can stand on. */
+function freeTile(m, tx, ty) {
+  for (let r = 0; r < 6; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    const x = tx + dx, y = ty + dy;
+    if (x > 1 && y > 1 && x < m.w - 2 && y < m.h - 2 && m.reach[y * m.w + x]) return [x, y];
+  }
+  return null;
+}
+function fireNear(rt, p) {
+  for (const f of rt.fires) if (dist(p.x, p.y, f.x, f.y) <= FIRE_R) return f;
+  return null;
+}
+/** The centre of the closest water tile within reach of a fishing line, or null. */
+function waterNear(m, p) {
+  const tx = Math.floor(p.x / T), ty = Math.floor(p.y / T);
+  let best = null, bd = 34;
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    const x = tx + dx, y = ty + dy;
+    if (x < 0 || y < 0 || x >= m.w || y >= m.h || m.g[y][x] !== "w") continue;
+    const d = dist(p.x, p.y, x * T + 8, y * T + 8);
+    if (d < bd) { bd = d; best = [x * T + 8, y * T + 8]; }
+  }
+  return best;
+}
+/** Stand up, reel in: whatever a player was quietly doing stops. */
+function rouse(S, p) {
+  p.sit = false;
+  if (p.fish) { p.fish = null; S.maps[p.map].ev.push(["f", p.eid, 0]); }
+}
+function guildNear(S, p) {
+  if (!p.ch.guild) return 0;
+  let n = 0;
+  for (const pid of Object.keys(S.players)) {
+    const o = S.players[pid];
+    if (o !== p && o.map === p.map && !o.dead && o.ch.guild === p.ch.guild && dist(o.x, o.y, p.x, p.y) <= PARTY_RANGE) n++;
+  }
+  return Math.min(3, n);
+}
+
 function newMob(S, k, r) {
   return { id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false };
 }
 export function setup() {
   const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, parties: {}, chat: [], n: 0 };
   for (const id of Object.keys(MAPS)) {
-    const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], who: false, n: 0, kc: 0, fb: 0 };
+    const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], fires: [], who: false, n: 0, kc: 0, fb: 0 };
+    for (const [fx, fy] of FIRES[id] || []) {
+      const at = freeTile(MAPS[id], fx, fy);
+      if (at) rt.fires.push({ id: S.nextId++, x: at[0] * T + 8, y: at[1] * T + 10, until: 0 });
+    }
     for (const sp of MAPS[id].spawns) {
       for (let i = 0; i < sp.n; i++) {
         const mob = newMob(S, sp.k, sp.r);
@@ -783,6 +851,7 @@ export function addPlayer(S, pid, ch) {
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, hp: 1, mp: 0, dead: false, stc: null,
     cds: [0, 0, 0, 0], atkAt: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
+    sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null,
     atkBuff: 0, spdBuff: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null,
   };
   if (!canStand(MAPS[p.map], p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
@@ -817,6 +886,7 @@ function dropAggro(S, p) {
 }
 
 function changeMap(S, p, to, x, y) {
+  rouse(S, p);
   dropAggro(S, p);
   S.maps[p.map].n--;
   S.maps[p.map].who = true;
@@ -1077,7 +1147,7 @@ function killMob(S, rt, mob) {
     p.streak = S.now - p.streakAt < STREAK_MS ? p.streak + 1 : 1;
     p.streakAt = S.now;
     const rank = masteryRank(ch, mob.k);
-    gainXp(S, p, xp * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02));
+    gainXp(S, p, xp * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
     ch.kills = (ch.kills || 0) + 1;
     ch.mk[mob.k] = (ch.mk[mob.k] || 0) + 1;
     const now = masteryRank(ch, mob.k);
@@ -1121,6 +1191,7 @@ function hurtPlayer(S, rt, p, raw, mob) {
   const dmg = Math.max(1, Math.round(raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6));
   p.hp -= dmg;
   p.hitAt = S.now;
+  rouse(S, p);
   rt.ev.push(["h", p.eid, dmg, 0, 1]);
   if (mob && st.lg.thorn) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * 0.4)), 0);
   if (p.hp <= 0) {
@@ -1175,6 +1246,7 @@ function aimVec(p, mob) {
 }
 
 function basicAttack(S, p) {
+  rouse(S, p);
   const st = stats(p);
   const c = st.arm;
   const rt = S.maps[p.map];
@@ -1195,6 +1267,8 @@ function basicAttack(S, p) {
   else if (c.line) { const [ux, uy] = aimVec(p, mob); extra = mobsInLine(rt, p.x, p.y, ux, uy, c.range + 10, 11).slice(0, c.line); }
   else if (c.splash) extra = mobsWithin(rt, mob.x, mob.y, c.splash).slice(0, 4);
   const zx = mob.x, zy = mob.y;
+  // the blow lands with weight: the target is shoved back and flinches
+  if (c.kb && !mob.el) { const [ux, uy] = aimVec(p, mob); knock(MAPS[p.map], mob, ux, uy, c.kb); mob.stun = Math.max(mob.stun, S.now + 140); }
   hurtMob(S, rt, mob, p, mult);
   for (const o of extra) if (o !== mob) hurtMob(S, rt, o, p, mult * 0.6);
   if (st.lg.chain && rnd(S) < 0.25) {
@@ -1211,6 +1285,7 @@ function castSkill(S, p, i) {
   const c = st.arm;
   const rt = S.maps[p.map];
   const m = MAPS[p.map];
+  rouse(S, p);
   p.mp -= sk.mp;
   p.cds[i] = S.now + sk.cd;
   if (st.lg.echo && rnd(S) < 0.2) { p.cds[i] = S.now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
@@ -1401,6 +1476,32 @@ export function validateAction(S, pid, a) {
     }
     case "pdec": return OK;
     case "pleave": return p.party ? OK : bad("파티에 속해 있지 않습니다");
+    case "gcreate":
+      if (ch.guild) return bad("이미 길드에 속해 있습니다");
+      if (!validName(a.name)) return bad("길드 이름은 한글·영문·숫자 2~10자로 지어 주세요");
+      if (ch.gold < GUILD_COST) return bad(`길드 창설에는 ${GUILD_COST}G가 필요합니다`);
+      return OK;
+    case "ginv": {
+      const o = byEid(S, a.e);
+      if (!ch.guild) return bad("길드에 속해 있지 않습니다");
+      if (!o || o === p) return bad("대상을 찾을 수 없습니다");
+      if (o.ch.guild) return bad("이미 길드에 속해 있습니다");
+      if (o.ginv && now - o.ginv.at < 15000) return bad("상대가 다른 초대에 응답 중입니다");
+      return OK;
+    }
+    case "gacc":
+      if (ch.guild) return bad("이미 길드에 속해 있습니다");
+      return p.ginv && now - p.ginv.at < 30000 ? OK : bad("유효한 초대가 없습니다");
+    case "gdec": case "glist": return OK;
+    case "gleave": return ch.guild ? OK : bad("길드에 속해 있지 않습니다");
+    case "gchat":
+      if (!ch.guild) return bad("길드에 속해 있지 않습니다");
+      if (typeof a.m !== "string" || !a.m.trim()) return bad("빈 메시지");
+      if (now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
+      return OK;
+    case "emo":
+      if (!Number.isInteger(a.i) || a.i < 0 || a.i >= EMOTES) return bad("없는 감정표현");
+      return now - p.emoAt < 600 ? bad("잠시 후에") : OK;
   }
   if (p.dead) return bad("쓰러진 상태입니다");
   switch (a.t) {
@@ -1420,9 +1521,15 @@ export function validateAction(S, pid, a) {
     }
     case "use": {
       const it = ITEMS[a.id];
-      if (!it || it.type !== "pot") return bad("사용할 수 없는 아이템");
+      if (!it || !["pot", "food", "camp"].includes(it.type)) return bad("사용할 수 없는 아이템");
       if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
-      if (now < p.potAt) return bad("물약 재사용 대기 중입니다");
+      if (it.type === "camp") {
+        const rt = S.maps[p.map];
+        if (rt.fires.some((f) => dist(f.x, f.y, p.x, p.y) < 40)) return bad("바로 곁에 모닥불이 있습니다");
+        if (rt.fires.filter((f) => f.until).length >= FIRE_MAX) return bad("이 지역에는 모닥불이 너무 많습니다");
+        return OK;
+      }
+      if (now < p.potAt) return bad("재사용 대기 중입니다");
       return OK;
     }
     case "eq": {
@@ -1485,6 +1592,22 @@ export function validateAction(S, pid, a) {
       if (countItem(ch, "stone") < c.stone) return bad("강화석이 부족합니다");
       return OK;
     }
+    case "sit": return OK;
+    case "fish":
+      if (p.fish) return bad("이미 낚시 중입니다");
+      if (now - p.hitAt < 3000) return bad("싸우는 중에는 낚시할 수 없습니다");
+      if (!waterNear(MAPS[p.map], p)) return bad("물가에서만 낚시할 수 있습니다");
+      if (!canAdd(ch, "fish_s", 1)) return bad("가방이 가득 찼습니다");
+      return OK;
+    case "reel": return p.fish ? OK : bad("낚시 중이 아닙니다");
+    case "cook": {
+      const it = ITEMS[a.id];
+      if (!it || it.type !== "fish") return bad("요리할 수 없는 아이템");
+      if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
+      if (!fireNear(S.maps[p.map], p)) return bad("모닥불 곁에서만 요리할 수 있습니다");
+      if (!canAdd(ch, it.cook, 1)) return bad("가방이 가득 찼습니다");
+      return OK;
+    }
     case "salv": {
       const s = ch.inv[a.s];
       if (!s || !isGear(s.id)) return bad("분해할 수 없는 아이템");
@@ -1532,6 +1655,7 @@ export function applyAction(S, pid, a) {
       const max = (stats(p).spd * dt) / 1000 * 1.6 + 8;
       const d = dist(p.x, p.y, a.x, a.y);
       if (d > max || !canStand(m, a.x, a.y)) { p.fix = true; break; }
+      if (d > 1.5) rouse(S, p);
       p.x = a.x; p.y = a.y;
       if (a.d >= 0 && a.d <= 3) p.dir = a.d | 0;
       // stepping anywhere on a gate tile (or brushing its edge) takes you through
@@ -1546,6 +1670,17 @@ export function applyAction(S, pid, a) {
       const it = ITEMS[a.id];
       const st = stats(p);
       takeItem(ch, a.id, 1);
+      if (it.type === "camp") {
+        S.maps[p.map].fires.push({ id: S.nextId++, x: Math.round(p.x), y: Math.round(p.y) - 14, until: now + FIRE_MS });
+        S.maps[p.map].ev.push(["u", p.eid, 2]);
+        toast(p, "모닥불을 피웠습니다. 앉아서(X) 쉬어 가세요.");
+        p.dirty = true;
+        break;
+      }
+      if (it.type === "food") {
+        p.food = { id: a.id, until: now + it.buff.min * 60000, xp: it.buff.xp, atk: it.buff.atk };
+        toast(p, `${it.name}을(를) 먹었습니다. ${it.desc}`);
+      }
       p.potAt = now + 900;
       if (it.heal) { p.hp = Math.min(st.mhp, p.hp + it.heal); S.maps[p.map].ev.push(["h", p.eid, -it.heal, 0, 1]); }
       if (it.mana) p.mp = Math.min(st.mmp, p.mp + it.mana);
@@ -1631,6 +1766,41 @@ export function applyAction(S, pid, a) {
       }
       S.maps[p.map].ev.push(["e", p.eid, win ? 1 : 0]);
       afterGear(S, p);
+      break;
+    }
+    case "sit":
+      if (p.sit) p.sit = false;
+      else { rouse(S, p); p.sit = true; p.warmT = 0; }
+      break;
+    case "fish": {
+      rouse(S, p);
+      const [wx, wy] = waterNear(m, p);
+      p.fish = { at: now + 2500 + rnd(S) * 4500, bite: 0 };
+      p.dir = dirOf(wx - p.x, wy - p.y);
+      S.maps[p.map].ev.push(["f", p.eid, 1, wx, wy]);
+      break;
+    }
+    case "reel": {
+      const bite = p.fish.bite;
+      p.fish = null;
+      S.maps[p.map].ev.push(["f", p.eid, 0]);
+      if (!bite) { toast(p, "너무 일찍 당겼습니다…"); break; }
+      // mostly minnows; now and then a trout, a stone from the riverbed, or the golden carp
+      const r = rnd(S);
+      const id = r < 0.03 ? "fish_l" : r < 0.24 ? "fish_m" : r < 0.29 ? "stone" : "fish_s";
+      if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, id === "fish_l" ? 3 : id === "fish_m" ? 1 : 0]);
+      ch.fish++;
+      if (id === "fish_l") sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`);
+      p.dirty = true;
+      break;
+    }
+    case "cook": {
+      const it = ITEMS[a.id];
+      takeItem(ch, a.id, 1);
+      addItem(ch, it.cook, 1);
+      p.gain.push(["item", it.cook, 1, 0]);
+      S.maps[p.map].ev.push(["u", p.eid, 0]);
+      p.dirty = true;
       break;
     }
     case "salv": {
@@ -1722,6 +1892,45 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "pdec": p.pinv = null; break;
+    case "gcreate":
+      ch.gold -= GUILD_COST;
+      ch.guild = a.name; ch.gm = 1;
+      sys(S, `${ch.name}님이 길드 [${a.name}]을(를) 세웠습니다!`);
+      S.maps[p.map].who = true;
+      p.dirty = true;
+      break;
+    case "ginv": {
+      const o = byEid(S, a.e);
+      o.ginv = { from: pid, g: ch.guild, at: now };
+      toast(p, `${o.ch.name}님을 길드에 초대했습니다.`);
+      break;
+    }
+    case "gacc": {
+      ch.guild = p.ginv.g; ch.gm = 0;
+      p.ginv = null;
+      for (const oid of Object.keys(S.players)) {
+        const o = S.players[oid];
+        if (o.ch.guild === ch.guild) { toast(o, `${ch.name}님이 길드 [${ch.guild}]에 들어왔습니다.`); o.dirty = true; }
+      }
+      S.maps[p.map].who = true;
+      break;
+    }
+    case "gdec": p.ginv = null; break;
+    case "glist": p.dirty = true; break;
+    case "gleave":
+      toast(p, `길드 [${ch.guild}]을(를) 떠났습니다.`);
+      ch.guild = ""; ch.gm = 0;
+      S.maps[p.map].who = true;
+      p.dirty = true;
+      break;
+    case "gchat":
+      p.chatAt = now;
+      S.chat.push({ n: ch.name, m: a.m.trim().slice(0, 80), g: ch.guild });
+      break;
+    case "emo":
+      p.emoAt = now;
+      S.maps[p.map].ev.push(["o", p.eid, a.i]);
+      break;
     case "pleave":
       leaveParty(S, p);
       toast(p, "파티를 떠났습니다.");
@@ -1872,6 +2081,7 @@ export function tick(S, now) {
         if (p.map === id && !p.dead && dist(p.x, p.y, t.x, t.y) <= t.r) hurtPlayer(S, rt, p, t.dmg);
       }
     }
+    for (let i = rt.fires.length - 1; i >= 0; i--) if (rt.fires[i].until && now >= rt.fires[i].until) rt.fires.splice(i, 1);
     for (let i = rt.drops.length - 1; i >= 0; i--) {
       const dr = rt.drops[i];
       if (now >= dr.dieAt) { rt.drops.splice(i, 1); continue; }
@@ -1903,12 +2113,34 @@ export function tick(S, now) {
   for (const pid of pids) {
     const p = S.players[pid];
     if (p.pinv && now - p.pinv.at > 30000) p.pinv = null;
+    if (p.ginv && now - p.ginv.at > 30000) p.ginv = null;
+    if (p.fish) {
+      // a bite, then a short moment to reel it in
+      const rt = S.maps[p.map];
+      if (!p.fish.bite && now >= p.fish.at) { p.fish.bite = now; rt.ev.push(["f", p.eid, 2]); }
+      else if (p.fish.bite && now > p.fish.bite + 1600) { p.fish = null; rt.ev.push(["f", p.eid, 0]); toast(p, "물고기가 달아났습니다."); }
+    }
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;
     const st = stats(p);
     const calm = now - p.hitAt > 5000;
-    if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + (MAPS[p.map].safe ? st.mhp * 0.08 : st.mhp * 0.02) + 1);
-    if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * 0.03 + 1);
+    // a campfire is a place to catch your breath; sitting by it is better still
+    const fire = calm ? fireNear(S.maps[p.map], p) : null;
+    const rest = fire ? (p.sit ? 0.12 : 0.06) : MAPS[p.map].safe ? 0.08 : 0.02;
+    if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * rest + 1);
+    if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * (fire ? rest : 0.03) + 1);
+    if (fire && p.sit) {
+      if (++p.warmT >= WARM_SEC) {
+        let friends = 0;
+        for (const oid of pids) { const o = S.players[oid]; if (o !== p && o.map === p.map && o.sit && dist(o.x, o.y, fire.x, fire.y) <= FIRE_R) friends++; }
+        const pct = Math.min(20, 10 + friends * 2);
+        const had = p.warm > now ? p.warmPct : 0;
+        if (pct > had) toast(p, `모닥불의 온기 — 10분간 경험치 +${pct}%${friends ? ` (함께 쉬는 동료 ${friends}명)` : ""}`);
+        p.warm = now + WARM_MS; p.warmPct = Math.max(had, pct);
+        p.warmT = 0;
+        p.dirty = true;
+      }
+    } else p.warmT = 0;
   }
   return S;
 }
@@ -1942,7 +2174,9 @@ function selfPayload(p) {
     inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, tr: ch.tr, trc, enh,
     bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     cds: p.cds.map((t) => Math.max(0, t - now)),
-    buffs: [Math.max(0, p.atkBuff - now), Math.max(0, p.spdBuff - now)],
+    buffs: [Math.max(0, p.atkBuff - now), Math.max(0, p.spdBuff - now), Math.max(0, p.warm - now), p.food ? Math.max(0, p.food.until - now) : 0],
+    warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
+    gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, MAPS[o.map].name, o.ch.gm]) : [],
   };
 }
 
@@ -1957,13 +2191,13 @@ export function viewFor(S, pid) {
   const near = (o) => Math.abs(o.x - p.x) < VIEW_X && Math.abs(o.y - p.y) < VIEW_Y;
   const out = {
     type: "snap",
-    me: [Math.round(p.x), Math.round(p.y), Math.round(p.hp), Math.round(p.mp), p.dead ? 1 : 0, p.fix ? 1 : 0, p.dir],
-    P: [], M: [], D: [],
+    me: [Math.round(p.x), Math.round(p.y), Math.round(p.hp), Math.round(p.mp), p.dead ? 1 : 0, p.fix ? 1 : 0, p.dir, p.sit ? 1 : 0],
+    P: [], M: [], D: [], F: [],
   };
   for (const oid of Object.keys(S.players)) {
     const o = S.players[oid];
     if (o === p || o.map !== p.map || !near(o)) continue;
-    out.P.push([o.eid, Math.round(o.x), Math.round(o.y), o.dir, o.dead ? 1 : 0, Math.round(o.hp), stats(o).mhp]);
+    out.P.push([o.eid, Math.round(o.x), Math.round(o.y), o.dir, o.dead ? 1 : 0, Math.round(o.hp), stats(o).mhp, o.sit ? 1 : 0]);
   }
   for (const mob of rt.mobs) {
     if (mob.dead || !near(mob)) continue;
@@ -1972,8 +2206,10 @@ export function viewFor(S, pid) {
   for (const dr of rt.drops) {
     if (near(dr) && (dr.own === pid || S.now >= dr.freeAt)) out.D.push([dr.id, dr.it, Math.round(dr.x), Math.round(dr.y), dr.q]);
   }
+  for (const f of rt.fires) if (near(f)) out.F.push([f.id, f.x, f.y]);
   if (rt.ev.length) out.ev = rt.ev;
-  if (S.chat.length) out.chat = S.chat;
+  // guild chat reaches only the guild
+  if (S.chat.length) { const chat = S.chat.filter((c) => !c.g || c.g === p.ch.guild); if (chat.length) out.chat = chat; }
   if (p.sendMap) out.map = mapPayload(MAPS[p.map]);
   if (p.sendMap || rt.who) {
     out.who = [];
@@ -1984,7 +2220,7 @@ export function viewFor(S, pid) {
       // (its tier, rarity, enhancement and kind)
       const ar = o.ch.eq.armor, wp = o.ch.eq.weapon;
       out.who.push([o.eid, o.ch.name, o.ch.cls, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
-        wp ? wp.q : 0, wp ? wp.enh : 0, 0, weaponKind(o.ch)]);
+        wp ? wp.q : 0, wp ? wp.enh : 0, 0, weaponKind(o.ch), o.ch.guild]);
     }
   }
   if (p.party) {
@@ -1993,6 +2229,10 @@ export function viewFor(S, pid) {
   if (p.pinv) {
     const from = S.players[p.pinv.from];
     if (from) out.pinv = from.ch.name;
+  }
+  if (p.ginv) {
+    const from = S.players[p.ginv.from];
+    if (from) out.ginv = [from.ch.name, p.ginv.g];
   }
   if (p.dirty) out.self = selfPayload(p);
   if (p.gain.length) out.gain = p.gain;
@@ -2019,6 +2259,6 @@ export function defs() {
     items: ITEMS, mobs, classes, skills: SKILLS, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV, maxLv: MAXLV,
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
-    streak: [STREAK_MS, STREAK_MAX], maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
+    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
   };
 }

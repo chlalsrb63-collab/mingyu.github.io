@@ -85,7 +85,7 @@ setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) ws.send("__ping"
 const G = {
   playing: false, you: 0, defs: null, icons: null, self: null, map: null,
   me: { x: 0, y: 0, dir: 0, hp: 1, mp: 0, dead: false, walk: 0, moving: false, atkT: -1e9, hurtT: -1e9 },
-  who: new Map(), players: new Map(), mobs: new Map(), drops: new Map(),
+  who: new Map(), players: new Map(), mobs: new Map(), drops: new Map(), fires: new Map(), bobs: new Map(), ginv: null,
   fx: [], parts: [], texts: [], bubbles: new Map(), statics: [],
   cdEnd: [0, 0, 0], buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
   auto: false, sel: -1, shake: 0, flash: 0, near: null, party: [], pinv: null, path: null, mark: null,
@@ -124,7 +124,7 @@ function onMessage(msg) {
         G.defs = msg.defs;
         G.icons = Art.buildIcons(G.defs.items);
       }
-      G.players.clear(); G.mobs.clear(); G.drops.clear(); G.who.clear();
+      G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear(); G.who.clear();
       $("#title").hidden = true; $("#create").hidden = true; $("#hud").hidden = false;
       if (!G.playing) {
         G.playing = true;
@@ -162,7 +162,7 @@ function loadMap(m) {
   mini = Art.renderMini(m);
   const cv = $("#mini-cv");
   cv.width = mini.width; cv.height = mini.height;
-  G.players.clear(); G.mobs.clear(); G.drops.clear();
+  G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear();
   G.texts.length = 0;
   G.snapCam = true;
   $("#mini-name").textContent = m.name;
@@ -176,18 +176,20 @@ function onSnap(s) {
   const me = G.me;
   if (s.map) loadMap(s.map);
   if (s.map || s.me[5]) { me.x = s.me[0]; me.y = s.me[1]; me.dir = s.me[6]; }
-  me.hp = s.me[2]; me.mp = s.me[3];
+  me.hp = s.me[2]; me.mp = s.me[3]; me.sit = !!s.me[7];
   const dead = !!s.me[4];
   if (dead !== me.dead) { me.dead = dead; $("#dead").hidden = !dead; if (dead) { G.auto = false; Sound.play("die"); } }
 
   if (s.who) {
     G.who.clear();
-    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, , wk] of s.who) {
-      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk }, party });
+    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, , wk, guild] of s.who) {
+      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk }, party, guild });
     }
     if (isOpen("party")) renderParty();
+    if (isOpen("guild")) renderGuild();
   }
-  sync(G.players, s.P, (e, r) => { e.tx = r[1]; e.ty = r[2]; e.dir = r[3]; e.dead = !!r[4]; e.hp = r[5]; e.mhp = r[6]; }, t);
+  sync(G.players, s.P, (e, r) => { e.tx = r[1]; e.ty = r[2]; e.dir = r[3]; e.dead = !!r[4]; e.hp = r[5]; e.mhp = r[6]; e.sit = !!r[7]; }, t);
+  sync(G.fires, s.F || [], (e, r) => { e.tx = r[1]; e.ty = r[2]; e.x = r[1]; e.y = r[2]; }, t);
   sync(G.mobs, s.M, (e, r) => { e.k = r[1]; e.tx = r[2]; e.ty = r[3]; e.dir = r[4]; e.hp = r[5]; e.el = r[6]; }, t);
   sync(G.drops, s.D, (e, r) => { e.it = r[1]; e.tx = r[2]; e.ty = r[3]; e.q = r[4]; }, t);
 
@@ -197,14 +199,16 @@ function onSnap(s) {
     G.streak = { n: s.self.streak[0], end: t + s.self.streak[1] };
     G.buffEnd = s.self.buffs.map((ms) => t + ms);
     refreshUi();
+    if (isOpen("guild")) renderGuild();
   }
   if (s.ev) for (const e of s.ev) onEvent(e, t);
-  if (s.chat) for (const c of s.chat) c.sys ? addChat(c.m, "sys") : addChat(c.m, "", c.n);
+  if (s.chat) for (const c of s.chat) c.sys ? addChat(c.m, "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`) : addChat(c.m, "", c.n);
   if (s.gain) for (const gn of s.gain) onGain(gn);
   if (s.toast) for (const m of s.toast) toast(m);
   const pk = JSON.stringify(s.party || []);
   if (pk !== G.partyKey) { G.partyKey = pk; G.party = s.party || []; renderPartyHud(); if (isOpen("party")) renderParty(); }
-  if ((s.pinv || null) !== G.pinv) { G.pinv = s.pinv || null; renderInvite(); }
+  const gi = s.ginv ? s.ginv.join("|") : null;
+  if ((s.pinv || null) !== G.pinv || gi !== G.ginv) { G.pinv = s.pinv || null; G.ginv = gi; renderInvite(); }
   hudBars();
 }
 
@@ -255,7 +259,7 @@ function onEvent(e, t) {
         floatText(crit ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit);
         tgt.hurtT = t;
         if (id === G.you) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
-        else if (!isPlayer) Sound.play(crit ? "crit" : "hit");
+        else if (!isPlayer) { Sound.play(crit ? "crit" : "hit"); if (t - G.lastAtk < 260) S3.shake(crit ? 3 : 1.2); }
         S3.fx.burst(tgt.x, tgt.y, h * 0.55, isPlayer ? "#ff7a7a" : "#ffffff", crit ? 9 : 5, 1.6);
       }
       break;
@@ -294,6 +298,17 @@ function onEvent(e, t) {
     }
     case "pd": { const p = entityPos(e[1]); if (p) S3.fx.burst(p.x, p.y, 0.6, "#c8c8d8", 12, 1.4); break; }
     case "s": G.bubbles.set(e[1], { text: e[2], until: t + 4500 }); break;
+    case "o": G.bubbles.set(e[1], { text: EMOTES[e[2]] || "?", until: t + 2600, big: true }); break;
+    case "f": {
+      // 1: a line goes out · 2: a bite · 0: it comes back in
+      if (e[2] === 1) G.bobs.set(e[1], { id: e[1], eid: e[1], x: e[3], y: e[4], bite: false });
+      else if (e[2] === 2) {
+        const b = G.bobs.get(e[1]);
+        if (b) { b.bite = true; S3.fx.ring(b.x, b.y, 12, "#ffffff", 300); }
+        if (e[1] === G.you) { Sound.play("ok"); banner("입질! F", true); }
+      } else G.bobs.delete(e[1]);
+      break;
+    }
     case "u": {
       const p = entityPos(e[1]);
       if (p) S3.fx.sparkle(p.x, p.y, 0.8, e[2] === 2 ? "#ffd84a" : e[2] ? "#7ab4ff" : "#ff8a8a", e[2] === 2 ? 16 : 10);
@@ -376,6 +391,9 @@ addEventListener("keydown", (e) => {
     case "q": case "ㅂ": usePotion("hp"); break;
     case "e": case "ㄷ": usePotion("mp"); break;
     case "f": case "ㄹ": interact(); break;
+    case "x": case "ㅌ": act({ t: "sit" }); break;
+    case "g": case "ㅎ": toggleWin("guild"); break;
+    case "t": case "ㅅ": $("#emotes").hidden = !$("#emotes").hidden; break;
     case "i": case "ㅑ": toggleWin("inv"); break;
     case "c": case "ㅊ": toggleWin("char"); break;
     case "l": case "ㅣ": toggleWin("quest"); break;
@@ -554,9 +572,23 @@ function nearestNpc() {
   }
   return best;
 }
+/** Is there water close enough to cast into? */
+function waterNear() {
+  const m = G.map, tx = Math.floor(G.me.x / T), ty = Math.floor(G.me.y / T);
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    const row = m.g[ty + dy];
+    if (row && row[tx + dx] === "w" && dist(G.me.x, G.me.y, (tx + dx) * T + 8, (ty + dy) * T + 8) < 34) return true;
+  }
+  return false;
+}
+const fireNear = () => { for (const f of G.fires.values()) if (dist(G.me.x, G.me.y, f.x, f.y) <= G.defs.fireR) return true; return false; };
+const EMOTES = ["👋", "❤️", "😆", "😢", "😡", "💤", "👍", "🎵"];
 function interact() {
   const n = G.near;
-  if (!n || G.me.dead) return;
+  if (G.me.dead) return;
+  // a line already out is reeled in; with nobody to talk to, water is for fishing
+  if (G.bobs.has(G.you)) { act({ t: "reel" }); return; }
+  if (!n) { if (waterNear()) { act({ t: "fish" }); Sound.play("ui"); } return; }
   Sound.play("ui");
   if (n.role === "shop") { openWin("shop"); openWin("inv"); }
   else if (n.role === "smith") { openWin("smith"); openWin("inv"); }
@@ -731,21 +763,24 @@ function renderText(t) {
     const [x, y] = at(d.x, d.y, 0.6);
     label(G.defs.items[d.it].name, x, y, Art.RARITY_COL[d.q]);
   }
+  const mine = G.who.get(G.you);
   for (const [eid, p] of G.players) {
     const w = G.who.get(eid);
     if (!w) continue;
     const [x, y] = at(p.x, p.y, (p.h3 || 1.32) + 0.22);
     label(`Lv.${w.lvl} ${w.name}`, x, y, p.dead ? "#9a9aa8" : w.party && w.party === myParty ? "#8cff8c" : "#dce6f2");
+    if (w.guild) label(`‹${w.guild}›`, x, y - 13, mine && w.guild === mine.guild ? "#9af0ae" : "#c8b8e8", 11);
     if (p.hp < p.mhp && !p.dead) bar(x, y + 4, 40, p.hp / p.mhp, "#58c070");
   }
-  const mine = G.who.get(G.you);
-  if (mine) { const [x, y] = at(me.x, me.y, (me.h3 || 1.32) + 0.22); label(`Lv.${mine.lvl} ${mine.name}`, x, y, "#f4e4b0"); }
+  if (mine) { const [x, y] = at(me.x, me.y, (me.h3 || 1.32) + 0.22); label(`Lv.${mine.lvl} ${mine.name}`, x, y, "#f4e4b0"); if (mine.guild) label(`‹${mine.guild}›`, x, y - 13, "#9af0ae", 11); }
+  for (const b of G.bobs.values()) if (b.bite) { const [x, y] = at(b.x, b.y, 0.9); label("!", x, y + Math.sin(t / 60) * 2, "#ffe04a", 20); }
   for (const [eid, b] of G.bubbles) {
     if (t > b.until) { G.bubbles.delete(eid); continue; }
     const p = entityPos(eid);
     if (!p) continue;
     const [x, y] = at(p.x, p.y, (p.h3 || 1.32) + 0.5);
-    label(b.text.length > 22 ? b.text.slice(0, 22) + "…" : b.text, x, y - 12, "#08090c", 12, true);
+    if (b.big) label(b.text, x, y - 18, "#ffffff", 22);
+    else label(b.text.length > 22 ? b.text.slice(0, 22) + "…" : b.text, x, y - 12, "#08090c", 12, true);
   }
   for (let i = G.texts.length - 1; i >= 0; i--) {
     const f = G.texts[i];
@@ -780,12 +815,13 @@ function renderMini(t) {
 
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
-const WIN = ["inv", "char", "shop", "smith", "quest", "rank", "talk", "help", "train", "party"];
+const WIN = ["inv", "char", "shop", "smith", "quest", "rank", "talk", "help", "train", "party", "guild"];
 const isOpen = (id) => !$(`#w-${id}`).hidden;
 function openWin(id) {
   $(`#w-${id}`).hidden = false;
   if (id === "rank") { $("#rank-list").textContent = "불러오는 중…"; act({ t: "rank" }); }
   if (id === "party") renderParty();
+  if (id === "guild") { act({ t: "glist" }); renderGuild(); }
   refreshUi();
 }
 function closeWin(id) { $(`#w-${id}`).hidden = true; }
@@ -822,7 +858,9 @@ $("#chat-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const input = $("#chat-in");
   const m = input.value.trim();
-  if (m) act({ t: "chat", m });
+  const g = /^\/(g|길드|ㅎ)\s+(.+)/.exec(m);
+  if (g) act({ t: "gchat", m: g[2] });
+  else if (m) act({ t: "chat", m });
   input.value = "";
   input.blur();
 });
@@ -983,6 +1021,12 @@ function refreshUi() {
       const btns = el("div", "btns");
       const add = (label, fn, off) => { const b = el("button", "", label); b.disabled = !!off; b.addEventListener("click", fn); btns.append(b); };
       if (d.type === "pot") add("사용", () => act({ t: "use", id: entry.id }));
+      if (d.type === "food") add("먹기", () => act({ t: "use", id: entry.id }));
+      if (d.type === "camp") add("모닥불 피우기", () => { act({ t: "use", id: entry.id }); closeWin("inv"); });
+      if (d.type === "fish") {
+        add("굽기", () => act({ t: "cook", id: entry.id }), !fireNear());
+        if (!fireNear()) btns.append(el("span", "ds", " 모닥불 곁에서 구울 수 있습니다"));
+      }
       if (isGear(entry.id)) {
         const off = (d.cls && d.cls !== s.cls) || s.lvl < d.req;
         if (d.type === "ring" && s.eq.ring1 && s.eq.ring2) {
@@ -1240,13 +1284,64 @@ function renderParty() {
 }
 function renderInvite() {
   const box = $("#invite");
-  box.hidden = !G.pinv;
-  if (!G.pinv) return;
-  $("#invite-text").textContent = `${G.pinv}님이 파티에 초대했습니다.`;
+  box.hidden = !G.pinv && !G.ginv;
+  if (box.hidden) return;
+  if (G.pinv) $("#invite-text").textContent = `${G.pinv}님이 파티에 초대했습니다.`;
+  else { const [from, g] = G.ginv.split("|"); $("#invite-text").textContent = `${from}님이 길드 ‹${g}›에 초대했습니다.`; }
   Sound.play("ok");
 }
-$("#invite-yes").addEventListener("click", () => act({ t: "pacc" }));
-$("#invite-no").addEventListener("click", () => act({ t: "pdec" }));
+$("#invite-yes").addEventListener("click", () => act({ t: G.pinv ? "pacc" : "gacc" }));
+$("#invite-no").addEventListener("click", () => act({ t: G.pinv ? "pdec" : "gdec" }));
+
+// ── guild ──
+function renderGuild() {
+  const box = $("#guild-body"), s = G.self;
+  if (!s) return;
+  box.textContent = "";
+  if (!s.guild) {
+    box.append(el("p", "say", `길드를 세우면 이름 위에 길드명이 걸리고, 길드원끼리만 보이는 채팅(/g 메시지)을 쓸 수 있습니다. 같은 길드원 곁에서 사냥하면 한 명당 경험치 +${Math.round(G.defs.guildXp * 100)}% (최대 3명).`));
+    const row = el("div", "btns");
+    const input = el("input"); input.maxLength = 10; input.placeholder = "길드 이름 (2~10자)"; input.autocomplete = "off";
+    const b = el("button", "", `창설 (${G.defs.guildCost.toLocaleString()}G)`);
+    b.disabled = s.gold < G.defs.guildCost;
+    b.addEventListener("click", () => { if (input.value.trim()) act({ t: "gcreate", name: input.value.trim() }); Sound.play("ui"); });
+    row.append(input, b);
+    box.append(row, el("p", "ds", "다른 길드에 들어가려면 그 길드원에게 초대를 받으세요."));
+    return;
+  }
+  box.append(el("div", "q-title", `‹${s.guild}›`), el("p", "ds", `이 채널에 접속 중인 길드원 ${s.gmates.length}명 · 길드 채팅은 채팅창에 /g 메시지`));
+  const list = el("div", "list");
+  for (const [eid, name, cls, lvl, where, gm] of s.gmates) {
+    const row = el("div", "rk" + (eid === G.you ? " me" : ""));
+    row.append(el("b", "", `${gm ? "★ " : ""}${name}`), el("span", "", `Lv.${lvl} ${G.defs.classes[cls].name} · ${where}`));
+    list.append(row);
+  }
+  let near = 0;
+  for (const [eid, w] of G.who) {
+    if (eid === G.you || w.guild) continue;
+    near++;
+    const row = el("div", "it");
+    row.append(el("div", "tx", `Lv.${w.lvl} ${w.name} · ${G.defs.classes[w.cls].name}`));
+    const b = el("button", "", "초대");
+    b.addEventListener("click", () => { act({ t: "ginv", e: eid }); Sound.play("ui"); });
+    row.append(b);
+    list.append(row);
+  }
+  if (!near) list.append(el("div", "ds", "같은 지역에 초대할 수 있는 모험가가 없습니다."));
+  box.append(list);
+  const btns = el("div", "btns");
+  const b = el("button", "", "길드 탈퇴");
+  b.addEventListener("click", () => act({ t: "gleave" }));
+  btns.append(b);
+  box.append(btns);
+}
+for (let i = 0; i < EMOTES.length; i++) {
+  const b = el("button", "", EMOTES[i]);
+  b.addEventListener("click", () => { act({ t: "emo", i }); $("#emotes").hidden = true; });
+  $("#emotes").append(b);
+}
+$("#b-sit").addEventListener("click", () => act({ t: "sit" }));
+$("#b-emo").addEventListener("click", () => { $("#emotes").hidden = !$("#emotes").hidden; });
 
 function renderRank(list) {
   const box = $("#rank-list");
@@ -1281,8 +1376,9 @@ function hudTick(t) {
     $("#streak-bar").style.width = `${clamp((k.end - t) / G.defs.streak[0], 0, 1) * 100}%`;
   }
   const buffs = $("#st-buffs");
-  const names = ["공격력↑", "이동속도↑"];
-  const want = G.buffEnd.map((e, i) => (e > t ? `${names[i]} ${Math.ceil((e - t) / 1000)}` : "")).filter(Boolean).join("|");
+  const names = ["공격력↑", "이동속도↑", `온기 EXP+${s.warm}%`, s.food ? G.defs.items[s.food].name : "음식"];
+  const left = (ms) => (ms > 90000 ? `${Math.ceil(ms / 60000)}분` : `${Math.ceil(ms / 1000)}`);
+  const want = G.buffEnd.map((e, i) => (e > t ? `${names[i]} ${left(e - t)}` : "")).filter(Boolean).join("|");
   if (buffs.dataset.v !== want) {
     buffs.dataset.v = want;
     buffs.textContent = "";

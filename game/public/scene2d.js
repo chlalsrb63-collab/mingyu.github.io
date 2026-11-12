@@ -614,6 +614,7 @@ function drawPerson(s, e, t, dt, x, y) {
   if (s.ph === undefined) s.ph = Math.random() * 4000;
   const F = SP.FRAME;
   const frame = e.dead ? F.stand
+    : e.sit ? F.breathe
     : e.moving ? [F.stepA, F.stretch, F.stepB, F.stretch][Math.floor(s.walk) % 4]
     : (t + s.ph) % 3600 < 140 ? F.blink
     : Math.floor((t + s.ph) / 560) % 2 ? F.breathe : F.stand;
@@ -631,7 +632,7 @@ function drawPerson(s, e, t, dt, x, y) {
     g.save();
     g.translate(Math.round(x), Math.round(y));
     if (e.dead) { g.rotate(sg * 1.45); g.globalAlpha = 0.6; }
-    g.scale(sg, 1);
+    g.scale(sg, e.sit && !e.dead ? 0.8 : 1);       // sitting: tucked down a little
     g.drawImage(img, -SP.FOOT[0], -SP.FOOT[1]);
     g.restore();
   };
@@ -791,6 +792,8 @@ export function render(focusX, focusY, dt, t, snap) {
   for (const s of statics) if (s.x > x0 && s.x < x1 && s.y > y0 && s.y < y1) list.push({ y: s.y, s });
   for (const n of npcs) list.push({ y: n.y, n });
   for (const d of G.drops.values()) list.push({ y: d.y * P - 2, d });
+  if (G.fires) for (const f of G.fires.values()) list.push({ y: f.y * P, f });
+  if (G.bobs) for (const b of G.bobs.values()) list.push({ y: b.y * P - 1, b });
   for (const m of G.mobs.values()) list.push({ y: m.y * P, m });
   for (const [eid, p] of G.players) list.push({ y: p.y * P, p, eid });
   list.push({ y: G.me.y * P, p: G.me, eid: G.you });
@@ -814,6 +817,20 @@ export function render(focusX, focusY, dt, t, snap) {
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 5, 2, 0, 0, 7); g.fill();
       const nt = t + o.n.x * 37, nf = nt % 3900 < 140 ? SP.FRAME.blink : Math.floor(nt / 620) % 2 ? SP.FRAME.breathe : SP.FRAME.stand;
       g.drawImage(o.n.sheet.front[nf], Math.round(o.n.x - SP.FOOT[0]), Math.round(o.n.y - SP.FOOT[1]));
+    } else if (o.f) {
+      // a campfire: warm light on the ground, a flickering flame, sparks drifting up
+      const x = o.f.x * P, y = o.f.y * P, fr = SP.campfire()[Math.floor(t / 140 + o.f.id) % 3];
+      g.fillStyle = "rgba(255,170,60,.13)"; g.beginPath(); g.ellipse(x, y - 2, 30, 14, 0, 0, 7); g.fill();
+      g.drawImage(fr, Math.round(x - SP.FOOT[0]), Math.round(y - SP.FOOT[1] + 2));
+      if (Math.random() < 0.12) parts.push({ x: x - 3 + Math.random() * 6, y: y - 16, vx: (Math.random() - 0.5) * 10, vy: -18 - Math.random() * 14, life: 0.7, color: Math.random() < 0.5 ? "#ffd070" : "#ff9040", g: -10, s: 1 });
+    } else if (o.b) {
+      // a fishing float riding the water, its line running back to the angler
+      const bx = Math.round(o.b.x * P), by = Math.round(o.b.y * P + Math.sin(t / 260) * 1.2 + (o.b.bite ? Math.sin(t / 40) * 2 : 0));
+      const who = o.b.eid === G.you ? G.me : G.players.get(o.b.eid);
+      g.lineWidth = 1;
+      if (who) { g.strokeStyle = "rgba(240,240,255,.6)"; g.beginPath(); g.moveTo(bx, by - 4); g.lineTo(Math.round(who.x * P) + 4, Math.round(who.y * P) - 12); g.stroke(); }
+      g.strokeStyle = "rgba(255,255,255,.5)"; g.beginPath(); g.ellipse(bx, by + 1, 4 + ((t / 200) % 3), 1.5, 0, 0, 7); g.stroke();
+      g.fillStyle = "#2b2233"; g.fillRect(bx - 2, by - 4, 4, 5); g.fillStyle = "#ffffff"; g.fillRect(bx - 1, by - 3, 2, 1); g.fillStyle = "#e84a5a"; g.fillRect(bx - 1, by - 2, 2, 2);
     } else if (o.d) {
       const d = o.d, x = d.x * P, y = d.y * P, ic = G.icons.cv[d.it];
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(x, y, 8, 3, 0, 0, 7); g.fill();
@@ -875,7 +892,7 @@ export function render(focusX, focusY, dt, t, snap) {
     lg.globalCompositeOperation = "destination-out";
     const hole = (x, y, r, k = 1) => { const sx = x - ox, sy = y - oy; if (sx < -r || sy < -r || sx > vw + r || sy > vh + r) return; const gr = lg.createRadialGradient(sx, sy, 0, sx, sy, r); gr.addColorStop(0, `rgba(0,0,0,${k})`); gr.addColorStop(1, "rgba(0,0,0,0)"); lg.fillStyle = gr; lg.fillRect(sx - r, sy - r, r * 2, r * 2); };
     hole(meX, meY - 8, 130, 0.9);
-    for (const o of list) { if (o.p && o.eid !== G.you) hole(o.p.x * P, o.p.y * P - 20, 110, 0.8); else if (o.s && o.s.glow) hole(o.s.x, o.s.y - (o.s.big ? 60 : o.s.sp.height - 12), o.s.big ? 120 : o.s.glow === "#ffe690" ? 110 : 60, 0.85); else if (o.d && o.d.q) hole(o.d.x * P, o.d.y * P - 10, 36, 0.7); else if (o.m && SP.MOB_GLOW[G.defs.mobs[o.m.k].sp]) hole(o.m.x * P, o.m.y * P - 14, o.m.el === 2 ? 90 : 48, 0.75); }
+    for (const o of list) { if (o.f) hole(o.f.x * P, o.f.y * P - 8, 120, 0.95); else if (o.p && o.eid !== G.you) hole(o.p.x * P, o.p.y * P - 20, 110, 0.8); else if (o.s && o.s.glow) hole(o.s.x, o.s.y - (o.s.big ? 60 : o.s.sp.height - 12), o.s.big ? 120 : o.s.glow === "#ffe690" ? 110 : 60, 0.85); else if (o.d && o.d.q) hole(o.d.x * P, o.d.y * P - 10, 36, 0.7); else if (o.m && SP.MOB_GLOW[G.defs.mobs[o.m.k].sp]) hole(o.m.x * P, o.m.y * P - 14, o.m.el === 2 ? 90 : 48, 0.75); }
     for (const p of map.portals) hole(p.x * T + 16, p.y * T + 16, 80, 0.8);
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.drawImage(lightCv, 0, 0);

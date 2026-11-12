@@ -206,6 +206,24 @@ function person(o, view, f) {
   return finish(c, g, INK, 1);
 }
 
+let fireFrames = null;
+/** A campfire — crossed logs in a ring of stones, the flame flickering through three frames. Stands on the foot line. */
+export function campfire() {
+  if (fireFrames) return fireFrames;
+  fireFrames = [0, 1, 2].map((f) => {
+    const [c, g] = sheet(S);
+    const b = brush(g);
+    b.r(9, 26, 14, 2, "#8a8e9c"); b.r(8, 25, 3, 2, "#a4a8b6"); b.r(21, 25, 3, 2, "#a4a8b6"); b.r(13, 27, 6, 1, "#6e7280");
+    b.r(10, 23, 12, 3, "#7a5230"); b.r(11, 22, 4, 2, "#94683c"); b.r(17, 22, 4, 2, "#5e3e22"); b.r(10, 24, 2, 1, "#c89a5a"); b.r(20, 24, 2, 1, "#c89a5a");
+    const tip = [0, -1, 1][f], lean = [0, 1, -1][f];
+    b.r(12, 17, 8, 6, "#f0702a"); b.r(13, 14 + (f === 1 ? 1 : 0), 6, 4, "#f0702a"); b.r(14 + lean, 11 + tip, 4, 4, "#f0702a"); b.r(15 + lean, 9 + tip, 2, 2, "#f0702a");
+    b.r(13, 18, 6, 5, "#ffb030"); b.r(14, 15, 4, 4, "#ffb030"); b.r(15 + lean, 13 + tip, 2, 3, "#ffb030");
+    b.r(14, 20, 4, 3, "#fff0a0"); b.r(15, 18, 2, 2, "#fff0a0");
+    return finish(c, g, INK, 1);
+  });
+  return fireFrames;
+}
+
 const cache = new Map();
 /** `{ front, side, back }`, each a list of frames indexed by FRAME. Side frames face right. */
 export function personSheet(o) {
