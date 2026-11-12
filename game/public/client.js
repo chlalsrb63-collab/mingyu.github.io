@@ -12,7 +12,7 @@
 
 import * as Art from "./art.js";
 import { Sound } from "./audio.js";
-import * as S3 from "./scene3d.js";
+import * as S3 from "./scene2d.js";
 
 const T = Art.TILE;
 const $ = (s) => document.querySelector(s);
@@ -161,7 +161,7 @@ function loadMap(m) {
   S3.loadMap(m);
   mini = Art.renderMini(m);
   const cv = $("#mini-cv");
-  cv.width = m.w + m.h; cv.height = Math.ceil((m.w + m.h) / 2);
+  cv.width = mini.width; cv.height = mini.height;
   G.players.clear(); G.mobs.clear(); G.drops.clear();
   G.texts.length = 0;
   G.snapCam = true;
@@ -229,7 +229,6 @@ function entityPos(id) {
 const MOB_COL = { slime: "#5a9a4a", bslime: "#4a7aa8", shroom: "#8e3434", boar: "#6a4a34", bat: "#4a3862", drone: "#aab4c4", thug: "#5e2a2e", robot: "#7a808c", skel: "#d0d0d8", golem: "#5ac8d8", boss: "#e050b8" };
 const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * (m.el ? G.defs.eliteHp : 1));
 
-const YAW = [0, -Math.PI / 2, Math.PI / 2, Math.PI];
 const heightOf = (e) => e.h3 || 1.3;
 
 function onEvent(e, t) {
@@ -240,6 +239,7 @@ function onEvent(e, t) {
       if (!src) break;
       if (eid !== G.you) { src.atkT = t; src.dir = e[5]; }
       else G.me.dir = e[5];
+      src.aim = [tx, ty + 6];
       attackFx(kind, src, tx, ty + 6, e[5]);
       break;
     }
@@ -316,14 +316,15 @@ function floatText(str, x, y, h, col, big) {
 }
 /** `src` is the attacker, (tx, ty) the point of impact on the ground. */
 function attackFx(kind, src, tx, ty, dir) {
-  const yaw = YAW[dir] || 0, f = S3.fx;
-  const mx = src.x + (tx - src.x) * 0.6, my = src.y + (ty - src.y) * 0.6;
+  const f = S3.fx;
+  // the blade's crescent opens toward the target (or the way the attacker faces)
+  const ang = Math.hypot(tx - src.x, ty - src.y) > 2 ? Math.atan2(ty - src.y, tx - src.x) : [Math.PI / 2, Math.PI, 0, -Math.PI / 2][dir] || 0;
   switch (kind) {
-    case 0: f.slash(mx, my, yaw, "#f4f4ff", 0.8); Sound.play("swing"); break;
+    case 0: f.slash(src.x, src.y, ang, "#f4f4ff", 0.8); Sound.play("swing"); break;
     case 1: f.proj(src.x, src.y, 0.75, tx, ty, 0.5, "#fff0c0", 0.04, 42); f.burst(src.x + (tx - src.x) * 0.15, src.y + (ty - src.y) * 0.15, 0.75, "#ffd84a", 4, 0.8); Sound.play("shoot"); break;
     case 2: f.proj(src.x, src.y, 1.1, tx, ty, 0.5, "#b08aff", 0.09, 15); Sound.play("magic"); break;
-    case 3: f.slash(mx, my, yaw, "#dcdcec", 0.45); Sound.play("swing"); break;
-    case 10: f.slash(mx, my, yaw, "#ffd84a", 1.05); S3.shake(2); Sound.play("crit"); break;
+    case 3: f.slash(src.x, src.y, ang, "#dcdcec", 0.45); Sound.play("swing"); break;
+    case 10: f.slash(src.x, src.y, ang, "#ffd84a", 1.05); S3.shake(2); Sound.play("crit"); break;
     case 11: f.ring(src.x, src.y, 48, "#ffffff", 260); f.ring(src.x, src.y, 34, "#ffd84a", 240, false, 60); Sound.play("swing"); break;
     case 12: f.ring(src.x, src.y, 60, "#ff7a5a", 500); f.sparkle(src.x, src.y, 0.9, "#ff7a5a", 16); Sound.play("buff"); break;
     case 13: f.beam(src.x, src.y, tx, ty, "#9fe8ff", 0.7); Sound.play("shoot"); break;
@@ -331,7 +332,7 @@ function attackFx(kind, src, tx, ty, dir) {
     case 15: f.proj(src.x, src.y, 1.1, tx, ty, 0.4, "#ff8a3a", 0.14, 13, () => { f.ring(tx, ty, 34, "#ff8a3a", 300, true); f.burst(tx, ty, 0.4, "#ffd84a", 22, 2.6); S3.shake(3); Sound.play("boom"); }); Sound.play("magic"); break;
     case 16: f.ring(src.x, src.y, 58, "#9fe8ff", 420, true); f.sparkle(src.x, src.y, 0.6, "#d0f4ff", 22); Sound.play("ice"); break;
     case 17: f.ring(src.x, src.y, 90, "#8cff8c", 500); f.sparkle(src.x, src.y, 0.6, "#8cff8c", 22); Sound.play("heal"); break;
-    case 18: f.slash(mx, my, yaw, "#e04860", 0.7); f.burst(tx, ty, 0.6, "#e04860", 10, 1.8); Sound.play("crit"); break;
+    case 18: f.slash(src.x, src.y, ang, "#e04860", 0.7); f.burst(tx, ty, 0.6, "#e04860", 10, 1.8); Sound.play("crit"); break;
     case 19: f.burst(src.x, src.y, 0.6, "#4a4468", 10, 1); break;
     case 20: f.burst(src.x, src.y, 0.5, "#8a8a98", 40, 1.2); Sound.play("buff"); break;
     case 21: f.proj(src.x, src.y, 1, tx, ty, 0.2, "#6a7a5a", 0.1, 11, () => { f.ring(tx, ty, 42, "#ffb04a", 320, true); f.burst(tx, ty, 0.4, "#ffd84a", 28, 3); S3.shake(4); Sound.play("boom"); }); Sound.play("swing"); break;
@@ -371,19 +372,14 @@ addEventListener("keydown", (e) => {
 addEventListener("keyup", (e) => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
 addEventListener("blur", () => { keys.clear(); held.atk = false; });
 
-/**
- * Which way to walk, in grid terms. The grid's axes are the screen's diagonals,
- * so each arrow key walks one diagonal (up = up-right, right = down-right,
- * down = down-left, left = up-left) and two keys together walk straight. The
- * stick and click-to-move work in screen terms and are converted.
- */
+/** Which way to walk: keys, the stick, or the next step of a clicked route. */
 function moveVector() {
   let x = 0, y = 0;
   if (keys.has("ArrowLeft") || keys.has("a") || keys.has("ㅁ")) x -= 1;
   if (keys.has("ArrowRight") || keys.has("d") || keys.has("ㅇ")) x += 1;
   if (keys.has("ArrowUp") || keys.has("w") || keys.has("ㅈ")) y -= 1;
   if (keys.has("ArrowDown") || keys.has("s") || keys.has("ㄴ")) y += 1;
-  if (joy.on) [x, y] = Art.unIso(joy.x, joy.y);
+  if (joy.on) { x = joy.x; y = joy.y; }
   if (x || y) G.path = null;
   else if (G.path) {
     while (G.path.length && dist(G.me.x, G.me.y, G.path[0][0], G.path[0][1]) < 2.5) G.path.shift();
@@ -754,14 +750,10 @@ function renderMini(t) {
   miniAt = t;
   const cv = $("#mini-cv"), g = cv.getContext("2d");
   const m = G.map;
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.clearRect(0, 0, cv.width, cv.height);
   g.imageSmoothingEnabled = false;
-  // the same diamond projection as the world, one pixel per tile
-  g.setTransform(0.5, 0.25, -0.5, 0.25, m.h, 0);
   g.drawImage(mini, 0, 0);
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  const dot = (x, y, col, r = 2) => { g.fillStyle = col; g.fillRect(Math.round((x - y) / T + m.h - r / 2), Math.round((x + y) / (2 * T) - r / 2), r, r); };
+  const k = mini.width / m.w / T;
+  const dot = (x, y, col, r = 2) => { g.fillStyle = col; g.fillRect(Math.round(x * k - r / 2), Math.round(y * k - r / 2), r, r); };
   for (const p of m.portals) dot(p.x * T + 8, p.y * T + 8, "#e080ff", 3);
   for (const n of m.npcs) dot(n.x * T + 8, n.y * T + 8, "#ffd84a", 3);
   for (const mob of G.mobs.values()) dot(mob.x, mob.y, mob.el ? "#ffbe3c" : "#ff5050");
