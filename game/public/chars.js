@@ -28,6 +28,14 @@ export const HAIR = ["#7c5842", "#35353f", "#d6b66c", "#c26a4e", "#9684b4", "#e2
 export const SKIN = ["#f8dcc6", "#e8ba98", "#bc8866"];
 export const STYLES = ["짧은 머리", "긴 머리", "묶은 머리"];
 const LINE = "#2c2430";
+/**
+ * Art-direction switches, so the same designer can be previewed in several
+ * styles: `tall` stretches the body and shrinks the head (about four and a half
+ * heads), `flat` drops the ink line and the form shading.
+ */
+let STYLE = { tall: false, flat: false };
+export function setStyle(s) { STYLE = { tall: !!s.tall, flat: !!s.flat }; }
+let ink = LINE, flat = false, tall = false;
 const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30"];
 const TAU = Math.PI * 2;
 
@@ -70,7 +78,7 @@ function sheet() {
   return [c, g];
 }
 /** Fill a path, then ink its edge. `fill` may be a colour or a gradient. */
-function shape(g, fill, path, line = LINE, lw = 0.75) {
+function shape(g, fill, path, line = ink, lw = 0.75) {
   g.beginPath();
   path(g);
   g.fillStyle = fill;
@@ -82,6 +90,7 @@ const box = (x, y, w, h, r) => (g) => g.roundRect(x, y, w, h, r);
 const poly = (...pts) => (g) => { pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); };
 /** Soft form shading: light from the upper left. */
 function shade(g, col, x0, x1) {
+  if (flat) return col;
   const gr = g.createLinearGradient(x0, 0, x1, 0);
   gr.addColorStop(0, lt(col, 1.12));
   gr.addColorStop(0.55, col);
@@ -91,8 +100,8 @@ function shade(g, col, x0, x1) {
 /** A rounded limb from a to b: inked, then coloured. */
 function limb(g, x0, y0, x1, y1, w, col) {
   g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1);
-  g.strokeStyle = LINE; g.lineWidth = w + 1.4; g.stroke();
-  g.strokeStyle = col; g.lineWidth = w; g.stroke();
+  if (ink) { g.strokeStyle = ink; g.lineWidth = w + 1.4; g.stroke(); }
+  g.strokeStyle = col; g.lineWidth = flat ? w + 0.8 : w; g.stroke();
 }
 function glow(g, col, blur, draw) {
   g.save();
@@ -170,7 +179,7 @@ function staff(g, o, x0, y0, x1, y1, lit) {
   aura(g, o, () => {
     if (t >= 3) {
       g.beginPath(); g.arc(x1, y1 - 1.5, 3.4, 0.25 * Math.PI, 1.9 * Math.PI);
-      g.strokeStyle = LINE; g.lineWidth = 2.2; g.stroke(); g.strokeStyle = m; g.lineWidth = 1.2; g.stroke();
+      g.strokeStyle = ink || "rgba(30,20,40,.28)"; g.lineWidth = 2.2; g.stroke(); g.strokeStyle = m; g.lineWidth = 1.2; g.stroke();
     } else shape(g, "#b4885c", ell(x1, y1 - 0.4, 2, 1.6));
     glow(g, gem, lit || t >= 4 ? 3 : 1.2, () => shape(g, gem, ell(x1, y1 - 1.6, 1.5 + t * 0.14, 1.7 + t * 0.14)));
     g.fillStyle = "#ffffff"; g.beginPath(); g.arc(x1 - 0.5, y1 - 2.2, 0.5, 0, TAU); g.fill();
@@ -181,9 +190,10 @@ function staff(g, o, x0, y0, x1, y1, lit) {
 
 /** The head is drawn a touch smaller than its construction lines, pivoting on the neck. */
 function head(g, o, back, by) {
-  const k = 0.86;
   g.save();
-  g.translate(20.2, 25.4 + by); g.scale(k, k); g.translate(-20.2, -(25.4 + by));
+  g.translate(20.2, 25.4 + by);
+  if (tall) g.scale(0.7 / TALL_X, 0.7 / TALL_Y); else g.scale(0.86, 0.86);
+  g.translate(-20.2, -(25.4 + by));
   headShape(g, o, back, by);
   g.restore();
 }
@@ -195,7 +205,7 @@ function headShape(g, o, back, by) {
     shape(g, shade(g, "#eef0f6", 12, 29), ell(hx, hy, 7.4, 7));
     if (!back) {
       for (const [x, r] of [[17.8, 1.5], [23.4, 1.3]]) { shape(g, "#2a2434", ell(x, hy + 1, r, 2), null); glow(g, o.eye, 1.4, () => shape(g, o.eye, ell(x, hy + 1.4, 0.7, 0.9), null)); }
-      g.strokeStyle = LINE; g.lineWidth = 0.5; g.beginPath(); for (let i = 0; i < 4; i++) { g.moveTo(18.4 + i * 1.4, hy + 4.6); g.lineTo(18.4 + i * 1.4, hy + 6); } g.stroke();
+      g.strokeStyle = ink || "rgba(30,20,40,.28)"; g.lineWidth = 0.5; g.beginPath(); for (let i = 0; i < 4; i++) { g.moveTo(18.4 + i * 1.4, hy + 4.6); g.lineTo(18.4 + i * 1.4, hy + 6); } g.stroke();
     }
     return;
   }
@@ -212,7 +222,7 @@ function headShape(g, o, back, by) {
     g.beginPath(); g.moveTo(15, hy - 3.5); g.quadraticCurveTo(19, hy - 6.5, 24, hy - 4.6);
     g.strokeStyle = lt(hair, 1.35); g.lineWidth = 1.1; g.stroke();
     g.beginPath(); g.moveTo(16, hy + 3); g.quadraticCurveTo(20, hy + 6, 24.5, hy + 3); g.strokeStyle = dk(hair, 0.82); g.lineWidth = 0.6; g.stroke();
-    if (o.style === 2) { shape(g, o.accent, poly([20.2, hy + 5.6], [17.2, hy + 4.2], [17.6, hy + 7]), LINE, 0.5); shape(g, o.accent, poly([20.2, hy + 5.6], [23.2, hy + 4.2], [22.8, hy + 7]), LINE, 0.5); }
+    if (o.style === 2) { shape(g, o.accent, poly([20.2, hy + 5.6], [17.2, hy + 4.2], [17.6, hy + 7]), ink, 0.5); shape(g, o.accent, poly([20.2, hy + 5.6], [23.2, hy + 4.2], [22.8, hy + 7]), ink, 0.5); }
   } else {
     // face
     shape(g, shade(g, skin, 10, 34), ell(12.9, hy + 1.6, 1.3, 1.7));
@@ -252,7 +262,7 @@ function headShape(g, o, back, by) {
   // headwear
   const top = hy - 7.6;
   if (o.cls === "warrior") {
-    g.beginPath(); g.moveTo(12.4, hy - 2.2); g.quadraticCurveTo(20, hy - 4.6, 28, hy - 2.4); g.strokeStyle = LINE; g.lineWidth = 2; g.stroke(); g.strokeStyle = o.accent; g.lineWidth = 1.2; g.stroke();
+    g.beginPath(); g.moveTo(12.4, hy - 2.2); g.quadraticCurveTo(20, hy - 4.6, 28, hy - 2.4); g.strokeStyle = ink || "rgba(30,20,40,.28)"; g.lineWidth = 2; g.stroke(); g.strokeStyle = o.accent; g.lineWidth = 1.2; g.stroke();
     if (o.at >= 3 && !back) shape(g, o.trim, poly([20, hy - 5.6], [21.6, hy - 3.4], [20, hy - 2.2], [18.4, hy - 3.4]));
   } else if (o.cls === "ranger") {
     shape(g, shade(g, o.main, 11, 30), (p) => { p.moveTo(11.8, hy - 2.6); p.bezierCurveTo(11.4, top - 2.6, 28.6, top - 3.4, 28.8, hy - 3); p.quadraticCurveTo(20, hy - 5.4, 11.8, hy - 2.6); p.closePath(); });
@@ -273,10 +283,14 @@ function headShape(g, o, back, by) {
   if (o.beard && !back) shape(g, "#eef0f6", (p) => { p.moveTo(15, hy + 3.4); p.quadraticCurveTo(20.4, hy + 5, 25.6, hy + 3.4); p.quadraticCurveTo(25, hy + 10, 20.4, hy + 12.4); p.quadraticCurveTo(15.6, hy + 10, 15, hy + 3.4); p.closePath(); });
 }
 
+const TALL_X = 0.9, TALL_Y = 1.3;
+
 // ───────────────────────────── the figure ─────────────────────────────
 
 function figure(o, back, f) {
   const [c, g] = sheet();
+  ink = o.flat ? null : LINE; flat = !!o.flat; tall = !!o.tall;
+  if (tall) { g.translate(20, 46); g.scale(TALL_X, TALL_Y); g.translate(-20, -46); }
   const P = POSE[f], by = P.bob, cls = o.cls, atk = P.atk;
   const walking = f >= 2 && f <= 5;
   const sway = walking ? [0, 1, 0, -1][f - 2] : 0;
@@ -422,7 +436,7 @@ export function drawFigure(g, s, dir, f, x, y, w = CHAR_W, h = CHAR_H) {
 }
 
 function base(look) {
-  return { hair: look[0] | 0, skin: look[1] | 0, style: look[2] | 0, hairCol: HAIR[look[0] | 0] || HAIR[0], skinCol: SKIN[look[1] | 0] || SKIN[0], eye: "#4a78c8" };
+  return { ...(STYLE.tall ? { tall: 1 } : {}), ...(STYLE.flat ? { flat: 1 } : {}), hair: look[0] | 0, skin: look[1] | 0, style: look[2] | 0, hairCol: HAIR[look[0] | 0] || HAIR[0], skinCol: SKIN[look[1] | 0] || SKIN[0], eye: "#4a78c8" };
 }
 /**
  * A player's look. `gear`: at/aq armour tier and rarity · wt/wq/we weapon tier,

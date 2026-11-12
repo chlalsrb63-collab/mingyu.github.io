@@ -526,7 +526,7 @@ export function buildScenery() {
 // ───────────────────────────── characters ─────────────────────────────
 // People are designed in their own module; see chars.js.
 
-export { charSprite, drawFigure, playerLook, npcLook, HAIR, SKIN, STYLES, CHAR_W, CHAR_H, CHAR_TOP, FOOT_X, FOOT_Y } from "./chars.js";
+export { charSprite, drawFigure, setStyle, playerLook, npcLook, HAIR, SKIN, STYLES, CHAR_W, CHAR_H, CHAR_TOP, FOOT_X, FOOT_Y } from "./chars.js";
 import { charSprite, frameOf, mobLook, K as CHAR_K } from "./chars.js";
 
 // ───────────────────────────── monsters ─────────────────────────────

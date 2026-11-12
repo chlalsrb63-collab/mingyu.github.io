@@ -89,6 +89,9 @@ const G = {
   cdEnd: [0, 0, 0], buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
   auto: false, sel: -1, shake: 0, flash: 0, near: null, party: [], pinv: null, path: null, mark: null,
 };
+// ?style=c|d previews alternative character art directions
+const STYLE_KEY = new URLSearchParams(location.search).get("style") || "";
+Art.setStyle({ tall: STYLE_KEY === "c" || STYLE_KEY === "d", flat: STYLE_KEY === "d" });
 const scenery = Art.buildScenery();
 const mobArt = Art.buildMobs();
 let ground = null, mini = null;
