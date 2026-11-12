@@ -1599,8 +1599,11 @@ export function viewFor(S, pid) {
     for (const oid of Object.keys(S.players)) {
       const o = S.players[oid];
       if (o.map !== p.map) continue;
-      const ar = o.ch.eq.armor, wp = o.ch.eq.weapon;
-      out.who.push([o.eid, o.ch.name, o.ch.cls, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party]);
+      // what everyone can see of this player, gear included: armour tier, weapon
+      // tier, party, weapon rarity and enhancement, accessory tier
+      const ar = o.ch.eq.armor, wp = o.ch.eq.weapon, ac = o.ch.eq.acc;
+      out.who.push([o.eid, o.ch.name, o.ch.cls, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
+        wp ? wp.q : 0, wp ? wp.enh : 0, ac ? ITEMS[ac.id].tier : 0]);
     }
   }
   if (p.party) {

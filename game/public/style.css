@@ -14,6 +14,7 @@ html, body {
 }
 [hidden] { display: none !important; }
 canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+#world, #char-cv, #create-cv { image-rendering: auto; }
 #world, #text { position: fixed; left: 0; top: 0; }
 #text { pointer-events: none; }
 

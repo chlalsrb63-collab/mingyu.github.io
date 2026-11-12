@@ -82,22 +82,22 @@ function tinted(src, col) {
 // ───────────────────────────── ground ─────────────────────────────
 
 const GROUND = {
-  ".": ["#4e8a3e", "#3f7434", "#62a04c"],
-  ",": ["#4e8a3e", "#3f7434", "#62a04c"],
-  '"': ["#4e8a3e", "#3f7434", "#62a04c"],
-  ":": ["#35693e", "#2a5633", "#44794a"],
-  ";": ["#35693e", "#2a5633", "#44794a"],
-  p: ["#b89a66", "#a38552", "#c8ac78"],
-  o: ["#8e8a84", "#6e6a66", "#a6a29a"],
-  s: ["#cdbd8a", "#b8a672", "#dccf9e"],
-  w: ["#3a6ea8", "#2e5c92", "#7fb0dc"],
-  b: ["#8a6034", "#644420", "#a07444"],
-  c: ["#4c475e", "#3f3a50", "#5a556e"],
-  d: ["#4c475e", "#3f3a50", "#5a556e"],
-  W: ["#0b0914", "#090711", "#0e0c18"],
-  a: ["#3a3d46", "#30333b", "#474a54"],
-  m: ["#3a3d46", "#30333b", "#474a54"],
-  k: ["#7c7f86", "#63666d", "#8f9299"],
+  ".": ["#6cba54", "#5aa646", "#84cf6a"],
+  ",": ["#6cba54", "#5aa646", "#84cf6a"],
+  '"': ["#6cba54", "#5aa646", "#84cf6a"],
+  ":": ["#4a9a58", "#3d8449", "#5aae68"],
+  ";": ["#4a9a58", "#3d8449", "#5aae68"],
+  p: ["#dcc08a", "#c8aa72", "#ead2a0"],
+  o: ["#bcb8b0", "#9c9890", "#d2cec6"],
+  s: ["#ecdcaa", "#d8c690", "#f6eac2"],
+  w: ["#58a0e0", "#4688cc", "#a8d8f8"],
+  b: ["#a87a48", "#7e5630", "#c0925a"],
+  c: ["#625c7a", "#524c68", "#726c8c"],
+  d: ["#625c7a", "#524c68", "#726c8c"],
+  W: ["#14111e", "#100e19", "#181524"],
+  a: ["#4a4e5a", "#3e424c", "#585c68"],
+  m: ["#4a4e5a", "#3e424c", "#585c68"],
+  k: ["#92969e", "#787c84", "#a6aab2"],
 };
 const GRASSY = '.,":;';
 const FLOWERS = ["#e8dc90", "#e8e8e8", "#d88aa8", "#e0b850"];
@@ -248,13 +248,13 @@ function tree() {
   g.fillStyle = "#7a5030"; g.fillRect(19, 38, 6, 22);
   g.fillStyle = "#5a3a20"; g.fillRect(23, 38, 2, 22); g.fillRect(17, 59, 10, 1);
   g.fillStyle = "#8e6238"; g.fillRect(19, 40, 1, 16);
-  disc(g, 22, 22, 20, 20, "#2a6a30");
-  disc(g, 20, 19, 17, 16, "#3a8038");
-  disc(g, 16, 14, 11, 9, "#549a46");
-  disc(g, 13, 10, 5, 4, "#74b45e");
-  disc(g, 30, 28, 8, 7, "#225828");
-  for (let i = 0; i < 40; i++) px(g, 5 + Math.floor(hash(i, 1) * 34), 6 + Math.floor(hash(i, 2) * 32), i % 3 ? "#2a6a30" : "#549a46");
-  outline(c, g, "#152e1a");
+  disc(g, 22, 22, 20, 20, "#3a8c40");
+  disc(g, 20, 19, 17, 16, "#52a64c");
+  disc(g, 16, 14, 11, 9, "#72c05c");
+  disc(g, 13, 10, 5, 4, "#9cdc80");
+  disc(g, 30, 28, 8, 7, "#2f7a38");
+  for (let i = 0; i < 40; i++) px(g, 5 + Math.floor(hash(i, 1) * 34), 6 + Math.floor(hash(i, 2) * 32), i % 3 ? "#3a8c40" : "#72c05c");
+  outline(c, g, "#245c30");
   return c;
 }
 function pine() {
@@ -264,13 +264,13 @@ function pine() {
   const tier = (top, h, half) => {
     for (let y = 0; y < h; y++) {
       const w = Math.round(1 + (half * y) / (h - 1));
-      g.fillStyle = "#265a3c"; g.fillRect(19 - w, top + y, w * 2, 1);
-      g.fillStyle = "#34704a"; g.fillRect(19 - w, top + y, Math.max(1, Math.round(w * 0.6)), 1);
-      g.fillStyle = "#1a4430"; g.fillRect(19 + Math.round(w * 0.45), top + y, w - Math.round(w * 0.45), 1);
+      g.fillStyle = "#327a50"; g.fillRect(19 - w, top + y, w * 2, 1);
+      g.fillStyle = "#46925e"; g.fillRect(19 - w, top + y, Math.max(1, Math.round(w * 0.6)), 1);
+      g.fillStyle = "#225a3c"; g.fillRect(19 + Math.round(w * 0.45), top + y, w - Math.round(w * 0.45), 1);
     }
   };
   tier(1, 16, 8); tier(11, 18, 11); tier(23, 20, 14); tier(36, 20, 17);
-  outline(c, g, "#0e2418");
+  outline(c, g, "#1a4a2c");
   return c;
 }
 function rock(cols) {
@@ -284,11 +284,11 @@ function rock(cols) {
 }
 function bush() {
   const [c, g] = canvas(16, 14);
-  disc(g, 8, 8, 7, 5, "#2a6a30");
-  disc(g, 5, 7, 4, 4, "#3a8038"); disc(g, 11, 7, 4, 4, "#3a8038");
-  disc(g, 6, 5, 2.5, 2, "#549a46");
+  disc(g, 8, 8, 7, 5, "#3a8c40");
+  disc(g, 5, 7, 4, 4, "#52a64c"); disc(g, 11, 7, 4, 4, "#52a64c");
+  disc(g, 6, 5, 2.5, 2, "#72c05c");
   for (const [x, y] of [[4, 8], [9, 6], [12, 9], [7, 10]]) { px(g, x, y, "#b83a48"); px(g, x + 1, y, "#d86a78"); }
-  outline(c, g, "#152e1a");
+  outline(c, g, "#245c30");
   return c;
 }
 function fence() {
@@ -345,7 +345,7 @@ function stalagmite() {
   outline(c, g, "#1c1830");
   return c;
 }
-const ROOFS = [["#a84434", "#7c2c26", "#c4604a"], ["#3f5f96", "#2c4470", "#587ab0"], ["#42784a", "#2e5634", "#5a9462"], ["#6a4a90", "#4c336c", "#8464aa"]];
+const ROOFS = [["#d8604a", "#a84238", "#ee8068"], ["#5a84c8", "#3f629c", "#7aa2e0"], ["#5aa468", "#3f7a4a", "#78c084"], ["#9a6cc8", "#74489c", "#b88ae0"]];
 
 /**
  * Paint a box standing on the diamond grid. (nx, ny) is where its far (north)
@@ -377,9 +377,9 @@ function house(v) {
   return boxSprite(W, D, H + R, (g, nx, ny) => {
     isoBox(g, nx, ny, W, D, H, fill("#000"),
       (g2, w, h) => {
-        g2.fillStyle = "#d0c4a8"; g2.fillRect(0, 0, w, h);
+        g2.fillStyle = "#f2e6cc"; g2.fillRect(0, 0, w, h);
         g2.fillStyle = "#7a5430"; g2.fillRect(0, 0, 2, h); g2.fillRect(w - 2, 0, 2, h); g2.fillRect(0, 10, w, 2); g2.fillRect(20, 0, 2, 10); g2.fillRect(46, 0, 2, 10);
-        g2.fillStyle = "#b8ac92"; g2.fillRect(2, h - 4, w - 4, 4);
+        g2.fillStyle = "#d8ccb2"; g2.fillRect(2, h - 4, w - 4, 4);
         g2.fillStyle = "#5a3c22"; g2.fillRect(26, h - 22, 14, 22);
         g2.fillStyle = "#8a6034"; g2.fillRect(28, h - 20, 10, 20);
         g2.fillStyle = "#6e4a28"; g2.fillRect(32, h - 20, 1, 20); g2.fillRect(28, h - 11, 10, 1);
@@ -387,9 +387,9 @@ function house(v) {
         for (const x of [6, 46]) { g2.fillStyle = "#5a3c22"; g2.fillRect(x, 14, 12, 12); g2.fillStyle = "#f0d890"; g2.fillRect(x + 1, 15, 10, 10); g2.fillStyle = "#5a3c22"; g2.fillRect(x + 5, 15, 2, 10); g2.fillRect(x + 1, 19, 10, 1); }
       },
       (g2, w, h) => {
-        g2.fillStyle = "#a89c82"; g2.fillRect(0, 0, w, h);
+        g2.fillStyle = "#cfc2a6"; g2.fillRect(0, 0, w, h);
         g2.fillStyle = "#5e4024"; g2.fillRect(0, 0, 2, h); g2.fillRect(w - 2, 0, 2, h); g2.fillRect(0, 10, w, 2); g2.fillRect(23, 0, 2, 10);
-        g2.fillStyle = "#948a72"; g2.fillRect(2, h - 4, w - 4, 4);
+        g2.fillStyle = "#b4a88e"; g2.fillRect(2, h - 4, w - 4, 4);
         g2.fillStyle = "#4a3018"; g2.fillRect(17, 14, 14, 12); g2.fillStyle = "#c8b070"; g2.fillRect(18, 15, 12, 10); g2.fillStyle = "#4a3018"; g2.fillRect(23, 15, 2, 10);
       });
     // a hipped roof: two slopes face the camera, two fall away behind the ridge
@@ -526,8 +526,8 @@ export function buildScenery() {
 // ───────────────────────────── characters ─────────────────────────────
 // People are designed in their own module; see chars.js.
 
-export { charSprite, playerLook, npcLook, HAIR, SKIN, STYLES, CHAR_W, CHAR_H, CHAR_TOP, FOOT_X, FOOT_Y } from "./chars.js";
-import { charSprite, mobLook } from "./chars.js";
+export { charSprite, drawFigure, playerLook, npcLook, HAIR, SKIN, STYLES, CHAR_W, CHAR_H, CHAR_TOP, FOOT_X, FOOT_Y } from "./chars.js";
+import { charSprite, frameOf, mobLook, K as CHAR_K } from "./chars.js";
 
 // ───────────────────────────── monsters ─────────────────────────────
 
@@ -682,10 +682,11 @@ export function buildMobs() {
   add("bat", [sheet(M_BAT_A, PAL.bat), sheet(M_BAT_B, PAL.bat)], 8);
   add("drone", [sheet(M_DRONE_A, PAL.drone), sheet(M_DRONE_B, PAL.drone)], 10);
   // humanoids come from the character designer: two walking frames, facing down-left
-  const thug = charSprite(mobLook("thug"));
-  add("thug", [thug[0][2], thug[0][4]]);
-  const skel = charSprite(mobLook("skel"));
-  add("skel", [skel[0][2], skel[0][4]]);
+  for (const kind of ["thug", "skel"]) {
+    const sheet = charSprite(mobLook(kind));
+    add(kind, [flip(frameOf(sheet, false, 2)), flip(frameOf(sheet, false, 4))]);
+    out[kind].k = CHAR_K;
+  }
   add("golem", mobFrames(M_GOLEM, PAL.golem, 2));
   add("robot", mobFrames(M_GOLEM, PAL.robot, 2));
   add("boss", mobFrames(M_GOLEM, PAL.boss, 3, (g) => {

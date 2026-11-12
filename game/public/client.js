@@ -102,12 +102,13 @@ function resize() {
   const W = innerWidth, H = innerHeight;
   scale = Math.max(2, Math.round(Math.min(W / 340, H / 210)));
   vw = Math.ceil(W / scale); vh = Math.ceil(H / scale);
-  world.width = vw; world.height = vh;
-  world.style.width = vw * scale + "px"; world.style.height = vh * scale + "px";
+  // the world is drawn at full device resolution through a scale transform, so
+  // curves, glows and the illustrated characters stay smooth at any zoom
   dpr = Math.min(2, window.devicePixelRatio || 1);
+  world.width = Math.round(W * dpr); world.height = Math.round(H * dpr);
+  world.style.width = W + "px"; world.style.height = H + "px";
   text.width = Math.round(W * dpr); text.height = Math.round(H * dpr);
   text.style.width = W + "px"; text.style.height = H + "px";
-  wg.imageSmoothingEnabled = false;
 }
 addEventListener("resize", resize);
 resize();
@@ -219,8 +220,8 @@ function onSnap(s) {
 
   if (s.who) {
     G.who.clear();
-    for (const [eid, name, cls, lvl, look, tier, wt, party] of s.who) {
-      G.who.set(eid, { name, cls, lvl, sprite: Art.charSprite(Art.playerLook(cls, look, tier, wt)), look, tier, party });
+    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, acc] of s.who) {
+      G.who.set(eid, { name, cls, lvl, sprite: Art.charSprite(Art.playerLook(cls, look, { at, wt, wq, we, acc })), look, party });
     }
     if (isOpen("party")) renderParty();
   }
@@ -711,9 +712,8 @@ function update(dt, t) {
 // projection; the camera works in projected space.
 
 function shadow(x, y, w) {
-  wg.fillStyle = "rgba(4, 6, 14, .32)";
-  wg.fillRect(Math.round(x - w / 2), Math.round(y - 1), w, 2);
-  wg.fillRect(Math.round(x - w / 2) + 2, Math.round(y - 2), w - 4, 4);
+  wg.fillStyle = "rgba(20, 24, 50, .28)";
+  wg.beginPath(); wg.ellipse(x, y, w / 2, w / 4.4, 0, 0, Math.PI * 2); wg.fill();
 }
 /** Screen-space unit vector for each facing (the four diagonals). */
 const FACE = [[-1, 0.5], [-1, -0.5], [1, 0.5], [1, -0.5]];
@@ -723,9 +723,11 @@ function drawChar(sprite, x, y, dir, walkT, moving, atkT, t, alpha = 1) {
   const frame = a < 240 ? (a < 90 ? 6 : 7) : moving ? 2 + (Math.floor(walkT) % 4) : Math.floor(t / 650) % 2;
   let ox = 0, oy = 0;
   if (a < 240) { const k = Math.sin((a / 240) * Math.PI) * 3; ox = FACE[dir][0] * k; oy = FACE[dir][1] * k; }
-  shadow(x, y + 1, 13);
+  shadow(x, y + 0.5, 14);
   if (alpha !== 1) wg.globalAlpha = alpha;
-  wg.drawImage(sprite[dir][frame], Math.round(x - Art.FOOT_X + ox), Math.round(y - Art.FOOT_Y + oy));
+  wg.imageSmoothingEnabled = true;        // people are illustrations, not pixels
+  Art.drawFigure(wg, sprite, dir, frame, x - Art.FOOT_X + ox, y - Art.FOOT_Y + oy);
+  wg.imageSmoothingEnabled = false;
   wg.globalAlpha = 1;
 }
 /** A circle lying on the ground looks like a 2:1 ellipse from this angle. */
@@ -742,7 +744,9 @@ function render(t) {
   cam.y = Math.round(miy - 12 - vh / 2);
   if (G.shake > 0.3) { cam.x += Math.round((Math.random() - 0.5) * G.shake); cam.y += Math.round((Math.random() - 0.5) * G.shake); }
 
-  wg.fillStyle = "#050608";
+  wg.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+  wg.imageSmoothingEnabled = false;       // scenery is pixel art: keep its edges crisp
+  wg.fillStyle = "#0b0d14";
   wg.fillRect(0, 0, vw, vh);
   wg.save();
   wg.translate(-cam.x, -cam.y);
@@ -825,19 +829,22 @@ function render(t) {
       let ox = 0;
       const a = t - mob.atkT;
       if (a < 200) ox = Math.sin((a / 200) * Math.PI) * 5 * (right ? 1 : -1);
-      shadow(x, y + 1, Math.min(22, img.width - 4));
+      const k = art.k || 1, iw = img.width / k, ih = img.height / k;
+      shadow(x, y + 1, Math.min(26, iw * 0.6));
       if (mob.el) {
         wg.strokeStyle = `rgba(255,190,60,${0.5 + 0.3 * Math.sin(t / 160)})`;
         wg.beginPath(); wg.ellipse(x, y, 13, 6, 0, 0, Math.PI * 2); wg.stroke();
         if (Math.random() < 0.2) G.parts.push({ x: x + Math.random() * 14 - 7, y: y - 2, vx: 0, vy: -20, life: 0.5, col: "#ffbe3c", g: 0 });
       }
       wg.globalAlpha = clamp((t - mob.born) / 300, 0, 1);
-      wg.drawImage(img, Math.round(x - img.width / 2 + ox), Math.round(y - img.height + 3 - art.lift + ox * (right ? 0.5 : -0.5) * 0));
+      wg.imageSmoothingEnabled = k > 1;
+      wg.drawImage(img, Math.round(x - iw / 2 + ox), Math.round(y - ih + 3 - art.lift), iw, ih);
+      wg.imageSmoothingEnabled = false;
       wg.globalAlpha = 1;
       const max = mobMax(mob);
       if (mob.hp < max) {
         const w = G.defs.mobs[mob.k].boss ? 40 : 16;
-        const bx = Math.round(x - w / 2), by = Math.round(y - img.height - 3 - art.lift);
+        const bx = Math.round(x - w / 2), by = Math.round(y - ih * (k > 1 ? 0.86 : 1) - 3 - art.lift);
         wg.fillStyle = "#08090c"; wg.fillRect(bx - 1, by - 1, w + 2, 4);
         wg.fillStyle = mob.el ? "#ffbe3c" : "#c8303c"; wg.fillRect(bx, by, Math.max(1, Math.round((w * mob.hp) / max)), 2);
       }
@@ -905,7 +912,7 @@ function render(t) {
 
 // Mood: each world has its own ambient darkness, and lamps, crystals, lit
 // windows and the players themselves cut pools of light out of it.
-const AMBIENT = { town: ["#141a38", 0.3], meadow: ["#1a2030", 0.1], forest: ["#06141c", 0.46], city: ["#080a22", 0.62], cave: ["#04030e", 0.7] };
+const AMBIENT = { town: ["#2a2050", 0.1], meadow: ["#1a2030", 0], forest: ["#0a2428", 0.26], city: ["#0c1036", 0.52], cave: ["#0a0820", 0.56] };
 const lightCv = document.createElement("canvas"), lg = lightCv.getContext("2d");
 function lighting(t, list) {
   const [col, alpha] = AMBIENT[G.map.id] || AMBIENT.meadow;
@@ -925,7 +932,7 @@ function lighting(t, list) {
     lg.fillStyle = gr;
     lg.fillRect(sx - r, sy - r, r * 2, r * 2);
   };
-  if (alpha > 0.2) {
+  if (alpha > 0.15) {
     for (const o of list) {
       if (o.me) hole(o.ix, o.iy - 10, 80, 0.9);
       else if (o.p) hole(o.ix, o.iy - 10, 66, 0.8);
@@ -936,10 +943,12 @@ function lighting(t, list) {
     for (const p of G.map.portals) { const [x, y] = P(p.x * T + 8, p.y * T + 8); hole(x, y, 44, 0.8); }
     for (const f of G.fx) if (f.type === "ring" || f.type === "proj") hole(f.type === "proj" ? f.x2 : f.x, f.type === "proj" ? f.y2 : f.y, 50, 0.6);
   }
-  wg.drawImage(lightCv, 0, 0);
+  wg.imageSmoothingEnabled = true;
+  wg.drawImage(lightCv, 0, 0, vw, vh);
+  wg.imageSmoothingEnabled = false;
   // a soft vignette pulls the eye to the middle of the screen
   const v = wg.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.45, vw / 2, vh / 2, Math.max(vw, vh) * 0.75);
-  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.42)");
+  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(10,8,30,.24)");
   wg.fillStyle = v;
   wg.fillRect(0, 0, vw, vh);
 }
@@ -994,7 +1003,7 @@ function renderText(t, list) {
       const d = G.defs.mobs[o.mob.k];
       if (d.boss || o.mob.el || o.mob.hp < mobMax(o.mob)) {
         const art = mobArt[d.sp];
-        label(`Lv.${d.lv} ${o.mob.el ? "정예 " : ""}${d.name}`, o.ix, o.iy - art.frames[0].height - 7 - art.lift, d.boss ? "#ff9ae0" : o.mob.el ? "#ffbe3c" : "#e8d8d8");
+        label(`Lv.${d.lv} ${o.mob.el ? "정예 " : ""}${d.name}`, o.ix, o.iy - (art.frames[0].height / (art.k || 1)) * (art.k ? 0.86 : 1) - 7 - art.lift, d.boss ? "#ff9ae0" : o.mob.el ? "#ffbe3c" : "#e8d8d8");
       }
     } else if (o.d) {
       if (o.d.q) label(G.defs.items[o.d.it].name, o.ix, o.iy - 16, Art.RARITY_COL[o.d.q]);
@@ -1250,8 +1259,8 @@ function refreshUi() {
   if (isOpen("char")) {
     const w = G.who.get(G.you);
     const cv = $("#char-cv"), cg = cv.getContext("2d");
-    cg.clearRect(0, 0, 40, 48);
-    if (w) cg.drawImage(w.sprite[2][Math.floor(now() / 650) % 2], 0, 0);
+    cg.clearRect(0, 0, cv.width, cv.height);
+    if (w) Art.drawFigure(cg, w.sprite, 2, 0, 0, 0, cv.width, cv.height);
     $("#char-title").textContent = `${s.name} · Lv.${s.lvl} ${G.defs.classes[s.cls].name}`;
     for (const k of GEAR) {
       const host = $(`#eq-${k}`);
@@ -1503,8 +1512,8 @@ $("#c-name").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#b-c
 // a small living diorama behind the title
 const tcv = $("#title-cv"), tgx = tcv.getContext("2d");
 const parade = [
-  Art.charSprite(Art.playerLook("warrior", [3, 0, 0], 1, 2)), Art.charSprite(Art.playerLook("mage", [4, 0, 1], 1, 2)),
-  Art.charSprite(Art.playerLook("ranger", [2, 1, 2], 1, 3)), Art.charSprite(Art.playerLook("rogue", [1, 2, 0], 1, 2)),
+  Art.charSprite(Art.playerLook("warrior", [3, 0, 0], { at: 3, wt: 3 })), Art.charSprite(Art.playerLook("mage", [4, 0, 1], { at: 2, wt: 3 })),
+  Art.charSprite(Art.playerLook("ranger", [2, 1, 2], { at: 2, wt: 3 })), Art.charSprite(Art.playerLook("rogue", [1, 2, 0], { at: 1, wt: 2 })),
 ];
 function renderTitle(t) {
   const s = Math.max(2, Math.round(Math.min(innerWidth / 300, innerHeight / 180)));
@@ -1530,18 +1539,21 @@ function renderTitle(t) {
     tgx.drawImage(i % 2 ? scenery.T : scenery.P, Math.round(x), gy - (i % 2 ? 26 : 30));
   }
   const cx = Math.round(w / 2);
-  parade.forEach((sp, i) => tgx.drawImage(sp[2][2 + (Math.floor(t / 150) % 4)], cx - 74 + i * 26, gy + 22 - Art.FOOT_Y));
+  tgx.imageSmoothingEnabled = true;
+  parade.forEach((sp, i) => Art.drawFigure(tgx, sp, 2, 2 + (Math.floor(t / 150) % 4), cx - 74 + i * 26, gy + 22 - Art.FOOT_Y));
+  tgx.imageSmoothingEnabled = false;
   const sl = mobArt.slime.right[Math.floor(t / 300) % 2];
   tgx.drawImage(sl, cx + 34, gy + 4 - Math.abs(Math.round(Math.sin(t / 250) * 5)));
   tgx.drawImage(mobArt.bslime.right[Math.floor(t / 300 + 1) % 2], cx + 54, gy + 4 - Math.abs(Math.round(Math.sin(t / 250 + 1) * 5)));
 }
 function renderCreate(t) {
   const g = $("#create-cv").getContext("2d");
-  g.clearRect(0, 0, 40, 48);
-  const sp = Art.charSprite(Art.playerLook(draft.cls, [draft.hair, draft.skin, draft.style], 1, 1));
+  const cvs = $("#create-cv");
+  g.clearRect(0, 0, cvs.width, cvs.height);
+  const sp = Art.charSprite(Art.playerLook(draft.cls, [draft.hair, draft.skin, draft.style], {}));
   // turn through the four facings, and show one swing in each
   const dir = [2, 0, 1, 3][Math.floor(t / 2400) % 4], k = t % 2400;
-  g.drawImage(sp[dir][k > 1900 ? (k < 2050 ? 6 : 7) : k < 700 ? Math.floor(t / 650) % 2 : 2 + (Math.floor(t / 150) % 4)], 0, 0);
+  Art.drawFigure(g, sp, dir, k > 1900 ? (k < 2050 ? 6 : 7) : k < 700 ? Math.floor(t / 650) % 2 : 2 + (Math.floor(t / 150) % 4), 0, 0, cvs.width, cvs.height);
 }
 
 // ───────────────────────────── main loop ─────────────────────────────

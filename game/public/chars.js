@@ -1,28 +1,35 @@
 /**
  * Character design.
  *
- * Every adventurer, townsperson and humanoid monster is painted here, limb by
- * limb, onto a 40×48 canvas: a figure about three and a half heads tall with
- * its weapon, costume and hair layered in the order they overlap. Two views are
- * drawn — three-quarter front and three-quarter back — and mirrored to give the
- * four diagonal facings of the game's grid.
+ * People are drawn as smooth, soft-shaded illustrations rather than pixels: a
+ * big-headed, two-and-a-half-heads-tall figure in the tradition of Korean
+ * online RPG sprites — large eyes, full hair, a costume that reads at a glance.
+ * Each figure is painted with curves at four times its on-screen size, so it
+ * stays clean at any zoom.
  *
- * Frames: 0–1 idle (breathing) · 2–5 walk cycle · 6–7 attack (wind-up, strike).
+ * What you wear is what you see: the armour's tier picks the outfit's cut and
+ * colours, the weapon's tier its shape, its rarity an aura, a high enhancement
+ * a sparkle, and an accessory hangs at the collar.
+ *
+ * Two views are painted (three-quarter front and back) and mirrored for the
+ * four diagonal facings. Frames: 0–1 idle · 2–5 walk · 6–7 attack.
  */
 
 export const CHAR_W = 40;
 export const CHAR_H = 48;
-/** Where the feet touch the ground inside the canvas. */
 export const FOOT_X = 20;
 export const FOOT_Y = 46;
 /** Height of the figure above its feet — where a name tag goes. */
-export const CHAR_TOP = 42;
-export const FRAMES = { idle: [0, 1], walk: [2, 3, 4, 5], attack: [6, 7] };
+export const CHAR_TOP = 40;
+/** Supersampling: sheets are K times larger than they are drawn. */
+export const K = 4;
 
-export const HAIR = ["#6b4630", "#22232c", "#d0aa58", "#a8432e", "#7d5c9a", "#d4d6de"];
-export const SKIN = ["#f0c9a4", "#d9a47c", "#a6714e"];
+export const HAIR = ["#8a5a3c", "#3a3a4c", "#f0c860", "#e0704a", "#b48ad8", "#eef0f6"];
+export const SKIN = ["#ffe0c8", "#f2c09a", "#c48a66"];
 export const STYLES = ["짧은 머리", "긴 머리", "묶은 머리"];
-const LINE = "#16121c";
+const LINE = "#3b2a3a";
+const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30"];
+const TAU = Math.PI * 2;
 
 // ───────────────────────────── colour ─────────────────────────────
 
@@ -31,210 +38,61 @@ function mix(hex, f) {
   const ch = (v) => Math.max(0, Math.min(255, Math.round(f < 1 ? v * f : v + (255 - v) * (f - 1)))).toString(16).padStart(2, "0");
   return `#${ch((n >> 16) & 255)}${ch((n >> 8) & 255)}${ch(n & 255)}`;
 }
-const dk = (hex) => mix(hex, 0.7);
-const lt = (hex) => mix(hex, 1.28);
+const dk = (hex, f = 0.74) => mix(hex, f);
+const lt = (hex, f = 1.3) => mix(hex, f);
 
-const METAL = ["#8e939c", "#8e939c", "#b4bac6", "#8fb0e0", "#62d6e2", "#d684f0"];
-/** Each class's signature material, by armour tier (index 0–5). */
-const TIER = {
-  warrior: ["#7e8696", "#7e8696", "#8f9aae", "#aab6cc", "#565c6e", "#58c0d0"],
-  rogue: ["#373a45", "#373a45", "#4c3e36", "#3c4656", "#24262e", "#2a6a78"],
-  ranger: ["#4f6044", "#4f6044", "#665840", "#56627a", "#2e323a", "#2a7a84"],
-  mage: ["#40367e", "#40367e", "#5c3672", "#34528c", "#28263e", "#2a8a94"],
+/** Outfit colours by armour tier: [main, secondary, trim, glow]. */
+const OUTFIT = {
+  warrior: [["#c8503e", "#9aa2b2", "#f0cc60"], ["#b06a3e", "#aab4c6", "#f0cc60"], ["#4468b8", "#dbe4f2", "#f6d870"], ["#343a48", "#6a7488", "#ff6a52"], ["#237c8c", "#a6eef4", "#f2ffff", "#8ff4ff"]],
+  rogue: [["#555b78", "#d04a5e", "#e6cc88"], ["#6a5244", "#e07a34", "#e6cc88"], ["#345a70", "#5ccab8", "#eaf6f0"], ["#2a2c38", "#ee4668", "#c8ccd8"], ["#1f5666", "#7ef4e2", "#f2ffff", "#8ff4ff"]],
+  ranger: [["#6a8a52", "#f2e6c4", "#d0ae64"], ["#96744a", "#f6ecd0", "#d0ae64"], ["#5074a8", "#eef2f8", "#f0d070"], ["#343844", "#d0d4dc", "#ffb44a"], ["#24828e", "#e2fcff", "#f2ffff", "#8ff4ff"]],
+  mage: [["#7a68d8", "#f4ecff", "#f6d878"], ["#b4549a", "#ffeaf6", "#f6d878"], ["#4274cc", "#eaf6ff", "#f6d878"], ["#34305a", "#c0b0ff", "#d0b0ff"], ["#22949e", "#eaffff", "#f2ffff", "#8ff4ff"]],
 };
+const METAL = ["#b8bcc6", "#b8bcc6", "#dfe4ee", "#a8c8f4", "#7fe4ee", "#e49af8"];
 
-// ───────────────────────────── canvas helpers ─────────────────────────────
+// ───────────────────────────── drawing helpers ─────────────────────────────
 
 function sheet() {
   const c = document.createElement("canvas");
-  c.width = CHAR_W;
-  c.height = CHAR_H;
+  c.width = CHAR_W * K;
+  c.height = CHAR_H * K;
   const g = c.getContext("2d");
-  g.imageSmoothingEnabled = false;
+  g.scale(K, K);
+  g.lineJoin = "round";
+  g.lineCap = "round";
   return [c, g];
 }
-function flip(src) {
-  const [c, g] = sheet();
-  g.translate(CHAR_W, 0);
-  g.scale(-1, 1);
-  g.drawImage(src, 0, 0);
-  return c;
+/** Fill a path, then ink its edge. `fill` may be a colour or a gradient. */
+function shape(g, fill, path, line = LINE, lw = 0.75) {
+  g.beginPath();
+  path(g);
+  g.fillStyle = fill;
+  g.fill();
+  if (line) { g.strokeStyle = line; g.lineWidth = lw; g.stroke(); }
 }
-function outline(c, g) {
-  const w = c.width, h = c.height;
-  const src = g.getImageData(0, 0, w, h).data;
-  const solid = (x, y) => x >= 0 && y >= 0 && x < w && y < h && src[(y * w + x) * 4 + 3] > 0;
-  g.fillStyle = LINE;
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    if (!solid(x, y) && (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1))) g.fillRect(x, y, 1, 1);
-  }
+const ell = (cx, cy, rx, ry, rot = 0) => (g) => g.ellipse(cx, cy, rx, ry, rot, 0, TAU);
+const box = (x, y, w, h, r) => (g) => g.roundRect(x, y, w, h, r);
+const poly = (...pts) => (g) => { pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); };
+/** Soft form shading: light from the upper left. */
+function shade(g, col, x0, x1) {
+  const gr = g.createLinearGradient(x0, 0, x1, 0);
+  gr.addColorStop(0, lt(col, 1.12));
+  gr.addColorStop(0.55, col);
+  gr.addColorStop(1, dk(col, 0.8));
+  return gr;
 }
-
-/** A tiny painter working in figure space: x 0–23 across, y 0–38 down, soles on row 38. */
-const BASE = 39;
-function brush(g) {
-  const OX = FOOT_X - 12, OY = FOOT_Y - BASE;
-  const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(OX + x, OY + y, w, h); };
-  /** A shaded block: lit from the upper left, shadowed on the right. */
-  const part = (x, y, w, h, col, shine) => {
-    r(x, y, w, h, col);
-    if (w >= 3) r(x + w - 1, y, 1, h, dk(col));
-    if (shine) r(x, y, 1, Math.max(1, h - 1), lt(col));
-  };
-  const rows = (x, y, map, pal) => {
-    for (let j = 0; j < map.length; j++) for (let i = 0; i < map[j].length; i++) {
-      const col = pal[map[j][i]];
-      if (col) r(x + i, y + j, 1, 1, col);
-    }
-  };
-  /** A straight run of pixels from a to b, `w` thick — blades, barrels, staves. */
-  const line = (x0, y0, x1, y1, w, col) => {
-    const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
-    for (let i = 0; i <= n; i++) {
-      const x = Math.round(x0 + ((x1 - x0) * i) / (n || 1)), y = Math.round(y0 + ((y1 - y0) * i) / (n || 1));
-      r(x, y, w, w, col);
-    }
-  };
-  return { r, part, rows, line };
+/** A rounded limb from a to b: inked, then coloured. */
+function limb(g, x0, y0, x1, y1, w, col) {
+  g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1);
+  g.strokeStyle = LINE; g.lineWidth = w + 1.4; g.stroke();
+  g.strokeStyle = col; g.lineWidth = w; g.stroke();
 }
-
-// ───────────────────────────── heads ─────────────────────────────
-// h hair · H hair shadow · i hair shine · s skin · S skin shadow · E lash · c iris · w eye white · m mouth
-
-const HEAD_F = [
-  "...hhhhhh...",
-  "..hiihhhhh..",
-  ".hhiihhhhhh.",
-  ".hhhhhhhhhH.",
-  ".hHhhhhsshH.",
-  ".hHhhssssshH",
-  ".HHhsEEsEEs.",
-  ".HSSscwscws.",
-  "..HSsssssss.",
-  "..H.ssssmss.",
-  "....Sssssss.",
-  ".....Ssss...",
-];
-const HEAD_B = [
-  "...hhhhhh...",
-  "..hhhhiihh..",
-  ".hhhhhhiihh.",
-  ".Hhhhhhhhhh.",
-  ".Hhhhhhhhhhs",
-  ".HHhhhhhhhss",
-  ".HHhhhhhhhSs",
-  ".HHHhhhhhhS.",
-  "..HHHhhhhH..",
-  "..HHHHHHHH..",
-  "...SsssSS...",
-  "....Ssss....",
-];
-const HEAD_X = 6, HEAD_Y = 2;
-
-function head(b, o, back, by) {
-  const hair = HAIR[o.hair] || HAIR[0], skin = SKIN[o.skin] || SKIN[0];
-  const pal = { h: hair, H: dk(hair), i: lt(hair), s: skin, S: dk(skin), E: "#1c1620", c: o.eye || "#3c5a8a", w: "#f4f0ea", m: dk(skin) };
-  const x = HEAD_X, y = HEAD_Y + by;
-  if (o.bone) { pal.h = pal.H = pal.i = pal.s = "#d6d8e0"; pal.S = "#a0a2b0"; pal.E = "#101018"; pal.c = o.eye; pal.w = "#101018"; pal.m = "#101018"; }
-
-  // hair that hangs behind the shoulders is painted before the head
-  if (!o.hood && !o.bone) {
-    if (o.style === 1) {
-      if (back) { b.part(x + 1, y + 8, 10, 9, hair); b.r(x + 2, y + 16, 8, 2, dk(hair)); b.r(x + 4, y + 9, 1, 7, lt(hair)); }
-      else { b.r(x, y + 6, 2, 10, dk(hair)); b.r(x + 1, y + 6, 1, 9, hair); b.r(x + 10, y + 7, 2, 8, dk(hair)); }
-    } else if (o.style === 2) {
-      if (back) { b.part(x + 4, y + 7, 4, 4, hair); b.part(x + 5, y + 10, 3, 8, hair); b.r(x + 5, y + 11, 1, 6, lt(hair)); }
-      else { b.r(x - 1, y + 5, 2, 3, hair); b.r(x - 2, y + 7, 2, 8, hair); b.r(x - 2, y + 9, 1, 6, dk(hair)); }
-    }
-  }
-  b.rows(x, y, back ? HEAD_B : HEAD_F, pal);
-  if (o.bone) return;
-
-  if (o.hood) {
-    // a hood: bigger than the skull, with the face in its shadow
-    const hd = o.hood, hD = dk(hd);
-    if (back) {
-      b.r(x + 3, y - 1, 6, 1, hd); b.r(x + 1, y, 10, 1, hd); b.part(x, y + 1, 12, 8, hd); b.r(x + 1, y + 9, 10, 2, hD);
-      b.r(x + 3, y + 1, 1, 6, lt(hd)); b.r(x + 4, y, 3, 1, lt(hd)); b.r(x + 9, y + 3, 2, 6, hD); b.r(x + 5, y + 10, 3, 2, hD);
-    } else {
-      b.r(x + 3, y - 1, 6, 1, hd); b.r(x + 1, y, 10, 1, hd); b.r(x, y + 1, 12, 3, hd); b.r(x, y + 4, 4, 7, hd); b.r(x + 10, y + 4, 2, 6, hD);
-      b.r(x + 4, y + 4, 6, 1, hD); b.r(x + 4, y, 3, 1, lt(hd)); b.r(x + 2, y + 1, 1, 8, lt(hd)); b.r(x + 1, y + 10, 3, 1, hD);
-      b.r(x + 4, y + 5, 6, 1, dk(pal.s));
-    }
-  }
-  if (o.mask && !back) { b.r(x + 4, y + 8, 7, 3, o.mask); b.r(x + 4, y + 10, 7, 1, dk(o.mask)); b.r(x + 5, y + 11, 4, 1, o.mask); }
-  if (o.band) { if (back) b.r(x + 1, y + 4, 10, 1, o.band); else { b.r(x + 1, y + 4, 10, 1, o.band); b.r(x, y + 5, 1, 3, o.band); } }
-  if (o.goggles) {
-    if (back) b.r(x + 1, y + 3, 10, 1, "#24252c");
-    else { b.r(x + 1, y + 3, 10, 2, "#24252c"); b.r(x + 5, y + 3, 2, 2, o.goggles); b.r(x + 8, y + 3, 2, 2, o.goggles); b.r(x + 5, y + 3, 1, 1, "#ffffff"); }
-  }
-  if (o.circlet) { if (!back) { b.r(x + 4, y + 4, 6, 1, o.circlet); b.r(x + 7, y + 3, 1, 1, "#9ff0ff"); } else b.r(x + 2, y + 4, 8, 1, o.circlet); }
-  if (o.beard && !back) { b.r(x + 4, y + 9, 7, 2, "#d4d6de"); b.r(x + 5, y + 11, 5, 2, "#d4d6de"); b.r(x + 6, y + 13, 3, 1, "#b0b2be"); }
-}
-
-// ───────────────────────────── limbs ─────────────────────────────
-
-/** One leg: [dx, lift] slides it forward/back and raises the foot. */
-function leg(b, x, [dx, lift], cloth, boot, knee) {
-  const top = 24, len = 12 - lift;
-  b.part(x + dx, top, 3, len, cloth);
-  if (knee) { b.r(x + dx, top + 4, 3, 3, knee); b.r(x + dx, top + 4, 1, 2, lt(knee)); }
-  b.part(x + dx, top + len - 2, 4, 4, boot);
-  b.r(x + dx, top + len - 2, 3, 1, lt(boot));
-  b.r(x + dx, top + len + 2, 4, 1, dk(boot));
-}
-/** One arm hanging from the shoulder; `fwd` swings it, `up` raises the hand. */
-function arm(b, x, y, fwd, up, sleeve, skin, glove) {
-  const len = 8 - up;
-  b.part(x + (fwd > 0 ? 0 : 0), y, 3, 4, sleeve);
-  b.part(x + fwd, y + 3, 3, len - 3, sleeve);
-  b.r(x + fwd, y + len, 3, 2, glove || skin);
-  if (!glove) b.r(x + fwd + 2, y + len, 1, 2, dk(skin));
-}
-
-// ───────────────────────────── weapons ─────────────────────────────
-
-function greatsword(b, x0, y0, x1, y1, tier) {
-  const m = METAL[tier] || METAL[1];
-  const n = Math.hypot(x1 - x0, y1 - y0) || 1, ux = (x1 - x0) / n, uy = (y1 - y0) / n;
-  // grip, guard, then a broad blade with a bright edge
-  b.line(x0, y0, x0 + ux * 4, y0 + uy * 4, 2, "#5a3c26");
-  const gx = x0 + ux * 5, gy = y0 + uy * 5;
-  b.line(gx - uy * 3, gy + ux * 3, gx + uy * 3, gy - ux * 3, 2, "#c8a040");
-  b.line(x0 + ux * 7, y0 + uy * 7, x1, y1, 3, m);
-  b.line(x0 + ux * 7, y0 + uy * 7, x1, y1, 1, lt(m));
-  b.line(x0 + ux * 7 - uy * 2, y0 + uy * 7 + ux * 2, x1 - uy * 2 - ux * 2, y1 + ux * 2 - uy * 2, 1, dk(m));
-  b.r(Math.round(x0 - ux), Math.round(y0 - uy), 2, 2, "#c8a040");
-}
-function dagger(b, x, y, ux, uy, tier, len = 6) {
-  const m = METAL[tier] || METAL[1];
-  b.r(x, y, 2, 2, "#2c2630");
-  b.line(x + ux * 2, y + uy * 2, x + ux * len, y + uy * len, 2, m);
-  b.line(x + ux * 2, y + uy * 2, x + ux * len, y + uy * len, 1, lt(m));
-}
-function gun(b, x, y, tier, up) {
-  const m = METAL[tier] || METAL[1], body = "#2a2c34";
-  const long = tier >= 3;
-  const dy = up ? -1 : 0;
-  // receiver, barrel, grip and (on rifles) a stock and magazine
-  b.r(x, y + dy, long ? 8 : 5, 3, body);
-  b.r(x, y + dy, long ? 8 : 5, 1, mix(body, 1.3));
-  b.r(x + (long ? 8 : 5), y + dy + (up ? 0 : 0), long ? 6 : 3, 2, m);
-  b.r(x + (long ? 8 : 5), y + dy, long ? 6 : 3, 1, lt(m));
-  b.r(x + 1, y + 3 + dy, 2, 3, "#3a2c22");
-  if (long) { b.r(x - 3, y + 1 + dy, 3, 3, "#3a2c22"); b.r(x + 4, y + 3 + dy, 2, 3, body); }
-  if (tier >= 4) b.r(x + 3, y - 1 + dy, 3, 1, "#62d6e2");
-  return x + (long ? 14 : 8);
-}
-function staff(b, x0, y0, x1, y1, tier, glow) {
-  const m = METAL[tier] || METAL[1];
-  b.line(x0, y0, x1, y1, 2, "#6a4a30");
-  b.line(x0, y0, x1, y1, 1, "#8a6644");
-  // a crescent head cradling a gem
-  b.r(x1 - 2, y1 - 3, 5, 1, m); b.r(x1 - 3, y1 - 2, 2, 3, m); b.r(x1 + 2, y1 - 2, 2, 3, dk(m));
-  b.r(x1 - 1, y1 - 2, 3, 3, glow ? "#e8fbff" : "#7ad6e8");
-  b.r(x1 - 1, y1 - 2, 1, 1, "#ffffff");
-  if (glow) { b.r(x1 - 4, y1 - 1, 1, 1, "#bff4ff"); b.r(x1 + 4, y1 - 1, 1, 1, "#bff4ff"); b.r(x1, y1 - 5, 1, 1, "#bff4ff"); }
+function glow(g, col, blur, draw) {
+  g.save();
+  g.shadowColor = col;
+  g.shadowBlur = blur * K;
+  draw();
+  g.restore();
 }
 
 // ───────────────────────────── poses ─────────────────────────────
@@ -242,196 +100,337 @@ function staff(b, x0, y0, x1, y1, tier, glow) {
 
 const POSE = [
   { bob: 0, near: [0, 0], far: [0, 0], an: 0, af: 0, atk: 0 },
-  { bob: 1, near: [0, 0], far: [0, 0], an: 0, af: 0, atk: 0 },
-  { bob: 1, near: [1, 0], far: [-1, 1], an: -1, af: 1, atk: 0 },
-  { bob: 0, near: [0, 0], far: [0, 2], an: 0, af: 0, atk: 0 },
-  { bob: 1, near: [-1, 1], far: [1, 0], an: 1, af: -1, atk: 0 },
-  { bob: 0, near: [0, 2], far: [0, 0], an: 0, af: 0, atk: 0 },
-  { bob: 0, near: [-1, 0], far: [1, 0], an: 0, af: 0, atk: 1 },
-  { bob: 1, near: [1, 0], far: [-1, 0], an: 0, af: 0, atk: 2 },
+  { bob: 0.6, near: [0, 0], far: [0, 0], an: 0, af: 0, atk: 0 },
+  { bob: 0.7, near: [1.6, 0], far: [-1.4, 1.2], an: -1.4, af: 1.4, atk: 0 },
+  { bob: 0, near: [0.2, 0], far: [0, 2.2], an: 0, af: 0, atk: 0 },
+  { bob: 0.7, near: [-1.4, 1.2], far: [1.6, 0], an: 1.4, af: -1.4, atk: 0 },
+  { bob: 0, near: [0, 2.2], far: [0.2, 0], an: 0, af: 0, atk: 0 },
+  { bob: -0.4, near: [-1.2, 0], far: [1.2, 0], an: 0, af: 0, atk: 1 },
+  { bob: 0.9, near: [1.6, 0], far: [-1.4, 0], an: 0, af: 0, atk: 2 },
 ];
+
+// ───────────────────────────── weapons ─────────────────────────────
+
+/** Draw with the weapon's aura: rarity tints it, a high enhancement makes it blaze. */
+function aura(g, o, draw) {
+  const col = RARITY[o.wq | 0];
+  const power = (col ? 2.2 : 0) + (o.we >= 7 ? 2.4 : o.we >= 4 ? 1 : 0);
+  if (power) glow(g, col || "#ffffff", power, draw); else draw();
+}
+function greatsword(g, o, x0, y0, x1, y1) {
+  const t = o.wt, m = METAL[t] || METAL[1];
+  const n = Math.hypot(x1 - x0, y1 - y0) || 1, ux = (x1 - x0) / n, uy = (y1 - y0) / n, px = -uy, py = ux;
+  const w = 1.5 + t * 0.22, gd = 3 + t * 0.4;
+  const at = (a, s) => [x0 + ux * a + px * s, y0 + uy * a + py * s];
+  aura(g, o, () => {
+    limb(g, ...at(0, 0), ...at(5, 0), 1.3, "#7a5236");
+    shape(g, shade(g, m, x0 - 4, x0 + 6), poly(at(6, -w), at(n - 3, -w), at(n, 0), at(n - 3, w), at(6, w)));
+    g.beginPath(); g.moveTo(...at(7, 0)); g.lineTo(...at(n - 3, 0)); g.strokeStyle = t >= 4 ? "#f4ffff" : dk(m, 0.86); g.lineWidth = t >= 4 ? 0.9 : 0.5; g.stroke();
+    shape(g, "#f0cc60", poly(at(5, -gd), at(6.4, -gd), at(6.4, gd), at(5, gd)));
+    shape(g, t >= 3 ? "#7fe4ee" : "#f0cc60", ell(...at(-0.6, 0), 1.1, 1.1));
+  });
+}
+function dagger(g, o, x, y, ux, uy) {
+  const m = METAL[o.wt] || METAL[1], len = 5 + o.wt * 0.5;
+  const px = -uy, py = ux;
+  aura(g, o, () => {
+    limb(g, x - ux * 1.6, y - uy * 1.6, x, y, 1.2, "#4a3a44");
+    shape(g, shade(g, m, x - 2, x + 4), poly([x + px * 1.1, y + py * 1.1], [x + ux * len, y + uy * len], [x - px * 1.1, y - py * 1.1]));
+    shape(g, "#f0cc60", ell(x, y, 1, 1));
+  });
+}
+function gun(g, o, x, y, tilt) {
+  const t = o.wt, m = METAL[t] || METAL[1];
+  const long = t >= 3 ? 13 + t : 6 + t;
+  g.save();
+  g.translate(x, y);
+  g.rotate(tilt);
+  aura(g, o, () => {
+    shape(g, "#5a4234", box(0.6, 1.4, 2.4, 4.2, 0.8));
+    if (t >= 3) shape(g, "#5a4234", box(-4.6, 0.2, 5, 2.8, 1));
+    shape(g, shade(g, "#4a4e5c", 0, long), box(0, -1.2, long * 0.55, 3.2, 0.9));
+    shape(g, shade(g, m, 0, long), box(long * 0.5, -0.6, long * 0.5, t >= 5 ? 2.8 : 1.8, 0.7));
+    if (t >= 4) { g.fillStyle = "#8ff4ff"; g.fillRect(1.2, -0.5, long * 0.4, 0.7); }
+    if (t >= 3) shape(g, "#3a3e4a", box(long * 0.28, 1.8, 1.8, 3, 0.5));
+  });
+  g.restore();
+  return [x + Math.cos(tilt) * long, y + Math.sin(tilt) * long];
+}
+function staff(g, o, x0, y0, x1, y1, lit) {
+  const t = o.wt, m = METAL[t] || METAL[1];
+  const gem = ["", "#8ad8f0", "#8ad8f0", "#b6a0ff", "#8ff4ff", "#ff9af0"][t] || "#8ad8f0";
+  limb(g, x0, y0, x1, y1, 1.3, "#9a6e48");
+  aura(g, o, () => {
+    if (t >= 3) {
+      g.beginPath(); g.arc(x1, y1 - 1.5, 3.4, 0.25 * Math.PI, 1.9 * Math.PI);
+      g.strokeStyle = LINE; g.lineWidth = 2.2; g.stroke(); g.strokeStyle = m; g.lineWidth = 1.2; g.stroke();
+    } else shape(g, "#b4885c", ell(x1, y1 - 0.4, 2, 1.6));
+    glow(g, gem, lit || t >= 4 ? 3 : 1.2, () => shape(g, gem, ell(x1, y1 - 1.6, 1.5 + t * 0.14, 1.7 + t * 0.14)));
+    g.fillStyle = "#ffffff"; g.beginPath(); g.arc(x1 - 0.5, y1 - 2.2, 0.5, 0, TAU); g.fill();
+  });
+}
+
+// ───────────────────────────── the head ─────────────────────────────
+
+function head(g, o, back, by) {
+  const hair = o.hairCol, skin = o.skinCol;
+  const hx = 20.2, hy = 17.4 + by;
+  const hg = shade(g, hair, hx - 9, hx + 9);
+  if (o.bone) {
+    shape(g, shade(g, "#eef0f6", 12, 29), ell(hx, hy, 7.4, 7));
+    if (!back) {
+      for (const [x, r] of [[17.8, 1.5], [23.4, 1.3]]) { shape(g, "#2a2434", ell(x, hy + 1, r, 2), null); glow(g, o.eye, 1.4, () => shape(g, o.eye, ell(x, hy + 1.4, 0.7, 0.9), null)); }
+      g.strokeStyle = LINE; g.lineWidth = 0.5; g.beginPath(); for (let i = 0; i < 4; i++) { g.moveTo(18.4 + i * 1.4, hy + 4.6); g.lineTo(18.4 + i * 1.4, hy + 6); } g.stroke();
+    }
+    return;
+  }
+  // hair that falls behind the head and shoulders
+  if (o.style === 1) shape(g, hg, back ? box(11.6, hy - 3, 17.2, 17.5, 6) : box(11.8, hy - 2, 16.8, 15.5, 6));
+  else if (o.style === 2) {
+    if (back) shape(g, hg, (p) => { p.moveTo(18.6, hy + 5); p.quadraticCurveTo(16.4, hy + 12, 20, hy + 17.5); p.quadraticCurveTo(23.4, hy + 12, 21.8, hy + 5); p.closePath(); });
+    else shape(g, hg, (p) => { p.moveTo(13, hy - 2); p.quadraticCurveTo(7.5, hy + 4, 10.4, hy + 13); p.quadraticCurveTo(13.5, hy + 7, 14.4, hy + 1); p.closePath(); });
+  }
+  shape(g, hg, ell(hx, hy - 0.6, 8.3, 7.7));
+  if (back) {
+    shape(g, hg, ell(hx, hy, 8.2, 7.5));
+    shape(g, shade(g, skin, 24, 30), ell(27.6, hy + 2, 1.3, 1.7));
+    g.beginPath(); g.moveTo(15, hy - 3.5); g.quadraticCurveTo(19, hy - 6.5, 24, hy - 4.6);
+    g.strokeStyle = lt(hair, 1.35); g.lineWidth = 1.1; g.stroke();
+    g.beginPath(); g.moveTo(16, hy + 3); g.quadraticCurveTo(20, hy + 6, 24.5, hy + 3); g.strokeStyle = dk(hair, 0.82); g.lineWidth = 0.6; g.stroke();
+    if (o.style === 2) { shape(g, o.accent, poly([20.2, hy + 5.6], [17.2, hy + 4.2], [17.6, hy + 7]), LINE, 0.5); shape(g, o.accent, poly([20.2, hy + 5.6], [23.2, hy + 4.2], [22.8, hy + 7]), LINE, 0.5); }
+  } else {
+    // face
+    shape(g, shade(g, skin, 10, 34), ell(12.9, hy + 1.6, 1.3, 1.7));
+    shape(g, shade(g, skin, 8, 36), ell(hx + 0.2, hy + 0.6, 7.3, 6.7));
+    g.fillStyle = "rgba(255,120,130,.32)";
+    g.beginPath(); g.ellipse(16.6, hy + 3.9, 1.7, 0.9, 0, 0, TAU); g.ellipse(25.2, hy + 3.9, 1.5, 0.9, 0, 0, TAU); g.fill();
+    for (const [x, rx] of [[17.8, 1.35], [23.9, 1.2]]) {
+      shape(g, "#2e2230", ell(x, hy + 1.3, rx, 2.15), null);
+      shape(g, o.eye, ell(x, hy + 2, rx * 0.8, 1.3), null);
+      g.fillStyle = "#ffffff"; g.beginPath(); g.arc(x - rx * 0.3, hy + 0.3, 0.55, 0, TAU); g.arc(x + rx * 0.35, hy + 2.5, 0.3, 0, TAU); g.fill();
+      g.beginPath(); g.moveTo(x - rx - 0.3, hy - 1.5); g.quadraticCurveTo(x, hy - 2.4, x + rx + 0.2, hy - 1.6); g.strokeStyle = dk(hair, 0.6); g.lineWidth = 0.5; g.stroke();
+    }
+    g.beginPath(); g.moveTo(20.2, hy + 4.9); g.quadraticCurveTo(21.1, hy + 5.6, 22, hy + 4.9); g.strokeStyle = "#a85a5a"; g.lineWidth = 0.5; g.stroke();
+    // fringe: a sweep of soft points over the brow
+    shape(g, hg, (p) => {
+      p.moveTo(12.3, hy + 1.6);
+      p.bezierCurveTo(11.2, hy - 7.5, 16.5, hy - 8.6, 20.4, hy - 8.3);
+      p.bezierCurveTo(25.6, hy - 8.2, 29.4, hy - 5, 28.1, hy + 1.2);
+      p.quadraticCurveTo(27.4, hy - 1.6, 26, hy - 2.2);
+      p.quadraticCurveTo(25.6, hy - 0.2, 24.4, hy + 0.3);
+      p.quadraticCurveTo(24.2, hy - 1.8, 22.6, hy - 2.8);
+      p.quadraticCurveTo(21.8, hy - 0.6, 19.8, hy + 0.2);
+      p.quadraticCurveTo(19.8, hy - 1.8, 18.6, hy - 2.8);
+      p.quadraticCurveTo(17, hy - 1, 15.4, hy + 0.9);
+      p.quadraticCurveTo(15.2, hy - 0.8, 14.6, hy - 1.6);
+      p.quadraticCurveTo(13.4, hy + 0.6, 13.6, hy + 3.6);
+      p.closePath();
+    });
+    g.beginPath(); g.moveTo(15.4, hy - 4.6); g.quadraticCurveTo(19.5, hy - 7.4, 24.4, hy - 5.6);
+    g.strokeStyle = lt(hair, 1.4); g.lineWidth = 1.1; g.stroke();
+  }
+  // headwear
+  const top = hy - 7.6;
+  if (o.cls === "warrior") {
+    g.beginPath(); g.moveTo(12.4, hy - 2.2); g.quadraticCurveTo(20, hy - 4.6, 28, hy - 2.4); g.strokeStyle = LINE; g.lineWidth = 2; g.stroke(); g.strokeStyle = o.accent; g.lineWidth = 1.2; g.stroke();
+    if (o.at >= 3 && !back) shape(g, o.trim, poly([20, hy - 5.6], [21.6, hy - 3.4], [20, hy - 2.2], [18.4, hy - 3.4]));
+  } else if (o.cls === "ranger") {
+    shape(g, shade(g, o.main, 11, 30), (p) => { p.moveTo(11.8, hy - 2.6); p.bezierCurveTo(11.4, top - 2.6, 28.6, top - 3.4, 28.8, hy - 3); p.quadraticCurveTo(20, hy - 5.4, 11.8, hy - 2.6); p.closePath(); });
+    if (!back) shape(g, dk(o.main), (p) => { p.moveTo(19, hy - 3.6); p.quadraticCurveTo(27, hy - 4.6, 31, hy - 1.4); p.quadraticCurveTo(26, hy - 2.6, 19, hy - 2.2); p.closePath(); });
+    if (o.at >= 2 && !back) { shape(g, "#3a3e4a", box(14.6, hy - 6.6, 10.6, 2.4, 1.1)); glow(g, "#8ff4ff", o.at >= 4 ? 1.5 : 0, () => { shape(g, "#9fe8f4", ell(17.4, hy - 5.4, 1.5, 0.95)); shape(g, "#9fe8f4", ell(22.6, hy - 5.4, 1.5, 0.95)); }); }
+  } else if (o.cls === "mage") {
+    if (o.at >= 2) {
+      // a soft pointed hat, its tip flopping back
+      shape(g, shade(g, o.main, 10, 30), (p) => { p.moveTo(11.4, hy - 3); p.quadraticCurveTo(14.5, top - 7, 12.6, top - 10.5); p.quadraticCurveTo(22, top - 9.5, 28.8, hy - 3.4); p.quadraticCurveTo(20, hy - 6, 11.4, hy - 3); p.closePath(); });
+      shape(g, shade(g, dk(o.main, 0.88), 8, 32), (p) => { p.moveTo(8.6, hy - 2); p.quadraticCurveTo(20, hy - 7.4, 31.6, hy - 2.4); p.quadraticCurveTo(20, hy - 3.6, 8.6, hy - 2); p.closePath(); });
+      g.beginPath(); g.moveTo(12.4, hy - 3.9); g.quadraticCurveTo(20, hy - 6.6, 28, hy - 4.2); g.strokeStyle = o.trim; g.lineWidth = 0.9; g.stroke();
+      if (!back) glow(g, "#fff6b0", 1, () => shape(g, o.trim, poly([16, hy - 8.4], [16.8, hy - 6.8], [18.4, hy - 6.6], [17.2, hy - 5.6], [17.5, hy - 4], [16, hy - 4.9], [14.5, hy - 4], [14.8, hy - 5.6], [13.6, hy - 6.6], [15.2, hy - 6.8]), null));
+    } else if (!back) { shape(g, o.sub, poly([24.6, hy - 6.6], [28.6, hy - 8.4], [27.6, hy - 5.2], [29.6, hy - 2.6], [25.8, hy - 4])); shape(g, o.trim, ell(25.6, hy - 5.2, 1, 1)); }
+  } else if (o.cls === "rogue") {
+    if (!back) shape(g, o.sub, (p) => { p.moveTo(12.6, hy - 2.4); p.quadraticCurveTo(20, hy - 5.2, 27.8, hy - 2.8); p.lineTo(27.6, hy - 4.4); p.quadraticCurveTo(20, hy - 7, 12.8, hy - 4.2); p.closePath(); });
+    else { shape(g, o.sub, box(12.4, hy - 4.4, 15.6, 2, 0.9)); shape(g, o.sub, poly([19, hy - 3], [16.6, hy + 2.6], [18.8, hy + 1.2], [20, hy + 3.4], [21, hy - 3])); }
+  }
+  if (o.beard && !back) shape(g, "#eef0f6", (p) => { p.moveTo(15, hy + 3.4); p.quadraticCurveTo(20.4, hy + 5, 25.6, hy + 3.4); p.quadraticCurveTo(25, hy + 10, 20.4, hy + 12.4); p.quadraticCurveTo(15.6, hy + 10, 15, hy + 3.4); p.closePath(); });
+}
 
 // ───────────────────────────── the figure ─────────────────────────────
 
 function figure(o, back, f) {
   const [c, g] = sheet();
-  const b = brush(g);
-  const P = POSE[f];
-  const by = P.bob;
-  const cls = o.cls;
-  const skin = SKIN[o.skin] || SKIN[0];
-  const main = o.main, wt = o.wt || 0;
-  const sway = f >= 2 && f <= 5 ? [0, 1, 0, -1][f - 2] : 0;
+  const P = POSE[f], by = P.bob, cls = o.cls, atk = P.atk;
+  const walking = f >= 2 && f <= 5;
+  const sway = walking ? [0, 1, 0, -1][f - 2] : 0;
+  const main = o.main, sub = o.sub, trim = o.trim, skin = o.skinCol;
+  const T = 25 + by;                      // top of the torso
+  const lit = (draw) => (o.glow ? glow(g, o.glow, 1.6, draw) : draw());
+  const robe = cls === "mage" || cls === "robe";
 
-  // ── behind the body
-  if (cls === "warrior") {
-    if (!back) {
-      if (P.atk === 0) greatsword(b, 20, 2 + by, 9, 22 + by, wt);
-      b.part(6, 15 + by, 12, 17, o.cape); b.r(6, 31 + by, 12, 1, dk(o.cape)); b.r(7 + sway, 32 + by, 10, 1, dk(o.cape));
-    }
-  } else if (cls === "mage" && !back && P.atk === 0) {
-    staff(b, 4, 38, 4, 5 + by, wt, false);
-  } else if (cls === "ranger" && back) {
-    if (P.atk) gun(b, 14, 15 + by, wt, P.atk === 1);
-    else gun(b, 13, 19 + by, wt, false);
-  } else if (cls === "rogue" && !back) {
-    b.r(4 - sway, 15 + by, 3, 2, o.scarf); b.r(2 - sway, 16 + by, 3, 5, o.scarf); b.r(1 - sway, 19 + by, 2, 4, dk(o.scarf));
+  // ── behind everything
+  if (cls === "warrior" && !back) {
+    if (!atk) greatsword(g, o, 27.4, 13 + by, 13.5, 35 + by);
+    shape(g, shade(g, o.cape, 12, 29), (p) => { p.moveTo(14.4, T + 1); p.lineTo(26.4, T + 1); p.quadraticCurveTo(28.6 + sway, T + 10, 27 + sway, 41 + by); p.lineTo(13.6 + sway, 41 + by); p.quadraticCurveTo(12.4 + sway, T + 10, 14.4, T + 1); p.closePath(); });
+  }
+  if (cls === "rogue" && !back) shape(g, shade(g, sub, 6, 16), (p) => { p.moveTo(14.5, T); p.quadraticCurveTo(9 - sway, T + 3, 8 - sway * 1.4, T + 10.5); p.lineTo(10.6 - sway, T + 9.4); p.quadraticCurveTo(11.6, T + 5, 15.4, T + 2.4); p.closePath(); });
+  if (cls === "mage" && !atk && !back) staff(g, o, 10.6, 46, 10.6, 13 + by, false);
+  if (cls === "ranger" && back) { if (atk) gun(g, o, 21, 29 + by, -0.5); else gun(g, o, 20, 32 + by, 0.5); }
+
+  // ── arms: how far each swings and lifts
+  let an = P.an, af = P.af, upN = 0, upF = 0, reachN = 0;
+  if (atk) {
+    if (cls === "warrior") { upN = upF = atk === 1 ? 7 : 2; reachN = 2.4; af = 1.4; }
+    else if (cls === "rogue") { upN = atk === 2 ? 4 : 1; reachN = atk === 2 ? 5 : -2; upF = 2; }
+    else if (cls === "ranger") { upN = upF = 5; reachN = 4; af = 1.4; }
+    else { upN = 5; reachN = 4; }
+  } else if (cls === "ranger") { upN = upF = 3; reachN = 3; af = 1; }
+  const sleeve = cls === "warrior" ? dk(main, 0.9) : cls === "rogue" ? skin : main;
+  const handF = [26.6 + af, T + 9.4 - upF], handN = [13.6 + an + reachN, T + 9.6 - upN];
+  limb(g, 25.4, T + 2.4, handF[0], handF[1], 2.5, dk(sleeve, 0.9));
+  shape(g, cls === "warrior" || cls === "ranger" ? dk(o.glove, 0.88) : dk(skin, 0.92), ell(handF[0], handF[1] + 0.4, 1.5, 1.5));
+
+  // ── legs (a robe hides them down to the boots)
+  for (const [x, [dx, lift], far] of [[21.3, P.far, 1], [16.2, P.near, 0]]) {
+    const sx = x + dx * 0.8, bot = 42.2 - lift;
+    if (!robe) limb(g, x + 1.6, 33.4 + by * 0.5, sx + 1.6, bot, 2.9, far ? dk(o.pants, 0.86) : o.pants);
+    shape(g, shade(g, far ? dk(o.boot, 0.86) : o.boot, sx - 1, sx + 6), box(sx - 0.5, bot - 1.2, 4.8 + (back ? 0 : 0.6), 5, 1.9));
+    if (cls === "warrior" && !robe) shape(g, far ? dk(sub, 0.86) : sub, box(sx - 0.2, bot - 5.2, 3.8, 3.4, 1.2));
   }
 
-  // ── far arm (hidden behind the torso edge)
-  const sleeve = cls === "warrior" ? o.under : cls === "ranger" ? main : cls === "mage" ? o.mantle || main : main;
-  const glove = cls === "warrior" ? main : cls === "rogue" ? "#1e1f26" : cls === "ranger" ? "#2a2c34" : null;
-  let af = P.af, an = P.an, upF = 0, upN = 0;
-  if (P.atk && cls !== "mage") { af = 1; upF = cls === "warrior" ? (P.atk === 1 ? 5 : 1) : 3; an = 1; upN = cls === "warrior" ? (P.atk === 1 ? 5 : 1) : cls === "rogue" ? (P.atk === 2 ? 3 : 1) : 3; }
-  if (P.atk && cls === "mage") { an = 1; upN = 4; }
-  if (cls === "ranger" && !P.atk) { af = 0; upF = 2; an = 1; upN = 2; }
-  arm(b, 16, 15 + by, af, upF, sleeve, skin, glove);
-
-  // ── legs
-  if (o.skirt) {
-    // a long robe hides the legs; only the feet show, and the hem sways with each step
-    b.part(13 + P.far[0], 36 - P.far[1], 4, 2, o.boot); b.part(8 + P.near[0], 36 - P.near[1], 4, 2, o.boot);
-    b.r(8 + P.near[0], 38 - P.near[1], 4, 1, dk(o.boot)); b.r(13 + P.far[0], 38 - P.far[1], 4, 1, dk(o.boot));
-  } else {
-    leg(b, 13, P.far, dk(o.pants), dk(o.boot), cls === "warrior" ? dk(main) : null);
-    leg(b, 9, P.near, o.pants, o.boot, cls === "warrior" ? main : null);
-  }
-
-  // ── torso
-  const T = 14 + by;
+  // ── torso and costume
+  const torso = box(15.2, T, 10, 10, 3);
   if (cls === "warrior") {
-    b.part(8, T, 9, 10, o.under);
-    b.part(8, T, 9, 6, main, true); b.r(9, T + 5, 7, 1, dk(main));          // breastplate
-    b.part(10, T + 1, 4, 10, o.tabard); b.r(11, T + 3, 2, 2, o.trim);          // tabard and crest
-    b.part(8, T + 9, 9, 2, "#4a3426"); b.r(12, T + 9, 2, 2, o.trim);            // belt
-    b.part(8, T + 11, 9, 2, o.under);
-    if (back) { b.part(8, T, 9, 6, main, true); b.r(9, T + 2, 7, 1, dk(main)); }
-  } else if (cls === "rogue") {
-    b.part(8, T, 9, 12, main);
-    b.r(9, T + 1, 7, 1, lt(main));
-    if (!back) { b.line(9, T + 1, 15, T + 8, 1, o.belt); b.r(12, T + 4, 2, 2, o.trim); }   // bandolier
-    b.part(8, T + 9, 9, 2, o.belt); b.r(11, T + 9, 2, 2, o.trim);
-    b.r(8, T + 11, 9, 2, dk(main));
-    b.r(7, T - 1, 11, 2, o.scarf); b.r(7, T, 11, 1, dk(o.scarf));                // scarf round the neck
-  } else if (cls === "ranger") {
-    b.part(8, T, 9, 12, o.shirt);
-    b.part(8, T + 9, 9, 2, "#2a221c"); b.r(12, T + 9, 2, 2, o.trim);
-    // an open long coat: two panels with the shirt showing between them
-    const hem = 34 + by;
+    shape(g, shade(g, main, 14, 27), torso);
+    lit(() => shape(g, shade(g, sub, 14, 27), box(15.6, T + 0.6, 9.2, 5.6, 2.4)));
+    if (!back) { shape(g, main, poly([18.6, T + 4.4], [21.8, T + 4.4], [21.4, T + 10.6], [19, T + 10.6])); shape(g, trim, ell(20.2, T + 3, 1.1, 1.1)); }
+    shape(g, "#7a5236", box(15.2, T + 7, 10, 1.7, 0.6)); shape(g, trim, box(19.3, T + 6.8, 1.9, 2.1, 0.5));
+    const pr = 2.5 + o.at * 0.32;
+    lit(() => { shape(g, shade(g, sub, 11, 18), ell(14.4, T + 1.5, pr, pr * 0.74)); shape(g, dk(sub, 0.88), ell(26, T + 1.5, pr * 0.84, pr * 0.66)); });
+    if (o.at >= 4) { g.fillStyle = trim; g.fillRect(12.6, T + 1.2, 3.6, 0.6); }
     if (back) {
-      b.part(7, T, 11, hem - T, main); b.r(12, T + 11, 1, hem - T - 11, dk(main)); b.part(7 + sway, hem, 11, 1, dk(main));
-      b.r(8, T - 1, 9, 2, lt(main)); b.r(8, T + 9, 9, 1, dk(main));                 // collar, waist seam
-      b.line(9, T + 1, 15, T + 8, 1, "#2a221c"); b.part(10, T + 3, 5, 5, o.vest); b.r(10, T + 3, 5, 1, lt(o.vest));   // sling and pack
+      shape(g, shade(g, o.cape, 12, 29), (p) => { p.moveTo(14.2, T + 1.6); p.lineTo(26.2, T + 1.6); p.quadraticCurveTo(28.8 + sway, T + 10, 27.2 + sway, 41 + by); p.lineTo(13.2 + sway, 41 + by); p.quadraticCurveTo(11.8 + sway, T + 10, 14.2, T + 1.6); p.closePath(); });
+      g.beginPath(); g.moveTo(17, T + 4); g.lineTo(16.4 + sway, 39 + by); g.moveTo(23.4, T + 4); g.lineTo(24 + sway, 39 + by); g.strokeStyle = dk(o.cape, 0.8); g.lineWidth = 0.6; g.stroke();
+      if (!atk) greatsword(g, o, 12.4, 12 + by, 28, 35 + by);
     }
-    else {
-      b.part(7, T, 3, hem - T, main, true); b.part(15, T, 3, hem - T, dk(main));
-      b.r(7 + sway, hem, 3, 1, dk(main)); b.r(15 + sway, hem, 3, 1, dk(main));
-      b.r(10, T, 1, 4, lt(main)); b.r(14, T, 1, 4, main);                         // lapels
-      b.r(10, T + 5, 2, 3, o.vest); b.r(13, T + 5, 2, 3, o.vest);                 // pouches
+  } else if (cls === "rogue") {
+    shape(g, shade(g, main, 14, 27), torso);
+    if (!back) { g.beginPath(); g.moveTo(16, T + 1.4); g.lineTo(24.4, T + 8); g.strokeStyle = "#7a5236"; g.lineWidth = 1.1; g.stroke(); shape(g, trim, ell(20.4, T + 4.8, 0.9, 0.9)); }
+    shape(g, "#7a5236", box(15.2, T + 7.2, 10, 1.6, 0.6));
+    if (o.at >= 3) lit(() => shape(g, shade(g, lt(main, 1.25), 11, 18), ell(14.6, T + 1.6, 2.4, 1.8)));
+    // a big scarf round the neck
+    shape(g, shade(g, sub, 13, 28), (p) => { p.moveTo(14.4, T - 0.6); p.quadraticCurveTo(20.2, T + 3.4, 26, T - 0.6); p.quadraticCurveTo(26.6, T + 2.2, 24, T + 3.2); p.quadraticCurveTo(20, T + 4.6, 16.2, T + 3.2); p.quadraticCurveTo(13.8, T + 2.2, 14.4, T - 0.6); p.closePath(); });
+    if (back) shape(g, shade(g, sub, 16, 24), (p) => { p.moveTo(18.4 + sway, T + 2.6); p.quadraticCurveTo(16.4 + sway * 2, T + 9, 18.6 + sway * 2, T + 13.4); p.lineTo(21.4 + sway * 2, T + 12); p.quadraticCurveTo(20.6 + sway, T + 7, 22, T + 2.8); p.closePath(); });
+  } else if (cls === "ranger") {
+    shape(g, shade(g, sub, 14, 27), torso);
+    shape(g, "#7a5236", box(15.2, T + 7.2, 10, 1.6, 0.6));
+    const hem = T + 12.6 + (o.at >= 3 ? 2.6 : 0);
+    if (back) {
+      shape(g, shade(g, main, 13, 28), (p) => { p.moveTo(14.6, T - 0.2); p.lineTo(25.8, T - 0.2); p.quadraticCurveTo(27.6 + sway, T + 7, 26.8 + sway, hem); p.lineTo(13.6 + sway, hem); p.quadraticCurveTo(12.8 + sway, T + 7, 14.6, T - 0.2); p.closePath(); });
+      shape(g, shade(g, o.pack, 16, 25), box(16.6, T + 2, 7.4, 6.4, 1.8)); shape(g, trim, box(19.4, T + 4.2, 1.8, 1.4, 0.4));
+    } else {
+      // an open jacket: two panels with the shirt between them
+      shape(g, shade(g, main, 13, 20), (p) => { p.moveTo(14.6, T - 0.2); p.lineTo(18.6, T - 0.2); p.lineTo(18.2, T + 5); p.lineTo(17.6 + sway, hem); p.lineTo(13.8 + sway, hem); p.quadraticCurveTo(13, T + 6, 14.6, T - 0.2); p.closePath(); });
+      shape(g, shade(g, dk(main, 0.9), 21, 28), (p) => { p.moveTo(25.8, T - 0.2); p.lineTo(22, T - 0.2); p.lineTo(22.4, T + 5); p.lineTo(23 + sway, hem); p.lineTo(26.6 + sway, hem); p.quadraticCurveTo(27.4, T + 6, 25.8, T - 0.2); p.closePath(); });
+      shape(g, o.pack, box(18.4, T + 8.2, 2.6, 2.4, 0.6));
+      if (o.at >= 4) { g.fillStyle = trim; g.fillRect(14.6, T + 3, 3.2, 0.7); }
     }
-  } else if (cls === "mage") {
-    const hem = 37;
-    b.part(8, T, 9, 10, main);
-    b.part(7 - (sway > 0 ? 1 : 0), T + 9, 11 + Math.abs(sway), hem - T - 9, main);
-    b.r(7, hem - 1, 11, 1, o.trim); b.r(7, hem, 11, 1, dk(main));
-    if (!back) { b.r(12, T + 2, 1, hem - T - 3, o.trim); b.part(8, T + 8, 9, 2, o.sash); b.r(11, T + 10, 2, 5, o.sash); b.r(11, T + 14, 2, 1, dk(o.sash)); }
-    else b.part(8, T + 8, 9, 2, o.sash);
-    // a short mantle over the shoulders
-    b.part(6, T - 1, 13, 5, o.mantle, true); b.r(6, T + 3, 13, 1, o.trim); b.r(7, T + 4, 11, 1, dk(o.mantle));
-    if (!back) b.r(12, T, 2, 2, "#9ff0ff");
-  } else if (cls === "robe") {
-    b.part(8, T, 9, 10, main); b.part(7, T + 9, 11, 37 - T - 9, main); b.r(7, 36, 11, 1, o.trim); b.r(7, 37, 11, 1, dk(main));
-    if (!back) b.r(12, T + 1, 1, 21, o.trim);
-    b.part(8, T + 8, 9, 2, o.trim);
+  } else if (robe) {
+    const hem = 43.4;
+    // a dress-length robe that flares toward the hem
+    shape(g, shade(g, main, 12, 29), (p) => { p.moveTo(15.4, T + 1); p.lineTo(25, T + 1); p.quadraticCurveTo(27.6 + sway * 0.6, T + 10, 28.6 + sway, hem); p.quadraticCurveTo(20.2, hem + 2, 11.8 + sway, hem); p.quadraticCurveTo(12.8 + sway * 0.6, T + 10, 15.4, T + 1); p.closePath(); });
+    g.beginPath(); g.moveTo(12.6 + sway, hem - 1.6); g.quadraticCurveTo(20.2, hem + 0.6, 27.8 + sway, hem - 1.6); g.strokeStyle = trim; g.lineWidth = 1; g.stroke();
+    if (!back) { g.beginPath(); g.moveTo(20.2, T + 3); g.lineTo(20.2, hem - 1.4); g.strokeStyle = trim; g.lineWidth = 0.8; g.stroke(); }
+    shape(g, o.sash || trim, box(15.4, T + 6.6, 9.6, 1.9, 0.7));
+    if (cls === "mage") {
+      lit(() => shape(g, shade(g, sub, 12, 29), (p) => { p.moveTo(13.2, T + 0.2); p.quadraticCurveTo(20.2, T - 2.4, 27.2, T + 0.2); p.quadraticCurveTo(28.4, T + 3.6, 26.4, T + 5.4); p.quadraticCurveTo(20.2, T + 7.2, 14, T + 5.4); p.quadraticCurveTo(12, T + 3.6, 13.2, T + 0.2); p.closePath(); }));
+      g.beginPath(); g.moveTo(14.2, T + 4.6); g.quadraticCurveTo(20.2, T + 6.2, 26.2, T + 4.6); g.strokeStyle = trim; g.lineWidth = 0.8; g.stroke();
+      if (!back) glow(g, "#bff4ff", 1.2, () => shape(g, "#8ad8f0", ell(20.2, T + 1.6, 1.2, 1.3)));
+    }
   } else {
-    // townsfolk: a tunic over trousers, with an optional apron
-    b.part(8, T, 9, 12, main); b.r(9, T + 1, 7, 1, lt(main));
-    b.part(8, T + 9, 9, 2, "#4a3426");
-    if (!back) { b.r(11, T, 3, 2, skin); if (o.apron) { b.part(9, T + 3, 7, 12, o.apron); b.r(9, T + 3, 7, 1, lt(o.apron)); } }
+    // townsfolk: a tunic, with an apron for those who work
+    shape(g, shade(g, main, 14, 27), torso);
+    shape(g, "#7a5236", box(15.2, T + 7.2, 10, 1.6, 0.6));
+    if (!back && o.apron) shape(g, shade(g, o.apron, 15, 26), box(16.4, T + 2.4, 7.6, 11.4, 1.6));
   }
-  // neck
-  if (!back && cls !== "rogue" && cls !== "mage") b.r(11, T - 1, 3, 1, dk(skin));
+  if (o.acc && !back) glow(g, o.acc >= 4 ? "#8ff4ff" : "#fff2a8", 1.2, () => shape(g, o.acc >= 4 ? "#8ff4ff" : o.acc >= 3 ? "#eef0f6" : "#e8a860", ell(20.2, T + 0.9, 1, 1.1)));
 
-  // ── pauldrons sit over the shoulders
-  if (cls === "warrior") {
-    b.part(5, T - 1, 5, 4, main, true); b.r(5, T + 2, 5, 1, dk(main)); b.r(6, T - 1, 3, 1, lt(main));
-    b.part(15, T - 1, 4, 4, dk(main)); b.r(15, T - 1, 3, 1, main);
-  }
+  head(g, o, back, by);
 
-  // ── cape and slung weapons on the back view
-  if (back && cls === "warrior") {
-    b.part(7, T + 1, 11, 18, o.cape); b.r(8, T + 2, 1, 15, lt(o.cape)); b.r(13, T + 4, 1, 14, dk(o.cape)); b.r(7 + sway, T + 19, 11, 1, dk(o.cape));
-    b.part(5, T - 1, 5, 3, main, true); b.part(15, T - 1, 4, 3, dk(main));
-    if (P.atk === 0) greatsword(b, 5, 3 + by, 21, 31 + by, wt);
-  }
-  if (back && cls === "rogue") { b.r(10 + sway, T + 1, 3, 2, o.scarf); b.r(11 + sway, T + 3, 3, 6, o.scarf); b.r(12 + sway, T + 8, 2, 4, dk(o.scarf)); }
-  if (back && cls === "mage" && P.atk === 0) staff(b, 4, 38, 4, 5 + by, wt, false);
-
-  // ── head
-  head(b, o, back, by);
-
-  // ── near arm, and whatever it holds
-  arm(b, 5, 15 + by, an, upN, sleeve, skin, glove);
-  if (cls === "warrior" && P.atk === 1) greatsword(b, back ? 16 : 8, 13 + by, back ? 22 : 15, by - 6, wt);
-  if (cls === "warrior" && P.atk === 2) { if (back) greatsword(b, 16, 20 + by, 29, 9 + by, wt); else greatsword(b, 9, 21 + by, 24, 31 + by, wt); }
+  // ── near arm and whatever it holds
+  limb(g, 15, T + 2.4, handN[0], handN[1], 2.6, sleeve);
+  if (cls === "rogue") { g.beginPath(); g.moveTo(14.2 + an * 0.6 + reachN * 0.6, T + 6.4 - upN * 0.6); g.lineTo(handN[0], handN[1]); g.strokeStyle = dk(main); g.lineWidth = 2.6; g.stroke(); }
+  if (cls === "warrior" && atk === 1) greatsword(g, o, handN[0] + 1, handN[1], back ? 27 : 24, by - 1);
+  if (cls === "warrior" && atk === 2) greatsword(g, o, handN[0] + 1, handN[1] + 1, back ? 37 : 35, back ? 16 + by : 37 + by);
   if (cls === "rogue") {
-    if (P.atk === 2) dagger(b, 9, 19 + by, 1, back ? -0.5 : 0.35, wt);
-    else if (P.atk === 1) dagger(b, 4, 19 + by, -1, -0.3, wt);
-    else { dagger(b, 5 + an, 24 + by, -0.4, 1, wt, 5); if (!back) dagger(b, 17 + af, 24 + by, 0.4, 1, wt, 5); }
+    if (atk === 2) dagger(g, o, handN[0] + 1, handN[1], 1, back ? -0.4 : 0.25);
+    else if (atk === 1) dagger(g, o, handN[0] - 1, handN[1], -0.8, -0.6);
+    else { dagger(g, o, handN[0] - 0.4, handN[1] + 1, -0.35, 0.94); if (!back) dagger(g, o, handF[0] + 0.4, handF[1] + 1, 0.35, 0.94); }
   }
   if (cls === "ranger" && !back) {
-    const tip = P.atk ? gun(b, 8, 17 + by, wt, P.atk === 1) : gun(b, 7, 20 + by, wt, false);
-    if (P.atk === 1) { b.r(tip, 16 + by, 2, 3, "#fff2b0"); b.r(tip + 2, 17 + by, 2, 1, "#ffd24a"); b.r(tip, 15 + by, 1, 1, "#ffd24a"); b.r(tip, 19 + by, 1, 1, "#ffd24a"); }
+    const tip = atk ? gun(g, o, handN[0] - 1.6, handN[1] - 0.4, atk === 1 ? -0.16 : 0) : gun(g, o, handN[0] - 2, handN[1] - 0.6, 0.32);
+    if (atk === 1) glow(g, "#ffd24a", 2, () => shape(g, "#fff6c8", poly([tip[0], tip[1] - 1.6], [tip[0] + 4.4, tip[1] - 0.2], [tip[0], tip[1] + 1.4], [tip[0] + 1.4, tip[1]]), null));
   }
-  if (cls === "mage" && P.atk) { if (back) staff(b, 8, 26 + by, 20, 5 + by, wt, true); else staff(b, 7, 25 + by, 21, 9 + by, wt, P.atk === 1); }
-
-  outline(c, g);
-  // a few glints painted over the outline so they stay bright
-  if (cls === "mage") { const hx = P.atk ? null : 4; if (hx !== null) { g.fillStyle = "#ffffff"; g.fillRect(FOOT_X - 12 + 3, FOOT_Y - BASE + 3 + by, 1, 1); } }
-  if (o.glow) { g.fillStyle = o.glow; g.fillRect(FOOT_X - 12 + (back ? 9 : 12), FOOT_Y - BASE + 17 + by, 2, 1); }
+  if (cls === "mage") {
+    if (atk) staff(g, o, handN[0] - 3, handN[1] + 5, handN[0] + 9, handN[1] - 9, true);
+    else if (back) staff(g, o, 10.6, 46, 10.6, 13 + by, false);
+  }
+  shape(g, cls === "warrior" || cls === "ranger" ? o.glove : skin, ell(handN[0], handN[1] + 0.4, 1.6, 1.6));
   return c;
 }
 
 // ───────────────────────────── public API ─────────────────────────────
 
 const cache = new Map();
-/**
- * `[dir][frame]` for one character. dir: 0 down-left · 1 up-left · 2 down-right ·
- * 3 up-right (the grid's four axes as they appear on screen).
- */
+/** A character sheet. Frames are painted the first time each one is needed. */
 export function charSprite(o) {
   const key = JSON.stringify(o);
   let s = cache.get(key);
-  if (s) return s;
-  const front = POSE.map((_, f) => figure(o, false, f));
-  const back = POSE.map((_, f) => figure(o, true, f));
-  s = [front.map(flip), back.map(flip), front, back];
-  cache.set(key, s);
+  if (!s) { s = { o, front: [], back: [] }; cache.set(key, s); }
   return s;
 }
+/** One frame of a sheet (as painted: facing right). */
+export function frameOf(s, back, f) {
+  const list = back ? s.back : s.front;
+  return list[f] || (list[f] = figure(s.o, back, f));
+}
+/**
+ * Draw a character with its top-left at (x, y). dir: 0 down-left · 1 up-left ·
+ * 2 down-right · 3 up-right — the grid's four axes as they appear on screen.
+ */
+export function drawFigure(g, s, dir, f, x, y, w = CHAR_W, h = CHAR_H) {
+  const img = frameOf(s, dir === 1 || dir === 3, f);
+  if (dir < 2) { g.save(); g.translate(x + w, y); g.scale(-1, 1); g.drawImage(img, 0, 0, w, h); g.restore(); }
+  else g.drawImage(img, x, y, w, h);
+}
 
-/** A player's look from the server's public record. */
-export function playerLook(cls, look, armorTier, weaponTier) {
-  const t = Math.max(0, Math.min(5, armorTier | 0));
-  const main = (TIER[cls] || TIER.warrior)[t];
-  const o = { cls, hair: look[0] | 0, skin: look[1] | 0, style: look[2] | 0, main, wt: Math.max(1, weaponTier | 0), glow: t === 5 ? "#bff8ff" : null };
-  if (cls === "warrior") Object.assign(o, { under: "#34303e", tabard: "#8c2a30", cape: "#6e1e26", trim: "#d0a848", pants: "#3a3644", boot: main, band: "#8c2a30" });
-  else if (cls === "rogue") Object.assign(o, { hood: mix(main, 1.12), mask: "#1e1f26", scarf: "#a62c3c", belt: "#6a4c36", trim: "#c8b070", pants: mix(main, 0.9), boot: "#1c1d24" });
-  else if (cls === "ranger") Object.assign(o, { shirt: "#c4b48c", vest: "#6e5c40", trim: "#c8b070", pants: "#3a3d46", boot: "#2a221c", goggles: "#6ad0e0" });
-  else Object.assign(o, { cls: "mage", mantle: mix(main, 1.22), trim: "#d8b860", sash: "#62c6d8", boot: "#2a2440", skirt: 1, circlet: "#d8b860" });
+function base(look) {
+  return { hair: look[0] | 0, skin: look[1] | 0, style: look[2] | 0, hairCol: HAIR[look[0] | 0] || HAIR[0], skinCol: SKIN[look[1] | 0] || SKIN[0], eye: "#4a78c8" };
+}
+/**
+ * A player's look. `gear`: at/aq armour tier and rarity · wt/wq/we weapon tier,
+ * rarity and enhancement · acc accessory tier.
+ */
+export function playerLook(cls, look, gear = {}) {
+  if (!OUTFIT[cls]) cls = "warrior";
+  const at = Math.max(1, Math.min(5, gear.at | 0 || 1));
+  const [main, sub, trim, glw] = OUTFIT[cls][at - 1];
+  const o = { ...base(look), cls, at, main, sub, trim, glow: glw || null, wt: Math.max(1, Math.min(5, gear.wt | 0 || 1)), wq: gear.wq | 0, we: gear.we | 0, acc: gear.acc | 0 };
+  o.eye = ["#4a78c8", "#3f9a6a", "#b8683a", "#8a5ac8"][(o.hair + o.skin) % 4];
+  if (cls === "warrior") Object.assign(o, { cape: at >= 4 ? dk(trim, 0.8) : dk(main, 0.86), accent: "#e04a4a", pants: "#5a5670", boot: sub, glove: sub });
+  else if (cls === "rogue") Object.assign(o, { accent: sub, pants: dk(main, 0.86), boot: "#4a4458", glove: "#4a4458" });
+  else if (cls === "ranger") Object.assign(o, { accent: trim, pants: "#6a6478", boot: "#6a4a38", glove: "#5a4636", pack: "#b08a58" });
+  else Object.assign(o, { accent: trim, pants: main, boot: "#5a4a78", sash: at >= 4 ? trim : "#7ad8e8" });
   return o;
 }
 export function npcLook(look, role) {
   const col = look[3] || "#667";
-  const base = { hair: look[0] | 0, skin: look[1] | 0, style: look[2] | 0, main: col, trim: "#c8b070", pants: "#3a3440", boot: "#2c241e" };
-  if (role === "elder") return { ...base, cls: "robe", beard: 1, skirt: 1 };
-  if (role === "smith") return { ...base, cls: "npc", apron: "#3c3430" };
-  if (role === "shop") return { ...base, cls: "npc", apron: "#d8ceb8" };
-  if (role === "train") return { ...base, cls: "npc", band: "#e8e0d0" };
-  return { ...base, cls: "warrior", under: "#34303e", tabard: "#3a4a6a", cape: "#2c3850", wt: 2 };
+  const o = { ...base(look), main: col, sub: lt(col), trim: "#f0cc60", accent: "#f0cc60", pants: "#5a5468", boot: "#6a4a38", glove: "#6a4a38", at: 1, wt: 2 };
+  if (role === "elder") return { ...o, cls: "robe", beard: 1 };
+  if (role === "smith") return { ...o, cls: "npc", apron: "#6a5a52" };
+  if (role === "shop") return { ...o, cls: "npc", apron: "#fff4e4" };
+  if (role === "train") return { ...o, cls: "npc" };
+  return { ...o, cls: "warrior", at: 3, sub: "#c8d0e0", cape: dk(col, 0.8), boot: "#c8d0e0", glove: "#c8d0e0" };
 }
 /** Humanoid monsters reuse the same figure with their own wardrobe. */
 export function mobLook(kind) {
-  if (kind === "thug") return { cls: "rogue", hair: 1, skin: 1, style: 0, main: "#5a2a30", hood: "#3e1c22", mask: "#18181c", scarf: "#d8d4c8", belt: "#2a2a30", trim: "#c8c8cc", pants: "#2c2e36", boot: "#16161a", wt: 2 };
-  return { cls: "warrior", bone: 1, hair: 5, skin: 0, style: 0, eye: "#5ac8d8", main: "#4a4860", under: "#201e2c", tabard: "#2c2840", cape: "#1c1a28", trim: "#5ac8d8", pants: "#2a2836", boot: "#3c3a50", wt: 3 };
+  if (kind === "thug") return { ...base([1, 1, 0]), cls: "rogue", at: 2, main: "#8a3a44", sub: "#e8e4d8", trim: "#d0d0d8", accent: "#e8e4d8", pants: "#3c3e4a", boot: "#2a2a32", glove: "#2a2a32", eye: "#c83a3a", wt: 2 };
+  return { ...base([5, 0, 0]), cls: "warrior", bone: 1, at: 3, eye: "#6ae8f4", main: "#4a4866", sub: "#7a7896", trim: "#6ae8f4", accent: "#6ae8f4", cape: "#2c2a40", pants: "#34324a", boot: "#7a7896", glove: "#7a7896", wt: 3 };
 }
