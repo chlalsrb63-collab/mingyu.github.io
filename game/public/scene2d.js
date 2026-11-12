@@ -248,7 +248,7 @@ function state(id, key, make) {
 function personState(id, look) {
   return state(id, JSON.stringify(look), () => {
     const cls = SP.HOLD[look.cls] ? look.cls : "warrior";
-    return { cls, sheet: SP.personSheet(SP.playerLook(cls, look.look, look.gear)), weapon: SP.weaponSprite(cls, look.gear), gear: look.gear || {}, h: look.look && look.look[0] === 1 ? 1.1 : 0.95 };
+    return { cls, sheet: SP.personSheet(SP.playerLook(cls, look.look, look.gear)), weapon: SP.weaponSprite(cls, look.gear), gear: look.gear || {}, h: 0.62 };
   });
 }
 const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30"];
@@ -268,7 +268,7 @@ function drawPerson(s, e, t, dt, x, y) {
   const img = (back ? s.sheet.back : s.sheet.front)[frame];
   const sg = s.face;
   g.fillStyle = "rgba(20,24,50,.26)";
-  g.beginPath(); g.ellipse(x, y, 6, 2.5, 0, 0, 7); g.fill();
+  g.beginPath(); g.ellipse(x, y, 5, 2, 0, 0, 7); g.fill();
   const body = () => {
     g.save();
     g.translate(Math.round(x), Math.round(y));
@@ -299,8 +299,8 @@ function drawPerson(s, e, t, dt, x, y) {
   }
   const resting = k >= 1;
   // with no arms, the weapon simply floats at the body's side
-  const hx = x + sg * (hold.style === "sweep" && resting ? 3 : 8) + Math.cos(s.ang) * push;
-  const hy = y - (hold.style === "sweep" && resting ? 7 : 5) + Math.sin(s.ang) * push + (frame === 1 ? -1 : 0);
+  const hx = x + sg * (hold.style === "sweep" && resting ? 3 : 7) + Math.cos(s.ang) * push;
+  const hy = y - (hold.style === "sweep" && resting ? 5 : 3) + Math.sin(s.ang) * push + (frame === 1 ? -1 : 0);
   const weapon = () => {
     g.save();
     g.translate(Math.round(hx), Math.round(hy));
@@ -330,7 +330,7 @@ export const fx = {
     this.add({ k: "proj", x0, y0, x1, y1, color, size: Math.max(2, Math.round(size * 44)), dur: Math.max(70, (Math.hypot(x1 - x0, y1 - y0) / (speed * 26)) * 1000), done });
   },
   /** A blade's crescent, centred on the attacker and opening toward `ang`. */
-  slash(wx, wy, ang, color, size = 0.8) { this.add({ k: "slash", x: wx * P, y: wy * P - 8, ang, color, r: size * 34, dur: 200 }); },
+  slash(wx, wy, ang, color, size = 0.8) { this.add({ k: "slash", x: wx * P, y: wy * P - 5, ang, color, r: size * 32, dur: 200 }); },
   beam(ax, ay, bx, by, color, h = 0.6) { this.add({ k: "beam", x0: ax * P, y0: ay * P - h * 22, x1: bx * P, y1: by * P - h * 22, color, dur: 260 }); },
   pillar(wx, wy) { this.add({ k: "pillar", x: wx * P, y: wy * P, dur: 900 }); this.sparkle(wx, wy, 0.5, "#ffd84a", 24); },
   burst(wx, wy, h, color, n = 8, speed = 1.4) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = speed * 34 * (0.3 + Math.random() * 0.7); parts.push({ x: wx * P, y: wy * P - h * 22, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: 0.25 + Math.random() * 0.3, color, g: 220 }); } },
@@ -435,7 +435,7 @@ export function render(focusX, focusY, dt, t, snap) {
       g.drawImage(sp, dx, dy);
       g.globalAlpha = 1;
     } else if (o.n) {
-      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 6, 2.5, 0, 0, 7); g.fill();
+      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 5, 2, 0, 0, 7); g.fill();
       g.drawImage(o.n.sheet.front[0], Math.round(o.n.x - SP.FOOT[0]), Math.round(o.n.y - SP.FOOT[1] + Math.sin(t / 600 + o.n.x) * 0.6));
     } else if (o.d) {
       const d = o.d, x = d.x * P, y = d.y * P, ic = G.icons.cv[d.it];
@@ -445,11 +445,11 @@ export function render(focusX, focusY, dt, t, snap) {
     } else if (o.m) {
       const m = o.m, kind = G.defs.mobs[m.k].sp, x = m.x * P, y = m.y * P;
       if (kind === "thug" || kind === "skel") {
-        const s = state("m" + m.id, kind, () => ({ cls: kind === "thug" ? "rogue" : "warrior", sheet: SP.personSheet(SP.mobLook(kind)), weapon: SP.weaponSprite(kind === "thug" ? "rogue" : "warrior", { wt: kind === "thug" ? 2 : 3 }), gear: {}, h: 0.95, px: m.x }));
+        const s = state("m" + m.id, kind, () => ({ cls: kind === "thug" ? "rogue" : "warrior", sheet: SP.personSheet(SP.mobLook(kind)), weapon: SP.weaponSprite(kind === "thug" ? "rogue" : "warrior", { wt: kind === "thug" ? 2 : 3 }), gear: {}, h: 0.62, px: m.x }));
         const dir = m.x < s.px - 0.05 ? 1 : m.x > s.px + 0.05 ? 2 : s.face < 0 ? 1 : 2;
         s.px = m.x;
         drawPerson(s, { x: m.x, y: m.y, dir, moving: m.moving, atkT: m.atkT, dead: false, aim: null }, t, dt, x, y);
-        m.h3 = 0.95;
+        m.h3 = 0.62;
       } else {
         const s = state("m" + m.id, kind, () => ({ frames: SP.monsterSheet(kind), size: (SP.MOB_SIZE[kind] || [1, 0])[0], hover: (SP.MOB_SIZE[kind] || [1, 0])[1], px: m.x }));
         if (m.x > s.px + 0.05) s.face = -1; else if (m.x < s.px - 0.05) s.face = 1;
@@ -496,7 +496,7 @@ export function render(focusX, focusY, dt, t, snap) {
     lg.globalAlpha = dark[1]; lg.fillStyle = dark[0]; lg.fillRect(0, 0, vw, vh); lg.globalAlpha = 1;
     lg.globalCompositeOperation = "destination-out";
     const hole = (x, y, r, k = 1) => { const sx = x - ox, sy = y - oy; if (sx < -r || sy < -r || sx > vw + r || sy > vh + r) return; const gr = lg.createRadialGradient(sx, sy, 0, sx, sy, r); gr.addColorStop(0, `rgba(0,0,0,${k})`); gr.addColorStop(1, "rgba(0,0,0,0)"); lg.fillStyle = gr; lg.fillRect(sx - r, sy - r, r * 2, r * 2); };
-    hole(meX, meY - 12, 130, 0.9);
+    hole(meX, meY - 8, 130, 0.9);
     for (const o of list) { if (o.p && o.eid !== G.you) hole(o.p.x * P, o.p.y * P - 20, 110, 0.8); else if (o.s && o.s.glow) hole(o.s.x, o.s.y - (o.s.big ? 60 : o.s.sp.height - 12), o.s.big ? 120 : o.s.glow === "#ffe690" ? 110 : 60, 0.85); else if (o.d && o.d.q) hole(o.d.x * P, o.d.y * P - 10, 36, 0.7); }
     for (const p of map.portals) hole(p.x * T + 16, p.y * T + 16, 80, 0.8);
     g.setTransform(1, 0, 0, 1, 0, 0);
@@ -542,7 +542,7 @@ export function renderStage(dt, t) {
   const cx = Math.round(vw / 2);
   stage.cast.forEach(({ s, i }) => {
     if (stage.draft) {
-      const k = (t % 3200) / 1000, dir = [2, 1, 3, 2][Math.floor(t / 3200) % 4], z = 7;
+      const k = (t % 3200) / 1000, dir = [2, 1, 3, 2][Math.floor(t / 3200) % 4], z = 10;
       g.save(); g.translate(cx + Math.min(120, vw * 0.18), gy + 34); g.scale(z, z);
       drawPerson(s, { x: 0, y: 0, dir, moving: k > 1 && k < 2.2, atkT: k > 2.5 ? t - (k - 2.5) * 1000 : -1e9, dead: false, aim: k > 2.5 ? [dir === 1 ? -40 : 40, 6] : null }, t, dt, 0, 0);
       g.restore();

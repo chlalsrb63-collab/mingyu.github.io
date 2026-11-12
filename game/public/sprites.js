@@ -83,7 +83,7 @@ function finish(c, g, ink = INK, passes = 2) {
 }
 
 // ───────────────────────────── adventurers ─────────────────────────────
-// Small animals on a 32×32 sheet: a boxy head about fourteen pixels wide, ears
+// Small animals that fit a 16×16 box on the 32×32 sheet: a boxy head, ears
 // above it, and a tiny body with no arms or legs. Nothing is worn on the head;
 // a face is just eyes, a nose and a blush. Every part is chosen at creation.
 
@@ -106,76 +106,78 @@ const PINK = "#f6a8a0", DARK = "#2b2233";
  * `f`: 0 standing, 1 the top of a hop, 2 the landing.
  */
 function person(o, back, f) {
+  // The whole animal fits a 16×16 box (outline included) standing on the sheet's
+  // foot line: three rows of ear, a seven-row head twelve pixels wide, and a
+  // four-row body. At this size every pixel is a decision, so there are few.
   const [c, g] = sheet(S);
   const b = brush(g);
   const fur = o.bone ? "#eef0f6" : o.fur, sh = dk(fur, 0.82), pat = o.pat | 0;
   const H = f === 1 ? -1 : f === 2 ? 1 : 0;                 // the head bobs with the hop
-  const by = 21 + H, bh = f === 2 ? 6 : 7;                  // the body squashes on landing
+  const by = 24 + H, bh = f === 2 ? 3 : 4;                  // the body squashes on landing
   const r = (x, y, w, h, col) => b.r(x, y + H, w, h, col);
   /** The same block on both sides of the face. */
   const both = (x, y, w, h, col, colR = col) => { r(x, y, w, h, col); r(32 - x - w, y, w, h, colR); };
-  const tris = (pts, col, colR) => { b.tri(pts.map(([x, y]) => [x, y + H]), col); b.tri(pts.map(([x, y]) => [32 - x, y + H]), colR); };
 
   // ── tail
   const tc = pat === 3 ? sh : fur;
   if (!o.bone) [
-    () => { b.r(20, by + 5, 3, 1, tc); b.r(22, by + 2, 1, 3, tc); b.r(23, by + 1, 1, 2, tc); },
-    () => b.r(20, by + 3, 2, 2, tc),
-    () => b.r(20, by + 4, 1, 2, tc),
-    () => { b.r(20, by + 2, 4, 4, tc); b.r(21, by + 1, 3, 1, tc); },
-    () => { b.r(20, by + 3, 2, 1, tc); b.r(21, by + 1, 1, 2, tc); },
-    () => { b.r(20, by + 5, 4, 1, tc); b.r(23, by + 3, 1, 2, tc); },
+    () => { b.r(19, by + 2, 2, 1, tc); b.r(20, by, 1, 2, tc); },
+    () => b.r(19, by + 1, 2, 2, tc),
+    () => b.r(19, by + 2, 1, 1, tc),
+    () => { b.r(19, by, 3, 3, tc); },
+    () => { b.r(19, by + 1, 1, 1, tc); b.r(20, by, 1, 1, tc); },
+    () => { b.r(19, by + bh - 1, 3, 1, tc); b.r(21, by + bh - 2, 1, 1, tc); },
   ][o.ear | 0]();
 
-  // ── body: a small lump, optionally in a plain tunic
+  // ── body: a tiny lump, optionally in a plain tunic
   const cloth = o.bone ? "#4a4868" : o.cloth;
-  b.r(12, by, 8, bh - 1, fur); b.r(13, by + bh - 1, 6, 1, dk(fur, 0.9));
-  if (cloth) { b.r(12, by, 8, bh - 3, cloth); b.r(12, by + bh - 3, 8, 1, dk(cloth, 0.8)); if (!back) b.r(15, by, 2, 1, lt(cloth, 1.5)); }
-  else b.r(12, by, 8, 1, dk(fur, 0.93));
+  b.r(13, by, 6, bh, fur);
+  if (cloth) b.r(13, by, 6, bh - 1, cloth);
+  else b.r(13, by, 6, 1, dk(fur, 0.92));
 
-  // ── ears
+  // ── ears: three rows above the head
   const eL = pat === 3 ? sh : fur, eR = pat === 3 || pat === 1 ? sh : fur;
   if (!o.bone) [
-    () => { tris([[9, 12], [10, 6], [15, 11]], eL, eR); if (!back) both(11, 9, 1, 2, PINK); },
-    () => { both(11, 3, 3, 9, eL, eR); if (!back) both(12, 5, 1, 5, PINK); },
-    () => { both(9, 9, 4, 3, eL, eR); both(10, 8, 2, 1, eL, eR); if (!back) both(10, 10, 2, 1, PINK); },
-    () => { tris([[8, 13], [8, 4], [15, 11]], eL, eR); if (!back) both(10, 8, 1, 3, PINK); },
+    () => { both(10, 16, 3, 1, eL, eR); both(10, 15, 2, 1, eL, eR); both(10, 14, 1, 1, eL, eR); },
+    () => { both(11, 14, 2, 3, eL, eR); },
+    () => { both(10, 15, 3, 2, eL, eR); },
+    () => { both(10, 16, 4, 1, eL, eR); both(10, 15, 3, 1, eL, eR); both(10, 14, 2, 1, eL, eR); },
     () => {},                                               // floppy ears hang over the head: drawn after it
-    () => { both(7, 7, 5, 4, eL, eR); both(8, 6, 3, 6, eL, eR); if (!back) both(9, 8, 2, 2, PINK); },
+    () => { both(9, 14, 3, 3, eL, eR); if (!back) both(10, 15, 1, 1, PINK); },
   ][o.ear | 0]();
 
   // ── head
-  r(10, 11, 12, 10, fur); r(9, 12, 14, 8, fur);
-  if (o.ear === 4 && !o.bone) { const d = pat === 3 ? dk(fur, 0.68) : sh; both(7, 10, 4, 1, d, pat === 1 ? dk(fur, 0.68) : d); both(6, 11, 4, 6, d, pat === 1 ? dk(fur, 0.68) : d); both(7, 17, 3, 1, d, pat === 1 ? dk(fur, 0.68) : d); }
-  if (pat === 2) { r(12, 11, 1, 2, sh); r(15, 11, 2, 3, sh); r(19, 11, 1, 2, sh); }
+  r(11, 17, 10, 7, fur); r(10, 18, 12, 5, fur);
+  if (o.ear === 4 && !o.bone) { const d = pat === 3 ? dk(fur, 0.68) : sh; both(9, 17, 2, 5, d, pat === 1 ? dk(fur, 0.68) : d); }
+  if (pat === 2) { r(15, 17, 2, 2, sh); both(12, 17, 1, 1, sh); }
 
   if (back) return finish(c, g, INK, 1);
 
   if (o.bone) {
-    both(11, 14, 3, 3, DARK); both(12, 15, 1, 1, o.glow || "#6ae8f4");
-    r(13, 19, 1, 2, DARK); r(15, 19, 1, 2, DARK); r(17, 19, 1, 2, DARK);
+    both(12, 19, 2, 2, DARK); both(12, 20, 1, 1, o.glow || "#6ae8f4");
+    r(13, 22, 1, 1, DARK); r(15, 22, 1, 1, DARK); r(17, 22, 1, 1, DARK); r(18, 22, 1, 1, DARK);
     return finish(c, g, INK, 1);
   }
 
   // ── face: eyes, a nose, a blush — nothing else
-  if (pat === 1) { r(17, 13, 5, 5, sh); r(22, 14, 1, 3, sh); }
-  if (o.mask) { r(9, 14, 14, 3, "#3c3040"); both(11, 15, 2, 1, "#ffffff"); }
+  if (pat === 1) r(17, 18, 4, 4, sh);
+  if (o.mask) { r(10, 19, 12, 2, "#3c3040"); both(12, 20, 1, 1, "#ffffff"); }
   else [
-    () => both(11, 15, 2, 2, DARK),
-    () => { both(11, 14, 2, 3, DARK); r(11, 14, 1, 1, "#ffffff"); r(19, 14, 1, 1, "#ffffff"); },
-    () => { both(11, 14, 3, 3, DARK); r(11, 14, 1, 1, "#ffffff"); r(18, 14, 1, 1, "#ffffff"); },
-    () => { both(11, 16, 1, 1, DARK); both(12, 15, 1, 1, DARK); both(13, 16, 1, 1, DARK); },
-    () => both(11, 16, 3, 1, DARK),
-    () => { both(11, 14, 2, 3, DARK); both(11, 16, 2, 1, "#5aa8f0"); r(11, 14, 1, 1, "#ffffff"); r(19, 14, 1, 1, "#ffffff"); },
+    () => both(12, 19, 1, 2, DARK),
+    () => both(12, 18, 1, 3, DARK),
+    () => both(12, 19, 2, 2, DARK),
+    () => { both(11, 20, 1, 1, DARK); both(12, 19, 1, 1, DARK); both(13, 20, 1, 1, DARK); },
+    () => both(12, 20, 2, 1, DARK),
+    () => { both(12, 19, 2, 1, DARK); both(12, 20, 2, 1, "#4a90e0"); },
   ][o.eye | 0]();
   [
-    () => r(15, 17, 2, 1, "#4a3640"),
-    () => r(15, 17, 2, 1, "#f08a9a"),
-    () => { r(15, 17, 2, 1, "#4a3640"); both(14, 18, 1, 1, "#4a3640"); },
-    () => { r(14, 17, 4, 1, "#4a3640"); r(15, 18, 2, 1, "#4a3640"); },
+    () => r(15, 21, 2, 1, "#4a3640"),
+    () => r(15, 21, 2, 1, "#f08a9a"),
+    () => { r(15, 21, 2, 1, "#4a3640"); both(14, 22, 1, 1, "#4a3640"); },
+    () => r(15, 21, 2, 2, "#4a3640"),
     () => {},
   ][o.nose | 0]();
-  if (o.blush) both(10, 18, 2, 1, o.blush);
+  if (o.blush) both(10, 21, 2, 1, o.blush);
   return finish(c, g, INK, 1);
 }
 
