@@ -746,7 +746,10 @@ function drawPerson(s, e, t, dt, x, y) {
   const back = e.dir === 3;
   if (e.dir === 1) s.face = -1; else if (e.dir === 2) s.face = 1;
   if (e.moving) s.walk += dt * 7;
-  const atk = (t - e.atkT) / 1000;
+  // a blow that connects freezes for a beat (`e.hs`), then carries on from where it stopped
+  const hs = e.hs && e.atkT <= e.hs.at ? e.hs : null;
+  const te = !hs || t < hs.at ? t : t < hs.at + hs.dur ? hs.at : t - hs.dur;
+  const atk = (te - e.atkT) / 1000;
   if (e.aim && atk < 0.5) s.face = e.aim[0] < e.x ? -1 : 1;
   // walking steps foot to foot; standing still breathes, and blinks now and then
   if (s.ph === undefined) s.ph = Math.random() * 4000;
@@ -763,7 +766,7 @@ function drawPerson(s, e, t, dt, x, y) {
   g.beginPath(); g.ellipse(x, y, 5, 2, 0, 0, 7); g.fill();
   // a strike leans the whole body into the blow for a moment
   if (e.aim && atk >= 0 && atk < 0.22 && !e.dead) {
-    const a = Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x), n = Math.sin((atk / 0.22) * Math.PI) * (e.atkN === 2 ? 4 : 2);
+    const a = Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x), n = Math.sin((atk / 0.22) * Math.PI) * (e.atkN === 2 ? 8 : 4.5);
     x += Math.cos(a) * n; y += Math.sin(a) * n;
   }
   const body = () => {
@@ -785,12 +788,14 @@ function drawPerson(s, e, t, dt, x, y) {
   const glow = RARITY[s.gear.wq | 0] || (s.gear.we >= 7 ? "#ffffff" : null);
   if (hold.style === "float") {
     // a spellbook hovers open beside its reader and darts forward to cast
-    const out = resting ? 0 : Math.sin(k * Math.PI) * hold.push * (fin ? 2 : 1) * (beat === 1 ? -0.6 : 1);
+    const out = resting ? 0 : Math.sin(k * Math.PI) * hold.push * (fin ? 2.2 : 1) * (beat === 1 ? -0.6 : 1);
+    const big = resting ? 1 : 1 + Math.sin(k * Math.PI) * (fin ? 0.7 : 0.35);
     const bx = x + sg * 9 + Math.cos(aim) * out, by = y - 8 + Math.sin(t / 380 + s.ph) * 1.2 + Math.sin(aim) * out + bob;
     const book = () => {
       g.save();
       if (!resting) { g.shadowColor = "#fff2b0"; g.shadowBlur = 10; } else if (glow) { g.shadowColor = glow; g.shadowBlur = 5; }
-      g.drawImage(s.weapon, Math.round(bx) - 16, Math.round(by) - 16);
+      g.translate(Math.round(bx), Math.round(by)); g.scale(big, big);
+      g.drawImage(s.weapon, -16, -16);
       g.restore();
     };
     if (back) { book(); body(); } else { body(); book(); }
@@ -798,7 +803,7 @@ function drawPerson(s, e, t, dt, x, y) {
   }
   const rest = sg > 0 ? -hold.rest * DEG : Math.PI + hold.rest * DEG;
   if (s.ang === null) s.ang = rest;
-  let push = 0;
+  let push = 0, grow = 0;
   if (!resting) {
     // a blow has three parts: draw back, strike, follow through. `w` runs from a
     // little below 0 (the wind-up) to 1 (the end of the stroke) and settles there.
@@ -808,7 +813,7 @@ function drawPerson(s, e, t, dt, x, y) {
     const arc = hold.arc * DEG;
     if (hold.style === "sweep") {
       // a greatsword: left to right, right to left, then an overhead chop that ends on the target
-      if (fin) { s.ang = aim - sg * 2.7 + sg * 2.95 * w; push = hold.push + 4 * Math.max(0, w); }
+      if (fin) { s.ang = aim - sg * 3.3 + sg * 3.6 * w; push = hold.push + 6 * Math.max(0, w); }
       else { s.ang = aim - side * arc / 2 + side * arc * w; push = hold.push + 1; }
     } else if (hold.style === "stab") {
       // a thrust, a quick cut across, then a long lunge
@@ -816,7 +821,12 @@ function drawPerson(s, e, t, dt, x, y) {
       else { s.ang = aim; push = (w < 0 ? w * 14 : Math.sin(Math.min(1, w) * Math.PI) * hold.push * (fin ? 1.7 : 1)); }
     } else if (fin) { s.ang = aim + sg * Math.PI * 2 * (1 - Math.max(0, w)); push = hold.push + 3; }   // a full twirl of the staff
     else { s.ang = aim - side * arc * (1 - w); push = hold.push; }
+    // mid-stroke the weapon swells toward the eye, and leaves its last two positions behind as a smear
+    grow = Math.sin(Math.max(0, Math.min(1, w)) * Math.PI) * hold.grow * (fin ? 1.6 : 1);
+    if (!s.smear) s.smear = [];
+    s.smear.unshift(s.ang); s.smear.length = Math.min(s.smear.length, 3);
   } else {
+    s.smear = null;
     let d = rest - s.ang;
     d = Math.atan2(Math.sin(d), Math.cos(d));
     s.ang += d * Math.min(1, dt * 12);
@@ -825,14 +835,20 @@ function drawPerson(s, e, t, dt, x, y) {
   const slung = hold.style === "sweep" && resting;
   const hx = x + sg * (slung ? 3 : 7) + Math.cos(s.ang) * push;
   const hy = y - (slung ? 5 : 3) + Math.sin(s.ang) * push + bob;
-  const weapon = () => {
+  const blade = (ang, alpha) => {
     g.save();
     g.translate(Math.round(hx), Math.round(hy));
-    g.rotate(s.ang);
-    if (Math.cos(s.ang) < 0) g.scale(1, -1);
-    if (glow) { g.shadowColor = glow; g.shadowBlur = s.gear.we >= 7 ? 9 : 5; }
+    g.rotate(ang);
+    if (Math.cos(ang) < 0) g.scale(1, -1);
+    g.scale(1 + grow, 1 + grow);
+    g.globalAlpha = alpha;
+    if (glow && alpha === 1) { g.shadowColor = glow; g.shadowBlur = s.gear.we >= 7 ? 9 : 5; }
     g.drawImage(s.weapon, -SP.GRIP[0], -SP.GRIP[1]);
     g.restore();
+  };
+  const weapon = () => {
+    if (s.smear && grow > 0.08) { if (s.smear[2] !== undefined) blade(s.smear[2], 0.16); if (s.smear[1] !== undefined) blade(s.smear[1], 0.34); }
+    blade(s.ang, 1);
   };
   // a slung greatsword sits behind the body; everything else is held in front
   const behind = resting ? (hold.style === "sweep") !== back : Math.sin(s.ang) < -0.2;
@@ -853,6 +869,7 @@ export const fx = {
     this.add({ k: "proj", x0, y0, x1, y1, color, size: Math.max(2, Math.round(size * 44)), dur: Math.max(70, (Math.hypot(x1 - x0, y1 - y0) / (speed * 26)) * 1000), done });
   },
   /** A blade's crescent, centred on the attacker and opening toward `ang`. */
+  spark(wx, wy, color = "#ffffff", size = 1) { this.add({ k: "spark", x: wx * P, y: wy * P - 6, color, r: 13 * size, n: size > 1.3 ? 8 : 6, a0: Math.random() * 6.28, dur: 190 }); },
   slash(wx, wy, ang, color, size = 0.8, rev = false) { this.add({ k: "slash", x: wx * P, y: wy * P - 5, ang, color, r: size * 32, rev, dur: 260, delay: 90 }); },
   beam(ax, ay, bx, by, color, h = 0.6) { this.add({ k: "beam", x0: ax * P, y0: ay * P - h * 22, x1: bx * P, y1: by * P - h * 22, color, dur: 260 }); },
   pillar(wx, wy) { this.add({ k: "pillar", x: wx * P, y: wy * P, dur: 900 }); this.sparkle(wx, wy, 0.5, "#ffd84a", 24); },
@@ -889,6 +906,20 @@ function drawFx(now, ground2) {
       for (let j = 0; j <= n; j++) { const a = a0 + ((a1 - a0) * j) / n; g.lineTo(f.x + Math.cos(a) * f.r, f.y + Math.sin(a) * f.r); }
       for (let j = n; j >= 0; j--) { const a = a0 + ((a1 - a0) * j) / n, w = f.r * (1 - 0.34 * Math.sin((j / n) * Math.PI)); g.lineTo(f.x + Math.cos(a) * w, f.y + Math.sin(a) * w); }
       g.closePath(); g.fill();
+      g.fillStyle = "#ffffff";
+      g.beginPath();
+      for (let j = 0; j <= n; j++) { const a = a0 + ((a1 - a0) * j) / n; g.lineTo(f.x + Math.cos(a) * f.r * 0.97, f.y + Math.sin(a) * f.r * 0.97); }
+      for (let j = n; j >= 0; j--) { const a = a0 + ((a1 - a0) * j) / n, w = f.r * (0.97 - 0.14 * Math.sin((j / n) * Math.PI)); g.lineTo(f.x + Math.cos(a) * w, f.y + Math.sin(a) * w); }
+      g.closePath(); g.fill();
+    } else if (f.k === "spark") {
+      // an impact: a white core and spokes thrown outward
+      g.globalAlpha = 1 - k;
+      g.fillStyle = f.color;
+      for (let j = 0; j < f.n; j++) {
+        const a = f.a0 + (j / f.n) * Math.PI * 2, r0 = f.r * (0.25 + 0.5 * k), r1 = f.r * (0.6 + 0.9 * k), w = Math.max(1, Math.round(3 * (1 - k)));
+        for (let q = 0; q <= 4; q++) { const r = r0 + ((r1 - r0) * q) / 4; g.fillRect(Math.round(f.x + Math.cos(a) * r - w / 2), Math.round(f.y + Math.sin(a) * r - w / 2), w, w); }
+      }
+      if (k < 0.35) { g.fillStyle = "#ffffff"; const c = Math.round(f.r * 0.45 * (1 - k)); g.fillRect(Math.round(f.x - c), Math.round(f.y - c), c * 2, c * 2); }
     } else if (f.k === "proj") {
       const x = f.x0 + (f.x1 - f.x0) * k, y = f.y0 + (f.y1 - f.y0) * k;
       g.fillStyle = f.color; g.fillRect(Math.round(x - f.size / 2), Math.round(y - f.size / 2), f.size, f.size);
@@ -1007,9 +1038,10 @@ export function render(focusX, focusY, dt, t, snap) {
       }
       g.save();
       const hk = (t - m.hurtT) / 200, rec = hk < 1 ? (1 - hk) * (1 - hk) : 0;
-      const jx = rec ? Math.cos(m.hurtA || 0) * rec * 5 + Math.sin(t / 14) * rec * 1.5 : 0, jy = rec ? Math.sin(m.hurtA || 0) * rec * 3 : 0;
+      const pow = m.hurtP || 1;
+      const jx = rec ? Math.cos(m.hurtA || 0) * rec * 8 * pow + Math.sin(t / 14) * rec * 2 : 0, jy = rec ? Math.sin(m.hurtA || 0) * rec * 5 * pow : 0;
       g.translate(Math.round(x + lunge + jx), Math.round(y + jy - s.hover - (s.hover ? Math.sin(t / 320 + m.id) * 2 : 0)));
-      g.scale(s.face * (1 + rec * 0.16), 1 - rec * 0.14);
+      g.scale(s.face * (1 + rec * 0.24), 1 - rec * 0.2);
       if (t - m.hurtT < 110) g.filter = "brightness(2.2)";
       else if (el) { g.shadowColor = el === 2 ? "#ff5ad0" : "#ffc040"; g.shadowBlur = el === 2 ? 8 : 4; }
       g.drawImage(img, -w / 2, -w * (SP.FOOT[1] / SP.SIZE), w, w);

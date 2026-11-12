@@ -265,10 +265,22 @@ function onEvent(e, t) {
         floatText(crit ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit);
         tgt.hurtT = t;
         // recoil away from whoever struck last
-        if (!isPlayer && G.hitFrom) { tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]); S3.fx.ring(tgt.x, tgt.y - 4, crit ? 14 : 9, crit ? "#ffe04a" : "#ffffff", 150); }
+        if (!isPlayer && G.hitFrom) {
+          tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]);
+          // was this my own blow landing? then it gets the full treatment: a held frame, a kick, a burst
+          const mine = t - G.lastAtk < 420, fin = mine && G.me.atkN === 2, heavy = crit || fin;
+          tgt.hurtP = heavy ? 1.6 : 1;
+          S3.fx.spark(tgt.x, tgt.y, crit ? "#ffe04a" : "#ffffff", heavy ? 1.7 : 1.1);
+          S3.fx.ring(tgt.x, tgt.y - 4, heavy ? 20 : 11, crit ? "#ffe04a" : "#ffffff", heavy ? 220 : 150);
+          if (mine) {
+            if (!G.me.hs || t > G.me.hs.at + G.me.hs.dur) G.me.hs = { at: t, dur: heavy ? 110 : 55 };
+            S3.shake(heavy ? 5 : 2);
+            if (heavy) { G.punch = 1; Sound.play("crit"); }
+          }
+        }
         if (id === G.you) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
-        else if (!isPlayer) { Sound.play(crit ? "crit" : "hit"); if (t - G.lastAtk < 260) S3.shake(crit ? 3 : 1.2); }
-        S3.fx.burst(tgt.x, tgt.y, h * 0.55, isPlayer ? "#ff7a7a" : "#ffffff", crit ? 9 : 5, 1.6);
+        else if (!isPlayer) Sound.play(crit ? "crit" : "hit");
+        S3.fx.burst(tgt.x, tgt.y, h * 0.55, isPlayer ? "#ff7a7a" : "#ffffff", crit ? 14 : 8, crit ? 2.6 : 2);
       }
       break;
     }
@@ -360,11 +372,11 @@ function attackFx(kind, src, tx, ty, dir, beat = 0) {
   // the blade's crescent opens toward the target (or the way the attacker faces)
   const ang = Math.hypot(tx - src.x, ty - src.y) > 2 ? Math.atan2(ty - src.y, tx - src.x) : [Math.PI / 2, Math.PI, 0, -Math.PI / 2][dir] || 0;
   switch (kind) {
-    case 0: f.slash(src.x, src.y, ang, "#f4f4ff", fin ? 1.2 : 0.95, beat === 1); if (fin) S3.shake(2); Sound.play("swing"); break;
+    case 0: f.slash(src.x, src.y, ang, "#cfe0ff", fin ? 1.9 : 1.4, beat === 1); if (fin) S3.shake(3); Sound.play("swing"); break;
     case 1: f.proj(src.x, src.y, 0.75, tx, ty, 0.5, "#fff0c0", 0.04, 42); f.burst(src.x + (tx - src.x) * 0.15, src.y + (ty - src.y) * 0.15, 0.75, "#ffd84a", 4, 0.8); Sound.play("shoot"); break;
     case 2: f.proj(src.x, src.y, 1.1, tx, ty, 0.5, "#b08aff", fin ? 0.15 : 0.09, 15, fin ? () => f.ring(tx, ty, 18, "#b08aff", 220, true) : undefined); Sound.play("magic"); break;
-    case 3: f.slash(src.x, src.y, ang, "#dcdcec", fin ? 0.7 : 0.5, beat === 1); Sound.play("swing"); break;
-    case 4: if (beat === 1) f.slash(src.x, src.y, ang, "#eef4ff", 1.1, true); else f.beam(src.x, src.y, src.x + Math.cos(ang) * (fin ? 62 : 46), src.y + Math.sin(ang) * (fin ? 62 : 46), "#eef4ff", fin ? 0.5 : 0.3); Sound.play("swing"); break;
+    case 3: f.slash(src.x, src.y, ang, "#e0d0f0", fin ? 1.15 : 0.8, beat === 1); Sound.play("swing"); break;
+    case 4: if (beat === 1) f.slash(src.x, src.y, ang, "#d0f0e8", 1.7, true); else { f.beam(src.x, src.y, src.x + Math.cos(ang) * (fin ? 74 : 54), src.y + Math.sin(ang) * (fin ? 74 : 54), "#eef4ff", fin ? 0.9 : 0.5); if (fin) S3.shake(2); } Sound.play("swing"); break;
     case 5: f.proj(src.x, src.y, 0.9, tx, ty, 0.5, "#c8a0ff", 0.07, 20, () => { f.ring(tx, ty, fin ? 34 : 26, "#c8a0ff", 220, true); }); Sound.play("magic"); break;
     case 23: f.beam(src.x, src.y, tx, ty, "#e0b070", 1.1); f.burst(tx, ty, 0.4, "#e0b070", 20, 2.4); S3.shake(5); Sound.play("boom"); break;
     case 24: f.sparkle(src.x, src.y, 0.8, "#ffe9a0", 12); Sound.play("magic"); break;
@@ -818,6 +830,8 @@ function renderText(t) {
   }
   tg.globalAlpha = 1;
   if (G.flash > 0) { tg.fillStyle = `rgba(255,40,60,${G.flash * 0.22})`; tg.fillRect(0, 0, text.width, text.height); }
+  // the white blink of a heavy hit
+  if (G.punch > 0) { tg.fillStyle = `rgba(255,255,255,${G.punch * 0.16})`; tg.fillRect(0, 0, text.width, text.height); G.punch = Math.max(0, G.punch - 0.25); }
 }
 
 let miniAt = 0;
