@@ -40,7 +40,7 @@ export function playerLook(cls, look, gear = {}) { return { cls, look, gear }; }
 export function init(canvas) { cv = canvas; g = cv.getContext("2d"); resize(); }
 export function resize() {
   if (!cv) return;
-  Z = Math.max(1, Math.round(Math.min(innerWidth / 620, innerHeight / 360)));
+  Z = Math.max(1, Math.round(Math.min(innerWidth / 480, innerHeight / 280)));
   if (innerWidth < 560) Z = Math.max(1, Math.round(innerWidth / 300));
   vw = Math.ceil(innerWidth / Z); vh = Math.ceil(innerHeight / Z);
   cv.width = vw; cv.height = vh;
@@ -247,7 +247,7 @@ function state(id, key, make) {
 function personState(id, look) {
   return state(id, JSON.stringify(look), () => {
     const cls = SP.HOLD[look.cls] ? look.cls : "warrior";
-    return { cls, sheet: SP.personSheet(SP.playerLook(cls, look.look, look.gear)), weapon: SP.weaponSprite(cls, look.gear), gear: look.gear || {}, h: cls === "mage" ? 1.95 : 1.75 };
+    return { cls, sheet: SP.personSheet(SP.playerLook(cls, look.look, look.gear)), weapon: SP.weaponSprite(cls, look.gear), gear: look.gear || {}, h: cls === "mage" ? 1.4 : 1.2 };
   });
 }
 const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30"];
@@ -267,7 +267,7 @@ function drawPerson(s, e, t, dt, x, y) {
   const img = (back ? s.sheet.back : s.sheet.front)[frame];
   const sg = s.face;
   g.fillStyle = "rgba(20,24,50,.26)";
-  g.beginPath(); g.ellipse(x, y, 13, 5, 0, 0, 7); g.fill();
+  g.beginPath(); g.ellipse(x, y, 8, 3, 0, 0, 7); g.fill();
   const body = () => {
     g.save();
     g.translate(Math.round(x), Math.round(y));
@@ -286,10 +286,10 @@ function drawPerson(s, e, t, dt, x, y) {
   let push = 0;
   if (k < 1) {
     const ease = k * k * (3 - 2 * k);
-    if (hold.style === "sweep") { const half = (hold.arc / 2) * DEG * sg; s.ang = aim - half + 2 * half * ease; push = 5; }
-    else if (hold.style === "stab") { s.ang = aim; push = Math.sin(k * Math.PI) * 15; }
-    else if (hold.style === "shoot") { s.ang = aim - sg * 0.3 * (1 - ease); push = -Math.sin(k * Math.PI) * 5; }
-    else { s.ang = aim - sg * hold.arc * DEG * (1 - ease); push = 6; }
+    if (hold.style === "sweep") { const half = (hold.arc / 2) * DEG * sg; s.ang = aim - half + 2 * half * ease; push = 3; }
+    else if (hold.style === "stab") { s.ang = aim; push = Math.sin(k * Math.PI) * 9; }
+    else if (hold.style === "shoot") { s.ang = aim - sg * 0.3 * (1 - ease); push = -Math.sin(k * Math.PI) * 3; }
+    else { s.ang = aim - sg * hold.arc * DEG * (1 - ease); push = 4; }
   } else {
     const want = hold.style === "shoot" ? (sg > 0 ? 0.2 : Math.PI - 0.2) : rest;
     let d = want - s.ang;
@@ -297,8 +297,9 @@ function drawPerson(s, e, t, dt, x, y) {
     s.ang += d * Math.min(1, dt * 12);
   }
   const resting = k >= 1;
-  const hx = x + sg * (hold.style === "sweep" && resting ? 3 : 10) + Math.cos(s.ang) * push;
-  const hy = y - (hold.style === "sweep" && resting ? 24 : 19) + Math.sin(s.ang) * push + (frame === 1 ? -2 : 0);
+  // with no arms, the weapon simply floats at the body's side
+  const hx = x + sg * (hold.style === "sweep" && resting ? 4 : 10) + Math.cos(s.ang) * push;
+  const hy = y - (hold.style === "sweep" && resting ? 9 : 6) + Math.sin(s.ang) * push + (frame === 1 ? -2 : 0);
   const weapon = () => {
     g.save();
     g.translate(Math.round(hx), Math.round(hy));
@@ -328,7 +329,7 @@ export const fx = {
     this.add({ k: "proj", x0, y0, x1, y1, color, size: Math.max(2, Math.round(size * 44)), dur: Math.max(70, (Math.hypot(x1 - x0, y1 - y0) / (speed * 26)) * 1000), done });
   },
   /** A blade's crescent, centred on the attacker and opening toward `ang`. */
-  slash(wx, wy, ang, color, size = 0.8) { this.add({ k: "slash", x: wx * P, y: wy * P - 18, ang, color, r: size * 40, dur: 200 }); },
+  slash(wx, wy, ang, color, size = 0.8) { this.add({ k: "slash", x: wx * P, y: wy * P - 8, ang, color, r: size * 34, dur: 200 }); },
   beam(ax, ay, bx, by, color, h = 0.6) { this.add({ k: "beam", x0: ax * P, y0: ay * P - h * 22, x1: bx * P, y1: by * P - h * 22, color, dur: 260 }); },
   pillar(wx, wy) { this.add({ k: "pillar", x: wx * P, y: wy * P, dur: 900 }); this.sparkle(wx, wy, 0.5, "#ffd84a", 24); },
   burst(wx, wy, h, color, n = 8, speed = 1.4) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = speed * 34 * (0.3 + Math.random() * 0.7); parts.push({ x: wx * P, y: wy * P - h * 22, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: 0.25 + Math.random() * 0.3, color, g: 220 }); } },
@@ -433,26 +434,26 @@ export function render(focusX, focusY, dt, t, snap) {
       g.drawImage(sp, dx, dy);
       g.globalAlpha = 1;
     } else if (o.n) {
-      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 13, 5, 0, 0, 7); g.fill();
+      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 8, 3, 0, 0, 7); g.fill();
       g.drawImage(o.n.sheet.front[0], Math.round(o.n.x - SP.FOOT[0]), Math.round(o.n.y - SP.FOOT[1] + Math.sin(t / 600 + o.n.x) * 0.6));
     } else if (o.d) {
       const d = o.d, x = d.x * P, y = d.y * P, ic = G.icons.cv[d.it];
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(x, y, 8, 3, 0, 0, 7); g.fill();
       if (d.q) { g.fillStyle = RARITY[d.q]; g.globalAlpha = 0.3 + 0.15 * Math.sin(t / 180 + d.id); g.fillRect(x - 2, y - 26 - d.q * 16, 4, d.q * 16 + 22); g.globalAlpha = 1; }
-      if (ic) g.drawImage(ic, Math.round(x - 12), Math.round(y - 26 + Math.sin(t / 220 + d.id) * 2), 24, 24);
+      if (ic) g.drawImage(ic, Math.round(x - 8), Math.round(y - 18 + Math.sin(t / 220 + d.id) * 2), 16, 16);
     } else if (o.m) {
       const m = o.m, kind = G.defs.mobs[m.k].sp, x = m.x * P, y = m.y * P;
       if (kind === "thug" || kind === "skel") {
-        const s = state("m" + m.id, kind, () => ({ cls: kind === "thug" ? "rogue" : "warrior", sheet: SP.personSheet(SP.mobLook(kind)), weapon: SP.weaponSprite(kind === "thug" ? "rogue" : "warrior", { wt: kind === "thug" ? 2 : 3 }), gear: {}, h: 1.75, px: m.x }));
+        const s = state("m" + m.id, kind, () => ({ cls: kind === "thug" ? "rogue" : "warrior", sheet: SP.personSheet(SP.mobLook(kind)), weapon: SP.weaponSprite(kind === "thug" ? "rogue" : "warrior", { wt: kind === "thug" ? 2 : 3 }), gear: {}, h: 1.2, px: m.x }));
         const dir = m.x < s.px - 0.05 ? 1 : m.x > s.px + 0.05 ? 2 : s.face < 0 ? 1 : 2;
         s.px = m.x;
         drawPerson(s, { x: m.x, y: m.y, dir, moving: m.moving, atkT: m.atkT, dead: false, aim: null }, t, dt, x, y);
-        m.h3 = 1.75;
+        m.h3 = 1.2;
       } else {
-        const s = state("m" + m.id, kind, () => ({ frames: SP.monsterSheet(kind), size: (SP.MOB_SIZE[kind] || [1.6, 0])[0] / 1.9, hover: (SP.MOB_SIZE[kind] || [0, 0])[1] * 26, px: m.x }));
+        const s = state("m" + m.id, kind, () => ({ frames: SP.monsterSheet(kind), size: (SP.MOB_SIZE[kind] || [1, 0])[0], hover: (SP.MOB_SIZE[kind] || [1, 0])[1], px: m.x }));
         if (m.x > s.px + 0.05) s.face = -1; else if (m.x < s.px - 0.05) s.face = 1;
         s.px = m.x;
-        const img = s.frames[Math.floor(t / (m.moving ? 180 : 360) + m.id) % 2], w = 64 * s.size * (m.el ? 1.2 : 1);
+        const img = s.frames[Math.floor(t / (m.moving ? 180 : 360) + m.id) % 2], w = SP.SIZE * s.size;
         const a = t - m.atkT, lunge = a < 220 ? Math.sin((a / 220) * Math.PI) * 8 * -s.face : 0;
         g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(x, y, w * 0.26, w * 0.1, 0, 0, 7); g.fill();
         if (m.el) { g.strokeStyle = `rgba(255,190,60,${0.6 + 0.3 * Math.sin(t / 160)})`; g.lineWidth = 2; g.beginPath(); g.ellipse(x, y, w * 0.34, w * 0.14, 0, 0, 7); g.stroke(); g.lineWidth = 1; }
@@ -460,9 +461,9 @@ export function render(focusX, focusY, dt, t, snap) {
         g.translate(Math.round(x + lunge), Math.round(y - s.hover - (s.hover ? Math.sin(t / 320 + m.id) * 3 : 0)));
         g.scale(s.face, 1);
         if (t - m.hurtT < 110) g.filter = "brightness(2.2)";
-        g.drawImage(img, -w / 2, -w * (SP.FOOT[1] / 64), w, w);
+        g.drawImage(img, -w / 2, -w * (SP.FOOT[1] / SP.SIZE), w, w);
         g.restore();
-        m.h3 = (w * 0.7 + s.hover) / 26;
+        m.h3 = (w * 0.8 + s.hover) / 26;
       }
     } else if (o.p) {
       const w = G.who.get(o.eid);
@@ -494,7 +495,7 @@ export function render(focusX, focusY, dt, t, snap) {
     lg.globalAlpha = dark[1]; lg.fillStyle = dark[0]; lg.fillRect(0, 0, vw, vh); lg.globalAlpha = 1;
     lg.globalCompositeOperation = "destination-out";
     const hole = (x, y, r, k = 1) => { const sx = x - ox, sy = y - oy; if (sx < -r || sy < -r || sx > vw + r || sy > vh + r) return; const gr = lg.createRadialGradient(sx, sy, 0, sx, sy, r); gr.addColorStop(0, `rgba(0,0,0,${k})`); gr.addColorStop(1, "rgba(0,0,0,0)"); lg.fillStyle = gr; lg.fillRect(sx - r, sy - r, r * 2, r * 2); };
-    hole(meX, meY - 20, 130, 0.9);
+    hole(meX, meY - 12, 130, 0.9);
     for (const o of list) { if (o.p && o.eid !== G.you) hole(o.p.x * P, o.p.y * P - 20, 110, 0.8); else if (o.s && o.s.glow) hole(o.s.x, o.s.y - (o.s.big ? 60 : o.s.sp.height - 12), o.s.big ? 120 : o.s.glow === "#ffe690" ? 110 : 60, 0.85); else if (o.d && o.d.q) hole(o.d.x * P, o.d.y * P - 10, 36, 0.7); }
     for (const p of map.portals) hole(p.x * T + 16, p.y * T + 16, 80, 0.8);
     g.setTransform(1, 0, 0, 1, 0, 0);
@@ -540,10 +541,10 @@ export function renderStage(dt, t) {
   const cx = Math.round(vw / 2);
   stage.cast.forEach(({ s, i }) => {
     if (stage.draft) {
-      const k = (t % 3200) / 1000, dir = [2, 1, 3, 2][Math.floor(t / 3200) % 4], z = 3;
+      const k = (t % 3200) / 1000, dir = [2, 1, 3, 2][Math.floor(t / 3200) % 4], z = 6;
       g.save(); g.translate(cx + Math.min(120, vw * 0.18), gy + 34); g.scale(z, z);
       drawPerson(s, { x: 0, y: 0, dir, moving: k > 1 && k < 2.2, atkT: k > 2.5 ? t - (k - 2.5) * 1000 : -1e9, dead: false, aim: k > 2.5 ? [dir === 1 ? -40 : 40, 6] : null }, t, dt, 0, 0);
       g.restore();
-    } else drawPerson(s, { x: 0, y: 0, dir: 2, moving: true, atkT: -1e9, dead: false, aim: null }, t, dt, cx - 96 + i * 62, gy + 10);
+    } else drawPerson(s, { x: 0, y: 0, dir: 2, moving: true, atkT: -1e9, dead: false, aim: null }, t, dt, cx - 66 + i * 44, gy + 12);
   });
 }

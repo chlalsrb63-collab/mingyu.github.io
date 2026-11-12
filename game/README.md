@@ -29,7 +29,7 @@
 src/logic.js    게임 규칙 전부: 아이템·몬스터·스킬 표, 맵 4개, 전투·드랍·의뢰·강화 시뮬레이션
 src/room.ts     채널 하나 = Durable Object 하나. 소켓과 시계(초당 10틱)를 맡고 캐릭터를 저장
 src/worker.ts   /ws/<채널> 웹소켓을 해당 채널로 연결
-public/         브라우저: client.js(입력·UI·이름표), scene2d.js(탑다운 도트 지형·소품·이펙트·무기 휘두르기), sprites.js(64px 동물 캐릭터·무기·몬스터), art.js(아이콘·미니맵), audio.js(칩튠 합성)
+public/         브라우저: client.js(입력·UI·이름표), scene2d.js(탑다운 도트 지형·소품·이펙트·무기 휘두르기), sprites.js(32px 동물 캐릭터·무기·몬스터), art.js(아이콘·미니맵), audio.js(칩튠 합성)
 tests/          규칙 테스트 (node tests/sim.mjs · node tests/party.mjs)
 ```
 
