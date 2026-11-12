@@ -195,7 +195,7 @@ const ENH_RATE = [100, 95, 90, 80, 70, 55, 45, 35, 25, 15];
 
 // ── the cosy side: campfires, fishing, guilds
 /** Campfires that always burn, by map, in tiles. */
-const FIRES = { town: [[22, 22]], meadow: [[9, 19], [32, 24]], forest: [[9, 19], [45, 19]], city: [[48, 22]], cave: [[7, 33], [21, 31]] };
+const FIRES = {};          // filled in as each map is generated
 const FIRE_R = 46, FIRE_MS = 180000, FIRE_MAX = 6;
 /** Sitting this long by a fire warms you: +10% experience for ten minutes, +2% per friend sitting there too. */
 const WARM_SEC = 6, WARM_MS = 600000;
@@ -237,9 +237,13 @@ const MOBS = {
   geode: { name: "정동 골렘", lv: 27, hp: 1600, atk: 98, def: 26, spd: 27, xp: 640, gold: [56, 100], aggro: 76, range: 21, cd: 1500, slam: 40 },
   boss: { name: "균열의 군주 크리온", lv: 30, hp: 22000, atk: 140, def: 30, spd: 34, xp: 9000, gold: [1500, 2500], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1 },
 };
+// Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
+for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["city", 18, 420, [180, 320]], ["cave", 26, 900, [320, 560]]]) {
+  MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
+}
 for (const k of Object.keys(MOBS)) {
   const d = MOBS[k];
-  d.sp = k;
+  if (!d.sp) d.sp = k;
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = 0.06 + d.lv * 0.002;
 }
@@ -354,6 +358,520 @@ function finalize(m) {
   return m;
 }
 
+// ───────────────────────────── maps: procedural terrain ─────────────────────────────
+// Every hunting ground is generated, from a fixed seed, by the same idea: lay a
+// coarse grid of cells over the map, grow a random spanning tree across it (plus a
+// few extra links so there are loops), and turn every edge the tree did NOT take
+// into a barrier — a cliff, a hedge, a belt of trees, a river, a row of buildings.
+// The links become gaps, bridges and streets. Dead ends become places worth the
+// walk: a ruin with a chest, a camp with a fire, a pond to fish in. A last pass
+// floods the map from its entry and cuts through anything that still seals a
+// place off, so nothing generated can ever be unreachable.
+
+/** Is this tile blocked — by the same rule the browser uses. */
+const blockedAt = (m, x, y) => x < 0 || y < 0 || x >= m.w || y >= m.h || m.o[y][x] !== " " || SOLID_G.includes(m.g[y][x]);
+const inMap = (m, x, y) => x >= 0 && y >= 0 && x < m.w && y < m.h;
+/** The free tile nearest to (x, y). */
+function spot(m, x, y) {
+  for (let r = 0; r < 8; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    if (Math.max(Math.abs(dx), Math.abs(dy)) === r && x + dx > 1 && y + dy > 1 && x + dx < m.w - 2 && y + dy < m.h - 2 && !blockedAt(m, x + dx, y + dy)) return [x + dx, y + dy];
+  }
+  return [x, y];
+}
+/** Clear a rectangle of objects (never the map's rim). */
+function clear(m, x0, y0, x1, y1) {
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (x > 1 && y > 1 && x < m.w - 2 && y < m.h - 2 && !"ha".includes(m.o[y][x])) m.o[y][x] = " ";
+}
+/** An irregular blob of ground `ch` around (cx, cy); returns nothing, skips water and bridges. */
+function blob(m, box, cx, cy, rx, ry, ch, only) {
+  for (let y = Math.floor(cy - ry - 1); y <= cy + ry + 1; y++) for (let x = Math.floor(cx - rx - 1); x <= cx + rx + 1; x++) {
+    if (x < 2 || y < 2 || x >= m.w - 2 || y >= m.h - 2) continue;
+    const d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+    if (d > 1 + (rnd(box) - 0.5) * 0.5) continue;
+    if (only ? only.includes(m.g[y][x]) : !"wb".includes(m.g[y][x])) m.g[y][x] = ch;
+  }
+}
+
+/**
+ * Which cells of a cw × ch grid link to which. `dist` is each cell's distance from
+ * the entry along the links, `par` the way back toward it, `deg` its number of links.
+ */
+function plan(box, cw, ch, entry, loops) {
+  const n = cw * ch;
+  const key = (a, b) => (a < b ? a * n + b : b * n + a);
+  const nbrs = (c) => { const i = c % cw, out = []; if (i > 0) out.push(c - 1); if (i < cw - 1) out.push(c + 1); if (c >= cw) out.push(c - cw); if (c < n - cw) out.push(c + cw); return out; };
+  const open = new Set(), seen = new Array(n).fill(false), stack = [entry];
+  seen[entry] = true;
+  while (stack.length) {
+    const c = stack[stack.length - 1];
+    const next = nbrs(c).filter((o) => !seen[o]);
+    if (!next.length) { stack.pop(); continue; }
+    const o = next[ri(box, 0, next.length - 1)];
+    seen[o] = true; open.add(key(c, o)); stack.push(o);
+  }
+  for (let c = 0; c < n; c++) for (const o of nbrs(c)) if (o > c && !open.has(key(c, o)) && rnd(box) < loops) open.add(key(c, o));
+  const dist = new Array(n).fill(-1), par = new Array(n).fill(-1), q = [entry];
+  dist[entry] = 0;
+  for (let h = 0; h < q.length; h++) for (const o of nbrs(q[h])) if (dist[o] < 0 && open.has(key(q[h], o))) { dist[o] = dist[q[h]] + 1; par[o] = q[h]; q.push(o); }
+  const deg = new Array(n).fill(0);
+  for (let c = 0; c < n; c++) for (const o of nbrs(c)) if (open.has(key(c, o))) deg[c]++;
+  return { n, dist, par, deg, linked: (a, b) => open.has(key(a, b)) };
+}
+
+/**
+ * Make sure every point can be walked to from the map's entry, cutting the
+ * cheapest way through whatever is in between (water gets a bridge, rock a floor).
+ */
+function connectAll(m, pts, floor) {
+  const W = m.w, H = m.h;
+  const flood = () => {
+    const r = new Uint8Array(W * H), st = [m.entry];
+    while (st.length) {
+      const [x, y] = st.pop();
+      if (blockedAt(m, x, y) || r[y * W + x]) continue;
+      r[y * W + x] = 1;
+      st.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+    }
+    return r;
+  };
+  let reach = flood();
+  for (const [px, py] of pts) {
+    if (reach[py * W + px]) continue;
+    const cost = new Int32Array(W * H).fill(1e9), from = new Int32Array(W * H).fill(-1), buckets = [[py * W + px]];
+    cost[py * W + px] = 0;
+    let goal = -1;
+    for (let d = 0; d < buckets.length && goal < 0; d++) {
+      const bk = buckets[d];
+      for (let k = 0; bk && k < bk.length; k++) {
+        const c = bk[k];
+        if (cost[c] !== d) continue;
+        if (reach[c]) { goal = c; break; }
+        const x = c % W, y = (c - x) / W;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 2 || ny < 2 || nx >= W - 2 || ny >= H - 2 || "ha".includes(m.o[ny][nx])) continue;   // never through a building
+          const step = blockedAt(m, nx, ny) ? 8 : 1, n = ny * W + nx;
+          if (d + step < cost[n]) { cost[n] = d + step; from[n] = c; (buckets[d + step] || (buckets[d + step] = [])).push(n); }
+        }
+      }
+    }
+    for (let c = goal; c >= 0; c = from[c]) {
+      const x = c % W, y = (c - x) / W;
+      m.o[y][x] = " ";
+      if (m.g[y][x] === "w") m.g[y][x] = "b"; else if (m.g[y][x] === "W") m.g[y][x] = floor;
+    }
+    reach = flood();
+  }
+}
+
+const CS = 10, CR = 9, MG = 3;
+/** Shared geometry and bookkeeping for a map built on the cell grid. */
+function grid(cfg) {
+  const box = { seed: cfg.seed };
+  const { cw, ch } = cfg;
+  const m = blank(cfg.id, cfg.name, cw * CS + MG * 2, ch * CR + MG * 2, cfg.ground);
+  if (cfg.bgm) m.bgm = cfg.bgm;
+  const P = plan(box, cw, ch, cfg.entry, cfg.loops);
+  const x0 = (c) => MG + (c % cw) * CS, y0 = (c) => MG + Math.floor(c / cw) * CR;
+  const mid = (c) => [x0(c) + 4, y0(c) + 4];
+  const doors = new Map();                      // "a|b" → [x, y, vertical boundary?, street?]
+  const dkey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+  // the way from the entry to the exit, cell by cell
+  const main = [];
+  for (let c = cfg.exit; c >= 0; c = P.par[c]) main.unshift(c);
+  // which cells become places: dead ends first, then the deepest of the rest
+  const onMain = new Set(main);
+  const order = [];
+  for (let c = 0; c < P.n; c++) if (c !== cfg.entry && c !== cfg.exit) order.push(c);
+  order.sort((a, b) => (P.deg[a] === 1 ? 0 : 1) - (P.deg[b] === 1 ? 0 : 1) || (onMain.has(a) ? 1 : 0) - (onMain.has(b) ? 1 : 0) || P.dist[b] - P.dist[a]);
+  const kind = new Array(P.n).fill("field");
+  const dead = order.filter((c) => P.deg[c] === 1).length;
+  cfg.places.slice(0, Math.max(cfg.min || 5, Math.min(dead, cfg.places.length))).forEach((k, i) => { if (order[i] !== undefined) kind[order[i]] = k; });
+  let far = 1;
+  for (const d of P.dist) far = Math.max(far, d);
+  /** The monster for a cell: deeper cells hold stronger kinds, with a little bleed between bands. */
+  const mobFor = (c) => {
+    const K = cfg.mobs.length;
+    let band = Math.min(K - 1, Math.floor((P.dist[c] / (far + 1)) * K));
+    if (rnd(box) < 0.2) band = clamp(band + (rnd(box) < 0.5 ? -1 : 1), 0, K - 1);
+    return cfg.mobs[P.dist[c] <= 1 ? 0 : band];
+  };
+  /** A walkable strip `wd` tiles wide, cleared of objects, that never paves over water or planks. */
+  const lay = (ax, ay, bx, by, ch, wd = 2) => {
+    const steps = Math.max(Math.abs(bx - ax), Math.abs(by - ay)) || 1;
+    for (let i = 0; i <= steps; i++) {
+      const x = Math.round(ax + ((bx - ax) * i) / steps), y = Math.round(ay + ((by - ay) * i) / steps);
+      for (let dy = -1; dy <= wd; dy++) for (let dx = -1; dx <= wd; dx++) {
+        const xx = x + dx, yy = y + dy;
+        if (xx < 0 || yy < 0 || xx >= m.w || yy >= m.h) continue;
+        if (xx > 1 && yy > 1 && xx < m.w - 2 && yy < m.h - 2 && !"ha".includes(m.o[yy][xx])) m.o[yy][xx] = " ";
+        if (dx >= 0 && dx < wd && dy >= 0 && dy < wd && !"wb".includes(m.g[yy][xx])) m.g[yy][xx] = ch;
+      }
+    }
+  };
+  /** Pave from one cell to the next through their door, in right-angled legs. */
+  const route = (a, b, ch, wd) => {
+    const d = doors.get(dkey(a, b)), [ax, ay] = mid(a), [bx, by] = mid(b);
+    if (!d) return;
+    if (d[2]) { lay(ax, ay, ax, d[1], ch, wd); lay(ax, d[1], bx, d[1], ch, wd); lay(bx, d[1], bx, by, ch, wd); }
+    else { lay(ax, ay, d[0], ay, ch, wd); lay(d[0], ay, d[0], by, ch, wd); lay(d[0], by, bx, by, ch, wd); }
+  };
+  /** A way in or out on the map's rim: two portal tiles and the two tiles travellers arrive on. */
+  const gates = {};
+  const gate = (name, side, c) => {
+    const [mx, my] = mid(c);
+    const g = side === "w" ? { t: [[1, my], [1, my + 1]], a: [[4, my], [4, my + 1]] }
+      : side === "e" ? { t: [[m.w - 2, my], [m.w - 2, my + 1]], a: [[m.w - 5, my], [m.w - 5, my + 1]] }
+      : { t: [[mx, 1], [mx + 1, 1]], a: [[mx, 4], [mx + 1, 4]] };
+    gates[name] = g;
+    lay(g.t[0][0], g.t[0][1], mx, my, cfg.road, cfg.roadW || 2);
+    for (const [x, y] of g.t) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inMap(m, x + dx, y + dy)) m.o[y + dy][x + dx] = " ";
+    return g;
+  };
+  return { box, m, P, x0, y0, mid, doors, dkey, main, kind, mobFor, lay, route, gate, gates, cw, ch };
+}
+
+/** Open country: meadow and forest. Barriers are cliffs, hedges, belts of trees and one river. */
+function wild(cfg) {
+  const G = grid(cfg);
+  const { box, m, P, x0, y0, mid, doors, dkey, kind, cw, ch } = G;
+  scatter(m, box, m.g, cfg.tufts, 0.16, cfg.ground);
+  scatter(m, box, m.g, '"', 0.04, cfg.ground);
+  border(m, cfg.edge, 2);
+  // a ragged inner rim, so the map's edge is not a ruled line
+  for (let y = 2; y < m.h - 2; y++) for (let x = 2; x < m.w - 2; x++) if ((x === 2 || y === 2 || x === m.w - 3 || y === m.h - 3) && rnd(box) < 0.55) m.o[y][x] = cfg.edge;
+
+  const put = (x, y, t) => {
+    if (x < 2 || y < 2 || x >= m.w - 2 || y >= m.h - 2) return;
+    m.o[y][x] = t === "trees" ? cfg.edge : t === "cliff" ? "C" : t === "hedge" ? "H" : "U";
+  };
+  const pick = () => { let r = rnd(box); for (const [t, w] of cfg.walls) { if (r < w) return t; r -= w; } return cfg.walls[0][0]; };
+  const riverAt = (i) => cfg.river === i;          // the river runs down the boundary before column i
+  // barriers along every shared edge; a link leaves a gap, or (sometimes) no barrier at all
+  for (let c = 0; c < P.n; c++) {
+    const i = c % cw, j = Math.floor(c / cw);
+    if (i < cw - 1) {
+      const e = c + 1, bx = x0(e) - 1, link = P.linked(c, e), gy = y0(c) + 2 + ri(box, 0, CR - 5);
+      if (link) doors.set(dkey(c, e), [bx, gy, true]);
+      if (!riverAt(i + 1) && !(link && rnd(box) < cfg.merge)) {
+        const t = pick();
+        let off = 0;
+        for (let y = y0(c) - 1; y <= y0(c) + CR - 1; y++) {
+          const prev = off;
+          if (rnd(box) < 0.35) off = clamp(off + ri(box, -1, 1), -1, 1);
+          if (link && y >= gy - 1 && y <= gy + 2) { off = 0; continue; }
+          put(bx + off, y, t);
+          if (off !== prev) put(bx + prev, y, t);
+          if (t === "trees" && rnd(box) < 0.6) put(bx + off + 1, y, t);
+        }
+      }
+    }
+    if (j < ch - 1) {
+      const s = c + cw, by = y0(s) - 1, link = P.linked(c, s), gx = x0(c) + 2 + ri(box, 0, CS - 6);
+      if (link) doors.set(dkey(c, s), [gx, by, false]);
+      if (!(link && rnd(box) < cfg.merge)) {
+        const t = pick();
+        let off = 0;
+        for (let x = x0(c) - 1; x <= x0(c) + CS - 1; x++) {
+          const prev = off;
+          if (rnd(box) < 0.35) off = clamp(off + ri(box, -1, 1), -1, 1);
+          if (link && x >= gx - 1 && x <= gx + 2) { off = 0; continue; }
+          put(x, by + off, t);
+          if (off !== prev) put(x, by + prev, t);
+          if (t === "trees" && rnd(box) < 0.6) put(x, by + off + 1, t);
+        }
+      }
+    }
+  }
+  // the river: one winding line of water, crossed only where a link has a bridge
+  if (cfg.river) {
+    const bx = MG + cfg.river * CS - 2, bridge = new Set();
+    for (let j = 0; j < ch; j++) { const a = j * cw + cfg.river - 1, d = doors.get(dkey(a, a + 1)); if (d) { bridge.add(d[1]); bridge.add(d[1] + 1); d[0] = bx + 1; } }
+    let off = 0;
+    for (let y = 0; y < m.h; y++) {
+      const near = bridge.has(y) || bridge.has(y - 1) || bridge.has(y + 1);
+      if (!near && rnd(box) < 0.4) off = clamp(off + ri(box, -1, 1), -2, 2);
+      if (near) off = 0;
+      const wide = near ? 3 : 2 + (rnd(box) < 0.4 ? 1 : 0);
+      for (let k = -1; k <= wide; k++) {
+        const x = bx + off + k;
+        if (k >= 0 && k < wide) { m.g[y][x] = bridge.has(y) ? "b" : "w"; m.o[y][x] = " "; }
+        else if (cfg.shore && y > 1 && y < m.h - 2 && !"wb".includes(m.g[y][x])) m.g[y][x] = cfg.shore;
+      }
+      // reeds stand in the shallows here and there
+      if (!near && y > 2 && y < m.h - 3 && rnd(box) < 0.22) m.o[y][bx + off + (rnd(box) < 0.5 ? 0 : wide - 1)] = "e";
+    }
+  }
+  // what each cell is
+  const special = [];
+  for (let c = 0; c < P.n; c++) {
+    const X = x0(c), Y = y0(c), [cx, cy] = mid(c), k = c === cfg.entry || c === cfg.exit ? "gate" : kind[c];
+    const inner = [X + 1, Y + 1, X + CS - 3, Y + CR - 3];
+    // loose scenery everywhere first; places clear what they need afterwards
+    for (let y = Y; y < Y + CR - 1; y++) for (let x = X; x < X + CS - 1; x++) {
+      if (m.o[y][x] !== " " || "wbs".includes(m.g[y][x])) continue;
+      const r = rnd(box) / (k === "grove" ? 3.2 : 1);
+      m.o[y][x] = r < cfg.tree ? cfg.treeCh : r < cfg.tree + 0.016 ? "B" : r < cfg.tree + 0.026 ? "R" : r < cfg.tree + 0.032 ? "u" : r < cfg.tree + 0.037 ? "l" : " ";
+    }
+    if (rnd(box) < 0.6) blob(m, box, X + 2 + ri(box, 0, 5), Y + 2 + ri(box, 0, 4), 1.6 + rnd(box) * 1.6, 1.2 + rnd(box), rnd(box) < 0.6 ? "t" : '"', cfg.ground + cfg.tufts + '"');
+    if (k === "vault") {
+      // a ruin: broken walls around old flagstones, a chest in the middle
+      clear(m, cx - 3, cy - 3, cx + 3, cy + 2);
+      rect(m.g, cx - 2, cy - 2, cx + 2, cy + 1, "r");
+      const gap = cx - 1 + ri(box, 0, 2);
+      for (let x = cx - 3; x <= cx + 3; x++) { if (rnd(box) < 0.85) m.o[cy - 3][x] = "U"; if (x !== gap && x !== gap + 1 && rnd(box) < 0.8) m.o[cy + 2][x] = "U"; }
+      for (let y = cy - 2; y <= cy + 1; y++) { if (rnd(box) < 0.8) m.o[y][cx - 3] = "U"; if (rnd(box) < 0.8) m.o[y][cx + 3] = "U"; }
+      m.o[cy - 2][cx - 2] = "q"; m.o[cy - 2][cx + 2] = "q";
+      m.spawns.push({ k: cfg.chest, n: 1, r: [cx, cy - 1, cx, cy - 1] });
+      m.spawns.push({ k: G.mobFor(c), n: 2, r: inner });
+      special.push([cx, cy - 1], [gap, cy + 3]);
+    } else if (k === "camp") {
+      clear(m, cx - 3, cy - 2, cx + 3, cy + 3);
+      blob(m, box, cx, cy + 0.5, 2.6, 2, cfg.road);
+      m.o[cy - 2][cx - 2] = "E"; m.o[cy + 1][cx + 2] = "l"; m.o[cy + 2][cx - 2] = "u";
+      FIRES[cfg.id].push([cx, cy]);
+      special.push([cx, cy + 1]);
+    } else if (k === "pond") {
+      clear(m, cx - 4, cy - 3, cx + 4, cy + 3);
+      blob(m, box, cx, cy, 3.6, 2.6, cfg.shore || cfg.ground);
+      for (let y = cy - 2; y <= cy + 1; y++) for (let x = cx - 3; x <= cx + 2; x++) if (((x - cx + 0.5) / 3) ** 2 + ((y - cy + 0.5) / 2) ** 2 <= 1) m.g[y][x] = "w";
+      for (const [x, y] of [[cx - 2, cy - 1], [cx + 1, cy], [cx - 1, cy + 1]]) if (m.g[y][x] === "w" && rnd(box) < 0.7) m.o[y][x] = "e";
+      if (cfg.pondMob) m.spawns.push({ k: cfg.pondMob, n: 3, r: inner });
+      special.push([cx - 4, cy]);
+    } else if (k === "ruin") {
+      // a scatter of fallen stone, and more monsters than anywhere else
+      for (let n = 0; n < 5; n++) { const x = X + 1 + ri(box, 0, 6), y = Y + 1 + ri(box, 0, 5); if (m.o[y][x] === " " && !"wb".includes(m.g[y][x])) { m.o[y][x] = n % 2 ? "U" : "q"; m.g[y][x] = "r"; } }
+      m.spawns.push({ k: G.mobFor(c), n: cfg.n + 2, r: inner });
+    } else if (k === "gate") {
+      m.spawns.push({ k: cfg.mobs[c === cfg.entry ? 0 : cfg.mobs.length - 1], n: 2, r: inner });
+    } else {
+      m.spawns.push({ k: G.mobFor(c), n: cfg.n + (c % 2), r: inner });
+      if (k === "grove" || rnd(box) < 0.3) m.spawns.push({ k: G.mobFor(c), n: 1, r: inner });
+    }
+  }
+  // roads: the main route is paved end to end, every other link gets a worn patch at its gap
+  for (let i = 1; i < G.main.length; i++) G.route(G.main[i - 1], G.main[i], cfg.road);
+  for (const [, d] of doors) {
+    clear(m, d[0] - 1, d[1] - 1, d[0] + 2, d[1] + 2);
+    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) if (!"wb".includes(m.g[d[1] + dy][d[0] + dx])) m.g[d[1] + dy][d[0] + dx] = cfg.road;
+  }
+  for (const [name, side, c] of cfg.gates) G.gate(name, side, c);
+  m.o[mid(cfg.entry)[1] - 2][mid(cfg.entry)[0] + 2] = "G";
+  m.gates = G.gates;
+  m.entry = G.gates[cfg.gates[0][0]].a[0];
+  const pts = [];
+  for (let c = 0; c < P.n; c++) pts.push(spot(m, ...mid(c)));
+  for (const p of special) pts.push(spot(m, p[0], p[1]));
+  for (const name of Object.keys(G.gates)) for (const a of G.gates[name].a) { m.o[a[1]][a[0]] = " "; pts.push(a); }
+  connectAll(m, pts, cfg.road);
+  return m;
+}
+
+/** The city: districts walled off by rows of buildings, joined by streets and the odd alley. */
+function city(cfg) {
+  const G = grid(cfg);
+  const { box, m, P, x0, y0, mid, doors, dkey, kind, cw, ch } = G;
+  border(m, "Z", 2);
+  const block = (x, y, w, h) => rect(m.o, x, y, x + w - 1, y + h - 1, "Z");
+  const tower = (x, y) => (rnd(box) < 0.8 ? house(m, x, y, 4 + ri(box, 0, 3)) : block(x, y, 4, 3));
+  const alleys = new Set();
+  for (let c = 0; c < P.n; c++) {
+    const i = c % cw, j = Math.floor(c / cw), X = x0(c), Y = y0(c);
+    if (i < cw - 1) {
+      // a column of three buildings between this district and the next; a link leaves one out
+      const e = c + 1, bx = x0(e) - 2, link = P.linked(c, e), slot = ri(box, 0, 2);
+      const alley = link && rnd(box) < cfg.merge;
+      for (let s = 0; s < 3; s++) {
+        if (link && s === slot) { if (alley) block(bx, Y + s * 3, 4, 1); continue; }
+        tower(bx, Y + s * 3);
+      }
+      if (link) { doors.set(dkey(c, e), [bx + 1, Y + slot * 3 + (alley ? 1 : 0), true]); if (alley) alleys.add(dkey(c, e)); }
+    } else block(X + CS - 2, Y, 2, CR);
+    if (i === 0) block(X, Y, 2, CR);
+    if (j < ch - 1) {
+      // a row between this district and the one below: one building and a stretch of wall
+      const s = c + cw, by = y0(s) - 2, link = P.linked(c, s), left = rnd(box) < 0.5;
+      const bx = X + (left ? 2 : 4), wx = X + (left ? 6 : 2);
+      block(wx, by, 2, 3);
+      if (link) doors.set(dkey(c, s), [bx + (left ? 1 : 0), by, false]);
+      else tower(bx, by);
+    }
+  }
+  // streets: asphalt three tiles wide along every link that is not an alley
+  for (const [k, d] of doors) {
+    const [a, b] = k.split("|").map(Number);
+    if (!alleys.has(k)) G.route(a, b, "a", 3);
+  }
+  for (const [name, side, c] of cfg.gates) G.gate(name, side, c);
+  // lane dashes down the middle of east-west streets
+  for (let y = 3; y < m.h - 3; y++) for (let x = 3; x < m.w - 3; x++) {
+    if (m.g[y][x] === "a" && m.g[y - 1][x] === "a" && m.g[y + 1][x] === "a" && m.g[y - 2][x] !== "a" && m.g[y + 2][x] !== "a" && x % 3 === 0) m.g[y][x] = "m";
+  }
+  const special = [];
+  for (let c = 0; c < P.n; c++) {
+    const X = x0(c), Y = y0(c), [cx, cy] = mid(c), k = c === cfg.entry ? "gate" : kind[c];
+    const inner = [X + 2, Y + 1, X + CS - 4, Y + CR - 4];
+    const freeK = (x, y) => m.o[y][x] === " " && m.g[y][x] === "k";
+    if (k === "pond") {
+      // a pocket park: grass behind a hedge, trees, and a pond
+      for (let y = Y + 1; y <= Y + 5; y++) for (let x = X + 2; x <= X + 7; x++) if (m.g[y][x] === "k") { m.g[y][x] = rnd(box) < 0.2 ? "," : "."; m.o[y][x] = " "; }
+      for (const [x, y] of [[X + 2, Y + 1], [X + 7, Y + 1], [X + 2, Y + 5]]) if (m.g[y][x] !== "a") m.o[y][x] = "T";
+      for (const [x, y] of [[cx, cy - 1], [cx + 1, cy - 1], [cx, cy], [cx + 1, cy]]) if (m.g[y][x] !== "a" && m.g[y][x] !== "m") { m.g[y][x] = "w"; m.o[y][x] = " "; }
+      m.o[cy - 1][cx + 1] = m.g[cy - 1][cx + 1] === "w" ? "e" : m.o[cy - 1][cx + 1];
+      special.push([cx - 1, cy]);
+    } else if (k === "camp") {
+      clear(m, cx - 2, cy - 1, cx + 2, cy + 2);
+      m.o[cy - 1][cx - 2] = "n"; m.o[cy - 1][cx + 2] = "D";
+      FIRES[cfg.id].push([cx, cy]);
+      special.push([cx, cy + 1]);
+    } else if (k === "vault") {
+      // a back lot behind dumpsters and crates, with a chest
+      for (const [x, y, o] of [[cx - 2, cy - 1, "D"], [cx + 2, cy - 1, "n"], [cx - 2, cy + 1, "n"], [cx + 2, cy + 1, "x"]]) if (freeK(x, y)) m.o[y][x] = o;
+      m.spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] });
+      m.spawns.push({ k: G.mobFor(c), n: 3, r: inner });
+      special.push([cx, cy]);
+    } else if (k === "ruin") {
+      // a paved square with lamps at its corners, and a crowd of machines
+      for (let y = Y + 1; y <= Y + 5; y++) for (let x = X + 2; x <= X + 7; x++) if (m.g[y][x] === "k") m.g[y][x] = "o";
+      for (const [x, y] of [[X + 2, Y + 1], [X + 7, Y + 1], [X + 2, Y + 5], [X + 7, Y + 5]]) if (m.o[y][x] === " " && m.g[y][x] === "o") m.o[y][x] = "L";
+      m.spawns.push({ k: G.mobFor(c), n: cfg.n + 3, r: inner });
+    } else {
+      m.spawns.push({ k: k === "gate" ? cfg.mobs[0] : G.mobFor(c), n: k === "gate" ? 2 : cfg.n + (c % 2), r: inner });
+    }
+    // street furniture: lamps where pavement meets asphalt, clutter against the walls
+    for (let y = Y; y < Y + CR; y++) for (let x = X; x < X + CS; x++) {
+      if (!freeK(x, y)) continue;
+      const road = m.g[y + 1][x] === "a" || m.g[y - 1][x] === "a", r = rnd(box);
+      if (road && (x + y * 3) % 7 === 0) m.o[y][x] = "L";
+      else if (r < 0.012) m.o[y][x] = "y";
+      else if (r < 0.026) m.o[y][x] = "x";
+      else if (r < 0.036) m.o[y][x] = "n";
+      else if (r < 0.042) m.o[y][x] = "D";
+    }
+  }
+  // parked cars along the kerb (a car is two tiles long: block the tile beside it as well)
+  for (let y = 3; y < m.h - 3; y++) for (let x = 3; x < m.w - 4; x++) {
+    if (m.g[y][x] !== "a" || m.g[y][x + 1] !== "a" || m.o[y][x] !== " " || m.o[y][x + 1] !== " ") continue;
+    if (m.g[y - 1][x] === "a" && m.g[y + 1][x] === "a") continue;         // keep the middle of the street clear
+    let door = false;
+    for (const [, d] of doors) if (Math.abs(d[0] - x) < 5 && Math.abs(d[1] - y) < 4) { door = true; break; }
+    if (!door && rnd(box) < 0.06) { m.o[y][x] = "c"; m.o[y][x + 1] = "h"; }
+  }
+  m.gates = G.gates;
+  m.entry = G.gates[cfg.gates[0][0]].a[0];
+  const pts = [];
+  for (let c = 0; c < P.n; c++) pts.push(spot(m, ...mid(c)));
+  for (const p of special) pts.push(spot(m, p[0], p[1]));
+  for (const name of Object.keys(G.gates)) for (const a of G.gates[name].a) { m.o[a[1]][a[0]] = " "; pts.push(a); }
+  connectAll(m, pts, "k");
+  return m;
+}
+
+/**
+ * The cave is a dungeon cut out of solid rock: rooms scattered at random, joined
+ * by a spanning tree of corridors plus a few loops, small vaults hung off the
+ * side, and the boss's arena at the far end behind a single antechamber.
+ */
+function dungeon(seed) {
+  const box = { seed };
+  const m = blank("cave", "수정 동굴", 66, 50, "W");
+  m.bgm = "cave";
+  const rooms = [];
+  const boss = { x0: 49, y0: 5, x1: 61, y1: 17 }, ante = { x0: 38, y0: 8, x1: 45, y1: 14 }, start = { x0: 3, y0: 40, x1: 10, y1: 46 };
+  const hit = (a, b, pad) => a.x0 - pad <= b.x1 && a.x1 + pad >= b.x0 && a.y0 - pad <= b.y1 && a.y1 + pad >= b.y0;
+  rooms.push(start, ante);
+  for (let n = 0; n < 220 && rooms.length < 14; n++) {
+    const w = ri(box, 6, 11), h = ri(box, 5, 8), x = ri(box, 3, m.w - 4 - w), y = ri(box, 3, m.h - 4 - h);
+    const r = { x0: x, y0: y, x1: x + w - 1, y1: y + h - 1 };
+    if (hit(r, boss, 3) || rooms.some((o) => hit(r, o, 2))) continue;
+    rooms.push(r);
+  }
+  const cx = (r) => Math.floor((r.x0 + r.x1) / 2), cy = (r) => Math.floor((r.y0 + r.y1) / 2);
+  const floor = new Set(), hall = new Set();
+  const dig = (x, y, set) => { if (x > 1 && y > 1 && x < m.w - 2 && y < m.h - 2) { m.g[y][x] = "c"; if (set) set.add(y * m.w + x); } };
+  for (const r of rooms.concat([boss])) {
+    for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) dig(x, y);
+    // ragged edges so the rooms don't look like boxes
+    if (r !== boss) {
+      for (let x = r.x0; x <= r.x1; x++) { if (rnd(box) < 0.35) dig(x, r.y0 - 1); if (rnd(box) < 0.35) dig(x, r.y1 + 1); }
+      for (let y = r.y0; y <= r.y1; y++) { if (rnd(box) < 0.35) dig(r.x0 - 1, y); if (rnd(box) < 0.35) dig(r.x1 + 1, y); }
+    }
+  }
+  /** A corridor two tiles wide between two points, bending once; it goes round the boss's arena, never through. */
+  const corridor = (ax, ay, bx, by) => {
+    const crosses = (x0, y0, x1, y1) => hit({ x0: Math.min(x0, x1), y0: Math.min(y0, y1), x1: Math.max(x0, x1) + 1, y1: Math.max(y0, y1) + 1 }, boss, 2);
+    const hFirst = !(crosses(ax, ay, bx, ay) || crosses(bx, ay, bx, by)) && (rnd(box) < 0.5 || crosses(ax, ay, ax, by) || crosses(ax, by, bx, by));
+    const leg = (x0, y0, x1, y1) => { for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) { dig(x, y, hall); dig(x + 1, y, hall); dig(x, y + 1, hall); dig(x + 1, y + 1, hall); } };
+    if (hFirst) { leg(ax, ay, bx, ay); leg(bx, ay, bx, by); } else { leg(ax, ay, ax, by); leg(ax, by, bx, by); }
+  };
+  // a spanning tree over the rooms (nearest first), then a few extra corridors for loops
+  const joined = [0], links = [];
+  while (joined.length < rooms.length) {
+    let best = null, bd = 1e9;
+    for (const a of joined) for (let b = 0; b < rooms.length; b++) {
+      if (joined.includes(b)) continue;
+      const d = Math.abs(cx(rooms[a]) - cx(rooms[b])) + Math.abs(cy(rooms[a]) - cy(rooms[b]));
+      if (d < bd) { bd = d; best = [a, b]; }
+    }
+    links.push(best); joined.push(best[1]);
+  }
+  for (let n = 0; n < 3; n++) { const a = ri(box, 0, rooms.length - 1), b = ri(box, 0, rooms.length - 1); if (a !== b && a !== 1 && b !== 1) links.push([a, b]); }
+  for (const [a, b] of links) corridor(cx(rooms[a]), cy(rooms[a]), cx(rooms[b]), cy(rooms[b]));
+  // the only way into the arena: a short neck from the antechamber
+  for (let x = ante.x1; x <= boss.x0; x++) { dig(x, 11, hall); dig(x, 12, hall); }
+  // vaults: small chambers off to the side, each with one way in
+  const vaults = [];
+  for (let n = 0; n < 400 && vaults.length < 4; n++) {
+    const x = ri(box, 4, m.w - 8), y = ri(box, 4, m.h - 8), v = { x0: x, y0: y, x1: x + 3, y1: y + 2 };
+    if (hit(v, boss, 3) || rooms.some((o) => hit(v, o, 1)) || vaults.some((o) => hit(v, o, 4))) continue;
+    let rock = true;
+    for (let yy = v.y0 - 1; yy <= v.y1 + 1 && rock; yy++) for (let xx = v.x0 - 1; xx <= v.x1 + 1; xx++) if (m.g[yy][xx] !== "W") { rock = false; break; }
+    if (!rock) continue;
+    // it must sit close to a room, so the passage to it is short
+    let near = null, nd = 12;
+    for (const r of rooms) { const d = Math.abs(cx(r) - (x + 1)) + Math.abs(cy(r) - (y + 1)) - (r.x1 - r.x0 + r.y1 - r.y0) / 2; if (r !== ante && d < nd) { nd = d; near = r; } }
+    if (!near) continue;
+    for (let yy = v.y0; yy <= v.y1; yy++) for (let xx = v.x0; xx <= v.x1; xx++) dig(xx, yy);
+    corridor(x + 1, y + 1, cx(near), cy(near));
+    vaults.push(v);
+  }
+  // furnishings: crystals and stalagmites against the walls, carts and crates in the rooms, a pool to fish in
+  const order = rooms.slice(2).sort((a, b) => (cx(a) + (m.h - cy(a))) - (cx(b) + (m.h - cy(b))));
+  const wallish = (x, y) => m.g[y - 1][x] === "W" || m.g[y][x - 1] === "W" || m.g[y][x + 1] === "W";
+  for (let y = 2; y < m.h - 2; y++) for (let x = 2; x < m.w - 2; x++) {
+    if (m.g[y][x] !== "c") continue;
+    const r = rnd(box);
+    if (r < 0.12) m.g[y][x] = "d";
+    if (hall.has(y * m.w + x) || hit({ x0: x, y0: y, x1: x, y1: y }, boss, 0)) continue;
+    const r2 = rnd(box);
+    if (wallish(x, y)) { if (r2 < 0.1) m.o[y][x] = "K"; else if (r2 < 0.17) m.o[y][x] = "S"; }
+    else if (r2 < 0.012) m.o[y][x] = "M"; else if (r2 < 0.026) m.o[y][x] = "n"; else if (r2 < 0.034) m.o[y][x] = "S";
+  }
+  const pool = order[Math.floor(order.length / 2)] || start;
+  for (let y = pool.y0; y <= pool.y0 + 1; y++) for (let x = pool.x0; x <= pool.x0 + 2; x++) { m.g[y][x] = "w"; m.o[y][x] = " "; }
+  clear(m, start.x0, start.y0, start.x1, start.y1);
+  clear(m, ante.x0 + 1, ante.y0 + 1, ante.x1 - 1, ante.y1 - 1);
+  // who lives where: the further from the way in, the worse
+  FIRES.cave.push([start.x0 + 4, start.y0 + 2]);
+  const camp = order[Math.floor(order.length / 2) + 1];
+  order.forEach((r, i) => {
+    const inner = [r.x0 + 1, r.y0 + 1, r.x1 - 1, r.y1 - 1], t = i / Math.max(1, order.length - 1);
+    if (r === camp) { clear(m, cx(r) - 2, cy(r) - 1, cx(r) + 2, cy(r) + 2); m.o[cy(r) - 1][cx(r) - 2] = "E"; FIRES.cave.push([cx(r), cy(r)]); return; }
+    m.spawns.push({ k: t < 0.4 ? "candle" : t < 0.75 ? "prism" : "geode", n: t < 0.4 ? 6 : 5, r: inner });
+    if (t >= 0.3) m.spawns.push({ k: t < 0.7 ? "candle" : "prism", n: 2, r: inner });
+  });
+  m.spawns.push({ k: "geode", n: 4, r: [ante.x0 + 1, ante.y0 + 1, ante.x1 - 1, ante.y1 - 1] });
+  m.spawns.push({ k: "boss", n: 1, r: [cx(boss), cy(boss) - 1, cx(boss) + 1, cy(boss)] });
+  for (const v of vaults) { m.o[v.y0][v.x0] = "K"; m.o[v.y0][v.x1] = "K"; m.spawns.push({ k: "chest_cave", n: 1, r: [v.x0 + 1, v.y0 + 1, v.x0 + 2, v.y0 + 1] }); }
+  m.gates = { west: { t: [[start.x0, start.y0 + 3], [start.x0, start.y0 + 4]], a: [[start.x0 + 3, start.y0 + 3], [start.x0 + 3, start.y0 + 4]] } };
+  m.entry = m.gates.west.a[0];
+  const pts = [m.gates.west.a[1], [cx(boss), cy(boss) + 3], [cx(ante), cy(ante)]];
+  for (const r of rooms) pts.push(spot(m, cx(r), cy(r)));
+  for (const v of vaults) pts.push([v.x0 + 1, v.y0 + 1], [v.x0 + 2, v.y0 + 1]);
+  connectAll(m, pts, "c");
+  return m;
+}
+
 function buildTown() {
   const box = { seed: 1101 };
   const m = blank("town", "넥서스 광장", 40, 30, ".");
@@ -380,180 +898,72 @@ function buildTown() {
   m.big.push({ t: "fountain", x: 19, y: 14 });
   for (const [x, y] of [[14, 10], [25, 10], [14, 19], [25, 19]]) m.o[y][x] = "L";
   for (let x = 4; x <= 12; x++) if (x !== 9 && x !== 10) m.o[26][x] = "F";
-  for (const [x, y] of [[5, 12], [33, 9], [34, 24], [5, 17], [23, 24], [13, 5], [24, 6]]) m.o[y][x] = "B";
+  for (const [x, y] of [[5, 12], [33, 9], [5, 17], [23, 24], [13, 5], [24, 6]]) m.o[y][x] = "B";
   for (const [x, y] of [[32, 13], [6, 13]]) m.o[y][x] = "G";
-  portal(m, 38, 14, "meadow", 4, 22);
-  portal(m, 38, 15, "meadow", 4, 23);
-  portal(m, 1, 14, "city", 51, 19);
-  portal(m, 1, 15, "city", 51, 20);
+  // the market corner by the supply shop: stacked goods and a stall's awning
+  for (const [x, y] of [[12, 8], [13, 8], [12, 10], [7, 9], [6, 10]]) m.o[y][x] = "B";
+  m.o[10][13] = "E";
+  // a pond to fish in, with a plank dock out over the water and reeds along the far bank
+  for (let y = 16; y <= 21; y++) for (let x = 31; x <= 38; x++) {
+    const d = ((x - 35) / 3.2) ** 2 + ((y - 18.5) / 2) ** 2;
+    if (d < 1) { m.g[y][x] = "w"; m.o[y][x] = " "; } else if (d < 1.9 && x < 38 && m.o[y][x] !== "h") { m.g[y][x] = "s"; if (m.o[y][x] !== "T") m.o[y][x] = " "; }
+  }
+  for (let x = 31; x <= 34; x++) { m.g[18][x] = "b"; m.o[18][x] = " "; }
+  for (const [x, y] of [[36, 17], [37, 19], [35, 20]]) if (m.g[y][x] === "w") m.o[y][x] = "e";
+  // hedges framing the plaza's south side
+  for (const x of [15, 16, 17, 22, 23, 24]) m.o[20][x] = "H";
   m.npcs.push(
     { id: "shop", name: "보급상 리나", role: "shop", x: 10, y: 9, look: [4, 0, 1, "#8a4a6a"] },
     { id: "smith", name: "대장장이 볼칸", role: "smith", x: 30, y: 8, look: [0, 1, 0, "#6a4a38"] },
     { id: "elder", name: "관리자 엘더윈", role: "elder", x: 19, y: 11, look: [5, 0, 0, "#3f5a9a"] },
     { id: "train", name: "수련관 카이", role: "train", x: 23, y: 12, look: [1, 2, 0, "#7a2e2e"] },
     { id: "guard", name: "경비병 토비", role: "talk", x: 35, y: 13, look: [1, 0, 0, "#5e6470"],
-      say: "동쪽 문은 바람초원, 서쪽 문은 네온 시티로 이어져. 네온 시티는 레벨 13은 되어야 버틸 만해. 혼자 가지 말고 파티를 구해!" },
+      say: "동쪽 문은 바람초원, 서쪽 문은 네온 시티로 이어져. 길은 갈라지고 막히기도 하니 샛길을 살펴봐 — 막다른 곳엔 보물 상자나 쉬어 갈 모닥불이 있거든. 네온 시티는 레벨 13은 되어야 버틸 만해!" },
   );
-  return finalize(m);
+  m.gates = { east: { t: [[38, 14], [38, 15]], a: [[36, 14], [36, 15]] }, west: { t: [[1, 14], [1, 15]], a: [[3, 14], [3, 15]] } };
+  FIRES.town.push([22, 22]);
+  return m;
 }
 
-function buildCity() {
-  const box = { seed: 5505 };
-  const m = blank("city", "네온 시티", 56, 40, "k");
-  m.entry = [51, 19];
-  m.bgm = "city";
-  rect(m.g, 0, 18, 55, 21, "a");
-  rect(m.g, 26, 0, 29, 39, "a");
-  for (let x = 2; x < 54; x += 3) if (x < 25 || x > 30) m.g[20][x] = "m";
-  for (const [x, y, v] of [[5, 4, 4], [12, 4, 6], [19, 5, 7], [33, 4, 6], [41, 5, 4], [47, 4, 7], [5, 11, 7], [13, 12, 4], [34, 11, 7], [44, 12, 6],
-    [5, 25, 6], [13, 26, 7], [20, 25, 4], [33, 25, 4], [41, 26, 6], [47, 25, 7], [6, 32, 4], [15, 33, 6], [35, 32, 7], [45, 33, 4]]) house(m, x, y, v);
-  scatter(m, box, m.o, "c", 0.03, "a");
-  // a parked car is two tiles long: block the tile beside it as well
-  for (let y = 0; y < m.h; y++) for (let x = m.w - 2; x >= 0; x--) {
-    if (m.o[y][x] !== "c") continue;
-    if (m.o[y][x + 1] === " " && "am".includes(m.g[y][x + 1])) m.o[y][x + 1] = "h";
-    else m.o[y][x] = " ";
-  }
-  scatter(m, box, m.o, "y", 0.012, "k");
-  scatter(m, box, m.o, "x", 0.014, "k");
-  for (let x = 4; x < 54; x += 7) if (x < 24 || x > 31) { m.o[17][x] = "L"; m.o[22][x + 2] = "L"; }
-  border(m, "Z", 2);
-  rect(m.o, 44, 18, 53, 21, " ");
-  portal(m, 53, 19, "town", 3, 14);
-  portal(m, 53, 20, "town", 3, 15);
-  m.spawns.push(
-    { k: "eyecam", n: 14, r: [3, 3, 25, 16] },
-    { k: "signbot", n: 16, r: [30, 3, 52, 16] },
-    { k: "tvhead", n: 12, r: [3, 23, 25, 36] },
-    { k: "signbot", n: 5, r: [3, 23, 25, 36] },
-    { k: "vend", n: 14, r: [30, 23, 52, 36] },
-  );
-  return finalize(m);
-}
-
-function buildMeadow() {
-  const box = { seed: 2202 };
-  const m = blank("meadow", "바람초원", 60, 46, ".");
-  m.entry = [4, 22];
-  scatter(m, box, m.g, ",", 0.16, ".");
-  scatter(m, box, m.g, '"', 0.07, ".");
-  // pond with a sandy shore
-  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
-    const d = Math.pow((x - 41) / 8, 2) + Math.pow((y - 11) / 5, 2);
-    if (d < 1) m.g[y][x] = "w";
-    else if (d < 1.5) m.g[y][x] = "s";
-  }
-  scatter(m, box, m.o, "T", 0.032, ".,\"");
-  scatter(m, box, m.o, "B", 0.02, ".,\"");
-  scatter(m, box, m.o, "R", 0.012, ".,\"s");
-  border(m, "T", 2);
-  road(m, 0, 22, 14, 22, "p");
-  road(m, 14, 22, 28, 27, "p");
-  road(m, 28, 27, 44, 24, "p");
-  road(m, 44, 24, 59, 22, "p");
-  portal(m, 1, 22, "town", 36, 14);
-  portal(m, 1, 23, "town", 36, 15);
-  portal(m, 58, 22, "forest", 4, 22);
-  portal(m, 58, 23, "forest", 4, 23);
-  m.spawns.push(
-    { k: "acorn", n: 24, r: [4, 4, 30, 42] },
-    { k: "potcrab", n: 18, r: [24, 28, 56, 42] },
-    { k: "puff", n: 16, r: [30, 3, 56, 20] },
-  );
-  return finalize(m);
-}
-
-function buildForest() {
-  const box = { seed: 3303 };
-  const m = blank("forest", "속삭임 숲", 60, 46, ":");
-  m.entry = [4, 22];
-  m.bgm = "forest";
-  scatter(m, box, m.g, ";", 0.2, ":");
-  scatter(m, box, m.g, '"', 0.02, ":");
-  // a stream running north-south, crossed by a bridge on the road
-  for (let y = 0; y < m.h; y++) {
-    const cx = 30 + Math.round(Math.sin(y / 5) * 2);
-    m.g[y][cx] = "w";
-    m.g[y][cx + 1] = "w";
-  }
-  scatter(m, box, m.o, "P", 0.065, ":;");
-  scatter(m, box, m.o, "B", 0.025, ":;");
-  scatter(m, box, m.o, "R", 0.015, ":;");
-  border(m, "P", 2);
-  for (let y = 21; y <= 24; y++) for (let x = 26; x <= 35; x++) if (m.g[y][x] === "w") m.g[y][x] = "b";
-  road(m, 0, 22, 26, 22, "p");
-  for (let x = 26; x <= 35; x++) for (let y = 21; y <= 24; y++) m.o[y][x] = " ";
-  road(m, 35, 22, 46, 16, "p");
-  road(m, 46, 16, 55, 6, "p");
-  road(m, 55, 6, 55, 2, "p");
-  portal(m, 1, 22, "meadow", 55, 22);
-  portal(m, 1, 23, "meadow", 55, 23);
-  portal(m, 55, 1, "cave", 5, 34);
-  portal(m, 56, 1, "cave", 5, 35);
-  m.spawns.push(
-    { k: "capfrog", n: 18, r: [4, 4, 27, 42] },
-    { k: "stump", n: 9, r: [8, 26, 27, 42] },
-    { k: "yarn", n: 14, r: [34, 22, 56, 42] },
-    { k: "lantern", n: 14, r: [34, 4, 56, 22] },
-  );
-  return finalize(m);
-}
-
-function buildCave() {
-  const box = { seed: 4404 };
-  const m = blank("cave", "수정 동굴", 50, 40, "W");
-  m.entry = [5, 34];
-  m.bgm = "cave";
-  const room = (x0, y0, x1, y1) => {
-    rect(m.g, x0, y0, x1, y1, "c");
-    // ragged edges so the rooms don't look like boxes
-    for (let x = x0; x <= x1; x++) {
-      if (rnd(box) < 0.35) m.g[y0 - 1][x] = "c";
-      if (rnd(box) < 0.35) m.g[y1 + 1][x] = "c";
-    }
-    for (let y = y0; y <= y1; y++) {
-      if (rnd(box) < 0.35) m.g[y][x0 - 1] = "c";
-      if (rnd(box) < 0.35) m.g[y][x1 + 1] = "c";
+const PLACES = ["vault", "camp", "pond", "vault", "ruin", "grove", "vault", "pond"];
+function buildMaps() {
+  for (const id of ["town", "meadow", "forest", "cave", "city"]) FIRES[id] = [];
+  const town = buildTown();
+  const meadow = wild({
+    id: "meadow", name: "바람초원", seed: 22021, cw: 7, ch: 5, entry: 14, exit: 20, loops: 0.14, merge: 0.3, river: 4,
+    ground: ".", tufts: ",", edge: "T", treeCh: "T", tree: 0.022, road: "p", shore: "s",
+    walls: [["cliff", 0.5], ["hedge", 0.22], ["trees", 0.28]], places: PLACES, mobs: ["acorn", "potcrab", "puff"], pondMob: "puff", chest: "chest_meadow", n: 4,
+    gates: [["west", "w", 14], ["east", "e", 20]],
+  });
+  const forest = wild({
+    id: "forest", name: "속삭임 숲", seed: 33047, bgm: "forest", cw: 7, ch: 5, entry: 14, exit: 6, loops: 0.1, merge: 0.18, river: 3,
+    ground: ":", tufts: ";", edge: "P", treeCh: "P", tree: 0.05, road: "p", shore: null,
+    walls: [["trees", 0.55], ["cliff", 0.33], ["ruin", 0.12]], places: PLACES, mobs: ["capfrog", "stump", "yarn", "lantern"], pondMob: null, chest: "chest_forest", n: 4,
+    gates: [["west", "w", 14], ["north", "n", 6]],
+  });
+  const cave = dungeon(44093);
+  const town2 = city({
+    id: "city", name: "네온 시티", seed: 55071, bgm: "city", cw: 7, ch: 5, entry: 20, exit: 14, loops: 0.2, merge: 0.3,
+    ground: "k", road: "a", roadW: 3, places: ["vault", "camp", "pond", "vault", "ruin", "vault", "ruin"], min: 6,
+    mobs: ["eyecam", "signbot", "tvhead", "vend"], chest: "chest_city", n: 4,
+    gates: [["east", "e", 20]],
+  });
+  // doors between the worlds: stepping on a gate tile puts you on the matching arrival tile next door
+  const join = (a, ga, b, gb) => {
+    for (let k = 0; k < 2; k++) {
+      portal(a, a.gates[ga].t[k][0], a.gates[ga].t[k][1], b.id, b.gates[gb].a[k][0], b.gates[gb].a[k][1]);
+      portal(b, b.gates[gb].t[k][0], b.gates[gb].t[k][1], a.id, a.gates[ga].a[k][0], a.gates[ga].a[k][1]);
     }
   };
-  room(3, 31, 10, 37);
-  room(14, 26, 27, 36);
-  room(6, 10, 20, 20);
-  room(26, 8, 36, 18);
-  room(40, 4, 47, 21);
-  rect(m.g, 10, 33, 14, 34, "c");
-  rect(m.g, 16, 20, 17, 26, "c");
-  rect(m.g, 20, 13, 26, 14, "c");
-  rect(m.g, 36, 12, 40, 13, "c");
-  for (let y = 1; y < m.h - 1; y++) for (let x = 1; x < m.w - 1; x++) {
-    if (m.g[y][x] !== "c") continue;
-    const r = rnd(box);
-    if (r < 0.12) m.g[y][x] = "d";
-    else if (r < 0.15) m.o[y][x] = "K";
-    else if (r < 0.17) m.o[y][x] = "S";
-  }
-  // keep corridors and the boss arena clear
-  rect(m.o, 10, 33, 14, 34, " ");
-  rect(m.o, 16, 20, 17, 26, " ");
-  rect(m.o, 20, 13, 26, 14, " ");
-  rect(m.o, 36, 12, 40, 13, " ");
-  rect(m.o, 41, 8, 46, 17, " ");
-  rect(m.o, 3, 33, 7, 36, " ");
-  portal(m, 3, 34, "forest", 55, 4);
-  portal(m, 3, 35, "forest", 56, 4);
-  m.spawns.push(
-    { k: "candle", n: 14, r: [14, 26, 27, 36] },
-    { k: "candle", n: 6, r: [6, 10, 20, 20] },
-    { k: "prism", n: 9, r: [6, 10, 20, 20] },
-    { k: "geode", n: 4, r: [6, 10, 20, 20] },
-    { k: "geode", n: 9, r: [26, 8, 36, 18] },
-    { k: "prism", n: 4, r: [26, 8, 36, 18] },
-    { k: "boss", n: 1, r: [43, 11, 44, 13] },
-  );
-  return finalize(m);
+  join(town, "east", meadow, "west");
+  join(town, "west", town2, "east");
+  join(meadow, "east", forest, "west");
+  join(forest, "north", cave, "west");
+  const out = {};
+  for (const m of [town, meadow, forest, cave, town2]) out[m.id] = finalize(m);
+  return out;
 }
-
-const MAPS = { town: buildTown(), meadow: buildMeadow(), forest: buildForest(), cave: buildCave(), city: buildCity() };
+const MAPS = buildMaps();
 const START = { map: "town", x: 20 * T + 8, y: 18 * T + 8 };
 
 function solidAt(m, px, py) {
@@ -819,7 +1229,7 @@ function placeMob(S, m, mob) {
     }
   }
   // now and then an elite spawns: far tougher, far more rewarding — party prey
-  mob.el = !MOBS[mob.k].boss && rnd(S) < 0.08 ? 1 : 0;
+  mob.el = !MOBS[mob.k].boss && !MOBS[mob.k].chest && rnd(S) < 0.08 ? 1 : 0;
   mob.hp = mobMax(mob);
   mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null;
   mob.wx = mob.x; mob.wy = mob.y;
@@ -1033,12 +1443,12 @@ function lootFor(S, rt, mob, p) {
   const st = stats(p);
   const out = [];
   const share = allies(S, p).length;
-  const rank = d.boss ? 2 : mob.el;
+  const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
   const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * (1 + st.gold / 100);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
   const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
   for (let i = 0; i < tries; i++) {
-    if (rnd(S) >= (rank === 2 ? 1 : rank === 1 ? 0.6 : d.gear) * (1 + st.mf / 100)) continue;
+    if (rnd(S) >= (rank === 2 || d.chest ? 1 : rank === 1 ? 0.6 : d.gear) * (1 + st.mf / 100)) continue;
     let tier = tierFor(d.lv);
     if (rank && rnd(S) < 0.25) tier = Math.min(5, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
@@ -1143,6 +1553,8 @@ function killMob(S, rt, mob) {
   const xp = d.xp * ELITE[el].xp;
   for (const p of looters) {
     const ch = p.ch;
+    // a chest is opened, not hunted: it pays out its loot and nothing else
+    if (d.chest) { p.dirty = true; lootFor(S, rt, mob, p); continue; }
     const n = Math.min(PARTY_MAX, allies(S, p).length);
     // a kill soon after the last one keeps the streak alive
     p.streak = S.now - p.streakAt < STREAK_MS ? p.streak + 1 : 1;
@@ -1181,7 +1593,7 @@ function killMob(S, rt, mob) {
     rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), d.burst, 900]);
   }
   // enough kills in one hunting ground call out its field boss
-  if (!d.boss && el < 2 && FIELD_BOSS[rt.id] && looters.size) {
+  if (!d.boss && !d.chest && el < 2 && FIELD_BOSS[rt.id] && looters.size) {
     rt.kc++;
     if (rt.kc >= FB_KILLS && !rt.fb) spawnFieldBoss(S, rt, mob.x, mob.y);
   }
@@ -1229,7 +1641,7 @@ function mobsInLine(rt, x, y, ux, uy, len, half) {
 }
 /** Shove a monster `far` along (ux, uy), stopping at anything solid. */
 function knock(m, mob, ux, uy, far) {
-  if (MOBS[mob.k].boss || mob.el === 2) return;
+  if (MOBS[mob.k].boss || MOBS[mob.k].still || mob.el === 2) return;
   const ok = MOBS[mob.k].fly ? canFly : canStand;
   for (let k = far; k > 3; k -= 4) {
     if (ok(m, mob.x + ux * k, mob.y + uy * k)) { mob.x += ux * k; mob.y += uy * k; return; }
@@ -1621,7 +2033,7 @@ export function validateAction(S, pid, a) {
       if (!npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
       if (a.a === "take") {
         const d = MOBS[a.k];
-        if (typeof a.k !== "string" || !d || d.boss) return bad("그런 의뢰는 없습니다");
+        if (typeof a.k !== "string" || !d || d.boss || d.chest) return bad("그런 의뢰는 없습니다");
         if (d.lv > ch.lvl + 4) return bad("아직 감당하기 어려운 상대입니다");
         return OK;
       }
@@ -1999,7 +2411,7 @@ function tickMob(S, m, rt, mob, dt) {
       if (o && o.map === m.id && dealMob(S, rt, mob, o, dot.dmg, 0)) return;
     }
   }
-  if (mob.stun > now) return;
+  if (mob.stun > now || d.still) return;
   const speed = d.spd * (mob.slow > now ? 0.5 : 1);
   const atk = d.atk * ELITE[mob.el].atk;
   let tgt = mob.tgt ? S.players[mob.tgt] : null;
@@ -2263,7 +2675,7 @@ export function defs() {
   const mobs = {};
   for (const k of Object.keys(MOBS)) {
     const d = MOBS[k];
-    mobs[k] = { name: d.name, sp: d.sp, lv: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, xp: d.xp };
+    mobs[k] = { name: d.name, sp: d.sp, lv: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp };
   }
   const classes = {};
   for (const k of Object.keys(CLASSES)) {
