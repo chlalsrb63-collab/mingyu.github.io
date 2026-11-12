@@ -315,7 +315,13 @@ function buildCity() {
   for (let x = 2; x < 54; x += 3) if (x < 25 || x > 30) m.g[20][x] = "m";
   for (const [x, y, v] of [[5, 4, 4], [12, 4, 6], [19, 5, 7], [33, 4, 6], [41, 5, 4], [47, 4, 7], [5, 11, 7], [13, 12, 4], [34, 11, 7], [44, 12, 6],
     [5, 25, 6], [13, 26, 7], [20, 25, 4], [33, 25, 4], [41, 26, 6], [47, 25, 7], [6, 32, 4], [15, 33, 6], [35, 32, 7], [45, 33, 4]]) house(m, x, y, v);
-  scatter(m, box, m.o, "c", 0.035, "a");
+  scatter(m, box, m.o, "c", 0.03, "a");
+  // a parked car is two tiles long: block the tile beside it as well
+  for (let y = 0; y < m.h; y++) for (let x = m.w - 2; x >= 0; x--) {
+    if (m.o[y][x] !== "c") continue;
+    if (m.o[y][x + 1] === " " && "am".includes(m.g[y][x + 1])) m.o[y][x + 1] = "h";
+    else m.o[y][x] = " ";
+  }
   scatter(m, box, m.o, "y", 0.012, "k");
   scatter(m, box, m.o, "x", 0.014, "k");
   for (let x = 4; x < 54; x += 7) if (x < 24 || x > 31) { m.o[17][x] = "L"; m.o[22][x + 2] = "L"; }
@@ -344,7 +350,7 @@ function buildMeadow() {
     if (d < 1) m.g[y][x] = "w";
     else if (d < 1.5) m.g[y][x] = "s";
   }
-  scatter(m, box, m.o, "T", 0.05, ".,\"");
+  scatter(m, box, m.o, "T", 0.032, ".,\"");
   scatter(m, box, m.o, "B", 0.02, ".,\"");
   scatter(m, box, m.o, "R", 0.012, ".,\"s");
   border(m, "T", 2);
@@ -377,7 +383,7 @@ function buildForest() {
     m.g[y][cx] = "w";
     m.g[y][cx + 1] = "w";
   }
-  scatter(m, box, m.o, "P", 0.1, ":;");
+  scatter(m, box, m.o, "P", 0.065, ":;");
   scatter(m, box, m.o, "B", 0.025, ":;");
   scatter(m, box, m.o, "R", 0.015, ":;");
   border(m, "P", 2);
@@ -493,7 +499,7 @@ export function newChar(name, cls, look) {
   const lk = isObj(look) ? look : {};
   return {
     v: 2, name, cls: c,
-    look: [clamp(lk.hair | 0, 0, 5), clamp(lk.skin | 0, 0, 2), clamp(lk.style | 0, 0, 1)],
+    look: [clamp(lk.hair | 0, 0, 5), clamp(lk.skin | 0, 0, 2), clamp(lk.style | 0, 0, 2)],
     lvl: 1, xp: 0, gold: 50,
     inv: [{ id: "hp_s", n: 5 }, { id: "mp_s", n: 3 }],
     eq: { weapon: plain(`w_${c}_1`), armor: plain("a_1"), acc: null },

@@ -319,3 +319,6 @@ h1 small { color: #7ab0c8; text-shadow: 2px 2px 0 #14283a, 3px 3px 0 var(--ink);
 #joy { background: rgba(255, 255, 255, .06); border: 1px solid rgba(138, 116, 72, .6); }
 #joy-knob { background: rgba(138, 116, 72, .5); border: 1px solid var(--edge); }
 @media (max-width: 560px) { #party-hud { top: 124px; } .window { width: 262px; } }
+
+/* character portraits: the 40×48 sheet at 3× */
+#char-cv, #create-cv { width: 120px; height: 144px; background: radial-gradient(circle at 50% 78%, #2e3340, #0c0d11 70%); border: 1px solid #343741; }

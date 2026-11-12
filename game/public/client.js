@@ -186,7 +186,7 @@ function loadMap(m) {
     const ch = m.o[y][x];
     if (m.g[y][x] === "W") { if (edge(x, y)) box(scenery.W, x * T, y * T, T, T); continue; }
     if (ch === "Z") { if (edge(x, y)) box(scenery.Z, x * T, y * T, T, T); continue; }
-    if (ch === "c") { box(scenery.c[Math.floor(Art.hash(x, y, 3) * scenery.c.length)], x * T - 5, y * T + 1.5, 26, 13); continue; }
+    if (ch === "c") { box(scenery.c[Math.floor(Art.hash(x, y, 3) * scenery.c.length)], x * T, y * T + 0.5, 32, 15); continue; }
     let sp = scenery[ch];
     if (!sp || Array.isArray(sp) || sp.cv) continue;
     if (ch === "K" && Art.hash(x, y, 7) > 0.6) sp = scenery.K2;
@@ -220,7 +220,7 @@ function onSnap(s) {
   if (s.who) {
     G.who.clear();
     for (const [eid, name, cls, lvl, look, tier, wt, party] of s.who) {
-      G.who.set(eid, { name, cls, lvl, sprite: Art.charSprite(Art.playerLook(cls, look, tier)), look, tier, wid: wt ? `w_${cls}_${wt}` : null, party });
+      G.who.set(eid, { name, cls, lvl, sprite: Art.charSprite(Art.playerLook(cls, look, tier, wt)), look, tier, party });
     }
     if (isOpen("party")) renderParty();
   }
@@ -717,21 +717,15 @@ function shadow(x, y, w) {
 }
 /** Screen-space unit vector for each facing (the four diagonals). */
 const FACE = [[-1, 0.5], [-1, -0.5], [1, 0.5], [1, -0.5]];
-function drawChar(sprite, x, y, dir, walkT, moving, atkT, t, alpha = 1, wid = null) {
-  const frame = moving ? 1 + (Math.floor(walkT) % 2) : 0;
-  let ox = 0, oy = 0;
+function drawChar(sprite, x, y, dir, walkT, moving, atkT, t, alpha = 1) {
+  // attack (wind-up, then strike) > four-step walk cycle > slow idle breathing
   const a = t - atkT;
-  if (a < 160) { const k = Math.sin((a / 160) * Math.PI) * 3; ox = FACE[dir][0] * k; oy = FACE[dir][1] * k; }
-  shadow(x, y + 1, 12);
+  const frame = a < 240 ? (a < 90 ? 6 : 7) : moving ? 2 + (Math.floor(walkT) % 4) : Math.floor(t / 650) % 2;
+  let ox = 0, oy = 0;
+  if (a < 240) { const k = Math.sin((a / 240) * Math.PI) * 3; ox = FACE[dir][0] * k; oy = FACE[dir][1] * k; }
+  shadow(x, y + 1, 13);
   if (alpha !== 1) wg.globalAlpha = alpha;
-  const cx = Math.round(x - 8 + ox), cy = Math.round(y - Art.CHAR_H + 2 + oy);
-  // the weapon in hand: behind the body when facing away, raised during a swing
-  const leftward = dir < 2, away = dir === 1 || dir === 3;
-  const icon = wid && G.icons ? (leftward ? G.icons.left[wid] : G.icons.cv[wid]) : null;
-  const wx = leftward ? cx - 9 : cx + 9, wy = cy + 7 + (a < 160 ? -3 : 0) + (frame ? 1 : 0);
-  if (icon && away) wg.drawImage(icon, wx, wy);
-  wg.drawImage(sprite[dir][frame], cx, cy);
-  if (icon && !away) wg.drawImage(icon, wx, wy);
+  wg.drawImage(sprite[dir][frame], Math.round(x - Art.FOOT_X + ox), Math.round(y - Art.FOOT_Y + oy));
   wg.globalAlpha = 1;
 }
 /** A circle lying on the ground looks like a 2:1 ellipse from this angle. */
@@ -799,10 +793,14 @@ function render(t) {
       if (o.s.glow) {
         wg.globalAlpha = 0.14 + 0.06 * Math.sin(t / 400 + o.s.cx);
         wg.fillStyle = o.s.glow;
-        wg.beginPath(); wg.arc(o.s.cx, o.s.dy + sp.height * (o.s.glow === "#ffe890" ? 0.18 : 0.45), 13, 0, Math.PI * 2); wg.fill();
+        wg.beginPath(); wg.arc(o.s.cx, o.s.dy + (o.s.glow === "#ffe890" ? 7 : sp.height * 0.45), 13, 0, Math.PI * 2); wg.fill();
         wg.globalAlpha = 1;
       }
+      // anything tall standing in front of you turns translucent so you never lose yourself
+      const hides = sp.height > 40 && o.z > me.x + me.y && mix > o.s.dx + 2 && mix < o.s.dx + sp.width - 2 && miy - 14 > o.s.dy && miy - 14 < o.s.dy + sp.height;
+      if (hides) wg.globalAlpha = 0.38;
       wg.drawImage(sp, o.s.dx, o.s.dy);
+      wg.globalAlpha = 1;
     } else if (o.n) {
       drawChar(o.n.sprite, x, y, 0, 0, false, -1e9, t);
     } else if (o.d) {
@@ -845,10 +843,10 @@ function render(t) {
       }
     } else if (o.p) {
       const w = G.who.get(o.eid);
-      if (w) drawChar(w.sprite, x, y, o.p.dir, o.p.walk, o.p.moving, o.p.atkT, t, o.p.dead ? 0.4 : 1, w.wid);
+      if (w) drawChar(w.sprite, x, y, o.p.dir, o.p.walk, o.p.moving, o.p.atkT, t, o.p.dead ? 0.4 : 1);
     } else if (o.me) {
       const w = G.who.get(G.you);
-      if (w) drawChar(w.sprite, x, y, me.dir, me.walk, me.moving, me.atkT, t, me.dead ? 0.4 : t - me.hurtT < 110 ? 0.6 : 1, w.wid);
+      if (w) drawChar(w.sprite, x, y, me.dir, me.walk, me.moving, me.atkT, t, me.dead ? 0.4 : t - me.hurtT < 110 ? 0.6 : 1);
     }
   }
 
@@ -931,7 +929,7 @@ function lighting(t, list) {
     for (const o of list) {
       if (o.me) hole(o.ix, o.iy - 10, 80, 0.9);
       else if (o.p) hole(o.ix, o.iy - 10, 66, 0.8);
-      else if (o.s && o.s.glow) hole(o.s.cx, o.s.cy - 16, o.s.glow === "#ffe890" ? 64 : 36, 0.85 + 0.1 * Math.sin(t / 300 + o.s.cx));
+      else if (o.s && o.s.glow) hole(o.s.cx, o.s.glow === "#ffe890" ? o.s.dy + 8 : o.s.cy - 12, o.s.glow === "#ffe890" ? 64 : 36, 0.85 + 0.1 * Math.sin(t / 300 + o.s.cx));
       else if (o.s && o.s.win) hole(o.s.cx, o.s.cy - 10, 56, 0.5);
       else if (o.d && o.d.q) hole(o.ix, o.iy - 6, 18, 0.7);
     }
@@ -976,7 +974,7 @@ function renderText(t, list) {
   tg.textAlign = "center";
   tg.textBaseline = "alphabetic";
   const m = G.map;
-  const top = Art.CHAR_H + 3;
+  const top = Art.CHAR_TOP + 2;
   const myParty = G.who.get(G.you)?.party;
 
   for (const p of m.portals) {
@@ -1252,8 +1250,8 @@ function refreshUi() {
   if (isOpen("char")) {
     const w = G.who.get(G.you);
     const cv = $("#char-cv"), cg = cv.getContext("2d");
-    cg.clearRect(0, 0, 16, 26);
-    if (w) cg.drawImage(w.sprite[0][0], 0, 0);
+    cg.clearRect(0, 0, 40, 48);
+    if (w) cg.drawImage(w.sprite[2][Math.floor(now() / 650) % 2], 0, 0);
     $("#char-title").textContent = `${s.name} · Lv.${s.lvl} ${G.defs.classes[s.cls].name}`;
     for (const k of GEAR) {
       const host = $(`#eq-${k}`);
@@ -1474,8 +1472,8 @@ function pick(sel, key, cast = (v) => v) {
     });
   }
 }
-Art.HAIR.forEach((c, i) => { const b = el("button", i ? "" : "on"); b.dataset.v = i; b.style.background = c[0]; $("#c-hair").append(b); });
-Art.SKIN.forEach((c, i) => { const b = el("button", i ? "" : "on"); b.dataset.v = i; b.style.background = c[0]; $("#c-skin").append(b); });
+Art.HAIR.forEach((c, i) => { const b = el("button", i ? "" : "on"); b.dataset.v = i; b.style.background = c; $("#c-hair").append(b); });
+Art.SKIN.forEach((c, i) => { const b = el("button", i ? "" : "on"); b.dataset.v = i; b.style.background = c; $("#c-skin").append(b); });
 pick("#c-cls", "cls"); pick("#c-hair", "hair", Number); pick("#c-skin", "skin", Number); pick("#c-style", "style", Number);
 $("#c-desc").textContent = CLASS_DESC.warrior;
 
@@ -1505,8 +1503,8 @@ $("#c-name").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#b-c
 // a small living diorama behind the title
 const tcv = $("#title-cv"), tgx = tcv.getContext("2d");
 const parade = [
-  Art.charSprite(Art.playerLook("warrior", [3, 0, 0], 0)), Art.charSprite(Art.playerLook("mage", [4, 0, 1], 0)),
-  Art.charSprite(Art.playerLook("ranger", [2, 1, 0], 0)), Art.charSprite(Art.playerLook("rogue", [1, 2, 0], 0)),
+  Art.charSprite(Art.playerLook("warrior", [3, 0, 0], 1, 2)), Art.charSprite(Art.playerLook("mage", [4, 0, 1], 1, 2)),
+  Art.charSprite(Art.playerLook("ranger", [2, 1, 2], 1, 3)), Art.charSprite(Art.playerLook("rogue", [1, 2, 0], 1, 2)),
 ];
 function renderTitle(t) {
   const s = Math.max(2, Math.round(Math.min(innerWidth / 300, innerHeight / 180)));
@@ -1532,16 +1530,18 @@ function renderTitle(t) {
     tgx.drawImage(i % 2 ? scenery.T : scenery.P, Math.round(x), gy - (i % 2 ? 26 : 30));
   }
   const cx = Math.round(w / 2);
-  parade.forEach((sp, i) => tgx.drawImage(sp[2][1 + (Math.floor(t / 160) % 2)], cx - 50 + i * 20, gy - 4));
+  parade.forEach((sp, i) => tgx.drawImage(sp[2][2 + (Math.floor(t / 150) % 4)], cx - 74 + i * 26, gy + 22 - Art.FOOT_Y));
   const sl = mobArt.slime.right[Math.floor(t / 300) % 2];
   tgx.drawImage(sl, cx + 34, gy + 4 - Math.abs(Math.round(Math.sin(t / 250) * 5)));
   tgx.drawImage(mobArt.bslime.right[Math.floor(t / 300 + 1) % 2], cx + 54, gy + 4 - Math.abs(Math.round(Math.sin(t / 250 + 1) * 5)));
 }
 function renderCreate(t) {
   const g = $("#create-cv").getContext("2d");
-  g.clearRect(0, 0, 16, 26);
-  const sp = Art.charSprite(Art.playerLook(draft.cls, [draft.hair, draft.skin, draft.style], 0));
-  g.drawImage(sp[Math.floor(t / 1600) % 4][1 + (Math.floor(t / 200) % 2)], 0, 0);
+  g.clearRect(0, 0, 40, 48);
+  const sp = Art.charSprite(Art.playerLook(draft.cls, [draft.hair, draft.skin, draft.style], 1, 1));
+  // turn through the four facings, and show one swing in each
+  const dir = [2, 0, 1, 3][Math.floor(t / 2400) % 4], k = t % 2400;
+  g.drawImage(sp[dir][k > 1900 ? (k < 2050 ? 6 : 7) : k < 700 ? Math.floor(t / 650) % 2 : 2 + (Math.floor(t / 150) % 4)], 0, 0);
 }
 
 // ───────────────────────────── main loop ─────────────────────────────

@@ -244,30 +244,32 @@ export function renderMini(m, s = 2) {
 // ───────────────────────────── scenery ─────────────────────────────
 
 function tree() {
-  const [c, g] = canvas(26, 34);
-  g.fillStyle = "#8a5a30"; g.fillRect(11, 22, 4, 10);
-  g.fillStyle = "#6a4222"; g.fillRect(14, 22, 1, 10); g.fillRect(10, 31, 6, 1);
-  disc(g, 13, 13, 11, 11, "#2a6a30");
-  disc(g, 12, 11, 9.5, 9, "#3a8038");
-  disc(g, 10, 8, 6, 5, "#549a46");
-  disc(g, 8, 6, 2.5, 2, "#74b45e");
-  for (let i = 0; i < 14; i++) px(g, 4 + Math.floor(hash(i, 1) * 18), 6 + Math.floor(hash(i, 2) * 15), i % 2 ? "#2a6a30" : "#549a46");
+  const [c, g] = canvas(44, 62);
+  g.fillStyle = "#7a5030"; g.fillRect(19, 38, 6, 22);
+  g.fillStyle = "#5a3a20"; g.fillRect(23, 38, 2, 22); g.fillRect(17, 59, 10, 1);
+  g.fillStyle = "#8e6238"; g.fillRect(19, 40, 1, 16);
+  disc(g, 22, 22, 20, 20, "#2a6a30");
+  disc(g, 20, 19, 17, 16, "#3a8038");
+  disc(g, 16, 14, 11, 9, "#549a46");
+  disc(g, 13, 10, 5, 4, "#74b45e");
+  disc(g, 30, 28, 8, 7, "#225828");
+  for (let i = 0; i < 40; i++) px(g, 5 + Math.floor(hash(i, 1) * 34), 6 + Math.floor(hash(i, 2) * 32), i % 3 ? "#2a6a30" : "#549a46");
   outline(c, g, "#152e1a");
   return c;
 }
 function pine() {
-  const [c, g] = canvas(24, 38);
-  g.fillStyle = "#7a5030"; g.fillRect(10, 28, 4, 8);
-  g.fillStyle = "#5a3a20"; g.fillRect(13, 28, 1, 8);
+  const [c, g] = canvas(38, 68);
+  g.fillStyle = "#6a4428"; g.fillRect(16, 52, 6, 14);
+  g.fillStyle = "#4a2e1a"; g.fillRect(20, 52, 2, 14);
   const tier = (top, h, half) => {
     for (let y = 0; y < h; y++) {
       const w = Math.round(1 + (half * y) / (h - 1));
-      g.fillStyle = "#265a3c"; g.fillRect(12 - w, top + y, w * 2, 1);
-      g.fillStyle = "#34704a"; g.fillRect(12 - w, top + y, Math.max(1, Math.round(w * 0.6)), 1);
-      g.fillStyle = "#1a4430"; g.fillRect(12 + Math.round(w * 0.5), top + y, w - Math.round(w * 0.5), 1);
+      g.fillStyle = "#265a3c"; g.fillRect(19 - w, top + y, w * 2, 1);
+      g.fillStyle = "#34704a"; g.fillRect(19 - w, top + y, Math.max(1, Math.round(w * 0.6)), 1);
+      g.fillStyle = "#1a4430"; g.fillRect(19 + Math.round(w * 0.45), top + y, w - Math.round(w * 0.45), 1);
     }
   };
-  tier(1, 11, 6); tier(8, 12, 8.5); tier(16, 13, 11);
+  tier(1, 16, 8); tier(11, 18, 11); tier(23, 20, 14); tier(36, 20, 17);
   outline(c, g, "#0e2418");
   return c;
 }
@@ -298,13 +300,14 @@ function fence() {
   return c;
 }
 function lamp() {
-  const [c, g] = canvas(12, 30);
-  g.fillStyle = "#4a4a58"; g.fillRect(5, 9, 2, 19); g.fillRect(3, 27, 6, 2);
-  g.fillStyle = "#6a6a7a"; g.fillRect(5, 9, 1, 19);
-  g.fillStyle = "#4a4a58"; g.fillRect(2, 1, 8, 1); g.fillRect(3, 8, 6, 1);
-  g.fillStyle = "#ffe890"; g.fillRect(3, 2, 6, 6);
-  g.fillStyle = "#fff8d0"; g.fillRect(4, 3, 3, 3);
-  outline(c, g, "#22222c");
+  const [c, g] = canvas(14, 50);
+  g.fillStyle = "#3e3e4a"; g.fillRect(6, 11, 2, 36); g.fillRect(4, 46, 6, 2); g.fillRect(3, 48, 8, 1);
+  g.fillStyle = "#5c5c6c"; g.fillRect(6, 11, 1, 36);
+  g.fillStyle = "#3e3e4a"; g.fillRect(2, 1, 10, 1); g.fillRect(3, 10, 8, 1); g.fillRect(5, 0, 4, 1);
+  g.fillStyle = "#ffe890"; g.fillRect(3, 2, 8, 8);
+  g.fillStyle = "#fff8d0"; g.fillRect(5, 3, 4, 5);
+  g.fillStyle = "#3e3e4a"; g.fillRect(3, 2, 1, 8); g.fillRect(10, 2, 1, 8);
+  outline(c, g, "#16161e");
   return c;
 }
 function sign() {
@@ -369,22 +372,25 @@ function boxSprite(w, d, tall, draw, line) {
 }
 
 function house(v) {
-  const W = 64, D = 48, H = 22, R = 16;
+  const W = 64, D = 48, H = 34, R = 22;
   const [roof, roofD, roofL] = ROOFS[v % ROOFS.length];
   return boxSprite(W, D, H + R, (g, nx, ny) => {
     isoBox(g, nx, ny, W, D, H, fill("#000"),
       (g2, w, h) => {
         g2.fillStyle = "#d0c4a8"; g2.fillRect(0, 0, w, h);
-        g2.fillStyle = "#7a5430"; g2.fillRect(0, 0, 2, h); g2.fillRect(w - 2, 0, 2, h); g2.fillRect(0, 9, w, 2); g2.fillRect(20, 0, 2, 9);
-        g2.fillStyle = "#5a3c22"; g2.fillRect(34, h - 14, 11, 14);
-        g2.fillStyle = "#8a6034"; g2.fillRect(36, h - 12, 7, 12);
-        g2.fillStyle = "#e8c860"; g2.fillRect(41, h - 7, 1, 1);
-        for (const x of [7, 51]) { g2.fillStyle = "#5a3c22"; g2.fillRect(x, 12, 9, 8); g2.fillStyle = "#f0d890"; g2.fillRect(x + 1, 13, 7, 6); g2.fillStyle = "#5a3c22"; g2.fillRect(x + 4, 13, 1, 6); }
+        g2.fillStyle = "#7a5430"; g2.fillRect(0, 0, 2, h); g2.fillRect(w - 2, 0, 2, h); g2.fillRect(0, 10, w, 2); g2.fillRect(20, 0, 2, 10); g2.fillRect(46, 0, 2, 10);
+        g2.fillStyle = "#b8ac92"; g2.fillRect(2, h - 4, w - 4, 4);
+        g2.fillStyle = "#5a3c22"; g2.fillRect(26, h - 22, 14, 22);
+        g2.fillStyle = "#8a6034"; g2.fillRect(28, h - 20, 10, 20);
+        g2.fillStyle = "#6e4a28"; g2.fillRect(32, h - 20, 1, 20); g2.fillRect(28, h - 11, 10, 1);
+        g2.fillStyle = "#e8c860"; g2.fillRect(36, h - 10, 1, 2);
+        for (const x of [6, 46]) { g2.fillStyle = "#5a3c22"; g2.fillRect(x, 14, 12, 12); g2.fillStyle = "#f0d890"; g2.fillRect(x + 1, 15, 10, 10); g2.fillStyle = "#5a3c22"; g2.fillRect(x + 5, 15, 2, 10); g2.fillRect(x + 1, 19, 10, 1); }
       },
       (g2, w, h) => {
         g2.fillStyle = "#a89c82"; g2.fillRect(0, 0, w, h);
-        g2.fillStyle = "#5e4024"; g2.fillRect(0, 0, 2, h); g2.fillRect(w - 2, 0, 2, h); g2.fillRect(0, 9, w, 2);
-        g2.fillStyle = "#4a3018"; g2.fillRect(18, 12, 10, 8); g2.fillStyle = "#c8b070"; g2.fillRect(19, 13, 8, 6);
+        g2.fillStyle = "#5e4024"; g2.fillRect(0, 0, 2, h); g2.fillRect(w - 2, 0, 2, h); g2.fillRect(0, 10, w, 2); g2.fillRect(23, 0, 2, 10);
+        g2.fillStyle = "#948a72"; g2.fillRect(2, h - 4, w - 4, 4);
+        g2.fillStyle = "#4a3018"; g2.fillRect(17, 14, 14, 12); g2.fillStyle = "#c8b070"; g2.fillRect(18, 15, 12, 10); g2.fillStyle = "#4a3018"; g2.fillRect(23, 15, 2, 10);
       });
     // a hipped roof: two slopes face the camera, two fall away behind the ridge
     const pt = (x, y, z) => [nx + x - y, ny + (x + y) / 2 - z];
@@ -409,10 +415,10 @@ function house(v) {
 const BLD = [["#5a5e6a", "#444852", "#ff4a8a"], ["#6a5448", "#4e3c34", "#4ae0e0"], ["#4a5464", "#363e4c", "#ffd04a"], ["#584a68", "#40344e", "#7aff8a"]];
 /** A flat-roofed city block with lit windows and a neon sign. */
 function building(v) {
-  const W = 64, D = 48, H = 50;
+  const W = 64, D = 48, H = 78;
   const [wall, wallD, neon] = BLD[v % BLD.length];
   const windows = (g2, w, h, seed, lit) => {
-    for (let r = 0; r < 3; r++) for (let x = 5; x + 7 <= w - 3; x += 11) {
+    for (let r = 0; r < 5; r++) for (let x = 5; x + 7 <= w - 3; x += 11) {
       const on = hash(x, r, v + seed) > 0.45;
       g2.fillStyle = "#14161c"; g2.fillRect(x, 5 + r * 10, 8, 7);
       g2.fillStyle = on ? (hash(x, r, v + seed + 9) > 0.5 ? lit : "#9fe0ff") : "#262c38"; g2.fillRect(x + 1, 6 + r * 10, 6, 5);
@@ -424,17 +430,20 @@ function building(v) {
       (g2, w, h) => {
         g2.fillStyle = wall; g2.fillRect(0, 0, w, h);
         windows(g2, w, h, 0, "#ffd880");
-        g2.fillStyle = "#101116"; g2.fillRect(3, h - 16, w - 6, 5);
-        g2.fillStyle = neon; g2.fillRect(6, h - 15, 14, 3); g2.fillRect(24, h - 15, 5, 3); g2.fillRect(33, h - 15, 12, 3); g2.fillRect(49, h - 15, 8, 3);
-        g2.fillStyle = "#14161c"; g2.fillRect(24, h - 10, 16, 10);
-        g2.fillStyle = "#3c4250"; for (let y = h - 9; y < h; y += 3) g2.fillRect(25, y, 14, 2);
+        g2.fillStyle = wall; g2.fillRect(0, h - 26, w, 26);
+        g2.fillStyle = "#101116"; g2.fillRect(3, h - 27, w - 6, 6);
+        g2.fillStyle = neon; g2.fillRect(6, h - 26, 14, 4); g2.fillRect(24, h - 26, 5, 4); g2.fillRect(33, h - 26, 12, 4); g2.fillRect(49, h - 26, 8, 4);
+        g2.fillStyle = "#14161c"; g2.fillRect(22, h - 20, 20, 20);
+        g2.fillStyle = "#3c4250"; for (let y = h - 19; y < h; y += 3) g2.fillRect(23, y, 18, 2);
+        g2.fillStyle = "#1c2430"; g2.fillRect(4, h - 18, 14, 12); g2.fillRect(46, h - 18, 14, 12);
+        g2.fillStyle = "#4a6480"; g2.fillRect(5, h - 17, 12, 2); g2.fillRect(47, h - 17, 12, 2);
       },
-      (g2, w, h) => { g2.fillStyle = wallD; g2.fillRect(0, 0, w, h); windows(g2, w, h, 40, "#e8c070"); g2.fillStyle = "rgba(0,0,0,.25)"; g2.fillRect(0, h - 11, w, 11); });
+      (g2, w, h) => { g2.fillStyle = wallD; g2.fillRect(0, 0, w, h); windows(g2, w, h, 40, "#e8c070"); g2.fillStyle = wallD; g2.fillRect(0, h - 24, w, 24); g2.fillStyle = "rgba(0,0,0,.25)"; g2.fillRect(0, h - 20, w, 20); });
   }, "#08090c");
 }
 /** One tile of wall, raised: cave rock or city brick. */
 function cube(kind) {
-  const H = kind === "rock" ? 15 : 20;
+  const H = kind === "rock" ? 22 : 30;
   const c = kind === "rock" ? ["#3a3550", "#2c2842", "#201c32", "#463f60"] : ["#343742", "#282a34", "#1c1e26", "#40434e"];
   return boxSprite(16, 16, H, (g, nx, ny) => {
     isoBox(g, nx, ny, 16, 16, H,
@@ -456,17 +465,18 @@ function cube(kind) {
 const CARS = ["#8a3238", "#3a5a8a", "#c8c8cc", "#3a3a40", "#b89030"];
 function car(v) {
   const col = CARS[v % CARS.length], dark = shadeHex(col);
-  return boxSprite(26, 13, 12, (g, nx, ny) => {
+  return boxSprite(32, 15, 20, (g, nx, ny) => {
     g.fillStyle = "rgba(0,0,0,.35)";
-    g.beginPath(); g.ellipse(nx + 6, ny + 13, 20, 8, 0, 0, Math.PI * 2); g.fill();
-    isoBox(g, nx, ny - 2, 26, 13, 6, fill(col),
-      (g2, w, h) => { g2.fillStyle = dark; g2.fillRect(0, 0, w, h); g2.fillStyle = "#101116"; g2.fillRect(3, h - 2, 5, 2); g2.fillRect(18, h - 2, 5, 2); },
-      (g2, w, h) => { g2.fillStyle = shadeHex(dark); g2.fillRect(0, 0, w, h); g2.fillStyle = "#ffe8a0"; g2.fillRect(2, 1, 3, 2); g2.fillRect(w - 5, 1, 3, 2); });
-    isoBox(g, nx + 4, ny - 4, 13, 9, 5, fill(dark),
-      (g2, w, h) => { g2.fillStyle = "#1c2430"; g2.fillRect(0, 0, w, h); g2.fillStyle = "#4a6480"; g2.fillRect(1, 1, w - 2, 1); },
-      (g2, w, h) => { g2.fillStyle = "#141a24"; g2.fillRect(0, 0, w, h); });
+    g.beginPath(); g.ellipse(nx + 8, ny + 12, 25, 10, 0, 0, Math.PI * 2); g.fill();
+    isoBox(g, nx, ny - 3, 32, 15, 8, fill(col),
+      (g2, w, h) => { g2.fillStyle = dark; g2.fillRect(0, 0, w, h); g2.fillStyle = lt2(col); g2.fillRect(0, 0, w, 1); g2.fillStyle = "#101116"; g2.fillRect(3, h - 3, 7, 3); g2.fillRect(22, h - 3, 7, 3); g2.fillStyle = "#5a5c64"; g2.fillRect(5, h - 2, 3, 1); g2.fillRect(24, h - 2, 3, 1); },
+      (g2, w, h) => { g2.fillStyle = shadeHex(dark); g2.fillRect(0, 0, w, h); g2.fillStyle = "#ffe8a0"; g2.fillRect(2, 2, 3, 2); g2.fillRect(w - 5, 2, 3, 2); g2.fillStyle = "#14161c"; g2.fillRect(5, 5, w - 10, 2); });
+    isoBox(g, nx + 6, ny - 3 + 4 - 8 + 2, 17, 11, 7, fill(dark),
+      (g2, w, h) => { g2.fillStyle = "#1c2430"; g2.fillRect(0, 0, w, h); g2.fillStyle = "#587896"; g2.fillRect(1, 1, w - 2, 2); g2.fillStyle = dark; g2.fillRect(8, 0, 1, h); },
+      (g2, w, h) => { g2.fillStyle = "#141a24"; g2.fillRect(0, 0, w, h); g2.fillStyle = "#3a5068"; g2.fillRect(1, 1, w - 2, 1); });
   }, "#08090c");
 }
+const lt2 = (hex) => { const n = parseInt(hex.slice(1), 16); const f = (x) => Math.min(255, Math.round(x * 1.25)).toString(16).padStart(2, "0"); return `#${f((n >> 16) & 255)}${f((n >> 8) & 255)}${f(n & 255)}`; };
 function shadeHex(hex) {
   const n = parseInt(hex.slice(1), 16);
   const f = (x) => Math.round(x * 0.68).toString(16).padStart(2, "0");
@@ -514,146 +524,10 @@ export function buildScenery() {
 }
 
 // ───────────────────────────── characters ─────────────────────────────
-// Taller than the classic two-head chibi: a 8px head on a 12px body reads as an
-// adult adventurer rather than a mascot.
+// People are designed in their own module; see chars.js.
 
-const C_DOWN = [
-  ".....oooooo.....",
-  "....ohhhhhho....",
-  "...ohhhhhhhho...",
-  "...ohhsssshho...",
-  "...ohsessesho...",
-  "...osssssssso...",
-  "....osssssso....",
-  "...oooccccooo...",
-  "..occcxccxccco..",
-  "..occcccccccco..",
-  "..ocCccccccCco..",
-  "..ocCcxxxxcCco..",
-  "..osoCCCCCCoso..",
-  "...ooccccccoo...",
-  "....occoocco....",
-  "....occoocco....",
-  "....occoocco....",
-  "....obboobbo....",
-  "....obboobbo....",
-  ".....oo..oo.....",
-];
-const C_UP = [
-  ".....oooooo.....",
-  "....ohhhhhho....",
-  "...ohhhhhhhho...",
-  "...ohhhhhhhho...",
-  "...ohhhhhhhho...",
-  "...ohhHHHHhho...",
-  "....ohHHHHho....",
-  "...oooccccooo...",
-  "..occcccccccco..",
-  "..occcccccccco..",
-  "..ocCccccccCco..",
-  "..ocCcxxxxcCco..",
-  "..osoCCCCCCoso..",
-  "...ooccccccoo...",
-  "....occoocco....",
-  "....occoocco....",
-  "....occoocco....",
-  "....obboobbo....",
-  "....obboobbo....",
-  ".....oo..oo.....",
-];
-/** Three-quarter views: the head turns toward the facing side, the body stays square-on. */
-const C_FR = C_DOWN.map((r, i) => ["...ohhhhsssso...", "...ohhhsesseo...", "...ohhsssssso...", "....ohssssso...."][i - 3] || r);
-const C_BK = C_UP.map((r, i) => ["...ohhhhhhhso...", "...ohhhhhhhso..."][i - 3] || r);
-const LEG = 14;
-export const CHAR_H = 26;
-
-export const HAIR = [["#5a3c2a", "#3e2a1c"], ["#26262e", "#15151b"], ["#c8a850", "#9a7c30"], ["#a8442c", "#7c2e1c"], ["#8a5a7a", "#623c58"], ["#d0d0d8", "#9c9cac"]];
-export const SKIN = [["#ecc8a4", "#c89c78"], ["#d8a47a", "#b07c54"], ["#a8724c", "#7e5034"]];
-const CLOTH = { warrior: ["#8a3030", "#5e1e22"], rogue: ["#3a3f4c", "#272a35"], ranger: ["#5a6a48", "#3d4a32"], mage: ["#4a3f8a", "#2f2860"] };
-const TRIM = { warrior: "#c8a040", rogue: "#a83242", ranger: "#c8b070", mage: "#7ad0e0" };
-const HOOD = { rogue: ["#2c2f3a", "#1c1e27"], ranger: ["#3d4a3a", "#2a3428"], mage: ["#3a2f6a", "#261f4a"] };
-const HOOD_ROWS = { rogue: 99, ranger: 3, mage: 3 };
-const ARMOR = [null, null, ["#7a5530", "#573a1e"], ["#7c8698", "#565e70"], ["#33373f", "#1f2228"], ["#3ab0c0", "#1f7888"]];
-
-function charFrame(base, o, legs, bob) {
-  const [c, g] = canvas(16, CHAR_H);
-  let rows = base.slice();
-  const front = base === C_FR, back = base === C_BK;
-  // headgear is a recolour of the hair rows; a rogue also wears a mask
-  const hoodRows = HOOD_ROWS[o.hat] || 0;
-  rows = rows.map((r, i) => {
-    if (i < hoodRows && i < 7) r = r.replace(/h/g, "q").replace(/H/g, "Q");
-    if (o.hat === "rogue" && (i === 5 || i === 6)) r = r.replace(/s/g, "Q");
-    return r;
-  });
-  const hair = HAIR[o.hair] || HAIR[0], skin = SKIN[o.skin] || SKIN[0], hood = HOOD[o.hat] || hair;
-  const pal = {
-    o: o.line || "#17131a", h: hair[0], H: hair[1], q: hood[0], Q: hood[1], s: skin[0], S: skin[1], e: o.eye || "#17131a",
-    c: o.cloth[0], C: o.cloth[1], x: o.trim, b: o.boot || "#3a2a20",
-  };
-  const oy = CHAR_H - 20 + (bob ? 1 : 0);
-  paint(g, rows.slice(0, LEG), pal, 0, oy);
-  const legRows = rows.slice(LEG);
-  for (let y = 0; y < legRows.length; y++) for (let x = 0; x < 16; x++) {
-    const col = pal[legRows[y][x]];
-    if (!col) continue;
-    const lift = (legs === "l" && x < 8) || (legs === "r" && x >= 8) ? 1 : 0;
-    px(g, x, CHAR_H - 20 + LEG + y - lift, col);
-  }
-  if (o.style === 1 && !hoodRows) {
-    g.fillStyle = hair[0];
-    g.fillRect(3, oy + 5, 1, 5); g.fillRect(front ? 4 : 12, oy + 5, 1, 5);
-    if (back) g.fillRect(4, oy + 6, 8, 3);
-  }
-  if (o.hat === "warrior") {
-    // steel pauldrons
-    g.fillStyle = "#aab2c0"; g.fillRect(2, oy + 7, 3, 3); g.fillRect(11, oy + 7, 3, 3);
-    g.fillStyle = "#6e7686"; g.fillRect(2, oy + 9, 3, 1); g.fillRect(11, oy + 9, 3, 1);
-  }
-  if (o.hat === "ranger") { g.fillStyle = "#1c241a"; if (front) g.fillRect(6, oy + 3, 8, 1); }
-  if (o.hat === "mage" && front) { g.fillStyle = "#7ad0e0"; g.fillRect(9, oy + 1, 2, 1); }
-  if (o.beard) {
-    g.fillStyle = "#d0d0d8";
-    if (front) { g.fillRect(6, oy + 5, 6, 2); g.fillRect(7, oy + 7, 4, 1); }
-  }
-  outline(c, g, pal.o);
-  return c;
-}
-
-const charCache = new Map();
-/**
- * A full character sheet: `[dir][frame]`, frame 0 idle · 1/2 walking. The four
- * directions are the grid's axes, which on screen are the four diagonals:
- * 0 down-left · 1 up-left · 2 down-right · 3 up-right.
- */
-export function charSprite(o) {
-  const key = JSON.stringify(o);
-  let s = charCache.get(key);
-  if (s) return s;
-  const set = (base, legs) => [charFrame(base, o, null, false), charFrame(base, o, legs[0], true), charFrame(base, o, legs[1], true)];
-  const fr = set(C_FR, ["l", "r"]);
-  const bk = set(C_BK, ["l", "r"]);
-  s = [fr.map(flip), bk.map(flip), fr, bk];
-  charCache.set(key, s);
-  return s;
-}
-
-/** Sprite options for a player from the server's public record. */
-export function playerLook(cls, look, armorTier) {
-  return {
-    hair: look[0] | 0, skin: look[1] | 0, style: look[2] | 0, hat: cls,
-    cloth: ARMOR[armorTier] || CLOTH[cls] || CLOTH.warrior, trim: TRIM[cls] || TRIM.warrior,
-  };
-}
-export function npcLook(look, role) {
-  const col = look[3] || "#888";
-  return { hair: look[0] | 0, skin: look[1] | 0, style: look[2] | 0, cloth: [col, shade(col)], trim: "#c8b070", beard: role === "elder" };
-}
-function shade(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  const f = (v) => Math.round(v * 0.68).toString(16).padStart(2, "0");
-  return `#${f((n >> 16) & 255)}${f((n >> 8) & 255)}${f(n & 255)}`;
-}
+export { charSprite, playerLook, npcLook, HAIR, SKIN, STYLES, CHAR_W, CHAR_H, CHAR_TOP, FOOT_X, FOOT_Y } from "./chars.js";
+import { charSprite, mobLook } from "./chars.js";
 
 // ───────────────────────────── monsters ─────────────────────────────
 
@@ -804,19 +678,19 @@ export function buildMobs() {
   add("slime", mobFrames(M_SLIME, PAL.slime));
   add("bslime", mobFrames(M_SLIME, PAL.bslime));
   add("shroom", mobFrames(M_SHROOM, PAL.shroom));
-  add("boar", mobFrames(M_BOAR, PAL.boar));
+  add("boar", mobFrames(M_BOAR, PAL.boar, 2));
   add("bat", [sheet(M_BAT_A, PAL.bat), sheet(M_BAT_B, PAL.bat)], 8);
   add("drone", [sheet(M_DRONE_A, PAL.drone), sheet(M_DRONE_B, PAL.drone)], 10);
-  const thug = charSprite({ hair: 1, skin: 1, style: 0, hat: "rogue", cloth: ["#5e2a2e", "#3e1a1e"], trim: "#c8c8cc", boot: "#18181c" });
-  add("thug", [thug[0][1], thug[0][2]]);
-  const skel = charSprite({ hair: 5, skin: 0, style: 0, cloth: ["#3e3a4c", "#2a2736"], trim: "#5ac8d8", line: "#0e0c16", eye: "#5ac8d8", boot: "#9c9cac" });
-  const bone = skel[0].map((f) => { const [c, g] = canvas(f.width, f.height); g.drawImage(f, 0, 0); recolor(c, g, SKIN[0][0], "#d0d0d8"); recolor(c, g, SKIN[0][1], "#9c9cac"); return c; });
-  add("skel", [bone[1], bone[2]]);
-  add("golem", mobFrames(M_GOLEM, PAL.golem));
-  add("robot", mobFrames(M_GOLEM, PAL.robot));
-  add("boss", mobFrames(M_GOLEM, PAL.boss, 2, (g) => {
+  // humanoids come from the character designer: two walking frames, facing down-left
+  const thug = charSprite(mobLook("thug"));
+  add("thug", [thug[0][2], thug[0][4]]);
+  const skel = charSprite(mobLook("skel"));
+  add("skel", [skel[0][2], skel[0][4]]);
+  add("golem", mobFrames(M_GOLEM, PAL.golem, 2));
+  add("robot", mobFrames(M_GOLEM, PAL.robot, 2));
+  add("boss", mobFrames(M_GOLEM, PAL.boss, 3, (g) => {
     const sh = (x, h) => { for (let y = 0; y < h; y++) { g.fillStyle = y < 2 ? "#ffc0e8" : "#e050b8"; g.fillRect(x - Math.min(2, Math.floor(y / 2)), 8 - h + y, 1 + Math.min(2, Math.floor(y / 2)) * 2, 1); } };
-    sh(10, 6); sh(16, 8); sh(22, 6);
+    sh(14, 6); sh(24, 8); sh(34, 6);
   }));
   return out;
 }
