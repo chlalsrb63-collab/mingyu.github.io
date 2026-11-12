@@ -946,6 +946,14 @@ function lighting(t, list) {
   wg.imageSmoothingEnabled = true;
   wg.drawImage(lightCv, 0, 0, vw, vh);
   wg.imageSmoothingEnabled = false;
+  // a warm key light from the upper left and a cool fill from the lower right:
+  // the scene reads as a lit diorama instead of a flat map
+  const sun = wg.createLinearGradient(0, 0, vw, vh);
+  sun.addColorStop(0, "rgba(255,206,140,.30)"); sun.addColorStop(0.5, "rgba(255,206,140,0)"); sun.addColorStop(1, "rgba(52,62,140,.28)");
+  wg.globalCompositeOperation = "soft-light";
+  wg.fillStyle = sun;
+  wg.fillRect(0, 0, vw, vh);
+  wg.globalCompositeOperation = "source-over";
   // a soft vignette pulls the eye to the middle of the screen
   const v = wg.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.45, vw / 2, vh / 2, Math.max(vw, vh) * 0.75);
   v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(10,8,30,.24)");
@@ -958,20 +966,21 @@ let fontK = 1;
 function label(str, ix, iy, col, size = 11, bg = false) {
   const S = scale * dpr;
   const x = Math.round((ix - cam.x) * S), y = Math.round((iy - cam.y) * S);
-  const px = size * fontK;
-  tg.font = `${px}px Galmuri${size >= 14 ? 14 : 11}, "Galmuri11", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
+  const px = Math.round(size * fontK * 1.04);
+  tg.font = `${size >= 14 ? 700 : 600} ${px}px Pretendard, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
   if (bg) {
-    const w = tg.measureText(str).width + 10 * fontK;
-    tg.fillStyle = "rgba(236,232,220,.95)";
-    tg.fillRect(x - w / 2, y - px - 3 * fontK, w, px + 6 * fontK);
-    tg.fillStyle = "#08090c";
-    tg.fillRect(x - w / 2, y + 3 * fontK, w, fontK);
-    tg.fillRect(x - 2 * fontK, y + 4 * fontK, 4 * fontK, 2 * fontK);
+    const w = tg.measureText(str).width + 12 * fontK, h = px + 8 * fontK;
+    tg.fillStyle = "rgba(250,247,240,.96)";
+    tg.beginPath(); tg.roundRect(x - w / 2, y - px - 3 * fontK, w, h, 5 * fontK); tg.fill();
+    tg.beginPath(); tg.moveTo(x - 3 * fontK, y + 5 * fontK - 1); tg.lineTo(x, y + 9 * fontK); tg.lineTo(x + 3 * fontK, y + 5 * fontK - 1); tg.fill();
+    tg.fillStyle = "#1c1a22";
     tg.fillText(str, x, y);
     return;
   }
-  tg.fillStyle = "#08090c";
-  for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [1, 1]]) tg.fillText(str, x + dx * fontK, y + dy * fontK);
+  tg.lineJoin = "round";
+  tg.lineWidth = 3 * fontK;
+  tg.strokeStyle = "rgba(16,14,22,.88)";
+  tg.strokeText(str, x, y);
   tg.fillStyle = col;
   tg.fillText(str, x, y);
 }

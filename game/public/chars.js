@@ -2,8 +2,8 @@
  * Character design.
  *
  * People are drawn as smooth, soft-shaded illustrations rather than pixels: a
- * big-headed, two-and-a-half-heads-tall figure in the tradition of Korean
- * online RPG sprites — large eyes, full hair, a costume that reads at a glance.
+ * stylised figure about three heads tall — compact enough to read at a glance,
+ * but with a grown-up face, a calm palette and a costume drawn in real detail.
  * Each figure is painted with curves at four times its on-screen size, so it
  * stays clean at any zoom.
  *
@@ -20,14 +20,14 @@ export const CHAR_H = 48;
 export const FOOT_X = 20;
 export const FOOT_Y = 46;
 /** Height of the figure above its feet — where a name tag goes. */
-export const CHAR_TOP = 40;
+export const CHAR_TOP = 38;
 /** Supersampling: sheets are K times larger than they are drawn. */
 export const K = 4;
 
-export const HAIR = ["#8a5a3c", "#3a3a4c", "#f0c860", "#e0704a", "#b48ad8", "#eef0f6"];
-export const SKIN = ["#ffe0c8", "#f2c09a", "#c48a66"];
+export const HAIR = ["#7c5842", "#35353f", "#d6b66c", "#c26a4e", "#9684b4", "#e2e4ec"];
+export const SKIN = ["#f8dcc6", "#e8ba98", "#bc8866"];
 export const STYLES = ["짧은 머리", "긴 머리", "묶은 머리"];
-const LINE = "#3b2a3a";
+const LINE = "#2c2430";
 const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30"];
 const TAU = Math.PI * 2;
 
@@ -39,6 +39,13 @@ function mix(hex, f) {
   return `#${ch((n >> 16) & 255)}${ch((n >> 8) & 255)}${ch(n & 255)}`;
 }
 const dk = (hex, f = 0.74) => mix(hex, f);
+/** Pull a colour toward grey: costumes read as dyed cloth and worn metal, not candy. */
+function soft(hex, k = 0.2) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, gg = (n >> 8) & 255, b = n & 255;
+  const l = 0.3 * r + 0.59 * gg + 0.11 * b;
+  const ch = (v) => Math.round(v + (l - v) * k).toString(16).padStart(2, "0");
+  return `#${ch(r)}${ch(gg)}${ch(b)}`;
+}
 const lt = (hex, f = 1.3) => mix(hex, f);
 
 /** Outfit colours by armour tier: [main, secondary, trim, glow]. */
@@ -172,7 +179,15 @@ function staff(g, o, x0, y0, x1, y1, lit) {
 
 // ───────────────────────────── the head ─────────────────────────────
 
+/** The head is drawn a touch smaller than its construction lines, pivoting on the neck. */
 function head(g, o, back, by) {
+  const k = 0.86;
+  g.save();
+  g.translate(20.2, 25.4 + by); g.scale(k, k); g.translate(-20.2, -(25.4 + by));
+  headShape(g, o, back, by);
+  g.restore();
+}
+function headShape(g, o, back, by) {
   const hair = o.hairCol, skin = o.skinCol;
   const hx = 20.2, hy = 17.4 + by;
   const hg = shade(g, hair, hx - 9, hx + 9);
@@ -202,15 +217,20 @@ function head(g, o, back, by) {
     // face
     shape(g, shade(g, skin, 10, 34), ell(12.9, hy + 1.6, 1.3, 1.7));
     shape(g, shade(g, skin, 8, 36), ell(hx + 0.2, hy + 0.6, 7.3, 6.7));
-    g.fillStyle = "rgba(255,120,130,.32)";
-    g.beginPath(); g.ellipse(16.6, hy + 3.9, 1.7, 0.9, 0, 0, TAU); g.ellipse(25.2, hy + 3.9, 1.5, 0.9, 0, 0, TAU); g.fill();
-    for (const [x, rx] of [[17.8, 1.35], [23.9, 1.2]]) {
-      shape(g, "#2e2230", ell(x, hy + 1.3, rx, 2.15), null);
-      shape(g, o.eye, ell(x, hy + 2, rx * 0.8, 1.3), null);
-      g.fillStyle = "#ffffff"; g.beginPath(); g.arc(x - rx * 0.3, hy + 0.3, 0.55, 0, TAU); g.arc(x + rx * 0.35, hy + 2.5, 0.3, 0, TAU); g.fill();
-      g.beginPath(); g.moveTo(x - rx - 0.3, hy - 1.5); g.quadraticCurveTo(x, hy - 2.4, x + rx + 0.2, hy - 1.6); g.strokeStyle = dk(hair, 0.6); g.lineWidth = 0.5; g.stroke();
+    g.fillStyle = "rgba(240,120,120,.13)";
+    g.beginPath(); g.ellipse(16.6, hy + 3.9, 1.7, 0.8, 0, 0, TAU); g.ellipse(25.2, hy + 3.9, 1.5, 0.8, 0, 0, TAU); g.fill();
+    // almond eyes under a firm lash line — alert rather than wide-eyed
+    for (const [x, rx] of [[17.8, 1.3], [23.9, 1.15]]) {
+      shape(g, "#f6f2ee", ell(x, hy + 1.7, rx, 1.5), null);
+      shape(g, o.eye, ell(x + 0.1, hy + 1.9, rx * 0.72, 1.25), null);
+      shape(g, "#241c28", ell(x + 0.1, hy + 2, rx * 0.36, 0.7), null);
+      g.fillStyle = "#ffffff"; g.beginPath(); g.arc(x - rx * 0.25, hy + 1.2, 0.36, 0, TAU); g.fill();
+      g.beginPath(); g.moveTo(x - rx - 0.35, hy + 1.3); g.quadraticCurveTo(x, hy - 0.5, x + rx + 0.45, hy + 1.1);
+      g.strokeStyle = "#241c28"; g.lineWidth = 0.75; g.stroke();
+      g.beginPath(); g.moveTo(x - rx - 0.2, hy - 1.2); g.lineTo(x + rx + 0.3, hy - 1.7 + (x > 20 ? 0.4 : 0));
+      g.strokeStyle = dk(hair, 0.62); g.lineWidth = 0.5; g.stroke();
     }
-    g.beginPath(); g.moveTo(20.2, hy + 4.9); g.quadraticCurveTo(21.1, hy + 5.6, 22, hy + 4.9); g.strokeStyle = "#a85a5a"; g.lineWidth = 0.5; g.stroke();
+    g.beginPath(); g.moveTo(20.3, hy + 5); g.lineTo(21.9, hy + 5); g.strokeStyle = "#9a5a58"; g.lineWidth = 0.45; g.stroke();
     // fringe: a sweep of soft points over the brow
     shape(g, hg, (p) => {
       p.moveTo(12.3, hy + 1.6);
@@ -411,7 +431,8 @@ function base(look) {
 export function playerLook(cls, look, gear = {}) {
   if (!OUTFIT[cls]) cls = "warrior";
   const at = Math.max(1, Math.min(5, gear.at | 0 || 1));
-  const [main, sub, trim, glw] = OUTFIT[cls][at - 1];
+  const [m0, s0, trim, glw] = OUTFIT[cls][at - 1];
+  const main = soft(m0, 0.22), sub = soft(s0, 0.12);
   const o = { ...base(look), cls, at, main, sub, trim, glow: glw || null, wt: Math.max(1, Math.min(5, gear.wt | 0 || 1)), wq: gear.wq | 0, we: gear.we | 0, acc: gear.acc | 0 };
   o.eye = ["#4a78c8", "#3f9a6a", "#b8683a", "#8a5ac8"][(o.hair + o.skin) % 4];
   if (cls === "warrior") Object.assign(o, { cape: at >= 4 ? dk(trim, 0.8) : dk(main, 0.86), accent: "#e04a4a", pants: "#5a5670", boot: sub, glove: sub });
