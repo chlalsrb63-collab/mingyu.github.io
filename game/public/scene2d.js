@@ -264,11 +264,23 @@ function drawPerson(s, e, t, dt, x, y) {
   if (e.moving) s.walk += dt * 9;
   const atk = (t - e.atkT) / 1000;
   if (e.aim && atk < 0.5) s.face = e.aim[0] < e.x ? -1 : 1;
-  const frame = e.dead ? 0 : e.moving ? 1 + (Math.floor(s.walk) % 2) : 0;
-  const img = (back ? s.sheet.back : s.sheet.front)[frame];
+  // walking steps foot to foot; standing still breathes, and blinks now and then
+  if (s.ph === undefined) s.ph = Math.random() * 4000;
+  const F = SP.FRAME;
+  const frame = e.dead ? F.stand
+    : e.moving ? [F.stepA, F.stretch, F.stepB, F.stretch][Math.floor(s.walk) % 4]
+    : (t + s.ph) % 3600 < 140 ? F.blink
+    : Math.floor((t + s.ph) / 560) % 2 ? F.breathe : F.stand;
+  // facing the camera shows the full face; walking sideways turns it three-quarters
+  const img = (back ? s.sheet.back : e.dir === 0 ? s.sheet.front : s.sheet.side)[frame];
   const sg = s.face;
   g.fillStyle = "rgba(20,24,50,.26)";
   g.beginPath(); g.ellipse(x, y, 5, 2, 0, 0, 7); g.fill();
+  // a strike leans the whole body into the blow for a moment
+  if (e.aim && atk >= 0 && atk < 0.22 && !e.dead) {
+    const a = Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x), n = Math.sin((atk / 0.22) * Math.PI) * 2;
+    x += Math.cos(a) * n; y += Math.sin(a) * n;
+  }
   const body = () => {
     g.save();
     g.translate(Math.round(x), Math.round(y));
@@ -300,7 +312,7 @@ function drawPerson(s, e, t, dt, x, y) {
   const resting = k >= 1;
   // with no arms, the weapon simply floats at the body's side
   const hx = x + sg * (hold.style === "sweep" && resting ? 3 : 7) + Math.cos(s.ang) * push;
-  const hy = y - (hold.style === "sweep" && resting ? 5 : 3) + Math.sin(s.ang) * push + (frame === 1 ? -1 : 0);
+  const hy = y - (hold.style === "sweep" && resting ? 5 : 3) + Math.sin(s.ang) * push + (frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0);
   const weapon = () => {
     g.save();
     g.translate(Math.round(hx), Math.round(hy));
@@ -436,7 +448,8 @@ export function render(focusX, focusY, dt, t, snap) {
       g.globalAlpha = 1;
     } else if (o.n) {
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 5, 2, 0, 0, 7); g.fill();
-      g.drawImage(o.n.sheet.front[0], Math.round(o.n.x - SP.FOOT[0]), Math.round(o.n.y - SP.FOOT[1] + Math.sin(t / 600 + o.n.x) * 0.6));
+      const nt = t + o.n.x * 37, nf = nt % 3900 < 140 ? SP.FRAME.blink : Math.floor(nt / 620) % 2 ? SP.FRAME.breathe : SP.FRAME.stand;
+      g.drawImage(o.n.sheet.front[nf], Math.round(o.n.x - SP.FOOT[0]), Math.round(o.n.y - SP.FOOT[1]));
     } else if (o.d) {
       const d = o.d, x = d.x * P, y = d.y * P, ic = G.icons.cv[d.it];
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(x, y, 8, 3, 0, 0, 7); g.fill();

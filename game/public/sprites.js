@@ -100,93 +100,122 @@ export const PARTS = [
 const BLUSH = ["#f6a8a0", "#f07882", "#f8ba7c", null];
 const PINK = "#f6a8a0", DARK = "#2b2233";
 
+/** Blend two colours: `t` of the way from `a` to `b`. */
+function blend(a, b, t) {
+  const p = parseInt(a.slice(1), 16), q = parseInt(b.slice(1), 16);
+  const ch = (s) => Math.round(((p >> s) & 255) * (1 - t) + ((q >> s) & 255) * t).toString(16).padStart(2, "0");
+  return `#${ch(16)}${ch(8)}${ch(0)}`;
+}
+/** Shadows lean toward violet instead of grey, so white fur stays clean. */
+const shade = (c, t = 0.16) => blend(c, "#6a5a96", t);
+
+/** Frames of a person sheet. */
+export const FRAME = { stand: 0, breathe: 1, stepA: 2, stretch: 3, stepB: 4, blink: 5 };
+
 /**
- * One frame of an adventurer. `o`: ear, eye, nose, fur (a colour), blush (a
- * colour or null), pat, cloth (a colour or null), and for monsters mask / bone.
- * `f`: 0 standing, 1 the top of a hop, 2 the landing.
+ * One frame of an adventurer, inside a 16×16 box standing on the foot line:
+ * four rows of ear, a six-row head twelve pixels wide, and a four-row body on
+ * two one-pixel feet. `view` is "front", "side" (a three-quarter turn to the
+ * right) or "back"; `f` is one of FRAME.
+ *
+ * `o`: ear, eye, nose, fur (a colour), blush (a colour or null), pat, cloth (a
+ * colour or null), and for monsters mask / bone.
  */
-function person(o, back, f) {
-  // The whole animal fits a 16×16 box (outline included) standing on the sheet's
-  // foot line: three rows of ear, a seven-row head twelve pixels wide, and a
-  // four-row body. At this size every pixel is a decision, so there are few.
+function person(o, view, f) {
   const [c, g] = sheet(S);
   const b = brush(g);
-  const fur = o.bone ? "#eef0f6" : o.fur, sh = dk(fur, 0.82), pat = o.pat | 0;
-  const H = f === 1 ? -1 : f === 2 ? 1 : 0;                 // the head bobs with the hop
-  const by = 24 + H, bh = f === 2 ? 3 : 4;                  // the body squashes on landing
+  const side = view === "side", back = view === "back";
+  const fur = o.bone ? "#eef0f6" : o.fur, soft = shade(fur), deep = shade(fur, 0.32), pat = o.pat | 0;
+  const H = f === FRAME.breathe ? 1 : f === FRAME.stretch ? -1 : 0;   // the head sinks on a breath, lifts mid-stride
   const r = (x, y, w, h, col) => b.r(x, y + H, w, h, col);
   /** The same block on both sides of the face. */
   const both = (x, y, w, h, col, colR = col) => { r(x, y, w, h, col); r(32 - x - w, y, w, h, colR); };
+  /** A block behind the body: on the right from the front, trailing on the left in a turn. */
+  const behind = (x, y, w, h, col) => b.r(side ? 32 - x - w : x, y, w, h, col);
 
   // ── tail
-  const tc = pat === 3 ? sh : fur;
+  const tc = pat === 3 ? deep : fur;
   if (!o.bone) [
-    () => { b.r(19, by + 2, 2, 1, tc); b.r(20, by, 1, 2, tc); },
-    () => b.r(19, by + 1, 2, 2, tc),
-    () => b.r(19, by + 2, 1, 1, tc),
-    () => { b.r(19, by, 3, 3, tc); },
-    () => { b.r(19, by + 1, 1, 1, tc); b.r(20, by, 1, 1, tc); },
-    () => { b.r(19, by + bh - 1, 3, 1, tc); b.r(21, by + bh - 2, 1, 1, tc); },
+    () => { behind(19, 26, 2, 1, tc); behind(20, 24, 1, 2, tc); },
+    () => behind(19, 25, 2, 2, tc),
+    () => behind(19, 26, 1, 1, tc),
+    () => { behind(19, 24, 3, 3, tc); behind(21, 24, 1, 1, pat === 3 ? fur : soft); },
+    () => { behind(19, 25, 1, 1, tc); behind(20, 24, 1, 1, tc); },
+    () => { behind(19, 26, 3, 1, tc); behind(21, 25, 1, 1, tc); },
   ][o.ear | 0]();
 
-  // ── body: a tiny lump, optionally in a plain tunic
-  const cloth = o.bone ? "#4a4868" : o.cloth;
-  b.r(13, by, 6, bh, fur);
-  if (cloth) b.r(13, by, 6, bh - 1, cloth);
-  else b.r(13, by, 6, 1, dk(fur, 0.92));
+  // ── body: a tiny lump on two feet; a step lifts one of them
+  const bt = 24 + H, cloth = o.bone ? "#4a4868" : o.cloth;
+  b.r(13, bt, 6, 27 - bt, fur);
+  if (f !== FRAME.stepB) b.r(13, 27, 2, 1, fur);
+  if (f !== FRAME.stepA) b.r(17, 27, 2, 1, fur);
+  if (cloth) {
+    b.r(13, bt, 6, 26 - bt, cloth); b.r(13, 25, 6, 1, shade(cloth, 0.3));
+    if (!back && !o.bone) b.r(side ? 16 : 15, bt, 2, 1, lt(cloth, 1.45));
+  } else b.r(13, bt, 6, 1, soft);
 
-  // ── ears: three rows above the head
-  const eL = pat === 3 ? sh : fur, eR = pat === 3 || pat === 1 ? sh : fur;
+  // ── ears: four rows above the head, pink inside
+  const eL = pat === 3 ? deep : fur, eR = pat === 3 || pat === 1 ? deep : fur;
+  const pink = (x, y, w, h) => { if (!back) both(x, y, w, h, PINK); };
   if (!o.bone) [
-    () => { both(10, 16, 3, 1, eL, eR); both(10, 15, 2, 1, eL, eR); both(10, 14, 1, 1, eL, eR); },
-    () => { both(11, 14, 2, 3, eL, eR); },
-    () => { both(10, 15, 3, 2, eL, eR); },
-    () => { both(10, 16, 4, 1, eL, eR); both(10, 15, 3, 1, eL, eR); both(10, 14, 2, 1, eL, eR); },
+    () => { both(10, 17, 4, 1, eL, eR); both(10, 16, 3, 1, eL, eR); both(10, 15, 2, 1, eL, eR); both(10, 14, 1, 1, eL, eR); pink(11, 16, 1, 2); },
+    () => { both(11, 14, 3, 4, eL, eR); pink(12, 15, 1, 3); },
+    () => { both(9, 16, 3, 2, eL, eR); both(10, 15, 2, 1, eL, eR); pink(10, 16, 1, 1); },
+    () => { both(9, 17, 5, 1, eL, eR); both(9, 16, 4, 1, eL, eR); both(9, 15, 3, 1, eL, eR); both(9, 14, 2, 1, eL, eR); pink(10, 16, 1, 2); },
     () => {},                                               // floppy ears hang over the head: drawn after it
-    () => { both(9, 14, 3, 3, eL, eR); if (!back) both(10, 15, 1, 1, PINK); },
+    () => { both(9, 15, 4, 2, eL, eR); both(10, 14, 2, 1, eL, eR); both(10, 17, 3, 1, eL, eR); pink(10, 15, 2, 2); },
   ][o.ear | 0]();
 
   // ── head
-  r(11, 17, 10, 7, fur); r(10, 18, 12, 5, fur);
-  if (o.ear === 4 && !o.bone) { const d = pat === 3 ? dk(fur, 0.68) : sh; both(9, 17, 2, 5, d, pat === 1 ? dk(fur, 0.68) : d); }
-  if (pat === 2) { r(15, 17, 2, 2, sh); both(12, 17, 1, 1, sh); }
+  r(11, 18, 10, 6, fur); r(10, 19, 12, 4, fur);
+  if (o.ear === 4 && !o.bone) { const d = pat === 3 ? shade(fur, 0.46) : deep; both(10, 17, 2, 1, d, pat === 1 ? shade(fur, 0.46) : d); both(9, 18, 2, 5, d, pat === 1 ? shade(fur, 0.46) : d); }
+  if (pat === 2) { r(15, 18, 2, 2, deep); both(12, 18, 1, 1, deep); }
 
   if (back) return finish(c, g, INK, 1);
 
+  // the face turns with the body: in a three-quarter view everything slides toward the far cheek
+  const lx = side ? 14 : 12, rx1 = side ? 20 : 19, rx2 = side ? 19 : 18, nx = side ? 17 : 15;
+  const eyes = (w, y, h, col) => { r(lx, y, w, h, col); r(w === 1 ? rx1 : rx2, y, w, h, col); };
+
   if (o.bone) {
-    both(12, 19, 2, 2, DARK); both(12, 20, 1, 1, o.glow || "#6ae8f4");
-    r(13, 22, 1, 1, DARK); r(15, 22, 1, 1, DARK); r(17, 22, 1, 1, DARK); r(18, 22, 1, 1, DARK);
+    eyes(2, 20, 2, DARK); r(lx, 21, 1, 1, o.glow || "#6ae8f4"); r(rx2, 21, 1, 1, o.glow || "#6ae8f4");
+    r(nx - 1, 23, 1, 1, DARK); r(nx + 1, 23, 1, 1, DARK); r(nx + 3, 23, 1, 1, DARK);
     return finish(c, g, INK, 1);
   }
 
   // ── face: eyes, a nose, a blush — nothing else
-  if (pat === 1) r(17, 18, 4, 4, sh);
-  if (o.mask) { r(10, 19, 12, 2, "#3c3040"); both(12, 20, 1, 1, "#ffffff"); }
+  if (pat === 1) r(side ? 18 : 17, 19, 4, 4, deep);
+  if (o.mask) { r(10, 20, 12, 2, "#3c3040"); eyes(1, 21, 1, "#ffffff"); }
+  else if (f === FRAME.blink && o.eye !== 3) eyes(2, 21, 1, DARK);
   else [
-    () => both(12, 19, 1, 2, DARK),
-    () => both(12, 18, 1, 3, DARK),
-    () => both(12, 19, 2, 2, DARK),
-    () => { both(11, 20, 1, 1, DARK); both(12, 19, 1, 1, DARK); both(13, 20, 1, 1, DARK); },
-    () => both(12, 20, 2, 1, DARK),
-    () => { both(12, 19, 2, 1, DARK); both(12, 20, 2, 1, "#4a90e0"); },
+    () => eyes(1, 20, 2, DARK),
+    () => eyes(1, 19, 3, DARK),
+    () => { eyes(2, 20, 2, DARK); r(lx, 20, 1, 1, "#ffffff"); r(rx2, 20, 1, 1, "#ffffff"); },
+    () => { for (const x of [lx - 1, rx2]) { r(x, 21, 1, 1, DARK); r(x + 1, 20, 1, 1, DARK); r(x + 2, 21, 1, 1, DARK); } },
+    () => eyes(2, 21, 1, DARK),
+    () => { eyes(2, 20, 1, DARK); eyes(2, 21, 1, "#4a90e0"); },
   ][o.eye | 0]();
   [
-    () => r(15, 21, 2, 1, "#4a3640"),
-    () => r(15, 21, 2, 1, "#f08a9a"),
-    () => { r(15, 21, 2, 1, "#4a3640"); both(14, 22, 1, 1, "#4a3640"); },
-    () => r(15, 21, 2, 2, "#4a3640"),
+    () => r(nx, 22, 2, 1, "#4a3640"),
+    () => r(nx, 22, 2, 1, "#f08a9a"),
+    () => { r(nx, 22, 2, 1, "#4a3640"); r(nx - 1, 23, 1, 1, "#4a3640"); r(nx + 2, 23, 1, 1, "#4a3640"); },
+    () => r(nx, 22, 2, 2, "#4a3640"),
     () => {},
   ][o.nose | 0]();
-  if (o.blush) both(10, 21, 2, 1, o.blush);
+  if (o.blush) { if (side) { r(12, 22, 2, 1, o.blush); r(21, 22, 1, 1, o.blush); } else both(10, 22, 2, 1, o.blush); }
   return finish(c, g, INK, 1);
 }
 
 const cache = new Map();
-/** `{ front: [3 frames], back: [3 frames] }` for a look. Frames face right. */
+/** `{ front, side, back }`, each a list of frames indexed by FRAME. Side frames face right. */
 export function personSheet(o) {
   const key = JSON.stringify(o);
   let s = cache.get(key);
-  if (!s) { s = { front: [0, 1, 2].map((f) => person(o, false, f)), back: [0, 1, 2].map((f) => person(o, true, f)) }; cache.set(key, s); }
+  if (!s) {
+    const frames = (view) => [0, 1, 2, 3, 4, 5].map((f) => person(o, view, f));
+    s = { front: frames("front"), side: frames("side"), back: frames("back") };
+    cache.set(key, s);
+  }
   return s;
 }
 /** `look` is the list of choices, one per entry of PARTS. The class shows only in the weapon. */
