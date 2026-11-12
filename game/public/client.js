@@ -14,6 +14,7 @@ import * as Art from "./art.js";
 import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
 import * as Mini from "./minigames.js";
+import { skillIconUrl } from "./skillicons.js";
 
 const T = Art.TILE;
 const $ = (s) => document.querySelector(s);
@@ -999,6 +1000,9 @@ function refreshUi() {
   G.defs.skills[s.cls].forEach((sk, i) => {
     const b = $(`#b-s${i}`);
     b.querySelector(".nm").textContent = sk.name;
+    let ic = b.querySelector("img.ic");
+    if (!ic) { ic = el("img", "ic"); ic.alt = ""; b.prepend(ic); }
+    if (ic.dataset.id !== sk.id) { ic.dataset.id = sk.id; ic.src = skillIconUrl(sk.id); }
     b.classList.toggle("locked", s.lvl < sk.lv);
     b.title = `${sk.name} (MP ${sk.mp}) — ${sk.desc}`;
   });
@@ -1110,7 +1114,8 @@ function refreshUi() {
     sk.textContent = "";
     for (const d of G.defs.skills[s.cls]) {
       const p = el("p", s.lvl < d.lv ? "locked" : "");
-      p.append(el("b", "", `${d.name} `), `Lv.${d.lv} · MP ${d.mp} · ${d.cd / 1000}초 — ${d.desc}`);
+      const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(d.id);
+      p.append(ic, el("b", "", `${d.name} `), `Lv.${d.lv} · MP ${d.mp} · ${d.cd / 1000}초 — ${d.desc}`);
       sk.append(p);
     }
   }

@@ -495,3 +495,13 @@ h1 small { font-family: var(--font); font-weight: 600; font-size: .2em; letter-s
 .mg-tray .piece.sel { border-color: var(--gold); background: rgba(226, 196, 134, .2); }
 .mg-tray .piece i { width: 14px; height: 14px; border-radius: 3px; }
 .mg .btns { justify-content: center; margin-top: 8px; }
+
+/* ───────────── skill icons: two greys, no colour ───────────── */
+.act.sk { background: radial-gradient(circle at 35% 30%, #3a3d49, #17181e); border-color: rgba(230, 224, 208, .35); }
+.act.sk .nm { display: none; }
+.act.sk img.ic { width: 28px; height: 28px; image-rendering: pixelated; display: block; margin: -6px auto 0; pointer-events: none; }
+.act.sk.locked img.ic { opacity: .35; }
+#char-skills p { display: flex; align-items: flex-start; gap: 8px; }
+#char-skills p > b { white-space: nowrap; }
+#char-skills img.ic { width: 24px; height: 24px; flex: none; image-rendering: pixelated; background: #17181e; border: 1px solid rgba(230, 224, 208, .25); border-radius: 4px; padding: 2px; }
+#char-skills p.locked img.ic { opacity: .4; }
