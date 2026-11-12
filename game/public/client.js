@@ -182,8 +182,8 @@ function onSnap(s) {
 
   if (s.who) {
     G.who.clear();
-    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, acc] of s.who) {
-      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, acc }, party });
+    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, , wk] of s.who) {
+      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk }, party });
     }
     if (isOpen("party")) renderParty();
   }
@@ -193,7 +193,8 @@ function onSnap(s) {
 
   if (s.self) {
     G.self = s.self;
-    for (let i = 0; i < 3; i++) G.cdEnd[i] = t + s.self.cds[i];
+    for (let i = 0; i < 4; i++) G.cdEnd[i] = t + s.self.cds[i];
+    G.streak = { n: s.self.streak[0], end: t + s.self.streak[1] };
     G.buffEnd = s.self.buffs.map((ms) => t + ms);
     refreshUi();
   }
@@ -226,8 +227,9 @@ function entityPos(id) {
   return G.players.get(id) || G.mobs.get(id) || null;
 }
 
-const MOB_COL = { slime: "#5a9a4a", bslime: "#4a7aa8", shroom: "#8e3434", boar: "#6a4a34", bat: "#4a3862", drone: "#aab4c4", thug: "#5e2a2e", robot: "#7a808c", skel: "#d0d0d8", golem: "#5ac8d8", boss: "#e050b8" };
-const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * (m.el ? G.defs.eliteHp : 1));
+const MOB_COL = { acorn: "#b07a40", potcrab: "#c8643c", puff: "#f4f0d8", capfrog: "#c84848", stump: "#7a5a3a", lantern: "#ffd060", yarn: "#d86a8a", eyecam: "#aab4c4", signbot: "#e0b040", vend: "#4a8ad0", tvhead: "#8ae0c0", candle: "#f4e8c8", geode: "#8a6ad8", prism: "#9ae8f4", boss: "#e050b8" };
+const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * G.defs.eliteHp[m.el | 0]);
+const RANK_NAME = ["", "정예 ", "우두머리 "];
 
 const heightOf = (e) => e.h3 || 1.3;
 
@@ -272,8 +274,19 @@ function onEvent(e, t) {
       break;
     }
     case "d": S3.fx.beam(e[2], e[3] + 8, e[4], e[5] + 8, "#8a78c8", 0.6); S3.fx.burst(e[2], e[3] + 8, 0.6, "#4a4468", 10, 1); break;
-    case "t": S3.fx.tele(e[1], e[2], e[3], e[4]); Sound.play("warn"); break;
-    case "b": S3.fx.ring(e[1], e[2], e[3], "#ff6ad0", 350, true); S3.fx.burst(e[1], e[2], 0.4, "#ff6ad0", 34, 3); S3.shake(6); Sound.play("boom"); break;
+    case "t": if (e[5]) { S3.fx.ring(e[1], e[2], e[3], "#ffe08a", e[4]); break; } S3.fx.tele(e[1], e[2], e[3], e[4]); Sound.play("warn"); break;
+    case "b": {
+      // a blast on the ground: a monster's (pink, it hurts) or a player's skill landing
+      const col = [null, "#ffb04a", "#ff8a3a", "#cfe4ff"][e[4] | 0];
+      if (col) { S3.fx.ring(e[1], e[2], e[3], col, 300, true); S3.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); S3.shake(2); Sound.play("boom"); }
+      else { S3.fx.ring(e[1], e[2], e[3], "#ff6ad0", 350, true); S3.fx.burst(e[1], e[2], 0.4, "#ff6ad0", 34, 3); S3.shake(6); Sound.play("boom"); }
+      break;
+    }
+    case "z":
+      // something flying from one point to another: a legendary's lightning, or a thrown knife
+      if (e[5]) S3.fx.proj(e[1], e[2] + 8, 0.6, e[3], e[4] + 8, 0.5, "#b8f060", 0.05, 30);
+      else { S3.fx.beam(e[1], e[2] + 8, e[3], e[4] + 8, "#fff48a", 0.45); S3.fx.burst(e[3], e[4] + 8, 0.5, "#fff48a", 8, 1.6); Sound.play("magic"); }
+      break;
     case "l": {
       const p = entityPos(e[1]);
       if (p) { S3.fx.pillar(p.x, p.y); if (e[1] !== G.you) floatText("LEVEL UP", p.x, p.y, heightOf(p) + 0.5, "#ffd84a", true); }
@@ -304,7 +317,7 @@ function onGain([kind, a, b, q]) {
     const p = addChat(`획득: ${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${b > 1 ? ` ×${b}` : ""}`, "loot");
     if (q) p.style.color = Art.RARITY_COL[q];
     Sound.play(q >= 2 ? "ok" : "item");
-    if (q === 3) banner("전설 획득!", true);
+    if (q >= 3) banner(q === 4 ? "세트 획득!" : "전설 획득!", true);
   } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y, h + 0.9, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a}이(가) 되었습니다!`, "sys"); }
 }
 
@@ -324,6 +337,10 @@ function attackFx(kind, src, tx, ty, dir) {
     case 1: f.proj(src.x, src.y, 0.75, tx, ty, 0.5, "#fff0c0", 0.04, 42); f.burst(src.x + (tx - src.x) * 0.15, src.y + (ty - src.y) * 0.15, 0.75, "#ffd84a", 4, 0.8); Sound.play("shoot"); break;
     case 2: f.proj(src.x, src.y, 1.1, tx, ty, 0.5, "#b08aff", 0.09, 15); Sound.play("magic"); break;
     case 3: f.slash(src.x, src.y, ang, "#dcdcec", 0.45); Sound.play("swing"); break;
+    case 4: f.beam(src.x, src.y, src.x + Math.cos(ang) * 46, src.y + Math.sin(ang) * 46, "#eef4ff", 0.3); Sound.play("swing"); break;
+    case 5: f.proj(src.x, src.y, 0.9, tx, ty, 0.5, "#c8a0ff", 0.07, 20, () => { f.ring(tx, ty, 26, "#c8a0ff", 220, true); }); Sound.play("magic"); break;
+    case 23: f.beam(src.x, src.y, tx, ty, "#e0b070", 1.1); f.burst(tx, ty, 0.4, "#e0b070", 20, 2.4); S3.shake(5); Sound.play("boom"); break;
+    case 24: f.sparkle(src.x, src.y, 0.8, "#ffe9a0", 12); Sound.play("magic"); break;
     case 10: f.slash(src.x, src.y, ang, "#ffd84a", 1.05); S3.shake(2); Sound.play("crit"); break;
     case 11: f.ring(src.x, src.y, 48, "#ffffff", 260); f.ring(src.x, src.y, 34, "#ffd84a", 240, false, 60); Sound.play("swing"); break;
     case 12: f.ring(src.x, src.y, 60, "#ff7a5a", 500); f.sparkle(src.x, src.y, 0.9, "#ff7a5a", 16); Sound.play("buff"); break;
@@ -355,7 +372,7 @@ addEventListener("keydown", (e) => {
   if (e.repeat) return;
   keys.add(k);
   switch (k) {
-    case "1": case "2": case "3": castSkill(Number(k) - 1); break;
+    case "1": case "2": case "3": case "4": castSkill(Number(k) - 1); break;
     case "q": case "ㅂ": usePotion("hp"); break;
     case "e": case "ㄷ": usePotion("mp"); break;
     case "f": case "ㄹ": interact(); break;
@@ -461,7 +478,7 @@ function press(btn, down, up) {
   btn.addEventListener("pointerup", u); btn.addEventListener("pointerleave", u); btn.addEventListener("pointercancel", u);
 }
 press($("#b-atk"), () => { held.atk = true; }, () => { held.atk = false; });
-for (let i = 0; i < 3; i++) press($(`#b-s${i}`), () => castSkill(i));
+for (let i = 0; i < 4; i++) press($(`#b-s${i}`), () => castSkill(i));
 press($("#b-hp"), () => usePotion("hp"));
 press($("#b-mp"), () => usePotion("mp"));
 press($("#b-auto"), () => toggleAuto());
@@ -524,8 +541,7 @@ function usePotion(kind) {
 }
 function attack() {
   const t = now();
-  const cd = G.defs.classes[G.self.cls].cd;
-  if (t - G.lastAtk < cd) return;
+  if (t - G.lastAtk < G.self.acd) return;
   G.lastAtk = t; G.me.atkT = t;
   act({ t: "atk" });
 }
@@ -543,7 +559,7 @@ function interact() {
   if (!n || G.me.dead) return;
   Sound.play("ui");
   if (n.role === "shop") { openWin("shop"); openWin("inv"); }
-  else if (n.role === "smith") openWin("smith");
+  else if (n.role === "smith") { openWin("smith"); openWin("inv"); }
   else if (n.role === "elder") openWin("quest");
   else if (n.role === "train") openWin("train");
   else { $("#talk-name").textContent = n.name; $("#talk-text").textContent = n.say || "…"; openWin("talk"); }
@@ -565,7 +581,7 @@ function update(dt, t) {
     let best = null, bd = 1e9;
     for (const m of G.mobs.values()) { const d = dist(me.x, me.y, m.x, m.y); if (d < bd) { bd = d; best = m; } }
     if (best) {
-      const range = G.defs.classes[s.cls].range * 0.8;
+      const range = s.range * 0.8;
       if (bd > range) {
         const ux = (best.x - me.x) / bd, uy = (best.y - me.y) / bd;
         if (autoSt.side > 0) { mx = -uy * autoSt.sign; my = ux * autoSt.sign; autoSt.side -= dt; }
@@ -573,7 +589,7 @@ function update(dt, t) {
       } else {
         wantAtk = true;
         if (t - autoSt.lastSkill > 500) {
-          for (let i = 0; i < 3; i++) {
+          for (let i = 0; i < 4; i++) {
             const sk = G.defs.skills[s.cls][i];
             if (s.lvl >= sk.lv && t >= G.cdEnd[i] && me.mp >= sk.mp + 4) { if (castSkill(i)) { autoSt.lastSkill = t; break; } }
           }
@@ -707,8 +723,8 @@ function renderText(t) {
     const d = G.defs.mobs[mob.k], max = mobMax(mob);
     if (!(d.boss || mob.el || mob.hp < max)) continue;
     const [x, y] = at(mob.x, mob.y, (mob.h3 || 1) + 0.28);
-    label(`Lv.${d.lv} ${mob.el ? "정예 " : ""}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el ? "#ffbe3c" : "#ece0e0");
-    if (mob.hp < max) bar(x, y + 4, d.boss ? 90 : 42, mob.hp / max, mob.el ? "#ffbe3c" : "#d8404c");
+    label(`Lv.${d.lv} ${RANK_NAME[mob.el | 0]}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#ece0e0");
+    if (mob.hp < max) bar(x, y + 4, d.boss ? 90 : mob.el === 2 ? 70 : 42, mob.hp / max, mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#d8404c");
   }
   for (const d of G.drops.values()) {
     if (!d.q) continue;
@@ -841,44 +857,66 @@ function itemSlot(entry, onClick, selected) {
   if (onClick) d.addEventListener("click", onClick);
   return d;
 }
-const GEAR = ["weapon", "armor", "acc"];
-const SLOT_NAME = { weapon: "무기", armor: "방어구", acc: "장신구" };
+const GEAR = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet"];
+const TYPE_NAME = { weapon: "무기", helm: "투구", armor: "갑옷", gloves: "장갑", boots: "신발", ring: "반지", amulet: "목걸이" };
+const SLOT_NAME = { weapon: "무기", helm: "투구", armor: "갑옷", gloves: "장갑", boots: "신발", ring1: "반지 1", ring2: "반지 2", amulet: "목걸이" };
 const isGear = (id) => GEAR.includes(G.defs.items[id].type);
+const slotsFor = (type) => (type === "ring" ? ["ring1", "ring2"] : [type]);
 function runewordOf(g) {
   if (!g.sk || !g.ru || g.ru.length !== g.sk) return null;
   return G.defs.runewords.find((rw) => rw.seq.length === g.sk && rw.seq.every((r, i) => g.ru[i] === r)) || null;
 }
-/** "+3 맹렬한 강철 양손검" — the first affix lends the item its prefix. */
+/** "공격력 +12", "치명타 +3%" — one stat in words. */
+function statText(k, v) {
+  const label = G.defs.affix[k][0];
+  return `${label.replace(" %", "")} +${v}${label.includes("%") ? "%" : ""}`;
+}
+/** "+3 뇌명의 강철 양손검" — a legendary's power, a set's name, or the first affix lends the prefix. */
 function itemName(entry) {
   const it = G.defs.items[entry.id];
-  const prefix = entry.af && entry.af.length ? G.defs.affix[entry.af[0][0]][1] + " " : "";
-  return (entry.enh > 0 ? `+${entry.enh} ` : "") + prefix + it.name;
+  const word = entry.lg ? G.defs.legend[entry.lg][0] : entry.set ? G.defs.sets[entry.set].name : entry.af && entry.af.length ? G.defs.affix[entry.af[0][0]][1] : "";
+  return (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name;
 }
 function itemDesc(entry) {
   const it = G.defs.items[entry.id];
   const e = entry.enh || 0;
-  if (it.type === "weapon") return `공격력 +${Math.round(it.atk * (1 + 0.1 * e))} · ${G.defs.classes[it.cls].name} 전용 · Lv.${it.req}`;
-  if (it.type === "armor") return `방어력 +${Math.round(it.def * (1 + 0.1 * e))} · HP +${it.hp + e * 10} · Lv.${it.req}`;
-  if (it.type === "acc") return `장신구 · Lv.${it.req}`;
-  if (it.type === "rune") { const r = G.defs.runes[it.rune]; return `${G.defs.affix[r[1]][0]} +${r[2]} — 장착한 장비의 홈에 끼웁니다.`; }
+  if (it.base) {
+    const base = Object.keys(it.base).map((k) => statText(k, k === "spd" || k === "crit" ? it.base[k] : Math.round(it.base[k] * (1 + 0.1 * e))));
+    if (it.cls) base.push(`${G.defs.wkinds[it.wk].name} · ${G.defs.classes[it.cls].name} 전용`);
+    base.push(`Lv.${it.req}`);
+    return base.join(" · ");
+  }
+  if (it.type === "rune") { const r = G.defs.runes[it.rune]; return `${statText(r[1], r[2])} — 장착한 장비의 홈에 끼웁니다.`; }
   return it.desc || "";
 }
-/** The full tooltip: base line, rolled affixes, sockets, runeword. */
+/** How many pieces of a set are being worn right now. */
+function setWorn(id) {
+  let n = 0;
+  if (G.self) for (const k of G.defs.slots) if (G.self.eq[k] && G.self.eq[k].set === id) n++;
+  return n;
+}
+/** The full tooltip: base line, rolled affixes, legendary power, set bonuses, sockets, runeword. */
 function describe(entry, host) {
   const it = G.defs.items[entry.id];
   const nm = el("div", "nm", itemName(entry));
   nm.style.color = Art.RARITY_COL[entry.q || 0];
   host.append(nm);
-  if (isGear(entry.id)) host.append(el("div", "rar", `${G.defs.rarity[entry.q || 0]} ${SLOT_NAME[it.type]}`));
+  if (isGear(entry.id)) host.append(el("div", "rar", `${G.defs.rarity[entry.q || 0]} ${TYPE_NAME[it.type]}`));
   host.append(el("div", "ds", itemDesc(entry)));
-  for (const [k, v] of entry.af || []) host.append(el("div", "af", `${G.defs.affix[k][0].replace(" %", "")} +${v}${G.defs.affix[k][0].includes("%") ? "%" : ""}`));
+  for (const [k, v] of entry.af || []) host.append(el("div", "af", statText(k, v)));
+  if (entry.lg) host.append(el("div", "lg", `◆ ${G.defs.legend[entry.lg][1]}`));
+  if (entry.set) {
+    const set = G.defs.sets[entry.set], worn = setWorn(entry.set);
+    host.append(el("div", "st", `${set.name} 세트 (${worn}개 착용)`));
+    for (const [n, list] of set.bonus) host.append(el("div", worn >= n ? "st on" : "st off", `${n}세트: ${list.map(([k, v]) => statText(k, v)).join(", ")}`));
+  }
   if (entry.sk) {
     const names = [];
     for (let i = 0; i < entry.sk; i++) { const r = entry.ru && entry.ru[i]; names.push(r ? G.defs.runes[r][0] : "빈 홈"); }
     host.append(el("div", "so", `홈 ${entry.sk}개 [ ${names.join(" · ")} ]`));
-    for (const r of entry.ru || []) if (r) host.append(el("div", "af", `${G.defs.affix[G.defs.runes[r][1]][0].replace(" %", "")} +${G.defs.runes[r][2]}${G.defs.affix[G.defs.runes[r][1]][0].includes("%") ? "%" : ""}`));
+    for (const r of entry.ru || []) if (r) host.append(el("div", "af", statText(G.defs.runes[r][1], G.defs.runes[r][2])));
     const rw = runewordOf(entry);
-    if (rw) host.append(el("div", "rw", `룬어 「${rw.name}」 ${rw.add.map(([k, v]) => `${G.defs.affix[k][0].replace(" %", "")} +${v}`).join(", ")}`));
+    if (rw) host.append(el("div", "rw", `룬어 「${rw.name}」 ${rw.add.map(([k, v]) => statText(k, v)).join(", ")}`));
   }
 }
 function sellPrice(entry) {
@@ -922,6 +960,10 @@ function refreshUi() {
   } else if (quest) {
     qt.append(el("b", "", "[의뢰]"), " 관리자 엘더윈에게 새 의뢰가 있습니다");
   }
+  if (s.bq) {
+    const done = s.bq.n >= s.bq.need;
+    qt.append(el("br"), el("b", "", "[반복] "), el("span", done ? "done" : "", done ? "완료! 관리자에게 보고하세요" : `${G.defs.mobs[s.bq.k].name} ${s.bq.n} / ${s.bq.need}`));
+  }
 
   if (isOpen("inv")) {
     $("#inv-gold").textContent = s.gold.toLocaleString();
@@ -941,10 +983,16 @@ function refreshUi() {
       const btns = el("div", "btns");
       const add = (label, fn, off) => { const b = el("button", "", label); b.disabled = !!off; b.addEventListener("click", fn); btns.append(b); };
       if (d.type === "pot") add("사용", () => act({ t: "use", id: entry.id }));
-      if (isGear(entry.id)) add("장착", () => { act({ t: "eq", s: G.sel }); G.sel = -1; }, (d.cls && d.cls !== s.cls) || s.lvl < d.req);
+      if (isGear(entry.id)) {
+        const off = (d.cls && d.cls !== s.cls) || s.lvl < d.req;
+        if (d.type === "ring" && s.eq.ring1 && s.eq.ring2) {
+          for (const k of ["ring1", "ring2"]) add(`${SLOT_NAME[k]}에 장착`, () => { act({ t: "eq", s: G.sel, k }); G.sel = -1; }, off);
+        } else add("장착", () => { act({ t: "eq", s: G.sel }); G.sel = -1; }, off);
+        if (isOpen("smith")) add("분해", () => { act({ t: "salv", s: G.sel }); G.sel = -1; });
+      }
       if (d.type === "rune") {
         let any = false;
-        for (const k of GEAR) {
+        for (const k of G.defs.slots) {
           const g = s.eq[k];
           for (let i = 0; g && i < g.sk; i++) {
             any = true;
@@ -960,12 +1008,20 @@ function refreshUi() {
         if (entry.n > 1) add(`전부 판매 (${each * entry.n}G)`, () => act({ t: "sell", s: G.sel, n: entry.n }));
       }
       det.append(btns);
+      // what it would replace, for comparison
+      if (isGear(entry.id)) {
+        for (const k of slotsFor(d.type)) {
+          if (!s.eq[k]) continue;
+          det.append(el("div", "cmp", `착용 중 — ${SLOT_NAME[k]}`));
+          describe(s.eq[k], det);
+        }
+      }
     }
   }
 
   if (isOpen("char")) {
     $("#char-title").textContent = `${s.name} · Lv.${s.lvl} ${G.defs.classes[s.cls].name}`;
-    for (const k of GEAR) {
+    for (const k of G.defs.slots) {
       const host = $(`#eq-${k}`);
       const slot = itemSlot(s.eq[k], s.eq[k] ? () => act({ t: "uneq", k }) : null);
       slot.id = `eq-${k}`;
@@ -975,11 +1031,21 @@ function refreshUi() {
     }
     const st = $("#char-stats");
     st.textContent = "";
-    for (const [k, v] of [["공격력", s.atk], ["방어력", s.def], ["최대 HP", s.mhp], ["최대 MP", s.mmp], ["치명타", `${s.crit}%`], ["치명타 피해", `${s.critd}%`], ["흡혈", `${s.ls}%`], ["경험치 보너스", `${s.xpb}%`], ["아이템 발견", `${s.mf}%`], ["처치 수", s.kills],
+    for (const [k, v] of [["공격력", s.atk], ["방어력", s.def], ["최대 HP", s.mhp], ["최대 MP", s.mmp], ["치명타", `${s.crit}%`], ["치명타 피해", `${s.critd}%`], ["흡혈", `${s.ls}%`], ["경험치 보너스", `${s.xpb}%`], ["아이템 발견", `${s.mf}%`], ["골드 획득", `+${s.goldb}%`], ["공격 간격", `${(s.acd / 1000).toFixed(2)}초`], ["처치 수", s.kills],
       ["수련 · 힘", s.tr.str], ["수련 · 체력", s.tr.vit], ["수련 · 지력", s.tr.int], ["수련 · 수호", s.tr.grd]]) {
       const sp = el("span", "", k);
       sp.append(el("b", "", v));
       st.append(sp);
+    }
+    const pw = $("#char-sets");
+    pw.textContent = "";
+    for (const k of s.lg) pw.append(el("div", "lg", `◆ ${G.defs.legend[k][0].replace(/의$/, "")} — ${G.defs.legend[k][1]}`));
+    for (const id of Object.keys(G.defs.sets)) {
+      const worn = setWorn(id);
+      if (!worn) continue;
+      const set = G.defs.sets[id];
+      pw.append(el("div", "st", `${set.name} 세트 ${worn}개`));
+      for (const [n, list] of set.bonus) pw.append(el("div", worn >= n ? "st on" : "st off", `${n}세트: ${list.map(([a, v]) => statText(a, v)).join(", ")}`));
     }
     const sk = $("#char-skills");
     sk.textContent = "";
@@ -996,6 +1062,7 @@ function refreshUi() {
     for (const key of G.defs.shop) {
       const id = key[0] === "W" && key.length === 2 ? `w_${s.cls}_${key[1]}` : key;
       const d = it[id];
+      if (d.cls && d.cls !== s.cls) continue;
       const row = el("div", "it");
       const img = el("img"); img.src = G.icons.url[id]; img.alt = "";
       const tx = el("div", "tx", d.name);
@@ -1012,10 +1079,10 @@ function refreshUi() {
     const list = $("#smith-list");
     list.textContent = "";
     const stones = countItem("stone");
-    for (const k of ["weapon", "armor"]) {
+    for (const k of G.defs.slots) {
       const g = s.eq[k];
+      if (!g || !s.enh[k]) continue;
       const row = el("div", "it");
-      if (!g) { row.append(el("div", "tx", k === "weapon" ? "무기를 장착하지 않았습니다" : "방어구를 장착하지 않았습니다")); list.append(row); continue; }
       const d = it[g.id];
       const img = el("img"); img.src = G.icons.url[g.id]; img.alt = "";
       const tx = el("div", "tx", itemName(g));
@@ -1072,6 +1139,51 @@ function refreshUi() {
       if (!atElder) { b.disabled = true; btns.append(b, el("span", "ds", " 관리자 엘더윈 근처에서만 가능합니다")); }
       else btns.append(b);
       body.append(btns);
+    }
+
+    // a bounty that starts over each time it is paid out
+    const mobs = G.defs.mobs;
+    body.append(el("div", "q-title sub", "반복 의뢰"));
+    body.append(el("p", "ds", `같은 몬스터 ${G.defs.bounty}마리를 잡을 때마다 보상을 받고, 곧바로 다시 시작됩니다. (완료 ${s.bn}회 — 3회마다 강화석, 10회마다 룬)`));
+    const bl = el("div", "list");
+    body.append(bl);
+    if (s.bq) {
+      const d = mobs[s.bq.k], done = s.bq.n >= s.bq.need;
+      const row = el("div", "it");
+      const tx = el("div", "tx", `Lv.${d.lv} ${d.name}  ${Math.min(s.bq.n, s.bq.need)} / ${s.bq.need}`);
+      tx.append(el("small", "", `보상: EXP ${Math.round(d.xp * s.bq.need * 0.5).toLocaleString()} + 골드`));
+      const b = el("button", "", "보고");
+      b.disabled = !done || !atElder;
+      b.addEventListener("click", () => { act({ t: "bq", a: "done" }); Sound.play("ok"); });
+      row.append(tx, b);
+      bl.append(row);
+    }
+    const picks = Object.keys(mobs).filter((k) => !mobs[k].boss && mobs[k].lv <= s.lvl + 4 && (!s.bq || s.bq.k !== k)).sort((a, b) => mobs[b].lv - mobs[a].lv).slice(0, 4);
+    for (const k of picks) {
+      const d = mobs[k];
+      const row = el("div", "it");
+      const tx = el("div", "tx", `Lv.${d.lv} ${d.name}`);
+      tx.append(el("small", "", `EXP ${Math.round(d.xp * G.defs.bounty * 0.5).toLocaleString()} + 골드`));
+      const b = el("button", "", s.bq ? "바꾸기" : "받기");
+      b.disabled = !atElder;
+      b.addEventListener("click", () => { act({ t: "bq", a: "take", k }); Sound.play("ok"); });
+      row.append(tx, b);
+      bl.append(row);
+    }
+
+    // mastery: every kind of monster keeps its own count
+    body.append(el("div", "q-title sub", "토벌 숙련"));
+    body.append(el("p", "ds", "같은 몬스터를 많이 잡을수록 그 몬스터에게 주는 피해(단계당 +3%)와 얻는 경험치(+2%)가 늘어납니다."));
+    const steps = G.defs.mastery;
+    const known = Object.keys(mobs).filter((k) => s.mk[k]).sort((a, b) => mobs[a].lv - mobs[b].lv);
+    if (!known.length) body.append(el("p", "ds", "아직 기록이 없습니다."));
+    for (const k of known) {
+      const n = s.mk[k];
+      let r = 0;
+      while (r < steps.length && n >= steps[r]) r++;
+      const row = el("div", "mk");
+      row.append(el("span", "", mobs[k].name), el("b", "", "★".repeat(r) + "☆".repeat(steps.length - r)), el("small", "", r < steps.length ? `${n.toLocaleString()} / ${steps[r].toLocaleString()}` : `${n.toLocaleString()} · 최고 단계`));
+      body.append(row);
     }
   }
 }
@@ -1154,6 +1266,20 @@ function hudTick(t) {
     const left = G.cdEnd[i] - t;
     $(`#b-s${i} .cd`).style.height = left > 0 ? `${clamp(left / sk.cd, 0, 1) * 100}%` : "0";
   });
+  // the kill streak: counts up while kills keep coming, drains between them
+  const sb = $("#streak"), k = G.streak;
+  const live = k && k.n >= 2 && t < k.end;
+  if (sb.hidden === live) sb.hidden = !live;
+  if (live) {
+    const want = `${k.n}`;
+    if (sb.dataset.v !== want) {
+      sb.dataset.v = want;
+      $("#streak-n").textContent = `연속 처치 ${k.n}`;
+      $("#streak-b").textContent = `EXP +${Math.min(G.defs.streak[1], k.n - 1) * 2}%`;
+      sb.classList.remove("pop"); void sb.offsetWidth; sb.classList.add("pop");
+    }
+    $("#streak-bar").style.width = `${clamp((k.end - t) / G.defs.streak[0], 0, 1) * 100}%`;
+  }
   const buffs = $("#st-buffs");
   const names = ["공격력↑", "이동속도↑"];
   const want = G.buffEnd.map((e, i) => (e > t ? `${names[i]} ${Math.ceil((e - t) / 1000)}` : "")).filter(Boolean).join("|");
@@ -1169,8 +1295,8 @@ function hudTick(t) {
 const CLASS_DESC = {
   warrior: "전사 · 양손검 — 파티의 방패. 대검의 궤적이 주변 적까지 베고, 전투함성으로 파티 전체의 공격력을 올립니다.",
   rogue: "도적 · 단검 — 가장 빠른 공격과 높은 치명타. 그림자 도약으로 적의 등 뒤를 잡고 연막으로 빠져나옵니다.",
-  ranger: "레인저 · 총 — 다른 세계의 화기를 다루는 원거리 딜러. 관통탄과 수류탄으로 무리를 정리합니다.",
-  mage: "마도사 · 지팡이 — 광역 마법과 치유. 체력은 약하지만 파티의 생존을 책임집니다.",
+  lancer: "창술사 · 창 — 긴 창으로 일직선의 적을 한꺼번에 꿰뚫습니다. 적을 밀쳐 내고 뛰어들어 전열을 휘젓습니다.",
+  mage: "마도사 · 마법지팡이 / 마법책 — 지팡이는 멀리서 강한 한 발, 마법책은 빠르게 번지는 폭발. 광역 마법과 치유로 파티를 책임집니다.",
 };
 const draft = { cls: "warrior", look: S3.PARTS.map(() => 0) };
 for (const b of $$("#c-cls button")) {

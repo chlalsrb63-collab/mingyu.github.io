@@ -44,6 +44,7 @@
       </div>
 
       <div id="quest-track"></div>
+      <div id="streak" hidden><b id="streak-n"></b><span id="streak-b"></span><i><i id="streak-bar"></i></i></div>
       <div id="party-hud"></div>
       <div id="invite" class="win" hidden><span id="invite-text"></span><button id="invite-yes">수락</button><button id="invite-no">거절</button></div>
 
@@ -65,6 +66,7 @@
         <button class="act sk" id="b-s0"><span class="nm"></span><i class="cd"></i><kbd>1</kbd></button>
         <button class="act sk" id="b-s1"><span class="nm"></span><i class="cd"></i><kbd>2</kbd></button>
         <button class="act sk" id="b-s2"><span class="nm"></span><i class="cd"></i><kbd>3</kbd></button>
+        <button class="act sk" id="b-s3"><span class="nm"></span><i class="cd"></i><kbd>4</kbd></button>
         <button class="act atk" id="b-atk">공격<kbd>Space</kbd></button>
       </div>
 
@@ -84,9 +86,10 @@
         <div class="charbox">
           <div>
             <div id="char-title"></div>
-            <div class="eq"><div class="slot" id="eq-weapon"></div><div class="slot" id="eq-armor"></div><div class="slot" id="eq-acc"></div></div>
+            <div class="eq"><div class="slot" id="eq-weapon"></div><div class="slot" id="eq-helm"></div><div class="slot" id="eq-armor"></div><div class="slot" id="eq-gloves"></div><div class="slot" id="eq-boots"></div><div class="slot" id="eq-ring1"></div><div class="slot" id="eq-ring2"></div><div class="slot" id="eq-amulet"></div></div>
           </div>
         </div>
+        <div id="char-sets"></div>
         <div id="char-stats" class="stats"></div>
         <div id="char-skills"></div>
       </section>
@@ -101,7 +104,7 @@
         <header>대장장이 볼칸<button class="x">×</button></header>
         <p class="say">장비를 두드려 주지. 강화석이랑 골드만 넉넉히 가져오라고!</p>
         <div id="smith-list" class="list"></div>
-        <p class="hint">+5 이상에서 실패하면 강화 단계가 1 내려갑니다. 장비가 부서지지는 않습니다.</p>
+        <p class="hint">+5 이상에서 실패하면 강화 단계가 1 내려갑니다. 장비가 부서지지는 않습니다. 쓰지 않는 장비는 가방에서 골라 <b>분해</b>하면 강화석이 됩니다 (희귀 2개, 전설·세트 5개).</p>
       </section>
 
       <section class="win window" id="w-quest" hidden>
@@ -138,7 +141,9 @@
           <p><b>이동</b> 방향키 / WASD (여덟 방향)</p>
           <p><b>클릭 이동</b> 땅을 클릭(터치)하면 그곳까지 알아서 걸어갑니다. 모바일은 왼쪽 조이스틱도 됩니다.</p>
           <p><b>공격</b> Space — 가까운 적을 자동으로 겨냥합니다</p>
-          <p><b>스킬</b> 1 · 2 · 3 &nbsp; <b>물약</b> Q(HP) · E(MP)</p>
+          <p><b>스킬</b> 1 · 2 · 3 · 4 &nbsp; <b>물약</b> Q(HP) · E(MP)</p>
+          <p><b>사냥</b> 쉬지 않고 잡으면 <b>연속 처치</b>로 경험치가 최대 +50%. 사냥터에서 60마리를 잡으면 <b>우두머리</b>가 나타납니다.</p>
+          <p><b>장비</b> 무기 · 투구 · 갑옷 · 장갑 · 신발 · 반지 2 · 목걸이. <span style="color:#ff8a30">전설</span>은 고유 능력, <span style="color:#5fd47a">세트</span>는 모을수록 강해집니다.</p>
           <p><b>대화</b> F &nbsp; <b>자동사냥</b> R &nbsp; <b>채팅</b> Enter</p>
           <p><b>창</b> I 가방 · C 캐릭터 · L 의뢰 · P 파티 · Esc 닫기</p>
           <p><b>파밍</b> 장비는 일반 · <span style="color:#6a9cff">마법</span> · <span style="color:#f0d050">희귀</span> · <span style="color:#ff8a30">전설</span> 등급으로 떨어지며 옵션이 무작위로 붙습니다. 홈이 있는 장비에 <b>룬</b>을 순서대로 끼우면 <b>룬어</b>가 완성됩니다.</p>
@@ -181,7 +186,7 @@
             <div class="pick" id="c-cls">
               <button data-v="warrior" class="on">전사</button>
               <button data-v="rogue">도적</button>
-              <button data-v="ranger">레인저</button>
+              <button data-v="lancer">창술사</button>
               <button data-v="mage">마도사</button>
             </div>
             <p id="c-desc"></p>

@@ -710,7 +710,7 @@ function recolor(c, g, from, to) {
 // ───────────────────────────── icons ─────────────────────────────
 
 /** Rarity colours: common · magic · rare · legendary. */
-export const RARITY_COL = ["#d8d4c8", "#6a9cff", "#f0d050", "#ff8a30"];
+export const RARITY_COL = ["#d8d4c8", "#6a9cff", "#f0d050", "#ff8a30", "#5fd47a"];
 const METAL = [null, ["#a8acb4", "#74787f"], ["#c8ccd4", "#8e94a0"], ["#9ab8e0", "#5a78b0"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"]];
 const RUNE_COL = { ign: "#ff6a3a", aeg: "#8aa0c0", vit: "#e84a5a", men: "#4a8aff", cel: "#7ae8a0", acu: "#ffd84a", san: "#c03048", lum: "#fff0a0", fos: "#b07aff" };
 
@@ -768,28 +768,83 @@ const RUNE_KEYS_ART = Object.keys(RUNE_COL);
 function weaponIcon(cls, tier) {
   const [c, g] = canvas(16, 16);
   const [m, md] = METAL[tier];
-  if (cls === "warrior") {
+  if (cls === "sword") {
     // a greatsword: broad blade, long grip
     for (let i = 0; i < 10; i++) { px(g, 13 - i, 2 + i, m); px(g, 14 - i, 2 + i, md); px(g, 13 - i, 1 + i, m); px(g, 12 - i, 2 + i, m); }
     g.fillStyle = "#b08a38"; g.fillRect(1, 9, 3, 1); g.fillRect(2, 10, 3, 1); g.fillRect(3, 11, 3, 1); g.fillRect(4, 12, 3, 1);
     px(g, 3, 12, "#5a3c22"); px(g, 2, 13, "#5a3c22"); px(g, 1, 14, "#3e2a18");
-  } else if (cls === "rogue") {
+  } else if (cls === "dagger") {
     for (let i = 0; i < 6; i++) { px(g, 10 - i, 4 + i, m); px(g, 11 - i, 4 + i, md); }
     g.fillStyle = "#a83242"; g.fillRect(3, 9, 3, 1); g.fillRect(4, 10, 3, 1);
     px(g, 4, 11, "#2a2a30"); px(g, 3, 12, "#2a2a30"); px(g, 2, 13, "#2a2a30");
-  } else if (cls === "ranger") {
-    g.fillStyle = m; g.fillRect(2, 5, 12, 3);
-    g.fillStyle = md; g.fillRect(2, 7, 12, 1); g.fillRect(13, 4, 1, 1);
-    g.fillStyle = "#2a2a30"; g.fillRect(3, 8, 3, 5); g.fillRect(7, 8, 2, 2);
-    g.fillStyle = "#4a4a54"; g.fillRect(3, 8, 1, 5);
-    if (tier >= 3) { g.fillStyle = md; g.fillRect(8, 3, 4, 2); }
-    if (tier >= 4) { g.fillStyle = "#ffffff"; g.fillRect(14, 6, 1, 1); }
+  } else if (cls === "spear") {
+    // a long shaft corner to corner, a leaf-shaped head
+    for (let i = 0; i < 9; i++) { px(g, 2 + i, 13 - i, "#7a5430"); px(g, 3 + i, 13 - i, "#573a1e"); }
+    for (let i = 0; i < 4; i++) { px(g, 11 + i, 4 - i, m); px(g, 12 + i, 4 - i, md); px(g, 10 + i, 4 - i, m); }
+    px(g, 10, 5, m); px(g, 12, 5, md); px(g, 11, 6, "#b08a38"); px(g, 10, 6, "#b08a38");
+  } else if (cls === "book") {
+    const cover = ["#8a4a3a", "#3a5a9a", "#5a3a8a", "#2a7a8a", "#8a3a9a"][tier - 1];
+    g.fillStyle = cover; g.fillRect(3, 3, 10, 11);
+    g.fillStyle = "#f4ecd8"; g.fillRect(5, 4, 8, 9);
+    g.fillStyle = cover; g.fillRect(3, 3, 2, 11);
+    g.fillStyle = "#cfc4a8"; g.fillRect(6, 6, 6, 1); g.fillRect(6, 8, 6, 1); g.fillRect(6, 10, 4, 1);
+    g.fillStyle = m; g.fillRect(8, 2, 2, 2);
   } else {
     for (let i = 0; i < 10; i++) { px(g, 4 + i, 13 - i, "#7a5430"); px(g, 5 + i, 13 - i, "#573a1e"); }
     disc(g, 12, 4, 2.5, 2.5, md);
     disc(g, 11.6, 3.6, 1.5, 1.5, m);
     px(g, 11, 3, "#ffffff");
   }
+  outline(c, g, "#111118");
+  return c;
+}
+function helmIcon(tier) {
+  const [c, g] = canvas(16, 16);
+  const [m, md] = tier === 1 ? ["#b8ac90", "#8e8468"] : tier === 2 ? ["#8a6238", "#5e4022"] : METAL[tier];
+  disc(g, 8, 8, 5.5, 5, m);
+  g.clearRect(2, 9, 12, 6);
+  g.fillStyle = m; g.fillRect(3, 9, 10, 3);
+  g.fillStyle = md; g.fillRect(9, 4, 4, 5); g.fillRect(3, 11, 10, 1);
+  g.fillStyle = "#1a1c24"; g.fillRect(5, 9, 6, 2);
+  if (tier >= 3) { g.fillStyle = md; g.fillRect(7, 1, 2, 3); }
+  outline(c, g, "#111118");
+  return c;
+}
+function glovesIcon(tier) {
+  const [c, g] = canvas(16, 16);
+  const [m, md] = tier === 1 ? ["#b8ac90", "#8e8468"] : tier === 2 ? ["#8a6238", "#5e4022"] : METAL[tier];
+  g.fillStyle = m; g.fillRect(4, 3, 7, 7); g.fillRect(5, 10, 6, 4); g.fillRect(11, 5, 2, 4);
+  g.fillStyle = md; g.fillRect(8, 3, 3, 7); g.fillRect(5, 12, 6, 2);
+  g.fillStyle = "#111118"; g.fillRect(6, 3, 1, 3); g.fillRect(8, 3, 1, 3);
+  outline(c, g, "#111118");
+  return c;
+}
+function bootsIcon(tier) {
+  const [c, g] = canvas(16, 16);
+  const [m, md] = tier === 1 ? ["#c8b070", "#9a8448"] : tier === 2 ? ["#8a6238", "#5e4022"] : METAL[tier];
+  g.fillStyle = m; g.fillRect(5, 2, 5, 9); g.fillRect(5, 10, 9, 4);
+  g.fillStyle = md; g.fillRect(8, 2, 2, 9); g.fillRect(5, 13, 9, 1); g.fillRect(12, 10, 2, 3);
+  if (tier >= 4) { g.fillStyle = "#7af0ff"; g.fillRect(5, 12, 4, 1); }
+  outline(c, g, "#111118");
+  return c;
+}
+function ringIcon(tier) {
+  const [c, g] = canvas(16, 16);
+  const [m, md] = [["#c88a50", "#8e5a2c"], ["#c8ccd4", "#8e94a0"], ["#f0c840", "#b08a20"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"]][tier - 1];
+  disc(g, 8, 10, 4.5, 4.5, m);
+  g.fillStyle = md; g.fillRect(9, 12, 3, 2); g.fillRect(12, 9, 1, 3);
+  g.clearRect(6, 8, 4, 4);
+  g.fillStyle = ["#e84a5a", "#6a9cff", "#e84a5a", "#ffffff", "#ffd84a"][tier - 1]; g.fillRect(7, 3, 2, 3); g.fillRect(6, 4, 4, 1);
+  outline(c, g, "#111118");
+  return c;
+}
+function amuletIcon(tier) {
+  const [c, g] = canvas(16, 16);
+  const [m, md] = [["#8a6238", "#5e4022"], ["#c8ccd4", "#8e94a0"], ["#f0c840", "#b08a20"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"]][tier - 1];
+  // a cord in a V, a pendant where it meets
+  for (let i = 0; i < 6; i++) { px(g, 3 + i, 2 + i, md); px(g, 12 - i, 2 + i, md); }
+  disc(g, 8, 10.5, 3, 3.2, m);
+  disc(g, 7.6, 10.2, 1.6, 1.8, ["#7ad08a", "#6a9cff", "#e84a5a", "#ffffff", "#ffd84a"][tier - 1]);
   outline(c, g, "#111118");
   return c;
 }
@@ -803,26 +858,18 @@ function armorIcon(tier) {
   outline(c, g, "#111118");
   return c;
 }
-function accIcon(tier) {
-  const [c, g] = canvas(16, 16);
-  const [m, md] = [["#c88a50", "#8e5a2c"], ["#c8ccd4", "#8e94a0"], ["#e080f0", "#9a40c0"]][tier - 2] || METAL[2];
-  disc(g, 8, 9, 4.5, 4.5, md);
-  disc(g, 8, 9, 4.5, 4.5, m);
-  g.clearRect(6, 7, 4, 4);
-  g.fillStyle = md; g.fillRect(9, 6, 3, 1); g.fillRect(11, 7, 1, 5);
-  g.fillStyle = tier >= 4 ? "#70e0e8" : "#e84a5a"; g.fillRect(7, 3, 2, 2);
-  outline(c, g, "#111118");
-  return c;
-}
-
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items) {
   const cv = { gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem() };
   for (const id of Object.keys(items)) {
     const it = items[id];
-    if (it.type === "weapon") cv[id] = weaponIcon(it.cls, it.tier);
+    if (it.type === "weapon") cv[id] = weaponIcon(it.wk, it.tier);
     else if (it.type === "armor") cv[id] = armorIcon(it.tier);
-    else if (it.type === "acc") cv[id] = accIcon(it.tier);
+    else if (it.type === "helm") cv[id] = helmIcon(it.tier);
+    else if (it.type === "gloves") cv[id] = glovesIcon(it.tier);
+    else if (it.type === "boots") cv[id] = bootsIcon(it.tier);
+    else if (it.type === "ring") cv[id] = ringIcon(it.tier);
+    else if (it.type === "amulet") cv[id] = amuletIcon(it.tier);
     else if (it.type === "rune") cv[id] = runeIcon(it.rune);
   }
   const url = {}, left = {};

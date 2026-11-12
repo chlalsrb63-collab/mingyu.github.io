@@ -3,8 +3,11 @@
  *
  * A party-hunting RPG set where worlds overlap: a fantasy meadow, a neon city
  * and a crystal rift all hang off one hub. Three ideas drive the rules:
- *   - loot is rolled, not listed: every piece of gear gets a rarity, random
- *     affixes and sockets, and runes socketed in the right order form runewords;
+ *   - loot is rolled, not listed: eight slots of gear, each piece with a rarity,
+ *     random affixes and sockets; legendaries carry a unique power, set pieces
+ *     grow stronger together, and runes in the right order form runewords;
+ *   - a hunting ground is worth another lap: kill streaks, per-monster mastery,
+ *     bounties that renew themselves, and a field boss the kills call out;
  *   - experience never stops mattering: it levels you up, and it can also be
  *     spent, without limit, on permanent training of your base stats;
  *   - hunting together pays: a party shares kills, quest credit and a bonus.
@@ -34,49 +37,71 @@ const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 
 // ───────────────────────────── tables ─────────────────────────────
 
+/** A weapon kind decides how a basic attack lands. */
+const WKIND = {
+  sword: { name: "양손검", cd: 700, range: 34, fx: 0, cleave: 3 },
+  dagger: { name: "단검", cd: 380, range: 26, fx: 3 },
+  spear: { name: "창", cd: 560, range: 54, fx: 4, line: 3 },
+  staff: { name: "마법지팡이", cd: 800, range: 100, fx: 2 },
+  book: { name: "마법책", cd: 620, range: 84, fx: 5, splash: 26, mult: 0.8 },
+};
 const CLASSES = {
-  warrior: { name: "전사", arm: "양손검", hp: [130, 24], mp: [30, 4], atk: [10, 2.6], def: [3, 0.9], crit: 8, cd: 700, range: 34, fx: 0, cleave: 3 },
-  rogue: { name: "도적", arm: "단검", hp: [92, 16], mp: [40, 6], atk: [7, 1.9], def: [1, 0.5], crit: 22, cd: 380, range: 26, fx: 3, cleave: 1 },
-  ranger: { name: "레인저", arm: "총", hp: [86, 15], mp: [40, 6], atk: [8, 2.1], def: [1, 0.5], crit: 12, cd: 600, range: 118, fx: 1, cleave: 1 },
-  mage: { name: "마도사", arm: "지팡이", hp: [76, 13], mp: [60, 10], atk: [9, 2.4], def: [1, 0.4], crit: 10, cd: 800, range: 100, fx: 2, cleave: 1 },
+  warrior: { name: "전사", arm: "양손검", wk: ["sword"], hp: [130, 24], mp: [30, 4], atk: [10, 2.6], def: [3, 0.9], crit: 8 },
+  rogue: { name: "도적", arm: "단검", wk: ["dagger"], hp: [92, 16], mp: [40, 6], atk: [7, 1.9], def: [1, 0.5], crit: 22 },
+  lancer: { name: "창술사", arm: "창", wk: ["spear"], hp: [112, 20], mp: [36, 5], atk: [9, 2.3], def: [2, 0.7], crit: 12 },
+  mage: { name: "마도사", arm: "마법지팡이 · 마법책", wk: ["staff", "book"], hp: [76, 13], mp: [60, 10], atk: [9, 2.4], def: [1, 0.4], crit: 10 },
 };
 
 const SKILLS = {
   warrior: [
-    { id: "strike", name: "강타", lv: 3, mp: 6, cd: 4000, mult: 2.2, desc: "가까운 적 하나에게 강력한 일격 (220%)" },
+    { id: "strike", name: "강타", lv: 3, mp: 6, cd: 4000, mult: 2.2, stun: 1200, desc: "강력한 일격 (220%) — 맞은 적은 잠시 기절한다" },
     { id: "spin", name: "회전베기", lv: 7, mp: 12, cd: 8000, mult: 1.6, r: 48, desc: "주변의 모든 적을 벤다 (160%)" },
     { id: "shout", name: "전투함성", lv: 12, mp: 15, cd: 30000, dur: 12000, r: 110, desc: "12초간 자신과 주변 파티원의 공격력 25% 증가" },
+    { id: "quake", name: "대지 가르기", lv: 18, mp: 22, cd: 14000, mult: 2.4, len: 120, knock: 22, desc: "땅을 갈라 일직선의 적을 날려 버린다 (240%)" },
   ],
   rogue: [
     { id: "vital", name: "급소 찌르기", lv: 3, mp: 6, cd: 3500, mult: 2.0, desc: "반드시 치명타로 들어가는 일격 (200%)" },
     { id: "dash", name: "그림자 도약", lv: 7, mp: 10, cd: 7000, mult: 1.9, len: 120, desc: "적의 등 뒤로 순간이동해 벤다 (190%)" },
     { id: "smoke", name: "연막", lv: 12, mp: 14, cd: 22000, dur: 6000, desc: "적의 시선을 끊고 6초간 이동속도 40% 증가" },
+    { id: "fan", name: "맹독 표창", lv: 18, mp: 18, cd: 11000, mult: 1.2, r: 76, n: 5, dot: 0.5, desc: "가까운 적 5명에게 표창을 던져 중독시킨다 (120% + 4초간 독)" },
   ],
-  ranger: [
-    { id: "multi", name: "연사", lv: 3, mp: 7, cd: 4500, mult: 1.0, desc: "가까운 적 최대 3명에게 사격 (100%)" },
-    { id: "pierce", name: "관통탄", lv: 7, mp: 12, cd: 8000, mult: 2.0, len: 170, desc: "일직선의 적을 모두 꿰뚫는다 (200%)" },
-    { id: "nade", name: "수류탄", lv: 12, mp: 16, cd: 10000, mult: 2.3, r: 42, desc: "폭발 범위의 적 모두에게 피해 (230%)" },
+  lancer: [
+    { id: "pierce", name: "관통 찌르기", lv: 3, mp: 7, cd: 4500, mult: 1.9, len: 96, desc: "일직선의 적을 모두 꿰뚫는다 (190%)" },
+    { id: "sweep", name: "초승달 베기", lv: 7, mp: 12, cd: 8000, mult: 1.5, r: 58, knock: 20, desc: "창을 크게 휘둘러 주변의 적을 밀쳐 낸다 (150%)" },
+    { id: "vault", name: "도약 강습", lv: 12, mp: 16, cd: 10000, mult: 2.2, len: 130, r: 44, desc: "적에게 뛰어올라 내리꽂는다 (범위 220%, 둔화)" },
+    { id: "rain", name: "창 소나기", lv: 18, mp: 24, cd: 16000, mult: 0.9, r: 50, n: 5, every: 500, desc: "하늘에서 창이 다섯 번 쏟아진다 (5회 × 90%)" },
   ],
   mage: [
     { id: "fireball", name: "화염구", lv: 3, mp: 10, cd: 4500, mult: 1.9, r: 34, desc: "폭발하는 불덩이 (범위 190%)" },
     { id: "nova", name: "빙결 파동", lv: 7, mp: 16, cd: 9000, mult: 1.4, r: 58, desc: "주변 적에게 피해를 주고 느리게 한다" },
     { id: "heal", name: "치유의 빛", lv: 12, mp: 22, cd: 12000, r: 90, desc: "자신과 주변 아군의 HP 35% 회복" },
+    { id: "meteor", name: "유성우", lv: 18, mp: 30, cd: 18000, mult: 1.3, r: 52, n: 4, every: 700, desc: "지정한 곳에 유성이 네 번 떨어진다 (4회 × 130%)" },
   ],
 };
 
+// ── gear: seven kinds of piece, five tiers each
 const WEAPON_NAMES = {
-  warrior: ["녹슨 대검", "강철 양손검", "기사단 클레이모어", "고주파 대검", "차원 절단기"],
-  rogue: ["낡은 단검", "암살자의 비수", "쌍독니", "카본 나이프", "균열의 송곳니"],
-  ranger: ["구식 권총", "리볼버", "자동소총", "레일 피스톨", "특이점 캐논"],
-  mage: ["견습 지팡이", "룬 지팡이", "현자의 지팡이", "플라즈마 로드", "공허의 홀"],
+  sword: ["녹슨 대검", "강철 양손검", "기사단 클레이모어", "고주파 대검", "차원 절단기"],
+  dagger: ["낡은 단검", "암살자의 비수", "쌍독니", "카본 나이프", "균열의 송곳니"],
+  spear: ["대나무 창", "강철 장창", "기사단 할버드", "플라즈마 랜스", "차원 관통창"],
+  staff: ["견습 지팡이", "룬 지팡이", "현자의 지팡이", "플라즈마 로드", "공허의 홀"],
+  book: ["낡은 주문서", "룬 마도서", "현자의 법전", "홀로그램 코덱스", "공허의 서"],
 };
-const ARMOR_NAMES = ["여행자 옷", "가죽 갑옷", "사슬 갑옷", "전술 방탄복", "차원 외골격"];
-const ACC_NAMES = ["구리 반지", "은 목걸이", "차원 인장"];
+/** Which class wields each weapon kind, and the word used in its item ids. */
+const WK_CLASS = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "mage" };
+const WK_ID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book" };
 const W_ATK = [6, 14, 26, 42, 64];
-const A_DEF = [2, 6, 11, 18, 28];
-const A_HP = [0, 30, 70, 130, 220];
 const G_REQ = [1, 8, 16, 26, 38];
 const G_PRICE = [80, 600, 2200, 7000, 20000];
+/** Everything worn: id prefix, names by tier, and the stats a plain piece carries. */
+const GEAR = {
+  helm: { pre: "h", cost: 0.7, names: ["천 두건", "가죽 모자", "강철 투구", "전술 헬멧", "차원 왕관"], st: { def: [1, 3, 6, 10, 15], hp: [0, 15, 35, 65, 110] } },
+  armor: { pre: "a", cost: 1, names: ["여행자 옷", "가죽 갑옷", "사슬 갑옷", "전술 방탄복", "차원 외골격"], st: { def: [2, 6, 11, 18, 28], hp: [0, 30, 70, 130, 220] } },
+  gloves: { pre: "g", cost: 0.6, names: ["헝겊 장갑", "가죽 장갑", "사슬 장갑", "강화 건틀릿", "차원 손아귀"], st: { atk: [1, 3, 6, 10, 16] } },
+  boots: { pre: "b", cost: 0.6, names: ["짚신", "가죽 장화", "강철 각반", "부스터 부츠", "차원 보행기"], st: { def: [1, 2, 4, 7, 11], spd: [2, 3, 4, 6, 8] } },
+  ring: { pre: "r", cost: 0.8, names: ["구리 반지", "은 반지", "금 반지", "네온 링", "차원 인장"], st: { atk: [1, 2, 4, 7, 11], crit: [1, 1, 2, 3, 4] } },
+  amulet: { pre: "n", cost: 0.8, names: ["나무 목걸이", "은 목걸이", "수호 부적", "홀로 펜던트", "균열의 심장"], st: { hp: [10, 30, 60, 110, 180], mp: [5, 15, 30, 55, 90] } },
+};
 
 const ITEMS = {
   hp_s: { name: "빨간 물약", type: "pot", heal: 60, price: 20, desc: "HP를 60 회복한다." },
@@ -85,16 +110,19 @@ const ITEMS = {
   mp_m: { name: "큰 파란 물약", type: "pot", mana: 140, price: 80, desc: "MP를 140 회복한다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
 };
-for (const cls of Object.keys(WEAPON_NAMES)) {
+for (const wk of Object.keys(WEAPON_NAMES)) {
   for (let t = 1; t <= 5; t++) {
-    ITEMS[`w_${cls}_${t}`] = { name: WEAPON_NAMES[cls][t - 1], type: "weapon", cls, tier: t, atk: W_ATK[t - 1], req: G_REQ[t - 1], price: G_PRICE[t - 1] };
+    const base = wk === "book" ? { atk: Math.round(W_ATK[t - 1] * 0.85), mp: [15, 35, 60, 100, 150][t - 1] } : { atk: W_ATK[t - 1] };
+    ITEMS[`w_${WK_ID[wk]}_${t}`] = { name: WEAPON_NAMES[wk][t - 1], type: "weapon", wk, cls: WK_CLASS[wk], tier: t, base, req: G_REQ[t - 1], price: G_PRICE[t - 1] };
   }
 }
-for (let t = 1; t <= 5; t++) {
-  ITEMS[`a_${t}`] = { name: ARMOR_NAMES[t - 1], type: "armor", tier: t, def: A_DEF[t - 1], hp: A_HP[t - 1], req: G_REQ[t - 1], price: G_PRICE[t - 1] };
-}
-for (let t = 1; t <= 3; t++) {
-  ITEMS[`c_${t}`] = { name: ACC_NAMES[t - 1], type: "acc", tier: t + 1, req: [5, 15, 28][t - 1], price: [400, 1800, 6000][t - 1] };
+for (const type of Object.keys(GEAR)) {
+  const d = GEAR[type];
+  for (let t = 1; t <= 5; t++) {
+    const base = {};
+    for (const s of Object.keys(d.st)) if (d.st[s][t - 1]) base[s] = d.st[s][t - 1];
+    ITEMS[`${d.pre}_${t}`] = { name: d.names[t - 1], type, tier: t, base, req: G_REQ[t - 1], price: Math.round(G_PRICE[t - 1] * d.cost) };
+  }
 }
 
 /** Runes: one stat each. Socket them into equipped gear; the right sequence forms a runeword. */
@@ -120,11 +148,28 @@ const AFFIX = [
   ["atk", "공격력", "날카로운", 1, 3, 0.35], ["atkp", "공격력 %", "맹렬한", 3, 8, 0], ["def", "방어력", "단단한", 1, 2, 0.25],
   ["hp", "최대 HP", "강인한", 8, 20, 2], ["mp", "최대 MP", "지혜의", 5, 12, 1], ["crit", "치명타 %", "예리한", 2, 5, 0],
   ["critd", "치명타 피해 %", "잔혹한", 8, 20, 0], ["ls", "흡혈 %", "흡혈의", 1, 3, 0], ["spd", "이동속도 %", "신속의", 3, 7, 0],
-  ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0],
+  ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
 ];
-const RARITY = ["일반", "마법", "희귀", "전설"];
+const RARITY = ["일반", "마법", "희귀", "전설", "세트"];
 /** How many affixes each rarity rolls: [min, max]. */
-const RARITY_AFFIX = [[0, 0], [1, 2], [3, 4], [5, 5]];
+const RARITY_AFFIX = [[0, 0], [1, 2], [3, 4], [4, 4], [2, 3]];
+/** A legendary piece carries one power no affix can give: [name word, what it does]. */
+const LEGEND = {
+  chain: ["뇌명의", "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)"],
+  nova: ["폭렬의", "적을 처치하면 폭발해 주변에 피해를 준다 (80%)"],
+  greed: ["황금손의", "골드 획득 +60%"],
+  haste: ["질주의", "공격 속도 +15%"],
+  thorn: ["가시의", "받은 피해의 40%를 공격한 적에게 되돌려 준다"],
+  feast: ["포식자의", "적을 처치할 때마다 최대 HP의 4% 회복"],
+  echo: ["메아리의", "스킬 사용 시 20% 확률로 재사용 대기시간이 사라진다"],
+  giant: ["거인 사냥꾼의", "정예와 우두머리에게 주는 피해 +30%"],
+};
+/** Set pieces grow stronger the more of the same set is worn: [pieces, [[stat, value]…]]. */
+const SETS = {
+  pioneer: { name: "개척자", tiers: [1, 2], types: ["helm", "armor", "gloves", "boots"], bonus: [[2, [["hp", 60]]], [4, [["spd", 10], ["xp", 12]]]] },
+  runner: { name: "네온 러너", tiers: [3, 4], types: ["gloves", "boots", "ring", "amulet"], bonus: [[2, [["crit", 6]]], [4, [["atkp", 15], ["spd", 8]]]] },
+  rift: { name: "균열 추적자", tiers: [4, 5], types: ["weapon", "helm", "armor", "ring", "amulet"], bonus: [[2, [["mf", 25]]], [3, [["atkp", 12]]], [5, [["ls", 4], ["critd", 40]]]] },
+};
 
 /** Training: experience spent on a permanent stat point. Never capped. */
 const TRAIN = {
@@ -135,33 +180,59 @@ const TRAIN = {
 };
 const trainCost = (n) => 120 + 40 * n;
 
-const SHOP = ["hp_s", "hp_m", "mp_s", "mp_m", "stone", "W1", "a_1"];
+const SHOP = ["hp_s", "hp_m", "mp_s", "mp_m", "stone", "W1", "w_book_1", "h_1", "a_1", "g_1", "b_1"];
 const ENH_RATE = [100, 95, 90, 80, 70, 55, 45, 35, 25, 15];
 
+// ── the hunt: what keeps a hunting ground worth another lap
+/** Kills in quick succession build a streak; each step adds 2% experience, up to +50%. */
+const STREAK_MS = 8000, STREAK_MAX = 25;
+/** Kills of one kind of monster that earn each mastery rank (+3% damage, +2% experience against it). */
+const MASTERY = [30, 100, 300, 1000, 3000];
+/** A repeatable bounty asks for this many of one monster, and renews itself when paid out. */
+const BOUNTY_N = 25;
+/** After this many kills in a hunting ground, its field boss appears. */
+const FB_KILLS = 60;
+const FIELD_BOSS = { meadow: "potcrab", forest: "stump", city: "vend", cave: "geode" };
+
+/**
+ * Monsters. Beyond the numbers: `fly` crosses anything, `shot` attacks from range,
+ * `leap` pounces from that far, `slam` pounds the ground around itself, and
+ * `burst` goes off where it died.
+ */
 const MOBS = {
-  slime: { name: "초원 슬라임", sp: "slime", lv: 1, hp: 30, atk: 5, def: 0, spd: 22, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300, resp: 7000, gear: 0.05 },
-  bslime: { name: "부식 슬라임", sp: "bslime", lv: 3, hp: 62, atk: 9, def: 0, spd: 26, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, resp: 8000, gear: 0.06 },
-  shroom: { name: "포자괴", sp: "shroom", lv: 5, hp: 100, atk: 14, def: 1, spd: 30, xp: 32, gold: [6, 14], aggro: 60, range: 17, cd: 1200, resp: 9000, gear: 0.07 },
-  boar: { name: "흑갈기 멧돼지", sp: "boar", lv: 8, hp: 190, atk: 24, def: 3, spd: 48, xp: 62, gold: [10, 22], aggro: 76, range: 18, cd: 1100, resp: 10000, gear: 0.08 },
-  bat: { name: "흡혈박쥐", sp: "bat", lv: 11, hp: 180, atk: 31, def: 2, spd: 60, xp: 88, gold: [12, 26], aggro: 90, range: 16, cd: 1000, resp: 10000, fly: true, gear: 0.08 },
-  drone: { name: "감시 드론", sp: "drone", lv: 14, hp: 300, atk: 40, def: 5, spd: 56, xp: 140, gold: [18, 36], aggro: 100, range: 70, cd: 1300, resp: 11000, fly: true, shot: true, gear: 0.09 },
-  thug: { name: "뒷골목 무법자", sp: "thug", lv: 17, hp: 460, atk: 52, def: 8, spd: 46, xp: 200, gold: [26, 50], aggro: 84, range: 19, cd: 1000, resp: 12000, gear: 0.1 },
-  robot: { name: "경비 로봇 MK-2", sp: "robot", lv: 20, hp: 720, atk: 64, def: 16, spd: 30, xp: 300, gold: [34, 64], aggro: 80, range: 22, cd: 1500, resp: 14000, gear: 0.11 },
-  skel: { name: "망령 병사", sp: "skel", lv: 23, hp: 900, atk: 78, def: 14, spd: 42, xp: 400, gold: [40, 76], aggro: 88, range: 19, cd: 1100, resp: 13000, gear: 0.11 },
-  golem: { name: "수정 골렘", sp: "golem", lv: 26, hp: 1500, atk: 96, def: 26, spd: 27, xp: 620, gold: [56, 100], aggro: 76, range: 21, cd: 1500, resp: 15000, gear: 0.13 },
-  boss: { name: "균열의 군주 크리온", sp: "boss", lv: 30, hp: 22000, atk: 140, def: 30, spd: 34, xp: 9000, gold: [1500, 2500], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1 },
+  acorn: { name: "도토리 병정", lv: 1, hp: 28, atk: 5, def: 0, spd: 24, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300 },
+  potcrab: { name: "화분 소라게", lv: 3, hp: 60, atk: 9, def: 1, spd: 22, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300 },
+  puff: { name: "민들레 홀씨", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 56, range: 17, cd: 1200, fly: true },
+  capfrog: { name: "버섯 개구리", lv: 8, hp: 170, atk: 23, def: 2, spd: 44, xp: 60, gold: [10, 22], aggro: 80, range: 18, cd: 1100, leap: 96 },
+  stump: { name: "그루터기 거북", lv: 10, hp: 330, atk: 26, def: 8, spd: 22, xp: 92, gold: [12, 26], aggro: 60, range: 18, cd: 1400 },
+  yarn: { name: "털실 거미", lv: 11, hp: 190, atk: 30, def: 2, spd: 58, xp: 92, gold: [12, 26], aggro: 88, range: 16, cd: 1000, leap: 80 },
+  lantern: { name: "초롱 반딧불", lv: 13, hp: 210, atk: 34, def: 2, spd: 44, xp: 118, gold: [14, 30], aggro: 96, range: 72, cd: 1400, fly: true, shot: true },
+  eyecam: { name: "감시 눈알", lv: 14, hp: 290, atk: 40, def: 5, spd: 56, xp: 140, gold: [18, 36], aggro: 100, range: 70, cd: 1300, fly: true, shot: true },
+  signbot: { name: "신호등 보행기", lv: 17, hp: 460, atk: 52, def: 8, spd: 46, xp: 200, gold: [26, 50], aggro: 84, range: 19, cd: 1000 },
+  tvhead: { name: "브라운관 유령", lv: 19, hp: 520, atk: 60, def: 6, spd: 40, xp: 250, gold: [28, 54], aggro: 92, range: 66, cd: 1400, fly: true, shot: true },
+  vend: { name: "자판기 미믹", lv: 21, hp: 820, atk: 68, def: 18, spd: 30, xp: 330, gold: [60, 120], aggro: 72, range: 22, cd: 1500 },
+  candle: { name: "촛농 유령", lv: 23, hp: 880, atk: 78, def: 12, spd: 42, xp: 400, gold: [40, 76], aggro: 88, range: 19, cd: 1100, fly: true, burst: 34 },
+  prism: { name: "프리즘 해파리", lv: 25, hp: 900, atk: 86, def: 10, spd: 38, xp: 480, gold: [46, 86], aggro: 96, range: 76, cd: 1500, fly: true, shot: true },
+  geode: { name: "정동 골렘", lv: 27, hp: 1600, atk: 98, def: 26, spd: 27, xp: 640, gold: [56, 100], aggro: 76, range: 21, cd: 1500, slam: 40 },
+  boss: { name: "균열의 군주 크리온", lv: 30, hp: 22000, atk: 140, def: 30, spd: 34, xp: 9000, gold: [1500, 2500], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1 },
 };
+for (const k of Object.keys(MOBS)) {
+  const d = MOBS[k];
+  d.sp = k;
+  if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
+  if (!d.gear) d.gear = 0.06 + d.lv * 0.002;
+}
 
 const QUESTS = [
-  { mob: "slime", n: 5, title: "첫 발걸음", text: "차원이 겹친 뒤로 초원에 슬라임이 들끓는다네. 초원 슬라임 5마리만 정리해 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
-  { mob: "bslime", n: 6, title: "부식의 흔적", text: "남쪽의 부식 슬라임이 길을 녹이고 있어. 6마리를 처치해 주게.", xp: 220, gold: 120, items: [["mp_s", 5]] },
-  { mob: "shroom", n: 8, title: "포자 주의보", text: "연못가에 포자괴가 번지고 있네. 8마리를 뽑아 주면 강화석을 주지.", xp: 520, gold: 200, items: [["stone", 2]] },
-  { mob: "boar", n: 10, title: "숲의 난폭자", text: "속삭임 숲의 흑갈기 멧돼지 10마리를 사냥해 주게. 혼자선 벅찰 테니 동료를 구해 보게.", xp: 1300, gold: 450, items: [["hp_m", 5], ["ru_vit", 1]] },
-  { mob: "bat", n: 10, title: "밤의 날갯짓", text: "숲 동쪽의 흡혈박쥐 10마리를 쫓아내 주게.", xp: 2200, gold: 600, items: [["stone", 3]] },
-  { mob: "drone", n: 10, title: "다른 세계의 눈", text: "서쪽 문 너머는 '네온 시티'라는 다른 세계일세. 우리를 감시하는 드론 10기를 떨어뜨려 주게.", xp: 4200, gold: 900, items: [["ru_ign", 1]] },
-  { mob: "thug", n: 12, title: "뒷골목 청소", text: "네온 시티의 무법자들이 차원문을 넘보고 있어. 12명을 제압해 주게.", xp: 6500, gold: 1300, items: [["mp_m", 5]] },
-  { mob: "robot", n: 10, title: "강철의 순찰대", text: "경비 로봇 MK-2 10기를 멈춰 세워 주게. 방어가 단단하니 파티가 필요할 걸세.", xp: 9500, gold: 1800, items: [["stone", 5]] },
-  { mob: "golem", n: 8, title: "움직이는 수정", text: "숲 끝의 수정 동굴은 균열의 중심일세. 수정 골렘 8마리를 부숴 주게.", xp: 15000, gold: 2600, items: [["ru_acu", 1], ["ru_san", 1]] },
+  { mob: "acorn", n: 5, title: "첫 발걸음", text: "차원이 겹친 뒤로 초원의 도토리들이 창을 들고 일어섰다네. 도토리 병정 5마리만 정리해 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
+  { mob: "potcrab", n: 6, title: "걸어 다니는 화분", text: "남쪽 꽃밭의 화분이 죄다 걸어 나갔어. 화분 소라게 6마리를 잡아 주게.", xp: 220, gold: 120, items: [["mp_s", 5]] },
+  { mob: "puff", n: 8, title: "홀씨 주의보", text: "연못가에 민들레 홀씨가 떠다니며 사람을 쫓는다네. 8마리를 흩어 주면 강화석을 주지.", xp: 520, gold: 200, items: [["stone", 2]] },
+  { mob: "capfrog", n: 10, title: "숲의 도약자", text: "속삭임 숲의 버섯 개구리 10마리를 사냥해 주게. 멀리서도 뛰어드니 동료를 구해 보게.", xp: 1300, gold: 450, items: [["hp_m", 5], ["ru_vit", 1]] },
+  { mob: "lantern", n: 10, title: "밤길의 초롱", text: "숲 동쪽의 초롱 반딧불 10마리를 꺼뜨려 주게. 불씨를 쏘아 대니 조심하게.", xp: 2200, gold: 600, items: [["stone", 3]] },
+  { mob: "eyecam", n: 10, title: "다른 세계의 눈", text: "서쪽 문 너머는 '네온 시티'라는 다른 세계일세. 우리를 지켜보는 감시 눈알 10기를 떨어뜨려 주게.", xp: 4200, gold: 900, items: [["ru_ign", 1]] },
+  { mob: "signbot", n: 12, title: "빨간불", text: "네온 시티의 신호등 보행기들이 차원문 앞을 막아섰어. 12기를 멈춰 주게.", xp: 6500, gold: 1300, items: [["mp_m", 5]] },
+  { mob: "vend", n: 10, title: "동전 먹는 기계", text: "자판기 미믹 10대를 부숴 주게. 단단하지만 삼킨 동전을 잔뜩 뱉는다네.", xp: 9500, gold: 1800, items: [["stone", 5]] },
+  { mob: "geode", n: 8, title: "움직이는 수정", text: "숲 끝의 수정 동굴은 균열의 중심일세. 정동 골렘 8마리를 부숴 주게. 땅을 내리칠 땐 물러서게.", xp: 15000, gold: 2600, items: [["ru_acu", 1], ["ru_san", 1]] },
   { mob: "boss", n: 1, title: "균열의 군주", text: "모든 세계를 뒤섞은 장본인, 균열의 군주 크리온을 쓰러뜨려 주게. 반드시 파티를 꾸려서 가게.", xp: 40000, gold: 8000, items: [["stone", 10], ["ru_lum", 1]] },
 ];
 
@@ -330,10 +401,11 @@ function buildCity() {
   portal(m, 53, 19, "town", 3, 14);
   portal(m, 53, 20, "town", 3, 15);
   m.spawns.push(
-    { k: "drone", n: 9, r: [3, 3, 25, 16] },
-    { k: "thug", n: 8, r: [30, 3, 52, 16] },
-    { k: "thug", n: 5, r: [3, 23, 25, 36] },
-    { k: "robot", n: 8, r: [30, 23, 52, 36] },
+    { k: "eyecam", n: 14, r: [3, 3, 25, 16] },
+    { k: "signbot", n: 16, r: [30, 3, 52, 16] },
+    { k: "tvhead", n: 12, r: [3, 23, 25, 36] },
+    { k: "signbot", n: 5, r: [3, 23, 25, 36] },
+    { k: "vend", n: 14, r: [30, 23, 52, 36] },
   );
   return finalize(m);
 }
@@ -363,9 +435,9 @@ function buildMeadow() {
   portal(m, 58, 22, "forest", 4, 22);
   portal(m, 58, 23, "forest", 4, 23);
   m.spawns.push(
-    { k: "slime", n: 11, r: [4, 4, 30, 42] },
-    { k: "bslime", n: 7, r: [24, 28, 56, 42] },
-    { k: "shroom", n: 7, r: [30, 3, 56, 20] },
+    { k: "acorn", n: 24, r: [4, 4, 30, 42] },
+    { k: "potcrab", n: 18, r: [24, 28, 56, 42] },
+    { k: "puff", n: 16, r: [30, 3, 56, 20] },
   );
   return finalize(m);
 }
@@ -398,9 +470,10 @@ function buildForest() {
   portal(m, 55, 1, "cave", 5, 34);
   portal(m, 56, 1, "cave", 5, 35);
   m.spawns.push(
-    { k: "boar", n: 10, r: [4, 4, 27, 42] },
-    { k: "shroom", n: 4, r: [8, 28, 27, 42] },
-    { k: "bat", n: 9, r: [34, 4, 56, 42] },
+    { k: "capfrog", n: 18, r: [4, 4, 27, 42] },
+    { k: "stump", n: 9, r: [8, 26, 27, 42] },
+    { k: "yarn", n: 14, r: [34, 22, 56, 42] },
+    { k: "lantern", n: 14, r: [34, 4, 56, 22] },
   );
   return finalize(m);
 }
@@ -448,10 +521,12 @@ function buildCave() {
   portal(m, 3, 34, "forest", 55, 4);
   portal(m, 3, 35, "forest", 56, 4);
   m.spawns.push(
-    { k: "skel", n: 8, r: [14, 26, 27, 36] },
-    { k: "skel", n: 5, r: [6, 10, 20, 20] },
-    { k: "golem", n: 3, r: [6, 10, 20, 20] },
-    { k: "golem", n: 6, r: [26, 8, 36, 18] },
+    { k: "candle", n: 14, r: [14, 26, 27, 36] },
+    { k: "candle", n: 6, r: [6, 10, 20, 20] },
+    { k: "prism", n: 9, r: [6, 10, 20, 20] },
+    { k: "geode", n: 4, r: [6, 10, 20, 20] },
+    { k: "geode", n: 9, r: [26, 8, 36, 18] },
+    { k: "prism", n: 4, r: [26, 8, 36, 18] },
     { k: "boss", n: 1, r: [43, 11, 44, 13] },
   );
   return finalize(m);
@@ -489,8 +564,12 @@ const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
-const SLOTS = ["weapon", "armor", "acc"];
-const isGear = (id) => SLOTS.includes(ITEMS[id].type);
+/** Where gear is worn. Two rings; everything else one of a kind. */
+const SLOTS = ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet"];
+const GEAR_TYPES = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet"];
+const isGear = (id) => GEAR_TYPES.includes(ITEMS[id].type);
+const isJewel = (id) => ITEMS[id].type === "ring" || ITEMS[id].type === "amulet";
+const slotsFor = (type) => (type === "ring" ? ["ring1", "ring2"] : [type]);
 const plain = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
 
 /** The highest choice allowed for each part of a character's look. */
@@ -500,34 +579,60 @@ export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
   const lk = Array.isArray(look) ? look : [];
   return {
-    v: 2, name, cls: c,
+    v: 3, name, cls: c,
     // ear, eyes, nose, colour, blush, markings, tunic
     look: LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)),
     lvl: 1, xp: 0, gold: 50,
     inv: [{ id: "hp_s", n: 5 }, { id: "mp_s", n: 3 }],
-    eq: { weapon: plain(`w_${c}_1`), armor: plain("a_1"), acc: null },
+    eq: { weapon: plain(`w_${c}_1`), helm: null, armor: plain("a_1"), gloves: null, boots: null, ring1: null, ring2: null, amulet: null },
     tr: { str: 0, vit: 0, int: 0, grd: 0 },
     q: { i: 0, n: 0, st: 0 },
+    bq: null, bn: 0, mk: {},
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
   };
 }
 
+/** Ids that no longer exist, and what they became. */
+const OLD_ID = { c_1: "r_2", c_2: "n_3", c_3: "r_4" };
 /** Bring a sheet saved by an older version up to the current shape. */
 function migrate(ch) {
-  if (!CLASSES[ch.cls]) ch.cls = ch.cls === "archer" ? "ranger" : "warrior";
+  if (ch.cls === "ranger" || ch.cls === "archer") ch.cls = "lancer";
+  if (!CLASSES[ch.cls]) ch.cls = "warrior";
   const fix = (g) => {
-    if (!g || !ITEMS[g.id]) return null;
-    if (!isGear(g.id)) return g;
-    return { id: g.id, q: g.q | 0, enh: g.enh | 0, af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
+    if (!g || typeof g.id !== "string") return null;
+    const id = OLD_ID[g.id] || g.id.replace("w_ranger_", "w_lancer_");
+    if (!ITEMS[id]) return null;
+    if (!isGear(id)) return { id, n: g.n | 0 || 1 };
+    const out = { id, q: clamp(g.q | 0, 0, 4), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
+    if (LEGEND[g.lg]) out.lg = g.lg;
+    if (SETS[g.set]) out.set = g.set;
+    return out;
   };
   ch.inv = (Array.isArray(ch.inv) ? ch.inv : []).map(fix).filter(Boolean);
-  const eq = isObj(ch.eq) ? ch.eq : {};
-  ch.eq = { weapon: fix(eq.weapon), armor: fix(eq.armor), acc: fix(eq.acc) };
-  if (ch.eq.weapon && ITEMS[ch.eq.weapon.id].cls !== ch.cls) ch.eq.weapon = plain(`w_${ch.cls}_1`);
+  const old = isObj(ch.eq) ? ch.eq : {};
+  const eq = {};
+  for (const k of SLOTS) {
+    const g = fix(old[k]);
+    eq[k] = g && slotsFor(ITEMS[g.id].type).includes(k) ? g : null;
+  }
+  // the single accessory slot of old sheets becomes a ring or an amulet
+  const acc = fix(old.acc);
+  if (acc) {
+    const k = slotsFor(ITEMS[acc.id].type)[0];
+    if (!eq[k]) eq[k] = acc;
+    else if (ch.inv.length < INV) ch.inv.push(acc);
+  }
+  if (eq.weapon && ITEMS[eq.weapon.id].cls !== ch.cls) eq.weapon = plain(`w_${ch.cls}_1`);
+  ch.eq = eq;
   const tr = isObj(ch.tr) ? ch.tr : {};
   ch.tr = { str: tr.str | 0, vit: tr.vit | 0, int: tr.int | 0, grd: tr.grd | 0 };
   if (!isObj(ch.q)) ch.q = { i: 0, n: 0, st: 0 };
-  ch.v = 2;
+  ch.bq = isObj(ch.bq) && MOBS[ch.bq.k] ? { k: ch.bq.k, n: ch.bq.n | 0, need: BOUNTY_N } : null;
+  ch.bn = ch.bn | 0;
+  const mk = {};
+  if (isObj(ch.mk)) for (const k of Object.keys(ch.mk)) if (MOBS[k]) mk[k] = ch.mk[k] | 0;
+  ch.mk = mk;
+  ch.v = 3;
   return ch;
 }
 
@@ -538,41 +643,63 @@ function runeword(g) {
   }
   return null;
 }
+/** How a character's basic attack lands: the equipped weapon's kind, or the class's first. */
+function armOf(ch) {
+  const w = ch.eq.weapon;
+  return WKIND[(w && ITEMS[w.id].wk) || CLASSES[ch.cls].wk[0]];
+}
+const weaponKind = (ch) => (ch.eq.weapon && ITEMS[ch.eq.weapon.id].wk) || CLASSES[ch.cls].wk[0];
+/** Mastery rank (0–5) against one kind of monster. */
+function masteryRank(ch, k) {
+  const n = ch.mk[k] || 0;
+  let r = 0;
+  while (r < MASTERY.length && n >= MASTERY[r]) r++;
+  return r;
+}
 
-/** Everything gear, runes and runewords add up to. */
+/** Everything gear adds up to: base stats, affixes, runes, runewords, set bonuses, legendary powers. */
 function gearBonus(ch) {
-  const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0 };
+  const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
+  const lg = {}, sets = {};
+  const add = (s, v) => { if (s in b) b[s] += v; };
   for (const k of SLOTS) {
     const g = ch.eq[k];
     if (!g) continue;
-    for (const [s, v] of g.af) b[s] += v;
-    for (const r of g.ru) if (r && RUNES[r]) b[RUNES[r][1]] += RUNES[r][2];
+    const base = ITEMS[g.id].base;
+    // each enhancement level is worth a tenth of the piece's own stats
+    for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : 1 + 0.1 * g.enh));
+    for (const [s, v] of g.af) add(s, v);
+    for (const r of g.ru) if (r && RUNES[r]) add(RUNES[r][1], RUNES[r][2]);
     const rw = runeword(g);
-    if (rw) for (const [s, v] of rw.add) b[s] += v;
+    if (rw) for (const [s, v] of rw.add) add(s, v);
+    if (g.lg) lg[g.lg] = 1;
+    if (g.set) sets[g.set] = (sets[g.set] || 0) + 1;
   }
+  for (const id of Object.keys(sets)) {
+    for (const [n, list] of SETS[id].bonus) if (sets[id] >= n) for (const [s, v] of list) add(s, v);
+  }
+  if (lg.greed) b.gold += 60;
+  b.lg = lg;
   return b;
 }
 
 function stats(p) {
   let c = p.stc;
   if (!c) {
-    const ch = p.ch, cl = CLASSES[ch.cls], lv = ch.lvl, b = gearBonus(ch);
-    const w = ch.eq.weapon, a = ch.eq.armor;
-    const wAtk = w ? ITEMS[w.id].atk * (1 + 0.1 * w.enh) : 0;
-    const aDef = a ? ITEMS[a.id].def * (1 + 0.1 * a.enh) : 0;
-    const aHp = a ? ITEMS[a.id].hp + a.enh * 10 : 0;
+    const ch = p.ch, cl = CLASSES[ch.cls], lv = ch.lvl, b = gearBonus(ch), w = ch.eq.weapon, arm = armOf(ch);
     c = p.stc = {
-      mhp: Math.round(cl.hp[0] + cl.hp[1] * lv + aHp + b.hp + ch.tr.vit * TRAIN.vit.gain),
+      mhp: Math.round(cl.hp[0] + cl.hp[1] * lv + b.hp + ch.tr.vit * TRAIN.vit.gain),
       mmp: Math.round(cl.mp[0] + cl.mp[1] * lv + b.mp + ch.tr.int * TRAIN.int.gain),
-      atk0: (cl.atk[0] + cl.atk[1] * lv + wAtk + b.atk + ch.tr.str * TRAIN.str.gain) * (1 + b.atkp / 100),
-      def: Math.round(cl.def[0] + cl.def[1] * lv + aDef + b.def + ch.tr.grd * TRAIN.grd.gain),
+      atk0: (cl.atk[0] + cl.atk[1] * lv + b.atk + ch.tr.str * TRAIN.str.gain) * (1 + b.atkp / 100),
+      def: Math.round(cl.def[0] + cl.def[1] * lv + b.def + ch.tr.grd * TRAIN.grd.gain),
       crit: Math.min(75, cl.crit + (w ? w.enh : 0) + b.crit),
-      critd: 1.6 + b.critd / 100, ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + Math.min(40, b.spd) / 100), xp: b.xp, mf: b.mf,
+      critd: 1.6 + b.critd / 100, ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + Math.min(40, b.spd) / 100), xp: b.xp, mf: b.mf, gold: b.gold,
+      lg: b.lg, arm, acd: Math.round(arm.cd * (b.lg.haste ? 0.85 : 1)),
     };
   }
   const now = p.S.now;
   return {
-    mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, xp: c.xp, mf: c.mf,
+    mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, xp: c.xp, mf: c.mf, gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1.25 : 1)),
     spd: c.spd0 * (p.spdBuff > now ? 1.4 : 1), spd0: c.spd0,
   };
@@ -589,13 +716,16 @@ export function exportChar(S, pid) {
 
 // ───────────────────────────── world ─────────────────────────────
 
+function newMob(S, k, r) {
+  return { id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false };
+}
 export function setup() {
   const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, parties: {}, chat: [], n: 0 };
   for (const id of Object.keys(MAPS)) {
-    const rt = { id, mobs: [], drops: [], ev: [], tele: [], who: false, n: 0 };
+    const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], who: false, n: 0, kc: 0, fb: 0 };
     for (const sp of MAPS[id].spawns) {
       for (let i = 0; i < sp.n; i++) {
-        const mob = { id: S.nextId++, k: sp.k, r: sp.r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, castAt: 0, el: false };
+        const mob = newMob(S, sp.k, sp.r);
         placeMob(S, MAPS[id], mob);
         rt.mobs.push(mob);
       }
@@ -605,8 +735,9 @@ export function setup() {
   return S;
 }
 
-const ELITE = { hp: 3.5, atk: 1.4, xp: 4 };
-const mobMax = (mob) => Math.round(MOBS[mob.k].hp * (mob.el ? ELITE.hp : 1));
+/** What rank does to a monster: 1 is an elite, 2 a hunting ground's field boss. */
+const ELITE = [{ hp: 1, atk: 1, xp: 1 }, { hp: 3.5, atk: 1.4, xp: 4 }, { hp: 14, atk: 1.8, xp: 30 }];
+const mobMax = (mob) => Math.round(MOBS[mob.k].hp * ELITE[mob.el].hp);
 
 function placeMob(S, m, mob) {
   const [x0, y0, x1, y1] = mob.r;
@@ -618,12 +749,26 @@ function placeMob(S, m, mob) {
       break;
     }
   }
-  // now and then a champion spawns: far tougher, far more rewarding — party prey
-  mob.el = !MOBS[mob.k].boss && rnd(S) < 0.08;
+  // now and then an elite spawns: far tougher, far more rewarding — party prey
+  mob.el = !MOBS[mob.k].boss && rnd(S) < 0.08 ? 1 : 0;
   mob.hp = mobMax(mob);
-  mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0;
+  mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null;
   mob.wx = mob.x; mob.wy = mob.y;
-  mob.castAt = S.now + 5000;
+  mob.castAt = S.now + 3000 + rnd(S) * 3000;
+}
+/** A hunting ground's field boss walks in where the kill that summoned it was made. */
+function spawnFieldBoss(S, rt, x, y) {
+  const m = MAPS[rt.id];
+  const mob = newMob(S, FIELD_BOSS[rt.id], [0, 0, 0, 0]);
+  mob.el = 2; mob.temp = true;
+  mob.x = mob.hx = mob.wx = x; mob.y = mob.hy = mob.wy = y;
+  mob.hp = mobMax(mob);
+  mob.castAt = S.now + 4000;
+  rt.mobs.push(mob);
+  rt.fb = mob.id;
+  rt.kc = 0;
+  rt.ev.push(["r", mob.id]);
+  sys(S, `${m.name}에 우두머리 [${MOBS[mob.k].name}]이(가) 나타났습니다!`);
 }
 
 export function playerCount(S) {
@@ -637,7 +782,7 @@ export function addPlayer(S, pid, ch) {
   if (!MAPS[ch.map]) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, hp: 1, mp: 0, dead: false, stc: null,
-    cds: [0, 0, 0], atkAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
+    cds: [0, 0, 0, 0], atkAt: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     atkBuff: 0, spdBuff: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null,
   };
   if (!canStand(MAPS[p.map], p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
@@ -758,41 +903,58 @@ function takeItem(ch, id, n) {
   }
 }
 function gearName(g) {
-  return (g.enh > 0 ? `+${g.enh} ` : "") + ITEMS[g.id].name;
+  const word = g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : "";
+  return (g.enh > 0 ? `+${g.enh} ` : "") + word + ITEMS[g.id].name;
 }
 function sellPrice(s) {
   const it = ITEMS[s.id];
   if (!isGear(s.id)) return Math.floor(it.price * 0.4);
   return Math.floor(it.price * 0.25 * (1 + 0.8 * (s.q | 0)) * (1 + 0.3 * (s.enh | 0)));
 }
+/** The set a base item can belong to, if any. */
+function setFor(it) {
+  for (const id of Object.keys(SETS)) {
+    if (SETS[id].types.includes(it.type) && SETS[id].tiers.includes(it.tier)) return id;
+  }
+  return null;
+}
 
 /** Roll one piece of gear: rarity decides how many affixes, item level how big. */
 function rollGear(S, id, q, ilvl) {
+  const it = ITEMS[id];
+  if (q === 4 && !setFor(it)) q = 3;
   const g = plain(id);
   g.q = q;
   const [lo, hi] = RARITY_AFFIX[q];
   const pool = AFFIX.slice();
   for (let n = ri(S, lo, hi); n > 0 && pool.length; n--) {
     const [key, , , min, max, grow] = pool.splice(ri(S, 0, pool.length - 1), 1)[0];
-    g.af.push([key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * ilvl) * (q === 3 ? 1.3 : 1)))]);
+    g.af.push([key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * ilvl) * (q >= 3 ? 1.3 : 1)))]);
   }
-  if (ITEMS[id].type !== "acc") {
+  if (q === 3) { const keys = Object.keys(LEGEND); g.lg = keys[ri(S, 0, keys.length - 1)]; }
+  if (q === 4) g.set = setFor(it);
+  if (!isJewel(id)) {
     const r = rnd(S);
-    g.sk = (r < 0.12 ? 2 : r < 0.45 ? 1 : 0) + (q === 3 ? 1 : 0);
+    const most = it.type === "gloves" || it.type === "boots" ? 1 : 3;
+    g.sk = Math.min(most, (r < 0.12 ? 2 : r < 0.45 ? 1 : 0) + (q >= 3 ? 1 : 0));
   }
   return g;
 }
-function rollRarity(S, d, el, mf) {
+/** `rank`: 0 for ordinary monsters, 1 elite, 2 field boss or boss. */
+function rollRarity(S, rank, mf) {
   const k = 1 + mf / 100;
   const r = rnd(S);
-  const legend = (d.boss ? 0.15 : el ? 0.06 : 0.015) * k;
-  const rare = (d.boss ? 0.5 : el ? 0.3 : 0.1) * k;
-  const magic = 0.38 * k;
-  return r < legend ? 3 : r < legend + rare ? 2 : r < legend + rare + magic ? 1 : 0;
+  const top = [0.012, 0.07, 0.2][rank] * k;       // legendary or set
+  const rare = [0.09, 0.3, 0.55][rank] * k;
+  const magic = 0.36 * k;
+  if (r < top) return rnd(S) < 0.4 ? 4 : 3;
+  return r < top + rare ? 2 : r < top + rare + magic ? 1 : 0;
 }
 function tierFor(lv) {
   return lv < 8 ? 1 : lv < 16 ? 2 : lv < 26 ? 3 : lv < 38 ? 4 : 5;
 }
+/** Which kind of piece drops: weapons most often, jewellery least. */
+const DROP_TYPES = [["weapon", 24], ["helm", 13], ["armor", 15], ["gloves", 13], ["boots", 13], ["ring", 13], ["amulet", 9]];
 
 /** What one looter finds on one corpse. Everyone in the party rolls their own. */
 function lootFor(S, rt, mob, p) {
@@ -800,22 +962,30 @@ function lootFor(S, rt, mob, p) {
   const st = stats(p);
   const out = [];
   const share = allies(S, p).length;
-  out.push({ it: "gold", n: Math.max(1, Math.round((ri(S, d.gold[0], d.gold[1]) * (mob.el ? 3 : 1)) / share)) });
-  const tries = d.boss ? 3 : 1;
+  const rank = d.boss ? 2 : mob.el;
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * (1 + st.gold / 100);
+  out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
+  const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
   for (let i = 0; i < tries; i++) {
-    if (rnd(S) >= (mob.el ? 0.6 : d.gear) * (1 + st.mf / 100)) continue;
+    if (rnd(S) >= (rank === 2 ? 1 : rank === 1 ? 0.6 : d.gear) * (1 + st.mf / 100)) continue;
     let tier = tierFor(d.lv);
-    if ((mob.el || d.boss) && rnd(S) < 0.25) tier = Math.min(5, tier + 1);
-    const r = rnd(S);
-    let id = r < 0.4 ? `w_${p.ch.cls}_${tier}` : r < 0.8 ? `a_${tier}` : `c_${clamp(tier - 1, 1, 3)}`;
-    let q = rollRarity(S, d, mob.el, st.mf);
-    if (ITEMS[id].type === "acc" && q === 0) q = 1;
+    if (rank && rnd(S) < 0.25) tier = Math.min(5, tier + 1);
+    let roll = rnd(S) * 100, type = "weapon";
+    for (const [t, w] of DROP_TYPES) { if (roll < w) { type = t; break; } roll -= w; }
+    let id;
+    if (type === "weapon") {
+      // weapons always fit the looter's class; a mage finds staves and books alike
+      const kinds = CLASSES[p.ch.cls].wk;
+      id = `w_${WK_ID[kinds[ri(S, 0, kinds.length - 1)]]}_${tier}`;
+    } else id = `${GEAR[type].pre}_${tier}`;
+    let q = rollRarity(S, rank, st.mf);
+    if (isJewel(id) && q === 0) q = 1;
     out.push({ g: rollGear(S, id, q, d.lv) });
   }
-  if (rnd(S) < (d.boss ? 1 : mob.el ? 0.25 : 0.02 + d.lv * 0.001)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
-  if (rnd(S) < (d.boss ? 1 : mob.el ? 0.5 : 0.05)) out.push({ it: "stone", n: d.boss ? ri(S, 3, 6) : 1 });
-  if (rnd(S) < 0.12) out.push({ it: d.lv < 8 ? "hp_s" : "hp_m", n: 1 });
-  if (rnd(S) < 0.08) out.push({ it: d.lv < 8 ? "mp_s" : "mp_m", n: 1 });
+  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : 0.02 + d.lv * 0.001)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
+  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
+  if (rnd(S) < 0.1) out.push({ it: d.lv < 8 ? "hp_s" : "hp_m", n: 1 });
+  if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : "mp_m", n: 1 });
   for (const o of out) {
     rt.drops.push({
       id: S.nextId++, it: o.g ? o.g.id : o.it, g: o.g || null, n: o.n || 1, q: o.g ? o.g.q : 0,
@@ -847,26 +1017,47 @@ function gainXp(S, p, n) {
   p.dirty = true;
 }
 
+/** Take `dmg` off a monster on behalf of `p`; true if that killed it. */
+function dealMob(S, rt, mob, p, dmg, crit) {
+  if (mob.dead) return false;
+  mob.hp -= dmg;
+  mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
+  if (!mob.tgt) mob.tgt = p.pid;
+  rt.ev.push(["h", mob.id, dmg, crit ? 1 : 0, 0]);
+  if (mob.hp > 0) return false;
+  killMob(S, rt, mob);
+  return true;
+}
+
 function hurtMob(S, rt, mob, p, mult, sure) {
   if (mob.dead) return;
   const st = stats(p);
   const d = MOBS[mob.k];
   const crit = sure || rnd(S) * 100 < st.crit;
   let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? st.critd : 1) - d.def * 0.5;
+  dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
+  if (st.lg.giant && (mob.el || d.boss)) dmg *= 1.3;
   dmg = Math.max(1, Math.round(dmg));
-  mob.hp -= dmg;
-  mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
-  if (!mob.tgt) mob.tgt = p.pid;
-  rt.ev.push(["h", mob.id, dmg, crit ? 1 : 0, 0]);
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)));
-  if (mob.hp <= 0) killMob(S, rt, mob);
+  const x = mob.x, y = mob.y;
+  if (!dealMob(S, rt, mob, p, dmg, crit)) return;
+  // legendary powers that answer a kill
+  if (st.lg.feast && !p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * 0.04);
+  if (st.lg.nova && !p.chainKill) {
+    p.chainKill = true;
+    rt.ev.push(["b", Math.round(x), Math.round(y), 34, 1]);
+    for (const o of mobsWithin(rt, x, y, 34)) hurtMob(S, rt, o, p, 0.8);
+    p.chainKill = false;
+  }
 }
 
 function killMob(S, rt, mob) {
   const d = MOBS[mob.k];
+  const el = mob.el;
   mob.dead = true;
   mob.respAt = S.now + d.resp;
   mob.tgt = null;
+  mob.dot = null;
   rt.ev.push(["k", mob.id]);
   // everyone who hit it, plus their party members standing nearby, shares the kill
   const looters = new Set();
@@ -878,39 +1069,71 @@ function killMob(S, rt, mob) {
     for (const o of allies(S, p)) if (!o.dead) looters.add(o);
   }
   mob.by = {};
-  const xp = d.xp * (mob.el ? ELITE.xp : 1);
+  const xp = d.xp * ELITE[el].xp;
   for (const p of looters) {
+    const ch = p.ch;
     const n = Math.min(PARTY_MAX, allies(S, p).length);
-    gainXp(S, p, xp * PARTY_SHARE[n - 1]);
-    p.ch.kills = (p.ch.kills || 0) + 1;
-    const q = p.ch.q;
+    // a kill soon after the last one keeps the streak alive
+    p.streak = S.now - p.streakAt < STREAK_MS ? p.streak + 1 : 1;
+    p.streakAt = S.now;
+    const rank = masteryRank(ch, mob.k);
+    gainXp(S, p, xp * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02));
+    ch.kills = (ch.kills || 0) + 1;
+    ch.mk[mob.k] = (ch.mk[mob.k] || 0) + 1;
+    const now = masteryRank(ch, mob.k);
+    if (now > rank) {
+      toast(p, `토벌 숙련 [${d.name}] ${now}단계 — 피해 +${now * 3}%, 경험치 +${now * 2}%`);
+      rt.ev.push(["u", p.eid, 2]);
+    }
+    const q = ch.q;
     const quest = QUESTS[q.i];
     if (q.st === 1 && quest && quest.mob === mob.k && q.n < quest.n) {
       q.n++;
-      p.dirty = true;
       if (q.n >= quest.n) toast(p, `의뢰 [${quest.title}] 달성! 관리자에게 돌아가세요.`);
     }
+    const bq = ch.bq;
+    if (bq && bq.k === mob.k && bq.n < bq.need) {
+      bq.n++;
+      if (bq.n >= bq.need) toast(p, `반복 의뢰 [${d.name} ${bq.need}마리] 달성! 관리자에게 보고하세요.`);
+    }
+    p.dirty = true;
     lootFor(S, rt, mob, p);
   }
   if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}을(를) 쓰러뜨렸습니다!`);
+  if (el === 2) {
+    rt.fb = 0;
+    if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 우두머리 [${d.name}]을(를) 쓰러뜨렸습니다!`);
+  }
+  // some monsters go off where they fall
+  if (d.burst) {
+    rt.tele.push({ x: mob.x, y: mob.y, r: d.burst, at: S.now + 900, dmg: d.atk * 1.3 });
+    rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), d.burst, 900]);
+  }
+  // enough kills in one hunting ground call out its field boss
+  if (!d.boss && el < 2 && FIELD_BOSS[rt.id] && looters.size) {
+    rt.kc++;
+    if (rt.kc >= FB_KILLS && !rt.fb) spawnFieldBoss(S, rt, mob.x, mob.y);
+  }
 }
-function hurtPlayer(S, rt, p, raw) {
+function hurtPlayer(S, rt, p, raw, mob) {
   if (p.dead) return;
   const st = stats(p);
   const dmg = Math.max(1, Math.round(raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6));
   p.hp -= dmg;
   p.hitAt = S.now;
   rt.ev.push(["h", p.eid, dmg, 0, 1]);
+  if (mob && st.lg.thorn) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * 0.4)), 0);
   if (p.hp <= 0) {
     p.hp = 0;
     p.dead = true;
+    p.streak = 0;
     dropAggro(S, p);
     rt.ev.push(["pd", p.eid]);
     toast(p, "쓰러졌습니다...");
   }
 }
 
-const big = (mob) => (MOBS[mob.k].boss ? 12 : 0);
+const big = (mob) => (MOBS[mob.k].boss ? 12 : mob.el === 2 ? 8 : 0);
 function nearestMob(rt, x, y, range) {
   let best = null, bd = range;
   for (const mob of rt.mobs) {
@@ -923,36 +1146,74 @@ function nearestMob(rt, x, y, range) {
 function mobsWithin(rt, x, y, r) {
   return rt.mobs.filter((mob) => !mob.dead && dist(x, y, mob.x, mob.y) - big(mob) <= r);
 }
+/** Monsters standing in a strip `len` long from (x, y) along the unit vector (ux, uy). */
+function mobsInLine(rt, x, y, ux, uy, len, half) {
+  return rt.mobs.filter((o) => {
+    if (o.dead) return false;
+    const rx = o.x - x, ry = o.y - y;
+    const along = rx * ux + ry * uy;
+    return along > -4 && along < len && Math.abs(rx * uy - ry * ux) < half + big(o);
+  });
+}
+/** Shove a monster `far` along (ux, uy), stopping at anything solid. */
+function knock(m, mob, ux, uy, far) {
+  if (MOBS[mob.k].boss || mob.el === 2) return;
+  const ok = MOBS[mob.k].fly ? canFly : canStand;
+  for (let k = far; k > 3; k -= 4) {
+    if (ok(m, mob.x + ux * k, mob.y + uy * k)) { mob.x += ux * k; mob.y += uy * k; return; }
+  }
+}
 function face(p, mob) {
   p.dir = dirOf(mob.x - p.x, mob.y - p.y);
 }
 const DX = [0, -1, 1, 0], DY = [1, 0, 0, -1];
+/** The unit vector from a player toward a monster, or the way the player faces. */
+function aimVec(p, mob) {
+  if (!mob) return [DX[p.dir], DY[p.dir]];
+  const d = dist(p.x, p.y, mob.x, mob.y) || 1;
+  return [(mob.x - p.x) / d, (mob.y - p.y) / d];
+}
 
 function basicAttack(S, p) {
-  const c = CLASSES[p.ch.cls];
+  const st = stats(p);
+  const c = st.arm;
   const rt = S.maps[p.map];
   p.atkAt = S.now;
   const mob = nearestMob(rt, p.x, p.y, c.range);
-  if (mob) {
-    face(p, mob);
-    rt.ev.push(["a", p.eid, c.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir]);
-    // a greatsword's arc catches whatever stands next to the target
-    const extra = c.cleave > 1 ? mobsWithin(rt, mob.x, mob.y, 26).filter((o) => o !== mob).slice(0, c.cleave - 1) : [];
-    hurtMob(S, rt, mob, p, 1);
-    for (const o of extra) hurtMob(S, rt, o, p, 0.6);
-  } else {
-    const reach = c.range < 40 ? 14 : c.range * 0.7;
+  if (!mob) {
+    const reach = c.range < 60 ? 14 : c.range * 0.7;
     rt.ev.push(["a", p.eid, c.fx, Math.round(p.x + DX[p.dir] * reach), Math.round(p.y - 6 + DY[p.dir] * reach), p.dir]);
+    return;
+  }
+  face(p, mob);
+  rt.ev.push(["a", p.eid, c.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir]);
+  const mult = c.mult || 1;
+  // a greatsword's arc catches what stands beside the target, a spear runs through
+  // what stands behind it, and a spellbook's burst splashes around it
+  let extra = [];
+  if (c.cleave) extra = mobsWithin(rt, mob.x, mob.y, 26).slice(0, c.cleave);
+  else if (c.line) { const [ux, uy] = aimVec(p, mob); extra = mobsInLine(rt, p.x, p.y, ux, uy, c.range + 10, 11).slice(0, c.line); }
+  else if (c.splash) extra = mobsWithin(rt, mob.x, mob.y, c.splash).slice(0, 4);
+  const zx = mob.x, zy = mob.y;
+  hurtMob(S, rt, mob, p, mult);
+  for (const o of extra) if (o !== mob) hurtMob(S, rt, o, p, mult * 0.6);
+  if (st.lg.chain && rnd(S) < 0.25) {
+    for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
+      rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
+      hurtMob(S, rt, o, p, 0.6);
+    }
   }
 }
 
 function castSkill(S, p, i) {
   const sk = SKILLS[p.ch.cls][i];
-  const c = CLASSES[p.ch.cls];
+  const st = stats(p);
+  const c = st.arm;
   const rt = S.maps[p.map];
   const m = MAPS[p.map];
   p.mp -= sk.mp;
   p.cds[i] = S.now + sk.cd;
+  if (st.lg.echo && rnd(S) < 0.2) { p.cds[i] = S.now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
   p.atkAt = S.now;
   p.dirty = true;
   const ev = (kind, x, y) => rt.ev.push(["a", p.eid, kind, Math.round(x), Math.round(y), p.dir]);
@@ -961,17 +1222,41 @@ function castSkill(S, p, i) {
     if (mob) face(p, mob);
     return mob;
   };
+  /** Jump next to a monster (behind it if `behind`), leaving a trail. */
+  const jumpTo = (mob, behind) => {
+    const [ux, uy] = aimVec(p, mob);
+    const ox = p.x, oy = p.y;
+    for (const k of behind ? [14, -14] : [-14, 14]) {
+      const nx = mob.x + ux * k, ny = mob.y + uy * k;
+      if (canStand(m, nx, ny)) { p.x = nx; p.y = ny; break; }
+    }
+    p.fix = true;
+    p.mvAt = S.now;
+    face(p, mob);
+    rt.ev.push(["d", p.eid, Math.round(ox), Math.round(oy - 8), Math.round(p.x), Math.round(p.y - 8)]);
+  };
+  /** Damage that keeps landing on one spot: `n` bursts, `every` ms apart. */
+  const zone = (x, y) => {
+    rt.zones.push({ x, y, r: sk.r, next: S.now + 350, every: sk.every, left: sk.n, mult: sk.mult, pid: p.pid, kind: sk.id === "meteor" ? 2 : 3 });
+    rt.ev.push(["t", Math.round(x), Math.round(y), sk.r, 350 + sk.every * (sk.n - 1), 1]);
+  };
   switch (sk.id) {
     case "strike": case "vital": {
       const mob = aimAt(c.range + 8);
       const kind = sk.id === "strike" ? 10 : 18;
-      if (mob) { ev(kind, mob.x, mob.y - 6); hurtMob(S, rt, mob, p, sk.mult, sk.id === "vital"); }
-      else ev(kind, p.x + DX[p.dir] * 14, p.y - 6 + DY[p.dir] * 14);
+      if (mob) {
+        ev(kind, mob.x, mob.y - 6);
+        if (sk.stun) mob.stun = S.now + sk.stun;
+        hurtMob(S, rt, mob, p, sk.mult, sk.id === "vital");
+      } else ev(kind, p.x + DX[p.dir] * 14, p.y - 6 + DY[p.dir] * 14);
       break;
     }
-    case "spin":
+    case "spin": case "sweep":
       ev(11, p.x, p.y - 6);
-      for (const mob of mobsWithin(rt, p.x, p.y, sk.r)) hurtMob(S, rt, mob, p, sk.mult);
+      for (const mob of mobsWithin(rt, p.x, p.y, sk.r)) {
+        if (sk.knock) { const [ux, uy] = aimVec(p, mob); knock(m, mob, ux, uy, sk.knock); }
+        hurtMob(S, rt, mob, p, sk.mult);
+      }
       break;
     case "shout":
       ev(12, p.x, p.y - 6);
@@ -982,23 +1267,29 @@ function castSkill(S, p, i) {
         if (o !== p) rt.ev.push(["u", o.eid, 2]);
       }
       break;
+    case "pierce": case "quake": {
+      const [ux, uy] = aimVec(p, aimAt(sk.len));
+      ev(sk.id === "quake" ? 23 : 13, p.x + ux * sk.len, p.y - 6 + uy * sk.len);
+      for (const o of mobsInLine(rt, p.x, p.y, ux, uy, sk.len, sk.id === "quake" ? 18 : 13)) {
+        if (sk.knock) knock(m, o, ux, uy, sk.knock);
+        hurtMob(S, rt, o, p, sk.mult);
+      }
+      break;
+    }
     case "dash": {
       const mob = aimAt(sk.len);
       if (!mob) { ev(19, p.x, p.y - 6); break; }
-      const d = dist(p.x, p.y, mob.x, mob.y) || 1;
-      const ux = (mob.x - p.x) / d, uy = (mob.y - p.y) / d;
-      const ox = p.x, oy = p.y;
-      // land behind the target if there is room, otherwise right in front of it
-      for (const k of [14, -14]) {
-        const nx = mob.x + ux * k, ny = mob.y + uy * k;
-        if (canStand(m, nx, ny)) { p.x = nx; p.y = ny; break; }
-      }
-      p.fix = true;
-      p.mvAt = S.now;
-      face(p, mob);
-      rt.ev.push(["d", p.eid, Math.round(ox), Math.round(oy - 8), Math.round(p.x), Math.round(p.y - 8)]);
+      jumpTo(mob, true);
       ev(18, mob.x, mob.y - 6);
       hurtMob(S, rt, mob, p, sk.mult);
+      break;
+    }
+    case "vault": {
+      const mob = aimAt(sk.len);
+      if (!mob) { ev(19, p.x, p.y - 6); break; }
+      jumpTo(mob, false);
+      ev(21, mob.x, mob.y - 6);
+      for (const o of mobsWithin(rt, mob.x, mob.y, sk.r)) { o.slow = S.now + 3000; hurtMob(S, rt, o, p, sk.mult); }
       break;
     }
     case "smoke":
@@ -1006,36 +1297,29 @@ function castSkill(S, p, i) {
       p.spdBuff = S.now + sk.dur;
       ev(20, p.x, p.y - 6);
       break;
-    case "multi": {
-      const list = mobsWithin(rt, p.x, p.y, c.range + 10)
-        .sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y)).slice(0, 3);
+    case "fan": {
+      const list = mobsWithin(rt, p.x, p.y, sk.r)
+        .sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y)).slice(0, sk.n);
       if (list.length) face(p, list[0]);
-      else ev(1, p.x + DX[p.dir] * 70, p.y - 6 + DY[p.dir] * 70);
-      for (const mob of list) { ev(1, mob.x, mob.y - 6); hurtMob(S, rt, mob, p, sk.mult); }
-      break;
-    }
-    case "pierce": {
-      const mob = aimAt(sk.len);
-      let ux = DX[p.dir], uy = DY[p.dir];
-      if (mob) {
-        const d = dist(p.x, p.y, mob.x, mob.y) || 1;
-        ux = (mob.x - p.x) / d; uy = (mob.y - p.y) / d;
-      }
-      ev(13, p.x + ux * sk.len, p.y - 6 + uy * sk.len);
-      for (const o of rt.mobs) {
-        if (o.dead) continue;
-        const rx = o.x - p.x, ry = o.y - p.y;
-        const along = rx * ux + ry * uy;
-        const off = Math.abs(rx * uy - ry * ux);
-        if (along > -4 && along < sk.len && off < (MOBS[o.k].boss ? 24 : 13)) hurtMob(S, rt, o, p, sk.mult);
+      ev(24, p.x + DX[p.dir] * 20, p.y - 6 + DY[p.dir] * 20);
+      for (const mob of list) {
+        rt.ev.push(["z", Math.round(p.x), Math.round(p.y - 8), Math.round(mob.x), Math.round(mob.y - 6), 1]);
+        mob.dot = { until: S.now + 4000, next: S.now + 1000, dmg: Math.max(1, Math.round(st.atk * sk.dot)), pid: p.pid };
+        hurtMob(S, rt, mob, p, sk.mult);
       }
       break;
     }
-    case "fireball": case "nade": {
+    case "fireball": {
       const mob = aimAt(c.range + 10);
       const tx = mob ? mob.x : p.x + DX[p.dir] * 70, ty = mob ? mob.y : p.y + DY[p.dir] * 70;
-      ev(sk.id === "nade" ? 21 : 15, tx, ty - 6);
+      ev(15, tx, ty - 6);
       for (const o of mobsWithin(rt, tx, ty, sk.r)) hurtMob(S, rt, o, p, sk.mult);
+      break;
+    }
+    case "rain": case "meteor": {
+      const mob = aimAt(110);
+      ev(24, mob ? mob.x : p.x + DX[p.dir] * 60, (mob ? mob.y : p.y + DY[p.dir] * 60) - 6);
+      zone(mob ? mob.x : p.x + DX[p.dir] * 60, mob ? mob.y : p.y + DY[p.dir] * 60);
       break;
     }
     case "nova":
@@ -1047,9 +1331,9 @@ function castSkill(S, p, i) {
       for (const pid of Object.keys(S.players)) {
         const o = S.players[pid];
         if (o.map !== p.map || o.dead || dist(p.x, p.y, o.x, o.y) > sk.r) continue;
-        const st = stats(o);
-        const amt = Math.round(st.mhp * 0.35);
-        o.hp = Math.min(st.mhp, o.hp + amt);
+        const so = stats(o);
+        const amt = Math.round(so.mhp * 0.35);
+        o.hp = Math.min(so.mhp, o.hp + amt);
         rt.ev.push(["h", o.eid, -amt, 0, 1]);
       }
       break;
@@ -1124,7 +1408,7 @@ export function validateAction(S, pid, a) {
       if (!num(a.x) || !num(a.y)) return bad("잘못된 좌표");
       return OK;
     case "atk":
-      if (now - p.atkAt < CLASSES[ch.cls].cd - 60) return bad("아직 공격할 수 없습니다");
+      if (now - p.atkAt < stats(p).acd - 60) return bad("아직 공격할 수 없습니다");
       return OK;
     case "sk": {
       const sk = SKILLS[ch.cls][a.i];
@@ -1147,6 +1431,7 @@ export function validateAction(S, pid, a) {
       const it = ITEMS[s.id];
       if (it.cls && it.cls !== ch.cls) return bad("다른 직업의 장비입니다");
       if (ch.lvl < it.req) return bad(`레벨 ${it.req}부터 착용할 수 있습니다`);
+      if (a.k !== undefined && !slotsFor(it.type).includes(a.k)) return bad("그 부위에는 착용할 수 없습니다");
       return OK;
     }
     case "uneq":
@@ -1176,6 +1461,7 @@ export function validateAction(S, pid, a) {
       if (n < 1 || n > STACK) return bad("잘못된 수량");
       if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
       const id = resolveItem(a.id, ch.cls);
+      if (ITEMS[id].cls && ITEMS[id].cls !== ch.cls) return bad("다른 직업의 장비입니다");
       if (ch.gold < ITEMS[id].price * n) return bad("골드가 부족합니다");
       if (!canAdd(ch, id, n)) return bad("가방이 가득 찼습니다");
       return OK;
@@ -1189,15 +1475,33 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "enh": {
-      if (a.k !== "weapon" && a.k !== "armor") return bad("강화할 수 없는 부위");
-      const g = ch.eq[a.k];
+      const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
       if (!g) return bad("장착한 장비가 없습니다");
+      if (isJewel(g.id)) return bad("장신구는 강화할 수 없습니다");
       if (g.enh >= 10) return bad("최대 강화 단계입니다");
       if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
       const c = enhCost(g);
       if (ch.gold < c.gold) return bad("골드가 부족합니다");
       if (countItem(ch, "stone") < c.stone) return bad("강화석이 부족합니다");
       return OK;
+    }
+    case "salv": {
+      const s = ch.inv[a.s];
+      if (!s || !isGear(s.id)) return bad("분해할 수 없는 아이템");
+      if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
+      if (!canAdd(ch, "stone", 12)) return bad("가방이 가득 찼습니다");
+      return OK;
+    }
+    case "bq": {
+      if (!npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
+      if (a.a === "take") {
+        const d = MOBS[a.k];
+        if (typeof a.k !== "string" || !d || d.boss) return bad("그런 의뢰는 없습니다");
+        if (d.lv > ch.lvl + 4) return bad("아직 감당하기 어려운 상대입니다");
+        return OK;
+      }
+      if (a.a === "done") return ch.bq && ch.bq.n >= ch.bq.need ? OK : bad("아직 의뢰를 마치지 못했습니다");
+      return bad("잘못된 요청입니다");
     }
     case "quest": {
       if (!npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
@@ -1251,7 +1555,9 @@ export function applyAction(S, pid, a) {
     }
     case "eq": {
       const s = ch.inv[a.s];
-      const k = ITEMS[s.id].type;
+      // a ring goes where asked, else on the first bare finger
+      const fits = slotsFor(ITEMS[s.id].type);
+      const k = fits.includes(a.k) ? a.k : fits.find((o) => !ch.eq[o]) || fits[0];
       const old = ch.eq[k];
       ch.eq[k] = s;
       if (old) ch.inv[a.s] = old;
@@ -1325,6 +1631,40 @@ export function applyAction(S, pid, a) {
       }
       S.maps[p.map].ev.push(["e", p.eid, win ? 1 : 0]);
       afterGear(S, p);
+      break;
+    }
+    case "salv": {
+      const s = ch.inv[a.s];
+      ch.inv.splice(a.s, 1);
+      // better pieces break down into more stones; enhancement gives some back
+      const n = [rnd(S) < 0.35 ? 1 : 0, 1, 2, 5, 5][s.q | 0] + Math.floor((s.enh | 0) / 2);
+      if (n > 0) { addItem(ch, "stone", n); p.gain.push(["item", "stone", n, 0]); }
+      toast(p, n > 0 ? `${gearName(s)} 분해 — 강화석 ${n}개` : `${gearName(s)} 분해 — 건진 것이 없습니다`);
+      p.dirty = true;
+      break;
+    }
+    case "bq": {
+      if (a.a === "take") {
+        ch.bq = { k: a.k, n: 0, need: BOUNTY_N };
+        toast(p, `반복 의뢰 수락: ${MOBS[a.k].name} ${BOUNTY_N}마리`);
+      } else {
+        const d = MOBS[ch.bq.k];
+        const gold = Math.round(((d.gold[0] + d.gold[1]) / 2) * ch.bq.need * 0.8);
+        ch.gold += gold;
+        p.gain.push(["gold", gold]);
+        ch.bn++;
+        // every third report earns a stone, every tenth a rune
+        if (ch.bn % 3 === 0 && addItem(ch, "stone", 1)) p.gain.push(["item", "stone", 1, 0]);
+        if (ch.bn % 10 === 0) {
+          const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`;
+          if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]);
+        }
+        toast(p, `반복 의뢰 완료 (${ch.bn}회째) — 같은 의뢰가 다시 시작됩니다.`);
+        const xp = Math.round(d.xp * ch.bq.need * 0.5);
+        ch.bq = { k: ch.bq.k, n: 0, need: BOUNTY_N };
+        gainXp(S, p, xp);
+      }
+      p.dirty = true;
       break;
     }
     case "quest": {
@@ -1420,11 +1760,22 @@ function tickMob(S, m, rt, mob, dt) {
   const d = MOBS[mob.k];
   const now = S.now;
   if (mob.dead) {
-    if (now >= mob.respAt) { placeMob(S, m, mob); rt.ev.push(["r", mob.id]); }
+    if (!mob.temp && now >= mob.respAt) { placeMob(S, m, mob); rt.ev.push(["r", mob.id]); }
     return;
   }
+  if (mob.dot) {
+    // poison keeps biting once a second
+    const dot = mob.dot;
+    if (now >= dot.until) mob.dot = null;
+    else if (now >= dot.next) {
+      dot.next = now + 1000;
+      const o = S.players[dot.pid];
+      if (o && o.map === m.id && dealMob(S, rt, mob, o, dot.dmg, 0)) return;
+    }
+  }
+  if (mob.stun > now) return;
   const speed = d.spd * (mob.slow > now ? 0.5 : 1);
-  const atk = d.atk * (mob.el ? ELITE.atk : 1);
+  const atk = d.atk * ELITE[mob.el].atk;
   let tgt = mob.tgt ? S.players[mob.tgt] : null;
   const leash = Math.max(150, d.aggro * 2.4);
   if (tgt && (tgt.map !== m.id || tgt.dead || dist(mob.x, mob.y, mob.hx, mob.hy) > leash + 60 || dist(mob.x, mob.y, tgt.x, tgt.y) > leash)) {
@@ -1442,14 +1793,27 @@ function tickMob(S, m, rt, mob, dt) {
   }
   if (tgt) {
     const dd = dist(mob.x, mob.y, tgt.x, tgt.y);
-    if (d.boss && now >= mob.castAt) {
+    if (d.leap && now >= mob.castAt && dd > d.range + 16 && dd < d.leap) {
+      // pounce: land beside the target in one bound
+      mob.castAt = now + 4500;
+      const nx = tgt.x - ((tgt.x - mob.x) / dd) * 14, ny = tgt.y - ((tgt.y - mob.y) / dd) * 14;
+      if (canStand(m, nx, ny)) { mob.x = nx; mob.y = ny; mob.atkAt = Math.max(mob.atkAt, now + 350); }
+    }
+    if (d.slam && mob.el < 2 && now >= mob.castAt && dd < 70) {
+      // pound the ground: a ring to step out of
+      mob.castAt = now + 6000;
+      rt.tele.push({ x: mob.x, y: mob.y, r: d.slam, at: now + 1100, dmg: atk * 1.5 });
+      rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), d.slam, 1100]);
+    }
+    if ((d.boss || mob.el === 2) && now >= mob.castAt) {
       mob.castAt = now + 6500;
       // one blast on every player in the fight: stand still and the whole party pays
       for (const pid of Object.keys(S.players)) {
         const o = S.players[pid];
         if (o.map !== m.id || o.dead || dist(mob.x, mob.y, o.x, o.y) > 220) continue;
-        rt.tele.push({ x: o.x, y: o.y, r: 40, at: now + 1300, dmg: atk * 1.7 });
-        rt.ev.push(["t", Math.round(o.x), Math.round(o.y), 40, 1300]);
+        const r = d.boss ? 40 : 32;
+        rt.tele.push({ x: o.x, y: o.y, r, at: now + 1300, dmg: atk * (d.boss ? 1.7 : 1.3) });
+        rt.ev.push(["t", Math.round(o.x), Math.round(o.y), r, 1300]);
       }
     }
     if (dd <= d.range) {
@@ -1457,7 +1821,7 @@ function tickMob(S, m, rt, mob, dt) {
         mob.atkAt = now + d.cd;
         mob.dir = tgt.x < mob.x ? 1 : 2;
         rt.ev.push(d.shot ? ["m", mob.id, Math.round(tgt.x), Math.round(tgt.y - 8)] : ["m", mob.id]);
-        hurtPlayer(S, rt, tgt, atk);
+        hurtPlayer(S, rt, tgt, atk, mob);
       }
     } else stepMob(m, mob, tgt.x, tgt.y, speed, dt, d.fly);
     return;
@@ -1487,6 +1851,17 @@ export function tick(S, now) {
     if (rt.n <= 0) continue;
     const m = MAPS[id];
     for (const mob of rt.mobs) tickMob(S, m, rt, mob, dt);
+    for (let i = rt.mobs.length - 1; i >= 0; i--) if (rt.mobs[i].temp && rt.mobs[i].dead) rt.mobs.splice(i, 1);
+    for (let i = rt.zones.length - 1; i >= 0; i--) {
+      const z = rt.zones[i];
+      if (now < z.next) continue;
+      const p = S.players[z.pid];
+      if (!p || p.map !== id) { rt.zones.splice(i, 1); continue; }
+      z.next = now + z.every;
+      rt.ev.push(["b", Math.round(z.x), Math.round(z.y), z.r, z.kind]);
+      for (const o of mobsWithin(rt, z.x, z.y, z.r)) hurtMob(S, rt, o, p, z.mult);
+      if (--z.left <= 0) rt.zones.splice(i, 1);
+    }
     for (let i = rt.tele.length - 1; i >= 0; i--) {
       const t = rt.tele[i];
       if (now < t.at) continue;
@@ -1512,7 +1887,7 @@ export function tick(S, now) {
           if (p.ch.inv.length >= INV) { if (now > p.fullAt) { p.fullAt = now + 3000; toast(p, "가방이 가득 찼습니다."); } continue; }
           p.ch.inv.push(dr.g);
           p.gain.push(["item", dr.it, 1, dr.q]);
-          if (dr.q === 3) sys(S, `${p.ch.name}님이 전설 장비 [${ITEMS[dr.it].name}]을(를) 획득했습니다!`);
+          if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]을(를) 획득했습니다!`);
         } else if (addItem(p.ch, dr.it, dr.n)) {
           p.gain.push(["item", dr.it, dr.n, 0]);
         } else {
@@ -1558,11 +1933,14 @@ function selfPayload(p) {
   const now = p.S.now;
   const trc = {};
   for (const k of Object.keys(TRAIN)) trc[k] = [trainCost(ch.tr[k]), trainTotal(ch.tr[k], 10)];
+  const enh = {};
+  for (const k of SLOTS) enh[k] = ch.eq[k] && !isJewel(ch.eq[k].id) ? enhCost(ch.eq[k]) : null;
   return {
     name: ch.name, cls: ch.cls, lvl: ch.lvl, xp: ch.xp, need: ch.lvl >= MAXLV ? 0 : xpNeed(ch.lvl), gold: ch.gold,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: st.crit, critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: st.mf, spd: st.spd0,
-    inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, tr: ch.tr, trc,
-    enh: { weapon: ch.eq.weapon ? enhCost(ch.eq.weapon) : null, armor: ch.eq.armor ? enhCost(ch.eq.armor) : null },
+    goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: st.acd, range: st.arm.range,
+    inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, tr: ch.tr, trc, enh,
+    bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     cds: p.cds.map((t) => Math.max(0, t - now)),
     buffs: [Math.max(0, p.atkBuff - now), Math.max(0, p.spdBuff - now)],
   };
@@ -1589,7 +1967,7 @@ export function viewFor(S, pid) {
   }
   for (const mob of rt.mobs) {
     if (mob.dead || !near(mob)) continue;
-    out.M.push([mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el ? 1 : 0]);
+    out.M.push([mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el]);
   }
   for (const dr of rt.drops) {
     if (near(dr) && (dr.own === pid || S.now >= dr.freeAt)) out.D.push([dr.id, dr.it, Math.round(dr.x), Math.round(dr.y), dr.q]);
@@ -1602,11 +1980,11 @@ export function viewFor(S, pid) {
     for (const oid of Object.keys(S.players)) {
       const o = S.players[oid];
       if (o.map !== p.map) continue;
-      // what everyone can see of this player, gear included: armour tier, weapon
-      // tier, party, weapon rarity and enhancement, accessory tier
-      const ar = o.ch.eq.armor, wp = o.ch.eq.weapon, ac = o.ch.eq.acc;
+      // what everyone can see of this player: look, party, and the weapon in hand
+      // (its tier, rarity, enhancement and kind)
+      const ar = o.ch.eq.armor, wp = o.ch.eq.weapon;
       out.who.push([o.eid, o.ch.name, o.ch.cls, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
-        wp ? wp.q : 0, wp ? wp.enh : 0, ac ? ITEMS[ac.id].tier : 0]);
+        wp ? wp.q : 0, wp ? wp.enh : 0, 0, weaponKind(o.ch)]);
     }
   }
   if (p.party) {
@@ -1628,14 +2006,19 @@ export function defs() {
   const mobs = {};
   for (const k of Object.keys(MOBS)) {
     const d = MOBS[k];
-    mobs[k] = { name: d.name, sp: d.sp, lv: d.lv, hp: d.hp, boss: d.boss ? 1 : 0 };
+    mobs[k] = { name: d.name, sp: d.sp, lv: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, xp: d.xp };
   }
   const classes = {};
-  for (const k of Object.keys(CLASSES)) classes[k] = { name: CLASSES[k].name, arm: CLASSES[k].arm, cd: CLASSES[k].cd, range: CLASSES[k].range };
+  for (const k of Object.keys(CLASSES)) {
+    const arm = WKIND[CLASSES[k].wk[0]];
+    classes[k] = { name: CLASSES[k].name, arm: CLASSES[k].arm, wk: CLASSES[k].wk, cd: arm.cd, range: arm.range };
+  }
   const affix = {};
   for (const [k, label, prefix] of AFFIX) affix[k] = [label, prefix];
   return {
     items: ITEMS, mobs, classes, skills: SKILLS, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV, maxLv: MAXLV,
-    affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.hp, partyMax: PARTY_MAX,
+    affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
+    slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
+    streak: [STREAK_MS, STREAK_MAX], maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
   };
 }

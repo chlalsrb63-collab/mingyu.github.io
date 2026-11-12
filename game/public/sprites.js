@@ -239,111 +239,336 @@ export function mobLook(kind) {
 // ───────────────────────────── weapons ─────────────────────────────
 
 const METAL = ["#c4c8d2", "#c4c8d2", "#e6ebf4", "#b0cef8", "#86e8f2", "#e8a0fa"];
+const GEM = ["#8ad8f0", "#8ad8f0", "#8ad8f0", "#b6a0ff", "#8ff4ff", "#ff9af0"];
+const COVER = ["#8a5a3a", "#8a5a3a", "#3f6ab0", "#7a48b0", "#2a8a96", "#b03a6a"];
+const GOLD = "#f0cc60";
+const RARE_INK = [INK, "#2c4a8c", "#8a6a14", "#9a4a12", "#1f6a3a"];
+
+/** The weapon each class starts with; a mage may also carry a `book`. */
+export const WEAPON_OF = { warrior: "sword", rogue: "dagger", lancer: "spear", ranger: "spear", mage: "staff" };
+/** The kind of weapon to draw: what the gear says, else the class's own. */
+export function weaponKind(cls, gear = {}) {
+  return HOLD[gear && gear.wk] ? gear.wk : WEAPON_OF[cls] || "sword";
+}
+
 /**
- * A weapon sprite, drawn pointing right with its grip at `GRIP`.
- * `gear`: wt tier (1–5) · wq rarity (0–3) · we enhancement.
+ * A weapon sprite. Swords, daggers, spears and staves point right with the
+ * grip at `GRIP`; a book is drawn open and upright around the sheet's centre.
+ * `kind`: sword · dagger · spear · staff · book (a class id is accepted too).
+ * `gear`: wt tier (1–5) · wq rarity (0–4) · we enhancement.
  */
-export function weaponSprite(cls, gear = {}) {
-  const wt = Math.max(1, Math.min(5, gear.wt | 0 || 1)), wq = gear.wq | 0, we = gear.we | 0;
-  const key = `w:${cls}:${wt}:${wq}:${we >= 7 ? 2 : we >= 4 ? 1 : 0}`;
+export function weaponSprite(kind, gear = {}) {
+  if (!HOLD[kind]) kind = weaponKind(kind, gear);
+  const wt = Math.max(1, Math.min(5, gear.wt | 0 || 1)), wq = Math.max(0, Math.min(4, gear.wq | 0));
+  const key = `w:${kind}:${wt}:${wq}`;
   let c = cache.get(key);
   if (c) return c;
-  const [cv, g] = sheet();
+  const [cv, g] = sheet(kind === "spear" ? 48 : S);
   const b = brush(g);
-  const m = METAL[wt], y = 32;
-  if (cls === "warrior") {
-    const len = 34 + wt * 2, w = 10 + wt;
-    b.r(4, y - 2, 12, 4, "#7a5236"); b.r(2, y - 3, 3, 6, "#f0cc60");
-    b.block(15, y - w / 2 - 3, 5, w + 6, "#f0cc60", 2);
-    b.r(20, y - w / 2, len, w, m); b.tri([[20 + len, y - w / 2], [20 + len + 7, y], [20 + len, y + w / 2]], m);
-    b.r(20, y, len + 4, w / 2, dk(m, 0.84)); b.r(22, y - 1, len - 2, 2, wt >= 4 ? "#f6ffff" : lt(m, 1.2));
-    if (wt >= 3) b.r(16, y - 2, 3, 4, "#7fe4ee");
-  } else if (cls === "rogue") {
-    const len = 14 + wt * 2;
-    b.r(4, y - 2, 9, 4, "#4a3a44"); b.block(12, y - 5, 3, 10, "#f0cc60", 0);
-    b.tri([[15, y - 4], [15 + len, y], [15, y + 4]], m); b.tri([[15, y], [15 + len, y], [15, y + 4]], dk(m, 0.84));
-  } else if (cls === "ranger") {
-    const len = wt >= 3 ? 30 + wt * 2 : 16 + wt * 3;
-    b.tri([[6, y + 1], [12, y + 1], [9, y + 12], [4, y + 11]], "#6a4c38");
-    if (wt >= 3) b.block(0, y - 3, 8, 7, "#6a4c38", 2);
-    b.block(6, y - 5, len * 0.55, 8, "#4c5060", 3);
-    b.r(6 + len * 0.5, y - 3, len * 0.5, wt >= 5 ? 6 : 4, m); b.r(6 + len * 0.5, y - 3, len * 0.5, 1, lt(m));
-    if (wt >= 3) b.block(6 + len * 0.3, y + 3, 4, 7, "#3c4050", 0);
-    if (wt >= 4) b.r(9, y - 4, len * 0.4, 2, "#8ff4ff");
+  const m = METAL[wt], y = GRIP[1];
+  if (kind === "sword") {
+    const len = 14 + wt, wide = wt >= 4 ? 1 : 0;
+    b.r(1, y - 1, 2, 3, GOLD); b.r(3, y - 1, 5, 3, "#7a5236"); b.r(4, y - 1, 1, 3, "#5a3a26"); b.r(6, y - 1, 1, 3, "#5a3a26");
+    b.r(8, y - 4 - wide, 2, 9 + wide * 2, GOLD); b.r(8, y + 3 + wide, 2, 2, shade(GOLD, 0.3));
+    b.r(10, y - 2 - wide, len, 5 + wide * 2, m);
+    b.r(10 + len, y - 1, 1, 3, m); b.r(11 + len, y, 1, 1, m);
+    b.r(10, y - 2 - wide, len, 1, lt(m, 1.25)); b.r(10, y + 1, len + 1, 2 + wide, shade(m, 0.24));
+    b.r(11, y, len - 2, 1, wt >= 4 ? "#f6ffff" : shade(m, 0.12));
+    if (wt >= 3) b.r(8, y, 2, 1, GEM[wt]);
+  } else if (kind === "dagger") {
+    const len = 5 + wt;
+    b.r(2, y - 1, 1, 3, GOLD); b.r(3, y - 1, 4, 3, "#4a3a44"); b.r(7, y - 3, 1, 7, GOLD);
+    b.r(8, y - 1, len, 3, m); b.r(8 + len, y, 1, 1, m);
+    b.r(8, y - 1, len, 1, lt(m, 1.25)); b.r(8, y + 1, len, 1, shade(m, 0.24));
+    if (wt >= 4) b.r(9, y, len - 2, 1, GEM[wt]);
+  } else if (kind === "spear") {
+    const xs = 29 + wt;                                          // where the shaft ends and the head begins
+    b.r(0, y, xs, 1, "#9a6e48"); b.r(0, y - 1, 2, 3, "#6a7080");
+    b.r(xs - 4, y + 1, 2, 3, wt >= 4 ? GEM[wt] : "#e0564a"); b.r(xs - 3, y + 4, 1, 1, wt >= 4 ? GEM[wt] : "#e0564a");
+    b.r(xs, y - 1, 2, 3, GOLD);
+    if (wt >= 3) b.r(xs + 1, y - 4, 1, 9, m);
+    b.r(xs + 2, y - 2, 3, 5, m); b.r(xs + 5, y - 1, 3, 3, m); b.r(xs + 8, y, 2, 1, m);
+    b.r(xs + 2, y - 2, 3, 1, lt(m, 1.25)); b.r(xs + 5, y - 1, 3, 1, lt(m, 1.25));
+    b.r(xs + 2, y + 1, 3, 2, shade(m, 0.24)); b.r(xs + 5, y + 1, 3, 1, shade(m, 0.24));
+  } else if (kind === "staff") {
+    const gem = GEM[wt];
+    b.r(1, y, 20, 1, "#9a6e48"); b.r(1, y, 2, 1, "#6a4a30");
+    // a wooden crook, or from tier 3 a metal cradle, holding the gem
+    if (wt >= 3) { b.r(20, y - 3, 1, 7, m); b.r(21, y - 4, 3, 1, m); b.r(21, y + 4, 3, 1, m); b.r(24, y - 5, 1, 1, m); b.r(24, y + 5, 1, 1, m); }
+    else b.r(20, y - 2, 2, 5, "#7a5236");
+    b.r(22, y - 2, 5, 5, gem); b.r(23, y - 3, 3, 7, gem); b.r(27, y - 1, 1, 3, gem);
+    b.r(23, y - 2, 1, 1, "#ffffff"); b.r(24, y + 1, 3, 2, shade(gem, 0.26)); b.r(23, y + 3, 3, 1, shade(gem, 0.26));
   } else {
-    const gem = ["", "#8ad8f0", "#8ad8f0", "#b6a0ff", "#8ff4ff", "#ff9af0"][wt];
-    b.r(2, y - 1, 44, 3, "#9a6e48"); b.r(2, y + 1, 44, 1, "#74502f");
-    if (wt >= 3) { b.oval(50, y, 9, 9, m); b.oval(51, y, 6, 6, "#00000000"); g.clearRect(46, y - 5, 9, 10); }
-    else b.block(44, y - 4, 6, 8, "#b4885c", 2);
-    b.oval(50, y, 5 + wt * 0.4, 5 + wt * 0.4, gem); b.r(48, y - 3, 2, 2, "#ffffff");
+    // an open book, seen from the front
+    const cover = COVER[wt], page = "#fff8e8";
+    b.r(8, 13, 16, 9, cover); b.r(8, 21, 16, 1, shade(cover, 0.3));
+    b.r(9, 12, 6, 9, page); b.r(17, 12, 6, 9, page);
+    b.r(14, 12, 1, 9, "#e2d6c0"); b.r(17, 12, 1, 9, "#e2d6c0"); b.r(15, 12, 2, 10, shade(cover, 0.3));
+    b.r(10, 14, 3, 1, "#b8a890"); b.r(10, 16, 4, 1, "#b8a890"); b.r(10, 18, 3, 1, "#b8a890");
+    b.r(19, 14, 3, 1, GEM[wt]); b.r(20, 15, 1, 2, GEM[wt]); b.r(19, 17, 3, 1, GEM[wt]); b.r(20, 18, 1, 1, GEM[wt]);
+    b.r(16, 22, 1, 3, "#e0564a");
   }
   // rare weapons are inked in their rarity's colour
-  c = half(finish(cv, g, [INK, "#2c4a8c", "#8a6a14", "#9a4a12"][wq] || INK));
+  c = finish(cv, g, RARE_INK[wq] || INK, 1);
   cache.set(key, c);
   return c;
 }
-/** How each class carries its weapon at rest and swings it, in degrees (0 = pointing right, counter-clockwise). */
+/**
+ * How each kind of weapon is carried and used. Angles are in degrees (0 points
+ * right, counter-clockwise). `style`: sweep through `arc`, stab forward by
+ * `push` pixels, cast with a short flick, or float beside the caster.
+ */
 export const HOLD = {
-  warrior: { rest: 58, arc: 200, time: 0.24, reach: 0, style: "sweep" },
-  rogue: { rest: -38, arc: 0, time: 0.16, reach: 0.34, style: "stab" },
-  ranger: { rest: -8, arc: 0, time: 0.16, reach: -0.12, style: "shoot" },
-  mage: { rest: 84, arc: 60, time: 0.3, reach: 0.12, style: "cast" },
+  sword: { rest: 58, arc: 200, time: 0.24, push: 3, style: "sweep" },
+  dagger: { rest: -38, arc: 0, time: 0.16, push: 9, style: "stab" },
+  spear: { rest: 64, arc: 0, time: 0.22, push: 13, style: "stab" },
+  staff: { rest: 84, arc: 60, time: 0.3, push: 4, style: "cast" },
+  book: { rest: 0, arc: 0, time: 0.3, push: 5, style: "float" },
 };
 
 // ───────────────────────────── monsters ─────────────────────────────
+// Each creature is drawn at its real size with a one-pixel outline, facing
+// left, standing on the sheet's foot line. `f` is the frame (0 or 1).
 
-/** Two frames of a monster (the second is its bounce). */
+const WHITE = "#fbfbff";
+const MOB = {
+  /** 도토리 병정 — an acorn that marches under its own cap. */
+  acorn(b, f, px) {
+    const o = -f, nut = "#e8bc7c", cap = "#8a5a34";
+    b.r(12, 27 + o, 2, 1, "#6a4426"); b.r(18, 27 + o, 2, 1, "#6a4426");
+    b.r(11, 18 + o, 10, 8, nut); b.r(12, 26 + o, 8, 1, shade(nut, 0.2)); b.r(20, 19 + o, 1, 7, shade(nut, 0.2));
+    b.r(10, 14 + o, 12, 3, cap); b.r(11, 13 + o, 10, 1, cap); b.r(9, 17 + o, 14, 1, shade(cap, 0.3));
+    for (const [x, y] of [[12, 14], [15, 15], [18, 14], [13, 16], [17, 16], [20, 15]]) px(x, y + o, "#b07a48");
+    b.r(15, 10 + o, 2, 3, "#6a4426"); b.r(17, 10 + o, 3, 1, "#6ab85a"); b.r(18, 9 + o, 2, 1, "#6ab85a");
+    px(12, 19 + o, DARK); px(19, 19 + o, DARK);
+    b.r(13, 20 + o, 1, 2, DARK); b.r(18, 20 + o, 1, 2, DARK);
+    b.r(15, 23 + o, 2, 1, "#4a3640"); px(12, 22 + o, PINK); px(19, 22 + o, PINK);
+  },
+  /** 화분 소라게 — a hermit crab that moved into a flower pot, flower and all. */
+  potcrab(b, f, px) {
+    const o = -f, pot = "#d8784e", crab = "#f39a4a", leaf = "#6ab85a";
+    for (const s of [0, 1]) {                                   // claws and legs, mirrored
+      const m = (x, w) => (s ? 32 - x - w : x);
+      b.r(m(6, 3), 22 + o, 3, 3, crab); b.r(m(5, 1), 22 + o, 1, 1, crab); b.r(m(5, 1), 24 + o, 1, 1, crab);
+      b.r(m(9, 2), 25, 2, 1, crab); px(m(10, 1), 27, shade(crab, 0.3)); px(m(12, 1), 27, shade(crab, 0.3));
+    }
+    b.r(11, 24, 10, 3, crab); b.r(15, 26, 2, 1, "#4a3640");
+    b.r(10, 16, 12, 3, pot); b.r(11, 19, 10, 3, pot); b.r(12, 22, 8, 1, pot);
+    b.r(19, 16, 3, 3, shade(pot, 0.26)); b.r(18, 19, 3, 3, shade(pot, 0.26)); b.r(11, 20, 7, 1, "#f6dcb8");
+    b.r(9, 13, 14, 3, pot); b.r(9, 13, 14, 1, lt(pot, 1.22)); b.r(10, 12, 12, 1, "#5a4030");
+    b.r(16, 8, 1, 4, "#4a9a50"); b.r(13, 10, 3, 1, leaf); b.r(17, 9, 3, 1, leaf);
+    b.r(15 + f, 5, 3, 3, "#ff9ac0"); px(16 + f, 6, "#ffe070");
+    for (const x of [12, 17]) { b.r(x + 1, 21, 1, 3, crab); b.r(x, 19, 3, 3, WHITE); px(x + 1, 20, DARK); }
+  },
+  /** 민들레 홀씨 — a dandelion clock that drifts where the wind forgot it. */
+  puff(b, f, px) {
+    for (let i = 0; i < 12; i++) { const a = (i * 30 + f * 15) * (Math.PI / 180); px(Math.round(15.5 + Math.cos(a) * 8), Math.round(12.5 + Math.sin(a) * 7.5), WHITE); }
+    b.oval(16, 13, 6.5, 6, WHITE); b.oval(16, 16, 5, 2.6, shade(WHITE, 0.12));
+    b.r(13, 12, 1, 2, DARK); b.r(18, 12, 1, 2, DARK); b.r(15, 15, 2, 1, "#4a3640"); px(12, 15, PINK); px(19, 15, PINK);
+    b.r(16, 19, 1, 3, "#8ab868"); b.r(16 + f, 22, 1, 2, "#8ab868"); b.r(15 + f, 24, 2, 3, "#8a6238");
+  },
+  /** 버섯 개구리 — a frog that never took its mushroom hat off. */
+  capfrog(b, f, px) {
+    const o = f, gr = "#6ab85a", red = "#d05a4e";
+    b.r(8, 24, 3, 3, shade(gr, 0.26)); b.r(21, 24, 3, 3, shade(gr, 0.26)); b.r(7, 27, 4, 1, gr); b.r(21, 27, 4, 1, gr);
+    b.r(11, 20 + o, 10, 8 - o, gr); b.r(10, 21 + o, 12, 6 - o, gr); b.r(13, 24 + o, 6, 4 - o, "#c8e8a0");
+    b.oval(16, 15 + o, 8.5, 6, red, -99, 17 + o); b.r(8, 17 + o, 16, 1, shade(red, 0.3));
+    b.r(11, 12 + o, 2, 2, "#fff4e0"); b.r(17, 11 + o, 3, 2, "#fff4e0"); b.r(20, 14 + o, 2, 1, "#fff4e0"); px(14, 15 + o, "#fff4e0");
+    for (const x of [10, 19]) { b.r(x, 18 + o, 3, 3, WHITE); px(x + 1, 19 + o, DARK); }
+    b.r(12, 23 + o, 8, 1, DARK); px(11, 22 + o, DARK); px(20, 22 + o, DARK);
+  },
+  /** 그루터기 거북 — a tortoise whose shell is the stump it fell asleep under. */
+  stump(b, f, px) {
+    const bark = "#7a5636", wood = "#e6c896", skin = "#7aa860";
+    b.r(8, 25, 3, 3, skin); b.r(22, 25, 3, 3, skin); b.r(13, 26, 2, 2, shade(skin, 0.24)); b.r(19, 26, 2, 2, shade(skin, 0.24));
+    px(25, 23, skin); px(26, 24, skin);
+    b.r(8 - f, 20, 2, 3, skin); b.r(4 - f, 19, 5, 4, skin); b.r(5 - f, 18, 3, 1, skin); px(5 - f, 20, DARK); px(4 - f, 22, shade(skin, 0.36));
+    b.r(9, 16, 16, 10, bark); b.r(9, 24, 16, 2, shade(bark, 0.26));
+    b.r(12, 19, 1, 6, shade(bark, 0.3)); b.r(17, 18, 1, 7, shade(bark, 0.3)); b.r(21, 20, 1, 5, shade(bark, 0.3));
+    b.oval(17, 16, 8, 3.2, wood); b.oval(17, 16, 5, 2, "#c8a070"); b.oval(17, 16, 3, 1.2, wood); px(16, 16, "#c8a070");
+    b.r(20, 11, 1, 3, "#4a9a50"); b.r(21, 10, 3, 2, "#6ab85a"); b.r(18, 12, 2, 1, "#6ab85a");
+  },
+  /** 초롱 반딧불 — a firefly that carries its light in a paper lantern. */
+  lantern(b, f, px) {
+    const paper = f ? "#fff0a8" : "#ffd870", red = "#e0564a";
+    const wy = f ? 14 : 10;
+    b.r(6, wy, 5, 3, "#d8f0ff"); b.r(21, wy, 5, 3, "#d8f0ff"); px(6, wy, "#ffffff"); px(25, wy, "#ffffff");
+    px(14, 6, DARK); px(17, 6, DARK); px(13, 5, "#ffe070"); px(18, 5, "#ffe070");
+    b.r(12, 7, 8, 2, "#3a3048");
+    b.r(12, 9, 8, 12, paper); b.r(11, 10, 10, 10, paper);
+    b.r(13, 10, 1, 10, "#f0a848"); b.r(18, 10, 1, 10, "#f0a848");
+    b.r(12, 9, 8, 1, red); b.r(12, 20, 8, 1, red);
+    b.r(14, 13, 1, 2, DARK); b.r(17, 13, 1, 2, DARK); b.r(15, 16, 2, 1, "#4a3640");
+    b.r(13, 21, 6, 1, "#3a3048"); b.r(15, 22, 2, 3, red); px(15 + f, 25, red);
+  },
+  /** 털실 거미 — a ball of yarn that grew needle legs and unravels as it walks. */
+  yarn(b, f, px, line) {
+    const pink = "#f078a8", legs = "#4a3a5a";
+    for (const s of [0, 1]) {
+      const m = (x) => (s ? 31 - x : x), k = (s + f) % 2;
+      line(m(9), 17, m(6), 15 - k, legs); line(m(6), 15 - k, m(4), 19 - k, legs);
+      line(m(8), 20, m(5), 20 + k, legs); line(m(5), 20 + k, m(3), 25, legs);
+      line(m(9), 23, m(6), 24 - k, legs); line(m(6), 24 - k, m(6), 27, legs);
+    }
+    b.oval(16, 19, 7.5, 7, pink);
+    for (let i = 0; i < 9; i++) { px(11 + i, 15 + (i >> 1), shade(pink, 0.3)); px(10 + i, 20 + (i >> 1), shade(pink, 0.3)); px(21 - i, 14 + (i >> 1), lt(pink, 1.3)); }
+    b.oval(16, 24, 6, 1.6, shade(pink, 0.22));
+    b.r(11, 17, 3, 3, WHITE); px(12, 18, DARK); b.r(18, 18, 2, 2, WHITE); px(18, 19, DARK);
+    px(21, 12, pink); px(22, 11, pink); px(23, 11, pink); px(24, 12, pink); px(24, 13 + f, pink);
+  },
+  /** 감시 눈알 CCTV — a security camera that grew a real eye, and never blinks. */
+  eyecam(b, f, px) {
+    const body = "#e8ecf4", grey = "#aab2c4";
+    b.r(17, 7, 2, 3, "#6a7080"); b.r(f ? 15 : 12, 6, f ? 6 : 12, 1, "#b6c0d0");
+    px(24, 16, DARK); px(25, 17, DARK); px(26, 17, DARK); px(27, 18, DARK);
+    b.r(11, 11, 13, 8, body); b.r(11, 17, 13, 2, shade(body, 0.2)); b.r(8, 10, 17, 2, grey);
+    px(22, 13, f ? "#ff4040" : "#7a2a30");
+    b.oval(10, 15, 4.6, 4.6, WHITE); b.r(6, 11, 8, 1, grey);
+    b.r(7 + f, 13, 3, 4, "#e04848"); b.r(7 + f, 14, 2, 2, DARK); px(9 + f, 13, "#ffffff");
+  },
+  /** 신호등 보행 로봇 — a traffic light that got tired of standing still. */
+  signbot(b, f, px) {
+    const box = "#f0b83a", leg = "#8a90a0";
+    b.r(13, 23, 2, 4, leg); b.r(17, 23, 2, 4, leg);
+    b.r(f ? 13 : 11, 27, 3, 1, "#1c1e28"); b.r(f ? 18 : 17, 27, 3, 1, "#1c1e28");
+    b.r(9, 12, 2, 1, leg); b.r(8, 13, 1, 3, leg); b.r(21, 12, 2, 1, leg); b.r(23, 13, 1, 3, leg);
+    b.r(11, 5, 10, 17, box); b.r(12, 4, 8, 19, box); b.r(19, 6, 2, 15, shade(box, 0.3)); b.r(12, 5, 8, 16, "#2e3240");
+    const lamps = [["#ff5a4a", "#6a2a2e"], ["#ffd24a", "#6a5a2e"], ["#5ae07a", "#2a5a3e"]], lit = f ? 2 : 0;
+    lamps.forEach(([on, off], i) => {
+      const y = 6 + i * 5;
+      b.r(13, y, 6, 4, i === lit ? on : off); b.r(12, y - 1, 8, 1, "#1c1e28");
+      if (i === lit) { px(14, y + 1, DARK); px(17, y + 1, DARK); b.r(15, y + (lit ? 2 : 3), 2, 1, DARK); if (lit) { px(14, y + 2, DARK); px(17, y + 2, DARK); } px(13, y, "#ffffff"); }
+    });
+  },
+  /** 자판기 미믹 — the vending machine that takes your coin, then your arm. */
+  vend(b, f, px) {
+    const box = "#4aa8d8", dark = "#1c2430";
+    b.r(11, 27, 3, 1, "#2e3240"); b.r(19, 27, 3, 1, "#2e3240");
+    b.r(10, 7, 13, 20, box); b.r(11, 6, 11, 1, box); b.r(21, 7, 2, 20, shade(box, 0.26)); b.r(10, 7, 13, 1, lt(box, 1.3));
+    b.r(11, 9, 9, 7, dark);
+    for (const x of [12, 16]) { b.r(x, 10, 3, 2, "#ffe070"); px(x + 1 - f, 11, DARK); }
+    ["#e0564a", "#ffd24a", "#5ae07a"].forEach((c, i) => b.r(12 + i * 3, 13, 2, 2, c));
+    px(21, 10, f ? "#ffe070" : "#f0a030");
+    const my = f ? 17 : 18, mh = f ? 6 : 4;
+    b.r(11, my, 10, mh, "#3a1420");
+    for (const x of [12, 14, 16, 18]) px(x, my, WHITE);
+    for (const x of [13, 15, 17, 19]) px(x, my + mh - 1, WHITE);
+    b.r(14, my + 2, 3, f ? 5 : 1, "#f07888");
+    b.r(10, 24, 13, 1, "#fbfbff");
+  },
+  /** 브라운관 유령 — a ghost still haunting the last television it watched. */
+  tvhead(b, f, px) {
+    const sheet2 = "#dcdcf4", wood = "#8a6240", scr = f ? "#c8fff4" : "#9af0e0";
+    b.r(8, 20 - f, 2, 2, sheet2); b.r(22, 20 - f, 2, 2, sheet2);
+    b.r(11, 19, 10, 4, sheet2); b.r(12, 23, 8, 2, sheet2); b.r(13, 25, 5, 1, sheet2); b.r(14 + f, 26, 3, 1, sheet2); px(15 + f * 2, 27, sheet2);
+    b.r(18, 20, 3, 3, shade(sheet2, 0.16));
+    for (let i = 0; i < 4; i++) { px(13 - i, 7 - i, DARK); px(18 + i, 7 - i, DARK); }
+    b.r(9, 8, 14, 11, wood); b.r(10, 7, 12, 13, wood); b.r(9, 17, 14, 2, shade(wood, 0.28));
+    b.r(11, 10, 9, 7, scr);
+    for (let i = 0; i < 4; i++) b.r(11 + ((i * 3 + f * 2) % 7), 10 + i * 2 + f, 2, 1, "#ffffff");
+    b.r(13, 12, 1, 2, DARK); b.r(17, 12, 1, 2, DARK); b.r(14, 15, 3, 1, DARK);
+    px(21, 11, "#f0cc60"); px(21, 14, "#d05a4e");
+  },
+  /** 촛농 유령 — a candle that kept burning after it finished melting. */
+  candle(b, f, px) {
+    const wax = "#fff4dc";
+    b.r(10, 24, 12, 2, wax); b.r(f ? 8 : 9, 26, f ? 16 : 14, 1, wax); b.r(10, 27, 12, 1, shade(wax, 0.2));
+    b.r(8, 17 + f, 3, 2, wax); b.r(21, 18 - f, 3, 2, wax);
+    b.r(11, 12, 10, 13, wax); b.r(12, 11, 8, 1, wax); b.r(20, 15, 1, 10, shade(wax, 0.18));
+    b.r(11, 12, 10, 2, "#fffdf2"); b.r(11, 14, 2, 3, "#fffdf2"); b.r(17, 14, 2, 2 + f, "#fffdf2"); b.r(20, 14, 1, 3, "#fffdf2");
+    px(12, 16, DARK); px(19, 16, DARK); b.r(13, 17, 1, 2, DARK); b.r(18, 17, 1, 2, DARK); b.r(15, 20, 2, 2, "#4a3640");
+    b.r(16, 9, 1, 2, DARK);
+    if (f) { b.r(14, 5, 4, 4, "#ffb040"); b.r(16, 2, 2, 3, "#ffb040"); b.r(15, 6, 2, 3, "#fff0a0"); }
+    else { b.r(14, 4, 4, 5, "#ffb040"); b.r(15, 2, 2, 2, "#ffb040"); b.r(15, 5, 2, 3, "#fff0a0"); }
+    px(15, 8, "#8ad8f0"); px(16, 8, "#8ad8f0");
+  },
+  /** 정동 골렘 — a boulder cracked open around the crystals it grew inside. */
+  geode(b, f, px) {
+    const rock = "#8a8698", hole = "#3a2a5a";
+    b.r(3, 17 + f, 4, 5, rock); b.r(3, 21 + f, 4, 1, shade(rock, 0.3)); b.r(25, 17 - f, 4, 5, rock); b.r(25, 21 - f, 4, 1, shade(rock, 0.3));
+    b.r(10, 26, 4, 2, shade(rock, 0.36)); b.r(18, 26, 4, 2, shade(rock, 0.36));
+    b.oval(16, 18, 11, 9.5, rock); b.oval(16, 23, 10, 4, shade(rock, 0.24));
+    b.r(9, 11, 4, 1, lt(rock, 1.3)); px(8, 13, lt(rock, 1.3)); px(22, 12, shade(rock, 0.3)); px(23, 13, shade(rock, 0.3));
+    b.r(11, 13, 10, 10, hole); b.r(10, 15, 12, 6, hole); px(12, 12, hole); px(15, 12, hole); px(19, 12, hole); px(13, 23, hole); px(17, 23, hole); px(18, 24, hole);
+    for (const [x, y, h, c] of [[11, 19, 4, "#b48cff"], [13, 17, 6, "#72e6f4"], [16, 18, 5, "#b48cff"], [18, 16, 7, "#72e6f4"], [20, 19, 3, "#b48cff"]]) { b.r(x, y, 2, h, c); px(x, y - (f ? 0 : 0), "#ffffff"); px(x + 1, y + 1, shade(c, 0.26)); }
+    b.r(13, 14, 2, 2, f ? "#ffffff" : "#c8fbff"); b.r(18, 14, 2, 2 - 0, f ? "#ffffff" : "#c8fbff");
+  },
+  /** 프리즘 해파리 — a jellyfish of cut glass trailing every colour it swallowed. */
+  prism(b, f, px) {
+    ["#ff6a6a", "#ffa850", "#ffe070", "#7ae08a", "#72e6f4", "#6a9cff", "#b48cff"].forEach((c, i) => {
+      const x = 10 + i * 2, len = 5 + ((i * 3) % 4);
+      for (let j = 0; j < len; j++) px(x + ((j + f + i) % 4 < 2 ? 0 : 1), 18 + j, c);
+    });
+    b.tri([[16, 4], [8.5, 17.5], [23.5, 17.5]], "#f4fdff"); b.tri([[16, 4], [16, 17.5], [23.5, 17.5]], "#a8e4f8");
+    b.r(9, 17, 15, 1, "#8adcf0");
+    px(13, 9 + f, "#ffffff"); px(12, 10 + f, "#ffffff"); px(19, 14, "#f4fdff");
+    b.r(13, 13, 1, 2, DARK); b.r(18, 13, 1, 2, DARK); px(12, 15, PINK); px(19, 15, PINK);
+  },
+};
+/** 균열의 군주 — an empty royal robe held open around a tear in the world. Drawn at 96×96. */
+function riftLord(b, f, px) {
+  const robe = "#3a2a6a", trim = "#8ae8f8", bone = "#f0ecf8", void2 = "#120a2a", rift = "#ff72d6";
+  const o = f ? -1 : 0;
+  // hands that belong to no arm
+  for (const s of [0, 1]) {
+    const m = (x, w) => (s ? 96 - x - w : x), hy = 50 + (s === f ? -2 : 2);
+    b.r(m(8, 11), hy, 11, 10, bone); b.r(m(9, 9), hy - 1, 9, 1, bone); b.r(m(8, 11), hy + 7, 11, 3, shade(bone, 0.2));
+    for (let i = 0; i < 3; i++) b.r(m(9 + i * 4, 2), hy + 10, 2, 4, bone);
+    b.r(m(10, 7), hy - 5, 7, 4, robe); b.r(m(10, 7), hy - 2, 7, 1, trim);
+    b.r(m(12, 3), hy + 3, 3, 3, rift);
+  }
+  // the robe, and the tattered hem
+  b.tri([[28, 36 + o], [68, 36 + o], [79, 78], [17, 78]], robe);
+  for (let x = 18; x < 78; x += 8) b.tri([[x, 78], [x + 8, 78], [x + 4 + (f ? 1 : -1), 85]], robe);
+  b.tri([[48, 36 + o], [68, 36 + o], [79, 78], [58, 78]], shade(robe, 0.3));
+  b.tri([[42, 38 + o], [54, 38 + o], [61, 79], [35, 79]], void2);
+  b.tri([[42, 38 + o], [44, 38 + o], [37, 79], [35, 79]], trim); b.tri([[52, 38 + o], [54, 38 + o], [61, 79], [59, 79]], trim);
+  b.r(18, 76, 60, 2, trim);
+  for (const [x, y] of [[40, 52], [55, 60], [43, 70], [53, 46], [46, 74], [57, 72]]) px(x, y, f ? "#ffffff" : "#b6a0ff");
+  // the tear itself
+  const zig = [[48, 41], [45, 48], [50, 54], [45, 61], [50, 67], [47, 76]];
+  for (let i = 0; i < zig.length - 1; i++) { const [x0, y0] = zig[i], [x1, y1] = zig[i + 1]; b.tri([[x0 - 2, y0], [x0 + 3, y0], [x1 + 3, y1], [x1 - 2, y1]], rift); b.tri([[x0, y0], [x0 + (f ? 2 : 1), y0], [x1 + (f ? 2 : 1), y1], [x1, y1]], "#ffffff"); }
+  // shoulders of raw crystal
+  b.tri([[20, 40 + o], [35, 29 + o], [38, 41 + o]], "#6a58b0"); b.tri([[76, 40 + o], [61, 29 + o], [58, 41 + o]], "#6a58b0");
+  b.tri([[27, 35 + o], [35, 29 + o], [36, 37 + o]], "#9a88e0"); b.tri([[69, 35 + o], [61, 29 + o], [60, 37 + o]], "#9a88e0");
+  // the hood and the cracked mask
+  b.oval(48, 23 + o, 14, 14.5, robe); b.oval(52, 25 + o, 9, 11, shade(robe, 0.3));
+  b.oval(48, 23 + o, 9, 11, bone); b.oval(51, 27 + o, 5, 6.5, shade(bone, 0.14));
+  b.r(41, 21 + o, 6, 2, rift); b.r(42, 21 + o, 2, 1, "#ffffff");
+  b.r(51, 19 + o, 4, 5, void2); px(52, 21 + o, f ? "#ffffff" : rift);
+  for (const [x, y] of [[53, 12], [52, 13], [53, 14], [54, 15], [53, 16], [54, 17], [55, 18], [55, 24], [54, 25], [55, 26], [54, 27], [53, 28]]) px(x, y + o, void2);
+  // a crown of shards that never touches the head
+  [[34, 7], [41, 10], [48, 13], [55, 10], [62, 7]].forEach(([x, h], i) => { const y = 9 + o * 2 + (i % 2 ? 1 : 0); b.tri([[x - 3, y], [x + 3, y], [x, y - h]], i % 2 ? rift : trim); b.tri([[x, y], [x + 3, y], [x, y - h]], i % 2 ? shade(rift, 0.3) : shade(trim, 0.3)); });
+}
+
+/** Old names from before the redesign, so a stale server still draws something sensible. */
+const MOB_ALIAS = { slime: "acorn", bslime: "potcrab", shroom: "capfrog", boar: "stump", bat: "lantern", drone: "eyecam", thug: "tvhead", robot: "signbot", skel: "candle", golem: "geode" };
+
+/** Two frames of a monster. Anything unknown gets a plain blob rather than an error. */
 export function monsterSheet(kind) {
+  kind = MOB_ALIAS[kind] || kind;
   const key = "m:" + kind;
   let s = cache.get(key);
   if (s) return s;
   const draw = (f) => {
-    const [c, g] = sheet();
+    const [c, g] = sheet(kind === "boss" ? 96 : S);
     const b = brush(g);
-    const q = f ? 2 : 0; // squash
-    const eyes = (x1, x2, y, col = "#2b2233", w = 4, h = 6) => { b.r(x1, y, w, h, col); b.r(x2, y, w, h, col); b.r(x1, y, 2, 2, "#ffffff"); b.r(x2, y, 2, 2, "#ffffff"); };
-    if (kind === "slime" || kind === "bslime") {
-      const col = kind === "slime" ? "#7ccc68" : "#68a8ec";
-      b.oval(32, 44 + q, 17 + q, 14 - q, col); b.r(15 - q, 46 + q, 34 + q * 2, 12 - q, col);
-      b.oval(32, 54, 17 + q, 5, dk(col)); b.oval(25, 38 + q, 5, 3, lt(col, 1.5));
-      eyes(24, 36, 43 + q);
-    } else if (kind === "shroom") {
-      b.block(24, 40, 16, 18, "#f2e6cc", 4);
-      b.oval(32, 34 + q, 21, 15 - q, "#c84c48", -99, 38 + q); b.r(11, 36 + q, 42, 3, dk("#c84c48"));
-      for (const [x, y] of [[20, 26], [32, 22], [43, 28], [26, 32]]) b.oval(x, y + q, 3, 2.5, "#fbf2e0");
-      eyes(26, 35, 44, "#2b2233", 3, 5);
-    } else if (kind === "boar") {
-      b.oval(34, 42 + q, 19, 13 - q, "#8a6648"); b.oval(17, 44 + q, 10, 9, "#8a6648");
-      b.block(8, 44 + q, 8, 7, "#d09a94", 2); b.r(40, 28 + q, 16, 4, "#4a3626");
-      b.tri([[12, 50 + q], [15, 50 + q], [12, 56 + q]], "#fbf6ea"); b.tri([[18, 50 + q], [21, 50 + q], [19, 56 + q]], "#fbf6ea");
-      b.r(17, 40 + q, 4, 4, "#e04848"); b.r(17, 40 + q, 2, 2, "#ffffff");
-      b.block(24, 52, 6, 6 - q, "#5a4230", 2); b.block(42, 52, 6, 6 - q, "#5a4230", 2);
-    } else if (kind === "bat") {
-      const wy = f ? 8 : -6;
-      b.tri([[26, 30], [4, 26 + wy], [10, 38 + wy / 2], [22, 38]], "#5a4878"); b.tri([[38, 30], [60, 26 + wy], [54, 38 + wy / 2], [42, 38]], "#5a4878");
-      b.oval(32, 32, 9, 10, "#6a5690"); b.tri([[25, 24], [27, 16], [31, 24]], "#6a5690"); b.tri([[39, 24], [37, 16], [33, 24]], "#6a5690");
-      eyes(27, 34, 29, "#ff5a5a", 3, 4); b.r(30, 37, 2, 3, "#ffffff"); b.r(33, 37, 2, 3, "#ffffff");
-    } else if (kind === "drone") {
-      b.block(18, 30, 28, 12, "#7a8294", 4); b.block(24, 40, 16, 6, "#4c5262", 2);
-      b.oval(32, 36, 5, 5, "#ff5252"); b.r(30, 33, 2, 2, "#ffffff");
-      for (const x of [14, 50]) { b.r(x - 1, 22, 2, 9, "#4c5262"); b.r(x - (f ? 9 : 5), 20, f ? 18 : 10, 3, "#b6c0d0"); }
-      b.r(31, 46, 2, 5, "#ffe070");
-    } else {
-      // the golem family: security robot, crystal golem, rift lord
-      const robot = kind === "robot", boss = kind === "boss";
-      const [A, glow] = robot ? ["#939aa8", "#ff5a40"] : boss ? ["#6a58b0", "#ff72d6"] : ["#928cae", "#72e6f4"];
-      b.block(18, 26 + q, 28, 24 - q, A, 6); b.block(22, 12 + q, 20, 16, A, 4);
-      b.block(8, 28 + q, 10, 20, dk(A, 0.86), 4); b.block(46, 28 + q, 10, 20, dk(A, 0.86), 4);
-      b.block(20, 48, 9, 10, dk(A, 0.8), 3); b.block(35, 48, 9, 10, dk(A, 0.8), 3);
-      b.r(25, 18 + q, 14, 4, glow); b.r(26, 18 + q, 3, 1, "#ffffff");
-      b.tri([[32, 30 + q], [38, 37 + q], [32, 44 + q], [26, 37 + q]], glow);
-      if (!robot) for (const [x, y, h] of [[12, 26, 9], [52, 26, 9], [32, 12, boss ? 12 : 7], [25, 13, boss ? 8 : 0], [39, 13, boss ? 8 : 0]]) if (h) b.tri([[x - 3, y + q], [x, y - h + q], [x + 3, y + q]], glow);
-    }
-    return half(finish(c, g));
+    const px = (x, y, col) => b.r(x, y, 1, 1, col);
+    const line = (x0, y0, x1, y1, col) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) || 1; for (let i = 0; i <= n; i++) px(Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), col); };
+    if (kind === "boss") riftLord(b, f, px);
+    else if (MOB[kind]) MOB[kind](b, f, px, line);
+    else { b.oval(16, 21 - f, 6, 6, "#a8a4b8"); b.r(13, 19 - f, 1, 2, DARK); b.r(18, 19 - f, 1, 2, DARK); }
+    return finish(c, g, INK, 1);
   };
   s = [draw(0), draw(1)];
   cache.set(key, s);
   return s;
 }
 /** Per monster: how many times its sheet is enlarged, and how many pixels it floats. */
-export const MOB_SIZE = { slime: [1, 0], bslime: [1, 0], shroom: [1, 0], boar: [1, 0], bat: [1, 12], drone: [1, 16], robot: [1, 0], golem: [2, 0], boss: [3, 0] };
+export const MOB_SIZE = {
+  acorn: [1, 0], potcrab: [1, 0], puff: [1, 8], capfrog: [1, 0], stump: [1, 0], lantern: [1, 9], yarn: [1, 0],
+  eyecam: [1, 12], signbot: [1, 0], vend: [1, 0], tvhead: [1, 5], candle: [1, 3], geode: [1, 0], prism: [1, 10], boss: [3, 0],
+};
+for (const [old, now] of Object.entries(MOB_ALIAS)) MOB_SIZE[old] = MOB_SIZE[now];
+/** The light a creature gives off in dark places, if any. */
+export const MOB_GLOW = { lantern: "#ffe690", candle: "#ffb040", prism: "#a8e4f8", tvhead: "#9af0e0", eyecam: "#ff6a6a", geode: "#b48cff", boss: "#ff72d6", bat: "#ffe690", skel: "#ffb040", thug: "#9af0e0", golem: "#b48cff" };
