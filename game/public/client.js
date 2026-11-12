@@ -246,10 +246,13 @@ function onEvent(e, t) {
       const [, eid, kind, tx, ty] = e;
       const src = entityPos(eid);
       if (!src) break;
-      if (eid !== G.you) { src.atkT = t; src.dir = e[5]; }
-      else G.me.dir = e[5];
+      // which blow of the combo this is; a skill swings like a finisher
+      const beat = kind >= 10 ? 2 : e[6] | 0;
+      if (eid !== G.you) { src.atkT = t; src.dir = e[5]; src.atkN = beat; }
+      else { G.me.dir = e[5]; G.me.atkN = beat; if (kind < 10) G.combo = beat; }
       src.aim = [tx, ty + 6];
-      attackFx(kind, src, tx, ty + 6, e[5]);
+      G.hitFrom = [src.x, src.y];
+      attackFx(kind, src, tx, ty + 6, e[5], beat);
       break;
     }
     case "h": {
@@ -261,6 +264,8 @@ function onEvent(e, t) {
       else {
         floatText(crit ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit);
         tgt.hurtT = t;
+        // recoil away from whoever struck last
+        if (!isPlayer && G.hitFrom) { tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]); S3.fx.ring(tgt.x, tgt.y - 4, crit ? 14 : 9, crit ? "#ffe04a" : "#ffffff", 150); }
         if (id === G.you) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
         else if (!isPlayer) { Sound.play(crit ? "crit" : "hit"); if (t - G.lastAtk < 260) S3.shake(crit ? 3 : 1.2); }
         S3.fx.burst(tgt.x, tgt.y, h * 0.55, isPlayer ? "#ff7a7a" : "#ffffff", crit ? 9 : 5, 1.6);
@@ -349,17 +354,18 @@ function floatText(str, x, y, h, col, big) {
   G.texts.push({ str, x, y, h, col, big: !!big, t0: now() });
 }
 /** `src` is the attacker, (tx, ty) the point of impact on the ground. */
-function attackFx(kind, src, tx, ty, dir) {
+function attackFx(kind, src, tx, ty, dir, beat = 0) {
+  const fin = beat === 2;
   const f = S3.fx;
   // the blade's crescent opens toward the target (or the way the attacker faces)
   const ang = Math.hypot(tx - src.x, ty - src.y) > 2 ? Math.atan2(ty - src.y, tx - src.x) : [Math.PI / 2, Math.PI, 0, -Math.PI / 2][dir] || 0;
   switch (kind) {
-    case 0: f.slash(src.x, src.y, ang, "#f4f4ff", 0.8); Sound.play("swing"); break;
+    case 0: f.slash(src.x, src.y, ang, "#f4f4ff", fin ? 1.2 : 0.95, beat === 1); if (fin) S3.shake(2); Sound.play("swing"); break;
     case 1: f.proj(src.x, src.y, 0.75, tx, ty, 0.5, "#fff0c0", 0.04, 42); f.burst(src.x + (tx - src.x) * 0.15, src.y + (ty - src.y) * 0.15, 0.75, "#ffd84a", 4, 0.8); Sound.play("shoot"); break;
-    case 2: f.proj(src.x, src.y, 1.1, tx, ty, 0.5, "#b08aff", 0.09, 15); Sound.play("magic"); break;
-    case 3: f.slash(src.x, src.y, ang, "#dcdcec", 0.45); Sound.play("swing"); break;
-    case 4: f.beam(src.x, src.y, src.x + Math.cos(ang) * 46, src.y + Math.sin(ang) * 46, "#eef4ff", 0.3); Sound.play("swing"); break;
-    case 5: f.proj(src.x, src.y, 0.9, tx, ty, 0.5, "#c8a0ff", 0.07, 20, () => { f.ring(tx, ty, 26, "#c8a0ff", 220, true); }); Sound.play("magic"); break;
+    case 2: f.proj(src.x, src.y, 1.1, tx, ty, 0.5, "#b08aff", fin ? 0.15 : 0.09, 15, fin ? () => f.ring(tx, ty, 18, "#b08aff", 220, true) : undefined); Sound.play("magic"); break;
+    case 3: f.slash(src.x, src.y, ang, "#dcdcec", fin ? 0.7 : 0.5, beat === 1); Sound.play("swing"); break;
+    case 4: if (beat === 1) f.slash(src.x, src.y, ang, "#eef4ff", 1.1, true); else f.beam(src.x, src.y, src.x + Math.cos(ang) * (fin ? 62 : 46), src.y + Math.sin(ang) * (fin ? 62 : 46), "#eef4ff", fin ? 0.5 : 0.3); Sound.play("swing"); break;
+    case 5: f.proj(src.x, src.y, 0.9, tx, ty, 0.5, "#c8a0ff", 0.07, 20, () => { f.ring(tx, ty, fin ? 34 : 26, "#c8a0ff", 220, true); }); Sound.play("magic"); break;
     case 23: f.beam(src.x, src.y, tx, ty, "#e0b070", 1.1); f.burst(tx, ty, 0.4, "#e0b070", 20, 2.4); S3.shake(5); Sound.play("boom"); break;
     case 24: f.sparkle(src.x, src.y, 0.8, "#ffe9a0", 12); Sound.play("magic"); break;
     case 10: f.slash(src.x, src.y, ang, "#ffd84a", 1.05); S3.shake(2); Sound.play("crit"); break;
@@ -544,7 +550,7 @@ function castSkill(i) {
   if (t < G.cdEnd[i] || G.me.mp < sk.mp) { if (G.me.mp < sk.mp && !G.auto) toast("MP가 부족합니다"); return false; }
   act({ t: "sk", i });
   G.cdEnd[i] = t + sk.cd;
-  G.me.atkT = t; G.lastAtk = t; G.lastSkill = t;
+  G.me.atkT = t; G.me.atkN = 2; G.lastAtk = t; G.lastSkill = t;
   return true;
 }
 function countItem(id) {
@@ -568,6 +574,9 @@ function usePotion(kind) {
 function attack() {
   const t = now();
   if (t - G.lastAtk < G.self.acd) return;
+  // the same count the server keeps, so the swing starts on the right foot
+  G.combo = t - G.lastAtk < G.self.acd + 700 ? ((G.combo | 0) + 1) % 3 : 0;
+  G.me.atkN = G.combo;
   G.lastAtk = t; G.me.atkT = t;
   act({ t: "atk" });
 }
@@ -659,7 +668,7 @@ function update(dt, t) {
   }
   const moved = dist(ox, oy, me.x, me.y);
   me.moving = moved > 0.01;
-  if (me.moving) me.walk += dt * 9;
+  if (me.moving) me.walk += dt * 7;
   if (G.auto && (mx || my)) {
     if (moved < speed * dt * 0.3) { autoSt.stuck += dt; if (autoSt.stuck > 0.2) { autoSt.side = 0.5 + Math.random() * 0.4; autoSt.sign = Math.random() < 0.5 ? -1 : 1; autoSt.stuck = 0; } }
     else autoSt.stuck = 0;
@@ -678,7 +687,7 @@ function update(dt, t) {
       const d = dist(e.x, e.y, e.tx, e.ty);
       e.moving = d > 0.7;
       if (d > 60) { e.x = e.tx; e.y = e.ty; } else { e.x += (e.tx - e.x) * k; e.y += (e.ty - e.y) * k; }
-      if (e.moving) e.walk += dt * 9;
+      if (e.moving) e.walk += dt * 7;
     }
   }
   for (let i = G.parts.length - 1; i >= 0; i--) {

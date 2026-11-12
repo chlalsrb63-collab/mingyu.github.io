@@ -745,7 +745,7 @@ const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30", "#5fd47a"];
 function drawPerson(s, e, t, dt, x, y) {
   const back = e.dir === 3;
   if (e.dir === 1) s.face = -1; else if (e.dir === 2) s.face = 1;
-  if (e.moving) s.walk += dt * 9;
+  if (e.moving) s.walk += dt * 7;
   const atk = (t - e.atkT) / 1000;
   if (e.aim && atk < 0.5) s.face = e.aim[0] < e.x ? -1 : 1;
   // walking steps foot to foot; standing still breathes, and blinks now and then
@@ -763,7 +763,7 @@ function drawPerson(s, e, t, dt, x, y) {
   g.beginPath(); g.ellipse(x, y, 5, 2, 0, 0, 7); g.fill();
   // a strike leans the whole body into the blow for a moment
   if (e.aim && atk >= 0 && atk < 0.22 && !e.dead) {
-    const a = Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x), n = Math.sin((atk / 0.22) * Math.PI) * 2;
+    const a = Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x), n = Math.sin((atk / 0.22) * Math.PI) * (e.atkN === 2 ? 4 : 2);
     x += Math.cos(a) * n; y += Math.sin(a) * n;
   }
   const body = () => {
@@ -776,14 +776,16 @@ function drawPerson(s, e, t, dt, x, y) {
   };
   if (!s.weapon || e.dead) return body();
   const hold = SP.HOLD[s.wk] || SP.HOLD.sword;
-  const k = atk / hold.time, resting = k >= 1;
+  // which blow of the three this is: 0 and 1 are the strokes, 2 the finisher (slower, bigger)
+  const beat = e.atkN | 0, fin = beat === 2;
+  const k = atk / (hold.time * (fin ? 1.25 : 1)), resting = k >= 1;
   const bob = frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0;
   // angles here are canvas angles: 0 points right, positive turns clockwise
   const aim = e.aim && atk < 0.6 ? Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x) : sg > 0 ? 0.25 : Math.PI - 0.25;
   const glow = RARITY[s.gear.wq | 0] || (s.gear.we >= 7 ? "#ffffff" : null);
   if (hold.style === "float") {
     // a spellbook hovers open beside its reader and darts forward to cast
-    const out = resting ? 0 : Math.sin(k * Math.PI) * hold.push;
+    const out = resting ? 0 : Math.sin(k * Math.PI) * hold.push * (fin ? 2 : 1) * (beat === 1 ? -0.6 : 1);
     const bx = x + sg * 9 + Math.cos(aim) * out, by = y - 8 + Math.sin(t / 380 + s.ph) * 1.2 + Math.sin(aim) * out + bob;
     const book = () => {
       g.save();
@@ -798,10 +800,22 @@ function drawPerson(s, e, t, dt, x, y) {
   if (s.ang === null) s.ang = rest;
   let push = 0;
   if (!resting) {
-    const ease = k * k * (3 - 2 * k);
-    if (hold.style === "sweep") { const half = (hold.arc / 2) * DEG * sg; s.ang = aim - half + 2 * half * ease; push = hold.push; }
-    else if (hold.style === "stab") { s.ang = aim; push = Math.sin(k * Math.PI) * hold.push; }
-    else { s.ang = aim - sg * hold.arc * DEG * (1 - ease); push = hold.push; }
+    // a blow has three parts: draw back, strike, follow through. `w` runs from a
+    // little below 0 (the wind-up) to 1 (the end of the stroke) and settles there.
+    const sm = (v) => v * v * (3 - 2 * v);
+    const w = k < 0.24 ? -0.16 * sm(k / 0.24) : k < 0.62 ? -0.16 + 1.16 * sm((k - 0.24) / 0.38) : 1 + 0.05 * Math.sin(((k - 0.62) / 0.38) * Math.PI);
+    const side = beat === 1 ? -sg : sg;                 // the second stroke comes back the other way
+    const arc = hold.arc * DEG;
+    if (hold.style === "sweep") {
+      // a greatsword: left to right, right to left, then an overhead chop that ends on the target
+      if (fin) { s.ang = aim - sg * 2.7 + sg * 2.95 * w; push = hold.push + 4 * Math.max(0, w); }
+      else { s.ang = aim - side * arc / 2 + side * arc * w; push = hold.push + 1; }
+    } else if (hold.style === "stab") {
+      // a thrust, a quick cut across, then a long lunge
+      if (beat === 1) { s.ang = aim - side * arc / 2 + side * arc * w; push = hold.push * 0.45; }
+      else { s.ang = aim; push = (w < 0 ? w * 14 : Math.sin(Math.min(1, w) * Math.PI) * hold.push * (fin ? 1.7 : 1)); }
+    } else if (fin) { s.ang = aim + sg * Math.PI * 2 * (1 - Math.max(0, w)); push = hold.push + 3; }   // a full twirl of the staff
+    else { s.ang = aim - side * arc * (1 - w); push = hold.push; }
   } else {
     let d = rest - s.ang;
     d = Math.atan2(Math.sin(d), Math.cos(d));
@@ -839,7 +853,7 @@ export const fx = {
     this.add({ k: "proj", x0, y0, x1, y1, color, size: Math.max(2, Math.round(size * 44)), dur: Math.max(70, (Math.hypot(x1 - x0, y1 - y0) / (speed * 26)) * 1000), done });
   },
   /** A blade's crescent, centred on the attacker and opening toward `ang`. */
-  slash(wx, wy, ang, color, size = 0.8) { this.add({ k: "slash", x: wx * P, y: wy * P - 5, ang, color, r: size * 32, dur: 200 }); },
+  slash(wx, wy, ang, color, size = 0.8, rev = false) { this.add({ k: "slash", x: wx * P, y: wy * P - 5, ang, color, r: size * 32, rev, dur: 260, delay: 90 }); },
   beam(ax, ay, bx, by, color, h = 0.6) { this.add({ k: "beam", x0: ax * P, y0: ay * P - h * 22, x1: bx * P, y1: by * P - h * 22, color, dur: 260 }); },
   pillar(wx, wy) { this.add({ k: "pillar", x: wx * P, y: wy * P, dur: 900 }); this.sparkle(wx, wy, 0.5, "#ffd84a", 24); },
   burst(wx, wy, h, color, n = 8, speed = 1.4) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = speed * 34 * (0.3 + Math.random() * 0.7); parts.push({ x: wx * P, y: wy * P - h * 22, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: 0.25 + Math.random() * 0.3, color, g: 220 }); } },
@@ -867,7 +881,8 @@ function drawFx(now, ground2) {
       g.beginPath(); g.ellipse(f.x, f.y, f.r * k, f.r * k * 0.86, 0, 0, 7); g.stroke();
     } else if (f.k === "slash") {
       // a tapered crescent that sweeps open and fades
-      const a0 = f.ang - 1.25, a1 = f.ang - 1.25 + 2.5 * Math.min(1, k * 1.8), n = 14;
+      const way = f.rev ? -1 : 1;
+      const a0 = f.ang - 1.25 * way, a1 = a0 + 2.5 * way * Math.min(1, k * 1.8), n = 14;
       g.globalAlpha = k < 0.5 ? 1 : 2 - 2 * k;
       g.fillStyle = f.color;
       g.beginPath();
@@ -991,8 +1006,10 @@ export function render(focusX, focusY, dt, t, snap) {
         if (Math.random() < (el === 2 ? 0.3 : 0.1)) parts.push({ x: x + (Math.random() - 0.5) * w * 0.5, y: y - Math.random() * w * 0.4, vx: 0, vy: -22, life: 0.5, color: el === 2 ? "#ff8ae0" : "#ffe08a", g: 0, s: 1 });
       }
       g.save();
-      g.translate(Math.round(x + lunge), Math.round(y - s.hover - (s.hover ? Math.sin(t / 320 + m.id) * 2 : 0)));
-      g.scale(s.face, 1);
+      const hk = (t - m.hurtT) / 200, rec = hk < 1 ? (1 - hk) * (1 - hk) : 0;
+      const jx = rec ? Math.cos(m.hurtA || 0) * rec * 5 + Math.sin(t / 14) * rec * 1.5 : 0, jy = rec ? Math.sin(m.hurtA || 0) * rec * 3 : 0;
+      g.translate(Math.round(x + lunge + jx), Math.round(y + jy - s.hover - (s.hover ? Math.sin(t / 320 + m.id) * 2 : 0)));
+      g.scale(s.face * (1 + rec * 0.16), 1 - rec * 0.14);
       if (t - m.hurtT < 110) g.filter = "brightness(2.2)";
       else if (el) { g.shadowColor = el === 2 ? "#ff5ad0" : "#ffc040"; g.shadowBlur = el === 2 ? 8 : 4; }
       g.drawImage(img, -w / 2, -w * (SP.FOOT[1] / SP.SIZE), w, w);

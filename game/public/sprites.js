@@ -337,11 +337,11 @@ export function weaponSprite(kind, gear = {}) {
  * `push` pixels, cast with a short flick, or float beside the caster.
  */
 export const HOLD = {
-  sword: { rest: 58, arc: 200, time: 0.24, push: 3, style: "sweep" },
-  dagger: { rest: -38, arc: 0, time: 0.16, push: 9, style: "stab" },
-  spear: { rest: 64, arc: 0, time: 0.22, push: 13, style: "stab" },
-  staff: { rest: 84, arc: 60, time: 0.3, push: 4, style: "cast" },
-  book: { rest: 0, arc: 0, time: 0.3, push: 5, style: "float" },
+  sword: { rest: 58, arc: 210, time: 0.46, push: 3, style: "sweep" },
+  dagger: { rest: -38, arc: 120, time: 0.26, push: 9, style: "stab" },
+  spear: { rest: 64, arc: 170, time: 0.38, push: 13, style: "stab" },
+  staff: { rest: 84, arc: 70, time: 0.46, push: 4, style: "cast" },
+  book: { rest: 0, arc: 0, time: 0.42, push: 5, style: "float" },
 };
 
 // ───────────────────────────── monsters ─────────────────────────────

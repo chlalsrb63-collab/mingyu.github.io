@@ -31,7 +31,7 @@ const MAXLV = 50;
 const STACK = 99;
 const VIEW_X = 280;
 const VIEW_Y = 280;
-const BASE_SPD = 72;
+const BASE_SPD = 58;
 const PARTY_MAX = 4;
 const PARTY_RANGE = 340;
 /** Share of a kill's experience each member gets, by how many are in range. */
@@ -41,12 +41,18 @@ const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 
 /** A weapon kind decides how a basic attack lands. */
 const WKIND = {
-  sword: { name: "양손검", cd: 700, range: 34, fx: 0, cleave: 3, kb: 8 },
-  dagger: { name: "단검", cd: 380, range: 26, fx: 3, kb: 3 },
-  spear: { name: "창", cd: 560, range: 54, fx: 4, line: 3, kb: 6 },
-  staff: { name: "마법지팡이", cd: 800, range: 100, fx: 2, kb: 5 },
-  book: { name: "마법책", cd: 620, range: 84, fx: 5, splash: 26, mult: 0.8, kb: 3 },
+  // unhurried, weighty blows: each lands harder than a quick one would
+  sword: { name: "양손검", cd: 920, range: 34, fx: 0, cleave: 3, kb: 9, mult: 1.3 },
+  dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 1.35 },
+  spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.4 },
+  staff: { name: "마법지팡이", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.2 },
+  book: { name: "마법책", cd: 800, range: 84, fx: 5, splash: 26, mult: 1, kb: 4 },
 };
+/**
+ * Basic attacks come in threes: two strokes and a finisher. Strike again within
+ * COMBO_MS of the last blow and the count goes on; wait longer and it starts over.
+ */
+const COMBO_MS = 700, FINISH = { mult: 1.4, kb: 1.8, stun: 280 };
 const CLASSES = {
   warrior: { name: "전사", arm: "양손검", wk: ["sword"], hp: [130, 24], mp: [30, 4], atk: [10, 2.6], def: [3, 0.9], crit: 8 },
   rogue: { name: "도적", arm: "단검", wk: ["dagger"], hp: [92, 16], mp: [40, 6], atk: [7, 1.9], def: [1, 0.5], crit: 22 },
@@ -244,6 +250,7 @@ for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 16
 for (const k of Object.keys(MOBS)) {
   const d = MOBS[k];
   if (!d.sp) d.sp = k;
+  d.spd = Math.round(d.spd * 0.82);              // the whole world moves at an easier pace
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = 0.06 + d.lv * 0.002;
 }
@@ -1261,7 +1268,7 @@ export function addPlayer(S, pid, ch) {
   if (!MAPS[ch.map]) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, hp: 1, mp: 0, dead: false, stc: null,
-    cds: [0, 0, 0, 0], atkAt: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
+    cds: [0, 0, 0, 0], atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null,
     atkBuff: 0, spdBuff: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null,
   };
@@ -1521,6 +1528,8 @@ function hurtMob(S, rt, mob, p, mult, sure) {
   dmg = Math.max(1, Math.round(dmg));
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)));
   const x = mob.x, y = mob.y;
+  // whatever is hit flinches for a moment; the biggest things shrug it off
+  if (!d.boss && mob.el < 2) mob.stun = Math.max(mob.stun, S.now + (mob.el ? 80 : 120));
   if (!dealMob(S, rt, mob, p, dmg, crit)) return;
   // legendary powers that answer a kill
   if (st.lg.feast && !p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * 0.04);
@@ -1663,27 +1672,36 @@ function basicAttack(S, p) {
   const st = stats(p);
   const c = st.arm;
   const rt = S.maps[p.map];
+  // one, two, three: the third blow of an unbroken run is the finisher
+  p.combo = S.now - p.atkAt < st.acd + COMBO_MS ? (p.combo + 1) % 3 : 0;
+  const fin = p.combo === 2;
   p.atkAt = S.now;
   const mob = nearestMob(rt, p.x, p.y, c.range);
   if (!mob) {
     const reach = c.range < 60 ? 14 : c.range * 0.7;
-    rt.ev.push(["a", p.eid, c.fx, Math.round(p.x + DX[p.dir] * reach), Math.round(p.y - 6 + DY[p.dir] * reach), p.dir]);
+    rt.ev.push(["a", p.eid, c.fx, Math.round(p.x + DX[p.dir] * reach), Math.round(p.y - 6 + DY[p.dir] * reach), p.dir, p.combo]);
     return;
   }
   face(p, mob);
-  rt.ev.push(["a", p.eid, c.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir]);
-  const mult = c.mult || 1;
+  rt.ev.push(["a", p.eid, c.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir, p.combo]);
+  const mult = (c.mult || 1) * (fin ? FINISH.mult : 1);
   // a greatsword's arc catches what stands beside the target, a spear runs through
   // what stands behind it, and a spellbook's burst splashes around it
   let extra = [];
-  if (c.cleave) extra = mobsWithin(rt, mob.x, mob.y, 26).slice(0, c.cleave);
-  else if (c.line) { const [ux, uy] = aimVec(p, mob); extra = mobsInLine(rt, p.x, p.y, ux, uy, c.range + 10, 11).slice(0, c.line); }
-  else if (c.splash) extra = mobsWithin(rt, mob.x, mob.y, c.splash).slice(0, 4);
+  if (c.cleave) extra = mobsWithin(rt, mob.x, mob.y, fin ? 34 : 26).slice(0, c.cleave + (fin ? 1 : 0));
+  else if (c.line) { const [ux, uy] = aimVec(p, mob); extra = mobsInLine(rt, p.x, p.y, ux, uy, c.range + 10, fin ? 16 : 11).slice(0, c.line + (fin ? 1 : 0)); }
+  else if (c.splash) extra = mobsWithin(rt, mob.x, mob.y, c.splash + (fin ? 8 : 0)).slice(0, 4);
   const zx = mob.x, zy = mob.y;
-  // the blow lands with weight: the target is shoved back and flinches
-  if (c.kb && !mob.el) { const [ux, uy] = aimVec(p, mob); knock(MAPS[p.map], mob, ux, uy, c.kb); mob.stun = Math.max(mob.stun, S.now + 140); }
+  // the blow lands with weight: whatever it hits is shoved back and reels, the
+  // finisher most of all. Elites only reel; bosses and field bosses stand firm.
+  const shove = (o, k) => {
+    if (MOBS[o.k].boss || o.el === 2) return;
+    if (!o.el) { const [ux, uy] = aimVec(p, o); knock(MAPS[p.map], o, ux, uy, c.kb * k * (fin ? FINISH.kb : 1)); }
+    o.stun = Math.max(o.stun, S.now + (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1));
+  };
+  shove(mob, 1);
   hurtMob(S, rt, mob, p, mult);
-  for (const o of extra) if (o !== mob) hurtMob(S, rt, o, p, mult * 0.6);
+  for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6); }
   if (st.lg.chain && rnd(S) < 0.25) {
     for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
       rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
