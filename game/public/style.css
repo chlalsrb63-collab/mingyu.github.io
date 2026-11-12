@@ -426,3 +426,6 @@ h1 small { font-family: var(--font); font-weight: 600; font-size: .2em; letter-s
 /* ───────────── pixel world: keep every pixel square ───────────── */
 #world { image-rendering: pixelated; image-rendering: crisp-edges; }
 #title { background: linear-gradient(rgba(10, 12, 24, .28), rgba(10, 12, 24, .05) 45%, transparent); }
+
+/* characters are plain white: only the species is chosen */
+#c-hair, #c-skin { display: none; }

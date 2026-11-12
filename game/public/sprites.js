@@ -1,8 +1,8 @@
 /**
  * Pixel sprites: people, monsters and weapons, each on a 32×32 sheet.
  *
- * The adventurers are small animals — cats, foxes and bears — carrying weapons
- * as big as they are. The style is as simple as it can be: a big face on a tiny
+ * The adventurers are small white animals — cats, foxes and bears — carrying
+ * weapons as big as they are, and wearing nothing else. The style is as simple as it can be: a big face on a tiny
  * body with no arms or legs, dot eyes, flat colours with one shadow tone and a
  * dark outline, so a figure reads instantly at any size. Weapons are separate sprites drawn
  * pointing right from their grip, because in play they are not animation
@@ -116,7 +116,7 @@ function person(o, back, f) {
 
   const tail = () => {
     if (kind === 0) { b.r(20, by + 5, 3, 1, fur); b.r(22, by + 1, 1, 4, fur); b.r(23, by, 1, 2, fur); }
-    else if (kind === 1) { b.oval(23, by + 3, 3, 3.5, fur); b.r(23, by, 2, 2, "#fff8ea"); }
+    else if (kind === 1) { b.oval(23, by + 3, 3, 3.5, fur); }
     else if (kind === 2) b.r(21, by + 5, 2, 2, fur);
   };
   if (!back) { tail(); if (cls === "warrior") b.r(9, by + 1, 14, bh - 2, dk(o.cape || main, 0.85)); }
@@ -138,8 +138,8 @@ function person(o, back, f) {
   // ── ears
   const ear = (x, s) => {
     if (kind === 0) { b.tri([[x - 3 * s, hy - 4], [x - 2 * s, hy - 12], [x + 3 * s, hy - 7]], fur); if (!back) b.r(x - (s > 0 ? 1 : 0), hy - 8, 1, 2, "#f6a8a0"); }
-    else if (kind === 1) { b.tri([[x - 4 * s, hy - 3], [x - 3 * s, hy - 14], [x + 3 * s, hy - 7]], fur); b.r(x - (s > 0 ? 3 : -2), hy - 13, 1, 3, "#3c3040"); if (!back) b.r(x - (s > 0 ? 1 : 0), hy - 8, 1, 2, "#fff8ea"); }
-    else if (kind === 2) { b.oval(x - 1 * s, hy - 7, 3, 3, fur); if (!back) b.r(x - (s > 0 ? 2 : -1), hy - 8, 2, 2, dk(fur, 0.8)); }
+    else if (kind === 1) { b.tri([[x - 4 * s, hy - 3], [x - 3 * s, hy - 14], [x + 3 * s, hy - 7]], fur); if (!back) b.r(x - (s > 0 ? 1 : 0), hy - 9, 1, 3, "#f6a8a0"); }
+    else if (kind === 2) { b.oval(x - 1 * s, hy - 7, 3, 3, fur); if (!back) b.r(x - (s > 0 ? 2 : -1), hy - 8, 2, 2, "#f6a8a0"); }
   };
   ear(10, 1); ear(22, -1);
 
@@ -151,7 +151,7 @@ function person(o, back, f) {
     b.r(11, hy - 1, 3, 4, "#2b2233"); b.r(18, hy - 1, 3, 4, "#2b2233"); b.r(12, hy, 1, 2, o.eye || "#6ae8f4"); b.r(19, hy, 1, 2, o.eye || "#6ae8f4");
     b.r(13, hy + 5, 1, 2, "#2b2233"); b.r(15, hy + 5, 1, 2, "#2b2233"); b.r(17, hy + 5, 1, 2, "#2b2233"); b.r(19, hy + 5, 1, 2, "#2b2233");
   } else {
-    if (kind === 1) { b.r(5, hy + 1, 3, 3, "#fff8ea"); b.r(24, hy + 1, 3, 3, "#fff8ea"); }
+    if (kind === 1) { b.r(5, hy + 1, 3, 3, fur); b.r(24, hy + 1, 3, 3, fur); }
     b.oval(16, hy + 4, 5, 3, belly);
     if (o.mask) b.r(8, hy - 2, 16, 4, "#3c3040");
     b.r(11, hy - 1, 2, 3, "#2b2233"); b.r(19, hy - 1, 2, 3, "#2b2233");
@@ -187,25 +187,27 @@ export function personSheet(o) {
   if (!s) { s = { front: [0, 1, 2].map((f) => person(o, false, f)), back: [0, 1, 2].map((f) => person(o, true, f)) }; cache.set(key, s); }
   return s;
 }
-/** `look` is [fur, belly, species] as chosen at creation. */
-export function playerLook(cls, look, gear = {}) {
-  if (!OUTFIT[cls]) cls = "warrior";
-  const at = Math.max(1, Math.min(5, gear.at | 0 || 1));
-  const [main, sub, trim] = OUTFIT[cls][at - 1];
-  return { cls, fur: FUR[look[0] | 0] || FUR[0], belly: BELLY[look[1] | 0] || BELLY[0], kind: Math.min(2, look[2] | 0), at, main, sub, trim, acc: gear.acc | 0 };
+const WHITE = "#fbfbff";
+/** A plain look: one colour of fur, no costume — just eyes, blush and a nose. */
+const plain = (kind, fur = WHITE) => ({ cls: "plain", kind, fur, belly: fur, main: fur, sub: fur, trim: fur, at: 1 });
+/**
+ * Players are plain white animals; `look[2]` picks the species. What they
+ * carry — the weapon — is what tells the classes apart.
+ */
+export function playerLook(cls, look) {
+  return plain(Math.min(2, look[2] | 0));
 }
+/** Townsfolk are the same simple animals in soft tints, so they read as not-you. */
 export function npcLook(look, role) {
-  const col = look[3] || "#667";
-  const o = { fur: FUR[look[0] | 0] || FUR[0], belly: BELLY[look[1] | 0] || BELLY[0], kind: (look[0] + look[1]) % 3, main: col, sub: lt(col), trim: "#f0cc60", at: 1 };
-  if (role === "elder") return { ...o, cls: "robe", fur: "#d8d4cc", kind: 2, old: 1 };
-  if (role === "smith") return { ...o, cls: "npc", kind: 2, apron: "#6a5a52" };
-  if (role === "shop") return { ...o, cls: "npc", kind: 0, apron: "#fff4e4" };
-  if (role === "train") return { ...o, cls: "npc", kind: 1, band: "#f4ece0" };
-  return { ...o, cls: "warrior", at: 3, sub: "#c8d0e0", cape: dk(col, 0.8), band: "#5a7ad0" };
+  if (role === "elder") return plain(2, "#e2e4f0");
+  if (role === "smith") return plain(2, "#e6d2bc");
+  if (role === "shop") return plain(0, "#ffe6d2");
+  if (role === "train") return plain(1, "#f6dcdc");
+  return plain(1, "#dce8f6");
 }
 export function mobLook(kind) {
-  if (kind === "thug") return { cls: "rogue", fur: "#7a7684", belly: "#d8d4dc", kind: 0, mask: 1, at: 2, main: "#5a3040", sub: "#b83a4c", trim: "#d0d0d8" };
-  return { cls: "warrior", bone: 1, kind: -1, fur: "#eef0f6", belly: "#eef0f6", at: 3, main: "#4a4868", sub: "#7c7a98", trim: "#6ae8f4", eye: "#6ae8f4", cape: "#2c2a40", band: "#6ae8f4" };
+  if (kind === "thug") return { ...plain(0, "#7a7684"), mask: 1 };
+  return { cls: "plain", bone: 1, kind: -1, fur: "#eef0f6", belly: "#eef0f6", at: 1, main: "#4a4868", sub: "#7c7a98", trim: "#4a4868", eye: "#6ae8f4" };
 }
 
 // ───────────────────────────── weapons ─────────────────────────────
