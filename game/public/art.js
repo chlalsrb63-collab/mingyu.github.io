@@ -230,8 +230,8 @@ export function renderGround(m) {
   return { frames: out, ox: m.h * TILE };
 }
 
-const MINI = { ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86" };
-const MINI_OBJ = { T: "#2a6030", P: "#1d4a30", R: "#74747c", B: "#35803a", h: "#8a4a3a", a: "#6a9ac8", K: "#5ac8d8", S: "#3a3550", F: "#6a4628", L: "#c8b060", G: "#6a4628", Z: "#22242c", c: "#8a3a3a", y: "#a83a3a", x: "#4a4d56" };
+const MINI = { t: "#447e38", r: "#8a8a80", ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86" };
+const MINI_OBJ = { C: "#6e6654", H: "#2f7036", U: "#8a8478", l: "#6a4628", u: "#6a4628", e: "#5a9a58", q: "#a8a498", n: "#8a6a3a", M: "#6a4628", D: "#2c5a48", E: "#c8b888", T: "#2a6030", P: "#1d4a30", R: "#74747c", B: "#35803a", h: "#8a4a3a", a: "#6a9ac8", K: "#5ac8d8", S: "#3a3550", F: "#6a4628", L: "#c8b060", G: "#6a4628", Z: "#22242c", c: "#8a3a3a", y: "#a83a3a", x: "#4a4d56" };
 export function renderMini(m, s = 2) {
   const [c, g] = canvas(m.w * s, m.h * s);
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {

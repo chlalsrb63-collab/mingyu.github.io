@@ -256,6 +256,54 @@ function scenery() {
     y: prop(16, 24, (b) => { b.r(4, 5, 8, 19, "#d84c4c"); b.r(10, 6, 2, 18, "#a83a40"); b.r(0, 10, 16, 5, "#d84c4c"); b.r(0, 13, 16, 2, "#a83a40"); b.r(3, 0, 10, 6, "#f07070"); b.r(6, 11, 4, 3, "#f4f4f8"); b.r(2, 22, 12, 2, "#a83a40"); }),
     x: prop(20, 26, (b) => { b.r(2, 7, 16, 19, "#5c6474"); b.r(14, 8, 4, 18, "#48505e"); b.r(5, 11, 2, 12, "#48505e"); b.r(10, 11, 2, 12, "#48505e"); b.r(0, 3, 20, 5, "#7a8494"); b.r(0, 3, 20, 1, "#98a2b2"); b.r(7, 0, 6, 3, "#48505e"); }),
     c: CAR.map(car),
+    // a fallen log, lying either way, sometimes mossed over
+    l: [0, 1].map((v) => prop(30, 15, (b) => {
+      b.r(2, 3, 26, 11, "#8a5a34"); b.r(1, 5, 28, 7, "#8a5a34"); b.r(2, 10, 26, 4, "#6a4226"); b.r(4, 4, 20, 1, "#a87446");
+      for (const x of [9, 16, 22]) b.r(x, 6, 1, 5, "#6a4226");
+      const cap = v ? 25 : 0;
+      b.r(cap, 4, 5, 9, "#d8ac6e"); b.r(cap + 1, 6, 3, 5, "#b88a52"); b.r(cap + 2, 8, 1, 1, "#8a5a34");
+      if (v) { b.r(6, 2, 7, 2, "#6ab85a"); b.r(15, 3, 4, 1, "#4faa5a"); } else b.r(12, 1, 2, 3, "#8a5a34");
+    })),
+    // a tree stump with its rings showing
+    u: prop(20, 17, (b) => {
+      b.r(3, 6, 14, 10, "#8a5a34"); b.r(12, 7, 5, 9, "#6a4226"); b.r(1, 13, 4, 3, "#8a5a34"); b.r(15, 14, 4, 2, "#6a4226"); b.r(6, 10, 1, 4, "#6a4226");
+      b.oval(10, 6, 8, 4.4, "#e0b87a"); b.oval(10, 6, 5, 2.6, "#c8985a"); b.oval(10, 6, 2, 1, "#e0b87a"); b.r(4, 4, 3, 1, "#f2d8a4");
+    }),
+    // reeds standing in shallow water
+    e: [0, 1].map((v) => prop(22, 27, (b) => {
+      for (const [x, h, c] of v ? [[3, 17, 0], [8, 23, 1], [13, 19, 0], [17, 14, 1]] : [[4, 21, 1], [10, 25, 0], [15, 17, 1]]) {
+        b.r(x, 27 - h, 2, h, c ? "#5fae52" : "#4a9648"); b.r(x + (c ? 2 : -1), 27 - h + 5, 1, 6, "#7acf6c");
+        if (h > 18) { b.r(x - 1, 27 - h - 1, 4, 5, "#7a4a2a"); b.r(x - 1, 27 - h - 1, 1, 5, "#9a6a3e"); }
+      }
+    })),
+    // what is left of a column
+    q: [0, 1].map((v) => prop(18, 36, (b) => {
+      const top = v ? 12 : 3;
+      b.r(3, top, 12, 36 - top - 5, "#d2cdbd"); b.r(11, top, 4, 31 - top, "#aaa494"); b.r(3, top, 2, 31 - top, "#e6e2d4");
+      for (let y = top + 6; y < 30; y += 7) b.r(3, y, 12, 1, "#aaa494");
+      b.r(1, 30, 16, 6, "#c2bcac"); b.r(1, 30, 16, 1, "#e6e2d4"); b.r(1, 34, 16, 2, "#8c8678");
+      if (v) { b.r(3, top, 4, 2, "#aaa494"); b.r(9, top - 2, 4, 2, "#d2cdbd"); b.r(5, 22, 4, 2, "#6aa85a"); } else { b.r(1, 1, 16, 4, "#c2bcac"); b.r(1, 1, 16, 1, "#e6e2d4"); }
+    })),
+    // a mine cart with a load of ore
+    M: prop(32, 24, (b) => {
+      b.r(3, 8, 26, 11, "#8a5a34"); b.r(5, 19, 22, 2, "#6a4226"); b.r(3, 8, 26, 2, "#b08050"); b.r(3, 14, 26, 1, "#6a4226"); b.r(3, 8, 2, 11, "#5a5e6c"); b.r(27, 8, 2, 11, "#5a5e6c"); b.r(15, 8, 2, 11, "#6a4226");
+      b.oval(16, 7, 11, 4, "#5a6a88"); b.r(9, 3, 4, 4, "#72e6f4"); b.r(10, 2, 2, 1, "#ffffff"); b.r(18, 4, 4, 3, "#c08af4"); b.r(14, 5, 3, 2, "#7a8aa8");
+      for (const x of [9, 23]) { b.oval(x, 21, 3.4, 3, "#3a3c48"); b.r(x - 1, 20, 2, 2, "#8a8e9c"); }
+    }),
+    // a dumpster with its lid half open
+    D: prop(36, 27, (b) => {
+      b.r(2, 9, 32, 16, "#3f7a62"); b.r(2, 9, 32, 2, "#56987c"); b.r(2, 21, 32, 4, "#2c5a48"); b.r(28, 11, 6, 14, "#2c5a48");
+      for (const x of [9, 18]) b.r(x, 12, 1, 9, "#2c5a48");
+      b.tri([[1, 9], [35, 9], [33, 3], [5, 5]], "#4a5064"); b.r(5, 5, 26, 1, "#6a7288");
+      b.r(21, 14, 6, 4, "#e8e0c8"); b.r(22, 15, 4, 1, "#c84a50");
+      for (const x of [7, 29]) b.oval(x, 25, 2.4, 2, "#22242c");
+    }),
+    // a traveller's tent
+    E: prop(44, 34, (b) => {
+      b.tri([[2, 33], [42, 33], [22, 2]], "#e6d2a4"); b.tri([[22, 2], [42, 33], [27, 33]], "#c2aa78"); b.tri([[15, 33], [29, 33], [22, 12]], "#4a3a34"); b.tri([[15, 33], [22, 33], [22, 12]], "#5e4a40");
+      b.r(21, 0, 2, 5, "#8a5a34"); b.r(2, 32, 40, 2, "#b09866"); b.r(10, 22, 3, 1, "#f6ecd2"); b.r(7, 27, 4, 1, "#f6ecd2");
+      b.r(0, 31, 3, 3, "#8a5a34"); b.r(41, 31, 3, 3, "#6a4226");
+    }),
     house: [0, 1, 2, 3].map(house).concat([4, 5, 6, 7].map(building)),
     fountain: prop(72, 64, (b) => {
       b.oval(36, 45, 35, 18, "#8a909e"); b.oval(36, 43, 35, 18, "#c2c8d4"); b.oval(36, 41, 34, 16, "#dfe4ee"); b.oval(36, 43, 31, 14, "#aab0be");
@@ -266,13 +314,86 @@ function scenery() {
       for (const [x, y, h] of [[35, 1, 6], [30, 6, 5], [41, 5, 6], [26, 12, 4], [45, 12, 4]]) b.r(x, y, 2, h, "#dff4ff");
     }),
   };
+  SC.n = SC.TB[2];
   return SC;
+}
+
+// ── barriers that run on: cliffs, hedges and ruined walls are built from joined pieces
+const WALL = {
+  // a raised ledge: grass on top, a rim of pale rock where it is lit, a rock face to the south
+  C(b, o, grass) {
+    const rock = "#c6bc9c", mid = "#a1967a", dark = "#776c56";
+    // the top is bare rock, with a tuft or a patch of moss that the ground below lends it
+    b.r(0, 0, 32, 32, "#b4aa8c");
+    if (o.v) { b.r(7, 9, 6, 1, mid); b.r(12, 10, 3, 1, mid); b.r(19, 20, 5, 3, grass); b.r(20, 19, 3, 1, lt(grass, 1.2)); b.r(24, 8, 2, 2, rock); }
+    else { b.r(17, 8, 5, 3, grass); b.r(18, 7, 3, 1, lt(grass, 1.2)); b.r(6, 20, 7, 1, mid); b.r(8, 21, 3, 1, mid); b.r(24, 24, 2, 2, rock); }
+    if (!o.n) { b.r(0, 0, 32, 4, rock); b.r(0, 0, 32, 1, lt(rock, 1.14)); b.r(0, 4, 32, 1, mid); }
+    if (!o.w) { b.r(0, 0, 4, 32, rock); b.r(0, 0, 1, 32, lt(rock, 1.14)); if (!o.n) b.r(0, 0, 4, 4, lt(rock, 1.08)); }
+    if (!o.e) { b.r(28, 0, 4, 32, mid); b.r(27, o.n ? 0 : 4, 1, 32, dark); }
+    if (!o.s) {
+      b.r(0, 28, 32, 4, rock); b.r(0, 27, 32, 1, mid);
+      b.r(0, 32, 32, 14, mid); b.r(0, 32, 32, 3, "#b5ab8c"); b.r(0, 42, 32, 4, dark);
+      const k = o.v ? 9 : 0;
+      b.r(5 + k, 35, 1, 6, dark); b.r(6 + k, 39, 2, 1, dark); b.r(22 - k, 36, 1, 5, dark); b.r(12, 38, 7, 1, "#8c8168"); b.r(26 - k, 34, 3, 1, "#b5ab8c");
+      if (!o.e) b.r(28, 32, 4, 14, dark);
+    }
+  },
+  // a clipped hedge
+  H(b, o) {
+    const leaf = "#4aa552", lit = "#6ac060", deep = "#33863f";
+    b.r(0, 0, 32, 32, leaf);
+    b.oval(9, 9, 6, 4, lit); b.oval(23, 20, 6, 4, lit); b.oval(21, 7, 4, 3, deep); b.oval(8, 23, 5, 3, deep);
+    for (const [x, y] of o.v ? [[15, 15], [4, 16], [27, 12], [16, 26]] : [[14, 18], [5, 4], [26, 28], [17, 3]]) { b.r(x, y, 3, 2, deep); b.r(x + 1, y - 1, 2, 1, lit); }
+    if (!o.n) b.r(0, 0, 32, 2, "#84d474");
+    if (!o.w) b.r(0, 0, 2, 32, lit);
+    if (!o.e) b.r(30, 0, 2, 32, deep);
+    if (!o.s) {
+      b.r(0, 29, 32, 17, deep); b.r(0, 29, 32, 2, leaf);
+      for (let i = 0; i < 5; i++) { b.r(2 + i * 6, 34 + (i % 2) * 5, 3, 2, leaf); b.r(4 + i * 6, 38 - (i % 2) * 4, 2, 1, "#256a32"); }
+      b.r(0, 43, 32, 3, "#256a32");
+    }
+  },
+  // a wall of dressed stone, long since fallen in
+  U(b, o) {
+    const top = "#cbc6b6", lit = "#e2decf", face = "#9c9686", dark = "#726c5e";
+    b.r(0, 0, 32, 32, top);
+    b.r(0, 15, 32, 1, "#aaa494"); b.r(15, 0, 1, 15, "#aaa494"); b.r(8, 16, 1, 16, "#aaa494"); b.r(24, 16, 1, 16, "#aaa494");
+    if (o.v) { b.oval(10, 8, 5, 3, "#7ab868"); b.r(20, 22, 5, 2, "#6aa85a"); b.r(3, 26, 3, 2, "#aaa494"); } else { b.r(20, 5, 5, 3, "#b8b2a2"); b.r(4, 21, 2, 4, "#aaa494"); }
+    if (!o.n) b.r(0, 0, 32, 2, lit);
+    if (!o.w) b.r(0, 0, 2, 32, lit);
+    if (!o.e) b.r(30, 0, 2, 32, "#aaa494");
+    if (!o.s) {
+      b.r(0, 30, 32, 16, face); b.r(0, 30, 32, 2, "#bcb6a6"); b.r(0, 37, 32, 1, dark);
+      for (const x of [10, 26]) b.r(x, 32, 1, 5, dark);
+      for (const x of [4, 18]) b.r(x, 38, 1, 6, dark);
+      b.r(0, 44, 32, 2, dark);
+      if (o.v) { b.r(22, 32, 4, 3, "#6aa85a"); b.r(23, 35, 2, 2, "#6aa85a"); }
+    }
+  },
+};
+const wallCache = new Map();
+/** One piece of a barrier. `mask` says which neighbours are the same thing: 1 north, 2 east, 4 south, 8 west. */
+function wallPiece(kind, mask, v, grass) {
+  const key = kind + mask + v + grass;
+  let c = wallCache.get(key);
+  if (c) return c;
+  const o = { n: mask & 1, e: mask & 2, s: mask & 4, w: mask & 8, v };
+  // no margin — so no outline — on a side that joins the next piece
+  const padL = o.w ? 0 : 2, padR = o.e ? 0 : 2, padT = o.n ? 0 : 2, padB = o.s ? 0 : 2;
+  const [cv2, x] = sheet(32 + padL + padR, (o.s ? 32 : 46) + padT + padB);
+  x.translate(padL, padT);
+  WALL[kind](tools(x), o, grass);
+  x.setTransform(1, 0, 0, 1, 0, 0);
+  c = ink(cv2, x);
+  c.ax = (padR - padL) / 2; c.padT = padT;
+  wallCache.set(key, c);
+  return c;
 }
 
 // ───────────────────────────── ground ─────────────────────────────
 
-const GROUND = { ".": "#6cbf5e", ",": "#6cbf5e", '"': "#6cbf5e", ":": "#3f8a5c", ";": "#3f8a5c", p: "#d9ab6c", o: "#b4b9c6", s: "#ecd9a2", w: "#4aa2e2", b: "#b98a50", c: "#486a8a", d: "#486a8a", W: "#131a32", a: "#474b5a", m: "#474b5a", k: "#9aa0ae" };
-const GROUP = { ".": 0, ",": 0, '"': 0, ":": 1, ";": 1, p: 2, o: 3, s: 4, w: 5, b: 6, c: 7, d: 7, W: 8, a: 9, m: 9, k: 10 };
+const GROUND = { t: "#6cbf5e", r: "#aeb0a0", ".": "#6cbf5e", ",": "#6cbf5e", '"': "#6cbf5e", ":": "#3f8a5c", ";": "#3f8a5c", p: "#d9ab6c", o: "#b4b9c6", s: "#ecd9a2", w: "#4aa2e2", b: "#b98a50", c: "#486a8a", d: "#486a8a", W: "#131a32", a: "#474b5a", m: "#474b5a", k: "#9aa0ae" };
+const GROUP = { t: 0, r: 3, ".": 0, ",": 0, '"': 0, ":": 1, ";": 1, p: 2, o: 3, s: 4, w: 5, b: 6, c: 7, d: 7, W: 8, a: 9, m: 9, k: 10 };
 /** The outline where a patch of ground ends: [dark edge line, soft inner rim]. */
 const EDGE = { 2: ["#8f6238", "#bd8c54"], 3: ["#6e7486", "#969cac"], 4: ["#b89a5e", "#d8c088"], 5: ["#2f78c0", "#86c8f4"], 6: ["#6a4426", "#96683a"], 7: ["#2a4262", "#3a5878"], 10: ["#5e6474", "#c4c8d2"] };
 const FLOWER = ["#fffbe8", "#ffd84a", "#ff9ac0", "#9ac8ff", "#f06a7a"];
@@ -288,7 +409,7 @@ function themeOf(m) {
 function paintGround(m, theme) {
   const [c, x] = sheet(m.w * T, m.h * T);
   const b = tools(x);
-  const BASE = theme === "forest" ? { ...GROUND, ".": GROUND[":"], ",": GROUND[":"], '"': GROUND[":"] } : GROUND;
+  const BASE = theme === "forest" ? { ...GROUND, ".": GROUND[":"], ",": GROUND[":"], '"': GROUND[":"], t: GROUND[":"] } : GROUND;
   const at = (tx, ty) => (ty < 0 || tx < 0 || ty >= m.h || tx >= m.w ? null : m.g[ty][tx]);
   const forest = theme === "forest";
   const grp = (tx, ty) => { const ch = at(tx, ty); return ch === null ? -1 : forest && GROUP[ch] === 0 ? 1 : GROUP[ch]; };
@@ -318,6 +439,12 @@ function paintGround(m, theme) {
         const a = X + 9 + Math.floor(h(20) * 12), q = Y + 10 + Math.floor(h(21) * 10);
         for (let i = -1; i <= 1; i++) { const bh = i ? 5 : 8, bx = a + i * 3; b.r(bx, q + 9 - bh, 2, bh - 1, i < 0 ? lt(col, 1.3) : l); b.r(bx + (i > 0 ? 1 : 0), q + 8 - bh, 1, 1, lt(col, 1.3)); }
         b.r(a - 4, q + 8, 10, 1, d);
+      } else if (ch === "t") {
+        // tall grass: six clumps of blades, standing clear of one another
+        for (let i = 0; i < 6; i++) {
+          const a = X + 3 + (i % 3) * 10 + Math.floor(h(20 + i) * 3), q = Y + 2 + Math.floor(i / 3) * 15 + Math.floor(h(30 + i) * 3), bh = 7 + Math.floor(h(40 + i) * 4);
+          b.r(a, q + 11 - bh, 2, bh, l); b.r(a + 3, q + 13 - bh, 2, bh - 2, lt(col, 1.32)); b.r(a - 2, q + 15 - bh, 1, bh - 4, d); b.r(a - 2, q + 11, 7, 1, d);
+        }
       } else if (ch === '"') {
         for (let i = 0; i < 3; i++) flower(X + 5 + Math.floor(h(30 + i) * 22), Y + 5 + Math.floor(h(40 + i) * 22), FLOWER[Math.floor(h(50 + i) * (g0 ? 3 : 5))]);
       } else if (free(tx, ty)) {
@@ -337,7 +464,7 @@ function paintGround(m, theme) {
     } else if (ch === "s") {
       for (let i = 0; i < 5; i++) b.r(X + 2 + Math.floor(h(i) * 27), Y + 2 + Math.floor(h(i + 9) * 27), 2, 1, i % 2 ? dk(col, 0.92) : "#fbf0c8");
       if (h(30) < 0.14) { const a = X + 8 + Math.floor(h(31) * 16), q = Y + 8 + Math.floor(h(32) * 16); b.r(a, q, 3, 2, "#fff4f0"); b.r(a + 1, q + 1, 1, 1, "#f0a8b0"); }
-    } else if (ch === "o") {
+    } else if (ch === "o" || ch === "r") {
       // paving: two courses of stones per tile, each stone its own shade
       for (let r2 = 0; r2 < 2; r2++) {
         const off = (ty * 2 + r2) % 2 ? 8 : 0;
@@ -352,7 +479,12 @@ function paintGround(m, theme) {
         b.r(X, Y + r2 * 16 + 15, T, 1, dk(col, 0.82));
       }
       if (h(40) < 0.04) { const a = X + 6 + Math.floor(h(41) * 16), q = Y + 5 + Math.floor(h(42) * 18); b.r(a, q, 1, 4, dk(col, 0.72)); b.r(a + 1, q + 3, 3, 1, dk(col, 0.72)); }
-      if (h(43) < 0.08) b.r(X + Math.floor(h(44) * 26), Y + 14, 4, 2, "#7ab868");
+      if (h(43) < (ch === "r" ? 0.6 : 0.08)) b.r(X + Math.floor(h(44) * 26), Y + 14, 4, 2, "#7ab868");
+      if (ch === "r") {
+        // old stones: moss in the joints, a broken corner here and there
+        if (h(45) < 0.5) { const a = X + 3 + Math.floor(h(46) * 20), q = Y + 3 + Math.floor(h(47) * 20); b.r(a, q, 5, 2, "#7ab868"); b.r(a + 1, q + 2, 3, 1, "#6aa85a"); }
+        if (h(48) < 0.3) { const a = X + 4 + Math.floor(h(49) * 20), q = Y + 18 + Math.floor(h(50) * 8); b.r(a, q, 1, 4, dk(col, 0.72)); b.r(a + 1, q + 3, 3, 1, dk(col, 0.72)); }
+      }
     } else if (ch === "k") {
       b.r(X, Y, T, 1, lt(col, 1.1)); b.r(X + 15, Y, 1, T, dk(col, 0.9)); b.r(X, Y + 15, T, 1, dk(col, 0.9)); b.r(X + 31, Y, 1, T, dk(col, 0.86)); b.r(X, Y + 31, T, 1, dk(col, 0.86));
       if (h(1) < 0.2) b.r(X + 3 + Math.floor(h(2) * 22), Y + 3 + Math.floor(h(3) * 22), 5, 3, dk(col, 0.93));
@@ -495,6 +627,12 @@ export function loadMap(m) {
       waterTiles.push({ x: x * T, y: y * T, h: hash(x, y, 5), n: sh(0, -1), s: sh(0, 1), w: sh(-1, 0), e: sh(1, 0) });
     }
     const ch = m.o[y][x];
+    if (WALL[ch]) {
+      const same = (dx, dy) => { const r = m.o[y + dy]; return r && r[x + dx] === ch ? 1 : 0; };
+      const piece = wallPiece(ch, same(0, -1) | (same(1, 0) << 1) | (same(0, 1) << 2) | (same(-1, 0) << 3), hash(x, y, 4) < 0.5 ? 0 : 1, theme === "forest" ? GROUND[":"] : GROUND["."]);
+      statics.push({ sp: piece, x: x * T + 16 + piece.ax, y: y * T - 14 - piece.padT + piece.height - 2, glow: null, glint: -1 });
+      continue;
+    }
     let sp = S[ch];
     if (!sp) continue;
     const h = hash(x, y, 3);

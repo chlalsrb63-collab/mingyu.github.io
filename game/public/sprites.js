@@ -559,6 +559,15 @@ function riftLord(b, f, px) {
   [[34, 7], [41, 10], [48, 13], [55, 10], [62, 7]].forEach(([x, h], i) => { const y = 9 + o * 2 + (i % 2 ? 1 : 0); b.tri([[x - 3, y], [x + 3, y], [x, y - h]], i % 2 ? rift : trim); b.tri([[x, y], [x + 3, y], [x, y - h]], i % 2 ? shade(rift, 0.3) : shade(trim, 0.3)); });
 }
 
+// A treasure chest: iron-bound wood with a gold lock that glints now and then.
+MOB.chest = (b, f) => {
+  b.r(8, 17, 16, 11, "#9a6238"); b.r(8, 24, 16, 4, "#74462a"); b.r(9, 13, 14, 5, "#b47a46"); b.r(8, 14, 16, 3, "#b47a46"); b.r(10, 13, 12, 1, "#d49a5e");
+  for (const x of [10, 20]) { b.r(x, 13, 2, 15, "#5a6074"); b.r(x, 13, 1, 15, "#8a90a4"); }
+  b.r(8, 17, 16, 1, "#4a3020");
+  b.r(14, 16, 4, 5, "#f0c040"); b.r(15, 18, 2, 2, "#6a4a18"); b.r(14, 16, 4, 1, "#fff0a0");
+  if (f) { b.r(13, 15, 1, 1, "#ffffff"); b.r(18, 14, 1, 1, "#fff8d0"); }
+};
+
 /** Old names from before the redesign, so a stale server still draws something sensible. */
 const MOB_ALIAS = { slime: "acorn", bslime: "potcrab", shroom: "capfrog", boar: "stump", bat: "lantern", drone: "eyecam", thug: "tvhead", robot: "signbot", skel: "candle", golem: "geode" };
 
@@ -585,7 +594,7 @@ export function monsterSheet(kind) {
 /** Per monster: how many times its sheet is enlarged, and how many pixels it floats. */
 export const MOB_SIZE = {
   acorn: [1, 0], potcrab: [1, 0], puff: [1, 8], capfrog: [1, 0], stump: [1, 0], lantern: [1, 9], yarn: [1, 0],
-  eyecam: [1, 12], signbot: [1, 0], vend: [1, 0], tvhead: [1, 5], candle: [1, 3], geode: [1, 0], prism: [1, 10], boss: [3, 0],
+  eyecam: [1, 12], signbot: [1, 0], vend: [1, 0], tvhead: [1, 5], candle: [1, 3], geode: [1, 0], prism: [1, 10], boss: [3, 0], chest: [1, 0],
 };
 for (const [old, now] of Object.entries(MOB_ALIAS)) MOB_SIZE[old] = MOB_SIZE[now];
 /** The light a creature gives off in dark places, if any. */

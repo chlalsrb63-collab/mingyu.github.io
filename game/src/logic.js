@@ -930,13 +930,13 @@ function buildMaps() {
   for (const id of ["town", "meadow", "forest", "cave", "city"]) FIRES[id] = [];
   const town = buildTown();
   const meadow = wild({
-    id: "meadow", name: "바람초원", seed: 22021, cw: 7, ch: 5, entry: 14, exit: 20, loops: 0.14, merge: 0.3, river: 4,
+    id: "meadow", name: "바람초원", seed: 22021, min: 7, cw: 7, ch: 5, entry: 14, exit: 20, loops: 0.14, merge: 0.3, river: 4,
     ground: ".", tufts: ",", edge: "T", treeCh: "T", tree: 0.022, road: "p", shore: "s",
     walls: [["cliff", 0.5], ["hedge", 0.22], ["trees", 0.28]], places: PLACES, mobs: ["acorn", "potcrab", "puff"], pondMob: "puff", chest: "chest_meadow", n: 4,
     gates: [["west", "w", 14], ["east", "e", 20]],
   });
   const forest = wild({
-    id: "forest", name: "속삭임 숲", seed: 33047, bgm: "forest", cw: 7, ch: 5, entry: 14, exit: 6, loops: 0.1, merge: 0.18, river: 3,
+    id: "forest", name: "속삭임 숲", seed: 33053, min: 7, bgm: "forest", cw: 7, ch: 5, entry: 14, exit: 6, loops: 0.1, merge: 0.18, river: 3,
     ground: ":", tufts: ";", edge: "P", treeCh: "P", tree: 0.05, road: "p", shore: null,
     walls: [["trees", 0.55], ["cliff", 0.33], ["ruin", 0.12]], places: PLACES, mobs: ["capfrog", "stump", "yarn", "lantern"], pondMob: null, chest: "chest_forest", n: 4,
     gates: [["west", "w", 14], ["north", "n", 6]],

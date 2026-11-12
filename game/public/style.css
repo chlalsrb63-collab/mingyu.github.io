@@ -478,7 +478,7 @@ h1 small { font-family: var(--font); font-weight: 600; font-size: .2em; letter-s
 #guild-body .ds { font-size: 11px; opacity: .7; margin: 4px 0 8px; }
 
 /* ───────────── mini-games: the rhythm of the line, the pan to pack ───────────── */
-#mini { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(6, 8, 16, .45); }
+#minigame { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(6, 8, 16, .45); }
 .mg { width: min(380px, calc(100vw - 20px)); padding: 14px 16px 16px; text-align: center; }
 .mg header { font-family: var(--serif, serif); font-size: 16px; color: var(--gold); margin-bottom: 4px; }
 .mg-hint { margin: 0 0 10px; font-size: 12px; opacity: .75; }

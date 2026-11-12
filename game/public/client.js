@@ -232,10 +232,10 @@ function entityPos(id) {
   return G.players.get(id) || G.mobs.get(id) || null;
 }
 
-const MOB_COL = { acorn: "#b07a40", potcrab: "#c8643c", puff: "#f4f0d8", capfrog: "#c84848", stump: "#7a5a3a", lantern: "#ffd060", yarn: "#d86a8a", eyecam: "#aab4c4", signbot: "#e0b040", vend: "#4a8ad0", tvhead: "#8ae0c0", candle: "#f4e8c8", geode: "#8a6ad8", prism: "#9ae8f4", boss: "#e050b8" };
+const MOB_COL = { acorn: "#b07a40", potcrab: "#c8643c", puff: "#f4f0d8", capfrog: "#c84848", stump: "#7a5a3a", lantern: "#ffd060", yarn: "#d86a8a", eyecam: "#aab4c4", signbot: "#e0b040", vend: "#4a8ad0", tvhead: "#8ae0c0", candle: "#f4e8c8", geode: "#8a6ad8", prism: "#9ae8f4", boss: "#e050b8", chest_meadow: "#f0c040", chest_forest: "#f0c040", chest_city: "#f0c040", chest_cave: "#f0c040" };
 const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * G.defs.eliteHp[m.el | 0]);
 const RANK_NAME = ["", "정예 ", "우두머리 "];
-Mini.mount($("#mini"));
+Mini.mount($("#minigame"));
 
 const heightOf = (e) => e.h3 || 1.3;
 
