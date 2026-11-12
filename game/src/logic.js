@@ -493,13 +493,16 @@ const SLOTS = ["weapon", "armor", "acc"];
 const isGear = (id) => SLOTS.includes(ITEMS[id].type);
 const plain = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
 
+/** The highest choice allowed for each part of a character's look. */
+const LOOK_MAX = [5, 5, 4, 9, 3, 3, 5];
 /** A brand-new character sheet — this is exactly what gets persisted. */
 export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
-  const lk = isObj(look) ? look : {};
+  const lk = Array.isArray(look) ? look : [];
   return {
     v: 2, name, cls: c,
-    look: [clamp(lk.hair | 0, 0, 5), clamp(lk.skin | 0, 0, 2), clamp(lk.style | 0, 0, 2)],
+    // ear, eyes, nose, colour, blush, markings, tunic
+    look: LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)),
     lvl: 1, xp: 0, gold: 50,
     inv: [{ id: "hp_s", n: 5 }, { id: "mp_s", n: 3 }],
     eq: { weapon: plain(`w_${c}_1`), armor: plain("a_1"), acc: null },

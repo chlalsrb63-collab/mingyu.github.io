@@ -34,14 +34,15 @@ const dk = (c, f = 0.78) => mix(c, f), lt = (c, f = 1.25) => mix(c, f);
 let cv, g, Z = 2, vw = 320, vh = 200;
 const cam = { x: 0, y: 0 };
 let map = null, ground = null, statics = [], npcs = [], G = null, shakeAmt = 0;
-export const SWATCH = { HAIR: SP.FUR, SKIN: SP.BELLY };
+export const PARTS = SP.PARTS;
 export function playerLook(cls, look, gear = {}) { return { cls, look, gear }; }
 
 export function init(canvas) { cv = canvas; g = cv.getContext("2d"); resize(); }
 export function resize() {
   if (!cv) return;
-  Z = Math.max(1, Math.round(Math.min(innerWidth / 480, innerHeight / 280)));
-  if (innerWidth < 560) Z = Math.max(1, Math.round(innerWidth / 300));
+  // about 440×256 world pixels on screen, so the small sprites stay readable
+  Z = Math.max(1, Math.round(Math.min(innerWidth / 440, innerHeight / 256)));
+  if (innerWidth < 560) Z = Math.max(2, Math.round(innerWidth / 220));
   vw = Math.ceil(innerWidth / Z); vh = Math.ceil(innerHeight / Z);
   cv.width = vw; cv.height = vh;
   cv.style.width = vw * Z + "px"; cv.style.height = vh * Z + "px";
@@ -247,7 +248,7 @@ function state(id, key, make) {
 function personState(id, look) {
   return state(id, JSON.stringify(look), () => {
     const cls = SP.HOLD[look.cls] ? look.cls : "warrior";
-    return { cls, sheet: SP.personSheet(SP.playerLook(cls, look.look, look.gear)), weapon: SP.weaponSprite(cls, look.gear), gear: look.gear || {}, h: cls === "mage" ? 1.4 : 1.2 };
+    return { cls, sheet: SP.personSheet(SP.playerLook(cls, look.look, look.gear)), weapon: SP.weaponSprite(cls, look.gear), gear: look.gear || {}, h: look.look && look.look[0] === 1 ? 1.1 : 0.95 };
   });
 }
 const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30"];
@@ -267,7 +268,7 @@ function drawPerson(s, e, t, dt, x, y) {
   const img = (back ? s.sheet.back : s.sheet.front)[frame];
   const sg = s.face;
   g.fillStyle = "rgba(20,24,50,.26)";
-  g.beginPath(); g.ellipse(x, y, 8, 3, 0, 0, 7); g.fill();
+  g.beginPath(); g.ellipse(x, y, 6, 2.5, 0, 0, 7); g.fill();
   const body = () => {
     g.save();
     g.translate(Math.round(x), Math.round(y));
@@ -298,8 +299,8 @@ function drawPerson(s, e, t, dt, x, y) {
   }
   const resting = k >= 1;
   // with no arms, the weapon simply floats at the body's side
-  const hx = x + sg * (hold.style === "sweep" && resting ? 4 : 10) + Math.cos(s.ang) * push;
-  const hy = y - (hold.style === "sweep" && resting ? 9 : 6) + Math.sin(s.ang) * push + (frame === 1 ? -2 : 0);
+  const hx = x + sg * (hold.style === "sweep" && resting ? 3 : 8) + Math.cos(s.ang) * push;
+  const hy = y - (hold.style === "sweep" && resting ? 7 : 5) + Math.sin(s.ang) * push + (frame === 1 ? -1 : 0);
   const weapon = () => {
     g.save();
     g.translate(Math.round(hx), Math.round(hy));
@@ -434,7 +435,7 @@ export function render(focusX, focusY, dt, t, snap) {
       g.drawImage(sp, dx, dy);
       g.globalAlpha = 1;
     } else if (o.n) {
-      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 8, 3, 0, 0, 7); g.fill();
+      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 6, 2.5, 0, 0, 7); g.fill();
       g.drawImage(o.n.sheet.front[0], Math.round(o.n.x - SP.FOOT[0]), Math.round(o.n.y - SP.FOOT[1] + Math.sin(t / 600 + o.n.x) * 0.6));
     } else if (o.d) {
       const d = o.d, x = d.x * P, y = d.y * P, ic = G.icons.cv[d.it];
@@ -444,11 +445,11 @@ export function render(focusX, focusY, dt, t, snap) {
     } else if (o.m) {
       const m = o.m, kind = G.defs.mobs[m.k].sp, x = m.x * P, y = m.y * P;
       if (kind === "thug" || kind === "skel") {
-        const s = state("m" + m.id, kind, () => ({ cls: kind === "thug" ? "rogue" : "warrior", sheet: SP.personSheet(SP.mobLook(kind)), weapon: SP.weaponSprite(kind === "thug" ? "rogue" : "warrior", { wt: kind === "thug" ? 2 : 3 }), gear: {}, h: 1.2, px: m.x }));
+        const s = state("m" + m.id, kind, () => ({ cls: kind === "thug" ? "rogue" : "warrior", sheet: SP.personSheet(SP.mobLook(kind)), weapon: SP.weaponSprite(kind === "thug" ? "rogue" : "warrior", { wt: kind === "thug" ? 2 : 3 }), gear: {}, h: 0.95, px: m.x }));
         const dir = m.x < s.px - 0.05 ? 1 : m.x > s.px + 0.05 ? 2 : s.face < 0 ? 1 : 2;
         s.px = m.x;
         drawPerson(s, { x: m.x, y: m.y, dir, moving: m.moving, atkT: m.atkT, dead: false, aim: null }, t, dt, x, y);
-        m.h3 = 1.2;
+        m.h3 = 0.95;
       } else {
         const s = state("m" + m.id, kind, () => ({ frames: SP.monsterSheet(kind), size: (SP.MOB_SIZE[kind] || [1, 0])[0], hover: (SP.MOB_SIZE[kind] || [1, 0])[1], px: m.x }));
         if (m.x > s.px + 0.05) s.face = -1; else if (m.x < s.px - 0.05) s.face = 1;
@@ -518,7 +519,7 @@ export function pick(clientX, clientY) {
 
 let stage = null;
 export function showcase(draft) {
-  const cast = draft ? [draft] : [playerLook("warrior", [0, 0, 0], { at: 3, wt: 3 }), playerLook("mage", [2, 0, 0], { at: 2, wt: 3 }), playerLook("ranger", [4, 1, 2], { at: 2, wt: 3 }), playerLook("rogue", [1, 2, 1], { at: 1, wt: 2 })];
+  const cast = draft ? [draft] : [playerLook("warrior", [1, 0, 0, 0, 0, 0, 1], { wt: 3 }), playerLook("mage", [0, 2, 1, 3, 0, 0, 4], { wt: 3 }), playerLook("ranger", [3, 1, 2, 7, 2, 3, 3], { wt: 3 }), playerLook("rogue", [2, 4, 3, 8, 3, 0, 0], { wt: 2 })];
   stage = { draft: !!draft, cast: cast.map((look, i) => ({ s: (() => { const cls = look.cls; return { key: "", face: 1, walk: 0, ang: null, cls, sheet: SP.personSheet(SP.playerLook(cls, look.look, look.gear)), weapon: SP.weaponSprite(cls, look.gear), gear: look.gear || {} }; })(), i })) };
   map = null;
 }
@@ -541,7 +542,7 @@ export function renderStage(dt, t) {
   const cx = Math.round(vw / 2);
   stage.cast.forEach(({ s, i }) => {
     if (stage.draft) {
-      const k = (t % 3200) / 1000, dir = [2, 1, 3, 2][Math.floor(t / 3200) % 4], z = 6;
+      const k = (t % 3200) / 1000, dir = [2, 1, 3, 2][Math.floor(t / 3200) % 4], z = 7;
       g.save(); g.translate(cx + Math.min(120, vw * 0.18), gy + 34); g.scale(z, z);
       drawPerson(s, { x: 0, y: 0, dir, moving: k > 1 && k < 2.2, atkT: k > 2.5 ? t - (k - 2.5) * 1000 : -1e9, dead: false, aim: k > 2.5 ? [dir === 1 ? -40 : 40, 6] : null }, t, dt, 0, 0);
       g.restore();

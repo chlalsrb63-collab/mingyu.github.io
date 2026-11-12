@@ -427,5 +427,16 @@ h1 small { font-family: var(--font); font-weight: 600; font-size: .2em; letter-s
 #world { image-rendering: pixelated; image-rendering: crisp-edges; }
 #title { background: linear-gradient(rgba(10, 12, 24, .28), rgba(10, 12, 24, .05) 45%, transparent); }
 
-/* characters are plain white: only the species is chosen */
-#c-hair, #c-skin { display: none; }
+/* ───────────── character creation: one row per part ───────────── */
+#c-parts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.part { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.part.sw { grid-column: 1 / -1; }
+.part .lab { width: 30px; flex: none; font-size: 12px; color: var(--gold); opacity: .85; }
+.part b { flex: 1; text-align: center; font-weight: 500; font-size: 13px; white-space: nowrap; }
+.part .step { width: 24px; height: 24px; padding: 0; flex: none; line-height: 1; font-size: 15px; color: #fff6dc; background: rgba(226, 196, 134, .12); border: 1px solid rgba(226, 196, 134, .35); border-radius: 6px; cursor: pointer; }
+.part .step:hover { background: rgba(226, 196, 134, .28); }
+.part .pick.sw { gap: 5px; flex-wrap: wrap; }
+.part .pick.sw button { width: 20px; height: 20px; opacity: 1; }
+.part .pick.sw button.none { background: linear-gradient(135deg, transparent 44%, #c66 45%, #c66 55%, transparent 56%), rgba(255, 255, 255, .08); }
+#c-rand { align-self: flex-start; padding: 4px 12px; font-size: 12px; color: #fff6dc; background: rgba(226, 196, 134, .12); border: 1px solid rgba(226, 196, 134, .35); border-radius: 6px; cursor: pointer; }
+#c-rand:hover { background: rgba(226, 196, 134, .28); }

@@ -1172,21 +1172,49 @@ const CLASS_DESC = {
   ranger: "레인저 · 총 — 다른 세계의 화기를 다루는 원거리 딜러. 관통탄과 수류탄으로 무리를 정리합니다.",
   mage: "마도사 · 지팡이 — 광역 마법과 치유. 체력은 약하지만 파티의 생존을 책임집니다.",
 };
-const draft = { cls: "warrior", hair: 0, skin: 0, style: 0 };
-function pick(sel, key, cast = (v) => v) {
-  for (const b of $$(`${sel} button`)) {
-    b.addEventListener("click", () => {
-      for (const o of $$(`${sel} button`)) o.classList.remove("on");
-      b.classList.add("on");
-      draft[key] = cast(b.dataset.v);
-      $("#c-desc").textContent = CLASS_DESC[draft.cls];
-      Sound.unlock(); Sound.play("ui");
-    });
-  }
+const draft = { cls: "warrior", look: S3.PARTS.map(() => 0) };
+for (const b of $$("#c-cls button")) {
+  b.addEventListener("click", () => {
+    for (const o of $$("#c-cls button")) o.classList.toggle("on", o === b);
+    draft.cls = b.dataset.v;
+    $("#c-desc").textContent = CLASS_DESC[draft.cls];
+    Sound.unlock(); Sound.play("ui");
+    stageDraft();
+  });
 }
-S3.SWATCH.HAIR.forEach((c, i) => { const b = el("button", i ? "" : "on"); b.dataset.v = i; b.style.background = c; $("#c-hair").append(b); });
-S3.SWATCH.SKIN.forEach((c, i) => { const b = el("button", i ? "" : "on"); b.dataset.v = i; b.style.background = c; $("#c-skin").append(b); });
-pick("#c-cls", "cls"); pick("#c-hair", "hair", Number); pick("#c-skin", "skin", Number); pick("#c-style", "style", Number);
+/** One row per part: a stepper through named shapes, or a row of colour swatches. */
+function buildParts() {
+  const box = $("#c-parts");
+  box.textContent = "";
+  S3.PARTS.forEach((p, i) => {
+    const n = (p.names || p.colors).length;
+    const set = (v) => { draft.look[i] = (v + n) % n; Sound.unlock(); Sound.play("ui"); buildParts(); stageDraft(); };
+    const row = el("div", p.colors ? "part sw" : "part");
+    row.append(el("span", "lab", p.label));
+    if (p.colors) {
+      const sw = el("div", "pick sw");
+      p.colors.forEach((c, v) => {
+        const b = el("button", (v === draft.look[i] ? "on" : "") + (c ? "" : " none"));
+        if (c) b.style.background = c;
+        b.addEventListener("click", () => set(v));
+        sw.append(b);
+      });
+      row.append(sw);
+    } else {
+      const prev = el("button", "step", "‹"), next = el("button", "step", "›");
+      prev.addEventListener("click", () => set(draft.look[i] - 1));
+      next.addEventListener("click", () => set(draft.look[i] + 1));
+      row.append(prev, el("b", "", p.names[draft.look[i]]), next);
+    }
+    box.append(row);
+  });
+}
+$("#c-rand").addEventListener("click", () => {
+  draft.look = S3.PARTS.map((p) => Math.floor(Math.random() * (p.names || p.colors).length));
+  Sound.unlock(); Sound.play("ui");
+  buildParts(); stageDraft();
+});
+buildParts();
 $("#c-desc").textContent = CLASS_DESC.warrior;
 
 for (const b of $$("#ch-pick button")) {
@@ -1208,14 +1236,13 @@ $("#b-create").addEventListener("click", () => {
   const name = $("#c-name").value.trim();
   if (!/^[가-힣A-Za-z0-9]{2,10}$/.test(name)) { $("#create-msg").textContent = "이름은 한글·영문·숫자 2~10자로 지어 주세요"; return; }
   $("#create-msg").textContent = "";
-  act({ t: "create", name, cls: draft.cls, look: { hair: draft.hair, skin: draft.skin, style: draft.style } });
+  act({ t: "create", name, cls: draft.cls, look: draft.look });
 });
 $("#c-name").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#b-create").click(); });
 
-/** The look being designed on the creation screen, shown on the 3D stage. */
-const draftLook = () => S3.playerLook(draft.cls, [draft.hair, draft.skin, draft.style], {});
+/** The look being designed on the creation screen, shown large beside the form. */
+function draftLook() { return S3.playerLook(draft.cls, draft.look.slice(), {}); }
 function stageDraft() { if (!$("#create").hidden) S3.showcase(draftLook()); }
-for (const b of $$("#create .pick button")) b.addEventListener("click", () => stageDraft());
 
 // ───────────────────────────── main loop ─────────────────────────────
 

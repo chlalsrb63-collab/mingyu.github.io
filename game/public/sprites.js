@@ -1,8 +1,8 @@
 /**
  * Pixel sprites: people, monsters and weapons, each on a 32×32 sheet.
  *
- * The adventurers are small white animals — cats, foxes and bears — carrying
- * weapons as big as they are, and wearing nothing else. The style is as simple as it can be: a big face on a tiny
+ * The adventurers are small animals carrying weapons as big as they are. Their
+ * ears, eyes, nose, colour, blush, markings and tunic are chosen at creation. The style is as simple as it can be: a big face on a tiny
  * body with no arms or legs, dot eyes, flat colours with one shadow tone and a
  * dark outline, so a figure reads instantly at any size. Weapons are separate sprites drawn
  * pointing right from their grip, because in play they are not animation
@@ -83,99 +83,99 @@ function finish(c, g, ink = INK, passes = 2) {
 }
 
 // ───────────────────────────── adventurers ─────────────────────────────
-// Small animals drawn on a 32×32 sheet and kept as simple as they can be: a big
-// face with the species' ears, a little body in the class's colours, a tail —
-// and no arms or legs. The weapon floats at their side.
+// Small animals on a 32×32 sheet: a boxy head about fourteen pixels wide, ears
+// above it, and a tiny body with no arms or legs. Nothing is worn on the head;
+// a face is just eyes, a nose and a blush. Every part is chosen at creation.
 
-export const SPECIES = ["고양이", "여우", "곰"];
-/** Fur colours and the paler colour of the muzzle. */
-export const FUR = ["#e8a04c", "#6a6e80", "#f2ead8", "#c8643c", "#8a6248", "#3c3a48"];
-export const BELLY = ["#fff4e0", "#f6d8b8", "#d8dce8"];
-
-/** Outfit by armour tier: [main, secondary, trim]. */
-const OUTFIT = {
-  warrior: [["#c8503e", "#a8b0c0", "#f0cc60"], ["#b06a3e", "#b8c2d2", "#f0cc60"], ["#4a6ec0", "#e2eaf6", "#f6d870"], ["#3a4050", "#7a8498", "#ff6a52"], ["#2a8c9c", "#b6f2f8", "#f6ffff"]],
-  rogue: [["#4c5270", "#d85064", "#ecd090"], ["#70584a", "#e88238", "#ecd090"], ["#3a6078", "#62d2c0", "#f0faf4"], ["#30323e", "#f24c6e", "#d0d4e0"], ["#246070", "#84f8e6", "#f6ffff"]],
-  ranger: [["#70925a", "#f6eacc", "#d6b46a"], ["#9c7a50", "#faf0d6", "#d6b46a"], ["#567ab0", "#f2f6fc", "#f4d674"], ["#3a3e4a", "#d6dae2", "#ffb850"], ["#2a8a96", "#e8ffff", "#f6ffff"]],
-  mage: [["#7e6cdc", "#f6f0ff", "#f8dc80"], ["#b85aa0", "#fff0f8", "#f8dc80"], ["#487ad0", "#eef8ff", "#f8dc80"], ["#3a3662", "#c6b6ff", "#d6b6ff"], ["#289aa4", "#eeffff", "#f6ffff"]],
-};
+/** What can be chosen at creation, in the order `look` stores it. */
+export const PARTS = [
+  { key: "ear", label: "귀", names: ["고양이", "토끼", "곰", "여우", "강아지", "쥐"] },
+  { key: "eye", label: "눈", names: ["점 눈", "긴 눈", "큰 눈", "웃는 눈", "졸린 눈", "파란 눈"] },
+  { key: "nose", label: "코", names: ["작은 코", "분홍 코", "ㅅ 입", "큰 코", "없음"] },
+  { key: "fur", label: "색상", colors: ["#fbfbff", "#fff0d8", "#ffd9c2", "#ffd0dc", "#e2d6ff", "#cfe6ff", "#cff2dc", "#ffeaa0", "#b9bdca", "#b98b68"] },
+  { key: "blush", label: "볼", names: ["분홍", "빨강", "주황", "없음"] },
+  { key: "pat", label: "무늬", names: ["없음", "눈 얼룩", "줄무늬", "포인트"] },
+  { key: "cloth", label: "옷", colors: [null, "#5a8ae0", "#e0605a", "#5ab87a", "#9a78e0", "#f0c050"] },
+];
+const BLUSH = ["#f6a8a0", "#f07882", "#f8ba7c", null];
+const PINK = "#f6a8a0", DARK = "#2b2233";
 
 /**
- * One frame of an adventurer. `o`: cls, fur, belly, kind (species), at (armour
- * tier), main/sub/trim, and optional apron, band, bone, mask, old.
+ * One frame of an adventurer. `o`: ear, eye, nose, fur (a colour), blush (a
+ * colour or null), pat, cloth (a colour or null), and for monsters mask / bone.
  * `f`: 0 standing, 1 the top of a hop, 2 the landing.
  */
 function person(o, back, f) {
   const [c, g] = sheet(S);
   const b = brush(g);
-  const cls = o.cls;
-  const fur = o.bone ? "#eef0f6" : o.fur, belly = o.bone ? "#eef0f6" : o.belly, kind = o.bone ? -1 : o.kind;
-  const main = o.main, sub = o.sub, trim = o.trim;
-  const up = f === 1 ? 2 : 0, sq = f === 2 ? 1 : 0;   // hop, then squash
-  const hy = 14 - up + sq, by = 21 - up + sq, bh = 8 - sq;
+  const fur = o.bone ? "#eef0f6" : o.fur, sh = dk(fur, 0.82), pat = o.pat | 0;
+  const H = f === 1 ? -1 : f === 2 ? 1 : 0;                 // the head bobs with the hop
+  const by = 21 + H, bh = f === 2 ? 6 : 7;                  // the body squashes on landing
+  const r = (x, y, w, h, col) => b.r(x, y + H, w, h, col);
+  /** The same block on both sides of the face. */
+  const both = (x, y, w, h, col, colR = col) => { r(x, y, w, h, col); r(32 - x - w, y, w, h, colR); };
+  const tris = (pts, col, colR) => { b.tri(pts.map(([x, y]) => [x, y + H]), col); b.tri(pts.map(([x, y]) => [32 - x, y + H]), colR); };
 
-  const tail = () => {
-    if (kind === 0) { b.r(20, by + 5, 3, 1, fur); b.r(22, by + 1, 1, 4, fur); b.r(23, by, 1, 2, fur); }
-    else if (kind === 1) { b.oval(23, by + 3, 3, 3.5, fur); }
-    else if (kind === 2) b.r(21, by + 5, 2, 2, fur);
-  };
-  if (!back) { tail(); if (cls === "warrior") b.r(9, by + 1, 14, bh - 2, dk(o.cape || main, 0.85)); }
+  // ── tail
+  const tc = pat === 3 ? sh : fur;
+  if (!o.bone) [
+    () => { b.r(20, by + 5, 3, 1, tc); b.r(22, by + 2, 1, 3, tc); b.r(23, by + 1, 1, 2, tc); },
+    () => b.r(20, by + 3, 2, 2, tc),
+    () => b.r(20, by + 4, 1, 2, tc),
+    () => { b.r(20, by + 2, 4, 4, tc); b.r(21, by + 1, 3, 1, tc); },
+    () => { b.r(20, by + 3, 2, 1, tc); b.r(21, by + 1, 1, 2, tc); },
+    () => { b.r(20, by + 5, 4, 1, tc); b.r(23, by + 3, 1, 2, tc); },
+  ][o.ear | 0]();
 
-  // ── body: a small rounded lump in the class's colours
-  b.r(12, by, 8, bh, main); b.r(11, by + 1, 10, bh - 2, main);
-  b.r(11, by + bh - 3, 10, 2, dk(main)); b.r(12, by + bh - 1, 8, 1, dk(main));
-  if (!back) {
-    if (cls === "warrior") { b.r(12, by + 1, 8, 3, sub); b.r(15, by + 1, 2, 4, main); }
-    else if (cls === "ranger") { b.r(14, by + 1, 4, bh - 3, sub); }
-    else if (cls === "mage" || cls === "robe") { b.r(15, by + 1, 2, bh - 2, trim); if (cls === "mage") b.r(15, by + 1, 2, 2, "#8adcf4"); }
-    else if (cls === "rogue") { b.r(13, by + 3, 6, 1, "#7a5236"); }
-    else if (o.apron) b.r(13, by + 2, 6, bh - 3, o.apron);
-    if (cls !== "mage" && cls !== "robe" && !o.apron) b.r(15, by + bh - 4, 2, 2, trim);
-  } else if (cls === "ranger") b.r(13, by + 1, 6, 4, "#b08a58");
-  if (cls === "mage" || cls === "robe") b.r(11, by + bh - 2, 10, 1, trim);
-  if (o.at >= 5) b.r(12, by + bh - 1, 8, 1, "#bff8ff");
+  // ── body: a small lump, optionally in a plain tunic
+  const cloth = o.bone ? "#4a4868" : o.cloth;
+  b.r(12, by, 8, bh - 1, fur); b.r(13, by + bh - 1, 6, 1, dk(fur, 0.9));
+  if (cloth) { b.r(12, by, 8, bh - 3, cloth); b.r(12, by + bh - 3, 8, 1, dk(cloth, 0.8)); if (!back) b.r(15, by, 2, 1, lt(cloth, 1.5)); }
+  else b.r(12, by, 8, 1, dk(fur, 0.93));
 
   // ── ears
-  const ear = (x, s) => {
-    if (kind === 0) { b.tri([[x - 3 * s, hy - 4], [x - 2 * s, hy - 12], [x + 3 * s, hy - 7]], fur); if (!back) b.r(x - (s > 0 ? 1 : 0), hy - 8, 1, 2, "#f6a8a0"); }
-    else if (kind === 1) { b.tri([[x - 4 * s, hy - 3], [x - 3 * s, hy - 14], [x + 3 * s, hy - 7]], fur); if (!back) b.r(x - (s > 0 ? 1 : 0), hy - 9, 1, 3, "#f6a8a0"); }
-    else if (kind === 2) { b.oval(x - 1 * s, hy - 7, 3, 3, fur); if (!back) b.r(x - (s > 0 ? 2 : -1), hy - 8, 2, 2, "#f6a8a0"); }
-  };
-  ear(10, 1); ear(22, -1);
+  const eL = pat === 3 ? sh : fur, eR = pat === 3 || pat === 1 ? sh : fur;
+  if (!o.bone) [
+    () => { tris([[9, 12], [10, 6], [15, 11]], eL, eR); if (!back) both(11, 9, 1, 2, PINK); },
+    () => { both(11, 3, 3, 9, eL, eR); if (!back) both(12, 5, 1, 5, PINK); },
+    () => { both(9, 9, 4, 3, eL, eR); both(10, 8, 2, 1, eL, eR); if (!back) both(10, 10, 2, 1, PINK); },
+    () => { tris([[8, 13], [8, 4], [15, 11]], eL, eR); if (!back) both(10, 8, 1, 3, PINK); },
+    () => {},                                               // floppy ears hang over the head: drawn after it
+    () => { both(7, 7, 5, 4, eL, eR); both(8, 6, 3, 6, eL, eR); if (!back) both(9, 8, 2, 2, PINK); },
+  ][o.ear | 0]();
 
-  // ── the big face
-  b.oval(16, hy, 10, 8, fur);
-  if (back) {
-    if (!o.bone) b.oval(16, hy + 3, 7, 4, dk(fur, 0.9));
-  } else if (o.bone) {
-    b.r(11, hy - 1, 3, 4, "#2b2233"); b.r(18, hy - 1, 3, 4, "#2b2233"); b.r(12, hy, 1, 2, o.eye || "#6ae8f4"); b.r(19, hy, 1, 2, o.eye || "#6ae8f4");
-    b.r(13, hy + 5, 1, 2, "#2b2233"); b.r(15, hy + 5, 1, 2, "#2b2233"); b.r(17, hy + 5, 1, 2, "#2b2233"); b.r(19, hy + 5, 1, 2, "#2b2233");
-  } else {
-    if (kind === 1) { b.r(5, hy + 1, 3, 3, fur); b.r(24, hy + 1, 3, 3, fur); }
-    b.oval(16, hy + 4, 5, 3, belly);
-    if (o.mask) b.r(8, hy - 2, 16, 4, "#3c3040");
-    b.r(11, hy - 1, 2, 3, "#2b2233"); b.r(19, hy - 1, 2, 3, "#2b2233");
-    b.r(11, hy - 1, 1, 1, "#ffffff"); b.r(19, hy - 1, 1, 1, "#ffffff");
-    b.r(15, hy + 2, 2, 1, "#4a3640");
-    b.r(8, hy + 3, 2, 1, "#f6a8a0"); b.r(22, hy + 3, 2, 1, "#f6a8a0");
-    if (o.old) { b.r(10, hy - 3, 4, 1, "#eef0f6"); b.r(18, hy - 3, 4, 1, "#eef0f6"); b.r(13, hy + 5, 6, 3, "#eef0f6"); }
+  // ── head
+  r(10, 11, 12, 10, fur); r(9, 12, 14, 8, fur);
+  if (o.ear === 4 && !o.bone) { const d = pat === 3 ? dk(fur, 0.68) : sh; both(7, 10, 4, 1, d, pat === 1 ? dk(fur, 0.68) : d); both(6, 11, 4, 6, d, pat === 1 ? dk(fur, 0.68) : d); both(7, 17, 3, 1, d, pat === 1 ? dk(fur, 0.68) : d); }
+  if (pat === 2) { r(12, 11, 1, 2, sh); r(15, 11, 2, 3, sh); r(19, 11, 1, 2, sh); }
+
+  if (back) return finish(c, g, INK, 1);
+
+  if (o.bone) {
+    both(11, 14, 3, 3, DARK); both(12, 15, 1, 1, o.glow || "#6ae8f4");
+    r(13, 19, 1, 2, DARK); r(15, 19, 1, 2, DARK); r(17, 19, 1, 2, DARK);
+    return finish(c, g, INK, 1);
   }
 
-  // ── what marks the class: a band, a scarf, goggles, a hat
-  if (cls === "warrior" || o.band) { b.r(7, hy - 5, 18, 2, o.band || "#e04a4a"); if (back) b.r(17, hy - 3, 2, 4, o.band || "#e04a4a"); }
-  if (cls === "rogue") { b.r(9, by - 1, 14, 3, sub); b.r(9, by + 1, 14, 1, dk(sub)); if (back) b.r(16, by + 2, 3, 5, sub); else b.r(8, by + 2, 3, 4, sub); }
-  if (cls === "ranger") {
-    b.r(7, hy - 5, 18, 1, "#3a3e4a");
-    if (!back) { const lens = o.at >= 4 ? "#ffd060" : "#8fe8f4"; b.r(10, hy - 7, 5, 4, "#3a3e4a"); b.r(17, hy - 7, 5, 4, "#3a3e4a"); b.r(11, hy - 6, 3, 2, lens); b.r(18, hy - 6, 3, 2, lens); }
-  }
-  if (cls === "mage") {
-    b.tri([[11, hy - 5], [21, hy - 5], [19, hy - 14], [16, hy - 10]], main);
-    b.r(18, hy - 14, 4, 2, main); b.r(21, hy - 13, 2, 2, main);
-    b.r(9, hy - 6, 14, 2, dk(main, 0.88));
-    b.r(12, hy - 8, 8, 1, trim);
-  }
-  if (back) { if (cls === "warrior") { b.r(10, by, 12, bh - 1, o.cape || dk(main, 0.85)); b.r(12, by + 1, 1, bh - 3, lt(o.cape || main)); } tail(); }
-  if (o.acc && !back) b.r(15, by, 2, 1, o.acc >= 4 ? "#8ff4ff" : o.acc >= 3 ? "#eef0f6" : "#f0b060");
+  // ── face: eyes, a nose, a blush — nothing else
+  if (pat === 1) { r(17, 13, 5, 5, sh); r(22, 14, 1, 3, sh); }
+  if (o.mask) { r(9, 14, 14, 3, "#3c3040"); both(11, 15, 2, 1, "#ffffff"); }
+  else [
+    () => both(11, 15, 2, 2, DARK),
+    () => { both(11, 14, 2, 3, DARK); r(11, 14, 1, 1, "#ffffff"); r(19, 14, 1, 1, "#ffffff"); },
+    () => { both(11, 14, 3, 3, DARK); r(11, 14, 1, 1, "#ffffff"); r(18, 14, 1, 1, "#ffffff"); },
+    () => { both(11, 16, 1, 1, DARK); both(12, 15, 1, 1, DARK); both(13, 16, 1, 1, DARK); },
+    () => both(11, 16, 3, 1, DARK),
+    () => { both(11, 14, 2, 3, DARK); both(11, 16, 2, 1, "#5aa8f0"); r(11, 14, 1, 1, "#ffffff"); r(19, 14, 1, 1, "#ffffff"); },
+  ][o.eye | 0]();
+  [
+    () => r(15, 17, 2, 1, "#4a3640"),
+    () => r(15, 17, 2, 1, "#f08a9a"),
+    () => { r(15, 17, 2, 1, "#4a3640"); both(14, 18, 1, 1, "#4a3640"); },
+    () => { r(14, 17, 4, 1, "#4a3640"); r(15, 18, 2, 1, "#4a3640"); },
+    () => {},
+  ][o.nose | 0]();
+  if (o.blush) both(10, 18, 2, 1, o.blush);
   return finish(c, g, INK, 1);
 }
 
@@ -187,27 +187,22 @@ export function personSheet(o) {
   if (!s) { s = { front: [0, 1, 2].map((f) => person(o, false, f)), back: [0, 1, 2].map((f) => person(o, true, f)) }; cache.set(key, s); }
   return s;
 }
-const WHITE = "#fbfbff";
-/** A plain look: one colour of fur, no costume — just eyes, blush and a nose. */
-const plain = (kind, fur = WHITE) => ({ cls: "plain", kind, fur, belly: fur, main: fur, sub: fur, trim: fur, at: 1 });
-/**
- * Players are plain white animals; `look[2]` picks the species. What they
- * carry — the weapon — is what tells the classes apart.
- */
-export function playerLook(cls, look) {
-  return plain(Math.min(2, look[2] | 0));
+/** `look` is the list of choices, one per entry of PARTS. The class shows only in the weapon. */
+export function playerLook(cls, look = []) {
+  const at = (i) => { const p = PARTS[i], n = (p.names || p.colors).length; return Math.max(0, Math.min(n - 1, look[i] | 0)); };
+  return { ear: at(0), eye: at(1), nose: at(2), fur: PARTS[3].colors[at(3)], blush: BLUSH[at(4)], pat: at(5), cloth: PARTS[6].colors[at(6)] };
 }
-/** Townsfolk are the same simple animals in soft tints, so they read as not-you. */
+/** Townsfolk wear a tunic in their trade's colour. */
 export function npcLook(look, role) {
-  if (role === "elder") return plain(2, "#e2e4f0");
-  if (role === "smith") return plain(2, "#e6d2bc");
-  if (role === "shop") return plain(0, "#ffe6d2");
-  if (role === "train") return plain(1, "#f6dcdc");
-  return plain(1, "#dce8f6");
+  if (role === "elder") return { ear: 1, eye: 4, nose: 0, fur: "#e6e6f0", blush: PINK, pat: 0, cloth: "#5a6ac0" };
+  if (role === "smith") return { ear: 2, eye: 0, nose: 3, fur: "#c89a74", blush: null, pat: 0, cloth: "#6a5a52" };
+  if (role === "shop") return { ear: 0, eye: 3, nose: 1, fur: "#ffe6d2", blush: PINK, pat: 0, cloth: "#e07a8a" };
+  if (role === "train") return { ear: 3, eye: 1, nose: 0, fur: "#f6c890", blush: PINK, pat: 3, cloth: "#b84a4a" };
+  return { ear: 4, eye: 0, nose: 3, fur: "#f0e0c8", blush: PINK, pat: 0, cloth: "#5e6a88" };
 }
 export function mobLook(kind) {
-  if (kind === "thug") return { ...plain(0, "#7a7684"), mask: 1 };
-  return { cls: "plain", bone: 1, kind: -1, fur: "#eef0f6", belly: "#eef0f6", at: 1, main: "#4a4868", sub: "#7c7a98", trim: "#4a4868", eye: "#6ae8f4" };
+  if (kind === "thug") return { ear: 0, eye: 0, nose: 4, fur: "#8a8694", blush: null, pat: 0, cloth: "#6a3040", mask: 1 };
+  return { bone: 1, ear: 0, fur: "#eef0f6" };
 }
 
 // ───────────────────────────── weapons ─────────────────────────────
