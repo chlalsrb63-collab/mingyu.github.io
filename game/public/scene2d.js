@@ -14,6 +14,7 @@
  */
 
 import * as SP from "./sprites.js";
+import * as DC from "./decor.js";
 
 const T = 32, P = 2;
 const INK = "#2b2233";
@@ -762,26 +763,41 @@ function paintExtras(m, c) {
   }
   for (const n of m.npcs) {
     // a woven mat marks where each of the townsfolk stands
-    const cx = n.x * T + 16, cy = n.y * T + 25, col = { shop: "#e07a8a", smith: "#8a90a0", elder: "#5a6ac0", train: "#b84a4a" }[n.role] || "#6a8a5a";
+    const cx = n.x * T + 16, cy = n.y * T + 25, col = { shop: "#e07a8a", smith: "#8a90a0", elder: "#5a6ac0", train: "#b84a4a", warp: "#7a5ae0", collector: "#4a7a4a", achieve: "#d8a830", daily: "#4a8ad0" }[n.role] || "#6a8a5a";
     b.oval(cx, cy, 15, 6.5, "#f2e0b0"); b.oval(cx, cy, 13, 5, col); b.oval(cx, cy, 9, 3, lt(col, 1.3)); b.oval(cx, cy, 5, 1.6, col);
   }
 }
 
 let theme = "meadow", waterTiles = [], smokers = [];
+/** Level art from decor.js: falling water, a layer that breathes, little emitters, lantern strings, critters, signs. */
+let falls = [], pulseCv = null, emit = [], strings = [], critters = [], signs = [], lights = [];
 export function loadMap(m) {
   map = m;
   theme = m.theme || themeOf(m);
   ground = paintGround(m, theme);
+  DC.decals(m, theme, ground.getContext("2d"));
   paintExtras(m, ground);
-  const S = scenery();
-  statics = []; waterTiles = []; smokers = [];
+  const S = scenery(), D = DC.sprites();
+  statics = []; waterTiles = []; smokers = []; signs = []; lights = [];
+  const lay = DC.plan(m, theme), mkt = theme === "town" ? DC.town(m) : { statics: [], swap: new Set(), strings: [] };
+  falls = lay.falls; pulseCv = DC.pulse(m, theme); emit = DC.emitters(m, theme); strings = mkt.strings; critters = [];
+  const marks = new Map((m.marks || []).map((k) => [k.x + "," + k.y, k]));
   const edge = (x, y) => x < 2 || y < 2 || x >= m.w - 2 || y >= m.h - 2;
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     if (m.g[y][x] === "w") {
       const sh = (dx, dy) => { const r = m.g[y + dy], ch = r && r[x + dx]; return ch !== undefined && ch !== "w" && ch !== "b" ? 1 : 0; };
       waterTiles.push({ x: x * T, y: y * T, h: hash(x, y, 5), n: sh(0, -1), s: sh(0, 1), w: sh(-1, 0), e: sh(1, 0) });
     }
-    const ch = m.o[y][x];
+    const ch = m.o[y][x], key = x + "," + y;
+    if (lay.covered.has(key)) continue;
+    if (ch === "Q") { statics.push({ sp: D.waypoint, x: x * T + 16, y: (y + 1) * T - 3, glow: null, glint: -1, wp: true, ph: hash(x, y, 6) * 9 }); continue; }
+    if (ch === "G" && marks.has(key)) {
+      const k = marks.get(key), way = signWay(m, x, y, k);
+      const st = { sp: D.sign[way + 1], x: x * T + 16, y: (y + 1) * T - 3, glow: null, glint: -1, label: k && k.label ? k.label : null };
+      statics.push(st); if (st.label) signs.push(st);
+      continue;
+    }
+    if (mkt.swap.has(key)) continue;
     if (WALL[ch]) {
       const same = (dx, dy) => { const r = m.o[y + dy]; return r && r[x + dx] === ch ? 1 : 0; };
       const piece = wallPiece(ch, same(0, -1) | (same(1, 0) << 1) | (same(0, 1) << 2) | (same(-1, 0) << 3), hash(x, y, 4) < 0.5 ? 0 : 1, theme === "forest" ? GROUND[":"] : GROUND["."]);
@@ -809,10 +825,50 @@ export function loadMap(m) {
       if (!city) smokers.push({ x: s.x + 31, y: s.y - 134 });
     } else statics.push({ sp: S.fountain, x: (b.x + 1) * T, y: (b.y + 2) * T - 2, water: true });
   }
+  for (const st of lay.statics) statics.push(st);
+  for (const st of mkt.statics) statics.push(st);
+  // what lights up after dark: lamps, windows, landmarks, runes
+  for (const st of statics) if (st.glow || st.wp || st.nightGlow || (st.big && !st.neon && st.sp.width === S.house[0].width)) lights.push(st);
   npcs = m.npcs.map((n) => ({ n, x: n.x * T + T / 2, y: n.y * T + 24, sheet: SP.personSheet(SP.npcLook(n.look, n.role)) }));
   ents.clear();
   fx.clear();
   amb.length = 0;
+}
+
+/**
+ * A signpost's board points at the gate it names, if the gate is clearly to one
+ * side; otherwise it is a plain board. Returns -1 (left), 0 or 1 (right).
+ */
+function signWay(m, x, y, k) {
+  if (!k) return 0;
+  // the label may carry its own arrow
+  const lab = String(k.label || "");
+  if (/[←⇐◀↖↙]/.test(lab)) return -1;
+  if (/[→⇒▶↗↘]/.test(lab)) return 1;
+  if (/[↑↓]/.test(lab) || !k.to) return 0;
+  const want = String(k.to);
+  const gate = (m.portals || []).find((p) => p.to === want || p.id === want || p.map === want || (p.to && (p.to.startsWith(want) || want.startsWith(p.to.split(" Lv")[0]))));
+  if (!gate) return 0;
+  const dx = gate.x - x, dy = gate.y - y;
+  return Math.abs(dx) < Math.abs(dy) * 0.5 ? 0 : Math.sign(dx);
+}
+/** Where each signpost's words go on screen (CSS pixels, the centre of a line just above the board), for the page to letter crisply. */
+const labelOut = [];
+export function labels() {
+  labelOut.length = 0;
+  const ox = cam.ox ?? cam.x, oy = cam.oy ?? cam.y;
+  for (const s of signs) {
+    const sx = s.x - ox, sy = s.y - 40 - oy;
+    if (sx < -60 || sx > vw + 60 || sy < -20 || sy > vh + 40) continue;
+    labelOut.push({ x: sx * Z, y: sy * Z, text: s.label });
+  }
+  return labelOut;
+}
+/** Whether the waypoint here has been touched: unknown counts as lit, so a stone never looks dead by mistake. */
+function wpLit() {
+  const self = G && G.self;
+  const got = self && (self.wp || self.wps);
+  return !Array.isArray(got) || got.includes(map.id);
 }
 
 // ───────────────────────────── ambient life ─────────────────────────────
@@ -1163,6 +1219,46 @@ function drawFx(now, ground2) {
 
 // ───────────────────────────── the frame ─────────────────────────────
 
+/** The worlds under the open sky, where day turns to night. */
+const OUTDOOR = new Set(["town", "meadow", "forest", "city"]);
+/** A waypoint's rune: lit and breathing once touched, dark until then. */
+function drawRune(st, dx, dy, t) {
+  if (!wpLit()) return;
+  const D = DC.sprites(), k = 0.5 + 0.5 * Math.sin(t / 520 + st.ph);
+  g.fillStyle = k > 0.7 ? "#e8fbff" : "#7ae0ff";
+  for (const [x, y] of D.RUNE) g.fillRect(dx + 2 + x, dy + 2 + y, 1, 1);
+  g.globalCompositeOperation = "lighter"; g.globalAlpha = 0.25 + k * 0.3;
+  g.drawImage(DC.glow("#5ad0ff", 26), dx + 11 - 26, dy + 18 - 26);
+  g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+  if (Math.random() < 0.06) parts.push({ x: st.x - 5 + Math.random() * 10, y: st.y - 20 - Math.random() * 16, vx: (Math.random() - 0.5) * 4, vy: -14, life: 1.1, color: Math.random() < 0.5 ? "#9af0ff" : "#ffffff", g: 0, s: 1 });
+}
+/** After dark: warm light in windows, pools under lamps, runes and landmarks brighter. */
+function drawNightLights(night, t, ox, oy) {
+  const S = scenery();
+  g.globalCompositeOperation = "lighter";
+  for (const st of lights) {
+    const sx = st.x - ox, sy = st.y - oy;
+    if (sx < -140 || sx > vw + 140 || sy < -40 || sy > vh + 240) continue;
+    if (st.big && !st.neon && st.sp.width === S.house[0].width) {
+      // a cottage's two windows, lit from inside, flickering a little
+      const dx = Math.round(sx - st.sp.width / 2), dy = Math.round(sy - st.sp.height + 2);
+      const f = 0.8 + 0.2 * Math.sin(t / 300 + st.ph * 4);
+      g.globalAlpha = night * 0.75 * f; g.fillStyle = "#ffb050";
+      for (const wx of [18, 94]) { g.fillRect(dx + wx + 4, dy + 84, 7, 7); g.fillRect(dx + wx + 13, dy + 84, 5, 7); g.fillRect(dx + wx + 4, dy + 93, 7, 5); g.fillRect(dx + wx + 13, dy + 93, 5, 5); }
+      g.globalAlpha = night * 0.35 * f;
+      for (const wx of [18, 94]) g.drawImage(DC.glow("#ffb050", 28), dx + wx + 12 - 28, dy + 92 - 28);
+      continue;
+    }
+    const col = st.nightGlow || st.glow || "#7ae0ff", r = st.big || st.land ? 60 : st.nightGlow ? 26 : 40;
+    const cy = st.wp ? sy - 22 : st.land ? sy - st.sp.height * 0.5 : st.nightGlow ? sy - 30 : sy - st.sp.height + 10;
+    g.globalAlpha = night * (st.nightGlow ? 0.3 : 0.45);
+    g.drawImage(DC.glow(col, r), Math.round(sx - r), Math.round(cy - r));
+    if (st.glow === "#ffe690") { g.globalAlpha = night * 0.22; g.drawImage(DC.glow(col, 44), Math.round(sx - 44), Math.round(sy - 26)); }
+  }
+  for (const f of G.fires ? G.fires.values() : []) { g.globalAlpha = night * 0.5; g.drawImage(DC.glow("#ff9a40", 56), Math.round(f.x * P - ox - 56), Math.round(f.y * P - oy - 64)); }
+  g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+}
+
 /** How dark each world is, and the colour of its darkness. */
 const DARK = { forest: ["#06242a", 0.1], city: ["#0a0e30", 0.18], cave: ["#060a22", 0.17], crypt: ["#0a0810", 0.2], sewer: ["#04100a", 0.17], abyss: ["#1e0208", 0.16] };
 let lightCv = null, lg = null;
@@ -1190,6 +1286,12 @@ export function render(focusX, focusY, dt, t, snap) {
   g.translate(-ox, -oy);
   g.drawImage(ground, 0, 0);
   drawWater(t, ox, oy);
+  if (pulseCv) {
+    const sx = Math.max(0, ox), sy = Math.max(0, oy), sw = Math.min(vw, pulseCv.width - sx), sh = Math.min(vh, pulseCv.height - sy);
+    const beat = theme === "abyss" ? Math.max(0, Math.sin(t / 260)) ** 3 * 0.6 + Math.max(0, Math.sin(t / 260 - 0.9)) ** 3 * 0.3 : 0.5 + 0.5 * Math.sin(t / 1100);
+    if (sw > 0 && sh > 0) { g.globalAlpha = 0.25 + beat * 0.6; g.drawImage(pulseCv, sx, sy, sw, sh, sx, sy, sw, sh); g.globalAlpha = 1; }
+  }
+  DC.drawFalls(g, falls, t, ox, oy, vw, vh);
   for (const s of smokers) if (s.x > ox - 20 && s.x < ox + vw + 20 && s.y > oy - 60 && s.y < oy + vh && Math.random() < 0.07) parts.push({ x: s.x + Math.random() * 4, y: s.y, vx: 5 + Math.random() * 5, vy: -13, life: 1.3 + Math.random(), color: "#eef0f6", g: -5, s: 3 });
 
   // gates
@@ -1218,7 +1320,7 @@ export function render(focusX, focusY, dt, t, snap) {
   const meX = G.me.x * P, meY = G.me.y * P;
   for (const o of list) {
     if (o.s) {
-      const st = o.s, sp = st.sp, dx = Math.round(st.x - sp.width / 2), dy = Math.round(st.y - sp.height + 2);
+      const st = o.s, sp = st.sp, dx = Math.round(st.x - sp.width / 2), dy = Math.round(st.y - sp.height + 2 - (st.lift || 0));
       // tall things in front of you turn translucent
       const hides = sp.height > 60 && st.y > meY && meX > dx + 6 && meX < dx + sp.width - 6 && meY - 20 > dy;
       if (hides) g.globalAlpha = 0.42;
@@ -1227,6 +1329,15 @@ export function render(focusX, focusY, dt, t, snap) {
       // a neon sign that sputters, a crystal that catches the light, a fountain that splashes
       if (st.neon && Math.sin(t / 130 + st.ph) + Math.sin(t / 71 + st.ph * 3) > 1.55) { g.globalAlpha = 0.55; g.fillStyle = "#181a22"; g.fillRect(dx + 12, dy + 148, 112, 14); g.globalAlpha = 1; }
       if (st.glint >= 0 && Math.sin(t / 420 + st.glint) > 0.86) { g.fillStyle = "#ffffff"; g.fillRect(dx + 16, dy + 6, 5, 1); g.fillRect(dx + 18, dy + 4, 1, 5); }
+      if (st.wp) drawRune(st, dx, dy, t);
+      if (st.land && st.glow) {
+        const beat = st.land === "heart" ? Math.max(0, Math.sin(t / 260)) ** 3 + Math.max(0, Math.sin(t / 260 - 0.9)) ** 3 * 0.5 : 0.5 + 0.5 * Math.sin(t / 900 + st.ph);
+        const r = st.land === "heart" ? 70 : 44, gy = st.land === "heart" ? dy + 70 : st.land === "board" ? dy + 44 : st.land === "shrine" ? dy + 14 : st.land === "oak" ? dy + 94 : dy + sp.height * 0.45;
+        g.globalCompositeOperation = "lighter"; g.globalAlpha = (0.12 + beat * 0.16) * (DARK[theme] ? 1.4 : 1);
+        g.drawImage(DC.glow(st.glow, r), Math.round(st.x - r), Math.round(gy - r));
+        g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+        if (st.land === "crystals" && Math.random() < 0.04) parts.push({ x: dx + 10 + Math.random() * (sp.width - 20), y: dy + 20 + Math.random() * 60, vx: 0, vy: -8, life: 1.2, color: "#cffaff", g: 0, s: 1 });
+      }
       if (st.water && Math.random() < 0.45) parts.push({ x: st.x - 9 + Math.random() * 18, y: st.y - 52, vx: (Math.random() - 0.5) * 34, vy: -24 - Math.random() * 20, life: 0.55, color: "#dff4ff", g: 170, s: 2 });
     } else if (o.n) {
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 5, 2, 0, 0, 7); g.fill();
@@ -1300,8 +1411,13 @@ export function render(focusX, focusY, dt, t, snap) {
     g.globalAlpha = clamp(p.life * 3, 0, 1); g.fillStyle = p.color; g.fillRect(Math.round(p.x) - (sz >> 1), Math.round(p.y) - (sz >> 1), sz, sz);
   }
   g.globalAlpha = 1;
+  const day = DC.daylight(), night = OUTDOOR.has(theme) ? day.night : 0;
+  DC.drawEmitters(g, emit, t, ox, oy, vw, vh, parts);
+  DC.drawStrings(g, strings, t, ox, oy, vw, vh, night);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  DC.drawCritters(g, critters, dt, t, ox, oy, vw, vh, theme);
 
-  // darkness, with pools of light cut out of it
+  // darkness, with pools of light cut out of it: the same everywhere on screen, never darker at the edges
   const dark = DARK[theme];
   if (dark) {
     if (!lightCv) [lightCv, lg] = sheet(vw, vh);
@@ -1311,13 +1427,17 @@ export function render(focusX, focusY, dt, t, snap) {
     lg.globalAlpha = dark[1]; lg.fillStyle = dark[0]; lg.fillRect(0, 0, vw, vh); lg.globalAlpha = 1;
     lg.globalCompositeOperation = "destination-out";
     const hole = (x, y, r, k = 1) => { const sx = x - ox, sy = y - oy; if (sx < -r || sy < -r || sx > vw + r || sy > vh + r) return; const gr = lg.createRadialGradient(sx, sy, 0, sx, sy, r); gr.addColorStop(0, `rgba(0,0,0,${k})`); gr.addColorStop(1, "rgba(0,0,0,0)"); lg.fillStyle = gr; lg.fillRect(sx - r, sy - r, r * 2, r * 2); };
-    hole(meX, meY - 8, 130, 0.9);
-    for (const o of list) { if (o.f) hole(o.f.x * P, o.f.y * P - 8, 120, 0.95); else if (o.p && o.eid !== G.you) hole(o.p.x * P, o.p.y * P - 20, 110, 0.8); else if (o.s && o.s.glow) hole(o.s.x, o.s.y - (o.s.big ? 60 : o.s.sp.height - 12), o.s.big ? 120 : o.s.glow === "#ffe690" ? 110 : 60, 0.85); else if (o.d && o.d.q) hole(o.d.x * P, o.d.y * P - 10, 36, 0.7); else if (o.m && SP.MOB_GLOW[G.defs.mobs[o.m.k].sp]) hole(o.m.x * P, o.m.y * P - 14, o.m.el === 2 ? 90 : 48, 0.75); }
+    for (const o of list) { if (o.f) hole(o.f.x * P, o.f.y * P - 8, 120, 0.95); else if (o.s && o.s.wp) hole(o.s.x, o.s.y - 22, 70, wpLit() ? 0.85 : 0.3); else if (o.s && o.s.glow) hole(o.s.x, o.s.y - (o.s.big ? 60 : o.s.sp.height - 12), o.s.big ? 120 : o.s.glow === "#ffe690" ? 110 : 60, 0.85); else if (o.d && o.d.q) hole(o.d.x * P, o.d.y * P - 10, 36, 0.7); else if (o.m && SP.MOB_GLOW[G.defs.mobs[o.m.k].sp]) hole(o.m.x * P, o.m.y * P - 14, o.m.el === 2 ? 90 : 48, 0.75); }
     for (const p of map.portals) hole(p.x * T + 16, p.y * T + 16, 80, 0.8);
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.drawImage(lightCv, 0, 0);
   }
   g.setTransform(1, 0, 0, 1, 0, 0);
+  // outdoors the day turns: a light, even wash at night, and every lamp and window lit against it
+  if (night > 0.01 || day.warm > 0.01) {
+    if (OUTDOOR.has(theme)) DC.wash(g, vw, vh, night, day.warm, Math.max(0, 0.2 - (dark ? dark[1] : 0)));
+    if (night > 0.05) drawNightLights(night, t, ox, oy);
+  }
   drawAmbient(dt, t, ox, oy);
   cam.ox = ox; cam.oy = oy;
 }

@@ -247,6 +247,11 @@ export function npcLook(look, role) {
   if (role === "smith") return { ear: 2, eye: 0, nose: 3, fur: "#c89a74", blush: null, pat: 0, cloth: "#6a5a52" };
   if (role === "shop") return { ear: 0, eye: 3, nose: 1, fur: "#ffe6d2", blush: PINK, pat: 0, cloth: "#e07a8a" };
   if (role === "train") return { ear: 3, eye: 1, nose: 0, fur: "#f6c890", blush: PINK, pat: 3, cloth: "#b84a4a" };
+  // the stone-keeper in violet, the collector in hunter's green, the herald of deeds in gold, the task-giver in sky blue
+  if (role === "warp") return { ear: 1, eye: 4, nose: 2, fur: "#d8ccff", blush: PINK, pat: 0, cloth: "#6a4ad0" };
+  if (role === "collector") return { ear: 2, eye: 1, nose: 3, fur: "#a8845c", blush: null, pat: 1, cloth: "#3a6a42" };
+  if (role === "achieve") return { ear: 0, eye: 2, nose: 0, fur: "#fff0c0", blush: PINK, pat: 0, cloth: "#d8a830" };
+  if (role === "daily") return { ear: 3, eye: 0, nose: 1, fur: "#ffd0a0", blush: PINK, pat: 2, cloth: "#4a8ad0" };
   return { ear: 4, eye: 0, nose: 3, fur: "#f0e0c8", blush: PINK, pat: 0, cloth: "#5e6a88" };
 }
 export function mobLook(kind) {
