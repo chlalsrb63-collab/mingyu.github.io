@@ -1,0 +1,40 @@
+name: Deploy game to Cloudflare
+
+# Every push that touches the game runs the rule tests and, if they pass,
+# deploys the Worker (server + static client) to our own Cloudflare account.
+# Needs two repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+on:
+  push:
+    branches: [main, claude/topdown-2d-mmorpg-dev-jke7w3]
+    paths: ["game/**", ".github/workflows/deploy-game.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-game
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: game
+    env:
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Rule tests
+        run: |
+          for t in sim party loot life world hard content; do node tests/$t.mjs; done
+      - name: Deploy
+        if: env.HAS_TOKEN == 'true'
+        run: npx --yes wrangler@4 deploy -c wrangler.deploy.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Skipped (no Cloudflare token yet)
+        if: env.HAS_TOKEN != 'true'
+        run: echo "Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as repository secrets to deploy."
