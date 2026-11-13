@@ -1014,6 +1014,10 @@ function drawPerson(s, e, t, dt, x, y) {
 // ───────────────────────────── effects ─────────────────────────────
 
 const parts = [];
+/** The colour an elite takes from its first trait (names from the sprite sheet's tint list). */
+const TRAIT_TINT = { fire: "fire", poison: "poison", frost: "frost", tough: "steel", vamp: "blood", swift: "gold", burst: "ash", thorn: "bone" };
+/** What a spat puddle looks like, by kind: poison, fire, blood. */
+const POOL_COL = ["#8ad84a", "#ff8a3a", "#c8324a"];
 export const fx = {
   list: [],
   clear() { this.list.length = 0; parts.length = 0; },
@@ -1032,6 +1036,21 @@ export const fx = {
   burst(wx, wy, h, color, n = 8, speed = 1.4) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = speed * 34 * (0.3 + Math.random() * 0.7); parts.push({ x: wx * P, y: wy * P - h * 22, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: 0.25 + Math.random() * 0.3, color, g: 220 }); } },
   sparkle(wx, wy, h, color, n = 10) { for (let i = 0; i < n; i++) parts.push({ x: wx * P + Math.random() * 28 - 14, y: wy * P - h * 22 + Math.random() * 18 - 6, vx: 0, vy: -26 - Math.random() * 34, life: 0.4 + Math.random() * 0.5, color, g: 0 }); },
   flash() {},
+  /** A marked line something is about to run down, from a to b; it fills as the moment (`ms`) nears. */
+  lane(ax, ay, bx, by, ms, color = "#ff5a6a", width = 13) { this.add({ k: "lane", x0: ax * P, y0: ay * P, x1: bx * P, y1: by * P, w: width * P, color, dur: ms }); },
+  /** A puddle on the ground: appears after `delay` ms and lies there for `ms`. */
+  pool(wx, wy, r, ms, color = POOL_COL[0], delay = 0) { this.add({ k: "pool", x: wx * P, y: wy * P, r: r * P, color, dur: ms, delay, seed: Math.random() * 6.28 }); },
+  /** Something lobbed from a to b: it arcs over for `ms`, with its landing spot marked meanwhile. */
+  lob(ax, ay, bx, by, ms, color = "#ff8a5a", r = 13) {
+    this.add({ k: "mark", x: bx * P, y: by * P, r: r * P, color, dur: ms });
+    this.add({ k: "lob", x0: ax * P, y0: ay * P - 10, x1: bx * P, y1: by * P, color, dur: ms });
+  },
+  /** A spread of shots from one point to several (`pts` is [[x, y], …]), all landing after `ms`. */
+  volley(ax, ay, pts, ms, color = "#ff8a5a") { for (const [bx, by] of pts) this.lob(ax, ay, bx, by, ms, color); },
+  /** A monster spitting a puddle: the gob flies for `fly` ms, then the puddle lies for `life` ms. `kind`: 0 poison, 1 fire, 2 blood. */
+  spit(ax, ay, bx, by, r, fly, life, kind = 0) { const c = POOL_COL[kind] || POOL_COL[0]; this.lob(ax, ay, bx, by, fly, c, r); this.pool(bx, by, r, life, c, fly); },
+  /** A small hit on the ground where a shot lands: no shake, no noise. */
+  pop(wx, wy, r = 13, color = "#ff8a5a") { this.ring(wx, wy, r, color, 220, true); this.burst(wx, wy, 0.1, color, 6, 1.2); },
 };
 export function shake(n) { shakeAmt = Math.max(shakeAmt, n); }
 
@@ -1040,7 +1059,7 @@ function drawFx(now, ground2) {
     const f = fx.list[i], k = (now - f.t0) / f.dur;
     if (k < 0) continue;
     if (k >= 1) { fx.list.splice(i, 1); if (f.done) f.done(); continue; }
-    const flat = f.k === "ring" || f.k === "tele";
+    const flat = f.k === "ring" || f.k === "tele" || f.k === "lane" || f.k === "pool" || f.k === "mark";
     if (flat !== ground2) continue;
     if (f.k === "ring") {
       g.globalAlpha = 1 - k;
@@ -1052,6 +1071,30 @@ function drawFx(now, ground2) {
       g.beginPath(); g.ellipse(f.x, f.y, f.r, f.r * 0.86, 0, 0, 7); g.fill();
       g.strokeStyle = "#ff6ad0"; g.lineWidth = 2;
       g.beginPath(); g.ellipse(f.x, f.y, f.r * k, f.r * k * 0.86, 0, 0, 7); g.stroke();
+    } else if (f.k === "lane") {
+      // a band along the ground, pulsing, with a brighter part that runs out to the far end as time runs out
+      const dx = f.x1 - f.x0, dy = f.y1 - f.y0, len = Math.hypot(dx, dy) || 1, nx = (-dy / len) * f.w / 2, ny = (dx / len) * f.w / 2 * 0.86;
+      const quad = (t) => { g.beginPath(); g.moveTo(f.x0 + nx, f.y0 + ny); g.lineTo(f.x0 + dx * t + nx, f.y0 + dy * t + ny); g.lineTo(f.x0 + dx * t - nx, f.y0 + dy * t - ny); g.lineTo(f.x0 - nx, f.y0 - ny); g.closePath(); };
+      g.fillStyle = f.color;
+      g.globalAlpha = 0.16 + 0.12 * Math.abs(Math.sin(now / 70)); quad(1); g.fill();
+      g.globalAlpha = 0.42; quad(k); g.fill();
+      g.globalAlpha = 0.9; g.strokeStyle = f.color; g.lineWidth = 1; quad(1); g.stroke();
+    } else if (f.k === "pool") {
+      // a lumpy puddle that seeps in, lies, and dries out
+      const a = k < 0.06 ? k / 0.06 : k > 0.85 ? (1 - k) / 0.15 : 1;
+      g.fillStyle = f.color;
+      g.globalAlpha = 0.46 * a;
+      g.beginPath(); g.ellipse(f.x, f.y, f.r, f.r * 0.8, 0, 0, 7); g.fill();
+      for (let j = 0; j < 5; j++) { const an = f.seed + j * 1.257, rr = f.r * 0.8; g.beginPath(); g.ellipse(f.x + Math.cos(an) * rr, f.y + Math.sin(an) * rr * 0.8, f.r * 0.3, f.r * 0.24, 0, 0, 7); g.fill(); }
+      g.globalAlpha = 0.85 * a; g.strokeStyle = f.color; g.lineWidth = 1;
+      g.beginPath(); g.ellipse(f.x, f.y, f.r * (0.5 + 0.12 * Math.sin(now / 300 + f.seed)), f.r * (0.4 + 0.1 * Math.sin(now / 300 + f.seed)), 0, 0, 7); g.stroke();
+      if (Math.random() < 0.12) parts.push({ x: f.x + (Math.random() - 0.5) * f.r * 1.4, y: f.y + (Math.random() - 0.5) * f.r, vx: 0, vy: -14, life: 0.5, color: f.color, g: 0, s: 2 });
+    } else if (f.k === "mark") {
+      // where a lobbed shot will land: a ring that fills in as it comes down
+      g.strokeStyle = f.color; g.lineWidth = 1; g.globalAlpha = 0.9;
+      g.beginPath(); g.ellipse(f.x, f.y, f.r, f.r * 0.86, 0, 0, 7); g.stroke();
+      g.fillStyle = f.color; g.globalAlpha = 0.14 + 0.3 * k;
+      g.beginPath(); g.ellipse(f.x, f.y, f.r * k, f.r * k * 0.86, 0, 0, 7); g.fill();
     } else if (f.k === "slash") {
       // a tapered crescent that sweeps open and fades
       const way = f.rev ? -1 : 1;
@@ -1081,6 +1124,13 @@ function drawFx(now, ground2) {
       g.fillStyle = f.color; g.fillRect(Math.round(x - f.size / 2), Math.round(y - f.size / 2), f.size, f.size);
       g.fillStyle = "#ffffff"; g.fillRect(Math.round(x - f.size / 4), Math.round(y - f.size / 4), Math.ceil(f.size / 2), Math.ceil(f.size / 2));
       if (Math.random() < 0.7) parts.push({ x, y, vx: 0, vy: 0, life: 0.18, color: f.color, g: 0 });
+    } else if (f.k === "lob") {
+      // a gob in the air: straight along the ground, up and over in an arc
+      const x = f.x0 + (f.x1 - f.x0) * k, y = f.y0 + (f.y1 - f.y0) * k - Math.sin(k * Math.PI) * 28;
+      g.fillStyle = "#2b2233"; g.fillRect(Math.round(x - 3), Math.round(y - 3), 6, 6);
+      g.fillStyle = f.color; g.fillRect(Math.round(x - 2), Math.round(y - 2), 4, 4);
+      g.fillStyle = "#ffffff"; g.fillRect(Math.round(x - 1), Math.round(y - 2), 2, 2);
+      if (Math.random() < 0.5) parts.push({ x, y, vx: 0, vy: 0, life: 0.16, color: f.color, g: 0 });
     } else if (f.k === "beam") {
       g.globalAlpha = 1 - k; g.strokeStyle = f.color; g.lineWidth = 6; g.beginPath(); g.moveTo(f.x0, f.y0); g.lineTo(f.x1, f.y1); g.stroke();
       g.strokeStyle = "#ffffff"; g.lineWidth = 2; g.beginPath(); g.moveTo(f.x0, f.y0); g.lineTo(f.x1, f.y1); g.stroke();
@@ -1179,7 +1229,9 @@ export function render(focusX, focusY, dt, t, snap) {
     } else if (o.m) {
       const m = o.m, kind = G.defs.mobs[m.k].sp, x = m.x * P, y = m.y * P, el = m.el | 0;
       // an elite glows gold; a field boss is twice the size and glows like the rift
-      const s = state("m" + m.id, kind + ":" + el, () => { const z = SP.MOB_SIZE[kind] || [1, 0]; return { frames: SP.monsterSheet(kind), size: z[0] * (el === 2 ? 2 : 1), hover: z[1] * (el === 2 ? 1.5 : 1), px: m.x }; });
+      // an elite wears the colour of its first trait; a recoloured kind wears its own
+      const tint = (m.tr && TRAIT_TINT[m.tr[0]]) || G.defs.mobs[m.k].tint || null;
+      const s = state("m" + m.id, kind + ":" + el + ":" + (tint || ""), () => { const z = SP.MOB_SIZE[kind] || [1, 0]; return { frames: SP.monsterSheet(kind, tint), size: z[0] * (el === 2 ? 2 : 1), hover: z[1] * (el === 2 ? 1.5 : 1), px: m.x }; });
       if (m.x > s.px + 0.05) s.face = -1; else if (m.x < s.px - 0.05) s.face = 1;
       s.px = m.x;
       const img = s.frames[Math.floor(t / (m.moving ? 180 : 360) + m.id) % 2], w = SP.SIZE * s.size;

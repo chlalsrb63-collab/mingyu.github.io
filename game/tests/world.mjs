@@ -87,7 +87,7 @@ for (const id of ["crypt", "sewer", "abyss"]) {
   const far = Math.max(...all);
   const nearN = all.filter((d) => d < far * 0.25).length, deepN = all.filter((d) => d > far * 0.6).length;
   assert.ok(deepN > nearN * 2, `${id}: the depths are more crowded than the entrance (${nearN} near, ${deepN} deep)`);
-  assert.ok(rt.mobs.length <= 175, `${id}: ${rt.mobs.length} monsters`);
+  assert.ok(rt.mobs.length <= 230, `${id}: ${rt.mobs.length} monsters`);
   assert.ok(rt.fires.length >= 1, id + " has a camp");
   const fire = rt.fires[0], fd = dist[Math.floor(fire.y / 16) * m.w + Math.floor(fire.x / 16)];
   assert.ok(fd > far * 0.2 && fd < far * 0.85, `${id}: the camp is partway in (${fd} of ${far})`);

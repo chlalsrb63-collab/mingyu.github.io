@@ -220,47 +220,95 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "gutfrog", forest: "ribdeer", crypt: "ratking", city: "doghead", sewer: "gatorhalf", cave: "bearmaw", abyss: "twingoat" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand" };
+
+/**
+ * What an elite carries besides its size: one trait for an elite, two for a
+ * guardian or a field boss. [name, what it does] — in the order clients list them.
+ */
+const TRAITS = {
+  tough: ["단단함", "받는 피해가 40% 줄어든다"],
+  fire: ["화염", "맞으면 불이 붙어 한동안 계속 피해를 입는다"],
+  poison: ["맹독", "맞으면 중독되어 한동안 계속 피해를 입는다"],
+  swift: ["신속", "이동과 공격이 35% 빠르다"],
+  vamp: ["흡혈", "입힌 피해로 제 체력을 회복한다"],
+  frost: ["빙결", "맞으면 한동안 발이 느려진다"],
+  burst: ["폭발", "쓰러진 자리에서 터진다"],
+  thorn: ["가시", "가까이서 때리면 피해의 일부를 되돌려 받는다"],
+};
+const TRAIT_KEYS = Object.keys(TRAITS);
+/** A slowed player moves at this share of their speed, for this long. */
+const SLOW = 0.65, SLOW_MS = 2500;
+/** How long a charge is telegraphed, a volley is in the air, a spat puddle flies and then lies. */
+const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
+/** The tricks a monster may have besides its plain attack, in the order it tries them. */
+const MOVES = ["charge", "leap", "slam", "pool", "fan"];
+/** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
+const CROWD = 1.4, CROWD_MAX = 228, GEAR_CUT = 0.65, MOB_ATK = 1.27;
+/**
+ * However thick the crowd, only this many monsters will come for one player of
+ * their own accord — the rest wait their turn (anything struck still fights back).
+ */
+const AGGRO_CAP = 4;
 
 /**
  * Monsters: animals that came back wrong. Beyond the numbers: `fly` crosses anything,
- * `shot` attacks from range, `leap` pounces from that far, `slam` pounds the ground
- * around itself, and `burst` goes off where it died. Listed in the order a
- * character meets them.
+ * `shot` attacks from range and `volley` does so three shots at a time; `leap` pounces
+ * from that far, `charge` runs down a marked line from that far, `slam` pounds the
+ * ground around itself, `pool` spits a lingering puddle (kind 0 poisons, 1 burns,
+ * 2 slows), `fan` throws a spread of shots from that far, and `burst` goes off
+ * where it died. A kind with `sp` and `tint` is another's body in another colour —
+ * the same beast, grown worse. Listed in the order a character meets them.
  */
 const MOBS = {
   // 바람초원
   twinhare: { name: "쌍두 토끼", lv: 1, hp: 28, atk: 5, def: 0, spd: 26, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300 },
   gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80 },
   eyecrow: { name: "눈알 까마귀", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true },   // circles the pond and minds its own business, so the shore stays a fishing spot
+  lambmaw: { name: "뒤집힌 양", lv: 6, hp: 110, atk: 15, def: 1, spd: 38, xp: 38, gold: [7, 16], aggro: 72, range: 18, cd: 1300, charge: 110 },
   // 속삭임 숲
-  splitboar: { name: "반쪽 멧돼지", lv: 8, hp: 170, atk: 23, def: 2, spd: 44, xp: 60, gold: [10, 22], aggro: 80, range: 18, cd: 1100, leap: 96 },
+  splitboar: { name: "반쪽 멧돼지", lv: 8, hp: 170, atk: 23, def: 2, spd: 44, xp: 60, gold: [10, 22], aggro: 80, range: 18, cd: 1100, charge: 104 },
   ribdeer: { name: "갈비뼈 사슴", lv: 10, hp: 330, atk: 26, def: 8, spd: 26, xp: 92, gold: [12, 26], aggro: 64, range: 18, cd: 1400, slam: 34 },
-  hydrasnake: { name: "세 머리 뱀", lv: 11, hp: 200, atk: 29, def: 2, spd: 36, xp: 96, gold: [12, 26], aggro: 92, range: 64, cd: 1400, shot: true },
-  mothface: { name: "인면 나방", lv: 13, hp: 210, atk: 34, def: 2, spd: 44, xp: 118, gold: [14, 30], aggro: 96, range: 72, cd: 1400, fly: true, shot: true },
+  hydrasnake: { name: "세 머리 뱀", lv: 11, hp: 200, atk: 29, def: 2, spd: 36, xp: 96, gold: [12, 26], aggro: 92, range: 64, cd: 1700, volley: true },
+  foxtwine: { name: "꼬인 여우", lv: 12, hp: 230, atk: 28, def: 3, spd: 62, xp: 108, gold: [13, 28], aggro: 96, range: 17, cd: 800, leap: 90 },
+  mothface: { name: "인면 나방", lv: 13, hp: 210, atk: 34, def: 2, spd: 44, xp: 118, gold: [14, 30], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 22 },
   // 뼈의 지하묘지
-  ratking: { name: "쥐 왕", lv: 12, hp: 260, atk: 31, def: 4, spd: 46, xp: 108, gold: [14, 28], aggro: 86, range: 17, cd: 1000 },
+  ratking: { name: "쥐 왕", lv: 12, hp: 260, atk: 29, def: 4, spd: 46, xp: 108, gold: [14, 28], aggro: 86, range: 17, cd: 850 },
+  twinhare_bone: { name: "해골 쌍두 토끼", sp: "twinhare", tint: "bone", lv: 13, hp: 240, atk: 33, def: 3, spd: 56, xp: 112, gold: [13, 28], aggro: 90, range: 16, cd: 900 },
   bonehound: { name: "가죽 벗겨진 사냥개", lv: 14, hp: 300, atk: 40, def: 5, spd: 58, xp: 140, gold: [18, 36], aggro: 100, range: 18, cd: 1000, leap: 100 },
+  toadbrood: { name: "알 밴 두꺼비", lv: 15, hp: 420, atk: 42, def: 8, spd: 28, xp: 160, gold: [20, 40], aggro: 86, range: 20, cd: 1500, pool: 26 },
   batcluster: { name: "박쥐 덩어리", lv: 16, hp: 360, atk: 46, def: 4, spd: 52, xp: 178, gold: [22, 44], aggro: 96, range: 17, cd: 1100, fly: true, burst: 32 },
   // 네온 시티
   pigeonmass: { name: "비둘기 떼살", lv: 14, hp: 290, atk: 40, def: 5, spd: 56, xp: 140, gold: [18, 36], aggro: 100, range: 70, cd: 1300, fly: true, shot: true },
-  doghead: { name: "세 머리 들개", lv: 17, hp: 460, atk: 52, def: 8, spd: 46, xp: 200, gold: [26, 50], aggro: 84, range: 19, cd: 1000 },
+  gutfrog_poison: { name: "맹독 창자 개구리", sp: "gutfrog", tint: "poison", lv: 16, hp: 400, atk: 46, def: 5, spd: 32, xp: 180, gold: [22, 44], aggro: 84, range: 17, cd: 1200, leap: 84, pool: 22 },
+  doghead: { name: "세 머리 들개", lv: 17, hp: 460, atk: 52, def: 8, spd: 46, xp: 200, gold: [26, 50], aggro: 84, range: 19, cd: 1000, charge: 110 },
+  squidrat: { name: "촉수 쥐", lv: 18, hp: 430, atk: 54, def: 6, spd: 54, xp: 225, gold: [26, 52], aggro: 92, range: 18, cd: 1000, pool: 22, poolKind: 2 },
   catsplit: { name: "갈라진 고양이", lv: 19, hp: 500, atk: 60, def: 6, spd: 54, xp: 250, gold: [28, 54], aggro: 92, range: 18, cd: 1000, leap: 100 },
-  fishwalker: { name: "다리 달린 생선", lv: 21, hp: 820, atk: 68, def: 18, spd: 30, xp: 330, gold: [40, 80], aggro: 72, range: 22, cd: 1500 },
+  fishwalker: { name: "다리 달린 생선", lv: 21, hp: 820, atk: 68, def: 18, spd: 30, xp: 330, gold: [40, 80], aggro: 72, range: 22, cd: 1500, slam: 34 },
   // 하수도
-  leechmaw: { name: "거머리 아가리", lv: 22, hp: 800, atk: 73, def: 10, spd: 40, xp: 365, gold: [38, 72], aggro: 84, range: 19, cd: 1100 },
+  leechmaw: { name: "거머리 아가리", lv: 22, hp: 800, atk: 73, def: 10, spd: 40, xp: 365, gold: [38, 72], aggro: 84, range: 19, cd: 1100, leap: 84 },
+  ratking_bile: { name: "썩은 쥐 왕", sp: "ratking", tint: "bile", lv: 23, hp: 780, atk: 74, def: 10, spd: 50, xp: 400, gold: [40, 76], aggro: 90, range: 17, cd: 850, pool: 24 },
   gatorhalf: { name: "반쪽 악어", lv: 24, hp: 1200, atk: 82, def: 22, spd: 30, xp: 450, gold: [44, 82], aggro: 76, range: 21, cd: 1500, slam: 38 },
-  eelknot: { name: "뱀장어 매듭", lv: 26, hp: 950, atk: 90, def: 10, spd: 38, xp: 520, gold: [50, 92], aggro: 96, range: 74, cd: 1500, shot: true },
+  crabskull: { name: "두개골 게", lv: 25, hp: 1300, atk: 86, def: 24, spd: 34, xp: 490, gold: [48, 88], aggro: 80, range: 20, cd: 1400, charge: 120 },
+  eelknot: { name: "뱀장어 매듭", lv: 26, hp: 950, atk: 90, def: 10, spd: 38, xp: 520, gold: [50, 92], aggro: 96, range: 74, cd: 1800, volley: true },
   // 수정 동굴
   spiderhand: { name: "손가락 거미", lv: 24, hp: 900, atk: 82, def: 10, spd: 56, xp: 440, gold: [42, 80], aggro: 92, range: 18, cd: 1000, leap: 96 },
+  splitboar_frost: { name: "서리 반쪽 멧돼지", sp: "splitboar", tint: "frost", lv: 25, hp: 1000, atk: 88, def: 12, spd: 48, xp: 480, gold: [46, 86], aggro: 92, range: 19, cd: 1100, charge: 112 },
+  moleworm: { name: "눈먼 두더지", lv: 26, hp: 1100, atk: 92, def: 14, spd: 44, xp: 520, gold: [50, 92], aggro: 90, range: 19, cd: 1200, leap: 100, slam: 36 },
   bearmaw: { name: "아가리 곰", lv: 27, hp: 1600, atk: 98, def: 26, spd: 27, xp: 640, gold: [56, 100], aggro: 76, range: 21, cd: 1500, slam: 40 },
+  hydrasnake_steel: { name: "강철 비늘 뱀", sp: "hydrasnake", tint: "steel", lv: 28, hp: 1250, atk: 100, def: 28, spd: 36, xp: 680, gold: [58, 104], aggro: 96, range: 70, cd: 1800, volley: true },
   owlstare: { name: "목 꺾인 올빼미", lv: 29, hp: 1150, atk: 106, def: 12, spd: 40, xp: 720, gold: [60, 108], aggro: 96, range: 76, cd: 1500, fly: true, shot: true },
-  boss: { name: "균열의 군주 크리온", lv: 32, hp: 24000, atk: 150, def: 32, spd: 34, xp: 10000, gold: [1500, 2500], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1 },
+  boss: { name: "균열의 군주 크리온", lv: 32, hp: 24000, atk: 150, def: 32, spd: 34, xp: 10000, gold: [1500, 2500], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1, fan: 150, pool: 30, poolKind: 1 },
   // 피의 심연
-  twingoat: { name: "쌍두 염소", lv: 32, hp: 1900, atk: 118, def: 24, spd: 44, xp: 900, gold: [70, 124], aggro: 88, range: 20, cd: 1100 },
+  twingoat: { name: "쌍두 염소", lv: 32, hp: 1900, atk: 118, def: 24, spd: 44, xp: 900, gold: [70, 124], aggro: 88, range: 20, cd: 1100, charge: 110 },
+  bonehound_ash: { name: "잿빛 사냥개", sp: "bonehound", tint: "ash", lv: 33, hp: 2000, atk: 124, def: 20, spd: 62, xp: 980, gold: [74, 130], aggro: 104, range: 19, cd: 950, leap: 110 },
   horsehalf: { name: "반쪽 말", lv: 34, hp: 2200, atk: 128, def: 22, spd: 60, xp: 1050, gold: [78, 136], aggro: 100, range: 20, cd: 1000, leap: 110 },
-  serpentwing: { name: "날개 구렁이", lv: 36, hp: 2000, atk: 138, def: 18, spd: 44, xp: 1220, gold: [86, 150], aggro: 100, range: 78, cd: 1500, fly: true, shot: true },
-  abyssboss: { name: "심연의 어미", lv: 40, hp: 48000, atk: 200, def: 40, spd: 34, xp: 30000, gold: [4000, 6000], aggro: 140, range: 30, cd: 1400, resp: 240000, boss: true, gear: 1 },
+  batcluster_blood: { name: "피 박쥐 덩어리", sp: "batcluster", tint: "blood", lv: 35, hp: 2100, atk: 132, def: 18, spd: 54, xp: 1120, gold: [80, 140], aggro: 100, range: 18, cd: 1100, fly: true, burst: 36 },
+  lionhand: { name: "손갈기 사자", lv: 35, hp: 2600, atk: 134, def: 26, spd: 50, xp: 1140, gold: [82, 144], aggro: 100, range: 21, cd: 1100, slam: 40, fan: 100 },
+  serpentwing: { name: "날개 구렁이", lv: 36, hp: 2000, atk: 138, def: 18, spd: 44, xp: 1220, gold: [86, 150], aggro: 100, range: 78, cd: 1800, fly: true, volley: true },
+  sowseer: { name: "눈 달린 암퇘지", lv: 37, hp: 3000, atk: 140, def: 30, spd: 30, xp: 1300, gold: [90, 158], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
+  doghead_fire: { name: "불타는 세 머리 들개", sp: "doghead", tint: "fire", lv: 38, hp: 2900, atk: 146, def: 26, spd: 52, xp: 1400, gold: [94, 164], aggro: 100, range: 20, cd: 1000, charge: 116, pool: 24, poolKind: 1 },
+  abyssboss: { name: "심연의 어미", lv: 40, hp: 48000, atk: 200, def: 40, spd: 34, xp: 30000, gold: [4000, 6000], aggro: 140, range: 30, cd: 1400, resp: 240000, boss: true, gear: 1, fan: 160, pool: 34, poolKind: 2, charge: 150 },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
@@ -271,8 +319,10 @@ for (const k of Object.keys(MOBS)) {
   const d = MOBS[k];
   if (!d.sp) d.sp = k;
   d.spd = Math.round(d.spd * 0.82);              // the whole world moves at an easier pace
+  d.atk = Math.round(d.atk * MOB_ATK);
+  d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
-  if (!d.gear) d.gear = 0.06 + d.lv * 0.002;
+  if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;
 }
 /** How long a dungeon's guardian (a fixed rank-2 monster) stays down. */
 const GUARD_RESP = 180000;
@@ -282,18 +332,22 @@ const QUESTS = [
   { mob: "twinhare", n: 5, title: "첫 발걸음", text: "차원이 겹친 뒤로 초원의 짐승들이 뒤틀려 돌아왔다네. 머리 둘 달린 토끼 5마리만 정리해 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
   { mob: "gutfrog", n: 6, title: "뒤집힌 개구리", text: "속이 밖으로 나온 개구리가 길목에서 뛰어든다네. 창자 개구리 6마리를 잡아 주게.", xp: 220, gold: 120, items: [["mp_s", 5]] },
   { mob: "eyecrow", n: 8, title: "지켜보는 것들", text: "연못 위를 도는 눈알 까마귀 8마리를 떨어뜨려 주게. 먼저 덤비진 않지만, 보고 있는 게 영 꺼림칙해.", xp: 520, gold: 200, items: [["stone", 2]] },
+  { mob: "lambmaw", n: 8, title: "뒤집힌 것", text: "초원 가장 깊은 곳에 안팎이 뒤집힌 양이 돌아다닌다네. 8마리를 잡아 주게. 고개를 숙이면 곧장 달려드니, 그 줄에서 비켜서게.", xp: 800, gold: 300, items: [["hp_s", 8]] },
   { mob: "splitboar", n: 10, title: "숲의 반쪽", text: "속삭임 숲에는 몸이 반만 남은 멧돼지가 돌아다닌다네. 10마리를 사냥해 주게. 멀리서도 뛰어드니 동료를 구해 보게.", xp: 1300, gold: 450, items: [["hp_m", 5], ["ru_vit", 1]] },
   { mob: "hydrasnake", n: 10, title: "세 갈래 혀", text: "숲 깊은 곳의 세 머리 뱀 10마리를 베어 주게. 독을 뱉으니 서 있지 말고 움직이게.", xp: 2200, gold: 600, items: [["stone", 3]] },
   { mob: "ratking", n: 12, title: "무덤 아래", text: "숲의 막다른 폐허에 지하묘지로 내려가는 계단이 있다네. 꼬리가 엉킨 쥐 왕 12마리를 정리해 주게.", xp: 3000, gold: 750, items: [["hp_m", 5]] },
+  { mob: "toadbrood", n: 10, title: "등에 밴 것", text: "지하묘지의 알 밴 두꺼비 10마리를 잡아 주게. 뱉어 놓은 웅덩이는 한참 남으니, 밟고 서 있지 말게.", xp: 3500, gold: 820, items: [["mp_m", 4]] },
   { mob: "batcluster", n: 10, title: "터지는 것", text: "지하묘지 깊은 곳의 박쥐 덩어리 10마리를 터뜨려 주게. 죽으면서 터지니, 쓰러뜨리고 물러서게.", xp: 4000, gold: 900, items: [["ru_ign", 1]] },
   { mob: "pigeonmass", n: 10, title: "다른 세계의 하늘", text: "서쪽 문 너머는 '네온 시티'라는 다른 세계일세. 한 덩어리로 뭉친 비둘기 떼살 10마리를 떨어뜨려 주게.", xp: 4600, gold: 1000, items: [["mp_m", 5]] },
   { mob: "catsplit", n: 12, title: "뒷골목의 울음", text: "네온 시티 골목의 갈라진 고양이 12마리를 잡아 주게. 소리 없이 뛰어든다네.", xp: 6500, gold: 1300, items: [["stone", 4]] },
   { mob: "fishwalker", n: 10, title: "뭍에 오른 것", text: "다리 달린 생선 10마리를 쓰러뜨려 주게. 단단하니 파티가 필요할 걸세.", xp: 9500, gold: 1800, items: [["stone", 5]] },
   { mob: "leechmaw", n: 12, title: "도시의 밑바닥", text: "네온 시티 뒷마당에 하수도로 내려가는 구멍이 있다네. 거머리 아가리 12마리를 떼어 내 주게.", xp: 12000, gold: 2200, items: [["hp_m", 8]] },
+  { mob: "crabskull", n: 10, title: "남의 머리", text: "하수도에는 남의 두개골을 뒤집어쓴 게가 있다네. 두개골 게 10마리를 부숴 주게. 단단하고, 돌진이 매섭네.", xp: 13500, gold: 2400, items: [["stone", 4]] },
   { mob: "eelknot", n: 10, title: "매듭", text: "하수도 끝의 뱀장어 매듭 10마리를 풀어 주게. 멀리서 전기를 쏜다네.", xp: 15000, gold: 2600, items: [["ru_acu", 1]] },
   { mob: "bearmaw", n: 8, title: "배에 난 입", text: "숲 끝의 수정 동굴은 균열의 중심일세. 아가리 곰 8마리를 쓰러뜨려 주게. 땅을 내리칠 땐 물러서게.", xp: 19000, gold: 3200, items: [["ru_san", 1], ["stone", 5]] },
   { mob: "boss", n: 1, title: "균열의 군주", text: "모든 세계를 뒤섞은 장본인, 균열의 군주 크리온을 쓰러뜨려 주게. 반드시 파티를 꾸려서 가게.", xp: 45000, gold: 8000, items: [["stone", 10], ["ru_lum", 1]] },
   { mob: "horsehalf", n: 12, title: "군주의 뒤편", text: "군주가 쓰러진 자리 뒤에 더 깊은 균열이 열렸네. 피의 심연의 반쪽 말 12마리를 쓰러뜨려 주게.", xp: 30000, gold: 5000, items: [["hp_m", 10], ["ru_fos", 1]] },
+  { mob: "lionhand", n: 10, title: "손으로 된 갈기", text: "심연 깊은 곳의 손갈기 사자 10마리를 쓰러뜨려 주게. 땅을 치고, 멀리서는 무언가를 던진다네.", xp: 38000, gold: 6000, items: [["stone", 8]] },
   { mob: "abyssboss", n: 1, title: "심연의 어미", text: "뒤틀린 것들은 전부 한곳에서 태어났네. 심연의 어미를 쓰러뜨려, 이 일을 끝내 주게.", xp: 120000, gold: 20000, items: [["stone", 20], ["ru_lum", 2]] },
 ];
 
@@ -921,8 +975,8 @@ function dungeon(seed) {
     const inner = [r.x0 + 1, r.y0 + 1, r.x1 - 1, r.y1 - 1], t = i / Math.max(1, order.length - 1);
     if (r === camp) { clear(m, cx(r) - 2, cy(r) - 1, cx(r) + 2, cy(r) + 2); m.o[cy(r) - 1][cx(r) - 2] = "E"; FIRES.cave.push([cx(r), cy(r)]); return; }
     const elite = 0.04 + 0.16 * t;
-    m.spawns.push({ k: t < 0.4 ? "spiderhand" : t < 0.75 ? "owlstare" : "bearmaw", n: t < 0.15 ? 3 : t < 0.4 ? 5 : 6, r: inner, elite });
-    if (t >= 0.3) m.spawns.push({ k: t < 0.7 ? "spiderhand" : "owlstare", n: 2, r: inner, elite });
+    m.spawns.push({ k: t < 0.22 ? "spiderhand" : t < 0.42 ? "splitboar_frost" : t < 0.58 ? "moleworm" : t < 0.76 ? "owlstare" : t < 0.9 ? "hydrasnake_steel" : "bearmaw", n: t < 0.15 ? 3 : t < 0.4 ? 5 : 6, r: inner, elite });
+    if (t >= 0.3) m.spawns.push({ k: t < 0.5 ? "spiderhand" : t < 0.8 ? "moleworm" : "owlstare", n: 2, r: inner, elite });
   });
   m.spawns.push({ k: "bearmaw", n: 4, r: [ante.x0 + 1, ante.y0 + 1, ante.x1 - 1, ante.y1 - 1], elite: 0.3 });
   m.spawns.push({ k: "boss", n: 1, r: [cx(boss), cy(boss) - 1, cx(boss) + 1, cy(boss)] });
@@ -1153,37 +1207,37 @@ function buildMaps() {
   const meadow = wild({
     id: "meadow", name: "바람초원", seed: 22021, min: 7, cw: 7, ch: 5, entry: 14, exit: 20, loops: 0.14, merge: 0.3, river: 4,
     ground: ".", tufts: ",", edge: "T", treeCh: "T", tree: 0.022, road: "p", shore: "s",
-    walls: [["cliff", 0.5], ["hedge", 0.22], ["trees", 0.28]], places: PLACES, mobs: ["twinhare", "gutfrog", "eyecrow"], pondMob: "eyecrow", chest: "chest_meadow", n: 4,
+    walls: [["cliff", 0.5], ["hedge", 0.22], ["trees", 0.28]], places: PLACES, mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "lambmaw", "eyecrow", "lambmaw", "eyecrow"], pondMob: "eyecrow", chest: "chest_meadow", n: 4,
     gates: [["west", "w", 14], ["east", "e", 20]],
   });
   const forest = wild({
     id: "forest", name: "속삭임 숲", seed: 33053, min: 8, bgm: "forest", cw: 7, ch: 5, entry: 14, exit: 6, loops: 0.1, merge: 0.18, river: 3,
     ground: ":", tufts: ";", edge: "P", treeCh: "P", tree: 0.05, road: "p", shore: null,
     walls: [["trees", 0.55], ["cliff", 0.33], ["ruin", 0.12]], places: ["stair"].concat(PLACES), stair: "crypt",
-    mobs: ["splitboar", "ribdeer", "hydrasnake", "mothface"], pondMob: null, chest: "chest_forest", n: 4,
+    mobs: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest", n: 4,
     gates: [["west", "w", 14], ["north", "n", 6]],
   });
   const cave = dungeon(44093);
   const town2 = city({
     id: "city", name: "네온 시티", seed: 55071, bgm: "city", cw: 7, ch: 5, entry: 20, exit: 14, loops: 0.2, merge: 0.3,
     ground: "k", road: "a", roadW: 3, places: ["stair", "vault", "camp", "pond", "vault", "ruin", "vault", "ruin"], min: 7, stair: "sewer",
-    mobs: ["pigeonmass", "doghead", "catsplit", "fishwalker"], chest: "chest_city", n: 4,
+    mobs: ["pigeonmass", "gutfrog_poison", "doghead", "squidrat", "catsplit", "fishwalker"], chest: "chest_city", n: 4,
     gates: [["east", "e", 20]],
   });
   // the dungeons: each a maze with its own inhabitants and its own furniture
   const crypt = maze({
     id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, cw: 6, ch: 5, cs: 10, cr: 9, entry: 24, loops: 0.05, out: true,
-    mobs: ["ratking", "bonehound", "batcluster"], guard: "bonehound", chest: "chest_crypt", n: 3,
+    mobs: ["ratking", "twinhare_bone", "bonehound", "toadbrood", "batcluster"], guard: "bonehound", chest: "chest_crypt", n: 3,
     dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.03], ["4", 0.035], ["5", 0.012]], pillar: "5", pool: ["pond", 0.18] },
   });
   const sewer = maze({
     id: "sewer", name: "하수도", theme: "sewer", seed: 77029, cw: 7, ch: 5, cs: 10, cr: 9, entry: 0, loops: 0.06, out: true,
-    mobs: ["leechmaw", "gatorhalf", "eelknot"], guard: "gatorhalf", chest: "chest_sewer", n: 3,
+    mobs: ["leechmaw", "ratking_bile", "gatorhalf", "crabskull", "eelknot"], guard: "gatorhalf", chest: "chest_sewer", n: 3,
     dress: { wall: [["6", 0.14], ["7", 0.05]], floor: [["7", 0.02], ["n", 0.02]], pillar: "7", pool: ["channel", 0.85] },
   });
   const abyss = maze({
     id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, cw: 7, ch: 6, cs: 10, cr: 9, entry: 35, loops: 0.04, boss: "abyssboss",
-    mobs: ["twingoat", "horsehalf", "serpentwing"], guard: "horsehalf", chest: "chest_abyss", n: 3,
+    mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss", n: 3,
     dress: { wall: [["0", 0.12], ["8", 0.06]], floor: [["8", 0.03], ["4", 0.03], ["0", 0.012]], pillar: "8", pool: ["pond", 0.6] },
   });
   // the level a character should be to walk in, shown on every door that leads there
@@ -1206,6 +1260,21 @@ function buildMaps() {
   join(cave, "rift", abyss, "in");
   leave(crypt, "out", forest, "crypt");
   leave(sewer, "out", town2, "sewer");
+  // the hunt wants a crowd: every hunting ground holds more than its layout asked for
+  // (chests, guardians and bosses stay as placed)
+  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss]) {
+    const grows = (sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el;
+    let base = 0, fixed = 0;
+    for (const sp of m.spawns) { if (grows(sp)) base += sp.n; else fixed += sp.n; }
+    const k = Math.min(CROWD, (CROWD_MAX - fixed) / base);
+    let carry = 0;
+    for (const sp of m.spawns) {
+      if (!grows(sp)) continue;
+      const want = sp.n * k + carry, n = Math.max(sp.n, Math.round(want));
+      carry = want - n;
+      sp.n = n;
+    }
+  }
   const out = {};
   for (const m of [town, meadow, forest, crypt, town2, sewer, cave, abyss]) out[m.id] = finalize(m);
   return out;
@@ -1388,7 +1457,7 @@ function stats(p) {
     mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf,
     xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1.25 : 1) * (food ? 1 + food.atk / 100 : 1)),
-    spd: c.spd0 * (p.spdBuff > now ? 1.4 : 1), spd0: c.spd0,
+    spd: c.spd0 * (p.spdBuff > now ? 1.4 : 1) * (p.slowed > now ? SLOW : 1), spd0: c.spd0,
   };
 }
 
@@ -1443,12 +1512,12 @@ function guildNear(S, p) {
 }
 
 function newMob(S, k, r, sp) {
-  return { fix: (sp && sp.el) || 0, ep: sp && sp.elite !== undefined ? sp.elite : 0.08, id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false };
+  return { fix: (sp && sp.el) || 0, ep: sp && sp.elite !== undefined ? sp.elite : 0.08, id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false, tr: [], act: null, mv: 0, cn: 0 };
 }
 export function setup() {
   const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, parties: {}, chat: [], n: 0 };
   for (const id of Object.keys(MAPS)) {
-    const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], fires: [], who: false, n: 0, kc: 0, fb: 0 };
+    const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], who: false, n: 0, kc: 0, fb: 0 };
     for (const [fx, fy] of FIRES[id] || []) {
       const at = freeTile(MAPS[id], fx, fy);
       if (at) rt.fires.push({ id: S.nextId++, x: at[0] * T + 8, y: at[1] * T + 10, until: 0 });
@@ -1482,8 +1551,10 @@ function placeMob(S, m, mob) {
   // now and then an elite spawns: far tougher, far more rewarding — party prey
   // (how often depends on where: deeper chambers and side vaults breed more of them)
   mob.el = mob.fix || (!MOBS[mob.k].boss && !MOBS[mob.k].chest && rnd(S) < mob.ep ? 1 : 0);
+  // an elite carries one trait, a guardian two
+  mob.tr = mob.el ? rollTraits(S, mob.el) : [];
   mob.hp = mobMax(mob);
-  mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null;
+  mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null; mob.act = null; mob.mv = 0; mob.cn = 0;
   mob.wx = mob.x; mob.wy = mob.y;
   mob.castAt = S.now + 3000 + rnd(S) * 3000;
 }
@@ -1492,6 +1563,7 @@ function spawnFieldBoss(S, rt, x, y) {
   const m = MAPS[rt.id];
   const mob = newMob(S, FIELD_BOSS[rt.id], [0, 0, 0, 0]);
   mob.el = 2; mob.temp = true;
+  mob.tr = rollTraits(S, 2);
   mob.x = mob.hx = mob.wx = x; mob.y = mob.hy = mob.wy = y;
   mob.hp = mobMax(mob);
   mob.castAt = S.now + 4000;
@@ -1514,7 +1586,7 @@ export function addPlayer(S, pid, ch) {
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, hp: 1, mp: 0, dead: false, stc: null,
     cds: [0, 0, 0, 0], atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
-    sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null,
+    sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, spdBuff: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null,
   };
   if (!canStand(MAPS[p.map], p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
@@ -1715,8 +1787,8 @@ function lootFor(S, rt, mob, p) {
     if (isJewel(id) && q === 0) q = 1;
     out.push({ g: rollGear(S, id, q, d.lv) });
   }
-  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : 0.02 + d.lv * 0.001)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
-  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
+  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
+  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
   if (rnd(S) < 0.1) out.push({ it: d.lv < 8 ? "hp_s" : "hp_m", n: 1 });
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : "mp_m", n: 1 });
   for (const o of out) {
@@ -1770,7 +1842,13 @@ function hurtMob(S, rt, mob, p, mult, sure) {
   let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? st.critd : 1) - d.def * 0.5;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
   if (st.lg.giant && (mob.el || d.boss)) dmg *= 1.3;
+  if (has(mob, "tough")) dmg *= 0.6;
   dmg = Math.max(1, Math.round(dmg));
+  // thorns: a blow struck from up close costs the striker a little (never the last of their health)
+  if (has(mob, "thorn") && st.arm.range < 60 && !p.dead) {
+    const back = Math.min(p.hp - 1, Math.max(1, Math.round(dmg * 0.12)));
+    if (back > 0) { p.hp -= back; rt.ev.push(["h", p.eid, back, 0, 1]); }
+  }
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)));
   const x = mob.x, y = mob.y;
   // whatever is hit flinches for a moment; the biggest things shrug it off
@@ -1841,10 +1919,11 @@ function killMob(S, rt, mob) {
     if (mob.temp) rt.fb = 0;
     if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 ${mob.temp ? "우두머리" : "수문장"} [${d.name}]을(를) 쓰러뜨렸습니다!`);
   }
-  // some monsters go off where they fall
-  if (d.burst) {
-    rt.tele.push({ x: mob.x, y: mob.y, r: d.burst, at: S.now + 900, dmg: d.atk * 1.3 });
-    rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), d.burst, 900]);
+  // some monsters go off where they fall, and so does any elite with the trait
+  if (d.burst || has(mob, "burst")) {
+    const r = d.burst || 34;
+    rt.tele.push({ x: mob.x, y: mob.y, r, at: S.now + 900, dmg: d.atk * ELITE[el].atk * 1.3 });
+    rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), r, 900]);
   }
   // enough kills in one hunting ground call out its field boss
   if (!d.boss && !d.chest && el < 2 && FIELD_BOSS[rt.id] && looters.size) {
@@ -1861,14 +1940,25 @@ function hurtPlayer(S, rt, p, raw, mob) {
   rouse(S, p);
   rt.ev.push(["h", p.eid, dmg, 0, 1]);
   if (mob && st.lg.thorn) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * 0.4)), 0);
-  if (p.hp <= 0) {
-    p.hp = 0;
-    p.dead = true;
-    p.streak = 0;
-    dropAggro(S, p);
-    rt.ev.push(["pd", p.eid]);
-    toast(p, "쓰러졌습니다...");
-  }
+  if (p.hp <= 0) fall(S, rt, p);
+}
+/** Damage that no armour turns: fire, poison. */
+function wound(S, rt, p, dmg) {
+  if (p.dead) return;
+  p.hp -= dmg;
+  p.hitAt = S.now;
+  rt.ev.push(["h", p.eid, dmg, 0, 1]);
+  if (p.hp <= 0) fall(S, rt, p);
+}
+function fall(S, rt, p) {
+  p.hp = 0;
+  p.dead = true;
+  p.streak = 0;
+  p.burn = null; p.poison = null; p.slowed = 0;
+  dropAggro(S, p);
+  rt.ev.push(["pd", p.eid]);
+  toast(p, "쓰러졌습니다...");
+  p.dirty = true;
 }
 
 const big = (mob) => (MOBS[mob.k].boss ? 12 : mob.el === 2 ? 8 : 0);
@@ -2657,6 +2747,117 @@ function stepMob(m, mob, tx, ty, speed, dt, fly) {
   return d - step < 1;
 }
 
+const has = (mob, t) => !!mob.tr && mob.tr.includes(t);
+/** Pick `n` different traits for an elite (one) or a guardian / field boss (two). */
+function rollTraits(S, n) {
+  const pool = TRAIT_KEYS.slice(), out = [];
+  while (out.length < n && pool.length) out.push(pool.splice(ri(S, 0, pool.length - 1), 1)[0]);
+  return out;
+}
+/** Put a lingering condition on a player: "burn" and "poison" bite once a second, "slow" drags the feet. */
+function afflict(S, p, kind, atk) {
+  const now = S.now;
+  if (kind === "slow") p.slowed = Math.max(p.slowed || 0, now + SLOW_MS);
+  else if (kind === "burn") p.burn = { until: now + 4000, next: (p.burn && p.burn.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.14)) };
+  else p.poison = { until: now + 6000, next: (p.poison && p.poison.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.09)) };
+  p.dirty = true;
+}
+/** A monster's blow landing on a player, and whatever its traits add to that. */
+function mobHit(S, rt, p, raw, mob) {
+  if (p.dead) return;
+  const before = p.hp;
+  const src = mob && !mob.dead ? mob : null;
+  hurtPlayer(S, rt, p, raw, src);
+  if (!src || src.dead || !src.tr || !src.tr.length) return;
+  const atk = MOBS[src.k].atk * ELITE[src.el].atk;
+  if (!p.dead) {
+    if (has(src, "fire")) afflict(S, p, "burn", atk);
+    if (has(src, "poison")) afflict(S, p, "poison", atk);
+    if (has(src, "frost")) afflict(S, p, "slow", atk);
+  }
+  if (has(src, "vamp")) {
+    // it drinks what it spills
+    const heal = Math.min(mobMax(src) - src.hp, Math.max(0, before - p.hp) * 3);
+    if (heal >= 1) { src.hp += heal; rt.ev.push(["h", src.id, -Math.round(heal), 0, 0]); }
+  }
+}
+/** Three (or more) shots fanned out around the line to the target; each lands where it was aimed, a beat later. */
+function volley(S, rt, mob, tgt, dmg, n) {
+  const dx = tgt.x - mob.x, dy = tgt.y - mob.y, base = Math.atan2(dy, dx), far = Math.max(30, Math.hypot(dx, dy));
+  const ev = ["v", mob.id, VOLLEY_MS];
+  for (let i = 0; i < n; i++) {
+    const a = base + (i - (n - 1) / 2) * 0.42;
+    const x = mob.x + Math.cos(a) * far, y = mob.y + Math.sin(a) * far;
+    rt.tele.push({ x, y, r: 13, at: S.now + VOLLEY_MS, dmg, by: mob, ev: "q" });
+    ev.push(Math.round(x), Math.round(y));
+  }
+  rt.ev.push(ev);
+}
+/** One of a monster's tricks, if the moment suits it. True when it was used. */
+function special(S, m, rt, mob, tgt, dd, atk, k) {
+  const d = MOBS[mob.k], now = S.now;
+  if (k === "charge") {
+    // lower the head along a marked line, then run it through
+    if (dd < 34 || dd > d.charge) return false;
+    const ux = (tgt.x - mob.x) / dd, uy = (tgt.y - mob.y) / dd, len = Math.min(dd + 36, d.charge + 20);
+    mob.act = { at: now + CHARGE_MS, ux, uy, len };
+    mob.dir = ux < 0 ? 1 : 2;
+    rt.ev.push(["c", mob.id, Math.round(mob.x), Math.round(mob.y), Math.round(mob.x + ux * len), Math.round(mob.y + uy * len), CHARGE_MS]);
+    mob.castAt = now + 5500;
+    return true;
+  }
+  if (k === "leap") {
+    // pounce: land beside the target in one bound
+    if (dd <= d.range + 16 || dd >= d.leap) return false;
+    mob.castAt = now + 4500;
+    const nx = tgt.x - ((tgt.x - mob.x) / dd) * 14, ny = tgt.y - ((tgt.y - mob.y) / dd) * 14;
+    if (canStand(m, nx, ny)) { mob.x = nx; mob.y = ny; mob.atkAt = Math.max(mob.atkAt, now + 350); }
+    return true;
+  }
+  if (k === "slam") {
+    // pound the ground: a ring to step out of
+    if (dd >= 70) return false;
+    mob.castAt = now + 6000;
+    rt.tele.push({ x: mob.x, y: mob.y, r: d.slam, at: now + 1100, dmg: atk * 1.5, by: mob });
+    rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), d.slam, 1100]);
+    return true;
+  }
+  if (k === "pool") {
+    // spit a puddle under the target's feet; it lies there for a while
+    if (dd >= 110) return false;
+    mob.castAt = now + 6500;
+    const kind = d.poolKind || 0;
+    rt.pools.push({ x: tgt.x, y: tgt.y, r: d.pool, next: now + POOL_FLY, until: now + POOL_FLY + POOL_MS, dmg: atk * 0.4, atk, kind });
+    rt.ev.push(["g", mob.id, Math.round(tgt.x), Math.round(tgt.y), d.pool, POOL_FLY, POOL_MS, kind]);
+    return true;
+  }
+  if (k === "fan") {
+    if (dd < 24 || dd >= d.fan) return false;
+    mob.castAt = now + 5000;
+    volley(S, rt, mob, tgt, atk, d.boss ? 5 : 3);
+    return true;
+  }
+  return false;
+}
+/** The run at the end of a charge: as far along the line as the ground allows, through whoever is on it. */
+function dash(S, m, rt, mob, atk) {
+  const a = mob.act;
+  mob.act = null;
+  const ok = MOBS[mob.k].fly ? canFly : canStand;
+  const x0 = mob.x, y0 = mob.y;
+  let far = 0;
+  for (let k = 4; k <= a.len; k += 4) { if (!ok(m, x0 + a.ux * k, y0 + a.uy * k)) break; far = k; }
+  mob.x = x0 + a.ux * far; mob.y = y0 + a.uy * far;
+  rt.ev.push(["m", mob.id]);
+  for (const pid of Object.keys(S.players)) {
+    const p = S.players[pid];
+    if (p.map !== m.id || p.dead) continue;
+    const rx = p.x - x0, ry = p.y - y0, along = rx * a.ux + ry * a.uy;
+    if (along > -6 && along < far + 10 && Math.abs(rx * a.uy - ry * a.ux) < 13) mobHit(S, rt, p, atk * 1.7, mob);
+  }
+  mob.atkAt = Math.max(mob.atkAt, S.now + 600);
+}
+
 function tickMob(S, m, rt, mob, dt) {
   const d = MOBS[mob.k];
   const now = S.now;
@@ -2674,9 +2875,16 @@ function tickMob(S, m, rt, mob, dt) {
       if (o && o.map === m.id && dealMob(S, rt, mob, o, dot.dmg, 0)) return;
     }
   }
-  if (mob.stun > now || d.still) return;
-  const speed = d.spd * (mob.slow > now ? 0.5 : 1);
+  if (d.still) return;
   const atk = d.atk * ELITE[mob.el].atk;
+  // a charge already wound up goes off whatever is done to the charger in the meantime
+  if (mob.act) {
+    if (now >= mob.act.at) dash(S, m, rt, mob, atk);
+    return;
+  }
+  if (mob.stun > now) return;
+  const swift = has(mob, "swift");
+  const speed = d.spd * (mob.slow > now ? 0.5 : 1) * (swift ? 1.35 : 1);
   let tgt = mob.tgt ? S.players[mob.tgt] : null;
   const leash = Math.max(150, d.aggro * 2.4);
   if (tgt && (tgt.map !== m.id || tgt.dead || dist(mob.x, mob.y, mob.hx, mob.hy) > leash + 60 || dist(mob.x, mob.y, tgt.x, tgt.y) > leash)) {
@@ -2686,43 +2894,48 @@ function tickMob(S, m, rt, mob, dt) {
     let bd = d.aggro;
     for (const pid of Object.keys(S.players)) {
       const p = S.players[pid];
-      if (p.map !== m.id || p.dead) continue;
+      if (p.map !== m.id || p.dead || (p.foes || 0) >= AGGRO_CAP) continue;
       const dd = dist(mob.x, mob.y, p.x, p.y);
       if (dd < bd) { bd = dd; tgt = p; }
     }
-    if (tgt) mob.tgt = tgt.pid;
+    if (tgt) { mob.tgt = tgt.pid; tgt.foes = (tgt.foes || 0) + 1; }
   }
   if (tgt) {
     const dd = dist(mob.x, mob.y, tgt.x, tgt.y);
-    if (d.leap && now >= mob.castAt && dd > d.range + 16 && dd < d.leap) {
-      // pounce: land beside the target in one bound
-      mob.castAt = now + 4500;
-      const nx = tgt.x - ((tgt.x - mob.x) / dd) * 14, ny = tgt.y - ((tgt.y - mob.y) / dd) * 14;
-      if (canStand(m, nx, ny)) { mob.x = nx; mob.y = ny; mob.atkAt = Math.max(mob.atkAt, now + 350); }
-    }
-    if (d.slam && mob.el < 2 && now >= mob.castAt && dd < 70) {
-      // pound the ground: a ring to step out of
-      mob.castAt = now + 6000;
-      rt.tele.push({ x: mob.x, y: mob.y, r: d.slam, at: now + 1100, dmg: atk * 1.5 });
-      rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), d.slam, 1100]);
-    }
-    if ((d.boss || mob.el === 2) && now >= mob.castAt) {
-      mob.castAt = now + 6500;
-      // one blast on every player in the fight: stand still and the whole party pays
-      for (const pid of Object.keys(S.players)) {
-        const o = S.players[pid];
-        if (o.map !== m.id || o.dead || dist(mob.x, mob.y, o.x, o.y) > 220) continue;
-        const r = d.boss ? 40 : 32;
-        rt.tele.push({ x: o.x, y: o.y, r, at: now + 1300, dmg: atk * (d.boss ? 1.7 : 1.3) });
-        rt.ev.push(["t", Math.round(o.x), Math.round(o.y), r, 1300]);
+    if (now >= mob.castAt) {
+      const big = d.boss || mob.el === 2;
+      // each kind has its own tricks: it tries them in turn and uses the first that suits the moment.
+      // Bosses, guardians and field bosses alternate those with a blast on everyone in the fight.
+      let used = false;
+      mob.cn = (mob.cn || 0) + 1;
+      if (!big || mob.cn % 2) {
+        for (let i = 0; i < d.moves.length && !used; i++) {
+          const k = d.moves[((mob.mv || 0) + i) % d.moves.length];
+          if (special(S, m, rt, mob, tgt, dd, atk, k)) { used = true; mob.mv = ((mob.mv || 0) + i + 1) % d.moves.length; }
+        }
       }
+      if (!used && big) {
+        mob.castAt = now + 6500;
+        // one blast on every player in the fight: stand still and the whole party pays
+        for (const pid of Object.keys(S.players)) {
+          const o = S.players[pid];
+          if (o.map !== m.id || o.dead || dist(mob.x, mob.y, o.x, o.y) > 220) continue;
+          const r = d.boss ? 40 : 32;
+          rt.tele.push({ x: o.x, y: o.y, r, at: now + 1300, dmg: atk * (d.boss ? 1.7 : 1.3), by: mob });
+          rt.ev.push(["t", Math.round(o.x), Math.round(o.y), r, 1300]);
+        }
+      } else if (!used) mob.castAt = now + 800;        // nothing suited: look again shortly
+      if (mob.act) return;
     }
     if (dd <= d.range) {
       if (now >= mob.atkAt) {
-        mob.atkAt = now + d.cd;
+        mob.atkAt = now + d.cd * (swift ? 0.74 : 1);
         mob.dir = tgt.x < mob.x ? 1 : 2;
-        rt.ev.push(d.shot ? ["m", mob.id, Math.round(tgt.x), Math.round(tgt.y - 8)] : ["m", mob.id]);
-        hurtPlayer(S, rt, tgt, atk, mob);
+        if (d.volley) { rt.ev.push(["m", mob.id]); volley(S, rt, mob, tgt, atk * 0.85, 3); }
+        else {
+          rt.ev.push(d.shot ? ["m", mob.id, Math.round(tgt.x), Math.round(tgt.y - 8)] : ["m", mob.id]);
+          mobHit(S, rt, tgt, atk, mob);
+        }
       }
     } else stepMob(m, mob, tgt.x, tgt.y, speed, dt, d.fly);
     return;
@@ -2751,6 +2964,9 @@ export function tick(S, now) {
     const rt = S.maps[id];
     if (rt.n <= 0) continue;
     const m = MAPS[id];
+    // how many monsters are already after each player here
+    for (const pid of pids) if (S.players[pid].map === id) S.players[pid].foes = 0;
+    for (const mob of rt.mobs) { const o = !mob.dead && mob.tgt ? S.players[mob.tgt] : null; if (o && o.map === id) o.foes++; }
     for (const mob of rt.mobs) tickMob(S, m, rt, mob, dt);
     for (let i = rt.mobs.length - 1; i >= 0; i--) if (rt.mobs[i].temp && rt.mobs[i].dead) rt.mobs.splice(i, 1);
     for (let i = rt.zones.length - 1; i >= 0; i--) {
@@ -2767,10 +2983,23 @@ export function tick(S, now) {
       const t = rt.tele[i];
       if (now < t.at) continue;
       rt.tele.splice(i, 1);
-      rt.ev.push(["b", Math.round(t.x), Math.round(t.y), t.r]);
+      rt.ev.push([t.ev || "b", Math.round(t.x), Math.round(t.y), t.r]);
       for (const pid of pids) {
         const p = S.players[pid];
-        if (p.map === id && !p.dead && dist(p.x, p.y, t.x, t.y) <= t.r) hurtPlayer(S, rt, p, t.dmg);
+        if (p.map === id && !p.dead && dist(p.x, p.y, t.x, t.y) <= t.r) mobHit(S, rt, p, t.dmg, t.by);
+      }
+    }
+    for (let i = rt.pools.length - 1; i >= 0; i--) {
+      // a puddle bites whoever is standing in it, and leaves its mark on them
+      const q = rt.pools[i];
+      if (now >= q.until) { rt.pools.splice(i, 1); continue; }
+      if (now < q.next) continue;
+      q.next = now + 700;
+      for (const pid of pids) {
+        const p = S.players[pid];
+        if (p.map !== id || p.dead || dist(p.x, p.y, q.x, q.y) > q.r) continue;
+        hurtPlayer(S, rt, p, q.dmg);
+        if (!p.dead) afflict(S, p, q.kind === 1 ? "burn" : q.kind === 2 ? "slow" : "poison", q.atk);
       }
     }
     for (let i = rt.fires.length - 1; i >= 0; i--) if (rt.fires[i].until && now >= rt.fires[i].until) rt.fires.splice(i, 1);
@@ -2811,6 +3040,15 @@ export function tick(S, now) {
       const rt = S.maps[p.map];
       if (!p.fish.bite && now >= p.fish.at) { p.fish.bite = now; rt.ev.push(["f", p.eid, 2]); }
       else if ((p.fish.bite && !p.fish.hook && now > p.fish.bite + 1800) || (p.fish.hook && now > p.fish.hook + 25000)) { p.fish = null; rt.ev.push(["f", p.eid, 0]); toast(p, "물고기가 달아났습니다."); }
+    }
+    if (!p.dead) {
+      // fire and poison bite once a second until they run out
+      for (const key of ["burn", "poison"]) {
+        const s = p[key];
+        if (!s) continue;
+        if (now >= s.until) { p[key] = null; continue; }
+        if (now >= s.next) { s.next = now + 1000; wound(S, S.maps[p.map], p, s.dmg); if (p.dead) break; }
+      }
     }
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;
@@ -2866,7 +3104,9 @@ function selfPayload(p) {
     inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, tr: ch.tr, trc, enh,
     bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     cds: p.cds.map((t) => Math.max(0, t - now)),
-    buffs: [Math.max(0, p.atkBuff - now), Math.max(0, p.spdBuff - now), Math.max(0, p.warm - now), p.food ? Math.max(0, p.food.until - now) : 0],
+    // attack up, speed up, warmth, food — then what monsters leave on you: slowed, burning, poisoned
+    buffs: [Math.max(0, p.atkBuff - now), Math.max(0, p.spdBuff - now), Math.max(0, p.warm - now), p.food ? Math.max(0, p.food.until - now) : 0,
+      Math.max(0, (p.slowed || 0) - now), p.burn ? Math.max(0, p.burn.until - now) : 0, p.poison ? Math.max(0, p.poison.until - now) : 0],
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, MAPS[o.map].name, o.ch.gm]) : [],
   };
@@ -2893,7 +3133,7 @@ export function viewFor(S, pid) {
   }
   for (const mob of rt.mobs) {
     if (mob.dead || !near(mob)) continue;
-    out.M.push([mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el]);
+    out.M.push([mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || []]);
   }
   for (const dr of rt.drops) {
     if (near(dr) && (dr.own === pid || S.now >= dr.freeAt)) out.D.push([dr.id, dr.it, Math.round(dr.x), Math.round(dr.y), dr.q]);
@@ -2938,7 +3178,7 @@ export function defs() {
   const mobs = {};
   for (const k of Object.keys(MOBS)) {
     const d = MOBS[k];
-    mobs[k] = { name: d.name, sp: d.sp, lv: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp };
+    mobs[k] = { name: d.name, sp: d.sp, tint: d.tint || null, lv: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp };
   }
   const classes = {};
   for (const k of Object.keys(CLASSES)) {
@@ -2951,6 +3191,7 @@ export function defs() {
     items: ITEMS, mobs, classes, skills: SKILLS, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV, maxLv: MAXLV,
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
+    traits: TRAITS, slow: SLOW,
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
   };
 }
