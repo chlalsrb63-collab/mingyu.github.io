@@ -234,7 +234,7 @@ function entityPos(id) {
   return G.players.get(id) || G.mobs.get(id) || null;
 }
 
-const MOB_COL = { twinhare: "#a83848", gutfrog: "#7a9a4a", eyecrow: "#5c3c6c", splitboar: "#a83848", ribdeer: "#e0d8c8", hydrasnake: "#5a8a4a", mothface: "#b8a890", ratking: "#c87a8a", bonehound: "#a83848", batcluster: "#5c3c6c", pigeonmass: "#7a8aa0", doghead: "#7a5a48", catsplit: "#a83848", fishwalker: "#8ab0c0", leechmaw: "#b4cc3c", gatorhalf: "#5a7a4a", eelknot: "#4a5a6a", spiderhand: "#e0d8c8", bearmaw: "#a83848", owlstare: "#7a5a48", twingoat: "#e0d8c8", horsehalf: "#a83848", serpentwing: "#b4cc3c", boss: "#e050b8", abyssboss: "#b4cc3c", chest_meadow: "#f0c040", chest_forest: "#f0c040", chest_city: "#f0c040", chest_cave: "#f0c040", chest_crypt: "#f0c040", chest_sewer: "#f0c040", chest_abyss: "#f0c040" };
+const MOB_COL = { twinhare: "#a83848", gutfrog: "#7a9a4a", eyecrow: "#5c3c6c", splitboar: "#a83848", ribdeer: "#e0d8c8", hydrasnake: "#5a8a4a", mothface: "#b8a890", ratking: "#c87a8a", bonehound: "#a83848", batcluster: "#5c3c6c", pigeonmass: "#7a8aa0", doghead: "#7a5a48", catsplit: "#a83848", fishwalker: "#8ab0c0", leechmaw: "#b4cc3c", gatorhalf: "#5a7a4a", eelknot: "#4a5a6a", spiderhand: "#e0d8c8", bearmaw: "#a83848", owlstare: "#7a5a48", twingoat: "#e0d8c8", horsehalf: "#a83848", serpentwing: "#b4cc3c", boss: "#e050b8", abyssboss: "#b4cc3c", chest_meadow: "#f0c040", chest_forest: "#f0c040", chest_city: "#f0c040", chest_cave: "#f0c040", chest_crypt: "#f0c040", chest_sewer: "#f0c040", chest_abyss: "#f0c040" , lambmaw: "#a83848", foxtwine: "#c8643c", toadbrood: "#7a8a4a", squidrat: "#8a6a7a", crabskull: "#c85a3a", moleworm: "#5a566a", lionhand: "#b8905a", sowseer: "#d8a0a8", twinhare_bone: "#e0d8c8", gutfrog_poison: "#8ad84a", ratking_bile: "#b4cc3c", splitboar_frost: "#8ad8ff", hydrasnake_steel: "#a8b4c8", bonehound_ash: "#5a5a66", batcluster_blood: "#b02838", doghead_fire: "#ff8a3a" };
 const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * G.defs.eliteHp[m.el | 0]);
 const RANK_NAME = ["", "정예 ", "우두머리 "];
 Mini.mount($("#minigame"));
@@ -310,6 +310,25 @@ function onEvent(e, t) {
       const col = [null, "#ffb04a", "#ff8a3a", "#cfe4ff"][e[4] | 0];
       if (col) { S3.fx.ring(e[1], e[2], e[3], col, 300, true); S3.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); S3.shake(2); Sound.play("boom"); }
       else { S3.fx.ring(e[1], e[2], e[3], "#ff6ad0", 350, true); S3.fx.burst(e[1], e[2], 0.4, "#ff6ad0", 34, 3); S3.shake(6); Sound.play("boom"); }
+      break;
+    }
+    case "c": S3.fx.lane(e[2], e[3], e[4], e[5], e[6]); Sound.play("warn"); break;      // a charge is coming down this line
+    case "v": {
+      // a spread of shots, each landing where its mark is
+      const m = G.mobs.get(e[1]);
+      if (!m) break;
+      const pts = [];
+      for (let i = 3; i + 1 < e.length; i += 2) pts.push([e[i], e[i + 1]]);
+      m.atkT = t;
+      S3.fx.volley(m.x, m.y, pts, e[2]);
+      Sound.play("shoot");
+      break;
+    }
+    case "q": S3.fx.pop(e[1], e[2], e[3]); break;
+    case "g": {
+      // spat out, it lands and stays: poison, fire or a slowing mire
+      const m = G.mobs.get(e[1]);
+      if (m) { m.atkT = t; S3.fx.spit(m.x, m.y, e[2], e[3], e[4], e[5], e[6], e[7]); Sound.play("magic"); }
       break;
     }
     case "z":
@@ -682,7 +701,7 @@ function update(dt, t) {
   }
 
   // walk — applied immediately, checked by the server afterwards
-  const speed = s.spd * (t < G.buffEnd[1] ? 1.4 : 1) * (t < (G.buffEnd[4] || 0) ? 0.65 : 1);    // hasted, or slowed by frost
+  const speed = s.spd * (t < G.buffEnd[1] ? 1.4 : 1) * (t < (G.buffEnd[4] || 0) ? G.defs.slow || 0.65 : 1);    // hasted, or slowed by frost
   const ox = me.x, oy = me.y;
   if (mx || my) {
     const nx = me.x + mx * speed * dt, ny = me.y + my * speed * dt;

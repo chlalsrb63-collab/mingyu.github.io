@@ -112,8 +112,9 @@ const GEAR = {
 };
 
 const ITEMS = {
-  hp_s: { name: "빨간 물약", type: "pot", heal: 60, price: 20, desc: "HP를 60 회복한다." },
-  hp_m: { name: "큰 빨간 물약", type: "pot", heal: 220, price: 70, desc: "HP를 220 회복한다." },
+  // red potions heal a fixed amount plus a share of the drinker's health, so they keep their worth as monsters hit harder
+  hp_s: { name: "빨간 물약", type: "pot", heal: 60, pct: 0.1, price: 20, desc: "HP를 60 + 최대 HP의 10% 회복한다." },
+  hp_m: { name: "큰 빨간 물약", type: "pot", heal: 220, pct: 0.18, price: 70, desc: "HP를 220 + 최대 HP의 18% 회복한다." },
   mp_s: { name: "파란 물약", type: "pot", mana: 40, price: 25, desc: "MP를 40 회복한다." },
   mp_m: { name: "큰 파란 물약", type: "pot", mana: 140, price: 80, desc: "MP를 140 회복한다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
@@ -245,11 +246,13 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 const CROWD = 1.4, CROWD_MAX = 228, GEAR_CUT = 0.65, MOB_ATK = 1.27;
+/** Past this level the extra bite tapers off, a little per level: the deep dungeons were already the sharpest. */
+const ATK_EASE = [16, 0.016];
 /**
  * However thick the crowd, only this many monsters will come for one player of
  * their own accord — the rest wait their turn (anything struck still fights back).
  */
-const AGGRO_CAP = 4;
+const AGGRO_CAP = 3;
 
 /**
  * Monsters: animals that came back wrong. Beyond the numbers: `fly` crosses anything,
@@ -319,7 +322,7 @@ for (const k of Object.keys(MOBS)) {
   const d = MOBS[k];
   if (!d.sp) d.sp = k;
   d.spd = Math.round(d.spd * 0.82);              // the whole world moves at an easier pace
-  d.atk = Math.round(d.atk * MOB_ATK);
+  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]));
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;
@@ -2449,7 +2452,11 @@ export function applyAction(S, pid, a) {
         toast(p, `${it.name}을(를) 먹었습니다. ${it.desc}`);
       }
       p.potAt = now + 900;
-      if (it.heal) { p.hp = Math.min(st.mhp, p.hp + it.heal); S.maps[p.map].ev.push(["h", p.eid, -it.heal, 0, 1]); }
+      if (it.heal) {
+        const amt = Math.min(Math.round(it.heal + st.mhp * (it.pct || 0)), Math.max(1, Math.round(st.mhp - p.hp)));
+        p.hp = Math.min(st.mhp, p.hp + amt);
+        S.maps[p.map].ev.push(["h", p.eid, -amt, 0, 1]);
+      }
       if (it.mana) p.mp = Math.min(st.mmp, p.mp + it.mana);
       S.maps[p.map].ev.push(["u", p.eid, it.heal ? 0 : 1]);
       p.dirty = true;
@@ -2998,6 +3005,9 @@ export function tick(S, now) {
       for (const pid of pids) {
         const p = S.players[pid];
         if (p.map !== id || p.dead || dist(p.x, p.y, q.x, q.y) > q.r) continue;
+        // overlapping puddles do not add up: one bite at a time
+        if (now < (p.poolAt || 0) + 600) continue;
+        p.poolAt = now;
         hurtPlayer(S, rt, p, q.dmg);
         if (!p.dead) afflict(S, p, q.kind === 1 ? "burn" : q.kind === 2 ? "slow" : "poison", q.atk);
       }
