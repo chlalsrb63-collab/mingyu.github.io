@@ -376,6 +376,7 @@ button:disabled { filter: grayscale(1); opacity: .45; cursor: default; }
 .set-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, .05); font-size: 12px; }
 .set-row span { flex: 1; }
 .set-row kbd { padding: 1px 4px; border: 1px solid #000; border-radius: 2px; background: var(--well); color: var(--muted); }
+.set-row input.vol { width: 130px; height: 14px; margin: 0; accent-color: #d8b25a; cursor: pointer; }
 .help p { margin: 0 0 7px; font-size: 12px; line-height: 1.6; } .help b { color: var(--gold); font-weight: 600; }
 
 /* ── death, title, creation ── */

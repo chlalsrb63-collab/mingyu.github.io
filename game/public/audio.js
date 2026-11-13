@@ -196,6 +196,8 @@ const TRACKS = {
     form: "A B",
   },
 };
+/** Per-track level trims, measured by rendering each offline, so all sit near the same loudness. */
+const TRIM = { city: 1.6, rift: 1.55, boss: 1.45, cave: 1.5, crypt: 1.15 };
 /** Old names some maps still carry. */
 const ALIAS = { field: "meadow" };
 
@@ -237,7 +239,7 @@ export const Sound = {
   sfxOn: true, bgmOn: true,
   vol: { music: 0.7, sfx: 0.85, mute: false },
   base: null, theme: null, playing: [], timer: 0,
-  voices: 0, last: {}, amb: 0, ambNext: 0, noiseBuf: null, waves: {},
+  voices: 0, last: {}, k: 1, amb: 0, ambNext: 0, noiseBuf: null, waves: {},
 
   /** Browsers only allow audio after a gesture — call this from a click/keypress. */
   unlock() {
@@ -270,7 +272,7 @@ export const Sound = {
     // nothing plays in a hidden tab
     document.addEventListener("visibilitychange", () => {
       if (!this.ctx) return;
-      if (document.hidden) this.ctx.suspend(); else if (!this.vol.mute) this.ctx.resume();
+      if (document.hidden) this.ctx.suspend(); else this.ctx.resume();
     });
     this.timer = setInterval(() => this.pump(), 50);
     this.pick();
@@ -292,8 +294,12 @@ export const Sound = {
   load() { try { Object.assign(this.vol, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch { /* defaults */ } this.sfxOn = this.bgmOn = !this.vol.mute; return this.vol; },
 
   // ── music ──
-  /** The map's own music. */
-  bgm(name) { this.base = TRACKS[name] ? name : ALIAS[name] || (TRACKS[name] ? name : "meadow"); this.pick(); },
+  /** The map's own music: its id has a track, or else its `fallback` name does. */
+  bgm(name, fallback) {
+    const own = (k) => (TRACKS[k] ? k : TRACKS[ALIAS[k]] ? ALIAS[k] : null);
+    this.base = own(name) || own(fallback) || "meadow";
+    this.pick();
+  },
   /** A theme over the map's music — "boss", "rift" — or null to go back. */
   setTheme(name) { if (this.theme === name) return; this.theme = name; this.pick(); },
   /** Crossfade to whichever track should be playing now. */
@@ -306,7 +312,7 @@ export const Sound = {
     const t = c.currentTime;
     for (const p of this.playing) if (!p.dying) { p.gain.gain.cancelScheduledValues(t); p.gain.gain.setValueAtTime(p.gain.gain.value, t); p.gain.gain.linearRampToValueAtTime(0, t + FADE); p.dying = t + FADE + 0.1; }
     const g = c.createGain();
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + FADE);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(TRIM[want] || 1, t + FADE);
     g.connect(this.music);
     const send = c.createGain(); send.gain.value = TRACKS[want].delay || 0; g.connect(send); send.connect(this.verb);
     this.playing.push({ name: want, def: TRACKS[want], song: SONGS[want], gain: g, step: 0, next: t + 0.12, dying: 0 });
@@ -322,7 +328,7 @@ export const Sound = {
       const sixteenth = 60 / p.def.bpm / 4;
       if (p.next < now - 0.5) p.next = now + 0.05;          // woke from a long sleep: don't rush to catch up
       while (p.next < now + LOOKAHEAD) {
-        this.step(p, p.next, sixteenth);
+        this.tick(p, p.next, sixteenth);
         p.step++;
         p.next += sixteenth;
       }
@@ -337,7 +343,7 @@ export const Sound = {
     }
   },
   /** Everything that sounds on one sixteenth step of a track. */
-  step(p, t, s16) {
+  tick(p, t, s16) {
     const def = p.def, bars = p.song, bar = bars[Math.floor(p.step / 16) % bars.length], i = p.step % 16;
     const out = p.gain, ch = bar.chord;
     for (const [f, at, len] of bar.notes) if (at === i) this.inst(def.lead, f, t, len * s16, def.vol, out);
@@ -452,7 +458,7 @@ export const Sound = {
     if (typeof type === "number") o.setPeriodicWave(this.waves[type]); else o.type = type;
     o.frequency.setValueAtTime(f0, t);
     if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
-    g.gain.setValueAtTime(vol, t);
+    g.gain.setValueAtTime(vol * this.k, t);
     g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
     o.connect(g); g.connect(this.sfx);
     o.start(t); o.stop(t + dur + 0.02);
@@ -463,7 +469,7 @@ export const Sound = {
     const c = this.ctx, t = c.currentTime + when;
     const s = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
     f.type = type; f.frequency.setValueAtTime(fc, t); if (fc2) f.frequency.exponentialRampToValueAtTime(fc2, t + dur);
-    s.buffer = this.noiseBuf; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    s.buffer = this.noiseBuf; g.gain.setValueAtTime(vol * this.k, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
     s.connect(f); f.connect(g); g.connect(this.sfx);
     s.start(t, Math.random() * 0.8, dur + 0.02);
     this.voices++; s.onended = () => this.voices--;
@@ -476,11 +482,13 @@ export const Sound = {
     if (!c || this.vol.mute || c.state !== "running") return;
     // the same sound twice within a few frames is one sound; and never too many at once
     const now = c.currentTime, gap = THROTTLE[name] ?? 0.03;
-    if (now - (this.last[name] || -1) < gap) return;
+    if (now - (this.last[name] ?? -1e9) < gap) return;
     if (this.voices > MAX_SFX && !IMPORTANT.has(name)) return;
     this.last[name] = now;
     const fx = SFX[name];
-    if (fx) fx.call(this, arg);
+    if (!fx) return;
+    this.k = BOOST[name] || 1;
+    try { fx.call(this, arg); } finally { this.k = 1; }
   },
   /** A footstep on the ground under the player. */
   step(ground) { this.play(`step_${ground}`); },
@@ -488,6 +496,13 @@ export const Sound = {
 
 /** Minimum seconds between two plays of the same effect. */
 const THROTTLE = { hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
+/** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
+const BOOST = {
+  swing: 3, swing_sword: 3, swing_dagger: 3, swing_spear: 3, swing_staff: 2, swing_book: 2.2, shoot: 1.6, magic: 1.5,
+  hit: 2, crit: 1.6, hurt: 2, die: 2, die_small: 2.2, die_big: 1.8, mob_shot: 1.8, charge: 2, volley: 1.8, spit: 2, pop: 2, buff: 1.5,
+  ui: 1.8, open: 2, close: 2, tab: 2, blip: 1.8, emote: 1.6, cast: 1.8, coin: 1.5, salvage: 1.5, recall: 1.4, warp_out: 1.4, rift_warn: 1.5, fail: 1.4,
+  step_grass: 2.5, step_dirt: 2.5, step_stone: 2, step_wood: 1.6,
+};
 /** Effects that play even when many voices are already sounding. */
 const IMPORTANT = new Set(["level", "achieve", "death", "rift_start", "rift_boss", "announce", "enh_ok", "enh_fail", "warp", "loot"]);
 

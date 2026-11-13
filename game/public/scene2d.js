@@ -763,7 +763,7 @@ function paintExtras(m, c) {
   }
   for (const n of m.npcs) {
     // a woven mat marks where each of the townsfolk stands
-    const cx = n.x * T + 16, cy = n.y * T + 25, col = { shop: "#e07a8a", smith: "#8a90a0", elder: "#5a6ac0", train: "#b84a4a", warp: "#7a5ae0", collector: "#4a7a4a", achieve: "#d8a830", daily: "#4a8ad0" }[n.role] || "#6a8a5a";
+    const cx = n.x * T + 16, cy = n.y * T + 25, col = { shop: "#e07a8a", smith: "#8a90a0", elder: "#5a6ac0", train: "#b84a4a", warp: "#7a5ae0", collector: "#4a7a4a", achieve: "#d8a830", daily: "#4a8ad0", bank: "#a07a3a" }[n.role] || "#6a8a5a";
     b.oval(cx, cy, 15, 6.5, "#f2e0b0"); b.oval(cx, cy, 13, 5, col); b.oval(cx, cy, 9, 3, lt(col, 1.3)); b.oval(cx, cy, 5, 1.6, col);
   }
 }
@@ -1127,15 +1127,83 @@ export const fx = {
   spit(ax, ay, bx, by, r, fly, life, kind = 0) { const c = POOL_COL[kind] || POOL_COL[0]; this.lob(ax, ay, bx, by, fly, c, r); this.pool(bx, by, r, life, c, fly); },
   /** A small hit on the ground where a shot lands: no shake, no noise. */
   pop(wx, wy, r = 13, color = "#ff8a5a") { this.ring(wx, wy, r, color, 220, true); this.burst(wx, wy, 0.1, color, 6, 1.2); },
+  // ── for the second-tier skills and the ultimates
+  /** Blades whirling round a point: `n` short arcs sweeping a ring of radius `r`. */
+  storm(wx, wy, r, color = "#d8e8ff", dur = 420, n = 5) { this.add({ k: "storm", x: wx * P, y: wy * P - 6, r: r * P, color, dur, n, a0: Math.random() * 6.28 }); },
+  /** The ground split open: jagged cracks running out from a point, flat on the ground. */
+  crack(wx, wy, r, color = "#ffb04a", dur = 700) {
+    const rays = [];
+    for (let i = 0; i < 9; i++) { const a = (i / 9) * 6.28 + Math.random() * 0.4, pts = [[0, 0]]; let d = 0; while (d < 1) { d += 0.18 + Math.random() * 0.12; pts.push([Math.cos(a) * d + (Math.random() - 0.5) * 0.12, Math.sin(a) * d * 0.86 + (Math.random() - 0.5) * 0.1]); } rays.push(pts); }
+    this.add({ k: "crack", x: wx * P, y: wy * P, r: r * P, color, dur, rays });
+  },
+  /** A jagged bolt of lightning from a to b, redrawn a little differently each frame. */
+  bolt(ax, ay, bx, by, color = "#9fdcff", dur = 240) { this.add({ k: "bolt", x0: ax * P, y0: ay * P - 14, x1: bx * P, y1: by * P - 14, color, dur }); },
+  /** Something huge coming straight down out of the sky onto (wx, wy), landing at `ms`. */
+  fall(wx, wy, color = "#ffd84a", ms = 450) { this.add({ k: "fall", x: wx * P, y: wy * P, color, dur: ms + 260, land: ms / (ms + 260) }); },
+  /** Snow driven across a round patch of ground for `ms`. */
+  snow(wx, wy, r, ms = 3600) { this.add({ k: "snow", x: wx * P, y: wy * P, r: r * P, dur: ms }); },
 };
 export function shake(n) { shakeAmt = Math.max(shakeAmt, n); }
+
+// ───────────────────────────── pets ─────────────────────────────
+// A pet trots a little behind its owner, on the side away from where they face,
+// and darts out to whatever it fetches (메이플 펫처럼 따라다니며 줍는다).
+const pets = new Map();
+/** The pet of `eid` runs to (wx, wy) and back: called when the server says it picked something up. */
+export function petFetch(eid, wx, wy) {
+  const pt = pets.get(eid);
+  if (pt) { pt.go = { x: wx, y: wy, t0: performance.now() }; }
+  fx.sparkle(wx, wy, 0.3, "#fff0a0", 6);
+}
+function petsNow(dt, t) {
+  const out = [];
+  const owners = [[G.you, G.me]];
+  for (const [eid, p] of G.players) owners.push([eid, p]);
+  const live = new Set();
+  for (const [eid, p] of owners) {
+    const w = G.who.get(eid);
+    if (!w || !w.pet || p.dead) continue;
+    live.add(eid);
+    let pt = pets.get(eid);
+    const face = p.dir === 1 ? -1 : p.dir === 2 ? 1 : 0, back = p.dir === 3 ? 1 : p.dir === 0 ? -1 : 0;
+    const hx = p.x - face * 13 + (face ? 0 : 10), hy = p.y + 2 - back * 8;
+    if (!pt || pt.kind !== w.pet) { pt = { kind: w.pet, x: hx, y: hy, face: 1, px: hx, id: eid }; pets.set(eid, pt); }
+    let tx = hx, ty = hy, k = 4;
+    if (pt.go) {
+      const a = (t - pt.go.t0) / 1000;
+      if (a < 0.16) { tx = pt.go.x; ty = pt.go.y; k = 18; } else if (a > 0.5) pt.go = null;
+    }
+    pt.x += (tx - pt.x) * Math.min(1, dt * k);
+    pt.y += (ty - pt.y) * Math.min(1, dt * k);
+    if (pt.x > pt.px + 0.05) pt.face = 1; else if (pt.x < pt.px - 0.05) pt.face = -1;
+    pt.moving = Math.abs(pt.x - pt.px) + Math.abs(pt.y - pt.py || 0) > 0.03;
+    pt.px = pt.x; pt.py = pt.y;
+    out.push(pt);
+  }
+  for (const id of pets.keys()) if (!live.has(id)) pets.delete(id);
+  return out;
+}
+function drawPet(pt, t) {
+  const frames = SP.petSheet(pt.kind), hover = SP.PET_HOVER[pt.kind] || 0;
+  const x = Math.round(pt.x * P), y = Math.round(pt.y * P);
+  // walkers hop when they move, flyers flap and bob all the time
+  const fr = hover ? Math.floor(t / 140 + pt.id) % 2 : pt.moving ? Math.floor(t / 120) % 2 : Math.floor(t / 900) % 6 === 0 ? 1 : 0;
+  const lift = hover ? hover + Math.round(Math.sin(t / 260 + pt.id) * 2) : 0;
+  g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(x, y, hover ? 5 : 6, 2, 0, 0, 7); g.fill();
+  if (pt.kind === "pet_wisp") { g.globalCompositeOperation = "lighter"; g.globalAlpha = 0.35; g.drawImage(DC.glow("#5ad0ff", 20), x - 20, y - lift - 30); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1; if (Math.random() < 0.15) parts.push({ x: x - 3 + Math.random() * 6, y: y - lift - 16, vx: 0, vy: -16, life: 0.5, color: "#bfeaff", g: 0, s: 1 }); }
+  g.save();
+  g.translate(x, y - lift);
+  g.scale(pt.face, 1);
+  g.drawImage(frames[fr], -SP.FOOT[0], -SP.FOOT[1]);
+  g.restore();
+}
 
 function drawFx(now, ground2) {
   for (let i = fx.list.length - 1; i >= 0; i--) {
     const f = fx.list[i], k = (now - f.t0) / f.dur;
     if (k < 0) continue;
     if (k >= 1) { fx.list.splice(i, 1); if (f.done) f.done(); continue; }
-    const flat = f.k === "ring" || f.k === "tele" || f.k === "lane" || f.k === "pool" || f.k === "mark";
+    const flat = f.k === "ring" || f.k === "tele" || f.k === "lane" || f.k === "pool" || f.k === "mark" || f.k === "crack" || f.k === "snow";
     if (flat !== ground2) continue;
     if (f.k === "ring") {
       g.globalAlpha = 1 - k;
@@ -1212,6 +1280,59 @@ function drawFx(now, ground2) {
       g.strokeStyle = "#ffffff"; g.lineWidth = 2; g.beginPath(); g.moveTo(f.x0, f.y0); g.lineTo(f.x1, f.y1); g.stroke();
     } else if (f.k === "pillar") {
       g.globalAlpha = (1 - k) * 0.6; g.fillStyle = "#fff0a0"; g.fillRect(f.x - 14, f.y - 120, 28, 124); g.fillStyle = "#ffffff"; g.fillRect(f.x - 6, f.y - 120, 12, 124);
+    } else if (f.k === "storm") {
+      // short tapered arcs chasing each other round, fast at first and easing off
+      const spin = f.a0 + (1 - (1 - k) * (1 - k)) * 7.5, n = 9;
+      g.globalAlpha = k < 0.7 ? 1 : (1 - k) / 0.3;
+      for (let j = 0; j < f.n; j++) {
+        const a0 = spin + (j / f.n) * 6.28;
+        for (const [col, rr, w] of [[f.color, f.r, 4], ["#ffffff", f.r - 1, 2]]) {
+          g.strokeStyle = col; g.lineWidth = w;
+          g.beginPath();
+          for (let q = 0; q <= n; q++) { const a = a0 + (q / n) * 0.9; g.lineTo(f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr * 0.6); }
+          g.stroke();
+        }
+      }
+      if (Math.random() < 0.6) { const a = Math.random() * 6.28; parts.push({ x: f.x + Math.cos(a) * f.r, y: f.y + Math.sin(a) * f.r * 0.6, vx: -Math.sin(a) * 60, vy: Math.cos(a) * 36 - 10, life: 0.25, color: f.color, g: 0, s: 2 }); }
+    } else if (f.k === "crack") {
+      // cracks run out in the first fifth, glow, then darken and fade
+      const run = Math.min(1, k * 5), a = k < 0.6 ? 1 : (1 - k) / 0.4;
+      for (const pts of f.rays) {
+        const m = Math.max(1, Math.ceil(pts.length * run));
+        for (const [col, w] of [["#2b2233", 5], [k < 0.35 ? "#fff0b0" : f.color, 2]]) {
+          g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = w;
+          g.beginPath();
+          for (let q = 0; q < m; q++) g.lineTo(f.x + pts[q][0] * f.r, f.y + pts[q][1] * f.r);
+          g.stroke();
+        }
+      }
+    } else if (f.k === "bolt") {
+      // a fresh zig-zag every frame between the two ends, a bright core inside a coloured glow
+      const dx = f.x1 - f.x0, dy = f.y1 - f.y0, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, segs = Math.max(3, Math.round(len / 14));
+      const pts = [[f.x0, f.y0]];
+      for (let q = 1; q < segs; q++) { const o = (Math.random() - 0.5) * 18; pts.push([f.x0 + (dx * q) / segs + nx * o, f.y0 + (dy * q) / segs + ny * o]); }
+      pts.push([f.x1, f.y1]);
+      g.globalAlpha = k < 0.5 ? 1 : 2 - 2 * k;
+      for (const [col, w] of [[f.color, 6], ["#ffffff", 2]]) { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); for (const [x, y] of pts) g.lineTo(x, y); g.stroke(); }
+    } else if (f.k === "fall") {
+      // a shaft of light dropping onto its mark, then a flash where it lands
+      if (k < f.land) {
+        const q = k / f.land, top = f.y - 220 + q * 200;
+        g.fillStyle = f.color; g.globalAlpha = 0.35 + q * 0.4; g.fillRect(f.x - 9, top - 60, 18, 60);
+        g.fillStyle = "#ffffff"; g.globalAlpha = 0.9; g.fillRect(f.x - 3, top - 70, 6, 72);
+        g.fillStyle = f.color; g.fillRect(f.x - 7, top, 14, 6); g.fillRect(f.x - 4, top + 6, 8, 5); g.fillRect(f.x - 1, top + 11, 2, 4);
+      } else {
+        const q = (k - f.land) / (1 - f.land);
+        g.globalAlpha = 1 - q; g.fillStyle = "#ffffff"; g.fillRect(f.x - 16 * (1 - q), f.y - 140, 32 * (1 - q), 140);
+        g.fillStyle = f.color; g.fillRect(f.x - 26 * (1 - q) - 2, f.y - 6, 52 * (1 - q) + 4, 6);
+      }
+    } else if (f.k === "snow") {
+      // flakes blown slantwise over the patch, a pale wash under them
+      const a = k < 0.08 ? k / 0.08 : k > 0.9 ? (1 - k) / 0.1 : 1;
+      g.globalAlpha = 0.16 * a; g.fillStyle = "#cfeaff";
+      g.beginPath(); g.ellipse(f.x, f.y, f.r, f.r * 0.8, 0, 0, 7); g.fill();
+      g.globalAlpha = a;
+      for (let q = 0; q < 3; q++) if (Math.random() < 0.9) { const ang = Math.random() * 6.28, rr = Math.sqrt(Math.random()) * f.r; parts.push({ x: f.x + Math.cos(ang) * rr - 20, y: f.y + Math.sin(ang) * rr * 0.8 - 46, vx: 70 + Math.random() * 30, vy: 60 + Math.random() * 30, life: 0.6, color: Math.random() < 0.6 ? "#ffffff" : "#bfe6ff", g: 0, s: Math.random() < 0.3 ? 3 : 2 }); }
     }
     g.globalAlpha = 1; g.lineWidth = 1;
   }
@@ -1314,6 +1435,7 @@ export function render(focusX, focusY, dt, t, snap) {
   for (const m of G.mobs.values()) list.push({ y: m.y * P, m });
   for (const [eid, p] of G.players) list.push({ y: p.y * P, p, eid });
   list.push({ y: G.me.y * P, p: G.me, eid: G.you });
+  for (const pt of petsNow(dt, t)) list.push({ y: pt.y * P - 1, pet: pt });
   list.sort((a, b) => a.y - b.y);
   for (const s of ents.values()) s.seen = false;
 
@@ -1391,6 +1513,8 @@ export function render(focusX, focusY, dt, t, snap) {
       g.drawImage(img, -w / 2, -w * (SP.FOOT[1] / SP.SIZE), w, w);
       g.restore();
       m.h3 = (w * (G.defs.mobs[m.k].boss ? 0.92 : 0.72) + s.hover) / 26;
+    } else if (o.pet) {
+      drawPet(o.pet, t);
     } else if (o.p) {
       const w = G.who.get(o.eid);
       if (!w) continue;

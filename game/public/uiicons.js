@@ -46,16 +46,20 @@ const G = {
   trophy: ["############", "#.########.#", "#.########.#", ".#.######.#.", "..########..", "...######...", "....####....", ".....##.....", ".....##.....", "...######...", "..########..", "............"],
   paw: ["...##..##...", "..###..###..", "..###..###..", "#...#..#...#", "##........##", "##..####..##", "...######...", "..########..", "..########..", "...##..##...", "............", "............"],
   stone: ["....####....", "...######...", "..###oo###..", "..##o##o##..", "..##o##o##..", "..###oo###..", "..########..", "..###oo###..", "..########..", ".##########.", "############", "............"],
+  swords: ["##........##", "###......###", ".###....###.", "..###..###..", "...######...", "....####....", "....####....", "...######...", ".o###..###o.", "..o#....#o..", ".o.o....o.o.", "o..........o"],
+  shieldp: ["............", ".##########.", ".#oooooooo#.", ".#ooo##ooo#.", ".#ooo##ooo#.", ".#o######o#.", ".#o######o#.", "..#oo##oo#..", "..#oo##oo#..", "...#oooo#...", "....#oo#....", ".....##....."],
+  star: [".....##.....", ".....##.....", "....####....", "....####....", "############", ".##########.", "..########..", "...######...", "..###..###..", "..##....##..", ".##......##.", "............"],
+  feather: ["..........##", ".........###", "........###o", ".......###o.", "......###o..", ".....###o...", "....###o....", "...###o.....", "..##o.......", ".#o.........", "#...........", "............"],
   rift: [".....#......", "....##......", "...##.......", "..###...#...", ".####..##...", "..#######...", "...#######..", "...##..####.", "...#...###..", ".......##...", "......##....", "......#....."],
 };
 
 /** What each stat, menu button, buff and elite trait is drawn with. */
 export const STAT_ICON = { atk: "sword", def: "shield", hp: "heart", mp: "drop", crit: "target", critd: "burst", ls: "fang", xp: "up", mf: "gem", gold: "coin", acd: "clock", kills: "skull" };
-export const MENU_ICON = { inv: "bag", char: "person", skill: "book", quest: "scroll", party: "party", guild: "banner", rank: "crown", help: "help", settings: "gear", sit: "fire", emo: "smile", sound: "note", auto: "auto", daily: "cal", achieve: "trophy", collect: "paw", warp: "stone", event: "rift" };
+export const MENU_ICON = { inv: "bag", char: "person", skill: "book", quest: "scroll", party: "party", guild: "banner", rank: "crown", help: "help", settings: "gear", sit: "fire", emo: "smile", sound: "note", auto: "auto", daily: "cal", achieve: "trophy", collect: "paw", warp: "stone", event: "rift", bank: "bag" };
 /** Each class is marked by its weapon. */
 export const CLASS_ICON = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" };
-/** In the order of `self.buffs`: attack up, speed up, warmth, food, slowed, burning, poisoned. */
-export const BUFF_ICON = ["sword", "chevron", "fire", "fish", "snow", "fire", "venom"];
+/** In the order of `self.buffs`: attack up, speed up, warmth, food, slowed, burning, poisoned — then the scrolls of attack, defence, experience. */
+export const BUFF_ICON = ["sword", "chevron", "fire", "fish", "snow", "fire", "venom", "swords", "shieldp", "star"];
 export const TRAIT = {
   tough: ["shield", "#b8c4d8"], fire: ["fire", "#ff8a3a"], poison: ["venom", "#9be05a"], swift: ["chevron", "#ffe070"],
   vamp: ["fang", "#e84a6a"], frost: ["snow", "#8ad8ff"], burst: ["bomb", "#ffb04a"], thorn: ["thorn", "#e8dcc0"],

@@ -224,6 +224,60 @@ export function campfire() {
   return fireFrames;
 }
 
+// ───────────────────────────── pets ─────────────────────────────
+// A pet is about half an adventurer's size, drawn on the same 32×32 sheet and
+// standing on the same foot line, facing right; two frames (rest, hop or flap).
+// The chick walks, the bat and the wisp hover (the scene lifts them).
+
+const petCache = {};
+/** Two frames of a pet: `pet_chick`, `pet_bat` or `pet_wisp`. */
+export function petSheet(kind) {
+  if (petCache[kind]) return petCache[kind];
+  const frames = [0, 1].map((f) => {
+    const [c, g] = sheet(S);
+    const { r, oval, tri } = brush(g);
+    if (kind === "pet_bat") {
+      // a round dark body, two ears, wings up then down, yellow eyes
+      const B = "#6a4a8a", W = "#4a3068", L = "#9a7ac0";
+      if (f === 0) { tri([[13, 21], [6, 15], [9, 24]], W); tri([[19, 21], [26, 15], [23, 24]], W); r(7, 16, 1, 3, L); r(24, 16, 1, 3, L); }
+      else { tri([[13, 21], [6, 27], [10, 20]], W); tri([[19, 21], [26, 27], [22, 20]], W); }
+      oval(16, 22, 4, 4, B);
+      tri([[12, 20], [13, 15], [15, 19]], B); tri([[17, 19], [19, 15], [20, 20]], B);
+      oval(16, 24, 2.5, 1.6, L);
+      r(14, 21, 1, 1, "#ffe070"); r(17, 21, 1, 1, "#ffe070");
+      r(16, 24, 1, 1, "#ffffff");
+      return finish(c, g, INK, 1);
+    }
+    if (kind === "pet_wisp") {
+      // a little blue flame with a face: a light, so its edge is deep blue, not ink
+      const tip = f ? -1 : 0, lean = f ? 1 : -1;
+      oval(16, 23, 5, 5, "#3a8ad0");
+      tri([[11, 22], [16 + lean, 12 + tip], [21, 22]], "#3a8ad0");
+      oval(16, 24, 3.6, 3.6, "#7ad4ff");
+      tri([[13, 23], [16 + lean, 15 + tip], [19, 23]], "#7ad4ff");
+      oval(16, 25, 2, 2, "#e8fbff");
+      r(14, 23, 1, 2, "#1e3a68"); r(18, 23, 1, 2, "#1e3a68");
+      return finish(c, g, "#1e4a78", 1);
+    }
+    // the chick: a round yellow body, a head with a tuft, a small wing, an orange beak and feet
+    const Y = "#ffd84a", O = "#e8a838", up = f ? -1 : 0;
+    oval(15, 24 + up, 5.5, 4.2, Y);
+    oval(15, 26 + up, 5, 2.2, O, 26 + up);
+    oval(18, 19 + up, 3.6, 3.4, Y);
+    r(18, 15 + up, 1, 2, Y); r(17, 14 + up, 1, 1, Y);
+    if (f) r(11, 20 + up, 4, 2, "#f6c030"); else oval(13, 24, 2.6, 1.6, "#f6c030");
+    r(21, 19 + up, 2, 1, "#ff8a3a"); r(21, 20 + up, 1, 1, "#d8642a");
+    r(19, 18 + up, 1, 1, INK);
+    r(18, 20 + up, 1, 1, "#f6a8a0");
+    if (!f) { r(13, 28, 1, 1, "#ff8a3a"); r(17, 28, 1, 1, "#ff8a3a"); }
+    else { r(14, 27, 1, 1, "#ff8a3a"); r(16, 27, 1, 1, "#ff8a3a"); }
+    return finish(c, g, INK, 1);
+  });
+  return (petCache[kind] = frames);
+}
+/** Pets that fly hover this far above their shadow. */
+export const PET_HOVER = { pet_chick: 0, pet_bat: 9, pet_wisp: 7 };
+
 const cache = new Map();
 /** `{ front, side, back }`, each a list of frames indexed by FRAME. Side frames face right. */
 export function personSheet(o) {
@@ -252,6 +306,8 @@ export function npcLook(look, role) {
   if (role === "collector") return { ear: 2, eye: 1, nose: 3, fur: "#a8845c", blush: null, pat: 1, cloth: "#3a6a42" };
   if (role === "achieve") return { ear: 0, eye: 2, nose: 0, fur: "#fff0c0", blush: PINK, pat: 0, cloth: "#d8a830" };
   if (role === "daily") return { ear: 3, eye: 0, nose: 1, fur: "#ffd0a0", blush: PINK, pat: 2, cloth: "#4a8ad0" };
+  // the warehouse keeper, a bear in a storeroom-brown apron
+  if (role === "bank") return { ear: 2, eye: 3, nose: 1, fur: "#e6cca4", blush: PINK, pat: 0, cloth: "#8a6a3a" };
   return { ear: 4, eye: 0, nose: 3, fur: "#f0e0c8", blush: PINK, pat: 0, cloth: "#5e6a88" };
 }
 export function mobLook(kind) {

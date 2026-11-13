@@ -172,7 +172,7 @@ function loadMap(m) {
   G.snapCam = true;
   $("#mini-name").textContent = m.band ? `${m.name} · Lv.${m.band[0]}–${m.band[1]}` : m.name;
   $("#mini-name").title = $("#mini-name").textContent;
-  Sound.bgm(m.bgm);
+  Sound.bgm(m.id, m.bgm); Sound.setTheme(null); snd.bossT = 0;
   banner(m.name, true);
   closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train");
 }
@@ -184,7 +184,7 @@ function onSnap(s) {
   if (s.map || s.me[5]) { me.x = s.me[0]; me.y = s.me[1]; me.dir = s.me[6]; }
   me.hp = s.me[2]; me.mp = s.me[3]; me.sit = !!s.me[7];
   const dead = !!s.me[4];
-  if (dead !== me.dead) { me.dead = dead; $("#dead").hidden = !dead; if (dead) { G.auto = false; Sound.play("die"); } }
+  if (dead !== me.dead) { me.dead = dead; $("#dead").hidden = !dead; Sound.play(dead ? "death" : "revive"); if (dead) G.auto = false; }
 
   if (s.who) {
     G.who.clear();
@@ -217,10 +217,12 @@ function onSnap(s) {
   }
   for (const [id, m] of G.gone) if (t - m.goneT > 1500) G.gone.delete(id);
   if (s.chat) for (const c of s.chat) c.sys ? addChat(c.m, "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`) : addChat(c.m, "", c.n);
+  // a field boss called out, or a wave of the rift breaking in
+  if (s.chat) for (const c of s.chat) if (c.sys && /나타났습니다/.test(c.m)) Sound.play(/균열/.test(c.m) ? "elite" : "announce");
   if (s.gain) for (const gn of s.gain) onGain(gn);
   if (s.toast) for (const m of s.toast) toast(m);
   const pk = JSON.stringify(s.party || []);
-  if (pk !== G.partyKey) { G.partyKey = pk; G.party = s.party || []; renderPartyHud(); if (isOpen("party")) renderParty(); }
+  if (pk !== G.partyKey) { if (G.partyKey !== undefined && (s.party || []).length > (G.party || []).length) Sound.play("party"); G.partyKey = pk; G.party = s.party || []; renderPartyHud(); if (isOpen("party")) renderParty(); }
   const gi = s.ginv ? s.ginv.join("|") : null;
   if ((s.pinv || null) !== G.pinv || gi !== G.ginv) { G.pinv = s.pinv || null; G.ginv = gi; renderInvite(); }
   hudBars();
@@ -290,7 +292,7 @@ function onEvent(e, t) {
           if (mine) {
             if (!G.me.hs || t > G.me.hs.at + G.me.hs.dur) G.me.hs = { at: t, dur: heavy ? 110 : 55 };
             S3.shake(heavy ? 5 : 2);
-            if (heavy) { G.punch = 1; Sound.play("crit"); }
+            if (heavy) { G.punch = 1; Sound.play(fin ? "finisher" : "crit"); }
           }
         }
         if (id === G.you) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
@@ -301,14 +303,14 @@ function onEvent(e, t) {
     }
     case "k": {
       const m = G.mobs.get(e[1]) || G.gone.get(e[1]);
-      if (m) { G.gone.delete(e[1]); S3.fx.burst(m.x, m.y, heightOf(m) * 0.5, MOB_COL[m.k] || "#fff", G.defs.mobs[m.k]?.boss ? 70 : 16, 2.2); Sound.play("die"); G.mobs.delete(e[1]); }
+      if (m) { G.gone.delete(e[1]); S3.fx.burst(m.x, m.y, heightOf(m) * 0.5, MOB_COL[m.k] || "#fff", G.defs.mobs[m.k]?.boss ? 70 : 16, 2.2); Sound.play(G.defs.mobs[m.k]?.boss ? "die_boss" : m.el ? "die_big" : "die_small"); G.mobs.delete(e[1]); }
       break;
     }
     case "m": {
       const m = G.mobs.get(e[1]);
       if (m) {
         m.atkT = t;
-        if (e.length > 2) { S3.fx.proj(m.x, m.y, heightOf(m) * 0.75, e[2], e[3] + 8, 0.7, "#ff5a4a", 0.05, 34); Sound.play("shoot"); }
+        if (e.length > 2) { S3.fx.proj(m.x, m.y, heightOf(m) * 0.75, e[2], e[3] + 8, 0.7, "#ff5a4a", 0.05, 34); Sound.play("mob_shot"); }
       }
       break;
     }
@@ -318,7 +320,7 @@ function onEvent(e, t) {
       // a blast on the ground: a monster's (pink, it hurts) or a player's skill landing
       const col = [null, "#ffb04a", "#ff8a3a", "#cfe4ff"][e[4] | 0];
       if (col) { S3.fx.ring(e[1], e[2], e[3], col, 300, true); S3.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); S3.shake(2); Sound.play("boom"); }
-      else { S3.fx.ring(e[1], e[2], e[3], "#ff6ad0", 350, true); S3.fx.burst(e[1], e[2], 0.4, "#ff6ad0", 34, 3); S3.shake(6); Sound.play("boom"); }
+      else { S3.fx.ring(e[1], e[2], e[3], "#ff6ad0", 350, true); S3.fx.burst(e[1], e[2], 0.4, "#ff6ad0", 34, 3); S3.shake(6); Sound.play("slam"); }
       break;
     }
     case "wp": {
@@ -326,8 +328,9 @@ function onEvent(e, t) {
       const p = entityPos(e[1]);
       if (p) { S3.fx.ring(p.x, p.y, e[2] === 2 ? 34 : 24, "#8ad8ff", 520, true); S3.fx.sparkle(p.x, p.y, 0.8, "#bfeaff", e[2] === 2 ? 22 : 14); }
       if (e[1] === G.you) {
-        if (e[2] === 2) { banner("이동의 돌을 깨웠습니다", true); Sound.play("level"); toast("이제 다른 이동의 돌에서 이곳으로 올 수 있습니다"); }
-        else if (e[2] === 1) { fadeIn(); Sound.play("magic"); }
+        if (e[2] === 2) { banner("이동의 돌을 깨웠습니다", true); Sound.play("wp_wake"); toast("이제 다른 이동의 돌에서 이곳으로 올 수 있습니다"); }
+        else if (e[2] === 1) { fadeIn(); Sound.play("warp"); }
+        else Sound.play("warp_out");
       }
       break;
     }
@@ -336,9 +339,9 @@ function onEvent(e, t) {
       const p = entityPos(e[1]);
       if (e[2] > 0) {
         if (p) S3.fx.ring(p.x, p.y, 20, "#ffe08a", e[2], false);
-        if (e[1] === G.you) { G.cast = { start: t, end: t + e[2] }; Sound.play("magic"); }
+        if (e[1] === G.you) { G.cast = { start: t, end: t + e[2] }; Sound.play("recall"); }
       } else {
-        if (e[1] === G.you) { G.cast = null; if (e[2] === 0) Sound.play("fail"); }
+        if (e[1] === G.you) { G.cast = null; Sound.play(e[2] === 0 ? "fail" : "warp"); }
         if (p && e[2] < 0) S3.fx.sparkle(p.x, p.y, 0.8, "#ffe08a", 16);
       }
       break;
@@ -346,13 +349,13 @@ function onEvent(e, t) {
     case "ac": {
       const a = (G.defs.achievements || []).find((x) => x.id === e[2]);
       if (!a) break;
-      if (e[1] === G.you) { banner(`업적 달성 · ${a.name}`, true); Sound.play("level"); addChat(`업적 [${a.name}] 달성! (+${a.pts}점${a.title ? ` · 칭호 「${a.title}」` : ""})`, "sys"); }
+      if (e[1] === G.you) { banner(`업적 달성 · ${a.name}`, true); Sound.play("achieve"); addChat(`업적 [${a.name}] 달성! (+${a.pts}점${a.title ? ` · 칭호 「${a.title}」` : ""})`, "sys"); }
       else { const w = G.who.get(e[1]); if (w) addChat(`${w.name}님이 업적 [${a.name}]을(를) 달성했습니다.`, "sys"); }
       const p = entityPos(e[1]);
       if (p) S3.fx.sparkle(p.x, p.y, 0.9, "#ffd84a", 20);
       break;
     }
-    case "c": S3.fx.lane(e[2], e[3], e[4], e[5], e[6]); Sound.play("warn"); break;      // a charge is coming down this line
+    case "c": S3.fx.lane(e[2], e[3], e[4], e[5], e[6]); Sound.play("charge"); break;      // a charge is coming down this line
     case "v": {
       // a spread of shots, each landing where its mark is
       const m = G.mobs.get(e[1]);
@@ -361,14 +364,14 @@ function onEvent(e, t) {
       for (let i = 3; i + 1 < e.length; i += 2) pts.push([e[i], e[i + 1]]);
       m.atkT = t;
       S3.fx.volley(m.x, m.y, pts, e[2]);
-      Sound.play("shoot");
+      Sound.play("volley");
       break;
     }
-    case "q": S3.fx.pop(e[1], e[2], e[3]); break;
+    case "q": S3.fx.pop(e[1], e[2], e[3]); Sound.play("pop"); break;
     case "g": {
       // spat out, it lands and stays: poison, fire or a slowing mire
       const m = G.mobs.get(e[1]);
-      if (m) { m.atkT = t; S3.fx.spit(m.x, m.y, e[2], e[3], e[4], e[5], e[6], e[7]); Sound.play("magic"); }
+      if (m) { m.atkT = t; S3.fx.spit(m.x, m.y, e[2], e[3], e[4], e[5], e[6], e[7]); Sound.play("spit"); }
       break;
     }
     case "z":
@@ -383,15 +386,15 @@ function onEvent(e, t) {
     }
     case "pd": { const p = entityPos(e[1]); if (p) S3.fx.burst(p.x, p.y, 0.6, "#c8c8d8", 12, 1.4); break; }
     // what someone says floats over their head for a while, longer for longer lines
-    case "s": G.bubbles.set(e[1], { text: e[2], t0: t, until: t + 3500 + Math.min(4000, e[2].length * 90) }); break;
-    case "o": G.bubbles.set(e[1], { emo: e[2] | 0, t0: t, until: t + 2800 }); break;
+    case "s": G.bubbles.set(e[1], { text: e[2], t0: t, until: t + 3500 + Math.min(4000, e[2].length * 90) }); Sound.play("blip"); break;
+    case "o": G.bubbles.set(e[1], { emo: e[2] | 0, t0: t, until: t + 2800 }); Sound.play("emote"); break;
     case "f": {
       // 1: a line goes out · 2: a bite · 0: it comes back in
-      if (e[2] === 1) G.bobs.set(e[1], { id: e[1], eid: e[1], x: e[3], y: e[4], bite: false });
+      if (e[2] === 1) { G.bobs.set(e[1], { id: e[1], eid: e[1], x: e[3], y: e[4], bite: false }); if (e[1] === G.you) Sound.play("cast"); }
       else if (e[2] === 2) {
         const b = G.bobs.get(e[1]);
         if (b) { b.bite = true; S3.fx.ring(b.x, b.y, 12, "#ffffff", 300); }
-        if (e[1] === G.you) { Sound.play("ok"); banner("입질! F", true); }
+        if (e[1] === G.you) { Sound.play("bite"); banner("입질! F", true); }
       } else if (e[2] === 0) {
         G.bobs.delete(e[1]);
         if (e[1] === G.you) Mini.close();                    // it got away, or the catch is in
@@ -407,7 +410,7 @@ function onEvent(e, t) {
     case "e": {
       const p = entityPos(e[1]);
       if (p) { S3.fx.sparkle(p.x, p.y, 0.8, e[2] ? "#ffd84a" : "#8a8a9a", e[2] ? 28 : 10); if (e[2]) S3.fx.ring(p.x, p.y, 20, "#ffd84a", 400); }
-      if (e[1] === G.you) Sound.play(e[2] ? "ok" : "fail");
+      if (e[1] === G.you) Sound.play(e[2] ? "enh_ok" : "enh_fail");
       break;
     }
   }
@@ -420,7 +423,7 @@ function onGain([kind, a, b, q]) {
   else if (kind === "item") {
     const p = addChat(`획득: ${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${b > 1 ? ` ×${b}` : ""}`, "loot");
     if (q) p.style.color = Art.RARITY_COL[q];
-    Sound.play(q >= 2 ? "ok" : "item");
+    Sound.play("loot", q | 0);
     if (q >= 3) banner(q === 4 ? "세트 획득!" : "전설 획득!", true);
   } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y, h + 0.9, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a}이(가) 되었습니다!`, "sys"); }
 }
@@ -438,12 +441,12 @@ function attackFx(kind, src, tx, ty, dir, beat = 0) {
   // the blade's crescent opens toward the target (or the way the attacker faces)
   const ang = Math.hypot(tx - src.x, ty - src.y) > 2 ? Math.atan2(ty - src.y, tx - src.x) : [Math.PI / 2, Math.PI, 0, -Math.PI / 2][dir] || 0;
   switch (kind) {
-    case 0: f.slash(src.x, src.y, ang, "#cfe0ff", fin ? 1.9 : 1.4, beat === 1); if (fin) S3.shake(3); Sound.play("swing"); break;
+    case 0: f.slash(src.x, src.y, ang, "#cfe0ff", fin ? 1.9 : 1.4, beat === 1); if (fin) S3.shake(3); Sound.play("swing_sword", fin); break;
     case 1: f.proj(src.x, src.y, 0.75, tx, ty, 0.5, "#fff0c0", 0.04, 42); f.burst(src.x + (tx - src.x) * 0.15, src.y + (ty - src.y) * 0.15, 0.75, "#ffd84a", 4, 0.8); Sound.play("shoot"); break;
-    case 2: f.proj(src.x, src.y, 1.1, tx, ty, 0.5, "#b08aff", fin ? 0.15 : 0.09, 15, fin ? () => f.ring(tx, ty, 18, "#b08aff", 220, true) : undefined); Sound.play("magic"); break;
-    case 3: f.slash(src.x, src.y, ang, "#e0d0f0", fin ? 1.15 : 0.8, beat === 1); Sound.play("swing"); break;
-    case 4: if (beat === 1) f.slash(src.x, src.y, ang, "#d0f0e8", 1.7, true); else { f.beam(src.x, src.y, src.x + Math.cos(ang) * (fin ? 74 : 54), src.y + Math.sin(ang) * (fin ? 74 : 54), "#eef4ff", fin ? 0.9 : 0.5); if (fin) S3.shake(2); } Sound.play("swing"); break;
-    case 5: f.proj(src.x, src.y, 0.9, tx, ty, 0.5, "#c8a0ff", 0.07, 20, () => { f.ring(tx, ty, fin ? 34 : 26, "#c8a0ff", 220, true); }); Sound.play("magic"); break;
+    case 2: f.proj(src.x, src.y, 1.1, tx, ty, 0.5, "#b08aff", fin ? 0.15 : 0.09, 15, fin ? () => f.ring(tx, ty, 18, "#b08aff", 220, true) : undefined); Sound.play("swing_staff"); break;
+    case 3: f.slash(src.x, src.y, ang, "#e0d0f0", fin ? 1.15 : 0.8, beat === 1); Sound.play("swing_dagger"); break;
+    case 4: if (beat === 1) f.slash(src.x, src.y, ang, "#d0f0e8", 1.7, true); else { f.beam(src.x, src.y, src.x + Math.cos(ang) * (fin ? 74 : 54), src.y + Math.sin(ang) * (fin ? 74 : 54), "#eef4ff", fin ? 0.9 : 0.5); if (fin) S3.shake(2); } Sound.play("swing_spear", fin); break;
+    case 5: f.proj(src.x, src.y, 0.9, tx, ty, 0.5, "#c8a0ff", 0.07, 20, () => { f.ring(tx, ty, fin ? 34 : 26, "#c8a0ff", 220, true); }); Sound.play("swing_book"); break;
     case 23: f.beam(src.x, src.y, tx, ty, "#e0b070", 1.1); f.burst(tx, ty, 0.4, "#e0b070", 20, 2.4); S3.shake(5); Sound.play("boom"); break;
     case 24: f.sparkle(src.x, src.y, 0.8, "#ffe9a0", 12); Sound.play("magic"); break;
     case 10: f.slash(src.x, src.y, ang, "#ffd84a", 1.05); S3.shake(2); Sound.play("crit"); break;
@@ -619,13 +622,23 @@ function setCrt(on) {
 setCrt(localStorage.getItem("lumentale:crt") !== "0");
 $("#btn-crt").addEventListener("click", () => { setCrt(!document.body.classList.contains("crt")); Sound.play("ui"); });
 function toggleSound() {
-  const on = !(Sound.sfxOn && Sound.bgmOn);
-  Sound.sfxOn = Sound.bgmOn = on;
-  if (Sound.music) Sound.music.gain.value = on ? 0.32 : 0;
-  $("#btn-sound").classList.toggle("off", !on);
-  $("#btn-sound").textContent = on ? "켜짐" : "꺼짐";
+  Sound.setMute(!Sound.vol.mute);
+  soundUi();
   Sound.play("ui");
 }
+/** The settings window's sound controls show what Sound holds. */
+function soundUi() {
+  const on = !Sound.vol.mute;
+  $("#btn-sound").classList.toggle("off", !on);
+  $("#btn-sound").textContent = on ? "켜짐" : "꺼짐";
+  $("#vol-bgm").value = String(Math.round(Sound.vol.music * 100));
+  $("#vol-sfx").value = String(Math.round(Sound.vol.sfx * 100));
+}
+Sound.load();
+soundUi();
+$("#vol-bgm").addEventListener("input", (ev) => { Sound.unlock(); Sound.setMusic(ev.target.value / 100); });
+$("#vol-sfx").addEventListener("input", (ev) => { Sound.unlock(); Sound.setSfx(ev.target.value / 100); });
+$("#vol-sfx").addEventListener("change", () => Sound.play("coin"));
 function toggleAuto() {
   G.auto = !G.auto;
   $("#b-auto").classList.toggle("on", G.auto);
@@ -742,6 +755,33 @@ function interact() {
 let lastSend = 0, sent = { x: 0, y: 0, d: 0 };
 const autoSt = { stuck: 0, side: 0, sign: 1, lastSkill: 0, target: null, routed: 0, skip: new Map() };
 
+/** What the ground under a tile sounds like underfoot. */
+const STEP_KIND = { ".": "grass", ",": "grass", '"': "grass", ":": "grass", ";": "grass", p: "dirt", s: "dirt", b: "wood", w: "dirt" };
+const snd = { foot: 0, look: 0, bossT: 0 };
+/** Footsteps, a nearby fire's crackle, an elite turning up, and boss / rift music over the map's own. */
+function soundscape(t) {
+  const me = G.me;
+  const f = Math.floor(me.walk);
+  if (me.moving && f !== snd.foot && f % 2 === 0) {
+    const row = G.map.g[Math.floor(me.y / T)];
+    Sound.step(STEP_KIND[row && row[Math.floor(me.x / T)]] || "stone");
+  }
+  snd.foot = f;
+  if (t - snd.look < 250) return;
+  snd.look = t;
+  let fire = 0;
+  for (const fr of G.fires.values()) fire = Math.max(fire, 1 - dist(me.x, me.y, fr.x, fr.y) / 200);
+  Sound.ambient(fire);
+  // a boss or field boss close by and fighting keeps the boss theme up for a while
+  for (const m of G.mobs.values()) {
+    const d = dist(me.x, me.y, m.x, m.y);
+    if (m.el && !m.heard && d < 260 && !G.defs.mobs[m.k]?.chest) { m.heard = 1; Sound.play(m.el === 2 ? "announce" : "elite"); }
+    if ((G.defs.mobs[m.k]?.boss || m.el === 2) && d < 280 && t - Math.max(m.hurtT || 0, m.atkT || 0) < 8000) snd.bossT = t + 6000;
+  }
+  const e = G.evt, rift = e && (e.phase === "on" || e.phase === "boss") && e.map === G.map.id;
+  Sound.setTheme(t < snd.bossT && !me.dead ? "boss" : rift ? "rift" : null);
+}
+
 function update(dt, t) {
   const me = G.me, s = G.self;
   if (!G.map || !s) return;
@@ -790,6 +830,7 @@ function update(dt, t) {
   const moved = dist(ox, oy, me.x, me.y);
   me.moving = moved > 0.01;
   if (me.moving) me.walk += dt * 6;
+  soundscape(t);
   if (G.auto && (mx || my)) {
     if (moved < speed * dt * 0.3) {
       autoSt.stuck += dt;
@@ -1138,19 +1179,19 @@ function closeWin(id) {
   if (id === "inv") G.sel = -1;
   syncMenu();
 }
-function toggleWin(id) { Sound.play("ui"); isOpen(id) ? closeWin(id) : openWin(id); }
+function toggleWin(id) { Sound.play(isOpen(id) ? "close" : "open"); isOpen(id) ? closeWin(id) : openWin(id); }
 function closeAll() { for (const id of WIN) closeWin(id); }
 /** Esc: the emote picker first, then whichever window is on top. */
 function closeTop() {
   if (!$("#emotes").hidden) { $("#emotes").hidden = true; return; }
   let best = null, bz = -1;
   for (const id of WIN) if (isOpen(id)) { const z = +winEl(id).style.zIndex || 0; if (z > bz) { bz = z; best = id; } }
-  if (best) { closeWin(best); Sound.play("ui"); }
+  if (best) { closeWin(best); Sound.play("close"); }
 }
 for (const id of WIN) {
   const w = winEl(id), head = w.querySelector("header");
   w.addEventListener("pointerdown", () => front(id), true);
-  w.querySelector(".x").addEventListener("click", () => { closeWin(id); Sound.play("ui"); });
+  w.querySelector(".x").addEventListener("click", () => { closeWin(id); Sound.play("close"); });
   // dragged by the title bar, kept on the screen, remembered
   head.addEventListener("pointerdown", (e) => {
     if (e.target.closest(".x") || e.button !== 0) return;
@@ -1612,7 +1653,7 @@ function renderInv(s) {
     if (d.type === "ring" && s.eq.ring1 && s.eq.ring2) {
       for (const k of ["ring1", "ring2"]) add(`${SLOT_NAME[k]}에 장착`, () => { act({ t: "eq", s: G.sel, k }); G.sel = -1; }, off, true);
     } else add("장착", () => { act({ t: "eq", s: G.sel }); G.sel = -1; }, off, true);
-    if (isOpen("smith")) add("분해", () => { act({ t: "salv", s: G.sel }); G.sel = -1; });
+    if (isOpen("smith")) add("분해", () => { act({ t: "salv", s: G.sel }); G.sel = -1; Sound.play("salvage"); });
   }
   if (d.type === "rune") {
     let any = false;
@@ -1753,7 +1794,7 @@ function renderDaily(s) {
     ft.append(el("small", "", rewardText(tk.reward)));
     const b = el("button", tk.done && !tk.claimed ? "btn gold small" : "btn small", tk.claimed ? "받음" : "받기");
     b.disabled = !tk.done || tk.claimed;
-    b.addEventListener("click", () => { act({ t: "daily", i }); Sound.play("ok"); });
+    b.addEventListener("click", () => { act({ t: "daily", i }); Sound.play("daily"); });
     ft.append(b);
     card.append(hd, bar, ft);
     box.append(card);
@@ -1764,7 +1805,7 @@ function renderDaily(s) {
   const ft = el("div", "df"); ft.append(el("small", "", rewardText(d.bonusReward || {})));
   const b = el("button", all && !d.bonus ? "btn gold small" : "btn small", d.bonus ? "받음" : "열기");
   b.disabled = !all || d.bonus;
-  b.addEventListener("click", () => { act({ t: "daily", i: "bonus" }); Sound.play("ok"); });
+  b.addEventListener("click", () => { act({ t: "daily", i: "bonus" }); Sound.play("daily"); });
   ft.append(b);
   chest.append(hd, ft);
   box.append(chest);
@@ -1791,7 +1832,7 @@ function renderAchieve(s) {
     const n = c === "칭호" ? all.filter((a) => a.title && got.has(a.id)).length : all.filter((a) => a.cat === c && got.has(a.id)).length;
     const of = c === "칭호" ? all.filter((a) => a.title).length : all.filter((a) => a.cat === c).length;
     const b = el("button", G.achTab === c ? "on" : "", `${c} ${n}/${of}`);
-    b.addEventListener("click", () => { G.achTab = c; Sound.play("ui"); refreshUi(); });
+    b.addEventListener("click", () => { G.achTab = c; Sound.play("tab"); refreshUi(); });
     tabs.append(b);
   }
   box.append(tabs);
@@ -1861,7 +1902,7 @@ function renderCollect(s) {
   for (const id of regions) {
     const done = (s.col || []).includes(id);
     const b = el("button", (G.colTab === id ? "on" : "") + (done ? " done" : ""), maps[id] ? maps[id].name : id);
-    b.addEventListener("click", () => { G.colTab = id; Sound.play("ui"); refreshUi(); });
+    b.addEventListener("click", () => { G.colTab = id; Sound.play("tab"); refreshUi(); });
     tabs.append(b);
   }
   box.append(tabs);
@@ -1919,9 +1960,9 @@ function eventWidget(t) {
   document.body.classList.toggle("evt-live", live);
   if (G.evtPhase !== e.phase) {
     if (G.evtPhase !== undefined) {
-      if (e.phase === "warn") { banner(`균열 침공 예고 · ${name(e.map)}`, true); Sound.play("warn"); }
-      else if (e.phase === "on") { banner(`균열 침공 시작! · ${name(e.map)}`, true); Sound.play("boom"); }
-      else if (e.phase === "boss") { banner("균열의 우두머리 출현!", true); Sound.play("boom"); }
+      if (e.phase === "warn") { banner(`균열 침공 예고 · ${name(e.map)}`, true); Sound.play("rift_warn"); }
+      else if (e.phase === "on") { banner(`균열 침공 시작! · ${name(e.map)}`, true); Sound.play("rift_start"); }
+      else if (e.phase === "boss") { banner("균열의 우두머리 출현!", true); Sound.play("rift_boss"); }
       else if (e.phase === "done") banner("균열 침공 종료", true);
     }
     G.evtPhase = e.phase;
@@ -2035,7 +2076,7 @@ function renderQuest(s) {
     b.dataset.k = key;
     b.append(el("span", "", label));
     if (sub) b.append(el("small", "", sub));
-    b.addEventListener("click", () => { G.qsel = key; Sound.play("ui"); refreshUi(); });
+    b.addEventListener("click", () => { G.qsel = key; Sound.play("tab"); refreshUi(); });
     list.append(b);
   };
   list.append(el("div", "grp", "주요 의뢰"));
@@ -2064,7 +2105,7 @@ function renderQuest(s) {
     const btns = el("div", "btns");
     const b = el("button", "btn gold", label);
     b.disabled = !ok || !atElder;
-    b.addEventListener("click", () => { fn(); Sound.play("ok"); });
+    b.addEventListener("click", () => { fn(); Sound.play("quest"); });
     btns.append(b);
     if (!atElder) btns.append(el("span", "ds", "관리자 엘더윈 곁에서만 할 수 있습니다"));
     det.append(btns);

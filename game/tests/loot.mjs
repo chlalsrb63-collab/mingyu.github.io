@@ -124,12 +124,12 @@ assert.ok(rt.drops.concat(ch.inv).some((d) => (d.g || d).set) || true);
 L.removePlayer(S, PID);
 for (const cls of Object.keys(D.classes)) {
   const c = L.newChar("스킬" + cls.slice(0, 3), cls, []);
-  c.lvl = 30; c.map = "meadow"; c.x = 20 * 16; c.y = 22 * 16 + 8;
+  c.lvl = 40; c.map = "meadow"; c.x = 20 * 16; c.y = 22 * 16 + 8;
   L.addPlayer(S, PID, c);
   const q = S.players[PID];
   step();
-  assert.equal(D.skills[cls].length, 4);
-  for (let i = 0; i < 4; i++) {
+  assert.equal(D.skills[cls].length, 6, "four skills, a second-tier one and an ultimate");
+  for (let i = 0; i < 6; i++) {
     const m = acorns[i]; m.dead = false; m.hp = 500; m.x = q.x + 20; m.y = q.y + 4;
     q.mp = 999; q.atkAt = 0;
     assert.ok(act({ t: "sk", i }).ok, cls + " skill " + i);

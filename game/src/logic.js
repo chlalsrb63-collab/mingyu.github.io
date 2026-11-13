@@ -59,7 +59,7 @@ const CLASSES = {
   warrior: { name: "전사", arm: "양손검", wk: ["sword"], hp: [130, 24], mp: [30, 4], atk: [10, 2.6], def: [3, 0.9], crit: 8 },
   rogue: { name: "도적", arm: "단검", wk: ["dagger"], hp: [92, 16], mp: [40, 6], atk: [7, 1.9], def: [1, 0.5], crit: 22 },
   lancer: { name: "창술사", arm: "창", wk: ["spear"], hp: [112, 20], mp: [36, 5], atk: [9, 2.3], def: [2, 0.7], crit: 12 },
-  mage: { name: "마도사", arm: "마법지팡이 · 마법책", wk: ["staff", "book"], hp: [76, 13], mp: [60, 10], atk: [9, 2.4], def: [1, 0.4], crit: 10 },
+  mage: { name: "마도사", arm: "마법지팡이 · 마법책", wk: ["staff", "book"], hp: [80, 15], mp: [60, 10], atk: [9, 2.4], def: [1, 0.55], crit: 10 },
 };
 
 const SKILLS = {
@@ -68,24 +68,33 @@ const SKILLS = {
     { id: "spin", name: "회전베기", lv: 7, mp: 12, cd: 8000, mult: 1.6, r: 48, desc: "주변의 모든 적을 벤다 (160%)" },
     { id: "shout", name: "전투함성", lv: 12, mp: 15, cd: 30000, dur: 12000, r: 110, desc: "12초간 자신과 주변 파티원의 공격력 25% 증가" },
     { id: "quake", name: "대지 가르기", lv: 18, mp: 22, cd: 14000, mult: 2.4, len: 120, knock: 22, desc: "땅을 갈라 일직선의 적을 날려 버린다 (240%)" },
+    // the second tier and the ultimate, learned at 25 and 35 (메이플스토리 4차 · 바람의나라 승급 스킬 무렵)
+    { id: "whirl", name: "폭풍 칼날", lv: 25, mp: 28, cd: 15000, mult: 0.75, r: 54, n: 6, every: 400, desc: "칼날 폭풍을 두르고 움직인다 — 곁의 적을 여섯 번 벤다 (6회 × 75%)" },
+    { id: "titan", name: "거신의 일격", lv: 35, mp: 45, cd: 40000, mult: 4.2, r: 84, stun: 1500, knock: 26, ult: 1, desc: "궁극기 · 대지를 내려쳐 넓은 범위를 부수고 기절시킨다 (420%)" },
   ],
   rogue: [
     { id: "vital", name: "급소 찌르기", lv: 3, mp: 6, cd: 3500, mult: 2.0, desc: "반드시 치명타로 들어가는 일격 (200%)" },
     { id: "dash", name: "그림자 도약", lv: 7, mp: 10, cd: 7000, mult: 1.9, len: 120, desc: "적의 등 뒤로 순간이동해 벤다 (190%)" },
     { id: "smoke", name: "연막", lv: 12, mp: 14, cd: 22000, dur: 6000, desc: "적의 시선을 끊고 6초간 이동속도 40% 증가" },
     { id: "fan", name: "맹독 표창", lv: 18, mp: 18, cd: 11000, mult: 1.2, r: 76, n: 5, dot: 0.5, desc: "가까운 적 5명에게 표창을 던져 중독시킨다 (120% + 4초간 독)" },
+    { id: "phantom", name: "환영 난무", lv: 25, mp: 26, cd: 14000, mult: 0.95, r: 96, n: 6, hits: 2, desc: "분신이 곁의 적 6명을 두 번씩 벤다 (2회 × 95%)" },
+    { id: "reaper", name: "암살", lv: 35, mp: 40, cd: 36000, mult: 5.5, len: 150, exec: 0.3, ult: 1, desc: "궁극기 · 적의 등 뒤로 숨어들어 확정 치명타 (550%) — 체력 30% 이하의 적에게는 두 배" },
   ],
   lancer: [
     { id: "pierce", name: "관통 찌르기", lv: 3, mp: 7, cd: 4500, mult: 1.9, len: 96, desc: "일직선의 적을 모두 꿰뚫는다 (190%)" },
     { id: "sweep", name: "초승달 베기", lv: 7, mp: 12, cd: 8000, mult: 1.5, r: 58, knock: 20, desc: "창을 크게 휘둘러 주변의 적을 밀쳐 낸다 (150%)" },
     { id: "vault", name: "도약 강습", lv: 12, mp: 16, cd: 10000, mult: 2.2, len: 130, r: 44, desc: "적에게 뛰어올라 내리꽂는다 (범위 220%, 둔화)" },
     { id: "rain", name: "창 소나기", lv: 18, mp: 24, cd: 16000, mult: 0.9, r: 50, n: 5, every: 500, desc: "하늘에서 창이 다섯 번 쏟아진다 (5회 × 90%)" },
+    { id: "charge", name: "돌격", lv: 25, mp: 26, cd: 13000, mult: 2.3, len: 110, knock: 24, desc: "앞으로 내달리며 길 위의 적을 모두 꿰뚫고 옆으로 밀쳐 낸다 (230%)" },
+    { id: "dragon", name: "천룡 강림", lv: 35, mp: 44, cd: 40000, mult: 2.1, r: 72, n: 3, every: 450, ult: 1, desc: "궁극기 · 하늘에서 용의 창이 세 번 내리꽂힌다 (3회 × 210%, 둔화)" },
   ],
   mage: [
     { id: "fireball", name: "화염구", lv: 3, mp: 10, cd: 4500, mult: 1.9, r: 34, desc: "폭발하는 불덩이 (범위 190%)" },
     { id: "nova", name: "빙결 파동", lv: 7, mp: 16, cd: 9000, mult: 1.4, r: 58, desc: "주변 적에게 피해를 주고 느리게 한다" },
-    { id: "heal", name: "치유의 빛", lv: 12, mp: 22, cd: 12000, r: 90, desc: "자신과 주변 아군의 HP 35% 회복" },
+    { id: "heal", name: "치유의 빛", lv: 12, mp: 22, cd: 12000, r: 90, pct: 0.35, desc: "자신과 주변 아군의 HP 35% 회복" },
     { id: "meteor", name: "유성우", lv: 18, mp: 30, cd: 18000, mult: 1.3, r: 52, n: 4, every: 700, desc: "지정한 곳에 유성이 네 번 떨어진다 (4회 × 130%)" },
+    { id: "chain", name: "연쇄 번개", lv: 25, mp: 26, cd: 9000, mult: 1.7, r: 84, n: 6, desc: "번개가 적 6명을 차례로 튄다 (170%, 튈 때마다 10%씩 약해진다)" },
+    { id: "blizzard", name: "눈보라", lv: 35, mp: 50, cd: 38000, mult: 0.85, r: 76, n: 8, every: 450, ult: 1, desc: "궁극기 · 지정한 곳에 눈보라가 몰아쳐 여덟 번 얼린다 (8회 × 85%, 둔화)" },
   ],
 };
 
@@ -117,8 +126,10 @@ const ITEMS = {
   // red potions heal a fixed amount plus a share of the drinker's health, so they keep their worth as monsters hit harder
   hp_s: { name: "빨간 물약", type: "pot", heal: 60, pct: 0.1, price: 20, desc: "HP를 60 + 최대 HP의 10% 회복한다." },
   hp_m: { name: "큰 빨간 물약", type: "pot", heal: 220, pct: 0.18, price: 70, desc: "HP를 220 + 최대 HP의 18% 회복한다." },
+  hp_l: { name: "농축 빨간 물약", type: "pot", heal: 480, pct: 0.24, price: 150, desc: "HP를 480 + 최대 HP의 24% 회복한다." },
   mp_s: { name: "파란 물약", type: "pot", mana: 40, price: 25, desc: "MP를 40 회복한다." },
   mp_m: { name: "큰 파란 물약", type: "pot", mana: 140, price: 80, desc: "MP를 140 회복한다." },
+  mp_l: { name: "농축 파란 물약", type: "pot", mana: 340, price: 170, desc: "MP를 340 회복한다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
   recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 넥서스 광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
@@ -129,6 +140,15 @@ const ITEMS = {
   food_s: { name: "구운 송사리", type: "food", heal: 80, buff: { xp: 5, atk: 0, min: 10 }, price: 40, desc: "HP 80 회복. 10분간 경험치 +5%." },
   food_m: { name: "송어 소금구이", type: "food", heal: 220, buff: { xp: 10, atk: 0, min: 10 }, price: 150, desc: "HP 220 회복. 10분간 경험치 +10%." },
   food_l: { name: "황금 잉어찜", type: "food", heal: 9999, buff: { xp: 15, atk: 8, min: 15 }, price: 1000, desc: "HP 전부 회복. 15분간 경험치 +15%, 공격력 +8%." },
+  // scrolls of blessing, ten minutes each; reading the same one again only refills its time (메이플 주문서 · 바람의나라 부적)
+  sc_atk: { name: "공격의 주문서", type: "buff", buff: "atk", pct: 10, min: 10, price: 300, desc: "10분간 공격력 +10%. 같은 주문서는 겹치지 않고 남은 시간만 다시 채운다." },
+  sc_def: { name: "방어의 주문서", type: "buff", buff: "def", pct: 12, min: 10, price: 300, desc: "10분간 받는 피해 -12%. 같은 주문서는 겹치지 않고 남은 시간만 다시 채운다." },
+  sc_xp: { name: "경험의 주문서", type: "buff", buff: "xp", pct: 20, min: 10, price: 450, desc: "10분간 경험치 +20%. 같은 주문서는 겹치지 않고 남은 시간만 다시 채운다." },
+  feather: { name: "부활 깃털", type: "revive", price: 250, desc: "쓰러졌을 때 그 자리에서 일어난다 (HP·MP 60%). 경험치를 잃지 않는다." },
+  // pets (메이플스토리 펫): a small companion that follows its owner and fetches their loot
+  pet_chick: { name: "병아리 펫", type: "pet", radius: 56, price: 2500, desc: "사용하면 곁을 따라다니며 내 전리품을 반경 56 안에서 주워 온다. 다시 사용하면 돌려보낸다." },
+  pet_bat: { name: "꼬마 박쥐 펫", type: "pet", radius: 76, price: 9000, desc: "사용하면 곁을 따라다니며 내 전리품을 반경 76 안에서 주워 온다. 다시 사용하면 돌려보낸다." },
+  pet_wisp: { name: "도깨비불 펫", type: "pet", radius: 96, price: 24000, desc: "사용하면 곁을 따라다니며 내 전리품을 반경 96 안에서 주워 온다. 다시 사용하면 돌려보낸다." },
 };
 for (const wk of Object.keys(WEAPON_NAMES)) {
   for (let t = 1; t <= 5; t++) {
@@ -199,8 +219,33 @@ const TRAIN = {
   grd: { name: "수호", gain: 1, stat: "def", desc: "방어력 +1" },
 };
 const trainCost = (n) => 120 + 40 * n;
+/**
+ * Skill growth, as at a 바람의나라 수련장 or with a 메이플 마스터리북: every skill
+ * is raised from 1 to 10 at the trainer for gold and experience. Each level adds
+ * SK_STEP to what it does; at 5 and at 10 its cooldown shortens.
+ */
+const SK_MAX = 10, SK_STEP = 0.08;
+const skillCost = (sk, L) => ({ gold: Math.round((50 + sk.lv * 25) * L * (L + 1) / 2), xp: Math.round(xpNeed(sk.lv) * 0.12 * L), lvl: sk.lv + L });
+const skillCd = (L) => (L >= 10 ? 0.85 : L >= 5 ? 0.92 : 1);
+/** A skill as a character of their skill level casts it. */
+function levelled(ch, i) {
+  const sk = SKILLS[ch.cls][i], L = (ch.skl && ch.skl[i]) || 1;
+  if (L <= 1) return sk;
+  const o = { ...sk };
+  if (sk.mult) o.mult = sk.mult * (1 + SK_STEP * (L - 1));
+  if (sk.pct) o.pct = sk.pct + 0.015 * (L - 1);
+  if (sk.dur) o.dur = sk.dur + 500 * (L - 1);
+  o.cd = Math.round(sk.cd * skillCd(L));
+  return o;
+}
+/** A warehouse (창고) holds this many slots per character, besides gold. */
+const WH = 60;
+/** The loot filter: the least rarity of gear a label is shown for and a pet fetches. */
+const FILTER_Q = [0, 1, 2];
+/** How often a pet runs for something. */
+const PET_MS = 300;
 
-const SHOP = ["hp_s", "hp_m", "mp_s", "mp_m", "recall", "camp", "stone", "W1", "w_book_1", "h_1", "a_1", "g_1", "b_1"];
+const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "W1", "w_book_1", "h_1", "a_1", "g_1", "b_1"];
 const ENH_RATE = [100, 95, 90, 80, 70, 55, 45, 35, 25, 15];
 
 // ── the cosy side: campfires, fishing, guilds
@@ -250,7 +295,7 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 /** The tricks a monster may have besides its plain attack, in the order it tries them. */
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
-const CROWD = 1.4, CROWD_MAX = 228, GEAR_CUT = 0.65, MOB_ATK = 1.27;
+const CROWD = 1.4, CROWD_MAX = 228, GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /** Past this level the extra bite tapers off, a little per level: the deep dungeons were already the sharpest. */
 const ATK_EASE = [16, 0.016];
 /**
@@ -307,15 +352,15 @@ const MOBS = {
   hydrasnake_steel: { name: "강철 비늘 뱀", sp: "hydrasnake", tint: "steel", lv: 28, hp: 1250, atk: 100, def: 28, spd: 36, xp: 680, gold: [58, 104], aggro: 96, range: 70, cd: 1800, volley: true },
   owlstare: { name: "목 꺾인 올빼미", lv: 29, hp: 1150, atk: 106, def: 12, spd: 40, xp: 720, gold: [60, 108], aggro: 96, range: 76, cd: 1500, fly: true, shot: true },
   boss: { name: "균열의 군주 크리온", lv: 32, hp: 24000, atk: 150, def: 32, spd: 34, xp: 10000, gold: [1500, 2500], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1, fan: 150, pool: 30, poolKind: 1 },
-  // 피의 심연
-  twingoat: { name: "쌍두 염소", lv: 32, hp: 1900, atk: 118, def: 24, spd: 44, xp: 900, gold: [70, 124], aggro: 88, range: 20, cd: 1100, charge: 110 },
-  bonehound_ash: { name: "잿빛 사냥개", sp: "bonehound", tint: "ash", lv: 33, hp: 2000, atk: 124, def: 20, spd: 62, xp: 980, gold: [74, 130], aggro: 104, range: 19, cd: 950, leap: 110 },
-  horsehalf: { name: "반쪽 말", lv: 34, hp: 2200, atk: 128, def: 22, spd: 60, xp: 1050, gold: [78, 136], aggro: 100, range: 20, cd: 1000, leap: 110 },
-  batcluster_blood: { name: "피 박쥐 덩어리", sp: "batcluster", tint: "blood", lv: 35, hp: 2100, atk: 132, def: 18, spd: 54, xp: 1120, gold: [80, 140], aggro: 100, range: 18, cd: 1100, fly: true, burst: 36 },
-  lionhand: { name: "손갈기 사자", lv: 35, hp: 2600, atk: 134, def: 26, spd: 50, xp: 1140, gold: [82, 144], aggro: 100, range: 21, cd: 1100, slam: 40, fan: 100 },
-  serpentwing: { name: "날개 구렁이", lv: 36, hp: 2000, atk: 138, def: 18, spd: 44, xp: 1220, gold: [86, 150], aggro: 100, range: 78, cd: 1800, fly: true, volley: true },
-  sowseer: { name: "눈 달린 암퇘지", lv: 37, hp: 3000, atk: 140, def: 30, spd: 30, xp: 1300, gold: [90, 158], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
-  doghead_fire: { name: "불타는 세 머리 들개", sp: "doghead", tint: "fire", lv: 38, hp: 2900, atk: 146, def: 26, spd: 52, xp: 1400, gold: [94, 164], aggro: 100, range: 20, cd: 1000, charge: 116, pool: 24, poolKind: 1 },
+  // 피의 심연 — they bite about a fifth softer than they used to: a plainly geared Lv.32 could not stand at the door (probe: 9–34 deaths in two minutes)
+  twingoat: { name: "쌍두 염소", lv: 32, hp: 1900, atk: 96, def: 24, spd: 44, xp: 900, gold: [70, 124], aggro: 88, range: 20, cd: 1100, charge: 110 },
+  bonehound_ash: { name: "잿빛 사냥개", sp: "bonehound", tint: "ash", lv: 33, hp: 2000, atk: 100, def: 20, spd: 62, xp: 980, gold: [74, 130], aggro: 104, range: 19, cd: 950, leap: 110 },
+  horsehalf: { name: "반쪽 말", lv: 34, hp: 2200, atk: 104, def: 22, spd: 60, xp: 1050, gold: [78, 136], aggro: 100, range: 20, cd: 1000, leap: 110 },
+  batcluster_blood: { name: "피 박쥐 덩어리", sp: "batcluster", tint: "blood", lv: 35, hp: 2100, atk: 106, def: 18, spd: 54, xp: 1120, gold: [80, 140], aggro: 100, range: 18, cd: 1100, fly: true, burst: 36 },
+  lionhand: { name: "손갈기 사자", lv: 35, hp: 2600, atk: 108, def: 26, spd: 50, xp: 1140, gold: [82, 144], aggro: 100, range: 21, cd: 1100, slam: 40, fan: 100 },
+  serpentwing: { name: "날개 구렁이", lv: 36, hp: 2000, atk: 110, def: 18, spd: 44, xp: 1220, gold: [86, 150], aggro: 100, range: 78, cd: 1800, fly: true, volley: true },
+  sowseer: { name: "눈 달린 암퇘지", lv: 37, hp: 3000, atk: 112, def: 30, spd: 30, xp: 1300, gold: [90, 158], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
+  doghead_fire: { name: "불타는 세 머리 들개", sp: "doghead", tint: "fire", lv: 38, hp: 2900, atk: 116, def: 26, spd: 52, xp: 1400, gold: [94, 164], aggro: 100, range: 20, cd: 1000, charge: 116, pool: 24, poolKind: 1 },
   abyssboss: { name: "심연의 어미", lv: 40, hp: 48000, atk: 200, def: 40, spd: 34, xp: 30000, gold: [4000, 6000], aggro: 140, range: 30, cd: 1400, resp: 240000, boss: true, gear: 1, fan: 160, pool: 34, poolKind: 2, charge: 150 },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
@@ -373,7 +418,24 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 const isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 const num = (v) => typeof v === "number" && Number.isFinite(v);
-const xpNeed = (lv) => Math.round(34 * Math.pow(lv, 1.85) + 20);
+/**
+ * Experience a level asks for: the old curve times a factor that grows with level,
+ * so every band is lived in for a while — about a quarter hour to Lv.7 and ten or
+ * eleven hours of steady hunting to Lv.40 (measured with a headless bot, see README).
+ */
+const XP_STEPS = [[1, 6], [7, 6], [10, 8], [15, 11], [19, 17], [24, 34], [30, 62], [35, 72], [40, 82], [50, 95]];
+function XP_K(lv) {
+  for (let i = 1; i < XP_STEPS.length; i++) {
+    const [l1, k1] = XP_STEPS[i], [l0, k0] = XP_STEPS[i - 1];
+    if (lv <= l1) return k0 + ((k1 - k0) * (lv - l0)) / (l1 - l0);
+  }
+  return XP_STEPS[XP_STEPS.length - 1][1];
+}
+/** Deeper monsters drop less gold for their level: the bands last longer, and the purse should not run away. */
+const goldK = (lv) => 1 - 0.7 * clamp((lv - 8) / 28, 0, 1);
+const xpNeed = (lv) => Math.round((34 * Math.pow(lv, 1.85) + 20) * XP_K(lv));
+// the errands pay in step with the levels they are given at
+for (const q of QUESTS) q.xp = Math.round(q.xp * XP_K(MOBS[q.mob].lv));
 
 function dirOf(dx, dy) {
   // 0 down · 1 left · 2 right · 3 up
@@ -1200,6 +1262,8 @@ function buildTown() {
     { id: "smith", name: "대장장이 볼칸", role: "smith", x: 30, y: 8, look: [0, 1, 0, "#6a4a38"] },
     { id: "elder", name: "관리자 엘더윈", role: "elder", x: 19, y: 11, look: [5, 0, 0, "#3f5a9a"] },
     { id: "train", name: "수련관 카이", role: "train", x: 23, y: 12, look: [1, 2, 0, "#7a2e2e"] },
+    { id: "bank", name: "창고지기 도담", role: "bank", x: 7, y: 12, look: [2, 0, 0, "#6a5a3a"],
+      say: "맡길 물건이 있나? 캐릭터마다 60칸, 골드도 따로 맡아 두지. 같은 물건은 한 칸에 모아 준다네." },
     { id: "guard", name: "경비병 토비", role: "talk", x: 35, y: 13, look: [1, 0, 0, "#5e6470"],
       say: "동쪽 문은 바람초원, 서쪽 문은 네온 시티로 이어져. 길은 갈라지고 막히기도 하니 샛길을 살펴봐 — 막다른 곳엔 보물 상자나 모닥불, 그리고 가끔은 땅속으로 내려가는 계단이 있거든. 문 이름 옆의 레벨을 보고, 감당할 만한 곳부터 가!" },
   );
@@ -1491,7 +1555,7 @@ export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
   const lk = Array.isArray(look) ? look : [];
   return {
-    v: 4, name, cls: c,
+    v: 5, name, cls: c,
     // ear, eyes, nose, colour, blush, markings, tunic
     look: LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)),
     lvl: 1, xp: 0, gold: 50,
@@ -1501,6 +1565,7 @@ export function newChar(name, cls, look) {
     q: { i: 0, n: 0, st: 0 },
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
     wp: ["town"], seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
+    skl: [1, 1, 1, 1, 1, 1], wh: { items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
   };
 }
@@ -1565,7 +1630,17 @@ function migrate(ch) {
     : null;
   // a character from before the first-steps chain who has clearly found their feet skips it
   ch.tut = isObj(ch.tut) ? { i: clamp(ch.tut.i | 0, 0, TUT.length), n: Math.max(0, ch.tut.n | 0) } : { i: ch.lvl >= 5 || (ch.kills | 0) >= 20 ? TUT.length : 0, n: 0 };
-  ch.v = 4;
+  // skill levels, the warehouse, a pet, scrolls being read, settings
+  const skl = Array.isArray(ch.skl) ? ch.skl : [];
+  ch.skl = SKILLS[ch.cls].map((_, i) => clamp(skl[i] | 0 || 1, 1, SK_MAX));
+  const wh = isObj(ch.wh) ? ch.wh : {};
+  ch.wh = { items: (Array.isArray(wh.items) ? wh.items : []).map(fix).filter(Boolean).slice(0, WH), gold: Math.max(0, Math.floor(num(wh.gold) ? wh.gold : 0)) };
+  ch.pet = typeof ch.pet === "string" && ITEMS[ch.pet] && ITEMS[ch.pet].type === "pet" && countItem(ch, ch.pet) > 0 ? ch.pet : "";
+  const scr = isObj(ch.scr) ? ch.scr : {};
+  ch.scr = { atk: num(scr.atk) ? scr.atk : 0, def: num(scr.def) ? scr.def : 0, xp: num(scr.xp) ? scr.xp : 0 };
+  const opt = isObj(ch.opt) ? ch.opt : {};
+  ch.opt = { filter: clamp(opt.filter | 0, 0, 2), ahp: clamp(opt.ahp | 0, 0, 90), amp: clamp(opt.amp | 0, 0, 90) };
+  ch.v = 5;
   return ch;
 }
 
@@ -1638,10 +1713,12 @@ function stats(p) {
   }
   const now = p.S.now;
   const food = p.food && p.food.until > now ? p.food : null;
+  const scr = p.ch.scr || {};
   return {
     mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf,
-    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
-    atk: Math.round(c.atk0 * (p.atkBuff > now ? 1.25 : 1) * (food ? 1 + food.atk / 100 : 1)),
+    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
+    atk: Math.round(c.atk0 * (p.atkBuff > now ? 1.25 : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
+    guard: scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1,
     spd: c.spd0 * (p.spdBuff > now ? 1.4 : 1) * (p.slowed > now ? SLOW : 1), spd0: c.spd0,
   };
 }
@@ -1771,7 +1848,7 @@ export function addPlayer(S, pid, ch) {
   if (!MAPS[ch.map]) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, hp: 1, mp: 0, dead: false, stc: null,
-    cds: [0, 0, 0, 0], atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
+    cds: [0, 0, 0, 0, 0, 0], atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, spdBuff: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
@@ -1889,6 +1966,60 @@ function addItem(ch, id, n) {
   }
   return true;
 }
+/** Room in the warehouse for `n` of `id`. */
+function whRoom(wh, id, n) {
+  if (isGear(id)) return wh.items.length + 1 <= WH;
+  let room = (WH - wh.items.length) * STACK;
+  for (const s of wh.items) if (s.id === id) room += STACK - s.n;
+  return room >= n;
+}
+/** Stack `n` of `id` into a list of slots, filling what is there first. */
+function stackInto(list, id, n) {
+  for (const s of list) {
+    if (s.id !== id || n <= 0) continue;
+    const put = Math.min(n, STACK - s.n);
+    s.n += put; n -= put;
+  }
+  while (n > 0) { const put = Math.min(n, STACK); list.push({ id, n: put }); n -= put; }
+}
+/** A pet whose item is no longer in the bag goes home. */
+function petCheck(S, p) {
+  if (p.ch.pet && countItem(p.ch, p.ch.pet) < 1) { p.ch.pet = ""; S.maps[p.map].who = true; }
+}
+/** Whether a drop passes its owner's loot filter (gold and anything that is not gear always does). */
+function wanted(ch, dr) {
+  return !dr.g || dr.q >= FILTER_Q[(ch.opt && ch.opt.filter) | 0];
+}
+/** Whether `p` has room for a drop. */
+function fits(ch, dr) {
+  if (dr.it === "gold") return true;
+  return dr.g ? ch.inv.length < INV : canAdd(ch, dr.it, dr.n);
+}
+function bagFull(S, p) {
+  if (S.now > p.fullAt) { p.fullAt = S.now + 3000; toast(p, "가방이 가득 찼습니다."); }
+}
+/** Put a drop into `p`'s bag (or purse). False, with a reminder, if there is no room. */
+function pickUp(S, p, dr) {
+  if (!fits(p.ch, dr)) { bagFull(S, p); return false; }
+  if (dr.it === "gold") {
+    p.ch.gold += dr.n;
+    p.gain.push(["gold", dr.n]);
+  } else if (dr.g) {
+    p.ch.inv.push(dr.g);
+    p.gain.push(["item", dr.it, 1, dr.q]);
+    if (dr.q === 3) p.ch.st.leg++;
+    if (dr.q === 4) p.ch.st.set++;
+    if (dr.q >= 3) checkAch(S, p);
+    if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]을(를) 획득했습니다!`);
+  } else {
+    addItem(p.ch, dr.it, dr.n);
+    p.gain.push(["item", dr.it, dr.n, 0]);
+  }
+  p.dirty = true;
+  return true;
+}
+/** What dying costs: a share of the level's experience (a revive feather spares it). */
+const deathLoss = (ch) => Math.floor(Math.min(ch.xp, xpNeed(ch.lvl)) * 0.03);
 function takeItem(ch, id, n) {
   for (let i = ch.inv.length - 1; i >= 0 && n > 0; i--) {
     const s = ch.inv[i];
@@ -1902,10 +2033,12 @@ function gearName(g) {
   const word = g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : "";
   return (g.enh > 0 ? `+${g.enh} ` : "") + word + ITEMS[g.id].name;
 }
+/** Plain gear: no rarity, no enhancement, nothing socketed — what "sell all" sells. */
+const junk = (s) => isGear(s.id) && !(s.q | 0) && !(s.enh | 0) && !(s.ru || []).some(Boolean);
 function sellPrice(s) {
   const it = ITEMS[s.id];
   if (!isGear(s.id)) return Math.floor(it.price * 0.4);
-  return Math.floor(it.price * 0.25 * (1 + 0.8 * (s.q | 0)) * (1 + 0.3 * (s.enh | 0)));
+  return Math.floor(it.price * 0.05 * (1 + 0.8 * (s.q | 0)) * (1 + 0.3 * (s.enh | 0)));
 }
 /** The set a base item can belong to, if any. */
 function setFor(it) {
@@ -1959,11 +2092,11 @@ function lootFor(S, rt, mob, p) {
   const out = [];
   const share = allies(S, p).length;
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * (1 + st.gold / 100);
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * (1 + st.gold / 100);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
   const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
   for (let i = 0; i < tries; i++) {
-    if (rnd(S) >= (rank === 2 || d.chest ? 1 : rank === 1 ? 0.6 : d.gear) * (1 + st.mf / 100)) continue;
+    if (rnd(S) >= (rank === 2 || d.chest ? 1 : rank === 1 ? 0.35 : d.gear) * (1 + st.mf / 100)) continue;
     let tier = tierFor(d.lv);
     if (rank && rnd(S) < 0.25) tier = Math.min(5, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
@@ -1980,8 +2113,8 @@ function lootFor(S, rt, mob, p) {
   }
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
-  if (rnd(S) < 0.1) out.push({ it: d.lv < 8 ? "hp_s" : "hp_m", n: 1 });
-  if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : "mp_m", n: 1 });
+  if (rnd(S) < 0.1) out.push({ it: d.lv < 8 ? "hp_s" : d.lv < 26 ? "hp_m" : "hp_l", n: 1 });
+  if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   for (const o of out) {
     rt.drops.push({
       id: S.nextId++, it: o.g ? o.g.id : o.it, g: o.g || null, n: o.n || 1, q: o.g ? o.g.q : 0,
@@ -2134,9 +2267,9 @@ function killMob(S, rt, mob) {
   }
 }
 function hurtPlayer(S, rt, p, raw, mob) {
-  if (p.dead) return;
+  if (p.dead || S.now < (p.ghost || 0)) return;
   const st = stats(p);
-  const dmg = Math.max(1, Math.round(raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6));
+  const dmg = Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard));
   p.hp -= dmg;
   p.hitAt = S.now;
   rouse(S, p);
@@ -2146,7 +2279,7 @@ function hurtPlayer(S, rt, p, raw, mob) {
 }
 /** Damage that no armour turns: fire, poison. */
 function wound(S, rt, p, dmg) {
-  if (p.dead) return;
+  if (p.dead || S.now < (p.ghost || 0)) return;
   cancelRecall(S, p, "귀환이 취소되었습니다.");
   p.hp -= dmg;
   p.hitAt = S.now;
@@ -2249,7 +2382,7 @@ function basicAttack(S, p) {
 }
 
 function castSkill(S, p, i) {
-  const sk = SKILLS[p.ch.cls][i];
+  const sk = levelled(p.ch, i);
   const st = stats(p);
   const c = st.arm;
   const rt = S.maps[p.map];
@@ -2377,11 +2510,91 @@ function castSkill(S, p, i) {
         const o = S.players[pid];
         if (o.map !== p.map || o.dead || dist(p.x, p.y, o.x, o.y) > sk.r) continue;
         const so = stats(o);
-        const amt = Math.round(so.mhp * 0.35);
+        const amt = Math.round(so.mhp * sk.pct);
         o.hp = Math.min(so.mhp, o.hp + amt);
         rt.ev.push(["h", o.eid, -amt, 0, 1]);
       }
       break;
+    // ── the second tier and the ultimates
+    case "whirl":
+      // a storm of blades that goes where its wielder goes
+      ev(25, p.x, p.y - 6);
+      rt.zones.push({ x: p.x, y: p.y, r: sk.r, next: S.now + 150, every: sk.every, left: sk.n, mult: sk.mult, pid: p.pid, kind: 4, follow: 1 });
+      break;
+    case "titan":
+      ev(26, p.x, p.y - 6);
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        const [ux, uy] = aimVec(p, o);
+        knock(m, o, ux, uy, sk.knock);
+        if (!MOBS[o.k].boss) o.stun = Math.max(o.stun, S.now + sk.stun * (o.el ? 0.5 : 1));
+        hurtMob(S, rt, o, p, sk.mult);
+      }
+      break;
+    case "phantom": {
+      const list = mobsWithin(rt, p.x, p.y, sk.r)
+        .sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y)).slice(0, sk.n);
+      if (list.length) face(p, list[0]);
+      ev(27, p.x, p.y - 6);
+      for (const mob of list) {
+        rt.ev.push(["z", Math.round(p.x), Math.round(p.y - 8), Math.round(mob.x), Math.round(mob.y - 6), 3]);
+        for (let k = 0; k < sk.hits; k++) hurtMob(S, rt, mob, p, sk.mult);
+      }
+      break;
+    }
+    case "reaper": {
+      const mob = aimAt(sk.len);
+      if (!mob) { ev(19, p.x, p.y - 6); break; }
+      const low = mob.hp <= mobMax(mob) * sk.exec;
+      jumpTo(mob, true);
+      ev(28, mob.x, mob.y - 6);
+      hurtMob(S, rt, mob, p, sk.mult * (low ? 2 : 1), true);
+      break;
+    }
+    case "charge": {
+      // run on down the line as far as the ground allows, shoving everything on it aside
+      const [ux, uy] = aimVec(p, aimAt(sk.len));
+      const ox = p.x, oy = p.y;
+      let far = 0;
+      for (let k = 6; k <= sk.len; k += 6) { if (!canStand(m, ox + ux * k, oy + uy * k)) break; far = k; }
+      p.x = ox + ux * far; p.y = oy + uy * far;
+      p.fix = true;
+      p.mvAt = S.now;
+      rt.ev.push(["d", p.eid, Math.round(ox), Math.round(oy - 8), Math.round(p.x), Math.round(p.y - 8)]);
+      ev(29, ox, oy - 6);
+      for (const o of mobsInLine(rt, ox, oy, ux, uy, far + 26, 17)) {
+        const side = (o.x - ox) * -uy + (o.y - oy) * ux >= 0 ? 1 : -1;
+        knock(m, o, -uy * side, ux * side, sk.knock);
+        hurtMob(S, rt, o, p, sk.mult);
+      }
+      break;
+    }
+    case "dragon": case "blizzard": {
+      const mob = aimAt(120);
+      const x = mob ? mob.x : p.x + DX[p.dir] * 60, y = mob ? mob.y : p.y + DY[p.dir] * 60;
+      const first = sk.id === "dragon" ? 500 : 300;
+      ev(sk.id === "dragon" ? 30 : 32, x, y - 6);
+      rt.zones.push({ x, y, r: sk.r, next: S.now + first, every: sk.every, left: sk.n, mult: sk.mult, pid: p.pid, kind: sk.id === "dragon" ? 6 : 5, slow: 1 });
+      rt.ev.push(["t", Math.round(x), Math.round(y), sk.r, first + sk.every * (sk.n - 1), 1]);
+      break;
+    }
+    case "chain": {
+      // the bolt leaps from each struck monster to the nearest one not yet struck
+      let mob = aimAt(c.range + 20);
+      ev(31, mob ? mob.x : p.x + DX[p.dir] * 40, (mob ? mob.y : p.y + DY[p.dir] * 40) - 6);
+      let fx = p.x, fy = p.y - 8, mult = sk.mult;
+      const hit = new Set();
+      for (let k = 0; k < sk.n && mob; k++) {
+        rt.ev.push(["z", Math.round(fx), Math.round(fy), Math.round(mob.x), Math.round(mob.y - 6), 2]);
+        hit.add(mob);
+        hurtMob(S, rt, mob, p, mult);
+        mult *= 0.9;
+        fx = mob.x; fy = mob.y - 6;
+        const from = mob;
+        mob = mobsWithin(rt, from.x, from.y, sk.r).filter((o) => !hit.has(o))
+          .sort((a, b) => dist(from.x, from.y, a.x, a.y) - dist(from.x, from.y, b.x, b.y))[0] || null;
+      }
+      break;
+    }
   }
 }
 
@@ -2683,7 +2896,7 @@ const TUT = [
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
   { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
   { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
-  { id: "skill", title: "스킬 써 보기", hint: "레벨 3이 되면 1번 키로 첫 스킬을 쓸 수 있습니다.", reward: { gold: 100, items: [["camp", 1], ["recall", 2]] } },
+  { id: "skill", title: "스킬 써 보기", hint: "레벨 3이 되면 1번 키로 첫 스킬을 쓸 수 있습니다.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
 ];
 function tutStep(S, p, id) {
   const ch = p.ch, step = TUT[ch.tut.i];
@@ -2736,7 +2949,17 @@ export function validateAction(S, pid, a) {
   const ch = p.ch;
   const now = S.now;
   switch (a.t) {
-    case "respawn": return p.dead ? OK : bad("살아 있습니다");
+    case "respawn":
+      if (!p.dead) return bad("살아 있습니다");
+      if (a.here && countItem(ch, "feather") < 1) return bad("부활 깃털이 없습니다");
+      return OK;
+    case "opt": {
+      // settings kept with the character: loot filter, auto-potion thresholds (percent)
+      const okPct = (v) => v === undefined || (Number.isInteger(v) && v >= 0 && v <= 90);
+      if (a.filter !== undefined && !(Number.isInteger(a.filter) && a.filter >= 0 && a.filter < FILTER_Q.length)) return bad("잘못된 필터");
+      if (!okPct(a.ahp) || !okPct(a.amp)) return bad("잘못된 설정값");
+      return OK;
+    }
     case "chat":
       if (typeof a.m !== "string" || !a.m.trim()) return bad("빈 메시지");
       if (now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
@@ -2829,7 +3052,7 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "sk": {
-      const sk = SKILLS[ch.cls][a.i];
+      const sk = Number.isInteger(a.i) ? SKILLS[ch.cls][a.i] : null;
       if (!sk) return bad("없는 스킬");
       if (ch.lvl < sk.lv) return bad(`레벨 ${sk.lv}에 배울 수 있습니다`);
       if (now < p.cds[a.i]) return bad("재사용 대기 중입니다");
@@ -2838,8 +3061,9 @@ export function validateAction(S, pid, a) {
     }
     case "use": {
       const it = ITEMS[a.id];
-      if (!it || !["pot", "food", "camp", "scroll"].includes(it.type)) return bad("사용할 수 없는 아이템");
+      if (!it || !["pot", "food", "camp", "scroll", "buff", "pet"].includes(it.type)) return bad("사용할 수 없는 아이템");
       if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
+      if (it.type === "buff" || it.type === "pet") return OK;
       if (it.type === "scroll") {
         if (p.map === START.map) return bad("이미 마을에 있습니다");
         if (p.recall) return bad("이미 귀환을 준비하고 있습니다");
@@ -2884,6 +3108,40 @@ export function validateAction(S, pid, a) {
       if (ch.xp < trainTotal(ch.tr[a.k], n)) return bad("경험치가 부족합니다");
       return OK;
     }
+    case "sklv": {
+      const sk = Number.isInteger(a.i) ? SKILLS[ch.cls][a.i] : null;
+      if (!sk) return bad("없는 스킬");
+      if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
+      if (ch.lvl < sk.lv) return bad(`레벨 ${sk.lv}에 배울 수 있습니다`);
+      const L = ch.skl[a.i];
+      if (L >= SK_MAX) return bad("이미 최고 레벨입니다");
+      const c = skillCost(sk, L);
+      if (ch.lvl < c.lvl) return bad(`캐릭터 레벨 ${c.lvl}부터 올릴 수 있습니다`);
+      if (ch.gold < c.gold) return bad("골드가 부족합니다");
+      if (ch.xp < c.xp) return bad("경험치가 부족합니다");
+      return OK;
+    }
+    case "wh": {
+      if (!npcNear(p, "bank")) return bad("창고지기가 너무 멉니다");
+      const wh = ch.wh;
+      if (a.a === "gold") {
+        if (!Number.isSafeInteger(a.n) || a.n === 0) return bad("잘못된 금액");
+        if (a.n > 0 && ch.gold < a.n) return bad("골드가 부족합니다");
+        if (a.n < 0 && wh.gold < -a.n) return bad("창고에 골드가 부족합니다");
+        return OK;
+      }
+      const from = a.a === "put" ? ch.inv : a.a === "take" ? wh.items : null;
+      if (!from) return bad("잘못된 요청입니다");
+      const sl = Number.isInteger(a.s) ? from[a.s] : null;
+      if (!sl) return bad("아이템이 없습니다");
+      const n = isGear(sl.id) ? 1 : a.n | 0;
+      if (n < 1 || n > (sl.n || 1)) return bad("잘못된 수량");
+      if (a.a === "put") return whRoom(wh, sl.id, n) ? OK : bad("창고가 가득 찼습니다");
+      return (isGear(sl.id) ? ch.inv.length < INV : canAdd(ch, sl.id, n)) ? OK : bad("가방이 가득 찼습니다");
+    }
+    case "sellall":
+      if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
+      return ch.inv.some(junk) ? OK : bad("팔 일반 장비가 없습니다");
     case "buy": {
       if (!SHOP.includes(a.id)) return bad("팔지 않는 물건입니다");
       const n = a.n | 0;
@@ -3000,7 +3258,25 @@ export function applyAction(S, pid, a) {
         p.dirty = true;
         break;
       }
+      if (it.type === "pet") {
+        // the same pet again sends it home; another takes its place
+        ch.pet = ch.pet === a.id ? "" : a.id;
+        S.maps[p.map].who = true;
+        if (ch.pet) S.maps[p.map].ev.push(["u", p.eid, 2]);
+        toast(p, ch.pet ? `${it.name}이(가) 곁을 따라다닙니다. 내 전리품을 주워 옵니다.` : `${it.name}을(를) 돌려보냈습니다.`);
+        p.dirty = true;
+        break;
+      }
       takeItem(ch, a.id, 1);
+      if (it.type === "buff") {
+        // the same scroll never stacks with itself: reading it again refills its time
+        const had = ch.scr[it.buff] > now;
+        ch.scr[it.buff] = now + it.min * 60000;
+        S.maps[p.map].ev.push(["u", p.eid, 2]);
+        toast(p, had ? `${it.name} — 남은 시간을 다시 채웠습니다 (10분).` : `${it.name}을(를) 읽었습니다. ${it.desc.split(".")[0]}.`);
+        p.dirty = true;
+        break;
+      }
       if (it.type === "camp") {
         S.maps[p.map].fires.push({ id: S.nextId++, x: Math.round(p.x), y: Math.round(p.y) - 14, until: now + FIRE_MS });
         S.maps[p.map].ev.push(["u", p.eid, 2]);
@@ -3064,6 +3340,65 @@ export function applyAction(S, pid, a) {
       toast(p, `${TRAIN[a.k].name} +${n} (누적 ${ch.tr[a.k]})`);
       break;
     }
+    case "sklv": {
+      const sk = SKILLS[ch.cls][a.i], c = skillCost(sk, ch.skl[a.i]);
+      ch.gold -= c.gold;
+      ch.xp -= c.xp;
+      const L = ++ch.skl[a.i];
+      p.dirty = true;
+      S.maps[p.map].ev.push(["u", p.eid, 2]);
+      toast(p, `[${sk.name}] 스킬 레벨 ${L}!${L === 5 || L === 10 ? " 재사용 대기시간이 줄었습니다." : ""}`);
+      break;
+    }
+    case "wh": {
+      const wh = ch.wh;
+      if (a.a === "gold") {
+        ch.gold -= a.n; wh.gold += a.n;
+        toast(p, a.n > 0 ? `${a.n}G를 맡겼습니다.` : `${-a.n}G를 찾았습니다.`);
+      } else if (a.a === "put") {
+        const sl = ch.inv[a.s];
+        if (isGear(sl.id)) { ch.inv.splice(a.s, 1); wh.items.push(sl); }
+        else {
+          const n = a.n | 0;
+          stackInto(wh.items, sl.id, n);
+          sl.n -= n;
+          if (sl.n <= 0) ch.inv.splice(a.s, 1);
+        }
+        petCheck(S, p);
+      } else {
+        const sl = wh.items[a.s];
+        if (isGear(sl.id)) { wh.items.splice(a.s, 1); ch.inv.push(sl); }
+        else {
+          const n = a.n | 0;
+          addItem(ch, sl.id, n);
+          sl.n -= n;
+          if (sl.n <= 0) wh.items.splice(a.s, 1);
+        }
+      }
+      p.dirty = true;
+      break;
+    }
+    case "sellall": {
+      // every plain, unenhanced, unsocketed piece in the bag goes in one go
+      let n = 0, gold = 0;
+      for (let i = ch.inv.length - 1; i >= 0; i--) {
+        if (!junk(ch.inv[i])) continue;
+        gold += sellPrice(ch.inv[i]);
+        ch.inv.splice(i, 1);
+        n++;
+      }
+      ch.gold += gold;
+      p.gain.push(["gold", gold]);
+      toast(p, `일반 장비 ${n}개를 ${gold}G에 팔았습니다.`);
+      p.dirty = true;
+      break;
+    }
+    case "opt":
+      if (a.filter !== undefined) ch.opt.filter = a.filter;
+      if (a.ahp !== undefined) ch.opt.ahp = a.ahp;
+      if (a.amp !== undefined) ch.opt.amp = a.amp;
+      p.dirty = true;
+      break;
     case "buy": {
       const id = resolveItem(a.id, ch.cls);
       const n = a.n | 0;
@@ -3082,6 +3417,7 @@ export function applyAction(S, pid, a) {
       if (isGear(s.id) || s.n <= n) ch.inv.splice(a.s, 1);
       else s.n -= n;
       p.gain.push(["gold", each * n]);
+      petCheck(S, p);
       p.dirty = true;
       break;
     }
@@ -3213,7 +3549,20 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "respawn": {
-      const lost = Math.floor(Math.min(ch.xp, xpNeed(ch.lvl)) * 0.03);
+      if (a.here) {
+        // a revive feather: up again where you fell, a little shaken, nothing lost (메이플 부활 아이템)
+        takeItem(ch, "feather", 1);
+        p.dead = false;
+        const st = stats(p);
+        p.hp = Math.round(st.mhp * 0.6); p.mp = Math.max(p.mp, Math.round(st.mmp * 0.6));
+        p.ghost = now + 2500;
+        p.hitAt = now;
+        S.maps[p.map].ev.push(["u", p.eid, 2]);
+        p.dirty = true;
+        toast(p, "부활 깃털로 그 자리에서 일어났습니다. (경험치 손실 없음)");
+        break;
+      }
+      const lost = deathLoss(ch);
       ch.xp -= lost;
       p.dead = false;
       changeMap(S, p, START.map, START.x, START.y);
@@ -3585,10 +3934,11 @@ export function tick(S, now) {
       const z = rt.zones[i];
       if (now < z.next) continue;
       const p = S.players[z.pid];
-      if (!p || p.map !== id) { rt.zones.splice(i, 1); continue; }
+      if (!p || p.map !== id || (z.follow && p.dead)) { rt.zones.splice(i, 1); continue; }
+      if (z.follow) { z.x = p.x; z.y = p.y; }
       z.next = now + z.every;
       rt.ev.push(["b", Math.round(z.x), Math.round(z.y), z.r, z.kind]);
-      for (const o of mobsWithin(rt, z.x, z.y, z.r)) hurtMob(S, rt, o, p, z.mult);
+      for (const o of mobsWithin(rt, z.x, z.y, z.r)) { if (z.slow) o.slow = now + 2500; hurtMob(S, rt, o, p, z.mult); }
       if (--z.left <= 0) rt.zones.splice(i, 1);
     }
     for (let i = rt.tele.length - 1; i >= 0; i--) {
@@ -3626,27 +3976,28 @@ export function tick(S, now) {
         if (p.map !== id || p.dead) continue;
         if (dr.own !== pid && now < dr.freeAt) continue;
         if (dist(p.x, p.y, dr.x, dr.y) > 15) continue;
-        if (dr.it === "gold") {
-          p.ch.gold += dr.n;
-          p.gain.push(["gold", dr.n]);
-        } else if (dr.g) {
-          if (p.ch.inv.length >= INV) { if (now > p.fullAt) { p.fullAt = now + 3000; toast(p, "가방이 가득 찼습니다."); } continue; }
-          p.ch.inv.push(dr.g);
-          p.gain.push(["item", dr.it, 1, dr.q]);
-          if (dr.q === 3) p.ch.st.leg++;
-          if (dr.q === 4) p.ch.st.set++;
-          if (dr.q >= 3) checkAch(S, p);
-          if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]을(를) 획득했습니다!`);
-        } else if (addItem(p.ch, dr.it, dr.n)) {
-          p.gain.push(["item", dr.it, dr.n, 0]);
-        } else {
-          if (now > p.fullAt) { p.fullAt = now + 3000; toast(p, "가방이 가득 찼습니다."); }
-          continue;
-        }
-        p.dirty = true;
+        if (!pickUp(S, p, dr)) continue;
         rt.drops.splice(i, 1);
         break;
       }
+    }
+    // a pet runs for its owner's own drops within its reach, one at a time, minding the
+    // loot filter and the room in the bag (메이플 펫의 줍기)
+    if (rt.drops.length) for (const pid of pids) {
+      const p = S.players[pid];
+      if (p.map !== id || p.dead || !p.ch.pet || now < (p.petAt || 0)) continue;
+      const reach = ITEMS[p.ch.pet].radius;
+      let best = -1, bd = reach;
+      for (let i = 0; i < rt.drops.length; i++) {
+        const dr = rt.drops[i];
+        if (dr.own !== pid || !wanted(p.ch, dr) || !fits(p.ch, dr)) continue;
+        const d = dist(p.x, p.y, dr.x, dr.y);
+        if (d <= bd) { bd = d; best = i; }
+      }
+      if (best < 0) continue;
+      p.petAt = now + PET_MS;
+      const dr = rt.drops[best];
+      if (pickUp(S, p, dr)) { rt.drops.splice(best, 1); rt.ev.push(["pk", p.eid, Math.round(dr.x), Math.round(dr.y)]); }
     }
   }
   for (const pid of pids) {
@@ -3737,9 +4088,15 @@ function selfPayload(p) {
     inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, tr: ch.tr, trc, enh,
     bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     cds: p.cds.map((t) => Math.max(0, t - now)),
-    // attack up, speed up, warmth, food — then what monsters leave on you: slowed, burning, poisoned
+    // attack up, speed up, warmth, food — then what monsters leave on you: slowed, burning, poisoned —
+    // then the scrolls being read: attack, defence, experience
     buffs: [Math.max(0, p.atkBuff - now), Math.max(0, p.spdBuff - now), Math.max(0, p.warm - now), p.food ? Math.max(0, p.food.until - now) : 0,
-      Math.max(0, (p.slowed || 0) - now), p.burn ? Math.max(0, p.burn.until - now) : 0, p.poison ? Math.max(0, p.poison.until - now) : 0],
+      Math.max(0, (p.slowed || 0) - now), p.burn ? Math.max(0, p.burn.until - now) : 0, p.poison ? Math.max(0, p.poison.until - now) : 0,
+      Math.max(0, ch.scr.atk - now), Math.max(0, ch.scr.def - now), Math.max(0, ch.scr.xp - now)],
+    // skill levels and what the next level of each costs ({ gold, xp, lvl } or null at the top)
+    skl: ch.skl, skc: SKILLS[ch.cls].map((sk, i) => (ch.skl[i] >= SK_MAX ? null : skillCost(sk, ch.skl[i]))),
+    wh: ch.wh, pet: ch.pet, opt: ch.opt,
+    dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather") } : null,
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), st: ch.st,
     daily: dailyView(p), tut: { i: ch.tut.i, n: ch.tut.n }, evt: evtView(p.S, p), recall: p.recall ? Math.max(0, p.recall.at - now) : 0,
@@ -3787,7 +4144,7 @@ export function viewFor(S, pid) {
       // (its tier, rarity, enhancement and kind)
       const ar = o.ch.eq.armor, wp = o.ch.eq.weapon;
       out.who.push([o.eid, o.ch.name, o.ch.cls, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
-        wp ? wp.q : 0, wp ? wp.enh : 0, 0, weaponKind(o.ch), o.ch.guild, titleOf(o.ch)]);
+        wp ? wp.q : 0, wp ? wp.enh : 0, o.ch.pet || 0, weaponKind(o.ch), o.ch.guild, titleOf(o.ch)]);
     }
   }
   if (p.party) {
@@ -3826,7 +4183,7 @@ export function defs() {
     items: ITEMS, mobs, classes, skills: SKILLS, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV, maxLv: MAXLV,
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
-    traits: TRAITS, slow: SLOW,
+    traits: TRAITS, slow: SLOW, skMax: SK_MAX, skStep: SK_STEP, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     waypoints: Object.keys(WP).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null })),
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
     collection: Object.fromEntries(REGIONS.map((id) => [id, { mobs: COL_MOBS[id], bonus: REGION_BONUS[id] }])), colNeed: MASTERY[0],
