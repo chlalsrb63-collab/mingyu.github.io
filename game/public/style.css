@@ -527,7 +527,7 @@ body.crt #crt-frame { display: block; z-index: 90; }
 /* scanlines: a dark line every third pixel row */
 body.crt #crt::before {
   content: ""; position: absolute; inset: 0;
-  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(6, 4, 14, .26) 2px 3px);
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(6, 4, 14, .16) 2px 3px);
 }
 /* the phosphor grille: faint red, green and blue stripes */
 body.crt #crt::after {
@@ -540,10 +540,8 @@ body.crt #crt .roll {
   background: linear-gradient(to bottom, transparent, rgba(220, 240, 255, .045) 45%, rgba(220, 240, 255, .07) 52%, transparent);
   animation: crt-roll 9s linear infinite;
 }
-/* the glass: slightly rounded corners and a faint reflection; the edges stay bright */
+/* the glass: only a faint reflection; nothing darkens the edges or corners */
 body.crt #crt-frame {
-  border-radius: 14px / 16px;
-  box-shadow: 0 0 0 60px #06070b;
   background: radial-gradient(ellipse 60% 40% at 28% 14%, rgba(255, 255, 255, .045), transparent 70%);
 }
 /* the picture itself glows a little, and text bleeds red and blue at its edges */

@@ -1164,7 +1164,7 @@ function drawFx(now, ground2) {
 // ───────────────────────────── the frame ─────────────────────────────
 
 /** How dark each world is, and the colour of its darkness. */
-const DARK = { forest: ["#06242a", 0.3], city: ["#0a0e30", 0.52], cave: ["#060a22", 0.48], crypt: ["#0a0810", 0.56], sewer: ["#04100a", 0.5], abyss: ["#1e0208", 0.44] };
+const DARK = { forest: ["#06242a", 0.1], city: ["#0a0e30", 0.18], cave: ["#060a22", 0.17], crypt: ["#0a0810", 0.2], sewer: ["#04100a", 0.17], abyss: ["#1e0208", 0.16] };
 let lightCv = null, lg = null;
 
 export function sync(state2) { G = state2; }
