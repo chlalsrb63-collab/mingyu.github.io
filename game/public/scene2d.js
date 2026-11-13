@@ -315,6 +315,71 @@ function scenery() {
     }),
   };
   SC.n = SC.TB[2];
+  // ── dungeon furniture: the crypt's dead, the sewer's plumbing, the abyss's anatomy
+  const BONE = "#e2dcc6", BONE_D = "#a8a08a", BONE_L = "#f4f0e0";
+  Object.assign(SC, {
+    // a stone sarcophagus, its lid carved with a cross
+    1: prop(30, 24, (b) => {
+      b.r(1, 8, 28, 15, "#7a746a"); b.r(1, 18, 28, 5, "#5a5550"); b.r(24, 9, 5, 14, "#5a5550");
+      b.r(0, 3, 30, 7, "#989080"); b.r(0, 3, 30, 1, "#b8b09c"); b.r(0, 9, 30, 1, "#6a645c");
+      b.r(13, 4, 4, 5, "#6a645c"); b.r(10, 5, 10, 2, "#6a645c");
+      b.r(4, 13, 2, 6, "#5a5550"); b.r(12, 13, 2, 6, "#5a5550"); b.r(20, 13, 2, 6, "#5a5550");
+    }),
+    // a coffin stood against the wall, lid ajar
+    2: [0, 1].map((v) => prop(20, 38, (b) => {
+      b.tri([[4, 0], [16, 0], [20, 10], [16, 38], [4, 38], [0, 10]], "#6a4a34"); b.tri([[10, 0], [16, 0], [20, 10], [16, 38], [10, 38]], "#523624");
+      b.r(5, 2, 10, 1, "#8a6646"); b.r(9, 8, 2, 12, "#3a2618"); b.r(6, 12, 8, 2, "#3a2618");
+      if (v) { b.tri([[13, 2], [16, 2], [19, 10], [16, 36], [13, 36]], "#1a1216"); b.r(14, 16, 3, 2, BONE); b.r(14, 19, 2, 1, BONE_D); }
+      b.r(4, 36, 12, 2, "#3a2618");
+    })),
+    // an iron stand of candles, burning low
+    3: prop(16, 34, (b) => {
+      b.r(7, 12, 2, 18, "#3a3c48"); b.r(3, 30, 10, 3, "#3a3c48"); b.r(1, 32, 14, 2, "#2a2c36"); b.r(1, 11, 14, 2, "#4a4c5a");
+      for (const [x, h] of [[1, 5], [7, 8], [13, 4]]) { b.r(x, 11 - h, 2, h, "#f2ead0"); b.r(x + 1, 11 - h, 1, h, "#cfc6a8"); b.r(x, 8 - h, 2, 3, "#ffb030"); b.r(x, 7 - h, 1, 2, "#fff0a0"); }
+    }),
+    // a heap of bones with a skull on top
+    4: [0, 1].map((v) => prop(28, 16, (b) => {
+      b.r(2, 10, 24, 5, BONE_D); b.r(4, 8, 20, 3, BONE); b.r(1, 12, 8, 2, BONE); b.r(18, 12, 9, 2, BONE); b.r(0, 11, 2, 4, BONE_L); b.r(26, 11, 2, 4, BONE_L);
+      b.r(6, 9, 1, 5, BONE_D); b.r(13, 10, 1, 4, "#7a7462"); b.r(20, 9, 1, 5, BONE_D);
+      const x = v ? 15 : 7;
+      b.r(x, 1, 8, 7, BONE); b.r(x + 1, 8, 6, 2, BONE); b.r(x, 1, 8, 1, BONE_L); b.r(x + 1, 4, 2, 2, "#2f2a29"); b.r(x + 5, 4, 2, 2, "#2f2a29"); b.r(x + 3, 7, 2, 1, "#2f2a29"); b.r(x + 2, 9, 1, 1, "#7a7462"); b.r(x + 4, 9, 1, 1, "#7a7462");
+    })),
+    // a pillar of stacked stone under a capital of skulls
+    5: prop(20, 46, (b) => {
+      b.r(4, 8, 12, 32, "#7a746a"); b.r(12, 8, 4, 32, "#5a5550"); b.r(4, 8, 2, 32, "#989080");
+      for (let y = 16; y < 38; y += 8) b.r(4, y, 12, 1, "#5a5550");
+      b.r(1, 40, 18, 6, "#6a645c"); b.r(1, 40, 18, 1, "#989080"); b.r(1, 44, 18, 2, "#4a4642");
+      b.r(1, 2, 18, 7, "#989080"); b.r(1, 2, 18, 1, "#b8b09c"); b.r(1, 8, 18, 1, "#5a5550");
+      for (const x of [3, 11]) { b.r(x, 3, 6, 5, BONE); b.r(x + 1, 5, 1, 2, "#2f2a29"); b.r(x + 4, 5, 1, 2, "#2f2a29"); }
+    }),
+    // a pipe mouth in the wall, drooling
+    6: [0, 1].map((v) => prop(24, 30, (b) => {
+      b.r(2, 2, 20, 14, "#6a7280"); b.r(2, 2, 20, 2, "#98a2b2"); b.r(2, 13, 20, 3, "#48505e"); b.r(0, 0, 4, 18, "#7a8494"); b.r(20, 0, 4, 18, "#565e6e");
+      b.oval(12, 9, 7, 5, "#1a1e22"); b.oval(12, 10, 5, 3, "#2c3a26");
+      b.r(9, 12, 6, 12 + v * 4, "#6a9a3a"); b.r(9, 12, 2, 12 + v * 4, "#8cc054"); b.r(8, 24 + v * 4, 8, 2, "#5a8a30"); b.r(6, 26 + v * 4, 12, 2, "#6a9a3a");
+      b.r(1, 5, 2, 2, "#3a4048"); b.r(21, 5, 2, 2, "#3a4048");
+    })),
+    // a rusted drum, banded and leaking
+    7: [0, 1].map((v) => prop(20, 28, (b) => {
+      const c = v ? "#8a5a3a" : "#5a7a6a";
+      b.r(2, 3, 16, 23, c); b.r(1, 6, 18, 17, c); b.r(13, 4, 5, 21, dk(c, 0.76)); b.r(4, 7, 2, 14, lt(c, 1.25));
+      b.r(1, 8, 18, 2, "#3a3c48"); b.r(1, 19, 18, 2, "#3a3c48"); b.oval(10, 4, 8, 3, lt(c, 1.18)); b.oval(10, 4, 5, 1.6, dk(c, 0.8));
+      if (v) { b.r(6, 12, 8, 5, "#e8c040"); b.r(8, 13, 4, 3, "#2a2c36"); } else { b.r(3, 22, 3, 5, "#6a9a3a"); b.r(1, 26, 8, 2, "#5a8a30"); }
+    })),
+    // ribs rising out of the ground, curving in over the path
+    8: [0, 1].map((v) => prop(30, 42, (b) => {
+      for (const [x, s] of [[3, 1], [26, -1]]) {
+        for (let i = 0; i < 9; i++) { const y = 40 - i * 4, bx = x + s * Math.round(Math.sin((i / 9) * 1.5) * (v ? 9 : 7)); b.r(bx - 1, y - 4, 4, 5, i % 2 ? BONE : BONE_L); b.r(bx + (s > 0 ? 2 : -1), y - 4, 1, 5, BONE_D); }
+      }
+      b.r(0, 38, 8, 4, "#5c1e2b"); b.r(22, 38, 8, 4, "#5c1e2b"); b.r(1, 37, 5, 1, "#9e4855"); b.r(24, 37, 5, 1, "#9e4855");
+    })),
+    // a stalk of flesh with an eye at the end of it
+    0: [0, 1].map((v) => prop(22, 30, (b) => {
+      b.r(8, 12, 6, 16, "#8c2c3a"); b.r(12, 12, 2, 16, "#5a1622"); b.r(8, 14, 1, 10, "#ba4e5a"); b.r(4, 26, 14, 4, "#6e2230"); b.r(4, 26, 14, 1, "#9e4855");
+      b.oval(11, 8, 9, 8, "#8c2c3a"); b.oval(11, 8, 7, 6, "#f4ecd8"); b.oval(11 + (v ? 1 : -1), 8, 3.4, 3.6, "#c41830"); b.r(10 + (v ? 1 : -1), 7, 2, 3, "#19070c"); b.r(8, 5, 2, 1, "#ffffff");
+      b.r(3, 16, 2, 5, "#8c2c3a"); b.r(17, 18, 2, 4, "#8c2c3a");
+    })),
+  });
   return SC;
 }
 
@@ -398,6 +463,84 @@ const GROUP = { t: 0, r: 3, ".": 0, ",": 0, '"': 0, ":": 1, ";": 1, p: 2, o: 3, 
 const EDGE = { 2: ["#8f6238", "#bd8c54"], 3: ["#6e7486", "#969cac"], 4: ["#b89a5e", "#d8c088"], 5: ["#2f78c0", "#86c8f4"], 6: ["#6a4426", "#96683a"], 7: ["#2a4262", "#3a5878"], 10: ["#5e6474", "#c4c8d2"] };
 const FLOWER = ["#fffbe8", "#ffd84a", "#ff9ac0", "#9ac8ff", "#f06a7a"];
 
+// ── the dungeons underground share the cave's bones (rock `W`, floor `c`/`d`, liquid `w`) but each has its own skin
+/**
+ * Per theme: floor [mid, dark, light], the dark behind everything, the wall's
+ * lit face [base, top, highlight, seam], the liquid [shallow, deep, glint,
+ * edge line, edge rim], and the motes in the air.
+ */
+const UG = {
+  crypt: { floor: ["#6f6a64", "#55504c", "#8b867c"], rock: "#15121a", face: ["#4b4540", "#77705f", "#989078", "#2f2a29"], wet: ["#3d5a66", "#33505c", "#7aa0a8", "#243a44", "#5a8088"], mote: "#d8d0c0" },
+  sewer: { floor: ["#5d6a5e", "#47534a", "#768476"], rock: "#0d130f", face: ["#6a4636", "#8a6048", "#aa7c5e", "#3c2820"], wet: ["#6a9a3a", "#5a8a30", "#b0dc70", "#36561e", "#8cc054"], mote: "#b8e890" },
+  abyss: { floor: ["#7c2f3c", "#5c1e2b", "#9e4855"], rock: "#19070c", face: ["#5a1622", "#8c2c3a", "#ba4e5a", "#330e18"], wet: ["#a81c2c", "#8e1424", "#e4606c", "#560a16", "#d04858"], mote: "#ff8a7a" },
+};
+
+/** One tile of dungeon floor. `d` is the busier variant; `under` means rock stands directly above. */
+function underFloor(b, U, theme, X, Y, ch, h, free, under) {
+  const [mid, dark, light] = U.floor;
+  if (theme === "crypt") {
+    // flagstones a tile across, worn at the corners; now and then a crack, and bones on the busy ones
+    b.r(X, Y + 31, T, 1, dark); b.r(X + 31, Y, 1, T, dark); b.r(X, Y, T, 1, light); b.r(X, Y, 1, T, light);
+    if (h(1) < 0.5) { b.r(X + 15, Y + 1, 1, 30, dark); b.r(X + 16, Y + 1, 1, 30, light); } else { b.r(X + 1, Y + 15, 30, 1, dark); b.r(X + 1, Y + 16, 30, 1, light); }
+    if (h(2) < 0.22) { const a = X + 5 + Math.floor(h(3) * 18), q = Y + 5 + Math.floor(h(4) * 16); b.r(a, q, 1, 4, dark); b.r(a + 1, q + 3, 3, 1, dark); b.r(a + 3, q + 4, 1, 3, dark); }
+    if (ch === "d" && free) {
+      const a = X + 5 + Math.floor(h(5) * 14), q = Y + 7 + Math.floor(h(6) * 14);
+      if (h(7) < 0.5) { b.r(a, q + 1, 9, 2, "#d8d0b8"); b.r(a - 1, q, 2, 4, "#e8e2cc"); b.r(a + 8, q, 2, 4, "#e8e2cc"); b.r(a + 1, q + 3, 7, 1, "#a8a08a"); }      // a thigh bone
+      else { b.r(a, q, 6, 5, "#e2dcc6"); b.r(a + 1, q + 5, 4, 2, "#e2dcc6"); b.r(a + 1, q + 2, 1, 2, "#2f2a29"); b.r(a + 4, q + 2, 1, 2, "#2f2a29"); b.r(a + 1, q + 6, 4, 1, "#a8a08a"); b.r(a, q, 6, 1, "#f4f0e0"); }   // a skull
+    }
+  } else if (theme === "sewer") {
+    // brick laid in four courses, every other one shifted; grime between, a grate on the busy ones
+    for (let r = 0; r < 4; r++) {
+      const y = Y + r * 8, off = r % 2 ? 8 : 0;
+      b.r(X, y + 7, T, 1, dark);
+      for (let x = off; x < T; x += 16) b.r(X + x, y, 1, 7, dark);
+      b.r(X + ((off + 3) % 16), y + 1, 6, 1, light);
+    }
+    if (h(2) < 0.3) { const a = X + 4 + Math.floor(h(3) * 20), q = Y + 4 + Math.floor(h(4) * 20); b.r(a, q, 5, 2, "#4f7a3a"); b.r(a + 1, q + 2, 3, 1, "#3e6a30"); }
+    if (ch === "d" && free) { const a = X + 8, q = Y + 9; b.r(a, q, 16, 14, "#262c28"); b.r(a, q, 16, 1, "#8a968a"); b.r(a, q + 13, 16, 1, "#161a18"); for (let i = 2; i < 16; i += 4) b.r(a + i, q + 2, 2, 10, "#6a766c"); }
+  } else {
+    // flesh: no joints at all — veins under the surface, wet highlights, a blister on the busy ones
+    for (let i = 0; i < 3; i++) {
+      const a = X + 2 + Math.floor(h(10 + i) * 22), q = Y + 3 + Math.floor(h(14 + i) * 24);
+      b.r(a, q, 4, 1, dark); b.r(a + 3, q + 1, 3, 1, dark); b.r(a + 5, q + 2, 1, 2, dark);
+    }
+    for (let i = 0; i < 2; i++) b.r(X + 4 + Math.floor(h(20 + i) * 22), Y + 4 + Math.floor(h(24 + i) * 22), 3, 1, light);
+    if (ch === "d" && free) {
+      const a = X + 8 + Math.floor(h(5) * 12), q = Y + 9 + Math.floor(h(6) * 12);
+      if (h(7) < 0.5) { b.oval(a + 4, q + 3, 5, 3.4, "#c4606a"); b.oval(a + 3, q + 2, 3, 1.8, "#e89aa0"); b.r(a + 2, q + 1, 2, 1, "#fff0f0"); b.r(a, q + 6, 9, 1, dark); }       // a blister
+      else { b.oval(a + 4, q + 3, 5, 3, "#f4ecd8"); b.oval(a + 4, q + 3, 2.4, 2.4, "#3a0a12"); b.r(a + 3, q + 2, 1, 1, "#ffffff"); b.r(a - 1, q + 2, 1, 3, dark); b.r(a + 9, q + 2, 1, 3, dark); }   // an eye in the floor
+    }
+  }
+  if (under) b.r(X, Y, T, 5, dark);                        // the wall's shadow falls a little way onto the floor
+}
+
+/** One tile of dungeon rock: flat dark, with a lit face where it stands over open floor. */
+function underRock(b, U, theme, X, Y, h, faced, lipN, lipW, lipE) {
+  const [base, top, hi, seam] = U.face;
+  if (faced) {
+    b.r(X, Y + 6, T, 26, base); b.r(X, Y + 6, T, 3, top); b.r(X, Y + 9, T, 1, hi); b.r(X, Y + 30, T, 2, seam);
+    if (theme === "crypt") {
+      // coursed stone, and here and there a niche with a skull in it
+      for (let r = 0; r < 2; r++) { b.r(X, Y + 16 + r * 7, T, 1, seam); for (let x = r ? 8 : 0; x < T; x += 16) b.r(X + x, Y + 10 + r * 7, 1, 7, seam); }
+      if (h(6) < 0.2) { const a = X + 9 + Math.floor(h(7) * 8); b.r(a, Y + 13, 12, 12, "#1f1b1e"); b.r(a + 3, Y + 16, 6, 5, "#e2dcc6"); b.r(a + 4, Y + 21, 4, 2, "#e2dcc6"); b.r(a + 4, Y + 18, 1, 2, "#1f1b1e"); b.r(a + 7, Y + 18, 1, 2, "#1f1b1e"); b.r(a + 3, Y + 16, 6, 1, "#f4f0e0"); }
+    } else if (theme === "sewer") {
+      // brick, streaked with slime where the damp runs down
+      for (let r = 0; r < 3; r++) { b.r(X, Y + 14 + r * 5, T, 1, seam); for (let x = r % 2 ? 8 : 0; x < T; x += 16) b.r(X + x, Y + 10 + r * 5, 1, 5, seam); }
+      if (h(6) < 0.35) { const a = X + 4 + Math.floor(h(7) * 22), len = 6 + Math.floor(h(8) * 12); b.r(a, Y + 9, 2, len, "#4f7a3a"); b.r(a, Y + 9 + len, 1, 2, "#6a9a3a"); }
+    } else {
+      // flesh, with eyes that follow you from the wall — or a row of teeth
+      for (let i = 0; i < 2; i++) b.r(X + 3 + Math.floor(h(i) * 20), Y + 13 + i * 8, 8, 1, seam);
+      if (h(6) < 0.22) { const a = X + 8 + Math.floor(h(7) * 10), q = Y + 15; b.oval(a + 5, q + 4, 7, 5, seam); b.oval(a + 5, q + 4, 6, 3.6, "#f4ecd8"); b.oval(a + 5, q + 4, 2.6, 2.8, "#c41830"); b.r(a + 4, q + 3, 2, 2, "#19070c"); b.r(a + 3, q + 2, 1, 1, "#ffffff"); }
+      else if (h(6) > 0.86) { for (let i = 0; i < 5; i++) b.tri([[X + 4 + i * 5, Y + 26], [X + 8 + i * 5, Y + 26], [X + 6 + i * 5, Y + 31]], "#ece4cc"); }
+    }
+  } else {
+    if (h(1) < 0.5) b.r(X + Math.floor(h(2) * 24), Y + Math.floor(h(3) * 26), 6, 2, seam);
+    if (lipN) { b.r(X, Y, T, 4, base); b.r(X, Y, T, 1, top); }
+  }
+  if (lipW) { b.r(X, Y, 4, T, base); b.r(X, Y, 1, T, top); }
+  if (lipE) { b.r(X + T - 4, Y, 4, T, base); b.r(X + T - 1, Y, 1, T, top); }
+}
+
 /** What kind of place a map is, from the ground it is made of. */
 function themeOf(m) {
   let cave = 0, city = 0, forest = 0;
@@ -409,7 +552,10 @@ function themeOf(m) {
 function paintGround(m, theme) {
   const [c, x] = sheet(m.w * T, m.h * T);
   const b = tools(x);
-  const BASE = theme === "forest" ? { ...GROUND, ".": GROUND[":"], ",": GROUND[":"], '"': GROUND[":"], t: GROUND[":"] } : GROUND;
+  const U = UG[theme] || null;
+  const BASE = theme === "forest" ? { ...GROUND, ".": GROUND[":"], ",": GROUND[":"], '"': GROUND[":"], t: GROUND[":"] }
+    : U ? { ...GROUND, c: U.floor[0], d: U.floor[0], W: U.rock, w: U.wet[0] } : GROUND;
+  const EDG = U ? { ...EDGE, 5: [U.wet[3], U.wet[4]], 7: [U.floor[1], U.floor[2]] } : EDGE;
   const at = (tx, ty) => (ty < 0 || tx < 0 || ty >= m.h || tx >= m.w ? null : m.g[ty][tx]);
   const forest = theme === "forest";
   const grp = (tx, ty) => { const ch = at(tx, ty); return ch === null ? -1 : forest && GROUP[ch] === 0 ? 1 : GROUP[ch]; };
@@ -491,12 +637,18 @@ function paintGround(m, theme) {
       if (h(4) < 0.05) { const a = X + 6 + Math.floor(h(5) * 14), q = Y + 6 + Math.floor(h(6) * 14); b.r(a, q, 1, 5, dk(col, 0.74)); b.r(a + 1, q + 4, 4, 1, dk(col, 0.74)); }
     } else if (ch === "w") {
       const deep = grp(tx, ty - 1) === 5 && grp(tx, ty + 1) === 5 && grp(tx - 1, ty) === 5 && grp(tx + 1, ty) === 5;
-      if (deep) b.r(X, Y, T, T, "#4196d8");
-      if (deep && h(1) < 0.07) { const a = X + 8 + Math.floor(h(2) * 14), q = Y + 9 + Math.floor(h(3) * 12); b.oval(a + 4, q + 3, 5, 3.4, "#4faa5a"); b.r(a + 4, q + 3, 3, 1, "#4196d8"); b.oval(a + 3, q + 2, 2.4, 1.4, "#7acf70"); if (h(4) < 0.5) { b.r(a + 6, q + 1, 2, 2, "#ff9ac0"); b.r(a + 6, q + 1, 1, 1, "#fff2c0"); } }
+      if (deep) b.r(X, Y, T, T, U ? U.wet[1] : "#4196d8");
+      if (U) { for (let i = 0; i < 2; i++) b.r(X + 4 + Math.floor(h(i + 2) * 20), Y + 6 + Math.floor(h(i + 5) * 20), 4, 1, U.wet[1]); }
+      else if (deep && h(1) < 0.07) { const a = X + 8 + Math.floor(h(2) * 14), q = Y + 9 + Math.floor(h(3) * 12); b.oval(a + 4, q + 3, 5, 3.4, "#4faa5a"); b.r(a + 4, q + 3, 3, 1, "#4196d8"); b.oval(a + 3, q + 2, 2.4, 1.4, "#7acf70"); if (h(4) < 0.5) { b.r(a + 6, q + 1, 2, 2, "#ff9ac0"); b.r(a + 6, q + 1, 1, 1, "#fff2c0"); } }
     } else if (ch === "b") {
       for (let i = 0; i < T; i += 8) { b.r(X + i, Y, 1, T, dk(col, 0.72)); b.r(X + i + 1, Y, 2, T, lt(col, 1.14)); b.r(X + i + 4, Y + 3, 1, 1, "#5a3a22"); b.r(X + i + 4, Y + 28, 1, 1, "#5a3a22"); if (hash(tx * 4 + i, ty, 3) < 0.3) b.r(X + i + 3, Y + 8 + Math.floor(hash(tx * 4 + i, ty, 4) * 14), 3, 1, dk(col, 0.84)); }
       if (grp(tx, ty - 1) !== 6) { b.r(X, Y, T, 5, "#7a5030"); b.r(X, Y, T, 1, "#a87a48"); b.r(X, Y + 5, T, 2, dk(col, 0.7)); }
       if (grp(tx, ty + 1) !== 6) { b.r(X, Y + T - 6, T, 6, "#7a5030"); b.r(X, Y + T - 6, T, 1, "#a87a48"); }
+    } else if (g0 === 7 && U) {
+      underFloor(b, U, theme, X, Y, ch, h, free(tx, ty), grp(tx, ty - 1) === 8);
+    } else if (ch === "W" && U) {
+      const below = at(tx, ty + 1);
+      underRock(b, U, theme, X, Y, h, !!below && below !== "W", grp(tx, ty - 1) === 7, grp(tx - 1, ty) === 7, grp(tx + 1, ty) === 7);
     } else if (g0 === 7) {
       // cave floor: worn flagstones
       const d = dk(col, 0.84);
@@ -533,7 +685,7 @@ function paintGround(m, theme) {
       for (const dx of [-1, 1]) if (grp(tx + dx, ty) === 7) { b.r(dx < 0 ? X : X + T - 4, Y, 4, T, "#22335a"); b.r(dx < 0 ? X : X + T - 1, Y, 1, T, "#3e5c8a"); }
     }
     // the edge of this patch: a wavering line with the neighbour's colour biting into it
-    const ed = EDGE[g0];
+    const ed = EDG[g0];
     if (ed) {
       const dif = (dx, dy) => { const n = grp(tx + dx, ty + dy); return n !== -1 && n < g0 && !(g0 === 6 && n === 5) && n !== 8; };
       const nb = (dx, dy) => BASE[at(tx + dx, ty + dy)];
@@ -615,7 +767,7 @@ function paintExtras(m, c) {
 let theme = "meadow", waterTiles = [], smokers = [];
 export function loadMap(m) {
   map = m;
-  theme = themeOf(m);
+  theme = m.theme || themeOf(m);
   ground = paintGround(m, theme);
   paintExtras(m, ground);
   const S = scenery();
@@ -644,7 +796,7 @@ export function loadMap(m) {
     const wide = ch === "c" ? T : 0;
     statics.push({
       sp, x: x * T + T / 2 + wide / 2 + (ch === "T" || ch === "P" ? Math.round((hash(x, y, 8) - 0.5) * 6) : 0), y: (y + 1) * T - 3,
-      glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
+      glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" ? "#ffd070" : ch === "0" ? "#ff6a7a" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
     });
   }
   for (const b of m.big) {
@@ -664,9 +816,9 @@ export function loadMap(m) {
 
 /** Drifting motes: pollen in the open, fireflies and leaves under trees, rain in the city, dust underground. */
 const amb = [];
-const AMB_N = { town: 16, meadow: 24, forest: 26, city: 80, cave: 26 };
+const AMB_N = { town: 16, meadow: 24, forest: 26, city: 80, cave: 26, crypt: 18, sewer: 22, abyss: 36 };
 function respawn(p, ox, oy, fresh) {
-  const k = theme === "forest" ? (Math.random() < 0.45 ? "fly" : "leaf") : theme === "city" ? "rain" : theme === "cave" ? "dust" : "pollen";
+  const k = theme === "forest" ? (Math.random() < 0.45 ? "fly" : "leaf") : theme === "city" ? "rain" : theme === "cave" || UG[theme] ? "dust" : "pollen";
   p.k = k;
   p.x = ox - 20 + Math.random() * (vw + 40);
   p.y = k === "rain" && !fresh ? oy - 10 : oy - 10 + Math.random() * (vh + 20);
@@ -690,7 +842,7 @@ function drawAmbient(dt, t, ox, oy) {
     if (p.k === "rain") { g.globalAlpha = 0.3; g.fillStyle = "#a8c4ff"; g.fillRect(sx, sy, 1, 6); }
     else if (p.k === "fly") { const a = (0.45 + 0.55 * Math.sin(t / 260 + p.ph * 3)) * fade; g.globalAlpha = a * 0.28; g.fillStyle = "#e8ff8a"; g.fillRect(sx - 1, sy - 2, 3, 5); g.fillRect(sx - 2, sy - 1, 5, 3); g.globalAlpha = a; g.fillRect(sx - 1, sy, 3, 1); g.fillRect(sx, sy - 1, 1, 3); g.fillStyle = "#ffffff"; g.fillRect(sx, sy, 1, 1); }
     else if (p.k === "leaf") { g.globalAlpha = fade * 0.9; g.fillStyle = p.c; g.fillRect(sx, sy, 2, 1); g.fillRect(sx + (Math.sin(t / 300 + p.ph) > 0 ? 1 : 0), sy + 1, 1, 1); }
-    else if (p.k === "dust") { g.globalAlpha = fade * 0.55; g.fillStyle = "#bfe8ff"; g.fillRect(sx, sy, 1, 1); }
+    else if (p.k === "dust") { g.globalAlpha = fade * (theme === "abyss" ? 0.8 : 0.55); g.fillStyle = UG[theme] ? UG[theme].mote : "#bfe8ff"; g.fillRect(sx, sy, 1, theme === "sewer" ? 2 : 1); }
     else { g.globalAlpha = fade * 0.8; g.fillStyle = "#fffbe0"; g.fillRect(sx, sy, 1, 1); if (p.ph > 4) g.fillRect(sx + 1, sy, 1, 1); }
   }
   g.globalAlpha = 1;
@@ -701,12 +853,13 @@ function drawWater(t, ox, oy) {
   for (const w of waterTiles) {
     if (w.x < ox - T || w.x > ox + vw || w.y < oy - T || w.y > oy + vh) continue;
     const ph = (beat + Math.floor(w.h * 8)) % 4;
-    g.fillStyle = "#8accf6";
+    const wet = UG[theme] ? UG[theme].wet : null;
+    g.fillStyle = wet ? wet[2] : "#8accf6";
     g.fillRect(w.x + 3 + ph * 5 + Math.floor(w.h * 6), w.y + 8, 6, 1);
     g.fillRect(w.x + 20 - ph * 4, w.y + 22, 5, 1);
     if (ph === 0 && w.h > 0.6) { g.fillStyle = "#ffffff"; g.fillRect(w.x + 12 + Math.floor(w.h * 10), w.y + 15, 2, 1); }
     if (w.n | w.s | w.w | w.e) {
-      g.fillStyle = "#e8f8ff";
+      g.fillStyle = wet ? wet[4] : "#e8f8ff";
       const o = ph % 2;
       if (w.n) g.fillRect(w.x + (o ? 4 : 0), w.y + 5 + o, 12, 1), g.fillRect(w.x + 18 + (o ? 2 : 0), w.y + 6 - o, 10, 1);
       if (w.s) g.fillRect(w.x + (o ? 2 : 6), w.y + T - 7 - o, 12, 1);
@@ -938,7 +1091,7 @@ function drawFx(now, ground2) {
 // ───────────────────────────── the frame ─────────────────────────────
 
 /** How dark each world is, and the colour of its darkness. */
-const DARK = { forest: ["#06242a", 0.3], city: ["#0a0e30", 0.52], cave: ["#060a22", 0.48] };
+const DARK = { forest: ["#06242a", 0.3], city: ["#0a0e30", 0.52], cave: ["#060a22", 0.48], crypt: ["#0a0810", 0.56], sewer: ["#04100a", 0.5], abyss: ["#1e0208", 0.44] };
 let lightCv = null, lg = null;
 
 export function sync(state2) { G = state2; }
@@ -1046,7 +1199,7 @@ export function render(focusX, focusY, dt, t, snap) {
       else if (el) { g.shadowColor = el === 2 ? "#ff5ad0" : "#ffc040"; g.shadowBlur = el === 2 ? 8 : 4; }
       g.drawImage(img, -w / 2, -w * (SP.FOOT[1] / SP.SIZE), w, w);
       g.restore();
-      m.h3 = (w * (kind === "boss" ? 0.92 : 0.72) + s.hover) / 26;
+      m.h3 = (w * (G.defs.mobs[m.k].boss ? 0.92 : 0.72) + s.hover) / 26;
     } else if (o.p) {
       const w = G.who.get(o.eid);
       if (!w) continue;

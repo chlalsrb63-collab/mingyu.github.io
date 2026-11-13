@@ -405,17 +405,19 @@ const MOB = {
   },
   /** 눈알 까마귀 — a crow that grew an eye wherever a feather fell out. */
   eyecrow(b, f, px, line) {
-    const feather = "#3a3348", dark = "#2c2638";
-    const up = f ? -3 : 2;
-    b.tri([[13, 15], [3, 12 + up], [5, 17 + up], [12, 19]], feather); b.tri([[19, 15], [29, 12 + up], [27, 17 + up], [20, 19]], feather);
-    b.tri([[3, 12 + up], [1, 15 + up], [5, 17 + up]], dark); b.tri([[29, 12 + up], [31, 15 + up], [27, 17 + up]], dark);
-    b.oval(16, 17, 5, 5, feather); b.oval(17, 19, 4, 3, dark);
-    b.r(20, 20, 6, 2, dark); b.r(23, 22, 4, 1, dark);                              // tail
-    b.oval(12, 12, 3.5, 3.5, feather);
-    b.tri([[9, 12], [4, 14], [9, 14]], BONE); px(4, 14, GORE); px(5, 15, GORE);    // a wet beak
-    orb(b, px, 11, 10, GORE, 1);
-    for (const [x, y, a] of [[6, 13 + up, 0], [24, 13 + up, 3], [15, 15, 2], [18, 18, 1], [9, 16 + (up >> 1), 0], [21, 15 + (up >> 1), 2]]) orb(b, px, x, y, f ? "#ff7a30" : GORE, a);
-    px(14, 22, "#6a5a40"); px(14, 23, "#6a5a40"); px(18, 22, "#6a5a40"); px(18, 23, "#6a5a40"); px(13, 24, "#6a5a40"); px(19, 24, "#6a5a40");
+    const feather = "#3d3550", dark = "#2a2438", beak = "#cfc6a8", leg = "#7a6a48";
+    b.r(22, 17, 6, 2, dark); b.r(24, 19, 5, 1, dark); px(28, 16, dark); px(29, 18, dark);               // tail
+    px(15, 21, leg); px(15, 22, leg); px(14, 23, leg); px(16, 23, leg); px(19, 21, leg); px(19, 22, leg); px(18, 23, leg); px(20, 23, leg);
+    b.oval(17, 17, 6, 4, feather); b.oval(18, 19, 5, 2, dark);
+    b.oval(10, 14, 3.6, 3.4, feather);
+    b.r(3, 14, 5, 2, beak); b.r(4, 16, 3, 1, shade(beak, 0.34)); px(3, 15, GORE); px(2, 16, GORE); if (f) px(2, 17, GORE);
+    // one wing, beating: raised, then swept down
+    if (!f) { b.tri([[13, 15], [17, 3], [27, 5], [24, 15]], feather); b.tri([[21, 8], [27, 5], [24, 15], [19, 15]], dark); px(17, 3, dark); px(20, 2, feather); px(24, 3, feather); }
+    else { b.tri([[13, 16], [23, 16], [28, 27], [17, 25]], feather); b.tri([[20, 19], [23, 16], [28, 27], [21, 26]], dark); }
+    // an eye wherever a feather fell out
+    b.r(9, 12, 3, 3, EYE); px(10, 13, GORE); px(9, 12, "#ffd0d0");
+    for (const [x, y, a] of f ? [[16, 19, 0], [20, 22, 3], [23, 19, 1]] : [[17, 7, 0], [21, 6, 3], [18, 11, 1], [22, 11, 2]]) orb(b, px, x, y, GORE, a);
+    orb(b, px, 14, 16, "#ff7a30", 2); if (!f) orb(b, px, 20, 17, GORE, 1);
   },
   // ── forest
   /** 반쪽 멧돼지 — the front half of a boar, still charging; the rest of it is something else now. */
@@ -458,20 +460,27 @@ const MOB = {
   },
   /** 세 머리 뱀 — three heads on one body, and they do not agree. */
   hydrasnake(b, f, px, line) {
-    const scale = "#4f6b4c", belly = "#c9c078", o = f ? 1 : -1;
-    b.oval(17, 24, 9, 3.6, scale); b.oval(15, 22, 6, 2.6, shade(scale, 0.28)); b.oval(17, 26, 8, 1.4, shade(scale, 0.3));
-    for (const x of [10, 13, 16, 19, 22]) px(x, 25, belly);
-    b.r(25, 22, 4, 2, scale); px(29, 21, scale); px(30, 20, shade(scale, 0.3));     // tail tip
-    const neck = (pts) => { path(line, pts.map(([x, y]) => [x + 1, y]), shade(scale, 0.3)); path(line, pts.map(([x, y]) => [x - 1, y]), belly); path(line, pts, scale); };
-    const head = (x, y, dir) => {
-      b.r(x - 2, y - 1, 5, 3, scale); b.r(x - 1, y - 2, 3, 1, scale); b.r(x - 2, y + 1, 5, 1, shade(scale, 0.3));
-      px(x + dir, y - 1, GORE); px(x + dir * 3, y + 1, GORE); px(x + dir * 4, y + (f ? 2 : 0), GORE);          // eye and tongue
-      px(x + dir * 2, y + 1, BONE);
+    const scale = "#56744f", belly = "#cfc67c", eye = "#e8c840", o = f ? 1 : -1;
+    // the coil it rises from
+    b.oval(17, 25, 10, 2.8, scale); b.oval(16, 22, 7, 2.6, scale); b.r(10, 24, 13, 1, shade(scale, 0.4)); b.oval(17, 26.5, 9, 1.2, shade(scale, 0.3));
+    for (const x of [9, 12, 15, 18, 21, 24]) px(x, 26, belly);
+    b.r(26, 23, 3, 2, scale); px(29, 22, scale); px(30, 21, shade(scale, 0.3));
+    const neck = (pts) => {
+      for (const d of [-1, 0, 1]) path(line, pts.map(([x, y]) => [x + d, y]), d > 0 ? shade(scale, 0.32) : scale);
+      for (let i = 1; i < pts.length; i++) px(pts[i][0] - 1, pts[i][1] + 1, belly);
     };
-    neck([[12, 22], [9, 18], [8 + o, 14], [7 + o, 12]]); head(7 + o, 11, -1);
-    neck([[16, 21], [16, 16], [15 - o, 10], [15 - o, 8]]); head(15 - o, 7, -1);
-    neck([[20, 22], [23, 18], [24 + o, 14], [24 + o, 12]]); head(24 + o, 11, 1);
-    px(12, 21, CLOT); px(16, 20, CLOT); px(20, 21, CLOT);
+    const head = (x, y, dir) => {
+      const jx = dir < 0 ? x - 6 : x + 2;
+      b.r(x - 3, y - 2, 6, 4, scale); b.r(x - 2, y - 3, 4, 1, scale); b.r(x - 3, y + 1, 6, 1, shade(scale, 0.3));
+      b.r(jx, y - 1, 4, 2, scale); b.r(jx, y + 1, 4, 1, CLOT); b.r(jx, y + 2 + (f ? 1 : 0), 4, 1, shade(scale, 0.3)); if (f) b.r(jx, y + 2, 4, 1, CLOT);
+      px(dir < 0 ? jx : jx + 3, y + 1, BONE); px(dir < 0 ? jx + 2 : jx + 1, y + 1, BONE);
+      b.r(dir < 0 ? x - 2 : x, y - 1, 2, 1, eye); px(dir < 0 ? x - 2 : x + 1, y - 1, DARK);
+      px(dir < 0 ? jx - 1 : jx + 4, y + 1, GORE); px(dir < 0 ? jx - 2 : jx + 5, y + (f ? 2 : 0), GORE);
+    };
+    neck([[12, 22], [9, 18], [8 + o, 14], [8 + o, 12]]); head(8 + o, 10, -1);
+    neck([[16, 21], [17, 15], [16 - o, 9], [16 - o, 7]]); head(16 - o, 5, -1);
+    neck([[21, 22], [23, 18], [24 + o, 15], [24 + o, 13]]); head(24 + o, 11, 1);
+    px(12, 21, GORE); px(16, 20, CLOT); px(21, 21, GORE);
   },
   /** 인면 나방 — the pattern on its wings looks back at you, and blinks. */
   mothface(b, f, px, line) {
@@ -479,6 +488,7 @@ const MOB = {
     const w = f ? 5 : 7;
     b.oval(16 - w, 13, w, 6.5, dust); b.oval(16 + w, 13, w, 6.5, dust);
     b.oval(16 - w + 1, 21, w - 2, 3.5, dark); b.oval(16 + w - 1, 21, w - 2, 3.5, dark);
+    b.tri([[16 - w - 4, 9], [16 - w - 5, 4], [16 - w + 2, 7]], dust); b.tri([[16 + w + 4, 9], [16 + w + 5, 4], [16 + w - 2, 7]], dust);
     b.oval(16 - w, 16, w - 1, 3, shade(dust, 0.22)); b.oval(16 + w, 16, w - 1, 3, shade(dust, 0.22));
     // the face: two eyes high on the wings, a mouth across the lower pair
     for (const s of [-1, 1]) {
@@ -541,17 +551,21 @@ const MOB = {
   // ── city
   /** 비둘기 떼살 — a flock that melted together; three of the heads still look for crumbs. */
   pigeonmass(b, f, px, line) {
-    const grey = "#7c8698", dark = "#565e70", foot = "#e07a8a";
+    const grey = "#7c8698", dark = "#565e70", foot = "#e07a8a", beak = "#d6aaa2";
     const up = f ? -3 : 1;
     b.tri([[10, 14], [1, 8 + up], [2, 15 + up], [9, 18]], grey); b.tri([[2, 15 + up], [1, 8 + up], [0, 13 + up]], dark);
     path(line, [[23, 17], [28, 20], [29, 25]], grey); path(line, [[24, 17], [29, 20], [30, 24]], dark); px(27, 24, dark); px(28, 26, grey);   // the wing that broke
+    for (const x of [11, 14, 18, 21]) { const k = (x + f) % 2; px(x, 23, foot); px(x, 24 + k, foot); px(x - 1, 25 + k, foot); px(x + 1, 25 + k, foot); }
     b.oval(16, 17, 8, 6, grey); b.oval(18, 20, 6, 3.5, dark);
-    for (const [x, y] of [[11, 15], [12, 15], [19, 13], [20, 13], [15, 19]]) px(x, y, "#6ab890");                 // the sheen on a pigeon's neck
-    for (const [x, y] of [[13, 14], [21, 14], [16, 20]]) px(x, y, "#9a6ac0");
-    const head = (x, y, dir) => { b.oval(x, y, 2.5, 2.5, grey); b.r(x + dir * 2, y, 2, 1, "#e0a050"); px(x + dir * 2, y + 1, shade("#e0a050", 0.3)); px(x + dir, y - 1, "#ff8a30"); px(x, y + 2, "#6ab890"); };
-    head(7, 12, -1); head(15, 9 - (f ? 1 : 0), -1); head(25, 13, 1);
-    for (const x of [11, 14, 18, 21]) { px(x, 23, foot); px(x, 24 + ((x + f) % 2), foot); px(x - 1, 25 + ((x + f) % 2), foot); px(x + 1, 25 + ((x + f) % 2), foot); }
-    px(16, 22, CLOT); px(13, 18, CLOT); px(20, 17, CLOT);
+    for (const [x, y] of [[11, 15], [12, 15], [19, 13], [20, 13], [15, 19], [16, 19]]) px(x, y, "#6ab890");       // the sheen on a pigeon's neck
+    for (const [x, y] of [[13, 14], [14, 14], [21, 15], [17, 20]]) px(x, y, "#9a6ac0");
+    const head = (x, y, dir) => {
+      b.oval(x, y, 3, 3, grey); b.r(dir < 0 ? x - 5 : x + 3, y, 3, 1, beak); b.r(dir < 0 ? x - 4 : x + 3, y + 1, 2, 1, shade(beak, 0.34));
+      px(dir < 0 ? x - 3 : x + 3, y - 1, WHITE);
+      b.r(dir < 0 ? x - 2 : x, y - 1, 2, 2, "#ff8a30"); px(dir < 0 ? x - 2 : x + 1, y - 1, DARK); px(x, y + 2, "#6ab890"); px(x - dir, y + 2, "#9a6ac0");
+    };
+    head(7, 12, -1); head(15, 8 - (f ? 1 : 0), -1); head(25, 13, 1);
+    px(16, 22, CLOT); px(13, 18, GORE); px(20, 17, CLOT); px(9, 19, GORE);
   },
   /** 세 머리 들개 — one stray, three hungers. */
   doghead(b, f, px, line) {
@@ -637,12 +651,16 @@ const MOB = {
   },
   /** 뱀장어 매듭 — a ball of eels wound tight around the one eye they share. */
   eelknot(b, f, px, line) {
-    const eel = "#3c5a62", band = "#6a9a98", o = f ? 1 : -1;
-    const head = (x, y, dx, dy) => { path(line, [[16 + dx * 5, 18 + dy * 5], [x, y]], eel); path(line, [[16 + dx * 5, 19 + dy * 5], [x, y + 1]], shade(eel, 0.3)); b.r(x - 1, y - 1, 3, 3, eel); px(x, y - 1, EYE); px(x + Math.sign(dx), y + 1, GORE); };
-    head(4, 21 + o, -1, 0.4); head(25, 8 - o, 1, -1.2); head(28, 23 + o, 1.4, 0.8);
+    const eel = "#3f5e66", band = "#73a4a0", o = f ? 1 : -1;
+    const head = (x, y, dx, dy, dir) => {
+      for (const d of [0, 1]) path(line, [[16 + dx * 5, 18 + dy * 5 + d], [x, y + d]], d ? shade(eel, 0.34) : eel);
+      b.r(x - 2, y - 1, 5, 3, eel); b.r(dir < 0 ? x - 4 : x + 3, y, 2, 1, eel); b.r(dir < 0 ? x - 4 : x + 3, y + 1, 2, 1, CLOT);
+      px(x + dir, y - 1, EYE); px(dir < 0 ? x - 4 : x + 4, y + 1, BONE);
+    };
+    head(5, 22 + o, -1, 0.5, -1); head(25, 7 - o, 1, -1.3, 1); head(27, 24 + o, 1.4, 0.9, 1);
     b.oval(16, 18, 8.5, 8, eel); b.oval(17, 21, 7, 4.5, shade(eel, 0.3));
-    for (const [pts] of [[[[9, 15], [13, 11], [19, 10], [23, 14]]], [[[8, 20], [12, 24], [18, 25], [23, 22]]], [[[11, 12], [10, 17], [12, 22]]], [[[21, 12], [23, 17], [21, 23]]]]) path(line, pts, band);
-    // the eye in the middle
+    for (const pts of [[[9, 15], [13, 11], [19, 10], [23, 14]], [[8, 20], [12, 24], [18, 25], [23, 22]], [[11, 12], [10, 17], [12, 22]], [[21, 12], [23, 17], [21, 23]]]) path(line, pts, band);
+    // the one eye they share
     b.oval(16, 18, 4.2, 3.8, EYE); b.oval(16 + (f ? 1 : 0), 18, 2.2, 2.4, "#d8b030"); b.r(16 + (f ? 1 : 0), 16, 1, 5, DARK);
     px(12, 17, GORE); px(13, 20, GORE); px(19, 20, GORE); px(20, 17, GORE);
     px(15, 26, BILE); if (f) px(15, 27, BILE);
@@ -650,12 +668,14 @@ const MOB = {
   // ── cave
   /** 손가락 거미 — it walks on fingers. Whose, nobody has asked. */
   spiderhand(b, f, px, line) {
-    const skin = "#d6b09e", joint = "#a87a70", body = "#3c2f40";
+    const skin = "#d8b2a0", joint = "#a47670", body = "#3c2f40";
+    // five fingers, each with a knuckle and a nail
     const finger = (x0, kx, ky, tx, lift) => {
-      limb(line, [[x0, 17], [kx, ky], [tx, 26 - lift]], skin, joint);
-      b.r(kx - 1, ky - 1, 2, 2, joint); b.r(tx - 1, 26 - lift, 2, 2, "#f0e0d8"); px(tx - 1, 27 - lift, "#b08a88");
+      for (const d of [-1, 0, 1]) path(line, [[x0 + d, 17], [kx + d, ky], [tx + d, 26 - lift]], d > 0 ? joint : skin);
+      b.r(kx - 1, ky - 1, 3, 2, joint); px(kx - 1, ky - 1, skin);
+      b.r(tx - 1, 25 - lift, 3, 3, skin); b.r(tx - 1, 26 - lift, 2, 2, "#f6ebe6"); px(tx + 1, 27 - lift, joint);
     };
-    finger(12, 5, 12, 3, f ? 2 : 0); finger(13, 9, 10, 8, f ? 0 : 2); finger(19, 23, 10, 24, f ? 2 : 0); finger(20, 27, 12, 29, f ? 0 : 2);
+    finger(12, 5, 11, 3, f ? 2 : 0); finger(13, 9, 9, 8, f ? 0 : 2); finger(19, 23, 9, 24, f ? 2 : 0); finger(20, 27, 11, 28, f ? 0 : 2);
     finger(16, 15, 21, 14, 0);
     b.oval(18, 15, 6, 5, body); b.oval(19, 17, 5, 3, shade(body, 0.4));
     b.oval(11, 17, 3.5, 3, body);
@@ -683,65 +703,73 @@ const MOB = {
   },
   /** 목 꺾인 올빼미 — an owl whose head went all the way round and stayed there. */
   owlstare(b, f, px, line) {
-    const plume = "#7b6a5c", dark = "#52443e", pale = "#c8b8a0";
+    const plume = "#7b6a5c", dark = "#52443e", pale = "#cbbba2", gold = "#d8a850", socket = "#1c1420";
     const up = f ? -3 : 1;
-    b.tri([[10, 14], [1, 11 + up], [3, 20 + up], [10, 21]], dark); b.tri([[22, 14], [31, 11 + up], [29, 20 + up], [22, 21]], dark);
-    path(line, [[9, 15], [2, 12 + up]], plume); path(line, [[23, 15], [30, 12 + up]], plume);
-    b.oval(16, 19, 6.5, 7, plume); b.oval(16, 21, 4.5, 4.5, pale);
-    for (const [x, y] of [[14, 19], [18, 19], [16, 21], [14, 23], [18, 23]]) px(x, y, dark);
+    b.tri([[10, 16], [1, 13 + up], [3, 22 + up], [10, 23]], dark); b.tri([[22, 16], [31, 13 + up], [29, 22 + up], [22, 23]], dark);
+    path(line, [[9, 17], [2, 14 + up]], plume); path(line, [[23, 17], [30, 14 + up]], plume);
+    b.oval(16, 21, 6.5, 6, plume); b.oval(16, 22.5, 4.5, 3.6, pale);
+    for (const [x, y] of [[14, 21], [18, 21], [16, 23], [14, 25], [18, 25]]) px(x, y, dark);
     b.r(12, 26, 2, 2, BONE); b.r(18, 26, 2, 2, BONE); px(11, 27, BONE); px(20, 27, BONE);
-    b.r(12, 12, 8, 2, dark); px(13, 13, CLOT); px(16, 12, CLOT); px(18, 13, CLOT);                                  // the wrung neck
-    // the head, upside down: tufts at the bottom, beak above the eyes
-    b.oval(16, 8, 7, 5.5, plume); b.oval(16, 8, 5.5, 4, pale);
-    b.tri([[9, 10], [8, 14], [12, 12]], plume); b.tri([[23, 10], [24, 14], [20, 12]], plume);
-    b.r(11, 7, 4, 4, "#1c1420"); b.r(17, 7, 4, 4, "#1c1420"); px(13, 9, f ? "#ff7a30" : GORE); px(18, 9, f ? "#ff7a30" : GORE);
-    b.tri([[15, 7], [16.5, 3], [18, 7]], "#d8a850"); px(16, 4, shade("#d8a850", 0.3));
-    px(12, 11, GORE); px(12, 12, GORE); px(19, 11, GORE); if (f) px(19, 12, GORE);
+    // the neck, wrung like a cloth
+    b.r(13, 13, 6, 3, dark); px(14, 14, CLOT); px(17, 13, CLOT); px(15, 15, GORE);
+    // the head, upside down: the beak points at the sky, the ear tufts hang, and it weeps upward
+    b.oval(16, 7, 7.5, 5.5, plume); b.oval(16, 8, 6, 4, pale);
+    b.r(8, 10, 2, 5, plume); px(8, 15, plume); b.r(22, 10, 2, 5, plume); px(23, 15, plume);
+    b.r(11, 6, 4, 4, socket); b.r(17, 6, 4, 4, socket); px(13, 8, f ? "#ff7a30" : GORE); px(18, 8, f ? "#ff7a30" : GORE);
+    b.r(15, 2, 2, 3, gold); px(14, 4, gold); px(17, 4, gold); px(16, 1, gold); px(16, 3, shade(gold, 0.34));
+    px(12, 5, GORE); px(12, 4, GORE); px(19, 5, GORE); if (f) px(19, 4, GORE);
+    px(13, 11, dark); px(14, 12, dark); px(18, 11, dark); px(17, 12, dark);                                         // brows, under the eyes now
   },
   // ── abyss
   /** 쌍두 염소 — two heads, four horns, and pupils that look sideways at everything. */
   twingoat(b, f, px, line) {
-    const wool = "#c6beae", horn = "#4a3a36", o = f ? 1 : 0;
-    for (const [x, k] of [[15, 0], [18, 1], [23, 1], [26, 0]]) { b.r(x, 22, 1, 5 - (k === o ? 1 : 0), shade(wool, 0.34)); px(x, 27 - (k === o ? 1 : 0), horn); }
-    b.oval(20, 18, 7, 5, wool); b.oval(21, 21, 6, 2.6, shade(wool, 0.24));
-    for (const x of [16, 19, 22, 25]) px(x, 23, shade(wool, 0.3));
-    px(27, 15, wool); px(28, 14, shade(wool, 0.3));
-    const head = (x, y, hx, hy) => {
-      b.tri([[15, 16], [17, 20], [x + 2, y + 2], [x + 1, y - 1]], wool);
-      b.oval(x, y, 3, 2.6, wool); b.r(x - 5, y, 3, 3, wool); b.r(x - 5, y + 2, 3, 1, shade(wool, 0.3)); px(x - 5, y + 1, DARK);
-      b.r(x - 1, y - 1, 2, 2, "#d8b030"); b.r(x - 1, y, 2, 1, DARK);                                                // a goat's sideways pupil
-      path(line, [[x + 1, y - 3], [x + 3 + hx, y - 6 + hy], [x + 6 + hx, y - 5 + hy]], horn); path(line, [[x, y - 3], [x + 1 + hx, y - 7 + hy], [x + 4 + hx, y - 8 + hy]], horn);
-      px(x - 4, y + 3, shade(wool, 0.3)); px(x - 4, y + 4, shade(wool, 0.3));                                       // beard
+    const wool = "#c9c1b0", horn = "#9c8c78", ridge = "#5e5048", o = f ? 1 : 0;
+    for (const [x, k] of [[15, 0], [18, 1], [23, 1], [26, 0]]) { b.r(x, 22, 2, 5 - (k === o ? 1 : 0), shade(wool, 0.36)); b.r(x, 27 - (k === o ? 1 : 0), 2, 1, ridge); }
+    b.oval(21, 18, 7, 5, wool); b.oval(22, 21, 6, 2.6, shade(wool, 0.24));
+    for (const x of [17, 20, 23, 26]) px(x, 23, shade(wool, 0.34));
+    px(28, 15, wool); px(29, 14, shade(wool, 0.3));
+    const head = (x, y, lift) => {
+      b.tri([[15, 14], [19, 21], [x + 3, y + 3], [x + 1, y - 2]], wool);                                           // a neck thick enough to carry it
+      b.oval(x, y, 3.4, 3, wool); b.r(x - 6, y, 4, 3, wool); b.r(x - 6, y + 2, 4, 1, shade(wool, 0.3)); px(x - 6, y + 1, DARK);
+      b.r(x - 2, y - 1, 3, 2, "#e0b830"); b.r(x - 2, y, 3, 1, DARK);                                               // the sideways pupil
+      for (const d of [0, 1]) { path(line, [[x + 1, y - 3 + d], [x + 4, y - 6 + lift + d], [x + 7, y - 5 + lift + d]], d ? ridge : horn); path(line, [[x - 1, y - 3 + d], [x + 1, y - 7 + lift + d], [x + 5, y - 9 + lift + d]], d ? ridge : horn); }
+      px(x - 5, y + 3, shade(wool, 0.3)); px(x - 5, y + 4, shade(wool, 0.3)); px(x - 4, y + 3, wool);              // beard
     };
-    head(8, 21, 0, 0); head(10, 10 - o, 0, 1);
-    for (let y = 15; y <= 19; y++) px(14, y, y % 2 ? DARK : GORE);                                                // where the necks part
-    px(3, 25, GORE); if (f) px(3, 26, GORE);
+    head(9, 21, 0); head(11, 10 - o, 1);
+    for (let y = 14; y <= 20; y++) px(15 + (y % 3 === 0 ? 1 : 0), y, y % 2 ? DARK : GORE);                          // where the necks part
+    px(3, 25, GORE); if (f) px(3, 26, GORE); px(5, 14 - o, GORE);
   },
   /** 반쪽 말 — a horse that kept walking after it lost its head; something filled the gap. */
   horsehalf(b, f, px, line) {
-    const coat = "#5d3d3c", tent = "#a04a7a", o = f ? 1 : -1, s = f ? 1 : 0;
-    for (const [x, k] of [[12, 0], [15, 1], [22, 1], [25, 0]]) { b.r(x, 20, 2, 7 - (k === s ? 1 : 0), shade(coat, 0.3)); b.r(x, 27 - (k === s ? 1 : 0), 2, 1, DARK); }
+    const coat = "#7c5048", mane = "#2c2028", tent = "#a8507e", sucker = "#e6a6c6", o = f ? 1 : -1, s = f ? 1 : 0;
+    for (const [x, k] of [[12, 0], [15, 1], [22, 1], [25, 0]]) { b.r(x, 20, 2, 7 - (k === s ? 1 : 0), shade(coat, 0.32)); b.r(x, 27 - (k === s ? 1 : 0), 2, 1, DARK); }
     b.oval(19, 17, 8, 4.8, coat); b.oval(20, 19, 7, 2.6, shade(coat, 0.26));
-    path(line, [[27, 15], [30, 18], [29, 24]], "#2c2028"); path(line, [[28, 15], [31, 19], [30, 23]], "#2c2028");   // tail
-    b.tri([[13, 20], [15, 14], [10, 9], [7, 11]], coat);
-    for (const [x, y] of [[13, 13], [12, 11], [14, 15]]) px(x, y, "#2c2028");                                       // what is left of the mane
-    b.oval(8, 10, 2.6, 2, MEAT); px(7, 9, BONE); px(9, 9, BONE); px(8, 11, CLOT);                                    // the stump
-    limb(line, [[8, 9], [7 + o, 5], [4, 3 - o], [2, 6], [4 + o, 8]], tent);
-    px(7 + o, 6, "#e0a0c0"); px(4, 4 - o, "#e0a0c0"); px(2, 7, "#e0a0c0");
-    px(8, 13, GORE); px(8, 14, GORE); if (f) px(9, 16, GORE);
+    path(line, [[27, 15], [30, 18], [29, 24]], mane); path(line, [[28, 15], [31, 19], [30, 23]], mane); px(29, 25, mane);
+    b.tri([[13, 20], [16, 14], [11, 9], [7, 12]], coat);
+    for (const [x, y] of [[14, 13], [13, 11], [15, 15], [12, 10]]) px(x, y, mane);                                 // what is left of the mane
+    // where the head was, and what grew there instead
+    const arm = [[9, 10], [8 + o, 6], [10, 3], [7 - o, 1], [3, 3], [1, 7 + o]];
+    for (const d of [0, 1]) { path(line, arm.map(([x, y]) => [x + 1, y + d]), d ? shade(tent, 0.34) : tent); path(line, arm.map(([x, y]) => [x, y + d]), d ? shade(tent, 0.34) : tent); }
+    for (const [x, y] of [[8 + o, 7], [9, 4], [5, 3], [2, 5]]) px(x, y, sucker);
+    path(line, [[11, 10], [13, 6 - o], [12, 3]], tent); px(12, 2, sucker);                                          // and a thinner one, feeling the air
+    b.oval(9, 11, 3, 2.2, MEAT); px(7, 10, BONE); px(11, 10, BONE); px(9, 12, CLOT); px(8, 11, CLOT);
+    px(8, 14, GORE); px(8, 15, GORE); px(10, 14, GORE); if (f) px(10, 16, GORE);
   },
   /** 날개 구렁이 — a serpent that grew wings and never learned to land. */
   serpentwing(b, f, px, line) {
-    const scale = "#7c2c3c", belly = "#d6c890", skin = "#5c3c5c";
+    const scale = "#8a3040", belly = "#d6c890", skin = "#5c3c5c", eye = "#e8c840";
     const up = f ? -4 : 1;
-    b.tri([[14, 14], [3, 7 + up], [2, 15 + up], [8, 17 + (up >> 1)], [13, 17]], skin); b.tri([[19, 14], [30, 7 + up], [31, 15 + up], [25, 17 + (up >> 1)], [20, 17]], skin);
-    path(line, [[14, 14], [3, 7 + up]], BONE); path(line, [[14, 15], [2, 15 + up]], BONE); path(line, [[19, 14], [30, 7 + up]], BONE); path(line, [[19, 15], [31, 15 + up]], BONE);
-    const body = [[9, 8], [13, 10], [17, 14], [19, 18], [17, 22], [20, 25], [25, 25], [28, 22]];
-    path(line, body.map(([x, y]) => [x, y + 1]), belly); path(line, body.map(([x, y]) => [x + 1, y]), shade(scale, 0.3)); path(line, body, scale); path(line, body.map(([x, y]) => [x, y - 1]), scale);
+    b.tri([[15, 14], [4, 7 + up], [3, 15 + up], [9, 17 + (up >> 1)], [14, 17]], skin); b.tri([[19, 14], [30, 7 + up], [31, 15 + up], [25, 17 + (up >> 1)], [20, 17]], skin);
+    path(line, [[15, 14], [4, 7 + up]], BONE); path(line, [[15, 15], [3, 15 + up]], BONE); path(line, [[19, 14], [30, 7 + up]], BONE); path(line, [[19, 15], [31, 15 + up]], BONE);
+    const body = [[11, 9], [14, 11], [17, 14], [19, 18], [17, 22], [20, 25], [25, 25], [28, 22]];
+    path(line, body.map(([x, y]) => [x, y + 2]), belly);
+    for (const d of [-1, 0, 1]) path(line, body.map(([x, y]) => [x, y + d]), scale);
+    path(line, body.map(([x, y]) => [x + 1, y + 1]), shade(scale, 0.34));
     px(29, 21, scale); px(30, 20, shade(scale, 0.3));
-    b.r(5, 6, 5, 3, scale); b.r(6, 5, 3, 1, scale); b.r(3, 8, 5, 1 + (f ? 1 : 0), CLOT);
-    px(3, 8, BONE); px(5, 8, BONE); px(4, 9 + (f ? 1 : 0), BONE);
-    px(7, 6, "#d8b030"); px(2, 9, GORE); px(1, 10, GORE);
+    // the head: mostly jaw
+    b.oval(9, 7, 4, 3, scale); b.r(2, 6, 6, 3, scale); b.r(2, 9, 6, 1 + (f ? 1 : 0), CLOT); b.r(3, 10 + (f ? 1 : 0), 6, 1, shade(scale, 0.34));
+    px(2, 9, BONE); px(5, 9, BONE); px(4, 9 + (f ? 1 : 0), BONE);
+    b.r(8, 5, 2, 2, eye); px(8, 6, DARK); px(1, 10, GORE); px(0, 11, GORE); px(11, 4, scale); px(12, 3, shade(scale, 0.3));
   },
 };
 

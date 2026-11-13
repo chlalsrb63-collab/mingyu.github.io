@@ -233,7 +233,7 @@ function entityPos(id) {
   return G.players.get(id) || G.mobs.get(id) || null;
 }
 
-const MOB_COL = { acorn: "#b07a40", potcrab: "#c8643c", puff: "#f4f0d8", capfrog: "#c84848", stump: "#7a5a3a", lantern: "#ffd060", yarn: "#d86a8a", eyecam: "#aab4c4", signbot: "#e0b040", vend: "#4a8ad0", tvhead: "#8ae0c0", candle: "#f4e8c8", geode: "#8a6ad8", prism: "#9ae8f4", boss: "#e050b8", chest_meadow: "#f0c040", chest_forest: "#f0c040", chest_city: "#f0c040", chest_cave: "#f0c040" };
+const MOB_COL = { twinhare: "#a83848", gutfrog: "#7a9a4a", eyecrow: "#5c3c6c", splitboar: "#a83848", ribdeer: "#e0d8c8", hydrasnake: "#5a8a4a", mothface: "#b8a890", ratking: "#c87a8a", bonehound: "#a83848", batcluster: "#5c3c6c", pigeonmass: "#7a8aa0", doghead: "#7a5a48", catsplit: "#a83848", fishwalker: "#8ab0c0", leechmaw: "#b4cc3c", gatorhalf: "#5a7a4a", eelknot: "#4a5a6a", spiderhand: "#e0d8c8", bearmaw: "#a83848", owlstare: "#7a5a48", twingoat: "#e0d8c8", horsehalf: "#a83848", serpentwing: "#b4cc3c", boss: "#e050b8", abyssboss: "#b4cc3c", chest_meadow: "#f0c040", chest_forest: "#f0c040", chest_city: "#f0c040", chest_cave: "#f0c040", chest_crypt: "#f0c040", chest_sewer: "#f0c040", chest_abyss: "#f0c040" };
 const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * G.defs.eliteHp[m.el | 0]);
 const RANK_NAME = ["", "정예 ", "우두머리 "];
 Mini.mount($("#minigame"));
