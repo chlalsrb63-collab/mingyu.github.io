@@ -497,7 +497,10 @@ function underFloor(b, U, theme, X, Y, ch, h, free, under) {
       b.r(X + ((off + 3) % 16), y + 1, 6, 1, light);
     }
     if (h(2) < 0.3) { const a = X + 4 + Math.floor(h(3) * 20), q = Y + 4 + Math.floor(h(4) * 20); b.r(a, q, 5, 2, "#4f7a3a"); b.r(a + 1, q + 2, 3, 1, "#3e6a30"); }
-    if (ch === "d" && free) { const a = X + 8, q = Y + 9; b.r(a, q, 16, 14, "#262c28"); b.r(a, q, 16, 1, "#8a968a"); b.r(a, q + 13, 16, 1, "#161a18"); for (let i = 2; i < 16; i += 4) b.r(a + i, q + 2, 2, 10, "#6a766c"); }
+    if (ch === "d" && free) {
+      if (h(7) < 0.4) { const a = X + 8, q = Y + 9; b.r(a, q, 16, 14, "#262c28"); b.r(a, q, 16, 1, "#8a968a"); b.r(a, q + 13, 16, 1, "#161a18"); for (let i = 2; i < 16; i += 4) b.r(a + i, q + 2, 2, 10, "#6a766c"); }        // a drain
+      else { const a = X + 7 + Math.floor(h(5) * 10), q = Y + 10 + Math.floor(h(6) * 10); b.oval(a + 6, q + 3, 7, 3.4, U.wet[3]); b.oval(a + 6, q + 3, 6, 2.6, U.wet[0]); b.r(a + 3, q + 2, 4, 1, U.wet[2]); }   // a puddle of what leaks
+    }
   } else {
     // flesh: no joints at all — veins under the surface, wet highlights, a blister on the busy ones
     for (let i = 0; i < 3; i++) {
@@ -507,7 +510,7 @@ function underFloor(b, U, theme, X, Y, ch, h, free, under) {
     for (let i = 0; i < 2; i++) b.r(X + 4 + Math.floor(h(20 + i) * 22), Y + 4 + Math.floor(h(24 + i) * 22), 3, 1, light);
     if (ch === "d" && free) {
       const a = X + 8 + Math.floor(h(5) * 12), q = Y + 9 + Math.floor(h(6) * 12);
-      if (h(7) < 0.5) { b.oval(a + 4, q + 3, 5, 3.4, "#c4606a"); b.oval(a + 3, q + 2, 3, 1.8, "#e89aa0"); b.r(a + 2, q + 1, 2, 1, "#fff0f0"); b.r(a, q + 6, 9, 1, dark); }       // a blister
+      if (h(7) < 0.72) { b.oval(a + 4, q + 3, 5, 3.4, "#c4606a"); b.oval(a + 3, q + 2, 3, 1.8, "#e89aa0"); b.r(a + 2, q + 1, 2, 1, "#fff0f0"); b.r(a, q + 6, 9, 1, dark); }       // a blister
       else { b.oval(a + 4, q + 3, 5, 3, "#f4ecd8"); b.oval(a + 4, q + 3, 2.4, 2.4, "#3a0a12"); b.r(a + 3, q + 2, 1, 1, "#ffffff"); b.r(a - 1, q + 2, 1, 3, dark); b.r(a + 9, q + 2, 1, 3, dark); }   // an eye in the floor
     }
   }
