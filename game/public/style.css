@@ -540,12 +540,11 @@ body.crt #crt .roll {
   background: linear-gradient(to bottom, transparent, rgba(220, 240, 255, .045) 45%, rgba(220, 240, 255, .07) 52%, transparent);
   animation: crt-roll 9s linear infinite;
 }
-/* the glass: rounded corners, the edges falling into shadow, a faint reflection */
+/* the glass: slightly rounded corners and a faint reflection; the edges stay bright */
 body.crt #crt-frame {
-  border-radius: 26px / 30px;
-  box-shadow: 0 0 0 60px #06070b, inset 0 0 110px 26px rgba(0, 0, 0, .52), inset 0 0 14px 4px rgba(0, 0, 0, .7);
-  background: radial-gradient(ellipse 60% 40% at 28% 14%, rgba(255, 255, 255, .045), transparent 70%),
-              radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, .28) 100%);
+  border-radius: 14px / 16px;
+  box-shadow: 0 0 0 60px #06070b;
+  background: radial-gradient(ellipse 60% 40% at 28% 14%, rgba(255, 255, 255, .045), transparent 70%);
 }
 /* the picture itself glows a little, and text bleeds red and blue at its edges */
 body.crt #world { filter: saturate(1.18) contrast(1.07) brightness(1.07); }
