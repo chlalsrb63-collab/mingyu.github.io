@@ -45,12 +45,13 @@ export const PARTS = SP.PARTS;
 export function playerLook(cls, look, gear = {}) { return { cls, look, gear }; }
 
 export function init(canvas) { cv = canvas; g = cv.getContext("2d"); resize(); }
-export function resize() {
+/** Fit the world to a W×H screen rect (the HUD passes the play viewport; default the whole window). */
+export function resize(W = innerWidth, H = innerHeight) {
   if (!cv) return;
   // about 440×256 world pixels on screen, so the small sprites stay readable
-  Z = Math.max(1, Math.round(Math.min(innerWidth / 440, innerHeight / 256)));
-  if (innerWidth < 560) Z = Math.max(2, Math.round(innerWidth / 220));
-  vw = Math.ceil(innerWidth / Z); vh = Math.ceil(innerHeight / Z);
+  Z = Math.max(1, Math.round(Math.min(W / 440, H / 256)));
+  if (W < 560) Z = Math.max(2, Math.round(W / 220));
+  vw = Math.ceil(W / Z); vh = Math.ceil(H / Z);
   cv.width = vw; cv.height = vh;
   cv.style.width = vw * Z + "px"; cv.style.height = vh * Z + "px";
   g.imageSmoothingEnabled = false;

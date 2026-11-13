@@ -21,6 +21,8 @@ import * as Emo from "./emoticons.js";
 import * as Growth from "./growth.js";
 import * as SkillFx from "./skillfx.js";
 import { drawClassGauge, gaugeTip } from "./classgauge.js";
+import { installFrames } from "./frames.js";
+installFrames();
 
 const T = Art.TILE;
 const $ = (s) => document.querySelector(s);
@@ -104,12 +106,40 @@ let dpr = 1;
 const world = $("#world");
 const text = $("#text"), tg = text.getContext("2d");
 
+/**
+ * The screen layout. On a desktop the world plays in the top-left viewport,
+ * framed by the side column (right) and the dock (bottom); a phone upright
+ * gets the world on top and a control deck below; a phone on its side keeps
+ * the world full screen with the controls floating over it. The title and
+ * character creation always use the whole window.
+ */
+const SIDE = 288, DOCK = 184;
+const VP = { w: innerWidth, h: innerHeight, lay: "full" };
+function layout() {
+  const W = innerWidth, H = innerHeight, b = document.body;
+  // a finger-driven screen gets the touch controls from the start, before the first tap
+  if (matchMedia("(pointer: coarse)").matches && !matchMedia("(pointer: fine)").matches) b.classList.add("touch");
+  const compact = b.classList.contains("touch") || W < 900 || H < 540;
+  VP.lay = !compact ? "full" : H > W ? "port" : "land";
+  const deck = Math.round(clamp(H * 0.4, 290, 360));
+  if (!G.playing) { VP.w = W; VP.h = H; }
+  else if (VP.lay === "full") { VP.w = W - SIDE; VP.h = H - DOCK; }
+  else if (VP.lay === "port") { VP.w = W; VP.h = H - deck; }
+  else { VP.w = W; VP.h = H; }
+  b.dataset.lay = VP.lay;
+  b.classList.toggle("playing", !!G.playing);
+  const r = document.documentElement.style;
+  r.setProperty("--vpw", VP.w + "px"); r.setProperty("--vph", VP.h + "px");
+  r.setProperty("--dock", (VP.lay === "port" ? deck : DOCK) + "px");
+  if (VP.lay === "full") b.classList.remove("drawer");
+}
 function resize() {
-  const W = innerWidth, H = innerHeight;
+  layout();
+  const W = VP.w, H = VP.h;
   dpr = Math.min(2, window.devicePixelRatio || 1);
   text.width = Math.round(W * dpr); text.height = Math.round(H * dpr);
   text.style.width = W + "px"; text.style.height = H + "px";
-  S3.resize();
+  S3.resize(W, H);
 }
 addEventListener("resize", resize);
 S3.init(world);
@@ -137,6 +167,7 @@ function onMessage(msg) {
       $("#title").hidden = true; $("#create").hidden = true; $("#hud").hidden = false;
       if (!G.playing) {
         G.playing = true;
+        resize();
         addChat(`루멘테일 온라인에 오신 것을 환영합니다! (${channelName()})`, "sys");
         addChat("관리자 엘더윈에게 말을 걸어 첫 의뢰를 받아 보세요. 조작법은 H (도움말)에 있습니다.", "sys");
       }
@@ -149,6 +180,7 @@ function onMessage(msg) {
         G.playing = false;
         try { ws.close(); } catch { /* already closed */ }
         $("#hud").hidden = true; $("#create").hidden = true; $("#title").hidden = false;
+        resize();
         tg.clearRect(0, 0, text.width, text.height);
         S3.showcase();
         $("#title-msg").textContent = msg.error;
@@ -604,7 +636,7 @@ joyEl.addEventListener("touchstart", (e) => { e.preventDefault(); const t = e.ch
 joyEl.addEventListener("touchmove", (e) => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === joy.id) joyMove(t); }, { passive: false });
 const joyEnd = (e) => { for (const t of e.changedTouches) if (t.identifier === joy.id) { joy.on = false; joy.x = joy.y = 0; knob.style.transform = ""; } };
 joyEl.addEventListener("touchend", joyEnd); joyEl.addEventListener("touchcancel", joyEnd);
-addEventListener("touchstart", () => { document.body.classList.add("touch"); Sound.unlock(); }, { once: true, passive: true });
+addEventListener("touchstart", () => { document.body.classList.add("touch"); Sound.unlock(); resize(); }, { once: true, passive: true });
 addEventListener("pointerdown", () => Sound.unlock(), { once: true });
 
 function press(btn, down, up) {
@@ -1129,29 +1161,44 @@ function renderMini(t) {
 const touch = () => document.body.classList.contains("touch");
 const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank"];
 const winEl = (id) => $(`#w-${id}`);
-const isOpen = (id) => !winEl(id).hidden;
+/** The bag is docked in the side column, so it always counts as open (on a phone it lives in the drawer). */
+const isOpen = (id) => id === "inv" || !winEl(id).hidden;
+const compact = () => VP.lay !== "full";
+const drawerOpen = () => document.body.classList.contains("drawer");
+function setDrawer(on) {
+  if (on === drawerOpen()) return;
+  document.body.classList.toggle("drawer", on);
+  Sound.play(on ? "open" : "close");
+  if (!on && G.sel >= 0) { G.sel = -1; refreshUi(); }
+}
+/** Point the player at the docked bag: on a phone open the drawer, on a desktop make it blink. */
+function showBag() {
+  if (compact()) { setDrawer(true); return; }
+  const b = winEl("inv");
+  b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash");
+}
 /** Per window, the key of what it last drew: a window is rebuilt only when what it shows has changed. */
 const shown = {};
 let zTop = 20;
-const WIN_KEY = (id) => `lumentale:win:${id}`;
-const roomy = () => innerWidth >= 700 && !touch();
+const WIN_KEY = (id) => `lumentale:win2:${id}`;
+const roomy = () => VP.lay === "full";
+/** Where windows may sit: over the viewport on a desktop, anywhere on a phone. */
+const winArea = () => (VP.lay === "land" ? [Math.max(320, innerWidth - 300), innerHeight] : [VP.w, VP.h]);
 
-/** Where a window first opens, before the player moves it: the bag on the right, what goes with it beside it. */
+/** Where a window first opens, before the player moves it: inside the viewport, the shop and smith on the right next to the bag. */
 function homeOf(id, w, h) {
-  const W = innerWidth, H = innerHeight, top = 64;
-  const right = W - w - 222, mid = (W - w) / 2;
-  const inv = winEl("inv").offsetWidth || 296;
+  const [W, H] = winArea(), top = 8;
+  const right = W - w - 8, mid = (W - w) / 2;
   switch (id) {
-    case "inv": return [right, top];
-    case "char": case "shop": case "smith": case "train": return [W - 222 - inv - 10 - w, top];
-    case "bank": return [Math.max(4, W - 222 - w), top];
-    case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": return [262, top + 36];
-    case "talk": return [mid, H - h - 190];
-    default: return [mid, Math.max(top, (H - h) / 2 - 60)];
+    case "char": case "shop": case "smith": case "train": case "bank": return [right, top];
+    case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": return [8, top + 32];
+    case "talk": return [mid, H - h - 56];
+    default: return [mid, Math.max(top, (H - h) / 2 - 30)];
   }
 }
 function keepIn(id, x, y) {
-  const w = winEl(id), W = innerWidth, H = innerHeight;
+  if (id === "inv") return;
+  const w = winEl(id), [W, H] = winArea();
   const ww = w.offsetWidth, wh = w.offsetHeight;
   x = x ?? (parseFloat(w.style.left) || 0); y = y ?? (parseFloat(w.style.top) || 0);
   w.style.left = `${Math.round(clamp(x, 4, Math.max(4, W - ww - 4)))}px`;
@@ -1161,46 +1208,58 @@ function placeWin(id) {
   const w = winEl(id);
   let pos = null;
   if (roomy()) { try { pos = JSON.parse(localStorage.getItem(WIN_KEY(id))); } catch { pos = null; } }
-  if (!Array.isArray(pos)) pos = roomy() ? homeOf(id, w.offsetWidth, w.offsetHeight) : [(innerWidth - w.offsetWidth) / 2, 48];
+  if (!Array.isArray(pos)) pos = roomy() ? homeOf(id, w.offsetWidth, w.offsetHeight) : [(winArea()[0] - w.offsetWidth) / 2, 8];
   keepIn(id, pos[0], pos[1]);
 }
 function front(id) {
+  if (id === "inv") return;
   const w = winEl(id);
   if (+w.style.zIndex !== zTop) w.style.zIndex = ++zTop;
-  for (const o of WIN) winEl(o).classList.toggle("top", o === id);
+  for (const o of WIN) if (o !== "inv") winEl(o).classList.toggle("top", o === id);
 }
-function syncMenu() { for (const b of $$("#menu button[data-win]")) b.classList.toggle("on", isOpen(b.dataset.win)); }
+function syncMenu() { for (const b of $$("#menu button[data-win]")) b.classList.toggle("on", b.dataset.win === "inv" ? drawerOpen() : isOpen(b.dataset.win)); }
 function openWin(id) {
+  if (id === "inv") { showBag(); tutTry("bag"); refreshUi(); syncMenu(); return; }
   const w = winEl(id), was = !w.hidden;
   w.hidden = false;
   delete shown[id];
   if (id === "rank") { $("#rank-list").textContent = "불러오는 중…"; act({ t: "rank" }); }
   if (id === "party") renderParty();
   if (id === "guild") { act({ t: "glist" }); renderGuild(); }
-  if (id === "inv") tutTry("bag");
   refreshUi();
   if (!was) placeWin(id);
   front(id);
   syncMenu();
 }
 function closeWin(id) {
+  if (id === "inv") {
+    if (tip.from && winEl("inv").contains(tip.from)) hideTip();
+    if (G.sel >= 0) { G.sel = -1; refreshUi(); }
+    if (compact()) setDrawer(false);
+    syncMenu();
+    return;
+  }
   const w = winEl(id);
   if (w.hidden) return;
   w.hidden = true;
   if (tip.from && w.contains(tip.from)) hideTip();
-  if (id === "inv") G.sel = -1;
   syncMenu();
 }
-function toggleWin(id) { Sound.play(isOpen(id) ? "close" : "open"); isOpen(id) ? closeWin(id) : openWin(id); }
+function toggleWin(id) {
+  if (id === "inv") { if (compact() && drawerOpen()) closeWin("inv"); else { Sound.play("open"); openWin("inv"); } return; }
+  Sound.play(isOpen(id) ? "close" : "open"); isOpen(id) ? closeWin(id) : openWin(id);
+}
 function closeAll() { for (const id of WIN) closeWin(id); }
-/** Esc: the emote picker first, then whichever window is on top. */
+/** Esc: the emote picker first, then whichever window is on top, then the drawer, then the bag's pick. */
 function closeTop() {
   if (!$("#emotes").hidden) { $("#emotes").hidden = true; return; }
   let best = null, bz = -1;
-  for (const id of WIN) if (isOpen(id)) { const z = +winEl(id).style.zIndex || 0; if (z > bz) { bz = z; best = id; } }
+  for (const id of WIN) if (id !== "inv" && isOpen(id)) { const z = +winEl(id).style.zIndex || 0; if (z > bz) { bz = z; best = id; } }
   if (best) { closeWin(best); Sound.play("close"); }
+  else if (drawerOpen() || G.sel >= 0) closeWin("inv");
 }
 for (const id of WIN) {
+  if (id === "inv") continue;
   const w = winEl(id), head = w.querySelector("header");
   w.addEventListener("pointerdown", () => front(id), true);
   w.querySelector(".x").addEventListener("click", () => { closeWin(id); Sound.play("close"); });
@@ -1218,6 +1277,10 @@ for (const id of WIN) {
     head.addEventListener("pointermove", move); head.addEventListener("pointerup", up); head.addEventListener("pointercancel", up);
   });
 }
+$("#b-drawer").addEventListener("click", () => { setDrawer(!drawerOpen()); syncMenu(); });
+$("#chat-fold").addEventListener("click", () => document.body.classList.toggle("chat-folded"));
+// the class gauge's own tooltip
+$("#cg-box").addEventListener("mouseenter", () => { $("#cg-box").title = G.self ? gaugeTip(G.self) || "" : ""; });
 addEventListener("resize", () => { for (const id of WIN) if (isOpen(id)) keepIn(id); });
 for (const b of $$("#menu button[data-win]")) b.addEventListener("click", () => toggleWin(b.dataset.win));
 $("#btn-winreset").addEventListener("click", () => {
@@ -2338,12 +2401,15 @@ function renderRank(list) {
   if (isOpen("rank")) keepIn("rank");
 }
 
+const cgauge = $("#cgauge");
 function hudTick(t) {
   eventWidget(t);
   castBar(t);
   if (isOpen("daily")) tickDaily(t);
   const s = G.self;
   if (!s) return;
+  // the class gauge (classgauge.js); a fault there must never stop the frame
+  try { drawClassGauge(cgauge, s, G.defs, t); } catch (err) { if (!hudTick.warned) { hudTick.warned = true; console.warn("class gauge:", err); } }
   G.defs.skills[s.cls].forEach((sk, i) => {
     const left = G.cdEnd[i] - t, b = $(`#b-s${i}`);
     b.style.setProperty("--cd", left > 0 ? clamp(left / sk.cd, 0, 1).toFixed(3) : "0");
