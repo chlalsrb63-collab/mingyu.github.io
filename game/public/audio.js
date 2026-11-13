@@ -495,7 +495,7 @@ export const Sound = {
 };
 
 /** Minimum seconds between two plays of the same effect. */
-const THROTTLE = { hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
+const THROTTLE = { quake: 0.2, tip: 0.06, clang: 0.08, block: 0.1, tea: 0.5, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
 /** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
 const BOOST = {
   swing: 3, swing_sword: 3, swing_dagger: 3, swing_spear: 3, swing_staff: 2, swing_book: 2.2, shoot: 1.6, magic: 1.5,
@@ -504,7 +504,7 @@ const BOOST = {
   step_grass: 2.5, step_dirt: 2.5, step_stone: 2, step_wood: 1.6,
 };
 /** Effects that play even when many voices are already sounding. */
-const IMPORTANT = new Set(["level", "achieve", "death", "rift_start", "rift_boss", "announce", "enh_ok", "enh_fail", "warp", "loot"]);
+const IMPORTANT = new Set(["heads", "steam", "overload", "supercon", "giant", "hundred", "level", "achieve", "death", "rift_start", "rift_boss", "announce", "enh_ok", "enh_fail", "warp", "loot"]);
 
 /** The catalogue. `this` is Sound. */
 const SFX = {
@@ -521,6 +521,45 @@ const SFX = {
   ice() { this.tone("triangle", 1800, 600, 0.3, 0.12); this.noise(0.22, 0.12, 4000); this.arp("sine", [2093, 2637, 3136], 0.04, 0.12, 0.04, 0.05); },
   heal() { this.arp("sine", [659, 784, 988, 1319], 0.06, 0.25, 0.12); },
   buff() { this.tone("sawtooth", 200, 600, 0.3, 0.09); this.arp(0.25, [523, 659, 784], 0.07, 0.12, 0.06, 0.1); },
+  // ── class skills ──
+  throw() { this.noise(0.3, 0.26, 600, "bandpass", 0, 2600); this.tone("triangle", 220, 520, 0.22, 0.06); },
+  sword_back() { this.noise(0.24, 0.24, 2600, "bandpass", 0, 700); this.tone("triangle", 520, 220, 0.2, 0.06); this.tone(0.5, 1200, 1200, 0.05, 0.06, 0.22); },
+  headbutt() { this.tone("sine", 140, 60, 0.14, 0.3); this.noise(0.06, 0.16, 900, "lowpass"); this.tone(0.25, 520, 380, 0.05, 0.05, 0.03); },
+  brace() { this.tone("square", 110, 110, 0.12, 0.08); this.tone("triangle", 220, 330, 0.2, 0.08); this.noise(0.1, 0.06, 4000, "highpass", 0.02); },
+  clang() { this.tone(0.5, 1400, 1100, 0.07, 0.08); this.tone("sine", 2100, 1900, 0.1, 0.04); },
+  shock() { this.noise(0.36, 0.34, 2400, "lowpass", 0, 100); this.tone("sine", 90, 35, 0.4, 0.34); this.tone("square", 240, 60, 0.2, 0.1); },
+  roar() { this.tone("sawtooth", 110, 80, 0.5, 0.12); this.tone("sawtooth", 165, 120, 0.5, 0.08); this.noise(0.45, 0.14, 500, "bandpass", 0, 300); },
+  grit_burst() { this.noise(0.5, 0.36, 3000, "lowpass", 0, 80); this.tone("square", 180, 40, 0.45, 0.16); this.arp(0.25, [330, 440, 554], 0.04, 0.1, 0.06); },
+  quake() { this.tone("sine", 70, 40, 0.18, 0.28); this.noise(0.12, 0.12, 400, "lowpass"); },
+  giant() { this.tone("sawtooth", 60, 120, 0.7, 0.14); this.arp("triangle", [131, 165, 196, 262], 0.09, 0.3, 0.1, 0.1); this.noise(0.6, 0.2, 200, "bandpass", 0, 1200); },
+  swap() { this.tone("sine", 900, 300, 0.12, 0.1); this.tone("sine", 300, 900, 0.12, 0.08, 0.1); this.noise(0.12, 0.08, 3000, "highpass"); },
+  venom() { this.noise(0.3, 0.1, 400, "lowpass", 0, 1600); this.tone("sine", 300, 180, 0.25, 0.06); this.tone("sine", 600, 420, 0.1, 0.05, 0.18); },
+  coin_flip() { for (let i = 0; i < 4; i++) this.tone(0.5, 1800 + i * 120, 1800 + i * 120, 0.03, 0.05, i * 0.07); },
+  heads() { this.arp(0.25, [1047, 1319, 1568, 2093], 0.05, 0.12, 0.09); this.tone(0.5, 2637, 2637, 0.2, 0.05, 0.2); },
+  tails() { this.arp(0.25, [784, 659], 0.08, 0.12, 0.07); },
+  decoy() { this.noise(0.4, 0.12, 2000, "bandpass", 0, 500); this.tone("sine", 700, 350, 0.3, 0.05); },
+  decoy_pop() { this.noise(0.2, 0.26, 1800, "lowpass", 0, 200); this.tone("square", 400, 120, 0.15, 0.1); this.noise(0.15, 0.08, 6000, "highpass", 0.05); },
+  harvest() { for (let i = 0; i < 4; i++) this.tone(0.5, 900 - i * 90, 400 - i * 40, 0.08, 0.07, i * 0.04); this.noise(0.2, 0.2, 2200, "bandpass", 0, 600); },
+  dance() { this.noise(0.08, 0.16, 5000, "bandpass", 0, 2000); this.tone("sine", 1500, 600, 0.08, 0.05); },
+  hook() { this.noise(0.18, 0.14, 1400, "bandpass", 0, 3000); this.tone("square", 300, 600, 0.06, 0.06); this.tone(0.5, 1000, 700, 0.05, 0.06, 0.16); },
+  pole() { this.tone("triangle", 300, 900, 0.3, 0.08); this.noise(0.25, 0.1, 1500, "bandpass", 0, 4000); },
+  banner() { this.noise(0.25, 0.12, 900, "bandpass", 0, 2500); this.arp("triangle", [392, 523, 659], 0.07, 0.18, 0.1, 0.12); },
+  wheel() { for (let i = 0; i < 4; i++) this.noise(0.08, 0.12, 1200, "bandpass", i * 0.1, 3600); },
+  block() { this.tone(0.5, 1600, 1200, 0.06, 0.08); this.noise(0.05, 0.1, 5000, "highpass"); },
+  javelin() { this.noise(0.22, 0.22, 800, "bandpass", 0, 4200); this.tone("triangle", 400, 900, 0.16, 0.05); },
+  wall() { this.tone("sine", 110, 50, 0.25, 0.32); this.noise(0.18, 0.26, 1400, "lowpass", 0, 150); this.tone("square", 260, 200, 0.06, 0.08); },
+  tip() { this.tone(0.25, 1760, 1760, 0.04, 0.06); },
+  focus() { this.arp("sine", [880, 1175, 1568], 0.04, 0.12, 0.06); },
+  hundred() { this.noise(0.4, 0.3, 300, "bandpass", 0, 6000); this.tone("sawtooth", 200, 800, 0.3, 0.08); this.tone(0.5, 2093, 2093, 0.3, 0.04, 0.3); },
+  ember() { this.noise(0.3, 0.18, 400, "lowpass", 0, 2400); this.tone("sine", 260, 520, 0.18, 0.08); },
+  frost() { this.tone("triangle", 2200, 800, 0.3, 0.1); this.noise(0.3, 0.1, 6000, "highpass"); },
+  tea() { this.tone("sine", 1200, 1500, 0.12, 0.05); this.noise(0.4, 0.05, 3000, "bandpass", 0.06, 6000); this.tone("sine", 660, 660, 0.3, 0.05, 0.1); },
+  bolt() { this.noise(0.12, 0.26, 3000, "highpass"); this.tone("square", 1200, 200, 0.12, 0.08); this.noise(0.25, 0.12, 900, "lowpass", 0.05, 120); },
+  rewind() { this.tone("sine", 1400, 300, 0.4, 0.1); this.tone("triangle", 700, 150, 0.4, 0.06, 0.04); this.noise(0.4, 0.06, 2000, "bandpass", 0, 400); },
+  surge() { this.arp(0.25, [262, 330, 392, 523, 659, 784], 0.05, 0.2, 0.08); this.noise(0.6, 0.16, 300, "bandpass", 0, 5000); this.tone("sawtooth", 80, 160, 0.6, 0.1); },
+  steam() { this.noise(0.5, 0.3, 5000, "highpass", 0, 1500); this.noise(0.3, 0.2, 800, "lowpass", 0, 120); this.tone("sine", 160, 60, 0.3, 0.2); },
+  supercon() { this.tone("square", 2400, 600, 0.2, 0.06); this.tone("triangle", 1800, 2600, 0.2, 0.06); this.noise(0.2, 0.1, 6000, "highpass"); },
+  overload() { this.noise(0.45, 0.38, 2000, "lowpass", 0, 90); this.tone("square", 220, 40, 0.35, 0.18); this.noise(0.1, 0.2, 4000, "highpass"); },
   // ── hits ──
   hit() { this.tone(0.5, 260, 90, 0.08, 0.15); this.noise(0.05, 0.12, 1600, "bandpass"); },
   crit() { this.tone(0.5, 560, 130, 0.14, 0.18); this.noise(0.1, 0.22, 1200, "bandpass"); this.tone("sine", 1400, 1100, 0.08, 0.05, 0.02); },

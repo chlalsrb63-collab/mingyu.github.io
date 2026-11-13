@@ -977,15 +977,18 @@ function drawPerson(s, e, t, dt, x, y) {
   const sg = s.face;
   g.fillStyle = "rgba(20,24,50,.26)";
   g.beginPath(); g.ellipse(x, y, 5, 2, 0, 0, 7); g.fill();
+  const fl = e.fl | 0;
   const body = () => {
     g.save();
     g.translate(Math.round(x), Math.round(y));
     if (e.dead) { g.rotate(sg * 1.45); g.globalAlpha = 0.6; }
+    else if (fl & 64) g.globalAlpha = 0.4;             // slipped away behind a puppet
+    else if (fl & 16) g.globalAlpha = 0.55 + 0.25 * Math.sin(t / 40);   // a shadow, blinking about
     g.scale(sg, e.sit && !e.dead ? 0.8 : 1);       // sitting: tucked down a little
     g.drawImage(img, -SP.FOOT[0], -SP.FOOT[1]);
     g.restore();
   };
-  if (!s.weapon || e.dead) return body();
+  if (!s.weapon || e.dead || (fl & 2)) return body();    // (the greatsword is off stuck in the ground)
   const hold = SP.HOLD[s.wk] || SP.HOLD.sword;
   // which blow of the three this is: 0 and 1 are the strokes, 2 the finisher (slower, bigger)
   const beat = e.atkN | 0, fin = beat === 2;
@@ -1095,6 +1098,25 @@ const parts = [];
 const TRAIT_TINT = { fire: "fire", poison: "poison", frost: "frost", tough: "steel", vamp: "blood", swift: "gold", burst: "ash", thorn: "bone" };
 /** What a spat puddle looks like, by kind: poison, fire, blood. */
 const POOL_COL = ["#8ad84a", "#ff8a3a", "#c8324a"];
+/**
+ * Things the class skills leave standing in the world — a stuck greatsword, a banner,
+ * a teapot, a rogue's puppet: id → { x, y, until, draw(g, t, sx, sy) } in world units,
+ * sorted in with everything else that stands up. `hooks` draw over the creatures
+ * each frame (marks over monsters and the like): (g, t, P) in world pixels.
+ */
+export const props = new Map();
+export const hooks = [];
+/** A person's standing frame (front view) and weapon sprite, for drawing copies of them. */
+export function personFrame(eid) {
+  const w = G && G.who.get(eid);
+  if (!w) return null;
+  const s = personState(eid, playerLook(w.cls, w.look, w.gear));
+  return { img: s.sheet.front[SP.FRAME.stand], weapon: s.weapon, wk: s.wk };
+}
+export const FOOT = SP.FOOT;
+/** A custom effect: draw(g, k, f) is called with k running 0 → 1 over `dur` ms. */
+export function fxCustom(draw, dur, flat = false, delay = 0) { fx.add({ k: "custom", draw, dur, flat, delay }); }
+
 export const fx = {
   list: [],
   clear() { this.list.length = 0; parts.length = 0; },
@@ -1204,8 +1226,9 @@ function drawFx(now, ground2) {
     const f = fx.list[i], k = (now - f.t0) / f.dur;
     if (k < 0) continue;
     if (k >= 1) { fx.list.splice(i, 1); if (f.done) f.done(); continue; }
-    const flat = f.k === "ring" || f.k === "tele" || f.k === "lane" || f.k === "pool" || f.k === "mark" || f.k === "crack" || f.k === "snow";
+    const flat = f.k === "ring" || f.k === "tele" || f.k === "lane" || f.k === "pool" || f.k === "mark" || f.k === "crack" || f.k === "snow" || (f.k === "custom" && f.flat);
     if (flat !== ground2) continue;
+    if (f.k === "custom") { g.save(); f.draw(g, k, f); g.restore(); continue; }
     if (f.k === "ring") {
       g.globalAlpha = 1 - k;
       if (f.filled) { g.fillStyle = f.color; g.globalAlpha = (1 - k) * 0.35; g.beginPath(); g.ellipse(f.x, f.y, f.r * k, f.r * k * 0.86, 0, 0, 7); g.fill(); g.globalAlpha = 1 - k; }
@@ -1440,6 +1463,7 @@ export function render(focusX, focusY, dt, t, snap) {
   for (const [eid, p] of G.players) list.push({ y: p.y * P, p, eid });
   list.push({ y: G.me.y * P, p: G.me, eid: G.you });
   for (const pt of petsNow(dt, t)) list.push({ y: pt.y * P - 1, pet: pt });
+  for (const [id, pr] of props) { if (t >= pr.until) props.delete(id); else list.push({ y: pr.y * P - (pr.lift || 0), pr }); }
   list.sort((a, b) => a.y - b.y);
   for (const s of ents.values()) s.seen = false;
 
@@ -1517,17 +1541,24 @@ export function render(focusX, focusY, dt, t, snap) {
       g.drawImage(img, -w / 2, -w * (SP.FOOT[1] / SP.SIZE), w, w);
       g.restore();
       m.h3 = (w * (G.defs.mobs[m.k].boss ? 0.92 : 0.72) + s.hover) / 26;
+    } else if (o.pr) {
+      g.save(); o.pr.draw(g, t, o.pr.x * P, o.pr.y * P); g.restore();
     } else if (o.pet) {
       drawPet(o.pet, t);
     } else if (o.p) {
       const w = G.who.get(o.eid);
       if (!w) continue;
       const s = personState(o.eid, playerLook(w.cls, w.look, w.gear));
-      drawPerson(s, o.p, t, dt, o.p.x * P, o.p.y * P);
-      o.p.h3 = s.h;
+      const px = o.p.x * P, py = o.p.y * P;
+      // a giant grows (and shrinks back) over a quarter of a second
+      const gz = o.p.gz = (o.p.gz || 1) + (((o.p.fl | 0) & 1 ? 1.6 : 1) - (o.p.gz || 1)) * Math.min(1, dt * 8);
+      if (gz > 1.01) { g.save(); g.translate(px, py); g.scale(gz, gz); g.translate(-px, -py); drawPerson(s, o.p, t, dt, px, py); g.restore(); }
+      else drawPerson(s, o.p, t, dt, px, py);
+      o.p.h3 = s.h * gz;
     }
   }
   for (const [id, s] of ents) if (!s.seen) ents.delete(id);
+  for (const h of hooks) { g.save(); h(g, t, P); g.restore(); }
 
   drawFx(now, false);
   for (let i = parts.length - 1; i >= 0; i--) {

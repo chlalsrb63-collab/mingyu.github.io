@@ -62,39 +62,59 @@ const CLASSES = {
   mage: { name: "마도사", arm: "마법지팡이 · 마법책", wk: ["staff", "book"], hp: [80, 15], mp: [60, 10], atk: [9, 2.4], def: [1, 0.55], crit: 10 },
 };
 
+/**
+ * Every class plays around one thing of its own, shown in the class gauge:
+ *   전사 투지 (grit, 0–100): earned by striking and by being struck, spent in one blast;
+ *   도적 표식 (marks, 0–5 on each monster): left by every stab, cashed in all at once;
+ *   창술사 창끝 (the spear's tip): a blow that lands at the far end of the reach hits
+ *     harder and builds 집중 (focus, 0–5); full focus empowers the next skill;
+ *   마도사 원소 엮기 (weaving): fire, ice and lightning react when one lands on another.
+ * `el` is a mage spell's element; `emp` says what full focus adds to a lancer's skill.
+ */
+const GRIT_MAX = 100, MARK_MAX = 5, FOCUS_MAX = 5, MARK_MS = 10000, FOCUS_MS = 10000, WEAVE_MS = 5000;
+const TIP = { at: 0.72, mult: 1.5, flinch: 250 };
+const ELEM = { f: "불", i: "얼음", l: "번개" };
+/** What two elements make together (either order), and the third element's partner in a surge. */
+const REACT = {
+  fi: { id: "steam", name: "증기 폭발", r: 62, mult: 1.3 },
+  il: { id: "super", name: "초전도", r: 56, mult: 0.6, vuln: 6000 },
+  fl: { id: "over", name: "과부하", r: 50, mult: 1.1, knock: 26 },
+};
+const pairKey = (a, b) => [a, b].sort().join("");
+const SURGE_NEXT = { f: "i", i: "l", l: "f" };
+
 const SKILLS = {
   warrior: [
-    { id: "strike", name: "강타", lv: 3, mp: 6, cd: 4000, mult: 2.2, stun: 1200, desc: "강력한 일격 (220%) — 맞은 적은 잠시 기절한다" },
-    { id: "spin", name: "회전베기", lv: 7, mp: 12, cd: 8000, mult: 1.6, r: 48, desc: "주변의 모든 적을 벤다 (160%)" },
-    { id: "shout", name: "전투함성", lv: 12, mp: 15, cd: 30000, dur: 12000, r: 110, desc: "12초간 자신과 주변 파티원의 공격력 25% 증가" },
-    { id: "quake", name: "대지 가르기", lv: 18, mp: 22, cd: 14000, mult: 2.4, len: 120, knock: 22, desc: "땅을 갈라 일직선의 적을 날려 버린다 (240%)" },
-    // the second tier and the ultimate, learned at 25 and 35 (메이플스토리 4차 · 바람의나라 승급 스킬 무렵)
-    { id: "whirl", name: "폭풍 칼날", lv: 25, mp: 28, cd: 15000, mult: 0.75, r: 54, n: 6, every: 400, desc: "칼날 폭풍을 두르고 움직인다 — 곁의 적을 여섯 번 벤다 (6회 × 75%)" },
-    { id: "titan", name: "거신의 일격", lv: 35, mp: 45, cd: 40000, mult: 4.2, r: 84, stun: 1500, knock: 26, ult: 1, desc: "궁극기 · 대지를 내려쳐 넓은 범위를 부수고 기절시킨다 (420%)" },
+    { id: "toss", name: "대검 투척", lv: 3, mp: 8, cd: 6000, mult: 1.5, ret: 1.2, len: 120, stay: 8000, desc: "대검을 던져 일직선의 적을 꿰뚫는다 (150%). 검은 땅에 꽂혀 8초간 남고, 다시 누르면 회수 — 돌아오는 검이 길 위의 적을 다시 베며 (120%) 내 앞으로 끌고 온다. 검이 없는 동안 기본 공격은 빠른 박치기 (투지 +12)" },
+    { id: "brace", name: "버티기", lv: 7, mp: 10, cd: 9000, dur: 1200, guard: 0.8, r: 54, mult: 1.2, desc: "1.2초간 버티며 받는 피해를 80% 막는다. 버티기가 끝나면 막아 낸 피해의 세 배를 충격파로 되돌려 준다 (최소 120%) · 투지 +30" },
+    { id: "roar", name: "도발 포효", lv: 12, mp: 14, cd: 16000, r: 96, mult: 0.6, dur: 8000, durUp: 300, buff: 15, desc: "주변의 적을 내 앞으로 끌어당기고 나만 노리게 한다 (60%). 끌려온 적 하나마다 투지 +10 · 8초간 나와 파티원의 공격력 15% 증가" },
+    { id: "burst", name: "투지 폭발", lv: 18, mp: 16, cd: 10000, mult: 1, per: 0.018, r: 36, desc: "모은 투지를 모두 터뜨린다 — 투지가 많을수록 넓고 강하다 (100% + 투지 1당 1.8%, 최대 280%)" },
+    { id: "stomp", name: "대지 걸음", lv: 25, mp: 24, cd: 16000, dur: 8000, durUp: 250, mult: 0.35, r: 40, desc: "8초간 걸음마다 땅이 울린다 — 걸으면 0.5초마다, 서 있으면 1초마다 발밑의 적에게 35%" },
+    { id: "giant", name: "거신화", lv: 35, mp: 40, cd: 45000, dur: 10000, durUp: 200, mult: 2.4, r: 56, ult: 1, desc: "궁극기 · 10초간 거인이 된다. 내려서며 주변을 부수고 (240%), 넉백·둔화에 끄떡없으며, 모든 기본 공격이 마무리 일격으로 넓게 휩쓴다. 투지가 줄지 않는다" },
   ],
   rogue: [
-    { id: "vital", name: "급소 찌르기", lv: 3, mp: 6, cd: 3500, mult: 2.0, desc: "반드시 치명타로 들어가는 일격 (200%)" },
-    { id: "dash", name: "그림자 도약", lv: 7, mp: 10, cd: 7000, mult: 1.9, len: 120, desc: "적의 등 뒤로 순간이동해 벤다 (190%)" },
-    { id: "smoke", name: "연막", lv: 12, mp: 14, cd: 22000, dur: 6000, desc: "적의 시선을 끊고 6초간 이동속도 40% 증가" },
-    { id: "fan", name: "맹독 표창", lv: 18, mp: 18, cd: 11000, mult: 1.2, r: 76, n: 5, dot: 0.5, desc: "가까운 적 5명에게 표창을 던져 중독시킨다 (120% + 4초간 독)" },
-    { id: "phantom", name: "환영 난무", lv: 25, mp: 26, cd: 14000, mult: 0.95, r: 96, n: 6, hits: 2, desc: "분신이 곁의 적 6명을 두 번씩 벤다 (2회 × 95%)" },
-    { id: "reaper", name: "암살", lv: 35, mp: 40, cd: 36000, mult: 5.5, len: 150, exec: 0.3, ult: 1, desc: "궁극기 · 적의 등 뒤로 숨어들어 확정 치명타 (550%) — 체력 30% 이하의 적에게는 두 배" },
+    { id: "swap", name: "그림자 바꿔치기", lv: 3, mp: 7, cd: 5000, len: 110, mult: 1.3, marks: 2, desc: "가장 가까운 적과 자리를 바꾸며 벤다 (130%) · 표식 +2, 적은 1초간 혼란에 빠진다" },
+    { id: "venom", name: "맹독 바르기", lv: 7, mp: 10, cd: 14000, n: 6, dot: 0.12, desc: "다음 기본 공격 6번이 표식을 하나 더 남기고, 표식 수만큼 독해지는 독을 묻힌다 (4초, 표식 1당 공격력의 12%/초)" },
+    { id: "coin", name: "행운의 동전", lv: 12, mp: 12, cd: 8000, len: 84, mult: 3, miss: 0.8, desc: "동전을 튕겨 앞의 적에게 던진다. 앞면 — 확정 치명타 300%, 이 일격으로 쓰러지면 골드 두 배. 뒷면 — 80%, 대신 다음에 쓰는 스킬의 재사용 대기가 사라진다" },
+    { id: "decoy", name: "꼭두각시 분신", lv: 18, mp: 16, cd: 15000, dur: 4000, mult: 1.8, r: 44, desc: "제자리에 분신을 남기고 몸을 감춘다 (2.5초간 이동속도 40% 증가, 적이 나를 잊는다). 분신은 적을 끌어모으다 맞거나 4초가 지나면 터진다 (180%, 표식 +2)" },
+    { id: "harvest", name: "표식 수확", lv: 25, mp: 22, cd: 14000, r: 110, mult: 1.4, desc: "주변의 표식을 모두 터뜨린다 — 표식 1개당 140%, 터진 자리 곁의 적에게도 그 35%. 이것으로 쓰러뜨린 적 하나마다 재사용 대기 1.5초 감소" },
+    { id: "dance", name: "그림자 무도", lv: 35, mp: 40, cd: 40000, len: 150, n: 8, every: 260, mult: 2.2, per: 0.4, ult: 1, desc: "궁극기 · 2.5초간 그림자가 되어 표식이 있는 적 사이를 (없으면 가까운 적을) 차례로 넘나들며 벤다 — 최대 8명, 각 220% + 표식 1당 40%. 끝나면 제자리로 돌아온다. 그동안은 피해를 입지 않는다" },
   ],
   lancer: [
-    { id: "pierce", name: "관통 찌르기", lv: 3, mp: 7, cd: 4500, mult: 1.9, len: 96, desc: "일직선의 적을 모두 꿰뚫는다 (190%)" },
-    { id: "sweep", name: "초승달 베기", lv: 7, mp: 12, cd: 8000, mult: 1.5, r: 58, knock: 20, desc: "창을 크게 휘둘러 주변의 적을 밀쳐 낸다 (150%)" },
-    { id: "vault", name: "도약 강습", lv: 12, mp: 16, cd: 10000, mult: 2.2, len: 130, r: 44, desc: "적에게 뛰어올라 내리꽂는다 (범위 220%, 둔화)" },
-    { id: "rain", name: "창 소나기", lv: 18, mp: 24, cd: 16000, mult: 0.9, r: 50, n: 5, every: 500, desc: "하늘에서 창이 다섯 번 쏟아진다 (5회 × 90%)" },
-    { id: "charge", name: "돌격", lv: 25, mp: 26, cd: 13000, mult: 2.3, len: 110, knock: 24, desc: "앞으로 내달리며 길 위의 적을 모두 꿰뚫고 옆으로 밀쳐 낸다 (230%)" },
-    { id: "dragon", name: "천룡 강림", lv: 35, mp: 44, cd: 40000, mult: 2.1, r: 72, n: 3, every: 450, ult: 1, desc: "궁극기 · 하늘에서 용의 창이 세 번 내리꽂힌다 (3회 × 210%, 둔화)" },
+    { id: "hook", name: "갈고리 걸기", lv: 3, mp: 7, cd: 5000, len: 140, mult: 1.3, desc: "일직선에서 가장 먼 적을 걸어 정확히 창끝 거리로 끌어온다 (130%, 둔화)", emp: "집중 5: 셋을 한꺼번에 걸어 온다" },
+    { id: "pole", name: "장대 도약", lv: 7, mp: 12, cd: 9000, len: 100, r: 44, mult: 2, desc: "창을 짚고 적의 머리 위로 뛰어넘어 내려찍는다 (범위 200%). 착지 후 1.2초 안의 기본 공격은 반드시 창끝으로 들어간다", emp: "집중 5: 착지 범위가 넓어지고 1초간 기절시킨다" },
+    { id: "banner", name: "깃발 꽂기", lv: 12, mp: 16, cd: 20000, dur: 12000, durUp: 400, r: 80, haste: 0.2, desc: "12초간 깃발을 꽂는다. 깃발 곁의 파티원은 공격 속도 20% 증가, 깃발 곁의 적은 느려진다", emp: "집중 5: 깃발이 더 넓게, 6초 더 오래 선다" },
+    { id: "wheel", name: "회전 방벽", lv: 18, mp: 16, cd: 12000, dur: 1500, r: 36, n: 5, every: 300, mult: 0.6, knock: 10, desc: "1.5초간 창을 돌린다 — 날아오는 공격을 모두 막고, 닿는 적을 다섯 번 쳐 밀어낸다 (5회 × 60%)", emp: "집중 5: 두 배 오래 돈다" },
+    { id: "javelin", name: "투창", lv: 25, mp: 22, cd: 13000, len: 150, carry: 70, mult: 2.2, pin: 1.6, desc: "창을 던져 맞은 적을 뒤로 날려 보낸다 (220%). 벽에 박히면 2초간 기절하고 피해 1.6배 (벽꿍)", emp: "집중 5: 길 위의 적을 모두 꿰어 날린다" },
+    { id: "hundred", name: "백보일섬", lv: 35, mp: 40, cd: 40000, len: 160, mult: 2.6, per: 0.4, ult: 1, desc: "궁극기 · 집중을 모두 쏟아 160만큼 꿰뚫고 지나간다 — 지나친 모든 적에게 창끝 일격 (260% + 집중 1당 40%)" },
   ],
   mage: [
-    { id: "fireball", name: "화염구", lv: 3, mp: 10, cd: 4500, mult: 1.9, r: 34, desc: "폭발하는 불덩이 (범위 190%)" },
-    { id: "nova", name: "빙결 파동", lv: 7, mp: 16, cd: 9000, mult: 1.4, r: 58, desc: "주변 적에게 피해를 주고 느리게 한다" },
-    { id: "heal", name: "치유의 빛", lv: 12, mp: 22, cd: 12000, r: 90, pct: 0.35, desc: "자신과 주변 아군의 HP 35% 회복" },
-    { id: "meteor", name: "유성우", lv: 18, mp: 30, cd: 18000, mult: 1.3, r: 52, n: 4, every: 700, desc: "지정한 곳에 유성이 네 번 떨어진다 (4회 × 130%)" },
-    { id: "chain", name: "연쇄 번개", lv: 25, mp: 26, cd: 9000, mult: 1.7, r: 84, n: 6, desc: "번개가 적 6명을 차례로 튄다 (170%, 튈 때마다 10%씩 약해진다)" },
-    { id: "blizzard", name: "눈보라", lv: 35, mp: 50, cd: 38000, mult: 0.85, r: 76, n: 8, every: 450, ult: 1, desc: "궁극기 · 지정한 곳에 눈보라가 몰아쳐 여덟 번 얼린다 (8회 × 85%, 둔화)" },
+    { id: "ember", name: "불씨", lv: 3, mp: 9, cd: 4000, el: "f", mult: 1.7, r: 26, burn: 0.15, desc: "불덩이를 던진다 (범위 170%). 떨어진 자리는 3초간 타오른다 (0.5초마다 15%)" },
+    { id: "frost", name: "서리 고리", lv: 7, mp: 13, cd: 8000, el: "i", mult: 1.3, r: 56, desc: "주변에 서리 고리를 퍼뜨린다 (130%, 둔화). 이미 느려진 적은 1초간 얼어붙는다" },
+    { id: "teapot", name: "따뜻한 찻주전자", lv: 12, mp: 20, cd: 18000, dur: 8000, r: 80, pct: 0.4, desc: "따뜻한 찻주전자를 내려놓는다. 8초 동안 곁의 아군이 매초 조금씩 회복한다 (모두 합쳐 최대 HP의 40%)" },
+    { id: "bolt", name: "번개 화살", lv: 18, mp: 16, cd: 7000, el: "l", mult: 1.6, r: 72, n: 3, desc: "번개 화살이 적 셋을 차례로 튄다 (160%, 튈 때마다 10%씩 약해진다)" },
+    { id: "rewind", name: "시간 되감기", lv: 25, mp: 18, cd: 20000, ago: 3000, desc: "3초 전에 서 있던 곳으로 돌아간다. 그때 HP가 더 많았다면 그만큼 되돌린다 · 원소 주문의 재사용 대기 2초 감소" },
+    { id: "surge", name: "원소 폭주", lv: 35, mp: 30, cd: 50000, dur: 8000, durUp: 200, mult: 1.5, r: 60, ult: 1, desc: "궁극기 · 세 원소를 터뜨리며 (범위 150%) 8초간 폭주한다 — 원소 주문의 MP 소모 없음, 재사용 대기 절반, 모든 시전이 직전 원소와 반응한다" },
   ],
 };
 
@@ -233,8 +253,9 @@ function levelled(ch, i) {
   if (L <= 1) return sk;
   const o = { ...sk };
   if (sk.mult) o.mult = sk.mult * (1 + SK_STEP * (L - 1));
+  if (sk.ret) o.ret = sk.ret * (1 + SK_STEP * (L - 1));
   if (sk.pct) o.pct = sk.pct + 0.015 * (L - 1);
-  if (sk.dur) o.dur = sk.dur + 500 * (L - 1);
+  if (sk.durUp) o.dur = sk.dur + sk.durUp * (L - 1);
   o.cd = Math.round(sk.cd * skillCd(L));
   return o;
 }
@@ -1717,9 +1738,9 @@ function stats(p) {
   return {
     mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf,
     xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
-    atk: Math.round(c.atk0 * (p.atkBuff > now ? 1.25 : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
+    atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1,
-    spd: c.spd0 * (p.spdBuff > now ? 1.4 : 1) * (p.slowed > now ? SLOW : 1), spd0: c.spd0,
+    spd: c.spd0 * (p.spdBuff > now ? 1.4 : 1) * (p.slowed > now && !(p.giant > now) ? SLOW : 1), spd0: c.spd0,
   };
 }
 
@@ -1780,7 +1801,7 @@ function newMob(S, k, r, sp) {
 export function setup() {
   const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, parties: {}, chat: [], n: 0, evt: null };
   for (const id of Object.keys(MAPS)) {
-    const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], who: false, n: 0, kc: 0, fb: 0 };
+    const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0 };
     for (const [fx, fy] of FIRES[id] || []) {
       const at = freeTile(MAPS[id], fx, fy);
       if (at) rt.fires.push({ id: S.nextId++, x: at[0] * T + 8, y: at[1] * T + 10, until: 0 });
@@ -1850,7 +1871,7 @@ export function addPlayer(S, pid, ch) {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, hp: 1, mp: 0, dead: false, stc: null,
     cds: [0, 0, 0, 0, 0, 0], atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
-    atkBuff: 0, spdBuff: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
+    atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, grit: 0, gritAt: 0, focus: 0, focusAt: 0, sword: null, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
   if (!canStand(MAPS[p.map], p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
   const st = stats(p);
@@ -1893,6 +1914,7 @@ function changeMap(S, p, to, x, y) {
   S.maps[p.map].n--;
   S.maps[p.map].who = true;
   p.map = to; p.x = x; p.y = y;
+  classReset(p, false);
   S.maps[to].n++;
   S.maps[to].who = true;
   p.sendMap = true; p.fix = true;
@@ -2092,7 +2114,7 @@ function lootFor(S, rt, mob, p) {
   const out = [];
   const share = allies(S, p).length;
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * (1 + st.gold / 100);
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * (1 + st.gold / 100) * (mob.lucky ? 2 : 1);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
   const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
   for (let i = 0; i < tries; i++) {
@@ -2164,11 +2186,13 @@ function hurtMob(S, rt, mob, p, mult, sure) {
   if (mob.dead) return;
   const st = stats(p);
   const d = MOBS[mob.k];
-  const crit = sure || rnd(S) * 100 < st.crit;
+  // a rogue finds the gaps their marks point to: +4% critical chance per mark
+  const crit = sure || rnd(S) * 100 < st.crit + (p.ch.cls === "rogue" ? marksOf(S, mob) * 4 : 0);
   let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? st.critd : 1) - d.def * 0.5;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
   if (st.lg.giant && (mob.el || d.boss)) dmg *= 1.3;
   if (has(mob, "tough")) dmg *= 0.6;
+  if (mob.vuln > S.now) dmg *= 1.3;
   dmg = Math.max(1, Math.round(dmg));
   // thorns: a blow struck from up close costs the striker a little (never the last of their health)
   if (has(mob, "thorn") && st.arm.range < 60 && !p.dead) {
@@ -2197,6 +2221,7 @@ function killMob(S, rt, mob) {
   mob.respAt = S.now + (mob.fix === 2 ? GUARD_RESP : d.resp);
   mob.tgt = null;
   mob.dot = null;
+  mob.mk = 0; mob.dec = null; mob.vuln = 0;
   rt.ev.push(["k", mob.id]);
   // everyone who hit it, plus their party members standing nearby, shares the kill
   const looters = new Set();
@@ -2269,7 +2294,10 @@ function killMob(S, rt, mob) {
 function hurtPlayer(S, rt, p, raw, mob) {
   if (p.dead || S.now < (p.ghost || 0)) return;
   const st = stats(p);
-  const dmg = Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard));
+  let dmg = Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard));
+  // braced: most of the blow is caught, to be thrown back when the stance breaks
+  if (p.brace && S.now < p.brace.until) { const held = Math.round(dmg * 0.8); dmg = Math.max(1, dmg - held); p.brace.stored += held; rt.ev.push(["bk", p.eid]); }
+  addGrit(p, 4);
   p.hp -= dmg;
   p.hitAt = S.now;
   rouse(S, p);
@@ -2291,6 +2319,7 @@ function fall(S, rt, p) {
   p.dead = true;
   p.streak = 0;
   p.burn = null; p.poison = null; p.slowed = 0;
+  classReset(p, true);
   dropAggro(S, p);
   rt.ev.push(["pd", p.eid]);
   toast(p, "쓰러졌습니다...");
@@ -2338,28 +2367,58 @@ function aimVec(p, mob) {
   return [(mob.x - p.x) / d, (mob.y - p.y) / d];
 }
 
+/** How long a basic attack takes now: a headbutt is quick, and a banner hurries its party. */
+function atkCd(p) {
+  const st = stats(p);
+  return Math.round(st.acd * (p.sword ? 0.6 : 1) * (p.banHaste ? 1 - p.banHaste : 1));
+}
+/** How far a basic attack reaches now. */
+function atkRange(p) {
+  const r = stats(p).arm.range;
+  return p.sword ? 22 : p.giant > p.S.now ? r + 10 : r;
+}
+
 function basicAttack(S, p) {
   rouse(S, p);
   const st = stats(p);
   const c = st.arm;
   const rt = S.maps[p.map];
-  // one, two, three: the third blow of an unbroken run is the finisher
-  p.combo = S.now - p.atkAt < st.acd + COMBO_MS ? (p.combo + 1) % 3 : 0;
-  const fin = p.combo === 2;
-  p.atkAt = S.now;
-  const mob = nearestMob(rt, p.x, p.y, c.range);
+  const now = S.now;
+  const giant = p.giant > now;
+  // one, two, three: the third blow of an unbroken run is the finisher (a giant's every blow is one)
+  p.combo = now - p.atkAt < atkCd(p) + COMBO_MS ? (p.combo + 1) % 3 : 0;
+  const fin = p.combo === 2 || giant;
+  p.atkAt = now;
+  const range = atkRange(p);
+  const mob = nearestMob(rt, p.x, p.y, range);
+  // a warrior without a sword puts their head down and butts
+  const butt = !!p.sword;
+  const fxKind = butt ? 40 : c.fx;
   if (!mob) {
-    const reach = c.range < 60 ? 14 : c.range * 0.7;
-    rt.ev.push(["a", p.eid, c.fx, Math.round(p.x + DX[p.dir] * reach), Math.round(p.y - 6 + DY[p.dir] * reach), p.dir, p.combo]);
+    const far = range < 60 ? 14 : range * 0.7;
+    rt.ev.push(["a", p.eid, fxKind, Math.round(p.x + DX[p.dir] * far), Math.round(p.y - 6 + DY[p.dir] * far), p.dir, p.combo]);
     return;
   }
   face(p, mob);
-  rt.ev.push(["a", p.eid, c.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir, p.combo]);
-  const mult = (c.mult || 1) * (fin ? FINISH.mult : 1);
+  // the spear's tip: a blow landing at the far end of the reach (or right after a vault)
+  let tip = false;
+  if (c === WKIND.spear) {
+    tip = now < (p.tipNext || 0) || dist(p.x, p.y, mob.x, mob.y) - big(mob) >= c.range * TIP.at;
+    if (tip) { p.tipNext = 0; addFocus(S, p); rt.ev.push(["tip", mob.id]); }
+  }
+  rt.ev.push(["a", p.eid, fxKind, Math.round(mob.x), Math.round(mob.y - 6), p.dir, p.combo]);
+  if (butt) {
+    const [ux, uy] = aimVec(p, mob);
+    if (!MOBS[mob.k].boss && mob.el !== 2) { knock(MAPS[p.map], mob, ux, uy, 16); mob.stun = Math.max(mob.stun, now + 350); }
+    hurtMob(S, rt, mob, p, 0.6);
+    addGrit(p, 12);
+    return;
+  }
+  const mult = (c.mult || 1) * (fin ? FINISH.mult : 1) * (tip ? TIP.mult : 1);
   // a greatsword's arc catches what stands beside the target, a spear runs through
   // what stands behind it, and a spellbook's burst splashes around it
   let extra = [];
-  if (c.cleave) extra = mobsWithin(rt, mob.x, mob.y, fin ? 34 : 26).slice(0, c.cleave + (fin ? 1 : 0));
+  if (c.cleave) extra = mobsWithin(rt, mob.x, mob.y, (fin ? 34 : 26) * (giant ? 1.6 : 1)).slice(0, c.cleave + (fin ? 1 : 0) + (giant ? 3 : 0));
   else if (c.line) { const [ux, uy] = aimVec(p, mob); extra = mobsInLine(rt, p.x, p.y, ux, uy, c.range + 10, fin ? 16 : 11).slice(0, c.line + (fin ? 1 : 0)); }
   else if (c.splash) extra = mobsWithin(rt, mob.x, mob.y, c.splash + (fin ? 8 : 0)).slice(0, 4);
   const zx = mob.x, zy = mob.y;
@@ -2368,10 +2427,22 @@ function basicAttack(S, p) {
   const shove = (o, k) => {
     if (MOBS[o.k].boss || o.el === 2) return;
     if (!o.el) { const [ux, uy] = aimVec(p, o); knock(MAPS[p.map], o, ux, uy, c.kb * k * (fin ? FINISH.kb : 1)); }
-    o.stun = Math.max(o.stun, S.now + (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1));
+    o.stun = Math.max(o.stun, now + (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + (tip && o === mob ? TIP.flinch : 0));
   };
   shove(mob, 1);
   hurtMob(S, rt, mob, p, mult);
+  if (p.ch.cls === "warrior") addGrit(p, 8);
+  if (p.ch.cls === "rogue" && !mob.dead) {
+    // every stab leaves a mark; a venomed blade leaves two and a poison that grows with them
+    const v = p.venom && p.venom.n > 0 && p.venom.until > now ? p.venom : null;
+    addMarks(S, mob, v ? 2 : 1);
+    if (v) {
+      v.n--;
+      mob.dot = { until: now + 4000, next: now + 1000, dmg: Math.max(1, Math.round(st.atk * v.dot * marksOf(S, mob))), pid: p.pid };
+      if (!v.n) p.venom = null;
+      p.dirty = true;
+    }
+  }
   for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6); }
   if (st.lg.chain && rnd(S) < 0.25) {
     for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
@@ -2381,210 +2452,580 @@ function basicAttack(S, p) {
   }
 }
 
+// ── the class mechanics
+
+/** What a skill costs right now: nothing to call a thrown sword back, nothing for a spell in a surge. */
+function skMp(p, i) {
+  const sk = SKILLS[p.ch.cls][i];
+  if (!sk) return 0;
+  if (sk.id === "toss" && p.sword) return 0;
+  if (sk.el && p.surge > p.S.now) return 0;
+  return sk.mp;
+}
+function addGrit(p, n) {
+  if (p.ch.cls !== "warrior") return;
+  p.grit = Math.min(GRIT_MAX, (p.grit || 0) + n);
+  p.gritAt = p.S.now;
+}
+const marksOf = (S, mob) => (mob.mkAt > S.now ? mob.mk | 0 : 0);
+function addMarks(S, mob, n) {
+  if (mob.dead) return;
+  mob.mk = Math.min(MARK_MAX, marksOf(S, mob) + n);
+  mob.mkAt = S.now + MARK_MS;
+}
+function addFocus(S, p) {
+  p.focus = Math.min(FOCUS_MAX, (p.focus || 0) + 1);
+  p.focusAt = S.now;
+}
+/** Whether this cast spends full focus on its empowered form. */
+function spendFocus(p, sk) {
+  if (p.ch.cls !== "lancer" || sk.ult || (p.focus || 0) < FOCUS_MAX) return false;
+  p.focus = 0;
+  return true;
+}
+/** Drag a monster toward (tx, ty), as far as the ground lets it. */
+function pullTo(m, mob, tx, ty) {
+  if (MOBS[mob.k].boss || MOBS[mob.k].still || mob.el === 2) return false;
+  const ok = MOBS[mob.k].fly ? canFly : canStand;
+  const d = dist(mob.x, mob.y, tx, ty);
+  if (d < 1) return true;
+  const ux = (tx - mob.x) / d, uy = (ty - mob.y) / d;
+  let far = 0;
+  for (let k = 4; k <= d; k += 4) { if (!ok(m, mob.x + ux * k, mob.y + uy * k)) break; far = k; }
+  if (far >= d - 4 && ok(m, tx, ty)) { mob.x = tx; mob.y = ty; } else { mob.x += ux * far; mob.y += uy * far; }
+  return true;
+}
+/** How far along (ux, uy) from (x, y) something can fly before the ground stops it. */
+function reach(m, x, y, ux, uy, len, step = 6) {
+  let far = 0;
+  for (let k = step; k <= len; k += step) { if (solidAt(m, x + ux * k, y + uy * k - 3)) break; far = k; }
+  return far;
+}
+/**
+ * A spell of element `e` landing at (x, y). If a different element is still held
+ * (or a surge is on) the two react there; either way `e` is held next.
+ */
+function weave(S, rt, p, e, x, y, k) {
+  const now = S.now, held = p.weave && p.weave.until > now ? p.weave.e : "";
+  let other = held && held !== e ? held : "";
+  if (!other && p.surge > now) other = SURGE_NEXT[e];
+  p.weave = { e, until: now + WEAVE_MS };
+  if (!other) return null;
+  const rx = REACT[pairKey(e, other)];
+  const m = MAPS[p.map];
+  rt.ev.push(["rx", rx.id === "steam" ? 1 : rx.id === "super" ? 2 : 3, Math.round(x), Math.round(y), rx.r]);
+  for (const o of mobsWithin(rt, x, y, rx.r)) {
+    if (rx.vuln) { o.vuln = now + rx.vuln; rt.ev.push(["vu", o.id, rx.vuln]); }
+    if (rx.knock) { const d = dist(x, y, o.x, o.y) || 1; knock(m, o, (o.x - x) / d, (o.y - y) / d, rx.knock); }
+    hurtMob(S, rt, o, p, rx.mult * k);
+  }
+  if (!(p.surge > now)) p.weave = null;    // a reaction uses both up — but a surge keeps the chain going
+  return rx;
+}
+/** The mage's footprints, a few seconds of them, for the rewind. */
+function trailPush(S, p) {
+  if (p.ch.cls !== "mage") return;
+  if (!p.trail) p.trail = [];
+  const last = p.trail[p.trail.length - 1];
+  if (last && S.now - last[0] < 200) return;
+  p.trail.push([S.now, p.x, p.y, p.hp, p.map]);
+  while (p.trail.length && S.now - p.trail[0][0] > 4200) p.trail.shift();
+}
+
+/** A rogue's puppet goes off: it marks and hurts whatever crowded round it. */
+function popDecoy(S, rt, dc) {
+  if (dc.gone) return;
+  dc.gone = true;
+  rt.ev.push(["dx", dc.id, Math.round(dc.x), Math.round(dc.y), dc.r]);
+  for (const o of rt.mobs) if (o.dec === dc) o.dec = null;
+  const p = S.players[dc.pid];
+  if (!p || p.map !== rt.id) return;
+  for (const o of mobsWithin(rt, dc.x, dc.y, dc.r)) { hurtMob(S, rt, o, p, dc.mult); addMarks(S, o, 2); }
+}
+/** Banners, teapots and puppets standing in a map. */
+function classProps(S, rt, m, now) {
+  if (rt.decoys && rt.decoys.length) {
+    for (let i = rt.decoys.length - 1; i >= 0; i--) {
+      const dc = rt.decoys[i];
+      if (!dc.gone && now >= dc.until) popDecoy(S, rt, dc);
+      if (dc.gone) rt.decoys.splice(i, 1);
+    }
+  }
+  if (!rt.props || !rt.props.length) return;
+  for (let i = rt.props.length - 1; i >= 0; i--) {
+    const o = rt.props[i];
+    if (now >= o.until) { rt.props.splice(i, 1); continue; }
+    if (now < o.next) continue;
+    if (o.kind === "banner") {
+      o.next = now + 500;
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) mob.slow = Math.max(mob.slow || 0, now + 800);
+    } else if (o.kind === "tea") {
+      // a warm cup for everyone close by, once a second
+      o.next = now + 1000;
+      rt.ev.push(["tq", o.id]);
+      for (const pid of Object.keys(S.players)) {
+        const q = S.players[pid];
+        if (q.map !== rt.id || q.dead || dist(q.x, q.y, o.x, o.y) > o.r) continue;
+        const mhp = stats(q).mhp, amt = Math.min(mhp - q.hp, Math.round(mhp * o.pct));
+        if (amt < 1) continue;
+        q.hp += amt;
+        rt.ev.push(["h", q.eid, -amt, 0, 1]);
+      }
+    }
+  }
+}
+/** One blink of the shadow dance: on to the next marked monster, or home when there is none. */
+function danceStep(S, p, now) {
+  const dn = p.dance;
+  if (now < dn.next) return;
+  const rt = S.maps[p.map], m = MAPS[p.map];
+  let mob = null;
+  while (dn.i < dn.ids.length && !mob) { const id = dn.ids[dn.i++]; mob = rt.mobs.find((o) => o.id === id && !o.dead) || null; }
+  const ox = p.x, oy = p.y;
+  if (!mob) {
+    if (canStand(m, dn.ox, dn.oy)) { p.x = dn.ox; p.y = dn.oy; }
+    p.fix = true; p.mvAt = now; p.dance = null; p.dirty = true;
+    rt.ev.push(["ln", 5, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+    rt.ev.push(["a", p.eid, 56, Math.round(p.x), Math.round(p.y - 6), p.dir]);
+    return;
+  }
+  dn.next = now + dn.every;
+  const [ux, uy] = aimVec(p, mob);
+  for (const k of [14, -14, 0]) { const nx = mob.x + ux * k, ny = mob.y + uy * k; if (canStand(m, nx, ny)) { p.x = nx; p.y = ny; break; } }
+  p.fix = true; p.mvAt = now;
+  face(p, mob);
+  rt.ev.push(["ln", 5, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+  rt.ev.push(["a", p.eid, 57, Math.round(mob.x), Math.round(mob.y - 6), p.dir, 2]);
+  const n = marksOf(S, mob);
+  mob.mk = 0;
+  hurtMob(S, rt, mob, p, dn.mult + dn.per * n, n >= 3);
+}
+/** What every class keeps track of from moment to moment. */
+function classTick(S, p, now) {
+  const rt = S.maps[p.map], m = MAPS[p.map];
+  const cls = p.ch.cls;
+  // a banner hurries the party standing by it
+  let haste = 0;
+  if (rt.props) for (const o of rt.props) {
+    if (o.kind !== "banner" || dist(p.x, p.y, o.x, o.y) > o.r) continue;
+    const owner = S.players[o.pid];
+    if (owner && (owner === p || allies(S, p).includes(owner))) haste = Math.max(haste, o.haste);
+  }
+  if (haste !== (p.banHaste || 0)) { p.banHaste = haste; p.dirty = true; }
+  if (p.hide && now >= p.hide) p.hide = 0;
+  if (cls === "warrior") {
+    if (p.sword && now >= p.sword.until) {
+      // left too long, the sword finds its own way back — with nothing to show for it
+      rt.ev.push(["sr", p.eid, Math.round(p.sword.x), Math.round(p.sword.y)]);
+      p.sword = null;
+      p.cds[0] = Math.max(p.cds[0], now + 1500);
+      p.dirty = true;
+    }
+    if (p.brace && now >= p.brace.until) {
+      const b = p.brace;
+      p.brace = null;
+      const st = stats(p);
+      const mult = Math.max(b.mult, Math.min(6, (b.stored * 3) / Math.max(1, st.atk)));
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), b.r, 1]);
+      for (const o of mobsWithin(rt, p.x, p.y, b.r)) {
+        const d = dist(p.x, p.y, o.x, o.y) || 1;
+        knock(m, o, (o.x - p.x) / d, (o.y - p.y) / d, 14);
+        hurtMob(S, rt, o, p, mult);
+      }
+      addGrit(p, 30);
+      p.dirty = true;
+    }
+    if (p.stomp) {
+      const sp = p.stomp;
+      if (now >= sp.until) p.stomp = null;
+      else if (now >= sp.next) {
+        const walked = dist(p.x, p.y, sp.lx, sp.ly) >= 4;
+        sp.next = now + (walked ? 500 : 1000);
+        sp.lx = p.x; sp.ly = p.y;
+        rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sp.r, 3]);
+        for (const o of mobsWithin(rt, p.x, p.y, sp.r)) {
+          if (!MOBS[o.k].boss && o.el < 2) o.stun = Math.max(o.stun, now + 150);
+          hurtMob(S, rt, o, p, sp.mult);
+        }
+      }
+    }
+    // grit cools once the fighting stops — never in a giant
+    if (p.grit > 0 && !(p.giant > now) && now - p.gritAt > 4000 && now - (p.gritDec || 0) >= 100) { p.gritDec = now; p.grit = Math.max(0, p.grit - 1); }
+    if (p.giant && now >= p.giant) { p.giant = 0; p.dirty = true; }
+  } else if (cls === "rogue") {
+    if (p.dance) danceStep(S, p, now);
+    if (p.venom && now >= p.venom.until) { p.venom = null; p.dirty = true; }
+  } else if (cls === "lancer") {
+    if (p.focus > 0 && now - p.focusAt > FOCUS_MS) p.focus = 0;
+    if (p.wheel && now >= p.wheel) p.wheel = 0;
+  } else if (cls === "mage") {
+    trailPush(S, p);
+    if (p.weave && now >= p.weave.until) p.weave = null;
+    if (p.surge && now >= p.surge) { p.surge = 0; p.dirty = true; }
+  }
+}
+/** Everything a class has going that does not survive a fall or a change of map. */
+function classReset(p, death) {
+  p.sword = null; p.brace = null; p.stomp = null; p.dance = null; p.wheel = 0; p.weave = null;
+  p.trail = []; p.hide = 0; p.banHaste = 0; p.tipNext = 0;
+  if (death) { p.giant = 0; p.surge = 0; p.grit = 0; p.focus = 0; p.venom = null; p.coinFree = false; }
+}
+/** The bits other players see of a class at work: giant, sword thrown, braced, spinning, dancing, surging, hidden. */
+function flagsOf(p, now) {
+  return (p.giant > now ? 1 : 0) | (p.sword ? 2 : 0) | (p.brace ? 4 : 0) | (p.wheel > now ? 8 : 0) | (p.dance ? 16 : 0) | (p.surge > now ? 32 : 0) | (p.hide > now ? 64 : 0);
+}
+const WEAVE_CODE = { f: 1, i: 2, l: 3 };
+/** The class gauge's live number: grit, venomed strikes left, focus, or the element held. */
+function crValue(p, now) {
+  switch (p.ch.cls) {
+    case "warrior": return Math.round(p.grit || 0);
+    case "rogue": return p.venom && p.venom.until > now ? p.venom.n : 0;
+    case "lancer": return p.focus || 0;
+    default: return p.weave && p.weave.until > now ? WEAVE_CODE[p.weave.e] : 0;
+  }
+}
+function crView(p, now) {
+  switch (p.ch.cls) {
+    case "warrior": return { k: "grit", v: crValue(p, now), max: GRIT_MAX, sw: p.sword ? Math.max(0, p.sword.until - now) : 0, gi: Math.max(0, (p.giant || 0) - now) };
+    case "rogue": return { k: "mark", v: crValue(p, now), max: MARK_MAX, coin: p.coinFree ? 1 : 0 };
+    case "lancer": return { k: "focus", v: crValue(p, now), max: FOCUS_MAX, tip: Math.round(WKIND.spear.range * TIP.at) };
+    default: return { k: "weave", v: crValue(p, now), left: p.weave ? Math.max(0, p.weave.until - now) : 0, su: Math.max(0, (p.surge || 0) - now) };
+  }
+}
+
 function castSkill(S, p, i) {
   const sk = levelled(p.ch, i);
   const st = stats(p);
   const c = st.arm;
   const rt = S.maps[p.map];
   const m = MAPS[p.map];
+  const now = S.now;
+  const k = 1 + SK_STEP * (((p.ch.skl && p.ch.skl[i]) || 1) - 1);
   rouse(S, p);
   tutStep(S, p, "skill");
-  p.mp -= sk.mp;
-  p.cds[i] = S.now + sk.cd;
-  if (st.lg.echo && rnd(S) < 0.2) { p.cds[i] = S.now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
-  p.atkAt = S.now;
+  p.mp -= skMp(p, i);
+  // an element spell in a surge comes back in half the time
+  p.cds[i] = now + (sk.el && p.surge > now ? sk.cd * 0.5 : sk.cd);
+  if (st.lg.echo && rnd(S) < 0.2) { p.cds[i] = now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
+  // the coin came up tails last time: this skill is free to use again at once
+  if (p.coinFree && sk.id !== "coin" && !(sk.id === "toss" && !p.sword)) { p.coinFree = false; p.cds[i] = now + 300; toast(p, `행운! [${sk.name}] 재사용 대기 없음`); }
+  p.atkAt = now;
   p.dirty = true;
-  const ev = (kind, x, y) => rt.ev.push(["a", p.eid, kind, Math.round(x), Math.round(y), p.dir]);
+  const emp = spendFocus(p, sk);
+  if (emp) rt.ev.push(["fo", p.eid]);
+  const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
   const aimAt = (range) => {
     const mob = nearestMob(rt, p.x, p.y, range);
     if (mob) face(p, mob);
     return mob;
   };
-  /** Jump next to a monster (behind it if `behind`), leaving a trail. */
-  const jumpTo = (mob, behind) => {
-    const [ux, uy] = aimVec(p, mob);
-    const ox = p.x, oy = p.y;
-    for (const k of behind ? [14, -14] : [-14, 14]) {
-      const nx = mob.x + ux * k, ny = mob.y + uy * k;
-      if (canStand(m, nx, ny)) { p.x = nx; p.y = ny; break; }
-    }
-    p.fix = true;
-    p.mvAt = S.now;
-    face(p, mob);
-    rt.ev.push(["d", p.eid, Math.round(ox), Math.round(oy - 8), Math.round(p.x), Math.round(p.y - 8)]);
-  };
-  /** Damage that keeps landing on one spot: `n` bursts, `every` ms apart. */
-  const zone = (x, y) => {
-    rt.zones.push({ x, y, r: sk.r, next: S.now + 350, every: sk.every, left: sk.n, mult: sk.mult, pid: p.pid, kind: sk.id === "meteor" ? 2 : 3 });
-    rt.ev.push(["t", Math.round(x), Math.round(y), sk.r, 350 + sk.every * (sk.n - 1), 1]);
-  };
+  const ahead = (n) => [p.x + DX[p.dir] * n, p.y + DY[p.dir] * n];
   switch (sk.id) {
-    case "strike": case "vital": {
-      const mob = aimAt(c.range + 8);
-      const kind = sk.id === "strike" ? 10 : 18;
-      if (mob) {
-        ev(kind, mob.x, mob.y - 6);
-        if (sk.stun) mob.stun = S.now + sk.stun;
-        hurtMob(S, rt, mob, p, sk.mult, sk.id === "vital");
-      } else ev(kind, p.x + DX[p.dir] * 14, p.y - 6 + DY[p.dir] * 14);
+    // ── 전사: 투지
+    case "toss": {
+      if (p.sword) {
+        // the recall: the sword comes home down the line, cutting and dragging what it passes
+        const sw = p.sword;
+        p.sword = null;
+        p.cds[i] = now + sk.cd;
+        const d = dist(sw.x, sw.y, p.x, p.y) || 1, ux = (p.x - sw.x) / d, uy = (p.y - sw.y) / d;
+        face(p, { x: sw.x, y: sw.y });
+        ev(42, sw.x, sw.y - 6);
+        rt.ev.push(["sr", p.eid, Math.round(sw.x), Math.round(sw.y)]);
+        for (const o of mobsInLine(rt, sw.x, sw.y, ux, uy, d, 15)) {
+          pullTo(m, o, p.x - ux * 16, p.y - uy * 16);
+          o.stun = Math.max(o.stun, now + 300);
+          hurtMob(S, rt, o, p, sk.ret);
+          addGrit(p, 4);
+        }
+        break;
+      }
+      const [ux, uy] = aimVec(p, aimAt(sk.len));
+      const far = Math.max(12, reach(m, p.x, p.y, ux, uy, sk.len));
+      const x = p.x + ux * far, y = p.y + uy * far;
+      p.sword = { x, y, until: now + sk.stay };
+      p.cds[i] = now + 700;                       // a moment, then it can be called back
+      ev(41, x, y - 6);
+      rt.ev.push(["sw", p.eid, Math.round(x), Math.round(y), sk.stay]);
+      for (const o of mobsInLine(rt, p.x, p.y, ux, uy, far + 8, 14)) hurtMob(S, rt, o, p, sk.mult);
       break;
     }
-    case "spin": case "sweep":
-      ev(11, p.x, p.y - 6);
-      for (const mob of mobsWithin(rt, p.x, p.y, sk.r)) {
-        if (sk.knock) { const [ux, uy] = aimVec(p, mob); knock(m, mob, ux, uy, sk.knock); }
-        hurtMob(S, rt, mob, p, sk.mult);
-      }
+    case "brace":
+      p.brace = { until: now + sk.dur, stored: 0, r: sk.r, mult: sk.mult };
+      ev(43, p.x, p.y - 6);
       break;
-    case "shout":
-      ev(12, p.x, p.y - 6);
+    case "roar": {
+      ev(45, p.x, p.y - 6, sk.r);
+      let n = 0;
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        const d = dist(p.x, p.y, o.x, o.y) || 1;
+        if (pullTo(m, o, p.x + ((o.x - p.x) / d) * 18, p.y + ((o.y - p.y) / d) * 18)) n++;
+        if (o.tgt !== p.pid) o.tgt = p.pid;
+        o.st = 0; o.taunt = now + 4000;
+        hurtMob(S, rt, o, p, sk.mult);
+      }
+      addGrit(p, 10 * n);
       for (const o of members(S, p)) {
-        if (o !== p && (o.map !== p.map || o.dead || dist(o.x, o.y, p.x, p.y) > sk.r)) continue;
-        o.atkBuff = S.now + sk.dur;
+        if (o !== p && (o.map !== p.map || o.dead || dist(o.x, o.y, p.x, p.y) > sk.r * 1.4)) continue;
+        o.atkBuff = now + sk.dur; o.atkBuffK = sk.buff / 100;
         o.dirty = true;
         if (o !== p) rt.ev.push(["u", o.eid, 2]);
       }
       break;
-    case "pierce": case "quake": {
-      const [ux, uy] = aimVec(p, aimAt(sk.len));
-      ev(sk.id === "quake" ? 23 : 13, p.x + ux * sk.len, p.y - 6 + uy * sk.len);
-      for (const o of mobsInLine(rt, p.x, p.y, ux, uy, sk.len, sk.id === "quake" ? 18 : 13)) {
-        if (sk.knock) knock(m, o, ux, uy, sk.knock);
-        hurtMob(S, rt, o, p, sk.mult);
+    }
+    case "burst": {
+      const g = p.grit || 0;
+      p.grit = 0;
+      const r = sk.r + g * 0.4;
+      ev(46, p.x, p.y - 6, Math.round(r));
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), Math.round(r), 2]);
+      for (const o of mobsWithin(rt, p.x, p.y, r)) {
+        const [ux, uy] = aimVec(p, o);
+        knock(m, o, ux, uy, 8 + g * 0.14);
+        hurtMob(S, rt, o, p, (sk.mult + g * sk.per) * k);
       }
       break;
     }
-    case "dash": {
-      const mob = aimAt(sk.len);
-      if (!mob) { ev(19, p.x, p.y - 6); break; }
-      jumpTo(mob, true);
-      ev(18, mob.x, mob.y - 6);
-      hurtMob(S, rt, mob, p, sk.mult);
+    case "stomp":
+      p.stomp = { until: now + sk.dur, next: now + 250, lx: p.x, ly: p.y, r: sk.r, mult: sk.mult };
+      ev(47, p.x, p.y - 6);
       break;
-    }
-    case "vault": {
-      const mob = aimAt(sk.len);
-      if (!mob) { ev(19, p.x, p.y - 6); break; }
-      jumpTo(mob, false);
-      ev(21, mob.x, mob.y - 6);
-      for (const o of mobsWithin(rt, mob.x, mob.y, sk.r)) { o.slow = S.now + 3000; hurtMob(S, rt, o, p, sk.mult); }
-      break;
-    }
-    case "smoke":
-      dropAggro(S, p);
-      p.spdBuff = S.now + sk.dur;
-      ev(20, p.x, p.y - 6);
-      break;
-    case "fan": {
-      const list = mobsWithin(rt, p.x, p.y, sk.r)
-        .sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y)).slice(0, sk.n);
-      if (list.length) face(p, list[0]);
-      ev(24, p.x + DX[p.dir] * 20, p.y - 6 + DY[p.dir] * 20);
-      for (const mob of list) {
-        rt.ev.push(["z", Math.round(p.x), Math.round(p.y - 8), Math.round(mob.x), Math.round(mob.y - 6), 1]);
-        mob.dot = { until: S.now + 4000, next: S.now + 1000, dmg: Math.max(1, Math.round(st.atk * sk.dot)), pid: p.pid };
-        hurtMob(S, rt, mob, p, sk.mult);
-      }
-      break;
-    }
-    case "fireball": {
-      const mob = aimAt(c.range + 10);
-      const tx = mob ? mob.x : p.x + DX[p.dir] * 70, ty = mob ? mob.y : p.y + DY[p.dir] * 70;
-      ev(15, tx, ty - 6);
-      for (const o of mobsWithin(rt, tx, ty, sk.r)) hurtMob(S, rt, o, p, sk.mult);
-      break;
-    }
-    case "rain": case "meteor": {
-      const mob = aimAt(110);
-      ev(24, mob ? mob.x : p.x + DX[p.dir] * 60, (mob ? mob.y : p.y + DY[p.dir] * 60) - 6);
-      zone(mob ? mob.x : p.x + DX[p.dir] * 60, mob ? mob.y : p.y + DY[p.dir] * 60);
-      break;
-    }
-    case "nova":
-      ev(16, p.x, p.y - 6);
-      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { o.slow = S.now + 3000; hurtMob(S, rt, o, p, sk.mult); }
-      break;
-    case "heal":
-      ev(17, p.x, p.y - 6);
-      for (const pid of Object.keys(S.players)) {
-        const o = S.players[pid];
-        if (o.map !== p.map || o.dead || dist(p.x, p.y, o.x, o.y) > sk.r) continue;
-        const so = stats(o);
-        const amt = Math.round(so.mhp * sk.pct);
-        o.hp = Math.min(so.mhp, o.hp + amt);
-        rt.ev.push(["h", o.eid, -amt, 0, 1]);
-      }
-      break;
-    // ── the second tier and the ultimates
-    case "whirl":
-      // a storm of blades that goes where its wielder goes
-      ev(25, p.x, p.y - 6);
-      rt.zones.push({ x: p.x, y: p.y, r: sk.r, next: S.now + 150, every: sk.every, left: sk.n, mult: sk.mult, pid: p.pid, kind: 4, follow: 1 });
-      break;
-    case "titan":
-      ev(26, p.x, p.y - 6);
+    case "giant":
+      p.giant = now + sk.dur;
+      p.slowed = 0;
+      ev(48, p.x, p.y - 6);
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 9]);
       for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
         const [ux, uy] = aimVec(p, o);
-        knock(m, o, ux, uy, sk.knock);
-        if (!MOBS[o.k].boss) o.stun = Math.max(o.stun, S.now + sk.stun * (o.el ? 0.5 : 1));
+        knock(m, o, ux, uy, 18);
+        if (!MOBS[o.k].boss) o.stun = Math.max(o.stun, now + 700 * (o.el ? 0.5 : 1));
         hurtMob(S, rt, o, p, sk.mult);
       }
+      p.stc = null;
       break;
-    case "phantom": {
-      const list = mobsWithin(rt, p.x, p.y, sk.r)
-        .sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y)).slice(0, sk.n);
-      if (list.length) face(p, list[0]);
-      ev(27, p.x, p.y - 6);
-      for (const mob of list) {
-        rt.ev.push(["z", Math.round(p.x), Math.round(p.y - 8), Math.round(mob.x), Math.round(mob.y - 6), 3]);
-        for (let k = 0; k < sk.hits; k++) hurtMob(S, rt, mob, p, sk.mult);
-      }
-      break;
-    }
-    case "reaper": {
+
+    // ── 도적: 표식
+    case "swap": {
       const mob = aimAt(sk.len);
-      if (!mob) { ev(19, p.x, p.y - 6); break; }
-      const low = mob.hp <= mobMax(mob) * sk.exec;
-      jumpTo(mob, true);
-      ev(28, mob.x, mob.y - 6);
-      hurtMob(S, rt, mob, p, sk.mult * (low ? 2 : 1), true);
+      if (!mob) { ev(19, p.x, p.y - 6); p.cds[i] = now + 600; p.mp += sk.mp; break; }
+      const ox = p.x, oy = p.y;
+      const movable = !MOBS[mob.k].boss && !MOBS[mob.k].still && mob.el !== 2 && (MOBS[mob.k].fly ? canFly : canStand)(m, ox, oy);
+      if (canStand(m, mob.x, mob.y)) {
+        p.x = mob.x; p.y = mob.y;
+        if (movable) { mob.x = ox; mob.y = oy; }
+      }
+      p.fix = true; p.mvAt = now;
+      face(p, mob);
+      rt.ev.push(["ln", 6, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(50, mob.x, mob.y - 6);
+      if (!MOBS[mob.k].boss) { mob.stun = Math.max(mob.stun, now + 1000); mob.conf = now + 1000; rt.ev.push(["cf", mob.id, 1000]); }
+      hurtMob(S, rt, mob, p, sk.mult);
+      addMarks(S, mob, sk.marks);
       break;
     }
-    case "charge": {
-      // run on down the line as far as the ground allows, shoving everything on it aside
+    case "venom":
+      p.venom = { n: sk.n, until: now + 20000, dot: sk.dot };
+      ev(51, p.x, p.y - 6);
+      break;
+    case "coin": {
+      const mob = aimAt(sk.len);
+      const [tx, ty] = mob ? [mob.x, mob.y] : ahead(40);
+      const heads = rnd(S) < 0.5;
+      ev(52, tx, ty - 6);
+      rt.ev.push(["cn", p.eid, Math.round(tx), Math.round(ty), heads ? 1 : 0]);
+      if (heads) {
+        if (mob) { mob.lucky = true; hurtMob(S, rt, mob, p, sk.mult, true); mob.lucky = false; }
+      } else {
+        if (mob) hurtMob(S, rt, mob, p, sk.miss * k);
+        p.coinFree = true;
+      }
+      if (mob) addMarks(S, mob, 1);
+      break;
+    }
+    case "decoy": {
+      if (!rt.decoys) rt.decoys = [];
+      const dc = { id: S.nextId++, x: p.x, y: p.y, until: now + sk.dur, pid: p.pid, r: sk.r, mult: sk.mult };
+      rt.decoys.push(dc);
+      rt.ev.push(["dc", dc.id, p.eid, Math.round(p.x), Math.round(p.y), sk.dur]);
+      ev(53, p.x, p.y - 6);
+      // everything after the rogue turns on the puppet instead
+      for (const o of rt.mobs) if (!o.dead && (o.tgt === p.pid || dist(o.x, o.y, p.x, p.y) < 110) && !MOBS[o.k].boss) { o.dec = dc; if (o.tgt === p.pid) o.tgt = null; }
+      p.hide = now + 2500;
+      p.spdBuff = Math.max(p.spdBuff, now + 2500);
+      break;
+    }
+    case "harvest": {
+      ev(54, p.x, p.y - 6, sk.r);
+      let kills = 0;
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        const n = marksOf(S, o);
+        if (!n) continue;
+        o.mk = 0;
+        const x = o.x, y = o.y;
+        rt.ev.push(["bw", Math.round(x), Math.round(y), 12 + n * 4, 5]);
+        hurtMob(S, rt, o, p, sk.mult * n);
+        if (o.dead) kills++;
+        // each mark that bursts throws splinters at whatever stands beside it
+        for (const q of mobsWithin(rt, x, y, 12 + n * 4)) if (q !== o && !q.dead) hurtMob(S, rt, q, p, sk.mult * n * 0.35);
+      }
+      if (kills) p.cds[i] = Math.max(now + 1000, p.cds[i] - 1500 * kills);
+      break;
+    }
+    case "dance": {
+      let list = mobsWithin(rt, p.x, p.y, sk.len).filter((o) => marksOf(S, o) > 0)
+        .sort((a, b) => marksOf(S, b) - marksOf(S, a)).slice(0, sk.n);
+      if (!list.length) list = mobsWithin(rt, p.x, p.y, sk.len).sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y)).slice(0, 4);
+      ev(55, p.x, p.y - 6);
+      p.ghost = Math.max(p.ghost || 0, now + 2500);
+      if (!list.length) break;
+      p.dance = { ids: list.map((o) => o.id), i: 0, next: now + 120, ox: p.x, oy: p.y, mult: sk.mult, per: sk.per, every: sk.every };
+      break;
+    }
+
+    // ── 창술사: 창끝과 집중
+    case "hook": {
+      const [ux, uy] = aimVec(p, aimAt(sk.len));
+      const tip = c.range * 0.85;
+      const list = mobsInLine(rt, p.x, p.y, ux, uy, sk.len, 15)
+        .sort((a, b) => dist(p.x, p.y, b.x, b.y) - dist(p.x, p.y, a.x, a.y)).slice(0, emp ? 3 : 1);
+      const end = list[0] ? dist(p.x, p.y, list[0].x, list[0].y) : sk.len * 0.6;
+      ev(60, p.x + ux * end, p.y + uy * end - 6);
+      list.forEach((o, j) => {
+        rt.ev.push(["ln", 1, Math.round(p.x), Math.round(p.y), Math.round(o.x), Math.round(o.y)]);
+        const off = (j - (list.length - 1) / 2) * 12;
+        pullTo(m, o, p.x + ux * tip - uy * off, p.y + uy * tip + ux * off);
+        o.slow = now + 2500;
+        hurtMob(S, rt, o, p, sk.mult);
+      });
+      break;
+    }
+    case "pole": {
+      const mob = aimAt(sk.len);
+      const [ux, uy] = aimVec(p, mob);
+      // over the heads of anything in the way, never over a wall
+      let far = 0;
+      const want = mob ? Math.min(sk.len, dist(p.x, p.y, mob.x, mob.y) + 18) : sk.len * 0.7;
+      for (let d = 6; d <= want; d += 6) { if (solidAt(m, p.x + ux * d, p.y + uy * d - 3)) break; far = d; }
+      while (far > 0 && !canStand(m, p.x + ux * far, p.y + uy * far)) far -= 3;
+      const ox = p.x, oy = p.y;
+      p.x += ux * far; p.y += uy * far;
+      p.fix = true; p.mvAt = now;
+      rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      const r = sk.r * (emp ? 1.5 : 1);
+      ev(61, p.x, p.y - 6, Math.round(r));
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), Math.round(r), 14]);
+      for (const o of mobsWithin(rt, p.x, p.y, r)) {
+        if (emp && !MOBS[o.k].boss) o.stun = Math.max(o.stun, now + 1000);
+        hurtMob(S, rt, o, p, sk.mult);
+      }
+      p.tipNext = now + 1200;
+      break;
+    }
+    case "banner": {
+      if (!rt.props) rt.props = [];
+      const [x, y] = ahead(10);
+      const fx = canStand(m, x, y) ? x : p.x, fy = canStand(m, x, y) ? y : p.y;
+      const r = Math.round(sk.r * (emp ? 1.4 : 1)), dur = sk.dur + (emp ? 6000 : 0);
+      // one banner per lancer
+      rt.props = rt.props.filter((o) => !(o.kind === "banner" && o.pid === p.pid));
+      const b = { id: S.nextId++, kind: "banner", x: fx, y: fy, r, until: now + dur, pid: p.pid, haste: sk.haste, next: now };
+      rt.props.push(b);
+      rt.ev.push(["bn", b.id, Math.round(fx), Math.round(fy), r, dur]);
+      ev(62, fx, fy - 6);
+      break;
+    }
+    case "wheel": {
+      const n = sk.n * (emp ? 2 : 1);
+      p.wheel = now + sk.every * n;
+      ev(63, p.x, p.y - 6, sk.every * n);
+      rt.zones.push({ x: p.x, y: p.y, r: sk.r, next: now + 100, every: sk.every, left: n, mult: sk.mult, pid: p.pid, kind: 11, follow: 1, knock: sk.knock });
+      break;
+    }
+    case "javelin": {
+      const mob = aimAt(sk.len);
+      const [ux, uy] = aimVec(p, mob);
+      const line = mobsInLine(rt, p.x, p.y, ux, uy, sk.len, 13).sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y));
+      const carried = emp ? line : line.slice(0, 1);
+      const far = line.length ? dist(p.x, p.y, line[0].x, line[0].y) : reach(m, p.x, p.y, ux, uy, sk.len);
+      ev(64, p.x + ux * far, p.y + uy * far - 6);
+      let endX = p.x + ux * far, endY = p.y + uy * far;
+      for (const o of carried) {
+        const x0 = o.x, y0 = o.y;
+        let pinned = false;
+        if (!MOBS[o.k].boss && !MOBS[o.k].still && o.el !== 2) {
+          const ok = MOBS[o.k].fly ? canFly : canStand;
+          let go = 0;
+          for (let d = 4; d <= sk.carry; d += 4) { if (!ok(m, x0 + ux * d, y0 + uy * d)) { pinned = true; break; } go = d; }
+          o.x = x0 + ux * go; o.y = y0 + uy * go;
+        }
+        endX = o.x; endY = o.y;
+        if (pinned) { o.stun = Math.max(o.stun, now + 2000); rt.ev.push(["wl", o.id]); }
+        hurtMob(S, rt, o, p, sk.mult * (pinned ? sk.pin : 1));
+      }
+      for (const o of line) if (!carried.includes(o)) hurtMob(S, rt, o, p, sk.mult * 0.5);
+      rt.ev.push(["ln", 2, Math.round(p.x), Math.round(p.y), Math.round(endX), Math.round(endY)]);
+      break;
+    }
+    case "hundred": {
+      const f = p.focus || 0;
+      p.focus = 0;
       const [ux, uy] = aimVec(p, aimAt(sk.len));
       const ox = p.x, oy = p.y;
       let far = 0;
-      for (let k = 6; k <= sk.len; k += 6) { if (!canStand(m, ox + ux * k, oy + uy * k)) break; far = k; }
+      for (let d = 6; d <= sk.len; d += 6) { if (!canStand(m, ox + ux * d, oy + uy * d)) break; far = d; }
       p.x = ox + ux * far; p.y = oy + uy * far;
-      p.fix = true;
-      p.mvAt = S.now;
-      rt.ev.push(["d", p.eid, Math.round(ox), Math.round(oy - 8), Math.round(p.x), Math.round(p.y - 8)]);
-      ev(29, ox, oy - 6);
-      for (const o of mobsInLine(rt, ox, oy, ux, uy, far + 26, 17)) {
-        const side = (o.x - ox) * -uy + (o.y - oy) * ux >= 0 ? 1 : -1;
-        knock(m, o, -uy * side, ux * side, sk.knock);
-        hurtMob(S, rt, o, p, sk.mult);
+      p.fix = true; p.mvAt = now;
+      p.ghost = Math.max(p.ghost || 0, now + 500);
+      rt.ev.push(["ln", 3, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(65, p.x, p.y - 6, f);
+      for (const o of mobsInLine(rt, ox, oy, ux, uy, far + 20, 18)) {
+        rt.ev.push(["tip", o.id]);
+        if (!MOBS[o.k].boss) o.stun = Math.max(o.stun, now + 600);
+        hurtMob(S, rt, o, p, (sk.mult + sk.per * f) * k);
       }
       break;
     }
-    case "dragon": case "blizzard": {
-      const mob = aimAt(120);
-      const x = mob ? mob.x : p.x + DX[p.dir] * 60, y = mob ? mob.y : p.y + DY[p.dir] * 60;
-      const first = sk.id === "dragon" ? 500 : 300;
-      ev(sk.id === "dragon" ? 30 : 32, x, y - 6);
-      rt.zones.push({ x, y, r: sk.r, next: S.now + first, every: sk.every, left: sk.n, mult: sk.mult, pid: p.pid, kind: sk.id === "dragon" ? 6 : 5, slow: 1 });
-      rt.ev.push(["t", Math.round(x), Math.round(y), sk.r, first + sk.every * (sk.n - 1), 1]);
+
+    // ── 마도사: 원소 엮기
+    case "ember": {
+      const mob = aimAt(c.range + 10);
+      const [tx, ty] = mob ? [mob.x, mob.y] : ahead(70);
+      ev(70, tx, ty - 6);
+      for (const o of mobsWithin(rt, tx, ty, sk.r)) hurtMob(S, rt, o, p, sk.mult);
+      rt.zones.push({ x: tx, y: ty, r: sk.r, next: now + 500, every: 500, left: 6, mult: sk.burn * k, pid: p.pid, kind: 10 });
+      weave(S, rt, p, "f", tx, ty, k);
       break;
     }
-    case "chain": {
-      // the bolt leaps from each struck monster to the nearest one not yet struck
+    case "frost": {
+      ev(71, p.x, p.y - 6, sk.r);
+      let first = null;
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        if (o.slow > now && !MOBS[o.k].boss) { o.stun = Math.max(o.stun, now + 1000); rt.ev.push(["fz", o.id, 1000]); }
+        o.slow = now + 3000;
+        hurtMob(S, rt, o, p, sk.mult);
+        if (!first) first = o;
+      }
+      weave(S, rt, p, "i", first ? first.x : p.x, first ? first.y : p.y, k);
+      break;
+    }
+    case "teapot": {
+      if (!rt.props) rt.props = [];
+      const [x, y] = ahead(10);
+      const fx = canStand(m, x, y) ? x : p.x, fy = canStand(m, x, y) ? y : p.y;
+      const tp = { id: S.nextId++, kind: "tea", x: fx, y: fy, r: sk.r, until: now + sk.dur, pid: p.pid, next: now + 1000, pct: sk.pct / (sk.dur / 1000) };
+      rt.props.push(tp);
+      rt.ev.push(["tp", tp.id, Math.round(fx), Math.round(fy), sk.r, sk.dur]);
+      ev(72, fx, fy - 6);
+      break;
+    }
+    case "bolt": {
       let mob = aimAt(c.range + 20);
-      ev(31, mob ? mob.x : p.x + DX[p.dir] * 40, (mob ? mob.y : p.y + DY[p.dir] * 40) - 6);
+      const [ax, ay] = mob ? [mob.x, mob.y] : ahead(60);
+      ev(73, ax, ay - 6);
       let fx = p.x, fy = p.y - 8, mult = sk.mult;
       const hit = new Set();
-      for (let k = 0; k < sk.n && mob; k++) {
-        rt.ev.push(["z", Math.round(fx), Math.round(fy), Math.round(mob.x), Math.round(mob.y - 6), 2]);
+      for (let j = 0; j < sk.n && mob; j++) {
+        rt.ev.push(["ln", 4, Math.round(fx), Math.round(fy), Math.round(mob.x), Math.round(mob.y - 6)]);
         hit.add(mob);
         hurtMob(S, rt, mob, p, mult);
         mult *= 0.9;
@@ -2593,8 +3034,32 @@ function castSkill(S, p, i) {
         mob = mobsWithin(rt, from.x, from.y, sk.r).filter((o) => !hit.has(o))
           .sort((a, b) => dist(from.x, from.y, a.x, a.y) - dist(from.x, from.y, b.x, b.y))[0] || null;
       }
+      weave(S, rt, p, "l", ax, ay, k);
       break;
     }
+    case "rewind": {
+      const want = now - sk.ago;
+      const tr = (p.trail || []).filter((s) => s[4] === p.map);
+      const then = tr.find((s) => s[0] >= want) || tr[0];
+      if (then) {
+        const ox = p.x, oy = p.y;
+        if (canStand(m, then[1], then[2])) { p.x = then[1]; p.y = then[2]; p.fix = true; p.mvAt = now; }
+        rt.ev.push(["ln", 8, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+        if (then[3] > p.hp) { const back = Math.round(Math.min(st.mhp, then[3]) - p.hp); p.hp += back; rt.ev.push(["h", p.eid, -back, 0, 1]); }
+      }
+      p.burn = null; p.poison = null; p.slowed = 0;
+      SKILLS.mage.forEach((o, j) => { if (o.el) p.cds[j] = Math.max(now, p.cds[j] - 2000); });
+      ev(74, p.x, p.y - 6);
+      p.trail = [];
+      break;
+    }
+    case "surge":
+      p.surge = now + sk.dur;
+      p.weave = null;
+      ev(75, p.x, p.y - 6, sk.r);
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 13]);
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { o.slow = now + 2000; hurtMob(S, rt, o, p, sk.mult); }
+      break;
   }
 }
 
@@ -3041,7 +3506,8 @@ export function validateAction(S, pid, a) {
       if (!num(a.x) || !num(a.y)) return bad("잘못된 좌표");
       return OK;
     case "atk":
-      if (now - p.atkAt < stats(p).acd - 60) return bad("아직 공격할 수 없습니다");
+      if (p.dance) return bad("그림자 무도 중입니다");
+      if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
     case "warp": {
       if (typeof a.to !== "string" || !WP[a.to]) return bad("그곳에는 이동의 돌이 없습니다");
@@ -3055,8 +3521,9 @@ export function validateAction(S, pid, a) {
       const sk = Number.isInteger(a.i) ? SKILLS[ch.cls][a.i] : null;
       if (!sk) return bad("없는 스킬");
       if (ch.lvl < sk.lv) return bad(`레벨 ${sk.lv}에 배울 수 있습니다`);
+      if (p.dance) return bad("그림자 무도 중입니다");
       if (now < p.cds[a.i]) return bad("재사용 대기 중입니다");
-      if (p.mp < sk.mp) return bad("MP가 부족합니다");
+      if (p.mp < skMp(p, a.i)) return bad("MP가 부족합니다");
       return OK;
     }
     case "use": {
@@ -3231,6 +3698,7 @@ export function applyAction(S, pid, a) {
   const m = MAPS[p.map];
   switch (a.t) {
     case "mv": {
+      if (p.dance) { p.fix = true; break; }
       const dt = clamp(now - p.mvAt, 0, 600);
       p.mvAt = now;
       const max = (stats(p).spd * dt) / 1000 * 1.6 + 8;
@@ -3845,6 +4313,16 @@ function tickMob(S, m, rt, mob, dt) {
   if (mob.stun > now) return;
   const swift = has(mob, "swift");
   const speed = d.spd * (mob.slow > now ? 0.5 : 1) * (swift ? 1.35 : 1);
+  if (mob.dec) {
+    // a rogue's puppet: walk up to it and strike it, which sets it off
+    const dc = mob.dec;
+    if (dc.gone || now >= dc.until) mob.dec = null;
+    else {
+      if (dist(mob.x, mob.y, dc.x, dc.y) <= d.range + 4) { if (now >= mob.atkAt) { mob.atkAt = now + d.cd; rt.ev.push(["m", mob.id]); popDecoy(S, rt, dc); } }
+      else stepMob(m, mob, dc.x, dc.y, speed, dt, d.fly);
+      return;
+    }
+  }
   let tgt = mob.tgt ? S.players[mob.tgt] : null;
   const leash = Math.max(150, d.aggro * 2.4);
   if (tgt && (tgt.map !== m.id || tgt.dead || dist(mob.x, mob.y, mob.hx, mob.hy) > leash + 60 || dist(mob.x, mob.y, tgt.x, tgt.y) > leash)) {
@@ -3854,7 +4332,7 @@ function tickMob(S, m, rt, mob, dt) {
     let bd = d.aggro;
     for (const pid of Object.keys(S.players)) {
       const p = S.players[pid];
-      if (p.map !== m.id || p.dead || (p.foes || 0) >= AGGRO_CAP) continue;
+      if (p.map !== m.id || p.dead || (p.foes || 0) >= AGGRO_CAP || p.hide > now) continue;
       const dd = dist(mob.x, mob.y, p.x, p.y);
       if (dd < bd) { bd = dd; tgt = p; }
     }
@@ -3894,7 +4372,8 @@ function tickMob(S, m, rt, mob, dt) {
         if (d.volley) { rt.ev.push(["m", mob.id]); volley(S, rt, mob, tgt, atk * 0.85, 3); }
         else {
           rt.ev.push(d.shot ? ["m", mob.id, Math.round(tgt.x), Math.round(tgt.y - 8)] : ["m", mob.id]);
-          mobHit(S, rt, tgt, atk, mob);
+          if (d.shot && tgt.wheel > now) rt.ev.push(["bl", tgt.eid]);
+          else mobHit(S, rt, tgt, atk, mob);
         }
       }
     } else stepMob(m, mob, tgt.x, tgt.y, speed, dt, d.fly);
@@ -3938,9 +4417,14 @@ export function tick(S, now) {
       if (z.follow) { z.x = p.x; z.y = p.y; }
       z.next = now + z.every;
       rt.ev.push(["b", Math.round(z.x), Math.round(z.y), z.r, z.kind]);
-      for (const o of mobsWithin(rt, z.x, z.y, z.r)) { if (z.slow) o.slow = now + 2500; hurtMob(S, rt, o, p, z.mult); }
+      for (const o of mobsWithin(rt, z.x, z.y, z.r)) {
+        if (z.slow) o.slow = now + 2500;
+        if (z.knock) { const d = dist(z.x, z.y, o.x, o.y) || 1; knock(m, o, (o.x - z.x) / d, (o.y - z.y) / d, z.knock); }
+        hurtMob(S, rt, o, p, z.mult);
+      }
       if (--z.left <= 0) rt.zones.splice(i, 1);
     }
+    classProps(S, rt, m, now);
     for (let i = rt.tele.length - 1; i >= 0; i--) {
       const t = rt.tele[i];
       if (now < t.at) continue;
@@ -3948,7 +4432,9 @@ export function tick(S, now) {
       rt.ev.push([t.ev || "b", Math.round(t.x), Math.round(t.y), t.r]);
       for (const pid of pids) {
         const p = S.players[pid];
-        if (p.map === id && !p.dead && dist(p.x, p.y, t.x, t.y) <= t.r) mobHit(S, rt, p, t.dmg, t.by);
+        if (p.map !== id || p.dead || dist(p.x, p.y, t.x, t.y) > t.r) continue;
+        if (t.ev === "q" && p.wheel > now) { rt.ev.push(["bl", p.eid]); continue; }
+        mobHit(S, rt, p, t.dmg, t.by);
       }
     }
     for (let i = rt.pools.length - 1; i >= 0; i--) {
@@ -4020,6 +4506,7 @@ export function tick(S, now) {
       }
     }
     if (p.recall && now >= p.recall.at && !p.dead) finishRecall(S, p);
+    if (!p.dead) classTick(S, p, now);
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;
     ensureDaily(S, p);
@@ -4084,7 +4571,9 @@ function selfPayload(p) {
   return {
     name: ch.name, cls: ch.cls, lvl: ch.lvl, xp: ch.xp, need: ch.lvl >= MAXLV ? 0 : xpNeed(ch.lvl), gold: ch.gold,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: st.crit, critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: st.mf, spd: st.spd0,
-    goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: st.acd, range: st.arm.range,
+    goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
+    // the class gauge, and what each skill costs this moment
+    cr: crView(p, now), skm: SKILLS[ch.cls].map((_, i) => skMp(p, i)),
     inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, tr: ch.tr, trc, enh,
     bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     cds: p.cds.map((t) => Math.max(0, t - now)),
@@ -4115,17 +4604,18 @@ export function viewFor(S, pid) {
   const near = (o) => Math.abs(o.x - p.x) < VIEW_X && Math.abs(o.y - p.y) < VIEW_Y;
   const out = {
     type: "snap",
-    me: [Math.round(p.x), Math.round(p.y), Math.round(p.hp), Math.round(p.mp), p.dead ? 1 : 0, p.fix ? 1 : 0, p.dir, p.sit ? 1 : 0],
+    me: [Math.round(p.x), Math.round(p.y), Math.round(p.hp), Math.round(p.mp), p.dead ? 1 : 0, p.fix ? 1 : 0, p.dir, p.sit ? 1 : 0, flagsOf(p, S.now), crValue(p, S.now)],
     P: [], M: [], D: [], F: [],
   };
   for (const oid of Object.keys(S.players)) {
     const o = S.players[oid];
     if (o === p || o.map !== p.map || !near(o)) continue;
-    out.P.push([o.eid, Math.round(o.x), Math.round(o.y), o.dir, o.dead ? 1 : 0, Math.round(o.hp), stats(o).mhp, o.sit ? 1 : 0]);
+    out.P.push([o.eid, Math.round(o.x), Math.round(o.y), o.dir, o.dead ? 1 : 0, Math.round(o.hp), stats(o).mhp, o.sit ? 1 : 0, flagsOf(o, S.now)]);
   }
   for (const mob of rt.mobs) {
     if (mob.dead || !near(mob)) continue;
-    out.M.push([mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || []]);
+    const mk = marksOf(S, mob);
+    out.M.push(mk ? [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || [], mk] : [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || []]);
   }
   for (const dr of rt.drops) {
     if (near(dr) && (dr.own === pid || S.now >= dr.freeAt)) out.D.push([dr.id, dr.it, Math.round(dr.x), Math.round(dr.y), dr.q]);
@@ -4183,7 +4673,7 @@ export function defs() {
     items: ITEMS, mobs, classes, skills: SKILLS, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV, maxLv: MAXLV,
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
-    traits: TRAITS, slow: SLOW, skMax: SK_MAX, skStep: SK_STEP, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
+    traits: TRAITS, slow: SLOW, skMax: SK_MAX, mech: { grit: GRIT_MAX, marks: MARK_MAX, focus: FOCUS_MAX, tip: TIP.at, tipMult: TIP.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, skStep: SK_STEP, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     waypoints: Object.keys(WP).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null })),
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
     collection: Object.fromEntries(REGIONS.map((id) => [id, { mobs: COL_MOBS[id], bonus: REGION_BONUS[id] }])), colNeed: MASTERY[0],

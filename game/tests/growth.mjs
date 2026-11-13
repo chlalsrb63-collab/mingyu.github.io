@@ -118,66 +118,25 @@ assert.ok(D.tutorial.length >= 1);
   assert.ok(Math.abs(a.cd + 150 - cd) <= 20 && Math.abs(b.cd + 150 - cd * 0.92) <= 20 && Math.abs(c.cd + 150 - cd * 0.85) <= 20, `cooldowns shorten: ${a.cd}, ${b.cd}, ${c.cd}`);
 }
 
-// ── the second-tier and ultimate skills of every class work, each with its own effect
-const FX = { warrior: [25, 26], rogue: [27, 28], lancer: [29, 30], mage: [31, 32] };
+// ── the second-tier and ultimate skills of every class go off, each with its own effect
+// (what each one does is tested in tests/skills.mjs)
+const FX = { warrior: [47, 48], rogue: [54, 55], lancer: [64, 65], mage: [74, 75] };
 for (const cls of Object.keys(D.classes)) {
   const W = world("궁극" + cls.slice(0, 2), cls, 40);
   W.to("meadow", 20, 22);
-  // stand in the open: a row of clear ground for the charge to run along
-  const mp = W.step().map;
-  const clear = (x, y) => mp.o[y][x] === " " && !"wW".includes(mp.g[y][x]);
-  let spot = null;
-  for (let y = 4; y < mp.h - 4 && !spot; y++) for (let x = 4; x < mp.w - 16 && !spot; x++) {
-    let ok = true;
-    for (let dy = -1; dy <= 1 && ok; dy++) for (let dx = -2; dx <= 12 && ok; dx++) if (!clear(x + dx, y + dy)) ok = false;
-    if (ok) spot = [x, y];
-  }
-  assert.ok(spot, "open ground in the meadow");
-  W.to("meadow", spot[0], spot[1]);
   W.step();
   const p = W.p, rt = W.S.maps.meadow;
-  const pack = () => {
+  for (const i of [4, 5]) {
     const list = rt.mobs.filter((o) => !D.mobs[o.k].chest && !D.mobs[o.k].boss).slice(0, 6);
     for (const o of rt.mobs) if (!list.includes(o)) { o.dead = true; o.respAt = W.now + 1e9; }
-    list.forEach((m, j) => { m.dead = false; m.el = 0; m.tr = []; m.hp = 5000; m.x = p.x + 18 + (j % 3) * 10; m.y = p.y - 8 + Math.floor(j / 3) * 14; m.by = {}; m.stun = 0; m.slow = 0; });
-    return list;
-  };
-  for (const i of [4, 5]) {
-    const list = pack();
+    list.forEach((m, j) => { m.dead = false; m.el = 0; m.tr = []; m.hp = 5000; m.x = p.x + 18 + (j % 3) * 10; m.y = p.y - 8 + Math.floor(j / 3) * 14; m.by = {}; m.stun = 0; m.slow = 0; m.mk = 2; m.mkAt = W.now + 9000; });
     p.mp = 999; p.cds[i] = 0; p.dir = 2; p.hp = 1e6;
-    const x0 = p.x;
     assert.ok(W.act({ t: "sk", i }).ok, `${cls} casts ${D.skills[cls][i].name}`);
     const v = W.step(50);
     const kinds = evts(v, "a").filter((e) => e[1] === p.eid).map((e) => e[2]);
     assert.ok(kinds.includes(FX[cls][i - 4]), `${cls} skill ${i} shows its own effect (${kinds})`);
-    let hurt = 0;
-    for (let k = 0; k < 40; k++) W.step(100);
-    hurt = list.filter((m) => m.dead || m.hp < 5000).length;
-    assert.ok(hurt >= 1, `${cls} skill ${i} lands`);
-    const sk = D.skills[cls][i];
-    if (sk.id === "whirl") {
-      // the blade storm follows its wielder
-      const z0 = rt.zones.length;
-      p.cds[i] = 0; p.mp = 999; W.act({ t: "sk", i });
-      const z = rt.zones[rt.zones.length - 1];
-      assert.ok(rt.zones.length === z0 + 1 && z.follow, "a following zone");
-      p.x += 30; W.step(450);
-      assert.ok(Math.abs(z.x - p.x) < 1, "the storm went along");
-    }
-    if (sk.id === "chain") assert.ok(true);
-    if (sk.id === "charge") assert.ok(p.x > x0 + 20, "the charge carries the lancer forward");
-    if (sk.id === "blizzard" || sk.id === "dragon") assert.ok(list.some((m) => m.slow > W.now - 3000), sk.id + " slows what it hits");
-    if (sk.id === "titan") assert.ok(list.some((m) => m.stun > W.now - 3000 || m.dead), "the ultimate stuns");
-  }
-  if (cls === "mage") {
-    // a bolt of lightning leaps from monster to monster
-    const list = pack();
-    p.cds[4] = 0; p.mp = 999;
-    W.act({ t: "sk", i: 4 });
-    const v = W.step(20);
-    const bolts = evts(v, "z").filter((e) => e[5] === 2);
-    assert.ok(bolts.length >= 3, "the chain leaps on, " + bolts.length + " bolts");
-    assert.ok(list.filter((m) => m.hp < 5000 || m.dead).length >= 3);
+    for (let k = 0; k < 40; k++) { if (D.skills[cls][i].id === "stomp") p.x += k % 2 ? 6 : -6; W.step(100); }
+    if (D.skills[cls][i].id !== "rewind") assert.ok(list.some((m) => m.dead || m.hp < 5000), `${cls} skill ${i} lands`);
   }
 }
 

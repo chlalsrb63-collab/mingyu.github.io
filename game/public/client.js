@@ -234,6 +234,7 @@ function onSnap(s) {
   sync(G.fires, s.F || [], (e, r) => { e.tx = r[1]; e.ty = r[2]; e.x = r[1]; e.y = r[2]; }, t);
   sync(G.mobs, s.M, (e, r) => { e.k = r[1]; e.tx = r[2]; e.ty = r[3]; e.dir = r[4]; e.hp = r[5]; e.el = r[6]; e.tr = r[7] || []; }, t, G.gone);
   sync(G.drops, s.D, (e, r) => { e.it = r[1]; e.tx = r[2]; e.ty = r[3]; e.q = r[4]; }, t);
+  SkillFx.onSnap(s, G, t);
 
   if (s.self) {
     G.self = s.self;
@@ -704,7 +705,8 @@ function castSkill(i) {
   const sk = G.defs.skills[s.cls][i];
   const t = now();
   if (s.lvl < sk.lv) { toast(`[${sk.name}] 레벨 ${sk.lv}에 배웁니다`); return false; }
-  if (t < G.cdEnd[i] || G.me.mp < sk.mp) { if (G.me.mp < sk.mp && !G.auto) toast("MP가 부족합니다"); return false; }
+  const mpc = s.skm ? s.skm[i] : sk.mp;          // a thrown sword comes back for nothing; a surge casts for nothing
+  if (t < G.cdEnd[i] || G.me.mp < mpc) { if (G.me.mp < mpc && !G.auto) toast("MP가 부족합니다"); return false; }
   act({ t: "sk", i });
   G.cdEnd[i] = t + sk.cd;
   G.me.atkT = t; G.me.atkN = 2; G.lastAtk = t; G.lastSkill = t;
@@ -850,7 +852,7 @@ function update(dt, t) {
         if (t - autoSt.lastSkill > 500) {
           for (let i = G.defs.skills[s.cls].length - 1; i >= 0; i--) {
             const sk = G.defs.skills[s.cls][i];
-            if (s.lvl >= sk.lv && t >= G.cdEnd[i] && me.mp >= sk.mp + 4) { if (castSkill(i)) { autoSt.lastSkill = t; break; } }
+            if (s.lvl >= sk.lv && t >= G.cdEnd[i] && me.mp >= (s.skm ? s.skm[i] : sk.mp) + 4) { if (castSkill(i)) { autoSt.lastSkill = t; break; } }
           }
         }
       }
@@ -2456,10 +2458,10 @@ function hudTick(t) {
 // ───────────────────────────── title & creation ─────────────────────────────
 
 const CLASS_DESC = {
-  warrior: "전사 · 양손검 — 파티의 방패. 대검의 궤적이 주변 적까지 베고, 전투함성으로 파티 전체의 공격력을 올립니다.",
-  rogue: "도적 · 단검 — 가장 빠른 공격과 높은 치명타. 그림자 도약으로 적의 등 뒤를 잡고 연막으로 빠져나옵니다.",
-  lancer: "창술사 · 창 — 긴 창으로 일직선의 적을 한꺼번에 꿰뚫습니다. 적을 밀쳐 내고 뛰어들어 전열을 휘젓습니다.",
-  mage: "마도사 · 마법지팡이 / 마법책 — 지팡이는 멀리서 강한 한 발, 마법책은 빠르게 번지는 폭발. 광역 마법과 치유로 파티를 책임집니다.",
+  warrior: "전사 · 양손검 — 투지: 치고 맞을수록 투지가 끓어오릅니다. 대검을 던져 꽂고 다시 불러들이고, 버티다 되받아치고, 모은 투지를 한 번에 터뜨립니다. 궁극기는 거신화.",
+  rogue: "도적 · 단검 — 표식: 찌를 때마다 적에게 표식이 쌓이고, 표식이 많을수록 급소가 보입니다. 자리를 바꾸고, 동전을 던지고, 꼭두각시로 속인 뒤 표식을 한꺼번에 거둡니다.",
+  lancer: "창술사 · 창 — 창끝: 사거리 끝으로 맞혀야 제 위력이 나옵니다. 갈고리로 끌어오고 장대로 뛰어넘어 거리를 재며, 집중이 차면 스킬이 강해집니다. 깃발로 파티를 재촉합니다.",
+  mage: "마도사 · 마법지팡이 / 마법책 — 원소 엮기: 불·얼음·번개를 번갈아 써서 증기 폭발·초전도·과부하를 일으킵니다. 찻주전자로 파티를 돌보고, 시간을 되감아 위기를 넘깁니다.",
 };
 const draft = { cls: "warrior", look: S3.PARTS.map(() => 0) };
 for (const b of $$("#c-cls button")) {
