@@ -505,3 +505,15 @@ h1 small { font-family: var(--font); font-weight: 600; font-size: .2em; letter-s
 #char-skills p > b { white-space: nowrap; }
 #char-skills img.ic { width: 24px; height: 24px; flex: none; image-rendering: pixelated; background: #17181e; border: 1px solid rgba(230, 224, 208, .25); border-radius: 4px; padding: 2px; }
 #char-skills p.locked img.ic { opacity: .4; }
+
+/* ───────────── interface glyphs ───────────── */
+img.gi { width: 12px; height: 12px; image-rendering: pixelated; vertical-align: -1px; flex: none; }
+#menu button { display: inline-flex; align-items: center; gap: 5px; }
+#menu button img.gi { width: 14px; height: 14px; }
+.stats span { align-items: center; gap: 6px; }
+.stats span img.gi { opacity: .85; }
+.stats span b { margin-left: auto; }
+#st-buffs span { display: inline-flex; align-items: center; gap: 3px; padding: 1px 5px; }
+#st-buffs span.bad { background: rgba(200, 60, 60, .28); color: #ffb0a8; }
+
+.stats span { white-space: nowrap; }

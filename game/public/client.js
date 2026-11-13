@@ -15,6 +15,7 @@ import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
 import * as Mini from "./minigames.js";
 import { skillIconUrl } from "./skillicons.js";
+import { icon, iconImg, MENU_ICON, BUFF_ICON, TRAIT } from "./uiicons.js";
 
 const T = Art.TILE;
 const $ = (s) => document.querySelector(s);
@@ -192,7 +193,7 @@ function onSnap(s) {
   }
   sync(G.players, s.P, (e, r) => { e.tx = r[1]; e.ty = r[2]; e.dir = r[3]; e.dead = !!r[4]; e.hp = r[5]; e.mhp = r[6]; e.sit = !!r[7]; }, t);
   sync(G.fires, s.F || [], (e, r) => { e.tx = r[1]; e.ty = r[2]; e.x = r[1]; e.y = r[2]; }, t);
-  sync(G.mobs, s.M, (e, r) => { e.k = r[1]; e.tx = r[2]; e.ty = r[3]; e.dir = r[4]; e.hp = r[5]; e.el = r[6]; }, t);
+  sync(G.mobs, s.M, (e, r) => { e.k = r[1]; e.tx = r[2]; e.ty = r[3]; e.dir = r[4]; e.hp = r[5]; e.el = r[6]; e.tr = r[7] || []; }, t);
   sync(G.drops, s.D, (e, r) => { e.it = r[1]; e.tx = r[2]; e.ty = r[3]; e.q = r[4]; }, t);
 
   if (s.self) {
@@ -237,6 +238,11 @@ const MOB_COL = { twinhare: "#a83848", gutfrog: "#7a9a4a", eyecrow: "#5c3c6c", s
 const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * G.defs.eliteHp[m.el | 0]);
 const RANK_NAME = ["", "정예 ", "우두머리 "];
 Mini.mount($("#minigame"));
+// the menu wears glyphs: beside the words where there is room, instead of them where there is not
+for (const b of $$("#menu button[data-win]")) { const g = MENU_ICON[b.dataset.win]; if (!g) continue; if (b.dataset.win === "help") b.textContent = ""; b.prepend(iconImg(g)); }
+$("#b-sit").prepend(iconImg(MENU_ICON.sit));
+$("#b-emo").textContent = ""; $("#b-emo").append(iconImg(MENU_ICON.emo));
+$("#btn-sound").textContent = ""; $("#btn-sound").append(iconImg(MENU_ICON.sound));
 
 const heightOf = (e) => e.h3 || 1.3;
 
@@ -676,7 +682,7 @@ function update(dt, t) {
   }
 
   // walk — applied immediately, checked by the server afterwards
-  const speed = s.spd * (t < G.buffEnd[1] ? 1.4 : 1);
+  const speed = s.spd * (t < G.buffEnd[1] ? 1.4 : 1) * (t < (G.buffEnd[4] || 0) ? 0.65 : 1);    // hasted, or slowed by frost
   const ox = me.x, oy = me.y;
   if (mx || my) {
     const nx = me.x + mx * speed * dt, ny = me.y + my * speed * dt;
@@ -809,7 +815,14 @@ function renderText(t) {
     if (!(d.boss || mob.el || mob.hp < max)) continue;
     const [x, y] = at(mob.x, mob.y, (mob.h3 || 1) + 0.28);
     // in a dungeon the rank-2 monster is its guardian; out in the open it is the field boss
-    label(`Lv.${d.lv} ${mob.el === 2 && G.map.theme ? "수문장 " : RANK_NAME[mob.el | 0]}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#ece0e0");
+    // an elite wears its traits: named in its title, and stamped as glyphs above it
+    const tr = mob.tr || [], traits = G.defs.traits || {};
+    const tn = tr.length && traits[tr[0]] ? `${traits[tr[0]][0]} ` : "";
+    if (tr.length) {
+      tg.imageSmoothingEnabled = false;
+      tr.forEach((k, i) => { const tk = TRAIT[k]; if (tk) tg.drawImage(icon(tk[0], tk[1]), Math.round(x - tr.length * 9 + i * 18 + 1), Math.round(y - 29), 16, 16); });
+    }
+    label(`Lv.${d.lv} ${mob.el === 2 && G.map.theme ? "수문장 " : RANK_NAME[mob.el | 0]}${tn}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#ece0e0");
     if (mob.hp < max) bar(x, y + 4, d.boss ? 90 : mob.el === 2 ? 70 : 42, mob.hp / max, mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#d8404c");
   }
   for (const d of G.drops.values()) {
@@ -951,6 +964,8 @@ function itemSlot(entry, onClick, selected) {
   if (onClick) d.addEventListener("click", onClick);
   return d;
 }
+/** The glyph beside each line of the character sheet. */
+const STAT_GLYPH = { "공격력": "sword", "방어력": "shield", "최대 HP": "heart", "최대 MP": "drop", "치명타": "target", "치명 피해": "burst", "흡혈": "fang", "경험치 추가": "up", "아이템 발견": "gem", "골드 획득": "coin", "공격 간격": "clock", "처치 수": "skull", "수련 · 힘": "sword", "수련 · 체력": "heart", "수련 · 지력": "drop", "수련 · 수호": "shield" };
 const GEAR = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet"];
 const TYPE_NAME = { weapon: "무기", helm: "투구", armor: "갑옷", gloves: "장갑", boots: "신발", ring: "반지", amulet: "목걸이" };
 const SLOT_NAME = { weapon: "무기", helm: "투구", armor: "갑옷", gloves: "장갑", boots: "신발", ring1: "반지 1", ring2: "반지 2", amulet: "목걸이" };
@@ -1134,9 +1149,10 @@ function refreshUi() {
     }
     const st = $("#char-stats");
     st.textContent = "";
-    for (const [k, v] of [["공격력", s.atk], ["방어력", s.def], ["최대 HP", s.mhp], ["최대 MP", s.mmp], ["치명타", `${s.crit}%`], ["치명타 피해", `${s.critd}%`], ["흡혈", `${s.ls}%`], ["경험치 보너스", `${s.xpb}%`], ["아이템 발견", `${s.mf}%`], ["골드 획득", `+${s.goldb}%`], ["공격 간격", `${(s.acd / 1000).toFixed(2)}초`], ["처치 수", s.kills],
+    for (const [k, v] of [["공격력", s.atk], ["방어력", s.def], ["최대 HP", s.mhp], ["최대 MP", s.mmp], ["치명타", `${s.crit}%`], ["치명 피해", `${s.critd}%`], ["흡혈", `${s.ls}%`], ["경험치 추가", `${s.xpb}%`], ["아이템 발견", `${s.mf}%`], ["골드 획득", `+${s.goldb}%`], ["공격 간격", `${(s.acd / 1000).toFixed(2)}초`], ["처치 수", s.kills],
       ["수련 · 힘", s.tr.str], ["수련 · 체력", s.tr.vit], ["수련 · 지력", s.tr.int], ["수련 · 수호", s.tr.grd]]) {
       const sp = el("span", "", k);
+      sp.prepend(iconImg(STAT_GLYPH[k] || "up"));
       sp.append(el("b", "", v));
       st.append(sp);
     }
@@ -1436,13 +1452,20 @@ function hudTick(t) {
     $("#streak-bar").style.width = `${clamp((k.end - t) / G.defs.streak[0], 0, 1) * 100}%`;
   }
   const buffs = $("#st-buffs");
-  const names = ["공격력↑", "이동속도↑", `온기 EXP+${s.warm}%`, s.food ? G.defs.items[s.food].name : "음식"];
+  // each status is its glyph and the time left; the last three are things done to you
+  const names = ["공격력 증가", "이동속도 증가", `모닥불의 온기: 경험치 +${s.warm}%`, s.food ? G.defs.items[s.food].name : "음식", "둔화: 이동속도 감소", "화상: 지속 피해", "중독: 지속 피해"];
   const left = (ms) => (ms > 90000 ? `${Math.ceil(ms / 60000)}분` : `${Math.ceil(ms / 1000)}`);
-  const want = G.buffEnd.map((e, i) => (e > t ? `${names[i]} ${left(e - t)}` : "")).filter(Boolean).join("|");
+  const shown = G.buffEnd.map((e, i) => (e > t ? [i, left(e - t)] : null)).filter(Boolean);
+  const want = shown.map(([i, l]) => `${i}:${l}`).join("|");
   if (buffs.dataset.v !== want) {
     buffs.dataset.v = want;
     buffs.textContent = "";
-    for (const b of want ? want.split("|") : []) buffs.append(el("span", "", b));
+    for (const [i, l] of shown) {
+      const sp = el("span", i >= 4 ? "bad" : "", l);
+      sp.title = names[i];
+      sp.prepend(iconImg(BUFF_ICON[i], i >= 4 ? "#ff9a8a" : undefined));
+      buffs.append(sp);
+    }
   }
 }
 
