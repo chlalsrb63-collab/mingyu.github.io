@@ -12,7 +12,9 @@
  *     spent, without limit, on permanent training of your base stats;
  *   - hunting together pays: a party shares kills, quest credit and a bonus;
  *   - and there is a quiet side: campfires to sit by, fish to catch and cook,
- *     guilds, and a handful of emotes.
+ *     guilds, and a handful of emotes;
+ *   - and a long game: waypoints, a return scroll, daily tasks, achievements and
+ *     titles, a monster collection, a half-hourly world event, and first steps.
  *
  * This file is the single source of truth. The room (`room.ts`) only moves
  * bytes — it feeds actions and the clock in and fans per-player views out — and
@@ -118,6 +120,7 @@ const ITEMS = {
   mp_s: { name: "파란 물약", type: "pot", mana: 40, price: 25, desc: "MP를 40 회복한다." },
   mp_m: { name: "큰 파란 물약", type: "pot", mana: 140, price: 80, desc: "MP를 140 회복한다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
+  recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 넥서스 광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
   fish_s: { name: "송사리", type: "fish", cook: "food_s", price: 30, desc: "흔한 물고기. 모닥불에서 구울 수 있다." },
   fish_m: { name: "무지개 송어", type: "fish", cook: "food_m", price: 110, desc: "살이 오른 송어. 모닥불에서 구울 수 있다." },
@@ -197,12 +200,14 @@ const TRAIN = {
 };
 const trainCost = (n) => 120 + 40 * n;
 
-const SHOP = ["hp_s", "hp_m", "mp_s", "mp_m", "camp", "stone", "W1", "w_book_1", "h_1", "a_1", "g_1", "b_1"];
+const SHOP = ["hp_s", "hp_m", "mp_s", "mp_m", "recall", "camp", "stone", "W1", "w_book_1", "h_1", "a_1", "g_1", "b_1"];
 const ENH_RATE = [100, 95, 90, 80, 70, 55, 45, 35, 25, 15];
 
 // ── the cosy side: campfires, fishing, guilds
 /** Campfires that always burn, by map, in tiles. */
 const FIRES = {};          // filled in as each map is generated
+/** Each map's waypoint stone, in tiles, and the tile a traveller arrives on beside it. */
+const WP = {};
 const FIRE_R = 46, FIRE_MS = 180000, FIRE_MAX = 6;
 /** Sitting this long by a fire warms you: +10% experience for ten minutes, +2% per friend sitting there too. */
 const WARM_SEC = 6, WARM_MS = 600000;
@@ -1198,6 +1203,25 @@ function buildTown() {
     { id: "guard", name: "경비병 토비", role: "talk", x: 35, y: 13, look: [1, 0, 0, "#5e6470"],
       say: "동쪽 문은 바람초원, 서쪽 문은 네온 시티로 이어져. 길은 갈라지고 막히기도 하니 샛길을 살펴봐 — 막다른 곳엔 보물 상자나 모닥불, 그리고 가끔은 땅속으로 내려가는 계단이 있거든. 문 이름 옆의 레벨을 보고, 감당할 만한 곳부터 가!" },
   );
+  // the hub's services stand around the plaza: a waypoint stone with its keeper, the
+  // collector, the hall of records and the board of daily tasks
+  m.npcs.push(
+    { id: "warp", name: "이동술사 노바", role: "warp", x: 15, y: 17, look: [2, 3, 0, "#4a6ac8"],
+      say: "이동의 돌을 깨우면 어디서든 돌과 돌 사이를 건널 수 있어. 사냥터마다 입구 가까이에 하나씩 있지." },
+    { id: "collector", name: "학자 몽", role: "collector", x: 24, y: 16, look: [3, 4, 0, "#7a6a3a"],
+      say: "같은 몬스터를 서른 마리 잡으면 도감에 오르지. 한 지역을 다 채우면 그 땅이 힘을 빌려준다네." },
+    { id: "achieve", name: "기록관 루", role: "achieve", x: 24, y: 14, look: [4, 1, 0, "#8a3a5a"],
+      say: "자네의 모험은 모두 이 비석에 새겨지네. 이름난 업적에는 칭호가 따르지." },
+    { id: "daily", name: "게시판지기 하루", role: "daily", x: 15, y: 13, look: [0, 2, 0, "#3a7a5a"],
+      say: "매일 아침 6시에 새 과제가 붙는다네. 셋을 다 하면 보상 상자도 있지!" },
+  );
+  m.o[16][16] = "Q";
+  WP.town = { x: 16, y: 16, ax: 17, ay: 16 };
+  m.marks = [
+    { x: 16, y: 16, kind: "waypoint" },
+    { x: 32, y: 13, kind: "sign", label: "바람초원 Lv.1–7 →", to: "meadow" },
+    { x: 6, y: 13, kind: "sign", label: "← 네온 시티 Lv.14–21", to: "city" },
+  ];
   m.gates = { east: { t: [[38, 14], [38, 15]], a: [[36, 14], [36, 15]] }, west: { t: [[1, 14], [1, 15]], a: [[3, 14], [3, 15]] } };
   FIRES.town.push([22, 22]);
   return m;
@@ -1278,12 +1302,147 @@ function buildMaps() {
       sp.n = n;
     }
   }
+  const byId = { town, meadow, forest, crypt, city: town2, sewer, cave, abyss };
+  const labelOf = (id) => (byId[id].band ? `${byId[id].name} Lv.${byId[id].band[0]}–${byId[id].band[1]}` : byId[id].name);
+  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss]) {
+    const lo = m.band[0];
+    markRoutes(m, labelOf, (id) => (byId[id].band && byId[id].band[0] > lo ? byId[id].band[0] : 0));
+  }
   const out = {};
   for (const m of [town, meadow, forest, crypt, town2, sewer, cave, abyss]) out[m.id] = finalize(m);
   return out;
 }
+/**
+ * Waypoint stone and signposts for a hunting ground. The route a player walks
+ * from the entrance to the way on (the deepest door, or the boss) is the
+ * critical path: the waypoint stands beside it a dozen steps in, signposts at
+ * junctions along it point on, and where the way to a camp or a second door
+ * turns off, a signpost marks the turn. Nothing placed may cut anything off.
+ */
+function markRoutes(m, labelOf, deeper) {
+  const W = m.w, H = m.h;
+  m.marks = m.marks || [];
+  const open = (x, y) => inMap(m, x, y) && m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]);
+  const flood = (sx, sy) => {
+    const d = new Int32Array(W * H).fill(-1), prev = new Int32Array(W * H).fill(-1);
+    const q = [sy * W + sx];
+    d[q[0]] = 0;
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h], x = i % W, y = (i - x) / W;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy, j = ny * W + nx;
+        if (!open(nx, ny) || d[j] >= 0) continue;
+        d[j] = d[i] + 1; prev[j] = i; q.push(j);
+      }
+    }
+    return { d, prev, count: q.length };
+  };
+  const [ex, ey] = m.entry;
+  const base = flood(ex, ey);
+  let reach = base.count;
+  /** The walk from the entrance to the reachable tile nearest (tx, ty), as tile indexes. */
+  const route = (tx, ty) => {
+    let best = -1, bd = 1e9;
+    for (let y = Math.max(0, ty - 4); y <= Math.min(H - 1, ty + 4); y++) for (let x = Math.max(0, tx - 4); x <= Math.min(W - 1, tx + 4); x++) {
+      const i = y * W + x;
+      if (base.d[i] < 0) continue;
+      const dd = Math.abs(x - tx) + Math.abs(y - ty);
+      if (dd < bd) { bd = dd; best = i; }
+    }
+    if (best < 0) return null;
+    const out = [];
+    for (let i = best; i >= 0; i = base.prev[i]) out.push(i);
+    return out.reverse();
+  };
+  // where a player might be heading: every door out (not the one they came in by), the boss, a camp
+  const dests = [], doors = new Set();
+  for (const pt of m.portals) {
+    if (doors.has(pt.to)) continue;
+    const path = route(pt.x, pt.y);
+    if (!path || path.length < 8) continue;
+    doors.add(pt.to);
+    dests.push({ to: pt.to, label: labelOf(pt.to), path, rank: deeper(pt.to) });
+  }
+  const bossSp = m.spawns.find((sp) => MOBS[sp.k].boss);
+  if (bossSp && !dests.some((d) => d.rank > 0)) {
+    const path = route(Math.round((bossSp.r[0] + bossSp.r[2]) / 2), Math.round((bossSp.r[1] + bossSp.r[3]) / 2));
+    if (path) dests.push({ to: null, label: MOBS[bossSp.k].name, path, rank: 99 });
+  }
+  if (!dests.length) return;
+  // the way on: the door to the strongest place, else the farthest
+  const main = dests.slice().sort((a, b) => b.rank - a.rank || b.path.length - a.path.length)[0];
+  const others = dests.filter((d) => d !== main);
+  if (FIRES[m.id].length) {
+    const [fx, fy] = FIRES[m.id][0];
+    const path = route(fx, fy);
+    if (path) others.push({ to: null, label: "야영지 · 모닥불", path, camp: [fx, fy] });
+  }
+  const C = main.path, onPath = new Set();
+  for (const d of [main, ...others]) for (const i of d.path) onPath.add(i);
+  const busy = (x, y) => {
+    for (const pt of m.portals) if (Math.abs(pt.x - x) <= 2 && Math.abs(pt.y - y) <= 2) return true;
+    for (const [fx, fy] of FIRES[m.id]) if (Math.abs(fx - x) <= 1 && Math.abs(fy - y) <= 1) return true;
+    return m.marks.some((k) => Math.abs(k.x - x) <= 2 && Math.abs(k.y - y) <= 2);
+  };
+  /** Put object `ch` beside the walk at index-tile `at`, where it blocks nothing. */
+  const place = (at, ch) => {
+    const ax = at % W, ay = (at - ax) / W;
+    for (const [dx, dy] of [[0, -1], [1, 0], [-1, 0], [0, 1], [1, -1], [-1, -1], [1, 1], [-1, 1]]) {
+      const x = ax + dx, y = ay + dy, i = y * W + x;
+      if (!open(x, y) || onPath.has(i) || base.d[i] < 0 || busy(x, y)) continue;
+      m.o[y][x] = ch;
+      if (flood(ex, ey).count === reach - 1) { reach--; return [x, y]; }
+      m.o[y][x] = " ";
+    }
+    return null;
+  };
+  const arrow = (from, to) => {
+    const fx = from % W, fy = (from - fx) / W, tx = to % W, ty = (to - tx) / W;
+    const o = ((Math.round(Math.atan2(ty - fy, tx - fx) / (Math.PI / 4)) % 8) + 8) % 8;
+    return ["→", "↘", "↓", "↙", "←", "↖", "↑", "↗"][o];
+  };
+  const forks = (i) => { const x = i % W, y = (i - x) / W; return [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => open(x + dx, y + dy)).length; };
+  // the waypoint, a dozen steps along the way on
+  for (let k = Math.min(12, C.length - 2); k < Math.min(C.length - 1, 48); k++) {
+    const at = place(C[k], "Q");
+    if (!at) continue;
+    WP[m.id] = { x: at[0], y: at[1], ax: C[k] % W, ay: Math.floor(C[k] / W) };
+    m.marks.push({ x: at[0], y: at[1], kind: "waypoint" });
+    break;
+  }
+  // signposts at junctions along the way on
+  for (const frac of [0.33, 0.62, 0.86]) {
+    const t = Math.round(C.length * frac);
+    for (let s = 0; s <= 14; s++) {
+      const j = s % 2 ? t + (s + 1) / 2 : t - s / 2;
+      if (j < 10 || j > C.length - 5 || forks(C[j]) < 3) continue;
+      const at = place(C[j], "G");
+      if (!at) continue;
+      m.marks.push({ x: at[0], y: at[1], kind: "sign", label: `${main.label} ${arrow(C[j], C[Math.min(j + 8, C.length - 1)])}`, to: main.to || undefined });
+      break;
+    }
+  }
+  // and where the way to a camp or another door turns off
+  for (const d of others) {
+    const P = d.path;
+    let k = 0;
+    while (k < P.length && k < C.length && P[k] === C[k]) k++;
+    for (let a = Math.max(1, k - 1); a < Math.min(P.length - 3, k + 6); a++) {
+      const at = place(P[a], "G");
+      if (!at) continue;
+      m.marks.push({ x: at[0], y: at[1], kind: "sign", label: `${d.label} ${arrow(P[a], P[Math.min(a + 8, P.length - 1)])}`, to: d.to || undefined });
+      break;
+    }
+  }
+}
+
+
 const MAPS = buildMaps();
 const START = { map: "town", x: 20 * T + 8, y: 18 * T + 8 };
+/** Every monster that lives somewhere (no chests, no bosses), and each region's for its collection. */
+const HUNTED = [...new Set(Object.values(MAPS).flatMap((m) => m.spawns.map((sp) => sp.k)))].filter((k) => !MOBS[k].chest && !MOBS[k].boss);
+const COL_MOBS = {};
+for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"]) COL_MOBS[id] = [...new Set(MAPS[id].spawns.map((sp) => sp.k))].filter((k) => HUNTED.includes(k));
 
 function solidAt(m, px, py) {
   const tx = Math.floor(px / T), ty = Math.floor(py / T);
@@ -1304,7 +1463,7 @@ const doorName = (m) => (m.band ? `${m.name} Lv.${m.band[0]}–${m.band[1]}` : m
 function mapPayload(m) {
   return {
     id: m.id, name: m.name, w: m.w, h: m.h, g: m.g, o: m.o, big: m.big, safe: m.safe, bgm: m.bgm,
-    theme: m.theme || null, band: m.band || null,
+    theme: m.theme || null, band: m.band || null, marks: m.marks || [],
     // a door names where it leads and how strong you should be to go there
     portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: doorName(MAPS[p.to]) })),
     npcs: m.npcs,
@@ -1332,7 +1491,7 @@ export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
   const lk = Array.isArray(look) ? look : [];
   return {
-    v: 3, name, cls: c,
+    v: 4, name, cls: c,
     // ear, eyes, nose, colour, blush, markings, tunic
     look: LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)),
     lvl: 1, xp: 0, gold: 50,
@@ -1341,6 +1500,7 @@ export function newChar(name, cls, look) {
     tr: { str: 0, vit: 0, int: 0, grd: 0 },
     q: { i: 0, n: 0, st: 0 },
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
+    wp: ["town"], seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
   };
 }
@@ -1389,10 +1549,28 @@ function migrate(ch) {
   ch.guild = typeof ch.guild === "string" && NAME_RE.test(ch.guild) ? ch.guild : "";
   ch.gm = ch.guild && ch.gm ? 1 : 0;
   ch.fish = ch.fish | 0;
-  ch.v = 3;
+  // the long game: waypoints, places seen, achievements, a title, counters, dailies, first steps
+  ch.wp = (Array.isArray(ch.wp) ? ch.wp : []).filter((id) => WP[id]);
+  if (!ch.wp.includes("town")) ch.wp.unshift("town");
+  ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => MAPS[id]);
+  if (!ch.seen.includes("town")) ch.seen.unshift("town");
+  ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
+  ch.title = typeof ch.title === "string" && ch.ach.includes(ch.title) && ACH_BY[ch.title].title ? ch.title : "";
+  const st = isObj(ch.st) ? ch.st : {};
+  ch.st = {};
+  for (const k of ST_KEYS) ch.st[k] = Math.max(0, st[k] | 0);
+  const dl = ch.daily;
+  ch.daily = isObj(dl) && Number.isInteger(dl.day) && Array.isArray(dl.tasks) && dl.tasks.length === 3 && dl.tasks.every((t) => isObj(t) && DAILY_TEXT[t.kind] && (t.kind !== "kill" || MOBS[t.k]))
+    ? { day: dl.day, tasks: dl.tasks.map((t) => ({ kind: t.kind, k: t.kind === "kill" ? t.k : null, n: clamp(t.n | 0, 0, t.need | 0), need: Math.max(1, t.need | 0) })), claimed: [0, 1, 2].map((i) => !!(Array.isArray(dl.claimed) && dl.claimed[i])), bonus: !!dl.bonus }
+    : null;
+  // a character from before the first-steps chain who has clearly found their feet skips it
+  ch.tut = isObj(ch.tut) ? { i: clamp(ch.tut.i | 0, 0, TUT.length), n: Math.max(0, ch.tut.n | 0) } : { i: ch.lvl >= 5 || (ch.kills | 0) >= 20 ? TUT.length : 0, n: 0 };
+  ch.v = 4;
   return ch;
 }
 
+/** Counters kept for achievements. */
+const ST_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {
@@ -1435,6 +1613,10 @@ function gearBonus(ch) {
   for (const id of Object.keys(sets)) {
     for (const [n, list] of SETS[id].bonus) if (sets[id] >= n) for (const [s, v] of list) add(s, v);
   }
+  // a worn title and every finished region of the monster collection add their bit
+  const ttl = ch.title && ACH_BY[ch.title];
+  if (ttl && ttl.bonus) for (const [s, v] of ttl.bonus) add(s, v);
+  for (const id of REGIONS) if (regionDone(ch, id)) for (const [s, v] of REGION_BONUS[id]) add(s, v);
   if (lg.greed) b.gold += 60;
   b.lg = lg;
   return b;
@@ -1501,6 +1683,7 @@ function waterNear(m, p) {
 }
 /** Stand up, reel in: whatever a player was quietly doing stops. */
 function rouse(S, p) {
+  cancelRecall(S, p, "귀환이 취소되었습니다.");
   p.sit = false;
   if (p.fish) { p.fish = null; S.maps[p.map].ev.push(["f", p.eid, 0]); }
 }
@@ -1518,7 +1701,7 @@ function newMob(S, k, r, sp) {
   return { fix: (sp && sp.el) || 0, ep: sp && sp.elite !== undefined ? sp.elite : 0.08, id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false, tr: [], act: null, mv: 0, cn: 0 };
 }
 export function setup() {
-  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, parties: {}, chat: [], n: 0 };
+  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, parties: {}, chat: [], n: 0, evt: null };
   for (const id of Object.keys(MAPS)) {
     const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], who: false, n: 0, kc: 0, fb: 0 };
     for (const [fx, fy] of FIRES[id] || []) {
@@ -1590,7 +1773,7 @@ export function addPlayer(S, pid, ch) {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, hp: 1, mp: 0, dead: false, stc: null,
     cds: [0, 0, 0, 0], atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
-    atkBuff: 0, spdBuff: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null,
+    atkBuff: 0, spdBuff: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
   if (!canStand(MAPS[p.map], p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
   const st = stats(p);
@@ -1602,6 +1785,10 @@ export function addPlayer(S, pid, ch) {
   S.maps[p.map].n++;
   S.maps[p.map].who = true;
   sys(S, `${ch.name}님이 접속했습니다.`);
+  ensureDaily(S, p);
+  explore(S, p);
+  if (TUT[ch.tut.i] && TUT[ch.tut.i].id === "equip" && ch.eq.weapon) tutStep(S, p, "equip");
+  checkAch(S, p);
   return p.eid;
 }
 
@@ -1632,6 +1819,7 @@ function changeMap(S, p, to, x, y) {
   S.maps[to].n++;
   S.maps[to].who = true;
   p.sendMap = true; p.fix = true;
+  explore(S, p);
 }
 
 function sys(S, m) {
@@ -1821,6 +2009,7 @@ function gainXp(S, p, n) {
     for (const sk of SKILLS[ch.cls]) if (sk.lv === ch.lvl) toast(p, `새 스킬 [${sk.name}]을(를) 배웠습니다!`);
     if (ch.lvl % 10 === 0) sys(S, `${ch.name}님이 레벨 ${ch.lvl}을(를) 달성했습니다!`);
     if (ch.lvl === MAXLV) toast(p, "최고 레벨 달성! 이제 경험치는 수련에 쓰입니다.");
+    checkAch(S, p);
   }
   p.dirty = true;
 }
@@ -1830,6 +2019,7 @@ function dealMob(S, rt, mob, p, dmg, crit) {
   if (mob.dead) return false;
   mob.hp -= dmg;
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
+  if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
   if (!mob.tgt) mob.tgt = p.pid;
   rt.ev.push(["h", mob.id, dmg, crit ? 1 : 0, 0]);
   if (mob.hp > 0) return false;
@@ -1889,7 +2079,7 @@ function killMob(S, rt, mob) {
   for (const p of looters) {
     const ch = p.ch;
     // a chest is opened, not hunted: it pays out its loot and nothing else
-    if (d.chest) { p.dirty = true; lootFor(S, rt, mob, p); continue; }
+    if (d.chest) { p.dirty = true; lootFor(S, rt, mob, p); dailyProg(S, p, "chest"); continue; }
     const n = Math.min(PARTY_MAX, allies(S, p).length);
     // a kill soon after the last one keeps the streak alive
     p.streak = S.now - p.streakAt < STREAK_MS ? p.streak + 1 : 1;
@@ -1902,6 +2092,7 @@ function killMob(S, rt, mob) {
     if (now > rank) {
       toast(p, `토벌 숙련 [${d.name}] ${now}단계 — 피해 +${now * 3}%, 경험치 +${now * 2}%`);
       rt.ev.push(["u", p.eid, 2]);
+      if (rank === 0 && HUNTED.includes(mob.k)) registered(S, p, mob.k);
     }
     const q = ch.q;
     const quest = QUESTS[q.i];
@@ -1914,13 +2105,21 @@ function killMob(S, rt, mob) {
       bq.n++;
       if (bq.n >= bq.need) toast(p, `반복 의뢰 [${d.name} ${bq.need}마리] 달성! 관리자에게 보고하세요.`);
     }
+    if (el === 1) ch.st.elite++;
+    else if (el === 2) { if (mob.evt) ch.st.evb++; else if (mob.temp) ch.st.fb++; else ch.st.guard++; }
+    if (n >= 2) ch.st.party++;
+    dailyProg(S, p, "kill", mob.k);
+    if (el >= 1) dailyProg(S, p, "elite");
+    if (mob.k === "twinhare") tutStep(S, p, "hunt");
+    checkAch(S, p);
     p.dirty = true;
     lootFor(S, rt, mob, p);
   }
   if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}을(를) 쓰러뜨렸습니다!`);
   if (el === 2) {
-    if (mob.temp) rt.fb = 0;
-    if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 ${mob.temp ? "우두머리" : "수문장"} [${d.name}]을(를) 쓰러뜨렸습니다!`);
+    if (mob.evt) { if (S.evt) S.evt.bossDead = true; }
+    else if (mob.temp) rt.fb = 0;
+    if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]을(를) 쓰러뜨렸습니다!`);
   }
   // some monsters go off where they fall, and so does any elite with the trait
   if (d.burst || has(mob, "burst")) {
@@ -1929,7 +2128,7 @@ function killMob(S, rt, mob) {
     rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), r, 900]);
   }
   // enough kills in one hunting ground call out its field boss
-  if (!d.boss && !d.chest && el < 2 && FIELD_BOSS[rt.id] && looters.size) {
+  if (!d.boss && !d.chest && !mob.evt && el < 2 && FIELD_BOSS[rt.id] && looters.size) {
     rt.kc++;
     if (rt.kc >= FB_KILLS && !rt.fb) spawnFieldBoss(S, rt, mob.x, mob.y);
   }
@@ -1948,6 +2147,7 @@ function hurtPlayer(S, rt, p, raw, mob) {
 /** Damage that no armour turns: fire, poison. */
 function wound(S, rt, p, dmg) {
   if (p.dead) return;
+  cancelRecall(S, p, "귀환이 취소되었습니다.");
   p.hp -= dmg;
   p.hitAt = S.now;
   rt.ev.push(["h", p.eid, dmg, 0, 1]);
@@ -2055,6 +2255,7 @@ function castSkill(S, p, i) {
   const rt = S.maps[p.map];
   const m = MAPS[p.map];
   rouse(S, p);
+  tutStep(S, p, "skill");
   p.mp -= sk.mp;
   p.cds[i] = S.now + sk.cd;
   if (st.lg.echo && rnd(S) < 0.2) { p.cds[i] = S.now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
@@ -2184,6 +2385,321 @@ function castSkill(S, p, i) {
   }
 }
 
+// ───────────────────────────── content: the long game ─────────────────────────────
+// What keeps a character coming back, each after a live game that does it well:
+// waypoints (Diablo II), a return scroll (Baram, Lineage), daily tasks (Lost Ark),
+// achievements and titles (MapleStory, Baram), a monster collection (MapleStory,
+// Lost Ark), a timed field event (Lineage, Baram) and a first-steps chain.
+
+const dirtyAll = (S) => { for (const pid of Object.keys(S.players)) S.players[pid].dirty = true; };
+
+// ── waypoints and the return scroll
+const WP_R = 40, RECALL_MS = 2000, WARP_CALM = 3000;
+/** The waypoint stone of the player's map, if they stand beside it. */
+function wpNear(p) {
+  const w = WP[p.map];
+  return w && dist(p.x, p.y, w.x * T + 8, w.y * T + 10) <= WP_R ? w : null;
+}
+/** Waking the stone you stand beside, and noting the maps you have walked. */
+function explore(S, p) {
+  const ch = p.ch;
+  if (!ch.seen.includes(p.map)) { ch.seen.push(p.map); checkAch(S, p); }
+  const w = wpNear(p);
+  if (w && !ch.wp.includes(p.map)) {
+    ch.wp.push(p.map);
+    toast(p, `[${MAPS[p.map].name}] 이동의 돌을 깨웠습니다. 다른 이동의 돌에서 이곳으로 올 수 있습니다.`);
+    S.maps[p.map].ev.push(["wp", p.eid, 2]);
+    p.dirty = true;
+    checkAch(S, p);
+  }
+}
+function cancelRecall(S, p, why) {
+  if (!p.recall) return;
+  p.recall = null;
+  S.maps[p.map].ev.push(["rc", p.eid, 0]);
+  p.dirty = true;
+  if (why) toast(p, why);
+}
+function finishRecall(S, p) {
+  if (countItem(p.ch, "recall") < 1) { cancelRecall(S, p, "귀환 주문서가 없습니다."); return; }
+  takeItem(p.ch, "recall", 1);
+  p.recall = null;
+  S.maps[p.map].ev.push(["rc", p.eid, -1]);
+  changeMap(S, p, START.map, START.x, START.y);
+  toast(p, "넥서스 광장으로 돌아왔습니다.");
+  p.dirty = true;
+}
+
+// ── daily tasks, reset at 06:00 Korean time
+const DAY_MS = 86400000, KST = 9 * 3600000, RESET_AT = 6 * 3600000;
+const dayOf = (now) => Math.floor((now + KST - RESET_AT) / DAY_MS);
+const nextReset = (now) => (dayOf(now) + 1) * DAY_MS - KST + RESET_AT;
+function strHash(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+const DAILY_TEXT = { kill: "{mob} {need}마리 처치", elite: "정예 몬스터 {need}마리 처치", fish: "물고기 {need}마리 낚기", cook: "요리 {need}번 성공하기", chest: "보물 상자 {need}개 열기", bounty: "반복 의뢰 {need}번 보고하기" };
+const DAILY_OTHER = ["elite", "fish", "cook", "chest", "bounty"];
+function rollDaily(ch, day) {
+  const box = { seed: strHash(`${ch.name}:${day}`) | 0 };
+  // the monster to hunt is one around the character's level that lives somewhere they can reach
+  const near = HUNTED.filter((k) => MOBS[k].lv <= ch.lvl + 2).sort((a, b) => Math.abs(MOBS[a].lv - ch.lvl) - Math.abs(MOBS[b].lv - ch.lvl)).slice(0, 4);
+  const k = near.length ? near[ri(box, 0, near.length - 1)] : HUNTED[0];
+  const tasks = [{ kind: "kill", k, n: 0, need: 30 + 10 * ri(box, 0, 2) }];
+  const pool = DAILY_OTHER.slice();
+  while (tasks.length < 3) {
+    const kind = pool.splice(ri(box, 0, pool.length - 1), 1)[0];
+    const need = { elite: ri(box, 3, 5), fish: ri(box, 4, 6), cook: ri(box, 2, 4), chest: 2, bounty: 1 }[kind];
+    tasks.push({ kind, k: null, n: 0, need });
+  }
+  return { day, tasks, claimed: [false, false, false], bonus: false };
+}
+function ensureDaily(S, p) {
+  const ch = p.ch, day = dayOf(S.now);
+  if (ch.daily && ch.daily.day === day) return;
+  const had = !!ch.daily;
+  ch.daily = rollDaily(ch, day);
+  p.dirty = true;
+  if (had) toast(p, "일일 과제가 새로 갱신되었습니다.");
+}
+const dailyText = (t) => DAILY_TEXT[t.kind].replace("{mob}", t.k ? MOBS[t.k].name : "").replace("{need}", t.need);
+function dailyReward(ch, t) {
+  const lv = Math.min(ch.lvl, MAXLV - 1);
+  return { gold: 60 + 25 * ch.lvl, xp: Math.round(xpNeed(lv) * 0.12), stone: t.kind === "kill" || t.kind === "elite" || t.kind === "chest" ? 1 : 0 };
+}
+function dailyBonus(ch) {
+  const lv = Math.min(ch.lvl, MAXLV - 1);
+  return { gold: 150 + 40 * ch.lvl, xp: Math.round(xpNeed(lv) * 0.25), stone: 3, gear: 1 };
+}
+/** Count one more of `kind` (and, for hunting, of monster `k`) toward today's tasks. */
+function dailyProg(S, p, kind, k) {
+  ensureDaily(S, p);
+  for (const t of p.ch.daily.tasks) {
+    if (t.kind !== kind || (kind === "kill" && t.k !== k) || t.n >= t.need) continue;
+    t.n++;
+    p.dirty = true;
+    if (t.n >= t.need) toast(p, `일일 과제 완료: ${dailyText(t)} — 보상을 받으세요.`);
+  }
+}
+/** A piece of gear for the looter's class, of at least rarity `minQ`, if the bag has room. */
+function rewardGear(S, p, ilvl, minQ) {
+  if (p.ch.inv.length >= INV) { toast(p, "가방이 가득 차 장비 보상을 받지 못했습니다."); return; }
+  let roll = rnd(S) * 100, type = "weapon";
+  for (const [ty, w] of DROP_TYPES) { if (roll < w) { type = ty; break; } roll -= w; }
+  const tier = tierFor(ilvl);
+  let id;
+  if (type === "weapon") { const kinds = CLASSES[p.ch.cls].wk; id = `w_${WK_ID[kinds[ri(S, 0, kinds.length - 1)]]}_${tier}`; }
+  else id = `${GEAR[type].pre}_${tier}`;
+  const g = rollGear(S, id, Math.max(minQ, rollRarity(S, 1, 0)), ilvl);
+  p.ch.inv.push(g);
+  p.gain.push(["item", g.id, 1, g.q]);
+}
+function payout(S, p, r) {
+  const ch = p.ch;
+  if (r.gold) { ch.gold += r.gold; p.gain.push(["gold", r.gold]); }
+  if (r.stone && addItem(ch, "stone", r.stone)) p.gain.push(["item", "stone", r.stone, 0]);
+  if (r.rune) { const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`; if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]); }
+  if (r.gear) rewardGear(S, p, ch.lvl, r.gearQ || 2);
+  if (r.xp) gainXp(S, p, r.xp);
+  p.dirty = true;
+}
+
+// ── achievements and titles
+/** [id, category, name, description, points, test, title, title bonus]. */
+const ACH = [
+  ["hunt100", "사냥", "첫 사냥꾼", "몬스터 100마리 처치", 5, (c) => c.kills >= 100],
+  ["hunt1000", "사냥", "숙련된 사냥꾼", "몬스터 1,000마리 처치", 10, (c) => c.kills >= 1000, "사냥꾼"],
+  ["hunt10000", "사냥", "학살자", "몬스터 10,000마리 처치", 30, (c) => c.kills >= 10000, "학살자", [["atkp", 2]]],
+  ["elite10", "사냥", "정예 사냥", "정예 몬스터 10마리 처치", 5, (c) => c.st.elite >= 10],
+  ["elite100", "사냥", "정예 학살", "정예 몬스터 100마리 처치", 15, (c) => c.st.elite >= 100, "정예 사냥꾼", [["crit", 1]]],
+  ["fb1", "사냥", "우두머리 토벌", "사냥터 우두머리 처치", 10, (c) => c.st.fb >= 1],
+  ["fb10", "사냥", "우두머리 사냥꾼", "사냥터 우두머리 10마리 처치", 20, (c) => c.st.fb >= 10, "우두머리 사냥꾼", [["hp", 40]]],
+  ["guard1", "사냥", "수문장 격파", "던전 수문장 처치", 10, (c) => c.st.guard >= 1],
+  ["boss", "사냥", "균열을 닫은 자", "균열의 군주 처치", 30, (c) => (c.mk.boss || 0) >= 1, "균열을 닫은 자", [["atkp", 3]]],
+  ["abyss", "사냥", "심연을 넘은 자", "심연의 어미 처치", 50, (c) => (c.mk.abyssboss || 0) >= 1, "심연을 넘은 자", [["atkp", 4], ["critd", 10]]],
+  ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, (c) => c.st.evt >= 1],
+  ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.st.evt >= 10, "균열 수호자", [["def", 3]]],
+  ["wp3", "탐험", "이동의 돌", "이동의 돌 3개 깨우기", 5, (c) => c.wp.length >= 3],
+  ["wpall", "탐험", "모든 길을 아는 자", "모든 이동의 돌 깨우기", 20, (c) => Object.keys(WP).every((id) => c.wp.includes(id))],
+  ["explore", "탐험", "세계 여행자", "모든 지역 방문", 20, (c) => Object.keys(MAPS).every((id) => c.seen.includes(id)), "여행자", [["spd", 3]]],
+  ["star10", "숙련", "숙련의 길", "토벌 숙련 별 10개", 10, (c) => stars(c) >= 10],
+  ["star50", "숙련", "토벌의 장인", "토벌 숙련 별 50개", 30, (c) => stars(c) >= 50, "토벌의 장인", [["xp", 3]]],
+  ["col1", "숙련", "첫 도감 완성", "한 지역의 몬스터 도감 완성", 10, (c) => REGIONS.some((id) => regionDone(c, id))],
+  ["colall", "숙련", "박물학자", "모든 지역의 몬스터 도감 완성", 50, (c) => REGIONS.every((id) => regionDone(c, id)), "박물학자", [["mf", 10]]],
+  ["fish10", "생활", "낚시꾼", "물고기 10마리 낚기", 5, (c) => c.fish >= 10],
+  ["fish100", "생활", "강태공", "물고기 100마리 낚기", 15, (c) => c.fish >= 100, "강태공"],
+  ["carp", "생활", "황금 잉어", "황금 잉어 낚기", 15, (c) => c.st.carp >= 1],
+  ["cook10", "생활", "요리사", "요리 10번 성공", 10, (c) => c.st.cook >= 10, "요리사"],
+  ["rest10", "생활", "모닥불 단골", "모닥불의 온기 10번 받기", 5, (c) => c.st.rest >= 10],
+  ["leg", "장비", "첫 전설", "전설 장비 획득", 10, (c) => c.st.leg >= 1],
+  ["set", "장비", "세트 수집가", "세트 장비 획득", 10, (c) => c.st.set >= 1],
+  ["enh7", "장비", "강화의 손길", "장비 +7 강화 성공", 10, (c) => c.st.enh >= 7],
+  ["enh10", "장비", "명장", "장비 +10 강화 성공", 30, (c) => c.st.enh >= 10, "명장", [["def", 4]]],
+  ["rw", "장비", "룬어 완성", "룬어 완성", 10, (c) => c.st.rw >= 1],
+  ["party100", "함께", "함께하는 사냥", "파티로 몬스터 100마리 처치", 10, (c) => c.st.party >= 100, "동료"],
+  ["guild", "함께", "길드원", "길드 가입", 5, (c) => !!c.guild],
+  ["gfound", "함께", "길드장", "길드 창설", 10, (c) => c.st.gfound >= 1, "길드장"],
+  ["lv10", "성장", "견습 모험가", "레벨 10 달성", 5, (c) => c.lvl >= 10],
+  ["lv30", "성장", "베테랑 모험가", "레벨 30 달성", 15, (c) => c.lvl >= 30, "베테랑"],
+  ["lv50", "성장", "전설의 모험가", "레벨 50 달성", 40, (c) => c.lvl >= 50, "전설의 모험가", [["hp", 80]]],
+  ["daily1", "성장", "성실한 하루", "일일 과제 보상 상자 받기", 5, (c) => c.st.daily >= 1],
+  ["daily30", "성장", "성실한 모험가", "일일 과제 보상 상자 30번 받기", 20, (c) => c.st.daily >= 30, "성실한 모험가", [["gold", 10]]],
+].map(([id, cat, name, desc, pts, test, title, bonus]) => ({ id, cat, name, desc, pts, test, title: title || null, bonus: bonus || null }));
+const ACH_BY = Object.fromEntries(ACH.map((a) => [a.id, a]));
+/** Every mastery star a character has earned. */
+function stars(ch) {
+  let n = 0;
+  for (const k of Object.keys(ch.mk)) n += masteryRank(ch, k);
+  return n;
+}
+function checkAch(S, p) {
+  const ch = p.ch;
+  for (const a of ACH) {
+    if (ch.ach.includes(a.id) || !a.test(ch)) continue;
+    ch.ach.push(a.id);
+    toast(p, `업적 달성: [${a.name}] +${a.pts}점${a.title ? ` — 칭호 「${a.title}」 획득` : ""}`);
+    S.maps[p.map].ev.push(["ac", p.eid, a.id]);
+    if (a.pts >= 30) sys(S, `${ch.name}님이 업적 [${a.name}]을(를) 달성했습니다!`);
+    p.dirty = true;
+  }
+}
+const achPoints = (ch) => ch.ach.reduce((n, id) => n + (ACH_BY[id] ? ACH_BY[id].pts : 0), 0);
+const titleOf = (ch) => (ch.title && ACH_BY[ch.title] ? ACH_BY[ch.title].title : "");
+
+// ── the monster collection: a kind is registered at its first mastery star
+const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def", 2]], city: [["crit", 1]], sewer: [["mf", 5]], cave: [["atk", 3]], abyss: [["atkp", 2]] };
+const REGIONS = Object.keys(REGION_BONUS);
+const regionDone = (ch, id) => COL_MOBS[id].every((k) => (ch.mk[k] || 0) >= MASTERY[0]);
+function registered(S, p, k) {
+  const ch = p.ch;
+  toast(p, `몬스터 도감 등록: ${MOBS[k].name}`);
+  for (const id of REGIONS) {
+    if (!COL_MOBS[id].includes(k) || !regionDone(ch, id)) continue;
+    const words = REGION_BONUS[id].map(([s, v]) => `${s === "xp" || s === "mf" || s === "crit" || s === "atkp" ? `${v}%` : `+${v}`} ${STAT_WORD[s]}`).join(", ");
+    toast(p, `[${MAPS[id].name}] 도감 완성! 영구 보너스: ${words}`);
+    sys(S, `${ch.name}님이 [${MAPS[id].name}] 몬스터 도감을 완성했습니다!`);
+    p.stc = null;
+  }
+}
+const STAT_WORD = { hp: "최대 HP", xp: "경험치", def: "방어력", crit: "치명타", mf: "아이템 발견", atk: "공격력", atkp: "공격력" };
+
+// ── the world event: a rift opens in one hunting ground every half hour
+const EVT = { every: 1800000, warn: 120000, len: 480000, waves: [0, 150000, 300000], boss: 360000 };
+const EVT_MAPS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"];
+const evtMap = (slot) => EVT_MAPS[(Math.imul(slot, 2654435761) >>> 0) % EVT_MAPS.length];
+const newEvt = (slot) => ({ slot, map: evtMap(slot), phase: "warn", start: slot * EVT.every, end: slot * EVT.every + EVT.len, waves: 0, boss: 0, bossDead: false, dmg: {}, top: null });
+function worldEvent(S, now) {
+  const slot = Math.floor(now / EVT.every);
+  let e = S.evt;
+  if (e && (e.phase === "on" || e.phase === "boss")) { runEvent(S, e, now); return; }
+  // the next one is called out two minutes ahead
+  const next = slot + 1;
+  if (now >= next * EVT.every - EVT.warn && (!e || e.slot !== next)) {
+    S.evt = e = newEvt(next);
+    sys(S, `2분 뒤 [${MAPS[e.map].name}]에 균열 침공이 시작됩니다!`);
+    dirtyAll(S);
+    return;
+  }
+  if (e && e.phase === "warn" && now >= e.start) { beginEvent(S, e); return; }
+  // a channel that wakes in the middle of an event's window joins it late
+  if (slot > 0 && (!e || e.slot < slot) && now >= slot * EVT.every && now < slot * EVT.every + EVT.len - 60000) { S.evt = e = newEvt(slot); beginEvent(S, e); }
+}
+function beginEvent(S, e) {
+  e.phase = "on";
+  sys(S, `균열 침공 시작! [${MAPS[e.map].name}]에 정예 몬스터가 몰려옵니다. (8분)`);
+  dirtyAll(S);
+  runEvent(S, e, S.now);
+}
+function runEvent(S, e, now) {
+  while (e.waves < EVT.waves.length && now >= e.start + EVT.waves[e.waves]) { e.waves++; spawnWave(S, e); }
+  if (!e.boss && now >= e.start + EVT.boss) spawnEvtBoss(S, e);
+  if (now >= e.end || e.bossDead) endEvent(S, e);
+}
+/** Where an event's monsters gather: beside the map's waypoint stone. */
+const evtSpot = (id) => [WP[id].ax, WP[id].ay];
+function spawnWave(S, e) {
+  const m = MAPS[e.map], rt = S.maps[e.map], [cx, cy] = evtSpot(e.map);
+  const kinds = COL_MOBS[e.map].slice().sort((a, b) => MOBS[b].lv - MOBS[a].lv).slice(0, 2);
+  const n = clamp(5 + 2 * rt.n, 5, 14);
+  for (let i = 0; i < n; i++) {
+    const mob = newMob(S, kinds[i % kinds.length], [Math.max(2, cx - 6), Math.max(2, cy - 6), Math.min(m.w - 3, cx + 6), Math.min(m.h - 3, cy + 6)]);
+    placeMob(S, m, mob);
+    if (!mob.x) { mob.x = mob.hx = mob.wx = cx * T + 8; mob.y = mob.hy = mob.wy = cy * T + 10; }
+    mob.el = 1; mob.tr = rollTraits(S, 1); mob.hp = mobMax(mob); mob.temp = true; mob.evt = true;
+    rt.mobs.push(mob);
+    rt.ev.push(["r", mob.id]);
+  }
+  sys(S, `[${m.name}] 균열 침공 ${e.waves}파 — 정예 ${n}마리가 나타났습니다!`);
+  dirtyAll(S);
+}
+function spawnEvtBoss(S, e) {
+  const m = MAPS[e.map], rt = S.maps[e.map], [cx, cy] = evtSpot(e.map);
+  const mob = newMob(S, FIELD_BOSS[e.map], [0, 0, 0, 0]);
+  mob.el = 2; mob.temp = true; mob.evt = true; mob.tr = rollTraits(S, 2);
+  mob.x = mob.hx = mob.wx = cx * T + 8; mob.y = mob.hy = mob.wy = cy * T + 10;
+  mob.hp = mobMax(mob);
+  mob.castAt = S.now + 4000;
+  rt.mobs.push(mob);
+  rt.ev.push(["r", mob.id]);
+  e.boss = mob.id; e.phase = "boss";
+  sys(S, `[${m.name}] 균열 침공의 우두머리 [${MOBS[mob.k].name}]이(가) 나타났습니다!`);
+  dirtyAll(S);
+}
+function endEvent(S, e) {
+  const rt = S.maps[e.map];
+  for (const mob of rt.mobs) if (mob.evt && !mob.dead) { mob.dead = true; rt.ev.push(["k", mob.id]); }
+  const list = Object.entries(e.dmg).filter(([pid]) => S.players[pid]).sort((a, b) => b[1] - a[1]);
+  const total = list.reduce((n, [, d]) => n + d, 0) || 1;
+  const hi = MAPS[e.map].band ? MAPS[e.map].band[1] : 10;
+  list.forEach(([pid, d], rank) => {
+    const p = S.players[pid], share = d / total;
+    const lv = Math.min(p.ch.lvl, MAXLV - 1);
+    payout(S, p, {
+      gold: Math.round(40 * hi * (0.5 + 2 * share)), xp: Math.round(xpNeed(lv) * (0.06 + 0.3 * share)),
+      stone: 1 + (share >= 0.25 ? 1 : 0) + (rank === 0 ? 2 : 0), rune: rank < 3, gear: rank === 0 ? 1 : 0, gearQ: 2,
+    });
+    p.ch.st.evt++;
+    toast(p, `균열 침공 보상 — 기여도 ${Math.round(share * 100)}%${rank < 3 ? ` (${rank + 1}위)` : ""}`);
+    checkAch(S, p);
+  });
+  e.top = list.slice(0, 3).map(([pid, d]) => [S.players[pid].ch.name, d]);
+  e.phase = "done";
+  sys(S, list.length ? `균열 침공 종료! ${e.top.map(([n], i) => `${i + 1}위 ${n}`).join(", ")}` : "균열 침공이 끝났습니다. 아무도 막지 못했습니다…");
+  dirtyAll(S);
+}
+function evtView(S, p) {
+  const e = S.evt, now = S.now, next = Math.floor(now / EVT.every) + 1;
+  const out = { phase: e ? e.phase : "idle", next: next * EVT.every - now, nextMap: evtMap(next) };
+  if (e) Object.assign(out, { map: e.map, name: MAPS[e.map].name, in: e.start - now, left: e.end - now, waves: e.waves, mine: e.dmg[p.pid] || 0, top: e.top });
+  return out;
+}
+
+// ── first steps: a short tutorial chain beside the main quests
+const TUT = [
+  { id: "talk", title: "관리자에게 말 걸기", hint: "광장 분수 앞의 관리자 엘더윈에게 다가가 F를 누르세요.", reward: { gold: 20 } },
+  { id: "equip", title: "무기 장착하기", hint: "C로 캐릭터 창을 열어 무기를 장착하세요.", reward: { gold: 20 } },
+  { id: "bag", title: "가방 열기", hint: "I를 눌러 가방을 열어 보세요.", reward: { gold: 20 } },
+  { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
+  { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
+  { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
+  { id: "skill", title: "스킬 써 보기", hint: "레벨 3이 되면 1번 키로 첫 스킬을 쓸 수 있습니다.", reward: { gold: 100, items: [["camp", 1], ["recall", 2]] } },
+];
+function tutStep(S, p, id) {
+  const ch = p.ch, step = TUT[ch.tut.i];
+  if (!step || step.id !== id) return;
+  if (step.need && ++ch.tut.n < step.need) { p.dirty = true; return; }
+  ch.tut.i++; ch.tut.n = 0;
+  const r = step.reward;
+  if (r.gold) { ch.gold += r.gold; p.gain.push(["gold", r.gold]); }
+  for (const [it, n] of r.items || []) if (addItem(ch, it, n)) p.gain.push(["item", it, n, 0]);
+  const next = TUT[ch.tut.i];
+  toast(p, `[첫걸음] ${step.title} 완료!${next ? ` 다음: ${next.title}` : " 모든 첫걸음을 마쳤습니다!"}`);
+  p.dirty = true;
+  // a step already done needs no doing
+  if (next && next.id === "equip" && ch.eq.weapon) tutStep(S, p, "equip");
+}
+
 // ───────────────────────────── actions ─────────────────────────────
 
 function npcNear(p, role) {
@@ -2271,6 +2787,30 @@ export function validateAction(S, pid, a) {
     case "emo":
       if (!Number.isInteger(a.i) || a.i < 0 || a.i >= EMOTES) return bad("없는 감정표현");
       return now - p.emoAt < 600 ? bad("잠시 후에") : OK;
+    case "title":
+      if (a.id === "" || a.id === undefined || a.id === null) return OK;
+      if (typeof a.id !== "string" || !ACH_BY[a.id] || !ACH_BY[a.id].title) return bad("없는 칭호입니다");
+      return ch.ach.includes(a.id) ? OK : bad("아직 얻지 않은 칭호입니다");
+    case "daily": {
+      ensureDaily(S, p);
+      const dl = ch.daily;
+      if (a.i === "bonus") {
+        if (dl.bonus) return bad("이미 보상을 받았습니다");
+        if (!dl.claimed.every(Boolean)) return bad("세 과제의 보상을 모두 받아야 합니다");
+        return ch.inv.length + 2 <= INV ? OK : bad("가방이 가득 찼습니다");
+      }
+      const t = Number.isInteger(a.i) ? dl.tasks[a.i] : null;
+      if (!t) return bad("없는 과제입니다");
+      if (dl.claimed[a.i]) return bad("이미 보상을 받았습니다");
+      if (t.n < t.need) return bad("아직 과제를 마치지 못했습니다");
+      return canAdd(ch, "stone", 1) ? OK : bad("가방이 가득 찼습니다");
+    }
+    case "tut": {
+      const step = TUT[ch.tut.i];
+      if (!step || step.id !== a.s || (a.s !== "talk" && a.s !== "bag")) return bad("지금 할 단계가 아닙니다");
+      if (a.s === "talk" && !npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
+      return OK;
+    }
   }
   if (p.dead) return bad("쓰러진 상태입니다");
   switch (a.t) {
@@ -2280,6 +2820,14 @@ export function validateAction(S, pid, a) {
     case "atk":
       if (now - p.atkAt < stats(p).acd - 60) return bad("아직 공격할 수 없습니다");
       return OK;
+    case "warp": {
+      if (typeof a.to !== "string" || !WP[a.to]) return bad("그곳에는 이동의 돌이 없습니다");
+      if (!wpNear(p)) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
+      if (!ch.wp.includes(a.to)) return bad("아직 깨우지 않은 이동의 돌입니다");
+      if (a.to === p.map) return bad("이미 이곳에 있습니다");
+      if (now - p.hitAt < WARP_CALM) return bad("전투 중에는 이동할 수 없습니다");
+      return OK;
+    }
     case "sk": {
       const sk = SKILLS[ch.cls][a.i];
       if (!sk) return bad("없는 스킬");
@@ -2290,8 +2838,13 @@ export function validateAction(S, pid, a) {
     }
     case "use": {
       const it = ITEMS[a.id];
-      if (!it || !["pot", "food", "camp"].includes(it.type)) return bad("사용할 수 없는 아이템");
+      if (!it || !["pot", "food", "camp", "scroll"].includes(it.type)) return bad("사용할 수 없는 아이템");
       if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
+      if (it.type === "scroll") {
+        if (p.map === START.map) return bad("이미 마을에 있습니다");
+        if (p.recall) return bad("이미 귀환을 준비하고 있습니다");
+        return OK;
+      }
       if (it.type === "camp") {
         const rt = S.maps[p.map];
         if (rt.fires.some((f) => dist(f.x, f.y, p.x, p.y) < 40)) return bad("바로 곁에 모닥불이 있습니다");
@@ -2439,6 +2992,14 @@ export function applyAction(S, pid, a) {
     case "use": {
       const it = ITEMS[a.id];
       const st = stats(p);
+      if (it.type === "scroll") {
+        rouse(S, p);
+        p.recall = { at: now + RECALL_MS };
+        S.maps[p.map].ev.push(["rc", p.eid, RECALL_MS]);
+        toast(p, "귀환 주문서를 읽는 중… (움직이거나 피해를 입으면 취소)");
+        p.dirty = true;
+        break;
+      }
       takeItem(ch, a.id, 1);
       if (it.type === "camp") {
         S.maps[p.map].fires.push({ id: S.nextId++, x: Math.round(p.x), y: Math.round(p.y) - 14, until: now + FIRE_MS });
@@ -2472,6 +3033,7 @@ export function applyAction(S, pid, a) {
       if (old) ch.inv[a.s] = old;
       else ch.inv.splice(a.s, 1);
       afterGear(S, p);
+      if (k === "weapon") tutStep(S, p, "equip");
       break;
     }
     case "uneq":
@@ -2487,7 +3049,7 @@ export function applyAction(S, pid, a) {
       g.ru[a.i] = key;
       const rw = runeword(g);
       toast(p, rw ? `룬어 [${rw.name}] 완성!` : `${RUNES[key][0]} 룬을 끼웠습니다.`);
-      if (rw) sys(S, `${ch.name}님이 룬어 [${rw.name}]을(를) 완성했습니다!`);
+      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]을(를) 완성했습니다!`); ch.st.rw++; checkAch(S, p); }
       S.maps[p.map].ev.push(["e", p.eid, 1]);
       afterGear(S, p);
       break;
@@ -2508,6 +3070,7 @@ export function applyAction(S, pid, a) {
       ch.gold -= ITEMS[id].price * n;
       addItem(ch, id, n);
       p.gain.push(["item", id, n, 0]);
+      if (ITEMS[id].type === "pot") tutStep(S, p, "buy");
       p.dirty = true;
       break;
     }
@@ -2532,6 +3095,8 @@ export function applyAction(S, pid, a) {
         g.enh++;
         toast(p, `강화 성공! ${gearName(g)}`);
         if (g.enh >= 7) sys(S, `${ch.name}님이 ${gearName(g)} 강화에 성공했습니다!`);
+        ch.st.enh = Math.max(ch.st.enh, g.enh);
+        checkAch(S, p);
       } else if (g.enh >= 5) {
         g.enh--;
         toast(p, `강화 실패... ${gearName(g)}(으)로 단계가 내려갔습니다.`);
@@ -2575,7 +3140,9 @@ export function applyAction(S, pid, a) {
       if (score >= 95) toast(p, "완벽한 낚시!");
       if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, id === "fish_l" ? 3 : id === "fish_m" ? 1 : 0]);
       ch.fish++;
-      if (id === "fish_l") sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`);
+      if (id === "fish_l") { sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`); ch.st.carp++; }
+      if (id.startsWith("fish")) dailyProg(S, p, "fish");
+      checkAch(S, p);
       p.dirty = true;
       break;
     }
@@ -2588,6 +3155,7 @@ export function applyAction(S, pid, a) {
       addItem(ch, out, n);
       p.gain.push(["item", out, n, 0]);
       toast(p, score < 35 ? "태워 버렸습니다…" : score >= 85 ? `완벽한 요리! ${ITEMS[out].name} 2개` : `${ITEMS[out].name} 완성`);
+      if (score >= 35) { ch.st.cook++; dailyProg(S, p, "cook"); checkAch(S, p); }
       S.maps[p.map].ev.push(["u", p.eid, 0]);
       p.dirty = true;
       break;
@@ -2619,6 +3187,7 @@ export function applyAction(S, pid, a) {
           if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]);
         }
         toast(p, `반복 의뢰 완료 (${ch.bn}회째) — 같은 의뢰가 다시 시작됩니다.`);
+        dailyProg(S, p, "bounty");
         const xp = Math.round(d.xp * ch.bq.need * 0.5);
         ch.bq = { k: ch.bq.k, n: 0, need: BOUNTY_N };
         gainXp(S, p, xp);
@@ -2628,6 +3197,7 @@ export function applyAction(S, pid, a) {
     }
     case "quest": {
       const quest = QUESTS[ch.q.i];
+      tutStep(S, p, "talk");
       if (a.a === "accept") {
         ch.q.st = 1; ch.q.n = 0;
         toast(p, `의뢰 수락: ${quest.title}`);
@@ -2685,6 +3255,8 @@ export function applyAction(S, pid, a) {
       ch.gold -= GUILD_COST;
       ch.guild = a.name; ch.gm = 1;
       sys(S, `${ch.name}님이 길드 [${a.name}]을(를) 세웠습니다!`);
+      ch.st.gfound = 1;
+      checkAch(S, p);
       S.maps[p.map].who = true;
       p.dirty = true;
       break;
@@ -2701,6 +3273,7 @@ export function applyAction(S, pid, a) {
         const o = S.players[oid];
         if (o.ch.guild === ch.guild) { toast(o, `${ch.name}님이 길드 [${ch.guild}]에 들어왔습니다.`); o.dirty = true; }
       }
+      checkAch(S, p);
       S.maps[p.map].who = true;
       break;
     }
@@ -2720,6 +3293,37 @@ export function applyAction(S, pid, a) {
       p.emoAt = now;
       S.maps[p.map].ev.push(["o", p.eid, a.i]);
       break;
+    case "title":
+      ch.title = a.id || "";
+      p.stc = null;
+      S.maps[p.map].who = true;
+      toast(p, ch.title ? `칭호 「${titleOf(ch)}」을(를) 달았습니다.` : "칭호를 떼었습니다.");
+      p.dirty = true;
+      break;
+    case "daily": {
+      const dl = ch.daily;
+      if (a.i === "bonus") {
+        dl.bonus = true;
+        ch.st.daily++;
+        toast(p, "일일 과제 보상 상자를 열었습니다!");
+        payout(S, p, dailyBonus(ch));
+      } else {
+        dl.claimed[a.i] = true;
+        payout(S, p, dailyReward(ch, dl.tasks[a.i]));
+      }
+      checkAch(S, p);
+      break;
+    }
+    case "tut": tutStep(S, p, a.s); break;
+    case "warp": {
+      const w = WP[a.to];
+      S.maps[p.map].ev.push(["wp", p.eid, 0]);
+      changeMap(S, p, a.to, w.ax * T + 8, w.ay * T + 10);
+      S.maps[a.to].ev.push(["wp", p.eid, 1]);
+      toast(p, `[${MAPS[a.to].name}]의 이동의 돌로 건너왔습니다.`);
+      p.dirty = true;
+      break;
+    }
     case "pleave":
       leaveParty(S, p);
       toast(p, "파티를 떠났습니다.");
@@ -2966,6 +3570,7 @@ export function tick(S, now) {
   const dt = clamp(now - (S.last || now), 0, 300) / 1000;
   S.last = now;
   S.now = now;
+  worldEvent(S, now);
   const pids = Object.keys(S.players);
   for (const id of Object.keys(MAPS)) {
     const rt = S.maps[id];
@@ -3028,6 +3633,9 @@ export function tick(S, now) {
           if (p.ch.inv.length >= INV) { if (now > p.fullAt) { p.fullAt = now + 3000; toast(p, "가방이 가득 찼습니다."); } continue; }
           p.ch.inv.push(dr.g);
           p.gain.push(["item", dr.it, 1, dr.q]);
+          if (dr.q === 3) p.ch.st.leg++;
+          if (dr.q === 4) p.ch.st.set++;
+          if (dr.q >= 3) checkAch(S, p);
           if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]을(를) 획득했습니다!`);
         } else if (addItem(p.ch, dr.it, dr.n)) {
           p.gain.push(["item", dr.it, dr.n, 0]);
@@ -3060,8 +3668,11 @@ export function tick(S, now) {
         if (now >= s.next) { s.next = now + 1000; wound(S, S.maps[p.map], p, s.dmg); if (p.dead) break; }
       }
     }
+    if (p.recall && now >= p.recall.at && !p.dead) finishRecall(S, p);
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;
+    ensureDaily(S, p);
+    explore(S, p);
     const st = stats(p);
     const calm = now - p.hitAt > 5000;
     // a campfire is a place to catch your breath; sitting by it is better still
@@ -3077,6 +3688,9 @@ export function tick(S, now) {
         const had = p.warm > now ? p.warmPct : 0;
         if (pct > had) toast(p, `모닥불의 온기 — 10분간 경험치 +${pct}%${friends ? ` (함께 쉬는 동료 ${friends}명)` : ""}`);
         p.warm = now + WARM_MS; p.warmPct = Math.max(had, pct);
+        p.ch.st.rest++;
+        tutStep(S, p, "rest");
+        checkAch(S, p);
         p.warmT = 0;
         p.dirty = true;
       }
@@ -3099,6 +3713,15 @@ export function isGameOver() {
   return { over: false };
 }
 
+/** Today's tasks as the player sees them: what, how far, what it pays, and when they renew. */
+function dailyView(p) {
+  const ch = p.ch, dl = ch.daily;
+  if (!dl) return null;
+  return {
+    day: dl.day, reset: Math.max(0, nextReset(p.S.now) - p.S.now), bonus: dl.bonus, bonusReward: dailyBonus(ch),
+    tasks: dl.tasks.map((t, i) => ({ kind: t.kind, k: t.k, n: t.n, need: t.need, done: t.n >= t.need, claimed: dl.claimed[i], text: dailyText(t), reward: dailyReward(ch, t) })),
+  };
+}
 function selfPayload(p) {
   const ch = p.ch;
   const st = stats(p);
@@ -3118,6 +3741,8 @@ function selfPayload(p) {
     buffs: [Math.max(0, p.atkBuff - now), Math.max(0, p.spdBuff - now), Math.max(0, p.warm - now), p.food ? Math.max(0, p.food.until - now) : 0,
       Math.max(0, (p.slowed || 0) - now), p.burn ? Math.max(0, p.burn.until - now) : 0, p.poison ? Math.max(0, p.poison.until - now) : 0],
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
+    wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), st: ch.st,
+    daily: dailyView(p), tut: { i: ch.tut.i, n: ch.tut.n }, evt: evtView(p.S, p), recall: p.recall ? Math.max(0, p.recall.at - now) : 0,
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, MAPS[o.map].name, o.ch.gm]) : [],
   };
 }
@@ -3162,7 +3787,7 @@ export function viewFor(S, pid) {
       // (its tier, rarity, enhancement and kind)
       const ar = o.ch.eq.armor, wp = o.ch.eq.weapon;
       out.who.push([o.eid, o.ch.name, o.ch.cls, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
-        wp ? wp.q : 0, wp ? wp.enh : 0, 0, weaponKind(o.ch), o.ch.guild]);
+        wp ? wp.q : 0, wp ? wp.enh : 0, 0, weaponKind(o.ch), o.ch.guild, titleOf(o.ch)]);
     }
   }
   if (p.party) {
@@ -3202,6 +3827,11 @@ export function defs() {
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
     traits: TRAITS, slow: SLOW,
+    waypoints: Object.keys(WP).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null })),
+    achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
+    collection: Object.fromEntries(REGIONS.map((id) => [id, { mobs: COL_MOBS[id], bonus: REGION_BONUS[id] }])), colNeed: MASTERY[0],
+    event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },
+    daily: { resetKST: 6, text: DAILY_TEXT }, tutorial: TUT.map(({ id, title, hint, need }) => ({ id, title, hint, need: need || 1 })), recallMs: RECALL_MS,
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
   };
 }
