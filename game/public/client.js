@@ -167,7 +167,7 @@ function loadMap(m) {
   G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear();
   G.texts.length = 0;
   G.snapCam = true;
-  $("#mini-name").textContent = m.name;
+  $("#mini-name").textContent = m.band ? `${m.name} Lv.${m.band[0]}–${m.band[1]}` : m.name;
   Sound.bgm(m.bgm);
   banner(m.name, true);
   closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train");
@@ -637,7 +637,7 @@ function interact() {
 // ───────────────────────────── update ─────────────────────────────
 
 let lastSend = 0, sent = { x: 0, y: 0, d: 0 };
-const autoSt = { stuck: 0, side: 0, sign: 1, lastSkill: 0 };
+const autoSt = { stuck: 0, side: 0, sign: 1, lastSkill: 0, target: null, routed: 0, skip: new Map() };
 
 function update(dt, t) {
   const me = G.me, s = G.self;
@@ -646,9 +646,15 @@ function update(dt, t) {
   let wantAtk = !me.dead && !typing() && !Mini.active() && (keys.has(" ") || keys.has("j") || held.atk);
 
   // auto-hunt: walk at the nearest monster, hit it, drink when low
+  // a route taken to get round a wall ends as soon as its monster is within reach
+  if (G.auto && G.path && autoSt.routed) {
+    const m = G.mobs.get(autoSt.routed);
+    if (!m || dist(me.x, me.y, m.x, m.y) < s.range * 0.8) { G.path = null; autoSt.routed = 0; }
+  }
   if (G.auto && !me.dead && mx === 0 && my === 0 && !G.path && !G.map.safe) {
     let best = null, bd = 1e9;
-    for (const m of G.mobs.values()) { const d = dist(me.x, me.y, m.x, m.y); if (d < bd) { bd = d; best = m; } }
+    for (const m of G.mobs.values()) { if ((autoSt.skip.get(m.id) || 0) > t) continue; const d = dist(me.x, me.y, m.x, m.y); if (d < bd) { bd = d; best = m; } }
+    autoSt.target = best;
     if (best) {
       const range = s.range * 0.8;
       if (bd > range) {
@@ -682,7 +688,17 @@ function update(dt, t) {
   me.moving = moved > 0.01;
   if (me.moving) me.walk += dt * 7;
   if (G.auto && (mx || my)) {
-    if (moved < speed * dt * 0.3) { autoSt.stuck += dt; if (autoSt.stuck > 0.2) { autoSt.side = 0.5 + Math.random() * 0.4; autoSt.sign = Math.random() < 0.5 ? -1 : 1; autoSt.stuck = 0; } }
+    if (moved < speed * dt * 0.3) {
+      autoSt.stuck += dt;
+      if (autoSt.stuck > 0.25) {
+        // walled off: find the way round, or give this one up for a while if there is none
+        autoSt.stuck = 0;
+        const m = autoSt.target, route = m ? pathTo(m.x, m.y) : null;
+        if (route && route.length < 60) { G.path = route; autoSt.routed = m.id; }
+        else if (m) autoSt.skip.set(m.id, t + 8000);
+        else { autoSt.side = 0.5 + Math.random() * 0.4; autoSt.sign = Math.random() < 0.5 ? -1 : 1; }
+      }
+    }
     else autoSt.stuck = 0;
   }
   if (t - lastSend > 90 && (Math.abs(me.x - sent.x) > 0.3 || Math.abs(me.y - sent.y) > 0.3 || me.dir !== sent.d)) {
@@ -792,7 +808,8 @@ function renderText(t) {
     const d = G.defs.mobs[mob.k], max = mobMax(mob);
     if (!(d.boss || mob.el || mob.hp < max)) continue;
     const [x, y] = at(mob.x, mob.y, (mob.h3 || 1) + 0.28);
-    label(`Lv.${d.lv} ${RANK_NAME[mob.el | 0]}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#ece0e0");
+    // in a dungeon the rank-2 monster is its guardian; out in the open it is the field boss
+    label(`Lv.${d.lv} ${mob.el === 2 && G.map.theme ? "수문장 " : RANK_NAME[mob.el | 0]}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#ece0e0");
     if (mob.hp < max) bar(x, y + 4, d.boss ? 90 : mob.el === 2 ? 70 : 42, mob.hp / max, mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#d8404c");
   }
   for (const d of G.drops.values()) {
@@ -1213,7 +1230,7 @@ function refreshUi() {
     const body = $("#quest-body");
     body.textContent = "";
     const atElder = G.near && G.near.role === "elder";
-    if (!quest) body.append(el("p", "say", "자네 덕분에 마을에 평화가 찾아왔네. 모든 의뢰를 완료했다네! 이제 수정 군주에게 다시 도전하며 더 강한 장비를 노려 보게."));
+    if (!quest) body.append(el("p", "say", "심연의 어미까지 쓰러뜨리다니… 자네 덕분에 균열이 잠잠해졌네. 모든 의뢰를 완료했다네! 이제 반복 의뢰와 수문장 사냥으로 더 강한 장비를 노려 보게."));
     else {
       body.append(el("div", "q-title", `${s.q.i + 1}. ${quest.title}`), el("p", "say", quest.text));
       const mob = G.defs.mobs[quest.mob];

@@ -1020,9 +1020,14 @@ function maze(cfg) {
   for (let c = 0; c < P.n; c++) {
     const r = room[c], k = kind[c];
     // a channel of whatever runs here (sludge, blood) along the top of the bigger rooms
-    if (T2.pool && k === "room" && r.x1 - r.x0 >= 4 && r.y1 - r.y0 >= 3 && rnd(box) < T2.pool) {
-      if (T2.pool >= 0.5) { for (let x = r.x0 + 1; x <= r.x1 - 1; x++) if (inRoom(x, r.y0 + 1)) m.g[r.y0 + 1][x] = "w"; }
-      else { const px = r.x0 + 1 + ri(box, 0, 1), py = r.y1 - 1; for (let y = py - 1; y <= py; y++) for (let x = px; x <= px + 1 + ri(box, 0, 1); x++) if (inRoom(x, y) && x < r.x1) m.g[y][x] = "w"; }
+    if (!T2.pool || k !== "room" || rnd(box) >= T2.pool[1]) continue;
+    if (T2.pool[0] === "channel") {
+      // a gutter along the top of the room, a tile in from the wall, with the ends left to walk round
+      if (r.x1 - r.x0 >= 4 && r.y1 - r.y0 >= 3) for (let x = r.x0 + 1; x <= r.x1 - 1; x++) if (inRoom(x, r.y0 + 1)) m.g[r.y0 + 1][x] = "w";
+    } else if (r.x1 - r.x0 >= 3 && r.y1 - r.y0 >= 2) {
+      // a pool in one corner
+      const px = rnd(box) < 0.5 ? r.x0 : r.x1 - 1, py = rnd(box) < 0.5 ? r.y0 : r.y1 - 1;
+      for (let y = py; y <= py + 1; y++) for (let x = px; x <= px + 1; x++) if (inRoom(x, y)) m.g[y][x] = "w";
     }
   }
   for (let y = 2; y < m.h - 2; y++) for (let x = 2; x < m.w - 2; x++) {
@@ -1169,17 +1174,17 @@ function buildMaps() {
   const crypt = maze({
     id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, cw: 6, ch: 5, cs: 10, cr: 9, entry: 24, loops: 0.05, out: true,
     mobs: ["ratking", "bonehound", "batcluster"], guard: "bonehound", chest: "chest_crypt", n: 3,
-    dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.03], ["4", 0.035], ["5", 0.012]], pillar: "5", pool: 0 },
+    dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.03], ["4", 0.035], ["5", 0.012]], pillar: "5", pool: ["pond", 0.18] },
   });
   const sewer = maze({
     id: "sewer", name: "하수도", theme: "sewer", seed: 77029, cw: 7, ch: 5, cs: 10, cr: 9, entry: 0, loops: 0.06, out: true,
     mobs: ["leechmaw", "gatorhalf", "eelknot"], guard: "gatorhalf", chest: "chest_sewer", n: 3,
-    dress: { wall: [["6", 0.14], ["7", 0.05]], floor: [["7", 0.02], ["n", 0.02]], pillar: "7", pool: 0.6 },
+    dress: { wall: [["6", 0.14], ["7", 0.05]], floor: [["7", 0.02], ["n", 0.02]], pillar: "7", pool: ["channel", 0.85] },
   });
   const abyss = maze({
     id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, cw: 7, ch: 6, cs: 10, cr: 9, entry: 35, loops: 0.04, boss: "abyssboss",
     mobs: ["twingoat", "horsehalf", "serpentwing"], guard: "horsehalf", chest: "chest_abyss", n: 3,
-    dress: { wall: [["0", 0.12], ["8", 0.06]], floor: [["8", 0.03], ["4", 0.03], ["0", 0.012]], pillar: "8", pool: 0.4 },
+    dress: { wall: [["0", 0.12], ["8", 0.06]], floor: [["8", 0.03], ["4", 0.03], ["0", 0.012]], pillar: "8", pool: ["pond", 0.6] },
   });
   // the level a character should be to walk in, shown on every door that leads there
   for (const [m, lo, hi] of [[meadow, 1, 7], [forest, 8, 13], [crypt, 12, 17], [town2, 14, 21], [sewer, 22, 27], [cave, 24, 32], [abyss, 32, 40]]) m.band = [lo, hi];
