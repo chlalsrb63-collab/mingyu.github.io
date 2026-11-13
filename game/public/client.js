@@ -188,8 +188,8 @@ function onSnap(s) {
 
   if (s.who) {
     G.who.clear();
-    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, , wk, guild] of s.who) {
-      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk }, party, guild });
+    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, , wk, guild, title] of s.who) {
+      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk }, party, guild, title });
     }
     if (isOpen("party")) renderParty();
     if (isOpen("guild")) renderGuild();
@@ -204,6 +204,9 @@ function onSnap(s) {
     for (let i = 0; i < 4; i++) G.cdEnd[i] = t + s.self.cds[i];
     G.streak = { n: s.self.streak[0], end: t + s.self.streak[1] };
     G.buffEnd = s.self.buffs.map((ms) => t + ms);
+    if (s.self.evt) { G.evt = s.self.evt; G.evtNext = t + s.self.evt.next; G.evtIn = t + (s.self.evt.in || 0); G.evtLeft = t + (s.self.evt.left || 0); }
+    if (s.self.daily) G.dailyReset = t + s.self.daily.reset;
+    if (s.self.recall > 0 && !G.cast) G.cast = { start: t - (G.defs.recallMs - s.self.recall), end: t + s.self.recall };
     refreshUi();
     if (isOpen("guild")) renderGuild();
   }
@@ -316,6 +319,37 @@ function onEvent(e, t) {
       const col = [null, "#ffb04a", "#ff8a3a", "#cfe4ff"][e[4] | 0];
       if (col) { S3.fx.ring(e[1], e[2], e[3], col, 300, true); S3.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); S3.shake(2); Sound.play("boom"); }
       else { S3.fx.ring(e[1], e[2], e[3], "#ff6ad0", 350, true); S3.fx.burst(e[1], e[2], 0.4, "#ff6ad0", 34, 3); S3.shake(6); Sound.play("boom"); }
+      break;
+    }
+    case "wp": {
+      // 0 leaving by a waypoint, 1 arriving at one, 2 a stone woken
+      const p = entityPos(e[1]);
+      if (p) { S3.fx.ring(p.x, p.y, e[2] === 2 ? 34 : 24, "#8ad8ff", 520, true); S3.fx.sparkle(p.x, p.y, 0.8, "#bfeaff", e[2] === 2 ? 22 : 14); }
+      if (e[1] === G.you) {
+        if (e[2] === 2) { banner("이동의 돌을 깨웠습니다", true); Sound.play("level"); toast("이제 다른 이동의 돌에서 이곳으로 올 수 있습니다"); }
+        else if (e[2] === 1) { fadeIn(); Sound.play("magic"); }
+      }
+      break;
+    }
+    case "rc": {
+      // reading the return scroll: a cast bar for me, a ring round anyone reading
+      const p = entityPos(e[1]);
+      if (e[2] > 0) {
+        if (p) S3.fx.ring(p.x, p.y, 20, "#ffe08a", e[2], false);
+        if (e[1] === G.you) { G.cast = { start: t, end: t + e[2] }; Sound.play("magic"); }
+      } else {
+        if (e[1] === G.you) { G.cast = null; if (e[2] === 0) Sound.play("fail"); }
+        if (p && e[2] < 0) S3.fx.sparkle(p.x, p.y, 0.8, "#ffe08a", 16);
+      }
+      break;
+    }
+    case "ac": {
+      const a = (G.defs.achievements || []).find((x) => x.id === e[2]);
+      if (!a) break;
+      if (e[1] === G.you) { banner(`업적 달성 · ${a.name}`, true); Sound.play("level"); addChat(`업적 [${a.name}] 달성! (+${a.pts}점${a.title ? ` · 칭호 「${a.title}」` : ""})`, "sys"); }
+      else { const w = G.who.get(e[1]); if (w) addChat(`${w.name}님이 업적 [${a.name}]을(를) 달성했습니다.`, "sys"); }
+      const p = entityPos(e[1]);
+      if (p) S3.fx.sparkle(p.x, p.y, 0.9, "#ffd84a", 20);
       break;
     }
     case "c": S3.fx.lane(e[2], e[3], e[4], e[5], e[6]); Sound.play("warn"); break;      // a charge is coming down this line
@@ -458,6 +492,9 @@ addEventListener("keydown", (e) => {
     case "p": case "ㅔ": toggleWin("party"); break;
     case "k": case "ㅏ": toggleWin("skill"); break;
     case "n": case "ㅜ": toggleWin("rank"); break;
+    case "u": case "ㅕ": toggleWin("daily"); break;
+    case "y": case "ㅛ": toggleWin("achieve"); break;
+    case "j": case "ㅓ": toggleWin("collect"); break;
     case "h": case "ㅗ": toggleWin("help"); break;
     case "o": case "ㅐ": toggleWin("settings"); break;
     case "m": case "ㅡ": toggleSound(); break;
@@ -531,6 +568,11 @@ world.addEventListener("pointerdown", (e) => {
   if (!G.playing || !G.map || G.me.dead) return;
   const hit = S3.pick(e.clientX, e.clientY);
   if (!hit) return;
+  const stone = (G.map.marks || []).find((m) => m.kind === "waypoint" && Math.floor(hit[0] / T) === m.x && Math.floor(hit[1] / T) === m.y);
+  if (stone) {
+    if (stoneNear()) { openWin("warp"); return; }
+    hit[1] = (stone.y + 1) * T + 8;                 // the tile in front of it
+  }
   G.path = pathTo(hit[0], hit[1]);
   if (G.path) G.mark = { at: now(), pos: G.path[G.path.length - 1] }
 });
@@ -648,8 +690,16 @@ function nearestNpc() {
     const d = dist(G.me.x, G.me.y, n.x * T + 8, n.y * T + 12);
     if (d < bd) { bd = d; best = n; }
   }
+  for (const m of G.map.marks || []) {
+    if (m.kind !== "waypoint") continue;
+    const d = dist(G.me.x, G.me.y, m.x * T + 8, m.y * T + 8);
+    if (d < bd) { bd = d; best = STONE; }
+  }
   return best;
 }
+/** The waypoint stone, as something the player can talk to. */
+const STONE = { role: "stone", name: "이동의 돌" };
+const stoneNear = () => (G.map.marks || []).some((m) => m.kind === "waypoint" && dist(G.me.x, G.me.y, m.x * T + 8, m.y * T + 8) < 40);
 /** Is there water close enough to cast into? */
 function waterNear() {
   const m = G.map, tx = Math.floor(G.me.x / T), ty = Math.floor(G.me.y / T);
@@ -678,7 +728,11 @@ function interact() {
   Sound.play("ui");
   if (n.role === "shop") { openWin("shop"); openWin("inv"); }
   else if (n.role === "smith") { openWin("smith"); openWin("inv"); }
-  else if (n.role === "elder") openWin("quest");
+  else if (n.role === "elder") { openWin("quest"); tutTry("talk"); }
+  else if (n.role === "stone" || n.role === "warp") openWin("warp");
+  else if (n.role === "daily") openWin("daily");
+  else if (n.role === "collector") openWin("collect");
+  else if (n.role === "achieve") openWin("achieve");
   else if (n.role === "train") openWin("train");
   else { $("#talk-name").textContent = n.name; $("#talk-text").textContent = n.say || "…"; openWin("talk"); }
 }
@@ -692,7 +746,7 @@ function update(dt, t) {
   const me = G.me, s = G.self;
   if (!G.map || !s) return;
   let [mx, my] = me.dead ? [0, 0] : moveVector();
-  let wantAtk = !me.dead && !typing() && !Mini.active() && (keys.has(" ") || keys.has("j") || held.atk);
+  let wantAtk = !me.dead && !typing() && !Mini.active() && (keys.has(" ") || held.atk);
 
   // auto-hunt: walk at the nearest monster, hit it, drink when low
   // a route taken to get round a wall ends as soon as its monster is within reach
@@ -782,7 +836,7 @@ function update(dt, t) {
     const p = $("#prompt");
     p.hidden = !near;
     if (near) { p.textContent = ""; p.append(el("b", "", document.body.classList.contains("touch") ? "▶ " : "F  "), near.name); }
-    else { closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); }
+    else { closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); if (isOpen("warp")) delete shown.warp; }
   }
 }
 
@@ -910,6 +964,20 @@ function renderText(t) {
   const m = G.map, me = G.me;
   const myParty = G.who.get(G.you)?.party;
   const at = (x, y, h) => S3.project(x, y, h);
+  // signpost boards: a small dark plate with the destination over each visible post
+  if (S3.labels) {
+    tg.font = `700 ${Math.round(10 * dpr)}px Pretendard, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
+    tg.textBaseline = "middle";
+    for (const l of S3.labels()) {
+      const x = Math.round(l.x * dpr), y = Math.round(l.y * dpr), w = Math.round(tg.measureText(l.text).width + 12 * dpr), h = Math.round(16 * dpr);
+      tg.fillStyle = "rgba(34,27,40,.82)";
+      tg.beginPath(); tg.roundRect(x - w / 2, y - h / 2, w, h, 3 * dpr); tg.fill();
+      tg.strokeStyle = "rgba(226,196,134,.45)"; tg.lineWidth = 1; tg.stroke();
+      tg.fillStyle = "#ffe9b8";
+      tg.fillText(l.text, x, y + 1);
+    }
+    tg.textBaseline = "alphabetic";
+  }
 
   if (G.path && G.mark) {
     const [x, y] = at(G.mark.pos[0], G.mark.pos[1], 0.02), k = ((t - G.mark.at) / 500) % 1;
@@ -957,16 +1025,18 @@ function renderText(t) {
     const [x, y] = at(p.x, p.y, (p.h3 || 1.32) + 0.22);
     label(`Lv.${w.lvl} ${w.name}`, x, y, p.dead ? "#9a9aa8" : w.party && w.party === myParty ? "#8cff8c" : "#dce6f2");
     if (w.guild) label(`‹${w.guild}›`, x, y - 13, mine && w.guild === mine.guild ? "#9af0ae" : "#c8b8e8", 11);
+    if (w.title) label(`「${w.title}」`, x, y - (w.guild ? 26 : 13), "#ffcf6a", 11);
     if (p.hp < p.mhp && !p.dead) bar(x, y + 4, 40, p.hp / p.mhp, "#58c070");
   }
-  if (mine) { const [x, y] = at(me.x, me.y, (me.h3 || 1.32) + 0.22); label(`Lv.${mine.lvl} ${mine.name}`, x, y, "#f4e4b0"); if (mine.guild) label(`‹${mine.guild}›`, x, y - 13, "#9af0ae", 11); }
+  if (mine) { const [x, y] = at(me.x, me.y, (me.h3 || 1.32) + 0.22); label(`Lv.${mine.lvl} ${mine.name}`, x, y, "#f4e4b0"); if (mine.guild) label(`‹${mine.guild}›`, x, y - 13, "#9af0ae", 11); if (mine.title) label(`「${mine.title}」`, x, y - (mine.guild ? 26 : 13), "#ffcf6a", 11); }
   for (const b of G.bobs.values()) if (b.bite) { const [x, y] = at(b.x, b.y, 0.9); label("!", x, y + Math.sin(t / 60) * 2, "#ffe04a", 20); }
   for (const [eid, b] of G.bubbles) {
     if (t > b.until) { G.bubbles.delete(eid); continue; }
     const p = entityPos(eid);
     if (!p) continue;
     const [x, y] = at(p.x, p.y, (p.h3 || 1.32) + 0.5);
-    bubble(b, x, y - 14, t);
+    const w = G.who.get(eid), over = w ? (w.guild ? 1 : 0) + (w.title ? 1 : 0) : 0;
+    bubble(b, x, y - 14 - Math.max(0, over - 1) * 13, t);
   }
   for (let i = G.texts.length - 1; i >= 0; i--) {
     const f = G.texts[i];
@@ -1005,7 +1075,7 @@ function renderMini(t) {
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect"];
 const winEl = (id) => $(`#w-${id}`);
 const isOpen = (id) => !winEl(id).hidden;
 /** Per window, the key of what it last drew: a window is rebuilt only when what it shows has changed. */
@@ -1022,7 +1092,7 @@ function homeOf(id, w, h) {
   switch (id) {
     case "inv": return [right, top];
     case "char": case "shop": case "smith": case "train": return [W - 222 - inv - 10 - w, top];
-    case "skill": case "party": case "guild": case "rank": return [262, top + 36];
+    case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": return [262, top + 36];
     case "talk": return [mid, H - h - 190];
     default: return [mid, Math.max(top, (H - h) / 2 - 60)];
   }
@@ -1054,6 +1124,7 @@ function openWin(id) {
   if (id === "rank") { $("#rank-list").textContent = "불러오는 중…"; act({ t: "rank" }); }
   if (id === "party") renderParty();
   if (id === "guild") { act({ t: "glist" }); renderGuild(); }
+  if (id === "inv") tutTry("bag");
   refreshUi();
   if (!was) placeWin(id);
   front(id);
@@ -1305,7 +1376,7 @@ function useSlot(i) {
   if (!entry) return;
   const d = G.defs.items[entry.id];
   hideTip();
-  if (d.type === "pot" || d.type === "food") act({ t: "use", id: entry.id });
+  if (d.type === "pot" || d.type === "food" || d.type === "scroll") act({ t: "use", id: entry.id });
   else if (d.type === "camp") { act({ t: "use", id: entry.id }); closeWin("inv"); }
   else if (d.type === "fish") {
     if (!fireNear()) { toast("모닥불 곁에서 구울 수 있습니다"); return; }
@@ -1418,9 +1489,10 @@ function hotbar(s) {
 }
 function tracker(s) {
   const quest = G.defs.quests[s.q.i], mobs = G.defs.mobs;
-  const key = JSON.stringify([s.q, s.bq]);
+  const dl = s.daily && s.daily.tasks.filter((d) => !d.claimed);
+  const key = JSON.stringify([s.q, s.bq, dl]);
   setOnce($("#quest-track"), key, (qt) => {
-    if (!quest && !s.bq) return;
+    if (!quest && !s.bq && !(dl && dl.length)) return;
     const head = el("div", "qh"); head.append(iconImg("scroll", "#e2c486"), "의뢰");
     qt.append(head);
     const goal = (label, n, need, doneText) => {
@@ -1444,6 +1516,11 @@ function tracker(s) {
     if (s.bq) {
       const t = el("div", "qt"); t.append(el("small", "", "반복"), `${mobs[s.bq.k].name} 토벌`);
       qt.append(t, goal(mobs[s.bq.k].name, s.bq.n, s.bq.need, "완료! 엘더윈에게 보고하세요"));
+    }
+    if (dl && dl.length) {
+      const t = el("div", "qt"); t.append(el("small", "", "일일"), `오늘의 과제 ${3 - dl.length}/3`);
+      qt.append(t);
+      for (const d of dl) qt.append(goal(d.text, d.n, d.need, `${d.text} — 완료! (U)`));
     }
   });
 }
@@ -1474,6 +1551,11 @@ function refreshUi() {
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone")], renderSmith);
   draw("train", () => [s.xp, s.tr, s.trc], renderTrain);
   draw("quest", () => [s.q, s.bq, s.bn, s.mk, s.lvl, near, G.qsel], renderQuest);
+  draw("warp", () => [s.wp, G.map && G.map.id, stoneNear(), near, G.warpPick], renderWarp);
+  draw("daily", () => [s.daily && s.daily.day, s.daily && s.daily.tasks, s.daily && s.daily.bonus, s.inv.length], renderDaily);
+  draw("achieve", () => [s.ach, s.title, s.pts, G.achTab], renderAchieve);
+  draw("collect", () => [s.mk, s.col, G.colTab], renderCollect);
+  tutCard(s);
 }
 function section(text, glyph) {
   const h = el("div", "section");
@@ -1518,6 +1600,7 @@ function renderInv(s) {
   const btns = el("div", "btns");
   const add = (label, fn, off, gold) => { const b = el("button", gold ? "btn gold small" : "btn small", label); b.disabled = !!off; b.addEventListener("click", () => { hideTip(); fn(); }); btns.append(b); };
   if (d.type === "pot") add("사용", () => act({ t: "use", id: entry.id }), false, true);
+  if (d.type === "scroll") add("읽기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "food") add("먹기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "camp") add("모닥불 피우기", () => { act({ t: "use", id: entry.id }); closeWin("inv"); }, false, true);
   if (d.type === "fish") {
@@ -1620,6 +1703,247 @@ function renderSkills(s) {
     box.append(row);
   });
   box.append(el("p", "hint", "1–4 키나 단축 버튼으로 씁니다. 자동사냥 중에는 MP가 넉넉하면 배운 스킬을 알아서 씁니다."));
+}
+
+// ── waypoints ──
+const bandText = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
+function renderWarp(s) {
+  const box = $("#warp-body");
+  box.textContent = "";
+  const here = G.map && G.map.id, can = stoneNear() || (G.near && G.near.role === "warp");
+  box.append(el("p", "say", can ? "깨운 이동의 돌끼리는 한순간에 오갈 수 있다네. 어디로 가겠나?" : "이동의 돌 곁에서만 다른 돌로 건너갈 수 있습니다. 돌에 다가가 F를 누르세요."));
+  const list = el("div", "list");
+  for (const w of G.defs.waypoints || []) {
+    const open = (s.wp || []).includes(w.id), cur = w.id === here;
+    const row = el("div", "it wp" + (open ? "" : " locked") + (cur ? " cur" : "") + (G.warpPick === w.id ? " pick" : ""));
+    const ic = el("span", "wpi"); ic.append(iconImg("stone", open ? "#8ad8ff" : "#6a6658"));
+    const tx = el("div", "tx", w.name);
+    tx.append(el("small", "", `${bandText(w.band)} · ${cur ? "현재 위치" : open ? "이동 가능" : "아직 깨우지 않음"}`));
+    row.append(ic, tx);
+    if (!cur) {
+      const b = el("button", open ? "btn gold small" : "btn small", "이동");
+      b.disabled = !open || !can;
+      b.addEventListener("click", () => { act({ t: "warp", to: w.id }); Sound.play("ui"); G.warpPick = null; });
+      row.append(b);
+    }
+    list.append(row);
+  }
+  box.append(list);
+  box.append(el("p", "hint", "새 맵의 이동의 돌에 다가가면 깨어납니다. 싸우는 중(3초 안에 맞음)에는 이동할 수 없습니다."));
+}
+
+// ── daily tasks ──
+const rewardText = (r) => [r.gold ? `${r.gold.toLocaleString()}G` : "", r.xp ? `EXP ${r.xp.toLocaleString()}` : "", r.stone ? `강화석 ${r.stone}` : "", r.gear ? "희귀 이상 장비" : ""].filter(Boolean).join(" · ");
+const clock = (ms) => { ms = Math.max(0, ms); const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000), sec = Math.floor((ms % 60000) / 1000); return h ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`; };
+function renderDaily(s) {
+  const box = $("#daily-body");
+  box.textContent = "";
+  const d = s.daily;
+  if (!d) { box.append(el("p", "hint", "불러오는 중…")); return; }
+  const top = el("div", "daily-top");
+  top.append(iconImg("cal", "#e2c486"), el("span", "", "매일 아침 6시에 새 과제"), el("b", "", ""));
+  top.lastChild.id = "daily-clock";
+  box.append(top);
+  d.tasks.forEach((tk, i) => {
+    const card = el("div", "dcard" + (tk.claimed ? " claimed" : tk.done ? " done" : ""));
+    const hd = el("div", "dh");
+    hd.append(el("b", "", tk.text), el("span", "", `${Math.min(tk.n, tk.need)} / ${tk.need}`));
+    const bar = el("div", "bar"), f = el("i"); f.style.width = `${clamp((tk.n / tk.need) * 100, 0, 100)}%`; bar.append(f);
+    const ft = el("div", "df");
+    ft.append(el("small", "", rewardText(tk.reward)));
+    const b = el("button", tk.done && !tk.claimed ? "btn gold small" : "btn small", tk.claimed ? "받음" : "받기");
+    b.disabled = !tk.done || tk.claimed;
+    b.addEventListener("click", () => { act({ t: "daily", i }); Sound.play("ok"); });
+    ft.append(b);
+    card.append(hd, bar, ft);
+    box.append(card);
+  });
+  const all = d.tasks.every((tk) => tk.claimed);
+  const chest = el("div", "dcard bonus" + (d.bonus ? " claimed" : all ? " done" : ""));
+  const hd = el("div", "dh"); hd.append(el("b", "", "오늘의 보너스 상자"), el("span", "", d.bonus ? "받음" : all ? "열 수 있음" : "세 과제를 모두 마치면"));
+  const ft = el("div", "df"); ft.append(el("small", "", rewardText(d.bonusReward || {})));
+  const b = el("button", all && !d.bonus ? "btn gold small" : "btn small", d.bonus ? "받음" : "열기");
+  b.disabled = !all || d.bonus;
+  b.addEventListener("click", () => { act({ t: "daily", i: "bonus" }); Sound.play("ok"); });
+  ft.append(b);
+  chest.append(hd, ft);
+  box.append(chest);
+  box.append(el("p", "hint", "과제는 어디서든 받을 수 있습니다. 광장의 일일 의뢰 게시판 담당자에게서도 열 수 있습니다."));
+  tickDaily(now());
+}
+function tickDaily(t) {
+  const c = $("#daily-clock");
+  if (c && G.dailyReset) { const v = `초기화까지 ${clock(G.dailyReset - t)}`; if (c.textContent !== v) c.textContent = v; }
+}
+
+// ── achievements and titles ──
+function renderAchieve(s) {
+  const box = $("#achieve-body");
+  box.textContent = "";
+  const all = G.defs.achievements || [], got = new Set(s.ach || []);
+  const cats = [...new Set(all.map((a) => a.cat))];
+  if (!G.achTab || (G.achTab !== "칭호" && !cats.includes(G.achTab))) G.achTab = cats[0];
+  const head = el("div", "ach-top");
+  head.append(iconImg("trophy", "#e2c486"), el("span", "", `업적 점수 ${s.pts || 0}`), el("small", "", `${got.size} / ${all.length}`));
+  box.append(head);
+  const tabs = el("div", "tabs");
+  for (const c of [...cats, "칭호"]) {
+    const n = c === "칭호" ? all.filter((a) => a.title && got.has(a.id)).length : all.filter((a) => a.cat === c && got.has(a.id)).length;
+    const of = c === "칭호" ? all.filter((a) => a.title).length : all.filter((a) => a.cat === c).length;
+    const b = el("button", G.achTab === c ? "on" : "", `${c} ${n}/${of}`);
+    b.addEventListener("click", () => { G.achTab = c; Sound.play("ui"); refreshUi(); });
+    tabs.append(b);
+  }
+  box.append(tabs);
+  const list = el("div", "list");
+  if (G.achTab === "칭호") {
+    const worn = s.title;
+    list.append(el("p", "hint", worn ? `지금 단 칭호: 「${(all.find((a) => a.id === worn) || {}).title}」` : "칭호를 달면 이름 위에 보이고, 희귀한 칭호는 능력치도 조금 올려 줍니다."));
+    for (const a of all.filter((x) => x.title)) {
+      const have = got.has(a.id), on = s.title === a.id;
+      const row = el("div", "it ach" + (have ? " got" : " locked") + (on ? " on" : ""));
+      const tx = el("div", "tx", `「${a.title}」`);
+      tx.append(el("small", "", `${a.name} — ${a.desc}${a.bonus ? ` · ${a.bonus.map(([k, v]) => statText(k, v)).join(", ")}` : ""}`));
+      row.append(tx);
+      const b = el("button", on ? "btn small" : "btn gold small", on ? "떼기" : "달기");
+      b.disabled = !have;
+      b.addEventListener("click", () => { act({ t: "title", id: on ? "" : a.id }); Sound.play("ui"); });
+      row.append(b);
+      list.append(row);
+    }
+  } else {
+    for (const a of all.filter((x) => x.cat === G.achTab)) {
+      const have = got.has(a.id);
+      const row = el("div", "it ach" + (have ? " got" : " locked"));
+      const ic = el("span", "achi"); ic.append(iconImg(have ? "trophy" : "trophy", have ? "#ffd84a" : "#55524a"));
+      const tx = el("div", "tx", a.name);
+      tx.append(el("small", "", `${a.desc}${a.title ? ` · 칭호 「${a.title}」` : ""}${a.bonus ? ` (${a.bonus.map(([k, v]) => statText(k, v)).join(", ")})` : ""}`));
+      row.append(ic, tx, el("em", "pts", `${a.pts}점`));
+      list.append(row);
+    }
+  }
+  box.append(list);
+}
+
+// ── the monster collection ──
+const thumbs = new Map();
+/** A monster's first frame shrunk into a 36-pixel square; unregistered ones are a dark silhouette. */
+function mobThumb(k, lit) {
+  const key = k + (lit ? "" : ":dark");
+  if (thumbs.has(key)) return thumbs.get(key);
+  const d = G.defs.mobs[k], c = document.createElement("canvas");
+  c.width = c.height = 36;
+  const g = c.getContext("2d");
+  g.imageSmoothingEnabled = false;
+  try {
+    const img = SP.monsterSheet(d.sp || k, d.tint)[0];
+    const s = Math.min(36 / img.width, 36 / img.height) * (img.width > 40 ? 1.1 : 1.15);
+    const w = img.width * s, h = img.height * s;
+    g.drawImage(img, (36 - w) / 2, 36 - h + (img.width > 40 ? 2 : 3), w, h);
+    if (!lit) { g.globalCompositeOperation = "source-in"; g.fillStyle = "#3a3846"; g.fillRect(0, 0, 36, 36); }
+  } catch { /* an unknown sprite simply stays blank */ }
+  const url = c.toDataURL();
+  thumbs.set(key, url);
+  return url;
+}
+function renderCollect(s) {
+  const box = $("#collect-body");
+  box.textContent = "";
+  const col = G.defs.collection || {}, need = G.defs.colNeed || 30, maps = Object.fromEntries((G.defs.maps || []).map((m) => [m.id, m]));
+  const regions = Object.keys(col);
+  if (!G.colTab || !col[G.colTab]) G.colTab = regions[0];
+  let total = 0, have = 0;
+  for (const id of regions) for (const k of col[id].mobs) { total++; if ((s.mk[k] || 0) >= need) have++; }
+  const head = el("div", "ach-top");
+  head.append(iconImg("paw", "#e2c486"), el("span", "", `등록 ${have} / ${total}`), el("small", "", `완성 지역 ${(s.col || []).length} / ${regions.length}`));
+  box.append(head);
+  const tabs = el("div", "tabs");
+  for (const id of regions) {
+    const done = (s.col || []).includes(id);
+    const b = el("button", (G.colTab === id ? "on" : "") + (done ? " done" : ""), maps[id] ? maps[id].name : id);
+    b.addEventListener("click", () => { G.colTab = id; Sound.play("ui"); refreshUi(); });
+    tabs.append(b);
+  }
+  box.append(tabs);
+  const reg = col[G.colTab], done = (s.col || []).includes(G.colTab);
+  const bonus = el("div", "col-bonus" + (done ? " done" : ""));
+  bonus.append(el("b", "", done ? "지역 완성 보너스 적용 중" : "지역을 모두 채우면"), el("span", "", reg.bonus.map(([k, v]) => statText(k, v)).join(", ")));
+  box.append(bonus);
+  const grid = el("div", "col-grid");
+  for (const k of reg.mobs) {
+    const d = G.defs.mobs[k], n = s.mk[k] || 0, ok = n >= need;
+    const cell = el("div", "col-cell" + (ok ? " ok" : ""));
+    const im = el("img"); im.alt = ""; im.src = mobThumb(k, ok);
+    const bar = el("div", "bar"), f = el("i"); f.style.width = `${clamp((n / need) * 100, 0, 100)}%`; bar.append(f);
+    cell.append(im, el("b", "", ok ? d.name : n ? d.name : "???"), el("small", "", ok ? `Lv.${d.lv} · 등록됨` : `${n} / ${need}`), bar);
+    cell.title = `${d.name} — ${ok ? "등록됨" : `${need}마리를 잡으면 등록됩니다`} (처치 ${n})`;
+    grid.append(cell);
+  }
+  box.append(grid);
+  box.append(el("p", "hint", `같은 몬스터를 ${need}마리 잡으면 도감에 등록됩니다. 광장의 수집가에게서도 열 수 있습니다.`));
+}
+
+// ── first steps ──
+function tutTry(id) {
+  const s = G.self, step = s && s.tut && G.defs.tutorial && G.defs.tutorial[s.tut.i];
+  if (step && step.id === id) act({ t: "tut", s: id });
+}
+function tutCard(s) {
+  const card = $("#tut"), steps = G.defs.tutorial || [], i = s.tut ? s.tut.i : steps.length, step = steps[i];
+  const hide = !step || +localStorage.getItem("lumentale:tuthide") === i + 1;
+  if (card.hidden !== hide) card.hidden = hide;
+  if (hide) return;
+  setOnce($("#tut-title"), `${i}`, (n) => n.append(step.title));
+  $("#tut-n").textContent = `첫걸음 ${i + 1}/${steps.length}${step.need > 1 ? ` · ${s.tut.n}/${step.need}` : ""}`;
+  if ($("#tut-hint").textContent !== step.hint) $("#tut-hint").textContent = step.hint;
+  if (card.dataset.i !== String(i)) { card.dataset.i = String(i); card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); if (i > 0) Sound.play("ok"); }
+}
+$("#tut-x").addEventListener("click", () => { const s = G.self; if (s && s.tut) localStorage.setItem("lumentale:tuthide", String(s.tut.i + 1)); $("#tut").hidden = true; Sound.play("ui"); });
+
+// ── the world event, the return scroll's cast bar, the arrival fade ──
+function eventWidget(t) {
+  const e = G.evt, box = $("#evt");
+  if (!e || !G.defs.maps) { box.hidden = true; return; }
+  const name = (id) => (G.defs.maps.find((m) => m.id === id) || {}).name || id;
+  const live = e.phase === "on" || e.phase === "boss";
+  let html;
+  if (live) {
+    html = [`<b>균열 침공 진행 중</b> · ${name(e.map)}`, `남은 ${clock(G.evtLeft - t)} · ${e.phase === "boss" ? "우두머리 출현!" : `웨이브 ${e.waves}/${(G.defs.event && G.defs.event.waves.length) || 3}`}`, e.mine ? `내 피해 ${e.mine.toLocaleString()}` : "피해를 주면 보상을 받습니다"];
+  } else if (e.phase === "warn") html = [`<b>균열 침공 예고</b> · ${name(e.map)}`, `시작까지 ${clock(G.evtIn - t)}`];
+  else html = [`다음 균열 침공 ${clock(G.evtNext - t)}`, name(e.nextMap)];
+  if (e.top && e.top.length && (live || e.phase === "done")) html.push(e.top.map(([n, d], i) => `${i + 1}. ${n} ${d.toLocaleString()}`).join("  "));
+  const v = html.join("<br>");
+  if (box.dataset.v !== v) { box.dataset.v = v; box.innerHTML = v; }
+  box.className = "frame" + (live ? " live" : e.phase === "warn" ? " warn" : "");
+  box.hidden = false;
+  if (G.evtPhase !== e.phase) {
+    if (G.evtPhase !== undefined) {
+      if (e.phase === "warn") { banner(`균열 침공 예고 · ${name(e.map)}`, true); Sound.play("warn"); }
+      else if (e.phase === "on") { banner(`균열 침공 시작! · ${name(e.map)}`, true); Sound.play("boom"); }
+      else if (e.phase === "boss") { banner("균열의 우두머리 출현!", true); Sound.play("boom"); }
+      else if (e.phase === "done") banner("균열 침공 종료", true);
+    }
+    G.evtPhase = e.phase;
+  }
+}
+$("#evt").addEventListener("click", () => {
+  const e = G.evt, s = G.self;
+  if (!e || !s) return;
+  const target = e.phase === "idle" || e.phase === "done" ? e.nextMap : e.map;
+  if ((s.wp || []).includes(target)) { G.warpPick = target; openWin("warp"); toast("이동의 돌 곁에서 균열 침공 지역으로 이동할 수 있습니다"); }
+  else toast("그 지역의 이동의 돌을 아직 깨우지 않았습니다");
+  Sound.play("ui");
+});
+function castBar(t) {
+  const c = G.cast, box = $("#cast");
+  if (!c || t > c.end + 200) { if (!box.hidden) box.hidden = true; if (c && t > c.end + 200) G.cast = null; return; }
+  if (box.hidden) { box.hidden = false; $("#cast-name").textContent = "귀환 주문서"; }
+  $("#cast-fill").style.width = `${clamp(((t - c.start) / (c.end - c.start)) * 100, 0, 100)}%`;
+}
+function fadeIn() {
+  const f = $("#fade");
+  f.hidden = true; void f.offsetWidth; f.hidden = false;
+  setTimeout(() => { f.hidden = true; }, 700);
 }
 
 // ── shop, smith, trainer ──
@@ -1956,6 +2280,9 @@ function renderRank(list) {
 }
 
 function hudTick(t) {
+  eventWidget(t);
+  castBar(t);
+  if (isOpen("daily")) tickDaily(t);
   const s = G.self;
   if (!s) return;
   G.defs.skills[s.cls].forEach((sk, i) => {
