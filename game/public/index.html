@@ -16,6 +16,7 @@
   <body>
     <canvas id="world"></canvas>
     <canvas id="text"></canvas>
+    <div id="crt" aria-hidden="true"><i class="roll"></i></div>
 
     <!-- ── HUD ─────────────────────────────────────────── -->
     <div id="hud" hidden>
@@ -43,6 +44,7 @@
           <button id="b-emo" title="감정표현 (T)">😊</button>
           <button data-win="help" title="도움말">?</button>
           <button id="btn-sound" title="소리 (M)">♪</button>
+          <button id="btn-crt" title="CRT 화면 효과 (V)">CRT</button>
         </div>
       </div>
 
@@ -154,6 +156,7 @@
           <p><b>스킬</b> 1 · 2 · 3 · 4 &nbsp; <b>물약</b> Q(HP) · E(MP)</p>
           <p><b>사냥</b> 쉬지 않고 잡으면 <b>연속 처치</b>로 경험치가 최대 +50%. 사냥터에서 60마리를 잡으면 <b>우두머리</b>가 나타납니다.</p>
           <p><b>쉬어 가기</b> 모닥불 곁에서 <b>X</b>로 앉으면 빠르게 회복하고, 잠시 쉬면 경험치 보너스(온기)를 얻습니다. 물가에서 <b>F</b>로 낚시, 입질이 오면 다시 <b>F</b> — 물결이 찌에 닿는 박자에 맞춰 누를수록 좋은 물고기가 나옵니다. 잡은 물고기는 모닥불 곁에서 <b>굽기</b>: 재료 조각으로 팬을 빈틈없이 빨리 채우면 두 접시가 됩니다.</p>
+          <p><b>화면</b> <b>V</b> 또는 메뉴의 CRT 버튼으로 브라운관 효과를 켜고 끕니다.</p>
           <p><b>함께</b> <b>G</b> 길드 · <b>T</b> 감정표현 · 채팅창에 <b>/g 메시지</b>로 길드 채팅.</p>
           <p><b>장비</b> 무기 · 투구 · 갑옷 · 장갑 · 신발 · 반지 2 · 목걸이. <span style="color:#ff8a30">전설</span>은 고유 능력, <span style="color:#5fd47a">세트</span>는 모을수록 강해집니다.</p>
           <p><b>대화</b> F &nbsp; <b>자동사냥</b> R &nbsp; <b>채팅</b> Enter</p>
@@ -212,5 +215,6 @@
     </div>
 
     <script type="module" src="client.js"></script>
+    <div id="crt-frame" aria-hidden="true"></div>
   </body>
 </html>

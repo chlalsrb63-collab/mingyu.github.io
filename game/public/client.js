@@ -455,6 +455,7 @@ addEventListener("keydown", (e) => {
     case "r": case "ㄱ": toggleAuto(); break;
     case "p": case "ㅔ": toggleWin("party"); break;
     case "m": case "ㅡ": toggleSound(); break;
+    case "v": case "ㅍ": setCrt(!document.body.classList.contains("crt")); break;
     case "Enter": e.preventDefault(); $("#chat-in").focus(); break;
     case "Escape": closeAll(); break;
   }
@@ -560,6 +561,14 @@ $("#prompt").addEventListener("click", () => interact());
 $("#b-respawn").addEventListener("click", () => act({ t: "respawn" }));
 $("#btn-sound").addEventListener("click", toggleSound);
 
+/** The CRT look is on unless the player turned it off. */
+function setCrt(on) {
+  document.body.classList.toggle("crt", on);
+  $("#btn-crt").classList.toggle("off", !on);
+  localStorage.setItem("lumentale:crt", on ? "1" : "0");
+}
+setCrt(localStorage.getItem("lumentale:crt") !== "0");
+$("#btn-crt").addEventListener("click", () => { setCrt(!document.body.classList.contains("crt")); Sound.play("ui"); });
 function toggleSound() {
   const on = !(Sound.sfxOn && Sound.bgmOn);
   Sound.sfxOn = Sound.bgmOn = on;
