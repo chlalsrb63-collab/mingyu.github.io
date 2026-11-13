@@ -19,6 +19,8 @@ import { icon, iconImg, iconUrl, MENU_ICON, CLASS_ICON, BUFF_ICON, TRAIT } from 
 import * as SP from "./sprites.js";
 import * as Emo from "./emoticons.js";
 import * as Growth from "./growth.js";
+import * as SkillFx from "./skillfx.js";
+import { drawClassGauge, gaugeTip } from "./classgauge.js";
 
 const T = Art.TILE;
 const $ = (s) => document.querySelector(s);
@@ -261,6 +263,7 @@ $("#b-auto").prepend(iconImg(MENU_ICON.auto));
 const heightOf = (e) => e.h3 || 1.3;
 
 function onEvent(e, t) {
+  if (SkillFx.skillEvent(e, { G, S3, Sound, entityPos, heightOf, t })) return;
   switch (e[0]) {
     case "a": {
       const [, eid, kind, tx, ty] = e;
