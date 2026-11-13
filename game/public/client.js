@@ -88,7 +88,7 @@ setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) ws.send("__ping"
 const G = {
   playing: false, you: 0, defs: null, icons: null, self: null, map: null,
   me: { x: 0, y: 0, dir: 0, hp: 1, mp: 0, dead: false, walk: 0, moving: false, atkT: -1e9, hurtT: -1e9 },
-  who: new Map(), players: new Map(), mobs: new Map(), drops: new Map(), fires: new Map(), bobs: new Map(), ginv: null,
+  who: new Map(), players: new Map(), mobs: new Map(), gone: new Map(), drops: new Map(), fires: new Map(), bobs: new Map(), ginv: null,
   fx: [], parts: [], texts: [], bubbles: new Map(), statics: [],
   cdEnd: [0, 0, 0], buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
   auto: false, sel: -1, shake: 0, flash: 0, near: null, party: [], pinv: null, path: null, mark: null,
@@ -193,7 +193,7 @@ function onSnap(s) {
   }
   sync(G.players, s.P, (e, r) => { e.tx = r[1]; e.ty = r[2]; e.dir = r[3]; e.dead = !!r[4]; e.hp = r[5]; e.mhp = r[6]; e.sit = !!r[7]; }, t);
   sync(G.fires, s.F || [], (e, r) => { e.tx = r[1]; e.ty = r[2]; e.x = r[1]; e.y = r[2]; }, t);
-  sync(G.mobs, s.M, (e, r) => { e.k = r[1]; e.tx = r[2]; e.ty = r[3]; e.dir = r[4]; e.hp = r[5]; e.el = r[6]; e.tr = r[7] || []; }, t);
+  sync(G.mobs, s.M, (e, r) => { e.k = r[1]; e.tx = r[2]; e.ty = r[3]; e.dir = r[4]; e.hp = r[5]; e.el = r[6]; e.tr = r[7] || []; }, t, G.gone);
   sync(G.drops, s.D, (e, r) => { e.it = r[1]; e.tx = r[2]; e.ty = r[3]; e.q = r[4]; }, t);
 
   if (s.self) {
@@ -204,7 +204,12 @@ function onSnap(s) {
     refreshUi();
     if (isOpen("guild")) renderGuild();
   }
-  if (s.ev) for (const e of s.ev) onEvent(e, t);
+  if (s.ev) for (const e of s.ev) {
+    const wait = G.impactAt - t;
+    if (wait > 8 && ((e[0] === "h" && !e[4] && e[2] > 0) || e[0] === "k")) setTimeout(() => onEvent(e, now()), wait);
+    else onEvent(e, t);
+  }
+  for (const [id, m] of G.gone) if (t - m.goneT > 1500) G.gone.delete(id);
   if (s.chat) for (const c of s.chat) c.sys ? addChat(c.m, "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`) : addChat(c.m, "", c.n);
   if (s.gain) for (const gn of s.gain) onGain(gn);
   if (s.toast) for (const m of s.toast) toast(m);
@@ -216,7 +221,7 @@ function onSnap(s) {
 }
 
 /** Bring a Map of entities in line with a snapshot list (first field is the id). */
-function sync(map, rows, apply, t) {
+function sync(map, rows, apply, t, gone) {
   const seen = new Set();
   for (const r of rows) {
     seen.add(r[0]);
@@ -226,12 +231,12 @@ function sync(map, rows, apply, t) {
     apply(e, r);
     if (fresh) { e.x = e.tx; e.y = e.ty; }
   }
-  for (const id of map.keys()) if (!seen.has(id)) map.delete(id);
+  for (const [id, e] of map) if (!seen.has(id)) { if (gone) { e.goneT = t; gone.set(id, e); } map.delete(id); }
 }
 
 function entityPos(id) {
   if (id === G.you) return G.me;
-  return G.players.get(id) || G.mobs.get(id) || null;
+  return G.players.get(id) || G.mobs.get(id) || G.gone.get(id) || null;
 }
 
 const MOB_COL = { twinhare: "#a83848", gutfrog: "#7a9a4a", eyecrow: "#5c3c6c", splitboar: "#a83848", ribdeer: "#e0d8c8", hydrasnake: "#5a8a4a", mothface: "#b8a890", ratking: "#c87a8a", bonehound: "#a83848", batcluster: "#5c3c6c", pigeonmass: "#7a8aa0", doghead: "#7a5a48", catsplit: "#a83848", fishwalker: "#8ab0c0", leechmaw: "#b4cc3c", gatorhalf: "#5a7a4a", eelknot: "#4a5a6a", spiderhand: "#e0d8c8", bearmaw: "#a83848", owlstare: "#7a5a48", twingoat: "#e0d8c8", horsehalf: "#a83848", serpentwing: "#b4cc3c", boss: "#e050b8", abyssboss: "#b4cc3c", chest_meadow: "#f0c040", chest_forest: "#f0c040", chest_city: "#f0c040", chest_cave: "#f0c040", chest_crypt: "#f0c040", chest_sewer: "#f0c040", chest_abyss: "#f0c040" , lambmaw: "#a83848", foxtwine: "#c8643c", toadbrood: "#7a8a4a", squidrat: "#8a6a7a", crabskull: "#c85a3a", moleworm: "#5a566a", lionhand: "#b8905a", sowseer: "#d8a0a8", twinhare_bone: "#e0d8c8", gutfrog_poison: "#8ad84a", ratking_bile: "#b4cc3c", splitboar_frost: "#8ad8ff", hydrasnake_steel: "#a8b4c8", bonehound_ash: "#5a5a66", batcluster_blood: "#b02838", doghead_fire: "#ff8a3a" };
@@ -291,8 +296,8 @@ function onEvent(e, t) {
       break;
     }
     case "k": {
-      const m = G.mobs.get(e[1]);
-      if (m) { S3.fx.burst(m.x, m.y, heightOf(m) * 0.5, MOB_COL[m.k] || "#fff", G.defs.mobs[m.k]?.boss ? 70 : 16, 2.2); Sound.play("die"); G.mobs.delete(e[1]); }
+      const m = G.mobs.get(e[1]) || G.gone.get(e[1]);
+      if (m) { G.gone.delete(e[1]); S3.fx.burst(m.x, m.y, heightOf(m) * 0.5, MOB_COL[m.k] || "#fff", G.defs.mobs[m.k]?.boss ? 70 : 16, 2.2); Sound.play("die"); G.mobs.delete(e[1]); }
       break;
     }
     case "m": {
@@ -615,6 +620,7 @@ function attack() {
   G.combo = t - G.lastAtk < G.self.acd + 700 ? ((G.combo | 0) + 1) % 3 : 0;
   G.me.atkN = G.combo;
   G.lastAtk = t; G.me.atkT = t;
+  G.impactAt = t + S3.impactMs(G.self.wk, G.combo);
   act({ t: "atk" });
 }
 
@@ -711,7 +717,7 @@ function update(dt, t) {
   }
   const moved = dist(ox, oy, me.x, me.y);
   me.moving = moved > 0.01;
-  if (me.moving) me.walk += dt * 7;
+  if (me.moving) me.walk += dt * 6;
   if (G.auto && (mx || my)) {
     if (moved < speed * dt * 0.3) {
       autoSt.stuck += dt;
@@ -740,7 +746,7 @@ function update(dt, t) {
       const d = dist(e.x, e.y, e.tx, e.ty);
       e.moving = d > 0.7;
       if (d > 60) { e.x = e.tx; e.y = e.ty; } else { e.x += (e.tx - e.x) * k; e.y += (e.ty - e.y) * k; }
-      if (e.moving) e.walk += dt * 7;
+      if (e.moving) e.walk += dt * 6;
     }
   }
   for (let i = G.parts.length - 1; i >= 0; i--) {
@@ -1586,4 +1592,4 @@ function frame() {
 requestAnimationFrame(frame);
 
 // handy for automated play-testing
-window.__game = { G, act, go: (wx, wy) => { G.path = pathTo(wx, wy); return !!G.path; } };
+window.__game = { G, act, S3, go: (wx, wy) => { G.path = pathTo(wx, wy); return !!G.path; } };

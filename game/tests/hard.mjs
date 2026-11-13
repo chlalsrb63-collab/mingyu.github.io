@@ -109,11 +109,11 @@ for (const [tr, slot, key] of [["fire", 5, "burn"], ["poison", 6, "poison"], ["f
 // a slowed player may not move at full speed
 stand(); p.slowed = 0;
 step(100);
-assert.ok(act({ t: "mv", x: p.x + 16, y: p.y, d: 2 }).ok);
-assert.equal(step(100).me[5], 0, "sixteen units in a tick is a legal step");
+assert.ok(act({ t: "mv", x: p.x + 14, y: p.y, d: 2 }).ok);
+assert.equal(step(100).me[5], 0, "fourteen units in a tick is a legal step");
 stand(); p.slowed = now + 5000;
 step(100);
-act({ t: "mv", x: p.x + 16, y: p.y, d: 2 });
+act({ t: "mv", x: p.x + 14, y: p.y, d: 2 });
 assert.equal(step(100).me[5], 1, "but not while slowed");
 assert.equal(D.slow, 0.65);
 

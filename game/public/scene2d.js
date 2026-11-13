@@ -901,7 +901,7 @@ const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30", "#5fd47a"];
 function drawPerson(s, e, t, dt, x, y) {
   const back = e.dir === 3;
   if (e.dir === 1) s.face = -1; else if (e.dir === 2) s.face = 1;
-  if (e.moving) s.walk += dt * 7;
+  if (e.moving) s.walk += dt * 6;
   // a blow that connects freezes for a beat (`e.hs`), then carries on from where it stopped
   const hs = e.hs && e.atkT <= e.hs.at ? e.hs : null;
   const te = !hs || t < hs.at ? t : t < hs.at + hs.dur ? hs.at : t - hs.dur;
@@ -920,11 +920,6 @@ function drawPerson(s, e, t, dt, x, y) {
   const sg = s.face;
   g.fillStyle = "rgba(20,24,50,.26)";
   g.beginPath(); g.ellipse(x, y, 5, 2, 0, 0, 7); g.fill();
-  // a strike leans the whole body into the blow for a moment
-  if (e.aim && atk >= 0 && atk < 0.22 && !e.dead) {
-    const a = Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x), n = Math.sin((atk / 0.22) * Math.PI) * (e.atkN === 2 ? 8 : 4.5);
-    x += Math.cos(a) * n; y += Math.sin(a) * n;
-  }
   const body = () => {
     g.save();
     g.translate(Math.round(x), Math.round(y));
@@ -937,7 +932,14 @@ function drawPerson(s, e, t, dt, x, y) {
   const hold = SP.HOLD[s.wk] || SP.HOLD.sword;
   // which blow of the three this is: 0 and 1 are the strokes, 2 the finisher (slower, bigger)
   const beat = e.atkN | 0, fin = beat === 2;
-  const k = atk / (hold.time * (fin ? 1.25 : 1)), resting = k >= 1;
+  const stroke = hold.time * (fin ? 1.15 : 1);
+  const k = atk / stroke, resting = k >= 1;
+  // the body rocks back on the wind-up and leans into the strike
+  if (e.aim && !resting && atk >= 0) {
+    const u = k < 0.1 ? -0.35 * (k / 0.1) : k < 0.44 ? Math.sin(((k - 0.1) / 0.34) * Math.PI) : 0;
+    const a = Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x), n = u * (fin ? 8 : 4.5);
+    x += Math.cos(a) * n; y += Math.sin(a) * n;
+  }
   const bob = frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0;
   // angles here are canvas angles: 0 points right, positive turns clockwise
   const aim = e.aim && atk < 0.6 ? Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x) : sg > 0 ? 0.25 : Math.PI - 0.25;
@@ -959,38 +961,56 @@ function drawPerson(s, e, t, dt, x, y) {
   }
   const rest = sg > 0 ? -hold.rest * DEG : Math.PI + hold.rest * DEG;
   if (s.ang === null) s.ang = rest;
-  let push = 0, grow = 0;
-  if (!resting) {
-    // a blow has three parts: draw back, strike, follow through. `w` runs from a
-    // little below 0 (the wind-up) to 1 (the end of the stroke) and settles there.
-    const sm = (v) => v * v * (3 - 2 * v);
-    const w = k < 0.24 ? -0.16 * sm(k / 0.24) : k < 0.62 ? -0.16 + 1.16 * sm((k - 0.24) / 0.38) : 1 + 0.05 * Math.sin(((k - 0.62) / 0.38) * Math.PI);
-    const side = beat === 1 ? -sg : sg;                 // the second stroke comes back the other way
-    const arc = hold.arc * DEG;
+  // every stroke starts from wherever the weapon is, which after a stroke is
+  // where that stroke ended: right to left, a beat's pause, then straight back
+  if (s.t0 !== e.atkT) { s.t0 = e.atkT; s.from = s.ang; s.fromPush = s.push || 0; }
+  const sm = (v) => v * v * (3 - 2 * v);
+  const turn = (a, b, u) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * u; };
+  const side = beat === 1 ? -sg : sg;                   // the second stroke comes back the other way
+  const arc = hold.arc * DEG;
+  /** Where the weapon is at stroke position `w` (0 the start of the cut, 1 its end): [angle, reach]. */
+  const path = (w) => {
     if (hold.style === "sweep") {
       // a greatsword: left to right, right to left, then an overhead chop that ends on the target
-      if (fin) { s.ang = aim - sg * 3.3 + sg * 3.6 * w; push = hold.push + 6 * Math.max(0, w); }
-      else { s.ang = aim - side * arc / 2 + side * arc * w; push = hold.push + 1; }
-    } else if (hold.style === "stab") {
-      // a thrust, a quick cut across, then a long lunge
-      if (beat === 1) { s.ang = aim - side * arc / 2 + side * arc * w; push = hold.push * 0.45; }
-      else { s.ang = aim; push = (w < 0 ? w * 14 : Math.sin(Math.min(1, w) * Math.PI) * hold.push * (fin ? 1.7 : 1)); }
-    } else if (fin) { s.ang = aim + sg * Math.PI * 2 * (1 - Math.max(0, w)); push = hold.push + 3; }   // a full twirl of the staff
-    else { s.ang = aim - side * arc * (1 - w); push = hold.push; }
-    // mid-stroke the weapon swells toward the eye, and leaves its last two positions behind as a smear
-    grow = Math.sin(Math.max(0, Math.min(1, w)) * Math.PI) * hold.grow * (fin ? 1.6 : 1);
+      return fin ? [aim - sg * 3.3 + sg * 3.6 * w, hold.push + 6 * Math.max(0, w)] : [aim - side * arc / 2 + side * arc * w, hold.push + 1];
+    }
+    if (hold.style === "stab") {
+      // a thrust, a cut across, then a long lunge
+      if (beat === 1) return [aim - side * arc / 2 + side * arc * w, hold.push * 0.45];
+      return [aim, w < 0 ? w * 14 : Math.sin(Math.min(1, w) * Math.PI) * hold.push * (fin ? 1.7 : 1)];
+    }
+    if (fin) return [aim + sg * Math.PI * 2 * (1 - Math.max(0, w)), hold.push + 3];   // a full twirl of the staff
+    return [aim - side * arc * (1 - w), hold.push];
+  };
+  const held = resting && atk < stroke + 0.6;           // poised at the end of the stroke, ready for the next
+  let push = 0, grow = 0;
+  if (!resting) {
+    // three parts: from where it was into the wind-up (0–0.1), the strike (0.1–0.36), and a
+    // follow-through that carries on, slowing, until just before the next stroke is due
+    const w = k < 0.1 ? -0.12 : k < 0.36 ? -0.12 + 1.12 * sm((k - 0.1) / 0.26) : 1 + 0.14 * (1 - (1 - (k - 0.36) / 0.64) ** 2);
+    const [pa, pp] = path(w);
+    if (k < 0.1) { const u = sm(k / 0.1); s.ang = turn(s.from, pa, u); push = s.fromPush + (pp - s.fromPush) * u; }
+    else { s.ang = pa; push = pp; }
+    if (k >= 0.1 && k < 0.46) grow = Math.sin(((k - 0.1) / 0.36) * Math.PI) * hold.grow * (fin ? 1.6 : 1);
+    // mid-stroke the weapon swells toward the eye and leaves its last two positions behind as a smear
     if (!s.smear) s.smear = [];
     s.smear.unshift(s.ang); s.smear.length = Math.min(s.smear.length, 3);
-  } else {
+    s.endAng = s.ang; s.endPush = push;
+  } else if (held) {
     s.smear = null;
-    let d = rest - s.ang;
-    d = Math.atan2(Math.sin(d), Math.cos(d));
-    s.ang += d * Math.min(1, dt * 12);
+    s.ang = s.endAng ?? s.ang; push = s.endPush ?? 0;
+  } else {
+    // the run is over: the weapon comes down and is slung again, unhurried
+    s.smear = null;
+    s.ang = turn(s.ang, rest, Math.min(1, dt * 5));
+    push = (s.push || 0) * Math.max(0, 1 - dt * 6);
   }
+  s.push = push;
+  // a greatsword is slung across the back between fights, and comes off it to fight
+  s.sl = (s.sl ?? 1) + ((hold.style === "sweep" && resting && !held ? 1 : 0) - (s.sl ?? 1)) * Math.min(1, dt * 8);
   // with no arms, the weapon simply floats at the body's side
-  const slung = hold.style === "sweep" && resting;
-  const hx = x + sg * (slung ? 3 : 7) + Math.cos(s.ang) * push;
-  const hy = y - (slung ? 5 : 3) + Math.sin(s.ang) * push + bob;
+  const hx = x + sg * (7 - 4 * s.sl) + Math.cos(s.ang) * push;
+  const hy = y - (3 + 2 * s.sl) + Math.sin(s.ang) * push + bob;
   const blade = (ang, alpha) => {
     g.save();
     g.translate(Math.round(hx), Math.round(hy));
@@ -1007,7 +1027,7 @@ function drawPerson(s, e, t, dt, x, y) {
     blade(s.ang, 1);
   };
   // a slung greatsword sits behind the body; everything else is held in front
-  const behind = resting ? (hold.style === "sweep") !== back : Math.sin(s.ang) < -0.2;
+  const behind = resting && !held ? (hold.style === "sweep") !== back : Math.sin(s.ang) < -0.2;
   if (behind) { weapon(); body(); } else { body(); weapon(); }
 }
 
@@ -1148,6 +1168,11 @@ const DARK = { forest: ["#06242a", 0.3], city: ["#0a0e30", 0.52], cave: ["#060a2
 let lightCv = null, lg = null;
 
 export function sync(state2) { G = state2; }
+/** Milliseconds from the start of a stroke to the moment its blade crosses the target. */
+export function impactMs(wk, beat) {
+  const hold = SP.HOLD[wk] || SP.HOLD.sword;
+  return hold.time * (beat === 2 ? 1.15 : 1) * 1000 * 0.23;
+}
 
 export function render(focusX, focusY, dt, t, snap) {
   if (!map || !ground || !G) return;

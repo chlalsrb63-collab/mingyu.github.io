@@ -31,7 +31,7 @@ const MAXLV = 50;
 const STACK = 99;
 const VIEW_X = 280;
 const VIEW_Y = 280;
-const BASE_SPD = 58;
+const BASE_SPD = 48;
 const PARTY_MAX = 4;
 const PARTY_RANGE = 340;
 /** Share of a kill's experience each member gets, by how many are in range. */
@@ -321,7 +321,7 @@ for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 16
 for (const k of Object.keys(MOBS)) {
   const d = MOBS[k];
   if (!d.sp) d.sp = k;
-  d.spd = Math.round(d.spd * 0.82);              // the whole world moves at an easier pace
+  d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
   d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]));
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
