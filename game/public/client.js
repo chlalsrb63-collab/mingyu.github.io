@@ -1912,10 +1912,11 @@ function eventWidget(t) {
   } else if (e.phase === "warn") html = [`<b>균열 침공 예고</b> · ${name(e.map)}`, `시작까지 ${clock(G.evtIn - t)}`];
   else html = [`다음 균열 침공 ${clock(G.evtNext - t)}`, name(e.nextMap)];
   if (e.top && e.top.length && (live || e.phase === "done")) html.push(e.top.map(([n, d], i) => `${i + 1}. ${n} ${d.toLocaleString()}`).join("  "));
-  const v = html.join("<br>");
+  const v = html.map((h) => `<span>${h}</span>`).join("");
   if (box.dataset.v !== v) { box.dataset.v = v; box.innerHTML = v; }
   box.className = "frame" + (live ? " live" : e.phase === "warn" ? " warn" : "");
   box.hidden = false;
+  document.body.classList.toggle("evt-live", live);
   if (G.evtPhase !== e.phase) {
     if (G.evtPhase !== undefined) {
       if (e.phase === "warn") { banner(`균열 침공 예고 · ${name(e.map)}`, true); Sound.play("warn"); }

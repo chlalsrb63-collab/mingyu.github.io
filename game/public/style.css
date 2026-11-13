@@ -578,7 +578,12 @@ body.touch #emotes { bottom: auto; top: 150px; right: 96px; }
 @keyframes fade-in { from { opacity: .85; } to { opacity: 0; } }
 #menu { grid-template-columns: repeat(7, 38px); }
 @media (max-width: 1180px) and (min-width: 700px) { #menu { grid-template-columns: repeat(7, 34px); } }
-body.touch #tut { top: auto; bottom: calc(118px + var(--safe-b, 0px)); width: min(300px, calc(100vw - 24px)); }
-body.touch #evt { width: 150px; }
+#evt > span { display: block; }
+/* phones: the menu column sits under the minimap, so the event line and the guide card stack under the status frame */
+body.touch #evt { position: fixed; left: 8px; top: calc(76px + var(--safe-t, 0px)); width: 210px; padding: 3px 8px; z-index: 5; }
+body.touch #evt:not(.live) > span + span { display: none; }
+body.touch #evt:not(.live) > span:first-child::after { content: " ›"; color: var(--gold); }
+body.touch #tut { left: 8px; transform: none; top: calc(106px + var(--safe-t, 0px)); width: min(300px, calc(100vw - 116px)); min-width: 0; }
+body.touch.evt-live #tut { display: none; }
 @media (max-height: 500px) { body.touch #menu { grid-template-columns: repeat(14, 30px); } body.touch #menu button { width: 30px; } #evt { display: none; } }
 @media (max-height: 520px) { #tut { display: none; } }
