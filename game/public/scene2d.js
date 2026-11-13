@@ -1329,10 +1329,13 @@ function drawFx(now, ground2) {
     } else if (f.k === "snow") {
       // flakes blown slantwise over the patch, a pale wash under them
       const a = k < 0.08 ? k / 0.08 : k > 0.9 ? (1 - k) / 0.1 : 1;
-      g.globalAlpha = 0.16 * a; g.fillStyle = "#cfeaff";
+      g.globalAlpha = 0.24 * a; g.fillStyle = "#cfeaff";
       g.beginPath(); g.ellipse(f.x, f.y, f.r, f.r * 0.8, 0, 0, 7); g.fill();
+      // a pale rim turning slowly, so the patch reads as one storm
+      g.globalAlpha = 0.7 * a; g.strokeStyle = "#ffffff"; g.lineWidth = 2;
+      for (let j = 0; j < 4; j++) { const a0 = now / 500 + j * 1.57; g.beginPath(); g.ellipse(f.x, f.y, f.r, f.r * 0.8, 0, a0, a0 + 0.8); g.stroke(); }
       g.globalAlpha = a;
-      for (let q = 0; q < 3; q++) if (Math.random() < 0.9) { const ang = Math.random() * 6.28, rr = Math.sqrt(Math.random()) * f.r; parts.push({ x: f.x + Math.cos(ang) * rr - 20, y: f.y + Math.sin(ang) * rr * 0.8 - 46, vx: 70 + Math.random() * 30, vy: 60 + Math.random() * 30, life: 0.6, color: Math.random() < 0.6 ? "#ffffff" : "#bfe6ff", g: 0, s: Math.random() < 0.3 ? 3 : 2 }); }
+      for (let q = 0; q < 7; q++) if (Math.random() < 0.9) { const ang = Math.random() * 6.28, rr = Math.sqrt(Math.random()) * f.r; parts.push({ x: f.x + Math.cos(ang) * rr - 20, y: f.y + Math.sin(ang) * rr * 0.8 - 46, vx: 70 + Math.random() * 30, vy: 60 + Math.random() * 30, life: 0.6, color: Math.random() < 0.6 ? "#ffffff" : "#bfe6ff", g: 0, s: Math.random() < 0.3 ? 3 : 2 }); }
     }
     g.globalAlpha = 1; g.lineWidth = 1;
   }

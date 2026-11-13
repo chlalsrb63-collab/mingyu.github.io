@@ -11,7 +11,7 @@
     <meta name="theme-color" content="#0e0f14" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;900&display=swap" />
-    <link rel="stylesheet" href="style.css?v=1794577682" />
+    <link rel="stylesheet" href="style.css?v=1794586265" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -80,6 +80,8 @@
         <button class="act sk" id="b-s1"><span class="nm"></span><i class="cd"></i><em class="cdt"></em><small class="mp"></small><kbd>2</kbd></button>
         <button class="act sk" id="b-s2"><span class="nm"></span><i class="cd"></i><em class="cdt"></em><small class="mp"></small><kbd>3</kbd></button>
         <button class="act sk" id="b-s3"><span class="nm"></span><i class="cd"></i><em class="cdt"></em><small class="mp"></small><kbd>4</kbd></button>
+        <button class="act sk" id="b-s4"><span class="nm"></span><i class="cd"></i><em class="cdt"></em><small class="mp"></small><kbd>5</kbd></button>
+        <button class="act sk ult" id="b-s5"><span class="nm"></span><i class="cd"></i><em class="cdt"></em><small class="mp"></small><kbd>6</kbd></button>
         <i class="sep"></i>
         <button class="act atk" id="b-atk" title="공격 (Space)"><img alt="" /><span class="nm">공격</span><kbd>Space</kbd></button>
         <button class="act auto" id="b-auto" title="자동사냥 (R)"><span class="nm">자동</span><kbd>R</kbd></button>
@@ -187,6 +189,11 @@
         <div class="body"><div id="daily-body"></div></div>
       </section>
 
+      <section class="window" id="w-bank" hidden>
+        <header><span class="t">창고지기 도담</span><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body"><div id="bank-body"></div></div>
+      </section>
+
       <section class="window" id="w-achieve" hidden>
         <header><span class="t">업적 · 칭호</span><kbd>Y</kbd><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body"><div id="achieve-body"></div></div>
@@ -220,6 +227,10 @@
           <div class="set-row"><span>효과음</span><input type="range" id="vol-sfx" class="vol" min="0" max="100" step="1" value="85" aria-label="효과음 음량"></div>
           <div class="set-row"><span>CRT 화면 효과</span><kbd>V</kbd><button id="btn-crt" class="btn toggle">켜짐</button></div>
           <div class="set-row"><span>창 위치</span><button id="btn-winreset" class="btn">처음 자리로</button></div>
+          <div class="set-row"><span>아이템 필터</span><select id="opt-filter" class="sel" aria-label="아이템 필터"><option value="0">모두</option><option value="1">마법 이상</option><option value="2">희귀 이상</option></select></div>
+          <div class="set-row"><span>자동 HP 물약</span><input type="range" id="opt-ahp" class="vol" min="0" max="90" step="5" value="0" aria-label="자동 HP 물약"><b id="opt-ahp-v" class="pct">끔</b></div>
+          <div class="set-row"><span>자동 MP 물약</span><input type="range" id="opt-amp" class="vol" min="0" max="90" step="5" value="0" aria-label="자동 MP 물약"><b id="opt-amp-v" class="pct">끔</b></div>
+          <p class="hint">아이템 필터는 땅에 떨어진 장비의 이름 표시와 펫이 주워 오는 장비에 함께 적용됩니다. 자동 물약은 HP·MP가 정한 비율 아래로 내려가면 알맞은 크기의 물약을 마십니다.</p>
           <p class="hint">창은 제목 줄을 끌어 옮길 수 있고, 옮긴 자리는 기억됩니다.</p>
         </div>
       </section>
@@ -228,7 +239,7 @@
         <header><span class="t">도움말</span><kbd>H</kbd><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body help">
           <p><b>이동</b> 방향키 / WASD (여덟 방향) · 땅을 클릭(터치)하면 그곳까지 알아서 걸어갑니다. 모바일은 왼쪽 조이스틱.</p>
-          <p><b>전투</b> Space 공격 (가까운 적을 자동으로 겨냥, 세 번째 타격이 마무리 일격) · 1 2 3 4 스킬 · Q / E 물약 · R 자동사냥</p>
+          <p><b>전투</b> Space 공격 (가까운 적을 자동으로 겨냥, 세 번째 타격이 마무리 일격) · 1–6 스킬 (5는 Lv.25, 6은 Lv.35 궁극기) · Q / E 물약 · R 자동사냥</p>
           <p><b>창</b> I 가방 · C 캐릭터 · K 스킬 · L 의뢰 · U 일일 의뢰 · Y 업적·칭호 · J 몬스터 도감 · P 파티 · G 길드 · N 랭킹 · O 설정 · H 도움말 · Esc 맨 위 창 닫기</p>
           <p><b>이동의 돌</b> 맵마다 하나씩 있는 돌비석에 다가가면 깨어납니다. 깨운 돌끼리는 F로 말을 걸어 순간이동할 수 있습니다. <b>귀환 주문서</b>는 2초 동안 읽으면 광장으로 돌아갑니다(움직이거나 맞으면 취소).</p>
           <p><b>매일</b> 아침 6시에 일일 의뢰 세 개가 새로 주어지고, 모두 끝내면 보너스 상자를 받습니다. 매시 정각과 30분에는 한 사냥터에 <b>균열 침공</b>이 열립니다(오른쪽 위에 남은 시간).</p>
@@ -237,7 +248,8 @@
           <p><b>사냥</b> 쉬지 않고 잡으면 <b>연속 처치</b>로 경험치가 최대 +50%. 사냥터에서 60마리를 잡으면 <b>우두머리</b>가 나타납니다. 정예는 이름 위 아이콘으로 특성을 보여 줍니다.</p>
           <p><b>쉬어 가기</b> 모닥불 곁에서 X로 앉으면 빠르게 회복하고, 잠시 쉬면 경험치 보너스(온기)를 얻습니다. 물가에서 F로 낚시, 입질이 오면 다시 F — 물결이 찌에 닿는 박자에 맞춰 누를수록 좋은 물고기가 나옵니다. 잡은 물고기는 모닥불 곁에서 <b>굽기</b>.</p>
           <p><b>장비</b> 무기 · 투구 · 갑옷 · 장갑 · 신발 · 반지 2 · 목걸이. 일반 · <span style="color:#6a9cff">마법</span> · <span style="color:#f0d050">희귀</span> · <span style="color:#ff8a30">전설</span> · <span style="color:#5fd47a">세트</span>. 홈이 있는 장비에 <b>룬</b>을 순서대로 끼우면 <b>룬어</b>가 완성됩니다.</p>
-          <p><b>성장</b> 수련관에게 경험치를 바치면 능력치가 영구히 오릅니다. 한계가 없습니다.</p>
+          <p><b>성장</b> 수련관에게 경험치를 바치면 능력치가 영구히 오릅니다. 한계가 없습니다. 스킬도 수련관에게서 골드와 경험치로 1→10레벨까지 올립니다 (레벨마다 위력 +8%, 5·10레벨에 재사용 대기 감소).</p>
+          <p><b>편의</b> 광장 서쪽의 <b>창고지기</b>에게 물건 60칸과 골드를 맡길 수 있습니다. 보급상의 <b>펫</b>은 곁을 따라다니며 내 전리품을 주워 오고, <b>주문서</b>는 10분간 공격·방어·경험치를 올려 줍니다. <b>부활 깃털</b>이 있으면 쓰러진 자리에서 경험치 손실 없이 일어납니다. 설정(O)에서 아이템 필터와 자동 물약을 정할 수 있습니다.</p>
           <p><b>파티 · 길드</b> 함께 잡으면 모두가 경험치와 전리품을 얻습니다. 길드원 곁에서 사냥하면 경험치가 더 붙습니다.</p>
           <p>넥서스 광장 동쪽 문은 판타지 세계, 서쪽 문은 네온 시티로 이어집니다.</p>
         </div>
@@ -247,8 +259,12 @@
     <div id="dead" hidden>
       <div class="frame">
         <h2>쓰러졌습니다</h2>
-        <p>넥서스 광장에서 다시 일어납니다. (경험치를 조금 잃습니다)</p>
-        <button id="b-respawn" class="btn gold big">광장에서 부활</button>
+        <p id="dead-loss">넥서스 광장에서 다시 일어납니다. (경험치를 조금 잃습니다)</p>
+        <div class="dead-btns">
+          <button id="b-respawn" class="btn gold big">마을에서 부활</button>
+          <button id="b-feather" class="btn big">그 자리에서 부활</button>
+        </div>
+        <p id="dead-feather" class="hint"></p>
       </div>
     </div>
 
@@ -289,7 +305,7 @@
       </div>
     </div>
 
-    <script type="module" src="client.js?v=1794577682"></script>
+    <script type="module" src="client.js?v=1794586265"></script>
     <div id="crt-frame" aria-hidden="true"></div>
   </body>
 </html>

@@ -18,6 +18,7 @@ import { skillIconUrl } from "./skillicons.js";
 import { icon, iconImg, iconUrl, MENU_ICON, CLASS_ICON, BUFF_ICON, TRAIT } from "./uiicons.js";
 import * as SP from "./sprites.js";
 import * as Emo from "./emoticons.js";
+import * as Growth from "./growth.js";
 
 const T = Art.TILE;
 const $ = (s) => document.querySelector(s);
@@ -92,7 +93,7 @@ const G = {
   me: { x: 0, y: 0, dir: 0, hp: 1, mp: 0, dead: false, walk: 0, moving: false, atkT: -1e9, hurtT: -1e9 },
   who: new Map(), players: new Map(), mobs: new Map(), gone: new Map(), drops: new Map(), fires: new Map(), bobs: new Map(), ginv: null,
   fx: [], parts: [], texts: [], bubbles: new Map(), statics: [],
-  cdEnd: [0, 0, 0], buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
+  cdEnd: [0, 0, 0, 0, 0, 0], buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
   auto: false, sel: -1, shake: 0, flash: 0, near: null, party: [], pinv: null, path: null, mark: null,
 };
 let mini = null;
@@ -127,7 +128,8 @@ function onMessage(msg) {
       G.you = msg.you;
       if (!G.defs) {
         G.defs = msg.defs;
-        G.icons = Art.buildIcons(G.defs.items);
+        G.icons = Growth.icons(Art.buildIcons(G.defs.items));
+        Growth.init({ G, act, el, iconImg, itemSlot, section, countItem, usePotion, isGear: (id) => isGear(id), sellPrice: (e) => sellPrice(e) });
       }
       G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear(); G.who.clear();
       $("#title").hidden = true; $("#create").hidden = true; $("#hud").hidden = false;
@@ -188,8 +190,8 @@ function onSnap(s) {
 
   if (s.who) {
     G.who.clear();
-    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, , wk, guild, title] of s.who) {
-      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk }, party, guild, title });
+    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, pet, wk, guild, title] of s.who) {
+      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk }, party, guild, title, pet: pet || null });
     }
     if (isOpen("party")) renderParty();
     if (isOpen("guild")) renderGuild();
@@ -201,13 +203,14 @@ function onSnap(s) {
 
   if (s.self) {
     G.self = s.self;
-    for (let i = 0; i < 4; i++) G.cdEnd[i] = t + s.self.cds[i];
+    for (let i = 0; i < s.self.cds.length; i++) G.cdEnd[i] = t + s.self.cds[i];
     G.streak = { n: s.self.streak[0], end: t + s.self.streak[1] };
     G.buffEnd = s.self.buffs.map((ms) => t + ms);
     if (s.self.evt) { G.evt = s.self.evt; G.evtNext = t + s.self.evt.next; G.evtIn = t + (s.self.evt.in || 0); G.evtLeft = t + (s.self.evt.left || 0); }
     if (s.self.daily) G.dailyReset = t + s.self.daily.reset;
     if (s.self.recall > 0 && !G.cast) G.cast = { start: t - (G.defs.recallMs - s.self.recall), end: t + s.self.recall };
     refreshUi();
+    Growth.onSelf(s.self);
     if (isOpen("guild")) renderGuild();
   }
   if (s.ev) for (const e of s.ev) {
@@ -319,7 +322,8 @@ function onEvent(e, t) {
     case "b": {
       // a blast on the ground: a monster's (pink, it hurts) or a player's skill landing
       const col = [null, "#ffb04a", "#ff8a3a", "#cfe4ff"][e[4] | 0];
-      if (col) { S3.fx.ring(e[1], e[2], e[3], col, 300, true); S3.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); S3.shake(2); Sound.play("boom"); }
+      if ((e[4] | 0) >= 4) Growth.zoneFx(e, S3);       // the blade storm, the blizzard, the dragon's spear
+      else if (col) { S3.fx.ring(e[1], e[2], e[3], col, 300, true); S3.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); S3.shake(2); Sound.play("boom"); }
       else { S3.fx.ring(e[1], e[2], e[3], "#ff6ad0", 350, true); S3.fx.burst(e[1], e[2], 0.4, "#ff6ad0", 34, 3); S3.shake(6); Sound.play("slam"); }
       break;
     }
@@ -376,9 +380,11 @@ function onEvent(e, t) {
     }
     case "z":
       // something flying from one point to another: a legendary's lightning, or a thrown knife
-      if (e[5]) S3.fx.proj(e[1], e[2] + 8, 0.6, e[3], e[4] + 8, 0.5, "#b8f060", 0.05, 30);
+      if (e[5] >= 2) Growth.lineFx(e, S3);              // chain lightning, a phantom's dash
+      else if (e[5]) S3.fx.proj(e[1], e[2] + 8, 0.6, e[3], e[4] + 8, 0.5, "#b8f060", 0.05, 30);
       else { S3.fx.beam(e[1], e[2] + 8, e[3], e[4] + 8, "#fff48a", 0.45); S3.fx.burst(e[3], e[4] + 8, 0.5, "#fff48a", 8, 1.6); Sound.play("magic"); }
       break;
+    case "pk": S3.petFetch(e[1], e[2], e[3]); break;     // a pet fetched something
     case "l": {
       const p = entityPos(e[1]);
       if (p) { S3.fx.pillar(p.x, p.y); if (e[1] !== G.you) floatText("LEVEL UP", p.x, p.y, heightOf(p) + 0.5, "#ffd84a", true); }
@@ -461,6 +467,7 @@ function attackFx(kind, src, tx, ty, dir, beat = 0) {
     case 19: f.burst(src.x, src.y, 0.6, "#4a4468", 10, 1); break;
     case 20: f.burst(src.x, src.y, 0.5, "#8a8a98", 40, 1.2); Sound.play("buff"); break;
     case 21: f.proj(src.x, src.y, 1, tx, ty, 0.2, "#6a7a5a", 0.1, 11, () => { f.ring(tx, ty, 42, "#ffb04a", 320, true); f.burst(tx, ty, 0.4, "#ffd84a", 28, 3); S3.shake(4); Sound.play("boom"); }); Sound.play("swing"); break;
+    default: Growth.skillFx(kind, src, tx, ty, ang, S3);     // 25–32: the second-tier skills and the ultimates
   }
 }
 
@@ -481,7 +488,7 @@ addEventListener("keydown", (e) => {
   if (e.repeat) return;
   keys.add(k);
   switch (k) {
-    case "1": case "2": case "3": case "4": castSkill(Number(k) - 1); break;
+    case "1": case "2": case "3": case "4": case "5": case "6": castSkill(Number(k) - 1); break;
     case "q": case "ㅂ": usePotion("hp"); break;
     case "e": case "ㄷ": usePotion("mp"); break;
     case "f": case "ㄹ": interact(); break;
@@ -604,7 +611,7 @@ function press(btn, down, up) {
   btn.addEventListener("pointerup", u); btn.addEventListener("pointerleave", u); btn.addEventListener("pointercancel", u);
 }
 press($("#b-atk"), () => { held.atk = true; }, () => { held.atk = false; });
-for (let i = 0; i < 4; i++) press($(`#b-s${i}`), () => castSkill(i));
+for (let i = 0; i < 6; i++) press($(`#b-s${i}`), () => castSkill(i));
 press($("#b-hp"), () => usePotion("hp"));
 press($("#b-mp"), () => usePotion("mp"));
 press($("#b-auto"), () => toggleAuto());
@@ -676,12 +683,10 @@ function countItem(id) {
 function usePotion(kind) {
   const s = G.self, t = now();
   if (!s || G.me.dead || t < G.potAt) return;
-  const [small, big] = kind === "hp" ? ["hp_s", "hp_m"] : ["mp_s", "mp_m"];
   const missing = kind === "hp" ? s.mhp - G.me.hp : s.mmp - G.me.mp;
   if (missing <= 0) return;
-  const need = kind === "hp" ? G.defs.items[small].heal : G.defs.items[small].mana;
-  let id = countItem(small) ? small : countItem(big) ? big : null;
-  if (id === small && missing > need * 1.8 && countItem(big)) id = big;
+  // the smallest potion that covers most of what is missing (small, big, concentrated)
+  const id = Growth.pickPotion(kind, missing);
   if (!id) { if (!G.auto) toast(kind === "hp" ? "HP 물약이 없습니다" : "MP 물약이 없습니다"); return; }
   act({ t: "use", id });
   G.potAt = t + 950;
@@ -747,6 +752,7 @@ function interact() {
   else if (n.role === "collector") openWin("collect");
   else if (n.role === "achieve") openWin("achieve");
   else if (n.role === "train") openWin("train");
+  else if (n.role === "bank") openWin("bank");
   else { $("#talk-name").textContent = n.name; $("#talk-text").textContent = n.say || "…"; openWin("talk"); }
 }
 
@@ -807,7 +813,7 @@ function update(dt, t) {
       } else {
         wantAtk = true;
         if (t - autoSt.lastSkill > 500) {
-          for (let i = 0; i < 4; i++) {
+          for (let i = G.defs.skills[s.cls].length - 1; i >= 0; i--) {
             const sk = G.defs.skills[s.cls][i];
             if (s.lvl >= sk.lv && t >= G.cdEnd[i] && me.mp >= sk.mp + 4) { if (castSkill(i)) { autoSt.lastSkill = t; break; } }
           }
@@ -817,6 +823,7 @@ function update(dt, t) {
     if (me.hp < s.mhp * 0.45) usePotion("hp");
     if (me.mp < s.mmp * 0.25) usePotion("mp");
   }
+  Growth.autoPotion();
 
   // walk — applied immediately, checked by the server afterwards
   const speed = s.spd * (t < G.buffEnd[1] ? 1.4 : 1) * (t < (G.buffEnd[4] || 0) ? G.defs.slow || 0.65 : 1);    // hasted, or slowed by frost
@@ -1055,9 +1062,10 @@ function renderText(t) {
     if (mob.hp < max) bar(x, y + 4, d.boss ? 90 : mob.el === 2 ? 70 : 42, mob.hp / max, mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#d8404c");
   }
   for (const d of G.drops.values()) {
-    if (!d.q) continue;
+    // the loot filter decides whose names are shown: everything, magic and up, or rare and up
+    if (!Growth.showDrop(d)) continue;
     const [x, y] = at(d.x, d.y, 0.6);
-    label(G.defs.items[d.it].name, x, y, Art.RARITY_COL[d.q]);
+    label(Growth.dropName(d), x, y, d.it === "gold" ? "#ffd84a" : Art.RARITY_COL[d.q | 0]);
   }
   const mine = G.who.get(G.you);
   for (const [eid, p] of G.players) {
@@ -1116,7 +1124,7 @@ function renderMini(t) {
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank"];
 const winEl = (id) => $(`#w-${id}`);
 const isOpen = (id) => !winEl(id).hidden;
 /** Per window, the key of what it last drew: a window is rebuilt only when what it shows has changed. */
@@ -1133,6 +1141,7 @@ function homeOf(id, w, h) {
   switch (id) {
     case "inv": return [right, top];
     case "char": case "shop": case "smith": case "train": return [W - 222 - inv - 10 - w, top];
+    case "bank": return [Math.max(4, W - 222 - w), top];
     case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": return [262, top + 36];
     case "talk": return [mid, H - h - 190];
     default: return [mid, Math.max(top, (H - h) / 2 - 60)];
@@ -1370,7 +1379,7 @@ function describe(entry, host) {
 function sellPrice(entry) {
   const it = G.defs.items[entry.id];
   if (!isGear(entry.id)) return Math.floor(it.price * 0.4);
-  return Math.floor(it.price * 0.25 * (1 + 0.8 * (entry.q || 0)) * (1 + 0.3 * (entry.enh || 0)));
+  return Math.floor(it.price * 0.05 * (1 + 0.8 * (entry.q || 0)) * (1 + 0.3 * (entry.enh || 0)));
 }
 /** A tooltip's content: the item, a line on what clicking does, then whatever it would replace. */
 function itemTip(entry, host, o = {}) {
@@ -1417,7 +1426,7 @@ function useSlot(i) {
   if (!entry) return;
   const d = G.defs.items[entry.id];
   hideTip();
-  if (d.type === "pot" || d.type === "food" || d.type === "scroll") act({ t: "use", id: entry.id });
+  if (d.type === "pot" || d.type === "food" || d.type === "scroll" || d.type === "buff" || d.type === "pet") act({ t: "use", id: entry.id });
   else if (d.type === "camp") { act({ t: "use", id: entry.id }); closeWin("inv"); }
   else if (d.type === "fish") {
     if (!fireNear()) { toast("모닥불 곁에서 구울 수 있습니다"); return; }
@@ -1506,9 +1515,9 @@ function hudFrame(s) {
 }
 function setSrc(img, src) { if (img.dataset.src !== src) { img.dataset.src = src; img.src = src; } }
 function hotbar(s) {
-  for (const [btn, ids] of [["#b-hp", ["hp_s", "hp_m"]], ["#b-mp", ["mp_s", "mp_m"]]]) {
-    const n = countItem(ids[0]) + countItem(ids[1]);
-    setSrc($(`${btn} img`), G.icons.url[countItem(ids[0]) || !countItem(ids[1]) ? ids[0] : ids[1]]);
+  for (const [btn, kind] of [["#b-hp", "hp"], ["#b-mp", "mp"]]) {
+    const [n, show] = Growth.potionCount(kind);
+    setSrc($(`${btn} img`), G.icons.url[show]);
     $(`${btn} .n`).textContent = n;
     $(btn).style.opacity = n ? 1 : 0.45;
   }
@@ -1585,12 +1594,13 @@ function refreshUi() {
   hotbar(s);
   tracker(s);
   const near = G.near && G.near.role;
-  draw("inv", () => [s.inv, s.gold, s.eq, s.lvl, G.sel, invSort, near, isOpen("shop"), isOpen("smith"), fireNear(), touch()], renderInv);
+  draw("inv", () => [s.inv, s.gold, s.eq, s.lvl, G.sel, invSort, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet], renderInv);
   draw("char", () => [s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.tr, s.lg, s.lvl, s.name, s.guild], renderChar);
-  draw("skill", () => [s.lvl, s.cls, s.wk, s.acd, s.range, s.eq.weapon && s.eq.weapon.id], renderSkills);
-  draw("shop", () => [s.gold, s.cls, s.lvl], renderShop);
+  draw("skill", () => [s.lvl, s.cls, s.wk, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.skl], renderSkills);
+  draw("shop", () => [s.gold, s.cls, s.lvl, s.inv], renderShop);
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone")], renderSmith);
-  draw("train", () => [s.xp, s.tr, s.trc], renderTrain);
+  draw("train", () => [s.xp, s.tr, s.trc, s.skl, s.skc, s.gold, s.lvl], renderTrain);
+  draw("bank", () => [s.inv, s.wh, s.gold], Growth.renderBank);
   draw("quest", () => [s.q, s.bq, s.bn, s.mk, s.lvl, near, G.qsel], renderQuest);
   draw("warp", () => [s.wp, G.map && G.map.id, stoneNear(), near, G.warpPick], renderWarp);
   draw("daily", () => [s.daily && s.daily.day, s.daily && s.daily.tasks, s.daily && s.daily.bonus, s.inv.length], renderDaily);
@@ -1641,7 +1651,8 @@ function renderInv(s) {
   const btns = el("div", "btns");
   const add = (label, fn, off, gold) => { const b = el("button", gold ? "btn gold small" : "btn small", label); b.disabled = !!off; b.addEventListener("click", () => { hideTip(); fn(); }); btns.append(b); };
   if (d.type === "pot") add("사용", () => act({ t: "use", id: entry.id }), false, true);
-  if (d.type === "scroll") add("읽기", () => act({ t: "use", id: entry.id }), false, true);
+  if (d.type === "scroll" || d.type === "buff") add("읽기", () => act({ t: "use", id: entry.id }), false, true);
+  if (d.type === "pet") add(s.pet === entry.id ? "돌려보내기" : "데리고 다니기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "food") add("먹기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "camp") add("모닥불 피우기", () => { act({ t: "use", id: entry.id }); closeWin("inv"); }, false, true);
   if (d.type === "fish") {
@@ -1739,11 +1750,11 @@ function renderSkills(s) {
     const row = el("div", "skill" + (locked ? " locked" : ""));
     const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(sk.id);
     const hd = el("div", "hd");
-    hd.append(el("b", "", sk.name), el("kbd", "", String(i + 1)), el("small", "mp", `MP ${sk.mp}`), el("small", "", `재사용 ${sk.cd / 1000}초`), el("small", "", locked ? `레벨 ${sk.lv}에 배웁니다` : `Lv.${sk.lv} 습득`));
+    hd.append(el("b", "", sk.name), el("kbd", "", String(i + 1)), el("small", "mp", `MP ${sk.mp}`), el("small", "", `재사용 ${sk.cd / 1000}초`), el("small", "", locked ? `레벨 ${sk.lv}에 배웁니다` : `Lv.${sk.lv} 습득`), Growth.levelTag(s, i));
     row.append(ic, hd, el("p", "", sk.desc));
     box.append(row);
   });
-  box.append(el("p", "hint", "1–4 키나 단축 버튼으로 씁니다. 자동사냥 중에는 MP가 넉넉하면 배운 스킬을 알아서 씁니다."));
+  box.append(el("p", "hint", "1–6 키나 단축 버튼으로 씁니다. 6번은 궁극기입니다. 수련관에게서 스킬 레벨을 올리면 위력이 오르고 5·10레벨에 재사용 대기시간이 줄어듭니다. 자동사냥 중에는 MP가 넉넉하면 배운 스킬을 알아서 씁니다."));
 }
 
 // ── waypoints ──
@@ -1992,6 +2003,7 @@ function fadeIn() {
 function renderShop(s) {
   const it = G.defs.items, list = $("#shop-list");
   list.textContent = "";
+  Growth.shopTop(list, s);
   for (const key of G.defs.shop) {
     const id = key[0] === "W" && key.length === 2 ? `w_${s.cls}_${key[1]}` : key;
     const d = it[id];
@@ -2040,7 +2052,8 @@ function renderSmith(s) {
 function renderTrain(s) {
   const list = $("#train-list");
   list.textContent = "";
-  $("#train-xp").textContent = `보유 경험치 ${s.xp.toLocaleString()}`;
+  $("#train-xp").textContent = `보유 경험치 ${s.xp.toLocaleString()} · 골드 ${s.gold.toLocaleString()}G`;
+  list.append(section("능력치 수련", "person"));
   for (const k of Object.keys(G.defs.train)) {
     const d = G.defs.train[k];
     const row = el("div", "it");
@@ -2056,6 +2069,7 @@ function renderTrain(s) {
     }
     list.append(row);
   }
+  Growth.trainSkills(list, s);
 }
 
 // ── quests: a log on the left, the chosen entry on the right ──
@@ -2353,7 +2367,8 @@ function hudTick(t) {
   }
   const buffs = $("#st-buffs");
   // each status is its glyph and the time left; the last three are things done to you
-  const names = ["공격력 증가", "이동속도 증가", `모닥불의 온기: 경험치 +${s.warm}%`, s.food ? G.defs.items[s.food].name : "음식", "둔화: 이동속도 감소", "화상: 지속 피해", "중독: 지속 피해"];
+  const names = ["공격력 증가", "이동속도 증가", `모닥불의 온기: 경험치 +${s.warm}%`, s.food ? G.defs.items[s.food].name : "음식", "둔화: 이동속도 감소", "화상: 지속 피해", "중독: 지속 피해", "공격의 주문서: 공격력 +10%", "방어의 주문서: 받는 피해 -12%", "경험의 주문서: 경험치 +20%"];
+  const bad = (i) => i >= 4 && i < 7;
   const left = (ms) => (ms > 90000 ? `${Math.ceil(ms / 60000)}분` : `${Math.ceil(ms / 1000)}`);
   const shownB = G.buffEnd.map((e, i) => (e > t ? [i, left(e - t)] : null)).filter(Boolean);
   const want = shownB.map(([i, l]) => `${i}:${l}`).join("|");
@@ -2361,9 +2376,9 @@ function hudTick(t) {
     buffs.dataset.v = want;
     buffs.textContent = "";
     for (const [i, l] of shownB) {
-      const sp = el("span", i >= 4 ? "bad" : "", l);
+      const sp = el("span", bad(i) ? "bad" : i >= 7 ? "scr" : "", l);
       sp.title = names[i];
-      sp.prepend(iconImg(BUFF_ICON[i], i >= 4 ? "#ff9a8a" : "#e2c486"));
+      sp.prepend(iconImg(BUFF_ICON[i], bad(i) ? "#ff9a8a" : i >= 7 ? "#9ad8ff" : "#e2c486"));
       buffs.append(sp);
     }
   }
