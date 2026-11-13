@@ -16,6 +16,7 @@ import * as S3 from "./scene2d.js";
 import * as Mini from "./minigames.js";
 import { skillIconUrl } from "./skillicons.js";
 import { icon, iconImg, MENU_ICON, BUFF_ICON, TRAIT } from "./uiicons.js";
+import * as Emo from "./emoticons.js";
 
 const T = Art.TILE;
 const $ = (s) => document.querySelector(s);
@@ -347,8 +348,9 @@ function onEvent(e, t) {
       break;
     }
     case "pd": { const p = entityPos(e[1]); if (p) S3.fx.burst(p.x, p.y, 0.6, "#c8c8d8", 12, 1.4); break; }
-    case "s": G.bubbles.set(e[1], { text: e[2], until: t + 4500 }); break;
-    case "o": G.bubbles.set(e[1], { text: EMOTES[e[2]] || "?", until: t + 2600, big: true }); break;
+    // what someone says floats over their head for a while, longer for longer lines
+    case "s": G.bubbles.set(e[1], { text: e[2], t0: t, until: t + 3500 + Math.min(4000, e[2].length * 90) }); break;
+    case "o": G.bubbles.set(e[1], { emo: e[2] | 0, t0: t, until: t + 2800 }); break;
     case "f": {
       // 1: a line goes out · 2: a bite · 0: it comes back in
       if (e[2] === 1) G.bobs.set(e[1], { id: e[1], eid: e[1], x: e[3], y: e[4], bite: false });
@@ -448,7 +450,7 @@ addEventListener("keydown", (e) => {
     case "f": case "ㄹ": interact(); break;
     case "x": case "ㅌ": act({ t: "sit" }); break;
     case "g": case "ㅎ": toggleWin("guild"); break;
-    case "t": case "ㅅ": $("#emotes").hidden = !$("#emotes").hidden; break;
+    case "t": case "ㅅ": openEmotes("emote"); break;
     case "i": case "ㅑ": toggleWin("inv"); break;
     case "c": case "ㅊ": toggleWin("char"); break;
     case "l": case "ㅣ": toggleWin("quest"); break;
@@ -651,7 +653,7 @@ function waterNear() {
   return false;
 }
 const fireNear = () => { for (const f of G.fires.values()) if (dist(G.me.x, G.me.y, f.x, f.y) <= G.defs.fireR) return true; return false; };
-const EMOTES = ["👋", "❤️", "😆", "😢", "😡", "💤", "👍", "🎵"];
+
 function interact() {
   const n = G.near;
   if (G.me.dead) return;
@@ -809,6 +811,83 @@ function label(str, sx, sy, col, size = 12, bg = false) {
   tg.fillStyle = col;
   tg.fillText(str, x, y);
 }
+/**
+ * A speech bubble whose tail points down at (sx, sy): white, rounded, outlined,
+ * wrapped to a few lines, with emoticons drawn in among the words. An emote is
+ * a bubble holding one large emoticon that pops in.
+ */
+const BUBBLE_FONT = (px) => `600 ${px}px Pretendard, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
+function bubble(b, sx, sy, t) {
+  const d = dpr, x = Math.round(sx * d), y = Math.round(sy * d);
+  const pad = 6 * d, tail = 6 * d, r = 7 * d;
+  const age = t - b.t0, fade = Math.max(0, Math.min(1, (b.until - t) / 350, age / 120));
+  let w, h;
+  if (b.emo !== undefined) {
+    const pop = age < 160 ? 0.6 + 0.4 * Math.sin((age / 160) * Math.PI / 2) + 0.12 * Math.sin((age / 160) * Math.PI) : 1;
+    const s = Math.round(28 * d * pop);
+    w = s + pad * 2; h = s + pad * 2;
+    bubbleFrame(x, y, w, h, tail, r, fade);
+    tg.imageSmoothingEnabled = false;
+    tg.globalAlpha = fade;
+    tg.drawImage(Emo.emoCanvas(b.emo), Math.round(x - s / 2), Math.round(y - tail - h + pad + (28 * d - s) / 2), s, s);
+    tg.globalAlpha = 1;
+    return;
+  }
+  const px = Math.round(12 * d), ic = Math.round(15 * d), lh = Math.round(17 * d), maxW = 150 * d;
+  tg.font = BUBBLE_FONT(px);
+  if (!b.lines || b.d !== d) {
+    // lay the words out once: break at spaces, and inside a word only when it will not fit
+    const units = [];
+    for (const seg of Emo.parse(b.text)) {
+      if (seg.e !== undefined) units.push({ e: seg.e, w: ic + 2 * d });
+      else for (const word of seg.s.split(/(\s+)/)) if (word) units.push({ s: word, w: tg.measureText(word).width });
+    }
+    const lines = [[]];
+    let lw = 0;
+    const push = (u) => {
+      if (lw + u.w > maxW && lines[lines.length - 1].length) { lines.push([]); lw = 0; if (u.s && !u.s.trim()) return; }
+      lines[lines.length - 1].push(u); lw += u.w;
+    };
+    for (const u of units) {
+      if (u.s && u.w > maxW) { for (const ch of u.s) push({ s: ch, w: tg.measureText(ch).width }); }
+      else push(u);
+    }
+    if (lines.length > 4) { lines.length = 4; lines[3].push({ s: "…", w: tg.measureText("…").width }); }
+    b.lines = lines.map((l) => ({ units: l, w: l.reduce((a, u) => a + u.w, 0) }));
+    b.d = d;
+  }
+  w = Math.max(...b.lines.map((l) => l.w)) + pad * 2;
+  h = b.lines.length * lh + pad * 2 - 2 * d;
+  bubbleFrame(x, y, w, h, tail, r, fade);
+  tg.globalAlpha = fade;
+  tg.textAlign = "left"; tg.textBaseline = "middle";
+  tg.fillStyle = "#1c1a22";
+  tg.imageSmoothingEnabled = false;
+  b.lines.forEach((l, i) => {
+    let cx = x - l.w / 2;
+    const cy = y - tail - h + pad + lh * i + lh / 2 - 1 * d;
+    for (const u of l.units) {
+      if (u.e !== undefined) tg.drawImage(Emo.emoCanvas(u.e), Math.round(cx + 1 * d), Math.round(cy - ic / 2), ic, ic);
+      else tg.fillText(u.s, cx, cy);
+      cx += u.w;
+    }
+  });
+  tg.textAlign = "center"; tg.textBaseline = "alphabetic";
+  tg.globalAlpha = 1;
+}
+/** The bubble's body and tail. */
+function bubbleFrame(x, y, w, h, tail, r, alpha) {
+  const d = dpr, top = y - tail - h, left = Math.round(x - w / 2);
+  tg.globalAlpha = alpha;
+  tg.beginPath();
+  tg.roundRect(left, top, w, h, r);
+  tg.moveTo(x - 5 * d, top + h - 1); tg.lineTo(x, y); tg.lineTo(x + 5 * d, top + h - 1);
+  tg.fillStyle = "rgba(252,250,244,.97)"; tg.fill();
+  tg.lineWidth = 1.5 * d; tg.strokeStyle = "rgba(28,26,34,.85)"; tg.stroke();
+  // cover the seam where the tail meets the body
+  tg.fillStyle = "rgba(252,250,244,.97)"; tg.fillRect(x - 4 * d, top + h - 2 * d, 8 * d, 3 * d);
+  tg.globalAlpha = 1;
+}
 function bar(sx, sy, w, k, col) {
   const x = Math.round((sx - w / 2) * dpr), y = Math.round(sy * dpr);
   tg.fillStyle = "rgba(10,10,16,.85)";
@@ -880,8 +959,7 @@ function renderText(t) {
     const p = entityPos(eid);
     if (!p) continue;
     const [x, y] = at(p.x, p.y, (p.h3 || 1.32) + 0.5);
-    if (b.big) label(b.text, x, y - 18, "#ffffff", 22);
-    else label(b.text.length > 22 ? b.text.slice(0, 22) + "…" : b.text, x, y - 12, "#08090c", 12, true);
+    bubble(b, x, y - 14, t);
   }
   for (let i = G.texts.length - 1; i >= 0; i--) {
     const f = G.texts[i];
@@ -952,7 +1030,12 @@ function addChat(m, cls, name) {
   const log = $("#chat-log");
   const p = el("p", cls || "");
   if (name) p.append(el("span", "who", `${name}: `));
-  p.append(m);
+  if (typeof m === "string") {
+    for (const seg of Emo.parse(m)) {
+      if (seg.e === undefined) { p.append(seg.s); continue; }
+      const im = el("img", "emo"); im.alt = Emo.token(seg.e); im.src = Emo.emoUrl(seg.e); p.append(im);
+    }
+  } else p.append(m);
   log.append(p);
   while (log.children.length > 40) log.firstChild.remove();
   return p;
@@ -1445,13 +1528,33 @@ function renderGuild() {
   btns.append(b);
   box.append(btns);
 }
-for (let i = 0; i < EMOTES.length; i++) {
-  const b = el("button", "", EMOTES[i]);
-  b.addEventListener("click", () => { act({ t: "emo", i }); $("#emotes").hidden = true; });
+for (let i = 0; i < Emo.COUNT; i++) {
+  const b = el("button");
+  b.title = Emo.token(i);
+  const im = el("img"); im.alt = Emo.token(i); im.src = Emo.emoUrl(i); b.append(im);
+  b.addEventListener("click", () => {
+    const box = $("#emotes");
+    if (box.dataset.mode === "chat") {
+      const input = $("#chat-in");
+      input.value = (input.value + Emo.token(i)).slice(0, 80);
+      input.focus();
+    } else act({ t: "emo", i });
+    box.hidden = true;
+  });
   $("#emotes").append(b);
 }
+/** Open the picker either to send an emote or to put an emoticon in the chat line. */
+function openEmotes(mode) {
+  const box = $("#emotes");
+  if (!box.hidden && box.dataset.mode === mode) { box.hidden = true; return; }
+  box.dataset.mode = mode;
+  box.classList.toggle("at-chat", mode === "chat");
+  box.hidden = false;
+}
+$("#chat-emo").addEventListener("pointerdown", (e) => e.preventDefault());   // keep the chat line focused
+$("#chat-emo").addEventListener("click", () => openEmotes("chat"));
 $("#b-sit").addEventListener("click", () => act({ t: "sit" }));
-$("#b-emo").addEventListener("click", () => { $("#emotes").hidden = !$("#emotes").hidden; });
+$("#b-emo").addEventListener("click", () => openEmotes("emote"));
 
 function renderRank(list) {
   const box = $("#rank-list");

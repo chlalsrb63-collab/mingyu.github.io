@@ -209,7 +209,7 @@ const WARM_SEC = 6, WARM_MS = 600000;
 const GUILD_COST = 1000;
 /** Each guildmate hunting beside you adds this much experience, up to three. */
 const GUILD_XP = 0.05;
-const EMOTES = 8;
+const EMOTES = 25;
 
 // ── the hunt: what keeps a hunting ground worth another lap
 /** Kills in quick succession build a streak; each step adds 2% experience, up to +50%. */

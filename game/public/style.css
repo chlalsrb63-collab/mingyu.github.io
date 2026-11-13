@@ -552,3 +552,15 @@ body.crt #text { filter: drop-shadow(1px 0 0 rgba(255, 40, 80, .45)) drop-shadow
 @media (prefers-reduced-motion: reduce) { body.crt #crt, body.crt #crt .roll { animation: none; } }
 #btn-crt { font-size: 11px; letter-spacing: .5px; }
 #btn-crt.off { opacity: .5; }
+
+/* ───────────── chat: emoticons in the log, the picker ───────────── */
+#chat-log img.emo { width: 16px; height: 16px; image-rendering: pixelated; vertical-align: -3px; margin: 0 1px; }
+#chat-form { display: flex; gap: 4px; align-items: center; }
+#chat-form #chat-in { flex: 1; min-width: 0; }
+#chat-emo { width: 26px; height: 26px; flex: none; padding: 0; border-radius: 6px; cursor: pointer;
+  background: rgba(0, 0, 0, .35) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='6.5' fill='%23ffd75a' stroke='%232b2233'/><rect x='5' y='6' width='1.5' height='2' fill='%232b2233'/><rect x='9.5' y='6' width='1.5' height='2' fill='%232b2233'/><path d='M5 10 Q8 12.5 11 10' stroke='%232b2233' fill='none'/></svg>") center / 16px no-repeat;
+  border: 1px solid rgba(255, 255, 255, .16); }
+body.touch #chat-emo { display: none; }
+#emotes { grid-template-columns: repeat(5, 34px); }
+#emotes button img { width: 24px; height: 24px; image-rendering: pixelated; display: block; margin: auto; pointer-events: none; }
+#emotes.at-chat { right: auto; top: auto; left: 8px; bottom: calc(150px + var(--safe-b, 0px)); }
