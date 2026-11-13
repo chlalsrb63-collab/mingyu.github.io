@@ -345,218 +345,486 @@ export const HOLD = {
 };
 
 // ───────────────────────────── monsters ─────────────────────────────
-// Each creature is drawn at its real size with a one-pixel outline, facing
-// left, standing on the sheet's foot line. `f` is the frame (0 or 1).
+// Everything that hunts here was an animal once. Each is drawn at its real size
+// with a one-pixel outline, facing left, standing on the sheet's foot line; `f`
+// is the frame (0 or 1). The palette is the opposite of the adventurers': raw
+// meat, bruise, bone and bile, with blood as the one bright accent.
 
 const WHITE = "#fbfbff";
+const MEAT = "#a83848", GORE = "#e02838", CLOT = "#5a1424", GUT = "#d87a88", BONE = "#e8dfc8", BRUISE = "#5c3c6c", BILE = "#b4cc3c", EYE = "#f4efe0";
+/** A polyline, one pixel wide. */
+const path = (line, pts, col) => { for (let i = 0; i < pts.length - 1; i++) line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], col); };
+/** A limb two pixels thick: the line, and the same line one pixel lower in its shadow tone. */
+const limb = (line, pts, col, under = shade(col, 0.3)) => { path(line, pts.map(([x, y]) => [x, y + 1]), under); path(line, pts, col); };
+/** A lidless eye: two by two, white, with one pixel of iris. */
+const orb = (b, px, x, y, iris = GORE, at = 0) => { b.r(x, y, 2, 2, EYE); px(x + (at & 1), y + (at >> 1), iris); };
+
 const MOB = {
-  /** 도토리 병정 — an acorn that marches under its own cap. */
-  acorn(b, f, px) {
-    const o = -f, nut = "#e8bc7c", cap = "#8a5a34";
-    b.r(12, 27 + o, 2, 1, "#6a4426"); b.r(18, 27 + o, 2, 1, "#6a4426");
-    b.r(11, 18 + o, 10, 8, nut); b.r(12, 26 + o, 8, 1, shade(nut, 0.2)); b.r(20, 19 + o, 1, 7, shade(nut, 0.2));
-    b.r(10, 14 + o, 12, 3, cap); b.r(11, 13 + o, 10, 1, cap); b.r(9, 17 + o, 14, 1, shade(cap, 0.3));
-    for (const [x, y] of [[12, 14], [15, 15], [18, 14], [13, 16], [17, 16], [20, 15]]) px(x, y + o, "#b07a48");
-    b.r(15, 10 + o, 2, 3, "#6a4426"); b.r(17, 10 + o, 3, 1, "#6ab85a"); b.r(18, 9 + o, 2, 1, "#6ab85a");
-    px(12, 19 + o, DARK); px(19, 19 + o, DARK);
-    b.r(13, 20 + o, 1, 2, DARK); b.r(18, 20 + o, 1, 2, DARK);
-    b.r(15, 23 + o, 2, 1, "#4a3640"); px(12, 22 + o, PINK); px(19, 22 + o, PINK);
+  // ── meadow
+  /** 쌍두 토끼 — two hares sewn into one; only one of the heads is still alive. */
+  twinhare(b, f, px, line) {
+    const fur = "#b9b0b6", dead = "#8f8a9c", o = f;
+    b.r(22, 24, 5, 3, shade(fur, 0.3)); b.r(24, 27, 4, 1, fur);                    // haunch and long foot
+    b.oval(18, 22, 7, 5, fur); b.oval(18, 25, 6, 2, shade(fur, 0.22));
+    b.r(11, 25, 2, 3, fur); b.r(14, 26, 2, 2, shade(fur, 0.3));
+    b.r(25, 19, 2, 2, WHITE);                                                      // scut
+    // the dead head, lolling on top
+    b.r(15, 4 + o, 2, 8, dead); b.r(18, 6 + o, 2, 6, dead); px(15, 5 + o, "#6a5a70"); px(18, 7 + o, "#6a5a70");
+    b.oval(16, 14 + o, 4, 3.5, dead);
+    px(13, 13 + o, DARK); px(14, 14 + o, DARK); px(14, 13 + o, "#3a2a40"); px(13, 14 + o, "#3a2a40");   // an eye sewn shut
+    px(12, 16 + o, CLOT);
+    // the live one, low and forward
+    b.r(6, 8, 2, 8, fur); b.r(9, 9, 2, 7, fur); px(6, 10, PINK); px(6, 11, PINK); px(9, 11, PINK);
+    b.oval(9, 19, 4.5, 4, fur); b.oval(9, 21, 3.5, 1.5, shade(fur, 0.2));
+    b.r(6, 18, 2, 2, GORE); px(6, 18, "#ff9a9a");                                  // one raw red eye
+    px(4, 21, "#7a4a58"); b.r(5, 22, 2, 1, CLOT); px(5, 23, GORE); if (f) px(5, 24, GORE);
+    // the seam where they were joined
+    for (let y = 16; y <= 25; y += 1) px(14 + (y % 3 === 0 ? 1 : 0), y, y % 2 ? DARK : GORE);
+    px(13, 18, DARK); px(16, 20, DARK); px(13, 22, DARK); px(16, 24, DARK);
   },
-  /** 화분 소라게 — a hermit crab that moved into a flower pot, flower and all. */
-  potcrab(b, f, px) {
-    const o = -f, pot = "#d8784e", crab = "#f39a4a", leaf = "#6ab85a";
-    for (const s of [0, 1]) {                                   // claws and legs, mirrored
-      const m = (x, w) => (s ? 32 - x - w : x);
-      b.r(m(6, 3), 22 + o, 3, 3, crab); b.r(m(5, 1), 22 + o, 1, 1, crab); b.r(m(5, 1), 24 + o, 1, 1, crab);
-      b.r(m(9, 2), 25, 2, 1, crab); px(m(10, 1), 27, shade(crab, 0.3)); px(m(12, 1), 27, shade(crab, 0.3));
+  /** 창자 개구리 — a frog swollen tight, its own guts hanging out where a tongue should be. */
+  gutfrog(b, f, px, line) {
+    const skin = "#7d9450", belly = "#cdd2a0", o = f;
+    b.r(21, 24, 6, 3, shade(skin, 0.3)); b.r(24, 27, 4, 1, skin);                   // folded hind leg
+    b.oval(17, 20 - o, 9, 7 + o, skin);
+    b.oval(17, 23, 8, 4, belly);
+    for (const [x, y] of [[13, 22], [14, 23], [15, 23], [20, 24], [21, 23], [22, 23]]) px(x, y, "#8a5a9a");   // veins under the stretched skin
+    px(18, 21, "#8a5a9a"); px(18, 22, "#8a5a9a");
+    b.r(11, 25, 2, 3, skin); b.r(9, 27, 3, 1, skin);
+    // eyes pushed out of the skull
+    b.r(9, 10 - o, 4, 4, skin); b.r(15, 9 - o, 4, 4, skin);
+    b.r(10, 10 - o, 3, 3, EYE); px(10, 11 - o, DARK); px(12, 10 - o, GORE);
+    b.r(16, 9 - o, 3, 3, EYE); px(17, 10 - o, DARK); px(16, 11 - o, GORE); px(18, 9 - o, GORE);
+    // the mouth, and what comes out of it
+    b.r(7, 17, 7, 3, CLOT); px(8, 16, CLOT); px(13, 17, BONE); px(10, 17, BONE);
+    const sway = f ? 1 : 0;
+    limb(line, [[8, 19], [5, 21], [4 + sway, 24], [6 + sway, 26], [3 + sway, 27]], GUT, "#a84a5c");
+    limb(line, [[10, 19], [8, 22], [9 + sway, 25]], GUT, "#a84a5c");
+    px(4 + sway, 22, "#f2a6ae"); px(6 + sway, 25, "#f2a6ae"); px(2, 27, GORE);
+    for (const [x, y] of [[20, 15], [23, 18], [14, 14]]) px(x, y - o, shade(skin, 0.34));   // warts
+  },
+  /** 눈알 까마귀 — a crow that grew an eye wherever a feather fell out. */
+  eyecrow(b, f, px, line) {
+    const feather = "#3a3348", dark = "#2c2638";
+    const up = f ? -3 : 2;
+    b.tri([[13, 15], [3, 12 + up], [5, 17 + up], [12, 19]], feather); b.tri([[19, 15], [29, 12 + up], [27, 17 + up], [20, 19]], feather);
+    b.tri([[3, 12 + up], [1, 15 + up], [5, 17 + up]], dark); b.tri([[29, 12 + up], [31, 15 + up], [27, 17 + up]], dark);
+    b.oval(16, 17, 5, 5, feather); b.oval(17, 19, 4, 3, dark);
+    b.r(20, 20, 6, 2, dark); b.r(23, 22, 4, 1, dark);                              // tail
+    b.oval(12, 12, 3.5, 3.5, feather);
+    b.tri([[9, 12], [4, 14], [9, 14]], BONE); px(4, 14, GORE); px(5, 15, GORE);    // a wet beak
+    orb(b, px, 11, 10, GORE, 1);
+    for (const [x, y, a] of [[6, 13 + up, 0], [24, 13 + up, 3], [15, 15, 2], [18, 18, 1], [9, 16 + (up >> 1), 0], [21, 15 + (up >> 1), 2]]) orb(b, px, x, y, f ? "#ff7a30" : GORE, a);
+    px(14, 22, "#6a5a40"); px(14, 23, "#6a5a40"); px(18, 22, "#6a5a40"); px(18, 23, "#6a5a40"); px(13, 24, "#6a5a40"); px(19, 24, "#6a5a40");
+  },
+  // ── forest
+  /** 반쪽 멧돼지 — the front half of a boar, still charging; the rest of it is something else now. */
+  splitboar(b, f, px, line) {
+    const hide = "#5c4238", snout = "#8f5c54", o = f;
+    const tent = "#9a4a7a";
+    limb(line, [[19, 20], [23, 18 - o], [27, 20 + o], [30, 18]], tent); limb(line, [[19, 23], [24, 24 + o], [28, 22 - o], [30, 24]], tent);
+    limb(line, [[19, 25], [23, 27], [27, 26 + o]], tent);
+    for (const [x, y] of [[24, 18 - o], [27, 21 + o], [25, 25 + o]]) px(x, y, "#e0a0c0");
+    b.oval(13, 20, 7, 6, hide); b.oval(13, 23, 6, 3, shade(hide, 0.3));
+    b.oval(19, 21, 2, 5, MEAT); b.r(19, 19, 1, 5, CLOT); px(19, 18, BONE); px(20, 18, BONE); px(19, 21, BONE);   // the cut
+    for (const x of [9, 12, 15]) b.tri([[x, 15], [x + 2, 11 - (x % 2)], [x + 3, 15]], "#2f2630");               // bristles
+    b.oval(7, 21, 4, 3.5, hide); b.r(2, 21, 4, 4, snout); b.r(2, 24, 4, 1, shade(snout, 0.3)); px(2, 22, DARK); px(4, 22, DARK);
+    b.r(5, 24, 1, 3, BONE); px(4, 27 - 1, BONE); b.r(8, 25, 1, 2, BONE); px(5, 27, GORE);                        // tusks
+    b.r(7, 18, 2, 2, GORE); px(7, 18, "#ff9a9a");
+    px(9, 16, hide); px(10, 15, hide);
+    b.r(10, 25 + (f ? 0 : 1), 2, 3 - (f ? 0 : 1), hide); b.r(14, 25 + (f ? 1 : 0), 2, 3 - (f ? 1 : 0), hide);
+    px(21, 27, GORE); px(24, 27, GORE); if (f) px(27, 27, GORE);
+  },
+  /** 갈비뼈 사슴 — a stag walking with its chest hanging open and hands where its antlers were. */
+  ribdeer(b, f, px, line) {
+    const hide = "#8c6c5a", o = f ? 1 : 0;
+    for (const [x, k] of [[12, 0], [15, 1], [21, 1], [24, 0]]) { b.r(x, 22, 1, 5 - (k === o ? 1 : 0), shade(hide, 0.28)); px(x, 27 - (k === o ? 1 : 0), DARK); }
+    b.oval(18, 19, 7.5, 4.5, hide); b.r(25, 16, 2, 2, shade(hide, 0.2));
+    // the open chest
+    b.r(14, 17, 8, 6, CLOT);
+    for (const x of [14, 16, 18, 20]) { b.r(x, 17, 1, 5, BONE); px(x, 22, shade(BONE, 0.3)); }
+    b.r(17, 19, 2, 2, f ? "#ff5a5a" : GORE);                                        // the heart still going
+    px(16, 23, GORE); px(16, 24, GORE); if (f) px(16, 25, GORE); px(19, 23, GORE);
+    // neck and head
+    b.tri([[11, 20], [14, 16], [9, 10], [7, 13]], hide);
+    b.oval(7, 11, 3.5, 2.5, hide); b.r(3, 11, 3, 2, shade(hide, 0.22)); px(3, 12, DARK);
+    b.r(7, 10, 2, 2, DARK); px(7, 11, GORE);
+    // antlers that end in fingers
+    for (const [x, s] of [[8, -1], [11, 1]]) {
+      path(line, [[x, 9], [x + s, 6], [x + s * 2, 4]], BONE);
+      px(x + s * 2 - 1, 3, BONE); px(x + s * 2, 2, BONE); px(x + s * 2 + 1, 3, BONE); px(x + s * 3, 5, BONE); px(x + s * 2 - 1, 2 - 1, BONE); px(x + s * 2 + 1, 2, BONE);
     }
-    b.r(11, 24, 10, 3, crab); b.r(15, 26, 2, 1, "#4a3640");
-    b.r(10, 16, 12, 3, pot); b.r(11, 19, 10, 3, pot); b.r(12, 22, 8, 1, pot);
-    b.r(19, 16, 3, 3, shade(pot, 0.26)); b.r(18, 19, 3, 3, shade(pot, 0.26)); b.r(11, 20, 7, 1, "#f6dcb8");
-    b.r(9, 13, 14, 3, pot); b.r(9, 13, 14, 1, lt(pot, 1.22)); b.r(10, 12, 12, 1, "#5a4030");
-    b.r(16, 8, 1, 4, "#4a9a50"); b.r(13, 10, 3, 1, leaf); b.r(17, 9, 3, 1, leaf);
-    b.r(15 + f, 5, 3, 3, "#ff9ac0"); px(16 + f, 6, "#ffe070");
-    for (const x of [12, 17]) { b.r(x + 1, 21, 1, 3, crab); b.r(x, 19, 3, 3, WHITE); px(x + 1, 20, DARK); }
+    px(27, 15, hide);
   },
-  /** 민들레 홀씨 — a dandelion clock that drifts where the wind forgot it. */
-  puff(b, f, px) {
-    for (let i = 0; i < 12; i++) { const a = (i * 30 + f * 15) * (Math.PI / 180); px(Math.round(15.5 + Math.cos(a) * 8), Math.round(12.5 + Math.sin(a) * 7.5), WHITE); }
-    b.oval(16, 13, 6.5, 6, WHITE); b.oval(16, 16, 5, 2.6, shade(WHITE, 0.12));
-    b.r(13, 12, 1, 2, DARK); b.r(18, 12, 1, 2, DARK); b.r(15, 15, 2, 1, "#4a3640"); px(12, 15, PINK); px(19, 15, PINK);
-    b.r(16, 19, 1, 3, "#8ab868"); b.r(16 + f, 22, 1, 2, "#8ab868"); b.r(15 + f, 24, 2, 3, "#8a6238");
+  /** 세 머리 뱀 — three heads on one body, and they do not agree. */
+  hydrasnake(b, f, px, line) {
+    const scale = "#4f6b4c", belly = "#c9c078", o = f ? 1 : -1;
+    b.oval(17, 24, 9, 3.6, scale); b.oval(15, 22, 6, 2.6, shade(scale, 0.28)); b.oval(17, 26, 8, 1.4, shade(scale, 0.3));
+    for (const x of [10, 13, 16, 19, 22]) px(x, 25, belly);
+    b.r(25, 22, 4, 2, scale); px(29, 21, scale); px(30, 20, shade(scale, 0.3));     // tail tip
+    const neck = (pts) => { path(line, pts.map(([x, y]) => [x + 1, y]), shade(scale, 0.3)); path(line, pts.map(([x, y]) => [x - 1, y]), belly); path(line, pts, scale); };
+    const head = (x, y, dir) => {
+      b.r(x - 2, y - 1, 5, 3, scale); b.r(x - 1, y - 2, 3, 1, scale); b.r(x - 2, y + 1, 5, 1, shade(scale, 0.3));
+      px(x + dir, y - 1, GORE); px(x + dir * 3, y + 1, GORE); px(x + dir * 4, y + (f ? 2 : 0), GORE);          // eye and tongue
+      px(x + dir * 2, y + 1, BONE);
+    };
+    neck([[12, 22], [9, 18], [8 + o, 14], [7 + o, 12]]); head(7 + o, 11, -1);
+    neck([[16, 21], [16, 16], [15 - o, 10], [15 - o, 8]]); head(15 - o, 7, -1);
+    neck([[20, 22], [23, 18], [24 + o, 14], [24 + o, 12]]); head(24 + o, 11, 1);
+    px(12, 21, CLOT); px(16, 20, CLOT); px(20, 21, CLOT);
   },
-  /** 버섯 개구리 — a frog that never took its mushroom hat off. */
-  capfrog(b, f, px) {
-    const o = f, gr = "#6ab85a", red = "#d05a4e";
-    b.r(8, 24, 3, 3, shade(gr, 0.26)); b.r(21, 24, 3, 3, shade(gr, 0.26)); b.r(7, 27, 4, 1, gr); b.r(21, 27, 4, 1, gr);
-    b.r(11, 20 + o, 10, 8 - o, gr); b.r(10, 21 + o, 12, 6 - o, gr); b.r(13, 24 + o, 6, 4 - o, "#c8e8a0");
-    b.oval(16, 15 + o, 8.5, 6, red, -99, 17 + o); b.r(8, 17 + o, 16, 1, shade(red, 0.3));
-    b.r(11, 12 + o, 2, 2, "#fff4e0"); b.r(17, 11 + o, 3, 2, "#fff4e0"); b.r(20, 14 + o, 2, 1, "#fff4e0"); px(14, 15 + o, "#fff4e0");
-    for (const x of [10, 19]) { b.r(x, 18 + o, 3, 3, WHITE); px(x + 1, 19 + o, DARK); }
-    b.r(12, 23 + o, 8, 1, DARK); px(11, 22 + o, DARK); px(20, 22 + o, DARK);
-  },
-  /** 그루터기 거북 — a tortoise whose shell is the stump it fell asleep under. */
-  stump(b, f, px) {
-    const bark = "#7a5636", wood = "#e6c896", skin = "#7aa860";
-    b.r(8, 25, 3, 3, skin); b.r(22, 25, 3, 3, skin); b.r(13, 26, 2, 2, shade(skin, 0.24)); b.r(19, 26, 2, 2, shade(skin, 0.24));
-    px(25, 23, skin); px(26, 24, skin);
-    b.r(8 - f, 20, 2, 3, skin); b.r(4 - f, 19, 5, 4, skin); b.r(5 - f, 18, 3, 1, skin); px(5 - f, 20, DARK); px(4 - f, 22, shade(skin, 0.36));
-    b.r(9, 16, 16, 10, bark); b.r(9, 24, 16, 2, shade(bark, 0.26));
-    b.r(12, 19, 1, 6, shade(bark, 0.3)); b.r(17, 18, 1, 7, shade(bark, 0.3)); b.r(21, 20, 1, 5, shade(bark, 0.3));
-    b.oval(17, 16, 8, 3.2, wood); b.oval(17, 16, 5, 2, "#c8a070"); b.oval(17, 16, 3, 1.2, wood); px(16, 16, "#c8a070");
-    b.r(20, 11, 1, 3, "#4a9a50"); b.r(21, 10, 3, 2, "#6ab85a"); b.r(18, 12, 2, 1, "#6ab85a");
-  },
-  /** 초롱 반딧불 — a firefly that carries its light in a paper lantern. */
-  lantern(b, f, px) {
-    const paper = f ? "#fff0a8" : "#ffd870", red = "#e0564a";
-    const wy = f ? 14 : 10;
-    b.r(6, wy, 5, 3, "#d8f0ff"); b.r(21, wy, 5, 3, "#d8f0ff"); px(6, wy, "#ffffff"); px(25, wy, "#ffffff");
-    px(14, 6, DARK); px(17, 6, DARK); px(13, 5, "#ffe070"); px(18, 5, "#ffe070");
-    b.r(12, 7, 8, 2, "#3a3048");
-    b.r(12, 9, 8, 12, paper); b.r(11, 10, 10, 10, paper);
-    b.r(13, 10, 1, 10, "#f0a848"); b.r(18, 10, 1, 10, "#f0a848");
-    b.r(12, 9, 8, 1, red); b.r(12, 20, 8, 1, red);
-    b.r(14, 13, 1, 2, DARK); b.r(17, 13, 1, 2, DARK); b.r(15, 16, 2, 1, "#4a3640");
-    b.r(13, 21, 6, 1, "#3a3048"); b.r(15, 22, 2, 3, red); px(15 + f, 25, red);
-  },
-  /** 털실 거미 — a ball of yarn that grew needle legs and unravels as it walks. */
-  yarn(b, f, px, line) {
-    const pink = "#f078a8", legs = "#4a3a5a";
-    for (const s of [0, 1]) {
-      const m = (x) => (s ? 31 - x : x), k = (s + f) % 2;
-      line(m(9), 17, m(6), 15 - k, legs); line(m(6), 15 - k, m(4), 19 - k, legs);
-      line(m(8), 20, m(5), 20 + k, legs); line(m(5), 20 + k, m(3), 25, legs);
-      line(m(9), 23, m(6), 24 - k, legs); line(m(6), 24 - k, m(6), 27, legs);
+  /** 인면 나방 — the pattern on its wings looks back at you, and blinks. */
+  mothface(b, f, px, line) {
+    const dust = "#b79c8c", dark = "#6c5560";
+    const w = f ? 5 : 7;
+    b.oval(16 - w, 13, w, 6.5, dust); b.oval(16 + w, 13, w, 6.5, dust);
+    b.oval(16 - w + 1, 21, w - 2, 3.5, dark); b.oval(16 + w - 1, 21, w - 2, 3.5, dark);
+    b.oval(16 - w, 16, w - 1, 3, shade(dust, 0.22)); b.oval(16 + w, 16, w - 1, 3, shade(dust, 0.22));
+    // the face: two eyes high on the wings, a mouth across the lower pair
+    for (const s of [-1, 1]) {
+      const x = 16 + s * w;
+      b.r(x - 2, 10, 4, 4, EYE); b.r(x - 1, 9, 2, 1, EYE);
+      b.r(x - 1, 11 + (f ? 1 : 0), 2, 2, DARK); px(x - 1, 11 + (f ? 1 : 0), GORE);
+      b.r(x - 3, 8, 6, 1, dark);
+      b.r(x - 2, 20, 4, 2, CLOT); px(x - 2, 20, BONE); px(x, 20, BONE); px(x + 1, 21, BONE);
     }
-    b.oval(16, 19, 7.5, 7, pink);
-    for (let i = 0; i < 9; i++) { px(11 + i, 15 + (i >> 1), shade(pink, 0.3)); px(10 + i, 20 + (i >> 1), shade(pink, 0.3)); px(21 - i, 14 + (i >> 1), lt(pink, 1.3)); }
-    b.oval(16, 24, 6, 1.6, shade(pink, 0.22));
-    b.r(11, 17, 3, 3, WHITE); px(12, 18, DARK); b.r(18, 18, 2, 2, WHITE); px(18, 19, DARK);
-    px(21, 12, pink); px(22, 11, pink); px(23, 11, pink); px(24, 12, pink); px(24, 13 + f, pink);
+    b.r(15, 9, 2, 13, "#3a2c38"); px(15, 12, dark); px(16, 15, dark); px(15, 18, dark);
+    b.r(15, 7, 2, 2, "#3a2c38"); px(14, 8, GORE); px(17, 8, GORE);
+    path(line, [[15, 7], [12, 3], [10, 3]], "#3a2c38"); path(line, [[16, 7], [19, 3], [21, 3]], "#3a2c38");
+    px(16, 22, GORE); px(16, 23, GORE);
   },
-  /** 감시 눈알 CCTV — a security camera that grew a real eye, and never blinks. */
-  eyecam(b, f, px) {
-    const body = "#e8ecf4", grey = "#aab2c4";
-    b.r(17, 7, 2, 3, "#6a7080"); b.r(f ? 15 : 12, 6, f ? 6 : 12, 1, "#b6c0d0");
-    px(24, 16, DARK); px(25, 17, DARK); px(26, 17, DARK); px(27, 18, DARK);
-    b.r(11, 11, 13, 8, body); b.r(11, 17, 13, 2, shade(body, 0.2)); b.r(8, 10, 17, 2, grey);
-    px(22, 13, f ? "#ff4040" : "#7a2a30");
-    b.oval(10, 15, 4.6, 4.6, WHITE); b.r(6, 11, 8, 1, grey);
-    b.r(7 + f, 13, 3, 4, "#e04848"); b.r(7 + f, 14, 2, 2, DARK); px(9 + f, 13, "#ffffff");
+  // ── crypt
+  /** 쥐 왕 — a nest of rats knotted together by their tails, pulling four ways at once. */
+  ratking(b, f, px, line) {
+    const fur = "#6e6876", sick = "#7d8a70", o = f ? 1 : 0;
+    const rat = (x, y, dir, col, dead) => {
+      b.oval(x, y, 4, 2.8, col); b.oval(x, y + 1.5, 3, 1.3, shade(col, 0.3));
+      b.oval(x + dir * 4, y, 2.4, 2, col); px(x + dir * 6, y + 1, PINK);
+      px(x + dir * 3, y - 2, PINK); px(x + dir * 4, y - 3, col);
+      if (dead) { px(x + dir * 4, y - 1, DARK); px(x + dir * 5, y, DARK); } else px(x + dir * 4, y, GORE);
+      px(x - dir, y + 3, PINK); px(x + dir * 2, y + 3, PINK);
+    };
+    // the knot of tails
+    for (const [x0, y0] of [[8, 21], [24, 21], [10, 12], [22, 12]]) path(line, [[x0, y0], [16, 18]], GUT);
+    b.oval(16, 18, 4, 3.2, GUT); b.r(14, 17, 4, 1, "#a84a5c"); b.r(15, 19, 3, 1, "#a84a5c"); px(13, 18, "#a84a5c"); px(18, 16, "#a84a5c"); px(17, 20, CLOT);
+    rat(7, 23 - o, -1, fur, false); rat(25, 23 + o, 1, fur, false);
+    rat(9, 10 + o, -1, sick, true); rat(23, 10 - o, 1, fur, false);
+    px(16, 22, GORE); px(15, 23, GORE);
   },
-  /** 신호등 보행 로봇 — a traffic light that got tired of standing still. */
-  signbot(b, f, px) {
-    const box = "#f0b83a", leg = "#8a90a0";
-    b.r(13, 23, 2, 4, leg); b.r(17, 23, 2, 4, leg);
-    b.r(f ? 13 : 11, 27, 3, 1, "#1c1e28"); b.r(f ? 18 : 17, 27, 3, 1, "#1c1e28");
-    b.r(9, 12, 2, 1, leg); b.r(8, 13, 1, 3, leg); b.r(21, 12, 2, 1, leg); b.r(23, 13, 1, 3, leg);
-    b.r(11, 5, 10, 17, box); b.r(12, 4, 8, 19, box); b.r(19, 6, 2, 15, shade(box, 0.3)); b.r(12, 5, 8, 16, "#2e3240");
-    const lamps = [["#ff5a4a", "#6a2a2e"], ["#ffd24a", "#6a5a2e"], ["#5ae07a", "#2a5a3e"]], lit = f ? 2 : 0;
-    lamps.forEach(([on, off], i) => {
-      const y = 6 + i * 5;
-      b.r(13, y, 6, 4, i === lit ? on : off); b.r(12, y - 1, 8, 1, "#1c1e28");
-      if (i === lit) { px(14, y + 1, DARK); px(17, y + 1, DARK); b.r(15, y + (lit ? 2 : 3), 2, 1, DARK); if (lit) { px(14, y + 2, DARK); px(17, y + 2, DARK); } px(13, y, "#ffffff"); }
-    });
+  /** 가죽 벗겨진 사냥개 — a hound with no skin left, and its spine working loose. */
+  bonehound(b, f, px, line) {
+    const o = f ? 1 : 0, dark = "#7a2434";
+    for (const [x, k] of [[10, 0], [13, 1], [21, 1], [24, 0]]) { b.r(x, 21, 2, 5 - (k === o ? 1 : 0), dark); b.r(x, 26 - (k === o ? 1 : 0), 2, 1, BONE); }
+    b.oval(17, 18, 8, 4.5, MEAT); b.oval(21, 19, 3, 3, dark); b.oval(13, 20, 4, 2, dark);
+    for (const x of [13, 15, 17, 19]) b.r(x, 17, 1, 4, BONE);                       // ribs through the meat
+    for (let x = 9; x <= 25; x += 2) { b.r(x, 13, 1, 2, BONE); px(x + 1, 14, CLOT); }  // the spine, standing proud
+    path(line, [[26, 14], [28, 11], [30, 10 - o]], BONE); px(27, 13, CLOT); px(29, 11, CLOT);
+    // the head: all jaw
+    b.oval(7, 15, 3.5, 3, MEAT); b.r(1, 15, 6, 2, MEAT); b.r(2, 18, 5, 1 + o, dark);
+    for (const x of [1, 3, 5]) px(x, 17, BONE);
+    px(2, 19 + o, BONE); px(4, 19 + o, BONE);
+    orb(b, px, 6, 13, DARK, 0); px(1, 14, DARK);
+    b.r(8, 11, 2, 2, dark);
+    px(15, 23, GORE); px(15, 24, GORE); if (f) px(15, 25, GORE); px(19, 23, GORE);
   },
-  /** 자판기 미믹 — the vending machine that takes your coin, then your arm. */
-  vend(b, f, px) {
-    const box = "#4aa8d8", dark = "#1c2430";
-    b.r(11, 27, 3, 1, "#2e3240"); b.r(19, 27, 3, 1, "#2e3240");
-    b.r(10, 7, 13, 20, box); b.r(11, 6, 11, 1, box); b.r(21, 7, 2, 20, shade(box, 0.26)); b.r(10, 7, 13, 1, lt(box, 1.3));
-    b.r(11, 9, 9, 7, dark);
-    for (const x of [12, 16]) { b.r(x, 10, 3, 2, "#ffe070"); px(x + 1 - f, 11, DARK); }
-    ["#e0564a", "#ffd24a", "#5ae07a"].forEach((c, i) => b.r(12 + i * 3, 13, 2, 2, c));
-    px(21, 10, f ? "#ffe070" : "#f0a030");
-    const my = f ? 17 : 18, mh = f ? 6 : 4;
-    b.r(11, my, 10, mh, "#3a1420");
-    for (const x of [12, 14, 16, 18]) px(x, my, WHITE);
-    for (const x of [13, 15, 17, 19]) px(x, my + mh - 1, WHITE);
-    b.r(14, my + 2, 3, f ? 5 : 1, "#f07888");
-    b.r(10, 24, 13, 1, "#fbfbff");
+  /** 박쥐 덩어리 — too many bats to count, grown into one ball that screams from every side. */
+  batcluster(b, f, px, line) {
+    const body = "#4d3c56", skin = "#7a5270";
+    const up = f ? -3 : 1;
+    b.tri([[10, 15], [1, 9 + up], [3, 18 + up], [9, 19]], skin); b.tri([[22, 15], [31, 9 + up], [29, 18 + up], [23, 19]], skin);
+    path(line, [[10, 15], [1, 9 + up]], body); path(line, [[9, 17], [3, 18 + up]], body); path(line, [[22, 15], [31, 9 + up]], body); path(line, [[23, 17], [29, 18 + up]], body);
+    b.oval(16, 16, 8, 8, body); b.oval(18, 19, 6, 5, shade(body, 0.3));
+    for (const [x, y] of [[10, 9], [15, 7], [20, 8], [24, 12], [8, 14]]) b.tri([[x - 1, y + 2], [x, y - 2], [x + 2, y + 2]], body);   // ears, everywhere
+    for (const [x, y] of [[11, 12], [17, 11], [13, 17], [20, 16], [16, 21]]) { px(x, y, GORE); px(x + 2, y, GORE); b.r(x, y + 2, 3, 1, CLOT); px(x, y + 2, BONE); px(x + 2, y + 2, BONE); }
+    px(12, 24, skin); px(12, 25, skin); px(19, 24, skin); px(19, 25, skin); px(16, 25, GORE); if (f) px(16, 26, GORE);
   },
-  /** 브라운관 유령 — a ghost still haunting the last television it watched. */
-  tvhead(b, f, px) {
-    const sheet2 = "#dcdcf4", wood = "#8a6240", scr = f ? "#c8fff4" : "#9af0e0";
-    b.r(8, 20 - f, 2, 2, sheet2); b.r(22, 20 - f, 2, 2, sheet2);
-    b.r(11, 19, 10, 4, sheet2); b.r(12, 23, 8, 2, sheet2); b.r(13, 25, 5, 1, sheet2); b.r(14 + f, 26, 3, 1, sheet2); px(15 + f * 2, 27, sheet2);
-    b.r(18, 20, 3, 3, shade(sheet2, 0.16));
-    for (let i = 0; i < 4; i++) { px(13 - i, 7 - i, DARK); px(18 + i, 7 - i, DARK); }
-    b.r(9, 8, 14, 11, wood); b.r(10, 7, 12, 13, wood); b.r(9, 17, 14, 2, shade(wood, 0.28));
-    b.r(11, 10, 9, 7, scr);
-    for (let i = 0; i < 4; i++) b.r(11 + ((i * 3 + f * 2) % 7), 10 + i * 2 + f, 2, 1, "#ffffff");
-    b.r(13, 12, 1, 2, DARK); b.r(17, 12, 1, 2, DARK); b.r(14, 15, 3, 1, DARK);
-    px(21, 11, "#f0cc60"); px(21, 14, "#d05a4e");
+  // ── city
+  /** 비둘기 떼살 — a flock that melted together; three of the heads still look for crumbs. */
+  pigeonmass(b, f, px, line) {
+    const grey = "#7c8698", dark = "#565e70", foot = "#e07a8a";
+    const up = f ? -3 : 1;
+    b.tri([[10, 14], [1, 8 + up], [2, 15 + up], [9, 18]], grey); b.tri([[2, 15 + up], [1, 8 + up], [0, 13 + up]], dark);
+    path(line, [[23, 17], [28, 20], [29, 25]], grey); path(line, [[24, 17], [29, 20], [30, 24]], dark); px(27, 24, dark); px(28, 26, grey);   // the wing that broke
+    b.oval(16, 17, 8, 6, grey); b.oval(18, 20, 6, 3.5, dark);
+    for (const [x, y] of [[11, 15], [12, 15], [19, 13], [20, 13], [15, 19]]) px(x, y, "#6ab890");                 // the sheen on a pigeon's neck
+    for (const [x, y] of [[13, 14], [21, 14], [16, 20]]) px(x, y, "#9a6ac0");
+    const head = (x, y, dir) => { b.oval(x, y, 2.5, 2.5, grey); b.r(x + dir * 2, y, 2, 1, "#e0a050"); px(x + dir * 2, y + 1, shade("#e0a050", 0.3)); px(x + dir, y - 1, "#ff8a30"); px(x, y + 2, "#6ab890"); };
+    head(7, 12, -1); head(15, 9 - (f ? 1 : 0), -1); head(25, 13, 1);
+    for (const x of [11, 14, 18, 21]) { px(x, 23, foot); px(x, 24 + ((x + f) % 2), foot); px(x - 1, 25 + ((x + f) % 2), foot); px(x + 1, 25 + ((x + f) % 2), foot); }
+    px(16, 22, CLOT); px(13, 18, CLOT); px(20, 17, CLOT);
   },
-  /** 촛농 유령 — a candle that kept burning after it finished melting. */
-  candle(b, f, px) {
-    const wax = "#fff4dc";
-    b.r(10, 24, 12, 2, wax); b.r(f ? 8 : 9, 26, f ? 16 : 14, 1, wax); b.r(10, 27, 12, 1, shade(wax, 0.2));
-    b.r(8, 17 + f, 3, 2, wax); b.r(21, 18 - f, 3, 2, wax);
-    b.r(11, 12, 10, 13, wax); b.r(12, 11, 8, 1, wax); b.r(20, 15, 1, 10, shade(wax, 0.18));
-    b.r(11, 12, 10, 2, "#fffdf2"); b.r(11, 14, 2, 3, "#fffdf2"); b.r(17, 14, 2, 2 + f, "#fffdf2"); b.r(20, 14, 1, 3, "#fffdf2");
-    px(12, 16, DARK); px(19, 16, DARK); b.r(13, 17, 1, 2, DARK); b.r(18, 17, 1, 2, DARK); b.r(15, 20, 2, 2, "#4a3640");
-    b.r(16, 9, 1, 2, DARK);
-    if (f) { b.r(14, 5, 4, 4, "#ffb040"); b.r(16, 2, 2, 3, "#ffb040"); b.r(15, 6, 2, 3, "#fff0a0"); }
-    else { b.r(14, 4, 4, 5, "#ffb040"); b.r(15, 2, 2, 2, "#ffb040"); b.r(15, 5, 2, 3, "#fff0a0"); }
-    px(15, 8, "#8ad8f0"); px(16, 8, "#8ad8f0");
+  /** 세 머리 들개 — one stray, three hungers. */
+  doghead(b, f, px, line) {
+    const coat = "#8c765a", bald = "#c48e86", o = f ? 1 : 0;
+    for (const [x, k] of [[15, 0], [18, 1], [23, 1], [26, 0]]) b.r(x, 22, 2, 6 - (k === o ? 1 : 0), shade(coat, 0.3));
+    b.oval(20, 19, 7, 4.5, coat); b.oval(21, 21, 6, 2.5, shade(coat, 0.26));
+    for (const [x, y] of [[18, 17], [19, 17], [23, 18], [24, 18], [21, 20]]) px(x, y, bald);                      // mange
+    for (const x of [18, 20, 22]) px(x, 22, shade(coat, 0.4));                                                    // ribs showing
+    path(line, [[27, 17], [29, 14], [30, 15 + o]], shade(coat, 0.3));
+    const head = (x, y, snarl) => {
+      b.tri([[14, 18], [16, 20], [x + 2, y + 2], [x + 2, y - 1]], coat);
+      b.oval(x, y, 3.2, 2.6, coat); b.r(x - 6, y, 4, 2, coat); b.r(x - 6, y + 2, 4, 1 + snarl, CLOT);
+      px(x - 6, y + 2, BONE); px(x - 4, y + 2, BONE); if (snarl) px(x - 5, y + 3, BONE);
+      px(x - 6, y, DARK); px(x - 1, y - 1, GORE); px(x + 1, y - 3, coat); px(x + 2, y - 3, shade(coat, 0.3));
+    };
+    head(8, 23, o); head(8, 16, 1 - o); head(12, 10, o);
+    px(3, 26, GORE); if (f) px(3, 27, GORE); px(15, 19, CLOT); px(15, 17, CLOT);
   },
-  /** 정동 골렘 — a boulder cracked open around the crystals it grew inside. */
-  geode(b, f, px) {
-    const rock = "#8a8698", hole = "#3a2a5a";
-    b.r(3, 17 + f, 4, 5, rock); b.r(3, 21 + f, 4, 1, shade(rock, 0.3)); b.r(25, 17 - f, 4, 5, rock); b.r(25, 21 - f, 4, 1, shade(rock, 0.3));
-    b.r(10, 26, 4, 2, shade(rock, 0.36)); b.r(18, 26, 4, 2, shade(rock, 0.36));
-    b.oval(16, 18, 11, 9.5, rock); b.oval(16, 23, 10, 4, shade(rock, 0.24));
-    b.r(9, 11, 4, 1, lt(rock, 1.3)); px(8, 13, lt(rock, 1.3)); px(22, 12, shade(rock, 0.3)); px(23, 13, shade(rock, 0.3));
-    b.r(11, 13, 10, 10, hole); b.r(10, 15, 12, 6, hole); px(12, 12, hole); px(15, 12, hole); px(19, 12, hole); px(13, 23, hole); px(17, 23, hole); px(18, 24, hole);
-    for (const [x, y, h, c] of [[11, 19, 4, "#b48cff"], [13, 17, 6, "#72e6f4"], [16, 18, 5, "#b48cff"], [18, 16, 7, "#72e6f4"], [20, 19, 3, "#b48cff"]]) { b.r(x, y, 2, h, c); px(x, y - (f ? 0 : 0), "#ffffff"); px(x + 1, y + 1, shade(c, 0.26)); }
-    b.r(13, 14, 2, 2, f ? "#ffffff" : "#c8fbff"); b.r(18, 14, 2, 2 - 0, f ? "#ffffff" : "#c8fbff");
+  /** 갈라진 고양이 — a cat opened down the middle like a flower, with something else living inside. */
+  catsplit(b, f, px, line) {
+    const fur = "#4c4856", tent = "#9a4a7a", o = f ? 1 : -1;
+    // what lives inside
+    limb(line, [[15, 16], [13 + o, 10], [14 - o, 5], [12 - o, 3]], tent); limb(line, [[17, 16], [19 - o, 9], [18 + o, 4]], tent); limb(line, [[16, 18], [16 + o, 12], [17, 8]], tent);
+    px(13 + o, 9, "#e0a0c0"); px(19 - o, 8, "#e0a0c0"); px(16 + o, 11, "#e0a0c0");
+    b.r(12, 14, 8, 13, CLOT); b.r(13, 12, 6, 2, CLOT); b.r(14, 20, 4, 4, MEAT); px(15, 24, GORE); px(16, 25, GORE);
+    for (const s of [-1, 1]) {
+      const m = (x) => (s < 0 ? x : 31 - x);
+      const half = [[m(12), 27], [m(5), 27], [m(4), 20], [m(6), 12], [m(8), 9], [m(12), 11]];
+      b.tri(half, fur);
+      b.tri([[m(5), 11], [m(6), 5], [m(9), 9]], fur); px(m(7), 8, PINK);                                           // one ear each
+      b.r(Math.min(m(8), m(9)), 14, 2, 2, s < 0 ? BILE : EYE); px(m(8), 14 + (f ? 1 : 0), DARK);                   // one eye each
+      for (let y = 13; y <= 25; y += 3) px(m(12), y, BONE);                                                       // teeth down the split
+      b.r(Math.min(m(5), m(7)), 26, 3, 2, WHITE);
+      px(m(4), 16, shade(fur, 0.3)); px(m(4), 18, shade(fur, 0.3));
+    }
+    path(line, [[26, 24], [29, 20], [28, 16 + o]], fur);
   },
-  /** 프리즘 해파리 — a jellyfish of cut glass trailing every colour it swallowed. */
-  prism(b, f, px) {
-    ["#ff6a6a", "#ffa850", "#ffe070", "#7ae08a", "#72e6f4", "#6a9cff", "#b48cff"].forEach((c, i) => {
-      const x = 10 + i * 2, len = 5 + ((i * 3) % 4);
-      for (let j = 0; j < len; j++) px(x + ((j + f + i) % 4 < 2 ? 0 : 1), 18 + j, c);
-    });
-    b.tri([[16, 4], [8.5, 17.5], [23.5, 17.5]], "#f4fdff"); b.tri([[16, 4], [16, 17.5], [23.5, 17.5]], "#a8e4f8");
-    b.r(9, 17, 15, 1, "#8adcf0");
-    px(13, 9 + f, "#ffffff"); px(12, 10 + f, "#ffffff"); px(19, 14, "#f4fdff");
-    b.r(13, 13, 1, 2, DARK); b.r(18, 13, 1, 2, DARK); px(12, 15, PINK); px(19, 15, PINK);
+  /** 다리 달린 생선 — a fish that walked out of the river on legs it should not have. */
+  fishwalker(b, f, px, line) {
+    const scale = "#8aa0a6", belly = "#d6d4c2", leg = "#d8b6a6", o = f ? 1 : 0;
+    // the legs: too long, bent the wrong way
+    limb(line, [[12, 18], [9 + o, 22], [12 + o, 25], [10 + o, 27]], leg, "#a8847c"); limb(line, [[19, 18], [22 - o, 22], [19 - o, 25], [21 - o, 27]], leg, "#a8847c");
+    px(8 + o, 27, leg); px(9 + o, 27, leg); px(22 - o, 27, leg); px(23 - o, 27, leg);
+    b.tri([[23, 13], [30, 8], [28, 14], [30, 19]], shade(scale, 0.3));                                              // tail
+    b.oval(15, 14, 9, 5, scale); b.oval(15, 17, 8, 2.4, belly);
+    b.tri([[14, 9], [19, 5], [20, 10]], shade(scale, 0.3));                                                        // dorsal fin
+    for (const [x, y] of [[16, 12], [19, 13], [22, 12], [18, 15], [21, 15]]) px(x, y, shade(scale, 0.3));
+    b.r(12, 12, 1, 4, GORE); b.r(14, 12, 1, 4, CLOT);                                                              // gills, working
+    b.r(7, 10, 4, 4, EYE); b.r(8, 11, 2, 2, DARK); px(7, 13, GORE);                                                // a dead flat eye
+    b.r(5, 15, 4, 2, CLOT); for (const x of [5, 7]) { px(x, 15, BONE); px(x + 1, 16, BONE); }
+    px(5, 17, GORE); if (f) px(5, 18, GORE);
+  },
+  // ── sewer
+  /** 거머리 아가리 — a leech the size of a dog; the whole front of it is a mouth. */
+  leechmaw(b, f, px, line) {
+    const slick = "#4b3a46", under = "#8a5c66", o = f ? 1 : 0;
+    b.oval(24, 25, 5, 3, slick); b.oval(19, 23, 5.5, 4.5, slick); b.oval(13, 19 - o, 6, 6, slick);
+    for (const [x, y] of [[26, 26], [22, 26], [18, 26], [15, 24], [12, 24 - o]]) b.r(x, y, 2, 1, under);
+    for (const [x, y] of [[21, 20], [17, 18], [23, 22]]) px(x, y, lt(slick, 1.5));                                   // the wet shine
+    // the maw: a ring of meat, a ring of teeth, and a throat
+    b.oval(9, 16 - o, 5, 6, MEAT); b.oval(9, 16 - o, 3.2, 4.2, CLOT); b.oval(9, 16 - o, 1.5, 2, "#1e0810");
+    for (const [x, y] of [[9, 11], [6, 13], [12, 13], [5, 16], [12, 17], [6, 19], [11, 20], [8, 21]]) px(x, y - o, BONE);
+    px(8, 22 - o, BILE); px(8, 23 - o, BILE); if (f) px(8, 24, BILE);
+    px(28, 27, slick); px(29, 27, under);
+  },
+  /** 반쪽 악어 — an alligator hauling itself along on two legs, towing a bare spine. */
+  gatorhalf(b, f, px, line) {
+    const hide = "#5d7a4c", belly = "#c2bc88", o = f ? 1 : 0;
+    // the spine it drags
+    for (let i = 0; i < 6; i++) { const x = 20 + i * 2, y = 22 + Math.round(i * 0.6) + (i % 2 ? o : 0); b.r(x, y, 1, 2, BONE); px(x + 1, y + 1, CLOT); if (i % 2 === 0) { px(x, y + 2, BONE); px(x, y - 1, BONE); } }
+    px(22, 26, GORE); px(26, 27, GORE); if (f) px(29, 27, GORE);
+    b.oval(15, 21, 6, 4.5, hide); b.oval(15, 23, 5, 2, belly);
+    b.oval(20, 21, 1.5, 4, MEAT); px(20, 20, BONE); px(20, 22, CLOT);
+    for (const x of [11, 14, 17]) b.tri([[x, 17], [x + 1, 15], [x + 2, 17]], shade(hide, 0.3));                    // ridges
+    b.r(9, 23 + o, 3, 2, hide); b.r(7, 25 + o, 4, 2, hide); px(6, 27, BONE); px(8, 27, BONE);
+    b.r(16, 24 - o, 3, 2, shade(hide, 0.3)); b.r(17, 26 - o, 4, 1, shade(hide, 0.3));
+    // the jaws
+    b.r(1, 16 - o, 11, 3, hide); b.r(2, 15 - o, 3, 1, hide); b.r(1, 21, 10, 2, hide); b.r(1, 22, 10, 1, belly);
+    b.r(2, 19 - o, 9, 2 + o, CLOT);
+    for (const x of [2, 4, 6, 8]) { px(x, 19 - o, BONE); px(x + 1, 20, BONE); }
+    b.r(10, 13 - o, 3, 3, hide); b.r(11, 14 - o, 2, 2, BILE); px(11, 14 - o, DARK);
+    px(1, 16 - o, DARK);
+  },
+  /** 뱀장어 매듭 — a ball of eels wound tight around the one eye they share. */
+  eelknot(b, f, px, line) {
+    const eel = "#3c5a62", band = "#6a9a98", o = f ? 1 : -1;
+    const head = (x, y, dx, dy) => { path(line, [[16 + dx * 5, 18 + dy * 5], [x, y]], eel); path(line, [[16 + dx * 5, 19 + dy * 5], [x, y + 1]], shade(eel, 0.3)); b.r(x - 1, y - 1, 3, 3, eel); px(x, y - 1, EYE); px(x + Math.sign(dx), y + 1, GORE); };
+    head(4, 21 + o, -1, 0.4); head(25, 8 - o, 1, -1.2); head(28, 23 + o, 1.4, 0.8);
+    b.oval(16, 18, 8.5, 8, eel); b.oval(17, 21, 7, 4.5, shade(eel, 0.3));
+    for (const [pts] of [[[[9, 15], [13, 11], [19, 10], [23, 14]]], [[[8, 20], [12, 24], [18, 25], [23, 22]]], [[[11, 12], [10, 17], [12, 22]]], [[[21, 12], [23, 17], [21, 23]]]]) path(line, pts, band);
+    // the eye in the middle
+    b.oval(16, 18, 4.2, 3.8, EYE); b.oval(16 + (f ? 1 : 0), 18, 2.2, 2.4, "#d8b030"); b.r(16 + (f ? 1 : 0), 16, 1, 5, DARK);
+    px(12, 17, GORE); px(13, 20, GORE); px(19, 20, GORE); px(20, 17, GORE);
+    px(15, 26, BILE); if (f) px(15, 27, BILE);
+  },
+  // ── cave
+  /** 손가락 거미 — it walks on fingers. Whose, nobody has asked. */
+  spiderhand(b, f, px, line) {
+    const skin = "#d6b09e", joint = "#a87a70", body = "#3c2f40";
+    const finger = (x0, kx, ky, tx, lift) => {
+      limb(line, [[x0, 17], [kx, ky], [tx, 26 - lift]], skin, joint);
+      b.r(kx - 1, ky - 1, 2, 2, joint); b.r(tx - 1, 26 - lift, 2, 2, "#f0e0d8"); px(tx - 1, 27 - lift, "#b08a88");
+    };
+    finger(12, 5, 12, 3, f ? 2 : 0); finger(13, 9, 10, 8, f ? 0 : 2); finger(19, 23, 10, 24, f ? 2 : 0); finger(20, 27, 12, 29, f ? 0 : 2);
+    finger(16, 15, 21, 14, 0);
+    b.oval(18, 15, 6, 5, body); b.oval(19, 17, 5, 3, shade(body, 0.4));
+    b.oval(11, 17, 3.5, 3, body);
+    for (const [x, y] of [[9, 15], [11, 15], [8, 17], [10, 17]]) px(x, y, GORE);
+    px(8, 19, BONE); px(10, 20, BONE);
+    b.r(17, 12, 3, 1, GORE); b.r(18, 11, 1, 3, GORE);                                                             // a red mark on its back
+    px(18, 20, CLOT);
+  },
+  /** 아가리 곰 — a bear that eats with its chest. The head on top is only for watching. */
+  bearmaw(b, f, px, line) {
+    const fur = "#4c3a36", o = f ? 1 : 0;
+    b.r(9, 24, 5, 4, shade(fur, 0.3)); b.r(19, 24, 5, 4, shade(fur, 0.3));
+    b.oval(16, 16, 10, 10, fur); b.oval(18, 20, 8, 6, shade(fur, 0.28));
+    // arms that hang to the ground
+    b.r(3, 12, 4, 13, fur); b.r(25, 12, 4, 13, shade(fur, 0.3)); b.oval(5, 12, 3, 3, fur); b.oval(27, 12, 3, 3, shade(fur, 0.3));
+    for (const x of [3, 5, 7]) { px(x - 1, 25, BONE); px(x - 1, 26, BONE); } for (const x of [25, 27, 29]) { px(x, 25, BONE); px(x, 26, BONE); }
+    // a small head, sunk between the shoulders
+    b.oval(15, 6, 4, 3.5, fur); b.r(11, 2, 2, 2, fur); b.r(18, 2, 2, 2, fur); b.r(12, 7, 3, 2, shade(fur, 0.3));
+    px(13, 5, GORE); px(16, 5, GORE); px(12, 8, DARK);
+    // the maw in the chest
+    b.oval(15, 17 + o * 0.5, 4.5, 6.5 + o, CLOT); b.oval(15, 17, 2.4, 4.5, "#1e0810");
+    for (let y = 12; y <= 22; y += 2) { px(11 + (y % 4 ? 1 : 0), y, BONE); px(18 + (y % 4 ? 0 : 1), y + 1, BONE); }
+    b.r(14, 20, 2, 4 + o, GUT); px(15, 24 + o, "#a84a5c");
+    px(13, 24, GORE); px(13, 25, GORE); if (f) px(13, 26, GORE); px(17, 24, GORE);
+  },
+  /** 목 꺾인 올빼미 — an owl whose head went all the way round and stayed there. */
+  owlstare(b, f, px, line) {
+    const plume = "#7b6a5c", dark = "#52443e", pale = "#c8b8a0";
+    const up = f ? -3 : 1;
+    b.tri([[10, 14], [1, 11 + up], [3, 20 + up], [10, 21]], dark); b.tri([[22, 14], [31, 11 + up], [29, 20 + up], [22, 21]], dark);
+    path(line, [[9, 15], [2, 12 + up]], plume); path(line, [[23, 15], [30, 12 + up]], plume);
+    b.oval(16, 19, 6.5, 7, plume); b.oval(16, 21, 4.5, 4.5, pale);
+    for (const [x, y] of [[14, 19], [18, 19], [16, 21], [14, 23], [18, 23]]) px(x, y, dark);
+    b.r(12, 26, 2, 2, BONE); b.r(18, 26, 2, 2, BONE); px(11, 27, BONE); px(20, 27, BONE);
+    b.r(12, 12, 8, 2, dark); px(13, 13, CLOT); px(16, 12, CLOT); px(18, 13, CLOT);                                  // the wrung neck
+    // the head, upside down: tufts at the bottom, beak above the eyes
+    b.oval(16, 8, 7, 5.5, plume); b.oval(16, 8, 5.5, 4, pale);
+    b.tri([[9, 10], [8, 14], [12, 12]], plume); b.tri([[23, 10], [24, 14], [20, 12]], plume);
+    b.r(11, 7, 4, 4, "#1c1420"); b.r(17, 7, 4, 4, "#1c1420"); px(13, 9, f ? "#ff7a30" : GORE); px(18, 9, f ? "#ff7a30" : GORE);
+    b.tri([[15, 7], [16.5, 3], [18, 7]], "#d8a850"); px(16, 4, shade("#d8a850", 0.3));
+    px(12, 11, GORE); px(12, 12, GORE); px(19, 11, GORE); if (f) px(19, 12, GORE);
+  },
+  // ── abyss
+  /** 쌍두 염소 — two heads, four horns, and pupils that look sideways at everything. */
+  twingoat(b, f, px, line) {
+    const wool = "#c6beae", horn = "#4a3a36", o = f ? 1 : 0;
+    for (const [x, k] of [[15, 0], [18, 1], [23, 1], [26, 0]]) { b.r(x, 22, 1, 5 - (k === o ? 1 : 0), shade(wool, 0.34)); px(x, 27 - (k === o ? 1 : 0), horn); }
+    b.oval(20, 18, 7, 5, wool); b.oval(21, 21, 6, 2.6, shade(wool, 0.24));
+    for (const x of [16, 19, 22, 25]) px(x, 23, shade(wool, 0.3));
+    px(27, 15, wool); px(28, 14, shade(wool, 0.3));
+    const head = (x, y, hx, hy) => {
+      b.tri([[15, 16], [17, 20], [x + 2, y + 2], [x + 1, y - 1]], wool);
+      b.oval(x, y, 3, 2.6, wool); b.r(x - 5, y, 3, 3, wool); b.r(x - 5, y + 2, 3, 1, shade(wool, 0.3)); px(x - 5, y + 1, DARK);
+      b.r(x - 1, y - 1, 2, 2, "#d8b030"); b.r(x - 1, y, 2, 1, DARK);                                                // a goat's sideways pupil
+      path(line, [[x + 1, y - 3], [x + 3 + hx, y - 6 + hy], [x + 6 + hx, y - 5 + hy]], horn); path(line, [[x, y - 3], [x + 1 + hx, y - 7 + hy], [x + 4 + hx, y - 8 + hy]], horn);
+      px(x - 4, y + 3, shade(wool, 0.3)); px(x - 4, y + 4, shade(wool, 0.3));                                       // beard
+    };
+    head(8, 21, 0, 0); head(10, 10 - o, 0, 1);
+    for (let y = 15; y <= 19; y++) px(14, y, y % 2 ? DARK : GORE);                                                // where the necks part
+    px(3, 25, GORE); if (f) px(3, 26, GORE);
+  },
+  /** 반쪽 말 — a horse that kept walking after it lost its head; something filled the gap. */
+  horsehalf(b, f, px, line) {
+    const coat = "#5d3d3c", tent = "#a04a7a", o = f ? 1 : -1, s = f ? 1 : 0;
+    for (const [x, k] of [[12, 0], [15, 1], [22, 1], [25, 0]]) { b.r(x, 20, 2, 7 - (k === s ? 1 : 0), shade(coat, 0.3)); b.r(x, 27 - (k === s ? 1 : 0), 2, 1, DARK); }
+    b.oval(19, 17, 8, 4.8, coat); b.oval(20, 19, 7, 2.6, shade(coat, 0.26));
+    path(line, [[27, 15], [30, 18], [29, 24]], "#2c2028"); path(line, [[28, 15], [31, 19], [30, 23]], "#2c2028");   // tail
+    b.tri([[13, 20], [15, 14], [10, 9], [7, 11]], coat);
+    for (const [x, y] of [[13, 13], [12, 11], [14, 15]]) px(x, y, "#2c2028");                                       // what is left of the mane
+    b.oval(8, 10, 2.6, 2, MEAT); px(7, 9, BONE); px(9, 9, BONE); px(8, 11, CLOT);                                    // the stump
+    limb(line, [[8, 9], [7 + o, 5], [4, 3 - o], [2, 6], [4 + o, 8]], tent);
+    px(7 + o, 6, "#e0a0c0"); px(4, 4 - o, "#e0a0c0"); px(2, 7, "#e0a0c0");
+    px(8, 13, GORE); px(8, 14, GORE); if (f) px(9, 16, GORE);
+  },
+  /** 날개 구렁이 — a serpent that grew wings and never learned to land. */
+  serpentwing(b, f, px, line) {
+    const scale = "#7c2c3c", belly = "#d6c890", skin = "#5c3c5c";
+    const up = f ? -4 : 1;
+    b.tri([[14, 14], [3, 7 + up], [2, 15 + up], [8, 17 + (up >> 1)], [13, 17]], skin); b.tri([[19, 14], [30, 7 + up], [31, 15 + up], [25, 17 + (up >> 1)], [20, 17]], skin);
+    path(line, [[14, 14], [3, 7 + up]], BONE); path(line, [[14, 15], [2, 15 + up]], BONE); path(line, [[19, 14], [30, 7 + up]], BONE); path(line, [[19, 15], [31, 15 + up]], BONE);
+    const body = [[9, 8], [13, 10], [17, 14], [19, 18], [17, 22], [20, 25], [25, 25], [28, 22]];
+    path(line, body.map(([x, y]) => [x, y + 1]), belly); path(line, body.map(([x, y]) => [x + 1, y]), shade(scale, 0.3)); path(line, body, scale); path(line, body.map(([x, y]) => [x, y - 1]), scale);
+    px(29, 21, scale); px(30, 20, shade(scale, 0.3));
+    b.r(5, 6, 5, 3, scale); b.r(6, 5, 3, 1, scale); b.r(3, 8, 5, 1 + (f ? 1 : 0), CLOT);
+    px(3, 8, BONE); px(5, 8, BONE); px(4, 9 + (f ? 1 : 0), BONE);
+    px(7, 6, "#d8b030"); px(2, 9, GORE); px(1, 10, GORE);
   },
 };
-/** 균열의 군주 — an empty royal robe held open around a tear in the world. Drawn at 96×96. */
-function riftLord(b, f, px) {
-  const robe = "#3a2a6a", trim = "#8ae8f8", bone = "#f0ecf8", void2 = "#120a2a", rift = "#ff72d6";
+
+/** 균열의 군주 — a beast-king stitched from four animals around a hole in the world. Drawn at 96×96. */
+function riftLord(b, f, px, line) {
+  const tan = "#8a6a52", black = "#3a3040", green = "#55704a", rift = "#ff72d6";
   const o = f ? -1 : 0;
-  // hands that belong to no arm
-  for (const s of [0, 1]) {
-    const m = (x, w) => (s ? 96 - x - w : x), hy = 50 + (s === f ? -2 : 2);
-    b.r(m(8, 11), hy, 11, 10, bone); b.r(m(9, 9), hy - 1, 9, 1, bone); b.r(m(8, 11), hy + 7, 11, 3, shade(bone, 0.2));
-    for (let i = 0; i < 3; i++) b.r(m(9 + i * 4, 2), hy + 10, 2, 4, bone);
-    b.r(m(10, 7), hy - 5, 7, 4, robe); b.r(m(10, 7), hy - 2, 7, 1, trim);
-    b.r(m(12, 3), hy + 3, 3, 3, rift);
+  // the serpent that is its tail
+  const tail = [[70, 62], [80, 56], [86, 44], [82, 32 + o * 2], [76, 28 + o * 2]];
+  for (const d of [-2, -1, 0, 1, 2]) path(line, tail.map(([x, y]) => [x + d, y]), d > 0 ? shade(green, 0.3) : green);
+  b.oval(74, 27 + o * 2, 5, 4, green); b.r(67, 27 + o * 2, 5, 3, green); b.r(67, 30 + o * 2, 5, 1, CLOT); px(68, 30 + o * 2, BONE); px(70, 30 + o * 2, BONE);
+  b.r(73, 25 + o * 2, 2, 2, "#d8b030"); px(65, 31 + o * 2, GORE); px(64, 32 + o * 2, GORE);
+  // legs: a bear's on one side, a bird's on the other
+  b.r(24, 62, 12, 22, black); b.r(22, 82, 16, 5, black); for (const x of [22, 27, 32]) b.r(x, 86, 3, 4, BONE);
+  b.r(60, 62, 8, 20, tan); b.r(62, 80, 3, 8, "#d8a850"); for (const d of [-4, 0, 4]) b.r(62 + d, 86, 3, 3, "#d8a850"); for (const d of [-4, 0, 4]) px(62 + d, 89, BONE);
+  b.r(40, 70, 9, 16, shade(tan, 0.34)); b.r(38, 84, 13, 4, shade(tan, 0.34));
+  // the body, in three hides
+  b.oval(48, 56, 27, 18, tan);
+  b.oval(34, 54, 13, 15, black); b.oval(64, 60, 11, 12, green);
+  b.oval(48, 66, 24, 8, shade(tan, 0.3));
+  for (let y = 40; y <= 70; y += 3) { px(45, y, DARK); px(46, y + 1, GORE); px(56, y + 1, DARK); px(55, y, BONE); }   // the stitches
+  for (const [x, y] of [[60, 54], [66, 58], [62, 64], [69, 62], [64, 52]]) b.r(x, y, 2, 1, shade(green, 0.34));
+  // the chest, torn open on the rift
+  b.oval(49, 58, 9, 11, CLOT);
+  for (let y = 49; y <= 67; y += 3) { b.r(41, y, 6, 1, BONE); b.r(52, y, 6, 1, BONE); }
+  b.oval(49, 58, 4 + (f ? 1 : 0), 6 + (f ? 1 : 0), rift); b.oval(49, 58, 2, 3, "#ffffff");
+  for (const y of [70, 73, 76]) px(48 + (y % 2), y + (f ? 1 : 0), GORE);
+  // a wolf's head, low and to the left
+  b.tri([[28, 46], [36, 52], [20, 40], [16, 44]], black);
+  b.oval(16, 40, 9, 7, black); b.r(2, 40, 12, 5, black); b.r(3, 45, 11, 3 + (f ? 1 : 0), CLOT);
+  for (const x of [3, 6, 9, 12]) { px(x, 45, BONE); px(x, 46, BONE); px(x + 1, 47 + (f ? 1 : 0), BONE); }
+  b.tri([[18, 34], [21, 26], [24, 35]], black); b.tri([[11, 35], [13, 28], [16, 35]], black);
+  b.r(13, 37, 3, 3, GORE); px(13, 37, "#ffb0b0"); px(2, 41, DARK); px(4, 49, GORE); px(4, 50, GORE); if (f) px(4, 51, GORE);
+  // a vulture's, on a neck with no feathers
+  for (const d of [0, 1, 2, 3]) path(line, [[66 + d, 44], [70 + d, 30], [66 + d, 18 + o]], d > 1 ? "#a86a70" : "#c88a8a");
+  b.oval(64, 16 + o, 6, 5, "#c88a8a"); b.tri([[59, 15 + o], [50, 19 + o], [59, 20 + o]], "#d8a850"); px(51, 19 + o, DARK); px(50, 21 + o, GORE);
+  b.r(62, 14 + o, 2, 2, DARK); px(62, 14 + o, rift);
+  for (let x = 64; x <= 72; x += 2) px(x, 40 + (x % 4 ? 1 : 0), WHITE);                                             // a ruff of dirty down
+  // and the goat's skull that wears the crown
+  b.tri([[42, 44], [56, 44], [53, 30], [44, 30]], tan);
+  b.oval(48, 26 + o, 9, 8, BONE); b.r(43, 30 + o, 10, 9, BONE); b.r(44, 38 + o, 8, 2, shade(BONE, 0.3));
+  b.r(43, 24 + o, 4, 5, "#1e0810"); b.r(50, 24 + o, 4, 5, "#1e0810"); px(45, 26 + o, rift); px(51, 26 + o, rift); px(44, 27 + o, f ? "#ffffff" : rift);
+  b.r(47, 32 + o, 2, 4, "#1e0810"); for (const x of [44, 46, 48, 50]) px(x, 39 + o, "#1e0810");
+  for (const s of [-1, 1]) { const x = 48 + s * 8; path(line, [[x, 21 + o], [x + s * 7, 15 + o], [x + s * 12, 19 + o], [x + s * 10, 26 + o]], "#4a3a36"); path(line, [[x, 22 + o], [x + s * 7, 16 + o], [x + s * 12, 20 + o], [x + s * 10, 27 + o]], "#2c2028"); path(line, [[x, 20 + o], [x + s * 7, 14 + o], [x + s * 13, 19 + o]], "#4a3a36"); }
+  [[40, 6], [44, 9], [48, 12], [52, 9], [56, 6]].forEach(([x, h], i) => { const y = 13 + o * 2; b.tri([[x - 2, y], [x + 2, y], [x, y - h]], i % 2 ? rift : BONE); });
+  b.r(38, 13 + o * 2, 20, 2, BONE); px(48, 14 + o * 2, GORE);
+}
+
+/** 심연의 어미 — the mother of all of it: one swollen body, five necks, and a brood still inside. Drawn at 96×96. */
+function abyssMother(b, f, px, line) {
+  const flesh = "#b89a9c", dark = "#7c5c6a", o = f ? -1 : 0;
+  // six legs, jointed like an insect's and tipped with bone
+  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) {
+    const x0 = 48 + s * (14 + i * 7), kx = 48 + s * (26 + i * 8), ky = 56 + i * 3 + (i % 2 === (f ? 1 : 0) ? -2 : 0), tx = 48 + s * (30 + i * 7);
+    for (const d of [0, 1, 2]) { path(line, [[x0 + d * s, 62], [kx + d * s, ky], [tx + d * s, 88]], d ? dark : shade(flesh, 0.12)); }
+    b.r(Math.min(tx, tx + s * 2), 86, 3, 4, BONE);
   }
-  // the robe, and the tattered hem
-  b.tri([[28, 36 + o], [68, 36 + o], [79, 78], [17, 78]], robe);
-  for (let x = 18; x < 78; x += 8) b.tri([[x, 78], [x + 8, 78], [x + 4 + (f ? 1 : -1), 85]], robe);
-  b.tri([[48, 36 + o], [68, 36 + o], [79, 78], [58, 78]], shade(robe, 0.3));
-  b.tri([[42, 38 + o], [54, 38 + o], [61, 79], [35, 79]], void2);
-  b.tri([[42, 38 + o], [44, 38 + o], [37, 79], [35, 79]], trim); b.tri([[52, 38 + o], [54, 38 + o], [61, 79], [59, 79]], trim);
-  b.r(18, 76, 60, 2, trim);
-  for (const [x, y] of [[40, 52], [55, 60], [43, 70], [53, 46], [46, 74], [57, 72]]) px(x, y, f ? "#ffffff" : "#b6a0ff");
-  // the tear itself
-  const zig = [[48, 41], [45, 48], [50, 54], [45, 61], [50, 67], [47, 76]];
-  for (let i = 0; i < zig.length - 1; i++) { const [x0, y0] = zig[i], [x1, y1] = zig[i + 1]; b.tri([[x0 - 2, y0], [x0 + 3, y0], [x1 + 3, y1], [x1 - 2, y1]], rift); b.tri([[x0, y0], [x0 + (f ? 2 : 1), y0], [x1 + (f ? 2 : 1), y1], [x1, y1]], "#ffffff"); }
-  // shoulders of raw crystal
-  b.tri([[20, 40 + o], [35, 29 + o], [38, 41 + o]], "#6a58b0"); b.tri([[76, 40 + o], [61, 29 + o], [58, 41 + o]], "#6a58b0");
-  b.tri([[27, 35 + o], [35, 29 + o], [36, 37 + o]], "#9a88e0"); b.tri([[69, 35 + o], [61, 29 + o], [60, 37 + o]], "#9a88e0");
-  // the hood and the cracked mask
-  b.oval(48, 23 + o, 14, 14.5, robe); b.oval(52, 25 + o, 9, 11, shade(robe, 0.3));
-  b.oval(48, 23 + o, 9, 11, bone); b.oval(51, 27 + o, 5, 6.5, shade(bone, 0.14));
-  b.r(41, 21 + o, 6, 2, rift); b.r(42, 21 + o, 2, 1, "#ffffff");
-  b.r(51, 19 + o, 4, 5, void2); px(52, 21 + o, f ? "#ffffff" : rift);
-  for (const [x, y] of [[53, 12], [52, 13], [53, 14], [54, 15], [53, 16], [54, 17], [55, 18], [55, 24], [54, 25], [55, 26], [54, 27], [53, 28]]) px(x, y + o, void2);
-  // a crown of shards that never touches the head
-  [[34, 7], [41, 10], [48, 13], [55, 10], [62, 7]].forEach(([x, h], i) => { const y = 9 + o * 2 + (i % 2 ? 1 : 0); b.tri([[x - 3, y], [x + 3, y], [x, y - h]], i % 2 ? rift : trim); b.tri([[x, y], [x + 3, y], [x, y - h]], i % 2 ? shade(rift, 0.3) : shade(trim, 0.3)); });
+  // five necks, five heads
+  const neck = (x0, pts, col) => { for (const d of [-2, -1, 0, 1, 2]) path(line, [[x0 + d, 50], ...pts.map(([x, y]) => [x + d, y])], d > 0 ? shade(col, 0.3) : col); };
+  neck(26, [[18, 36], [14, 26 + o]], "#3a3040");                                    // wolf
+  b.oval(13, 23 + o, 7, 5, "#3a3040"); b.r(2, 23 + o, 8, 4, "#3a3040"); b.r(3, 27 + o, 7, 2, CLOT); for (const x of [3, 6, 9]) px(x, 27 + o, BONE); b.r(11, 21 + o, 2, 2, GORE); b.tri([[14, 19 + o], [16, 13 + o], [18, 20 + o]], "#3a3040");
+  neck(36, [[32, 30], [30, 16 - o]], "#c6beae");                                    // goat
+  b.oval(29, 13 - o, 6, 5, "#c6beae"); b.r(21, 13 - o, 6, 5, "#c6beae"); px(21, 15 - o, DARK); b.r(27, 11 - o, 3, 2, "#d8b030"); b.r(27, 12 - o, 3, 1, DARK);
+  path(line, [[31, 8 - o], [36, 3 - o], [40, 5 - o]], "#4a3a36"); path(line, [[31, 9 - o], [36, 4 - o], [40, 6 - o]], "#4a3a36"); px(22, 19 - o, shade("#c6beae", 0.3)); px(22, 20 - o, shade("#c6beae", 0.3));
+  neck(48, [[48, 28], [48, 12 + o]], BONE);                                         // a horse's skull, in the middle
+  b.oval(48, 9 + o, 6, 6, BONE); b.r(44, 12 + o, 8, 12, BONE); b.r(45, 23 + o, 6, 2, shade(BONE, 0.3)); b.r(44, 7 + o, 3, 4, "#1e0810"); b.r(50, 7 + o, 3, 4, "#1e0810"); px(45, 9 + o, GORE); px(51, 9 + o, GORE);
+  for (const x of [45, 47, 49]) px(x, 24 + o, "#1e0810"); b.r(47, 15 + o, 2, 5, shade(BONE, 0.3));
+  neck(60, [[64, 30], [66, 16 - o]], "#3a3348");                                    // crow
+  b.oval(67, 13 - o, 6, 5, "#3a3348"); b.tri([[72, 11 - o], [80, 15 - o], [72, 16 - o]], BONE); px(79, 15 - o, GORE); orb(b, px, 67, 11 - o, GORE, 1); orb(b, px, 64, 14 - o, GORE, 2); orb(b, px, 69, 15 - o, GORE, 0);
+  neck(70, [[78, 36], [82, 26 + o]], "#7c2c3c");                                    // serpent
+  b.oval(83, 23 + o, 7, 5, "#7c2c3c"); b.r(86, 23 + o, 8, 4, "#7c2c3c"); b.r(86, 27 + o, 7, 2, CLOT); px(87, 27 + o, BONE); px(91, 27 + o, BONE); b.r(83, 21 + o, 2, 2, "#d8b030"); px(94, 28 + o, GORE); px(95, 29 + o, GORE);
+  // the body
+  b.oval(48, 62, 31, 19, flesh); b.oval(48, 70, 28, 11, dark);
+  b.oval(36, 54, 12, 7, lt(flesh, 1.12));
+  for (const [x, y] of [[26, 58], [30, 64], [66, 56], [70, 62], [58, 50], [38, 50]]) path(line, [[x, y], [x + 3, y + 2], [x + 2, y + 5]], "#8a5a9a");   // veins
+  // the brood: sacs along the belly, each with something curled inside
+  for (let i = 0; i < 6; i++) { const x = 22 + i * 10, y = 76 + (i % 2 ? 2 : 0) + (i % 2 === (f ? 1 : 0) ? 1 : 0); b.oval(x, y, 4.5, 5, BILE); b.oval(x + 1, y + 1, 2.5, 3, shade(BILE, 0.4)); px(x, y, DARK); px(x - 2, y - 2, "#f0ffb0"); }
+  // the mouth it feeds them from
+  b.oval(48, 60, 6 + (f ? 1 : 0), 11, CLOT); b.oval(48, 60, 3, 8, "#1e0810");
+  for (let y = 51; y <= 69; y += 3) { b.r(42 - (f ? 1 : 0), y, 2, 2, BONE); b.r(52 + (f ? 1 : 0), y + 1, 2, 2, BONE); }
+  b.r(47, 66, 3, 8 + (f ? 1 : 0), GUT); px(48, 74 + (f ? 1 : 0), "#a84a5c");
+  for (const [x, y] of [[44, 74], [45, 77], [52, 73], [53, 76], [50, 80]]) px(x, y + (f ? 1 : 0), GORE);
+  for (const [x, y] of [[20, 52], [76, 52], [48, 44]]) { px(x, y, DARK); px(x + 1, y + 1, GORE); px(x + 2, y, DARK); px(x + 3, y + 1, GORE); }   // old stitches
 }
 
 // A treasure chest: iron-bound wood with a gold lock that glints now and then.
@@ -568,8 +836,14 @@ MOB.chest = (b, f) => {
   if (f) { b.r(13, 15, 1, 1, "#ffffff"); b.r(18, 14, 1, 1, "#fff8d0"); }
 };
 
-/** Old names from before the redesign, so a stale server still draws something sensible. */
-const MOB_ALIAS = { slime: "acorn", bslime: "potcrab", shroom: "capfrog", boar: "stump", bat: "lantern", drone: "eyecam", thug: "tvhead", robot: "signbot", skel: "candle", golem: "geode" };
+/** Creatures that fill a 96×96 sheet instead of the usual 32×32. */
+const BIG_MOB = { boss: riftLord, abyssboss: abyssMother };
+/** Names from earlier rosters, so a stale server still draws something sensible. */
+const MOB_ALIAS = {
+  acorn: "twinhare", potcrab: "gutfrog", puff: "eyecrow", capfrog: "gutfrog", stump: "ribdeer", lantern: "mothface", yarn: "spiderhand",
+  eyecam: "pigeonmass", signbot: "doghead", vend: "fishwalker", tvhead: "catsplit", candle: "batcluster", geode: "bearmaw", prism: "owlstare",
+  slime: "twinhare", bslime: "gutfrog", shroom: "gutfrog", boar: "splitboar", bat: "batcluster", drone: "pigeonmass", thug: "catsplit", robot: "doghead", skel: "bonehound", golem: "bearmaw",
+};
 
 /** Two frames of a monster. Anything unknown gets a plain blob rather than an error. */
 export function monsterSheet(kind) {
@@ -578,11 +852,11 @@ export function monsterSheet(kind) {
   let s = cache.get(key);
   if (s) return s;
   const draw = (f) => {
-    const [c, g] = sheet(kind === "boss" ? 96 : S);
+    const [c, g] = sheet(BIG_MOB[kind] ? 96 : S);
     const b = brush(g);
     const px = (x, y, col) => b.r(x, y, 1, 1, col);
     const line = (x0, y0, x1, y1, col) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) || 1; for (let i = 0; i <= n; i++) px(Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), col); };
-    if (kind === "boss") riftLord(b, f, px);
+    if (BIG_MOB[kind]) BIG_MOB[kind](b, f, px, line);
     else if (MOB[kind]) MOB[kind](b, f, px, line);
     else { b.oval(16, 21 - f, 6, 6, "#a8a4b8"); b.r(13, 19 - f, 1, 2, DARK); b.r(18, 19 - f, 1, 2, DARK); }
     return finish(c, g, INK, 1);
@@ -593,9 +867,19 @@ export function monsterSheet(kind) {
 }
 /** Per monster: how many times its sheet is enlarged, and how many pixels it floats. */
 export const MOB_SIZE = {
-  acorn: [1, 0], potcrab: [1, 0], puff: [1, 8], capfrog: [1, 0], stump: [1, 0], lantern: [1, 9], yarn: [1, 0],
-  eyecam: [1, 12], signbot: [1, 0], vend: [1, 0], tvhead: [1, 5], candle: [1, 3], geode: [1, 0], prism: [1, 10], boss: [3, 0], chest: [1, 0],
+  twinhare: [1, 0], gutfrog: [1, 0], eyecrow: [1, 10],
+  splitboar: [1, 0], ribdeer: [1, 0], hydrasnake: [1, 0], mothface: [1, 9],
+  ratking: [1, 0], bonehound: [1, 0], batcluster: [1, 9],
+  pigeonmass: [1, 10], doghead: [1, 0], catsplit: [1, 0], fishwalker: [1, 0],
+  leechmaw: [1, 0], gatorhalf: [1, 0], eelknot: [1, 0],
+  spiderhand: [1, 0], bearmaw: [1, 0], owlstare: [1, 9],
+  twingoat: [1, 0], horsehalf: [1, 0], serpentwing: [1, 10],
+  boss: [3, 0], abyssboss: [3, 0], chest: [1, 0],
 };
 for (const [old, now] of Object.entries(MOB_ALIAS)) MOB_SIZE[old] = MOB_SIZE[now];
-/** The light a creature gives off in dark places, if any. */
-export const MOB_GLOW = { lantern: "#ffe690", candle: "#ffb040", prism: "#a8e4f8", tvhead: "#9af0e0", eyecam: "#ff6a6a", geode: "#b48cff", boss: "#ff72d6", bat: "#ffe690", skel: "#ffb040", thug: "#9af0e0", golem: "#b48cff" };
+/** The light a creature gives off in dark places, if any: eyes, bile, an open heart. */
+export const MOB_GLOW = {
+  eyecrow: "#ff6a50", ribdeer: "#ff5a5a", mothface: "#f4efe0", batcluster: "#ff5a5a", leechmaw: "#b4cc3c", eelknot: "#e8c840",
+  owlstare: "#ff7a30", bearmaw: "#ff5a5a", serpentwing: "#e8c840", boss: "#ff72d6", abyssboss: "#b4cc3c",
+};
+for (const [old, now] of Object.entries(MOB_ALIAS)) if (MOB_GLOW[now]) MOB_GLOW[old] = MOB_GLOW[now];

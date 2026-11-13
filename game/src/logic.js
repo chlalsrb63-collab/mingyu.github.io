@@ -219,32 +219,52 @@ const MASTERY = [30, 100, 300, 1000, 3000];
 const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
-const FIELD_BOSS = { meadow: "potcrab", forest: "stump", city: "vend", cave: "geode" };
+/** The monster a hunting ground's kills call out, by map. */
+const FIELD_BOSS = { meadow: "gutfrog", forest: "ribdeer", crypt: "ratking", city: "doghead", sewer: "gatorhalf", cave: "bearmaw", abyss: "twingoat" };
 
 /**
- * Monsters. Beyond the numbers: `fly` crosses anything, `shot` attacks from range,
- * `leap` pounces from that far, `slam` pounds the ground around itself, and
- * `burst` goes off where it died.
+ * Monsters: animals that came back wrong. Beyond the numbers: `fly` crosses anything,
+ * `shot` attacks from range, `leap` pounces from that far, `slam` pounds the ground
+ * around itself, and `burst` goes off where it died. Listed in the order a
+ * character meets them.
  */
 const MOBS = {
-  acorn: { name: "도토리 병정", lv: 1, hp: 28, atk: 5, def: 0, spd: 24, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300 },
-  potcrab: { name: "화분 소라게", lv: 3, hp: 60, atk: 9, def: 1, spd: 22, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300 },
-  puff: { name: "민들레 홀씨", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true },      // drifts by the pond and minds its own business, so the shore stays a fishing spot
-  capfrog: { name: "버섯 개구리", lv: 8, hp: 170, atk: 23, def: 2, spd: 44, xp: 60, gold: [10, 22], aggro: 80, range: 18, cd: 1100, leap: 96 },
-  stump: { name: "그루터기 거북", lv: 10, hp: 330, atk: 26, def: 8, spd: 22, xp: 92, gold: [12, 26], aggro: 60, range: 18, cd: 1400 },
-  yarn: { name: "털실 거미", lv: 11, hp: 190, atk: 30, def: 2, spd: 58, xp: 92, gold: [12, 26], aggro: 88, range: 16, cd: 1000, leap: 80 },
-  lantern: { name: "초롱 반딧불", lv: 13, hp: 210, atk: 34, def: 2, spd: 44, xp: 118, gold: [14, 30], aggro: 96, range: 72, cd: 1400, fly: true, shot: true },
-  eyecam: { name: "감시 눈알", lv: 14, hp: 290, atk: 40, def: 5, spd: 56, xp: 140, gold: [18, 36], aggro: 100, range: 70, cd: 1300, fly: true, shot: true },
-  signbot: { name: "신호등 보행기", lv: 17, hp: 460, atk: 52, def: 8, spd: 46, xp: 200, gold: [26, 50], aggro: 84, range: 19, cd: 1000 },
-  tvhead: { name: "브라운관 유령", lv: 19, hp: 520, atk: 60, def: 6, spd: 40, xp: 250, gold: [28, 54], aggro: 92, range: 66, cd: 1400, fly: true, shot: true },
-  vend: { name: "자판기 미믹", lv: 21, hp: 820, atk: 68, def: 18, spd: 30, xp: 330, gold: [60, 120], aggro: 72, range: 22, cd: 1500 },
-  candle: { name: "촛농 유령", lv: 23, hp: 880, atk: 78, def: 12, spd: 42, xp: 400, gold: [40, 76], aggro: 88, range: 19, cd: 1100, fly: true, burst: 34 },
-  prism: { name: "프리즘 해파리", lv: 25, hp: 900, atk: 86, def: 10, spd: 38, xp: 480, gold: [46, 86], aggro: 96, range: 76, cd: 1500, fly: true, shot: true },
-  geode: { name: "정동 골렘", lv: 27, hp: 1600, atk: 98, def: 26, spd: 27, xp: 640, gold: [56, 100], aggro: 76, range: 21, cd: 1500, slam: 40 },
-  boss: { name: "균열의 군주 크리온", lv: 30, hp: 22000, atk: 140, def: 30, spd: 34, xp: 9000, gold: [1500, 2500], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1 },
+  // 바람초원
+  twinhare: { name: "쌍두 토끼", lv: 1, hp: 28, atk: 5, def: 0, spd: 26, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300 },
+  gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80 },
+  eyecrow: { name: "눈알 까마귀", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true },   // circles the pond and minds its own business, so the shore stays a fishing spot
+  // 속삭임 숲
+  splitboar: { name: "반쪽 멧돼지", lv: 8, hp: 170, atk: 23, def: 2, spd: 44, xp: 60, gold: [10, 22], aggro: 80, range: 18, cd: 1100, leap: 96 },
+  ribdeer: { name: "갈비뼈 사슴", lv: 10, hp: 330, atk: 26, def: 8, spd: 26, xp: 92, gold: [12, 26], aggro: 64, range: 18, cd: 1400, slam: 34 },
+  hydrasnake: { name: "세 머리 뱀", lv: 11, hp: 200, atk: 29, def: 2, spd: 36, xp: 96, gold: [12, 26], aggro: 92, range: 64, cd: 1400, shot: true },
+  mothface: { name: "인면 나방", lv: 13, hp: 210, atk: 34, def: 2, spd: 44, xp: 118, gold: [14, 30], aggro: 96, range: 72, cd: 1400, fly: true, shot: true },
+  // 뼈의 지하묘지
+  ratking: { name: "쥐 왕", lv: 12, hp: 260, atk: 31, def: 4, spd: 46, xp: 108, gold: [14, 28], aggro: 86, range: 17, cd: 1000 },
+  bonehound: { name: "가죽 벗겨진 사냥개", lv: 14, hp: 300, atk: 40, def: 5, spd: 58, xp: 140, gold: [18, 36], aggro: 100, range: 18, cd: 1000, leap: 100 },
+  batcluster: { name: "박쥐 덩어리", lv: 16, hp: 360, atk: 46, def: 4, spd: 52, xp: 178, gold: [22, 44], aggro: 96, range: 17, cd: 1100, fly: true, burst: 32 },
+  // 네온 시티
+  pigeonmass: { name: "비둘기 떼살", lv: 14, hp: 290, atk: 40, def: 5, spd: 56, xp: 140, gold: [18, 36], aggro: 100, range: 70, cd: 1300, fly: true, shot: true },
+  doghead: { name: "세 머리 들개", lv: 17, hp: 460, atk: 52, def: 8, spd: 46, xp: 200, gold: [26, 50], aggro: 84, range: 19, cd: 1000 },
+  catsplit: { name: "갈라진 고양이", lv: 19, hp: 500, atk: 60, def: 6, spd: 54, xp: 250, gold: [28, 54], aggro: 92, range: 18, cd: 1000, leap: 100 },
+  fishwalker: { name: "다리 달린 생선", lv: 21, hp: 820, atk: 68, def: 18, spd: 30, xp: 330, gold: [40, 80], aggro: 72, range: 22, cd: 1500 },
+  // 하수도
+  leechmaw: { name: "거머리 아가리", lv: 22, hp: 800, atk: 73, def: 10, spd: 40, xp: 365, gold: [38, 72], aggro: 84, range: 19, cd: 1100 },
+  gatorhalf: { name: "반쪽 악어", lv: 24, hp: 1200, atk: 82, def: 22, spd: 30, xp: 450, gold: [44, 82], aggro: 76, range: 21, cd: 1500, slam: 38 },
+  eelknot: { name: "뱀장어 매듭", lv: 26, hp: 950, atk: 90, def: 10, spd: 38, xp: 520, gold: [50, 92], aggro: 96, range: 74, cd: 1500, shot: true },
+  // 수정 동굴
+  spiderhand: { name: "손가락 거미", lv: 24, hp: 900, atk: 82, def: 10, spd: 56, xp: 440, gold: [42, 80], aggro: 92, range: 18, cd: 1000, leap: 96 },
+  bearmaw: { name: "아가리 곰", lv: 27, hp: 1600, atk: 98, def: 26, spd: 27, xp: 640, gold: [56, 100], aggro: 76, range: 21, cd: 1500, slam: 40 },
+  owlstare: { name: "목 꺾인 올빼미", lv: 29, hp: 1150, atk: 106, def: 12, spd: 40, xp: 720, gold: [60, 108], aggro: 96, range: 76, cd: 1500, fly: true, shot: true },
+  boss: { name: "균열의 군주 크리온", lv: 32, hp: 24000, atk: 150, def: 32, spd: 34, xp: 10000, gold: [1500, 2500], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1 },
+  // 피의 심연
+  twingoat: { name: "쌍두 염소", lv: 32, hp: 1900, atk: 118, def: 24, spd: 44, xp: 900, gold: [70, 124], aggro: 88, range: 20, cd: 1100 },
+  horsehalf: { name: "반쪽 말", lv: 34, hp: 2200, atk: 128, def: 22, spd: 60, xp: 1050, gold: [78, 136], aggro: 100, range: 20, cd: 1000, leap: 110 },
+  serpentwing: { name: "날개 구렁이", lv: 36, hp: 2000, atk: 138, def: 18, spd: 44, xp: 1220, gold: [86, 150], aggro: 100, range: 78, cd: 1500, fly: true, shot: true },
+  abyssboss: { name: "심연의 어미", lv: 40, hp: 48000, atk: 200, def: 40, spd: 34, xp: 30000, gold: [4000, 6000], aggro: 140, range: 30, cd: 1400, resp: 240000, boss: true, gear: 1 },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
-for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["city", 18, 420, [180, 320]], ["cave", 26, 900, [320, 560]]]) {
+for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
+  ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {
@@ -254,18 +274,27 @@ for (const k of Object.keys(MOBS)) {
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = 0.06 + d.lv * 0.002;
 }
+/** How long a dungeon's guardian (a fixed rank-2 monster) stays down. */
+const GUARD_RESP = 180000;
 
+/** One chain of errands, leading through every ground in the order a character can survive them. */
 const QUESTS = [
-  { mob: "acorn", n: 5, title: "첫 발걸음", text: "차원이 겹친 뒤로 초원의 도토리들이 창을 들고 일어섰다네. 도토리 병정 5마리만 정리해 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
-  { mob: "potcrab", n: 6, title: "걸어 다니는 화분", text: "남쪽 꽃밭의 화분이 죄다 걸어 나갔어. 화분 소라게 6마리를 잡아 주게.", xp: 220, gold: 120, items: [["mp_s", 5]] },
-  { mob: "puff", n: 8, title: "홀씨 주의보", text: "연못가에 민들레 홀씨가 떠다니며 사람을 쫓는다네. 8마리를 흩어 주면 강화석을 주지.", xp: 520, gold: 200, items: [["stone", 2]] },
-  { mob: "capfrog", n: 10, title: "숲의 도약자", text: "속삭임 숲의 버섯 개구리 10마리를 사냥해 주게. 멀리서도 뛰어드니 동료를 구해 보게.", xp: 1300, gold: 450, items: [["hp_m", 5], ["ru_vit", 1]] },
-  { mob: "lantern", n: 10, title: "밤길의 초롱", text: "숲 동쪽의 초롱 반딧불 10마리를 꺼뜨려 주게. 불씨를 쏘아 대니 조심하게.", xp: 2200, gold: 600, items: [["stone", 3]] },
-  { mob: "eyecam", n: 10, title: "다른 세계의 눈", text: "서쪽 문 너머는 '네온 시티'라는 다른 세계일세. 우리를 지켜보는 감시 눈알 10기를 떨어뜨려 주게.", xp: 4200, gold: 900, items: [["ru_ign", 1]] },
-  { mob: "signbot", n: 12, title: "빨간불", text: "네온 시티의 신호등 보행기들이 차원문 앞을 막아섰어. 12기를 멈춰 주게.", xp: 6500, gold: 1300, items: [["mp_m", 5]] },
-  { mob: "vend", n: 10, title: "동전 먹는 기계", text: "자판기 미믹 10대를 부숴 주게. 단단하지만 삼킨 동전을 잔뜩 뱉는다네.", xp: 9500, gold: 1800, items: [["stone", 5]] },
-  { mob: "geode", n: 8, title: "움직이는 수정", text: "숲 끝의 수정 동굴은 균열의 중심일세. 정동 골렘 8마리를 부숴 주게. 땅을 내리칠 땐 물러서게.", xp: 15000, gold: 2600, items: [["ru_acu", 1], ["ru_san", 1]] },
-  { mob: "boss", n: 1, title: "균열의 군주", text: "모든 세계를 뒤섞은 장본인, 균열의 군주 크리온을 쓰러뜨려 주게. 반드시 파티를 꾸려서 가게.", xp: 40000, gold: 8000, items: [["stone", 10], ["ru_lum", 1]] },
+  { mob: "twinhare", n: 5, title: "첫 발걸음", text: "차원이 겹친 뒤로 초원의 짐승들이 뒤틀려 돌아왔다네. 머리 둘 달린 토끼 5마리만 정리해 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
+  { mob: "gutfrog", n: 6, title: "뒤집힌 개구리", text: "속이 밖으로 나온 개구리가 길목에서 뛰어든다네. 창자 개구리 6마리를 잡아 주게.", xp: 220, gold: 120, items: [["mp_s", 5]] },
+  { mob: "eyecrow", n: 8, title: "지켜보는 것들", text: "연못 위를 도는 눈알 까마귀 8마리를 떨어뜨려 주게. 먼저 덤비진 않지만, 보고 있는 게 영 꺼림칙해.", xp: 520, gold: 200, items: [["stone", 2]] },
+  { mob: "splitboar", n: 10, title: "숲의 반쪽", text: "속삭임 숲에는 몸이 반만 남은 멧돼지가 돌아다닌다네. 10마리를 사냥해 주게. 멀리서도 뛰어드니 동료를 구해 보게.", xp: 1300, gold: 450, items: [["hp_m", 5], ["ru_vit", 1]] },
+  { mob: "hydrasnake", n: 10, title: "세 갈래 혀", text: "숲 깊은 곳의 세 머리 뱀 10마리를 베어 주게. 독을 뱉으니 서 있지 말고 움직이게.", xp: 2200, gold: 600, items: [["stone", 3]] },
+  { mob: "ratking", n: 12, title: "무덤 아래", text: "숲의 막다른 폐허에 지하묘지로 내려가는 계단이 있다네. 꼬리가 엉킨 쥐 왕 12마리를 정리해 주게.", xp: 3000, gold: 750, items: [["hp_m", 5]] },
+  { mob: "batcluster", n: 10, title: "터지는 것", text: "지하묘지 깊은 곳의 박쥐 덩어리 10마리를 터뜨려 주게. 죽으면서 터지니, 쓰러뜨리고 물러서게.", xp: 4000, gold: 900, items: [["ru_ign", 1]] },
+  { mob: "pigeonmass", n: 10, title: "다른 세계의 하늘", text: "서쪽 문 너머는 '네온 시티'라는 다른 세계일세. 한 덩어리로 뭉친 비둘기 떼살 10마리를 떨어뜨려 주게.", xp: 4600, gold: 1000, items: [["mp_m", 5]] },
+  { mob: "catsplit", n: 12, title: "뒷골목의 울음", text: "네온 시티 골목의 갈라진 고양이 12마리를 잡아 주게. 소리 없이 뛰어든다네.", xp: 6500, gold: 1300, items: [["stone", 4]] },
+  { mob: "fishwalker", n: 10, title: "뭍에 오른 것", text: "다리 달린 생선 10마리를 쓰러뜨려 주게. 단단하니 파티가 필요할 걸세.", xp: 9500, gold: 1800, items: [["stone", 5]] },
+  { mob: "leechmaw", n: 12, title: "도시의 밑바닥", text: "네온 시티 뒷마당에 하수도로 내려가는 구멍이 있다네. 거머리 아가리 12마리를 떼어 내 주게.", xp: 12000, gold: 2200, items: [["hp_m", 8]] },
+  { mob: "eelknot", n: 10, title: "매듭", text: "하수도 끝의 뱀장어 매듭 10마리를 풀어 주게. 멀리서 전기를 쏜다네.", xp: 15000, gold: 2600, items: [["ru_acu", 1]] },
+  { mob: "bearmaw", n: 8, title: "배에 난 입", text: "숲 끝의 수정 동굴은 균열의 중심일세. 아가리 곰 8마리를 쓰러뜨려 주게. 땅을 내리칠 땐 물러서게.", xp: 19000, gold: 3200, items: [["ru_san", 1], ["stone", 5]] },
+  { mob: "boss", n: 1, title: "균열의 군주", text: "모든 세계를 뒤섞은 장본인, 균열의 군주 크리온을 쓰러뜨려 주게. 반드시 파티를 꾸려서 가게.", xp: 45000, gold: 8000, items: [["stone", 10], ["ru_lum", 1]] },
+  { mob: "horsehalf", n: 12, title: "군주의 뒤편", text: "군주가 쓰러진 자리 뒤에 더 깊은 균열이 열렸네. 피의 심연의 반쪽 말 12마리를 쓰러뜨려 주게.", xp: 30000, gold: 5000, items: [["hp_m", 10], ["ru_fos", 1]] },
+  { mob: "abyssboss", n: 1, title: "심연의 어미", text: "뒤틀린 것들은 전부 한곳에서 태어났네. 심연의 어미를 쓰러뜨려, 이 일을 끝내 주게.", xp: 120000, gold: 20000, items: [["stone", 20], ["ru_lum", 2]] },
 ];
 
 // ───────────────────────────── helpers ─────────────────────────────
@@ -535,7 +564,15 @@ function grid(cfg) {
     for (const [x, y] of g.t) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inMap(m, x + dx, y + dy)) m.o[y + dy][x + dx] = " ";
     return g;
   };
-  return { box, m, P, x0, y0, mid, doors, dkey, main, kind, mobFor, lay, route, gate, gates, cw, ch };
+  /** Deeper cells breed more elites: set each spawn's odds from how far its cell is from the entry. */
+  const rank = () => {
+    for (const sp of m.spawns) {
+      if (MOBS[sp.k].chest || sp.elite !== undefined) continue;
+      const c = clamp(Math.floor((sp.r[0] - MG) / CS), 0, cw - 1) + clamp(Math.floor((sp.r[1] - MG) / CR), 0, ch - 1) * cw;
+      sp.elite = 0.03 + 0.14 * (P.dist[c] / far);
+    }
+  };
+  return { box, m, P, x0, y0, mid, doors, dkey, main, kind, mobFor, lay, route, gate, gates, rank, cw, ch };
 }
 
 /** Open country: meadow and forest. Barriers are cliffs, hedges, belts of trees and one river. */
@@ -632,6 +669,16 @@ function wild(cfg) {
       m.spawns.push({ k: cfg.chest, n: 1, r: [cx, cy - 1, cx, cy - 1] });
       m.spawns.push({ k: G.mobFor(c), n: 2, r: inner });
       special.push([cx, cy - 1], [gap, cy + 3]);
+    } else if (k === "stair") {
+      // a ruin whose cellar goes somewhere worse: old flagstones, broken walls, steps down
+      clear(m, cx - 3, cy - 3, cx + 3, cy + 3);
+      rect(m.g, cx - 2, cy - 2, cx + 3, cy + 2, "r");
+      for (let x = cx - 3; x <= cx + 4; x++) if (rnd(box) < 0.9) m.o[cy - 3][x] = "U";
+      for (let y = cy - 2; y <= cy + 1; y++) { if (rnd(box) < 0.85) m.o[y][cx - 3] = "U"; if (rnd(box) < 0.85) m.o[y][cx + 4] = "U"; }
+      m.o[cy][cx - 2] = "q"; m.o[cy][cx + 3] = "q";
+      G.gates[cfg.stair] = { t: [[cx, cy - 1], [cx + 1, cy - 1]], a: [[cx, cy + 1], [cx + 1, cy + 1]] };
+      m.spawns.push({ k: cfg.mobs[cfg.mobs.length - 1], n: 3, r: [X + 1, cy + 2, X + CS - 3, Y + CR - 3], elite: 0.3 });
+      special.push([cx, cy + 1], [cx, cy + 3]);
     } else if (k === "camp") {
       clear(m, cx - 3, cy - 2, cx + 3, cy + 3);
       blob(m, box, cx, cy + 0.5, 2.6, 2, cfg.road);
@@ -671,6 +718,7 @@ function wild(cfg) {
   for (const p of special) pts.push(spot(m, p[0], p[1]));
   for (const name of Object.keys(G.gates)) for (const a of G.gates[name].a) { m.o[a[1]][a[0]] = " "; pts.push(a); }
   connectAll(m, pts, cfg.road);
+  G.rank();
   return m;
 }
 
@@ -731,6 +779,13 @@ function city(cfg) {
       m.o[cy - 1][cx - 2] = "n"; m.o[cy - 1][cx + 2] = "D";
       FIRES[cfg.id].push([cx, cy]);
       special.push([cx, cy + 1]);
+    } else if (k === "stair") {
+      // a fenced-off back lot around an open shaft: the way down into the sewer
+      clear(m, cx - 2, cy - 2, cx + 3, cy + 2);
+      for (const [x, y, o] of [[cx - 2, cy - 1, "D"], [cx + 3, cy - 1, "n"], [cx - 2, cy + 1, "x"], [cx + 3, cy + 1, "n"]]) if (freeK(x, y)) m.o[y][x] = o;
+      G.gates[cfg.stair] = { t: [[cx, cy - 1], [cx + 1, cy - 1]], a: [[cx, cy + 1], [cx + 1, cy + 1]] };
+      m.spawns.push({ k: cfg.mobs[cfg.mobs.length - 1], n: 3, r: inner, elite: 0.3 });
+      special.push([cx, cy + 1]);
     } else if (k === "vault") {
       // a back lot behind dumpsters and crates, with a chest
       for (const [x, y, o] of [[cx - 2, cy - 1, "D"], [cx + 2, cy - 1, "n"], [cx - 2, cy + 1, "n"], [cx + 2, cy + 1, "x"]]) if (freeK(x, y)) m.o[y][x] = o;
@@ -771,6 +826,7 @@ function city(cfg) {
   for (const p of special) pts.push(spot(m, p[0], p[1]));
   for (const name of Object.keys(G.gates)) for (const a of G.gates[name].a) { m.o[a[1]][a[0]] = " "; pts.push(a); }
   connectAll(m, pts, "k");
+  G.rank();
   return m;
 }
 
@@ -864,17 +920,170 @@ function dungeon(seed) {
   order.forEach((r, i) => {
     const inner = [r.x0 + 1, r.y0 + 1, r.x1 - 1, r.y1 - 1], t = i / Math.max(1, order.length - 1);
     if (r === camp) { clear(m, cx(r) - 2, cy(r) - 1, cx(r) + 2, cy(r) + 2); m.o[cy(r) - 1][cx(r) - 2] = "E"; FIRES.cave.push([cx(r), cy(r)]); return; }
-    m.spawns.push({ k: t < 0.4 ? "candle" : t < 0.75 ? "prism" : "geode", n: t < 0.4 ? 6 : 5, r: inner });
-    if (t >= 0.3) m.spawns.push({ k: t < 0.7 ? "candle" : "prism", n: 2, r: inner });
+    const elite = 0.04 + 0.16 * t;
+    m.spawns.push({ k: t < 0.4 ? "spiderhand" : t < 0.75 ? "owlstare" : "bearmaw", n: t < 0.15 ? 3 : t < 0.4 ? 5 : 6, r: inner, elite });
+    if (t >= 0.3) m.spawns.push({ k: t < 0.7 ? "spiderhand" : "owlstare", n: 2, r: inner, elite });
   });
-  m.spawns.push({ k: "geode", n: 4, r: [ante.x0 + 1, ante.y0 + 1, ante.x1 - 1, ante.y1 - 1] });
+  m.spawns.push({ k: "bearmaw", n: 4, r: [ante.x0 + 1, ante.y0 + 1, ante.x1 - 1, ante.y1 - 1], elite: 0.3 });
   m.spawns.push({ k: "boss", n: 1, r: [cx(boss), cy(boss) - 1, cx(boss) + 1, cy(boss)] });
   for (const v of vaults) { m.o[v.y0][v.x0] = "K"; m.o[v.y0][v.x1] = "K"; m.spawns.push({ k: "chest_cave", n: 1, r: [v.x0 + 1, v.y0 + 1, v.x0 + 2, v.y0 + 1] }); }
-  m.gates = { west: { t: [[start.x0, start.y0 + 3], [start.x0, start.y0 + 4]], a: [[start.x0 + 3, start.y0 + 3], [start.x0 + 3, start.y0 + 4]] } };
+  // behind the arena, past the boss: a crack in the far wall that leads further down
+  for (let x = boss.x1 + 1; x <= m.w - 3; x++) { dig(x, 10); dig(x, 11); m.o[10][x] = " "; m.o[11][x] = " "; }
+  m.gates = {
+    west: { t: [[start.x0, start.y0 + 3], [start.x0, start.y0 + 4]], a: [[start.x0 + 3, start.y0 + 3], [start.x0 + 3, start.y0 + 4]] },
+    rift: { t: [[m.w - 3, 10], [m.w - 3, 11]], a: [[boss.x1 - 1, 10], [boss.x1 - 1, 11]] },
+  };
   m.entry = m.gates.west.a[0];
-  const pts = [m.gates.west.a[1], [cx(boss), cy(boss) + 3], [cx(ante), cy(ante)]];
+  const pts = [m.gates.west.a[1], [cx(boss), cy(boss) + 3], [cx(ante), cy(ante)], m.gates.rift.a[0], m.gates.rift.t[0]];
   for (const r of rooms) pts.push(spot(m, cx(r), cy(r)));
   for (const v of vaults) pts.push([v.x0 + 1, v.y0 + 1], [v.x0 + 2, v.y0 + 1]);
+  connectAll(m, pts, "c");
+  return m;
+}
+
+/**
+ * A themed dungeon, cut out of solid rock on the same cell grid as the open maps
+ * but far tighter: every cell is a chamber (or just a bend in the passage), every
+ * link a corridor, and there are almost no loops — so there is one critical path
+ * from the way in to the deepest chamber, and everything off it is a dead end.
+ *
+ * Difficulty is laid along that path: the first chambers hold one or two of the
+ * weakest kind; each step deeper adds bodies, stronger kinds and more elites; a
+ * camp with a fire sits halfway; dead ends are small vaults — a chest behind a
+ * harder-than-usual guard; and the last chamber belongs to a guardian (a fixed
+ * rank-2 monster) or, in the final dungeon, to the boss, with the guardian in the
+ * chamber before it.
+ */
+function maze(cfg) {
+  const box = { seed: cfg.seed };
+  const { cw, ch, cs, cr } = cfg;                         // cells across and down; a cell's width and height in tiles
+  const m = blank(cfg.id, cfg.name, cw * cs + MG * 2, ch * cr + MG * 2, "W");
+  m.bgm = cfg.bgm || "cave";
+  m.theme = cfg.theme;
+  const P = plan(box, cw, ch, cfg.entry, cfg.loops);
+  let far = 1, exit = cfg.entry;
+  for (let c = 0; c < P.n; c++) if (P.dist[c] > far) { far = P.dist[c]; exit = c; }
+  const main = [];
+  for (let c = exit; c >= 0; c = P.par[c]) main.unshift(c);
+  const onMain = new Set(main);
+  const x0 = (c) => MG + (c % cw) * cs, y0 = (c) => MG + Math.floor(c / cw) * cr;
+  const hall = new Set();
+  const dig = (x, y, set) => { if (x > 1 && y > 1 && x < m.w - 2 && y < m.h - 2) { m.g[y][x] = "c"; if (set) set.add(y * m.w + x); } };
+
+  // what each cell is
+  const kind = new Array(P.n).fill("room");
+  const camp = main[Math.floor(main.length / 2)];
+  for (let c = 0; c < P.n; c++) {
+    if (c === cfg.entry) kind[c] = "gate";
+    else if (c === exit) kind[c] = cfg.boss ? "arena" : "guard";
+    else if (cfg.boss && c === main[main.length - 2]) kind[c] = "guard";
+    else if (c === camp) kind[c] = "camp";
+    else if (P.deg[c] === 1) kind[c] = "vault";
+    else if (!onMain.has(c) && P.deg[c] === 2 && rnd(box) < 0.4) kind[c] = "bend";
+  }
+  // chambers: set pieces fill their cell, ordinary rooms are any size and ragged, vaults are small
+  const room = [];
+  for (let c = 0; c < P.n; c++) {
+    const k = kind[c], X = x0(c), Y = y0(c);
+    let w, h, rx, ry;
+    if (k === "arena") { w = cs - 1; h = cr - 1; rx = X; ry = Y; }
+    else if (k === "guard" || k === "camp" || k === "gate") { w = cs - 3; h = cr - 3; rx = X + 1; ry = Y + 1; }
+    else {
+      w = k === "bend" ? 2 : k === "vault" ? 4 : ri(box, 4, cs - 4);
+      h = k === "bend" ? 2 : k === "vault" ? 3 : ri(box, 3, cr - 4);
+      rx = X + 1 + ri(box, 0, cs - 3 - w); ry = Y + 1 + ri(box, 0, cr - 3 - h);
+    }
+    const r = { x0: rx, y0: ry, x1: rx + w - 1, y1: ry + h - 1, cx: rx + (w >> 1), cy: ry + (h >> 1) };
+    room.push(r);
+    for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) dig(x, y);
+    if (k === "room") {
+      for (let x = r.x0; x <= r.x1; x++) { if (rnd(box) < 0.3) dig(x, r.y0 - 1); if (rnd(box) < 0.3) dig(x, r.y1 + 1); }
+      for (let y = r.y0; y <= r.y1; y++) { if (rnd(box) < 0.3) dig(r.x0 - 1, y); if (rnd(box) < 0.3) dig(r.x1 + 1, y); }
+    }
+  }
+  // corridors: two tiles wide along the critical path, often a single file elsewhere
+  const leg = (ax, ay, bx, by, wd) => {
+    for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) {
+      dig(x, y, hall);
+      if (wd > 1) { dig(x + 1, y, hall); dig(x, y + 1, hall); dig(x + 1, y + 1, hall); }
+    }
+  };
+  for (let c = 0; c < P.n; c++) for (const o of [c + 1, c + cw]) {
+    if (o >= P.n || (o === c + 1 && o % cw === 0) || !P.linked(c, o)) continue;
+    const a = room[c], b = room[o], wd = onMain.has(c) && onMain.has(o) ? 2 : rnd(box) < 0.45 ? 1 : 2;
+    if (o === c + 1) { leg(a.cx, a.cy, b.cx, a.cy, wd); leg(b.cx, a.cy, b.cx, b.cy, wd); }
+    else { leg(a.cx, a.cy, a.cx, b.cy, wd); leg(a.cx, b.cy, b.cx, b.cy, wd); }
+  }
+  // the floor's second face, and what the theme leaves lying about
+  const T2 = cfg.dress;
+  const inRoom = (x, y) => !hall.has(y * m.w + x);
+  for (let c = 0; c < P.n; c++) {
+    const r = room[c], k = kind[c];
+    // a channel of whatever runs here (sludge, blood) along the top of the bigger rooms
+    if (T2.pool && k === "room" && r.x1 - r.x0 >= 4 && r.y1 - r.y0 >= 3 && rnd(box) < T2.pool) {
+      if (T2.pool >= 0.5) { for (let x = r.x0 + 1; x <= r.x1 - 1; x++) if (inRoom(x, r.y0 + 1)) m.g[r.y0 + 1][x] = "w"; }
+      else { const px = r.x0 + 1 + ri(box, 0, 1), py = r.y1 - 1; for (let y = py - 1; y <= py; y++) for (let x = px; x <= px + 1 + ri(box, 0, 1); x++) if (inRoom(x, y) && x < r.x1) m.g[y][x] = "w"; }
+    }
+  }
+  for (let y = 2; y < m.h - 2; y++) for (let x = 2; x < m.w - 2; x++) {
+    if (m.g[y][x] !== "c") continue;
+    if (rnd(box) < 0.12) m.g[y][x] = "d";
+    if (!inRoom(x, y)) continue;
+    const wall = m.g[y - 1][x] === "W", r2 = rnd(box);
+    if (wall) { let acc = 0; for (const [ch2, p] of T2.wall) { acc += p; if (r2 < acc) { m.o[y][x] = ch2; break; } } }
+    else if (m.g[y][x - 1] !== "W" && m.g[y][x + 1] !== "W" && m.g[y + 1][x] !== "W") { let acc = 0; for (const [ch2, p] of T2.floor) { acc += p; if (r2 < acc) { m.o[y][x] = ch2; break; } } }
+  }
+  // who and what is in each chamber
+  const K = cfg.mobs.length;
+  const pts = [], gates = {};
+  for (let c = 0; c < P.n; c++) {
+    const r = room[c], k = kind[c], t = P.dist[c] / far;
+    const inner = [r.x0, r.y0, r.x1, r.y1];
+    const band = P.dist[c] <= 1 ? 0 : Math.min(K - 1, Math.floor(t * K));
+    const open = (pad) => { for (let y = r.cy - pad; y <= r.cy + pad; y++) for (let x = r.cx - pad; x <= r.cx + pad; x++) if (x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1) { m.o[y][x] = " "; if (m.g[y][x] === "w") m.g[y][x] = "c"; } };
+    pts.push([r.cx, r.cy]);
+    if (k === "gate") {
+      for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) m.o[y][x] = " ";
+      gates.in = { t: [[r.x0, r.cy], [r.x0, r.cy + 1]], a: [[r.x0 + 2, r.cy], [r.x0 + 2, r.cy + 1]] };
+      m.spawns.push({ k: cfg.mobs[0], n: 1, r: [r.cx, r.y0, r.x1, r.y1], elite: 0 });
+    } else if (k === "camp") {
+      open(2);
+      m.o[r.y0][r.x0] = "E";
+      FIRES[cfg.id].push([r.cx, r.cy]);
+    } else if (k === "vault") {
+      // a side branch worth the detour: a chest, and guards a notch above the rooms around it
+      open(1);
+      m.spawns.push({ k: cfg.chest, n: 1, r: [r.cx, r.y0, r.cx, r.y0] });
+      m.spawns.push({ k: cfg.mobs[Math.min(K - 1, band + 1)], n: 2 + (t > 0.5 ? 1 : 0), r: inner, elite: 0.35 });
+      pts.push([r.cx, r.y0]);
+    } else if (k === "guard") {
+      open(2);
+      m.spawns.push({ k: cfg.guard, n: 1, r: [r.cx, r.cy, r.cx, r.cy], el: 2 });
+      m.spawns.push({ k: cfg.mobs[K - 1], n: 3, r: inner, elite: 0.25 });
+      m.spawns.push({ k: cfg.chest, n: 1, r: [r.x1 - 1, r.y0, r.x1 - 1, r.y0] });
+      pts.push([r.x1 - 1, r.y0]);
+      // the way out, for those who got this far: back up to where they came in
+      if (cfg.out && c === exit) { gates.out = { t: [[r.x1, r.cy], [r.x1, r.cy + 1]], a: [[r.x1 - 2, r.cy], [r.x1 - 2, r.cy + 1]] }; }
+    } else if (k === "arena") {
+      for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) { m.o[y][x] = " "; m.g[y][x] = m.g[y][x] === "w" ? "c" : m.g[y][x]; }
+      for (const [x, y] of [[r.x0 + 1, r.y0 + 1], [r.x1 - 1, r.y0 + 1], [r.x0 + 1, r.y1 - 1], [r.x1 - 1, r.y1 - 1]]) m.o[y][x] = T2.pillar;
+      m.spawns.push({ k: cfg.boss, n: 1, r: [r.cx, r.cy, r.cx, r.cy] });
+    } else if (k === "bend") {
+      if (t > 0.3) m.spawns.push({ k: cfg.mobs[band], n: 1, r: inner, elite: 0.04 + 0.2 * t });
+    } else {
+      // an ordinary chamber: sparse and weak by the door, crowded and mean in the depths
+      const n = P.dist[c] <= 1 ? 1 + (c % 2) : 2 + Math.round(t * cfg.n) + (onMain.has(c) ? 0 : 1);
+      m.spawns.push({ k: cfg.mobs[band], n, r: inner, elite: 0.03 + 0.2 * t });
+      if (t >= 0.4) m.spawns.push({ k: cfg.mobs[clamp(band + (rnd(box) < 0.5 ? -1 : 1), 0, K - 1)], n: 1 + (t > 0.7 ? 1 : 0), r: inner, elite: 0.03 + 0.2 * t });
+    }
+  }
+  for (const name of Object.keys(gates)) {
+    for (const [x, y] of gates[name].t.concat(gates[name].a)) { m.o[y][x] = " "; if (m.g[y][x] !== "c" && m.g[y][x] !== "d") m.g[y][x] = "c"; }
+    for (const a of gates[name].a) pts.push(a);
+    for (const a of gates[name].t) pts.push(a);
+  }
+  m.gates = gates;
+  m.entry = gates.in.a[0];
   connectAll(m, pts, "c");
   return m;
 }
@@ -925,7 +1134,7 @@ function buildTown() {
     { id: "elder", name: "관리자 엘더윈", role: "elder", x: 19, y: 11, look: [5, 0, 0, "#3f5a9a"] },
     { id: "train", name: "수련관 카이", role: "train", x: 23, y: 12, look: [1, 2, 0, "#7a2e2e"] },
     { id: "guard", name: "경비병 토비", role: "talk", x: 35, y: 13, look: [1, 0, 0, "#5e6470"],
-      say: "동쪽 문은 바람초원, 서쪽 문은 네온 시티로 이어져. 길은 갈라지고 막히기도 하니 샛길을 살펴봐 — 막다른 곳엔 보물 상자나 쉬어 갈 모닥불이 있거든. 네온 시티는 레벨 13은 되어야 버틸 만해!" },
+      say: "동쪽 문은 바람초원, 서쪽 문은 네온 시티로 이어져. 길은 갈라지고 막히기도 하니 샛길을 살펴봐 — 막다른 곳엔 보물 상자나 모닥불, 그리고 가끔은 땅속으로 내려가는 계단이 있거든. 문 이름 옆의 레벨을 보고, 감당할 만한 곳부터 가!" },
   );
   m.gates = { east: { t: [[38, 14], [38, 15]], a: [[36, 14], [36, 15]] }, west: { t: [[1, 14], [1, 15]], a: [[3, 14], [3, 15]] } };
   FIRES.town.push([22, 22]);
@@ -934,27 +1143,46 @@ function buildTown() {
 
 const PLACES = ["vault", "camp", "pond", "vault", "ruin", "grove", "vault", "pond"];
 function buildMaps() {
-  for (const id of ["town", "meadow", "forest", "cave", "city"]) FIRES[id] = [];
+  for (const id of ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"]) FIRES[id] = [];
   const town = buildTown();
   const meadow = wild({
     id: "meadow", name: "바람초원", seed: 22021, min: 7, cw: 7, ch: 5, entry: 14, exit: 20, loops: 0.14, merge: 0.3, river: 4,
     ground: ".", tufts: ",", edge: "T", treeCh: "T", tree: 0.022, road: "p", shore: "s",
-    walls: [["cliff", 0.5], ["hedge", 0.22], ["trees", 0.28]], places: PLACES, mobs: ["acorn", "potcrab", "puff"], pondMob: "puff", chest: "chest_meadow", n: 4,
+    walls: [["cliff", 0.5], ["hedge", 0.22], ["trees", 0.28]], places: PLACES, mobs: ["twinhare", "gutfrog", "eyecrow"], pondMob: "eyecrow", chest: "chest_meadow", n: 4,
     gates: [["west", "w", 14], ["east", "e", 20]],
   });
   const forest = wild({
-    id: "forest", name: "속삭임 숲", seed: 33053, min: 7, bgm: "forest", cw: 7, ch: 5, entry: 14, exit: 6, loops: 0.1, merge: 0.18, river: 3,
+    id: "forest", name: "속삭임 숲", seed: 33053, min: 8, bgm: "forest", cw: 7, ch: 5, entry: 14, exit: 6, loops: 0.1, merge: 0.18, river: 3,
     ground: ":", tufts: ";", edge: "P", treeCh: "P", tree: 0.05, road: "p", shore: null,
-    walls: [["trees", 0.55], ["cliff", 0.33], ["ruin", 0.12]], places: PLACES, mobs: ["capfrog", "stump", "yarn", "lantern"], pondMob: null, chest: "chest_forest", n: 4,
+    walls: [["trees", 0.55], ["cliff", 0.33], ["ruin", 0.12]], places: ["stair"].concat(PLACES), stair: "crypt",
+    mobs: ["splitboar", "ribdeer", "hydrasnake", "mothface"], pondMob: null, chest: "chest_forest", n: 4,
     gates: [["west", "w", 14], ["north", "n", 6]],
   });
   const cave = dungeon(44093);
   const town2 = city({
     id: "city", name: "네온 시티", seed: 55071, bgm: "city", cw: 7, ch: 5, entry: 20, exit: 14, loops: 0.2, merge: 0.3,
-    ground: "k", road: "a", roadW: 3, places: ["vault", "camp", "pond", "vault", "ruin", "vault", "ruin"], min: 6,
-    mobs: ["eyecam", "signbot", "tvhead", "vend"], chest: "chest_city", n: 4,
+    ground: "k", road: "a", roadW: 3, places: ["stair", "vault", "camp", "pond", "vault", "ruin", "vault", "ruin"], min: 7, stair: "sewer",
+    mobs: ["pigeonmass", "doghead", "catsplit", "fishwalker"], chest: "chest_city", n: 4,
     gates: [["east", "e", 20]],
   });
+  // the dungeons: each a maze with its own inhabitants and its own furniture
+  const crypt = maze({
+    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, cw: 6, ch: 5, cs: 10, cr: 9, entry: 24, loops: 0.05, out: true,
+    mobs: ["ratking", "bonehound", "batcluster"], guard: "bonehound", chest: "chest_crypt", n: 3,
+    dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.03], ["4", 0.035], ["5", 0.012]], pillar: "5", pool: 0 },
+  });
+  const sewer = maze({
+    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, cw: 7, ch: 5, cs: 10, cr: 9, entry: 0, loops: 0.06, out: true,
+    mobs: ["leechmaw", "gatorhalf", "eelknot"], guard: "gatorhalf", chest: "chest_sewer", n: 3,
+    dress: { wall: [["6", 0.14], ["7", 0.05]], floor: [["7", 0.02], ["n", 0.02]], pillar: "7", pool: 0.6 },
+  });
+  const abyss = maze({
+    id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, cw: 7, ch: 6, cs: 10, cr: 9, entry: 35, loops: 0.04, boss: "abyssboss",
+    mobs: ["twingoat", "horsehalf", "serpentwing"], guard: "horsehalf", chest: "chest_abyss", n: 3,
+    dress: { wall: [["0", 0.12], ["8", 0.06]], floor: [["8", 0.03], ["4", 0.03], ["0", 0.012]], pillar: "8", pool: 0.4 },
+  });
+  // the level a character should be to walk in, shown on every door that leads there
+  for (const [m, lo, hi] of [[meadow, 1, 7], [forest, 8, 13], [crypt, 12, 17], [town2, 14, 21], [sewer, 22, 27], [cave, 24, 32], [abyss, 32, 40]]) m.band = [lo, hi];
   // doors between the worlds: stepping on a gate tile puts you on the matching arrival tile next door
   const join = (a, ga, b, gb) => {
     for (let k = 0; k < 2; k++) {
@@ -962,12 +1190,19 @@ function buildMaps() {
       portal(b, b.gates[gb].t[k][0], b.gates[gb].t[k][1], a.id, a.gates[ga].a[k][0], a.gates[ga].a[k][1]);
     }
   };
+  /** A one-way door: out of `a` at gate `ga`, arriving beside `b`'s gate `gb`. */
+  const leave = (a, ga, b, gb) => { for (let k = 0; k < 2; k++) portal(a, a.gates[ga].t[k][0], a.gates[ga].t[k][1], b.id, b.gates[gb].a[k][0], b.gates[gb].a[k][1]); };
   join(town, "east", meadow, "west");
   join(town, "west", town2, "east");
   join(meadow, "east", forest, "west");
   join(forest, "north", cave, "west");
+  join(forest, "crypt", crypt, "in");
+  join(town2, "sewer", sewer, "in");
+  join(cave, "rift", abyss, "in");
+  leave(crypt, "out", forest, "crypt");
+  leave(sewer, "out", town2, "sewer");
   const out = {};
-  for (const m of [town, meadow, forest, cave, town2]) out[m.id] = finalize(m);
+  for (const m of [town, meadow, forest, crypt, town2, sewer, cave, abyss]) out[m.id] = finalize(m);
   return out;
 }
 const MAPS = buildMaps();
@@ -988,10 +1223,13 @@ function canFly(m, x, y) {
   return m.g[ty][tx] !== "W";
 }
 
+const doorName = (m) => (m.band ? `${m.name} Lv.${m.band[0]}–${m.band[1]}` : m.name);
 function mapPayload(m) {
   return {
     id: m.id, name: m.name, w: m.w, h: m.h, g: m.g, o: m.o, big: m.big, safe: m.safe, bgm: m.bgm,
-    portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: MAPS[p.to].name })),
+    theme: m.theme || null, band: m.band || null,
+    // a door names where it leads and how strong you should be to go there
+    portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: doorName(MAPS[p.to]) })),
     npcs: m.npcs,
   };
 }
@@ -1065,6 +1303,7 @@ function migrate(ch) {
   const tr = isObj(ch.tr) ? ch.tr : {};
   ch.tr = { str: tr.str | 0, vit: tr.vit | 0, int: tr.int | 0, grd: tr.grd | 0 };
   if (!isObj(ch.q)) ch.q = { i: 0, n: 0, st: 0 };
+  ch.q = { i: clamp(ch.q.i | 0, 0, QUESTS.length), n: Math.max(0, ch.q.n | 0), st: ch.q.st === 1 ? 1 : 0 };
   ch.bq = isObj(ch.bq) && MOBS[ch.bq.k] ? { k: ch.bq.k, n: ch.bq.n | 0, need: BOUNTY_N } : null;
   ch.bn = ch.bn | 0;
   const mk = {};
@@ -1198,8 +1437,8 @@ function guildNear(S, p) {
   return Math.min(3, n);
 }
 
-function newMob(S, k, r) {
-  return { id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false };
+function newMob(S, k, r, sp) {
+  return { fix: (sp && sp.el) || 0, ep: sp && sp.elite !== undefined ? sp.elite : 0.08, id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false };
 }
 export function setup() {
   const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, parties: {}, chat: [], n: 0 };
@@ -1211,7 +1450,7 @@ export function setup() {
     }
     for (const sp of MAPS[id].spawns) {
       for (let i = 0; i < sp.n; i++) {
-        const mob = newMob(S, sp.k, sp.r);
+        const mob = newMob(S, sp.k, sp.r, sp);
         placeMob(S, MAPS[id], mob);
         rt.mobs.push(mob);
       }
@@ -1236,7 +1475,8 @@ function placeMob(S, m, mob) {
     }
   }
   // now and then an elite spawns: far tougher, far more rewarding — party prey
-  mob.el = !MOBS[mob.k].boss && !MOBS[mob.k].chest && rnd(S) < 0.08 ? 1 : 0;
+  // (how often depends on where: deeper chambers and side vaults breed more of them)
+  mob.el = mob.fix || (!MOBS[mob.k].boss && !MOBS[mob.k].chest && rnd(S) < mob.ep ? 1 : 0);
   mob.hp = mobMax(mob);
   mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null;
   mob.wx = mob.x; mob.wy = mob.y;
@@ -1545,7 +1785,7 @@ function killMob(S, rt, mob) {
   const d = MOBS[mob.k];
   const el = mob.el;
   mob.dead = true;
-  mob.respAt = S.now + d.resp;
+  mob.respAt = S.now + (mob.fix === 2 ? GUARD_RESP : d.resp);
   mob.tgt = null;
   mob.dot = null;
   rt.ev.push(["k", mob.id]);
@@ -1593,8 +1833,8 @@ function killMob(S, rt, mob) {
   }
   if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}을(를) 쓰러뜨렸습니다!`);
   if (el === 2) {
-    rt.fb = 0;
-    if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 우두머리 [${d.name}]을(를) 쓰러뜨렸습니다!`);
+    if (mob.temp) rt.fb = 0;
+    if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 ${mob.temp ? "우두머리" : "수문장"} [${d.name}]을(를) 쓰러뜨렸습니다!`);
   }
   // some monsters go off where they fall
   if (d.burst) {
@@ -2706,6 +2946,6 @@ export function defs() {
     items: ITEMS, mobs, classes, skills: SKILLS, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV, maxLv: MAXLV,
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
-    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
+    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
   };
 }

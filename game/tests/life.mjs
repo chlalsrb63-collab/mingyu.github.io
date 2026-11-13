@@ -116,7 +116,7 @@ assert.ok(va.chat.some((c) => c.g === "모닥불회") && !(vc.chat || []).some((
 // a guildmate beside you adds experience
 a.x = b.x + 20; a.y = b.y; a.mvAt = now; a.warm = 0; b.warm = 0; a.food = null;
 const gain = (pid, p) => {
-  const mob = m.mobs.find((x) => x.k === "acorn"); mob.dead = false; mob.el = 1; mob.hp = 1; mob.x = p.x + 12; mob.y = p.y; mob.by = {};
+  const mob = m.mobs.find((x) => x.k === "twinhare"); mob.dead = false; mob.el = 1; mob.hp = 1; mob.x = p.x + 12; mob.y = p.y; mob.by = {};
   p.atkAt = 0; p.streak = 0; p.streakAt = -1e9; p.ch.mk = {};
   const before = p.ch.xp + 0;
   const lvl = p.ch.lvl;
@@ -134,7 +134,7 @@ assert.ok(act(B, { t: "gleave" }).ok && b.ch.guild === "");
 assert.ok(act(A, { t: "emo", i: 1 }).ok);
 assert.equal(act(A, { t: "emo", i: 99 }).ok, false);
 a.x = 8 * 16 + 8; a.y = 22 * 16 + 10; a.mvAt = now;            // on the open road
-const mob = m.mobs.find((x) => x.k === "acorn"); mob.dead = false; mob.el = 0; mob.hp = 9999; mob.x = a.x + 14; mob.y = a.y; mob.stun = 0;
+const mob = m.mobs.find((x) => x.k === "twinhare"); mob.dead = false; mob.el = 0; mob.hp = 9999; mob.x = a.x + 14; mob.y = a.y; mob.stun = 0;
 a.atkAt = 0; a.dir = 2;
 const x0 = mob.x;
 act(A, { t: "atk" });

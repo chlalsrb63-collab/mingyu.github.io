@@ -78,21 +78,21 @@ assert.equal(act({ t: "salv", s: 0 }).ok, false, "stones are not gear");
 // ── bounties renew themselves
 near("elder");
 assert.equal(act({ t: "bq", a: "take", k: "boss" }).ok, false);
-assert.ok(act({ t: "bq", a: "take", k: "acorn" }).ok);
+assert.ok(act({ t: "bq", a: "take", k: "twinhare" }).ok);
 assert.equal(act({ t: "bq", a: "done" }).ok, false);
 ch.bq.n = ch.bq.need;
 const g0 = ch.gold;
 assert.ok(act({ t: "bq", a: "done" }).ok);
-assert.ok(ch.gold > g0 && ch.bn === 1 && ch.bq.n === 0 && ch.bq.k === "acorn");
+assert.ok(ch.gold > g0 && ch.bn === 1 && ch.bq.n === 0 && ch.bq.k === "twinhare");
 
 // ── the hunt: streaks, mastery, and the field boss that enough kills call out
 const p = S.players[PID];
 const rt = S.maps.meadow;
 p.map = "meadow"; rt.n++; S.maps.town.n--; p.sendMap = true;
 ch.eq.weapon = gear("w_lancer_5", { enh: 10 }); p.stc = null;
-const acorns = rt.mobs.filter((m) => m.k === "acorn");
+const acorns = rt.mobs.filter((m) => m.k === "twinhare");
 let killed = 0;
-for (const m of rt.mobs) { if (m.k !== "acorn" && m.k !== "potcrab") continue; if (rt.fb) break; m.dead = false; m.el = 0; m.hp = 1; p.x = m.x - 12; p.y = m.y; p.mvAt = now; p.atkAt = 0; p.dir = 2; assert.ok(act({ t: "atk" }).ok); if (m.dead) killed++; step(30); p.hp = 99999; }
+for (const m of rt.mobs) { if (m.k !== "twinhare" && m.k !== "gutfrog") continue; if (rt.fb) break; m.dead = false; m.el = 0; m.hp = 1; p.x = m.x - 12; p.y = m.y; p.mvAt = now; p.atkAt = 0; p.dir = 2; assert.ok(act({ t: "atk" }).ok); if (m.dead) killed++; step(30); p.hp = 99999; }
 // not enough distinct monsters at once: revive and repeat until the count is reached
 for (let i = 0; !rt.fb && i < 500; i++) {
   const m = acorns[i % acorns.length];
@@ -103,10 +103,10 @@ for (let i = 0; !rt.fb && i < 500; i++) {
 }
 assert.ok(rt.fb, "kills call out the field boss, counted " + rt.kc);
 assert.ok(p.streak >= 20, "kills in quick succession build a streak, got " + p.streak);
-assert.ok((ch.mk.acorn || 0) >= 30, "kills are counted per monster");
+assert.ok((ch.mk.twinhare || 0) >= 30, "kills are counted per monster");
 const boss = rt.mobs.find((m) => m.el === 2);
-assert.ok(boss && boss.k === "potcrab" && rt.fb === boss.id, "the field boss arrives");
-assert.equal(boss.hp, Math.round(D.mobs.potcrab.hp * D.eliteHp[2]));
+assert.ok(boss && boss.k === "gutfrog" && rt.fb === boss.id, "the field boss arrives");
+assert.equal(boss.hp, Math.round(D.mobs.gutfrog.hp * D.eliteHp[2]));
 boss.hp = 1; boss.x = p.x + 12; boss.y = p.y; p.atkAt = 0;
 act({ t: "atk" });
 step(30);
