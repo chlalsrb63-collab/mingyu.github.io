@@ -32,7 +32,7 @@ Moved out of `AGENTS.md`; read the one recipe your task needs.
 **Add a map set piece**
 1. Rows in `src/logic/30-maps-overworld.js PIECES` using the `PIECE` legend (`*` chest, `#` fire …).
 2. Use it: add the name to a map cfg's `vaultKinds` or `features` in `34-maps-world.js`.
-3. New tile/object character? solidity (`SOLID_G` in 20-helpers-mapkit; any object blocks), drawing in `public/scene2d.js`
+3. New tile/object character? solidity (`SOLID_G` in 20-helpers-mapkit; any object blocks), drawing in `public/scene_props.js`
    (scenery sprites) / `iso_tall.js` / `iso_ground.js`, minimap colour in `art.js renderMini`,
    preview colours in `_over.html`.
 4. `node scripts/test-all.mjs maps world`, then `shot.mjs --page over --map <id>` and `--map <id>`.
@@ -40,8 +40,8 @@ Moved out of `AGENTS.md`; read the one recipe your task needs.
 **Add a UI window**
 1. Markup: `<section class="window" id="w-<id>" hidden>` in `public/index.html` (copy one) + a
    `#menu button[data-win="<id>"]` with a `uiicons.js MENU_ICON`.
-2. `public/client.js`: add `<id>` to `WIN`, a hotkey in the keydown switch (Korean 2-set key too, e.g.
-   `case "u": case "ㅕ":`), a `render<Id>(s)` registered in `refreshUi()` as `draw("<id>", () => [deps…], render<Id>)`; styles in `public/hud.css`.
+2. `public/windows.js`: add `<id>` to `WIN`; `input.js`: a hotkey in the keydown switch (Korean 2-set key too, e.g.
+   `case "u": case "ㅕ":`); a `render<Id>(s)` (a `win_*.js` module) registered in `hud.js refreshUi()` as `draw("<id>", () => [deps…], render<Id>)`; styles in `public/hud.css`.
    Keep the `header` + `.body` shape: hud.css then caps it to the safe zone (`--win-max` for a wide one) and scrolls the body;
    `placeWin` places it beside open windows or folds them.
 3. Data it needs: `selfPayload` in `90-views-api.js` (send only when dirty) or `defs()`; actions via
@@ -61,7 +61,7 @@ Moved out of `AGENTS.md`; read the one recipe your task needs.
 **Add a sound / music**
 - Effect: a function in `public/audio.js SFX` (synth: `this.tone`, `this.noise`), optional level in
   `BOOST`, rate limit in `THROTTLE`, priority in `IMPORTANT`; play with `Sound.play("name")`. Server-driven sounds are
-  played from event handlers in `client.js`/`skillfx.js`.
+  played from event handlers in `events.js`/`skillfx.js`.
 - Music: a track in `audio.js TRACKS`; a map picks it with `bgm` in its cfg.
 - External file instead: the External assets section below + `Assets.play(ctx, "sfx.<key>")` (fall back to the synth).
 

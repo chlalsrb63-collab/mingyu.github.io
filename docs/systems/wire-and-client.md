@@ -15,9 +15,9 @@ snapshot (`viewFor`), `defs()`, and the plain-ES-module client (`client.js`, win
 | `tick(S,now)` / `endTick(S)` (`80-simulation.js`) | world step; `endTick` clears `rt.ev`, `rt.who`, `S.chat` after all snapshots are sent |
 | `viewFor(S,pid)` (`90-views-api.js`) | builds one player's `snap`; also `selfPayload(p)` (own sheet), `mapPayload` (34), `dimView` (64-dim), `homeSelf` (64-housing) |
 | `defs()` (`90-views-api.js`) | static tables sent once in `welcome`: `items mobs skills shop quests enh bag house jobs stats scale grade wm* affix runes runewords rarity slots wkinds legend sets mastery waypoints cos* achievements collection event daily tutorial side sky dim maps(+`to` routes) …` — the client duplicates no rules |
-| `client.js` (3 091 lines; FILEMAP's 2 563 is stale) | banners (`grep -n "^// ───"`): connection L58 · state `G` L118 · messages `onSnap` L276 · effects · input L631 · player actions L845 · update L1020 · render L1220 · HUD & windows L1454 · title · main loop L3072 |
+| client modules (`public/`) | `client.js` entry (boot, start-up wiring in the old order, lobby hook-up, main loop `frame`, `window.__game`) · `state.js` (`G`, helpers, `layout/resize`) · `net.js` (socket `connect act`, `onMessage`, **`onSnap`**, `sync`, `loadMap`) · `events.js` (`onEvent onGain floatText attackFx`) · `input.js` (keydown hotkeys, pointer, stick) · `actions.js` (attack/skills/potions, aim, `interact`, talk) · `update.js` (`update`: prediction, `mv`, auto-hunt) · `overlay.js` (`render`, text overlay) · `windows.js` (`WIN openWin placeWin fold`, toasts, chat, tips) · `items.js` (item text/tips/slots) · `hud.js` (`draw refreshUi hudTick`, bars, hotbar, tracker) · `win_char/win_world/win_shop/win_social.js` (window renderers) |
 | `public/radar.js` | radar (side column, player-centred, `ZOOMS`) + map window `#w-map` (current map, world route map from `defs.maps[].to`); fed by `G`, `Art.renderMini` texture; `Radar.init(deps)`, `loadMap`, `draw`, `drawWin`, `opened` |
-| `public/scene2d.js` (3 003) | renderer; banners: drawing tools · scenery · ground L683 · ambient life · creatures · effects L1774 · pets · the frame L2401 · title/creation L2959 |
+| `public/scene2d.js` + `scene_*.js` | renderer: `scene2d.js` = public API (re-exports everything) + the frame (`render`, lighting); `scene_view` (projection, canvas, camera, `G`, `project pick`) · `scene_props` (scenery sprites) · `scene_ground` (bake + per-frame ground) · `scene_map` (`loadMap`, map state, blocks, labels, ambient) · `scene_people` (people, monsters, pets, footsteps) · `scene_fx` (`fx big shake`, qi, arrows, `drawFx`, aim arrow) · `scene_stage` (title/creation) |
 
 ## Snapshot (`type:"snap"`) — positional arrays, append new fields at the END
 | field | content |
@@ -38,7 +38,7 @@ snapshot (`viewFor`), `defs()`, and the plain-ES-module client (`client.js`, win
 Each player sees only their map. Big/rare data ⇒ `defs()`, `map`, `who` or `self` (dirty flags), never every snapshot.
 
 ## Action flow
-1. Client `act({t,…})` → `ws.send({type:"action",action})` (`client.js` L113). Walking: `{t:"mv",x,y,d,a}` at most every 90 ms when changed; client predicts own movement.
+1. Client `act({t,…})` → `ws.send({type:"action",action})` (`net.js`). Walking: `{t:"mv",x,y,d,a}` at most every 90 ms when changed; client predicts own movement.
 2. `room.ts` → `validateAction` (fail ⇒ `{type:"error",error}` except silent for `mv`/`atk`) → `applyAction`.
 3. Server `mv`: max step = `spd·dt·1.6+8`, `canStand`; failure sets `p.fix` so the next `me[5]=1` snaps the client. Stepping on a portal tile triggers `changeMap`.
 4. `applyAction` sets `p.dirty = true` (→ `self`), pushes `rt.ev`, `p.gain`, `p.toast`; `saveSoon` for persistent progress.
