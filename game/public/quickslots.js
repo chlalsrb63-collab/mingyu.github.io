@@ -182,7 +182,7 @@ export function render() {
   render.lvl = s.lvl;
   // a gentle pointer at the empty bar until something is put in it
   const hint = $("#qs-hint");
-  if (hint) hint.hidden = any;
+  if (hint) { hint.hidden = any; hint.textContent = C.touch() ? "스킬(K)·가방의 [단축칸] → 칸 누르기" : "스킬(K)·아이템(가방)을 끌어다 놓으세요"; }
   if (!any && !render.told && s.lvl >= 1) {
     render.told = true;
     C.addChat("단축칸 1~9는 비어 있습니다. 스킬 창(K)의 스킬이나 가방의 물약·음식·주문서를 아래 단축칸에 끌어다 놓으면 그 숫자 키로 씁니다. (터치: 스킬·아이템의 [단축칸] 버튼 → 칸 누르기)", "sys");
