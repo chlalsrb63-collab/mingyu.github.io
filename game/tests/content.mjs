@@ -577,6 +577,13 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   // a single-job hero whose mastery is somehow below 20 keeps the job
   const keep = join({ ...JSON.parse(JSON.stringify(once)), wm: {} });
   assert.equal(keep.job, "lancer");
+  // a v10 sheet (housing: a bigger bag and a house, still four classes) becomes a v11 hero and keeps both
+  const h10 = oldSheet("집주인", "rogue", 30, { v: 10, bagCap: 60, house: { tier: 1, storage: [{ id: "hp_m", n: 7 }] } });
+  h10.inv = Array.from({ length: 50 }, () => ({ id: "h_1", q: 0, enh: 0, af: [], sk: 0, ru: [] }));
+  const hj = join(h10);
+  assert.equal(hj.v, 11); assert.equal(hj.job, "thief"); assert.equal(hj.lvl, 117); assert.equal(hj.wm.dagger.lv, 30);
+  assert.equal(hj.bagCap, 60); assert.equal(hj.inv.length, 50, "nothing in the bigger bag is lost");
+  assert.equal(hj.house.tier, 1); assert.deepEqual(hj.house.storage.map((s) => s.id), ["hp_m"]);
 }
 
 console.log("content ok — waypoints", D.waypoints.length, "achievements", D.achievements.length, "event every", D.event.every / 60000, "min");
