@@ -44,7 +44,8 @@ const evts = (v, tag) => (v.ev || []).filter((e) => e[0] === tag);
 const chatHas = (W, word) => W.log.some((m) => m.includes(word));
 
 // ── definitions: every hunting ground and the town has a waypoint, a level band, a collection
-assert.deepEqual(D.waypoints.map((w) => w.id).sort(), ["abyss", "cave", "city", "crypt", "forest", "meadow", "sewer", "town"]);
+// (maps from the world map editor, data/maps, may add their own stones)
+for (const id of ["abyss", "cave", "city", "crypt", "forest", "meadow", "sewer", "town"]) assert.ok(D.waypoints.some((w) => w.id === id), id + " has a waypoint");
 const BANDS = { meadow: [1, 7], forest: [8, 13], crypt: [12, 17], city: [14, 21], sewer: [22, 27], cave: [24, 32], abyss: [32, 40] };
 for (const [id, band] of Object.entries(BANDS)) {
   const m = D.maps.find((o) => o.id === id);

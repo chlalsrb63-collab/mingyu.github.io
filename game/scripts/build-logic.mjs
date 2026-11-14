@@ -49,13 +49,13 @@ function partFiles() {
 /** The empty data set: the game exactly as it is without the editor. */
 export const EMPTY_DATA = () => ({ maps: [], links: [], npcs: [], quests: { main: null, side: [] } });
 
-function readJson(file, problems) {
+function readJson(file, problems, label = file) {
   try {
     let s = readFileSync(file, "utf8");
     if (s.charCodeAt(0) === 0xfeff) s = s.slice(1);
     return JSON.parse(s);
   } catch (e) {
-    problems.push(`${file}: JSON을 읽을 수 없습니다 (${e.message})`);
+    problems.push(`${label}: JSON을 읽을 수 없습니다 (${e.message})`);
     return null;
   }
 }
@@ -72,9 +72,8 @@ export function readData(dataDir = DATA_DIR) {
   if (existsSync(mapsDir)) {
     const seen = new Set();
     for (const f of readdirSync(mapsDir).filter((f) => f.endsWith(".json")).sort()) {
-      const file = join(mapsDir, f), m = readJson(file, problems);
+      const file = join(mapsDir, f), where = `data/${rel(file)}`, m = readJson(file, problems, where);
       if (!m) continue;
-      const where = `data/${rel(file)}`;
       if (!isObj(m) || typeof m.id !== "string" || !/^[a-z][a-z0-9_]{1,23}$/.test(m.id)) { problems.push(`${where}: "id"가 올바르지 않습니다`); continue; }
       if (seen.has(m.id)) { problems.push(`${where}: 지도 id "${m.id}"가 중복됩니다`); continue; }
       const w = m.w, h = m.h;
@@ -88,7 +87,7 @@ export function readData(dataDir = DATA_DIR) {
   const list = (name, key) => {
     const file = join(dataDir, name);
     if (!existsSync(file)) return [];
-    const j = readJson(file, problems);
+    const j = readJson(file, problems, `data/${name}`);
     if (!j) return [];
     if (!isObj(j) || !Array.isArray(j[key])) { problems.push(`data/${name}: "${key}" 배열이 없습니다`); return []; }
     return j[key].filter(isObj);
@@ -97,7 +96,7 @@ export function readData(dataDir = DATA_DIR) {
   data.npcs = list("npcs.json", "npcs");
   const qf = join(dataDir, "quests.json");
   if (existsSync(qf)) {
-    const q = readJson(qf, problems);
+    const q = readJson(qf, problems, "data/quests.json");
     if (q && !isObj(q)) problems.push("data/quests.json: 객체여야 합니다");
     else if (q) {
       if (q.main !== null && q.main !== undefined && !Array.isArray(q.main)) problems.push('data/quests.json: "main"은 null 또는 배열이어야 합니다');

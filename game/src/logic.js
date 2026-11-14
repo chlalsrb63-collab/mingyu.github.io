@@ -134,10 +134,11 @@ const SKILLS = {
 /** Maps, doors, NPCs and quests made in the world map editor (docs/editor/SCHEMA.md). */
 const DATA = {
   maps: [
+    {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"town","safe":true,"band":null,"w":40,"h":32,"ground":["tt,t...............pp...\"..,.....tt.....",".t..tt....,........pp.,....\".......tt...","ttttt.t............pp.,,...\"..,.,tt.tt..","ttttttt\".,...\",...\"pp....,.,.....tt.tt..",".ttt,...,....,.....pp............,ttt..t","ttt...t...........,pp............tttt...","..,,.,.\"...........pp....,........\"...\".","\",.....,..\".,......pp..,......,.......,.","....,,...,...\".....pp.....,........,.,..","....,...pppppppppppppppppppppppp........","........pp.........pp.......\".pp........",".,......pp.........pp.,,......pp........",".......,pp\".,.\".oooooooo.,...ssssss.....","....\"\"\",pp.,...oooooooooo,.sswwwwwwss,..","....\"\"\"\"pp..,,oooooooooooo.swwwwwwwws...",".,.\"\"\"\",pp\"...oooooooooooobbbbwwwwwws.,.","....\"\"\".pp....oooooooooooo.swwwwwwwws..,","....\"\"\".pp....oooooooooooo,sswwwwwwss...","......\",pp.....oooooooooo....ssssss.....",".....,..pp.\"....oooooooo......pp...,,...",".,.,.,\".pp\"......\",pp.........pp,,.....,","...,....pppppppppppppppppppppppp....,...","....,,..pp,..,,..,....,..\"....pp........","..........,.....,..............,..\".,...","...,.\",\".,,.,............,...\"\".........","......,.....\".......,........,,.........",".....,..,..,....,..............,..,..,..","..........,,..,....,......\".\"...........","..tt.t...............,..........,,..tt.t","t..tttt\".,.....,..\"...,...........t,tt,t",".ttt.t...............,.....,.....ttttttt","...t.tt.,.....\"..,.\"....\".......\"t,..t,t"],"objects":["TTPTTTTTTTTTTTTTTT    TPTTPPTTTTTTTTTTTP","TTTTTTTPTTTTTTPTPT    TTTTTTTPTPTTTTTTTT","TT                                    PT","TT         HH     L  L    HH          TT","TT    hhhh   hhhh           hhhh      TT","TT    hhhh   hhhh     G     hhhh      PT","TT    hhhh   hhhh           hhhh   u  TT","TT                                    TT","TT                                  B TT","PT B                                  TT","TT                                    TT","TT                                    TT","TT FFFFF       L        L             TT","TT F   F   B                 e    e   TT","TP F   F                              TT","PT F   F           T                  TT","TP F   F                           e  PP","PT F   F   B                     e    PT","TP FF FF                              TP","TT             L        L             TT","TT  u                                 TT","TP                                    TT","TT                                    TT","TT  hhhh                       hhhh   TP","TT  hhhh      hhhh      B      hhhh   PT","TT  hhhh      hhhh             hhhh   TP","PT          B hhhh        B         B PT","TT        u      E    u               TP","PT                                    TT","PT                                    PT","TPPTPTPTTTTTTTTPTTTTTPPTTPTTTPTTTTTTPTTP","TPTTPTTTTTTPTTTTTTTTTTTTTTTPTTTTTPTTTTPT"],"entry":[20,4],"spawns":[],"npcs":[{"id":"willow_elder","name":"촌장 버들","role":"quest","x":18,"y":13,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 도와주면 섭섭지 않게 사례하지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":25,"y":16,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."]},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":15,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 울타리 안은 밟으면 안 돼!","넥서스 광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":22,"y":25,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 넥서스 광장이야. 거기서 동쪽은 바람초원이고."]}],"portals":[{"x":19,"y":1,"to":"town","tx":19,"ty":25},{"x":20,"y":1,"to":"town","tx":20,"ty":25}],"fires":[[19,25]],"waypoint":[22,7],"fishing":true,"boss":null,"marks":[{"x":22,"y":5,"kind":"sign","label":"↑ 넥서스 광장","to":"town"}]},
   ],
-  links: [],
-  npcs: [],
-  quests: {"main":null,"side":[]},
+  links: [{"map":"town","x":19,"y":27,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":20,"y":27,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"}],
+  npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":21,"y":24,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]}],
+  quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"넥서스 광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":2,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false}]},
 };
 // ── gear: seven kinds of piece, five tiers each
 const WEAPON_NAMES = {
@@ -2821,11 +2822,13 @@ function fromEditor(d, id) {
   });
   delete WP[id];
   if (Array.isArray(d.waypoint) && xyOk(m, d.waypoint[0], d.waypoint[1])) {
-    const [x, y] = d.waypoint;
+    // [x, y] the stone, and optionally [.., ax, ay] the tile travellers arrive on beside it
+    const [x, y, ax, ay] = d.waypoint;
     m.o[y][x] = "Q";
-    const side = [[0, 1], [1, 0], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].find(([dx, dy]) => openTile(m, x + dx, y + dy)) || [0, 1];
+    const side = Number.isInteger(ax) && Number.isInteger(ay) && Math.abs(ax - x) <= 1 && Math.abs(ay - y) <= 1 && openTile(m, ax, ay) ? [ax - x, ay - y]
+      : [[0, 1], [1, 0], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].find(([dx, dy]) => openTile(m, x + dx, y + dy)) || [0, 1];
     WP[id] = { x, y, ax: x + side[0], ay: y + side[1] };
-    m.marks.push({ x, y, kind: "waypoint" });
+    m.marks.unshift({ x, y, kind: "waypoint" });
   }
   // a hunting ground's field boss: called out by kills, like every generated one
   if (!m.safe && d.boss && typeof d.boss.k === "string" && Object.hasOwn(MOBS, d.boss.k)) FIELD_BOSS[id] = d.boss.k;
@@ -2907,6 +2910,19 @@ for (const id of Object.keys(MAPS)) {
 /** NPC id → the map it stands on (side quests find their givers and talk targets here). */
 const NPC_MAP = {};
 for (const id of Object.keys(MAPS)) for (const n of MAPS[id].npcs) if (!NPC_MAP[n.id]) NPC_MAP[n.id] = id;
+
+/**
+ * The map editor's playtest (local dev only; room.ts checks PLAYTEST and HF_ENV): put a saved
+ * sheet on tile (tx, ty) of `map`, or the nearest tile a player can stand on, or the entrance.
+ */
+export function devPlace(ch, map, tx, ty) {
+  if (!ch || typeof map !== "string" || !Object.hasOwn(MAPS, map)) return false;
+  const m = MAPS[map];
+  const at = (Number.isInteger(tx) && Number.isInteger(ty) && inMap(m, tx, ty) && m.reach[ty * m.w + tx] ? [tx, ty] : null) || freeTile(m, tx | 0, ty | 0) || m.entry;
+  ch.map = map; ch.x = at[0] * T + 8; ch.y = at[1] * T + 10;
+  if (ch.hp === 0) ch.hp = -1;
+  return true;
+}
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
@@ -2936,7 +2952,7 @@ export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
   const lk = Array.isArray(look) ? look : [];
   return {
-    v: 7, name, cls: c,
+    v: 8, name, cls: c,
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     lvl: 1, xp: 0, gold: 50,
@@ -2947,7 +2963,7 @@ export function newChar(name, cls, look) {
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
     wp: ["town"], seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
     skl: [1, 1, 1, 1, 1, 1], wh: { items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
-    qs: QS_EMPTY(), cos: cosEmpty(),
+    qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
   };
 }
@@ -3028,7 +3044,9 @@ function migrate(ch) {
   ch.qs = QS_EMPTY().map((_, i) => (Array.isArray(ch.qs) && ch.qs[i] && qsOk(ch, ch.qs[i]) ? ch.qs[i].slice() : null));
   // the wardrobe (v7): owned cosmetics and the one worn in each slot
   ch.cos = cosClean(ch.cos, ch);
-  ch.v = Math.max(ch.v | 0, 7);
+  // side quests from the world map editor (v8): what is under way and what is done
+  ch.sq = sqClean(ch.sq);
+  ch.v = Math.max(ch.v | 0, 8);
   return ch;
 }
 
@@ -3311,6 +3329,7 @@ function changeMap(S, p, to, x, y) {
   S.maps[to].who = true;
   p.sendMap = true; p.fix = true;
   explore(S, p);
+  sqProgress(S, p, "visit", (g) => g.map === to);
 }
 
 function sys(S, m) {
@@ -3428,6 +3447,7 @@ function pickUp(S, p, dr) {
   } else {
     addItem(p.ch, dr.it, dr.n);
     p.gain.push(["item", dr.it, dr.n, 0]);
+    sqPicked(p, dr.it);
   }
   p.dirty = true;
   return true;
@@ -3660,6 +3680,7 @@ function killMob(S, rt, mob) {
       bq.n++;
       if (bq.n >= bq.need) toast(p, `반복 의뢰 [${d.name} ${bq.need}마리] 달성! 관리자에게 보고하세요.`);
     }
+    sqProgress(S, p, "kill", (g) => g.mob === mob.k);
     if (el === 1) ch.st.elite++;
     else if (el === 2) { if (mob.evt) ch.st.evb++; else if (mob.temp) ch.st.fb++; else ch.st.guard++; }
     if (n >= 2) ch.st.party++;
@@ -4826,6 +4847,127 @@ function tutStep(S, p, id) {
   if (next && next.id === "equip" && ch.eq.weapon) tutStep(S, p, "equip");
 }
 
+// ───────────────────────────── side quests (world map editor) ─────────────────────────────
+// data/quests.json "side": errands NPCs hand out beside the main chain. A goal is to kill
+// (kills of the kind count, like the main quest's), to collect (items in the bag, taken on
+// hand-in), to talk to an NPC or to visit a map. Progress lives on the sheet as
+// ch.sq = { on: { id: n }, done: { id: times } } (sheet v8).
+
+const SQ_MAX = 10;
+const SQ_GOALS = ["kill", "collect", "talk", "visit"];
+/** The side quests, cleaned: anything naming what does not exist is left out. */
+const SIDE = DATA.quests.side.filter((q) => typeof q.id === "string" && /^[a-z][a-z0-9_]{2,31}$/.test(q.id) && typeof q.giver === "string" && q.goal && SQ_GOALS.includes(q.goal.type)).map((q) => {
+  const g = q.goal, req = q.req && typeof q.req === "object" ? q.req : {}, rw = q.reward && typeof q.reward === "object" ? q.reward : {};
+  const goal = { type: g.type, n: g.type === "kill" || g.type === "collect" ? clamp(g.n | 0, 1, 999) : 1 };
+  if (g.type === "kill") goal.mob = g.mob;
+  if (g.type === "collect") goal.item = g.item;
+  if (g.type === "talk") goal.npc = g.npc;
+  if (g.type === "visit") goal.map = g.map;
+  return {
+    id: q.id, giver: q.giver, title: txt(q.title, 40) || q.id, text: txt(q.text, 400), done: txt(q.done, 400),
+    goal, req: { lv: clamp(req.lv | 0, 0, MAXLV), quest: typeof req.quest === "string" ? req.quest : null },
+    reward: { xp: Math.max(0, rw.xp | 0), gold: Math.max(0, rw.gold | 0), items: (Array.isArray(rw.items) ? rw.items : []).filter((it) => Array.isArray(it) && typeof it[0] === "string" && Object.hasOwn(ITEMS, it[0])).map(([id, n]) => [id, clamp(n | 0, 1, 999)]) },
+    repeat: !!q.repeat,
+  };
+}).filter((q, i, all) => all.findIndex((o) => o.id === q.id) === i && NPC_MAP[q.giver] && (
+  q.goal.type === "kill" ? Object.hasOwn(MOBS, q.goal.mob) : q.goal.type === "collect" ? Object.hasOwn(ITEMS, q.goal.item) : q.goal.type === "talk" ? !!NPC_MAP[q.goal.npc] : Object.hasOwn(MAPS, q.goal.map)));
+const SQ_BY = {};
+for (const q of SIDE) SQ_BY[q.id] = q;
+for (const q of SIDE) if (q.req.quest && !SQ_BY[q.req.quest]) q.req.quest = null;
+
+const sqEmpty = () => ({ on: {}, done: {} });
+/** A saved ch.sq, cleaned: active quests that no longer exist are dropped; finished ones are remembered. */
+function sqClean(v) {
+  const out = sqEmpty();
+  if (!isObj(v)) return out;
+  if (isObj(v.on)) for (const id of Object.keys(v.on)) if (SQ_BY[id] && Object.keys(out.on).length < SQ_MAX) out.on[id] = clamp(v.on[id] | 0, 0, SQ_BY[id].goal.n);
+  if (isObj(v.done)) for (const id of Object.keys(v.done).slice(0, 400)) if (/^[a-z][a-z0-9_]{2,31}$/.test(id) && (v.done[id] | 0) > 0) out.done[id] = Math.min(9999, v.done[id] | 0);
+  return out;
+}
+/** How far along an active quest is (a collect goal counts what is in the bag right now). */
+const sqHave = (ch, q) => (q.goal.type === "collect" ? Math.min(q.goal.n, countItem(ch, q.goal.item)) : Math.min(q.goal.n, ch.sq.on[q.id] | 0));
+/** 0 locked · 1 can take · 2 under way · 3 ready to hand in · 4 finished for good. */
+function sqState(ch, q) {
+  if (Object.hasOwn(ch.sq.on, q.id)) return sqHave(ch, q) >= q.goal.n ? 3 : 2;
+  if (ch.sq.done[q.id] && !q.repeat) return 4;
+  if (ch.lvl < q.req.lv || (q.req.quest && !ch.sq.done[q.req.quest])) return 0;
+  return 1;
+}
+/** An NPC with this id stands within talking distance. */
+function npcNearId(p, id) {
+  for (const n of MAPS[p.map].npcs) if (n.id === id && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < 56) return true;
+  return false;
+}
+const npcName = (id) => { const m = MAPS[NPC_MAP[id]]; const n = m && m.npcs.find((o) => o.id === id); return n ? n.name : id; };
+/** Credit `n` toward every active quest of this type that `match` accepts. */
+function sqProgress(S, p, type, match, n = 1) {
+  const ch = p.ch;
+  for (const id of Object.keys(ch.sq.on)) {
+    const q = SQ_BY[id];
+    if (!q || q.goal.type !== type || !match(q.goal)) continue;
+    const was = ch.sq.on[id] | 0;
+    if (was >= q.goal.n) continue;
+    ch.sq.on[id] = Math.min(q.goal.n, was + n);
+    p.dirty = true;
+    if (ch.sq.on[id] >= q.goal.n) toast(p, `[${q.title}] 달성! ${npcName(q.giver)}에게 돌아가세요.`);
+    else if (type === "kill") toast(p, `[${q.title}] ${ch.sq.on[id]}/${q.goal.n}`);
+  }
+}
+/** A picked-up item that a collect quest wants says so. */
+function sqPicked(p, item) {
+  for (const id of Object.keys(p.ch.sq.on)) {
+    const q = SQ_BY[id];
+    if (!q || q.goal.type !== "collect" || q.goal.item !== item) continue;
+    const have = sqHave(p.ch, q);
+    toast(p, have >= q.goal.n ? `[${q.title}] 달성! ${npcName(q.giver)}에게 돌아가세요.` : `[${q.title}] ${ITEMS[item].name} ${have}/${q.goal.n}`);
+  }
+}
+function sqValidate(S, p, a) {
+  const ch = p.ch;
+  if (a.a === "drop") return typeof a.id === "string" && Object.hasOwn(ch.sq.on, a.id) ? OK : bad("진행 중인 퀘스트가 아닙니다");
+  if (a.a === "talk") return typeof a.npc === "string" && npcNearId(p, a.npc) ? OK : bad("너무 멉니다");
+  const q = typeof a.id === "string" && Object.hasOwn(SQ_BY, a.id) ? SQ_BY[a.id] : null;
+  if (!q) return bad("없는 퀘스트입니다");
+  if (!npcNearId(p, q.giver)) return bad(`${npcName(q.giver)}에게 가까이 가야 합니다`);
+  const st = sqState(ch, q);
+  if (a.a === "take") {
+    if (st === 2 || st === 3) return bad("이미 진행 중입니다");
+    if (st === 4) return bad("이미 마친 퀘스트입니다");
+    if (ch.lvl < q.req.lv) return bad(`레벨 ${q.req.lv} 이상이어야 합니다`);
+    if (st === 0) return bad(`먼저 [${SQ_BY[q.req.quest].title}]${pp(SQ_BY[q.req.quest].title, "을를")} 마쳐야 합니다`);
+    if (Object.keys(ch.sq.on).length >= SQ_MAX) return bad(`퀘스트는 ${SQ_MAX}개까지 받을 수 있습니다`);
+    return OK;
+  }
+  if (a.a === "done") {
+    if (st !== 3) return bad("아직 퀘스트를 마치지 못했습니다");
+    for (const [id, n] of q.reward.items) if (!canAdd(ch, id, n)) return bad("가방을 비우고 다시 오세요");
+    return OK;
+  }
+  return bad("잘못된 요청입니다");
+}
+function sqApply(S, p, a) {
+  const ch = p.ch;
+  p.dirty = true;
+  if (a.a === "talk") { sqProgress(S, p, "talk", (g) => g.npc === a.npc); return; }
+  if (a.a === "drop") { const q = SQ_BY[a.id]; delete ch.sq.on[a.id]; toast(p, `퀘스트 포기: ${q ? q.title : a.id}`); return; }
+  const q = SQ_BY[a.id];
+  if (a.a === "take") {
+    ch.sq.on[q.id] = 0;
+    toast(p, `퀘스트 수락: ${q.title}`);
+    if (q.goal.type === "visit" && p.map === q.goal.map) sqProgress(S, p, "visit", (g) => g.map === p.map);
+    return;
+  }
+  // hand in: collected items are given over, then the reward
+  if (q.goal.type === "collect") takeItem(ch, q.goal.item, q.goal.n);
+  delete ch.sq.on[q.id];
+  ch.sq.done[q.id] = (ch.sq.done[q.id] | 0) + 1;
+  if (q.reward.gold) { ch.gold += q.reward.gold; p.gain.push(["gold", q.reward.gold]); }
+  for (const [id, n] of q.reward.items) if (addItem(ch, id, n)) p.gain.push(["item", id, n, 0]);
+  toast(p, `퀘스트 완료: ${q.title}`);
+  if (q.reward.xp) gainXp(S, p, q.reward.xp);
+}
+/** What the quest windows show: [id, state, have, need] for every side quest. */
+const sqView = (ch) => SIDE.map((q) => [q.id, sqState(ch, q), Object.hasOwn(ch.sq.on, q.id) ? sqHave(ch, q) : 0, q.goal.n]);
 // ───────────────────────────── cosmetics (외형) ─────────────────────────────
 // Hats, tops, back pieces, face accessories and weapon skins change only how a
 // character looks. They are not bag items: each character keeps a wardrobe of
@@ -5286,6 +5428,7 @@ export function validateAction(S, pid, a) {
       if (a.a === "done") return ch.bq && ch.bq.n >= ch.bq.need ? OK : bad("아직 의뢰를 마치지 못했습니다");
       return bad("잘못된 요청입니다");
     }
+    case "sq": return sqValidate(S, p, a);
     case "quest": {
       if (!npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
       const quest = QUESTS[ch.q.i];
@@ -5619,6 +5762,7 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
+    case "sq": sqApply(S, p, a); break;
     case "quest": {
       const quest = QUESTS[ch.q.i];
       tutStep(S, p, "talk");
@@ -6253,7 +6397,7 @@ function selfPayload(p) {
       Math.max(0, ch.scr.atk - now), Math.max(0, ch.scr.def - now), Math.max(0, ch.scr.xp - now)],
     // skill levels and what the next level of each costs ({ gold, xp, lvl } or null at the top)
     skl: ch.skl, skc: SKILLS[ch.cls].map((sk, i) => (ch.skl[i] >= SK_MAX ? null : skillCost(sk, ch.skl[i]))),
-    wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos,
+    wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, sq: sqView(ch),
     dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather"), by: p.blame ? p.blame.by : null, lv: p.blame ? p.blame.lv : 0, el: p.blame ? p.blame.el : 0 } : null,
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), st: ch.st,
@@ -6362,6 +6506,9 @@ export function defs() {
     collection: Object.fromEntries(REGIONS.map((id) => [id, { mobs: COL_MOBS[id], bonus: REGION_BONUS[id] }])), colNeed: MASTERY[0],
     event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },
     daily: { resetKST: 6, text: DAILY_TEXT }, tutorial: TUT.map(({ id, title, hint, need }) => ({ id, title, hint, need: need || 1 })), recallMs: RECALL_MS,
+    // side quests from the world map editor, with who gives them and where they stand
+    side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAPS[NPC_MAP[q.giver]].name,
+      target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAPS[q.goal.map].name })),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
   };
 }

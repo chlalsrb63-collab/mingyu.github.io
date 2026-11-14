@@ -81,6 +81,7 @@ function pickUp(S, p, dr) {
   } else {
     addItem(p.ch, dr.it, dr.n);
     p.gain.push(["item", dr.it, dr.n, 0]);
+    sqPicked(p, dr.it);
   }
   p.dirty = true;
   return true;
@@ -313,6 +314,7 @@ function killMob(S, rt, mob) {
       bq.n++;
       if (bq.n >= bq.need) toast(p, `반복 의뢰 [${d.name} ${bq.need}마리] 달성! 관리자에게 보고하세요.`);
     }
+    sqProgress(S, p, "kill", (g) => g.mob === mob.k);
     if (el === 1) ch.st.elite++;
     else if (el === 2) { if (mob.evt) ch.st.evb++; else if (mob.temp) ch.st.fb++; else ch.st.guard++; }
     if (n >= 2) ch.st.party++;

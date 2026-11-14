@@ -29,7 +29,7 @@ let now = 1000;
 S.now = now;
 for (const id of Object.keys(S.maps)) {
   const rt = S.maps[id];
-  if (id === "town") continue;
+  if (id === "town" || L.atlas().maps[id].safe) continue; // the town, and safe places from the map editor (data/maps)
   assert.ok(rt.mobs.length >= 100 && rt.mobs.length <= 230, `${id}: ${rt.mobs.length} monsters`);
   for (const m of rt.mobs) {
     assert.equal(m.tr.length, m.el, `${id}: a rank-${m.el} ${m.k} carries ${m.el} trait(s)`);

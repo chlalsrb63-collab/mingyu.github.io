@@ -1,4 +1,7 @@
 {
   "v": 1,
-  "links": []
+  "links": [
+    { "map": "town", "x": 19, "y": 27, "to": "willow", "tx": 19, "ty": 3, "label": "버드나무 마을" },
+    { "map": "town", "x": 20, "y": 27, "to": "willow", "tx": 20, "ty": 3, "label": "버드나무 마을" }
+  ]
 }

@@ -314,6 +314,7 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
+    case "sq": sqApply(S, p, a); break;
     case "quest": {
       const quest = QUESTS[ch.q.i];
       tutStep(S, p, "talk");

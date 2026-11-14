@@ -333,6 +333,7 @@ export function validateAction(S, pid, a) {
       if (a.a === "done") return ch.bq && ch.bq.n >= ch.bq.need ? OK : bad("아직 의뢰를 마치지 못했습니다");
       return bad("잘못된 요청입니다");
     }
+    case "sq": return sqValidate(S, p, a);
     case "quest": {
       if (!npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
       const quest = QUESTS[ch.q.i];

@@ -27,7 +27,7 @@ export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
   const lk = Array.isArray(look) ? look : [];
   return {
-    v: 7, name, cls: c,
+    v: 8, name, cls: c,
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     lvl: 1, xp: 0, gold: 50,
@@ -38,7 +38,7 @@ export function newChar(name, cls, look) {
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
     wp: ["town"], seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
     skl: [1, 1, 1, 1, 1, 1], wh: { items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
-    qs: QS_EMPTY(), cos: cosEmpty(),
+    qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
   };
 }
@@ -119,7 +119,9 @@ function migrate(ch) {
   ch.qs = QS_EMPTY().map((_, i) => (Array.isArray(ch.qs) && ch.qs[i] && qsOk(ch, ch.qs[i]) ? ch.qs[i].slice() : null));
   // the wardrobe (v7): owned cosmetics and the one worn in each slot
   ch.cos = cosClean(ch.cos, ch);
-  ch.v = Math.max(ch.v | 0, 7);
+  // side quests from the world map editor (v8): what is under way and what is done
+  ch.sq = sqClean(ch.sq);
+  ch.v = Math.max(ch.v | 0, 8);
   return ch;
 }
 
@@ -402,6 +404,7 @@ function changeMap(S, p, to, x, y) {
   S.maps[to].who = true;
   p.sendMap = true; p.fix = true;
   explore(S, p);
+  sqProgress(S, p, "visit", (g) => g.map === to);
 }
 
 function sys(S, m) {

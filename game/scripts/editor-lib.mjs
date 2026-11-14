@@ -116,7 +116,7 @@ function toEditor(E, id) {
     npcs: m.npcs.map((n) => ({ id: n.id, name: n.name, role: n.role, x: n.x, y: n.y, look: n.look, lines: n.lines || (n.say ? [n.say] : []) })),
     portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: p.to, tx: p.tx, ty: p.ty })),
     fires: (E.FIRES[id] || []).map((f) => [f[0], f[1]]),
-    waypoint: wp ? [wp.x, wp.y] : null,
+    waypoint: wp ? [wp.x, wp.y, wp.ax, wp.ay] : null,
     fishing: !m.nofish,
     boss: E.FIELD_BOSS[id] ? { k: E.FIELD_BOSS[id], x: wp ? wp.ax : m.entry[0], y: wp ? wp.ay : m.entry[1] } : null,
     big: m.big.map((b) => ({ ...b })),

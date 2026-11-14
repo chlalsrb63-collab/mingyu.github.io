@@ -79,11 +79,13 @@ function fromEditor(d, id) {
   });
   delete WP[id];
   if (Array.isArray(d.waypoint) && xyOk(m, d.waypoint[0], d.waypoint[1])) {
-    const [x, y] = d.waypoint;
+    // [x, y] the stone, and optionally [.., ax, ay] the tile travellers arrive on beside it
+    const [x, y, ax, ay] = d.waypoint;
     m.o[y][x] = "Q";
-    const side = [[0, 1], [1, 0], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].find(([dx, dy]) => openTile(m, x + dx, y + dy)) || [0, 1];
+    const side = Number.isInteger(ax) && Number.isInteger(ay) && Math.abs(ax - x) <= 1 && Math.abs(ay - y) <= 1 && openTile(m, ax, ay) ? [ax - x, ay - y]
+      : [[0, 1], [1, 0], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].find(([dx, dy]) => openTile(m, x + dx, y + dy)) || [0, 1];
     WP[id] = { x, y, ax: x + side[0], ay: y + side[1] };
-    m.marks.push({ x, y, kind: "waypoint" });
+    m.marks.unshift({ x, y, kind: "waypoint" });
   }
   // a hunting ground's field boss: called out by kills, like every generated one
   if (!m.safe && d.boss && typeof d.boss.k === "string" && Object.hasOwn(MOBS, d.boss.k)) FIELD_BOSS[id] = d.boss.k;
@@ -165,3 +167,16 @@ for (const id of Object.keys(MAPS)) {
 /** NPC id → the map it stands on (side quests find their givers and talk targets here). */
 const NPC_MAP = {};
 for (const id of Object.keys(MAPS)) for (const n of MAPS[id].npcs) if (!NPC_MAP[n.id]) NPC_MAP[n.id] = id;
+
+/**
+ * The map editor's playtest (local dev only; room.ts checks PLAYTEST and HF_ENV): put a saved
+ * sheet on tile (tx, ty) of `map`, or the nearest tile a player can stand on, or the entrance.
+ */
+export function devPlace(ch, map, tx, ty) {
+  if (!ch || typeof map !== "string" || !Object.hasOwn(MAPS, map)) return false;
+  const m = MAPS[map];
+  const at = (Number.isInteger(tx) && Number.isInteger(ty) && inMap(m, tx, ty) && m.reach[ty * m.w + tx] ? [tx, ty] : null) || freeTile(m, tx | 0, ty | 0) || m.entry;
+  ch.map = map; ch.x = at[0] * T + 8; ch.y = at[1] * T + 10;
+  if (ch.hp === 0) ch.hp = -1;
+  return true;
+}
