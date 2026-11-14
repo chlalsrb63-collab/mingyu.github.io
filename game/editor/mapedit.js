@@ -9,7 +9,7 @@
  */
 import { $, $$, el, api, toast, dialog, confirmBox, ask, DB, reloadMaps, mapName, mobName, mobImg, mobIcon, fieldMobs,
   checkCtx, npcCanvas, npcIcon, fullLook, pickFrom, mobEntries, ROLE_KO, THEME_KO, BGM_KO, icon } from "./ui.js";
-import { checkMap, checkLinks, checkNpcs, standable, ID_RE, MIN_SIZE, MAX_SIZE } from "./validate.js";
+import { checkMap, checkLinks, checkNpcs, standable, ID_RE, MAX_SIZE, minSize } from "./validate.js";
 import * as LK from "/public/looks.js";
 import * as SPC from "/public/species.js";
 import * as UIC from "/public/uiicons.js";
@@ -819,6 +819,9 @@ export function npcForm(n, readOnly, onChange, onRemove, opts = {}) {
       el("button.btn", { disabled: readOnly, title: "동물·얼굴·색을 골라요", onclick: () => lookDialog(n, () => upd(() => drawFace())) }, "모습 고르기"))),
     field("아이디", el("input", { type: "text", value: n.id, disabled: readOnly, title: "영어 소문자·숫자·_ (퀘스트가 이 아이디로 NPC를 찾아요)", onchange: (e) => upd(() => { n.id = e.target.value.trim(); }) })));
   if (opts.where) box.append(opts.where);
+  // an interactive object (bookshelf, notice board, mirror): no body, may stand on its furniture
+  box.append(el("label.chk", { title: "켜면 사람이 아니라 물건이에요 (책장·게시판·거울 등): 모습 없이 가구 칸 위에 놓을 수 있고, 이름이 F 안내에 보여요" },
+    el("input", { type: "checkbox", checked: !!n.thing, disabled: readOnly, onchange: (e) => upd(() => { if (e.target.checked) n.thing = true; else delete n.thing; }) }), "상호작용 물건"));
   if (n.role === "quest") box.append(el("p.hint", null, "퀘스트 탭에서 이 NPC를 '의뢰인'으로 고르면 퀘스트를 줘요."));
   // lines
   const lines = el("div.lines");
@@ -908,14 +911,14 @@ export function renderProps() {
     el("label.chk", { title: "켜면 몬스터가 안 나오고 다치지 않아요 (마을처럼)" }, el("input", { type: "checkbox", checked: m.safe, disabled: ro, onchange: (e) => on(() => { m.safe = e.target.checked; }) }), "안전지대 (몬스터 없음)"),
     el("label.chk", { title: "물가에서 낚시를 할 수 있어요" }, el("input", { type: "checkbox", checked: m.fishing, disabled: ro, onchange: (e) => on(() => { m.fishing = e.target.checked; }) }), "낚시 허용"),
     el("div.subhead", null, "크기"),
-    el("div.row", null, el("input", { type: "number", min: MIN_SIZE, max: MAX_SIZE, value: m.w, disabled: ro, title: "가로 칸 수", onchange: (e) => { nw = +e.target.value; } }), "×",
-      el("input", { type: "number", min: MIN_SIZE, max: MAX_SIZE, value: m.h, disabled: ro, title: "세로 칸 수", onchange: (e) => { nh = +e.target.value; } }), anc),
+    el("div.row", null, el("input", { type: "number", min: minSize(m.theme), max: MAX_SIZE, value: m.w, disabled: ro, title: "가로 칸 수", onchange: (e) => { nw = +e.target.value; } }), "×",
+      el("input", { type: "number", min: minSize(m.theme), max: MAX_SIZE, value: m.h, disabled: ro, title: "세로 칸 수", onchange: (e) => { nh = +e.target.value; } }), anc),
     el("button.btn", { disabled: ro, title: "맵 크기를 바꿔요 (줄이면 잘린 부분은 사라져요)", onclick: () => resize(nw, nh, anchor) }, "크기 바꾸기"));
 }
 async function resize(nw, nh, anchor) {
   nw = Math.round(nw); nh = Math.round(nh);
-  if (!(nw >= MIN_SIZE && nh >= MIN_SIZE && nw <= MAX_SIZE && nh <= MAX_SIZE)) return toast(`크기는 ${MIN_SIZE}~${MAX_SIZE}칸이에요.`, "bad");
-  const m = E.m;
+  const m = E.m, lo = minSize(m.theme);
+  if (!(nw >= lo && nh >= lo && nw <= MAX_SIZE && nh <= MAX_SIZE)) return toast(`크기는 ${lo}~${MAX_SIZE}칸이에요.`, "bad");
   if (nw === m.w && nh === m.h) return;
   if ((nw < m.w || nh < m.h) && !(await confirmBox("크기 줄이기", "맵을 줄이면 잘리는 부분의 바닥·물체·몬스터 구역이 사라져요. 계속할까요?", "줄이기", true))) return;
   push();
@@ -1125,7 +1128,7 @@ export async function newMap() {
   const name = el("input.inp", { type: "text", value: "새 마을", maxLength: 24 });
   const id = el("input.inp", { type: "text", value: suggestId(), maxLength: 24 });
   const th = el("select.inp", null, ...DB.defs.themes.map((t) => el("option", { value: t, selected: t === "meadow" }, THEME_KO[t] || t)));
-  const w = el("input.inp", { type: "number", value: 48, min: MIN_SIZE, max: MAX_SIZE }), h = el("input.inp", { type: "number", value: 36, min: MIN_SIZE, max: MAX_SIZE });
+  const w = el("input.inp", { type: "number", value: 48, min: minSize("interior"), max: MAX_SIZE }), h = el("input.inp", { type: "number", value: 36, min: minSize("interior"), max: MAX_SIZE });
   const body = el("div.form", null, field("이름", name, "게임에 보이는 이름"), field("아이디", id, "영어 소문자·숫자·_ (파일 이름)"), field("테마", th), field("크기", el("span", null, w, " × ", h)),
     el("p.hint", null, "아이디는 영어 소문자로 시작하고 소문자·숫자·_ 만 쓸 수 있어요 (예: willow, cave2)."));
   for (;;) {
@@ -1135,7 +1138,8 @@ export async function newMap() {
     if (!ID_RE.test(v.id)) { toast("아이디는 영어 소문자로 시작하고 소문자·숫자·_ 2~24글자예요.", "bad"); continue; }
     if (DB.maps.some((m) => m.id === v.id)) { toast(`"${v.id}" 아이디는 이미 있어요.`, "bad"); continue; }
     if (!v.name) { toast("이름을 적어 주세요.", "bad"); continue; }
-    if (!(v.w >= MIN_SIZE && v.h >= MIN_SIZE && v.w <= MAX_SIZE && v.h <= MAX_SIZE)) { toast(`크기는 ${MIN_SIZE}~${MAX_SIZE}칸이에요.`, "bad"); continue; }
+    const lo = minSize(th.value);
+    if (!(v.w >= lo && v.h >= lo && v.w <= MAX_SIZE && v.h <= MAX_SIZE)) { toast(`크기는 ${lo}~${MAX_SIZE}칸이에요.`, "bad"); continue; }
     const [links, npcs] = await Promise.all([api("/api/links"), api("/api/npcs")]);
     E.links = links; E.npcsFile = npcs; E.saved.links = linksJson(); E.saved.npcs = npcsJson();
     load(blankMap(v.id, v.name, th.value, v.w, v.h), { isNew: true });

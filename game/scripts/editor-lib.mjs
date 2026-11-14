@@ -49,7 +49,7 @@ const GROUND_NAME = {
   n: "지하묘지 통로", i: "지하묘지 둥근 바닥", W: "암벽·낭떠러지 (못 건넘)", k: "보도", a: "아스팔트", m: "차선", g: "철판·배수 바닥",
   "=": "왕도 포석", "%": "낙엽 더미", "&": "병든 땅",
   // indoors (theme "interior", public/iso_interior.js)
-  f: "실내 마루 (밝은 나무)", l: "실내 마루 (호두나무)", x: "벽난로 앞 돌바닥", q: "체크무늬 깔개", u: "둥근 깔개", y: "긴 카펫 (러너)", e: "현관 매트",
+  f: "실내 마루 (밝은 나무)", l: "실내 마루 (호두나무)", h: "실내 마루 (헤링본)", x: "벽난로 앞 돌바닥", q: "체크무늬 깔개", u: "둥근 깔개", y: "긴 카펫 (러너)", e: "현관 매트",
 };
 /** Korean names for every object character (any object blocks the tile). */
 const OBJECT_NAME = {
@@ -63,6 +63,9 @@ const OBJECT_NAME = {
   "=": "실내 벽", "+": "실내 벽 (창문)", "^": "실내 벽 (칠판 메뉴)", "~": "실내 벽 (그림·지도)", "@": "실내 벽 (벽시계)", "!": "실내 벽 (깃발)", _: "잘린 앞벽 (낮은 벽)",
   o: "둥근 탁자 (등불)", k: "의자 (탁자를 향함)", s: "안락의자", m: "카운터", j: "카운터 (커피 머신)", "$": "빵 진열장", b: "책장", r: "찬장 (병·시계)", t: "트로피 진열장",
   "#": "벽난로", g: "화분", "*": "등불 기둥", v: "게시판", "-": "긴 탁자", p: "침대", w: "나무통", "]": "나무 상자", "%": "잠자는 고양이 (방석)",
+  // the town's buildings (docs/design/town.md E): the terrace wall outdoors, then the workshops' pieces
+  W: "석축 (돌 축대)", "&": "모루", "<": "화덕 (용광로)", ">": "진열대 (무기·옷·도구)", "|": "독서대", ";": "표본 진열장",
+  ":": "화덕 (요리·가마솥)", "'": "전신 거울", "`": "수련 인형",
 };
 /** The colours the minimap uses (public/art.js renderMini), read from the client source so they never drift. */
 function miniColours() {
@@ -283,9 +286,22 @@ export async function checkData(dataDir = DATA_DIR) {
     if (n.lines !== undefined && (!Array.isArray(n.lines) || n.lines.some((l) => typeof l !== "string"))) err(f, `${path}.lines`, "lines는 문자열 배열이어야 합니다");
     if (n.role === "talk" && (!Array.isArray(n.lines) || !n.lines.length)) warn(f, `${path}.lines`, `${n.name || n.id}: 대화 NPC에게 할 말(lines)이 없습니다`);
     if (n.look !== undefined && !Array.isArray(n.look)) err(f, `${path}.look`, "look은 배열이어야 합니다");
+    if (n.thing !== undefined && typeof n.thing !== "boolean") err(f, `${path}.thing`, "thing은 true/false여야 합니다");
+    if (n.goods !== undefined) {
+      if (n.role !== "shop") warn(f, `${path}.goods`, `${n.name || n.id}: goods는 역할이 shop인 NPC만 씁니다`);
+      if (!Array.isArray(n.goods)) err(f, `${path}.goods`, "goods는 아이템 id 배열이어야 합니다");
+      else for (const id of n.goods) if (!item(id) || !(G.ITEMS[id].price > 0)) err(f, `${path}.goods`, `팔 수 없는 아이템 "${id}" (없는 id이거나 값이 없습니다)`);
+    }
     const m = reachOf(map);
     if (!inside(m, n.x, n.y)) { err(f, `${path}`, `NPC 위치 (${n.x},${n.y})가 지도 밖입니다`); return; }
-    if (!m.open(n.x, n.y)) err(f, `${path}`, `NPC가 막힌 칸 (${n.x},${n.y})에 서 있습니다`);
+    const side = (ok) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => inside(m, n.x + dx, n.y + dy) && ok(n.x + dx, n.y + dy));
+    if (n.thing === true && !m.open(n.x, n.y)) {
+      // an interactive object stands on its furniture (or hangs on a back wall), with an open side to walk up to
+      const o = m.objects[n.y][n.x];
+      if (o === " " || o === "_") err(f, `${path}`, `물건 ${n.name || n.id}이(가) 잘린 앞벽이나 막힌 바닥 (${n.x},${n.y}) 위에 있습니다`);
+      else if (!side((x, y) => m.open(x, y))) err(f, `${path}`, `물건 ${n.name || n.id} (${n.x},${n.y}) 옆에 설 수 있는 빈칸이 없습니다`);
+      else if (!side((x, y) => m.open(x, y) && m.reach[y * m.w + x])) warn(f, `${path}`, `물건 ${n.name || n.id}에게 입구에서 걸어갈 수 없습니다 (${n.x},${n.y})`);
+    } else if (!m.open(n.x, n.y)) err(f, `${path}`, `NPC가 막힌 칸 (${n.x},${n.y})에 서 있습니다`);
     else if (!nearReach(m.reach, m.w, m.h, n.x, n.y)) warn(f, `${path}`, `NPC ${n.name || n.id}에게 입구에서 걸어갈 수 없습니다 (${n.x},${n.y})`);
   };
 
@@ -304,6 +320,10 @@ export async function checkData(dataDir = DATA_DIR) {
         for (let x = 0; x < row.length; x++) if (!okCh.has(row[x])) { err(f, `${layer}[${y}]`, `알 수 없는 ${layer === "ground" ? "바닥" : "물체"} 글자 "${row[x]}" (${x},${y})`); break; }
       });
     }
+    // a room is a diorama: tall walls only along the back (north row, west column), never in front
+    if (d.theme === "interior") d.objects.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) if ("=+^~@!".includes(row[x]) && x > 0 && y > 0) { err(f, `objects[${y}]`, `실내 벽은 뒤쪽(맨 윗줄·맨 왼쪽 줄)에만 세울 수 있습니다 (${x},${y}) — 앞쪽은 잘린 벽 "_"`); break; }
+    });
     const m = reachOf(id);
     if (!Array.isArray(d.entry) || !inside(m, d.entry[0], d.entry[1])) err(f, "entry", "입구(entry)가 지도 밖이거나 없습니다");
     else if (!m.open(d.entry[0], d.entry[1])) err(f, "entry", `입구 (${d.entry[0]},${d.entry[1]})가 막힌 칸입니다`);

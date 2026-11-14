@@ -76,8 +76,9 @@ export function readData(dataDir = DATA_DIR) {
       if (!m) continue;
       if (!isObj(m) || typeof m.id !== "string" || !/^[a-z][a-z0-9_]{1,23}$/.test(m.id)) { problems.push(`${where}: "id"가 올바르지 않습니다`); continue; }
       if (seen.has(m.id)) { problems.push(`${where}: 지도 id "${m.id}"가 중복됩니다`); continue; }
-      const w = m.w, h = m.h;
-      if (!Number.isInteger(w) || !Number.isInteger(h) || w < 16 || h < 16 || w > 160 || h > 160) { problems.push(`${where}: 크기(w, h)는 16..160 정수여야 합니다`); continue; }
+      // a room indoors may be small (a shop, a lobby): 8 tiles a side; everything else 16
+      const w = m.w, h = m.h, min = m.theme === "interior" ? 8 : 16;
+      if (!Number.isInteger(w) || !Number.isInteger(h) || w < min || h < min || w > 160 || h > 160) { problems.push(`${where}: 크기(w, h)는 ${min}..160 정수여야 합니다`); continue; }
       const grid = (k) => Array.isArray(m[k]) && m[k].length === h && m[k].every((r) => typeof r === "string" && r.length === w);
       if (!grid("ground") || !grid("objects")) { problems.push(`${where}: ground/objects는 ${w}글자 × ${h}줄이어야 합니다`); continue; }
       seen.add(m.id);

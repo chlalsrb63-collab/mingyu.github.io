@@ -11,6 +11,9 @@ export const ID_RE = /^[a-z][a-z0-9_]{1,23}$/;
 export const NPC_ID_RE = /^[a-z][a-z0-9_]{1,31}$/;
 export const QUEST_ID_RE = /^[a-z][a-z0-9_]{2,31}$/;
 export const MIN_SIZE = 16, MAX_SIZE = 160;
+/** A room indoors (theme "interior") may be smaller: a shop or a lobby. */
+export const MIN_ROOM = 8;
+export const minSize = (theme) => (theme === "interior" ? MIN_ROOM : MIN_SIZE);
 
 const isInt = (v) => Number.isInteger(v);
 const isStr = (v) => typeof v === "string";
@@ -33,6 +36,15 @@ export function standable(m, x, y, solidG) {
   const g = m.ground[y] && m.ground[y][x];
   return o === " " && !solidG.has(g);
 }
+
+/** Is (x, y) a piece of furniture, or a back wall with something hung on it (a map, a picture)? A `thing`
+ * NPC may stand there; never on the cut-down front wall `_` (that is the way the room is seen and left). */
+export function onFurniture(m, x, y) {
+  const o = m.objects[y] && m.objects[y][x];
+  return !!o && o !== " " && o !== "_";
+}
+/** Is one of the four sides of (x, y) a tile `ok` accepts? */
+export function sideOpen(x, y, ok) { return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => ok(x + dx, y + dy)); }
 
 /** Tiles reachable on foot from the entry (Uint8Array w*h), or null if the entry is bad. */
 export function reach(m, solidG) {
@@ -75,8 +87,9 @@ export function checkMap(m, ctx, opts = {}) {
   if (typeof m.safe !== "boolean") err("safe", "안전지대는 예/아니오(true/false)로 정해 주세요.");
   if (m.band != null && !(Array.isArray(m.band) && m.band.length === 2 && isInt(m.band[0]) && isInt(m.band[1]) && m.band[0] >= 1 && m.band[0] <= m.band[1]))
     err("band", "레벨대는 [최소, 최대] 숫자 두 개예요 (예: 5~9).");
-  const sizeOk = isInt(m.w) && isInt(m.h) && m.w >= MIN_SIZE && m.h >= MIN_SIZE && m.w <= MAX_SIZE && m.h <= MAX_SIZE;
-  if (!sizeOk) { err("w", `맵 크기는 가로·세로 ${MIN_SIZE}~${MAX_SIZE}칸이어야 해요.`); return P; }
+  const lo = minSize(m.theme);
+  const sizeOk = isInt(m.w) && isInt(m.h) && m.w >= lo && m.h >= lo && m.w <= MAX_SIZE && m.h <= MAX_SIZE;
+  if (!sizeOk) { err("w", `맵 크기는 가로·세로 ${lo}~${MAX_SIZE}칸이어야 해요.`); return P; }
   for (const L of ["ground", "objects"]) {
     const rows = m[L], ko = L === "ground" ? "바닥" : "물체", known = L === "ground" ? S.ground : S.objects;
     if (!Array.isArray(rows) || rows.length !== m.h) { err(L, `${ko} 층의 줄 수가 맵 세로(${m.h})와 달라요.`); return P; }
@@ -128,8 +141,14 @@ export function checkMap(m, ctx, opts = {}) {
     if (!n) return;
     if (!isStr(n.name) || !n.name.trim()) err(p, `NPC ${i + 1}: 이름을 적어 주세요.`, n.x, n.y);
     if (roles.length && !roles.includes(n.role)) err(p, `${who}: 역할 "${n.role}"을(를) 모르겠어요.`, n.x, n.y);
+    if (n.thing != null && typeof n.thing !== "boolean") err(p, `${who}: 상호작용 물건(thing)은 예/아니오(true/false)예요.`, n.x, n.y);
     if (!inb(n.x, n.y)) err(p, `${who}: 맵 밖에 있어요.`);
-    else {
+    else if (n.thing === true && !stand(n.x, n.y)) {
+      // an interactive object stands on its furniture, with a free side to walk up to
+      if (!onFurniture(m, n.x, n.y)) err(p, `${who}: 물건은 빈칸·가구·뒷벽 위에만 놓을 수 있어요 (잘린 앞벽은 안 돼요).`, n.x, n.y);
+      else if (!sideOpen(n.x, n.y, stand)) err(p, `${who}: 물건 옆(위·아래·왼쪽·오른쪽)에 설 수 있는 빈칸이 하나는 있어야 해요.`, n.x, n.y);
+      else if (!sideOpen(n.x, n.y, (x, y) => stand(x, y) && reachable(x, y))) warn(p, `${who}: 입구에서 걸어갈 수 없는 곳에 있어요.`, n.x, n.y);
+    } else {
       if (!stand(n.x, n.y)) err(p, `${who}: 막힌 칸 위에 서 있어요.`, n.x, n.y);
       else if (!nearReach(n.x, n.y)) warn(p, `${who}: 입구에서 걸어갈 수 없는 곳에 있어요.`, n.x, n.y);
     }
