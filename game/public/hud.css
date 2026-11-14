@@ -139,7 +139,7 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #chat-log .party { color: #9ad8ff; }
 #chat-log .who { color: #9ac0e8; }
 #chat-log img.emo { width: 16px; height: 16px; image-rendering: pixelated; vertical-align: -3px; margin: 0 1px; }
-#chat-log[data-tab="party"] p:not(.party), #chat-log[data-tab="guild"] p:not(.guild), #chat-log[data-tab="sys"] p:not(.sys):not(.loot):not(.err) { display: none; }
+#chat-log[data-tab="all"] p.far, #chat-log[data-tab="party"] p:not(.party), #chat-log[data-tab="guild"] p:not(.guild), #chat-log[data-tab="sys"] p:not(.sys):not(.loot):not(.err) { display: none; }
 #chat-form { display: flex; gap: 3px; align-items: center; flex: none; }
 #chat-in { flex: 1; min-width: 0; height: 24px; padding: 2px 6px; outline: none; font: 12px var(--pix); color: var(--cream); user-select: text; -webkit-user-select: text;
   background: var(--scr); border: 2px solid var(--ink); border-radius: 0; box-shadow: inset 2px 2px 0 #07060b; }
@@ -302,6 +302,9 @@ body.qs-drag, body.qs-drag * { cursor: grabbing !important; }
 #hud .frame { background: rgba(24, 20, 31, .94); border: 2px solid var(--ink); border-radius: 0; box-shadow: inset 0 0 0 2px #5a4426; }
 #evt { width: 196px; padding: 5px 8px; font-size: 12px; line-height: 1.4; text-align: left; color: #d8cfb8; cursor: pointer; }
 #evt > span { display: block; }
+#evt { position: relative; }
+#evt .fold { position: absolute; top: 2px; right: 4px; padding: 0 3px; font-style: normal; color: var(--b-hi); }
+#evt .fold + span { padding-right: 12px; }
 #evt b { color: var(--b-hi); font-weight: 400; }
 #evt.warn b { color: #ffcf6a; }
 #evt.live { box-shadow: inset 0 0 0 2px #c84a4a; }

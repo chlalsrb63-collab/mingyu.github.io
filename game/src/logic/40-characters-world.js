@@ -188,6 +188,19 @@ function qsLearn(ch, id) {
   ch.qs[j] = ["s", id];
   return j + 1;
 }
+/**
+ * Slot 1 follows the weapon in hand: a skill of another weapon kind there gives way to this
+ * weapon's first skill (moved from wherever else it sat). Job signatures and items stay put.
+ */
+function qsFollow(ch) {
+  const wk = inHand(ch), v = ch.qs[0];
+  if (!wk || !v || v[0] !== "s" || SKILL[v[1]].job || skWks(SKILL[v[1]]).includes(wk)) return;
+  const first = WK_SKILLS[wk].find((id) => SKILL[id].kind === "a" && SKILL[id].need <= 1);
+  if (!first) return;
+  const at = ch.qs.findIndex((s) => s && s[0] === "s" && s[1] === first);
+  if (at > 0) ch.qs[at] = null;
+  ch.qs[0] = ["s", first];
+}
 /** The actives a character can use with the weapon in hand (and its job's signature), in order: for a fresh bar. */
 const qsStarter = (ch) => skillsFor(ch).filter((id) => SKILL[id].kind !== "p" && !skWhy(ch, SKILL[id]));
 
@@ -516,7 +529,7 @@ export function addPlayer(S, pid, ch) {
   sys(S, `${ch.name}님이 접속했습니다.`);
   ensureDaily(S, p);
   explore(S, p);
-  if (TUT[ch.tut.i] && TUT[ch.tut.i].id === "equip" && ch.eq.weapon && ch.sw) tutStep(S, p, "equip");
+  if (TUT[ch.tut.i] && tutDone(ch, TUT[ch.tut.i].id)) tutStep(S, p, TUT[ch.tut.i].id);
   checkAch(S, p);
   return p.eid;
 }

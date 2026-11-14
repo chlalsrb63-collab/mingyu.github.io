@@ -227,6 +227,8 @@ const EVT = { every: 1800000, warn: 120000, len: 480000, waves: [0, 150000, 3000
 /** Where a rift can open: every hunting ground with a waypoint stone, a field boss and monsters of its own (never an instance). */
 const EVT_MAPS = Object.keys(MAP_META).filter((id) => !MAP_META[id].safe && MAP_META[id].wp && FIELD_BOSS[id] && COL_MOBS[id]);
 const evtMap = (slot) => EVT_MAPS[(Math.imul(slot, 2654435761) >>> 0) % EVT_MAPS.length];
+/** A rift line in the chat, tagged with its map: players elsewhere see it in the 시스템 tab only. */
+function sysEvt(S, map, m) { S.chat.push({ sys: 1, m, ev: map }); }
 const newEvt = (slot) => ({ slot, map: evtMap(slot), phase: "warn", start: slot * EVT.every, end: slot * EVT.every + EVT.len, waves: 0, boss: 0, bossDead: false, dmg: {}, top: null });
 function worldEvent(S, now) {
   const slot = Math.floor(now / EVT.every);
@@ -236,7 +238,7 @@ function worldEvent(S, now) {
   const next = slot + 1;
   if (now >= next * EVT.every - EVT.warn && (!e || e.slot !== next)) {
     S.evt = e = newEvt(next);
-    sys(S, `2분 뒤 [${MAP_META[e.map].name}]에 균열 침공이 시작됩니다! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁으로 모이세요 — 깨운 돌이라면 어느 이동의 돌에서든 건너갈 수 있습니다.`);
+    sysEvt(S, e.map, `2분 뒤 [${MAP_META[e.map].name}]에 균열 침공이 시작됩니다! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁으로 모이세요 — 깨운 돌이라면 어느 이동의 돌에서든 건너갈 수 있습니다.`);
     dirtyAll(S);
     return;
   }
@@ -246,7 +248,7 @@ function worldEvent(S, now) {
 }
 function beginEvent(S, e) {
   e.phase = "on";
-  sys(S, `균열 침공 시작! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁에 정예 몬스터가 몰려옵니다. (8분)`);
+  sysEvt(S, e.map, `균열 침공 시작! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁에 정예 몬스터가 몰려옵니다. (8분)`);
   dirtyAll(S);
   runEvent(S, e, S.now);
 }
@@ -274,7 +276,7 @@ function spawnWave(S, e) {
     rt.mobs.push(mob);
     rt.ev.push(["r", mob.id]);
   }
-  sys(S, `[${m.name}] 균열 침공 ${e.waves}파 — 정예 ${n}마리가 나타났습니다!`);
+  sysEvt(S, e.map, `[${m.name}] 균열 침공 ${e.waves}파 — 정예 ${n}마리가 나타났습니다!`);
   dirtyAll(S);
 }
 function spawnEvtBoss(S, e) {
@@ -288,7 +290,7 @@ function spawnEvtBoss(S, e) {
   rt.mobs.push(mob);
   rt.ev.push(["r", mob.id]);
   e.boss = mob.id; e.phase = "boss";
-  sys(S, `[${m.name}] 균열 침공의 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
+  sysEvt(S, e.map, `[${m.name}] 균열 침공의 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
   dirtyAll(S);
 }
 function endEvent(S, e) {
@@ -311,7 +313,7 @@ function endEvent(S, e) {
   });
   e.top = list.slice(0, 3).map(([pid, d]) => [S.players[pid].ch.name, d]);
   e.phase = "done";
-  sys(S, list.length ? `균열 침공 종료! ${e.top.map(([n], i) => `${i + 1}위 ${n}`).join(", ")}` : "균열 침공이 끝났습니다. 아무도 막지 못했습니다…");
+  sysEvt(S, e.map, list.length ? `균열 침공 종료! ${e.top.map(([n], i) => `${i + 1}위 ${n}`).join(", ")}` : "균열 침공이 끝났습니다. 아무도 막지 못했습니다…");
   dirtyAll(S);
 }
 function evtView(S, p) {
@@ -324,16 +326,22 @@ function evtView(S, p) {
 
 // ── first steps: a short tutorial chain beside the main quests
 const TUT = [
-  { id: "talk", title: "관리자에게 말 걸기", hint: "광장 분수 앞의 관리자 엘더윈에게 다가가 F를 누르세요.", reward: { gold: 20 } },
-  { id: "equip", title: "무기 장착하기", hint: "수련관 카이에게 무기를 하나 받아 C 창에서 장착하세요.", reward: { gold: 20 } },
+  { id: "talk", title: "관리자에게 말 걸기", hint: "광장 분수 앞의 관리자 엘더윈에게 다가가 F를 누르세요. 첫 의뢰를 맡겨 줍니다.", reward: { gold: 20 } },
+  { id: "equip", title: "무기 고르기", hint: "수련관 카이에게 F로 말을 걸어 무기를 하나 고르세요. 고른 무기를 바로 손에 듭니다.", reward: { gold: 20 } },
   { id: "bag", title: "가방 열기", hint: "I를 눌러 가방을 열어 보세요.", reward: { gold: 20 } },
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
   { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
   { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
-  { id: "skill", title: "스킬 써 보기", hint: "무기 숙련 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 숫자 키(처음이면 1)를 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
+  { id: "skill", title: "스킬 써 보기", hint: "든 무기의 첫 스킬은 숙련 1부터 단축칸 1번에 있습니다. 몬스터 곁에서 1을 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
   // appended (the index is persisted): spending experience on a stat point
-  { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁에서 C 창 → 능력치에서 한 칸 올려 보세요.", reward: { gold: 50 } },
+  { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁이나 수련관 카이 앞에서 C 창 → 능력치를 한 칸 올려 보세요. 한 칸이 1레벨입니다.", reward: { gold: 50 } },
 ];
+/** Is tutorial step `id` already done by what the sheet shows? (a step that becomes current then completes at once) */
+function tutDone(ch, id) {
+  if (id === "equip") return !!(ch.eq.weapon && ch.sw);
+  if (id === "level") return (ch.xpt | 0) > 0;
+  return false;
+}
 function tutStep(S, p, id) {
   const ch = p.ch, step = TUT[ch.tut.i];
   if (!step || step.id !== id) return;
@@ -346,6 +354,6 @@ function tutStep(S, p, id) {
   toast(p, `[첫걸음] ${step.title} 완료!${next ? ` 다음: ${next.title}` : " 모든 첫걸음을 마쳤습니다!"}`);
   p.dirty = true;
   // a step already done needs no doing
-  if (next && next.id === "equip" && ch.eq.weapon && ch.sw) tutStep(S, p, "equip");
+  if (next && tutDone(ch, next.id)) tutStep(S, p, next.id);
 }
 

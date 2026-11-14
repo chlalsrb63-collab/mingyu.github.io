@@ -231,9 +231,11 @@ function onSnap(s) {
     else onEvent(e, t);
   }
   for (const [id, m] of G.gone) if (t - m.goneT > 1500) G.gone.delete(id);
-  if (s.chat) for (const c of s.chat) c.sys ? addChat(c.m, "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`) : c.pt ? addChat(c.m, "party", `[파티] ${c.n}`) : addChat(c.m, "", c.n);
+  // a rift on another map (c.ev) is news for the 시스템 tab only, not the 전체 log
+  const far = (c) => c.ev && G.map && c.ev !== G.map.id;
+  if (s.chat) for (const c of s.chat) c.sys ? addChat(c.m, far(c) ? "sys far" : "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`) : c.pt ? addChat(c.m, "party", `[파티] ${c.n}`) : addChat(c.m, "", c.n);
   // a field boss called out, or a wave of the rift breaking in
-  if (s.chat) for (const c of s.chat) if (c.sys && /나타났습니다/.test(c.m)) Sound.play(/균열/.test(c.m) ? "elite" : "announce");
+  if (s.chat) for (const c of s.chat) if (c.sys && !far(c) && /나타났습니다/.test(c.m)) Sound.play(/균열/.test(c.m) ? "elite" : "announce");
   if (s.gain) for (const gn of s.gain) onGain(gn);
   if (s.toast) for (const m of s.toast) toast(m);
   // (a member's place, [7…], changes every step: only who they are and how they fare redraw the party)

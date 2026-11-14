@@ -145,7 +145,9 @@ function hotbar(s) {
 }
 function tracker(s) {
   const quest = G.defs.quests[s.q.i], mobs = G.defs.mobs;
-  const dl = s.daily && s.daily.tasks.filter((d) => !d.claimed);
+  // while the first steps are unfinished the daily tasks stay out of the tracker (첫걸음 and the main quest only)
+  const tutOn = !!(s.tut && s.tut.i < (G.defs.tutorial || []).length);
+  const dl = !tutOn && s.daily && s.daily.tasks.filter((d) => !d.claimed);
   const key = JSON.stringify([s.q, s.bq, dl]);
   setOnce($("#quest-track"), key, (qt) => {
     if (!quest && !s.bq && !(dl && dl.length)) return;

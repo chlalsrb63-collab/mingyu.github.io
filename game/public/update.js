@@ -23,6 +23,8 @@ let lastSend = 0, sent = { x: 0, y: 0, d: 0, a: 16 };
 export const autoSt = { stuck: 0, side: 0, sign: 1, lastSkill: 0, target: null, routed: 0, skip: new Map(), home: null, homing: false };
 /** How far from where it was switched on auto-hunt will go looking (px): it should not wander into a harder band. */
 const AUTO_LEASH = 220;
+/** How long (ms) auto-hunt waits with nothing within the leash before it looks further (to 2× over as long again). */
+const AUTO_IDLE = 8000;
 /**
  * Whether auto-hunt should pick this monster: never a boss or field boss, nor an elite
  * three or more levels above you — unless it is already fighting you, then you answer.
@@ -98,7 +100,7 @@ export function update(dt, t) {
   if (!G.path) autoSt.homing = false;
   if (G.auto && (mx || my || (G.path && !autoSt.routed && !autoSt.homing))) autoSt.home = null;
   if (G.auto && !me.dead && mx === 0 && my === 0 && !G.path && !G.map.safe) {
-    if (!autoSt.home || autoSt.home.map !== G.map.id) autoSt.home = { map: G.map.id, x: me.x, y: me.y };
+    if (!autoSt.home || autoSt.home.map !== G.map.id) { autoSt.home = { map: G.map.id, x: me.x, y: me.y }; autoSt.idleAt = t; autoSt.none = false; }
     const home = autoSt.home;
     // something far too strong close by (a field boss turning up mid-hunt, a big elite): back off
     let threat = null, td = 110;
@@ -117,16 +119,52 @@ export function update(dt, t) {
       else { mx = (me.x - threat.x) / (td || 1); my = (me.y - threat.y) / (td || 1); }
       if (t - (autoSt.fleeT || 0) > 10000) { autoSt.fleeT = t; toast(`${G.defs.mobs[threat.k].name} — 너무 강한 상대입니다. 자동사냥이 물러납니다.`); }
     }
+    // nothing within the leash for a while (AUTO_IDLE): look further, a little more each second, up to twice as far
+    if (autoSt.idleAt == null) autoSt.idleAt = t;
+    const idle = threat ? 0 : t - autoSt.idleAt;
+    const leash = AUTO_LEASH * (idle > AUTO_IDLE ? Math.min(2, 1 + (idle - AUTO_IDLE) / AUTO_IDLE) : 1);
     let best = null, bd = 1e9;
     if (!threat) for (const m of G.mobs.values()) {
       if ((autoSt.skip.get(m.id) || 0) > t) continue;
       const d = dist(me.x, me.y, m.x, m.y);
-      if (!autoOk(m, s, t, d) || (dist(home.x, home.y, m.x, m.y) > AUTO_LEASH && d > s.range * 1.5)) continue;
+      if (!autoOk(m, s, t, d) || (dist(home.x, home.y, m.x, m.y) > leash && d > s.range * 1.5)) continue;
       if (d < bd) { bd = d; best = m; }
     }
     autoSt.target = best;
+    if (best || threat) { autoSt.idleAt = t; autoSt.none = false; }
+    // a quarry found out past the leash: the hunt moves there instead of drifting back
+    if (best && dist(home.x, home.y, best.x, best.y) > AUTO_LEASH) autoSt.home = { map: G.map.id, x: best.x, y: best.y };
+    // between fights: gold and loot on the ground within the leash (the view sends only what is ours to take)
+    let loot = null;
+    if (!threat && !best) {
+      let ld = 1e9;
+      for (const d of G.drops.values()) {
+        if ((autoSt.skip.get("d" + d.id) || 0) > t || dist(home.x, home.y, d.x, d.y) > AUTO_LEASH) continue;
+        const dd = dist(me.x, me.y, d.x, d.y);
+        if (dd < ld) { ld = dd; loot = d; }
+      }
+      if (loot) {
+        // one that stays put after a few seconds (a wall between, a full bag) is left alone for a while
+        if (autoSt.loot !== loot.id) { autoSt.loot = loot.id; autoSt.lootT = t; }
+        else if (t - autoSt.lootT > 4000) autoSt.skip.set("d" + loot.id, t + 30000);
+        if (ld > 4) { mx = (loot.x - me.x) / ld; my = (loot.y - me.y) / ld; }
+      }
+    }
+    // still nothing at twice the leash: walk to the nearest monster in sight, or say once that there is none
+    if (!threat && !best && !loot && idle > AUTO_IDLE * 2 && t - (autoSt.farT || 0) > 2000) {
+      autoSt.farT = t;
+      let far = null, fd = 1e9;
+      for (const m of G.mobs.values()) {
+        const md = G.defs.mobs[m.k], d = dist(me.x, me.y, m.x, m.y);
+        if ((autoSt.skip.get(m.id) || 0) > t || !md || md.lv >= s.lvl + 12 || !autoOk(m, s, t, d)) continue;
+        if (d < fd) { fd = d; far = m; }
+      }
+      const route = far ? pathTo(far.x, far.y) : null;
+      if (route) { G.path = route; autoSt.routed = far.id; autoSt.home = { map: G.map.id, x: far.x, y: far.y }; autoSt.idleAt = t; }
+      else if (!autoSt.none) { autoSt.none = true; toast("근처에 몬스터가 없습니다. 자동사냥이 기다립니다."); }
+    }
     // nothing to hunt nearby: drift back to the spot and wait for the next to turn up
-    if (!threat && !best && dist(me.x, me.y, home.x, home.y) > 48) { const route = pathTo(home.x, home.y); if (route) { G.path = route; autoSt.homing = true; } }
+    if (!threat && !best && !loot && !G.path && dist(me.x, me.y, autoSt.home.x, autoSt.home.y) > 48) { const route = pathTo(autoSt.home.x, autoSt.home.y); if (route) { G.path = route; autoSt.homing = true; } }
     if (best) {
       const range = s.range * 0.8;
       if (bd > range) {
