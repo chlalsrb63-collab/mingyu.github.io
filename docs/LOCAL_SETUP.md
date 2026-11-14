@@ -85,7 +85,7 @@ npm run deploy:cf       # 규칙 확인 + 테스트 후 배포
 - GitHub에서 자동 배포: 저장소 Settings › Secrets and variables › Actions 에 `CLOUDFLARE_API_TOKEN`,
   `CLOUDFLARE_ACCOUNT_ID` 를 넣으면 이 브랜치에 push할 때마다 테스트 후 자동 배포됩니다.
 - 참고: 게임 화면을 GitHub Pages 같은 다른 주소에서 열면 아직 Higgsfield 서버(`lumentale-online.higgsfield.app`)에
-  접속합니다. Cloudflare로 완전히 옮길 때는 AI에게 "`public/client.js`와 `public/account.js`의 `LIVE_HOST`를
+  접속합니다. Cloudflare로 완전히 옮길 때는 AI에게 "`public/net.js`와 `public/account.js`의 `LIVE_HOST`를
   내 workers.dev 주소로 바꿔 줘"라고 하세요. (workers.dev 주소에서 직접 열면 이미 자기 서버에 접속합니다.)
 
 ## 4. AI 도구 설치

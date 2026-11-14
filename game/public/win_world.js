@@ -1,0 +1,285 @@
+/**
+ * Journey windows (split from client.js): waypoints `renderWarp`, dailies `renderDaily tickDaily`,
+ * achievements `renderAchieve`, the monster collection `renderCollect` (`mobThumb`), the tutorial
+ * card (`tutTry tutCard`), the rift event widget, the cast bar, and the door fade.
+ */
+
+import { Sound } from "./audio.js";
+import { iconImg } from "./uiicons.js";
+import * as SP from "./sprites.js";
+import { $, G, el, dist, T, clamp, now } from "./state.js";
+import { act } from "./net.js";
+import { stoneNear } from "./actions.js";
+import { wpWoke } from "./overlay.js";
+import { placeToasts, touch, banner, openWin, toast } from "./windows.js";
+import { statText } from "./items.js";
+import { refreshUi, setOnce } from "./hud.js";
+
+// ── waypoints ──
+const bandText = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
+export function renderWarp(s) {
+  const box = $("#warp-body");
+  box.textContent = "";
+  const here = G.map && G.map.id, can = stoneNear() || (G.near && G.near.role === "warp");
+  box.append(el("p", "say", can ? "깨운 이동의 돌끼리는 한순간에 오갈 수 있다네. 어디로 가겠나?" : "이동의 돌 곁에서만 다른 돌로 건너갈 수 있습니다. 돌에 다가가 F를 누르세요."));
+  const list = el("div", "list");
+  // a big hunting ground has several stones (self.wp: { mapId: bitmask }, bit i = stone i); the one I stand by is "here"
+  const stones = ((G.map && G.map.marks) || []).filter((k) => k.kind === "waypoint");
+  const hereI = stones.findIndex((k) => dist(G.me.x, G.me.y, k.x * T + 8, k.y * T + 8) < 40);
+  for (const w of G.defs.waypoints || []) for (let i = 0; i < (w.n || 1); i++) {
+    const open = wpWoke(s, w.id, i), cur = w.id === here && (hereI < 0 ? i === 0 : hereI === i);
+    const row = el("div", "it wp" + (open ? "" : " locked") + (cur ? " cur" : "") + (G.warpPick === w.id && i === (G.warpPickI | 0) ? " pick" : ""));
+    const ic = el("span", "wpi"); ic.append(iconImg("stone", open ? "#8ad8ff" : "#6a6658"));
+    const tx = el("div", "tx", (w.n || 1) > 1 ? `${w.name} · ${(w.names && w.names[i]) || i + 1}` : w.name);
+    tx.append(el("small", "", `${bandText(w.band)} · ${cur ? "현재 위치" : open ? "이동 가능" : "아직 깨우지 않음"}`));
+    row.append(ic, tx);
+    if (!cur) {
+      const b = el("button", open ? "btn gold small" : "btn small", "이동");
+      b.disabled = !open || !can;
+      b.addEventListener("click", () => { act(i ? { t: "warp", to: w.id, i } : { t: "warp", to: w.id }); Sound.play("ui"); G.warpPick = null; });
+      row.append(b);
+    }
+    list.append(row);
+  }
+  box.append(list);
+  box.append(el("p", "hint", "새 맵의 이동의 돌에 다가가면 깨어납니다. 싸우는 중(3초 안에 맞음)에는 이동할 수 없습니다."));
+}
+
+// ── daily tasks ──
+const rewardText = (r) => [r.gold ? `${r.gold.toLocaleString()}G` : "", r.xp ? `EXP ${r.xp.toLocaleString()}` : "", r.stone ? `강화석 ${r.stone}` : "", r.gear ? "희귀 이상 장비" : ""].filter(Boolean).join(" · ");
+const clock = (ms) => { ms = Math.max(0, ms); const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000), sec = Math.floor((ms % 60000) / 1000); return h ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`; };
+export function renderDaily(s) {
+  const box = $("#daily-body");
+  box.textContent = "";
+  const d = s.daily;
+  if (!d) { box.append(el("p", "hint", "불러오는 중…")); return; }
+  const top = el("div", "daily-top");
+  top.append(iconImg("cal", "#e2c486"), el("span", "", "매일 아침 6시에 새 과제"), el("b", "", ""));
+  top.lastChild.id = "daily-clock";
+  box.append(top);
+  d.tasks.forEach((tk, i) => {
+    const card = el("div", "dcard" + (tk.claimed ? " claimed" : tk.done ? " done" : ""));
+    const hd = el("div", "dh");
+    hd.append(el("b", "", tk.text), el("span", "", `${Math.min(tk.n, tk.need)} / ${tk.need}`));
+    const bar = el("div", "bar"), f = el("i"); f.style.width = `${clamp((tk.n / tk.need) * 100, 0, 100)}%`; bar.append(f);
+    const ft = el("div", "df");
+    ft.append(el("small", "", rewardText(tk.reward)));
+    const b = el("button", tk.done && !tk.claimed ? "btn gold small" : "btn small", tk.claimed ? "받음" : "받기");
+    b.disabled = !tk.done || tk.claimed;
+    b.addEventListener("click", () => { act({ t: "daily", i }); Sound.play("daily"); });
+    ft.append(b);
+    card.append(hd, bar, ft);
+    box.append(card);
+  });
+  const all = d.tasks.every((tk) => tk.claimed);
+  const chest = el("div", "dcard bonus" + (d.bonus ? " claimed" : all ? " done" : ""));
+  const hd = el("div", "dh"); hd.append(el("b", "", "오늘의 보너스 상자"), el("span", "", d.bonus ? "받음" : all ? "열 수 있음" : "세 과제를 모두 마치면"));
+  const ft = el("div", "df"); ft.append(el("small", "", rewardText(d.bonusReward || {})));
+  const b = el("button", all && !d.bonus ? "btn gold small" : "btn small", d.bonus ? "받음" : "열기");
+  b.disabled = !all || d.bonus;
+  b.addEventListener("click", () => { act({ t: "daily", i: "bonus" }); Sound.play("daily"); });
+  ft.append(b);
+  chest.append(hd, ft);
+  box.append(chest);
+  box.append(el("p", "hint", "과제는 어디서든 받을 수 있습니다. 광장의 일일 의뢰 게시판 담당자에게서도 열 수 있습니다."));
+  tickDaily(now());
+}
+export function tickDaily(t) {
+  const c = $("#daily-clock");
+  if (c && G.dailyReset) { const v = `초기화까지 ${clock(G.dailyReset - t)}`; if (c.textContent !== v) c.textContent = v; }
+}
+
+// ── achievements and titles ──
+export function renderAchieve(s) {
+  const box = $("#achieve-body");
+  box.textContent = "";
+  const all = G.defs.achievements || [], got = new Set(s.ach || []);
+  const cats = [...new Set(all.map((a) => a.cat))];
+  if (!G.achTab || (G.achTab !== "칭호" && !cats.includes(G.achTab))) G.achTab = cats[0];
+  const head = el("div", "ach-top");
+  head.append(iconImg("trophy", "#e2c486"), el("span", "", `업적 점수 ${s.pts || 0}`), el("small", "", `${got.size} / ${all.length}`));
+  box.append(head);
+  const tabs = el("div", "tabs");
+  for (const c of [...cats, "칭호"]) {
+    const n = c === "칭호" ? all.filter((a) => a.title && got.has(a.id)).length : all.filter((a) => a.cat === c && got.has(a.id)).length;
+    const of = c === "칭호" ? all.filter((a) => a.title).length : all.filter((a) => a.cat === c).length;
+    const b = el("button", G.achTab === c ? "on" : "", `${c} ${n}/${of}`);
+    b.addEventListener("click", () => { G.achTab = c; Sound.play("tab"); refreshUi(); });
+    tabs.append(b);
+  }
+  box.append(tabs);
+  const list = el("div", "list");
+  if (G.achTab === "칭호") {
+    const worn = s.title;
+    list.append(el("p", "hint", worn ? `지금 단 칭호: 「${(all.find((a) => a.id === worn) || {}).title}」` : "칭호를 달면 이름 위에 보이고, 희귀한 칭호는 능력치도 조금 올려 줍니다."));
+    for (const a of all.filter((x) => x.title)) {
+      const have = got.has(a.id), on = s.title === a.id;
+      const row = el("div", "it ach" + (have ? " got" : " locked") + (on ? " on" : ""));
+      const tx = el("div", "tx", `「${a.title}」`);
+      tx.append(el("small", "", `${a.name} — ${a.desc}${a.bonus ? ` · ${a.bonus.map(([k, v]) => statText(k, v)).join(", ")}` : ""}`));
+      row.append(tx);
+      const b = el("button", on ? "btn small" : "btn gold small", on ? "떼기" : "달기");
+      b.disabled = !have;
+      b.addEventListener("click", () => { act({ t: "title", id: on ? "" : a.id }); Sound.play("ui"); });
+      row.append(b);
+      list.append(row);
+    }
+  } else {
+    for (const a of all.filter((x) => x.cat === G.achTab)) {
+      const have = got.has(a.id);
+      const row = el("div", "it ach" + (have ? " got" : " locked"));
+      const ic = el("span", "achi"); ic.append(iconImg(have ? "trophy" : "trophy", have ? "#ffd84a" : "#55524a"));
+      const tx = el("div", "tx", a.name);
+      tx.append(el("small", "", `${a.desc}${a.title ? ` · 칭호 「${a.title}」` : ""}${a.bonus ? ` (${a.bonus.map(([k, v]) => statText(k, v)).join(", ")})` : ""}`));
+      row.append(ic, tx, el("em", "pts", `${a.pts}점`));
+      list.append(row);
+    }
+  }
+  box.append(list);
+}
+
+// ── the monster collection ──
+const thumbs = new Map();
+/** A monster's first frame shrunk into a 36-pixel square; unregistered ones are a dark silhouette. */
+function mobThumb(k, lit) {
+  const key = k + (lit ? "" : ":dark");
+  if (thumbs.has(key)) return thumbs.get(key);
+  const d = G.defs.mobs[k], c = document.createElement("canvas");
+  c.width = c.height = 36;
+  const g = c.getContext("2d");
+  g.imageSmoothingEnabled = false;
+  try {
+    const img = SP.monsterSheet(d.sp || k, d.tint)[0];
+    const s = Math.min(36 / img.width, 36 / img.height) * (img.width > 40 ? 1.1 : 1.15);
+    const w = img.width * s, h = img.height * s;
+    g.drawImage(img, (36 - w) / 2, 36 - h + (img.width > 40 ? 2 : 3), w, h);
+    if (!lit) { g.globalCompositeOperation = "source-in"; g.fillStyle = "#3a3846"; g.fillRect(0, 0, 36, 36); }
+  } catch { /* an unknown sprite simply stays blank */ }
+  const url = c.toDataURL();
+  thumbs.set(key, url);
+  return url;
+}
+export function renderCollect(s) {
+  const box = $("#collect-body");
+  box.textContent = "";
+  const col = G.defs.collection || {}, need = G.defs.colNeed || 30, maps = Object.fromEntries((G.defs.maps || []).map((m) => [m.id, m]));
+  const regions = Object.keys(col);
+  if (!G.colTab || !col[G.colTab]) G.colTab = regions[0];
+  let total = 0, have = 0;
+  for (const id of regions) for (const k of col[id].mobs) { total++; if ((s.mk[k] || 0) >= need) have++; }
+  const head = el("div", "ach-top");
+  head.append(iconImg("paw", "#e2c486"), el("span", "", `등록 ${have} / ${total}`), el("small", "", `완성 지역 ${(s.col || []).length} / ${regions.length}`));
+  box.append(head);
+  const tabs = el("div", "tabs");
+  for (const id of regions) {
+    const done = (s.col || []).includes(id);
+    const b = el("button", (G.colTab === id ? "on" : "") + (done ? " done" : ""), maps[id] ? maps[id].name : id);
+    b.addEventListener("click", () => { G.colTab = id; Sound.play("tab"); refreshUi(); });
+    tabs.append(b);
+  }
+  box.append(tabs);
+  const reg = col[G.colTab], done = (s.col || []).includes(G.colTab);
+  const bonus = el("div", "col-bonus" + (done ? " done" : ""));
+  bonus.append(el("b", "", done ? "지역 완성 보너스 적용 중" : "지역을 모두 채우면"), el("span", "", reg.bonus.map(([k, v]) => statText(k, v)).join(", ")));
+  box.append(bonus);
+  const grid = el("div", "col-grid");
+  for (const k of reg.mobs) {
+    const d = G.defs.mobs[k], n = s.mk[k] || 0, ok = n >= need;
+    const cell = el("div", "col-cell" + (ok ? " ok" : ""));
+    const im = el("img"); im.alt = ""; im.src = mobThumb(k, ok);
+    const bar = el("div", "bar"), f = el("i"); f.style.width = `${clamp((n / need) * 100, 0, 100)}%`; bar.append(f);
+    cell.append(im, el("b", "", ok ? d.name : n ? d.name : "???"), el("small", "", ok ? `Lv.${d.lv} · 등록됨` : `${n} / ${need}`), bar);
+    cell.title = `${d.name} — ${ok ? "등록됨" : `${need}마리를 잡으면 등록됩니다`} (처치 ${n})`;
+    grid.append(cell);
+  }
+  box.append(grid);
+  box.append(el("p", "hint", `같은 몬스터를 ${need}마리 잡으면 도감에 등록됩니다. 광장의 수집가에게서도 열 수 있습니다.`));
+}
+
+// ── first steps ──
+export function tutTry(id) {
+  const s = G.self, step = s && s.tut && G.defs.tutorial && G.defs.tutorial[s.tut.i];
+  if (step && step.id === id) act({ t: "tut", s: id });
+}
+/** The first steps told for fingers: the server's hints name keyboard keys a phone does not have. */
+const TUT_TOUCH = {
+  talk: "광장 분수 앞의 관리자 엘더윈에게 걸어가, 아래에 뜨는 [▶ 관리자 엘더윈]을 누르세요.",
+  equip: "메뉴 → 캐릭터에서 무기를 장착하세요.",
+  bag: "메뉴 → 가방을 열어 보세요.",
+  buy: "보급상 리나에게 다가가 [▶ 보급상 리나]를 누르고 빨간 물약을 사 보세요.",
+  hunt: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. [공격] 버튼으로 치고, [자동]을 켜면 알아서 사냥합니다.",
+  rest: "모닥불 곁에서 메뉴 → 앉기를 눌러 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.",
+  skill: "레벨 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 칸을 눌러 써 보세요.",
+};
+export function tutCard(s) {
+  const card = $("#tut"), steps = G.defs.tutorial || [], i = s.tut ? s.tut.i : steps.length, step = steps[i];
+  const hide = !step || +localStorage.getItem("lumentale:tuthide") === i + 1;
+  // on a wide screen the bag sits open in the side column from the start: nothing to press, so the step is done
+  if (step && step.id === "bag" && !$("#w-inv").hidden && tutCard.bag !== i) { tutCard.bag = i; tutTry("bag"); }
+  if (card.hidden !== hide) { card.hidden = hide; placeToasts(); }
+  if (hide) return;
+  setOnce($("#tut-title"), `${i}`, (n) => n.append(step.title));
+  $("#tut-n").textContent = `첫걸음 ${i + 1}/${steps.length}${step.need > 1 ? ` · ${s.tut.n}/${step.need}` : ""}`;
+  const hint = (touch() && TUT_TOUCH[step.id]) || step.hint;
+  if ($("#tut-hint").textContent !== hint) { $("#tut-hint").textContent = hint; placeToasts(); }
+  if (card.dataset.i !== String(i)) { card.dataset.i = String(i); card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); if (i > 0) Sound.play("ok"); }
+}
+
+// ── the world event, the return scroll's cast bar, the arrival fade ──
+export function eventWidget(t) {
+  const e = G.evt, box = $("#evt");
+  if (!e || !G.defs.maps) { box.hidden = true; return; }
+  const name = (id) => (G.defs.maps.find((m) => m.id === id) || {}).name || id;
+  const live = e.phase === "on" || e.phase === "boss";
+  let html;
+  if (live) {
+    html = [`<b>균열 침공 진행 중</b> · ${name(e.map)}`, `남은 ${clock(G.evtLeft - t)} · ${e.phase === "boss" ? "우두머리 출현!" : `웨이브 ${e.waves}/${(G.defs.event && G.defs.event.waves.length) || 3}`}`, e.mine ? `내 피해 ${e.mine.toLocaleString()}` : "피해를 주면 보상을 받습니다"];
+  } else if (e.phase === "warn") html = [`<b>균열 침공 예고</b> · ${name(e.map)}`, `시작까지 ${clock(G.evtIn - t)}`];
+  else html = [`다음 균열 침공 ${clock(G.evtNext - t)}`, name(e.nextMap)];
+  if (e.top && e.top.length && (live || e.phase === "done")) html.push(e.top.map(([n, d], i) => `${i + 1}. ${n} ${d.toLocaleString()}`).join("  "));
+  const v = html.map((h) => `<span>${h}</span>`).join("");
+  if (box.dataset.v !== v) { box.dataset.v = v; box.innerHTML = v; }
+  box.className = "frame" + (live ? " live" : e.phase === "warn" ? " warn" : "");
+  box.hidden = false;
+  document.body.classList.toggle("evt-live", live);
+  if (G.evtPhase !== e.phase) {
+    if (G.evtPhase !== undefined) {
+      if (e.phase === "warn") { banner(`균열 침공 예고 · ${name(e.map)}`, true); Sound.play("rift_warn"); }
+      else if (e.phase === "on") { banner(`균열 침공 시작! · ${name(e.map)}`, true); Sound.play("rift_start"); }
+      else if (e.phase === "boss") { banner("균열의 우두머리 출현!", true); Sound.play("rift_boss"); }
+      else if (e.phase === "done") banner("균열 침공 종료", true);
+    }
+    G.evtPhase = e.phase;
+  }
+}
+export function castBar(t) {
+  const c = G.cast, box = $("#cast");
+  if (!c || t > c.end + 200) { if (!box.hidden) box.hidden = true; if (c && t > c.end + 200) G.cast = null; return; }
+  if (box.hidden) { box.hidden = false; $("#cast-name").textContent = "귀환 주문서"; }
+  $("#cast-fill").style.width = `${clamp(((t - c.start) / (c.end - c.start)) * 100, 0, 100)}%`;
+}
+export function doorFade() {
+  const f = $("#fade");
+  f.hidden = true; f.classList.add("door"); void f.offsetWidth; f.hidden = false;
+  setTimeout(() => { f.hidden = true; f.classList.remove("door"); }, 900);
+}
+export function fadeIn() {
+  const f = $("#fade");
+  f.hidden = true; void f.offsetWidth; f.hidden = false;
+  setTimeout(() => { f.hidden = true; }, 700);
+}
+
+/** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */
+export function setupWinWorld() {
+  $("#tut-x").addEventListener("click", () => { const s = G.self; if (s && s.tut) localStorage.setItem("lumentale:tuthide", String(s.tut.i + 1)); $("#tut").hidden = true; placeToasts(); Sound.play("ui"); });
+  $("#evt").addEventListener("click", () => {
+    const e = G.evt, s = G.self;
+    if (!e || !s) return;
+    // the event gathers at one stone of its ground (the middle one, 중턱, on a big ground)
+    const next = e.phase === "idle" || e.phase === "done", target = next ? e.nextMap : e.map, st = (next ? e.nextSt : e.st) | 0;
+    if (wpWoke(s, target, st)) { G.warpPick = target; G.warpPickI = st; openWin("warp"); toast("이동의 돌 곁에서 균열 침공 지역으로 이동할 수 있습니다"); }
+    else if (wpWoke(s, target)) { G.warpPick = target; G.warpPickI = 0; openWin("warp"); toast("침공이 모이는 이동의 돌을 아직 깨우지 않았습니다 — 입구 돌로 건너가 걸어가세요"); }
+    else toast("그 지역의 이동의 돌을 아직 깨우지 않았습니다");
+    Sound.play("ui");
+  });
+}
