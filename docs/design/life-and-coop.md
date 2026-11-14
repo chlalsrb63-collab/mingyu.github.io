@@ -842,3 +842,29 @@ contract is H2's, unchanged. Notes for L2b/L2c:
   생활 window's cards. At a shop a click sells one, Shift+click all (`sell {pid, n}`). Icons for all 22 pouch goods
   (`m_*`, `ing_*`, `staple`, `flask`) are code-drawn (`matIcon`); preview `_gather.html`.
 - Gains of pouch goods also float over the head (`+들꽃잎 ×2`). 대성공 shows "대성공!" and its own sound.
+
+## H4. L2b client as built (stations + mini-games; deviations only)
+
+`public/station.js` (window, flow) + `minigames.js` `forge`/`brew`, wired from actions/events/hud; the contract is
+H2's, unchanged. Notes for L2c:
+- **One window** `#w-craft` (WIN id `craft`) for all four stations, titled by kind; no menu button or hotkey — F at
+  캉캉 / 보글 / 쥬쥬의 화덕 opens it (their "곧 문을 엽니다" lines are replaced by station tips), and it closes itself
+  once you are > 72 px from that role's NPC (a campfire: `fireNear()` or the stove). With no NPC near, F tries a
+  node, then a **campfire** (요리 window), then water — so F at a fire by a lake no longer casts; step away to fish.
+- **Lists**: `craft` · `alch` show their `at`; the stove shows `cook` + `fire`; a campfire `fire` only. The L1 fish
+  dishes (`any`) sit in a "생선 구이" band and are made through `craft_open`/`craft` too (the bag's double-click
+  `cook` alias still works). Another class's weapons are hidden, as at the shop. Bands are the five grades.
+- **Odds** shown are `lifeOdds` at score 50 mirrored on the client (쥬쥬's +10 %p perk is not shown); the minimum
+  time is `ms × (1 − roll.time·L)` from `defs`, not a hard-coded 0.008.
+- **Timing**: the clock starts when `mk` arrives; the score is sent at the earliest `mk + min + 250 ms` (a "마무리하는
+  중…" toast if the game ended sooner). No `mk` within 3 s (a refusal) gives the 만들기 button back.
+- **Mini-games**: `pan` is L1's `cooking` (Esc still scores what is in the pan); `forge` = five blows on a swinging
+  heat bar (100/75/40/5 by distance to a band that narrows and moves); `brew` = hold to raise a needle, keep it in a
+  wandering green band for `max(5 s, min + 1.2 s)`, score = time inside. Esc in forge/brew sends nothing (the
+  server's `p.mk` just waits for the next `craft_open`).
+- **Results**: `mo` plays `craft_great` / `craft_ok` (`dish_done` for pan) / `craft_fail` and floats "대성공!" /
+  "실패…" over you; the result toast is the server's. Anyone's 대성공 sparkles over their head; others' `mk` is
+  ignored (no pose).
+- `nearestNpc` gives station roles (`craft alch cook`) the same −14 px counter bias as a shopkeeper: without it 쥬쥬 (goods)
+  always won over her own stove; now the stove is the F target from its side of the counter.
+- The 생활 window now counts 제작 and 연금 as open (배달 waits for L2c).
