@@ -13,7 +13,9 @@
  * one-pixel outline in the rarity's colour.
  *
  * A book is the exception: it is drawn open, facing the viewer, around the
- * sheet's centre.
+ * sheet's centre. A bow is held square to the shot: its limbs run across the
+ * sprite, its string and arrow along it, and it is drawn at every pull of its
+ * string (bowSprite; swing.js bowPose says which).
  *
  * An approved external image (asset/ → scripts/import-art.mjs --install → public/assets/
  * manifest.json) replaces a look when it is listed: "weapon.<kind>.t<tier>",
@@ -62,6 +64,8 @@ const M = {
   wrap: "#3a2630", gild: "#f0cc60", spot: "#b0603a", fuller: "#8e96ae", glow: "#7af4ff", core: "#e8ffff",
   energy: "#e8a8ff", spark: "#fff4a0", venom: "#8ae84a", ruby: "#ff5a6a", sapph: "#5ab8ff", emer: "#5ae0a0",
   amethyst: "#c87aff", white: "#ffffff", ink: "#3a3044", line: "#b8a890", rune: "#5ab8ff", orange: "#ff9a3a",
+  // bows: a gut string, an arrow's shaft, a longbow's pale belly, a compound's cable
+  gut: "#f2e6c8", shaft: "#e8cc94", belly: "#d8a86c", cable: "#4a4c5e",
 };
 
 // ───────────────────────────── shapes ─────────────────────────────
@@ -335,7 +339,104 @@ const BOOK = [
   }),
 ];
 
-export const DESIGNS = { sword: SWORD, dagger: DAGGER, spear: SPEAR, staff: STAFF, book: BOOK };
+// ── bows. The limbs run ACROSS the weapon (t) and the arrow along it (s), so the sprite turned to
+// the aim holds the bow square to the shot. The pivot at GRIP is the drawing hand at full draw
+// (the cheek); the riser — the bow hand — sits RISER px ahead of it. Every design takes the pull
+// `o.pull` (−0.25 the string snapped past rest · 0 at rest · 1 at full draw: the nock comes back
+// to NOCK_FULL and the limbs bend, their tips coming back and in) and `o.arrow` (an arrow on the
+// string). The string is drawn after the outline (`post`), one bare pixel wide.
+const RISER = 7, NOCK_FULL = -3.5, ARROW_LEN = 14;
+/**
+ * A bow's limbs, string and nocked arrow. `b`: T half-height · tip s at rest · g grip half-length ·
+ * w0/w1 limb thickness at grip/tip · rc recurve (the tips flick forward) · gap (limbs floating free
+ * of the riser) · mat limb material · str string material · fl fletching material.
+ * Returns { sh, post, c(t) → the limb's centre s at t, T, tipS } at this pull.
+ */
+function bowParts(b, o, icon) {
+  const p = Math.max(-0.25, Math.min(1, o.pull || 0)), dr = Math.max(0, p), k = icon ? 1.3 : 1;
+  const T = b.T - 1.2 * dr, tipS = b.tip - 1.4 * dr + 1.2 * Math.max(0, -p), g = b.g, r = RISER;
+  const span = Math.max(1, T - g);
+  const c = (t) => { const u = Math.max(0, Math.min(1, (Math.abs(t) - g) / span)); return r - (r - tipS) * u * u + (b.rc || 0) * Math.max(0, (u - 0.68) / 0.32) ** 2; };
+  const sh = [], post = [];
+  for (const sg of [-1, 1]) {
+    const L0 = [], L1 = [], n = 10, u0 = b.gap ? b.gap / span : 0;
+    for (let i = 0; i <= n; i++) {
+      const u = u0 + ((1 - u0) * i) / n, t = sg * (g + span * u), w = (b.w0 + (b.w1 - b.w0) * u) * k;
+      L0.push([c(t) - w / 2, t]); L1.unshift([c(t) + w / 2, t]);
+    }
+    sh.push(P(L0.concat(L1), b.mat));
+  }
+  // the string: tip to nock to tip (a straight line at rest); bowed forward a hair just after the release
+  const nock = p >= 0 ? tipS + p * (NOCK_FULL - tipS) : tipS - p * 6;
+  const ts = c(T) - 0.4, tt = T - 0.6;
+  if (Math.abs(nock - ts) < 0.3) post.push(L(ts, -tt, ts, tt, b.str));
+  else post.push(L(ts, -tt, nock, 0, b.str), L(nock, 0, ts, tt, b.str));
+  if (o.arrow) {
+    // the arrow on the rest: a pale shaft over the riser, a steel head, fletching at the nock
+    const a = nock, h = a + ARROW_LEN;
+    sh.push(
+      L(a + 1, 0, h - 1, 0, "shaft"),
+      P([[a + 0.6, -1.4], [a + 3.6, -0.4], [a + 3.6, 0.2], [a + 0.6, 0.2]], b.fl || "red"),
+      P([[a + 0.6, 0.8], [a + 3.6, 0.8], [a + 3.6, 1.4], [a + 0.6, 2.4]], b.fl || "red"),
+      P([[h - 1.2, -1.3], [h + 2.6, 0.5], [h - 1.2, 2.3]], "steel"),
+    );
+  }
+  return { sh, post, c, T, tipS };
+}
+/** A bow design: its parts at the pull, plus its own riser and trim (`extra(c, T, tipS, k)`), boxed for motifs along the limb. */
+const bow = (b, extra) => (icon, o = {}) => {
+  const pt = bowParts(b, o, icon), k = icon ? 1.15 : 1;
+  const ex = extra(pt.c, pt.T, pt.tipS, k);
+  // the arrow (after the two limbs in pt.sh) goes over the riser
+  const arrow = o.arrow ? pt.sh.splice(2) : [];
+  return {
+    sh: [...pt.sh, ...ex.sh, ...arrow], post: [...pt.post, ...(ex.post || [])],
+    head: [-pt.T + 1, pt.T - 1, -(b.w0 * k) / 2 - 0.3, (b.w0 * k) / 2 + 0.3], limb: pt.c,
+    blade: [b.mat], edgeX: true,
+  };
+};
+const BOW = [
+  // 1 나무 짧은활 — a plain self-bow cut from one stave, a cord-wrapped grip, a hemp string
+  bow({ T: 9, tip: 3.4, g: 2, w0: 2.4, w1: 1.5, mat: "wood", str: "gut" }, (c, T, tip, k) => ({
+    sh: [R(RISER - 1.4 * k, RISER + 1.4 * k, -2.5, 2.5, "wood"), L(RISER - 1, -1, RISER + 1, -1, "wrap"), L(RISER - 1, 1, RISER + 1, 1, "wrap")],
+  })),
+  // 2 사냥꾼의 장궁 — a tall yew longbow: pale belly, dark back, a leather grip, horn nocks
+  bow({ T: 13, tip: 4.4, g: 2.5, w0: 2.6, w1: 1.4, mat: "dwood", str: "gut" }, (c, T, tip, k) => ({
+    sh: [
+      ...[-1, 1].map((sg) => L(c(sg * 4) - 0.9, sg * 4, c(sg * (T - 2)) - 0.6, sg * (T - 2), "belly")),
+      R(RISER - 1.5 * k, RISER + 1.5 * k, -3, 3, "leather"), L(RISER - 1, -2, RISER + 1, -2, "wrap"), L(RISER - 1, 2, RISER + 1, 2, "wrap"),
+      C(c(T) + 0.2, -T + 0.3, 0.9 * k, "bone"), C(c(T) + 0.2, T - 0.3, 0.9 * k, "bone"),
+    ],
+  })),
+  // 3 기사단 전투활 — a knight's recurve: dark limbs flicking forward at steel-capped tips, a gilt riser, a sapphire
+  bow({ T: 11, tip: 4, g: 3.5, w0: 2.4, w1: 1.6, rc: 2.2, mat: "dwood", str: "gut" }, (c, T, tip, k) => ({
+    sh: [
+      P([[RISER - 1.6 * k, -4.5], [RISER + 1.2 * k, -4], [RISER + 2 * k, 0], [RISER + 1.2 * k, 4], [RISER - 1.6 * k, 4.5]], "gold"),
+      D(RISER, -3, "blue"), D(RISER, 2, "blue"), D(RISER + 0.5, 0, "sapph"),
+      ...[-1, 1].map((sg) => P([[c(sg * (T - 2.4)) - 1.3 * k, sg * (T - 2.4)], [c(sg * (T - 2.4)) + 1.3 * k, sg * (T - 2.4)], [c(sg * T) + 1.1 * k, sg * (T + 0.6)], [c(sg * T) - 0.9 * k, sg * (T + 0.6)]], "steel")),
+    ],
+  })),
+  // 4 카본 컴파운드 보우 — a gunmetal compound: a cut-out carbon riser, short stiff limbs, cams at the tips, a cyan string
+  bow({ T: 10, tip: 4.6, g: 5, w0: 2.4, w1: 2, mat: "gun", str: "glow" }, (c, T, tip, k) => ({
+    sh: [
+      P([[RISER - 1.4 * k, -6], [RISER + 1.6 * k, -5], [RISER + 2.2 * k, 0], [RISER + 1.6 * k, 5], [RISER - 1.4 * k, 6], [RISER - 0.6 * k, 0]], "carbon"),
+      R(RISER - 0.2, RISER + 1.2, -3.6, -1.6, null), R(RISER - 0.2, RISER + 1.2, 1.6, 3.6, null),
+      L(RISER + 1, -1, RISER + 1, 1, "glow"),
+      ...[-1, 1].flatMap((sg) => [C(c(sg * T), sg * T, 1.7 * k, "iron"), D(c(sg * T) - 0.5, sg * T - 0.5, "glow")]),
+    ],
+    post: [L(c(T) + 0.6, -T + 1.2, RISER - 2.4, 0, "cable"), L(RISER - 2.4, 0, c(T) + 0.6, T - 1.2, "cable")],
+  })),
+  // 5 균열의 시위 — a rift bow: limbs of void that float free of a black riser, crystal shards past the tips, a violet string
+  bow({ T: 12, tip: 3.6, g: 3, w0: 2.6, w1: 1.4, rc: 1.2, gap: 1.2, mat: "void", str: "energy", fl: "violet" }, (c, T, tip, k) => ({
+    sh: [
+      P([[RISER - 1.4 * k, -3.2], [RISER + 1.4 * k, -3.6], [RISER + 2.2 * k, 0], [RISER + 1.4 * k, 3.6], [RISER - 1.4 * k, 3.2]], "black"),
+      D(RISER, 0, "energy"), D(c(7), -7, "energy"), D(c(7), 7, "energy"),
+      ...[-1, 1].map((sg) => P([[c(sg * T) - 0.6, sg * (T + 1.6)], [c(sg * T) + 1.6, sg * (T + 1.2)], [c(sg * T) + 0.4, sg * (T + 3.4)]], "crystal")),
+    ],
+  })),
+];
+
+export const DESIGNS = { sword: SWORD, dagger: DAGGER, spear: SPEAR, staff: STAFF, book: BOOK, bow: BOW };
 /** Extra designs other modules can register (new weapon kinds): kind → [tier1…tier5] design functions. */
 export function registerKind(kind, designs) { DESIGNS[kind] = designs; }
 
@@ -425,8 +526,8 @@ function raster(shapes, mats, W, H, xf, inv, glow) {
       const m = mat[i], up = y > 0 ? mat[i - W] : null, dn = y < H - 1 ? mat[i + W] : null;
       const lit = up !== m, dark = dn !== m;
       col = colOf(m, lit && !dark ? 0 : dark && !lit ? 2 : lit ? 0 : 1);
-      // a +7 weapon's lit edge burns
-      if (glow && lit && glow.blade.includes(m)) col = glow.col;
+      // a +7 weapon's lit edge burns (a bow's: the back of its limbs, the edge facing the shot)
+      if (glow && glow.blade.includes(m) && (glow.edgeX ? (x < W - 1 ? mat[i + 1] : null) !== m : lit)) col = glow.col;
     }
     if (!col) continue;
     const [r, gg, b] = hexRgb(col);
@@ -448,18 +549,52 @@ function outline(c, inks) {
 }
 
 /** The design for a kind and tier, with a motif (legendary, set or skin) applied. */
-function build(kind, tier, motif, icon) {
+function build(kind, tier, motif, icon, o) {
   const list = DESIGNS[kind] || DESIGNS.sword;
-  const d = list[Math.max(0, Math.min(list.length - 1, tier - 1))](icon);
+  const d = list[Math.max(0, Math.min(list.length - 1, tier - 1))](icon, o);
   const mats = {};
   let sh = d.sh.slice();
   const mo = MOTIF[motif];
   if (mo) {
     for (const b of d.blade) mats[b] = mo.blade;
     if (mo.fit) for (const f of ["iron", "gold", "dark", "carbon", "black", "dwood", "leather"]) if (!d.blade.includes(f)) mats[f] = mo.fit;
-    sh = sh.concat(mo.add(d.head));
+    // a bow's motif is laid out along its curved limb (head is in limb terms: along it, across it)
+    const add = mo.add(d.head);
+    sh = sh.concat(d.limb ? bend(add, d.limb) : add);
   }
-  return { sh, mats, head: d.head, blade: d.blade };
+  return { sh, post: d.post || [], mats, head: d.head, blade: d.blade, edgeX: !!d.edgeX };
+}
+/**
+ * Shapes drawn for a straight blade (s along it, t across, t < 0 its upper edge) bent onto a bow's
+ * limb: along → t, across → back from the limb's centre `c(t)` (the upper edge faces the shot).
+ * Edges are cut into pieces first so they follow the curve.
+ */
+function bend(shapes, c) {
+  const at = ([u, v]) => [c(u) - v, u];
+  const cut = (pts, closed) => {
+    const out = [];
+    for (let i = 0; i < pts.length - (closed ? 0 : 1); i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      for (let j = 0; j < 4; j++) out.push([a[0] + ((b[0] - a[0]) * j) / 4, a[1] + ((b[1] - a[1]) * j) / 4]);
+    }
+    if (!closed) out.push(pts[pts.length - 1]);
+    return out;
+  };
+  return shapes.flatMap((sh) => {
+    if (sh.k === "p") return [{ ...sh, pts: cut(sh.pts, true).map(at) }];
+    if (sh.k === "c") { const [s, t] = at([sh.s, sh.t]); return [{ ...sh, s, t }]; }
+    if (sh.k === "d") { const [s, t] = at([sh.s, sh.t]); return [{ ...sh, s, t }]; }
+    const pts = cut([sh.a, sh.b], false).map(at), segs = [];
+    for (let i = 0; i + 1 < pts.length; i++) segs.push({ ...sh, a: pts[i], b: pts[i + 1] });
+    return segs;
+  });
+}
+/** Paint a design: its shapes, inked (`inks`), then its bare one-pixel lines (a bow's string) over the ink. */
+function paint(d, W, H, xf, inv, glow, inks) {
+  const c = raster(d.sh, d.mats, W, H, xf, inv, glow);
+  outline(c, inks);
+  if (d.post.length) c.getContext("2d").drawImage(raster(d.post, d.mats, W, H, xf, inv, null), 0, 0);
+  return c;
 }
 const GLOW7 = "#fff2a8", GLOW10 = "#ffd84a";
 
@@ -523,9 +658,22 @@ const cache = new Map();
  * key · ws weapon-skin motif. Pointing right with the hand at GRIP (a book: centred).
  */
 export function weaponSprite(kind, gear = {}) {
+  return kind === "bow" ? bowSprite(gear) : sprite(kind, gear, null);
+}
+/**
+ * A bow in hand at a moment of its shot: `pull` −0.25 (the string just snapped past rest) … 0
+ * (rest) … 1 (full draw), in eighths; `arrow` an arrow on the string. scene2d draws every frame of
+ * the draw and release from these (swing.js bowPose gives the pull). An installed image
+ * (`weapon.bow.…`) has no string of its own to pull: it is shown as it is.
+ */
+export function bowSprite(gear = {}, pull = 0, arrow = false) {
+  const q = Math.max(-2, Math.min(8, Math.round(pull * 8)));
+  return sprite("bow", gear, { pull: q / 8, arrow: !!arrow, q });
+}
+function sprite(kind, gear, o) {
   const wt = Math.max(1, Math.min(5, gear.wt | 0 || 1)), wq = Math.max(0, Math.min(4, gear.wq | 0)), we = gear.we | 0;
   const motif = MOTIF[gear.ws] ? gear.ws : MOTIF[gear.wl] ? gear.wl : "";
-  const key = `${kind}:${wt}:${wq}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}:${motif}`;
+  const key = `${kind}:${wt}:${wq}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}:${motif}${o ? `:${o.q}:${o.arrow ? 1 : 0}` : ""}`;
   let c = cache.get(key);
   if (c) return c;
   const book = kind === "book";
@@ -538,10 +686,9 @@ export function weaponSprite(kind, gear = {}) {
     cache.set(key, c);
     return c;
   }
-  const d = build(kind, wt, motif, false);
-  const glow = we >= 7 ? { blade: d.blade, col: GLOW7 } : null;
-  c = raster(d.sh, d.mats, W, H, (s, t) => [ox + s, oy + t], (x, y) => [x - ox, y - oy], glow);
-  outline(c, we >= 10 ? [RARE_INK[wq] || INK, GLOW10] : [RARE_INK[wq] || INK]);
+  const d = build(kind, wt, motif, false, o || undefined);
+  const glow = we >= 7 ? { blade: d.blade, col: GLOW7, edgeX: d.edgeX } : null;
+  c = paint(d, W, H, (s, t) => [ox + s, oy + t], (x, y) => [x - ox, y - oy], glow, we >= 10 ? [RARE_INK[wq] || INK, GLOW10] : [RARE_INK[wq] || INK]);
   cache.set(key, c);
   return c;
 }
@@ -559,11 +706,12 @@ export function weaponIcon(kind, tier, o = {}) {
     cache.set(key, c);
     return c;
   }
-  const d = build(kind, tier, motif, true);
+  // a bow is shown half drawn, an arrow on the string: the open D of the string reads at 16 px
+  const d = build(kind, tier, motif, true, kind === "bow" ? { pull: 0.4, arrow: true } : undefined);
   const glow = we >= 7 ? { blade: d.blade, col: GLOW7 } : null;
   // the extent of every shape, to fit the square with a pixel to spare for the outline
   const pts = [];
-  for (const sh of d.sh) {
+  for (const sh of d.sh.concat(d.post)) {
     if (sh.m === null) continue;
     if (sh.k === "p") pts.push(...sh.pts);
     else if (sh.k === "c") pts.push([sh.s - sh.r, sh.t - sh.r], [sh.s + sh.r, sh.t + sh.r]);
@@ -585,8 +733,7 @@ export function weaponIcon(kind, tier, o = {}) {
     xf = (s, t) => [ox + u * (s + t), oy + u * (t - s)];
     inv = (x, y) => { const a = (x - ox) / u, b = (y - oy) / u; return [(a - b) / 2, (a + b) / 2]; };
   }
-  c = raster(d.sh, d.mats, 16, 16, xf, inv, glow);
-  outline(c, we >= 10 ? [ICON_INK, GLOW10] : [ICON_INK]);
+  c = paint(d, 16, 16, xf, inv, glow, we >= 10 ? [ICON_INK, GLOW10] : [ICON_INK]);
   cache.set(key, c);
   return c;
 }

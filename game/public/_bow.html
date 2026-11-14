@@ -1,0 +1,137 @@
+<!doctype html><meta charset="utf-8"><title>bow</title>
+<body style="margin:0;background:#2a2834;color:#ddd;font:12px sans-serif;overflow:hidden"><canvas id="c" style="image-rendering:pixelated;display:block"></canvas>
+<canvas id="out" style="position:fixed;left:0;top:0;image-rendering:pixelated"></canvas>
+<script type="module">
+// Dev preview of the bow (never deployed): ?m=
+//   art     every tier at every pull (rest → full draw → snapped), with and without an arrow; icons; motifs; +7/+10
+//   draw    the shot cycle frame by frame in eight aims (?aim=e,se,s,sw,w,nw,n,ne · ?beat=0|1|2|up · ?ms=24 · ?n=20 · ?wt=3)
+//   arrows  the arrow sprite in 64 directions, then arrows in flight (plain, tiers 4/5, a piercing streak, a hit, a wall)
+import * as WP from "./weapons.js";
+const q = new URLSearchParams(location.search), mode = q.get("m") || "art";
+const NAMES = ["나무 짧은활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위"];
+const cv = document.getElementById("c"), g = cv.getContext("2d");
+const txt = (s, x, y, col = "#ddd") => { g.fillStyle = col; g.font = "12px sans-serif"; g.fillText(s, x, y); };
+
+if (mode === "art") {
+  const z = +(q.get("z") || 3), PULLS = [0, 0.25, 0.5, 0.75, 1, -0.25], CW = 32 * z + 4, RH = 32 * z + 18;
+  cv.width = 140 + PULLS.length * 2 * CW + 80; cv.height = 5 * RH + 560;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#3c5a3a"; g.fillRect(0, 0, cv.width, cv.height);
+  for (let t = 1; t <= 5; t++) {
+    const y = (t - 1) * RH + 14;
+    txt(`T${t} ${NAMES[t - 1]}`, 4, y + 10);
+    PULLS.forEach((p, i) => {
+      for (const ar of [false, true]) {
+        const s = WP.bowSprite({ wt: t }, p, ar), x = 140 + (i * 2 + (ar ? 1 : 0)) * CW;
+        g.drawImage(s, x, y, s.width * z, s.height * z);
+        if (t === 1) txt(`${p}${ar ? " ➶" : ""}`, x + 4, 10, "#ffe");
+      }
+    });
+    const ic = WP.weaponIcon("bow", t);
+    g.drawImage(ic, 30, y + 22, 64, 64);
+    g.drawImage(ic, 100, y + 40, 16, 16);
+  }
+  // motifs (legendary, set, skin) on a tier-3 bow at 2×, and the icon
+  const y0 = 5 * RH + 20, mz = 2;
+  WP.MOTIFS.forEach((mo, i) => {
+    const x = 6 + (i % 10) * 118, y = y0 + Math.floor(i / 10) * 150;
+    txt(mo, x, y + 10);
+    const s = WP.bowSprite({ wt: 3, ws: mo }, 0.5, true);
+    g.drawImage(s, x, y + 14, s.width * mz, s.height * mz);
+    g.drawImage(WP.weaponIcon("bow", 3, { ws: mo }), x + 64, y + 30, 48, 48);
+    g.drawImage(WP.weaponIcon("bow", 3, { ws: mo }), x + 70, y + 90, 16, 16);
+  });
+  const y1 = y0 + 320;
+  [[0, 0], [7, 2], [10, 3]].forEach(([e, wq], i) => {
+    for (let t = 4; t <= 5; t++) {
+      const s = WP.bowSprite({ wt: t, we: e, wq }, 0, false), x = 6 + i * 330 + (t - 4) * 110;
+      g.drawImage(s, x, y1 + 14, s.width * 3, s.height * 3);
+      g.drawImage(WP.weaponIcon("bow", t, { we: e }), x + 20, y1 + 116, 48, 48);
+    }
+    txt("+" + e, 6 + i * 330, y1 + 10);
+  });
+  window.__done = true;
+}
+
+if (mode === "draw" || mode === "arrows" || mode === "fight") {
+  const S = await import("./scene2d.js");
+  const maps = await (await fetch("./_maps.json")).json();
+  const m = maps[q.get("map") || "meadow"] || maps.town;
+  globalThis.__skyHour = 12; globalThis.__skyWx = 0;
+  // stand by the waypoint stone (open, flat ground: nothing behind to hide the hero), or at ?x=&y= (tiles)
+  const wp = (m.marks || []).find((k) => k.kind === "waypoint");
+  const fx = +(q.get("x") || (wp ? wp.x + 2 : m.w >> 1)), fy = +(q.get("y") || (wp ? wp.y + 3 : m.h >> 1));
+  const me = { x: fx * 16 + 8, y: fy * 16 + 8, dir: 0, moving: false, atkT: -1e9, dead: false, aim: null, atkN: 0 };
+  const G = { you: 1, me, players: new Map(), mobs: new Map(), drops: new Map(), who: new Map(), defs: { mobs: {} }, icons: { cv: {} }, self: null, fires: new Map(), bobs: new Map() };
+  const wt = +(q.get("wt") || 3);
+  G.who.set(1, { cls: q.get("cls") || "lancer", look: [+(q.get("sp") || 1), 0, 0, 0, 0, 0, 1], gear: { wk: "bow", wt, wq: +(q.get("wq") || 0), we: +(q.get("we") || 0) } });
+  const AIMS = { e: [1, -1], se: [1, 0], s: [1, 1], sw: [0, 1], w: [-1, 1], nw: [-1, 0], n: [-1, -1], ne: [0, -1] };   // screen directions → ground
+  const cv = document.getElementById("c");
+  S.init(cv); S.resize(+(q.get("vw") || 400), +(q.get("vh") || 260), 1); S.loadMap(m); S.sync(G);
+  const out = document.getElementById("out"), o = out.getContext("2d");
+  let t = 50000;
+  const frame = (dt = 0.016) => S.render(me.x, me.y, dt, t, true);
+  const settle = (n = 30) => { for (let i = 0; i < n; i++) { t += 16; frame(); } };
+  const step = (ms) => { const sub = Math.max(1, Math.round(ms / 16)); for (let k = 0; k < sub; k++) { t += ms / sub; frame(ms / sub / 1000); } };
+  const z = +(q.get("z") || 3), label = (s, x, y) => { o.fillStyle = "#fff"; o.font = "14px monospace"; o.fillText(s, x, y); };
+
+  if (mode === "draw") {
+    // rows: the eight aims; columns: frames of one shot (the release at the red tick)
+    const ms = +(q.get("ms") || 24), n = +(q.get("n") || 20), cw = +(q.get("cw") || 64), ch = +(q.get("ch") || 60), dirs = (q.get("aim") || "e,se,s,sw,w,nw,n,ne").split(",");
+    const beatQ = q.get("beat") || "0", up = beatQ === "up", beat = up ? 2 : +beatQ;
+    out.width = n * cw * z + 70; out.height = dirs.length * ch * z;
+    o.imageSmoothingEnabled = false; o.fillStyle = "#000"; o.fillRect(0, 0, out.width, out.height);
+    dirs.forEach((d, r) => {
+      S.fx.clear();
+      const [ax, ay] = AIMS[d];
+      me.aim = [me.x + ax * 40, me.y + ay * 40 + 6]; me.atkT = -1e9; me.bowUp = up;
+      settle(40);
+      me.atkT = t; me.atkN = beat;
+      const rel = S.impactMs("bow", beat);
+      let shot = false;
+      for (let i = 0; i < n; i++) {
+        if (i) step(ms); else frame();
+        if (!shot && t - me.atkT >= rel - 1) { shot = true; S.fx.arrow(me.x, me.y, me.x + ax * 90, me.y + ay * 90, { tier: wt, pierce: beat === 2 && !up, end: "hit" }); }
+        o.drawImage(cv, cv.width / 2 - cw / 2, cv.height / 2 - ch / 2 - 4, cw, ch, 70 + i * cw * z, r * ch * z, cw * z, ch * z);
+      }
+      label(d, 6, r * ch * z + 20); label(`b${beatQ}`, 6, r * ch * z + 40);
+      o.fillStyle = "#ff3040"; o.fillRect(70 + (rel / ms) * cw * z, r * ch * z, 2, 10);
+    });
+  }
+
+  if (mode === "arrows") {
+    // top: the sprite in all 64 directions (each tier's fletch, then the piercing white-hot one), at z;
+    // below: a volley in flight from the hero in eight aims (plain T1, T4 cyan, T5 violet, piercing), mid-flight
+    const z2 = 4, rowsA = [[1, false], [4, false], [5, false], [3, true]];
+    out.width = 64 * 18 * 2 + 20; out.height = rowsA.length * 18 * z2 / 2 * 2 + 20 + 3 * 300 * 2;
+    o.imageSmoothingEnabled = false; o.fillStyle = "#3c5a3a"; o.fillRect(0, 0, out.width, out.height);
+    rowsA.forEach(([tier, hot], r) => { for (let i = 0; i < 64; i++) o.drawImage(S.arrowSprite((i / 64) * Math.PI * 2, tier, hot), 10 + i * 36, 10 + r * 36, 34, 34); });
+    const y0 = 10 + rowsA.length * 36 + 10, W = 400, H = 260;
+    [[60, "in flight"], [150, "further"], [330, "landed"]].forEach(([after, name], c) => {
+      S.fx.clear(); me.aim = null; me.atkT = -1e9; settle(10);
+      Object.values(AIMS).forEach(([ax, ay], i) => {
+        const tier = [1, 1, 4, 4, 5, 5, 3, 3][i], pierce = i >= 6;
+        S.fx.arrow(me.x, me.y, me.x + ax * 70, me.y + ay * 70, { tier, pierce, end: i % 3 === 0 ? "stuck" : "hit" });
+      });
+      step(after);
+      o.drawImage(cv, 0, 0, W, H, 10, y0 + c * (H * 2 + 10), W * 2, H * 2);
+      label(`${name} (+${after} ms)`, 16, y0 + c * (H * 2 + 10) + 18);
+    });
+  }
+
+  if (mode === "fight") {
+    // one frame of the real thing at 1×, then 3×: the hero mid-shot at a monster, the arrow on its way
+    const d = q.get("aim") || "e", [ax, ay] = AIMS[d], after = +(q.get("after") || 70);
+    out.width = 400 * 4; out.height = 260 * 3;
+    o.imageSmoothingEnabled = false;
+    me.aim = [me.x + ax * 60, me.y + ay * 60 + 6]; settle(40);
+    me.atkT = t; me.atkN = +(q.get("beat") || 0);
+    step(S.impactMs("bow", me.atkN));
+    S.fx.arrow(me.x, me.y, me.x + ax * 120, me.y + ay * 120, { tier: wt, end: "hit" });
+    step(after);
+    o.drawImage(cv, 0, 0, 400, 260, 0, 0, 400, 260);
+    o.drawImage(cv, 100, 60, 200, 140, 400, 0, 600, 420);
+  }
+  window.__done = true;
+}
+</script>

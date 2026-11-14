@@ -7,7 +7,7 @@
 //   node scripts/shot.mjs --page scene --map crypt --x 30 --y 22 --q "mobs=ratking,bonehound&el=1"
 //   node scripts/shot.mjs --page mobs --q "k=twinhare,lambmaw&z=4"
 //   node scripts/shot.mjs --page world --map forest            (whole map, real renderer)
-//   pages: scene world iso over mobs sheet species wardrobe swing title icons uicons emo mini
+//   pages: scene world iso over mobs sheet species wardrobe swing bow title icons uicons emo mini
 //
 // Live mode: the real game against a running dev server (npm run dev:local first).
 // Logs in with a throwaway account (cached in shots/.shot-account.json), creates

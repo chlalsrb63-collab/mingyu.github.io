@@ -2,7 +2,8 @@
 <body style="margin:0;background:#101426;overflow:hidden"><canvas id="c" style="image-rendering:pixelated;display:block"></canvas>
 <canvas id="out" style="position:fixed;left:0;top:0;image-rendering:pixelated"></canvas>
 <script type="module">
-// Attack-motion contact sheet: every weapon kind, each beat of the combo, frame by frame.
+// Attack-motion contact sheet: every weapon kind, each beat of the combo, frame by frame (?wk=bow; the bow's
+// own sheets — tiers, pulls, eight aims, arrows — are in _bow.html).
 // ?ms=33&n=16&aim=e (e, w, n, s, se…) — dev preview only, not part of the game.
 import * as S from "./scene2d.js";
 const q = new URLSearchParams(location.search);
@@ -25,7 +26,7 @@ S.resize(320, 200, 1);
 S.loadMap(m);
 S.sync(G); console.log("loaded");
 const ms = +(q.get("ms") || 33), n = +(q.get("n") || 18), Z = 3, cw = 80, ch = 84;
-const kinds = (q.get("wk") || "sword,dagger,spear,staff,book").split(","), cls = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "mage" };
+const kinds = (q.get("wk") || "sword,dagger,spear,staff,book").split(","), cls = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "mage", bow: "lancer" };
 const dirs = (q.get("aim") || "e").split(",");
 const rows = [];
 for (const wk of kinds) for (const d of dirs) for (const beat of [0, 1, 2]) rows.push([wk, d, beat]);
@@ -50,7 +51,7 @@ for (let r = 0; r < rows.length; r++) {
       else S.render(me.x, me.y, 0.016, t, true);
       o.drawImage(cv, cv.width / 2 - cw / 2, cv.height / 2 + 14 - 50, cw, ch, 70 + i * cw * Z, r * ch * Z, cw * Z, ch * Z);
     }
-    if (!last) { const stroke = { sword: 920, dagger: 520, spear: 780, staff: 980, book: 800 }[wk]; for (let k = 0; k < stroke / 16; k++) { t += 16; S.render(me.x, me.y, 0.016, t, true); } }
+    if (!last) { const stroke = { sword: 920, dagger: 520, spear: 780, staff: 980, book: 800, bow: 760 }[wk]; for (let k = 0; k < stroke / 16; k++) { t += 16; S.render(me.x, me.y, 0.016, t, true); } }
   }
   o.fillStyle = "#fff"; o.font = "14px monospace"; o.fillText(`${wk}`, 4, r * ch * Z + 20); o.fillText(`${d} b${beat}`, 4, r * ch * Z + 40);
   // the moment the blow lands

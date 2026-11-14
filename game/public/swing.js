@@ -79,6 +79,20 @@ const STROKES = {
     null,
     [K(0.08, -100, 34, 2, -1, "crouch", eOut), K(0.2, 0, 12, 8, 4, "stretch", eIO), K(0.34, 0, 0, 9, 4, "", oExpo), K(0.5, 6, -10, 7, 2, "", eOut), K(0.6, 6, -10, 7, 2, "", lin), K(1, 12, 4, 4, 0, "", oBack)],
   ],
+  // the bow: raised and drawn in one quick pull while the body rocks back to the anchor; the string
+  // is let go at IMPACT (the arrow leaves then: scene2d fx.arrow's `delay`), the bow kicks forward
+  // and tips up on the release, recoils a pixel and settles. The second shot swings onto the target
+  // from a little off it; the finisher (and a skill) is an overdraw: deeper rock back, bigger kick.
+  // bowPose adds the string's pull and the arrow on it.
+  bow: [
+    [K(0.15, 0, 3, -1, -1, "crouch", eOut), K(0.2, 0, 2, -1, -1, "crouch", lin), K(0.27, 0, 10, 2, 0.5, "stretch", oExpo), K(0.5, 0, 5, -1, 0, "", eOut), K(0.6, 0, 5, -1, 0, "", lin), K(1, 0, 3, 0, 0, "", oBack)],
+    [K(0.15, -9, 5, -1, -1, "crouch", eOut), K(0.2, 0, 2, -1, -1, "crouch", eIO), K(0.27, 0, 10, 2, 0.5, "stretch", oExpo), K(0.5, 0, 5, -1, 0, "", eOut), K(0.6, 0, 5, -1, 0, "", lin), K(1, 0, 3, 0, 0, "", oBack)],
+    [K(0.15, 0, 4, -2, -2.5, "crouch", eOut), K(0.2, 0, 2, -2, -2.5, "crouch", lin), K(0.27, 0, 15, 3, 1.5, "stretch", oExpo), K(0.5, 0, 6, -2, 0.5, "", eOut), K(0.6, 0, 6, -2, 0.5, "", lin), K(1, 0, 3, 0, 0, "", oBack)],
+  ],
+  // a skill shot into the sky (a rain of arrows): drawn steeply upward, released, brought down
+  bowup: [
+    [K(0.15, 0, 52, -1, -2, "crouch", eOut), K(0.2, 0, 50, -1, -2, "crouch", lin), K(0.27, 0, 62, 2, 0.5, "stretch", oExpo), K(0.5, 0, 54, -1, 0, "", eOut), K(0.6, 0, 54, -1, 0, "", lin), K(1, 0, 24, 0, 0, "", oBack)],
+  ],
 };
 /** Staff finisher: a whole extra turn between the wind-up and the release. */
 const TWIRL = { staff: 360 * D };
@@ -107,6 +121,31 @@ export function pose(wk, beat, k, side) {
   return out(keys[keys.length - 1], side, 0);
 }
 const out = (p, side) => ({ yaw: side * p.yaw, pitch: p.pitch, reach: p.reach, lean: p.lean, fr: p.fr, strike: false });
+
+/**
+ * The bow's shot at k (the strokes' clock; side as in pose): the pose, plus `pull` (the string:
+ * 0 rest … 1 full draw, below 0 snapped forward past rest), `arrow` (one on the string), `glint`
+ * (the finisher's arrowhead catching the light at full draw) and `release` (the first frames after
+ * the string is let go, at IMPACT). `up`: the skyward skill shot (bowup).
+ *   nock 0 → 3% · draw 3 → 15% (out-cubic: fast, then easing into the anchor) · hold to IMPACT ·
+ *   release: the string snaps past rest and rings out (a damped wobble to 42%) · re-nock from 72%
+ *   (a fresh arrow, drawn a hair: the ready pose scene2d holds between shots, BOW_READY).
+ */
+export function bowPose(beat, k, side, up) {
+  const p = pose(up ? "bowup" : "bow", up ? 0 : beat, k, side);
+  if (!p) return null;
+  const fin = beat === 2 || !!up;
+  let pull, arrow = true;
+  if (k < 0.03) pull = 0.15 * (k / 0.03);
+  else if (k < 0.15) pull = 0.15 + 0.85 * eOut((k - 0.03) / 0.12);
+  else if (k < IMPACT) pull = 1;
+  else if (k < 0.42) { const u = (k - IMPACT) / (0.42 - IMPACT); pull = -0.25 * (1 - u) ** 2 * Math.cos(u * Math.PI * 4); arrow = false; }
+  else if (k < 0.72) { pull = 0; arrow = false; }
+  else pull = 0.12 * eOut((k - 0.72) / 0.28);
+  return { ...p, pull, arrow, glint: fin && k >= 0.12 && k < IMPACT, release: k >= IMPACT && k < IMPACT + 0.08 };
+}
+/** The pull and arrow of a bow held ready between shots. */
+export const BOW_READY = { pull: 0.12, arrow: true };
 
 /** The book: how far it darts out (-: pulled back to the chest) and how much it swells, at k (the strokes' clock). */
 export function bookPose(beat, k) {

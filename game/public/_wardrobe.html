@@ -8,7 +8,7 @@ const q = new URLSearchParams(location.search), mode = q.get("m") || "weapons";
 if (q.get("code") !== "1") await (await import("./assetlib.js")).ready();
 const cv = document.getElementById("c"), g = cv.getContext("2d");
 const txt = (s, x, y, col = "#ddd") => { g.fillStyle = col; g.font = "12px sans-serif"; g.fillText(s, x, y); };
-const KINDS = ["sword", "dagger", "spear", "staff", "book"];
+const KINDS = ["sword", "dagger", "spear", "staff", "book", "bow"];
 if (mode === "weapons") {
   const z = 4, CW = 52 * z + 8, RH = 32 * z + 4;
   cv.width = 5 * CW + 120; cv.height = KINDS.length * RH + 470;

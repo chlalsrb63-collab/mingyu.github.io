@@ -36,9 +36,9 @@ import { pathToFileURL } from "node:url";
 import { args, readPng, writePng, decodeInBrowser, GAME, PUBLIC, ASSET, REPO } from "./artkit.mjs";
 
 const INK = [0x2b, 0x22, 0x33];
-const KINDS = ["sword", "dagger", "spear", "staff", "book"];
+const KINDS = ["sword", "dagger", "spear", "staff", "book", "bow"];
 /** World sprite canvases, as weapons.js weaponSprite draws them. */
-const WORLD = { sword: [44, 32], spear: [52, 32], dagger: [32, 32], staff: [32, 32], book: [32, 32] };
+const WORLD = { sword: [44, 32], spear: [52, 32], dagger: [32, 32], staff: [32, 32], book: [32, 32], bow: [32, 32] };
 const GRIP = [5, 16];
 const MANIFEST = join(PUBLIC, "assets", "manifest.json");
 

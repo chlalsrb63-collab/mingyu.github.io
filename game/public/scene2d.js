@@ -1510,7 +1510,8 @@ function drawPerson(s, e, t, dt, x, y) {
   const aimYaw = e.aim ? (e.scr ? Sw.groundYaw(e.aim[0] - e.x, e.aim[1] - e.y) : Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x)) : 0;
   const sk = Sw.has(s.wk) ? s.wk : hold.style === "sweep" ? "sword" : hold.style === "stab" ? "spear" : "staff";
   const side = (beat === 1 ? -1 : 1) * sg;             // the second stroke comes back the other way
-  const P = !live ? null : hold.style === "float" ? Sw.bookPose(beat, k) : Sw.pose(sk, beat, k, side);
+  const bowy = hold.style === "bow";
+  const P = !live ? null : hold.style === "float" ? Sw.bookPose(beat, k) : bowy ? Sw.bowPose(beat, k, side, e.bowUp) : Sw.pose(sk, beat, k, side);
   if (s.t0 !== e.atkT) { s.t0 = e.atkT; s.from = s.ang; s.fromLen = s.len ?? 1; s.fromPush = s.push || 0; s.fromLean = s.lean || 0; }
   // the body rocks back on the wind-up, leans (or steps) into the blow, and settles back after
   if (P) s.lean = P.pre !== undefined ? s.fromLean + (P.lean - s.fromLean) * Sw.eOut(P.pre) : P.lean;
@@ -1569,7 +1570,8 @@ function drawPerson(s, e, t, dt, x, y) {
   if (P) {
     let [pa, pl, pd, pp] = place(P);
     // the wind-up starts from wherever the weapon was: at rest, or where the last stroke ended
-    if (P.pre !== undefined) { const u = Sw.eOut(P.pre); pa = turn(s.from ?? pa, pa, u); pl = (s.fromLen ?? 1) + (pl - (s.fromLen ?? 1)) * u; pp = s.fromPush + (pp - s.fromPush) * u; }
+    // (a bow is not wound up from where it hung: it comes straight onto the aim, raised by s.bw)
+    if (P.pre !== undefined && !bowy) { const u = Sw.eOut(P.pre); pa = turn(s.from ?? pa, pa, u); pl = (s.fromLen ?? 1) + (pl - (s.fromLen ?? 1)) * u; pp = s.fromPush + (pp - s.fromPush) * u; }
     s.ang = pa; len = pl; depth = pd; push = pp;
     // through the strike the weapon swells toward the eye
     if (P.strike) grow = Math.sin(clamp((k - Sw.WIND + 0.02) / 0.16, 0, 1) * Math.PI) * hold.grow * (fin ? 1.4 : 1);
@@ -1585,10 +1587,17 @@ function drawPerson(s, e, t, dt, x, y) {
   s.push = push; s.len = len;
   // a greatsword is slung across the back between fights, and comes off it to fight
   s.sl = (s.sl ?? 1) + ((hold.style === "sweep" && resting && !held ? 1 : 0) - (s.sl ?? 1)) * Math.min(1, dt * 8);
-  // with no arms, the weapon simply floats at the body's side
-  const hx0 = x + sg * (7 - 4 * s.sl), hy0 = y - (3 + 2 * s.sl) + bob;
+  // with no arms, the weapon simply floats at the body's side; a bow's pivot is the drawing hand:
+  // at the cheek while shooting (the riser out ahead of it), dropped to the hip at rest
+  // (raised at once — a shot has no wind-up to spare — and lowered unhurried)
+  if (bowy) s.bw = P ? 1 : (s.bw ?? 0) + ((held ? 1 : 0) - (s.bw ?? 0)) * Math.min(1, dt * 8);
+  const hx0 = bowy ? x - sg * 1.5 * (1 - s.bw) + Math.cos(aimS) * 3 * s.bw : x + sg * (7 - 4 * s.sl);
+  const hy0 = bowy ? y - 5 - 2 * s.bw + Math.sin(aimS) * 1.5 * s.bw + bob : y - (3 + 2 * s.sl) + bob;
   const hx = hx0 + Math.cos(s.ang) * push * len, hy = hy0 + Math.sin(s.ang) * push * len;
   const long = Sw.bladeLen(s.weapon, SP.GRIP);
+  // the bow at this moment of its shot: the string's pull and whether an arrow is on it
+  const bs = bowy ? P || (held ? Sw.BOW_READY : null) : null;
+  const wimg = bowy ? SP.bowSprite(s.gear, bs ? bs.pull : 0, bs ? bs.arrow : false) : s.weapon;
   const weapon = () => {
     // the smear: the band the blade's outer half swept through in the last few hundredths of a
     // second, sampled along the stroke itself so it bends with the arc as the view shows it
@@ -1622,14 +1631,24 @@ function drawPerson(s, e, t, dt, x, y) {
     // turned toward or away from the camera, the blade is seen end-on and looks shorter
     g.scale((1 + grow) * Math.max(0.45, len), 1 + grow);
     if (glow) { g.shadowColor = glow; g.shadowBlur = s.gear.we >= 7 ? 9 : 5; }
-    g.drawImage(s.weapon, -SP.GRIP[0], -SP.GRIP[1]);
+    g.drawImage(wimg, -SP.GRIP[0], -SP.GRIP[1]);
     g.restore();
+    // the finisher's overdraw: the arrowhead catches the light, a four-point glint blinking at full draw
+    if (bs && bs.glint && Math.floor(t / 45) % 2 === 0) {
+      const tl = (13 + push) * Math.max(0.45, len), gx = Math.round(hx0 + Math.cos(s.ang) * tl), gy = Math.round(hy0 + Math.sin(s.ang) * tl);
+      g.fillStyle = "#fff6c0"; g.fillRect(gx - 2, gy, 5, 1); g.fillRect(gx, gy - 2, 1, 5);
+      g.fillStyle = "#ffffff"; g.fillRect(gx, gy, 1, 1);
+    }
   };
   // a slung greatsword sits behind the body; in a stroke, a blade pointing away from the camera does too
   const behind = resting && !held ? (hold.style === "sweep") !== back : depth < -0.35 || (Math.sin(s.ang) < -0.45 && depth < 0.2);
   if (behind) { weapon(); body(); } else { body(); weapon(); }
   // the blow lands: a burst of sword-qi as big as the weapon, at the snap (once per stroke)
-  if (live && k >= Sw.IMPACT && k < Sw.IMPACT + 0.2 && s.qiT !== e.atkT) {
+  // (a bow throws no qi: the string snaps, and the arrow is the blow — fx.arrow, from the server's shot)
+  if (live && bowy && k >= Sw.IMPACT && k < Sw.IMPACT + 0.2 && s.qiT !== e.atkT) {
+    s.qiT = e.atkT;
+    bowSnap(hx0 + Math.cos(s.ang) * (7 + push) * len, hy0 + Math.sin(s.ang) * (7 + push) * len, s.ang, fin || !!e.bowUp, glow);
+  } else if (live && !bowy && k >= Sw.IMPACT && k < Sw.IMPACT + 0.2 && s.qiT !== e.atkT) {
     s.qiT = e.atkT;
     const [ia, il, , ir] = place(Sw.pose(sk, beat, Sw.IMPACT, side));
     const tipX = hx0 + Math.cos(ia) * (ir * il + long * Math.max(0.45, il)), tipY = hy0 + Math.sin(ia) * (ir * il + long * Math.max(0.45, il));
@@ -1866,9 +1885,114 @@ function drawQi(f, k) {
  * crescents, shots, beams, bolts) are placed at their projected point and drawn
  * upright in iso pixels.
  */
+// ── arrows: a bow's shot in flight (fx.arrow), its faint dotted trail or a piercing streak, the spark
+// where it strikes (fx.arrowHit), one left quivering in a wall, and the snap of the string at the
+// release (bowSnap, from drawPerson). Every sprite is built pixel by pixel in 64 directions, inked.
+const ARROW_STEPS = 64, arrowSprites = new Map(), arrows = new Map();
+/** By bow tier (1–5): the trail's dots and the fletching (T4 cyan, T5 violet; else red). */
+const ARROW_TRAIL = [null, "#fff4dc", "#fff4dc", "#fff4dc", "#7af4ff", "#d8a8ff"];
+const ARROW_FLETCH = [null, "#e04a3c", "#e04a3c", "#e04a3c", "#3ab8d0", "#a05ae0"];
+/** The piercing shot's ink: a white-hot arrow outlined in gold (T4 cyan, T5 violet). */
+const ARROW_HOT = [null, "#ffc23a", "#ffc23a", "#ffc23a", "#3ad0f0", "#b46aff"];
+/** How long a ground direction looks on screen at screen angle `a`, relative to one straight across. */
+const isoLen = (a) => 1 / Math.sqrt(2 * Math.sin(a) ** 2 + Math.cos(a) ** 2 / 2) / Math.SQRT2;
+/**
+ * The arrow sprite for screen angle `ang` (snapped to 64 steps), centred on a 17×17 canvas:
+ * a pale shaft, a two-pixel steel head with barbs, fletching at the nock, a dark outline. It is
+ * 11 px long flying across the screen and shorter (down to 6) flying toward or away from the eye.
+ * `hot`: the piercing shot — white-hot, inked in its tier's colour.
+ */
+export function arrowSprite(ang, tier = 1, hot = false) {
+  const step = ((Math.round((ang / (2 * Math.PI)) * ARROW_STEPS) % ARROW_STEPS) + ARROW_STEPS) % ARROW_STEPS;
+  const key = `${step}|${tier}|${hot ? 1 : 0}`;
+  let c = arrowSprites.get(key);
+  if (c) return c;
+  const a = (step / ARROW_STEPS) * 2 * Math.PI, ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
+  const N = 17, C = 8, Lr = Math.max(6, Math.round(11 * isoLen(a)));
+  const px = new Map(), set = (i, j, col) => { if (i >= 1 && j >= 1 && i < N - 1 && j < N - 1) px.set(j * N + i, col); };
+  const at = (d, o = 0) => [Math.round(C + ux * d + nx * o), Math.round(C + uy * d + ny * o)];
+  const glowInk = ARROW_HOT[tier] || ARROW_HOT[1];
+  const shaft = hot ? "#fff6d8" : "#e8cc94", head = hot ? "#ffffff" : "#e2e8f0", headD = hot ? "#ffffff" : "#9aa2b4", fl = hot ? glowInk : ARROW_FLETCH[tier] || ARROW_FLETCH[1];
+  const pts = [];
+  for (let q = 0; q <= Lr; q++) { const [i, j] = at(q - Lr / 2); pts.push([i, j]); set(i, j, q >= Lr - 1 ? head : q <= 1 ? fl : shaft); }
+  // the head's barbs and the fletching's vanes stand out one pixel either side: square to the shaft
+  // when it runs near an axis, else on the two axis neighbours behind the head (a chevron) and ahead of the nock
+  const diag = Math.abs(ux) > 0.38 && Math.abs(uy) > 0.38, sx = Math.sign(ux), sy = Math.sign(uy);
+  const [hi, hj] = pts[pts.length - 1], [ti, tj] = pts[0];
+  if (diag) { set(hi - sx, hj, headD); set(hi, hj - sy, headD); set(ti + sx, tj, fl); set(ti, tj + sy, fl); }
+  else for (const o of [-1, 1]) { const [i, j] = at(Lr / 2 - 1, o); set(i, j, headD); const [fi, fj] = at(-Lr / 2 + 0.5, o); set(fi, fj, fl); }
+  let x;
+  [c, x] = sheet(N, N);
+  const ink = hot ? glowInk : INK;
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const col = px.get(j * N + i);
+    if (col) { x.fillStyle = col; x.fillRect(i, j, 1, 1); }
+    else if (px.has(j * N + i - 1) && i > 0 || px.has(j * N + i + 1) && i < N - 1 || px.has((j - 1) * N + i) || px.has((j + 1) * N + i)) { x.fillStyle = ink; x.fillRect(i, j, 1, 1); }
+  }
+  if (arrowSprites.size > 900) arrowSprites.clear();
+  arrowSprites.set(key, c);
+  return c;
+}
+/** Where an arrow is at distance d along its flight: [ground x, ground y, screen x, screen y (lifted), screen angle]. */
+function arrowAt(f, d) {
+  const wx = f.wx + f.ux * d, wy = f.wy + f.uy * d, [x, y] = iso(wx, wy), q = d / f.full;
+  // a shallow arc over the whole range: it rises a little and comes down a little at the end
+  const arc = Math.min(4, f.full * 0.02), lift = f.h + Math.sin(q * Math.PI) * arc;
+  const sx = f.ux - f.uy, sy = (f.ux + f.uy) / 2 - (arc * Math.PI * Math.cos(q * Math.PI)) / f.full;
+  return [x, y, x, y - lift, Math.atan2(sy, sx)];
+}
+/** Draw one arrow in flight at k (0–1 of the flight that is left to it). */
+function drawArrow(f, k) {
+  const d = f.len * k, [gx, gy, x, y, ang] = arrowAt(f, d), col = (f.pierce ? ARROW_HOT : ARROW_TRAIL)[f.tier] || ARROW_TRAIL[1];
+  f.at = [x, y, ang];
+  // a one-pixel shadow running along the ground under it
+  g.globalAlpha = 0.28; g.fillStyle = "#141832";
+  g.fillRect(Math.round(gx - 2), Math.round(gy), 4, 1);
+  g.globalAlpha = 1;
+  // the trail: dots pinned to the path (they stay where they were left), thinning out behind
+  const back = Math.min(d, f.pierce ? 34 : 16);
+  for (let u = Math.floor(d) - 2; u > d - back; u--) {
+    const far = (d - u) / back, gap = f.pierce ? (far < 0.5 ? 1 : 2) : far < 0.4 ? 2 : 3;
+    if (u % gap) continue;
+    const [, , tx, ty] = arrowAt(f, u);
+    g.fillStyle = f.pierce && far < 0.6 ? "#ffffff" : col;
+    g.fillRect(Math.round(tx), Math.round(ty), 1, 1);
+    // the piercing streak is two pixels thick near the arrow, its edge in the tier's colour
+    if (f.pierce && far < 0.6) { g.fillStyle = col; g.fillRect(Math.round(tx), Math.round(ty) + 1, 1, 1); }
+  }
+  g.drawImage(arrowSprite(ang, f.tier, f.pierce), Math.round(x) - 8, Math.round(y) - 8);
+}
+/** An arrow has come to the end of its flight: it strikes, sticks or simply drops out of sight. */
+function arrowLanded(f) {
+  f.gone = true; f.goneAt = fxNow();
+  const [, , x, y, ang] = arrowAt(f, f.len), wx = f.wx + f.ux * f.len, wy = f.wy + f.uy * f.len;
+  if (f.end === "stuck") stuckArrow(x, y, ang, f.tier);
+  else if (f.end === "hit") fx.arrowHit(wx, wy, Math.atan2(f.uy, f.ux), f.pierce ? ARROW_HOT[f.tier] : "#ffffff", f.pierce, f.h);
+}
+/** An arrow driven into a wall: its head buried, the shaft quivering a step either way, then gone. */
+function stuckArrow(x, y, ang, tier) {
+  const L = Math.max(6, Math.round(11 * isoLen(ang)));
+  // the head goes in: the sprite drawn back along its own line by a third of its length
+  const ox = Math.round(x - Math.cos(ang) * L * 0.3), oy = Math.round(y - Math.sin(ang) * L * 0.3);
+  fx.add({ k: "custom", dur: 1100, draw: (c, k) => {
+    const wob = k < 0.2 ? (Math.floor(k * 60) % 2 ? 1 : -1) * (2 * Math.PI / ARROW_STEPS) * (1 - k / 0.2) * 1.5 : 0;
+    if (k > 0.8 && Math.floor(k * 40) % 2) return;            // blinks out
+    c.drawImage(arrowSprite(ang + wob, tier), ox - 8, oy - 8);
+  } });
+  for (let i = 0; i < 5; i++) parts.push({ x, y, vx: -Math.cos(ang) * (10 + Math.random() * 20) + (Math.random() - 0.5) * 16, vy: -Math.sin(ang) * 10 - 10 - Math.random() * 14, life: 0.22 + Math.random() * 0.12, color: i % 2 ? "#cdbfa6" : "#8a7e70", g: 140, s: 1 });
+}
+/** The string let go: two short speed lines leaping forward off the riser and a fleck off the string (drawPerson, at the release). */
+function bowSnap(x, y, ang, fin, glow) {
+  fx.add({ k: "custom", dur: fin ? 150 : 110, draw: (c, k) => {
+    const ux = Math.cos(ang), uy = Math.sin(ang), nx = -uy, ny = ux, run = (fin ? 9 : 6) * (0.4 + k), len = Math.max(1, Math.round((fin ? 6 : 4) * (1 - k)));
+    c.fillStyle = k < 0.35 ? "#ffffff" : glow && glow !== "#ffffff" ? glow : "#fff4dc";
+    for (const o of fin ? [-4, 0, 4] : [-3, 3]) for (let i = 0; i < len; i++) c.fillRect(Math.round(x + ux * (run + i) + nx * o), Math.round(y + uy * (run + i) + ny * o), 1, 1);
+  } });
+}
+
 export const fx = {
   list: [],
-  clear() { this.list.length = 0; parts.length = 0; },
+  clear() { this.list.length = 0; parts.length = 0; arrows.clear(); },
   add(o) { o.t0 = fxNow() + (o.delay || 0); this.list.push(o); },
   ring(wx, wy, r, color, dur = 300, filled = false, delay = 0) { this.add({ k: "ring", x: wx * P, y: wy * P, r: r * P, color, dur, filled, delay }); },
   tele(wx, wy, r, ms) { this.add({ k: "tele", x: wx * P, y: wy * P, r: r * P, dur: ms }); },
@@ -1921,6 +2045,47 @@ export const fx = {
   fall(wx, wy, color = "#ffd84a", ms = 450) { const [x, y] = iso(wx, wy); this.add({ k: "fall", x, y, color, dur: ms + 260, land: ms / (ms + 260) }); },
   /** Snow driven across a round patch of ground for `ms`. */
   snow(wx, wy, r, ms = 3600) { this.add({ k: "snow", x: wx * P, y: wy * P, r: r * P, dur: ms }); },
+  // ── the bow's arrows (server units throughout; skillfx.js turns the wire's "ar"/"ae" into these)
+  /**
+   * An arrow loosed at (ax, ay) toward (bx, by): it flies the whole way unless arrowEnd cuts it short.
+   * `o`: spd units/s (420) · h height above the ground in px (9) · delay ms it waits on the string
+   * (the stroke's release, impactMs("bow", beat), minus what has passed) — it flies a little faster
+   * to land when an undelayed one would · tier 1–5 (trail: T4 cyan, T5 violet) · pierce (the
+   * piercing streak, white-hot) · id (for arrowEnd) · end "fade" | "hit" | "stuck" (how it ends if it
+   * flies the whole way; default fade) · done(). Returns the effect.
+   */
+  arrow(ax, ay, bx, by, o = {}) {
+    const far = Math.hypot(bx - ax, by - ay) || 1, spd = o.spd || 420, flight = (far / spd) * 1000, delay = Math.max(0, o.delay || 0);
+    const v = far / Math.max(flight * 0.5, flight - delay);   // units per ms, caught up
+    const now = fxNow();
+    for (const [id, a] of arrows) if (a.gone && now - a.goneAt > 1500) arrows.delete(id);
+    const f = { k: "arrow", wx: ax, wy: ay, ux: (bx - ax) / far, uy: (by - ay) / far, len: far, full: far, v, h: o.h ?? 9, tier: Math.max(1, Math.min(5, o.tier | 0 || 1)), pierce: !!o.pierce, end: o.end || "fade", delay, dur: far / v };
+    f.done = () => { arrowLanded(f); if (o.done) o.done(); };
+    if (o.id !== undefined) arrows.set(o.id, f);
+    this.add(f);
+    return f;
+  },
+  /**
+   * The server says arrow `id` ended at (wx, wy): `how` "hit" (a spark), "stuck" (left in a wall) or
+   * "fade" (ran out of range). An arrow still in flight is cut short there (it lands when it gets
+   * there); one already gone — or never seen — just ends there now.
+   */
+  arrowEnd(id, wx, wy, how = "hit") {
+    const f = arrows.get(id);
+    if (f && !f.gone) {
+      f.len = Math.min(f.len, Math.max(0, (wx - f.wx) * f.ux + (wy - f.wy) * f.uy));
+      f.dur = Math.max(1, f.len / f.v); f.end = how;
+      return;
+    }
+    const ang = f ? Math.atan2(f.uy, f.ux) : 0, tier = f ? f.tier : 1, h = f ? f.h : 9;
+    if (how === "stuck" && f) { const [x, y] = iso(wx, wy); stuckArrow(x, y - h, sAng(f.ux, f.uy), tier); }
+    else if (how === "hit") this.arrowHit(wx, wy, ang, "#ffffff", false, h);
+  },
+  /** Where an arrow strikes: a white-hot pixel core and short spokes thrown on along its flight (`ang` on the ground). */
+  arrowHit(wx, wy, ang = 0, color = "#ffffff", big = false, h = 9) {
+    const [x, y] = iso(wx, wy);
+    this.add({ k: "ahit", x, y: y - h, ang: sAng(Math.cos(ang), Math.sin(ang)), color, big, dur: big ? 200 : 150 });
+  },
 };
 /**
  * The skills' effects, scaled up (skillfx.js and growth.js draw through this): bursts and sparkles
@@ -2032,6 +2197,19 @@ function drawFx(now, ground2) {
     if (flat !== ground2) continue;
     if (f.k === "custom") { g.save(); f.draw(g, k, f); g.restore(); continue; }
     if (f.k === "qi") { g.globalAlpha = 1; drawQi(f, k); continue; }
+    if (f.k === "arrow") { g.globalAlpha = 1; drawArrow(f, k); continue; }
+    if (f.k === "ahit") {
+      // pixel spokes thrown on along the flight (a cone of five, one kicked back), a white core for the first frames
+      g.globalAlpha = 1;
+      const R = f.big ? 11 : 7, n = f.big ? 7 : 5;
+      g.fillStyle = k < 0.3 ? "#ffffff" : f.color;
+      for (let j = 0; j <= n; j++) {
+        const a = j === n ? f.ang + Math.PI : f.ang + (j / (n - 1) - 0.5) * 2.2, r0 = R * (0.2 + 0.7 * k), r1 = R * (0.5 + 0.6 * k) * (j === n ? 0.5 : 1);
+        for (let r = r0; r <= r1; r += 1.5) g.fillRect(Math.round(f.x + Math.cos(a) * r), Math.round(f.y + Math.sin(a) * r * 0.75), 1, 1);
+      }
+      if (k < 0.3) { const c = f.big ? 2 : 1; g.fillStyle = "#ffffff"; g.fillRect(Math.round(f.x) - c, Math.round(f.y) - c, c * 2 + 1, c * 2 + 1); }
+      continue;
+    }
     if (f.k === "flash") {
       // pixel rows, no smoothing: white-hot with a yellow rim, then a smaller yellow core
       const hot = k < 0.5, rx = Math.round(f.r * (hot ? 1 : 0.6)), ry = Math.max(1, Math.round(rx * 0.75));

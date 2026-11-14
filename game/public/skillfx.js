@@ -261,6 +261,34 @@ export function skillEvent(e, ctx) {
       if (kind === 11) { f.storm(e[1], e[2], e[3], "#e6f4ff", 300, 3); Sound.play("wheel"); return true; }
       return false;
     }
+    // ── the bow's arrows (docs/design/jobs-and-stats.md D.2): fired ["ar", id, x0, y0, ux·1000, uy·1000,
+    // spd, kind, shooter?] — kind 0 a plain shot, 1 the finisher (pierces one), 2+ a skill's piercing shot;
+    // the optional 9th field names the shooter, else it is the bow drawn nearest the arrow's start —
+    // and ended ["ae", id, x, y, how] (0 struck or ran out, 1 stuck in a wall, 2 ran out of range)
+    case "ar": {
+      const [, id, x0, y0, ux, uy, spd, kind, pid] = e, n = Math.hypot(ux, uy) || 1;
+      let sh = null, best = 40;
+      for (const s of bowShots) {
+        if (t - s.t > 700 || (pid !== undefined && s.eid !== pid)) continue;
+        const d = Math.hypot(s.x - x0, s.y - y0);
+        if (d < best) { best = d; sh = s; }
+      }
+      if (sh) bowShots.splice(bowShots.indexOf(sh), 1);
+      const range = (kind | 0) >= 2 ? 180 : (G.defs && G.defs.wkinds && G.defs.wkinds.bow && G.defs.wkinds.bow.range) || 150;
+      arrowFrom.set(id, [x0, y0, range]);
+      if (arrowFrom.size > 64) arrowFrom.delete(arrowFrom.keys().next().value);
+      S3.fx.arrow(x0, y0, x0 + (ux / n) * range, y0 + (uy / n) * range, { id, spd: spd || 420, delay: sh ? Math.max(0, sh.at - t) : 0, tier: sh ? sh.wt : 1, pierce: (kind | 0) >= 1 });
+      return true;
+    }
+    case "ae": {
+      const [, id, x, y, how] = e, from = arrowFrom.get(id);
+      arrowFrom.delete(id);
+      // struck nothing and simply ran its whole range: it drops out of sight, no spark
+      const spent = how === 2 || (!how && from && Math.hypot(x - from[0], y - from[1]) >= from[2] - 6);
+      S3.fx.arrowEnd(id, x, y, how === 1 ? "stuck" : spent ? "fade" : "hit");
+      if (how === 1) Sound.play("arrow_wall"); else if (!spent) Sound.play("arrow_hit");
+      return true;
+    }
     case "bw": {
       const [, x, y, r, kind] = e;
       if (kind === 1) { f.ring(x, y, r, "#ffd84a", 380, true); f.crack(x, y, r * 0.5, "#ffd84a", 500); f.burst(x, y, 0.3, "#ffe9a0", 26, 2.8); B.shake(7); Sound.play("shock"); }
@@ -366,6 +394,27 @@ export function skillEvent(e, ctx) {
     }
   }
   return false;
+}
+
+// ── the bow's shot: client.js attackFx calls bowFire for fx code 6 (the "a" event of a bow's basic
+// attack; a skill swung like a finisher too). The arrow itself comes on its own ("ar", above): it is
+// held on the string until the stroke's release (swing.js IMPACT) and still lands on time.
+/** Bows drawn in the last moments, waiting for their arrows: { eid, x, y, t, at (release time), wt (tier) }. */
+const bowShots = [];
+/** Where each arrow in flight started, and its range: id → [x0, y0, range]. */
+const arrowFrom = new Map();
+/**
+ * A bow drawn (fx code 6): remember the shooter for the arrow that follows, creak the bow now and
+ * twang it at the release. `beat` 2 is the finisher; `up` the skyward skill shot (src.bowUp, the pose).
+ */
+export function bowFire(G, src, beat = 0, up = false) {
+  const t = now(), eid = src === G.me ? G.you : src.id, w = G.who && G.who.get(eid);
+  const left = Math.max(0, (src.atkT ?? t) + S3.impactMs("bow", beat) - t);
+  src.bowUp = !!up;
+  bowShots.push({ eid, x: src.x, y: src.y, t, at: t + left, wt: (w && w.gear && w.gear.wt) || 1 });
+  if (bowShots.length > 24) bowShots.shift();
+  Sound.play("bow_draw");
+  setTimeout(() => Sound.play("bow_shot", beat === 2 || up), left);
 }
 
 /** A skill being used: what it looks like at the caster and where it lands. */

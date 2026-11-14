@@ -342,7 +342,8 @@ export function weaponKind(cls, gear = {}) {
 /**
  * A weapon sprite. Swords, daggers, spears and staves point right with the
  * grip at `GRIP`; a book is drawn open and upright around the sheet's centre.
- * `kind`: sword · dagger · spear · staff · book (a class id is accepted too).
+ * `kind`: sword · dagger · spear · staff · book · bow (a class id is accepted too; a bow is
+ * held square to the shot, its limbs across the sprite, its riser ahead of the grip).
  * `gear`: wt tier (1–5) · wq rarity (0–4) · we enhancement.
  */
 export function weaponSprite(kind, gear = {}) {
@@ -417,7 +418,12 @@ export const HOLD = {
   spear: { rest: 64, arc: 220, time: 0.46, push: 18, grow: 0.3, style: "stab" },
   staff: { rest: 84, arc: 110, time: 0.6, push: 7, grow: 0.3, style: "cast" },
   book: { rest: 0, arc: 0, time: 0.48, push: 9, grow: 0.3, style: "float" },
+  // a bow is held square to the shot (weapons.js: the limbs across, the arrow along) and drawn,
+  // not swung: no smear, no swell; at rest it hangs nearly upright at the body's side
+  bow: { rest: -16, arc: 0, time: 0.42, push: 0, grow: 0, style: "bow" },
 };
+/** A bow at a moment of its shot (pull −0.25 … 1, an arrow on the string or not): see weapons.js bowSprite. */
+export const bowSprite = (gear, pull, arrow) => WPN.bowSprite(gear || {}, pull, arrow);
 
 // ───────────────────────────── monsters ─────────────────────────────
 // Everything that hunts here was an animal once. Each is drawn at its real size

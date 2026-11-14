@@ -558,6 +558,8 @@ function attackFx(kind, src, tx, ty, dir, beat = 0) {
     case 3: Sound.play("swing_dagger"); break;
     case 4: Sound.play("swing_spear", fin); break;
     case 5: f.proj(src.x, src.y, 0.9, tx, ty, 0.5, "#c8a0ff", 0.07, 20, () => { f.ring(tx, ty, fin ? 34 : 26, "#c8a0ff", 220, true); }); Sound.play("swing_book"); break;
+    // the bow: drawn and loosed by the stroke itself; its arrow comes as its own event ("ar", skillfx.js)
+    case 6: SkillFx.bowFire(G, src, beat); break;
     case 23: f.beam(src.x, src.y, tx, ty, "#e0b070", 1.1); f.burst(tx, ty, 0.4, "#e0b070", 20, 2.4); S3.shake(5); Sound.play("boom"); break;
     case 24: f.sparkle(src.x, src.y, 0.8, "#ffe9a0", 12); Sound.play("magic"); break;
     case 10: f.slash(src.x, src.y, ang, "#ffd84a", 1.05); S3.shake(2); Sound.play("crit"); break;

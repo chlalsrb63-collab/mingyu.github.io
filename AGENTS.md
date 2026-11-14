@@ -120,7 +120,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `client.js` [2563] | game client. Sections (grep `// ───`): connection, state `G`, messages (`onSnap`), effects, input (keydown hotkeys ~L537), player actions, update, render, HUD & windows (`WIN` list ~L1236, `openWin`, `render<Window>()`), main loop. `window.__game = {G, act, S3, go}` for automation |
 | `lobby.js` [593] | title, 로그인/회원가입, server/channel list, character creation, in-game channel switch/logout |
 | `account.js` [99] | HTTP side of accounts: `session signup login logout me servers`, `API` base |
-| `scene2d.js` [2808] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites (+ `autumnScenery`), ground (`drawGround`: whole canvas, or on big maps the visible chunks + one prefetched per frame; walls/rock stand up lazily near the screen, `lazyTall`; the deep places' glow in pieces, `pulsePart`), raised blocks, creatures (`drawPerson`; movement life `stepLife`: bob, lean, stop squash, terrain footsteps `footKind/footstep`, afterimage), effects `fx/fxCustom` (+ `flash wave zap`), sword-qi `qiBurst` at each stroke's impact, skills' scaled set `big(ang)`, `shake(n, ang)` (directional kick), pets, title/creation stage; `groundInfo()` (load/bake costs for tools) |
+| `scene2d.js` [2986] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites (+ `autumnScenery`), ground (`drawGround`: whole canvas, or on big maps the visible chunks + one prefetched per frame; walls/rock stand up lazily near the screen, `lazyTall`; the deep places' glow in pieces, `pulsePart`), raised blocks, creatures (`drawPerson`; movement life `stepLife`: bob, lean, stop squash, terrain footsteps `footKind/footstep`, afterimage), effects `fx/fxCustom` (+ `flash wave zap`), sword-qi `qiBurst` at each stroke's impact, bow arrows `fx.arrow/arrowEnd/arrowHit` + `arrowSprite` (64 directions, trail, piercing streak, stuck in walls), the string's snap `bowSnap`, skills' scaled set `big(ang)`, `shake(n, ang)` (directional kick), pets, title/creation stage; `groundInfo()` (load/bake costs for tools) |
 | `isotiles.js` [65] · `iso_px.js` [118] · `iso_ground.js` [939] · `iso_tall.js` [601] | quarter-view ground baking (`bakeGround` whole; `groundChunks` = 1024×512 pieces baked on demand with an LRU of 12 for maps over `CHUNK_AREA` 80×60 tiles, `?chunks=1` forces; `bakeChunk` gives the same pixels as the same part of `bake`), pixel buffers/projection (`TW=32, TH=16`), ground materials and transitions, tall blocks (cliffs, walls, houses) |
 | `iso_interior.js` [1059] | indoors (theme `interior`): `bakeRoom` floors and rugs, `roomPiece` back walls / cut front wall / furniture (a texel `Model` with depth buffer), `roomLight` warm lamp/fire/window light, `drawPose` NPC idle acts; char legend in its header and SCHEMA.md |
 | `decor.js` [674] | landmarks (`LANDMARKS` per theme; autumn ruins stand exactly on their footprints), decals, pulses, critters, waypoint stones/signs, town dressing (old `daylight`/`wash`, unused) |
@@ -133,10 +133,10 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `species.js` [403] | hero species and face parts: `SPECIES PARTS TABS PRESETS cleanLook withSpecies` (limits mirror logic `LOOK_MAX`); fit data for worn things: `EARS headAnchor faceAnchor EYE_PIX HEAD_BOB` |
 | `looks.js` [244] | look editor (creation tabs) and the town mirror |
 | `mobart.js` [588] + `mobart_kit.js` [139] + `mobart_a/b/c/d.js` [376/309/561/268] | monsters as 3D-primitive models rasterised to pixels; `BEASTS_A` meadow/forest, `_B` crypt/city, `_C` sewer/cave/abyss/bosses/chest, `_D` 단풍 왕도 (blighted beasts and plants); `has draw icon KINDS` |
-| `weapons.js` [602] | weapon art per kind × tier, legendary/set looks, skins, glow: `DESIGNS weaponSprite weaponIcon`; an installed image (`assetKey`: manifest `weapon.<kind>.t<n>`/`.lg.`/`.set.`/`.skin.`, `icon.weapon.…`) replaces a look, rarity ink + glow still applied |
+| `weapons.js` [749] | weapon art per kind × tier (sword dagger spear staff book bow), legendary/set looks, skins, glow: `DESIGNS weaponSprite weaponIcon`, `bowSprite(gear, pull, arrow)` (a bow at every pull of its string; motifs bent along the limb); an installed image (`assetKey`: manifest `weapon.<kind>.t<n>`/`.lg.`/`.set.`/`.skin.`, `icon.weapon.…`) replaces a look, rarity ink + glow still applied |
 | `wardrobe.js` [807] · `wardrobe_ui.js` [283] | cosmetic layers drawn over heroes (`ART SLOTS dress anchors`; designs `HAT TOP BACK FACE`, rules in the header); costume shop + 외형 tab |
-| `swing.js` [148] | weapon stroke poses for attacks/casts; the tempo `WIND IMPACT SNAP` (15% wind-up, snap, blow at 0.2) with out-expo/out-back easing |
-| `skillfx.js` [408] | skill visuals/sounds per server fx code (`skillEvent`, switch on codes 40–75), props, marks |
+| `swing.js` [187] | weapon stroke poses for attacks/casts; the tempo `WIND IMPACT SNAP` (15% wind-up, snap, blow at 0.2) with out-expo/out-back easing; the bow's shot `bowPose` (pull, arrow, release at IMPACT, `bowup` skyward cast) |
+| `skillfx.js` [459] | skill visuals/sounds per server fx code (`skillEvent`, switch on codes 40–75), props, marks; the bow: `bowFire` (fx code 6, from client attackFx) and the arrow events `ar`/`ae` |
 | `skillicons.js` [471] · `uiicons.js` [105] · `emoticons.js` [164] | 16×16 skill glyphs, 12×12 UI glyphs (`MENU_ICON TRAIT`), chat emoticons |
 | `classgauge.js` [152] | class gauge in the status panel |
 | `growth.js` [292] | skill training, warehouse, pets, auto-potion, drop names (client side) |
@@ -145,13 +145,13 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `npctalk.js` [80] | NPC flavour lines by role (an NPC with `lines` from the editor says those) |
 | `sidequests.js` [125] | side-quest cards in the talk window, quest-window entries, "!"/"?" over givers |
 | `frames.js` [85] | HUD 9-slice frame art → CSS custom properties |
-| `audio.js` [658] | chiptune synth: `TRACKS` (per-map music), `SFX` catalogue, `Sound.play(name)` |
+| `audio.js` [844] | chiptune synth: `TRACKS` (per-map music), `SFX` catalogue, `Sound.play(name)` |
 | `titlescene.js` [510] | title-screen diorama and pixel logo |
 | `assetlib.js` [131] | external asset loader, `ready()` awaited at client start-up; `canvas meta has loadImage loadAudio loadSounds play`. Used by weapons.js and art.js `buildIcons` (`icon.item.<id>`) |
 | `style.css` [351] · `hud.css` [473] · `lobby.css` [225] | base + CRT, HUD/windows, lobby |
 | `assets/manifest.json` | installed external images/sounds by key (empty = all code-drawn); written by `scripts/import-art.mjs --install` |
 | `fonts/` | Galmuri pixel fonts (OFL) |
-| `_*.html` | dev preview pages (never deployed, `.assetsignore`): scene world iso over mobs sheet species wardrobe swing feel (skill blasts, hits, footsteps as frame strips) title icons uicons emo mini chunks (chunked vs whole ground bake, pixel by pixel; `scripts/bake-check.mjs`) |
+| `_*.html` | dev preview pages (never deployed, `.assetsignore`): scene world iso over mobs sheet species wardrobe swing feel (skill blasts, hits, footsteps as frame strips) bow (`?m=art|draw|arrows|fight`: tiers × pulls, the shot in 8 aims, arrows) title icons uicons emo mini chunks (chunked vs whole ground bake, pixel by pixel; `scripts/bake-check.mjs`) |
 
 ### Tests — `game/tests/*.mjs` (plain node + `node:assert`; list in `tests/LIST`)
 sim (smoke) · party · loot (gear, repeat hunting) · life (fires, fishing, cooking, guilds) · world

@@ -649,10 +649,11 @@ export const Sound = {
 };
 
 /** Minimum seconds between two plays of the same effect. */
-const THROTTLE = { quake: 0.2, tip: 0.06, clang: 0.08, block: 0.1, tea: 0.5, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
+const THROTTLE = { bow_draw: 0.06, arrow_hit: 0.035, arrow_wall: 0.05, quake: 0.2, tip: 0.06, clang: 0.08, block: 0.1, tea: 0.5, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
 /** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
 const BOOST = {
   swing: 3, swing_sword: 3, swing_dagger: 3, swing_spear: 3, swing_staff: 2, swing_book: 2.2, shoot: 1.6, magic: 1.5,
+  bow_draw: 2, bow_shot: 2.6, release: 2.6, arrow_hit: 2, arrow_wall: 1.6,
   hit: 2, crit: 1.6, hurt: 2, die: 2, die_small: 2.2, die_big: 1.8, mob_shot: 1.8, charge: 2, volley: 1.8, spit: 2, pop: 2, buff: 1.5,
   ui: 1.8, open: 2, close: 2, tab: 2, blip: 1.8, emote: 1.6, cast: 1.8, coin: 1.5, salvage: 1.5, recall: 1.4, warp_out: 1.4, rift_warn: 1.5, fail: 1.4,
   step_grass: 2.5, step_dirt: 2.5, step_stone: 2, step_wood: 1.6, step_water: 2,
@@ -672,6 +673,19 @@ const SFX = {
   swing_staff() { this.tone("sine", 420, 760, 0.18, 0.1); this.tone("triangle", 630, 1140, 0.16, 0.05, 0.02); this.noise(0.12, 0.06, 3000, "highpass"); },
   swing_book() { this.noise(0.08, 0.12, 2400, "bandpass", 0, 1200); this.noise(0.06, 0.1, 3000, "bandpass", 0.07, 1600); this.tone("sine", 880, 1320, 0.14, 0.06, 0.04); },
   shoot() { this.noise(0.06, 0.16, 2500); this.tone(0.5, 900, 400, 0.08, 0.07); },
+  // the bow (all ±5%): a short creak as it is drawn; the release — the string's twang (a pitch drop
+  // 220 → 110 with a bright pluck and a click) and the arrow's whoosh leaving; the arrow striking
+  // flesh (a thunk) or wood and stone (a knock and a rattle)
+  bow_draw() { const p = this.vary(); this.noise(0.08, 0.07, 700 * p, "bandpass", 0, 1500 * p); this.tone("triangle", 180 * p, 240 * p, 0.07, 0.025); },
+  bow_shot(fin) {
+    const p = this.vary();
+    this.tone("triangle", 220 * p, 110 * p, 0.15, 0.15); this.tone(0.5, 440 * p, 210 * p, 0.05, 0.05);
+    this.noise(0.025, 0.18, 3400 * p, "highpass");
+    this.noise(fin ? 0.2 : 0.13, fin ? 0.24 : 0.17, 1300 * p, "bandpass", 0.012, 4400 * p);
+  },
+  release(fin) { SFX.bow_shot.call(this, fin); },
+  arrow_hit() { const p = this.vary(); this.tone("sine", 160 * p, 70 * p, 0.08, 0.2); this.noise(0.035, 0.15, 1200 * p, "lowpass"); this.tone(0.5, 620 * p, 300 * p, 0.03, 0.04); },
+  arrow_wall() { const p = this.vary(); this.tone("square", 330 * p, 260 * p, 0.035, 0.06); this.noise(0.05, 0.12, 2400 * p, "bandpass"); this.tone("triangle", 190 * p, 182 * p, 0.14, 0.05, 0.02); this.tone("triangle", 196 * p, 188 * p, 0.1, 0.03, 0.06); },
   magic() { this.tone("sine", 500, 1300, 0.16, 0.14); this.tone("triangle", 750, 1700, 0.14, 0.07, 0.03); },
   boom() { this.noise(0.34, 0.36, 1600, "lowpass", 0, 120); this.tone("square", 150, 40, 0.3, 0.16); },
   ice() { this.tone("triangle", 1800, 600, 0.3, 0.12); this.noise(0.22, 0.12, 4000); this.arp("sine", [2093, 2637, 3136], 0.04, 0.12, 0.04, 0.05); },
