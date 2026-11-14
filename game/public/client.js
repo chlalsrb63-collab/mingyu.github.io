@@ -137,8 +137,10 @@ const text = $("#text"), tg = text.getContext("2d");
  * character creation always use the whole window.
  */
 const SIDE = 288, DOCK = 184;
-/** The dock grows a little on tall screens (more chat lines): 184 px up to 920 high, 216 at 1080. */
-const dockH = (H) => Math.round(clamp(H * 0.2, DOCK, 224));
+/** The side column narrows on small desktops (≤ 1100 wide: 256 px, menu glyphs only; hud.css matches the breakpoint). */
+const sideW = (W) => (W <= 1100 ? 256 : SIDE);
+/** The dock grows a little on tall screens (more chat lines): 184 px up to 920 high, 216 at 1080; 160 on short screens (≤ 640). */
+const dockH = (H) => (H <= 640 ? 160 : Math.round(clamp(H * 0.2, DOCK, 224)));
 const VP = { w: innerWidth, h: innerHeight, lay: "full" };
 function layout() {
   const W = innerWidth, H = innerHeight, b = document.body;
@@ -148,7 +150,7 @@ function layout() {
   VP.lay = !compact ? "full" : H > W ? "port" : "land";
   const deck = Math.round(clamp(H * 0.4, 290, 360));
   if (!G.playing) { VP.w = W; VP.h = H; }
-  else if (VP.lay === "full") { VP.w = W - SIDE; VP.h = H - dockH(H); }
+  else if (VP.lay === "full") { VP.w = W - sideW(W); VP.h = H - dockH(H); }
   else if (VP.lay === "port") { VP.w = W; VP.h = H - deck; }
   else { VP.w = W; VP.h = H; }
   b.dataset.lay = VP.lay;
@@ -156,11 +158,20 @@ function layout() {
   const r = document.documentElement.style;
   r.setProperty("--vpw", VP.w + "px"); r.setProperty("--vph", VP.h + "px");
   r.setProperty("--dock", (VP.lay === "port" ? deck : dockH(H)) + "px");
+  if (VP.lay === "full") r.setProperty("--side", sideW(W) + "px"); else r.removeProperty("--side");
+  // the safe zone windows live in (client placeWin/keepIn, hud.css caps their size to it)
+  const zw = VP.lay === "land" ? Math.max(320, W - 300) : VP.w, zh = VP.lay === "land" ? H : VP.h;
+  r.setProperty("--zone-w", zw + "px"); r.setProperty("--zone-h", zh + "px");
   if (VP.lay === "full") b.classList.remove("drawer");
   // the potions sit beside the HP/MP bars on a desktop, on the thumb pad on a phone
   const pots = $("#st-pots"), hpB = $("#b-hp"), mpB = $("#b-mp");
   if (VP.lay === "full" && hpB.parentNode !== pots) pots.append(hpB, mpB);
   else if (VP.lay !== "full" && hpB.parentNode === pots) $("#actions").prepend(hpB, mpB);
+  // the buffs: under the party frames over the world (the dock and the floating unit frame have no height to
+  // spare); in the unit frame only on an upright phone, whose control deck has room
+  const buffs = $("#st-buffs"), tl = $("#topleft"), upright = VP.lay === "port";
+  if (!upright && buffs.parentNode !== tl) tl.append(buffs);
+  else if (upright && buffs.parentNode === tl) $(".st-side").append(buffs);
 }
 function resize() {
   layout();
@@ -1469,31 +1480,128 @@ const WIN_KEY = (id) => `lumentale:win2:${id}`;
 const roomy = () => VP.lay === "full";
 /** Where windows may sit: over the viewport on a desktop, anywhere on a phone. */
 const winArea = () => (VP.lay === "land" ? [Math.max(320, innerWidth - 300), innerHeight] : [VP.w, VP.h]);
+/**
+ * Window placement. Windows live in a safe zone: the world viewport (never over the side column or the
+ * dock), 4 px in from its edges, less a strip along the bottom while folded windows sit there. CSS caps
+ * their size to it (--zone-w / --zone-h / --tabs-h, hud.css); this code keeps their position in it.
+ * Two or more windows: a new one goes where it belongs (or where the player last dragged it); if that
+ * covers another window it tries beside each open window, then one row of all of them; when they do not
+ * fit side by side, the newest stays open and the windows it would cover fold into title tabs along the
+ * bottom-right of the zone (click a tab, or press its hotkey, to unfold it — that folds what it covers).
+ */
+const EDGE = 4, GAP = 8, TAB_H = 30;
+const folded = (id) => winEl(id).classList.contains("mini");
+const floated = () => WIN.filter((id) => id !== "inv" && !winEl(id).hidden);
+const tabsOut = () => floated().filter(folded);
+function zone() {
+  const [W, H] = winArea();
+  return [EDGE, EDGE, W - EDGE, H - EDGE - (tabsOut().length ? TAB_H : 0)];
+}
+const boxOf = (id) => { const w = winEl(id); return [parseFloat(w.style.left) || 0, parseFloat(w.style.top) || 0, w.offsetWidth, w.offsetHeight]; };
+const hits = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
 
 /** Where a window first opens, before the player moves it: inside the viewport, the shop and smith on the right next to the bag. */
 function homeOf(id, w, h) {
-  const [W, H] = winArea(), top = 8;
-  const right = W - w - 8, mid = (W - w) / 2;
+  const [x0, y0, x1, y1] = zone(), top = y0 + 4;
+  const right = x1 - w - 4, mid = (x0 + x1 - w) / 2;
   switch (id) {
     case "char": case "shop": case "smith": case "train": case "bank": return [right, top];
-    case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": return [8, top + 32];
-    case "talk": return [mid, H - h - 56];
-    default: return [mid, Math.max(top, (H - h) / 2 - 30)];
+    case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": return [x0 + 4, top + 32];
+    case "talk": return [mid, y1 - h - 52];
+    default: return [mid, Math.max(top, (y0 + y1 - h) / 2 - 30)];
   }
 }
+function clampPos(x, y, w, h) {
+  const [x0, y0, x1, y1] = zone();
+  return [Math.round(clamp(x, x0, Math.max(x0, x1 - w))), Math.round(clamp(y, y0, Math.max(y0, y1 - h)))];
+}
+/** Keep a window inside the safe zone (after a drag, a resize, or its content changing size). */
 function keepIn(id, x, y) {
   if (id === "inv") return;
-  const w = winEl(id), [W, H] = winArea();
-  const ww = w.offsetWidth, wh = w.offsetHeight;
-  x = x ?? (parseFloat(w.style.left) || 0); y = y ?? (parseFloat(w.style.top) || 0);
-  w.style.left = `${Math.round(clamp(x, 4, Math.max(4, W - ww - 4)))}px`;
-  w.style.top = `${Math.round(clamp(y, 4, Math.max(4, H - wh - 4)))}px`;
+  const w = winEl(id);
+  if (w.hidden) return;
+  if (folded(id)) { layTabs(); return; }
+  [x, y] = clampPos(x ?? (parseFloat(w.style.left) || 0), y ?? (parseFloat(w.style.top) || 0), w.offsetWidth, w.offsetHeight);
+  w.style.left = `${x}px`;
+  w.style.top = `${y}px`;
+}
+/** The folded windows: title tabs in a row along the bottom-right of the zone, the latest folded rightmost. */
+function layTabs() {
+  const tabs = tabsOut().sort((a, b) => (+winEl(b).dataset.fold || 0) - (+winEl(a).dataset.fold || 0));
+  document.documentElement.style.setProperty("--tabs-h", tabs.length ? TAB_H + "px" : "0px");
+  const [W, H] = winArea();
+  let x = W - EDGE - (VP.lay === "port" ? 52 : 0);
+  for (const id of tabs) {
+    const w = winEl(id);
+    x -= w.offsetWidth;
+    w.style.left = `${Math.max(EDGE, x)}px`;
+    w.style.top = `${H - EDGE - w.offsetHeight}px`;
+    x -= 4;
+  }
+  for (const id of floated()) if (!folded(id)) keepIn(id);
+}
+let foldN = 0;
+function fold(id) {
+  const w = winEl(id);
+  if (folded(id)) return;
+  w.classList.add("mini");
+  w.dataset.fold = ++foldN;
+  w.title = "눌러서 다시 펼치기";
+  if (tip.from && w.contains(tip.from)) hideTip();
+  layTabs();
+}
+function unfold(id) {
+  const w = winEl(id);
+  if (!folded(id)) return;
+  w.classList.remove("mini");
+  w.title = "";
+  layTabs();
+  placeWin(id);
+  front(id);
+}
+function savedPos(id) {
+  if (!roomy()) return null;
+  try { const p = JSON.parse(localStorage.getItem(WIN_KEY(id))); return Array.isArray(p) && p.length === 2 && p.every(Number.isFinite) ? p : null; } catch { return null; }
 }
 function placeWin(id) {
-  const w = winEl(id);
-  let pos = null;
-  if (roomy()) { try { pos = JSON.parse(localStorage.getItem(WIN_KEY(id))); } catch { pos = null; } }
-  if (!Array.isArray(pos)) pos = roomy() ? homeOf(id, w.offsetWidth, w.offsetHeight) : [(winArea()[0] - w.offsetWidth) / 2, 8];
+  const w = winEl(id), ww = w.offsetWidth, wh = w.offsetHeight, [x0, y0, x1, y1] = zone();
+  const want = savedPos(id) || (roomy() ? homeOf(id, ww, wh) : [(x0 + x1 - ww) / 2, y0 + 4]);
+  let pos = clampPos(want[0], want[1], ww, wh);
+  const others = floated().filter((o) => o !== id && !folded(o));
+  const free = (p) => others.every((o) => !hits([p[0], p[1], ww, wh], boxOf(o)));
+  if (!free(pos)) {
+    // beside one of the open windows (level with it, or at the top), the nearest such place to where it wanted to be
+    const fits = (p) => p[0] >= x0 && p[0] + ww <= x1 && p[1] >= y0 && p[1] + wh <= y1;
+    const cands = [];
+    for (const o of others) {
+      const [ox, oy, ow] = boxOf(o);
+      for (const y of [oy, y0 + 4]) cands.push([ox + ow + GAP, y], [ox - ww - GAP, y]);
+    }
+    const ok = cands.filter((p) => fits(p) && free(p));
+    const d = (p) => Math.hypot(p[0] - pos[0], p[1] - pos[1]);
+    if (ok.length) pos = ok.reduce((a, b) => (d(b) < d(a) ? b : a));
+    else {
+      // all of them in one row, left to right as they stand, the new one on the side it opens on
+      const row = others.slice().sort((a, b) => boxOf(a)[0] - boxOf(b)[0]);
+      const right = pos[0] + ww / 2 > (x0 + x1) / 2;
+      if (right) row.push(id); else row.unshift(id);
+      const size = (o) => (o === id ? [ww, wh] : boxOf(o).slice(2));
+      const total = row.reduce((a, o) => a + size(o)[0], 0) + GAP * (row.length - 1);
+      if (total <= x1 - x0 && row.every((o) => size(o)[1] <= y1 - y0)) {
+        let x = right ? x1 - total : x0;
+        for (const o of row) {
+          const [ow, oh] = size(o), y = Math.round(clamp(o === id ? pos[1] : boxOf(o)[1], y0, y1 - oh));
+          if (o === id) pos = [Math.round(x), y];
+          else { winEl(o).style.left = `${Math.round(x)}px`; winEl(o).style.top = `${y}px`; }
+          x += ow + GAP;
+        }
+      } else {
+        // no room side by side: the newest stays, what it would cover folds into a tab
+        for (const o of others) if (hits([pos[0], pos[1], ww, wh], boxOf(o))) fold(o);
+        pos = clampPos(want[0], want[1], ww, wh);
+      }
+    }
+  }
   keepIn(id, pos[0], pos[1]);
 }
 function front(id) {
@@ -1513,7 +1621,8 @@ function openWin(id) {
   if (id === "party") renderParty();
   if (id === "guild") { act({ t: "glist" }); renderGuild(); }
   refreshUi();
-  if (!was) placeWin(id);
+  if (was && folded(id)) unfold(id);
+  else if (!was) placeWin(id);
   front(id);
   syncMenu();
 }
@@ -1528,31 +1637,37 @@ function closeWin(id) {
   const w = winEl(id);
   if (w.hidden) return;
   w.hidden = true;
+  if (folded(id)) { w.classList.remove("mini"); w.title = ""; layTabs(); }
   if (tip.from && w.contains(tip.from)) hideTip();
   syncMenu();
 }
 function toggleWin(id) {
   if (id === "inv") { if (compact() && drawerOpen()) closeWin("inv"); else { Sound.play("open"); openWin("inv"); } return; }
+  if (isOpen(id) && folded(id)) { Sound.play("open"); unfold(id); syncMenu(); return; }
   Sound.play(isOpen(id) ? "close" : "open"); isOpen(id) ? closeWin(id) : openWin(id);
 }
 function closeAll() { for (const id of WIN) closeWin(id); }
-/** Esc: the emote picker first, then whichever window is on top, then the drawer, then the bag's pick. */
+/** Esc: the emote picker first, then whichever window is on top (open ones before tabs), then the drawer, then the bag's pick. */
 function closeTop() {
   if (!$("#emotes").hidden) { $("#emotes").hidden = true; return; }
   let best = null, bz = -1;
-  for (const id of WIN) if (id !== "inv" && isOpen(id)) { const z = +winEl(id).style.zIndex || 0; if (z > bz) { bz = z; best = id; } }
+  for (const id of WIN) if (id !== "inv" && isOpen(id)) { const z = (+winEl(id).style.zIndex || 0) + (folded(id) ? 0 : 1e6); if (z > bz) { bz = z; best = id; } }
   if (best) { closeWin(best); Sound.play("close"); }
   else if (drawerOpen() || G.sel >= 0) closeWin("inv");
 }
+// a window whose content grows or shrinks (a list arriving, a tab switched) is kept inside the zone
+const winSize = typeof ResizeObserver === "function" ? new ResizeObserver((es) => { for (const e of es) keepIn(e.target.id.slice(2)); }) : null;
 for (const id of WIN) {
   if (id === "inv") continue;
   const w = winEl(id), head = w.querySelector("header");
+  if (winSize) winSize.observe(w);
   w.addEventListener("pointerdown", () => front(id), true);
   w.querySelector(".x").addEventListener("click", () => { closeWin(id); Sound.play("close"); });
-  // dragged by the title bar, kept on the screen, remembered
+  // dragged by the title bar, kept in the safe zone, remembered; a folded window's tab unfolds on a press
   head.addEventListener("pointerdown", (e) => {
     if (e.target.closest(".x") || e.button !== 0) return;
     e.preventDefault();
+    if (folded(id)) { Sound.play("open"); unfold(id); syncMenu(); return; }
     const r = w.getBoundingClientRect(), ox = e.clientX - r.left, oy = e.clientY - r.top;
     head.setPointerCapture(e.pointerId);
     const move = (ev) => keepIn(id, ev.clientX - ox, ev.clientY - oy);
@@ -1567,11 +1682,11 @@ $("#b-drawer").addEventListener("click", () => { setDrawer(!drawerOpen()); syncM
 $("#chat-fold").addEventListener("click", () => document.body.classList.toggle("chat-folded"));
 // the class gauge's own tooltip
 $("#cg-box").addEventListener("mouseenter", () => { $("#cg-box").title = G.self ? gaugeTip(G.self) || "" : ""; });
-addEventListener("resize", () => { for (const id of WIN) if (isOpen(id)) keepIn(id); });
+addEventListener("resize", () => { layTabs(); for (const id of WIN) if (isOpen(id)) keepIn(id); });
 for (const b of $$("#menu button[data-win]")) b.addEventListener("click", () => toggleWin(b.dataset.win));
 $("#btn-winreset").addEventListener("click", () => {
   for (const id of WIN) localStorage.removeItem(WIN_KEY(id));
-  for (const id of WIN) if (isOpen(id)) placeWin(id);
+  for (const id of WIN) if (isOpen(id) && !folded(id)) placeWin(id);
   Sound.play("ui");
   toast("창을 처음 자리로 옮겼습니다");
 });
@@ -2889,4 +3004,4 @@ function frame() {
 requestAnimationFrame(frame);
 
 // handy for automated play-testing
-window.__game = { G, act, S3, go: (wx, wy) => { G.path = pathTo(wx, wy); return !!G.path; } };
+window.__game = { G, act, S3, go: (wx, wy) => { G.path = pathTo(wx, wy); return !!G.path; }, openWin, closeWin, closeAll };

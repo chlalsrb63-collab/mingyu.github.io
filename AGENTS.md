@@ -120,7 +120,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | file | owns · key exports |
 | --- | --- |
 | `index.html` [364] | all HUD/window markup (`section.window#w-<id>`), `#menu`, cache tag `?v=` |
-| `client.js` [2563] | game client. Sections (grep `// ───`): connection, state `G`, messages (`onSnap`), effects, input (keydown hotkeys ~L537), player actions, update, render, HUD & windows (`WIN` list ~L1236, `openWin`, `render<Window>()`), main loop. `window.__game = {G, act, S3, go}` for automation |
+| `client.js` [2563] | game client. Sections (grep `// ───`): connection, state `G`, messages (`onSnap`), effects, input (keydown hotkeys ~L537), player actions, update, render, HUD & windows (`WIN` list, `openWin`, window placement `placeWin`/`keepIn`/`fold` — safe zone, side by side, else fold to tabs; `render<Window>()`), main loop. `layout()` sets the docks (`sideW`/`dockH`) and `--vpw --vph --zone-w --zone-h`. `window.__game = {G, act, S3, go, openWin, closeWin, closeAll}` for automation |
 | `lobby.js` [593] | title, 로그인/회원가입, server/channel list, character creation, in-game channel switch/logout |
 | `account.js` [99] | HTTP side of accounts: `session signup login logout me servers`, `API` base |
 | `scene2d.js` [2986] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites (+ `autumnScenery`), ground (`drawGround`: whole canvas, or on big maps the visible chunks + one prefetched per frame; walls/rock stand up lazily near the screen, `lazyTall`; the deep places' glow in pieces, `pulsePart`), raised blocks, creatures (`drawPerson`; movement life `stepLife`: bob, lean, stop squash, terrain footsteps `footKind/footstep`, afterimage), effects `fx/fxCustom` (+ `flash wave zap`), sword-qi `qiBurst` at each stroke's impact, bow arrows `fx.arrow/arrowEnd/arrowHit` + `arrowSprite` (64 directions, trail, piercing streak, stuck in walls), the string's snap `bowSnap`, skills' scaled set `big(ang)`, `shake(n, ang)` (directional kick), pets, title/creation stage; `groundInfo()` (load/bake costs for tools) |
@@ -153,7 +153,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `audio.js` [844] | chiptune synth: `TRACKS` (per-map music), `SFX` catalogue, `Sound.play(name)` |
 | `titlescene.js` [510] | title-screen diorama and pixel logo |
 | `assetlib.js` [131] | external asset loader, `ready()` awaited at client start-up; `canvas meta has loadImage loadAudio loadSounds play`. Used by weapons.js and art.js `buildIcons` (`icon.item.<id>`) |
-| `style.css` [351] · `hud.css` [473] · `lobby.css` [225] | base + CRT, HUD/windows, lobby |
+| `style.css` [351] · `hud.css` [721] · `lobby.css` [225] | base + CRT, HUD/windows (the last section, "responsive": breakpoints ≤1100 wide / ≤640 high / ≤860 phones, the window safe zone, scrolling bodies, folded tabs, text wrapping), lobby |
 | `assets/manifest.json` | installed external images/sounds by key (empty = all code-drawn); written by `scripts/import-art.mjs --install` |
 | `fonts/` | Galmuri pixel fonts (OFL) |
 | `_*.html` | dev preview pages (never deployed, `.assetsignore`): scene world iso over mobs sheet species wardrobe swing feel (skill blasts, hits, footsteps as frame strips) bow (`?m=art|draw|arrows|fight`: tiers × pulls, the shot in 8 aims, arrows) title icons uicons emo mini chunks (chunked vs whole ground bake, pixel by pixel; `scripts/bake-check.mjs`) |
@@ -324,6 +324,8 @@ lives in `game/.wrangler/` (delete it to reset local accounts/characters).
    `#menu button[data-win="<id>"]` with a `uiicons.js MENU_ICON`.
 2. `public/client.js`: add `<id>` to `WIN`, a hotkey in the keydown switch (Korean 2-set key too, e.g.
    `case "u": case "ㅕ":`), a `render<Id>(s)` registered in `refreshUi()` as `draw("<id>", () => [deps…], render<Id>)`; styles in `public/hud.css`.
+   Keep the `header` + `.body` shape: hud.css then caps it to the safe zone (`--win-max` for a wide one) and scrolls the body;
+   `placeWin` places it beside open windows or folds them.
 3. Data it needs: `selfPayload` in `90-views-api.js` (send only when dirty) or `defs()`; actions via
    `act({t:…})` + validate/apply cases. Bump the `?v=` cache tag.
 4. `shot.mjs --live --keys <key>`.
