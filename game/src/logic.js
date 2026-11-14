@@ -2608,11 +2608,11 @@ function buildMaps() {
       : b === "clearing" ? (n1 > 0.64 ? "%" : n1 < 0.16 ? '"' : n2 > 0.74 ? "t" : null)
       : b === "hollow" ? (n1 > 0.7 ? "&" : n1 > 0.48 ? "j" : n2 > 0.6 ? "%" : null)
       : n2 > 0.6 ? ":" : null),
-    scatter: (b, h, n1) => (b === "maple" ? ((n1 > 0.5 ? h < 0.2 : h < 0.08) ? "T" : h < 0.095 ? "B" : h < 0.1 ? "u" : h < 0.104 ? "l" : null)
-      : b === "gold" ? ((n1 > 0.55 ? h < 0.16 : h < 0.07) ? "T" : h < 0.08 ? "B" : h < 0.086 ? "R" : null)
+    scatter: (b, h, n1) => (b === "maple" ? ((n1 > 0.5 ? h < 0.24 : h < 0.1) ? "T" : h < 0.095 ? "B" : h < 0.1 ? "u" : h < 0.104 ? "l" : null)
+      : b === "gold" ? ((n1 > 0.55 ? h < 0.2 : h < 0.09) ? "T" : h < 0.08 ? "B" : h < 0.086 ? "R" : null)
       : b === "pine" ? ((n1 > 0.5 ? h < 0.22 : h < 0.09) ? "P" : h < 0.1 ? "R" : h < 0.11 ? "B" : h < 0.114 ? "u" : null)
       : b === "hollow" ? (h < 0.03 ? "Y" : h < 0.045 ? "A" : h < 0.055 ? "T" : h < 0.06 ? "u" : null)
-      : h < 0.014 ? "T" : h < 0.022 ? "u" : h < 0.028 ? "B" : h < 0.031 ? "l" : null),
+      : h < 0.03 ? "T" : h < 0.038 ? "u" : h < 0.046 ? "B" : h < 0.05 ? "l" : null),
   });
   // a hermit keeps the cottage fire
   if (maple.camp) {
