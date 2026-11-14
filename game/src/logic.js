@@ -4672,7 +4672,31 @@ function mapPayload(m) {
     zq: m.zq || null,
     // gathering nodes [kind 0 herb · 1 ore · 2 wood, grade 1–5, tx, ty] (life skills, 58-life.js lifeNodes)
     nodes: lifeNodes(m),
+    // the art of the reworked maps (maps-v2 C), only on maps that have it: map art, no rules
+    ...artWire(m),
   });
+}
+/**
+ * Static map art for the client, once per map change: the cave's shelf levels (`lv`: runs of "<level><count>"
+ * over the tiles row by row, joined by ","), mushroom rings [x, y], arched doorways [x, y, 1 = runs east–west],
+ * torch alcoves [x, y], waterfalls [x, y, dir], river crossings [row, 1 = ford], the temple {x, y, w, h, pool}.
+ */
+function artWire(m) {
+  const o = {};
+  if (m.level) {
+    const runs = [];
+    let v = m.level[0], n = 0;
+    for (let i = 0; i < m.level.length; i++) { if (m.level[i] === v) n++; else { runs.push(v + "" + n); v = m.level[i]; n = 1; } }
+    runs.push(v + "" + n);
+    o.lv = runs.join(",");
+  }
+  if (m.rings && m.rings.length) o.rings = m.rings;
+  if (m.arches && m.arches.length) o.arches = m.arches;
+  if (m.torches && m.torches.length) o.torches = m.torches;
+  if (m.falls && m.falls.length) o.falls = m.falls;
+  if (m.crossings && m.crossings.length) o.cross = m.crossings.map(([y, k]) => [y, k === "ford" ? 1 : 0]);
+  if (m.temple) o.temple = m.temple;
+  return o;
 }
 
 // ───────────────────────────── maps from the world map editor ─────────────────────────────

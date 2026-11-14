@@ -1,6 +1,6 @@
 # maps-v2 — 다채로운 사냥터·던전 (varied hunting grounds and dungeons)
 
-Status: **M1 + M2 built** (meadow, forest, cave, crypt, sewer reworked; path-quality test holds all five). M3–M4 are design.
+Status: **M1 + M2 built, client art step 1 done (H)** (meadow, forest, cave, crypt, sewer reworked; path-quality test holds all five). M3–M4 are design.
 Owner's request: maps from his reference images, procedurally generated, colourful, not monotonous; routes a little
 complex but never blocked in a way that gets in the player's way; maps wide.
 
@@ -197,3 +197,29 @@ Deviations:
   sit on 3-wide ground).
 - `tests/hard.mjs` samples the `tough` trait over 120 blows instead of 40: with the new sewer the 40-blow ratio read
   0.71 against a 0.68 cap (the world's RNG stream moved); the trait is unchanged. `tests/lifeskills.mjs` needed nothing.
+
+## H. Client art, step 1 as built (table C)
+
+Wire: `mapPayload` appends `artWire(m)` (34-maps-world.js), static and sent once per map change, each key only on maps
+that have it: `lv` (cave shelf level 0/1/2 per tile as runs `"<level><count>"` joined by `,`, ~3 KB), `rings`,
+`arches`, `torches`, `falls`, `cross` ([row, 1 = ford]), `temple`. No rule changes. Decoder: `iso_ground.js levels(m)`.
+
+| for | as built |
+| --- | --- |
+| A.5 moss | cave `;` deep green moss (organic clumps, sparse mint/white specks baked, a few breathing in the pulse layer); `:` a darker moss-over-rock fringe. Meadow/forest keep their grass. |
+| A.5 shelves | floor up on a level is grey rough rock (`_shelf`); rim `C` = `caveShelf`: grey faceted rock, 16 px (level 1) / 30 px (level 2), moss strands trailing over the edge, rare jade glints |
+| A.5 steps, fords, streams | grey stone steps; fords are shallow jade water over pebbles; cave water jade (`UG.cave.wet`) with a green pulse glow; cave floor slate-teal |
+| A.5 rings | a three-layer jade light pool under each `m.rings` centre (pulse layer) |
+| A.4 walls | crypt walls grey 4×8 brick with a damp low band and the odd missing brick; sewer keeps its brown brick |
+| A.4 paving | `k` in crypt/sewer = big cracked flagstones (12×10), knocked-off corners, grime in the sewer; ragged edge over the brick floor |
+| A.4 arches | `hallart.js`: brick piers + segmental arch (crown 28 px, top 34) over each 3-wide mouth, cut into 4-px depth strips so you walk under it (duplicates in `m.arches` skipped) |
+| A.4 torches | iron bracket on the alcove's west wall (the face the camera sees), live 3-frame flame, flickering additive glow, sparks; lights the dark; hides the candle stand |
+| A.2/A.6 cliffs | outdoor `C`: grey faceted stone under the grass lip, moss in soft patches (more in the forest) |
+| A.2 falls | `riverFalls`: a light curtain down the face when the drop faces the camera (dir 1), else a white lip; foam rings and churning flecks on the pool |
+| A.6 fords | `s` across the river in a `cross` ford band = clear shallows with two staggered files of grey stepping stones |
+| A.3 temple | rune-pool glow at `m.temple.pool`: breathing jade light, twelve runes turning round the rim, rising motes |
+
+Left from table C: the natural rock arch (A.2), cliff height by level outdoors (`m.tier` is not on the wire), carved
+flagstones and broken-colonnade art for the temple, a taller jade spire (A.5); the M3/M4 themes. Cost: every ground
+skin is baked (chunked maps bake per chunk as before); per frame only the visible torches (two glow blits each), arch
+strips, fall rings and the temple glow are added.

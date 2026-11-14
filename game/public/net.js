@@ -155,7 +155,7 @@ export function stopGame() {
   G.auto = false;
   resetPurse(); // the next character's purse starts without a +N
   $("#hud").hidden = true; $("#dead").hidden = true; G.me.dead = false; $("#tip").hidden = true;
-  for (const w of $$("#windows .window")) if (!w.hidden) closeWin(w.id.slice(2));
+  for (const w of $$("#windows .window, #panel .window")) if (!w.hidden) closeWin(w.id.slice(2));
   resize();
   tg.clearRect(0, 0, text.width, text.height);
 }

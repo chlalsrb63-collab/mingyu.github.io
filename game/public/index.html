@@ -21,7 +21,7 @@
 
     <!-- ── HUD ───────────────────────────────────────────
          A fixed handheld-style frame: the world plays in the top-left
-         viewport, the side column (map, quests, bag, menu) stands on the
+         viewport, the side column (map, the side panel, menu) stands on the
          right, and the dock along the bottom holds the chat and the
          character: bars, class gauge, skills. -->
     <div id="hud" hidden>
@@ -63,7 +63,7 @@
       <div id="joy"><div id="joy-knob"></div></div>
       <button id="b-drawer" title="가방 · 지도 · 메뉴"><i></i><span>메뉴</span></button>
 
-      <!-- ── the side column: map, quests, bag, menu ── -->
+      <!-- ── the side column: map, the side panel (quests or one window), menu ── -->
       <aside id="side" class="gba">
         <div id="mini">
           <div id="mini-name" class="plate"></div>
@@ -71,14 +71,12 @@
           <div id="mini-bar"><span id="mini-xy"></span><button id="mini-zo" class="mini-b" title="축소 (더 넓게)">−</button><button id="mini-zi" class="mini-b" title="확대 (더 가까이)">+</button><button id="mini-map" class="mini-b" title="지도 (M)">지도 <kbd>M</kbd></button></div>
           <div id="mini-info"></div>
         </div>
+        <!-- the side panel: the quest tracker by default; on a desktop the window whose hotkey or menu button
+             was pressed takes its place (windows.js dockPanel moves the panel windows in here, back to #windows on a phone) -->
+        <div id="panel">
         <div id="quest-track" class="sunk"></div>
-        <!-- the character, docked on a desktop: state.js layout() moves #w-char's .doll in here (back on a phone) -->
-        <div id="side-char">
-          <div id="sc-doll" class="sunk"></div>
-          <div id="sc-tabs"><button data-t="gear" title="상세 능력 (C)">상세</button><button data-t="stat" title="능력치 올리기">능력치</button><button data-t="cos" title="외형 옷장">외형</button></div>
-        </div>
         <section class="window docked" id="w-inv">
-          <header><span class="t plate">가방</span><span id="inv-gold" class="gold"></span><span id="inv-count"></span><button id="inv-sort" class="btn small" title="보기 정렬"></button><button class="x" title="닫기"></button></header>
+          <header><span class="t plate">가방</span><span id="inv-gold" class="gold"></span><span id="inv-count"></span><button id="inv-sort" class="btn small" title="보기 정렬"></button><button class="x" title="닫기 (Esc)"></button></header>
           <div class="body">
             <div id="inv-grid" class="grid"></div>
             <div id="inv-grow"></div>
@@ -86,7 +84,9 @@
             <div id="inv-detail" class="detail"></div>
           </div>
         </section>
+        </div>
         <div id="menu">
+          <button data-win="inv" title="가방 (I)"><span>가방</span><kbd>I</kbd></button>
           <button data-win="char" title="캐릭터 (C)"><span>캐릭터</span><kbd>C</kbd></button>
           <button data-win="skill" title="무기 · 스킬 (K)"><span>스킬</span><kbd>K</kbd></button>
           <button data-win="quest" title="의뢰 (L)"><span>의뢰</span><kbd>L</kbd></button>
@@ -102,7 +102,6 @@
           <button id="b-sit" title="앉기 (X)"><span>앉기</span><kbd>X</kbd></button>
           <button data-win="help" title="도움말 (H)"><span>도움말</span><kbd>H</kbd></button>
           <button data-win="settings" title="설정 (O)"><span>설정</span><kbd>O</kbd></button>
-          <button data-win="inv" title="가방 (I)"><span>가방</span><kbd>I</kbd></button>
         </div>
       </aside>
 
