@@ -10,6 +10,7 @@ import * as Mini from "./minigames.js";
 import * as QS from "./quickslots.js";
 import * as Housing from "./housing.js";
 import * as Gather from "./gather.js";
+import * as Charms from "./charms.js";
 import { G, $, dist, T, clamp, world, now, resize } from "./state.js";
 import { act } from "./net.js";
 import { usePotion, interact, stoneNear, aimAtPoint, attack } from "./actions.js";
@@ -159,6 +160,8 @@ export function setupInput() {
     if (Housing.onKey(k)) { e.preventDefault(); return; }
     // gathering: F and Space are the "반짝!" tap, not a talk or a blow (gather.js)
     if (Gather.onKey(k)) { e.preventDefault(); return; }
+    // the 참 보드 with a charm in hand: R turns it, Esc lets go of it (charms.js)
+    if (Charms.onKey(k)) { e.preventDefault(); return; }
     keys.add(k);
     switch (k) {
       case "1": case "2": case "3": case "4": case "5": case "6": case "7": case "8": case "9": QS.press(Number(k) - 1); break;
@@ -173,7 +176,7 @@ export function setupInput() {
       case "i": case "ㅑ": toggleWin("inv"); break;
       // a hybrid job swaps its two weapons
       case "Tab": { e.preventDefault(); const j = G.self && G.defs.jobs[G.self.job]; if (j && j.kind === "hybrid") { act({ t: "wsw" }); Sound.play("ui"); } break; }
-      case "c": case "ㅊ": toggleWin("char"); break;
+      case "c": case "ㅊ": toggleWin(e.shiftKey ? "charm" : "char"); break;   // Shift+C: 참 보드
       // Shift+L: the 생활 window (life skills, life.js); L alone: quests
       case "l": case "ㅣ": toggleWin(e.shiftKey ? "life" : "quest"); break;
       case "r": case "ㄱ": toggleAuto(); break;

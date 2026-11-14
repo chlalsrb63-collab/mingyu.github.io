@@ -259,7 +259,7 @@ export function update(dt, t) {
     p.hidden = !near && !gat;
     p.classList.toggle("jb", !!jb);
     if (near || gat) { p.textContent = ""; p.append(el("b", "", document.body.classList.contains("touch") ? "▶ " : "F  "), near ? jb || near.name : gat); }
-    if (moved && !near) { closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); closeWin("job"); if (isOpen("warp")) delete shown.warp; }
+    if (moved && !near) { closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); closeWin("job"); closeWin("juana"); if (isOpen("warp")) delete shown.warp; }
     // the stat tab and the job card say what can be done where you stand
     if (moved && (isOpen("char") || isOpen("skill"))) refreshUi();
   }
