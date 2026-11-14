@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import * as L from "../src/logic.js";
 import * as SPC from "../public/species.js";
+import { STARTER, STARTER_ORDER, DIFF_NAME, FAR_RANGE } from "../public/starter.js";
 
 const D = L.defs();
 
@@ -24,6 +25,21 @@ assert.deepEqual(SPC.PARTS[6].colors.slice(0, 6), [null, "#5a8ae0", "#e0605a", "
 for (const p of SPC.PARTS) assert.equal(new Set(p.names || p.colors).size, (p.names || p.colors).length, p.key + ": no duplicate choices");
 assert.ok(SPC.SPECIES.length >= 12, "a dozen animals or more");
 assert.ok(SPC.LOOK_N[1] >= 14 && SPC.LOOK_N[2] >= 12 && SPC.LOOK_N[0] >= 12 && SPC.LOOK_N[3] >= 20, "many eyes, mouths, ears and colours");
+
+// ── the creation page's weapon tiles (public/starter.js) say what the rules say
+{
+  assert.deepEqual(STARTER_ORDER, D.wkOrder, "the six weapons, in the rules' order");
+  assert.deepEqual(Object.keys(STARTER), D.wkOrder);
+  for (const k of D.wkOrder) {
+    const w = STARTER[k], first = D.skillOrder.find((id) => D.skills[id].wk === k && D.skills[id].kind === "a" && D.skills[id].need <= 1);
+    assert.equal(w.name, D.wkName[k], k + ": its name");
+    assert.equal(w.skill, D.skills[first].name, k + ": the first skill's name");
+    assert.equal(w.reach, D.wkinds[k].range >= FAR_RANGE ? "원거리" : "근접", k + ": reach follows the basic attack's range");
+    assert.ok(DIFF_NAME[w.diff] && w.feel, k + ": a difficulty and a feel");
+    // …and that skill is what a hero created with it finds on quick slot 1
+    assert.deepEqual(L.newChar("시작" + k, [], k).qs[0], ["s", first]);
+  }
+}
 
 // ── a new character: anything sent is clamped into a full, valid look
 {
