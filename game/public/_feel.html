@@ -51,6 +51,31 @@ for (let r = 0; r < rows.length; r++) {
     G.mobs.set(1, mob); G.texts = G.texts || [];
     const ctx = { G, S3: S, entityPos: (id) => (id === 1 ? me : mob), heightOf: () => 1.3, t };
     me.atkT = t;
+    // the hybrid expansion (fx 120–128) with the events the server sends round each: sk120 … sk128
+    const ev = (...e) => SkillFx.skillEvent(e, ctx), rad = (d) => (d * Math.PI) / 180;
+    if (code === 120) for (const [i, dx, dy] of [[2, 44, -18], [3, 30, 26]]) G.mobs.set(i, { ...mob, id: i, x: me.x + dx, y: me.y + dy });
+    if (code === 121 || code === 123) {
+      // a run that started 70 behind: the hero has landed where they stand
+      ev("ln", code === 121 ? 3 : 6, me.x - 70, me.y, me.x, me.y);
+      ev("a", 1, code, me.x, me.y - 6, 2, 2, code === 121 ? 56 : 70);
+      if (code === 121) ev("bw", me.x, me.y, 56, 9);
+      ev("tip", 1);
+    } else if (code === 122 || code === 125) {
+      ev("a", 1, code, me.x + 90, me.y - 6, 2, 2, 90);
+      if (code === 122) ev("bw", me.x + 90, me.y, 44, 2); else { ev("tip", 1); ev("fz", 1, 1000); }
+    } else if (code === 124) {
+      ev("a", 1, code, me.x + 40, me.y - 6, 2, 2, 3);
+      for (const d of [-18, 0, 18]) ev("ln", 7, me.x, me.y, me.x + Math.cos(rad(d)) * 100, me.y + Math.sin(rad(d)) * 100);
+    } else if (code === 126) {
+      ev("a", 1, code, me.x + 50, me.y - 6, 2, 2, 48);
+      ev("pr", 800 + r, "rune", me.x + 50, me.y, 48, 5000, 1);
+      for (let i = 0; i < 8; i++) { t += 16; frame(); }
+      ev("pp", 800 + r, me.x + 50, me.y, 1 + (r % 3));
+    } else if (code === 127 || code === 128) {
+      ev("a", 1, code, me.x + 60, me.y - 6, 2, 2);
+      const fan = code === 127 ? [[-8, 4], [0, 5], [8, 6]] : [-24, -12, 0, 12, 24].map((d) => [d, 7]);
+      fan.forEach(([d, kind], i) => ev("ar", 900 + r * 10 + i, me.x, me.y - 6, Math.round(Math.cos(rad(d)) * 1000), Math.round(Math.sin(rad(d)) * 1000), code === 127 ? 520 : 420, kind, 1));
+    } else
     SkillFx.skillEvent(["a", 1, code, Math.round(mob.x), Math.round(mob.y - 6), 2, 2, isNaN(extra) ? undefined : extra], ctx);
     if (code === 94 || code === 95) SkillFx.skillEvent(["ar", 900 + r, me.x, me.y - 6, 1000, 0, 600, code === 94 ? 2 : 3, 1], ctx);
     if (code === 101) SkillFx.skillEvent(["ln", 2, me.x, me.y, mob.x, mob.y], ctx);

@@ -1,8 +1,9 @@
 /**
- * The weapon skills as the player sees them (docs/design/jobs-and-stats.md C.5): what each skill looks and
- * sounds like (fx codes 70–102 on an "a" event), the passives' little flashes (110–115), the things skills
- * leave standing (a vortex, a phantom beast, a rain of arrows, traps, a storm, a blood sanctuary: "pr" placed,
- * "pp" a beat, "pe" gone), the tracker's lure, the bow's arrows ("ar"/"ae"), and the signs drawn over
+ * The weapon skills as the player sees them (docs/design/jobs-and-stats.md C.5, H.4): what each skill looks and
+ * sounds like (fx codes 70–102 and the nine later hybrids' 120–128 on an "a" event), the passives' little
+ * flashes (110–115), the things skills leave standing (a vortex, a phantom beast, a rain of arrows, traps, a
+ * storm, a blood sanctuary, a rune circle: "pr" placed, "pp" a beat, "pe" gone), the tracker's lure, the bow's
+ * arrows ("ar"/"ae": plain, piercing, and the element and ink arrows of kinds 4–7), and the signs drawn over
  * creatures — a dagger's marks, a book's brand, a frozen monster, a superconducted one.
  *
  * client.js hands every snapshot event here first (`skillEvent`: true = handled) and calls `onSnap` after each
@@ -42,6 +43,8 @@ function text(G, str, x, y, h, col, big) { G.texts.push({ str, x, y, h, col, big
 const px = (g, x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); };
 const INK = "#2b2233";
 const rand = (a, b) => a + Math.random() * (b - a);
+/** Do `fn` in `ms`, on the effects' own clock (so the preview pages that step time by hand see it too). */
+const later = (ms, fn) => S3.fx.add({ k: "custom", draw() {}, dur: Math.max(1, ms), done: fn });
 /** A filled ring flat on the ground for `ms`, gently pulsing, its edge marching: the reach of something standing. */
 function groundRing(wx, wy, r, ms, col, fill = 0.16) {
   S3.fxCustom((g, k) => {
@@ -196,7 +199,40 @@ function placeProp(G, B, f, id, kind, x, y, r, ms, eid) {
       break;
     }
     case "sanct": follow.set(id, { eid, r, until: now() + ms, t0: now() }); break;
+    case "rune": runeCircle(placed.get(id), x, y, r, ms); break;
   }
+}
+/** The six marks of 메아리 법진, 3×3 each (a few strokes apiece: never a letter of any real script). */
+const RUNES = ["#.#.#.#.#", ".#.###.#.", "##..#..##", "#.####..#", ".#.#.#.#.", "###.#.#.#"];
+/**
+ * A rune circle cut into the ground for `ms`: two rings, a triangle turning slowly inside them, six marks
+ * between the rings. It is violet until its first beat; every beat ("pp") floods it with that beat's element
+ * and the flood drains again before the next.
+ */
+function runeCircle(o, x, y, r, ms) {
+  let beatT = -1e9;
+  S3.fxCustom((g, k) => {
+    const t = k * ms, a = Math.min(1, k * 10, (1 - k) * 8), R = r * P, cx = x * P, cy = y * P;
+    if (o.beatNew) { o.beatNew = false; beatT = t; }
+    const beat = Math.max(0, 1 - (t - beatT) / 340), col = ELEM_COL[o.el] || "#c8a0ff";
+    g.globalAlpha = (0.16 + 0.3 * beat) * a; g.fillStyle = col;
+    g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
+    g.globalAlpha = (0.8 + 0.2 * beat) * a; g.strokeStyle = beat > 0.6 ? "#ffffff" : col;
+    g.lineWidth = 4; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
+    g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R * 0.74, 0, 7); g.stroke();
+    // the triangle: three chords of the inner ring, turning
+    g.beginPath();
+    for (let i = 0; i <= 3; i++) { const q = t / 2600 + (i / 3) * 6.2832; g[i ? "lineTo" : "moveTo"](cx + Math.cos(q) * R * 0.74, cy + Math.sin(q) * R * 0.74); }
+    g.stroke();
+    // the marks ride between the rings the other way round, lit one after another
+    g.fillStyle = col;
+    for (let i = 0; i < 6; i++) {
+      const q = -t / 3400 + (i / 6) * 6.2832, mx = Math.round(cx + Math.cos(q) * R * 0.87), my = Math.round(cy + Math.sin(q) * R * 0.87);
+      g.globalAlpha = (Math.floor(t / 160) % 6 === i || beat > 0.3 ? 1 : 0.75) * a;
+      for (let j = 0; j < 9; j++) if (RUNES[i][j] === "#") g.fillRect(mx - 6 + (j % 3) * 4, my - 6 + ((j / 3) | 0) * 4, 4, 4);
+    }
+    g.globalAlpha = 1;
+  }, ms, true);
 }
 /** A sanctuary moves with its knight: drawn in the overlay each frame round wherever they stand. */
 const follow = new Map();
@@ -227,6 +263,16 @@ function propBeat(G, B, f, e) {
       break;
     }
     case "storm": B.fx.zap(x + rand(-o.r, o.r) * 0.7, y + rand(-o.r, o.r) * 0.5, "#bfe8ff", 220); break;
+    case "rune": {
+      // the beat's element floods the circle (the flat drawing reads o.el), and shows in the air over it
+      const el = extra >= 1 && extra <= 3 ? extra : 1, col = ELEM_COL[el];
+      o.el = el; o.beatNew = true;
+      S3.fx.wave(x, y, o.r, col, 340); S3.fx.wave(x, y, o.r * 0.6, "#ffffff", 260, 40);
+      if (el === 1) { for (let i = 0; i < 5; i++) { const a = rand(0, 6.28), d = rand(0.2, 0.8) * o.r; f.burst(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, 0.1, i % 2 ? "#ffd84a" : "#ff8a3a", 4, 1.6); } Sound.play("ember"); }
+      else if (el === 2) { for (let i = 0; i < 6; i++) { const a = rand(0, 6.28), d = rand(0.2, 0.85) * o.r; f.sparkle(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, 0.2, i % 2 ? "#e8f8ff" : "#9fe8ff", 3); } Sound.play("frost"); }
+      else { for (let i = 0; i < 2; i++) { const a = rand(0, 6.28), d = rand(0.25, 0.75) * o.r; S3.fx.zap(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, "#fff27a", 200, i * 70); } Sound.play("bolt"); }
+      break;
+    }
     case "burst": {
       B.fx.ring(x, y, o.r, "#c8324a", 380, true);
       for (let i = 0; i < 10; i++) { const a = (i / 10) * 6.28; f.burst(x + Math.cos(a) * o.r * 0.5, y + Math.sin(a) * o.r * 0.5, 0.3, "#c8324a", 6, 2.4); }
@@ -367,11 +413,16 @@ export function skillEvent(e, ctx) {
         if (d < best) { best = d; sh = s; }
       }
       // (a volley shares one draw of the string)
-      if (sh && (kind | 0) !== 3) bowShots.splice(bowShots.indexOf(sh), 1);
-      const range = (kind | 0) === 2 ? 180 : (G.defs && G.defs.wkinds && G.defs.wkinds.bow && G.defs.wkinds.bow.range) || 150;
-      arrowFrom.set(id, [x0, y0, range]);
+      const kd = kind | 0, look = ARROW_LOOK[kd];
+      if (sh && kd !== 3 && !look) bowShots.splice(bowShots.indexOf(sh), 1);
+      const range = ARROW_RANGE[kd] || (G.defs && G.defs.wkinds && G.defs.wkinds.bow && G.defs.wkinds.bow.range) || 150;
+      arrowFrom.set(id, [x0, y0, range, kd]);
       if (arrowFrom.size > 64) arrowFrom.delete(arrowFrom.keys().next().value);
-      S3.fx.arrow(x0, y0, x0 + (ux / n) * range, y0 + (uy / n) * range, { id, spd: spd || 420, delay: sh ? Math.max(0, sh.at - t) : 0, tier: sh ? sh.wt : 1, pierce: (kind | 0) === 1 || (kind | 0) === 2 });
+      const delay = sh ? Math.max(0, sh.at - t) : 0, o = { id, spd: spd || 420, delay, tier: look ? look.tier : sh ? sh.wt : 1, pierce: kd === 1 || kd === 2 || !!look };
+      // an element or ink arrow wears its dress over the white-hot arrow: queued first, so drawn after it
+      const hold = {};
+      if (look) S3.fxCustom((g) => dressArrow(g, hold.f, look), (range / o.spd) * 1000 + delay + 400);
+      hold.f = S3.fx.arrow(x0, y0, x0 + (ux / n) * range, y0 + (uy / n) * range, o);
       return true;
     }
     case "ae": {
@@ -381,6 +432,9 @@ export function skillEvent(e, ctx) {
       const spent = how === 2 || (!how && from && Math.hypot(x - from[0], y - from[1]) >= from[2] - 6);
       S3.fx.arrowEnd(id, x, y, how === 1 ? "stuck" : spent ? "fade" : "hit");
       if (how === 1) Sound.play("arrow_wall"); else if (!spent) Sound.play("arrow_hit");
+      // an element or ink arrow leaves a puff of what it carried where it stops
+      const look = from && ARROW_LOOK[from[3]];
+      if (look && !spent) { S3.fx.burst(x, y, 0.4, look.tail[1], 6, 1.4); S3.fx.ring(x, y, 9, look.tail[2], 220); }
       return true;
     }
     case "pr": { const [, id, kind, x, y, r, ms, eid] = e; placeProp(G, B, f, id, kind, x, y, r, ms, eid); return true; }
@@ -388,6 +442,8 @@ export function skillEvent(e, ctx) {
     case "pe": propEnd(G, B, f, e); return true;
     case "bw": {
       const [, x, y, r, kind] = e;
+      // 검기 화살's crescent bursts when its arrow gets there, not when the string lets go
+      if (kind === 2 && now() - qi.at < 80) { const ms = qi.ms; qi.at = 0; later(ms, () => skillEvent(e, ctx)); return true; }
       if (kind === 2) { f.ring(x, y, r, "#ff8a3a", 420, true); f.ring(x, y, r * 0.7, "#ffffff", 300); f.crack(x, y, r * 0.6, "#ff7a3a", 650); f.burst(x, y, 0.3, "#ffb04a", 20 + r / 2, 3.4); B.shake(Math.min(14, 4 + r / 8)); }
       else if (kind === 9) { f.crack(x, y, r * 0.6, "#c8a0ff", 700); f.ring(x, y, r, "#ffffff", 320, true); f.burst(x, y, 0.1, "#8a5ad8", 34, 3); B.shake(10); Sound.play("slam"); }
       else if (kind === 15) { f.ring(x, y, r, "#8a5ad8", 420, true); f.ring(x, y, r * 0.6, "#ff5a8a", 340); f.burst(x, y, 0.4, "#3a2a58", 40, 3.2); f.sparkle(x, y, 0.6, "#c8a0ff", 20); B.shake(8); Sound.play("pact_end"); }
@@ -414,6 +470,7 @@ export function skillEvent(e, ctx) {
     }
     case "ln": {
       const [, kind, ax, ay, bx, by] = e;
+      lastLn = { kind, ax, ay, bx, by, at: now() };
       if (kind === 2) {
         // the thunder javelin: a bolt of a spear down the line
         S3.fx.proj(ax, ay, 0.7, bx, by, 0.5, "#fff6b0", 0.07, 70);
@@ -427,14 +484,21 @@ export function skillEvent(e, ctx) {
       else if (kind === 5) { f.beam(ax, ay - 8, bx, by - 8, "#7a4ac8", 0.5); f.burst(ax, ay, 0.6, "#3a2a58", 8, 1.2); Sound.play("dance"); }
       else if (kind === 6) { f.beam(ax, ay - 8, bx, by - 8, "#a070e0", 0.5); f.burst(ax, ay, 0.6, "#3a2a58", 14, 1.4); f.burst(bx, by, 0.6, "#6a4a9a", 12, 1.4); }
       else if (kind === 7) {
-        // a shadow blade spinning down its line
+        // a shadow blade spinning down its line; 원소 비수's three (fx 124 just before them) come in fire, ice, lightning
+        const el = fan.n > 0 && now() - fan.at < 80 ? 4 - fan.n-- : 0, col = el ? ELEM_COL[el] : "#c8a0ff";
+        const far = Math.hypot(bx - ax, by - ay), ms = Math.max(120, far * 2.4);
         S3.fxCustom((g, k) => {
           const [x, y] = at(ax + (bx - ax) * k, ay + (by - ay) * k, 10);
           const a = k * 18;
           g.translate(Math.round(x), Math.round(y)); g.rotate(a);
-          px(g, -5, -1, 10, 3, INK); px(g, -4, 0, 8, 1, "#c8a0ff"); px(g, 3, -1, 2, 1, "#ffffff");
-        }, Math.max(120, Math.hypot(bx - ax, by - ay) * 2.4));
-        f.beam(ax, ay, bx, by, "rgba(160,112,224,.5)", 0.45);
+          px(g, -5, -1, 10, 3, INK); px(g, -4, 0, 8, 1, col); px(g, 3, -1, 2, 1, "#ffffff");
+        }, ms);
+        if (el) {
+          // each leaves its element along the way and a puff of it at the end
+          f.beam(ax, ay, bx, by, col, 0.45);
+          along(ax, ay, bx, by, 26).forEach(([x, y], i, all) => later((i / all.length) * ms, () => S3.fx.sparkle(x, y, 0.4, col, 2)));
+          later(ms, () => { S3.fx.ring(bx, by, 10, col, 240); S3.fx.burst(bx, by, 0.4, col, 6, 1.6); });
+        } else f.beam(ax, ay, bx, by, "rgba(160,112,224,.5)", 0.45);
       } else if (kind === 8) { f.beam(ax, ay - 4, bx, by - 4, "#d8c8a0", 0.3); f.burst(ax, ay, 0.1, "#b8a878", 12, 1.6); }
       else if (kind === 9) {
         // up and over: a dotted arc and the dust where they left
@@ -457,6 +521,59 @@ export function skillEvent(e, ctx) {
 // ── the bow's shot: client.js attackFx calls bowFire for fx code 6 (the "a" event of a bow's basic
 // attack); the bow skills call it too. The arrow itself comes on its own ("ar", above): it is held on
 // the string until the stroke's release (swing.js IMPACT) and still lands on time.
+/** The last "ln" seen (a charge's or a run's line: the skill event that follows it reads where it began). */
+let lastLn = null;
+const lineOf = (kind) => (lastLn && lastLn.kind === kind && now() - lastLn.at < 80 ? lastLn : null);
+/** 검기 화살 (fx 122) just loosed: when, and how long its arrow flies (the "bw" that follows waits that long). */
+const qi = { at: 0, ms: 0 };
+/** 원소 비수 (fx 124) just thrown: how many of its three "ln 7" blades are still to come, and when it was. */
+const fan = { n: 0, at: 0 };
+/** How far each special arrow flies (the server's `len`): 관통 화살, 삼원소 화살's three, 룬 먹화살. */
+const ARROW_RANGE = { 2: 180, 4: 190, 5: 190, 6: 190, 7: 170 };
+/**
+ * The dressed arrows (docs/design/jobs-and-stats.md H.4): kind 4 fire, 5 ice, 6 lightning, 7 rune ink.
+ * `tier` picks the ink of the white-hot arrow underneath (scene2d ARROW_HOT: 1 gold, 4 cyan, 5 violet);
+ * `tail` is what streams behind it, nearest first; `shaft` repaints the arrow itself (the ink arrow is black).
+ */
+const ARROW_LOOK = {
+  4: { tier: 1, how: "flame", tail: ["#ffffff", "#ffd84a", "#ff8a3a", "#d83a2a"] },
+  5: { tier: 4, how: "frost", tail: ["#ffffff", "#e8f8ff", "#9fe8ff", "#5aa8e0"] },
+  6: { tier: 1, how: "spark", tail: ["#ffffff", "#fff27a", "#ffe86a", "#c8a030"] },
+  7: { tier: 5, how: "ink", tail: ["#b46aff", "#3a2a58", "#b46aff", "#1a1426"], shaft: "#1a1426" },
+};
+/** Draw the dress of arrow `f` (scene2d keeps where it is in `f.at`: screen x, y, angle) for this frame. */
+function dressArrow(g, f, look) {
+  if (!f || f.gone || !f.at) return;
+  const [x, y, a] = f.at, ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux, n = (f.n = (f.n || 0) + 1);
+  const dot = (d, o, w, c) => px(g, x - ux * d + nx * o - (w >> 1), y - uy * d + ny * o - (w >> 1), w, w, c);
+  if (look.shaft) {
+    // the arrow as long as scene2d drew it (shorter flying toward or away from the eye), its middle inked over
+    const L = Math.max(6, Math.round(11 / Math.sqrt(2 * uy * uy + (ux * ux) / 2) / Math.SQRT2));
+    for (let q = -L / 2 + 2; q <= L / 2 - 2; q++) px(g, x + ux * q, y + uy * q, 1, 1, look.shaft);
+  }
+  const T = look.tail;
+  if (look.how === "flame") {
+    // a tongue of fire licking back off the head, flickering, embers lifting off it as it cools
+    for (let i = 0; i < 7; i++) {
+      const d = 4 + i * 2.2;
+      dot(d, ((n + i * 5) % 3) - 1, i < 2 ? 2 : 1, T[Math.min(3, (i + 1) >> 1)]);
+      if (i > 3 && (n + i) % 2) px(g, x - ux * d, y - uy * d - 2 - (i - 3), 1, 1, T[2]);
+    }
+  } else if (look.how === "frost") {
+    // a wake of ice crystals either side, and a hard glint on the head
+    for (let i = 0; i < 6; i++) dot(4 + i * 3, i % 2 ? 2 : -2, 1, T[1 + Math.min(2, i >> 1)]);
+    for (const [d, o] of [[-5, 1], [-5, -1], [-6, 0], [-4, 0]]) dot(d, o, 1, T[(n >> 1) % 2]);
+  } else if (look.how === "spark") {
+    // a jagged thread of lightning trailing it, re-forked every frame
+    let o = 0;
+    for (let i = 0; i < 9; i++) { o = Math.max(-2, Math.min(2, o + ((n * 7 + i * 13) % 5) - 2)); dot(3 + i * 2, o, 1, T[i < 3 ? 0 : 1 + (i % 2)]); }
+    if (n % 3 === 0) dot(8, o > 0 ? -4 : 4, 1, T[1]);
+  } else {
+    // drops of ink shed behind, violet rune pixels riding between them
+    for (let i = 0; i < 6; i++) dot(5 + i * 3, i % 2 ? 1 : -1, i < 3 ? 2 : 1, i % 2 ? T[0] : T[3]);
+    dot(-3 - (n % 2), 0, 1, T[0]);
+  }
+}
 /** Bows drawn in the last moments, waiting for their arrows: { eid, x, y, t, at (release time), wt (tier) }. */
 const bowShots = [];
 /** Where each arrow in flight started, and its range: id → [x0, y0, range]. */
@@ -568,8 +685,137 @@ function cast(kind, src, eid, tx, ty, extra, G) {
     case 99: f.fall(tx, ty, "#c8a0ff", 260); B.shake(10); Sound.play("dive"); if (mine) text(G, "심연의 강림!", src.x, src.y, 2.3, "#e0c8ff", true); break;
     case 100: f.ring(src.x, src.y, extra || 100, "#c8324a", 400); f.sparkle(src.x, src.y, 0.8, "#ff3a5a", 16); Sound.play("blood_bind"); break;
     case 101: f.zap(tx, ty, "#fff27a", 300); f.ring(tx, ty, 40, "#bfe8ff", 360, true); B.shake(9); Sound.play("thunder"); if (mine) text(G, "천뢰!", src.x, src.y, 2.2, "#fff27a", true); break;
+    // ── the hybrid expansion (docs/design/jobs-and-stats.md H.4)
+    case 120: {
+      // 십자 난도: the great blade's crescent across everything ahead, then a dagger's X on each one it swept
+      const r = extra || 64;
+      f.slash(src.x, src.y, ang, "#e8f0ff", 2.1); f.slash(src.x, src.y, ang, "#9fb8ff", 1.6, true);
+      for (let i = -2; i <= 2; i++) { const a = ang + i * 0.36; f.spark(src.x + Math.cos(a) * r * 0.86, src.y + Math.sin(a) * r * 0.86, "#ffffff", 0.7); }
+      B.shake(9); Sound.play("power_slash");
+      const swept = [...G.mobs.values()].filter((m) => !m.dead && Math.hypot(m.x - src.x, m.y - src.y) <= r + 8 && Math.cos(Math.atan2(m.y - src.y, m.x - src.x) - ang) > 0.5).slice(0, 8);
+      later(170, () => {
+        for (const m of swept) { f.slash(m.x, m.y, ang + 0.8, "#c890ff", 0.6); f.slash(m.x, m.y, ang - 0.8, "#f0d0ff", 0.6, true); S3.fx.spark(m.x, m.y, "#f0d0ff", 1.2); }
+        if (swept.length) { B.shake(4); Sound.play("crit"); }
+      });
+      if (mine) text(G, "십자 난도!", src.x, src.y, 2.2, "#d8c8ff", true);
+      break;
+    }
+    case 121: {
+      // 파진돌격: the charge's streak is the "ln 3" before this; here the great blade comes down where it
+      // stopped (the cracks and the ring are the "bw" after) and the spear's reach shows on the rim
+      const r = extra || 56, l = lineOf(3), a = l ? Math.atan2(l.by - l.ay, l.bx - l.ax) : ang;
+      if (l) { f.beam(l.ax, l.ay - 3, l.bx, l.by - 3, "#e0c890", 0.5); for (const [x, y] of along(l.ax, l.ay, l.bx, l.by, 16)) f.burst(x, y, 0.05, "#a89068", 3, 1.4); }
+      f.fall(tx, ty, "#e8f0ff", 90);
+      f.slash(tx, ty, a, "#ffd84a", 1.7); f.slash(tx, ty, a + Math.PI, "#e8f0ff", 1.3, true);
+      for (let i = 0; i < 10; i++) { const q = (i / 10) * 6.28; S3.fx.sparkle(tx + Math.cos(q) * r * 0.86, ty + Math.sin(q) * r * 0.86, 0.2, i % 2 ? "#5ad0b8" : "#c8fff0", 2); }
+      S3.fx.ring(tx, ty, r * 0.86, "#5ad0b8", 320, false, 60);
+      B.shake(11, a); Sound.play("verdict");
+      if (mine) text(G, "파진돌격!", tx, ty, 2.3, "#ffd84a", true);
+      break;
+    }
+    case 122: {
+      // 검기 화살: the bow looses a sword's edge — a white-gold crescent head on a long streak, to the line's end
+      SkillFx_bow(G, src, false);
+      const ax = src.x, ay = src.y, ms = Math.max(140, Math.hypot(tx - ax, ty - ay) * 1.5);
+      const [sx0, sy0] = at(ax, ay, 11), [sx1, sy1] = at(tx, ty, 11), sl = Math.hypot(sx1 - sx0, sy1 - sy0) || 1, ux = (sx1 - sx0) / sl, uy = (sy1 - sy0) / sl, sa = Math.atan2(uy, ux);
+      S3.fxCustom((g, k) => {
+        const x = sx0 + (sx1 - sx0) * k, y = sy0 + (sy1 - sy0) * k, back = Math.min(sl * k, 46);
+        for (let q = 3; q < back; q++) { g.globalAlpha = 1 - q / 46; const w = q < 14 ? 3 : q < 28 ? 2 : 1; px(g, x - ux * q - (w >> 1), y - uy * q - (w >> 1), w, w, q < 10 ? "#ffffff" : q % 3 ? "#ffe9a0" : "#ffc23a"); }
+        g.globalAlpha = 1;
+        // the head: a crescent bowed forward, inked gold round a white edge
+        for (const [rr, c, w] of [[11, "#ffc23a", 3], [10, "#ffffff", 2]]) for (let i = -7; i <= 7; i++) { const q = sa + (i / 7) * 1.15; px(g, x + Math.cos(q) * rr - ux * 7 - 1, y + Math.sin(q) * rr * 0.85 - uy * 7 - 1, w, w, c); }
+      }, ms);
+      f.beam(ax, ay, tx, ty, "#ffe9a0", 0.5);
+      along(ax, ay, tx, ty, 24).forEach(([x, y], i, all) => later((i / all.length) * ms, () => S3.fx.sparkle(x, y, 0.5, i % 2 ? "#ffffff" : "#ffd84a", 2)));
+      qi.at = now(); qi.ms = ms;
+      f.flash(src.x, src.y, 12); B.shake(7); Sound.play("pierce"); Sound.play("power_slash");
+      if (mine) text(G, "검기 화살!", src.x, src.y, 2.2, "#ffe9a0", true);
+      break;
+    }
+    case 123: {
+      // 그림자 관통: a spear of shadow thrown down the run (its streak is the "ln 6" before this), afterimages left on the way
+      const l = lineOf(6), far = extra || 100;
+      const a = l ? Math.atan2(l.by - l.ay, l.bx - l.ax) : ang, ax = l ? l.ax : tx - Math.cos(a) * far, ay = l ? l.ay : ty - Math.sin(a) * far;
+      const [sx0, sy0] = at(ax, ay, 10), [sx1, sy1] = at(tx, ty, 10), sl = Math.hypot(sx1 - sx0, sy1 - sy0) || 1, ux = (sx1 - sx0) / sl, uy = (sy1 - sy0) / sl;
+      S3.fxCustom((g, k) => {
+        const u = Math.min(1, k / 0.3), hx = sx0 + (sx1 - sx0) * u + ux * 8, hy = sy0 + (sy1 - sy0) * u + uy * 8, L = Math.min(sl * u + 8, 60);
+        if (k > 0.3) g.globalAlpha = Math.max(0, 1 - (k - 0.3) / 0.7);
+        // an inked shaft, a violet core, a pale head with two barbs
+        for (let q = 0; q < L; q++) px(g, hx - ux * q - 1, hy - uy * q - 1, 3, 3, INK);
+        for (let q = 0; q < L; q++) px(g, hx - ux * q, hy - uy * q, 1, 1, q < 7 ? "#f0d0ff" : q % 4 === 3 ? "#6a4a9a" : "#a070e0");
+        for (const o of [-1, 1]) for (let q = 3; q < 7; q++) px(g, hx - ux * q - uy * o * (q - 2) * 0.7, hy - uy * q + ux * o * (q - 2) * 0.7, 1, 1, "#f0d0ff");
+      }, 420);
+      along(ax, ay, tx, ty, 26).forEach(([x, y], i) => { f.burst(x, y, 0.5, i % 2 ? "#3a2a58" : "#6a4a9a", 4, 0.9); });
+      f.burst(tx, ty, 0.5, "#a070e0", 10, 1.8); S3.fx.spark(tx + Math.cos(a) * 10, ty + Math.sin(a) * 10, "#f0d0ff", 1.2);
+      B.shake(7, a); Sound.play("shade"); Sound.play("spiral");
+      if (mine) text(G, "그림자 관통!", tx, ty, 2.2, "#d8b0ff", true);
+      break;
+    }
+    case 124: {
+      // 원소 비수: the three blades are the "ln 7"s that follow (the ln case colours them); here, the throw
+      fan.n = 3; fan.at = now();
+      [1, 2, 3].forEach((el, j) => { const a = ang + (j - 1) * 0.32; S3.fx.spark(src.x + Math.cos(a) * 12, src.y + Math.sin(a) * 12, ELEM_COL[el], 0.8); });
+      f.slash(src.x, src.y, ang, "#f0d0ff", 0.9);
+      B.shake(5); Sound.play("shade"); Sound.play("swap");
+      if (mine) text(G, "원소 비수!", src.x, src.y, 2.2, "#f0d0ff", true);
+      break;
+    }
+    case 125: {
+      // 빙결창: a line of frost down the thrust, and ice standing up out of the ground where the point stopped
+      f.beam(src.x, src.y, tx, ty, "#ffffff", 0.55); f.beam(src.x, src.y + 2, tx, ty + 2, "#9fe8ff", 0.5);
+      along(src.x, src.y, tx, ty, 12).forEach(([x, y], i) => f.sparkle(x, y, 0.5, i % 2 ? "#e8f8ff" : "#9fe8ff", 2));
+      f.ring(tx, ty, 44, "#9fe8ff", 380, true); f.burst(tx, ty, 0.3, "#e8f8ff", 16, 2.6);
+      iceSpire(tx, ty);
+      B.shake(8); Sound.play("spiral"); Sound.play("frost");
+      if (mine) text(G, "빙결창!", src.x, src.y, 2.2, "#bfe8ff", true);
+      break;
+    }
+    case 126: f.sparkle(src.x, src.y, 1, "#c8a0ff", 14); f.ring(tx, ty, extra || 64, "#c8a0ff", 420, true); f.burst(tx, ty, 0.2, "#8a5ad8", 16, 2); B.shake(4); Sound.play("pact"); if (mine) text(G, "메아리 법진", src.x, src.y, 2.2, "#e0c8ff", true); break;
+    case 127: {
+      // 삼원소 화살: the three arrows come as "ar" kinds 4–6; here the string's glow in all three
+      SkillFx_bow(G, src, false);
+      [1, 2, 3].forEach((el, j) => S3.fx.sparkle(src.x + Math.cos(ang + (j - 1) * 0.5) * 8, src.y + Math.sin(ang + (j - 1) * 0.5) * 8, 0.8, ELEM_COL[el], 5));
+      f.flash(src.x, src.y, 12); B.shake(5); Sound.play("pierce"); Sound.play("ember");
+      if (mine) text(G, "삼원소 화살!", src.x, src.y, 2.2, "#fff4dc", true);
+      break;
+    }
+    case 128: {
+      // 룬 먹화살: five arrows as "ar" kind 7; here ink thrown off the string
+      SkillFx_bow(G, src, false);
+      f.burst(src.x, src.y, 0.6, "#2a2040", 14, 1.8); S3.fx.sparkle(src.x, src.y, 0.9, "#b46aff", 8);
+      S3.fx.ring(src.x, src.y, 16, "#b46aff", 280);
+      B.shake(5); Sound.play("leapshot"); Sound.play("brand");
+      if (mine) text(G, "룬 먹화살!", src.x, src.y, 2.2, "#d8a8ff", true);
+      break;
+    }
     case 102: f.ring(src.x, src.y, extra || 90, "#c8324a", 500, true); f.sparkle(src.x, src.y, 1, "#ff6a8a", 20); B.shake(5); Sound.play("sanctuary"); if (mine) text(G, "불멸의 성역", src.x, src.y, 2.2, "#ff8a9a", true); break;
   }
+}
+/** 빙결창's ice: three crystals shooting up out of the ground at (wx, wy), standing a moment, blinking out as they break. */
+function iceSpire(wx, wy) {
+  let broke = false;
+  S3.fxCustom((g, k) => {
+    const [x0, y0] = at(wx, wy), x = Math.round(x0), y = Math.round(y0), up = Math.min(1, k / 0.1);
+    if (k > 0.8) {
+      if (!broke) { broke = true; S3.fx.burst(wx, wy, 0.8, "#e8f8ff", 14, 2.2); S3.fx.burst(wx, wy, 0.4, "#9fe8ff", 10, 1.6); }
+      if (Math.floor(k * 50) % 2) return;
+    }
+    // [dx, half width, height]: the small ones first, the tall one in front of them
+    for (const [dx, w, h] of [[-10, 3, 20], [9, 3, 24], [0, 5, 42]]) {
+      const H = Math.max(1, Math.round(h * up));
+      // how wide half the crystal is at row j of H: swelling over the first fifth, tapering to a point
+      const half = (j) => { const u = j / H; return Math.max(0, Math.round(w * (u < 0.2 ? 0.5 + u * 2.5 : 1 - (u - 0.2) / 0.8))); };
+      for (let j = 0; j < H; j++) px(g, x + dx - half(j) - 1, y - j - 1, half(j) * 2 + 3, 1, INK);
+      px(g, x + dx - 1, y - H - 1, 3, 1, INK);
+      for (let j = 0; j < H; j++) {
+        const a = half(j);
+        px(g, x + dx - a, y - j - 1, a * 2 + 1, 1, "#9fe8ff");
+        px(g, x + dx - a, y - j - 1, a + 1, 1, "#e8f8ff");
+        if (a > 1) px(g, x + dx - a + 1, y - j - 1, 1, 1, "#ffffff");
+        if (a > 0) px(g, x + dx + a, y - j - 1, 1, 1, "#5aa8e0");
+      }
+    }
+  }, 900);
 }
 /** The bow skills draw and loose like a finisher (or up at the sky). */
 function SkillFx_bow(G, src, up) { bowFire(G, src, 2, up); }
