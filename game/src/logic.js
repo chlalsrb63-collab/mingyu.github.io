@@ -3161,6 +3161,12 @@ function allMaps() {
   for (const id of Object.keys(out)) for (const pt of out[id].portals) arrivalOf(null, pt);
   return out;
 }
+/** A sheet's waypoint stones per map are a bitmask (ch.wp): up to this many stones on one map. */
+const WP_MASK = 0xff;
+/** Whether a sheet has woken stone `i` of map `id`. */
+const wpWoken = (ch, id, i = 0) => typeof id === "string" && Object.hasOwn(ch.wp, id) && !!(ch.wp[id] & (1 << i));
+/** How many stones a sheet has woken, on every map together. */
+const wpCount = (ch) => { let n = 0; for (const id of Object.keys(ch.wp)) for (let k = ch.wp[id]; k; k &= k - 1) n++; return n; };
 /** Whether a map has a waypoint stone (known without building it). */
 const hasWp = (id) => typeof id === "string" && Object.hasOwn(MAP_META, id) && MAP_META[id].wp;
 /** A map's waypoint stone { x, y, ax, ay } (builds the map), or null. */
@@ -3244,7 +3250,7 @@ export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
   const lk = Array.isArray(look) ? look : [];
   return {
-    v: 8, name, cls: c,
+    v: 9, name, cls: c,
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     lvl: 1, xp: 0, gold: 50,
@@ -3253,7 +3259,10 @@ export function newChar(name, cls, look) {
     tr: { str: 0, vit: 0, int: 0, grd: 0 },
     q: { i: 0, n: 0, st: 0 },
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
-    wp: ["town"], seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
+    // waypoint stones woken, per map a bitmask of its stones (bit 0 = its first stone)
+    wp: { town: 1 }, seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
+    // 차원 균열 clears today (Phase 2: the daily count), by the day number they were made on
+    dim: { day: 0, n: 0 },
     skl: [1, 1, 1, 1, 1, 1], wh: { items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
@@ -3307,8 +3316,12 @@ function migrate(ch) {
   ch.gm = ch.guild && ch.gm ? 1 : 0;
   ch.fish = ch.fish | 0;
   // the long game: waypoints, places seen, achievements, a title, counters, dailies, first steps
-  ch.wp = (Array.isArray(ch.wp) ? ch.wp : []).filter((id) => hasWp(id));
-  if (!ch.wp.includes("town")) ch.wp.unshift("town");
+  // (v9: { mapId: bitmask of its stones }; before, a list of maps, each meaning its one stone)
+  const wp = {};
+  if (Array.isArray(ch.wp)) { for (const id of ch.wp) if (hasWp(id)) wp[id] = 1; }
+  else if (isObj(ch.wp)) for (const id of Object.keys(ch.wp)) { const k = ch.wp[id] & WP_MASK; if (k && hasWp(id)) wp[id] = k; }
+  wp.town = (wp.town | 0) | 1;
+  ch.wp = wp;
   ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => typeof id === "string" && Object.hasOwn(MAP_META, id));
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
   ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
@@ -3338,7 +3351,9 @@ function migrate(ch) {
   ch.cos = cosClean(ch.cos, ch);
   // side quests from the world map editor (v8): what is under way and what is done
   ch.sq = sqClean(ch.sq);
-  ch.v = Math.max(ch.v | 0, 8);
+  // the 차원 균열 daily count (v9)
+  ch.dim = isObj(ch.dim) ? { day: Math.max(0, ch.dim.day | 0), n: clamp(ch.dim.n | 0, 0, 999) } : { day: 0, n: 0 };
+  ch.v = Math.max(ch.v | 0, 9);
   return ch;
 }
 
@@ -4987,8 +5002,8 @@ function explore(S, p) {
   const ch = p.ch;
   if (!ch.seen.includes(p.map)) { ch.seen.push(p.map); checkAch(S, p); }
   const w = wpNear(p);
-  if (w && !ch.wp.includes(p.map)) {
-    ch.wp.push(p.map);
+  if (w && !wpWoken(ch, p.map)) {
+    ch.wp[p.map] = (ch.wp[p.map] | 0) | 1;
     toast(p, `[${mapOfS(p.S, p.map).name}] 이동의 돌을 깨웠습니다. 다른 이동의 돌에서 이곳으로 올 수 있습니다.`);
     S.maps[p.map].ev.push(["wp", p.eid, 2]);
     p.dirty = true;
@@ -5102,8 +5117,8 @@ const ACH = [
   ["abyss", "사냥", "심연을 넘은 자", "심연의 어미 처치", 50, (c) => (c.mk.abyssboss || 0) >= 1, "심연을 넘은 자", [["atkp", 4], ["critd", 10]]],
   ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, (c) => c.st.evt >= 1],
   ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.st.evt >= 10, "균열 수호자", [["def", 3]]],
-  ["wp3", "탐험", "이동의 돌", "이동의 돌 3개 깨우기", 5, (c) => c.wp.length >= 3],
-  ["wpall", "탐험", "모든 길을 아는 자", "모든 이동의 돌 깨우기", 20, (c) => Object.keys(WP).every((id) => c.wp.includes(id))],
+  ["wp3", "탐험", "이동의 돌", "이동의 돌 3개 깨우기", 5, (c) => wpCount(c) >= 3],
+  ["wpall", "탐험", "모든 길을 아는 자", "모든 이동의 돌 깨우기", 20, (c) => Object.keys(MAP_META).every((id) => !MAP_META[id].wp || wpWoken(c, id))],
   ["explore", "탐험", "세계 여행자", "모든 지역 방문", 20, (c) => Object.keys(MAP_META).every((id) => c.seen.includes(id)), "여행자", [["spd", 3]]],
   ["star10", "숙련", "숙련의 길", "토벌 숙련 별 10개", 10, (c) => stars(c) >= 10],
   ["star50", "숙련", "토벌의 장인", "토벌 숙련 별 50개", 30, (c) => stars(c) >= 50, "토벌의 장인", [["xp", 3]]],
@@ -5906,7 +5921,7 @@ export function validateAction(S, pid, a) {
     case "warp": {
       if (!hasWp(a.to)) return bad("그곳에는 이동의 돌이 없습니다");
       if (!wpNear(p)) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
-      if (!ch.wp.includes(a.to)) return bad("아직 깨우지 않은 이동의 돌입니다");
+      if (!wpWoken(ch, a.to)) return bad("아직 깨우지 않은 이동의 돌입니다");
       if (a.to === p.map) return bad("이미 이곳에 있습니다");
       if (now - p.hitAt < WARP_CALM) return bad("전투 중에는 이동할 수 없습니다");
       return OK;
@@ -7151,6 +7166,7 @@ function selfPayload(p) {
     wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, sq: sqView(ch),
     dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather"), by: p.blame ? p.blame.by : null, lv: p.blame ? p.blame.lv : 0, el: p.blame ? p.blame.el : 0 } : null,
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
+    // waypoint stones woken: { mapId: bitmask } (bit 0 = the map's first stone)
     wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), st: ch.st,
     daily: dailyView(p), tut: { i: ch.tut.i, n: ch.tut.n }, evt: evtView(p.S, p), recall: p.recall ? Math.max(0, p.recall.at - now) : 0,
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],

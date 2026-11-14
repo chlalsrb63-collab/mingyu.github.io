@@ -78,7 +78,7 @@ assert.equal(D.tutorial.length, 7);
   assert.equal(town.o[wpTown.y][wpTown.x], "Q", "the waypoint stone is the Q object");
   assert.ok(town.marks.filter((k) => k.kind === "sign").every((k) => k.label && k.to), "town signposts name where they lead");
   for (const k of town.marks.filter((k) => k.kind === "sign")) assert.equal(town.o[k.y][k.x], "G", "signposts stand on sign props");
-  assert.deepEqual(v.self.wp, ["town"]);
+  assert.deepEqual(v.self.wp, { town: 1 });
 
   // every hunting ground's waypoint stands by a walkable tile, with signposts toward the way on
   const maps = {};
@@ -112,7 +112,7 @@ assert.equal(D.tutorial.length, 7);
   const mw = maps.meadow.marks.find((k) => k.kind === "waypoint");
   W.to("meadow", mw.x + 1, mw.y);
   v = W.step(1100);
-  assert.ok(v.self.wp.includes("meadow"), "the meadow stone wakes when walked past");
+  assert.equal(v.self.wp.meadow, 1, "the meadow stone wakes when walked past");
   assert.ok(evts(v, "wp").some((e) => e[1] === p.eid && e[2] === 2), "waking is announced with an event");
   assert.ok(v.self.seen.includes("meadow"));
   // hurt a moment ago: no warping
@@ -437,7 +437,7 @@ assert.equal(D.tutorial.length, 7);
   old.title = "hunt10000"; // not earned
   L.addPlayer(W.S, W.PID, old);
   const me = W.step().self;
-  assert.deepEqual(me.wp, ["town"]);
+  assert.deepEqual(me.wp, { town: 1 });
   assert.equal(me.title, "", "an unearned title is dropped");
   assert.equal(me.tut.i, D.tutorial.length, "a seasoned character skips the first steps");
   assert.ok(me.ach.includes("hunt100") && me.ach.includes("lv10"), "what it already did counts");
@@ -451,9 +451,34 @@ assert.equal(D.tutorial.length, 7);
   L.addPlayer(W.S, "pid-bad", bad);
   W.step();
   const bp = W.S.players["pid-bad"].ch;
-  assert.deepEqual(bp.wp, ["town"]);
+  assert.deepEqual(bp.wp, { town: 1 });
   assert.ok(!bp.ach.includes("nope"));
   assert.equal(bp.daily.tasks.length, 3);
+}
+
+// ── a v8 sheet comes up to v9: its waypoint list becomes stone masks (each map's stone 0), and it gains
+// the 차원 균열 daily count; a v9 sheet's masks are cleaned, not trusted
+{
+  const W = world("구판");
+  const old = L.newChar("구판", "rogue", []);
+  old.v = 8; old.wp = ["town", "meadow", "forest", "nowhere"]; delete old.dim;
+  L.addPlayer(W.S, W.PID, old);
+  const ch = W.S.players[W.PID].ch;
+  assert.deepEqual(ch.wp, { town: 1, meadow: 1, forest: 1 }, "each map it had keeps its first stone");
+  assert.deepEqual(ch.dim, { day: 0, n: 0 });
+  assert.equal(ch.v, 9);
+  assert.deepEqual(W.step().self.wp, { town: 1, meadow: 1, forest: 1 }, "the wire carries the masks");
+  assert.equal(L.newChar("새판", "warrior", []).v, 9);
+  assert.deepEqual(L.newChar("새판", "warrior", []).wp, { town: 1 });
+  const odd = L.newChar("이상", "lancer", []);
+  odd.wp = { meadow: 5, nowhere: 1, forest: 0, cave: "x", maple: 1 << 12 }; odd.dim = { day: -4, n: 1e6 };
+  L.addPlayer(W.S, "pid-odd", odd);
+  const oc = W.S.players["pid-odd"].ch;
+  assert.deepEqual(oc.wp, { meadow: 5, town: 1 }, "unknown maps, empty and out-of-range masks go; the town's stone is always known");
+  assert.deepEqual(oc.dim, { day: 0, n: 999 });
+  // warping needs the destination's first stone
+  W.S.players[W.PID].ch.wp = { town: 1 };
+  assert.equal(L.validateAction(W.S, W.PID, { t: "warp", to: "meadow" }).ok, false);
 }
 
 console.log("content ok — waypoints", D.waypoints.length, "achievements", D.achievements.length, "event every", D.event.every / 60000, "min");

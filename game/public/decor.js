@@ -532,12 +532,16 @@ export function decals(m, theme, ctx) {
  * the cave, veins in the abyss's walls, a sheen on the sewer's sludge. The
  * scene draws the visible part each frame at a rising and falling strength.
  */
-export function pulse(m, theme) {
+export function pulse(m, theme, part = null) {
   if (!["cave", "abyss", "sewer", "crypt"].includes(theme)) return null;
-  const [c, x] = sheet(m.w * T, m.h * T);
+  // `part` { u, v, w, h }: only that rectangle of the map's world pixels (a big map's layer is made in pieces)
+  const [c, x] = part ? sheet(part.w, part.h) : sheet(m.w * T, m.h * T);
+  if (part) x.translate(-part.u, -part.v);
   const b = tools(x);
+  const keep = (tx, y) => !part || (tx * T + 64 > part.u && tx * T - 32 < part.u + part.w && y * T + 64 > part.v && y * T - 64 < part.v + part.h);
   let any = false;
   for (let y = 1; y < m.h - 1; y++) for (let tx = 1; tx < m.w - 1; tx++) {
+    if (!keep(tx, y)) continue;
     const X = tx * T, Y = y * T, g0 = m.g[y][tx];
     if (theme === "cave" && g0 === "w") { b.oval(X + 16, Y + 16, 18, 14, "rgba(90,232,255,0.22)"); b.r(X + 8, Y + 14, 16, 1, "rgba(200,250,255,0.5)"); any = true; }
     if (theme === "sewer" && g0 === "w" && hash(tx, y, 61) < 0.5) { b.r(X + 4 + hash(tx, y, 62) * 14, Y + 10 + hash(tx, y, 63) * 12, 9, 1, "rgba(200,255,140,0.55)"); any = true; }

@@ -252,6 +252,12 @@ function allMaps() {
   for (const id of Object.keys(out)) for (const pt of out[id].portals) arrivalOf(null, pt);
   return out;
 }
+/** A sheet's waypoint stones per map are a bitmask (ch.wp): up to this many stones on one map. */
+const WP_MASK = 0xff;
+/** Whether a sheet has woken stone `i` of map `id`. */
+const wpWoken = (ch, id, i = 0) => typeof id === "string" && Object.hasOwn(ch.wp, id) && !!(ch.wp[id] & (1 << i));
+/** How many stones a sheet has woken, on every map together. */
+const wpCount = (ch) => { let n = 0; for (const id of Object.keys(ch.wp)) for (let k = ch.wp[id]; k; k &= k - 1) n++; return n; };
 /** Whether a map has a waypoint stone (known without building it). */
 const hasWp = (id) => typeof id === "string" && Object.hasOwn(MAP_META, id) && MAP_META[id].wp;
 /** A map's waypoint stone { x, y, ax, ay } (builds the map), or null. */

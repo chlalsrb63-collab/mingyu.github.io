@@ -85,7 +85,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `accounts.js` [382] | plain JS (runs in DO and node): `SERVERS`, `CHANNELS`, `class Accounts` (signup/login/logout/auth/me/servers), `parseApiBody`, storage key scheme `K`, `pidFor`, throttle rules |
 | `accounts.d.ts` [75], `logic.d.ts` [36] | types for the two plain-JS modules (update when exports change) |
 | `env.ts` [22] | `Env` bindings: `ASSETS`, `ROOMS`, `HF_ENV`, `APP_SLUG`, `PLAYTEST` (local only: map-editor playtest join) |
-| `logic.js` [7255] | **GENERATED** — never edit; built from `src/logic/*.js` |
+| `logic.js` [7297] | **GENERATED** — never edit; built from `src/logic/*.js` |
 
 ### Rules — `game/src/logic/` (fragments of ONE scope, concatenated in name order; not modules)
 | part | contents |
@@ -97,8 +97,8 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `32-maps-underground.js` [630] | `tunnel`, `cavern` (cave), `catacomb` (crypt), `sewers`, `abyssal` (abyss) |
 | *(generated)* | `const DATA = {maps, links, npcs, quests}` — `build-logic.mjs` inserts `game/data/**` right after 00-header |
 | `34-maps-world.js` [425] | `buildTown()`, **`GEN`** (every generated map's generator, band and `cfg()`: seed, size, mobs, chest, features), `GATE_LINKS` (doors by gate name), `genMap(id)` (one map: terrain, doors, crowd, `markRoutes`), collision `solidAt/canStand/canFly`, `mapPayload` |
-| `36-custom-maps.js` [308] | editor maps over the generated world: `fromEditor` (map file → map), `finishMap` (doors, links, NPCs, finalize, `buildCells` → `m.cells` spawn quotas per 16×16 cell); the **lazy map registry**: `MAP_META` (name/theme/band/size/wp/kinds of every map, nothing built), **`mapOf(id)`** (built on first use, cached), **`mapOfS(S,id)`** (+ instances `S.dims`), `allMaps()` (tools/tests), `arrivalOf` (a door's landing tile, resolved at warp time), `hasWp/wpOf`; `START`, `HUNTED`, `COL_MOBS`, `NPC_MAP`/`NPC_NAME`, `devPlace` (playtest). Town + editor maps are built at load, hunting grounds on first entry: never index a map table directly |
-| `40-characters-world.js` [552] | `validName`, **`newChar`** (sheet `v:7`), **`migrate`** (old sheets), gear stats `stats()`, `exportChar`; world `setup`, **`runtime(S,id)`** (a map's live state, made on first use: fixed spawns + cell slots), `liveMapIds`, instances `registerDim/closeDim`, mobs `newMob/placeMob`, field boss, `addPlayer/removePlayer`, `changeMap`, `sys/toast`; parties |
+| `36-custom-maps.js` [314] | editor maps over the generated world: `fromEditor` (map file → map), `finishMap` (doors, links, NPCs, finalize, `buildCells` → `m.cells` spawn quotas per 16×16 cell); the **lazy map registry**: `MAP_META` (name/theme/band/size/wp/kinds of every map, nothing built), **`mapOf(id)`** (built on first use, cached), **`mapOfS(S,id)`** (+ instances `S.dims`), `allMaps()` (tools/tests), `arrivalOf` (a door's landing tile, resolved at warp time), `hasWp/wpOf`, sheet stones `wpWoken/wpCount`; `START`, `HUNTED`, `COL_MOBS`, `NPC_MAP`/`NPC_NAME`, `devPlace` (playtest). Town + editor maps are built at load, hunting grounds on first entry: never index a map table directly |
+| `40-characters-world.js` [561] | `validName`, **`newChar`** (sheet `v:9`: `wp` = {mapId: stone bitmask}, `dim` = {day, n}), **`migrate`** (old sheets), gear stats `stats()`, `exportChar`; world `setup`, **`runtime(S,id)`** (a map's live state, made on first use: fixed spawns + cell slots), `liveMapIds`, instances `registerDim/closeDim`, mobs `newMob/placeMob`, field boss, `addPlayer/removePlayer`, `changeMap`, `sys/toast`; parties |
 | `50-loot-combat.js` [503] | bag/stack/warehouse helpers, pickup, prices, `rollGear`, `rollRarity`, `lootFor`; `gainXp`, `hurtMob`, `killMob`, `hurtPlayer`, targeting + aim helpers (`AIM_V setAim inArc aimMob`), `basicAttack` |
 | `55-class-skills.js` [611] | class mechanics (grit, marks, focus, weave), `classTick`, `crView` gauge, **`castSkill`** (switch on skill id; emits numeric fx events `ev(code,…)`) |
 | `60-content.js` [317] | waypoints + recall, dailies (06:00 KST), achievements `ACH` + titles, collection, world event (rift), tutorial `TUT` |
@@ -117,8 +117,8 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `client.js` [2563] | game client. Sections (grep `// ───`): connection, state `G`, messages (`onSnap`), effects, input (keydown hotkeys ~L537), player actions, update, render, HUD & windows (`WIN` list ~L1236, `openWin`, `render<Window>()`), main loop. `window.__game = {G, act, S3, go}` for automation |
 | `lobby.js` [593] | title, 로그인/회원가입, server/channel list, character creation, in-game channel switch/logout |
 | `account.js` [99] | HTTP side of accounts: `session signup login logout me servers`, `API` base |
-| `scene2d.js` [2686] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites (+ `autumnScenery`), ground, raised blocks, creatures (`drawPerson`; movement life `stepLife`: bob, lean, stop squash, terrain footsteps `footKind/footstep`, afterimage), effects `fx/fxCustom` (+ `flash wave zap`), sword-qi `qiBurst` at each stroke's impact, skills' scaled set `big(ang)`, `shake(n, ang)` (directional kick), pets, title/creation stage |
-| `isotiles.js` [31] · `iso_px.js` [118] · `iso_ground.js` [886] · `iso_tall.js` [601] | quarter-view ground baking (`bakeGround`), pixel buffers/projection (`TW=32, TH=16`), ground materials and transitions, tall blocks (cliffs, walls, houses) |
+| `scene2d.js` [2808] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites (+ `autumnScenery`), ground (`drawGround`: whole canvas, or on big maps the visible chunks + one prefetched per frame; walls/rock stand up lazily near the screen, `lazyTall`; the deep places' glow in pieces, `pulsePart`), raised blocks, creatures (`drawPerson`; movement life `stepLife`: bob, lean, stop squash, terrain footsteps `footKind/footstep`, afterimage), effects `fx/fxCustom` (+ `flash wave zap`), sword-qi `qiBurst` at each stroke's impact, skills' scaled set `big(ang)`, `shake(n, ang)` (directional kick), pets, title/creation stage; `groundInfo()` (load/bake costs for tools) |
+| `isotiles.js` [65] · `iso_px.js` [118] · `iso_ground.js` [939] · `iso_tall.js` [601] | quarter-view ground baking (`bakeGround` whole; `groundChunks` = 1024×512 pieces baked on demand with an LRU of 12 for maps over `CHUNK_AREA` 80×60 tiles, `?chunks=1` forces; `bakeChunk` gives the same pixels as the same part of `bake`), pixel buffers/projection (`TW=32, TH=16`), ground materials and transitions, tall blocks (cliffs, walls, houses) |
 | `iso_interior.js` [1059] | indoors (theme `interior`): `bakeRoom` floors and rugs, `roomPiece` back walls / cut front wall / furniture (a texel `Model` with depth buffer), `roomLight` warm lamp/fire/window light, `drawPose` NPC idle acts; char legend in its header and SCHEMA.md |
 | `decor.js` [674] | landmarks (`LANDMARKS` per theme; autumn ruins stand exactly on their footprints), decals, pulses, critters, waypoint stones/signs, town dressing (old `daylight`/`wash`, unused) |
 | `autumn.js` [40] | the autumn theme's turned colours: `HUE` (maple, oak, ginkgo, green) and `hueAt(m, x, y)`, shared by trees (scene2d) and their fallen leaves (iso_ground) |
@@ -148,7 +148,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `style.css` [351] · `hud.css` [473] · `lobby.css` [225] | base + CRT, HUD/windows, lobby |
 | `assets/manifest.json` | installed external images/sounds by key (empty = all code-drawn); written by `scripts/import-art.mjs --install` |
 | `fonts/` | Galmuri pixel fonts (OFL) |
-| `_*.html` | dev preview pages (never deployed, `.assetsignore`): scene world iso over mobs sheet species wardrobe swing feel (skill blasts, hits, footsteps as frame strips) title icons uicons emo mini |
+| `_*.html` | dev preview pages (never deployed, `.assetsignore`): scene world iso over mobs sheet species wardrobe swing feel (skill blasts, hits, footsteps as frame strips) title icons uicons emo mini chunks (chunked vs whole ground bake, pixel by pixel; `scripts/bake-check.mjs`) |
 
 ### Tests — `game/tests/*.mjs` (plain node + `node:assert`; list in `tests/LIST`)
 sim (smoke) · party · loot (gear, repeat hunting) · life (fires, fishing, cooking, guilds) · world
@@ -170,7 +170,7 @@ walls, keepers' own goods).
 writes only `data/**` with backups in `data/.backup/`; starts `wrangler dev` for playtests;
 `EDITOR_DATA=<dir>` edits another folder) · `test-all.mjs` (build + run
 tests/LIST; `--no-build`, names to filter, `-v`) · `dump-maps.mjs` (public/_maps.json for previews) ·
-`shot.mjs` (one screenshot; `--serve` for previews; scene preview takes `hour= wx= sitters= jam=`) · `bots.mjs` (dev: N throwaway players sit at the town fire for live shots, `--url --secs --jam`) · `artkit.mjs` (shared: browser launch, static server, PNG
+`bake-check.mjs` (headless: chunked ground bake == whole bake on every map, with bake ms and canvas MB; `--src` other map payloads) · `shot.mjs` (one screenshot; `--serve` for previews; scene preview takes `hour= wx= sitters= jam=`) · `bots.mjs` (dev: N throwaway players sit at the town fire for live shots, `--url --secs --jam`) · `artkit.mjs` (shared: browser launch, static server, PNG
 read/write) · `export-art.mjs` (`npm run art:export`: code-drawn art → `asset/_export/` PNGs) · `gallery.mjs`
 (`art:gallery`: index `asset/` → `gallery.json/.js`) · `import-art.mjs` (normalise AI/external images into
 `asset/<category>/`; `--install`/`--uninstall`/`--list` wire approved files into `public/assets/manifest.json`) ·

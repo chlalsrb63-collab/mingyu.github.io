@@ -18,8 +18,8 @@ function explore(S, p) {
   const ch = p.ch;
   if (!ch.seen.includes(p.map)) { ch.seen.push(p.map); checkAch(S, p); }
   const w = wpNear(p);
-  if (w && !ch.wp.includes(p.map)) {
-    ch.wp.push(p.map);
+  if (w && !wpWoken(ch, p.map)) {
+    ch.wp[p.map] = (ch.wp[p.map] | 0) | 1;
     toast(p, `[${mapOfS(p.S, p.map).name}] 이동의 돌을 깨웠습니다. 다른 이동의 돌에서 이곳으로 올 수 있습니다.`);
     S.maps[p.map].ev.push(["wp", p.eid, 2]);
     p.dirty = true;
@@ -133,8 +133,8 @@ const ACH = [
   ["abyss", "사냥", "심연을 넘은 자", "심연의 어미 처치", 50, (c) => (c.mk.abyssboss || 0) >= 1, "심연을 넘은 자", [["atkp", 4], ["critd", 10]]],
   ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, (c) => c.st.evt >= 1],
   ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.st.evt >= 10, "균열 수호자", [["def", 3]]],
-  ["wp3", "탐험", "이동의 돌", "이동의 돌 3개 깨우기", 5, (c) => c.wp.length >= 3],
-  ["wpall", "탐험", "모든 길을 아는 자", "모든 이동의 돌 깨우기", 20, (c) => Object.keys(WP).every((id) => c.wp.includes(id))],
+  ["wp3", "탐험", "이동의 돌", "이동의 돌 3개 깨우기", 5, (c) => wpCount(c) >= 3],
+  ["wpall", "탐험", "모든 길을 아는 자", "모든 이동의 돌 깨우기", 20, (c) => Object.keys(MAP_META).every((id) => !MAP_META[id].wp || wpWoken(c, id))],
   ["explore", "탐험", "세계 여행자", "모든 지역 방문", 20, (c) => Object.keys(MAP_META).every((id) => c.seen.includes(id)), "여행자", [["spd", 3]]],
   ["star10", "숙련", "숙련의 길", "토벌 숙련 별 10개", 10, (c) => stars(c) >= 10],
   ["star50", "숙련", "토벌의 장인", "토벌 숙련 별 50개", 30, (c) => stars(c) >= 50, "토벌의 장인", [["xp", 3]]],

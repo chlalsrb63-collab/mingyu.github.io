@@ -5,7 +5,8 @@
 import * as S from "./scene2d.js";
 import * as SP from "./sprites.js";
 const q = new URLSearchParams(location.search);
-const maps = await (await fetch("./_maps.json")).json();
+// ?src=_maps4x.json reads other map payloads; ?chunks=1 bakes the ground in chunks whatever the size
+const maps = await (await fetch("./" + (q.get("src") || "_maps.json"))).json();
 const m = maps[q.get("map") || "town"];
 if (q.get("day")) globalThis.__dayK = +q.get("day");
 // ?hour=0..24 and ?wx=0..5 (맑음 흐림 비 안개 바람 눈) set the sky; ?sitters=1..4 seats adventurers at the first fire, ?jam=1 gives them a lute and a cup
@@ -50,7 +51,9 @@ mobKeys.forEach((k, i) => {
 const cv = document.getElementById("c");
 S.init(cv);
 const lab = document.createElement("canvas"); lab.width = innerWidth; lab.height = innerHeight; lab.style.cssText = "position:fixed;left:0;top:0;pointer-events:none"; document.body.appendChild(lab); const lc = lab.getContext("2d");
+const l0 = performance.now();
 S.loadMap(m);
+window.__load = { ms: Math.round(performance.now() - l0), ground: S.groundInfo() };
 S.sync(G);
 let last = performance.now(), frames = 0, t0 = last;
 function loop(now) {
@@ -60,7 +63,7 @@ function loop(now) {
   if (frames > 30) { window.__ms = (window.__ms || 0) + performance.now() - r0; window.__n = (window.__n || 0) + 1; }
   if (S.labels) { const L = S.labels(); lc.clearRect(0, 0, lab.width, lab.height); lc.font = "bold 11px sans-serif"; lc.textAlign = "center"; lc.textBaseline = "middle"; for (const l of L) { const w = lc.measureText(l.text).width + 12; lc.fillStyle = "rgba(43,34,51,.78)"; lc.fillRect(Math.round(l.x - w / 2), Math.round(l.y - 9), Math.round(w), 18); lc.fillStyle = "#ffe9b8"; lc.fillText(l.text, l.x, l.y + 1); } }
   frames++;
-  if (frames === 30) { document.title = "ready"; window.__fps = Math.round(30000 / (now - t0)); }
+  if (frames === 30) { document.title = "ready"; window.__fps = Math.round(30000 / (now - t0)); window.__ground = S.groundInfo(); }
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

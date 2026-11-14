@@ -1,6 +1,6 @@
 # 사냥터 4배 확장 + 파티 전용 「차원 균열」 던전 — 설계서
 
-Status: Phase 0 in progress (see F. for what is built). Audience: two implementers working in parallel (Phase 1 / Phase 2) after one
+Status: Phase 0 done (see F. for what was built and measured); Phases 1 and 2 not started. Audience: two implementers working in parallel (Phase 1 / Phase 2) after one
 foundation task (Phase 0). Code, identifiers and commit messages are English; every player-facing string is Korean
 (AGENTS.md rule 6). All numbers marked (measured) come from throwaway node scripts run against the built `logic.js`
 on this repo; numbers marked (est.) are estimates.
@@ -535,3 +535,84 @@ hook in `killMob` (`50`).
   living, replay determinism, farmed cell not reset by walking away, sleeping cell keeps its places and refills at
   once, party ×1.5, cap 230 nearest-first, waves). Bot tests now walk a BFS path (`sim`), borrowed test monsters
   drop their slot (`hard`, `hotbar`), and helpers tick once so the cells fill (`loot`, `data`, `daynight`).
+
+### F.3 Chunked client baking (step 0.3, done)
+
+Where: `iso_ground.js` (`bakeRect`, `bake`, `bakeChunk`, `groundSize`; per-map precompute `prep` in a WeakMap),
+`isotiles.js` (`CHUNK_AREA`, `chunked`, `groundChunks`), `scene2d.js` (`drawGround`, `lazyTall`, `pulsePiece`/`pulsePart`,
+`groundInfo`), `decor.js pulse(m, theme, part)`, `client.js isoMini`. Check: `node scripts/bake-check.mjs`
+(`public/_chunks.html`; `--src` another payload file, e.g. a 4x dump).
+
+- Chunks are **screen rectangles of the whole-map ground canvas**, `1024 × 512` px (not 32 × 32-tile squares: a
+  tile-square chunk is a diamond on screen and would need masking; a rectangle blits directly). A chunk is baked
+  over its rectangle + a 48 px apron: every tile whose diamond touches the buffer goes through the same tile pass,
+  every upright detail/glint/bridge face whose tile is within 40 px is stamped in the same global order (all
+  writes are bounds-checked; reads of the bridge column too), then the inner rectangle is cropped. **Pixel-identical**
+  to the whole bake on every 1x map (9/9) and on a 4x dump of all 8 hunting grounds (both water frames), and the
+  glow layer (below) is identical too.
+- `scene2d`: maps with `w × h > 80 × 60` (or `?chunks=1` / `globalThis.__chunks`) use chunks: the visible ones are
+  baked on the spot, then one more within 192 px of the view per frame (nearest first); LRU of 12 (a dropped chunk's
+  canvases are zeroed at once). Town, interiors, editor maps and today's 1x hunting grounds keep the single bake.
+- Two more whole-map costs found while profiling, fixed for chunked maps only (1x untouched):
+  1. the flat fallback ground (`paintGround` + `toIso`, ≈ 4 Mpx + 2 Mpx canvases at 1x) was built and thrown away on
+     every load; now only when isotiles fails.
+  2. the deep places' glow layer (`DC.pulse`, cave/abyss/sewer/crypt) is a whole-map world-pixel canvas — at 4x
+     abyss 4864 × 3840 = **18.7 Mpx, over iOS Safari's 16.7 Mpx limit**. Chunked maps make it in 1024 × 512 pieces
+     (`pulsePiece`: the world pixels under the piece, laid flat with the same matrix), LRU 12, empty pieces cached.
+  3. the per-tile statics pass called `IT.tallAt` (one canvas per wall/cliff/rock tile) for the whole map: on chunked
+     maps walls, cliffs, hedges and rock are placeholders resolved when within 160 px of the view (and up to 16 per
+     frame within 448 px). Everything else (trees, houses, signs, lights) is still built whole-map at load.
+- `isoMini`: `renderMini(m, s)` with `s = m.w > 100 ? 2 : 4`, same diamond size.
+- Measured (headless Chromium 1920 × 1080, `Z = 2` → 960 × 540 view; "cold" = fresh page):
+
+  | | 1x (today) | 4x dump (152 × 102 …) |
+  | --- | --- | --- |
+  | whole bake, warm page | meadow 153-220 ms, others 64-167 ms | 253-659 ms (abyss 659, maple 515) |
+  | whole canvases (2 frames) | 13.5-18.5 MB (+ ≈ 2x transient buffers) | 53-73 MB (+ transient) |
+  | one chunk (warm / cold) | 23-40 ms / ≤ 110 ms | 12-50 ms typ., max 105 ms / ≤ 170 ms |
+  | chunk memory | 4 MB each; arrival bakes the 2-4 on screen; ≤ 12 kept = ≤ 48 MB | same |
+  | `loadMap` total, cold page | whole 377-489 ms → chunked 109-134 ms | chunked 153-191 ms (was 316-459 before lazy walls) |
+  | `loadMap` warm (2nd load) | 9-22 ms chunked | 29-53 ms chunked (tiles pass 18-34 ms; was 176-192) |
+  | steady render per frame | 1.0-1.4 ms both ways | 1.2-2.3 ms |
+
+  At 4x, arrival costs ≈ 2-4 chunks (≈ 60-160 ms) instead of a 250-660 ms whole bake, and ground memory is the kept
+  chunks (≤ 48 MB, typically 6-9 = 24-36 MB) instead of 53-73 MB + transient. Decision on the open point: **chunking
+  only**; no Worker-side pre-baked tiles needed. A cold first chunk can take 100-170 ms (JIT warm-up); a 1-chunk
+  per frame prefetch is a ≈ 25-40 ms hitch while walking into new ground — move it to `requestIdleCallback` if felt.
+- Not done (deviation from B.4c): payload row RLE. The 4x dump's payloads are 27-40 KB (over the 25 KB trigger), but
+  the B.4c form (`[char, count, …]` per row when shorter) measured only 3-8 % smaller on the overworld (meadow 33.6 →
+  32.3 KB, city 39.8 → 36.6) and 30-40 % on dungeons (abyss 37.0 → 21.9, sewer 31.6 → 18.7): 266 → 216 KB for all
+  eight, not the 3-5x expected. Sent once per map entry, never per tick, so it is left out of the wire for now;
+  Phase 1 can add it in `viewFor` (`out.map` only; `mapPayload` stays plain for the tools) + `client.js loadMap`.
+
+### F.4 Sheet v9 (step 0.4, done)
+
+- `ch.wp` is `{ mapId: bitmask }` (bit `i` = stone `i` of that map; `WP_MASK = 0xff`, at most 8 stones per map). `migrate`:
+  an old list → each listed map with a stone gets `1`; an object → masked, unknown maps and empty masks dropped;
+  `town` always has bit 0. Helpers in `36`: `wpWoken(ch, id, i = 0)`, `wpCount(ch)`. `explore` wakes bit 0; the `warp`
+  action checks bit 0; achievements `wp3` = 3 stones, `wpall` = stone 0 of every map with `MAP_META.wp` (was
+  `Object.keys(WP)`, which with lazy maps would have counted only built maps).
+- Wire: `self.wp` is the same object. `client.js wpWoke(s, id, i = 0)`, `scene2d wpLit` read it.
+- `ch.dim = { day, n }` (default `{0, 0}`, clamped) for Phase 2's daily count. `v = 9`. Tests: `content.mjs` (v8 → v9,
+  messy v9 masks, warp needs stone 0), `data.mjs` (v7 → 9).
+- **Phase 1**: more stones = more bits in `WP[id]` (make it a list) + `warp {to, i}` + `explore` waking the right bit;
+  no further sheet bump needed. **Phase 2**: `ch.dim` exists; no sheet bump needed.
+
+### F.5 What Phases 1 and 2 can rely on now
+
+- Frozen contracts (E) exist as written: `mapOf`, `mapOfS`, `allMaps`, `liveMapIds`, `runtime`, `buildCells` (fills
+  `m.cells = {cw, ch, spawns, fixed, open, zone}` — `fixed`/`open` added), `registerDim`, `closeDim`, `WAKE_R CELL
+  WAKE_MAX_MOBS` (+ `SLEEP_R SPAWN_MIN_D CELL_RESPAWN_MS CELL_PASS_MS DENSITY_MAX WAVE_*`). No `MAPS` anywhere.
+- Phase 1: change sizes and counts in `GEN[id].cfg()` only (and `band` beside it); a new monster kind placed by a
+  generator must be listed in its cfg (or `GEN.kinds`), `tests/maps.mjs` checks. Set `m.zone` in the generator and
+  turn zones into quotas in `buildCells` (keep the entry shape). Per-map build budget 150 ms is asserted; the 4x dump
+  built meadow in 142 ms cold, so watch it. Waypoints: `WP[id]` + bits in `ch.wp` (F.4). The client is ready for 4x:
+  chunked ground, glow pieces and lazy walls kick in above 80 × 60 tiles by themselves.
+- Phase 2: build the instance map, `finalize` it, `registerDim(S, {id: "dim:<n>", map, party, seed, lv, theme,
+  expire})`, then `changeMap(S, p, id, x, y)`; place packs straight into `dim.rt.mobs` (an instance map with empty
+  `spawns` has no cells; `runtime` builds empty ones). `exportChar` already saves anyone inside as in town;
+  `closeDim` already returns them, clears `party.dim` and frees everything. `ch.dim = {day, n}` exists.
+  `weatherAt` treats instances as underground; `mapPayload` labels doors from `MAP_META`, so an instance's door to
+  town reads "넥서스 광장".
+- Verified live (wrangler dev + `shot.mjs --live`): log in, walk town → meadow (monsters about) → forest through the
+  gates, no page or worker errors.

@@ -1,0 +1,63 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>chunked ground check</title>
+<style>body{margin:0;background:#101018;color:#ccc;font:12px monospace;padding:8px}pre{white-space:pre-wrap}</style>
+</head><body>
+<pre id="out">baking…</pre>
+<script type="module">
+// The chunked ground bake against the whole-map one: every pixel of both water frames, every map
+// asked for (?maps=meadow,forest or all; ?src=_maps.json). Also the cost: time and canvas memory.
+// node scripts/bake-check.mjs drives it headless and prints window.__result.
+import * as IT from "./isotiles.js";
+import * as S3 from "./scene2d.js";
+const q = new URLSearchParams(location.search);
+const maps = await (await fetch("./" + (q.get("src") || "_maps.json"))).json();
+const ids = (q.get("maps") || "meadow,forest,crypt,city,sewer,cave,abyss,maple,town").split(",").filter((id) => maps[id]);
+const pixels = (c) => c.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, c.width, c.height).data;
+const result = {};
+for (const id of ids) {
+  const m = maps[id], theme = m.theme || "town";
+  const r = { w: m.w, h: m.h };
+  // whole
+  const t0 = performance.now();
+  const whole = IT.bakeGround(m, theme);
+  r.wholeMs = Math.round(performance.now() - t0);
+  r.parts = whole.parts;
+  const W = whole.frames[0].width, H = whole.frames[0].height;
+  r.wholePx = W * H;
+  r.wholeMB = +((W * H * 4 * 2) / 1048576).toFixed(1);
+  if (q.has("whole")) { result[id] = r; continue; }
+  // chunked, every chunk (kept), laid back together
+  const C = IT.groundChunks(m, theme, 1024, 512, 1e9);
+  const first = performance.now();
+  C.get(0, 0);
+  r.firstChunkMs = Math.round(performance.now() - first);
+  let diff = 0, where = null;
+  for (let f = 0; f < 2; f++) {
+    const a = pixels(whole.frames[f]);
+    const back = document.createElement("canvas");
+    back.width = W; back.height = H;
+    const g = back.getContext("2d", { willReadFrequently: true });
+    for (let j = 0; j < C.ny; j++) for (let i = 0; i < C.nx; i++) { const c = C.get(i, j); g.drawImage(c.frames[f], c.X, c.Y); }
+    const b = g.getImageData(0, 0, W, H).data;
+    for (let k = 0; k < a.length; k += 4) if (a[k] !== b[k] || a[k + 1] !== b[k + 1] || a[k + 2] !== b[k + 2] || a[k + 3] !== b[k + 3]) { diff++; if (!where) where = [f, (k / 4) % W, Math.floor(k / 4 / W)]; }
+  }
+  r.chunks = C.nx * C.ny;
+  r.chunkMsTotal = Math.round(C.stats.ms);
+  r.chunkMsMax = Math.round(C.stats.max);
+  r.chunkMB = +((1024 * 512 * 4 * 2) / 1048576).toFixed(1);
+  r.diffPx = diff;
+  if (where) r.firstDiff = where;
+  // the deep places' glow layer, whole and in pieces
+  const pb = S3.pulseBoth(m, theme);
+  if (pb) {
+    const a = pixels(pb.whole), b = pixels(pb.parts);
+    let pd = 0;
+    for (let k = 0; k < a.length; k++) if (a[k] !== b[k]) pd++;
+    r.pulseDiff = pd;
+  }
+  result[id] = r;
+}
+window.__result = result;
+document.getElementById("out").textContent = JSON.stringify(result, null, 1);
+</script>
+</body></html>

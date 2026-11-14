@@ -1025,7 +1025,7 @@ let theme = "meadow", waterTiles = [], smokers = [];
 /** The fires that always burn on this map, on screen, with their stumps (camp.js art; sky.js fireflies). */
 let camps = [];
 /** Level art from decor.js: falling water, a layer that breathes, little emitters, lantern strings, critters, signs. */
-let falls = [], pulseCv = null, emit = [], strings = [], critters = [], signs = [], lights = [];
+let falls = [], pulseCv = null, pulseParts = null, emit = [], strings = [], critters = [], signs = [], lights = [];
 /** An interior's lamps, fire and window light (iso_interior.js roomLight). */
 let roomL = { glows: [], wins: [], motes: [] };
 /** Whether the ground came from isotiles.js (its water animates itself). */
@@ -1159,26 +1159,39 @@ function blockSprite(kind, mask, v, topOnly) {
 let ARTSC = null;
 const artSc = () => ARTSC || (ARTSC = Art.buildScenery());
 
+/** What the last loadMap cost, ms: the ground, the sprite sets, the landmarks' plan, the per-tile pass, the rest (tools). */
+let loadCost = null;
 export function loadMap(m) {
+  const lt = [performance.now()];
   map = m;
   theme = m.theme || themeOf(m);
-  // the ground: painted flat on the square grid, then laid onto diamonds — unless isotiles.js has the real thing
+  // the ground: isotiles.js bakes it — a big map in chunks, as they come on screen (?chunks=1 forces that) —
+  // or, failing that, it is painted flat on the square grid and laid onto diamonds
   // (indoors there is no flat fallback: iso_interior.js bakes the floor)
-  const flat = theme === "interior" ? sheet(m.w * T, m.h * T)[0] : paintGround(m, theme);
-  if (theme !== "interior") { DC.decals(m, theme, flat.getContext("2d")); paintExtras(m, flat); }
-  ground = { frames: [toIso(m, flat)], ox: m.h * 16 * K, oy: 0 };
-  artGround = false;
+  ground = null; artGround = false;
   if (IT.ready) {
-    const b = IT.bakeGround(m, theme);
-    if (b && b.frames && b.frames.length) { ground = b; artGround = true; }
+    const force = !!globalThis.__chunks || (typeof location !== "undefined" && /[?&]chunks=1/.test(location.search));
+    if (IT.chunked(m, theme, force)) { ground = IT.groundChunks(m, theme); artGround = true; }
+    else {
+      const b = IT.bakeGround(m, theme);
+      if (b && b.frames && b.frames.length) { ground = b; artGround = true; }
+    }
   }
-  const S = scenery(), D = DC.sprites();
+  if (!ground) {
+    const flat = theme === "interior" ? sheet(m.w * T, m.h * T)[0] : paintGround(m, theme);
+    if (theme !== "interior") { DC.decals(m, theme, flat.getContext("2d")); paintExtras(m, flat); }
+    ground = { frames: [toIso(m, flat)], ox: m.h * 16 * K, oy: 0 };
+  }
+  lt.push(performance.now());
+  const S = scenery(), D = DC.sprites(), lazyWalls = IT.ready && !!ground.chunked;
+  lt.push(performance.now());
   statics = []; waterTiles = []; smokers = []; signs = []; lights = [];
   const spiritAt = new Set(m.big.filter((b) => b.t === "spirit").map((b) => b.x + "," + b.y));
   roomL = { glows: [], wins: [], motes: [] };
   const lay = DC.plan(m, theme), mkt = theme === "town" ? DC.town(m) : { statics: [], swap: new Set(), strings: [] };
-  const pc = DC.pulse(m, theme);
-  pulseCv = pc ? toIso(m, pc) : null;
+  // the glowing layer of the deep places: one canvas, or for a chunked map pieces made as they come on screen
+  pulseCv = null; pulseParts = ground.chunked && ["cave", "abyss", "sewer", "crypt"].includes(theme) ? new Map() : null;
+  if (!pulseParts) { const pc = DC.pulse(m, theme); pulseCv = pc ? toIso(m, pc) : null; }
   // falling water runs down the face of a ledge, which now runs along the diagonal
   falls = lay.falls.map((f) => { const [X0, Y0] = sqI(f.x, f.edge), [X1] = sqI(f.x + f.w, f.edge); return { ...f, X0, Y0, len: X1 - X0, H: f.pool ? 22 : 30 }; });
   emit = DC.emitters(m, theme).map((e) => { const [X, Y] = sqI(e.x, e.y); return { ...e, x: X, y: Y - (e.k === "drip" ? 26 : e.k === "eyes" ? 12 : 0) }; });
@@ -1188,6 +1201,7 @@ export function loadMap(m) {
     return { ax, ay, bx, by };
   });
   critters = [];
+  lt.push(performance.now());
   const marks = new Map((m.marks || []).map((k) => [k.x + "," + k.y, k]));
   const edge = (x, y) => x < 2 || y < 2 || x >= m.w - 2 || y >= m.h - 2;
   // the pieces isotiles.js stands up, by tile; a house it draws is not drawn again here
@@ -1204,6 +1218,13 @@ export function loadMap(m) {
     const ch = m.o[y][x], key = x + "," + y;
     // a landmark stands where it stands: nothing else is drawn on the tiles it covers
     if (lay.covered.has(key) || spiritAt.has(key)) continue;
+    // on a big (chunked) map the walls, cliffs, hedges and rock stand up when they first come near the
+    // screen (render: lazyTall); what isotiles.js draws for them, or nothing, is decided then
+    if (lazyWalls && (isRock(x, y) || "CHUZ".includes(ch))) {
+      const [X, Y] = tI(x, y);
+      statics.push({ lazy: [x, y], sp: null, dx: X, dy: Y, x: X, y: Y + 16, d: Y + 8, glow: null, glint: -1, art: true, tx: X, ty: Y });
+      continue;
+    }
     if (IT.ready && (ch !== " " || isRock(x, y))) {
       const pc2 = IT.tallAt(m, x, y, theme);
       if (pc2 && pc2.img) {
@@ -1283,6 +1304,7 @@ export function loadMap(m) {
     else statics.push(standBig({ sp: S.fountain, water: true }, b.x, b.y, 2, 2, -4));
   }
   // every fire that always burns: a ring of stones, stumps to sit on; in town a tripod, a pot and a bedroll
+  lt.push(performance.now());
   camps = (m.camps || []).map((c) => {
     const [X, Y] = iso(c.x, c.y), flat = (sp, cx, cy, d) => statics.push({ sp, dx: Math.round(X + cx), dy: Math.round(Y + cy), x: X, y: Y, d, glow: null, glint: -1 });
     flat(Camp.ring(), -17, -10, Y - 30);
@@ -1304,10 +1326,14 @@ export function loadMap(m) {
   for (const st of mkt.statics) { const s = fromDC(st); if (s) statics.push(s); }
   // what lights up after dark: lamps, windows, landmarks, runes
   for (const st of statics) if (st.glow || st.wp || st.nightGlow || st.house || st.pot) lights.push(st);
+  lazyLeft = statics.filter((st) => st.lazy).length;
   npcs = m.npcs.map((n) => { const [x, y] = iso(n.x * 16 + 8, n.y * 16 + 12); return { n, x, y, sheet: SP.personSheet(SP.npcLook(n.look, n.role)) }; });
   ents.clear();
   fx.clear();
   amb.length = 0;
+  lt.push(performance.now());
+  loadCost = { ground: lt[1] - lt[0], sprites: lt[2] - lt[1], plan: lt[3] - lt[2], tiles: lt[4] - lt[3], rest: lt[5] - lt[4] };
+  for (const k of Object.keys(loadCost)) loadCost[k] = Math.round(loadCost[k]);
 }
 
 /**
@@ -1342,8 +1368,9 @@ export function labels() {
 /** Whether the waypoint here has been touched: unknown counts as lit, so a stone never looks dead by mistake. */
 function wpLit() {
   const self = G && G.self;
-  const got = self && (self.wp || self.wps);
-  return !Array.isArray(got) || got.includes(map.id);
+  const got = self && self.wp;
+  // (self.wp: { mapId: bitmask of its stones })
+  return !got || typeof got !== "object" || (Array.isArray(got) ? got.includes(map.id) : !!(got[map.id] & 1));
 }
 
 // ───────────────────────────── ambient life ─────────────────────────────
@@ -2282,6 +2309,97 @@ export function impactMs(wk, beat) {
   return hold.time * (beat === 2 ? 1.15 : 1) * 1000 * Sw.IMPACT;
 }
 
+/**
+ * The ground: one canvas, or for a big map the chunks on screen (baked on the spot if missing),
+ * and then one more of those just off screen, nearest first, so walking on rarely waits.
+ */
+const PREFETCH = 192;
+function drawGround(f, ox, oy) {
+  const Gc = ground;
+  if (!Gc.chunked) { drawLayer(Gc.frames[f % Gc.frames.length], Gc.ox, Gc.oy, ox, oy); return; }
+  const x0 = ox + Gc.ox, y0 = oy + Gc.oy, x1 = x0 + vw + 2, y1 = y0 + vh + 2;
+  const span = (a, b, n, s) => [clamp(Math.floor(a / s), 0, n - 1), clamp(Math.floor(b / s), 0, n - 1)];
+  const [i0, i1] = span(x0, x1, Gc.nx, Gc.CW), [j0, j1] = span(y0, y1, Gc.ny, Gc.CH);
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+    const c = Gc.get(i, j);
+    const sx = Math.max(0, Math.floor(x0 - c.X)), sy = Math.max(0, Math.floor(y0 - c.Y));
+    const sw = Math.min(c.w, Math.ceil(x1 - c.X)) - sx, sh = Math.min(c.h, Math.ceil(y1 - c.Y)) - sy;
+    if (sw > 0 && sh > 0) g.drawImage(c.frames[f % 2], sx, sy, sw, sh, c.X + sx - Gc.ox, c.Y + sy - Gc.oy, sw, sh);
+  }
+  const [p0, p1] = span(x0 - PREFETCH, x1 + PREFETCH, Gc.nx, Gc.CW), [q0, q1] = span(y0 - PREFETCH, y1 + PREFETCH, Gc.ny, Gc.CH);
+  let next = null, nd = Infinity;
+  for (let j = q0; j <= q1; j++) for (let i = p0; i <= p1; i++) {
+    if (Gc.has(i, j)) continue;
+    const d = Math.abs((i + 0.5) * Gc.CW - (x0 + x1) / 2) + Math.abs((j + 0.5) * Gc.CH - (y0 + y1) / 2);
+    if (d < nd) { nd = d; next = [i, j]; }
+  }
+  if (next) Gc.get(next[0], next[1]);
+}
+/**
+ * A chunked map's glow layer, in 1024 × 512 pieces of the whole layer's canvas: each made when first on
+ * screen from the world pixels that land in it (laid flat exactly as toIso lays the whole), the last
+ * dozen kept. A piece with nothing in it is remembered as empty.
+ */
+const PULSE_W = 1024, PULSE_H = 512;
+function pulsePiece(m, th, i, j) {
+  const X0 = i * PULSE_W, Y0 = j * PULSE_H, hx = m.h * 16 * K;
+  // the world pixels under this piece: u = X − hx + 2Y, v = 2Y − (X − hx), over its four corners
+  const u0 = Math.floor(X0 - hx + 2 * Y0) - 2, v0 = Math.floor(2 * Y0 - (X0 + PULSE_W - hx)) - 2;
+  const flat = DC.pulse(m, th, { u: u0, v: v0, w: PULSE_W + 2 * PULSE_H + 4, h: PULSE_W + 2 * PULSE_H + 4 });
+  if (!flat) return null;
+  const [cv, x] = sheet(PULSE_W, PULSE_H);
+  x.imageSmoothingEnabled = false;
+  x.setTransform(FLAT[0], FLAT[1], FLAT[2], FLAT[3], hx - X0, -Y0);
+  x.drawImage(flat, u0, v0);
+  flat.width = flat.height = 0;
+  return cv;
+}
+/** For the bake check (_chunks.html): the glow layer whole and in pieces, laid side by side — { whole, parts } canvases or null. */
+export function pulseBoth(m, th) {
+  const pc = DC.pulse(m, th);
+  if (!pc) return null;
+  const whole = toIso(m, pc), [parts, x] = sheet(whole.width, whole.height);
+  for (let j = 0; j * PULSE_H < whole.height; j++) for (let i = 0; i * PULSE_W < whole.width; i++) { const c = pulsePiece(m, th, i, j); if (c) x.drawImage(c, i * PULSE_W, j * PULSE_H); }
+  return { whole, parts };
+}
+function pulsePart(i, j) {
+  const key = i + "," + j;
+  if (pulseParts.has(key)) { const c = pulseParts.get(key); pulseParts.delete(key); pulseParts.set(key, c); return c; }
+  const c = pulsePiece(map, theme, i, j);
+  pulseParts.set(key, c);
+  while (pulseParts.size > 12) { const [k0, old] = pulseParts.entries().next().value; pulseParts.delete(k0); if (old) old.width = old.height = 0; }
+  return c;
+}
+function drawPulseParts(ox, oy) {
+  const hx = map.h * 16 * K, x0 = ox + hx, y0 = oy, W = (map.w + map.h) * 16 * K, H = (map.w + map.h) * 8 * K;
+  for (let j = Math.max(0, Math.floor(y0 / PULSE_H)); j <= Math.min(Math.ceil(H / PULSE_H) - 1, Math.floor((y0 + vh + 2) / PULSE_H)); j++)
+    for (let i = Math.max(0, Math.floor(x0 / PULSE_W)); i <= Math.min(Math.ceil(W / PULSE_W) - 1, Math.floor((x0 + vw + 2) / PULSE_W)); i++) {
+      const c = pulsePart(i, j);
+      if (c) g.drawImage(c, i * PULSE_W - hx, j * PULSE_H);
+    }
+}
+/**
+ * Stand up the walls and rock of a chunked map that are near the screen: everything that could show
+ * now, and up to LAZY_STEP more a little further out, nearest the view first (they cost a canvas each).
+ */
+let lazyLeft = 0;
+const LAZY_NEAR = 160, LAZY_FAR = 448, LAZY_STEP = 16;
+function lazyTall(X0, X1, Y0, Y1) {
+  let budget = LAZY_STEP, left = 0;
+  for (const st of statics) {
+    if (!st.lazy) continue;
+    const must = st.x > X0 - LAZY_NEAR && st.x < X1 + LAZY_NEAR && st.y > Y0 - 24 && st.y - LAZY_NEAR < Y1;
+    const soon = !must && budget > 0 && st.x > X0 - LAZY_FAR && st.x < X1 + LAZY_FAR && st.y > Y0 - LAZY_FAR / 2 && st.y - LAZY_FAR < Y1;
+    if (!must && !soon) { left++; continue; }
+    if (soon) budget--;
+    const [x, y] = st.lazy, pc2 = IT.tallAt(map, x, y, theme);
+    st.lazy = null;
+    if (pc2 && pc2.img) { st.sp = pc2.img; st.dx = st.tx + pc2.dx; st.dy = st.ty + pc2.dy; if ("low" in pc2) st.cut = pc2; }
+  }
+  lazyLeft = left;
+}
+/** The ground's bake for the tools: whole or chunked, and what chunks cost so far. */
+export function groundInfo() { return ground && { load: loadCost, ...(ground.chunked ? { chunked: true, nx: ground.nx, ny: ground.ny, ...ground.stats } : { chunked: false, ms: ground.ms || 0, parts: ground.parts || null }) }; }
 /** Draw the on-screen part of a whole-map layer whose map origin sits at (lx, ly) inside it. */
 function drawLayer(c, lx, ly, ox, oy) {
   const sx = Math.max(0, Math.floor(ox + lx)), sy = Math.max(0, Math.floor(oy + ly));
@@ -2380,11 +2498,13 @@ export function render(focusX, focusY, dt, t, snap) {
   g.fillRect(0, 0, vw, vh);
   g.translate(-ox, -oy);
   drawSkirt();
-  drawLayer(ground.frames[artGround ? Math.floor(t / 650) % ground.frames.length : 0], ground.ox, ground.oy, ox, oy);
+  drawGround(artGround ? Math.floor(t / 650) % 2 : 0, ox, oy);
   if (!artGround) drawWater(t, ox, oy);
-  if (pulseCv) {
+  if (pulseCv || pulseParts) {
     const beat = theme === "abyss" ? Math.max(0, Math.sin(t / 260)) ** 3 * 0.6 + Math.max(0, Math.sin(t / 260 - 0.9)) ** 3 * 0.3 : 0.5 + 0.5 * Math.sin(t / 1100);
-    g.globalAlpha = 0.25 + beat * 0.6; drawLayer(pulseCv, map.h * 16 * K, 0, ox, oy); g.globalAlpha = 1;
+    g.globalAlpha = 0.25 + beat * 0.6;
+    if (pulseCv) drawLayer(pulseCv, map.h * 16 * K, 0, ox, oy); else drawPulseParts(ox, oy);
+    g.globalAlpha = 1;
   }
   // gates and everything else that lies flat on the ground, drawn through the diamond matrix
   g.setTransform(FLAT[0], FLAT[1], FLAT[2], FLAT[3], -ox, -oy);
@@ -2412,8 +2532,10 @@ export function render(focusX, focusY, dt, t, snap) {
   const list = [];
   const X0 = ox - 8, X1 = ox + vw + 8, Y0 = oy - 8, Y1 = oy + vh + 8;
   const on = (X, Y, up = 80) => X > X0 - 48 && X < X1 + 48 && Y > Y0 && Y - up < Y1;
+  if (lazyLeft) lazyTall(X0, X1, Y0, Y1);
   for (const st of statics) {
     const sp = st.sp;
+    if (!sp) continue;
     if (st.dx > X1 || st.dx + sp.width < X0 || st.dy > Y1 || st.dy + sp.height < Y0) continue;
     if (st.slices) { for (const sl of st.slices) if (st.dx + sl.sx < X1 && st.dx + sl.sx + sl.w > X0) list.push({ y: sl.d, s: st, sl }); }
     else list.push({ y: st.d, s: st });

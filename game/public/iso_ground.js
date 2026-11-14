@@ -284,26 +284,50 @@ export function raisedAt(m, x, y) {
 const DX = [0, 1, 0, -1, -1, 1, 1, -1], DY = [-1, 0, 1, 0, -1, -1, 1, 1];
 const UP = [1, 0, 0, 1, 1, 0, 0, 0], DOWN = [0, 1, 1, 0, 0, 0, 1, 0];
 
-export function bake(m, theme) {
+/** What a map's bake works out once, whatever part of it is baked: its materials per tile and its extras. */
+const PREP = new WeakMap();
+function prep(m, theme) {
+  const p = PREP.get(m);
+  if (p && p.theme === theme) return p;
+  const MT = materials(theme), tmat = new Array(m.w * m.h);
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) tmat[y * m.w + x] = MT[m.g[y][x]] || MT._grass;
+  const out = { theme, MT, tmat, ext: extras(m, theme, MT) };
+  PREP.set(m, out);
+  return out;
+}
+/** The whole map's ground canvas: size, and where tile (0, 0)'s top corner sits in it. */
+export const groundSize = (m) => ({ W: (m.w + m.h) * 16, H: (m.w + m.h) * 8 + 24, ox: m.h * 16, oy: 8 });
+
+/**
+ * Bake the rectangle (X0, Y0, BW, BH) of the whole-map ground canvas into two pixel buffers
+ * (two frames of water). Every tile whose diamond touches the rectangle is worked out exactly
+ * as for the whole map, and every upright detail that could reach into it is stamped in the
+ * same order, so a part comes out pixel for pixel as the same part of the whole.
+ */
+function bakeRect(m, theme, X0, Y0, BW, BH) {
   const t0 = performance.now();
-  const MT = materials(theme), U = UG[theme];
-  const W = (m.w + m.h) * 16, H = (m.w + m.h) * 8 + 24, ox = m.h * 16, oy = 8;
+  const { MT, tmat, ext } = prep(m, theme), U = UG[theme];
+  const W = BW, H = BH, ox = m.h * 16 - X0, oy = 8 - Y0;
   const px = new Uint32Array(W * H), mat = new Uint8Array(W * H);
   const at = (x, y) => (x < 0 || y < 0 || x >= m.w || y >= m.h ? null : m.g[y][x]);
   const isWater = (x, y) => { const c = at(x, y); return c === "w" || c === "b"; };
-  const tmat = new Array(m.w * m.h);
-  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) tmat[y * m.w + x] = MT[m.g[y][x]] || MT._grass;
   // deep water lies a little way out from every shore, along a wavering line
   const D0 = U ? 11 : 17, land = [];
   const deepTex = MT._deep.tex, wetId = MT._water.id, deepId = MT._deep.id;
   const matAt = (x, y) => (x < 0 || y < 0 || x >= m.w || y >= m.h ? null : tmat[y * m.w + x]);
-  const ext = extras(m, theme, MT);
+  /** Whether tile (x, y)'s diamond comes within `pad` pixels of the rectangle. */
+  const whole = X0 === 0 && Y0 === 0 && W === (m.w + m.h) * 16;
+  const near = (x, y, pad) => {
+    const X = ox + (x - y) * 16, Y = oy + (x + y) * 8;
+    return X + 16 + pad > 0 && X - 16 - pad < W && Y + 16 + pad > 0 && Y - pad < H;
+  };
 
   const TEX = new Uint32Array(256), TM = new Uint8Array(256);
   const PA = Int32Array.from(TILE_PX, (p) => p[2]), PB = Int32Array.from(TILE_PX, (p) => p[3]);
   const OFF = Int32Array.from(TILE_PX, ([sx, sy]) => sy * W + sx);
   const nb = new Array(8), dn = [];
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    if (!whole && !near(x, y, 0)) continue;
     const me = tmat[y * m.w + x], ch = m.g[y][x];
     // 1 — the material itself
     if (me.id === wetId) {
@@ -347,11 +371,17 @@ export function bake(m, theme) {
         if ((rl && a < rl[0] - (b > 13 ? 15 - b : 0) * 0) || (rr && b < rr[1]) || (rc && a < rc[0] && b < rc[1])) TEX[k] = shadePx(TEX[k], 0.8);
       }
     }
-    // project
-    const base = (oy + (x + y) * 8) * W + ox + (x - y) * 16;
-    for (let k = 0; k < 256; k++) { px[base + OFF[k]] = TEX[k]; mat[base + OFF[k]] = TM[k]; }
+    // project (a tile on the rectangle's edge only where it lies inside)
+    const X = ox + (x - y) * 16, Y = oy + (x + y) * 8, base = Y * W + X;
+    if (X - 16 >= 0 && X + 16 <= W && Y >= 0 && Y + 16 <= H) for (let k = 0; k < 256; k++) { px[base + OFF[k]] = TEX[k]; mat[base + OFF[k]] = TM[k]; }
+    else for (let k = 0; k < 256; k++) {
+      const sx = X + TILE_PX[k][0], sy = Y + TILE_PX[k][1];
+      if (sx < 0 || sy < 0 || sx >= W || sy >= H) continue;
+      px[sy * W + sx] = TEX[k]; mat[sy * W + sx] = TM[k];
+    }
   }
-  const S = { m, theme, W, H, ox, oy, px, mat, MT };
+  // the upright details of every tile whose stamps could reach the rectangle
+  const S = { m, theme, W, H, ox, oy, px, mat, MT, near: whole ? null : (x, y) => near(x, y, 40) };
   const t1 = performance.now();
   // 5 — upright details in screen space
   details(S);
@@ -361,14 +391,33 @@ export function bake(m, theme) {
   const px2 = px.slice();
   glints(S, px, 0); glints(S, px2, 1);
   const t3 = performance.now();
-  const frames = [px, px2].map((d) => {
-    const c = document.createElement("canvas");
-    c.width = W; c.height = H;
-    c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(d.buffer), W, H), 0, 0);
-    return c;
-  });
-  const t4 = performance.now();
+  return { px, px2, W, H, t: [t0, t1, t2, t3] };
+}
+const canvasOf = (d, W, H, cx = 0, cy = 0, cw = W, ch = H) => {
+  const c = document.createElement("canvas");
+  c.width = cw; c.height = ch;
+  c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(d.buffer), W, H), -cx, -cy, cx, cy, cw, ch);
+  return c;
+};
+
+/** The whole map's ground in one go: { frames: [canvas, canvas], ox, oy, ms, parts }. */
+export function bake(m, theme) {
+  const { W, H, ox, oy } = groundSize(m);
+  const r = bakeRect(m, theme, 0, 0, W, H);
+  const frames = [r.px, r.px2].map((d) => canvasOf(d, W, H));
+  const t4 = performance.now(), [t0, t1, t2, t3] = r.t;
   return { frames, ox, oy, ms: t4 - t0, parts: [t1 - t0, t2 - t1, t3 - t2, t4 - t3].map(Math.round) };
+}
+/** How far past its own edges a chunk is worked out (bridge faces read the column above them; stamps reach in). */
+const APRON = 48;
+/**
+ * One rectangle (X, Y, w, h) of the whole-map ground canvas, the same pixels as the same part of
+ * bake(): { frames: [canvas, canvas], X, Y, w, h, ms }.
+ */
+export function bakeChunk(m, theme, X, Y, w, h) {
+  const r = bakeRect(m, theme, X - APRON, Y - APRON, w + 2 * APRON, h + 2 * APRON);
+  const frames = [r.px, r.px2].map((d) => canvasOf(d, r.W, r.H, APRON, APRON, w, h));
+  return { frames, X, Y, w, h, ms: performance.now() - r.t[0] };
 }
 
 /** Per-texel tables for one tile: distance to each side and corner, and the rounded outer corners. */
@@ -489,8 +538,9 @@ function details(S) {
     const k = ((Math.floor((n + 3) * 1.4) % 6) + 6) % 6;
     return theme === "forest" ? [0, 1, 2][k % 3] : [0, 2, 1, 3, 5, 4][k];
   };
-  const free = (x, y) => m.o[y][x] === " ";
+  const free = (x, y) => m.o[y][x] === " ", near = S.near;
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    if (near && !near(x, y)) continue;
     const ch = m.g[y][x], h = (s) => hash(x, y, s);
     if (MT[ch] === G) {
       if (ch === "," || ch === ";") {
@@ -561,7 +611,7 @@ function autumnDetails(S, free) {
   const LEAF = [["1", "1"], ["11"], [".1", "1."], ["1.", ".1"]];
   const fall = HUE.map((h) => h.fall.map(C));
   for (let y = 1; y < m.h - 1; y++) for (let x = 1; x < m.w - 1; x++) {
-    if (!free(x, y)) continue;
+    if (!free(x, y) || (S.near && !S.near(x, y))) continue;
     const h = (s) => hash(x, y, s);
     // the nearest tree, if one stands beside this square
     let tree = null;
@@ -586,10 +636,12 @@ function autumnDetails(S, free) {
 
 /** Glints on open water that move between the two frames. */
 function glints(S, px, f) {
-  const { m, W, mat, MT } = S;
+  const { m, W, H, mat, MT, near } = S;
   const wm = [MID.water, MID.deep], g1 = MT._water.foam, g2 = C(light(MT._water.hex, 1.32));
+  // (a part of the map: nothing is written past the edge of its buffer)
+  const inside = (X, Y) => X >= 0 && X < W && Y >= 0 && Y < H;
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
-    if (m.g[y][x] !== "w") continue;
+    if (m.g[y][x] !== "w" || (near && !near(x, y))) continue;
     const h = hash(x, y, 5);
     for (let i = 0; i < 2; i++) {
       const ph = (Math.floor(h * 4) + f * 2 + i) % 4;
@@ -598,13 +650,13 @@ function glints(S, px, f) {
       const len = 3 + (ph & 1), dx = (f ? 2 : -1) + i;
       for (let k = 0; k < len; k++) {
         const o = (Y + (i ? 0 : 0)) * W + X + dx + k;
-        if (wm.includes(mat[o])) px[o] = ph === 0 && k === 1 ? g1 : g2;
+        if (inside(X + dx + k, Y) && wm.includes(mat[o])) px[o] = ph === 0 && k === 1 ? g1 : g2;
       }
     }
     if ((h * 10 + f * 3) % 4 < 1) {
       const [X, Y] = spot(S, x, y, 0.5, 0.5);
       const o = Y * W + X + (f ? 3 : -3);
-      if (wm.includes(mat[o])) px[o] = C("#ffffff");
+      if (inside(X + (f ? 3 : -3), Y) && wm.includes(mat[o])) px[o] = C("#ffffff");
     }
   }
 }
@@ -833,10 +885,11 @@ function extras(m, theme, MT) {
   }
 
   function screen(S) {
-    const { W, px, mat } = S;
+    const { W, H, px, mat, near } = S;
+    const inside = (X, Y) => X >= 0 && X < W && Y >= 0 && Y < H;
     // the thickness of a bridge's deck, where it stands over water toward the viewer
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
-      if (m.g[y][x] !== "b") continue;
+      if (m.g[y][x] !== "b" || (near && !near(x, y))) continue;
       const faceC = theme === "abyss" ? [C("#a8a08a"), C("#5c1e2b")] : theme === "sewer" ? [C("#3a423e"), C("#1c2220")] : theme === "crypt" ? [C("#6a645c"), C("#3a3632")] : [C("#7a5030"), C("#5a3a22")];
       const X0 = S.ox + (x - y) * 16, Y0 = S.oy + (x + y) * 8;
       for (let sx = -15; sx <= 15; sx++) {
@@ -845,16 +898,16 @@ function extras(m, theme, MT) {
         // the bottom pixel of this tile's column
         const bot = 15 - Math.ceil(Math.abs(sx - 0.5) / 2) + (sx <= 0 ? 0 : 0);
         let yb = -1;
-        for (let r = 15; r >= 0; r--) { const o = (Y0 + r) * W + X0 + sx; if (mat[o] === MID.deck) { yb = r; break; } }
+        for (let r = 15; r >= 0; r--) { const o = (Y0 + r) * W + X0 + sx; if (inside(X0 + sx, Y0 + r) && mat[o] === MID.deck) { yb = r; break; } }
         if (yb < 0) continue;
-        for (let r = 1; r <= 3; r++) { const o = (Y0 + yb + r) * W + X0 + sx; if (mat[o] !== MID.deck) { px[o] = faceC[r === 3 ? 1 : 0]; mat[o] = MID.line; } }
+        for (let r = 1; r <= 3; r++) { const o = (Y0 + yb + r) * W + X0 + sx; if (inside(X0 + sx, Y0 + yb + r) && mat[o] !== MID.deck) { px[o] = faceC[r === 3 ? 1 : 0]; mat[o] = MID.line; } }
         void bot;
       }
     }
     // dungeon dead and drains, cave glow, city puddles
     for (let y = 1; y < m.h - 1; y++) for (let x = 1; x < m.w - 1; x++) {
       const ch = m.g[y][x], h = (s) => hash(x, y, s), free = m.o[y][x] === " ";
-      if (!free) continue;
+      if (!free || (near && !near(x, y))) continue;
       const [X, Y] = spot(S, x, y, 0.3 + h(5) * 0.4, 0.3 + h(6) * 0.4);
       const fl = [MID.floor];
       if (theme === "crypt" && (ch === "d" ? h(7) < 0.8 : ch === "c" && h(7) < 0.05)) {

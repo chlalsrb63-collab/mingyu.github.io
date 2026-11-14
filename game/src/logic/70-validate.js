@@ -183,7 +183,7 @@ export function validateAction(S, pid, a) {
     case "warp": {
       if (!hasWp(a.to)) return bad("그곳에는 이동의 돌이 없습니다");
       if (!wpNear(p)) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
-      if (!ch.wp.includes(a.to)) return bad("아직 깨우지 않은 이동의 돌입니다");
+      if (!wpWoken(ch, a.to)) return bad("아직 깨우지 않은 이동의 돌입니다");
       if (a.to === p.map) return bad("이미 이곳에 있습니다");
       if (now - p.hitAt < WARP_CALM) return bad("전투 중에는 이동할 수 없습니다");
       return OK;

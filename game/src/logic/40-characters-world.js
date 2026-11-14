@@ -27,7 +27,7 @@ export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
   const lk = Array.isArray(look) ? look : [];
   return {
-    v: 8, name, cls: c,
+    v: 9, name, cls: c,
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     lvl: 1, xp: 0, gold: 50,
@@ -36,7 +36,10 @@ export function newChar(name, cls, look) {
     tr: { str: 0, vit: 0, int: 0, grd: 0 },
     q: { i: 0, n: 0, st: 0 },
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
-    wp: ["town"], seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
+    // waypoint stones woken, per map a bitmask of its stones (bit 0 = its first stone)
+    wp: { town: 1 }, seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
+    // 차원 균열 clears today (Phase 2: the daily count), by the day number they were made on
+    dim: { day: 0, n: 0 },
     skl: [1, 1, 1, 1, 1, 1], wh: { items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
@@ -90,8 +93,12 @@ function migrate(ch) {
   ch.gm = ch.guild && ch.gm ? 1 : 0;
   ch.fish = ch.fish | 0;
   // the long game: waypoints, places seen, achievements, a title, counters, dailies, first steps
-  ch.wp = (Array.isArray(ch.wp) ? ch.wp : []).filter((id) => hasWp(id));
-  if (!ch.wp.includes("town")) ch.wp.unshift("town");
+  // (v9: { mapId: bitmask of its stones }; before, a list of maps, each meaning its one stone)
+  const wp = {};
+  if (Array.isArray(ch.wp)) { for (const id of ch.wp) if (hasWp(id)) wp[id] = 1; }
+  else if (isObj(ch.wp)) for (const id of Object.keys(ch.wp)) { const k = ch.wp[id] & WP_MASK; if (k && hasWp(id)) wp[id] = k; }
+  wp.town = (wp.town | 0) | 1;
+  ch.wp = wp;
   ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => typeof id === "string" && Object.hasOwn(MAP_META, id));
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
   ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
@@ -121,7 +128,9 @@ function migrate(ch) {
   ch.cos = cosClean(ch.cos, ch);
   // side quests from the world map editor (v8): what is under way and what is done
   ch.sq = sqClean(ch.sq);
-  ch.v = Math.max(ch.v | 0, 8);
+  // the 차원 균열 daily count (v9)
+  ch.dim = isObj(ch.dim) ? { day: Math.max(0, ch.dim.day | 0), n: clamp(ch.dim.n | 0, 0, 999) } : { day: 0, n: 0 };
+  ch.v = Math.max(ch.v | 0, 9);
   return ch;
 }
 

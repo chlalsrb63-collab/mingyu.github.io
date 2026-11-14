@@ -1369,14 +1369,17 @@ function renderText(t) {
   if (G.punch > 0) { tg.fillStyle = `rgba(255,255,255,${G.punch * 0.16})`; tg.fillRect(0, 0, text.width, text.height); G.punch = Math.max(0, G.punch - 0.25); }
 }
 
+/** Whether the sheet has woken map `id`'s waypoint stone `i` (self.wp: { mapId: bitmask of its stones }). */
+function wpWoke(s, id, i = 0) { return !!(s && s.wp && !Array.isArray(s.wp) && (s.wp[id] & (1 << i))); }
 /** The minimap as a diamond, turned the way the world is seen: screen-up on the map is screen-up in the world. */
 function isoMini(m) {
-  const sq = Art.renderMini(m, 4);
+  // (a big map is drawn square at half the size first: the diamond comes out the same size)
+  const s = m.w > 100 ? 2 : 4, sq = Art.renderMini(m, s);
   const c = document.createElement("canvas");
   c.width = (m.w + m.h) * 2; c.height = m.w + m.h;
   const g = c.getContext("2d");
   g.imageSmoothingEnabled = false;
-  g.setTransform(0.5, 0.25, -0.5, 0.25, m.h * 2, 0);
+  g.setTransform(2 / s, 1 / s, -2 / s, 1 / s, m.h * 2, 0);
   g.drawImage(sq, 0, 0);
   return c;
 }
@@ -2112,7 +2115,7 @@ function renderWarp(s) {
   box.append(el("p", "say", can ? "깨운 이동의 돌끼리는 한순간에 오갈 수 있다네. 어디로 가겠나?" : "이동의 돌 곁에서만 다른 돌로 건너갈 수 있습니다. 돌에 다가가 F를 누르세요."));
   const list = el("div", "list");
   for (const w of G.defs.waypoints || []) {
-    const open = (s.wp || []).includes(w.id), cur = w.id === here;
+    const open = wpWoke(s, w.id), cur = w.id === here;
     const row = el("div", "it wp" + (open ? "" : " locked") + (cur ? " cur" : "") + (G.warpPick === w.id ? " pick" : ""));
     const ic = el("span", "wpi"); ic.append(iconImg("stone", open ? "#8ad8ff" : "#6a6658"));
     const tx = el("div", "tx", w.name);
@@ -2342,7 +2345,7 @@ $("#evt").addEventListener("click", () => {
   const e = G.evt, s = G.self;
   if (!e || !s) return;
   const target = e.phase === "idle" || e.phase === "done" ? e.nextMap : e.map;
-  if ((s.wp || []).includes(target)) { G.warpPick = target; openWin("warp"); toast("이동의 돌 곁에서 균열 침공 지역으로 이동할 수 있습니다"); }
+  if (wpWoke(s, target)) { G.warpPick = target; openWin("warp"); toast("이동의 돌 곁에서 균열 침공 지역으로 이동할 수 있습니다"); }
   else toast("그 지역의 이동의 돌을 아직 깨우지 않았습니다");
   Sound.play("ui");
 });
