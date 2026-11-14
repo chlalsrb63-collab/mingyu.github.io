@@ -25,7 +25,7 @@ const L = await import(pathToFileURL(join(GAME, "src", "logic.js")).href);
 const defs = L.defs();
 const data = { items: defs.items, mobs: defs.mobs, cos: defs.cos, legend: Object.keys(defs.legend), sets: Object.keys(defs.sets), only: only ? [...only] : null };
 
-const PAGE = `<!doctype html><meta charset="utf-8"><title>export</title><body></body>`;
+const PAGE = `<!doctype html><meta charset="utf-8"><link rel="icon" href="data:,"><title>export</title><body></body>`;
 const srv = await serve(PUBLIC, 0, { "/__export.html": PAGE });
 const browser = await launch(opt.channel);
 const errors = [];
@@ -52,7 +52,12 @@ try {
           put(`${dir}${k}_t${t}.png`, WP.weaponSprite(k, { wt: t }), n);
           put(`${dir}icon_${k}_t${t}.png`, WP.weaponIcon(k, t), n);
         }
-        // a power, set or skin recolours the design of whatever tier it sits on: shown on tier 3
+        for (const [name, motif] of WP.silhouetteSamples(k)) {
+          const gear = { wt: 3, wl: motif };
+          put(`${dir}${k}_sil_${name}.png`, WP.weaponSprite(k, gear), name);
+          put(`${dir}icon_${k}_sil_${name}.png`, WP.weaponIcon(k, 3, gear), name);
+        }
+        // Legendary powers, sets and skins are shown on tier 3.
         for (const m of WP.MOTIFS) {
           const what = D.legend.includes(m) ? "lg" : D.sets.includes(m) ? "set" : "skin";
           const o = what === "skin" ? { ws: m } : { wl: m };

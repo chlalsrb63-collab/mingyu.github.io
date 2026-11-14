@@ -120,7 +120,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `species.js` [356] | hero species and face parts: `SPECIES PARTS TABS PRESETS cleanLook withSpecies` (limits mirror logic `LOOK_MAX`) |
 | `looks.js` [244] | look editor (creation tabs) and the town mirror |
 | `mobart.js` [587] + `mobart_kit.js` [139] + `mobart_a/b/c.js` [376/309/561] | monsters as 3D-primitive models rasterised to pixels; `BEASTS_A` meadow/forest, `_B` crypt/city, `_C` sewer/cave/abyss/bosses/chest; `has draw icon KINDS` |
-| `weapons.js` [602] | weapon art per kind × tier, legendary/set looks, skins, glow: `DESIGNS weaponSprite weaponIcon`; an installed image (`assetKey`: manifest `weapon.<kind>.t<n>`/`.lg.`/`.set.`/`.skin.`, `icon.weapon.…`) replaces a look, rarity ink + glow still applied |
+| `weapons.js` [818] | weapon art per kind × tier, legendary silhouettes, set looks, skins, glow: `DESIGNS SIL MOTIF_SIL weaponSprite weaponIcon`; an installed image (`assetKey`: manifest `weapon.<kind>.t<n>`/`.lg.`/`.set.`/`.skin.`, `icon.weapon.…`) replaces a look, rarity ink + glow still applied |
 | `wardrobe.js` [593] · `wardrobe_ui.js` [283] | cosmetic layers drawn over heroes (`ART SLOTS dress`); costume shop + 외형 tab |
 | `swing.js` [131] | weapon stroke poses for attacks/casts |
 | `skillfx.js` [408] | skill visuals/sounds per server fx code (`skillEvent`, switch on codes 40–75), props, marks |
@@ -138,7 +138,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `style.css` [351] · `hud.css` [473] · `lobby.css` [225] | base + CRT, HUD/windows, lobby |
 | `assets/manifest.json` | installed external images/sounds by key (empty = all code-drawn); written by `scripts/import-art.mjs --install` |
 | `fonts/` | Galmuri pixel fonts (OFL) |
-| `_*.html` | dev preview pages (never deployed, `.assetsignore`): scene world iso over mobs sheet species wardrobe swing title icons uicons emo mini |
+| `_*.html` | dev preview pages (never deployed, `.assetsignore`): scene world iso over mobs sheet species wardrobe (weapons: `?m=sil`) swing title icons uicons emo mini |
 
 ### Tests — `game/tests/*.mjs` (plain node + `node:assert`; list in `tests/LIST`)
 sim (smoke) · party · loot (gear, repeat hunting) · life (fires, fishing, cooking, guilds) · world
