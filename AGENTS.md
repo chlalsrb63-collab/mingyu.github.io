@@ -153,7 +153,11 @@ trip, data:check errors, sheet v8).
 ### Scripts — `game/scripts/` (pure node; work on Windows)
 `build-logic.mjs` (concat parts + `data/**` → logic.js; `--check`, `--watch`; exports `readData buildLogic`) ·
 `editor-lib.mjs` (for the map editor: `palette mapToEditor defsForEditor listMaps checkData loadLogic`) ·
-`data-check.mjs` (`npm run data:check`, Korean errors with file/path) · `test-all.mjs` (build + run
+`data-check.mjs` (`npm run data:check`, Korean errors with file/path) · `editor-server.mjs` [~400]
+(`npm run editor`, EDITOR.bat: the map editor's local server on 127.0.0.1:5190 — serves `game/editor/`,
+`/public/` and `/asset/` read-only, the SCHEMA.md API; editor-lib runs in a recycled child process;
+writes only `data/**` with backups in `data/.backup/`; starts `wrangler dev` for playtests;
+`EDITOR_DATA=<dir>` edits another folder) · `test-all.mjs` (build + run
 tests/LIST; `--no-build`, names to filter, `-v`) · `dump-maps.mjs` (public/_maps.json for previews) ·
 `shot.mjs` (one screenshot; `--serve` for previews) · `artkit.mjs` (shared: browser launch, static server, PNG
 read/write) · `export-art.mjs` (`npm run art:export`: code-drawn art → `asset/_export/` PNGs) · `gallery.mjs`
@@ -165,7 +169,13 @@ contact sheets → `game/shots_cos/`).
 
 ### Other
 `game/data/` map-editor data, built into logic.js (contract: `docs/editor/SCHEMA.md`): `maps/<id>.json`
-(sample `willow.json` 버드나무 마을), `links.json`, `npcs.json`, `quests.json` · `ai/` AI team: `TASKS.md` task board, role files `codex.md` `gemini.md` `merge.md`, `reports/`, `worker.bat` (workers run in git worktrees `.work/<name>` on branch `<name>/work`) · root launchers `PLAY.bat` `AI-TEAM.bat` `AI-MERGE.bat` `UPDATE.bat` `TESTS.bat` `ASSETS.bat` (export + gallery), `install.ps1` (one-step Windows setup), `.vscode/tasks.json` (VS Code: starts the AI team on folder open) · `asset/` (repo root) art/sound library and gallery `index.html` (not deployed; §9) · `ai/prompts/weapon-assets.md`
+(sample `willow.json` 버드나무 마을), `links.json`, `npcs.json`, `quests.json` · `game/editor/` the map
+editor app (plain ES modules, Korean, no build; imports `/public/` art modules; owner guide
+`docs/editor/README.md`): `app.js` (tabs, keys, help) · `ui.js` (DOM, API, dialogs, pickers, mob/item/NPC
+pictures) · `validate.js` (map/links/npcs/quests checks, shared with the server) · `mapedit.js` (맵 tab:
+canvas, tools, layers, undo, panels, NPC form, save/playtest) · `preview.html` (quarter view via
+`scene2d.js`) · `quests.js` `npcs.js` `assets.js` `build.js` (other tabs) · `editor.css` · root
+`EDITOR.bat` starts it · `ai/` AI team: `TASKS.md` task board, role files `codex.md` `gemini.md` `merge.md`, `reports/`, `worker.bat` (workers run in git worktrees `.work/<name>` on branch `<name>/work`) · root launchers `PLAY.bat` `AI-TEAM.bat` `AI-MERGE.bat` `UPDATE.bat` `TESTS.bat` `ASSETS.bat` (export + gallery), `install.ps1` (one-step Windows setup), `.vscode/tasks.json` (VS Code: starts the AI team on folder open) · `asset/` (repo root) art/sound library and gallery `index.html` (not deployed; §9) · `ai/prompts/weapon-assets.md`
 (asset review + Codex/ChatGPT weapon prompts) · `.claude/agents/` 22 specialist roles adapted from the MIT "Claude Code Game Studios" template (game/systems/economy/level designer, narrative, writer, art director, technical artist, sound, UX, gameplay/network programmer, QA, performance, live-ops, security, producer…); Claude uses them as subagents, and Codex/Gemini may read one as a role guide (e.g. Gemini doing balance → `economy-designer.md`) · `.claude/skills/pixel-art/` pixel-art
 rules (any AI may read `rules/*.md`) · `.github/workflows/deploy-game.yml` CI (split check, tests,
 deploy) · root `index.html`/`profile.jpg` = the owner's unrelated GitHub Pages profile.
@@ -210,6 +220,7 @@ npm run watch:logic         # 2nd terminal while editing src/logic/*.js (wrangle
 npm run test:rules          # build + all rule tests in tests/LIST (~15 s); one: node scripts/test-all.mjs maps
 npm run check:split         # is logic.js up to date?
 npm run data:check          # validate game/data/** (maps, doors, NPCs, quests)
+npm run editor              # the world map editor → http://localhost:5190 (EDITOR.bat does this)
 npm run typecheck           # tsc --noEmit for the TS server files
 npm run deploy:cf           # checks + tests, then wrangler deploy -c wrangler.deploy.jsonc (needs `npx wrangler login`)
 ```
@@ -298,6 +309,8 @@ lives in `game/.wrangler/` (delete it to reset local accounts/characters).
 4. `shot.mjs --live --keys <key>`.
 
 **Add content with the editor data files** (`game/data/`, format in `docs/editor/SCHEMA.md`)
+0. Normally the owner does this in the editor (`npm run editor`). Changing the editor: drive it with
+   Playwright against a copy (`EDITOR_DATA=<scratch copy of data> npm run editor`), never the real data.
 1. A map: `data/maps/<id>.json` (new id, or `"replaces": "<built-in id>"`; start from
    `editor-lib.mjs mapToEditor(id)`); doors in its `portals` + an entry in `links.json` for the way in.
 2. NPCs on built-in maps: `npcs.json`; side quests: `quests.json` `side` (giver = an NPC with role

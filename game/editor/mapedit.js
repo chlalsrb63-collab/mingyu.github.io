@@ -276,10 +276,12 @@ export function setZoom(z, cx, cy) {
 }
 export function fit() {
   if (!E.m) return;
-  const z = Math.max(1, Math.min(8, Math.floor(Math.min((cv.width - 20) / (E.m.w * 4), (cv.height - 20) / (E.m.h * 4)))));
+  // the box, not the canvas: the canvas only takes the box's size at its next paint
+  const W = wrap.clientWidth || cv.width, H = wrap.clientHeight || cv.height;
+  const z = Math.max(1, Math.min(8, Math.floor(Math.min((W - 20) / (E.m.w * 4), (H - 20) / (E.m.h * 4)))));
   E.zoom = z;
   $("#zoom-lab").textContent = z + "×";
-  E.ox = Math.round((cv.width - E.m.w * ts()) / 2); E.oy = Math.round((cv.height - E.m.h * ts()) / 2);
+  E.ox = Math.round((W - E.m.w * ts()) / 2); E.oy = Math.round((H - E.m.h * ts()) / 2);
   draw();
 }
 /** Centre the view on a tile and blink it. */
@@ -1248,7 +1250,11 @@ export function init(opts) {
   $("#map-del").onclick = removeMap;
   $("#pv-refresh").onclick = () => refreshPreview(true);
   $("#pv-big").onclick = () => { pvBig = !pvBig; $("#pv-panel").classList.toggle("big", pvBig); $("#pv-big").textContent = pvBig ? "작게" : "크게"; setTimeout(() => refreshPreview(true), 60); };
-  addEventListener("message", (e) => { if (e.data && e.data.type === "preview-ready") { pvReady = true; refreshPreview(true); } });
+  addEventListener("message", (e) => { if (e.origin === location.origin && e.data && e.data.type === "preview-ready") { pvReady = true; refreshPreview(true); } });
+  // the preview page may have said "ready" before this listener existed: ask it again
+  const pv = $("#pv"), ping = () => { try { pv.contentWindow.postMessage({ type: "ping" }, location.origin); } catch { /* not loaded */ } };
+  pv.addEventListener("load", ping);
+  ping();
   setInterval(() => { if ($("#pv-auto").checked && !$("#tab-map").hidden) refreshPreview(false); }, 3000);
   setInterval(saveDraft, 5000);
   addEventListener("keyup", (e) => { if (e.code === "Space") { space = false; if (cv) cv.style.cursor = "crosshair"; } });

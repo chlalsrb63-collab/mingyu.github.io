@@ -23,6 +23,9 @@ fit();
 addEventListener("resize", fit);
 addEventListener("message", (e) => {
   const d = e.data;
+  if (e.origin !== location.origin) return;
+  // the editor may start after this page: it asks, and we answer that we are here
+  if (d && d.type === "ping") { parent.postMessage({ type: "preview-ready" }, location.origin); return; }
   if (!d || d.type !== "show" || !d.map) return;
   try {
     S.loadMap(d.map);

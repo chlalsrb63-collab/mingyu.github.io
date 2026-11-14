@@ -145,6 +145,28 @@ POST /api/playtest {map,x,y} → make sure the local game server runs and return
                                dev character at that spot (local dev only; never in production)
 ```
 
+Editor side, as built (additive; the routes above behave exactly as listed):
+- `:id` in `/api/map/:id` is the map's id in the game (a built-in id for a replacement); the file
+  written is `maps/<body.id>.json` (body.id may be the replacement's alias; body.id or body.replaces
+  must equal `:id`). GET finds a file by its own id or by `replaces`. A second file replacing the
+  same built-in is refused. PUT runs `game/editor/validate.js` (the same checks the app shows live)
+  and answers `{ ok, warnings }` or 400 `{ ok:false, error, errors, warnings }` (`{file, path, msg, x?, y?}`).
+  The full cross-file check stays `POST /api/check` (= editor-lib `checkData`).
+- Every write: temp file + rename, previous version copied to `data/.backup/<file>.<time>.json`
+  (last 20 per file). Bodies over 4 MB are refused. Requests whose Host/Origin is not local are refused.
+- `GET /api/defs` adds `mobs[k].sp/tint` and `items[id].tier/wk/rune` (for the pictures) and
+  `mainQuests` (the built-in chain as written in 10-tables.js, for "기본 퀘스트를 복사").
+- `GET /api/maps` is editor-lib `listMaps` (with `file`). `GET /api/assets` adds `manifest`
+  (public/assets/manifest.json). `POST /api/build?stream=1` streams the log as text and ends with
+  `__RESULT__{"ok", "steps"}`; build = build-logic, data-check, tests `sim world data`.
+- Extra routes: `GET /api/npcs/all` (every NPC: `{...npc, map, mapName, source: builtin|map|npcs.json}`),
+  `GET /api/status`, `GET /api/playtest/log` (the wrangler output).
+- `/api/playtest` runs build-logic, starts `node node_modules/wrangler/bin/wrangler.js dev -c
+  wrangler.local.jsonc --port 8787` if nothing answers there (stopped with the editor), returns
+  `{ ok, started, url }` with the URL below.
+- `EDITOR_DATA=<dir>` makes the server read/write that folder instead of `game/data` (tests); then
+  build only runs the data check and playtest is refused. `EDITOR_PORT` changes the port.
+
 ### /api/playtest — how the game honours it
 
 The URL is `http://localhost:8787/?dev=1&map=<id>&x=<tileX>&y=<tileY>` (the dev server started with
