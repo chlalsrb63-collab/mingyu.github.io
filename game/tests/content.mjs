@@ -397,8 +397,12 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   const shop = town.npcs.find((n) => n.role === "shop");
   assert.equal(W.act({ t: "tut", s: "bag" }).error, "지금 할 단계가 아닙니다");
   W.p.x = elder.x * T + 8; W.p.y = elder.y * T + 30;
-  assert.ok(W.act({ t: "quest", a: "accept" }).ok, "accepting the first quest is talking to the elder");
+  assert.equal(me.q.st, 0);
+  assert.ok(W.act({ t: "tut", s: "talk" }).ok, "talking to the elder");
+  assert.ok(W.p.toast.some((s) => s.includes("의뢰 수락: 초원의 쌍두 토끼")));
   me = W.self();
+  assert.equal(me.q.st, 1, "the first talk also accepts the first main quest");
+  assert.equal(W.act({ t: "quest", a: "accept" }).error, "이미 진행 중입니다", "nothing left to accept");
   // the old dagger in hand does not count: a 모험가 picks a weapon at 수련관 카이 and puts it on
   assert.equal(D.tutorial[me.tut.i].id, "equip", "talk → equip");
   const kai = town.npcs.find((n) => n.role === "train");
@@ -407,9 +411,12 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   assert.equal(W.act({ t: "starter", wk: "gun" }).ok, false);
   assert.ok(W.act({ t: "starter", wk: "sword" }).ok, "one free weapon");
   assert.equal(W.act({ t: "starter", wk: "bow" }).error, "이미 무기를 받았습니다", "only one");
-  assert.ok(W.p.toast.some((s) => s.includes("[녹슨 대검]을 받았습니다")));
-  assert.ok(W.act({ t: "eq", s: W.p.ch.inv.findIndex((s) => s.id === "w_warrior_1") }).ok);
+  assert.ok(W.p.toast.some((s) => s.includes("[녹슨 대검]을 받아 손에 들었습니다")));
   me = W.self();
+  // the picked weapon is in hand at once; quick slot 1 swaps the dagger's 암습 for the sword's first skill
+  assert.equal(me.eq.weapon.id, "w_warrior_1", "the starter is equipped");
+  assert.deepEqual(me.qs[0], ["s", "slash"], "slot 1 follows the weapon");
+  assert.ok(!me.qs.some((v) => v && v[1] === "ambush"), "no dagger skill left on the bar");
   assert.equal(me.wk, "sword");
   assert.ok(me.inv.some((s) => s.id === "w_rogue_1"), "the old dagger goes back to the bag");
   assert.equal(D.tutorial[me.tut.i].id, "bag", "equip → bag");

@@ -636,7 +636,7 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   mob: String(q.mob), n: Math.max(1, q.n | 0), title: String(q.title || ""), text: String(q.text || ""), xp: Math.max(0, q.xp | 0), gold: Math.max(0, q.gold | 0),
   items: (Array.isArray(q.items) ? q.items : []).filter((it) => Array.isArray(it) && typeof it[0] === "string" && Object.hasOwn(ITEMS, it[0])).map(([id, n]) => [id, Math.max(1, n | 0)]),
 })).filter((q) => Object.hasOwn(MOBS, q.mob)) : [
-  { mob: "twinhare", n: 5, title: "첫 발걸음", text: "차원이 겹친 뒤로 초원의 짐승들이 뒤틀려 돌아왔다네. 머리 둘 달린 토끼 5마리만 정리해 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
+  { mob: "twinhare", n: 5, title: "초원의 쌍두 토끼", text: "차원이 겹친 뒤로 초원의 짐승들이 뒤틀려 돌아왔다네. 머리 둘 달린 토끼 5마리만 정리해 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
   { mob: "gutfrog", n: 6, title: "뒤집힌 개구리", text: "속이 밖으로 나온 개구리가 길목에서 뛰어든다네. 창자 개구리 6마리를 잡아 주게.", xp: 220, gold: 120, items: [["mp_s", 5]] },
   { mob: "eyecrow", n: 8, title: "지켜보는 것들", text: "연못 위를 도는 눈알 까마귀 8마리를 떨어뜨려 주게. 먼저 덤비진 않지만, 보고 있는 게 영 꺼림칙해.", xp: 520, gold: 200, items: [["stone", 2]] },
   { mob: "lambmaw", n: 8, title: "뒤집힌 것", text: "초원 가장 깊은 곳에 안팎이 뒤집힌 양이 돌아다닌다네. 8마리를 잡아 주게. 고개를 숙이면 곧장 달려드니, 그 줄에서 비켜서게.", xp: 800, gold: 300, items: [["hp_s", 8]] },
@@ -4710,6 +4710,19 @@ function qsLearn(ch, id) {
   ch.qs[j] = ["s", id];
   return j + 1;
 }
+/**
+ * Slot 1 follows the weapon in hand: a skill of another weapon kind there gives way to this
+ * weapon's first skill (moved from wherever else it sat). Job signatures and items stay put.
+ */
+function qsFollow(ch) {
+  const wk = inHand(ch), v = ch.qs[0];
+  if (!wk || !v || v[0] !== "s" || SKILL[v[1]].job || skWks(SKILL[v[1]]).includes(wk)) return;
+  const first = WK_SKILLS[wk].find((id) => SKILL[id].kind === "a" && SKILL[id].need <= 1);
+  if (!first) return;
+  const at = ch.qs.findIndex((s) => s && s[0] === "s" && s[1] === first);
+  if (at > 0) ch.qs[at] = null;
+  ch.qs[0] = ["s", first];
+}
 /** The actives a character can use with the weapon in hand (and its job's signature), in order: for a fresh bar. */
 const qsStarter = (ch) => skillsFor(ch).filter((id) => SKILL[id].kind !== "p" && !skWhy(ch, SKILL[id]));
 
@@ -5038,7 +5051,7 @@ export function addPlayer(S, pid, ch) {
   sys(S, `${ch.name}님이 접속했습니다.`);
   ensureDaily(S, p);
   explore(S, p);
-  if (TUT[ch.tut.i] && TUT[ch.tut.i].id === "equip" && ch.eq.weapon && ch.sw) tutStep(S, p, "equip");
+  if (TUT[ch.tut.i] && tutDone(ch, TUT[ch.tut.i].id)) tutStep(S, p, TUT[ch.tut.i].id);
   checkAch(S, p);
   return p.eid;
 }
@@ -8056,16 +8069,22 @@ function evtView(S, p) {
 
 // ── first steps: a short tutorial chain beside the main quests
 const TUT = [
-  { id: "talk", title: "관리자에게 말 걸기", hint: "광장 분수 앞의 관리자 엘더윈에게 다가가 F를 누르세요.", reward: { gold: 20 } },
-  { id: "equip", title: "무기 장착하기", hint: "수련관 카이에게 무기를 하나 받아 C 창에서 장착하세요.", reward: { gold: 20 } },
+  { id: "talk", title: "관리자에게 말 걸기", hint: "광장 분수 앞의 관리자 엘더윈에게 다가가 F를 누르세요. 첫 의뢰를 맡겨 줍니다.", reward: { gold: 20 } },
+  { id: "equip", title: "무기 고르기", hint: "수련관 카이에게 F로 말을 걸어 무기를 하나 고르세요. 고른 무기를 바로 손에 듭니다.", reward: { gold: 20 } },
   { id: "bag", title: "가방 열기", hint: "I를 눌러 가방을 열어 보세요.", reward: { gold: 20 } },
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
   { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
   { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
-  { id: "skill", title: "스킬 써 보기", hint: "무기 숙련 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 숫자 키(처음이면 1)를 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
+  { id: "skill", title: "스킬 써 보기", hint: "든 무기의 첫 스킬은 숙련 1부터 단축칸 1번에 있습니다. 몬스터 곁에서 1을 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
   // appended (the index is persisted): spending experience on a stat point
-  { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁에서 C 창 → 능력치에서 한 칸 올려 보세요.", reward: { gold: 50 } },
+  { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁이나 수련관 카이 앞에서 C 창 → 능력치를 한 칸 올려 보세요. 한 칸이 1레벨입니다.", reward: { gold: 50 } },
 ];
+/** Is tutorial step `id` already done by what the sheet shows? (a step that becomes current then completes at once) */
+function tutDone(ch, id) {
+  if (id === "equip") return !!(ch.eq.weapon && ch.sw);
+  if (id === "level") return (ch.xpt | 0) > 0;
+  return false;
+}
 function tutStep(S, p, id) {
   const ch = p.ch, step = TUT[ch.tut.i];
   if (!step || step.id !== id) return;
@@ -8078,7 +8097,7 @@ function tutStep(S, p, id) {
   toast(p, `[첫걸음] ${step.title} 완료!${next ? ` 다음: ${next.title}` : " 모든 첫걸음을 마쳤습니다!"}`);
   p.dirty = true;
   // a step already done needs no doing
-  if (next && next.id === "equip" && ch.eq.weapon && ch.sw) tutStep(S, p, "equip");
+  if (next && tutDone(ch, next.id)) tutStep(S, p, next.id);
 }
 
 // ───────────────────────────── the turning day, the weather, the fire at night ─────────────────────────────
@@ -10386,7 +10405,16 @@ export function applyAction(S, pid, a) {
       checkAch(S, p);
       break;
     }
-    case "tut": tutStep(S, p, a.s); break;
+    case "tut": {
+      // the first talk with 엘더윈 also takes on the first main quest: no button to miss
+      if (a.s === "talk" && ch.q.i === 0 && ch.q.st === 0 && QUESTS[0]) {
+        ch.q.st = 1; ch.q.n = 0;
+        toast(p, `의뢰 수락: ${QUESTS[0].title}`);
+        p.dirty = true;
+      }
+      tutStep(S, p, a.s);
+      break;
+    }
     case "warp": {
       const i = a.i || 0, w = stonesOf(mapOf(a.to))[i] || wpOf(a.to);
       S.maps[p.map].ev.push(["wp", p.eid, 0]);
@@ -10423,12 +10451,16 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "starter": {
-      const id = `w_${WK_ID[a.wk]}_1`;
+      // the weapon picked at 카이 goes straight into the hand; the one held before goes to the bag
+      const id = `w_${WK_ID[a.wk]}_1`, old = ch.eq.weapon, was = inHand(ch);
       ch.sw = 1;
-      ch.inv.push(plain(id));
+      ch.eq.weapon = plain(id);
+      if (old) ch.inv.push(old);
       p.gain.push(["item", id, 1, 0]);
-      toast(p, `[${ITEMS[id].name}]${pp(ITEMS[id].name, "을를")} 받았습니다. C 창에서 장착하세요.`);
-      p.dirty = true;
+      if (inHand(ch) !== was) handChanged(p);
+      afterGear(S, p);
+      toast(p, `[${ITEMS[id].name}]${pp(ITEMS[id].name, "을를")} 받아 손에 들었습니다.${old ? " 들던 무기는 가방에 넣었습니다." : ""}`);
+      tutStep(S, p, "equip");
       break;
     }
     case "job_change": {
@@ -10464,6 +10496,7 @@ export function applyAction(S, pid, a) {
 function handChanged(p) {
   const ch = p.ch, wk = inHand(ch);
   p.dance = null;
+  qsFollow(ch);
   if (!wk || ch.wm[wk].lv > 1 || ch.wm[wk].xp > 0) return;
   for (const id of WK_SKILLS[wk]) if (SKILL[id].kind === "a" && SKILL[id].need <= 1) qsLearn(ch, id);
 }

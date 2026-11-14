@@ -502,7 +502,9 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(W.act({ t: "starter", wk: "bow" }).error, "가방이 가득 찼습니다");
   W.ch.inv = [];
   assert.ok(W.act({ t: "starter", wk: "bow" }).ok);
-  assert.deepEqual(W.ch.inv.map((s) => s.id), ["w_bow_1"]);
+  assert.equal(W.ch.eq.weapon.id, "w_bow_1", "the starter goes straight into the hand");
+  assert.deepEqual(W.ch.inv.map((s) => s.id), ["w_rogue_1"], "the old dagger goes to the bag");
+  assert.notEqual(W.ch.qs[0][1], "ambush", "slot 1 no longer holds the dagger's skill");
   assert.equal(W.ch.sw, 1);
   assert.equal(W.act({ t: "starter", wk: "sword" }).error, "이미 무기를 받았습니다");
 }

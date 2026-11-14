@@ -203,13 +203,14 @@ export function tutTry(id) {
 }
 /** The first steps told for fingers: the server's hints name keyboard keys a phone does not have. */
 const TUT_TOUCH = {
-  talk: "광장 분수 앞의 관리자 엘더윈에게 걸어가, 아래에 뜨는 [▶ 관리자 엘더윈]을 누르세요.",
-  equip: "메뉴 → 캐릭터에서 무기를 장착하세요.",
+  talk: "광장 분수 앞의 관리자 엘더윈에게 걸어가, 아래에 뜨는 [▶ 관리자 엘더윈]을 누르세요. 첫 의뢰를 맡겨 줍니다.",
+  equip: "수련관 카이에게 다가가 [▶ 수련관 카이]를 누르고 무기를 하나 고르세요. 고른 무기를 바로 손에 듭니다.",
   bag: "메뉴 → 가방을 열어 보세요.",
   buy: "보급상 리나에게 다가가 [▶ 보급상 리나]를 누르고 빨간 물약을 사 보세요.",
   hunt: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. [공격] 버튼으로 치고, [자동]을 켜면 알아서 사냥합니다.",
   rest: "모닥불 곁에서 메뉴 → 앉기를 눌러 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.",
-  skill: "레벨 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 칸을 눌러 써 보세요.",
+  skill: "든 무기의 첫 스킬은 숙련 1부터 단축칸 1번에 있습니다. 몬스터 곁에서 1번 칸을 눌러 써 보세요.",
+  level: "모닥불 곁이나 수련관 카이 앞에서 메뉴 → 캐릭터 → 능력치를 한 칸 올려 보세요. 한 칸이 1레벨입니다.",
 };
 export function tutCard(s) {
   const card = $("#tut"), steps = G.defs.tutorial || [], i = s.tut ? s.tut.i : steps.length, step = steps[i];

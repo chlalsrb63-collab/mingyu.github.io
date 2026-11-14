@@ -521,7 +521,16 @@ export function applyAction(S, pid, a) {
       checkAch(S, p);
       break;
     }
-    case "tut": tutStep(S, p, a.s); break;
+    case "tut": {
+      // the first talk with 엘더윈 also takes on the first main quest: no button to miss
+      if (a.s === "talk" && ch.q.i === 0 && ch.q.st === 0 && QUESTS[0]) {
+        ch.q.st = 1; ch.q.n = 0;
+        toast(p, `의뢰 수락: ${QUESTS[0].title}`);
+        p.dirty = true;
+      }
+      tutStep(S, p, a.s);
+      break;
+    }
     case "warp": {
       const i = a.i || 0, w = stonesOf(mapOf(a.to))[i] || wpOf(a.to);
       S.maps[p.map].ev.push(["wp", p.eid, 0]);
@@ -558,12 +567,16 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "starter": {
-      const id = `w_${WK_ID[a.wk]}_1`;
+      // the weapon picked at 카이 goes straight into the hand; the one held before goes to the bag
+      const id = `w_${WK_ID[a.wk]}_1`, old = ch.eq.weapon, was = inHand(ch);
       ch.sw = 1;
-      ch.inv.push(plain(id));
+      ch.eq.weapon = plain(id);
+      if (old) ch.inv.push(old);
       p.gain.push(["item", id, 1, 0]);
-      toast(p, `[${ITEMS[id].name}]${pp(ITEMS[id].name, "을를")} 받았습니다. C 창에서 장착하세요.`);
-      p.dirty = true;
+      if (inHand(ch) !== was) handChanged(p);
+      afterGear(S, p);
+      toast(p, `[${ITEMS[id].name}]${pp(ITEMS[id].name, "을를")} 받아 손에 들었습니다.${old ? " 들던 무기는 가방에 넣었습니다." : ""}`);
+      tutStep(S, p, "equip");
       break;
     }
     case "job_change": {
@@ -599,6 +612,7 @@ export function applyAction(S, pid, a) {
 function handChanged(p) {
   const ch = p.ch, wk = inHand(ch);
   p.dance = null;
+  qsFollow(ch);
   if (!wk || ch.wm[wk].lv > 1 || ch.wm[wk].xp > 0) return;
   for (const id of WK_SKILLS[wk]) if (SKILL[id].kind === "a" && SKILL[id].need <= 1) qsLearn(ch, id);
 }

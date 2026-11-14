@@ -324,16 +324,22 @@ function evtView(S, p) {
 
 // ── first steps: a short tutorial chain beside the main quests
 const TUT = [
-  { id: "talk", title: "관리자에게 말 걸기", hint: "광장 분수 앞의 관리자 엘더윈에게 다가가 F를 누르세요.", reward: { gold: 20 } },
-  { id: "equip", title: "무기 장착하기", hint: "수련관 카이에게 무기를 하나 받아 C 창에서 장착하세요.", reward: { gold: 20 } },
+  { id: "talk", title: "관리자에게 말 걸기", hint: "광장 분수 앞의 관리자 엘더윈에게 다가가 F를 누르세요. 첫 의뢰를 맡겨 줍니다.", reward: { gold: 20 } },
+  { id: "equip", title: "무기 고르기", hint: "수련관 카이에게 F로 말을 걸어 무기를 하나 고르세요. 고른 무기를 바로 손에 듭니다.", reward: { gold: 20 } },
   { id: "bag", title: "가방 열기", hint: "I를 눌러 가방을 열어 보세요.", reward: { gold: 20 } },
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
   { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
   { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
-  { id: "skill", title: "스킬 써 보기", hint: "무기 숙련 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 숫자 키(처음이면 1)를 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
+  { id: "skill", title: "스킬 써 보기", hint: "든 무기의 첫 스킬은 숙련 1부터 단축칸 1번에 있습니다. 몬스터 곁에서 1을 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
   // appended (the index is persisted): spending experience on a stat point
-  { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁에서 C 창 → 능력치에서 한 칸 올려 보세요.", reward: { gold: 50 } },
+  { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁이나 수련관 카이 앞에서 C 창 → 능력치를 한 칸 올려 보세요. 한 칸이 1레벨입니다.", reward: { gold: 50 } },
 ];
+/** Is tutorial step `id` already done by what the sheet shows? (a step that becomes current then completes at once) */
+function tutDone(ch, id) {
+  if (id === "equip") return !!(ch.eq.weapon && ch.sw);
+  if (id === "level") return (ch.xpt | 0) > 0;
+  return false;
+}
 function tutStep(S, p, id) {
   const ch = p.ch, step = TUT[ch.tut.i];
   if (!step || step.id !== id) return;
@@ -346,6 +352,6 @@ function tutStep(S, p, id) {
   toast(p, `[첫걸음] ${step.title} 완료!${next ? ` 다음: ${next.title}` : " 모든 첫걸음을 마쳤습니다!"}`);
   p.dirty = true;
   // a step already done needs no doing
-  if (next && next.id === "equip" && ch.eq.weapon && ch.sw) tutStep(S, p, "equip");
+  if (next && tutDone(ch, next.id)) tutStep(S, p, next.id);
 }
 

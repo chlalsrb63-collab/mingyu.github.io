@@ -289,6 +289,7 @@ for (const cls of Object.keys(WK)) {
   const W = world("첫펫", "warrior", 3);
   const ch = W.ch;
   ch.tut = { i: D.tutorial.findIndex((t) => t.id === "skill"), n: 0 };
+  ch.xpt = 0;   // no stat point bought yet, so the last step waits
   W.to("meadow", 20, 22);
   W.step();
   const p = W.p, m = L.runtime(W.S, "meadow").mobs.find((o) => o.k === "twinhare");
@@ -297,6 +298,20 @@ for (const cls of Object.keys(WK)) {
   assert.ok(W.act({ t: "sk", id: "slash" }).ok);
   assert.equal(D.tutorial[ch.tut.i].id, "level", "the skill step done; the stat-point step is last");
   assert.equal(count(ch, "pet_chick"), 1, "the first steps end with a pet chick");
+}
+{
+  // a step that becomes current completes at once when it is already done (a stat point bought early)
+  const W = world("먼저함", "warrior", 3);
+  const ch = W.ch;
+  assert.ok(ch.xpt > 0, "points already bought");
+  ch.tut = { i: D.tutorial.findIndex((t) => t.id === "skill"), n: 0 };
+  W.to("meadow", 20, 22);
+  W.step();
+  const p = W.p, m = L.runtime(W.S, "meadow").mobs.find((o) => o.k === "twinhare");
+  m.dead = false; m.hp = 500; m.x = p.x + 16; m.y = p.y;
+  p.mp = 999;
+  assert.ok(W.act({ t: "sk", id: "slash" }).ok);
+  assert.equal(ch.tut.i, D.tutorial.length, "skill → level done at once → chain finished");
 }
 
 // ── scrolls: ten minutes each, never stacking with themselves
