@@ -224,6 +224,8 @@ function stopGame() {
 }
 
 function loadMap(m) {
+  // through a house door (into or out of an interior): a warm fade and the door's latch and bell
+  if (G.map && G.map.id !== m.id && (G.map.theme === "interior" || m.theme === "interior")) { doorFade(); Sound.play("door"); }
   G.map = m;
   G.path = null;
   S3.leaveStage();
@@ -962,6 +964,8 @@ function autoOk(m, s, t, d) {
 
 /** What the ground under a tile sounds like underfoot. */
 const STEP_KIND = { ".": "grass", ",": "grass", '"': "grass", ":": "grass", ";": "grass", p: "dirt", s: "dirt", b: "wood", w: "dirt" };
+/** Indoors: boards creak, rugs and the door mat muffle (iso_interior.js floors). */
+const STEP_ROOM = { f: "wood", l: "wood", q: "grass", u: "grass", y: "grass", e: "dirt", x: "stone" };
 const snd = { foot: 0, look: 0, bossT: 0 };
 /** Footsteps, a nearby fire's crackle, an elite turning up, and boss / rift music over the map's own. */
 function soundscape(t) {
@@ -969,7 +973,8 @@ function soundscape(t) {
   const f = Math.floor(me.walk);
   if (me.moving && f !== snd.foot && f % 2 === 0) {
     const row = G.map.g[Math.floor(me.y / T)];
-    Sound.step(STEP_KIND[row && row[Math.floor(me.x / T)]] || "stone");
+    const ch = row && row[Math.floor(me.x / T)];
+    Sound.step((G.map.theme === "interior" ? STEP_ROOM[ch] : STEP_KIND[ch]) || "stone");
   }
   snd.foot = f;
   if (t - snd.look < 250) return;
@@ -1903,7 +1908,7 @@ function refreshUi() {
   draw("inv", () => [s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs], renderInv);
   draw("char", () => [s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.tr, s.lg, s.lvl, s.name, s.guild], renderChar);
   draw("skill", () => [s.lvl, s.cls, s.wk, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.skl, s.qs], renderSkills);
-  draw("shop", () => [s.gold, s.cls, s.lvl, s.inv], renderShop);
+  draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near], renderShop);
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone")], renderSmith);
   draw("train", () => [s.xp, s.tr, s.trc, s.skl, s.skc, s.gold, s.lvl], renderTrain);
   draw("bank", () => [s.inv, s.wh, s.gold], Growth.renderBank);
@@ -2327,6 +2332,11 @@ function castBar(t) {
   if (box.hidden) { box.hidden = false; $("#cast-name").textContent = "귀환 주문서"; }
   $("#cast-fill").style.width = `${clamp(((t - c.start) / (c.end - c.start)) * 100, 0, 100)}%`;
 }
+function doorFade() {
+  const f = $("#fade");
+  f.hidden = true; f.classList.add("door"); void f.offsetWidth; f.hidden = false;
+  setTimeout(() => { f.hidden = true; f.classList.remove("door"); }, 900);
+}
 function fadeIn() {
   const f = $("#fade");
   f.hidden = true; void f.offsetWidth; f.hidden = false;
@@ -2338,7 +2348,15 @@ function renderShop(s) {
   const it = G.defs.items, list = $("#shop-list");
   list.textContent = "";
   Growth.shopTop(list, s);
-  for (const key of G.defs.shop) {
+  // a shopkeeper with their own counter (the cafe, the inn) sells their own goods, under their own name
+  const keeper = G.near && G.near.role === "shop" ? G.near : null, goods = (keeper && keeper.goods) || G.defs.shop;
+  const win = $("#w-shop");
+  if (win) {
+    win.querySelector("header .t").textContent = keeper ? keeper.name : "보급상 리나";
+    const say = win.querySelector(".say");
+    if (say) say.textContent = keeper && keeper.goods && keeper.lines ? keeper.lines[0] : "어서 와요! 필요한 건 다 있답니다. 가방에서 물건을 고르면 팔 수도 있어요.";
+  }
+  for (const key of goods) {
     const id = key[0] === "W" && key.length === 2 ? `w_${s.cls}_${key[1]}` : key;
     const d = it[id];
     if (d.cls && d.cls !== s.cls) continue;

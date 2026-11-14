@@ -25,6 +25,7 @@ import * as MA from "./mobart.js";
 import * as Sky from "./sky.js";
 import * as Camp from "./camp.js";
 import { HUE, hueAt } from "./autumn.js";
+import * as IN from "./iso_interior.js";
 
 const T = 32, P = 2;
 /** Iso pixels per server unit along the screen's x; y is half that. Height lifts by 26 px per unit `h`. */
@@ -1025,6 +1026,8 @@ let theme = "meadow", waterTiles = [], smokers = [];
 let camps = [];
 /** Level art from decor.js: falling water, a layer that breathes, little emitters, lantern strings, critters, signs. */
 let falls = [], pulseCv = null, emit = [], strings = [], critters = [], signs = [], lights = [];
+/** An interior's lamps, fire and window light (iso_interior.js roomLight). */
+let roomL = { glows: [], wins: [], motes: [] };
 /** Whether the ground came from isotiles.js (its water animates itself). */
 let artGround = false;
 
@@ -1160,9 +1163,9 @@ export function loadMap(m) {
   map = m;
   theme = m.theme || themeOf(m);
   // the ground: painted flat on the square grid, then laid onto diamonds — unless isotiles.js has the real thing
-  const flat = paintGround(m, theme);
-  DC.decals(m, theme, flat.getContext("2d"));
-  paintExtras(m, flat);
+  // (indoors there is no flat fallback: iso_interior.js bakes the floor)
+  const flat = theme === "interior" ? sheet(m.w * T, m.h * T)[0] : paintGround(m, theme);
+  if (theme !== "interior") { DC.decals(m, theme, flat.getContext("2d")); paintExtras(m, flat); }
   ground = { frames: [toIso(m, flat)], ox: m.h * 16 * K, oy: 0 };
   artGround = false;
   if (IT.ready) {
@@ -1172,6 +1175,7 @@ export function loadMap(m) {
   const S = scenery(), D = DC.sprites();
   statics = []; waterTiles = []; smokers = []; signs = []; lights = [];
   const spiritAt = new Set(m.big.filter((b) => b.t === "spirit").map((b) => b.x + "," + b.y));
+  roomL = { glows: [], wins: [], motes: [] };
   const lay = DC.plan(m, theme), mkt = theme === "town" ? DC.town(m) : { statics: [], swap: new Set(), strings: [] };
   const pc = DC.pulse(m, theme);
   pulseCv = pc ? toIso(m, pc) : null;
@@ -1207,6 +1211,10 @@ export function loadMap(m) {
         // a wall tall enough to hide someone can be cut down to a stump when they stand behind it
         if (ch !== "h" && "low" in pc2) st.cut = pc2;
         if (ch === "h") { const hb = houseAt(x, y); if (hb) { artHouse.add(hb); slice(st, hb.x, hb.y, 4, 3); } }
+        // indoors: a fire, steam, a sleeping cat; lamps and windows light the room (iso_interior.js)
+        if (pc2.anim) st.anim = pc2.anim;
+        if (pc2.glow) roomL.glows.push({ ...pc2.glow, X: X + pc2.glow.x, Y: Y + pc2.glow.y });
+        if (pc2.win) roomL.wins.push(IN.windowPatch(pc2.win, x, y, tI));
         art.set(key, st);
         statics.push(st);
         continue;
@@ -1965,8 +1973,8 @@ function glowAfterDark(n, t, ox, oy) {
 /** How dark each world is, and the colour of its darkness. */
 const DARK = { forest: ["#06242a", 0.1], city: ["#0a0e30", 0.18], cave: ["#060a22", 0.17], crypt: ["#0a0810", 0.2], sewer: ["#04100a", 0.17], abyss: ["#1e0208", 0.16] };
 /** What lies beyond the edge of the map, and the earth its edge is cut from. */
-const VOID = { cave: "#05060e", crypt: "#060508", sewer: "#040806", abyss: "#0c0204", city: "#07080e" };
-const SKIRT = { meadow: ["#7a5a3a", "#5a4030"], town: ["#7a5a3a", "#5a4030"], forest: ["#5a4632", "#3e3024"], city: ["#4a5064", "#343846"], cave: ["#2e4468", "#1b2644"] };
+const VOID = { interior: "#120c0a", cave: "#05060e", crypt: "#060508", sewer: "#040806", abyss: "#0c0204", city: "#07080e" };
+const SKIRT = { interior: ["#5a3a26", "#3a2418"], meadow: ["#7a5a3a", "#5a4030"], town: ["#7a5a3a", "#5a4030"], forest: ["#5a4632", "#3e3024"], city: ["#4a5064", "#343846"], cave: ["#2e4468", "#1b2644"] };
 let lightCv = null, lg = null;
 
 export function sync(state2) { G = state2; }
@@ -2080,13 +2088,21 @@ export function render(focusX, focusY, dt, t, snap) {
   g.setTransform(FLAT[0], FLAT[1], FLAT[2], FLAT[3], -ox, -oy);
   for (const p of map.portals) {
     const px = p.x * T + 16, py = p.y * T + 16;
+    if (p.door) {
+      // a house door: a mat on the step outside (indoors it is part of the floor) and a warm, breathing light
+      if (theme !== "interior") { g.fillStyle = "#5a3a22"; g.fillRect(px - 13, py - 11, 26, 22); g.fillStyle = "#b8925a"; g.fillRect(px - 11, py - 9, 22, 18); g.fillStyle = "#a8824c"; for (let i = -9; i < 9; i += 4) g.fillRect(px - 11, py + i, 22, 2); }
+      const k = 0.5 + 0.5 * Math.sin(t / 900 + p.x);
+      g.fillStyle = theme === "interior" ? `rgba(255,246,214,${0.1 + k * 0.08})` : `rgba(255,200,120,${0.08 + k * 0.08})`;
+      g.beginPath(); g.arc(px, py, 18 + k * 3, 0, 7); g.fill();
+      continue;
+    }
     for (let i = 0; i < 3; i++) { const ph = (t / 700 + i / 3) % 1; g.strokeStyle = `rgba(${i % 2 ? "170,225,255" : "205,160,255"},${1 - ph})`; g.lineWidth = 4; g.beginPath(); g.arc(px, py, 8 + ph * 20, 0, 7); g.stroke(); }
   }
   g.lineWidth = 1;
   drawFx(now, true);
   g.setTransform(1, 0, 0, 1, -ox, -oy);
   drawAimArrow(t, dt, false);
-  for (const p of map.portals) if (Math.random() < 0.2) { const [px, py] = tI(p.x + 0.5, p.y + 0.5); parts.push({ x: px + Math.random() * 24 - 12, y: py + Math.random() * 8 - 4, vx: 0, vy: -40, life: 0.6, color: "#d6b8ff", g: 0 }); }
+  for (const p of map.portals) if (!p.door && Math.random() < 0.2) { const [px, py] = tI(p.x + 0.5, p.y + 0.5); parts.push({ x: px + Math.random() * 24 - 12, y: py + Math.random() * 8 - 4, vx: 0, vy: -40, life: 0.6, color: "#d6b8ff", g: 0 }); }
   DC.drawFalls(g, falls, t, ox, oy, vw, vh);
   for (const s of smokers) if (s.x > ox - 20 && s.x < ox + vw + 20 && s.y > oy - 60 && s.y < oy + vh && Math.random() < 0.07) parts.push({ x: s.x + Math.random() * 4, y: s.y, vx: 5 + Math.random() * 5, vy: -13, life: 1.3 + Math.random(), color: "#eef0f6", g: -5, s: 3 });
 
@@ -2138,6 +2154,7 @@ export function render(focusX, focusY, dt, t, snap) {
       // a crystal that catches the light, a waypoint's rune, a landmark's glow, a fountain that splashes
       if (st.glint >= 0 && Math.sin(t / 420 + st.glint) > 0.86) { g.fillStyle = "#ffffff"; g.fillRect(dx + 16, dy + 6, 5, 1); g.fillRect(dx + 18, dy + 4, 1, 5); }
       if (st.wp) drawRune(st, dx, dy, t);
+      if (st.anim) st.anim(g, t, st.tx, st.ty, parts);
       if (st.land && st.glow) {
         const beat = st.land === "heart" ? Math.max(0, Math.sin(t / 260)) ** 3 + Math.max(0, Math.sin(t / 260 - 0.9)) ** 3 * 0.5 : 0.5 + 0.5 * Math.sin(t / 900 + st.ph);
         const r = st.land === "heart" ? 70 : 44, gy = st.land === "heart" ? dy + 70 : st.land === "board" ? dy + 44 : st.land === "shrine" ? dy + 14 : st.land === "oak" ? dy + 94 : dy + sp.height * 0.45;
@@ -2149,8 +2166,12 @@ export function render(focusX, focusY, dt, t, snap) {
       if (st.water && Math.random() < 0.45) parts.push({ x: st.x - 9 + Math.random() * 18, y: st.y - 50, vx: (Math.random() - 0.5) * 34, vy: -24 - Math.random() * 20, life: 0.55, color: "#dff4ff", g: 170, s: 2 });
     } else if (o.n) {
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 6, 3, 0, 0, 7); g.fill();
-      const nt = t + o.n.x * 37, nf = nt % 3900 < 140 ? SP.FRAME.blink : Math.floor(nt / 620) % 2 ? SP.FRAME.breathe : SP.FRAME.stand;
+      const pose = o.n.n.pose, nt = t + o.n.x * 37;
+      const nf = pose === "doze" || nt % 3900 < 140 ? SP.FRAME.blink : Math.floor(nt / (pose === "doze" ? 1400 : 620)) % 2 ? SP.FRAME.breathe : SP.FRAME.stand;
       g.drawImage(o.n.sheet.front[nf], Math.round(o.n.x - SP.FOOT[0]), Math.round(o.n.y - SP.FOOT[1]));
+      if (pose) IN.drawPose(g, pose, o.n.x, o.n.y, t, parts, o.n.n.x * 7 + o.n.n.y);
+    } else if (o.f && theme === "interior") {
+      // indoors the fire burns in the fireplace (iso_interior.js), not on the floor
     } else if (o.f) {
       // a campfire: warm light on the ground, a flickering flame, sparks drifting up
       const x = o.X, y = o.Y, fr = SP.campfire()[Math.floor(t / 140 + o.f.id) % 3];
@@ -2244,6 +2265,8 @@ export function render(focusX, focusY, dt, t, snap) {
     if (p.life <= 0) { parts.splice(i, 1); continue; }
     p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt;
     const sz = p.s || 3;
+    // a sleeper's "z", drifting up
+    if (p.z) { g.globalAlpha = clamp(p.life, 0, 1); g.fillStyle = p.color; const zx = Math.round(p.x), zy = Math.round(p.y); g.fillRect(zx, zy, 3, 1); g.fillRect(zx + 1, zy + 1, 1, 1); g.fillRect(zx, zy + 2, 3, 1); continue; }
     g.globalAlpha = clamp(p.life * 3, 0, 1); g.fillStyle = p.color; g.fillRect(Math.round(p.x) - (sz >> 1), Math.round(p.y) - (sz >> 1), sz, sz);
   }
   g.globalAlpha = 1;
@@ -2276,6 +2299,8 @@ export function render(focusX, focusY, dt, t, snap) {
     g.drawImage(lightCv, 0, 0);
   }
   g.setTransform(1, 0, 0, 1, 0, 0);
+  // indoors: warm lamplight and the fire, sunlight through the windows by day (iso_interior.js)
+  if (theme === "interior") { IN.roomLight(g, roomL, t, dt, ox, oy, vw, vh, Sky.nightK()); cam.ox = ox; cam.oy = oy; return; }
   // outdoors the day turns: the whole view graded by the hour and the weather (one even multiply,
   // never darker at the edges), with lamps, windows, runes and fires cut into the night as pools
   const L = outdoor ? Sky.grade(g, vw, vh, dt, t, skyLights(t, ox, oy), Sky.cloudPainter(ox, oy, t)) : null;

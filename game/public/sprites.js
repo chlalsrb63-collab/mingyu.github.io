@@ -299,6 +299,11 @@ export function playerLook(cls, look = [], gear = {}) {
 }
 /** Townsfolk wear a tunic in their trade's colour. */
 export function npcLook(look, role) {
+  // an editor NPC with its own fur: [ear, eye, nose, cloth, fur, pat] (data/maps, data/npcs.json)
+  if (Array.isArray(look) && look.length >= 5 && typeof look[4] === "string") {
+    const n = (i, max) => Math.max(0, Math.min(max, look[i] | 0));
+    return { ear: n(0, 4), eye: n(1, 4), nose: n(2, 4), fur: look[4], blush: PINK, pat: n(5, 3), cloth: typeof look[3] === "string" ? look[3] : "#5e6a88" };
+  }
   if (role === "elder") return { ear: 1, eye: 4, nose: 0, fur: "#e6e6f0", blush: PINK, pat: 0, cloth: "#5a6ac0" };
   if (role === "smith") return { ear: 2, eye: 0, nose: 3, fur: "#c89a74", blush: null, pat: 0, cloth: "#6a5a52" };
   if (role === "shop") return { ear: 0, eye: 3, nose: 1, fur: "#ffe6d2", blush: PINK, pat: 0, cloth: "#e07a8a" };

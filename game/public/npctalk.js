@@ -65,7 +65,8 @@ const LINES = {
 const said = new Map();
 /** The next line for this NPC, or null if they have nothing to add. */
 export function lineFor(npc, s) {
-  const list = LINES[npc.role];
+  // a service NPC from the map editor (the cafe, the inn, the town hall) speaks its own lines in turn
+  const list = Array.isArray(npc.lines) && npc.lines.length ? npc.lines : LINES[npc.role];
   if (!list || !s) return null;
   // the elder opens with the quest line (what to do next); everyone else starts anywhere
   const i = (said.get(npc.name) ?? (npc.role === "elder" ? 1 : Math.floor(Math.random() * list.length))) % list.length;

@@ -22,8 +22,10 @@
  */
 import { bake } from "./iso_ground.js";
 import { tall } from "./iso_tall.js";
+import { bakeRoom, roomPiece, OBJECTS as ROOM_OBJ } from "./iso_interior.js";
 
 export const TW = 32, TH = 16;
 export const ready = true;
-export function bakeGround(m, theme) { return bake(m, theme); }
-export function tallAt(m, x, y, theme) { return tall(m, x, y, theme); }
+/** Interiors (theme "interior", iso_interior.js) have their own floors; their furniture stands in any theme. */
+export function bakeGround(m, theme) { return theme === "interior" ? bakeRoom(m) : bake(m, theme); }
+export function tallAt(m, x, y, theme) { return ROOM_OBJ.includes(m.o[y][x]) ? roomPiece(m, x, y) : tall(m, x, y, theme); }

@@ -233,8 +233,9 @@ export function renderGround(m) {
   return { frames: out, ox: m.h * TILE };
 }
 
-const MINI = { t: "#447e38", r: "#8a8a80", ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86", j: "#5a5638", v: "#b0a68e", g: "#4a5248", "=": "#a8a090", "%": "#b0602a", "&": "#4a2a52" };
-const MINI_OBJ = { C: "#6e6654", H: "#2f7036", U: "#8a8478", l: "#6a4628", u: "#6a4628", e: "#5a9a58", q: "#a8a498", n: "#8a6a3a", M: "#6a4628", D: "#2c5a48", E: "#c8b888", T: "#2a6030", P: "#1d4a30", R: "#74747c", B: "#35803a", h: "#8a4a3a", a: "#6a9ac8", K: "#5ac8d8", S: "#3a3550", F: "#6a4628", L: "#c8b060", G: "#6a4628", Z: "#22242c", c: "#8a3a3a", y: "#a83a3a", x: "#4a4d56",
+const MINI = { f: "#c48a52", l: "#8e5c3a", x: "#a2958a", q: "#c8604e", u: "#468a8e", y: "#a2323a", e: "#b8925a", t: "#447e38", r: "#8a8a80", ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86", j: "#5a5638", v: "#b0a68e", g: "#4a5248", "=": "#a8a090", "%": "#b0602a", "&": "#4a2a52" };
+const MINI_OBJ = { "=": "#3a2620", "+": "#bfe0ee", "^": "#2a3a34", "~": "#c89a3a", "@": "#5a3420", "!": "#a8343c", _: "#e8dcc0", o: "#9a6440", k: "#6e4428", s: "#9a4a3a", m: "#8a5634", j: "#c87a3a", "$": "#e8b860", b: "#5a8a4a", r: "#7a4a2c", t: "#d8a830", "#": "#b8a898", g: "#4e9a4a", "*": "#ffd890", v: "#c89a6a", "-": "#7a4a2c", p: "#4a6a9a", w: "#9a6440", "]": "#c8945a", "%": "#e89a50", 
+  C: "#6e6654", H: "#2f7036", U: "#8a8478", l: "#6a4628", u: "#6a4628", e: "#5a9a58", q: "#a8a498", n: "#8a6a3a", M: "#6a4628", D: "#2c5a48", E: "#c8b888", T: "#2a6030", P: "#1d4a30", R: "#74747c", B: "#35803a", h: "#8a4a3a", a: "#6a9ac8", K: "#5ac8d8", S: "#3a3550", F: "#6a4628", L: "#c8b060", G: "#6a4628", Z: "#22242c", c: "#8a3a3a", y: "#a83a3a", x: "#4a4d56",
   1: "#8a8478", 2: "#5a3e2a", 3: "#d8a850", 4: "#c8c2ac", 5: "#8a8478", 6: "#6a7280", 7: "#6a5a44", 8: "#c8c2ac", 0: "#c0303c", 9: "#c8a050", I: "#6a4226", Q: "#7ae0ff", J: "#b4b2a8", V: "#3a5a9a", z: "#c8c4b4", N: "#9a9484", d: "#c8a050", i: "#9a9484", f: "#9a9484", O: "#9a9cb0", A: "#5a4434", Y: "#c8503e", X: "#e02a3a" };
 /** The old kingdom's canopy turns: maples red, the rest gold; pines stay dark. */
 const AUTUMN_OBJ = { T: "#b4442a", P: "#24503a", B: "#a8582a" };
@@ -741,6 +742,31 @@ function potion(liquid, light, big) {
   outline(c, g, "#111118");
   return c;
 }
+/** The cafe's and the inn's fare: a steaming mug, a scone, a slice of pie, a bowl of stew, a loaf. */
+function mugIcon(cup, cupD, drink, top) {
+  const [c, g] = canvas(16, 16);
+  g.fillStyle = cup; g.fillRect(3, 6, 8, 8); g.fillRect(11, 8, 2, 1); g.fillRect(12, 9, 1, 3); g.fillRect(11, 12, 2, 1);
+  g.fillStyle = cupD; g.fillRect(8, 6, 3, 8);
+  g.fillStyle = drink; g.fillRect(4, 6, 6, 2);
+  if (top) { g.fillStyle = top; g.fillRect(5, 5, 2, 2); g.fillRect(7, 6, 2, 1); }
+  g.fillStyle = "#f4f0ea"; px(g, 5, 2, "#f4f0ea"); px(g, 6, 3, "#f4f0ea"); px(g, 5, 4, "#f4f0ea"); px(g, 8, 1, "#f4f0ea"); px(g, 9, 2, "#f4f0ea"); px(g, 8, 3, "#f4f0ea");
+  outline(c, g, "#111118");
+  return c;
+}
+function bakeIcon(kind) {
+  const [c, g] = canvas(16, 16);
+  if (kind === "scone") { disc(g, 8, 10, 5.5, 4, "#d8a050"); disc(g, 7.5, 9, 4.5, 3, "#e8b868"); px(g, 6, 8, "#f4d898"); px(g, 9, 10, "#a86a30"); px(g, 6, 11, "#a86a30"); }
+  else if (kind === "pie") {
+    g.fillStyle = "#d8a050"; for (let y = 0; y < 8; y++) g.fillRect(3 + Math.floor(y / 2), 5 + y, 11 - y, 1);
+    g.fillStyle = "#c0303c"; for (let y = 1; y < 7; y++) g.fillRect(4 + Math.floor(y / 2), 5 + y, 8 - y, 1);
+    px(g, 6, 7, "#ff7080"); px(g, 9, 8, "#ff7080"); g.fillStyle = "#f0c878"; g.fillRect(3, 5, 11, 1);
+  } else if (kind === "stew") {
+    disc(g, 8, 10, 6, 3.6, "#8a5a36"); disc(g, 8, 9, 5, 2.2, "#b8602e"); px(g, 6, 9, "#e8a040"); px(g, 9, 8, "#7aa84a"); px(g, 10, 10, "#e8d0a0");
+    px(g, 6, 4, "#f4f0ea"); px(g, 7, 5, "#f4f0ea"); px(g, 9, 3, "#f4f0ea"); px(g, 10, 4, "#f4f0ea");
+  } else { disc(g, 8, 9, 6, 4, "#a8703a"); disc(g, 7.5, 8, 5, 3, "#c88a48"); g.fillStyle = "#e8b878"; g.fillRect(5, 7, 1, 2); g.fillRect(8, 6, 1, 2); g.fillRect(11, 7, 1, 2); }
+  outline(c, g, "#111118");
+  return c;
+}
 function gem() {
   const [c, g] = canvas(16, 16);
   for (let y = 0; y < 11; y++) {
@@ -897,7 +923,9 @@ function armorIcon(tier) {
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items) {
   const cv = { camp: campIcon(), fish_s: fishIcon("#8ab4d8", "#e8f0f8", false), fish_m: fishIcon("#e88aa8", "#b8e8d8", false), fish_l: fishIcon("#f0c040", "#fff0a0", false),
-    food_s: fishIcon("#c88a4a", "#e8b878", true), food_m: fishIcon("#d87a5a", "#f0b890", true), food_l: fishIcon("#e8a030", "#ffe090", true), burnt: fishIcon("#3a3038", "#5a4a50", true), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem() };
+    food_s: fishIcon("#c88a4a", "#e8b878", true), food_m: fishIcon("#d87a5a", "#f0b890", true), food_l: fishIcon("#e8a030", "#ffe090", true), burnt: fishIcon("#3a3038", "#5a4a50", true), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem(),
+    cafe_coffee: mugIcon("#f4ecdc", "#cfc4b2", "#5a3420", "#c8a070"), cafe_cocoa: mugIcon("#d86a6a", "#b04e56", "#8a4a2a", "#ffffff"), cafe_tea: mugIcon("#8ac0a0", "#6a9a80", "#c8b040", null),
+    cafe_scone: bakeIcon("scone"), cafe_pie: bakeIcon("pie"), inn_stew: bakeIcon("stew"), inn_bread: bakeIcon("bread") };
   for (const id of Object.keys(items)) {
     const it = items[id];
     if (it.type === "weapon") cv[id] = WPN.DESIGNS[it.wk] ? WPN.weaponIcon(it.wk, it.tier) : weaponIcon(it.wk, it.tier);

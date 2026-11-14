@@ -65,6 +65,44 @@ const TRACKS = {
     },
     form: "A B A",
   },
+  // D major, 84 — the cafe: a slow, warm waltz-like sway, a bell over soft plucked chords
+  cafe: {
+    bpm: 84, lead: "bell", vol: 0.1, bass: "tri", comp: "pluck", compVol: 0.035, pad: true, padVol: 0.02, delay: 0.16,
+    bassPat: "R.......F.......", compPat: "....1.2.....1.2.",
+    drums: { h: "....o.......o..." },
+    sections: {
+      A: ["D Bm G A D Bm Em A",
+        "F#5:6 A5:2 D6:8  B5:4 A5:4 F#5:8  G5:6 B5:2 D6:4 B5:4  A5:12 -:4  F#5:6 A5:2 D6:4 E6:4  D6:4 B5:4 F#5:8  G5:4 E5:4 G5:4 B5:4  A5:12 -:4"],
+      B: ["G A F#m Bm G A D D",
+        "B5:6 A5:2 G5:8  C#6:6 B5:2 A5:8  A5:4 F#5:4 C#5:8  D5:4 F#5:4 B5:8  B5:4 D6:4 G5:8  A5:4 C#6:4 E6:8  D6:8 A5:8  F#5:12 -:4"],
+    },
+    form: "A B A",
+  },
+  // Bb major, 76 — the town hall: a stately, gentle organ hymn
+  hall: {
+    bpm: 76, lead: "flute", vol: 0.09, bass: "organ", comp: "organ", compVol: 0.025, pad: true, padType: "organ", padVol: 0.02, delay: 0.22,
+    bassPat: "R.......R.......", compPat: "0...1...2...1...",
+    sections: {
+      A: ["Bb F Gm Eb Bb F Eb F",
+        "D5:8 F5:8  C5:8 A4:8  Bb4:4 D5:4 G5:8  G5:8 Eb5:8  F5:8 D5:8  C5:4 A4:4 F5:8  Eb5:4 G5:4 Bb5:8  A5:12 -:4"],
+      B: ["Gm Eb Bb F Gm Cm F Bb",
+        "G5:8 Bb5:8  G5:8 Eb5:8  F5:4 D5:4 Bb4:8  C5:12 -:4  D5:8 G5:8  Eb5:8 C5:8  A4:4 C5:4 F5:8  D5:12 -:4"],
+    },
+    form: "A B",
+  },
+  // G major, 92 — the inn: a fireside folk tune on a flute, a lazy strum
+  inn: {
+    bpm: 92, lead: "flute", vol: 0.1, bass: "tri", comp: "pluck", compVol: 0.04, pad: false, delay: 0.14,
+    bassPat: "R.....F.R.....F.", compPat: "..2.1...2.2.1...",
+    drums: { k: "x...............", h: "......o.......o." },
+    sections: {
+      A: ["G C G D G C D G",
+        "B4:4 D5:4 G5:6 F#5:2  E5:4 G5:4 C5:8  B4:4 D5:4 G5:4 B5:4  A5:12 -:4  B5:6 A5:2 G5:4 E5:4  E5:4 G5:4 C6:8  B5:4 A5:4 F#5:4 D5:4  G5:12 -:4"],
+      B: ["Em C G D Em C D D",
+        "E5:6 F#5:2 G5:8  E5:4 C5:4 E5:8  D5:4 G5:4 B5:8  A5:6 G5:2 F#5:8  G5:6 A5:2 B5:8  C6:4 B5:4 A5:8  F#5:4 A5:4 D6:8  D6:12 -:4"],
+    },
+    form: "A B A",
+  },
   // F major, 100 — the plaza: a lilting tune over an off-beat strum
   town: {
     bpm: 100, lead: "bell", vol: 0.12, bass: "tri", comp: "pluck", pad: false, delay: 0.12,
@@ -232,7 +270,7 @@ const TRACKS = {
 /** The calmer tune a map's music turns into after dark. */
 const NIGHT = { town: "town_night", meadow: "field_night", forest: "field_night" };
 /** Per-track level trims, measured by rendering each offline, so all sit near the same loudness. */
-const TRIM = { city: 1.6, rift: 1.55, boss: 1.45, cave: 1.5, crypt: 1.15 };
+const TRIM = { cafe: 1.2, hall: 1.2, inn: 1.15, city: 1.6, rift: 1.55, boss: 1.45, cave: 1.5, crypt: 1.15 };
 /** Old names some maps still carry. */
 const ALIAS = { field: "meadow" };
 
@@ -716,6 +754,8 @@ const SFX = {
   // ── travel ──
   wp_wake() { this.arp("sine", [392, 523, 659, 784, 1047], 0.09, 0.4, 0.1); this.noise(0.8, 0.05, 5000, "highpass", 0.2); },
   warp() { this.noise(0.5, 0.18, 300, "bandpass", 0, 4000); this.arp("sine", [523, 784, 1047], 0.06, 0.3, 0.08, 0.2); },
+  // a wooden door: the latch, a soft creak, a bell over the door, the door closing behind you
+  door() { this.noise(0.04, 0.16, 1800, "bandpass"); this.tone("triangle", 180, 120, 0.22, 0.05, 0.03); this.tone("sawtooth", 340, 260, 0.18, 0.012, 0.05); this.tone("sine", 1568, 1568, 0.5, 0.05, 0.08); this.tone("sine", 2093, 2093, 0.4, 0.03, 0.12); this.noise(0.08, 0.14, 300, "lowpass", 0.32); },
   warp_out() { this.noise(0.4, 0.16, 4000, "bandpass", 0, 300); this.tone("sine", 1047, 262, 0.4, 0.08); },
   recall() { this.tone("triangle", 330, 330, 1.8, 0.05); this.noise(1.8, 0.04, 3000, "bandpass", 0, 6000); this.noise(0.08, 0.1, 2400, "bandpass"); },
   // ── fishing, emotes, chat, party ──
