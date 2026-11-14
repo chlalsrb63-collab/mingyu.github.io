@@ -6,6 +6,7 @@ import * as Art from "./art.js";
 import { Sound } from "./audio.js";
 import * as Growth from "./growth.js";
 import * as SideQ from "./sidequests.js";
+import * as Board from "./board.js";
 import { G, $, el, clamp } from "./state.js";
 import { act } from "./net.js";
 import { countItem } from "./actions.js";
@@ -25,7 +26,15 @@ export function renderShop(s) {
     win.querySelector("header .t").textContent = keeper ? keeper.name : "보급상 리나";
     const say = win.querySelector(".say");
     if (say) say.textContent = keeper && keeper.goods && keeper.lines ? keeper.lines[0] : "어서 와요! 필요한 건 다 있답니다. 가방에서 물건을 고르면 팔 수도 있어요.";
+    // the keeper's trust (board.js): a 단골 pays 5 % less here, as the server counts it
+    let rep = win.querySelector("#shop-rep");
+    if (!rep) { rep = el("div", "shop-rep"); rep.id = "shop-rep"; list.before(rep); }
+    rep.textContent = "";
+    const badge = keeper && Board.repBadge(s, keeper.id);
+    if (badge) rep.append(badge);
   }
+  const R = G.defs.life && G.defs.life.rep, off = keeper && R && Board.repOf(s, keeper.id) >= R.tier[0] ? R.disc : 1;
+  const cost = (d, n) => (off < 1 ? Math.floor(d.price * n * off) : d.price * n);
   for (const key of goods) {
     const id = key[0] === "W" && key.length === 2 ? `w_${s.cls}_${key[1]}` : key;
     const d = it[id];
@@ -33,12 +42,16 @@ export function renderShop(s) {
     const row = el("div", "it");
     const img = el("img"); img.src = G.icons.url[id]; img.alt = "";
     const tx = el("div", "tx", d.name);
-    tx.append(el("small", "", `${d.price.toLocaleString()}G · ${itemDesc({ id })}`));
+    const pr = el("small", "");
+    if (off < 1) { pr.append(el("s", "", `${d.price.toLocaleString()}G`), " "); pr.append(el("b", "deal", `${cost(d, 1).toLocaleString()}G`)); }
+    else pr.append(`${d.price.toLocaleString()}G`);
+    pr.append(` · ${itemDesc({ id })}`);
+    tx.append(pr);
     row.append(img, tx);
-    const buy = (n) => { const b = el("button", "", n > 1 ? `×${n}` : "구매"); b.disabled = s.gold < d.price * n; b.addEventListener("click", () => act({ t: "buy", id: key, n })); row.append(b); };
+    const buy = (n) => { const b = el("button", "", n > 1 ? `×${n}` : "구매"); b.disabled = s.gold < cost(d, n); if (off < 1) b.title = `${cost(d, n).toLocaleString()}G (${R.name[0]} 할인)`; b.addEventListener("click", () => act({ t: "buy", id: key, n })); row.append(b); };
     buy(1);
     if (d.type === "pot") buy(10);
-    hoverTip(img, (h) => itemTip({ id }, h, { price: `${d.price.toLocaleString()}G` }));
+    hoverTip(img, (h) => itemTip({ id }, h, { price: `${cost(d, 1).toLocaleString()}G` }));
     list.append(row);
   }
 }

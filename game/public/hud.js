@@ -23,6 +23,7 @@ import * as Life from "./life.js";
 import { G, $, clamp, VP, el, dollDocked } from "./state.js";
 import * as Gather from "./gather.js";
 import * as Station from "./station.js";
+import * as Board from "./board.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
 import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn } from "./windows.js";
 import { openTree, openStats, renderInv, renderChar, renderDoll, renderSkills } from "./win_char.js";
@@ -148,9 +149,9 @@ function tracker(s) {
   // while the first steps are unfinished the daily tasks stay out of the tracker (첫걸음 and the main quest only)
   const tutOn = !!(s.tut && s.tut.i < (G.defs.tutorial || []).length);
   const dl = !tutOn && s.daily && s.daily.tasks.filter((d) => !d.claimed);
-  const key = JSON.stringify([s.q, s.bq, dl]);
+  const key = JSON.stringify([s.q, s.bq, dl, Board.trackKey(s)]);
   setOnce($("#quest-track"), key, (qt) => {
-    if (!quest && !s.bq && !(dl && dl.length)) return;
+    if (!quest && !s.bq && !(dl && dl.length) && !Board.active(s)) return;
     const head = el("div", "qh"); head.append(iconImg("scroll", "#e2c486"), "의뢰");
     qt.append(head);
     const goal = (label, n, need, doneText) => {
@@ -164,6 +165,7 @@ function tracker(s) {
       }
       return row;
     };
+    Board.trackRows(s, qt, goal);                     // the 알바 in hand comes first: a parcel is on the clock (board.js)
     if (quest && s.q.st === 1) {
       const t = el("div", "qt"); t.append(el("small", "", "주요"), quest.title);
       qt.append(t, goal(G.defs.mobs[quest.mob].name, s.q.n, quest.n, "완료! 엘더윈에게 돌아가세요"));
@@ -207,13 +209,13 @@ export function refreshUi() {
   dockedDoll(s);
   // K: 무기 · 스킬 or 전직의 길
   draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey()], renderSkills);
-  draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near], renderShop);
+  draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near, s.rep], renderShop);
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone")], renderSmith);
   draw("train", () => [s.xp, s.xpt, s.nx, s.rs, s.sw, s.lvl, s.inv.length, near, StatWin.trainerKey()], (s) => StatWin.renderTrainer($("#train-body"), s, { atTrainer: near === "train" }));
   draw("job", () => [s.job, s.wm, s.gold, near, JobTree.key()], (s) => JobTree.renderJobNpc($("#job-body"), s, { atJob: near === "job" }));
   draw("bank", () => [s.inv, s.wh, s.gold], Growth.renderBank);
   draw("quest", () => [s.q, s.bq, s.bn, s.mk, s.lvl, near, G.qsel, s.sq], renderQuest);
-  draw("talk", () => [s.sq, s.lvl, talk.npc && talk.npc.id], () => SideQ.renderTalk($("#talk-sq"), talk.npc, s, (line) => { $("#talk-text").textContent = line; }));
+  draw("talk", () => [s.sq, s.lvl, talk.npc && talk.npc.id, Board.talkKey(s)], () => { SideQ.renderTalk($("#talk-sq"), talk.npc, s, (line) => { $("#talk-text").textContent = line; }); Board.renderTalk(talk.npc, s); });
   draw("warp", () => [s.wp, G.map && G.map.id, stoneNear(), near, G.warpPick], renderWarp);
   draw("daily", () => [s.daily && s.daily.day, s.daily && s.daily.tasks, s.daily && s.daily.bonus, s.inv.length], renderDaily);
   draw("achieve", () => [s.ach, s.title, s.pts, G.achTab], renderAchieve);
@@ -222,6 +224,7 @@ export function refreshUi() {
   Housing.refresh(s);
   Life.refresh(s);
   draw("craft", Station.key, Station.render);   // the life stations: 제작 연금 요리 (station.js)
+  draw("board", Board.key, Board.render);       // the 알바 board (board.js)
   tutCard(s);
 }
 /** The paper-doll docked in the side column (desktop): redrawn when the gear or the name line changes; its tab buttons light with the C window. */
@@ -265,6 +268,7 @@ export function hudTick(t) {
   eventWidget(t);
   skyTick(t);
   castBar(t);
+  Board.tick(t);                                    // a parcel's countdown (board.js)
   if (isOpen("daily")) tickDaily(t);
   const s = G.self;
   if (!s) return;

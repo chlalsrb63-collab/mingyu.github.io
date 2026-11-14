@@ -15,6 +15,7 @@ import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
 import * as Gather from "./gather.js";
 import * as Station from "./station.js";
+import * as Board from "./board.js";
 import { G, T, now, dist, $, el } from "./state.js";
 import { act } from "./net.js";
 import { toast, openWin, addChat, shown } from "./windows.js";
@@ -166,6 +167,7 @@ export function interact() {
     if (waterNear()) { act({ t: "fish" }); Sound.play("ui"); }
     return;
   }
+  if (Board.interact(n)) return;                   // the 알바 in hand: pick up / hand in here (board.js)
   Sound.play("ui");
   SideQ.onTalk(n, G.self);
   if (n.role === "shop") { openWin("shop"); openWin("inv"); }
@@ -182,6 +184,7 @@ export function interact() {
   else if (n.role === "dim") Dim.openKeeper();
   else if (n.role === "house") { Housing.openAgent(); openWin("inv"); }
   else if (n.role === "craft" || n.role === "alch" || n.role === "cook") Station.open(n.role);   // 캉캉 · 보글 · 쥬쥬의 화덕
+  else if (n.role === "jobs") Board.open();               // 알바 중개인 포포: the board
   else { talkTo(n); return; }
   if (SideQ.gives(n)) talkTo(n);
   // the townsfolk have a word to say as they serve you (npctalk.js)

@@ -1120,3 +1120,53 @@ body[data-lay="full"] #w-inv.docked { min-height: 120px; }
 #w-craft .st-detail .btns .btn.small { min-width: 22px; }
 #w-craft .st-n { min-width: 18px; text-align: center; font: 12px var(--pix); color: var(--cream); }
 #w-craft .st-detail .st-bt { display: inline; margin-left: 6px; color: #a898b8; }
+
+/* ── the 알바 board, delivery and trust (board.js): #w-board, #dl, .rep-badge ── */
+#w-board { --win-max: 420px; width: min(420px, calc(var(--zone-w) - 8px)); }
+#w-board .body { max-height: min(520px, calc(var(--zone-h) - 48px)); overflow-y: auto; }
+.window .jb-card { margin-top: 6px; }
+.window .jb-card .dh b { display: flex; align-items: center; gap: 4px; }
+.window .jb-card .dh .tag { padding: 0 4px; font: 10px var(--pix); color: #2a1806; background: var(--b-mid); }
+.window .jb-card .say { margin: 3px 0; padding: 0; background: none; box-shadow: none; border: 0; font: 12px/1.45 var(--pix); color: var(--cream); }
+.window .jb-card .df { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 8px; color: #cfc8b8; font: 11px var(--pix); }
+.window .jb-card .df .pay { color: var(--b-hi); }
+.window .jb-card .btns { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.window .jb-card .btns .btn:disabled { opacity: .45; }
+.window .jb-card .why { color: #ff9a8a; font: 11px var(--pix); }
+.window .jb-card .ok { display: block; margin-top: 3px; color: #9af0ae; font: 11px var(--pix); }
+.window .jb-card .where { display: block; margin: 2px 0; color: #ffe08a; font: 11px var(--pix); }
+.window .jb-card .late { display: block; color: #ffb08a; font: 11px var(--pix); }
+.window .jb-card .bar { height: 14px; background: #000; border: 1px solid #000; }
+.window .jb-card .bar b { line-height: 14px; }
+.window .jb-card .bar i { background: linear-gradient(#f6dc98 0 2px, #c8a04e 2px); }
+.window .jb-card.on { border-color: var(--b-mid); box-shadow: inset 0 0 0 1px var(--b-hi); }
+.window .jb-card.done { opacity: .55; }
+#w-board .ds { font: 11px var(--pix); color: #cfc8b8; }
+#w-life .btns { display: flex; gap: 6px; margin: 4px 0; }
+/* trust: tier tag, a bar with marks at the tiers, the number (talk window, shop header, 생활 window) */
+.rep-badge { display: flex; align-items: center; gap: 6px; font: 11px var(--pix); color: #cfc8b8; cursor: help; }
+.rep-badge .tier { flex: none; padding: 0 4px; color: #e8e0d0; background: #3a3146; box-shadow: inset 0 0 0 1px #000; }
+.rep-badge.t1 .tier { color: #2a1806; background: #c8a04e; }
+.rep-badge.t2 .tier { color: #10240e; background: #8fd060; }
+.rep-badge.t3 .tier { color: #2a0a1a; background: #ff9ac8; }
+.rep-badge .bar { position: relative; flex: 1; min-width: 60px; height: 6px; margin: 0; background: #000; border: 1px solid #000; overflow: visible; }
+.rep-badge .bar i { background: linear-gradient(#ffc8de 0 1px, #e0608e 1px); }
+.rep-badge .bar u { position: absolute; top: -2px; bottom: -2px; width: 1px; background: #f4e6c0; opacity: .7; }
+.rep-badge small { flex: none; min-width: 44px; text-align: right; }
+#talk-rep { margin-bottom: 4px; }
+#talk-rep:empty, #shop-rep:empty, #talk-jb:empty { display: none; }
+#shop-rep { margin: 2px 0 6px; }
+#w-shop .tx small s { color: #8a8094; }
+#w-shop .tx small .deal { color: #9af0ae; font-weight: 400; }
+#w-life .rep-list { display: flex; flex-direction: column; gap: 3px; }
+#w-life .rep-row { display: flex; align-items: center; gap: 8px; font: 12px var(--pix); }
+#w-life .rep-row > b { flex: 0 0 96px; font-weight: 400; color: var(--cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#w-life .rep-row .rep-badge { flex: 1; }
+#prompt.jb b { color: #ffe08a; }
+/* the parcel's countdown, just over the cast bar's place */
+#dl { position: fixed; left: calc(var(--vpw) / 2); top: calc(var(--vph) - 112px); transform: translateX(-50%); z-index: 7; width: 220px; text-align: center; pointer-events: none; }
+#dl b { display: block; font: 12px var(--pix); color: #f0c088; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; margin-bottom: 2px; }
+#dl > i { display: block; height: 8px; background: #000; border: 2px solid #6a4418; overflow: hidden; }
+#dl > i > i { display: block; height: 100%; width: 100%; background: #d49a58; transition: width .2s linear; }
+#dl.late b { color: #ff8a7a; }
+#dl.late > i > i { background: #e05a4a; }

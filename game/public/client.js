@@ -52,6 +52,7 @@ import * as Radar from "./radar.js";
 import * as Housing from "./housing.js";
 import * as Life from "./life.js";
 import * as Gather from "./gather.js";
+import * as Board from "./board.js";
 import { resize, world, $, G, el, $$, now } from "./state.js";
 import { act, entityPos, connect, disconnect, stopGame, channel, ws, setupNet } from "./net.js";
 import { pathTo, setupInput, toggleAuto } from "./input.js";
@@ -76,7 +77,7 @@ resize();
 Mini.mount($("#minigame"));
 Dim.init({ G, S3, Sound, act, openWin, closeWin, isOpen: (id) => isOpen(id) });
 Housing.init({ G, S3, Sound, act, el, iconImg, itemSlot: (e, o) => itemSlot(e, o), openWin, closeWin, isOpen: (id) => isOpen(id), draw: (id, k, fn) => draw(id, k, fn), hoverTip: (d, f) => hoverTip(d, f), toast: (m) => toast(m) });
-Life.init({ G, S3, Sound, el, iconImg, entityPos: (id) => entityPos(id), draw: (id, k, fn) => draw(id, k, fn), renderPouch: (b, s, o) => Gather.renderPouch(b, s, o), pouchKey: (s) => Gather.pouchKey(s) });
+Life.init({ G, S3, Sound, el, iconImg, entityPos: (id) => entityPos(id), draw: (id, k, fn) => draw(id, k, fn), renderPouch: (b, s, o) => Gather.renderPouch(b, s, o), pouchKey: (s) => Gather.pouchKey(s), renderJobs: (b, s) => Board.renderLife(b, s) });
 // gathering nodes, the channel and its "반짝!", the 재료 주머니 (gather.js)
 Gather.init({ G, S3, Sound, act, el, iconImg, itemSlot: (e, o) => itemSlot(e, o), toast: (m) => toast(m), entityPos: (id) => entityPos(id),
   floatText: (...a) => floatText(...a), pathTo: (x, y) => pathTo(x, y), stopAuto: () => { if (G.auto) toggleAuto(); } });
