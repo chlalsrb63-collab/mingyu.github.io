@@ -14,7 +14,15 @@
  *
  * A book is the exception: it is drawn open, facing the viewer, around the
  * sheet's centre.
+ *
+ * An approved external image (asset/ → scripts/import-art.mjs --install → public/assets/
+ * manifest.json) replaces a look when it is listed: "weapon.<kind>.t<tier>",
+ * ".lg.<power>", ".set.<set>", ".skin.<motif>", and "icon.weapon.<kind>.…" for the bag
+ * icon. The rarity outline and the +7/+10 glow are still applied on top. Unlisted looks
+ * (the default: the manifest is empty) are drawn in code as below.
  */
+
+import * as Assets from "./assetlib.js";
 
 const GRIP = [5, 16];
 const INK = "#2b2233";
@@ -455,6 +463,60 @@ function build(kind, tier, motif, icon) {
 }
 const GLOW7 = "#fff2a8", GLOW10 = "#ffd84a";
 
+// ───────────────────────────── external images ─────────────────────────────
+const SET_MOTIFS = new Set(["rift", "pioneer", "runner"]);
+/** The manifest key of a look: a skin wins over a legendary/set power, which wins over the tier. */
+export function assetKey(kind, tier, o = {}) {
+  if (MOTIF[o.ws]) return `${kind}.skin.${o.ws}`;
+  if (MOTIF[o.wl]) return `${kind}.${SET_MOTIFS.has(o.wl) ? "set" : "lg"}.${o.wl}`;
+  return `${kind}.t${tier}`;
+}
+/**
+ * The listed image for `key` on a W×H canvas, its hand point at (ox, oy) — the manifest's
+ * `grip`, else GRIP (a book's centre) — or null when nothing is listed.
+ */
+function fromAsset(key, W, H, ox, oy, centred) {
+  const src = Assets.canvas(key);
+  if (!src) return null;
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  g.imageSmoothingEnabled = false;
+  const grip = (Assets.meta(key) || {}).grip;
+  if (!grip && src.width === W && src.height === H) g.drawImage(src, 0, 0);
+  else {
+    const [gx, gy] = grip || (centred ? [src.width >> 1, src.height >> 1] : GRIP);
+    g.drawImage(src, Math.round(ox - gx), Math.round(oy - gy));
+  }
+  return c;
+}
+/**
+ * Rarity and enhancement over an external image: its dark outline takes `ink`, a +7
+ * lights the upper edge of the striking part (`front(x, y)`), a +10 adds a gold ring.
+ */
+function dressAsset(c, ink, we, front) {
+  const g = c.getContext("2d"), W = c.width, H = c.height;
+  const img = g.getImageData(0, 0, W, H), d = img.data;
+  const op = (x, y) => x >= 0 && y >= 0 && x < W && y < H && d[(y * W + x) * 4 + 3] > 0;
+  const edge = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    if (!op(x, y) || (op(x - 1, y) && op(x + 1, y) && op(x, y - 1) && op(x, y + 1))) continue;
+    if (d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11 < 90) edge[i] = 1;
+  }
+  const inkRgb = ink ? hexRgb(ink) : null, glow = we >= 7 ? hexRgb(GLOW7) : null;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    let col = null;
+    if (edge[i]) col = inkRgb;
+    else if (glow && y > 0 && op(x, y) && edge[i - W] && front(x, y)) col = glow;
+    if (col) { d[i * 4] = col[0]; d[i * 4 + 1] = col[1]; d[i * 4 + 2] = col[2]; d[i * 4 + 3] = 255; }
+  }
+  g.putImageData(img, 0, 0);
+  if (we >= 10) outline(c, [GLOW10]);
+  return c;
+}
+
 const cache = new Map();
 /**
  * The world sprite. `gear`: wt tier · wq rarity · we enhancement · wl legendary/set
@@ -466,10 +528,17 @@ export function weaponSprite(kind, gear = {}) {
   const key = `${kind}:${wt}:${wq}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}:${motif}`;
   let c = cache.get(key);
   if (c) return c;
-  const d = build(kind, wt, motif, false);
   const book = kind === "book";
   const W = kind === "spear" ? 52 : kind === "sword" ? 44 : 32, H = 32;
   const ox = book ? 16 : GRIP[0], oy = 16;
+  const ext = fromAsset("weapon." + assetKey(kind, wt, gear), W, H, ox, oy, book);
+  if (ext) {
+    // the striking part is past the guard: right of the hand by a third of the sprite
+    c = dressAsset(ext, wq ? RARE_INK[wq] : null, we, (x) => book || x > ox + (W - ox) / 3);
+    cache.set(key, c);
+    return c;
+  }
+  const d = build(kind, wt, motif, false);
   const glow = we >= 7 ? { blade: d.blade, col: GLOW7 } : null;
   c = raster(d.sh, d.mats, W, H, (s, t) => [ox + s, oy + t], (x, y) => [x - ox, y - oy], glow);
   outline(c, we >= 10 ? [RARE_INK[wq] || INK, GLOW10] : [RARE_INK[wq] || INK]);
@@ -483,6 +552,13 @@ export function weaponIcon(kind, tier, o = {}) {
   const key = `i:${kind}:${tier}:${motif}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}`;
   let c = cache.get(key);
   if (c) return c;
+  const ext = fromAsset("icon.weapon." + assetKey(kind, tier, o), 16, 16, 8, 8, true);
+  if (ext) {
+    // laid corner to corner: the striking part is the upper right
+    c = dressAsset(ext, null, we, (x, y) => kind === "book" || x - y > 1);
+    cache.set(key, c);
+    return c;
+  }
   const d = build(kind, tier, motif, true);
   const glow = we >= 7 ? { blade: d.blade, col: GLOW7 } : null;
   // the extent of every shape, to fit the square with a pixel to spare for the outline

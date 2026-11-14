@@ -4,6 +4,8 @@
 import * as WP from "./weapons.js";
 import * as SP from "./sprites.js";
 const q = new URLSearchParams(location.search), mode = q.get("m") || "weapons";
+// installed external art (public/assets/manifest.json) shows like in the game; ?code=1 shows the code drawing only
+if (q.get("code") !== "1") await (await import("./assetlib.js")).ready();
 const cv = document.getElementById("c"), g = cv.getContext("2d");
 const txt = (s, x, y, col = "#ddd") => { g.fillStyle = col; g.font = "12px sans-serif"; g.fillText(s, x, y); };
 const KINDS = ["sword", "dagger", "spear", "staff", "book"];

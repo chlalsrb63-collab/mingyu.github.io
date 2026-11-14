@@ -29,6 +29,11 @@ import * as SkillFx from "./skillfx.js";
 import { drawClassGauge, gaugeTip } from "./classgauge.js";
 import { installFrames } from "./frames.js";
 import * as Lobby from "./lobby.js";
+import * as Assets from "./assetlib.js";
+
+// approved external images (public/assets/manifest.json) before anything is drawn; an
+// empty or missing manifest leaves every look code-drawn
+await Assets.ready();
 installFrames();
 
 const T = Art.TILE;

@@ -2,3 +2,13 @@
 .work/
 ai/TASKS.current.md
 ai/ROADMAP.current.md
+# asset/: renders of the code-drawn art and the gallery index are regenerated
+# (ASSETS.bat / npm run art:export, art:gallery); import previews are scratch;
+# reference sheets have unknown licences and must never be redistributed.
+asset/_export/
+asset/_preview/
+asset/gallery.json
+asset/gallery.js
+asset/reference/*
+!asset/reference/.gitkeep
+!asset/reference/README.md

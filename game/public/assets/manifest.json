@@ -1,5 +1,5 @@
 {
-  "_readme": "External assets the client MAY use (public/assetlib.js). Empty = everything stays code-drawn. Keys are free-form, e.g. \"mob.twinhare\", \"tile.grass\", \"ui.frame\", \"sfx.coin\", \"bgm.town\". Paths are relative to public/. Record every pack in game/assets/CREDITS.md.",
+  "_readme": "External images and sounds the client uses instead of the code drawing (public/assetlib.js). Empty = everything code-drawn. Written by scripts/import-art.mjs --install (approved files from the repo's asset/ folder; sources recorded in asset/CREDITS.md). Keys: weapon.<kind>.t<tier> | .lg.<power> | .set.<set> | .skin.<motif>, icon.weapon.<kind>..., icon.item.<item id>; free-form for others (mob.twinhare, sfx.coin). Paths are relative to public/.",
   "images": {},
   "audio": {}
 }

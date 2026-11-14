@@ -55,10 +55,10 @@ src/logic.js       위 조각을 이어 붙여 자동 생성되는 한 파일 (�
 public/            브라우저: client.js(입력·UI), lobby.js(로그인·서버 선택·캐릭터 생성), scene2d.js + iso_*.js(쿼터뷰 화면),
                    sprites.js · species.js(동물 캐릭터), mobart*.js(괴물), weapons.js · wardrobe.js(무기·외형), audio.js(칩튠)
 public/_*.html     그림 확인용 미리보기 페이지 (배포 안 됨)
-public/assets/     외부 에셋 중 실제로 쓰는 것 + manifest.json (지금은 비어 있음, 전부 코드 그림)
-assets/            받은 무료 에셋 원본 보관함 + CREDITS.md (배포 안 됨)
+public/assets/     승인된 외부·AI 그림 중 실제로 쓰는 것 + manifest.json (지금은 비어 있음, 전부 코드 그림)
+../asset/          그림·소리 보관함과 갤러리 (저장소 맨 위, 배포 안 됨): 받은 팩, 참고, AI 원본, 승인본, CREDITS.md
 tests/             규칙 테스트 15개 (목록: tests/LIST)
-scripts/           build-logic · test-all · dump-maps · shot (스크린샷 한 장)
+scripts/           build-logic · test-all · dump-maps · shot (스크린샷 한 장) · export-art · gallery · import-art (에셋)
 ```
 
 서버가 모든 판정을 합니다. 브라우저는 "이동/공격/구매" 같은 의도만 보내고, 서버는 위치·쿨타임·

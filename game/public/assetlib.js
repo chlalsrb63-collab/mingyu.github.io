@@ -1,17 +1,21 @@
 /**
  * Optional external assets (PNG sprites, OGG/MP3 sounds) on top of the code-drawn art.
  *
- * Nothing imports this yet, so the game looks and sounds exactly as before. To let an
- * external file stand in for (or add to) something drawn in code:
+ * client.js awaits `ready()` once at start-up; with an empty manifest (the default)
+ * the game looks and sounds exactly as drawn in code. Where art is made, a listed file
+ * wins and the code stays the fallback (weapons.js and art.js buildIcons already do):
  *
- *   1. copy the curated file to public/assets/<type>/… and list it in
- *      public/assets/manifest.json under "images" or "audio" with a key:
- *        "images": { "mob.twinhare": { "src": "assets/sprites/twinhare.png", "w": 32, "h": 32 } }
+ *   1. normalise and approve the file in the repo's asset/ folder, then install it —
+ *      `node scripts/import-art.mjs --install <file>` copies it to public/assets/<type>/…
+ *      and lists it in public/assets/manifest.json under "images" or "audio" with a key:
+ *        "images": { "weapon.sword.t3": { "src": "assets/weapons/sword/sword_t3.png?v=1a2b", "w": 44, "h": 32 } }
  *        "audio":  { "sfx.coin": { "src": "assets/sfx/coin.ogg", "vol": 0.6 } }
- *   2. call `await Assets.ready()` once at start-up (client.js), then where the art is
- *      made, prefer the file and keep the code as the fallback:
+ *      Weapon keys: weapon.<kind>.t<tier> · .lg.<power> · .set.<set> · .skin.<motif>, and
+ *      icon.weapon.<kind>.… for the 16×16 bag icons; other bag icons: icon.item.<item id>.
+ *   2. prefer the file and keep the code as the fallback:
  *        const cv = Assets.canvas("mob.twinhare") || drawTwinhareInCode();
- *   3. record the pack in game/assets/CREDITS.md (name, author, URL, licence).
+ *   3. record the source in asset/CREDITS.md (pack, author, URL, licence — or
+ *      "AI-generated" with the tool and the prompt file).
  *
  * Images come back as canvases (pixelated, never smoothed) so they drop in wherever a
  * code-drawn canvas was used. Sounds come back as decoded AudioBuffers for audio.js's
@@ -88,6 +92,11 @@ async function image(key) {
 /** The canvas for `key`, or null (not listed, not loaded yet, or broken) — then draw in code. */
 export function canvas(key) {
   return canvases.get(key) || null;
+}
+
+/** The manifest entry of image `key` (src, w, h, optional grip [x, y]), or null. */
+export function meta(key) {
+  return manifest.images[key] || null;
 }
 
 /** Is `key` listed in the manifest (images or audio)? */

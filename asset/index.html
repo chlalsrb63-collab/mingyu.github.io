@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>테일즈테일즈 에셋 갤러리</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg: #1b1a22; --card: #26242f; --ink: #e8e4f0; --dim: #9a94a8; --line: #3a3746; --acc: #f0cc60; --view: #2f2c3a; }
+  body.light { --bg: #eceae4; --card: #ffffff; --ink: #2b2233; --dim: #6a6478; --line: #d4d0c8; --view: #f6f4ee; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.4 "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  h1 { font-size: 16px; margin: 0 8px 0 0; }
+  .grp { display: flex; gap: 2px; align-items: center; }
+  .grp span { color: var(--dim); margin-right: 4px; }
+  button { background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 3px 9px; cursor: pointer; font: inherit; }
+  button.on { background: var(--acc); color: #2b2233; border-color: var(--acc); }
+  input[type=search] { background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; width: 200px; font: inherit; }
+  nav { padding: 6px 16px; display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); }
+  nav a { color: var(--dim); text-decoration: none; padding: 2px 6px; border-radius: 3px; }
+  nav a:hover { color: var(--ink); background: var(--card); }
+  main { padding: 8px 16px 40px; }
+  section h2 { font-size: 14px; margin: 18px 0 6px; display: flex; gap: 8px; align-items: baseline; cursor: pointer; user-select: none; }
+  section h2 small { color: var(--dim); font-weight: normal; }
+  section.shut .cards { display: none; }
+  .cards { display: flex; flex-wrap: wrap; gap: 8px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 84px; max-width: 420px; }
+  .view { display: flex; gap: 6px; align-items: flex-end; justify-content: center; padding: 6px; border-radius: 4px; background: var(--view); min-height: 40px; }
+  .view.plain { background: none !important; min-height: 0; }
+  body.checker .view:not(.plain) { background: repeating-conic-gradient(#8a8a96 0 25%, #b4b4c0 0 50%) 0 0 / 16px 16px; }
+  body.green .view:not(.plain) { background: #3c5a3a; }
+  .view img { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+  .view figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .view figcaption { font-size: 10px; color: var(--ink); background: var(--card); padding: 0 4px; border-radius: 3px; }
+  .name { font-family: Consolas, monospace; font-size: 11px; word-break: break-all; }
+  .meta { color: var(--dim); font-size: 11px; }
+  .label { font-size: 12px; }
+  .empty { color: var(--dim); padding: 40px; text-align: center; font-size: 14px; line-height: 2; }
+  code { background: var(--card); padding: 1px 5px; border-radius: 3px; }
+  a.file { color: var(--ink); }
+</style>
+</head>
+<body>
+<header>
+  <h1>에셋 갤러리</h1>
+  <div class="grp" id="zoom"><span>확대</span><button data-z="1">1×</button><button data-z="2">2×</button><button data-z="4">4×</button><button data-z="8">8×</button></div>
+  <div class="grp" id="bgs"><span>배경</span><button data-b="dark">어둡게</button><button data-b="light">밝게</button><button data-b="checker">체크</button><button data-b="green">풀밭</button></div>
+  <div class="grp"><span>코드 그림</span><button id="exp">_export 보기</button><button id="twin">새 그림 옆에 비교</button></div>
+  <input type="search" id="q" placeholder="이름 검색 (예: sword_t3, 고블린)">
+  <span class="meta" id="info"></span>
+</header>
+<nav id="nav"></nav>
+<main id="main"></main>
+<script src="gallery.js"></script>
+<script>
+// The gallery: every file in asset/, grouped by folder. Data comes from gallery.js,
+// written by game/scripts/gallery.mjs (ASSETS.bat or `npm run art:gallery`).
+const $ = (s) => document.querySelector(s);
+const S = Object.assign({ z: 4, b: "dark", exp: true, twin: true, shut: {} }, JSON.parse(localStorage.getItem("tt-gallery") || "{}"));
+const save = () => localStorage.setItem("tt-gallery", JSON.stringify(S));
+const TOP = { weapons: "무기", gear: "장비", items: "아이템", monsters: "몬스터", characters: "캐릭터", cosmetics: "외형", tiles: "타일", ui: "UI", fx: "이펙트", sfx: "효과음", music: "음악", fonts: "폰트", incoming: "받은 팩 (미분류)", reference: "참고용 (배포 금지)", generated: "AI 생성 원본", _export: "현재 코드 그림", _preview: "가져오기 미리보기", ".": "맨 위" };
+const nameOf = (dir) => { const seg = dir.split("/"); const t = TOP[seg[0]] || seg[0]; return seg.length > 1 ? `${t} › ${seg.slice(1).map((s) => TOP[s] || s).join(" › ")}` : t; };
+const kb = (n) => (n < 1024 ? n + " B" : (n / 1024).toFixed(1) + " KB");
+
+async function data() {
+  if (window.GALLERY) return window.GALLERY;
+  try { const r = await fetch("gallery.json", { cache: "no-store" }); if (r.ok) return r.json(); } catch {}
+  return null;
+}
+function img(src, w, h) {
+  const im = new Image();
+  im.alt = src;
+  // big pictures (AI originals, sheets) are fitted to 384 px instead of zoomed
+  const size = () => { const k = Math.min(S.z, 384 / im.dataset.w, 384 / im.dataset.h); im.style.width = Math.round(im.dataset.w * k) + "px"; im.style.height = Math.round(im.dataset.h * k) + "px"; };
+  im._size = size;
+  if (w) { im.dataset.w = w; im.dataset.h = h; im.loading = "lazy"; size(); }
+  im.addEventListener("load", () => { im.dataset.w = im.naturalWidth; im.dataset.h = im.naturalHeight; size(); });
+  im.src = src;
+  return im;
+}
+function card(f, byPath) {
+  const c = document.createElement("div");
+  c.className = "card";
+  c.dataset.k = (f.p + " " + (f.label || "")).toLowerCase();
+  const v = document.createElement("div");
+  v.className = f.kind === "image" ? "view" : "view plain";
+  if (f.kind === "image") {
+    const twin = S.twin && f.twin && byPath.get(f.twin);
+    if (twin) {
+      const a = document.createElement("figure"), b = document.createElement("figure");
+      a.append(img(f.twin, twin.w, twin.h)); a.insertAdjacentHTML("beforeend", "<figcaption>코드</figcaption>");
+      b.append(img(f.p, f.w, f.h)); b.insertAdjacentHTML("beforeend", "<figcaption>새 그림</figcaption>");
+      v.append(a, b);
+    } else v.append(img(f.p, f.w, f.h));
+  } else if (f.kind === "audio") {
+    const au = document.createElement("audio");
+    au.controls = true; au.preload = "none"; au.src = f.p; au.style.width = "220px";
+    v.append(au);
+  } else {
+    const a = document.createElement("a");
+    a.href = f.p; a.textContent = "열기"; a.className = "file"; a.target = "_blank";
+    v.append(a);
+  }
+  c.append(v);
+  c.insertAdjacentHTML("beforeend", `<div class="name"></div>${f.label ? '<div class="label"></div>' : ""}<div class="meta">${f.w ? f.w + "×" + f.h + " · " : ""}${kb(f.bytes)}</div>`);
+  c.querySelector(".name").textContent = f.n;
+  if (f.label) c.querySelector(".label").textContent = f.label;
+  c.querySelector(".view").addEventListener("dblclick", () => window.open(f.p, "_blank"));
+  return c;
+}
+function render(D) {
+  const main = $("#main"), nav = $("#nav");
+  main.textContent = ""; nav.textContent = "";
+  if (!D) {
+    main.innerHTML = `<div class="empty">아직 목록이 없습니다.<br>저장소 맨 위의 <code>ASSETS.bat</code>을 더블클릭하세요<br>(또는 <code>game</code> 폴더에서 <code>npm run art:export</code> 후 <code>npm run art:gallery</code>).</div>`;
+    return;
+  }
+  const byPath = new Map();
+  for (const g of D.groups) for (const f of g.files) byPath.set(f.p, f);
+  let shown = 0, files = 0;
+  for (const g of D.groups) {
+    if (!S.exp && g.dir.startsWith("_export")) continue;
+    const sec = document.createElement("section");
+    sec.id = "g-" + g.dir;
+    if (S.shut[g.dir]) sec.className = "shut";
+    const h = document.createElement("h2");
+    h.innerHTML = `<span></span><small>${g.dir}/ · ${g.files.length}개</small>`;
+    h.firstChild.textContent = nameOf(g.dir);
+    h.onclick = () => { sec.classList.toggle("shut"); S.shut[g.dir] = sec.classList.contains("shut"); save(); };
+    const cards = document.createElement("div");
+    cards.className = "cards";
+    for (const f of g.files) { cards.append(card(f, byPath)); files++; }
+    sec.append(h, cards);
+    main.append(sec);
+    const top = g.dir.split("/")[0];
+    if (!nav.querySelector(`[data-top="${CSS.escape(top)}"]`)) {
+      const a = document.createElement("a");
+      a.href = "#" + sec.id; a.textContent = TOP[top] || top; a.dataset.top = top;
+      nav.append(a);
+    }
+    shown++;
+  }
+  $("#info").textContent = `${files}개 파일 · ${shown}개 폴더 · 목록 생성 ${new Date(D.generated).toLocaleString("ko-KR")}`;
+  filter();
+}
+function filter() {
+  const q = $("#q").value.trim().toLowerCase();
+  for (const c of document.querySelectorAll(".card")) c.hidden = !!q && !c.dataset.k.includes(q);
+  for (const s of document.querySelectorAll("section")) s.hidden = !!q && !s.querySelector(".card:not([hidden])");
+}
+function sync() {
+  document.body.className = S.b === "dark" ? "" : S.b;
+  for (const b of document.querySelectorAll("#zoom button")) b.classList.toggle("on", +b.dataset.z === S.z);
+  for (const b of document.querySelectorAll("#bgs button")) b.classList.toggle("on", b.dataset.b === S.b);
+  $("#exp").classList.toggle("on", S.exp);
+  $("#twin").classList.toggle("on", S.twin);
+}
+function rezoom() {
+  for (const im of document.querySelectorAll(".view img")) if (im.dataset.w && im._size) im._size();
+}
+(async () => {
+  const D = await data();
+  sync(); render(D);
+  $("#zoom").onclick = (e) => { if (e.target.dataset.z) { S.z = +e.target.dataset.z; save(); sync(); rezoom(); } };
+  $("#bgs").onclick = (e) => { if (e.target.dataset.b) { S.b = e.target.dataset.b; save(); sync(); } };
+  $("#exp").onclick = () => { S.exp = !S.exp; save(); sync(); render(D); };
+  $("#twin").onclick = () => { S.twin = !S.twin; save(); sync(); render(D); };
+  $("#q").oninput = filter;
+  document.title = "ready";
+})();
+</script>
+</body>
+</html>

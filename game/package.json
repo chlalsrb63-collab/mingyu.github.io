@@ -18,7 +18,10 @@
     "deploy:cf": "wrangler deploy -c wrangler.deploy.jsonc",
     "maps:dump": "node scripts/dump-maps.mjs",
     "preview": "node scripts/shot.mjs --serve",
-    "shot": "node scripts/shot.mjs"
+    "shot": "node scripts/shot.mjs",
+    "art:export": "node scripts/export-art.mjs",
+    "art:gallery": "node scripts/gallery.mjs",
+    "art:import": "node scripts/import-art.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.20.1",

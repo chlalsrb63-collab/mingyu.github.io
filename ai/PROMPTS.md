@@ -87,3 +87,9 @@ AGENTS.md 와 ai/merge.md 를 읽고 ai/merge.md 대로 진행해.
 ```
 AGENTS.md 를 읽고 <할 일>을 해 줘. 테스트로 확인하고, 화면이 바뀌면 shot.mjs 로 한 장만 확인. main에 커밋하고 push.
 ```
+
+## 그림 에셋 (무기 디자인 · AI 이미지 · 외부 팩)
+
+전부 [`ai/prompts/weapon-assets.md`](prompts/weapon-assets.md)에 있습니다: 외부 시트 사용 검토, **프롬프트 A**
+(Codex가 무기 실루엣을 코드로 추가 — 권장), **프롬프트 B** (ChatGPT 이미지 생성 + `import-art.mjs` 정리 명령),
+**프롬프트 C** (Codex가 `asset/generated/` 묶음을 검수·정리·추천). 결과는 `ASSETS.bat` 갤러리에서 비교합니다.

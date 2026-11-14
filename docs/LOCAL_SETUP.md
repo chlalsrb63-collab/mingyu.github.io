@@ -62,6 +62,13 @@ npx playwright install chromium
 (안 해도 PC에 설치된 Edge나 Chrome을 자동으로 씁니다.) 직접 미리보기 페이지를 보려면 `npm run preview` 후
 http://127.0.0.1:5178/_scene.html?map=meadow 같은 주소를 엽니다.
 
+### 에셋 갤러리 (선택)
+
+저장소 맨 위 **`ASSETS.bat`** 을 더블클릭하면 지금 코드로 그린 무기·장비·아이템·몬스터·캐릭터·외형을 PNG로
+`asset\_export\`에 뽑고, `asset\` 폴더 전체를 갤러리(`asset\index.html`)로 엽니다 (위 브라우저 도구가 필요).
+외부 팩·AI 그림을 넣고 다듬어 게임에 연결하는 순서는 `asset\README.md`, 무기 디자인 프롬프트는
+`ai\prompts\weapon-assets.md`에 있습니다.
+
 ## 3. 내 Cloudflare 계정에 배포하기
 
 ```powershell
@@ -149,7 +156,7 @@ git -C ..\tt-codex diff
 1. "AGENTS.md §8 '몬스터 추가' 순서대로 숲에 '이끼 뒤집힌 거북' 몬스터를 넣어 줘. 테스트 통과 후 `shot.mjs --page mobs` 한 장만 확인."
 2. "Codex 브랜치 `codex/new-potion`의 diff를 리뷰하고, 문제 없으면 합치고 push 해 줘."
 3. "균열 침공 이벤트에 '정예 웨이브'를 추가하는 설계를 먼저 제안해 줘. 어떤 파일의 어떤 함수를 바꿀지만."
-4. "`game/assets/incoming/`에 받은 타일 팩에서 숲 바닥에 맞는 것을 골라 CREDITS.md에 적고 assetlib로 연결해 줘. 코드 그림은 대체용으로 남기고."
+4. "`asset/incoming/`에 받은 타일 팩에서 숲 바닥에 맞는 것을 골라 `asset/CREDITS.md`에 적고 `import-art.mjs`로 정리해 갤러리에 올려 줘. 내가 고르면 `--install`로 연결하고, 코드 그림은 대체용으로 남기고."
 5. "다음 작업 3개를 Codex와 Gemini에게 나눠 맡기고 각자 워크트리에서 진행시켜 줘: …"
 6. "캐릭터 창(C)의 능력치 줄 간격이 좁아. `shot.mjs --live --keys c` 로 확인하고 hud.css만 고쳐 줘."
 

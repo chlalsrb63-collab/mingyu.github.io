@@ -117,7 +117,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `species.js` [356] | hero species and face parts: `SPECIES PARTS TABS PRESETS cleanLook withSpecies` (limits mirror logic `LOOK_MAX`) |
 | `looks.js` [244] | look editor (creation tabs) and the town mirror |
 | `mobart.js` [587] + `mobart_kit.js` [139] + `mobart_a/b/c.js` [376/309/561] | monsters as 3D-primitive models rasterised to pixels; `BEASTS_A` meadow/forest, `_B` crypt/city, `_C` sewer/cave/abyss/bosses/chest; `has draw icon KINDS` |
-| `weapons.js` [526] | weapon art per kind × tier, legendary/set looks, skins, glow: `DESIGNS weaponSprite weaponIcon` |
+| `weapons.js` [602] | weapon art per kind × tier, legendary/set looks, skins, glow: `DESIGNS weaponSprite weaponIcon`; an installed image (`assetKey`: manifest `weapon.<kind>.t<n>`/`.lg.`/`.set.`/`.skin.`, `icon.weapon.…`) replaces a look, rarity ink + glow still applied |
 | `wardrobe.js` [593] · `wardrobe_ui.js` [283] | cosmetic layers drawn over heroes (`ART SLOTS dress`); costume shop + 외형 tab |
 | `swing.js` [131] | weapon stroke poses for attacks/casts |
 | `skillfx.js` [408] | skill visuals/sounds per server fx code (`skillEvent`, switch on codes 40–75), props, marks |
@@ -130,9 +130,9 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `frames.js` [85] | HUD 9-slice frame art → CSS custom properties |
 | `audio.js` [658] | chiptune synth: `TRACKS` (per-map music), `SFX` catalogue, `Sound.play(name)` |
 | `titlescene.js` [510] | title-screen diorama and pixel logo |
-| `assetlib.js` [122] | OPTIONAL external asset loader (unused by default): `ready canvas has loadImage loadAudio loadSounds play` |
+| `assetlib.js` [131] | external asset loader, `ready()` awaited at client start-up; `canvas meta has loadImage loadAudio loadSounds play`. Used by weapons.js and art.js `buildIcons` (`icon.item.<id>`) |
 | `style.css` [351] · `hud.css` [473] · `lobby.css` [225] | base + CRT, HUD/windows, lobby |
-| `assets/manifest.json` | external asset keys (empty = all code-drawn) |
+| `assets/manifest.json` | installed external images/sounds by key (empty = all code-drawn); written by `scripts/import-art.mjs --install` |
 | `fonts/` | Galmuri pixel fonts (OFL) |
 | `_*.html` | dev preview pages (never deployed, `.assetsignore`): scene world iso over mobs sheet species wardrobe swing title icons uicons emo mini |
 
@@ -147,11 +147,15 @@ logic with a fake store + client contract).
 ### Scripts — `game/scripts/` (pure node; work on Windows)
 `build-logic.mjs` (concat parts → logic.js; `--check`, `--watch`) · `test-all.mjs` (build + run
 tests/LIST; `--no-build`, names to filter, `-v`) · `dump-maps.mjs` (public/_maps.json for previews) ·
-`shot.mjs` (one screenshot; `--serve` for previews). `build.mjs`/`check-logic.mjs` referenced by the
-`build` script are Higgsfield's and are not in the repo.
+`shot.mjs` (one screenshot; `--serve` for previews) · `artkit.mjs` (shared: browser launch, static server, PNG
+read/write) · `export-art.mjs` (`npm run art:export`: code-drawn art → `asset/_export/` PNGs) · `gallery.mjs`
+(`art:gallery`: index `asset/` → `gallery.json/.js`) · `import-art.mjs` (normalise AI/external images into
+`asset/<category>/`; `--install`/`--uninstall`/`--list` wire approved files into `public/assets/manifest.json`).
+`build.mjs`/`check-logic.mjs` referenced by the `build` script are Higgsfield's and are not in the repo.
 
 ### Other
-`ai/` AI team: `TASKS.md` task board, role files `codex.md` `gemini.md` `merge.md`, `reports/`, `worker.bat` (workers run in git worktrees `.work/<name>` on branch `<name>/work`) · root launchers `PLAY.bat` `AI-TEAM.bat` `AI-MERGE.bat` `UPDATE.bat` `TESTS.bat`, `install.ps1` (one-step Windows setup), `.vscode/tasks.json` (VS Code: starts the AI team on folder open) · `game/assets/` external asset drop zone (not deployed; see §9) · `.claude/agents/` 22 specialist roles adapted from the MIT "Claude Code Game Studios" template (game/systems/economy/level designer, narrative, writer, art director, technical artist, sound, UX, gameplay/network programmer, QA, performance, live-ops, security, producer…); Claude uses them as subagents, and Codex/Gemini may read one as a role guide (e.g. Gemini doing balance → `economy-designer.md`) · `.claude/skills/pixel-art/` pixel-art
+`ai/` AI team: `TASKS.md` task board, role files `codex.md` `gemini.md` `merge.md`, `reports/`, `worker.bat` (workers run in git worktrees `.work/<name>` on branch `<name>/work`) · root launchers `PLAY.bat` `AI-TEAM.bat` `AI-MERGE.bat` `UPDATE.bat` `TESTS.bat` `ASSETS.bat` (export + gallery), `install.ps1` (one-step Windows setup), `.vscode/tasks.json` (VS Code: starts the AI team on folder open) · `asset/` (repo root) art/sound library and gallery `index.html` (not deployed; §9) · `ai/prompts/weapon-assets.md`
+(asset review + Codex/ChatGPT weapon prompts) · `.claude/agents/` 22 specialist roles adapted from the MIT "Claude Code Game Studios" template (game/systems/economy/level designer, narrative, writer, art director, technical artist, sound, UX, gameplay/network programmer, QA, performance, live-ops, security, producer…); Claude uses them as subagents, and Codex/Gemini may read one as a role guide (e.g. Gemini doing balance → `economy-designer.md`) · `.claude/skills/pixel-art/` pixel-art
 rules (any AI may read `rules/*.md`) · `.github/workflows/deploy-game.yml` CI (split check, tests,
 deploy) · root `index.html`/`profile.jpg` = the owner's unrelated GitHub Pages profile.
 
@@ -177,8 +181,9 @@ deploy) · root `index.html`/`profile.jpg` = the owner's unrelated GitHub Pages 
 7. **Art direction.** Cute, simple 16×16 animal heroes (dot eyes, one shadow tone, dark outline) vs
    grotesque hell-beasts; 2:1 iso; GBA-style HUD; CRT without dark vignette. Follow
    `.claude/skills/pixel-art/rules/` (no blur/AA mush, no pillow shading, readable silhouettes).
-   **No AI image generation** for in-game art: art is code-drawn; external art only from `game/assets`
-   with its licence recorded (§9).
+   Art is **code-drawn by default**. External or AI-generated images are allowed ONLY through `asset/` →
+   `scripts/import-art.mjs` normalisation → owner approval → `--install` (manifest), with the source and licence,
+   or "AI-generated (tool, prompt file)", recorded in `asset/CREDITS.md` (§9). Unknown licence ⇒ `asset/reference/` only.
 8. **Cache tag.** After changing anything in `public/`, bump `?v=` (all four occurrences) in
    `public/index.html`.
 9. **Accounts/storage keys** (`accounts.js` header) are a live data format: never change a key shape
@@ -232,7 +237,8 @@ lives in `game/.wrangler/` (delete it to reset local accounts/characters).
   after resolving conflicts in parts (`npm run build:logic`) — never hand-merge `logic.js`.
 - The integrator (normally Claude) reviews the diff, runs tests, merges into the integration branch
   (`main`; the old `claude/topdown-2d-mmorpg-dev-jke7w3` branch is merged into it), and pushes. Pushing there triggers the CI deploy.
-- Never commit secrets, `node_modules`, `.wrangler/`, `shots/`, or downloaded assets outside `game/assets`.
+- Never commit secrets, `node_modules`, `.wrangler/`, `shots/`, `asset/_export/`, `asset/reference/` files, or
+  downloaded assets outside `asset/`.
 
 ## 8. 작업 레시피 — task recipes (which files to touch)
 
@@ -288,15 +294,22 @@ lives in `game/.wrangler/` (delete it to reset local accounts/characters).
 
 ## 9. External assets (외부 에셋)
 
-- Drop zone: `game/assets/{incoming,sprites,tiles,ui,fonts,sfx,music}` — raw packs, never deployed.
-  Every pack gets a line in `game/assets/CREDITS.md` (name, author, URL, licence). Allowed: CC0 /
-  public domain (preferred), CC-BY (credit must be shown in-game), OFL for fonts. Not allowed:
-  non-commercial, no-redistribution, unclear licences.
-- Curating (AI task): copy only what is used into `game/public/assets/<type>/`, PNG for images,
-  OGG/MP3 for audio, integer scaling only (16×16 heroes on 32×32 sheets, 32×16 iso diamonds), list it
-  in `public/assets/manifest.json`, and wire it with `public/assetlib.js`:
-  `await Assets.ready()` at start-up, then `Assets.canvas("key") || drawnInCode()`. Keep the code
-  path as the fallback. Fill in "사용 중" in CREDITS.md.
+- Library: repo-root `asset/` (Korean guide `asset/README.md`), never deployed. `incoming/` raw packs ·
+  `reference/` inspiration only, gitignored, never shipped · `generated/` raw AI outputs · approved game-ready art in
+  `weapons/<kind>/` (`<kind>_t<n>`, `_lg_<power>`, `_set_<set>`, `_skin_<motif>`, `icon_<kind>_…`), `gear/<type>/<id>`,
+  `items/<cat>/<id>`, `monsters/ characters/ tiles/ ui/ fx/ sfx/ music/ fonts/` · `_export/` and `_preview/` are
+  generated (gitignored). Gallery: `ASSETS.bat` (= `npm run art:export && npm run art:gallery`) opens `asset/index.html`.
+- Licences: CC0 / public domain (preferred), CC-BY (credit shown in-game), OFL fonts, paid licences that allow
+  commercial use + redistribution in a game. Not allowed: NC, no-redistribution, unclear. AI images: tool terms must
+  allow commercial use; never prompt for a living artist's or another game's style. One line per pack/batch in
+  `asset/CREDITS.md` — `--install` refuses files it does not mention.
+- Pipeline: `node scripts/import-art.mjs <img> --kind sword --tier 3 [--icon]` (or `--split --names …`, `--category
+  items/potion --name hp_s --size 16x16`) detects the pixel grid, samples, removes the background, reduces the palette
+  (`--colors`, `--palette game`), cleans specks, adds the `#2b2233` outline, places on the game canvas (world weapon:
+  points right, hand at GRIP [5,16]; icons 16×16), writes `asset/…` + `asset/_preview/<name>.compare.png`. After owner
+  approval: `--install <files>` → `public/assets/…` + manifest key + cache tag; `--uninstall <key>` reverts.
+- Code: `Assets.canvas("key") || drawnInCode()` (weapons.js, art.js buildIcons already do); keep the code path.
+  Prompts for weapon art (Codex code-drawn = preferred, ChatGPT image = concept/rough): `ai/prompts/weapon-assets.md`.
 
 ## 10. Housekeeping
 

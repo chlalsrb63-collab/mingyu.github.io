@@ -25,14 +25,11 @@
 //
 // Needs the `playwright` dev dependency (npm install) and a browser: either
 // `npx playwright install chromium` once, or an installed Edge/Chrome (tried automatically).
-import { createServer } from "node:http";
-import { readFile, mkdir, writeFile, stat } from "node:fs/promises";
-import { join, dirname, extname, normalize, sep, resolve } from "node:path";
+import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const PUBLIC = join(ROOT, "public");
+import { launch as _launch, serve as _serve, GAME as ROOT, PUBLIC } from "./artkit.mjs";
 
 // ── arguments
 const argv = process.argv.slice(2);
@@ -55,39 +52,9 @@ const [vw, vh] = String(opt.size || "960x600").split("x").map(Number);
 const out = resolve(ROOT, String(opt.out || `shots/${live ? "live" : page}${opt.map ? "-" + opt.map : ""}.png`));
 const extraWait = Number(opt.wait || (live ? 1500 : 250));
 
-// ── playwright and a browser
-async function launch() {
-  let chromium;
-  try {
-    ({ chromium } = await import("playwright"));
-  } catch {
-    console.error("playwright is not installed. In game/: npm install   (then once: npx playwright install chromium)");
-    process.exit(2);
-  }
-  const tries = opt.channel ? [{ channel: String(opt.channel) }] : [{}, { channel: "msedge" }, { channel: "chrome" }];
-  let last;
-  for (const t of tries) {
-    try { return await chromium.launch({ headless: true, ...t }); } catch (e) { last = e; }
-  }
-  console.error("No browser could be started. Run once: npx playwright install chromium\n" + String(last && last.message).split("\n")[0]);
-  process.exit(2);
-}
-
-// ── a tiny static server for public/ (preview mode only)
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".woff2": "font/woff2", ".ogg": "audio/ogg", ".mp3": "audio/mpeg", ".svg": "image/svg+xml", ".txt": "text/plain; charset=utf-8" };
-function serve(port = 0) {
-  const srv = createServer(async (req, res) => {
-    const path = decodeURIComponent(new URL(req.url, "http://x").pathname);
-    const file = normalize(join(PUBLIC, path === "/" ? "index.html" : path));
-    if (!file.startsWith(PUBLIC + sep)) { res.writeHead(403).end(); return; }
-    try {
-      if (!(await stat(file)).isFile()) throw new Error("not a file");
-      res.writeHead(200, { "content-type": TYPES[extname(file)] || "application/octet-stream", "cache-control": "no-store" });
-      res.end(await readFile(file));
-    } catch { res.writeHead(404).end("not found"); }
-  });
-  return new Promise((ok) => srv.listen(port, "127.0.0.1", () => ok(srv)));
-}
+// ── playwright and a browser, a tiny static server for public/ (artkit.mjs)
+const launch = () => _launch(opt.channel);
+const serve = (port = 0) => _serve(PUBLIC, port);
 
 function dumpMaps() {
   const d = spawnSync(process.execPath, [join(ROOT, "scripts", "dump-maps.mjs")], { cwd: ROOT, encoding: "utf8" });

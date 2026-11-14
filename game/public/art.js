@@ -10,6 +10,7 @@
  */
 
 import * as WPN from "./weapons.js";
+import * as Assets from "./assetlib.js";
 
 export const TILE = 16;
 
@@ -904,6 +905,8 @@ export function buildIcons(items) {
     else if (it.type === "amulet") cv[id] = amuletIcon(it.tier);
     else if (it.type === "rune") cv[id] = runeIcon(it.rune);
   }
+  // an approved external icon (public/assets/manifest.json "icon.item.<id>") wins over the code
+  for (const id of new Set([...Object.keys(cv), ...Object.keys(items)])) { const a = Assets.canvas("icon.item." + id); if (a) cv[id] = a; }
   const url = {}, left = {};
   for (const id of Object.keys(cv)) { url[id] = cv[id].toDataURL(); left[id] = flip(cv[id]); }
   return { cv, url, left };
