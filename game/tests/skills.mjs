@@ -133,15 +133,17 @@ for (const id of D.skillOrder) {
   assert.equal(J.act({ t: "sk", id: "verdict" }).error, "[대검]을 들어야 쓸 수 있습니다", "the job without its weapon");
   J.ch.eq.weapon = { id: "w_warrior_1", q: 0, enh: 0, af: [], sk: 0, ru: [] }; J.p.stc = null;
   assert.ok(J.act({ t: "sk", id: "verdict" }).ok, "the job with its weapon");
-  // mastery grows a skill: +SK_GROW a level past its need
+  // mastery grows a skill: +SK_GROW a level past its need (over and above what mastery adds to the weapon's
+  // attack, which every blow gets: divided out; 200 casts, so the dice do not decide)
   const dmg = (lv) => {
     const G = world("성장" + lv, { wk: "sword", wm: { sword: lv } });
     let sum = 0;
-    for (let i = 0; i < 40; i++) { G.ready(); const [m] = G.mobs([[24, 0]]); G.act({ t: "sk", id: "slash", a: 0 }); sum += 50000 - m.hp; }
-    return sum;
+    for (let i = 0; i < 200; i++) { G.ready(); const [m] = G.mobs([[24, 0]]); G.act({ t: "sk", id: "slash", a: 0 }); sum += 50000 - m.hp; }
+    return sum / G.self().atk;
   };
   const k = dmg(41) / dmg(1);
-  assert.ok(k > 1 + 30 * D.skGrow && k < 1 + 50 * D.skGrow, `mastery 41 hits ×${k.toFixed(3)} of mastery 1`);
+  // (the target's defence takes a fixed bite out of every blow, so the stronger one gains a little more)
+  assert.ok(k > 1 + 30 * D.skGrow && k < 1 + 65 * D.skGrow, `mastery 41 hits ×${k.toFixed(3)} of mastery 1 (per point of attack)`);
 }
 
 // ═════════ passives

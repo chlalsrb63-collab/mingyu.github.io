@@ -415,9 +415,11 @@ const dimIds = (S) => Object.keys(S.dims);
 for (const [k, v] of X_DIM_SET) D[k] = v;
 // ───────────── 6 & 7. a bot party clears rifts; the wire stays small
 /** Bots that hunt the nearest monster along the floor, pick up orbs and shrines, drink when low and get up when down. */
-function runParty(lv, classes, seedSalt) {
+function runParty(lv, classes, seedSalt, shift = 0) {
   const S = world();
   S.seed += seedSalt;
+  // (a rift's seed reads S.nextId: `shift` stands for a world with a few more things in it, another draw)
+  S.nextId += shift;
   const pids = classes.map((c, i) => "bot" + i);
   const ps = classes.map((c, i) => hero(S, pids[i], "봇" + i, c, lv, true));
   if (ps.length > 1) party(S, pids);
@@ -511,9 +513,13 @@ function runParty(lv, classes, seedSalt) {
 {
   const runs = [];
   const fours = [["warrior", "rogue", "lancer", "mage"], ["lancer", "mage", "warrior", "rogue"]];
-  for (const [lv, salt] of [[17, 1], [24, 2], [32, 3], [40, 4], ...(process.env.MORE ? [[14, 5], [20, 6], [28, 7], [36, 8], [44, 9], [17, 10], [32, 11]] : [])]) if (!process.env.ONLY || +process.env.ONLY === lv) runs.push(runParty(lv, fours[salt % 2], salt));
+  // every level on three draws of the rift (a seed that happens to suit the bots must not hide a hard one); SHIFTS=0,1,2,3,4 for tuning
+  const shifts = (process.env.SHIFTS || "0,1,2").split(",").map(Number);
+  for (const [lv, salt] of [[17, 1], [24, 2], [32, 3], [40, 4], ...(process.env.MORE ? [[14, 5], [20, 6], [28, 7], [36, 8], [44, 9], [17, 10], [32, 11]] : [])]) {
+    if (!process.env.ONLY || +process.env.ONLY === lv) for (const sh of shifts) runs.push({ ...runParty(lv, fours[salt % 2], salt, sh), sh });
+  }
   for (const r of runs) {
-    log(`4 bots Lv.${r.lv} ${r.theme}: master at ${r.boss && r.boss.toFixed(1)} min, clear at ${r.clear && r.clear.toFixed(1)} min, ${r.kills} kills, ${r.elites} elites, chests ${r.got}/${r.n}, ${r.deaths} deaths, end ${r.state} boss hp ${r.bossHp}, dim wire ${r.wire.toFixed(0)} B/snap`);
+    log(`4 bots Lv.${r.lv} ${r.theme} (+${r.sh}): master at ${r.boss && r.boss.toFixed(1)} min, clear at ${r.clear && r.clear.toFixed(1)} min, ${r.kills} kills, ${r.elites} elites, chests ${r.got}/${r.n}, ${r.deaths} deaths, end ${r.state} boss hp ${r.bossHp}, dim wire ${r.wire.toFixed(0)} B/snap`);
     if (!process.env.NOCLEAR) assert.equal(r.state === "clear" || r.clear !== null, true, `Lv.${r.lv}: the party clears it (${r.state})`);
     // the plan's window is 5–10 minutes for players; headless bots get half a minute either side
     if (!process.env.NOCLEAR) assert.ok(r.clear >= 4.5 && r.clear <= 10.5, `Lv.${r.lv}: clear in 5–10 min, took ${r.clear && r.clear.toFixed(2)}`);
