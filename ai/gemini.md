@@ -14,7 +14,7 @@ in your own git worktree (`.work/gemini`, branch `gemini/work`).
       that has no report yet;
    c. otherwise run a **content audit** on the next axis (A→H in `ai/ROADMAP.md`) after the one in
       your newest `ai/proposals/gemini-*.md`.
-3. Read what the task needs (AGENTS.md §3 tells you where things are; rules live in
+3. Read what the task needs (AGENTS.md §3 and docs/FILEMAP.md tell you where things are; rules live in
    `game/src/logic/*.js`, never in the generated `game/src/logic.js`; client text in `game/public/`).
 4. Produce:
    - the document under `docs/` (Markdown; tables; numbers with the file they came from; Korean

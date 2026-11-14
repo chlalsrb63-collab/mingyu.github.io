@@ -153,7 +153,7 @@ git -C ..\tt-codex diff
 ### AI별 예시 요청
 
 **Claude**
-1. "AGENTS.md §8 '몬스터 추가' 순서대로 숲에 '이끼 뒤집힌 거북' 몬스터를 넣어 줘. 테스트 통과 후 `shot.mjs --page mobs` 한 장만 확인."
+1. "docs/RECIPES.md '몬스터 추가' 순서대로 숲에 '이끼 뒤집힌 거북' 몬스터를 넣어 줘. 테스트 통과 후 `shot.mjs --page mobs` 한 장만 확인."
 2. "Codex 브랜치 `codex/new-potion`의 diff를 리뷰하고, 문제 없으면 합치고 push 해 줘."
 3. "균열 침공 이벤트에 '정예 웨이브'를 추가하는 설계를 먼저 제안해 줘. 어떤 파일의 어떤 함수를 바꿀지만."
 4. "`asset/incoming/`에 받은 타일 팩에서 숲 바닥에 맞는 것을 골라 `asset/CREDITS.md`에 적고 `import-art.mjs`로 정리해 갤러리에 올려 줘. 내가 고르면 `--install`로 연결하고, 코드 그림은 대체용으로 남기고."

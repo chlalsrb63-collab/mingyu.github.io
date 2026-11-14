@@ -18,7 +18,7 @@ Work autonomously; the owner is not watching. Never force-push, never rewrite ma
    - Gemini proposals: copy the best NEW lines from `ai/proposals/*.md` (Gemini's, or Codex's planning proposals while Gemini is off) into the **CODEX 백로그**
      of `ai/ROADMAP.md` (skip duplicates and anything that breaks the quality bar; keep the backlog
      under ~15 open lines).
-   - If the bump of `?v=` in `game/public/index.html` is missing after client changes, add it.
+   - The `?v=` cache tag is set by `npm run stamp` at deploy; do not bump it by hand.
 4. Commit ("AI team: merge <tasks>") and `git push origin main`.
 5. Bring the workers up to date for their next session: for each worktree in `.work/`, if
    `git -C .work/<name> status --porcelain` is empty, run `git -C .work/<name> rebase main`.

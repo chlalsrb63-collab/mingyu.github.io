@@ -521,15 +521,8 @@ async function writeManifest(man) {
   const out = { _readme: man._readme, images: sorted(man.images || {}), audio: sorted(man.audio || {}) };
   await writeFile(MANIFEST, JSON.stringify(out, null, 2) + "\n");
 }
-/** Bump the ?v= cache tag in public/index.html (AGENTS.md rule 8). */
-async function bumpCacheTag() {
-  const f = join(PUBLIC, "index.html"), s = await readFile(f, "utf8");
-  const m = s.match(/\?v=(\d+)/);
-  if (!m) return null;
-  const v = String(Number(m[1]) + 1);
-  await writeFile(f, s.replace(/\?v=\d+/g, "?v=" + v));
-  return v;
-}
+/** The ?v= cache tag is no longer bumped by hand: scripts/stamp.mjs sets it at deploy (AGENTS.md rule 8). */
+async function bumpCacheTag() { return null; }
 function keyOf(relPath) {
   const parts = relPath.split("/"), name = basename(relPath, ".png");
   if (parts[0] === "weapons") {

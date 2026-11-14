@@ -36,7 +36,7 @@ npm run test:rules 통과, 보고서 ai/reports/codex-*.md 작성, codex/work �
 **2) 특정 작업 지시**
 ```
 AGENTS.md 와 ai/codex.md 를 읽고, 이 작업 하나만 해: <여기에 할 일>.
-AGENTS.md §8 레시피의 파일만 열고, 테스트 추가 → npm run test:rules 통과 → 보고서 → 커밋.
+docs/RECIPES.md 레시피의 파일만 열고, 테스트 추가 → npm run test:rules 통과 → 보고서 → 커밋.
 ```
 
 **3) 자동 개선 (보드가 비었을 때)**

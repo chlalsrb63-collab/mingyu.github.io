@@ -22,7 +22,7 @@ worktree (`.work/codex`, branch `codex/work`), so you never collide with Gemini 
       report `ai/reports/codex-plan-<topic>.md`. Alternate: after a planning task, the next session
       implements one of its proposals (rule c) before planning again.
    Read the quality bar at the top of `ai/ROADMAP.md`; it is your definition of done.
-3. Plan in 3–6 bullet points, then implement. Use AGENTS.md §3 (file map) and §8 (recipes) to open
+3. Plan in 3–6 bullet points, then implement. Use AGENTS.md §3 + docs/FILEMAP.md (file map) and docs/RECIPES.md (recipes) to open
    only the files you need; grep instead of reading big files whole.
 4. Prove it: `cd game && npm run test:rules` must pass (add or extend a test for any rule change).
    Client-only change: `node scripts/shot.mjs --live` or a preview page; read the printed errors.
@@ -36,7 +36,7 @@ worktree (`.work/codex`, branch `codex/work`), so you never collide with Gemini 
 ## Rules that matter most
 
 - AGENTS.md §4 hard rules (never edit `game/src/logic.js`; determinism; server authoritative;
-  migrate saved sheets; Korean UI text; bump the `?v=` cache tag when `game/public/` changes).
+  migrate saved sheets; Korean UI text; never edit the `?v=` cache tag, `npm run stamp` sets it at deploy).
 - Don't redesign art or UI layout unless the task says so; keep diffs minimal.
 - Never ask questions in AUTO MODE: if a task is unclear or too big, write the report with a split
   proposal (as board lines) and stop without code changes.

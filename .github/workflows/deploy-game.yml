@@ -32,6 +32,9 @@ jobs:
       # The test list lives in tests/LIST (the same script as `npm run test:rules` locally).
       - name: Rule tests
         run: node scripts/test-all.mjs --no-build
+      # The ?v= cache tag is a hash of public/, set here instead of by hand in every change.
+      - name: Cache tag
+        run: node scripts/stamp.mjs
       - name: Deploy
         if: env.HAS_TOKEN == 'true'
         run: npx --yes wrangler@4 deploy -c wrangler.deploy.jsonc
