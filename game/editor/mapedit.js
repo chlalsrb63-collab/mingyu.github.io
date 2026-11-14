@@ -33,7 +33,7 @@ const TOOLS = [
   ["pick", "스포이트", "맵에서 눌러 그 칸의 바닥/물체를 골라요 (I)", "i"],
   ["select", "선택", "끌어서 영역을 골라요. Ctrl+C 복사, Ctrl+V 붙여넣기, T 회전, Delete 지우기 (S)", "s"],
 ];
-const BASE = { town: ".", meadow: ".", forest: ".", crypt: "c", city: "k", sewer: "c", cave: "g", abyss: "n" };
+const BASE = { interior: "f", town: ".", meadow: ".", forest: ".", crypt: "c", city: "k", sewer: "c", cave: "g", abyss: "n" };
 const UNDO_MAX = 200;
 const LOCKED_LAYERS = new Set(["npcs", "portals"]);
 
@@ -1111,8 +1111,11 @@ export async function guard() {
 function blankMap(id, name, th, w, h) {
   const base = BASE[th] && DB.pg[BASE[th]] ? BASE[th] : DB.palette.ground[0].ch;
   const tree = th === "city" ? "Z" : ["crypt", "sewer", "cave", "abyss"].includes(th) ? "C" : "T";
-  const objects = Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) && DB.po[tree] ? tree : " ").join(""));
-  return { v: 1, id, replaces: null, name, theme: th, bgm: DB.defs.bgm.includes(th) ? th : th === "meadow" ? "field" : DB.defs.bgm[0], safe: th === "town", band: th === "town" ? null : [1, 5], w, h,
+  // a room (theme interior, public/iso_interior.js): back walls north and west, a low cut wall in front with a doorway
+  const room = (x, y) => (y === 0 || x === 0 ? "=" : (y === h - 1 && x !== Math.floor(w / 2)) || x === w - 1 ? "_" : " ");
+  const objects = th === "interior" ? Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => room(x, y)).join(""))
+    : Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) && DB.po[tree] ? tree : " ").join(""));
+  return { v: 1, id, replaces: null, name, theme: th, bgm: DB.defs.bgm.includes(th) ? th : th === "meadow" ? "field" : th === "interior" ? "cafe" : DB.defs.bgm[0], safe: th === "town" || th === "interior", band: th === "town" || th === "interior" ? null : [1, 5], w, h,
     ground: Array.from({ length: h }, () => base.repeat(w)), objects, entry: [Math.floor(w / 2), Math.floor(h / 2)],
     spawns: [], npcs: [], portals: [], fires: [], waypoint: null, fishing: true, boss: null };
 }

@@ -648,9 +648,11 @@ function moveVector() {
  */
 function pathTo(wx, wy) {
   const m = G.map, n = m.w * m.h;
-  const free = (x, y) => x >= 0 && y >= 0 && x < m.w && y < m.h && m.o[y][x] === " " && !"wW".includes(m.g[y][x]);
   const sx = Math.floor(G.me.x / T), sy = Math.floor((G.me.y - 2) / T);
   const gx = clamp(Math.floor(wx / T), 0, m.w - 1), gy = clamp(Math.floor(wy / T), 0, m.h - 1);
+  // a walk goes round doors and gates it is not heading for (a house door sits right on the street)
+  const doors = new Set(m.portals.filter((p) => Math.abs(p.x - gx) + Math.abs(p.y - gy) > 1).map((p) => p.y * m.w + p.x));
+  const free = (x, y) => x >= 0 && y >= 0 && x < m.w && y < m.h && m.o[y][x] === " " && !"wW".includes(m.g[y][x]) && !doors.has(y * m.w + x);
   const cost = new Float32Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1), done = new Uint8Array(n);
   const start = sy * m.w + sx, goal = gy * m.w + gx;
   cost[start] = 0;
