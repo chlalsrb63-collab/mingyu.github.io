@@ -28,6 +28,7 @@ import * as NpcTalk from "./npctalk.js";
 import * as SkillFx from "./skillfx.js";
 import { drawClassGauge, gaugeTip } from "./classgauge.js";
 import { installFrames } from "./frames.js";
+import * as Lobby from "./lobby.js";
 installFrames();
 
 const T = Art.TILE;
@@ -51,45 +52,50 @@ const local = ["localhost", "127.0.0.1"].includes(location.hostname);
 const HOST = local || location.hostname.endsWith("higgsfield.app") ? location.host : LIVE_HOST;
 const PROTO = location.protocol === "http:" && local ? "ws:" : "wss:";
 
-/** Your claim to your character. Kept in this browser; never shown to other players. */
-function playerId() {
-  const key = "lumentale:pid";
-  let id = localStorage.getItem(key);
-  if (!id || id.length < 16) {
-    const b = crypto.getRandomValues(new Uint8Array(18));
-    id = [...b].map((v) => v.toString(36).padStart(2, "0")).join("").slice(0, 32);
-    localStorage.setItem(key, id);
-  }
-  return id;
-}
-
+/**
+ * The channel: one of the two of a server ("s1-ch2"), chosen in the lobby
+ * (lobby.js). The socket joins with the account's session token (account.js).
+ */
 let ws = null;
 let retry = 0;
 let wantOnline = false;
-let channel = new URLSearchParams(location.search).get("ch") || localStorage.getItem("lumentale:ch") || "ch1";
-if (!/^ch[1-3]$/.test(channel)) channel = "ch1";
+let channel = Lobby.lastChannel();
+let connT = 0;
 
-function connect() {
+/** Open (or reopen) the socket to channel `ch`, after `delay` ms. */
+function connect(ch = channel, delay = 0) {
+  clearTimeout(connT);
+  if (ws) { const old = ws; ws = null; wantOnline = false; try { old.close(); } catch { /* already closed */ } }
+  channel = ch;
   wantOnline = true;
-  ws = new WebSocket(`${PROTO}//${HOST}/ws/${channel}`);
-  ws.addEventListener("open", () => {
+  if (delay) { connT = setTimeout(open, delay); return; }
+  open();
+}
+function open() {
+  const sock = (ws = new WebSocket(`${PROTO}//${HOST}/ws/${channel}`));
+  sock.addEventListener("open", () => {
     retry = 0;
-    ws.send(JSON.stringify({ type: "join", playerId: playerId() }));
+    sock.send(JSON.stringify(Lobby.joinMsg()));
   });
-  ws.addEventListener("message", (ev) => {
-    if (ev.data === "__pong") return;
+  sock.addEventListener("message", (ev) => {
+    if (ev.data === "__pong" || sock !== ws) return;
     let msg;
     try { msg = JSON.parse(ev.data); } catch { return; }
     onMessage(msg);
   });
-  ws.addEventListener("close", () => {
-    if (!wantOnline) return;
+  sock.addEventListener("close", () => {
+    if (!wantOnline || sock !== ws) return;
     retry = Math.min(retry + 1, 6);
     const wait = 400 * 2 ** (retry - 1);
     if (G.playing) addChat("서버와의 연결이 끊겼습니다. 다시 연결하는 중…", "err");
-    else $("#title-msg").textContent = "서버에 연결하는 중…";
-    setTimeout(() => wantOnline && connect(), wait);
+    else Lobby.connecting();
+    connT = setTimeout(() => wantOnline && sock === ws && open(), wait);
   });
+}
+function disconnect() {
+  clearTimeout(connT);
+  wantOnline = false;
+  if (ws) { const old = ws; ws = null; try { old.close(); } catch { /* already closed */ } }
 }
 function act(action) {
   if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "action", action }));
@@ -150,17 +156,13 @@ function resize() {
 addEventListener("resize", resize);
 S3.init(world);
 resize();
-S3.showcase();
 
 // ───────────────────────────── messages ─────────────────────────────
 
 function onMessage(msg) {
   switch (msg.type) {
     case "need_char":
-      $("#title").hidden = true;
-      $("#create").hidden = false;
-      S3.showcase(draftLook());
-      $("#c-name").focus();
+      Lobby.needChar();
       break;
     case "welcome":
       G.you = msg.you;
@@ -172,7 +174,10 @@ function onMessage(msg) {
         QS.init({ G, act, el, toast, castSkill, useSlot, countItem, showTip, hideTip, touch, addChat });
       }
       G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear(); G.who.clear();
-      $("#title").hidden = true; $("#create").hidden = true; $("#hud").hidden = false;
+      $("#hud").hidden = false;
+      if (Lobby.welcome(msg) === "switch" && G.playing) {
+        addChat(`${channelName()}(으)로 이동했습니다.`, "sys");
+      }
       if (!G.playing) {
         G.playing = true;
         resize();
@@ -184,16 +189,10 @@ function onMessage(msg) {
     case "rank": renderRank(msg.list); break;
     case "error":
       if (msg.fatal) {
-        wantOnline = false;
-        G.playing = false;
-        try { ws.close(); } catch { /* already closed */ }
-        $("#hud").hidden = true; $("#create").hidden = true; $("#title").hidden = false;
-        resize();
-        tg.clearRect(0, 0, text.width, text.height);
-        S3.showcase();
-        $("#title-msg").textContent = msg.error;
-      } else if (!$("#create").hidden) {
-        $("#create-msg").textContent = msg.error;
+        disconnect();
+        Lobby.fatal(msg);
+      } else if (Lobby.createError(msg.error)) {
+        /* shown on the creation page */
       } else {
         toast(msg.error);
         Sound.play("no");
@@ -201,7 +200,16 @@ function onMessage(msg) {
       break;
   }
 }
-const channelName = () => `채널 ${channel.slice(2)}`;
+const channelName = () => Lobby.label(channel);
+/** Out of the world, back to the lobby (the socket is already closed or closing). */
+function stopGame() {
+  G.playing = false;
+  G.auto = false;
+  $("#hud").hidden = true;
+  for (const w of $$("#windows .window")) if (!w.hidden) closeWin(w.id.slice(2));
+  resize();
+  tg.clearRect(0, 0, text.width, text.height);
+}
 
 function loadMap(m) {
   G.map = m;
@@ -1290,6 +1298,7 @@ function openWin(id) {
   w.hidden = false;
   delete shown[id];
   if (id === "rank") { $("#rank-list").textContent = "불러오는 중…"; act({ t: "rank" }); }
+  if (id === "settings") Lobby.refreshSettings();
   if (id === "party") renderParty();
   if (id === "guild") { act({ t: "glist" }); renderGuild(); }
   refreshUi();
@@ -2519,28 +2528,6 @@ function hudTick(t) {
 
 // ───────────────────────────── title & creation ─────────────────────────────
 
-const CLASS_DESC = {
-  warrior: "전사 · 양손검 — 투지: 치고 맞을수록 투지가 끓어오릅니다. 대검을 던져 꽂고 다시 불러들이고, 버티다 되받아치고, 모은 투지를 한 번에 터뜨립니다. 궁극기는 거신화.",
-  rogue: "도적 · 단검 — 표식: 찌를 때마다 적에게 표식이 쌓이고, 표식이 많을수록 급소가 보입니다. 자리를 바꾸고, 동전을 던지고, 꼭두각시로 속인 뒤 표식을 한꺼번에 거둡니다.",
-  lancer: "창술사 · 창 — 창끝: 사거리 끝으로 맞혀야 제 위력이 나옵니다. 갈고리로 끌어오고 장대로 뛰어넘어 거리를 재며, 집중이 차면 스킬이 강해집니다. 깃발로 파티를 재촉합니다.",
-  mage: "마도사 · 마법지팡이 / 마법책 — 원소 엮기: 불·얼음·번개를 번갈아 써서 증기 폭발·초전도·과부하를 일으킵니다. 찻주전자로 파티를 돌보고, 시간을 되감아 위기를 넘깁니다.",
-};
-const draft = { cls: "warrior", look: S3.PARTS.map(() => 0) };
-for (const b of $$("#c-cls button")) {
-  b.addEventListener("click", () => {
-    for (const o of $$("#c-cls button")) o.classList.toggle("on", o === b);
-    draft.cls = b.dataset.v;
-    $("#c-desc").textContent = CLASS_DESC[draft.cls];
-    Sound.unlock(); Sound.play("ui");
-    stageDraft();
-  });
-}
-/** The look editor (looks.js): tabs of face pictures per part, animals and ready-made looks. */
-let lookEd = null;
-function buildParts() {
-  lookEd = Looks.editor($("#c-parts"), () => draft.look, (l) => { draft.look = l; stageDraft(); }, () => { Sound.unlock(); Sound.play("ui"); });
-}
-$("#c-rand").addEventListener("click", () => { if (lookEd) lookEd.random(); });
 // the mirror under the portrait: a new look later, in town, for gold
 Looks.installMirror({
   act, toast, sound: (k) => Sound.play(k),
@@ -2548,35 +2535,12 @@ Looks.installMirror({
   gold: () => (G.self ? G.self.gold : 0), town: () => !!(G.map && G.map.safe),
   get cost() { return (G.defs && G.defs.lookCost) || 500; },
 });
-buildParts();
-$("#c-desc").textContent = CLASS_DESC.warrior;
-
-for (const b of $$("#ch-pick button")) {
-  b.classList.toggle("on", b.dataset.ch === channel);
-  b.addEventListener("click", () => {
-    channel = b.dataset.ch;
-    localStorage.setItem("lumentale:ch", channel);
-    for (const o of $$("#ch-pick button")) o.classList.toggle("on", o === b);
-  });
-}
-$("#b-start").addEventListener("click", () => {
-  Sound.unlock();
-  Sound.play("ok");
-  $("#title-msg").textContent = "서버에 연결하는 중…";
-  if (ws) { wantOnline = false; try { ws.close(); } catch { /* fine */ } }
-  connect();
+// the title, log-in, server list and character creation live in lobby.js
+Lobby.init({
+  connect, disconnect, act, stopGame, toast,
+  playing: () => G.playing, channel: () => channel,
+  isOpen: () => !!ws && ws.readyState === WebSocket.OPEN,
 });
-$("#b-create").addEventListener("click", () => {
-  const name = $("#c-name").value.trim();
-  if (!/^[가-힣A-Za-z0-9]{2,10}$/.test(name)) { $("#create-msg").textContent = "이름은 한글·영문·숫자 2~10자로 지어 주세요"; return; }
-  $("#create-msg").textContent = "";
-  act({ t: "create", name, cls: draft.cls, look: draft.look });
-});
-$("#c-name").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#b-create").click(); });
-
-/** The look being designed on the creation screen, shown large beside the form. */
-function draftLook() { return S3.playerLook(draft.cls, draft.look.slice(), {}); }
-function stageDraft() { if (!$("#create").hidden) S3.showcase(draftLook()); }
 
 // ───────────────────────────── main loop ─────────────────────────────
 
@@ -2590,7 +2554,7 @@ function frame() {
     render(t, dt);
     renderMini(t);
     hudTick(t);
-  } else S3.renderStage(dt, t, !$("#create").hidden);
+  } else Lobby.frame(t, dt);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

@@ -55,7 +55,7 @@ function style() {
 
 const thumbCache = new Map();
 /** A small picture of a look: the head (and, for tails, the side view with the body). */
-function thumb(look, view = "front", whole = false) {
+export function thumb(look, view = "front", whole = false) {
   const key = look.join(".") + view + whole;
   let c = thumbCache.get(key);
   if (c) return copy(c);
@@ -92,8 +92,10 @@ export function randomLook() {
 /**
  * Build the tabbed editor into `box`. `get()` returns the look being edited (a full
  * list), `set(look)` takes a changed one. Returns { refresh, random }.
+ * `opts.presets === false` leaves the ready-made looks off the first tab (the creation
+ * page shows them in a row of its own).
  */
-export function editor(box, get, set, onSound) {
+export function editor(box, get, set, onSound, opts = {}) {
   style();
   box.textContent = "";
   const root = el("div", "lk");
@@ -165,7 +167,8 @@ export function editor(box, get, set, onSound) {
         b.addEventListener("click", () => change(l.slice()));
         pr.append(b);
       }
-      page.append(lab, gr, lab2, pr);
+      page.append(lab, gr);
+      if (opts.presets !== false) page.append(lab2, pr);
     } else if (tab === 1) page.append(grid("eye"), swatches("eyeC", "기본"), grid("nose"), grid("blush"));
     else if (tab === 2) page.append(grid("ear"), grid("tail", "side", true));
     else if (tab === 3) page.append(swatches("fur"), swatches("acc", "자동"));

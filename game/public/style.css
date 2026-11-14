@@ -48,20 +48,20 @@ img.gi { width: 12px; height: 12px; image-rendering: pixelated; vertical-align: 
   box-shadow: inset 0 0 0 1px var(--line), inset 1px 1px 0 1px rgba(255, 255, 255, .05), inset -1px -1px 0 1px rgba(0, 0, 0, .35), 0 6px 18px rgba(0, 0, 0, .45);
 }
 /* a sunken well: slots, bars, inputs, inset panels */
-.well, .slot, .bar, .detail, .stats, .say, #chat-in, #c-name, #guild-body input {
+.well, .slot, .bar, .detail, .stats, .say, #chat-in, #guild-body input {
   background: var(--well); border: 1px solid #000; border-radius: 3px;
   box-shadow: inset 1px 1px 0 rgba(0, 0, 0, .7), inset -1px -1px 0 rgba(255, 255, 255, .05);
 }
 /* buttons: raised with a bevel; hover lifts one step; pressed inverts and drops a pixel */
-.btn, .btns button, .list button, .pick button, #ch-pick button, #invite button, #c-rand, .part .step {
+.btn, .btns button, .list button, .pick button, #invite button, .part .step {
   position: relative; padding: 4px 12px; font-weight: 600; font-size: 12px; color: #ece6d4;
   background: linear-gradient(#353844, #23252e); border: 1px solid var(--ink); border-radius: 3px;
   box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .1), inset -1px -1px 0 rgba(0, 0, 0, .4), inset 0 0 0 1px rgba(214, 184, 122, .18);
 }
-.btn:hover, .btns button:hover, .list button:hover, .pick button:hover, #ch-pick button:hover, #invite button:hover, #c-rand:hover, .part .step:hover {
+.btn:hover, .btns button:hover, .list button:hover, .pick button:hover, #invite button:hover, .part .step:hover {
   background: linear-gradient(#41444f, #2b2d37); color: #fff6dc; box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .14), inset -1px -1px 0 rgba(0, 0, 0, .4), inset 0 0 0 1px rgba(226, 196, 134, .45);
 }
-.btn:active, .btns button:active, .list button:active, .pick button:active, #invite button:active, #c-rand:active {
+.btn:active, .btns button:active, .list button:active, .pick button:active, #invite button:active {
   transform: translate(1px, 1px); box-shadow: inset -1px -1px 0 rgba(255, 255, 255, .08), inset 1px 1px 0 rgba(0, 0, 0, .5);
 }
 .btn.gold, #b-start, #b-create, #b-respawn {
@@ -232,41 +232,9 @@ button:disabled { filter: grayscale(1); opacity: .45; cursor: default; }
 #dead p { color: #cfc9ba; font-size: 12px; margin: 0 0 14px; }
 h2 { margin: 0 0 8px; font-family: var(--serif); font-size: 20px; font-weight: 600; letter-spacing: 2px; color: var(--gold); }
 
-#title, #create { position: fixed; inset: 0; z-index: 30; display: flex; justify-content: center; }
-#title { align-items: flex-start; padding-top: 6vh; background: linear-gradient(rgba(10, 12, 24, .28), rgba(10, 12, 24, .05) 45%, transparent); }
-.title-box { position: relative; text-align: center; padding: 16px; }
-.title-box::before { content: ""; position: absolute; inset: -30px -60px; background: radial-gradient(ellipse at center, rgba(8, 8, 14, .62), transparent 70%); z-index: -1; }
-h1 {
-  margin: 0; font-family: var(--serif); font-weight: 900; font-size: clamp(40px, 8vw, 76px); line-height: 1.05; letter-spacing: 10px; color: #f2dfae;
-  background: linear-gradient(#fff4d6, #c89c54); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 3px 0 rgba(40, 20, 10, .7)) drop-shadow(0 0 22px rgba(226, 170, 90, .35));
-}
-h1 small { display: block; font-family: var(--font); font-weight: 600; font-size: .2em; letter-spacing: 1.1em; margin: 8px 0 0 1.1em; color: #b8c4d8; -webkit-text-fill-color: #b8c4d8; }
-.sub { margin: 10px 0 18px; font-family: var(--serif); letter-spacing: 3px; opacity: .9; text-shadow: 0 1px 2px #000; }
-#ch-pick, .pick { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
-#ch-pick button.on, .pick button.on { color: var(--gold-hi); box-shadow: inset 0 0 0 1px var(--line-hi), inset 1px 1px 0 rgba(255, 255, 255, .1); background: linear-gradient(#4a4232, #2e2a22); }
-#b-start { margin-top: 18px; }
-#title-msg, #create-msg { min-height: 1.5em; margin: 8px 0 0; color: #ffb0b0; text-shadow: 0 1px 2px #000; }
-#create { align-items: center; justify-content: flex-start; padding-left: max(16px, 5vw); }
-#create .frame { padding: 18px 20px; width: min(380px, calc(100vw - 20px)); text-align: center; }
-.create-row { display: block; text-align: left; }
-.create-form { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-#c-name { width: 100%; padding: 7px 10px; outline: none; user-select: text; -webkit-user-select: text; }
-#c-name:focus { border-color: var(--gold); }
-.pick { justify-content: flex-start; }
-#c-desc { margin: 0; font-size: 12px; min-height: 3em; color: #cfc9ba; }
-#c-parts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
-.part { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.part.sw { grid-column: 1 / -1; }
-.part .lab { width: 30px; flex: none; font-size: 12px; color: var(--gold); }
-.part b { flex: 1; text-align: center; font-weight: 600; font-size: 12px; white-space: nowrap; }
-.part .step { width: 24px; height: 24px; padding: 0; flex: none; line-height: 1; font-size: 15px; }
-.part .pick.sw { gap: 5px; flex-wrap: wrap; }
-.part .pick.sw button { width: 20px; height: 20px; padding: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4); }
-.part .pick.sw button.on { outline: 2px solid var(--gold-hi); outline-offset: 1px; }
-.part .pick.sw button.none { background: linear-gradient(135deg, transparent 44%, #c66 45%, #c66 55%, transparent 56%), rgba(255, 255, 255, .08); }
-#c-rand { align-self: flex-start; }
-#b-create { margin-top: 12px; }
+/* the title, the server list and character creation: lobby.css */
+.pick { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.pick button.on { color: var(--gold-hi); box-shadow: inset 0 0 0 1px var(--line-hi), inset 1px 1px 0 rgba(255, 255, 255, .1); background: linear-gradient(#4a4232, #2e2a22); }
 
 /* ── mini-games ── */
 #minigame { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(6, 8, 16, .45); }
@@ -308,7 +276,6 @@ body.crt #text { filter: drop-shadow(1px 0 0 rgba(255, 40, 80, .45)) drop-shadow
   .grid { grid-template-columns: repeat(6, 1fr); }
   .slot { width: auto; height: auto; aspect-ratio: 1; }
   .slot img { inset: 10%; left: 10%; top: 10%; width: 80%; height: 80%; }
-  #create { justify-content: center; align-items: flex-end; padding: 0 0 12px; }
   #banner { font-size: 26px; }
 }
 

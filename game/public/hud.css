@@ -470,17 +470,4 @@ body.touch kbd { display: none; }
 #minigame .mg header { font: 700 12px var(--pix); color: var(--b-hi); }
 #minigame .mg-hint, #minigame .mg-info { font-family: var(--pix); font-size: 12px; }
 
-/* the title and the creation card share the kit */
-#create .frame { background: none; box-shadow: none; border-radius: 0; border: 14px solid transparent; border-image: var(--fr-brass) 14 fill / 14px / 0 stretch; image-rendering: pixelated; padding: 6px 8px 10px; }
-#create, #title .title-box { font-family: var(--pix); font-size: 12px; }
-#create h2 { font: 700 12px/1.4 var(--pix); letter-spacing: 0; color: var(--b-hi); margin-bottom: 8px; }
-#create #c-desc, #create .part b, #create .part .lab { font-family: var(--pix); font-size: 12px; }
-#c-name { font: 12px var(--pix); border-radius: 0; border: 2px solid var(--ink); background: var(--scr); box-shadow: inset 2px 2px 0 #07060b; }
-#create .pick button:not(.sw button), #create .part .step, #c-rand, #ch-pick button, #b-start, #b-create {
-  font: 12px/1.2 var(--pix) !important; letter-spacing: 0 !important; border-radius: 0; color: var(--cream);
-  background: #3a3146; border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #5b4d6c, inset -2px -2px 0 #1f1a28;
-}
-#create .pick button.on:not(.sw button), #ch-pick button.on, #b-start, #b-create { color: #2a1806; background: var(--b-mid); box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px -2px 0 var(--b-lo); }
-#b-start, #b-create { padding: 8px 24px !important; }
-#create .part .pick.sw button { border-radius: 0; border: 2px solid var(--ink); }
-#title-msg, #create-msg { font-family: var(--pix); font-size: 12px; }
+

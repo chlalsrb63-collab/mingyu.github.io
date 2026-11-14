@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;900&display=swap" />
     <link rel="stylesheet" href="style.css?v=1794910000" />
     <link rel="stylesheet" href="hud.css?v=1794910000" />
+    <link rel="stylesheet" href="lobby.css?v=1794910000" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -228,6 +229,8 @@
       <section class="window" id="w-settings" hidden>
         <header><span class="t">설정</span><kbd>O</kbd><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body">
+          <div class="set-row"><span><b id="set-sv"></b> 채널</span><span id="set-ch" class="set-ch"></span></div>
+          <div class="set-row"><span>계정 <b id="set-acc"></b></span><button id="btn-servers" class="btn">서버 선택</button><button id="btn-logout" class="btn">로그아웃</button></div>
           <div class="set-row"><span>소리</span><kbd>M</kbd><button id="btn-sound" class="btn toggle">켜짐</button></div>
           <div class="set-row"><span>배경음악</span><input type="range" id="vol-bgm" class="vol" min="0" max="100" step="1" value="70" aria-label="배경음악 음량"></div>
           <div class="set-row"><span>효과음</span><input type="range" id="vol-sfx" class="vol" min="0" max="100" step="1" value="85" aria-label="효과음 음량"></div>
@@ -274,40 +277,84 @@
       </div>
     </div>
 
-    <!-- ── title / character creation ──────────────────── -->
+    <!-- ── title, account, servers (lobby.js) ──────────── -->
     <div id="title">
-      <div class="title-box">
-        <h1>테일즈테일즈<small>TALES TALES</small></h1>
-        <p class="sub">꼬리 달린 친구들의 이야기</p>
-        <div id="ch-pick">
-          <button data-ch="ch1" class="on">채널 1</button>
-          <button data-ch="ch2">채널 2</button>
-          <button data-ch="ch3">채널 3</button>
+      <canvas id="title-cv" aria-hidden="true"></canvas>
+      <div class="t-wrap">
+        <div class="t-brand">
+          <h1 class="t-h1"><canvas id="t-logo" role="img" aria-label="테일즈테일즈 TALES TALES"></canvas></h1>
+          <p class="t-sub">꼬리 달린 친구들의 이야기</p>
         </div>
-        <button id="b-start" class="btn gold big">게임 시작</button>
-        <p id="title-msg"></p>
+        <div class="t-stack">
+          <button id="t-press" type="button"><b>PRESS START</b><small>화면을 누르거나 아무 키나 누르세요</small></button>
+
+          <section id="t-auth" class="t-panel" hidden>
+            <div class="t-tabs" role="tablist"><button type="button" data-mode="login" class="on">로그인</button><button type="button" data-mode="signup">회원가입</button></div>
+            <h2 id="a-title">모험가 로그인</h2>
+            <form id="auth-form" novalidate>
+              <label class="fld"><span>아이디</span><input id="a-id" name="username" autocomplete="username" maxlength="16" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="영문 소문자·숫자·_ 4~16자" /></label>
+              <p id="a-id-msg" class="fmsg"></p>
+              <label class="fld"><span>비밀번호</span><input id="a-pw" name="password" type="password" autocomplete="current-password" maxlength="64" placeholder="6자 이상" /><button type="button" id="a-eye" class="eye" title="비밀번호 보기" aria-pressed="false">보기</button></label>
+              <p id="a-pw-msg" class="fmsg"></p>
+              <div id="a-pw2-row" hidden>
+                <label class="fld"><span>비밀번호 확인</span><input id="a-pw2" name="password2" type="password" autocomplete="new-password" maxlength="64" placeholder="한 번 더" /></label>
+                <p id="a-pw2-msg" class="fmsg"></p>
+              </div>
+              <p id="a-legacy" class="t-note" hidden>이 브라우저의 기존 캐릭터를 1서버로 옮깁니다</p>
+              <p id="a-msg" class="t-err" role="alert"></p>
+              <div class="t-btns"><button type="button" id="a-back" class="btn">처음으로</button><button id="a-submit" class="btn gold big" type="submit">로그인</button></div>
+            </form>
+          </section>
+
+          <section id="t-servers" class="t-panel" hidden>
+            <div class="sv-top"><span>계정 <b id="sv-id"></b></span><button type="button" id="sv-out" class="btn small">로그아웃</button></div>
+            <h2>서버 선택</h2>
+            <div id="sv-list"></div>
+            <p class="t-hint">캐릭터는 서버마다 하나씩. 같은 서버의 두 채널에서 함께 쓰입니다.</p>
+          </section>
+
+          <p id="title-msg" role="status"></p>
+        </div>
       </div>
+      <footer id="t-ver"></footer>
     </div>
 
+    <!-- ── character creation (lobby.js) ──────────────── -->
     <div id="create" hidden>
-      <div class="frame">
-        <h2>캐릭터 만들기</h2>
-        <div class="create-row">
-          <div class="create-form">
-            <input id="c-name" maxlength="10" placeholder="이름 (한글·영문·숫자 2~10자)" autocomplete="off" />
-            <div class="pick" id="c-cls">
-              <button data-v="warrior" class="on">전사</button>
-              <button data-v="rogue">도적</button>
-              <button data-v="lancer">창술사</button>
-              <button data-v="mage">마도사</button>
+      <div class="cr-wrap">
+        <header class="cr-head">
+          <button type="button" id="cr-back" class="btn">← 서버 선택</button>
+          <h2>캐릭터 만들기</h2>
+          <span id="cr-server" class="cr-sv"></span>
+        </header>
+        <div class="cr-body">
+          <div class="cr-col cr-l">
+            <div id="cr-stage" class="sunk">
+              <canvas id="cr-cv"></canvas>
+              <button type="button" id="cr-left" class="cr-turn l" title="돌리기">◀</button>
+              <button type="button" id="cr-right" class="cr-turn r" title="돌리기">▶</button>
+              <div id="cr-modes"><button type="button" data-m="auto">자동</button><button type="button" data-m="stand">서기</button><button type="button" data-m="walk">걷기</button><button type="button" data-m="attack">공격</button></div>
             </div>
-            <p id="c-desc"></p>
+            <div class="cr-name">
+              <label for="c-name">이름</label>
+              <input id="c-name" maxlength="10" placeholder="한글·영문·숫자 2~10자" autocomplete="off" spellcheck="false" />
+              <button type="button" id="c-dice" class="btn" title="귀여운 이름 하나 골라 주기">랜덤 이름</button>
+            </div>
+            <p id="c-name-msg" class="fmsg"></p>
+            <div class="cr-lab"><span>추천 모습</span></div>
+            <div id="c-presets"></div>
+          </div>
+          <div class="cr-col cr-r">
+            <div class="cr-lab"><span>직업</span><small>무기와 싸우는 법이 다릅니다</small></div>
+            <div id="c-cls"></div>
+            <div class="cr-lab"><span>외형</span><span class="cr-tools"><button type="button" id="c-undo" class="btn small" title="되돌리기 (Ctrl+Z)">되돌리기</button><button type="button" id="c-rand" class="btn small">무작위</button></span></div>
             <div id="c-parts"></div>
-            <button id="c-rand" type="button" class="btn small">무작위</button>
           </div>
         </div>
-        <button id="b-create" class="btn gold big">모험 시작</button>
-        <p id="create-msg"></p>
+        <footer class="cr-foot">
+          <p id="create-msg" role="status"></p>
+          <button id="b-create" type="button" class="btn gold big">생성</button>
+        </footer>
       </div>
     </div>
 

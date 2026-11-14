@@ -463,3 +463,48 @@ export function logo(S = 4) {
   });
   return cv2;
 }
+
+// ───────────────────────────── the creation stage ─────────────────────────────
+
+/**
+ * The creation page's preview: a clearing in the same forest, the figure on a
+ * patch of path in the middle. `c` is a canvas already sized to the box at 1×
+ * (one art pixel per canvas pixel); `fig`/`e` as for scene2d.drawFigure.
+ */
+export function stage(c, fig, e, t, dt) {
+  const keep = [g, iw, ih];
+  g = c.getContext("2d"); iw = c.width; ih = c.height;
+  try {
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.imageSmoothingEnabled = false;
+    const gy = R(ih * 0.62);
+    // sky, a line of far pines, the meadow
+    const bands = SKY.slice(1);
+    const bh = Math.ceil((gy - 10) / bands.length);
+    bands.forEach((col, i) => px(0, i * bh, iw, bh + 1, col));
+    const DEEP = { lit: FAR.lit, mid: FAR.mid, dk: FAR.dk, deeper: FAR.deeper };
+    for (let i = -1; i < iw / 9 + 1; i++) pine(i * 9 + R(hash(i, 5) * 4), gy - 4, 16 + R(hash(i, 7) * 14), DEEP);
+    px(0, gy - 4, iw, ih - gy + 4, GRASS.mid);
+    px(0, gy - 4, iw, 1, GRASS.dk);
+    px(0, gy - 3, iw, 1, GRASS.lit);
+    for (let i = 0; i < iw / 5; i++) for (let r = 0; r < 4; r++) {
+      if (hash(i, 700 + r) < 0.6) continue;
+      const x = i * 5 + R(hash(i, 710 + r) * 4), y = gy + 2 + R(r * (ih - gy) / 4 + hash(i, 720 + r) * 4);
+      px(x, y, 1, 2, GRASS.dk); px(x + 2, y + 1, 1, 1, GRASS.dk);
+      if (hash(i, 730 + r) < 0.12) px(x + 1, y - 1, 1, 1, FLOWERS[(hash(i, 740 + r) * 4) | 0]);
+    }
+    // the patch of path the figure stands on
+    const cx = R(iw / 2), fy = R(ih * 0.76), rx = Math.min(R(iw * 0.32), 30), ry = Math.max(4, R(rx * 0.32));
+    for (let y = -ry; y <= ry; y++) {
+      const w = R(rx * Math.sqrt(1 - (y / ry) ** 2));
+      px(cx - w, fy + y, w * 2 + 1, 1, PATH.mid);
+      px(cx - w, fy + y, 1, 1, PATH.edge); px(cx + w, fy + y, 1, 1, PATH.edge);
+    }
+    for (let x = -rx + 2; x <= rx - 2; x++) { const w = R(ry * Math.sqrt(1 - (x / rx) ** 2)); px(cx + x, fy - w, 1, 1, PATH.edge); px(cx + x, fy + w, 1, 1, PATH.edge); px(cx + x, fy - w + 1, 1, 1, PATH.lit); }
+    px(cx - 9, fy + 1, 2, 1, PATH.dk); px(cx + 11, fy - 1, 2, 1, PATH.peb); px(cx - 15, fy - 1, 1, 1, PATH.peb);
+    // a tree on each side, cut by the edges
+    if (iw > 70) { roundTree(4, gy + 2, 40, 13, 3); roundTree(iw - 5, gy + 4, 44, 14, 8); }
+    mushroom(R(iw * 0.18), R(ih * 0.86)); rock(R(iw * 0.84), R(ih * 0.9), 2);
+    S3.drawFigure(g, fig, e, t, dt, cx, fy + 1);
+  } finally { [g, iw, ih] = keep; }
+}
