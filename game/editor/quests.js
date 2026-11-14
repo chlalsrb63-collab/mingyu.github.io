@@ -198,11 +198,11 @@ export function init(opts) {
     } else {
       const v = await dialog("직접 만든 메인 퀘스트", "어디서 시작할까요?", [["기본 퀘스트를 복사해서", "copy", "gold"], ["빈 표에서", "empty"], ["취소", null]]);
       if (!v) { render(); return; }
-      Q.f.main = v === "copy" ? JSON.parse(JSON.stringify(DB.defs.quests || [])).map((q) => ({ mob: q.mob, n: q.n, title: q.title, text: q.text, xp: q.xp, gold: q.gold, items: q.items || [] })) : [];
+      Q.f.main = v === "copy" ? JSON.parse(JSON.stringify(DB.defs.mainQuests || DB.defs.quests || [])).map((q) => ({ mob: q.mob, n: q.n, title: q.title, text: q.text, xp: q.xp, gold: q.gold, items: q.items || [] })) : [];
       if (v === "empty") Q.f.main.push({ mob: (mobEntries()[0] || {}).key, n: 5, title: "첫 퀘스트", text: "", xp: 100, gold: 50, items: [] });
     }
     change(); render();
     if (Array.isArray(Q.f.main)) mainTable();
   };
 }
-export const key = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { save(); return true; } return false; };
+export const key = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { if (e.target && e.target.blur) e.target.blur(); save(); return true; } return false; };

@@ -71,7 +71,8 @@ function detail(f) {
   const inMan = Object.entries(A.manifest.images || {}).concat(Object.entries(A.manifest.audio || {})).filter(([, v]) => String(v).endsWith(f.n));
   box.append(el("h3.ttl", null, f.n), big,
     el("p.small", null, `asset/${f.p}`, el("br"), f.w ? `${f.w} × ${f.h} 픽셀 · ` : "", `${Math.round(f.bytes / 102.4) / 10} KB`, f.label ? el("span", null, el("br"), f.label) : null),
-    inMan.length ? el("p.small", null, "게임에 들어가 있어요: ", el("b", null, inMan.map((e) => e[0]).join(", "))) : null);
+    inMan.length ? el("p.small", null, "게임에 들어가 있어요: ", el("b", null, inMan.map((e) => e[0]).join(", "))) : "");
+  if (f.kind === "file") return;
   if (blocked(f.p)) { box.append(el("p.hint", null, "이 폴더의 파일은 게임에 넣을 수 없어요. 정리(import-art)해서 승인 폴더(weapons·gear·items…)에 저장한 것만 넣어요.")); return; }
   box.append(el("div.subhead", null, "게임에 넣기"), el("p.hint", null, "주인이 승인했고, asset/CREDITS.md에 출처가 적힌 그림만 넣으세요."), el("div.form", null, el("label.f", null, el("span", null, "게임 키"), key)),
     el("button.btn.gold.wide", { onclick: () => install(f, key.value.trim()) }, "이 그림을 게임에 넣기"));

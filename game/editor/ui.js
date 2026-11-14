@@ -98,7 +98,10 @@ export const BGM_KO = { town: "마을", field: "들판", meadow: "초원", fores
 /** The (ground) context used by validate.js. */
 export function checkCtx(extraMaps = {}) {
   const maps = {};
-  for (const m of DB.maps) maps[m.id] = { w: m.w, h: m.h, builtin: m.builtin };
+  for (const m of DB.maps) {
+    maps[m.id] = { w: m.w, h: m.h, builtin: m.builtin };
+    if (m.file && m.file !== m.id) maps[m.file] = maps[m.id];   // a replacement file's own id is an alias
+  }
   Object.assign(maps, extraMaps);
   return { palette: DB.palette, defs: DB.defs, maps, builtin: DB.maps.filter((m) => m.builtin).map((m) => m.id) };
 }

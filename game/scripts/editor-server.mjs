@@ -3,26 +3,31 @@
 //
 //   node scripts/editor-server.mjs        (npm run editor; EDITOR.bat at the repo root)
 //   → http://localhost:5190   (listens on 127.0.0.1 only)
+//   EDITOR_DATA=<dir> edits another data folder (tests, experiments); EDITOR_PORT=<n> another port.
 //
 // Serves game/editor/ (the app), game/public/ read-only at /public/ (the game's own renderer
 // for previews) and asset/ read-only at /asset/, and implements the /api routes of SCHEMA.md.
 // Writes only inside game/data/** (atomic temp+rename, timestamped backups in
 // game/data/.backup/, last 20 per file kept) and, through import-art.mjs, asset/ installs.
-// Pure node, no dependencies; works the same on Windows and POSIX.
+//
+// The game knowledge (palette, generated maps, tables, the full data check) comes from
+// scripts/editor-lib.mjs. It evaluates the rules once per data set and node never frees an
+// imported module, so the lib runs in a child process (this same file with EDITOR_LIB_WORKER=1)
+// that is recycled when it grows. Pure node, no dependencies; works the same on Windows and POSIX.
 import http from "node:http";
 import { readFile, writeFile, rename, mkdir, readdir, stat, unlink, copyFile } from "node:fs/promises";
-import { existsSync, readFileSync, statSync, createReadStream } from "node:fs";
+import { existsSync, readFileSync, createReadStream } from "node:fs";
 import { join, dirname, resolve, sep, extname, relative } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { spawn, spawnSync, fork } from "node:child_process";
 import { checkMap, checkLinks, checkNpcs, checkQuests, ID_RE } from "../editor/validate.js";
 
-const GAME = join(dirname(fileURLToPath(import.meta.url)), "..");
+const SELF = fileURLToPath(import.meta.url);
+const GAME = join(dirname(SELF), "..");
 const REPO = join(GAME, "..");
 const EDITOR = join(GAME, "editor");
 const PUBLIC = join(GAME, "public");
 const ASSET = join(REPO, "asset");
-// EDITOR_DATA=<dir> points the editor at another data folder (tests, experiments)
 const DATA = process.env.EDITOR_DATA ? resolve(process.env.EDITOR_DATA) : join(GAME, "data");
 const MAPS_DIR = join(DATA, "maps");
 const BACKUP = join(DATA, ".backup");
@@ -33,97 +38,95 @@ const MAX_BODY = 4 << 20;
 const KEEP_BACKUPS = 20;
 const WIN = process.platform === "win32";
 
-// ───────────────────────────── the game-side library ─────────────────────────────
-// scripts/editor-lib.mjs (written by the game side) knows the palette, converts generated maps
-// and checks game/data. Until it exists, the fallback below stands in for it.
-let LIB = null;
-async function lib() {
-  if (LIB) return LIB;
-  const p = join(GAME, "scripts", "editor-lib.mjs");
-  if (existsSync(p)) {
-    try { LIB = await import(pathToFileURL(p).href); LIB.__real = true; return LIB; } catch (e) { console.error("editor-lib.mjs failed to load, using the fallback:", e.message); }
-  }
-  LIB = FALLBACK;
-  return LIB;
+// ───────────────────────────── the lib worker (child process) ─────────────────────────────
+if (process.env.EDITOR_LIB_WORKER === "1") {
+  const L = await import("./editor-lib.mjs");
+  const { EMPTY_DATA } = await import("./build-logic.mjs");
+  const fns = {
+    palette: () => L.palette(),
+    defs: (dir) => L.defsForEditor(dir),
+    listMaps: (dir) => L.listMaps(dir),
+    mapToEditor: (id) => L.mapToEditor(id),
+    checkData: (dir) => L.checkData(dir),
+    /** What the pickers' pictures need beyond defsForEditor (sprite body, tint, gear tier). */
+    art: async () => {
+      const { E } = await L.loadLogic({ data: EMPTY_DATA() });
+      const mobs = {}, items = {};
+      for (const [k, m] of Object.entries(E.MOBS)) mobs[k] = { sp: m.sp || k, tint: m.tint || null };
+      for (const [k, it] of Object.entries(E.ITEMS)) if (it.tier != null || it.wk || it.rune) items[k] = { tier: it.tier, wk: it.wk, rune: it.rune };
+      return { mobs, items };
+    },
+  };
+  process.on("message", async ({ id, fn, args }) => {
+    try { process.send({ id, ok: true, v: await fns[fn](...(args || [])), rss: process.memoryUsage().rss }); }
+    catch (e) { process.send({ id, ok: false, err: e.message, rss: process.memoryUsage().rss }); }
+  });
+  process.send({ ready: true });
+} else {
+  await server();
 }
 
-// ── FALLBACK (temporary; remove once scripts/editor-lib.mjs is on main) ──────────────
-// Evaluates the generated logic.js with one extra export, the way dump-maps.mjs does.
-let LOGIC = null, LOGIC_MTIME = 0;
-async function logic() {
-  const f = join(GAME, "src", "logic.js");
-  const mt = statSync(f).mtimeMs;
-  if (LOGIC && mt === LOGIC_MTIME) return LOGIC;
-  const src = readFileSync(f, "utf8") +
-    "\nexport const __ed = { MAPS, MOBS, ITEMS, QUESTS, FIRES: typeof FIRES !== 'undefined' ? FIRES : {}, WP: typeof WP !== 'undefined' ? WP : {}, FIELD_BOSS: typeof FIELD_BOSS !== 'undefined' ? FIELD_BOSS : {} };\n";
-  LOGIC = (await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"))).__ed;
-  LOGIC_MTIME = mt;
-  return LOGIC;
+async function server() {
+let worker = null, seq = 0, recycle = false;
+const pending = new Map();
+const RSS_LIMIT = 700 << 20;
+function startWorker() {
+  worker = fork(SELF, [], { env: { ...process.env, EDITOR_LIB_WORKER: "1" }, stdio: ["ignore", "inherit", "inherit", "ipc"] });
+  const w = worker;
+  w.on("message", (msg) => {
+    if (msg.ready) return;
+    const p = pending.get(msg.id);
+    if (!p) return;
+    pending.delete(msg.id);
+    clearTimeout(p.timer);
+    if (msg.ok) p.ok(msg.v); else p.bad(httpError(500, "게임 정보를 읽지 못했어요: " + msg.err));
+    if (msg.rss > RSS_LIMIT) recycle = true;
+    if (recycle && !pending.size && worker === w) { recycle = false; worker = null; w.kill(); }
+  });
+  w.on("exit", () => {
+    if (worker === w) worker = null;
+    for (const [id, p] of pending) if (p.w === w) { pending.delete(id); clearTimeout(p.timer); p.bad(httpError(500, "게임 정보 작업이 멈췄어요. 다시 해 보세요.")); }
+  });
 }
-const ALL_THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"];
-const FB_GROUND = [
-  [".", "풀밭", "#6cbf5e", 0], [",", "풀밭 2", "#62b556", 0], ['"', "꽃밭", "#8fd07a", 0], ["t", "긴 풀", "#4f9f48", 0],
-  [":", "짙은 풀", "#3f8a5c", 0], [";", "이끼", "#377d52", 0], ["p", "흙길", "#d9ab6c", 0], ["o", "광장 돌바닥", "#b4b9c6", 0],
-  ["r", "폐허 돌바닥", "#a8a89a", 0], ["s", "모래", "#ecd9a2", 0], ["w", "물", "#4aa2e2", 1], ["b", "다리", "#8a5a30", 0],
-  ["j", "진흙", "#5a5a3a", 0], ["v", "계단", "#c8b890", 0], ["a", "아스팔트", "#474b5a", 0], ["m", "아스팔트 2", "#6a6e7c", 0],
-  ["k", "보도블록", "#9aa0ae", 0], ["c", "바닥 타일", "#486a8a", 0], ["d", "바닥 타일 2", "#527696", 0], ["g", "어두운 바닥", "#3a4a3a", 0],
-  ["n", "핏빛 바닥", "#7a2a3a", 0], ["i", "뼈 바닥", "#a49e90", 0], ["W", "바위·낭떠러지", "#131a32", 1],
-];
-const FB_OBJECTS = [
-  ["T", "나무", "#2a6a34"], ["P", "소나무", "#1d4a30"], ["R", "바위", "#7a7e8c"], ["B", "덤불", "#3f8a44"], ["C", "돌벽", "#6a6258"],
-  ["H", "울타리 덤불", "#2f7a3a"], ["U", "낮은 돌담", "#8a8478"], ["l", "쓰러진 통나무", "#7a5230"], ["u", "그루터기", "#8a6238"],
-  ["e", "갈대", "#9ac86a"], ["q", "부서진 기둥", "#b8b4a8"], ["n", "상자 더미", "#c89a5e"], ["M", "광산 수레", "#8a5a34"],
-  ["D", "쓰레기통", "#3a6a5a"], ["E", "천막", "#e0c090"], ["F", "나무 울타리", "#b88a52"], ["L", "가로등", "#ffe690"],
-  ["G", "표지판", "#e0b87a"], ["K", "수정", "#72e6f4"], ["S", "파이프", "#5a7896"], ["Z", "콘크리트 벽", "#343846"],
-  ["c", "자동차", "#c84a50"], ["y", "소화전", "#d84c4c"], ["x", "쓰레기 더미", "#5c6474"], ["h", "집 (4×3)", "#7c665a"],
-  ["a", "분수", "#6a9ac8"], ["O", "선돌", "#d0d0e0"], ["A", "죽은 나무", "#6a5040"], ["Y", "버섯", "#e05a6a"], ["X", "피의 제단", "#ff2040"],
-  ["Q", "이동의 돌", "#5ae4d0"], ["1", "석관", "#9a9488"], ["2", "세워 둔 관", "#7a5a42"], ["3", "촛대", "#ffd070"], ["4", "뼈 무더기", "#d8d0b8"],
-  ["5", "해골 기둥", "#c8c0a8"], ["6", "하수관", "#6a7a6a"], ["7", "밸브", "#8a7a5a"], ["8", "살덩이 기둥", "#a04a5a"],
-  ["9", "황금 장식", "#c8a050"], ["0", "핏빛 눈", "#ff6a7a"], ["I", "교회 의자", "#6a4226"],
-];
-const FB_ROLES = ["talk", "quest", "elder", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume"];
-const FB_BGM = ["town", "field", "meadow", "forest", "city", "cave", "crypt", "sewer", "abyss", "boss", "rift"];
-const FALLBACK = {
-  async palette() {
-    return {
-      ground: FB_GROUND.map(([ch, name, color, solid]) => ({ ch, name, color, solid: !!solid, themes: ALL_THEMES })),
-      objects: FB_OBJECTS.map(([ch, name, color]) => ({ ch, name, color, solid: true })),
-    };
-  },
-  async defsForEditor() {
-    const L = await logic();
-    const mobs = {};
-    for (const [k, m] of Object.entries(L.MOBS)) mobs[k] = { name: m.name, lv: m.lv, boss: !!m.boss, chest: !!m.chest, sp: m.sp || k, tint: m.tint || null };
-    const items = {};
-    for (const [k, it] of Object.entries(L.ITEMS)) items[k] = { name: it.name, type: it.type, tier: it.tier, wk: it.wk, rune: it.rune };
-    return { mobs, items, roles: FB_ROLES, themes: ALL_THEMES, bgm: FB_BGM, quests: L.QUESTS };
-  },
-  async mapToEditor(id) {
-    const L = await logic(), m = L.MAPS[id];
-    if (!m) return null;
-    const boss = L.FIELD_BOSS[id], bs = boss && m.spawns.find((s) => s.k === boss);
-    return {
-      v: 1, id, replaces: null, name: m.name, theme: m.theme || (id === "town" ? "town" : "meadow"), bgm: m.bgm || "field",
-      safe: !!m.safe, band: m.band || null, w: m.w, h: m.h, ground: m.g.slice(), objects: m.o.slice(), entry: m.entry.slice(),
-      spawns: m.spawns.filter((s) => !(L.MOBS[s.k] && (L.MOBS[s.k].chest || L.MOBS[s.k].boss))).map((s) => ({ k: s.k, n: s.n, r: s.r.slice(), elite: s.elite || 0 })),
-      npcs: m.npcs.map((n) => ({ id: n.id, name: n.name, role: n.role, x: n.x, y: n.y, look: n.look, lines: n.say ? [n.say] : [] })),
-      portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: p.to, tx: p.tx, ty: p.ty })),
-      fires: (L.FIRES[id] || []).map((f) => [f[0], f[1]]), waypoint: L.WP[id] ? [L.WP[id].x, L.WP[id].y] : null, fishing: true,
-      boss: boss ? { k: boss, x: bs ? bs.r[0] : m.entry[0], y: bs ? bs.r[1] : m.entry[1] } : null,
-    };
-  },
-  async checkData(dir) {
-    const ctx = await checkContext(dir);
-    const errors = [], warnings = [];
-    const put = (file, list) => { for (const p of list) (p.level === "warn" ? warnings : errors).push({ file, path: p.path, msg: p.msg, x: p.x, y: p.y }); };
-    for (const [id, m] of Object.entries(ctx.custom)) put(`maps/${id}.json`, checkMap(m, ctx, { deep: true }));
-    put("links.json", checkLinks(await readData("links.json", dir), ctx));
-    put("npcs.json", checkNpcs(await readData("npcs.json", dir), ctx));
-    put("quests.json", checkQuests(await readData("quests.json", dir), ctx));
-    return { ok: !errors.length, errors, warnings };
-  },
+/** Call an editor-lib function in the worker. */
+function call(fn, ...args) {
+  if (!worker) startWorker();
+  const id = ++seq, w = worker;
+  return new Promise((ok, bad) => {
+    const timer = setTimeout(() => { pending.delete(id); bad(httpError(500, "게임 정보를 읽는 데 너무 오래 걸려요.")); }, 180000);
+    pending.set(id, { ok, bad, timer, w });
+    w.send({ id, fn, args });
+  });
+}
+// data-dependent answers are cached until the next write
+let dataVersion = 0;
+const memo = new Map();
+const cached = (key, f) => {
+  const k = key + "@" + dataVersion;
+  if (!memo.has(k)) { memo.set(k, f().catch((e) => { memo.delete(k); throw e; })); for (const old of memo.keys()) if (!old.endsWith("@" + dataVersion)) memo.delete(old); }
+  return memo.get(k);
 };
-// ── end FALLBACK ─────────────────────────────────────────────────────────────────
+let palCache = null, artCache = null;
+const palette = () => palCache || (palCache = call("palette").catch((e) => { palCache = null; throw e; }));
+const art = () => artCache || (artCache = call("art").catch((e) => { artCache = null; throw e; }));
+const listMaps = () => cached("maps", () => call("listMaps", DATA));
+const checkData = () => cached("check", () => call("checkData", DATA));
+/** The built-in main quest chain exactly as written (10-tables.js), xp before the game's level scaling. */
+function rawMainQuests() {
+  const src = readFileSync(join(GAME, "src", "logic", "10-tables.js"), "utf8");
+  // `const QUESTS = <data replacement> ? … : [ …built-in chain… ];` — take the literal list
+  const at = src.indexOf("const QUESTS =");
+  const m = at < 0 ? null : /(\[\n[\s\S]*?\n\]);/.exec(src.slice(at));
+  try { return m ? Function(`"use strict"; return (${m[1]});`)() : []; } catch { return []; }
+}
+const defs = () => cached("defs", async () => {
+  const [d, a] = await Promise.all([call("defs", DATA), art()]);
+  // additive: picture fields for the pickers, the built-in chain in full for "기본 퀘스트를 복사"
+  for (const [k, m] of Object.entries(d.mobs)) Object.assign(m, a.mobs[k] || {});
+  for (const [k, it] of Object.entries(d.items)) Object.assign(it, a.items[k] || {});
+  d.mainQuests = rawMainQuests();
+  return d;
+});
 
 // ───────────────────────────── data files ─────────────────────────────
 const DEFAULTS = {
@@ -132,49 +135,42 @@ const DEFAULTS = {
   "quests.json": () => ({ v: 1, main: null, side: [] }),
 };
 async function readJson(p) { return JSON.parse((await readFile(p, "utf8")).replace(/^﻿/, "")); }
-async function readData(name, dir = DATA) {
-  const p = join(dir, name);
+async function readData(name) {
+  const p = join(DATA, name);
   if (!existsSync(p)) return DEFAULTS[name]();
   return readJson(p);
 }
-async function customMaps(dir = DATA) {
+/** The hand-made map files: { fileId: json } (a broken file → { __broken }). */
+async function mapFiles() {
   const out = {};
-  const d = join(dir, "maps");
-  if (!existsSync(d)) return out;
-  for (const f of await readdir(d)) {
+  if (!existsSync(MAPS_DIR)) return out;
+  for (const f of await readdir(MAPS_DIR)) {
     if (!f.endsWith(".json")) continue;
-    try { const m = await readJson(join(d, f)); out[f.slice(0, -5)] = m; } catch (e) { out[f.slice(0, -5)] = { __broken: e.message }; }
+    try { out[f.slice(0, -5)] = await readJson(join(MAPS_DIR, f)); } catch (e) { out[f.slice(0, -5)] = { __broken: e.message }; }
   }
   return out;
 }
-/** Built-in maps: what logic.js generates, minus hand-made maps it may already carry. */
-async function builtinMaps(custom) {
-  const L = await logic();
-  const out = {};
-  for (const [id, m] of Object.entries(L.MAPS)) {
-    const c = custom[id];
-    if (c && !c.replaces) continue;
-    out[id] = { id, name: m.name, w: m.w, h: m.h, theme: m.theme || (id === "town" ? "town" : null) };
-  }
-  return out;
+/** The file holding map `id` (its own id, or the built-in id it replaces), or null. */
+async function fileFor(id) {
+  const files = await mapFiles();
+  if (files[id]) return id;
+  for (const [f, m] of Object.entries(files)) if (m.replaces === id) return f;
+  return null;
 }
-/** Everything the validators need: palette, defs, map sizes, NPC ids. */
-async function checkContext(dir = DATA) {
-  const L = await lib();
-  const [palette, defs, custom] = [await L.palette(), await L.defsForEditor(), await customMaps(dir)];
-  const built = await builtinMaps(custom);
+/** Everything the validators need: palette, defs, map sizes (aliases too), NPC ids. */
+async function checkContext() {
+  const [pal, d, list, extra] = await Promise.all([palette(), defs(), listMaps(), readData("npcs.json").catch(() => ({ npcs: [] }))]);
   const maps = {};
-  for (const [id, b] of Object.entries(built)) maps[id] = { w: b.w, h: b.h, builtin: true };
-  for (const [id, m] of Object.entries(custom)) if (!m.__broken) maps[id] = { w: m.w, h: m.h, builtin: !!m.replaces };
-  const npcIds = [];
-  const Lg = await logic();
-  for (const [id, m] of Object.entries(Lg.MAPS)) if (!custom[id]) for (const n of m.npcs) npcIds.push(n.id);
-  for (const m of Object.values(custom)) for (const n of m.npcs || []) npcIds.push(n.id);
-  try { for (const n of (await readData("npcs.json", dir)).npcs) npcIds.push(n.id); } catch { /* broken file: reported by its own check */ }
-  return { palette, defs, maps, builtin: Object.keys(built), custom, npcIds, mapIds: Object.keys(maps) };
+  for (const m of list) {
+    maps[m.id] = { w: m.w, h: m.h, builtin: m.builtin };
+    if (m.file && m.file !== m.id) maps[m.file] = maps[m.id];
+  }
+  const npcIds = new Set(d.npcs.map((n) => n.id));
+  for (const n of extra.npcs || []) npcIds.add(n.id);
+  return { palette: pal, defs: d, maps, builtin: list.filter((m) => m.builtin).map((m) => m.id), npcIds: [...npcIds], mapIds: Object.keys(maps) };
 }
 
-/** Atomic write inside game/data with a timestamped backup of what was there. */
+/** Atomic write inside the data folder with a timestamped backup of what was there. */
 async function writeData(rel, obj) {
   const p = safeJoin(DATA, rel);
   if (!p) throw httpError(400, "저장할 수 없는 경로예요.");
@@ -185,6 +181,7 @@ async function writeData(rel, obj) {
   const tmp = p + ".tmp-" + process.pid + "-" + Date.now();
   await writeFile(tmp, text);
   await rename(tmp, p);
+  dataVersion++;
 }
 async function backup(rel) {
   const p = join(DATA, rel);
@@ -244,8 +241,8 @@ function body(req) {
 /** Run a command, feeding its output to `out(text)`; resolves with the exit code. */
 function run(cmd, args, out, opts = {}) {
   return new Promise((ok) => {
-    out(`\n$ ${[cmd, ...args].join(" ")}\n`);
-    const ch = spawn(cmd, args, { cwd: GAME, shell: WIN && /npx|npm/.test(cmd), env: { ...process.env, FORCE_COLOR: "0" }, ...opts });
+    out(`\n$ ${[cmd === process.execPath ? "node" : cmd, ...args.map((a) => a.startsWith(GAME) ? relative(GAME, a) : a)].join(" ")}\n`);
+    const ch = spawn(cmd, args, { cwd: GAME, env: { ...process.env, FORCE_COLOR: "0" }, ...opts });
     ch.stdout.on("data", (d) => out(d.toString()));
     ch.stderr.on("data", (d) => out(d.toString()));
     ch.on("error", (e) => { out(`✗ ${e.message}\n`); ok(1); });
@@ -253,11 +250,12 @@ function run(cmd, args, out, opts = {}) {
   });
 }
 const node = (script, args, out) => run(process.execPath, [join(GAME, "scripts", script), ...args], out);
+const dataArgs = () => (process.env.EDITOR_DATA ? [DATA] : []);
 
 // ───────────────────────────── the local game server (playtest) ─────────────────────────────
 let wrangler = null;
 const wlog = [];
-const wout = (s) => { wlog.push(s); if (wlog.length > 400) wlog.splice(0, wlog.length - 400); };
+const wout = (s) => { wlog.push(s.replace(/\x1b\[[0-9;]*m/g, "")); if (wlog.length > 400) wlog.splice(0, wlog.length - 400); };
 function ping(port) {
   return new Promise((ok) => {
     const r = http.get({ host: "127.0.0.1", port, path: "/", timeout: 1500 }, (res) => { res.resume(); ok(true); });
@@ -268,8 +266,11 @@ function ping(port) {
 async function ensureGame() {
   if (await ping(GAME_PORT)) return false;
   if (!wrangler) {
-    wout("게임 서버를 켭니다 (npx wrangler dev)…\n");
-    wrangler = spawn(WIN ? "npx.cmd" : "npx", ["wrangler", "dev", "-c", "wrangler.local.jsonc", "--port", String(GAME_PORT)], { cwd: GAME, shell: WIN, env: { ...process.env, FORCE_COLOR: "0" } });
+    wout("게임 서버를 켭니다 (wrangler dev -c wrangler.local.jsonc)…\n");
+    // node + wrangler's own script (no npx, no shell): one process tree we can stop again
+    const bin = join(GAME, "node_modules", "wrangler", "bin", "wrangler.js");
+    if (!existsSync(bin)) throw httpError(500, "wrangler가 설치되어 있지 않아요. game 폴더에서 npm install을 한 번 해 주세요.");
+    wrangler = spawn(process.execPath, [bin, "dev", "-c", "wrangler.local.jsonc", "--port", String(GAME_PORT)], { cwd: GAME, detached: !WIN, env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1" } });
     wrangler.stdout.on("data", (d) => wout(d.toString()));
     wrangler.stderr.on("data", (d) => wout(d.toString()));
     wrangler.on("close", (c) => { wout(`게임 서버가 꺼졌어요 (code ${c}).\n`); wrangler = null; });
@@ -279,34 +280,25 @@ async function ensureGame() {
     if (!wrangler) break;
     await new Promise((r) => setTimeout(r, 1000));
   }
-  throw httpError(500, "게임 서버를 켜지 못했어요. 빌드·테스트 탭의 기록을 보세요.", { log: wlog.join("").slice(-4000) });
+  throw httpError(500, "게임 서버를 켜지 못했어요. 빌드·테스트 탭의 '게임 서버 기록'을 보세요.", { log: wlog.join("").slice(-4000) });
 }
-function stopGame() { if (wrangler) { try { wrangler.kill(); } catch { /* gone */ } wrangler = null; } }
-process.on("SIGINT", () => { stopGame(); process.exit(0); });
-process.on("SIGTERM", () => { stopGame(); process.exit(0); });
-process.on("exit", stopGame);
+function stopAll() {
+  if (wrangler) {
+    // the whole tree (wrangler starts workerd): a process group on POSIX, taskkill /T on Windows
+    try { if (WIN) spawnSync("taskkill", ["/pid", String(wrangler.pid), "/T", "/F"], { stdio: "ignore" }); else process.kill(-wrangler.pid, "SIGTERM"); } catch { try { wrangler.kill(); } catch { /* gone */ } }
+    wrangler = null;
+  }
+  if (worker) { try { worker.kill(); } catch { /* gone */ } worker = null; }
+}
+process.on("SIGINT", () => { stopAll(); process.exit(0); });
+process.on("SIGTERM", () => { stopAll(); process.exit(0); });
+process.on("exit", stopAll);
 
 // ───────────────────────────── routes ─────────────────────────────
-async function mapList() {
-  const custom = await customMaps();
-  const built = await builtinMaps(custom);
-  const out = [];
-  for (const b of Object.values(built)) {
-    const c = custom[b.id];
-    out.push({ id: b.id, name: c && !c.__broken ? c.name : b.name, builtin: true, custom: !!c, replaces: c ? c.replaces || null : null, w: c && !c.__broken ? c.w : b.w, h: c && !c.__broken ? c.h : b.h, theme: c && !c.__broken ? c.theme : b.theme });
-  }
-  for (const [id, c] of Object.entries(custom)) {
-    if (built[id]) continue;
-    out.push(c.__broken ? { id, name: id + " (읽기 실패)", builtin: false, custom: true, replaces: null, w: 0, h: 0, theme: null, broken: c.__broken }
-      : { id, name: c.name, builtin: false, custom: true, replaces: c.replaces || null, w: c.w, h: c.h, theme: c.theme });
-  }
-  return out;
-}
 async function getMap(id) {
-  if (!ID_RE.test(id)) throw httpError(400, "맵 아이디 형식이 틀렸어요.");
-  const p = join(MAPS_DIR, id + ".json");
-  if (existsSync(p)) return readJson(p);
-  const m = await (await lib()).mapToEditor(id);
+  const f = await fileFor(id);
+  if (f) return readJson(join(MAPS_DIR, f + ".json"));
+  const m = await call("mapToEditor", id);
   if (!m) throw httpError(404, `맵 "${id}"이(가) 없어요.`);
   return m;
 }
@@ -318,14 +310,21 @@ function split(list, file) {
 }
 /** Every NPC in the world: hand-made maps, npcs.json and the generated maps. */
 async function allNpcs() {
-  const custom = await customMaps(), L = await logic(), out = [];
-  for (const [id, m] of Object.entries(L.MAPS)) {
-    if (custom[id]) continue;
-    for (const n of m.npcs) out.push({ map: id, mapName: m.name, id: n.id, name: n.name, role: n.role, x: n.x, y: n.y, look: n.look, lines: n.say ? [n.say] : [], source: "builtin" });
+  const [list, files, extra] = await Promise.all([listMaps(), mapFiles(), readData("npcs.json")]);
+  const name = Object.fromEntries(list.map((m) => [m.id, m.name]));
+  for (const m of list) if (m.file) name[m.file] = m.name;
+  const out = [];
+  for (const m of list) {
+    if (m.custom) continue;
+    const g = await call("mapToEditor", m.id);
+    for (const n of (g && g.npcs) || []) out.push({ ...n, map: m.id, mapName: m.name, source: "builtin" });
   }
-  for (const [id, m] of Object.entries(custom)) for (const n of m.npcs || []) out.push({ ...n, map: id, mapName: m.name, source: "map" });
-  const extra = await readData("npcs.json");
-  for (const n of extra.npcs || []) out.push({ ...n, mapName: (L.MAPS[n.map] || custom[n.map] || {}).name || n.map, source: "npcs.json" });
+  for (const [fid, m] of Object.entries(files)) {
+    if (m.__broken) continue;
+    const id = m.replaces || fid;
+    for (const n of m.npcs || []) out.push({ ...n, map: id, mapName: name[id] || m.name, source: "map", file: fid });
+  }
+  for (const n of extra.npcs || []) out.push({ ...n, mapName: name[n.map] || n.map, source: "npcs.json" });
   return out;
 }
 
@@ -333,17 +332,10 @@ const SIDE_FILES = { links: ["links.json", checkLinks], npcs: ["npcs.json", chec
 
 async function api(req, res, path) {
   const M = req.method;
-  const L = await lib();
-  if (path === "/api/palette" && M === "GET") return send(res, 200, await L.palette());
-  if (path === "/api/defs" && M === "GET") {
-    const d = await L.defsForEditor();
-    if (!d.quests) d.quests = (await logic()).QUESTS;      // additive: the built-in main chain, for "기본에서 시작"
-    return send(res, 200, d);
-  }
-  if (path === "/api/maps" && M === "GET") return send(res, 200, await mapList());
-  if (path === "/api/status" && M === "GET") {
-    return send(res, 200, { lib: L.__real ? "editor-lib" : "fallback", game: await ping(GAME_PORT), gamePort: GAME_PORT, data: relative(REPO, DATA) });
-  }
+  if (path === "/api/palette" && M === "GET") return send(res, 200, await palette());
+  if (path === "/api/defs" && M === "GET") return send(res, 200, await defs());
+  if (path === "/api/maps" && M === "GET") return send(res, 200, await listMaps());
+  if (path === "/api/status" && M === "GET") return send(res, 200, { game: await ping(GAME_PORT), gamePort: GAME_PORT, data: relative(REPO, DATA) || DATA });
   let m = path.match(/^\/api\/map\/([^/]+)$/);
   if (m) {
     const id = decodeURIComponent(m[1]);
@@ -351,20 +343,27 @@ async function api(req, res, path) {
     if (M === "GET") return send(res, 200, await getMap(id));
     if (M === "PUT") {
       const map = await body(req);
-      if (map.id !== id) throw httpError(400, "주소의 맵 아이디와 파일 안의 아이디가 달라요.");
+      if (map.id !== id && map.replaces !== id) throw httpError(400, "주소의 맵 아이디와 파일 안의 아이디가 달라요.");
+      if (!ID_RE.test(String(map.id))) throw httpError(400, "맵 아이디 형식이 틀렸어요.");
+      const files = await mapFiles();
+      for (const [f, other] of Object.entries(files)) {
+        if (f === map.id) continue;
+        if (map.replaces && other.replaces === map.replaces) throw httpError(400, `기본 맵 "${map.replaces}"은(는) 이미 maps/${f}.json이 대신하고 있어요.`);
+      }
       const ctx = await checkContext();
       // the map being saved counts as existing (doors may point at itself)
-      ctx.maps[id] = { w: map.w, h: map.h, builtin: !!map.replaces };
-      const { errors, warnings } = split(checkMap(map, ctx, { deep: true }), `maps/${id}.json`);
+      ctx.maps[id] = ctx.maps[map.id] = { w: map.w, h: map.h, builtin: !!map.replaces };
+      const { errors, warnings } = split(checkMap(map, ctx, { deep: true }), `maps/${map.id}.json`);
       if (errors.length) return send(res, 400, { ok: false, error: "저장하지 못했어요: " + errors[0].msg, errors, warnings });
-      await writeData(`maps/${id}.json`, map);
-      return send(res, 200, { ok: true, warnings });
+      await writeData(`maps/${map.id}.json`, map);
+      return send(res, 200, { ok: true, file: `maps/${map.id}.json`, warnings });
     }
     if (M === "DELETE") {
-      const p = join(MAPS_DIR, id + ".json");
-      if (!existsSync(p)) throw httpError(404, "지울 수 있는 직접 만든 맵이 아니에요 (기본 맵은 지울 수 없어요).");
-      await backup(`maps/${id}.json`);
-      await unlink(p);
+      const f = await fileFor(id);
+      if (!f) throw httpError(404, "지울 수 있는 직접 만든 맵이 아니에요 (기본 맵은 지울 수 없어요).");
+      await backup(`maps/${f}.json`);
+      await unlink(join(MAPS_DIR, f + ".json"));
+      dataVersion++;
       return send(res, 200, { ok: true });
     }
   }
@@ -376,8 +375,8 @@ async function api(req, res, path) {
       const f = await body(req);
       const ctx = await checkContext();
       if (m[1] === "npcs") { // the NPCs being saved are the ones that count
-        const old = new Set((await readData("npcs.json")).npcs.map((n) => n.id));
-        ctx.npcIds = ctx.npcIds.filter((i) => !old.has(i));
+        const old = new Set(((await readData("npcs.json")).npcs || []).map((n) => n.id));
+        ctx.npcIds = ctx.npcIds.filter((i) => !old.has(i)).concat((f.npcs || []).map((n) => n && n.id));
       }
       const { errors, warnings } = split(check(f, ctx), file);
       if (errors.length) return send(res, 400, { ok: false, error: "저장하지 못했어요: " + errors[0].msg, errors, warnings });
@@ -386,11 +385,10 @@ async function api(req, res, path) {
     }
   }
   if (path === "/api/npcs/all" && M === "GET") return send(res, 200, await allNpcs());
-  if (path === "/api/check" && M === "POST") return send(res, 200, await L.checkData(DATA));
+  if (path === "/api/check" && M === "POST") return send(res, 200, await checkData());
   if (path === "/api/build" && M === "POST") return build(req, res);
   if (path === "/api/assets" && M === "GET") {
-    const log = [];
-    await node("gallery.mjs", [], (s) => log.push(s));
+    await node("gallery.mjs", [], () => {});
     let g = { groups: [] };
     try { g = await readJson(join(ASSET, "gallery.json")); } catch { /* no gallery */ }
     let manifest = { images: {}, audio: {} };
@@ -399,10 +397,10 @@ async function api(req, res, path) {
   }
   if (path === "/api/assets/install" && M === "POST") {
     const b = await body(req);
-    const rel = String(b.file || "").replace(/^asset[\\/]/, "");
+    const rel = String(b.file || "").replace(/\\/g, "/").replace(/^asset\//, "");
     const p = safeJoin(ASSET, rel);
     if (!p || !existsSync(p) || !/\.(png|gif|ogg|mp3|wav)$/i.test(p)) throw httpError(400, "asset 폴더 안의 그림(PNG)이나 소리 파일만 넣을 수 있어요.");
-    if (/^(_export|_preview|reference|incoming)[\\/]/.test(rel)) throw httpError(400, "승인된 폴더의 파일만 게임에 넣을 수 있어요 (_export·_preview·reference·incoming 은 안 돼요).");
+    if (/^(_export|_preview|reference|incoming)\//.test(rel)) throw httpError(400, "승인된 폴더의 파일만 게임에 넣을 수 있어요 (_export·_preview·reference·incoming 은 안 돼요).");
     const args = ["--install", p];
     if (b.key) {
       if (!/^[a-z0-9_.-]{2,80}$/.test(b.key)) throw httpError(400, "게임 키는 영어 소문자·숫자·점(.)으로 적어 주세요 (예: icon.item.hp_s).");
@@ -417,11 +415,12 @@ async function api(req, res, path) {
     const map = String(b.map || "town");
     if (!ID_RE.test(map)) throw httpError(400, "맵 아이디 형식이 틀렸어요.");
     const x = Number.isInteger(b.x) ? b.x : null, y = Number.isInteger(b.y) ? b.y : null;
+    if (process.env.EDITOR_DATA) throw httpError(400, "다른 데이터 폴더(EDITOR_DATA)를 고치는 중에는 게임 테스트를 할 수 없어요.");
     const log = [];
     const code = await node("build-logic.mjs", [], (s) => log.push(s));
-    if (code !== 0) throw httpError(400, "게임 규칙을 만들지 못했어요 (빌드 실패).", { log: log.join("") });
+    if (code !== 0) throw httpError(400, "게임 규칙을 만들지 못했어요 (빌드 실패). 빌드·테스트 탭에서 검사해 보세요.", { log: log.join("") });
     const started = await ensureGame();
-    const q = new URLSearchParams({ playtest: map });
+    const q = new URLSearchParams({ dev: "1", map });
     if (x != null && y != null) { q.set("x", x); q.set("y", y); }
     return send(res, 200, { ok: true, started, url: `http://localhost:${GAME_PORT}/?${q}` });
   }
@@ -429,40 +428,37 @@ async function api(req, res, path) {
   throw httpError(404, "없는 API예요.");
 }
 
-/** POST /api/build: logic build, data check, fast tests. ?stream=1 streams the log as text. */
+/** POST /api/build: logic build with the data, data check, fast tests. ?stream=1 streams the log as text. */
 async function build(req, res) {
   const stream = new URL(req.url, "http://x").searchParams.get("stream") === "1";
   let log = "";
   const out = (s) => { log += s; if (stream) res.write(s); };
   if (stream) res.writeHead(200, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" });
   const steps = [];
-  out("▶ 1/3 게임 규칙 만들기 (build-logic)\n");
-  let code = await node("build-logic.mjs", [], out);
-  steps.push({ step: "build", ok: code === 0 });
+  let code = 0;
+  if (process.env.EDITOR_DATA) out("(EDITOR_DATA: 다른 데이터 폴더라 게임 규칙 파일은 만들지 않고 검사만 해요)\n");
+  else {
+    out("▶ 1/3 게임 규칙 만들기 (build-logic: src/logic + data)\n");
+    code = await node("build-logic.mjs", [], out);
+    steps.push({ step: "build", ok: code === 0 });
+  }
   if (code === 0) {
-    out("\n▶ 2/3 데이터 검사\n");
-    if (existsSync(join(GAME, "scripts", "data-check.mjs"))) code = await node("data-check.mjs", [], out);
-    else {
-      const r = await (await lib()).checkData(DATA);
-      for (const e of r.errors) out(`✗ ${e.file} ${e.path}: ${e.msg}\n`);
-      for (const w of r.warnings) out(`△ ${w.file} ${w.path}: ${w.msg}\n`);
-      out(r.ok ? "데이터 이상 없음.\n" : "");
-      code = r.ok ? 0 : 1;
-    }
+    out("\n▶ 2/3 데이터 검사 (data-check)\n");
+    code = await node("data-check.mjs", dataArgs(), out);
     steps.push({ step: "check", ok: code === 0 });
   }
-  if (code === 0) {
-    out("\n▶ 3/3 빠른 테스트 (sim world maps)\n");
-    code = await node("test-all.mjs", ["--no-build", "sim", "world", "maps"], out);
+  if (code === 0 && !process.env.EDITOR_DATA) {
+    out("\n▶ 3/3 빠른 테스트 (sim world data)\n");
+    code = await node("test-all.mjs", ["--no-build", "sim", "world", "data"], out);
     steps.push({ step: "tests", ok: code === 0 });
   }
-  const ok = code === 0 && steps.length === 3;
+  const ok = code === 0;
   out(ok ? "\n✔ 빌드 성공! 게임에 반영됐어요.\n" : "\n✗ 빌드 실패 — 위의 기록을 보세요.\n");
   if (stream) { res.end("\n__RESULT__" + JSON.stringify({ ok, steps })); return; }
   send(res, 200, { ok, steps, log });
 }
 
-const server = http.createServer(async (req, res) => {
+const srv = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${HOST}`);
   const path = url.pathname;
   // local only: refuse pages from other sites driving the API (DNS rebinding, cross-site posts)
@@ -483,13 +479,14 @@ const server = http.createServer(async (req, res) => {
     send(res, status, { ok: false, error: e.message, ...(e.extra || {}) });
   }
 });
-server.on("error", (e) => {
+srv.on("error", (e) => {
   if (e.code === "EADDRINUSE") console.error(`포트 ${PORT}을(를) 이미 쓰고 있어요. 에디터가 이미 켜져 있나요? http://localhost:${PORT}`);
   else console.error(e);
   process.exit(1);
 });
-server.listen(PORT, HOST, async () => {
-  const L = await lib();
-  console.log(`테일즈테일즈 월드맵에디터 → http://localhost:${PORT}   (끄려면 Ctrl+C)`);
-  console.log(`데이터: ${DATA}   ${L.__real ? "" : "(editor-lib.mjs 없음: 임시 팔레트 사용)"}`);
+srv.listen(PORT, HOST, () => {
+  console.log(`테일즈테일즈 월드맵에디터 → http://localhost:${PORT}   (끄려면 이 창을 닫거나 Ctrl+C)`);
+  console.log(`데이터 폴더: ${DATA}`);
+  palette().catch((e) => console.error("palette:", e.message));   // warm the worker up
 });
+}

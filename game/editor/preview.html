@@ -55,6 +55,6 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-parent.postMessage({ type: "preview-ready" }, "*");
+parent.postMessage({ type: "preview-ready" }, location.origin);
 </script>
 </body>

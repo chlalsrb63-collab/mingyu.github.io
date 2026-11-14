@@ -41,7 +41,7 @@ const E = {
   id: null, m: null, g: null, o: null, locked: false, isNew: false,
   links: { v: 1, links: [] }, npcsFile: { v: 1, npcs: [] },
   saved: { map: "", links: "", npcs: "" },
-  layer: "ground", tool: "brush", size: 1, cur: { ground: ".", objects: "T" }, allThemes: false,
+  layer: "ground", tool: "brush", size: 1, cur: { ground: ".", objects: "T" },
   zoom: 4, ox: 20, oy: 20, grid: true, hover: null,
   sel: null, clip: null, pasting: false, drag: null,
   undo: [], redo: [], focus: null, problems: [], flash: null,
@@ -54,7 +54,31 @@ const ts = () => 4 * E.zoom;
 const rowsToGrid = (rows) => rows.map((r) => [...r]);
 function serialize() {
   if (!E.m) return null;
-  return { ...E.m, ground: E.g.map((r) => r.join("")), objects: E.o.map((r) => r.join("")) };
+  const m = { ...E.m, ground: E.g.map((r) => r.join("")), objects: E.o.map((r) => r.join("")) };
+  // houses and fountains drawn as one big sprite follow the "h"/"a" blocks under them;
+  // signpost texts follow their "G" objects (both only when the file has them)
+  if (Array.isArray(m.big)) m.big = bigOf(m.objects, m.big, m.theme);
+  if (Array.isArray(m.marks)) m.marks = m.marks.filter((k) => k.kind !== "sign" || (m.objects[k.y] && m.objects[k.y][k.x] === "G"));
+  return m;
+}
+/** The big pieces over a set of object rows: the ones in `keep` still standing, plus one per new 4×3 "h" / 2×2 "a" block. */
+export function bigOf(o, keep = [], th = "town") {
+  const block = (x, y, w, h, ch) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (!o[y + j] || o[y + j][x + i] !== ch) return false; return true; };
+  const out = keep.filter((b) => (b.t === "house" ? block(b.x, b.y, 4, 3, "h") : b.t === "fountain" ? block(b.x, b.y, 2, 2, "a") : true)).map((b) => ({ ...b }));
+  const seen = new Set();
+  for (const b of out) { const [w, h] = b.t === "house" ? [4, 3] : [2, 2]; for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) seen.add(b.x + i + "," + (b.y + j)); }
+  for (let y = 0; y < o.length; y++) for (let x = 0; x < o[y].length; x++) {
+    const ch = o[y][x];
+    if ((ch !== "h" && ch !== "a") || seen.has(x + "," + y)) continue;
+    const [w, h] = ch === "h" ? [4, 3] : [2, 2];
+    if (!block(x, y, w, h, ch)) continue;
+    let free = true;
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (seen.has(x + i + "," + (y + j))) free = false;
+    if (!free) continue;
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) seen.add(x + i + "," + (y + j));
+    out.push(ch === "h" ? { t: "house", x, y, v: (th === "city" ? 4 : 0) + ((x * 7 + y * 3) % 4) } : { t: "fountain", x, y });
+  }
+  return out;
 }
 const mapJson = () => (E.m && !E.locked ? JSON.stringify(serialize()) : "");
 const linksJson = () => JSON.stringify(E.links);
@@ -66,6 +90,11 @@ export function dirty() {
   return d;
 }
 const theme = () => (E.m && E.m.theme) || "meadow";
+/** A ground tile's colour as the minimap draws it in this theme. */
+const gCol = (ch, th = theme()) => { const p = DB.pg[ch]; return p ? (p.themeColors && p.themeColors[th]) || p.color : "#ff00ff"; };
+const oCol = (ch) => (DB.po[ch] && DB.po[ch].color) || "#ff00ff";
+/** Is this map id (a map's own id or its file alias) the one open? */
+const here = (id) => !!E.m && (id === E.id || id === E.m.id);
 const baseGround = () => (DB.pg[BASE[theme()]] ? BASE[theme()] : DB.palette.ground[0].ch);
 const solidG = () => new Set(DB.palette.ground.filter((p) => p.solid).map((p) => p.ch));
 const inside = (x, y) => E.m && x >= 0 && y >= 0 && x < E.m.w && y < E.m.h;
@@ -76,14 +105,14 @@ function npcItems() {
   if (!E.m) return [];
   const out = E.m.npcs.map((n) => ({ src: E.locked ? "builtin" : "map", n }));
   const builtinish = E.locked || E.m.replaces || DB.maps.some((m) => m.id === E.id && m.builtin);
-  if (builtinish) for (const n of E.npcsFile.npcs) if (n.map === E.id) out.push({ src: "file", n });
+  if (builtinish) for (const n of E.npcsFile.npcs) if (here(n.map)) out.push({ src: "file", n });
   return out;
 }
 /** Doors on this map: own portals and links.json entries. */
 function doorItems() {
   if (!E.m) return [];
   const out = E.m.portals.map((d) => ({ src: E.locked ? "builtin" : "map", d }));
-  for (const l of E.links.links) if (l.map === E.id) out.push({ src: "links", d: l });
+  for (const l of E.links.links) if (here(l.map)) out.push({ src: "links", d: l });
   return out;
 }
 const editable = (it) => it && it.src !== "builtin";
@@ -292,8 +321,7 @@ function paint() {
   // the map's edge
   ctx.fillStyle = "#000"; ctx.fillRect(X(0) - 2, Y(0) - 2, m.w * s + 4, m.h * s + 4);
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-    const gp = DB.pg[E.g[y][x]];
-    ctx.fillStyle = gp ? gp.color : "#ff00ff";
+    ctx.fillStyle = gCol(E.g[y][x]);
     ctx.fillRect(X(x), Y(y), s, s);
   }
   // objects
@@ -302,7 +330,7 @@ function paint() {
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const ch = E.o[y][x];
     if (ch === " ") continue;
-    const op = DB.po[ch], col = op ? op.color : "#ff00ff";
+    const col = oCol(ch);
     if (ch === "h") {
       // a house block: draw as one roofed rectangle
       ctx.fillStyle = "#4a3a30"; ctx.fillRect(X(x), Y(y), s, s);
@@ -401,9 +429,9 @@ function paint() {
     ctx.globalAlpha = 0.65;
     for (let j = 0; j < E.clip.h; j++) for (let i = 0; i < E.clip.w; i++) {
       if (!inside(hx + i, hy + j)) continue;
-      const gp = DB.pg[E.clip.g[j][i]], o = E.clip.o[j][i];
-      ctx.fillStyle = gp ? gp.color : "#f0f"; ctx.fillRect(X(hx + i), Y(hy + j), s, s);
-      if (o !== " ") { ctx.fillStyle = (DB.po[o] || {}).color || "#f0f"; ctx.fillRect(X(hx + i) + pad, Y(hy + j) + pad, s - 2 * pad, s - 2 * pad); }
+      const o = E.clip.o[j][i];
+      ctx.fillStyle = gCol(E.clip.g[j][i]); ctx.fillRect(X(hx + i), Y(hy + j), s, s);
+      if (o !== " ") { ctx.fillStyle = oCol(o); ctx.fillRect(X(hx + i) + pad, Y(hy + j) + pad, s - 2 * pad, s - 2 * pad); }
     }
     ctx.globalAlpha = 1;
     ctx.strokeStyle = "#ffd25a"; ctx.lineWidth = 2; ctx.strokeRect(X(hx), Y(hy), E.clip.w * s, E.clip.h * s);
@@ -591,7 +619,8 @@ function addSpawn(r) {
   toast("몬스터 구역을 만들었어요. 오른쪽에서 몬스터를 고르세요.", "ok");
 }
 function uniqueNpcId() {
-  const used = new Set([...npcItems().map((it) => it.n.id), ...E.npcsFile.npcs.map((n) => n.id)]);
+  // NPC ids are unique across the whole world
+  const used = new Set([...npcItems().map((it) => it.n.id), ...E.npcsFile.npcs.map((n) => n.id), ...(DB.defs.npcs || []).map((n) => n.id)]);
   const base = (E.id + "_npc").slice(0, 28);
   for (let i = 1; ; i++) if (!used.has(base + i)) return base + i;
 }
@@ -651,7 +680,7 @@ function miniCanvas(m, scale) {
   const g = c.getContext("2d");
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     const o = m.objects[y][x];
-    g.fillStyle = o !== " " ? (DB.po[o] ? DB.po[o].color : "#333") : (DB.pg[m.ground[y][x]] || {}).color || "#f0f";
+    g.fillStyle = o !== " " ? oCol(o) : gCol(m.ground[y][x], m.theme);
     if (o !== " ") g.globalAlpha = 1;
     g.fillRect(x * scale, y * scale, scale, scale);
   }
@@ -705,18 +734,39 @@ function renderSide() {
 function palettePanel(box) {
   const L = E.layer, list = L === "ground" ? DB.palette.ground : DB.palette.objects, th = theme();
   const curCh = E.cur[L], cp = (L === "ground" ? DB.pg : DB.po)[curCh];
-  box.append(el("div.cur", null, el("span.sw", { style: `width:22px;height:22px;display:inline-block;background:${cp ? cp.color : "#000"}` }), el("span", null, "지금 고른 것: ", el("b", null, cp ? cp.name : curCh)),
+  box.append(el("div.cur", null, el("span.sw", { style: `width:22px;height:22px;display:inline-block;background:${cp && cp.color ? (L === "ground" ? gCol(curCh) : cp.color) : "#000"}` }), el("span", null, "지금 고른 것: ", el("b", null, cp ? cp.name : curCh)),
     el("label.mini", { title: "붓·지우개 굵기" }, "굵기 ", el("select", { onchange: (e) => { E.size = +e.target.value; draw(); } }, ...[1, 2, 3, 5].map((v) => el("option", { value: v, selected: v === E.size }, v))))));
-  box.append(el("label.chk.small", { title: "다른 테마의 바닥·물체도 보여 줘요" }, el("input", { type: "checkbox", checked: E.allThemes, onchange: (e) => { E.allThemes = e.target.checked; renderSide(); } }), "다른 테마 것도 보기"));
-  const fits = (p) => E.allThemes || !p.themes || p.themes.includes(th);
-  const grid = el("div.pal-grid");
-  for (const p of list) {
-    if (!fits(p) && p.ch !== curCh) continue;
-    grid.append(el("button.pal" + (p.ch === curCh ? ".on" : ""), { type: "button", title: `${p.name} ("${p.ch}")${p.solid ? " · 지나갈 수 없음" : ""}`, onclick: () => { E.cur[L] = p.ch; if (E.tool === "erase" || E.tool === "pick" || E.tool === "select") setTool("brush"); renderSide(); draw(); } },
-      el("span.sw", { style: `background:${p.color}` }, L === "objects" ? p.ch : p.solid ? "×" : ""), el("span.nm", null, p.name), el("span.ch", null, p.ch)));
+  // the theme's own pieces first; everything else stays at hand, below, a little dimmer
+  const fits = (p) => p.ch === " " || !p.themes || !p.themes.length || p.themes.includes(th);
+  const button = (p) => el("button.pal" + (p.ch === curCh ? ".on" : "") + (fits(p) ? "" : ".other"), { type: "button", title: `${p.name} ("${p.ch}")${p.solid ? " · 지나갈 수 없음" : ""}${fits(p) ? "" : " · 다른 테마에서 쓰는 것"}`, onclick: () => { E.cur[L] = p.ch; if (E.tool === "erase" || E.tool === "pick" || E.tool === "select") setTool("brush"); renderSide(); draw(); } },
+    el("span.sw", { style: p.color ? `background:${L === "ground" ? gCol(p.ch) : p.color}` : "background:repeating-conic-gradient(#3a3446 0 25%,#2a2434 0 50%) 0 0/8px 8px" }, L === "objects" && p.ch !== " " ? p.ch : p.solid ? "×" : ""), el("span.nm", null, p.name), el("span.ch", null, p.ch === " " ? "␣" : p.ch));
+  const mine = el("div.pal-grid", null, ...list.filter(fits).map(button));
+  const rest = list.filter((p) => !fits(p));
+  box.append(el("div.subhead", null, L === "ground" ? "바닥 팔레트" : "물체 팔레트", el("span.lab", null, `${THEME_KO[th] || th} 테마`)), mine);
+  if (rest.length) box.append(el("div.subhead", null, "다른 테마에서 쓰는 것"), el("div.pal-grid", null, ...rest.map(button)));
+  if (L === "objects") {
+    box.append(el("p.hint", null, "물체가 있는 칸은 지나갈 수 없어요. 집(h)은 4×3칸이 한 번에 놓여요."));
+    signPanel(box);
   }
-  box.append(el("div.subhead", null, L === "ground" ? "바닥 팔레트" : "물체 팔레트", el("span.lab", null, `${THEME_KO[th] || th} 테마`)), grid);
-  if (L === "objects") box.append(el("p.hint", null, "물체가 있는 칸은 지나갈 수 없어요. 집(h)은 4×3칸이 한 번에 놓여요."));
+}
+/** The words on each signpost (object "G"), kept in the map's `marks`. */
+function signPanel(box) {
+  const signs = [];
+  for (let y = 0; y < E.m.h; y++) for (let x = 0; x < E.m.w; x++) if (E.o[y][x] === "G") signs.push([x, y]);
+  box.append(el("div.subhead", null, "표지판 글씨", el("span.lab", null, signs.length ? `${signs.length}개` : "")));
+  if (!signs.length) { box.append(el("p.hint", null, "표지판(G)을 놓으면 여기서 글씨를 적을 수 있어요. 화살표(← → ↑ ↓)를 넣으면 그쪽을 가리켜요.")); return; }
+  for (const [x, y] of signs) {
+    const mk = (E.m.marks || []).find((k) => k.kind === "sign" && k.x === x && k.y === y);
+    box.append(el("div.row", null, el("button.btn.tiny", { title: "그곳 보기", onclick: () => jumpTo(x, y) }, `${x},${y}`),
+      el("input.grow", { type: "text", value: mk ? mk.label : "", placeholder: "표지판에 쓸 말 (예: ↑ 넥서스 광장)", maxLength: 30, disabled: E.locked,
+        onchange: (e) => {
+          push();
+          const v = e.target.value.trim();
+          E.m.marks = (E.m.marks || []).filter((k) => !(k.kind === "sign" && k.x === x && k.y === y));
+          if (v) E.m.marks.push(mk && mk.to ? { x, y, kind: "sign", label: v, to: mk.to } : { x, y, kind: "sign", label: v });
+          changed();
+        } })));
+  }
 }
 function spawnPanel(box) {
   box.append(el("p.hint", null, "빈 곳을 끌면 새 구역, 구역을 끌면 옮기기, 노란 오른쪽 아래 모서리를 끌면 크기 바꾸기."));
@@ -733,6 +783,8 @@ function spawnPanel(box) {
     field("몬스터", pick),
     field("마리 수", num(sp.n, 1, 40, (v) => { push(); sp.n = v; changed(true); }), "이 구역에 동시에 있는 몬스터 수"),
     field("정예 %", num(Math.round((sp.elite || 0) * 100), 0, 100, (v) => { push(); sp.elite = v / 100; changed(true); }), "정예(강한 녀석)로 나올 확률"),
+    field("등급", el("select", { disabled: dis, title: "모두 같은 등급으로 고정해요 (던전의 수호자처럼)", onchange: (e) => { push(); const v = +e.target.value; if (v) sp.el = v; else delete sp.el; changed(true); } },
+      ...[[0, "섞어서 (정예 %대로)"], [1, "모두 정예"], [2, "모두 수호자"]].map(([v, l]) => el("option", { value: v, selected: (sp.el || 0) === v }, l)))),
     field("범위", el("span", null, `${sp.r[0]},${sp.r[1]} ~ ${sp.r[2]},${sp.r[3]} (${sp.r[2] - sp.r[0] + 1}×${sp.r[3] - sp.r[1] + 1})`)),
     el("div.row", null, el("button.btn.red", { disabled: dis, onclick: removeFocus, title: "이 구역을 지워요 (Delete)" }, "구역 지우기"))));
 }
@@ -763,8 +815,8 @@ export function npcForm(n, readOnly, onChange, onRemove, opts = {}) {
       field("이름", el("input", { id: opts.nameId || "npc-name", type: "text", value: n.name, disabled: readOnly, maxLength: 24, title: "게임에 보이는 이름", oninput: (e) => upd(() => { n.name = e.target.value; }) })),
       field("역할", role),
       el("button.btn", { disabled: readOnly, title: "동물·얼굴·색을 골라요", onclick: () => lookDialog(n, () => upd(() => drawFace())) }, "모습 고르기"))),
-    field("아이디", el("input", { type: "text", value: n.id, disabled: readOnly, title: "영어 소문자·숫자·_ (퀘스트가 이 아이디로 NPC를 찾아요)", onchange: (e) => upd(() => { n.id = e.target.value.trim(); }) })),
-    opts.where || null);
+    field("아이디", el("input", { type: "text", value: n.id, disabled: readOnly, title: "영어 소문자·숫자·_ (퀘스트가 이 아이디로 NPC를 찾아요)", onchange: (e) => upd(() => { n.id = e.target.value.trim(); }) })));
+  if (opts.where) box.append(opts.where);
   if (n.role === "quest") box.append(el("p.hint", null, "퀘스트 탭에서 이 NPC를 '의뢰인'으로 고르면 퀘스트를 줘요."));
   // lines
   const lines = el("div.lines");
@@ -777,7 +829,7 @@ export function npcForm(n, readOnly, onChange, onRemove, opts = {}) {
         el("button.btn.tiny", { disabled: readOnly || i === 0, title: "위로", onclick: () => upd(() => { [n.lines[i - 1], n.lines[i]] = [n.lines[i], n.lines[i - 1]]; drawLines(); }) }, "▲"),
         el("button.btn.tiny", { disabled: readOnly || i === n.lines.length - 1, title: "아래로", onclick: () => upd(() => { [n.lines[i + 1], n.lines[i]] = [n.lines[i], n.lines[i + 1]]; drawLines(); }) }, "▼"),
         el("button.btn.tiny.red", { disabled: readOnly, title: "이 대사 지우기", onclick: () => upd(() => { n.lines.splice(i, 1); drawLines(); }) }, "×")))));
-    if (!readOnly) lines.append(el("button.btn", { title: "대사 한 줄 더하기", onclick: () => upd(() => { n.lines.push(""); drawLines(); const t = lines.querySelectorAll("textarea"); if (t.length) t[t.length - 1].focus(); }) }, "+ 대사 추가"));
+    if (!readOnly && n.lines.length < 12) lines.append(el("button.btn", { title: "대사 한 줄 더하기 (12줄까지, {n}은 플레이어 이름)", onclick: () => upd(() => { n.lines.push(""); drawLines(); const t = lines.querySelectorAll("textarea"); if (t.length) t[t.length - 1].focus(); }) }, "+ 대사 추가"));
   };
   drawLines();
   box.append(el("div.subhead", null, "대사"), lines);
@@ -879,8 +931,10 @@ async function resize(nw, nh, anchor) {
   m.spawns = m.spawns.map((s) => ({ ...s, r: [s.r[0] + dx, s.r[1] + dy, s.r[2] + dx, s.r[3] + dy] })).filter((s) => inb(s.r[0], s.r[1]) && inb(s.r[2], s.r[3]));
   m.npcs = m.npcs.map((n) => ({ ...n, x: n.x + dx, y: n.y + dy })).filter((n) => inb(n.x, n.y));
   m.portals = m.portals.map((p) => ({ ...p, x: p.x + dx, y: p.y + dy })).filter((p) => inb(p.x, p.y));
-  for (const l of E.links.links) if (l.map === E.id) { l.x += dx; l.y += dy; }
-  E.links.links = E.links.links.filter((l) => l.map !== E.id || inb(l.x, l.y));
+  for (const l of E.links.links) if (here(l.map)) { l.x += dx; l.y += dy; }
+  E.links.links = E.links.links.filter((l) => !here(l.map) || inb(l.x, l.y));
+  if (Array.isArray(m.big)) m.big = m.big.map((b) => ({ ...b, x: b.x + dx, y: b.y + dy }));
+  if (Array.isArray(m.marks)) m.marks = m.marks.map((k) => ({ ...k, x: k.x + dx, y: k.y + dy }));
   m.fires = m.fires.map(mv).filter((f) => inb(...f));
   if (m.waypoint) { m.waypoint = mv(m.waypoint); if (!inb(...m.waypoint)) m.waypoint = null; }
   if (m.boss) { m.boss.x += dx; m.boss.y += dy; if (!inb(m.boss.x, m.boss.y)) m.boss = null; }
@@ -894,13 +948,13 @@ let checkT = 0;
 function scheduleCheck() { clearTimeout(checkT); checkT = setTimeout(runCheck, 350); }
 function runCheck() {
   if (!E.m) return;
-  const extra = { [E.id]: { w: E.m.w, h: E.m.h, builtin: E.locked || !!E.m.replaces } };
+  const extra = { [E.id]: { w: E.m.w, h: E.m.h, builtin: E.locked || !!E.m.replaces }, [E.m.id]: { w: E.m.w, h: E.m.h, builtin: E.locked || !!E.m.replaces } };
   const c = checkCtx(extra);
   let P = [];
   if (!E.locked) P = checkMap(serialize(), c, { deep: true });
-  const mine = { v: 1, links: E.links.links.filter((l) => l.map === E.id) };
+  const mine = { v: 1, links: E.links.links.filter((l) => here(l.map)) };
   P = P.concat(checkLinks(mine, c).map((p) => ({ ...p, msg: "[links.json] " + p.msg })));
-  const mineN = { v: 1, npcs: E.npcsFile.npcs.filter((n) => n.map === E.id) };
+  const mineN = { v: 1, npcs: E.npcsFile.npcs.filter((n) => here(n.map)) };
   P = P.concat(checkNpcs(mineN, c).map((p) => ({ ...p, msg: "[npcs.json] " + p.msg })));
   E.problems = P;
   showProblems(P);
@@ -926,17 +980,7 @@ export function previewPayload() {
   const put = (x, y, ch) => { if (o[y] && o[y][x] === " ") o[y] = o[y].slice(0, x) + ch + o[y].slice(x + 1); };
   if (m.waypoint) put(m.waypoint[0], m.waypoint[1], "Q");
   // houses (4×3 of "h") and fountains (2×2 of "a") are drawn as one big piece
-  const big = [], seen = new Set();
-  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
-    const ch = o[y][x], key = x + "," + y;
-    if (seen.has(key) || (ch !== "h" && ch !== "a")) continue;
-    const [w, h] = ch === "h" ? [4, 3] : [2, 2];
-    let ok = true;
-    for (let j = 0; j < h && ok; j++) for (let i = 0; i < w; i++) if (!o[y + j] || o[y + j][x + i] !== ch || seen.has(x + i + "," + (y + j))) { ok = false; break; }
-    if (!ok) continue;
-    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) seen.add(x + i + "," + (y + j));
-    big.push(ch === "h" ? { t: "house", x, y, v: (x * 7 + y * 3) % 4 } : { t: "fountain", x, y });
-  }
+  const big = bigOf(o, m.big || [], m.theme);
   const npcs = npcItems().map((it) => ({ id: it.n.id, name: it.n.name, role: it.n.role, x: it.n.x, y: it.n.y, look: fullLook(it.n.look) ? [0, 0, 0, "#5e6a88"] : it.n.look }));
   const mobs = [], defs = {};
   for (const sp of m.spawns) {
@@ -950,7 +994,7 @@ export function previewPayload() {
   return {
     type: "show", x: cx, y: cy, mobs, defs, fires: m.fires,
     map: { id: m.id, name: m.name, w: m.w, h: m.h, g: m.ground, o, big, safe: m.safe, bgm: m.bgm, theme: m.theme, band: m.band,
-      marks: m.waypoint ? [{ x: m.waypoint[0], y: m.waypoint[1], kind: "waypoint" }] : [],
+      marks: (m.marks || []).filter((k) => k.kind === "sign").concat(m.waypoint ? [{ x: m.waypoint[0], y: m.waypoint[1], kind: "waypoint" }] : []),
       portals: doorItems().map((it) => ({ x: it.d.x, y: it.d.y, to: mapName(it.d.to) })), npcs },
   };
 }
@@ -980,7 +1024,7 @@ export function setTool(t) {
 const DRAFT = (id) => "tt-editor-draft:" + id;
 export function current() { return E; }
 export function load(m, opts = {}) {
-  E.id = m.id; E.m = m; E.g = rowsToGrid(m.ground); E.o = rowsToGrid(m.objects);
+  E.id = opts.id || m.replaces || m.id; E.m = m; E.g = rowsToGrid(m.ground); E.o = rowsToGrid(m.objects);
   E.locked = !!opts.locked; E.isNew = !!opts.isNew;
   E.undo = []; E.redo = []; E.focus = null; E.sel = null; E.pasting = false; E.version++;
   E.saved.map = opts.isNew ? "" : mapJson();
@@ -1010,7 +1054,7 @@ export async function openMap(id, { skipDraft = false } = {}) {
   const [links, npcs] = await Promise.all([api("/api/links"), api("/api/npcs")]);
   E.links = links; E.npcsFile = npcs;
   E.saved.links = linksJson(); E.saved.npcs = npcsJson();
-  load(m, { locked: info.builtin && !info.custom });
+  load(m, { id, locked: info.builtin && !info.custom });
   forgetMap(id);
   if (!skipDraft) offerDraft(id);
   localStorage.setItem("tt-editor-last", id);
@@ -1113,8 +1157,14 @@ export async function duplicate() {
 }
 export async function removeMap() {
   const info = DB.maps.find((m) => m.id === E.id);
+  if (E.m && E.isNew && !info) {
+    if (!(await confirmBox("맵 버리기", `아직 저장하지 않은 "${E.m.name}"을(를) 버릴까요?`, "버리기", true))) return;
+    localStorage.removeItem(DRAFT(E.id));
+    E.m = null; E.id = null;
+    renderMapList(); renderProps(); renderSide(); draw(); onDirty();
+    return;
+  }
   if (!E.m || !info) return toast("지울 맵을 고르세요.");
-  if (E.isNew && !info) { return; }
   if (!info.custom) return toast("기본 맵은 지울 수 없어요.", "bad");
   const msg = info.builtin ? `"${info.name}"을(를) 원래 자동으로 만들어지던 기본 맵으로 되돌릴까요? 직접 고친 내용은 사라져요 (백업은 data/.backup에 남아요).` : `"${info.name}" 맵을 지울까요? 이 맵으로 가는 문은 검사에서 오류가 나요 (백업은 data/.backup에 남아요).`;
   if (!(await confirmBox(info.builtin ? "기본 맵으로 되돌리기" : "맵 지우기", msg, info.builtin ? "되돌리기" : "지우기", true))) return;
@@ -1206,11 +1256,11 @@ export function init(opts) {
 /** Keys while the map tab is open. Returns true when handled. */
 export function key(e) {
   const t = e.target;
-  if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return false;
   const k = e.key.toLowerCase(), ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && k === "s") { if (t && t.blur) t.blur(); save(); return true; }   // also while typing in a field (blur commits it)
+  if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return false;
   if (ctrl && k === "z" && !e.shiftKey) { undo(); return true; }
   if (ctrl && (k === "y" || (k === "z" && e.shiftKey))) { redo(); return true; }
-  if (ctrl && k === "s") { save(); return true; }
   if (ctrl && k === "c") { copySel(); return true; }
   if (ctrl && k === "v") { pasteMode(); return true; }
   if (ctrl) return false;

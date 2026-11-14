@@ -64,8 +64,9 @@ export function checkMap(m, ctx, opts = {}) {
   if (m.v !== 1) err("v", "파일 버전(v)은 1이어야 해요.");
   if (!isStr(m.id) || !ID_RE.test(m.id)) err("id", "맵 아이디는 영어 소문자로 시작하고 소문자·숫자·_ 만 2~24글자여야 해요.");
   if (m.replaces != null) {
+    // the file's own id may differ (an alias other data can use), but a built-in id only for itself
     if (!builtin.has(m.replaces)) err("replaces", `대신할 기본 맵 "${m.replaces}"이(가) 없어요.`);
-    else if (m.replaces !== m.id) err("replaces", "기본 맵을 대신하는 맵은 아이디가 그 기본 맵과 같아야 해요.");
+    else if (builtin.has(m.id) && m.replaces !== m.id) err("replaces", `"${m.id}"는 다른 기본 맵의 아이디예요.`);
   } else if (builtin.has(m.id)) err("id", `"${m.id}"는 기본 맵 아이디예요. 다른 아이디를 쓰거나 '기본 맵 대신하기'로 저장하세요.`);
   if (!isStr(m.name) || !m.name.trim()) err("name", "맵 이름을 적어 주세요.");
   else if (m.name.length > 24) err("name", "맵 이름은 24글자까지예요.");
@@ -97,6 +98,8 @@ export function checkMap(m, ctx, opts = {}) {
   else if (!stand(m.entry[0], m.entry[1])) err("entry", "입구가 막힌 칸(물체·물·벽) 위에 있어요.", m.entry[0], m.entry[1]);
   const R = opts.deep && isXY(m.entry) ? reach(m, S.solidG) : null;
   const reachable = (x, y) => !R || R[y * m.w + x] === 1;
+  /** Reached itself or from a side (an NPC or a stone stands on its own tile). */
+  const nearReach = (x, y) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => inb(x + dx, y + dy) && reachable(x + dx, y + dy) && (!R || stand(x + dx, y + dy)));
 
   if (!Array.isArray(m.spawns)) err("spawns", "몬스터 구역 목록 형식이 틀렸어요.");
   else m.spawns.forEach((s, i) => {
@@ -106,10 +109,11 @@ export function checkMap(m, ctx, opts = {}) {
     if (!Array.isArray(r) || r.length !== 4 || !inb(r[0], r[1]) || !inb(r[2], r[3]) || r[0] > r[2] || r[1] > r[3]) { err(p, `몬스터 구역 ${i + 1}(${mobs[s.k].name}): 범위가 맵 밖이에요.`); return; }
     if (!isInt(s.n) || s.n < 1 || s.n > 40) err(p, `몬스터 구역 ${i + 1}(${mobs[s.k].name}): 마리 수는 1~40이에요.`, r[0], r[1]);
     if (s.elite != null && !(typeof s.elite === "number" && s.elite >= 0 && s.elite <= 1)) err(p, `몬스터 구역 ${i + 1}: 정예 확률은 0~100%예요.`, r[0], r[1]);
+    if (s.el != null && ![0, 1, 2].includes(s.el)) err(p, `몬스터 구역 ${i + 1}: 등급은 일반·정예·수호자 중 하나예요.`, r[0], r[1]);
     let open = 0, reached = 0;
     for (let y = r[1]; y <= r[3]; y++) for (let x = r[0]; x <= r[2]; x++) if (stand(x, y)) { open++; if (reachable(x, y)) reached++; }
     if (!open) err(p, `몬스터 구역 ${i + 1}(${mobs[s.k].name}): 안에 설 수 있는 칸이 하나도 없어요.`, r[0], r[1]);
-    else if (R && !reached) warn(p, `몬스터 구역 ${i + 1}(${mobs[s.k].name}): 입구에서 걸어갈 수 없는 곳이에요.`, r[0], r[1]);
+    else if (R && !reached) err(p, `몬스터 구역 ${i + 1}(${mobs[s.k].name}): 입구에서 걸어갈 수 없는 곳이에요.`, r[0], r[1]);
     if (m.safe) warn(p, "안전지대 맵에는 몬스터가 나오지 않아요.", r[0], r[1]);
   });
 
@@ -126,11 +130,12 @@ export function checkMap(m, ctx, opts = {}) {
     if (roles.length && !roles.includes(n.role)) err(p, `${who}: 역할 "${n.role}"을(를) 모르겠어요.`, n.x, n.y);
     if (!inb(n.x, n.y)) err(p, `${who}: 맵 밖에 있어요.`);
     else {
-      if (!stand(n.x, n.y)) warn(p, `${who}: 막힌 칸 위에 서 있어요.`, n.x, n.y);
-      else if (!reachable(n.x, n.y)) warn(p, `${who}: 입구에서 걸어갈 수 없는 곳에 있어요.`, n.x, n.y);
+      if (!stand(n.x, n.y)) err(p, `${who}: 막힌 칸 위에 서 있어요.`, n.x, n.y);
+      else if (!nearReach(n.x, n.y)) warn(p, `${who}: 입구에서 걸어갈 수 없는 곳에 있어요.`, n.x, n.y);
     }
     if (!Array.isArray(n.look)) err(p, `${who}: 모습(look) 형식이 틀렸어요.`, n.x, n.y);
     if (!Array.isArray(n.lines) || n.lines.some((l) => !isStr(l))) err(p, `${who}: 대사 형식이 틀렸어요.`, n.x, n.y);
+    else if (n.lines.length > 12) err(p, `${who}: 대사는 12줄까지예요.`, n.x, n.y);
     else if (!n.lines.length && n.role === "talk") warn(p, `${who}: 할 말이 하나도 없어요.`, n.x, n.y);
   });
 
@@ -143,14 +148,16 @@ export function checkMap(m, ctx, opts = {}) {
     else if (!stand(f[0], f[1])) warn(`fires[${i}]`, `모닥불 ${i + 1}: 막힌 칸 위에 있어요.`, f[0], f[1]);
   });
   if (m.waypoint != null) {
-    if (!isXY(m.waypoint) || !inb(m.waypoint[0], m.waypoint[1])) err("waypoint", "이동의 돌이 맵 밖이에요.");
+    const w = m.waypoint;   // [x, y] or [x, y, ax, ay]
+    if (!Array.isArray(w) || (w.length !== 2 && w.length !== 4) || !w.every(isInt) || !inb(w[0], w[1])) err("waypoint", "이동의 돌이 맵 밖이에요.");
+    else if (R && ![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => inb(w[0] + dx, w[1] + dy) && stand(w[0] + dx, w[1] + dy) && reachable(w[0] + dx, w[1] + dy))) err("waypoint", "이동의 돌 옆에 걸어서 갈 수 있는 빈칸이 없어요.", w[0], w[1]);
   }
   if (typeof m.fishing !== "boolean") err("fishing", "낚시 허용은 예/아니오(true/false)로 정해 주세요.");
   if (m.boss != null) {
     const b = m.boss;
     if (!b || !mobs[b.k]) err("boss", `필드 보스 "${b && b.k}"를 모르겠어요.`, b && b.x, b && b.y);
-    else if (!inb(b.x, b.y)) err("boss", "필드 보스 자리가 맵 밖이에요.");
-    else if (!stand(b.x, b.y)) err("boss", "필드 보스가 막힌 칸 위에 있어요.", b.x, b.y);
+    // x, y only mark where the boss is expected (the game calls the boss out on kills)
+    else if (b.x != null && !inb(b.x, b.y)) warn("boss", "필드 보스 표시 자리가 맵 밖이에요.");
     if (m.safe) warn("boss", "안전지대 맵에는 보스가 나오지 않아요.", b && b.x, b && b.y);
   }
   return P;
@@ -166,8 +173,9 @@ function checkDoor(d, p, label, m, ctx, P, inb, reachable) {
   if (!isStr(d.to) || !d.to) err(`${label}: 어디로 가는지(도착 맵) 정해 주세요.`, d.x, d.y);
   else if (!to) err(`${label}: 도착 맵 "${d.to}"이(가) 없어요.`, d.x, d.y);
   else if (!isInt(d.tx) || !isInt(d.ty) || d.tx < 0 || d.ty < 0 || d.tx >= to.w || d.ty >= to.h) err(`${label}: 도착 위치가 "${d.to}" 맵 밖이에요.`, d.x, d.y);
-  if (m && m.objects && m.objects[d.y] && m.objects[d.y][d.x] !== " ") warn(`${label}: 문 칸 위에 물체가 있어 밟을 수 없어요.`, d.x, d.y);
-  else if (!reachable(d.x, d.y)) warn(`${label}: 입구에서 걸어갈 수 없는 곳이에요.`, d.x, d.y);
+  if (m && m.objects && m.objects[d.y] && m.objects[d.y][d.x] !== " ") err(`${label}: 문 칸 위에 물체가 있어 밟을 수 없어요.`, d.x, d.y);
+  else if (m && m.ground && sets(ctx).solidG.has(m.ground[d.y][d.x])) err(`${label}: 문이 물·암벽 위에 있어요.`, d.x, d.y);
+  else if (!reachable(d.x, d.y)) err(`${label}: 입구에서 걸어갈 수 없는 곳이에요.`, d.x, d.y);
 }
 
 /** links.json */

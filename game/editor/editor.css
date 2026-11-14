@@ -102,7 +102,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--b-mid); }
 
 /* palette */
 .pal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
-.pal { display: flex; align-items: center; gap: 5px; padding: 2px 4px; background: #2a2234; border: 2px solid var(--ink); cursor: pointer; font-size: 11px; min-width: 0; }
+.pal { display: flex; align-items: center; gap: 5px; padding: 2px 4px; color: var(--cream); font: 11px var(--pix); text-align: left; background: #2a2234; border: 2px solid var(--ink); cursor: pointer; font-size: 11px; min-width: 0; }
 .pal:hover { background: #3a3046; }
 .pal.on { outline: 2px solid var(--b-hi); outline-offset: -2px; background: #4a3a24; }
 .pal .sw { width: 18px; height: 18px; flex: none; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font: 700 10px var(--pix9); color: #fff; text-shadow: 1px 1px 0 #000; }
@@ -177,3 +177,7 @@ table.main td textarea { min-height: 36px; }
 #modal.wide .dlg { width: min(860px, calc(100vw - 30px)); }
 kbd { font: 11px var(--pix9); background: #3a3146; border: 1px solid var(--ink); padding: 0 4px; }
 ::-webkit-scrollbar { width: 10px; height: 10px; } ::-webkit-scrollbar-track { background: var(--scr); } ::-webkit-scrollbar-thumb { background: #4a3f5a; border: 2px solid var(--scr); }
+.list li > span:not(.id):not(.tag) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list li .id, .list li .tag { flex: none; white-space: nowrap; }
+.items-ed > .btn { align-self: flex-start; }
+.pal.other { opacity: .62; } .pal.other:hover, .pal.other.on { opacity: 1; }
