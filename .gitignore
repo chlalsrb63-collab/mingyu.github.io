@@ -1,0 +1,3 @@
+# AI worktrees (one per AI, created by the AI-*.bat launchers)
+.work/
+ai/TASKS.current.md

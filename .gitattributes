@@ -24,3 +24,8 @@
 *.zip    binary
 *.7z     binary
 *.pdf    binary
+
+# Windows launchers need CRLF or cmd.exe can misread them; PowerShell scripts too.
+*.bat    text eol=crlf
+*.cmd    text eol=crlf
+*.ps1    text eol=crlf

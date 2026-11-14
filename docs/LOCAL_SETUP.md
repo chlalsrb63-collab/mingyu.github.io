@@ -7,6 +7,20 @@ Claude Code · OpenAI Codex CLI · Google Gemini CLI 세 AI가 같은 저장소�
 
 ---
 
+## 0. 제일 쉬운 방법 — 한 줄로 전부 설치
+
+`Win + R` 을 누르고 아래 한 줄을 붙여 넣은 뒤 Enter. (중간에 설치 승인 창이 뜨면 "예")
+
+```
+powershell -ExecutionPolicy Bypass -NoExit -Command "irm https://raw.githubusercontent.com/chlalsrb63-collab/mingyu.github.io/main/install.ps1 | iex"
+```
+
+Git·Node.js 설치 → 바탕화면 `Tales Tales` 폴더에 프로젝트 받기 → `npm install` → Claude Code·Codex·Gemini CLI 설치 →
+바탕화면 바로가기 2개("Tales Tales - PLAY", "Tales Tales - AI TEAM") → 게임 실행까지 자동으로 합니다.
+다시 실행하면 최신 버전으로 업데이트합니다. 그다음 사용법은 [`ai/README.md`](../ai/README.md).
+
+아래 1~3은 같은 일을 손으로 하는 방법입니다.
+
 ## 1. 설치 (한 번만)
 
 1. **Git for Windows** — https://git-scm.com/download/win (또는 PowerShell에서 `winget install Git.Git`)
@@ -19,7 +33,7 @@ Claude Code · OpenAI Codex CLI · Google Gemini CLI 세 AI가 같은 저장소�
 ## 2. 내려받기와 실행
 
 ```powershell
-git clone -b claude/topdown-2d-mmorpg-dev-jke7w3 https://github.com/chlalsrb63-collab/mingyu.github.io.git "C:\Users\mankyu\Desktop\Tales Tales"
+git clone https://github.com/chlalsrb63-collab/mingyu.github.io.git "C:\Users\mankyu\Desktop\Tales Tales"
 cd "C:\Users\mankyu\Desktop\Tales Tales\game"
 npm install
 npm run dev:local
@@ -106,7 +120,7 @@ cd ..\ ; codex                                           # 그 폴더에서 Code
 
 ```powershell
 cd "C:\Users\mankyu\Desktop\Tales Tales"
-git diff claude/topdown-2d-mmorpg-dev-jke7w3...codex/new-potion   # 무엇이 바뀌었나 검토
+git diff main...codex/new-potion   # 무엇이 바뀌었나 검토
 git merge --no-ff codex/new-potion
 cd game ; npm run test:rules ; cd ..
 git push

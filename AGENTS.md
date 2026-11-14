@@ -151,7 +151,7 @@ tests/LIST; `--no-build`, names to filter, `-v`) · `dump-maps.mjs` (public/_map
 `build` script are Higgsfield's and are not in the repo.
 
 ### Other
-`game/assets/` external asset drop zone (not deployed; see §9) · `.claude/skills/pixel-art/` pixel-art
+`ai/` AI team: `TASKS.md` task board, role files `codex.md` `gemini.md` `merge.md`, `reports/`, `worker.bat` (workers run in git worktrees `.work/<name>` on branch `<name>/work`) · root launchers `PLAY.bat` `AI-TEAM.bat` `AI-MERGE.bat` `UPDATE.bat` `TESTS.bat`, `install.ps1` (one-step Windows setup), `.vscode/tasks.json` (VS Code: starts the AI team on folder open) · `game/assets/` external asset drop zone (not deployed; see §9) · `.claude/skills/pixel-art/` pixel-art
 rules (any AI may read `rules/*.md`) · `.github/workflows/deploy-game.yml` CI (split check, tests,
 deploy) · root `index.html`/`profile.jpg` = the owner's unrelated GitHub Pages profile.
 
@@ -220,6 +220,9 @@ lives in `game/.wrangler/` (delete it to reset local accounts/characters).
 
 ## 7. 여러 AI의 git 작업 — git workflow for multiple AIs
 
+- On the owner's PC the AI team runs from `ai/` (see `ai/README.md`): Codex and Gemini work in
+  `.work/codex` / `.work/gemini` on `codex/work` / `gemini/work`, take tasks from `ai/TASKS.md`, write
+  `ai/reports/*.md`, and Claude merges with `ai/merge.md`.
 - One task = one branch (or one `git worktree`) per AI: `claude/<task>`, `codex/<task>`,
   `gemini/<task>`. Never two AIs in the same working tree at once.
   `git worktree add ../tt-codex -b codex/<task>` → work there → `git worktree remove ../tt-codex`.
@@ -228,7 +231,7 @@ lives in `game/.wrangler/` (delete it to reset local accounts/characters).
 - Before handing back: `git fetch && git rebase origin/<integration-branch>`; regenerate logic.js
   after resolving conflicts in parts (`npm run build:logic`) — never hand-merge `logic.js`.
 - The integrator (normally Claude) reviews the diff, runs tests, merges into the integration branch
-  (currently `claude/topdown-2d-mmorpg-dev-jke7w3`), and pushes. Pushing there triggers the CI deploy.
+  (`main`; the old `claude/topdown-2d-mmorpg-dev-jke7w3` branch is merged into it), and pushes. Pushing there triggers the CI deploy.
 - Never commit secrets, `node_modules`, `.wrangler/`, `shots/`, or downloaded assets outside `game/assets`.
 
 ## 8. 작업 레시피 — task recipes (which files to touch)
