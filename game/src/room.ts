@@ -275,8 +275,9 @@ export class Room extends DurableObject<Env> {
       if (!logic.validName(action.name)) {
         return this.send(ws, { type: "error", error: "이름은 한글·영문·숫자 2~10자로 지어 주세요" });
       }
-      // everyone starts a 모험가: an old client's class choice is ignored
-      const char = logic.newChar(String(action.name), action.look);
+      // everyone starts a 모험가: an old client's class choice is ignored. `wk` is the weapon picked on the
+      // creation page; newChar whitelists it (an old client sends none and starts with the old dagger)
+      const char = logic.newChar(String(action.name), action.look, typeof action.wk === "string" ? action.wk : undefined);
       const res = await this.callVault("create", { pid, room: this.roomName, char });
       if (!res.ok) return this.send(ws, { type: "error", error: res.error });
       await this.ready();

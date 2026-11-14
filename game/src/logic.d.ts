@@ -30,7 +30,8 @@ export function playerCount(state: World): number;
 
 export function validName(name: unknown): boolean;
 /** A new 모험가; `look` (an old caller's `(name, cls, look)` still works: the look in third place is taken). */
-export function newChar(name: string, look?: unknown, oldLook?: unknown): Char;
+/** `wk`: the weapon kind picked at creation (whitelisted; anything else = the old dagger). A look array there is the old call shape. */
+export function newChar(name: string, look?: unknown, wk?: unknown): Char;
 /** A test or probe hero (jobs-and-stats F.3). */
 export function hero(name: string, o?: { wk?: string; lvl?: number; st?: Record<string, number>; wm?: Record<string, number>; job?: string; wk2?: string; migrate?: boolean; look?: unknown[] }): Char;
 export function addPlayer(state: World, playerId: string, char: Char): number;

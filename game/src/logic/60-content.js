@@ -327,7 +327,7 @@ function evtView(S, p) {
 // ── first steps: a short tutorial chain beside the main quests
 const TUT = [
   { id: "talk", title: "관리자에게 말 걸기", hint: "광장 분수 앞의 관리자 엘더윈에게 다가가 F를 누르세요. 첫 의뢰를 맡겨 줍니다.", reward: { gold: 20 } },
-  { id: "equip", title: "무기 고르기", hint: "수련관 카이에게 F로 말을 걸어 무기를 하나 고르세요. 고른 무기를 바로 손에 듭니다.", reward: { gold: 20 } },
+  { id: "equip", title: "무기 받기", hint: "수련관 카이에게 F로 말을 걸어 무기를 하나 받으세요. 받은 무기를 바로 손에 듭니다.", reward: { gold: 20 } },
   { id: "bag", title: "가방 열기", hint: "I를 눌러 가방을 열어 보세요.", reward: { gold: 20 } },
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
   { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
@@ -346,14 +346,16 @@ function tutStep(S, p, id) {
   const ch = p.ch, step = TUT[ch.tut.i];
   if (!step || step.id !== id) return;
   if (step.need && ++ch.tut.n < step.need) { p.dirty = true; return; }
+  const pay = (r) => {
+    if (r.gold) { ch.gold += r.gold; p.gain.push(["gold", r.gold]); }
+    for (const [it, n] of r.items || []) if (addItem(ch, it, n)) p.gain.push(["item", it, n, 0]);
+  };
   ch.tut.i++; ch.tut.n = 0;
-  const r = step.reward;
-  if (r.gold) { ch.gold += r.gold; p.gain.push(["gold", r.gold]); }
-  for (const [it, n] of r.items || []) if (addItem(ch, it, n)) p.gain.push(["item", it, n, 0]);
-  const next = TUT[ch.tut.i];
+  pay(step.reward);
+  // a step already done needs no doing (a weapon picked on the creation page): passed over, paid, never announced as next
+  let next;
+  while ((next = TUT[ch.tut.i]) && tutDone(ch, next.id)) { ch.tut.i++; pay(next.reward); }
   toast(p, `[첫걸음] ${step.title} 완료!${next ? ` 다음: ${next.title}` : " 모든 첫걸음을 마쳤습니다!"}`);
   p.dirty = true;
-  // a step already done needs no doing
-  if (next && tutDone(ch, next.id)) tutStep(S, p, next.id);
 }
 
