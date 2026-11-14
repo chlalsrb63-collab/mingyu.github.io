@@ -272,8 +272,9 @@ export function loadMap(m) {
       statics.push({ sp, dx: X - 16 * K, dy: Y - sp.H, x: X, y: Y + 16, d: Y + 8, glow: null, glint: -1, block: true });
       continue;
     }
-    const au = theme === "autumn";
-    let sp = (au && S.AU[ch]) || S[ch];
+    // (maps-batch2: the cloud temple's trees stand in the old kingdom's reds and golds; the mesa's rock pillars are red)
+    const au = theme === "autumn" || theme === "mist";
+    let sp = (au && S.AU[ch]) || (theme === "mesa" && ch === "Θ" && S["RΘ"]) || S[ch];
     if (!sp || ch === "c") continue;
     const h = hash(x, y, 3);
     if (au && ch === "T") { const hu = hueAt(m, x, y); sp = sp[hu][hu === 0 ? (h < 0.65 ? 1 : 0) : h < 0.25 ? 1 : 0]; }
@@ -440,10 +441,10 @@ export function wpLit() {
 
 /** Drifting motes: pollen in the open, fireflies and leaves under trees, rain in the city, dust underground. */
 const amb = [];
-const AMB_N = { town: 16, meadow: 24, forest: 26, city: 80, cave: 26, crypt: 18, sewer: 22, abyss: 36, autumn: 40, desert: 30, jungle: 22 };
+const AMB_N = { town: 16, meadow: 24, forest: 26, city: 80, cave: 26, crypt: 18, sewer: 22, abyss: 36, autumn: 40, desert: 30, jungle: 22, mesa: 24, mist: 26 };
 function respawn(p, ox, oy, fresh) {
   // (maps-v2 M3 art) sand blowing low across the desert; fireflies and falling leaves in the jungle as in the wood
-  const k = theme === "desert" ? "sand" : theme === "forest" || theme === "jungle" ? (Math.random() < 0.45 ? "fly" : "leaf") : theme === "autumn" ? (Math.random() < 0.12 ? "spore" : "leaf") : theme === "city" ? "rain" : theme === "cave" || UG[theme] ? "dust" : "pollen";
+  const k = theme === "desert" || theme === "mesa" ? "sand" : theme === "forest" || theme === "jungle" ? (Math.random() < 0.45 ? "fly" : "leaf") : theme === "autumn" || theme === "mist" ? (Math.random() < 0.12 ? "spore" : "leaf") : theme === "city" ? "rain" : theme === "cave" || UG[theme] ? "dust" : "pollen";
   p.k = k;
   p.x = ox - 20 + Math.random() * (vw + 40);
   p.y = k === "rain" && !fresh ? oy - 10 : oy - 10 + Math.random() * (vh + 20);
@@ -501,4 +502,4 @@ export function drawWater(t, ox, oy) {
 }
 
 /** The worlds under the open sky, where day turns to night. */
-export const OUTDOOR = new Set(["town", "meadow", "forest", "city", "autumn", "jungle", "coast", "desert"]);
+export const OUTDOOR = new Set(["town", "meadow", "forest", "city", "autumn", "jungle", "coast", "desert", "mesa", "mist"]);

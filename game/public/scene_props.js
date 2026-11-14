@@ -185,6 +185,33 @@ export function scenery() {
     b.r(22, 17, 2, 1, "#4a4e5c"); b.r(25, 21, 3, 1, "#4a4e5c");
     if (v) { b.r(4, 25, 2, 1, "#dff4f4"); b.r(22, 26, 3, 1, "#dff4f4"); } else { b.r(11, 26, 3, 1, "#dff4f4"); b.r(27, 24, 2, 1, "#dff4f4"); }
   });
+  // A twisted pine (maps-batch2): a trunk that winds as it climbs, flat pads of needles — dark under, lit on top.
+  const tpine = (lean, v) => prop(52, 60, (b) => {
+    const tr = "#6a4630", trD = "#4a2e20", trL = "#8e6646", lf = "#2f6e4e", lfD = "#1f4e3c", lfL = "#5aa474";
+    const base = 56, cx = 26, tx = (y) => { const t = (base - y) / 40; return cx + Math.round(Math.sin(t * 3.4 + v) * 4 * lean + lean * 7 * t); };
+    b.r(cx - 5, base, 10, 2, trD); b.r(cx - 3, base, 4, 1, tr);
+    for (let y = base; y >= 16; y--) {
+      const x = tx(y), w = y > 46 ? 5 : y > 30 ? 4 : 3, x0 = x - (w >> 1);
+      b.r(x0, y, w, 1, tr); b.r(x0 + w - 1, y, 1, 1, trD);
+      if (y % 6 === 0) b.r(x0, y, 1, 1, trL);
+    }
+    const pad = (px, py, rx) => { b.oval(px, py + 2, rx, 3.6, lfD); b.oval(px, py, rx, 3.2, lf); b.oval(px - 1, py - 1.5, rx - 2.5, 1.5, lfL); };
+    const top = tx(16);
+    // a side branch out to each lower pad
+    for (let i = 0; i < 8; i++) { b.r(tx(30) + i * (lean >= 0 ? 1 : -1), 29 - (i >> 2), 2, 2, tr); b.r(tx(36) - i * (lean >= 0 ? 1 : -1), 35 - (i >> 2), 2, 2, trD); }
+    pad(tx(36) - 10 * (lean >= 0 ? 1 : -1), 32, 8); pad(tx(30) + 10 * (lean >= 0 ? 1 : -1), 26, 9);
+    pad(top - 1, 14, 12); if (v) pad(top + 5, 7, 7);
+  });
+  // A rock pillar (maps-batch2): a weathered column narrowing upward under a wider cap stone, banded.
+  const hoodoo = (pal, v) => prop(30, 62, (b) => {
+    const [mid, lit, dark, band] = pal, base = 58;
+    b.oval(15, base, 11, 3.6, dark);
+    for (let y = base; y >= 12; y--) {
+      const t = (base - y) / 46, w = Math.max(3, Math.round((v ? 9 : 8) - 3.5 * t + Math.sin(y / 5 + v * 2) * 1.5));
+      b.r(15 - w, y, w * 2, 1, y % 8 < 2 ? band : mid); b.r(15 - w, y, 2 + (w >> 2), 1, lit); b.r(15 + w - 3, y, 3, 1, dark);
+    }
+    b.oval(15, 10, 10, 4.2, mid); b.oval(13, 8.6, 7, 2, lit); b.r(6, 12, 18, 1, dark);
+  });
   // A round mud hut: daubed wall, a cone of thatch in courses with a ragged eave, a dark doorway.
   const hut = (v) => prop(46, 44, (b, x) => {
     const wall = v ? "#d4a66a" : "#c89a62", wD = "#a47a48", wL = "#e4bc84", th = v ? "#b08c48" : "#bc9850", thD = "#84642f", thL = "#dcbc6c";
@@ -223,6 +250,10 @@ export function scenery() {
     })],
     "Ω": [basalt(0), basalt(1)],
     "Δ": [hut(0), hut(1)],
+    // maps-batch2 art, step 1: twisted pines, rock pillars (grey; RΘ the mesa's red hoodoos)
+    "Σ": [tpine(1, 0), tpine(-1, 1), tpine(0.4, 1)],
+    "Θ": [hoodoo(["#8e9496", "#b4babc", "#5c6266", "#787e82"], 0), hoodoo(["#8e9496", "#b4babc", "#5c6266", "#787e82"], 1)],
+    "RΘ": [hoodoo(["#c4603a", "#e4885a", "#82361e", "#a2442a"], 0), hoodoo(["#c4603a", "#e4885a", "#82361e", "#a2442a"], 1)],
     JT: [jtree(0), jtree(1), jtree(2)],
     // driftwood on the beach: a sea-bleached trunk, a forked branch
     DW: [0, 1].map((v) => prop(30, 14, (b) => {

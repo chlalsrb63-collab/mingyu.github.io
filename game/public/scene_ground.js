@@ -363,7 +363,7 @@ export function paintExtras(m, c) {
     b.oval(cx, cy, 15, 6.5, "#f2e0b0"); b.oval(cx, cy, 13, 5, col); b.oval(cx, cy, 9, 3, lt(col, 1.3)); b.oval(cx, cy, 5, 1.6, col);
   }
 }
-const SKIRT = { jungle: ["#4a4034", "#322a22"], coast: ["#c8b48a", "#9a8662"], desert: ["#c09a5e", "#8e6e40"], interior: ["#5a3a26", "#3a2418"], meadow: ["#7a5a3a", "#5a4030"], town: ["#7a5a3a", "#5a4030"], forest: ["#5a4632", "#3e3024"], city: ["#4a5064", "#343846"], cave: ["#2e4468", "#1b2644"] };
+const SKIRT = { jungle: ["#4a4034", "#322a22"], coast: ["#c8b48a", "#9a8662"], desert: ["#c09a5e", "#8e6e40"], mesa: ["#a85a34", "#74381f"], mist: ["#8a8e96", "#60646c"], interior: ["#5a3a26", "#3a2418"], meadow: ["#7a5a3a", "#5a4030"], town: ["#7a5a3a", "#5a4030"], forest: ["#5a4632", "#3e3024"], city: ["#4a5064", "#343846"], cave: ["#2e4468", "#1b2644"] };
 
 // ───────────────────────────── the ground, frame by frame ─────────────────────────────
 
