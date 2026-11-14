@@ -15,6 +15,7 @@ import * as IN from "./iso_interior.js";
 import * as DimArt from "./dimart.js";
 import { icon as uiIcon } from "./uiicons.js";
 import * as TF from "./townfolk.js";
+import * as HA from "./hallart.js";
 import { sheet, K, FLAT, tI, tone, dk, hash, INK, T, sqI, iso, cam, G, vw, vh, Z, g } from "./scene_view.js";
 import { scenery, WALL, NEON } from "./scene_props.js";
 import { UG, themeOf, paintGround, paintExtras, setLazyLeft } from "./scene_ground.js";
@@ -194,11 +195,16 @@ export function loadMap(m) {
   const spiritAt = new Set(m.big.filter((b) => b.t === "spirit" || b.t === "obelisk").map((b) => b.x + "," + b.y));
   roomL = { glows: [], wins: [], motes: [] };
   const lay = DC.plan(m, theme), mkt = theme === "town" ? DC.town(m) : { statics: [], swap: new Set(), strings: [] };
+  // the brick halls: arched doorways and wall torches (hallart.js); a torch replaces its alcove's candle stand
+  const halls = HA.hallProps(m, theme);
   // the glowing layer of the deep places: one canvas, or for a chunked map pieces made as they come on screen
   pulseCv = null; pulseParts = ground.chunked && ["cave", "abyss", "sewer", "crypt"].includes(theme) ? new Map() : null;
   if (!pulseParts) { const pc = DC.pulse(m, theme); pulseCv = pc ? toIso(m, pc) : null; }
   // falling water runs down the face of a ledge, which now runs along the diagonal
-  falls = lay.falls.map((f) => { const [X0, Y0] = sqI(f.x, f.edge), [X1] = sqI(f.x + f.w, f.edge); return { ...f, X0, Y0, len: X1 - X0, H: f.pool ? 22 : 30 }; });
+  falls = lay.falls.concat(DC.riverFalls(m, theme)).map((f) => {
+    const [X0, Y0] = sqI(f.x, f.edge), [X1] = sqI(f.x + f.w, f.edge), R = f.ring ? sqI(f.ring[0], f.ring[1]) : null;
+    return { ...f, X0, Y0, len: X1 - X0, H: f.H || (f.pool ? 22 : 30), RX: R ? R[0] : undefined, RY: R ? R[1] : undefined };
+  });
   emit = DC.emitters(m, theme).map((e) => { const [X, Y] = sqI(e.x, e.y); return { ...e, x: X, y: Y - (e.k === "drip" ? 26 : e.k === "eyes" ? 12 : 0) }; });
   strings = mkt.strings.map((s) => {
     const lamp = (x, y) => { const [X, Y] = tI((x - 16) / T + 0.5, (y + 20) / T + 0.5); return [X, Y - 44]; };
@@ -255,7 +261,7 @@ export function loadMap(m) {
       statics.push(st); if (st.label) signs.push(st);
       continue;
     }
-    if (mkt.swap.has(key)) continue;
+    if (mkt.swap.has(key) || (ch === "3" && halls.torchAt.has(key))) continue;
     const bk = blockKind(x, y);
     if (bk) {
       // underground rock deep inside the mass shows only its top
@@ -288,6 +294,7 @@ export function loadMap(m) {
       sp, glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" || ch === "9" ? "#ffd070" : ch === "0" || ch === "X" ? "#ff6a7a" : ch === "Y" && theme === "cave" ? "#5ae4d0" : ch === "/" ? "#9affc8" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
     }, x, y, ch === "T" || ch === "P" ? Math.round((hash(x, y, 8) - 0.5) * 6) : 0));
   }
+  for (const st of halls.statics) statics.push(st);
   // cars stand across two tiles; houses and city blocks over four by three
   const A = artSc();
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {

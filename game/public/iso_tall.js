@@ -14,7 +14,7 @@
  * walking past it like any other tile.
  */
 import { hash, vnoise, C, mix, tone, shade, light, Buf, COL, texA, texB } from "./iso_px.js";
-import { UG, GRASS, materials } from "./iso_ground.js";
+import { UG, GRASS, materials, levels } from "./iso_ground.js";
 
 const INK = C("#2b2233");
 /** Heights (pixels) of what stands up. */
@@ -107,11 +107,14 @@ function pal(theme) {
 /** A wall of the underground, by theme. */
 function wallFace(theme, P, x, y, v) {
   const F = P.F;
+  // the brick halls (maps-v2 A.4): grey brick in the crypt, a damp darker band low down, the odd brick
+  // fallen out (a dark hole) or a paler new one
   if (theme === "crypt") return (side, s, z) => {
-    const k = coursed(s, z, 6, 8, 3, v), f = F[side];
+    const k = coursed(s, z, 4, 8, 3, v), f = F[side];
     if (k.seam) return f[2];
-    if (k.top) return f[1];
-    return k.t < 0.2 ? f[3] : f[0];
+    if (k.t > 0.97 && k.lz > 0) return f[2];
+    if (k.top) return z < 6 ? f[0] : f[1];
+    return k.t < 0.2 || z < 5 ? f[3] : k.t > 0.85 ? f[1] : f[0];
   };
   if (theme === "sewer") return (side, s, z) => {
     const k = coursed(s, z, 4, 8, 5, v), f = F[side];
@@ -734,7 +737,9 @@ function make(m, x, y, theme, S) {
     const hW = (i, j) => (o(i, j) === "W" ? HEIGHT.W : 0);
     return stoneWall(m, x, y, theme, [hW(x, y - 1), hW(x + 1, y), hW(x, y + 1), hW(x - 1, y)], hW(x + 1, y + 1));
   }
-  const hOf = (i, j) => (o(i, j) !== ch ? 0 : ch === "U" ? ruinH(i, j) : HEIGHT[ch]);
+  // the cave's shelf rims stand as tall as their level (m.lv): a low step, a high wall of rock
+  const L = ch === "C" ? levels(m) : null;
+  const hOf = (i, j) => (o(i, j) !== ch ? 0 : ch === "U" ? ruinH(i, j) : L ? (L[j * m.w + i] >= 2 ? 30 : 16) : HEIGHT[ch]);
   const h = hOf(x, y);
   const nh = [hOf(x, y - 1), hOf(x + 1, y), hOf(x, y + 1), hOf(x - 1, y)], nd = hOf(x + 1, y + 1);
   if (ch === "C") return cliff(m, x, y, theme, h, nh, nd);
@@ -774,21 +779,51 @@ function rockWall(m, x, y, theme, S, g) {
   return p;
 }
 
-/** A grassy rise with a rock face. */
+/**
+ * A rise with a rock face (maps-v2): out of doors grey stone under a grass lip, moss growing over it in
+ * patches (thicker in the forest); in the cave a grey shelf of bare rock, moss trailing from its edge, the
+ * odd jade crystal in a crack, as tall as the shelf's level.
+ */
 function cliff(m, x, y, theme, h, nh, nd) {
+  if (theme === "cave") return caveShelf(m, x, y, h, nh, nd);
   const G = materials(theme)._grass, gHex = GRASS[theme] || GRASS.meadow;
   const lip = C(light(gHex, 1.2)), gD = C(shade(gHex, 0.72));
-  const F = faces("#a1967a", "#c6bc9c", "#776c56");
+  const F = faces("#8e9390", "#b0b5b0", "#5c625f");
+  const mossy = theme === "forest" ? 0.5 : 0.62;
+  const M = { 2: [C("#5a8a48"), C("#74a85a"), C("#3e6a3a")], 1: [C("#4a7640"), C("#5e8e4c"), C("#34583a")] };
   const face = (side, s, z) => {
     const ws = (side === 2 ? x : y) * 16 + s;
     // grass hangs over the top of the face, a little ragged
     const hang = 1 + Math.floor(hash(ws, side, 5) * 2.2) + (hash(ws >> 2, side, 6) > 0.8 ? 2 : 0);
     if (z >= h - hang) return z === h - hang ? gD : side === 2 ? C(gHex) : C(shade(gHex, 0.82));
     if (z < 2) return F[side][2];
+    // moss in soft patches, ragged at the edge, a lit fleck here and there
+    const n = vnoise(ws, z * 1.6, 8, 57 + side);
+    if (n > mossy + 0.04 || (n > mossy && (ws + z) & 1)) return hash(ws, z, 58) < 0.12 ? M[side][1] : n > mossy + 0.16 ? M[side][2] : M[side][0];
     return facet(F[side], ws, z, 51);
   };
   const top = (a, b) => G.tex(x * 16 + a, y * 16 + b);
   return block({ h, nh, nd, top, face, hi: () => lip, backInk: (a, b, c) => (hash(a, b, x * 31 + y) < 0.0 ? c : C(shade(gHex, 0.6))), seam: F[1][2] });
+}
+
+function caveShelf(m, x, y, h, nh, nd) {
+  const S = materials("cave")._shelf;
+  const F = faces("#6c7370", "#8e9592", "#40464a");
+  const moss = [C("#2f7a4c"), C("#4aa86a"), C("#1e4e34")], jade = [C("#5ae4b0"), C("#c8fff0"), C("#2a9a78")];
+  const face = (side, s, z) => {
+    const ws = (side === 2 ? x : y) * 16 + s;
+    // moss trailing down from the edge in strands of different lengths
+    const len = hash(ws, side, 71) < 0.55 ? 1 + Math.floor(hash(ws >> 1, side, 72) * (h > 20 ? 9 : 5)) : 0;
+    if (z >= h - len) return z === h - len ? moss[2] : hash(ws, z, 73) < 0.18 ? moss[1] : moss[0];
+    if (z < 2) return F[side][2];
+    // strata: a dark seam every few pixels up, broken; a crystal glinting in the odd crack
+    const c = facet(F[side], ws, z, 77);
+    if (hash(ws, z >> 1, 78 + side) < 0.006 && z > 3 && z < h - 4) return (z & 1) ? jade[1] : jade[0];
+    return c;
+  };
+  const top = (a, b) => S.tex(x * 16 + a, y * 16 + b);
+  const lip = C("#a8aea9"), back = C("#3a4040");
+  return block({ h, nh, nd, top, face, hi: (a, b) => (hash(x * 16 + a, y * 16 + b, 79) < 0.3 ? moss[1] : lip), backInk: () => back, seam: F[1][2] });
 }
 
 /**
