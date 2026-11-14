@@ -101,9 +101,9 @@ const SKILL = {
     desc: "마창사의 기술 · 얼음을 두른 창을 일직선으로 내지른다. 맞은 적은 느려지고, 창끝(끝 28%)에 걸린 적은 1초간 얼어붙는다. 창끝이 닿은 자리에서 얼음 기둥이 솟아 주변을 친다. 얼음 원소." },
   runecircle: { kind: "h", job: "runesage", need: 15, name: "메아리 법진", mp: 46, cd: 45000, at: 80, r: 64, ms: 5000, every: 1000, mult: 0.2, rxK: 0.5, mag: 1, fx: 126,
     desc: "룬술사의 기술 · 앞쪽에 5초간 룬 법진을 새긴다. 1초마다 안의 적을 치고 낙인을 새기며, 불·얼음·번개가 번갈아 깃들어 두 박동마다 법진 안에서 원소 반응이 메아리친다." },
-  tristar: { kind: "h", job: "spellarcher", need: 15, name: "삼원소 화살", mp: 36, cd: 30000, n: 3, spread: 8, spd: 520, len: 190, r: 10, mult: 1.0, mag: 1, fx: 127,
+  tristar: { kind: "h", job: "spellarcher", need: 15, name: "삼원소 화살", mp: 36, cd: 30000, n: 3, spread: 8, spd: 520, len: 190, r: 10, mult: 1.1, mag: 1, fx: 127,
     desc: "마궁사의 기술 · 불·얼음·번개 화살 셋을 한꺼번에 쏜다. 화살은 일직선을 꿰뚫고, 처음 맞힌 자리에 원소를 남겨 서로 원소 반응을 일으킨다." },
-  inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.7, per: 2, brandK: 0.4, mag: 1, fx: 128,
+  inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.8, per: 2, brandK: 0.4, mag: 1, fx: 128,
     desc: "각인궁사의 기술 · 룬 먹물을 먹인 화살 다섯 대를 부채꼴로 쏜다. 꿰뚫린 적마다 낙인이 새겨지고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 한 적은 최대 두 대까지 맞는다." },
 };
 for (const id of Object.keys(SKILL)) SKILL[id].id = id;

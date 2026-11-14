@@ -740,6 +740,15 @@ spear at T40 read ×1.4 while its other hand read ×0.9. Measured (pair mean, T1
 The probe is deterministic but chaotic at T13 (one kill ≈ 1 %); a staff/book pair sits near ×1.19 there before its
 signature, so those signatures carry little at T13 by design. `node tests/balance.mjs -v [job…]` prints every row.
 
+**Deviation (maps-v2, fixed arena).** The probe used to fight in the first open square of the meadow, so regenerating
+the meadow (maps-v2) moved the numbers: 각인궁사's bow fell to ×0.64 at T25 (floor ×0.7). On the new rules the probe now
+fights in a fixed, flat, walled arena laid over the meadow for the run (`balance-probe.mjs ARENA`: 41 × 41 tiles of grass
+round tile 40,40, no camp fire; the map is restored afterwards); the old-rules path keeps the open-square search so BASE
+still reproduces. Tuning to re-centre the thin rows in the arena (bow T25 / pair T25, before → after):
+`inkshot` mult 0.7 → 0.8 (각인궁사 bow ×0.64 → ×0.75), `tristar` mult 1.0 → 1.1 (마궁사 bow ×0.71 → ×0.75), and 파진사's
+scale `str 0.85 wil 0.4` → `str 0.9 wil 0.5` (its pair read ×0.74 in the arena → ×0.81; `breach` mult does not move it).
+Other bow rows in the arena: 추적자 ×0.85, 폭풍기수 ×0.75, 검궁사 ×0.82, the bow itself ×0.85 (unchanged by the tuning).
+
 **Client contract** (for the art agent; `game/public/**` was not touched by H):
 
 | job (weapons) | signature | fx `(x, y, extra)` | the effect in one line |
