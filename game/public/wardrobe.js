@@ -62,6 +62,8 @@ export function anchors(base, o, view, f) {
   if (x1 - x0 < 6 || x1 - x0 > 16) { x0 = 11; x1 = 20; }
   const side = view === "side", back = view === "back";
   const A = { top, x0, x1, cx: (x0 + x1) / 2, eye: ha ? ha.eyeY + bob : top + 2, fx: side ? 17.5 : 15.5, bt: 24 + H, foot: 27, H, f, side, back, front: !side && !back, view };
+  // eyes up on top of the head (a frog's): the hat perches above them instead of covering them
+  if (A.eye - 2 < A.top) A.top = A.eye - 2;
   if (o && o.anchor) Object.assign(A, typeof o.anchor === "function" ? o.anchor(view, f) : o.anchor);
   return A;
 }
