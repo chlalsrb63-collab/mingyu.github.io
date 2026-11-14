@@ -271,7 +271,87 @@ export function sprites() {
     b.r(8, 10, 1, 2, s[2]); b.r(13, 10, 1, 2, s[2]);
     b.r(17, 0, 2, 18, s[0]); b.r(16, 14, 4, 2, s[2]); b.r(18, 0, 1, 14, s[2]);
   });
-  SPR = { waypoint, RUNE, sign: [sign(-1), sign(0), sign(1)], tower, oak, shrine, lip, board, metro, crystals, nave, culvert, heart, stall: [0, 1, 2].map(stall), notice, statue };
+  // ── 단풍 왕도: what is left of the kingdom. Weathered stone, royal blue trim, moss, and the blight's violet
+  const KS = ["#cfc6b0", "#a89e8a", "#7a7262", "#e4dcc6"], ROYAL = ["#34508e", "#203266", "#5a78b8"], BLI = ["#9a5ad0", "#d6a0ff", "#4a2a52"];
+  const ivy = (b, x0, y0, y1, seed) => { for (let y = y0; y < y1; y += 3) { const x = x0 + Math.round(Math.sin(y / 7 + seed) * 3); b.r(x, y, 3, 2, MOSS[0]); if (y % 9 === 0) b.r(x + 3, y, 2, 2, MOSS[1]); } };
+  const bricks = (b, x0, y0, w, h, step = 8) => { for (let y = y0 + step; y < y0 + h; y += step) { b.r(x0, y, w, 1, KS[2]); for (let x = x0 + ((y / step) % 2 ? 0 : 6); x < x0 + w; x += 12) b.r(x, y - step + 1, 1, step - 1, KS[2]); } };
+  // the chapel: a bell tower with its bell still hanging, a nave whose roof has fallen in, a rose window the blight lights from within
+  const chapel = prop(124, 138, (b) => {
+    b.oval(62, 134, 62, 5, "#4a5a2e");
+    // the nave
+    b.r(40, 66, 80, 68, KS[1]); b.r(40, 66, 10, 68, KS[0]); b.r(110, 66, 10, 68, KS[2]); bricks(b, 40, 66, 80, 68);
+    b.tri([[36, 68], [124, 68], [100, 40], [60, 40]], "#7a4a32");
+    for (let y = 46; y < 68; y += 5) b.r(48 + (68 - y) * 0.55, y, 64 - (68 - y) * 1.1, 1, "#5a3424");
+    // the fallen-in part: rafters against the dark
+    b.tri([[78, 68], [112, 68], [98, 44], [84, 44]], "#241a22");
+    for (const x of [84, 92, 100]) b.r(x, 46, 2, 22, "#6a4632");
+    b.r(36, 66, 88, 3, ROYAL[0]); b.r(36, 68, 88, 1, ROYAL[1]); b.r(58, 40, 44, 2, ROYAL[2]);
+    // the rose window, a door in an arch, two tall windows
+    b.oval(80, 84, 11, 11, KS[2]); b.oval(80, 84, 9, 9, BLI[2]);
+    for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; b.r(80 + Math.cos(a) * 6 - 1, 84 + Math.sin(a) * 6 - 1, 3, 3, k % 2 ? BLI[0] : "#7a3a9a"); }
+    b.r(78, 82, 4, 4, BLI[1]);
+    b.oval(80, 112, 10, 10, KS[2]); b.r(70, 112, 20, 22, KS[2]); b.oval(80, 113, 8, 8, "#2a1e22"); b.r(72, 113, 16, 21, "#2a1e22");
+    b.r(73, 116, 6, 18, "#5a3a26"); b.r(81, 116, 6, 18, "#4a2e1e"); b.r(79, 120, 2, 3, "#c8a050");
+    for (const x of [52, 100]) { b.oval(x + 4, 94, 4, 4, KS[2]); b.r(x, 94, 9, 22, KS[2]); b.oval(x + 4, 95, 3, 3, "#3a5a7a"); b.r(x + 1, 95, 7, 20, "#3a5a7a"); b.r(x + 1, 95, 2, 20, "#5a7a9a"); b.r(x + 4, 95, 1, 20, KS[2]); }
+    // the tower
+    b.r(4, 24, 38, 110, KS[1]); b.r(4, 24, 10, 110, KS[0]); b.r(34, 24, 8, 110, KS[2]); bricks(b, 4, 24, 38, 110);
+    b.r(0, 20, 46, 6, KS[1]); b.r(0, 20, 46, 2, KS[3]); b.r(0, 25, 46, 1, KS[2]);
+    b.tri([[0, 21], [46, 21], [23, 0]], "#3e5a8e"); b.tri([[23, 0], [46, 21], [28, 21]], ROYAL[1]); b.r(22, 0, 2, 4, "#c8a050");
+    b.oval(23, 40, 9, 9, KS[2]); b.r(14, 40, 18, 18, KS[2]); b.oval(23, 41, 7, 7, "#241a22"); b.r(16, 41, 14, 17, "#241a22");
+    b.r(18, 40, 10, 9, "#a8803a"); b.r(17, 47, 12, 3, "#c89a44"); b.r(19, 41, 3, 6, "#d8b860"); b.r(22, 50, 2, 3, "#6a4a22");
+    b.r(19, 72, 8, 16, "#241a22"); b.r(20, 72, 6, 2, KS[2]);
+    // the blight in the stones, ivy, rubble
+    for (const [x, y, n] of [[44, 120, 9], [112, 100, 12], [8, 110, 10]]) { for (let i = 0; i < n; i++) b.r(x + Math.round(Math.sin(i * 1.3) * 2), y + i, 1, 1, BLI[0]); b.r(x, y + n, 2, 2, BLI[1]); }
+    ivy(b, 6, 60, 128, 1); ivy(b, 114, 72, 130, 3);
+    for (const [x, y, w] of [[90, 128, 10], [112, 126, 10], [40, 128, 8]]) { b.r(x, y, w, 7, KS[1]); b.r(x, y, w, 2, KS[3]); b.r(x + w - 3, y + 2, 3, 5, KS[2]); }
+  });
+  // a thatched cottage, smoke-dark beams, a lit window, a woodpile under the eave
+  const cottage = prop(96, 84, (b) => {
+    b.oval(48, 80, 48, 4, "#4a5a2e");
+    b.r(10, 40, 76, 40, "#e2d2ae"); b.r(10, 40, 76, 3, "#c8b48c"); b.r(10, 72, 76, 8, "#9a9284"); b.r(10, 72, 76, 1, "#b8b0a2");
+    for (const x of [10, 36, 60, 83]) b.r(x, 40, 3, 32, "#5a3a26");
+    b.r(10, 56, 76, 2, "#5a3a26");
+    b.r(40, 52, 16, 28, "#5a3a26"); b.r(42, 54, 12, 26, "#8a5a34"); b.r(47, 54, 2, 26, "#6a4226"); b.r(51, 66, 2, 2, "#d8b050");
+    b.r(18, 46, 12, 10, "#5a3a26"); b.r(20, 48, 8, 7, "#ffd070"); b.r(20, 48, 8, 2, "#fff0b0"); b.r(23, 48, 2, 7, "#5a3a26");
+    b.r(66, 46, 12, 10, "#5a3a26"); b.r(68, 48, 8, 7, "#3a4a5a"); b.r(71, 48, 2, 7, "#5a3a26");
+    // the thatch: thick, rounded at the eaves, combed in rows, a mossy ridge
+    b.tri([[0, 44], [96, 44], [76, 6], [20, 6]], "#c49a4a");
+    b.oval(48, 44, 48, 6, "#a87c36"); b.r(0, 40, 96, 4, "#c49a4a");
+    for (let y = 12; y < 42; y += 5) for (let x = 24 - (y - 6) * 0.5; x < 72 + (y - 6) * 0.5; x += 4) b.r(x, y, 1, 3, "#a87c36");
+    b.r(20, 4, 56, 5, "#7a8a3a"); b.r(20, 4, 56, 1, "#9aaa4a");
+    b.tri([[20, 6], [28, 6], [6, 38], [2, 42]], "#dcb460");
+    b.r(66, 0, 10, 14, "#8a8274"); b.r(64, 0, 14, 3, "#6a6458");
+    for (let i = 0; i < 4; i++) { b.r(78 + (i % 2) * 6, 64 + Math.floor(i / 2) * 5, 6, 5, "#8a5a34"); b.oval(80 + (i % 2) * 6, 66 + Math.floor(i / 2) * 5, 2, 2, "#d8ac6e"); }
+    for (const x of [6, 88]) b.r(x, 74, 4, 6, "#c8503e");
+  });
+  // a watchtower of the old wall, broken off halfway, a royal banner still on its stump
+  const ktower = prop(84, 116, (b) => {
+    b.oval(42, 112, 42, 4, "#4a5a2e");
+    b.r(14, 30, 56, 82, KS[1]); b.r(14, 30, 12, 82, KS[0]); b.r(56, 30, 14, 82, KS[2]); bricks(b, 14, 30, 56, 82, 9);
+    // the broken top: a jagged line, stones falling
+    b.tri([[14, 30], [70, 30], [70, 18], [58, 26], [46, 10], [34, 24], [22, 14], [14, 22]], KS[1]);
+    b.tri([[46, 10], [58, 26], [70, 18], [70, 30], [46, 30]], KS[2]); b.tri([[14, 22], [22, 14], [26, 30], [14, 30]], KS[0]);
+    b.r(36, 50, 10, 18, "#241a22"); b.r(37, 50, 8, 2, KS[2]); b.r(34, 84, 16, 28, "#241a22"); b.r(36, 86, 12, 26, "#4a3020");
+    b.r(26, 0, 2, 22, "#5a5e6c"); b.r(28, 2, 14, 10, ROYAL[0]); b.r(28, 2, 14, 2, ROYAL[2]); b.r(33, 5, 4, 4, "#d8b050");
+    for (let x = 28; x < 42; x += 3) b.r(x, 12, 2, 2 + (x % 4), ROYAL[1]);
+    ivy(b, 58, 40, 108, 2);
+    for (const [x, y, w] of [[0, 104, 12], [70, 102, 12], [4, 96, 8]]) { b.r(x, y, w, 8, KS[1]); b.r(x, y, w, 2, KS[3]); b.r(x + w - 3, y + 2, 3, 6, KS[2]); }
+    for (let i = 0; i < 10; i++) b.r(60 + Math.round(Math.sin(i) * 2), 94 + i, 1, 1, BLI[0]);
+  });
+  // the gate that once spanned the royal road: two piers standing, the arch fallen between them, its crowned keystone face up
+  const kgate = prop(124, 92, (b) => {
+    b.oval(62, 88, 62, 4, "#4a5a2e");
+    for (const [x, h] of [[4, 70], [96, 52]]) { b.r(x, 88 - h, 24, h, KS[1]); b.r(x, 88 - h, 6, h, KS[0]); b.r(x + 18, 88 - h, 6, h, KS[2]); bricks(b, x, 88 - h, 24, h, 9); b.r(x - 2, 88 - h - 4, 28, 5, KS[1]); b.r(x - 2, 88 - h - 4, 28, 2, KS[3]); }
+    b.tri([[28, 18], [40, 26], [28, 34]], KS[1]); b.tri([[96, 36], [86, 42], [96, 48]], KS[1]);
+    // voussoirs lying in a curve on the ground
+    for (let k = 0; k < 7; k++) { const x = 32 + k * 9, y = 70 + Math.round(Math.abs(k - 3) * 2.2); b.r(x, y, 8, 12, KS[1]); b.r(x, y, 8, 2, KS[3]); b.r(x + 6, y + 2, 2, 10, KS[2]); }
+    b.r(56, 60, 14, 14, KS[0]); b.r(56, 60, 14, 2, KS[3]); b.r(68, 62, 2, 12, KS[2]);
+    b.r(59, 64, 8, 3, "#b89a54"); for (const x of [59, 62, 65]) b.r(x, 62, 2, 2, "#b89a54");
+    b.r(6, 40, 3, 30, ROYAL[0]); b.r(6, 40, 3, 2, ROYAL[2]);
+    ivy(b, 22, 24, 84, 4); ivy(b, 98, 44, 86, 1);
+    for (let i = 0; i < 12; i++) b.r(44 + i, 84 + Math.round(Math.sin(i * 0.9)), 1, 1, BLI[0]); b.r(56, 84, 2, 2, BLI[1]);
+  });
+  SPR = { chapel, cottage, ktower, kgate, waypoint, RUNE, sign: [sign(-1), sign(0), sign(1)], tower, oak, shrine, lip, board, metro, crystals, nave, culvert, heart, stall: [0, 1, 2].map(stall), notice, statue };
   return SPR;
 }
 
@@ -289,8 +369,12 @@ const LANDMARKS = {
   crypt: [["nave", 4, 3, 0.55, 0.45, { on: "W" }]],
   sewer: [["falls", 2, 1, 0.4, 0.5, { on: "W", water: "#6a9a3a", foam: "#b0dc70", culvert: true }], ["falls", 2, 1, 0.7, 0.3, { on: "W", water: "#6a9a3a", foam: "#b0dc70", culvert: true }]],
   abyss: [["heart", 4, 3, 0.5, 0.5, { on: "W" }]],
+  // the old kingdom's ruins stand on the footprints the set pieces leave for them (exact: nothing else may move them)
+  autumn: [["chapel", 4, 2, 0.5, 0.5, { on: "N", exact: true }], ["cottage", 3, 2, 0.5, 0.5, { on: "d", exact: true }],
+    ["ktower", 3, 2, 0.5, 0.5, { on: "i", exact: true }], ["ktower", 3, 2, 0.5, 0.5, { on: "i", exact: true }],
+    ["kgate", 4, 2, 0.5, 0.5, { on: "f", exact: true }], ["kgate", 4, 2, 0.5, 0.5, { on: "f", exact: true }]],
 };
-const GLOW = { tower: null, oak: "#ffe690", shrine: "#7af0b0", board: "#ff5a94", metro: "#4ab07a", crystals: "#72e6f4", nave: "#c8324a", heart: "#ff4a5a" };
+const GLOW = { chapel: "#b06ad8", cottage: "#ffd070", tower: null, oak: "#ffe690", shrine: "#7af0b0", board: "#ff5a94", metro: "#4ab07a", crystals: "#72e6f4", nave: "#c8324a", heart: "#ff4a5a" };
 
 function open(m, x, y) { return x >= 0 && y >= 0 && x < m.w && y < m.h && m.o[y][x] === " " && m.g[y][x] !== "w" && m.g[y][x] !== "W"; }
 /** A blocked tile of one of the kinds a landmark may stand on ("W" is bare rock). */
@@ -340,9 +424,9 @@ export function plan(m, theme) {
         else if (above >= Math.ceil(w * 0.6) || left >= h || right >= h) pen = 6;
         else continue;
       }
-      if (gates.some(([gx, gy]) => Math.abs(gx - x - w / 2) < 6 && Math.abs(gy - y - h / 2) < 6)) continue;
-      if (marks.some(([gx, gy]) => Math.abs(gx - x - w / 2) < 3 && Math.abs(gy - y - h / 2) < 3)) continue;
-      if (taken.some(([ax, ay]) => Math.hypot(ax - x, ay - y) < 10)) continue;
+      if (!extra.exact && gates.some(([gx, gy]) => Math.abs(gx - x - w / 2) < 6 && Math.abs(gy - y - h / 2) < 6)) continue;
+      if (!extra.exact && marks.some(([gx, gy]) => Math.abs(gx - x - w / 2) < 3 && Math.abs(gy - y - h / 2) < 3)) continue;
+      if (taken.some(([ax, ay]) => (extra.exact ? ax === x && ay === y : Math.hypot(ax - x, ay - y) < 10))) continue;
       const d = Math.hypot(x + w / 2 - fx * m.w, y + h / 2 - fy * m.h) + pen + hash(x, y, 77) * 3;
       if (d < bd) { bd = d; best = [x, y, pen]; }
     }
@@ -519,7 +603,7 @@ export function drawEmitters(g, list, t, ox, oy, vw, vh, parts) {
 
 /** Butterflies over the meadow and town, birds crossing high, a heron of a shadow now and then. */
 export function drawCritters(g, list, dt, t, ox, oy, vw, vh, theme) {
-  const want = theme === "meadow" ? 8 : theme === "town" ? 5 : theme === "forest" ? 3 : 0;
+  const want = theme === "meadow" ? 8 : theme === "town" ? 5 : theme === "forest" || theme === "autumn" ? 3 : 0;
   while (list.length < want) list.push(spawnCritter(ox, oy, vw, vh, list.length));
   while (list.length > want) list.pop();
   for (const c of list) {

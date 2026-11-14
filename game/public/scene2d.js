@@ -24,6 +24,7 @@ import * as Art from "./art.js";
 import * as MA from "./mobart.js";
 import * as Sky from "./sky.js";
 import * as Camp from "./camp.js";
+import { HUE, hueAt } from "./autumn.js";
 
 const T = 32, P = 2;
 /** Iso pixels per server unit along the screen's x; y is half that. Height lifts by 26 px per unit `h`. */
@@ -388,6 +389,7 @@ function scenery() {
     }),
   };
   SC.n = SC.TB[2];
+  SC.AU = autumnScenery(rock);
   // ── dungeon furniture: the crypt's dead, the sewer's plumbing, the abyss's anatomy
   const BONE = "#e2dcc6", BONE_D = "#a8a08a", BONE_L = "#f4f0e0";
   Object.assign(SC, {
@@ -479,6 +481,122 @@ function scenery() {
   return SC;
 }
 
+/**
+ * 단풍 왕도 — the fallen kingdom's things, used in place of the usual ones on an autumn map:
+ * broadleaf trees in four turned colours (two shapes each), shrubs and graveyard roses,
+ * leaning headstones, rotted royal banners, an old king's statue, rubble where a big ruin
+ * would stand if its picture found no room, dead trees with an eye in the bark, and the
+ * blight's toadstools. `T` is picked by autumn.js hueAt so trees match the litter below.
+ */
+function autumnScenery(rock) {
+  const bark = "#6a4e3a", barkD = "#43302a", barkL = "#8a6a4e";
+  const STONE = ["#d2ccba", "#aaa494", "#7e786a", "#e6e2d4"], MOSS = "#5f7a3a", BL = "#9a5ad0", BLL = "#d6a0ff";
+  const trunk = (b, x, y, w, h) => {
+    b.r(x, y, w, h, bark); b.r(x + w - 3, y, 3, h, barkD); b.r(x + 1, y + 2, 1, h - 6, barkL);
+    b.r(x - 3, y + h - 3, w + 6, 3, bark); b.r(x - 4, y + h - 1, 4, 1, barkD); b.r(x + w, y + h - 1, 5, 1, barkD);
+  };
+  // a round crown (oak, ginkgo): a dark mass, mid clusters, lit clusters to the upper left, a few dark gaps
+  const round = (hue) => prop(50, 64, (b) => {
+    const [d, m, l, hi] = HUE[hue].leaf;
+    trunk(b, 21, 40, 8, 22);
+    b.r(15, 44, 7, 2, bark); b.r(29, 46, 7, 2, barkD);
+    for (const [x, y, rx, ry] of [[25, 26, 24, 18], [8, 32, 7, 6], [42, 31, 7, 7], [25, 8, 12, 7], [38, 15, 9, 8], [12, 15, 9, 8]]) b.oval(x, y, rx, ry, d);
+    for (const [x, y, rx, ry] of [[23, 23, 20, 14], [9, 29, 5, 5], [24, 8, 9, 5], [37, 16, 7, 6], [13, 15, 7, 6], [40, 28, 5, 4]]) b.oval(x, y, rx, ry, m);
+    for (const [x, y, rx, ry] of [[17, 16, 10, 7], [30, 11, 6, 4], [10, 26, 5, 4], [26, 25, 7, 4]]) b.oval(x, y, rx, ry, l);
+    for (const [x, y] of [[12, 11], [19, 9], [8, 22], [29, 8], [23, 22]]) { b.r(x, y, 3, 2, hi); b.r(x + 1, y - 1, 1, 1, hi); }
+    for (const [x, y] of [[31, 23], [36, 31], [14, 33], [23, 33], [41, 21], [6, 25], [18, 21]]) b.r(x, y, 3, 2, d);
+    for (const [x, y] of [[34, 39], [16, 41], [43, 37]]) b.r(x, y, 2, 2, m);
+  });
+  // a maple: tiers of lobed foliage, each with a dark underside, narrowing to a point
+  const maple = (hue) => prop(46, 66, (b) => {
+    const [d, m, l, hi] = HUE[hue].leaf;
+    trunk(b, 19, 44, 7, 20);
+    b.r(13, 48, 7, 2, bark);
+    const tiers = [[23, 35, 21, 9], [23, 23, 17, 8], [23, 12, 12, 7]];
+    for (const [x, y, rx, ry] of tiers) { b.oval(x, y + 3, rx, ry, d); for (let k = -2; k <= 2; k++) b.oval(x + k * rx * 0.42, y + 4 + Math.abs(k), rx * 0.34, ry * 0.8, d); }
+    for (const [x, y, rx, ry] of tiers) {
+      b.oval(x - 1, y, rx - 2, ry - 1, m);
+      for (let k = -2; k <= 1; k++) b.oval(x + k * rx * 0.42, y + Math.abs(k), rx * 0.3, ry * 0.62, m);
+      b.oval(x - rx * 0.38, y - ry * 0.3, rx * 0.42, ry * 0.42, l);
+      b.r(x - rx * 0.55, y - ry * 0.6, 3, 2, hi); b.r(x + rx * 0.1, y - ry * 0.4, 2, 1, hi);
+      b.r(x + rx * 0.3, y + ry * 0.2, 3, 2, d);
+    }
+    b.r(22, 0, 2, 5, d); b.oval(23, 3, 3, 2, m);
+  });
+  const shrub = (hue, rose) => prop(30, 22, (b) => {
+    const [d, m, l, hi] = rose ? ["#26362c", "#3a5636", "#567644", "#7a9a5a"] : HUE[hue].leaf;
+    b.oval(15, 13, 14, 9, d); b.oval(13, 11, 12, 8, m); b.oval(21, 10, 7, 6, m); b.oval(10, 8, 7, 4, l); b.r(7, 5, 3, 1, hi);
+    b.r(14, 15, 3, 2, d); b.r(21, 13, 3, 2, d); b.r(6, 14, 2, 1, d);
+    // the graveyard's roses: blood-red heads, thorns gone violet with the blight
+    if (rose) {
+      for (const [x, y] of [[5, 10], [13, 6], [22, 7], [10, 14], [19, 14]]) { b.r(x, y, 3, 3, "#b01e34"); b.r(x, y, 1, 1, "#ec5a6a"); b.r(x + 1, y + 1, 1, 1, "#5a0a1a"); }
+      for (const [x, y] of [[2, 15], [27, 11], [16, 18]]) { b.r(x, y, 1, 3, BL); b.r(x, y, 1, 1, BLL); }
+    }
+  });
+  const grave = (v) => prop(18, 26, (b) => {
+    const s = STONE, L = v ? 2 : -2;
+    b.oval(9, 23, 9, 3, "#5a4634"); b.oval(9, 22, 7, 2, "#6e5a3e");
+    b.tri([[4, 23], [15, 23], [15 + L, 8], [4 + L, 8]], s[1]);
+    b.oval(9.5 + L, 8, 5.5, 5, s[1]); b.r(4 + L, 8, 2, 13, s[0]); b.oval(7 + L, 6, 3, 2, s[0]); b.r(13 + L, 9, 2, 13, s[2]);
+    b.r(7 + L, 11, 6, 1, s[2]); b.r(9 + L, 9, 2, 7, s[2]);
+    b.r(3, 19, 5, 3, MOSS); b.r(12, 20, 3, 2, MOSS);
+    if (v) { b.r(14 + L, 14, 1, 4, BL); b.r(13 + L, 17, 1, 1, BLL); }
+  });
+  const banner = (v) => prop(22, 52, (b) => {
+    b.r(4, 2, 2, 49, "#5a4a3a"); b.r(5, 2, 1, 49, "#3a2e26"); b.r(2, 0, 6, 3, "#c8a050"); b.r(1, 49, 8, 3, "#5a5248");
+    b.r(6, 5, 14, 2, "#5a4a3a");
+    const blue = "#34508e", blueD = "#203266", gold = "#d8b050";
+    b.r(7, 7, 12, 26, blue); b.r(16, 7, 3, 26, blueD);
+    for (let x = 7; x < 19; x += 2) b.r(x, 33, 2, ((x * 7) % 5) + (v ? 2 : 0), (x >> 1) % 2 ? blue : blueD);
+    b.r(7, 7, 12, 2, gold);
+    b.r(10, 14, 6, 2, gold); b.r(10, 12, 1, 2, gold); b.r(12, 11, 2, 3, gold); b.r(15, 12, 1, 2, gold);
+    b.r(11, 19, 4, 5, gold); b.r(12, 20, 2, 3, blueD);
+    if (v) { b.r(8, 24, 3, 4, "#4a2a52"); b.r(9, 25, 1, 1, BL); b.r(15, 28, 2, 3, blueD); }
+  });
+  const statue = prop(26, 50, (b) => {
+    const s = STONE;
+    b.r(1, 40, 24, 10, s[1]); b.r(1, 40, 24, 2, s[3]); b.r(19, 42, 6, 8, s[2]); b.r(1, 47, 24, 3, s[2]);
+    b.tri([[5, 40], [21, 40], [18, 18], [8, 18]], s[1]); b.tri([[14, 40], [21, 40], [18, 18], [14, 18]], s[2]); b.r(8, 18, 3, 22, s[0]);
+    b.r(6, 15, 14, 5, s[1]); b.r(6, 15, 4, 5, s[0]); b.r(17, 15, 3, 5, s[2]);
+    b.oval(13, 10, 4.5, 5, s[1]); b.oval(12, 9, 2.5, 3, s[0]); b.r(15, 8, 2, 6, s[2]);
+    b.r(8, 3, 10, 3, "#b89a54"); for (const x of [8, 12, 16]) b.r(x, 0, 2, 3, "#b89a54"); b.r(8, 5, 10, 1, "#7a6034");
+    b.r(12, 21, 3, 3, s[3]); b.r(13, 24, 1, 8, s[3]); b.r(10, 21, 7, 1, s[2]);
+    b.r(2, 37, 6, 3, MOSS); b.r(20, 36, 3, 4, MOSS); b.r(16, 26, 1, 6, s[2]); b.r(17, 31, 1, 3, s[2]);
+    b.r(4, 43, 1, 4, BL); b.r(5, 42, 3, 1, BL); b.r(7, 41, 1, 1, BLL);
+  });
+  const rubble = prop(32, 26, (b) => {
+    for (const [x, y, w, h] of [[1, 12, 12, 12], [11, 5, 14, 19], [20, 13, 11, 11]]) { b.r(x, y, w, h, STONE[1]); b.r(x, y, w, 2, STONE[3]); b.r(x + w - 3, y + 2, 3, h - 2, STONE[2]); }
+    b.r(5, 10, 5, 3, MOSS); b.r(14, 4, 4, 2, MOSS); b.r(2, 23, 28, 2, STONE[2]);
+  });
+  // a dead tree whose bark has opened an eye
+  const eyetree = (v) => prop(40, 58, (b) => {
+    const bk = "#5a4a50", dark = "#3a2e38", lit = "#7a6a6c";
+    const br = (x0, y0, x1, y1, w) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)); for (let i = 0; i <= n; i++) b.r(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n, w, w, bk); };
+    b.r(17, 24, 7, 32, bk); b.r(21, 24, 3, 32, dark); b.r(17, 24, 1, 32, lit);
+    b.r(12, 53, 17, 4, bk); b.r(10, 55, 4, 2, dark); b.r(27, 55, 5, 2, dark);
+    if (v) { br(19, 30, 5, 13, 3); br(6, 15, 2, 5, 2); br(21, 27, 34, 10, 3); br(32, 12, 37, 3, 2); br(20, 25, 22, 2, 3); }
+    else { br(19, 28, 7, 10, 3); br(9, 12, 9, 2, 2); br(21, 30, 35, 16, 3); br(33, 17, 38, 8, 2); br(20, 25, 16, 3, 3); }
+    b.oval(20, 38, 4, 3, "#2a1a2e"); b.oval(20, 38, 3, 2, "#f0e4d8"); b.r(20, 37, 2, 2, "#7a1a3a"); b.r(20, 37, 1, 1, "#1a0a14");
+    for (const [x, y] of [[18, 44], [22, 31], [19, 50]]) { b.r(x, y, 1, 3, BL); b.r(x + 1, y + 2, 1, 1, BLL); }
+  });
+  // the blight's fruit: a violet cap with pale spots like eyes
+  const toad = prop(30, 32, (b) => {
+    const cap = "#7a3a9a";
+    b.r(12, 15, 7, 15, "#e4d8cc"); b.r(16, 15, 3, 15, "#b8a89c"); b.r(10, 28, 11, 3, "#e4d8cc");
+    b.oval(15, 12, 14, 8, "#4a2060"); b.oval(15, 10, 14, 8, cap); b.oval(10, 7, 6, 3.4, "#a466c8");
+    b.r(4, 16, 22, 2, "#c8b0d8");
+    for (const [x, y] of [[6, 9], [15, 5], [21, 9], [11, 12]]) { b.r(x, y, 3, 2, "#f0e4ff"); b.r(x + 1, y, 1, 1, "#2a1030"); }
+    b.r(24, 25, 2, 6, "#e4d8cc"); b.oval(25, 24, 4, 2.6, cap); b.r(24, 23, 1, 1, BLL);
+  });
+  return {
+    T: [0, 1, 2, 3].map((k) => [round(k), maple(k)]),
+    B: [shrub(0), shrub(1), shrub(2), shrub(0, true)],
+    J: [grave(0), grave(1)], V: [banner(0), banner(1)], z: statue,
+    N: rubble, d: rubble, i: rubble, f: rubble,
+    A: [eyetree(0), eyetree(1)], toad,
+  };
+}
+
 // ── barriers that run on: cliffs, hedges and ruined walls are built from joined pieces
 const WALL = {
   // a raised ledge: grass on top, a rim of pale rock where it is lit, a rock face to the south
@@ -553,8 +671,8 @@ function wallPiece(kind, mask, v, grass) {
 
 // ───────────────────────────── ground ─────────────────────────────
 
-const GROUND = { t: "#6cbf5e", r: "#aeb0a0", ".": "#6cbf5e", ",": "#6cbf5e", '"': "#6cbf5e", ":": "#3f8a5c", ";": "#3f8a5c", p: "#d9ab6c", o: "#b4b9c6", s: "#ecd9a2", w: "#4aa2e2", b: "#b98a50", c: "#486a8a", d: "#486a8a", n: "#486a8a", i: "#486a8a", W: "#131a32", a: "#474b5a", m: "#474b5a", k: "#9aa0ae", j: "#6a6444", v: "#bdb39a", g: "#486a8a" };
-const GROUP = { t: 0, r: 3, ".": 0, ",": 0, '"': 0, ":": 1, ";": 1, p: 2, o: 3, s: 4, w: 5, b: 6, c: 7, d: 7, g: 7, n: 7, i: 7, W: 8, a: 9, m: 9, k: 10, j: 11, v: 12 };
+const GROUND = { t: "#6cbf5e", r: "#aeb0a0", ".": "#6cbf5e", ",": "#6cbf5e", '"': "#6cbf5e", ":": "#3f8a5c", ";": "#3f8a5c", p: "#d9ab6c", o: "#b4b9c6", s: "#ecd9a2", w: "#4aa2e2", b: "#b98a50", c: "#486a8a", d: "#486a8a", n: "#486a8a", i: "#486a8a", W: "#131a32", a: "#474b5a", m: "#474b5a", k: "#9aa0ae", j: "#6a6444", v: "#bdb39a", g: "#486a8a", "%": "#b4622e", "=": "#a69c88", "&": "#3e2c46" };
+const GROUP = { t: 0, r: 3, ".": 0, ",": 0, '"': 0, ":": 1, ";": 1, p: 2, o: 3, s: 4, w: 5, b: 6, c: 7, d: 7, g: 7, n: 7, i: 7, W: 8, a: 9, m: 9, k: 10, j: 11, v: 12, "%": 2, "=": 3, "&": 11 };
 /** The outline where a patch of ground ends: [dark edge line, soft inner rim]. */
 const EDGE = { 2: ["#8f6238", "#bd8c54"], 3: ["#6e7486", "#969cac"], 4: ["#b89a5e", "#d8c088"], 5: ["#2f78c0", "#86c8f4"], 6: ["#6a4426", "#96683a"], 7: ["#2a4262", "#3a5878"], 10: ["#5e6474", "#c4c8d2"], 11: ["#4a4430", "#7e7652"], 12: ["#7e7562", "#d6cdb4"] };
 const FLOWER = ["#fffbe8", "#ffd84a", "#ff9ac0", "#9ac8ff", "#f06a7a"];
@@ -1114,10 +1232,18 @@ export function loadMap(m) {
       statics.push({ sp, dx: X - 16 * K, dy: Y - sp.H, x: X, y: Y + 16, d: Y + 8, glow: null, glint: -1, block: true });
       continue;
     }
-    let sp = S[ch];
+    const au = theme === "autumn";
+    let sp = (au && S.AU[ch]) || S[ch];
     if (!sp || ch === "c") continue;
     const h = hash(x, y, 3);
-    if (ch === "T") sp = sp[edge(x, y) ? (h < 0.7 ? 0 : 2) : h < 0.5 ? 0 : h < 0.72 ? 2 : h < 0.88 ? 1 : 3];
+    if (au && ch === "T") { const hu = hueAt(m, x, y); sp = sp[hu][hu === 0 ? (h < 0.65 ? 1 : 0) : h < 0.25 ? 1 : 0]; }
+    else if (au && ch === "Y") sp = h < 0.55 ? S.AU.toad : S.Y[Math.floor(h * 2)];
+    else if (au && ch === "B") {
+      // roses grow by the graves and the fences round them, and wherever the blight is
+      const grave = [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [0, 2], [-2, 0], [0, -2]].some(([dx, dy]) => "JF".includes((m.o[y + dy] || [])[x + dx] || "."));
+      sp = sp[grave || m.g[y][x] === "&" || hash(x, y, 5) < 0.08 ? 3 : Math.min(2, hueAt(m, x, y))];
+    }
+    else if (ch === "T") sp = sp[edge(x, y) ? (h < 0.7 ? 0 : 2) : h < 0.5 ? 0 : h < 0.72 ? 2 : h < 0.88 ? 1 : 3];
     else if (ch === "B") sp = theme === "town" ? S.TB[Math.floor(h * 3)] : sp[Math.floor(h * 3)];
     else if (ch === "L") sp = theme === "city" ? S.L2 : S.L;
     else if (ch === "K") sp = hash(x, y, 7) > 0.6 ? S.K2 : S.K;
@@ -1216,9 +1342,9 @@ function wpLit() {
 
 /** Drifting motes: pollen in the open, fireflies and leaves under trees, rain in the city, dust underground. */
 const amb = [];
-const AMB_N = { town: 16, meadow: 24, forest: 26, city: 80, cave: 26, crypt: 18, sewer: 22, abyss: 36 };
+const AMB_N = { town: 16, meadow: 24, forest: 26, city: 80, cave: 26, crypt: 18, sewer: 22, abyss: 36, autumn: 40 };
 function respawn(p, ox, oy, fresh) {
-  const k = theme === "forest" ? (Math.random() < 0.45 ? "fly" : "leaf") : theme === "city" ? "rain" : theme === "cave" || UG[theme] ? "dust" : "pollen";
+  const k = theme === "forest" ? (Math.random() < 0.45 ? "fly" : "leaf") : theme === "autumn" ? (Math.random() < 0.12 ? "spore" : "leaf") : theme === "city" ? "rain" : theme === "cave" || UG[theme] ? "dust" : "pollen";
   p.k = k;
   p.x = ox - 20 + Math.random() * (vw + 40);
   p.y = k === "rain" && !fresh ? oy - 10 : oy - 10 + Math.random() * (vh + 20);
@@ -1227,7 +1353,8 @@ function respawn(p, ox, oy, fresh) {
   p.ph = Math.random() * 6.28;
   p.vx = k === "rain" ? -46 : k === "pollen" ? 5 + Math.random() * 9 : k === "leaf" ? -6 - Math.random() * 8 : (Math.random() - 0.5) * 6;
   p.vy = k === "rain" ? 400 + Math.random() * 120 : k === "leaf" ? 9 + Math.random() * 6 : k === "dust" ? -3 - Math.random() * 4 : (Math.random() - 0.5) * 4;
-  p.c = k === "leaf" ? (Math.random() < 0.5 ? "#d89a48" : "#7abf52") : null;
+  p.c = k === "leaf" ? (theme === "autumn" ? HUE[Math.random() < 0.9 ? Math.floor(Math.random() * 3) : 3].fall[Math.floor(Math.random() * 3)] : Math.random() < 0.5 ? "#d89a48" : "#7abf52") : null;
+  if (k === "spore") { p.vx = (Math.random() - 0.5) * 5; p.vy = -4 - Math.random() * 4; }
 }
 function drawAmbient(dt, t, ox, oy) {
   const want = AMB_N[theme] || 20;
@@ -1242,6 +1369,7 @@ function drawAmbient(dt, t, ox, oy) {
     if (p.k === "rain") { g.globalAlpha = 0.3; g.fillStyle = "#a8c4ff"; g.fillRect(sx, sy, 1, 6); }
     else if (p.k === "fly") { const a = (0.45 + 0.55 * Math.sin(t / 260 + p.ph * 3)) * fade; g.globalAlpha = a * 0.28; g.fillStyle = "#e8ff8a"; g.fillRect(sx - 1, sy - 2, 3, 5); g.fillRect(sx - 2, sy - 1, 5, 3); g.globalAlpha = a; g.fillRect(sx - 1, sy, 3, 1); g.fillRect(sx, sy - 1, 1, 3); g.fillStyle = "#ffffff"; g.fillRect(sx, sy, 1, 1); }
     else if (p.k === "leaf") { g.globalAlpha = fade * 0.9; g.fillStyle = p.c; g.fillRect(sx, sy, 2, 1); g.fillRect(sx + (Math.sin(t / 300 + p.ph) > 0 ? 1 : 0), sy + 1, 1, 1); }
+    else if (p.k === "spore") { const a = (0.5 + 0.5 * Math.sin(t / 400 + p.ph * 3)) * fade; g.globalAlpha = a * 0.35; g.fillStyle = "#b06ad8"; g.fillRect(sx - 1, sy - 1, 3, 3); g.globalAlpha = a; g.fillStyle = "#e0b8ff"; g.fillRect(sx, sy, 1, 1); }
     else if (p.k === "dust") { g.globalAlpha = fade * (theme === "abyss" ? 0.8 : 0.55); g.fillStyle = UG[theme] ? UG[theme].mote : "#bfe8ff"; g.fillRect(sx, sy, 1, theme === "sewer" ? 2 : 1); }
     else { g.globalAlpha = fade * 0.8; g.fillStyle = "#fffbe0"; g.fillRect(sx, sy, 1, 1); if (p.ph > 4) g.fillRect(sx + 1, sy, 1, 1); }
   }
@@ -1769,7 +1897,7 @@ function seatOf(e) {
 }
 
 /** The worlds under the open sky, where day turns to night. */
-const OUTDOOR = new Set(["town", "meadow", "forest", "city"]);
+const OUTDOOR = new Set(["town", "meadow", "forest", "city", "autumn"]);
 /** A waypoint's rune: lit and breathing once touched, dark until then. */
 function drawRune(st, dx, dy, t) {
   if (!wpLit()) return;

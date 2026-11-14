@@ -15,6 +15,7 @@
  * in screen space onto the pixels of the material they belong to.
  */
 import { hash, vnoise, C, mix, tone, shade, light, shadePx, TILE_PX } from "./iso_px.js";
+import { HUE, hueAt } from "./autumn.js";
 
 // ───────────────────────────── palettes ─────────────────────────────
 
@@ -25,11 +26,11 @@ export const UG = {
   abyss: { floor: ["#7c2f3c", "#5c1e2b", "#9e4855"], rock: "#19070c", face: ["#5a1622", "#8c2c3a", "#ba4e5a", "#330e18"], wet: ["#a81c2c", "#8e1424", "#e4606c", "#560a16", "#d04858"] },
   cave: { floor: ["#486a8a", "#3c5a78", "#5a7ea0"], rock: "#131a32", face: ["#2e4468", "#4a6a98", "#5a7cac", "#223450"], wet: ["#3f8fd0", "#3478bc", "#8ad4f8", "#245a8c", "#6ab8ec"] },
 };
-export const GRASS = { meadow: "#6cbf5e", town: "#6cbf5e", city: "#6cbf5e", forest: "#3f8a5c" };
+export const GRASS = { meadow: "#6cbf5e", town: "#6cbf5e", city: "#6cbf5e", forest: "#3f8a5c", autumn: "#71843a" };
 export const underground = (theme) => !!UG[theme];
 
 /** Material ids, as stored per pixel so later passes know what they are drawing on. */
-export const MID = { void: 1, grass: 2, forest: 3, path: 4, sand: 5, plaza: 6, ruin: 7, water: 8, deep: 9, bank: 10, mud: 11, steps: 12, asph: 13, pave: 14, floor: 15, deck: 16, line: 17, curb: 18 };
+export const MID = { void: 1, grass: 2, forest: 3, path: 4, sand: 5, plaza: 6, ruin: 7, water: 8, deep: 9, bank: 10, mud: 11, steps: 12, asph: 13, pave: 14, floor: 15, deck: 16, line: 17, curb: 18, leaves: 19, gold: 20, royal: 21, blight: 22, needle: 23 };
 
 /** A cluster shape: rows separated by "/", "." empty, a digit picks a colour from the material's palette. */
 function shape(s) {
@@ -63,6 +64,10 @@ const SHP = {
   mud: ["22", "11", "111", "3/1"].map(shape),
   flesh: ["22", "222", "2/1", "11"].map(shape),
   stone: ["1", "2", "11"].map(shape),
+  // fallen leaves: little blades and lobes, each one colour, lying every which way
+  leaf: ["44/.4", "55", "5./.5", "33.", ".3/3.", "11/.1", "2.2", "4/4", ".5/55"].map(shape),
+  leaf2: ["22/.2", "1.1/.1.", "3/33"].map(shape),
+  needle: ["1.1/.1.", "11", "3./.3", "22", ".2/2."].map(shape),
 };
 
 function mk(id, rank, hex, o = {}) {
@@ -173,7 +178,29 @@ export function materials(theme) {
     : organic(grass, SHP.grass, SHP.grass2, 11, 0.6, 0.28);
   if (theme === "forest") {
     grass.pal.push(C("#c0843e"), C("#9a6232"));
+  } else if (theme === "autumn") {
+    // the old kingdom's grass: olive going gold, with orange and red leaves lying in it
+    grass.pal.push(C("#d07a30"), C("#b03c2c"));
+    grass.tex = organic(grass, SHP.forest, SHP.grass2, 11, 0.5, 0.3);
   }
+  // ── the fallen kingdom's floor: leaf litter red and gold, its royal road, the blight, pine needles
+  const leaves = mk(MID.leaves, 2, "#b4622e", { pal: ["#b4622e", "#8c4228", "#d88a38", "#a0522a", "#c8382a", "#e2aa3c"], style: "soft", amp: 3.2, line: "#6a3020" });
+  leaves.tex = organic(leaves, SHP.leaf, SHP.leaf2, 91, 0.78, 0.42, 5, 4);
+  const goldL = mk(MID.gold, 2.5, "#d09a34", { pal: ["#d09a34", "#a8742a", "#eec458", "#bc8430", "#f4dc78", "#c86a2a"], style: "soft", amp: 3.2, line: "#7a5020" });
+  goldL.tex = organic(goldL, SHP.leaf, SHP.leaf2, 93, 0.74, 0.4, 5, 4);
+  const royal = mk(MID.royal, 1, "#a69c88", { pal: ["#a69c88", "#776e62", "#c6bca6", "#958b78", "#b4aa94"], amp: 2.6, depth: 2, line: "#5a5248" });
+  const mossR = C("#6f8a3a"), leafR = [C("#c8502c"), C("#e0a038"), C("#a83a2a")];
+  royal.tex = veined(laid(royal, 11, 7, 5, 95, { crack: true, moss: mossR }), 8, 96, 4, 97, (n, n2, A, B) => {
+    // moss creeping in from the joints, and leaves blown onto the stones
+    if (n > 0.74 && ((A + B) & 1 || n > 0.8) && n2 > 0.3) return mossR;
+    const hh = hash(A >> 1, B >> 1, 98);
+    return hh < 0.022 ? leafR[(hh * 1000) % 3 | 0] : 0;
+  });
+  const blight = mk(MID.blight, 6, "#4a3450", { pal: ["#4a3450", "#36263e", "#604a68"], style: "soft", amp: 3.4 });
+  const vein = C("#9a5ad0"), veinL = C("#d6a0ff");
+  blight.tex = veined(organic(blight, SHP.flesh, null, 99, 0.35, 0, 8, 5), 16, 100, 8, 101, (n, n2) => (Math.abs(n - 0.5) < 0.03 ? (n2 > 0.62 ? veinL : vein) : Math.abs(n2 - 0.5) < 0.035 && n > 0.55 ? vein : 0));
+  const needle = mk(MID.needle, 0.5, "#5e6a36", { pal: ["#5e6a36", "#4a5430", "#76804a", "#7a5a32"], style: "soft", amp: 2.6 });
+  needle.tex = organic(needle, SHP.needle, null, 103, 0.55, 0, 6, 4);
   const path = mk(MID.path, 3, "#d9ab6c", { pal: ["#d9ab6c", "#b08650", "#ecd0a0", "#c49660"], line: "#8f6238" });
   path.tex = organic(path, SHP.pebble, null, 21, 0.5, 0, 7, 5);
   const sand = mk(MID.sand, 7, "#ecd9a2", { pal: ["#ecd9a2", "#d6c08a", "#fbf0c8", "#c8b07a"], line: "#b89a5e" });
@@ -196,7 +223,7 @@ export function materials(theme) {
   };
   const steps = mk(MID.steps, 2, "#bdb39a", { straight: true, depth: 1 });
   // water: shallow and deep; the bank under a far shore
-  const wet = U ? U.wet : ["#4aa2e2", "#3f8ad2", "#8accf6", "#2f78c0", "#86c8f4"];
+  const wet = U ? U.wet : theme === "autumn" ? ["#3f86b8", "#336fa0", "#80bede", "#285c8a", "#6aa8d0"] : ["#4aa2e2", "#3f8ad2", "#8accf6", "#2f78c0", "#86c8f4"];
   const water = mk(MID.water, 10, wet[0], { pal: [wet[0], wet[1], mix(wet[0], 1.08)], style: "bank", line: wet[3] });
   water.tex = theme === "sewer" ? organic(water, SHP.water, SHP.sludge, 61, 0.42, 0.3, 9, 5) : organic(water, SHP.water, null, 61, 0.2, 0, 11, 6);
   water.foam = C(U ? wet[2] : "#d8f0ff"); water.foam2 = C(wet[4]);
@@ -234,8 +261,10 @@ export function materials(theme) {
     ".": grass, ",": grass, '"': grass, t: grass, ":": grass, ";": grass,
     p: path, s: sand, o: plaza, r: ruin, j: mud, v: steps, w: water, b: water,
     a: asph, m: asph, k: pave, c: floor, d: floor, g: floor, n: floor, i: floor, W: rock,
+    "%": leaves, "=": royal, "&": blight,
     _deep: deep, _water: water, _floor: floor, _grass: grass,
   };
+  if (theme === "autumn") { T[";"] = goldL; T[":"] = needle; }
   matCache.set(theme, T);
   return T;
 }
@@ -451,7 +480,8 @@ function details(S) {
   const gl = C(light(G.hex, 1.3)), gd = C(shade(G.hex, 0.82)), gL = C(light(G.hex, 1.14)), stem = C(shade(G.hex, 0.7));
   const yel = C("#f0b030");
   // tall grass: root shadow, blade, lit blade, warm tip (highlights lean yellow)
-  const tgD = C(shade(G.hex, 0.66)), tgL = C(shade(G.hex, 0.84)), tgR = C(light(G.hex, 1.22)), tgT = C(light(G.hex, 1.42));
+  const TG = theme === "autumn" ? "#b89a44" : G.hex;          // the old kingdom's tall grass has gone to straw
+  const tgD = C(shade(TG, 0.66)), tgL = C(shade(TG, 0.84)), tgR = C(light(TG, 1.22)), tgT = C(light(TG, 1.42));
   const fleaf = C(shade(G.hex, 0.62));
   // flower drifts change colour every few squares, smoothly enough to read as planted swathes
   const flowerFam = (x, y) => {
@@ -468,7 +498,7 @@ function details(S) {
         const [X, Y] = spot(S, x, y, 0.3 + h(20) * 0.4, 0.3 + h(21) * 0.4);
         stamp(S, X - 3, Y - 6, ch === ";" || theme === "forest"
           ? ["1.....1", ".1...1.", "..1.1..", "1..1..1", ".1.2.1.", "..222.."]
-          : ["..1.2..", "1.1.2.2", ".11.22.", "..121..", "...2..."], [0, gL, gd], gm);
+          : ["..1.2..", "1.1.2.2", ".11.22.", "..121..", "...2..."], theme === "autumn" ? [0, C("#cc7a36"), C("#8a4428")] : [0, gL, gd], gm);
       } else if (ch === "t") {
         // tall grass: a jittered 3×2 grid of clumps, each a dark root patch with blades over it —
         // the dark bases make the stand read as one mass, the warm tips catch the light
@@ -515,6 +545,41 @@ function details(S) {
     } else if (ch === "s" && free(x, y) && h(30) < 0.1) {
       const [X, Y] = spot(S, x, y, 0.3 + h(31) * 0.4, 0.3 + h(32) * 0.4);
       stamp(S, X - 1, Y - 1, ["11.", ".21"], [0, C("#fff4f0"), C("#f0a8b0")], [MID.sand]);
+    }
+  }
+  if (theme === "autumn") autumnDetails(S, free);
+}
+
+/**
+ * The old kingdom in autumn: every tree drops its own colour of leaves round its foot (and a
+ * few blow further, onto the road), little grey toadstools stand in the needles, and the blight
+ * puts up violet caps with a pale eye.
+ */
+function autumnDetails(S, free) {
+  const { m } = S;
+  const onto = [MID.grass, MID.leaves, MID.gold, MID.royal, MID.path, MID.needle, MID.line];
+  const LEAF = [["1", "1"], ["11"], [".1", "1."], ["1.", ".1"]];
+  const fall = HUE.map((h) => h.fall.map(C));
+  for (let y = 1; y < m.h - 1; y++) for (let x = 1; x < m.w - 1; x++) {
+    if (!free(x, y)) continue;
+    const h = (s) => hash(x, y, s);
+    // the nearest tree, if one stands beside this square
+    let tree = null;
+    for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]]) if (m.o[y + dy][x + dx] === "T") { tree = [x + dx, y + dy]; break; }
+    const n = tree ? 4 + Math.floor(h(150) * 4) : m.g[y][x] === "=" ? (h(151) < 0.35 ? 2 : 0) : h(151) < 0.12 ? 1 : 0;
+    const pal = tree ? fall[hueAt(m, tree[0], tree[1])] : fall[hueAt(m, x, y)];
+    for (let i = 0; i < n; i++) {
+      const [X, Y] = spot(S, x, y, 0.08 + hash(x, y, 160 + i) * 0.84, 0.08 + hash(x, y, 170 + i) * 0.84);
+      const c = pal[Math.floor(hash(x, y, 180 + i) * pal.length)];
+      stamp(S, X, Y, LEAF[Math.floor(hash(x, y, 190 + i) * LEAF.length)], [0, c], onto);
+    }
+    const g0 = m.g[y][x];
+    if (g0 === ":" && h(152) < 0.08) {
+      const [X, Y] = spot(S, x, y, 0.3 + h(153) * 0.4, 0.3 + h(154) * 0.4);
+      stamp(S, X - 2, Y - 3, [".11.", "1221", ".33."], [0, C("#b8ae98"), C("#ded4bc"), C("#8a8070")], [MID.needle]);
+    } else if (g0 === "&" && h(152) < 0.3) {
+      const [X, Y] = spot(S, x, y, 0.3 + h(153) * 0.4, 0.3 + h(154) * 0.4);
+      stamp(S, X - 2, Y - 4, [".11.", "1231", ".44.", ".44."], [0, C("#7a3a9a"), C("#b06ad8"), C("#f0e4ff"), C("#c8b8a8")], [MID.blight]);
     }
   }
 }
