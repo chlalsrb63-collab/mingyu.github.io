@@ -279,7 +279,7 @@ export function drawWeather(g, vw, vh, dt, t, ox, oy, outdoor, theme, camps, L) 
     }
   }
   // ── wind: leaves tumbling across, and thin streaks of moving air
-  const wantLeaf = Math.round(26 * wk[4] + (theme === "forest" ? 6 * wk[4] : 0));
+  const wantLeaf = Math.round(26 * wk[4] + (theme === "forest" || theme === "autumn" ? 6 * wk[4] : 0));
   while (leaves.length < wantLeaf) leaves.push({ x: -20 - R() * vw, y: R() * vh, v: 90 + R() * 60, ph: R() * 9, c: ["#d89a48", "#7abf52", "#c8643c", "#a8d468"][Math.floor(R() * 4)] });
   if (leaves.length > wantLeaf) leaves.length = wantLeaf;
   g.globalAlpha = Math.min(1, wk[4] * 1.2) * (0.5 + 0.5 * dim);
@@ -310,7 +310,7 @@ export function drawWeather(g, vw, vh, dt, t, ox, oy, outdoor, theme, camps, L) 
   }
   // ── fireflies after dark, wandering over the grass and gathering at the fires
   const calm = 1 - Math.max(wk[2], wk[5]) * 0.9;
-  const wild = theme === "meadow" || theme === "forest" || theme === "town" ? 22 : 0;
+  const wild = theme === "meadow" || theme === "forest" || theme === "autumn" || theme === "town" ? 22 : 0;
   const wantFly = n > 0.35 ? Math.round((wild + camps.length * 9) * calm) : 0;
   while (flies.length < wantFly) flies.push({ wx: R() * vw + ox, wy: R() * vh + oy, ph: R() * 9, camp: flies.length >= Math.round(wild * calm) ? Math.floor(R() * Math.max(1, camps.length)) : -1, a: R() * 6.28, r: 26 + R() * 46 });
   if (flies.length > wantFly) flies.length = wantFly;
