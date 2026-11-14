@@ -1,0 +1,180 @@
+{
+  "v": 1,
+  "id": "juju_diner",
+  "replaces": null,
+  "name": "쥬쥬식당",
+  "theme": "interior",
+  "style": "tavern",
+  "bgm": "cafe",
+  "safe": true,
+  "band": null,
+  "w": 20,
+  "h": 14,
+  "ground": [
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "fffxxxffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffqqqqqfffffff",
+    "ffffffffqqqqqfffffff",
+    "ffxfffffqqqqqfffffff",
+    "ffxfffffqqqqqfffffff",
+    "ffxfffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffefffffffff"
+  ],
+  "objects": [
+    "==+==^^===@==+==!===",
+    "=wr :       r www g_",
+    "=                  _",
+    "=          mmjmmm  _",
+    "+                  _",
+    "+ %                _",
+    "=    kok           _",
+    "=             kok  _",
+    "=  s     kok       _",
+    "=#                *_",
+    "+  s               _",
+    "=     kok     kok  _",
+    "=g                 _",
+    "__________ _________"
+  ],
+  "entry": [
+    10,
+    12
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "juju",
+      "name": "쥬쥬",
+      "role": "shop",
+      "x": 5,
+      "y": 2,
+      "look": [
+        2,
+        13,
+        0,
+        14,
+        3,
+        5,
+        10,
+        11,
+        9,
+        9,
+        4
+      ],
+      "pose": "stir",
+      "goods": [
+        "food_s",
+        "food_m",
+        "food_l",
+        "inn_bread"
+      ],
+      "lines": [
+        "쥬쥬식당에 어서 와! 오늘 국물은 끝내준다구.",
+        "배고픈 모험가는 못 싸워. 든든히 먹고 가!",
+        "화덕 옆에서 쉬어 가도 돼. 요리도 직접 해 볼래?"
+      ]
+    },
+    {
+      "id": "diner_piri",
+      "name": "떠돌이 악사 피리",
+      "role": "talk",
+      "x": 17,
+      "y": 5,
+      "look": [
+        8,
+        9,
+        3,
+        11,
+        0,
+        4,
+        4,
+        12,
+        2,
+        2,
+        1
+      ],
+      "lines": [
+        "♪ 국물 한 숟갈에 하루가 녹고, 노래 한 소절에 밤이 녹네 ♪",
+        "신청곡? 음… 동전 한 닢이면 생각해 볼게!"
+      ]
+    },
+    {
+      "id": "diner_reg1",
+      "name": "단골 손님 나비",
+      "role": "talk",
+      "x": 10,
+      "y": 9,
+      "look": [
+        0,
+        3,
+        10,
+        10,
+        2,
+        2,
+        3,
+        1,
+        3,
+        2,
+        4
+      ],
+      "pose": "sip",
+      "lines": [
+        "여기 스튜 먹으려고 매일 사냥 나간다니까.",
+        "쥬쥬한테 '곱빼기'라고 하면 진짜 두 배로 줘."
+      ]
+    },
+    {
+      "id": "diner_reg2",
+      "name": "단골 손님 뭉치",
+      "role": "talk",
+      "x": 15,
+      "y": 10,
+      "look": [
+        3,
+        3,
+        3,
+        11,
+        2,
+        7,
+        1,
+        2,
+        6,
+        1,
+        0
+      ],
+      "pose": "sip",
+      "lines": [
+        "건배! …아, 혼자구나. 그래도 건배!",
+        "바람초원 갔다 왔어? 토끼 머리가 둘이었지? 그치?"
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "x": 10,
+      "y": 13,
+      "to": "town",
+      "tx": 72,
+      "ty": 50
+    }
+  ],
+  "fires": [
+    [
+      4,
+      2
+    ],
+    [
+      2,
+      9
+    ]
+  ],
+  "waypoint": null,
+  "fishing": false,
+  "boss": null
+}

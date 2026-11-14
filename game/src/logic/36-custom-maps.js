@@ -8,9 +8,9 @@
 
 const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn", "interior"];
 /** The looks an interior can have (wallpaper, wood and light; public/iso_interior.js). */
-const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
+const ROOM_STYLES = ["cafe", "hall", "inn", "library", "office", "forge", "tavern", "shop", "boutique", "dojo", "lab", "lobby"];
 /** Little idle acts an NPC can play out (public/iso_interior.js npcPose). */
-const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
+const NPC_POSES = ["sip", "read", "wipe", "doze", "write", "sweep", "hammer", "stir", "carry", "fish", "water", "knit", "wave"];
 /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
 const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job",
   // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
@@ -35,6 +35,8 @@ function npcFrom(n, m) {
     if (goods.length) out.goods = goods;
   }
   if (NPC_POSES.includes(n.pose)) out.pose = n.pose;
+  // an interactive object (a bookshelf, a notice board, a mirror): no body, it may stand on its furniture
+  if (n.thing === true) out.thing = true;
   return out;
 }
 

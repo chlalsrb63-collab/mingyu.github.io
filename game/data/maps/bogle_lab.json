@@ -1,0 +1,87 @@
+{
+  "v": 1,
+  "id": "bogle_lab",
+  "replaces": null,
+  "name": "보글연금공방",
+  "theme": "interior",
+  "style": "lab",
+  "bgm": "cafe",
+  "safe": true,
+  "band": null,
+  "w": 18,
+  "h": 12,
+  "ground": [
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxqqqqqxxxxxx",
+    "xxxxxxxqqqqqxxxxxx",
+    "xxxxxxxqqqqqxxxxxx",
+    "xxxxxxxqqqqqxxxxxx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxexxxxxxxx"
+  ],
+  "objects": [
+    "==+==~==@==~==+===",
+    "= rrrr      rrrrg_",
+    "=      *         _",
+    "+                _",
+    "=;       :      w_",
+    "=;               _",
+    "=                _",
+    "=b           --- _",
+    "=b            k  _",
+    "+               *_",
+    "=                _",
+    "_________ ________"
+  ],
+  "entry": [
+    9,
+    10
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "bogle",
+      "name": "보글",
+      "role": "talk",
+      "x": 9,
+      "y": 3,
+      "look": [
+        11,
+        6,
+        13,
+        19,
+        3,
+        7,
+        4,
+        7,
+        1,
+        2,
+        0
+      ],
+      "pose": "stir",
+      "lines": [
+        "보글보글… 앗, 손님이다! 가마솥에 손 넣지 마!",
+        "초록색은 성공, 보라색은… 음, 그것도 성공이라 치자.",
+        "언젠가 이 공방에서 마을 최고의 물약을 만들 거야. 개굴!"
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "x": 9,
+      "y": 11,
+      "to": "town",
+      "tx": 80,
+      "ty": 29
+    }
+  ],
+  "fires": [],
+  "waypoint": null,
+  "fishing": false,
+  "boss": null
+}

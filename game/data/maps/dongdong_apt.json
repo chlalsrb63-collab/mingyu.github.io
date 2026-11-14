@@ -1,0 +1,102 @@
+{
+  "v": 1,
+  "id": "dongdong_apt",
+  "replaces": null,
+  "name": "동동아파트 1층 로비",
+  "theme": "interior",
+  "style": "lobby",
+  "bgm": "town",
+  "safe": true,
+  "band": null,
+  "w": 14,
+  "h": 10,
+  "ground": [
+    "hhhhhhhhhhhhhh",
+    "hhhhhhhhhhhhhh",
+    "hhhhhhhhhhhhhh",
+    "hhhhhhyyyhhhhh",
+    "hhhhhhyyyhhhhh",
+    "hhhhhhyyyhhhhh",
+    "hhhhhhyyyhhhhh",
+    "hhhhhhyyyhhhhh",
+    "hhhhhhyyyhhhhh",
+    "hhhhhhhehhhhhh"
+  ],
+  "objects": [
+    "=+==~====~==+=",
+    "=g rrrrr  * g_",
+    "=            _",
+    "+            _",
+    "=            _",
+    "=        --- _",
+    "=%           _",
+    "=           g_",
+    "=            _",
+    "_______ ______"
+  ],
+  "entry": [
+    7,
+    8
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "dongdong",
+      "name": "관리인 동동",
+      "role": "talk",
+      "x": 4,
+      "y": 3,
+      "look": [
+        11,
+        6,
+        8,
+        15,
+        0,
+        7,
+        11,
+        8,
+        10,
+        1,
+        0
+      ],
+      "pose": "sweep",
+      "lines": [
+        "동동아파트에 어서 오세요! 관리인 동동이에요.",
+        "복도에서 뛰면 안 돼요. 3층 할머니가 주무세요.",
+        "언젠가 모험가님들도 여기 살 수 있게 될 거예요. 방 청소 해 둘게요!"
+      ]
+    },
+    {
+      "id": "apt_mail",
+      "name": "우편함",
+      "role": "talk",
+      "x": 6,
+      "y": 1,
+      "look": [
+        0,
+        0,
+        0,
+        "#8a6a4a"
+      ],
+      "thing": true,
+      "lines": [
+        "편지가 없네요.",
+        "옆 칸에 꽂힌 쪽지: \"201호 펭귄님, 생선 잘 먹었어요!\"",
+        "또 다른 쪽지: \"밤마다 노래하는 분… 조금만 작게요.\""
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "x": 7,
+      "y": 9,
+      "to": "town",
+      "tx": 10,
+      "ty": 35
+    }
+  ],
+  "fires": [],
+  "waypoint": null,
+  "fishing": false,
+  "boss": null
+}

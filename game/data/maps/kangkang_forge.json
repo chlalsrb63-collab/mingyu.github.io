@@ -1,0 +1,154 @@
+{
+  "v": 1,
+  "id": "kangkang_forge",
+  "replaces": null,
+  "name": "캉캉대장간",
+  "theme": "interior",
+  "style": "forge",
+  "bgm": "town",
+  "safe": true,
+  "band": null,
+  "w": 18,
+  "h": 12,
+  "ground": [
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxxxllllllx",
+    "xxxxxxxxxxxllllllx",
+    "xxxxxxxxxxxllllllx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxxxxxxxxxx",
+    "xxxxxxxxxexxxxxxxx",
+    "xxxxxxxxxexxxxxxxx"
+  ],
+  "objects": [
+    "==!==+===+===+==!=",
+    "=] <    >>>    ]w_",
+    "=                _",
+    "=w              *_",
+    "=    &           _",
+    "+           mmmm _",
+    "=>               _",
+    "=>               _",
+    "=              ]]_",
+    "=      *        ]_",
+    "=                _",
+    "_________ ________"
+  ],
+  "entry": [
+    9,
+    10
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "forge_tong",
+      "name": "견습 대장장이 통통",
+      "role": "smith",
+      "x": 6,
+      "y": 3,
+      "look": [
+        5,
+        2,
+        9,
+        8,
+        0,
+        0,
+        8,
+        10,
+        7,
+        10,
+        0
+      ],
+      "pose": "hammer",
+      "lines": [
+        "캉! 캉! 강화하실 거예요? 모루 앞으로 오세요!",
+        "볼칸 스승님만큼은 아니어도… 저도 꽤 한다고요!",
+        "화덕에 너무 가까이 오지 마세요. 꼬리털 탄다고요."
+      ]
+    },
+    {
+      "id": "forge_musoe",
+      "name": "갑옷장이 무쇠",
+      "role": "shop",
+      "x": 13,
+      "y": 3,
+      "look": [
+        2,
+        8,
+        7,
+        11,
+        3,
+        0,
+        9,
+        4,
+        2,
+        2,
+        0
+      ],
+      "pose": "wipe",
+      "goods": [
+        "w_warrior_1",
+        "w_rogue_1",
+        "w_lancer_1",
+        "w_mage_1",
+        "w_book_1",
+        "w_bow_1",
+        "h_1",
+        "a_1",
+        "g_1",
+        "b_1",
+        "h_2",
+        "a_2",
+        "g_2",
+        "b_2",
+        "ru_ign",
+        "ru_aeg",
+        "ru_vit",
+        "ru_men",
+        "ru_cel",
+        "ru_acu",
+        "ru_san",
+        "ru_lum",
+        "ru_fos"
+      ],
+      "lines": [
+        "튼튼한 갑옷 하나가 목숨 열 개보다 낫지.",
+        "룬도 있다네. 소켓 난 장비에 박으면 힘이 깃들지."
+      ]
+    },
+    {
+      "id": "forge_anvil",
+      "name": "모루",
+      "role": "smith",
+      "x": 5,
+      "y": 4,
+      "look": [
+        0,
+        0,
+        0,
+        "#8a6a4a"
+      ],
+      "thing": true,
+      "lines": [
+        "묵직한 모루. 장비를 강화하거나 분해할 수 있다."
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "x": 9,
+      "y": 11,
+      "to": "town",
+      "tx": 72,
+      "ty": 38
+    }
+  ],
+  "fires": [],
+  "waypoint": null,
+  "fishing": false,
+  "boss": null
+}

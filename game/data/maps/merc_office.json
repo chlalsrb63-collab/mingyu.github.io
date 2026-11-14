@@ -1,0 +1,183 @@
+{
+  "v": 1,
+  "id": "merc_office",
+  "replaces": null,
+  "name": "늑대발 용병사무소",
+  "theme": "interior",
+  "style": "office",
+  "bgm": "town",
+  "safe": true,
+  "band": null,
+  "w": 20,
+  "h": 14,
+  "ground": [
+    "llllllllllllllllllll",
+    "llllllllllllllllllll",
+    "llllllllllllllllxxxl",
+    "llllllllllllllllllll",
+    "llllllllllllllllllll",
+    "llllllllllllllllllll",
+    "lllllllllyyyllllllll",
+    "lllllllllyyyllllllll",
+    "lllllllllyyyllllllll",
+    "lllllllllyyyllllllll",
+    "lllllllllyyyllllllll",
+    "lllllllllyyyllllllll",
+    "lllllllllyyyllllllll",
+    "llllllllllelllllllll"
+  ],
+  "objects": [
+    "=!=+===~~~~==+==!=+=",
+    "=   >> g    v v  # _",
+    "=>                 _",
+    "=>              s s_",
+    "+      ----        _",
+    "=      k  k        _",
+    "=*                 _",
+    "+                  _",
+    "= mmmm       *     _",
+    "=                ]]_",
+    "=  k k            w_",
+    "=                 w_",
+    "=g                 _",
+    "__________ _________"
+  ],
+  "entry": [
+    10,
+    12
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "merc_grey",
+      "name": "용병단장 그레이",
+      "role": "quest",
+      "x": 9,
+      "y": 2,
+      "look": [
+        4,
+        8,
+        3,
+        14,
+        3,
+        1,
+        8,
+        2,
+        6,
+        9,
+        0
+      ],
+      "lines": [
+        "늑대발 용병사무소다. 일거리를 찾나?",
+        "북쪽 숲이 시끄럽다. 손 빌려줄 모험가는 언제나 환영이지.",
+        "의뢰는 게시판에, 동료는 파티 구인판에. 보수는 확실하다."
+      ]
+    },
+    {
+      "id": "merc_mimi",
+      "name": "접수원 미미",
+      "role": "daily",
+      "x": 4,
+      "y": 6,
+      "look": [
+        1,
+        2,
+        1,
+        0,
+        0,
+        0,
+        6,
+        3,
+        5,
+        0,
+        6
+      ],
+      "pose": "write",
+      "lines": [
+        "어서 오세요! 오늘의 의뢰는 아침 6시에 새로 붙어요.",
+        "다 끝내면 보수를 챙겨 드릴게요. 꼭 살아서 오세요!"
+      ]
+    },
+    {
+      "id": "merc_bawi",
+      "name": "은퇴한 용병 바위",
+      "role": "talk",
+      "x": 17,
+      "y": 4,
+      "look": [
+        2,
+        13,
+        7,
+        9,
+        3,
+        0,
+        3,
+        4,
+        2,
+        2,
+        0
+      ],
+      "pose": "doze",
+      "lines": [
+        "음… 내가 젊었을 땐 쌍두 토끼를 맨손으로… 쿨.",
+        "차원 균열에 들어갈 땐 꼭 넷이서 가게. 혼자는 무모해.",
+        "불 옆이 최고야. 무릎이 쑤시거든."
+      ]
+    },
+    {
+      "id": "merc_board",
+      "name": "의뢰 게시판",
+      "role": "daily",
+      "x": 12,
+      "y": 1,
+      "look": [
+        0,
+        0,
+        0,
+        "#8a6a4a"
+      ],
+      "thing": true,
+      "lines": [
+        "빼곡한 의뢰서들. 오늘의 의뢰를 확인하자."
+      ]
+    },
+    {
+      "id": "merc_party",
+      "name": "파티 구인판",
+      "role": "talk",
+      "x": 14,
+      "y": 1,
+      "look": [
+        0,
+        0,
+        0,
+        "#8a6a4a"
+      ],
+      "thing": true,
+      "lines": [
+        "【파티 모집 안내】 P 키로 파티 창을 열 수 있어요.",
+        "가까이 있는 모험가에게 초대를 보내면 함께 사냥할 수 있어요. 최대 4명!",
+        "광장의 오벨리스크에서 파티원 모두가 준비하면 차원 균열에 들어갈 수 있어요.",
+        "구석에 누가 낙서해 두었다: \"힐러 구함. 아니 그냥 친구 구함.\""
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "x": 10,
+      "y": 13,
+      "to": "town",
+      "tx": 85,
+      "ty": 37
+    }
+  ],
+  "fires": [
+    [
+      17,
+      2
+    ]
+  ],
+  "waypoint": null,
+  "fishing": false,
+  "boss": null
+}

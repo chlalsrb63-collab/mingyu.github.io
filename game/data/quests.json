@@ -23,6 +23,39 @@
       "req": { "lv": 5, "quest": "sq_willow_letter" },
       "reward": { "xp": 300, "gold": 120, "items": [["mp_s", 3]] },
       "repeat": false
+    },
+    {
+      "id": "sq_merc_hares",
+      "giver": "merc_grey",
+      "title": "초원의 두 머리",
+      "text": "바람초원의 쌍두 토끼가 울타리까지 내려온다. 10마리만 쫓아내 주게. 첫 의뢰로 딱이지.",
+      "done": "깔끔하군. 늑대발의 일원이 될 자격이 있어.",
+      "goal": { "type": "kill", "mob": "twinhare", "n": 10 },
+      "req": { "lv": 1, "quest": null },
+      "reward": { "xp": 150, "gold": 100, "items": [["hp_s", 5]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_merc_boar",
+      "giver": "merc_grey",
+      "title": "반쪽 멧돼지 사냥",
+      "text": "몸이 반으로 갈라진 멧돼지들이 길을 막고 있다. 8마리만 부탁하지. 돌진하면 옆으로 피하게.",
+      "done": "잘했다. 그 녀석들 돌진은 우리 단원들도 무서워하지.",
+      "goal": { "type": "kill", "mob": "splitboar", "n": 8 },
+      "req": { "lv": 10, "quest": "sq_merc_hares" },
+      "reward": { "xp": 900, "gold": 400, "items": [["hp_m", 5], ["stone", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_merc_letter",
+      "giver": "merc_grey",
+      "title": "볼칸에게 보내는 주문서",
+      "text": "광장 동쪽 장터의 대장장이 볼칸에게 이 주문서를 전해 주게. 단원들 새 칼이 필요하거든.",
+      "done": "볼칸이 받았다고? 좋아. 이건 심부름 값이다.",
+      "goal": { "type": "talk", "npc": "smith" },
+      "req": { "lv": 1, "quest": null },
+      "reward": { "xp": 120, "gold": 120, "items": [["recall", 2]] },
+      "repeat": false
     }
   ]
 }

@@ -1,0 +1,87 @@
+{
+  "v": 1,
+  "id": "pet_house",
+  "replaces": null,
+  "name": "몽글 펫 돌봄집",
+  "theme": "interior",
+  "style": "inn",
+  "bgm": "cafe",
+  "safe": true,
+  "band": null,
+  "w": 14,
+  "h": 10,
+  "ground": [
+    "ffffffffffffff",
+    "ffffffffffffff",
+    "ffffffffffffff",
+    "ffffffffffffff",
+    "ffffffffffffff",
+    "ffuuuuffffffff",
+    "ffuuuuffffffff",
+    "ffuuuuffffffff",
+    "ffuuuuffffffff",
+    "fffffffeffffff"
+  ],
+  "objects": [
+    "==+==~@~==+===",
+    "=g g       ]w_",
+    "=            _",
+    "+            _",
+    "=    mmmmm  *_",
+    "=            _",
+    "= %        % _",
+    "=   %        _",
+    "=           g_",
+    "_______ ______"
+  ],
+  "entry": [
+    7,
+    8
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "pet_monggeul",
+      "name": "펫 돌보미 몽글",
+      "role": "shop",
+      "x": 7,
+      "y": 2,
+      "look": [
+        9,
+        4,
+        2,
+        3,
+        4,
+        0,
+        3,
+        9,
+        5,
+        2,
+        0
+      ],
+      "goods": [
+        "pet_chick",
+        "pet_bat",
+        "pet_wisp"
+      ],
+      "lines": [
+        "몽글몽글~ 펫 친구를 찾으러 왔구나!",
+        "펫은 사냥터에서 떨어진 물건을 주워 줘요. 착하죠?",
+        "고양이들은 손님이 아니라 하숙생이에요. 깨우지 말아 주세요."
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "x": 7,
+      "y": 9,
+      "to": "town",
+      "tx": 29,
+      "ty": 48
+    }
+  ],
+  "fires": [],
+  "waypoint": null,
+  "fishing": false,
+  "boss": null
+}

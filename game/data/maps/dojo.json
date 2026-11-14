@@ -1,0 +1,108 @@
+{
+  "v": 1,
+  "id": "dojo",
+  "replaces": null,
+  "name": "넥서스 수련관",
+  "theme": "interior",
+  "style": "dojo",
+  "bgm": "town",
+  "safe": true,
+  "band": null,
+  "w": 18,
+  "h": 14,
+  "ground": [
+    "llllllllllllllllll",
+    "llllllllllllllllll",
+    "llllllllllllllllll",
+    "llllllllllllllllll",
+    "llllllllllllllllll",
+    "llllqqqqqqqqqqllll",
+    "llllqqqqqqqqqqllll",
+    "llllqqqqqqqqqqllll",
+    "llllqqqqqqqqqqllll",
+    "llllqqqqqqqqqqllll",
+    "llllqqqqqqqqqqllll",
+    "llllllllyyylllllll",
+    "llllllllyyylllllll",
+    "lllllllllellllllll"
+  ],
+  "objects": [
+    "=!=+==!=~@~=!==+!=",
+    "= >>>  v     >>>g_",
+    "=                _",
+    "=                _",
+    "+t              *_",
+    "=t               _",
+    "=    `      `    _",
+    "=                _",
+    "=*               _",
+    "+    `      `    _",
+    "=                _",
+    "=               w_",
+    "=g               _",
+    "_________ ________"
+  ],
+  "entry": [
+    9,
+    12
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "dojo_panpan",
+      "name": "사범 판판",
+      "role": "train",
+      "x": 9,
+      "y": 3,
+      "look": [
+        2,
+        8,
+        7,
+        0,
+        3,
+        12,
+        2,
+        13,
+        2,
+        9,
+        0
+      ],
+      "lines": [
+        "어서 오너라! 땀 한 방울이 힘 한 줌이다.",
+        "수련 인형은 마음껏 때려도 된다. 아프다고 안 하거든.",
+        "길을 정했으면 두루마리 앞에 서 보거라. 전직의 길이 보일 게다."
+      ]
+    },
+    {
+      "id": "dojo_scroll",
+      "name": "전직의 두루마리",
+      "role": "job",
+      "x": 7,
+      "y": 1,
+      "look": [
+        0,
+        0,
+        0,
+        "#8a6a4a"
+      ],
+      "thing": true,
+      "lines": [
+        "무기를 숙련 20까지 다룬 자에게 새 길이 열린다.",
+        "전직은 되돌릴 수 없다. 신중히 고르라."
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "x": 9,
+      "y": 13,
+      "to": "town",
+      "tx": 62,
+      "ty": 21
+    }
+  ],
+  "fires": [],
+  "waypoint": null,
+  "fishing": false,
+  "boss": null
+}

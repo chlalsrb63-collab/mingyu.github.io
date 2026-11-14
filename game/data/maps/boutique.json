@@ -1,0 +1,104 @@
+{
+  "v": 1,
+  "id": "boutique",
+  "replaces": null,
+  "name": "루루 의상실",
+  "theme": "interior",
+  "style": "boutique",
+  "bgm": "cafe",
+  "safe": true,
+  "band": null,
+  "w": 16,
+  "h": 12,
+  "ground": [
+    "ffffffffffffffff",
+    "ffffffffffffffff",
+    "ffffffffffffffff",
+    "ffffffffffffffff",
+    "ffffffffffffffff",
+    "ffffffffffffffff",
+    "fffuuuuuffffffff",
+    "fffuuuufyyffffff",
+    "fffuuuufyyffffff",
+    "fffuuuufyyffffff",
+    "fffffffyyyffffff",
+    "ffffffffefffffff"
+  ],
+  "objects": [
+    "=+==!=~~==!==+==",
+    "=g      >>> ' g_",
+    "=              _",
+    "=>             _",
+    "+>             _",
+    "=>       mmmm $_",
+    "=              _",
+    "+   s          _",
+    "='             _",
+    "=     k       *_",
+    "=              _",
+    "________ _______"
+  ],
+  "entry": [
+    8,
+    10
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "bout_silvi",
+      "name": "재봉사 실비",
+      "role": "costume",
+      "x": 11,
+      "y": 3,
+      "look": [
+        0,
+        10,
+        10,
+        15,
+        0,
+        7,
+        6,
+        1,
+        3,
+        1,
+        4
+      ],
+      "pose": "knit",
+      "lines": [
+        "어머, 어서 와! 오늘은 어떤 모습이 되고 싶어?",
+        "치수 좀 잴게. 가만히… 꼬리도 가만히!",
+        "루루 언니는 밖에서 손님 맞는 중이야. 옷은 나한테 맡겨."
+      ]
+    },
+    {
+      "id": "bout_mirror",
+      "name": "전신 거울",
+      "role": "costume",
+      "x": 12,
+      "y": 1,
+      "look": [
+        0,
+        0,
+        0,
+        "#8a6a4a"
+      ],
+      "thing": true,
+      "lines": [
+        "거울 속 내가 오늘따라 멋져 보인다. 옷을 갈아입어 볼까?"
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "x": 8,
+      "y": 11,
+      "to": "town",
+      "tx": 46,
+      "ty": 51
+    }
+  ],
+  "fires": [],
+  "waypoint": null,
+  "fishing": false,
+  "boss": null
+}
