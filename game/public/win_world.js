@@ -238,7 +238,10 @@ export function eventWidget(t) {
   } else if (e.phase === "warn") html = [`<b>균열 침공 예고</b> · ${name(e.map)}`, `시작까지 ${clock(G.evtIn - t)}`];
   else html = [`다음 균열 침공 ${clock(G.evtNext - t)}`, name(e.nextMap)];
   if (e.top && e.top.length && (live || e.phase === "done")) html.push(e.top.map(([n, d], i) => `${i + 1}. ${n} ${d.toLocaleString()}`).join("  "));
-  const v = html.map((h) => `<span>${h}</span>`).join("");
+  // folded to its first line on a click of the corner mark (kept per browser); folded by default until the first steps are done
+  const fold = evtFolded();
+  if (fold) html = html.slice(0, 1);
+  const v = `<i class="fold" title="${fold ? "펼치기" : "접기"}">${fold ? "▸" : "▾"}</i>` + html.map((h) => `<span>${h}</span>`).join("");
   if (box.dataset.v !== v) { box.dataset.v = v; box.innerHTML = v; }
   box.className = "frame" + (live ? " live" : e.phase === "warn" ? " warn" : "");
   box.hidden = false;
@@ -252,6 +255,13 @@ export function eventWidget(t) {
     }
     G.evtPhase = e.phase;
   }
+}
+/** Is the rift banner folded? The player's choice, else folded while the first steps are unfinished. */
+function evtFolded() {
+  const v = localStorage.getItem("lumentale:evtfold");
+  if (v !== null) return v === "1";
+  const s = G.self, n = (G.defs.tutorial || []).length;
+  return !!(s && s.tut && s.tut.i < n);
 }
 export function castBar(t) {
   const c = G.cast, box = $("#cast");
@@ -276,7 +286,8 @@ export function fadeIn() {
 /** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */
 export function setupWinWorld() {
   $("#tut-x").addEventListener("click", () => { const s = G.self; if (s && s.tut) localStorage.setItem("lumentale:tuthide", String(s.tut.i + 1)); $("#tut").hidden = true; placeToasts(); Sound.play("ui"); });
-  $("#evt").addEventListener("click", () => {
+  $("#evt").addEventListener("click", (ev) => {
+    if (ev.target.closest(".fold")) { localStorage.setItem("lumentale:evtfold", evtFolded() ? "0" : "1"); delete $("#evt").dataset.v; Sound.play("ui"); return; }
     const e = G.evt, s = G.self;
     if (!e || !s) return;
     // the event gathers at one stone of its ground (the middle one, 중턱, on a big ground)

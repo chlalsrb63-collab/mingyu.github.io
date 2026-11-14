@@ -7972,6 +7972,8 @@ const EVT = { every: 1800000, warn: 120000, len: 480000, waves: [0, 150000, 3000
 /** Where a rift can open: every hunting ground with a waypoint stone, a field boss and monsters of its own (never an instance). */
 const EVT_MAPS = Object.keys(MAP_META).filter((id) => !MAP_META[id].safe && MAP_META[id].wp && FIELD_BOSS[id] && COL_MOBS[id]);
 const evtMap = (slot) => EVT_MAPS[(Math.imul(slot, 2654435761) >>> 0) % EVT_MAPS.length];
+/** A rift line in the chat, tagged with its map: players elsewhere see it in the 시스템 tab only. */
+function sysEvt(S, map, m) { S.chat.push({ sys: 1, m, ev: map }); }
 const newEvt = (slot) => ({ slot, map: evtMap(slot), phase: "warn", start: slot * EVT.every, end: slot * EVT.every + EVT.len, waves: 0, boss: 0, bossDead: false, dmg: {}, top: null });
 function worldEvent(S, now) {
   const slot = Math.floor(now / EVT.every);
@@ -7981,7 +7983,7 @@ function worldEvent(S, now) {
   const next = slot + 1;
   if (now >= next * EVT.every - EVT.warn && (!e || e.slot !== next)) {
     S.evt = e = newEvt(next);
-    sys(S, `2분 뒤 [${MAP_META[e.map].name}]에 균열 침공이 시작됩니다! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁으로 모이세요 — 깨운 돌이라면 어느 이동의 돌에서든 건너갈 수 있습니다.`);
+    sysEvt(S, e.map, `2분 뒤 [${MAP_META[e.map].name}]에 균열 침공이 시작됩니다! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁으로 모이세요 — 깨운 돌이라면 어느 이동의 돌에서든 건너갈 수 있습니다.`);
     dirtyAll(S);
     return;
   }
@@ -7991,7 +7993,7 @@ function worldEvent(S, now) {
 }
 function beginEvent(S, e) {
   e.phase = "on";
-  sys(S, `균열 침공 시작! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁에 정예 몬스터가 몰려옵니다. (8분)`);
+  sysEvt(S, e.map, `균열 침공 시작! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁에 정예 몬스터가 몰려옵니다. (8분)`);
   dirtyAll(S);
   runEvent(S, e, S.now);
 }
@@ -8019,7 +8021,7 @@ function spawnWave(S, e) {
     rt.mobs.push(mob);
     rt.ev.push(["r", mob.id]);
   }
-  sys(S, `[${m.name}] 균열 침공 ${e.waves}파 — 정예 ${n}마리가 나타났습니다!`);
+  sysEvt(S, e.map, `[${m.name}] 균열 침공 ${e.waves}파 — 정예 ${n}마리가 나타났습니다!`);
   dirtyAll(S);
 }
 function spawnEvtBoss(S, e) {
@@ -8033,7 +8035,7 @@ function spawnEvtBoss(S, e) {
   rt.mobs.push(mob);
   rt.ev.push(["r", mob.id]);
   e.boss = mob.id; e.phase = "boss";
-  sys(S, `[${m.name}] 균열 침공의 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
+  sysEvt(S, e.map, `[${m.name}] 균열 침공의 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
   dirtyAll(S);
 }
 function endEvent(S, e) {
@@ -8056,7 +8058,7 @@ function endEvent(S, e) {
   });
   e.top = list.slice(0, 3).map(([pid, d]) => [S.players[pid].ch.name, d]);
   e.phase = "done";
-  sys(S, list.length ? `균열 침공 종료! ${e.top.map(([n], i) => `${i + 1}위 ${n}`).join(", ")}` : "균열 침공이 끝났습니다. 아무도 막지 못했습니다…");
+  sysEvt(S, e.map, list.length ? `균열 침공 종료! ${e.top.map(([n], i) => `${i + 1}위 ${n}`).join(", ")}` : "균열 침공이 끝났습니다. 아무도 막지 못했습니다…");
   dirtyAll(S);
 }
 function evtView(S, p) {

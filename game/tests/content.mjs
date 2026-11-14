@@ -319,6 +319,8 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   assert.equal(v.self.evt.phase, "warn", "two minutes ahead it is called out");
   assert.equal(v.self.evt.map, evMap, "on the map the countdown named");
   assert.ok(chatHas(W, "2분 뒤"));
+  // rift lines carry their map, so players elsewhere get them in the 시스템 tab only
+  assert.ok((v.chat || []).some((c) => c.sys && c.ev === evMap && c.m.includes("2분 뒤")), "the warning is tagged with its map");
   W.now = start;
   v = W.step();
   assert.equal(v.self.evt.phase, "on");
