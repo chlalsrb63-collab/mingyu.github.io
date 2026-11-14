@@ -307,7 +307,7 @@ const HAT = {
       const T = A.top, W = A.x1 - A.x0 + 1, k = A.side ? -1 : 1;
       b.cr(T - 1, W, 1, p.c); b.cr(T - 2, W - 2, 1, p.c); b.cr(T - 3, W - 4, 1, p.c, k);
       b.cr(T - 4, 4, 1, p.c, k * 3); b.cr(T - 3, 2, 1, sh(p.c), k * 3); b.r(A.x0 + 1, T - 2, 2, 1, li(p.c, 0.25));
-      b.cr(T, W + 2, 1, "#f4f0f4"); b.cr(T - 4, 2, 2, "#f4f0f4", k * 6);
+      b.cr(T, W + 2, 1, p.t || "#f4f0f4"); b.cr(T - 4, 2, 2, p.t || "#f4f0f4", k * 6);
     },
   },
   // an open-faced knight's helm with cheek guards and a plume
@@ -368,6 +368,103 @@ const HAT = {
       b.r(A.x1 - 1 + k, T - 2, 2, 2, sh(p.c)); b.r(A.x0 + 1 + k, T - 2, 2, 1, li(p.c, 0.3));
     },
   },
+  // a wide sun hat: the brim droops at both ends, a flower sits on the band
+  sunhat: {
+    ears: "through",
+    draw(b, A, p) {
+      const T = A.top;
+      b.cr(T - 4, 6, 1, p.c); b.cr(T - 3, 8, 1, p.c); b.cr(T - 2, 8, 1, p.b);
+      b.r(b.c0 + 2, T - 4, 2, 2, sh(p.c)); b.r(b.c0 - 3, T - 4, 2, 1, li(p.c, 0.3));
+    },
+    over(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1;
+      b.cr(T - 1, W + 6, 1, li(p.c, 0.2)); b.cr(T, W + 8, 1, p.c); b.cr(T, W + 2, 1, sh(p.c));
+      b.sym(W / 2 + 2, T + 1, 2, 1, sh(p.c));
+      if (!A.back) { b.r(b.c0 + 1, T - 3, 2, 2, p.f); b.px(b.c0 + 1, T - 3, li(p.f, 0.5)); }
+    },
+  },
+  // a wound turban, folds running across it, a jewel at the brow; it covers the ears
+  turban: {
+    ears: "behind",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1, dk = sh(p.c, 0.28);
+      b.cr(T, W + 2, 1, dk); b.cr(T - 1, W + 2, 1, p.c); b.cr(T - 2, W + 2, 1, p.c); b.cr(T - 3, W, 1, p.c); b.cr(T - 4, W - 4, 1, p.c);
+      for (let x = A.x0; x <= A.x1 - 2; x += 3) { b.px(x, T - 1, dk); b.px(x + 1, T - 2, dk); b.px(x + 2, T - 3, dk); }
+      b.r(A.x0 + 1, T - 4 + 1, 2, 1, li(p.c, 0.4));
+      if (A.back) b.cr(T, 2, 1, sh(p.c, 0.5));
+      else { const k = A.side ? 2 : 0; b.cr(T - 2, 2, 2, p.b, k); b.cr(T - 2, 1, 1, li(p.b, 0.6), k - 0.5); }
+    },
+  },
+  // goggles pushed up on the forehead, a strap round the head (in front of the ears)
+  goggles: {
+    over(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1;
+      b.cr(T, W, 1, p.s);
+      if (A.back) { b.cr(T, 2, 1, p.b); return; }
+      b.sym(0, T - 2, 4, 1, p.b); b.sym(3, T - 1, 1, 2, p.b); b.cr(T - 1, 2, 2, p.b);
+      b.sym(1, T - 1, 2, 2, p.c); b.sym(1, T, 2, 1, sh(p.c, 0.3));
+      b.px(b.c0 + 1, T - 1, li(p.c, 0.7)); b.px(b.c0 - 3, T - 1, li(p.c, 0.7));
+    },
+  },
+  // an explorer's pith helmet: a round crown, a band, a short brim all round
+  pith: {
+    ears: "through",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1;
+      b.cr(T - 1, W, 1, p.b); b.cr(T - 2, W, 1, p.c); b.cr(T - 3, W - 2, 1, p.c); b.cr(T - 4, W - 4, 1, p.c); b.cr(T - 5, 2, 1, sh(p.c));
+      b.r(A.x1 - 2, T - 3, 2, 2, sh(p.c)); b.r(A.x0 + 2, T - 4, 2, 1, li(p.c, 0.5));
+      if (!A.back) b.cr(T - 2, 2, 1, GOLD, A.side ? 2 : 0);
+    },
+    over(b, A, p) { const W = A.x1 - A.x0 + 1; b.cr(A.top, W + 4, 1, sh(p.c, 0.3)); b.cr(A.top, W, 1, sh(p.c, 0.15)); },
+  },
+  // a woven bamboo cone, wider than the head; it covers the ears
+  bamboo: {
+    ears: "behind",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1;
+      const rows = [[5, 2], [4, 6], [3, W], [2, W + 4], [1, W + 8]];
+      for (const [dy, w] of rows) b.cr(T - dy, w, 1, p.c);
+      for (const [dy, w] of rows.slice(1)) { b.sym(Math.round((5 - dy) * 1.5), T - dy, 1, 1, sh(p.c)); b.r(Math.round(16 - w / 2) + 1, T - dy, 1, 1, li(p.c, 0.4)); }
+      b.cr(T - 5, 2, 1, p.b); b.cr(T, W + 4, 1, sh(p.c, 0.4));
+    },
+  },
+  // a miner's hard hat with a lamp at the brow
+  miner: {
+    ears: "through",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1;
+      b.cr(T - 1, W, 1, p.c); b.cr(T - 2, W, 1, p.c); b.cr(T - 3, W - 2, 1, p.c); b.cr(T - 4, W - 6, 1, sh(p.c));
+      b.r(A.x1 - 2, T - 3, 2, 3, sh(p.c)); b.r(A.x0 + 1, T - 3, 2, 1, li(p.c, 0.5));
+      b.cr(T, W + 2, 1, sh(p.c, 0.4));
+      if (A.front) { b.cr(T - 2, 4, 2, p.b); b.cr(T - 2, 2, 2, p.l); b.cr(T - 3, 2, 1, p.b); }
+      if (A.side) { b.r(A.x1 - 1, T - 2, 3, 2, p.b); b.r(A.x1 + 1, T - 2, 1, 2, p.l); }
+      if (A.back) b.cr(T - 1, W, 1, p.b);
+    },
+  },
+  // a soft bucket hat, the brim sloping down, a float pinned to the band
+  bucket: {
+    ears: "through",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1;
+      b.cr(T - 4, W - 2, 1, p.c); b.cr(T - 3, W, 2, p.c); b.cr(T - 1, W, 1, p.b);
+      b.r(A.x1 - 2, T - 4, 2, 3, sh(p.c)); b.r(A.x0 + 1, T - 4, 3, 1, li(p.c, 0.4));
+    },
+    over(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1;
+      b.cr(T, W + 4, 1, p.c); b.cr(T, W, 1, sh(p.c)); b.sym(W / 2 + 2, T + 1, 1, 1, sh(p.c));
+      if (!A.back) { const x = b.c0 + (A.side ? 3 : 2); b.px(x, T - 2, p.l); b.px(x, T - 3, "#ffffff"); b.px(x, T - 1, p.l); }
+    },
+  },
+  // shards of the rift circling over the head and the ears, drifting with the walk
+  shards: {
+    ink: "#3b2a66",
+    over(b, A, p) {
+      const T = Math.min(A.top, A.earTop) - 7 + (A.f === 1 ? 1 : 0), d = A.f === 2 || A.f === 4 ? 1 : 0;
+      b.cr(T, 2, 4, p.c); b.px(b.c0 - 1, T, li(p.c, 0.6)); b.px(b.c0, T + 3, sh(p.c));
+      b.sym(3, T + 2 + d, 2, 2, p.c, sh(p.c, 0.15)); b.px(b.c0 - 5, T + 2 + d, li(p.c, 0.6));
+      b.sym(6, T + 4 - d, 1, 2, p.b);
+    },
+  },
 };
 
 // ───────────────────────────── tops ─────────────────────────────
@@ -414,6 +511,55 @@ const TOP = {
   pajama: {
     pal: (p) => ({ c: p.c, s: sh(p.c), l: li(p.c, 0.6), b: p.b }),
     front: [".clcclc.", ".cbcccc.", ".ccccbc."], side: [".sccclc.", ".scbccc.", ".scccbc."], back: [".cccccc.", ".ccccbc.", ".cbcccc."],
+  },
+  // a cord round the neck with a shell on it (the fur shows everywhere else)
+  necklace: {
+    pal: (p) => ({ b: p.c, w: p.b, W: sh(p.b, 0.25) }),
+    front: [".b....b.", "..bwWb..", "........"], side: ["..b...b.", "...bwWb.", "........"], back: [".b....b.", "..bbbb..", "........"],
+  },
+  swim: {
+    pal: () => ({ W: sh(WHITE, 0.22) }),
+    front: [".lccccs.", ".wwwwwW.", ".lccccs."], side: [".sccccl.", ".Wwwwww.", ".sccccl."], back: [".cccccs.", ".wwwwwW.", ".cccccs."],
+  },
+  // a pocketed shirt, a red neckerchief, a belt
+  safari: {
+    front: [".lcrrcl.", ".cdccdc.", ".bbybbb."], side: [".scccrr.", ".sccdcc.", ".bbbbyb."], back: [".lccccl.", ".cccccc.", ".bbbbbb."],
+  },
+  // a long robe with a white collar and a sash; a crest on the back
+  dopo: {
+    front: [".clwwlc.", ".bbbbbB.", "sccllccs", "...cc..."], side: [".scccwc.", ".Bbbbbb.", "ssccccc.", "...cc..."], back: [".ccyycc.", ".bbBBbb.", "sccccccs", "...cc..."],
+  },
+  // wooden prayer beads, a tassel at the bottom
+  beads: {
+    pal: (p) => ({ b: p.c, B: li(p.c, 0.45), y: p.b }),
+    front: [".bB..Bb.", "..bBbB..", "...yy..."], side: ["..bB.Bb.", "....bBb.", ".....y.."], back: [".bBbBbB.", "...bB...", "........"],
+  },
+  // crossed leather straps over a plain shirt, a belt of pouches
+  delver: {
+    front: [".bccccb.", ".cbyybc.", ".BBBBBB."], side: [".sccbcc.", ".sccybc.", ".BBBBBB."], back: [".bccccb.", ".cbbbbc.", ".BBBBBB."],
+  },
+  // a white double-breasted coat, a red neckerchief
+  chefcoat: {
+    pal: (p) => ({ c: "#f8f8ff", s: sh("#f8f8ff", 0.25), l: "#ffffff", r: p.b }),
+    front: [".scrrcs.", ".cyccyc.", ".syccys."], side: [".sccrrc.", ".scccyc.", ".ssccyc."], back: [".sccccs.", ".csccsc.", ".sccccs."],
+  },
+  // a bib apron: straps over the shoulders, a pocket (d), tied in a bow behind
+  apron: {
+    pal: (p) => ({ d: p.d }),
+    front: [".bccccb.", ".ccddcc.", ".cccccc.", "...cc..."], side: [".bbcccc.", "..bccdc.", "...cccc."], back: [".b....b.", "..bbbb..", "...bb..."],
+  },
+  // a smith's thick apron: a tool loop, a scorched hem
+  smith: {
+    front: [".bccccb.", ".cccycc.", ".cddddc.", "...cc..."], side: [".bbcccc.", "..bccyc.", "..bdddc."], back: [".b....b.", "..bbbb..", "..b..b.."],
+  },
+  // an alchemist's coat: a bandolier of vials across it
+  alch: {
+    pal: () => ({ g: "#6ae08a", r: "#ff6a8a" }),
+    front: [".bgcccl.", ".ccbrcc.", ".ccccby.", "...cc..."], side: [".scccbg.", ".sccbrc.", ".sccccc.", "...cc..."], back: [".ccccbc.", ".cccbcc.", ".ccbccc.", "...cc..."],
+  },
+  // a scarf wound round the neck, one end hanging with a fringe
+  scarf: {
+    front: ["cccccccc", ".....cs.", ".....b.."], side: [".cccccc.", "cs......", "b......."], back: ["cccccccc", ".cs.....", ".b......"],
   },
 };
 /** The colours a top template reads. */
@@ -539,9 +685,79 @@ const BACK = {
     "...c..ccc",
     ".......cc",
   ], (p) => ({ c: p.c, l: p.b, s: sh(p.c, 0.3) })),
+  // a surfboard taller than its owner, upright behind one shoulder
+  surf: (b, A, p) => {
+    const y0 = A.bt - 13, y1 = A.foot - 1, x = A.front ? 20 : 8, dk = sh(p.c, 0.3);
+    b.r(x + 1, y0, 2, 1, p.c); b.r(x, y0 + 1, 4, y1 - y0 - 1, p.c); b.r(x + 1, y1, 2, 1, dk);
+    b.r(A.front ? x + 3 : x, y0 + 2, 1, y1 - y0 - 3, dk); b.r(x + 1, y0 + 1, 1, 3, li(p.c, 0.6));
+    b.r(x, y0 + 5, 4, 2, p.b); b.r(x, y1 - 4, 4, 1, p.b);
+  },
+  // a water gourd at the hip: two bulbs, a red cord, a cork; it bounces with the step
+  gourd: (b, A, p) => {
+    const rows = [".bb.", ".lc.", "lccs", ".rr.", "lccs", "cccs", ".ss."];
+    b.grid(A.back ? 19 : 8, A.foot - 6 - (sway(A) ? 1 : 0), rows, { c: p.c, l: li(p.c, 0.45), s: sh(p.c, 0.3), b: p.b, r: "#d04a4a" }, A.back);
+  },
+  // a lantern swinging from a pole that rises behind the shoulder
+  lantern: (b, A, p) => {
+    const T = A.top, sw = sway(A), x = A.front ? 23 : A.side ? 9 : 8, out = A.front ? 1 : -1;
+    b.r(x, T - 6, 1, A.foot - (T - 6), p.c);
+    b.r(out > 0 ? x + 1 : x - 2, T - 6, 2, 1, p.c);
+    b.grid((out > 0 ? x + 1 : x - 3) + sw, T - 5, [".k.", "bbb", "yly", "yoy", "bbb"], { k: p.b, b: p.b, y: "#ffe680", l: "#fffbe0", o: "#ffb040" });
+  },
+  // a wicker basket brimming with herbs
+  basket: (b, A, p) => {
+    const y = A.bt, last = A.foot - 1, dk = sh(p.c, 0.3), lt = li(p.c, 0.35), leaf = "#5aa84a", lf2 = "#8ad06a";
+    if (A.back) {
+      b.r(12, y, 8, last - y + 1, p.c); b.r(12, y, 8, 1, lt); b.r(12, last, 8, 1, dk);
+      for (let x = 13; x < 20; x += 2) b.px(x, y + 1, dk);
+      b.r(10, y, 2, 1, leaf); b.r(20, y, 2, 1, lf2); b.px(10, y - 1, lf2); b.px(21, y - 1, leaf);
+    } else if (A.side) {
+      b.r(8, y - 1, 5, last - y + 2, p.c); b.r(8, y - 1, 5, 1, lt); b.r(8, last, 5, 1, dk); b.px(9, y + 1, dk); b.px(11, y + 1, dk);
+      b.r(7, y - 2, 4, 1, leaf); b.px(8, y - 3, lf2); b.px(10, y - 3, leaf); b.px(9, y - 2, lf2);
+    } else {
+      b.r(10, y, 12, last - y + 1, p.c); b.r(10, y, 12, 1, lt); b.r(10, last, 12, 1, dk); b.px(11, y + 1, dk); b.px(20, y + 1, dk);
+      b.r(8, y - 1, 3, 1, leaf); b.px(8, y - 2, lf2); b.r(21, y - 1, 3, 1, leaf); b.px(23, y - 2, lf2);
+    }
+  },
+  // a courier's satchel at the hip, a letter sticking out
+  satchel: (b, A, p) => {
+    const rows = ["..ww", "bbbb", "cycc", "cccc", "ssss"];
+    b.grid(A.back ? 18 : A.side ? 9 : 8, A.bt - 1, rows, { c: p.c, s: sh(p.c, 0.35), b: sh(p.c, 0.2), y: GOLD, w: WHITE }, A.back);
+  },
+  // a smith's great hammer slung across the back, its head over one shoulder
+  hammer: (b, A, p) => {
+    const y0 = A.top - 5, y1 = A.foot - 1, dk = sh(p.c, 0.3);
+    const head = (x) => { b.r(x, y0 - 4, 6, 4, p.c); b.r(x, y0 - 4, 6, 1, li(p.c, 0.5)); b.r(x, y0 - 1, 6, 1, dk); b.r(x + 5, y0 - 3, 1, 2, dk); b.r(x + 2, y0 - 3, 2, 2, p.s); };
+    if (A.side) { b.r(11, y0, 1, y1 - y0 + 1, p.b); head(8); return; }
+    const xa = A.back ? 21 : 10, xb = A.back ? 9 : 22;
+    for (let y = y0; y <= y1; y++) b.r(Math.round(xb + ((xa - xb) * (y - y0)) / (y1 - y0)), y, 2, 1, p.b);
+    head(xb - 2);
+  },
+  // a horned skull on a pole: what is left of a boss
+  trophy: (b, A, p) => {
+    const T = A.top, x = A.front ? 23 : A.side ? 9 : 8;
+    b.r(x, T - 4, 1, A.foot - (T - 4), p.b);
+    b.grid(x - 2, T - 9, ["h...h", "hwwsh", "wewes", ".wws.", ".w.s."], { h: p.h, w: p.c, s: sh(p.c, 0.25), e: p.e });
+  },
+  // a bear plush riding on the back, peeking over the shoulder
+  plush: (b, A, p) => {
+    const y = A.bt, pal = { c: p.c, l: li(p.c, 0.55), s: sh(p.c, 0.3), k: INK };
+    const head = ["c..c", "cccc", "ckck", "clls"];
+    if (A.back) { b.r(17, y, 5, 3, p.c); b.r(17, y + 2, 5, 1, pal.s); b.r(18, y, 4, 1, p.b); b.grid(21, y - 4, head, pal, true); }
+    else if (A.side) { b.r(8, y, 5, 3, p.c); b.r(8, y + 2, 5, 1, pal.s); b.r(8, y, 4, 1, p.b); b.grid(6, y - 4, head, pal); }
+    else { b.grid(6, y - 4, head, pal); b.r(8, y, 4, 1, p.c); b.r(7, y, 3, 1, p.b); }
+  },
+};
+/** A strap from one shoulder to the other hip, for what is slung on the back. */
+const sling = (b, A, p) => {
+  const y = A.bt, n = A.foot - y, st = p.s || sh(p.c, 0.35);
+  if (A.side) { b.r(15, y, 1, n, st); return; }
+  for (let i = 0; i < n; i++) b.r(Math.max(13, 17 - i * 2), y + i, 2, 1, st);
 };
 /** What a back piece shows in front of the body (a cape's collar and clasp, a pack's straps), front and side views. */
 const BACK_FRONT = {
+  surf: sling, gourd: sling, lantern: sling, satchel: sling, hammer: sling, trophy: sling,
+  basket: (b, A, p) => BACK_FRONT.pack(b, A, p), plush: (b, A, p) => BACK_FRONT.pack(b, A, p),
   cape: (b, A, p) => {
     const y = A.bt;
     if (A.side) { b.r(14, y, 4, 1, p.c); b.px(17, y, GOLD); return; }
@@ -647,6 +863,43 @@ const FACE = {
       b.r(x, y, 6, 1, c); b.px(x - 1, y - 1, c); b.px(x + 6, y - 1, c); b.r(x + 2, y, 2, 1, rim(A, sh(p.c, 0.2)));
     },
   },
+  // a diving mask round both eyes (they stay in view) and a breathing tube up the side of the head
+  snorkel: {
+    back: true,
+    draw(b, A, p) {
+      const e = A.eye;
+      if (A.back) { b.px(A.x0, e, p.c); b.px(A.x1, e, p.c); b.r(A.x0 + 1, A.top, 1, 3, p.b); b.px(A.x0 + 1, A.top, p.t); return; }
+      const c = rim(A, p.c), L = A.lx - 2, R = A.rx + 2;
+      b.r(L, e - 1, R - L + 1, 1, c); b.r(L, e, 1, 2, c); b.r(R, e, 1, 2, c);
+      b.r(L, e + 2, 4, 1, c); b.r(R - 3, e + 2, 4, 1, c);
+      const x = A.side ? 16 - A.halfAt(A.top + 1) : 15 + A.halfAt(A.top + 1);
+      b.r(x, A.top + 1, 1, e - A.top + 1, p.b); b.px(x, A.top + 1, p.t);
+    },
+  },
+  // stripes of paint on the cheeks and a dab on the brow
+  paint: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const y = A.ny, c = rim(A, p.c), c2 = rim(A, p.b);
+      for (const [x, k] of A.side ? [[A.cheekR - 3, 1]] : [[A.cheekL, 0], [A.cheekR - 2, 1]]) { b.r(x, y, 3, 1, c); b.r(x + k, y + 1, 2, 1, c2); }
+      b.r(A.side ? A.nx : 15, A.top, 2, 1, c);
+    },
+  },
+  // a fox mask over the eyes and the nose: slit eyes, red brows, whiskers and a mark on the brow
+  fox: {
+    covers: true, back: true,
+    draw(b, A, p) {
+      const e = A.eye;
+      if (A.back) { b.r(A.x0, e, 2, 1, p.b); b.r(A.x1 - 1, e, 2, 1, p.b); b.r(15, e, 2, 1, p.b); return; }
+      const x0 = A.lx - 2, x1 = A.rx + 3, y1 = A.ny + 1, m = A.side ? A.nx : 15, edge = sh(p.c, 0.34);
+      for (let y = e - 2; y <= y1; y++) { const k = y === y1 ? 3 : y === y1 - 1 ? 1 : 0; b.r(x0 + k, y, x1 - x0 + 1 - 2 * k, 1, y >= y1 - 1 ? sh(p.c, 0.14) : p.c); b.px(x0 + k, y, edge); b.px(x1 - k, y, edge); }
+      b.r(x0 + 3, y1, x1 - x0 - 5, 1, edge);
+      for (const x of [A.lx, A.rx]) b.r(x, e, 2, 1, "#3a2a34");
+      b.px(A.lx - 1, e - 1, p.b); b.px(A.rx + 2, e - 1, p.b);
+      b.r(m, e - 2, 2, 1, p.b); b.r(m, A.ny, 2, 1, p.b);
+      b.px(x0 + 1, A.ny, p.b); b.px(x1 - 1, A.ny, p.b);
+    },
+  },
 };
 
 // ───────────────────────────── the catalogue's art ─────────────────────────────
@@ -719,6 +972,56 @@ export const ART = {
   ws_bone: ["wskin", "bone", {}],
   ws_star: ["wskin", "star", {}],
   ws_flame: ["wskin", "flame", {}],
+  // ── themed sets (logic COS_SETS): the seaside
+  hat_sunhat: ["hat", "sunhat", { c: "#f0d890", b: "#4ab0c8", f: "#ff7a9a" }],
+  face_snorkel: ["face", "snorkel", { c: "#3a8ad8", b: "#ffd84a", t: "#ff7a3a" }],
+  top_shell: ["top", "necklace", { c: "#c8a070", b: "#ffd8e0" }],
+  top_swim: ["top", "swim", { c: "#3a7ad8" }],
+  back_surf: ["back", "surf", { c: "#f4f0e0", b: "#ff7a5a", s: "#4a4458" }],
+  ws_coral: ["wskin", "coral", {}],
+  // the desert
+  hat_turban: ["hat", "turban", { c: "#4a6ab8", b: "#f0cc60" }],
+  hat_goggles: ["hat", "goggles", { c: "#8ad8f0", b: "#c89a40", s: "#6a4434" }],
+  back_cape_sand: ["back", "cape", { c: "#d8b070" }],
+  back_gourd: ["back", "gourd", { c: "#c89a50", b: "#6a4434", s: "#6a4434" }],
+  ws_dune: ["wskin", "dune", {}],
+  // the jungle
+  hat_pith: ["hat", "pith", { c: "#e8dcb0", b: "#8a6a44" }],
+  top_safari: ["top", "safari", { c: "#c8b078", b: "#6a4434" }],
+  face_paint: ["face", "paint", { c: "#4aa84a", b: "#e8f0d8" }],
+  // the eastern temple
+  hat_bamboo: ["hat", "bamboo", { c: "#d8c070", b: "#8a6a3a" }],
+  top_dopo: ["top", "dopo", { c: "#3a5a9a", b: "#f0e8d8" }],
+  top_beads: ["top", "beads", { c: "#8a5a3a", b: "#c8402a" }],
+  face_fox: ["face", "fox", { c: "#f8f4ec", b: "#e0404a" }],
+  ws_bamboo: ["wskin", "bamboo", {}],
+  // the brick dungeon
+  hat_miner: ["hat", "miner", { c: "#f0c030", b: "#5a5a6a", l: "#fff8c0" }],
+  back_lantern: ["back", "lantern", { c: "#8a6a44", b: "#5a4a3a", s: "#6a4434" }],
+  top_delver: ["top", "delver", { c: "#a89a80", b: "#7a4a2e" }],
+  // the life skill masters
+  hat_fisher: ["hat", "bucket", { c: "#8ab06a", b: "#f0e8d0", l: "#e8404a" }],
+  top_chefcoat: ["top", "chefcoat", { c: "#f8f8ff", b: "#e04a4a" }],
+  back_basket: ["back", "basket", { c: "#c8a060" }],
+  top_smith: ["top", "smith", { c: "#8a5a3a", b: "#4a3a34" }],
+  top_alch: ["top", "alch", { c: "#2e6a6a", b: "#c8a060" }],
+  back_satchel: ["back", "satchel", { c: "#b8763a" }],
+  // gifts from the NPCs who trust you
+  top_apron_juju: ["top", "apron", { c: "#ffb0c8", b: "#e0607a", d: "#e04a6a" }],
+  back_hammer: ["back", "hammer", { c: "#8a90a0", b: "#8a5a3a", s: "#5a3a2a" }],
+  hat_goggles_bogle: ["hat", "goggles", { c: "#7ae07a", b: "#6a7080", s: "#3a3440" }],
+  top_apron_moka: ["top", "apron", { c: "#7a543a", b: "#f0e0c0", d: "#f8f0e0" }],
+  hat_nightcap: ["hat", "santa", { c: "#4a5aa0", t: "#fff0a0" }],
+  // the rift
+  hat_shard: ["hat", "shards", { c: "#b07af0", b: "#7af4ff" }],
+  back_trophy: ["back", "trophy", { c: "#f0e8d0", h: "#8a7a6a", e: "#e04040", b: "#6a4434", s: "#4a3a34" }],
+  ws_shard: ["wskin", "shard", {}],
+  // just cute
+  hat_wreath_blue: ["hat", "wreath", { c: "#7aa8f0", b: "#e8f0ff" }],
+  hat_wreath_white: ["hat", "wreath", { c: "#f8f8ff", b: "#ffd84a" }],
+  top_scarf: ["top", "scarf", { c: "#e0404a", b: "#fff0d0" }],
+  back_plush: ["back", "plush", { c: "#c89060", b: "#e0405a" }],
+  ws_bee: ["wskin", "bee", {}],
 };
 /** The cosmetic slots, in the order the wire sends them. */
 export const SLOTS = ["hat", "top", "back", "face", "wskin"];
