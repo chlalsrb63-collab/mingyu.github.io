@@ -68,6 +68,8 @@ const SEAT_R = 18;
 const CAMPS = {};
 function campsOf(m) {
   const out = [];
+  // indoors the fire burns in a fireplace: no stumps round it, you sit where you stand (armchairs are furniture)
+  if (m.theme === "interior") return out;
   for (const [fx, fy] of FIRES[m.id] || []) {
     const at = freeTile(m, fx, fy);
     if (!at) continue;

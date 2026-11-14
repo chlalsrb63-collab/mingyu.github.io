@@ -16,15 +16,16 @@
  * q checked rug · u round rug · y runner carpet · e door mat.
  * Object chars (drawn in any theme; every object blocks):
  *   walls  = plain · + window · ^ chalkboard · ~ painting/map · @ clock · ! banner · _ cut-down front wall
- *   things o round table · k chair · m counter · j counter with coffee machine · d pastry case ·
- *          b bookshelf · r jar cupboard · f fireplace · g potted plant · i lantern · v notice board ·
- *          z long table · p bed · s armchair · t trophy cabinet · w barrel · N crates · V sleeping cat
+ *   things o round table · k chair · m counter · j counter with coffee machine · $ pastry case ·
+ *          b bookshelf · r jar cupboard · # fireplace · g potted plant · * lantern · v notice board ·
+ *          - long table · p bed · s armchair · t trophy cabinet · w barrel · ] crates · % sleeping cat
+ *   (the autumn kingdom owns d f i z N V J in the object layer, so the room uses symbols there)
  * Map `style` (cafe hall inn library) picks the wallpaper, curtains and banners.
  */
 import { hash, C, mix, tone, shade, light, Buf, TILE_PX } from "./iso_px.js";
 import { daylight } from "./decor.js";
 
-export const WALLS = "=+^~@!", STUB = "_", FURN = "okmjdbrfgivzpstwNV";
+export const WALLS = "=+^~@!", STUB = "_", FURN = "okmj$br#g*v-pstw]%";
 export const OBJECTS = WALLS + STUB + FURN;
 export const FLOORS = "flxquye";
 const INK = C("#2b2233");
@@ -536,7 +537,7 @@ function backing(m, x, y) {
 /** Which way a chair or an armchair turns: its back away from the nearest table or hearth. */
 function facing(m, x, y) {
   const o = (i, j) => (i < 0 || j < 0 || i >= m.w || j >= m.h ? null : m.o[j][i]);
-  for (const want of ["oz", "f", "mjd"]) {
+  for (const want of ["o-", "#", "mj$"]) {
     if (want.includes(o(x, y + 1))) return "N";
     if (want.includes(o(x + 1, y))) return "W";
     if (want.includes(o(x, y - 1))) return "S";
@@ -598,7 +599,7 @@ function chair(m, x, y) {
 /** An armchair turns to the fireplace if one is near, else like a chair. */
 function hearthward(m, x, y) {
   for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
-    if (m.o[y + j] && m.o[y + j][x + i] === "f") return Math.abs(j) >= Math.abs(i) ? (j < 0 ? "S" : "N") : i < 0 ? "E" : "W";
+    if (m.o[y + j] && m.o[y + j][x + i] === "#") return Math.abs(j) >= Math.abs(i) ? (j < 0 ? "S" : "N") : i < 0 ? "E" : "W";
   }
   return facing(m, x, y);
 }
@@ -615,11 +616,11 @@ function armchair(m, x, y) {
 }
 
 function counter(m, x, y, kind) {
-  const R = run(m, x, y, "mjd");
+  const R = run(m, x, y, "mj$");
   const M = new Model(34, R.o);
   const u0 = R.lo ? 0 : 1, u1 = R.hi ? 16 : 15;
   const front = m.style === "inn" ? "#7a4a2c" : "#8a5634";
-  if (kind === "d") {
+  if (kind === "$") {
     // a pastry case: a wooden base, a glass box with two shelves of cakes and loaves
     M.box(u0, 3, 0, u1 - u0, 10, 8, front, (f, s, z, k) => (f !== "top" && (z === 0 ? C("#3a2418") : (s & 7) === 0 ? F(shade(front, 0.7), k) : 0)));
     const pastry = ["#e8b860", "#d88a5a", "#f4e0c0", "#c86a5a", "#b07a40"];
@@ -793,7 +794,7 @@ function board(m, x, y) {
 }
 
 function longTable(m, x, y) {
-  const R = run(m, x, y, "z");
+  const R = run(m, x, y, "-");
   const M = new Model(30, R.o);
   const u0 = R.lo ? 0 : 1, u1 = R.hi ? 16 : 15;
   if (!R.lo) { M.box(2, 4, 0, 2, 2, 8, WOOD_D); M.box(2, 10, 0, 2, 2, 8, WOOD_D); }
@@ -870,17 +871,17 @@ export function roomPiece(m, x, y) {
     case "o": p = roundTable(m, x, y); break;
     case "k": p = chair(m, x, y); break;
     case "s": p = armchair(m, x, y); break;
-    case "m": case "j": case "d": p = counter(m, x, y, ch); break;
+    case "m": case "j": case "$": p = counter(m, x, y, ch); break;
     case "b": case "r": case "t": p = shelf(m, x, y, ch); break;
-    case "f": p = fireplace(m, x, y); break;
+    case "#": p = fireplace(m, x, y); break;
     case "g": p = plant(m, x, y); break;
-    case "i": p = lantern(m, x, y); break;
+    case "*": p = lantern(m, x, y); break;
     case "v": p = board(m, x, y); break;
-    case "z": p = longTable(m, x, y); break;
+    case "-": p = longTable(m, x, y); break;
     case "p": p = bed(m, x, y); break;
     case "w": p = barrel(m, x, y); break;
-    case "N": p = crates(m, x, y); break;
-    case "V": p = catCushion(m, x, y); break;
+    case "]": p = crates(m, x, y); break;
+    case "%": p = catCushion(m, x, y); break;
   }
   if (p) p.anim = animFor(p);
   S.set(key, p);

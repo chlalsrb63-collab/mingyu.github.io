@@ -85,10 +85,11 @@ generated map round-trips tile for tile):
   Walls: `=` plain, `+` window (sunlight on the floor), `^` chalkboard (two side by side share a
   frame), `~` picture/map, `@` clock, `!` banner. Furniture (any theme draws it, every object
   blocks): `o` round table with lamp, `k` chair (turns to the next table), `s` armchair (turns to
-  the hearth), `m` counter, `j` counter with coffee machine, `d` pastry case (counters join in
-  runs), `b` bookshelf, `r` jar cupboard, `t` trophy cabinet, `f` fireplace (put a `fires` entry
-  on the tile in front: it becomes the hearth to rest and cook by), `g` plant, `i` lantern, `v`
-  notice board, `z` long table (joins), `p` bed, `w` barrel, `N` crates, `V` sleeping cat.
+  the hearth), `m` counter, `j` counter with coffee machine, `$` pastry case (counters join in
+  runs), `b` bookshelf, `r` jar cupboard, `t` trophy cabinet, `#` fireplace (put a `fires` entry
+  on the tile in front: it becomes the hearth to rest and cook by), `g` plant, `*` lantern, `v`
+  notice board, `-` long table (joins), `p` bed, `w` barrel, `]` crates, `%` sleeping cat
+  (symbols because the autumn kingdom owns `d f i z N V J` in the object layer).
   Pieces against a back wall turn to face the room. Doors between town and a room (`links.json`
   on the house's doorstep, the room's `portals` back out) are drawn as house doors with a mat,
   not magic gates. Arrive one tile inside / one tile below the step, never on the door itself.
