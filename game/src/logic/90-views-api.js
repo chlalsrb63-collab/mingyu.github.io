@@ -62,6 +62,8 @@ export function viewFor(S, pid) {
     out.P.push([o.eid, Math.round(o.x), Math.round(o.y), o.dir, o.dead ? 1 : 0, Math.round(o.hp), stats(o).mhp, o.sit ? 1 : 0, flagsOf(o, S.now)]);
   }
   for (const mob of rt.mobs) {
+    // a field boss (or the rift invasion's lord) is shown on the radar wherever it stands on the map
+    if (mob.temp && mob.el === 2 && !mob.dim && !mob.dead) (out.fb || (out.fb = [])).push([Math.round(mob.x), Math.round(mob.y)]);
     if (mob.dead || !near(mob)) continue;
     const mk = marksOf(S, mob);
     out.M.push(mk ? [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || [], mk] : [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || []]);
@@ -93,7 +95,8 @@ export function viewFor(S, pid) {
     }
   }
   if (p.party) {
-    out.party = members(S, p).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, Math.round(o.hp), stats(o).mhp, o.map === p.map ? "" : mapOfS(o.S, o.map).name]);
+    // … then where each stands (pixels, for the radar and the map window) and the id of their map
+    out.party = members(S, p).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, Math.round(o.hp), stats(o).mhp, o.map === p.map ? "" : mapOfS(o.S, o.map).name, Math.round(o.x), Math.round(o.y), o.map]);
   }
   if (p.pinv) {
     const from = S.players[p.pinv.from];
@@ -163,6 +166,8 @@ export function defs() {
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
-    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band, mobs: MAP_META[id].kinds.slice() })),
+    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band, mobs: MAP_META[id].kinds.slice(),
+      // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
+      theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id] })),
   };
 }

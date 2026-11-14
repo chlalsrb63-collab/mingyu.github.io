@@ -34,6 +34,7 @@ import * as Lobby from "./lobby.js";
 import * as Assets from "./assetlib.js";
 import * as Sky from "./sky.js";
 import * as Dim from "./dimrift.js";
+import * as Radar from "./radar.js";
 
 // approved external images (public/assets/manifest.json) before anything is drawn; an
 // empty or missing manifest leaves every look code-drawn
@@ -123,7 +124,6 @@ const G = {
   cdEnd: [0, 0, 0, 0, 0, 0], buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
   auto: false, sel: -1, shake: 0, flash: 0, near: null, party: [], pinv: null, path: null, mark: null,
 };
-let mini = null;
 let dpr = 1;
 
 const world = $("#world");
@@ -249,9 +249,8 @@ function loadMap(m) {
   G.path = null;
   S3.leaveStage();
   S3.loadMap(m);
-  mini = isoMini(m);
-  const cv = $("#mini-cv");
-  cv.width = mini.width; cv.height = mini.height;
+  Radar.loadMap(m);
+  G.fb = null;
   G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear();
   G.texts.length = 0;
   G.snapCam = true;
@@ -313,7 +312,9 @@ function onSnap(s) {
   if (s.chat) for (const c of s.chat) if (c.sys && /나타났습니다/.test(c.m)) Sound.play(/균열/.test(c.m) ? "elite" : "announce");
   if (s.gain) for (const gn of s.gain) onGain(gn);
   if (s.toast) for (const m of s.toast) toast(m);
-  const pk = JSON.stringify(s.party || []);
+  // (a member's place, [7…], changes every step: only who they are and how they fare redraw the party)
+  G.fb = s.fb || null;
+  const pk = JSON.stringify((s.party || []).map((r) => r.slice(0, 7)));
   if (pk !== G.partyKey) { if (G.partyKey !== undefined && (s.party || []).length > (G.party || []).length) Sound.play("party"); G.partyKey = pk; G.party = s.party || []; renderPartyHud(); if (isOpen("party")) renderParty(); }
   const gi = s.ginv ? s.ginv.join("|") : null;
   if ((s.pinv || null) !== G.pinv || gi !== G.ginv) { G.pinv = s.pinv || null; G.ginv = gi; renderInvite(); }
@@ -647,7 +648,7 @@ addEventListener("keydown", (e) => {
     case "j": case "ㅓ": toggleWin("collect"); break;
     case "h": case "ㅗ": toggleWin("help"); break;
     case "o": case "ㅐ": toggleWin("settings"); break;
-    case "m": case "ㅡ": toggleSound(); break;
+    case "m": case "ㅡ": if (e.shiftKey) toggleSound(); else toggleWin("map"); break;
     case "v": case "ㅍ": setCrt(!document.body.classList.contains("crt")); break;
     case "Enter": e.preventDefault(); $("#chat-in").focus(); break;
     case "Escape": closeTop(); break;
@@ -1418,44 +1419,12 @@ function renderText(t) {
 
 /** Whether the sheet has woken map `id`'s waypoint stone `i` (self.wp: { mapId: bitmask of its stones }). */
 function wpWoke(s, id, i = 0) { return !!(s && s.wp && !Array.isArray(s.wp) && (s.wp[id] & (1 << i))); }
-/** The minimap as a diamond, turned the way the world is seen: screen-up on the map is screen-up in the world. */
-function isoMini(m) {
-  // (a big map is drawn square at half the size first: the diamond comes out the same size)
-  const s = m.w > 100 ? 2 : 4, sq = Art.renderMini(m, s);
-  const c = document.createElement("canvas");
-  c.width = (m.w + m.h) * 2; c.height = m.w + m.h;
-  const g = c.getContext("2d");
-  g.imageSmoothingEnabled = false;
-  g.setTransform(2 / s, 1 / s, -2 / s, 1 / s, m.h * 2, 0);
-  g.drawImage(sq, 0, 0);
-  return c;
-}
-let miniAt = 0;
-function renderMini(t) {
-  if (!mini || t - miniAt < 200) return;
-  miniAt = t;
-  const cv = $("#mini-cv"), g = cv.getContext("2d");
-  const m = G.map;
-  g.imageSmoothingEnabled = false;
-  g.drawImage(mini, 0, 0);
-  // the map turned to match the view: tile (x, y) is a 4×2 diamond, the map's west corner at the left edge
-  // (a 4× ground's minimap is shrunk to fit the frame: its dots are drawn twice as big to stay readable)
-  const big = m.w > 100 ? 2 : 1;
-  const dot = (x, y, col, r0 = 2) => { const r = r0 * big, tx = x / T, ty = y / T; g.fillStyle = col; g.fillRect(Math.round((tx - ty) * 2 + m.h * 2 - r / 2), Math.round(tx + ty - r / 2), r, r); };
-  for (const p of m.portals) dot(p.x * T + 8, p.y * T + 8, "#e080ff", 3);
-  for (const n of m.npcs) if (S3.npcOut(n)) dot(n.x * T + 8, n.y * T + 8, "#ffd84a", 3);
-  for (const mob of G.mobs.values()) dot(mob.x, mob.y, mob.el ? "#ffbe3c" : "#ff5050");
-  for (const p of G.players.values()) dot(p.x, p.y, "#7ad8ff", 3);
-  Dim.miniDots(dot, t);
-  dot(G.me.x, G.me.y, Math.floor(t / 300) % 2 ? "#ffffff" : "#08090c", 3);
-  const info = `${channelName()} · ${G.map.safe ? "안전 지대" : "사냥터"} · ${G.who.size}명`;
-  if ($("#mini-info").textContent !== info) $("#mini-info").textContent = info;
-}
+// (the radar and the map window live in radar.js)
 
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map"];
 const winEl = (id) => $(`#w-${id}`);
 /** The bag is docked in the side column, so it always counts as open (on a phone it lives in the drawer). */
 const isOpen = (id) => id === "inv" || !winEl(id).hidden;
@@ -1620,6 +1589,7 @@ function openWin(id) {
   if (id === "settings") Lobby.refreshSettings();
   if (id === "party") renderParty();
   if (id === "guild") { act({ t: "glist" }); renderGuild(); }
+  if (id === "map") Radar.opened();
   refreshUi();
   if (was && folded(id)) unfold(id);
   else if (!was) placeWin(id);
@@ -1679,6 +1649,12 @@ for (const id of WIN) {
   });
 }
 $("#b-drawer").addEventListener("click", () => { setDrawer(!drawerOpen()); syncMenu(); });
+// the radar over the side column and the map window (radar.js)
+Radar.init({
+  G, act, toggleWin, isOpen, wpWoke, npcOut: S3.npcOut, miniDots: Dim.miniDots, play: (n) => Sound.play(n),
+  canWarp: () => stoneNear() || !!(G.near && G.near.role === "warp"),
+  info: () => `${channelName()} · ${G.map.safe ? "안전 지대" : "사냥터"} · ${G.who.size}명`,
+});
 $("#chat-fold").addEventListener("click", () => document.body.classList.toggle("chat-folded"));
 // the class gauge's own tooltip
 $("#cg-box").addEventListener("mouseenter", () => { $("#cg-box").title = G.self ? gaugeTip(G.self) || "" : ""; });
@@ -2996,7 +2972,8 @@ function frame() {
   if (G.playing) {
     update(dt, t);
     render(t, dt);
-    renderMini(t);
+    Radar.draw(t);
+    Radar.drawWin(t);
     hudTick(t);
   } else Lobby.frame(t, dt);
   requestAnimationFrame(frame);

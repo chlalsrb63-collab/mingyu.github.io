@@ -292,7 +292,22 @@ function arrivalOf(S, pt) {
 
 // the town and the editor's maps, now
 for (const id of Object.keys(EAGER)) mapOf(id);
-const START = { map: "town", x: mapOf("town").entry[0] * T + 8, y: mapOf("town").entry[1] * T + 8 };
+/**
+ * Where each map's doors lead (map ids, for the world route map in defs), known without building
+ * a generated map: a built map's own doors, else its GATE_LINKS and the editor's links.
+ */
+const ROUTES = {};
+for (const id of Object.keys(MAP_META)) {
+  const to = new Set();
+  if (MAP_CACHE[id]) for (const p of MAP_CACHE[id].portals) to.add(p.to);
+  else {
+    for (const [a, , b, , both] of GATE_LINKS) { if (a === id) to.add(b); if (both && b === id) to.add(a); }
+    for (const l of DATA.links) if (realId(l.map) === id && realId(l.to) && xyOk(MAP_META[id], l.x, l.y)) to.add(realId(l.to));
+  }
+  to.delete(id);
+  ROUTES[id] = [...to].filter((t) => Object.hasOwn(MAP_META, t));
+}
+const START ={ map: "town", x: mapOf("town").entry[0] * T + 8, y: mapOf("town").entry[1] * T + 8 };
 /** Every monster that lives somewhere (no chests, no bosses), and each hunting ground's for its collection. */
 const HUNTED = [...new Set(Object.values(MAP_META).flatMap((mm) => mm.kinds))].filter((k) => !MOBS[k].chest && !MOBS[k].boss);
 const COL_MOBS = {};

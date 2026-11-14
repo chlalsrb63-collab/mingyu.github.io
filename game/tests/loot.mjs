@@ -123,6 +123,8 @@ assert.ok(p.streak >= 20, "kills in quick succession build a streak, got " + p.s
 assert.ok((ch.mk.twinhare || 0) >= 30, "kills are counted per monster");
 const boss = rt.mobs.find((m) => m.el === 2);
 assert.ok(boss && boss.k === "lambmaw" && rt.fb === boss.id, "the field boss arrives");
+// the radar shows where it stands wherever that is on the map (snapshot `fb`: [[x, y]…])
+assert.deepEqual(L.viewFor(S, PID).fb, [[Math.round(boss.x), Math.round(boss.y)]], "the snapshot carries the field boss's place");
 {
   // …clear of the waypoint stone and signposts, well away from the hunter, after a warning ring
   const A = L.atlas(), mm = A.maps.meadow, tile = (o) => [(o.x - 8) / 16, (o.y - 10) / 16];

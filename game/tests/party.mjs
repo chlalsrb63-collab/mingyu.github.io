@@ -21,6 +21,17 @@ assert.ok(act(B, { t: "pacc" }).ok);
 [va, vb] = step(A);
 assert.equal(va.party.length, 2);
 assert.equal(vb.party.length, 2);
+// the radar (radar.js): each member's place in pixels and their map id ride at the end of the row
+{
+  const row = va.party.find((r) => r[0] === eb), pb0 = S.players[B];
+  assert.deepEqual(row.slice(7), [Math.round(pb0.x), Math.round(pb0.y), "town"], "a party row ends with x, y, map id");
+  // the world route map: every map lists where its doors lead, both ways for the generated doors
+  const maps = new Map(L.defs().maps.map((d) => [d.id, d]));
+  assert.ok(maps.get("town").to.includes("meadow") && maps.get("meadow").to.includes("town"), "town ↔ meadow");
+  assert.ok(maps.get("forest").to.includes("crypt") && maps.get("crypt").to.includes("forest"), "forest ↔ crypt");
+  assert.ok(maps.get("town").to.includes("willow"), "an editor link shows on the route map");
+  for (const d of maps.values()) for (const to of d.to) assert.ok(maps.has(to), `${d.id} → ${to} is a real map`);
+}
 
 // ── shared kill: B never touches the monster but still gets experience
 const pa = S.players[A], pb = S.players[B];

@@ -70,7 +70,8 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
   whitelisted by `accounts.js parseApiBody`. PBKDF2 passwords, 30-day session tokens (only hashes
   stored), login throttling. Client side: `public/account.js` + `public/lobby.js`.
 - **Snapshots** (`viewFor`): compact positional arrays — `me`, `P` players, `M` mobs, `D` drops,
-  `F` fires, `ev` events, `chat`, plus `map` / `who` / `self` only when changed. Static tables go once
+  `F` fires, `ev` events, `chat`, `fb` field bosses anywhere on the map (radar), `party` (each row ends with
+  x, y, map id for the radar), plus `map` / `who` / `self` only when changed. Static tables go once
   in `welcome.defs` (`logic.defs()`); the client duplicates no rules.
 - **Two deploy targets**: Higgsfield (app.manifest.json + `wrangler.jsonc`, builds `dist/` with bun;
   its build scripts are injected by the platform) and our own Cloudflare (`wrangler.deploy.jsonc`,
@@ -131,7 +132,8 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `sky.js` [366] | the outdoor sky: server-synced clock (`setSky(dn)`, `hour phase nightK clockText`), the grade (`grade`: one multiply + stepped light pools + bloom, never a vignette), weather (`drawWeather`: rain, fog, cloud shadows, wind, snow, fireflies), HUD icon; preview overrides `__skyHour`/`__skyWx` |
 | `camp.js` [153] | campfire company art: `stump bedroll ring tripod lute cup spiritTree` (정령나무) |
 | `dimrift.js` [215] · `dimart.js` [171] | 차원 균열 client: `onSnap` (`dim` `rc` `dj`), `onEvent` (`dm dp dz`), rift HUD `#dim-hud`, ready check `#w-rc`, keeper window `#w-dim` (`openKeeper`), shrines/orbs/way home/chest as `S3.props`, `miniDots`; `window.__dim` for automation · art: `obelisk obeliskAnim drawPylon drawOrb drawPortal drawChest`, `PYLON` kinds |
-| `art.js` [910] | item icons `buildIcons`, minimap `renderMini`, old scenery helpers; re-exports `chars.js` |
+| `art.js` [910] | item icons `buildIcons`, minimap colours `renderMini` (the radar's texture), old scenery helpers; re-exports `chars.js` |
+| `radar.js` [600] | the radar (side-column minimap, player-centred: zoom `ZOOMS` ± remembered, texture window blitted through the iso turn, glyph marks, party discs pinned to the rim, my aim arrow; `perf` draw ms) and the map window `#w-map` (M; tabs 현재 지역 = whole map, zoom/pan, click a woken stone to warp · 월드 노선도 = regions from `defs.maps[].to` in columns by doors from town); `init(deps) loadMap draw drawWin opened` |
 | `chars.js` [471] | legacy smooth illustrated figures (re-exported by art.js; heroes now come from sprites.js) |
 | `sprites.js` [1259] | 32×32 sheets: heroes `personSheet/playerLook`, NPCs, pets, weapons `weaponSprite`, `monsterSheet`, tints |
 | `species.js` [403] | hero species and face parts: `SPECIES PARTS TABS PRESETS cleanLook withSpecies` (limits mirror logic `LOOK_MAX`); fit data for worn things: `EARS headAnchor faceAnchor EYE_PIX HEAD_BOB` |
@@ -141,7 +143,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `wardrobe.js` [807] · `wardrobe_ui.js` [283] | cosmetic layers drawn over heroes (`ART SLOTS dress anchors`; designs `HAT TOP BACK FACE`, rules in the header); costume shop + 외형 tab |
 | `swing.js` [187] | weapon stroke poses for attacks/casts; the tempo `WIND IMPACT SNAP` (15% wind-up, snap, blow at 0.2) with out-expo/out-back easing; the bow's shot `bowPose` (pull, arrow, release at IMPACT, `bowup` skyward cast) |
 | `skillfx.js` [459] | skill visuals/sounds per server fx code (`skillEvent`, switch on codes 40–75), props, marks; the bow: `bowFire` (fx code 6, from client attackFx) and the arrow events `ar`/`ae` |
-| `skillicons.js` [471] · `uiicons.js` [105] · `emoticons.js` [164] | 16×16 skill glyphs, 12×12 UI glyphs (`MENU_ICON TRAIT`), chat emoticons |
+| `skillicons.js` [471] · `uiicons.js` [114] · `emoticons.js` [164] | 16×16 skill glyphs, 12×12 UI glyphs (`MENU_ICON TRAIT`), chat emoticons |
 | `classgauge.js` [152] | class gauge in the status panel |
 | `mastery.js` [142] | weapon-mastery strip in the dock (weapon in hand, "숙련 Lv.N", bar; hybrids show both) and its hover card (six weapons, job, next unlock); reads `self.wm/wk/wk2/job`, Lv.1 until the server sends `wm` |
 | `growth.js` [292] | skill training, warehouse, pets, auto-potion, drop names (client side) |

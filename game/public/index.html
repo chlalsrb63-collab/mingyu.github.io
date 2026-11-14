@@ -10,9 +10,9 @@
     <meta property="og:image" content="https://lumentale-online.higgsfield.app/cover.png" />
     <meta name="theme-color" content="#0e0f14" />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="style.css?v=1795350101" />
-    <link rel="stylesheet" href="hud.css?v=1795350101" />
-    <link rel="stylesheet" href="lobby.css?v=1795350101" />
+    <link rel="stylesheet" href="style.css?v=1795350200" />
+    <link rel="stylesheet" href="hud.css?v=1795350200" />
+    <link rel="stylesheet" href="lobby.css?v=1795350200" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -64,6 +64,7 @@
         <div id="mini">
           <div id="mini-name" class="plate"></div>
           <div class="sunk"><canvas id="mini-cv"></canvas><div id="sky" hidden><canvas id="sky-ic" width="12" height="12"></canvas><span id="sky-t"></span></div></div>
+          <div id="mini-bar"><span id="mini-xy"></span><button id="mini-zo" class="mini-b" title="축소 (더 넓게)">−</button><button id="mini-zi" class="mini-b" title="확대 (더 가까이)">+</button><button id="mini-map" class="mini-b" title="지도 (M)">지도 <kbd>M</kbd></button></div>
           <div id="mini-info"></div>
         </div>
         <div id="quest-track" class="sunk"></div>
@@ -84,6 +85,7 @@
           <button data-win="achieve" title="업적 · 칭호 (Y)"><span>업적</span><kbd>Y</kbd></button>
           <button data-win="collect" title="몬스터 도감 (J)"><span>도감</span><kbd>J</kbd></button>
           <button data-win="rank" title="랭킹 (N)"><span>랭킹</span><kbd>N</kbd></button>
+          <button data-win="map" title="지도 (M)"><span>지도</span><kbd>M</kbd></button>
           <button id="b-emo" title="감정표현 (T)"><span>감정</span><kbd>T</kbd></button>
           <button id="b-sit" title="앉기 (X)"><span>앉기</span><kbd>X</kbd></button>
           <button data-win="help" title="도움말 (H)"><span>도움말</span><kbd>H</kbd></button>
@@ -200,6 +202,16 @@
         <div class="body"><div id="party-body"></div></div>
       </section>
 
+      <section class="window" id="w-map" hidden>
+        <header><span class="t">지도</span><kbd>M</kbd><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body">
+          <div class="tabs" id="map-tabs"><button data-tab="here" class="on">현재 지역</button><button data-tab="world">월드 노선도</button><span id="map-zoom"><button id="map-zo" title="축소">−</button><button id="map-zi" title="확대">+</button><button id="map-fit" title="전체 보기">맞춤</button></span></div>
+          <div class="sunk" id="map-box"><canvas id="map-cv"></canvas></div>
+          <div id="map-info"></div>
+          <div id="map-legend"></div>
+        </div>
+      </section>
+
       <section class="window" id="w-warp" hidden>
         <header><span class="t">이동의 돌</span><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body"><div id="warp-body"></div></div>
@@ -261,7 +273,7 @@
         <div class="body">
           <div class="set-row"><span><b id="set-sv"></b> 채널</span><span id="set-ch" class="set-ch"></span></div>
           <div class="set-row"><span>계정 <b id="set-acc"></b></span><button id="btn-servers" class="btn">서버 선택</button><button id="btn-logout" class="btn">로그아웃</button></div>
-          <div class="set-row"><span>소리</span><kbd>M</kbd><button id="btn-sound" class="btn toggle">켜짐</button></div>
+          <div class="set-row"><span>소리</span><kbd>Shift+M</kbd><button id="btn-sound" class="btn toggle">켜짐</button></div>
           <div class="set-row"><span>배경음악</span><input type="range" id="vol-bgm" class="vol" min="0" max="100" step="1" value="70" aria-label="배경음악 음량"></div>
           <div class="set-row"><span>효과음</span><input type="range" id="vol-sfx" class="vol" min="0" max="100" step="1" value="85" aria-label="효과음 음량"></div>
           <div class="set-row"><span>CRT 화면 효과</span><kbd>V</kbd><button id="btn-crt" class="btn toggle">켜짐</button></div>
@@ -280,7 +292,7 @@
         <div class="body help">
           <p><b>이동</b> 방향키 / WASD (여덟 방향) · 땅을 클릭(터치)하면 그곳까지 알아서 걸어갑니다. 모바일은 왼쪽 조이스틱.</p>
           <p><b>전투</b> Space 공격 (발밑의 작은 반달 조준 표시가 향한 쪽으로 나가며, 그 앞의 가까운 적을 겨냥 · 뒤의 적은 맞지 않음 · 세 번째 타격이 마무리 일격) · Shift+방향키 제자리에서 방향만 돌리기 · 몬스터 클릭 그쪽을 겨냥해 공격 · 1–9 단축칸 (스킬 창 K나 가방에서 스킬·물약·음식·주문서를 끌어다 놓기, 칸끼리 끌어 바꾸기, 우클릭으로 비우기) · Q / E 물약 · R 자동사냥 (단축칸의 스킬을 순서대로 씀)</p>
-          <p><b>창</b> I 가방 · C 캐릭터 · K 스킬 · L 의뢰 · U 일일 의뢰 · Y 업적·칭호 · J 몬스터 도감 · P 파티 · G 길드 · N 랭킹 · O 설정 · H 도움말 · Esc 맨 위 창 닫기</p>
+          <p><b>창</b> I 가방 · C 캐릭터 · K 스킬 · L 의뢰 · U 일일 의뢰 · Y 업적·칭호 · J 몬스터 도감 · P 파티 · G 길드 · N 랭킹 · M 지도 · O 설정 · H 도움말 · Shift+M 소리 켜기/끄기 · Esc 맨 위 창 닫기</p>
           <p><b>이동의 돌</b> 맵마다 하나씩 있는 돌비석에 다가가면 깨어납니다. 깨운 돌끼리는 F로 말을 걸어 순간이동할 수 있습니다. <b>귀환 주문서</b>는 2초 동안 읽으면 광장으로 돌아갑니다(움직이거나 맞으면 취소).</p>
           <p><b>매일</b> 아침 6시에 일일 의뢰 세 개가 새로 주어지고, 모두 끝내면 보너스 상자를 받습니다. 매시 정각과 30분에는 한 사냥터에 <b>균열 침공</b>이 열립니다(오른쪽 위에 남은 시간).</p>
           <p><b>수집</b> 같은 몬스터를 30마리 잡으면 도감에 등록되고, 한 지역을 모두 채우면 영구 보너스. 업적을 이루면 칭호를 달 수 있습니다.</p>
@@ -390,7 +402,7 @@
       </div>
     </div>
 
-    <script type="module" src="client.js?v=1795350101"></script>
+    <script type="module" src="client.js?v=1795350200"></script>
     <div id="crt-frame" aria-hidden="true"></div>
   </body>
 </html>

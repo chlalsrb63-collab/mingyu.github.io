@@ -3765,7 +3765,22 @@ function arrivalOf(S, pt) {
 
 // the town and the editor's maps, now
 for (const id of Object.keys(EAGER)) mapOf(id);
-const START = { map: "town", x: mapOf("town").entry[0] * T + 8, y: mapOf("town").entry[1] * T + 8 };
+/**
+ * Where each map's doors lead (map ids, for the world route map in defs), known without building
+ * a generated map: a built map's own doors, else its GATE_LINKS and the editor's links.
+ */
+const ROUTES = {};
+for (const id of Object.keys(MAP_META)) {
+  const to = new Set();
+  if (MAP_CACHE[id]) for (const p of MAP_CACHE[id].portals) to.add(p.to);
+  else {
+    for (const [a, , b, , both] of GATE_LINKS) { if (a === id) to.add(b); if (both && b === id) to.add(a); }
+    for (const l of DATA.links) if (realId(l.map) === id && realId(l.to) && xyOk(MAP_META[id], l.x, l.y)) to.add(realId(l.to));
+  }
+  to.delete(id);
+  ROUTES[id] = [...to].filter((t) => Object.hasOwn(MAP_META, t));
+}
+const START ={ map: "town", x: mapOf("town").entry[0] * T + 8, y: mapOf("town").entry[1] * T + 8 };
 /** Every monster that lives somewhere (no chests, no bosses), and each hunting ground's for its collection. */
 const HUNTED = [...new Set(Object.values(MAP_META).flatMap((mm) => mm.kinds))].filter((k) => !MOBS[k].chest && !MOBS[k].boss);
 const COL_MOBS = {};
@@ -8281,6 +8296,8 @@ export function viewFor(S, pid) {
     out.P.push([o.eid, Math.round(o.x), Math.round(o.y), o.dir, o.dead ? 1 : 0, Math.round(o.hp), stats(o).mhp, o.sit ? 1 : 0, flagsOf(o, S.now)]);
   }
   for (const mob of rt.mobs) {
+    // a field boss (or the rift invasion's lord) is shown on the radar wherever it stands on the map
+    if (mob.temp && mob.el === 2 && !mob.dim && !mob.dead) (out.fb || (out.fb = [])).push([Math.round(mob.x), Math.round(mob.y)]);
     if (mob.dead || !near(mob)) continue;
     const mk = marksOf(S, mob);
     out.M.push(mk ? [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || [], mk] : [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || []]);
@@ -8312,7 +8329,8 @@ export function viewFor(S, pid) {
     }
   }
   if (p.party) {
-    out.party = members(S, p).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, Math.round(o.hp), stats(o).mhp, o.map === p.map ? "" : mapOfS(o.S, o.map).name]);
+    // … then where each stands (pixels, for the radar and the map window) and the id of their map
+    out.party = members(S, p).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, Math.round(o.hp), stats(o).mhp, o.map === p.map ? "" : mapOfS(o.S, o.map).name, Math.round(o.x), Math.round(o.y), o.map]);
   }
   if (p.pinv) {
     const from = S.players[p.pinv.from];
@@ -8382,6 +8400,8 @@ export function defs() {
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
-    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band, mobs: MAP_META[id].kinds.slice() })),
+    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band, mobs: MAP_META[id].kinds.slice(),
+      // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
+      theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id] })),
   };
 }
