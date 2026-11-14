@@ -97,6 +97,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `50-loot-combat.js` [503] | bag/stack/warehouse helpers, pickup, prices, `rollGear`, `rollRarity`, `lootFor`; `gainXp`, `hurtMob`, `killMob`, `hurtPlayer`, targeting + aim helpers (`AIM_V setAim inArc aimMob`), `basicAttack` |
 | `55-class-skills.js` [611] | class mechanics (grit, marks, focus, weave), `classTick`, `crView` gauge, **`castSkill`** (switch on skill id; emits numeric fx events `ev(code,…)`) |
 | `60-content.js` [317] | waypoints + recall, dailies (06:00 KST), achievements `ACH` + titles, collection, world event (rift), tutorial `TUT` |
+| `62-daynight.js` [184] | sky: `SKY_DAY_MS` (one outdoor day = 48 real min), `PHASES` 새벽/아침/낮/노을/밤, `weatherAt(map, now)` (6-min slots, `WX_ODDS`, rain → fish, fog → aggro), `CAMPS`/seats `sitDown`, warmth `warmthFor`/`warmTick`, `JAM` 연주/건배, night storyteller `TELLER`/`TALES`, `skyTick`, `skyAt` (tests) |
 | `62-side-quests.js` [121] | editor side quests: `SIDE`, `ch.sq` (`sqClean`), `sqProgress` hooks (kill/pickup/talk/visit), `sqValidate`/`sqApply` (action `sq`), `sqView` |
 | `65-cosmetics.js` [125] | `COSMETICS` catalogue, `COS_SLOTS`, wardrobe helpers `cosClean cosWire giveCos cosFrom` |
 | `70-validate.js` [348] | **`validateAction`** — one `case` per action `t`: respawn opt look chat p*/g* (party/guild) qs sort emo cos_* title daily tut mv atk warp sk use eq uneq rune train sklv wh sellall buy sell enh sit fish hook reel cook salv bq quest |
@@ -113,7 +114,9 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `account.js` [99] | HTTP side of accounts: `session signup login logout me servers`, `API` base |
 | `scene2d.js` [2052] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites, ground, raised blocks, creatures, effects `fx/fxCustom/shake`, pets, title/creation stage |
 | `isotiles.js` [29] · `iso_px.js` [118] · `iso_ground.js` [725] · `iso_tall.js` [601] | quarter-view ground baking (`bakeGround`), pixel buffers/projection (`TW=32, TH=16`), ground materials and transitions, tall blocks (cliffs, walls, houses) |
-| `decor.js` [590] | landmarks, decals, pulses, critters, waypoint stones/signs, town dressing, day/night `daylight` |
+| `decor.js` [590] | landmarks, decals, pulses, critters, waypoint stones/signs, town dressing (old `daylight`/`wash`, unused) |
+| `sky.js` [366] | the outdoor sky: server-synced clock (`setSky(dn)`, `hour phase nightK clockText`), the grade (`grade`: one multiply + stepped light pools + bloom, never a vignette), weather (`drawWeather`: rain, fog, cloud shadows, wind, snow, fireflies), HUD icon; preview overrides `__skyHour`/`__skyWx` |
+| `camp.js` [153] | campfire company art: `stump bedroll ring tripod lute cup spiritTree` (정령나무) |
 | `art.js` [910] | item icons `buildIcons`, minimap `renderMini`, old scenery helpers; re-exports `chars.js` |
 | `chars.js` [471] | legacy smooth illustrated figures (re-exported by art.js; heroes now come from sprites.js) |
 | `sprites.js` [1259] | 32×32 sheets: heroes `personSheet/playerLook`, NPCs, pets, weapons `weaponSprite`, `monsterSheet`, tints |
@@ -147,7 +150,7 @@ growth (skill levels, warehouse, pets, scrolls) · skills (class mechanics) · a
 connectivity, determinism, speed) · hotbar (quick slots, party chat, tidy) · wardrobe (cosmetics) · cosmetics (every cosmetic × species × view ×
 frame: inside the sheet, closed outline, eyes uncovered, art in every view, in its place) ·
 looks (species ↔ LOOK_MAX) · mobart (every mob has a model that fits its canvas) · accounts (vault
-logic with a fake store + client contract) · data (editor data: sample map, links, side quests, round
+logic with a fake store + client contract) · daynight (clock, weather per map/slot, wire `dn`, stumps, warmth 1–4, 연주/건배, storyteller, rain/fog flavour) · data (editor data: sample map, links, side quests, round
 trip, data:check errors, sheet v8).
 
 ### Scripts — `game/scripts/` (pure node; work on Windows)
@@ -159,7 +162,7 @@ trip, data:check errors, sheet v8).
 writes only `data/**` with backups in `data/.backup/`; starts `wrangler dev` for playtests;
 `EDITOR_DATA=<dir>` edits another folder) · `test-all.mjs` (build + run
 tests/LIST; `--no-build`, names to filter, `-v`) · `dump-maps.mjs` (public/_maps.json for previews) ·
-`shot.mjs` (one screenshot; `--serve` for previews) · `artkit.mjs` (shared: browser launch, static server, PNG
+`shot.mjs` (one screenshot; `--serve` for previews; scene preview takes `hour= wx= sitters= jam=`) · `bots.mjs` (dev: N throwaway players sit at the town fire for live shots, `--url --secs --jam`) · `artkit.mjs` (shared: browser launch, static server, PNG
 read/write) · `export-art.mjs` (`npm run art:export`: code-drawn art → `asset/_export/` PNGs) · `gallery.mjs`
 (`art:gallery`: index `asset/` → `gallery.json/.js`) · `import-art.mjs` (normalise AI/external images into
 `asset/<category>/`; `--install`/`--uninstall`/`--list` wire approved files into `public/assets/manifest.json`) ·
