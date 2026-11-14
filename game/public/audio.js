@@ -616,6 +616,19 @@ export const Sound = {
     this.voices++; s.onended = () => this.voices--;
   },
   arp(type, notes, gap, len, vol, when = 0) { notes.forEach((f, i) => this.tone(type, f, f, len, vol, when + i * gap)); },
+  /** ±5% on a repeated sound, so ten hits in a row never sound like one sample on a loop. */
+  vary() { return 1 + (Math.random() - 0.5) * 0.1; },
+  /**
+   * A blow's punch, three layers at pitch `p`: a short pitch-drop transient (`drop` Hz falling to
+   * a third over 50 ms), a low thud (`thud` Hz, 80-140, falling an octave) and a bright click of
+   * burst noise with a metallic ring (`metal` Hz, 0 for none). `w` scales the whole.
+   */
+  punch(p, drop, thud, metal, w = 1, when = 0) {
+    this.tone(0.5, drop * p, drop * p * 0.33, 0.05, 0.12 * w, when);
+    this.tone("sine", thud * p, thud * p * 0.5, 0.11 + 0.05 * w, 0.26 * w, when);
+    this.noise(0.022, 0.2 * w, 5200 * p, "highpass", when);
+    if (metal) this.tone("sine", metal * p, metal * p * 0.94, 0.06, 0.035 * w, when + 0.004);
+  },
 
   /** Play a named effect. `arg` refines a few: item rarity for "loot", power for swings. */
   play(name, arg) {
@@ -636,13 +649,13 @@ export const Sound = {
 };
 
 /** Minimum seconds between two plays of the same effect. */
-const THROTTLE = { quake: 0.2, tip: 0.06, clang: 0.08, block: 0.1, tea: 0.5, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
+const THROTTLE = { quake: 0.2, tip: 0.06, clang: 0.08, block: 0.1, tea: 0.5, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
 /** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
 const BOOST = {
   swing: 3, swing_sword: 3, swing_dagger: 3, swing_spear: 3, swing_staff: 2, swing_book: 2.2, shoot: 1.6, magic: 1.5,
   hit: 2, crit: 1.6, hurt: 2, die: 2, die_small: 2.2, die_big: 1.8, mob_shot: 1.8, charge: 2, volley: 1.8, spit: 2, pop: 2, buff: 1.5,
   ui: 1.8, open: 2, close: 2, tab: 2, blip: 1.8, emote: 1.6, cast: 1.8, coin: 1.5, salvage: 1.5, recall: 1.4, warp_out: 1.4, rift_warn: 1.5, fail: 1.4,
-  step_grass: 2.5, step_dirt: 2.5, step_stone: 2, step_wood: 1.6,
+  step_grass: 2.5, step_dirt: 2.5, step_stone: 2, step_wood: 1.6, step_water: 2,
   drip: 1.6, reel: 1.8, slack: 1.6, sizzle: 1.4, pan_place: 1.8, pan_turn: 1.6, pan_bump: 1.6,
 };
 /** Effects that play even when many voices are already sounding. */
@@ -652,9 +665,10 @@ const IMPORTANT = new Set(["heads", "steam", "overload", "supercon", "giant", "h
 const SFX = {
   // ── weapons ──
   swing() { this.noise(0.1, 0.22, 1800, "bandpass", 0, 600); },
-  swing_sword(fin) { this.noise(fin ? 0.26 : 0.2, fin ? 0.32 : 0.24, 400, "bandpass", 0, 2200); this.tone("triangle", 140, 70, 0.16, 0.08); },
-  swing_dagger() { this.noise(0.07, 0.2, 2600, "bandpass", 0, 5200); },
-  swing_spear(fin) { this.noise(fin ? 0.16 : 0.12, 0.22, 900, "bandpass", 0, 3200); this.tone("triangle", 300, 520, 0.08, 0.05); },
+  // swings: a quick whoosh (shorter now the strokes snap) on a small pitch-drop and a soft thud
+  swing_sword(fin) { const p = this.vary(); this.noise(fin ? 0.18 : 0.13, fin ? 0.32 : 0.24, 500 * p, "bandpass", 0, 2600 * p); this.tone("triangle", 150 * p, 70 * p, 0.11, 0.08); this.tone(0.5, 420 * p, 140 * p, 0.04, 0.04); },
+  swing_dagger() { const p = this.vary(); this.noise(0.05, 0.2, 2800 * p, "bandpass", 0, 5600 * p); this.tone(0.5, 900 * p, 300 * p, 0.03, 0.03); },
+  swing_spear(fin) { const p = this.vary(); this.noise(fin ? 0.12 : 0.09, 0.22, 1000 * p, "bandpass", 0, 3600 * p); this.tone("triangle", 300 * p, 560 * p, 0.06, 0.05); this.tone("sine", 120 * p, 70 * p, 0.08, 0.06); },
   swing_staff() { this.tone("sine", 420, 760, 0.18, 0.1); this.tone("triangle", 630, 1140, 0.16, 0.05, 0.02); this.noise(0.12, 0.06, 3000, "highpass"); },
   swing_book() { this.noise(0.08, 0.12, 2400, "bandpass", 0, 1200); this.noise(0.06, 0.1, 3000, "bandpass", 0.07, 1600); this.tone("sine", 880, 1320, 0.14, 0.06, 0.04); },
   shoot() { this.noise(0.06, 0.16, 2500); this.tone(0.5, 900, 400, 0.08, 0.07); },
@@ -703,9 +717,10 @@ const SFX = {
   supercon() { this.tone("square", 2400, 600, 0.2, 0.06); this.tone("triangle", 1800, 2600, 0.2, 0.06); this.noise(0.2, 0.1, 6000, "highpass"); },
   overload() { this.noise(0.45, 0.38, 2000, "lowpass", 0, 90); this.tone("square", 220, 40, 0.35, 0.18); this.noise(0.1, 0.2, 4000, "highpass"); },
   // ── hits ──
-  hit() { this.tone(0.5, 260, 90, 0.08, 0.15); this.noise(0.05, 0.12, 1600, "bandpass"); },
-  crit() { this.tone(0.5, 560, 130, 0.14, 0.18); this.noise(0.1, 0.22, 1200, "bandpass"); this.tone("sine", 1400, 1100, 0.08, 0.05, 0.02); },
-  finisher() { this.noise(0.22, 0.3, 2400, "lowpass", 0, 200); this.tone("square", 220, 55, 0.24, 0.18); this.tone("sine", 90, 40, 0.3, 0.3); },
+  // hits: the punch (pitch-drop + 80–140 Hz thud + metallic click), each ±5% apart
+  hit() { const p = this.vary(); this.punch(p, 300, 120, 2300, 0.8); this.noise(0.04, 0.1, 1600 * p, "bandpass"); },
+  crit() { const p = this.vary(); this.punch(p, 620, 140, 2900, 1.15); this.noise(0.09, 0.2, 1200 * p, "bandpass"); this.tone("sine", 1400 * p, 1100 * p, 0.08, 0.05, 0.02); },
+  finisher() { const p = this.vary(); this.punch(p, 260, 95, 1700, 1.25); this.noise(0.2, 0.28, 2400 * p, "lowpass", 0, 200); this.tone("sine", 85 * p, 40 * p, 0.28, 0.26); },
   hurt() { this.tone("sawtooth", 190, 70, 0.16, 0.17); this.noise(0.08, 0.1, 900, "bandpass"); },
   // ── monsters ──
   die() { this.tone(0.5, 300, 60, 0.22, 0.12); },
@@ -805,9 +820,11 @@ const SFX = {
   death() { this.arp("sawtooth", [392, 370, 349, 330, 262], 0.16, 0.3, 0.07); this.tone("sine", 110, 55, 1.2, 0.18, 0.4); },
   revive() { this.arp("sine", [262, 392, 523, 784, 1047], 0.08, 0.3, 0.1); this.noise(0.6, 0.04, 5000, "highpass", 0.2); },
   // ── footsteps, by ground ──
-  step_grass() { this.noise(0.05, 0.035, 2500, "bandpass"); },
-  step_dirt() { this.noise(0.05, 0.04, 900, "bandpass"); },
-  step_stone() { this.noise(0.03, 0.045, 3200, "bandpass"); this.tone("sine", 300, 220, 0.03, 0.02); },
+  // footsteps: light and low, a little different each time
+  step_grass() { const p = this.vary(); this.noise(0.05, 0.03, 2500 * p, "bandpass"); this.noise(0.03, 0.012, 6000 * p, "highpass", 0.012); },
+  step_dirt() { this.noise(0.05, 0.04, 900 * this.vary(), "bandpass"); },
+  step_stone() { const p = this.vary(); this.noise(0.03, 0.04, 3200 * p, "bandpass"); this.tone("sine", 300 * p, 220 * p, 0.03, 0.018); },
+  step_water() { const p = this.vary(); this.noise(0.07, 0.035, 1400 * p, "bandpass", 0, 3200 * p); this.tone("sine", 700 * p, 1100 * p, 0.04, 0.012, 0.015); },
   step_wood() { this.tone("triangle", 220, 160, 0.05, 0.05); this.noise(0.03, 0.025, 1200, "bandpass"); },
 };
 export const SFX_NAMES = Object.keys(SFX);
