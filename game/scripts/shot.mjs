@@ -15,6 +15,7 @@
 //   node scripts/shot.mjs --live --out shots/town.png
 //   node scripts/shot.mjs --live --keys i --out shots/bag.png          (press keys first: I = bag)
 //   node scripts/shot.mjs --live --eval "__game.go(400, 300)" --wait 3000
+//   node scripts/shot.mjs --live --url http://localhost:8851 --path "/?dev=1&map=willow&x=18&y=14"   (map editor playtest)
 //
 // Serve only: node scripts/shot.mjs --serve [port]   (npm run preview) — open the preview
 // pages in your own browser at http://127.0.0.1:5178/_scene.html?map=meadow (no Playwright).
@@ -141,7 +142,7 @@ try {
       localStorage.setItem("lumentale:tuthide", "99");
     }, [JSON.stringify(s)]);
     console.log(`open ${BASE} as ${s.id}`);
-    await pg.goto(BASE);
+    await pg.goto(BASE + String(opt.path || ""));
     await pg.click("#t-press");
     await pg.waitForSelector("#sv-list .sv-ch:not([disabled])", { timeout: 15000 });
     await pg.click("#sv-list .sv-ch >> nth=0");
