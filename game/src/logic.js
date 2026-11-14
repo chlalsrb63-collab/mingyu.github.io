@@ -451,6 +451,17 @@ function rnd(box) {
 const ri = (box, a, b) => a + Math.floor(rnd(box) * (b - a + 1));
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+/**
+ * The Korean particle that follows a word, picked by its last sound: pp("양", "이가") → "이",
+ * pp("대검", "을를") → "을", pp("무기", "으로") → "로". A trailing digit is read aloud (2 → 이 → "가").
+ */
+function pp(word, pair) {
+  const c = String(word).trim().slice(-1), code = c.charCodeAt(0);
+  const d = "0123456789".indexOf(c);
+  const jong = code >= 0xac00 && code <= 0xd7a3 ? (code - 0xac00) % 28 : d >= 0 ? [21, 8, 0, 16, 0, 0, 1, 8, 8, 0][d] : 0;
+  if (pair === "으로") return jong && jong !== 8 ? "으로" : "로";
+  return jong ? pair[0] : pair[1];
+}
 const isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 const num = (v) => typeof v === "number" && Number.isFinite(v);
 /**
@@ -2857,6 +2868,18 @@ function qsOk(ch, v) {
   return false;
 }
 
+/**
+ * A skill just learned takes the first empty quick slot, unless the player already put it on
+ * the bar. Returns the key it went under (1–9), or 0 when it stayed off a full bar.
+ */
+function qsLearn(ch, i) {
+  if (ch.qs.some((v) => v && v[0] === "s" && v[1] === i)) return 0;
+  const j = ch.qs.indexOf(null);
+  if (j < 0) return 0;
+  ch.qs[j] = ["s", i];
+  return j + 1;
+}
+
 /** Counters kept for achievements. */
 const ST_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily"];
 function runeword(g) {
@@ -3047,7 +3070,7 @@ function spawnFieldBoss(S, rt, x, y) {
   rt.fb = mob.id;
   rt.kc = 0;
   rt.ev.push(["r", mob.id]);
-  sys(S, `${m.name}에 우두머리 [${MOBS[mob.k].name}]이(가) 나타났습니다!`);
+  sys(S, `${m.name}에 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
 }
 
 export function playerCount(S) {
@@ -3224,7 +3247,7 @@ function pickUp(S, p, dr) {
     if (dr.q === 3) p.ch.st.leg++;
     if (dr.q === 4) p.ch.st.set++;
     if (dr.q >= 3) checkAch(S, p);
-    if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]을(를) 획득했습니다!`);
+    if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]${pp(gearName(dr.g), "을를")} 획득했습니다!`);
   } else {
     addItem(p.ch, dr.it, dr.n);
     p.gain.push(["item", dr.it, dr.n, 0]);
@@ -3353,8 +3376,13 @@ function gainXp(S, p, n) {
     p.gain.push(["lvl", ch.lvl]);
     S.maps[p.map].ev.push(["l", p.eid]);
     S.maps[p.map].who = true;
-    for (const sk of SKILLS[ch.cls]) if (sk.lv === ch.lvl) toast(p, `새 스킬 [${sk.name}]을(를) 배웠습니다!`);
-    if (ch.lvl % 10 === 0) sys(S, `${ch.name}님이 레벨 ${ch.lvl}을(를) 달성했습니다!`);
+    // a skill just learned goes straight onto the bar, so the key is there to press (and auto-hunt uses it)
+    SKILLS[ch.cls].forEach((sk, i) => {
+      if (sk.lv !== ch.lvl) return;
+      const key = qsLearn(ch, i);
+      toast(p, `새 스킬 [${sk.name}]${pp(sk.name, "을를")} 배웠습니다!${key ? ` 단축칸 ${key}번에 올려 두었습니다.` : ""}`);
+    });
+    if (ch.lvl % 10 === 0) sys(S, `${ch.name}님이 레벨 ${ch.lvl}${pp(ch.lvl, "을를")} 달성했습니다!`);
     if (ch.lvl === MAXLV) toast(p, "최고 레벨 달성! 이제 경험치는 수련에 쓰입니다.");
     checkAch(S, p);
   }
@@ -3467,11 +3495,11 @@ function killMob(S, rt, mob) {
     // a field boss, a guardian or a boss may leave something to wear
     if ((el === 2 || d.boss) && cosRoll(S, p, "boss") < COS_BOSS) cosFrom(S, p, "boss", d.name);
   }
-  if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}을(를) 쓰러뜨렸습니다!`);
+  if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   if (el === 2) {
     if (mob.evt) { if (S.evt) S.evt.bossDead = true; }
     else if (mob.temp) rt.fb = 0;
-    if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]을(를) 쓰러뜨렸습니다!`);
+    if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   }
   // some monsters go off where they fall, and so does any elite with the trait
   if (d.burst || has(mob, "burst")) {
@@ -3485,6 +3513,15 @@ function killMob(S, rt, mob) {
     if (rt.kc >= FB_KILLS && !rt.fb) spawnFieldBoss(S, rt, mob.x, mob.y);
   }
 }
+/**
+ * The last thing that hurt a player, kept so a fall can say what did it (the death window
+ * shows it with a word of advice): `by` is the label players see over its head.
+ */
+function blameOf(mob) {
+  const d = MOBS[mob.k];
+  const rank = d.boss ? "보스 " : mob.el === 2 ? (mob.evt ? "침공 우두머리 " : mob.temp ? "우두머리 " : "수문장 ") : mob.el ? "정예 " : "";
+  return { by: `Lv.${d.lv} ${rank}${d.name}`, lv: d.lv, el: d.boss ? 3 : mob.el | 0 };
+}
 function hurtPlayer(S, rt, p, raw, mob) {
   if (p.dead || S.now < (p.ghost || 0)) return;
   const st = stats(p);
@@ -3495,6 +3532,7 @@ function hurtPlayer(S, rt, p, raw, mob) {
   p.hp -= dmg;
   p.hitAt = S.now;
   rouse(S, p);
+  if (mob) p.blame = blameOf(mob);
   rt.ev.push(["h", p.eid, dmg, 0, 1]);
   if (mob && st.lg.thorn) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * 0.4)), 0);
   if (p.hp <= 0) fall(S, rt, p);
@@ -3516,7 +3554,7 @@ function fall(S, rt, p) {
   classReset(p, true);
   dropAggro(S, p);
   rt.ev.push(["pd", p.eid]);
-  toast(p, "쓰러졌습니다...");
+  toast(p, p.blame ? `쓰러졌습니다... (${p.blame.by})` : "쓰러졌습니다...");
   p.dirty = true;
 }
 
@@ -4466,7 +4504,7 @@ function checkAch(S, p) {
     toast(p, `업적 달성: [${a.name}] +${a.pts}점${a.title ? ` — 칭호 「${a.title}」 획득` : ""}`);
     S.maps[p.map].ev.push(["ac", p.eid, a.id]);
     if (COS_ACH[a.id]) giveCos(S, p, COS_ACH[a.id], `업적 [${a.name}]`);
-    if (a.pts >= 30) sys(S, `${ch.name}님이 업적 [${a.name}]을(를) 달성했습니다!`);
+    if (a.pts >= 30) sys(S, `${ch.name}님이 업적 [${a.name}]${pp(a.name, "을를")} 달성했습니다!`);
     p.dirty = true;
   }
 }
@@ -4549,7 +4587,7 @@ function spawnEvtBoss(S, e) {
   rt.mobs.push(mob);
   rt.ev.push(["r", mob.id]);
   e.boss = mob.id; e.phase = "boss";
-  sys(S, `[${m.name}] 균열 침공의 우두머리 [${MOBS[mob.k].name}]이(가) 나타났습니다!`);
+  sys(S, `[${m.name}] 균열 침공의 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
   dirtyAll(S);
 }
 function endEvent(S, e) {
@@ -4590,7 +4628,7 @@ const TUT = [
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
   { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
   { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
-  { id: "skill", title: "스킬 써 보기", hint: "레벨 3이 되면 K로 스킬 창을 열어 첫 스킬을 아래 단축칸(1~9)에 끌어다 놓고, 그 숫자 키로 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
+  { id: "skill", title: "스킬 써 보기", hint: "레벨 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 숫자 키(처음이면 1)를 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
 ];
 function tutStep(S, p, id) {
   const ch = p.ch, step = TUT[ch.tut.i];
@@ -4721,7 +4759,7 @@ function giveCos(S, p, id, why) {
   ch.cos.own.push(id);
   toast(p, `외형 획득: [${COSMETICS[id].name}]${why ? ` — ${why}` : ""} (캐릭터 창 ‘외형’ 탭에서 입을 수 있습니다)`);
   p.gain.push(["cos", id]);
-  if (COSMETICS[id].q >= 3) sys(S, `${ch.name}님이 외형 [${COSMETICS[id].name}]을(를) 얻었습니다!`);
+  if (COSMETICS[id].q >= 3) sys(S, `${ch.name}님이 외형 [${COSMETICS[id].name}]${pp(COSMETICS[id].name, "을를")} 얻었습니다!`);
   p.dirty = true;
   return true;
 }
@@ -5124,7 +5162,7 @@ export function applyAction(S, pid, a) {
         ch.pet = ch.pet === a.id ? "" : a.id;
         S.maps[p.map].who = true;
         if (ch.pet) S.maps[p.map].ev.push(["u", p.eid, 2]);
-        toast(p, ch.pet ? `${it.name}이(가) 곁을 따라다닙니다. 내 전리품을 주워 옵니다.` : `${it.name}을(를) 돌려보냈습니다.`);
+        toast(p, ch.pet ? `${it.name}${pp(it.name, "이가")} 곁을 따라다닙니다. 내 전리품을 주워 옵니다.` : `${it.name}${pp(it.name, "을를")} 돌려보냈습니다.`);
         p.dirty = true;
         break;
       }
@@ -5134,7 +5172,7 @@ export function applyAction(S, pid, a) {
         const had = ch.scr[it.buff] > now;
         ch.scr[it.buff] = now + it.min * 60000;
         S.maps[p.map].ev.push(["u", p.eid, 2]);
-        toast(p, had ? `${it.name} — 남은 시간을 다시 채웠습니다 (10분).` : `${it.name}을(를) 읽었습니다. ${it.desc.split(".")[0]}.`);
+        toast(p, had ? `${it.name} — 남은 시간을 다시 채웠습니다 (10분).` : `${it.name}${pp(it.name, "을를")} 읽었습니다. ${it.desc.split(".")[0]}.`);
         p.dirty = true;
         break;
       }
@@ -5147,7 +5185,7 @@ export function applyAction(S, pid, a) {
       }
       if (it.type === "food") {
         p.food = { id: a.id, until: now + it.buff.min * 60000, xp: it.buff.xp, atk: it.buff.atk };
-        toast(p, `${it.name}을(를) 먹었습니다. ${it.desc}`);
+        toast(p, `${it.name}${pp(it.name, "을를")} 먹었습니다. ${it.desc}`);
       }
       p.potAt = now + 900;
       if (it.heal) {
@@ -5186,7 +5224,7 @@ export function applyAction(S, pid, a) {
       g.ru[a.i] = key;
       const rw = runeword(g);
       toast(p, rw ? `룬어 [${rw.name}] 완성!` : `${RUNES[key][0]} 룬을 끼웠습니다.`);
-      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]을(를) 완성했습니다!`); ch.st.rw++; checkAch(S, p); }
+      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]${pp(rw.name, "을를")} 완성했습니다!`); ch.st.rw++; checkAch(S, p); }
       S.maps[p.map].ev.push(["e", p.eid, 1]);
       afterGear(S, p);
       break;
@@ -5303,7 +5341,7 @@ export function applyAction(S, pid, a) {
         checkAch(S, p);
       } else if (g.enh >= 5) {
         g.enh--;
-        toast(p, `강화 실패... ${gearName(g)}(으)로 단계가 내려갔습니다.`);
+        toast(p, `강화 실패... ${gearName(g)}${pp(gearName(g), "으로")} 단계가 내려갔습니다.`);
       } else {
         toast(p, "강화 실패... 장비는 무사합니다.");
       }
@@ -5471,7 +5509,7 @@ export function applyAction(S, pid, a) {
     case "gcreate":
       ch.gold -= GUILD_COST;
       ch.guild = a.name; ch.gm = 1;
-      sys(S, `${ch.name}님이 길드 [${a.name}]을(를) 세웠습니다!`);
+      sys(S, `${ch.name}님이 길드 [${a.name}]${pp(a.name, "을를")} 세웠습니다!`);
       ch.st.gfound = 1;
       checkAch(S, p);
       S.maps[p.map].who = true;
@@ -5497,7 +5535,7 @@ export function applyAction(S, pid, a) {
     case "gdec": p.ginv = null; break;
     case "glist": p.dirty = true; break;
     case "gleave":
-      toast(p, `길드 [${ch.guild}]을(를) 떠났습니다.`);
+      toast(p, `길드 [${ch.guild}]${pp(ch.guild, "을를")} 떠났습니다.`);
       ch.guild = ""; ch.gm = 0;
       S.maps[p.map].who = true;
       p.dirty = true;
@@ -5540,7 +5578,7 @@ export function applyAction(S, pid, a) {
       ch.title = a.id || "";
       p.stc = null;
       S.maps[p.map].who = true;
-      toast(p, ch.title ? `칭호 「${titleOf(ch)}」을(를) 달았습니다.` : "칭호를 떼었습니다.");
+      toast(p, ch.title ? `칭호 「${titleOf(ch)}」${pp(titleOf(ch), "을를")} 달았습니다.` : "칭호를 떼었습니다.");
       p.dirty = true;
       break;
     case "cos_eq":
@@ -5560,7 +5598,7 @@ export function applyAction(S, pid, a) {
       // bought to be worn: put it on straight away
       ch.cos.on[c.slot] = a.id;
       S.maps[p.map].who = true;
-      toast(p, `[${c.name}]을(를) 샀습니다. 캐릭터 창 ‘외형’ 탭에서 갈아입을 수 있습니다.`);
+      toast(p, `[${c.name}]${pp(c.name, "을를")} 샀습니다. 캐릭터 창 ‘외형’ 탭에서 갈아입을 수 있습니다.`);
       p.dirty = true;
       break;
     }
@@ -5897,6 +5935,7 @@ export function tick(S, now) {
         // overlapping puddles do not add up: one bite at a time
         if (now < (p.poolAt || 0) + 600) continue;
         p.poolAt = now;
+        p.blame = { by: q.kind === 1 ? "불길" : q.kind === 2 ? "얼음 웅덩이" : "독 웅덩이", lv: 0, el: 0 };
         hurtPlayer(S, rt, p, q.dmg);
         if (!p.dead) afflict(S, p, q.kind === 1 ? "burn" : q.kind === 2 ? "slow" : "poison", q.atk);
       }
@@ -6033,7 +6072,7 @@ function selfPayload(p) {
     // skill levels and what the next level of each costs ({ gold, xp, lvl } or null at the top)
     skl: ch.skl, skc: SKILLS[ch.cls].map((sk, i) => (ch.skl[i] >= SK_MAX ? null : skillCost(sk, ch.skl[i]))),
     wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos,
-    dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather") } : null,
+    dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather"), by: p.blame ? p.blame.by : null, lv: p.blame ? p.blame.lv : 0, el: p.blame ? p.blame.el : 0 } : null,
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), st: ch.st,
     daily: dailyView(p), tut: { i: ch.tut.i, n: ch.tut.n }, evt: evtView(p.S, p), recall: p.recall ? Math.max(0, p.recall.at - now) : 0,

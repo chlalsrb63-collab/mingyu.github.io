@@ -77,7 +77,7 @@ function pickUp(S, p, dr) {
     if (dr.q === 3) p.ch.st.leg++;
     if (dr.q === 4) p.ch.st.set++;
     if (dr.q >= 3) checkAch(S, p);
-    if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]을(를) 획득했습니다!`);
+    if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]${pp(gearName(dr.g), "을를")} 획득했습니다!`);
   } else {
     addItem(p.ch, dr.it, dr.n);
     p.gain.push(["item", dr.it, dr.n, 0]);
@@ -206,8 +206,13 @@ function gainXp(S, p, n) {
     p.gain.push(["lvl", ch.lvl]);
     S.maps[p.map].ev.push(["l", p.eid]);
     S.maps[p.map].who = true;
-    for (const sk of SKILLS[ch.cls]) if (sk.lv === ch.lvl) toast(p, `새 스킬 [${sk.name}]을(를) 배웠습니다!`);
-    if (ch.lvl % 10 === 0) sys(S, `${ch.name}님이 레벨 ${ch.lvl}을(를) 달성했습니다!`);
+    // a skill just learned goes straight onto the bar, so the key is there to press (and auto-hunt uses it)
+    SKILLS[ch.cls].forEach((sk, i) => {
+      if (sk.lv !== ch.lvl) return;
+      const key = qsLearn(ch, i);
+      toast(p, `새 스킬 [${sk.name}]${pp(sk.name, "을를")} 배웠습니다!${key ? ` 단축칸 ${key}번에 올려 두었습니다.` : ""}`);
+    });
+    if (ch.lvl % 10 === 0) sys(S, `${ch.name}님이 레벨 ${ch.lvl}${pp(ch.lvl, "을를")} 달성했습니다!`);
     if (ch.lvl === MAXLV) toast(p, "최고 레벨 달성! 이제 경험치는 수련에 쓰입니다.");
     checkAch(S, p);
   }
@@ -320,11 +325,11 @@ function killMob(S, rt, mob) {
     // a field boss, a guardian or a boss may leave something to wear
     if ((el === 2 || d.boss) && cosRoll(S, p, "boss") < COS_BOSS) cosFrom(S, p, "boss", d.name);
   }
-  if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}을(를) 쓰러뜨렸습니다!`);
+  if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   if (el === 2) {
     if (mob.evt) { if (S.evt) S.evt.bossDead = true; }
     else if (mob.temp) rt.fb = 0;
-    if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]을(를) 쓰러뜨렸습니다!`);
+    if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   }
   // some monsters go off where they fall, and so does any elite with the trait
   if (d.burst || has(mob, "burst")) {
@@ -338,6 +343,15 @@ function killMob(S, rt, mob) {
     if (rt.kc >= FB_KILLS && !rt.fb) spawnFieldBoss(S, rt, mob.x, mob.y);
   }
 }
+/**
+ * The last thing that hurt a player, kept so a fall can say what did it (the death window
+ * shows it with a word of advice): `by` is the label players see over its head.
+ */
+function blameOf(mob) {
+  const d = MOBS[mob.k];
+  const rank = d.boss ? "보스 " : mob.el === 2 ? (mob.evt ? "침공 우두머리 " : mob.temp ? "우두머리 " : "수문장 ") : mob.el ? "정예 " : "";
+  return { by: `Lv.${d.lv} ${rank}${d.name}`, lv: d.lv, el: d.boss ? 3 : mob.el | 0 };
+}
 function hurtPlayer(S, rt, p, raw, mob) {
   if (p.dead || S.now < (p.ghost || 0)) return;
   const st = stats(p);
@@ -348,6 +362,7 @@ function hurtPlayer(S, rt, p, raw, mob) {
   p.hp -= dmg;
   p.hitAt = S.now;
   rouse(S, p);
+  if (mob) p.blame = blameOf(mob);
   rt.ev.push(["h", p.eid, dmg, 0, 1]);
   if (mob && st.lg.thorn) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * 0.4)), 0);
   if (p.hp <= 0) fall(S, rt, p);
@@ -369,7 +384,7 @@ function fall(S, rt, p) {
   classReset(p, true);
   dropAggro(S, p);
   rt.ev.push(["pd", p.eid]);
-  toast(p, "쓰러졌습니다...");
+  toast(p, p.blame ? `쓰러졌습니다... (${p.blame.by})` : "쓰러졌습니다...");
   p.dirty = true;
 }
 

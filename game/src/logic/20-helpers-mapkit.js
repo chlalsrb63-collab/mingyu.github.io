@@ -10,6 +10,17 @@ function rnd(box) {
 const ri = (box, a, b) => a + Math.floor(rnd(box) * (b - a + 1));
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+/**
+ * The Korean particle that follows a word, picked by its last sound: pp("양", "이가") → "이",
+ * pp("대검", "을를") → "을", pp("무기", "으로") → "로". A trailing digit is read aloud (2 → 이 → "가").
+ */
+function pp(word, pair) {
+  const c = String(word).trim().slice(-1), code = c.charCodeAt(0);
+  const d = "0123456789".indexOf(c);
+  const jong = code >= 0xac00 && code <= 0xd7a3 ? (code - 0xac00) % 28 : d >= 0 ? [21, 8, 0, 16, 0, 0, 1, 8, 8, 0][d] : 0;
+  if (pair === "으로") return jong && jong !== 8 ? "으로" : "로";
+  return jong ? pair[0] : pair[1];
+}
 const isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 const num = (v) => typeof v === "number" && Number.isFinite(v);
 /**

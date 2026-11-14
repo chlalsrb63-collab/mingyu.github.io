@@ -289,6 +289,7 @@ export function tick(S, now) {
         // overlapping puddles do not add up: one bite at a time
         if (now < (p.poolAt || 0) + 600) continue;
         p.poolAt = now;
+        p.blame = { by: q.kind === 1 ? "불길" : q.kind === 2 ? "얼음 웅덩이" : "독 웅덩이", lv: 0, el: 0 };
         hurtPlayer(S, rt, p, q.dmg);
         if (!p.dead) afflict(S, p, q.kind === 1 ? "burn" : q.kind === 2 ? "slow" : "poison", q.atk);
       }

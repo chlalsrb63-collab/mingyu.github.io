@@ -174,7 +174,7 @@ function checkAch(S, p) {
     toast(p, `업적 달성: [${a.name}] +${a.pts}점${a.title ? ` — 칭호 「${a.title}」 획득` : ""}`);
     S.maps[p.map].ev.push(["ac", p.eid, a.id]);
     if (COS_ACH[a.id]) giveCos(S, p, COS_ACH[a.id], `업적 [${a.name}]`);
-    if (a.pts >= 30) sys(S, `${ch.name}님이 업적 [${a.name}]을(를) 달성했습니다!`);
+    if (a.pts >= 30) sys(S, `${ch.name}님이 업적 [${a.name}]${pp(a.name, "을를")} 달성했습니다!`);
     p.dirty = true;
   }
 }
@@ -257,7 +257,7 @@ function spawnEvtBoss(S, e) {
   rt.mobs.push(mob);
   rt.ev.push(["r", mob.id]);
   e.boss = mob.id; e.phase = "boss";
-  sys(S, `[${m.name}] 균열 침공의 우두머리 [${MOBS[mob.k].name}]이(가) 나타났습니다!`);
+  sys(S, `[${m.name}] 균열 침공의 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
   dirtyAll(S);
 }
 function endEvent(S, e) {
@@ -298,7 +298,7 @@ const TUT = [
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
   { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
   { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
-  { id: "skill", title: "스킬 써 보기", hint: "레벨 3이 되면 K로 스킬 창을 열어 첫 스킬을 아래 단축칸(1~9)에 끌어다 놓고, 그 숫자 키로 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
+  { id: "skill", title: "스킬 써 보기", hint: "레벨 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 숫자 키(처음이면 1)를 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
 ];
 function tutStep(S, p, id) {
   const ch = p.ch, step = TUT[ch.tut.i];

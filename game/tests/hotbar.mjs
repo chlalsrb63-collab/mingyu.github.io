@@ -128,4 +128,58 @@ assert.equal(ch.inv.filter((s) => s.id === "hp_s").length, 2, "101 potions make 
 ch.inv = [ch.inv[0]];
 assert.equal(act(A, { t: "sort" }).ok, false, "nothing to tidy");
 
+// ── a skill just learned goes onto the first empty slot by itself (and says which key);
+// one the player already placed stays where it is; a full bar is left alone
+{
+  const T = 16, LV = "pid-hotbar-lv";
+  const kid = L.newChar("새싹", "warrior", []);
+  kid.lvl = 2;
+  kid.qs[0] = ["i", "hp_s"];
+  L.addPlayer(S, LV, kid);
+  const q = S.players[LV];
+  const meadow = S.maps.meadow;
+  S.maps[q.map].n--; q.map = "meadow"; meadow.n++;
+  const hare = meadow.mobs.find((m) => m.k === "twinhare");
+  q.x = hare.x - 12; q.y = hare.y; q.mvAt = now; q.dir = 2; q.aim = 0;
+  for (const o of meadow.mobs) if (o !== hare && !o.dead && Math.hypot(o.x - q.x, o.y - q.y) < 90) { o.x += 4000; o.hx = o.x; }
+  const lvlUp = () => {
+    hare.dead = false; hare.el = 0; hare.tr = []; hare.hp = 1; hare.by = {}; hare.x = q.x + 12; hare.y = q.y;
+    q.ch.xp = 1e9; q.atkAt = 0; q.hp = 1e6;
+    assert.ok(act(LV, { t: "atk" }).ok);
+    return view(LV);
+  };
+  let v = lvlUp();
+  assert.ok(q.ch.lvl >= 3, "the kill levels up");
+  assert.deepEqual(q.ch.qs.slice(0, 2), [["i", "hp_s"], ["s", 0]], "the first skill takes the first empty slot");
+  assert.deepEqual(v.self.qs[1], ["s", 0]);
+  assert.ok((v.toast || []).some((m) => m.includes("대검 투척") && m.includes("단축칸 2번")), "the toast names the key");
+  assert.ok((v.toast || []).every((m) => !m.includes("(를)")), "the particle is spelled out");
+  // learned again (another level that teaches nothing) it is not added twice
+  assert.equal(q.ch.qs.filter((x) => x && x[0] === "s" && x[1] === 0).length, 1);
+  // a skill the player already put on the bar is not copied
+  q.ch.lvl = 6; q.ch.xp = 0; q.ch.qs = [["s", 1], null, null, null, null, null, null, null, null];
+  lvlUp();
+  assert.equal(q.ch.lvl >= 7, true);
+  assert.equal(q.ch.qs.filter((x) => x && x[0] === "s" && x[1] === 1).length, 1, "already on the bar: left there");
+  // a full bar is left as it is
+  q.ch.lvl = 11; q.ch.xp = 0; q.ch.qs = Array(9).fill(["i", "hp_s"]);
+  lvlUp();
+  assert.ok(q.ch.lvl >= 12);
+  assert.ok(q.ch.qs.every((x) => x[0] === "i"), "no room: nothing is pushed out");
+
+  // ── a fall says what did it, for the death window
+  const boar = hare;
+  q.ch.lvl = 2; q.hp = 1; q.ghost = 0; q.dead = false; q.hitAt = -1e9;
+  for (const o of meadow.mobs) if (o !== boar && !o.dead && Math.hypot(o.x - q.x, o.y - q.y) < 200) { o.x += 4000; o.hx = o.x; }
+  Object.assign(boar, { k: "lambmaw", el: 1, tr: [], dead: false, hp: 1e6, x: q.x + 14, y: q.y, hx: q.x + 14, hy: q.y, wx: q.x + 14, wy: q.y, tgt: LV, st: 0, stun: 0, slow: 0, dot: null, act: null, mv: 0, cn: 0, atkAt: now, castAt: 1e15, mvAt: 1e15, by: {} });
+  for (let i = 0; i < 60 && !q.dead; i++) { v = view(LV); if (!q.dead) q.hp = Math.min(q.hp, 1); }
+  assert.ok(q.dead, "a lone level-2 with 1 HP falls to an elite");
+  v = view(LV);
+  const name = D.mobs[boar.k].name;
+  assert.ok(v.self.dead && v.self.dead.by && v.self.dead.by.includes(name) && v.self.dead.by.includes("정예"), "the death window names the killer: " + (v.self.dead && v.self.dead.by));
+  assert.equal(v.self.dead.lv, D.mobs[boar.k].lv);
+  assert.equal(v.self.dead.el, 1);
+  L.removePlayer(S, LV);
+}
+
 console.log("hotbar ok");

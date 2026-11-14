@@ -39,7 +39,7 @@ export function applyAction(S, pid, a) {
         ch.pet = ch.pet === a.id ? "" : a.id;
         S.maps[p.map].who = true;
         if (ch.pet) S.maps[p.map].ev.push(["u", p.eid, 2]);
-        toast(p, ch.pet ? `${it.name}이(가) 곁을 따라다닙니다. 내 전리품을 주워 옵니다.` : `${it.name}을(를) 돌려보냈습니다.`);
+        toast(p, ch.pet ? `${it.name}${pp(it.name, "이가")} 곁을 따라다닙니다. 내 전리품을 주워 옵니다.` : `${it.name}${pp(it.name, "을를")} 돌려보냈습니다.`);
         p.dirty = true;
         break;
       }
@@ -49,7 +49,7 @@ export function applyAction(S, pid, a) {
         const had = ch.scr[it.buff] > now;
         ch.scr[it.buff] = now + it.min * 60000;
         S.maps[p.map].ev.push(["u", p.eid, 2]);
-        toast(p, had ? `${it.name} — 남은 시간을 다시 채웠습니다 (10분).` : `${it.name}을(를) 읽었습니다. ${it.desc.split(".")[0]}.`);
+        toast(p, had ? `${it.name} — 남은 시간을 다시 채웠습니다 (10분).` : `${it.name}${pp(it.name, "을를")} 읽었습니다. ${it.desc.split(".")[0]}.`);
         p.dirty = true;
         break;
       }
@@ -62,7 +62,7 @@ export function applyAction(S, pid, a) {
       }
       if (it.type === "food") {
         p.food = { id: a.id, until: now + it.buff.min * 60000, xp: it.buff.xp, atk: it.buff.atk };
-        toast(p, `${it.name}을(를) 먹었습니다. ${it.desc}`);
+        toast(p, `${it.name}${pp(it.name, "을를")} 먹었습니다. ${it.desc}`);
       }
       p.potAt = now + 900;
       if (it.heal) {
@@ -101,7 +101,7 @@ export function applyAction(S, pid, a) {
       g.ru[a.i] = key;
       const rw = runeword(g);
       toast(p, rw ? `룬어 [${rw.name}] 완성!` : `${RUNES[key][0]} 룬을 끼웠습니다.`);
-      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]을(를) 완성했습니다!`); ch.st.rw++; checkAch(S, p); }
+      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]${pp(rw.name, "을를")} 완성했습니다!`); ch.st.rw++; checkAch(S, p); }
       S.maps[p.map].ev.push(["e", p.eid, 1]);
       afterGear(S, p);
       break;
@@ -218,7 +218,7 @@ export function applyAction(S, pid, a) {
         checkAch(S, p);
       } else if (g.enh >= 5) {
         g.enh--;
-        toast(p, `강화 실패... ${gearName(g)}(으)로 단계가 내려갔습니다.`);
+        toast(p, `강화 실패... ${gearName(g)}${pp(gearName(g), "으로")} 단계가 내려갔습니다.`);
       } else {
         toast(p, "강화 실패... 장비는 무사합니다.");
       }
@@ -386,7 +386,7 @@ export function applyAction(S, pid, a) {
     case "gcreate":
       ch.gold -= GUILD_COST;
       ch.guild = a.name; ch.gm = 1;
-      sys(S, `${ch.name}님이 길드 [${a.name}]을(를) 세웠습니다!`);
+      sys(S, `${ch.name}님이 길드 [${a.name}]${pp(a.name, "을를")} 세웠습니다!`);
       ch.st.gfound = 1;
       checkAch(S, p);
       S.maps[p.map].who = true;
@@ -412,7 +412,7 @@ export function applyAction(S, pid, a) {
     case "gdec": p.ginv = null; break;
     case "glist": p.dirty = true; break;
     case "gleave":
-      toast(p, `길드 [${ch.guild}]을(를) 떠났습니다.`);
+      toast(p, `길드 [${ch.guild}]${pp(ch.guild, "을를")} 떠났습니다.`);
       ch.guild = ""; ch.gm = 0;
       S.maps[p.map].who = true;
       p.dirty = true;
@@ -455,7 +455,7 @@ export function applyAction(S, pid, a) {
       ch.title = a.id || "";
       p.stc = null;
       S.maps[p.map].who = true;
-      toast(p, ch.title ? `칭호 「${titleOf(ch)}」을(를) 달았습니다.` : "칭호를 떼었습니다.");
+      toast(p, ch.title ? `칭호 「${titleOf(ch)}」${pp(titleOf(ch), "을를")} 달았습니다.` : "칭호를 떼었습니다.");
       p.dirty = true;
       break;
     case "cos_eq":
@@ -475,7 +475,7 @@ export function applyAction(S, pid, a) {
       // bought to be worn: put it on straight away
       ch.cos.on[c.slot] = a.id;
       S.maps[p.map].who = true;
-      toast(p, `[${c.name}]을(를) 샀습니다. 캐릭터 창 ‘외형’ 탭에서 갈아입을 수 있습니다.`);
+      toast(p, `[${c.name}]${pp(c.name, "을를")} 샀습니다. 캐릭터 창 ‘외형’ 탭에서 갈아입을 수 있습니다.`);
       p.dirty = true;
       break;
     }

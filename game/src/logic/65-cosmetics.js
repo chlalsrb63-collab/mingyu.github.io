@@ -112,7 +112,7 @@ function giveCos(S, p, id, why) {
   ch.cos.own.push(id);
   toast(p, `외형 획득: [${COSMETICS[id].name}]${why ? ` — ${why}` : ""} (캐릭터 창 ‘외형’ 탭에서 입을 수 있습니다)`);
   p.gain.push(["cos", id]);
-  if (COSMETICS[id].q >= 3) sys(S, `${ch.name}님이 외형 [${COSMETICS[id].name}]을(를) 얻었습니다!`);
+  if (COSMETICS[id].q >= 3) sys(S, `${ch.name}님이 외형 [${COSMETICS[id].name}]${pp(COSMETICS[id].name, "을를")} 얻었습니다!`);
   p.dirty = true;
   return true;
 }

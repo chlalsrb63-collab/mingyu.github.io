@@ -136,6 +136,18 @@ function qsOk(ch, v) {
   return false;
 }
 
+/**
+ * A skill just learned takes the first empty quick slot, unless the player already put it on
+ * the bar. Returns the key it went under (1–9), or 0 when it stayed off a full bar.
+ */
+function qsLearn(ch, i) {
+  if (ch.qs.some((v) => v && v[0] === "s" && v[1] === i)) return 0;
+  const j = ch.qs.indexOf(null);
+  if (j < 0) return 0;
+  ch.qs[j] = ["s", i];
+  return j + 1;
+}
+
 /** Counters kept for achievements. */
 const ST_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily"];
 function runeword(g) {
@@ -326,7 +338,7 @@ function spawnFieldBoss(S, rt, x, y) {
   rt.fb = mob.id;
   rt.kc = 0;
   rt.ev.push(["r", mob.id]);
-  sys(S, `${m.name}에 우두머리 [${MOBS[mob.k].name}]이(가) 나타났습니다!`);
+  sys(S, `${m.name}에 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
 }
 
 export function playerCount(S) {
