@@ -1,6 +1,6 @@
 # maps-v2 — 다채로운 사냥터·던전 (varied hunting grounds and dungeons)
 
-Status: **M1 + M2 built, client art step 1 done (H)** (meadow, forest, cave, crypt, sewer reworked; path-quality test holds all five). M3–M4 are design.
+Status: **M1 + M2 built, client art step 1 done (H), M3 rules/terrain built (I), M3 client art done (J)** (meadow, forest, cave, crypt, sewer reworked; jungle, coast, oasis new; the path-quality test holds all eight). M3's monsters and BGM and M4 are design.
 Owner's request: maps from his reference images, procedurally generated, colourful, not monotonous; routes a little
 complex but never blocked in a way that gets in the player's way; maps wide.
 
@@ -17,9 +17,9 @@ boot, gate names/sides, entry, waypoint stones (3), camps, zones/pockets (33-map
 | 3 | overgrown temple ruin: processional way, rune pool, colonnades, side chambers | `forest` set piece **잊힌 신전** (`PIECES.temple`) | M1 ✔ (art M2) |
 | 5 | glowing green crystal cavern, mossy winding floor, rock shelves, spires, streams, mushrooms | `cave` 수정 동굴 → **비취 수정굴** | M2 ✔ |
 | 4 | dark brick dungeon: flagstone plazas, brick walls, pillars, arches, torch alcoves, rubble | `crypt` 뼈의 지하묘지 + `sewer` 하수도 → **벽돌 회랑** | M2 ✔ |
-| 7 | desert dunes, oasis lake with palms and reeds, mud huts | new `oasis` **모래바람 오아시스** | M3 |
-| 8 | tropical beach: white sand, palms, surf line, turquoise shallows, reef rocks, islets | new `coast` **산호 해안** (joined to the oasis) | M3 |
-| 9 | coastal road: winding asphalt with yellow edge lines through jungle, black-boulder shore, teal sea | new `jungle` **정글 해안도로** (between city and coast) | M3 |
+| 7 | desert dunes, oasis lake with palms and reeds, mud huts | new `oasis` **모래바람 오아시스** | M3 ✔ (art next) |
+| 8 | tropical beach: white sand, palms, surf line, turquoise shallows, reef rocks, islets | new `coast` **산호 해안** (joined to the oasis) | M3 ✔ (art next) |
+| 9 | coastal road: winding asphalt with yellow edge lines through jungle, black-boulder shore, teal sea | new `jungle` **정글 해안도로** (between city and coast) | M3 ✔ (art next) |
 | 1 | snowy gothic castle-city on a spur: walled terraces, corner towers, gorge, arch bridges, snowy pines | new `citadel` **눈꽃 성채** | M4 |
 
 ## B. Layout recipes
@@ -100,6 +100,10 @@ stump, log · `U` `q` ruin wall/pillar · `O` standing stone · `Y` mushroom · 
 | A.8 | white sand, surf/foam edge, turquoise shallows (walkable), reef rocks, islets | coast theme; shallow water must be walkable (not `w`) |
 | A.9 | jungle trees/palms, asphalt with yellow edge line, black boulders, deep teal sea with waves | `a`/`m` exist (city); new edge-line and boulder art |
 | A.1 | snow ground, snowy pines, gothic walls/towers, arch bridges | snow theme |
+| M3 art (placeholders stand today, see I) | **ground**: dune sand `z` (wind ripples, two tones, soft ridge shadows), white sand `S` (shell flecks, wet band by the surf), shallows `~` (turquoise, sand ripples showing through, darker toward the deep), surf `-` (animated foam line that washes in and out), deep sea `w` in the jungle/coast themes (teal, breaking wave crests), the jungle's shingle `r`, the yellow edge line `m` (thin, unbroken, mitred at bends) and a worn centre for `a`, desert sand `s` | iso_ground.js materials per theme; a pulse/animation layer for the surf |
+| M3 art | **objects**: palm `Ψ` (3 leans, coconut, long shadow), reef rock `Φ` (mossy, coral, half under water), black shore boulder `Ω` (wet basalt, clusters), mud hut `Δ` (round, thatch, a bigger 2 × 2 variant), jungle skin for `T` (broad dark canopy, vines; today the meadow's tree), sandstone ridge skin for `C` in desert/coast (today grey stone and moss), sand-coloured rim | scene_props.js / iso_tall.js `cliff()` per theme |
+| M3 art | sand-bar edges where `S` crosses `~`, islets with a foam ring, tide pools, driftwood for `l` on the beach, caravan tents for `E` in the desert, desert/coast/jungle decals and ambient motes (heat shimmer, gulls, fireflies), minimap icons | decor.js, sky.js |
+| M3 sound | BGM for the three (today `forest` / `field`), surf and wind ambience | bgm.js TRACKS, audio.js |
 
 ## D. Path-quality rules (tests/mapflow.mjs)
 
@@ -123,7 +127,7 @@ stay joined (`m.keepWide`), and `genMap` widens once more after it.
 - **M1 (this step)**: doc, mapflow test, meadow + forest generators, temple piece. ✔
 - **M2 (rules)**: cave → 비취 수정굴, crypt + sewer → 벽돌 회랑; cave/crypt/sewer held in mapflow. ✔ Then client art
   for A.2/A.6/A.3/A.5/A.4 (table C).
-- **M3**: oasis + coast + jungle (new GEN entries, GATE_LINKS, bands, monsters per zone, BGM), client themes.
+- **M3**: oasis + coast + jungle (new GEN entries, GATE_LINKS, bands, monsters per zone) ✔ rules/terrain (I). Then: client themes (table C "M3 art"), BGM, new coastal/desert monster species.
 - **M4**: citadel + its snow theme; hold every map in mapflow, drop the warnings.
 
 ## F. M1 as built
@@ -224,7 +228,87 @@ flagstones and broken-colonnade art for the temple, a taller jade spire (A.5); t
 skin is baked (chunked maps bake per chunk as before); per frame only the visible torches (two glow blits each), arch
 strips, fall rings and the temple glow are added.
 
-## I. Dungeon widening as built
+## I. M3 as built (rules and terrain)
+
+| map | size | band | doors | open | narrow targets | loops | dead ends (longest) | tortuosity |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `jungle` 정글 해안도로 (theme `jungle`) | 168 × 112 | 20–26 | north ↔ city south, south ↔ coast north | 66 % | 0/15 | 52 | 26 (6) | south 1.32 |
+| `coast` 산호 해안 (theme `coast`) | 176 × 120 | 34–40 | north ↔ jungle south, east ↔ oasis west | 69 % | 0/16 | 108 | 11 (4) | east 1.28 |
+| `oasis` 모래바람 오아시스 (theme `desert`) | 168 × 116 | 28–34 | west ↔ coast east, north ↔ cave south | 78 % | 0/18 | 127 | 15 (5) | north 1.37 |
+
+All three are `wilds` maps held strictly by tests/mapflow.mjs (loops ≥ 10 / 12 / 12), three stones, a camp, 6–8 chests,
+a field boss, gathering nodes of grade 3 / 4 / 4. The loop city → jungle → coast → oasis → cave closes; every door is two-way.
+
+- **wilds, new settings** (each behind its cfg key, the older maps are byte-identical):
+  - `sea: { side: "w" | "s", at, amp, surf, shallow, beach, sand, bar, rock, rockP, reef }` — one side of the map is water.
+    A wavy waterline; out from it `surf` tiles of foam `-`, `shallow` tiles of walkable shallows `~`, then deep `w`
+    (no region grows there). In the shallows: reef rocks `Φ` in clusters (and wherever a region barrier ran out to sea),
+    sand islets with palms, deep holes; a road over them is a **sand bar** (`bar`). On land a `beach` strip of `sand`,
+    optionally strewn with boulders (`rock`: the jungle's black strand).
+  - gates on the south side (`"s"`); `roadEdge`: the road is five wide, three of `road` and a painted line either side
+    (jungle: asphalt `a` between lane `m`); `green: { r, palm }`: ground within `r` of water turns to grass and palms
+    stand round it (the oasis lakes and ponds); `rocks: [a, b]` and the wall kind `palms` for other barrier objects.
+  - set pieces `hamlet` (mud huts round a chest), `caravan` (the oasis camp), `drywell`, `palmring`, `tidepool`, `cove`.
+- **jungle**: 2 levels, mostly shut (`tierOpen: 0.15`, `wind: 0.8`) so the asphalt road winds; sea and boulder strand in
+  the west; swamp hollows, palm groves, glades; 4 lakes. No river and no temple (a road bridge over the river and the
+  temple's pool both broke the three-wide rule; the wood keeps the only temple).
+- **coast**: 3 levels of dune and palm grove running down to the beach; the south third is sea (2 surf + 26 shallows +
+  deep). Gates north and east are both on land; the shallows are loop ground with their own chests (tide pools, coves).
+- **oasis**: 3 levels of sand with ridges for cliffs, 6 lakes plus ponds each in a green ring with reeds and palms,
+  mud-hut hamlets in the dead ends, the caravan camp on the main way, sandstone rim (`edge: "C"`).
+- **city** got a south gate (a slip road off the ring at 0.3 W: 21 tiles changed, nothing else moved); **cave** a south
+  crack three wide at 0.52 W (45 tiles changed; stones, boss and spawns' places unchanged, 3 spawn boxes fewer).
+- **New characters**: ground `z` 사구 모래, `S` 흰 모래, `~` 얕은 물 (walkable), `-` 파도 거품 (walkable); objects
+  `Ψ` 야자수, `Φ` 산호 암초, `Ω` 검은 해안 바위, `Δ` 진흙 오두막. The objects are Greek letters because every printable
+  ASCII mark is already an object (the rooms' furniture took `( ) { } [ ?`). `SOLID_G` is unchanged ("wW"): the new
+  grounds are walkable, any object blocks. Names in scripts/editor-lib.mjs, colours in art.js `MINI*` and `_over.html`.
+- **Monsters**: existing bodies in new tints at fitting levels (new species are a later step) — jungle: catsplit_gold 20,
+  toadbrood_poison 21, hydrasnake_poison 23, mothface_bile 24, ribdeer_bile 26 (field boss); oasis: foxtwine_gold 28,
+  hydrasnake_gold 29, lambmaw_bone 30, eyecrow_ash 31 (also round the lakes), twingoat_gold 33, bearmaw_gold 34 (boss);
+  coast: crabskull_blood 34, fishwalker_frost 35, eelknot_frost 36, squidrat_blood 37, leechmaw_bone 38,
+  gatorhalf_steel 40 (boss). Chests `chest_jungle/oasis/coast` (Lv 23 / 31 / 37). The jungle's two lowest are melee on
+  purpose: the rift's fallback pool takes the kinds nearest a level, and two ranged kinds at 20–21 stopped the solo bot
+  of tests/dimrift.mjs reaching the master.
+- **Weather** (`WX_ODDS`, by theme): jungle clear/cloud/rain-heavy with some fog; coast clear, rain and wind, no fog;
+  desert clear and wind, never rain. All three are outdoor (day and night).
+- **Client placeholders** (replaced by art step 2, section J; so nothing was invisible): flat sand/shallows/foam materials and
+  teal water in iso_ground.js, a thin yellow `edgeLine` on the jungle's `m`, simple palm / reef / boulder / hut sprites in
+  scene_props.js, minimap and overview colours, `OUTDOOR` and skirt colours.
+- **Tests**: mapflow (strict for all three), maps (sizes, build time), world (the loop's doors both ways, bands, no
+  reachable deep water), lifeskills (grades), daynight (weather; the desert never rains).
+- Wished-for species (later step): 집게 소라게 떼 (hermit-crab swarm in a skull shell), 갈매기 눈알 (eye gull), 해파리 뇌
+  (brain jellyfish drifting over the shallows), 산호 뿔 거북 (coral-horn turtle, coast boss), 따개비 물개 (barnacle seal);
+  전갈 등뼈 (spine scorpion), 미라 낙타 (two-headed mummy camel, oasis boss), 모래 지렁이 아가리 (sand-worm maw, burrows),
+  독수리 갈비 (rib vulture), 선인장 고슴도치 (cactus hedgehog); 덩굴 원숭이 (vine monkey), 난초 사마귀 (orchid mantis),
+  독개구리 떼 (dart-frog brood), 악어 통나무 (log gator, jungle boss).
+
+## J. Client art, step 2 as built (table C "M3 art")
+
+No rule or wire changes. Everything on the ground is baked (chunked as before); the sea moves by the two existing
+water frames (650 ms each), so there is no new per-frame cost. Other themes are unchanged.
+
+| for | as built |
+| --- | --- |
+| dune sand `z`, desert `s` | iso_ground.js `dunes`: long crests across the screen (a lit crest line, the lee side below it in one flat tone), short wind ripples between, grains. `z` strong (22 px apart), the desert's `s` broad and faint (38 px); `z` is paler outside the desert |
+| white sand `S` | fine clusters, faint tide lines, rare shells; a **wet band** (two tan tones, scalloped) wherever sand meets `~`/`-` (also dune and desert sand) |
+| shallows `~` | turquoise with pale sand bars and their ripples showing through, darker toward the deep `w`, a thin net of light that shifts between the two frames, white foam against sand, a foam ring round every reef rock / boulder standing in it (so islets and rocks get rings) |
+| surf `-` | `shore(S, px, f)`: frame 0 the foam runs up the sand and a pale line follows; frame 1 it falls back, leaves wet sand and a sheen, and the next white line gathers further out |
+| sea `w` (jungle, coast) | deeper teal; white crests with a pale underline that step between frames, more and longer inshore |
+| jungle road | old asphalt (cracks, tarred patches); `edgeLine`: a thin yellow line that follows the run of `m` tiles — straight, mitred corner to corner at a right angle (a stepped diagonal becomes one straight line), arms at junctions, worn gaps — and a pale gravel shoulder outside it |
+| jungle floor, shingle `r` | deep green with broad fallen leaves; dark rounded stones with lit tops |
+| palm `Ψ` | 4 sprites (straight, two leans, a half lean): ringed curving trunk, dark fronds behind and lit ones in front, coconuts; `palmShade` bakes each one's long shadow (trunk + crown) down-right in the shadow tone |
+| reef `Φ`, basalt `Ω` | reef: moss cap, coral, dark wet foot with foam (3 sprites, one low); basalt: black faceted blocks, a cold gloss line on the sky-facing edges, a glint, spray |
+| mud hut `Δ` | round daubed wall, thatch cone in courses with a ragged eave, dark doorway (2 tints) |
+| tree `T` in the jungle | `JT`: buttress roots, a wide dark crown of broad leaves, hanging vines, one in red bloom |
+| cliff `C` in desert/coast | iso_tall.js `sandstone`: the upper level's sand over the edge, wavering courses with dark seams, redder bands, lit ledges, pits (ochre in the desert, pale by the sea) |
+| extras | driftwood for `l` on the coast (`DW`); wind-blown sand motes in the desert, fireflies and leaves in the jungle (scene_map.js ambient) |
+
+Left from table C: the 2 × 2 hut (no map marks one), tide pools and caravan tents as art, sand-bar edge art beyond the
+foam line, heat shimmer / gulls, a worn centre strip on the asphalt (needs the road's direction), tufts on the oasis's
+green ring (details only run on the theme's base ground), minimap icons (the colours already separate sand /
+shallows / sea), BGM and the new monster species.
+
+## K. Dungeon widening as built
 
 Owner: "dungeon maps feel too cramped for a 4-player party — wider, close to the fields." New metric (`tests/mapflow.mjs
 roomy`): **party room** = share of the reachable ground lying where a 7 × 7 open square fits (four heroes and a pack);
@@ -241,12 +325,12 @@ party rooms. For scale: meadow 75 % open / 52 % party room, forest 73 % / 36 %.
 | abyss before | 36 % | islands ~7 × 9; middle area 49 tiles | 6 % | 1 | 5 / 2 |
 | abyss after | 59 % | 32 fighting areas: middle 217 tiles (~17 × 17), smallest 70 | 75 % | 5 | 5 / 2 |
 | cave before | 53 % | middle area 64 tiles (8 × 8) | 11 % | 3 | 5 / 2 |
-| cave after | 64 % | 27 fighting areas: middle 111 tiles, largest 682 | 53 % | 5 | 6 / 2 |
+| cave after | 64 % | 21 fighting areas: middle 119 tiles, largest 774 | 52 % | 5 | 6 / 2 |
 
 Monsters follow the open ground (zoneSpawns: tiles / `DENSITY`), so density is unchanged (crypt 14.4 per 100 tiles
 before and after) and the totals rise with the floor: crypt 928 → 1197, sewer 967 → 1231, abyss 699 → 1297, cave
-623 → 761 (never more than `WAKE_MAX_MOBS` standing). Sizes, ids, gates, three stones, camps, bosses and guardians
-are as before; chests crypt 5 → 6, sewer 3 → 5, abyss 10 → 7, cave 2 → 2. Build: crypt ~50 ms, sewer ~30, cave ~95,
+623 → 753 (never more than `WAKE_MAX_MOBS` standing). Sizes, ids, gates, three stones, camps, bosses and guardians
+are as before; chests crypt 5 → 6, sewer 3 → 5, abyss 10 → 7, cave 2 → 4. Build: crypt ~50 ms, sewer ~30, cave ~95,
 abyss ~60–95 (bound 150).
 
 - **crypt** (`room: [15, 11]`, `ways: [5, 4, 3]`, cells ≥ 17 × 13, `leaf: 620`): a room fills its cell less one tile
@@ -265,9 +349,10 @@ abyss ~60–95 (bound 150).
   and round the mother. Bridges 5 wide on the critical path and for necks of flesh, 4 elsewhere, 3 to an altar, which
   keeps a small island of its own (the hidden pockets). The ledges at both doors are 5 wide. Now held in mapflow.
 - **cave** (`wide`, `moss.w: 4`): start fill 0.55, no rock planted in mid-hall, pillars only ≥ 6 tiles from a wall,
-  shelves at `[0.6, 0.74]`, the moss way 9 wide (7 off the spine), neck, rift crack and west ledge 5 wide, loose
-  crystals/mushrooms/spires within two tiles of rock. A ridge of rock (`wide.ridge`) lies across the line from the way
-  in to the antechamber so the walk still winds (tortuosity 1.22). Where rock is too thin for a vault, a block that is
+  shelves at `[0.63, 0.77]`, the moss way 9 wide (7 off the spine), neck, rift crack, west ledge and the M3 south
+  crack (a kept point of `wideWays`) 5 wide, loose
+  crystals/mushrooms/spires within two tiles of rock. A ridge of rock (`wide.ridges`, two) lies across the line from the way
+  in to the antechamber, and to the south crack, so the walk still winds (tortuosity rift 1.21, south 1.17). Where rock is too thin for a vault, a block that is
   half rock and otherwise bare floor is walled up round it.
 - Shared: `widen(m, pts, soft, dig, r)` takes a half-width (`m.widenR`; 2 = five wide) and judges "wide" by a summed
   table of blocked tiles; `wideWays(…, main)` cuts the doors, camp and boss five wide after the three-wide pass;
@@ -280,7 +365,7 @@ abyss ~60–95 (bound 150).
 
 Deviations:
 - Map sizes not grown: the monster count already rises with the floor; rooms are fewer and bigger.
-- Cave party room 53 % (target 55): taking out more rock leaves a bare field; held at 50.
+- Cave party room 52 % (target 55): taking out more rock leaves a bare field; held at 50.
 - Abyss 59 % open (target 60–65): the blood is the theme. Sewer water is now only in the short tunnels and the
   cisterns (2.4 % of the map) — the plazas nearly touch; a follow-up could run open channel stubs into the plazas.
 - `markRoutes` (34-maps-world.js) and `widen` were touched outside the dungeon cfg lines, for `m.widenR` only.

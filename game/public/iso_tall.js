@@ -786,6 +786,7 @@ function rockWall(m, x, y, theme, S, g) {
  */
 function cliff(m, x, y, theme, h, nh, nd) {
   if (theme === "cave") return caveShelf(m, x, y, h, nh, nd);
+  if (theme === "desert" || theme === "coast") return sandstone(m, x, y, theme, h, nh, nd);
   const G = materials(theme)._grass, gHex = GRASS[theme] || GRASS.meadow;
   const lip = C(light(gHex, 1.2)), gD = C(shade(gHex, 0.72));
   const F = faces("#8e9390", "#b0b5b0", "#5c625f");
@@ -804,6 +805,32 @@ function cliff(m, x, y, theme, h, nh, nd) {
   };
   const top = (a, b) => G.tex(x * 16 + a, y * 16 + b);
   return block({ h, nh, nd, top, face, hi: () => lip, backInk: (a, b, c) => (hash(a, b, x * 31 + y) < 0.0 ? c : C(shade(gHex, 0.6))), seam: F[1][2] });
+}
+
+/**
+ * A sandstone ridge (maps-v2 M3 art; the desert's and the coast's rise): the sand of the level above lying
+ * over its edge, under it stone in wavering courses — a dark seam beneath each, some courses a redder band,
+ * lit ledges, wind-cut pits. Warm ochre in the desert, pale by the sea.
+ */
+function sandstone(m, x, y, theme, h, nh, nd) {
+  const G = materials(theme)._grass, des = theme === "desert";
+  const F = des ? faces("#cc9258", "#e8b878", "#8e5a36") : faces("#d4b282", "#eed4a6", "#9a7a54");
+  const B = des ? faces("#b87844", "#cc9258", "#8e5a36") : faces("#c09a68", "#d4b282", "#9a7a54");
+  const lip = C(light(G.hex, 1.08));
+  const face = (side, s, z) => {
+    const ws = (side === 2 ? x : y) * 16 + s;
+    const hang = 1 + (hash(ws >> 1, side, 5) > 0.55 ? 1 : 0);
+    if (z >= h - hang) return side === 2 ? C(G.hex) : C(shade(G.hex, 0.86));
+    if (z < 2) return F[side][2];
+    const zz = z + Math.round(vnoise(ws, side * 40, 24, 61) * 4), r = zz % 5, course = Math.floor(zz / 5);
+    if (r === 0) return hash(ws >> 3, course, 65) < 0.85 ? F[side][2] : F[side][0];
+    const f = hash(course, 7, 62) < 0.38 ? B[side] : F[side];
+    if (r === 4 && hash(ws >> 2, course, 63) < 0.4) return f[1];
+    if (hash(ws >> 1, zz >> 1, 64) < 0.035) return f[2];
+    return hash(ws >> 2, zz, 66) < 0.08 ? f[3] : f[0];
+  };
+  const top = (a, b) => G.tex(x * 16 + a, y * 16 + b);
+  return block({ h, nh, nd, top, face, hi: () => lip, backInk: () => C(shade(G.hex, 0.66)), seam: F[1][2] });
 }
 
 function caveShelf(m, x, y, h, nh, nd) {

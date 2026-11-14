@@ -31,7 +31,7 @@ import { renderParty, renderGuild } from "./win_social.js";
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 export const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board", "charm", "juana"];
 export const winEl = (id) => $(`#w-${id}`);
 /** On a phone the bag lives in the drawer, so it always counts as open; on a desktop it opens in the side panel. */
 export const isOpen = (id) => (id === "inv" && compact()) || !winEl(id).hidden;
@@ -45,7 +45,7 @@ const compact = () => VP.lay !== "full";
  * the stations and the house chest put the bag in the panel when they open (selling needs it)
  * and take it away again when they close, if they were what brought it.
  */
-export const PANEL = ["inv", "char", "skill", "quest", "party", "guild", "life", "daily", "achieve", "collect", "rank", "settings", "help"];
+export const PANEL = ["inv", "char", "skill", "quest", "party", "guild", "life", "daily", "achieve", "collect", "rank", "settings", "help", "charm"];
 const BAG_WITH = ["shop", "smith", "craft", "hstore"];
 const panelBox = $("#panel"), winBox = $("#windows");
 let panelId = null, autoBag = false, wasDocked = null;
@@ -125,7 +125,7 @@ function homeOf(id, w, h) {
   const [x0, y0, x1, y1] = zone(), top = y0 + 4;
   const right = x1 - w - 4, mid = (x0 + x1 - w) / 2;
   switch (id) {
-    case "char": case "shop": case "smith": case "train": case "job": case "bank": case "house": case "hstore": return [right, top];
+    case "char": case "shop": case "smith": case "train": case "job": case "bank": case "house": case "hstore": case "juana": return [right, top];
     case "deco": return [x0 + 4, top + 32];
     case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": case "life": return [x0 + 4, top + 32];
     case "talk": return [mid, y1 - h - 52];

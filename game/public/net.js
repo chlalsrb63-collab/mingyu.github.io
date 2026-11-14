@@ -31,6 +31,7 @@ import { itemSlot, isGear, sellPrice, useSlot } from "./items.js";
 import { section, refreshUi, resetPurse, hudBars } from "./hud.js";
 import { openStats, openTree } from "./win_char.js";
 import { doorFade } from "./win_world.js";
+import * as Charms from "./charms.js";
 import { renderRank, renderParty, renderGuild, renderPartyHud, renderInvite } from "./win_social.js";
 
 // ───────────────────────────── connection ─────────────────────────────
@@ -142,6 +143,7 @@ function onMessage(msg) {
       } else if (Lobby.createError(msg.error)) {
         /* shown on the creation page */
       } else {
+        Charms.onError(msg.error);       // a refused board request goes back where it was (charms.js)
         toast(msg.error);
         Sound.play("no");
       }

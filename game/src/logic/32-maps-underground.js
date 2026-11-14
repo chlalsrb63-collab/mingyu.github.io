@@ -111,9 +111,10 @@ function cavern(cfg) {
   for (let x = ante[0] + 3; x <= arena[0] - 5; x++) for (const y of neckY) fixed[y * W + x] = 2;
   for (let x = arena[0] + 5; x <= W - 3; x++) for (const y of riftY) fixed[y * W + x] = 2;
   // (widened: with the caverns this open the walk in would run straight at the boss's door — a ridge of rock
-  // [cx, cy, half-length, half-width] lies across the line from the way in to the antechamber, to be walked round)
-  if (WD && WD.ridge) {
-    const [cx, cy, rl, rw] = WD.ridge, ux = ante[0] - start[0], uy = ante[1] - start[1], ul = Math.hypot(ux, uy);
+  // [cx, cy, half-length, half-width, tx, ty] lies across the line from the way in to (tx, ty) — the antechamber, the
+  // south crack — to be walked round)
+  for (const [cx, cy, rl, rw, tx, ty] of (WD && WD.ridges) || []) {
+    const ux = tx - start[0], uy = ty - start[1], ul = Math.hypot(ux, uy);
     for (let y = 4; y < H - 4; y++) for (let x = 4; x < W - 4; x++) {
       const a = ((x - cx) * ux + (y - cy) * uy) / ul, b = ((x - cx) * -uy + (y - cy) * ux) / ul;
       if ((a / (rw + (N1[y * W + x] - 0.5) * 2)) ** 2 + (b / rl) ** 2 <= 1) fixed[y * W + x] = 1;
@@ -404,16 +405,26 @@ function cavern(cfg) {
     west: { t: [[3, start[1] - 1], [3, start[1]]], a: [[6, start[1] - 1], [6, start[1]]] },
     rift: { t: [[W - 3, 10], [W - 3, 11]], a: [[arena[0] + 5, 10], [arena[0] + 5, 11]] },
   };
+  // maps-v2 M3: a crack three wide in the south wall, up to the first open floor (the way out to the oasis)
+  const pass = [];
+  if (cfg.south) {
+    const gx = Math.round(W * cfg.south);
+    let top = H - 4;
+    while (top > H - 30 && !(m.g[top][gx] !== "W" && m.o[top][gx] === " " && m.g[top][gx] !== "w")) top--;
+    for (let y = top; y <= H - 3; y++) for (const x of [gx - 1, gx, gx + 1]) { digAt(m, x, y); if (m.g[y][x] === "w") m.g[y][x] = "c"; }
+    m.gates.south = { t: [[gx, H - 3], [gx + 1, H - 3]], a: [[gx, H - 6], [gx + 1, H - 6]] };
+    pass.push(m.gates.south.a[0], [gx, top]);
+  }
   for (const name of Object.keys(m.gates)) for (const [x, y] of m.gates[name].t.concat(m.gates[name].a)) digAt(m, x, y);
   for (let x = 3; x <= start[0]; x++) for (const y of WD ? [start[1] - 2, start[1] - 1, start[1], start[1] + 1, start[1] + 2] : [start[1] - 1, start[1]]) { digAt(m, x, y); if (WD && !"ha".includes(m.o[y][x])) m.o[y][x] = " "; }
   m.entry = m.gates.west.a[0];
-  const pts = [m.gates.west.a[1], [arena[0], arena[1] + 3], ante, m.gates.rift.a[0], m.gates.rift.t[0]];
+  const pts = [m.gates.west.a[1], [arena[0], arena[1] + 3], ante, m.gates.rift.a[0], m.gates.rift.t[0]].concat(pass);
   for (const z of order) pts.push(spot(m, z.r.px, z.r.py));
   const wideTo = pts.slice();
   for (const [x, y] of vaults) pts.push([x + 1, y + 1], [x + 2, y + 1]);
   cover(m, cfg.mobs);
   knit(m, pts, "c");
-  if (cfg.moss) wideWays(m, wideTo.concat(FIRES[cfg.id]), "TPBRulYAeKSMn", fixed, wideTo.slice(0, 5).concat(FIRES[cfg.id]), WD ? 2 : 0);
+  if (cfg.moss) wideWays(m, wideTo.concat(FIRES[cfg.id]), "TPBRulYAeKSMn", fixed, wideTo.slice(0, 5 + pass.length).concat(FIRES[cfg.id]), WD ? 2 : 0);
   m.regions = order.length;
   return m;
 }
@@ -917,8 +928,10 @@ function abyssal(cfg) {
   const owner = new Int16Array(W * H).fill(-1);
   if (PL) for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
     const i = y * W + x;
+    // (the two nearest sites, by squared distance: the roots are taken once)
     let k1 = -1, d1 = Infinity, d2 = Infinity;
-    for (const I of isl) { const d = Math.hypot((x - I.x) * 0.8, y - I.y); if (d < d1) { d2 = d1; d1 = d; k1 = I.k; } else if (d < d2) d2 = d; }
+    for (let k = 0; k < n; k++) { const I = isl[k], ax = (x - I.x) * 0.8, ay = y - I.y, d = ax * ax + ay * ay; if (d < d1) { d2 = d1; d1 = d; k1 = k; } else if (d < d2) d2 = d; }
+    d1 = Math.sqrt(d1); d2 = Math.sqrt(d2);
     const I = isl[k1], mother = Math.hypot((x - isl[1].x) * 0.8, y - isl[1].y);
     // (the crack between two plates is `gap` wide and wider where the slow noise rises; nothing else near the mother)
     if (d1 + (N1[i] - 0.5) * 3 >= I.r || (k1 !== 1 && (d2 - d1 < PL.gap + N2[i] * PL.gapVary || mother < isl[1].r + 4.5))) continue;

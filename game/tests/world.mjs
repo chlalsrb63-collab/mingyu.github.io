@@ -74,7 +74,7 @@ while (todo.length) {
   }
 }
 assert.deepEqual(Object.keys(seen).sort(), D.maps.map((m) => m.id).sort(), "every map can be reached from town");
-for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
+for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
 
 // ── the dungeons: harder the deeper you go, a camp on the way, a guardian at the end
 for (const id of ["crypt", "sewer", "abyss"]) {
@@ -120,4 +120,23 @@ for (const id of ["crypt", "sewer", "abyss"]) {
 assert.ok(L.runtime(S, "abyss").mobs.some((o) => o.k === "abyssboss") && L.runtime(S, "cave").mobs.some((o) => o.k === "boss"));
 assert.equal(D.mobs.abyssboss.boss, 1);
 JSON.stringify(L.removePlayer(S, PID));
+
+// ── maps-v2 M3: the south-west coast closes a loop — city ↔ jungle ↔ coast ↔ oasis ↔ cave, every door both ways
+{
+  const { maps } = L.atlas();
+  for (const [a, b] of [["city", "jungle"], ["jungle", "coast"], ["coast", "oasis"], ["oasis", "cave"]]) {
+    for (const [from, to] of [[a, b], [b, a]]) {
+      assert.ok(maps[from].portals.some((p) => p.to === to), `${from} has a door to ${to}`);
+      assert.ok(D.maps.find((m) => m.id === from).to.includes(to), `${from} lists ${to} as a way on`);
+    }
+  }
+  for (const id of ["jungle", "oasis", "coast"]) {
+    const m = maps[id], band = D.maps.find((q) => q.id === id).band;
+    assert.equal(m.stones.length, 3, id + ": three waypoint stones");
+    for (const k of new Set(m.spawns.map((sp) => sp.k))) assert.ok(D.mobs[k].chest || (D.mobs[k].lv >= band[0] && D.mobs[k].lv <= band[1]), `${id}: ${k} fits the band`);
+    // the shallows are walkable, the deep sea is not
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.reach[y * m.w + x]) assert.ok(m.g[y][x] !== "w", `${id}: reachable deep water at ${x},${y}`);
+  }
+  assert.ok(maps.coast.g.some((r) => r.includes("~")) && maps.coast.g.some((r) => r.includes("-")), "the coast has shallows and a surf line");
+}
 console.log("world ok — maps", Object.keys(seen).join(","));

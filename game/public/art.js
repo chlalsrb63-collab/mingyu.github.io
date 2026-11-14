@@ -235,12 +235,16 @@ export function renderGround(m) {
   return { frames: out, ox: m.h * TILE };
 }
 
-const MINI = { f: "#c48a52", l: "#8e5c3a", h: "#d8b07a", x: "#a2958a", q: "#c8604e", u: "#468a8e", y: "#a2323a", e: "#b8925a", t: "#447e38", r: "#8a8a80", ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86", j: "#5a5638", v: "#b0a68e", g: "#4a5248", "=": "#a8a090", "%": "#b0602a", "&": "#4a2a52" };
-const MINI_OBJ = { "=": "#3a2620", "+": "#bfe0ee", "^": "#2a3a34", "~": "#c89a3a", "@": "#5a3420", "!": "#a8343c", _: "#e8dcc0", o: "#9a6440", k: "#6e4428", s: "#9a4a3a", m: "#8a5634", j: "#c87a3a", "$": "#e8b860", b: "#5a8a4a", r: "#7a4a2c", t: "#d8a830", "#": "#b8a898", g: "#4e9a4a", "*": "#ffd890", v: "#c89a6a", "-": "#7a4a2c", p: "#4a6a9a", w: "#9a6440", "]": "#c8945a", "%": "#e89a50", "[": "#b07440", "{": "#6a7480", "}": "#7656b4", "(": "#c08048", ")": "#5aa0d8", "?": "#e0b048", 
+const MINI = { f: "#c48a52", l: "#8e5c3a", h: "#d8b07a", x: "#a2958a", q: "#c8604e", u: "#468a8e", y: "#a2323a", e: "#b8925a", t: "#447e38", r: "#8a8a80", ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86", j: "#5a5638", v: "#b0a68e", g: "#4a5248", "=": "#a8a090", "%": "#b0602a", "&": "#4a2a52",
+  // maps-v2 M3 (the south-west coast): dune sand, white sand, shallows you can wade, the surf line
+  z: "#d8a858", S: "#f0e8cc", "~": "#58c8c0", "-": "#d8f0ec" };
+const MINI_OBJ = { "=": "#3a2620", "+": "#bfe0ee", "^": "#2a3a34", "~": "#c89a3a", "@": "#5a3420", "!": "#a8343c", _: "#e8dcc0", o: "#9a6440", k: "#6e4428", s: "#9a4a3a", m: "#8a5634", j: "#c87a3a", "$": "#e8b860", b: "#5a8a4a", r: "#7a4a2c", t: "#d8a830", "#": "#b8a898", g: "#4e9a4a", "*": "#ffd890", v: "#c89a6a", "-": "#7a4a2c", p: "#4a6a9a", w: "#9a6440", "]": "#c8945a", "%": "#e89a50", "[": "#b07440", "Ω": "#6a7480", "Δ": "#7656b4", "Ψ": "#c08048", "Φ": "#5aa0d8", "?": "#e0b048", 
   C: "#6e6654", H: "#2f7036", U: "#8a8478", l: "#6a4628", u: "#6a4628", e: "#5a9a58", q: "#a8a498", n: "#8a6a3a", M: "#6a4628", D: "#2c5a48", E: "#c8b888", T: "#2a6030", P: "#1d4a30", R: "#74747c", B: "#35803a", h: "#8a4a3a", a: "#6a9ac8", K: "#5ac8d8", S: "#3a3550", F: "#6a4628", L: "#c8b060", G: "#6a4628", Z: "#22242c", c: "#8a3a3a", y: "#a83a3a", x: "#4a4d56",
   1: "#8a8478", 2: "#5a3e2a", 3: "#d8a850", 4: "#c8c2ac", 5: "#8a8478", 6: "#6a7280", 7: "#6a5a44", 8: "#c8c2ac", 0: "#c0303c", 9: "#c8a050", I: "#6a4226", Q: "#7ae0ff", "/": "#9affc8", J: "#b4b2a8", V: "#3a5a9a", z: "#c8c4b4", N: "#9a9484", d: "#c8a050", i: "#9a9484", f: "#9a9484", O: "#9a9cb0", A: "#5a4434", Y: "#c8503e", X: "#e02a3a",
   // the town's stone terrace wall and the new interior pieces (docs/design/town.md E)
-  W: "#9a9080", "&": "#5a5e6c", "<": "#d8603a", ">": "#8a6a4a", "|": "#7a5a3a", ";": "#9ad0c8", ":": "#b8a898", "'": "#bfe0ee", "`": "#c8a060" };
+  W: "#9a9080", "&": "#5a5e6c", "<": "#d8603a", ">": "#8a6a4a", "|": "#7a5a3a", ";": "#9ad0c8", ":": "#b8a898", "'": "#bfe0ee", "`": "#c8a060",
+  // maps-v2 M3: palm, reef rock, black shore boulder, mud hut
+  "Ψ": "#3a9a50", "Φ": "#6a8a80", "Ω": "#2e2e36", "Δ": "#b88a58" };
 /** The old kingdom's canopy turns: maples red, the rest gold; pines stay dark. */
 const AUTUMN_OBJ = { T: "#b4442a", P: "#24503a", B: "#a8582a" };
 /** Dungeons share the cave's tiles but not its colours. */
@@ -249,6 +253,9 @@ const MINI_THEME = {
   sewer: { c: "#4c584e", d: "#435046", W: "#0c120e", w: "#5a8a30", g: "#2c342e", b: "#6a7280" },
   abyss: { c: "#6a2632", d: "#5c1e2a", W: "#16060a", w: "#a01828", b: "#d8d0b8" },
   autumn: { ".": "#7a8a3e", ",": "#7a8a3e", t: "#9a8a3e", '"': "#8a8a46", ":": "#556a34", ";": "#c8a032" },
+  jungle: { w: "#1f7f92", ":": "#2f7a40", ";": "#2a6a3a", r: "#6a6a70", m: "#c8a838", T: "#1f5a2c" },
+  coast: { w: "#1f7f92", z: "#e4c890" },
+  desert: { s: "#e2c88a", w: "#3aa0b8", r: "#a89878" },
 };
 /** A zoned hunting ground's minimap tint by 4 × 4 block (m.zq): the safe plaza cool, the elite ground red; hidden pockets stay hidden. */
 const ZONE_TINT = { 0: "rgba(120,220,255,0.22)", 2: "rgba(255,70,60,0.2)" };
@@ -936,6 +943,47 @@ function armorIcon(tier) {
   outline(c, g, "#111118");
   return c;
 }
+// ── charms (주아나의 참 공방; docs/design/charms.md) ──
+// 16×16, light from the top-left, one dark outline. A sealed charm is a rough shard that tells nothing; an appraised
+// one is the same cut crystal in its grade's setting: a bronze band (매직), a silver mount (레어), and for a legendary
+// its own emblem (a horn, a knot, a lens) — the setting, not only the colour, names the grade.
+const CHARM_ART = {
+  sealed: [[
+    "", "", ".......ab", "......aabb", ".....alabbc", "....aalabbcc", "....aaabbbcc", "...aaabbkbccc", "...aabbykbccc", "...abbbbkcccc", "....bbbkcccc", "....bbbcccc", ".....bccc", "......cc",
+  ], { a: "#a096ac", b: "#72687c", c: "#4c4458", l: "#d0c8d8", k: "#3a3344", y: "#f6e6a0" }],
+  g1: [[
+    "", ".......oo", "......o..o", ".......oo", "......hggd", ".....hhgggd", "....hhggggdd", "....BBBBBBBB", "....bbbbbbbb", "....hgggggdd", ".....ggggdd", ".....gggddd", "......gddd", ".......dd",
+  ], { o: "#c8843c", B: "#e0a45a", b: "#8a5424", g: "#4ac0b0", h: "#b4f4e6", d: "#2a8078" }],
+  g2: [[
+    "", ".......ss", "......s..s", "......SSss", ".....Shggds", "....Shhgggds", "....Shggggds", "....SgggggdS", "....shggggds", "....sggggdds", ".....sgggds", ".....Ssgdss", "......Ssss", ".......ss",
+  ], { S: "#f2f5fa", s: "#9aa2b4", g: "#5a8cf0", h: "#c4dcff", d: "#3458b0" }],
+  g3: [[
+    "", ".......Y", "...Y...y...Y", "....y.yYy.y", ".....yYYYy", "....yYhppYy", "..YyYYhpppYYyY", "....yYppqqYy", ".....yYqqYy", "....y.yYy.y", "...Y...y...Y", ".......Y",
+  ], { Y: "#ffe070", y: "#d89a28", p: "#c070f0", h: "#f0d4ff", q: "#7a3ab0" }],
+  echo: [[
+    "", "", "..........ii", ".........iiw", "........iiiw", ".......iiiww", "......YYYww", ".....yyYYw", "....iiiyw", "...iiiww", "...iiww", "..hiww", "..hw",
+  ], { i: "#f4ecd8", w: "#b8a888", h: "#ffffff", Y: "#ffe070", y: "#d89a28" }],
+  knot: [[
+    "", "", "....rr....rr", "...rRRr..rRRd", "...rR.RrrR.Rd", "....rRrYYrRd", ".....rYhYYd", "....rRrYYdRd", "...rR.RddR.Rd", "...rRRd..dRRd", "....dd....dd",
+  ], { r: "#f08a8a", R: "#d84a5a", d: "#8a2a3c", Y: "#ffd84a", h: "#fff4c0" }],
+  lens: [[
+    "", ".....YYYYY", "....Yyllly", "...Yyllllly", "...Yllwllly", "...Ylwwwlly", "...Yllwlldy", "...Yylllddy", "....yyldddy", ".....yyyyyy", "..........yy", "...........yy", "............y",
+  ], { Y: "#ffe070", y: "#c8882a", l: "#8adcff", w: "#ffffff", d: "#4a9ad0" }],
+  nail: [[
+    "", "", ".........H", "........HHh", ".........Hhh", "........nmhhd", ".......nm..dd", "......nm", ".....nm", "....nm", "...nm", "...m",
+  ], { H: "#fff0b8", h: "#e8c060", d: "#a87a2c", n: "#e8c478", m: "#9a6e2c" }],
+};
+const charmCache = {};
+/** A charm's 16×16 icon: `sealed`, `g1` `g2` `g3` (grade settings), a legendary's own emblem (`echo knot lens`), `nail`. */
+export function charmIcon(kind) {
+  const k = CHARM_ART[kind] ? kind : "sealed";
+  if (!charmCache[k]) { const [c, g] = canvas(16, 16); paint(g, CHARM_ART[k][0], CHARM_ART[k][1]); outline(c, g, "#2b2233"); charmCache[k] = c; }
+  return charmCache[k];
+}
+export const charmIconUrl = (kind) => { const k = "url:" + kind; return charmCache[k] || (charmCache[k] = charmIcon(kind).toDataURL()); };
+/** Which icon a bag charm shows: nothing of a sealed one's grade leaks (it has none on the wire). */
+export const charmKind = (c) => (!c || !c.rev ? "sealed" : c.lg && CHARM_ART[c.lg] ? c.lg : `g${c.g || 1}`);
+
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items) {
   const cv = { camp: campIcon(), fish_s: fishIcon("#8ab4d8", "#e8f0f8", false), fish_m: fishIcon("#e88aa8", "#b8e8d8", false), fish_l: fishIcon("#f0c040", "#fff0a0", false),
@@ -944,6 +992,7 @@ export function buildIcons(items) {
     // life skills' fish of grades 3 and 4 and their campfire dishes (12-life-tables.js)
     fish_c: fishIcon("#a8b4c4", "#e4ecf4", false), fish_v: fishIcon("#d8c0d8", "#f6eef6", false),
     food_c: fishIcon("#c8945a", "#ecc890", true), food_v: fishIcon("#d89a7a", "#f4d2b0", true),
+    charm: charmIcon("sealed"), charm_nail: charmIcon("nail"),
     cafe_scone: bakeIcon("scone"), cafe_pie: bakeIcon("pie"), inn_stew: bakeIcon("stew"), inn_bread: bakeIcon("bread") };
   for (const id of Object.keys(items)) {
     const it = items[id];

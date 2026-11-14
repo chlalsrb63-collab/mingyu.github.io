@@ -24,6 +24,7 @@ import { G, $, clamp, VP, el } from "./state.js";
 import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
+import * as Charms from "./charms.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
 import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn } from "./windows.js";
 import { openTree, openStats, renderInv, renderChar, renderSkills } from "./win_char.js";
@@ -201,7 +202,8 @@ export function refreshUi() {
   hotbar(s);
   tracker(s);
   const near = G.near && G.near.role;
-  draw("inv", () => [s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs, s.bagCap, Gather.pouchKey(s)], renderInv);
+  Charms.sync(s);                               // what the server confirmed: a charm set down, a seal broken (charms.js)
+  draw("inv", () => [Charms.bagKey(s), s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs, s.bagCap, Gather.pouchKey(s)], renderInv);
   // the C window: 장비 or 능력치 (points can be bought by a campfire or at 수련관 카이)
   draw("char", () => G.charTab === "cos" ? ["cos", s.xp, s.nx] : G.charTab === "stat"
     ? ["stat", s.st, s.lvl, s.xp, s.xpt, s.nx, s.rs, s.dv, s.atk, s.mhp, s.mmp, s.def, s.crit, s.critd, s.mf, s.job, s.wk, s.eq.weapon && s.eq.weapon.id, s.dead, fireNear(), near, StatWin.key()]
@@ -223,6 +225,8 @@ export function refreshUi() {
   Housing.refresh(s);
   Life.refresh(s);
   draw("craft", Station.key, Station.render);   // the life stations: 제작 연금 요리 (station.js)
+  draw("charm", Charms.boardKey, Charms.renderBoard);   // 참 보드 (charms.js)
+  draw("juana", Charms.juanaKey, Charms.renderJuana);   // 참감정사 주아나
   draw("board", Board.key, Board.render);       // the 알바 board (board.js)
   tutCard(s);
 }
