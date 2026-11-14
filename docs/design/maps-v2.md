@@ -1,6 +1,6 @@
 # maps-v2 — 다채로운 사냥터·던전 (varied hunting grounds and dungeons)
 
-Status: **M1 built** (meadow + forest reworked, path-quality test). M2–M4 are design.
+Status: **M1 + M2 built** (meadow, forest, cave, crypt, sewer reworked; path-quality test holds all five). M3–M4 are design.
 Owner's request: maps from his reference images, procedurally generated, colourful, not monotonous; routes a little
 complex but never blocked in a way that gets in the player's way; maps wide.
 
@@ -15,8 +15,8 @@ boot, gate names/sides, entry, waypoint stones (3), camps, zones/pockets (33-map
 | 2 | green highland plateaus, cliffs, waterfalls, arches, pools, thin paths, ramps | `meadow` 바람초원 → **고원 폭포** | M1 ✔ |
 | 6 | mossy grey cliffs, river gorge, ledges, stepping stones, fords | `forest` 속삭임 숲 → **이끼 협곡** | M1 ✔ |
 | 3 | overgrown temple ruin: processional way, rune pool, colonnades, side chambers | `forest` set piece **잊힌 신전** (`PIECES.temple`) | M1 ✔ (art M2) |
-| 5 | glowing green crystal cavern, mossy winding floor, rock shelves, spires, streams, mushrooms | `cave` 수정 동굴 → **비취 수정굴** | M2 |
-| 4 | dark brick dungeon: flagstone plazas, brick walls, pillars, arches, torch alcoves, rubble | `crypt` 뼈의 지하묘지 + `sewer` 하수도 → **벽돌 회랑** | M2 |
+| 5 | glowing green crystal cavern, mossy winding floor, rock shelves, spires, streams, mushrooms | `cave` 수정 동굴 → **비취 수정굴** | M2 ✔ |
+| 4 | dark brick dungeon: flagstone plazas, brick walls, pillars, arches, torch alcoves, rubble | `crypt` 뼈의 지하묘지 + `sewer` 하수도 → **벽돌 회랑** | M2 ✔ |
 | 7 | desert dunes, oasis lake with palms and reeds, mud huts | new `oasis` **모래바람 오아시스** | M3 |
 | 8 | tropical beach: white sand, palms, surf line, turquoise shallows, reef rocks, islets | new `coast` **산호 해안** (joined to the oasis) | M3 |
 | 9 | coastal road: winding asphalt with yellow edge lines through jungle, black-boulder shore, teal sea | new `jungle` **정글 해안도로** (between city and coast) | M3 |
@@ -49,13 +49,13 @@ stump, log · `U` `q` ruin wall/pillar · `O` standing stone · `Y` mushroom · 
   pillars → north shrine with the chest (`*`) and a keeper spot (`@`); broken colonnades `q`/`U` make side chambers.
   Placed upright in a quiet region 0.2–0.85 deep (`m.temple` {x,y,w,h,pool}), its ring paved `r`; 4 keepers + chest.
 
-### A.5 비취 수정굴 (crystal cavern) — M2
+### A.5 비취 수정굴 (crystal cavern) — built (as designed; see G for what changed)
 - Generator: `cavern` keeps its CA caves; add **rock shelves**: CA floor split into 2 heights by a low-frequency
   field; shelf edges as rock `W` with ramps; the lowest band is the "river of green" — moss floor winding through
   (a new ground `m` moss? — no: `m` is the city's lane; use a new char, see C) at least 5 wide.
 - Streams: thin `w` channels along shelf feet with fords; crystal spires (new object) on shelf rims, glowing
   mushroom rings `Y` in hollows. Boss arena unchanged.
-### A.4 벽돌 회랑 (brick halls) — M2
+### A.4 벽돌 회랑 (brick halls) — built (see G)
 - `catacomb`/`sewers`: rooms become **plazas** (min 11 × 9) with broken paving (floor variant mix), pillars in rows,
   torch alcoves (wall niches with a light), rubble piles; corridors 3 wide (today 1–2: see the table in D), arched
   doorways where a corridor meets a room; add 1–2 loop corridors per map (cycle rank ≥ 4).
@@ -87,8 +87,15 @@ stump, log · `U` `q` ruin wall/pillar · `O` standing stone · `Y` mushroom · 
 | A.6 | stepping stones in water (walkable) | new ground char, e.g. `o`-like stones on water; fords use `s` for now |
 | A.6 | mossy grey cliff skin for the forest theme | `cliff()` per theme in iso_tall.js |
 | A.3 | rune pool glow, carved flagstones, broken colonnade art | `~` is plain water now; a `rune` ground char or `m.temple.pool` glow |
-| A.5 | moss floor (green, glowing specks), crystal spire object, glow mushrooms | new ground + object chars, cave theme |
-| A.4 | brick wall face, arched doorway, torch alcove, broken paving variants | crypt/sewer `UG` skins |
+| A.5 | moss floor: `;` (core of the way) and `:` (its fringe) in the cave theme draw as meadow grass today; give them a cave moss material (deep green, glowing specks) | ground chars exist, only the cave skin is new |
+| A.5 | grey rock shelf rim: `C` in the cave theme (today a blue rock block) at two heights, per tile in `m.level` (0/1/2) | `cliff()` cave skin + height from `m.level` (send it in `mapPayload`) |
+| A.5 | ramp steps `v`, ford `s` and stream `w` in the cave theme (today path-coloured steps, sand, blue water) | cave skins; streams may want a glow |
+| A.5 | tall crystal spire: `K` (crystal) and `S` (stalagmite) on the shelf rims exist; a taller jade spire would sell the reference | optional new object, or a `K` variant by `m.level` |
+| A.5 | glowing mushroom ring: `Y` round a `d` centre (`m.rings` [x, y]) | a glow pool under the ring |
+| A.4 | broken paving: `k` slabs over `c` brick in crypt/sewer (today the town's grey pave) | crypt/sewer skin for `k` |
+| A.4 | arched doorway: `m.arches` [x, y, 1 = runs east–west] — the corridor tile at a room's edge | an arch over the 3-wide mouth (big prop, walkable under) |
+| A.4 | torch alcove: `m.torches` [x, y] — a niche dug a tile into a room's north wall, with candle stand `3` in it today | a wall torch prop + light |
+| A.4 | brick wall face for the crypt (grey) and sewer (brown) | crypt/sewer `UG` skins |
 | A.7 | dune sand (two tones), palm tree, mud hut, oasis reeds | desert theme |
 | A.8 | white sand, surf/foam edge, turquoise shallows (walkable), reef rocks, islets | coast theme; shallow water must be walkable (not `w`) |
 | A.9 | jungle trees/palms, asphalt with yellow edge line, black boulders, deep teal sea with waves | `a`/`m` exist (city); new edge-line and boulder art |
@@ -114,7 +121,7 @@ stay joined (`m.keepWide`), and `genMap` widens once more after it.
 
 ## E. Phases
 - **M1 (this step)**: doc, mapflow test, meadow + forest generators, temple piece. ✔
-- **M2**: cave → 비취 수정굴, crypt + sewer → 벽돌 회랑 (rules); hold cave/crypt/sewer in mapflow. Then client art
+- **M2 (rules)**: cave → 비취 수정굴, crypt + sewer → 벽돌 회랑; cave/crypt/sewer held in mapflow. ✔ Then client art
   for A.2/A.6/A.3/A.5/A.4 (table C).
 - **M3**: oasis + coast + jungle (new GEN entries, GATE_LINKS, bands, monsters per zone, BGM), client themes.
 - **M4**: citadel + its snow theme; hold every map in mapflow, drop the warnings.
@@ -149,3 +156,44 @@ Deviations and contracts:
   The same failure appears with the arena moved to the unchanged crypt, so it is the hybrid bow margin, not the
   map: left for the balance owner.
 - `tests/lifeskills.mjs` wiped only node 0's material; it now also wipes node 1's (the new meadow's node 1 is ore).
+
+## G. M2 as built
+
+| map | open | narrow targets | loops | dead ends (longest) | tortuosity |
+| --- | --- | --- | --- | --- | --- |
+| cave before | 47 % | 12/18 | 0 | 0 (0) | rift 1.90 |
+| cave after | 53 % | 0/14 | 24 | 10 (3) | rift 1.28 |
+| crypt before | 35 % | 16/22 | 4 | 0 (0) | out 2.67 |
+| crypt after | 48 % | 0/14 | 16 | 12 (7) | out 1.19 |
+| sewer before | 36 % | 17/22 | 1 | 0 (0) | out 2.00 |
+| sewer after | 45 % | 0/13 | 32 | 12 (4) | out 1.19 |
+
+(before = main at the branch point, with 16/15/16 walkable tiles cut off in cave/sewer/crypt; now none. Targets fall
+because the reworked maps have fewer, bigger rooms.) Build time: cave ~80–100 ms, crypt ~35, sewer ~25.
+
+- **cave** (`cfg.moss`): the CA caverns stay; over them a Gabriel graph of Poisson sites 15 apart (spanning tree,
+  `loops: 0.55`) is dug as winding ways (A* over a meander field), half-width 3 on the spine start → ante, 2 elsewhere;
+  their middle is moss `;`, the fringe `:`. A slow swell lifts the rest of the floor into shelves at levels 1/2
+  (`m.level`, small ones sink), their rims cliff `C`, 1–2 ramps of steps `v` (3 wide) per shelf. Crystals `K`/spires
+  `S` on the rims, up to 7 mushroom rings `Y` (`m.rings`), streams `w` on a contour line, fords `s` where they cross
+  the moss. Zone dressing never covers moss, ramps, rims or water. The neck to the boss and the rift crack are 3 wide
+  (were 2); the arena and its shell are otherwise unchanged and nothing is dug into the shell (`m.noDig`).
+- **crypt** (`cfg.halls`): BSP cells ≥ 14 × 12 (were 9 × 8), rooms never shrunk under 11 × 9, every corridor 3 wide
+  (full 3 × 3 at bends), `loops: 0.3`, `wind: 0.5`; pillars four apart; chapels, octagons, ossuaries and the pool/
+  rubble/rows/shrine styles as before. `brickRoom`: broken paving `k` in 3-tile patches over `c`, torch alcoves
+  (`m.torches`) on the north walls; `m.arches` where a corridor enters a room.
+- **sewer** (`cfg.halls`): junctions 14 apart (were 10.5), `loops: 0.35`; plazas are chamfered rectangles 13–15 × 11;
+  channel tunnels are 3 walk + 2 sludge + 3 walk (footbridges as before), tunnels to pump rooms and cisterns are dry
+  and 3 wide; plazas paved and lit like the crypt's, `m.arches` at tunnel mouths.
+- Shared: `widen(m, pts, soft, dig)` digs rock underground (`dig` = the floor char) and there also joins a stray wide
+  patch beside a point (the test takes the nearest wide tile, which may be that patch); `seal(m, "W")` fills crumbs
+  with rock; `wideWays` sets `m.keepWide`/`m.widenSoft`/`m.widenDig`, and genMap's last widen also joins the waypoint
+  stones' tiles when `m.widenDig` is set. Rules-only fields: `m.level m.rings m.arches m.torches m.noDig`.
+
+Deviations:
+- Sizes unchanged (tests/maps.mjs pins them). Moss uses the existing `;`/`:` chars rather than a new one, so today's
+  client draws it (as grass) and the art step only re-skins it (table C).
+- The neck to the cave boss and the rift crack widened from 2 to 3 tiles (else the boss and the rift door could not
+  sit on 3-wide ground).
+- `tests/hard.mjs` samples the `tough` trait over 120 blows instead of 40: with the new sewer the 40-blow ratio read
+  0.71 against a 0.68 cap (the world's RNG stream moved); the trait is unchanged. `tests/lifeskills.mjs` needed nothing.
