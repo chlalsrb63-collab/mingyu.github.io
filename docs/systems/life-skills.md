@@ -40,7 +40,7 @@ The server runs all six; the client (`public/life.js`) still shows only 낚시/�
 Gather: `gat {i}` → channel → `gt` → `gat_tap` → `lifeTick` → `gatDone`. Craft: talk to the station → `craft_open {r}` → `mk` → client mini-game → `craft {r, s}` (or `craft {r, n}` batch) → `craftOnce`. Board: 포포 `jb take` → gather/make/fish then `jb give` at the NPC, or `jb pick` at the sender → walk → `jb give` at the recipient. Raw `rnd(S)` only.
 
 ## NPCs (data/maps)
-캉캉 `kangkang` (craft, 캉캉대장간), 보글 `bogle` (alch) + `bogle_shelf` (flask), `juju_stove` 쥬쥬의 화덕 (cook thing) + 쥬쥬 sells `staple`, 포포 `popo` (jobs, 넥서스 마을회관).
+캉캉 `kangkang` (craft, 캉캉대장간), 보글 `bogle` (alch) + `bogle_shelf` (flask), `juju_stove` 쥬쥬의 화덕 (cook thing) + 쥬쥬 sells `staple`, 포포 `popo` (jobs, 버드나무광장 회관).
 
 ## Invariants / gotchas
 - Never trust sheet numbers: `lifeClean` clamps; a parcel is never saved; `rep` keys must be static NPC ids (unknown dropped).

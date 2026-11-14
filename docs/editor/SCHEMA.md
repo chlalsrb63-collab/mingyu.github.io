@@ -79,7 +79,7 @@ generated map round-trips tile for tile):
 - `big`: `[{ "t": "house", "x", "y", "v": 0..7 }, { "t": "fountain", "x", "y" }]` — the 4×3 house
   sprites (v 0–3 town houses, 4–7 city blocks) and the plaza fountain. Omitted: one house per
   4×3 block of `h` objects.
-- `marks`: `[{ "x", "y", "kind": "sign", "label": "↑ 넥서스 광장", "to"?: mapId }]` — signpost texts
+- `marks`: `[{ "x", "y", "kind": "sign", "label": "↑ 버드나무광장", "to"?: mapId }]` — signpost texts
   for `G` objects (the waypoint mark is added by the game).
 - NPC `lines` (≤ 12 strings, `{n}` = player name) are what the talk window shows, replacing the
   role's stock lines; role `elder` (main-quest giver) is allowed too.

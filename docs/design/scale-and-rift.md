@@ -613,7 +613,7 @@ Where: `iso_ground.js` (`bakeRect`, `bake`, `bakeChunk`, `groundSize`; per-map p
   `spawns` has no cells; `runtime` builds empty ones). `exportChar` already saves anyone inside as in town;
   `closeDim` already returns them, clears `party.dim` and frees everything. `ch.dim = {day, n}` exists.
   `weatherAt` treats instances as underground; `mapPayload` labels doors from `MAP_META`, so an instance's door to
-  town reads "넥서스 광장".
+  town reads "버드나무광장".
 - Verified live (wrangler dev + `shot.mjs --live`): log in, walk town → meadow (monsters about) → forest through the
   gates, no page or worker errors.
 ---------------------------------------------------------------------------------------------------------------

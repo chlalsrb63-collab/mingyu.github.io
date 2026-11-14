@@ -41,7 +41,7 @@ A real-time online party-hunting RPG in the browser (Korean MMORPG lineage: 바�
 - **View**: 2:1 isometric quarter view (32×16 ground diamonds), chunky pixels, one shadow tone, dark
   outlines. **HUD**: GBA/handheld style — brass 9-slice frames drawn in code (`frames.js`), Galmuri
   pixel font. **CRT** filter: scanlines, slight colour fringe, flicker — **no dark vignette**.
-- **World**: hub town 넥서스 광장 → meadow, forest, crypt (dungeon), city, sewer (dungeon), cave,
+- **World**: hub town 버드나무광장 → meadow, forest, crypt (dungeon), city, sewer (dungeon), cave,
   abyss (dungeon), and past the forest/abyss the autumn field 단풍 왕도 (`maple`, theme `autumn`, Lv.40–46). Hunting grounds are procedurally generated from fixed seeds (same map every boot).
 - **Systems**: loot rarities/affixes/sockets/runewords/legendaries/sets, enhancement +10, endless stat
   training with XP, skill levels, parties (4), guilds, campfires, fishing + cooking mini-games,

@@ -120,7 +120,7 @@ function jobCard(s, j, atJob) {
   const foot = el("div", "jt-foot");
   if (st === "cur") foot.append(el("small", "", "지금 걷고 있는 길입니다."));
   else if (st === "shut") foot.append(el("small", "", "이미 전직한 몸입니다. 전직은 되돌릴 수 없습니다."));
-  else if (st === "ok") { if (!atJob) foot.append(el("small", "", "넥서스 광장의 전직관 아르센에게 가면 전직할 수 있습니다.")); changeButton(foot, s, j, atJob); }
+  else if (st === "ok") { if (!atJob) foot.append(el("small", "", "버드나무광장의 전직관 아르센에게 가면 전직할 수 있습니다.")); changeButton(foot, s, j, atJob); }
   else foot.append(el("small", "", job.kind === "hybrid" ? `모험가로 남아 두 무기(${job.wk.map((k) => d.wkName[k]).join(" · ")})를 모두 숙련 ${needOf(j)}까지 다루면 열립니다. 한 무기의 길로 먼저 전직하면 닫힙니다.` : `[${d.wkName[job.wk[0]]}] 숙련 ${needOf(j)}을 채우면 열립니다. 그 무기를 들고 싸우세요.`));
   card.append(foot);
   return card;

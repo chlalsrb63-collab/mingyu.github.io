@@ -116,7 +116,7 @@ function homeMap(ch, id) {
   const [dx, dy] = homeDoorAt(H.tier);
   m.o[dy][dx] = " "; m.g[dy][dx] = "e";
   m.entry = homeEntry(H.tier);
-  m.portals.push({ x: dx, y: dy, to: HOUSE_TOWN.map, tx: HOUSE_TOWN.out[0], ty: HOUSE_TOWN.out[1], ok: 1, label: "넥서스 광장" });
+  m.portals.push({ x: dx, y: dy, to: HOUSE_TOWN.map, tx: HOUSE_TOWN.out[0], ty: HOUSE_TOWN.out[1], ok: 1, label: "버드나무광장" });
   m.fd = {};
   for (const f of H.furn) {
     const d = FURN[f.id];
@@ -351,7 +351,7 @@ function homeApply(S, p, a) {
       H.furn = [{ id: "fn_bed", uid: 1, x: 2, y: 1, dir: 0 }, { id: "fn_chest_wood", uid: 2, x: t.w - 2, y: 1, dir: 0 }, { id: "fn_plant", uid: 3, x: 1, y: 1, dir: 0 }];
       rt.ev.push(["u", p.eid, 2]);
       toast(p, `[${t.name}]${pp(t.name, "을를")} 마련했습니다! 곁의 '내 집' 문으로 들어가 보세요. 입주 선물: 포근한 침대, 나무 보관함, 화분`);
-      sys(S, `${ch.name}님이 넥서스 광장에 집을 마련했습니다!`);
+      sys(S, `${ch.name}님이 버드나무광장에 집을 마련했습니다!`);
       break;
     }
     case "house_upgrade": {

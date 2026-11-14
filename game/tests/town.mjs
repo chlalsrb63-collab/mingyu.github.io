@@ -1,4 +1,4 @@
-// Headless test of 넥서스 광장, the forest refuge (docs/design/town.md): its size, entry and gates, the
+// Headless test of 버드나무광장, the forest refuge (docs/design/town.md): its size, entry and gates, the
 // frozen building footprints and their doors, everyone's place and that every one of them (and every
 // door, landing, stone, the rift's landing and every resident's anchor) can be walked to from the
 // entry, the walking distances between the services, the signposts and their labels, the two fires,

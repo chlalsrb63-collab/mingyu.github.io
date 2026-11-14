@@ -312,7 +312,7 @@ function dimTick(S, now) {
         if (dist(o.x, o.y, dim.portal.x, dim.portal.y) > 14) continue;
         // nobody walks out past their own reward by accident
         if (dim.hit[o.pid] && !dim.got[o.pid]) { if (!o.dimNag || now - o.dimNag > 4000) { o.dimNag = now; toast(o, "먼저 보상 상자를 여세요!"); } continue; }
-        toast(o, "넥서스 광장으로 돌아왔습니다."); dimHome(S, o);
+        toast(o, "버드나무광장으로 돌아왔습니다."); dimHome(S, o);
       }
     }
   }
@@ -397,7 +397,7 @@ function dimApply(S, p, a) {
       rcCheck(S, party);
       break;
     case "dim_cancel": rcEnd(S, party, "파티장이 차원 균열 입장을 취소했습니다."); break;
-    case "dim_leave": toast(p, "차원 균열을 떠나 넥서스 광장으로 돌아왔습니다."); dimHome(S, p); break;
+    case "dim_leave": toast(p, "차원 균열을 떠나 버드나무광장으로 돌아왔습니다."); dimHome(S, p); break;
     case "dim_join": {
       const dim = dimJoinable(S, p);
       const [x, y] = dimSpot(dim.map, dimInside(S, dim.id).length);

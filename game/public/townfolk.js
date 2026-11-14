@@ -1,5 +1,5 @@
 /**
- * 마을 주민 — the townsfolk of 넥서스 광장 going about their day (docs/design/town.md H).
+ * 마을 주민 — the townsfolk of 버드나무광장 going about their day (docs/design/town.md H).
  *
  * Client-only and wire-free: every client works out each resident's place from the synced sky
  * clock (sky.js hour) and the resident's own plan, so two players see the same baker at the same

@@ -220,7 +220,7 @@ function dimBuild(cfg, seed) {
   const st = rooms[startK];
   m.entry = [st.cx, st.cy];
   const door = [st.x0 + 1, st.y0 + 1];
-  m.portals.push({ x: door[0], y: door[1], to: "town", tx: DIM_TOWN.land[0], ty: DIM_TOWN.land[1], label: "넥서스 광장 (귀환)" });
+  m.portals.push({ x: door[0], y: door[1], to: "town", tx: DIM_TOWN.land[0], ty: DIM_TOWN.land[1], label: "버드나무광장 (귀환)" });
   // nothing may wall anything off: furniture or a pool that does is taken away again
   const reachAll = () => {
     const d = bfs(W, H, m.entry[1] * W + m.entry[0], (i) => m.o[(i / W) | 0][i % W] === " " && !SOLID_G.includes(m.g[(i / W) | 0][i % W]));

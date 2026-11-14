@@ -221,7 +221,7 @@ Delivery (B.8) has no recipes.
 
 ### B.9 알바 게시판 (solo part-time board) and NPC trust — proposal fitting the owner's fields
 
-- **Where**: NPC 알바 중개인 포포 (`role: "jobs"`) beside a notice board in 넥서스 마을회관 (`data/maps/town_hall.json`,
+- **Where**: NPC 알바 중개인 포포 (`role: "jobs"`) beside a notice board in 버드나무광장 회관 (`data/maps/town_hall.json`,
   west side, e.g. (4,9); L2 picks a free tile). The plaza board 하루 (daily tasks) is not touched.
 - **Offers**: `jbOffers(ch, day)` is seeded like `rollDaily` (`strHash(name:day:jb)`) and draws 4 templates from
   `JB` the player qualifies for (life level). The board view shows them; `jobBoard.done` lists today's finished

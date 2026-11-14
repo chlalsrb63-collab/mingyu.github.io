@@ -169,7 +169,7 @@ const A = W.join("집주인", 1000000);
   assert.ok(v.map.name.includes("집주인"), v.map.name);
   assert.equal(v.self.house[6], 1, "at home");
   assert.ok(Array.isArray(v.self.house[7]) && v.self.house[7].length === 3, "with the furniture list");
-  assert.ok(v.map.portals.some((p) => p.to === "넥서스 광장" && p.door), "a door back out");
+  assert.ok(v.map.portals.some((p) => p.to === "버드나무광장" && p.door), "a door back out");
   assert.ok(W.S.homes[A.p.map], "the house is a live instance");
   assert.ok(v.map.o.some((row) => row.includes("[")) && v.map.o.some((row) => row.includes("p")), "the chest and the bed stand in the room");
 }

@@ -6,7 +6,7 @@
       "id": "sq_willow_letter",
       "giver": "willow_elder",
       "title": "꽃 편지 심부름",
-      "text": "넥서스 광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.",
+      "text": "버드나무광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.",
       "done": "리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.",
       "goal": { "type": "talk", "npc": "shop" },
       "req": { "lv": 1, "quest": null },

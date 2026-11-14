@@ -106,7 +106,7 @@ frame: inside the sheet, closed outline, eyes uncovered, art in every view, in i
 looks (species ↔ LOOK_MAX) · mobart (every mob has a model that fits its canvas) · accounts (vault
 logic with a fake store + client contract) · daynight (clock, weather per map/slot, wire `dn`, stumps, warmth 1–4, 연주/건배, storyteller, rain/fog flavour) · data (editor data: sample map, links, side quests, round
 trip, data:check errors, sheet v9) · dimrift (차원 균열: generator, ready check, gauge/orbs/shrines, master, chest, death, cleanup, wire, bot-party clear time; `-v` prints the times, `HPB= BOSSHP= NOCLEAR=1 MORE=1` for tuning) · housing (bag 40→100 and its costs, bag size in every way in, house buy/upgrade, door, furniture place/turn/pick with collisions, wall pieces, reach and limits, storage and its chests, rest, party visits, instance cleanup, old sheets of every version) · interiors (all thirteen town rooms against docs/design/town.md D/F: size, style, door ↔ room round trips onto
-each landing, diorama walls, a light, hosts and `thing` objects reachable, keepers' own goods, the job scroll, merc quests) · town (넥서스 광장: size/entry/build time, frozen buildings and doors, everyone's tile, reach from the entry, stone→door and service-pair distances, signposts and gate labels, the two fires, old-layout sheets, every resident anchor and walk).
+each landing, diorama walls, a light, hosts and `thing` objects reachable, keepers' own goods, the job scroll, merc quests) · town (버드나무광장: size/entry/build time, frozen buildings and doors, everyone's tile, reach from the entry, stone→door and service-pair distances, signposts and gate labels, the two fires, old-layout sheets, every resident anchor and walk).
 
 ### Scripts — `game/scripts/` (pure node; work on Windows)
 `build-logic.mjs` (concat parts + `data/**` → logic.js; `--check`, `--watch`; exports `readData buildLogic`) ·
@@ -127,8 +127,8 @@ contact sheets → `game/shots_cos/`).
 
 ### Other
 `game/data/` map-editor data, built into logic.js (contract: `docs/editor/SCHEMA.md`): `maps/<id>.json`
-(sample `willow.json` 버드나무 마을; the town's interiors, docs/design/town.md D/F: `town_hall` 넥서스 마을회관,
-`owl_library` 부엉이 도서관, `dojo` 넥서스 수련관, `general_store` 다람쥐 잡화점, `kangkang_forge` 캉캉대장간,
+(sample `willow.json` 버드나무 마을; the town's interiors, docs/design/town.md D/F: `town_hall` 버드나무광장 회관,
+`owl_library` 부엉이 도서관, `dojo` 버드나무광장 수련관, `general_store` 다람쥐 잡화점, `kangkang_forge` 캉캉대장간,
 `merc_office` 늑대발 용병사무소, `bogle_lab` 보글연금공방, `juju_diner` 쥬쥬식당, `tales_cafe` 테일즈 카페,
 `starlight_inn` 모닥별 여관, `boutique` 루루 의상실, `pet_house` 몽글 펫 돌봄집, `dongdong_apt` 동동아파트), `links.json` (every town door), `npcs.json`, `quests.json` · `game/editor/` the map
 editor app (plain ES modules, Korean, no build; imports `/public/` art modules; owner guide

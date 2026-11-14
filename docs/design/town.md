@@ -1,4 +1,4 @@
-# 넥서스 광장 — 숲 속 피난 마을 재설계 (town redesign) — 설계서
+# 버드나무광장 — 숲 속 피난 마을 재설계 (town redesign) — 설계서
 
 Status: **frozen design contract**, ready for two parallel implementers (T-A exterior, T-B interiors; section J).
 Audience: those two agents and the integrator. Code, identifiers and commit messages English; every player-facing
@@ -80,7 +80,7 @@ self-describing); add an old-sheet case to `content.mjs`. Sheets saved in an int
 10 TTCCCCCCC.CwC.......a...........a..............FTT    , upper terrace (윗마을) · W 석축 retaining wall
 12 TTCCCCCCC.CwC..,,,,,,,,,,,,,,,,,,,,,rr.........FTT    S stone steps (ground v) · o plaza · p road · r lane
 14 TT.CCCCC..CwC..,,,,,,,,,,,,,,,,,,,,,rr.........FTT    + door tiles (links.json / HOUSE_TOWN)
-16 TT........CwC..,LLLL,,,,,,,,,,JJJ,,,rr.........FTT    H 마을회관 · L 부엉이 도서관 · J 넥서스 수련관
+16 TT........CwC..,LLLL,,,,,,,,,,JJJ,,,rr.........FTT    H 마을회관 · L 부엉이 도서관 · J 버드나무광장 수련관
 18 TT........CwC..,LLLL,,,,,,,,,,JJJ,,,rr.........FTT    A 보글연금공방 · G 다람쥐 잡화점 · K 캉캉대장간
 20 TT........CwC..,LL+L,,,HHHH,,,,+,,,,rr.........FTT    M 늑대발 용병사무소 · R 마을 창고 (barn, no door)
 22 TThh.hhh..CwC..,,,,,,,,HHHH,,,,,,,,,rr........aFTT    Z 동동아파트 · h villagers' cottages (no doors)
@@ -120,7 +120,7 @@ script, not committed). T-A builds it with tile precision from the tables below;
 | district | area (tiles) | mood and content |
 | --- | --- | --- |
 | **중앙 광장** plaza | ellipse centre (50,40), rx 12.5, ry 8.5, ground `o` | fountain, waypoint stone, 엘더윈, 하루's board, 노바, 리나's stall, spirit tree + fire, obelisk + 오르카, benches, lamp strings (existing `L` string logic), flower tubs |
-| **윗마을** upper terrace (public) | x 30–74, y 12–28; promenade `r` y 26–27 x 32–72 | 마을회관 (centre, facing the plaza stairs), 부엉이 도서관 (west, by the ravine, reading garden), 넥서스 수련관 + training yard (east). Quiet, stone + ivy, flower beds along the wall |
+| **윗마을** upper terrace (public) | x 30–74, y 12–28; promenade `r` y 26–27 x 32–72 | 마을회관 (centre, facing the plaza stairs), 부엉이 도서관 (west, by the ravine, reading garden), 버드나무광장 수련관 + training yard (east). Quiet, stone + ivy, flower beds along the wall |
 | **장터 거리** market (commercial) | north side of the east road y 40–41, x 62–98; lane x 80–81 north to y 29 | 잡화점, 캉캉대장간 + open forge yard x 76–79 × 33–38, 용병사무소 near the east gate, 보글연금공방 up the lane. Awnings, crates, barrels, carts |
 | **모닥별 뜰** hospitality | lane x 76–77 (y 42–49) to square x 68–80 × 50–56 (`r`) | 쥬쥬식당, 테일즈 카페, 모닥별 여관 around a lantern-strung square with outdoor tables (`o` + `k`), a well |
 | **살림 마을** residential (west, across the stream) | x 3–20, y 20–50 | 동동아파트, 내 집 + 하우징 안내인 포근, five villagers' cottages (legacy `house()` v0–3, no doors), vegetable gardens, laundry lines, chicken-less pens, mailboxes |
@@ -155,9 +155,9 @@ the room's door tile is (dx, H−1) with ground `e`, entry (dx, H−2); its port
 
 | k (`bld.k`) | sign (name · icon) | function | district | footprint x,y,w,h | town door tiles | town landing | interior id · size · door/entry | exterior style |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| hall | 넥서스 마을회관 · `banner` | civic, main-quest elder outside, daily board inside | 윗마을 | 46,20,8,5 s | (49,25)(50,25) | (49,26) | `town_hall` 22×18 · (11,17)/(11,16) (exists) | big timber hall on a stone plinth, moss-green shingle hip roof, clock gable, two banners, twin lanterns |
+| hall | 버드나무광장 회관 · `banner` | civic, main-quest elder outside, daily board inside | 윗마을 | 46,20,8,5 s | (49,25)(50,25) | (49,26) | `town_hall` 22×18 · (11,17)/(11,16) (exists) | big timber hall on a stone plinth, moss-green shingle hip roof, clock gable, two banners, twin lanterns |
 | library | 부엉이 도서관 · `book` | lore, 도감, records | 윗마을 W | 33,16,7,5 s | (36,21)(37,21) | (36,22) | `owl_library` 22×16 · (11,15)/(11,14) | round stone tower + timber wing, slate-blue roof, round "owl-eye" window, ivy, reading garden with benches |
-| dojo | 넥서스 수련관 · `sword` | stat training, jobs | 윗마을 E | 60,16,6,4 s | (62,20)(63,20) | (62,21) | `dojo` 18×14 · (9,13)/(9,12) | long low timber hall, deep eaves, rust roof, banner poles; yard x 66–72 × 17–25 with dummies |
+| dojo | 버드나무광장 수련관 · `sword` | stat training, jobs | 윗마을 E | 60,16,6,4 s | (62,20)(63,20) | (62,21) | `dojo` 18×14 · (9,13)/(9,12) | long low timber hall, deep eaves, rust roof, banner poles; yard x 66–72 × 17–25 with dummies |
 | store | 다람쥐 잡화점 · `bag` | potions, scrolls, sundries | 장터 | 63,33,5,4 s | (65,37)(66,37) | (65,38) | `general_store` 16×12 · (8,11)/(8,10) | timber, striped awning, barrels/crates out front, hanging acorn-bag sign |
 | smithy | 캉캉대장간 · `anvil` | enhance, salvage, gear, runes | 장터 | 70,33,6,4 s | (72,37)(73,37) | (72,38) | `kangkang_forge` 18×12 · (9,11)/(9,10) | stone ground floor, tall chimney (glow + sparks), slate roof; open forge yard x 76–79 × 33–38 with outdoor anvil |
 | merc | 늑대발 용병사무소 · `swords` | requests, party finding, rift tips | 장터 E (by the gate) | 83,32,6,4 s | (85,36)(86,36) | (85,37) | `merc_office` 20×14 · (10,13)/(10,12) | log lodge, dark wood, shields on the front wall, notice board outside, crossed-swords sign |
@@ -254,7 +254,7 @@ Every room is `safe`, `theme: "interior"`, has ≥ 1 light (`*`, `o`, `#`, `<` o
 | `kangkang_forge` 캉캉대장간 | forge · town | `forge_tong` 견습 대장장이 통통 · smith · 생쥐 · hammer · (6,4)<br>`forge_musoe` 갑옷장이 무쇠 · shop `goods: W1 w_book_1 h_1 a_1 g_1 b_1 h_2 a_2 g_2 b_2 ru_ign ru_aeg ru_vit ru_men ru_cel ru_acu ru_san ru_lum ru_fos` · 곰 · wipe · (13,3)<br>reserved tile (11,6) for 캉캉 (life-and-coop C1, role `craft`) | `forge_anvil` 모루 · smith · on `&` | furnace `<`, anvil `&`, quench `w`, `>` racks, `]` ore crates, flagstone `x` floor |
 | `juju_diner` 쥬쥬식당 | tavern · cafe | `juju` 쥬쥬 · shop `goods: food_s food_m food_l inn_bread` · 너구리, apron · stir · by the stove (5,2)<br>`diner_piri` 떠돌이 악사 피리 · talk · 사슴 · — · (16,8)<br>`diner_reg1`, `diner_reg2` 단골 손님 · talk · sip · at tables | — | stove `:` with `fires` in front (cook + rest), bar `m` + `j` taps, `w` kegs, tables `o` + `k`, fireplace `#` |
 | `boutique` 루루 의상실 | boutique · cafe | `bout_silvi` 재봉사 실비 · costume · 고양이, tape measure · knit · (11,3) | `bout_mirror` 전신 거울 · costume · on `'` | `>` clothes rails, `'` mirrors, `s` armchair, `g` plants, `u` round rug, counter `m` |
-| `dojo` 넥서스 수련관 | dojo · town | `dojo_panpan` 사범 판판 · train · 판다, headband · — · (9,3) | `dojo_scroll` 전직의 두루마리 · job · on `v` (the job window opens here too) | `` ` `` dummies, `>` racks, `!` banners, `t` trophy cabinet, `x` / `y` mat floor |
+| `dojo` 버드나무광장 수련관 | dojo · town | `dojo_panpan` 사범 판판 · train · 판다, headband · — · (9,3) | `dojo_scroll` 전직의 두루마리 · job · on `v` (the job window opens here too) | `` ` `` dummies, `>` racks, `!` banners, `t` trophy cabinet, `x` / `y` mat floor |
 | `pet_house` 몽글 펫 돌봄집 | inn · cafe | `pet_monggeul` 펫 돌보미 몽글 · shop `goods: pet_chick pet_bat pet_wisp` · 양 · — · (7,2) | — | `%` cats, `g` plants, `w` feed barrel, `u` rug, counter `m` |
 | `dongdong_apt` 동동아파트 1층 로비 | inn · town | `dongdong` 관리인 동동 · talk · 펭귄 · sweep · (4,3) | `apt_mail` 우편함 · talk ("편지가 없네요." + resident gossip) · on `r` | mailboxes `r` along the back wall, a `~` painting of the building day, `g` plants, a long bench `-` |
 | `bogle_lab` 보글연금공방 | lab · cafe | `bogle` 보글 · talk (role `alch` later) · 개구리, goggles · stir · (9,3) | — | cauldron = `:` (no `fires` entry: not a hearth), `r` jar shelves, `;` specimen jars, `b` books |

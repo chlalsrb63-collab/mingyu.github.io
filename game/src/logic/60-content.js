@@ -41,7 +41,7 @@ function finishRecall(S, p) {
   p.recall = null;
   S.maps[p.map].ev.push(["rc", p.eid, -1]);
   changeMap(S, p, START.map, START.x, START.y);
-  toast(p, "넥서스 광장으로 돌아왔습니다.");
+  toast(p, "버드나무광장으로 돌아왔습니다.");
   p.dirty = true;
 }
 

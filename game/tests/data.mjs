@@ -114,7 +114,7 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   assert.equal(W.p.map, "willow", "the town's south door leads to willow");
   const v = W.step();
   assert.equal(v.map.id, "willow");
-  assert.ok(v.map.portals.some((p) => p.to === "넥서스 광장"), "the client sees where the door goes");
+  assert.ok(v.map.portals.some((p) => p.to === "버드나무광장"), "the client sees where the door goes");
   assert.ok(v.map.npcs.find((n) => n.id === "willow_fisher").lines.length >= 2);
   W.from = "willow"; W.walk(W.p.x / T | 0, 1);
   assert.equal(W.p.map, "town", "and the village's north door leads home");

@@ -1,4 +1,4 @@
-// ───────────────────────────── 넥서스 광장: the forest refuge (docs/design/town.md) ─────────────────────────────
+// ───────────────────────────── 버드나무광장: the forest refuge (docs/design/town.md) ─────────────────────────────
 // A cosy, lamp-lit centre (plaza, market, hearths) fading outward into the woods; along the north edge a
 // palisade, watch posts and the creeping blight where the darkness-eaten forest presses in. Laid by hand on a
 // 100 × 76 grid (the tiles in town.md B–D are frozen: doors, interiors, tests and other docs read them); the
@@ -12,9 +12,9 @@ const TOWN_REV = 2;
  * from data/links.json (and HOUSE_TOWN for 내 집): this table places the building, its door art and its sign.
  */
 const TOWN_BLD = [
-  { k: "hall", name: "넥서스 마을회관", icon: "banner", x: 46, y: 20, w: 8, h: 5, door: "s", d: [[49, 25], [50, 25]] },
+  { k: "hall", name: "버드나무광장 회관", icon: "banner", x: 46, y: 20, w: 8, h: 5, door: "s", d: [[49, 25], [50, 25]] },
   { k: "library", name: "부엉이 도서관", icon: "book", x: 33, y: 16, w: 7, h: 5, door: "s", d: [[36, 21], [37, 21]] },
-  { k: "dojo", name: "넥서스 수련관", icon: "sword", x: 60, y: 16, w: 6, h: 4, door: "s", d: [[62, 20], [63, 20]] },
+  { k: "dojo", name: "버드나무광장 수련관", icon: "sword", x: 60, y: 16, w: 6, h: 4, door: "s", d: [[62, 20], [63, 20]] },
   { k: "store", name: "다람쥐 잡화점", icon: "bag", x: 63, y: 33, w: 5, h: 4, door: "s", d: [[65, 37], [66, 37]] },
   { k: "smithy", name: "캉캉대장간", icon: "anvil", x: 70, y: 33, w: 6, h: 4, door: "s", d: [[72, 37], [73, 37]] },
   { k: "merc", name: "늑대발 용병사무소", icon: "swords", x: 83, y: 32, w: 6, h: 4, door: "s", d: [[85, 36], [86, 36]] },
@@ -41,7 +41,7 @@ function bigClean(b) {
 
 function buildTown() {
   const W = 100, H = 76, S0 = 2203;
-  const m = blank("town", "넥서스 광장", W, H, ".");
+  const m = blank("town", "버드나무광장", W, H, ".");
   m.safe = true;
   m.bgm = "town";
   m.entry = [50, 43];
