@@ -1,0 +1,27 @@
+<!doctype html><meta charset="utf-8"><title>gather</title><body style="margin:0;background:#15161c"><canvas id="c"></canvas>
+<script type="module">
+// gathering art (gatherart.js): nodes by kind × grade, ready and spent, at 4×; the pouch's icons at 4× and 1×
+import * as GA from "./gatherart.js";
+const cv = document.getElementById("c"), g = cv.getContext("2d"), z = 4;
+const NW = 34 * z + 8, NH = 30 * z + 8;
+cv.width = 10 * NW; cv.height = 3 * NH + 2 * (16 * z + 12) + 40;
+g.imageSmoothingEnabled = false;
+g.fillStyle = "#15161c"; g.fillRect(0, 0, cv.width, cv.height);
+for (let k = 0; k < 3; k++) for (let gr = 1; gr <= 5; gr++) for (const sp of [0, 1]) {
+  const col = (gr - 1) * 2 + sp, x = col * NW, y = k * NH;
+  g.fillStyle = ["#5a9a3a", "#4a7a3a", "#5a5a66", "#3a3446", "#8a6a3a"][gr - 1]; g.fillRect(x + 2, y + 2, NW - 4, NH - 4);
+  g.drawImage(GA.nodeSprite(k, gr, !!sp), x + 4, y + 4, 34 * z, 30 * z);
+}
+const ids = [];
+for (const mk of ["h", "o", "w"]) for (let i = 1; i <= 5; i++) ids.push([`m_${mk}${i}`, { type: "lmat", mk, grade: i }]);
+for (let i = 1; i <= 5; i++) ids.push([`ing_${i}`, { type: "lmat", mk: "i", grade: i }]);
+ids.push(["staple", { type: "mat" }], ["flask", { type: "mat" }]);
+const IW = 16 * z + 12, y0 = 3 * NH + 8;
+ids.forEach(([id, it], i) => {
+  const x = (i % 11) * IW + 6, y = y0 + Math.floor(i / 11) * IW;
+  g.fillStyle = "#23252e"; g.fillRect(x - 4, y - 4, 16 * z + 8, 16 * z + 8);
+  g.drawImage(GA.matIcon(id, it), x, y, 16 * z, 16 * z);
+  g.drawImage(GA.matIcon(id, it), 11 * IW + 10 + (i % 6) * 20, y0 + Math.floor(i / 6) * 20);
+});
+document.title = "ready";
+</script>
