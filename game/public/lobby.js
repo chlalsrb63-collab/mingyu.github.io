@@ -16,6 +16,7 @@ import * as SPC from "./species.js";
 import * as Looks from "./looks.js";
 import { Sound } from "./audio.js";
 import { iconImg } from "./uiicons.js";
+import { kindIcon } from "./mastery.js";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -452,7 +453,7 @@ function undo() {
   if (!h) return;
   Sound.play("ui");
   draft.cls = h.cls; draft.look = h.look;
-  markClass(); if (lookEd) lookEd.refresh(); markPresets();
+  pv.atkT = -1e9; if (lookEd) lookEd.refresh(); markPresets();
 }
 function openCreate(sid) {
   const sv = SERVER(sid);
@@ -463,10 +464,6 @@ function openCreate(sid) {
   if (!$("#c-name").value) nameCheck();
   if (matchMedia("(pointer: fine)").matches) setTimeout(() => $("#c-name").focus(), 50);
 }
-function markClass() {
-  for (const b of $$("#c-cls .cls")) { const on = b.dataset.v === draft.cls; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); }
-  pv.atkT = -1e9;
-}
 function nameCheck() {
   const v = $("#c-name").value, err = nameError(v), m = $("#c-name-msg");
   m.textContent = v ? err || "좋은 이름이에요! (이미 있는 이름인지는 생성할 때 확인해요)" : "한글·영문·숫자 2~10자";
@@ -475,16 +472,27 @@ function nameCheck() {
   return !err;
 }
 function wireCreate() {
-  // no class to pick any more: everyone starts a 모험가 with an old dagger (J3 restyles this corner)
+  // nothing to pick but the look: everyone starts a 모험가 holding an old dagger; the way on, in three steps
   const box = $("#c-cls");
   box.textContent = "";
-  const card = el("div", "cls on");
+  const card = el("div", "cls on start");
   const hd = el("div", "cls-hd");
-  const ic = el("span", "cls-ic"); ic.append(iconImg("dagger", "#2a1806"));
-  hd.append(ic, el("b", "", "모험가"));
+  const ic = el("span", "cls-ic"); ic.append(iconImg("person", "#2a1806"));
+  hd.append(ic, el("b", "", "모험가"), el("span", "cls-meta", "Lv.1"));
   card.append(hd, el("p", "cls-mech", "모든 모험가는 직업 없이 시작합니다. 무기를 쓰며 숙련을 쌓고, 숙련 20에 전직하세요."));
+  const wk = el("div", "cr-wk");
+  for (const [k, name] of [["sword", "대검"], ["dagger", "단검"], ["spear", "창"], ["staff", "스태프"], ["book", "마도서"], ["bow", "활"]]) {
+    const w = el("span", "");
+    const im = el("img"); im.alt = ""; im.src = kindIcon(k);
+    w.append(im, el("small", "", name));
+    w.title = name;
+    wk.append(w);
+  }
+  card.append(wk);
+  const steps = el("ol", "cr-steps");
+  for (const t of ["수련관 카이에게서 첫 무기를 하나 고릅니다", "모닥불 곁에서 경험치로 능력치를 올립니다 (C)", "무기 숙련 20 → 전직관 아르센에게서 전직 (K)"]) steps.append(el("li", "", t));
+  card.append(steps);
   box.append(card);
-  markClass();
   // the look editor (looks.js), without its presets: they get a row of their own
   lookEd = Looks.editor($("#c-parts"), () => draft.look, (l) => { remember(); draft.look = l; markPresets(); }, () => { Sound.unlock(); Sound.play("ui"); }, { presets: false });
   const pr = $("#c-presets");

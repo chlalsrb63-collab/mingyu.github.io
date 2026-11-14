@@ -223,3 +223,16 @@
   .cr-foot { padding-top: 4px; margin-top: 2px; }
   #t-ver { display: none; }
 }
+
+/* ── creation (J3): no class to pick; the 모험가 card shows the six weapons and the way on ── */
+#c-cls { grid-template-columns: 1fr; }
+#c-cls .cls.start { cursor: default; }
+#c-cls .cls.start:hover { background: #4e4030; }
+#c-cls .cls.start .cls-meta { font: 11px var(--pix9); }
+.cr-wk { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-top: 2px; }
+.cr-wk span { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 0 2px; background: #1a1522; border: 2px solid #0d0b12; }
+.cr-wk img { width: 32px; height: 32px; image-rendering: pixelated; }
+.cr-wk small { font: 10px/1 var(--pix9); color: #d8cfe6; }
+.cr-steps { margin: 2px 0 0; padding-left: 18px; font: 11px/1.45 var(--pix9); color: #f0e2b8; }
+.cr-steps li::marker { color: var(--b-hi); }
+@media (max-height: 520px) { .cr-steps { display: none; } .cr-wk img { width: 16px; height: 16px; } }
