@@ -24,13 +24,28 @@ export const UG = {
   crypt: { floor: ["#6f6a64", "#55504c", "#8b867c"], rock: "#15121a", face: ["#4b4540", "#77705f", "#989078", "#2f2a29"], wet: ["#3d5a66", "#33505c", "#7aa0a8", "#243a44", "#5a8088"] },
   sewer: { floor: ["#5d6a5e", "#47534a", "#768476"], rock: "#0d130f", face: ["#6a4636", "#8a6048", "#aa7c5e", "#3c2820"], wet: ["#6a9a3a", "#5a8a30", "#b0dc70", "#36561e", "#8cc054"] },
   abyss: { floor: ["#7c2f3c", "#5c1e2b", "#9e4855"], rock: "#19070c", face: ["#5a1622", "#8c2c3a", "#ba4e5a", "#330e18"], wet: ["#a81c2c", "#8e1424", "#e4606c", "#560a16", "#d04858"] },
-  cave: { floor: ["#486a8a", "#3c5a78", "#5a7ea0"], rock: "#131a32", face: ["#2e4468", "#4a6a98", "#5a7cac", "#223450"], wet: ["#3f8fd0", "#3478bc", "#8ad4f8", "#245a8c", "#6ab8ec"] },
+  cave: { floor: ["#40606a", "#344f5a", "#527680"], rock: "#101a26", face: ["#2e4458", "#4a6a7c", "#5a7c8c", "#22343f"], wet: ["#26a08e", "#1e8a7a", "#8af4dc", "#145a50", "#58d6be"] },
 };
 export const GRASS = { meadow: "#6cbf5e", town: "#6cbf5e", city: "#6cbf5e", forest: "#3f8a5c", autumn: "#71843a" };
 export const underground = (theme) => !!UG[theme];
+/**
+ * The cave's shelf level (0/1/2) per tile from the map payload's `lv` (runs "<level><count>" joined by ","),
+ * or null on a map without shelves. Decoded once per map.
+ */
+const LV = new WeakMap();
+export function levels(m) {
+  if (!m || !m.lv) return null;
+  let L = LV.get(m);
+  if (L) return L;
+  L = new Uint8Array(m.w * m.h);
+  let i = 0;
+  for (const run of m.lv.split(",")) { const v = +run[0], n = +run.slice(1); L.fill(v, i, i + n); i += n; }
+  LV.set(m, L);
+  return L;
+}
 
 /** Material ids, as stored per pixel so later passes know what they are drawing on. */
-export const MID = { void: 1, grass: 2, forest: 3, path: 4, sand: 5, plaza: 6, ruin: 7, water: 8, deep: 9, bank: 10, mud: 11, steps: 12, asph: 13, pave: 14, floor: 15, deck: 16, line: 17, curb: 18, leaves: 19, gold: 20, royal: 21, blight: 22, needle: 23 };
+export const MID = { void: 1, grass: 2, forest: 3, path: 4, sand: 5, plaza: 6, ruin: 7, water: 8, deep: 9, bank: 10, mud: 11, steps: 12, asph: 13, pave: 14, floor: 15, deck: 16, line: 17, curb: 18, leaves: 19, gold: 20, royal: 21, blight: 22, needle: 23, moss: 24, mossE: 25, shelf: 26, ford: 27, slab: 28 };
 
 /** A cluster shape: rows separated by "/", "." empty, a digit picks a colour from the material's palette. */
 function shape(s) {
@@ -257,6 +272,31 @@ export function materials(theme) {
     floor = mk(MID.floor, 4, "#486a8a", { pal: ["#486a8a", "#3c5a78", "#5a7ea0", "#4e7090", "#42627e"], straight: true, depth: 1, line: "#2a4262" });
     floor.tex = roughRock(floor, C("#34506c"), C("#4e7192"));
   }
+  // ── the jade cavern (maps-v2 A.5): moss along the ways, grey rock up on the shelves, steps cut in it,
+  // fords of shallow green water over pebbles
+  let cave = null;
+  if (theme === "cave") {
+    const speck = C("#8affc8"), speckL = C("#e4fff4");
+    const specks = (base, rate) => {
+      const tex = (A, B) => { const h = hash(A, B, 201); return h < rate * 0.3 ? speckL : h < rate ? speck : base(A, B); };
+      tex.fill = (x, y, TEX) => {
+        base.fill(x, y, TEX);
+        for (let k = 0; k < 256; k++) { const h = hash(x * 16 + TILE_PX[k][2], y * 16 + TILE_PX[k][3], 201); if (h < rate) TEX[k] = h < rate * 0.3 ? speckL : speck; }
+      };
+      return tex;
+    };
+    const moss = mk(MID.moss, 1, "#2a6a44", { pal: ["#2a6a44", "#205638", "#368656", "#26603e", "#46a066"], style: "soft", amp: 3, line: "#1a4a30" });
+    moss.tex = specks(organic(moss, SHP.forest, SHP.grass2, 205, 0.55, 0.3), 0.006);
+    const mossE = mk(MID.mossE, 2, "#35604e", { pal: ["#35604e", "#2a4c40", "#467a5c", "#3a5a52", "#52906a"], style: "soft", amp: 3.4, line: "#1e3a32" });
+    mossE.tex = specks(organic(mossE, SHP.pebble, SHP.grass2, 207, 0.5, 0.36), 0.002);
+    const shelf = mk(MID.shelf, 3.5, "#7c8380", { pal: ["#7c8380", "#5f6664", "#979e9a", "#848b88", "#6e7572"], straight: true, depth: 1, line: "#4a504e" });
+    shelf.tex = veined(roughRock(shelf, C("#4f5654"), C("#8e9592")), 16, 211, 8, 212, (n, n2, A, B) => (n > 0.7 && n2 > 0.45 && ((A ^ B) & 1) ? C("#4f8a5a") : 0));
+    const steps = mk(MID.steps, 2, "#8a918c", { straight: true, depth: 1 });
+    // shallow green water over pebbles (the pebble shapes carry a pale top and a dark side)
+    const ford = mk(MID.ford, 7, "#2a8a7a", { pal: ["#2a8a7a", "#22766a", "#5ac8b0", "#9aa6a0", "#6e7a76"], style: "soft", amp: 2.4, line: "#145a50" });
+    ford.tex = organic(ford, SHP.pebble, SHP.water, 215, 0.38, 0.3, 6, 4);
+    cave = { ";": moss, ":": mossE, v: steps, s: ford, _shelf: shelf };
+  }
   T = {
     ".": grass, ",": grass, '"': grass, t: grass, ":": grass, ";": grass,
     p: path, s: sand, o: plaza, r: ruin, j: mud, v: steps, w: water, b: water,
@@ -265,6 +305,7 @@ export function materials(theme) {
     _deep: deep, _water: water, _floor: floor, _grass: grass,
   };
   if (theme === "autumn") { T[";"] = goldL; T[":"] = needle; }
+  if (cave) Object.assign(T, cave);
   matCache.set(theme, T);
   return T;
 }
@@ -291,6 +332,9 @@ function prep(m, theme) {
   if (p && p.theme === theme) return p;
   const MT = materials(theme), tmat = new Array(m.w * m.h);
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) tmat[y * m.w + x] = MT[m.g[y][x]] || MT._grass;
+  // the cave's shelves: the floor up on a level is grey rock
+  const L = MT._shelf && levels(m);
+  if (L) for (let i = 0; i < L.length; i++) if (L[i] && tmat[i] === MT._floor) tmat[i] = MT._shelf;
   const out = { theme, MT, tmat, ext: extras(m, theme, MT) };
   PREP.set(m, out);
   return out;

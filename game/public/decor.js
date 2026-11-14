@@ -664,7 +664,9 @@ export function pulse(m, theme, part = null) {
   for (let y = 1; y < m.h - 1; y++) for (let tx = 1; tx < m.w - 1; tx++) {
     if (!keep(tx, y)) continue;
     const X = tx * T, Y = y * T, g0 = m.g[y][tx];
-    if (theme === "cave" && g0 === "w") { b.oval(X + 16, Y + 16, 18, 14, "rgba(90,232,255,0.22)"); b.r(X + 8, Y + 14, 16, 1, "rgba(200,250,255,0.5)"); any = true; }
+    if (theme === "cave" && g0 === "w") { b.oval(X + 16, Y + 16, 18, 14, "rgba(90,255,200,0.22)"); b.r(X + 8, Y + 14, 16, 1, "rgba(200,255,236,0.5)"); any = true; }
+    // the moss's glowing specks breathe with the water
+    if (theme === "cave" && g0 === ";" && hash(tx, y, 66) < 0.3) { b.r(X + 4 + hash(tx, y, 67) * 22, Y + 4 + hash(tx, y, 68) * 22, 2, 2, "rgba(150,255,200,0.7)"); any = true; }
     if (theme === "sewer" && g0 === "w" && hash(tx, y, 61) < 0.5) { b.r(X + 4 + hash(tx, y, 62) * 14, Y + 10 + hash(tx, y, 63) * 12, 9, 1, "rgba(200,255,140,0.55)"); any = true; }
     if (theme === "crypt" && m.o[y][tx] === "3") { b.oval(X + 16, Y + 10, 22, 16, "rgba(255,190,90,0.18)"); any = true; }
     // veins on rock faces that look out over the floor
@@ -673,6 +675,13 @@ export function pulse(m, theme, part = null) {
       for (let s = 0; s < 12; s++) { px += (hash(tx, y, 70 + s) - 0.5) * 6; py -= 2 + hash(tx, y, 90 + s) * 2; b.r(px, py, 2, 2, s % 3 ? "#ff3a4a" : "#ff8a8a"); }
       any = true;
     }
+  }
+  // a soft pool of light under each ring of glowing mushrooms (m.rings), brighter at the heart
+  if (theme === "cave") for (const [rx, ry] of m.rings || []) {
+    if (!keep(rx, ry)) continue;
+    const X = rx * T + 16, Y = ry * T + 16;
+    b.oval(X, Y, 80, 80, "rgba(70,230,180,0.10)"); b.oval(X, Y, 56, 56, "rgba(90,240,190,0.14)"); b.oval(X, Y, 28, 28, "rgba(170,255,220,0.22)");
+    any = true;
   }
   return any ? c : null;
 }
