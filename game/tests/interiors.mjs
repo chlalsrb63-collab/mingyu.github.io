@@ -93,7 +93,9 @@ for (const id of ROOMS) {
 // ── the cafe and the inn sell their own goods, and only theirs
 const buyAt = (id, npcId, item) => {
   const m = mapOf(id), n = m.npcs.find((o) => o.id === npcId);
-  place(id, n.x * 16 + 8, (n.y + 2) * 16 + 8);
+  // across the counter: three tiles in front of the keeper
+  place(id, n.x * 16 + 8, (n.y + 3) * 16 + 4);
+  assert.ok(open(m, n.x, n.y + 3), `${id}: a customer can stand in front of ${n.name}`);
   return L.validateAction(S, PID, { t: "buy", id: item, n: 1 });
 };
 p.ch.gold = 10000;

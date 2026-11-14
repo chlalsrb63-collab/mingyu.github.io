@@ -859,7 +859,8 @@ function nearestNpc() {
   let best = null, bd = 40;
   for (const n of G.map.npcs) {
     if (!S3.npcOut(n)) continue;
-    const d = dist(G.me.x, G.me.y, n.x * T + 8, n.y * T + 12);
+    // a keeper behind a counter (the cafe, the inn) is served across it: a little further, still in the server's reach (56)
+    const d = dist(G.me.x, G.me.y, n.x * T + 8, n.y * T + 12) - (n.goods ? 14 : 0);
     if (d < bd) { bd = d; best = n; }
   }
   for (const m of G.map.marks || []) {

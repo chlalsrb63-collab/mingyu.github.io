@@ -22,6 +22,7 @@
  * Map `style` (cafe hall inn library) picks the wallpaper, curtains and banners.
  */
 import { hash, C, mix, tone, shade, light, Buf, TILE_PX } from "./iso_px.js";
+import { daylight } from "./decor.js";
 
 export const WALLS = "=+^~@!", STUB = "_", FURN = "okmjdbrfgivzpstwNV";
 export const OBJECTS = WALLS + STUB + FURN;
@@ -438,7 +439,7 @@ function wallDeco(S, ch, s, z, k, x, y, join) {
     if (s < 4 || s > 11 || z > 40) return 0;
     const tip = 20 + Math.abs(s - 7.5);
     if (z < tip) return 0;
-    if (s === 4 || s === 11 || z < tip + 1.5) return F(light(S.banner, 1.0), k) && F(S.trim, k);
+    if (s === 4 || s === 11 || z < tip + 1.5) return F(S.trim, k);
     const pd = Math.hypot(s - 7.5, z - 29);
     if (pd < 1.8 || [[5.5, 32], [9.5, 32], [6.5, 34], [8.5, 34]].some(([a, b]) => Math.hypot(s - a, z - b) < 0.9)) return F(S.trim, k);
     return F((z & 3) === 0 ? shade(S.banner, 0.9) : S.banner, k);
@@ -483,7 +484,12 @@ function wallPiece(m, x, y, ch) {
     M.put(A, B, WH, c);
   }
   const extra = {};
-  if (ch === "+" && (showL || showR)) extra.win = showL ? "N" : "W";
+  if (ch === "+" && (showL || showR)) {
+    extra.win = showL ? "N" : "W";
+    // the glass, in screen terms from the tile's top corner, so night can darken it
+    const P = (s, z) => (showL ? [s - 15, ((s + 15) >> 1) - z] : [15 - (15 - s), ((15 + 15 - s) >> 1) - z]);
+    extra.glass = [...P(3, 21), ...P(13, 21), ...P(13, 41), ...P(3, 41)];
+  }
   if (ch === "=" && hash(x, y, 77) < 0.3) { const [sx, sy] = showL ? [7.5 - 15, ((7.5 + 15) >> 1) - 32] : [15 - 7.5, ((15 + 7.5) >> 1) - 32]; extra.glow = { x: sx, y: sy, r: 34, col: "#ffc070", k: 0.5 }; }
   return M.piece(extra);
 }
@@ -753,7 +759,7 @@ function plant(m, x, y) {
   if (h < 0.5) { M.blob(8, 8, 12, 4.5, 4.5, 5, pick); M.blob(6, 10, 16, 3, 3, 3.5, pick); M.blob(10, 7, 17, 2.6, 2.6, 3, pick); }
   else {
     // a tall leafy one
-    M.cyl(8, 8, 0.6, 5, 10, "#6a4a2a");
+    M.cyl(8, 8, 0.8, 5, 10, "#6a4a2a");
     M.blob(8, 8, 18, 4, 4, 5, pick); M.blob(7, 9, 12, 3.6, 3.4, 3, pick);
   }
   return M.piece();
@@ -762,7 +768,7 @@ function plant(m, x, y) {
 function lantern(m, x, y) {
   const M = new Model(34);
   M.cyl(8, 8, 2.6, 0, 2, "#3a3036");
-  M.cyl(8, 8, 0.7, 2, 20, "#4a3e44");
+  M.cyl(8, 8, 1, 2, 20, "#4a3e44");
   M.box(5, 5, 22, 6, 6, 8, "#ffd890", (f, s, z, k) => (f === "top" ? C("#3a3036") : s === 0 || s === 5 || z === 0 ? F("#4a3e44", k) : F(z > 4 ? "#fff0c0" : "#ffcc70", k)));
   M.box(4, 4, 30, 8, 8, 2, "#4a3e44");
   const [sx, sy] = M.scr(8, 8, 26);
@@ -798,7 +804,7 @@ function longTable(m, x, y) {
     // a cloth runner, papers, a candlestick
     M.box(u0, 6, 10, u1 - u0, 4, 1, "#a8343c", (f, s, z) => (f === "top" && (z === 0 || z === 3) ? C("#d8b050") : 0));
     if (h < 0.5) { M.box(3, 3, 10, 4, 3, 1, "#f2ead6"); M.box(10, 11, 10, 3, 4, 1, "#e8dcc0"); }
-    else { M.cyl(8, 8, 1.3, 11, 1, "#d8b050"); M.cyl(8, 8, 0.6, 12, 5, "#f4ecd8"); const [sx, sy] = M.scr(8, 8, 18); extra.glow = { x: sx, y: sy, r: 34, col: "#ffc070", k: 0.6, flick: 0.12 }; extra.candle = [sx, sy]; }
+    else { M.cyl(8, 8, 1.3, 11, 1, "#d8b050"); M.cyl(8, 8, 0.8, 12, 5, "#f4ecd8"); const [sx, sy] = M.scr(8, 8, 18); extra.glow = { x: sx, y: sy, r: 34, col: "#ffc070", k: 0.6, flick: 0.12 }; extra.candle = [sx, sy]; }
   } else {
     // plates, mugs and a loaf
     if (h < 0.4) { M.cyl(5, 6, 2.2, 10, 1, "#f4ecdc"); M.cyl(11, 12, 2.2, 10, 1, "#f4ecdc"); M.cyl(5, 6, 1.4, 11, 1, "#b0602a"); }
@@ -903,8 +909,21 @@ const CAT = [
 const CAT_C = [null, "#2b2233", "#e8934a", "#f6e2c0", "#b8622e", "#5a2a2a"];
 
 function animFor(p) {
-  if (!p.fire && !p.steam && !p.cat && !p.candle) return null;
+  if (!p.fire && !p.steam && !p.cat && !p.candle && !p.glass) return null;
   return (g, t, X, Y, parts) => {
+    if (p.glass) {
+      // after dark the window goes deep blue, with a star or two
+      const night = daylight().night;
+      if (night > 0.02) {
+        const q = p.glass;
+        g.globalAlpha = night * 0.85; g.fillStyle = "#1c2848";
+        g.beginPath(); g.moveTo(X + q[0], Y + q[1]); for (let i = 2; i < 8; i += 2) g.lineTo(X + q[i], Y + q[i + 1]); g.closePath(); g.fill();
+        g.globalAlpha = night; g.fillStyle = "#e8ecff";
+        g.fillRect(Math.round(X + (q[0] + q[2]) / 2 - 2), Math.round(Y + (q[1] + q[7]) / 2 - 4), 1, 1);
+        g.fillRect(Math.round(X + q[0] + 2), Math.round(Y + q[7] + 5), 1, 1);
+        g.globalAlpha = 1;
+      }
+    }
     if (p.fire) {
       const fr = FLAME[Math.floor(t / 120) % 3], x0 = Math.round(X + p.fire.x - 3), y0 = Math.round(Y + p.fire.y - 6);
       for (let j = 0; j < fr.length; j++) for (let i = 0; i < 6; i++) { const c = fr[j][i]; if (c !== ".") { g.fillStyle = FLAME_C[+c]; g.fillRect(x0 + i, y0 + j, 1, 1); } }

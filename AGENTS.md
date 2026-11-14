@@ -113,7 +113,8 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `lobby.js` [593] | title, 로그인/회원가입, server/channel list, character creation, in-game channel switch/logout |
 | `account.js` [99] | HTTP side of accounts: `session signup login logout me servers`, `API` base |
 | `scene2d.js` [2357] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites (+ `autumnScenery`), ground, raised blocks, creatures, effects `fx/fxCustom/shake`, pets, title/creation stage |
-| `isotiles.js` [29] · `iso_px.js` [118] · `iso_ground.js` [886] · `iso_tall.js` [601] | quarter-view ground baking (`bakeGround`), pixel buffers/projection (`TW=32, TH=16`), ground materials and transitions, tall blocks (cliffs, walls, houses) |
+| `isotiles.js` [31] · `iso_px.js` [118] · `iso_ground.js` [886] · `iso_tall.js` [601] | quarter-view ground baking (`bakeGround`), pixel buffers/projection (`TW=32, TH=16`), ground materials and transitions, tall blocks (cliffs, walls, houses) |
+| `iso_interior.js` [1059] | indoors (theme `interior`): `bakeRoom` floors and rugs, `roomPiece` back walls / cut front wall / furniture (a texel `Model` with depth buffer), `roomLight` warm lamp/fire/window light, `drawPose` NPC idle acts; char legend in its header and SCHEMA.md |
 | `decor.js` [674] | landmarks (`LANDMARKS` per theme; autumn ruins stand exactly on their footprints), decals, pulses, critters, waypoint stones/signs, town dressing (old `daylight`/`wash`, unused) |
 | `autumn.js` [40] | the autumn theme's turned colours: `HUE` (maple, oak, ginkgo, green) and `hueAt(m, x, y)`, shared by trees (scene2d) and their fallen leaves (iso_ground) |
 | `sky.js` [366] | the outdoor sky: server-synced clock (`setSky(dn)`, `hour phase nightK clockText`), the grade (`grade`: one multiply + stepped light pools + bloom, never a vignette), weather (`drawWeather`: rain, fog, cloud shadows, wind, snow, fireflies), HUD icon; preview overrides `__skyHour`/`__skyWx` |
@@ -152,7 +153,8 @@ connectivity, determinism, speed) · hotbar (quick slots, party chat, tidy) · w
 frame: inside the sheet, closed outline, eyes uncovered, art in every view, in its place) ·
 looks (species ↔ LOOK_MAX) · mobart (every mob has a model that fits its canvas) · accounts (vault
 logic with a fake store + client contract) · daynight (clock, weather per map/slot, wire `dn`, stumps, warmth 1–4, 연주/건배, storyteller, rain/fog flavour) · data (editor data: sample map, links, side quests, round
-trip, data:check errors, sheet v8).
+trip, data:check errors, sheet v8) · interiors (town doors in and out of the cafe/hall/inn, diorama
+walls, keepers' own goods).
 
 ### Scripts — `game/scripts/` (pure node; work on Windows)
 `build-logic.mjs` (concat parts + `data/**` → logic.js; `--check`, `--watch`; exports `readData buildLogic`) ·
@@ -173,7 +175,8 @@ contact sheets → `game/shots_cos/`).
 
 ### Other
 `game/data/` map-editor data, built into logic.js (contract: `docs/editor/SCHEMA.md`): `maps/<id>.json`
-(sample `willow.json` 버드나무 마을), `links.json`, `npcs.json`, `quests.json` · `game/editor/` the map
+(sample `willow.json` 버드나무 마을; the town's interiors `tales_cafe` 테일즈 카페, `town_hall` 넥서스 마을회관,
+`starlight_inn` 모닥별 여관), `links.json`, `npcs.json`, `quests.json` · `game/editor/` the map
 editor app (plain ES modules, Korean, no build; imports `/public/` art modules; owner guide
 `docs/editor/README.md`): `app.js` (tabs, keys, help) · `ui.js` (DOM, API, dialogs, pickers, mob/item/NPC
 pictures) · `validate.js` (map/links/npcs/quests checks, shared with the server) · `mapedit.js` (맵 tab:

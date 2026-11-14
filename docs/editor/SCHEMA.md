@@ -27,7 +27,7 @@ logic.js stays one file with no imports. Missing files = empty defaults = the ga
   "id": "willow",                 // [a-z][a-z0-9_]{1,23}; unique; may equal a built-in id only with "replaces"
   "replaces": null,               // or a built-in map id ("meadow", "town", …): this file REPLACES the generated map
   "name": "버드나무 마을",         // Korean display name
-  "theme": "meadow",              // town meadow forest crypt city sewer cave abyss (ground/wall art + palette)
+  "theme": "meadow",              // town meadow forest crypt city sewer cave abyss interior (ground/wall art + palette)
   "bgm": "field",                 // audio.js TRACKS key
   "safe": false,                  // true = no monsters, no PvE damage (like town)
   "band": [5, 9],                 // level band shown on doors, or null
@@ -75,6 +75,29 @@ generated map round-trips tile for tile):
   for `G` objects (the waypoint mark is added by the game).
 - NPC `lines` (≤ 12 strings, `{n}` = player name) are what the talk window shows, replacing the
   role's stock lines; role `elder` (main-quest giver) is allowed too.
+- **Interiors** (`"theme": "interior"`, art in `public/iso_interior.js`; examples
+  `tales_cafe.json`, `town_hall.json`, `starlight_inn.json`): a diorama room. Back walls stand on
+  the north row (y = 0) and west column (x = 0) only; the south row and east column hold the low
+  cut-down wall `_`, with one open tile (ground `e`, door mat) as the way out — no tall wall ever
+  stands in front of the player. Optional `"style"`: `cafe` `hall` `inn` `library` (wallpaper,
+  curtains, banners). Floors: `f` honey planks, `l` walnut, `x` hearth flagstones, `q` checked rug,
+  `u` round rug, `y` runner carpet, `e` door mat (rugs are drawn whole across touching tiles).
+  Walls: `=` plain, `+` window (sunlight on the floor), `^` chalkboard (two side by side share a
+  frame), `~` picture/map, `@` clock, `!` banner. Furniture (any theme draws it, every object
+  blocks): `o` round table with lamp, `k` chair (turns to the next table), `s` armchair (turns to
+  the hearth), `m` counter, `j` counter with coffee machine, `d` pastry case (counters join in
+  runs), `b` bookshelf, `r` jar cupboard, `t` trophy cabinet, `f` fireplace (put a `fires` entry
+  on the tile in front: it becomes the hearth to rest and cook by), `g` plant, `i` lantern, `v`
+  notice board, `z` long table (joins), `p` bed, `w` barrel, `N` crates, `V` sleeping cat.
+  Pieces against a back wall turn to face the room. Doors between town and a room (`links.json`
+  on the house's doorstep, the room's `portals` back out) are drawn as house doors with a mat,
+  not magic gates. Arrive one tile inside / one tile below the step, never on the door itself.
+- NPC `goods` (role `shop` only): the item ids this keeper sells instead of the general shop
+  list (the cafe's drinks, the inn's stew); the server refuses anything else at that counter.
+  A keeper may stand one tile behind a counter (served across it).
+- NPC `pose`: a small idle act drawn over the sprite — `sip` `read` `write` `wipe` `doze`.
+- NPC `look` with 5–6 values `[ear 0–4, eye 0–4, nose 0–4, clothHex, furHex, pattern 0–3]` gives
+  an editor NPC its own fur and clothes (4-value looks keep the role's built-in appearance).
 - links.json: each entry is ONE-WAY (a two-way connection is two entries, or one entry plus a
   portal in the custom map's own file); the door tile's object is cleared; `label` replaces the
   door's "map name Lv.a–b" caption.

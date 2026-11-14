@@ -30,7 +30,7 @@
   ],
   "objects": [
     "===+==@=+==~===+=+==",
-    "=w  rfr    p p p ig_",
+    "=w  rfr    popop ig_",
     "=                  _",
     "=  s   s           _",
     "=                  _",
@@ -38,7 +38,7 @@
     "+                  _",
     "+  kkkkk           _",
     "=  zzzzz           _",
-    "=  kkkkk        ww _",
+    "=i kkkkk        ww _",
     "=                 N_",
     "=ok          mmmmm _",
     "=k                 _",
@@ -57,7 +57,7 @@
       "name": "여관 주인 마루",
       "role": "shop",
       "x": 15,
-      "y": 10,
+      "y": 9,
       "look": [
         2,
         3,
