@@ -2,8 +2,7 @@
  * The browser side of growing a character and of the comforts of a long hunt,
  * modelled on what Korean MMORPGs settled on long ago:
  *
- *   - skill levels raised at the trainer (바람의나라 수련 · 메이플 마스터리),
- *     and the effects of the second-tier skills and the ultimates;
+ *   - skill levels raised at the trainer (바람의나라 수련 · 메이플 마스터리);
  *   - the warehouse window (창고: sixty slots and a purse per character);
  *   - pet icons and the pet running for loot (메이플 펫);
  *   - scrolls of blessing in the buff row, the revive feather on the death panel;
@@ -119,27 +118,6 @@ export function icons(set) {
 
 // ───────────────────────────── effects ─────────────────────────────
 
-/** The second-tier skills and the ultimates: `kind` 25–32 of an "a" event. */
-export function skillFx(kind, src, tx, ty, ang, S3) {
-  const f = S3.fx;
-  switch (kind) {
-    case 25: f.storm(src.x, src.y, 54, "#d8e8ff"); f.ring(src.x, src.y, 54, "#ffffff", 300); S3.shake(2); Sound.play("swing"); break;
-    case 26: f.crack(src.x, src.y, 84); f.ring(src.x, src.y, 84, "#ffb04a", 420, true); f.ring(src.x, src.y, 60, "#ffffff", 260); f.burst(src.x, src.y, 0.2, "#e0b070", 40, 3.2); S3.shake(10); Sound.play("boom"); break;
-    case 27: f.storm(src.x, src.y, 30, "#c890ff", 360, 3); f.burst(src.x, src.y, 0.6, "#6a4a9a", 22, 1.8); Sound.play("swing"); break;
-    case 28: f.slash(tx, ty, ang + 0.8, "#ff3a5a", 1.3); f.slash(tx, ty, ang - 0.8, "#ff3a5a", 1.3, true); f.spark(tx, ty, "#ffd0d8", 2); f.burst(tx, ty, 0.5, "#ff3a5a", 18, 2.4); S3.shake(7); Sound.play("crit"); break;
-    case 29: f.burst(src.x, src.y, 0.2, "#d0f0e8", 18, 2.4); f.ring(src.x, src.y, 22, "#d0f0e8", 260); S3.shake(3); Sound.play("swing"); break;
-    case 30: f.fall(tx, ty, "#ffd84a", 480); f.fall(tx - 22, ty + 8, "#ffe9a0", 900); f.fall(tx + 20, ty - 6, "#ffe9a0", 1350); Sound.play("magic"); break;
-    case 31: f.sparkle(src.x, src.y, 0.8, "#bfe8ff", 14); Sound.play("magic"); break;
-    case 32: f.snow(tx, ty, 76, 3800); f.ring(tx, ty, 76, "#cfeaff", 600, true); Sound.play("ice"); break;
-  }
-}
-/** A skill's lasting zone going off: 4 the blade storm, 5 the blizzard, 6 the dragon's spear. */
-export function zoneFx(e, S3) {
-  const [, x, y, r, kind] = e, f = S3.fx;
-  if (kind === 4) f.storm(x, y, r, "#d8e8ff", 380, 4);
-  else if (kind === 5) { f.ring(x, y, r, "#cfeaff", 300); f.sparkle(x, y, 0.3, "#ffffff", 10); }
-  else if (kind === 6) { f.fall(x, y, "#ffd84a", 220); f.crack(x, y, r * 0.8, "#ffd84a", 600); S3.shake(5); }
-}
 /** Something crossing from one point to another: 2 a chain-lightning hop, 3 a phantom's dash. */
 export function lineFx(e, S3) {
   const [, ax, ay, bx, by, kind] = e, f = S3.fx;
