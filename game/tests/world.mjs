@@ -79,7 +79,7 @@ while (todo.length) {
   }
 }
 assert.deepEqual(Object.keys(seen).sort(), D.maps.map((m) => m.id).sort(), "every map can be reached from town");
-for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
+for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
 
 // ── the dungeons: harder the deeper you go, a camp on the way, a guardian at the end
 for (const id of ["crypt", "sewer", "abyss"]) {

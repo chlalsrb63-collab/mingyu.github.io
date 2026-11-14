@@ -503,7 +503,7 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "lionhand_gold" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -528,7 +528,7 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6 };
 const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
@@ -639,6 +639,27 @@ const MOBS = {
   fishwalker_blood: { name: "붉은 다리 달린 생선", sp: "fishwalker", tint: "blood", lv: 35, hp: 2500, atk: 106, def: 24, spd: 32, xp: 1120, gold: [80, 140], aggro: 80, range: 22, cd: 1500, slam: 38 },
   crabskull_frost: { name: "푸른 두개골 게", sp: "crabskull", tint: "frost", lv: 36, hp: 2600, atk: 108, def: 30, spd: 34, xp: 1220, gold: [86, 150], aggro: 84, range: 20, cd: 1400, charge: 118 },
   moleworm_gold: { name: "모래 두더지", sp: "moleworm", tint: "gold", lv: 37, hp: 2800, atk: 112, def: 22, spd: 44, xp: 1300, gold: [90, 158], aggro: 90, range: 19, cd: 1200, leap: 100, slam: 40 },
+  // 운해 사원 · 붉은바위 황금궁 (maps-batch2, batch 1) — existing bodies in new tints with the fallback names of the design
+  // doc; the new species (염주 원숭이, 겹날개 두루미, 운해의 범 · 전갈 등뼈, 독수리 갈비, 금관 공작) are a later step. Placeholders,
+  // (a recoloured kind must outrank the body it borrows — tests/hard.mjs — so the temple's lowest and its flyer are a hound and an owl,
+  // not the doc's squirrels and winged serpent; the mesa's owl is in fire because owlstare_gold is the dune sea's)
+  // to be balanced later (docs/design/level-bands.md). ribdeer_frost and serpentwing_bone are the rare kinds (pocket keepers for now)
+  bonehound_frost: { name: "안개 사냥개", sp: "bonehound", tint: "frost", lv: 30, hp: 1700, atk: 100, def: 16, spd: 60, xp: 790, gold: [64, 114], aggro: 100, range: 18, cd: 950, leap: 104 },
+  splitboar_ash: { name: "먹빛 반쪽 멧돼지", sp: "splitboar", tint: "ash", lv: 31, hp: 1850, atk: 100, def: 16, spd: 48, xp: 850, gold: [66, 118], aggro: 92, range: 19, cd: 1100, charge: 112 },
+  owlstare_frost: { name: "흰 목 꺾인 올빼미", sp: "owlstare", tint: "frost", lv: 32, hp: 1700, atk: 102, def: 14, spd: 42, xp: 910, gold: [70, 124], aggro: 98, range: 76, cd: 1700, fly: true, volley: true },
+  ribdeer_gold: { name: "단풍 갈비뼈 사슴", sp: "ribdeer", tint: "gold", lv: 33, hp: 2100, atk: 102, def: 24, spd: 32, xp: 980, gold: [74, 130], aggro: 84, range: 20, cd: 1400, slam: 40 },
+  eelknot_gold: { name: "비단 뱀장어 매듭", sp: "eelknot", tint: "gold", lv: 34, hp: 1900, atk: 106, def: 16, spd: 40, xp: 1050, gold: [78, 136], aggro: 98, range: 76, cd: 1800, volley: true },
+  ribdeer_frost: { name: "흰 갈비뼈 사슴", sp: "ribdeer", tint: "frost", lv: 34, hp: 2300, atk: 106, def: 26, spd: 34, xp: 1400, gold: [110, 190], aggro: 86, range: 20, cd: 1400, slam: 42 },
+  bearmaw_ash: { name: "종지기 곰", sp: "bearmaw", tint: "ash", lv: 35, hp: 2700, atk: 108, def: 28, spd: 28, xp: 1130, gold: [82, 144], aggro: 80, range: 21, cd: 1500, slam: 42, pool: 26, poolKind: 1, charge: 110 },
+  lionhand_frost: { name: "운해의 범", sp: "lionhand", tint: "frost", lv: 36, hp: 36000, atk: 176, def: 36, spd: 40, xp: 20000, gold: [2800, 4200], aggro: 135, range: 30, cd: 1400, resp: 210000, boss: true, gear: 1, charge: 150, leap: 120, fan: 150, pool: 30, poolKind: 2 },
+  spiderhand_fire: { name: "붉은 손가락 거미", sp: "spiderhand", tint: "fire", lv: 36, hp: 2500, atk: 108, def: 18, spd: 56, xp: 1220, gold: [86, 150], aggro: 94, range: 18, cd: 1000, leap: 96 },
+  foxtwine_fire: { name: "붉은 꼬인 여우", sp: "foxtwine", tint: "fire", lv: 37, hp: 2600, atk: 112, def: 18, spd: 62, xp: 1300, gold: [90, 158], aggro: 98, range: 17, cd: 850, leap: 96 },
+  owlstare_fire: { name: "붉은바위 목 꺾인 올빼미", sp: "owlstare", tint: "fire", lv: 38, hp: 2500, atk: 116, def: 18, spd: 42, xp: 1400, gold: [94, 164], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
+  twingoat_blood: { name: "벼랑 붉은 염소", sp: "twingoat", tint: "blood", lv: 39, hp: 3100, atk: 116, def: 28, spd: 44, xp: 1450, gold: [95, 166], aggro: 90, range: 20, cd: 1100, charge: 112 },
+  sowseer_gold: { name: "금박 암퇘지", sp: "sowseer", tint: "gold", lv: 40, hp: 3400, atk: 118, def: 32, spd: 30, xp: 1500, gold: [96, 168], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
+  serpentwing_bone: { name: "백골 날개 구렁이", sp: "serpentwing", tint: "bone", lv: 40, hp: 3200, atk: 120, def: 22, spd: 46, xp: 2000, gold: [130, 220], aggro: 100, range: 78, cd: 1800, fly: true, volley: true },
+  horsehalf_gold: { name: "황금 반쪽 말", sp: "horsehalf", tint: "gold", lv: 41, hp: 3300, atk: 120, def: 26, spd: 60, xp: 1560, gold: [98, 170], aggro: 100, range: 20, cd: 1000, leap: 110 },
+  lionhand_gold: { name: "황금 손갈기 사자", sp: "lionhand", tint: "gold", lv: 42, hp: 3900, atk: 124, def: 30, spd: 52, xp: 1620, gold: [100, 174], aggro: 100, range: 21, cd: 1100, fan: 150, charge: 120, pool: 28, poolKind: 1 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes
   blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
@@ -691,7 +712,8 @@ const MOBS = {
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
   ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]],
-  ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 30, 1250, [440, 775]], ["dunesea", 34, 1420, [490, 840]]]) {
+  ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 30, 1250, [440, 775]], ["dunesea", 34, 1420, [490, 840]],
+  ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {
@@ -1764,6 +1786,9 @@ const PIECE = {
   "~": ["w", " "],
   // maps-v2 M3, the south-west coast: palm Ψ, reef rock Φ, shore boulder Ω, mud hut Δ (Greek: every ASCII mark is taken by the rooms' furniture); shallows (walkable), white sand, dune sand
   "Ψ": [undefined, "Ψ"], "Φ": [undefined, "Φ"], "Ω": [undefined, "Ω"], "Δ": [undefined, "Δ"], ",": ["~", " "], _: ["S", " "], ":": ["z", " "],
+  // maps-batch2 (the cloud temple, the red mesa): twisted pine Σ, a hall's footprint Π (a pagoda or a gold-roofed hall
+  // stands on four by two of them), rock pillar Θ, a crag, planks
+  "Σ": [undefined, "Σ"], "Π": [undefined, "Π"], "Θ": [undefined, "Θ"], C: [undefined, "C"], b: ["b", " "],
 };
 const PIECES = {
   // 바람초원 · 속삭임 숲
@@ -1823,8 +1848,45 @@ const PIECES = {
     "......===......",
   ],
 };
+// maps-batch2 (docs/design/maps-batch2.md, batch 1): the cloud temple's and the red mesa's pieces. A hall's footprint Π is
+// four by two with open ground below it (the client stands one big picture on it), so those pieces are never turned.
+/** A paved court w × h: flagstones inside a one-tile margin, then the marks [x, y, characters] over it. */
+function courtRows(w, h, marks, fill = "=") {
+  const g = [];
+  for (let y = 0; y < h; y++) { const row = []; for (let x = 0; x < w; x++) row.push(x === 0 || y === 0 || x === w - 1 || y === h - 1 ? "." : fill); g.push(row); }
+  for (const [x, y, chs] of marks) for (let i = 0; i < chs.length; i++) g[y][x + i] = chs[i];
+  return g.map((r) => r.join(""));
+}
+Object.assign(PIECES, {
+  // 운해 사원: a pagoda over its court, a court of stone lanterns, a lookout pavilion on a spur (a hidden pocket), the
+  // pilgrims' camp, the bell tower's terrace (the field boss's ground), the walled summit hall (the arena: one neck, three wide)
+  pagoda: ["Σ.=====.Σ", "..ΠΠΠΠ=..", "..ΠΠΠΠ=..", ".3=====3.", "..==*==..", "..=====..", "........."],
+  lanterncourt: ["3.....3", ".=====.", ".==*==.", ".=====.", "3.....3", "......."],
+  pavilion: [".Σ...Σ.", "..rrr..", "O.r*r.O", "..rrr..", "......."],
+  pilgrimcamp: [".E...3.", "..ppp..", ".pp#pp.", "Σ.ppp.l", "......."],
+  belltower: courtRows(13, 10, [[0, 0, "Σ"], [12, 0, "Σ"], [4, 0, "ΠΠΠΠ"], [4, 1, "ΠΠΠΠ"], [1, 3, "3"], [11, 3, "3"], [1, 7, "3"], [11, 7, "3"], [6, 3, "*"], [6, 6, "@"]]),
+  summithall: (() => {
+    const rows = courtRows(21, 17, [[9, 1, "ΠΠΠΠ"], [9, 2, "ΠΠΠΠ"], [3, 4, "3"], [17, 4, "3"], [3, 12, "3"], [17, 12, "3"], [10, 8, "@"]]).map((r) => r.split(""));
+    for (let y = 0; y < 17; y++) for (let x = 0; x < 21; x++) {
+      const rim = x === 0 || x === 20 || y === 0 || y >= 15 || ((x < 2 || x > 18) && (y < 2 || y > 12));
+      if (rim) rows[y][x] = y >= 15 && Math.abs(x - 10) <= 1 ? "=" : "C";
+    }
+    return rows.map((r) => r.join(""));
+  })(),
+  // 붉은바위 황금궁: a gold-roofed hall over its court, the lower town's houses on their stair (the camp), the houses by
+  // the west gate, a pool under a fall walled by rock (a hidden pocket), a shrine on a ledge, a colonnade, a bare mesa
+  // top, the throne hall's forecourt (the field boss's ground)
+  goldhall: courtRows(11, 8, [[0, 0, "q"], [10, 0, "q"], [3, 0, "ΠΠΠΠ"], [3, 1, "ΠΠΠΠ"], [0, 3, "q"], [10, 3, "q"], [5, 4, "*"], [0, 6, "q"], [10, 6, "q"]]),
+  templetown: [".Δ...Δ.", "..ppp..", ".pp#pp.", "Δ.ppp.l", "......."],
+  lowertown: courtRows(11, 7, [[1, 0, "Δ"], [9, 0, "Δ"], [4, 0, "ΠΠΠΠ"], [4, 1, "ΠΠΠΠ"], [0, 3, "Δ"], [10, 3, "Δ"], [5, 4, "3"]], "r"),
+  mistfall: ["ΘΘ.ΘΘ", "Θ,,,Θ", ",,*,,", "Θ,,,.", ".Θ.Θ."],
+  ledgeshrine: ["..Σ..", ".rrr.", "3r*r3", ".rrr.", "....."],
+  colonnade: ["q.q.q.q", ".=====.", ".==*==.", ".=====.", "q.q.q.q", "......."],
+  pillartop: ["Θ...Θ", ".....", "..*..", ".....", "Θ...Θ"],
+  thronecourt: courtRows(15, 13, [[0, 0, "q"], [14, 0, "q"], [5, 0, "ΠΠΠΠ"], [5, 1, "ΠΠΠΠ"], [0, 4, "q"], [14, 4, "q"], [7, 3, "*"], [7, 7, "@"], [0, 8, "q"], [14, 8, "q"], [0, 12, "q"], [14, 12, "q"]]),
+});
 /** Pieces whose ruin is one big picture standing on its footprint: never turned (a mirror is fine). */
-const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate", "temple"]);
+const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate", "temple", "pagoda", "belltower", "summithall", "goldhall", "lowertown", "thronecourt"]);
 /** Stamp a set piece and return where its tags landed: { chest: [[x, y]], fire: [...], ... }. */
 function piece(m, name, x, y, rot, flip) {
   const rows = PIECES[name], out = {};
@@ -1878,7 +1940,9 @@ function wilds(cfg) {
     const p1 = rnd(box) * 6.28, p2 = rnd(box) * 6.28;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const u = sea.side === "w" ? y : x, out = sea.side === "w" ? x : H - 1 - y;
-      sd[y * W + x] = sea.at + Math.sin(u / 13 + p1) * sea.amp * 0.55 + Math.sin(u / 5.3 + p2) * sea.amp * 0.2 + (N1[y * W + x] - 0.5) * sea.amp * 0.5 - out;
+      sd[y * W + x] = sea.at + Math.sin(u / 13 + p1) * sea.amp * 0.55 + Math.sin(u / 5.3 + p2) * sea.amp * 0.2 + (N1[y * W + x] - 0.5) * sea.amp * 0.5 - out
+        // (maps-batch2: a cape — sea.cape [fx, half-width] — where the land runs out to the rim, for a door on the sea's own side)
+        - (sea.cape ? 90 * clamp(1.6 - Math.abs(x - sea.cape[0] * W) / sea.cape[1], 0, 1) : 0);
     }
     const lim = Math.max(0, Math.ceil(sea.at + sea.amp - dz)) + 2;
     if (sea.side === "w") sx0 += lim; else sy1 -= lim;
@@ -1971,6 +2035,8 @@ function wilds(cfg) {
     if (cfg.tierOf) for (const r of R) tier[r.k] = cfg.tierOf(r);
     else for (const k of Object.values(gateIdx)) tier[k] = 0;
     m.tier = tier;
+    // (maps-batch2: the level under every tile goes to the client — the cliffs stand as tall as their level; artWire `lv`)
+    if (cfg.level) { m.level = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) m.level[i] = lab[i] >= 0 ? tier[lab[i]] : 0; }
   }
   // and what grows there
   const biome = R.map((r) => (role[r.k] === "gate" || role[r.k] === "camp" ? cfg.biomes.plain : cfg.biome(r.e, r.mo, rnd(box), tier ? tier[r.k] : 0, r)));
@@ -2023,8 +2089,10 @@ function wilds(cfg) {
       // (a dead end that keeps a chest stays shut but for one way in, three tiles wide: a hidden pocket)
       const nook = ["vault", "lair", "stair"].includes(role[e.a]) || ["vault", "lair", "stair"].includes(role[e.b]);
       if (tier[e.a] !== tier[e.b]) { kind = "cliff"; gr = nook ? 1 : cfg.ramp || 2; }
-      else if (!nook && (linked || rnd(box) < (typeof cfg.tierOpen === "function" ? cfg.tierOpen(R[e.a], R[e.b]) : cfg.tierOpen))) continue;
-      else { kind = wallKind(); gr = nook ? 1 : cfg.gap; }
+      // (maps-batch2, cfg.shut(a, b): canyon country — a wall stands even where the tree links two regions, with a gap through it)
+      else if (!nook && !(cfg.shut && cfg.shut(R[e.a], R[e.b])) && (linked || rnd(box) < (typeof cfg.tierOpen === "function" ? cfg.tierOpen(R[e.a], R[e.b]) : cfg.tierOpen))) continue;
+      // (maps-batch2, cfg.nookWall: what shuts a dead end that keeps a chest — rock, where a belt of trees would be cut through by the widening)
+      else { kind = wallKind(); if (nook && cfg.nookWall) kind = cfg.nookWall; gr = nook ? 1 : cfg.gap; }
     } else {
       if (linked && rnd(box) < cfg.merge && dE < cfg.cliff) continue;
       kind = dE >= cfg.cliff && rnd(box) < 0.85 ? "cliff" : wallKind();
@@ -2044,6 +2112,28 @@ function wilds(cfg) {
   }
   // where a way climbs a cliff, it climbs steps
   for (const t of steps) { const [x, y] = at(t); m.o[y][x] = " "; m.g[y][x] = "v"; }
+  // maps-batch2: rock in the mass — cfg.thick(x, y) more tiles of cliff grow out from every cliff face there (never over
+  // a gap, a ramp or a door), so the ways between are canyons; and where cfg.bridge(x, y) says, a slot left through
+  // the rock is decked with planks (the mesa tops joined by rope bridges)
+  if (cfg.thick) {
+    for (let pass = 0; pass < 3; pass++) {
+      const add = [];
+      for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
+        const i = y * W + x;
+        if (m.o[y][x] !== " " || keep[i] || lab[i] < 0 || cfg.thick(x, y) <= pass || N1[i] < 0.22) continue;
+        if (D4.some(([dx, dy]) => m.o[y + dy][x + dx] === "C")) add.push(i);
+      }
+      for (const i of add) m.o[(i - (i % W)) / W][i % W] = "C";
+    }
+  }
+  if (cfg.bridge) {
+    const rock = (x, y) => x >= 0 && y >= 0 && x < W && y < H && m.o[y][x] === "C";
+    const reach = (x, y, dx, dy) => { for (let s = 1; s <= 3; s++) if (rock(x + dx * s, y + dy * s)) return s; return 9; };
+    for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
+      if (m.o[y][x] !== " " || m.g[y][x] === "v" || !cfg.bridge(x, y)) continue;
+      if (reach(x, y, -1, 0) + reach(x, y, 1, 0) <= 6 || reach(x, y, 0, -1) + reach(x, y, 0, 1) <= 6) m.g[y][x] = "b";
+    }
+  }
 
   // the rim: a ragged fringe of the edge wood, thicker where the noise says
   border(m, cfg.edge, 2);
@@ -2096,14 +2186,16 @@ function wilds(cfg) {
   const water = (x, y) => { if (x < 2 || y < 1 || x >= W - 2 || y >= H - 1 || (sd && sd[y * W + x] > 0)) return; m.g[y][x] = "w"; m.o[y][x] = " "; };
   if (cfg.river) {
     // a meandering centre line — two sine waves of different length and some noise — from the top edge to the bottom
-    const sx = W * (0.38 + rnd(box) * 0.24), a1 = 4 + rnd(box) * 2.5, l1 = 11 + rnd(box) * 5, p1 = rnd(box) * 6.28, a2 = 1.5 + rnd(box), l2 = 4.5 + rnd(box) * 2;
-    let px = null;
+    const sx = W * (cfg.riverAt ? cfg.riverAt[0] + rnd(box) * cfg.riverAt[1] : 0.38 + rnd(box) * 0.24), a1 = 4 + rnd(box) * 2.5, l1 = 11 + rnd(box) * 5, p1 = rnd(box) * 6.28, a2 = 1.5 + rnd(box), l2 = 4.5 + rnd(box) * 2;
+    let px = null, pt = -1;
     for (let y = 1; y < H - 1; y++) {
       const x = Math.round(clamp(sx + Math.sin(y / l1 + p1) * a1 + Math.sin(y / l2 + p1 * 2) * a2 + (N1[y * W + Math.round(sx)] - 0.5) * 3, 7, W - 9));
       // fill across from where the last row ended, so the bank never breaks
       const from = px === null ? x : Math.min(px, x), to = px === null ? x : Math.max(px, x);
       const wide = 2 + (N2[y * W + x] > 0.6 ? 1 : 0) + (cfg.riverW || 0);
-      for (let X = from; X <= to + wide - 1; X++) { if (m.o[y][X] === "C") falls.push([X, y]); water(X, y); if (X >= 0 && X < W) riverAt[y * W + X] = 1; }
+      for (let X = from; X <= to + wide - 1; X++) { if (m.o[y][X] === "C" && !cfg.level) falls.push([X, y]); water(X, y); if (X >= 0 && X < W) riverAt[y * W + X] = 1; }
+      // (maps-batch2, a ground whose levels go to the client: a fall exactly where the river steps from one level to the next)
+      if (cfg.level && tier) { const k = lab[y * W + x], tk = k >= 0 ? tier[k] : -1; if (tk >= 0 && pt >= 0 && tk !== pt) falls.push([x, y]); if (tk >= 0) pt = tk; }
       px = x;
     }
   }
@@ -2113,6 +2205,7 @@ function wilds(cfg) {
     const done = [];
     for (const [fx, fy] of falls) {
       if (done.some(([x, y]) => Math.abs(x - fx) + Math.abs(y - fy) < 8)) continue;
+      if (cfg.level && (fy < 6 || fy > H - 7 || (sd && sd[fy * W + fx] > -4))) continue;         // (maps-batch2: never a fall on the rim or in the sea)
       done.push([fx, fy]);
       const tAt = (y) => { const k = lab[clamp(y, 0, H - 1) * W + fx]; return k >= 0 ? tier[k] : 9; };
       const dir = tAt(fy + 3) <= tAt(fy - 3) ? 1 : -1, low = tAt(fy + 3 * dir);
@@ -2172,17 +2265,24 @@ function wilds(cfg) {
     const isW = (x, y) => x >= 0 && y >= 0 && x < W && y < H && riverAt[y * W + x] === 1 && m.g[y][x] === "w";
     const nearW = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (isW(x + dx, y + dy)) return true; return false; };
     const bank = [];
-    for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) if (!isW(x, y) && !keep[y * W + x] && nearW(x, y) && m.g[y][x] !== "b") bank.push(y * W + x);
-    for (const i of bank) { const [x, y] = at(i); m.o[y][x] = "C"; }
+    // (maps-batch2: where the river has run out into the sea there is no bank)
+    for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) if (!isW(x, y) && !keep[y * W + x] && nearW(x, y) && m.g[y][x] !== "b" && !(sd && sd[y * W + x] > -1)) bank.push(y * W + x);
+    if (!cfg.gorge.open) for (const i of bank) { const [x, y] = at(i); m.o[y][x] = "C"; }
     // the crossings: evenly down the river, each a band five rows tall; bridges and fords by turns,
     // and the bank's cliff comes down in steps on either side
     for (let j = 0, y0 = cfg.gorge.first; y0 < H - 6; j++, y0 += cfg.gorge.every) {
       const yc = clamp(y0 + ri(box, -2, 2), 4, H - 5), ford = j % 2 === 1;
+      if (sd) { let wet = false; for (let x = 3; x < W - 3 && !wet; x++) if (riverAt[yc * W + x] && sd[(yc + 3) * W + x] > -3) wet = true; if (wet) continue; }   // (no crossing out in the sea)
       for (let y = yc - 2; y <= yc + 2; y++) {
         const xs = [];
-        for (let x = 3; x < W - 3; x++) if (riverAt[y * W + x]) { m.g[y][x] = ford ? "s" : "b"; m.o[y][x] = " "; xs.push(x); }
+        for (let x = 3; x < W - 3; x++) if (riverAt[y * W + x]) { m.g[y][x] = ford ? cfg.gorge.ford || "s" : cfg.gorge.deck || "b"; m.o[y][x] = " "; xs.push(x); }
         if (!xs.length) continue;
-        const lo = Math.min(...xs), hi = Math.max(...xs);
+        let lo = Math.min(...xs), hi = Math.max(...xs);
+        // (maps-batch2, an open river: the crossing runs on over a pool or a widening beside the channel)
+        if (cfg.gorge.open) {
+          while (lo > 4 && m.g[y][lo - 1] === "w") { lo--; m.g[y][lo] = ford ? cfg.gorge.ford || "s" : cfg.gorge.deck || "b"; m.o[y][lo] = " "; }
+          while (hi < W - 5 && m.g[y][hi + 1] === "w") { hi++; m.g[y][hi] = ford ? cfg.gorge.ford || "s" : cfg.gorge.deck || "b"; m.o[y][hi] = " "; }
+        }
         for (let x = lo - 2; x <= hi + 2; x++) if (m.o[y][x] === "C") { m.o[y][x] = " "; m.g[y][x] = "v"; }
         keepBox(lo - 3, y, hi + 3, y);
       }
@@ -2248,7 +2348,8 @@ function wilds(cfg) {
       }
     } else if (role[k] === "vault") {
       // the piece meant for it, or failing that whichever of the others fits, smallest last
-      const want = cfg.vaultKinds[vn++ % cfg.vaultKinds.length];
+      // (maps-batch2: a ground laid out by place names the piece a dead end there should keep — cfg.vaultAt(region, level))
+      const want = (cfg.vaultAt && cfg.vaultAt(r, tier ? tier[k] : 0)) || cfg.vaultKinds[vn++ % cfg.vaultKinds.length];
       const used = (q) => m.pieces.filter((x) => x === q).length;
       const kinds = [want, ...cfg.vaultKinds.filter((q) => q !== want).sort((a, b) => used(a) - used(b) || PIECES[b].length * PIECES[b][0].length - PIECES[a].length * PIECES[a][0].length)];
       let p = null;
@@ -2334,6 +2435,52 @@ function wilds(cfg) {
     }
   }
 
+  // maps-batch2: courts — big pieces laid by place (cfg.courts [{ piece, at: [fx, fy], boss, field, guards: [kind, n], stone }]):
+  // a pagoda's court, the bell tower, the throne hall's forecourt, the walled summit arena. Like the temple a court clears
+  // what stood on its ground and a ring round it. `boss` stands that monster on the piece's mark, `field` makes the mark
+  // the field boss's ground (m.bossAt), `guards` are elites that keep it, `stone` (1, 2 …: their order) asks for a
+  // waypoint stone beside the walk there (markRoutes)
+  m.courts = [];
+  const courtStones = [];
+  for (const c of cfg.courts || []) {
+    const rows = PIECES[c.piece], tw = rows[0].length, th = rows.length, tx = c.at[0] * W, ty = c.at[1] * H;
+    const cand = R.map((r) => r.k).filter((k) => role[k] === "field" && D[k] >= 0)
+      .sort((a, b) => Math.hypot(R[a].px - tx, R[a].py - ty) - Math.hypot(R[b].px - tx, R[b].py - ty) || a - b).slice(0, 10);
+    const OFF = [];
+    for (let dy = -9; dy <= 9; dy += 3) for (let dx = -9; dx <= 9; dx += 3) OFF.push([dx, dy]);
+    OFF.sort((p, q) => Math.hypot(p[0], p[1]) - Math.hypot(q[0], q[1]));
+    const clearAt = (x0, y0) => {
+      for (let y = y0 - 2; y < y0 + th + 2; y++) for (let x = x0 - 2; x < x0 + tw + 2; x++) if (hold[y * W + x] || "wbv".includes(m.g[y][x]) || lab[y * W + x] < 0) return false;
+      return true;
+    };
+    let at0 = null;
+    for (const k of cand) {
+      for (const [dx, dy] of OFF) {
+        const x0 = clamp(Math.round(R[k].px - tw / 2) + dx, 5, W - tw - 5), y0 = clamp(Math.round(R[k].py - th / 2) + dy, 5, H - th - 5);
+        if (clearAt(x0, y0)) { at0 = [x0, y0]; break; }
+      }
+      if (at0) break;
+    }
+    if (!at0) continue;
+    const [x0, y0] = at0;
+    for (let y = y0 - 1; y <= y0 + th; y++) for (let x = x0 - 1; x <= x0 + tw; x++) { m.o[y][x] = " "; if (y < y0 || y >= y0 + th || x < x0 || x >= x0 + tw) m.g[y][x] = "r"; }
+    const tags = piece(m, c.piece, x0, y0, 0, false);
+    m.pieces.push(c.piece);
+    keepBox(x0 - 1, y0 - 1, x0 + tw, y0 + th);
+    m.courts.push({ piece: c.piece, x: x0, y: y0, w: tw, h: th });
+    if (tags.chest) { const [cx, cy] = tags.chest[0]; spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] }); special.push([cx, cy]); }
+    const mark = tags.boss ? tags.boss[0] : tags.chest ? tags.chest[0] : [x0 + (tw >> 1), y0 + th - 1];
+    if (tags.boss) {
+      if (c.boss) spawns.push({ k: c.boss, n: 1, r: [mark[0], mark[1], mark[0], mark[1]] });
+      if (c.field) m.bossAt = mark;
+      special.push(mark);
+    }
+    if (c.guards) spawns.push({ k: c.guards[0], n: c.guards[1], r: [x0 + 1, y0 + 2, x0 + tw - 2, y0 + th - 2], el: 1 });
+    doors.push(mark);
+    if (c.stone) courtStones.push([c.stone, [x0 + (tw >> 1), y0 + th]]);
+  }
+  for (const [, p] of courtStones.sort((a, b) => a[0] - b[0])) (m.stonesAt || (m.stonesAt = [])).push(p);
+
   // small things that make a region its own: a pond, a ring of stones, a lone great tree, an old pen ...
   const ok = (k, x, y) => x > 2 && y > 2 && x < W - 3 && y < H - 3 && lab[y * W + x] === k && inner[y * W + x] >= 2 && free(x, y);
   const obj = (k, x, y, o) => { if (ok(k, x, y)) { m.o[y][x] = o; keep[y * W + x] = 1; } };
@@ -2415,10 +2562,12 @@ function wilds(cfg) {
     const [x, y] = at(j);
     if (x < 2 || y < 2 || x >= W - 2 || y >= H - 2 || m.o[y][x] !== " ") return Infinity;
     const g0 = m.g[y][x];
-    let c = g0 === "w" ? 14 : g0 === "b" || g0 === cfg.road ? 0.55 : g0 === "v" ? 1 : 1 + N1[j] * 2.2 + (g0 === "t" ? 0.6 : 0);
+    let c = g0 === "w" ? cfg.wet || 14 : g0 === "b" || g0 === cfg.road ? 0.55 : g0 === "v" ? 1 : 1 + N1[j] * 2.2 + (g0 === "t" ? 0.6 : 0);
     if (back >= 0 && j - i !== i - back) c += 0.4;
     return c;
   };
+  // (ground a road never repaints: planks and steps, and what a ground names — cfg.hard: the flagstones of a court or a stone bridge)
+  const HARD = "bv" + (cfg.hard || "");
   const pave = (path, wide, ch = cfg.road) => {
     for (let s = 0; s < path.length; s++) {
       const t = path[s], [x, y] = at(t), nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
@@ -2430,8 +2579,8 @@ function wilds(cfg) {
           // (a way over the shallows is a sand bar, shoulders and all; a painted road keeps its edge lines)
           const bar = sea && sea.bar && "~-".includes(m.g[Y][X]);
           if (bar) m.g[Y][X] = sea.bar;
-          else if (!shoulder && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch;
-          else if (edge && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = edge;
+          else if (!shoulder && !HARD.includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch;
+          else if (edge && !HARD.includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = edge;
           m.o[Y][X] = " ";
         }
         keep[Y * W + X] = 1;
@@ -2511,9 +2660,11 @@ function wilds(cfg) {
   // a door cut into a finished ground (cfg.doors [[name, side, f]]: the oasis's and the coast's doors to dunesea): nothing
   // is laid out round it — the rim behind it is cleared four wide, and the widening below joins it to the ways
   for (const [name, side, f] of cfg.doors || []) {
-    const g = side === "w" ? Math.round(f * H) : Math.round(f * W);
-    gates[name] = side === "w" ? { t: [[1, g], [1, g + 1]], a: [[4, g], [4, g + 1]] } : { t: [[g, H - 2], [g + 1, H - 2]], a: [[g, H - 5], [g + 1, H - 5]] };
-    const [x0, y0, x1, y1] = side === "w" ? [1, g - 1, 7, g + 2] : [g - 1, H - 8, g + 2, H - 2];
+    // (maps-batch2: on any side — the oasis's east door to the red mesa)
+    const g = side === "w" || side === "e" ? Math.round(f * H) : Math.round(f * W);
+    gates[name] = side === "w" ? { t: [[1, g], [1, g + 1]], a: [[4, g], [4, g + 1]] } : side === "e" ? { t: [[W - 2, g], [W - 2, g + 1]], a: [[W - 5, g], [W - 5, g + 1]] }
+      : side === "n" ? { t: [[g, 1], [g + 1, 1]], a: [[g, 4], [g + 1, 4]] } : { t: [[g, H - 2], [g + 1, H - 2]], a: [[g, H - 5], [g + 1, H - 5]] };
+    const [x0, y0, x1, y1] = side === "w" ? [1, g - 1, 7, g + 2] : side === "e" ? [W - 8, g - 1, W - 2, g + 2] : side === "n" ? [g - 1, 1, g + 2, 7] : [g - 1, H - 8, g + 2, H - 2];
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { m.o[y][x] = " "; if (m.g[y][x] === "w") m.g[y][x] = "b"; }
   }
   if (cfg.stonesAt) m.stonesAt = (m.stonesAt || []).concat(cfg.stonesAt.map(([fx, fy]) => [Math.round(fx * W), Math.round(fy * H)]));
@@ -3515,6 +3666,16 @@ function cavern(cfg) {
     for (let y = top; y <= H - 3; y++) for (const x of [gx - 1, gx, gx + 1]) { digAt(m, x, y); if (m.g[y][x] === "w") m.g[y][x] = "c"; }
     m.gates.south = { t: [[gx, H - 3], [gx + 1, H - 3]], a: [[gx, H - 6], [gx + 1, H - 6]] };
     pass.push(m.gates.south.a[0], [gx, top]);
+  }
+  // maps-batch2: a shaft three wide in the north wall at cfg.shaft of the width, down to the first open floor (the climb
+  // out to the cloud temple; a door in the east wall was a straight walk from the way in, which the path-quality rules refuse)
+  if (cfg.shaft) {
+    const gx = Math.round(W * cfg.shaft);
+    let bot = 4;
+    while (bot < 30 && !(m.g[bot][gx] !== "W" && m.o[bot][gx] === " " && m.g[bot][gx] !== "w")) bot++;
+    for (let y = 3; y <= bot; y++) for (const x of [gx - 1, gx, gx + 1]) { digAt(m, x, y); if (m.g[y][x] === "w") m.g[y][x] = "c"; }
+    m.gates.shaft = { t: [[gx, 3], [gx + 1, 3]], a: [[gx, 6], [gx + 1, 6]] };
+    pass.push(m.gates.shaft.a[0], [gx, bot]);
   }
   for (const name of Object.keys(m.gates)) for (const [x, y] of m.gates[name].t.concat(m.gates[name].a)) digAt(m, x, y);
   for (let x = 3; x <= start[0]; x++) for (const y of WD ? [start[1] - 2, start[1] - 1, start[1], start[1] + 1, start[1] + 2] : [start[1] - 1, start[1]]) { digAt(m, x, y); if (WD && !"ha".includes(m.o[y][x])) m.o[y][x] = " "; }
@@ -4661,7 +4822,7 @@ function buildTown() {
 // know without building anything (names, bands, monster lists) is read from here into MAP_META.
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
-const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep"];
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa"];
 /**
  * Every generated hunting ground: `make` the generator, `band` the level a character should
  * be to walk in (shown on every door that leads there), `stones` how many waypoint stones stand
@@ -4716,6 +4877,8 @@ const GEN = {
     moss: { r: 15, w: 4, wind: 0.55, loops: 0.55, shelf: [0.63, 0.77], rings: 7, stream: 0.018 }, wide: { fill: 0.55, plant: 0, pillar: [6, 0.74], ridges: [[24, 27, 13, 2.5, 41, 11], [38, 68, 10, 2.5, 69, 94]] },
     // maps-v2 M3: a crack in the south wall climbs out to the desert (the oasis)
     south: 0.52,
+    // maps-batch2: a shaft in the east wall climbs out to the cloud temple
+    shaft: 0.6,
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
   city: { make: metro, after: (m) => corridorGate(m, "ossuary", 129, 72), route: "sewer", band: [14, 21], stones: 3, theme: "city", cfg: () => ({
@@ -4788,7 +4951,7 @@ const GEN = {
     id: "oasis", name: "모래바람 오아시스", theme: "desert", bgm: "oasis", seed: 52711, w: 168, h: 116, r: 10.2, warp: 9, wind: 0.55, loops: 0.28, merge: 0.3, cliff: 0.16, gap: 2,
     tiers: 3, tierOpen: 0.55, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ", green: { r: 3, palm: 0.2 },
     ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 6, lakeR: 7, vaults: 9, ruins: 4, tpm: 15.5,
-    walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north", doors: [["south", "s", 0.2143]],
+    walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north", doors: [["south", "s", 0.2143], ["east", "e", 0.36]],
     mobs: ["foxtwine_gold", "hydrasnake_gold", "spinescorp_gold", "ribvulture_bone", "cactushog", "mummycamel"], pondMob: "ribvulture_bone", chest: "chest_oasis",
     campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "hamlet"], biomes: { plain: "flat" }, featureP: 0.65, features: ["pond", "boulders", "cairn", "stones", "dead"],
     // by level: scrub and flats below, rippled dunes on the middle shelves, bare stony ridges on top
@@ -4853,6 +5016,81 @@ const GEN = {
         : b === "scrub" ? (h < 0.04 ? "B" : h < 0.058 ? "Ψ" : h < 0.068 ? "A" : null)
         : b === "beach" ? (h < 0.03 ? "Ψ" : h < 0.036 ? "l" : h < 0.042 ? "Ω" : null)
         : b === "sea" ? null : h < 0.008 ? "Ψ" : h < 0.018 ? "R" : h < 0.024 ? "A" : null),
+    };
+  } },
+  // ── maps-batch2, batch 1 (docs/design/maps-batch2.md §4–5): cave → 운해 사원 → 붉은바위 황금궁 ← oasis. Both are laid out by
+  // place (levels, habitats, courts), their numbers placeholders to be balanced later with the other new grounds.
+  // 운해 사원: five levels of crag rising from the mountain gate in the south-west to the summit in the north-east, over a sea
+  // of cloud (rule-wise deep water) in the south; a gorge full of mist down the middle under three stone bridges, a fall at
+  // every step; pagoda courts on the middle levels, the bell tower's terrace (field boss) and the walled summit hall (the
+  // arena boss) on the top. The south door stands on a cape in the cloud.
+  cloudtemple: { make: wilds, route: "mesa", band: [30, 36], stones: 3, stoneNames: ["산문", "탑전 마당", "종루"], cfg: () => {
+    const W = 176, H = 128;
+    const tierAt = (x, y, e = 0.5) => { const f = 0.55 * (x / W) + 0.6 * (1 - y / H) + (e - 0.5) * 0.06; return f < 0.34 ? 0 : f < 0.5 ? 1 : f < 0.66 ? 2 : f < 0.84 ? 3 : 4; };
+    const SQ = "bonehound_frost", BOAR = "splitboar_ash", CRANE = "owlstare_frost", DEER = "ribdeer_gold", EEL = "eelknot_gold", BEAR = "bearmaw_ash";
+    return {
+      id: "cloudtemple", name: "운해 사원", theme: "mist", bgm: "autumn", seed: 60539, w: W, h: H, r: 9.4, warp: 9, wind: 0.6, loops: 0.34, merge: 0.3, cliff: 0.18, gap: 2,
+      tiers: 5, tierOpen: 0.15, ramp: 2, roadW: 3, pools: 2.6, level: true, hard: "=", stoneFr: [], widen: "TPBRulYAeΣΘO",
+      sea: { side: "s", at: 20, amp: 8, surf: 0, shallow: 0, beach: 0, sand: "r", reef: 0, cape: [0.74, 9] },
+      river: true, riverAt: [0.4, 0.06], gorge: { first: 20, every: 30, deck: "=" }, thick: () => 1,
+      ground: ":", edge: "C", treeCh: "T", treeCh2: "Σ", road: "r", trail: "p", shore: "r", lakes: 3, lakeR: 5, vaults: 13, ruins: 2, tpm: 15.5,
+      walls: [["trees", 0.45], ["rocks", 0.35], ["bramble", 0.2]], rocks: ["R", "Θ"], nookWall: "cliff", gates: [["west", "w", 0.62], ["south", "s", 0.74]], exit: "south",
+      mobs: [SQ, BOAR, CRANE, DEER, EEL, BEAR], pondMob: null, chest: "chest_cloudtemple", boss: "lionhand_frost",
+      // the rare kind keeps the pavilion pockets until the rare-spawn rule exists (maps-batch2 "shared rules")
+      campPiece: "pilgrimcamp", vaultKinds: ["pavilion", "lanterncourt", "pavilion", "cache", "menhir", "lanterncourt"], vaultMobs: { pavilion: "ribdeer_frost" },
+      courts: [{ piece: "summithall", at: [0.88, 0.13], boss: "lionhand_frost" }, { piece: "belltower", at: [0.76, 0.3], field: true, guards: [BEAR, 2], stone: 2 },
+        { piece: "pagoda", at: [0.6, 0.46], stone: 1 }, { piece: "pagoda", at: [0.52, 0.16] }],
+      biomes: { plain: "gate" }, featureP: 0.55, features: ["boulders", "cairn", "stones", "leafpile", "statue", "logs", "bigtree"],
+      tierOf: (r) => tierAt(r.px, r.py, r.e),
+      // A the mountain gate (level 0), B the stair terraces (1), C the gorge, D the pagoda courts (2–3), E the ledge walk by the cloud, F the bell tower (4)
+      rosterAt: (x, y) => { const t = tierAt(x, y); return t === 0 ? [SQ] : t === 4 ? [EEL, BEAR] : Math.abs(x - 0.43 * W) < 13 ? [BOAR, CRANE] : t === 1 ? [SQ, BOAR] : y > 84 ? [DEER, EEL] : [CRANE, DEER]; },
+      biome: (e, mo, rr, t, r) => (r.sd > -12 ? "ledge" : t === 0 ? "gate" : t === 1 ? "stairs" : t === 4 ? "summit" : rr < 0.5 ? "court" : "grove"),
+      paint: (b, n1, n2) => (b === "ledge" ? (n1 > 0.4 ? "r" : null) : b === "stairs" ? (n1 > 0.55 ? "%" : n2 > 0.7 ? "," : null) : b === "grove" ? (n1 > 0.45 ? "%" : null)
+        : b === "court" ? (n1 > 0.62 ? "=" : n1 < 0.2 ? "r" : null) : b === "summit" ? (n1 > 0.35 ? "r" : null) : n2 > 0.7 ? "," : null),
+      scatter: (b, h, n1) => (b === "ledge" ? (h < 0.03 ? "Σ" : h < 0.04 ? "R" : h < 0.046 ? "O" : null)
+        : b === "stairs" ? ((n1 > 0.55 ? h < 0.1 : h < 0.03) ? "T" : h < 0.045 ? "B" : h < 0.05 ? "Σ" : null)
+        : b === "grove" ? ((n1 > 0.5 ? h < 0.14 : h < 0.04) ? "T" : h < 0.05 ? "Σ" : h < 0.058 ? "l" : null)
+        : b === "court" ? (h < 0.012 ? "Σ" : h < 0.02 ? "3" : h < 0.03 ? "T" : null)
+        : b === "summit" ? (h < 0.025 ? "Σ" : h < 0.035 ? "R" : null)
+        : h < 0.02 ? "T" : h < 0.035 ? "B" : h < 0.042 ? "Σ" : null),
+    };
+  } },
+  // 붉은바위 황금궁: four levels of red sandstone rising from the canyon floor in the north-west to the palace in the south-east.
+  // The floor is a maze of slot canyons (rock in the mass, every way a gap through it), the river comes down three falls
+  // into pools, pine ledges climb in the north-east (the door to the cloud temple), the third level is mesa tops joined
+  // by plank bridges, and on top stand the gold-roofed halls and the throne hall's forecourt (the field boss's ground).
+  mesa: { make: wilds, band: [36, 42], stones: 3, wayOn: "cloudtemple", stoneNames: ["협곡 아랫마을", "황금 지붕 궁", "소나무 벼랑길"], cfg: () => {
+    const W = 184, H = 124;
+    const tierAt = (x, y, e = 0.5) => { const f = 0.45 * (x / W) + 0.65 * (y / H) + (e - 0.5) * 0.06; return f < 0.36 ? 0 : f < 0.58 ? 1 : f < 0.8 ? 2 : 3; };
+    const maze = (x, y) => tierAt(x, y) === 0 && x > 0.14 * W, tops = (x, y) => tierAt(x, y) === 2;
+    const SPIDER = "spiderhand_fire", FOX = "foxtwine_fire", OWL = "owlstare_fire", GOAT = "twingoat_blood", SOW = "sowseer_gold", HORSE = "horsehalf_gold", LION = "lionhand_gold";
+    return {
+      id: "mesa", name: "붉은바위 황금궁", theme: "mesa", bgm: "oasis", seed: 84223, w: W, h: H, r: 9.6, warp: 9, wind: 0.6, loops: 0.4, merge: 0.3, cliff: 0.16, gap: 2,
+      tiers: 4, tierOpen: 0.1, ramp: 2, roadW: 3, pools: 3, level: true, hard: "=", stoneFr: [], stonesAt: [[0.74, 0.3]], widen: "TPBRulYAeΣΘOq",
+      river: true, riverAt: [0.46, 0.05], gorge: { first: 12, every: 22, open: true, ford: "~" }, wet: 60,
+      ground: "s", edge: "C", treeCh: "Σ", treeCh2: "Θ", road: "p", shore: "t", lakes: 0, lakeR: 5, vaults: 7, ruins: 2, tpm: 15.5,
+      walls: [["rocks", 1]], rocks: ["Θ", "R"], gates: [["west", "w", 0.3], ["ledge", "n", 0.78]], exit: "ledge",
+      mobs: [SPIDER, FOX, OWL, GOAT, SOW, HORSE, LION], pondMob: null, chest: "chest_mesa",
+      campPiece: "templetown", vaultKinds: ["mistfall", "ledgeshrine", "pillartop", "colonnade", "cache", "menhir"], vaultMobs: { mistfall: "serpentwing_bone" },
+      vaultAt: (r, t) => (t === 0 ? "mistfall" : t === 1 ? "ledgeshrine" : t === 2 ? "pillartop" : "colonnade"),
+      courts: [{ piece: "thronecourt", at: [0.86, 0.84], field: true, guards: [LION, 2] }, { piece: "goldhall", at: [0.68, 0.88], stone: 1 }, { piece: "goldhall", at: [0.93, 0.62] },
+        { piece: "lowertown", at: [0.1, 0.3] }],
+      biomes: { plain: "town" }, featureP: 0.5, features: ["boulders", "cairn", "stones", "dead", "boulders"],
+      tierOf: (r) => tierAt(r.px, r.py, r.e),
+      // every barrier is red rock, but on the pine ledges (level 1) a belt of pines; the floor and the tops are canyon country
+      wallAt: (kind, x, y) => (tierAt(x, y) === 1 ? "trees" : "cliff"),
+      shut: (a, b) => (maze(a.px, a.py) && maze(b.px, b.py)) || (tops(a.px, a.py) && tops(b.px, b.py)),
+      thick: (x, y) => (maze(x, y) || tops(x, y) ? 2 : 1), bridge: tops,
+      // A the lower town, B the slot canyons (level 0), C the falls, D the pine ledges (1), E the mesa tops (2), F the palace (3)
+      rosterAt: (x, y) => { const t = tierAt(x, y); return Math.abs(x - 0.485 * W) < 13 && t <= 1 ? [FOX, OWL] : t === 0 ? (x < 0.16 * W ? [SPIDER] : [SPIDER, FOX]) : t === 1 ? [OWL, GOAT] : t === 2 ? [GOAT, SOW] : [SOW, HORSE]; },
+      biome: (e, mo, rr, t, r) => (t === 0 ? (r.px < 0.14 * W ? "town" : "canyon") : t === 1 ? "ledge" : t === 2 ? "tops" : "palace"),
+      paint: (b, n1, n2) => (b === "canyon" ? (n1 > 0.62 ? "z" : n1 < 0.16 ? "r" : null) : b === "ledge" ? (n1 > 0.6 ? "," : n1 < 0.3 ? "r" : null) : b === "tops" ? (n1 > 0.4 ? "z" : "r")
+        : b === "palace" ? (n1 > 0.5 ? "=" : n1 < 0.2 ? "r" : null) : n2 > 0.75 ? "z" : null),
+      scatter: (b, h) => (b === "canyon" ? (h < 0.012 ? "Θ" : h < 0.02 ? "R" : h < 0.026 ? "A" : null)
+        : b === "ledge" ? (h < 0.06 ? "Σ" : h < 0.07 ? "B" : h < 0.076 ? "R" : null)
+        : b === "tops" ? (h < 0.02 ? "Θ" : h < 0.028 ? "Σ" : null)
+        : b === "palace" ? (h < 0.012 ? "q" : h < 0.022 ? "Σ" : h < 0.03 ? "3" : null)
+        : h < 0.015 ? "Σ" : h < 0.025 ? "R" : null),
     };
   } },
   abyss: { make: abyssal, route: "maple", band: [32, 40], stones: 3, cfg: () => ({
@@ -4929,6 +5167,8 @@ const GATE_LINKS = [
   ["city", "south", "jungle", "north", 1], ["jungle", "south", "coast", "north", 1], ["coast", "east", "oasis", "west", 1], ["oasis", "north", "cave", "south", 1],
   // the dune sea: south out of the oasis into the high dunes, and west along the shore from the coral coast
   ["oasis", "south", "dunesea", "north", 1], ["coast", "west", "dunesea", "east", 1],
+  // maps-batch2, batch 1: up the cave's shaft to the cloud temple, down its south cape to the red mesa's ledge, and east out of the oasis to the mesa
+  ["cave", "shaft", "cloudtemple", "west", 1], ["cloudtemple", "south", "mesa", "ledge", 1], ["oasis", "east", "mesa", "west", 1],
 ];
 /** A generated map's own doors out (in GATE_LINKS order, as the generators always laid them). */
 function gateDoors(m) {
@@ -9371,6 +9611,8 @@ const WX_ODDS = {
   city: [40, 30, 24, 6, 0, 0],
   autumn: [34, 22, 14, 16, 14, 0],
   jungle: [30, 22, 30, 12, 6, 0], coast: [46, 14, 16, 0, 24, 0], desert: [62, 8, 0, 0, 30, 0],
+  // maps-batch2: the cloud temple is fog first; the red mesa is dry and windy
+  mist: [18, 24, 14, 36, 6, 2], mesa: [56, 12, 4, 6, 22, 0],
 };
 /** Small flavour: rain brings the fish up sooner, fog hides you a little from monsters. */
 const WX_FISH = 0.75, WX_FOG_AGGRO = 0.9;

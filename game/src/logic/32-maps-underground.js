@@ -415,6 +415,16 @@ function cavern(cfg) {
     m.gates.south = { t: [[gx, H - 3], [gx + 1, H - 3]], a: [[gx, H - 6], [gx + 1, H - 6]] };
     pass.push(m.gates.south.a[0], [gx, top]);
   }
+  // maps-batch2: a shaft three wide in the north wall at cfg.shaft of the width, down to the first open floor (the climb
+  // out to the cloud temple; a door in the east wall was a straight walk from the way in, which the path-quality rules refuse)
+  if (cfg.shaft) {
+    const gx = Math.round(W * cfg.shaft);
+    let bot = 4;
+    while (bot < 30 && !(m.g[bot][gx] !== "W" && m.o[bot][gx] === " " && m.g[bot][gx] !== "w")) bot++;
+    for (let y = 3; y <= bot; y++) for (const x of [gx - 1, gx, gx + 1]) { digAt(m, x, y); if (m.g[y][x] === "w") m.g[y][x] = "c"; }
+    m.gates.shaft = { t: [[gx, 3], [gx + 1, 3]], a: [[gx, 6], [gx + 1, 6]] };
+    pass.push(m.gates.shaft.a[0], [gx, bot]);
+  }
   for (const name of Object.keys(m.gates)) for (const [x, y] of m.gates[name].t.concat(m.gates[name].a)) digAt(m, x, y);
   for (let x = 3; x <= start[0]; x++) for (const y of WD ? [start[1] - 2, start[1] - 1, start[1], start[1] + 1, start[1] + 2] : [start[1] - 1, start[1]]) { digAt(m, x, y); if (WD && !"ha".includes(m.o[y][x])) m.o[y][x] = " "; }
   m.entry = m.gates.west.a[0];

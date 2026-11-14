@@ -10,7 +10,7 @@ const { built: builtAtLoad, meta } = (({ built, meta }) => ({ built: built.slice
 
 const { maps, fires, waypoints } = L.atlas();
 const D = L.defs();
-const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea"];
+const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "cloudtemple", "mesa"];
 const blocked = (m, x, y) => x < 0 || y < 0 || x >= m.w || y >= m.h || m.o[y][x] !== " " || "wW".includes(m.g[y][x]);
 const flood = (m, sx, sy) => {
   const d = new Int32Array(m.w * m.h).fill(-1), q = [[sx, sy]];
@@ -98,7 +98,7 @@ for (const id of ["meadow", "forest", "cave", "maple"]) {
 // hidden pockets with a chest and its guardian, three waypoint stones with a wind shrine past each later one
 const D0 = (k) => D.mobs[k];
 const DENS = Function(`return (${/const DENSITY = (\{[^}]*\})/.exec((await import("node:fs")).readFileSync(new URL("../src/logic/10-tables.js", import.meta.url), "utf8"))[1]})`)();
-const SIZE = { meadow: [152, 102], forest: [152, 102], crypt: [132, 102], city: [152, 102], sewer: [152, 102], cave: [132, 100], abyss: [152, 120], maple: [160, 112], jungle: [168, 112], oasis: [168, 116], coast: [176, 120], dunesea: [288, 192] };
+const SIZE = { meadow: [152, 102], forest: [152, 102], crypt: [132, 102], city: [152, 102], sewer: [152, 102], cave: [132, 100], abyss: [152, 120], maple: [160, 112], jungle: [168, 112], oasis: [168, 116], coast: [176, 120], dunesea: [288, 192], cloudtemple: [176, 128], mesa: [184, 124] };
 const zrep = [];
 for (const id of HUNT) {
   const m = maps[id], W = m.w, Z = m.zone, d = flood(m, m.entry[0], m.entry[1]);
