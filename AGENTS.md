@@ -140,6 +140,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `skillfx.js` [459] | skill visuals/sounds per server fx code (`skillEvent`, switch on codes 40–75), props, marks; the bow: `bowFire` (fx code 6, from client attackFx) and the arrow events `ar`/`ae` |
 | `skillicons.js` [471] · `uiicons.js` [105] · `emoticons.js` [164] | 16×16 skill glyphs, 12×12 UI glyphs (`MENU_ICON TRAIT`), chat emoticons |
 | `classgauge.js` [152] | class gauge in the status panel |
+| `mastery.js` [142] | weapon-mastery strip in the dock (weapon in hand, "숙련 Lv.N", bar; hybrids show both) and its hover card (six weapons, job, next unlock); reads `self.wm/wk/wk2/job`, Lv.1 until the server sends `wm` |
 | `growth.js` [292] | skill training, warehouse, pets, auto-potion, drop names (client side) |
 | `quickslots.js` [327] | quick slots 1–9 (drag skills/items, keys) |
 | `minigames.js` [269] | fishing rhythm game, cooking tangram |

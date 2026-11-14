@@ -10,9 +10,9 @@
     <meta property="og:image" content="https://lumentale-online.higgsfield.app/cover.png" />
     <meta name="theme-color" content="#0e0f14" />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="style.css?v=1795340000" />
-    <link rel="stylesheet" href="hud.css?v=1795340000" />
-    <link rel="stylesheet" href="lobby.css?v=1795340000" />
+    <link rel="stylesheet" href="style.css?v=1795350001" />
+    <link rel="stylesheet" href="hud.css?v=1795350001" />
+    <link rel="stylesheet" href="lobby.css?v=1795350001" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -95,7 +95,9 @@
         </div>
 
         <div id="center">
-          <!-- the unit frame: portrait, name, level, short health and mana bars, gold -->
+          <!-- the unit frame: a small portrait, name and level, slim health and mana bars, gold; on a desktop the
+               potions (Q/E) move beside the bars (client.js layout); then the weapon mastery strip (mastery.js),
+               the weapon gauge and the buffs -->
           <div id="status">
             <div class="face sunk"><canvas id="st-face" width="40" height="40"></canvas></div>
             <div class="st-main">
@@ -104,7 +106,9 @@
               <div class="meter mp"><em>MP</em><div class="bar mp"><i id="st-mp"></i></div><b id="st-mpt"></b></div>
               <div id="st-gold" title="보유 골드"><span id="st-gold-n"></span><i id="st-gold-fx"></i></div>
             </div>
+            <div id="st-pots"></div>
             <div class="st-side">
+              <div id="wm" tabindex="0"></div>
               <div id="cg-box" class="sunk"><canvas id="cgauge" width="120" height="20"></canvas></div>
               <div id="st-buffs"></div>
             </div>
@@ -361,7 +365,7 @@
       </div>
     </div>
 
-    <script type="module" src="client.js?v=1795340000"></script>
+    <script type="module" src="client.js?v=1795350001"></script>
     <div id="crt-frame" aria-hidden="true"></div>
   </body>
 </html>

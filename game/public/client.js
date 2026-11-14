@@ -28,6 +28,7 @@ import * as NpcTalk from "./npctalk.js";
 import * as SideQ from "./sidequests.js";
 import * as SkillFx from "./skillfx.js";
 import { drawClassGauge, gaugeTip } from "./classgauge.js";
+import * as Mastery from "./mastery.js";
 import { installFrames } from "./frames.js";
 import * as Lobby from "./lobby.js";
 import * as Assets from "./assetlib.js";
@@ -135,6 +136,8 @@ const text = $("#text"), tg = text.getContext("2d");
  * character creation always use the whole window.
  */
 const SIDE = 288, DOCK = 184;
+/** The dock grows a little on tall screens (more chat lines): 184 px up to 920 high, 216 at 1080. */
+const dockH = (H) => Math.round(clamp(H * 0.2, DOCK, 224));
 const VP = { w: innerWidth, h: innerHeight, lay: "full" };
 function layout() {
   const W = innerWidth, H = innerHeight, b = document.body;
@@ -144,15 +147,19 @@ function layout() {
   VP.lay = !compact ? "full" : H > W ? "port" : "land";
   const deck = Math.round(clamp(H * 0.4, 290, 360));
   if (!G.playing) { VP.w = W; VP.h = H; }
-  else if (VP.lay === "full") { VP.w = W - SIDE; VP.h = H - DOCK; }
+  else if (VP.lay === "full") { VP.w = W - SIDE; VP.h = H - dockH(H); }
   else if (VP.lay === "port") { VP.w = W; VP.h = H - deck; }
   else { VP.w = W; VP.h = H; }
   b.dataset.lay = VP.lay;
   b.classList.toggle("playing", !!G.playing);
   const r = document.documentElement.style;
   r.setProperty("--vpw", VP.w + "px"); r.setProperty("--vph", VP.h + "px");
-  r.setProperty("--dock", (VP.lay === "port" ? deck : DOCK) + "px");
+  r.setProperty("--dock", (VP.lay === "port" ? deck : dockH(H)) + "px");
   if (VP.lay === "full") b.classList.remove("drawer");
+  // the potions sit beside the HP/MP bars on a desktop, on the thumb pad on a phone
+  const pots = $("#st-pots"), hpB = $("#b-hp"), mpB = $("#b-mp");
+  if (VP.lay === "full" && hpB.parentNode !== pots) pots.append(hpB, mpB);
+  else if (VP.lay !== "full" && hpB.parentNode === pots) $("#actions").prepend(hpB, mpB);
 }
 function resize() {
   layout();
@@ -1648,6 +1655,7 @@ const tipBox = $("#tip");
 const tip = { from: null };
 function showTip(anchor, fill) {
   tipBox.textContent = "";
+  tipBox.classList.remove("wm-tip");
   fill(tipBox);
   tipBox.hidden = false;
   tip.from = anchor;
@@ -1873,14 +1881,43 @@ function setOnce(node, key, fill) {
 }
 function hudFrame(s) {
   $("#st-name").textContent = s.name;
-  setOnce($("#st-lv"), `${s.lvl}:${s.cls}`, (n) => n.append(iconImg(CLASS_ICON[s.cls] || "sword", "#e2c486"), `Lv.${s.lvl} ${G.defs.classes[s.cls].name}`));
+  // name and level on one line; the job is in the mastery card (hover the strip beside the bars)
+  const jobName = Mastery.jobOf(s, G.defs).name;
+  setOnce($("#st-lv"), `${s.lvl}:${jobName}`, (n) => { n.textContent = `Lv.${s.lvl}`; n.title = jobName; });
   drawFace();
+  hudMastery(s);
   hudPurse(s);
   const maxed = s.lvl >= G.defs.maxLv;
   $("#exp-fill").style.width = maxed ? "100%" : `${Math.min(100, (s.xp / s.need) * 100)}%`;
   $("#exp-text").textContent = maxed ? `수련 경험치 ${s.xp.toLocaleString()}` : `EXP ${s.xp.toLocaleString()} / ${s.need.toLocaleString()}  (${((s.xp / s.need) * 100).toFixed(2)}%)`;
   hudBars();
 }
+/** The weapon-mastery strip beside the bars (mastery.js); a level gained flashes it and chimes. */
+function hudMastery(s) {
+  const wpn = s.eq.weapon, it = wpn && G.defs.items[wpn.id];
+  const ups = Mastery.renderStrip($("#wm"), s, G.defs, wpn ? entryIconUrl(wpn, it) || G.icons.url[wpn.id] : "");
+  if (ups.length) Sound.play("buff");
+  if (tip.from === $("#wm")) showMasteryTip();
+}
+function showMasteryTip() {
+  const box = $("#wm");
+  if (!G.self) return;
+  showTip(box, (n) => Mastery.fillTip(n, G.self, G.defs));
+  // above the strip, so it never covers the hotbar (below it when the strip is at the top, phone on its side)
+  const r = box.getBoundingClientRect(), h = tipBox.offsetHeight, w = tipBox.offsetWidth;
+  tipBox.style.left = `${Math.round(clamp(r.left, 4, (VP.lay === "full" ? VP.w : innerWidth) - w - 4))}px`;
+  const above = r.top - h - 18;
+  tipBox.style.top = `${Math.round(above >= 4 ? above : Math.min(r.bottom + 6, innerHeight - h - 4))}px`;
+}
+$("#wm").addEventListener("mouseenter", () => { if (!touch()) showMasteryTip(); });
+$("#wm").addEventListener("mouseleave", () => { if (tip.from === $("#wm")) hideTip(); });
+// a finger has no hover: a tap shows the card for a few seconds, a second tap hides it
+$("#wm").addEventListener("click", () => {
+  if (!touch()) return;
+  if (tip.from === $("#wm")) return hideTip();
+  showMasteryTip();
+  setTimeout(() => { if (tip.from === $("#wm")) hideTip(); }, 5000);
+});
 function setSrc(img, src) { if (img.dataset.src !== src) { img.dataset.src = src; img.src = src; } }
 function hotbar(s) {
   for (const [btn, kind] of [["#b-hp", "hp"], ["#b-mp", "mp"]]) {
