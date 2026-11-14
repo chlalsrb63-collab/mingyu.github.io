@@ -496,4 +496,4 @@ export function drawWater(t, ox, oy) {
 }
 
 /** The worlds under the open sky, where day turns to night. */
-export const OUTDOOR = new Set(["town", "meadow", "forest", "city", "autumn"]);
+export const OUTDOOR = new Set(["town", "meadow", "forest", "city", "autumn", "jungle", "coast", "desert"]);

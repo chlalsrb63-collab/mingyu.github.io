@@ -130,7 +130,36 @@ export function scenery() {
     b.r(57, 16, 5, 4, "#ffe8a0"); b.r(0, 16, 3, 4, "#ff5050"); b.r(0, 24, 62, 2, "#3a3e4a");
     for (const x of [14, 47]) { b.oval(x, 26, 6, 5.4, "#22242c"); b.oval(x, 26, 3, 2.6, "#8a8e9c"); b.r(x - 1, 25, 2, 2, "#c8ccd8"); }
   });
+  // ── maps-v2 M3 placeholders (the art step redraws them): a palm, a reef rock, a black shore boulder, a mud hut
+  const palm = (lean) => prop(44, 62, (b) => {
+    const tr = "#a8824e", trD = "#7e5e36", leaf = "#3fae5a", d = "#237a44", hl = "#7ad86a";
+    for (let i = 0; i < 9; i++) { const x = 20 + Math.round(lean * (8 - i) * 0.5), y = 58 - i * 5; b.r(x, y - 5, 5, 6, i % 2 ? tr : trD); b.r(x + 3, y - 5, 2, 6, trD); }
+    b.r(17 + (lean ? 0 : 0), 58, 11, 3, trD);
+    const cx = 22 + lean * 4, cy = 14;
+    for (const [dx, dy, w, h] of [[-13, 2, 12, 4], [11, 2, 12, 4], [-9, -6, 9, 4], [8, -6, 9, 4], [-15, 8, 7, 4], [14, 8, 7, 4], [0, -9, 6, 5]]) b.oval(cx + dx, cy + dy, w, h, d);
+    for (const [dx, dy, w, h] of [[-12, 0, 10, 3], [10, 0, 10, 3], [-8, -7, 7, 3], [7, -7, 7, 3], [0, -10, 4, 4]]) b.oval(cx + dx, cy + dy, w, h, leaf);
+    b.oval(cx - 9, cy - 8, 4, 1.6, hl); b.oval(cx - 13, cy - 1, 5, 1.4, hl);
+    b.oval(cx, cy + 1, 4, 3, "#6a4a2a"); b.r(cx - 3, cy + 2, 2, 2, "#c8843a"); b.r(cx + 2, cy + 3, 2, 2, "#c8843a");
+  });
+  const lump = (c, top, dk, moss) => prop(30, 24, (b) => {
+    b.tri([[3, 23], [1, 13], [8, 4], [19, 2], [27, 9], [29, 20], [24, 23]], c);
+    b.tri([[8, 5], [19, 3], [25, 9], [14, 12], [5, 12]], top);
+    b.tri([[14, 12], [25, 9], [29, 20], [24, 23], [12, 23]], dk);
+    b.r(10, 5, 6, 1, lt(top, 1.2)); b.r(4, 21, 20, 2, dk);
+    if (moss) { b.oval(11, 6, 6, 2.4, moss); b.r(18, 5, 5, 2, moss); b.r(5, 11, 3, 2, moss); b.r(21, 13, 3, 1, "#f0a0a8"); b.r(8, 16, 2, 1, "#f0a0a8"); }
+  });
+  const hut = (v) => prop(46, 42, (b) => {
+    const wall = "#c89a62", wD = "#a67a48", roof = v ? "#b08a4a" : "#9a7a44", rD = "#7a5e32";
+    b.r(6, 18, 34, 22, wall); b.r(28, 18, 12, 22, wD); b.r(6, 38, 34, 2, "#86603a");
+    b.tri([[2, 20], [44, 20], [23, 2]], roof); b.tri([[23, 20], [44, 20], [23, 2]], rD);
+    for (const y of [8, 12, 16]) b.r(23 - (y - 2), y, (y - 2) * 2, 1, rD);
+    b.r(15, 26, 8, 14, "#4a3222"); b.r(15, 26, 8, 2, "#6a4a30"); b.r(31, 24, 5, 5, "#4a3222"); b.r(8, 22, 3, 1, wD); b.r(10, 31, 4, 1, wD);
+  });
   SC = {
+    "Ψ": [palm(0), palm(1), palm(-1)],
+    "Φ": [lump("#7e8a8c", "#a6b4b0", "#5e6a70", "#4fb89a"), lump("#868e8a", "#b0b8ae", "#646c6a", "#5aa86a")],
+    "Ω": [lump("#34363e", "#50525c", "#22232a", null), lump("#3c3a40", "#5a5860", "#26252c", null)],
+    "Δ": [hut(0), hut(1)],
     T: [tree("#4faa5a"), tree("#58b05a", "#e8584a"), tree("#7abf52"), tree("#f4a8c4")],
     P: [pine(true), pine(false)],
     B: [bush(0), bush(1), bush(2)],

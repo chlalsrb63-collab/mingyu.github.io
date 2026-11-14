@@ -35,7 +35,7 @@ town redesign moves the plaza — see `docs/design/README.md`; fishing/cooking h
 
 ## Invariants / gotchas
 - No `Date`/`Math.random` in logic: time is `S.now`; the day number is `dayOf(now)`; weather/tales derive from hashes of ids and slots.
-- New weather odds: add the map's `theme`/`id` to `WX_ODDS`, else it is "indoor" (-1). **`maple` (theme `autumn`) and the dungeon themes have no entry → no weather/day-night grading logic server side** (client `sky.js` decides visuals by theme; check before assuming).
+- New weather odds: add the map's `theme`/`id` to `WX_ODDS`, else it is "indoor" (-1). The coast loop's themes `jungle` `coast` `desert` have entries (the desert never rains). **`maple` (theme `autumn`) and the dungeon themes have no entry → no weather/day-night grading logic server side** (client `sky.js` decides visuals by theme; check before assuming).
 - New counter for achievements ⇒ add to `CNT_KEYS`, defaulted/clamped in `migrate` (it iterates `CNT_KEYS`).
 - New tutorial/daily kinds: append only (indices persisted); client text for daily kinds is `DAILY_TEXT`.
 - Stump seats are computed from `FIRES` once per map (`m.camps` cache); interior fires have no seats.

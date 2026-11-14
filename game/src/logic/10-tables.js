@@ -156,7 +156,7 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "ribdeer_bile", oasis: "bearmaw_gold", coast: "gatorhalf_steel" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -181,7 +181,7 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6 };
 const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
@@ -262,6 +262,26 @@ const MOBS = {
   sowseer: { name: "눈 달린 암퇘지", lv: 37, hp: 3000, atk: 112, def: 30, spd: 30, xp: 1300, gold: [90, 158], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
   doghead_fire: { name: "불타는 세 머리 들개", sp: "doghead", tint: "fire", lv: 38, hp: 2900, atk: 116, def: 26, spd: 52, xp: 1400, gold: [94, 164], aggro: 100, range: 20, cd: 1000, charge: 116, pool: 24, poolKind: 1 },
   abyssboss: { name: "심연의 어미", lv: 40, hp: 48000, atk: 200, def: 40, spd: 34, xp: 30000, gold: [4000, 6000], aggro: 140, range: 30, cd: 1400, resp: 240000, boss: true, gear: 1, fan: 160, pool: 34, poolKind: 2, charge: 150 },
+  // 정글 해안도로 (maps-v2 M3) — beasts met before, grown worse in the wet heat (new coast species come in a later step)
+  catsplit_gold: { name: "표범 무늬 고양이", sp: "catsplit", tint: "gold", lv: 20, hp: 600, atk: 64, def: 6, spd: 56, xp: 290, gold: [32, 62], aggro: 94, range: 18, cd: 1000, leap: 100 },
+  toadbrood_poison: { name: "늪 알 밴 두꺼비", sp: "toadbrood", tint: "poison", lv: 21, hp: 760, atk: 68, def: 14, spd: 30, xp: 330, gold: [36, 70], aggro: 86, range: 20, cd: 1500, pool: 26 },
+  hydrasnake_poison: { name: "맹독 세 머리 뱀", sp: "hydrasnake", tint: "poison", lv: 23, hp: 780, atk: 78, def: 8, spd: 38, xp: 400, gold: [40, 76], aggro: 94, range: 66, cd: 1700, volley: true },
+  mothface_bile: { name: "독가루 나방", sp: "mothface", tint: "bile", lv: 24, hp: 880, atk: 82, def: 8, spd: 44, xp: 450, gold: [44, 84], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 22 },
+  ribdeer_bile: { name: "이끼 갈비뼈 사슴", sp: "ribdeer", tint: "bile", lv: 26, hp: 1500, atk: 92, def: 22, spd: 30, xp: 540, gold: [50, 94], aggro: 80, range: 20, cd: 1400, slam: 38 },
+  // 모래바람 오아시스
+  foxtwine_gold: { name: "사막 꼬인 여우", sp: "foxtwine", tint: "gold", lv: 28, hp: 1200, atk: 100, def: 12, spd: 62, xp: 680, gold: [58, 104], aggro: 98, range: 17, cd: 850, leap: 96 },
+  hydrasnake_gold: { name: "모래 세 머리 뱀", sp: "hydrasnake", tint: "gold", lv: 29, hp: 1250, atk: 102, def: 14, spd: 38, xp: 730, gold: [60, 108], aggro: 96, range: 70, cd: 1700, volley: true },
+  lambmaw_bone: { name: "말라붙은 양", sp: "lambmaw", tint: "bone", lv: 30, hp: 1500, atk: 100, def: 16, spd: 40, xp: 790, gold: [64, 114], aggro: 90, range: 19, cd: 1200, charge: 112 },
+  eyecrow_ash: { name: "잿빛 눈알 까마귀", sp: "eyecrow", tint: "ash", lv: 31, hp: 1400, atk: 98, def: 12, spd: 46, xp: 850, gold: [66, 118], aggro: 98, range: 18, cd: 1100, fly: true },
+  twingoat_gold: { name: "모래 쌍두 염소", sp: "twingoat", tint: "gold", lv: 33, hp: 2000, atk: 100, def: 24, spd: 44, xp: 980, gold: [74, 130], aggro: 90, range: 20, cd: 1100, charge: 110 },
+  bearmaw_gold: { name: "모래 아가리 곰", sp: "bearmaw", tint: "gold", lv: 34, hp: 2600, atk: 104, def: 28, spd: 28, xp: 1060, gold: [78, 136], aggro: 80, range: 21, cd: 1500, slam: 40 },
+  // 산호 해안
+  crabskull_blood: { name: "붉은 두개골 게", sp: "crabskull", tint: "blood", lv: 34, hp: 2300, atk: 104, def: 28, spd: 34, xp: 1050, gold: [78, 136], aggro: 84, range: 20, cd: 1400, charge: 118 },
+  fishwalker_frost: { name: "푸른 다리 달린 생선", sp: "fishwalker", tint: "frost", lv: 35, hp: 2500, atk: 106, def: 24, spd: 32, xp: 1120, gold: [80, 140], aggro: 80, range: 22, cd: 1500, slam: 38 },
+  eelknot_frost: { name: "산호 뱀장어 매듭", sp: "eelknot", tint: "frost", lv: 36, hp: 2000, atk: 110, def: 16, spd: 40, xp: 1220, gold: [86, 150], aggro: 98, range: 76, cd: 1800, volley: true },
+  squidrat_blood: { name: "산호 촉수 쥐", sp: "squidrat", tint: "blood", lv: 37, hp: 2400, atk: 112, def: 18, spd: 56, xp: 1300, gold: [90, 158], aggro: 96, range: 18, cd: 1000, pool: 24, poolKind: 2 },
+  leechmaw_bone: { name: "흰 거머리 아가리", sp: "leechmaw", tint: "bone", lv: 38, hp: 2700, atk: 114, def: 20, spd: 44, xp: 1400, gold: [94, 164], aggro: 92, range: 19, cd: 1100, leap: 90 },
+  gatorhalf_steel: { name: "강철 반쪽 악어", sp: "gatorhalf", tint: "steel", lv: 40, hp: 3400, atk: 116, def: 34, spd: 30, xp: 1500, gold: [96, 168], aggro: 82, range: 21, cd: 1500, slam: 42 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes
   blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
@@ -273,7 +293,8 @@ const MOBS = {
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
-  ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]]]) {
+  ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]],
+  ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 37, 1650, [560, 950]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {
