@@ -2,7 +2,8 @@
 // node tests/balance.mjs
 //
 // BASE was measured with scripts/balance-probe.mjs on the rules just before J1 (origin/main e14fb5e:
-// four classes, levels 1–50, old level = the tier probed). With weapon skills (J2) every weapon kind must land
+// four classes, levels 1–50, old level = the tier probed, in the first open square of the old meadow). The new rules are
+// probed in a fixed flat arena (balance-probe.mjs ARENA), so map changes never move them. With weapon skills (J2) every weapon kind must land
 // within ±25 % of its old class's kills/min at every tier probed (the bow, against the average of all four: −25 %…+10 %).
 // Every hybrid, probed holding each of its two weapons, lands in the band of its pair at T13 (both masteries 15), T25
 // and T40 (below). Tune the skill table (03-skills.js), not these ranges.   node tests/balance.mjs [-v] [hybrid ids…]

@@ -24,6 +24,7 @@
 //         --clip x,y,w,h (only that part of the page) · --el "#w-bag" (only that element)
 //         Cheap first: a clipped/element shot of the part you changed costs a fraction of a full one.
 //         --channel msedge|chrome (use an installed browser instead of Playwright's Chromium)
+//         --hour 12 (fixed sky hour, so a shot taken at night still shows daylight)
 // Prints page errors and console errors, so a broken page is visible without the image.
 //
 // Needs the `playwright` dev dependency (npm install) and a browser: either
@@ -106,6 +107,8 @@ let srv = null;
 const browser = await launch();
 try {
   const ctx = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: 1 });
+  // --hour <0..24>: a fixed sky hour for the shot (sky.js reads __skyHour), e.g. 12 for noon light
+  if (opt.hour !== undefined) await ctx.addInitScript((h) => { globalThis.__skyHour = h; }, Number(opt.hour));
   const pg = await ctx.newPage();
   pg.on("pageerror", (e) => errors.push("pageerror: " + e.message));
   pg.on("console", (m) => { if (m.type() === "error") errors.push("console: " + m.text()); });

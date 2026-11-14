@@ -60,7 +60,7 @@ const JOBS = {
   darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.8, str: 0.8, int: 0.3 }, cost: 20000 },
   // the hybrid expansion: the other nine pairs (docs/design/jobs-and-stats.md "Hybrid expansion")
   bladedancer: { name: "검무사", kind: "hybrid", wk: ["sword", "dagger"], scale: { str: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: 20000 },
-  breaker: { name: "파진사", kind: "hybrid", wk: ["sword", "spear"], scale: { str: 0.85, wil: 0.4, wis: 0.4 }, cost: 20000 },
+  breaker: { name: "파진사", kind: "hybrid", wk: ["sword", "spear"], scale: { str: 0.9, wil: 0.5, wis: 0.4 }, cost: 20000 },
   arcblade: { name: "검궁사", kind: "hybrid", wk: ["sword", "bow"], scale: { str: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: 20000 },
   shadowlance: { name: "섬창사", kind: "hybrid", wk: ["dagger", "spear"], scale: { dex: 0.8, str: 0.8, luk: 0.3, wis: 0.3 }, cost: 20000 },
   trickster: { name: "환술사", kind: "hybrid", wk: ["dagger", "staff"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wis: 0.3 }, cost: 20000 },

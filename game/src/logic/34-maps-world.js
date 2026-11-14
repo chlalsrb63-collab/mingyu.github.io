@@ -290,14 +290,19 @@ const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", 
  */
 const GEN = {
   meadow: { make: wilds, band: [1, 7], stones: 3, cfg: () => ({
-    id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 152, h: 102, r: 9.6, warp: 9, wind: 0.55, loops: 0.12, merge: 0.32, cliff: 0.15, gap: 2,
+    // maps-v2 (docs/design/maps-v2.md, reference 2): highland falls — three terrace levels of wide grass, cliff
+    // edges climbed by wide ramps, the river pouring over each step into a pool, thin dirt paths winding across
+    id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 152, h: 102, r: 9.6, warp: 9, wind: 0.55, loops: 0.3, merge: 0.32, cliff: 0.15, gap: 2,
+    tiers: 3, tierOpen: 0.6, ramp: 2, roadW: 3, pools: 2.6, widen: "TPBRulYAe",
     ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 4, lakeR: 5, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
     mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "lambmaw", "eyecrow", "lambmaw", "eyecrow"], pondMob: "eyecrow", chest: "chest_meadow",
     vaultKinds: ["shrine", "circle", "bloom", "lookout", "cache", "menhir"], biomes: { plain: "plain" }, featureP: 0.6, features: ["pond", "boulders", "bigtree", "pen", "cairn", "logs", "stones"],
     // wet low ground flowers or grows tall; high ground is stony; dry ground is orchard or plain grass
-    biome: (e, mo, r) => (mo > 0.6 ? (r < 0.6 ? "flowers" : "tallgrass") : e > 0.66 ? "rocky" : mo < 0.36 ? (r < 0.5 ? "orchard" : "plain") : r < 0.35 ? "tallgrass" : "plain"),
-    paint: (b, n1, n2) => (b === "flowers" && n1 > 0.42 ? '"' : b === "tallgrass" && n1 > 0.4 ? "t" : b === "orchard" && n1 > 0.74 ? '"' : b === "plain" && n1 > 0.8 ? "t" : b === "plain" && n1 < 0.1 ? '"' : n2 > 0.66 ? "," : null),
+    // by level: the valley floor wet and in flower, the middle shelves orchard and tall grass, the tops stony heath
+    biome: (e, mo, r, t) => (t === 0 ? (mo > 0.5 ? (r < 0.7 ? "flowers" : "tallgrass") : r < 0.35 ? "tallgrass" : "plain")
+      : t === 1 ? (mo < 0.42 ? (r < 0.6 ? "orchard" : "plain") : r < 0.5 ? "tallgrass" : "plain") : r < 0.55 ? "rocky" : "plain"),
+    paint: (b, n1, n2) => (b === "rocky" ? (n1 > 0.6 ? "r" : n1 < 0.18 ? "p" : n2 > 0.6 ? "," : null) : b === "flowers" && n1 > 0.34 ? '"' : b === "tallgrass" && n1 > 0.4 ? "t" : b === "orchard" && n1 > 0.74 ? '"' : b === "plain" && n1 > 0.8 ? "t" : b === "plain" && n1 < 0.1 ? '"' : n2 > 0.66 ? "," : null),
     scatter: (b, h, n1) => (b === "orchard" ? (h < 0.05 ? "T" : h < 0.058 ? "u" : h < 0.063 ? "l" : null)
       : b === "rocky" ? (n1 > 0.55 && h < 0.09 ? "R" : h < 0.015 ? "B" : h < 0.025 ? "u" : null)
       : b === "flowers" ? (h < 0.03 ? "B" : h < 0.036 ? "T" : null)
@@ -305,7 +310,10 @@ const GEN = {
       : h < 0.018 ? "T" : h < 0.036 ? "B" : h < 0.043 ? "R" : h < 0.047 ? "u" : h < 0.05 ? "l" : null),
   }) },
   forest: { make: wilds, band: [8, 13], stones: 3, cfg: () => ({
-    id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 152, h: 102, r: 8.2, warp: 10, wind: 0.6, loops: 0.1, merge: 0.18, cliff: 0.22, gap: 2,
+    // maps-v2 (references 6 + 3): a mossy gorge — two levels of ledges, the stream in a cliff-sided cut crossed
+    // by bridges and fords, tree clusters, and the forgotten temple's courtyard partway in
+    id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 152, h: 102, r: 8.2, warp: 10, wind: 0.6, loops: 0.18, merge: 0.18, cliff: 0.22, gap: 2,
+    tiers: 3, tierOpen: 0.12, ramp: 2, roadW: 3, gorge: { first: 16, every: 30 }, temple: {}, stoneFr: [0.36, 0.8], widen: "TPBRulYAe",
     ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 2, lakeR: 4, vaults: 9, ruins: 5, tpm: 15.5, stair: "crypt",
     walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
     mobs: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
@@ -422,6 +430,8 @@ function genMap(id) {
   const lo = m.band[0];
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
   markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
+  // maps-v2: once the signs and stones stand, the ways that must stay three wide are checked once more
+  if (m.keepWide) widen(m, m.keepWide, m.widenSoft);
   // a pocket is the ground still open in it once the signs and stones stand
   for (const pk of m.pockets) pk.tiles = pk.tiles.filter((i) => m.o[Math.floor(i / m.w)][i % m.w] === " ");
   return m;
@@ -519,14 +529,59 @@ function markRoutes(m, labelOf, deeper) {
     for (let k = 1; k < 8; k += 2) if (on[k] && !got[k]) return false;
     return true;
   };
+  // maps-v2: a generator that keeps its ways three tiles wide (m.keepWide: the points they must join) gets its
+  // signs and stones only where every one of those points still joins the entrance's wide ground
+  let homeNow = null;
+  const wideOk = !m.keepWide ? null : () => {
+    const n = W * H, home = new Uint8Array(n);
+    const isWide = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!open(x + dx, y + dy)) return false; return true; };
+    const near = (px, py) => { const o = []; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (inMap(m, px + dx, py + dy)) o.push((py + dy) * W + px + dx); return o; };
+    const st = near(ex, ey).filter(isWide);
+    for (const i of st) home[i] = 1;
+    while (st.length) { const i = st.pop(), x = i % W; for (const j of [x + 1 < W ? i + 1 : -1, x > 0 ? i - 1 : -1, i + W < n ? i + W : -1, i - W]) if (j >= 0 && !home[j] && isWide(j)) { home[j] = 1; st.push(j); } }
+    homeNow = home;
+    return m.keepWide.map(([px, py]) => near(px, py).some((i) => home[i]));
+  };
+  const wideWas = wideOk ? wideOk() : null;
+  // only an object touching the wide ground can narrow it: anywhere else there is nothing to check
+  const touchesWide = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inMap(m, x + dx, y + dy) && homeNow[(y + dy) * W + x + dx]) return true; return false; };
+  const wideAt = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!open(x + dx, y + dy)) return false; return true; };
+  // the object (already set down at x, y) narrows nothing if the wide ground round it, two and three steps
+  // out, still holds together inside the 7 × 7 square; near a point that must stay joined, look at the whole map
+  const keepsWide = (x, y) => {
+    if (!wideOk || !touchesWide(x, y)) return true;
+    let fine;
+    if (m.keepWide.some(([px, py]) => Math.abs(px - x) <= 4 && Math.abs(py - y) <= 4)) {
+      fine = wideOk().every((v, k) => v || !wideWas[k]);
+      if (!fine) { const o = m.o[y][x]; m.o[y][x] = " "; wideOk(); m.o[y][x] = o; }
+      return fine;
+    }
+    const win = [], ring = [];
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+      const X = x + dx, Y = y + dy, i = Y * W + X;
+      if (!inMap(m, X, Y) || !homeNow[i] || !wideAt(i)) continue;
+      win.push(i);
+      if (Math.max(Math.abs(dx), Math.abs(dy)) >= 2) ring.push(i);
+    }
+    if (!ring.length) return true;
+    const inWin = new Set(win), got = new Set([ring[0]]), st = [ring[0]];
+    while (st.length) { const i = st.pop(); for (const j of [i + 1, i - 1, i + W, i - W]) if (inWin.has(j) && !got.has(j)) { got.add(j); st.push(j); } }
+    fine = ring.every((i) => got.has(i));
+    if (fine) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const X = x + dx, Y = y + dy; if (inMap(m, X, Y) && !wideAt(Y * W + X)) homeNow[Y * W + X] = 0; }
+    return fine;
+  };
+  /** Is the walk at this tile on the entrance's wide ground (or within two steps of it)? */
+  const onWide = (i) => { if (!homeNow) return true; const x = i % W, y = (i - x) / W; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (inMap(m, x + dx, y + dy) && homeNow[(y + dy) * W + x + dx]) return true; return false; };
+  const AROUND = [[0, -1], [1, 0], [-1, 0], [0, 1], [1, -1], [-1, -1], [1, 1], [-1, 1]];
+  const AROUND2 = AROUND.concat([[0, -2], [2, 0], [-2, 0], [0, 2], [2, -1], [-2, 1], [1, 2], [-1, -2]]);
   /** Put object `ch` beside the walk at index-tile `at`, where it blocks nothing. */
   const place = (at, ch) => {
     const ax = at % W, ay = (at - ax) / W;
-    for (const [dx, dy] of [[0, -1], [1, 0], [-1, 0], [0, 1], [1, -1], [-1, -1], [1, 1], [-1, 1]]) {
+    for (const [dx, dy] of wideOk ? AROUND2 : AROUND) {
       const x = ax + dx, y = ay + dy, i = y * W + x;
       if (!open(x, y) || onPath.has(i) || base.d[i] < 0 || busy(x, y)) continue;
       m.o[y][x] = ch;
-      if (ringJoined(x, y) || flood(ex, ey).count === reach - 1) { reach--; return [x, y]; }
+      if ((ringJoined(x, y) || flood(ex, ey).count === reach - 1) && keepsWide(x, y)) { reach--; return [x, y]; }
       m.o[y][x] = " ";
     }
     return null;
@@ -552,12 +607,12 @@ function markRoutes(m, labelOf, deeper) {
     // a wind shrine a few steps further on (33-maps-zones.js); a campfire burns in the plaza by the first
     m.stones = [WP[m.id]];
     m.shrines = [];
-    const fr = m.stonesWant >= 3 ? [1 / 3, 2 / 3] : m.stonesWant === 2 ? [0.5] : [];
+    const fr = m.stoneFr || (m.stonesWant >= 3 ? [1 / 3, 2 / 3] : m.stonesWant === 2 ? [0.5] : []);
     for (const f of fr) {
       const t = Math.round(C.length * f);
       for (let s = 0; s <= 60; s++) {
         const j = s % 2 ? t + (s + 1) / 2 : t - s / 2;
-        if (j <= k0 + 10 || j >= C.length - 3) continue;
+        if (j <= k0 + 10 || j >= C.length - 3 || !onWide(C[j])) continue;
         const at = place(C[j], "Q");
         if (!at) continue;
         const st = { x: at[0], y: at[1], ax: C[j] % W, ay: Math.floor(C[j] / W), i: m.stones.length };
