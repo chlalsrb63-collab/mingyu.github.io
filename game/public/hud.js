@@ -20,10 +20,10 @@ import * as JobTree from "./jobtree.js";
 import * as Sky from "./sky.js";
 import * as Housing from "./housing.js";
 import * as Life from "./life.js";
-import { G, $, clamp, VP, el } from "./state.js";
+import { G, $, clamp, VP, el, dollDocked } from "./state.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
 import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn } from "./windows.js";
-import { openTree, openStats, renderInv, renderChar, renderSkills } from "./win_char.js";
+import { openTree, openStats, renderInv, renderChar, renderDoll, renderSkills } from "./win_char.js";
 import { renderWarp, renderDaily, renderAchieve, renderCollect, tutCard, eventWidget, castBar, tickDaily } from "./win_world.js";
 import { renderShop, renderSmith, renderQuest } from "./win_shop.js";
 
@@ -199,7 +199,8 @@ export function refreshUi() {
   // the C window: 장비 or 능력치 (points can be bought by a campfire or at 수련관 카이)
   draw("char", () => G.charTab === "cos" ? ["cos", s.xp, s.nx] : G.charTab === "stat"
     ? ["stat", s.st, s.lvl, s.xp, s.xpt, s.nx, s.rs, s.dv, s.atk, s.mhp, s.mmp, s.def, s.crit, s.critd, s.mf, s.job, s.wk, s.eq.weapon && s.eq.weapon.id, s.dead, fireNear(), near, StatWin.key()]
-    : ["gear", s.xp, s.nx, s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.lvl, s.name, s.guild], renderChar);
+    : ["gear", dollDocked(), s.xp, s.nx, s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.lvl, s.name, s.guild], renderChar);
+  dockedDoll(s);
   // K: 무기 · 스킬 or 전직의 길
   draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey()], renderSkills);
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near], renderShop);
@@ -217,6 +218,18 @@ export function refreshUi() {
   Housing.refresh(s);
   Life.refresh(s);
   tutCard(s);
+}
+/** The paper-doll docked in the side column (desktop): redrawn when the gear or the name line changes; its tab buttons light with the C window. */
+function dockedDoll(s) {
+  if (!dollDocked()) return;
+  const k = JSON.stringify([s.eq, s.lvl, s.name, s.cls, s.job, touch()]);
+  if (shown.doll !== k) {
+    shown.doll = k;
+    if (tip.from && $("#side-char").contains(tip.from)) hideTip();
+    renderDoll(s);
+  }
+  const on = isOpen("char") ? G.charTab || "gear" : "";
+  for (const b of $("#sc-tabs").children) b.classList.toggle("on", b.dataset.t === on);
 }
 export function section(text, glyph) {
   const h = el("div", "section");
@@ -254,7 +267,7 @@ export function hudTick(t) {
   try { drawWeaponGauge(cgauge, s, G.defs, t); } catch (err) { if (!hudTick.warned) { hudTick.warned = true; console.warn("weapon gauge:", err); } }
   QS.tick(t);
   if (tip.from && (!tip.from.isConnected || tip.from.closest("[hidden]"))) hideTip();
-  if (isOpen("char")) drawPortrait(t);
+  if (isOpen("char") || dollDocked()) drawPortrait(t);
   // the kill streak: counts up while kills keep coming, drains between them
   const sb = $("#streak"), k = G.streak;
   const live = k && k.n >= 2 && t < k.end;

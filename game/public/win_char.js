@@ -13,7 +13,7 @@ import * as QS from "./quickslots.js";
 import * as StatWin from "./statwin.js";
 import * as JobTree from "./jobtree.js";
 import * as Housing from "./housing.js";
-import { G, $, el, now, $$ } from "./state.js";
+import { G, $, el, now, $$, dollDocked } from "./state.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
 import { isOpen, touch, hideTip, closeWin, openWin } from "./windows.js";
@@ -111,14 +111,21 @@ const STAT_GROUPS = [
   ["숙련", [["회피", "chevron", (s) => `${s.dv[1]}%`], ["공격 속도", "clock", (s) => `+${s.dv[2]}%`], ["재사용 감소", "clock", (s) => `${s.dv[3]}%`], ["무기 숙련", "up", (s) => `${s.skLv}`]]],
 ];
 export function renderChar(s) {
-  // three tabs (the row is wardrobe_ui.js's): 장비 (the paper-doll and the sheet), 능력치 (statwin.js: buying points), 외형
+  // three tabs (the row is wardrobe_ui.js's): 장비 (the paper-doll and the sheet), 능력치 (statwin.js: buying points), 외형.
+  // On a desktop the paper-doll is docked in the side column (renderDoll from hud.js refreshUi), so the first tab is the sheet: 상세
   const tab = G.charTab || "gear";
+  charTabs.children[0].textContent = dollDocked() ? "상세" : "장비";
   charTabBtn.classList.toggle("ready", s.lvl < G.defs.maxLv && s.xp >= StatWin.cheapest(s));
   $("#char-gear").hidden = tab !== "gear";
   $("#char-stat").hidden = tab !== "stat";
   const role = G.near && G.near.role;
   if (tab === "cos") return;
   if (tab === "stat") { StatWin.render($("#char-stat"), s, { here: fireNear() || role === "train", atTrainer: role === "train" }); return; }
+  if (!dollDocked()) renderDoll(s);
+  renderSheet(s);
+}
+/** The paper-doll: the name line, the gear slots (click one to take it off) and the portrait. Docked in the side column on a desktop. */
+export function renderDoll(s) {
   const title = $("#char-title");
   title.textContent = "";
   title.append(iconImg(CLASS_ICON[s.cls] || "sword", "#e2c486"), s.name, el("small", "", `Lv.${s.lvl} ${G.defs.classes[s.cls].name}`));
@@ -132,6 +139,11 @@ export function renderChar(s) {
     if (k === "weapon2") slot.hidden = !g && !(G.defs.jobs[s.job] && G.defs.jobs[s.job].kind === "hybrid");
     host.replaceWith(slot);
   }
+  resetDoll();
+  drawPortrait(now());
+}
+/** The 장비 / 상세 tab's sheet: stat groups, legendary powers, sets. */
+function renderSheet(s) {
   const st = $("#char-stats");
   st.textContent = "";
   for (const [name, rows] of STAT_GROUPS) {
@@ -155,8 +167,6 @@ export function renderChar(s) {
     pw.append(el("div", "st", `${set.name} 세트 ${worn}개`));
     for (const [n, list] of set.bonus) pw.append(el("div", worn >= n ? "st on" : "st off", `${n}세트: ${list.map(([a, v]) => statText(a, v)).join(", ")}`));
   }
-  resetDoll();
-  drawPortrait(now());
 }
 
 // ── K: 무기 · 스킬 and 전직의 길 (jobtree.js draws the weapon rows and the tree; the skill rows are here, with the quick-slot drag) ──
@@ -213,7 +223,13 @@ function skillRows(box, s, k) {
 // the C window's tab row is the wardrobe's (장비 · 외형, wardrobe_ui.js shows and hides its parts); 능력치 joins it
 const charTabs = $("#w-char .wr-tabs"), charTabBtn = el("button", "", "능력치");
 /** The C window on its 능력치 tab (the HUD's EXP bar, 카이, a campfire hint). */
-export function openStats() { if (!isOpen("char")) Sound.play("open"); openWin("char"); if (G.charTab !== "stat") charTabBtn.click(); }
+export function openStats() { openCharTab("stat"); }
+/** The C window on tab `t` (gear · stat · cos), through the tab row so the wardrobe's own state follows. */
+export function openCharTab(t) {
+  if (!isOpen("char")) Sound.play("open");
+  openWin("char");
+  if ((G.charTab || "gear") !== t) { const b = [...charTabs.children].find((x) => x.dataset.t === t); if (b) b.click(); }
+}
 /** K on its 전직의 길 tab (the mastery strip, 아르센). */
 export function openTree() { G.skTab = "tree"; if (!isOpen("skill")) Sound.play("open"); openWin("skill"); }
 
@@ -222,5 +238,12 @@ export function setupWinChar() {
   charTabBtn.dataset.t = "stat";
   charTabs.children[0].after(charTabBtn);
   charTabs.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { G.charTab = b.dataset.t; refreshUi(); } });
+  // the docked paper-doll's buttons: 상세 · 능력치 · 외형 open the C window there (the same button again closes it)
+  $("#sc-tabs").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b || !G.self) return;
+    if (isOpen("char") && (G.charTab || "gear") === b.dataset.t) { Sound.play("close"); closeWin("char"); return; }
+    openCharTab(b.dataset.t);
+  });
   for (const b of $$("#skill-tabs button")) b.addEventListener("click", () => { G.skTab = b.dataset.tab; Sound.play("tab"); refreshUi(); });
 }

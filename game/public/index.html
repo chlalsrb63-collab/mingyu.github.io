@@ -71,6 +71,11 @@
           <div id="mini-info"></div>
         </div>
         <div id="quest-track" class="sunk"></div>
+        <!-- the character, docked on a desktop: state.js layout() moves #w-char's .doll in here (back on a phone) -->
+        <div id="side-char">
+          <div id="sc-doll" class="sunk"></div>
+          <div id="sc-tabs"><button data-t="gear" title="상세 능력 (C)">상세</button><button data-t="stat" title="능력치 올리기">능력치</button><button data-t="cos" title="외형 옷장">외형</button></div>
+        </div>
         <section class="window docked" id="w-inv">
           <header><span class="t plate">가방</span><span id="inv-gold" class="gold"></span><span id="inv-count"></span><button id="inv-sort" class="btn small" title="보기 정렬"></button><button class="x" title="닫기"></button></header>
           <div class="body">
