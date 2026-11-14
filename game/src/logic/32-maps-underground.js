@@ -364,16 +364,26 @@ function cavern(cfg) {
     west: { t: [[3, start[1] - 1], [3, start[1]]], a: [[6, start[1] - 1], [6, start[1]]] },
     rift: { t: [[W - 3, 10], [W - 3, 11]], a: [[arena[0] + 5, 10], [arena[0] + 5, 11]] },
   };
+  // maps-v2 M3: a crack three wide in the south wall, up to the first open floor (the way out to the oasis)
+  const pass = [];
+  if (cfg.south) {
+    const gx = Math.round(W * cfg.south);
+    let top = H - 4;
+    while (top > H - 30 && !(m.g[top][gx] !== "W" && m.o[top][gx] === " " && m.g[top][gx] !== "w")) top--;
+    for (let y = top; y <= H - 3; y++) for (const x of [gx - 1, gx, gx + 1]) { digAt(m, x, y); if (m.g[y][x] === "w") m.g[y][x] = "c"; }
+    m.gates.south = { t: [[gx, H - 3], [gx + 1, H - 3]], a: [[gx, H - 6], [gx + 1, H - 6]] };
+    pass.push(m.gates.south.a[0], [gx, top]);
+  }
   for (const name of Object.keys(m.gates)) for (const [x, y] of m.gates[name].t.concat(m.gates[name].a)) digAt(m, x, y);
   for (let x = 3; x <= start[0]; x++) for (const y of [start[1] - 1, start[1]]) digAt(m, x, y);
   m.entry = m.gates.west.a[0];
-  const pts = [m.gates.west.a[1], [arena[0], arena[1] + 3], ante, m.gates.rift.a[0], m.gates.rift.t[0]];
+  const pts = [m.gates.west.a[1], [arena[0], arena[1] + 3], ante, m.gates.rift.a[0], m.gates.rift.t[0]].concat(pass);
   for (const z of order) pts.push(spot(m, z.r.px, z.r.py));
   const wideTo = pts.slice();
   for (const [x, y] of vaults) pts.push([x + 1, y + 1], [x + 2, y + 1]);
   cover(m, cfg.mobs);
   knit(m, pts, "c");
-  if (cfg.moss) wideWays(m, wideTo.concat(FIRES[cfg.id]), "TPBRulYAeKSMn", fixed, wideTo.slice(0, 5).concat(FIRES[cfg.id]));
+  if (cfg.moss) wideWays(m, wideTo.concat(FIRES[cfg.id]), "TPBRulYAeKSMn", fixed, wideTo.slice(0, 5 + pass.length).concat(FIRES[cfg.id]));
   m.regions = order.length;
   return m;
 }

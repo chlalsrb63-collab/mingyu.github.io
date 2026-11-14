@@ -496,7 +496,7 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "ribdeer_bile", oasis: "bearmaw_gold", coast: "gatorhalf_steel" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -521,7 +521,7 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6 };
 const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
@@ -602,6 +602,26 @@ const MOBS = {
   sowseer: { name: "눈 달린 암퇘지", lv: 37, hp: 3000, atk: 112, def: 30, spd: 30, xp: 1300, gold: [90, 158], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
   doghead_fire: { name: "불타는 세 머리 들개", sp: "doghead", tint: "fire", lv: 38, hp: 2900, atk: 116, def: 26, spd: 52, xp: 1400, gold: [94, 164], aggro: 100, range: 20, cd: 1000, charge: 116, pool: 24, poolKind: 1 },
   abyssboss: { name: "심연의 어미", lv: 40, hp: 48000, atk: 200, def: 40, spd: 34, xp: 30000, gold: [4000, 6000], aggro: 140, range: 30, cd: 1400, resp: 240000, boss: true, gear: 1, fan: 160, pool: 34, poolKind: 2, charge: 150 },
+  // 정글 해안도로 (maps-v2 M3) — beasts met before, grown worse in the wet heat (new coast species come in a later step)
+  catsplit_gold: { name: "표범 무늬 고양이", sp: "catsplit", tint: "gold", lv: 20, hp: 600, atk: 64, def: 6, spd: 56, xp: 290, gold: [32, 62], aggro: 94, range: 18, cd: 1000, leap: 100 },
+  toadbrood_poison: { name: "늪 알 밴 두꺼비", sp: "toadbrood", tint: "poison", lv: 21, hp: 760, atk: 68, def: 14, spd: 30, xp: 330, gold: [36, 70], aggro: 86, range: 20, cd: 1500, pool: 26 },
+  hydrasnake_poison: { name: "맹독 세 머리 뱀", sp: "hydrasnake", tint: "poison", lv: 23, hp: 780, atk: 78, def: 8, spd: 38, xp: 400, gold: [40, 76], aggro: 94, range: 66, cd: 1700, volley: true },
+  mothface_bile: { name: "독가루 나방", sp: "mothface", tint: "bile", lv: 24, hp: 880, atk: 82, def: 8, spd: 44, xp: 450, gold: [44, 84], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 22 },
+  ribdeer_bile: { name: "이끼 갈비뼈 사슴", sp: "ribdeer", tint: "bile", lv: 26, hp: 1500, atk: 92, def: 22, spd: 30, xp: 540, gold: [50, 94], aggro: 80, range: 20, cd: 1400, slam: 38 },
+  // 모래바람 오아시스
+  foxtwine_gold: { name: "사막 꼬인 여우", sp: "foxtwine", tint: "gold", lv: 28, hp: 1200, atk: 100, def: 12, spd: 62, xp: 680, gold: [58, 104], aggro: 98, range: 17, cd: 850, leap: 96 },
+  hydrasnake_gold: { name: "모래 세 머리 뱀", sp: "hydrasnake", tint: "gold", lv: 29, hp: 1250, atk: 102, def: 14, spd: 38, xp: 730, gold: [60, 108], aggro: 96, range: 70, cd: 1700, volley: true },
+  lambmaw_bone: { name: "말라붙은 양", sp: "lambmaw", tint: "bone", lv: 30, hp: 1500, atk: 100, def: 16, spd: 40, xp: 790, gold: [64, 114], aggro: 90, range: 19, cd: 1200, charge: 112 },
+  eyecrow_ash: { name: "잿빛 눈알 까마귀", sp: "eyecrow", tint: "ash", lv: 31, hp: 1400, atk: 98, def: 12, spd: 46, xp: 850, gold: [66, 118], aggro: 98, range: 18, cd: 1100, fly: true },
+  twingoat_gold: { name: "모래 쌍두 염소", sp: "twingoat", tint: "gold", lv: 33, hp: 2000, atk: 100, def: 24, spd: 44, xp: 980, gold: [74, 130], aggro: 90, range: 20, cd: 1100, charge: 110 },
+  bearmaw_gold: { name: "모래 아가리 곰", sp: "bearmaw", tint: "gold", lv: 34, hp: 2600, atk: 104, def: 28, spd: 28, xp: 1060, gold: [78, 136], aggro: 80, range: 21, cd: 1500, slam: 40 },
+  // 산호 해안
+  crabskull_blood: { name: "붉은 두개골 게", sp: "crabskull", tint: "blood", lv: 34, hp: 2300, atk: 104, def: 28, spd: 34, xp: 1050, gold: [78, 136], aggro: 84, range: 20, cd: 1400, charge: 118 },
+  fishwalker_frost: { name: "푸른 다리 달린 생선", sp: "fishwalker", tint: "frost", lv: 35, hp: 2500, atk: 106, def: 24, spd: 32, xp: 1120, gold: [80, 140], aggro: 80, range: 22, cd: 1500, slam: 38 },
+  eelknot_frost: { name: "산호 뱀장어 매듭", sp: "eelknot", tint: "frost", lv: 36, hp: 2000, atk: 110, def: 16, spd: 40, xp: 1220, gold: [86, 150], aggro: 98, range: 76, cd: 1800, volley: true },
+  squidrat_blood: { name: "산호 촉수 쥐", sp: "squidrat", tint: "blood", lv: 37, hp: 2400, atk: 112, def: 18, spd: 56, xp: 1300, gold: [90, 158], aggro: 96, range: 18, cd: 1000, pool: 24, poolKind: 2 },
+  leechmaw_bone: { name: "흰 거머리 아가리", sp: "leechmaw", tint: "bone", lv: 38, hp: 2700, atk: 114, def: 20, spd: 44, xp: 1400, gold: [94, 164], aggro: 92, range: 19, cd: 1100, leap: 90 },
+  gatorhalf_steel: { name: "강철 반쪽 악어", sp: "gatorhalf", tint: "steel", lv: 40, hp: 3400, atk: 116, def: 34, spd: 30, xp: 1500, gold: [96, 168], aggro: 82, range: 21, cd: 1500, slam: 42 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes
   blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
@@ -613,7 +633,8 @@ const MOBS = {
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
-  ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]]]) {
+  ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]],
+  ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 37, 1650, [560, 950]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {
@@ -1673,6 +1694,8 @@ const PIECE = {
   N: [undefined, "N"], $: [undefined, "d"], "!": [undefined, "i"], "^": [undefined, "f"],
   // maps-v2: still water (the temple's rune pool; the art step gives it a glow of its own)
   "~": ["w", " "],
+  // maps-v2 M3, the south-west coast: palm Ψ, reef rock Φ, shore boulder Ω, mud hut Δ (Greek: every ASCII mark is taken by the rooms' furniture); shallows (walkable), white sand, dune sand
+  "Ψ": [undefined, "Ψ"], "Φ": [undefined, "Φ"], "Ω": [undefined, "Ω"], "Δ": [undefined, "Δ"], ",": ["~", " "], _: ["S", " "], ":": ["z", " "],
 };
 const PIECES = {
   // 바람초원 · 속삭임 숲
@@ -1696,6 +1719,14 @@ const PIECES = {
   scarefield: ["FF.FF.FF", "Ft.tt.tF", "F.t*t.tF", "Ftt.tt.F", "F.t..t.F", "FFF..FFF"],
   leafmound: [".u...l.", "%%%%%%.", "%%%Y%%u", "u%%*%%%", ".%%%%%.", "...l..."],
   treetunnel: [".TTTTTTT.", "T.=====.T", "..====*=T", "T.=====.T", ".TTTTTTT."],
+  // 모래바람 오아시스 · 산호 해안 · 정글 해안도로 (maps-v2 M3): mud huts round a yard, a caravan's tents by a fire,
+  // a dry well, a ring of palms, a tide pool walled by reef, a boulder cove
+  hamlet: [".Δ...Δ.", "...p...", "Δ.p*p.Δ", "...p...", ".Ψ...Δ."],
+  caravan: [".E...E.", "..ppp..", ".pp#pp.", "Ψ.ppp.l", "......."],
+  drywell: ["..Ψ..", ".rrr.", "Or*rO", ".rrr.", "....."],
+  palmring: ["Ψ.Ψ.Ψ", ".....", "Ψ.*.Ψ", ".....", "Ψ...Ψ"],
+  tidepool: [".Φ,Φ.", "Φ,,,Φ", ",,*,,", "Φ,,,.", ".Φ.Φ.", "....."],
+  cove: ["ΩΩ.ΩΩ", "Ω___Ω", "__*__", "Ω___.", ".Ω.Ω."],
   // 잊힌 신전 (maps-v2, reference 3): a processional way three flagstones wide from the south gate to the
   // shrine in the north, round a rune pool; broken colonnades and wall stubs make side chambers. Never turned.
   temple: [
@@ -1766,10 +1797,24 @@ function wilds(cfg) {
   for (const [name, side, f] of cfg.gates) {
     if (side === "w") { const gy = Math.round(f * H); gates[name] = { t: [[1, gy], [1, gy + 1]], a: [[4, gy], [4, gy + 1]] }; fixed.push([7, gy]); keepBox(1, gy - 2, 7, gy + 3); }
     else if (side === "e") { const gy = Math.round(f * H); gates[name] = { t: [[W - 2, gy], [W - 2, gy + 1]], a: [[W - 5, gy], [W - 5, gy + 1]] }; fixed.push([W - 8, gy]); keepBox(W - 8, gy - 2, W - 2, gy + 3); }
+    else if (side === "s") { const gx = Math.round(f * W); gates[name] = { t: [[gx, H - 2], [gx + 1, H - 2]], a: [[gx, H - 5], [gx + 1, H - 5]] }; fixed.push([gx, H - 8]); keepBox(gx - 2, H - 8, gx + 3, H - 2); }
     else { const gx = Math.round(f * W); gates[name] = { t: [[gx, 1], [gx + 1, 1]], a: [[gx, 4], [gx + 1, 4]] }; fixed.push([gx, 7]); keepBox(gx - 2, 1, gx + 3, 7); }
   }
-  const sites = poisson(box, 5, 5, W - 6, H - 6, cfg.r, fixed).map(([x, y]) => ({ x, y, w: 0.78 + rnd(box) * 0.5 }));
-  const lab = partition(m, sites, S0 + 3, cfg.warp, (x, y) => x >= 2 && y >= 2 && x < W - 2 && y < H - 2);
+  // the sea (maps-v2 M3): one side of the map is water. `sd` is how far a tile lies out from the waterline (tiles,
+  // < 0 on land): surf to `surf`, walkable shallows to `dz`, deep sea beyond — no region is grown out there
+  const sea = cfg.sea || null, sd = sea ? new Float32Array(W * H) : null, dz = sea ? sea.surf + (sea.shallow || 0) : 0;
+  let sx0 = 5, sy1 = H - 6;
+  if (sea) {
+    const p1 = rnd(box) * 6.28, p2 = rnd(box) * 6.28;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const u = sea.side === "w" ? y : x, out = sea.side === "w" ? x : H - 1 - y;
+      sd[y * W + x] = sea.at + Math.sin(u / 13 + p1) * sea.amp * 0.55 + Math.sin(u / 5.3 + p2) * sea.amp * 0.2 + (N1[y * W + x] - 0.5) * sea.amp * 0.5 - out;
+    }
+    const lim = Math.max(0, Math.ceil(sea.at + sea.amp - dz)) + 2;
+    if (sea.side === "w") sx0 += lim; else sy1 -= lim;
+  }
+  const sites = poisson(box, sx0, 5, W - 6, sy1, cfg.r, fixed).map(([x, y]) => ({ x, y, w: 0.78 + rnd(box) * 0.5 }));
+  const lab = partition(m, sites, S0 + 3, cfg.warp, (x, y) => x >= 2 && y >= 2 && x < W - 2 && y < H - 2 && !(sd && sd[y * W + x] > dz));
   const { R, E: bord, inner } = regionsOf(m, lab, sites.length);
   for (const r of R) { let e = 0, mo = 0; for (const i of r.tiles) { e += El[i]; mo += Mo[i]; } r.e = e / Math.max(1, r.area); r.mo = mo / Math.max(1, r.area); }
   const n = R.length;
@@ -1829,7 +1874,8 @@ function wilds(cfg) {
     if (kind === "cliff") m.o[y][x] = "C";
     else if (kind === "trees") m.o[y][x] = h2(x, y, S0) < 0.82 ? cfg.treeCh : cfg.treeCh2;
     else if (kind === "hedge") m.o[y][x] = "H";
-    else if (kind === "rocks") m.o[y][x] = h2(x, y, S0) < 0.5 ? "R" : "B";
+    else if (kind === "rocks") m.o[y][x] = cfg.rocks ? cfg.rocks[h2(x, y, S0) < 0.5 ? 0 : 1] : h2(x, y, S0) < 0.5 ? "R" : "B";
+    else if (kind === "palms") m.o[y][x] = h2(x, y, S0) < 0.8 ? "Ψ" : "B";
     else if (kind === "ruin") m.o[y][x] = h2(x, y, S0) < 0.85 ? "U" : "q";
     else if (kind === "bramble") m.o[y][x] = h2(x, y, S0) < 0.7 ? "B" : cfg.treeCh;
   };
@@ -1884,9 +1930,37 @@ function wilds(cfg) {
     if (d <= 3 && !keep[i] && N1[i] + (3 - d) * 0.17 > 0.86) m.o[y][x] = cfg.edge;
   }
 
+  // the sea and its shore: deep water, a band of walkable shallows with reef rocks, sand islets and the odd deep
+  // hole, the surf line, then the beach (sand, or a strand of black boulders); a barrier that ran out into the
+  // water stands on as reef
+  if (sea) {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x, d = sd[i], rim = x < 2 || y < 2 || x >= W - 2 || y >= H - 2;
+      if (d <= -sea.beach) continue;
+      if (d > dz || (d > 0 && rim)) { m.g[y][x] = "w"; m.o[y][x] = " "; continue; }
+      if (rim) continue;
+      const was = m.o[y][x] !== " ";
+      if (d > 0) {
+        const sh = d > sea.surf;
+        m.g[y][x] = sh ? "~" : "-";
+        m.o[y][x] = was && !keep[i] ? "Φ" : " ";
+        if (!sh || keep[i]) continue;
+        const inner2 = d > sea.surf + 2 && d < dz - 2;
+        if (inner2 && El[i] > 0.6) { m.g[y][x] = sea.sand; if (!was && h2(x, y, S0 + 21) < 0.1) m.o[y][x] = "Ψ"; }
+        else if (inner2 && !was && Mo[i] > 0.72 && N1[i] > 0.45) m.g[y][x] = "w";
+        else if (!was && N1[i] > 0.6 && h2(x, y, S0 + 22) < sea.reef) m.o[y][x] = "Φ";
+      } else {
+        m.g[y][x] = sea.sand;
+        if (keep[i]) continue;
+        if (was) { if (sea.rock) m.o[y][x] = sea.rock; }
+        else if (sea.rock && h2(x, y, S0 + 23) < sea.rockP * (N1[i] > 0.5 ? 1.6 : 0.6)) m.o[y][x] = sea.rock;
+      }
+    }
+  }
+
   // the river: it runs downhill from the top of the map to the bottom
   const falls = [], riverAt = new Uint8Array(W * H);
-  const water = (x, y) => { if (x < 2 || y < 1 || x >= W - 2 || y >= H - 1) return; m.g[y][x] = "w"; m.o[y][x] = " "; };
+  const water = (x, y) => { if (x < 2 || y < 1 || x >= W - 2 || y >= H - 1 || (sd && sd[y * W + x] > 0)) return; m.g[y][x] = "w"; m.o[y][x] = " "; };
   if (cfg.river) {
     // a meandering centre line — two sine waves of different length and some noise — from the top edge to the bottom
     const sx = W * (0.38 + rnd(box) * 0.24), a1 = 4 + rnd(box) * 2.5, l1 = 11 + rnd(box) * 5, p1 = rnd(box) * 6.28, a2 = 1.5 + rnd(box), l2 = 4.5 + rnd(box) * 2;
@@ -1982,12 +2056,12 @@ function wilds(cfg) {
   }
 
   // set pieces
-  const free = (x, y) => m.o[y][x] === " " && !"wbv".includes(m.g[y][x]) && !keep[y * W + x];
+  const free = (x, y) => m.o[y][x] === " " && !"wbv~-".includes(m.g[y][x]) && !keep[y * W + x];
   const placeIn = (r, name, pad) => {
     const rot0 = ri(box, 0, 3), flip = rnd(box) < 0.5, rot = UPRIGHT.has(name) ? 0 : rot0;
     const [w, h] = stampSize(PIECES[name], rot);
     // a piece may stand where loose trees grow (it clears them), never on a barrier, water or a kept way
-    const room = (x, y) => !"wbv".includes(m.g[y][x]) && !keep[y * W + x] && !"CHUZ".includes(m.o[y][x]);
+    const room = (x, y) => !"wbv~-".includes(m.g[y][x]) && !keep[y * W + x] && !"CHUZ".includes(m.o[y][x]);
     const p = fitIn(m, lab, inner, r, w, h, pad, room) || fitIn(m, lab, inner, r, w, h, 2, room) || (cfg.padMin === 1 ? fitIn(m, lab, inner, r, w, h, 1, room) : null);
     if (!p) return null;
     const tags = piece(m, name, p[0], p[1], rot, flip);
@@ -2156,6 +2230,23 @@ function wilds(cfg) {
     }
   }
 
+  // an oasis (maps-v2 M3): the ground within a few steps of water is green, and palms stand round it
+  if (cfg.green) {
+    const dist = new Int8Array(W * H).fill(-1), q = [];
+    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) if (m.g[y][x] === "w" && !(sd && sd[y * W + x] > 0)) { dist[y * W + x] = 0; q.push(y * W + x); }
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h], x = i % W, y = (i - x) / W;
+      if (dist[i] >= cfg.green.r) continue;
+      for (const [dx, dy] of D4) { const X = x + dx, Y = y + dy, j = Y * W + X; if (X < 2 || Y < 2 || X >= W - 2 || Y >= H - 2 || dist[j] >= 0) continue; dist[j] = dist[i] + 1; q.push(j); }
+    }
+    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+      const i = y * W + x, d = dist[i];
+      if (d < 1 || "wbv=r".includes(m.g[y][x]) || m.g[y][x] === cfg.road) continue;
+      if (d < cfg.green.r || N2[i] > 0.5) m.g[y][x] = d === 1 ? "t" : N2[i] > 0.62 ? '"' : d === 2 ? "." : ",";
+      if (d >= 2 && free(x, y) && h2(x, y, S0 + 24) < cfg.green.palm) m.o[y][x] = h2(x, y, S0 + 25) < 0.8 ? "Ψ" : "B";
+    }
+  }
+
   // roads: from the way in to every way on, the cheapest way over dry, flat ground; bridges where they cross water
   const roadCost = (j, i, back) => {
     const [x, y] = at(j);
@@ -2169,14 +2260,25 @@ function wilds(cfg) {
     for (let s = 0; s < path.length; s++) {
       const t = path[s], [x, y] = at(t), nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
       // (a shoulder keeps its grass: the worn path stays a thin line through a way three tiles wide)
-      const lay1 = (X, Y, shoulder) => {
+      const lay1 = (X, Y, shoulder, edge) => {
         if (X < 2 || Y < 2 || X >= W - 2 || Y >= H - 2) return;
         if (m.g[Y][X] === "w") { m.g[Y][X] = "b"; m.o[Y][X] = " "; }
-        else if (m.o[Y][X] === " " || m.o[Y][X] === "e" || (shoulder && !"CHUZ".includes(m.o[Y][X]))) { if (!shoulder && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch; m.o[Y][X] = " "; }
+        else if (m.o[Y][X] === " " || m.o[Y][X] === "e" || (shoulder && !"CHUZ".includes(m.o[Y][X]))) {
+          // (a way over the shallows is a sand bar, shoulders and all; a painted road keeps its edge lines)
+          const bar = sea && sea.bar && "~-".includes(m.g[Y][X]);
+          if (bar) m.g[Y][X] = sea.bar;
+          else if (!shoulder && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch;
+          else if (edge && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = edge;
+          m.o[Y][X] = " ";
+        }
         keep[Y * W + X] = 1;
       };
       lay1(x, y);
-      if (wide && cfg.roadW === 3) { if (horiz) { lay1(x, y + 1, true); lay1(x, y - 1, true); } else { lay1(x + 1, y, true); lay1(x - 1, y, true); } }
+      if (wide && cfg.roadEdge) {
+        // a made road five wide: three of asphalt and a painted line down either edge
+        for (const d of [1, -1]) { if (horiz) lay1(x, y + d); else lay1(x + d, y); }
+        for (const d of [2, -2]) { if (horiz) lay1(x, y + d, true, cfg.roadEdge); else lay1(x + d, y, true, cfg.roadEdge); }
+      } else if (wide && cfg.roadW === 3) { if (horiz) { lay1(x, y + 1, true); lay1(x, y - 1, true); } else { lay1(x + 1, y, true); lay1(x - 1, y, true); } }
       else if (wide) {
         if (horiz) lay1(x, y + 1); else lay1(x + 1, y);
         if (N2[t] > 0.72) { if (horiz) lay1(x, y - 1); else lay1(x - 1, y); }
@@ -2510,6 +2612,12 @@ function metro(cfg) {
     spawns.push({ k: d <= 1 ? cfg.mobs[0] : bandMob(box, cfg.mobs, t, d), n: clamp(Math.round(area / cfg.tpm), 1, 6), r, elite: eliteAt(t) });
   }
   m.spawns.push(...spawns);
+  // maps-v2 M3: a second way out, a slip road off the ring through the south wall (to the jungle road)
+  if (cfg.south) {
+    const gx = Math.round(W * cfg.south);
+    for (let y = Y1 - 1; y < H - 1; y++) for (const x of [gx - 1, gx, gx + 1, gx + 2]) { if (x === gx || x === gx + 1 || y <= Y1) { m.g[y][x] = "a"; m.o[y][x] = " "; } else m.o[y][x] = "Z"; }
+    gates.south = { t: [[gx, H - 2], [gx + 1, H - 2]], a: [[gx, H - 5], [gx + 1, H - 5]] };
+  }
   for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) m.o[y][x] = " ";
   m.gates = gates;
   m.entry = gates[cfg.gate].a[0];
@@ -3179,16 +3287,26 @@ function cavern(cfg) {
     west: { t: [[3, start[1] - 1], [3, start[1]]], a: [[6, start[1] - 1], [6, start[1]]] },
     rift: { t: [[W - 3, 10], [W - 3, 11]], a: [[arena[0] + 5, 10], [arena[0] + 5, 11]] },
   };
+  // maps-v2 M3: a crack three wide in the south wall, up to the first open floor (the way out to the oasis)
+  const pass = [];
+  if (cfg.south) {
+    const gx = Math.round(W * cfg.south);
+    let top = H - 4;
+    while (top > H - 30 && !(m.g[top][gx] !== "W" && m.o[top][gx] === " " && m.g[top][gx] !== "w")) top--;
+    for (let y = top; y <= H - 3; y++) for (const x of [gx - 1, gx, gx + 1]) { digAt(m, x, y); if (m.g[y][x] === "w") m.g[y][x] = "c"; }
+    m.gates.south = { t: [[gx, H - 3], [gx + 1, H - 3]], a: [[gx, H - 6], [gx + 1, H - 6]] };
+    pass.push(m.gates.south.a[0], [gx, top]);
+  }
   for (const name of Object.keys(m.gates)) for (const [x, y] of m.gates[name].t.concat(m.gates[name].a)) digAt(m, x, y);
   for (let x = 3; x <= start[0]; x++) for (const y of [start[1] - 1, start[1]]) digAt(m, x, y);
   m.entry = m.gates.west.a[0];
-  const pts = [m.gates.west.a[1], [arena[0], arena[1] + 3], ante, m.gates.rift.a[0], m.gates.rift.t[0]];
+  const pts = [m.gates.west.a[1], [arena[0], arena[1] + 3], ante, m.gates.rift.a[0], m.gates.rift.t[0]].concat(pass);
   for (const z of order) pts.push(spot(m, z.r.px, z.r.py));
   const wideTo = pts.slice();
   for (const [x, y] of vaults) pts.push([x + 1, y + 1], [x + 2, y + 1]);
   cover(m, cfg.mobs);
   knit(m, pts, "c");
-  if (cfg.moss) wideWays(m, wideTo.concat(FIRES[cfg.id]), "TPBRulYAeKSMn", fixed, wideTo.slice(0, 5).concat(FIRES[cfg.id]));
+  if (cfg.moss) wideWays(m, wideTo.concat(FIRES[cfg.id]), "TPBRulYAeKSMn", fixed, wideTo.slice(0, 5 + pass.length).concat(FIRES[cfg.id]));
   m.regions = order.length;
   return m;
 }
@@ -4224,7 +4342,7 @@ function buildTown() {
 // know without building anything (names, bands, monster lists) is read from here into MAP_META.
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
-const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast"];
 /**
  * Every generated hunting ground: `make` the generator, `band` the level a character should
  * be to walk in (shown on every door that leads there), `stones` how many waypoint stones stand
@@ -4276,10 +4394,12 @@ const GEN = {
     id: "cave", name: "수정 동굴", seed: 44093, w: 132, h: 100, r: 8, vaults: 10, tpm: 16, chest: "chest_cave",
     // maps-v2 비취 수정굴: the moss way (sites `r` apart, half-width `w`), shelves where the swell passes `shelf`
     moss: { r: 15, w: 3, wind: 0.55, loops: 0.55, shelf: [0.56, 0.7], rings: 7, stream: 0.018 },
+    // maps-v2 M3: a crack in the south wall climbs out to the desert (the oasis)
+    south: 0.52,
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
   city: { make: metro, band: [14, 21], stones: 3, theme: "city", cfg: () => ({
-    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 152, h: 102, gate: "east", gateY: 0.5, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
+    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 152, h: 102, gate: "east", gateY: 0.5, south: 0.3, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
     mobs: ["pigeonmass", "gutfrog_poison", "doghead", "squidrat", "catsplit", "fishwalker"], chest: "chest_city",
   }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
@@ -4321,6 +4441,59 @@ const GEN = {
       : b === "hollow" ? (h < 0.03 ? "Y" : h < 0.045 ? "A" : h < 0.055 ? "T" : h < 0.06 ? "u" : null)
       : h < 0.03 ? "T" : h < 0.038 ? "u" : h < 0.046 ? "B" : h < 0.05 ? "l" : null),
   }) },
+  // ── the south-west coast (maps-v2 M3, docs/design/maps-v2.md A.7–A.9): city → jungle road → coral coast → oasis → cave
+  // 정글 해안도로: a made road, three of asphalt between yellow edge lines, winds from the city's south gate down
+  // through dense jungle; the west side is a strand of black boulders and the deep sea; old shrines and stone rings in the dead ends
+  jungle: { make: wilds, band: [20, 26], stones: 3, cfg: () => ({
+    id: "jungle", name: "정글 해안도로", theme: "jungle", bgm: "forest", seed: 31337, w: 168, h: 112, r: 8.8, warp: 10, wind: 0.8, loops: 0.2, merge: 0.2, cliff: 0.2, gap: 2,
+    tiers: 2, tierOpen: 0.15, ramp: 2, roadEdge: "m", stoneFr: [0.36, 0.8], widen: "TPBRulYAeΨΩΦ",
+    sea: { side: "w", at: 17, amp: 5, surf: 2, shallow: 0, beach: 4, sand: "r", rock: "Ω", rockP: 0.2, reef: 0 },
+    ground: ":", edge: "T", treeCh: "T", treeCh2: "Ψ", road: "a", trail: "p", shore: "s", river: false, lakes: 4, lakeR: 5, vaults: 9, ruins: 4, tpm: 15.5,
+    walls: [["trees", 0.6], ["bramble", 0.15], ["ruin", 0.1], ["rocks", 0.15]], rocks: ["Ω", "R"], gates: [["north", "n", 0.72], ["south", "s", 0.34]], exit: "south",
+    mobs: ["catsplit_gold", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile"], pondMob: null, chest: "chest_jungle",
+    vaultKinds: ["shrine", "ring", "circle", "cache", "menhir", "cove"], biomes: { plain: "glade" }, featureP: 0.6, features: ["pond", "boulders", "ring", "logs", "stones", "cairn", "bigtree"],
+    // wet hollows are swamp; elsewhere deep jungle, with palm groves and glades
+    biome: (e, mo, r) => (mo > 0.62 ? "swamp" : r < 0.2 ? "glade" : r < 0.45 ? "palm" : "deep"),
+    paint: (b, n1, n2) => (b === "swamp" ? (n1 > 0.8 ? "w" : n1 > 0.56 ? "j" : ";") : b === "glade" ? (n1 > 0.6 ? '"' : n2 > 0.7 ? "t" : ".") : b === "palm" ? (n2 > 0.6 ? "," : ".") : n1 > 0.4 ? ";" : null),
+    scatter: (b, h, n1) => (b === "swamp" ? (h < 0.03 ? "A" : h < 0.045 ? "Y" : h < 0.07 ? "Ψ" : null)
+      : b === "glade" ? (h < 0.02 ? "Ψ" : h < 0.03 ? "u" : h < 0.045 ? "B" : null)
+      : b === "palm" ? (h < 0.11 ? "Ψ" : h < 0.14 ? "B" : h < 0.146 ? "l" : null)
+      : (n1 > 0.5 ? h < 0.26 : h < 0.1) ? "T" : h < 0.3 && n1 > 0.5 ? "Ψ" : h < 0.12 ? "B" : h < 0.126 ? "l" : null),
+  }) },
+  // 모래바람 오아시스: dunes in three levels of sand, ridges for cliffs; lakes ringed by grass, reeds and palms, mud-hut
+  // hamlets in the dead ends, a caravan's camp on the way; the north pass climbs to the crystal cave
+  oasis: { make: wilds, band: [28, 34], stones: 3, cfg: () => ({
+    id: "oasis", name: "모래바람 오아시스", theme: "desert", bgm: "field", seed: 52711, w: 168, h: 116, r: 10.2, warp: 9, wind: 0.55, loops: 0.28, merge: 0.3, cliff: 0.16, gap: 2,
+    tiers: 3, tierOpen: 0.55, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ", green: { r: 3, palm: 0.2 },
+    ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 6, lakeR: 7, vaults: 9, ruins: 4, tpm: 15.5,
+    walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north",
+    mobs: ["foxtwine_gold", "hydrasnake_gold", "lambmaw_bone", "eyecrow_ash", "twingoat_gold", "bearmaw_gold"], pondMob: "eyecrow_ash", chest: "chest_oasis",
+    campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "hamlet"], biomes: { plain: "flat" }, featureP: 0.65, features: ["pond", "boulders", "cairn", "stones", "dead"],
+    // by level: scrub and flats below, rippled dunes on the middle shelves, bare stony ridges on top
+    biome: (e, mo, r, t) => (t === 2 ? "ridge" : t === 1 ? (r < 0.55 ? "dune" : "flat") : mo > 0.55 ? "scrub" : "flat"),
+    paint: (b, n1, n2) => (b === "ridge" ? (n1 > 0.45 ? "z" : n1 < 0.15 ? "r" : null) : b === "dune" ? (n1 > 0.5 ? "z" : null) : b === "scrub" ? (n1 > 0.72 ? "," : n2 > 0.76 ? "z" : null) : n2 > 0.8 ? "z" : null),
+    scatter: (b, h) => (b === "ridge" ? (h < 0.03 ? "R" : h < 0.04 ? "A" : null)
+      : b === "dune" ? (h < 0.012 ? "A" : h < 0.02 ? "R" : null)
+      : b === "scrub" ? (h < 0.04 ? "B" : h < 0.058 ? "Ψ" : h < 0.068 ? "A" : null)
+      : h < 0.008 ? "Ψ" : h < 0.018 ? "R" : h < 0.024 ? "A" : null),
+  }) },
+  // 산호 해안: the dunes run down to a white beach; the whole south is sea — a surf line, then wide turquoise
+  // shallows you can wade (reef rocks, sand islets with palms, sand bars where the ways cross, deep holes), then deep water
+  coast: { make: wilds, band: [34, 40], stones: 3, cfg: () => ({
+    id: "coast", name: "산호 해안", theme: "coast", bgm: "field", seed: 41519, w: 176, h: 120, r: 9.6, warp: 9, wind: 0.85, loops: 0.3, merge: 0.4, cliff: 0.2, gap: 2,
+    tiers: 3, tierOpen: 0.15, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ",
+    sea: { side: "s", at: 42, amp: 6, surf: 2, shallow: 26, beach: 7, sand: "S", bar: "S", reef: 0.16 },
+    ground: "S", edge: "T", treeCh: "Ψ", treeCh2: "T", road: "p", shore: "S", river: false, lakes: 2, lakeR: 4, vaults: 9, ruins: 3, tpm: 15.5,
+    walls: [["palms", 0.45], ["rocks", 0.35], ["trees", 0.2]], rocks: ["Ω", "R"], gates: [["north", "n", 0.16], ["east", "e", 0.5]], exit: "east",
+    mobs: ["crabskull_blood", "fishwalker_frost", "eelknot_frost", "squidrat_blood", "leechmaw_bone", "gatorhalf_steel"], pondMob: null, chest: "chest_coast",
+    vaultKinds: ["palmring", "tidepool", "cove", "cache", "menhir", "lookout"], biomes: { plain: "beach" }, featureP: 0.6, features: ["boulders", "logs", "cairn", "stones", "pond"],
+    // the upper level is dune and palm grove (the jungle's edge), the lower the open beach
+    biome: (e, mo, r, t) => (t === 1 ? (r < 0.5 ? "dune" : "grove") : mo > 0.6 ? "grove" : "beach"),
+    paint: (b, n1, n2) => (b === "dune" ? (n1 > 0.5 ? "z" : n2 > 0.72 ? "," : null) : b === "grove" ? (n1 > 0.35 ? "." : n2 > 0.6 ? "," : null) : n2 > 0.82 ? "z" : null),
+    scatter: (b, h, n1) => (b === "grove" ? ((n1 > 0.5 ? h < 0.2 : h < 0.08) ? "Ψ" : h < 0.1 ? "B" : h < 0.11 ? "T" : null)
+      : b === "dune" ? (h < 0.015 ? "Ψ" : h < 0.03 ? "B" : h < 0.04 ? "Ω" : null)
+      : h < 0.02 ? "Ψ" : h < 0.028 ? "l" : h < 0.034 ? "Ω" : null),
+  }) },
   abyss: { make: abyssal, band: [32, 40], stones: 3, cfg: () => ({
     id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 152, h: 120, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
     mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss",
@@ -4351,6 +4524,8 @@ const GATE_LINKS = [
   ["forest", "north", "cave", "west", 1], ["forest", "crypt", "crypt", "in", 1], ["city", "sewer", "sewer", "in", 1],
   ["cave", "rift", "abyss", "in", 1], ["forest", "east", "maple", "west", 1], ["maple", "east", "abyss", "out", 1],
   ["crypt", "out", "forest", "crypt", 0], ["sewer", "out", "city", "sewer", 0],
+  // the south-west coast: the city's south gate, down the jungle road to the sea, inland over the dunes, up into the cave
+  ["city", "south", "jungle", "north", 1], ["jungle", "south", "coast", "north", 1], ["coast", "east", "oasis", "west", 1], ["oasis", "north", "cave", "south", 1],
 ];
 /** A generated map's own doors out (in GATE_LINKS order, as the generators always laid them). */
 function gateDoors(m) {
@@ -8661,6 +8836,7 @@ const WX_ODDS = {
   forest: [30, 18, 20, 22, 8, 2],
   city: [40, 30, 24, 6, 0, 0],
   autumn: [34, 22, 14, 16, 14, 0],
+  jungle: [30, 22, 30, 12, 6, 0], coast: [46, 14, 16, 0, 24, 0], desert: [62, 8, 0, 0, 30, 0],
 };
 /** Small flavour: rain brings the fish up sooner, fog hides you a little from monsters. */
 const WX_FISH = 0.75, WX_FOG_AGGRO = 0.9;

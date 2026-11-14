@@ -12,6 +12,8 @@ const PIECE = {
   N: [undefined, "N"], $: [undefined, "d"], "!": [undefined, "i"], "^": [undefined, "f"],
   // maps-v2: still water (the temple's rune pool; the art step gives it a glow of its own)
   "~": ["w", " "],
+  // maps-v2 M3, the south-west coast: palm Ψ, reef rock Φ, shore boulder Ω, mud hut Δ (Greek: every ASCII mark is taken by the rooms' furniture); shallows (walkable), white sand, dune sand
+  "Ψ": [undefined, "Ψ"], "Φ": [undefined, "Φ"], "Ω": [undefined, "Ω"], "Δ": [undefined, "Δ"], ",": ["~", " "], _: ["S", " "], ":": ["z", " "],
 };
 const PIECES = {
   // 바람초원 · 속삭임 숲
@@ -35,6 +37,14 @@ const PIECES = {
   scarefield: ["FF.FF.FF", "Ft.tt.tF", "F.t*t.tF", "Ftt.tt.F", "F.t..t.F", "FFF..FFF"],
   leafmound: [".u...l.", "%%%%%%.", "%%%Y%%u", "u%%*%%%", ".%%%%%.", "...l..."],
   treetunnel: [".TTTTTTT.", "T.=====.T", "..====*=T", "T.=====.T", ".TTTTTTT."],
+  // 모래바람 오아시스 · 산호 해안 · 정글 해안도로 (maps-v2 M3): mud huts round a yard, a caravan's tents by a fire,
+  // a dry well, a ring of palms, a tide pool walled by reef, a boulder cove
+  hamlet: [".Δ...Δ.", "...p...", "Δ.p*p.Δ", "...p...", ".Ψ...Δ."],
+  caravan: [".E...E.", "..ppp..", ".pp#pp.", "Ψ.ppp.l", "......."],
+  drywell: ["..Ψ..", ".rrr.", "Or*rO", ".rrr.", "....."],
+  palmring: ["Ψ.Ψ.Ψ", ".....", "Ψ.*.Ψ", ".....", "Ψ...Ψ"],
+  tidepool: [".Φ,Φ.", "Φ,,,Φ", ",,*,,", "Φ,,,.", ".Φ.Φ.", "....."],
+  cove: ["ΩΩ.ΩΩ", "Ω___Ω", "__*__", "Ω___.", ".Ω.Ω."],
   // 잊힌 신전 (maps-v2, reference 3): a processional way three flagstones wide from the south gate to the
   // shrine in the north, round a rune pool; broken colonnades and wall stubs make side chambers. Never turned.
   temple: [
@@ -105,10 +115,24 @@ function wilds(cfg) {
   for (const [name, side, f] of cfg.gates) {
     if (side === "w") { const gy = Math.round(f * H); gates[name] = { t: [[1, gy], [1, gy + 1]], a: [[4, gy], [4, gy + 1]] }; fixed.push([7, gy]); keepBox(1, gy - 2, 7, gy + 3); }
     else if (side === "e") { const gy = Math.round(f * H); gates[name] = { t: [[W - 2, gy], [W - 2, gy + 1]], a: [[W - 5, gy], [W - 5, gy + 1]] }; fixed.push([W - 8, gy]); keepBox(W - 8, gy - 2, W - 2, gy + 3); }
+    else if (side === "s") { const gx = Math.round(f * W); gates[name] = { t: [[gx, H - 2], [gx + 1, H - 2]], a: [[gx, H - 5], [gx + 1, H - 5]] }; fixed.push([gx, H - 8]); keepBox(gx - 2, H - 8, gx + 3, H - 2); }
     else { const gx = Math.round(f * W); gates[name] = { t: [[gx, 1], [gx + 1, 1]], a: [[gx, 4], [gx + 1, 4]] }; fixed.push([gx, 7]); keepBox(gx - 2, 1, gx + 3, 7); }
   }
-  const sites = poisson(box, 5, 5, W - 6, H - 6, cfg.r, fixed).map(([x, y]) => ({ x, y, w: 0.78 + rnd(box) * 0.5 }));
-  const lab = partition(m, sites, S0 + 3, cfg.warp, (x, y) => x >= 2 && y >= 2 && x < W - 2 && y < H - 2);
+  // the sea (maps-v2 M3): one side of the map is water. `sd` is how far a tile lies out from the waterline (tiles,
+  // < 0 on land): surf to `surf`, walkable shallows to `dz`, deep sea beyond — no region is grown out there
+  const sea = cfg.sea || null, sd = sea ? new Float32Array(W * H) : null, dz = sea ? sea.surf + (sea.shallow || 0) : 0;
+  let sx0 = 5, sy1 = H - 6;
+  if (sea) {
+    const p1 = rnd(box) * 6.28, p2 = rnd(box) * 6.28;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const u = sea.side === "w" ? y : x, out = sea.side === "w" ? x : H - 1 - y;
+      sd[y * W + x] = sea.at + Math.sin(u / 13 + p1) * sea.amp * 0.55 + Math.sin(u / 5.3 + p2) * sea.amp * 0.2 + (N1[y * W + x] - 0.5) * sea.amp * 0.5 - out;
+    }
+    const lim = Math.max(0, Math.ceil(sea.at + sea.amp - dz)) + 2;
+    if (sea.side === "w") sx0 += lim; else sy1 -= lim;
+  }
+  const sites = poisson(box, sx0, 5, W - 6, sy1, cfg.r, fixed).map(([x, y]) => ({ x, y, w: 0.78 + rnd(box) * 0.5 }));
+  const lab = partition(m, sites, S0 + 3, cfg.warp, (x, y) => x >= 2 && y >= 2 && x < W - 2 && y < H - 2 && !(sd && sd[y * W + x] > dz));
   const { R, E: bord, inner } = regionsOf(m, lab, sites.length);
   for (const r of R) { let e = 0, mo = 0; for (const i of r.tiles) { e += El[i]; mo += Mo[i]; } r.e = e / Math.max(1, r.area); r.mo = mo / Math.max(1, r.area); }
   const n = R.length;
@@ -168,7 +192,8 @@ function wilds(cfg) {
     if (kind === "cliff") m.o[y][x] = "C";
     else if (kind === "trees") m.o[y][x] = h2(x, y, S0) < 0.82 ? cfg.treeCh : cfg.treeCh2;
     else if (kind === "hedge") m.o[y][x] = "H";
-    else if (kind === "rocks") m.o[y][x] = h2(x, y, S0) < 0.5 ? "R" : "B";
+    else if (kind === "rocks") m.o[y][x] = cfg.rocks ? cfg.rocks[h2(x, y, S0) < 0.5 ? 0 : 1] : h2(x, y, S0) < 0.5 ? "R" : "B";
+    else if (kind === "palms") m.o[y][x] = h2(x, y, S0) < 0.8 ? "Ψ" : "B";
     else if (kind === "ruin") m.o[y][x] = h2(x, y, S0) < 0.85 ? "U" : "q";
     else if (kind === "bramble") m.o[y][x] = h2(x, y, S0) < 0.7 ? "B" : cfg.treeCh;
   };
@@ -223,9 +248,37 @@ function wilds(cfg) {
     if (d <= 3 && !keep[i] && N1[i] + (3 - d) * 0.17 > 0.86) m.o[y][x] = cfg.edge;
   }
 
+  // the sea and its shore: deep water, a band of walkable shallows with reef rocks, sand islets and the odd deep
+  // hole, the surf line, then the beach (sand, or a strand of black boulders); a barrier that ran out into the
+  // water stands on as reef
+  if (sea) {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x, d = sd[i], rim = x < 2 || y < 2 || x >= W - 2 || y >= H - 2;
+      if (d <= -sea.beach) continue;
+      if (d > dz || (d > 0 && rim)) { m.g[y][x] = "w"; m.o[y][x] = " "; continue; }
+      if (rim) continue;
+      const was = m.o[y][x] !== " ";
+      if (d > 0) {
+        const sh = d > sea.surf;
+        m.g[y][x] = sh ? "~" : "-";
+        m.o[y][x] = was && !keep[i] ? "Φ" : " ";
+        if (!sh || keep[i]) continue;
+        const inner2 = d > sea.surf + 2 && d < dz - 2;
+        if (inner2 && El[i] > 0.6) { m.g[y][x] = sea.sand; if (!was && h2(x, y, S0 + 21) < 0.1) m.o[y][x] = "Ψ"; }
+        else if (inner2 && !was && Mo[i] > 0.72 && N1[i] > 0.45) m.g[y][x] = "w";
+        else if (!was && N1[i] > 0.6 && h2(x, y, S0 + 22) < sea.reef) m.o[y][x] = "Φ";
+      } else {
+        m.g[y][x] = sea.sand;
+        if (keep[i]) continue;
+        if (was) { if (sea.rock) m.o[y][x] = sea.rock; }
+        else if (sea.rock && h2(x, y, S0 + 23) < sea.rockP * (N1[i] > 0.5 ? 1.6 : 0.6)) m.o[y][x] = sea.rock;
+      }
+    }
+  }
+
   // the river: it runs downhill from the top of the map to the bottom
   const falls = [], riverAt = new Uint8Array(W * H);
-  const water = (x, y) => { if (x < 2 || y < 1 || x >= W - 2 || y >= H - 1) return; m.g[y][x] = "w"; m.o[y][x] = " "; };
+  const water = (x, y) => { if (x < 2 || y < 1 || x >= W - 2 || y >= H - 1 || (sd && sd[y * W + x] > 0)) return; m.g[y][x] = "w"; m.o[y][x] = " "; };
   if (cfg.river) {
     // a meandering centre line — two sine waves of different length and some noise — from the top edge to the bottom
     const sx = W * (0.38 + rnd(box) * 0.24), a1 = 4 + rnd(box) * 2.5, l1 = 11 + rnd(box) * 5, p1 = rnd(box) * 6.28, a2 = 1.5 + rnd(box), l2 = 4.5 + rnd(box) * 2;
@@ -321,12 +374,12 @@ function wilds(cfg) {
   }
 
   // set pieces
-  const free = (x, y) => m.o[y][x] === " " && !"wbv".includes(m.g[y][x]) && !keep[y * W + x];
+  const free = (x, y) => m.o[y][x] === " " && !"wbv~-".includes(m.g[y][x]) && !keep[y * W + x];
   const placeIn = (r, name, pad) => {
     const rot0 = ri(box, 0, 3), flip = rnd(box) < 0.5, rot = UPRIGHT.has(name) ? 0 : rot0;
     const [w, h] = stampSize(PIECES[name], rot);
     // a piece may stand where loose trees grow (it clears them), never on a barrier, water or a kept way
-    const room = (x, y) => !"wbv".includes(m.g[y][x]) && !keep[y * W + x] && !"CHUZ".includes(m.o[y][x]);
+    const room = (x, y) => !"wbv~-".includes(m.g[y][x]) && !keep[y * W + x] && !"CHUZ".includes(m.o[y][x]);
     const p = fitIn(m, lab, inner, r, w, h, pad, room) || fitIn(m, lab, inner, r, w, h, 2, room) || (cfg.padMin === 1 ? fitIn(m, lab, inner, r, w, h, 1, room) : null);
     if (!p) return null;
     const tags = piece(m, name, p[0], p[1], rot, flip);
@@ -495,6 +548,23 @@ function wilds(cfg) {
     }
   }
 
+  // an oasis (maps-v2 M3): the ground within a few steps of water is green, and palms stand round it
+  if (cfg.green) {
+    const dist = new Int8Array(W * H).fill(-1), q = [];
+    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) if (m.g[y][x] === "w" && !(sd && sd[y * W + x] > 0)) { dist[y * W + x] = 0; q.push(y * W + x); }
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h], x = i % W, y = (i - x) / W;
+      if (dist[i] >= cfg.green.r) continue;
+      for (const [dx, dy] of D4) { const X = x + dx, Y = y + dy, j = Y * W + X; if (X < 2 || Y < 2 || X >= W - 2 || Y >= H - 2 || dist[j] >= 0) continue; dist[j] = dist[i] + 1; q.push(j); }
+    }
+    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+      const i = y * W + x, d = dist[i];
+      if (d < 1 || "wbv=r".includes(m.g[y][x]) || m.g[y][x] === cfg.road) continue;
+      if (d < cfg.green.r || N2[i] > 0.5) m.g[y][x] = d === 1 ? "t" : N2[i] > 0.62 ? '"' : d === 2 ? "." : ",";
+      if (d >= 2 && free(x, y) && h2(x, y, S0 + 24) < cfg.green.palm) m.o[y][x] = h2(x, y, S0 + 25) < 0.8 ? "Ψ" : "B";
+    }
+  }
+
   // roads: from the way in to every way on, the cheapest way over dry, flat ground; bridges where they cross water
   const roadCost = (j, i, back) => {
     const [x, y] = at(j);
@@ -508,14 +578,25 @@ function wilds(cfg) {
     for (let s = 0; s < path.length; s++) {
       const t = path[s], [x, y] = at(t), nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
       // (a shoulder keeps its grass: the worn path stays a thin line through a way three tiles wide)
-      const lay1 = (X, Y, shoulder) => {
+      const lay1 = (X, Y, shoulder, edge) => {
         if (X < 2 || Y < 2 || X >= W - 2 || Y >= H - 2) return;
         if (m.g[Y][X] === "w") { m.g[Y][X] = "b"; m.o[Y][X] = " "; }
-        else if (m.o[Y][X] === " " || m.o[Y][X] === "e" || (shoulder && !"CHUZ".includes(m.o[Y][X]))) { if (!shoulder && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch; m.o[Y][X] = " "; }
+        else if (m.o[Y][X] === " " || m.o[Y][X] === "e" || (shoulder && !"CHUZ".includes(m.o[Y][X]))) {
+          // (a way over the shallows is a sand bar, shoulders and all; a painted road keeps its edge lines)
+          const bar = sea && sea.bar && "~-".includes(m.g[Y][X]);
+          if (bar) m.g[Y][X] = sea.bar;
+          else if (!shoulder && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch;
+          else if (edge && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = edge;
+          m.o[Y][X] = " ";
+        }
         keep[Y * W + X] = 1;
       };
       lay1(x, y);
-      if (wide && cfg.roadW === 3) { if (horiz) { lay1(x, y + 1, true); lay1(x, y - 1, true); } else { lay1(x + 1, y, true); lay1(x - 1, y, true); } }
+      if (wide && cfg.roadEdge) {
+        // a made road five wide: three of asphalt and a painted line down either edge
+        for (const d of [1, -1]) { if (horiz) lay1(x, y + d); else lay1(x + d, y); }
+        for (const d of [2, -2]) { if (horiz) lay1(x, y + d, true, cfg.roadEdge); else lay1(x + d, y, true, cfg.roadEdge); }
+      } else if (wide && cfg.roadW === 3) { if (horiz) { lay1(x, y + 1, true); lay1(x, y - 1, true); } else { lay1(x + 1, y, true); lay1(x - 1, y, true); } }
       else if (wide) {
         if (horiz) lay1(x, y + 1); else lay1(x + 1, y);
         if (N2[t] > 0.72) { if (horiz) lay1(x, y - 1); else lay1(x - 1, y); }
@@ -849,6 +930,12 @@ function metro(cfg) {
     spawns.push({ k: d <= 1 ? cfg.mobs[0] : bandMob(box, cfg.mobs, t, d), n: clamp(Math.round(area / cfg.tpm), 1, 6), r, elite: eliteAt(t) });
   }
   m.spawns.push(...spawns);
+  // maps-v2 M3: a second way out, a slip road off the ring through the south wall (to the jungle road)
+  if (cfg.south) {
+    const gx = Math.round(W * cfg.south);
+    for (let y = Y1 - 1; y < H - 1; y++) for (const x of [gx - 1, gx, gx + 1, gx + 2]) { if (x === gx || x === gx + 1 || y <= Y1) { m.g[y][x] = "a"; m.o[y][x] = " "; } else m.o[y][x] = "Z"; }
+    gates.south = { t: [[gx, H - 2], [gx + 1, H - 2]], a: [[gx, H - 5], [gx + 1, H - 5]] };
+  }
   for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) m.o[y][x] = " ";
   m.gates = gates;
   m.entry = gates[cfg.gate].a[0];
