@@ -49,7 +49,8 @@ const now = () => performance.now();
 /** Played from anywhere else (e.g. a static mirror), the game still talks to its live server. */
 const LIVE_HOST = "lumentale-online.higgsfield.app";
 const local = ["localhost", "127.0.0.1"].includes(location.hostname);
-const HOST = local || location.hostname.endsWith("higgsfield.app") ? location.host : LIVE_HOST;
+// (our own Cloudflare deploy on *.workers.dev serves itself too — keep in step with account.js)
+const HOST = local || location.hostname.endsWith("higgsfield.app") || location.hostname.endsWith(".workers.dev") ? location.host : LIVE_HOST;
 const PROTO = location.protocol === "http:" && local ? "ws:" : "wss:";
 
 /**

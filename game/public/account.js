@@ -36,7 +36,9 @@ export const SERVERS = [
  */
 const LIVE_HOST = "lumentale-online.higgsfield.app";
 const LOCAL = typeof location !== "undefined" && ["localhost", "127.0.0.1"].includes(location.hostname);
-export const API = typeof location === "undefined" || LOCAL || location.hostname.endsWith("higgsfield.app") ? "" : `https://${LIVE_HOST}`;
+/** Hosts that serve the game itself: Higgsfield, and our own Cloudflare deploy (wrangler.deploy.jsonc). */
+const SELF_SERVED = (h) => h.endsWith("higgsfield.app") || h.endsWith(".workers.dev");
+export const API = typeof location === "undefined" || LOCAL || SELF_SERVED(location.hostname) ? "" : `https://${LIVE_HOST}`;
 
 async function post(path, body) {
   try {
