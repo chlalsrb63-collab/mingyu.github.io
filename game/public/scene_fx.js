@@ -593,41 +593,37 @@ export function drawFx(now, ground2) {
 
 // ───────────────────────────── the aim mark ─────────────────────────────
 
-// ── the aim mark: a small sharp V (chevron) lying on the ground just in front of your own feet,
-// its point toward where your blows and skills will go (G.me.aimI, the server's aim steps). A pale
-// sliver inside a dark outline, so it reads on grass, stone, crypt and abyss alike.
+// ── the aim mark: a small solid arrowhead lying on the ground just in front of your own feet,
+// its sharp tip toward where your blows and skills will go (G.me.aimI, the server's aim steps). A
+// dark triangle inside a thin pale rim, so it reads on grass, sand, stone, crypt and abyss alike.
 const AIM_STEPS = 64, aimSprites = new Map(), aimArrow = { a: null };
-// the sliver a touch see-through inside a firmer outline: drawn at .82, the fill shows at about 70%
-const AIM_FILL = "rgba(255,246,218,.86)", AIM_INK = "#1a1320", AIM_C = 9;
+const AIM_FILL = "#1a1320", AIM_RIM = "rgba(255,246,218,.92)", AIM_C = 6;
 /**
- * The chevron for screen angle step `k`, worked out pixel by pixel (no smoothed curves): two
- * arms meeting in a sharp point toward the aim, thinning toward their ends, squashed a little so
- * it lies on the floor. The sprite's centre is (AIM_C, AIM_C).
+ * The arrowhead for screen angle step `k`, worked out pixel by pixel (no smoothed edges): a filled
+ * triangle LEN px from tip to its flat back, HALF° to each side of the aim at the back corners, its
+ * flanks drawn in a little (power BOW) so the tip stays a one-pixel point at every angle — a plain
+ * near-equilateral triangle this small reads as pointing three ways at once. Squashed a little so it
+ * lies on the floor, a one-pixel rim all round: about 8 px long, rim and all.
+ * The sprite's centre is (AIM_C, AIM_C); the tip is TIP px ahead of it.
  */
 function aimSprite(k) {
   let c = aimSprites.get(k);
   if (c) return c;
   const ang = (k / AIM_STEPS) * 2 * Math.PI, ax = Math.cos(ang), ay = Math.sin(ang);
-  // tip TIP px ahead of the centre, arms ARM px long opening at ±HALF, ROOT thick at the tip
-  const TIP = 3.5, ARM = 6.5, HALF = (38 * Math.PI) / 180, ROOT = 1.25, SQ = 0.9, N = AIM_C * 2 + 1;
+  const TIP = 3.6, LEN = 6.6, HALF = (20 * Math.PI) / 180, BOW = 1.25, SQ = 0.9, N = AIM_C * 2 + 1;
+  const hw = LEN * Math.tan(HALF);
   const fill = [];
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
-    // into the mark's own frame: u along the aim (tip at u = TIP), v across it
-    const px = i - AIM_C, py = (j - AIM_C) / SQ, u = px * ax + py * ay - TIP, v = -px * ay + py * ax;
-    let on = false;
-    for (const sg of [-1, 1]) {
-      const dx = -Math.cos(HALF), dy = sg * Math.sin(HALF), tt = clamp(u * dx + v * dy, 0, ARM);
-      const r = ROOT * (1 - (tt / ARM) * 0.55);
-      if (Math.hypot(u - dx * tt, v - dy * tt) <= r) on = true;
-    }
-    fill[j * N + i] = on;
+    // into the mark's own frame: d behind the tip along the aim, v across it
+    const px = i - AIM_C, py = (j - AIM_C) / SQ, d = TIP - (px * ax + py * ay), v = Math.abs(-px * ay + py * ax);
+    fill[j * N + i] = d >= -0.25 && d <= LEN && v <= hw * (Math.max(0, d) / LEN) ** BOW + 0.3;
   }
   const on = (i, j) => i >= 0 && j >= 0 && i < N && j < N && fill[j * N + i];
   let x;
   [c, x] = sheet(N, N);
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     if (on(i, j)) { x.fillStyle = AIM_FILL; x.fillRect(i, j, 1, 1); }
-    else if (on(i + 1, j) || on(i - 1, j) || on(i, j + 1) || on(i, j - 1)) { x.fillStyle = AIM_INK; x.fillRect(i, j, 1, 1); }
+    else if (on(i + 1, j) || on(i - 1, j) || on(i, j + 1) || on(i, j - 1)) { x.fillStyle = AIM_RIM; x.fillRect(i, j, 1, 1); }
   }
   aimSprites.set(k, c);
   return c;
@@ -652,11 +648,11 @@ export function drawAimArrow(t, dt, top) {
   if (up !== top) return;
   const [fx, fy] = iso(me.x, me.y - 1);
   // out along the ground: wider across the screen than up and down, as a ring on the floor looks
-  const ux = Math.cos(s) * 12, uy = Math.sin(s) * (8 + 12 * Math.max(0, -Math.sin(s)) ** 3);
+  const ux = Math.cos(s) * 11, uy = Math.sin(s) * (7.5 + 12 * Math.max(0, -Math.sin(s)) ** 3);
   const k = ((Math.round((s / (2 * Math.PI)) * AIM_STEPS) % AIM_STEPS) + AIM_STEPS) % AIM_STEPS;
   const hit = t - Math.max(G.aimFlash || -1e9, G.lastSkill || -1e9);
   const flash = hit >= 0 && hit < 300 ? 1 - hit / 300 : 0;
-  g.globalAlpha = 0.82 + 0.18 * flash;
+  g.globalAlpha = 0.86 + 0.14 * flash;
   g.drawImage(aimSprite(k), Math.round(fx + ux) - AIM_C, Math.round(fy + uy) - AIM_C);
   g.globalAlpha = 1;
 }
