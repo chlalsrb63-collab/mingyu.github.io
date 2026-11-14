@@ -438,6 +438,7 @@ export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
   if (s.px === undefined) { s.px = m.x; s.py = m.y; s.fx = (m.id & 1); s.back = 0; s.dist = 0; s.mvT = -1e9; }
   const mx = m.x - s.px, my = m.y - s.py, step = Math.hypot(mx, my);
   if (step > 0.04) { s.mvT = t; s.dist += step; facing(s, mx, my); }
+  if (step > 2.6 && !def.hover && !(t - (s.leapT || -1e9) < 320) && !(m.windT && t - m.windT < (m.windMs || 0) + 400)) s.leapT = t;                // a pounce: it covers the ground in a bound
   s.px = m.x; s.py = m.y;
   const a = t - m.atkT, h = t - m.hurtT, w = m.windT ? t - m.windT : 1e9, windMs = m.windMs || 0;
   // turn to whoever it is fighting
@@ -446,7 +447,9 @@ export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
   const dir = (s.back ? 2 : 0) + s.fx;
   const moving = t - s.mvT < 200, flyer = !!def.hover;
   let fr, shake = 0, lunge = 0;
+  const lp = s.leapT ? t - s.leapT : 1e9;
   if (h < 170 && h >= 0) fr = FR.hurt;
+  else if (lp < 200) { fr = FR.strike; lunge = -Math.sin((lp / 200) * Math.PI) * 6 * sc; }
   else if (w < windMs) { fr = FR.wind; shake = Math.sin(t / 28) * Math.min(1, w / windMs) * 1.2; }
   else if (a >= 0 && a < 240) { fr = FR.strike; lunge = Math.sin((a / 240) * Math.PI) * 5 * sc; }
   else if (w >= windMs && w < windMs + 260) { fr = FR.strike; lunge = Math.sin(((w - windMs) / 260) * Math.PI) * 3 * sc; }
@@ -478,7 +481,7 @@ export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
   const hk = h / 200, rec = hk >= 0 && hk < 1 ? (1 - hk) * (1 - hk) : 0, pow = m.hurtP || 1;
   const ha = m.hurtA || 0, hx = Math.cos(ha) - Math.sin(ha), hy = (Math.cos(ha) + Math.sin(ha)) / 2;
   const jx = rec ? hx * rec * 5 * pow : 0, jy = rec ? hy * rec * 5 * pow : 0;
-  const lx = lunge * (s.fx ? 1 : -1), ly = lunge * (s.back ? -0.5 : 0.5);
+  const lx = lp < 200 ? 0 : lunge * (s.fx ? 1 : -1), ly = lp < 200 ? lunge : lunge * (s.back ? -0.5 : 0.5);
   const fly = hover ? hover + Math.sin(t / 300 + m.id) * 2 : 0;
   g.save();
   g.translate(Math.round(X + lx + jx + shake), Math.round(Y + ly + jy - fly));

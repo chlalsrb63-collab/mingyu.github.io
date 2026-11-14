@@ -9,7 +9,7 @@ import { mat, C, bez, gait, bob, lunge, legs4, teeth, ribs, tentacle, surf, both
 const HARE = mat("#b4a8b2"), HARED = mat("#9aa4b8"), SCUT = mat("#f0eaf0");
 const FROG = mat("#7a9448"), FROGB = mat("#d0d4a0"), FROGD = mat("#566c34");
 const CROW = mat("#3e3654"), CROWD = mat("#2c2640"), BEAK = mat("#c8bea0"), TALON = mat("#8a7a58");
-const LAMB = mat("#c24a52", { drip: true, wet: true }), LAMBL = mat("#a83848"), WOOL = mat("#efe6d6"), HOOF = mat("#3a2a30");
+const LAMB = mat("#b83444", { drip: true, wet: true }), LAMBL = mat("#a83848"), WOOL = mat("#efe6d6"), HOOF = mat("#3a2a30");
 // ── forest: hide browns, moss and a bruise-violet that does not belong
 const BOAR = mat("#5e4436"), BOARD = mat("#3a2a26"), SNOUT = mat("#9a6a62"), TENT = mat("#8e4a86", { wet: true }), TENTL = mat("#d896c4");
 const DEER = mat("#8a6a52"), DEERL = mat("#c8a888"), HAND = mat("#e0c4b0");
@@ -103,7 +103,7 @@ export const BEASTS_A = {
 
   /** 눈알 까마귀 — a crow that grew an eye wherever a feather fell out. */
   eyecrow: {
-    size: "s", hover: 10, glow: "#ff6a50",
+    size: "s", hover: 10, glow: "#ff6a50", k: 1.15,
     draw(M, p) {
       const flap = p.dead ? 0.2 : [0.9, 0.2, -0.7, 0.1][p.walk ? Math.round(p.ph * 4) : p.idle ? 1 : 0] + (p.strike ? -0.4 : 0);
       const [lf, lu] = lunge(p);
@@ -147,7 +147,7 @@ export const BEASTS_A = {
       M.e([f0, u0, 0], [6.4, 4.6, 4.6], LAMB);
       M.e([f0 + 3.4, u0 + 0.8, 0], [3.6, 4, 4], LAMB);
       M.G();
-      ribs(M, f0 - 3.4, f0 + 3.4, u0 + 0.4, 4.9, 5, C.BONE, 0.9);
+      ribs(M, f0 - 3, f0 + 3, u0 + 0.6, 4.8, 4, C.BONEB, 0.72);
       // wool where the insides used to be, spilling out of the split belly
       for (const [a, b, c, r] of [[-1.6, -3.6, -1.2, 1.7], [1, -3.8, 1, 1.6], [-3.6, -3, 0.6, 1.4], [0.2, 4.2, 0.4, 1.3]]) M.s([f0 + a, u0 + b, c], r, WOOL);
       M.e([f0, u0 - 2.6, 0], [4.6, 1.2, 2.6], C.CLOT);
