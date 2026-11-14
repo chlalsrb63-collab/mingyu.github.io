@@ -46,7 +46,8 @@
 ```
 src/logic.js    게임 규칙 전부: 아이템·몬스터·스킬 표, 맵 4개, 전투·드랍·의뢰·강화 시뮬레이션
 src/room.ts     채널 하나 = Durable Object 하나. 소켓과 시계(초당 10틱)를 맡고 캐릭터를 저장
-src/worker.ts   /ws/<채널> 웹소켓을 해당 채널로 연결
+src/worker.ts   /ws/<채널> 웹소켓을 해당 채널로, /api/*(가입·로그인·로그아웃·내 캐릭터·서버 목록)를 저장소로 연결
+src/accounts.js 아이디·비밀번호(PBKDF2)·세션 토큰·로그인 제한, 1서버(s1-ch1·s1-ch2)·2서버(s2-ch1·s2-ch2), 서버별 캐릭터 키(아이디@s1)
 public/         브라우저: client.js(입력·UI·이름표), scene2d.js(탑다운 도트 지형·소품·이펙트·무기 휘두르기), sprites.js(32px 동물 캐릭터·무기·몬스터), species.js(동물 종류·얼굴 부위), looks.js(외형 고르기·거울), art.js(아이콘·미니맵), audio.js(칩튠 합성)
 public/growth.js 스킬 수련 · 창고 · 펫 · 주문서 · 부활 깃털 · 아이템 필터 · 자동 물약의 화면 쪽
 tests/          규칙 테스트 (node tests/sim.mjs · party.mjs · loot.mjs · life.mjs · world.mjs · hard.mjs · content.mjs · growth.mjs)

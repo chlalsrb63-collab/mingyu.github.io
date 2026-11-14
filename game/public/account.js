@@ -29,9 +29,18 @@ export const SERVERS = [
   { id: "s2", name: "2서버", channels: [{ id: "s2-ch1", name: "채널 1" }, { id: "s2-ch2", name: "채널 2" }] },
 ];
 
+/**
+ * Where the API lives: this origin when the page is served by the game server
+ * itself (or locally), else the live server — the same rule client.js uses for
+ * the WebSocket, so a static mirror still signs in. The API allows any origin.
+ */
+const LIVE_HOST = "lumentale-online.higgsfield.app";
+const LOCAL = typeof location !== "undefined" && ["localhost", "127.0.0.1"].includes(location.hostname);
+export const API = typeof location === "undefined" || LOCAL || location.hostname.endsWith("higgsfield.app") ? "" : `https://${LIVE_HOST}`;
+
 async function post(path, body) {
   try {
-    const r = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const r = await fetch(API + path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
     return r.ok ? j : { ok: false, error: j.error || `서버 오류 (${r.status})` };
   } catch {
@@ -70,7 +79,7 @@ export async function me() {
 /** Servers with live channel counts when available, else the fixed list. */
 export async function servers() {
   try {
-    const r = await fetch("/api/servers");
+    const r = await fetch(API + "/api/servers");
     if (r.ok) { const j = await r.json(); if (j && Array.isArray(j.servers)) return j.servers; }
   } catch { /* fall through */ }
   return SERVERS;

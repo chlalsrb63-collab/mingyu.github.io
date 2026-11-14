@@ -44,8 +44,8 @@ assert.ok(!A.safeEqual("abcd", "abce"));
 assert.ok(!A.safeEqual("abcd", "abc"));
 
 // ── the client contract matches (public/account.js keeps its own copy of the lists)
-const client = await import("../public/account.js").catch(() => null);
-if (client) {
+const client = await import("../public/account.js");
+{
   assert.deepEqual(client.SERVERS, A.SERVERS, "server list differs between client and server");
   assert.equal(String(client.ID_RE), String(A.ID_RE));
   assert.equal(client.PW_MIN, A.PW_MIN);
