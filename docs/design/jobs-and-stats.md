@@ -1,6 +1,6 @@
 # 무직 시작 · 여섯 능력치 · 무기 숙련 · 전직 — 설계서 (jobs and stats)
 
-Status: J1 and J2 built (see their "as built" notes in F.4); J3 next. Audience: the implementers of J1/J2/J3 and the
+Status: J1, J2 and J3 (the jobs UI) built (see their "as built" notes in F.4). Audience: the implementers of J1/J2/J3 and the
 agents running Phase 0/1/2 of [`scale-and-rift.md`](scale-and-rift.md) and the game-feel upgrade. Code, identifiers and
 commit messages are English; every player-facing string is Korean (AGENTS.md rule 6). Numbers marked (measured) come
 from throwaway node scripts run against the built `logic.js` of `origin/main` at 6e80ef5; (model) = a kill-rate model
@@ -601,6 +601,41 @@ hooks, `80-simulation` `classTick` → `weaponTick` (one line), `70/75` `sk`/`qs
 `skillfx.js`/`scene2d.js` (draw list from `ar/ae`), `art.js` icons, `index.html` (C "능력치" tab, K "무기 · 스킬" with
 전직의 길 tree, job NPC dialog, hybrid swap HUD), `client.js render*`, `hud.css`, `lobby.js`/`lobby.css` creation,
 previews `_swing.html _icons.html`, `README.md` rows, AGENTS.md file map (new parts and `weapongauge.js`), cache tag.
+
+**J3 as built** (the jobs UI; the bow art, held bow, arrows and swap sound had already landed with J1/J2):
+- New modules `public/statwin.js` (stat tab, 카이's window) and `public/jobtree.js` (K's two tabs, 아르센's window); the
+  client keeps the skill rows (quick-slot drag) and the wiring. J1's temporary controls in the trainer window, the C
+  window's "능력치 올리기" button and K's plain mastery list are gone.
+- **C window**: the 능력치 tab joins the wardrobe's tab row (장비 · 능력치 · 외형; wardrobe_ui.js owns the row). Rows: glyph,
+  name, the hand's grade badge (A, A+ for a job's +0.1, hybrid coefficients graded to the nearest letter), value (amber
+  from 40, orange from 60), pending `+n`, [−][+] (Shift: 5 / all), the stat's line, the price of its next point on top of
+  the pending ones. Footer "다음 1포인트 · n포인트 합계 → Lv.N" [되돌리기] (clears the pending) [확정] (`train {a}`, ≤ 50).
+  Derived list as E (공격력 shows "(마법)" for a magic hand); hovering a stat lights what it raises (display-only map in
+  `statwin.js FEEDS`). Away from a fire/카이 the buttons are off with E's line. The tab's button shows ★ and the HUD EXP
+  bar glows while a point is affordable; clicking the EXP bar opens the tab.
+- **Exact price**: `defs()` appends `lvt` (tierXp of each level, 200) and `lvDiv` (`LV_DIV`), so the client computes
+  `round(lvt/lvDiv × surcharge)` exactly as `pointCost` (`lvc` is pre-rounded and could miss by one); `tests/jobs.mjs`
+  checks the mirror against the server (one short fails, exact passes).
+- **수련관 카이** (`w-train`): starter pick as six cards (icon, name, two scaling stats from `defs.scale`, one-line feel),
+  a pick then [이 무기로 시작] (`starter`); a "레벨 올리기" line that opens the stat tab; 망각의 의식 with an in-window
+  confirm (free count or the 10 % fee). Respec is offered only here (the stat tab names 카이 and the free count).
+- **K window "무기 · 스킬"** (440 px): tabs 무기 · 스킬 | 전직의 길. Six weapon rows (icon, "숙련 n/50", bar to the next
+  level, scaling grades, chips L1/L10/L10P/20 with a lock number; tags 손/등/전직); a picked row lists that weapon's
+  skills (basic attack first for the hand, then its single job's signature, a hybrid's when it is yours).
+- **전직의 길**: a fixed-grid tree instead of the ring of E (the pair graph has no ring layout without a chord through
+  the centre): root card 모험가 (▲ one weapon 20 → its job · ▼ both weapons 20 → the two-weapon job), middle row the six
+  weapons in the order 스태프 대검 마도서 단검 활 창 (mastery, a bar to 20), single jobs above, five hybrids hanging
+  between adjacent weapons and 용기사 (마도서+창) on a bottom row with routed lines. Node states: 현재 직업 (brass), 전직
+  가능 (green, blinking in two steps), one weapon ready, not yet, closed after a change (dimmed, "이미 전직한 몸입니다" on
+  its card). The picked node's card: needs ✓/✗ with progress, cost, signature skill, scaling, the way there or
+  [전직]. Narrow windows zoom the map as a whole. A click on the mastery strip opens this tab.
+- **전직관 아르센** gets its own window `w-job` (role `job` no longer opens the trainer): open jobs as cards with [전직]
+  → in-window confirm with E's text → `job_change`; then the two-four nearest closed jobs with what they need; a button
+  to the tree. Event `jc` now plays: a pillar, a brass burst, "전직!" over the head, and for oneself a banner + fanfare.
+- **Creation**: the 모험가 card shows the six weapons and three steps (카이 → a campfire (C) → mastery 20 at 아르센 (K));
+  label "시작 — 직업은 고르지 않습니다". Glyphs `fist eye clover bow lock` in `uiicons.js`; job icons use `book`/`bow`.
+- Not done here: a separate hybrid swap button (the mastery strip shows the back weapon with a "Tab" cap), job names
+  in party/guild/rank (already from J1), the `?v=` cache tag (integrator).
 
 Conflict map: `70/75` — Phase 2 and J1 both append cases at the end (keep both); `10-tables.js` — each appends its own
 block; `50-loot-combat.js` — J1 rebases on game-feel, touches `hurtMob` with one-line hooks only; `90-views-api.js` —

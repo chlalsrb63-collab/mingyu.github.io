@@ -1,7 +1,7 @@
 # Combat, skills and jobs (stats J1, weapon skills J2)
 
 Purpose: how a hero is built (six stats, level 1–200, weapon mastery, jobs), what a blow and a skill do, how monsters
-hit back. Design (built through J2; J3 = full skill-tree UI): `docs/design/jobs-and-stats.md` ("J1 as built", "J2 as built").
+hit back. Design (built through J3, the jobs UI): `docs/design/jobs-and-stats.md` ("J1 as built", "J2 as built").
 Tables are in `02-jobs-stats.js` / `03-skills.js`, code in `45-jobs.js` / `57-weapon-skills.js` (`game/src/logic/`).
 
 ## Key files / functions
@@ -29,7 +29,8 @@ Tables are in `02-jobs-stats.js` / `03-skills.js`, code in `45-jobs.js` / `57-we
 
 ## Data shapes
 - Sheet (v≥11): `lvl st{6} xpt rs sw job wm{kind:{lv,xp}} cnt eq.weapon eq.weapon2 qs`; `qs` entries `["s", skillId]`.
-- Wire `self`: `st nx wm job sk` (every learned skill of every weapon; passives `[id,0,0,on]`), `cr` (hand's passive gauge; a hybrid adds `cr.o`), `dv`, `crit`; `me[9]` inertia/resonance; mob rows `M[i][8..9]` mark/brand. `defs()`: `skills skillOrder skGrow jobs wkOrder wkName jobWm grade wswMs`, `mobs[k].tier`.
+- Wire `self`: `st nx wm job sk` (every learned skill of every weapon; passives `[id,0,0,on]`), `cr` (hand's passive gauge; a hybrid adds `cr.o`), `dv`, `crit`; `me[9]` inertia/resonance; mob rows `M[i][8..9]` mark/brand. `defs()`: `skills skillOrder skGrow jobs wkOrder wkName jobWm grade wswMs`, `lvt lvDiv` (the stat panel's exact price mirror), `mobs[k].tier`.
+- Client (J3): C window 능력치 tab + 카이 = `public/statwin.js`; K window 무기 · 스킬 / 전직의 길 + 아르센 = `public/jobtree.js`.
 - Actions `{t:"sk", id, a?}` (`a` = aim step), `{t:"atk", a?}`. Events: `["a",eid,fx,x,y,dir,combo]`; arrows `["ar",id,x0,y0,ux·1000,uy·1000,spd,kind,shooter]` / `["ae",id,x,y,how 0 hit·1 wall·2 range]`; props `["pr",id,kind,x,y,r,ms,eid]`, `["pp",…]`, `["pe",…]`; `["wm",eid,kind,lv]`, `["jc",eid]`, `["ws",eid]`, `["sg",eid]` (player staggered). Retired: `sw sr bn tp tq cn fo bk bl wl cf`, fx 40–65.
 
 ## Flow
