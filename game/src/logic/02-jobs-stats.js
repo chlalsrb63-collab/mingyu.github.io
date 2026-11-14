@@ -56,8 +56,6 @@ const JOBS = {
   stormrider: { name: "폭풍기수", kind: "hybrid", wk: ["spear", "bow"], scale: { str: 0.8, dex: 0.8, wis: 0.3, luk: 0.3 }, cost: 20000 },
   darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.8, str: 0.8, int: 0.3 }, cost: 20000 },
 };
-/** The old four classes as the lobby and rank rows written before jobs still name them. */
-const OLD_CLASS_JOB = { warrior: "swordsman", rogue: "thief", lancer: "lancer", mage: "wizard", ranger: "lancer", archer: "lancer" };
 
 /**
  * Derived-stat constants (B.4), one table so tuning is data-only. Each formula reads eff(stat).

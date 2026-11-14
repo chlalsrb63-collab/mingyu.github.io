@@ -15,7 +15,7 @@ import * as SP from "./sprites.js";
 import * as SPC from "./species.js";
 import * as Looks from "./looks.js";
 import { Sound } from "./audio.js";
-import { iconImg, CLASS_ICON } from "./uiicons.js";
+import { iconImg } from "./uiicons.js";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -252,7 +252,8 @@ function renderServers(svs, loading) {
     else if (ch) {
       who.append(portrait(ch.cls, ch.look));
       const t = el("div", "sv-ct");
-      t.append(el("b", "", ch.name), el("span", "", `Lv.${ch.lvl} ${CLASS[ch.cls] ? CLASS[ch.cls].name : ""}`));
+      const jr = jobRow(ch);
+      t.append(el("b", "", ch.name), el("span", "", `Lv.${jr.lvl} ${JOB_NAME[jr.cls] || ""}`));
       who.append(t);
     } else {
       const b = el("button", "sv-new");
@@ -405,14 +406,11 @@ async function leave(logout) {
 
 // ───────────────────────────── character creation ─────────────────────────────
 
-/** What the class cards say: weapon, role, how hard, the one thing it plays around, and a stat shape. */
-const CLASS = {
-  warrior: { name: "전사", arm: "대검", role: "근접 · 돌격", diff: 1, mech: "투지 — 치고 맞을수록 차오르는 투지를 한 번에 터뜨린다", st: [5, 5, 5, 2, 2] },
-  rogue: { name: "도적", arm: "단검", role: "근접 · 급소", diff: 3, mech: "표식 — 찌를 때마다 쌓인 표식을 한꺼번에 거둔다", st: [2, 3, 2, 5, 3] },
-  lancer: { name: "창술사", arm: "창", role: "중거리 · 견제", diff: 2, mech: "창끝 — 사거리 끝으로 맞혀 집중을 모은다", st: [4, 4, 3, 3, 3] },
-  mage: { name: "마도사", arm: "지팡이 · 마법책", role: "원거리 · 마법", diff: 2, mech: "원소 엮기 — 불·얼음·번개를 섞어 폭발을 일으킨다", st: [1, 4, 1, 3, 5] },
-};
-const STAT_NAMES = ["체력", "공격", "방어", "치명", "마나"];
+/** Job names for the server list (the lobby has no defs yet); summaries from before jobs name an old class. */
+const JOB_NAME = { adventurer: "모험가", swordsman: "대검전사", thief: "도적", lancer: "창술사", wizard: "마법사", warlock: "마도사", archer: "궁수", spellblade: "마검사", tracker: "추적자", dragoon: "용기사", hexblade: "주술암살자", stormrider: "폭풍기수", darkknight: "암흑기사" };
+const OLD_JOB = { warrior: "swordsman", rogue: "thief", lancer: "lancer", mage: "wizard", ranger: "lancer", archer: "lancer" };
+/** A summary as the 1–200 scale reads it: one written before jobs (no `v`) is level 4L−3 of its class's job. */
+const jobRow = (ch) => (ch.v ? ch : { ...ch, cls: OLD_JOB[ch.cls] || "adventurer", lvl: Math.min(197, 4 * (ch.lvl | 0 || 1) - 3) });
 /** Cute names for the dice: a word, now and then with a little word in front. */
 const NAMES = ["몽실", "콩이", "보리", "두부", "호떡", "찹쌀", "꼬미", "말랑", "뭉치", "도토리", "솜사탕", "누룽지", "모찌", "꿀떡", "별이", "구름", "방울", "쿠키", "치즈", "단팥", "호두", "땅콩", "감자", "고구마", "밤톨", "토실", "포동", "동글", "젤리", "푸딩", "자두", "복숭아", "마루", "나비", "초코", "라떼", "우유", "망고", "레몬", "앵두", "바둑", "깜지", "하양", "까망", "노랑", "단추", "꼬리", "주먹밥", "만두", "약과", "곶감", "보송", "폭신", "몽글", "달콩", "새콤", "알밤", "버터", "와플", "솔방울"];
 const PRE = ["꼬마", "작은", "아기", "용감한", "졸린", "빠른", "작은별", "숲속", "꼬리긴", "말썽"];
@@ -436,7 +434,8 @@ export function nameError(name) {
   return "";
 }
 
-const draft = { cls: "warrior", look: SPC.cleanLook(SPC.PRESETS[0][1]) };
+// (`cls` only picks the preview's weapon now: a new 모험가 holds an old dagger)
+const draft = { cls: "rogue", look: SPC.cleanLook(SPC.PRESETS[0][1]) };
 const history = [];
 let lookEd = null, fig = null, figKey = "";
 /** The preview: "auto" plays a loop; or stand / walk / attack facing `dir`. */
@@ -476,34 +475,15 @@ function nameCheck() {
   return !err;
 }
 function wireCreate() {
-  // class cards
+  // no class to pick any more: everyone starts a 모험가 with an old dagger (J3 restyles this corner)
   const box = $("#c-cls");
   box.textContent = "";
-  for (const [id, c] of Object.entries(CLASS)) {
-    const b = el("button", "cls");
-    b.type = "button"; b.dataset.v = id;
-    b.setAttribute("role", "radio");
-    const hd = el("div", "cls-hd");
-    const ic = el("span", "cls-ic"); ic.append(iconImg(CLASS_ICON[id], "#2a1806"));
-    hd.append(ic, el("b", "", c.name), el("span", "cls-diff", "★".repeat(c.diff) + "☆".repeat(3 - c.diff)));
-    const meta = el("div", "cls-meta", `${c.arm} · ${c.role}`);
-    const mech = el("p", "cls-mech", c.mech);
-    const st = el("div", "cls-st");
-    c.st.forEach((v, i) => { const r = el("span"); const bar = el("i"); bar.style.setProperty("--v", v); r.append(el("small", "", STAT_NAMES[i]), bar); st.append(r); });
-    b.title = `${c.name} — ${c.arm}, ${c.role}, 난이도 ${c.diff}/3`;
-    b.append(hd, meta, mech, st);
-    b.addEventListener("click", () => { if (draft.cls !== id) { remember(); draft.cls = id; } Sound.unlock(); Sound.play("ui"); markClass(); });
-    box.append(b);
-  }
-  box.setAttribute("role", "radiogroup");
-  box.addEventListener("keydown", (e) => {
-    const ids = Object.keys(CLASS), i = ids.indexOf(draft.cls);
-    const d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
-    if (!d) return;
-    e.preventDefault();
-    remember(); draft.cls = ids[(i + d + ids.length) % ids.length]; markClass(); Sound.play("ui");
-    $(`#c-cls .cls[data-v="${draft.cls}"]`).focus();
-  });
+  const card = el("div", "cls on");
+  const hd = el("div", "cls-hd");
+  const ic = el("span", "cls-ic"); ic.append(iconImg("dagger", "#2a1806"));
+  hd.append(ic, el("b", "", "모험가"));
+  card.append(hd, el("p", "cls-mech", "모든 모험가는 직업 없이 시작합니다. 무기를 쓰며 숙련을 쌓고, 숙련 20에 전직하세요."));
+  box.append(card);
   markClass();
   // the look editor (looks.js), without its presets: they get a row of their own
   lookEd = Looks.editor($("#c-parts"), () => draft.look, (l) => { remember(); draft.look = l; markPresets(); }, () => { Sound.unlock(); Sound.play("ui"); }, { presets: false });
@@ -559,7 +539,7 @@ function create() {
   $("#create-msg").textContent = "";
   $("#b-create").disabled = true; $("#b-create").classList.add("busy"); $("#b-create").textContent = "만드는 중…";
   Sound.play("ok");
-  C.act({ t: "create", name: $("#c-name").value.trim(), cls: draft.cls, look: draft.look.slice() });
+  C.act({ t: "create", name: $("#c-name").value.trim(), look: draft.look.slice() });
 }
 
 /** Fit the preview canvas to its box: one art pixel is `z` screen pixels. */

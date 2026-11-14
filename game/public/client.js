@@ -197,6 +197,12 @@ function onMessage(msg) {
       G.you = msg.you;
       if (!G.defs) {
         G.defs = msg.defs;
+        // jobs: everyone's `cls` (who, party, guild, rank) is a job id now; the old class ids still
+        // reach us from rows saved before, so both name the job
+        G.defs.classes = {};
+        for (const id of Object.keys(G.defs.jobs)) G.defs.classes[id] = { name: G.defs.jobs[id].name, wk: G.defs.jobs[id].wk };
+        for (const [old, id] of Object.entries(JOB_ALIAS)) if (!G.defs.classes[old]) G.defs.classes[old] = G.defs.classes[id];
+        for (const id of Object.keys(G.defs.jobs)) { const k = G.defs.jobs[id].wk[0] || "dagger"; CLASS_ICON[id] = k === "book" ? "staff" : k === "bow" ? "target" : k; }
         Sky.configure(G.defs.sky);
         G.icons = Growth.icons(Art.buildIcons(G.defs.items));
         Growth.init({ G, act, el, iconImg, itemSlot, section, countItem, usePotion, isGear: (id) => isGear(id), sellPrice: (e) => sellPrice(e) });
@@ -222,6 +228,8 @@ function onMessage(msg) {
       if (msg.fatal) {
         disconnect();
         Lobby.fatal(msg);
+      } else if (msg.error === "stag" || msg.error === "wsw") {
+        /* quiet refusals: reeling from a blow, a swap too soon */
       } else if (Lobby.createError(msg.error)) {
         /* shown on the creation page */
       } else {
@@ -292,6 +300,10 @@ function onSnap(s) {
 
   if (s.self) {
     G.self = s.self;
+    // jobs (J1): `cls` now names the job (the class names below read defs.classes, rebuilt from defs.jobs);
+    // until J2 the old kit of the weapon in hand (`lc`) is learned by that weapon's mastery (`skLv`)
+    s.self.cls = s.self.job;
+    s.self.skLv = s.self.wm ? s.self.wm[Math.max(0, G.defs.wkOrder.indexOf(s.self.wk))][0] : 1;
     for (let i = 0; i < s.self.cds.length; i++) G.cdEnd[i] = t + s.self.cds[i];
     G.streak = { n: s.self.streak[0], end: t + s.self.streak[1] };
     G.buffEnd = s.self.buffs.map((ms) => t + ms);
@@ -347,6 +359,8 @@ function entityPos(id) {
 const MOB_COL = { twinhare: "#a83848", gutfrog: "#7a9a4a", eyecrow: "#5c3c6c", splitboar: "#a83848", ribdeer: "#e0d8c8", hydrasnake: "#5a8a4a", mothface: "#b8a890", ratking: "#c87a8a", bonehound: "#a83848", batcluster: "#5c3c6c", pigeonmass: "#7a8aa0", doghead: "#7a5a48", catsplit: "#a83848", fishwalker: "#8ab0c0", leechmaw: "#b4cc3c", gatorhalf: "#5a7a4a", eelknot: "#4a5a6a", spiderhand: "#e0d8c8", bearmaw: "#a83848", owlstare: "#7a5a48", twingoat: "#e0d8c8", horsehalf: "#a83848", serpentwing: "#b4cc3c", boss: "#e050b8", abyssboss: "#b4cc3c", chest_meadow: "#f0c040", chest_forest: "#f0c040", chest_city: "#f0c040", chest_cave: "#f0c040", chest_crypt: "#f0c040", chest_sewer: "#f0c040", chest_abyss: "#f0c040" , lambmaw: "#a83848", foxtwine: "#c8643c", toadbrood: "#7a8a4a", squidrat: "#8a6a7a", crabskull: "#c85a3a", moleworm: "#5a566a", lionhand: "#b8905a", sowseer: "#d8a0a8", twinhare_bone: "#e0d8c8", gutfrog_poison: "#8ad84a", ratking_bile: "#b4cc3c", splitboar_frost: "#8ad8ff", hydrasnake_steel: "#a8b4c8", bonehound_ash: "#5a5a66", batcluster_blood: "#b02838", doghead_fire: "#ff8a3a" };
 const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * G.defs.eliteHp[m.el | 0]);
 const RANK_NAME = ["", "정예 ", "우두머리 "];
+/** The old four classes and the jobs they became (rows saved before jobs still name a class). */
+const JOB_ALIAS = { warrior: "swordsman", rogue: "thief", mage: "wizard", ranger: "lancer" };
 // a dungeon's chosen guard is its 수문장; out in the open a summoned field boss is a 우두머리 (as the server calls them)
 const DUNGEONS = new Set(["crypt", "sewer", "abyss"]);
 Mini.mount($("#minigame"));
@@ -643,6 +657,8 @@ addEventListener("keydown", (e) => {
     case "g": case "ㅎ": toggleWin("guild"); break;
     case "t": case "ㅅ": openEmotes("emote"); break;
     case "i": case "ㅑ": toggleWin("inv"); break;
+    // a hybrid job swaps its two weapons
+    case "Tab": { e.preventDefault(); const j = G.self && G.defs.jobs[G.self.job]; if (j && j.kind === "hybrid") { act({ t: "wsw" }); Sound.play("ui"); } break; }
     case "c": case "ㅊ": toggleWin("char"); break;
     case "l": case "ㅣ": toggleWin("quest"); break;
     case "r": case "ㄱ": toggleAuto(); break;
@@ -839,9 +855,10 @@ const canStand = (x, y) => !(solid(x - 4, y - 5) || solid(x + 4, y - 5) || solid
 function castSkill(i) {
   const s = G.self;
   if (!s || G.me.dead) return;
-  const sk = G.defs.skills[s.cls][i];
+  const sk = (G.defs.skills[s.lc] || [])[i];
+  if (!sk) return false;
   const t = now();
-  if (s.lvl < sk.lv) { toast(`[${sk.name}] 레벨 ${sk.lv}에 배웁니다`); return false; }
+  if (s.skLv < sk.lv) { toast(`[${sk.name}] 숙련 ${sk.lv}에 배웁니다`); return false; }
   const mpc = s.skm ? s.skm[i] : sk.mp;          // a thrown sword comes back for nothing; a surge casts for nothing
   if (t < G.cdEnd[i] || G.me.mp < mpc) { if (G.me.mp < mpc && !G.auto) toast("MP가 부족합니다"); return false; }
   act({ t: "sk", i, a: G.me.aimI });
@@ -965,7 +982,7 @@ function interact() {
   else if (n.role === "daily") openWin("daily");
   else if (n.role === "collector") openWin("collect");
   else if (n.role === "achieve") openWin("achieve");
-  else if (n.role === "train") openWin("train");
+  else if (n.role === "train" || n.role === "job") openWin("train");   // 전직관 아르센 offers jobs in the same window (J3 gives it its own)
   else if (n.role === "bank") openWin("bank");
   else if (n.role === "costume") openWin("costume");
   else if (n.role === "dim") Dim.openKeeper();
@@ -1122,9 +1139,9 @@ function update(dt, t) {
         if (t - autoSt.lastSkill > 500) {
           // only what the player put in the quick slots, in slot order
           for (const i of QS.autoSkills()) {
-            const sk = G.defs.skills[s.cls][i];
+            const sk = (G.defs.skills[s.lc] || [])[i];
             if (!sk) continue;
-            if (s.lvl >= sk.lv && t >= G.cdEnd[i] && me.mp >= (s.skm ? s.skm[i] : sk.mp) + 4) { if (castSkill(i)) { autoSt.lastSkill = t; break; } }
+            if (s.skLv >= sk.lv && t >= G.cdEnd[i] && me.mp >= (s.skm ? s.skm[i] : sk.mp) + 4) { if (castSkill(i)) { autoSt.lastSkill = t; break; } }
           }
         }
       }
@@ -1793,8 +1810,8 @@ function hoverTip(node, fill) {
 /** The glyph beside each line of the character sheet. */
 const GEAR = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet"];
 const TYPE_NAME = { weapon: "무기", helm: "투구", armor: "갑옷", gloves: "장갑", boots: "신발", ring: "반지", amulet: "목걸이" };
-const SLOT_NAME = { weapon: "무기", helm: "투구", armor: "갑옷", gloves: "장갑", boots: "신발", ring1: "반지 1", ring2: "반지 2", amulet: "목걸이" };
-const SLOT_GLYPH = { weapon: "sword", helm: "person", armor: "shield", gloves: "fang", boots: "chevron", ring1: "gem", ring2: "gem", amulet: "gem" };
+const SLOT_NAME = { weapon: "무기", helm: "투구", armor: "갑옷", gloves: "장갑", boots: "신발", ring1: "반지 1", ring2: "반지 2", amulet: "목걸이", weapon2: "보조 무기" };
+const SLOT_GLYPH = { weapon: "sword", helm: "person", armor: "shield", gloves: "fang", boots: "chevron", ring1: "gem", ring2: "gem", amulet: "gem", weapon2: "swords" };
 const isGear = (id) => GEAR.includes(G.defs.items[id].type);
 const slotsFor = (type) => (type === "ring" ? ["ring1", "ring2"] : [type]);
 function runewordOf(g) {
@@ -2001,9 +2018,11 @@ function hudFrame(s) {
   drawFace();
   hudMastery(s);
   hudPurse(s);
-  const maxed = s.lvl >= G.defs.maxLv;
-  $("#exp-fill").style.width = maxed ? "100%" : `${Math.min(100, (s.xp / s.need) * 100)}%`;
-  $("#exp-text").textContent = maxed ? `수련 경험치 ${s.xp.toLocaleString()}` : `EXP ${s.xp.toLocaleString()} / ${s.need.toLocaleString()}  (${((s.xp / s.need) * 100).toFixed(2)}%)`;
+  // unspent experience against the cheapest next stat point (a level is bought at a campfire or the trainer)
+  const need = Math.min(...s.nx.filter((c) => c > 0), Infinity);
+  const maxed = s.lvl >= G.defs.maxLv || !Number.isFinite(need);
+  $("#exp-fill").style.width = maxed ? "100%" : `${Math.min(100, (s.xp / need) * 100)}%`;
+  $("#exp-text").textContent = maxed ? `경험치 ${s.xp.toLocaleString()}` : s.xp >= need ? `EXP ${s.xp.toLocaleString()} — 레벨을 올릴 수 있습니다 (모닥불·수련관)` : `EXP ${s.xp.toLocaleString()} / ${need.toLocaleString()}  (${((s.xp / need) * 100).toFixed(2)}%)`;
   hudBars();
 }
 /** The weapon-mastery strip beside the bars (mastery.js); a level gained flashes it and chimes. */
@@ -2104,11 +2123,11 @@ function refreshUi() {
   tracker(s);
   const near = G.near && G.near.role;
   draw("inv", () => [s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs, s.bagCap], renderInv);
-  draw("char", () => [s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.tr, s.lg, s.lvl, s.name, s.guild], renderChar);
-  draw("skill", () => [s.lvl, s.cls, s.wk, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.skl, s.qs], renderSkills);
+  draw("char", () => [s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.lvl, s.name, s.guild], renderChar);
+  draw("skill", () => [s.lvl, s.lc, s.skLv, s.wk, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.qs], renderSkills);
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near], renderShop);
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone")], renderSmith);
-  draw("train", () => [s.xp, s.tr, s.trc, s.skl, s.skc, s.gold, s.lvl], renderTrain);
+  draw("train", () => [s.xp, s.st, s.nx, s.rs, s.sw, s.job, s.wm, s.gold, s.lvl, fireNear(), G.near], renderTrain);
   draw("bank", () => [s.inv, s.wh, s.gold], Growth.renderBank);
   draw("quest", () => [s.q, s.bq, s.bn, s.mk, s.lvl, near, G.qsel, s.sq], renderQuest);
   draw("talk", () => [s.sq, s.lvl, talk.npc && talk.npc.id], () => SideQ.renderTalk($("#talk-sq"), talk.npc, s, (line) => { $("#talk-text").textContent = line; }));
@@ -2184,6 +2203,9 @@ function renderInv(s) {
     if (d.type === "ring" && s.eq.ring1 && s.eq.ring2) {
       for (const k of ["ring1", "ring2"]) add(`${SLOT_NAME[k]}에 장착`, () => { act({ t: "eq", s: G.sel, k }); G.sel = -1; }, off, true);
     } else add("장착", () => { act({ t: "eq", s: G.sel }); G.sel = -1; }, off, true);
+    // a hybrid job carries a second weapon of its pair (Tab swaps)
+    const job = G.defs.jobs[s.job];
+    if (d.type === "weapon" && job && job.kind === "hybrid" && job.wk.includes(d.wk)) add("보조 무기로", () => { act({ t: "eq", s: G.sel, k: "weapon2" }); G.sel = -1; }, off, true);
     if (isOpen("smith")) add("분해", () => { act({ t: "salv", s: G.sel }); G.sel = -1; Sound.play("salvage"); });
   }
   if (d.type === "rune") {
@@ -2211,7 +2233,8 @@ const STAT_GROUPS = [
   ["공격", [["공격력", "sword", (s) => s.atk], ["치명타", "target", (s) => `${s.crit}%`], ["치명 피해", "burst", (s) => `${s.critd}%`], ["공격 간격", "clock", (s) => `${(s.acd / 1000).toFixed(2)}초`], ["흡혈", "fang", (s) => `${s.ls}%`]]],
   ["방어", [["방어력", "shield", (s) => s.def], ["최대 HP", "heart", (s) => s.mhp], ["최대 MP", "drop", (s) => s.mmp]]],
   ["유틸", [["경험치 추가", "up", (s) => `${s.xpb}%`], ["아이템 발견", "gem", (s) => `${s.mf}%`], ["골드 획득", "coin", (s) => `+${s.goldb}%`], ["처치 수", "skull", (s) => s.kills.toLocaleString()]]],
-  ["수련", [["힘", "sword", (s) => s.tr.str], ["체력", "heart", (s) => s.tr.vit], ["지력", "drop", (s) => s.tr.int], ["수호", "shield", (s) => s.tr.grd]]],
+  ["능력치", [["힘", "sword", (s) => s.st.str], ["의지", "heart", (s) => s.st.wil], ["민첩", "chevron", (s) => s.st.dex], ["지능", "drop", (s) => s.st.int], ["지혜", "book", (s) => s.st.wis], ["행운", "star", (s) => s.st.luk]]],
+  ["숙련", [["회피", "chevron", (s) => `${s.dv[1]}%`], ["공격 속도", "clock", (s) => `+${s.dv[2]}%`], ["재사용 감소", "clock", (s) => `${s.dv[3]}%`], ["무기 숙련", "up", (s) => `${s.skLv}`]]],
 ];
 function renderChar(s) {
   const title = $("#char-title");
@@ -2219,10 +2242,12 @@ function renderChar(s) {
   title.append(iconImg(CLASS_ICON[s.cls] || "sword", "#e2c486"), s.name, el("small", "", `Lv.${s.lvl} ${G.defs.classes[s.cls].name}`));
   for (const k of G.defs.slots) {
     const host = $(`#eq-${k}`);
+    if (!host) continue;
     const g = s.eq[k];
     const slot = itemSlot(g, g ? { worn: true, onClick: () => { hideTip(); act({ t: "uneq", k }); Sound.play("ui"); }, hint: `${SLOT_NAME[k]} · 클릭하면 벗습니다` } : {});
     slot.id = `eq-${k}`;
     if (!g) { const ph = el("span", "ph"); ph.append(iconImg(SLOT_GLYPH[k])); slot.append(ph); slot.title = `${SLOT_NAME[k]} — 비어 있음`; }
+    if (k === "weapon2") slot.hidden = !g && !(G.defs.jobs[s.job] && G.defs.jobs[s.job].kind === "hybrid");
     host.replaceWith(slot);
   }
   const st = $("#char-stats");
@@ -2238,6 +2263,10 @@ function renderChar(s) {
     }
     st.append(grp);
   }
+  // the six stats are bought here too, by a campfire (J3: the C window's own 능력치 tab)
+  const up = el("button", "btn small", s.xp >= Math.min(...s.nx.filter((c) => c > 0), Infinity) ? "능력치 올리기 ★" : "능력치 올리기");
+  up.addEventListener("click", () => openWin("train"));
+  st.append(up);
   const pw = $("#char-sets");
   pw.textContent = "";
   const sets = Object.keys(G.defs.sets).filter((id) => setWorn(id));
@@ -2264,15 +2293,28 @@ function renderSkills(s) {
   bh.append(el("b", "", `${wk.name || "공격"}`), el("kbd", "", "Space"), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
   basic.append(bi, bh, el("p", "", "가장 가까운 적을 알아서 겨냥합니다. 끊지 않고 이어 치면 세 번째 타격이 강한 마무리 일격이 됩니다."));
   box.append(basic);
-  box.append(section(`${G.defs.classes[s.cls].name} 스킬`, "book"));
-  G.defs.skills[s.cls].forEach((sk, i) => {
-    const locked = s.lvl < sk.lv;
+  // weapon mastery, every kind (J3 draws the full 무기 · 스킬 window and the 전직의 길)
+  box.append(section("무기 숙련", "up"));
+  const wmBox = el("div", "list");
+  G.defs.wkOrder.forEach((k, j) => {
+    const [lv, xp, need] = s.wm[j];
+    const row = el("div", "skill" + (k === s.wk ? " on" : ""));
+    row.append(el("b", "", `${G.defs.wkName[k]} 숙련 ${lv}/50`), el("small", "", need ? ` ${xp.toLocaleString()} / ${need.toLocaleString()}` : " 최고"), el("small", "", lv >= G.defs.jobWm ? " · 전직 가능" : ""));
+    wmBox.append(row);
+  });
+  box.append(wmBox);
+  // until J2: the old kit of the weapon in hand, learned by its mastery
+  const list = G.defs.skills[s.lc] || [];
+  box.append(section(list.length ? `${G.defs.wkName[s.wk]} 스킬` : "스킬", "book"));
+  if (!list.length) box.append(el("p", "hint", "이 무기로 쓸 수 있는 스킬은 아직 없습니다."));
+  list.forEach((sk, i) => {
+    const locked = s.skLv < sk.lv;
     const row = el("div", "skill" + (locked ? " locked" : ""));
     const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(sk.id);
     const hd = el("div", "hd");
     const at = QS.keysOf(["s", i]);
-    hd.append(el("b", "", sk.name), at ? el("kbd", "", at) : "", el("small", "mp", `MP ${sk.mp}`), el("small", "", `재사용 ${sk.cd / 1000}초`), el("small", "", locked ? `레벨 ${sk.lv}에 배웁니다` : `Lv.${sk.lv} 습득`), Growth.levelTag(s, i));
-    if (i === G.defs.skills[s.cls].length - 1) row.classList.add("ult");
+    hd.append(el("b", "", sk.name), at ? el("kbd", "", at) : "", el("small", "mp", `MP ${sk.mp}`), el("small", "", `재사용 ${sk.cd / 1000}초`), el("small", "", locked ? `숙련 ${sk.lv}에 배웁니다` : `숙련 ${sk.lv} 습득`));
+    if (i === list.length - 1) row.classList.add("ult");
     // drag the icon (or the whole row) onto the quick slots; or tap the button, then a slot
     const put = el("button", "btn small qs-put", "단축칸");
     put.title = "누른 뒤 아래 단축칸(1~9)을 누르면 거기에 놓입니다";
@@ -2281,7 +2323,7 @@ function renderSkills(s) {
     QS.dragSource(row, ["s", i]);
     box.append(row);
   });
-  box.append(el("p", "hint", "스킬을 끌어다 아래 단축칸(1~9)에 놓으면 그 숫자 키로 씁니다. 칸끼리 끌어 바꾸고, 바깥에 놓거나 우클릭하면 비웁니다. 마지막 스킬은 궁극기입니다. 수련관에게서 스킬 레벨을 올리면 위력이 오르고 5·10레벨에 재사용 대기시간이 줄어듭니다. 자동사냥은 단축칸에 놓인 스킬을 칸 순서대로 씁니다."));
+  box.append(el("p", "hint", "스킬을 끌어다 아래 단축칸(1~9)에 놓으면 그 숫자 키로 씁니다. 칸끼리 끌어 바꾸고, 바깥에 놓거나 우클릭하면 비웁니다. 마지막 스킬은 궁극기입니다. 스킬은 손에 든 무기의 숙련으로 배웁니다. 자동사냥은 단축칸에 놓인 스킬을 칸 순서대로 씁니다."));
 }
 
 // ── waypoints ──
@@ -2610,24 +2652,71 @@ function renderSmith(s) {
 function renderTrain(s) {
   const list = $("#train-list");
   list.textContent = "";
-  $("#train-xp").textContent = `보유 경험치 ${s.xp.toLocaleString()} · 골드 ${s.gold.toLocaleString()}G`;
-  list.append(section("능력치 수련", "person"));
-  for (const k of Object.keys(G.defs.train)) {
-    const d = G.defs.train[k];
+  // (J1's plain list; J3 turns it into the C window's 능력치 tab and the 무기 · 스킬 window)
+  $("#train-xp").textContent = `Lv.${s.lvl} ${G.defs.classes[s.job].name} · 보유 경험치 ${s.xp.toLocaleString()} · 골드 ${s.gold.toLocaleString()}G`;
+  const role = G.near && G.near.role;
+  const here = role === "train" || fireNear();
+  // a new 모험가 picks one free weapon at 수련관 카이
+  if (!s.sw) {
+    list.append(section("첫 무기", "sword"));
+    list.append(el("p", "say", role === "train" ? "어떤 무기로 시작하겠나? 하나를 골라 가게." : "수련관 카이에게 가면 무기 하나를 골라 받을 수 있습니다."));
+    const feel = { sword: "힘·의지", dagger: "민첩·행운", spear: "힘·지혜", staff: "지능·지혜", book: "지능·의지", bow: "민첩·행운" };
     const row = el("div", "it");
-    const tx = el("div", "tx", `${d.name}  ${s.tr[k]}`);
-    tx.append(el("small", "", `${d.desc} · 1회 ${s.trc[k][0].toLocaleString()} EXP`));
-    row.append(tx);
-    for (const [n, cost] of [[1, s.trc[k][0]], [10, s.trc[k][1]]]) {
-      const b = el("button", "", `+${n}`);
-      b.disabled = s.xp < cost;
-      b.title = `${cost.toLocaleString()} EXP`;
-      b.addEventListener("click", () => act({ t: "train", k, n }));
+    for (const k of G.defs.wkOrder) {
+      const b = el("button", "", `${G.defs.wkName[k]} — ${feel[k]}`);
+      b.disabled = role !== "train";
+      b.addEventListener("click", () => act({ t: "starter", wk: k }));
       row.append(b);
     }
     list.append(row);
   }
-  Growth.trainSkills(list, s);
+  list.append(section("능력치", "person"));
+  if (!here) list.append(el("p", "hint", "모닥불 곁이나 수련관 앞에서 레벨을 올릴 수 있습니다."));
+  // what n more points in stat i cost (the client's mirror of the server's price; the server checks)
+  const [K, K0] = G.defs.statK;
+  const costOf = (i, n) => { let c = 0; for (let j = 0; j < n; j++) { const lv = s.lvl + j, v = s.st[G.defs.stats[i][0]] + j; if (lv >= G.defs.maxLv || v >= 99) return Infinity; c += Math.round(G.defs.lvc[lv - 1] * (1 + K * Math.max(0, v - K0))); } return c; };
+  G.defs.stats.forEach(([k, name, desc], i) => {
+    const row = el("div", "it");
+    const tx = el("div", "tx", `${name}  ${s.st[k]}`);
+    tx.append(el("small", "", `${desc} · 다음 1포인트 ${s.nx[i] ? `${s.nx[i].toLocaleString()} EXP` : "최대"}`));
+    row.append(tx);
+    for (const n of [1, 5]) {
+      const cost = costOf(i, n), a = [0, 0, 0, 0, 0, 0];
+      a[i] = n;
+      const b = el("button", "", `+${n}`);
+      b.disabled = !here || !s.nx[i] || s.xp < cost;
+      b.title = Number.isFinite(cost) ? `${cost.toLocaleString()} EXP` : "";
+      b.addEventListener("click", () => act({ t: "train", a }));
+      row.append(b);
+    }
+    list.append(row);
+  });
+  if (role === "train" && s.lvl > 1) {
+    const row = el("div", "it");
+    row.append(el("div", "tx", "망각의 의식 — 모든 능력치를 5로 되돌리고 쓴 경험치를 돌려받습니다."));
+    const b = el("button", "", s.rs > 0 ? `되돌리기 (무료 ${s.rs}회)` : `되돌리기 (경험치 10% 소모)`);
+    b.addEventListener("click", () => act({ t: "respec" }));
+    row.append(b);
+    list.append(row);
+  }
+  // jobs: offered by 전직관 아르센 (the server checks mastery, gold and where you stand)
+  if (s.job === "adventurer") {
+    const wmOf = (k) => s.wm[G.defs.wkOrder.indexOf(k)][0];
+    const open = Object.keys(G.defs.jobs).filter((j) => G.defs.jobs[j].kind !== "none" && G.defs.jobs[j].wk.every((k) => wmOf(k) >= G.defs.jobWm));
+    list.append(section("전직", "crown"));
+    if (!open.length) list.append(el("p", "hint", `무기 하나를 숙련 ${G.defs.jobWm}까지 다루면 전직관 아르센에게서 그 무기의 직업으로, 두 무기를 모두 ${G.defs.jobWm}까지 다루면 두 갈래 길로 전직할 수 있습니다.`));
+    for (const j of open) {
+      const d = G.defs.jobs[j], row = el("div", "it");
+      row.append(el("div", "tx", `${d.name} — ${d.wk.map((k) => G.defs.wkName[k]).join(" + ")} · ${d.cost.toLocaleString()}G`));
+      const b = el("button", "", "전직");
+      b.disabled = role !== "job" || s.gold < d.cost;
+      b.title = role === "job" ? "" : "전직관 아르센 앞에서 할 수 있습니다";
+      const ro = ((c) => (c >= 0 && c % 28 && c % 28 !== 8 ? "으로" : "로"))(d.name.charCodeAt(d.name.length - 1) - 0xac00);
+      b.addEventListener("click", () => { if (confirm(`[${d.name}]${ro} 전직합니다. 전직은 되돌릴 수 없습니다. 계속할까요? (${d.cost.toLocaleString()}G)`)) act({ t: "job_change", j }); });
+      row.append(b);
+      list.append(row);
+    }
+  }
 }
 
 // ── quests: a log on the left, the chosen entry on the right ──
@@ -2643,7 +2732,7 @@ function renderQuest(s) {
   // a main quest just handed in: show the next one rather than the finished page
   if (G.qCur !== undefined && G.qCur !== cur && G.qsel === `main:${G.qCur}`) G.qsel = `main:${cur}`;
   G.qCur = cur;
-  const picks = Object.keys(mobs).filter((k) => !mobs[k].boss && !mobs[k].chest && mobs[k].lv <= s.lvl + 4 && (!s.bq || s.bq.k !== k)).sort((a, b) => mobs[b].lv - mobs[a].lv).slice(0, 4);
+  const picks = Object.keys(mobs).filter((k) => !mobs[k].boss && !mobs[k].chest && mobs[k].tier <= (s.lvl + 3) / 4 + 4 && (!s.bq || s.bq.k !== k)).sort((a, b) => mobs[b].lv - mobs[a].lv).slice(0, 4);
   const keys = [];
   const entry = (key, label, sub, cls) => {
     keys.push(key);

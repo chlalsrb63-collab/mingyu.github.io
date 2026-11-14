@@ -57,7 +57,8 @@ export function init(ctx) {
 
 /** The slots as the server last sent them. */
 const slots = () => (C.G.self && C.G.self.qs) || Array(N).fill(null);
-const skills = () => C.G.defs.skills[C.G.self.cls];
+// until J2: the old kit of the weapon in hand (`lc`), learned by that weapon's mastery (`skLv`, set in client.js onSnap)
+const skills = () => C.G.defs.skills[C.G.self.lc] || [];
 const same = (a, b) => !!a && !!b && a[0] === b[0] && a[1] === b[1];
 /** Where (if anywhere) a skill or item sits: "1", "1·4" … */
 export function keysOf(v) {
@@ -147,10 +148,10 @@ export function render() {
       if (sk) {
         setSrc(img, skillIconUrl(sk.id));
         ult = v[1] === list.length - 1;
-        locked = s.lvl < sk.lv;
+        locked = s.skLv < sk.lv;
         mp = String(s.skm ? s.skm[v[1]] : sk.mp);
         b.dataset.lv = `Lv.${sk.lv}`;
-        title = `${sk.name} (${i + 1}) — MP ${sk.mp} · ${sk.cd / 1000}초${locked ? ` · 레벨 ${sk.lv}에 배웁니다` : ""}\n${sk.desc}`;
+        title = `${sk.name} (${i + 1}) — MP ${sk.mp} · ${sk.cd / 1000}초${locked ? ` · 숙련 ${sk.lv}에 배웁니다` : ""}\n${sk.desc}`;
       }
     } else if (kind === "i") {
       const it = G.defs.items[v[1]];
@@ -172,19 +173,21 @@ export function render() {
   });
   // a skill just learned: the server put it on the bar if there was room (and its toast says
   // which key); the log keeps a line, and says where to find it when the bar was full
-  if (render.lvl !== undefined && s.lvl > render.lvl) {
+  if (render.lc !== s.lc) render.lvl = undefined;
+  render.lc = s.lc;
+  if (render.lvl !== undefined && s.skLv > render.lvl) {
     list.forEach((sk, i) => {
-      if (sk.lv <= render.lvl || sk.lv > s.lvl) return;
+      if (sk.lv <= render.lvl || sk.lv > s.skLv) return;
       const k = keysOf(["s", i]);
       C.addChat(k ? `새 스킬 [${sk.name}] — 단축칸 ${k} 키로 씁니다.` : `새 스킬 [${sk.name}] — 단축칸이 가득 찼습니다. 스킬 창(K)에서 빈 칸으로 끌어다 놓으세요.`, "sys");
     });
   }
-  render.lvl = s.lvl;
+  render.lvl = s.skLv;
   // a gentle pointer at the empty bar until something is put in it
   const hint = $("#qs-hint");
   if (hint) { hint.hidden = any; hint.textContent = C.touch() ? "스킬(K)·가방의 [단축칸] → 칸 누르기" : "스킬(K)·아이템(가방)을 끌어다 놓으세요"; }
   // (only once there is a skill to put there: a new Lv.1 has enough to read)
-  if (!any && !render.told && s.lvl >= 3) {
+  if (!any && !render.told && s.skLv >= 3) {
     render.told = true;
     C.addChat("단축칸 1~9는 비어 있습니다. 스킬 창(K)의 스킬이나 가방의 물약·음식·주문서를 아래 단축칸에 끌어다 놓으면 그 숫자 키로 씁니다. (터치: 스킬·아이템의 [단축칸] 버튼 → 칸 누르기)", "sys");
   }
@@ -201,7 +204,7 @@ export function tick(t) {
     if (v && v[0] === "s" && list[v[1]]) {
       const sk = list[v[1]];
       left = (G.cdEnd[v[1]] || 0) - t; full = sk.cd;
-      nomp = G.me.mp < (s.skm ? s.skm[v[1]] : sk.mp) && s.lvl >= sk.lv;
+      nomp = G.me.mp < (s.skm ? s.skm[v[1]] : sk.mp) && s.skLv >= sk.lv;
     } else if (v && v[0] === "i" && G.defs.items[v[1]] && G.defs.items[v[1]].type === "pot") {
       left = G.potAt - t; full = 950;
     }
@@ -254,8 +257,8 @@ function slotTip(h, v) {
     const sk = skills()[v[1]];
     if (!sk) return;
     h.append(el("div", "nm", sk.name));
-    h.append(el("div", "ds", `MP ${s.skm ? s.skm[v[1]] : sk.mp} · 재사용 ${sk.cd / 1000}초 · 스킬 Lv.${(s.skl && s.skl[v[1]]) || 1}${v[1] === skills().length - 1 ? " · 궁극기" : ""}`));
-    if (s.lvl < sk.lv) h.append(el("div", "err-line", `레벨 ${sk.lv}에 배웁니다`));
+    h.append(el("div", "ds", `MP ${s.skm ? s.skm[v[1]] : sk.mp} · 재사용 ${sk.cd / 1000}초${v[1] === skills().length - 1 ? " · 궁극기" : ""}`));
+    if (s.skLv < sk.lv) h.append(el("div", "err-line", `숙련 ${sk.lv}에 배웁니다`));
     h.append(el("div", "ds", sk.desc));
   } else {
     const it = G.defs.items[v[1]];

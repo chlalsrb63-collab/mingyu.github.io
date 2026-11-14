@@ -15,7 +15,6 @@
  */
 import { Sound } from "./audio.js";
 import * as SP from "./sprites.js";
-import { skillIconUrl } from "./skillicons.js";
 
 /** What client.js lends us: its state, its helpers, its windows. */
 let C = null;
@@ -187,7 +186,7 @@ export const dropName = (d) => (d.it === "gold" ? "골드" : C.G.defs.items[d.it
 function deathTip(s) {
   const d = s.dead, hp = (s.inv || []).some((e) => e && C.G.defs.items[e.id] && C.G.defs.items[e.id].type === "pot" && /^hp_/.test(e.id));
   if (d.el >= 2) return "우두머리는 혼자 상대하기 어렵습니다 — 파티를 맺어 도전하세요.";
-  if (d.lv >= s.lvl + 3) return `나보다 ${d.lv - s.lvl}레벨 높은 상대입니다. 입구 쪽 약한 몬스터부터 사냥하세요.`;
+  if (d.lv >= s.lvl + 12) return `나보다 ${d.lv - s.lvl}레벨 높은 상대입니다. 입구 쪽 약한 몬스터부터 사냥하세요.`;
   if (!hp) return "빨간 물약이 없었습니다. 보급상 리나에게서 넉넉히 사 두세요.";
   if (d.el === 1) return "정예는 일반 몬스터보다 훨씬 셉니다. 체력이 줄면 물러서세요.";
   return "체력이 줄면 물약(Q)을 마시고, 모닥불 곁에서 쉬어 가세요.";
@@ -196,7 +195,7 @@ function deathTip(s) {
 export function onSelf(s) {
   // the death panel: what town costs, and whether there is a feather
   if (s.dead) {
-    const pct = s.need ? ((s.dead.loss / s.need) * 100).toFixed(1) : "0";
+    const pct = s.xp ? ((s.dead.loss / s.xp) * 100).toFixed(1) : "0";   // of the unspent experience
     $("#dead-loss").textContent = s.dead.loss > 0 ? `마을에서 부활하면 경험치 ${s.dead.loss.toLocaleString()} (${pct}%)를 잃습니다.` : "마을에서 부활합니다. (잃을 경험치가 없습니다)";
     // who did it, and a word of advice for next time
     const by = $("#dead-by");
@@ -235,36 +234,6 @@ export function shopTop(list, s) {
   b.addEventListener("click", () => { C.act({ t: "sellall" }); Sound.play("coin"); });
   row.append(tx, b);
   list.append(row);
-}
-/** The trainer's second half: each skill's level, what the next one costs, and a button. */
-export function trainSkills(list, s) {
-  const { el, G } = C;
-  list.append(C.section("스킬 수련", "book"));
-  const step = Math.round(G.defs.skStep * 100);
-  G.defs.skills[s.cls].forEach((sk, i) => {
-    const L = (s.skl || [])[i] || 1, c = (s.skc || [])[i], learned = s.lvl >= sk.lv;
-    const row = el("div", "it sk-row" + (learned ? "" : " locked"));
-    const img = el("img"); img.src = skillIconUrl(sk.id); img.alt = "";
-    const tx = el("div", "tx", `${sk.name}  `);
-    tx.append(el("b", "sklv", `Lv.${L}/${G.defs.skMax}`));
-    let note;
-    if (!learned) note = `캐릭터 레벨 ${sk.lv}에 배웁니다`;
-    else if (!c) note = `최고 레벨 — 위력 +${step * (L - 1)}%, 재사용 대기 -15%`;
-    else note = `다음: ${c.gold.toLocaleString()}G · ${c.xp.toLocaleString()} EXP${s.lvl < c.lvl ? ` · 캐릭터 Lv.${c.lvl} 필요` : ""} — 위력 +${step * L}%${L + 1 === 5 ? ", 재사용 대기 -8%" : L + 1 === 10 ? ", 재사용 대기 -15%" : ""}`;
-    tx.append(el("small", "", note));
-    row.append(img, tx);
-    const b = el("button", "", "+1");
-    b.disabled = !learned || !c || s.gold < c.gold || s.xp < c.xp || s.lvl < c.lvl;
-    if (c) b.title = `${c.gold.toLocaleString()}G · ${c.xp.toLocaleString()} EXP`;
-    b.addEventListener("click", () => C.act({ t: "sklv", i }));
-    row.append(b);
-    list.append(row);
-  });
-}
-/** A skill's level as a small tag for the skill window. */
-export function levelTag(s, i) {
-  const L = (s.skl || [])[i] || 1;
-  return C.el("small", "sklv", `스킬 Lv.${L}/${C.G.defs.skMax}`);
 }
 /** The warehouse: the bag on the left, the store on the right, the purse below. */
 export function renderBank(s) {

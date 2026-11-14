@@ -217,7 +217,7 @@ function overlay(g, t) {
       for (let i = 1; i <= 3; i++) { const a = t / 260 + i * 2.094, ox = Math.cos(a) * 14, oy = Math.sin(a) * 6; orb(g, x + ox, y - 14 + oy, i, t); }
     }
     // the element a mage is holding (only their own is sent)
-    if (me && G.me.cv && !(fl & 32) && G.self && G.self.cls === "mage") orb(g, x, y - 38 + Math.sin(t / 200) * 2, G.me.cv, t);
+    if (me && G.me.cv && !(fl & 32) && G.self && G.self.lc === "mage") orb(g, x, y - 38 + Math.sin(t / 200) * 2, G.me.cv, t);
   }
 }
 /** A little pixel orb of an element: 1 fire, 2 ice, 3 lightning. */

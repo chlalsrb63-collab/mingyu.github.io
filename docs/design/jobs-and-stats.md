@@ -252,7 +252,7 @@ Gain (always to the kind in hand at that moment; `gainWm(S, p, n)` in `45-jobs.j
 - Effects: weapon attack +1 %/lv (B.4), accuracy (B.6), skill growth `mult × (1 + 0.012·(wm − need))` (hybrid
   signature: the lower of the two), unlocks (C.1).
 
-### B.11 Migration (sheet v10; idempotent; detects old by `typeof ch.cls === "string" && !ch.job`, not by `v`)
+### B.11 Migration (sheet v11 — housing took v10; idempotent; detects old by `typeof ch.cls === "string" && !ch.job`, not by `v`)
 
 | old | new |
 | --- | --- |
@@ -266,9 +266,9 @@ Gain (always to the kind in hand at that moment; `gainWm(S, p, n)` in `45-jobs.j
 | `st` (achievement counters) | moved to `cnt` (every key of `CNT_KEYS`, formerly `ST_KEYS`, incl. `dim` if Phase 2 added it) |
 | `eq` | gets `weapon2: null`; the old "weapon of another class → replaced" line is **deleted**; nothing is ever dropped |
 | `qs` | `["s", i]` entries → `null` (J2 fills unlocked actives via `qsLearn`); items untouched |
-| `v` | `10` (Phase 0 takes 9; if Phase 0 has not bumped by then, J1 still writes 10) |
+| `v` | `11` (Phase 0 took 9, housing (bag + house) took 10; the jobs step runs for any sheet with `cls` and no `job`, whatever its `v`) |
 
-Every new sheet field gets a default in `newChar` and is clamped in `migrate` for v10 sheets too (`st` 5..99 ints,
+Every new sheet field gets a default in `newChar` and is clamped in `migrate` for v11 sheets too (`st` 5..99 ints,
 `lvl` recomputed, `wm` 6 kinds `lv 1..50`, `xp ≥ 0`, `job ∈ JOBS ∪ {adventurer}`, a job whose weapon mastery is < 20
 stays (never revoked)).
 
@@ -453,10 +453,10 @@ Pixel-art rules: `.claude/skills/pixel-art/rules/`.
 
 ## F. Wire, sheet, tests, implementation plan
 
-### F.1 Sheet v10 (only these changes)
+### F.1 Sheet v11 (housing took v10) (only these changes)
 
 `+ job, xpt, st{6}, wm{6×{lv,xp}}, rs, sw, cnt{…}, eq.weapon2` · `− cls, tr, skl` · `qs ["s", id]` (J2; J1 nulls
-skill entries) · `lvl` recomputed · `v: 10`. Tests in `content.mjs` (every old class at L 1/19/20/35/50, staff vs book
+skill entries) · `lvl` recomputed · `v: 11`. Tests in `content.mjs` (every old class at L 1/19/20/35/50, staff vs book
 mage, trained stats, skill levels, an old ranger, a mismatched-class weapon, a v9 sheet, run twice = same).
 
 ### F.2 Wire (positional, appended; client decoder updated in the same change)
@@ -509,9 +509,41 @@ generators, `MAP_META`, cells, `setup/runtime/changeMap`, `buildTown`, or `tickM
 - **Legacy bridge** so every merge is green: until J2, `legacyCls(ch)` = class of the hand (sword warrior, dagger
   rogue, spear lancer, staff/book mage, bow none) drives the old `SKILLS`, gauges and `castSkill`; an old skill is
   usable when `wm[hand].lv ≥ sk.lv`; `skl` is treated as all 1.
-- Frozen by J1 for J2/J3: sheet v10, `self`/`defs`/`who` fields above, actions `train respec starter job_change wsw`,
+- Frozen by J1 for J2/J3: sheet v11, `self`/`defs`/`who` fields above, actions `train respec starter job_change wsw`,
   `deriveStats(p).arm` + `st.mag`, `gainWm(S,p,n)`, `toTier/shownLv/tierXp`, `rt.shots` record and `ar/ae` events,
   `JOBS`/`SCALE` ids.
+
+**J1 as built** (what differs from or adds to the plan above; these are the contracts J2/J3 build on):
+- Wire: `ar` is `["ar", id, x0, y0, ux·1000, uy·1000, spd, kind, shooterEid]` (shooter appended for the bow art;
+  `kind` 0 plain, 1 finisher, 2+ skill); `ae` is `["ae", id, x, y, how]` with `how` 0 struck, 1 stuck in a wall, 2 out
+  of range (or its shooter fell / left: arrows of an absent shooter end on that map's next tick, so `changeMap` and
+  `fall` are untouched). The arrow flies 6 px above the ground (`y0 = p.y − 6`), walls are `solidAt` at its foot.
+  Swap event `["ws", eid]`. Quiet refusals `"stag"` and `"wsw"` (swap cooldown); the client drops both.
+- `self` also carries the bridge field `lc` (the old class of the hand, "" for the bow / bare hands) until J2; the
+  client sets `self.cls = self.job` and `self.skLv` (mastery of the hand) for its old code paths. `self.crit` is
+  rounded to 0.1. `dv` is exactly the F.2 list. `defs()` also has `mobs[k].tier` (the world tier next to the shown `lv`),
+  `wkOrder wkName jobWm grade legacyCls wswMs`; `jobs[id].scale` is the effective table (single: +0.1 applied).
+- `deriveStats(p)` is the cached sheet part (`p.stc`): `mhp mmp atk0 core def crit critd ls spd0 xp gold mf lg arm wk mag
+  acd aspd eva sneak cdr mpReg burst proc kbr poise res`; `stats(p)` adds buffs and passes those through.
+  `evadeOrStagger` became `evadeBlow(S, rt, p)` + `staggerPlayer(S, rt, p, mob)`, called from `mobHit(…, how)`:
+  `"blow"`/`"shot"` (volleys) can be evaded; `"charge"`, `"tele"` (leap/slam/fan landing) or any elite/boss blow stagger.
+  Mastery per action: `newAct(p, skill)` in `basicAttack`/`castSkill`, `wmHit` in `hurtMob` (arrows carry their action).
+  Bare hands fight as the job's weapon, else a dagger, and teach no mastery.
+- Sheet version: housing (bag 40→100, a house) landed first as v10, so jobs and stats are **v11**. `migrate` runs the
+  jobs step (`migrateV10`, named for the plan) first for any sheet with a `cls` and no `job` — v9 or a v10 housing sheet —
+  then housing's `bagClean`/`houseClean`, then sets `v = 11`; both old-sheet tests (content, housing) pass.
+- Migration: the old `["s", i]` quick-slot entries are cleared and, until J2, the old kit's skills the old level had
+  learned are put back (J2 replaces them). Rank rows `accounts.js rankRow`, old rows read with `fromOldRow`
+  (`JOB_ALIAS`); lobby summaries for v11 sheets carry `v: 2`. `newChar(name, look)` still accepts `(name, cls, look)`.
+  Test/probe helper `hero(name, {wk, lvl, st, wm, job, wk2, migrate})` (exported, like `devPlace`).
+- Content: TUT step 8 `level` (50 G); the town's two hard-coded signposts show the new levels; `data/quests.json`
+  `sq_willow_frogs` asks Lv.5 (was 2); 전직관 아르센 stands at town (26, 12).
+- Client (keep-running only): stat list, starter pick, respec and job list live in the trainer window (also opened by
+  아르센 and by a button in the C window, usable by a campfire); weapon mastery list in K; "보조 무기로" in the bag and a
+  hidden `#eq-weapon2` slot for hybrids; Tab swaps; HUD EXP bar = unspent XP vs the cheapest next point.
+- Balance probe (`tests/balance.mjs`, baseline from e14fb5e): sword/dagger/spear/staff/book land at ×0.9–1.5 of the
+  old class's kills/min (strongest at T40, where mastery 40 and the single job add up), the bow ×0.56–0.70 (no skills
+  until J2, and the probe does not kite). J2 owns the ±25 % / −25…+10 % asserts.
 
 **J2 — skills** (after J1 and after the game-feel upgrade merges, since it edits `skillfx.js`/`audio.js`).
 New `03-skills.js` (`SKILL`, `SKILL_ORDER`, fx constants) and `57-weapon-skills.js` (`castSkill` by id, passives,
