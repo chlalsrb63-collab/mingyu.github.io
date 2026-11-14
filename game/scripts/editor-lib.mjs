@@ -331,7 +331,7 @@ export async function checkData(dataDir = DATA_DIR) {
       else if (!nearReach(m.reach, m.w, m.h, x, y) && ![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => inside(m, x + dx, y + dy) && m.reach[(y + dy) * m.w + x + dx])) err(f, "waypoint", `이동의 돌 (${x},${y}) 옆에 걸어갈 수 있는 칸이 없습니다`);
     }
     if (d.boss != null && (!isObj(d.boss) || !mob(d.boss.k))) err(f, "boss.k", `알 수 없는 몬스터 "${d.boss && d.boss.k}"`);
-    if (Array.isArray(d.big)) d.big.forEach((b, i) => { if (!isObj(b) || !["house", "fountain"].includes(b.t) || !inside(m, b.x, b.y)) err(f, `big[${i}]`, "big 항목은 지도 안의 {t: house|fountain, x, y}여야 합니다"); });
+    if (Array.isArray(d.big)) d.big.forEach((b, i) => { if (!isObj(b) || !["house", "fountain", "spirit"].includes(b.t) || !inside(m, b.x, b.y)) err(f, `big[${i}]`, "big 항목은 지도 안의 {t: house|fountain|spirit, x, y}여야 합니다"); });
   }
   // generated maps keep their own doors
   for (const id of Object.keys(G.MAPS)) if (!custom[id]) for (const pt of G.MAPS[id].portals) addDoor(id, pt.to, pt.x, pt.y, pt.tx, pt.ty);
