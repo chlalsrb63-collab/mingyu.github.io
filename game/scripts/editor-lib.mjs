@@ -35,7 +35,7 @@ export async function loadLogic(opts = {}) {
     cache.set(key, import("data:text/javascript;base64," + Buffer.from(src).toString("base64")));
   }
   const L = await cache.get(key);
-  return Object.assign(Object.create(L), { L, problems, E: L.__editor });
+  return { ...L, L, problems, E: L.__editor };
 }
 /** The rules with no editor data at all: the generated world. */
 const pure = () => loadLogic({ data: EMPTY_DATA() });
