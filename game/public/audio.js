@@ -529,7 +529,7 @@ export const Sound = {
 };
 
 /** Minimum seconds between two plays of the same effect. */
-const THROTTLE = { bow_draw: 0.06, arrow_hit: 0.035, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
+const THROTTLE = { gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.035, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
 /** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
 const BOOST = {
   swing: 3, swing_sword: 3, swing_dagger: 3, swing_spear: 3, swing_staff: 2, swing_book: 2.2, shoot: 1.6, magic: 1.5,
@@ -657,6 +657,28 @@ const SFX = {
   dim_clear() { this.arp(0.25, [523, 659, 784, 1047, 1319], 0.09, 0.3, 0.1); this.tone("triangle", 262, 262, 1, 0.1, 0.45); this.tone("triangle", 392, 392, 1, 0.08, 0.45); },
   /** The way home opens: a slow shimmer. */
   dim_portal() { this.noise(1, 0.08, 3000, "bandpass", 0, 6000); this.arp("sine", [784, 988, 1175, 1568], 0.12, 0.5, 0.06); },
+  // ── gathering (gather.js): kind 0 herb · 1 ore · 2 wood ──
+  /** Kneeling to a herb, setting a pick to the rock, an axe to the log. */
+  gat_start(k = 0) {
+    if (k === 0) { this.noise(0.18, 0.07, 2600, "bandpass", 0, 4200); this.tone("triangle", 520, 620, 0.08, 0.04); }
+    else if (k === 1) { this.tone("square", 1180 * this.vary(), 900, 0.05, 0.05); this.noise(0.06, 0.08, 3000, "highpass"); }
+    else { this.tone("triangle", 180, 120, 0.09, 0.09); this.noise(0.08, 0.1, 900, "lowpass"); }
+  },
+  /** One beat of the work: a leafy rustle, a clink of iron on stone, a chop. */
+  gat_work(k = 0) {
+    const v = this.vary();
+    if (k === 0) this.noise(0.12, 0.05, 3200 * v, "bandpass", 0, 1800);
+    else if (k === 1) { this.tone("square", 1480 * v, 1100, 0.04, 0.05); this.tone("sine", 2960 * v, 2600, 0.12, 0.025, 0.01); this.noise(0.04, 0.06, 4000, "highpass"); }
+    else { this.tone("triangle", 150 * v, 90, 0.08, 0.1); this.noise(0.07, 0.1, 1100 * v, "lowpass"); }
+  },
+  /** "반짝!": a bright two-note glint — tap now. */
+  gat_tap() { this.tone("sine", 1568, 1568, 0.07, 0.09); this.tone("sine", 2093, 2093, 0.14, 0.08, 0.06); },
+  /** A tap in time: a quick upward sparkle. */
+  gat_hit() { this.arp("sine", [1319, 1760, 2349], 0.03, 0.08, 0.06); },
+  /** 대성공: the sparkle and a warm chord under it. */
+  gat_great() { this.arp("sine", [1047, 1319, 1568, 2093], 0.05, 0.16, 0.07); this.tone("triangle", 523, 523, 0.4, 0.06, 0.05); },
+  /** The channel broken: a soft falling note. */
+  gat_break() { this.tone("triangle", 440, 260, 0.18, 0.06); },
   // ── loot and progress ──
   coin() { this.tone(0.5, 1320, 1320, 0.05, 0.08); this.tone(0.5, 1760, 1760, 0.1, 0.08, 0.05); },
   item() { this.arp(0.5, [880, 1175, 1568], 0.05, 0.08, 0.08); },

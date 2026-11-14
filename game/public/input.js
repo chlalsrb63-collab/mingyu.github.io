@@ -9,6 +9,7 @@ import * as S3 from "./scene2d.js";
 import * as Mini from "./minigames.js";
 import * as QS from "./quickslots.js";
 import * as Housing from "./housing.js";
+import * as Gather from "./gather.js";
 import { G, $, dist, T, clamp, world, now, resize } from "./state.js";
 import { act } from "./net.js";
 import { usePotion, interact, stoneNear, aimAtPoint, attack } from "./actions.js";
@@ -135,7 +136,7 @@ function soundUi() {
   $("#vol-bgm").value = String(Math.round(Sound.vol.music * 100));
   $("#vol-sfx").value = String(Math.round(Sound.vol.sfx * 100));
 }
-function toggleAuto() {
+export function toggleAuto() {
   G.auto = !G.auto;
   autoSt.home = null;
   $("#b-auto").classList.toggle("on", G.auto);
@@ -156,6 +157,8 @@ export function setupInput() {
     if (e.repeat) return;
     // decorating a house: R turns the piece in hand, Esc lets go of it, Delete picks a piece up (housing.js)
     if (Housing.onKey(k)) { e.preventDefault(); return; }
+    // gathering: F and Space are the "반짝!" tap, not a talk or a blow (gather.js)
+    if (Gather.onKey(k)) { e.preventDefault(); return; }
     keys.add(k);
     switch (k) {
       case "1": case "2": case "3": case "4": case "5": case "6": case "7": case "8": case "9": QS.press(Number(k) - 1); break;
@@ -195,6 +198,7 @@ export function setupInput() {
     const hit = S3.pick(e.clientX, e.clientY);
     if (!hit) return;
     if (Housing.onWorldDown(e)) return;             // decorating a house: place or pick a piece
+    if (Gather.onWorldDown(e)) return;              // a gathering node: gather, or walk there first (gather.js)
     const stone = (G.map.marks || []).find((m) => m.kind === "waypoint" && Math.floor(hit[0] / T) === m.x && Math.floor(hit[1] / T) === m.y);
     if (stone) {
       if (stoneNear()) { openWin("warp"); return; }

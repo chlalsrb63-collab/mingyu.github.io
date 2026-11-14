@@ -42,6 +42,8 @@ export const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30", "#5fd47a"];
  * levelled and kicked back.
  */
 export function drawPerson(s, e, t, dt, x, y) {
+  // gathering (gather.js sets e.gat = {k, t0, end, fa}): bent to the herb, or a rhythm of raise and strike
+  const gat = e.gat && !e.dead && !e.moving && t < e.gat.end ? e.gat : null;
   // a brisk, bouncy stride; the feet kick up whatever they walk on (stepLife, below)
   if (e.moving) s.walk += dt * 8;
   const life = e.scr || e.dead ? null : stepLife(s, e, t, dt, x, y);
@@ -65,6 +67,7 @@ export function drawPerson(s, e, t, dt, x, y) {
     s.lx = e.x; s.ly = e.y;
     let fa = s.fa;
     if (e.sit && e.seatFa !== undefined) fa = e.seatFa;       // on a stump, turned to the fire
+    if (gat && gat.fa !== undefined) fa = gat.fa;              // gathering: turned to the node (gather.js)
     if (engaged && (!e.moving || atk < 0.5) && Math.hypot(e.aim[0] - e.x, e.aim[1] - e.y) > 2) fa = sAng(e.aim[0] - e.x, e.aim[1] - e.y);
     // eight ways on screen: straight down shows the face, the three ways up show the back,
     // and everything else is the three-quarter turn, mirrored for the left
@@ -77,8 +80,10 @@ export function drawPerson(s, e, t, dt, x, y) {
   // walking steps foot to foot; standing still breathes, and blinks now and then
   if (s.ph === undefined) s.ph = Math.random() * 4000;
   const F = SP.FRAME;
+  const gatBeat = gat ? ((t - gat.t0) % 480) / 480 : 0;
   let frame = e.dead ? F.stand
     : e.sit ? F.breathe
+    : gat ? (gat.k === 0 ? (gatBeat < 0.5 ? F.breathe : F.stand) : gatBeat < 0.55 ? F.stretch : F.breathe)
     : e.moving ? [F.stepA, F.stretch, F.stepB, F.stretch][Math.floor(s.walk) % 4]
     : (t + s.ph) % 3600 < 140 ? F.blink
     : Math.floor((t + s.ph) / 560) % 2 ? F.breathe : F.stand;
@@ -116,7 +121,9 @@ export function drawPerson(s, e, t, dt, x, y) {
     else if (fl & 64) g.globalAlpha = 0.4;             // slipped away behind a puppet
     else if (fl & 16) g.globalAlpha = 0.55 + 0.25 * Math.sin(t / 40);   // a shadow, blinking about
     const sq = life ? life.sq : 0;
-    g.scale(sg * (1 + sq * 0.9), (e.sit && !e.dead ? 0.8 : 1) * (1 - sq));       // sitting: tucked down a little
+    // sitting: tucked down a little; picking herbs: crouched; at a vein or a log: a dip on each strike
+    const tuck = e.sit && !e.dead ? 0.8 : gat ? (gat.k === 0 ? 0.84 : gatBeat >= 0.55 && gatBeat < 0.75 ? 0.92 : 1) : 1;
+    g.scale(sg * (1 + sq * 0.9), tuck * (1 - sq));
     // leaning one pixel into the walk: the upper body drawn a pixel ahead of the legs
     const ln = life ? life.lean * sg : 0, cut = SP.FOOT[1] - 6;
     if (ln) { g.drawImage(img, 0, 0, img.width, cut, -SP.FOOT[0] + ln, -SP.FOOT[1], img.width, cut); g.drawImage(img, 0, cut, img.width, img.height - cut, -SP.FOOT[0], -SP.FOOT[1] + cut, img.width, img.height - cut); }

@@ -15,6 +15,7 @@ import * as SkillFx from "./skillfx.js";
 import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
 import * as Life from "./life.js";
+import * as Gather from "./gather.js";
 import { G, dist, T, now } from "./state.js";
 import { entityPos } from "./net.js";
 import { addChat, banner, chatLog } from "./windows.js";
@@ -35,6 +36,7 @@ export function onEvent(e, t) {
   if (Dim.onEvent(e)) return;
   if (Housing.onEvent(e)) return;
   if (Life.onEvent(e)) return;                // a life skill's level (life.js)
+  if (Gather.onEvent(e)) return;              // gathering: gs gt ga (gather.js)
   MobArt.onEvent(e, G, S3, t);              // wind-ups, strikes and the bodies monsters leave
   switch (e[0]) {
     // the storyteller by the town's fire tells a tale: a bubble over her, and a line in the chat for those close by
@@ -243,6 +245,9 @@ export function onGain([kind, a, b, q]) {
     Sound.play("coin");
   }
   else if (kind === "item") {
+    // a material for the 재료 주머니 rises over the head too (gathering's reward, gather.js)
+    const d = G.defs.items[a];
+    if (d && (d.type === "lmat" || a === "staple" || a === "flask")) floatText(`+${d.name}${b > 1 ? ` ×${b}` : ""}`, me.x, me.y, h + 0.55, "#b8f07a");
     const p = addChat(`획득: ${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${b > 1 ? ` ×${b}` : ""}`, "loot");
     if (q) p.style.color = Art.RARITY_COL[q];
     Sound.play("loot", q | 0);
@@ -254,7 +259,7 @@ export function onGain([kind, a, b, q]) {
 // ───────────────────────────── effects ─────────────────────────────
 // Effects live in the 3D scene; floating text is drawn over it and follows its point in the world.
 
-function floatText(str, x, y, h, col, big, dmg = false) {
+export function floatText(str, x, y, h, col, big, dmg = false) {
   // a damage number bounces off to one side (dmg: true), the rest rise straight up
   G.texts.push({ str, x, y, h, col, big: !!big, t0: now(), dmg, vx: dmg ? (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8) : 0 });
 }

@@ -255,7 +255,10 @@ export function eventWidget(t) {
 export function castBar(t) {
   const c = G.cast, box = $("#cast");
   if (!c || t > c.end + 200) { if (!box.hidden) box.hidden = true; if (c && t > c.end + 200) G.cast = null; return; }
-  if (box.hidden) { box.hidden = false; $("#cast-name").textContent = "귀환 주문서"; }
+  // the recall scroll's cast, or a gathering channel (gather.js sets `name`)
+  const name = c.name || "귀환 주문서";
+  if (box.hidden || $("#cast-name").textContent !== name) { box.hidden = false; $("#cast-name").textContent = name; }
+  box.classList.toggle("gat", !!c.gat);
   $("#cast-fill").style.width = `${clamp(((t - c.start) / (c.end - c.start)) * 100, 0, 100)}%`;
 }
 export function doorFade() {
