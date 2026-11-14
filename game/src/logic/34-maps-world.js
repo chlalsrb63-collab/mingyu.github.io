@@ -279,7 +279,7 @@ function buildTown() {
 // know without building anything (names, bands, monster lists) is read from here into MAP_META.
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
-const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast"];
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea"];
 /**
  * Every generated hunting ground: `make` the generator, `band` the level a character should
  * be to walk in (shown on every door that leads there), `stones` how many waypoint stones stand
@@ -402,11 +402,11 @@ const GEN = {
   }) },
   // 모래바람 오아시스: dunes in three levels of sand, ridges for cliffs; lakes ringed by grass, reeds and palms, mud-hut
   // hamlets in the dead ends, a caravan's camp on the way; the north pass climbs to the crystal cave
-  oasis: { make: wilds, band: [28, 34], stones: 3, cfg: () => ({
+  oasis: { make: wilds, band: [28, 34], stones: 3, wayOn: "cave", cfg: () => ({
     id: "oasis", name: "모래바람 오아시스", theme: "desert", bgm: "field", seed: 52711, w: 168, h: 116, r: 10.2, warp: 9, wind: 0.55, loops: 0.28, merge: 0.3, cliff: 0.16, gap: 2,
     tiers: 3, tierOpen: 0.55, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ", green: { r: 3, palm: 0.2 },
     ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 6, lakeR: 7, vaults: 9, ruins: 4, tpm: 15.5,
-    walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north",
+    walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north", doors: [["south", "s", 0.2143]],
     mobs: ["foxtwine_gold", "hydrasnake_gold", "lambmaw_bone", "eyecrow_ash", "twingoat_gold", "bearmaw_gold"], pondMob: "eyecrow_ash", chest: "chest_oasis",
     campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "hamlet"], biomes: { plain: "flat" }, featureP: 0.65, features: ["pond", "boulders", "cairn", "stones", "dead"],
     // by level: scrub and flats below, rippled dunes on the middle shelves, bare stony ridges on top
@@ -424,7 +424,7 @@ const GEN = {
     tiers: 3, tierOpen: 0.15, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ",
     sea: { side: "s", at: 42, amp: 6, surf: 2, shallow: 26, beach: 7, sand: "S", bar: "S", reef: 0.16 },
     ground: "S", edge: "T", treeCh: "Ψ", treeCh2: "T", road: "p", shore: "S", river: false, lakes: 2, lakeR: 4, vaults: 9, ruins: 3, tpm: 15.5,
-    walls: [["palms", 0.45], ["rocks", 0.35], ["trees", 0.2]], rocks: ["Ω", "R"], gates: [["north", "n", 0.16], ["east", "e", 0.5]], exit: "east",
+    walls: [["palms", 0.45], ["rocks", 0.35], ["trees", 0.2]], rocks: ["Ω", "R"], gates: [["north", "n", 0.16], ["east", "e", 0.5]], exit: "east", doors: [["west", "w", 0.375]],
     mobs: ["crabskull_blood", "fishwalker_frost", "eelknot_frost", "squidrat_blood", "leechmaw_bone", "gatorhalf_steel"], pondMob: null, chest: "chest_coast",
     vaultKinds: ["palmring", "tidepool", "cove", "cache", "menhir", "lookout"], biomes: { plain: "beach" }, featureP: 0.6, features: ["boulders", "logs", "cairn", "stones", "pond"],
     // the upper level is dune and palm grove (the jungle's edge), the lower the open beach
@@ -434,6 +434,45 @@ const GEN = {
       : b === "dune" ? (h < 0.015 ? "Ψ" : h < 0.03 ? "B" : h < 0.04 ? "Ω" : null)
       : h < 0.02 ? "Ψ" : h < 0.028 ? "l" : h < 0.034 ? "Ω" : null),
   }) },
+  // 모래바다 (docs/design/maps-v2.md J): the biggest ground — a dune sea whose ridges run down to the shore. North to south:
+  // high dunes in long terraces (a salt flat in the north-east corner), the low desert with four oases (the largest
+  // keeps a village), a ruin half buried in the west (the field boss's ground), the white beach, the surf, wide
+  // shallows with reef fields and islets on sand bars, the deep. A dry riverbed winds from the north rim to the surf.
+  dunesea: { make: wilds, band: [31, 37], stones: 5, stoneNames: ["입구", "중턱", "안쪽", "오아시스 마을", "흰 모래 해변"], cfg: () => {
+    const wadiX = (y) => 118 + 24 * Math.sin(y / 21 + 0.6) + 6 * Math.sin(y / 8.3);
+    const onWadi = (x, y) => y > 6 && y < 150 && Math.abs(x - wadiX(y)) < 4.6;
+    const salt = (x, y) => x > 206 + 8 * Math.sin(y / 9) && y < 60 + 6 * Math.sin(x / 11);
+    const belt = (x, y) => y + 9 * Math.sin(x / 31 + 0.7) > 94;          // south of this line the low desert (the oasis belt)
+    const DUNE = ["ratking_gold", "spiderhand_bone", "owlstare_gold"], BELT = ["spiderhand_bone", "bonehound_gold", "owlstare_gold", "moleworm_gold"], SEA = ["fishwalker_blood", "crabskull_frost"];
+    return {
+      id: "dunesea", name: "모래바다", theme: "desert", bgm: "field", seed: 73129, w: 288, h: 192, r: 10.6, warp: 9, wind: 0.6, loops: 0.12, merge: 0.3, cliff: 0.16, gap: 2,
+      tiers: 4, ramp: 3, rampP: 0.14, roadW: 3, stoneFr: [0.42, 0.78], widen: "TPBRulYAeΨΩΦ", green: { r: 4, palm: 0.2 },
+      sea: { side: "s", at: 46, amp: 7, surf: 2, shallow: 36, beach: 8, sand: "S", bar: "S", reef: 0.07, isle: 0.7, islets: 6, isletGap: 38, isletKinds: ["palmring", "cove", "cache", "menhir"] },
+      oases: [[0.5, 0.58, 25, 8.5, -4, 0, "village"], [0.8, 0.6, 16, 5.5], [0.2, 0.27, 15, 5], [0.63, 0.2, 14, 4.5]],
+      temple: { at: [0.13, 0.6], buried: "z", arena: true, keeper: "bonehound_gold" }, stonesAt: [[0.33, 0.73]], via: [[0.5, 0.58], [0.62, 0.72]],
+      ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 0, lakeR: 6, vaults: 12, ruins: 6, tpm: 15.5,
+      walls: [["rocks", 0.55], ["ruin", 0.15], ["palms", 0.3]], rocks: ["R", "A"], gates: [["north", "n", 0.3], ["east", "e", 0.64]], exit: "east",
+      mobs: ["ratking_gold", "spiderhand_bone", "bonehound_gold", "owlstare_gold", "fishwalker_blood", "crabskull_frost", "moleworm_gold"], pondMob: null, chest: "chest_dunesea",
+      campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "cove"], biomes: { plain: "flat" }, featureP: 0.6, features: ["boulders", "cairn", "stones", "dead", "boulders", "dead"],
+      // levels by place: the shore and the sea lowest, the oasis belt a step up, the dunes above in long ridges by turns
+      tierOf: (r) => (r.sd > -10 ? 0 : salt(r.px, r.py) ? 2 : belt(r.px, r.py) ? (r.e > 0.64 ? 2 : 1) : 2 + ((Math.floor((r.py + r.px * 0.22 + 7 * Math.sin(r.px / 17)) / 24) & 1) ^ (r.e > 0.62 ? 1 : 0))),
+      tierOpen: (a, b) => (a.sd > 2 && b.sd > 2 ? 0.86 : salt(a.px, a.py) && salt(b.px, b.py) ? 0.9 : 0.4),
+      wallAt: (kind, x, y) => (kind === "palms" && !belt(x, y) ? "rocks" : kind),
+      open: onWadi,
+      rosterAt: (x, y) => (y > 138 ? SEA : belt(x, y) ? BELT : DUNE),
+      biome: (e, mo, rr, t, r) => (r.sd > 0 ? "sea" : t === 0 ? "beach" : salt(r.px, r.py) ? "salt" : t === 1 ? (mo > 0.55 ? "scrub" : "flat") : t === 3 ? "crest" : "dune"),
+      paint: (b, n1, n2, x, y) => (onWadi(x, y) && b !== "sea" ? (n2 > 0.86 ? "s" : "r")
+        : b === "salt" ? (n1 > 0.74 ? "s" : "S") : b === "crest" ? (n1 > 0.3 ? "z" : null) : b === "dune" ? (n1 > 0.52 ? "z" : null)
+        : b === "scrub" ? (n1 > 0.72 ? "," : n2 > 0.76 ? "z" : null) : b === "beach" ? "S" : n2 > 0.8 ? "z" : null),
+      scatter: (b, h, n1, n2, g) => (g === "r" ? (h < 0.014 ? "R" : null)
+        : b === "salt" ? (h < 0.008 ? "O" : h < 0.016 ? "R" : h < 0.02 ? "A" : null)
+        : b === "crest" ? (h < 0.006 ? "R" : h < 0.01 ? "A" : null)
+        : b === "dune" ? (h < 0.012 ? "A" : h < 0.02 ? "R" : h < 0.026 ? "B" : null)
+        : b === "scrub" ? (h < 0.04 ? "B" : h < 0.058 ? "Ψ" : h < 0.068 ? "A" : null)
+        : b === "beach" ? (h < 0.03 ? "Ψ" : h < 0.036 ? "l" : h < 0.042 ? "Ω" : null)
+        : b === "sea" ? null : h < 0.008 ? "Ψ" : h < 0.018 ? "R" : h < 0.024 ? "A" : null),
+    };
+  } },
   abyss: { make: abyssal, band: [32, 40], stones: 3, cfg: () => ({
     id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 152, h: 120, r: 16, wind: 0.55, loops: 0.3, n: 7, boss: "abyssboss", out: true,
     // dungeon widening (`plate`): islands are plates of flesh `r`…`r + vary` across the half, cracks of blood `gap` wide
@@ -468,6 +507,8 @@ const GATE_LINKS = [
   ["crypt", "out", "forest", "crypt", 0], ["sewer", "out", "city", "sewer", 0],
   // the south-west coast: the city's south gate, down the jungle road to the sea, inland over the dunes, up into the cave
   ["city", "south", "jungle", "north", 1], ["jungle", "south", "coast", "north", 1], ["coast", "east", "oasis", "west", 1], ["oasis", "north", "cave", "south", 1],
+  // the dune sea: south out of the oasis into the high dunes, and west along the shore from the coral coast
+  ["oasis", "south", "dunesea", "north", 1], ["coast", "west", "dunesea", "east", 1],
 ];
 /** A generated map's own doors out (in GATE_LINKS order, as the generators always laid them). */
 function gateDoors(m) {
@@ -489,6 +530,7 @@ function genMap(id) {
   const cfg = g.cfg();
   const m = g.make(cfg);
   if (g.after) g.after(m);
+  if (g.wayOn) m.wayOn = g.wayOn;
   m.band = g.band.slice();
   gateDoors(m);
   // zones by how far in, then who lives in each (33-maps-zones.js)
@@ -562,7 +604,8 @@ function markRoutes(m, labelOf, deeper) {
   }
   if (!dests.length) return;
   // the way on: the door to the strongest place, else the farthest
-  const main = dests.slice().sort((a, b) => b.rank - a.rank || b.path.length - a.path.length)[0];
+  // (a ground may name its way on — GEN[id].wayOn: the oasis's stays the cave, though dunesea is the stronger place)
+  const main = (m.wayOn && dests.find((d) => d.to === m.wayOn)) || dests.slice().sort((a, b) => b.rank - a.rank || b.path.length - a.path.length)[0];
   const others = dests.filter((d) => d !== main);
   if (FIRES[m.id].length) {
     const [fx, fy] = FIRES[m.id][0];
@@ -713,6 +756,20 @@ function markRoutes(m, labelOf, deeper) {
         m.stones.push(st);
         m.marks.push({ x: at[0], y: at[1], kind: "waypoint" });
         for (let q = j + 3; q < Math.min(C.length - 2, j + 16); q++) { const sh = place(C[q], "/"); if (sh) { m.shrines.push(sh); break; } }
+        break;
+      }
+    }
+    // stones asked for by place (dunesea: the oasis village, the beach): beside the last steps of the walk there
+    for (const [tx, ty] of m.stonesAt || []) {
+      const P = route(tx, ty);
+      if (!P) continue;
+      for (let j = P.length - 2; j > Math.max(10, P.length - 40); j--) {
+        if (!onWide(P[j])) continue;
+        const at = place(P[j], "Q");
+        if (!at) continue;
+        m.stones.push({ x: at[0], y: at[1], ax: P[j] % W, ay: Math.floor(P[j] / W), i: m.stones.length });
+        m.marks.push({ x: at[0], y: at[1], kind: "waypoint" });
+        for (let q = j - 3; q > Math.max(1, j - 16); q--) { const sh = place(P[q], "/"); if (sh) { m.shrines.push(sh); break; } }
         break;
       }
     }

@@ -39,13 +39,14 @@ probe's kill rate for the middle of the roster, to walk the whole band (see 1.3 
 | 모래바람 오아시스 `oasis` | field | 28–34 | 109–136 (109–133) | foxtwine_gold 28, hydrasnake_gold 29, lambmaw_bone 30, eyecrow_ash 31, twingoat_gold 33, bearmaw_gold 34 | bearmaw_gold 34 · 31 | 848 | 974k | 8.7 |
 | 피의 심연 `abyss` | dungeon + boss | 32–40 | 125–160 (125–157) | twingoat 32, bonehound_ash 33, horsehalf 34, batcluster_blood 35, lionhand 35, serpentwing 36, sowseer 37, doghead_fire 38; **심연의 어미 40** | lionhand 35 · 35 | 1,138 | 1.21M | 13.8 |
 | 산호 해안 `coast` | field | 34–40 | 133–160 (133–157) | crabskull_blood 34, fishwalker_frost 35, eelknot_frost 36, squidrat_blood 37, leechmaw_bone 38, gatorhalf_steel 40 | gatorhalf_steel 40 · 37 | 1,265 | 1.29M | 10.8 |
+| 모래바다 `dunesea` (**built, placeholder numbers — to be balanced later**) | field (the biggest: 288 × 192) | 31–37 | 121–148 (121–145) | ratking_gold 31, spiderhand_bone 32, bonehound_gold 33, owlstare_gold 34, fishwalker_blood 35, crabskull_frost 36, moleworm_gold 37 | moleworm_gold 37 · 34 | not measured | not measured | not measured |
 | 단풍 왕도 `maple` | field | 40–46 | 157–184 (157–181) | blightsquirrel 40, stumpmaw 41, crowscare 42, shroomboar 43, gravrose 44; rotstag 46 (lair only) | rotstag 46 · 43 | 1,726 | 1.60M | 13.0 |
 | 차원 균열 (rift) | party instance | 10–49 | 37–196 | `dimPool`: the theme's kinds within [lv−3, lv+2], else the four kinds nearest lv−1 | — | — | — | 5–10 min a run |
 
 Zones inside a ground (`33-maps-zones.js`): safe plaza → normal ground (the roster's lower 85 %, by depth) → elite
 ground (its upper half, 35 % elites) → hidden pockets. So a map's own sub-bands are roughly "lower two thirds of the
 band near the door, top third deep in". World graph (`GATE_LINKS`): town → meadow → forest → {crypt, cave, maple};
-town → city → {sewer, jungle → coast → oasis → cave}; cave → abyss; maple → abyss (out). Two doors jump far:
+town → city → {sewer, jungle → coast → oasis → cave}; oasis → dunesea ← coast; cave → abyss; maple → abyss (out). Two doors jump far:
 forest (8–13) → cave (24–32) and forest → maple (40–46).
 
 Other things that follow tiers and need no change now: life grades `GRADE_TIER = [1, 8, 14, 24, 40]` by a map's
@@ -103,6 +104,7 @@ Existing bands stay where they are.
 | 7 | **하늘 유적** `skyruins` | field | 30–36 | 117–144 | floating islands joined by chain bridges and wind shrines (질주의 바람), broken colonnades; storks with too many wings, cloud jellyfish, lightning rams | a shaft at the top of the cave ↔ skyruins; skyruins ↔ oasis north-east | abyss |
 | 8 | **가라앉은 항구** `deepsea` | party dungeon | 38–44 | 149–176 | a drowned harbour in an air pocket under the reef: wrecks, coral halls, glowing anglers for light; an anglerfish that wears a diver, barnacled gulls; boss "난파선의 어미" at 44 | a dive off the coast's reef | coast, volcano, maple |
 | 9 | **꿀벌 굴** `burrow` | first party dungeon | 5–9 | 17–36 | a warm earthen hive under the meadow: honeycomb rooms, root tunnels; bees with one shared eye, a queen mole; short (10 min), teaches parties | a burrow mouth in the meadow's far end | meadow, forest |
+| 10 | **모래바다** `dunesea` — **built** (maps-v2.md J) | field, the biggest ground | 31–37 | 121–148 | the dune sea running down to the shore: dune ridges, salt flat, dry riverbed, four oases and a village, a buried ruin (field boss), beach, shallows, islets; existing bodies in new tints for now. **Band, stats, XP and drops are placeholders: balance it in the pass after the next maps exist** (it overlaps oasis 28–34, abyss 32–40 and coast 34–40, so it may move up) | oasis south ↔ dunesea north, coast west ↔ dunesea east | — |
 
 Choices per level once all nine stand (fields **bold**, dungeons plain):
 

@@ -45,6 +45,8 @@ const PIECES = {
   palmring: ["Ψ.Ψ.Ψ", ".....", "Ψ.*.Ψ", ".....", "Ψ...Ψ"],
   tidepool: [".Φ,Φ.", "Φ,,,Φ", ",,*,,", "Φ,,,.", ".Φ.Φ.", "....."],
   cove: ["ΩΩ.ΩΩ", "Ω___Ω", "__*__", "Ω___.", ".Ω.Ω."],
+  // 모래바다 (dunesea): the oasis village — mud huts and palms round a yard with a fire that always burns
+  village: [".Δ...Ψ...Δ...", ".......l.....", "Δ...ppp....Δ.", "...pp#pp.....", "....ppp...Ψ..", ".Ψ.......Δ...", "....Δ.E......", "............."],
   // 잊힌 신전 (maps-v2, reference 3): a processional way three flagstones wide from the south gate to the
   // shrine in the north, round a rune pool; broken colonnades and wall stubs make side chambers. Never turned.
   temple: [
@@ -131,12 +133,38 @@ function wilds(cfg) {
     const lim = Math.max(0, Math.ceil(sea.at + sea.amp - dz)) + 2;
     if (sea.side === "w") sx0 += lim; else sy1 -= lim;
   }
-  const sites = poisson(box, sx0, 5, W - 6, sy1, cfg.r, fixed).map(([x, y]) => ({ x, y, w: 0.78 + rnd(box) * 0.5 }));
+  // big oases (dunesea) [fx, fy, clear, lake radius, lake offset x, y, piece]: each a site of its own that weighs more,
+  // with no other site within `clear` of it, so its region comes out several times the usual size
+  const oases = (cfg.oases || []).map(([fx, fy, clr, rad, ox, oy, pc]) => ({ x: Math.round(fx * W), y: Math.round(fy * H), clr, rad, ox: ox || 0, oy: oy || 0, pc: pc || null }));
+  const nFix = fixed.length;
+  for (const o of oases) fixed.push([o.x, o.y]);
+  let sitePts = poisson(box, sx0, 5, W - 6, sy1, cfg.r, fixed);
+  if (oases.length) sitePts = sitePts.filter(([x, y], j) => j < fixed.length || !oases.some((o) => Math.hypot(x - o.x, y - o.y) < o.clr));
+  const sites = sitePts.map(([x, y], j) => ({ x, y, w: j >= nFix && j < fixed.length ? 2.2 : 0.78 + rnd(box) * 0.5 }));
   const lab = partition(m, sites, S0 + 3, cfg.warp, (x, y) => x >= 2 && y >= 2 && x < W - 2 && y < H - 2 && !(sd && sd[y * W + x] > dz));
   const { R, E: bord, inner } = regionsOf(m, lab, sites.length);
   for (const r of R) { let e = 0, mo = 0; for (const i of r.tiles) { e += El[i]; mo += Mo[i]; } r.e = e / Math.max(1, r.area); r.mo = mo / Math.max(1, r.area); }
+  // (how far out to sea a region's heart lies: < 0 on land, -99 on a map with no sea)
+  for (const r of R) r.sd = sd ? sd[r.py * W + r.px] : -99;
   const n = R.length;
-  const tree = grow(box, n, [...bord.values()].filter((e) => e.n >= 4).map((e) => [e.a, e.b]), 0, cfg.wind, cfg.loops);
+  let links = [...bord.values()].filter((e) => e.n >= 4);
+  // long ridges (dunesea, cfg.rampP): where the levels are laid out by place, a border between two levels may only be
+  // climbed here and there — the longest border between each two neighbouring stretches of level ground always, any
+  // other with chance rampP — so a ridge runs unbroken for a long way between its ramps
+  if (cfg.tierOf && cfg.rampP !== undefined) {
+    const tv = R.map((r) => cfg.tierOf(r)), uf = R.map((r) => r.k);
+    const find = (a) => { while (uf[a] !== a) a = uf[a] = uf[uf[a]]; return a; };
+    for (const e of links) if (tv[e.a] === tv[e.b]) uf[find(e.a)] = find(e.b);
+    const best = new Map();
+    for (const e of links) {
+      if (tv[e.a] === tv[e.b]) continue;
+      const key = ekey(find(e.a), find(e.b)), was = best.get(key);
+      if (!was || e.n > was.n) best.set(key, e);
+    }
+    const sure = new Set(best.values());
+    links = links.filter((e) => tv[e.a] === tv[e.b] || sure.has(e) || h2(e.a, e.b, S0 + 31) < cfg.rampP);
+  }
+  const tree = grow(box, n, links.map((e) => [e.a, e.b]), 0, cfg.wind, cfg.loops);
   const D = tree.dist, far = tree.far;
 
   // what each region is for
@@ -144,8 +172,28 @@ function wilds(cfg) {
   const gateIdx = {};
   cfg.gates.forEach(([name], k) => { gateIdx[name] = k; role[k] = "gate"; });
   const exitIdx = gateIdx[cfg.exit];
-  const main = tree.path(exitIdx), onMain = new Set(main);
+  // (dunesea: the made way calls at places as it goes — cfg.via [[fx, fy]]: the shortest walk over the links from each to the next)
+  const viaK = (cfg.via || []).map(([fx, fy]) => lab[Math.round(fy * H) * W + Math.round(fx * W)]).filter((k) => k >= 0 && D[k] >= 0);
+  const hop = (a, b) => {
+    const par = new Map([[a, -1]]), q = [a];
+    for (let h = 0; h < q.length && !par.has(b); h++) for (const o of tree.adj[q[h]]) if (!par.has(o) && tree.linked(q[h], o)) { par.set(o, q[h]); q.push(o); }
+    const out = [];
+    for (let c = b; c !== undefined && c >= 0; c = par.get(c)) out.unshift(c);
+    return out;
+  };
+  const wayTo = (k) => { let out = [0]; for (const v of viaK.concat(k)) out = out.concat(hop(out[out.length - 1], v).slice(1)); return out; };
+  const main = viaK.length ? wayTo(exitIdx) : tree.path(exitIdx), onMain = new Set(main);
   for (let k = 0; k < n; k++) if (D[k] < 0) role[k] = "wild";             // cut off by thin borders: left as thicket
+  oases.forEach((o, j) => { if (role[nFix + j] === "field") { role[nFix + j] = "lake"; R[nFix + j].oasis = o; } });
+  // islets (dunesea): regions midway out in the shallows, spread along the coast, become sand islands with a chest
+  if (sea && sea.islets) {
+    const got = [];
+    for (const k of R.map((r) => r.k).filter((k) => role[k] === "field" && R[k].inr >= 4 && R[k].sd > sea.surf + 7 && R[k].sd < dz - 7).sort((a, b) => Math.abs(R[a].sd - dz * 0.5) - Math.abs(R[b].sd - dz * 0.5) || a - b)) {
+      if (got.length >= sea.islets) break;
+      if (got.some((q) => Math.hypot(R[q].px - R[k].px, R[q].py - R[k].py) < sea.isletGap)) continue;
+      got.push(k); role[k] = "islet";
+    }
+  }
   const pickRole = (want, list) => { const r = list.find((k) => role[k] === "field"); if (r !== undefined) role[r] = want; return r; };
   const byDepth = (f) => R.map((r) => r.k).filter(f).sort((a, b) => D[b] - D[a] || R[b].inr - R[a].inr);
   const campR = pickRole("camp", main.slice(Math.floor(main.length * 0.35), Math.floor(main.length * 0.75)).filter((k) => R[k].inr >= 4).sort((a, b) => R[b].inr - R[a].inr));
@@ -169,18 +217,20 @@ function wilds(cfg) {
     tier = new Array(n).fill(0);
     R.map((r) => r.k).sort((a, b) => R[a].e - R[b].e || a - b).forEach((k, j) => { tier[k] = Math.min(cfg.tiers - 1, Math.floor(j * cfg.tiers / n)); });
     // the ways in stand on the lowest ground, so every door opens onto a valley floor
-    for (const k of Object.values(gateIdx)) tier[k] = 0;
+    // (dunesea lays its levels out by place instead — long dune ridges, the oasis belt, the shore: cfg.tierOf(region))
+    if (cfg.tierOf) for (const r of R) tier[r.k] = cfg.tierOf(r);
+    else for (const k of Object.values(gateIdx)) tier[k] = 0;
     m.tier = tier;
   }
   // and what grows there
-  const biome = R.map((r) => (role[r.k] === "gate" || role[r.k] === "camp" ? cfg.biomes.plain : cfg.biome(r.e, r.mo, rnd(box), tier ? tier[r.k] : 0)));
+  const biome = R.map((r) => (role[r.k] === "gate" || role[r.k] === "camp" ? cfg.biomes.plain : cfg.biome(r.e, r.mo, rnd(box), tier ? tier[r.k] : 0, r)));
 
   // ground: each region's own surface, broken up by noise
   for (let i = 0; i < W * H; i++) {
     const k = lab[i];
     if (k < 0) continue;
     const [x, y] = at(i);
-    m.g[y][x] = cfg.paint(biome[k], N1[i], N2[i]) || cfg.ground;
+    m.g[y][x] = cfg.paint(biome[k], N1[i], N2[i], x, y) || cfg.ground;
   }
 
   // the barriers: every border the tree did not take is shut; a link leaves a gap, or no barrier at all
@@ -189,6 +239,9 @@ function wilds(cfg) {
   const put = (i, kind) => {
     const [x, y] = at(i);
     if (keep[i] || x < 2 || y < 2 || x >= W - 2 || y >= H - 2) return;
+    // (dunesea: no barrier stands in the dry riverbed — cfg.open; and a barrier's kind may follow the place — cfg.wallAt)
+    if (cfg.open && cfg.open(x, y)) return;
+    if (cfg.wallAt && kind !== "cliff") kind = cfg.wallAt(kind, x, y);
     if (kind === "cliff") m.o[y][x] = "C";
     else if (kind === "trees") m.o[y][x] = h2(x, y, S0) < 0.82 ? cfg.treeCh : cfg.treeCh2;
     else if (kind === "hedge") m.o[y][x] = "H";
@@ -220,7 +273,7 @@ function wilds(cfg) {
       // (a dead end that keeps a chest stays shut but for one way in, three tiles wide: a hidden pocket)
       const nook = ["vault", "lair", "stair"].includes(role[e.a]) || ["vault", "lair", "stair"].includes(role[e.b]);
       if (tier[e.a] !== tier[e.b]) { kind = "cliff"; gr = nook ? 1 : cfg.ramp || 2; }
-      else if (!nook && (linked || rnd(box) < cfg.tierOpen)) continue;
+      else if (!nook && (linked || rnd(box) < (typeof cfg.tierOpen === "function" ? cfg.tierOpen(R[e.a], R[e.b]) : cfg.tierOpen))) continue;
       else { kind = wallKind(); gr = nook ? 1 : cfg.gap; }
     } else {
       if (linked && rnd(box) < cfg.merge && dE < cfg.cliff) continue;
@@ -232,6 +285,7 @@ function wilds(cfg) {
       if (kind === "cliff" && lab[t] !== hi) continue;
       const [x, y] = at(t);
       if (gap && Math.max(Math.abs(x - gap[0]), Math.abs(y - gap[1])) <= gr) { keep[t] = 1; if (kind === "cliff") steps.push(t); continue; }
+      if (cfg.open && cfg.open(x, y)) { if (kind === "cliff") steps.push(t); continue; }       // the riverbed comes down each ridge in steps
       put(t, kind);
       // belts of trees grow thicker here and there
       if (kind === "trees" && N1[t] > 0.5) for (const [dx, dy] of D4) { const j = (y + dy) * W + x + dx; if ((lab[j] === e.a || lab[j] === e.b) && N2[j] > 0.45) put(j, kind); }
@@ -264,7 +318,7 @@ function wilds(cfg) {
         m.o[y][x] = was && !keep[i] ? "Φ" : " ";
         if (!sh || keep[i]) continue;
         const inner2 = d > sea.surf + 2 && d < dz - 2;
-        if (inner2 && El[i] > 0.6) { m.g[y][x] = sea.sand; if (!was && h2(x, y, S0 + 21) < 0.1) m.o[y][x] = "Ψ"; }
+        if (inner2 && El[i] > (sea.isle || 0.6)) { m.g[y][x] = sea.sand; if (!was && h2(x, y, S0 + 21) < 0.1) m.o[y][x] = "Ψ"; }
         else if (inner2 && !was && Mo[i] > 0.72 && N1[i] > 0.45) m.g[y][x] = "w";
         else if (!was && N1[i] > 0.6 && h2(x, y, S0 + 22) < sea.reef) m.o[y][x] = "Φ";
       } else {
@@ -272,6 +326,17 @@ function wilds(cfg) {
         if (keep[i]) continue;
         if (was) { if (sea.rock) m.o[y][x] = sea.rock; }
         else if (sea.rock && h2(x, y, S0 + 23) < sea.rockP * (N1[i] > 0.5 ? 1.6 : 0.6)) m.o[y][x] = sea.rock;
+      }
+    }
+    // an islet: a round of sand in the shallows, palms on its rim
+    for (const r of R) {
+      if (role[r.k] !== "islet") continue;
+      const rad = Math.min(r.inr, 7.5);
+      for (const i of r.tiles) {
+        const [x, y] = at(i), d = Math.hypot(x - r.px, (y - r.py) * 1.15) + (N1[i] - 0.5) * 2;
+        if (d >= rad || sd[i] <= sea.surf || sd[i] >= dz) continue;
+        m.g[y][x] = sea.sand;
+        m.o[y][x] = !keep[i] && d > rad - 2.2 && h2(x, y, S0 + 26) < 0.16 ? "Ψ" : " ";
       }
     }
   }
@@ -314,9 +379,11 @@ function wilds(cfg) {
   const lakes = [];
   for (const r of R) {
     if (role[r.k] !== "lake") continue;
-    const rad = Math.min(r.inr - 2, cfg.lakeR);
+    // (an oasis keeps its own lake, set a little to one side so the village has room beside it)
+    const oa = r.oasis, rad = oa ? Math.min(r.inr - 2 - Math.max(Math.abs(oa.ox), Math.abs(oa.oy)), oa.rad) : Math.min(r.inr - 2, cfg.lakeR);
+    const lx = r.px + (oa ? oa.ox : 0), ly = r.py + (oa ? oa.oy : 0);
     for (const i of r.tiles) {
-      const [x, y] = at(i), d = Math.hypot(x - r.px, (y - r.py) * 1.3) + (N1[i] - 0.5) * 3.2;
+      const [x, y] = at(i), d = Math.hypot(x - lx, (y - ly) * 1.3) + (N1[i] - 0.5) * 3.2;
       if (d < rad) water(x, y);
     }
     lakes.push(r);
@@ -388,11 +455,27 @@ function wilds(cfg) {
     return { x: p[0], y: p[1], w, h, tags };
   };
   const special = [], spawns = [];
-  const doors = [];
-  let vn = 0;
+  const doors = [], bars = [], lateFires = [];
+  let vn = 0, isn = 0;
   for (const r of R) {
     const k = r.k, t = D[k] / far;
-    if (role[k] === "camp") {
+    if (role[k] === "lake" && r.oasis && r.oasis.pc) {
+      // the oasis village: huts round a fire beside the lake (a second camp; a waypoint stone stands by it: markRoutes)
+      const p = placeIn(r, r.oasis.pc, 2);
+      if (p) { const f = p.tags.fire[0]; lateFires.push(f); special.push(f); doors.push(f); m.village = { x: p.x, y: p.y, w: p.w, h: p.h }; (m.stonesAt || (m.stonesAt = [])).push(f); }
+    } else if (role[k] === "islet") {
+      // an islet's chest and its keepers; a sand bar is laid to it from the beach (below)
+      let p = null;
+      for (let j = 0; j < sea.isletKinds.length && !p; j++) p = placeIn(r, sea.isletKinds[(isn + j) % sea.isletKinds.length], 2);
+      isn++;
+      if (p) {
+        const [cx, cy] = p.tags.chest[0];
+        spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] });
+        spawns.push({ k: cfg.mobs[cfg.mobs.length - 2], n: 2, r: [p.x - 1, p.y - 1, p.x + p.w, p.y + p.h], elite: 0.3 });
+        special.push([cx, cy]);
+        bars.push([cx, cy]);
+      }
+    } else if (role[k] === "camp") {
       // a camp must exist: on the main way if it fits anywhere along it, else in the roomiest quiet region
       const cp = cfg.campPiece || "camp";
       let p = placeIn(r, cp, 2);
@@ -452,12 +535,15 @@ function wilds(cfg) {
     }
   }
 
+  for (const f of lateFires) FIRES[cfg.id].push(f);
   // the temple ruin (maps-v2): a big set piece in a quiet region partway in; it clears what stood on its ground
   // and the ring round it (trees pressing in are put back after), so it may open a new way between regions
   if (cfg.temple) {
     const rows = PIECES.temple, tw = rows[0].length, th = rows.length;
     const cand = R.map((r) => r.k).filter((k) => role[k] === "field" && D[k] >= far * 0.2 && D[k] <= far * 0.85)
       .sort((a, b) => R[b].inr - R[a].inr || a - b);
+    // (dunesea asks for a place — cfg.temple.at: the regions nearest it are tried first)
+    if (cfg.temple.at) { const tx = cfg.temple.at[0] * W, ty = cfg.temple.at[1] * H; cand.sort((a, b) => Math.hypot(R[a].px - tx, R[a].py - ty) - Math.hypot(R[b].px - tx, R[b].py - ty) || a - b); }
     // round each candidate's heart, nearest first, the first footprint clear of water, steps and kept ground
     const OFF = [];
     for (let dy = -12; dy <= 12; dy += 3) for (let dx = -12; dx <= 12; dx += 3) OFF.push([dx, dy]);
@@ -485,7 +571,16 @@ function wilds(cfg) {
       spawns.push({ k: cfg.temple.keeper || cfg.mobs[cfg.mobs.length - 1], n: 4, r: [x0, y0, x0 + tw - 1, y0 + th - 1], elite: 0.35 });
       special.push([cx, cy], [bx, by - 0]);
       doors.push([x0 + 7, y0 + th - 1]);
-      m.temple = { x: x0, y: y0, w: tw, h: th, pool: [x0 + 7, y0 + 10] };
+      if (!cfg.temple.buried) m.temple = { x: x0, y: y0, w: tw, h: th, pool: [x0 + 7, y0 + 10] };
+      else {
+        // half buried (dunesea): the pool is long dry and drifts of sand lie over the flagstones; the field boss rises here
+        for (let y = y0 - 1; y <= y0 + th; y++) for (let x = x0 - 1; x <= x0 + tw; x++) {
+          const g0 = m.g[y][x];
+          if (g0 === "w" || ("=r".includes(g0) && N1[y * W + x] > 0.5 && !(x === cx && y === cy))) m.g[y][x] = cfg.temple.buried;
+        }
+        m.ruin = { x: x0, y: y0, w: tw, h: th };
+        if (cfg.temple.arena) m.bossAt = [bx, by];
+      }
     }
   }
 
@@ -611,7 +706,7 @@ function wilds(cfg) {
   };
   // the road follows the critical path: from the way in, through the heart of every region on it and the gap into the next, to each way on
   for (const [name] of cfg.gates.slice(1)) {
-    const regs = tree.path(gateIdx[name]), stops = [gates[cfg.gates[0][0]].a[0]];
+    const regs = name === cfg.exit ? main : tree.path(gateIdx[name]), stops = [gates[cfg.gates[0][0]].a[0]];
     for (let s = 1; s < regs.length; s++) {
       const g = gapAt.get(ekey(regs[s - 1], regs[s]));
       if (g) stops.push(spot(m, g[0], g[1]));
@@ -624,6 +719,12 @@ function wilds(cfg) {
   for (const [x, y] of doors) {
     const path = walk(W, H, y * W + x, (i) => roadMask[i] === 1, roadCost);
     if (path) pave(path.slice(1).filter((i) => !roadMask[i]), false, cfg.trail || cfg.road);
+  }
+
+  // sand bars (dunesea): three wide, from each islet's chest to the nearest road or dry beach
+  for (const [x, y] of bars) {
+    const path = walk(W, H, y * W + x, (i) => roadMask[i] === 1 || sd[i] < -1, roadCost);
+    if (path) pave(path.slice(1).filter((i) => !roadMask[i]), true, sea.bar);
   }
 
   // what grows everywhere else
@@ -657,6 +758,15 @@ function wilds(cfg) {
 
   if (cfg.stair && !gates[cfg.stair]) throw new Error(cfg.id + ": no room for the way down");
   if (!FIRES[cfg.id].length) throw new Error(cfg.id + ": no room for a camp");
+  // a door cut into a finished ground (cfg.doors [[name, side, f]]: the oasis's and the coast's doors to dunesea): nothing
+  // is laid out round it — the rim behind it is cleared four wide, and the widening below joins it to the ways
+  for (const [name, side, f] of cfg.doors || []) {
+    const g = side === "w" ? Math.round(f * H) : Math.round(f * W);
+    gates[name] = side === "w" ? { t: [[1, g], [1, g + 1]], a: [[4, g], [4, g + 1]] } : { t: [[g, H - 2], [g + 1, H - 2]], a: [[g, H - 5], [g + 1, H - 5]] };
+    const [x0, y0, x1, y1] = side === "w" ? [1, g - 1, 7, g + 2] : [g - 1, H - 8, g + 2, H - 2];
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { m.o[y][x] = " "; if (m.g[y][x] === "w") m.g[y][x] = "b"; }
+  }
+  if (cfg.stonesAt) m.stonesAt = (m.stonesAt || []).concat(cfg.stonesAt.map(([fx, fy]) => [Math.round(fx * W), Math.round(fy * H)]));
   // the gates themselves
   for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) { m.o[y][x] = " "; if (m.g[y][x] === "w") m.g[y][x] = "b"; }
   m.gates = gates;

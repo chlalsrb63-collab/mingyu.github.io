@@ -74,7 +74,7 @@ while (todo.length) {
   }
 }
 assert.deepEqual(Object.keys(seen).sort(), D.maps.map((m) => m.id).sort(), "every map can be reached from town");
-for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
+for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
 
 // ── the dungeons: harder the deeper you go, a camp on the way, a guardian at the end
 for (const id of ["crypt", "sewer", "abyss"]) {
@@ -138,5 +138,42 @@ JSON.stringify(L.removePlayer(S, PID));
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.reach[y * m.w + x]) assert.ok(m.g[y][x] !== "w", `${id}: reachable deep water at ${x},${y}`);
   }
   assert.ok(maps.coast.g.some((r) => r.includes("~")) && maps.coast.g.some((r) => r.includes("-")), "the coast has shallows and a surf line");
+}
+// ── 모래바다 (dunesea, maps-v2 J): the biggest ground — doors both ways to the oasis and the coast, five stones,
+// two camps and the plaza's fire, four oases (one with its village), islets with chests, the buried ruin for the boss
+{
+  const { maps, fires } = L.atlas();
+  const m = maps.dunesea, W = m.w, meta = D.maps.find((q) => q.id === "dunesea");
+  for (const [a, b] of [["oasis", "dunesea"], ["coast", "dunesea"]]) for (const [from, to] of [[a, b], [b, a]]) {
+    assert.ok(maps[from].portals.some((p) => p.to === to), `${from} has a door to ${to}`);
+    assert.ok(D.maps.find((q) => q.id === from).to.includes(to), `${from} lists ${to} as a way on`);
+  }
+  for (const id of Object.keys(maps)) if (id !== "dunesea") assert.ok(maps[id].w * maps[id].h < W * m.h / 2.4, `dunesea is far bigger than ${id}`);
+  assert.equal(m.stones.length, 5, "five waypoint stones");
+  assert.deepEqual(D.waypoints.find((w) => w.id === "dunesea").names, ["입구", "중턱", "안쪽", "오아시스 마을", "흰 모래 해변"]);
+  assert.equal(fires.dunesea.length, 3, "the caravan's camp, the village fire and the plaza's");
+  assert.ok(m.village && fires.dunesea.some(([x, y]) => x >= m.village.x && x < m.village.x + m.village.w && y >= m.village.y && y < m.village.y + m.village.h), "a fire burns in the oasis village");
+  assert.ok(m.stones.some((s) => Math.hypot(s.x - m.village.x, s.y - m.village.y) < 24), "a stone stands by the village");
+  for (const k of new Set(m.spawns.map((sp) => sp.k))) assert.ok(D.mobs[k].chest || (D.mobs[k].lv >= meta.band[0] && D.mobs[k].lv <= meta.band[1]), `dunesea: ${k} fits the band`);
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < W; x++) if (m.reach[y * W + x]) assert.ok(m.g[y][x] !== "w", `dunesea: reachable deep water at ${x},${y}`);
+  // the lakes of the four oases: four bodies of fresh water of ≥ 20 tiles north of the beach
+  const seen2 = new Uint8Array(W * m.h);
+  let lakes = 0;
+  for (let y = 2; y < 130; y++) for (let x = 2; x < W - 2; x++) {
+    if (m.g[y][x] !== "w" || seen2[y * W + x]) continue;
+    const st = [[x, y]]; let n = 0;
+    seen2[y * W + x] = 1;
+    while (st.length) { const [cx, cy] = st.pop(); n++; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = cx + dx, Y = cy + dy; if (Y < 130 && m.g[Y][X] === "w" && !seen2[Y * W + X]) { seen2[Y * W + X] = 1; st.push([X, Y]); } } }
+    if (n >= 20) lakes++;
+  }
+  assert.equal(lakes, 4, "four oases");
+  // islets: chests standing on sand out in the shallows, each walkable from the entrance
+  const chests = m.spawns.filter((sp) => D.mobs[sp.k].chest).map((sp) => sp.r);
+  const out = chests.filter(([x, y]) => y > 150 && m.g[y][x] === "S");
+  assert.ok(out.length >= 4, `chests on islets in the shallows (${out.length})`);
+  for (const [x, y] of chests) assert.ok(m.reach[y * W + x], `the chest at ${x},${y} can be reached`);
+  assert.ok(m.g.some((r) => r.includes("~")) && m.g.some((r) => r.includes("-")) && m.g.some((r) => r.includes("r")), "shallows, a surf line and the dry riverbed");
+  // the field boss rises in the buried ruin
+  assert.ok(m.ruin && m.bossAt && m.bossAt[0] >= m.ruin.x && m.bossAt[0] < m.ruin.x + m.ruin.w && m.bossAt[1] >= m.ruin.y && m.bossAt[1] < m.ruin.y + m.ruin.h && m.reach[m.bossAt[1] * W + m.bossAt[0]], "the boss's ground is the ruin");
 }
 console.log("world ok — maps", Object.keys(seen).join(","));
