@@ -15,7 +15,9 @@ const NPC_POSES = ["sip", "read", "wipe", "doze", "write", "sweep", "hammer", "s
 const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job",
   // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
   // alchemist, 포포 the 알바 broker — until L2 they only talk ("곧 문을 엽니다", public/npctalk.js)
-  "cook", "craft", "alch", "jobs"];
+  "cook", "craft", "alch", "jobs",
+  // 주아나 the charm appraiser (66-charms.js)
+  "charm"];
 const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);

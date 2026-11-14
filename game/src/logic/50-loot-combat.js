@@ -65,6 +65,7 @@ function wanted(ch, dr) {
 /** Whether `p` has room for a drop. */
 function fits(ch, dr) {
   if (dr.it === "gold") return true;
+  if (dr.c) return ch.inv.length < bagCap(ch);
   return dr.g ? ch.inv.length < bagCap(ch) : canAdd(ch, dr.it, dr.n);
 }
 function bagFull(S, p) {
@@ -72,6 +73,7 @@ function bagFull(S, p) {
 }
 /** Put a drop into `p`'s bag (or purse). False, with a reminder, if there is no room. */
 function pickUp(S, p, dr) {
+  if (dr.c) return charmPick(S, p, dr);   // a sealed charm (66-charms.js)
   if (!fits(p.ch, dr)) { bagFull(S, p); return false; }
   if (dr.it === "gold") {
     p.ch.gold += dr.n;
@@ -401,6 +403,7 @@ function killMob(S, rt, mob) {
     checkAch(S, p);
     p.dirty = true;
     lootFor(S, rt, mob, p);
+    charmKill(S, rt, mob, p);   // 주아나's quests, sealed charms (66-charms.js)
     // a field boss, a guardian or a boss may leave something to wear
     if ((el === 2 || d.boss) && cosRoll(S, p, "boss") < COS_BOSS) cosFrom(S, p, "boss", d.name);
   }
@@ -594,7 +597,7 @@ function basicAttack(S, p) {
   // 급소 도려내기: a stab on a marked monster opens it up (bleeding, and a burst of speed); every stab marks
   const vit = c === WKIND.dagger && pasOn(p, "vitals") ? SKILL.vitals : null;
   const marked = vit && marksOf(S, mob) > 0;
-  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1), false, tip ? { ign: SKILL.tip.ign } : null);
+  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1) * charmMarkK(S, rt, p, mob), false, tip ? { ign: SKILL.tip.ign } : null);
   if (vit && !mob.dead) {
     if (marked) {
       if (!(mob.dot && mob.dot.until > now && mob.dot.pid === p.pid)) rt.ev.push(["a", p.eid, 111, Math.round(mob.x), Math.round(mob.y - 6), p.dir]);

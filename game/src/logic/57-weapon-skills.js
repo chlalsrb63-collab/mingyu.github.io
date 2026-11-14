@@ -395,7 +395,7 @@ function castSkill(S, p, id) {
   newAct(p, true);
   const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
   // mastery grows a skill; a full resonance makes a staff skill free and 30% stronger
-  let k = skGrow(p.ch, sk);
+  let k = skGrow(p.ch, sk) * charmSkd(p, id);   // (and what the charm board adds to this skill, 66-charms.js)
   const cost = skMp(p, sk);
   if (skOf(sk, "staff") && pasOn(p, "reso")) {
     if ((p.reso | 0) >= SKILL.reso.n) { p.reso = 0; k *= 1 + SKILL.reso.k; }
@@ -437,7 +437,13 @@ function castSkill(S, p, id) {
       for (const o of mobsWithin(rt, p.x, p.y, sk.r)) hit(o, sk.mult);
       const wl = Math.max(18, reach(m, p.x, p.y, aimX, aimY, sk.len));
       ev(82, p.x + aimX * wl, p.y + aimY * wl - 6, wl);
-      for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, wl, sk.half)) { if (!MOBS[o.k].boss && o.el !== 2) holdMob(S, o, 300); hit(o, sk.wave); }
+      // (메아리 뿔참, 66-charms.js: the first monster in the wave's last 30% takes 18% of that hit again)
+      const wave = mobsInLine(rt, p.x, p.y, aimX, aimY, wl, sk.half), echo = charmEchoPick(S, p, wave, aimX, aimY, wl);
+      for (const o of wave) {
+        if (!MOBS[o.k].boss && o.el !== 2) holdMob(S, o, 300);
+        if (o === echo) charmEchoHit(S, rt, p, o, dealt(p, [o], () => hit(o, sk.wave)));
+        else hit(o, sk.wave);
+      }
       break;
     }
     case "verdict": {
@@ -557,7 +563,7 @@ function castSkill(S, p, id) {
       const [tx, ty] = mob ? [mob.x, mob.y] : ahead(sk.len * 0.6);
       const ms = Math.round((dist(p.x, p.y, tx, ty) / sk.spd) * 1000);
       ev(91, tx, ty - 6, ms);
-      if (mob) prop({ kind: "bolt", x: tx, y: ty, tgt: mob.id, next: now + ms, until: now + ms + 1000, every: 1000, mult: sk.mult * k, heal: sk.heal });
+      if (mob) prop({ kind: "bolt", x: tx, y: ty, tgt: mob.id, next: now + ms, until: now + ms + 1000, every: 1000, mult: sk.mult * k, heal: sk.heal * charmSkh(p, id) });
       break;
     }
     case "gravity": {
@@ -578,7 +584,8 @@ function castSkill(S, p, id) {
       const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
       if (mob) face(p, mob);
       ev(94, ...(mob ? [mob.x, mob.y] : ahead(80)));
-      fireArrow(S, rt, p, mob, sk.mult * k, 99, 2, { spd: sk.spd, len: sk.len, r: sk.r });
+      const shot = fireArrow(S, rt, p, mob, sk.mult * k, 99, 2, { spd: sk.spd, len: sk.len, r: sk.r });
+      if (deriveStats(p).cm.lg === "lens") shot.cl = 1;   // 길별의 렌즈참 (66-charms.js)
       break;
     }
     case "leapshot": {
@@ -650,7 +657,7 @@ function castSkill(S, p, id) {
       ev(99, p.x, p.y - 6, sk.r);
       rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 9]);
       for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { const [vx, vy] = aimVec(p, o); knock(m, o, vx, vy, 12); hit(o, sk.mult); }
-      prop({ kind: "field", wire: 1, x: p.x, y: p.y, r: sk.field, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.drain * k, heal: sk.heal });
+      prop({ kind: "field", wire: 1, x: p.x, y: p.y, r: sk.field, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.drain * k, heal: sk.heal * charmSkh(p, id) });
       break;
     }
     case "bloodburst": {

@@ -217,12 +217,14 @@ function dimClear(S, dim, mob) {
 /** Each member's own reward from the master's chest, once; full experience for the first few clears of the day. */
 function dimChest(S, dim, p) {
   const ch = p.ch, lv = dim.lv, R = DIM.reward;
+  if (charmChestHold(S, p)) return;   // a charm already waits at 주아나 and the bag is full (66-charms.js)
   dim.got[p.pid] = 1;
   const day = dayOf(S.now);
   if (!ch.dim || ch.dim.day !== day) ch.dim = { day, n: 0 };
   ch.dim.n++;
   const full = ch.dim.n <= DIM.dailyFull;
   payout(S, p, { gold: R.gold * lv, stone: R.stone, rune: rnd(S) < R.rune, gear: 1, gearQ: R.gearQ, xp: Math.round(R.xp * xpNeed(lv) * (full ? 1 : 0.5)) });
+  charmChest(S, dim, p);
   dim.rt.ev.push(["dm", "chest", dim.chest.x, dim.chest.y]);
   toast(p, full ? `균열의 보상을 받았습니다! (오늘 ${ch.dim.n}번째)` : `균열의 보상을 받았습니다. 오늘 ${DIM.dailyFull}번을 넘겨 경험치는 절반입니다.`);
   saveSoon(p);

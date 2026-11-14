@@ -47,7 +47,8 @@ logic.js stays one file with no imports. Missing files = empty defaults = the ga
 ```
 
 - `role`: `talk` (lines only), `quest` (gives side quests whose `giver` is this id), or any built-in
-  service role (`shop smith train bank warp daily collector achieve costume`).
+  service role (`shop smith train bank warp daily collector achieve costume`; `charm` is 주아나 the
+  charm appraiser, `66-charms.js`).
 - `look`: same 4-value array as built-in NPCs (see `34-maps-world.js buildTown`), or a full player
   look array (species.js) — the game accepts both.
 - Ground/object chars: the palette comes from the server (`GET /api/palette`), built from what

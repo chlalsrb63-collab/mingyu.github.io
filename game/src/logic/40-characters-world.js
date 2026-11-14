@@ -30,7 +30,7 @@ const LOOK_COST = 500;
 export function newChar(name, look, oldLook) {
   const lk = Array.isArray(look) ? look : Array.isArray(oldLook) ? oldLook : [];
   return {
-    v: 12, name, job: "adventurer",
+    v: 13, name, job: "adventurer",
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -51,6 +51,8 @@ export function newChar(name, look, oldLook) {
     bagCap: INV_BASE, house: homeEmpty(),
     // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
     ...lifeFresh(),
+    // charms (v13, 66-charms.js): the board, 주아나's quests, what waits with her
+    charms: charmsEmpty(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
     // the town layout it was saved under (34-maps-world.js TOWN_REV)
     tw: TOWN_REV,
@@ -72,6 +74,7 @@ function migrate(ch) {
     if (!g || typeof g.id !== "string") return null;
     const id = OLD_ID[g.id] || g.id.replace("w_ranger_", "w_lancer_");
     if (!ITEMS[id]) return null;
+    if (id === "charm") return charmFix(g);
     if (!isGear(id)) return { id, n: g.n | 0 || 1 };
     const out = { id, q: clamp(g.q | 0, 0, 4), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
     if (LEGEND[g.lg]) out.lg = g.lg;
@@ -159,7 +162,9 @@ function migrate(ch) {
   // life skills (v12): an older sheet's 낚시/요리 start from its fish and cook counters (cap Lv 20); the 알바
   // board, trust, co-op days and the 재료 주머니 are cleaned (58-life.js)
   lifeSheetClean(ch);
-  ch.v = Math.max(ch.v | 0, 12);
+  // charms (v13): the board and its charms made whole; what cannot stay where it was waits in the recovery queue (66-charms.js)
+  charmsClean(ch);
+  ch.v = Math.max(ch.v | 0, 13);
   return ch;
 }
 
