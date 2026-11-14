@@ -14,6 +14,7 @@ import * as SideQ from "./sidequests.js";
 import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
 import * as Gather from "./gather.js";
+import * as Station from "./station.js";
 import { G, T, now, dist, $, el } from "./state.js";
 import { act } from "./net.js";
 import { toast, openWin, addChat, shown } from "./windows.js";
@@ -111,7 +112,8 @@ export function nearestNpc() {
   for (const n of G.map.npcs) {
     if (!S3.npcOut(n)) continue;
     // a keeper behind a counter (the cafe, the inn) is served across it: a little further, still in the server's reach (56)
-    const d = dist(G.me.x, G.me.y, n.x * T + 8, n.y * T + 12) - (n.goods ? 14 : 0);
+    // so is a life station (쥬쥬의 화덕 sits right beside 쥬쥬's counter: step to its side to reach it)
+    const d = dist(G.me.x, G.me.y, n.x * T + 8, n.y * T + 12) - (n.goods || STATION_ROLE.has(n.role) ? 14 : 0);
     if (d < bd) { bd = d; best = n; }
   }
   for (const m of G.map.marks || []) {
@@ -121,6 +123,7 @@ export function nearestNpc() {
   }
   return best;
 }
+const STATION_ROLE = new Set(["craft", "alch", "cook"]);
 /** The waypoint stone, as something the player can talk to. */
 const STONE = { role: "stone", name: "이동의 돌" };
 export const stoneNear = () => (G.map.marks || []).some((m) => m.kind === "waypoint" && dist(G.me.x, G.me.y, m.x * T + 8, m.y * T + 8) < 40);
@@ -156,7 +159,13 @@ export function interact() {
   }
   if (Housing.interact()) return;                  // at home: a chest opens the storage, a bed gives a rest
   // with nobody to talk to: a gathering node in reach (gather.js), else water is for fishing
-  if (!n) { if (Gather.interact()) return; if (waterNear()) { act({ t: "fish" }); Sound.play("ui"); } return; }
+  // with nobody to talk to: a node, then a campfire's 요리 window (station.js), then water
+  if (!n) {
+    if (Gather.interact()) return;
+    if (fireNear() && Station.open("fire")) { Sound.play("ui"); return; }
+    if (waterNear()) { act({ t: "fish" }); Sound.play("ui"); }
+    return;
+  }
   Sound.play("ui");
   SideQ.onTalk(n, G.self);
   if (n.role === "shop") { openWin("shop"); openWin("inv"); }
@@ -172,6 +181,7 @@ export function interact() {
   else if (n.role === "costume") openWin("costume");
   else if (n.role === "dim") Dim.openKeeper();
   else if (n.role === "house") { Housing.openAgent(); openWin("inv"); }
+  else if (n.role === "craft" || n.role === "alch" || n.role === "cook") Station.open(n.role);   // 캉캉 · 보글 · 쥬쥬의 화덕
   else { talkTo(n); return; }
   if (SideQ.gives(n)) talkTo(n);
   // the townsfolk have a word to say as they serve you (npctalk.js)

@@ -22,6 +22,7 @@ import * as Housing from "./housing.js";
 import * as Life from "./life.js";
 import { G, $, clamp, VP, el, dollDocked } from "./state.js";
 import * as Gather from "./gather.js";
+import * as Station from "./station.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
 import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn } from "./windows.js";
 import { openTree, openStats, renderInv, renderChar, renderDoll, renderSkills } from "./win_char.js";
@@ -218,6 +219,7 @@ export function refreshUi() {
   Wardrobe.refresh(s);
   Housing.refresh(s);
   Life.refresh(s);
+  draw("craft", Station.key, Station.render);   // the life stations: 제작 연금 요리 (station.js)
   tutCard(s);
 }
 /** The paper-doll docked in the side column (desktop): redrawn when the gear or the name line changes; its tab buttons light with the C window. */

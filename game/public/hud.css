@@ -1084,3 +1084,36 @@ body[data-lay="full"] #w-inv.docked { min-height: 120px; }
 .window .pouch-grid .slot { width: var(--slot); height: var(--slot); }
 .window .pouch-grid .slot img { left: 2px; top: 2px; }
 .window .pouch-grid .slot.full .n { color: #ffb04a; }
+/* ── life stations (station.js): the 제작 · 연금 · 요리 window #w-craft ── */
+#w-craft { --win-max: 460px; width: min(460px, calc(var(--zone-w) - 8px)); }
+#w-craft .st-top { margin-bottom: 6px; }
+#w-craft .st-top b { color: var(--b-hi); font: 12px var(--pix); }
+#w-craft .st-list { max-height: min(300px, 40vh); overflow-y: auto; border: 2px solid #3a3146; background: #17131d; padding: 2px; }
+#w-craft .st-band { margin: 4px 2px 2px; padding: 1px 4px; font: 11px var(--pix); color: var(--b-mid); border-bottom: 2px solid #3a3146; }
+#w-craft .st-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border: 2px solid transparent; cursor: pointer; }
+#w-craft .st-row:hover { background: #241e2c; }
+#w-craft .st-row.sel { background: #2e2638; border-color: var(--b-mid); }
+#w-craft .st-row > img { width: 32px; height: 32px; image-rendering: pixelated; border: 2px solid var(--ink); background: #1a1622; flex: none; }
+#w-craft .st-row .tx { min-width: 0; flex: 1; }
+#w-craft .st-row .nm { display: flex; align-items: center; gap: 4px; font: 12px var(--pix); color: var(--cream); }
+#w-craft .st-row .nm b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#w-craft .st-row .nm .lv { margin-left: auto; color: #a898b8; font-size: 11px; }
+#w-craft .st-row .nm .tag { padding: 0 3px; font-size: 10px; color: #2a1806; background: var(--b-mid); }
+#w-craft .st-row .ins { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin-top: 1px; font: 11px var(--pix); color: #cfe8b0; }
+#w-craft .st-row .ins .in { display: inline-flex; align-items: center; gap: 1px; }
+#w-craft .st-row .ins img { width: 16px; height: 16px; image-rendering: pixelated; }
+#w-craft .st-row .ins .short { color: #ff8a7a; }
+#w-craft .st-row .ins .fee { margin-left: auto; color: var(--b-hi); }
+#w-craft .st-row .ins .fee.short { color: #ff8a7a; }
+#w-craft .st-row .why, #w-craft .st-detail .why { display: block; color: #ff9a8a; font: 11px var(--pix); }
+#w-craft .st-row.lock { cursor: default; }
+#w-craft .st-row.lock > img, #w-craft .st-row.lock .ins { filter: grayscale(1); opacity: .5; }
+#w-craft .st-row.lock .nm { color: #8a8094; }
+#w-craft .st-detail { margin-top: 6px; padding: 6px 8px; }
+#w-craft .st-detail small { display: block; color: #d8d2c2; font: 11px var(--pix); }
+#w-craft .st-dh b { font: 12px var(--pix); color: var(--b-hi); font-weight: 400; }
+#w-craft .st-detail .btns { display: flex; align-items: center; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+#w-craft .st-detail .btns .btn:disabled { opacity: .45; }
+#w-craft .st-detail .btns .btn.small { min-width: 22px; }
+#w-craft .st-n { min-width: 18px; text-align: center; font: 12px var(--pix); color: var(--cream); }
+#w-craft .st-detail .st-bt { display: inline; margin-left: 6px; color: #a898b8; }
