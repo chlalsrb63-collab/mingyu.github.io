@@ -69,8 +69,8 @@ function ramp4(rgb) {
 const TINT = {
   fire: { hi: 18, lo: 2, sat: 0.9, l: (l) => l * 0.7 + 0.14, accent: "#ffe27a" },
   poison: { hi: 100, lo: 290, sat: 0.58, l: (l) => l * 0.9 + 0.06 },
-  frost: { hi: 200, lo: 218, sat: 0.4, l: (l) => l * 0.6 + 0.34, rim: "#f4faff" },
-  steel: { hi: 212, lo: 226, sat: 0.12, l: (l) => (l - 0.5) * 1.1 + 0.5, rim: "#e6ecf4" },
+  frost: { hi: 200, lo: 218, sat: 0.46, l: (l) => l * 0.55 + 0.3, rim: "#eaf6ff" },
+  steel: { hi: 212, lo: 226, sat: 0.14, l: (l) => l * 0.62 + 0.16, rim: "#c8d2e0" },
   blood: { hi: 352, lo: 340, sat: 0.72, l: (l) => l * 0.7 + 0.08, accent: "#ff9a8a" },
   bile: { hi: 76, lo: 100, sat: 0.66, l: (l) => l * 0.84 + 0.1 },
   ash: { hi: 262, lo: 262, sat: 0.06, l: (l) => l * 0.5 + 0.16 },

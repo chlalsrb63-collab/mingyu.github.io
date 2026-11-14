@@ -277,7 +277,7 @@ export const BEASTS_C = {
   owlstare: {
     size: "m", hover: 9, glow: "#ff7a30",
     draw(M, p) {
-      const flap = p.dead ? 0.1 : [0.8, 0.1, -0.6, 0.1][p.walk ? Math.round(p.ph * 4) : p.idle ? 1 : 0] + (p.wind ? 0.7 : 0);
+      const flap = p.dead ? 0.1 : [0.5, 0.05, -0.4, 0.05][p.walk ? Math.round(p.ph * 4) : p.idle ? 1 : 0] + (p.wind ? 0.6 : 0);
       const [lf, lu] = lunge(p, 0.6);
       const f0 = lf, u0 = 6 + lu;
       M.G("body");
@@ -287,7 +287,7 @@ export const BEASTS_C = {
       for (let i = 0; i < 4; i++) both((s) => M.dot([f0 + 3, u0 - 2 + i * 1.1, s * (0.6 + (i % 2) * 0.6)], "#8a6a50"));
       both((s) => {
         const root = [f0 - 0.4, u0 + 2, s * 2.6];
-        for (let i = 0; i < 3; i++) M.e(rollPt([root[0] - i * 1.4, root[1], root[2] + s * (3.6 + i * 0.4)], -s * flap * 55, root), [2.6 - i * 0.4, 0.45, 3.4], i % 2 ? OWLD : OWL, [0, 0, -s * flap * 55]);
+        for (let i = 0; i < 3; i++) M.e(rollPt([root[0] - i * 1.6, root[1], root[2] + s * (4 + i * 0.4)], -s * flap * 55, root), [3 - i * 0.4, 0.5, 4], i % 2 ? OWLD : OWL, [0, 0, -s * flap * 55]);
         M.tube([[f0 + 0.6, u0 - 3.6, s * 1.2], [f0 + 1.2, u0 - 5.4, s * 1.2], [f0 + 2.2, u0 - 5.8, s * 1.4]], [0.6, 0.5, 0.4], C.NAIL);
       });
       // the head, upside down: the tufts hang under the chin, the beak points at the sky

@@ -14,7 +14,7 @@ const LAMB = mat("#c24a52", { drip: true, wet: true }), LAMBL = mat("#a83848"), 
 const BOAR = mat("#5e4436"), BOARD = mat("#3a2a26"), SNOUT = mat("#9a6a62"), TENT = mat("#8e4a86", { wet: true }), TENTL = mat("#d896c4");
 const DEER = mat("#8a6a52"), DEERL = mat("#c8a888"), HAND = mat("#e0c4b0");
 const SNAKE = mat("#4e7a44"), SNAKEB = mat("#c8c890"), SNAKED = mat("#2e4a30");
-const FOX = mat("#c8642c"), FOX2 = mat("#8a3a2a"), FOXW = mat("#efe2d0"), FOXD = mat("#3a2422");
+const FOX = mat("#c8642c"), FOX2 = mat("#4a4250"), FOXW = mat("#efe2d0"), FOXD = mat("#3a2422");
 const MOTH = mat("#b8a68a"), MOTHD = mat("#7a6a58"), MOTHW = mat("#d6c8a8"), FACE = mat("#ecdcc8");
 
 export const BEASTS_A = {
@@ -343,7 +343,7 @@ export const BEASTS_A = {
   mothface: {
     size: "m", hover: 9, glow: "#f4efe0",
     draw(M, p) {
-      const flap = p.dead ? 0 : [0.6, -0.1, -0.6, 0.1][p.walk ? Math.round(p.ph * 4) : p.idle ? 1 : 0] + (p.wind ? 0.8 : 0) + (p.strike ? -0.8 : 0);
+      const flap = p.dead ? 0 : [0.35, 0, -0.35, 0.05][p.walk ? Math.round(p.ph * 4) : p.idle ? 1 : 0] + (p.wind ? 0.5 : 0) + (p.strike ? -0.4 : 0);
       const [lf, lu] = lunge(p);
       const f0 = lf, u0 = 6 + lu;
       M.G("body");
@@ -356,8 +356,8 @@ export const BEASTS_A = {
         // forewing and hindwing, each a pale sheet; the forewing carries an eye that stares
         const root = [f0 + 0.6, u0 + 1, s * 1.4];
         const W = (df, d, r, m) => { const c = rollPt([root[0] + df, root[1], root[2] + s * d], deg, root); M.e(c, r, m, [0, 0, deg]); return c; };
-        const c1 = W(0.8, 5.4, [3.2, 0.4, 5.2], MOTH);
-        W(-2.6, 4.2, [2.6, 0.38, 4], MOTHD);
+        const c1 = W(0.8, 5.8, [3.6, 0.45, 5.6], MOTH);
+        W(-2.8, 4.6, [2.8, 0.4, 4.4], MOTHD);
         const e = rollPt([root[0] + 1.2, root[1] + 0.5, root[2] + s * 5.6], deg, root);
         M.eye(e, 3, "#2a1a22");
         M.dot(rollPt([root[0] - 0.8, root[1] + 0.5, root[2] + s * 6.4], deg, root), "#5a4a3a", 2, 1);
