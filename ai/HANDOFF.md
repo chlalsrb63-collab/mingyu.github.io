@@ -1,74 +1,73 @@
-# 인수인계 — handoff from the cloud session (2026-11-14)
+# 인수인계 — handoff from the cloud session to the local PC session (2026-11-14)
 
-For the next integrator session (normally Claude Code on the owner's PC, folder `Tales Tales`). Read this,
-`AGENTS.md` (loaded), `ai/BRIEF.md`, `docs/design/README.md`; then continue. Reply to the owner in Korean;
-they want reports **with screenshots** when work finishes ("다 끝나면 화면과 함께 알려줘").
+For the next integrator session: Claude Code on the owner's PC, folder `Tales Tales`. From now on development is
+**local first** (work and test on the PC, push to GitHub `main`), side by side with Codex in its worktree.
+Read this, `AGENTS.md` (loaded), `ai/BRIEF.md`, `docs/design/README.md`, `docs/systems/README.md`; then continue.
+Reply to the owner in Korean; they want reports **with screenshots** ("다 끝나면 화면과 함께 알려줘").
 
-## 0. First, check what is in flight
+Nothing is in flight in the cloud any more: everything is on `origin/main`. Start with `git pull` (UPDATE.bat).
 
-The cloud session started three agents before handing off. Two push to `main` by themselves when they finish:
+## 1. First task — merge Codex's work (owner's decision)
 
-```
-git fetch origin && git log --oneline origin/main | head -20
-```
-- **T-A town exterior** (`docs/design/town.md`, T-A part): commits starting "Town" (buildTown 100×76, terrain,
-  exteriors, signs, `public/townfolk.js` residents, enter/exit fade, tests). Until it lands, don't touch
-  `buildTown`, `iso_ground.js`, `iso_tall.js`, `scene2d.js`, `decor.js`.
-- **J2 weapon skills** (`docs/design/jobs-and-stats.md` J2): commits starting "Skills"/"Jobs J2"
-  (`57-weapon-skills.js`, fx 80–115 in `skillfx.js`, `skillicons.js`, balance asserts). Sheet v13 if it bumps.
-  Until it lands, don't touch `55/57-*.js`, `skillfx.js`, `skillicons.js`, `audio.js`.
-- **T-B town interiors**: MERGED by the cloud session after T-A (skip this item). It was finished but not on main (its links point at T-A's new town). Saved as patches in
-  `ai/pending/town-interiors/`. If `git log origin/main --oneline | grep "Town interiors"` already shows it, the
-  cloud session merged it: delete `ai/pending/` and skip this. Otherwise, **after T-A is on main**:
-  ```
-  git am -3 ai/pending/town-interiors/*.patch
-  # on a conflict in game/src/logic.js:  cd game && npm run build:logic && git add src/logic.js && git am --continue
-  cd game && npm run test:rules && npm run data:check && npm run typecheck
-  ```
-  Then remove the "town is not 100×76 yet" skip gate in `tests/interiors.mjs`, check the renderer skips
-  `thing: true` NPCs (furniture objects; they must not draw as little animals), `git rm -r ai/pending`, commit, push.
-  T-B's notes: ten rooms (owl_library dojo general_store kangkang_forge merc_office bogle_lab juju_diner boutique
-  pet_house dongdong_apt), 8 new pieces + 8 room styles + `lobby`, `npcLook` takes a full hero look, `thing` NPCs,
-  min room size 8, a few keepers moved behind counters.
+The owner gave Codex (on this PC) the "living town NPCs" request: every NPC follows a daily routine by job and
+personality, moves between the town and interiors with the time of day, keeps its role, relationships (walk
+together, chat side by side), NPC positions on the map window. Codex's result was never pushed to GitHub.
+1. Find it: `git worktree list`, `git branch -a`, `.work/codex` (branch `codex/work`), `ai/reports/`, uncommitted
+   changes in the main folder (`git status`). Ask the owner if nothing is found.
+2. Map it onto the contract `docs/design/npc-life.md` (section K.1 lists the six points to check: one pure
+   `npcAt(id, now)`, data in `game/data/npclife.json` → `DATA.npclife` / `defs().npclife` (NOT `life`: that name is
+   the life skills'), wire `nl`/`nw`, services stay at the post, `npcReach`, no sheet change). Keep what fits,
+   rewrite what doesn't; rebase onto `main` (the client was split into modules — see §2 — so Codex edits to the
+   old `client.js`/`scene2d.js` must be moved to the new files; never hand-merge `src/logic.js`, rebuild it).
+3. `npm run test:rules`, `npm run data:check`, `npm run typecheck`, a live check; then push.
+4. Continue the contract's work split for whatever Codex did not cover: N1 rules → N2 client ∥ N3 content (61
+   plans, 38 relationships, lines; data only, lighter model) → N4 the eight quest lines (`meet` goal, `이야기`
+   chip so service NPCs can give quests).
 
-If an agent never lands (the cloud container died), redo that phase from its design doc with a fresh agent.
+## 2. State of main
 
-## 1. State of main (f3ce265 + this handoff)
+Done and merged (all tests green, 29 suites): 4× grounds, zones, stones, 차원 균열 · game feel · day/night +
+weather · autumn map · editor · responsive HUD · radar + map window (M) · bag 100 + housing (sheet v10) ·
+**jobs**: J1 stats/levels 1–200/mastery/bow (v11), J2 weapon skills, J3 UI (stat tab, job tree, 아르센), **15
+hybrids** unlocking at mastery 15/15 (`HYB_WM`), job tree as a 6×6 weapon table · **life**: L1 (v12, 생활 window),
+L2 rules (gathering nodes, 84 recipes, pouch, 알바 board, delivery, trust) — **L2 has no client yet** · **new town**
+100×76 with 15 signed buildings, 13 interiors, 16 ambient residents (`townfolk.js`, to be replaced by the NPC life
+system), 15 side quests · **client split**: `client.js` is a 125-line entry + `state net events input actions
+update overlay windows items hud win_char win_world win_shop win_social`; `scene2d.js` keeps the public API +
+`scene_view props ground map people fx stage` (see `docs/FILEMAP.md`).
 
-Done and merged: Phase 0–2 (lazy maps, cells, 4× grounds, zones, stones, 차원 균열) · game feel · bow art ·
-interiors v1 (cafe/hall/inn) · day/night + weather (maple got weather in 390f321) · autumn map · editor ·
-responsive HUD/window safe zone · radar minimap + `#w-map` (M; sound moved to Shift+M) · bag 40→100 + housing
-(sheet v10) · J1 jobs/stats core (sheet v11, 전직관 아르센, bow weapon, `legacyCls` bridge until J2) · L1 life core
-(sheet v12, 생활 window Shift+L, graded fish, cooking XP) · town design contract · token-saving process
-(slim AGENTS.md, `docs/FILEMAP.md`, `docs/RECIPES.md`, `docs/systems/*`, `scripts/stamp.mjs`, quiet tests,
-`shot.mjs --el/--clip`).
+Process: slim `AGENTS.md`, `docs/FILEMAP.md`, `docs/RECIPES.md`, `docs/systems/*` (one page per system),
+`ai/BRIEF.md` (brief template, routing by cost), quiet tests, `shot.mjs --el/--clip`, cache tag by
+`npm run stamp` (never by hand).
 
-## 2. Next work, in order
+## 3. Next work, in order (after §1)
 
-1. Merge T-B (above). Report to the owner with screenshots: town overview, plaza, a street with signs, one
-   interior, night residents (+ J2 skill effects when it lands).
-2. **Split the big client files** (token plan #4): `public/client.js` → window modules (`win_*.js`), `scene2d.js`
-   → render stages; no behaviour change, `shot.mjs --live` with no page errors, FILEMAP rows.
-3. `docs/systems/` pages for combat+skills+jobs, town, life, housing (the cloud pass skipped them).
-4. **J3** (jobs UI: stat tab, mastery/job tree window, job NPC flow, appearance-only creation) — jobs doc F.
-5. **L2 ∥ C1** (gathering/crafting/delivery/알바 board; co-op engine + 동동아파트) — life doc F; town buildings
-   now come from town.md (not the old C.1 coordinates). Then C2 (쥬쥬식당), C3 (캉캉대장간/보글연금공방).
-6. Codex backlog in `ai/TASKS.md` (owner runs `AI-TEAM.bat`); merge with `ai/merge.md`.
+1. **L2 client** from the contract in `docs/design/life-and-coop.md` H2: gathering nodes on maps (`map.nodes`,
+   `ng`), gather channel + tap, station windows (craft/alchemy/cook), pouch view, 알바 board + delivery, trust;
+   the 생활 window opens the four closed skills; material icons.
+2. **Co-op part-time jobs** C1 (engine + 동동아파트) → C2 (쥬쥬식당) → C3 (캉캉대장간/보글연금공방) — life doc F;
+   buildings/interiors already exist (town.md).
+3. **Town polish**: the spirit tree's canopy hides the fountain; build building models lazily (town load
+   380–450 ms); night light cost (+0.4 ms); sit on benches; job-tree cells cramped ("전직 가능" overlaps progress,
+   long names like 주술암살자); "두 갈래 길은 15" hint in `mastery.js`/lobby text.
+4. Verify in the live game: the nine new hybrid signatures (fx 120–128 were only seen in `_feel.html`), a real
+   job change end to end, a life-skill level-up (`lv2`).
+5. Codex backlog in `ai/TASKS.md`; merge with `ai/merge.md` / `AI-MERGE.bat`.
 
-Known follow-ups: quest tracker's last line clipped · windows can overlap after shrinking the browser · editor
-can't place stones/shrines and doesn't round-trip a map's `grade` · rift chest drawn under the player · sunset
-grade faint, night maybe too dark · old town tiles in `TELLER` (62) and `DIM_TOWN` (31) — T-A was asked to move
-them; verify · J1: new heroes strong at high tiers (J2 owns tuning) · L1: materials have no icons yet (L2), the
-meadow no longer gives trout (by design).
+Other known follow-ups: quest tracker's last line clipped · editor can't place stones/shrines, doesn't
+round-trip a map's `grade`/`nodes` · rift chest drawn under the player · sunset grade faint · `tests/maps` build-time
+assertion flakes when the machine is busy (passes alone) · dead `wheel` line in `tickMob` · Lv-50/trust-60
+cosmetics are titles only (need wardrobe art) · no side quests yet from service-role hosts (fixed by N4's chip).
 
-## 3. Rules the owner set
+## 4. Rules the owner set
 
-- **No online deploy until the owner asks.** Then: `npm run stamp`, commit, and deploy (Higgsfield website
+- **No online deploy until the owner asks.** Then `npm run stamp`, commit, deploy (Higgsfield website
   `b29f4e07-243a-4614-aedf-47202eeb93fd`, slug lumentale-online; or `npm run deploy:cf`).
-- Work locally, keep improving quality; Codex-only AI team (`ai/TEAM.txt` GEMINI=off).
+- Local development on the PC, pushing to GitHub `main`; Codex works in parallel (`ai/TEAM.txt` GEMINI=off).
+  Give Codex small, well-specified tasks through `ai/TASKS.md`; point it at the design contracts.
 - Art is code-drawn; external/AI images only via `asset/` + import-art + owner approval (AGENTS rule 7).
-- Integration branch `main`; small commits, English messages, Korean UI text; never edit `src/logic.js`.
-- Plugins on the PC (superpowers, frontend-design) are welcome; for game UI the pixel-art rules
+- Small commits, English messages, Korean UI text; never edit `src/logic.js`; never bump `?v=` by hand.
+- Token saving matters: follow `ai/BRIEF.md` (small agent tasks, lighter model for mechanical work, clipped shots).
+- PC plugins (superpowers, frontend-design) are welcome; for game UI the pixel-art rules
   (`.claude/skills/pixel-art/rules/`) and the GBA HUD style win over generic web design.
-- Local tools: `graphify update game` once, then use it (AGENTS token rule 0); codebase-memory per
-  `docs/LOCAL_SETUP.md` §6.
+- Local tools: `graphify update game` once (AGENTS token rule 0); codebase-memory per `docs/LOCAL_SETUP.md` §6.
