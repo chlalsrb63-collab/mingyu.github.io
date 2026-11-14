@@ -385,8 +385,9 @@ function mapPayload(m) {
     id: m.id, name: m.name, w: m.w, h: m.h, g: m.g, o: m.o, big: m.big, safe: m.safe, bgm: m.bgm,
     theme: m.theme || null, band: m.band || null, marks: m.marks || [],
     // a door names where it leads and how strong you should be to go there
-    portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]) })),
-    npcs: m.npcs,
+    // (a house door, into or out of an interior, is drawn as a door, not a magic gate)
+    portals: m.portals.map((p) => (m.theme === "interior" || MAPS[p.to].theme === "interior" ? { x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]), door: 1 } : { x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]) })),
+    npcs: m.npcs, style: m.style || null,
     // fires that always burn, with the stumps around them ({ x, y, seats: [[x, y]…] }, world pixels)
     camps: CAMPS[m.id] || [],
   };

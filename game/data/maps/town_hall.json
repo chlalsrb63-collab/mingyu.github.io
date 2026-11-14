@@ -1,0 +1,154 @@
+{
+  "v": 1,
+  "id": "town_hall",
+  "replaces": null,
+  "name": "넥서스 마을회관",
+  "theme": "interior",
+  "style": "hall",
+  "bgm": "hall",
+  "safe": true,
+  "band": null,
+  "w": 22,
+  "h": 18,
+  "ground": [
+    "llllllllllllllllllllll",
+    "llllllllllllllllllllll",
+    "llllllllllyyylllllllll",
+    "llxxllllllyyylllllllll",
+    "llxxllllllyyylllllllll",
+    "llxxllllllyyylllllllll",
+    "llllllllllyyylllllllll",
+    "llllllllllyyylllllllll",
+    "llllllllllyyylllllllll",
+    "llllllllllyyylllllllll",
+    "llllllllllyyylllllllll",
+    "llllllllllyyylllllllll",
+    "llllllllllyyylllllllll",
+    "llllllllllyyylllllllll",
+    "llllllllllyyylllllllll",
+    "llllllllllyyylllllllll",
+    "llllllllllyyylllllllll",
+    "llllllllllyyylllllllll"
+  ],
+  "objects": [
+    "==++=!==!=~~~=!==!=++=",
+    "=g    tt i   i tt   g_",
+    "=                    _",
+    "=                    _",
+    "=f                   _",
+    "=                    _",
+    "=  kkkkk      kkkkk  _",
+    "=  zzzzz      zzzzz  _",
+    "=  kkkkk      kkkkk  _",
+    "+                    _",
+    "+                    _",
+    "=  kkkkk      kkkkk  _",
+    "=  zzzzz      zzzzz  _",
+    "=b kkkkk      kkkkk v_",
+    "=b                   _",
+    "=b       i   i       _",
+    "=g                  g_",
+    "___________ __________"
+  ],
+  "entry": [
+    11,
+    16
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "hall_bori",
+      "name": "이장 보리",
+      "role": "talk",
+      "x": 11,
+      "y": 3,
+      "look": [
+        2,
+        0,
+        3,
+        "#5a3a6a",
+        "#e6d8c0",
+        0
+      ],
+      "lines": [
+        "넥서스 마을회관에 온 걸 환영하네. 이 마을은 모험가들 덕에 버티고 있지.",
+        "벽에 걸린 지도를 보게. 동쪽은 바람초원, 서쪽은 네온 시티 — 그 너머는 아직 아무도 다 그리지 못했다네.",
+        "피곤하면 벽난로 곁에 앉아 쉬어 가게. 회관의 불은 꺼진 적이 없어."
+      ]
+    },
+    {
+      "id": "hall_momo",
+      "name": "서기관 모모",
+      "role": "achieve",
+      "x": 16,
+      "y": 3,
+      "look": [
+        0,
+        2,
+        0,
+        "#d8a830",
+        "#fff0c0",
+        0
+      ],
+      "pose": "write",
+      "lines": [
+        "자네의 공적은 내가 빠짐없이 적어 두지. 저 진열장의 트로피들도 다 누군가의 이야기라네."
+      ]
+    },
+    {
+      "id": "hall_pipi",
+      "name": "지도 제작자 피피",
+      "role": "collector",
+      "x": 5,
+      "y": 3,
+      "look": [
+        3,
+        1,
+        2,
+        "#3a6a42",
+        "#a8845c",
+        1
+      ],
+      "pose": "read",
+      "lines": [
+        "몬스터를 많이 만나 볼수록 지도가 정확해져. 도감을 채워 오면 그 땅의 힘을 나눠 줄게."
+      ]
+    },
+    {
+      "id": "hall_hana",
+      "name": "게시판지기 해나",
+      "role": "daily",
+      "x": 19,
+      "y": 14,
+      "look": [
+        3,
+        0,
+        1,
+        "#4a8ad0",
+        "#ffd0a0",
+        2
+      ],
+      "lines": [
+        "회관 게시판에도 오늘의 과제가 붙어 있어요. 매일 아침 6시에 새로 바뀐답니다!"
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "x": 11,
+      "y": 17,
+      "to": "town",
+      "tx": 19,
+      "ty": 6
+    }
+  ],
+  "fires": [
+    [
+      2,
+      4
+    ]
+  ],
+  "waypoint": null,
+  "fishing": false,
+  "boss": null
+}

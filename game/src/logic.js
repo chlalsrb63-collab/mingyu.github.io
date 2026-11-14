@@ -134,9 +134,12 @@ const SKILLS = {
 /** Maps, doors, NPCs and quests made in the world map editor (docs/editor/SCHEMA.md). */
 const DATA = {
   maps: [
+    {"v":1,"id":"starlight_inn","replaces":null,"name":"모닥별 여관","theme":"interior","style":"inn","bgm":"inn","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","fffffffffffllllllllf","ffffxxxffffllllllllf","fffffffffffllllllllf","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffffffefffffffff"],"objects":["===+==@=+==~===+=+==","=w  rfr    p p p ig_","=                  _","=  s   s           _","=                  _","=                  _","+                  _","+  kkkkk           _","=  zzzzz           _","=  kkkkk        ww _","=                 N_","=ok          mmmmm _","=k                 _","=g                i_","=                  _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"inn_maru","name":"여관 주인 마루","role":"shop","x":15,"y":10,"look":[2,3,1,"#8a6a3a","#e6cca4",0],"pose":"wipe","goods":["inn_stew","inn_bread","hp_s","hp_m","mp_s","mp_m","recall","camp"],"lines":["모닥별 여관에 어서 오시게! 스튜가 막 끓었다네.","벽난로 곁에 앉아 쉬면 온기가 오래 남지. 먼 길 떠나기 전엔 꼭 쉬어 가게."]},{"id":"inn_lira","name":"음유시인 리라","role":"talk","x":9,"y":5,"look":[1,2,0,"#7a3a5a","#fff0e4",0],"lines":["♪ 별이 모닥불에 내려앉은 밤, 꼬리 긴 영웅이 길을 떠났네 ♪","심연의 노래를 아나? 아직 끝까지 들은 사람이 없다지."]},{"id":"inn_toto","name":"졸린 나그네 토토","role":"talk","x":8,"y":3,"look":[1,0,3,"#5e6a88","#c8b090",3],"pose":"doze","lines":["음냐… 오 분만 더…","…아, 미안. 숲에서 사흘을 걸었더니 눈이 감기네."]}],"portals":[{"x":10,"y":15,"to":"town","tx":9,"ty":9}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
+    {"v":1,"id":"tales_cafe","replaces":null,"name":"테일즈 카페","theme":"interior","style":"cafe","bgm":"cafe","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","ffffffffffffffffffff","ffffxxxfffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","fuuuuuqqqqqqffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","ffffffffffefffffffff"],"objects":["==++===@=^^=~=======","=g  bfb      rrrb g_","=   V            N _","=  s   s           _","=           mddjmm _","=                 w_","+ k               g_","+ o          k     _","= k          o     _","=      kok   k ko  _","=i              k  _","=                  _","=  ok              _","=  k              i_","=g                 _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"cafe_moka","name":"카페 주인 모카","role":"shop","x":16,"y":3,"look":[0,3,1,"#7a4a2c","#f4e0c8",0],"pose":"wipe","goods":["cafe_coffee","cafe_cocoa","cafe_tea","cafe_scone","cafe_pie"],"lines":["어서 와요, 테일즈 카페예요! 오늘의 블렌드는 고소한 맛이 일품이죠.","사냥 나가기 전에 따뜻한 거 한 잔 어때요? 힘이 날 거예요.","벽난로 앞에 앉아 쉬면 몸이 금방 녹아요. 고양이 깨우지는 말고요!"]},{"id":"cafe_somi","name":"단골 손님 솜이","role":"talk","x":10,"y":10,"look":[3,1,0,"#d86a8a","#fff4e8",1],"pose":"sip","lines":["여기 코코아는 마시멜로가 두 개나 들어 있어!","창가 자리에 햇살이 들면 깜빡 졸게 된다니까.","바람초원 들꽃으로 우린 허브차, 꼭 마셔 봐."]},{"id":"cafe_lumi","name":"책벌레 루미","role":"talk","x":3,"y":9,"look":[1,4,2,"#3e6a8a","#d8ccff",0],"pose":"read","lines":["쉿, 지금 제일 재밌는 대목이야… 피의 심연 끝에는 뭐가 있을까?","옛날 모험가들은 이 카페에서 파티를 짰대. 지금 너처럼!"]}],"portals":[{"x":10,"y":15,"to":"town","tx":29,"ty":24}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
+    {"v":1,"id":"town_hall","replaces":null,"name":"넥서스 마을회관","theme":"interior","style":"hall","bgm":"hall","safe":true,"band":null,"w":22,"h":18,"ground":["llllllllllllllllllllll","llllllllllllllllllllll","llllllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll"],"objects":["==++=!==!=~~~=!==!=++=","=g    tt i   i tt   g_","=                    _","=                    _","=f                   _","=                    _","=  kkkkk      kkkkk  _","=  zzzzz      zzzzz  _","=  kkkkk      kkkkk  _","+                    _","+                    _","=  kkkkk      kkkkk  _","=  zzzzz      zzzzz  _","=b kkkkk      kkkkk v_","=b                   _","=b       i   i       _","=g                  g_","___________ __________"],"entry":[11,16],"spawns":[],"npcs":[{"id":"hall_bori","name":"이장 보리","role":"talk","x":11,"y":3,"look":[2,0,3,"#5a3a6a","#e6d8c0",0],"lines":["넥서스 마을회관에 온 걸 환영하네. 이 마을은 모험가들 덕에 버티고 있지.","벽에 걸린 지도를 보게. 동쪽은 바람초원, 서쪽은 네온 시티 — 그 너머는 아직 아무도 다 그리지 못했다네.","피곤하면 벽난로 곁에 앉아 쉬어 가게. 회관의 불은 꺼진 적이 없어."]},{"id":"hall_momo","name":"서기관 모모","role":"achieve","x":16,"y":3,"look":[0,2,0,"#d8a830","#fff0c0",0],"pose":"write","lines":["자네의 공적은 내가 빠짐없이 적어 두지. 저 진열장의 트로피들도 다 누군가의 이야기라네."]},{"id":"hall_pipi","name":"지도 제작자 피피","role":"collector","x":5,"y":3,"look":[3,1,2,"#3a6a42","#a8845c",1],"pose":"read","lines":["몬스터를 많이 만나 볼수록 지도가 정확해져. 도감을 채워 오면 그 땅의 힘을 나눠 줄게."]},{"id":"hall_hana","name":"게시판지기 해나","role":"daily","x":19,"y":14,"look":[3,0,1,"#4a8ad0","#ffd0a0",2],"lines":["회관 게시판에도 오늘의 과제가 붙어 있어요. 매일 아침 6시에 새로 바뀐답니다!"]}],"portals":[{"x":11,"y":17,"to":"town","tx":19,"ty":6}],"fires":[[2,4]],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"town","safe":true,"band":null,"w":40,"h":32,"ground":["tt,t...............pp...\"..,.....tt.....",".t..tt....,........pp.,....\".......tt...","ttttt.t............pp.,,...\"..,.,tt.tt..","ttttttt\".,...\",...\"pp....,.,.....tt.tt..",".ttt,...,....,.....pp............,ttt..t","ttt...t...........,pp............tttt...","..,,.,.\"...........pp....,........\"...\".","\",.....,..\".,......pp..,......,.......,.","....,,...,...\".....pp.....,........,.,..","....,...pppppppppppppppppppppppp........","........pp.........pp.......\".pp........",".,......pp.........pp.,,......pp........",".......,pp\".,.\".oooooooo.,...ssssss.....","....\"\"\",pp.,...oooooooooo,.sswwwwwwss,..","....\"\"\"\"pp..,,oooooooooooo.swwwwwwwws...",".,.\"\"\"\",pp\"...oooooooooooobbbbwwwwwws.,.","....\"\"\".pp....oooooooooooo.swwwwwwwws..,","....\"\"\".pp....oooooooooooo,sswwwwwwss...","......\",pp.....oooooooooo....ssssss.....",".....,..pp.\"....oooooooo......pp...,,...",".,.,.,\".pp\"......\",pp.........pp,,.....,","...,....pppppppppppppppppppppppp....,...","....,,..pp,..,,..,....,..\"....pp........","..........,.....,..............,..\".,...","...,.\",\".,,.,............,...\"\".........","......,.....\".......,........,,.........",".....,..,..,....,..............,..,..,..","..........,,..,....,......\".\"...........","..tt.t...............,..........,,..tt.t","t..tttt\".,.....,..\"...,...........t,tt,t",".ttt.t...............,.....,.....ttttttt","...t.tt.,.....\"..,.\"....\".......\"t,..t,t"],"objects":["TTPTTTTTTTTTTTTTTT    TPTTPPTTTTTTTTTTTP","TTTTTTTPTTTTTTPTPT    TTTTTTTPTPTTTTTTTT","TT                                    PT","TT         HH     L  L    HH          TT","TT    hhhh   hhhh           hhhh      TT","TT    hhhh   hhhh     G     hhhh      PT","TT    hhhh   hhhh           hhhh   u  TT","TT                                    TT","TT                                  B TT","PT B                                  TT","TT                                    TT","TT                                    TT","TT FFFFF       L        L             TT","TT F   F   B                 e    e   TT","TP F   F                              TT","PT F   F           T                  TT","TP F   F                           e  PP","PT F   F   B                     e    PT","TP FF FF                              TP","TT             L        L             TT","TT  u                                 TT","TP                                    TT","TT                                    TT","TT  hhhh                       hhhh   TP","TT  hhhh      hhhh      B      hhhh   PT","TT  hhhh      hhhh             hhhh   TP","PT          B hhhh        B         B PT","TT        u      E    u               TP","PT                                    TT","PT                                    PT","TPPTPTPTTTTTTTTPTTTTTPPTTPTTTPTTTTTTPTTP","TPTTPTTTTTTPTTTTTTTTTTTTTTTPTTTTTPTTTTPT"],"entry":[20,4],"spawns":[],"npcs":[{"id":"willow_elder","name":"촌장 버들","role":"quest","x":18,"y":13,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 도와주면 섭섭지 않게 사례하지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":25,"y":16,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."]},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":15,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 울타리 안은 밟으면 안 돼!","넥서스 광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":22,"y":25,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 넥서스 광장이야. 거기서 동쪽은 바람초원이고."]}],"portals":[{"x":19,"y":1,"to":"town","tx":19,"ty":25},{"x":20,"y":1,"to":"town","tx":20,"ty":25}],"fires":[[19,25]],"waypoint":[22,7],"fishing":true,"boss":null,"marks":[{"x":22,"y":5,"kind":"sign","label":"↑ 넥서스 광장","to":"town"}]},
   ],
-  links: [{"map":"town","x":19,"y":27,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":20,"y":27,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"}],
+  links: [{"map":"town","x":19,"y":27,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":20,"y":27,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"},{"map":"town","x":29,"y":23,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":30,"y":23,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":18,"y":5,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":19,"y":5,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":9,"y":8,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":10,"y":8,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"}],
   npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":21,"y":26,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]}],
   quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"넥서스 광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":2,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false}]},
 };
@@ -182,6 +185,14 @@ const ITEMS = {
   food_s: { name: "구운 송사리", type: "food", heal: 80, buff: { xp: 5, atk: 0, min: 10 }, price: 40, desc: "HP 80 회복. 10분간 경험치 +5%." },
   food_m: { name: "송어 소금구이", type: "food", heal: 220, buff: { xp: 10, atk: 0, min: 10 }, price: 150, desc: "HP 220 회복. 10분간 경험치 +10%." },
   food_l: { name: "황금 잉어찜", type: "food", heal: 9999, buff: { xp: 15, atk: 8, min: 15 }, price: 1000, desc: "HP 전부 회복. 15분간 경험치 +15%, 공격력 +8%." },
+  // the town's cafe and inn (data/maps/tales_cafe.json, starlight_inn.json): sold only at their own counters
+  cafe_coffee: { name: "테일즈 블렌드", type: "food", mana: 120, buff: { xp: 0, atk: 5, min: 10 }, price: 90, desc: "고소하고 진한 커피. MP 120 회복. 10분간 공격력 +5%." },
+  cafe_cocoa: { name: "마시멜로 코코아", type: "food", heal: 150, buff: { xp: 5, atk: 0, min: 15 }, price: 70, desc: "달콤하고 따끈하다. HP 150 회복. 15분간 경험치 +5%." },
+  cafe_tea: { name: "들꽃 허브차", type: "food", heal: 60, mana: 80, buff: { xp: 3, atk: 0, min: 20 }, price: 50, desc: "바람초원 들꽃을 우렸다. HP 60, MP 80 회복. 20분간 경험치 +3%." },
+  cafe_scone: { name: "버터 스콘", type: "food", heal: 220, buff: { xp: 5, atk: 0, min: 10 }, price: 60, desc: "겉은 바삭, 속은 촉촉. HP 220 회복. 10분간 경험치 +5%." },
+  cafe_pie: { name: "산딸기 파이", type: "food", heal: 420, buff: { xp: 8, atk: 3, min: 15 }, price: 180, desc: "모카의 자랑. HP 420 회복. 15분간 경험치 +8%, 공격력 +3%." },
+  inn_stew: { name: "여관 스튜", type: "food", heal: 360, mana: 60, buff: { xp: 6, atk: 0, min: 20 }, price: 110, desc: "뭉근히 끓인 고기 스튜. HP 360, MP 60 회복. 20분간 경험치 +6%." },
+  inn_bread: { name: "갓 구운 호밀빵", type: "food", heal: 120, buff: { xp: 2, atk: 0, min: 10 }, price: 25, desc: "든든한 한 덩이. HP 120 회복. 10분간 경험치 +2%." },
   // scrolls of blessing, ten minutes each; reading the same one again only refills its time (메이플 주문서 · 바람의나라 부적)
   sc_atk: { name: "공격의 주문서", type: "buff", buff: "atk", pct: 10, min: 10, price: 300, desc: "10분간 공격력 +10%. 같은 주문서는 겹치지 않고 남은 시간만 다시 채운다." },
   sc_def: { name: "방어의 주문서", type: "buff", buff: "def", pct: 12, min: 10, price: 300, desc: "10분간 받는 피해 -12%. 같은 주문서는 겹치지 않고 남은 시간만 다시 채운다." },
@@ -2845,8 +2856,9 @@ function mapPayload(m) {
     id: m.id, name: m.name, w: m.w, h: m.h, g: m.g, o: m.o, big: m.big, safe: m.safe, bgm: m.bgm,
     theme: m.theme || null, band: m.band || null, marks: m.marks || [],
     // a door names where it leads and how strong you should be to go there
-    portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]) })),
-    npcs: m.npcs,
+    // (a house door, into or out of an interior, is drawn as a door, not a magic gate)
+    portals: m.portals.map((p) => (m.theme === "interior" || MAPS[p.to].theme === "interior" ? { x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]), door: 1 } : { x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]) })),
+    npcs: m.npcs, style: m.style || null,
     // fires that always burn, with the stumps around them ({ x, y, seats: [[x, y]…] }, world pixels)
     camps: CAMPS[m.id] || [],
   };
@@ -2860,7 +2872,11 @@ function mapPayload(m) {
 // here it is moved to the nearest open tile so nobody is ever stuck in a wall).
 // Malformed entries are skipped: npm run data:check is where the owner hears about them.
 
-const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn"];
+const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn", "interior"];
+/** The looks an interior can have (wallpaper, wood and light; public/iso_interior.js). */
+const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
+/** Little idle acts an NPC can play out (public/iso_interior.js npcPose). */
+const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
 /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
 const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder"];
 const BUILTIN_MAPS = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
@@ -2876,6 +2892,12 @@ function npcFrom(n, m) {
   const lines = Array.isArray(n.lines) ? n.lines.filter((l) => typeof l === "string" && l).slice(0, 12).map((l) => l.slice(0, 240)) : [];
   if (lines.length) { out.lines = lines; out.say = lines[0]; }
   if (n.custom) out.custom = 1;
+  // a shopkeeper with their own counter sells only these (items that exist and can be bought)
+  if (out.role === "shop" && Array.isArray(n.goods)) {
+    const goods = [...new Set(n.goods.filter((id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && ITEMS[id].price > 0 && !ITEMS[id].cls))].slice(0, 24);
+    if (goods.length) out.goods = goods;
+  }
+  if (NPC_POSES.includes(n.pose)) out.pose = n.pose;
   return out;
 }
 
@@ -2900,6 +2922,7 @@ function fromEditor(d, id) {
   m.g = d.ground.map((r) => r.split(""));
   m.o = d.objects.map((r) => r.split(""));
   m.custom = true;
+  if (ROOM_STYLES.includes(d.style)) m.style = d.style;
   m.theme = THEMES.includes(d.theme) ? d.theme : "meadow";
   m.bgm = txt(d.bgm, 24) || "field";
   m.safe = !!d.safe;
@@ -5459,6 +5482,15 @@ function npcNear(p, role) {
   }
   return false;
 }
+/** What the shopkeepers within reach sell: their own `goods`, or the general SHOP list. */
+function goodsNear(p) {
+  const out = new Set();
+  for (const n of MAPS[p.map].npcs) {
+    if (n.role !== "shop" || dist(p.x, p.y, n.x * T + 8, n.y * T + 12) >= 56) continue;
+    for (const id of n.goods || SHOP) out.add(id);
+  }
+  return out;
+}
 const bad = (error) => ({ ok: false, error });
 const OK = { ok: true };
 function enhCost(g) {
@@ -5726,10 +5758,11 @@ export function validateAction(S, pid, a) {
       if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
       return ch.inv.some(junk) ? OK : bad("팔 일반 장비가 없습니다");
     case "buy": {
-      if (!SHOP.includes(a.id)) return bad("팔지 않는 물건입니다");
+      if (typeof a.id !== "string" || !Object.hasOwn(ITEMS, a.id) && !SHOP.includes(a.id)) return bad("팔지 않는 물건입니다");
       const n = a.n | 0;
       if (n < 1 || n > STACK) return bad("잘못된 수량");
       if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
+      if (!goodsNear(p).has(a.id)) return bad("이 가게에서는 팔지 않는 물건입니다");
       const id = resolveItem(a.id, ch.cls);
       if (ITEMS[id].cls && ITEMS[id].cls !== ch.cls) return bad("다른 직업의 장비입니다");
       if (ch.gold < ITEMS[id].price * n) return bad("골드가 부족합니다");

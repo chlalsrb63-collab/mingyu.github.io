@@ -6,6 +6,15 @@ function npcNear(p, role) {
   }
   return false;
 }
+/** What the shopkeepers within reach sell: their own `goods`, or the general SHOP list. */
+function goodsNear(p) {
+  const out = new Set();
+  for (const n of MAPS[p.map].npcs) {
+    if (n.role !== "shop" || dist(p.x, p.y, n.x * T + 8, n.y * T + 12) >= 56) continue;
+    for (const id of n.goods || SHOP) out.add(id);
+  }
+  return out;
+}
 const bad = (error) => ({ ok: false, error });
 const OK = { ok: true };
 function enhCost(g) {
@@ -273,10 +282,11 @@ export function validateAction(S, pid, a) {
       if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
       return ch.inv.some(junk) ? OK : bad("팔 일반 장비가 없습니다");
     case "buy": {
-      if (!SHOP.includes(a.id)) return bad("팔지 않는 물건입니다");
+      if (typeof a.id !== "string" || !Object.hasOwn(ITEMS, a.id) && !SHOP.includes(a.id)) return bad("팔지 않는 물건입니다");
       const n = a.n | 0;
       if (n < 1 || n > STACK) return bad("잘못된 수량");
       if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
+      if (!goodsNear(p).has(a.id)) return bad("이 가게에서는 팔지 않는 물건입니다");
       const id = resolveItem(a.id, ch.cls);
       if (ITEMS[id].cls && ITEMS[id].cls !== ch.cls) return bad("다른 직업의 장비입니다");
       if (ch.gold < ITEMS[id].price * n) return bad("골드가 부족합니다");

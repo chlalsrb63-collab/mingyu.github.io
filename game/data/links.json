@@ -1,7 +1,77 @@
 {
   "v": 1,
   "links": [
-    { "map": "town", "x": 19, "y": 27, "to": "willow", "tx": 19, "ty": 3, "label": "버드나무 마을" },
-    { "map": "town", "x": 20, "y": 27, "to": "willow", "tx": 20, "ty": 3, "label": "버드나무 마을" }
+    {
+      "map": "town",
+      "x": 19,
+      "y": 27,
+      "to": "willow",
+      "tx": 19,
+      "ty": 3,
+      "label": "버드나무 마을"
+    },
+    {
+      "map": "town",
+      "x": 20,
+      "y": 27,
+      "to": "willow",
+      "tx": 20,
+      "ty": 3,
+      "label": "버드나무 마을"
+    },
+    {
+      "map": "town",
+      "x": 29,
+      "y": 23,
+      "to": "tales_cafe",
+      "tx": 10,
+      "ty": 14,
+      "label": "테일즈 카페"
+    },
+    {
+      "map": "town",
+      "x": 30,
+      "y": 23,
+      "to": "tales_cafe",
+      "tx": 10,
+      "ty": 14,
+      "label": "테일즈 카페"
+    },
+    {
+      "map": "town",
+      "x": 18,
+      "y": 5,
+      "to": "town_hall",
+      "tx": 11,
+      "ty": 16,
+      "label": "넥서스 마을회관"
+    },
+    {
+      "map": "town",
+      "x": 19,
+      "y": 5,
+      "to": "town_hall",
+      "tx": 11,
+      "ty": 16,
+      "label": "넥서스 마을회관"
+    },
+    {
+      "map": "town",
+      "x": 9,
+      "y": 8,
+      "to": "starlight_inn",
+      "tx": 10,
+      "ty": 14,
+      "label": "모닥별 여관"
+    },
+    {
+      "map": "town",
+      "x": 10,
+      "y": 8,
+      "to": "starlight_inn",
+      "tx": 10,
+      "ty": 14,
+      "label": "모닥별 여관"
+    }
   ]
 }

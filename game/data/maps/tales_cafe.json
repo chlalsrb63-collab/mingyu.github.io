@@ -1,0 +1,143 @@
+{
+  "v": 1,
+  "id": "tales_cafe",
+  "replaces": null,
+  "name": "테일즈 카페",
+  "theme": "interior",
+  "style": "cafe",
+  "bgm": "cafe",
+  "safe": true,
+  "band": null,
+  "w": 20,
+  "h": 16,
+  "ground": [
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffxxxfffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffqqqqqqffffffff",
+    "ffffffqqqqqqffffffff",
+    "ffffffqqqqqqffffffff",
+    "ffffffqqqqqqffffffff",
+    "fuuuuuqqqqqqffffffff",
+    "fuuuuuffffffffffffff",
+    "fuuuuuffffffffffffff",
+    "fuuuuuffffffffffffff",
+    "ffffffffffefffffffff"
+  ],
+  "objects": [
+    "==++===@=^^=~=======",
+    "=g  bfb      rrrb g_",
+    "=   V            N _",
+    "=  s   s           _",
+    "=           mddjmm _",
+    "=                 w_",
+    "+ k               g_",
+    "+ o          k     _",
+    "= k          o     _",
+    "=      kok   k ko  _",
+    "=i              k  _",
+    "=                  _",
+    "=  ok              _",
+    "=  k              i_",
+    "=g                 _",
+    "__________ _________"
+  ],
+  "entry": [
+    10,
+    14
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "cafe_moka",
+      "name": "카페 주인 모카",
+      "role": "shop",
+      "x": 16,
+      "y": 3,
+      "look": [
+        0,
+        3,
+        1,
+        "#7a4a2c",
+        "#f4e0c8",
+        0
+      ],
+      "pose": "wipe",
+      "goods": [
+        "cafe_coffee",
+        "cafe_cocoa",
+        "cafe_tea",
+        "cafe_scone",
+        "cafe_pie"
+      ],
+      "lines": [
+        "어서 와요, 테일즈 카페예요! 오늘의 블렌드는 고소한 맛이 일품이죠.",
+        "사냥 나가기 전에 따뜻한 거 한 잔 어때요? 힘이 날 거예요.",
+        "벽난로 앞에 앉아 쉬면 몸이 금방 녹아요. 고양이 깨우지는 말고요!"
+      ]
+    },
+    {
+      "id": "cafe_somi",
+      "name": "단골 손님 솜이",
+      "role": "talk",
+      "x": 10,
+      "y": 10,
+      "look": [
+        3,
+        1,
+        0,
+        "#d86a8a",
+        "#fff4e8",
+        1
+      ],
+      "pose": "sip",
+      "lines": [
+        "여기 코코아는 마시멜로가 두 개나 들어 있어!",
+        "창가 자리에 햇살이 들면 깜빡 졸게 된다니까.",
+        "바람초원 들꽃으로 우린 허브차, 꼭 마셔 봐."
+      ]
+    },
+    {
+      "id": "cafe_lumi",
+      "name": "책벌레 루미",
+      "role": "talk",
+      "x": 3,
+      "y": 9,
+      "look": [
+        1,
+        4,
+        2,
+        "#3e6a8a",
+        "#d8ccff",
+        0
+      ],
+      "pose": "read",
+      "lines": [
+        "쉿, 지금 제일 재밌는 대목이야… 피의 심연 끝에는 뭐가 있을까?",
+        "옛날 모험가들은 이 카페에서 파티를 짰대. 지금 너처럼!"
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "x": 10,
+      "y": 15,
+      "to": "town",
+      "tx": 29,
+      "ty": 24
+    }
+  ],
+  "fires": [
+    [
+      5,
+      2
+    ]
+  ],
+  "waypoint": null,
+  "fishing": false,
+  "boss": null
+}

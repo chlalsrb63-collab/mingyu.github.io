@@ -47,6 +47,8 @@ const GROUND_NAME = {
   w: "물 (못 건넘)", b: "나무 다리·부두", r: "자갈 바닥", v: "폐허 바닥·돌계단", j: "늪", c: "동굴·던전 바닥", d: "던전 바닥 (어수선)",
   n: "지하묘지 통로", i: "지하묘지 둥근 바닥", W: "암벽·낭떠러지 (못 건넘)", k: "보도", a: "아스팔트", m: "차선", g: "철판·배수 바닥",
   "=": "왕도 포석", "%": "낙엽 더미", "&": "병든 땅",
+  // indoors (theme "interior", public/iso_interior.js)
+  f: "실내 마루 (밝은 나무)", l: "실내 마루 (호두나무)", x: "벽난로 앞 돌바닥", q: "체크무늬 깔개", u: "둥근 깔개", y: "긴 카펫 (러너)", e: "현관 매트",
 };
 /** Korean names for every object character (any object blocks the tile). */
 const OBJECT_NAME = {
@@ -56,6 +58,10 @@ const OBJECT_NAME = {
   x: "콘크리트 블록", y: "소화전", Z: "콘크리트 벽", c: "자동차", I: "예배당 의자", 0: "살덩이 눈자루", 1: "석관", 2: "세워 둔 관",
   3: "촛대", 4: "뼈 무더기", 5: "해골 기둥", 6: "배수관", 7: "녹슨 드럼통", 8: "솟은 갈비뼈", 9: "제단", X: "피의 제단",
   J: "기운 묘비", V: "썩은 왕국 깃발", z: "옛 왕의 석상", N: "무너진 예배당 (4×2 칸)", d: "초가 오두막 (3×2 칸)", i: "무너진 망루 (3×2 칸)", f: "쓰러진 왕도 성문 (4×2 칸)",
+  // indoors: back walls (north row / west column), the cut-down front wall, furniture (any theme draws them)
+  "=": "실내 벽", "+": "실내 벽 (창문)", "^": "실내 벽 (칠판 메뉴)", "~": "실내 벽 (그림·지도)", "@": "실내 벽 (벽시계)", "!": "실내 벽 (깃발)", _: "잘린 앞벽 (낮은 벽)",
+  o: "둥근 탁자 (등불)", k: "의자 (탁자를 향함)", s: "안락의자", m: "카운터", j: "카운터 (커피 머신)", "$": "빵 진열장", b: "책장", r: "찬장 (병·시계)", t: "트로피 진열장",
+  "#": "벽난로", g: "화분", "*": "등불 기둥", v: "게시판", "-": "긴 탁자", p: "침대", w: "나무통", "]": "나무 상자", "%": "잠자는 고양이 (방석)",
 };
 /** The colours the minimap uses (public/art.js renderMini), read from the client source so they never drift. */
 function miniColours() {

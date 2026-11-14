@@ -6,7 +6,11 @@
 // here it is moved to the nearest open tile so nobody is ever stuck in a wall).
 // Malformed entries are skipped: npm run data:check is where the owner hears about them.
 
-const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn"];
+const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn", "interior"];
+/** The looks an interior can have (wallpaper, wood and light; public/iso_interior.js). */
+const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
+/** Little idle acts an NPC can play out (public/iso_interior.js npcPose). */
+const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
 /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
 const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder"];
 const BUILTIN_MAPS = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
@@ -22,6 +26,12 @@ function npcFrom(n, m) {
   const lines = Array.isArray(n.lines) ? n.lines.filter((l) => typeof l === "string" && l).slice(0, 12).map((l) => l.slice(0, 240)) : [];
   if (lines.length) { out.lines = lines; out.say = lines[0]; }
   if (n.custom) out.custom = 1;
+  // a shopkeeper with their own counter sells only these (items that exist and can be bought)
+  if (out.role === "shop" && Array.isArray(n.goods)) {
+    const goods = [...new Set(n.goods.filter((id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && ITEMS[id].price > 0 && !ITEMS[id].cls))].slice(0, 24);
+    if (goods.length) out.goods = goods;
+  }
+  if (NPC_POSES.includes(n.pose)) out.pose = n.pose;
   return out;
 }
 
@@ -46,6 +56,7 @@ function fromEditor(d, id) {
   m.g = d.ground.map((r) => r.split(""));
   m.o = d.objects.map((r) => r.split(""));
   m.custom = true;
+  if (ROOM_STYLES.includes(d.style)) m.style = d.style;
   m.theme = THEMES.includes(d.theme) ? d.theme : "meadow";
   m.bgm = txt(d.bgm, 24) || "field";
   m.safe = !!d.safe;

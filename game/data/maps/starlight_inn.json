@@ -1,0 +1,143 @@
+{
+  "v": 1,
+  "id": "starlight_inn",
+  "replaces": null,
+  "name": "모닥별 여관",
+  "theme": "interior",
+  "style": "inn",
+  "bgm": "inn",
+  "safe": true,
+  "band": null,
+  "w": 20,
+  "h": 16,
+  "ground": [
+    "ffffffffffffffffffff",
+    "fffffffffffllllllllf",
+    "ffffxxxffffllllllllf",
+    "fffffffffffllllllllf",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffffffffffffffff",
+    "ffffffuuuuuuffffffff",
+    "ffffffuuuuuuffffffff",
+    "ffffffuuuuuuffffffff",
+    "ffffffuuuuuuffffffff",
+    "ffffffffffefffffffff"
+  ],
+  "objects": [
+    "===+==@=+==~===+=+==",
+    "=w  rfr    p p p ig_",
+    "=                  _",
+    "=  s   s           _",
+    "=                  _",
+    "=                  _",
+    "+                  _",
+    "+  kkkkk           _",
+    "=  zzzzz           _",
+    "=  kkkkk        ww _",
+    "=                 N_",
+    "=ok          mmmmm _",
+    "=k                 _",
+    "=g                i_",
+    "=                  _",
+    "__________ _________"
+  ],
+  "entry": [
+    10,
+    14
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "inn_maru",
+      "name": "여관 주인 마루",
+      "role": "shop",
+      "x": 15,
+      "y": 10,
+      "look": [
+        2,
+        3,
+        1,
+        "#8a6a3a",
+        "#e6cca4",
+        0
+      ],
+      "pose": "wipe",
+      "goods": [
+        "inn_stew",
+        "inn_bread",
+        "hp_s",
+        "hp_m",
+        "mp_s",
+        "mp_m",
+        "recall",
+        "camp"
+      ],
+      "lines": [
+        "모닥별 여관에 어서 오시게! 스튜가 막 끓었다네.",
+        "벽난로 곁에 앉아 쉬면 온기가 오래 남지. 먼 길 떠나기 전엔 꼭 쉬어 가게."
+      ]
+    },
+    {
+      "id": "inn_lira",
+      "name": "음유시인 리라",
+      "role": "talk",
+      "x": 9,
+      "y": 5,
+      "look": [
+        1,
+        2,
+        0,
+        "#7a3a5a",
+        "#fff0e4",
+        0
+      ],
+      "lines": [
+        "♪ 별이 모닥불에 내려앉은 밤, 꼬리 긴 영웅이 길을 떠났네 ♪",
+        "심연의 노래를 아나? 아직 끝까지 들은 사람이 없다지."
+      ]
+    },
+    {
+      "id": "inn_toto",
+      "name": "졸린 나그네 토토",
+      "role": "talk",
+      "x": 8,
+      "y": 3,
+      "look": [
+        1,
+        0,
+        3,
+        "#5e6a88",
+        "#c8b090",
+        3
+      ],
+      "pose": "doze",
+      "lines": [
+        "음냐… 오 분만 더…",
+        "…아, 미안. 숲에서 사흘을 걸었더니 눈이 감기네."
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "x": 10,
+      "y": 15,
+      "to": "town",
+      "tx": 9,
+      "ty": 9
+    }
+  ],
+  "fires": [
+    [
+      5,
+      2
+    ]
+  ],
+  "waypoint": null,
+  "fishing": false,
+  "boss": null
+}
