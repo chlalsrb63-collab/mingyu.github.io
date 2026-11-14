@@ -6,6 +6,24 @@
 
 ---
 
+## 지금은 Codex 혼자 (Gemini 꺼짐 — `ai/TEAM.txt`가 `GEMINI=off`)
+
+Codex가 구현과 기획·글쓰기를 번갈아 맡습니다. `AI-TEAM.bat` / `AI-AUTO.bat`도 Codex만 실행합니다.
+
+**Codex에게 (기본 — 이것만 붙여 넣으면 됨)**
+```
+AGENTS.md, ai/codex.md, ai/TEAM.txt, ai/TASKS.md, ai/ROADMAP.md 를 읽어. 지금은 Gemini가 꺼져 있으니 너 혼자
+구현과 기획을 번갈아 맡는다. ai/codex.md 2번 순서(a→d)대로 작업 딱 하나만 골라서 끝까지 해:
+구현이면 테스트(npm run test:rules) 통과 + 보고서 + codex/work 커밋, 기획이면 docs/ 문서 +
+ai/proposals/codex-*.md 작업 제안 + 보고서. 질문하지 말고, 막히면 보고서에 이유와 분해안을 쓰고 멈춰.
+```
+
+**Codex에게 (기획만 시키기)**
+```
+AGENTS.md 와 ai/gemini.md 의 산출물 규칙을 읽고, Gemini 대신 ROADMAP.md 개선 축 "<A~H 중 하나>" 를 점검해.
+게임 코드는 고치지 말고 docs/ 에 분석 문서, ai/proposals/codex-<축>.md 에 바로 구현 가능한 작업 3~6줄을 써.
+```
+
 ## Codex (구현 · 테스트)
 
 **1) 보드의 다음 일 하나**

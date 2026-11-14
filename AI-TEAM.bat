@@ -1,6 +1,6 @@
 @echo off
-rem Opens Codex and Gemini side by side, each in its own window and workspace,
-rem and each starts on its next task from ai\TASKS.md.
+rem Opens the AI workers, each in its own window and workspace; each starts on its next task
+rem from ai\TASKS.md (else ai\ROADMAP.md). Gemini only when ai\TEAM.txt says GEMINI=on.
 cd /d "%~dp0"
 start "Tales Tales - codex" cmd /k ""%~dp0ai\worker.bat" codex"
-start "Tales Tales - gemini" cmd /k ""%~dp0ai\worker.bat" gemini"
+findstr /i /c:"GEMINI=on" "%~dp0ai\TEAM.txt" >nul 2>nul && start "Tales Tales - gemini" cmd /k ""%~dp0ai\worker.bat" gemini"

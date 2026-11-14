@@ -1,6 +1,7 @@
 {
   // Opening this folder in VS Code starts the AI team (after you allow automatic tasks once):
-  // Codex and Gemini each open in their own terminal and take their next task from ai/TASKS.md.
+  // Codex opens in its own terminal and takes its next task from ai/TASKS.md. Gemini is off for now
+  // (ai/TEAM.txt); to auto-start it too, add "runOptions": { "runOn": "folderOpen" } to "AI: Gemini".
   // Delete this file if you don't want that.
   "version": "2.0.0",
   "tasks": [
@@ -21,7 +22,6 @@
       "args": ["/c", "ai\\worker.bat", "gemini"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "panel": "dedicated", "group": "ai-team", "focus": false },
-      "runOptions": { "runOn": "folderOpen" },
       "problemMatcher": []
     },
     {

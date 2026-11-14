@@ -15,7 +15,7 @@ Work autonomously; the owner is not watching. Never force-push, never rewrite ma
 3. Bookkeeping:
    - Tick `[x]` the task lines the reports quote — in `ai/TASKS.md` or `ai/ROADMAP.md`, wherever they
      are — and append `(ai/reports/<file>)`.
-   - Gemini proposals: copy the best NEW lines from `ai/proposals/gemini-*.md` into the **CODEX 백로그**
+   - Gemini proposals: copy the best NEW lines from `ai/proposals/*.md` (Gemini's, or Codex's planning proposals while Gemini is off) into the **CODEX 백로그**
      of `ai/ROADMAP.md` (skip duplicates and anything that breaks the quality bar; keep the backlog
      under ~15 open lines).
    - If the bump of `?v=` in `game/public/index.html` is missing after client changes, add it.

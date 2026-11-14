@@ -1,5 +1,8 @@
 # AI 팀 사용법 (Claude · Codex · Gemini)
 
+> **지금은 Gemini 꺼짐** (`ai/TEAM.txt` = `GEMINI=off`): Codex 혼자 구현과 기획·글쓰기를 번갈아 맡습니다.
+> Gemini가 폴더에 접근할 수 있게 되면 `GEMINI=on`으로 바꾸세요.
+
 | 파일 | 하는 일 |
 | --- | --- |
 | `AI-TEAM.bat` (폴더 맨 위) | 더블클릭 → Codex 창과 Gemini 창이 열리고, 각자 `ai/TASKS.md`의 자기 다음 일을 시작 |

@@ -1,0 +1,3 @@
+GEMINI=off
+# Which AI workers the launchers start. Change to GEMINI=on once Gemini CLI can work in this folder.
+# While Gemini is off, Codex also takes the GEMINI backlog (planning and writing) - see ai/codex.md.

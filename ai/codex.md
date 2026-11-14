@@ -13,7 +13,14 @@ worktree (`.work/codex`, branch `codex/work`), so you never collide with Gemini 
       (a fresh copy of the owner's board) that has no report yet in `ai/reports/`;
    b. otherwise (AUTO MODE) the first unchecked line in the **CODEX 백로그** of `ai/ROADMAP.md`
       that has no report yet;
-   c. otherwise a task from the newest `ai/proposals/gemini-*.md` that has no report yet.
+   c. otherwise a task from the newest `ai/proposals/*.md` that has no report yet;
+   d. otherwise, **if `ai/TEAM.txt` says `GEMINI=off`** (you are the only worker), take Gemini's
+      work too: first the GEMINI section of the board, then the **GEMINI 백로그** of `ai/ROADMAP.md`,
+      then a content audit of the next axis A→H. For those tasks follow the output rules of
+      `ai/gemini.md` instead of the code steps below: write the document under `docs/` and 3–6
+      follow-up task lines in `ai/proposals/codex-<topic>.md`, change no game code, and name the
+      report `ai/reports/codex-plan-<topic>.md`. Alternate: after a planning task, the next session
+      implements one of its proposals (rule c) before planning again.
    Read the quality bar at the top of `ai/ROADMAP.md`; it is your definition of done.
 3. Plan in 3–6 bullet points, then implement. Use AGENTS.md §3 (file map) and §8 (recipes) to open
    only the files you need; grep instead of reading big files whole.
