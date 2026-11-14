@@ -19,6 +19,7 @@ import { icon, iconImg, iconUrl, MENU_ICON, CLASS_ICON, BUFF_ICON, TRAIT } from 
 import * as SP from "./sprites.js";
 import * as Emo from "./emoticons.js";
 import * as Growth from "./growth.js";
+import * as Looks from "./looks.js";
 import * as QS from "./quickslots.js";
 import * as SkillFx from "./skillfx.js";
 import { drawClassGauge, gaugeTip } from "./classgauge.js";
@@ -2489,37 +2490,18 @@ for (const b of $$("#c-cls button")) {
     stageDraft();
   });
 }
-/** One row per part: a stepper through named shapes, or a row of colour swatches. */
+/** The look editor (looks.js): tabs of face pictures per part, animals and ready-made looks. */
+let lookEd = null;
 function buildParts() {
-  const box = $("#c-parts");
-  box.textContent = "";
-  S3.PARTS.forEach((p, i) => {
-    const n = (p.names || p.colors).length;
-    const set = (v) => { draft.look[i] = (v + n) % n; Sound.unlock(); Sound.play("ui"); buildParts(); stageDraft(); };
-    const row = el("div", p.colors ? "part sw" : "part");
-    row.append(el("span", "lab", p.label));
-    if (p.colors) {
-      const sw = el("div", "pick sw");
-      p.colors.forEach((c, v) => {
-        const b = el("button", (v === draft.look[i] ? "on" : "") + (c ? "" : " none"));
-        if (c) b.style.background = c;
-        b.addEventListener("click", () => set(v));
-        sw.append(b);
-      });
-      row.append(sw);
-    } else {
-      const prev = el("button", "step", "‹"), next = el("button", "step", "›");
-      prev.addEventListener("click", () => set(draft.look[i] - 1));
-      next.addEventListener("click", () => set(draft.look[i] + 1));
-      row.append(prev, el("b", "", p.names[draft.look[i]]), next);
-    }
-    box.append(row);
-  });
+  lookEd = Looks.editor($("#c-parts"), () => draft.look, (l) => { draft.look = l; stageDraft(); }, () => { Sound.unlock(); Sound.play("ui"); });
 }
-$("#c-rand").addEventListener("click", () => {
-  draft.look = S3.PARTS.map((p) => Math.floor(Math.random() * (p.names || p.colors).length));
-  Sound.unlock(); Sound.play("ui");
-  buildParts(); stageDraft();
+$("#c-rand").addEventListener("click", () => { if (lookEd) lookEd.random(); });
+// the mirror under the portrait: a new look later, in town, for gold
+Looks.installMirror({
+  act, toast, sound: (k) => Sound.play(k),
+  look: () => { const w = G.who && G.who.get(G.you); return w ? w.look : []; },
+  gold: () => (G.self ? G.self.gold : 0), town: () => !!(G.map && G.map.safe),
+  get cost() { return (G.defs && G.defs.lookCost) || 500; },
 });
 buildParts();
 $("#c-desc").textContent = CLASS_DESC.warrior;

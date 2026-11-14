@@ -2666,16 +2666,24 @@ const isJewel = (id) => ITEMS[id].type === "ring" || ITEMS[id].type === "amulet"
 const slotsFor = (type) => (type === "ring" ? ["ring1", "ring2"] : [type]);
 const plain = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
 
-/** The highest choice allowed for each part of a character's look. */
-const LOOK_MAX = [5, 5, 4, 9, 3, 3, 5];
+/**
+ * The highest choice allowed for each part of a character's look (public/species.js
+ * draws them): ear, eyes, nose, fur colour, blush, markings, tunic — then the kind of
+ * animal, tail, accent colour and eye colour, where 0 means "as before", so a sheet
+ * saved with the first seven alone looks exactly as it did.
+ */
+const LOOK_MAX = [13, 15, 13, 21, 5, 12, 11, 14, 11, 13, 7];
+const cleanLook = (look) => { const lk = Array.isArray(look) ? look : []; return LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)); };
+/** What a new look costs at the mirror in town (거울 · 미용실). */
+const LOOK_COST = 500;
 /** A brand-new character sheet — this is exactly what gets persisted. */
 export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
   const lk = Array.isArray(look) ? look : [];
   return {
     v: 7, name, cls: c,
-    // ear, eyes, nose, colour, blush, markings, tunic
-    look: LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)),
+    // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
+    look: cleanLook(lk),
     lvl: 1, xp: 0, gold: 50,
     inv: [{ id: "hp_s", n: 5 }, { id: "mp_s", n: 3 }],
     eq: { weapon: plain(`w_${c}_1`), helm: null, armor: plain("a_1"), gloves: null, boots: null, ring1: null, ring2: null, amulet: null },
@@ -2695,6 +2703,8 @@ const OLD_ID = { c_1: "r_2", c_2: "n_3", c_3: "r_4" };
 function migrate(ch) {
   if (ch.cls === "ranger" || ch.cls === "archer") ch.cls = "lancer";
   if (!CLASSES[ch.cls]) ch.cls = "warrior";
+  // an older, shorter look is padded with "as before"
+  ch.look = cleanLook(ch.look);
   const fix = (g) => {
     if (!g || typeof g.id !== "string") return null;
     const id = OLD_ID[g.id] || g.id.replace("w_ranger_", "w_lancer_");
@@ -4671,6 +4681,13 @@ export function validateAction(S, pid, a) {
       if (!okPct(a.ahp) || !okPct(a.amp)) return bad("잘못된 설정값");
       return OK;
     }
+    case "look": {
+      // a new look at the mirror in town, for gold
+      if (!Array.isArray(a.look) || a.look.length > LOOK_MAX.length || !a.look.every((v, i) => Number.isInteger(v) && v >= 0 && v <= LOOK_MAX[i])) return bad("잘못된 외형");
+      if (!MAPS[p.map].safe) return bad("마을에서만 외형을 바꿀 수 있습니다");
+      if (ch.gold < LOOK_COST) return bad(`골드가 부족합니다 (${LOOK_COST}G)`);
+      return OK;
+    }
     case "chat":
       if (typeof a.m !== "string" || !a.m.trim()) return bad("빈 메시지");
       if (now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
@@ -5135,6 +5152,13 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
+    case "look":
+      ch.look = cleanLook(a.look);
+      ch.gold -= LOOK_COST;
+      S.maps[p.map].who = true;
+      toast(p, `새 모습이 되었습니다! (-${LOOK_COST}G)`);
+      p.dirty = true;
+      break;
     case "opt":
       if (a.filter !== undefined) ch.opt.filter = a.filter;
       if (a.ahp !== undefined) ch.opt.ahp = a.ahp;
@@ -6015,6 +6039,6 @@ export function defs() {
     collection: Object.fromEntries(REGIONS.map((id) => [id, { mobs: COL_MOBS[id], bonus: REGION_BONUS[id] }])), colNeed: MASTERY[0],
     event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },
     daily: { resetKST: 6, text: DAILY_TEXT }, tutorial: TUT.map(({ id, title, hint, need }) => ({ id, title, hint, need: need || 1 })), recallMs: RECALL_MS,
-    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
+    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
   };
 }

@@ -15,6 +15,8 @@
 /** Every sheet is 32×32. Weapons and monsters are drawn at twice that and halved. */
 import * as WPN from "./weapons.js";
 import * as WR from "./wardrobe.js";
+import * as SPC from "./species.js";
+WR.useSpecies(SPC);
 
 export const SIZE = 32;
 const S = 32, BIG = 64;
@@ -90,16 +92,8 @@ function finish(c, g, ink = INK, passes = 2) {
 // above it, and a tiny body with no arms or legs. Nothing is worn on the head;
 // a face is just eyes, a nose and a blush. Every part is chosen at creation.
 
-/** What can be chosen at creation, in the order `look` stores it. */
-export const PARTS = [
-  { key: "ear", label: "귀", names: ["고양이", "토끼", "곰", "여우", "강아지", "쥐"] },
-  { key: "eye", label: "눈", names: ["점 눈", "긴 눈", "큰 눈", "웃는 눈", "졸린 눈", "파란 눈"] },
-  { key: "nose", label: "코", names: ["작은 코", "분홍 코", "ㅅ 입", "큰 코", "없음"] },
-  { key: "fur", label: "색상", colors: ["#fbfbff", "#fff0d8", "#ffd9c2", "#ffd0dc", "#e2d6ff", "#cfe6ff", "#cff2dc", "#ffeaa0", "#b9bdca", "#b98b68"] },
-  { key: "blush", label: "볼", names: ["분홍", "빨강", "주황", "없음"] },
-  { key: "pat", label: "무늬", names: ["없음", "눈 얼룩", "줄무늬", "포인트"] },
-  { key: "cloth", label: "옷", colors: [null, "#5a8ae0", "#e0605a", "#5ab87a", "#9a78e0", "#f0c050"] },
-];
+/** What can be chosen at creation, in the order `look` stores it (species.js has them all). */
+export const PARTS = SPC.PARTS;
 const BLUSH = ["#f6a8a0", "#f07882", "#f8ba7c", null];
 const PINK = "#f6a8a0", DARK = "#2b2233";
 
@@ -125,6 +119,8 @@ export const FRAME = { stand: 0, breathe: 1, stepA: 2, stretch: 3, stepB: 4, bli
  * colour or null), and for monsters mask / bone.
  */
 function person(o, view, f) {
+  // players (any look with a species) are drawn by species.js; townsfolk and monsters below
+  if (o.sp !== undefined) return SPC.animal(o, view, f, { sheet, brush, finish, shade, blend, lt, FRAME });
   const [c, g] = sheet(S);
   const b = brush(g);
   const side = view === "side", back = view === "back";
@@ -296,8 +292,7 @@ export function personSheet(o) {
 }
 /** `look` is the list of choices, one per entry of PARTS. The class shows only in the weapon. */
 export function playerLook(cls, look = [], gear = {}) {
-  const at = (i) => { const p = PARTS[i], n = (p.names || p.colors).length; return Math.max(0, Math.min(n - 1, look[i] | 0)); };
-  const o = { ear: at(0), eye: at(1), nose: at(2), fur: PARTS[3].colors[at(3)], blush: BLUSH[at(4)], pat: at(5), cloth: PARTS[6].colors[at(6)] };
+  const o = SPC.lookOf(look);
   // cosmetics worn (ids), so others see the outfit too
   return gear && gear.cos && gear.cos.length ? { ...o, cos: gear.cos } : o;
 }
