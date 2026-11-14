@@ -24,7 +24,7 @@ function buildTown() {
   m.big.push({ t: "fountain", x: 19, y: 14 });
   for (const [x, y] of [[14, 10], [25, 10], [14, 19], [25, 19]]) m.o[y][x] = "L";
   for (let x = 4; x <= 12; x++) if (x !== 9 && x !== 10) m.o[26][x] = "F";
-  for (const [x, y] of [[5, 12], [33, 9], [5, 17], [23, 24], [13, 5], [24, 6]]) m.o[y][x] = "B";
+  for (const [x, y] of [[5, 12], [33, 9], [5, 17], [13, 5], [24, 6]]) m.o[y][x] = "B";
   for (const [x, y] of [[32, 13], [6, 13]]) m.o[y][x] = "G";
   // the market corner by the supply shop: stacked goods and a stall's awning
   for (const [x, y] of [[12, 8], [13, 8], [12, 10], [7, 9], [6, 10]]) m.o[y][x] = "B";
@@ -72,6 +72,9 @@ function buildTown() {
   ];
   m.gates = { east: { t: [[38, 14], [38, 15]], a: [[36, 14], [36, 15]] }, west: { t: [[1, 14], [1, 15]], a: [[3, 14], [3, 15]] } };
   FIRES.town.push([22, 22]);
+  // the spirit tree (정령나무) stands behind the plaza's campfire; its trunk blocks one tile
+  m.o[20][20] = "T";
+  m.big.push({ t: "spirit", x: 20, y: 20 });
   return m;
 }
 
@@ -350,6 +353,8 @@ function mapPayload(m) {
     // a door names where it leads and how strong you should be to go there
     portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]) })),
     npcs: m.npcs,
+    // fires that always burn, with the stumps around them ({ x, y, seats: [[x, y]…] }, world pixels)
+    camps: CAMPS[m.id] || [],
   };
 }
 

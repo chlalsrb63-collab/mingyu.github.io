@@ -228,12 +228,12 @@ export function applyAction(S, pid, a) {
     }
     case "sit":
       if (p.sit) p.sit = false;
-      else { rouse(S, p); p.sit = true; p.warmT = 0; }
+      else { rouse(S, p); sitDown(S, p); }
       break;
     case "fish": {
       rouse(S, p);
       const [wx, wy] = waterNear(m, p);
-      p.fish = { at: now + 2500 + rnd(S) * 4500, bite: 0 };
+      p.fish = { at: now + (2500 + rnd(S) * 4500) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
       p.dir = dirOf(wx - p.x, wy - p.y);
       S.maps[p.map].ev.push(["f", p.eid, 1, wx, wy]);
       break;
@@ -448,6 +448,11 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
+    case "jam":
+      // a song on the lute or a raised cup, for everyone around to hear
+      p.emoAt = now;
+      S.maps[p.map].ev.push(["j", p.eid, a.k]);
+      break;
     case "emo":
       p.emoAt = now;
       S.maps[p.map].ev.push(["o", p.eid, a.i]);

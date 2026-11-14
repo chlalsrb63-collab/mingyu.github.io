@@ -112,6 +112,11 @@ export function validateAction(S, pid, a) {
       return qsOk(ch, a.v === undefined ? null : a.v) ? OK : bad("단축칸에 놓을 수 없습니다");
     }
     case "sort": return ch.inv.length > 1 ? OK : bad("정리할 것이 없습니다");
+    case "jam":
+      if (a.k !== 0 && a.k !== 1) return bad("없는 동작");
+      if (!p.sit) return bad("앉아서 할 수 있습니다");
+      if (a.k === 1 && !fireNear(S.maps[p.map], p)) return bad("모닥불 곁에서 할 수 있습니다");
+      return now - p.emoAt < JAM_CD ? bad("잠시 후에") : OK;
     case "emo":
       if (!Number.isInteger(a.i) || a.i < 0 || a.i >= EMOTES) return bad("없는 감정표현");
       return now - p.emoAt < 600 ? bad("잠시 후에") : OK;

@@ -26,9 +26,10 @@ v = step(1100);
 assert.equal(v.a.me[7], 1, "sitting shows in the snapshot");
 assert.ok(a.hp > 20, "the fireside heals");
 for (let i = 0; i < 8; i++) v = step(1100);
-assert.ok(a.warm > now && a.warmPct === 12, "two at one fire: 10% + 2%, got " + a.warmPct);
+// (the clock starts at midnight outdoors: the night adds its point — tests/daynight.mjs has the table)
+assert.ok(a.warm > now && a.warmPct === 14, "two at one fire by night: 10% + 3% + 1%, got " + a.warmPct);
 a.dirty = true; v = step();
-assert.ok(v.a.self.xpb >= 12 && v.a.self.buffs[2] > 0);
+assert.ok(v.a.self.xpb >= 14 && v.a.self.buffs[2] > 0);
 // walking off stands you up
 act(A, { t: "mv", x: a.x + 6, y: a.y, d: 2 });
 assert.equal(a.sit, false);

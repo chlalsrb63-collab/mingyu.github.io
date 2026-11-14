@@ -169,7 +169,8 @@ function tickMob(S, m, rt, mob, dt) {
     tgt = null; mob.tgt = null; mob.st = 2; mob.by = {};
   }
   if (!tgt && d.aggro > 0 && mob.st !== 2) {
-    let bd = d.aggro;
+    // fog: monsters see a little less far
+    let bd = d.aggro * (rt.wx === WX.fog ? WX_FOG_AGGRO : 1);
     for (const pid of Object.keys(S.players)) {
       const p = S.players[pid];
       if (p.map !== m.id || p.dead || (p.foes || 0) >= AGGRO_CAP || p.hide > now) continue;
@@ -239,6 +240,7 @@ export function tick(S, now) {
   S.last = now;
   S.now = now;
   worldEvent(S, now);
+  skyTick(S, now);
   const pids = Object.keys(S.players);
   for (const id of Object.keys(MAPS)) {
     const rt = S.maps[id];
@@ -357,23 +359,12 @@ export function tick(S, now) {
     // a campfire is a place to catch your breath; sitting by it is better still
     const fire = calm ? fireNear(S.maps[p.map], p) : null;
     const rest = fire ? (p.sit ? 0.12 : 0.06) : MAPS[p.map].safe ? 0.08 : 0.02;
-    if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * rest + 1);
-    if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * (fire ? rest : 0.03) + 1);
-    if (fire && p.sit) {
-      if (++p.warmT >= WARM_SEC) {
-        let friends = 0;
-        for (const oid of pids) { const o = S.players[oid]; if (o !== p && o.map === p.map && o.sit && dist(o.x, o.y, fire.x, fire.y) <= FIRE_R) friends++; }
-        const pct = Math.min(20, 10 + friends * 2);
-        const had = p.warm > now ? p.warmPct : 0;
-        if (pct > had) toast(p, `모닥불의 온기 — 10분간 경험치 +${pct}%${friends ? ` (함께 쉬는 동료 ${friends}명)` : ""}`);
-        p.warm = now + WARM_MS; p.warmPct = Math.max(had, pct);
-        p.ch.st.rest++;
-        tutStep(S, p, "rest");
-        checkAch(S, p);
-        p.warmT = 0;
-        p.dirty = true;
-      }
-    } else p.warmT = 0;
+    // a fire's warmth carries on after you stand up, as long as you keep out of a fight
+    const wr = calm ? warmRegen(p, now) : 0;
+    if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * (rest + wr) + 1);
+    if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr) + 1);
+    if (fire && p.sit) warmTick(S, p, fire, now);
+    else p.warmT = 0;
   }
   return S;
 }

@@ -38,3 +38,5 @@ export function takeSaves(state: World): string[];
 export function defs(): unknown;
 /** Local playtest (map editor): put a sheet on a map tile (the nearest standable one). */
 export function devPlace(char: Char, map: string, tx: number, ty: number): boolean;
+/** The sky over a map at `now`: hour, phase, weather, the night storyteller and the camps (tests, tools). */
+export function skyAt(map: string, now: number): { hour: number; phase: number; name: string; night: boolean; outdoor: boolean; wx: number; npc: unknown; tale: number; camps: { x: number; y: number; seats: number[][] }[] };

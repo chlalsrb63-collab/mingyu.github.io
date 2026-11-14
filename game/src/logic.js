@@ -2412,7 +2412,7 @@ function buildTown() {
   m.big.push({ t: "fountain", x: 19, y: 14 });
   for (const [x, y] of [[14, 10], [25, 10], [14, 19], [25, 19]]) m.o[y][x] = "L";
   for (let x = 4; x <= 12; x++) if (x !== 9 && x !== 10) m.o[26][x] = "F";
-  for (const [x, y] of [[5, 12], [33, 9], [5, 17], [23, 24], [13, 5], [24, 6]]) m.o[y][x] = "B";
+  for (const [x, y] of [[5, 12], [33, 9], [5, 17], [13, 5], [24, 6]]) m.o[y][x] = "B";
   for (const [x, y] of [[32, 13], [6, 13]]) m.o[y][x] = "G";
   // the market corner by the supply shop: stacked goods and a stall's awning
   for (const [x, y] of [[12, 8], [13, 8], [12, 10], [7, 9], [6, 10]]) m.o[y][x] = "B";
@@ -2460,6 +2460,9 @@ function buildTown() {
   ];
   m.gates = { east: { t: [[38, 14], [38, 15]], a: [[36, 14], [36, 15]] }, west: { t: [[1, 14], [1, 15]], a: [[3, 14], [3, 15]] } };
   FIRES.town.push([22, 22]);
+  // the spirit tree (정령나무) stands behind the plaza's campfire; its trunk blocks one tile
+  m.o[20][20] = "T";
+  m.big.push({ t: "spirit", x: 20, y: 20 });
   return m;
 }
 
@@ -2738,6 +2741,8 @@ function mapPayload(m) {
     // a door names where it leads and how strong you should be to go there
     portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]) })),
     npcs: m.npcs,
+    // fires that always burn, with the stumps around them ({ x, y, seats: [[x, y]…] }, world pixels)
+    camps: CAMPS[m.id] || [],
   };
 }
 
@@ -4910,6 +4915,190 @@ function tutStep(S, p, id) {
   if (next && next.id === "equip" && ch.eq.weapon) tutStep(S, p, "equip");
 }
 
+// ───────────────────────────── the turning day, the weather, the fire at night ─────────────────────────────
+// Outdoors the day turns on the server clock, the same for everyone on every channel;
+// the weather is rolled per map from the clock and a seed, so all players see the same
+// sky; and at night the town's campfire becomes a place to gather (Mabinogi's campfire,
+// 바람의나라's 주막): stumps to sit on, warmth that grows with company, a storyteller.
+
+/**
+ * One day outdoors lasts 48 real minutes, so one hour of the day is two real minutes:
+ * hour = (now mod 48 min) / 2 min, counted from the epoch (00:00 at every 48-minute mark).
+ * The phases, by hour: 새벽 04:30 · 아침 07:00 · 낮 11:00 · 노을 17:00 · 밤 19:30–04:30.
+ */
+const SKY_DAY_MS = 48 * 60000;
+const PHASES = [["새벽", 4.5], ["아침", 7], ["낮", 11], ["노을", 17], ["밤", 19.5]];
+const PH_NIGHT = 4;
+/** The hour of the day outdoors, 0–24 (fractional). */
+function dayHour(now) { return ((((now % SKY_DAY_MS) + SKY_DAY_MS) % SKY_DAY_MS) / SKY_DAY_MS) * 24; }
+/** Which phase the day is in: an index into PHASES (0 새벽 … 4 밤). */
+function dayPhase(now) {
+  const h = dayHour(now);
+  for (let i = PHASES.length - 1; i >= 0; i--) if (h >= PHASES[i][1]) return i;
+  return PH_NIGHT;
+}
+function isNight(now) { return dayPhase(now) === PH_NIGHT; }
+
+// ── the weather: one roll per map for every six real minutes (three hours of the day)
+const WEATHER = ["맑음", "흐림", "비", "안개", "바람", "눈"];
+const WX = { clear: 0, cloud: 1, rain: 2, fog: 3, wind: 4, snow: 5 };
+const WX_MS = 6 * 60000;
+/** How often each weather comes, by the map's look: [맑음, 흐림, 비, 안개, 바람, 눈]. Snow is a rare treat. */
+const WX_ODDS = {
+  town: [50, 20, 14, 6, 10, 0],
+  meadow: [40, 18, 16, 8, 16, 2],
+  forest: [30, 18, 20, 22, 8, 2],
+  city: [40, 30, 24, 6, 0, 0],
+};
+/** Small flavour: rain brings the fish up sooner, fog hides you a little from monsters. */
+const WX_FISH = 0.75, WX_FOG_AGGRO = 0.9;
+/** Maps under the open sky: the day turns and the weather comes only there. */
+function outdoor(m) { return !!m && !m.indoor && Object.hasOwn(WX_ODDS, m.theme || m.id); }
+/** A well-mixed 0–1 number from a map id and a slot, the same on every server. */
+function wxRoll(id, slot) {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  h = Math.imul(h ^ (slot | 0), 2246822519); h ^= h >>> 13;
+  h = Math.imul(h, 3266489917); h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+/** The weather on a map at a moment: an index into WEATHER, or -1 indoors and underground. */
+function weatherAt(id, now) {
+  const m = MAPS[id];
+  if (!outdoor(m)) return -1;
+  const odds = WX_ODDS[m.theme || m.id];
+  let r = wxRoll(id, Math.floor(now / WX_MS)) * odds.reduce((a, b) => a + b, 0), w = 0;
+  while (w < odds.length - 1 && r >= odds[w]) { r -= odds[w]; w++; }
+  // fog burns off by midday
+  if (w === WX.fog && dayPhase(now) === 2) w = WX.cloud;
+  return w;
+}
+
+// ── the campfire's company: stumps to sit on around every fire that always burns
+/** Where the stumps stand around a fire, in world pixels from it (left-front, behind, right, front-right on screen). */
+const SEAT_AT = [[-7, 27], [-15, -25], [17, -17], [34, 14]];
+/** Warmth: +10% experience, +3% for each other sitter (up to four around one fire), +1% at night; regen +0.5% a second per sitter. */
+const WARM_N = 4, WARM_BASE = 10, WARM_STEP = 3, WARM_NIGHT = 1, WARM_REGEN = 0.005;
+/** Snapping onto a stump: how close you must stand to it. */
+const SEAT_R = 18;
+/** Fires and their seats, by map: { x, y, seats: [[x, y]…] } in world pixels. */
+const CAMPS = {};
+function campsOf(m) {
+  const out = [];
+  for (const [fx, fy] of FIRES[m.id] || []) {
+    const at = freeTile(m, fx, fy);
+    if (!at) continue;
+    const x = at[0] * T + 8, y = at[1] * T + 10, seats = [];
+    for (const [dx, dy] of SEAT_AT) {
+      const sx = x + dx, sy = y + dy;
+      if (canStand(m, sx, sy) && m.reach[Math.floor(sy / T) * m.w + Math.floor(sx / T)]) seats.push([sx, sy]);
+    }
+    // out in the wilds there is room for three around a camp; the town's fire seats four
+    out.push({ x, y, seats: m.safe ? seats : seats.slice(0, 3) });
+  }
+  return out;
+}
+for (const id of Object.keys(MAPS)) CAMPS[id] = campsOf(MAPS[id]);
+
+/** Players sitting around the fire `f` on `p`'s map, `p` counted if they sit too. */
+function sittersAt(S, map, f) {
+  let n = 0;
+  for (const oid of Object.keys(S.players)) {
+    const o = S.players[oid];
+    if (o.map === map && o.sit && !o.dead && dist(o.x, o.y, f.x, f.y) <= FIRE_R) n++;
+  }
+  return n;
+}
+/** The warmth for `n` sitters (1–4 counted), by day or by night: { pct, regen }. */
+function warmthFor(n, night) {
+  const k = clamp(n | 0, 1, WARM_N);
+  return { pct: WARM_BASE + WARM_STEP * (k - 1) + (night ? WARM_NIGHT : 0), regen: WARM_REGEN * k };
+}
+/**
+ * Sitting down: on the nearest free stump within reach, facing the fire, or where you
+ * stand. A stump is taken when someone already sits on it.
+ */
+function sitDown(S, p) {
+  p.sit = true; p.warmT = 0;
+  let best = null, bd = SEAT_R;
+  for (const c of CAMPS[p.map] || []) for (const [sx, sy] of c.seats) {
+    const d = dist(p.x, p.y, sx, sy);
+    if (d > bd) continue;
+    let taken = false;
+    for (const oid of Object.keys(S.players)) { const o = S.players[oid]; if (o !== p && o.map === p.map && o.sit && dist(o.x, o.y, sx, sy) < 4) { taken = true; break; } }
+    if (!taken) { bd = d; best = [sx, sy, c]; }
+  }
+  if (!best) return false;
+  p.x = best[0]; p.y = best[1];
+  p.dir = dirOf(best[2].x - p.x, best[2].y - p.y);
+  p.fix = true;
+  return true;
+}
+/** Once a second, for a calm player sitting by a fire: warmth that grows with the company. */
+function warmTick(S, p, fire, now) {
+  if (++p.warmT < WARM_SEC) return;
+  p.warmT = 0;
+  const n = sittersAt(S, p.map, fire), w = warmthFor(n, outdoor(MAPS[p.map]) && isNight(now));
+  const live = p.warm > now, had = live ? p.warmPct : 0;
+  if (w.pct > had) toast(p, `모닥불의 온기 — 10분간 경험치 +${w.pct}%, 회복 +${(w.regen * 100).toFixed(1)}%/초${n > 1 ? ` (함께 앉은 ${n}명)` : ""}`);
+  // the warmth keeps the best company it has had while it lasts
+  p.warmN = clamp(Math.max(live ? p.warmN || 0 : 0, n), 1, WARM_N);
+  p.warm = now + WARM_MS; p.warmPct = Math.max(had, w.pct);
+  p.ch.st.rest++;
+  tutStep(S, p, "rest");
+  checkAch(S, p);
+  p.dirty = true;
+}
+/** The warmth's regen, a share of the maximum each second while it lasts and you are not fighting. */
+function warmRegen(p, now) { return p.warm > now ? WARM_REGEN * clamp(p.warmN || 1, 1, WARM_N) : 0; }
+
+// ── songs and toasts by the fire (연주, 건배)
+const JAM = ["연주", "건배"];
+const JAM_CD = 1200;
+
+// ── the storyteller: at night she sits by the town's fire and tells a tale every hundred seconds
+const TALE_MS = 100000;
+const TELLER = { id: "story", name: "이야기꾼 할머니 소담", role: "talk", x: 20, y: 22, night: 1, look: [5, 2, 0, "#7a5a8a"],
+  say: "밤이 깊었구나. 불 가까이 앉으렴 — 이야기는 혼자 듣는 것보다 여럿이 듣는 게 더 따뜻하단다." };
+const TALES = [
+  "옛날 옛적, 넥서스 광장은 정령나무 한 그루뿐인 빈 들판이었단다. 길 잃은 이들이 그 푸른 빛을 보고 모여들었지.",
+  "정령나무의 잎은 밤마다 빛을 머금는단다. 그 빛이 꺼지지 않는 한, 마을에는 지옥 짐승이 들어오지 못해.",
+  "바람초원의 두 머리 토끼는 원래 평범한 토끼였대. 심연에서 새어 나온 붉은 안개를 마시고 그리 되었다더구나.",
+  "속삭임 숲에서 누가 네 이름을 부르거든 대답하지 말거라. 눈 달린 까마귀가 목소리를 흉내 내는 거란다.",
+  "반딧불이는 먼 길 떠난 모험가들의 작은 소원이래. 모닥불 곁에 모이는 건 따뜻한 데가 그리워서지.",
+  "지하묘지의 뼈들은 아직 자기가 살아 있는 줄 안단다. 그러니 그곳에선 발소리를 죽이렴.",
+  "네온 시티가 생기기 전, 그 자리엔 별을 세던 천문대가 있었지. 지금도 비 오는 밤엔 옛 종소리가 들린대.",
+  "모닥불에 둘러앉은 이들은 서로의 이름을 오래 기억한단다. 그래서 불가의 인연은 쉽게 끊어지지 않지.",
+  "심연 깊은 곳의 사자손은 한때 이 마을의 문지기였다는 소문이 있어. 믿거나 말거나 말이다.",
+  "비 오는 날엔 물고기가 수면 가까이 올라온단다. 낚싯대를 챙겨 연못으로 가 보렴.",
+  "안개 낀 날엔 짐승들도 앞이 잘 안 보인단다. 살금살금 지나가면 들키지 않을지도 몰라.",
+  "새벽녘 정령나무 아래에서 소원을 빌면, 그날 사냥은 운이 좋다는구나. 할미도 젊을 적엔 매일 빌었지.",
+];
+MAPS.town.npcs.push(TELLER);
+/** The storyteller of `map` if she is out at `now` (only by night), else null. */
+function nightNpc(map, now) { return map === "town" && isNight(now) ? TELLER : null; }
+/** Which tale is being told at `now` (an index into TALES), or -1 by day. */
+function taleAt(now) { return isNight(now) ? Math.floor(now / TALE_MS) % TALES.length : -1; }
+
+/** Once a tick, per outdoor map: the weather, and at night in town the next tale by the fire. */
+function skyTick(S, now) {
+  for (const id of Object.keys(S.maps)) {
+    const rt = S.maps[id];
+    rt.wx = weatherAt(id, now);
+    if (id !== "town") continue;
+    const slot = isNight(now) ? Math.floor(now / TALE_MS) : -1;
+    if (slot !== rt.tale) { rt.tale = slot; if (slot >= 0) rt.ev.push(["tl", slot % TALES.length]); }
+  }
+}
+
+/**
+ * The sky over a map at a moment, for the tests and the tools: the hour, the phase, the
+ * weather, whether the storyteller is out and which tale she tells, and the camps.
+ */
+export function skyAt(map, now) {
+  const ph = dayPhase(now), m = MAPS[map];
+  return { hour: dayHour(now), phase: ph, name: PHASES[ph][0], night: ph === PH_NIGHT, outdoor: outdoor(m), wx: weatherAt(map, now), npc: nightNpc(map, now), tale: map === "town" ? taleAt(now) : -1, camps: CAMPS[map] || [] };
+}
 // ───────────────────────────── side quests (world map editor) ─────────────────────────────
 // data/quests.json "side": errands NPCs hand out beside the main chain. A goal is to kill
 // (kills of the kind count, like the main quest's), to collect (items in the bag, taken on
@@ -5270,6 +5459,11 @@ export function validateAction(S, pid, a) {
       return qsOk(ch, a.v === undefined ? null : a.v) ? OK : bad("단축칸에 놓을 수 없습니다");
     }
     case "sort": return ch.inv.length > 1 ? OK : bad("정리할 것이 없습니다");
+    case "jam":
+      if (a.k !== 0 && a.k !== 1) return bad("없는 동작");
+      if (!p.sit) return bad("앉아서 할 수 있습니다");
+      if (a.k === 1 && !fireNear(S.maps[p.map], p)) return bad("모닥불 곁에서 할 수 있습니다");
+      return now - p.emoAt < JAM_CD ? bad("잠시 후에") : OK;
     case "emo":
       if (!Number.isInteger(a.i) || a.i < 0 || a.i >= EMOTES) return bad("없는 감정표현");
       return now - p.emoAt < 600 ? bad("잠시 후에") : OK;
@@ -5739,12 +5933,12 @@ export function applyAction(S, pid, a) {
     }
     case "sit":
       if (p.sit) p.sit = false;
-      else { rouse(S, p); p.sit = true; p.warmT = 0; }
+      else { rouse(S, p); sitDown(S, p); }
       break;
     case "fish": {
       rouse(S, p);
       const [wx, wy] = waterNear(m, p);
-      p.fish = { at: now + 2500 + rnd(S) * 4500, bite: 0 };
+      p.fish = { at: now + (2500 + rnd(S) * 4500) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
       p.dir = dirOf(wx - p.x, wy - p.y);
       S.maps[p.map].ev.push(["f", p.eid, 1, wx, wy]);
       break;
@@ -5959,6 +6153,11 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
+    case "jam":
+      // a song on the lute or a raised cup, for everyone around to hear
+      p.emoAt = now;
+      S.maps[p.map].ev.push(["j", p.eid, a.k]);
+      break;
     case "emo":
       p.emoAt = now;
       S.maps[p.map].ev.push(["o", p.eid, a.i]);
@@ -6205,7 +6404,8 @@ function tickMob(S, m, rt, mob, dt) {
     tgt = null; mob.tgt = null; mob.st = 2; mob.by = {};
   }
   if (!tgt && d.aggro > 0 && mob.st !== 2) {
-    let bd = d.aggro;
+    // fog: monsters see a little less far
+    let bd = d.aggro * (rt.wx === WX.fog ? WX_FOG_AGGRO : 1);
     for (const pid of Object.keys(S.players)) {
       const p = S.players[pid];
       if (p.map !== m.id || p.dead || (p.foes || 0) >= AGGRO_CAP || p.hide > now) continue;
@@ -6275,6 +6475,7 @@ export function tick(S, now) {
   S.last = now;
   S.now = now;
   worldEvent(S, now);
+  skyTick(S, now);
   const pids = Object.keys(S.players);
   for (const id of Object.keys(MAPS)) {
     const rt = S.maps[id];
@@ -6393,23 +6594,12 @@ export function tick(S, now) {
     // a campfire is a place to catch your breath; sitting by it is better still
     const fire = calm ? fireNear(S.maps[p.map], p) : null;
     const rest = fire ? (p.sit ? 0.12 : 0.06) : MAPS[p.map].safe ? 0.08 : 0.02;
-    if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * rest + 1);
-    if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * (fire ? rest : 0.03) + 1);
-    if (fire && p.sit) {
-      if (++p.warmT >= WARM_SEC) {
-        let friends = 0;
-        for (const oid of pids) { const o = S.players[oid]; if (o !== p && o.map === p.map && o.sit && dist(o.x, o.y, fire.x, fire.y) <= FIRE_R) friends++; }
-        const pct = Math.min(20, 10 + friends * 2);
-        const had = p.warm > now ? p.warmPct : 0;
-        if (pct > had) toast(p, `모닥불의 온기 — 10분간 경험치 +${pct}%${friends ? ` (함께 쉬는 동료 ${friends}명)` : ""}`);
-        p.warm = now + WARM_MS; p.warmPct = Math.max(had, pct);
-        p.ch.st.rest++;
-        tutStep(S, p, "rest");
-        checkAch(S, p);
-        p.warmT = 0;
-        p.dirty = true;
-      }
-    } else p.warmT = 0;
+    // a fire's warmth carries on after you stand up, as long as you keep out of a fight
+    const wr = calm ? warmRegen(p, now) : 0;
+    if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * (rest + wr) + 1);
+    if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr) + 1);
+    if (fire && p.sit) warmTick(S, p, fire, now);
+    else p.warmT = 0;
   }
   return S;
 }
@@ -6502,6 +6692,10 @@ export function viewFor(S, pid) {
   // guild chat reaches only the guild
   if (S.chat.length) { const chat = S.chat.filter((c) => (!c.g || c.g === p.ch.guild) && (!c.pt || c.pt === p.party)); if (chat.length) out.chat = chat; }
   if (p.sendMap) out.map = mapPayload(MAPS[p.map]);
+  // the sky: [weather (-1 under a roof), server clock in seconds], when the weather turns, on
+  // arrival, and once a minute to keep everyone's hour of the day in step
+  const wx = rt.wx ?? weatherAt(p.map, S.now);
+  if (p.sendMap || wx !== p.wx || S.now - (p.dnAt || 0) >= 60000) { out.dn = [wx, Math.floor(S.now / 1000)]; p.wx = wx; p.dnAt = S.now; }
   if (p.sendMap || rt.who) {
     out.who = [];
     for (const oid of Object.keys(S.players)) {
@@ -6549,7 +6743,7 @@ export function defs() {
   const mobs = {};
   for (const k of Object.keys(MOBS)) {
     const d = MOBS[k];
-    mobs[k] = { name: d.name, sp: d.sp, tint: d.tint || null, lv: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0 };
+    mobs[k] = { name: d.name, sp: d.sp, tint: d.tint || null, lv: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0, aggro: d.aggro || 0 };
   }
   const classes = {};
   for (const k of Object.keys(CLASSES)) {
@@ -6573,6 +6767,8 @@ export function defs() {
     // side quests from the world map editor, with who gives them and where they stand
     side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAPS[NPC_MAP[q.giver]].name,
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAPS[q.goal.map].name })),
+    // the turning day and the weather (the client keeps the same clock), the fire's company
+    sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
   };
 }

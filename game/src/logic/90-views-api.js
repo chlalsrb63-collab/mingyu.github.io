@@ -71,6 +71,10 @@ export function viewFor(S, pid) {
   // guild chat reaches only the guild
   if (S.chat.length) { const chat = S.chat.filter((c) => (!c.g || c.g === p.ch.guild) && (!c.pt || c.pt === p.party)); if (chat.length) out.chat = chat; }
   if (p.sendMap) out.map = mapPayload(MAPS[p.map]);
+  // the sky: [weather (-1 under a roof), server clock in seconds], when the weather turns, on
+  // arrival, and once a minute to keep everyone's hour of the day in step
+  const wx = rt.wx ?? weatherAt(p.map, S.now);
+  if (p.sendMap || wx !== p.wx || S.now - (p.dnAt || 0) >= 60000) { out.dn = [wx, Math.floor(S.now / 1000)]; p.wx = wx; p.dnAt = S.now; }
   if (p.sendMap || rt.who) {
     out.who = [];
     for (const oid of Object.keys(S.players)) {
@@ -118,7 +122,7 @@ export function defs() {
   const mobs = {};
   for (const k of Object.keys(MOBS)) {
     const d = MOBS[k];
-    mobs[k] = { name: d.name, sp: d.sp, tint: d.tint || null, lv: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0 };
+    mobs[k] = { name: d.name, sp: d.sp, tint: d.tint || null, lv: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0, aggro: d.aggro || 0 };
   }
   const classes = {};
   for (const k of Object.keys(CLASSES)) {
@@ -142,6 +146,8 @@ export function defs() {
     // side quests from the world map editor, with who gives them and where they stand
     side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAPS[NPC_MAP[q.giver]].name,
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAPS[q.goal.map].name })),
+    // the turning day and the weather (the client keeps the same clock), the fire's company
+    sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
   };
 }
