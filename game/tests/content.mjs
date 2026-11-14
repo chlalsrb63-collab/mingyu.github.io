@@ -272,7 +272,7 @@ assert.equal(D.tutorial.length, 7);
   assert.equal(v.self.title, "lv50");
   assert.equal(W.self().mhp - hp0, 80, "a rarer title carries a small bonus");
   const row = v.who.find((r) => r[0] === W.p.eid) || v.who[0];
-  assert.equal(row[row.length - 1], "전설의 모험가", "the worn title shows on the who row");
+  assert.equal(row[13], "전설의 모험가", "the worn title shows on the who row (index 13; the outfit follows it)");
   assert.ok(W.act({ t: "title", id: "" }).ok);
   assert.equal(W.self().title, "");
   assert.equal(W.self().mhp, hp0, "taking it off takes the bonus away");

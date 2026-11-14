@@ -2355,6 +2355,9 @@ function buildTown() {
       say: "자네의 모험은 모두 이 비석에 새겨지네. 이름난 업적에는 칭호가 따르지." },
     { id: "daily", name: "게시판지기 하루", role: "daily", x: 15, y: 13, look: [0, 2, 0, "#3a7a5a"],
       say: "매일 아침 6시에 새 과제가 붙는다네. 셋을 다 하면 보상 상자도 있지!" },
+    // the costume shop, by the house on the south-west corner of the square, off both roads
+    { id: "costume", name: "의상실 주인 루루", role: "costume", x: 13, y: 22, look: [3, 1, 0, "#d86a9a"],
+      say: "어서 와요! 모자, 옷, 망토, 안경, 무기 외형까지 — 능력치는 그대로, 모습만 바뀌어요." },
   );
   m.o[16][16] = "Q";
   WP.town = { x: 16, y: 16, ax: 17, ay: 16 };
@@ -2670,7 +2673,7 @@ export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
   const lk = Array.isArray(look) ? look : [];
   return {
-    v: 6, name, cls: c,
+    v: 7, name, cls: c,
     // ear, eyes, nose, colour, blush, markings, tunic
     look: LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)),
     lvl: 1, xp: 0, gold: 50,
@@ -2681,7 +2684,7 @@ export function newChar(name, cls, look) {
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
     wp: ["town"], seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
     skl: [1, 1, 1, 1, 1, 1], wh: { items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
-    qs: QS_EMPTY(),
+    qs: QS_EMPTY(), cos: cosEmpty(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
   };
 }
@@ -2758,7 +2761,9 @@ function migrate(ch) {
   ch.opt = { filter: clamp(opt.filter | 0, 0, 2), ahp: clamp(opt.ahp | 0, 0, 90), amp: clamp(opt.amp | 0, 0, 90) };
   // the quick slots 1–9: sheets from before them start with all nine empty
   ch.qs = QS_EMPTY().map((_, i) => (Array.isArray(ch.qs) && ch.qs[i] && qsOk(ch, ch.qs[i]) ? ch.qs[i].slice() : null));
-  ch.v = Math.max(ch.v | 0, 6);
+  // the wardrobe (v7): owned cosmetics and the one worn in each slot
+  ch.cos = cosClean(ch.cos, ch);
+  ch.v = Math.max(ch.v | 0, 7);
   return ch;
 }
 
@@ -3347,7 +3352,7 @@ function killMob(S, rt, mob) {
   for (const p of looters) {
     const ch = p.ch;
     // a chest is opened, not hunted: it pays out its loot and nothing else
-    if (d.chest) { p.dirty = true; lootFor(S, rt, mob, p); dailyProg(S, p, "chest"); continue; }
+    if (d.chest) { p.dirty = true; lootFor(S, rt, mob, p); dailyProg(S, p, "chest"); if (cosRoll(S, p, "chest") < COS_CHEST) cosFrom(S, p, "chest", "보물 상자"); continue; }
     const n = Math.min(PARTY_MAX, allies(S, p).length);
     // a kill soon after the last one keeps the streak alive
     p.streak = S.now - p.streakAt < STREAK_MS ? p.streak + 1 : 1;
@@ -3382,6 +3387,8 @@ function killMob(S, rt, mob) {
     checkAch(S, p);
     p.dirty = true;
     lootFor(S, rt, mob, p);
+    // a field boss, a guardian or a boss may leave something to wear
+    if ((el === 2 || d.boss) && cosRoll(S, p, "boss") < COS_BOSS) cosFrom(S, p, "boss", d.name);
   }
   if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}을(를) 쓰러뜨렸습니다!`);
   if (el === 2) {
@@ -4350,6 +4357,7 @@ function checkAch(S, p) {
     ch.ach.push(a.id);
     toast(p, `업적 달성: [${a.name}] +${a.pts}점${a.title ? ` — 칭호 「${a.title}」 획득` : ""}`);
     S.maps[p.map].ev.push(["ac", p.eid, a.id]);
+    if (COS_ACH[a.id]) giveCos(S, p, COS_ACH[a.id], `업적 [${a.name}]`);
     if (a.pts >= 30) sys(S, `${ch.name}님이 업적 [${a.name}]을(를) 달성했습니다!`);
     p.dirty = true;
   }
@@ -4450,6 +4458,7 @@ function endEvent(S, e) {
       stone: 1 + (share >= 0.25 ? 1 : 0) + (rank === 0 ? 2 : 0), rune: rank < 3, gear: rank === 0 ? 1 : 0, gearQ: 2,
     });
     p.ch.st.evt++;
+    if (rank === 0 || (rank < 3 && cosRoll(S, p, "rift") < COS_RIFT_TOP3)) cosFrom(S, p, "rift", "균열 침공");
     toast(p, `균열 침공 보상 — 기여도 ${Math.round(share * 100)}%${rank < 3 ? ` (${rank + 1}위)` : ""}`);
     checkAch(S, p);
   });
@@ -4488,6 +4497,131 @@ function tutStep(S, p, id) {
   p.dirty = true;
   // a step already done needs no doing
   if (next && next.id === "equip" && ch.eq.weapon) tutStep(S, p, "equip");
+}
+
+// ───────────────────────────── cosmetics (외형) ─────────────────────────────
+// Hats, tops, back pieces, face accessories and weapon skins change only how a
+// character looks. They are not bag items: each character keeps a wardrobe of
+// everything it owns (`ch.cos.own`) and wears one per slot (`ch.cos.on`). Some are
+// sold at the costume shop in town; the rest only come from opening chests,
+// field bosses and guardians, the daily reward box, the rift invasion and
+// achievements. The art lives in the browser (public/wardrobe.js, weapons.js),
+// keyed by the same ids.
+
+/** The cosmetic slots, in the order the wire sends them. */
+const COS_SLOTS = ["hat", "top", "back", "face", "wskin"];
+const COS_SLOT_NAME = { hat: "모자", top: "상의", back: "등", face: "얼굴", wskin: "무기 외형" };
+/**
+ * id → [wire code, slot, name, rarity 0–4, source, price or achievement id, description].
+ * Sources: shop (sold for `price` gold), chest, boss, daily, rift, ach (earned with achievement `price`).
+ * Codes are what the wire carries: never reuse or renumber one.
+ */
+const COSMETICS = Object.fromEntries([
+  ["hat_beanie_red", 1, "hat", "빨간 비니", 0, "shop", 800, "폭신한 털실 모자. 귀는 구멍으로 쏙."],
+  ["hat_beanie_navy", 2, "hat", "남색 비니", 0, "shop", 800, "차분한 남색 털실 모자."],
+  ["hat_beanie_mint", 3, "hat", "민트 비니", 0, "shop", 800, "상큼한 민트색 털실 모자."],
+  ["hat_straw", 4, "hat", "밀짚모자", 0, "shop", 1200, "챙 넓은 여름 모자. 빨간 리본이 달렸다."],
+  ["hat_straw_blue", 5, "hat", "파란 리본 밀짚모자", 1, "chest", 0, "보물 상자 속에서 나온 밀짚모자."],
+  ["hat_wizard", 6, "hat", "마법사 모자", 1, "shop", 3000, "끝이 꺾인 보랏빛 고깔모자."],
+  ["hat_wizard_night", 7, "hat", "밤하늘 마법사 모자", 2, "boss", 0, "우두머리가 쓰던 별빛 고깔모자."],
+  ["hat_crown", 8, "hat", "황금 왕관", 3, "ach", "boss", "균열의 군주를 쓰러뜨린 자의 왕관."],
+  ["hat_crown_silver", 9, "hat", "은빛 왕관", 2, "rift", 0, "균열 침공을 막아 낸 보답."],
+  ["hat_wreath_pink", 10, "hat", "벚꽃 화관", 1, "shop", 2000, "분홍 꽃을 엮은 화관."],
+  ["hat_wreath_sun", 11, "hat", "해바라기 화관", 1, "daily", 0, "일일 과제 보상 상자에서 나온 화관."],
+  ["hat_bow_red", 12, "hat", "빨간 리본", 0, "shop", 1000, "머리 위의 커다란 리본."],
+  ["hat_bow_pink", 13, "hat", "분홍 리본", 0, "shop", 1000, "머리 위의 커다란 분홍 리본."],
+  ["hat_cap_blue", 14, "hat", "파란 야구모자", 0, "shop", 900, "챙이 바라보는 쪽을 따라간다."],
+  ["hat_cap_red", 15, "hat", "빨간 야구모자", 0, "chest", 0, "보물 상자 속 야구모자."],
+  ["hat_tricorn", 16, "hat", "해적 모자", 2, "chest", 0, "해골 무늬 삼각모."],
+  ["hat_santa", 17, "hat", "산타 모자", 1, "daily", 0, "방울이 달랑거리는 빨간 모자."],
+  ["hat_helm", 18, "hat", "기사 투구", 2, "ach", "elite100", "정예 사냥꾼에게 주어지는 깃털 투구."],
+  ["hat_frog", 19, "hat", "개구리 모자", 1, "ach", "fish10", "낚시꾼들 사이에서 유행하는 모자."],
+  ["hat_halo", 20, "hat", "천사의 고리", 3, "rift", 0, "머리 위에 떠 있는 빛의 고리."],
+  ["hat_horns", 21, "hat", "꼬마 악마 뿔", 2, "boss", 0, "귀여운 척하는 작은 뿔."],
+  ["hat_chef", 22, "hat", "요리사 모자", 1, "ach", "cook10", "요리를 열 번 성공한 자의 모자."],
+  ["hat_beret", 23, "hat", "빨간 베레모", 0, "shop", 1500, "비스듬히 눌러 쓴 베레모."],
+  ["hat_beret_black", 24, "hat", "검은 베레모", 1, "shop", 2500, "화가의 검은 베레모."],
+  ["top_overalls", 25, "top", "멜빵바지", 0, "shop", 1200, "단추 두 개가 반짝이는 청 멜빵바지."],
+  ["top_hoodie_grey", 26, "top", "회색 후드티", 0, "shop", 1000, "편안한 회색 후드티."],
+  ["top_hoodie_pink", 27, "top", "분홍 후드티", 0, "shop", 1000, "편안한 분홍 후드티."],
+  ["top_sailor", 28, "top", "세일러복", 1, "shop", 2500, "줄무늬와 빨간 스카프."],
+  ["top_armor", 29, "top", "기사 흉갑", 2, "ach", "guard1", "던전 수문장을 쓰러뜨린 증표."],
+  ["top_robe", 30, "top", "마법사 로브", 1, "shop", 3000, "금실 장식의 보랏빛 로브."],
+  ["top_robe_green", 31, "top", "숲의 로브", 2, "chest", 0, "이끼 냄새가 나는 초록 로브."],
+  ["top_dress_pink", 32, "top", "분홍 드레스", 1, "shop", 2800, "허리에 리본을 묶은 드레스."],
+  ["top_dress_white", 33, "top", "하얀 드레스", 2, "daily", 0, "하늘색 리본의 하얀 드레스."],
+  ["top_suit", 34, "top", "정장", 2, "ach", "lv30", "베테랑 모험가의 정장과 넥타이."],
+  ["top_hanbok", 35, "top", "색동 한복", 2, "shop", 6000, "노랑 저고리에 붉은 치마, 고름까지."],
+  ["top_vest", 36, "top", "털 조끼", 1, "boss", 0, "우두머리의 털로 지은 조끼."],
+  ["top_pajama", 37, "top", "별무늬 잠옷", 1, "ach", "rest10", "모닥불 곁에서 꾸벅꾸벅."],
+  ["back_cape_red", 38, "back", "붉은 망토", 1, "shop", 4000, "걸음마다 펄럭이는 망토."],
+  ["back_cape_blue", 39, "back", "푸른 망토", 1, "shop", 4000, "걸음마다 펄럭이는 푸른 망토."],
+  ["back_cape_black", 40, "back", "칠흑 망토", 2, "boss", 0, "수문장이 두르던 검은 망토."],
+  ["back_angel", 41, "back", "천사 날개", 3, "rift", 0, "균열을 막아 낸 자에게 돋는 날개."],
+  ["back_bat", 42, "back", "박쥐 날개", 2, "chest", 0, "보물 상자에 숨어 있던 날개."],
+  ["back_fairy", 43, "back", "요정 날개", 2, "daily", 0, "반짝이는 작은 날개."],
+  ["back_pack", 44, "back", "모험가 배낭", 0, "shop", 1500, "뭐든 들어갈 것 같은 가죽 배낭."],
+  ["back_dragon", 45, "back", "용의 날개", 3, "ach", "abyss", "심연을 넘은 자의 날개."],
+  ["face_glasses", 46, "face", "동그란 안경", 0, "shop", 700, "똑똑해 보이는 안경."],
+  ["face_glasses_gold", 47, "face", "금테 안경", 1, "ach", "col1", "도감 하나를 채운 학자의 안경."],
+  ["face_shades", 48, "face", "선글라스", 1, "shop", 1800, "햇빛도 몬스터도 무섭지 않다."],
+  ["face_patch", 49, "face", "안대", 1, "chest", 0, "한쪽 눈을 가린 해적 안대."],
+  ["face_bandage", 50, "face", "반창고", 0, "shop", 300, "볼에 붙인 반창고."],
+  ["face_mask", 51, "face", "마스크", 0, "shop", 400, "하얀 천 마스크."],
+  ["face_heart", 52, "face", "하트 스티커", 1, "daily", 0, "양 볼의 하트."],
+  ["face_monocle", 53, "face", "외알 안경", 2, "ach", "hunt1000", "숙련된 사냥꾼의 외알 안경."],
+  ["face_stache", 54, "face", "콧수염", 1, "chest", 0, "멋지게 말린 콧수염."],
+  ["ws_sakura", 55, "wskin", "벚꽃 무기 외형", 2, "shop", 8000, "어떤 무기든 벚꽃빛으로. 꽃잎이 흩날린다."],
+  ["ws_frost", 56, "wskin", "서리 무기 외형", 2, "boss", 0, "날 끝에 얼음 가시가 돋는다."],
+  ["ws_candy", 57, "wskin", "사탕 무기 외형", 1, "daily", 0, "줄무늬 사탕 같은 무기."],
+  ["ws_bone", 58, "wskin", "해골 무기 외형", 2, "chest", 0, "뼈로 깎은 듯한 무기."],
+  ["ws_star", 59, "wskin", "별빛 무기 외형", 3, "rift", 0, "밤하늘을 담은 무기."],
+  ["ws_flame", 60, "wskin", "화염 무기 외형", 3, "ach", "enh10", "명장의 무기는 불꽃을 두른다."],
+].map(([id, n, slot, name, q, src, price, desc]) => [id, { n, slot, name, q, src, price: src === "shop" ? price : 0, ach: src === "ach" ? price : "", desc }]));
+const COS_IDS = Object.keys(COSMETICS);
+const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
+const COS_ACH = Object.fromEntries(COS_IDS.filter((id) => COSMETICS[id].ach).map((id) => [COSMETICS[id].ach, id]));
+/** The chance a looted chest, or a downed field boss or guardian, holds a cosmetic. */
+const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_RIFT_TOP3 = 0.3;
+const cosEmpty = () => ({ own: [], on: {} });
+function cosClean(c, ch) {
+  const src = isObj(c) ? c : {};
+  const own = [...new Set((Array.isArray(src.own) ? src.own : []).filter((id) => typeof id === "string" && Object.hasOwn(COSMETICS, id)))];
+  // what was earned through an achievement before the wardrobe existed comes along
+  for (const id of ch.ach || []) if (COS_ACH[id] && !own.includes(COS_ACH[id])) own.push(COS_ACH[id]);
+  const on = {};
+  const was = isObj(src.on) ? src.on : {};
+  for (const s of COS_SLOTS) if (typeof was[s] === "string" && own.includes(was[s]) && COSMETICS[was[s]].slot === s) on[s] = was[s];
+  return { own, on };
+}
+/** What others see: the worn codes in slot order, trailing empties dropped ([] for none). */
+function cosWire(ch) {
+  const on = ch.cos ? ch.cos.on : {};
+  const out = COS_SLOTS.map((s) => (on[s] ? COSMETICS[on[s]].n : 0));
+  while (out.length && !out[out.length - 1]) out.pop();
+  return out;
+}
+/** A roll in [0, 1) for cosmetic finds, kept apart from the world's own random stream. */
+function cosRoll(S, p, salt) {
+  S.cosN = (S.cosN | 0) + 1;
+  return (strHash(`${S.now}:${p.eid}:${salt}:${S.cosN}`) >>> 0) / 4294967296;
+}
+/** Give one cosmetic; false when it is already owned. */
+function giveCos(S, p, id, why) {
+  const ch = p.ch;
+  if (!COSMETICS[id] || ch.cos.own.includes(id)) return false;
+  ch.cos.own.push(id);
+  toast(p, `외형 획득: [${COSMETICS[id].name}]${why ? ` — ${why}` : ""} (캐릭터 창 ‘외형’ 탭에서 입을 수 있습니다)`);
+  p.gain.push(["cos", id]);
+  if (COSMETICS[id].q >= 3) sys(S, `${ch.name}님이 외형 [${COSMETICS[id].name}]을(를) 얻었습니다!`);
+  p.dirty = true;
+  return true;
+}
+/** A cosmetic from one source's pool the character does not own yet, if any is left. */
+function cosFrom(S, p, src, why) {
+  const left = COS_IDS.filter((id) => COSMETICS[id].src === src && !p.ch.cos.own.includes(id));
+  if (!left.length) return false;
+  return giveCos(S, p, left[Math.floor(cosRoll(S, p, src) * left.length)], why);
 }
 
 // ───────────────────────────── actions ─────────────────────────────
@@ -4600,6 +4734,21 @@ export function validateAction(S, pid, a) {
     case "emo":
       if (!Number.isInteger(a.i) || a.i < 0 || a.i >= EMOTES) return bad("없는 감정표현");
       return now - p.emoAt < 600 ? bad("잠시 후에") : OK;
+    // the wardrobe: wear something owned, take a slot off, or buy at the costume shop
+    case "cos_eq":
+      if (typeof a.id !== "string" || !Object.hasOwn(COSMETICS, a.id)) return bad("없는 외형입니다");
+      if (!ch.cos.own.includes(a.id)) return bad("아직 얻지 않은 외형입니다");
+      return ch.cos.on[COSMETICS[a.id].slot] === a.id ? bad("이미 입고 있습니다") : OK;
+    case "cos_off":
+      if (!COS_SLOTS.includes(a.s)) return bad("잘못된 부위");
+      return ch.cos.on[a.s] ? OK : bad("입은 외형이 없습니다");
+    case "cos_buy": {
+      const c = typeof a.id === "string" && Object.hasOwn(COSMETICS, a.id) ? COSMETICS[a.id] : null;
+      if (!c || c.src !== "shop") return bad("팔지 않는 외형입니다");
+      if (!npcNear(p, "costume")) return bad("의상실 주인이 너무 멉니다");
+      if (ch.cos.own.includes(a.id)) return bad("이미 가지고 있습니다");
+      return ch.gold < c.price ? bad("골드가 부족합니다") : OK;
+    }
     case "title":
       if (a.id === "" || a.id === undefined || a.id === null) return OK;
       if (typeof a.id !== "string" || !ACH_BY[a.id] || !ACH_BY[a.id].title) return bad("없는 칭호입니다");
@@ -5268,6 +5417,27 @@ export function applyAction(S, pid, a) {
       toast(p, ch.title ? `칭호 「${titleOf(ch)}」을(를) 달았습니다.` : "칭호를 떼었습니다.");
       p.dirty = true;
       break;
+    case "cos_eq":
+      ch.cos.on[COSMETICS[a.id].slot] = a.id;
+      S.maps[p.map].who = true;
+      p.dirty = true;
+      break;
+    case "cos_off":
+      delete ch.cos.on[a.s];
+      S.maps[p.map].who = true;
+      p.dirty = true;
+      break;
+    case "cos_buy": {
+      const c = COSMETICS[a.id];
+      ch.gold -= c.price;
+      ch.cos.own.push(a.id);
+      // bought to be worn: put it on straight away
+      ch.cos.on[c.slot] = a.id;
+      S.maps[p.map].who = true;
+      toast(p, `[${c.name}]을(를) 샀습니다. 캐릭터 창 ‘외형’ 탭에서 갈아입을 수 있습니다.`);
+      p.dirty = true;
+      break;
+    }
     case "daily": {
       const dl = ch.daily;
       if (a.i === "bonus") {
@@ -5275,6 +5445,7 @@ export function applyAction(S, pid, a) {
         ch.st.daily++;
         toast(p, "일일 과제 보상 상자를 열었습니다!");
         payout(S, p, dailyBonus(ch));
+        cosFrom(S, p, "daily", "일일 과제 보상 상자");
       } else {
         dl.claimed[a.i] = true;
         payout(S, p, dailyReward(ch, dl.tasks[a.i]));
@@ -5735,7 +5906,7 @@ function selfPayload(p) {
       Math.max(0, ch.scr.atk - now), Math.max(0, ch.scr.def - now), Math.max(0, ch.scr.xp - now)],
     // skill levels and what the next level of each costs ({ gold, xp, lvl } or null at the top)
     skl: ch.skl, skc: SKILLS[ch.cls].map((sk, i) => (ch.skl[i] >= SK_MAX ? null : skillCost(sk, ch.skl[i]))),
-    wh: ch.wh, pet: ch.pet, opt: ch.opt,
+    wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos,
     dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather") } : null,
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), st: ch.st,
@@ -5785,7 +5956,9 @@ export function viewFor(S, pid) {
       // (its tier, rarity, enhancement and kind)
       const ar = o.ch.eq.armor, wp = o.ch.eq.weapon;
       out.who.push([o.eid, o.ch.name, o.ch.cls, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
-        wp ? wp.q : 0, wp ? wp.enh : 0, o.ch.pet || 0, weaponKind(o.ch), o.ch.guild, titleOf(o.ch)]);
+        wp ? wp.q : 0, wp ? wp.enh : 0, o.ch.pet || 0, weaponKind(o.ch), o.ch.guild, titleOf(o.ch),
+        // the outfit (cosmetic codes, slot order) and the weapon's legendary power or set, for its look
+        cosWire(o.ch), wp ? wp.lg || wp.set || "" : ""]);
     }
   }
   if (p.party) {
@@ -5836,6 +6009,8 @@ export function defs() {
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
     traits: TRAITS, slow: SLOW, skMax: SK_MAX, mech: { grit: GRIT_MAX, marks: MARK_MAX, focus: FOCUS_MAX, tip: TIP.at, tipMult: TIP.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, skStep: SK_STEP, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     waypoints: Object.keys(WP).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null })),
+    // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
+    cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N,
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
     collection: Object.fromEntries(REGIONS.map((id) => [id, { mobs: COL_MOBS[id], bonus: REGION_BONUS[id] }])), colNeed: MASTERY[0],
     event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },

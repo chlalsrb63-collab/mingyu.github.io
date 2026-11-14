@@ -14,6 +14,7 @@
 
 /** Every sheet is 32×32. Weapons and monsters are drawn at twice that and halved. */
 import * as WPN from "./weapons.js";
+import * as WR from "./wardrobe.js";
 
 export const SIZE = 32;
 const S = 32, BIG = 64;
@@ -286,16 +287,19 @@ export function personSheet(o) {
   const key = JSON.stringify(o);
   let s = cache.get(key);
   if (!s) {
-    const frames = (view) => [0, 1, 2, 3, 4, 5].map((f) => person(o, view, f));
+    // worn cosmetics (wardrobe.js) are layered over each plain frame
+    const frames = (view) => [0, 1, 2, 3, 4, 5].map((f) => WR.dress(person(o, view, f), o, view, f));
     s = { front: frames("front"), side: frames("side"), back: frames("back") };
     cache.set(key, s);
   }
   return s;
 }
 /** `look` is the list of choices, one per entry of PARTS. The class shows only in the weapon. */
-export function playerLook(cls, look = []) {
+export function playerLook(cls, look = [], gear = {}) {
   const at = (i) => { const p = PARTS[i], n = (p.names || p.colors).length; return Math.max(0, Math.min(n - 1, look[i] | 0)); };
-  return { ear: at(0), eye: at(1), nose: at(2), fur: PARTS[3].colors[at(3)], blush: BLUSH[at(4)], pat: at(5), cloth: PARTS[6].colors[at(6)] };
+  const o = { ear: at(0), eye: at(1), nose: at(2), fur: PARTS[3].colors[at(3)], blush: BLUSH[at(4)], pat: at(5), cloth: PARTS[6].colors[at(6)] };
+  // cosmetics worn (ids), so others see the outfit too
+  return gear && gear.cos && gear.cos.length ? { ...o, cos: gear.cos } : o;
 }
 /** Townsfolk wear a tunic in their trade's colour. */
 export function npcLook(look, role) {
@@ -310,6 +314,8 @@ export function npcLook(look, role) {
   if (role === "daily") return { ear: 3, eye: 0, nose: 1, fur: "#ffd0a0", blush: PINK, pat: 2, cloth: "#4a8ad0" };
   // the warehouse keeper, a bear in a storeroom-brown apron
   if (role === "bank") return { ear: 2, eye: 3, nose: 1, fur: "#e6cca4", blush: PINK, pat: 0, cloth: "#8a6a3a" };
+  // the costume-shop keeper, a fox, wears her own stock
+  if (role === "costume") return { ear: 3, eye: 3, nose: 1, fur: "#fff0e4", blush: PINK, pat: 0, cloth: null, cos: ["hat_beret", "top_dress_white", "face_glasses_gold"] };
   return { ear: 4, eye: 0, nose: 3, fur: "#f0e0c8", blush: PINK, pat: 0, cloth: "#5e6a88" };
 }
 export function mobLook(kind) {
