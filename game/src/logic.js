@@ -3473,7 +3473,7 @@ function buildTown() {
     [64, 42], [74, 42], [84, 42], [91, 42], [26, 42], [33, 42], [12, 42], [20, 42], [51, 52], [51, 62], [48, 68]]) O(x, y, "L");
   // flower tubs round the plaza, flower beds along the terrace's lip
   for (const [x, y] of [[39, 37], [39, 44], [61, 36], [61, 44], [45, 32], [55, 32], [45, 48], [55, 48]]) O(x, y, "B");
-  for (let x = 31; x <= 71; x++) if (o[28][x] === " " && (x < 46 || x > 54) && (x < 33 || x > 38) && x % 3) o[28][x] = "B";
+  for (let x = 31; x <= 71; x++) if (o[28][x] === " " && (x < 46 || x > 54) && (x < 33 || x > 38)) { g[28][x] = "\""; if (x % 7 === 3) o[28][x] = "B"; }
 
   // ── props over a footprint (scene2d draws them; town.md H keeps them under 80 with the buildings)
   prop("watch", 40, 10, 2, 2); prop("watch", 64, 10, 2, 2); prop("watch", 92, 22, 2, 2);
