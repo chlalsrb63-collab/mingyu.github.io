@@ -91,7 +91,8 @@ export const mobName = (k) => (DB.defs.mobs[k] ? DB.defs.mobs[k].name : k);
 export const itemName = (k) => (DB.defs.items[k] ? DB.defs.items[k].name : k);
 /** Monsters a player meets in the field (no chests), sorted by level. */
 export const fieldMobs = () => Object.entries(DB.defs.mobs).filter(([, m]) => !m.chest).sort((a, b) => a[1].lv - b[1].lv || a[0].localeCompare(b[0]));
-export const ROLE_KO = { talk: "대화", quest: "퀘스트 의뢰", shop: "상점", smith: "대장장이", train: "수련관", bank: "창고", warp: "이동술사", daily: "일일 과제", collector: "도감 학자", achieve: "업적 기록관", costume: "의상실", elder: "관리자", guard: "경비" };
+export const ROLE_KO = { talk: "대화", quest: "퀘스트 의뢰", shop: "상점", smith: "대장장이", train: "수련관", bank: "창고", warp: "이동술사", daily: "일일 과제", collector: "도감 학자", achieve: "업적 기록관", costume: "의상실", elder: "관리자", guard: "경비",
+  cook: "요리사 (생활)", craft: "제작 장인 (생활)", alch: "연금술사 (생활)", jobs: "알바 중개인 (생활)" };
 export const THEME_KO = { interior: "실내 (건물 안)", town: "마을", meadow: "초원", forest: "숲", crypt: "지하묘지", city: "도시", sewer: "하수도", cave: "동굴", abyss: "심연" };
 export const BGM_KO = { town: "마을", field: "들판", meadow: "초원", forest: "숲", city: "도시", cave: "동굴", crypt: "지하묘지", sewer: "하수도", abyss: "심연", boss: "보스", rift: "균열", title: "타이틀" };
 

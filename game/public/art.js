@@ -937,6 +937,9 @@ export function buildIcons(items) {
   const cv = { camp: campIcon(), fish_s: fishIcon("#8ab4d8", "#e8f0f8", false), fish_m: fishIcon("#e88aa8", "#b8e8d8", false), fish_l: fishIcon("#f0c040", "#fff0a0", false),
     food_s: fishIcon("#c88a4a", "#e8b878", true), food_m: fishIcon("#d87a5a", "#f0b890", true), food_l: fishIcon("#e8a030", "#ffe090", true), burnt: fishIcon("#3a3038", "#5a4a50", true), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem(),
     cafe_coffee: mugIcon("#f4ecdc", "#cfc4b2", "#5a3420", "#c8a070"), cafe_cocoa: mugIcon("#d86a6a", "#b04e56", "#8a4a2a", "#ffffff"), cafe_tea: mugIcon("#8ac0a0", "#6a9a80", "#c8b040", null),
+    // life skills' fish of grades 3 and 4 and their campfire dishes (12-life-tables.js)
+    fish_c: fishIcon("#a8b4c4", "#e4ecf4", false), fish_v: fishIcon("#d8c0d8", "#f6eef6", false),
+    food_c: fishIcon("#c8945a", "#ecc890", true), food_v: fishIcon("#d89a7a", "#f4d2b0", true),
     cafe_scone: bakeIcon("scone"), cafe_pie: bakeIcon("pie"), inn_stew: bakeIcon("stew"), inn_bread: bakeIcon("bread") };
   for (const id of Object.keys(items)) {
     const it = items[id];

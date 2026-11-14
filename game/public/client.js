@@ -36,6 +36,7 @@ import * as Sky from "./sky.js";
 import * as Dim from "./dimrift.js";
 import * as Radar from "./radar.js";
 import * as Housing from "./housing.js";
+import * as Life from "./life.js";
 
 // approved external images (public/assets/manifest.json) before anything is drawn; an
 // empty or missing manifest leaves every look code-drawn
@@ -366,6 +367,7 @@ const DUNGEONS = new Set(["crypt", "sewer", "abyss"]);
 Mini.mount($("#minigame"));
 Dim.init({ G, S3, Sound, act, openWin, closeWin, isOpen: (id) => isOpen(id) });
 Housing.init({ G, S3, Sound, act, el, iconImg, itemSlot: (e, o) => itemSlot(e, o), openWin, closeWin, isOpen: (id) => isOpen(id), draw: (id, k, fn) => draw(id, k, fn), hoverTip: (d, f) => hoverTip(d, f), toast: (m) => toast(m) });
+Life.init({ G, S3, Sound, el, iconImg, entityPos: (id) => entityPos(id), draw: (id, k, fn) => draw(id, k, fn) });
 Dim.bindUi();
 // every menu button wears its glyph above its word; the auto-hunt button wears one too
 for (const b of $$("#menu button")) { const g = MENU_ICON[b.dataset.win || b.id.slice(2)]; if (g) b.prepend(iconImg(g)); }
@@ -377,6 +379,7 @@ function onEvent(e, t) {
   if (SkillFx.skillEvent(e, { G, S3, Sound, entityPos, heightOf, t })) return;
   if (Dim.onEvent(e)) return;
   if (Housing.onEvent(e)) return;
+  if (Life.onEvent(e)) return;                // a life skill's level (life.js)
   MobArt.onEvent(e, G, S3, t);              // wind-ups, strikes and the bodies monsters leave
   switch (e[0]) {
     // the storyteller by the town's fire tells a tale: a bubble over her, and a line in the chat for those close by
@@ -660,7 +663,8 @@ addEventListener("keydown", (e) => {
     // a hybrid job swaps its two weapons
     case "Tab": { e.preventDefault(); const j = G.self && G.defs.jobs[G.self.job]; if (j && j.kind === "hybrid") { act({ t: "wsw" }); Sound.play("ui"); } break; }
     case "c": case "ㅊ": toggleWin("char"); break;
-    case "l": case "ㅣ": toggleWin("quest"); break;
+    // Shift+L: the 생활 window (life skills, life.js); L alone: quests
+    case "l": case "ㅣ": toggleWin(e.shiftKey ? "life" : "quest"); break;
     case "r": case "ㄱ": toggleAuto(); break;
     case "p": case "ㅔ": toggleWin("party"); break;
     case "k": case "ㅏ": toggleWin("skill"); break;
@@ -1454,7 +1458,7 @@ function wpWoke(s, id, i = 0) { return !!(s && s.wp && !Array.isArray(s.wp) && (
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life"];
 const winEl = (id) => $(`#w-${id}`);
 /** The bag is docked in the side column, so it always counts as open (on a phone it lives in the drawer). */
 const isOpen = (id) => id === "inv" || !winEl(id).hidden;
@@ -1506,7 +1510,7 @@ function homeOf(id, w, h) {
   switch (id) {
     case "char": case "shop": case "smith": case "train": case "bank": case "house": case "hstore": return [right, top];
     case "deco": return [x0 + 4, top + 32];
-    case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": return [x0 + 4, top + 32];
+    case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": case "life": return [x0 + 4, top + 32];
     case "talk": return [mid, y1 - h - 52];
     default: return [mid, Math.max(top, (y0 + y1 - h) / 2 - 30)];
   }
@@ -2137,6 +2141,7 @@ function refreshUi() {
   draw("collect", () => [s.mk, s.col, G.colTab], renderCollect);
   Wardrobe.refresh(s);
   Housing.refresh(s);
+  Life.refresh(s);
   tutCard(s);
 }
 function section(text, glyph) {

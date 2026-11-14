@@ -798,3 +798,12 @@ body.in-house #tut { display: none !important; }
 .deco-style .btn.on { color: #2a1806; background: var(--b-mid); opacity: 1; }
 #w-hstore { width: min(620px, calc(100vw - 8px)); }
 #w-hstore .bank-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; font: 12px var(--pix); color: var(--b-hi); }
+/* ─────────────────────────── life skills: the 생활 window (life.js) ─────────────────────────── */
+#w-life { width: min(360px, calc(100vw - 8px)); }
+#w-life .life-card .dh b { display: flex; align-items: center; gap: 4px; }
+#w-life .life-card .dh .lv { color: var(--b-hi); font: 12px var(--pix); }
+#w-life .life-card .bar { height: 14px; }
+#w-life .life-card .df { flex-wrap: wrap; justify-content: space-between; gap: 0 8px; color: #cfc8b8; }
+#w-life .life-card .df small { white-space: nowrap; }
+#w-life .life-card .df .next { color: #a898b8; white-space: nowrap; }
+#w-life .life-card.soon { opacity: .55; }

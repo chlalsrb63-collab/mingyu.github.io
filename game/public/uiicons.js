@@ -51,6 +51,8 @@ const G = {
   star: [".....##.....", ".....##.....", "....####....", "....####....", "############", ".##########.", "..########..", "...######...", "..###..###..", "..##....##..", ".##......##.", "............"],
   feather: ["..........##", ".........###", "........###o", ".......###o.", "......###o..", ".....###o...", "....###o....", "...###o.....", "..##o.......", ".#o.........", "#...........", "............"],
   rift: [".....#......", "....##......", "...##.......", "..###...#...", ".####..##...", "..#######...", "...#######..", "...##..####.", "...#...###..", ".......##...", "......##....", "......#....."],
+  // the 생활 window (life.js): a sprout in a pot
+  life: ["............", "......####..", ".....######.", "..##..####o.", ".####..##o..", ".#####.#o...", "..###o.#....", "....oo#.....", ".....##.....", "..########..", "...#oooo#...", "....####...."],
   // the map window and the radar's marks (radar.js)
   map: ["............", "####....####", "#oo######oo#", "#oo#oooo#oo#", "#o##oooo#oo#", "#oo#o##o##o#", "#oo#oo#o#oo#", "#oo#oooo#oo#", "#oo#oooo#oo#", "####oooo####", "...######...", "............"],
   gate: ["...######...", "..##oooo##..", ".##oo##oo##.", ".#oo#oo#oo#.", ".#o#o##o#o#.", ".#o#o##o#o#.", ".#oo#oo#oo#.", ".#ooo##ooo#.", ".#oooooooo#.", ".#oooooooo#.", "###......###", "............"],
@@ -64,7 +66,7 @@ const G = {
 
 /** What each stat, menu button, buff and elite trait is drawn with. */
 export const STAT_ICON = { atk: "sword", def: "shield", hp: "heart", mp: "drop", crit: "target", critd: "burst", ls: "fang", xp: "up", mf: "gem", gold: "coin", acd: "clock", kills: "skull" };
-export const MENU_ICON = { inv: "bag", char: "person", skill: "book", quest: "scroll", party: "party", guild: "banner", rank: "crown", help: "help", settings: "gear", sit: "fire", emo: "smile", sound: "note", auto: "auto", daily: "cal", achieve: "trophy", collect: "paw", warp: "stone", event: "rift", bank: "bag", map: "map" };
+export const MENU_ICON = { inv: "bag", char: "person", skill: "book", quest: "scroll", party: "party", guild: "banner", rank: "crown", help: "help", settings: "gear", sit: "fire", emo: "smile", sound: "note", auto: "auto", daily: "cal", achieve: "trophy", collect: "paw", life: "life", warp: "stone", event: "rift", bank: "bag", map: "map" };
 /** Each class is marked by its weapon. */
 export const CLASS_ICON = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" };
 /** In the order of `self.buffs`: attack up, speed up, warmth, food, slowed, burning, poisoned — then the scrolls of attack, defence, experience — then a wind shrine's push, then 안락한 휴식 (a rest at home). */
