@@ -490,7 +490,7 @@ const GEN = {
       tiers: 5, tierOpen: 0.15, ramp: 2, roadW: 3, pools: 2.6, level: true, hard: "=", stoneFr: [], widen: "TPBRulYAeΣΘO",
       sea: { side: "s", at: 20, amp: 8, surf: 0, shallow: 0, beach: 0, sand: "r", reef: 0, cape: [0.74, 9] },
       river: true, riverAt: [0.4, 0.06], gorge: { first: 20, every: 30, deck: "=" }, thick: () => 1,
-      ground: ":", edge: "C", treeCh: "T", treeCh2: "Σ", road: "r", trail: "p", shore: "r", lakes: 3, lakeR: 5, vaults: 13, ruins: 2, tpm: 15.5,
+      ground: ":", edge: "C", treeCh: "T", treeCh2: "Σ", road: "r", trail: "p", shore: "r", lakes: 7, lakeR: 7, vaults: 13, ruins: 2, tpm: 15.5,
       walls: [["trees", 0.45], ["rocks", 0.35], ["bramble", 0.2]], rocks: ["R", "Θ"], nookWall: "cliff", gates: [["west", "w", 0.62], ["south", "s", 0.74]], exit: "south",
       mobs: [SQ, BOAR, CRANE, DEER, EEL, BEAR], pondMob: null, chest: "chest_cloudtemple", boss: "lionhand_frost",
       // the rare kind keeps the pavilion pockets until the rare-spawn rule exists (maps-batch2 "shared rules")

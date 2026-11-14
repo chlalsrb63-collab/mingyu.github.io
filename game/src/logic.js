@@ -1638,7 +1638,8 @@ function widen(m, pts, soft, dig, r = m.widenR || 1) {
       const X = x + dx, Y = y + dy, o = m.o[Y][X];
       if (dig && m.g[Y][X] === "W" && o === " ") { if (m.noDig && m.noDig[Y * W + X]) return Infinity; c += 4; continue; }
       if (SOLID_G.includes(m.g[Y][X]) || (o !== " " && !soft.includes(o) && o !== "C")) return Infinity;
-      if (o === "C") c += 8;
+      // (a crag that walls a boss in is never cut into steps: m.noCut, the summit hall of the cloud temple)
+      if (o === "C") { if (m.noCut && m.noCut[Y * W + X]) return Infinity; c += 8; }
       else if (o !== " ") c += 3;
     }
     return c;
@@ -1661,6 +1662,7 @@ function widen(m, pts, soft, dig, r = m.widenR || 1) {
       for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
         if (dig && m.g[y + dy][x + dx] === "W") { m.g[y + dy][x + dx] = dig; cut++; }
         // (five wide: the swath round the first step may hold the stone or the sign the way is cut for — those stay)
+        if (m.noCut && m.noCut[(y + dy) * W + x + dx]) continue;
         if (m.o[y + dy][x + dx] !== " " && (r === 1 || soft.includes(m.o[y + dy][x + dx]) || m.o[y + dy][x + dx] === "C")) { if (m.o[y + dy][x + dx] === "C") m.g[y + dy][x + dx] = "v"; m.o[y + dy][x + dx] = " "; cut++; }
       }
     }
@@ -2468,6 +2470,8 @@ function wilds(cfg) {
     m.pieces.push(c.piece);
     keepBox(x0 - 1, y0 - 1, x0 + tw, y0 + th);
     m.courts.push({ piece: c.piece, x: x0, y: y0, w: tw, h: th });
+    // (the crags a court is walled with stand for good: the widening never cuts them into steps)
+    for (let y = y0; y < y0 + th; y++) for (let x = x0; x < x0 + tw; x++) if (m.o[y][x] === "C") (m.noCut || (m.noCut = new Uint8Array(W * H)))[y * W + x] = 1;
     if (tags.chest) { const [cx, cy] = tags.chest[0]; spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] }); special.push([cx, cy]); }
     const mark = tags.boss ? tags.boss[0] : tags.chest ? tags.chest[0] : [x0 + (tw >> 1), y0 + th - 1];
     if (tags.boss) {
@@ -5033,7 +5037,7 @@ const GEN = {
       tiers: 5, tierOpen: 0.15, ramp: 2, roadW: 3, pools: 2.6, level: true, hard: "=", stoneFr: [], widen: "TPBRulYAeΣΘO",
       sea: { side: "s", at: 20, amp: 8, surf: 0, shallow: 0, beach: 0, sand: "r", reef: 0, cape: [0.74, 9] },
       river: true, riverAt: [0.4, 0.06], gorge: { first: 20, every: 30, deck: "=" }, thick: () => 1,
-      ground: ":", edge: "C", treeCh: "T", treeCh2: "Σ", road: "r", trail: "p", shore: "r", lakes: 3, lakeR: 5, vaults: 13, ruins: 2, tpm: 15.5,
+      ground: ":", edge: "C", treeCh: "T", treeCh2: "Σ", road: "r", trail: "p", shore: "r", lakes: 7, lakeR: 7, vaults: 13, ruins: 2, tpm: 15.5,
       walls: [["trees", 0.45], ["rocks", 0.35], ["bramble", 0.2]], rocks: ["R", "Θ"], nookWall: "cliff", gates: [["west", "w", 0.62], ["south", "s", 0.74]], exit: "south",
       mobs: [SQ, BOAR, CRANE, DEER, EEL, BEAR], pondMob: null, chest: "chest_cloudtemple", boss: "lionhand_frost",
       // the rare kind keeps the pavilion pockets until the rare-spawn rule exists (maps-batch2 "shared rules")

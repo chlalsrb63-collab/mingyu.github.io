@@ -696,6 +696,8 @@ function wilds(cfg) {
     m.pieces.push(c.piece);
     keepBox(x0 - 1, y0 - 1, x0 + tw, y0 + th);
     m.courts.push({ piece: c.piece, x: x0, y: y0, w: tw, h: th });
+    // (the crags a court is walled with stand for good: the widening never cuts them into steps)
+    for (let y = y0; y < y0 + th; y++) for (let x = x0; x < x0 + tw; x++) if (m.o[y][x] === "C") (m.noCut || (m.noCut = new Uint8Array(W * H)))[y * W + x] = 1;
     if (tags.chest) { const [cx, cy] = tags.chest[0]; spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] }); special.push([cx, cy]); }
     const mark = tags.boss ? tags.boss[0] : tags.chest ? tags.chest[0] : [x0 + (tw >> 1), y0 + th - 1];
     if (tags.boss) {
