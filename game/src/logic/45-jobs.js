@@ -96,16 +96,19 @@ function deriveStats(p) {
 // ── weapon mastery
 
 /** Mastery experience for the weapon in hand; levels it up (events, toasts, the skills it opens go on the bar). */
-function gainWm(S, p, n) {
-  const ch = p.ch;
-  if (!ch.eq.weapon || !(n > 0)) return;
-  const wk = ITEMS[ch.eq.weapon.id].wk, r = ch.wm[wk];
+function gainWm(S, p, n, bonus) {
+  const ch = p.ch, wk = inHand(ch);
+  if (!wk || !(n > 0)) return;
+  const r = ch.wm[wk];
   if (r.lv >= WM_MAX) return;
-  r.xp += Math.round(n);
+  const gain = n + (r.lv < JOB_WM ? bonus : 0);
+  r.xp += gain;
   p.dirty = true;
   while (r.lv < WM_MAX && r.xp >= wmNeed(r.lv)) {
     r.xp -= wmNeed(r.lv);
     r.lv++;
+    // Any excess at job mastery returns to the normal earning rate.
+    if (r.lv === JOB_WM) r.xp = Math.floor(r.xp * n / gain);
     p.stc = null;
     S.maps[p.map].ev.push(["wm", p.eid, WK_ORDER.indexOf(wk), r.lv]);
     saveSoon(p);
@@ -125,17 +128,17 @@ function gainWm(S, p, n) {
   }
   if (r.lv >= WM_MAX) r.xp = 0;
 }
-/**
- * A blow from `p` landed on `mob`: the action it came from (a basic attack +1, a skill +2) counts once,
- * if the monster is worth it (no more than WM_GAIN.lowTier tiers below; never a chest or a still thing).
- */
+/** Combat credit requires a real mob no more than WM_GAIN.lowTier tiers below the player. */
+function wmEligible(p, d) {
+  return !d.chest && !d.still && d.lv >= toTier(p.ch.lvl) - WM_GAIN.lowTier;
+}
+/** A landed basic attack or skill counts once, including volleys and attacks that hit several mobs. */
 function wmHit(S, p, mob) {
-  const d = MOBS[mob.k];
-  if (d.chest || d.still || d.lv < toTier(p.ch.lvl) - WM_GAIN.lowTier) return;
+  if (!wmEligible(p, MOBS[mob.k])) return;
   const [a, n] = p.hitAct || [p.actN | 0, p.actGain | 0];
   if (!a || a <= (p.wmAct | 0)) return;
   p.wmAct = a;
-  gainWm(S, p, n);
+  gainWm(S, p, n, n * (WM_GAIN.earlyHit - 1));
 }
 /** A new action (`skill` true for a skill): blows it lands until the next one count toward its mastery. */
 function newAct(p, skill) {
@@ -146,8 +149,14 @@ function newAct(p, skill) {
 function wmKill(S, rt, mob) {
   const d = MOBS[mob.k];
   if (d.chest || d.still) return;
-  const n = (1 + Math.floor(d.lv / 2)) * WM_GAIN.kill[mob.el | 0] * (d.boss ? WM_GAIN.boss : 1);
-  for (const pid of Object.keys(mob.by)) { const p = S.players[pid]; if (p && p.map === rt.id && !p.dead) gainWm(S, p, n); }
+  const rank = WM_GAIN.kill[mob.el | 0];
+  const n = (1 + Math.floor(d.lv / 2)) * rank * (d.boss ? WM_GAIN.boss : 1);
+  const bonus = Math.round(Math.min(d.xp, WM_GAIN.earlyXpMax) * WM_GAIN.earlyKill * rank);
+  for (const pid of Object.keys(mob.by)) {
+    const p = S.players[pid];
+    if (!p || p.map !== rt.id || p.dead || !wmEligible(p, d)) continue;
+    gainWm(S, p, n, bonus);
+  }
 }
 
 // ── accuracy, evasion, stagger

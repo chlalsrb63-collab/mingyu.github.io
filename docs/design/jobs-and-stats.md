@@ -228,7 +228,7 @@ work.
 
 - Faucets unchanged (XP per kill, gold, drops). The only new sinks: `pointCost` (replaces `trainCost` + `skillCost`
   XP) and respec. Gold sink lost: skill training gold (`skillCost` up to ≈ 150k per skill) → keep the gold sink by
-  making **job change cost 5,000 G** (single) / **20,000 G** (hybrid), and 망각의 의식 respec free of gold.
+  making **job change cost 1,000 G** (single) / **5,000 G** (hybrid), and 망각의 의식 respec free of gold.
 - Loot: a weapon drop picks its kind 50 % = the looter's equipped kind, 50 % uniform over the six (no more class
   filter); bows enter every table automatically. Legendary powers and the 균열 추적자 set (`types` includes `weapon`)
   roll on bows with no table change.
@@ -241,15 +241,17 @@ work.
 const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow"], WM_MAX = 50;
 wmNeed(m) = 22 · m²        // XP from m to m+1: 22, 88, … 2,200 (10), 7,942 (19), 52,822 (49); Σ to 10 = 6.3k, to 20 = 54k, to 50 = 889k
 ```
-Gain (always to the kind in hand at that moment; `gainWm(S, p, n)` in `45-jobs.js`, called from 3 hooks):
-- **hit**: +1 per action (basic attack or skill) that damaged ≥ 1 monster whose tier ≥ `toTier(lvl) − 8`; skills +2.
-  Chests and `still` monsters never count.
-- **kill**: each player in `mob.by` (the hitters, not idle party members) gets `(1 + floor(tier/2)) × [1, 4, 10][el]`,
-  bosses ×20.
-- Level-up: event `["wm", eid, kindIndex, lv]`, toast "[대검] 숙련 10! 새 스킬 [대지 가르기] · 패시브 [거검의 관성]",
-  at 20: "[대검] 숙련 20! 전직관 아르센에게 가면 [대검전사]로 전직할 수 있습니다." `qsLearn` for new actives.
-- Expected (model): mastery 10 ≈ 20 min, 20 ≈ 2 h (≈ Lv.77), 50 ≈ 15 h (≈ Lv.181) using one weapon; a hybrid needs two
-  weapons at 20 ≈ 4 h.
+Gain (always to the kind in hand; `gainWm(S, p, n, bonus)` in `45-jobs.js`):
+- **Hit**: once per landed action. Basic attack/skill grant 5/10 before mastery 20 and 1/2 afterward.
+- **Kill**: each contributing hunter earns the usual tier and rank reward. Before mastery 20, add
+  `round(min(60, monster XP) * 3.55 * rank)` with rank 1/4/10. Chests, still targets and mobs more than
+  eight tiers below the character give no mastery. Excess XP on crossing 20 falls back to the usual rate.
+- **Character XP**: the hunter gets +60% combat XP from eligible kills through displayed Lv.30, tapering
+  linearly to +0% at Lv.40. Direct damage is required and mobs more than three tiers ahead give regular XP. Quest turn-ins grant character XP.
+- **Unlocks**: mastery 10 teaches the weapon's active and passive. A single job opens at 20. A hybrid
+  requires an adventurer with 15 in each of its weapons.
+- In the six-weapon hunt-only probe, mastery 20 coincides with character Lv.29–31. See the
+  [measured results](../../ai/reports/codex-early-mastery.md).
 - Effects: weapon attack +1 %/lv (B.4), accuracy (B.6), skill growth `mult × (1 + 0.012·(wm − need))` (hybrid
   signature: the lower of the two), unlocks (C.1).
 
@@ -316,7 +318,7 @@ SKILL_ORDER = [ per weapon: L1, L10 active, L10 passive ] × 6, then 6 single, t
 | bow L10 | `leapshot` 도약 사격 | mp 13, cd 9000, backstep 60 (`reach`), then 5 arrows ±30° len 150 ×1.0 (≤ 2 per target) | | 95 | `rewind`-style move + shots |
 | bow P10 | `hawk` 매의 시야 | bow hit × (1 + 0.25·clamp((d − 40)/110, 0, 1)), d = distance from the firing spot | | 115 (far hit tint) | — |
 
-### C.3 Single jobs (need: mastery 20 in the weapon, from 모험가, at 전직관; 5,000 G)
+### C.3 Single jobs (need: mastery 20 in the weapon, from 모험가, at 전직관; 1,000 G)
 
 | job id · name | weapon | signature (`j`) | numbers | fx |
 | --- | --- | --- | --- | --- |
@@ -327,7 +329,7 @@ SKILL_ORDER = [ per weapon: L1, L10 active, L10 passive ] × 6, then 6 single, t
 | `warlock` 마도사 | book | `pact` 심연의 계약 | mp 40, cd 38000, phantom beast prop at aim 6 s: bites nearest every 600 ms ×0.8; at the end curse blast r 80 ×2.2 (+25 % if branded), mag | 93 |
 | `archer` 궁수 | bow | `rain` 화살비 | mp 34, cd 30000, area r 70 at 110 ahead, 3 s: every 300 ms ×0.45 to all inside + slow | 96 |
 
-### C.4 Hybrid jobs (need: stay 모험가, two weapons of the pair ≥ 15 since H — was 20; 20,000 G)
+### C.4 Hybrid jobs (need: stay 모험가, two weapons of the pair ≥ 15 since H — was 20; 5,000 G)
 
 The first six (numbers as first designed; the tuned numbers are in `03-skills.js` and H.3). The other nine pairs are in H.
 
@@ -659,7 +661,7 @@ rebase).
    단풍 왕도 Lv.157–181) so player and monster levels compare directly.
 4. **Job permanence.** Default: a job is permanent; a single-job character can never become a hybrid; stat resets
    (first free, then 10 % of spent XP) never touch jobs or mastery.
-5. **Job fees and the starter pick.** Default: 5,000 G single / 20,000 G hybrid (replaces the retired skill-training
+5. **Job fees and the starter pick.** Current: 1,000 G single / 5,000 G hybrid (replaces the retired skill-training
    gold sink); every new 모험가 picks one free tier-1 weapon from 수련관 카이 and starts holding a 낡은 단검.
 
 ---------------------------------------------------------------------------------------------------------------
@@ -696,7 +698,7 @@ pair of the six weapons has its hybrid. J1/J2 built six (C.4); H adds the other 
 | staff+bow | `spellarcher` 마궁사 | three-element arrows | INT .8 DEX .8 WIS .3 LUK .3 | `tristar` 삼원소 화살 | 127 |
 | book+bow | `runearcher` 각인궁사 | rune-ink arrows that brand | INT .8 DEX .8 WIL .3 LUK .3 | `inkshot` 룬 먹화살 | 128 |
 
-All cost 20,000 G and are taken from 모험가 at 전직관 아르센; a hybrid's signature works with either weapon in hand.
+All cost 5,000 G and are taken from 모험가 at 전직관 아르센; a hybrid's signature works with either weapon in hand.
 
 ### H.3 Signatures (numbers as built, tuned by `tests/balance.mjs`; mult × attack)
 

@@ -42,18 +42,20 @@ now += 1000;
 assert.ok(act(A, { t: "atk", a: 0 }).ok);
 assert.ok(mob.dead, "one hit should finish a 1 hp monster");
 assert.ok(pa.ch.xp > 0 && pb.ch.xp > 0, "both party members gain experience");
-assert.ok(pa.ch.xp < 36, "a shared kill pays each member a share, not the full amount");
+assert.equal(pb.ch.xp, Math.round(36 * 0.8), "the nearby member gets the regular shared reward");
+assert.equal(pa.ch.xp, Math.round(36 * 0.8 * 1.6), "the early hunter earns the bonus on the party share");
 assert.ok(rt.drops.some((d) => d.own === A) && rt.drops.some((d) => d.own === B), "each member rolls their own loot");
 
 // ── stat points: bought with experience, at a campfire or by the trainer
 assert.equal(act(A, { t: "train", a: [1, 0, 0, 0, 0, 0] }).ok, false);
 pa.ch.xp = 5000;
 { const kai = L.atlas().maps.town.npcs.find((n) => n.role === "train"); pa.x = kai.x * 16 + 8; pa.y = (kai.y + 1) * 16 + 8; }
+pa.dirty = true;
 const before = L.viewFor(S, A).self.atk;
 assert.ok(act(A, { t: "train", a: [10, 0, 0, 0, 0, 0] }).ok);
 const self = L.viewFor(S, A).self;
 assert.equal(self.st.str, 15); assert.equal(self.lvl, 11);
-assert.ok(self.atk >= before + 8 && self.atk <= before + 9, "ten points of STR at grade A: +8.5 attack");
+assert.ok(self.atk >= before + 9 && self.atk <= before + 10, "ten points of STR at grade A and ten character levels: +9.5 attack before rounding");
 assert.ok(self.xp < 5000);
 
 // ── runes: socket two in order and the runeword appears
