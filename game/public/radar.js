@@ -503,16 +503,17 @@ function drawWorld(g, W, H, t) {
     g.fillStyle = cur ? (Math.floor(t / 500) % 2 ? "#ffd84a" : "#e8b84a") : edge; g.fillRect(n.x, n.y, n.w, n.h);
     g.fillStyle = cur ? "#3a2408" : "#1d1826"; g.fillRect(n.x + 2, n.y + 2, n.w - 4, n.h - 4);
     const big = n.h >= 28;
+    const band = n.d.minLv ? `Lv.${n.d.minLv} 전용` : bandOf(n.d.band);
     // (a short box says its level band on the same line)
-    const one = !big && n.d.band ? `${n.d.name} ${bandOf(n.d.band)}` : n.d.name;
+    const one = !big && n.d.band ? `${n.d.name} ${band}` : n.d.name;
     label(g, one, n.x + n.w / 2, n.y + (big ? n.h / 2 - 6 : n.h / 2), cur ? "#fff2a0" : "#f4ecd0", n.k === "in" || one !== n.d.name ? 10 : 11);
-    if (big) label(g, n.k === "dun" ? `던전 ${bandOf(n.d.band)}` : n.k === "town" ? "안전 지대" : bandOf(n.d.band), n.x + n.w / 2, n.y + n.h / 2 + 7, cur ? "#ffe8a0" : edge, 10);
+    if (big) label(g, n.k === "dun" ? `던전 ${band}` : n.k === "town" ? "안전 지대" : band, n.x + n.w / 2, n.y + n.h / 2 + 7, cur ? "#ffe8a0" : edge, 10);
     if (cur) blit(g, meArrow(0), n.x - 4, n.y + n.h / 2);
     (party.get(id) || []).forEach((q, j) => blit(g, disc(q.col, q.n), n.x + n.w - 4 - j * 11, n.y - 1));
     const stones = n.d.wpn ? ` · 이동의 돌 ${n.d.wpn}개` : "";
     const who = (party.get(id) || []).map((q) => q.name).join(", ");
     view.hits.push({ x: n.x + n.w / 2, y: n.y + n.h / 2, rect: [n.x, n.y, n.w, n.h],
-      tip: `${n.d.name} · ${kname} · ${n.k === "in" ? "실내" : bandOf(n.d.band)}${n.d.mobs && n.d.mobs.length ? ` · 몬스터 ${n.d.mobs.length}종` : ""}${stones}${cur ? " · 현재 위치" : ""}${who ? ` · 파티원: ${who}` : ""}` });
+      tip: `${n.d.name} · ${kname} · ${n.k === "in" ? "실내" : band}${n.d.mobs && n.d.mobs.length ? ` · 몬스터 ${n.d.mobs.length}종` : ""}${stones}${cur ? " · 현재 위치" : ""}${who ? ` · 파티원: ${who}` : ""}` });
   }
 }
 

@@ -52,11 +52,11 @@ const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
 function dimPool(theme, lv) {
   const ok = (k) => MOBS[k] && !MOBS[k].chest && !MOBS[k].boss;
   const own = [];
-  for (const id of Object.keys(MAP_META)) if (MAP_META[id].theme === theme && !MAP_META[id].safe) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
+  for (const id of Object.keys(MAP_META)) if (MAP_META[id].theme === theme && !MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
   let pool = own.filter((k) => MOBS[k].lv >= lv - DIM.poolLv[0] && MOBS[k].lv <= lv + DIM.poolLv[1]);
   if (pool.length < 3) {
     const all = [];
-    for (const id of Object.keys(MAP_META)) if (!MAP_META[id].safe) for (const k of MAP_META[id].kinds) if (ok(k) && !all.includes(k)) all.push(k);
+    for (const id of Object.keys(MAP_META)) if (!MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !all.includes(k)) all.push(k);
     all.sort((a, b) => Math.abs(MOBS[a].lv - (lv - 1)) - Math.abs(MOBS[b].lv - (lv - 1)) || MOBS[a].lv - MOBS[b].lv || (a < b ? -1 : 1));
     pool = all.slice(0, 4);
   }

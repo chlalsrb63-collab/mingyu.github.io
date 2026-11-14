@@ -532,6 +532,8 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "warp": {
+      const minLv = mapLevelNeed(ch, a.to);
+      if (minLv) { toast(p, mapLevelMessage(minLv)); break; }
       const i = a.i || 0, w = stonesOf(mapOf(a.to))[i] || wpOf(a.to);
       S.maps[p.map].ev.push(["wp", p.eid, 0]);
       // to another stone of the same ground: a step, not a journey (the map is not sent again)
@@ -561,6 +563,7 @@ export function applyAction(S, pid, a) {
       ch.xpt = 0;
       ch.st = freshSt();
       ch.lvl = 1;
+      if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);
       afterGear(S, p);
       S.maps[p.map].ev.push(["u", p.eid, 2]);
       toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (경험치 ${fee.toLocaleString()} 소모)` : " (무료)"}`);

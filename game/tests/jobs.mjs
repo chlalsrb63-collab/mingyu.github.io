@@ -513,7 +513,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 {
   for (const k of Object.keys(D.mobs)) assert.equal(D.mobs[k].lv, 4 * D.mobs[k].tier - 3);
   const maple = D.maps.find((m) => m.id === "maple");
-  assert.deepEqual(maple.band, [157, 181], "단풍 왕도 shows Lv.157–181");
+  assert.deepEqual(maple.band, [157, 197], "단풍 왕도 shows Lv.157–197");
   const W = world({ wk: "sword", lvl: 13 });   // tier 4
   const town = W.map;
   assert.ok(town.portals.some((pt) => pt.to.includes("바람초원 Lv.1–25")), "doors name shown levels");

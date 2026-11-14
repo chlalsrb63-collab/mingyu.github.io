@@ -524,7 +524,7 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, frostkeep: 14 };
 const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
@@ -562,6 +562,7 @@ const MOBS = {
   gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80 },
   eyecrow: { name: "눈알 까마귀", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true },   // circles the pond and minds its own business, so the shore stays a fishing spot
   lambmaw: { name: "뒤집힌 양", lv: 6, hp: 110, atk: 15, def: 1, spd: 38, xp: 38, gold: [7, 16], aggro: 72, range: 18, cd: 1300, charge: 110 },
+  meadowram: { name: "금 간 뿔 숫양", sp: "lambmaw", tint: "ash", lv: 7, hp: 134, atk: 18, def: 2, spd: 40, xp: 49, gold: [8, 19], aggro: 64, range: 18, cd: 1400, charge: 100 },
   // 속삭임 숲
   splitboar: { name: "반쪽 멧돼지", lv: 8, hp: 170, atk: 23, def: 2, spd: 44, xp: 60, gold: [10, 22], aggro: 80, range: 18, cd: 1100, charge: 104 },
   ribdeer: { name: "갈비뼈 사슴", lv: 10, hp: 330, atk: 26, def: 8, spd: 26, xp: 92, gold: [12, 26], aggro: 64, range: 18, cd: 1400, slam: 34 },
@@ -619,12 +620,12 @@ const MOBS = {
   twingoat_gold: { name: "모래 쌍두 염소", sp: "twingoat", tint: "gold", lv: 33, hp: 2000, atk: 100, def: 24, spd: 44, xp: 980, gold: [74, 130], aggro: 90, range: 20, cd: 1100, charge: 110 },
   bearmaw_gold: { name: "모래 아가리 곰", sp: "bearmaw", tint: "gold", lv: 34, hp: 2600, atk: 104, def: 28, spd: 28, xp: 1060, gold: [78, 136], aggro: 80, range: 21, cd: 1500, slam: 40 },
   // 산호 해안
-  crabskull_blood: { name: "붉은 두개골 게", sp: "crabskull", tint: "blood", lv: 34, hp: 2300, atk: 104, def: 28, spd: 34, xp: 1050, gold: [78, 136], aggro: 84, range: 20, cd: 1400, charge: 118 },
-  fishwalker_frost: { name: "푸른 다리 달린 생선", sp: "fishwalker", tint: "frost", lv: 35, hp: 2500, atk: 106, def: 24, spd: 32, xp: 1120, gold: [80, 140], aggro: 80, range: 22, cd: 1500, slam: 38 },
-  eelknot_frost: { name: "산호 뱀장어 매듭", sp: "eelknot", tint: "frost", lv: 36, hp: 2000, atk: 110, def: 16, spd: 40, xp: 1220, gold: [86, 150], aggro: 98, range: 76, cd: 1800, volley: true },
-  squidrat_blood: { name: "산호 촉수 쥐", sp: "squidrat", tint: "blood", lv: 37, hp: 2400, atk: 112, def: 18, spd: 56, xp: 1300, gold: [90, 158], aggro: 96, range: 18, cd: 1000, pool: 24, poolKind: 2 },
-  leechmaw_bone: { name: "흰 거머리 아가리", sp: "leechmaw", tint: "bone", lv: 38, hp: 2700, atk: 114, def: 20, spd: 44, xp: 1400, gold: [94, 164], aggro: 92, range: 19, cd: 1100, leap: 90 },
-  gatorhalf_steel: { name: "강철 반쪽 악어", sp: "gatorhalf", tint: "steel", lv: 40, hp: 3400, atk: 116, def: 34, spd: 30, xp: 1500, gold: [96, 168], aggro: 82, range: 21, cd: 1500, slam: 42 },
+  crabskull_blood: { name: "붉은 두개골 게", sp: "crabskull", tint: "blood", lv: 26, hp: 1370, atk: 92, def: 24, spd: 34, xp: 540, gold: [48, 88], aggro: 84, range: 20, cd: 1400, charge: 118 },
+  fishwalker_frost: { name: "푸른 다리 달린 생선", sp: "fishwalker", tint: "frost", lv: 27, hp: 1580, atk: 95, def: 22, spd: 32, xp: 590, gold: [52, 92], aggro: 80, range: 22, cd: 1500, slam: 38 },
+  eelknot_frost: { name: "산호 뱀장어 매듭", sp: "eelknot", tint: "frost", lv: 28, hp: 1320, atk: 99, def: 16, spd: 40, xp: 660, gold: [56, 100], aggro: 98, range: 76, cd: 1800, volley: true },
+  squidrat_blood: { name: "산호 촉수 쥐", sp: "squidrat", tint: "blood", lv: 29, hp: 1500, atk: 101, def: 18, spd: 56, xp: 715, gold: [59, 105], aggro: 96, range: 18, cd: 1000, pool: 24, poolKind: 2 },
+  leechmaw_bone: { name: "흰 거머리 아가리", sp: "leechmaw", tint: "bone", lv: 30, hp: 1700, atk: 103, def: 20, spd: 44, xp: 785, gold: [62, 111], aggro: 92, range: 19, cd: 1100, leap: 90 },
+  gatorhalf_steel: { name: "강철 반쪽 악어", sp: "gatorhalf", tint: "steel", lv: 32, hp: 2100, atk: 106, def: 30, spd: 30, xp: 880, gold: [69, 119], aggro: 82, range: 21, cd: 1500, slam: 42 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes
   blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
@@ -633,11 +634,18 @@ const MOBS = {
   shroomboar: { name: "버섯등 멧돼지", lv: 43, hp: 3300, atk: 124, def: 28, spd: 48, xp: 1700, gold: [104, 180], aggro: 92, range: 20, cd: 1100, charge: 116, pool: 26 },
   gravrose: { name: "묘지 장미", lv: 44, hp: 3000, atk: 128, def: 22, spd: 22, xp: 1780, gold: [108, 186], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
   rotstag: { name: "썩은 관 사슴왕", lv: 46, hp: 5200, atk: 136, def: 32, spd: 42, xp: 2200, gold: [120, 204], aggro: 92, range: 22, cd: 1300, charge: 124, slam: 42, fan: 100 },
+  bogcrown: { name: "검은 왕관 뿌리짐승", sp: "stumpmaw", tint: "ash", lv: 47, hp: 4250, atk: 138, def: 35, spd: 28, xp: 3100, gold: [118, 184], aggro: 82, range: 22, cd: 1600, slam: 42 },
+  hollowowl: { name: "눈먼 문지기 올빼미", sp: "owlstare", tint: "bone", lv: 49, hp: 4050, atk: 144, def: 30, spd: 34, xp: 3550, gold: [122, 195], aggro: 94, range: 68, cd: 1800, fly: true, fan: 105 },
+  rootwarden: { name: "얼어붙은 왕릉 파수꾼", sp: "rotstag", tint: "frost", lv: 50, hp: 5500, atk: 155, def: 42, spd: 39, xp: 3950, gold: [134, 210], aggro: 90, range: 22, cd: 1450, charge: 128, slam: 43 },
+  // 성에왕의 성채: the open approach, the paired galleries and the crown chamber
+  rimehare: { name: "서리창 쌍두토끼", lv: 50, hp: 4600, atk: 142, def: 30, spd: 52, xp: 3400, gold: [132, 204], aggro: 80, range: 18, cd: 1350, leap: 92 },
+  frostmoth: { name: "갈라진 유리날개", lv: 50, hp: 4500, atk: 149, def: 33, spd: 37, xp: 3900, gold: [142, 218], aggro: 92, range: 32, cd: 1900, fly: true, fan: 96 },
+  crownstag: { name: "성에왕 유리뿔", lv: 50, hp: 520000, atk: 205, def: 50, spd: 34, xp: 74000, gold: [5200, 7600], aggro: 124, range: 30, cd: 1500, resp: 300000, boss: true, gear: 1, charge: 148, slam: 48, fan: 144, pool: 34, poolKind: 2 },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
   ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]],
-  ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 37, 1650, [560, 950]]]) {
+  ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 30, 1250, [440, 775]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {
@@ -669,13 +677,13 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   { mob: "ratking", n: 12, title: "무덤 아래", text: "숲의 막다른 폐허에 지하묘지로 내려가는 계단이 있다네. 꼬리가 엉킨 쥐 왕 12마리를 정리해 주게.", xp: 3000, gold: 750, items: [["hp_m", 5]] },
   { mob: "toadbrood", n: 10, title: "등에 밴 것", text: "지하묘지의 알 밴 두꺼비 10마리를 잡아 주게. 뱉어 놓은 웅덩이는 한참 남으니, 밟고 서 있지 말게.", xp: 3500, gold: 820, items: [["mp_m", 4]] },
   { mob: "batcluster", n: 10, title: "터지는 것", text: "지하묘지 깊은 곳의 박쥐 덩어리 10마리를 터뜨려 주게. 죽으면서 터지니, 쓰러뜨리고 물러서게.", xp: 4000, gold: 900, items: [["ru_ign", 1]] },
-  { mob: "pigeonmass", n: 10, title: "다른 세계의 하늘", text: "서쪽 문 너머는 '네온 시티'라는 다른 세계일세. 한 덩어리로 뭉친 비둘기 떼살 10마리를 떨어뜨려 주게.", xp: 4600, gold: 1000, items: [["mp_m", 5]] },
+  { mob: "pigeonmass", n: 10, title: "다른 세계의 하늘", text: "지하묘지 깊은 회랑 끝에서 네온 시티 변두리로 들어갈 수 있네. 한 덩어리로 뭉친 비둘기 떼살 10마리를 잡아 주게.", xp: 4600, gold: 1000, items: [["mp_m", 5]] },
   { mob: "catsplit", n: 12, title: "뒷골목의 울음", text: "네온 시티 골목의 갈라진 고양이 12마리를 잡아 주게. 소리 없이 뛰어든다네.", xp: 6500, gold: 1300, items: [["stone", 4]] },
   { mob: "fishwalker", n: 10, title: "뭍에 오른 것", text: "다리 달린 생선 10마리를 쓰러뜨려 주게. 단단하니 파티가 필요할 걸세.", xp: 9500, gold: 1800, items: [["stone", 5]] },
   { mob: "leechmaw", n: 12, title: "도시의 밑바닥", text: "네온 시티 뒷마당에 하수도로 내려가는 구멍이 있다네. 거머리 아가리 12마리를 떼어 내 주게.", xp: 12000, gold: 2200, items: [["hp_m", 8]] },
   { mob: "crabskull", n: 10, title: "남의 머리", text: "하수도에는 남의 두개골을 뒤집어쓴 게가 있다네. 두개골 게 10마리를 부숴 주게. 단단하고, 돌진이 매섭네.", xp: 13500, gold: 2400, items: [["stone", 4]] },
   { mob: "eelknot", n: 10, title: "매듭", text: "하수도 끝의 뱀장어 매듭 10마리를 풀어 주게. 멀리서 전기를 쏜다네.", xp: 15000, gold: 2600, items: [["ru_acu", 1]] },
-  { mob: "bearmaw", n: 8, title: "배에 난 입", text: "숲 끝의 수정 동굴은 균열의 중심일세. 아가리 곰 8마리를 쓰러뜨려 주게. 땅을 내리칠 땐 물러서게.", xp: 19000, gold: 3200, items: [["ru_san", 1], ["stone", 5]] },
+  { mob: "bearmaw", n: 8, title: "배에 난 입", text: "하수도 끝 회랑의 물길을 따라가면 수정 동굴이 나와. 아가리 곰 8마리를 쓰러뜨려 주게. 땅을 내리칠 땐 물러서게.", xp: 19000, gold: 3200, items: [["ru_san", 1], ["stone", 5]] },
   { mob: "boss", n: 1, title: "균열의 군주", text: "모든 세계를 뒤섞은 장본인, 균열의 군주 크리온을 쓰러뜨려 주게. 반드시 파티를 꾸려서 가게.", xp: 45000, gold: 8000, items: [["stone", 10], ["ru_lum", 1]] },
   { mob: "horsehalf", n: 12, title: "군주의 뒤편", text: "군주가 쓰러진 자리 뒤에 더 깊은 균열이 열렸네. 피의 심연의 반쪽 말 12마리를 쓰러뜨려 주게.", xp: 30000, gold: 5000, items: [["hp_m", 10], ["ru_fos", 1]] },
   { mob: "lionhand", n: 10, title: "손으로 된 갈기", text: "심연 깊은 곳의 손갈기 사자 10마리를 쓰러뜨려 주게. 땅을 치고, 멀리서는 무언가를 던진다네.", xp: 38000, gold: 6000, items: [["stone", 8]] },
@@ -683,6 +691,10 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   { mob: "blightsquirrel", n: 12, title: "단풍 아래의 병", text: "어미는 쓰러졌지만, 그 병은 뿌리를 타고 지상으로 번졌다네. 속삭임 숲 동쪽, 단풍에 묻힌 옛 왕도로 가서 한 꼬리 다람쥐떼 12마리를 정리해 주게.", xp: 40000, gold: 6500, items: [["hp_m", 10]] },
   { mob: "shroomboar", n: 12, title: "포자 무덤", text: "왕도의 멧돼지들은 등에 버섯을 키운다네. 버섯등 멧돼지 12마리를 잡아 주게. 뱉어 낸 포자 웅덩이는 독이니 밟지 말게.", xp: 46000, gold: 7200, items: [["stone", 8], ["mp_m", 6]] },
   { mob: "rotstag", n: 4, title: "썩은 왕관", text: "무너진 예배당엔 왕관을 쓴 사슴이 산다네. 옛 왕의 사냥감이었다지. 썩은 관 사슴왕 4마리를 쓰러뜨려, 왕도의 병을 끊어 주게.", xp: 60000, gold: 9000, items: [["stone", 12], ["ru_lum", 1]] },
+  { mob: "bogcrown", n: 24, title: "서리에 물든 뿌리", text: "단풍 왕도 안쪽부터 땅이 얼고 있네. 검은 왕관 뿌리짐승 24마리를 베어 오래된 왕릉으로 가는 길을 트게.", xp: 52000, gold: 9500, items: [["stone", 12]] },
+  { mob: "hollowowl", n: 28, title: "소리로 지키는 길", text: "왕도 깊은 폐허의 올빼미는 발자국 소리를 듣고 날아오르네. 눈먼 문지기 올빼미 28마리를 쓰러뜨려 사냥길을 열게.", xp: 61000, gold: 11000, items: [["hp_m", 15], ["mp_m", 10]] },
+  { mob: "rootwarden", n: 32, title: "얼어붙은 왕의 문", text: "단풍 왕도 남동쪽에서 얼어붙은 왕릉 파수꾼 32마리를 쓰러뜨려 주게. 성에왕의 성채는 Lv.200부터 들어갈 수 있네.", xp: 74000, gold: 15000, items: [["stone", 16], ["ru_fos", 2]] },
+  { mob: "crownstag", n: 1, title: "마지막 왕의 뿔", text: "성에왕의 성채 안쪽 왕좌에 유리뿔이 있다네. 원형 광장 바깥으로 빠질 길을 살핀 뒤, 동료와 함께 왕을 쓰러뜨려 주게.", xp: 40000, gold: 24000, items: [["stone", 20], ["ru_lum", 2]] },
 ];
 
 // ───────────────────────────── bag expansion and housing (46-bag.js, 64-housing.js) ─────────────────────────────
@@ -2688,11 +2700,11 @@ const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
 function dimPool(theme, lv) {
   const ok = (k) => MOBS[k] && !MOBS[k].chest && !MOBS[k].boss;
   const own = [];
-  for (const id of Object.keys(MAP_META)) if (MAP_META[id].theme === theme && !MAP_META[id].safe) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
+  for (const id of Object.keys(MAP_META)) if (MAP_META[id].theme === theme && !MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
   let pool = own.filter((k) => MOBS[k].lv >= lv - DIM.poolLv[0] && MOBS[k].lv <= lv + DIM.poolLv[1]);
   if (pool.length < 3) {
     const all = [];
-    for (const id of Object.keys(MAP_META)) if (!MAP_META[id].safe) for (const k of MAP_META[id].kinds) if (ok(k) && !all.includes(k)) all.push(k);
+    for (const id of Object.keys(MAP_META)) if (!MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !all.includes(k)) all.push(k);
     all.sort((a, b) => Math.abs(MOBS[a].lv - (lv - 1)) - Math.abs(MOBS[b].lv - (lv - 1)) || MOBS[a].lv - MOBS[b].lv || (a < b ? -1 : 1));
     pool = all.slice(0, 4);
   }
@@ -4345,7 +4357,7 @@ function buildTown() {
 // know without building anything (names, bands, monster lists) is read from here into MAP_META.
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
-const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast"];
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "frostkeep"];
 /**
  * Every generated hunting ground: `make` the generator, `band` the level a character should
  * be to walk in (shown on every door that leads there), `stones` how many waypoint stones stand
@@ -4362,7 +4374,7 @@ const GEN = {
     tiers: 3, tierOpen: 0.6, ramp: 2, roadW: 3, pools: 2.6, widen: "TPBRulYAe",
     ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 4, lakeR: 5, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
-    mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "lambmaw", "eyecrow", "lambmaw", "eyecrow"], pondMob: "eyecrow", chest: "chest_meadow",
+    mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "eyecrow", "lambmaw", "lambmaw", "meadowram"], pondMob: "eyecrow", chest: "chest_meadow",
     vaultKinds: ["shrine", "circle", "bloom", "lookout", "cache", "menhir"], biomes: { plain: "plain" }, featureP: 0.6, features: ["pond", "boulders", "bigtree", "pen", "cairn", "logs", "stones"],
     // wet low ground flowers or grows tall; high ground is stony; dry ground is orchard or plain grass
     // by level: the valley floor wet and in flower, the middle shelves orchard and tall grass, the tops stony heath
@@ -4382,7 +4394,7 @@ const GEN = {
     tiers: 3, tierOpen: 0.12, ramp: 2, roadW: 3, gorge: { first: 16, every: 30 }, temple: {}, stoneFr: [0.36, 0.8], widen: "TPBRulYAe",
     ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 2, lakeR: 4, vaults: 9, ruins: 5, tpm: 15.5, stair: "crypt",
     walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
-    mobs: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
+    mobs: ["splitboar", "splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
     vaultKinds: ["deadgrove", "ring", "shrine", "lookout", "menhir", "cache"], biomes: { plain: "glade" }, featureP: 0.6, features: ["pond", "boulders", "ring", "dead", "logs", "stones", "cairn"],
     // the wettest hollows are bog, the heights fern and rock; elsewhere pine, with glades and old birch groves
     biome: (e, mo, r) => (mo > 0.64 ? "bog" : e > 0.68 ? "fern" : r < 0.22 ? "glade" : r < 0.38 ? "birch" : "pine"),
@@ -4393,7 +4405,7 @@ const GEN = {
       : b === "fern" ? (h < 0.04 ? "P" : h < 0.055 ? "B" : h < 0.065 ? "R" : null)
       : (n1 > 0.55 ? h < 0.24 : h < 0.09) ? "P" : h < 0.1 ? "B" : h < 0.107 ? "l" : h < 0.113 ? "u" : null),
   }) },
-  cave: { make: cavern, band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
+  cave: { make: cavern, after: (m) => corridorGate(m, "drain", 10, 34), route: "abyss", band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
     id: "cave", name: "수정 동굴", seed: 44093, w: 132, h: 100, r: 8, vaults: 10, tpm: 16, chest: "chest_cave",
     // maps-v2 비취 수정굴: the moss way (sites `r` apart, half-width `w`), shelves where the swell passes `shelf`
     moss: { r: 15, w: 3, wind: 0.55, loops: 0.55, shelf: [0.56, 0.7], rings: 7, stream: 0.018 },
@@ -4401,12 +4413,12 @@ const GEN = {
     south: 0.52,
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
-  city: { make: metro, band: [14, 21], stones: 3, theme: "city", cfg: () => ({
+  city: { make: metro, after: (m) => corridorGate(m, "ossuary", 129, 72), route: "sewer", band: [14, 21], stones: 3, theme: "city", cfg: () => ({
     id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 152, h: 102, gate: "east", gateY: 0.5, south: 0.3, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
     mobs: ["pigeonmass", "gutfrog_poison", "doghead", "squidrat", "catsplit", "fishwalker"], chest: "chest_city",
   }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
-  crypt: { make: catacomb, band: [12, 17], stones: 3, cfg: () => ({
+  crypt: { make: catacomb, route: "city", band: [12, 17], stones: 3, cfg: () => ({
     // maps-v2 벽돌 회랑 (`halls`): plazas ≥ 11 × 9 in cells ≥ 14 × 12, corridors three wide, more loops
     id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 14, minH: 12, leaf: 420, entryY: 0.8, wind: 0.5, loops: 0.3, out: true, n: 3,
     halls: true, soft: "12345I",
@@ -4414,7 +4426,7 @@ const GEN = {
     mobs: ["ratking", "twinhare_bone", "bonehound", "toadbrood", "batcluster"], guard: "bonehound", chest: "chest_crypt",
     dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4", light: "3" },
   }) },
-  sewer: { make: sewers, band: [22, 27], stones: 3, cfg: () => ({
+  sewer: { make: sewers, route: "cave", band: [22, 27], stones: 3, cfg: () => ({
     // maps-v2 벽돌 회랑 (`halls`): flagstone plazas, channel tunnels with a walkway three wide, dry side ways
     id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 14, wind: 0.5, loops: 0.35, n: 3,
     halls: true, soft: "67x4n", light: "3",
@@ -4423,11 +4435,11 @@ const GEN = {
   // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
   // wood to the chasm that swallowed the capital (a ledge down into the abyss, behind the mother). Crimson maple
   // groves on red litter, golden stands on gold, pine on the heights, clearings, and hollows where the blight fruits
-  maple: { make: wilds, band: [40, 46], stones: 3, npcs: [["hermit", "은자 바스"]], after: hermitAt, cfg: () => ({
+  maple: { make: wilds, route: "frostkeep", band: [40, 50], stones: 3, npcs: [["hermit", "은자 바스"]], after: (m) => { hermitAt(m); corridorGate(m, "ice", 137, 81); }, cfg: () => ({
     id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 160, h: 112, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
     ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 2, lakeR: 4, vaults: 10, ruins: 4, tpm: 15,
     walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3]], exit: "east",
-    mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose"], pondMob: null, chest: "chest_maple",
+    mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose", "rotstag", "bogcrown", "hollowowl", "rootwarden"], pondMob: null, chest: "chest_maple",
     campPiece: "cottage", lair: { piece: "chapel", guard: "rotstag", pack: "rotstag" },
     vaultKinds: ["graveyard", "watchtower", "kinggate", "leafmound", "scarefield", "treetunnel"],
     vaultMobs: { graveyard: "gravrose", scarefield: "crowscare", leafmound: "shroomboar", treetunnel: "stumpmaw" },
@@ -4447,8 +4459,8 @@ const GEN = {
   // ── the south-west coast (maps-v2 M3, docs/design/maps-v2.md A.7–A.9): city → jungle road → coral coast → oasis → cave
   // 정글 해안도로: a made road, three of asphalt between yellow edge lines, winds from the city's south gate down
   // through dense jungle; the west side is a strand of black boulders and the deep sea; old shrines and stone rings in the dead ends
-  jungle: { make: wilds, band: [20, 26], stones: 3, cfg: () => ({
-    id: "jungle", name: "정글 해안도로", theme: "jungle", bgm: "forest", seed: 31337, w: 168, h: 112, r: 8.8, warp: 10, wind: 0.8, loops: 0.2, merge: 0.2, cliff: 0.2, gap: 2,
+  jungle: { make: wilds, route: "coast", band: [20, 26], stones: 3, cfg: () => ({
+    id: "jungle", name: "정글 해안도로", theme: "jungle", bgm: "jungle", seed: 31337, w: 168, h: 112, r: 8.8, warp: 10, wind: 0.8, loops: 0.2, merge: 0.2, cliff: 0.2, gap: 2,
     tiers: 2, tierOpen: 0.15, ramp: 2, roadEdge: "m", stoneFr: [0.36, 0.8], widen: "TPBRulYAeΨΩΦ",
     sea: { side: "w", at: 17, amp: 5, surf: 2, shallow: 0, beach: 4, sand: "r", rock: "Ω", rockP: 0.2, reef: 0 },
     ground: ":", edge: "T", treeCh: "T", treeCh2: "Ψ", road: "a", trail: "p", shore: "s", river: false, lakes: 4, lakeR: 5, vaults: 9, ruins: 4, tpm: 15.5,
@@ -4465,8 +4477,8 @@ const GEN = {
   }) },
   // 모래바람 오아시스: dunes in three levels of sand, ridges for cliffs; lakes ringed by grass, reeds and palms, mud-hut
   // hamlets in the dead ends, a caravan's camp on the way; the north pass climbs to the crystal cave
-  oasis: { make: wilds, band: [28, 34], stones: 3, cfg: () => ({
-    id: "oasis", name: "모래바람 오아시스", theme: "desert", bgm: "field", seed: 52711, w: 168, h: 116, r: 10.2, warp: 9, wind: 0.55, loops: 0.28, merge: 0.3, cliff: 0.16, gap: 2,
+  oasis: { make: wilds, route: "cave", band: [28, 34], stones: 3, cfg: () => ({
+    id: "oasis", name: "모래바람 오아시스", theme: "desert", bgm: "oasis", seed: 52711, w: 168, h: 116, r: 10.2, warp: 9, wind: 0.55, loops: 0.28, merge: 0.3, cliff: 0.16, gap: 2,
     tiers: 3, tierOpen: 0.55, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ", green: { r: 3, palm: 0.2 },
     ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 6, lakeR: 7, vaults: 9, ruins: 4, tpm: 15.5,
     walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north",
@@ -4482,8 +4494,8 @@ const GEN = {
   }) },
   // 산호 해안: the dunes run down to a white beach; the whole south is sea — a surf line, then wide turquoise
   // shallows you can wade (reef rocks, sand islets with palms, sand bars where the ways cross, deep holes), then deep water
-  coast: { make: wilds, band: [34, 40], stones: 3, cfg: () => ({
-    id: "coast", name: "산호 해안", theme: "coast", bgm: "field", seed: 41519, w: 176, h: 120, r: 9.6, warp: 9, wind: 0.85, loops: 0.3, merge: 0.4, cliff: 0.2, gap: 2,
+  coast: { make: wilds, route: "oasis", band: [26, 32], stones: 3, cfg: () => ({
+    id: "coast", name: "산호 해안", theme: "coast", bgm: "coast", seed: 41519, w: 176, h: 120, r: 9.6, warp: 9, wind: 0.85, loops: 0.3, merge: 0.4, cliff: 0.2, gap: 2,
     tiers: 3, tierOpen: 0.15, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ",
     sea: { side: "s", at: 42, amp: 6, surf: 2, shallow: 26, beach: 7, sand: "S", bar: "S", reef: 0.16 },
     ground: "S", edge: "T", treeCh: "Ψ", treeCh2: "T", road: "p", shore: "S", river: false, lakes: 2, lakeR: 4, vaults: 9, ruins: 3, tpm: 15.5,
@@ -4497,11 +4509,48 @@ const GEN = {
       : b === "dune" ? (h < 0.015 ? "Ψ" : h < 0.03 ? "B" : h < 0.04 ? "Ω" : null)
       : h < 0.02 ? "Ψ" : h < 0.028 ? "l" : h < 0.034 ? "Ω" : null),
   }) },
-  abyss: { make: abyssal, band: [32, 40], stones: 3, cfg: () => ({
+  abyss: { make: abyssal, route: "maple", band: [32, 40], stones: 3, cfg: () => ({
     id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 152, h: 120, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
     mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss",
   }) },
+  frostkeep: { make: frostkeep, minLv: MAXLV, band: [50, 50], stones: 3, cfg: () => ({
+    id: "frostkeep", name: "성에왕의 성채", theme: "cave", bgm: "frostkeep", seed: 91027, w: 96, h: 64,
+    mobs: ["rimehare", "rimehare", "frostmoth"], boss: "crownstag",
+  }) },
 };
+/** A paired threshold across an existing open hallway, with its arrival two tiles off the door. */
+function corridorGate(m, name, x, y) {
+  m.gates[name] = { t: [[x, y], [x, y + 1]], a: [[x + 2, y], [x + 2, y + 1]] };
+}
+
+/** Frost-blown galleries around two loops, with a final arena off the northern circuit. */
+function frostkeep(cfg) {
+  const m = blank(cfg.id, cfg.name, cfg.w, cfg.h, "W");
+  m.theme = cfg.theme;
+  m.bgm = cfg.bgm;
+  const rooms = [
+    [4, 42, 20, 59], [28, 39, 47, 57], [58, 41, 83, 59],
+    [9, 17, 29, 32], [39, 18, 57, 30], [66, 17, 86, 31], [39, 3, 58, 12],
+  ];
+  const galleries = [
+    [19, 47, 30, 51], [44, 46, 60, 50],
+    [13, 30, 17, 43], [22, 26, 43, 30], [55, 24, 68, 28], [73, 29, 77, 44],
+    [41, 27, 45, 41], [47, 10, 51, 20],
+  ];
+  for (const r of rooms) rect(m.g, ...r, "c");
+  for (const r of galleries) rect(m.g, ...r, "c");
+  // The crystals stand out of the fighting lanes and mark the two bends in each circuit.
+  for (const [x, y] of [[8, 44], [8, 57], [23, 19], [27, 30], [33, 42], [45, 54],
+    [61, 44], [81, 56], [69, 20], [83, 28], [42, 5], [55, 5], [42, 11], [55, 11]]) m.o[y][x] = "K";
+  m.entry = [8, 49];
+  m.gates = { west: { t: [[4, 49], [4, 50]], a: [[8, 49], [8, 50]] } };
+  FIRES[m.id].push([11, 45]);
+  m.spawns.push({ k: cfg.boss, n: 1, r: [49, 7, 49, 7] });
+  m.keepWide = [m.entry, [4, 49], [11, 45], [15, 24], [36, 48], [74, 48], [75, 26], [49, 23], [49, 7]];
+  m.widenSoft = "K";
+  m.widenDig = "c";
+  return m;
+}
 /** A hermit keeps the maple cottage fire. */
 function hermitAt(maple) {
   if (!maple.camp) return;
@@ -4526,7 +4575,8 @@ const GATE_LINKS = [
   ["town", "east", "meadow", "west", 1], ["town", "west", "city", "east", 1], ["meadow", "east", "forest", "west", 1],
   ["forest", "north", "cave", "west", 1], ["forest", "crypt", "crypt", "in", 1], ["city", "sewer", "sewer", "in", 1],
   ["cave", "rift", "abyss", "in", 1], ["forest", "east", "maple", "west", 1], ["maple", "east", "abyss", "out", 1],
-  ["crypt", "out", "forest", "crypt", 0], ["sewer", "out", "city", "sewer", 0],
+  ["crypt", "out", "city", "ossuary", 0], ["sewer", "out", "cave", "drain", 0],
+  ["maple", "ice", "frostkeep", "west", 1],
   // the south-west coast: the city's south gate, down the jungle road to the sea, inland over the dunes, up into the cave
   ["city", "south", "jungle", "north", 1], ["jungle", "south", "coast", "north", 1], ["coast", "east", "oasis", "west", 1], ["oasis", "north", "cave", "south", 1],
 ];
@@ -4558,7 +4608,11 @@ function genMap(id) {
   m.stonesWant = g.stones || 1;
   const lo = m.band[0];
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
-  markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
+  markRoutes(m, labelOf, (to) => {
+    if (to === g.route) return TIER_MAX + 1;
+    const b = MAP_META[to]?.band;
+    return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0;
+  });
   // maps-v2: once the signs and stones stand, the ways that must stay three wide are checked once more
   // (underground the stones' own standing tiles are joined too: the rock may be dug for them)
   if (m.keepWide) widen(m, m.widenDig ? m.keepWide.concat((m.stones || []).map((s) => [s.ax, s.ay])) : m.keepWide, m.widenSoft, m.widenDig);
@@ -4832,7 +4886,7 @@ function canFly(m, x, y) {
   return m.g[ty][tx] !== "W";
 }
 
-const doorName = (m) => (m.band ? `${m.name} Lv.${shownLv(m.band[0])}–${shownLv(m.band[1])}` : m.name);
+const doorName = (m) => (m.minLv ? `${m.name} · Lv.${m.minLv} 전용` : m.band ? `${m.name} Lv.${shownLv(m.band[0])}–${shownLv(m.band[1])}` : m.name);
 function mapPayload(m) {
   // (a house's turns and floor, the town's "내 집" door: 64-housing.js homeWire)
   return homeWire(m, {
@@ -5108,18 +5162,25 @@ function buildCells(m) {
 }
 const metaKinds = (m) => [...new Set(m.spawns.map((sp) => sp.k))];
 
-/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, wpn (how many stones), kinds, eager }. */
+/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, wpn (how many stones), minLv, kinds, eager }. */
 const MAP_META = {};
 const EAGER = {};
 for (const id of [...BUILTIN_MAPS, ...Object.keys(FILES).filter((id) => !BUILTIN_MAPS.includes(id))]) {
+  const minLv = GEN[id]?.minLv || 0;
   if (id === "town" || FILES[id]) {
     const m = (EAGER[id] = baseMap(id));
-    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, kinds: metaKinds(m), eager: true };
+    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, minLv, kinds: metaKinds(m), eager: true };
   } else {
     const g = GEN[id], c = g.cfg();
-    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, kinds: genKinds(id), eager: false };
+    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, minLv, kinds: genKinds(id), eager: false };
   }
 }
+function mapLevelNeed(ch, id) {
+  const minLv = typeof id === "string" && Object.hasOwn(MAP_META, id) ? MAP_META[id].minLv : 0;
+  return ch.lvl < minLv ? minLv : 0;
+}
+const mapLevelMessage = (minLv) => `레벨 ${minLv}부터 입장할 수 있습니다.`;
+
 /** Built maps by id. */
 const MAP_CACHE = {};
 /** NPC id → the map it stands on, and its name (side quests find their givers and talk targets here). */
@@ -5217,8 +5278,9 @@ for (const id of Object.keys(MAP_META)) {
  * sheet on tile (tx, ty) of `map`, or the nearest tile a player can stand on, or the entrance.
  */
 export function devPlace(ch, map, tx, ty) {
+  if (!ch || mapLevelNeed(ch, map)) return false;
   const m = typeof map === "string" ? mapOf(map) : null;
-  if (!ch || !m) return false;
+  if (!m) return false;
   const at = (Number.isInteger(tx) && Number.isInteger(ty) && inMap(m, tx, ty) && m.reach[ty * m.w + tx] ? [tx, ty] : null) || freeTile(m, tx | 0, ty | 0) || m.entry;
   ch.map = map; ch.x = at[0] * T + 8; ch.y = at[1] * T + 10;
   if (ch.hp === 0) ch.hp = -1;
@@ -5735,13 +5797,16 @@ export function addPlayer(S, pid, ch) {
   if (S.players[pid]) removePlayer(S, pid);
   migrate(ch);
   // a place that is gone (a closed instance, a map removed from the editor's data) is the town
-  if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
+  const minLv = mapLevelNeed(ch, ch.map);
+  if (minLv) { ch.map = START.map; ch.x = START.x; ch.y = START.y; }
+  else if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, aim: AIM_N / 4, hp: 1, mp: 0, dead: false, stc: null,
     cds: {}, atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, inert: 0, inertAt: 0, reso: 0, vitSpd: 0, sanctAt: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
+  if (minLv) toast(p, mapLevelMessage(minLv));
   // a place that changed under their feet (the hunting grounds grew): the way in of that same ground
   const here = mapOf(p.map);
   if (!(p.x >= 0 && p.y >= 0) || !canStand(here, p.x, p.y) || !here.reach[Math.floor(p.y / T) * here.w + Math.floor(p.x / T)]) {
@@ -5784,6 +5849,14 @@ function dropAggro(S, p) {
 }
 
 function changeMap(S, p, to, x, y) {
+  const minLv = mapLevelNeed(p.ch, to);
+  if (minLv) {
+    if (S.now >= (p.gateHintAt || 0)) {
+      toast(p, mapLevelMessage(minLv));
+      p.gateHintAt = S.now + 1500;
+    }
+    return;
+  }
   rouse(S, p);
   dropAggro(S, p);
   S.maps[p.map].n--;
@@ -8671,7 +8744,7 @@ const achPoints = (ch) => ch.ach.reduce((n, id) => n + (ACH_BY[id] ? ACH_BY[id].
 const titleOf = (ch) => (ch.title && ACH_BY[ch.title] ? ACH_BY[ch.title].title : "");
 
 // ── the monster collection: a kind is registered at its first mastery star
-const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def", 2]], city: [["crit", 1]], sewer: [["mf", 5]], cave: [["atk", 3]], abyss: [["atkp", 2]], maple: [["hp", 60], ["mf", 4]] };
+const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def", 2]], city: [["crit", 1]], sewer: [["mf", 5]], cave: [["atk", 3]], abyss: [["atkp", 2]], maple: [["hp", 60], ["mf", 4]], frostkeep: [["def", 3], ["hp", 40]] };
 // a hunting ground from the world map editor has a collection too, with no bonus; one with no monsters left has none
 for (const id of Object.keys(COL_MOBS)) if (!REGION_BONUS[id]) REGION_BONUS[id] = [];
 for (const id of Object.keys(REGION_BONUS)) if (!COL_MOBS[id]) delete REGION_BONUS[id];
@@ -10982,6 +11055,8 @@ export function validateAction(S, pid, a) {
       // a big ground has several stones: `i` picks one (0, the first, when left out)
       const i = a.i === undefined ? 0 : a.i;
       if (!hasWp(a.to) || !Number.isInteger(i) || i < 0 || i >= MAP_META[a.to].wpn) return bad("그곳에는 이동의 돌이 없습니다");
+      const minLv = mapLevelNeed(ch, a.to);
+      if (minLv) return bad(mapLevelMessage(minLv));
       const at = wpNear(p);
       if (!at) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
       if (!wpWoken(ch, a.to, i)) return bad("아직 깨우지 않은 이동의 돌입니다");
@@ -11756,6 +11831,8 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "warp": {
+      const minLv = mapLevelNeed(ch, a.to);
+      if (minLv) { toast(p, mapLevelMessage(minLv)); break; }
       const i = a.i || 0, w = stonesOf(mapOf(a.to))[i] || wpOf(a.to);
       S.maps[p.map].ev.push(["wp", p.eid, 0]);
       // to another stone of the same ground: a step, not a journey (the map is not sent again)
@@ -11785,6 +11862,7 @@ export function applyAction(S, pid, a) {
       ch.xpt = 0;
       ch.st = freshSt();
       ch.lvl = 1;
+      if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);
       afterGear(S, p);
       S.maps[p.map].ev.push(["u", p.eid, 2]);
       toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (경험치 ${fee.toLocaleString()} 소모)` : " (무료)"}`);
@@ -12561,7 +12639,7 @@ export function defs() {
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
     traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
-    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: STONE_NAMES[MAP_META[id].wpn || 1] || [] })),
+    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: STONE_NAMES[MAP_META[id].wpn || 1] || [], minLv: MAP_META[id].minLv || undefined })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
     cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N,
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
@@ -12579,6 +12657,6 @@ export function defs() {
     charms: charmDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), mobs: MAP_META[id].kinds.slice(),
       // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
-      theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id] })),
+      theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id], minLv: MAP_META[id].minLv || undefined })),
   };
 }
