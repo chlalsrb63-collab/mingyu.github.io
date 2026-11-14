@@ -344,7 +344,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
     let great = 0, bonus = 0;
     for (let k = 0; k < N2; k++) {
       ch.life.gather = { lv, xp: 0 };
-      wipe("stone"); wipe("camp"); wipe("m_h2"); wipe(mat);
+      wipe("stone"); wipe("camp"); wipe("m_h2"); wipe(mat); wipe(X.nodeMat(ns[1]));   // (whatever node 1 yields: its pile must not fill the pouch)
       p.gat = { i: 1, k: ns[1][0], map: "meadow", x: p.x, y: p.y, at: now, end: now, tapAt: now, sent: true, tapped: true, extra };
       clearEv();
       X.gatDone(S, p);

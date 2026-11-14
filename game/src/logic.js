@@ -1493,6 +1493,77 @@ function knit(m, pts, floor, minPocket = 6) {
 }
 
 /**
+ * Widen the ways (maps-v2 path-quality rule: the main routes are at least three tiles wide). A tile is
+ * "wide" when the 3 × 3 round it is all walkable; every point in `pts` must join the entrance's wide ground.
+ * Where one does not, the cheapest way is cut whose every 3 × 3 holds nothing harder than the `soft`
+ * objects (trees, bushes, rocks … — cleared along it) or a cliff (cut back into steps, dearly); walls, water and
+ * set pieces are never touched.
+ */
+function widen(m, pts, soft) {
+  const W = m.w, H = m.h, n = W * H;
+  const wk = (x, y) => !blockedAt(m, x, y);
+  const isWide = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!wk(x + dx, y + dy)) return false; return true; };
+  const home = new Uint8Array(n);
+  const spread = (seeds) => {
+    const st = seeds.filter((i) => !home[i] && isWide(i));
+    for (const i of st) home[i] = 1;
+    while (st.length) {
+      const i = st.pop(), x = i % W;
+      for (const j of [x + 1 < W ? i + 1 : -1, x > 0 ? i - 1 : -1, i + W < n ? i + W : -1, i - W]) if (j >= 0 && !home[j] && isWide(j)) { home[j] = 1; st.push(j); }
+    }
+  };
+  // the walkable tiles within two steps of a point
+  const round = (px, py, r = 2) => {
+    const out = [];
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const x = px + dx, y = py + dy; if (wk(x, y)) out.push(y * W + x); }
+    return out;
+  };
+  const [ex, ey] = m.entry;
+  spread(round(ex, ey));
+  const cost = (j) => {
+    const x = j % W, y = (j - x) / W;
+    if (x < 3 || y < 3 || x >= W - 3 || y >= H - 3) return Infinity;
+    let c = 1;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const X = x + dx, Y = y + dy, o = m.o[Y][X];
+      if (SOLID_G.includes(m.g[Y][X]) || (o !== " " && !soft.includes(o) && o !== "C")) return Infinity;
+      if (o === "C") c += 8;
+      else if (o !== " ") c += 3;
+    }
+    return c;
+  };
+  let cut = 0;
+  for (const [px, py] of pts) {
+    const near = round(px, py);
+    if (near.some((i) => home[i])) continue;
+    // (a point in a walled piece — a chest behind a fence's narrow doorway — is joined from just outside it)
+    const path = walk(W, H, near, (j) => home[j] === 1, cost) || walk(W, H, round(px, py, 5), (j) => home[j] === 1, cost);
+    if (!path) continue;
+    for (const c of path) {
+      const x = c % W, y = (c - x) / W;
+      // (a cliff in the way is cut back into steps: the ramp grows to three wide)
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (m.o[y + dy][x + dx] !== " ") { if (m.o[y + dy][x + dx] === "C") m.g[y + dy][x + dx] = "v"; m.o[y + dy][x + dx] = " "; cut++; }
+    }
+    spread(path.concat(near));
+  }
+  return cut;
+}
+/** Fill the little walkable pockets (under `max` tiles) that cannot be walked to from the entrance. */
+function seal(m, ch, max = 6) {
+  const W = m.w, H = m.h, n = W * H;
+  const open = (i) => { const x = i % W; return !blockedAt(m, x, (i - x) / W); };
+  const [ex, ey] = m.entry;
+  const reach = bfs(W, H, ey * W + ex, open), seen = new Uint8Array(n);
+  for (let s = 0; s < n; s++) {
+    if (seen[s] || reach[s] >= 0 || !open(s)) continue;
+    const q = [s];
+    seen[s] = 1;
+    for (let h = 0; h < q.length; h++) { const c = q[h], x = c % W; for (const j of [x + 1 < W ? c + 1 : -1, x > 0 ? c - 1 : -1, c + W < n ? c + W : -1, c - W]) if (j >= 0 && !seen[j] && reach[j] < 0 && open(j)) { seen[j] = 1; q.push(j); } }
+    if (q.length < max) for (const c of q) { const x = c % W; m.o[(c - x) / W][x] = ch; }
+  }
+}
+
+/**
  * A set piece drawn as rows of characters, each standing for [ground, object] through
  * `legend` (an undefined entry leaves that layer alone; " " in the picture is skipped).
  * Stamped with its top-left at (x, y), turned `rot` quarter turns and mirrored if `flip`.
@@ -1590,6 +1661,8 @@ const PIECE = {
   // and the footprints the big ruins stand on (the chapel N, a cottage d, a watchtower i, the toppled gate f)
   "=": ["=", " "], "%": ["%", " "], "&": ["&", " "], t: ["t", " "], J: [undefined, "J"], V: [undefined, "V"], z: [undefined, "z"],
   N: [undefined, "N"], $: [undefined, "d"], "!": [undefined, "i"], "^": [undefined, "f"],
+  // maps-v2: still water (the temple's rune pool; the art step gives it a glow of its own)
+  "~": ["w", " "],
 };
 const PIECES = {
   // 바람초원 · 속삭임 숲
@@ -1613,9 +1686,34 @@ const PIECES = {
   scarefield: ["FF.FF.FF", "Ft.tt.tF", "F.t*t.tF", "Ftt.tt.F", "F.t..t.F", "FFF..FFF"],
   leafmound: [".u...l.", "%%%%%%.", "%%%Y%%u", "u%%*%%%", ".%%%%%.", "...l..."],
   treetunnel: [".TTTTTTT.", "T.=====.T", "..====*=T", "T.=====.T", ".TTTTTTT."],
+  // 잊힌 신전 (maps-v2, reference 3): a processional way three flagstones wide from the south gate to the
+  // shrine in the north, round a rune pool; broken colonnades and wall stubs make side chambers. Never turned.
+  temple: [
+    "...UUqUUUqUU...",
+    "..Uq.=====.qU..",
+    "..U..==*==..U..",
+    "..q.=======.q..",
+    "......=@=......",
+    "UUq...===...qUU",
+    "Ur.q..===..q.rU",
+    "U.r...===...r.U",
+    "q.....=~=.....q",
+    "...q.~~~~~.q...",
+    "....=~~~~~=....",
+    "...q.~~~~~.q...",
+    "q.....=~=.....q",
+    "U.r...===...r.U",
+    "Ur.q..===..q.rU",
+    "UUq...===...qUU",
+    "......===......",
+    ".q...=====...q.",
+    "..U..=====..U..",
+    "..Uq.=====.qU..",
+    "......===......",
+  ],
 };
 /** Pieces whose ruin is one big picture standing on its footprint: never turned (a mirror is fine). */
-const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate"]);
+const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate", "temple"]);
 /** Stamp a set piece and return where its tags landed: { chest: [[x, y]], fire: [...], ... }. */
 function piece(m, name, x, y, rot, flip) {
   const rows = PIECES[name], out = {};
@@ -1649,7 +1747,9 @@ function wilds(cfg) {
   for (let i = 0; i < W * H; i++) N2[i] = (h2(i % W, Math.floor(i / W), S0 + 6) + h2(i % W >> 1, Math.floor(i / W) >> 1, S0 + 7)) / 2;
   const at = (i) => [i % W, Math.floor(i / W)];
   const keep = new Uint8Array(W * H);
-  const keepBox = (x0, y0, x1, y1) => { for (let y = Math.max(0, y0); y <= Math.min(H - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(W - 1, x1); x++) keep[y * W + x] = 1; };
+  // (`hold` marks what a later big piece may not stand on: doors, pieces, jetties; a gap in a border is only kept)
+  const hold = new Uint8Array(W * H);
+  const keepBox = (x0, y0, x1, y1, soft) => { for (let y = Math.max(0, y0); y <= Math.min(H - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(W - 1, x1); x++) { keep[y * W + x] = 1; if (!soft) hold[y * W + x] = 1; } };
 
   // ways in and out on the rim, each with a region of its own grown around it
   const gates = {}, fixed = [];
@@ -1690,8 +1790,17 @@ function wilds(cfg) {
   const lakeList = R.map((r) => r.k).filter((k) => role[k] === "field" && !onMain.has(k) && R[k].inr >= 5 && D[k] > 1).sort((a, b) => R[a].e - R[b].e);
   for (let v = 0; v < cfg.lakes; v++) pickRole("lake", lakeList);
   for (let v = 0; v < cfg.ruins; v++) pickRole("ruin", byDepth((k) => !onMain.has(k) && D[k] >= far * 0.4 && R[k].inr >= 3).reverse());
+  // terraces (maps-v2): the regions ranked by height and cut into `tiers` levels; a step between levels is a cliff
+  let tier = null;
+  if (cfg.tiers) {
+    tier = new Array(n).fill(0);
+    R.map((r) => r.k).sort((a, b) => R[a].e - R[b].e || a - b).forEach((k, j) => { tier[k] = Math.min(cfg.tiers - 1, Math.floor(j * cfg.tiers / n)); });
+    // the ways in stand on the lowest ground, so every door opens onto a valley floor
+    for (const k of Object.values(gateIdx)) tier[k] = 0;
+    m.tier = tier;
+  }
   // and what grows there
-  const biome = R.map((r) => (role[r.k] === "gate" || role[r.k] === "camp" ? cfg.biomes.plain : cfg.biome(r.e, r.mo, rnd(box))));
+  const biome = R.map((r) => (role[r.k] === "gate" || role[r.k] === "camp" ? cfg.biomes.plain : cfg.biome(r.e, r.mo, rnd(box), tier ? tier[r.k] : 0)));
 
   // ground: each region's own surface, broken up by noise
   for (let i = 0; i < W * H; i++) {
@@ -1702,7 +1811,7 @@ function wilds(cfg) {
   }
 
   // the barriers: every border the tree did not take is shut; a link leaves a gap, or no barrier at all
-  const hiOf = (e) => (R[e.a].e >= R[e.b].e ? e.a : e.b);
+  const hiOf = (e) => (tier ? (tier[e.a] > tier[e.b] || (tier[e.a] === tier[e.b] && R[e.a].e >= R[e.b].e) ? e.a : e.b) : R[e.a].e >= R[e.b].e ? e.a : e.b);
   const wallKind = () => { let r = rnd(box); for (const [t, w] of cfg.walls) { if (r < w) return t; r -= w; } return cfg.walls[0][0]; };
   const put = (i, kind) => {
     const [x, y] = at(i);
@@ -1730,10 +1839,21 @@ function wilds(cfg) {
       gap = at(cand[ri(box, 0, Math.min(cand.length - 1, Math.max(1, Math.floor(cand.length * 0.3))))]);
       gapAt.set(ekey(e.a, e.b), gap);
     }
-    if (linked && rnd(box) < cfg.merge && dE < cfg.cliff) continue;
-    const kind = dE >= cfg.cliff && rnd(box) < 0.85 ? "cliff" : wallKind();
+    let kind, gr;
+    if (tier) {
+      // terraces: one level to the next is always a cliff, climbed by a wide ramp where the tree links them;
+      // on one level the ground runs on, open, or now and then a belt of trees, a hedge or boulders
+      // (a dead end that keeps a chest stays shut but for one way in, three tiles wide: a hidden pocket)
+      const nook = ["vault", "lair", "stair"].includes(role[e.a]) || ["vault", "lair", "stair"].includes(role[e.b]);
+      if (tier[e.a] !== tier[e.b]) { kind = "cliff"; gr = nook ? 1 : cfg.ramp || 2; }
+      else if (!nook && (linked || rnd(box) < cfg.tierOpen)) continue;
+      else { kind = wallKind(); gr = nook ? 1 : cfg.gap; }
+    } else {
+      if (linked && rnd(box) < cfg.merge && dE < cfg.cliff) continue;
+      kind = dE >= cfg.cliff && rnd(box) < 0.85 ? "cliff" : wallKind();
+      gr = kind === "cliff" ? 1 : cfg.gap;
+    }
     const hi = hiOf(e);
-    const gr = kind === "cliff" ? 1 : cfg.gap;
     for (const t of e.tiles) {
       if (kind === "cliff" && lab[t] !== hi) continue;
       const [x, y] = at(t);
@@ -1742,7 +1862,7 @@ function wilds(cfg) {
       // belts of trees grow thicker here and there
       if (kind === "trees" && N1[t] > 0.5) for (const [dx, dy] of D4) { const j = (y + dy) * W + x + dx; if ((lab[j] === e.a || lab[j] === e.b) && N2[j] > 0.45) put(j, kind); }
     }
-    if (gap) keepBox(gap[0] - gr - 1, gap[1] - gr - 1, gap[0] + gr + 1, gap[1] + gr + 1);
+    if (gap) keepBox(gap[0] - gr - 1, gap[1] - gr - 1, gap[0] + gr + 1, gap[1] + gr + 1, true);
   }
   // where a way climbs a cliff, it climbs steps
   for (const t of steps) { const [x, y] = at(t); m.o[y][x] = " "; m.g[y][x] = "v"; }
@@ -1755,6 +1875,7 @@ function wilds(cfg) {
   }
 
   // the river: it runs downhill from the top of the map to the bottom
+  const falls = [], riverAt = new Uint8Array(W * H);
   const water = (x, y) => { if (x < 2 || y < 1 || x >= W - 2 || y >= H - 1) return; m.g[y][x] = "w"; m.o[y][x] = " "; };
   if (cfg.river) {
     // a meandering centre line — two sine waves of different length and some noise — from the top edge to the bottom
@@ -1764,9 +1885,27 @@ function wilds(cfg) {
       const x = Math.round(clamp(sx + Math.sin(y / l1 + p1) * a1 + Math.sin(y / l2 + p1 * 2) * a2 + (N1[y * W + Math.round(sx)] - 0.5) * 3, 7, W - 9));
       // fill across from where the last row ended, so the bank never breaks
       const from = px === null ? x : Math.min(px, x), to = px === null ? x : Math.max(px, x);
-      const wide = 2 + (N2[y * W + x] > 0.6 ? 1 : 0);
-      for (let X = from; X <= to + wide - 1; X++) water(X, y);
+      const wide = 2 + (N2[y * W + x] > 0.6 ? 1 : 0) + (cfg.riverW || 0);
+      for (let X = from; X <= to + wide - 1; X++) { if (m.o[y][X] === "C") falls.push([X, y]); water(X, y); if (X >= 0 && X < W) riverAt[y * W + X] = 1; }
       px = x;
+    }
+  }
+  // waterfalls (maps-v2): where the river drops over a terrace's cliff it pours into a pool on the lower level
+  m.falls = [];
+  if (tier && cfg.pools) {
+    const done = [];
+    for (const [fx, fy] of falls) {
+      if (done.some(([x, y]) => Math.abs(x - fx) + Math.abs(y - fy) < 8)) continue;
+      done.push([fx, fy]);
+      const tAt = (y) => { const k = lab[clamp(y, 0, H - 1) * W + fx]; return k >= 0 ? tier[k] : 9; };
+      const dir = tAt(fy + 3) <= tAt(fy - 3) ? 1 : -1, low = tAt(fy + 3 * dir);
+      const cx = fx, cy = fy + dir * 4, rad = cfg.pools + rnd(box) * 1.2;
+      for (let dy = -5; dy <= 5; dy++) for (let dx = -6; dx <= 6; dx++) {
+        const X = cx + dx, Y = cy + dy, i = Y * W + X;
+        if (X < 3 || Y < 3 || X >= W - 3 || Y >= H - 3 || keep[i] || m.o[Y][X] === "C" || lab[i] < 0 || tier[lab[i]] !== low) continue;
+        if (Math.hypot(dx * 0.85, dy) + (N2[i] - 0.5) * 1.4 < rad) water(X, Y);
+      }
+      m.falls.push([fx, fy, dir]);
     }
   }
   // lakes: the low ground of a region or two fills with water; a jetty to fish from
@@ -1805,6 +1944,31 @@ function wilds(cfg) {
     const [x, y, dx, dy] = best;
     for (let s = 1; s <= 3; s++) { const X = x + dx * s, Y = y + dy * s; if (m.g[Y][X] !== "w") break; m.g[Y][X] = "b"; m.o[Y][X] = " "; }
     keepBox(x - 1, y - 1, x + 1, y + 1);
+  }
+
+  // the gorge (maps-v2, mossy cliffs over a stream): the river runs in a cut — its banks stand up as cliffs —
+  // crossed every so often by a bridge or a ford, where the bank comes down in steps to the water
+  m.crossings = [];
+  if (cfg.gorge && cfg.river) {
+    const isW = (x, y) => x >= 0 && y >= 0 && x < W && y < H && riverAt[y * W + x] === 1 && m.g[y][x] === "w";
+    const nearW = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (isW(x + dx, y + dy)) return true; return false; };
+    const bank = [];
+    for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) if (!isW(x, y) && !keep[y * W + x] && nearW(x, y) && m.g[y][x] !== "b") bank.push(y * W + x);
+    for (const i of bank) { const [x, y] = at(i); m.o[y][x] = "C"; }
+    // the crossings: evenly down the river, each a band five rows tall; bridges and fords by turns,
+    // and the bank's cliff comes down in steps on either side
+    for (let j = 0, y0 = cfg.gorge.first; y0 < H - 6; j++, y0 += cfg.gorge.every) {
+      const yc = clamp(y0 + ri(box, -2, 2), 4, H - 5), ford = j % 2 === 1;
+      for (let y = yc - 2; y <= yc + 2; y++) {
+        const xs = [];
+        for (let x = 3; x < W - 3; x++) if (riverAt[y * W + x]) { m.g[y][x] = ford ? "s" : "b"; m.o[y][x] = " "; xs.push(x); }
+        if (!xs.length) continue;
+        const lo = Math.min(...xs), hi = Math.max(...xs);
+        for (let x = lo - 2; x <= hi + 2; x++) if (m.o[y][x] === "C") { m.o[y][x] = " "; m.g[y][x] = "v"; }
+        keepBox(lo - 3, y, hi + 3, y);
+      }
+      m.crossings.push([yc, ford ? "ford" : "bridge"]);
+    }
   }
 
   // set pieces
@@ -1886,6 +2050,43 @@ function wilds(cfg) {
     }
   }
 
+  // the temple ruin (maps-v2): a big set piece in a quiet region partway in; it clears what stood on its ground
+  // and the ring round it (trees pressing in are put back after), so it may open a new way between regions
+  if (cfg.temple) {
+    const rows = PIECES.temple, tw = rows[0].length, th = rows.length;
+    const cand = R.map((r) => r.k).filter((k) => role[k] === "field" && D[k] >= far * 0.2 && D[k] <= far * 0.85)
+      .sort((a, b) => R[b].inr - R[a].inr || a - b);
+    // round each candidate's heart, nearest first, the first footprint clear of water, steps and kept ground
+    const OFF = [];
+    for (let dy = -12; dy <= 12; dy += 3) for (let dx = -12; dx <= 12; dx += 3) OFF.push([dx, dy]);
+    OFF.sort((p, q) => Math.hypot(p[0], p[1]) - Math.hypot(q[0], q[1]));
+    const clearAt = (x0, y0) => {
+      for (let y = y0 - 2; y < y0 + th + 2; y++) for (let x = x0 - 2; x < x0 + tw + 2; x++) if (hold[y * W + x] || "wbv".includes(m.g[y][x]) || lab[y * W + x] < 0) return false;
+      return true;
+    };
+    let spotT = null;
+    for (const k of cand) {
+      for (const [dx, dy] of OFF) {
+        const x0 = clamp(Math.round(R[k].px - tw / 2) + dx, 5, W - tw - 5), y0 = clamp(Math.round(R[k].py - th / 2) + dy, 5, H - th - 5);
+        if (clearAt(x0, y0)) { spotT = [x0, y0]; break; }
+      }
+      if (spotT) break;
+    }
+    if (spotT) {
+      const [x0, y0] = spotT;
+      for (let y = y0 - 1; y <= y0 + th; y++) for (let x = x0 - 1; x <= x0 + tw; x++) { m.o[y][x] = " "; if (y < y0 || y >= y0 + th || x < x0 || x >= x0 + tw) m.g[y][x] = "r"; }
+      const tags = piece(m, "temple", x0, y0, 0, false);
+      m.pieces.push("temple");
+      keepBox(x0 - 1, y0 - 1, x0 + tw, y0 + th);
+      const [cx, cy] = tags.chest[0], [bx, by] = tags.boss[0];
+      spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] });
+      spawns.push({ k: cfg.temple.keeper || cfg.mobs[cfg.mobs.length - 1], n: 4, r: [x0, y0, x0 + tw - 1, y0 + th - 1], elite: 0.35 });
+      special.push([cx, cy], [bx, by - 0]);
+      doors.push([x0 + 7, y0 + th - 1]);
+      m.temple = { x: x0, y: y0, w: tw, h: th, pool: [x0 + 7, y0 + 10] };
+    }
+  }
+
   // small things that make a region its own: a pond, a ring of stones, a lone great tree, an old pen ...
   const ok = (k, x, y) => x > 2 && y > 2 && x < W - 3 && y < H - 3 && lab[y * W + x] === k && inner[y * W + x] >= 2 && free(x, y);
   const obj = (k, x, y, o) => { if (ok(k, x, y)) { m.o[y][x] = o; keep[y * W + x] = 1; } };
@@ -1957,14 +2158,16 @@ function wilds(cfg) {
   const pave = (path, wide, ch = cfg.road) => {
     for (let s = 0; s < path.length; s++) {
       const t = path[s], [x, y] = at(t), nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
-      const lay1 = (X, Y) => {
+      // (a shoulder keeps its grass: the worn path stays a thin line through a way three tiles wide)
+      const lay1 = (X, Y, shoulder) => {
         if (X < 2 || Y < 2 || X >= W - 2 || Y >= H - 2) return;
         if (m.g[Y][X] === "w") { m.g[Y][X] = "b"; m.o[Y][X] = " "; }
-        else if (m.o[Y][X] === " " || m.o[Y][X] === "e") { if (!"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch; m.o[Y][X] = " "; }
+        else if (m.o[Y][X] === " " || m.o[Y][X] === "e" || (shoulder && !"CHUZ".includes(m.o[Y][X]))) { if (!shoulder && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch; m.o[Y][X] = " "; }
         keep[Y * W + X] = 1;
       };
       lay1(x, y);
-      if (wide) {
+      if (wide && cfg.roadW === 3) { if (horiz) { lay1(x, y + 1, true); lay1(x, y - 1, true); } else { lay1(x + 1, y, true); lay1(x - 1, y, true); } }
+      else if (wide) {
         if (horiz) lay1(x, y + 1); else lay1(x + 1, y);
         if (N2[t] > 0.72) { if (horiz) lay1(x, y - 1); else lay1(x - 1, y); }
       }
@@ -2034,6 +2237,16 @@ function wilds(cfg) {
   for (const name of Object.keys(gates)) for (const a of gates[name].a) pts.push(a);
   cover(m, cfg.mobs);
   knit(m, pts, cfg.trail || cfg.road);
+  // maps-v2: every way that matters three tiles wide, and no crumbs of ground left that cannot be walked to
+  if (cfg.widen) {
+    widen(m, pts, cfg.widen);
+    seal(m, cfg.treeCh2);
+    // what the signs and stones put down later must leave joined (markRoutes): the doors and the places that matter
+    m.keepWide = special.concat(...Object.values(gates).map((g) => g.a));
+    m.widenSoft = cfg.widen;
+  }
+  // (where along the way on the second and third waypoint stones stand, if not a third and two thirds: markRoutes)
+  if (cfg.stoneFr) m.stoneFr = cfg.stoneFr;
   m.regions = n;
   return m;
 }
@@ -3797,14 +4010,19 @@ const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", 
  */
 const GEN = {
   meadow: { make: wilds, band: [1, 7], stones: 3, cfg: () => ({
-    id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 152, h: 102, r: 9.6, warp: 9, wind: 0.55, loops: 0.12, merge: 0.32, cliff: 0.15, gap: 2,
+    // maps-v2 (docs/design/maps-v2.md, reference 2): highland falls — three terrace levels of wide grass, cliff
+    // edges climbed by wide ramps, the river pouring over each step into a pool, thin dirt paths winding across
+    id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 152, h: 102, r: 9.6, warp: 9, wind: 0.55, loops: 0.3, merge: 0.32, cliff: 0.15, gap: 2,
+    tiers: 3, tierOpen: 0.6, ramp: 2, roadW: 3, pools: 2.6, widen: "TPBRulYAe",
     ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 4, lakeR: 5, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
     mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "lambmaw", "eyecrow", "lambmaw", "eyecrow"], pondMob: "eyecrow", chest: "chest_meadow",
     vaultKinds: ["shrine", "circle", "bloom", "lookout", "cache", "menhir"], biomes: { plain: "plain" }, featureP: 0.6, features: ["pond", "boulders", "bigtree", "pen", "cairn", "logs", "stones"],
     // wet low ground flowers or grows tall; high ground is stony; dry ground is orchard or plain grass
-    biome: (e, mo, r) => (mo > 0.6 ? (r < 0.6 ? "flowers" : "tallgrass") : e > 0.66 ? "rocky" : mo < 0.36 ? (r < 0.5 ? "orchard" : "plain") : r < 0.35 ? "tallgrass" : "plain"),
-    paint: (b, n1, n2) => (b === "flowers" && n1 > 0.42 ? '"' : b === "tallgrass" && n1 > 0.4 ? "t" : b === "orchard" && n1 > 0.74 ? '"' : b === "plain" && n1 > 0.8 ? "t" : b === "plain" && n1 < 0.1 ? '"' : n2 > 0.66 ? "," : null),
+    // by level: the valley floor wet and in flower, the middle shelves orchard and tall grass, the tops stony heath
+    biome: (e, mo, r, t) => (t === 0 ? (mo > 0.5 ? (r < 0.7 ? "flowers" : "tallgrass") : r < 0.35 ? "tallgrass" : "plain")
+      : t === 1 ? (mo < 0.42 ? (r < 0.6 ? "orchard" : "plain") : r < 0.5 ? "tallgrass" : "plain") : r < 0.55 ? "rocky" : "plain"),
+    paint: (b, n1, n2) => (b === "rocky" ? (n1 > 0.6 ? "r" : n1 < 0.18 ? "p" : n2 > 0.6 ? "," : null) : b === "flowers" && n1 > 0.34 ? '"' : b === "tallgrass" && n1 > 0.4 ? "t" : b === "orchard" && n1 > 0.74 ? '"' : b === "plain" && n1 > 0.8 ? "t" : b === "plain" && n1 < 0.1 ? '"' : n2 > 0.66 ? "," : null),
     scatter: (b, h, n1) => (b === "orchard" ? (h < 0.05 ? "T" : h < 0.058 ? "u" : h < 0.063 ? "l" : null)
       : b === "rocky" ? (n1 > 0.55 && h < 0.09 ? "R" : h < 0.015 ? "B" : h < 0.025 ? "u" : null)
       : b === "flowers" ? (h < 0.03 ? "B" : h < 0.036 ? "T" : null)
@@ -3812,7 +4030,10 @@ const GEN = {
       : h < 0.018 ? "T" : h < 0.036 ? "B" : h < 0.043 ? "R" : h < 0.047 ? "u" : h < 0.05 ? "l" : null),
   }) },
   forest: { make: wilds, band: [8, 13], stones: 3, cfg: () => ({
-    id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 152, h: 102, r: 8.2, warp: 10, wind: 0.6, loops: 0.1, merge: 0.18, cliff: 0.22, gap: 2,
+    // maps-v2 (references 6 + 3): a mossy gorge — two levels of ledges, the stream in a cliff-sided cut crossed
+    // by bridges and fords, tree clusters, and the forgotten temple's courtyard partway in
+    id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 152, h: 102, r: 8.2, warp: 10, wind: 0.6, loops: 0.18, merge: 0.18, cliff: 0.22, gap: 2,
+    tiers: 3, tierOpen: 0.12, ramp: 2, roadW: 3, gorge: { first: 16, every: 30 }, temple: {}, stoneFr: [0.36, 0.8], widen: "TPBRulYAe",
     ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 2, lakeR: 4, vaults: 9, ruins: 5, tpm: 15.5, stair: "crypt",
     walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
     mobs: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
@@ -3929,6 +4150,8 @@ function genMap(id) {
   const lo = m.band[0];
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
   markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
+  // maps-v2: once the signs and stones stand, the ways that must stay three wide are checked once more
+  if (m.keepWide) widen(m, m.keepWide, m.widenSoft);
   // a pocket is the ground still open in it once the signs and stones stand
   for (const pk of m.pockets) pk.tiles = pk.tiles.filter((i) => m.o[Math.floor(i / m.w)][i % m.w] === " ");
   return m;
@@ -4026,14 +4249,59 @@ function markRoutes(m, labelOf, deeper) {
     for (let k = 1; k < 8; k += 2) if (on[k] && !got[k]) return false;
     return true;
   };
+  // maps-v2: a generator that keeps its ways three tiles wide (m.keepWide: the points they must join) gets its
+  // signs and stones only where every one of those points still joins the entrance's wide ground
+  let homeNow = null;
+  const wideOk = !m.keepWide ? null : () => {
+    const n = W * H, home = new Uint8Array(n);
+    const isWide = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!open(x + dx, y + dy)) return false; return true; };
+    const near = (px, py) => { const o = []; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (inMap(m, px + dx, py + dy)) o.push((py + dy) * W + px + dx); return o; };
+    const st = near(ex, ey).filter(isWide);
+    for (const i of st) home[i] = 1;
+    while (st.length) { const i = st.pop(), x = i % W; for (const j of [x + 1 < W ? i + 1 : -1, x > 0 ? i - 1 : -1, i + W < n ? i + W : -1, i - W]) if (j >= 0 && !home[j] && isWide(j)) { home[j] = 1; st.push(j); } }
+    homeNow = home;
+    return m.keepWide.map(([px, py]) => near(px, py).some((i) => home[i]));
+  };
+  const wideWas = wideOk ? wideOk() : null;
+  // only an object touching the wide ground can narrow it: anywhere else there is nothing to check
+  const touchesWide = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inMap(m, x + dx, y + dy) && homeNow[(y + dy) * W + x + dx]) return true; return false; };
+  const wideAt = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!open(x + dx, y + dy)) return false; return true; };
+  // the object (already set down at x, y) narrows nothing if the wide ground round it, two and three steps
+  // out, still holds together inside the 7 × 7 square; near a point that must stay joined, look at the whole map
+  const keepsWide = (x, y) => {
+    if (!wideOk || !touchesWide(x, y)) return true;
+    let fine;
+    if (m.keepWide.some(([px, py]) => Math.abs(px - x) <= 4 && Math.abs(py - y) <= 4)) {
+      fine = wideOk().every((v, k) => v || !wideWas[k]);
+      if (!fine) { const o = m.o[y][x]; m.o[y][x] = " "; wideOk(); m.o[y][x] = o; }
+      return fine;
+    }
+    const win = [], ring = [];
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+      const X = x + dx, Y = y + dy, i = Y * W + X;
+      if (!inMap(m, X, Y) || !homeNow[i] || !wideAt(i)) continue;
+      win.push(i);
+      if (Math.max(Math.abs(dx), Math.abs(dy)) >= 2) ring.push(i);
+    }
+    if (!ring.length) return true;
+    const inWin = new Set(win), got = new Set([ring[0]]), st = [ring[0]];
+    while (st.length) { const i = st.pop(); for (const j of [i + 1, i - 1, i + W, i - W]) if (inWin.has(j) && !got.has(j)) { got.add(j); st.push(j); } }
+    fine = ring.every((i) => got.has(i));
+    if (fine) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const X = x + dx, Y = y + dy; if (inMap(m, X, Y) && !wideAt(Y * W + X)) homeNow[Y * W + X] = 0; }
+    return fine;
+  };
+  /** Is the walk at this tile on the entrance's wide ground (or within two steps of it)? */
+  const onWide = (i) => { if (!homeNow) return true; const x = i % W, y = (i - x) / W; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (inMap(m, x + dx, y + dy) && homeNow[(y + dy) * W + x + dx]) return true; return false; };
+  const AROUND = [[0, -1], [1, 0], [-1, 0], [0, 1], [1, -1], [-1, -1], [1, 1], [-1, 1]];
+  const AROUND2 = AROUND.concat([[0, -2], [2, 0], [-2, 0], [0, 2], [2, -1], [-2, 1], [1, 2], [-1, -2]]);
   /** Put object `ch` beside the walk at index-tile `at`, where it blocks nothing. */
   const place = (at, ch) => {
     const ax = at % W, ay = (at - ax) / W;
-    for (const [dx, dy] of [[0, -1], [1, 0], [-1, 0], [0, 1], [1, -1], [-1, -1], [1, 1], [-1, 1]]) {
+    for (const [dx, dy] of wideOk ? AROUND2 : AROUND) {
       const x = ax + dx, y = ay + dy, i = y * W + x;
       if (!open(x, y) || onPath.has(i) || base.d[i] < 0 || busy(x, y)) continue;
       m.o[y][x] = ch;
-      if (ringJoined(x, y) || flood(ex, ey).count === reach - 1) { reach--; return [x, y]; }
+      if ((ringJoined(x, y) || flood(ex, ey).count === reach - 1) && keepsWide(x, y)) { reach--; return [x, y]; }
       m.o[y][x] = " ";
     }
     return null;
@@ -4059,12 +4327,12 @@ function markRoutes(m, labelOf, deeper) {
     // a wind shrine a few steps further on (33-maps-zones.js); a campfire burns in the plaza by the first
     m.stones = [WP[m.id]];
     m.shrines = [];
-    const fr = m.stonesWant >= 3 ? [1 / 3, 2 / 3] : m.stonesWant === 2 ? [0.5] : [];
+    const fr = m.stoneFr || (m.stonesWant >= 3 ? [1 / 3, 2 / 3] : m.stonesWant === 2 ? [0.5] : []);
     for (const f of fr) {
       const t = Math.round(C.length * f);
       for (let s = 0; s <= 60; s++) {
         const j = s % 2 ? t + (s + 1) / 2 : t - s / 2;
-        if (j <= k0 + 10 || j >= C.length - 3) continue;
+        if (j <= k0 + 10 || j >= C.length - 3 || !onWide(C[j])) continue;
         const at = place(C[j], "Q");
         if (!at) continue;
         const st = { x: at[0], y: at[1], ax: C[j] % W, ay: Math.floor(C[j] / W), i: m.stones.length };

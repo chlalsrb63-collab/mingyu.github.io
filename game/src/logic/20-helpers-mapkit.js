@@ -498,6 +498,77 @@ function knit(m, pts, floor, minPocket = 6) {
 }
 
 /**
+ * Widen the ways (maps-v2 path-quality rule: the main routes are at least three tiles wide). A tile is
+ * "wide" when the 3 × 3 round it is all walkable; every point in `pts` must join the entrance's wide ground.
+ * Where one does not, the cheapest way is cut whose every 3 × 3 holds nothing harder than the `soft`
+ * objects (trees, bushes, rocks … — cleared along it) or a cliff (cut back into steps, dearly); walls, water and
+ * set pieces are never touched.
+ */
+function widen(m, pts, soft) {
+  const W = m.w, H = m.h, n = W * H;
+  const wk = (x, y) => !blockedAt(m, x, y);
+  const isWide = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!wk(x + dx, y + dy)) return false; return true; };
+  const home = new Uint8Array(n);
+  const spread = (seeds) => {
+    const st = seeds.filter((i) => !home[i] && isWide(i));
+    for (const i of st) home[i] = 1;
+    while (st.length) {
+      const i = st.pop(), x = i % W;
+      for (const j of [x + 1 < W ? i + 1 : -1, x > 0 ? i - 1 : -1, i + W < n ? i + W : -1, i - W]) if (j >= 0 && !home[j] && isWide(j)) { home[j] = 1; st.push(j); }
+    }
+  };
+  // the walkable tiles within two steps of a point
+  const round = (px, py, r = 2) => {
+    const out = [];
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const x = px + dx, y = py + dy; if (wk(x, y)) out.push(y * W + x); }
+    return out;
+  };
+  const [ex, ey] = m.entry;
+  spread(round(ex, ey));
+  const cost = (j) => {
+    const x = j % W, y = (j - x) / W;
+    if (x < 3 || y < 3 || x >= W - 3 || y >= H - 3) return Infinity;
+    let c = 1;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const X = x + dx, Y = y + dy, o = m.o[Y][X];
+      if (SOLID_G.includes(m.g[Y][X]) || (o !== " " && !soft.includes(o) && o !== "C")) return Infinity;
+      if (o === "C") c += 8;
+      else if (o !== " ") c += 3;
+    }
+    return c;
+  };
+  let cut = 0;
+  for (const [px, py] of pts) {
+    const near = round(px, py);
+    if (near.some((i) => home[i])) continue;
+    // (a point in a walled piece — a chest behind a fence's narrow doorway — is joined from just outside it)
+    const path = walk(W, H, near, (j) => home[j] === 1, cost) || walk(W, H, round(px, py, 5), (j) => home[j] === 1, cost);
+    if (!path) continue;
+    for (const c of path) {
+      const x = c % W, y = (c - x) / W;
+      // (a cliff in the way is cut back into steps: the ramp grows to three wide)
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (m.o[y + dy][x + dx] !== " ") { if (m.o[y + dy][x + dx] === "C") m.g[y + dy][x + dx] = "v"; m.o[y + dy][x + dx] = " "; cut++; }
+    }
+    spread(path.concat(near));
+  }
+  return cut;
+}
+/** Fill the little walkable pockets (under `max` tiles) that cannot be walked to from the entrance. */
+function seal(m, ch, max = 6) {
+  const W = m.w, H = m.h, n = W * H;
+  const open = (i) => { const x = i % W; return !blockedAt(m, x, (i - x) / W); };
+  const [ex, ey] = m.entry;
+  const reach = bfs(W, H, ey * W + ex, open), seen = new Uint8Array(n);
+  for (let s = 0; s < n; s++) {
+    if (seen[s] || reach[s] >= 0 || !open(s)) continue;
+    const q = [s];
+    seen[s] = 1;
+    for (let h = 0; h < q.length; h++) { const c = q[h], x = c % W; for (const j of [x + 1 < W ? c + 1 : -1, x > 0 ? c - 1 : -1, c + W < n ? c + W : -1, c - W]) if (j >= 0 && !seen[j] && reach[j] < 0 && open(j)) { seen[j] = 1; q.push(j); } }
+    if (q.length < max) for (const c of q) { const x = c % W; m.o[(c - x) / W][x] = ch; }
+  }
+}
+
+/**
  * A set piece drawn as rows of characters, each standing for [ground, object] through
  * `legend` (an undefined entry leaves that layer alone; " " in the picture is skipped).
  * Stamped with its top-left at (x, y), turned `rot` quarter turns and mirrored if `flip`.
