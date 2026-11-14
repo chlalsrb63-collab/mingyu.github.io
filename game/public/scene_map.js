@@ -283,6 +283,8 @@ export function loadMap(m) {
       const grave = [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [0, 2], [-2, 0], [0, -2]].some(([dx, dy]) => "JF".includes((m.o[y + dy] || [])[x + dx] || "."));
       sp = sp[grave || m.g[y][x] === "&" || hash(x, y, 5) < 0.08 ? 3 : Math.min(2, hueAt(m, x, y))];
     }
+    else if (ch === "l" && theme === "coast") sp = S.DW[h < 0.5 ? 0 : 1];
+    else if (ch === "T" && theme === "jungle") sp = S.JT[h < 0.45 ? 0 : h < 0.85 ? 1 : 2];   // broad dark leaves (maps-v2 M3 art)
     else if (ch === "T") sp = sp[edge(x, y) ? (h < 0.7 ? 0 : 2) : h < 0.5 ? 0 : h < 0.72 ? 2 : h < 0.88 ? 1 : 3];
     else if (ch === "B") sp = theme === "town" ? S.TB[Math.floor(h * 3)] : sp[Math.floor(h * 3)];
     else if (ch === "L") sp = theme === "city" ? S.L2 : S.L;
@@ -438,9 +440,10 @@ export function wpLit() {
 
 /** Drifting motes: pollen in the open, fireflies and leaves under trees, rain in the city, dust underground. */
 const amb = [];
-const AMB_N = { town: 16, meadow: 24, forest: 26, city: 80, cave: 26, crypt: 18, sewer: 22, abyss: 36, autumn: 40 };
+const AMB_N = { town: 16, meadow: 24, forest: 26, city: 80, cave: 26, crypt: 18, sewer: 22, abyss: 36, autumn: 40, desert: 30, jungle: 22 };
 function respawn(p, ox, oy, fresh) {
-  const k = theme === "forest" ? (Math.random() < 0.45 ? "fly" : "leaf") : theme === "autumn" ? (Math.random() < 0.12 ? "spore" : "leaf") : theme === "city" ? "rain" : theme === "cave" || UG[theme] ? "dust" : "pollen";
+  // (maps-v2 M3 art) sand blowing low across the desert; fireflies and falling leaves in the jungle as in the wood
+  const k = theme === "desert" ? "sand" : theme === "forest" || theme === "jungle" ? (Math.random() < 0.45 ? "fly" : "leaf") : theme === "autumn" ? (Math.random() < 0.12 ? "spore" : "leaf") : theme === "city" ? "rain" : theme === "cave" || UG[theme] ? "dust" : "pollen";
   p.k = k;
   p.x = ox - 20 + Math.random() * (vw + 40);
   p.y = k === "rain" && !fresh ? oy - 10 : oy - 10 + Math.random() * (vh + 20);
@@ -451,6 +454,7 @@ function respawn(p, ox, oy, fresh) {
   p.vy = k === "rain" ? 400 + Math.random() * 120 : k === "leaf" ? 9 + Math.random() * 6 : k === "dust" ? -3 - Math.random() * 4 : (Math.random() - 0.5) * 4;
   p.c = k === "leaf" ? (theme === "autumn" ? HUE[Math.random() < 0.9 ? Math.floor(Math.random() * 3) : 3].fall[Math.floor(Math.random() * 3)] : Math.random() < 0.5 ? "#d89a48" : "#7abf52") : null;
   if (k === "spore") { p.vx = (Math.random() - 0.5) * 5; p.vy = -4 - Math.random() * 4; }
+  if (k === "sand") { p.vx = 70 + Math.random() * 60; p.vy = 14 + Math.random() * 10; p.max = 1.2 + Math.random() * 1.6; p.life = fresh ? Math.random() * p.max : p.max; }
 }
 export function drawAmbient(dt, t, ox, oy) {
   const want = AMB_N[theme] || 20;
@@ -465,6 +469,7 @@ export function drawAmbient(dt, t, ox, oy) {
     if (p.k === "rain") { g.globalAlpha = 0.3; g.fillStyle = "#a8c4ff"; g.fillRect(sx, sy, 1, 6); }
     else if (p.k === "fly") { const a = (0.45 + 0.55 * Math.sin(t / 260 + p.ph * 3)) * fade; g.globalAlpha = a * 0.28; g.fillStyle = "#e8ff8a"; g.fillRect(sx - 1, sy - 2, 3, 5); g.fillRect(sx - 2, sy - 1, 5, 3); g.globalAlpha = a; g.fillRect(sx - 1, sy, 3, 1); g.fillRect(sx, sy - 1, 1, 3); g.fillStyle = "#ffffff"; g.fillRect(sx, sy, 1, 1); }
     else if (p.k === "leaf") { g.globalAlpha = fade * 0.9; g.fillStyle = p.c; g.fillRect(sx, sy, 2, 1); g.fillRect(sx + (Math.sin(t / 300 + p.ph) > 0 ? 1 : 0), sy + 1, 1, 1); }
+    else if (p.k === "sand") { g.globalAlpha = Math.min(1, fade * 3) * 0.7; g.fillStyle = p.ph > 3 ? "#fff0c8" : "#f4d9a0"; g.fillRect(sx, sy + Math.round(Math.sin(t / 180 + p.ph) * 1.5), p.ph > 4.5 ? 3 : 2, 1); }
     else if (p.k === "spore") { const a = (0.5 + 0.5 * Math.sin(t / 400 + p.ph * 3)) * fade; g.globalAlpha = a * 0.35; g.fillStyle = "#b06ad8"; g.fillRect(sx - 1, sy - 1, 3, 3); g.globalAlpha = a; g.fillStyle = "#e0b8ff"; g.fillRect(sx, sy, 1, 1); }
     else if (p.k === "dust") { g.globalAlpha = fade * (theme === "abyss" ? 0.8 : 0.55); g.fillStyle = UG[theme] ? UG[theme].mote : "#bfe8ff"; g.fillRect(sx, sy, 1, theme === "sewer" ? 2 : 1); }
     else { g.globalAlpha = fade * 0.8; g.fillStyle = "#fffbe0"; g.fillRect(sx, sy, 1, 1); if (p.ph > 4) g.fillRect(sx + 1, sy, 1, 1); }

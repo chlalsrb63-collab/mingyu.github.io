@@ -1,6 +1,6 @@
 # maps-v2 — 다채로운 사냥터·던전 (varied hunting grounds and dungeons)
 
-Status: **M1 + M2 built, client art step 1 done (H), M3 rules/terrain built (I)** (meadow, forest, cave, crypt, sewer reworked; jungle, coast, oasis new; the path-quality test holds all eight). M3's art and monsters and M4 are design.
+Status: **M1 + M2 built, client art step 1 done (H), M3 rules/terrain built (I), M3 client art done (J)** (meadow, forest, cave, crypt, sewer reworked; jungle, coast, oasis new; the path-quality test holds all eight). M3's monsters and BGM and M4 are design.
 Owner's request: maps from his reference images, procedurally generated, colourful, not monotonous; routes a little
 complex but never blocked in a way that gets in the player's way; maps wide.
 
@@ -271,7 +271,7 @@ a field boss, gathering nodes of grade 3 / 4 / 4. The loop city → jungle → c
   of tests/dimrift.mjs reaching the master.
 - **Weather** (`WX_ODDS`, by theme): jungle clear/cloud/rain-heavy with some fog; coast clear, rain and wind, no fog;
   desert clear and wind, never rain. All three are outdoor (day and night).
-- **Client placeholders** (so nothing is invisible; the art step replaces them): flat sand/shallows/foam materials and
+- **Client placeholders** (replaced by art step 2, section J; so nothing was invisible): flat sand/shallows/foam materials and
   teal water in iso_ground.js, a thin yellow `edgeLine` on the jungle's `m`, simple palm / reef / boulder / hut sprites in
   scene_props.js, minimap and overview colours, `OUTDOOR` and skirt colours.
 - **Tests**: mapflow (strict for all three), maps (sizes, build time), world (the loop's doors both ways, bands, no
@@ -281,3 +281,29 @@ a field boss, gathering nodes of grade 3 / 4 / 4. The loop city → jungle → c
   전갈 등뼈 (spine scorpion), 미라 낙타 (two-headed mummy camel, oasis boss), 모래 지렁이 아가리 (sand-worm maw, burrows),
   독수리 갈비 (rib vulture), 선인장 고슴도치 (cactus hedgehog); 덩굴 원숭이 (vine monkey), 난초 사마귀 (orchid mantis),
   독개구리 떼 (dart-frog brood), 악어 통나무 (log gator, jungle boss).
+
+## J. Client art, step 2 as built (table C "M3 art")
+
+No rule or wire changes. Everything on the ground is baked (chunked as before); the sea moves by the two existing
+water frames (650 ms each), so there is no new per-frame cost. Other themes are unchanged.
+
+| for | as built |
+| --- | --- |
+| dune sand `z`, desert `s` | iso_ground.js `dunes`: long crests across the screen (a lit crest line, the lee side below it in one flat tone), short wind ripples between, grains. `z` strong (22 px apart), the desert's `s` broad and faint (38 px); `z` is paler outside the desert |
+| white sand `S` | fine clusters, faint tide lines, rare shells; a **wet band** (two tan tones, scalloped) wherever sand meets `~`/`-` (also dune and desert sand) |
+| shallows `~` | turquoise with pale sand bars and their ripples showing through, darker toward the deep `w`, a thin net of light that shifts between the two frames, white foam against sand, a foam ring round every reef rock / boulder standing in it (so islets and rocks get rings) |
+| surf `-` | `shore(S, px, f)`: frame 0 the foam runs up the sand and a pale line follows; frame 1 it falls back, leaves wet sand and a sheen, and the next white line gathers further out |
+| sea `w` (jungle, coast) | deeper teal; white crests with a pale underline that step between frames, more and longer inshore |
+| jungle road | old asphalt (cracks, tarred patches); `edgeLine`: a thin yellow line that follows the run of `m` tiles — straight, mitred corner to corner at a right angle (a stepped diagonal becomes one straight line), arms at junctions, worn gaps — and a pale gravel shoulder outside it |
+| jungle floor, shingle `r` | deep green with broad fallen leaves; dark rounded stones with lit tops |
+| palm `Ψ` | 4 sprites (straight, two leans, a half lean): ringed curving trunk, dark fronds behind and lit ones in front, coconuts; `palmShade` bakes each one's long shadow (trunk + crown) down-right in the shadow tone |
+| reef `Φ`, basalt `Ω` | reef: moss cap, coral, dark wet foot with foam (3 sprites, one low); basalt: black faceted blocks, a cold gloss line on the sky-facing edges, a glint, spray |
+| mud hut `Δ` | round daubed wall, thatch cone in courses with a ragged eave, dark doorway (2 tints) |
+| tree `T` in the jungle | `JT`: buttress roots, a wide dark crown of broad leaves, hanging vines, one in red bloom |
+| cliff `C` in desert/coast | iso_tall.js `sandstone`: the upper level's sand over the edge, wavering courses with dark seams, redder bands, lit ledges, pits (ochre in the desert, pale by the sea) |
+| extras | driftwood for `l` on the coast (`DW`); wind-blown sand motes in the desert, fireflies and leaves in the jungle (scene_map.js ambient) |
+
+Left from table C: the 2 × 2 hut (no map marks one), tide pools and caravan tents as art, sand-bar edge art beyond the
+foam line, heat shimmer / gulls, a worn centre strip on the asphalt (needs the road's direction), tufts on the oasis's
+green ring (details only run on the theme's base ground), minimap icons (the colours already separate sand /
+shallows / sea), BGM and the new monster species.

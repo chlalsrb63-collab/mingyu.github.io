@@ -239,7 +239,7 @@ export function materials(theme) {
   const steps = mk(MID.steps, 2, "#bdb39a", { straight: true, depth: 1 });
   // water: shallow and deep; the bank under a far shore
   const wet = U ? U.wet : theme === "autumn" ? ["#3f86b8", "#336fa0", "#80bede", "#285c8a", "#6aa8d0"]
-    : theme === "jungle" || theme === "coast" ? ["#2796a6", "#1d7c90", "#74d6d4", "#16627a", "#5cc4c8"]
+    : theme === "jungle" || theme === "coast" ? ["#2a9cae", "#17748c", "#7adcd8", "#125a74", "#5cc4c8"]
     : theme === "desert" ? ["#3aa8bc", "#2c90a8", "#8adcde", "#207890", "#74ccd4"] : ["#4aa2e2", "#3f8ad2", "#8accf6", "#2f78c0", "#86c8f4"];
   const water = mk(MID.water, 10, wet[0], { pal: [wet[0], wet[1], mix(wet[0], 1.08)], style: "bank", line: wet[3] });
   water.tex = theme === "sewer" ? organic(water, SHP.water, SHP.sludge, 61, 0.42, 0.3, 9, 5) : organic(water, SHP.water, null, 61, 0.2, 0, 11, 6);
@@ -307,28 +307,76 @@ export function materials(theme) {
     _deep: deep, _water: water, _floor: floor, _grass: grass,
   };
   if (theme === "autumn") { T[";"] = goldL; T[":"] = needle; }
-  // ── the south-west coast (maps-v2 M3; placeholders, the art step gives them their own textures): rippled dune
-  // sand, white beach sand, turquoise shallows you can wade, the foam of the surf line
-  const dune = mk(MID.dune, 6.5, "#e0b468", { pal: ["#e0b468", "#c8984e", "#f0cc86", "#d2a458"], line: "#a87838" });
-  dune.tex = organic(dune, SHP.sand, null, 241, 0.62, 0, 8, 5);
-  const wsand = mk(MID.wsand, 7.2, "#f6efd8", { pal: ["#f6efd8", "#e4dabc", "#fffaf0", "#d8ccac"], line: "#c0b48e" });
-  wsand.tex = organic(wsand, SHP.sand, null, 243, 0.4, 0, 8, 5);
-  const shal = mk(MID.shallow, 9, "#5ccfc4", { pal: ["#5ccfc4", "#48bcb4", "#8ae6d8", "#b4f0dc"], style: "soft", amp: 2.6, line: "#2a9a9a" });
-  shal.tex = organic(shal, SHP.water, SHP.sand, 245, 0.3, 0.12, 9, 5);
-  const surf = mk(MID.surf, 8.5, "#d8f4f0", { pal: ["#d8f4f0", "#a8e4e0", "#ffffff", "#8adcd8"], style: "soft", amp: 3, line: "#8adcd8" });
-  surf.tex = organic(surf, SHP.water, null, 247, 0.6, 0, 6, 4);
+  // ── the south-west coast (maps-v2 M3 art): dunes in two tones under wind ripples, white beach sand with shell
+  // flecks, clear turquoise shallows with the sand showing through, the surf (its foam is laid per water frame by
+  // `shore`, with the wet band, the caustics and the sea's wave crests)
+  const dunes = (m, seed, wl, lee, rip) => (A, B) => {
+    // long crests across the screen, each one a lit line with its lee side below it in one flat shadow tone
+    const SX = A - B, SY = (A + B) >> 1;
+    const t = SY + vnoise(SX, SY * 2, 48, seed) * 24 + vnoise(SX, SY * 2, 16, seed + 1) * 6;
+    const band = ((t % wl) + wl) % wl, open = vnoise(SX, SY * 2, 64, seed + 5);
+    if (open > 0.3) {
+      if (band < 1) return m.pal[2];
+      const edge = wl * lee * Math.min(1, (open - 0.3) * 5);
+      if (band < edge - 1 || (band < edge && (SX + SY) & 1)) return m.pal[1];
+    }
+    // wind ripples: short wavering lines, closer together where the sand lies flat
+    const r = SY + Math.round(vnoise(SX, SY * 2, 10, seed + 2) * 4);
+    if (r % rip === 0 && vnoise(SX, SY * 3, 14, seed + 3) > 0.42 && hash(SX >> 3, r, seed + 4) < 0.8) return m.pal[3];
+    const g = hash(A, B, seed + 6);
+    return g < 0.012 ? m.pal[2] : g > 0.992 ? m.pal[4] : m.pal[0];
+  };
+  const dune = theme === "desert"
+    ? mk(MID.dune, 6.5, "#e4b76a", { pal: ["#e4b76a", "#cd9a50", "#f6d892", "#d8a95e", "#b98444"], line: "#a87838" })
+    : mk(MID.dune, 6.5, "#ecd29c", { pal: ["#ecd29c", "#d8b67e", "#fbe8bc", "#e2c48c", "#c8a468"], line: "#c0a070" });   // paler by the sea
+  dune.tex = dunes(dune, 241, 22, 0.42, 3);
+  const wsand = mk(MID.wsand, 7.2, "#f6efd8", { pal: ["#f6efd8", "#e6dcbe", "#fffaf0", "#ece2c6", "#d8c8a4", "#f0a8a0"], line: "#c0b48e" });
+  const beach = organic(wsand, SHP.sand, null, 243, 0.3, 0, 8, 5);
+  wsand.tex = (A, B) => {
+    // faint tide lines, and a shell or a pebble now and then
+    const SX = A - B, SY = (A + B) >> 1, h = hash(A, B, 244);
+    if (h < 0.004) return h < 0.0015 ? wsand.pal[5] : wsand.pal[4];
+    if ((SY + Math.round(vnoise(SX, SY * 2, 12, 245) * 5)) % 7 === 0 && vnoise(SX, SY * 3, 18, 246) > 0.6) return wsand.pal[3];
+    return beach(A, B);
+  };
+  const shal = mk(MID.shallow, 9, "#4fd0c6", { pal: ["#4fd0c6", "#3fbfba", "#86e6d6", "#b8f2de", "#2fa8b2", "#e8fff6"], style: "soft", amp: 2.6, line: "#2a9a9a" });
+  shal.tex = (A, B) => {
+    // sand bars under the water: pale ripples lying across the screen, the hollows between a deeper green
+    const SX = A - B, SY = (A + B) >> 1, n = vnoise(SX, SY * 2, 40, 247);
+    if (n > 0.56) {
+      const r = SY + Math.round(vnoise(SX, SY * 2, 12, 248) * 5);
+      return r % 4 === 0 && hash(SX >> 3, r, 249) < 0.85 ? shal.pal[3] : n > 0.6 || (SX + SY) & 1 ? shal.pal[2] : shal.pal[0];
+    }
+    return n < 0.3 && (n < 0.26 || (SX + SY) & 1) ? shal.pal[1] : shal.pal[0];
+  };
+  const surf = mk(MID.surf, 8.5, "#9ce8da", { pal: ["#9ce8da", "#78dcd0", "#ffffff", "#c8f6ea", "#dccfa8", "#e8dcb8"], style: "soft", amp: 3, line: "#8adcd8" });
   T.z = dune; T.S = wsand; T["~"] = shal; T["-"] = surf;
   if (theme === "desert") {
     // the desert's own sand is warmer than a river bank's; what tops a dune's ridge is sand, not grass
-    const dsand = mk(MID.sand, 7, "#ecd09a", { pal: ["#ecd09a", "#d8b87e", "#f8e2b8", "#cca870"], line: "#b08a52" });
-    dsand.tex = organic(dsand, SHP.sand, null, 249, 0.5, 0, 8, 5);
+    const dsand = mk(MID.sand, 7, "#eed29c", { pal: ["#eed29c", "#dcba80", "#fbe6bc", "#e2c48c", "#c8a468"], line: "#b08a52" });
+    dsand.tex = dunes(dsand, 249, 38, 0.2, 4);
     T.s = dsand; T._grass = dsand;
   } else if (theme === "coast") T._grass = wsand;
   else if (theme === "jungle") {
-    // the strand of black boulders stands on dark wet shingle
-    const shingle = mk(MID.ruin, 4, "#5c5e68", { pal: ["#5c5e68", "#44464e", "#74767e", "#50525a"], line: "#2e3036" });
-    shingle.tex = organic(shingle, SHP.pebble, null, 251, 0.6, 0, 6, 4);
+    // the strand of black boulders stands on dark wet shingle: rounded stones, each with a lit top
+    const shingle = mk(MID.ruin, 4, "#56585f", { pal: ["#56585f", "#3c3e46", "#7c7e86", "#484a52", "#9a9ca4"], line: "#2e3036" });
+    shingle.tex = organic(shingle, ["33./333/.11", "22/11", ".44/331/.11", "2/1", "333/111"].map(shape), SHP.pebble, 251, 0.85, 0.5, 6, 4);
     T.r = shingle;
+    // the coast road: old asphalt, patched and cracked
+    const road = mk(MID.asph, 7, "#4a4e58", { pal: ["#4a4e58", "#3e424c", "#5a5e68", "#34383f", "#646058"], style: "curb", straight: true, depth: 0 });
+    const grit = organic(road, SHP.asph, null, 253, 0.45, 0, 7, 5);
+    road.tex = (A, B) => {
+      const c = vnoise(A, B, 16, 254), c2 = vnoise(A, B, 8, 255);
+      if (Math.abs(c - 0.5) < 0.012 && c2 > 0.45) return road.pal[3];                              // a crack
+      if (vnoise(A, B, 32, 256) > 0.72) return hash(A >> 1, B >> 1, 257) < 0.12 ? road.pal[3] : road.pal[1]; // a tarred patch
+      return grit(A, B);
+    };
+    T.a = road; T.m = road;
+    // the jungle floor: deep green, broad fallen leaves and the odd dead one
+    const jg = mk(MID.grass, 0, gHex, { pal: [gHex, shade(gHex, 0.8), light(gHex, 1.16), shade(gHex, 0.9), "#2a7440", "#a88a3e"], line: shade(gHex, 0.6) });
+    jg.tex = organic(jg, ["44./444/.11", "1.1/.1.", "22/.2", "444/.44", "11", "5/1", "2.2/.2."].map(shape), SHP.grass2, 11, 0.7, 0.34, 6, 5);
+    for (const ch of '.,"t:;') T[ch] = jg;
+    T._grass = jg;
   }
   if (cave) Object.assign(T, cave);
   // a ford out of doors (maps-v2 A.6, the forest's crossings `m.cross`): clear shallows over sand, flat grey
@@ -497,10 +545,12 @@ function bakeRect(m, theme, X0, Y0, BW, BH) {
   // 5 — upright details in screen space
   details(S);
   if (ext.screen) ext.screen(S);
+  palmShade(S);
   const t2 = performance.now();
   // 6 — two frames of water
   const px2 = px.slice();
   glints(S, px, 0); glints(S, px2, 1);
+  shore(S, px, 0); shore(S, px2, 1);
   const t3 = performance.now();
   return { px, px2, W, H, t: [t0, t1, t2, t3] };
 }
@@ -772,6 +822,164 @@ function glints(S, px, f) {
   }
 }
 
+// ───────────────────────────── the sea's edge ─────────────────────────────
+
+const WET = "~-wb", ROCKS = "ΦΩ";
+const SEA = new WeakMap();
+const hasSea = (m) => { let v = SEA.get(m); if (v === undefined) { v = m.g.some((r) => r.includes("~") || r.includes("-")); SEA.set(m, v); } return v; };
+/** Distance in texels from (A, B) to the nearest of the tile squares listed as [x0, y0, x0, y0 …] (texel corners). */
+function nearest(list, A, B) {
+  let d = 9999;
+  for (let i = 0; i < list.length; i += 2) {
+    const dx = Math.max(list[i] - A - 0.5, 0, A + 0.5 - list[i] - 16), dy = Math.max(list[i + 1] - B - 0.5, 0, B + 0.5 - list[i + 1] - 16);
+    const e = dx * dx + dy * dy;
+    if (e < d) d = e;
+  }
+  return Math.sqrt(d);
+}
+/** The same from tile centres, so a staircase of tiles gives a scalloped line instead of a stepped one. */
+function round(list, A, B) {
+  let d = 9999;
+  for (let i = 0; i < list.length; i += 2) { const e = Math.hypot(A - 7.5 - list[i], B - 7.5 - list[i + 1]); if (e < d) d = e; }
+  return d - 10.5;
+}
+/**
+ * The coast (maps-v2 M3 art), laid once per water frame so the sea moves at no cost per frame: the surf's foam
+ * washing up the sand and falling back, a band of wet sand along the waterline, the shallows darkening toward
+ * the deep with a net of light over them, a foam ring round every islet and reef rock, and in the jungle and
+ * on the coast the sea's breaking crests.
+ */
+function shore(S, px, f) {
+  const { m, theme, W, H, mat, MT, near } = S;
+  const sea = theme === "coast" || theme === "jungle";
+  if (!hasSea(m) && !sea) return;
+  const at = (x, y) => (x < 0 || y < 0 || x >= m.w || y >= m.h ? null : m.g[y][x]);
+  const inside = (X, Y) => X >= 0 && X < W && Y >= 0 && Y < H;
+  const sf = MT["-"].pal, sh = MT["~"].pal, white = C("#ffffff");
+  const sandy = [MID.wsand, MID.dune, MID.sand], wetOf = { [MID.wsand]: [C("#dccfa8"), C("#cdbd94")], [MID.dune]: [C("#c89a56"), C("#b88a4a")], [MID.sand]: [C("#d2b67c"), C("#c2a66c")] };
+  const wm = [MID.water, MID.deep], crest = C("#e8fbf6"), crest2 = C("#6fd0cc");
+  const land = [], deep = [], wet = [], rocks = [];
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    if (near && !near(x, y)) continue;
+    const ch = m.g[y][x], X0 = S.ox + (x - y) * 16, Y0 = S.oy + (x + y) * 8;
+    if (ch === "-" || ch === "~") {
+      land.length = deep.length = rocks.length = 0;
+      for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
+        const c = at(x + i, y + j);
+        if (c === null) continue;
+        if (!WET.includes(c)) land.push((x + i) * 16, (y + j) * 16);
+        else if (c === "w") deep.push((x + i) * 16, (y + j) * 16);
+        if (Math.abs(i) < 2 && Math.abs(j) < 2 && ROCKS.includes(m.o[y + j][x + i])) rocks.push((x + i) * 16 + 8, (y + j) * 16 + 8);
+      }
+      for (let k = 0; k < 256; k++) {
+        const P = TILE_PX[k], sx = X0 + P[0], sy = Y0 + P[1];
+        if (!inside(sx, sy)) continue;
+        const o = sy * W + sx, id = mat[o];
+        if (id !== MID.surf && id !== MID.shallow) continue;
+        const A = x * 16 + P[2], B = y * 16 + P[3];
+        const dl = land.length ? nearest(land, A, B) : 99;
+        if (id === MID.surf) {
+          // the wave runs up the sand (frame 0), then slides back and leaves it wet while the next one gathers
+          const e = dl - vnoise(A, B, 8, 261) * 5 - vnoise(A, B, 4, 262) * 2 + 2.5;
+          const line = vnoise(A, B, 12, 263) > 0.32;
+          let c = e < 7 ? sf[0] : sf[1];
+          if (f === 0) {
+            if (e < 2.6) c = white;
+            else if (e < 4.2) c = (A + B) & 1 ? white : sf[3];
+            else if (e > 9 && e < 10.4 && line) c = sf[3];
+          } else {
+            if (e < 1.4) c = sf[4];
+            else if (e < 2.2) c = sf[5];
+            else if (e < 3.4) c = white;
+            else if (e < 4.4) c = (A + B) & 1 ? sf[3] : sf[0];
+            else if (e > 11.4 && e < 13 && line) c = white;
+            else if (e > 13 && e < 14 && line) c = sf[3];
+          }
+          px[o] = c;
+          continue;
+        }
+        // the shallows: foam against the sand and round each rock, deeper water out toward the sea, light over the rest
+        const wob = vnoise(A, B, 6, 264) * 2.4;
+        if (dl < 1.2 + wob - f * 0.9) { px[o] = dl < 0.9 || (A + B + f) & 1 ? white : sh[3]; continue; }
+        let ring = false;
+        for (let i = 0; i < rocks.length; i += 2) {
+          const r = Math.hypot(A + 0.5 - rocks[i], B + 0.5 - rocks[i + 1]);
+          if (Math.abs(r - 7.6 - f * 1.2 - wob * 0.5) < 0.75 && hash(A >> 1, B >> 1, 265 + f) < 0.7) ring = true;
+        }
+        if (ring) { px[o] = white; continue; }
+        const dd = deep.length ? nearest(deep, A, B) : 99, lim = 11 + vnoise(A, B, 8, 266) * 9;
+        if (dd < lim - 4 || (dd < lim && (A + B) & 1)) { px[o] = dd < 3 + wob && (A + B) & 1 ? sh[1] : sh[4]; continue; }
+        const n = vnoise(A + f * 3, B - f * 2, 8, 267);
+        if (Math.abs(n - 0.5) < 0.018 && vnoise(A, B, 24, 268) > 0.35) px[o] = sh[2];
+        else if (hash(A, B, 269 + f) < 0.0016) px[o] = sh[5];
+      }
+    } else if (ch === "w" && sea) {
+      // breaking crests: more of them, and longer, where the sea comes in over the shallows
+      let inshore = false;
+      for (let j = -3; j <= 3 && !inshore; j++) for (let i = -3; i <= 3; i++) { const c = at(x + i, y + j); if (c !== null && c !== "w" && c !== "b") { inshore = true; break; } }
+      const h = hash(x, y, 270);
+      if (h > (inshore ? 0.34 : 0.1)) continue;
+      const [X, Y] = spot(S, x, y, 0.2 + hash(x, y, 271) * 0.6, 0.2 + hash(x, y, 272) * 0.6);
+      const len = (inshore ? 9 : 6) + Math.floor(hash(x, y, 273) * 7), x0 = X - (len >> 1) + (f ? 2 : 0), yy = Y + f;
+      for (let i = 0; i < len; i++) {
+        const end = i < 2 || i > len - 3, cy = yy + (end ? 1 : 0), o = cy * W + x0 + i;
+        if (!inside(x0 + i, cy + 1) || !wm.includes(mat[o])) continue;
+        if (!(f && (i === 3 || i === len - 5))) px[o] = crest;
+        if (!end && wm.includes(mat[o + W])) px[o + W] = crest2;
+      }
+    } else {
+      // wet sand along the waterline
+      const me = MT[ch];
+      if (!me || !sandy.includes(me.id)) continue;
+      wet.length = 0;
+      for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const c = at(x + i, y + j); if (c === "~" || c === "-") wet.push((x + i) * 16, (y + j) * 16); }
+      if (!wet.length) continue;
+      for (let k = 0; k < 256; k++) {
+        const P = TILE_PX[k], sx = X0 + P[0], sy = Y0 + P[1];
+        if (!inside(sx, sy)) continue;
+        const o = sy * W + sx, cols = wetOf[mat[o]];
+        if (!cols) continue;
+        const A = x * 16 + P[2], B = y * 16 + P[3], d = round(wet, A, B), lim = 3 + vnoise(A, B, 8, 274) * 4;
+        if (d < lim - 1 || (d < lim && (A + B) & 1)) px[o] = d < 1.5 ? cols[1] : cols[0];
+      }
+    }
+  }
+}
+
+/** The long shadow of every palm, laid over the ground down and to the right in the one shadow tone. */
+const PALM_SHADE = (() => {
+  const pts = new Set(), add = (x, y) => pts.add(((x + 64) << 8) | (y + 64));
+  for (let i = -1; i < 26; i++) for (let j = 2; j < 6; j++) add(i, (i >> 1) + j);
+  for (let k = 0; k < 7; k++) {
+    const a = (k / 7) * 6.2832 + 0.3, L = 12 + (k % 3) * 2;
+    for (let r = 0; r <= L; r++) {
+      const w = r < L * 0.7 ? 3.2 : 1.6;
+      for (let t = -w; t <= w; t += 0.8) add(Math.round(27 + Math.cos(a) * r - Math.sin(a) * t), Math.round(17 + (Math.sin(a) * r + Math.cos(a) * t) * 0.5));
+    }
+  }
+  return [...pts].map((v) => [(v >> 8) - 64, (v & 255) - 64]);
+})();
+function palmShade(S) {
+  const { m, W, H, px, mat, near } = S;
+  let seen = null;
+  for (let y = 0; y < m.h; y++) {
+    const row = m.o[y];
+    if (!row.includes("Ψ")) continue;
+    for (let x = 0; x < m.w; x++) {
+      if (row[x] !== "Ψ" || (near && !near(x, y))) continue;
+      seen = seen || new Uint8Array(W * H);
+      const [X, Y] = spot(S, x, y, 0.5, 0.5), flip = hash(x, y, 3) > 0.66 ? 3 : 0;
+      for (const [dx, dy] of PALM_SHADE) {
+        const sx = X + dx + (dx > 12 ? flip : 0), sy = Y + dy;
+        if (sx < 0 || sy < 0 || sx >= W || sy >= H) continue;
+        const o = sy * W + sx;
+        if (seen[o] || mat[o] === MID.void || !mat[o]) continue;
+        seen[o] = 1; px[o] = shadePx(px[o], 0.78);
+      }
+    }
+  }
+}
+
 // ───────────────────────────── per-map extras ─────────────────────────────
 
 /**
@@ -991,11 +1199,27 @@ function extras(m, theme, MT) {
   }
   /** The jungle road's edge (maps-v2 M3): an unbroken yellow line along the asphalt it runs beside. */
   function edgeLine(x, y, TEX, PA, PB) {
-    const A = (i, j) => at(x + i, y + j) === "a";
-    const ns = A(1, 0) || A(-1, 0), ew = A(0, 1) || A(0, -1);
+    // (maps-v2 M3 art) the line follows the run of edge tiles: straight through a tile whose neighbours lie
+    // opposite, mitred corner to corner where they lie at a right angle (so a stepped diagonal comes out as one
+    // straight line), arms from the centre at a junction. Outside it the shoulder is worn pale and gravelly.
+    const M = (i, j) => at(x + i, y + j) === "m", Aa = (i, j) => at(x + i, y + j) === "a";
+    const nb = [M(0, -1), M(1, 0), M(0, 1), M(-1, 0)], mid = [[8, 0], [16, 8], [8, 16], [0, 8]], n = nb.filter(Boolean).length;
+    const segs = [];
+    if (n === 2 && !(nb[0] && nb[2]) && !(nb[1] && nb[3])) { const i = nb.indexOf(true), j = nb.lastIndexOf(true); segs.push([...mid[i], ...mid[j]]); }
+    else if (n === 0) segs.push(Aa(1, 0) || Aa(-1, 0) ? [8, 0, 8, 16] : [0, 8, 16, 8]);
+    else for (let i = 0; i < 4; i++) if (nb[i]) segs.push(n === 1 ? [...mid[i], ...mid[(i + 2) % 4]] : [8, 8, ...mid[i]]);
+    const road = [];
+    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if (Aa(i, j)) road.push((x + i) * 16, (y + j) * 16);
+    const yl = C("#f2ca3a"), yd = C("#c89a28"), dust = [C("#6a665e"), C("#5c5a56"), C("#807a6c")];
     for (let k = 0; k < 256; k++) {
-      const a = PA[k], b = PB[k];
-      if ((ns && (a === 7 || a === 8)) || (ew && (b === 7 || b === 8))) TEX[k] = (ns && a === 7) || (ew && b === 7) ? C("#f0c838") : C("#c89a28");
+      const a = PA[k], b = PB[k], Ax = x * 16 + a, Bx = y * 16 + b;
+      let d = 99;
+      for (const [x0, y0, x1, y1] of segs) {
+        const vx = x1 - x0, vy = y1 - y0, t = Math.max(0, Math.min(1, ((a + 0.5 - x0) * vx + (b + 0.5 - y0) * vy) / (vx * vx + vy * vy)));
+        d = Math.min(d, Math.hypot(a + 0.5 - x0 - vx * t, b + 0.5 - y0 - vy * t));
+      }
+      if (d < 1.05) { if (hash(Ax >> 2, Bx >> 2, 281) > 0.07) TEX[k] = hash(Ax >> 1, Bx >> 1, 282) < 0.2 ? yd : yl; }
+      else if (road.length && nearest(road, Ax, Bx) > 9.2) { const h = hash(Ax, Bx, 283); TEX[k] = h < 0.1 ? dust[2] : h < 0.5 || (Ax + Bx) & 1 ? dust[0] : dust[1]; }
     }
   }
   function zebra(x, y, TEX, PA, PB) {
