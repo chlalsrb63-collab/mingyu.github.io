@@ -19,6 +19,7 @@ import { icon, iconImg, iconUrl, MENU_ICON, CLASS_ICON, BUFF_ICON, TRAIT } from 
 import * as SP from "./sprites.js";
 import * as Emo from "./emoticons.js";
 import * as Growth from "./growth.js";
+import * as QS from "./quickslots.js";
 import * as SkillFx from "./skillfx.js";
 import { drawClassGauge, gaugeTip } from "./classgauge.js";
 import { installFrames } from "./frames.js";
@@ -162,6 +163,7 @@ function onMessage(msg) {
         G.defs = msg.defs;
         G.icons = Growth.icons(Art.buildIcons(G.defs.items));
         Growth.init({ G, act, el, iconImg, itemSlot, section, countItem, usePotion, isGear: (id) => isGear(id), sellPrice: (e) => sellPrice(e) });
+        QS.init({ G, act, el, toast, castSkill, useSlot, countItem, showTip, hideTip, touch, addChat });
       }
       G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear(); G.who.clear();
       $("#title").hidden = true; $("#create").hidden = true; $("#hud").hidden = false;
@@ -254,7 +256,7 @@ function onSnap(s) {
     else onEvent(e, t);
   }
   for (const [id, m] of G.gone) if (t - m.goneT > 1500) G.gone.delete(id);
-  if (s.chat) for (const c of s.chat) c.sys ? addChat(c.m, "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`) : addChat(c.m, "", c.n);
+  if (s.chat) for (const c of s.chat) c.sys ? addChat(c.m, "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`) : c.pt ? addChat(c.m, "party", `[파티] ${c.n}`) : addChat(c.m, "", c.n);
   // a field boss called out, or a wave of the rift breaking in
   if (s.chat) for (const c of s.chat) if (c.sys && /나타났습니다/.test(c.m)) Sound.play(/균열/.test(c.m) ? "elite" : "announce");
   if (s.gain) for (const gn of s.gain) onGain(gn);
@@ -524,7 +526,7 @@ addEventListener("keydown", (e) => {
   if (e.repeat) return;
   keys.add(k);
   switch (k) {
-    case "1": case "2": case "3": case "4": case "5": case "6": castSkill(Number(k) - 1); break;
+    case "1": case "2": case "3": case "4": case "5": case "6": case "7": case "8": case "9": QS.press(Number(k) - 1); break;
     case "q": case "ㅂ": usePotion("hp"); break;
     case "e": case "ㄷ": usePotion("mp"); break;
     case "f": case "ㄹ": interact(); break;
@@ -652,7 +654,6 @@ function press(btn, down, up) {
   btn.addEventListener("pointerup", u); btn.addEventListener("pointerleave", u); btn.addEventListener("pointercancel", u);
 }
 press($("#b-atk"), () => { held.atk = true; }, () => { held.atk = false; });
-for (let i = 0; i < 6; i++) press($(`#b-s${i}`), () => castSkill(i));
 press($("#b-hp"), () => usePotion("hp"));
 press($("#b-mp"), () => usePotion("mp"));
 press($("#b-auto"), () => toggleAuto());
@@ -855,8 +856,10 @@ function update(dt, t) {
       } else {
         wantAtk = true;
         if (t - autoSt.lastSkill > 500) {
-          for (let i = G.defs.skills[s.cls].length - 1; i >= 0; i--) {
+          // only what the player put in the quick slots, in slot order
+          for (const i of QS.autoSkills()) {
             const sk = G.defs.skills[s.cls][i];
+            if (!sk) continue;
             if (s.lvl >= sk.lv && t >= G.cdEnd[i] && me.mp >= (s.skm ? s.skm[i] : sk.mp) + 4) { if (castSkill(i)) { autoSt.lastSkill = t; break; } }
           }
         }
@@ -1344,7 +1347,16 @@ function addChat(m, cls, name) {
   if (stick) chatLog.scrollTop = chatLog.scrollHeight;
   return p;
 }
-const CHAT_HINT = { all: "Enter 로 채팅 · /g 길드", party: "Enter 로 채팅 (전체에 보입니다)", guild: "Enter 로 길드 채팅", sys: "Enter 로 채팅" };
+const CHAT_HINT = { all: "Enter 로 채팅 · /p 파티 · /g 길드", party: "Enter 로 파티 채팅", guild: "Enter 로 길드 채팅", sys: "Enter 로 채팅" };
+/** Which channel a line goes to: /p or /g in front, else the open tab (파티 · 길드), else everyone nearby. */
+function chatAction(m) {
+  const g = /^\/(g|길드|ㅎ)\s+(.+)/.exec(m), pt = /^\/(p|파티|ㅔ)\s+(.+)/.exec(m);
+  if (g) return { t: "gchat", m: g[2] };
+  if (pt) return { t: "pchat", m: pt[2] };
+  if (chatLog.dataset.tab === "guild") return { t: "gchat", m };
+  if (chatLog.dataset.tab === "party") return { t: "pchat", m };
+  return { t: "chat", m };
+}
 for (const b of $$("#chat-tabs button")) {
   b.addEventListener("click", () => {
     for (const o of $$("#chat-tabs button")) o.classList.toggle("on", o === b);
@@ -1358,17 +1370,14 @@ $("#chat-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const input = $("#chat-in");
   const m = input.value.trim();
-  const g = /^\/(g|길드|ㅎ)\s+(.+)/.exec(m);
-  if (g) act({ t: "gchat", m: g[2] });
-  else if (m && chatLog.dataset.tab === "guild") act({ t: "gchat", m });
-  else if (m) act({ t: "chat", m });
+  if (m) act(chatAction(m));
   input.value = "";
   input.blur();
 });
 chatLog.addEventListener("click", () => {
   if (!touch()) return;
-  const m = prompt(chatLog.dataset.tab === "guild" ? "길드 채팅" : "채팅");
-  if (m && m.trim()) act({ t: chatLog.dataset.tab === "guild" ? "gchat" : "chat", m: m.trim().slice(0, 80) });
+  const m = prompt(chatLog.dataset.tab === "guild" ? "길드 채팅" : chatLog.dataset.tab === "party" ? "파티 채팅" : "채팅");
+  if (m && m.trim()) act(chatAction(m.trim().slice(0, 80)));
 });
 
 // ── the tooltip ──
@@ -1524,22 +1533,17 @@ function useSlot(i) {
   Sound.play("ui");
 }
 
-/** The bag can be shown in the order things were picked up, or by kind; the server's order never changes. */
-const SORT_ORDER = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet", "rune", "pot", "food", "fish", "camp", "mat"];
-let invSort = localStorage.getItem("lumentale:sort") === "kind";
-function invOrder(inv) {
-  const idx = inv.map((_, i) => i);
-  if (!invSort) return idx;
-  const items = G.defs.items;
-  const rank = (e) => { const r = SORT_ORDER.indexOf(items[e.id].type); return r < 0 ? 99 : r; };
-  return idx.sort((a, b) => rank(inv[a]) - rank(inv[b]) || (inv[b].q || 0) - (inv[a].q || 0) || (items[inv[b].id].req || 0) - (items[inv[a].id].req || 0) || a - b);
-}
+/** The tidy button asks the server to sort the bag for real: by kind, best first, stacks merged. */
+const invOrder = (inv) => inv.map((_, i) => i);
 $("#inv-sort").addEventListener("click", () => {
-  invSort = !invSort;
-  localStorage.setItem("lumentale:sort", invSort ? "kind" : "got");
+  if (!G.self || G.self.inv.length < 2) return;
+  act({ t: "sort" });
+  G.sel = -1;
+  hideTip();
   Sound.play("ui");
-  refreshUi();
 });
+/** Usable things can go in a quick slot. */
+const QS_USE = ["pot", "food", "camp", "scroll", "buff", "pet"];
 
 // ── the unit frame and the bars ──
 const look = () => G.who.get(G.you);
@@ -1605,17 +1609,7 @@ function hotbar(s) {
     $(`${btn} .n`).textContent = n;
     $(btn).style.opacity = n ? 1 : 0.45;
   }
-  G.defs.skills[s.cls].forEach((sk, i) => {
-    const b = $(`#b-s${i}`);
-    b.querySelector(".nm").textContent = sk.name;
-    let ic = b.querySelector("img.ic");
-    if (!ic) { ic = el("img", "ic"); ic.alt = ""; b.prepend(ic); }
-    setSrc(ic, skillIconUrl(sk.id));
-    b.querySelector(".mp").textContent = sk.mp;
-    b.classList.toggle("locked", s.lvl < sk.lv);
-    b.dataset.lv = `Lv.${sk.lv}`;
-    b.title = `${sk.name} — MP ${sk.mp} · ${sk.cd / 1000}초${s.lvl < sk.lv ? ` · 레벨 ${sk.lv}에 배웁니다` : ""}\n${sk.desc}`;
-  });
+  QS.render();                                      // the quick slots 1–9 (quickslots.js)
   // the attack button carries the weapon in hand
   const wpn = s.eq.weapon;
   setSrc($("#b-atk img"), wpn ? G.icons.url[wpn.id] : iconUrl("sword"));
@@ -1678,9 +1672,9 @@ function refreshUi() {
   hotbar(s);
   tracker(s);
   const near = G.near && G.near.role;
-  draw("inv", () => [s.inv, s.gold, s.eq, s.lvl, G.sel, invSort, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet], renderInv);
+  draw("inv", () => [s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs], renderInv);
   draw("char", () => [s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.tr, s.lg, s.lvl, s.name, s.guild], renderChar);
-  draw("skill", () => [s.lvl, s.cls, s.wk, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.skl], renderSkills);
+  draw("skill", () => [s.lvl, s.cls, s.wk, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.skl, s.qs], renderSkills);
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv], renderShop);
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone")], renderSmith);
   draw("train", () => [s.xp, s.tr, s.trc, s.skl, s.skc, s.gold, s.lvl], renderTrain);
@@ -1707,7 +1701,8 @@ function renderInv(s) {
   $("#inv-count").textContent = `${s.inv.length} / ${G.defs.inv}`;
   const sort = $("#inv-sort");
   sort.textContent = "";
-  sort.append(iconImg("sort"), invSort ? "종류순" : "획득순");
+  sort.append(iconImg("sort"), "정리");
+  sort.title = "가방 정리: 종류별로, 좋은 것부터, 같은 것은 한 묶음으로";
   const grid = $("#inv-grid");
   grid.textContent = "";
   if (G.sel >= s.inv.length) G.sel = -1;
@@ -1716,13 +1711,17 @@ function renderInv(s) {
     const i = order[n];
     if (i === undefined) { grid.append(itemSlot(null)); continue; }
     const entry = s.inv[i];
-    grid.append(itemSlot(entry, {
+    const usable = QS_USE.includes(it[entry.id].type), at = usable ? QS.keysOf(["i", entry.id]) : "";
+    const node = itemSlot(entry, {
       selected: i === G.sel,
       onClick: () => { G.sel = G.sel === i ? -1 : i; Sound.play("ui"); refreshUi(); },
       onUse: () => useSlot(i),
-      hint: isOpen("shop") ? "클릭해서 고른 뒤 아래 버튼으로 판매" : isOpen("smith") && isGear(entry.id) ? "클릭해서 고른 뒤 아래 버튼으로 분해" : "",
+      hint: isOpen("shop") ? "클릭해서 고른 뒤 아래 버튼으로 판매" : isOpen("smith") && isGear(entry.id) ? "클릭해서 고른 뒤 아래 버튼으로 분해" : usable ? `아래 단축칸(1~9)에 끌어다 놓을 수 있습니다${at ? ` · 지금 ${at}번` : ""}` : "",
       price: isOpen("shop") ? `판매가 ${(sellPrice(entry) * (entry.n || 1)).toLocaleString()}G${entry.n > 1 ? ` (개당 ${sellPrice(entry)}G)` : ""}` : "",
-    }));
+    });
+    // a usable thing can be dragged onto the quick slots; the slot it sits in shows in the corner
+    if (usable) { QS.dragSource(node, ["i", entry.id]); if (at) node.append(el("span", "qk", at)); }
+    grid.append(node);
   }
   const det = $("#inv-detail");
   det.textContent = "";
@@ -1739,6 +1738,7 @@ function renderInv(s) {
   if (d.type === "pet") add(s.pet === entry.id ? "돌려보내기" : "데리고 다니기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "food") add("먹기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "camp") add("모닥불 피우기", () => { act({ t: "use", id: entry.id }); closeWin("inv"); }, false, true);
+  if (QS_USE.includes(d.type)) add("단축칸", () => QS.pick(["i", entry.id]));
   if (d.type === "fish") {
     add("굽기", () => { const id = entry.id; closeWin("inv"); Mini.cooking(G.defs.items[d.cook].name, (score) => act({ t: "cook", id, s: score })); }, !fireNear(), true);
     if (!fireNear()) btns.append(el("span", "ds", "모닥불 곁에서 구울 수 있습니다"));
@@ -1834,11 +1834,18 @@ function renderSkills(s) {
     const row = el("div", "skill" + (locked ? " locked" : ""));
     const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(sk.id);
     const hd = el("div", "hd");
-    hd.append(el("b", "", sk.name), el("kbd", "", String(i + 1)), el("small", "mp", `MP ${sk.mp}`), el("small", "", `재사용 ${sk.cd / 1000}초`), el("small", "", locked ? `레벨 ${sk.lv}에 배웁니다` : `Lv.${sk.lv} 습득`), Growth.levelTag(s, i));
-    row.append(ic, hd, el("p", "", sk.desc));
+    const at = QS.keysOf(["s", i]);
+    hd.append(el("b", "", sk.name), at ? el("kbd", "", at) : "", el("small", "mp", `MP ${sk.mp}`), el("small", "", `재사용 ${sk.cd / 1000}초`), el("small", "", locked ? `레벨 ${sk.lv}에 배웁니다` : `Lv.${sk.lv} 습득`), Growth.levelTag(s, i));
+    if (i === G.defs.skills[s.cls].length - 1) row.classList.add("ult");
+    // drag the icon (or the whole row) onto the quick slots; or tap the button, then a slot
+    const put = el("button", "btn small qs-put", "단축칸");
+    put.title = "누른 뒤 아래 단축칸(1~9)을 누르면 거기에 놓입니다";
+    put.addEventListener("click", () => QS.pick(["s", i]));
+    row.append(ic, hd, el("p", "", sk.desc), put);
+    QS.dragSource(row, ["s", i]);
     box.append(row);
   });
-  box.append(el("p", "hint", "1–6 키나 단축 버튼으로 씁니다. 6번은 궁극기입니다. 수련관에게서 스킬 레벨을 올리면 위력이 오르고 5·10레벨에 재사용 대기시간이 줄어듭니다. 자동사냥 중에는 MP가 넉넉하면 배운 스킬을 알아서 씁니다."));
+  box.append(el("p", "hint", "스킬을 끌어다 아래 단축칸(1~9)에 놓으면 그 숫자 키로 씁니다. 칸끼리 끌어 바꾸고, 바깥에 놓거나 우클릭하면 비웁니다. 마지막 스킬은 궁극기입니다. 수련관에게서 스킬 레벨을 올리면 위력이 오르고 5·10레벨에 재사용 대기시간이 줄어듭니다. 자동사냥은 단축칸에 놓인 스킬을 칸 순서대로 씁니다."));
 }
 
 // ── waypoints ──
@@ -2428,14 +2435,7 @@ function hudTick(t) {
   if (!s) return;
   // the class gauge (classgauge.js); a fault there must never stop the frame
   try { drawClassGauge(cgauge, s, G.defs, t); } catch (err) { if (!hudTick.warned) { hudTick.warned = true; console.warn("class gauge:", err); } }
-  G.defs.skills[s.cls].forEach((sk, i) => {
-    const left = G.cdEnd[i] - t, b = $(`#b-s${i}`);
-    b.style.setProperty("--cd", left > 0 ? clamp(left / sk.cd, 0, 1).toFixed(3) : "0");
-    const txt = left > 0 ? (left >= 10000 ? String(Math.ceil(left / 1000)) : (left / 1000).toFixed(left < 3000 ? 1 : 0)) : "";
-    const cdt = b.querySelector(".cdt");
-    if (cdt.textContent !== txt) cdt.textContent = txt;
-    b.classList.toggle("nomp", G.me.mp < sk.mp && s.lvl >= sk.lv);
-  });
+  QS.tick(t);
   if (tip.from && (!tip.from.isConnected || tip.from.closest("[hidden]"))) hideTip();
   if (isOpen("char")) drawPortrait(t);
   // the kill streak: counts up while kills keep coming, drains between them

@@ -121,7 +121,7 @@ body.playing #crt, body.playing #crt-frame { right: auto; bottom: auto; width: v
 
 /* ───────────────────────────── the dock ───────────────────────────── */
 #dock { left: 0; bottom: 0; right: var(--side); height: var(--dock); display: flex; gap: 8px; }
-#chat { flex: 0 0 clamp(280px, 38%, 470px); min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+#chat { flex: 0 0 clamp(260px, 34%, 470px); min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 #chat-tabs { display: flex; gap: 2px; flex: none; }
 #chat-tabs button { padding: 2px 8px; font: 12px/1.2 var(--pix); color: #9a90a8; background: #2a2433; border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #3e344b; }
 #chat-tabs button.on { color: #2a1806; background: var(--b-mid); box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px 0 0 var(--b-lo); }
@@ -180,18 +180,44 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 .act img { width: 32px; height: 32px; image-rendering: pixelated; display: block; margin: 6px auto 0; pointer-events: none; }
 .act .n { position: absolute; right: 2px; bottom: 1px; font: 10px var(--pix9); text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
 .act .nm { position: absolute; left: 0; right: 0; bottom: 2px; font: 10px var(--pix9); text-align: center; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; pointer-events: none; }
-.act.sk img.ic { width: 32px; height: 32px; margin: 6px auto 0; }
-.act.sk .nm { display: none; }
-.act.sk .mp { position: absolute; right: 2px; bottom: 1px; font: 10px var(--pix9); color: var(--mp-hi); text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
+/* the quick slots 1–9: empty until the player drags a skill or an item in (quickslots.js) */
+#qslots { display: contents; }
+#actions { --act: 42px; position: relative; }
+#actions .act { width: var(--act); height: var(--act); }
+#actions .act img { margin-top: calc((var(--act) - 36px) / 2); }
+.act.qs img.ic { width: 32px; height: 32px; }
+.act.qs .mp { position: absolute; right: 2px; bottom: 1px; font: 10px var(--pix9); color: var(--mp-hi); text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
+.act.qs.empty { background: #1a1622; box-shadow: inset 2px 2px 0 #07060b, inset -2px -2px 0 #241e2d; }
+.act.qs.empty kbd { left: 0; right: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; color: #4e4560; font-size: 12px; }
+.act.qs.empty::before { content: ""; position: absolute; inset: 5px; border: 1px dashed #3a3247; pointer-events: none; }
 /* the cooldown: a hard-edged sweep, no soft fade */
-.act.sk .cd { position: absolute; inset: 0; pointer-events: none; background: conic-gradient(rgba(6, 4, 10, .8) calc(var(--cd, 0) * 360deg), transparent 0); }
-.act.sk .cdt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 12px/1 var(--pix); font-style: normal; color: #fff; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; pointer-events: none; }
-.act.sk.locked img.ic { opacity: .22; }
-.act.sk.locked::after { content: attr(data-lv); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 10px var(--pix9); color: #9a90a8; }
-.act.sk.nomp img.ic { filter: grayscale(1) brightness(.6); }
-.act.sk.ult { border-color: #6e4a1c; box-shadow: inset 2px 2px 0 #07060b, inset -2px -2px 0 #2c2537, inset 0 0 0 4px rgba(207, 159, 85, .35); }
-.act.atk { width: 56px; height: 56px; background: #3a1c22; box-shadow: inset 2px 2px 0 #1a0a0e, inset -2px -2px 0 #6a2a30; }
-.act.atk img { width: 32px; height: 32px; margin-top: 4px; }
+.act.qs .cd { position: absolute; inset: 0; pointer-events: none; background: conic-gradient(rgba(6, 4, 10, .8) calc(var(--cd, 0) * 360deg), transparent 0); }
+.act.qs .cdt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 12px/1 var(--pix); font-style: normal; color: #fff; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; pointer-events: none; }
+.act.qs.locked img.ic { opacity: .22; }
+.act.qs.locked::after { content: attr(data-lv); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 10px var(--pix9); color: #9a90a8; }
+.act.qs.nomp img.ic, .act.qs.none img.ic { filter: grayscale(1) brightness(.6); }
+.act.qs.none .n { color: #ff8a7a; }
+.act.qs.ult { border-color: #6e4a1c; box-shadow: inset 2px 2px 0 #07060b, inset -2px -2px 0 #2c2537, inset 0 0 0 4px rgba(207, 159, 85, .35); }
+/* dragging: the slot under the pointer lights up; picking with a tap makes the whole bar glow */
+.act.qs.over { border-color: var(--b-hi); filter: brightness(1.35); }
+body.qs-pick .act.qs, body.qs-drag .act.qs { border-color: var(--b-mid); animation: pulse 1s steps(2) infinite; }
+#qs-ghost { position: fixed; z-index: 60; width: 32px; height: 32px; image-rendering: pixelated; pointer-events: none; opacity: .85; outline: 2px solid var(--b-hi); background: rgba(18, 15, 24, .7); }
+body.qs-drag, body.qs-drag * { cursor: grabbing !important; }
+.qs-src img { -webkit-user-drag: none; }
+#qs-hint { position: absolute; left: 50%; top: -15px; transform: translateX(-50%); padding: 0 6px; white-space: nowrap; pointer-events: none;
+  font: 10px/12px var(--pix9); color: var(--b-hi); background: rgba(18, 15, 24, .9); border: 1px solid #5a4426; animation: qs-bob 1.2s steps(2) infinite; }
+#qs-hint::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -4px; border: 4px solid transparent; border-bottom: 0; border-top-color: #5a4426; }
+@keyframes qs-bob { 50% { transform: translate(-50%, -2px); } }
+/* the bag and the skill window say which slot a thing sits in */
+.slot .qk { position: absolute; right: 2px; top: 1px; font: 10px var(--pix9); color: var(--b-hi); text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; pointer-events: none; }
+.skill .qs-put { justify-self: end; grid-column: -2 / -1; }
+.skill.qs-src { cursor: grab; }
+.skill.ult .hd b { color: #e8c27a; }
+#center { container-type: inline-size; }
+@container (max-width: 600px) { #actions { --act: 38px; gap: 2px; } #actions .act img { width: 28px; height: 28px; margin-top: 3px; } #actions .act.atk { width: 46px; height: 46px; } #actions .sep { margin: 0 1px; } }
+.act.atk, #actions .act.atk { width: 52px; height: 52px; background: #3a1c22; box-shadow: inset 2px 2px 0 #1a0a0e, inset -2px -2px 0 #6a2a30; }
+.act.atk img, #actions .act.atk img { width: 32px; height: 32px; margin-top: 6px; }
+#actions .act.auto img.gi { margin-top: 3px; }
 .act.atk .nm { color: #ffd2c4; }
 .act.auto img.gi { width: 24px; height: 24px; margin: 8px auto 0; display: block; }
 .act.auto.on { border-color: #4ac06a; animation: pulse 1.2s steps(2) infinite; }
@@ -325,17 +351,19 @@ body[data-lay="port"] #exp { order: -1; }
 /* the thumb cluster under the deck: the stick left, attack and skills right */
 body[data-lay="port"] #joy, body[data-lay="land"] #joy { display: block; }
 body[data-lay="port"] #joy { left: 18px; bottom: calc(16px + var(--safe-b)); z-index: 6; }
+/* the nine quick slots sit like a number pad: 7 8 9 on top, 1 2 3 nearest the thumb */
 body[data-lay="port"] #actions {
-  position: fixed; right: 10px; bottom: calc(10px + var(--safe-b)); z-index: 6;
-  display: grid; gap: 5px; grid-template-columns: repeat(3, 48px) 64px; grid-template-rows: 48px 48px 48px;
-  grid-template-areas: "s3 s4 s5 au" "s0 s1 s2 at" "hp mp . at"; justify-items: center; align-items: center;
+  position: fixed; right: 10px; bottom: calc(10px + var(--safe-b)); z-index: 6; --act: 44px;
+  display: grid; gap: 4px; grid-template-columns: repeat(3, 44px) 64px; grid-template-rows: repeat(4, 44px);
+  grid-template-areas: "q6 q7 q8 ." "q3 q4 q5 ." "q0 q1 q2 at" "hp mp au at"; justify-items: center; align-items: center;
 }
 body[data-lay="port"] #actions .sep, body[data-lay="land"] #actions .sep { display: none; }
-body[data-lay="port"] .act, body[data-lay="land"] .act { width: 48px; height: 48px; }
-body[data-lay="port"] .act.atk, body[data-lay="land"] .act.atk { width: 64px; height: 64px; grid-area: at; }
-body[data-lay="port"] .act.atk img, body[data-lay="land"] .act.atk img { width: 40px; height: 40px; margin-top: 8px; }
+body[data-lay="port"] #actions .act, body[data-lay="land"] #actions .act { width: 44px; height: 44px; }
+body[data-lay="port"] #actions .act.atk, body[data-lay="land"] #actions .act.atk { width: 64px; height: 64px; grid-area: at; }
+body[data-lay="port"] #actions .act.atk img, body[data-lay="land"] #actions .act.atk img { width: 40px; height: 40px; margin-top: 8px; }
+body[data-lay="port"] #qs-hint, body[data-lay="land"] #qs-hint { top: -16px; left: 0; transform: none; animation: none; }
 #b-hp { grid-area: hp; } #b-mp { grid-area: mp; } #b-auto { grid-area: au; }
-#b-s0 { grid-area: s0; } #b-s1 { grid-area: s1; } #b-s2 { grid-area: s2; } #b-s3 { grid-area: s3; } #b-s4 { grid-area: s4; } #b-s5 { grid-area: s5; }
+#q0 { grid-area: q0; } #q1 { grid-area: q1; } #q2 { grid-area: q2; } #q3 { grid-area: q3; } #q4 { grid-area: q4; } #q5 { grid-area: q5; } #q6 { grid-area: q6; } #q7 { grid-area: q7; } #q8 { grid-area: q8; }
 body[data-lay="port"] #emotes, body[data-lay="land"] #emotes { right: auto; left: 50%; transform: translateX(-50%); top: 56px; bottom: auto; }
 body[data-lay="port"] #prompt { left: auto; right: 56px; transform: none; top: calc(var(--vph) - 40px); }
 body[data-lay="port"] #b-drawer { top: auto; bottom: calc(var(--dock) + 6px); }
@@ -359,9 +387,9 @@ body[data-lay="land"].chat-folded #chat-log { display: none; }
 body[data-lay="land"] #chat-tabs button { padding: 1px 5px; font-size: 10px; font-family: var(--pix9); }
 body[data-lay="land"] #joy { left: 18px; bottom: calc(18px + var(--safe-b)); }
 body[data-lay="land"] #actions {
-  position: fixed; right: 10px; bottom: calc(14px + var(--safe-b)); z-index: 6;
-  display: grid; gap: 4px; grid-template-columns: repeat(3, 48px) 64px; grid-template-rows: 48px 48px 48px;
-  grid-template-areas: "s3 s4 s5 au" "s0 s1 s2 at" "hp mp . at"; justify-items: center; align-items: center;
+  position: fixed; right: 10px; bottom: calc(14px + var(--safe-b)); z-index: 6; --act: 44px;
+  display: grid; gap: 4px; grid-template-columns: repeat(3, 44px) 64px; grid-template-rows: repeat(4, 44px);
+  grid-template-areas: "q6 q7 q8 ." "q3 q4 q5 ." "q0 q1 q2 at" "hp mp au at"; justify-items: center; align-items: center;
 }
 body[data-lay="land"] #b-drawer { right: 6px; top: 6px; }
 body[data-lay="land"] #tut { left: 240px; transform: none; top: 6px; width: min(300px, calc(100vw - 300px)); min-width: 0; }
