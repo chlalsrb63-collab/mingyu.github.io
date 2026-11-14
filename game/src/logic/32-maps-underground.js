@@ -640,23 +640,36 @@ function sewers(cfg) {
       return c;
     }, B.x, B.y, 1);
     if (!path) continue;
+    // maps-v2 벽돌 회랑: a channel tunnel has a walkway three wide either side of the channel;
+    // the way to a pump room or a cistern is a dry brick corridor three wide
+    const dead = (k) => kind[k] === "pump" || kind[k] === "cistern";
+    const wet = !cfg.halls || (!dead(a) && !dead(b));
+    const [o0, o1] = !cfg.halls ? [-2, 2] : wet ? [-3, 4] : [-1, 1];
     for (let s = 0; s < path.length; s++) {
       const t = path[s], x = t % W, y = (t - x) / W, nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
       // a walkway two wide, the channel, and a ledge one wide on the far side
-      for (let o = -2; o <= 2; o++) {
+      for (let o = o0; o <= o1; o++) {
         const X = horiz ? x : x + o, Y = horiz ? y + o : y;
         if (m.g[Y][X] === "W") digAt(m, X, Y);
-        if (o === 0 || o === 1) chan[Y * W + X] = 1;
+        if (wet && (o === 0 || o === 1)) chan[Y * W + X] = 1;
       }
     }
-    tunnels.push({ a, b, path });
+    tunnels.push({ a, b, path, wet });
   }
   for (let i = 0; i < W * H; i++) if (chan[i]) m.g[Math.floor(i / W)][i % W] = "w";
-  // chambers over the junctions: round floors, a grated sump in the middle
-  const room = (cx, cy, rx, ry) => { for (let y = cy - ry; y <= cy + ry; y++) for (let x = cx - rx; x <= cx + rx; x++) if (((x - cx) / (rx + 0.4)) ** 2 + ((y - cy) / (ry + 0.4)) ** 2 <= 1) { digAt(m, x, y); } };
+  // chambers over the junctions: round floors, a grated sump in the middle (maps-v2: flagstone plazas ≥ 13 × 11,
+  // their corners cut)
+  const plaza = new Int16Array(W * H).fill(-1);
+  const room = (cx, cy, rx, ry, k) => {
+    for (let y = cy - ry; y <= cy + ry; y++) for (let x = cx - rx; x <= cx + rx; x++) {
+      const inside = cfg.halls ? Math.abs(x - cx) / rx + Math.abs(y - cy) / ry <= 1.6 : ((x - cx) / (rx + 0.4)) ** 2 + ((y - cy) / (ry + 0.4)) ** 2 <= 1;
+      if (inside) { digAt(m, x, y); if (inMap(m, x, y)) plaza[y * W + x] = k; }
+    }
+  };
   node.forEach((nd, k) => {
     const big = kind[k] === "guard" || kind[k] === "camp" || kind[k] === "gate" ? 4 : kind[k] === "junction" ? 3 + (h2(nd.x, nd.y, S0) < 0.4 ? 1 : 0) : 0;
-    if (big) room(nd.x, nd.y, big + 1, big);
+    if (big && cfg.halls) room(nd.x, nd.y, big + 3, big + 1, k);
+    else if (big) room(nd.x, nd.y, big + 1, big, k);
     if (kind[k] === "junction") { m.g[nd.y][nd.x] = "g"; m.g[nd.y][nd.x + 1] = "g"; m.pieces.push("junction"); }
   });
   // dead ends: a pump room (drums, a chest) or a cistern (a tank of sludge with a walk round it)
@@ -717,11 +730,30 @@ function sewers(cfg) {
     else if (h > 0.96 && D4.some(([dx, dy]) => m.g[y + dy][x + dx] === "W")) m.o[y][x] = h > 0.968 ? "4" : "n";
     else if (h < 0.14) m.g[y][x] = "d";
   }
+  // maps-v2 벽돌 회랑: the plazas paved and lit, an arch wherever a tunnel comes into one
+  const torches = [], arches = [];
+  if (cfg.halls) {
+    node.forEach((nd, k) => {
+      if (kind[k] === "pump" || kind[k] === "cistern") return;
+      const box2 = { x0: nd.x - 7, y0: nd.y - 5, x1: nd.x + 7, y1: nd.y + 5 };
+      torches.push(...brickRoom(m, box2, (x, y) => inMap(m, x, y) && plaza[y * W + x] === k, S0 + k, cfg.light));
+    });
+    for (const tn of tunnels) for (let s = 1; s < tn.path.length; s++) {
+      const u = tn.path[s - 1], v = tn.path[s];
+      if ((plaza[u] < 0) === (plaza[v] < 0)) continue;
+      const t = plaza[u] < 0 ? u : v, x = t % W;
+      arches.push([x, (t - x) / W, Math.abs(u - v) === 1 ? 1 : 0]);
+    }
+  }
   for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) { digAt(m, x, y); pts.push([x, y]); }
   m.gates = gates;
   m.entry = gates.in.a[0];
   cover(m, cfg.mobs);
   knit(m, pts, "c");
+  if (cfg.halls) {
+    m.arches = arches; m.torches = torches; m.pieces.push("plaza", "arch", "alcove");
+    wideWays(m, pts, cfg.soft, null, Object.values(gates).flatMap((g) => g.a).concat(FIRES[cfg.id]));
+  }
   m.regions = n;
   return m;
 }

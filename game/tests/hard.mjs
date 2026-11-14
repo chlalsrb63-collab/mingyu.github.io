@@ -97,7 +97,7 @@ const row = v.M.find((r) => r[0] === pet.id);
 assert.equal(row.length, 8); assert.deepEqual(row[7], ["tough"]); assert.equal(row[6], 1);
 
 // ── tough: four tenths of every blow turned
-const dealt = (tr) => { let sum = 0; for (let i = 0; i < 40; i++) { stand(); dress("twinhare", 1, tr, 14, { atkAt: 1e15 }); const h0 = pet.hp; assert.ok(act({ t: "atk" }).ok); sum += h0 - pet.hp; step(1000); } return sum; };
+const dealt = (tr) => { let sum = 0; for (let i = 0; i < 120; i++) { stand(); dress("twinhare", 1, tr, 14, { atkAt: 1e15 }); const h0 = pet.hp; assert.ok(act({ t: "atk" }).ok); sum += h0 - pet.hp; step(1000); } return sum; };
 const plainDmg = dealt([]), toughDmg = dealt(["tough"]);
 assert.ok(toughDmg / plainDmg > 0.52 && toughDmg / plainDmg < 0.68, `tough takes about 60%: ${(toughDmg / plainDmg).toFixed(2)}`);
 

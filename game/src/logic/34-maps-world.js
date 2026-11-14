@@ -347,7 +347,9 @@ const GEN = {
     dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4", light: "3" },
   }) },
   sewer: { make: sewers, band: [22, 27], stones: 3, cfg: () => ({
-    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 10.5, wind: 0.5, loops: 0.16, n: 3,
+    // maps-v2 벽돌 회랑 (`halls`): flagstone plazas, channel tunnels with a walkway three wide, dry side ways
+    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 14, wind: 0.5, loops: 0.35, n: 3,
+    halls: true, soft: "67x4n", light: "3",
     mobs: ["leechmaw", "ratking_bile", "gatorhalf", "crabskull", "eelknot"], guard: "gatorhalf", chest: "chest_sewer",
   }) },
   // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
