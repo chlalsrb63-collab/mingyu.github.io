@@ -90,13 +90,11 @@ body.playing #crt, body.playing #crt-frame { right: auto; bottom: auto; width: v
 #quest-track .qp .bar i { background: linear-gradient(#f6dc98 0 1px, #c8a04e 1px); }
 #quest-track .done { color: #9af0ae; }
 
-/* the bag, always open */
-#w-inv.docked { position: static; width: auto; max-width: none; max-height: none; flex: none; background: none; border: 0; box-shadow: none; pointer-events: auto; display: flex; flex-direction: column; }
-#w-inv.docked.flash { animation: bag-flash .5s steps(2) 2; }
-@keyframes bag-flash { 50% { filter: brightness(1.5); } }
-#w-inv.docked > header { height: auto; padding: 0 0 4px; gap: 6px; cursor: default; background: none; border: 0; }
-#w-inv.docked > header .t { font: 700 12px/1.2 var(--pix); letter-spacing: 0; color: #2a1806; padding: 1px 8px; }
-#w-inv.docked > header .x { display: none; }
+/* docked windows: the bag in the phone drawer, and on a desktop whichever window the side panel shows (windows.js dockPanel) */
+.window.docked { position: static; width: auto; max-width: none; max-height: none; flex: none; background: none; border: 0; box-shadow: none; pointer-events: auto; display: flex; flex-direction: column; }
+.window.docked > header { height: auto; padding: 0 0 4px; gap: 6px; cursor: default; background: none; border: 0; }
+.window.docked > header .t { font: 700 12px/1.2 var(--pix); letter-spacing: 0; color: #2a1806; padding: 1px 8px; }
+body:not([data-lay="full"]) #w-inv.docked > header .x { display: none; }
 #inv-gold { display: inline-flex; align-items: center; gap: 3px; font: 700 12px var(--pix); color: var(--b-hi); }
 #inv-count { font: 10px var(--pix9); color: #9a90a8; }
 #inv-sort { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; }
@@ -627,13 +625,27 @@ body.in-dim #tut { display: none !important; }
 :root { --zone-w: 100vw; --zone-h: 100vh; --tabs-h: 0px; }
 
 /* the side column: map, quests (capped), the bag (takes the rest, its grid scrolls), the menu */
-body[data-lay="full"] #quest-track { flex: 0 1 auto; min-height: 44px; max-height: clamp(56px, 24vh, 240px); }
-body[data-lay="full"] #w-inv.docked { flex: 1 1 0; min-height: 96px; }
-body[data-lay="full"] #w-inv.docked > .body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+/* the side panel (desktop): the quest tracker fills it, or one window does in its place (windows.js PANEL) */
+#panel { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+body:not([data-lay="full"]) #panel { display: contents; }
+body[data-lay="full"] #quest-track { flex: 1 1 0; min-height: 44px; max-height: none; }
+body[data-lay="full"] #panel.on > #quest-track { display: none; }
+body[data-lay="full"] #panel > .window.docked { flex: 1 1 0; min-height: 0; width: auto; max-width: none; }
+body[data-lay="full"] #panel > .window.docked > header { flex: none; min-width: 0; height: auto; margin: 0; padding: 0 0 4px; border-bottom: 2px solid #2c2537; flex-wrap: nowrap; }
+body[data-lay="full"] #panel > .window.docked > header .t { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body[data-lay="full"] #panel > .window.docked > .body { flex: 1 1 auto; min-height: 0; padding: 4px 2px 2px; overflow-y: auto; overflow-x: hidden; }
+body[data-lay="full"] #w-inv.docked > .body { display: flex; flex-direction: column; overflow: hidden; }
+/* the panel is one column wide: two-column windows stack (the quest list over the chosen quest) */
+body[data-lay="full"] #panel .qwin { grid-template-columns: 1fr; gap: 6px; min-height: 0; }
+body[data-lay="full"] #panel .qlist { max-height: 34vh; }
+/* the job tree's legend has no free cells to sit in at this width (the note above the grid says the same) */
+body[data-lay="full"] #panel .jt-key { display: none; }
 body[data-lay="full"] #inv-grid { flex: 0 1 auto; min-height: 44px; overflow-y: auto; overflow-x: hidden; align-content: start; }
 body[data-lay="full"] #inv-detail { flex: none; max-height: 45%; overflow-y: auto; }
 #w-inv.docked > header { flex: none; min-width: 0; }
 #w-inv.docked > header .t { flex: none; }
+/* the 가방 button stands in the menu on a desktop (on a phone the drawer is the bag) */
+body[data-lay="full"] #menu button[data-win="inv"] { display: flex; }
 #inv-count { white-space: nowrap; }
 
 /* the buffs sit under the party frames on a desktop and a phone on its side (client.js layout moves them into #topleft) */
@@ -712,7 +724,6 @@ body.playing .window.mini:hover { box-shadow: inset 0 0 0 2px var(--b-mid); }
 /* ── short screens: a shorter dock (client.js dockH), a smaller map, a lower cap on the quest list ── */
 @media (max-height: 640px) {
   body[data-lay="full"] #side { gap: 4px; }
-  body[data-lay="full"] #quest-track { max-height: clamp(44px, 16vh, 96px); }
   body[data-lay="full"] #mini-info { display: none; }
   body[data-lay="full"] #center { gap: 2px; }
   body[data-lay="full"] #chat { gap: 2px; }
@@ -1026,35 +1037,6 @@ body.touch #wm .wm-tab { display: none; }
 .jt-key span.single i { border-color: #4a3f5a; background: #221b2b; }
 .jt-key small { color: #8a8098; font: inherit; }
 
-/* ─────────────── the docked paper-doll (desktop side column: map, quests, the character, the bag) ─────────────── */
-/* state.js layout() moves #w-char's .doll into #sc-doll on a desktop; on a phone it stays in the C window */
-#side-char { flex: none; display: flex; flex-direction: column; gap: 3px; }
-body:not([data-lay="full"]) #side-char { display: none; }
-#sc-doll { padding: 2px 4px; background: #15111b; }
-#sc-doll .doll { grid-template-columns: 36px 1fr 36px; gap: 4px; }
-#sc-doll .doll .col { gap: 2px; }
-#sc-doll .slot { width: 36px; height: 36px; }
-#sc-doll .slot img { left: 2px; top: 2px; }
-/* the portrait at 4 screen px per sprite pixel (the canvas draws 5) */
-#sc-doll #char-cv { width: 106px; height: 134px; border: 0; background: none; }
-#sc-doll #char-title { margin-top: 1px; gap: 3px; font: 700 12px/1.2 var(--pix); white-space: nowrap; overflow: hidden; }
-#sc-doll #char-title small { font: 10px/1.2 var(--pix9); }
-#sc-tabs { display: flex; gap: 2px; }
-#sc-tabs button { flex: 1; height: 20px; padding: 0 4px; font: 12px/1 var(--pix); color: var(--cream); background: #3a3146; border: 2px solid var(--ink); border-radius: 0;
-  box-shadow: inset 1px 1px 0 #5b4d6c, inset -1px -1px 0 #1f1a28; cursor: pointer; }
-#sc-tabs button:hover { background: #463b55; color: #fff6dc; }
-#sc-tabs button.on { color: #2a1806; background: var(--b-mid); box-shadow: inset 1px 1px 0 var(--b-hi), inset -1px -1px 0 var(--b-lo); }
-/* with the character docked the quest list gives up a little height, so the bag keeps a few rows */
-body[data-lay="full"] #quest-track { max-height: clamp(56px, 16vh, 180px); }
-body[data-lay="full"] #w-inv.docked { min-height: 120px; }
-@media (max-height: 760px) {
-  body[data-lay="full"] #sc-doll .slot { width: 30px; height: 30px; }
-  body[data-lay="full"] #sc-doll .slot img { left: -1px; top: -1px; }
-  body[data-lay="full"] #sc-doll .doll { grid-template-columns: 30px 1fr 30px; }
-  body[data-lay="full"] #sc-doll #char-cv { width: 80px; height: 101px; }
-  body[data-lay="full"] #quest-track { max-height: clamp(44px, 14vh, 96px); }
-}
-
 /* ─────────────── empty paper-doll slots: what goes there (uiicons.js eq_*, at 2×) and the slot's name ─────────────── */
 .doll .slot.empty .ph { align-items: flex-start; padding-top: 1px; }
 .doll .slot.empty .ph img.gi { width: 24px; height: 24px; opacity: .3; }
@@ -1062,11 +1044,6 @@ body[data-lay="full"] #w-inv.docked { min-height: 120px; }
   white-space: nowrap; letter-spacing: -1px; pointer-events: none; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000; }
 .doll .slot.empty:hover .ph img.gi { opacity: .5; }
 .doll .slot.empty:hover .cap { color: var(--b-hi); opacity: 1; }
-/* the small docked doll (30 px slots): the silhouette at 1× above the caption */
-@media (max-height: 760px) {
-  body[data-lay="full"] #sc-doll .slot.empty .ph { padding-top: 3px; }
-  body[data-lay="full"] #sc-doll .slot.empty .ph img.gi { width: 12px; height: 12px; opacity: .45; }
-}
 /* ── gathering (gather.js): the "반짝!" prompt over the channel bar, the bar's colour, the 재료 주머니 ── */
 #gat-tap { left: calc(var(--vpw) / 2); transform: translateX(-50%); top: calc(var(--vph) - 118px); padding: 5px 16px; z-index: 8;
   font: 13px var(--pix); white-space: nowrap; color: #fff2a0; cursor: pointer; animation: gat-tap .28s steps(2) infinite alternate; }

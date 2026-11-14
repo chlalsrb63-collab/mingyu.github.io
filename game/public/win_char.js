@@ -13,11 +13,11 @@ import * as QS from "./quickslots.js";
 import * as StatWin from "./statwin.js";
 import * as JobTree from "./jobtree.js";
 import * as Housing from "./housing.js";
-import { G, $, el, now, $$, dollDocked } from "./state.js";
+import { G, $, el, now, $$ } from "./state.js";
 import * as Gather from "./gather.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
-import { isOpen, touch, hideTip, closeWin, openWin } from "./windows.js";
+import { isOpen, touch, hideTip, closeDrawer, openWin } from "./windows.js";
 import { invOrder, itemSlot, QS_USE, useSlot, isGear, sellPrice, itemTip, itemName, SLOT_NAME, SLOT_GLYPH, setWorn, statText } from "./items.js";
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
 
@@ -69,10 +69,10 @@ export function renderInv(s) {
   if (d.type === "scroll" || d.type === "buff") add("읽기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "pet") add(s.pet === entry.id ? "돌려보내기" : "데리고 다니기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "food") add("먹기", () => act({ t: "use", id: entry.id }), false, true);
-  if (d.type === "camp") add("모닥불 피우기", () => { act({ t: "use", id: entry.id }); closeWin("inv"); }, false, true);
+  if (d.type === "camp") add("모닥불 피우기", () => { act({ t: "use", id: entry.id }); closeDrawer(); }, false, true);
   if (QS_USE.includes(d.type)) add("단축칸", () => QS.pick(["i", entry.id]));
   if (d.type === "fish") {
-    add("굽기", () => { const id = entry.id; closeWin("inv"); Mini.cooking(G.defs.items[d.cook].name, (score) => act({ t: "cook", id, s: score })); }, !fireNear(), true);
+    add("굽기", () => { const id = entry.id; closeDrawer(); Mini.cooking(G.defs.items[d.cook].name, (score) => act({ t: "cook", id, s: score })); }, !fireNear(), true);
     if (!fireNear()) btns.append(el("span", "ds", "모닥불 곁에서 구울 수 있습니다"));
   }
   if (isGear(entry.id)) {
@@ -115,19 +115,17 @@ const STAT_GROUPS = [
 ];
 export function renderChar(s) {
   // three tabs (the row is wardrobe_ui.js's): 장비 (the paper-doll and the sheet), 능력치 (statwin.js: buying points), 외형.
-  // On a desktop the paper-doll is docked in the side column (renderDoll from hud.js refreshUi), so the first tab is the sheet: 상세
   const tab = G.charTab || "gear";
-  charTabs.children[0].textContent = dollDocked() ? "상세" : "장비";
   charTabBtn.classList.toggle("ready", s.lvl < G.defs.maxLv && s.xp >= StatWin.cheapest(s));
   $("#char-gear").hidden = tab !== "gear";
   $("#char-stat").hidden = tab !== "stat";
   const role = G.near && G.near.role;
   if (tab === "cos") return;
   if (tab === "stat") { StatWin.render($("#char-stat"), s, { here: fireNear() || role === "train", atTrainer: role === "train" }); return; }
-  if (!dollDocked()) renderDoll(s);
+  renderDoll(s);
   renderSheet(s);
 }
-/** The paper-doll: the name line, the gear slots (click one to take it off) and the portrait. Docked in the side column on a desktop. */
+/** The paper-doll: the name line, the gear slots (click one to take it off) and the portrait (the C window's 장비 tab). */
 export function renderDoll(s) {
   const title = $("#char-title");
   title.textContent = "";
@@ -246,12 +244,5 @@ export function setupWinChar() {
   charTabBtn.dataset.t = "stat";
   charTabs.children[0].after(charTabBtn);
   charTabs.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { G.charTab = b.dataset.t; refreshUi(); } });
-  // the docked paper-doll's buttons: 상세 · 능력치 · 외형 open the C window there (the same button again closes it)
-  $("#sc-tabs").addEventListener("click", (e) => {
-    const b = e.target.closest("button");
-    if (!b || !G.self) return;
-    if (isOpen("char") && (G.charTab || "gear") === b.dataset.t) { Sound.play("close"); closeWin("char"); return; }
-    openCharTab(b.dataset.t);
-  });
   for (const b of $$("#skill-tabs button")) b.addEventListener("click", () => { G.skTab = b.dataset.tab; Sound.play("tab"); refreshUi(); });
 }

@@ -3,6 +3,9 @@
  * `openWin closeWin toggleWin closeAll closeTop isOpen`, placement in the safe zone (`zone homeOf
  * placeWin keepIn front`, fold to tabs `fold unfold layTabs`, saved spots), the phone drawer,
  * toasts and banners, the chat log (`addChat`), and tooltips (`showTip hideTip hoverTip`).
+ * The side panel (`PANEL dockPanel panelWin`): on a desktop the bag, the character, skills, quests, party,
+ * guild, life and the other list windows open one at a time in the side column under the minimap (the quest
+ * tracker when none is open), the rest float over the world; on a phone they all float as before.
  */
 
 import { Sound } from "./audio.js";
@@ -15,7 +18,7 @@ import * as Lobby from "./lobby.js";
 import * as Dim from "./dimrift.js";
 import * as Radar from "./radar.js";
 import * as Housing from "./housing.js";
-import { $, VP, G, clamp, $$, el } from "./state.js";
+import { $, VP, G, clamp, $$, el, setLayoutHook } from "./state.js";
 import { act, channelName } from "./net.js";
 import { stoneNear } from "./actions.js";
 import { wpWoke } from "./overlay.js";
@@ -30,21 +33,65 @@ import { renderParty, renderGuild } from "./win_social.js";
 export const touch = () => document.body.classList.contains("touch");
 const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board"];
 export const winEl = (id) => $(`#w-${id}`);
-/** The bag is docked in the side column, so it always counts as open (on a phone it lives in the drawer). */
-export const isOpen = (id) => id === "inv" || !winEl(id).hidden;
+/** On a phone the bag lives in the drawer, so it always counts as open; on a desktop it opens in the side panel. */
+export const isOpen = (id) => (id === "inv" && compact()) || !winEl(id).hidden;
 const compact = () => VP.lay !== "full";
+
+/**
+ * The side panel (desktop, 바람의나라-style): these windows open in the side column under the minimap, one at
+ * a time — a hotkey or menu button shows that window there in place of the quest tracker, the same key again
+ * (or Esc) brings the tracker back. dockPanel() (run after every layout pass) moves them into #panel and marks
+ * them `.docked`; on a phone they go back to #windows and float (the bag stays in the drawer). Shops, the smith,
+ * the stations and the house chest put the bag in the panel when they open (selling needs it)
+ * and take it away again when they close, if they were what brought it.
+ */
+export const PANEL = ["inv", "char", "skill", "quest", "party", "guild", "life", "daily", "achieve", "collect", "rank", "settings", "help"];
+const BAG_WITH = ["shop", "smith", "craft", "hstore"];
+const panelBox = $("#panel"), winBox = $("#windows");
+let panelId = null, autoBag = false, wasDocked = null;
+/** Is this window docked (in the side panel, or the bag in the phone drawer)? Docked windows are never placed, dragged or folded. */
+const paned = (id) => winEl(id).classList.contains("docked");
+/** The window shown in the side panel, or null (the quest tracker). */
+export const panelWin = () => panelId;
+function setPanel(id) { panelId = id; panelBox.classList.toggle("on", !!id); }
+function dockPanel() {
+  const full = VP.lay === "full";
+  if (full === wasDocked) return;
+  wasDocked = full;
+  const inv = winEl("inv");
+  if (full) {
+    // the top floating panel window (if any) keeps its place in the panel, the others close
+    const open = PANEL.filter((id) => id !== "inv" && !winEl(id).hidden)
+      .sort((a, b) => (+winEl(b).style.zIndex || 0) - (+winEl(a).style.zIndex || 0));
+    for (const id of PANEL) {
+      if (id === "inv") continue;
+      const w = winEl(id);
+      w.classList.remove("mini", "top"); w.title = ""; w.style.zIndex = "";
+      panelBox.append(w); w.classList.add("docked");
+      if (open.indexOf(id) > 0) w.hidden = true;
+    }
+    inv.hidden = true;   // the bag opens with I (or a shop) on a desktop
+    setPanel(open[0] || null);
+    layTabs();
+  } else {
+    const keep = panelId && panelId !== "inv" ? panelId : null;
+    for (const id of PANEL) {
+      if (id === "inv") continue;
+      const w = winEl(id);
+      w.classList.remove("docked"); winBox.append(w);
+    }
+    inv.hidden = false;
+    setPanel(null);
+    if (keep) { placeWin(keep); front(keep); }
+  }
+  syncMenu();
+}
 const drawerOpen = () => document.body.classList.contains("drawer");
 function setDrawer(on) {
   if (on === drawerOpen()) return;
   document.body.classList.toggle("drawer", on);
   Sound.play(on ? "open" : "close");
   if (!on && G.sel >= 0) { G.sel = -1; refreshUi(); }
-}
-/** Point the player at the docked bag: on a phone open the drawer, on a desktop make it blink. */
-function showBag() {
-  if (compact()) { setDrawer(true); return; }
-  const b = winEl("inv");
-  b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash");
 }
 /** Per window, the key of what it last drew: a window is rebuilt only when what it shows has changed. */
 export const shown = {};
@@ -64,7 +111,7 @@ const winArea = () => (VP.lay === "land" ? [Math.max(320, innerWidth - 300), inn
  */
 const EDGE = 4, GAP = 8, TAB_H = 30;
 const folded = (id) => winEl(id).classList.contains("mini");
-const floated = () => WIN.filter((id) => id !== "inv" && !winEl(id).hidden);
+const floated = () => WIN.filter((id) => !paned(id) && !winEl(id).hidden);
 const tabsOut = () => floated().filter(folded);
 function zone() {
   const [W, H] = winArea();
@@ -91,7 +138,7 @@ function clampPos(x, y, w, h) {
 }
 /** Keep a window inside the safe zone (after a drag, a resize, or its content changing size). */
 export function keepIn(id, x, y) {
-  if (id === "inv") return;
+  if (paned(id)) return;
   const w = winEl(id);
   if (w.hidden) return;
   if (folded(id)) { layTabs(); return; }
@@ -179,58 +226,77 @@ function placeWin(id) {
   keepIn(id, pos[0], pos[1]);
 }
 function front(id) {
-  if (id === "inv") return;
+  if (paned(id)) return;
   const w = winEl(id);
   if (+w.style.zIndex !== zTop) w.style.zIndex = ++zTop;
-  for (const o of WIN) if (o !== "inv") winEl(o).classList.toggle("top", o === id);
+  for (const o of WIN) if (!paned(o)) winEl(o).classList.toggle("top", o === id);
 }
-function syncMenu() { for (const b of $$("#menu button[data-win]")) b.classList.toggle("on", b.dataset.win === "inv" ? drawerOpen() : isOpen(b.dataset.win)); }
+function syncMenu() { for (const b of $$("#menu button[data-win]")) b.classList.toggle("on", b.dataset.win === "inv" && compact() ? drawerOpen() : isOpen(b.dataset.win)); }
 export function openWin(id) {
-  if (id === "inv") { showBag(); tutTry("bag"); refreshUi(); syncMenu(); return; }
+  if (id === "inv" && compact()) { setDrawer(true); tutTry("bag"); refreshUi(); syncMenu(); return; }
   const w = winEl(id), was = !w.hidden;
+  if (paned(id) && panelId !== id) {
+    // the side panel shows one window: this one takes the place of whatever was there
+    if (panelId) closeWin(panelId);
+    autoBag = false;
+    setPanel(id);
+    const bd = w.querySelector(".body"); if (bd) bd.scrollTop = 0;
+  }
   w.hidden = false;
   delete shown[id];
+  if (id === "inv") tutTry("bag");
   if (id === "rank") { $("#rank-list").textContent = "불러오는 중…"; act({ t: "rank" }); }
   if (id === "settings") Lobby.refreshSettings();
   if (id === "party") renderParty();
   if (id === "guild") { act({ t: "glist" }); renderGuild(); }
   if (id === "map") Radar.opened();
   refreshUi();
-  if (was && folded(id)) unfold(id);
-  else if (!was) placeWin(id);
-  front(id);
+  if (!paned(id)) {
+    if (was && folded(id)) unfold(id);
+    else if (!was) placeWin(id);
+    front(id);
+  }
+  // a shop, the smith, a station or the house chest: the bag goes in the panel (to sell, salvage, craft from, store)
+  if (BAG_WITH.includes(id) && !compact() && panelId !== "inv") { openWin("inv"); autoBag = true; }
   syncMenu();
 }
 export function closeWin(id) {
-  if (id === "inv") {
+  if (id === "inv" && compact()) {
     if (tip.from && winEl("inv").contains(tip.from)) hideTip();
     if (G.sel >= 0) { G.sel = -1; refreshUi(); }
-    if (compact()) setDrawer(false);
+    setDrawer(false);
     syncMenu();
     return;
   }
   const w = winEl(id);
   if (w.hidden) return;
   w.hidden = true;
+  if (panelId === id) { setPanel(null); autoBag = false; }
+  if (id === "inv" && G.sel >= 0) { G.sel = -1; refreshUi(); }
   if (folded(id)) { w.classList.remove("mini"); w.title = ""; layTabs(); }
   Housing.onWinClose(id);
   if (id === "train") StatWin.reset();
   if (id === "job" || id === "skill") JobTree.reset();
   if (tip.from && w.contains(tip.from)) hideTip();
+  // the bag a shop brought in goes away with the last such window
+  if (BAG_WITH.includes(id) && autoBag && panelId === "inv" && !BAG_WITH.some((o) => isOpen(o))) closeWin("inv");
   syncMenu();
 }
+/** Out of the way for a mini-game or a campfire: the phone drawer closes; the desktop side panel stays. */
+export function closeDrawer() { if (compact()) closeWin("inv"); }
 export function toggleWin(id) {
-  if (id === "inv") { if (compact() && drawerOpen()) closeWin("inv"); else { Sound.play("open"); openWin("inv"); } return; }
-  if (isOpen(id) && folded(id)) { Sound.play("open"); unfold(id); syncMenu(); return; }
+  if (id === "inv" && compact()) { if (drawerOpen()) closeWin("inv"); else { Sound.play("open"); openWin("inv"); } return; }
+  if (isOpen(id) && !paned(id) && folded(id)) { Sound.play("open"); unfold(id); syncMenu(); return; }
   Sound.play(isOpen(id) ? "close" : "open"); isOpen(id) ? closeWin(id) : openWin(id);
 }
 export function closeAll() { for (const id of WIN) closeWin(id); }
-/** Esc: the emote picker first, then whichever window is on top (open ones before tabs), then the drawer, then the bag's pick. */
+/** Esc: the emote picker first, then whichever floating window is on top (open ones before tabs), then the side panel's window, then the drawer, then the bag's pick. */
 export function closeTop() {
   if (!$("#emotes").hidden) { $("#emotes").hidden = true; return; }
   let best = null, bz = -1;
-  for (const id of WIN) if (id !== "inv" && isOpen(id)) { const z = (+winEl(id).style.zIndex || 0) + (folded(id) ? 0 : 1e6); if (z > bz) { bz = z; best = id; } }
+  for (const id of WIN) if (!paned(id) && isOpen(id)) { const z = (+winEl(id).style.zIndex || 0) + (folded(id) ? 0 : 1e6); if (z > bz) { bz = z; best = id; } }
   if (best) { closeWin(best); Sound.play("close"); }
+  else if (panelId) { closeWin(panelId); Sound.play("close"); }
   else if (drawerOpen() || G.sel >= 0) closeWin("inv");
 }
 // a window whose content grows or shrinks (a list arriving, a tab switched) is kept inside the zone
@@ -323,14 +389,13 @@ export function hoverTip(node, fill) {
 /** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */
 export function setupWindows() {
   for (const id of WIN) {
-    if (id === "inv") continue;
     const w = winEl(id), head = w.querySelector("header");
     if (winSize) winSize.observe(w);
     w.addEventListener("pointerdown", () => front(id), true);
     w.querySelector(".x").addEventListener("click", () => { closeWin(id); Sound.play("close"); });
     // dragged by the title bar, kept in the safe zone, remembered; a folded window's tab unfolds on a press
     head.addEventListener("pointerdown", (e) => {
-      if (e.target.closest(".x") || e.button !== 0) return;
+      if (e.target.closest(".x") || e.button !== 0 || paned(id)) return;
       e.preventDefault();
       if (folded(id)) { Sound.play("open"); unfold(id); syncMenu(); return; }
       const r = w.getBoundingClientRect(), ox = e.clientX - r.left, oy = e.clientY - r.top;
@@ -357,7 +422,7 @@ export function setupWindows() {
   for (const b of $$("#menu button[data-win]")) b.addEventListener("click", () => toggleWin(b.dataset.win));
   $("#btn-winreset").addEventListener("click", () => {
     for (const id of WIN) localStorage.removeItem(WIN_KEY(id));
-    for (const id of WIN) if (isOpen(id) && !folded(id)) placeWin(id);
+    for (const id of WIN) if (isOpen(id) && !paned(id) && !folded(id)) placeWin(id);
     Sound.play("ui");
     toast("창을 처음 자리로 옮겼습니다");
   });
@@ -385,3 +450,4 @@ export function setupWindows() {
     if (m && m.trim()) act(chatAction(m.trim().slice(0, 80)));
   });
 }
+setLayoutHook(dockPanel);
