@@ -142,9 +142,9 @@ function warmRegen(p, now) { return p.warm > now ? WARM_REGEN * clamp(p.warmN ||
 const JAM = ["연주", "건배"];
 const JAM_CD = 1200;
 
-// ── the storyteller: at night she sits by the town's fire and tells a tale every hundred seconds
+// ── the storyteller: at night she sits by the town's fire (two tiles west of the plaza fire, FIRES.town[0]) and tells a tale every hundred seconds
 const TALE_MS = 100000;
-const TELLER = { id: "story", name: "이야기꾼 할머니 소담", role: "talk", x: 56, y: 46, night: 1, look: [5, 2, 0, "#7a5a8a"],
+const TELLER = { id: "story", name: "이야기꾼 할머니 소담", role: "talk", x: FIRES.town[0][0] - 2, y: FIRES.town[0][1], night: 1, look: [5, 2, 0, "#7a5a8a"],
   say: "밤이 깊었구나. 불 가까이 앉으렴 — 이야기는 혼자 듣는 것보다 여럿이 듣는 게 더 따뜻하단다." };
 const TALES = [
   "옛날 옛적, 넥서스 광장은 정령나무 한 그루뿐인 빈 들판이었단다. 길 잃은 이들이 그 푸른 빛을 보고 모여들었지.",
