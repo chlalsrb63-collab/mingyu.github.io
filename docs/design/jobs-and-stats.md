@@ -1,6 +1,7 @@
 # 무직 시작 · 여섯 능력치 · 무기 숙련 · 전직 — 설계서 (jobs and stats)
 
-Status: J1, J2 and J3 (the jobs UI) built (see their "as built" notes in F.4). Audience: the implementers of J1/J2/J3 and the
+Status: J1, J2 and J3 (the jobs UI) built (see their "as built" notes in F.4); the hybrid expansion (H: a hybrid opens at
+mastery 15 in both weapons, one hybrid for each of the 15 pairs) built in the rules — its client art follows H.4. Audience: the implementers of J1/J2/J3 and the
 agents running Phase 0/1/2 of [`scale-and-rift.md`](scale-and-rift.md) and the game-feel upgrade. Code, identifiers and
 commit messages are English; every player-facing string is Korean (AGENTS.md rule 6). Numbers marked (measured) come
 from throwaway node scripts run against the built `logic.js` of `origin/main` at 6e80ef5; (model) = a kill-rate model
@@ -31,7 +32,7 @@ accumulates, mastery XP from `hurtMob`/`killMob` for the equipped kind, bow basi
    level → ≈ 20 min to 10, ≈ 2 h to 20, ≈ 15 h to 50 with one weapon (model). It adds +1 %/level to the weapon's own
    attack and +1 accuracy (removes grazes, B.6), unlocks skills at 1 / 10 / 20 and makes skills grow (+1.2 %/level).
 5. **Jobs**: at mastery 20 a 모험가 may take the single job of that weapon (signature skill, +0.1 on that weapon's two
-   scaling coefficients); or stay 모험가 until **two** weapons of a listed pair are ≥ 20 and take the hybrid (dual
+   scaling coefficients); or stay 모험가 until **two** weapons of a pair are ≥ 15 (H; was 20) and take the hybrid (dual
    scaling table, free swap with a second weapon slot on `Tab`, both weapons' passives always on, fusion signature).
    Job change is irreversible in v1.
 6. **Class gauges are retired as classes and reborn as weapon passives** (grit bar → 관성, marks → 표식/출혈, tip →
@@ -326,7 +327,9 @@ SKILL_ORDER = [ per weapon: L1, L10 active, L10 passive ] × 6, then 6 single, t
 | `warlock` 마도사 | book | `pact` 심연의 계약 | mp 40, cd 38000, phantom beast prop at aim 6 s: bites nearest every 600 ms ×0.8; at the end curse blast r 80 ×2.2 (+25 % if branded), mag | 93 |
 | `archer` 궁수 | bow | `rain` 화살비 | mp 34, cd 30000, area r 70 at 110 ahead, 3 s: every 300 ms ×0.45 to all inside + slow | 96 |
 
-### C.4 Hybrid jobs (need: stay 모험가, two weapons of the pair ≥ 20; 20,000 G)
+### C.4 Hybrid jobs (need: stay 모험가, two weapons of the pair ≥ 15 since H — was 20; 20,000 G)
+
+The first six (numbers as first designed; the tuned numbers are in `03-skills.js` and H.3). The other nine pairs are in H.
 
 | job id · name | pair | signature (`h`) | numbers | fx |
 | --- | --- | --- | --- | --- |
@@ -349,6 +352,7 @@ weapons' gauges), both passives on, dual scaling (B.5). Non-hybrids change weapo
 | 84–86 | ambush, shade, flurry | 97–102 | crimson, traps, dive, bloodburst, thunder, sanctuary |
 | 87–89 | spiral, comet, dragon | 110–115 | passives: inertia stack, bleed, (tip uses `"tip"`), resonance ready, brand, hawk far hit |
 | 70, 71, 73 | reused: fireball, frostring, chain lightning | 90 | meteor impact |
+| 120–128 | H: crosscut, breach, qiarrow, shadowpierce, elemfan, frostspire, runecircle, tristar, inkshot | | |
 
 Retired after J2 lands: 40–48, 50–55, 60–65, 72, 74, 75 (client handlers deleted in the same J2 change; 55's dance
 renderer is reused for 86). Props: `grav`, `phantom`, `rainzone`, `storm`, `sanct`, `trap`, `meteor` in `rt.props`
@@ -657,3 +661,109 @@ rebase).
    (first free, then 10 % of spent XP) never touch jobs or mastery.
 5. **Job fees and the starter pick.** Default: 5,000 G single / 20,000 G hybrid (replaces the retired skill-training
    gold sink); every new 모험가 picks one free tier-1 weapon from 수련관 카이 and starts holding a 낡은 단검.
+
+---------------------------------------------------------------------------------------------------------------
+
+## H. Hybrid expansion (both weapons 15; one hybrid for each of the 15 pairs)
+
+Owner's request: a two-weapon job opens when **both** weapons reach mastery **15** (single jobs stay at 20), and every
+pair of the six weapons has its hybrid. J1/J2 built six (C.4); H adds the other nine.
+
+### H.1 Rules
+
+- One constant `HYB_WM = 15` (`02-jobs-stats.js`, next to `JOB_WM = 20`). `jobOk` asks `HYB_WM` of both weapons of a
+  hybrid ("[대검]과 [마도서] 숙련이 모두 15 이상이어야 합니다"), `JOB_WM` of a single's weapon. `jobWmOf(j)` (45) gives a
+  job's number; `defs()` carries `hybWm` and each `jobs[id].wm` (15 or 20) and `.sig` (its signature skill id).
+- Hybrid signatures (`kind "h"`) have `need: 15` (all fifteen), so `skGrow` counts growth from 15 (the lower mastery).
+- At mastery 15 (as a 모험가) a toast names every two-weapon job that level opens: "[대검] 숙련 15! 두 갈래 길 [마검사],
+  [검궁사]가 열렸습니다 — 전직관 아르센에게 가 보세요." (only pairs whose other weapon is already ≥ 15).
+- Scale budget (`JOBS[j].scale`, replaces both weapons' tables): two different main stats → 0.8 + 0.8 and each weapon's
+  second stat 0.3 (2.2). A pair that shares its main stat folds it into one coefficient and gets less, because its build
+  need not split: 파진사 (STR) 1.65, 룬술사 (INT) 1.4, 추적자 (DEX, LUK) 1.6. 용기사 was 2.4 and is now 2.2 (WIL 0.7 → 0.5).
+- No sheet change: `ch.job` is an id; saved hybrids load as they were (`tests/jobs.mjs`).
+
+### H.2 The nine new jobs
+
+| pair | job id · name | fantasy | scale | signature id · name | fx |
+| --- | --- | --- | --- | --- | --- |
+| sword+dagger | `bladedancer` 검무사 | a sword-dancer: the great blade sweeps, the dagger finishes | STR .8 DEX .8 WIL .3 LUK .3 | `crosscut` 십자 난도 | 120 |
+| sword+spear | `breaker` 파진사 | breaks the line: a spear charge, a great-sword slam | STR .85 WIL .4 WIS .4 | `breach` 파진돌격 | 121 |
+| sword+bow | `arcblade` 검궁사 | looses a sword's edge on an arrow | STR .8 DEX .8 WIL .3 LUK .3 | `qiarrow` 검기 화살 | 122 |
+| dagger+spear | `shadowlance` 섬창사 | a shadow that runs the spear through | DEX .8 STR .8 LUK .3 WIS .3 | `shadowpierce` 그림자 관통 | 123 |
+| dagger+staff | `trickster` 환술사 | elemental knife tricks | DEX .8 INT .8 LUK .3 WIS .3 | `elemfan` 원소 비수 | 124 |
+| spear+staff | `spellspear` 마창사 | an ice-bound lance | STR .8 INT .8 WIS .6 | `frostspire` 빙결창 | 125 |
+| staff+book | `runesage` 룬술사 | a rune circle that echoes the elements | INT .8 WIS .3 WIL .3 | `runecircle` 메아리 법진 | 126 |
+| staff+bow | `spellarcher` 마궁사 | three-element arrows | INT .8 DEX .8 WIS .3 LUK .3 | `tristar` 삼원소 화살 | 127 |
+| book+bow | `runearcher` 각인궁사 | rune-ink arrows that brand | INT .8 DEX .8 WIL .3 LUK .3 | `inkshot` 룬 먹화살 | 128 |
+
+All cost 20,000 G and are taken from 모험가 at 전직관 아르센; a hybrid's signature works with either weapon in hand.
+
+### H.3 Signatures (numbers as built, tuned by `tests/balance.mjs`; mult × attack)
+
+| id | numbers | what it does | reuses |
+| --- | --- | --- | --- |
+| `crosscut` | mp 36, cd 32 s, r 64, half-arc 100°: sweep ×1.0 + 2 marks, then a stab ×(0.5 + 0.2 per mark, marks spent), sure crit on a monster not after you, else +30 % crit | sword sweep marks, dagger stabs cash the marks; fills 관성 to 5 (fx 110) | `addMarks marksOf inArc`, inertia |
+| `breach` | mp 38, cd 32 s, dash 120 (half 20): path ×0.6, stun 0.4 s, carried to the end; slam r 56 ×1.4, knock 18; the rim (≥ 72 % of r) ×1.5 and −35 % def | spear charge (comet's drag), then a sword slam whose rim is the spear's tip | comet `stepTo pullTo`, `TIP`, `knock`, `ln 3`, `bw 9` |
+| `qiarrow` | mp 38, cd 32 s, line 200 (half 14) ×1.6 × (1 + 0.25 by distance 40→190) × (1 + 0.1 per 관성 stack, all spent); crescent r 44 ×1.0 at the end | an instant sword-qi arrow through the line | hawk's distance rule, inertia, `bw 2` |
+| `shadowpierce` | mp 34, cd 28 s, run 130 (half 18), untouchable 0.4 s, ×(1.4 + 0.2 per mark), then +2 marks; the last 28 % of the run is the tip (×1.5, −35 % def) | a blink-run through the line: dagger marks feed it, the spear's tip ends it | ambush `ln 6`, marks, `TIP`, `p.ghost` |
+| `elemfan` | mp 36, cd 30 s, three blades −18°/0/+18° len 140 (half 12) ×0.9 mag: fire, ice (slow 2 s), lightning; +1 mark each; a monster struck by two elements reacts (≤ 3 reactions a cast) | a dagger fan carrying the staff's elements | shade fan `ln 7`, `react`/`REACT`, marks |
+| `frostspire` | mp 36, cd 30 s, thrust line 150 (half 14) ×1.4, all slowed 3 s; the tip (≥ 72 %) ×1.5, −35 % def, frozen 1 s (elite 0.5; `fz`); ice burst r 44 ×1.0 at the end, then ice is held (`weave i`) | a spear thrust with a staff's ice | spiral line, `TIP`, frostring freeze, `weave` |
+| `runecircle` | mp 46, cd 45 s, circle r 64 at 80 ahead (or the aimed monster), 5 s, a beat every 1 s: ×0.2 mag to all inside (brands: a book's skill); the beat's element turns f → i → l and every other beat the held one and the new one react at ×0.5 power. The circle keeps its own element (never the caster's weave) | the book's brand and the staff's reactions | new prop kind `rune`, `react`, brand |
+| `tristar` | mp 36, cd 30 s, three arrows −8°/0/+8° (kinds 4 fire, 5 ice, 6 lightning), 520 px/s, len 190, r 10, pierce all, ×1.0 mag; each leaves its element where it first strikes (`weave`), so they react on the target | a bow volley carrying the staff's elements | `fireArrow` (+ `el`, `opt`), `weave` |
+| `inkshot` | mp 36, cd 30 s, five arrows ±24° (kind 7), len 170, r 8, pierce, ≤ 2 a monster, ×0.7 mag; every hit brands (a book's skill); a monster already branded takes +40 % | a bow fan that brands, then cashes the brand | leapshot fan + `cap`, `fireArrow` (+ `opt`, `brandK`), brand |
+
+New in the engine for these, nothing else: `fireArrow` options `opt` (hurtMob's options: the skill, so the book's brand
+and magic apply), `el` (an element woven where the arrow first strikes, at power `k`) and `brandK`; the prop kind `rune`.
+
+Retuned among the first six (they were never probed at T13 before the threshold fell to 15): 홍련참 ×2.0 → 1.6, 사방의
+그림자 덫 stab 0.6 → 0.35 and shot 0.8 → 0.45, 심연의 강림 ×2.4 → 2.0 and drain 0.25 → 0.2, 천뢰의 투창 ×2.2 → 1.7 and
+storm 0.3 → 0.25; 용기사's scale (H.1).
+
+### H.4 Hybrid expansion as built — balance and the client contract
+
+**Balance** (`tests/balance.mjs`; probe `scripts/balance-probe.mjs`, `probe(L, wk, tier, secs, {job})`): each hybrid is
+probed holding each of its two weapons (the other on its back), both masteries `max(15, tier)`, stats laid out half and
+half by the two weapons' templates (`hero({build})`), at T13 (the first tier both can be 15), T25 and T40. Its kills/min
+(the mean of its two hands) must lie in the band of its pair: ×0.75 up to the mean of the two weapons' upper bounds (×1.25
+a weapon, ×1.1 the bow) of the mean of the two old baselines, and neither hand below ×0.7 of its own baseline. A per-hand
+band was tried and dropped: the old lancer at T40 (12.5) and the old mage at T13 (33.5) are low, so a hybrid holding a
+spear at T40 read ×1.4 while its other hand read ×0.9. Measured (pair mean, T13 / T25 / T40):
+
+| job | × | job | × | job | × |
+| --- | --- | --- | --- | --- | --- |
+| 마검사 | 1.20 / 0.93 / 1.06 | 추적자 | 1.15 / 0.97 / 0.96 | 용기사 | 1.17 / 1.09 / 1.19 |
+| 주술암살자 | 1.12 / 1.08 / 1.15 | 폭풍기수 | 0.96 / 0.92 / 1.07 | 암흑기사 | 1.18 / 0.98 / 1.03 |
+| 검무사 | 1.11 / 1.08 / 1.16 | 파진사 | 1.03 / 0.88 / 1.05 | 검궁사 | 1.08 / 0.95 / 1.11 |
+| 섬창사 | 0.97 / 0.99 / 1.08 | 환술사 | 1.19 / 1.06 / 1.10 | 마창사 | 1.14 / 0.95 / 1.08 |
+| 룬술사 | 1.22 / 0.97 / 1.00 | 마궁사 | 1.10 / 0.91 / 1.08 | 각인궁사 | 1.09 / 0.95 / 1.11 |
+
+The probe is deterministic but chaotic at T13 (one kill ≈ 1 %); a staff/book pair sits near ×1.19 there before its
+signature, so those signatures carry little at T13 by design. `node tests/balance.mjs -v [job…]` prints every row.
+
+**Client contract** (for the art agent; `game/public/**` was not touched by H):
+
+| job (weapons) | signature | fx `(x, y, extra)` | the effect in one line |
+| --- | --- | --- | --- |
+| 검무사 `bladedancer` (sword, dagger) | `crosscut` 십자 난도 | 120 at 0.5·r ahead, r | a huge crescent sweep in front, then quick dagger X-glints on each monster swept; fx 110 follows |
+| 파진사 `breaker` (sword, spear) | `breach` 파진돌격 | 121 at the landing, r | a spear-first charge streak (`ln 3`), then a heavy sword slam ring with cracks (`bw` kind 9); `tip` pops at the rim |
+| 검궁사 `arcblade` (sword, bow) | `qiarrow` 검기 화살 | 122 at the line's end, length | a white-gold sword-qi arrow streaking from the hero to the end; a crescent burst there (`bw` kind 2, r 44) |
+| 섬창사 `shadowlance` (dagger, spear) | `shadowpierce` 그림자 관통 | 123 at the end of the run, length | a dark afterimage streak (`ln 6`) with a spear-thrust silhouette; `tip` pops on the far ones |
+| 환술사 `trickster` (dagger, staff) | `elemfan` 원소 비수 | 124 40 ahead, 3 | three thrown blades, red / pale blue / yellow (`ln 7` ×3 in that order: −18°, 0°, +18°); `rx` where two meet |
+| 마창사 `spellspear` (spear, staff) | `frostspire` 빙결창 | 125 at the thrust's end, length | an icy thrust line and an ice pillar bursting up at its end (r 44); `fz` and `tip` on the tip |
+| 룬술사 `runesage` (staff, book) | `runecircle` 메아리 법진 | 126 at the circle, r | a rune circle on the ground (prop `rune` via `pr`/`pe`); each beat `["pp", id, x, y, e]` flashes it in the beat's element (1 fire, 2 ice, 3 lightning); `rx` every other beat |
+| 마궁사 `spellarcher` (staff, bow) | `tristar` 삼원소 화살 | 127 at the target or 80 ahead | the bow's shot loosing three arrows: `ar` kinds **4 fire, 5 ice, 6 lightning** (range 190, 520 px/s, pierce) |
+| 각인궁사 `runearcher` (book, bow) | `inkshot` 룬 먹화살 | 128 60 ahead | a fan of five ink-black arrows with violet runes: `ar` kind **7** (range 170, pierce); fx 114 brands on hit |
+
+- Arrows: the client flies kind 2 to 180 px and every other kind to the bow's 150; kinds 4–6 go 190, kind 7 goes 170
+  (pierce all). Prop `rune` is new (a circle like `grav`'s, no pull). Nine skill glyphs (`skillicons.js`), sounds
+  (`audio.js SFX`), `_feel.html` rows `sk120…sk128` and `pr:rune`.
+- Strings that say 20 for a hybrid and must read `defs.hybWm` (15) or `defs.jobs[id].wm` instead — all in
+  `public/jobtree.js`: the header comment (l.9 "both at 20", "the six two-weapon jobs"), `ready` (l.44 `>= D().jobWm`),
+  the needs list (l.73–80 "✗ 대검 숙련 17/20"), the closed card's hint (l.118 "두 무기를 모두 숙련 ${d.jobWm}까지"), the
+  tree root (l.221 "▼ 두 무기 모두 ${d.jobWm}"), `ready(k)` (l.230), node progress and title (l.243, l.246), 아르센's line
+  (l.297 "두 무기를 모두 ${d.jobWm}까지"), the nearest-closed sort (l.305). Single-job texts keep 20: `public/mastery.js`
+  (`JOB_WM = 20`, "Lv.20: 전직 가능"; a "두 갈래 길" hint at 15 would be new) and `public/lobby.js` l.482, l.493 ("숙련 20에
+  전직"; could add "두 무기는 15").
+- The 전직의 길 tree (J3: six weapons in a row, five adjacent hybrids, 용기사 on a bottom row) must now place **15**
+  hybrids, one per pair. `defs.jobs` lists them: the first six, then bladedancer breaker arcblade shadowlance trickster
+  spellspear runesage spellarcher runearcher; each has `wk` (its pair), `wm` 15 and `sig`.
