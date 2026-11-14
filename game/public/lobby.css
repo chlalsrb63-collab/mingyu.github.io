@@ -78,6 +78,7 @@
 /* ── servers ── */
 .sv-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 4px; color: var(--b-hi); }
 .sv-top b { color: var(--cream); font-weight: 700; }
+.sv-btns { display: flex; gap: 4px; }
 #t-servers { width: min(620px, calc(100vw - 16px)); }
 #sv-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .sv-card { display: flex; flex-direction: column; gap: 6px; padding: 6px; background: #2b2436; border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #3e344d, inset -2px -2px 0 #1a1522; }

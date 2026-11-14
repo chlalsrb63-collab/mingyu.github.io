@@ -74,6 +74,8 @@ export function init(ctx) {
   });
   wireAuth();
   wireCreate();
+  $("#sv-re").addEventListener("click", () => { Sound.play("ui"); refreshServers(); });
+  setInterval(() => { if (view === "servers" && !pending && !document.hidden) refreshServers(); }, 20000);
   wireSettings();
   show("title");
 }
@@ -205,8 +207,12 @@ async function showServers(msg, kind) {
   $("#sv-id").textContent = s.id;
   const list = $("#sv-list");
   if (!list.children.length) renderServers(Account.SERVERS, true);
+  await refreshServers();
+}
+/** Characters and channel counts, fetched again (also every 20 s while the list is up). */
+async function refreshServers() {
   const [me, svs] = await Promise.all([Account.me(), Account.servers()]);
-  if (view !== "servers") return;
+  if (view !== "servers" || pending) return;
   if (!me.ok) {
     if (me.expired || !Account.session()) return showAuth("login", me.error || "로그인이 만료되었습니다. 다시 로그인해 주세요.");
     setMsg(me.error || "계정 정보를 불러오지 못했습니다");
