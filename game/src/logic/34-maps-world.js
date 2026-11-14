@@ -339,10 +339,12 @@ const GEN = {
   }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
   crypt: { make: catacomb, band: [12, 17], stones: 3, cfg: () => ({
-    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 9, minH: 8, leaf: 300, entryY: 0.8, wind: 0.6, loops: 0.06, out: true, n: 3,
+    // maps-v2 벽돌 회랑 (`halls`): plazas ≥ 11 × 9 in cells ≥ 14 × 12, corridors three wide, more loops
+    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 14, minH: 12, leaf: 420, entryY: 0.8, wind: 0.5, loops: 0.3, out: true, n: 3,
+    halls: true, soft: "12345I",
     shapes: ["plain", "chapel", "cross", "octagon", "ell", "chapel", "cross"], styles: ["pillars", "pool", "rows", "rubble", "shrine", "plain", "plain"], vaultName: "ossuary",
     mobs: ["ratking", "twinhare_bone", "bonehound", "toadbrood", "batcluster"], guard: "bonehound", chest: "chest_crypt",
-    dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4" },
+    dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4", light: "3" },
   }) },
   sewer: { make: sewers, band: [22, 27], stones: 3, cfg: () => ({
     id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 10.5, wind: 0.5, loops: 0.16, n: 3,
@@ -433,7 +435,8 @@ function genMap(id) {
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
   markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
   // maps-v2: once the signs and stones stand, the ways that must stay three wide are checked once more
-  if (m.keepWide) widen(m, m.keepWide, m.widenSoft, m.widenDig);
+  // (underground the stones' own standing tiles are joined too: the rock may be dug for them)
+  if (m.keepWide) widen(m, m.widenDig ? m.keepWide.concat((m.stones || []).map((s) => [s.ax, s.ay])) : m.keepWide, m.widenSoft, m.widenDig);
   // a pocket is the ground still open in it once the signs and stones stand
   for (const pk of m.pockets) pk.tiles = pk.tiles.filter((i) => m.o[Math.floor(i / m.w)][i % m.w] === " ");
   return m;

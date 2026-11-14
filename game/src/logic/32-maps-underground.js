@@ -13,6 +13,28 @@ function wideWays(m, pts, soft, shell, keep = pts) {
   // (only the doors and the places that matter are checked again: every point would make the signs slow to place)
   m.keepWide = keep.slice(); m.widenSoft = soft; m.widenDig = "c";
 }
+/**
+ * maps-v2 벽돌 회랑, a room of the brick halls (box `r`, its tiles `inRoom`): broken flagstone paving over the
+ * floor (slabs `k`, the old brick `c` showing where they are gone, grit `d`), and torch alcoves — a niche dug a
+ * tile into the north wall every few tiles, a light (`light`) stood in it. Returns the alcoves [x, y].
+ */
+function brickRoom(m, r, inRoom, seed, light) {
+  const out = [];
+  for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) {
+    if (!inRoom(x, y) || m.g[y][x] !== "c") continue;
+    // (slabs lost in patches three tiles across, the odd one alone)
+    if (h2(Math.floor(x / 3), Math.floor(y / 3), seed) < 0.72 && h2(x, y, seed + 1) > 0.07) m.g[y][x] = "k";
+  }
+  const y = r.y0 - 1;
+  for (let x = r.x0 + 2; x <= r.x1 - 2; x++) {
+    if (!inRoom(x, r.y0) || m.o[r.y0][x] !== " " || !m.g[y - 1] || out.some(([ox]) => x - ox < 4)) continue;
+    if (m.g[y][x] !== "W" || m.g[y - 1][x] !== "W" || m.g[y][x - 1] !== "W" || m.g[y][x + 1] !== "W") continue;
+    digAt(m, x, y);
+    m.o[y][x] = light;
+    out.push([x, y]);
+  }
+  return out;
+}
 /** A chamber's monsters, by how deep it lies: sparse and weak by the door, crowded and mean in the depths. */
 function denSpawns(m, box, cfg, rect, t, d, side, extra = 0) {
   const K = cfg.mobs.length, band = d <= 1 ? 0 : Math.min(K - 1, Math.floor(t * K));
@@ -40,6 +62,14 @@ function tunnel(m, a, b, wd, avoid, turn = 3, ch = "c") {
     const t = path[s], x = t % W, y = (t - x) / W, nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
     if (m.g[y][x] === "W" || m.g[y][x] === "w") digAt(m, x, y, ch);
     if (wd > 1) { const X = horiz ? x : x + 1, Y = horiz ? y + 1 : y; if (m.g[Y] && (m.g[Y][X] === "W")) digAt(m, X, Y, ch); }
+    // (three wide: a tile either side, and the whole 3 × 3 at a bend so the corner keeps its width)
+    if (wd > 2) {
+      const bend = s > 0 && path[s + 1] !== undefined && path[s + 1] - t !== t - path[s - 1];
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (!bend && (horiz ? dx : dy)) continue;
+        if (m.g[y + dy] && m.g[y + dy][x + dx] === "W") digAt(m, x + dx, y + dy, ch);
+      }
+    }
   }
   return path;
 }
@@ -399,9 +429,11 @@ function catacomb(cfg) {
   // the rooms: each cell's shape
   const roomOf = new Int16Array(W * H).fill(-1);
   const rooms = cells.map((c, k) => {
-    const pad = kind[k] === "vault" ? 2 : kind[k] === "room" ? 1 + ri(box, 0, 1) : 1;
+    const pad = kind[k] === "vault" ? 2 : kind[k] === "room" ? 1 + ri(box, 0, cfg.halls ? 0 : 1) : 1;
     let x0 = c.x0 + pad, y0 = c.y0 + pad, x1 = c.x1 - pad, y1 = c.y1 - pad;
-    if (kind[k] === "room" && rnd(box) < 0.5) { const sw = ri(box, 0, Math.max(0, (x1 - x0 - 5) >> 1)), sh = ri(box, 0, Math.max(0, (y1 - y0 - 4) >> 1)); x0 += sw; x1 -= ri(box, 0, sw); y0 += sh; y1 -= ri(box, 0, sh); }
+    // (maps-v2 벽돌 회랑: a room is a plaza, never under 11 × 9)
+    const [mw, mh] = cfg.halls ? [11, 9] : [6, 5];
+    if (kind[k] === "room" && rnd(box) < 0.5) { const sw = ri(box, 0, Math.max(0, (x1 - x0 + 1 - mw) >> 1)), sh = ri(box, 0, Math.max(0, (y1 - y0 + 1 - mh) >> 1)); x0 += sw; x1 -= ri(box, 0, sw); y0 += sh; y1 -= ri(box, 0, sh); }
     if (kind[k] === "vault") { const cx2 = (x0 + x1) >> 1, cy2 = (y0 + y1) >> 1; x0 = Math.max(x0, cx2 - 2); x1 = Math.min(x1, cx2 + 2); y0 = Math.max(y0, cy2 - 2); y1 = Math.min(y1, cy2 + 1); }
     const w = x1 - x0 + 1, h = y1 - y0 + 1, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
     const shapes = kind[k] === "room" ? cfg.shapes : kind[k] === "vault" ? ["octagon", "plain"] : ["plain"];
@@ -426,16 +458,23 @@ function catacomb(cfg) {
   // the corridors: two wide along the critical path, often single file elsewhere
   const avoid = new Float32Array(W * H);
   for (let i = 0; i < W * H; i++) if (roomOf[i] >= 0) avoid[i] = 2.5;
-  const hall = new Uint8Array(W * H);
+  const hall = new Uint8Array(W * H), arches = [], torches = [];
   for (const e of edges) {
     const [a, b] = e;
     if (!tree.linked(a, b)) continue;
     const A = rooms[a], B = rooms[b];
-    const wd = onMain.has(a) && onMain.has(b) ? 2 : rnd(box) < 0.5 ? 1 : 2;
+    const wd = cfg.halls ? 3 : onMain.has(a) && onMain.has(b) ? 2 : rnd(box) < 0.5 ? 1 : 2;
     const sa = spot(m, A.cx, A.cy), sb = spot(m, B.cx, B.cy);
     for (const i of [sa[1] * W + sa[0], sb[1] * W + sb[0]]) avoid[i] = 0;
     const p = tunnel(m, sa, sb, wd, avoid, 3);
     for (const t of p) if (roomOf[t] < 0) hall[t] = 1;
+    // an arched doorway where the corridor comes out of the rock into a room: [x, y, 1 when it runs east–west]
+    if (cfg.halls) for (let s = 1; s < p.length; s++) {
+      const u = p[s - 1], v = p[s];
+      if ((roomOf[u] < 0) === (roomOf[v] < 0)) continue;
+      const t = roomOf[u] < 0 ? u : v, x = t % W;
+      arches.push([x, (t - x) / W, Math.abs(u - v) === 1 ? 1 : 0]);
+    }
   }
   // furnishing, by room
   const free = (x, y) => m.g[y][x] !== "W" && m.o[y][x] === " " && !hall[y * W + x];
@@ -487,7 +526,9 @@ function catacomb(cfg) {
       for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) {
         if (!cellFree(x, y)) continue;
         const h = h2(x, y, S0 + 9), edge = wallN(x, y) || m.g[y][x - 1] === "W" || m.g[y][x + 1] === "W" || m.g[y + 1][x] === "W";
-        if (style === "pillars") { if ((x - r.x0) % 3 === 1 && (y - r.y0) % 3 === 1 && !edge && Math.abs(x - r.cx) + Math.abs(y - r.cy) > 1) m.o[y][x] = T2.pillar; }
+        // (in the brick halls the rows of pillars stand four apart: three wide ways between them)
+        const pp = cfg.halls ? 4 : 3, po = cfg.halls ? 2 : 1;
+        if (style === "pillars") { if ((x - r.x0) % pp === po && (y - r.y0) % pp === po && !edge && Math.abs(x - r.cx) + Math.abs(y - r.cy) > 1) m.o[y][x] = T2.pillar; }
         else if (style === "pool") { if (Math.hypot((x - r.cx) * 0.8, y - r.cy) + (N1[y * W + x] - 0.5) * 1.6 < Math.min(r.w, r.h) * 0.28) { m.g[y][x] = "w"; } }
         else if (style === "rows") { if (!edge && (y - r.y0) % 3 === 1 && (x - r.x0) % 4 !== 0 && (x - r.x0) % 4 !== 3 && x !== r.cx && h < 0.9) m.o[y][x] = T2.rows; }
         else if (style === "rubble") { if (N1[y * W + x] > 0.68 && !edge && Math.abs(x - r.cx) + Math.abs(y - r.cy) > 2) { m.g[y][x] = "W"; } else if (h < 0.08) m.o[y][x] = T2.junk; }
@@ -532,6 +573,7 @@ function catacomb(cfg) {
     // keep the middle of every room walkable
     for (let y = r.cy - 1; y <= r.cy + 1; y++) for (let x = r.cx - 1; x <= r.cx + 1; x++) if (roomOf[y * W + x] === k) { m.o[y][x] = " "; if (m.g[y][x] === "W") m.g[y][x] = "c"; }
     if (kind[k] === "room" && (r.shape === "chapel" || r.shape === "octagon")) { hallow(r, k); pts[ptI] = spot(m, r.cx, r.cy); }
+    if (cfg.halls && kind[k] !== "vault") torches.push(...brickRoom(m, r, (x, y) => roomOf[y * W + x] === k, S0 + k, T2.light));
   });
   for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) if (m.g[y][x] === "c" && h2(x, y, S0) < 0.12) m.g[y][x] = "d";
   for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) { m.o[y][x] = " "; if (m.g[y][x] !== "d") m.g[y][x] = "c"; pts.push([x, y]); }
@@ -539,6 +581,11 @@ function catacomb(cfg) {
   m.entry = gates.in.a[0];
   cover(m, cfg.mobs);
   knit(m, pts, "c");
+  if (cfg.halls) {
+    m.arches = arches; m.torches = torches; m.pieces.push("plaza", "arch", "alcove");
+    const doors = Object.values(gates).flatMap((g) => g.a);
+    wideWays(m, pts, cfg.soft, null, doors.concat(FIRES[cfg.id]));
+  }
   m.regions = cells.length;
   return m;
 }

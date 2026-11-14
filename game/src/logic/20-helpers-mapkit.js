@@ -541,8 +541,13 @@ function widen(m, pts, soft, dig) {
   };
   let cut = 0;
   for (const [px, py] of pts) {
-    const near = round(px, py);
-    if (near.some((i) => home[i])) continue;
+    let near = round(px, py);
+    if (near.some((i) => home[i])) {
+      // (underground, a stray piece of wide ground beside the point is joined too: it might be the one taken as nearest)
+      if (!dig) continue;
+      near = near.filter((i) => !home[i] && isWide(i));
+      if (!near.length) continue;
+    }
     // (a point in a walled piece — a chest behind a fence's narrow doorway — is joined from just outside it)
     const path = walk(W, H, near, (j) => home[j] === 1, cost) || walk(W, H, round(px, py, 5), (j) => home[j] === 1, cost);
     if (!path) continue;
