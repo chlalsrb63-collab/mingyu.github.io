@@ -37,6 +37,9 @@ export function validateAction(S, pid, a) {
   if (!isObj(a) || typeof a.t !== "string") return bad("잘못된 요청입니다");
   const ch = p.ch;
   const now = S.now;
+  // charms keep to their own ways (66-charms.js)
+  const cg = charmGuard(ch, a);
+  if (cg) return bad(cg);
   switch (a.t) {
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");
@@ -414,6 +417,8 @@ export function validateAction(S, pid, a) {
     }
     // life skills L2 (58-life.js): gathering, the stations, the 알바 board
     case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": return lifeValidate(S, p, a);
+    // charms (66-charms.js): 주아나's quests, appraisal, the board
+    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": return charmValidate(S, p, a);
     default:
       return bad("알 수 없는 행동");
   }

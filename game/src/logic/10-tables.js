@@ -31,6 +31,9 @@ const ITEMS = {
   mp_s: { name: "파란 물약", type: "pot", mana: 40, price: 25, desc: "MP를 40 회복한다." },
   mp_m: { name: "큰 파란 물약", type: "pot", mana: 140, price: 80, desc: "MP를 140 회복한다." },
   mp_l: { name: "농축 파란 물약", type: "pot", mana: 340, price: 170, desc: "MP를 340 회복한다." },
+  // charms (66-charms.js): one to a slot, never stacked, sold or stored; `charm_nail` opens a cell of the board
+  charm: { name: "참", type: "charm", price: 0, desc: "주아나가 감정해 주는 빛나는 조각. 감정한 참은 참 보드에 놓아야 힘을 낸다." },
+  charm_nail: { name: "참틀 확장못", type: "mat", price: 0, desc: "주아나에게 가져가면 골드와 함께 참 보드의 칸을 하나 연다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
   recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 버드나무광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },

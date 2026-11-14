@@ -113,7 +113,7 @@ const DATA = {
     {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"willow","safe":true,"band":null,"w":40,"h":32,"ground":["tt,t...............pp...\"..,.....tt.....",".t..tt....,........pp.,....\".......tt...","ttttt.t............pp.,,...\"..,.,tt.tt..","ttttttt\".,...\",...\"pp....,.,.....tt.tt..",".ttt,...,....,.....pp............,ttt..t","ttt...t...........,pp............tttt...","..,,.,.\"...........pp....,........\"...\".","\",.....,..\".,......pp..,......,.......,.","....,,...,...\".....pp.....,........,.,..","....,...pppppppppppppppppppppppp........","........pp.........pp.......\".pp........",".,......pp.........pp.,,......pp........",".......,pp\".,.\".oooooooo.,...ssssss.....","....\"\"\",pp.,...oooooooooo,.sswwwwwwss,..","....\"\"\"\"pp..,,oooooooooooo.swwwwwwwws...",".,.\"\"\"\",pp\"...oooooooooooobbbbwwwwwws.,.","....\"\"\".pp....oooooooooooo.swwwwwwwws..,","....\"\"\".pp....oooooooooooo,sswwwwwwss...","......\",pp.....oooooooooo....ssssss.....",".....,..pp.\"....oooooooo......pp...,,...",".,.,.,\".pp\"......\",pp.........pp,,.....,","...,....pppppppppppppppppppppppp....,...","....,,..pp,..,,..,....,..\"....pp........","..........,.....,..............,..\".,...","...,.\",\".,,.,............,...\"\".........","......,.....\".......,........,,.........",".....,..,..,....,..............,..,..,..","..........,,..,....,......\".\"...........","..tt.t...............,..........,,..tt.t","t..tttt\".,.....,..\"...,...........t,tt,t",".ttt.t...............,.....,.....ttttttt","...t.tt.,.....\"..,.\"....\".......\"t,..t,t"],"objects":["TTPTTTTTTTTTTTTTTT    TPTTPPTTTTTTTTTTTP","TTTTTTTPTTTTTTPTPT    TTTTTTTPTPTTTTTTTT","TT                                    PT","TT         HH     L  L    HH          TT","TT    hhhh   hhhh           hhhh      TT","TT    hhhh   hhhh     G     hhhh      PT","TT    hhhh   hhhh           hhhh   u  TT","TT                                    TT","TT                                  B TT","PT B                                  TT","TT                                    TT","TT                                    TT","TT FFFFF       L        L             TT","TT F   F   B                 e    e   TT","TP F   F                              TT","PT F   F           T                  TT","TP F   F                           e  PP","PT F   F   B                     e    PT","TP FF FF                              TP","TT             L        L             TT","TT  u                                 TT","TP                                    TT","TT                                    TT","TT  hhhh                       hhhh   TP","TT  hhhh      hhhh      B      hhhh   PT","TT  hhhh      hhhh             hhhh   TP","PT          B hhhh        B         B PT","TT        u      E    u               TP","PT                                    TT","PT                                    PT","TPPTPTPTTTTTTTTPTTTTTPPTTPTTTPTTTTTTPTTP","TPTTPTTTTTTPTTTTTTTTTTTTTTTPTTTTTPTTTTPT"],"entry":[20,4],"spawns":[],"npcs":[{"id":"willow_elder","name":"촌장 버들","role":"quest","x":18,"y":13,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 도와주면 섭섭지 않게 사례하지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":25,"y":16,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."]},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":15,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 울타리 안은 밟으면 안 돼!","버드나무광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":22,"y":25,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 버드나무광장이야. 거기서 동쪽은 바람초원이고."]}],"portals":[{"x":19,"y":1,"to":"town","tx":49,"ty":71},{"x":20,"y":1,"to":"town","tx":50,"ty":71}],"fires":[[19,25]],"waypoint":[22,7],"fishing":true,"boss":null,"marks":[{"x":22,"y":5,"kind":"sign","label":"↑ 버드나무광장","to":"town"}]},
   ],
   links: [{"map":"town","x":49,"y":73,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":50,"y":73,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"},{"map":"town","x":49,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":50,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":36,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":37,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":62,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":63,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":65,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":66,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":72,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":73,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":85,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":86,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":80,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":81,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":72,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":73,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":79,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":80,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":67,"y":51,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":67,"y":52,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":45,"y":51,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":45,"y":52,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":29,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":30,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":10,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"},{"map":"town","x":11,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"}],
-  npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":52,"y":70,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":70,"y":23,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","전직은 되돌릴 수 없다네. 신중하게 고르게."]}],
+  npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":52,"y":70,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":70,"y":23,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","전직은 되돌릴 수 없다네. 신중하게 고르게."]},{"map":"town","id":"town_charm_juana","name":"참감정사 주아나","role":"charm","x":66,"y":23,"look":[7,0,11,11,0,0,4,6,2,0,0],"lines":["볼주머니에 넣기엔 제법 무거운 조각이네요. 빛을 품을 자리를 같이 찾아봐요.","여기, 테두리에 무늬가 보여요. 돌려 보면 작은 빈자리에도 맞겠어요.","사냥터에서 빛나는 조각을 주우면 가져오세요. 감정해서 참 보드에 놓으면 힘이 된답니다."]}],
   quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"버드나무광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":5,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false},{"id":"sq_merc_hares","giver":"merc_grey","title":"초원의 두 머리","text":"바람초원의 쌍두 토끼가 울타리까지 내려온다. 10마리만 쫓아내 주게. 첫 의뢰로 딱이지.","done":"깔끔하군. 늑대발의 일원이 될 자격이 있어.","goal":{"type":"kill","mob":"twinhare","n":10},"req":{"lv":1,"quest":null},"reward":{"xp":150,"gold":100,"items":[["hp_s",5]]},"repeat":false},{"id":"sq_merc_boar","giver":"merc_grey","title":"반쪽 멧돼지 사냥","text":"몸이 반으로 갈라진 멧돼지들이 길을 막고 있다. 8마리만 부탁하지. 돌진하면 옆으로 피하게.","done":"잘했다. 그 녀석들 돌진은 우리 단원들도 무서워하지.","goal":{"type":"kill","mob":"splitboar","n":8},"req":{"lv":10,"quest":"sq_merc_hares"},"reward":{"xp":900,"gold":400,"items":[["hp_m",5],["stone",1]]},"repeat":false},{"id":"sq_merc_letter","giver":"merc_grey","title":"볼칸에게 보내는 주문서","text":"광장 동쪽 장터의 대장장이 볼칸에게 이 주문서를 전해 주게. 단원들 새 칼이 필요하거든.","done":"볼칸이 받았다고? 좋아. 이건 심부름 값이다.","goal":{"type":"talk","npc":"smith"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":120,"items":[["recall",2]]},"repeat":false},{"id":"sq_kong_parcel","giver":"store_kong","title":"콩콩의 급한 배달","text":"보글 아저씨한테 이 상자 좀 전해 줄래? 다리가 짧아서 연금공방까지 가면 해가 질 거야!","done":"고마워! 보글 아저씨가 상자를 흔들어 봤다고? 앗, 조심하라고 했는데!","goal":{"type":"talk","npc":"bogle"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":90,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_borum_frogs","giver":"lib_borum","title":"표본 채집","text":"괴수 도감에 창자 개구리 항목이 비어 있어요. 바람초원에서 8마리를 잡아 와 주세요. 조용히, 도서관에서는 비명 금지!","done":"좋아요, 표본이 충분하네요. 도감이 한 장 두꺼워졌어요.","goal":{"type":"kill","mob":"gutfrog","n":8},"req":{"lv":3,"quest":null},"reward":{"xp":250,"gold":170,"items":[["hp_s",5],["mp_s",3]]},"repeat":false},{"id":"sq_mungchi_trout","giver":"diner_reg2","title":"쥬쥬표 송어 구이","text":"쥬쥬 아줌마의 송어 소금구이가 먹고 싶은데 재료가 똑 떨어졌대. 무지개 송어 3마리만 낚아다 줘!","done":"냠냠, 이 냄새! 약속대로 한 접시 몫은 네 거야.","goal":{"type":"collect","item":"fish_m","n":3},"req":{"lv":8,"quest":null},"reward":{"xp":650,"gold":300,"items":[["food_m",2],["hp_s",3]]},"repeat":false},{"id":"sq_bogle_crows","giver":"bogle","title":"보글보글 까마귀 눈","text":"새 시약에는 까마귀의 눈알이 한 방울 필요합니다. 눈알 까마귀 6마리를 바람초원에서 잡아 주세요. 폭발은 안 해요. 아마도.","done":"오오, 거품이 보랏빛으로! 이건 대성공입니다!","goal":{"type":"kill","mob":"eyecrow","n":6},"req":{"lv":12,"quest":"sq_kong_parcel"},"reward":{"xp":1110,"gold":410,"items":[["hp_m",3],["mp_m",2]]},"repeat":false},{"id":"sq_lira_song","giver":"inn_lira","title":"잠꾸러기를 위한 자장가","text":"새 자장가를 짓는 중인데, 여관 구석의 토토 씨가 어떤 노래를 좋아하는지 물어봐 줄래요?","done":"호오, 숲의 소리가 들어간 노래를 좋아한다고요? 영감이 마구 떠올라요!","goal":{"type":"talk","npc":"inn_toto"},"req":{"lv":20,"quest":null},"reward":{"xp":1910,"gold":510,"items":[["inn_bread",3],["hp_m",2]]},"repeat":false},{"id":"sq_bori_scout","giver":"hall_bori","title":"숲길 정찰","text":"이장으로서 속삭임 숲 길이 안전한지 알아야겠네. 직접 가서 한 바퀴 둘러보고 오게. 조심하게나.","done":"무사히 다녀왔군! 숲이 아직 버틸 만하다니 마을도 한시름 놓겠네.","goal":{"type":"visit","map":"forest"},"req":{"lv":25,"quest":null},"reward":{"xp":2730,"gold":620,"items":[["recall",2],["hp_m",3]]},"repeat":false},{"id":"sq_bawi_deer","giver":"merc_bawi","title":"갈비뼈 사슴의 뿔","text":"내가 젊을 때 갈비뼈 사슴한테 엉덩이를 찔렸지. 속삭임 숲에서 8마리만 혼내 주게. 복수는 후배가 하는 법이야.","done":"허허, 속이 다 시원하구먼. 이건 늙은이의 쌈짓돈일세.","goal":{"type":"kill","mob":"ribdeer","n":8},"req":{"lv":33,"quest":null},"reward":{"xp":6600,"gold":990,"items":[["hp_m",5],["stone",1]]},"repeat":false},{"id":"sq_toto_moths","giver":"inn_toto","title":"불빛 쫓는 나방","text":"으음... 잠을 잘 수가 없어... 인면 나방들이 창문에서 사람 얼굴로 웃고 있거든... 숲의 나방 8마리만 쫓아 줘...","done":"드디어... 조용해... 쿨쿨... 아, 고마워... 이건 꿈값이야...","goal":{"type":"kill","mob":"mothface","n":8},"req":{"lv":45,"quest":"sq_lira_song"},"reward":{"xp":14050,"gold":1320,"items":[["hp_l",3],["stone",1]]},"repeat":false},{"id":"sq_dongdong_pigeons","giver":"dongdong","title":"베란다의 비둘기 떼","text":"입주민들이 난리예요! 네온 시티의 비둘기 떼살이 자꾸 베란다에 앉는대요. 12마리만 정리해 주세요.","done":"살았다! 이제 빨래를 널 수 있겠어요. 관리비 대신 받으세요!","goal":{"type":"kill","mob":"pigeonmass","n":12},"req":{"lv":50,"quest":null},"reward":{"xp":18230,"gold":1460,"items":[["hp_l",3],["stone",2]]},"repeat":false},{"id":"sq_borum_blight","giver":"lib_borum","title":"시든 숲의 기록","text":"단풍 왕도의 다람쥐들이 가을 열병에 걸렸다는 소문이 있어요. 한 꼬리 다람쥐떼 12마리를 기록해 와 주세요. 위험하면 도망쳐도 좋아요!","done":"멋진 기록이에요. 이 한 장이 도감의 마지막 쪽을 채웠어요.","goal":{"type":"kill","mob":"blightsquirrel","n":12},"req":{"lv":150,"quest":"sq_borum_frogs"},"reward":{"xp":1017960,"gold":4210,"items":[["hp_l",5],["mp_l",3],["stone",3],["sc_xp",1]]},"repeat":false}]},
 };
 // ───────────────────────────── jobs and stats: tables ─────────────────────────────
@@ -374,6 +374,9 @@ const ITEMS = {
   mp_s: { name: "파란 물약", type: "pot", mana: 40, price: 25, desc: "MP를 40 회복한다." },
   mp_m: { name: "큰 파란 물약", type: "pot", mana: 140, price: 80, desc: "MP를 140 회복한다." },
   mp_l: { name: "농축 파란 물약", type: "pot", mana: 340, price: 170, desc: "MP를 340 회복한다." },
+  // charms (66-charms.js): one to a slot, never stacked, sold or stored; `charm_nail` opens a cell of the board
+  charm: { name: "참", type: "charm", price: 0, desc: "주아나가 감정해 주는 빛나는 조각. 감정한 참은 참 보드에 놓아야 힘을 낸다." },
+  charm_nail: { name: "참틀 확장못", type: "mat", price: 0, desc: "주아나에게 가져가면 골드와 함께 참 보드의 칸을 하나 연다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
   recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 버드나무광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
@@ -4715,7 +4718,9 @@ const NPC_POSES = ["sip", "read", "wipe", "doze", "write", "sweep", "hammer", "s
 const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job",
   // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
   // alchemist, 포포 the 알바 broker — until L2 they only talk ("곧 문을 엽니다", public/npctalk.js)
-  "cook", "craft", "alch", "jobs"];
+  "cook", "craft", "alch", "jobs",
+  // 주아나 the charm appraiser (66-charms.js)
+  "charm"];
 const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
@@ -5076,7 +5081,7 @@ const LOOK_COST = 500;
 export function newChar(name, look, oldLook) {
   const lk = Array.isArray(look) ? look : Array.isArray(oldLook) ? oldLook : [];
   return {
-    v: 12, name, job: "adventurer",
+    v: 13, name, job: "adventurer",
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -5097,6 +5102,8 @@ export function newChar(name, look, oldLook) {
     bagCap: INV_BASE, house: homeEmpty(),
     // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
     ...lifeFresh(),
+    // charms (v13, 66-charms.js): the board, 주아나's quests, what waits with her
+    charms: charmsEmpty(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
     // the town layout it was saved under (34-maps-world.js TOWN_REV)
     tw: TOWN_REV,
@@ -5118,6 +5125,7 @@ function migrate(ch) {
     if (!g || typeof g.id !== "string") return null;
     const id = OLD_ID[g.id] || g.id.replace("w_ranger_", "w_lancer_");
     if (!ITEMS[id]) return null;
+    if (id === "charm") return charmFix(g);
     if (!isGear(id)) return { id, n: g.n | 0 || 1 };
     const out = { id, q: clamp(g.q | 0, 0, 4), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
     if (LEGEND[g.lg]) out.lg = g.lg;
@@ -5205,7 +5213,9 @@ function migrate(ch) {
   // life skills (v12): an older sheet's 낚시/요리 start from its fish and cook counters (cap Lv 20); the 알바
   // board, trust, co-op days and the 재료 주머니 are cleaned (58-life.js)
   lifeSheetClean(ch);
-  ch.v = Math.max(ch.v | 0, 12);
+  // charms (v13): the board and its charms made whole; what cannot stay where it was waits in the recovery queue (66-charms.js)
+  charmsClean(ch);
+  ch.v = Math.max(ch.v | 0, 13);
   return ch;
 }
 
@@ -5707,7 +5717,9 @@ function deriveStats(p) {
   if (p.stc) return p.stc;
   const ch = p.ch, lv = ch.lvl, b = gearBonus(ch), w = ch.eq.weapon, wk = weaponKind(ch), arm = WKIND[wk];
   const E = {};
-  for (const k of ST_ORDER) E[k] = eff(ch.st[k]);
+  // the charm board (66-charms.js): stats on top of the soft-capped ones (combat only), HP, MP, attack after gear
+  const cm = charmSum(ch);
+  for (const k of ST_ORDER) E[k] = eff(ch.st[k]) + cm.st[k];
   const wAtk = w ? (ITEMS[w.id].base.atk || 0) * (1 + 0.1 * w.enh) : 0;
   const sc = scaleOf(ch, wk);
   let core = SFX.atk[0] + SFX.atk[1] * lv;
@@ -5715,10 +5727,10 @@ function deriveStats(p) {
   const wm = w ? ch.wm[wk].lv : 0;
   const luk = E.luk, dex = E.dex, wil = E.wil, wis = E.wis;
   p.stc = {
-    mhp: Math.round(SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp),
-    mmp: Math.round(SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp),
-    atk0: (core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100),
-    core,
+    mhp: Math.round(SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp),
+    mmp: Math.round(SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp),
+    atk0: (core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk,
+    core, cm,
     def: Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def),
     crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh : 0) + b.crit),
     critd: SFX.critd[0] + SFX.critd[1] * luk + b.critd / 100,
@@ -5893,8 +5905,10 @@ function shotTick(S, rt, dt) {
       s.hit.push(o.id);
       if (s.cap) s.cap.h[o.id] = (s.cap.h[o.id] | 0) + 1;
       p.hitAct = [s.act, s.gain];
-      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1), false, s.opt || undefined);
+      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
       p.hitAct = null;
+      // 길별의 렌즈참: a 관통 화살 that strikes a second target marks it (66-charms.js)
+      if (s.cl && s.hit.length === 2) charmLens(S, rt, p, o);
       if (s.el) { weave(S, rt, p, s.el, o.x, o.y, s.k); s.el = ""; }
       if (s.hit.length > s.pierce) { stop = along; break; }
     }
@@ -6051,7 +6065,7 @@ function sortSlots(list) {
   const out = [];
   for (const e of order) {
     const top = out[out.length - 1];
-    if (!isGear(e.id) && top && top.id === e.id && top.n < STACK) {
+    if (!isGear(e.id) && e.id !== "charm" && top && top.id === e.id && top.n < STACK) {
       const put = Math.min(e.n || 1, STACK - top.n);
       top.n += put;
       if ((e.n || 1) > put) out.push({ id: e.id, n: (e.n || 1) - put });
@@ -6150,6 +6164,7 @@ function wanted(ch, dr) {
 /** Whether `p` has room for a drop. */
 function fits(ch, dr) {
   if (dr.it === "gold") return true;
+  if (dr.c) return ch.inv.length < bagCap(ch);
   return dr.g ? ch.inv.length < bagCap(ch) : canAdd(ch, dr.it, dr.n);
 }
 function bagFull(S, p) {
@@ -6157,6 +6172,7 @@ function bagFull(S, p) {
 }
 /** Put a drop into `p`'s bag (or purse). False, with a reminder, if there is no room. */
 function pickUp(S, p, dr) {
+  if (dr.c) return charmPick(S, p, dr);   // a sealed charm (66-charms.js)
   if (!fits(p.ch, dr)) { bagFull(S, p); return false; }
   if (dr.it === "gold") {
     p.ch.gold += dr.n;
@@ -6486,6 +6502,7 @@ function killMob(S, rt, mob) {
     checkAch(S, p);
     p.dirty = true;
     lootFor(S, rt, mob, p);
+    charmKill(S, rt, mob, p);   // 주아나's quests, sealed charms (66-charms.js)
     // a field boss, a guardian or a boss may leave something to wear
     if ((el === 2 || d.boss) && cosRoll(S, p, "boss") < COS_BOSS) cosFrom(S, p, "boss", d.name);
   }
@@ -6679,7 +6696,7 @@ function basicAttack(S, p) {
   // 급소 도려내기: a stab on a marked monster opens it up (bleeding, and a burst of speed); every stab marks
   const vit = c === WKIND.dagger && pasOn(p, "vitals") ? SKILL.vitals : null;
   const marked = vit && marksOf(S, mob) > 0;
-  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1), false, tip ? { ign: SKILL.tip.ign } : null);
+  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1) * charmMarkK(S, rt, p, mob), false, tip ? { ign: SKILL.tip.ign } : null);
   if (vit && !mob.dead) {
     if (marked) {
       if (!(mob.dot && mob.dot.until > now && mob.dot.pid === p.pid)) rt.ev.push(["a", p.eid, 111, Math.round(mob.x), Math.round(mob.y - 6), p.dir]);
@@ -7094,7 +7111,7 @@ function castSkill(S, p, id) {
   newAct(p, true);
   const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
   // mastery grows a skill; a full resonance makes a staff skill free and 30% stronger
-  let k = skGrow(p.ch, sk);
+  let k = skGrow(p.ch, sk) * charmSkd(p, id);   // (and what the charm board adds to this skill, 66-charms.js)
   const cost = skMp(p, sk);
   if (skOf(sk, "staff") && pasOn(p, "reso")) {
     if ((p.reso | 0) >= SKILL.reso.n) { p.reso = 0; k *= 1 + SKILL.reso.k; }
@@ -7136,7 +7153,13 @@ function castSkill(S, p, id) {
       for (const o of mobsWithin(rt, p.x, p.y, sk.r)) hit(o, sk.mult);
       const wl = Math.max(18, reach(m, p.x, p.y, aimX, aimY, sk.len));
       ev(82, p.x + aimX * wl, p.y + aimY * wl - 6, wl);
-      for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, wl, sk.half)) { if (!MOBS[o.k].boss && o.el !== 2) holdMob(S, o, 300); hit(o, sk.wave); }
+      // (메아리 뿔참, 66-charms.js: the first monster in the wave's last 30% takes 18% of that hit again)
+      const wave = mobsInLine(rt, p.x, p.y, aimX, aimY, wl, sk.half), echo = charmEchoPick(S, p, wave, aimX, aimY, wl);
+      for (const o of wave) {
+        if (!MOBS[o.k].boss && o.el !== 2) holdMob(S, o, 300);
+        if (o === echo) charmEchoHit(S, rt, p, o, dealt(p, [o], () => hit(o, sk.wave)));
+        else hit(o, sk.wave);
+      }
       break;
     }
     case "verdict": {
@@ -7256,7 +7279,7 @@ function castSkill(S, p, id) {
       const [tx, ty] = mob ? [mob.x, mob.y] : ahead(sk.len * 0.6);
       const ms = Math.round((dist(p.x, p.y, tx, ty) / sk.spd) * 1000);
       ev(91, tx, ty - 6, ms);
-      if (mob) prop({ kind: "bolt", x: tx, y: ty, tgt: mob.id, next: now + ms, until: now + ms + 1000, every: 1000, mult: sk.mult * k, heal: sk.heal });
+      if (mob) prop({ kind: "bolt", x: tx, y: ty, tgt: mob.id, next: now + ms, until: now + ms + 1000, every: 1000, mult: sk.mult * k, heal: sk.heal * charmSkh(p, id) });
       break;
     }
     case "gravity": {
@@ -7277,7 +7300,8 @@ function castSkill(S, p, id) {
       const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
       if (mob) face(p, mob);
       ev(94, ...(mob ? [mob.x, mob.y] : ahead(80)));
-      fireArrow(S, rt, p, mob, sk.mult * k, 99, 2, { spd: sk.spd, len: sk.len, r: sk.r });
+      const shot = fireArrow(S, rt, p, mob, sk.mult * k, 99, 2, { spd: sk.spd, len: sk.len, r: sk.r });
+      if (deriveStats(p).cm.lg === "lens") shot.cl = 1;   // 길별의 렌즈참 (66-charms.js)
       break;
     }
     case "leapshot": {
@@ -7349,7 +7373,7 @@ function castSkill(S, p, id) {
       ev(99, p.x, p.y - 6, sk.r);
       rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 9]);
       for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { const [vx, vy] = aimVec(p, o); knock(m, o, vx, vy, 12); hit(o, sk.mult); }
-      prop({ kind: "field", wire: 1, x: p.x, y: p.y, r: sk.field, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.drain * k, heal: sk.heal });
+      prop({ kind: "field", wire: 1, x: p.x, y: p.y, r: sk.field, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.drain * k, heal: sk.heal * charmSkh(p, id) });
       break;
     }
     case "bloodburst": {
@@ -9153,12 +9177,14 @@ function dimClear(S, dim, mob) {
 /** Each member's own reward from the master's chest, once; full experience for the first few clears of the day. */
 function dimChest(S, dim, p) {
   const ch = p.ch, lv = dim.lv, R = DIM.reward;
+  if (charmChestHold(S, p)) return;   // a charm already waits at 주아나 and the bag is full (66-charms.js)
   dim.got[p.pid] = 1;
   const day = dayOf(S.now);
   if (!ch.dim || ch.dim.day !== day) ch.dim = { day, n: 0 };
   ch.dim.n++;
   const full = ch.dim.n <= DIM.dailyFull;
   payout(S, p, { gold: R.gold * lv, stone: R.stone, rune: rnd(S) < R.rune, gear: 1, gearQ: R.gearQ, xp: Math.round(R.xp * xpNeed(lv) * (full ? 1 : 0.5)) });
+  charmChest(S, dim, p);
   dim.rt.ev.push(["dm", "chest", dim.chest.x, dim.chest.y]);
   toast(p, full ? `균열의 보상을 받았습니다! (오늘 ${ch.dim.n}번째)` : `균열의 보상을 받았습니다. 오늘 ${DIM.dailyFull}번을 넘겨 경험치는 절반입니다.`);
   saveSoon(p);
@@ -9987,6 +10013,613 @@ function cosFrom(S, p, src, why) {
   return giveCos(S, p, left[Math.floor(cosRoll(S, p, src) * left.length)], why);
 }
 
+// ───────────────────────────── charms (주아나의 참 공방) ─────────────────────────────
+// docs/design/charms.md. A charm (참) is its own kind of thing, apart from gear: it drops sealed (미감정) in
+// the field and from a rift's own chest, 주아나 (town_charm_juana, role "charm") appraises it, and it then
+// sits on a board of up to 5 × 5 cells where its shape has to fit. Only charms on the board do anything.
+//
+// Sheet (v13): ch.charms = { unlocked, openN, intro, fu, kn, freeId, nextUid, placed, pending, rec }
+//   unlocked  the board is open (forever: a stat reset does not touch it)
+//   openN     cells bought beyond the inner 3 × 3, in CHARM_EXPAND order (0–16)
+//   intro     〈빛나는 조각의 자리〉 0 not taken · 1 hunting · 2 done;  fu  the Lv.50 / Lv.90 follow-ups, each 0/1/2
+//   kn        kills counted for the quest under way
+//   freeId    1 while the one free appraisal is unspent
+//   nextUid   the next charm's id (per character, never reused)
+//   placed    [{ c: charm, x, y, r }] — anchor (top-left of the turned shape) and quarter turns 0–3
+//   pending   one charm from a rift chest opened with a full bag (claimed at 주아나)
+//   rec       charms a migration took off a broken board (claimed at 주아나, never put back by themselves)
+// A charm in the bag: { id: "charm", n: 1, uid, seal, rv, tier, src, rev: 0 } and, once appraised,
+//   rev: 1, g (1 매직 · 2 레어 · 3 전설), sh (shape id), op [[kind, value, arg]], lg (legendary id).
+//   `seal` never leaves the server (charmWire); with `rv` (the rule version it was sealed under) and `src`
+//   it decides the appraisal, so asking again — or after a reconnect — gives the same charm.
+
+/** The appraisal rules' version: part of every seal's hash. */
+const CHARM_V = 1;
+const CHARM_SIZE = 5, CHARM_REC_MAX = 60;
+/** Monsters more than this many tiers below the hunter give neither charms nor quest kills. */
+const CHARM_LOW = 4;
+/** The cells bought one at a time after the inner (1,1)–(3,3), in this order. */
+const CHARM_EXPAND = [[4, 1], [4, 2], [4, 3], [1, 4], [2, 4], [3, 4], [4, 4], [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [2, 0], [3, 0], [4, 0], [0, 0]];
+/** The k-th expansion (k cells already bought, 0–15): 2,000 … 36,500 G, 252,000 G in all. */
+const charmExpandCost = (k) => 2000 + 800 * k + 100 * k * k;
+/** What an appraisal costs, by the tier the charm came from (never by what it turns out to be). */
+const charmIdCost = (tier) => Math.round(200 + 12 * tier);
+/** Shapes: cells in the base turn, and what a general option is multiplied by. */
+const CHARM_SHAPES = {
+  pin: { cells: [[0, 0]], k: 1.0, w: 40 },
+  bar2: { cells: [[0, 0], [1, 0]], k: 1.7, w: 25 },
+  bar3: { cells: [[0, 0], [1, 0], [2, 0]], k: 2.3, w: 12 },
+  elbow: { cells: [[0, 0], [0, 1], [1, 1]], k: 2.3, w: 13 },
+  tile2: { cells: [[0, 0], [1, 0], [0, 1], [1, 1]], k: 2.9, w: 10 },
+};
+const CHARM_SHAPE_IDS = Object.keys(CHARM_SHAPES);
+const CHARM_GRADE = ["", "매직", "레어", "전설"];
+/**
+ * Where a charm comes from (wire `src`): the chance of a sealed charm, the odds of 매직 / 레어 / 전설 once
+ * one fell (percent), and the chance of a 참틀 확장못. 4 is 주아나's first charm (always a 매직 1 × 1).
+ */
+const CHARM_SRC = [
+  { name: "필드 사냥", p: 0.006, g: [85, 14.8, 0.2], nail: 0.0005 },
+  { name: "필드 정예", p: 0.024, g: [79, 20.65, 0.35], nail: 0.002 },
+  { name: "우두머리·수문장", p: 0.12, g: [67, 32.5, 0.5], nail: 0.01 },
+  { name: "차원 균열 상자", p: 0.4, g: [60, 39, 1], nail: 0.08 },
+  { name: "주아나의 의뢰", p: 0, g: [100, 0, 0], nail: 0 },
+];
+/**
+ * General options on a 1 × 1 charm: [lo, hi] before the shape's coefficient, `pct` for tenths of a percent
+ * (whole numbers are floored), `cap` for the whole board, `w` how often it is rolled.
+ *   st a stat (arg: its key, added to the stat after its soft cap — combat only) · hp · mp · atk (after gear)
+ *   skd one weapon active's damage % (arg: skill id) · skh one healing skill's recovery % (arg: skill id)
+ */
+const CHARM_OPT = {
+  st: { name: "능력치", lo: 1, hi: 2, cap: 8, w: 30 },
+  hp: { name: "HP", lo: 8, hi: 14, cap: 120, w: 18 },
+  mp: { name: "MP", lo: 4, hi: 7, cap: 60, w: 14 },
+  atk: { name: "공격력", lo: 1, hi: 2, cap: 30, w: 14 },
+  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 12, w: 18 },
+  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 12, w: 6 },
+};
+const CHARM_OPT_IDS = Object.keys(CHARM_OPT);
+/** The skills an option can name: every weapon active (damage), every skill that heals its caster (recovery). */
+const CHARM_SKD = SKILL_ORDER.filter((id) => SKILL[id].kind === "a");
+const CHARM_SKH = SKILL_ORDER.filter((id) => SKILL[id].heal > 0);
+/**
+ * Legendary charms: a fixed shape, one power, one general option. Only one power works on a board (the
+ * first placed). `off`: not dropped yet — 수호의 매듭참 waits for a spear or book skill that heals the party.
+ */
+const CHARM_LEGEND = {
+  echo: { name: "메아리 뿔참", shape: "bar3", sk: "rend", k: 0.18, tail: 0.3, cd: 12000,
+    desc: "대검 [대지 가르기]의 파동 끝 30%에 처음 맞은 적에게 그 적중 피해의 18%를 한 번 더 준다. 시전당 1회, 12초마다." },
+  knot: { name: "수호의 매듭참", shape: "elbow", off: 1, k: 0.04, ms: 4000, cd: 18000,
+    desc: "창이나 마도서의 파티 회복 스킬로 HP 50% 미만의 아군을 회복하면 그 아군에게 최대 HP 4%의 보호막을 4초 준다. 18초마다. (아직 열리지 않음)" },
+  lens: { name: "길별의 렌즈참", shape: "tile2", sk: "pierce", k: 0.15, ms: 4000, cd: 14000,
+    desc: "활 [관통 화살]이 두 번째 표적을 맞히면 그 표적에 4초간 표식을 남긴다. 표식 있는 적에게 하는 다음 기본 공격 1회의 피해 +15%. 14초마다." },
+};
+const CHARM_LG_LIVE = Object.keys(CHARM_LEGEND).filter((id) => !CHARM_LEGEND[id].off);
+/** 주아나's commissions: the first opens the board; the two after it each bring a 참틀 확장못. */
+const CHARM_QUESTS = [
+  { id: "intro", lv: 30, n: 8, title: "빛나는 조각의 자리", text: "내 수준에 맞는 사냥터의 몬스터 8마리를 잡고 주아나에게 돌아가세요.", reward: "참 보드 3×3 · 미감정 참 1개 · 첫 감정 무료" },
+  { id: "f50", lv: 50, n: 8, title: "넓어지는 틀", text: "내 수준에 맞는 사냥터의 몬스터 8마리를 잡고 주아나에게 돌아가세요.", reward: "참틀 확장못 1개" },
+  { id: "f90", lv: 90, n: 8, title: "마지막 못 자리", text: "내 수준에 맞는 사냥터의 몬스터 8마리를 잡고 주아나에게 돌아가세요.", reward: "참틀 확장못 1개" },
+];
+const CHARM_SAY = {
+  accept: "볼주머니에 넣기엔 제법 무거운 조각이네요. 빛을 품을 자리를 같이 찾아봐요.",
+  appraise: "여기, 테두리에 무늬가 보여요. 돌려 보면 작은 빈자리에도 맞겠어요.",
+};
+
+const charmsEmpty = () => ({ unlocked: false, openN: 0, intro: 0, fu: [0, 0], kn: 0, freeId: 0, nextUid: 1, placed: [], pending: null, rec: [] });
+const isCharm = (s) => !!s && s.id === "charm";
+
+// ── shapes and the board
+
+/** The cells of shape `sh` after `r` quarter turns, moved back to the origin, in reading order. */
+function charmCells(sh, r) {
+  let cells = CHARM_SHAPES[sh].cells.map(([x, y]) => [x, y]);
+  for (let i = 0; i < (r & 3); i++) cells = cells.map(([x, y]) => [-y, x]);
+  const mx = Math.min(...cells.map((c) => c[0])), my = Math.min(...cells.map((c) => c[1]));
+  return cells.map(([x, y]) => [x - mx, y - my]).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+}
+/** The open cells of a board with `openN` expansions, as a set of "x,y" (nothing before the board is unlocked). */
+function charmOpen(cs) {
+  const out = new Set();
+  if (!cs.unlocked) return out;
+  for (let y = 1; y <= 3; y++) for (let x = 1; x <= 3; x++) out.add(`${x},${y}`);
+  for (let i = 0; i < cs.openN; i++) out.add(CHARM_EXPAND[i].join(","));
+  return out;
+}
+/** Why shape `sh` cannot lie at (x, y) turned `r` ("" when it can); `skip` is a charm whose own cells do not count. */
+function charmFit(cs, sh, x, y, r, skip) {
+  if (!Number.isInteger(x) || !Number.isInteger(y) || !Number.isInteger(r) || r < 0 || r > 3) return "잘못된 자리입니다";
+  const open = charmOpen(cs), used = new Set();
+  for (const e of cs.placed) if (e.c.uid !== skip) for (const [cx, cy] of charmCells(e.c.sh, e.r)) used.add(`${e.x + cx},${e.y + cy}`);
+  const at = charmCells(sh, r).map(([cx, cy]) => [x + cx, y + cy]);
+  // (the whole shape is looked at for each reason in turn: off the board, then locked, then taken)
+  if (at.some(([px, py]) => px < 0 || py < 0 || px >= CHARM_SIZE || py >= CHARM_SIZE)) return "보드 밖입니다";
+  if (at.some(([px, py]) => !open.has(`${px},${py}`))) return "잠긴 칸입니다";
+  if (at.some(([px, py]) => used.has(`${px},${py}`))) return "다른 참이 놓인 칸입니다";
+  return "";
+}
+
+// ── sealing and appraising
+
+/** A roll of the charm stream: apart from the world's own dice (so nothing else in a seeded run moves). */
+function charmRoll(S, p, salt) {
+  S.chN = (S.chN | 0) + 1;
+  // (the hash only seeds: the generator does the mixing, so counters next to each other do not roll alike)
+  return rnd({ seed: strHash(`${S.now}:${p.eid}:${p.ch.name}:${salt}:${S.chN}`) | 0 });
+}
+/** A sealed charm, not yet anyone's (no uid): from source `src` at world tier `tier`. */
+function charmSeal(S, p, src, tier) {
+  S.chN = (S.chN | 0) + 1;
+  return { seal: Math.floor(rnd({ seed: strHash(`seal:${S.now}:${p.pid}:${p.ch.name}:${p.ch.charms.nextUid}:${S.chN}`) | 0 }) * 4294967296) >>> 0, rv: CHARM_V, tier: clamp(Math.round(tier) || 1, 1, TIER_MAX), src };
+}
+/** Make a sealed charm this character's own (the next uid): the instance that goes into the bag. */
+function charmOwn(ch, c) {
+  const out = { id: "charm", n: 1, uid: ch.charms.nextUid++, seal: c.seal >>> 0, rv: c.rv | 0 || CHARM_V, tier: c.tier, src: c.src, rev: 0 };
+  if (c.fx) out.fx = 1;
+  return out;
+}
+/** One general option for a shape, not one of `have`: [kind, value, arg]. */
+function charmOption(box, sh, have) {
+  const total = CHARM_OPT_IDS.reduce((n, k) => n + CHARM_OPT[k].w, 0);
+  for (let tries = 0; ; tries++) {
+    let roll = rnd(box) * total, kind = CHARM_OPT_IDS[0];
+    for (const k of CHARM_OPT_IDS) { if (roll < CHARM_OPT[k].w) { kind = k; break; } roll -= CHARM_OPT[k].w; }
+    const o = CHARM_OPT[kind];
+    const arg = kind === "st" ? ST_ORDER[ri(box, 0, ST_ORDER.length - 1)] : kind === "skd" ? CHARM_SKD[ri(box, 0, CHARM_SKD.length - 1)] : kind === "skh" ? CHARM_SKH[ri(box, 0, CHARM_SKH.length - 1)] : "";
+    const base = o.pct ? ri(box, o.lo * 10, o.hi * 10) / 10 : ri(box, o.lo, o.hi);
+    if (tries < 40 && have.some((h) => h[0] === kind && h[2] === arg)) continue;
+    const v = base * CHARM_SHAPES[sh].k;
+    return [kind, o.pct ? Math.round(v * 10) / 10 : Math.floor(v), arg];
+  }
+}
+/** What a seal holds: { g, sh, op, lg }. The same for the same seal, rule version and source, every time. */
+function charmAppraise(c) {
+  const box = { seed: strHash(`charm:${c.seal >>> 0}:${c.rv | 0}:${c.src | 0}`) | 0 };
+  const odds = (CHARM_SRC[c.src] || CHARM_SRC[0]).g;
+  const x = rnd(box) * 100, pick = rnd(box);
+  let g = x < odds[0] ? 1 : x < odds[0] + odds[1] ? 2 : 3, sh = "pin", lg = "";
+  if (c.fx) g = 1;
+  else if (g === 3 && CHARM_LG_LIVE.length) { lg = CHARM_LG_LIVE[Math.floor(pick * CHARM_LG_LIVE.length)]; sh = CHARM_LEGEND[lg].shape; }
+  else {
+    if (g === 3) g = 2;
+    const total = CHARM_SHAPE_IDS.reduce((n, k) => n + CHARM_SHAPES[k].w, 0);
+    let roll = pick * total;
+    for (const k of CHARM_SHAPE_IDS) { if (roll < CHARM_SHAPES[k].w) { sh = k; break; } roll -= CHARM_SHAPES[k].w; }
+  }
+  const op = [];
+  for (let n = g === 2 ? 2 : 1; n > 0; n--) op.push(charmOption(box, sh, op));
+  return { g, sh, op, lg };
+}
+const charmName = (c) => (!c.rev ? "미감정 참" : c.lg ? CHARM_LEGEND[c.lg].name : `${CHARM_GRADE[c.g]} 참`);
+/** What the owner's client is told of a charm: never the seal, and of a sealed one only where it came from. */
+function charmWire(c) {
+  if (!c.rev) return { id: "charm", n: 1, uid: c.uid, src: c.src, tier: c.tier, rev: 0, cost: charmIdCost(c.tier) };
+  const out = { id: "charm", n: 1, uid: c.uid, src: c.src, tier: c.tier, rev: 1, g: c.g, sh: c.sh, op: c.op };
+  if (c.lg) out.lg = c.lg;
+  return out;
+}
+/** The bag as the client sees it (selfPayload): everything as it is, charms through charmWire. */
+const charmBag = (inv) => (inv.some(isCharm) ? inv.map((s) => (isCharm(s) ? charmWire(s) : s)) : inv);
+
+// ── the sheet
+
+/** A saved charm made whole, or null when it cannot be one (no seal, no uid). */
+function charmFix(g) {
+  if (!isObj(g) || !Number.isInteger(g.uid) || g.uid < 1 || !num(g.seal)) return null;
+  const out = { id: "charm", n: 1, uid: g.uid, seal: g.seal >>> 0, rv: clamp(g.rv | 0, 1, CHARM_V), tier: clamp(g.tier | 0, 1, TIER_MAX), src: clamp(g.src | 0, 0, CHARM_SRC.length - 1), rev: g.rev ? 1 : 0 };
+  if (g.fx) out.fx = 1;
+  if (!out.rev) return out;
+  // an appraised charm is what its seal says: anything else on the sheet is put right
+  const a = charmAppraise(out);
+  out.g = a.g; out.sh = a.sh; out.op = a.op;
+  if (a.lg) out.lg = a.lg;
+  return out;
+}
+/**
+ * The charm fields of a sheet being migrated (v13; idempotent, after the bag, the warehouse and the house
+ * are clean). Every uid is one charm: a second with the same uid, a charm on a cell that is locked, taken
+ * or off the board, one that is still sealed on the board, and any that strayed into the warehouse or a
+ * house chest go to the recovery queue (`rec`) with a uid of their own — never back onto the board.
+ */
+function charmsClean(ch) {
+  const old = isObj(ch.charms) ? ch.charms : {};
+  const cs = charmsEmpty();
+  cs.unlocked = !!old.unlocked;
+  cs.openN = cs.unlocked ? clamp(old.openN | 0, 0, CHARM_EXPAND.length) : 0;
+  cs.intro = cs.unlocked ? 2 : clamp(old.intro | 0, 0, 1);
+  cs.fu = [0, 1].map((i) => (cs.unlocked && Array.isArray(old.fu) ? clamp(old.fu[i] | 0, 0, 2) : 0));
+  cs.kn = clamp(old.kn | 0, 0, 999);
+  cs.freeId = old.freeId ? 1 : 0;
+  const seen = new Set(), stray = [];
+  let top = 0;
+  const all = [];
+  const take = (c) => { if (seen.has(c.uid)) return false; seen.add(c.uid); top = Math.max(top, c.uid); return true; };
+  // the bag first: what is carried is kept where it is
+  const inv = [];
+  for (const s of ch.inv) {
+    if (!isCharm(s)) { inv.push(s); continue; }
+    all.push(s);
+    if (take(s)) inv.push(s); else stray.push(s);
+  }
+  ch.inv = inv;
+  for (const e of Array.isArray(old.placed) ? old.placed : []) {
+    const c = isObj(e) ? charmFix(e.c) : null;
+    if (!c) continue;
+    all.push(c);
+    if (c.rev && !seen.has(c.uid) && !charmFit(cs, c.sh, e.x, e.y, e.r, 0)) { take(c); cs.placed.push({ c, x: e.x, y: e.y, r: e.r }); }
+    else stray.push(c);
+  }
+  const pend = charmFix(old.pending);
+  if (pend) { all.push(pend); if (take(pend)) cs.pending = pend; else stray.push(pend); }
+  for (const g of Array.isArray(old.rec) ? old.rec : []) {
+    const c = charmFix(g);
+    if (!c) continue;
+    all.push(c);
+    if (take(c)) cs.rec.push(c); else stray.push(c);
+  }
+  // charms never live in the warehouse or a house chest
+  const sweep = (list) => list.filter((s) => { if (!isCharm(s)) return true; const c = charmFix(s); if (c) { all.push(c); stray.push(c); } return false; });
+  if (isObj(ch.wh) && Array.isArray(ch.wh.items)) ch.wh.items = sweep(ch.wh.items);
+  if (isObj(ch.house) && Array.isArray(ch.house.storage)) ch.house.storage = sweep(ch.house.storage);
+  for (const c of all) top = Math.max(top, c.uid);
+  cs.nextUid = Math.max(1, old.nextUid | 0, top + 1);
+  for (const c of stray) {
+    if (seen.has(c.uid)) c.uid = cs.nextUid++;
+    seen.add(c.uid);
+    if (cs.rec.length < CHARM_REC_MAX) cs.rec.push(c);
+  }
+  ch.charms = cs;
+}
+
+// ── what the board adds
+
+/**
+ * The board's total: stats (after their soft caps), HP, MP, attack, per-skill damage and recovery percent —
+ * each held to its cap — and the one legendary power at work (the first placed).
+ */
+function charmSum(ch) {
+  const out = { st: Object.fromEntries(ST_ORDER.map((k) => [k, 0])), hp: 0, mp: 0, atk: 0, skd: {}, skh: {}, lg: "" };
+  const cs = ch.charms;
+  if (!cs || !cs.placed.length) return out;
+  for (const e of cs.placed) {
+    if (e.c.lg && !out.lg && !CHARM_LEGEND[e.c.lg].off) out.lg = e.c.lg;
+    for (const [kind, v, arg] of e.c.op) {
+      const cap = CHARM_OPT[kind].cap;
+      if (kind === "st") out.st[arg] = Math.min(cap, out.st[arg] + v);
+      else if (kind === "skd" || kind === "skh") out[kind][arg] = Math.min(cap, Math.round(((out[kind][arg] || 0) + v) * 10) / 10);
+      else out[kind] = Math.min(cap, out[kind] + v);
+    }
+  }
+  return out;
+}
+/** × a skill's damage, × a skill's healing, from the board (castSkill). */
+const charmSkd = (p, id) => 1 + (deriveStats(p).cm.skd[id] || 0) / 100;
+const charmSkh = (p, id) => 1 + (deriveStats(p).cm.skh[id] || 0) / 100;
+/** Is legendary power `id` at work for `p`, and off its inner cooldown? (The cooldown lives with the player, not the board.) */
+function charmReady(S, p, id) {
+  if (deriveStats(p).cm.lg !== id) return false;
+  return !(p.chCd && p.chCd[id] > S.now);
+}
+const charmUsed = (S, p, id) => { (p.chCd || (p.chCd = {}))[id] = S.now + CHARM_LEGEND[id].cd; };
+
+// ── legendary powers (called from the hit itself: 57-weapon-skills.js rend, 45-jobs.js shotTick, 50 basicAttack)
+
+/** 메아리 뿔참: of the monsters a 대지 가르기 wave of length `wl` is about to strike, the first in its last 30% — or null. */
+function charmEchoPick(S, p, list, ux, uy, wl) {
+  if (!charmReady(S, p, "echo")) return null;
+  const from = wl * (1 - CHARM_LEGEND.echo.tail);
+  let best = null, at = 0;
+  for (const o of list) {
+    const along = (o.x - p.x) * ux + (o.y - p.y) * uy;
+    if (along < from) continue;
+    if (!best || along < at || (along === at && o.id < best.id)) { best = o; at = along; }
+  }
+  return best;
+}
+/**
+ * … and once the wave has struck it for `dmg`: 18% of that again, as plain damage (no crit, no leech, no
+ * mastery, nothing that could set off anything else), and the 12 s wait starts.
+ */
+function charmEchoHit(S, rt, p, mob, dmg) {
+  if (mob.dead || !(dmg > 0)) return;
+  charmUsed(S, p, "echo");
+  rt.ev.push(["cm", p.eid, 0, Math.round(mob.x), Math.round(mob.y - 6)]);
+  // (`dmg` is what reached the monster: a rift's toughness is already in it)
+  const hk = mob.hk; mob.hk = 0;
+  dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * CHARM_LEGEND.echo.k)), 0);
+  mob.hk = hk;
+}
+/** 길별의 렌즈참: a 관통 화살 has struck its second target, which lives: it is marked for 4 s. */
+function charmLens(S, rt, p, mob) {
+  if (mob.dead || !charmReady(S, p, "lens")) return;
+  charmUsed(S, p, "lens");
+  mob.cmk = { pid: p.pid, until: S.now + CHARM_LEGEND.lens.ms };
+  rt.ev.push(["cm", p.eid, 1, Math.round(mob.x), Math.round(mob.y - 6), mob.id]);
+}
+/** × the marker's next basic attack on a marked monster (the mark is spent by it). */
+function charmMarkK(S, rt, p, mob) {
+  const mk = mob.cmk;
+  if (!mk || mk.pid !== p.pid) return 1;
+  mob.cmk = null;
+  if (mk.until <= S.now) return 1;
+  rt.ev.push(["cm", p.eid, 2, Math.round(mob.x), Math.round(mob.y - 6), mob.id]);
+  return 1 + CHARM_LEGEND.lens.k;
+}
+
+// ── finding them
+
+/** Does a kill of `mob` count for charms (drops, 주아나's quests) for `p`? A field monster no more than 4 tiers below. */
+function charmPrey(rt, mob, p) {
+  const d = MOBS[mob.k];
+  if (mob.dim || mob.evt || d.chest || d.still || !Object.hasOwn(MAP_META, rt.id)) return false;
+  return d.lv >= toTier(p.ch.lvl) - CHARM_LOW;
+}
+/** The quest under way or next in line: its index in CHARM_QUESTS and its state (0 not taken, 1 hunting), or null when all are done. */
+function charmQuest(cs) {
+  if (cs.intro < 2) return { i: 0, st: cs.intro };
+  for (let i = 0; i < 2; i++) if (cs.fu[i] < 2) return { i: i + 1, st: cs.fu[i] };
+  return null;
+}
+/** A kill credited to `p` (killMob, once per looter): the quest's count, then the dice for a sealed charm and a 확장못. */
+function charmKill(S, rt, mob, p) {
+  const ch = p.ch, cs = ch.charms;
+  if (!charmPrey(rt, mob, p)) return;
+  const q = charmQuest(cs);
+  if (q && q.st === 1 && cs.kn < CHARM_QUESTS[q.i].n) {
+    cs.kn++;
+    p.dirty = true;
+    if (cs.kn >= CHARM_QUESTS[q.i].n) toast(p, `의뢰 [${CHARM_QUESTS[q.i].title}] 달성! 주아나에게 돌아가세요.`);
+  }
+  if (!cs.unlocked) return;
+  const d = MOBS[mob.k], src = d.boss || mob.el === 2 ? 2 : mob.el === 1 ? 1 : 0, row = CHARM_SRC[src];
+  const drop = (o) => rt.drops.push({ id: S.nextId++, g: null, n: 1, q: 0, x: mob.x + Math.round(charmRoll(S, p, "x") * 20 - 10), y: mob.y + Math.round(charmRoll(S, p, "y") * 14 - 6), own: p.pid, freeAt: S.now + 20000, dieAt: S.now + 60000, ...o });
+  if (charmRoll(S, p, "f") < row.p) drop({ it: "charm", c: charmSeal(S, p, src, d.lv) });
+  if (charmRoll(S, p, "n") < row.nail) drop({ it: "charm_nail" });
+}
+/** Picking a sealed charm up off the ground (pickUp): one free slot, and it becomes the picker's own. */
+function charmPick(S, p, dr) {
+  const ch = p.ch;
+  if (ch.inv.length >= bagCap(ch)) { bagFull(S, p); return false; }
+  ch.inv.push(charmOwn(ch, dr.c));
+  p.gain.push(["item", "charm", 1, 0]);
+  if (!ch.charms.unlocked) toast(p, "미감정 참을 주웠습니다. 버드나무광장의 주아나가 감정해 줍니다.");
+  p.dirty = true;
+  saveSoon(p);
+  return true;
+}
+/**
+ * A rift's own chest (dimChest), before it opens: with a charm already waiting at 주아나 and no room for
+ * both the chest's gear and another charm, the chest stays shut (true) and says why.
+ */
+function charmChestHold(S, p) {
+  const ch = p.ch, cs = ch.charms;
+  if (!cs.unlocked || !cs.pending || bagCap(ch) - ch.inv.length >= 2) return false;
+  if (!(S.now - (p.chNag || -1e9) < 4000)) { p.chNag = S.now; toast(p, "주아나의 보류함에 참이 있고 가방이 가득 찼습니다 — 가방을 두 칸 비워야 보상 상자를 열 수 있습니다."); }
+  return true;
+}
+/** … and once it has paid out: maybe a sealed charm (into the bag, else the one-charm box at 주아나), maybe a 확장못. */
+function charmChest(S, dim, p) {
+  const ch = p.ch, cs = ch.charms, row = CHARM_SRC[3];
+  if (!cs.unlocked) return;
+  if (charmRoll(S, p, "d") < row.p) {
+    const c = charmOwn(ch, charmSeal(S, p, 3, dim.lv));
+    if (ch.inv.length < bagCap(ch)) { ch.inv.push(c); p.gain.push(["item", "charm", 1, 0]); }
+    else if (!cs.pending) { cs.pending = c; toast(p, "가방이 가득 차 미감정 참을 주아나가 맡아 두었습니다. 버드나무광장에서 찾아가세요."); }
+    p.dirty = true;
+  }
+  if (charmRoll(S, p, "dn") < row.nail) {
+    if (addItem(ch, "charm_nail", 1)) p.gain.push(["item", "charm_nail", 1, 0]);
+    else dim.rt.drops.push({ id: S.nextId++, it: "charm_nail", g: null, n: 1, q: 0, x: dim.chest.x, y: dim.chest.y + 8, own: p.pid, freeAt: S.now + 20000, dieAt: S.now + 60000 });
+    p.dirty = true;
+  }
+}
+
+// ── actions
+
+const CHARM_ACTS = ["charm_quest", "charm_id", "charm_place", "charm_move", "charm_remove", "charm_expand", "charm_claim", "charm_destroy"];
+/** Charms and 확장못 keep to their own ways: no shop, warehouse or house chest takes them ("" when the action is none of those). */
+function charmGuard(ch, a) {
+  if (a.t !== "sell" && a.t !== "h_dep" && !(a.t === "wh" && a.a === "put")) return "";
+  const s = Number.isInteger(a.s) ? ch.inv[a.s] : null;
+  if (isCharm(s)) return a.t === "sell" ? "참은 팔 수 없습니다" : "참은 맡길 수 없습니다";
+  if (a.t === "sell" && s && s.id === "charm_nail") return "참틀 확장못은 팔 수 없습니다";
+  return "";
+}
+const charmInBag = (ch, uid) => (Number.isInteger(uid) ? ch.inv.findIndex((s) => isCharm(s) && s.uid === uid) : -1);
+const charmOnBoard = (cs, uid) => (Number.isInteger(uid) ? cs.placed.findIndex((e) => e.c.uid === uid) : -1);
+const charmTown = (p) => !!mapOfS(p.S, p.map).safe;
+
+function charmValidate(S, p, a) {
+  const ch = p.ch, cs = ch.charms;
+  switch (a.t) {
+    case "charm_quest": {
+      if (!npcNear(p, "charm")) return bad("주아나가 너무 멉니다");
+      const q = charmQuest(cs);
+      if (!q) return bad("주아나의 의뢰를 모두 마쳤습니다");
+      const def = CHARM_QUESTS[q.i];
+      if (a.a === "accept") {
+        if (q.st !== 0) return bad("이미 진행 중입니다");
+        return ch.lvl >= def.lv ? OK : bad(`Lv.${def.lv}부터 받을 수 있는 의뢰입니다`);
+      }
+      if (a.a === "done") {
+        if (q.st !== 1 || cs.kn < def.n) return bad("아직 의뢰를 마치지 못했습니다");
+        if (q.i === 0 ? ch.inv.length >= bagCap(ch) : !canAdd(ch, "charm_nail", 1)) return bad("가방을 비우고 다시 오세요");
+        return OK;
+      }
+      return bad("잘못된 요청입니다");
+    }
+    case "charm_id": {
+      const c = ch.inv[charmInBag(ch, a.uid)];
+      if (!c) return bad("가방에 없는 참입니다");
+      if (c.rev) return bad("이미 감정한 참입니다");
+      if (!npcNear(p, "charm")) return bad("주아나가 너무 멉니다");
+      if (!cs.freeId && ch.gold < charmIdCost(c.tier)) return bad(`골드가 부족합니다 (${gStr(charmIdCost(c.tier))}G 필요)`);
+      return OK;
+    }
+    case "charm_place": {
+      if (!cs.unlocked) return bad("아직 참 보드가 없습니다");
+      const c = ch.inv[charmInBag(ch, a.uid)];
+      if (!c) return bad("가방에 없는 참입니다");
+      if (!c.rev) return bad("감정하지 않은 참은 놓을 수 없습니다");
+      if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
+      const why = charmFit(cs, c.sh, a.x, a.y, a.r, 0);
+      return why ? bad(why) : OK;
+    }
+    case "charm_move": {
+      const e = cs.placed[charmOnBoard(cs, a.uid)];
+      if (!e) return bad("보드에 없는 참입니다");
+      if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
+      if (e.x === a.x && e.y === a.y && e.r === a.r) return bad("이미 그 자리에 있습니다");
+      const why = charmFit(cs, e.c.sh, a.x, a.y, a.r, e.c.uid);
+      return why ? bad(why) : OK;
+    }
+    case "charm_remove":
+      if (charmOnBoard(cs, a.uid) < 0) return bad("보드에 없는 참입니다");
+      if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
+      return ch.inv.length < bagCap(ch) ? OK : bad("가방이 가득 찼습니다");
+    case "charm_expand": {
+      if (!cs.unlocked) return bad("아직 참 보드가 없습니다");
+      if (cs.openN >= CHARM_EXPAND.length) return bad("참 보드를 모두 열었습니다");
+      // `k`: the expansion being bought — a request sent twice buys one cell, not two
+      if (a.k !== cs.openN) return bad("이미 확장한 칸입니다");
+      if (!npcNear(p, "charm")) return bad("주아나가 너무 멉니다");
+      if (countItem(ch, "charm_nail") < 1) return bad("참틀 확장못이 없습니다");
+      const cost = charmExpandCost(cs.openN);
+      return ch.gold < cost ? bad(`골드가 부족합니다 (${gStr(cost)}G 필요)`) : OK;
+    }
+    case "charm_claim":
+      if (!cs.pending && !cs.rec.length) return bad("맡겨 둔 참이 없습니다");
+      if (!npcNear(p, "charm")) return bad("주아나가 너무 멉니다");
+      return ch.inv.length < bagCap(ch) ? OK : bad("가방이 가득 찼습니다");
+    case "charm_destroy":
+      if (charmInBag(ch, a.uid) < 0) return bad("가방에 없는 참입니다");
+      return a.ok === 1 ? OK : bad("참을 부수려면 확인이 필요합니다");
+    default: return bad("알 수 없는 행동");
+  }
+}
+
+function charmApply(S, p, a) {
+  const ch = p.ch, cs = ch.charms;
+  switch (a.t) {
+    case "charm_quest": {
+      const q = charmQuest(cs), def = CHARM_QUESTS[q.i];
+      const set = (v) => { if (q.i === 0) cs.intro = v; else cs.fu[q.i - 1] = v; };
+      if (a.a === "accept") {
+        set(1); cs.kn = 0;
+        toast(p, `주아나: “${CHARM_SAY.accept}”`);
+        toast(p, `의뢰 [${def.title}] — ${def.text}`);
+        break;
+      }
+      set(2); cs.kn = 0;
+      if (q.i === 0) {
+        cs.unlocked = true; cs.freeId = 1;
+        const c = charmOwn(ch, charmSeal(S, p, 4, Math.floor(toTier(ch.lvl))));
+        c.fx = 1;
+        ch.inv.push(c);
+        p.gain.push(["item", "charm", 1, 0]);
+        toast(p, "참 보드(3×3)가 열렸습니다! 미감정 참 1개를 받았습니다 — 첫 감정은 무료입니다.");
+      } else {
+        addItem(ch, "charm_nail", 1);
+        p.gain.push(["item", "charm_nail", 1, 0]);
+        toast(p, `의뢰 [${def.title}] 완료 — [참틀 확장못] 1개를 받았습니다.`);
+      }
+      S.maps[p.map].ev.push(["u", p.eid, 2]);
+      break;
+    }
+    case "charm_id": {
+      const c = ch.inv[charmInBag(ch, a.uid)], cost = cs.freeId ? 0 : charmIdCost(c.tier);
+      if (cs.freeId) cs.freeId = 0; else ch.gold -= cost;
+      const r = charmAppraise(c);
+      c.rev = 1; c.g = r.g; c.sh = r.sh; c.op = r.op;
+      if (r.lg) c.lg = r.lg;
+      toast(p, `주아나: “${CHARM_SAY.appraise}”`);
+      toast(p, `감정 결과: [${charmName(c)}]${cost ? ` (-${gStr(cost)}G)` : " (무료)"}`);
+      if (c.g === 3) sys(S, `${ch.name}님이 전설 참 [${charmName(c)}]${pp(charmName(c), "을를")} 감정받았습니다!`);
+      break;
+    }
+    case "charm_place": {
+      const i = charmInBag(ch, a.uid), c = ch.inv[i];
+      ch.inv.splice(i, 1);
+      cs.placed.push({ c, x: a.x, y: a.y, r: a.r });
+      afterGear(S, p);
+      break;
+    }
+    case "charm_move": {
+      const e = cs.placed[charmOnBoard(cs, a.uid)];
+      e.x = a.x; e.y = a.y; e.r = a.r;
+      break;
+    }
+    case "charm_remove": {
+      const i = charmOnBoard(cs, a.uid), e = cs.placed[i];
+      cs.placed.splice(i, 1);
+      ch.inv.push(e.c);
+      afterGear(S, p);
+      break;
+    }
+    case "charm_expand": {
+      const cost = charmExpandCost(cs.openN), cell = CHARM_EXPAND[cs.openN];
+      takeItem(ch, "charm_nail", 1);
+      ch.gold -= cost;
+      cs.openN++;
+      toast(p, `참 보드의 (${cell[0]}, ${cell[1]}) 칸을 열었습니다. (-${gStr(cost)}G, 확장못 1개)`);
+      break;
+    }
+    case "charm_claim": {
+      let n = 0;
+      const room = () => ch.inv.length < bagCap(ch);
+      if (cs.pending && room()) { ch.inv.push(cs.pending); cs.pending = null; n++; }
+      while (cs.rec.length && room()) { ch.inv.push(cs.rec.shift()); n++; }
+      p.gain.push(["item", "charm", n, 0]);
+      const left = (cs.pending ? 1 : 0) + cs.rec.length;
+      toast(p, `맡겨 둔 참 ${n}개를 받았습니다.${left ? ` 가방이 가득 차 ${left}개가 남았습니다.` : ""}`);
+      break;
+    }
+    case "charm_destroy": {
+      const i = charmInBag(ch, a.uid), c = ch.inv[i];
+      ch.inv.splice(i, 1);
+      toast(p, `[${charmName(c)}]${pp(charmName(c), "을를")} 부쉈습니다.`);
+      break;
+    }
+  }
+  p.dirty = true;
+  saveSoon(p);
+}
+
+// ── what the client is told
+
+/** `self.charms`: the board, what waits at 주아나, the quest, the totals and the power at work. */
+function charmSelf(p) {
+  const ch = p.ch, cs = ch.charms, q = charmQuest(cs), cm = deriveStats(p).cm;
+  const lg = cs.placed.find((e) => e.c.lg);
+  const sk = cm.lg && CHARM_LEGEND[cm.lg].sk ? SKILL[CHARM_LEGEND[cm.lg].sk] : null;
+  return {
+    un: cs.unlocked ? 1 : 0, openN: cs.openN, open: [...charmOpen(cs)].map((k) => k.split(",").map(Number)),
+    next: cs.unlocked && cs.openN < CHARM_EXPAND.length ? { k: cs.openN, cell: CHARM_EXPAND[cs.openN], cost: charmExpandCost(cs.openN), nail: countItem(ch, "charm_nail") } : null,
+    free: cs.freeId,
+    placed: cs.placed.map((e) => ({ c: charmWire(e.c), x: e.x, y: e.y, r: e.r })),
+    pending: cs.pending ? charmWire(cs.pending) : null, rec: cs.rec.map(charmWire),
+    quest: q ? { i: q.i, st: q.st, n: cs.kn, need: CHARM_QUESTS[q.i].n, lv: CHARM_QUESTS[q.i].lv, ok: ch.lvl >= CHARM_QUESTS[q.i].lv ? 1 : 0 } : null,
+    sum: { st: ST_ORDER.map((k) => cm.st[k]), hp: cm.hp, mp: cm.mp, atk: cm.atk, skd: cm.skd, skh: cm.skh },
+    // the power at work, why it cannot go off just now ("" when it can), and how many legendaries lie on the board
+    lg: cm.lg, lgWhy: sk ? skWhy(ch, sk) || "" : lg && !cm.lg ? "아직 열리지 않은 효과입니다" : "", lgN: cs.placed.filter((e) => e.c.lg).length,
+  };
+}
+/** `defs().charms`: everything the board UI draws from. */
+function charmDefs() {
+  return {
+    v: CHARM_V, size: CHARM_SIZE, lv: CHARM_QUESTS[0].lv, low: CHARM_LOW,
+    shapes: Object.fromEntries(CHARM_SHAPE_IDS.map((id) => [id, { cells: CHARM_SHAPES[id].cells, k: CHARM_SHAPES[id].k, rot: [0, 1, 2, 3].map((r) => charmCells(id, r)) }])),
+    grades: CHARM_GRADE, src: CHARM_SRC.map((s) => s.name),
+    opts: Object.fromEntries(CHARM_OPT_IDS.map((k) => [k, { name: CHARM_OPT[k].name, lo: CHARM_OPT[k].lo, hi: CHARM_OPT[k].hi, pct: CHARM_OPT[k].pct ? 1 : 0, cap: CHARM_OPT[k].cap }])),
+    skd: CHARM_SKD, skh: CHARM_SKH,
+    legend: Object.fromEntries(Object.keys(CHARM_LEGEND).map((id) => { const l = CHARM_LEGEND[id]; return [id, { name: l.name, shape: l.shape, sk: l.sk || "", cd: l.cd, off: l.off ? 1 : 0, desc: l.desc }]; })),
+    expand: CHARM_EXPAND, expandCost: CHARM_EXPAND.map((_, k) => charmExpandCost(k)), nail: "charm_nail",
+    // appraisal: round(idCost[0] + idCost[1] × the charm's tier) G; the first is free
+    idCost: [200, 12],
+    quests: CHARM_QUESTS.map(({ id, lv, n, title, text, reward }) => ({ id, lv, n, title, text, reward })), say: CHARM_SAY, npc: "town_charm_juana", role: "charm",
+  };
+}
 // ───────────────────────────── actions ─────────────────────────────
 
 function npcNear(p, role) {
@@ -10026,6 +10659,9 @@ export function validateAction(S, pid, a) {
   if (!isObj(a) || typeof a.t !== "string") return bad("잘못된 요청입니다");
   const ch = p.ch;
   const now = S.now;
+  // charms keep to their own ways (66-charms.js)
+  const cg = charmGuard(ch, a);
+  if (cg) return bad(cg);
   switch (a.t) {
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");
@@ -10403,6 +11039,8 @@ export function validateAction(S, pid, a) {
     }
     // life skills L2 (58-life.js): gathering, the stations, the 알바 board
     case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": return lifeValidate(S, p, a);
+    // charms (66-charms.js): 주아나's quests, appraisal, the board
+    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": return charmValidate(S, p, a);
     default:
       return bad("알 수 없는 행동");
   }
@@ -11013,6 +11651,8 @@ export function applyAction(S, pid, a) {
       S.maps[p.map].ev.push(["ws", p.eid]);
       break;
     }
+    // charms (66-charms.js)
+    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": charmApply(S, p, a); break;
   }
   if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;
@@ -11588,7 +12228,7 @@ function selfPayload(p) {
       r1(Math.min(SFX.mf[1], SFX.mf[0] * eff(ch.st.luk))), clamp(SFX.graze[0] - (ch.eq.weapon ? ch.wm[weaponKind(ch)].lv : 0), 0, SFX.graze[3])],
     // the weapon passive's gauge (57 crView), and every skill learned: [id, MP now, cooldown left ms, usable in hand 1/0]
     cr: crView(p, now), sk: skWire(p, now),
-    inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, enh, qs: ch.qs,
+    inv: charmBag(ch.inv), eq: ch.eq, q: ch.q, kills: ch.kills || 0, enh, qs: ch.qs,
     bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     // attack up, speed up, warmth, food — then what monsters leave on you: slowed, burning, poisoned —
     // then the scrolls being read: attack, defence, experience
@@ -11608,6 +12248,8 @@ function selfPayload(p) {
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.job, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
     // the bag's size (46-bag.js) and the house (64-housing.js homeSelf)
     bagCap: bagCap(ch), house: homeSelf(p),
+    // charms (66-charms.js): the board, what waits at 주아나, her quest; a sealed charm's seal never leaves the server
+    charms: charmSelf(p),
     // life skills (58-life.js): [lv, xp, need] per skill in LIFE order; L2: the 알바 board, trust, the 재료 주머니
     life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch,
   };
@@ -11757,6 +12399,8 @@ export function defs() {
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
     // life skills: names, curve, grades, the bonus formula, fish, recipes, each map's grade (58-life.js)
     life: lifeDefs(),
+    // charms: shapes, options and caps, legendaries, the expansion order and prices, 주아나's quests (66-charms.js)
+    charms: charmDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), mobs: MAP_META[id].kinds.slice(),
       // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
       theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id] })),

@@ -603,6 +603,8 @@ export function applyAction(S, pid, a) {
       S.maps[p.map].ev.push(["ws", p.eid]);
       break;
     }
+    // charms (66-charms.js)
+    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": charmApply(S, p, a); break;
   }
   if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;
