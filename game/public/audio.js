@@ -169,6 +169,19 @@ const TRACKS = {
     },
     form: "A B",
   },
+  // A minor, 84 — 단풍 왕도: a flute over a plucked lute, a fallen kingdom remembered fondly; the leaves rustle between phrases
+  autumn: {
+    bpm: 84, lead: "flute", vol: 0.12, bass: "tri", comp: "pluck", pad: true, padVol: 0.025, delay: 0.3, rustle: true,
+    bassPat: "R.......F...R...", compPat: "0.2.1.2.3.2.1.2.", compVol: 0.03,
+    drums: { h: "....o.......o..." },
+    sections: {
+      A: ["Am F C G Am F E E",
+        "E5:4 A5:4 C6:6 B5:2  A5:4 F5:4 C5:8  E5:4 G5:4 C6:4 E6:4  D6:6 C6:2 B5:8  C6:4 B5:4 A5:4 E5:4  F5:6 G5:2 A5:8  G#5:4 B5:4 E6:4 D6:4  B5:12 -:4"],
+      B: ["Dm G C Am Dm E Am Am",
+        "F5:6 E5:2 D5:8  B4:4 D5:4 G5:8  E5:6 F5:2 G5:4 C6:4  A5:12 -:4  D6:6 C6:2 A5:4 F5:4  G#5:4 B5:4 E5:8  A5:4 C6:4 E6:4 C6:4  A5:12 -:4"],
+    },
+    form: "A B A",
+  },
   // E minor, 148 — a boss on screen
   boss: {
     bpm: 148, lead: "pulse25", vol: 0.1, bass: "saw", comp: "pulse12", pad: false, delay: 0.08,
@@ -366,6 +379,19 @@ export const Sound = {
         this.ambNext += 0.07 + Math.random() * 0.3;
       }
     }
+    // under an autumn track, a breeze through dry leaves now and then
+    if (!this.vol.mute && this.playing.some((p) => !p.dying && p.def.rustle)) {
+      if (!this.rustleNext || this.rustleNext < now) this.rustleNext = now + 1 + Math.random() * 3;
+      if (this.rustleNext < now + LOOKAHEAD) { this.rustle(this.rustleNext); this.rustleNext += 2.5 + Math.random() * 5; }
+    }
+  },
+  /** Leaves stirring: a soft swell of high, filtered noise with a few dry ticks in it. */
+  rustle(t) {
+    const c = this.ctx, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), len = 0.9 + Math.random() * 0.8;
+    s.buffer = this.noiseBuf; s.loop = true; f.type = "bandpass"; f.frequency.value = 3200 + Math.random() * 1800; f.Q.value = 0.8;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.018, t + len * 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    s.connect(f); f.connect(g); g.connect(this.sfx); s.start(t); s.stop(t + len + 0.05);
+    for (let i = 0; i < 3; i++) this.crackle(t + len * (0.2 + Math.random() * 0.6), 0.25);
   },
   /** Everything that sounds on one sixteenth step of a track. */
   tick(p, t, s16) {

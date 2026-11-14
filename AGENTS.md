@@ -27,7 +27,7 @@ A real-time online party-hunting RPG in the browser (Korean MMORPG lineage: 바�
   outlines. **HUD**: GBA/handheld style — brass 9-slice frames drawn in code (`frames.js`), Galmuri
   pixel font. **CRT** filter: scanlines, slight colour fringe, flicker — **no dark vignette**.
 - **World**: hub town 넥서스 광장 → meadow, forest, crypt (dungeon), city, sewer (dungeon), cave,
-  abyss (dungeon). Hunting grounds are procedurally generated from fixed seeds (same map every boot).
+  abyss (dungeon), and past the forest/abyss the autumn field 단풍 왕도 (`maple`, theme `autumn`, Lv.40–46). Hunting grounds are procedurally generated from fixed seeds (same map every boot).
 - **Systems**: loot rarities/affixes/sockets/runewords/legendaries/sets, enhancement +10, endless stat
   training with XP, skill levels, parties (4), guilds, campfires, fishing + cooking mini-games,
   waypoints, dailies, achievements/titles, monster collection, half-hourly rift event, tutorial chain,
@@ -88,10 +88,10 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `00-header.js` [122] | file doc, `meta`, core constants (`T`=16 tile px, `INV`, `MAXLV`, view range, party), `WKIND` weapon kinds, `CLASSES`, class-mechanic constants, elements `REACT`, **`SKILLS`** (per class) |
 | `10-tables.js` [309] | gear names/tiers `GEAR`, **`ITEMS`**, `RUNES`, `RUNEWORDS`, `AFFIX`, `RARITY`, `LEGEND`, `SETS`, `TRAIN`, skill costs, `SHOP`, `ENH_RATE`, campfire/fishing/guild consts, `MASTERY`, `FIELD_BOSS`, elite `TRAITS`, `DENSITY`, **`MOBS`**, chests, **`QUESTS`** |
 | `20-helpers-mapkit.js` [568] | `rnd(box)`/`ri`/`clamp`/`dist`, XP curve `xpNeed`, map primitives (`blank rect road portal finalize`), noise (`fbm`), A* `walk`, `bfs`, `poisson`, Voronoi `partition`, `grow`, `knit`, `stamp`, cellular `automaton`, spawn banding |
-| `30-maps-overworld.js` [667] | set pieces `PIECE` legend + **`PIECES`**, `piece()`, `wilds(cfg)` (meadow/forest generator), `metro(cfg)` (city generator) |
+| `30-maps-overworld.js` [722] | set pieces `PIECE` legend + **`PIECES`** (incl. the fallen kingdom: chapel cottage watchtower kinggate graveyard …; `UPRIGHT` = never rotated, their ruin art stands on footprint chars `N d i f`), `piece()`, `wilds(cfg)` (meadow/forest/maple generator; optional `lair` `campPiece` `vaultMobs` `trail` `padMin`), `metro(cfg)` (city generator) |
 | `32-maps-underground.js` [630] | `tunnel`, `cavern` (cave), `catacomb` (crypt), `sewers`, `abyssal` (abyss) |
 | *(generated)* | `const DATA = {maps, links, npcs, quests}` — `build-logic.mjs` inserts `game/data/**` right after 00-header |
-| `34-maps-world.js` [358] | `buildTown()`, **`buildMaps()`** (every map's cfg: seed, size, mobs, chest, features), `markRoutes`, collision `solidAt/canStand/canFly`, `mapPayload` |
+| `34-maps-world.js` [389] | `buildTown()`, **`buildMaps()`** (every map's cfg: seed, size, mobs, chest, features), `markRoutes`, collision `solidAt/canStand/canFly`, `mapPayload` |
 | `36-custom-maps.js` [182] | editor maps over the generated world: `fromEditor` (map file → map), `customWorld` (replaces, doors, links, NPCs), **`MAPS`**, `START`, `HUNTED`, `COL_MOBS`, `NPC_MAP`, `devPlace` (playtest) |
 | `40-characters-world.js` [426] | `validName`, **`newChar`** (sheet `v:7`), **`migrate`** (old sheets), gear stats `stats()`, `exportChar`; world `setup`, mobs `newMob/placeMob`, field boss, `addPlayer/removePlayer`, `changeMap`, `sys/toast`; parties |
 | `50-loot-combat.js` [503] | bag/stack/warehouse helpers, pickup, prices, `rollGear`, `rollRarity`, `lootFor`; `gainXp`, `hurtMob`, `killMob`, `hurtPlayer`, targeting + aim helpers (`AIM_V setAim inArc aimMob`), `basicAttack` |
@@ -112,9 +112,10 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `client.js` [2563] | game client. Sections (grep `// ───`): connection, state `G`, messages (`onSnap`), effects, input (keydown hotkeys ~L537), player actions, update, render, HUD & windows (`WIN` list ~L1236, `openWin`, `render<Window>()`), main loop. `window.__game = {G, act, S3, go}` for automation |
 | `lobby.js` [593] | title, 로그인/회원가입, server/channel list, character creation, in-game channel switch/logout |
 | `account.js` [99] | HTTP side of accounts: `session signup login logout me servers`, `API` base |
-| `scene2d.js` [2052] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites, ground, raised blocks, creatures, effects `fx/fxCustom/shake`, pets, title/creation stage |
-| `isotiles.js` [29] · `iso_px.js` [118] · `iso_ground.js` [725] · `iso_tall.js` [601] | quarter-view ground baking (`bakeGround`), pixel buffers/projection (`TW=32, TH=16`), ground materials and transitions, tall blocks (cliffs, walls, houses) |
-| `decor.js` [590] | landmarks, decals, pulses, critters, waypoint stones/signs, town dressing (old `daylight`/`wash`, unused) |
+| `scene2d.js` [2357] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites (+ `autumnScenery`), ground, raised blocks, creatures, effects `fx/fxCustom/shake`, pets, title/creation stage |
+| `isotiles.js` [29] · `iso_px.js` [118] · `iso_ground.js` [886] · `iso_tall.js` [601] | quarter-view ground baking (`bakeGround`), pixel buffers/projection (`TW=32, TH=16`), ground materials and transitions, tall blocks (cliffs, walls, houses) |
+| `decor.js` [674] | landmarks (`LANDMARKS` per theme; autumn ruins stand exactly on their footprints), decals, pulses, critters, waypoint stones/signs, town dressing (old `daylight`/`wash`, unused) |
+| `autumn.js` [40] | the autumn theme's turned colours: `HUE` (maple, oak, ginkgo, green) and `hueAt(m, x, y)`, shared by trees (scene2d) and their fallen leaves (iso_ground) |
 | `sky.js` [366] | the outdoor sky: server-synced clock (`setSky(dn)`, `hour phase nightK clockText`), the grade (`grade`: one multiply + stepped light pools + bloom, never a vignette), weather (`drawWeather`: rain, fog, cloud shadows, wind, snow, fireflies), HUD icon; preview overrides `__skyHour`/`__skyWx` |
 | `camp.js` [153] | campfire company art: `stump bedroll ring tripod lute cup spiritTree` (정령나무) |
 | `art.js` [910] | item icons `buildIcons`, minimap `renderMini`, old scenery helpers; re-exports `chars.js` |
@@ -122,7 +123,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `sprites.js` [1259] | 32×32 sheets: heroes `personSheet/playerLook`, NPCs, pets, weapons `weaponSprite`, `monsterSheet`, tints |
 | `species.js` [403] | hero species and face parts: `SPECIES PARTS TABS PRESETS cleanLook withSpecies` (limits mirror logic `LOOK_MAX`); fit data for worn things: `EARS headAnchor faceAnchor EYE_PIX HEAD_BOB` |
 | `looks.js` [244] | look editor (creation tabs) and the town mirror |
-| `mobart.js` [587] + `mobart_kit.js` [139] + `mobart_a/b/c.js` [376/309/561] | monsters as 3D-primitive models rasterised to pixels; `BEASTS_A` meadow/forest, `_B` crypt/city, `_C` sewer/cave/abyss/bosses/chest; `has draw icon KINDS` |
+| `mobart.js` [588] + `mobart_kit.js` [139] + `mobart_a/b/c/d.js` [376/309/561/268] | monsters as 3D-primitive models rasterised to pixels; `BEASTS_A` meadow/forest, `_B` crypt/city, `_C` sewer/cave/abyss/bosses/chest, `_D` 단풍 왕도 (blighted beasts and plants); `has draw icon KINDS` |
 | `weapons.js` [602] | weapon art per kind × tier, legendary/set looks, skins, glow: `DESIGNS weaponSprite weaponIcon`; an installed image (`assetKey`: manifest `weapon.<kind>.t<n>`/`.lg.`/`.set.`/`.skin.`, `icon.weapon.…`) replaces a look, rarity ink + glow still applied |
 | `wardrobe.js` [807] · `wardrobe_ui.js` [283] | cosmetic layers drawn over heroes (`ART SLOTS dress anchors`; designs `HAT TOP BACK FACE`, rules in the header); costume shop + 외형 tab |
 | `swing.js` [131] | weapon stroke poses for attacks/casts |
