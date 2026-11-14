@@ -90,7 +90,7 @@ function clear(i) {
 function setPicked(v) {
   picked = v;
   document.body.classList.toggle("qs-pick", !!v);
-  if (v) C.toast("놓을 단축칸(1~9)을 누르세요 · Esc 취소");
+  if (v) C.toast(C.touch() ? "놓을 단축칸을 누르세요 · 같은 버튼을 다시 누르면 취소" : "놓을 단축칸(1~9)을 누르세요 · Esc 취소");
 }
 /** "단축칸" buttons in the skill window and the bag: pick this up and tap a slot. */
 export function pick(v) { setPicked(same(picked, v) ? null : v); Sound.play("ui"); }
@@ -170,6 +170,16 @@ export function render() {
     if (!C.touch()) b.title = title;
     else b.removeAttribute("title");
   });
+  // a skill just learned and not on the bar yet: say where it is
+  if (render.lvl !== undefined && s.lvl > render.lvl) {
+    list.forEach((sk, i) => {
+      if (sk.lv > render.lvl && sk.lv <= s.lvl && !keysOf(["s", i])) {
+        C.toast(`새 스킬 [${sk.name}] — 스킬 창(K)에서 단축칸으로 끌어다 놓으세요`);
+        C.addChat(`새 스킬 [${sk.name}]을(를) 배웠습니다. 스킬 창(K)에서 아래 단축칸(1~9)으로 끌어다 놓으면 그 숫자 키로 씁니다.`, "sys");
+      }
+    });
+  }
+  render.lvl = s.lvl;
   // a gentle pointer at the empty bar until something is put in it
   const hint = $("#qs-hint");
   if (hint) hint.hidden = any;
