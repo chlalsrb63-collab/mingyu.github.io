@@ -557,3 +557,53 @@ body.touch kbd { display: none; }
 #jam button { font: 12px/1 var(--pix); color: #f4e4b0; background: #3a2c22; border: 1px solid #c89a5a; padding: 4px 8px; cursor: pointer; }
 #jam button:hover { background: #5a4030; }
 #jam kbd { font-size: 9px; color: #c8b088; margin-left: 3px; }
+
+/* ─────────────────────────── 차원 균열 (dimrift.js) ─────────────────────────── */
+#dim-hud { left: calc(var(--vpw) - 292px); top: 8px; width: 280px; z-index: 6 !important; padding: 5px 8px 6px; color: #e8dcff; }
+#dim-hud .dim-hd { display: flex; justify-content: space-between; gap: 8px; font: 700 12px/1.3 var(--pix); }
+#dim-hud .dim-hd b { color: #d8b8ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#dim-time { font: 700 12px var(--pix); color: var(--b-hi); }
+#dim-time.low { color: #ff7a6a; animation: dim-blink 1s steps(2) infinite; }
+@keyframes dim-blink { 50% { color: #fff2a0; } }
+.dim-gauge { position: relative; height: 14px; margin-top: 3px; background: #120c1c; border: 2px solid var(--ink); box-shadow: inset 0 0 0 1px #4a2e78; overflow: hidden; }
+.dim-gauge i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(#e0c0ff 0 2px, #9a5ae8 2px 8px, #5a2e9a 8px); transition: width .25s linear; }
+.dim-gauge span { position: absolute; inset: 0; text-align: center; font: 10px/11px var(--pix9); color: #fff; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
+#dim-hud.boss .dim-gauge i { background: linear-gradient(#ffc0d0 0 2px, #e84a6a 2px 8px, #8a1e3a 8px); }
+#dim-hud.clear .dim-gauge i { background: linear-gradient(#fff2b0 0 2px, #e0b03a 2px 8px, #8a5a1e 8px); }
+#dim-team { display: flex; flex-wrap: wrap; gap: 3px 6px; margin-top: 4px; }
+.dim-chip { display: inline-flex; align-items: center; gap: 3px; font: 10px var(--pix9); color: #e8dcff; }
+.dim-chip b { font-weight: 400; max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dim-chip.me b { color: var(--b-hi); }
+.dim-chip > i { display: inline-block; width: 28px; height: 5px; background: #000; border: 1px solid var(--ink); }
+.dim-chip > i > i { display: block; height: 100%; background: var(--hp); }
+.dim-chip.down { opacity: .55; }
+.dim-chip.down b { text-decoration: line-through; }
+.dim-buff { font: 10px var(--pix9); color: #9ac8ff; }
+#dim-boss { margin-top: 4px; }
+#dim-boss b { display: block; font: 700 11px var(--pix); color: #ff8aa8; }
+.dim-bbar { height: 9px; background: #000; border: 2px solid var(--ink); box-shadow: inset 0 0 0 1px #6a1e3a; overflow: hidden; }
+.dim-bbar i { display: block; height: 100%; width: 100%; background: linear-gradient(#ff8a9a 0 2px, #d8243e 2px); transition: width .2s linear; }
+#dim-leave { position: absolute; right: -2px; bottom: -24px; font-size: 10px !important; padding: 2px 5px !important; }
+#w-dim { width: 330px; }
+#w-dim .say { margin: 0 0 8px; line-height: 1.55; }
+#w-dim .dim-n { color: var(--b-hi); }
+.dim-btns { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+#w-rc { width: 280px; box-shadow: 0 0 0 2px #7a4ac0; }
+#w-rc .rc-hd { display: flex; justify-content: space-between; margin: 0 0 4px; color: #d8b8ff; }
+#rc-time { font: 700 12px var(--pix); color: var(--b-hi); }
+.rc-bar { height: 6px; background: #000; border: 2px solid var(--ink); margin-bottom: 6px; overflow: hidden; }
+.rc-bar i { display: block; height: 100%; background: #b880ff; transition: width 1s linear; }
+#rc-list { list-style: none; margin: 0 0 6px; padding: 0; }
+#rc-list li { display: flex; align-items: center; gap: 6px; padding: 2px 0; font: 12px var(--pix); }
+#rc-list li b { flex: 1; font-weight: 400; }
+#rc-list li em { font: 10px var(--pix9); font-style: normal; color: #a898b8; }
+.rc-mark { width: 10px; height: 10px; border: 2px solid var(--ink); background: #3a3146; }
+#rc-list .rc-1 .rc-mark { background: #4ad07a; } #rc-list .rc-1 em { color: #8affb0; }
+#rc-list .rc-2 .rc-mark { background: #d84a4a; } #rc-list .rc-2 em { color: #ff9a8a; }
+#rc-list .rc-3 { opacity: .55; }
+#rc-list .rc-0 .rc-mark { animation: dim-blink 1s steps(2) infinite; background: #e0b03a; }
+.rc-wait { margin: 0 0 6px; text-align: center; font: 11px var(--pix9); color: #a898b8; min-height: 0; }
+.rc-wait:empty { display: none; }
+body[data-lay="port"] #dim-hud { left: 8px; width: min(280px, calc(100vw - 16px)); top: 56px; }
+/* inside a rift the first-steps card steps aside for the rift HUD */
+body.in-dim #tut { display: none !important; }

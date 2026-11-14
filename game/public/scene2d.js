@@ -26,6 +26,7 @@ import * as Sky from "./sky.js";
 import * as Camp from "./camp.js";
 import { HUE, hueAt } from "./autumn.js";
 import * as IN from "./iso_interior.js";
+import * as DimArt from "./dimart.js";
 
 const T = 32, P = 2;
 /** Iso pixels per server unit along the screen's x; y is half that. Height lifts by 26 px per unit `h`. */
@@ -1195,7 +1196,8 @@ export function loadMap(m) {
   const S = scenery(), D = DC.sprites(), lazyWalls = IT.ready && !!ground.chunked;
   lt.push(performance.now());
   statics = []; waterTiles = []; smokers = []; signs = []; lights = [];
-  const spiritAt = new Set(m.big.filter((b) => b.t === "spirit").map((b) => b.x + "," + b.y));
+  // landmarks that stand on one solid tile (the spirit tree, the rift obelisk): nothing else is drawn there
+  const spiritAt = new Set(m.big.filter((b) => b.t === "spirit" || b.t === "obelisk").map((b) => b.x + "," + b.y));
   roomL = { glows: [], wins: [], motes: [] };
   const lay = DC.plan(m, theme), mkt = theme === "town" ? DC.town(m) : { statics: [], swap: new Set(), strings: [] };
   // the glowing layer of the deep places: one canvas, or for a chunked map pieces made as they come on screen
@@ -1310,6 +1312,12 @@ export function loadMap(m) {
       statics.push(s);
       if (!city) smokers.push({ x: s.x + 6, y: s.dy + 10 });
     } else if (b.t === "spirit") statics.push(stand({ sp: Camp.spiritTree(), glow: "#5ab8ff", land: "spirit", spirit: true, ph: 1.3, glint: -1 }, b.x, b.y));
+    else if (b.t === "obelisk") {
+      // 차원의 오벨리스크 (dimart.js): its seam pulses and two shards circle it
+      const st = stand({ sp: DimArt.obelisk(), glow: "#b07aff", land: "obelisk", ph: 0.4, glint: -1 }, b.x, b.y);
+      st.anim = (g2, t2) => DimArt.obeliskAnim(g2, t2, st.dx, st.dy);
+      statics.push(st);
+    }
     else statics.push(standBig({ sp: S.fountain, water: true }, b.x, b.y, 2, 2, -4));
   }
   // every fire that always burns: a ring of stones, stumps to sit on; in town a tripod, a pot and a bedroll

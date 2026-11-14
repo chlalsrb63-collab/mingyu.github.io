@@ -130,6 +130,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `autumn.js` [40] | the autumn theme's turned colours: `HUE` (maple, oak, ginkgo, green) and `hueAt(m, x, y)`, shared by trees (scene2d) and their fallen leaves (iso_ground) |
 | `sky.js` [366] | the outdoor sky: server-synced clock (`setSky(dn)`, `hour phase nightK clockText`), the grade (`grade`: one multiply + stepped light pools + bloom, never a vignette), weather (`drawWeather`: rain, fog, cloud shadows, wind, snow, fireflies), HUD icon; preview overrides `__skyHour`/`__skyWx` |
 | `camp.js` [153] | campfire company art: `stump bedroll ring tripod lute cup spiritTree` (정령나무) |
+| `dimrift.js` [215] · `dimart.js` [171] | 차원 균열 client: `onSnap` (`dim` `rc` `dj`), `onEvent` (`dm dp dz`), rift HUD `#dim-hud`, ready check `#w-rc`, keeper window `#w-dim` (`openKeeper`), shrines/orbs/way home/chest as `S3.props`, `miniDots`; `window.__dim` for automation · art: `obelisk obeliskAnim drawPylon drawOrb drawPortal drawChest`, `PYLON` kinds |
 | `art.js` [910] | item icons `buildIcons`, minimap `renderMini`, old scenery helpers; re-exports `chars.js` |
 | `chars.js` [471] | legacy smooth illustrated figures (re-exported by art.js; heroes now come from sprites.js) |
 | `sprites.js` [1259] | 32×32 sheets: heroes `personSheet/playerLook`, NPCs, pets, weapons `weaponSprite`, `monsterSheet`, tints |

@@ -33,6 +33,7 @@ import { installFrames } from "./frames.js";
 import * as Lobby from "./lobby.js";
 import * as Assets from "./assetlib.js";
 import * as Sky from "./sky.js";
+import * as Dim from "./dimrift.js";
 
 // approved external images (public/assets/manifest.json) before anything is drawn; an
 // empty or missing manifest leaves every look code-drawn
@@ -305,6 +306,7 @@ function onSnap(s) {
   if (pk !== G.partyKey) { if (G.partyKey !== undefined && (s.party || []).length > (G.party || []).length) Sound.play("party"); G.partyKey = pk; G.party = s.party || []; renderPartyHud(); if (isOpen("party")) renderParty(); }
   const gi = s.ginv ? s.ginv.join("|") : null;
   if ((s.pinv || null) !== G.pinv || gi !== G.ginv) { G.pinv = s.pinv || null; G.ginv = gi; renderInvite(); }
+  Dim.onSnap(s);                               // 차원 균열: HUD, ready check, shrines and orbs (dimrift.js)
   hudBars();
 }
 
@@ -334,6 +336,8 @@ const RANK_NAME = ["", "정예 ", "우두머리 "];
 // a dungeon's chosen guard is its 수문장; out in the open a summoned field boss is a 우두머리 (as the server calls them)
 const DUNGEONS = new Set(["crypt", "sewer", "abyss"]);
 Mini.mount($("#minigame"));
+Dim.init({ G, S3, Sound, act, openWin, closeWin, isOpen: (id) => isOpen(id) });
+Dim.bindUi();
 // every menu button wears its glyph above its word; the auto-hunt button wears one too
 for (const b of $$("#menu button")) { const g = MENU_ICON[b.dataset.win || b.id.slice(2)]; if (g) b.prepend(iconImg(g)); }
 $("#b-auto").prepend(iconImg(MENU_ICON.auto));
@@ -342,6 +346,7 @@ const heightOf = (e) => e.h3 || 1.3;
 
 function onEvent(e, t) {
   if (SkillFx.skillEvent(e, { G, S3, Sound, entityPos, heightOf, t })) return;
+  if (Dim.onEvent(e)) return;
   MobArt.onEvent(e, G, S3, t);              // wind-ups, strikes and the bodies monsters leave
   switch (e[0]) {
     // the storyteller by the town's fire tells a tale: a bubble over her, and a line in the chat for those close by
@@ -940,6 +945,7 @@ function interact() {
   else if (n.role === "train") openWin("train");
   else if (n.role === "bank") openWin("bank");
   else if (n.role === "costume") openWin("costume");
+  else if (n.role === "dim") Dim.openKeeper();
   else { talkTo(n); return; }
   // the townsfolk have a word to say as they serve you (npctalk.js)
   const line = n.role !== "stone" && NpcTalk.lineFor(n, talkSheet());
@@ -1179,6 +1185,7 @@ function render(t, dt) {
   S3.sync(G, dt, t);
   S3.render(G.me.x, G.me.y, dt, t, G.snapCam);
   G.snapCam = false;
+  Dim.tick();
   renderText(t);
 }
 
@@ -1428,6 +1435,7 @@ function renderMini(t) {
   for (const n of m.npcs) if (S3.npcOut(n)) dot(n.x * T + 8, n.y * T + 8, "#ffd84a", 3);
   for (const mob of G.mobs.values()) dot(mob.x, mob.y, mob.el ? "#ffbe3c" : "#ff5050");
   for (const p of G.players.values()) dot(p.x, p.y, "#7ad8ff", 3);
+  Dim.miniDots(dot, t);
   dot(G.me.x, G.me.y, Math.floor(t / 300) % 2 ? "#ffffff" : "#08090c", 3);
   const info = `${channelName()} · ${G.map.safe ? "안전 지대" : "사냥터"} · ${G.who.size}명`;
   if ($("#mini-info").textContent !== info) $("#mini-info").textContent = info;
@@ -1436,7 +1444,7 @@ function renderMini(t) {
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc"];
 const winEl = (id) => $(`#w-${id}`);
 /** The bag is docked in the side column, so it always counts as open (on a phone it lives in the drawer). */
 const isOpen = (id) => id === "inv" || !winEl(id).hidden;

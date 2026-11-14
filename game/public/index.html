@@ -10,9 +10,9 @@
     <meta property="og:image" content="https://lumentale-online.higgsfield.app/cover.png" />
     <meta name="theme-color" content="#0e0f14" />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="style.css?v=1795350001" />
-    <link rel="stylesheet" href="hud.css?v=1795350001" />
-    <link rel="stylesheet" href="lobby.css?v=1795350001" />
+    <link rel="stylesheet" href="style.css?v=1795350100" />
+    <link rel="stylesheet" href="hud.css?v=1795350100" />
+    <link rel="stylesheet" href="lobby.css?v=1795350100" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -31,6 +31,15 @@
       <div id="topleft">
         <div id="party-hud"></div>
         <button id="evt" class="frame" hidden></button>
+      </div>
+
+      <!-- 차원 균열: the gauge, the clock, the party, the master's health (dimrift.js) -->
+      <div id="dim-hud" class="frame" hidden>
+        <div class="dim-hd"><b id="dim-title"></b><span id="dim-time"></span></div>
+        <div class="dim-gauge"><i id="dim-fill"></i><span id="dim-pct"></span></div>
+        <div id="dim-team"></div>
+        <div id="dim-boss" hidden><b id="dim-boss-name"></b><div class="dim-bbar"><i id="dim-boss-fill"></i></div></div>
+        <button id="dim-leave" class="btn small" title="마을로 돌아가기">떠나기</button>
       </div>
 
       <!-- first steps: the current step and how to do it -->
@@ -194,6 +203,22 @@
       <section class="window" id="w-warp" hidden>
         <header><span class="t">이동의 돌</span><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body"><div id="warp-body"></div></div>
+      </section>
+
+      <section class="window" id="w-dim" hidden>
+        <header><span class="t">차원의 오벨리스크 · 균열 지기 오르카</span><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body"><p id="dim-info" class="say"></p><div class="dim-btns"><button id="dim-open" class="btn gold">균열 열기</button><button id="dim-join" class="btn gold" hidden>합류하기</button></div></div>
+      </section>
+
+      <section class="window" id="w-rc" hidden>
+        <header><span class="t">차원 균열 입장 준비</span><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body">
+          <p class="rc-hd"><b id="rc-lv"></b><span id="rc-time"></span></p>
+          <div class="rc-bar"><i id="rc-fill"></i></div>
+          <ul id="rc-list"></ul>
+          <p id="rc-wait" class="rc-wait"></p>
+          <div class="dim-btns"><button id="rc-yes" class="btn gold">수락</button><button id="rc-no" class="btn">거절</button><button id="rc-cancel" class="btn" hidden>입장 취소</button></div>
+        </div>
       </section>
 
       <section class="window" id="w-daily" hidden>
@@ -365,7 +390,7 @@
       </div>
     </div>
 
-    <script type="module" src="client.js?v=1795350001"></script>
+    <script type="module" src="client.js?v=1795350100"></script>
     <div id="crt-frame" aria-hidden="true"></div>
   </body>
 </html>

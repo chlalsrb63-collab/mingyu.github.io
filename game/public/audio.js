@@ -168,6 +168,19 @@ const TRACKS = {
     },
     form: "A B",
   },
+  // E phrygian, 116 — 차원 균열: a driving, uneasy pulse under a tune that keeps slipping a half step
+  dim: {
+    bpm: 116, lead: "dark", vol: 0.1, bass: "tri", comp: null, pad: true, padVol: 0.03, padTritone: true, delay: 0.3,
+    bassPat: "R.R.O.R.R.R.F.T.",
+    drums: { k: "x...x...x...x...", s: "....o.......o...", h: "..o...o...o...o." },
+    sections: {
+      A: ["Em Em F F Em Em D B",
+        "E5:2 -:2 G5:2 -:2 F5:2 E5:2 B4:4  E5:4 F5:2 G5:2 B5:8  C6:2 -:2 B5:2 A5:2 F5:4 A5:4  G5:2 F5:2 E5:4 F5:8  E5:2 -:2 G5:2 -:2 B5:2 C6:2 B5:4  G5:4 F5:2 E5:2 G5:8  F#5:2 -:2 A5:2 -:2 D6:4 C6:4  B5:8 D#5:4 F#5:4"],
+      B: ["Am Am Em Em F G B B",
+        "A5:4 C6:4 E6:4 C6:4  B5:2 A5:2 G5:4 A5:8  G5:4 B5:4 E6:4 B5:4  A5:2 G5:2 F#5:4 E5:8  F5:4 A5:4 C6:4 A5:4  G5:4 B5:4 D6:4 B5:4  B5:4 A5:4 F#5:4 D#5:4  B4:12 -:4"],
+    },
+    form: "A B",
+  },
   // C minor, 64 — the crypt: a slow organ in a cold nave
   crypt: {
     bpm: 64, lead: "organ", vol: 0.09, bass: "organ", comp: null, pad: true, padVol: 0.04, padType: "organ", delay: 0.32,
@@ -660,7 +673,7 @@ const BOOST = {
   drip: 1.6, reel: 1.8, slack: 1.6, sizzle: 1.4, pan_place: 1.8, pan_turn: 1.6, pan_bump: 1.6,
 };
 /** Effects that play even when many voices are already sounding. */
-const IMPORTANT = new Set(["heads", "steam", "overload", "supercon", "giant", "hundred", "level", "achieve", "death", "rift_start", "rift_boss", "announce", "enh_ok", "enh_fail", "warp", "loot"]);
+const IMPORTANT = new Set(["heads", "steam", "overload", "supercon", "giant", "hundred", "level", "achieve", "death", "rift_start", "rift_boss", "rc_ping", "dim_boss", "dim_clear", "announce", "enh_ok", "enh_fail", "warp", "loot"]);
 
 /** The catalogue. `this` is Sound. */
 const SFX = {
@@ -753,6 +766,21 @@ const SFX = {
   rift_warn() { for (let i = 0; i < 3; i++) { this.tone("sawtooth", 520, 380, 0.25, 0.08, i * 0.32); } },
   rift_start() { this.noise(0.8, 0.3, 3000, "lowpass", 0, 100); this.tone("sawtooth", 80, 40, 0.9, 0.18); this.arp(0.25, [370, 440, 554, 740], 0.08, 0.18, 0.08, 0.3); },
   rift_boss() { this.tone("sawtooth", 60, 30, 1.2, 0.2); this.noise(1, 0.28, 1200, "lowpass", 0, 60); this.arp("square", [185, 175, 165], 0.2, 0.3, 0.07, 0.2); },
+  // ── 차원 균열 (dimrift.js) ──
+  /** A party member is asked to go in: two bright pings over a low hum, hard to miss. */
+  rc_ping() { this.tone("sine", 1319, 1319, 0.12, 0.1); this.tone("sine", 1760, 1760, 0.16, 0.09, 0.14); this.tone("triangle", 220, 233, 0.6, 0.06); },
+  /** Stepping through into a rift: a downward rush and a hollow chord. */
+  dim_open() { this.noise(0.6, 0.18, 4000, "bandpass", 0, 200); this.tone("sawtooth", 330, 110, 0.6, 0.06); this.arp("triangle", [247, 294, 370], 0.06, 0.4, 0.06, 0.25); },
+  /** An orb taken: a quick rising sparkle. */
+  dim_orb() { this.arp("sine", [880, 1175, 1568], 0.04, 0.14, 0.07); this.tone("triangle", 440, 880, 0.12, 0.05); },
+  /** A shrine answers: a struck crystal and a swell. */
+  dim_pylon() { this.tone("sine", 1047, 1047, 0.8, 0.08); this.tone("sine", 1568, 1568, 0.6, 0.05, 0.02); this.noise(0.5, 0.06, 6000, "highpass", 0, 3000); this.arp("triangle", [523, 659, 784, 1047], 0.05, 0.2, 0.06, 0.1); },
+  /** The master comes: a deep tear, a drum and a falling minor figure. */
+  dim_boss() { this.tone("sawtooth", 70, 35, 1.4, 0.2); this.noise(1.2, 0.3, 900, "lowpass", 0, 50); this.arp("square", [233, 220, 208, 196], 0.18, 0.3, 0.07, 0.3); },
+  /** Cleared: a bright fanfare. */
+  dim_clear() { this.arp(0.25, [523, 659, 784, 1047, 1319], 0.09, 0.3, 0.1); this.tone("triangle", 262, 262, 1, 0.1, 0.45); this.tone("triangle", 392, 392, 1, 0.08, 0.45); },
+  /** The way home opens: a slow shimmer. */
+  dim_portal() { this.noise(1, 0.08, 3000, "bandpass", 0, 6000); this.arp("sine", [784, 988, 1175, 1568], 0.12, 0.5, 0.06); },
   // ── loot and progress ──
   coin() { this.tone(0.5, 1320, 1320, 0.05, 0.08); this.tone(0.5, 1760, 1760, 0.1, 0.08, 0.05); },
   item() { this.arp(0.5, [880, 1175, 1568], 0.05, 0.08, 0.08); },
