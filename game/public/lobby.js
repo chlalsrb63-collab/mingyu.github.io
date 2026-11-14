@@ -46,7 +46,18 @@ function channelFor(sid) {
 }
 export function lastChannel() { const l = localStorage.getItem(LAST); return validChannel(l) ? l : "s1-ch1"; }
 /** The join frame for the socket. */
-export function joinMsg() { const s = Account.session(); return { type: "join", token: s ? s.token : "" }; }
+export function joinMsg() {
+  const s = Account.session(), msg = { type: "join", token: s ? s.token : "" };
+  // the map editor's playtest (?dev=1&map=willow&x=24&y=30, tiles): sent with the first join of the
+  // page only; the server honours it only in local dev (wrangler.local.jsonc PLAYTEST)
+  if (PLAYTEST && !playtestSent) { msg.dev = PLAYTEST; playtestSent = true; }
+  return msg;
+}
+const PLAYTEST = (() => {
+  const q = new URLSearchParams(location.search);
+  return q.get("dev") === "1" && q.get("map") ? { map: q.get("map"), x: Math.max(0, parseInt(q.get("x"), 10) || 0), y: Math.max(0, parseInt(q.get("y"), 10) || 0) } : null;
+})();
+let playtestSent = false;
 
 // ───────────────────────────── setup ─────────────────────────────
 

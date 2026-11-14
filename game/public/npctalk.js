@@ -75,6 +75,8 @@ export function lineFor(npc, s) {
 }
 /** Every line for a talking NPC, the server's greeting first. */
 export function allLines(npc, s) {
+  // an NPC from the map editor says exactly what it was given
+  if (Array.isArray(npc.lines) && npc.lines.length) return npc.lines.map((l) => (s ? l.replaceAll("{n}", s.name) : l));
   const out = npc.say ? [npc.say] : [];
   for (let k = 0; k < (LINES[npc.role] || []).length; k++) { const l = lineFor(npc, s); if (l && !out.includes(l)) out.push(l); }
   return out;

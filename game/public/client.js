@@ -25,6 +25,7 @@ import { entryIconUrl } from "./weapons.js";
 import * as Looks from "./looks.js";
 import * as QS from "./quickslots.js";
 import * as NpcTalk from "./npctalk.js";
+import * as SideQ from "./sidequests.js";
 import * as SkillFx from "./skillfx.js";
 import { drawClassGauge, gaugeTip } from "./classgauge.js";
 import { installFrames } from "./frames.js";
@@ -179,6 +180,7 @@ function onMessage(msg) {
         Growth.init({ G, act, el, iconImg, itemSlot, section, countItem, usePotion, isGear: (id) => isGear(id), sellPrice: (e) => sellPrice(e) });
         Wardrobe.init({ G, act, el, hoverTip });
         QS.init({ G, act, el, toast, castSkill, useSlot, countItem, showTip, hideTip, touch, addChat });
+        SideQ.init({ G, act, el, Sound });
       }
       G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear(); G.who.clear();
       $("#hud").hidden = false;
@@ -874,6 +876,7 @@ function interact() {
   }
   if (!n) { if (waterNear()) { act({ t: "fish" }); Sound.play("ui"); } return; }
   Sound.play("ui");
+  SideQ.onTalk(n, G.self);
   if (n.role === "shop") { openWin("shop"); openWin("inv"); }
   else if (n.role === "smith") { openWin("smith"); openWin("inv"); }
   else if (n.role === "elder") { openWin("quest"); tutTry("talk"); }
@@ -900,6 +903,9 @@ function talkTo(n) {
 }
 function talkShow() {
   $("#talk-text").textContent = talk.lines[talk.i % talk.lines.length];
+  // side quests from the map editor: what this NPC offers (sidequests.js)
+  if (!$("#talk-sq")) { const box = el("div", "talk-sq"); box.id = "talk-sq"; $("#talk-text").parentNode.append(box); }
+  shown.talk = null;
   let more = $("#talk-more");
   if (!more) {
     more = el("button", "btn small", "");
@@ -1243,6 +1249,8 @@ function renderText(t) {
   for (const n of m.npcs) {
     const [x, y] = at(n.x * T + 8, n.y * T + 12, 1.55);
     label(n.name, x, y, "#f0d48a");
+    const sqm = SideQ.mark(n, G.self);
+    if (sqm) label(sqm, x, y - 18 + Math.sin(t / 200) * 3, sqm === "!" ? "#ffd84a" : "#8cff8c", 18);
     if (n.role === "elder" && G.self) {
       const q = G.self.q, quest = G.defs.quests[q.i];
       const mark = !quest ? "" : q.st === 0 ? "!" : q.n >= quest.n ? "?" : "";
@@ -1839,7 +1847,8 @@ function refreshUi() {
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone")], renderSmith);
   draw("train", () => [s.xp, s.tr, s.trc, s.skl, s.skc, s.gold, s.lvl], renderTrain);
   draw("bank", () => [s.inv, s.wh, s.gold], Growth.renderBank);
-  draw("quest", () => [s.q, s.bq, s.bn, s.mk, s.lvl, near, G.qsel], renderQuest);
+  draw("quest", () => [s.q, s.bq, s.bn, s.mk, s.lvl, near, G.qsel, s.sq], renderQuest);
+  draw("talk", () => [s.sq, s.lvl, talk.npc && talk.npc.id], () => SideQ.renderTalk($("#talk-sq"), talk.npc, s, (line) => { $("#talk-text").textContent = line; }));
   draw("warp", () => [s.wp, G.map && G.map.id, stoneNear(), near, G.warpPick], renderWarp);
   draw("daily", () => [s.daily && s.daily.day, s.daily && s.daily.tasks, s.daily && s.daily.bonus, s.inv.length], renderDaily);
   draw("achieve", () => [s.ach, s.title, s.pts, G.achTab], renderAchieve);
@@ -2367,6 +2376,7 @@ function renderQuest(s) {
     entry(`main:${cur}`, `${cur + 1}. ${q.title}`, s.q.st === 0 ? "새 의뢰" : s.q.n >= q.n ? "완료!" : `${s.q.n}/${q.n}`, s.q.st === 1 && s.q.n >= q.n ? "done" : "");
   }
   for (let i = cur - 1; i >= 0; i--) entry(`main:${i}`, `${i + 1}. ${qs[i].title}`, "완료", "past");
+  SideQ.listEntries(s, entry, (t) => list.append(el("div", "grp", t)));
   list.append(el("div", "grp", "반복 의뢰"));
   if (s.bq) entry("bq", `${mobs[s.bq.k].name} 토벌`, s.bq.n >= s.bq.need ? "완료!" : `${Math.min(s.bq.n, s.bq.need)}/${s.bq.need}`, s.bq.n >= s.bq.need ? "done" : "");
   for (const k of picks) entry(`bq:${k}`, `${mobs[k].name}`, `Lv.${mobs[k].lv}`, "offer");
@@ -2402,6 +2412,8 @@ function renderQuest(s) {
     det.append(el("div", "q-reward", `보상: EXP ${q.xp.toLocaleString()} · ${q.gold.toLocaleString()}G · ${q.items.map(([id, n]) => `${it[id].name} ×${n}`).join(", ")}`));
     if (s.q.st === 0) button("의뢰 수락", () => act({ t: "quest", a: "accept" }), true);
     else button("의뢰 완료", () => act({ t: "quest", a: "done" }), s.q.n >= q.n);
+  } else if (kind === "sq") {
+    SideQ.detail(det, arg, s);
   } else if (kind === "bq" && !arg) {
     const d = mobs[s.bq.k];
     det.append(el("div", "q-title", `반복 의뢰 — ${d.name} 토벌`));

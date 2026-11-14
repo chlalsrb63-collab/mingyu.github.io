@@ -34,3 +34,5 @@ export function addPlayer(state: World, playerId: string, char: Char): number;
 export function removePlayer(state: World, playerId: string): Char | null;
 export function exportChar(state: World, playerId: string): Char | null;
 export function defs(): unknown;
+/** Local playtest (map editor): put a sheet on a map tile (the nearest standable one). */
+export function devPlace(char: Char, map: string, tx: number, ty: number): boolean;

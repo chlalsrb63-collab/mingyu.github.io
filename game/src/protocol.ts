@@ -12,9 +12,12 @@ const MAX_TOKEN = 128;
 const MAX_ACTION_BYTES = 4 * 1024;
 
 export type ClientMessage =
-  | { type: "join"; token: string }
+  | { type: "join"; token: string; dev?: DevSpot }
   | { type: "action"; action: unknown }
   | { type: "reset" };
+
+/** Local playtest only (?dev=1&map=…&x=…&y=…): where the editor wants the character put, in tiles. */
+export type DevSpot = { map: string; x: number; y: number };
 
 export type ParseResult = { ok: true; msg: ClientMessage } | { ok: false; error: string };
 
@@ -44,6 +47,12 @@ export function parseClientMessage(raw: string | ArrayBuffer): ParseResult {
       const token = parsed.token;
       if (typeof token !== "string" || !token || token.length > MAX_TOKEN) {
         return { ok: false, error: "token required" };
+      }
+      // a playtest spot from the map editor; the room ignores it unless local playtesting is on
+      const dev = parsed.dev;
+      if (isRecord(dev) && typeof dev.map === "string" && /^[a-z][a-z0-9_]{1,23}$/.test(dev.map) &&
+          Number.isInteger(dev.x) && Number.isInteger(dev.y) && (dev.x as number) >= 0 && (dev.y as number) >= 0 && (dev.x as number) < 200 && (dev.y as number) < 200) {
+        return { ok: true, msg: { type: "join", token, dev: { map: dev.map, x: dev.x as number, y: dev.y as number } } };
       }
       return { ok: true, msg: { type: "join", token } };
     }

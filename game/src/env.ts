@@ -12,6 +12,11 @@ export interface Env {
   ROOMS: DurableObjectNamespace;
   /** "dev" | "prod" — the CODE's environment label. */
   HF_ENV?: string;
+  /**
+   * "1" only in wrangler.local.jsonc: the world map editor's playtest (a join may put the
+   * character on any map tile). Never honoured when HF_ENV is "prod".
+   */
+  PLAYTEST?: string;
   /** This app's subdomain label. */
   APP_SLUG?: string;
 }

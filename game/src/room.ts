@@ -246,6 +246,8 @@ export class Room extends DurableObject<Env> {
       const res = await this.callVault("load", { pid, room: this.roomName });
       if (!res.ok) return this.send(ws, { type: "error", error: res.error, fatal: true });
       if (!res.char) return this.send(ws, { type: "need_char" });
+      // the map editor's playtest: local dev only, never in production
+      if (msg.dev && this.env.PLAYTEST === "1" && this.env.HF_ENV !== "prod") logic.devPlace(res.char, msg.dev.map, msg.dev.x, msg.dev.y);
       this.enter(ws, att, res.char);
       await this.startClock();
       return;
