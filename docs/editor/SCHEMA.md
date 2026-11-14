@@ -64,7 +64,8 @@ generated map round-trips tile for tile):
 - `waypoint`: `[x, y]` or `[x, y, ax, ay]` (ax, ay = the open tile beside the stone travellers
   arrive on; default: the first open side). The stone tile becomes object `Q`.
 - `boss`: `{ k }` = the field boss the map's kills call out (like generated hunting grounds);
-  `x, y` are informational. A map with monsters, a waypoint and a boss joins the rift rotation;
+  `x, y` (optional) is where it prefers to walk in, still kept ≥3 tiles from the waypoint and signs
+  and ≥6 from players. A map with monsters, a waypoint and a boss joins the rift rotation;
   with monsters it gets a collection page (no region bonus).
 - `fishing: false` forbids fishing on that map.
 - `big`: `[{ "t": "house", "x", "y", "v": 0..7 }, { "t": "fountain", "x", "y" }]` — the 4×3 house

@@ -97,9 +97,18 @@ function takeItem(ch, id, n) {
     if (s.n <= 0) ch.inv.splice(i, 1);
   }
 }
+/** A piece's name word: a legendary's power, a set's name, or its first affix (as the client shows it). */
+function gearWord(g) {
+  const af = Array.isArray(g.af) && g.af.length ? AFFIX.find((x) => x[0] === g.af[0][0]) : null;
+  return g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : af ? `${af[2]} ` : "";
+}
+/** "+3 뇌명의 강철 양손검" */
 function gearName(g) {
-  const word = g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : "";
-  return (g.enh > 0 ? `+${g.enh} ` : "") + word + ITEMS[g.id].name;
+  return (g.enh > 0 ? `+${g.enh} ` : "") + gearWord(g) + ITEMS[g.id].name;
+}
+/** "희귀 잔혹한 강철 양손검 +6" — the whole name, rarity first and the level last (enhancement news). */
+function gearFull(g) {
+  return ((g.q | 0) > 0 && RARITY[g.q] ? `${RARITY[g.q]} ` : "") + gearWord(g) + ITEMS[g.id].name + (g.enh > 0 ? ` +${g.enh}` : "");
 }
 /** Plain gear: no rarity, no enhancement, nothing socketed — what "sell all" sells. */
 const junk = (s) => isGear(s.id) && !(s.q | 0) && !(s.enh | 0) && !(s.ru || []).some(Boolean);
@@ -205,6 +214,7 @@ function gainXp(S, p, n) {
     const st = stats(p);
     p.hp = st.mhp; p.mp = st.mmp;
     p.gain.push(["lvl", ch.lvl]);
+    saveSoon(p);
     S.maps[p.map].ev.push(["l", p.eid]);
     S.maps[p.map].who = true;
     // a skill just learned goes straight onto the bar, so the key is there to press (and auto-hunt uses it)

@@ -65,7 +65,20 @@ assert.deepEqual(me.lg.sort(), ["greed", "haste"]);
 // ── the smith: any worn piece but jewellery can be enhanced; spare gear breaks down into stones
 near("smith");
 ch.gold = 1e6; ch.inv = [{ id: "stone", n: 50 }, gear("h_1", { q: 2 }), gear("r_1", { q: 3, lg: "nova" })];
+S.players[PID].toast.length = 0;
 assert.ok(act({ t: "enh", k: "helm" }).ok);
+{
+  // the news names the whole piece: rarity, its word, the item, and the level it is now at
+  const said = S.players[PID].toast.at(-1), g = ch.eq.helm;
+  const full = `전설 ${D.legend.haste[0]} ${D.items.h_3.name}` + (g.enh ? ` +${g.enh}` : "");
+  assert.ok(said.includes(full + " 강화 성공!") || said.startsWith(full + " 강화 실패"), said);
+  // an affixed rare piece is named by its first affix, as the client names it
+  ch.eq.boots = gear("b_2", { q: 2, enh: 5, af: [["critd", 10]] });
+  for (let i = 0; i < 40 && ch.eq.boots.enh === 5; i++) { S.players[PID].toast.length = 0; ch.eq.boots.enh = 5; assert.ok(act({ t: "enh", k: "boots" }).ok); }
+  const b = S.players[PID].toast.at(-1);
+  assert.ok(b.includes(`희귀 잔혹한 ${D.items.b_2.name} +${ch.eq.boots.enh}`), b);
+  delete ch.eq.boots;
+}
 assert.equal(act({ t: "enh", k: "ring1" }).ok, false);
 const stones = () => ch.inv.filter((s) => s.id === "stone").reduce((n, s) => n + s.n, 0);
 const s0 = stones();
@@ -106,6 +119,30 @@ assert.ok(p.streak >= 20, "kills in quick succession build a streak, got " + p.s
 assert.ok((ch.mk.twinhare || 0) >= 30, "kills are counted per monster");
 const boss = rt.mobs.find((m) => m.el === 2);
 assert.ok(boss && boss.k === "lambmaw" && rt.fb === boss.id, "the field boss arrives");
+{
+  // …clear of the waypoint stone and signposts, well away from the hunter, after a warning ring
+  const A = L.atlas(), mm = A.maps.meadow, tile = (o) => [(o.x - 8) / 16, (o.y - 10) / 16];
+  const [bx, by] = tile(boss);
+  assert.ok(mm.reach[by * mm.w + bx], "on a reachable tile");
+  for (const k of mm.marks.filter((k) => k.kind === "waypoint" || k.kind === "sign")) assert.ok(Math.hypot(k.x - bx, k.y - by) >= 3, `≥3 tiles from the ${k.kind} at ${k.x},${k.y}`);
+  assert.ok(Math.hypot(p.x / 16 - 0.5 - bx, p.y / 16 - 0.5 - by) >= 6, "≥6 tiles from the nearest player");
+  assert.ok(boss.stun > S.now - 3000, "it holds still while its arrival is telegraphed");
+  // call it again from a kill right beside the stone with the hunter standing there: the worst case
+  const W = A.waypoints.meadow, kx = W.ax * 16 + 8, ky = W.ay * 16 + 10;
+  const fb = rt.fb; rt.fb = 0; rt.kc = 1e9;
+  p.x = kx; p.y = ky;
+  const before = rt.mobs.slice();
+  const prey = acorns[0]; prey.dead = false; prey.el = 0; prey.hp = 1; prey.x = kx + 12; prey.y = ky; p.atkAt = 0; p.aim = 0;
+  assert.ok(act({ t: "atk" }).ok);
+  const b2 = rt.mobs.find((m) => !before.includes(m) && m.el === 2);
+  assert.ok(b2, "a second call-out from beside the stone");
+  const [cx, cy] = tile(b2);
+  assert.ok(Math.hypot(W.x - cx, W.y - cy) >= 3, "not on the stone");
+  assert.ok(Math.hypot(p.x / 16 - 0.5 - cx, p.y / 16 - 0.5 - cy) >= 6, "not on the hunter beside it");
+  assert.ok(rt.ev.some((e) => e[0] === "t" && e[1] === b2.x && e[2] === b2.y), "a warning ring where it lands");
+  // back to the story: the first boss is the one the rest of this test fights
+  rt.mobs.splice(rt.mobs.indexOf(b2), 1); rt.fb = fb; rt.kc = 0;
+}
 assert.equal(boss.hp, Math.round(D.mobs.lambmaw.hp * D.eliteHp[2]));
 boss.hp = 1; boss.x = p.x + 12; boss.y = p.y; p.atkAt = 0;
 act({ t: "atk", a: 0 });

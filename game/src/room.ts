@@ -44,6 +44,8 @@ import { Accounts, K, pidFor, serverOf } from "./accounts.js";
 
 const TICK_MS = 100;
 const SAVE_MS = 15_000;
+/** Progress the logic flags (quest, enhancement, level-up…) is saved within this, batched. */
+const SAVE_SOON_MS = 1_000;
 /** A character counts as "in another channel" until its lock is this stale. */
 const LOCK_MS = 40_000;
 const RANK_SIZE = 20;
@@ -89,6 +91,7 @@ export class Room extends DurableObject<Env> {
   private reviving: Promise<void> | null = null;
   private roomName = "";
   private lastSave = 0;
+  private lastQuickSave = 0;
   private nextTick = 0;
   /** The account service; only ever created in the vault instance. */
   private accounts: Accounts | null = null;
@@ -360,7 +363,7 @@ export class Room extends DurableObject<Env> {
       logic.endTick(world);
 
       if (now - this.lastSave >= SAVE_MS) {
-        this.lastSave = now;
+        this.lastSave = this.lastQuickSave = now;
         const list: Array<{ pid: string; char: Char }> = [];
         for (const [, pid] of live) {
           const char = logic.exportChar(world, pid);
@@ -368,6 +371,20 @@ export class Room extends DurableObject<Env> {
         }
         // Not awaited: a save must never stall the tick.
         this.ctx.waitUntil(this.callVault("save", { room: this.roomName, list, release: [], n: live.length }));
+      } else if (now - this.lastQuickSave >= SAVE_SOON_MS) {
+        // Progress the rules flagged (quest, enhancement, level-up, skills, wardrobe, warehouse):
+        // one batched vault call at most once a second, only for the characters that asked.
+        const asked = new Set(logic.takeSaves(world));
+        if (asked.size) {
+          this.lastQuickSave = now;
+          const list: Array<{ pid: string; char: Char }> = [];
+          for (const [, pid] of live) {
+            if (!asked.has(pid)) continue;
+            const char = logic.exportChar(world, pid);
+            if (char) list.push({ pid, char });
+          }
+          if (list.length) this.ctx.waitUntil(this.callVault("save", { room: this.roomName, list, release: [], n: live.length }));
+        }
       }
 
       // Hold a steady cadence even when a tick ran long.

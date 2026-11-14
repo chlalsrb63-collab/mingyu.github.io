@@ -91,6 +91,36 @@ assert.ok(D.tutorial.length >= 1);
   assert.ok(!W.act({ t: "sklv", i: 9 }).ok && !W.act({ t: "sklv", i: "0" }).ok, "nonsense is refused");
 }
 
+// ── progress worth keeping asks the room for a save soon (not the 15 s cycle)
+{
+  const W = world("저장", "warrior", 5);
+  const ch = W.ch;
+  L.takeSaves(W.S);
+  W.step();
+  assert.deepEqual(L.takeSaves(W.S), [], "walking about asks for nothing");
+  ch.gold = 1e7; ch.xp = 1e7;
+  W.npc("train");
+  assert.ok(!W.act({ t: "sklv", i: 9 }).ok);
+  assert.deepEqual(L.takeSaves(W.S), [], "a refused action asks for nothing");
+  assert.ok(W.act({ t: "sklv", i: 0 }).ok);
+  assert.deepEqual(L.takeSaves(W.S), [W.PID], "a skill level asks for a save");
+  assert.deepEqual(L.takeSaves(W.S), [], "and the flag is handed out once");
+  // the regular save clears a pending flag
+  assert.ok(W.act({ t: "sklv", i: 0 }).ok);
+  L.exportChar(W.S, W.PID);
+  assert.deepEqual(L.takeSaves(W.S), [], "the 15 s save already covered it");
+  // a level-up from a kill's experience asks too
+  const p = W.p, rt = W.S.maps.meadow;
+  W.to("meadow", 20, 20);
+  ch.lvl = 5; ch.xp = 0;
+  W.step(); L.takeSaves(W.S);
+  const mob = rt.mobs.find((o) => !o.dead && o.k === "twinhare");
+  ch.xp = 1e6; mob.el = 0; mob.hp = 1; mob.x = p.x + 12; mob.y = p.y; p.atkAt = 0; p.aim = 0; p.hp = 1e5;
+  assert.ok(W.act({ t: "atk" }).ok);
+  W.step();
+  assert.ok(ch.lvl > 5 && L.takeSaves(W.S).includes(W.PID), "a level-up asks for a save");
+}
+
 // ── a levelled skill hits harder, and at 5 and 10 comes back sooner
 {
   const dmgOf = (L1) => {

@@ -212,15 +212,15 @@ export function applyAction(S, pid, a) {
       const win = rnd(S) * 100 < ENH_RATE[g.enh];
       if (win) {
         g.enh++;
-        toast(p, `강화 성공! ${gearName(g)}`);
-        if (g.enh >= 7) sys(S, `${ch.name}님이 ${gearName(g)} 강화에 성공했습니다!`);
+        toast(p, `${gearFull(g)} 강화 성공!`);
+        if (g.enh >= 7) sys(S, `${ch.name}님이 ${gearFull(g)} 강화에 성공했습니다!`);
         ch.st.enh = Math.max(ch.st.enh, g.enh);
         checkAch(S, p);
       } else if (g.enh >= 5) {
         g.enh--;
-        toast(p, `강화 실패... ${gearName(g)}${pp(gearName(g), "으로")} 단계가 내려갔습니다.`);
+        toast(p, `강화 실패... ${gearFull(g)}${pp(gearFull(g), "으로")} 단계가 내려갔습니다.`);
       } else {
-        toast(p, "강화 실패... 장비는 무사합니다.");
+        toast(p, `${gearFull(g)} 강화 실패... 장비는 무사합니다.`);
       }
       S.maps[p.map].ev.push(["e", p.eid, win ? 1 : 0]);
       afterGear(S, p);
@@ -510,6 +510,7 @@ export function applyAction(S, pid, a) {
       toast(p, "파티를 떠났습니다.");
       break;
   }
+  if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;
 }
 

@@ -2831,8 +2831,11 @@ function fromEditor(d, id) {
     m.marks.unshift({ x, y, kind: "waypoint" });
   }
   // a hunting ground's field boss: called out by kills, like every generated one
-  if (!m.safe && d.boss && typeof d.boss.k === "string" && Object.hasOwn(MOBS, d.boss.k)) FIELD_BOSS[id] = d.boss.k;
-  else delete FIELD_BOSS[id];
+  if (!m.safe && d.boss && typeof d.boss.k === "string" && Object.hasOwn(MOBS, d.boss.k)) {
+    FIELD_BOSS[id] = d.boss.k;
+    // its x, y (if any) is where it prefers to walk in (still kept clear of stone, signs and players)
+    if (xyOk(m, d.boss.x, d.boss.y)) m.bossAt = [d.boss.x, d.boss.y];
+  } else delete FIELD_BOSS[id];
   return m;
 }
 
@@ -3160,7 +3163,21 @@ export function exportChar(S, pid) {
   const ch = p.ch;
   ch.map = p.map; ch.x = Math.round(p.x); ch.y = Math.round(p.y);
   ch.hp = p.dead ? 0 : Math.round(p.hp); ch.mp = Math.round(p.mp);
+  p.save = false;
   return ch;
+}
+
+/**
+ * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
+ * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
+ */
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "sklv", "train", "wh", "cos_buy"]);
+const saveSoon = (p) => { p.save = true; };
+/** The players whose characters asked to be saved soon, cleared as they are handed out. */
+export function takeSaves(S) {
+  const out = [];
+  for (const pid in S.players) if (S.players[pid].save) { S.players[pid].save = false; out.push(pid); }
+  return out;
 }
 
 // ───────────────────────────── world ─────────────────────────────
@@ -3252,18 +3269,53 @@ function placeMob(S, m, mob) {
   mob.wx = mob.x; mob.wy = mob.y;
   mob.castAt = S.now + 3000 + rnd(S) * 3000;
 }
-/** A hunting ground's field boss walks in where the kill that summoned it was made. */
+/** How far (tiles) a field boss keeps from the waypoint stone and signposts, and from players. */
+const FB_CLEAR = 3, FB_AWAY = 6, FB_SCAN = 18, FB_WARN = 1500;
+/**
+ * Where a boss walks in: a reachable tile near `ax, ay` (tiles) at least `clear` tiles from every
+ * waypoint stone and signpost (so it never hides them) and at least `away` tiles from every living
+ * player on the map (so it does not land on a low-level hunter's head). The closest such tile
+ * wins; on a small or crowded map the best compromise is taken, and failing that the anchor.
+ */
+function bossSpot(S, m, ax, ay, clear = FB_CLEAR, away = FB_AWAY) {
+  const marks = (m.marks || []).filter((k) => k.kind === "waypoint" || k.kind === "sign").map((k) => [k.x, k.y]);
+  if (WP[m.id]) marks.push([WP[m.id].x, WP[m.id].y]);
+  const folk = [];
+  for (const pid in S.players) { const p = S.players[pid]; if (p.map === m.id && !p.dead) folk.push([p.x / T - 0.5, p.y / T - 0.5]); }
+  const near = (list, x, y) => { let b = Infinity; for (const [px, py] of list) b = Math.min(b, Math.hypot(px - x, py - y)); return b; };
+  let best = null, bestScore = -1;
+  for (let r = 0; r <= FB_SCAN; r++) {
+    for (let y = ay - r; y <= ay + r; y++) for (let x = ax - r; x <= ax + r; x++) {
+      if (Math.max(Math.abs(x - ax), Math.abs(y - ay)) !== r) continue;
+      if (x < 1 || y < 1 || x >= m.w - 1 || y >= m.h - 1 || !m.reach[y * m.w + x]) continue;
+      const dm = near(marks, x, y), dp = near(folk, x, y);
+      if (dm >= clear && dp >= away) return [x, y];
+      const score = Math.min(dm, clear) / clear + Math.min(dp, away) / away;
+      if (score > bestScore) { bestScore = score; best = [x, y]; }
+    }
+  }
+  return best || [ax, ay];
+}
+/**
+ * A hunting ground's field boss walks in near the kill that summoned it (or at the map's own
+ * boss spot, if its designer gave one), but clear of the waypoint stone, the signposts and the
+ * hunters themselves, standing still for a moment inside a warning ring where it lands.
+ */
 function spawnFieldBoss(S, rt, x, y) {
   const m = MAPS[rt.id];
   const mob = newMob(S, FIELD_BOSS[rt.id], [0, 0, 0, 0]);
   mob.el = 2; mob.temp = true;
   mob.tr = rollTraits(S, 2);
-  mob.x = mob.hx = mob.wx = x; mob.y = mob.hy = mob.wy = y;
+  const at = m.bossAt || [Math.floor(x / T), Math.floor(y / T)];
+  const [tx, ty] = bossSpot(S, m, clamp(at[0], 0, m.w - 1), clamp(at[1], 0, m.h - 1));
+  mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   mob.hp = mobMax(mob);
   mob.castAt = S.now + 4000;
+  mob.stun = S.now + FB_WARN;
   rt.mobs.push(mob);
   rt.fb = mob.id;
   rt.kc = 0;
+  rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), 40, FB_WARN]);
   rt.ev.push(["r", mob.id]);
   sys(S, `${m.name}에 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
 }
@@ -3463,9 +3515,18 @@ function takeItem(ch, id, n) {
     if (s.n <= 0) ch.inv.splice(i, 1);
   }
 }
+/** A piece's name word: a legendary's power, a set's name, or its first affix (as the client shows it). */
+function gearWord(g) {
+  const af = Array.isArray(g.af) && g.af.length ? AFFIX.find((x) => x[0] === g.af[0][0]) : null;
+  return g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : af ? `${af[2]} ` : "";
+}
+/** "+3 뇌명의 강철 양손검" */
 function gearName(g) {
-  const word = g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : "";
-  return (g.enh > 0 ? `+${g.enh} ` : "") + word + ITEMS[g.id].name;
+  return (g.enh > 0 ? `+${g.enh} ` : "") + gearWord(g) + ITEMS[g.id].name;
+}
+/** "희귀 잔혹한 강철 양손검 +6" — the whole name, rarity first and the level last (enhancement news). */
+function gearFull(g) {
+  return ((g.q | 0) > 0 && RARITY[g.q] ? `${RARITY[g.q]} ` : "") + gearWord(g) + ITEMS[g.id].name + (g.enh > 0 ? ` +${g.enh}` : "");
 }
 /** Plain gear: no rarity, no enhancement, nothing socketed — what "sell all" sells. */
 const junk = (s) => isGear(s.id) && !(s.q | 0) && !(s.enh | 0) && !(s.ru || []).some(Boolean);
@@ -3571,6 +3632,7 @@ function gainXp(S, p, n) {
     const st = stats(p);
     p.hp = st.mhp; p.mp = st.mmp;
     p.gain.push(["lvl", ch.lvl]);
+    saveSoon(p);
     S.maps[p.map].ev.push(["l", p.eid]);
     S.maps[p.map].who = true;
     // a skill just learned goes straight onto the bar, so the key is there to press (and auto-hunt uses it)
@@ -4780,7 +4842,8 @@ function spawnWave(S, e) {
   dirtyAll(S);
 }
 function spawnEvtBoss(S, e) {
-  const m = MAPS[e.map], rt = S.maps[e.map], [cx, cy] = evtSpot(e.map);
+  // the rift's lord gathers by the stone too, but never on it or on a signpost
+  const m = MAPS[e.map], rt = S.maps[e.map], [cx, cy] = bossSpot(S, m, ...evtSpot(e.map), FB_CLEAR, 0);
   const mob = newMob(S, FIELD_BOSS[e.map], [0, 0, 0, 0]);
   mob.el = 2; mob.temp = true; mob.evt = true; mob.tr = rollTraits(S, 2);
   mob.x = mob.hx = mob.wx = cx * T + 8; mob.y = mob.hy = mob.wy = cy * T + 10;
@@ -5660,15 +5723,15 @@ export function applyAction(S, pid, a) {
       const win = rnd(S) * 100 < ENH_RATE[g.enh];
       if (win) {
         g.enh++;
-        toast(p, `강화 성공! ${gearName(g)}`);
-        if (g.enh >= 7) sys(S, `${ch.name}님이 ${gearName(g)} 강화에 성공했습니다!`);
+        toast(p, `${gearFull(g)} 강화 성공!`);
+        if (g.enh >= 7) sys(S, `${ch.name}님이 ${gearFull(g)} 강화에 성공했습니다!`);
         ch.st.enh = Math.max(ch.st.enh, g.enh);
         checkAch(S, p);
       } else if (g.enh >= 5) {
         g.enh--;
-        toast(p, `강화 실패... ${gearName(g)}${pp(gearName(g), "으로")} 단계가 내려갔습니다.`);
+        toast(p, `강화 실패... ${gearFull(g)}${pp(gearFull(g), "으로")} 단계가 내려갔습니다.`);
       } else {
-        toast(p, "강화 실패... 장비는 무사합니다.");
+        toast(p, `${gearFull(g)} 강화 실패... 장비는 무사합니다.`);
       }
       S.maps[p.map].ev.push(["e", p.eid, win ? 1 : 0]);
       afterGear(S, p);
@@ -5958,6 +6021,7 @@ export function applyAction(S, pid, a) {
       toast(p, "파티를 떠났습니다.");
       break;
   }
+  if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;
 }
 

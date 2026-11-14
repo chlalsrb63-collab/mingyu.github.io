@@ -252,7 +252,8 @@ function spawnWave(S, e) {
   dirtyAll(S);
 }
 function spawnEvtBoss(S, e) {
-  const m = MAPS[e.map], rt = S.maps[e.map], [cx, cy] = evtSpot(e.map);
+  // the rift's lord gathers by the stone too, but never on it or on a signpost
+  const m = MAPS[e.map], rt = S.maps[e.map], [cx, cy] = bossSpot(S, m, ...evtSpot(e.map), FB_CLEAR, 0);
   const mob = newMob(S, FIELD_BOSS[e.map], [0, 0, 0, 0]);
   mob.el = 2; mob.temp = true; mob.evt = true; mob.tr = rollTraits(S, 2);
   mob.x = mob.hx = mob.wx = cx * T + 8; mob.y = mob.hy = mob.wy = cy * T + 10;

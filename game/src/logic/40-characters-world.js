@@ -235,7 +235,21 @@ export function exportChar(S, pid) {
   const ch = p.ch;
   ch.map = p.map; ch.x = Math.round(p.x); ch.y = Math.round(p.y);
   ch.hp = p.dead ? 0 : Math.round(p.hp); ch.mp = Math.round(p.mp);
+  p.save = false;
   return ch;
+}
+
+/**
+ * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
+ * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
+ */
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "sklv", "train", "wh", "cos_buy"]);
+const saveSoon = (p) => { p.save = true; };
+/** The players whose characters asked to be saved soon, cleared as they are handed out. */
+export function takeSaves(S) {
+  const out = [];
+  for (const pid in S.players) if (S.players[pid].save) { S.players[pid].save = false; out.push(pid); }
+  return out;
 }
 
 // ───────────────────────────── world ─────────────────────────────
@@ -327,18 +341,53 @@ function placeMob(S, m, mob) {
   mob.wx = mob.x; mob.wy = mob.y;
   mob.castAt = S.now + 3000 + rnd(S) * 3000;
 }
-/** A hunting ground's field boss walks in where the kill that summoned it was made. */
+/** How far (tiles) a field boss keeps from the waypoint stone and signposts, and from players. */
+const FB_CLEAR = 3, FB_AWAY = 6, FB_SCAN = 18, FB_WARN = 1500;
+/**
+ * Where a boss walks in: a reachable tile near `ax, ay` (tiles) at least `clear` tiles from every
+ * waypoint stone and signpost (so it never hides them) and at least `away` tiles from every living
+ * player on the map (so it does not land on a low-level hunter's head). The closest such tile
+ * wins; on a small or crowded map the best compromise is taken, and failing that the anchor.
+ */
+function bossSpot(S, m, ax, ay, clear = FB_CLEAR, away = FB_AWAY) {
+  const marks = (m.marks || []).filter((k) => k.kind === "waypoint" || k.kind === "sign").map((k) => [k.x, k.y]);
+  if (WP[m.id]) marks.push([WP[m.id].x, WP[m.id].y]);
+  const folk = [];
+  for (const pid in S.players) { const p = S.players[pid]; if (p.map === m.id && !p.dead) folk.push([p.x / T - 0.5, p.y / T - 0.5]); }
+  const near = (list, x, y) => { let b = Infinity; for (const [px, py] of list) b = Math.min(b, Math.hypot(px - x, py - y)); return b; };
+  let best = null, bestScore = -1;
+  for (let r = 0; r <= FB_SCAN; r++) {
+    for (let y = ay - r; y <= ay + r; y++) for (let x = ax - r; x <= ax + r; x++) {
+      if (Math.max(Math.abs(x - ax), Math.abs(y - ay)) !== r) continue;
+      if (x < 1 || y < 1 || x >= m.w - 1 || y >= m.h - 1 || !m.reach[y * m.w + x]) continue;
+      const dm = near(marks, x, y), dp = near(folk, x, y);
+      if (dm >= clear && dp >= away) return [x, y];
+      const score = Math.min(dm, clear) / clear + Math.min(dp, away) / away;
+      if (score > bestScore) { bestScore = score; best = [x, y]; }
+    }
+  }
+  return best || [ax, ay];
+}
+/**
+ * A hunting ground's field boss walks in near the kill that summoned it (or at the map's own
+ * boss spot, if its designer gave one), but clear of the waypoint stone, the signposts and the
+ * hunters themselves, standing still for a moment inside a warning ring where it lands.
+ */
 function spawnFieldBoss(S, rt, x, y) {
   const m = MAPS[rt.id];
   const mob = newMob(S, FIELD_BOSS[rt.id], [0, 0, 0, 0]);
   mob.el = 2; mob.temp = true;
   mob.tr = rollTraits(S, 2);
-  mob.x = mob.hx = mob.wx = x; mob.y = mob.hy = mob.wy = y;
+  const at = m.bossAt || [Math.floor(x / T), Math.floor(y / T)];
+  const [tx, ty] = bossSpot(S, m, clamp(at[0], 0, m.w - 1), clamp(at[1], 0, m.h - 1));
+  mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   mob.hp = mobMax(mob);
   mob.castAt = S.now + 4000;
+  mob.stun = S.now + FB_WARN;
   rt.mobs.push(mob);
   rt.fb = mob.id;
   rt.kc = 0;
+  rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), 40, FB_WARN]);
   rt.ev.push(["r", mob.id]);
   sys(S, `${m.name}에 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
 }

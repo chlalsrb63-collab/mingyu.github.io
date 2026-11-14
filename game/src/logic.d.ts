@@ -33,6 +33,8 @@ export function newChar(name: string, cls: unknown, look: unknown): Char;
 export function addPlayer(state: World, playerId: string, char: Char): number;
 export function removePlayer(state: World, playerId: string): Char | null;
 export function exportChar(state: World, playerId: string): Char | null;
+/** Players whose progress asked to be saved soon (quest, enhancement, level…); clears the flags. */
+export function takeSaves(state: World): string[];
 export function defs(): unknown;
 /** Local playtest (map editor): put a sheet on a map tile (the nearest standable one). */
 export function devPlace(char: Char, map: string, tx: number, ty: number): boolean;

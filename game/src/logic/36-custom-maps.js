@@ -88,8 +88,11 @@ function fromEditor(d, id) {
     m.marks.unshift({ x, y, kind: "waypoint" });
   }
   // a hunting ground's field boss: called out by kills, like every generated one
-  if (!m.safe && d.boss && typeof d.boss.k === "string" && Object.hasOwn(MOBS, d.boss.k)) FIELD_BOSS[id] = d.boss.k;
-  else delete FIELD_BOSS[id];
+  if (!m.safe && d.boss && typeof d.boss.k === "string" && Object.hasOwn(MOBS, d.boss.k)) {
+    FIELD_BOSS[id] = d.boss.k;
+    // its x, y (if any) is where it prefers to walk in (still kept clear of stone, signs and players)
+    if (xyOk(m, d.boss.x, d.boss.y)) m.bossAt = [d.boss.x, d.boss.y];
+  } else delete FIELD_BOSS[id];
   return m;
 }
 
