@@ -25,7 +25,7 @@ for (const [h, name] of want) {
 }
 
 // ── the weather: a pure function of map and time, steady within a slot, varied across them
-const outdoorMaps = ["town", "meadow", "forest", "city"];
+const outdoorMaps = ["town", "meadow", "forest", "city", "maple"];   // maple: theme autumn
 for (const id of outdoorMaps) {
   const seen = new Set();
   for (let i = 0; i < 400; i++) {

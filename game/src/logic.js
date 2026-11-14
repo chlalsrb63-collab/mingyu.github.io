@@ -6551,6 +6551,7 @@ const WX_ODDS = {
   meadow: [40, 18, 16, 8, 16, 2],
   forest: [30, 18, 20, 22, 8, 2],
   city: [40, 30, 24, 6, 0, 0],
+  autumn: [34, 22, 14, 16, 14, 0],
 };
 /** Small flavour: rain brings the fish up sooner, fog hides you a little from monsters. */
 const WX_FISH = 0.75, WX_FOG_AGGRO = 0.9;
