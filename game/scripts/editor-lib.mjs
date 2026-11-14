@@ -10,7 +10,7 @@
 //   await listMaps(dataDir?)           → [{ id, name, builtin, custom, replaces, w, h, theme }]
 //   await checkData(dataDir?)          → { ok, errors: [{file, path, msg}], warnings: [...] }
 //   await loadLogic({ dataDir?, data? }) → the rules module built with that data, plus `__editor`
-//                                        (MAPS FIRES WP FIELD_BOSS MOBS ITEMS QUESTS ...)
+//                                        (MAPS MAP_META FIRES WP FIELD_BOSS MOBS ITEMS QUESTS ...)
 //
 // All of them are async (the rules are evaluated from text so any data set can be tried
 // without touching src/logic.js). Signatures are stable: the editor server imports them.
@@ -21,7 +21,8 @@ import { buildLogic, readData, EMPTY_DATA, ROOT, DATA_DIR } from "./build-logic.
 
 export { DATA_DIR, ROOT };
 
-const EXTRA = "\nexport const __editor = { MAPS, FIRES, WP, FIELD_BOSS, MOBS, ITEMS, QUESTS, SOLID_G, THEMES, NPC_ROLES, BUILTIN_MAPS, NPC_MAP, DATA, COL_MOBS, SIDE: typeof SIDE === 'undefined' ? [] : SIDE, mapPayload };\n";
+// (MAPS: every map built — the rules build the generated ones only on first use)
+const EXTRA = "\nexport const __editor = { get MAPS() { return allMaps(); }, MAP_META, FIRES, WP, FIELD_BOSS, MOBS, ITEMS, QUESTS, SOLID_G, THEMES, NPC_ROLES, BUILTIN_MAPS, NPC_MAP, DATA, COL_MOBS, SIDE: typeof SIDE === 'undefined' ? [] : SIDE, mapPayload };\n";
 const cache = new Map();
 
 /** The rules evaluated with a data set (default: data/**); cached by content. */

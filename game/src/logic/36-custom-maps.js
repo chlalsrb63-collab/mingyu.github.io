@@ -13,7 +13,7 @@ const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
 const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
 /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
 const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder"];
-const BUILTIN_MAPS = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
+const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
 const openTile = (m, x, y) => inMap(m, x, y) && m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]);
@@ -107,88 +107,161 @@ function fromEditor(d, id) {
   return m;
 }
 
-/** The generated world with the editor's maps, doors and NPCs laid over it. */
-function customWorld(gen) {
-  const maps = {};
-  for (const id of Object.keys(gen)) {
-    const m = gen[id];
-    m.g = m.g.map((r) => (typeof r === "string" ? r.split("") : r));
-    m.o = m.o.map((r) => (typeof r === "string" ? r.split("") : r));
-    maps[id] = m;
-  }
-  // a file's own id is another name for the map it replaces
-  const alias = {};
-  for (const d of DATA.maps) {
-    const rep = typeof d.replaces === "string" && d.replaces ? d.replaces : null;
-    if (rep && !Object.hasOwn(gen, rep)) continue;
-    const id = rep || d.id;
-    if (!rep && Object.hasOwn(maps, id)) continue;
-    alias[d.id] = id;
-    const old = maps[id];
+// ───────────────────────────── the map registry ─────────────────────────────
+// Maps are built when first needed and kept (one isolate = one channel room, so each is built
+// at most once per room). Built when the rules load: the town and every editor map (small,
+// and the editor's waypoints, camps and field bosses must be known from the start). Built on
+// first use: the generated hunting grounds. Everything the rest of the rules needs to know about
+// a map without walking it — name, theme, level band, size, whether it has a waypoint stone,
+// which monsters live there — is in MAP_META, read from the settings, never from the terrain.
+
+/** Editor map files by the id they take (a replacement under the built-in id); ALIAS: a file's own id → that id. */
+const FILES = {}, ALIAS = {};
+for (const d of DATA.maps) {
+  const rep = typeof d.replaces === "string" && d.replaces ? d.replaces : null;
+  if (rep && !BUILTIN_MAPS.includes(rep)) continue;
+  const id = rep || d.id;
+  if (!rep && (BUILTIN_MAPS.includes(id) || Object.hasOwn(FILES, id))) continue;
+  ALIAS[d.id] = id;
+  FILES[id] = d;
+}
+/** The map id a name from the editor's data means (its own id, or a file id that replaces a built-in), or null. */
+const realId = (id) => (typeof id === "string" ? (Object.hasOwn(MAP_META, id) ? id : Object.hasOwn(ALIAS, id) ? ALIAS[id] : null) : null);
+
+/** A map before the editor's doors, links and NPCs are laid over it (rows still arrays). */
+function baseMap(id) {
+  const d = FILES[id];
+  if (d) {
     const m = fromEditor(d, id);
-    // the doors other maps have into a replaced map stay; its own doors come from the file
-    if (old && old.band && !m.band && !d.band && d.band !== null) m.band = old.band;
-    maps[id] = m;
+    // a replacement keeps the generated map's level band unless the file says otherwise
+    if (GEN[id] && !m.band && !d.band && d.band !== null) m.band = GEN[id].band.slice();
+    return m;
   }
-  const real = (id) => (typeof id === "string" ? (Object.hasOwn(maps, id) ? id : Object.hasOwn(alias, id) ? alias[id] : null) : null);
-  for (const m of Object.values(maps)) {
-    if (!m.doors) continue;
+  if (id === "town") { FIRES.town = []; const m = buildTown(); gateDoors(m); return m; }
+  return genMap(id);
+}
+/** The editor's doors, links and NPCs laid over a map, then the map finalized (rows joined, solid, reach). */
+function finishMap(m) {
+  const id = m.id;
+  if (m.doors) {
     for (const p of m.doors) {
-      const to = real(p.to);
-      if (!to || !xyOk(maps[to], p.tx, p.ty)) continue;
+      const to = realId(p.to);
+      if (!to || !xyOk(MAP_META[to], p.tx, p.ty)) continue;
       m.portals.push({ x: p.x, y: p.y, to, tx: p.tx, ty: p.ty });
     }
     delete m.doors;
   }
   // doors added to any map, built-in or the editor's own
   for (const l of DATA.links) {
-    const from = maps[real(l.map)], to = real(l.to);
-    if (!from || !to || !xyOk(from, l.x, l.y) || !xyOk(maps[to], l.tx, l.ty)) continue;
-    from.o[l.y][l.x] = " ";
+    if (realId(l.map) !== id) continue;
+    const to = realId(l.to);
+    if (!to || !xyOk(m, l.x, l.y) || !xyOk(MAP_META[to], l.tx, l.ty)) continue;
+    m.o[l.y][l.x] = " ";
     const p = { x: l.x, y: l.y, to, tx: l.tx, ty: l.ty };
     if (typeof l.label === "string" && l.label) p.label = l.label.slice(0, 40);
-    from.portals.push(p);
+    m.portals.push(p);
   }
   // NPCs added to any map
   for (const n of DATA.npcs) {
-    const m = maps[real(n.map)];
-    const c = m && npcFrom(n, m);
+    if (realId(n.map) !== id) continue;
+    const c = npcFrom(n, m);
     if (c && !m.npcs.some((o) => o.id === c.id)) m.npcs.push(c);
   }
-  for (const id of Object.keys(maps)) if (!FIRES[id]) FIRES[id] = [];
-  // the editor's maps and the ones it touched are finalized again; the rest come out the same
-  for (const m of Object.values(maps)) finalize(m);
-  // an arrival tile in a wall becomes the nearest open tile (or the map's entrance)
-  for (const m of Object.values(maps)) for (const p of m.portals) {
-    const t = maps[p.to];
-    if (t.reach[p.ty * t.w + p.tx]) continue;
-    const at = freeTile(t, p.tx, p.ty) || t.entry;
-    p.tx = at[0]; p.ty = at[1];
+  if (!FIRES[id]) FIRES[id] = [];
+  return finalize(m);
+}
+const metaKinds = (m) => [...new Set(m.spawns.map((sp) => sp.k))];
+
+/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, kinds, eager }. */
+const MAP_META = {};
+const EAGER = {};
+for (const id of [...BUILTIN_MAPS, ...Object.keys(FILES).filter((id) => !BUILTIN_MAPS.includes(id))]) {
+  if (id === "town" || FILES[id]) {
+    const m = (EAGER[id] = baseMap(id));
+    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], kinds: metaKinds(m), eager: true };
+  } else {
+    const g = GEN[id], c = g.cfg();
+    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, kinds: genKinds(id), eager: false };
   }
-  return maps;
+}
+/** Built maps by id. */
+const MAP_CACHE = {};
+/** NPC id → the map it stands on, and its name (side quests find their givers and talk targets here). */
+const NPC_MAP = {}, NPC_NAME = {};
+const noteNpc = (id, nid, name) => { if (!NPC_MAP[nid]) { NPC_MAP[nid] = id; NPC_NAME[nid] = name; } };
+/**
+ * The built map `id` (generated, laid over and finalized on first use, then kept), or null for
+ * an id the world does not have. Never a runtime instance: see mapOfS.
+ */
+function mapOf(id) {
+  const c = MAP_CACHE[id];
+  if (c) return c;
+  if (typeof id !== "string" || !Object.hasOwn(MAP_META, id)) return null;
+  const m = finishMap(EAGER[id] || baseMap(id));
+  delete EAGER[id];
+  MAP_CACHE[id] = m;
+  return m;
+}
+/** The map `id` as the world `S` sees it: a runtime instance ("dim:<n>", in S.dims) or mapOf(id). */
+function mapOfS(S, id) {
+  return S && S.dims && Object.hasOwn(S.dims, id) ? S.dims[id].map : mapOf(id);
+}
+/** Every map built (tests, tools, the editor), keyed in MAP_META order, every door's arrival tile resolved. */
+function allMaps() {
+  const out = {};
+  for (const id of Object.keys(MAP_META)) out[id] = mapOf(id);
+  for (const id of Object.keys(out)) for (const pt of out[id].portals) arrivalOf(null, pt);
+  return out;
+}
+/** Whether a map has a waypoint stone (known without building it). */
+const hasWp = (id) => typeof id === "string" && Object.hasOwn(MAP_META, id) && MAP_META[id].wp;
+/** A map's waypoint stone { x, y, ax, ay } (builds the map), or null. */
+function wpOf(id) {
+  return hasWp(id) && mapOf(id) && WP[id] ? WP[id] : null;
+}
+/**
+ * The tile a door puts you on: beside the named gate of the map behind it (a generated door),
+ * or the tile the editor gave it; the nearest open tile when that is in a wall, the map's
+ * entrance when the gate is gone (an editor map replaced the target). Worked out on first use
+ * and remembered on the door.
+ */
+function arrivalOf(S, pt) {
+  if (!pt.ok) {
+    const t = mapOfS(S, pt.to);
+    if (!t) return null;
+    let at = pt.gate !== undefined ? (t.gates && t.gates[pt.gate] ? t.gates[pt.gate].a[pt.k] : t.entry) : [pt.tx, pt.ty];
+    if (!inMap(t, at[0], at[1]) || !t.reach[at[1] * t.w + at[0]]) at = freeTile(t, at[0], at[1]) || t.entry;
+    pt.tx = at[0]; pt.ty = at[1]; pt.ok = 1;
+  }
+  return [pt.tx, pt.ty];
 }
 
-const MAPS = customWorld(buildMaps());
-const START = { map: "town", x: MAPS.town.entry[0] * T + 8, y: MAPS.town.entry[1] * T + 8 };
+// the town and the editor's maps, now
+for (const id of Object.keys(EAGER)) mapOf(id);
+const START = { map: "town", x: mapOf("town").entry[0] * T + 8, y: mapOf("town").entry[1] * T + 8 };
 /** Every monster that lives somewhere (no chests, no bosses), and each hunting ground's for its collection. */
-const HUNTED = [...new Set(Object.values(MAPS).flatMap((m) => m.spawns.map((sp) => sp.k)))].filter((k) => !MOBS[k].chest && !MOBS[k].boss);
+const HUNTED = [...new Set(Object.values(MAP_META).flatMap((mm) => mm.kinds))].filter((k) => !MOBS[k].chest && !MOBS[k].boss);
 const COL_MOBS = {};
-for (const id of Object.keys(MAPS)) {
-  if (MAPS[id].safe) continue;
-  const ks = [...new Set(MAPS[id].spawns.map((sp) => sp.k))].filter((k) => HUNTED.includes(k));
+for (const id of Object.keys(MAP_META)) {
+  if (MAP_META[id].safe) continue;
+  const ks = MAP_META[id].kinds.filter((k) => HUNTED.includes(k));
   if (ks.length) COL_MOBS[id] = ks;
 }
-/** NPC id → the map it stands on (side quests find their givers and talk targets here). */
-const NPC_MAP = {};
-for (const id of Object.keys(MAPS)) for (const n of MAPS[id].npcs) if (!NPC_MAP[n.id]) NPC_MAP[n.id] = id;
+// everyone's place, first map first: the people of built maps as they stand, of the others
+// those their generator places and the editor's
+for (const id of Object.keys(MAP_META)) {
+  if (MAP_CACHE[id]) { for (const n of MAP_CACHE[id].npcs) noteNpc(id, n.id, n.name); continue; }
+  for (const [nid, name] of GEN[id].npcs || []) noteNpc(id, nid, name);
+  for (const n of DATA.npcs) { const c = realId(n && n.map) === id && npcFrom(n, MAP_META[id]); if (c) noteNpc(id, c.id, c.name); }
+}
 
 /**
  * The map editor's playtest (local dev only; room.ts checks PLAYTEST and HF_ENV): put a saved
  * sheet on tile (tx, ty) of `map`, or the nearest tile a player can stand on, or the entrance.
  */
 export function devPlace(ch, map, tx, ty) {
-  if (!ch || typeof map !== "string" || !Object.hasOwn(MAPS, map)) return false;
-  const m = MAPS[map];
+  const m = typeof map === "string" ? mapOf(map) : null;
+  if (!ch || !m) return false;
   const at = (Number.isInteger(tx) && Number.isInteger(ty) && inMap(m, tx, ty) && m.reach[ty * m.w + tx] ? [tx, ty] : null) || freeTile(m, tx | 0, ty | 0) || m.entry;
   ch.map = map; ch.x = at[0] * T + 8; ch.y = at[1] * T + 10;
   if (ch.hp === 0) ch.hp = -1;

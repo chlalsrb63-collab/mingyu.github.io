@@ -137,8 +137,8 @@ assert.equal(act(A, { t: "sort" }).ok, false, "nothing to tidy");
   kid.qs[0] = ["i", "hp_s"];
   L.addPlayer(S, LV, kid);
   const q = S.players[LV];
-  const meadow = S.maps.meadow;
-  S.maps[q.map].n--; q.map = "meadow"; meadow.n++;
+  const meadow = L.runtime(S, "meadow");
+  L.runtime(S, q.map).n--; q.map = "meadow"; meadow.n++;
   const hare = meadow.mobs.find((m) => m.k === "twinhare");
   q.x = hare.x - 12; q.y = hare.y; q.mvAt = now; q.dir = 2; q.aim = 0;
   for (const o of meadow.mobs) if (o !== hare && !o.dead && Math.hypot(o.x - q.x, o.y - q.y) < 90) { o.x += 4000; o.hx = o.x; }

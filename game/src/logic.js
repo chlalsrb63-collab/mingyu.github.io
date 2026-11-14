@@ -2549,10 +2549,23 @@ function buildTown() {
   return m;
 }
 
-function buildMaps() {
-  for (const id of ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"]) FIRES[id] = [];
-  const town = buildTown();
-  const meadow = wilds({
+// ───────────────────────────── the generated world, map by map ─────────────────────────────
+// Nothing here is built when the rules load: each hunting ground is generated the first time
+// someone needs it (mapOf in 36-custom-maps.js) and kept. GEN holds what each one is made
+// from — its generator, its level band and its settings (a function, so every build starts
+// from a fresh copy) — and GATE_LINKS how the doors join them. What the rest of the rules must
+// know without building anything (names, bands, monster lists) is read from here into MAP_META.
+
+/** The generated maps in their fixed order (also the order of every list made from them). */
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
+/**
+ * Every generated hunting ground: `make` the generator, `band` the level a character should
+ * be to walk in (shown on every door that leads there), `cfg()` its settings; `theme` where the
+ * generator sets one of its own, `kinds` monsters the generator places by itself, `after(m)`
+ * a finishing touch, `npcs` the ids of the people it places.
+ */
+const GEN = {
+  meadow: { make: wilds, band: [1, 7], cfg: () => ({
     id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 76, h: 51, r: 9.6, warp: 9, wind: 0.55, loops: 0.12, merge: 0.32, cliff: 0.15, gap: 2,
     ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 2, lakeR: 5, vaults: 3, ruins: 1, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
@@ -2566,8 +2579,8 @@ function buildMaps() {
       : b === "flowers" ? (h < 0.03 ? "B" : h < 0.036 ? "T" : null)
       : b === "tallgrass" ? (h < 0.012 ? "T" : h < 0.02 ? "B" : null)
       : h < 0.018 ? "T" : h < 0.036 ? "B" : h < 0.043 ? "R" : h < 0.047 ? "u" : h < 0.05 ? "l" : null),
-  });
-  const forest = wilds({
+  }) },
+  forest: { make: wilds, band: [8, 13], cfg: () => ({
     id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 76, h: 51, r: 8.2, warp: 10, wind: 0.6, loops: 0.1, merge: 0.18, cliff: 0.22, gap: 2,
     ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 1, lakeR: 4, vaults: 3, ruins: 2, tpm: 15.5, stair: "crypt",
     walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
@@ -2581,30 +2594,30 @@ function buildMaps() {
       : b === "birch" ? (h < 0.05 ? "T" : h < 0.058 ? "q" : h < 0.064 ? "u" : null)
       : b === "fern" ? (h < 0.04 ? "P" : h < 0.055 ? "B" : h < 0.065 ? "R" : null)
       : (n1 > 0.55 ? h < 0.24 : h < 0.09) ? "P" : h < 0.1 ? "B" : h < 0.107 ? "l" : h < 0.113 ? "u" : null),
-  });
-  const cave = cavern({
+  }) },
+  cave: { make: cavern, band: [24, 32], theme: "cave", kinds: ["boss"], cfg: () => ({
     id: "cave", name: "수정 동굴", seed: 44093, w: 66, h: 50, r: 8, vaults: 4, tpm: 16, chest: "chest_cave",
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
-  });
-  const town2 = metro({
+  }) },
+  city: { make: metro, band: [14, 21], theme: "city", cfg: () => ({
     id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 76, h: 51, gate: "east", gateY: 0.5, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
     mobs: ["pigeonmass", "gutfrog_poison", "doghead", "squidrat", "catsplit", "fishwalker"], chest: "chest_city",
-  });
+  }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
-  const crypt = catacomb({
+  crypt: { make: catacomb, band: [12, 17], cfg: () => ({
     id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 66, h: 51, min: 9, minH: 8, leaf: 150, entryY: 0.8, wind: 0.6, loops: 0.06, out: true, n: 3,
     shapes: ["plain", "chapel", "cross", "octagon", "ell", "chapel", "cross"], styles: ["pillars", "pool", "rows", "rubble", "shrine", "plain", "plain"], vaultName: "ossuary",
     mobs: ["ratking", "twinhare_bone", "bonehound", "toadbrood", "batcluster"], guard: "bonehound", chest: "chest_crypt",
     dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4" },
-  });
-  const sewer = sewers({
+  }) },
+  sewer: { make: sewers, band: [22, 27], cfg: () => ({
     id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 76, h: 51, r: 10.5, wind: 0.5, loops: 0.16, n: 3,
     mobs: ["leechmaw", "ratking_bile", "gatorhalf", "crabskull", "eelknot"], guard: "gatorhalf", chest: "chest_sewer",
-  });
+  }) },
   // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
   // wood to the chasm that swallowed the capital (a ledge down into the abyss, behind the mother). Crimson maple
   // groves on red litter, golden stands on gold, pine on the heights, clearings, and hollows where the blight fruits
-  const maple = wilds({
+  maple: { make: wilds, band: [40, 46], npcs: [["hermit", "은자 바스"]], after: hermitAt, cfg: () => ({
     id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 80, h: 56, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
     ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 1, lakeR: 4, vaults: 4, ruins: 2, tpm: 15,
     walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3]], exit: "east",
@@ -2624,68 +2637,84 @@ function buildMaps() {
       : b === "pine" ? ((n1 > 0.5 ? h < 0.22 : h < 0.09) ? "P" : h < 0.1 ? "R" : h < 0.11 ? "B" : h < 0.114 ? "u" : null)
       : b === "hollow" ? (h < 0.03 ? "Y" : h < 0.045 ? "A" : h < 0.055 ? "T" : h < 0.06 ? "u" : null)
       : h < 0.03 ? "T" : h < 0.038 ? "u" : h < 0.046 ? "B" : h < 0.05 ? "l" : null),
-  });
-  // a hermit keeps the cottage fire
-  if (maple.camp) {
-    const [fx, fy] = FIRES.maple[0];
-    const at = [[2, 0], [-2, 0], [0, 2], [2, 1], [-2, 1], [1, 2], [-1, 2]].map(([dx, dy]) => [fx + dx, fy + dy]).find(([x, y]) => maple.o[y][x] === " " && !SOLID_G.includes(maple.g[y][x]));
-    if (at) maple.npcs.push({ id: "hermit", name: "은자 바스", role: "talk", x: at[0], y: at[1], look: [2, 4, 0, "#8a5a2a"],
-      say: "이 숲은 옛 단풍 왕국의 왕도였지. 심연이 열리던 밤 왕성은 통째로 가라앉고, 남은 것들은 보랏빛 병에 물들었다네. 무너진 예배당엔 왕관 쓴 사슴이 지키고 있으니, 불을 쬐고 가게." });
-  }
-  const abyss = abyssal({
+  }) },
+  abyss: { make: abyssal, band: [32, 40], cfg: () => ({
     id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 76, h: 60, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
     mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss",
-  });
-  // the level a character should be to walk in, shown on every door that leads there
-  for (const [m, lo, hi] of [[meadow, 1, 7], [forest, 8, 13], [crypt, 12, 17], [town2, 14, 21], [sewer, 22, 27], [cave, 24, 32], [abyss, 32, 40], [maple, 40, 46]]) m.band = [lo, hi];
-  // doors between the worlds: stepping on a gate tile puts you on the matching arrival tile next door
-  const join = (a, ga, b, gb) => {
-    for (let k = 0; k < 2; k++) {
-      portal(a, a.gates[ga].t[k][0], a.gates[ga].t[k][1], b.id, b.gates[gb].a[k][0], b.gates[gb].a[k][1]);
-      portal(b, b.gates[gb].t[k][0], b.gates[gb].t[k][1], a.id, a.gates[ga].a[k][0], a.gates[ga].a[k][1]);
-    }
-  };
-  /** A one-way door: out of `a` at gate `ga`, arriving beside `b`'s gate `gb`. */
-  const leave = (a, ga, b, gb) => { for (let k = 0; k < 2; k++) portal(a, a.gates[ga].t[k][0], a.gates[ga].t[k][1], b.id, b.gates[gb].a[k][0], b.gates[gb].a[k][1]); };
-  join(town, "east", meadow, "west");
-  join(town, "west", town2, "east");
-  join(meadow, "east", forest, "west");
-  join(forest, "north", cave, "west");
-  join(forest, "crypt", crypt, "in");
-  join(town2, "sewer", sewer, "in");
-  join(cave, "rift", abyss, "in");
-  join(forest, "east", maple, "west");
-  join(maple, "east", abyss, "out");
-  leave(crypt, "out", forest, "crypt");
-  leave(sewer, "out", town2, "sewer");
-  // the hunt wants a crowd: every hunting ground holds more than its layout asked for
-  // (chests, guardians and bosses stay as placed)
-  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss, maple]) {
-    const grows = (sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el;
-    let base = 0, fixed = 0;
-    for (const sp of m.spawns) { if (grows(sp)) base += sp.n; else fixed += sp.n; }
-    // as many as the ground has room for, at the density each kind of ground is meant to have
-    let open = 0;
-    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x])) open++;
-    const k = Math.min(CROWD_MAX - fixed, open / DENSITY[m.id]) / base;
-    let carry = 0;
-    for (const sp of m.spawns) {
-      if (!grows(sp)) continue;
-      const want = sp.n * k + carry, n = Math.max(sp.n, Math.round(want));
-      carry = want - n;
-      sp.n = n;
-    }
+  }) },
+};
+/** A hermit keeps the maple cottage fire. */
+function hermitAt(maple) {
+  if (!maple.camp) return;
+  const [fx, fy] = FIRES.maple[0];
+  const at = [[2, 0], [-2, 0], [0, 2], [2, 1], [-2, 1], [1, 2], [-1, 2]].map(([dx, dy]) => [fx + dx, fy + dy]).find(([x, y]) => maple.o[y][x] === " " && !SOLID_G.includes(maple.g[y][x]));
+  if (at) maple.npcs.push({ id: "hermit", name: "은자 바스", role: "talk", x: at[0], y: at[1], look: [2, 4, 0, "#8a5a2a"],
+    say: "이 숲은 옛 단풍 왕국의 왕도였지. 심연이 열리던 밤 왕성은 통째로 가라앉고, 남은 것들은 보랏빛 병에 물들었다네. 무너진 예배당엔 왕관 쓴 사슴이 지키고 있으니, 불을 쬐고 가게." });
+}
+/** Every monster kind a generated map places, read from its settings alone (the map tests check it against the built map). */
+function genKinds(id) {
+  const g = GEN[id], c = g.cfg();
+  const ks = [...c.mobs, c.pondMob, c.guard, c.lair && c.lair.guard, c.lair && c.lair.pack, ...Object.values(c.vaultMobs || {}), c.boss, ...(g.kinds || []), c.chest];
+  return [...new Set(ks.filter((k) => k && Object.hasOwn(MOBS, k)))];
+}
+/**
+ * Doors between the worlds, [a, gate of a, b, gate of b, both ways]: stepping on a gate tile of
+ * `a` puts you beside gate `gb` of `b` (and back, unless the door is one way). A door holds only
+ * the gate's name; the tile you arrive on is looked up when you go through (arrivalOf), so
+ * building one map never builds its neighbours.
+ */
+const GATE_LINKS = [
+  ["town", "east", "meadow", "west", 1], ["town", "west", "city", "east", 1], ["meadow", "east", "forest", "west", 1],
+  ["forest", "north", "cave", "west", 1], ["forest", "crypt", "crypt", "in", 1], ["city", "sewer", "sewer", "in", 1],
+  ["cave", "rift", "abyss", "in", 1], ["forest", "east", "maple", "west", 1], ["maple", "east", "abyss", "out", 1],
+  ["crypt", "out", "forest", "crypt", 0], ["sewer", "out", "city", "sewer", 0],
+];
+/** A generated map's own doors out (in GATE_LINKS order, as the generators always laid them). */
+function gateDoors(m) {
+  const add = (ga, to, gb) => { for (let k = 0; k < 2; k++) { const [x, y] = m.gates[ga].t[k]; portal(m, x, y, to, undefined, undefined); m.portals[m.portals.length - 1] = { x, y, to, gate: gb, k }; } };
+  for (const [a, ga, b, gb, both] of GATE_LINKS) {
+    if (a === m.id) add(ga, b, gb);
+    if (both && b === m.id) add(gb, a, ga);
   }
-  const byId = { town, meadow, forest, crypt, city: town2, sewer, cave, abyss, maple };
-  const labelOf = (id) => (byId[id].band ? `${byId[id].name} Lv.${byId[id].band[0]}–${byId[id].band[1]}` : byId[id].name);
-  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss, maple]) {
-    const lo = m.band[0];
-    // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
-    markRoutes(m, labelOf, (id) => (byId[id].band && byId[id].band[0] > lo && byId[id].band[0] <= lo + 20 ? byId[id].band[0] : 0));
+}
+/**
+ * The hunt wants a crowd: every hunting ground holds more than its layout asked for, as many
+ * as the ground has room for at the density each kind of ground is meant to have (chests,
+ * guardians and bosses stay as placed).
+ */
+function crowdUp(m) {
+  const grows = (sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el;
+  let base = 0, fixed = 0;
+  for (const sp of m.spawns) { if (grows(sp)) base += sp.n; else fixed += sp.n; }
+  let open = 0;
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x])) open++;
+  const k = Math.min(CROWD_MAX - fixed, open / DENSITY[m.id]) / base;
+  let carry = 0;
+  for (const sp of m.spawns) {
+    if (!grows(sp)) continue;
+    const want = sp.n * k + carry, n = Math.max(sp.n, Math.round(want));
+    carry = want - n;
+    sp.n = n;
   }
-  const out = {};
-  for (const m of [town, meadow, forest, crypt, town2, sewer, cave, abyss, maple]) out[m.id] = finalize(m);
-  return out;
+}
+/** A door's label: where it leads and how strong you should be to go there (from MAP_META, nothing built). */
+const labelOf = (id) => doorName(MAP_META[id]);
+/**
+ * One generated map, built from its settings (rows still arrays; 36-custom-maps.js finalizes it):
+ * terrain, doors, the crowd, then the waypoint stone and signposts along its routes.
+ */
+function genMap(id) {
+  const g = GEN[id];
+  FIRES[id] = [];
+  const m = g.make(g.cfg());
+  if (g.after) g.after(m);
+  m.band = g.band.slice();
+  gateDoors(m);
+  crowdUp(m);
+  const lo = m.band[0];
+  // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
+  markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
+  return m;
 }
 /**
  * Waypoint stone and signposts for a hunting ground. The route a player walks
@@ -2833,7 +2862,7 @@ function markRoutes(m, labelOf, deeper) {
 }
 
 
-// MAPS, START, HUNTED and COL_MOBS are made in 36-custom-maps.js, once the editor's maps are laid over these.
+// MAP_META, mapOf, START, HUNTED and COL_MOBS are made in 36-custom-maps.js, with the editor's maps laid over these.
 
 function solidAt(m, px, py) {
   const tx = Math.floor(px / T), ty = Math.floor(py / T);
@@ -2857,10 +2886,11 @@ function mapPayload(m) {
     theme: m.theme || null, band: m.band || null, marks: m.marks || [],
     // a door names where it leads and how strong you should be to go there
     // (a house door, into or out of an interior, is drawn as a door, not a magic gate)
-    portals: m.portals.map((p) => (m.theme === "interior" || MAPS[p.to].theme === "interior" ? { x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]), door: 1 } : { x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]) })),
+    // (labels come from MAP_META: describing a door never builds the map behind it)
+    portals: m.portals.map((p) => { const t = MAP_META[p.to] || { name: p.to }; return m.theme === "interior" || t.theme === "interior" ? { x: p.x, y: p.y, to: p.label || doorName(t), door: 1 } : { x: p.x, y: p.y, to: p.label || doorName(t) }; }),
     npcs: m.npcs, style: m.style || null,
     // fires that always burn, with the stumps around them ({ x, y, seats: [[x, y]…] }, world pixels)
-    camps: CAMPS[m.id] || [],
+    camps: campsOf(m),
   };
 }
 
@@ -2879,7 +2909,7 @@ const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
 const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
 /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
 const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder"];
-const BUILTIN_MAPS = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
+const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
 const openTile = (m, x, y) => inMap(m, x, y) && m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]);
@@ -2973,88 +3003,161 @@ function fromEditor(d, id) {
   return m;
 }
 
-/** The generated world with the editor's maps, doors and NPCs laid over it. */
-function customWorld(gen) {
-  const maps = {};
-  for (const id of Object.keys(gen)) {
-    const m = gen[id];
-    m.g = m.g.map((r) => (typeof r === "string" ? r.split("") : r));
-    m.o = m.o.map((r) => (typeof r === "string" ? r.split("") : r));
-    maps[id] = m;
-  }
-  // a file's own id is another name for the map it replaces
-  const alias = {};
-  for (const d of DATA.maps) {
-    const rep = typeof d.replaces === "string" && d.replaces ? d.replaces : null;
-    if (rep && !Object.hasOwn(gen, rep)) continue;
-    const id = rep || d.id;
-    if (!rep && Object.hasOwn(maps, id)) continue;
-    alias[d.id] = id;
-    const old = maps[id];
+// ───────────────────────────── the map registry ─────────────────────────────
+// Maps are built when first needed and kept (one isolate = one channel room, so each is built
+// at most once per room). Built when the rules load: the town and every editor map (small,
+// and the editor's waypoints, camps and field bosses must be known from the start). Built on
+// first use: the generated hunting grounds. Everything the rest of the rules needs to know about
+// a map without walking it — name, theme, level band, size, whether it has a waypoint stone,
+// which monsters live there — is in MAP_META, read from the settings, never from the terrain.
+
+/** Editor map files by the id they take (a replacement under the built-in id); ALIAS: a file's own id → that id. */
+const FILES = {}, ALIAS = {};
+for (const d of DATA.maps) {
+  const rep = typeof d.replaces === "string" && d.replaces ? d.replaces : null;
+  if (rep && !BUILTIN_MAPS.includes(rep)) continue;
+  const id = rep || d.id;
+  if (!rep && (BUILTIN_MAPS.includes(id) || Object.hasOwn(FILES, id))) continue;
+  ALIAS[d.id] = id;
+  FILES[id] = d;
+}
+/** The map id a name from the editor's data means (its own id, or a file id that replaces a built-in), or null. */
+const realId = (id) => (typeof id === "string" ? (Object.hasOwn(MAP_META, id) ? id : Object.hasOwn(ALIAS, id) ? ALIAS[id] : null) : null);
+
+/** A map before the editor's doors, links and NPCs are laid over it (rows still arrays). */
+function baseMap(id) {
+  const d = FILES[id];
+  if (d) {
     const m = fromEditor(d, id);
-    // the doors other maps have into a replaced map stay; its own doors come from the file
-    if (old && old.band && !m.band && !d.band && d.band !== null) m.band = old.band;
-    maps[id] = m;
+    // a replacement keeps the generated map's level band unless the file says otherwise
+    if (GEN[id] && !m.band && !d.band && d.band !== null) m.band = GEN[id].band.slice();
+    return m;
   }
-  const real = (id) => (typeof id === "string" ? (Object.hasOwn(maps, id) ? id : Object.hasOwn(alias, id) ? alias[id] : null) : null);
-  for (const m of Object.values(maps)) {
-    if (!m.doors) continue;
+  if (id === "town") { FIRES.town = []; const m = buildTown(); gateDoors(m); return m; }
+  return genMap(id);
+}
+/** The editor's doors, links and NPCs laid over a map, then the map finalized (rows joined, solid, reach). */
+function finishMap(m) {
+  const id = m.id;
+  if (m.doors) {
     for (const p of m.doors) {
-      const to = real(p.to);
-      if (!to || !xyOk(maps[to], p.tx, p.ty)) continue;
+      const to = realId(p.to);
+      if (!to || !xyOk(MAP_META[to], p.tx, p.ty)) continue;
       m.portals.push({ x: p.x, y: p.y, to, tx: p.tx, ty: p.ty });
     }
     delete m.doors;
   }
   // doors added to any map, built-in or the editor's own
   for (const l of DATA.links) {
-    const from = maps[real(l.map)], to = real(l.to);
-    if (!from || !to || !xyOk(from, l.x, l.y) || !xyOk(maps[to], l.tx, l.ty)) continue;
-    from.o[l.y][l.x] = " ";
+    if (realId(l.map) !== id) continue;
+    const to = realId(l.to);
+    if (!to || !xyOk(m, l.x, l.y) || !xyOk(MAP_META[to], l.tx, l.ty)) continue;
+    m.o[l.y][l.x] = " ";
     const p = { x: l.x, y: l.y, to, tx: l.tx, ty: l.ty };
     if (typeof l.label === "string" && l.label) p.label = l.label.slice(0, 40);
-    from.portals.push(p);
+    m.portals.push(p);
   }
   // NPCs added to any map
   for (const n of DATA.npcs) {
-    const m = maps[real(n.map)];
-    const c = m && npcFrom(n, m);
+    if (realId(n.map) !== id) continue;
+    const c = npcFrom(n, m);
     if (c && !m.npcs.some((o) => o.id === c.id)) m.npcs.push(c);
   }
-  for (const id of Object.keys(maps)) if (!FIRES[id]) FIRES[id] = [];
-  // the editor's maps and the ones it touched are finalized again; the rest come out the same
-  for (const m of Object.values(maps)) finalize(m);
-  // an arrival tile in a wall becomes the nearest open tile (or the map's entrance)
-  for (const m of Object.values(maps)) for (const p of m.portals) {
-    const t = maps[p.to];
-    if (t.reach[p.ty * t.w + p.tx]) continue;
-    const at = freeTile(t, p.tx, p.ty) || t.entry;
-    p.tx = at[0]; p.ty = at[1];
+  if (!FIRES[id]) FIRES[id] = [];
+  return finalize(m);
+}
+const metaKinds = (m) => [...new Set(m.spawns.map((sp) => sp.k))];
+
+/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, kinds, eager }. */
+const MAP_META = {};
+const EAGER = {};
+for (const id of [...BUILTIN_MAPS, ...Object.keys(FILES).filter((id) => !BUILTIN_MAPS.includes(id))]) {
+  if (id === "town" || FILES[id]) {
+    const m = (EAGER[id] = baseMap(id));
+    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], kinds: metaKinds(m), eager: true };
+  } else {
+    const g = GEN[id], c = g.cfg();
+    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, kinds: genKinds(id), eager: false };
   }
-  return maps;
+}
+/** Built maps by id. */
+const MAP_CACHE = {};
+/** NPC id → the map it stands on, and its name (side quests find their givers and talk targets here). */
+const NPC_MAP = {}, NPC_NAME = {};
+const noteNpc = (id, nid, name) => { if (!NPC_MAP[nid]) { NPC_MAP[nid] = id; NPC_NAME[nid] = name; } };
+/**
+ * The built map `id` (generated, laid over and finalized on first use, then kept), or null for
+ * an id the world does not have. Never a runtime instance: see mapOfS.
+ */
+function mapOf(id) {
+  const c = MAP_CACHE[id];
+  if (c) return c;
+  if (typeof id !== "string" || !Object.hasOwn(MAP_META, id)) return null;
+  const m = finishMap(EAGER[id] || baseMap(id));
+  delete EAGER[id];
+  MAP_CACHE[id] = m;
+  return m;
+}
+/** The map `id` as the world `S` sees it: a runtime instance ("dim:<n>", in S.dims) or mapOf(id). */
+function mapOfS(S, id) {
+  return S && S.dims && Object.hasOwn(S.dims, id) ? S.dims[id].map : mapOf(id);
+}
+/** Every map built (tests, tools, the editor), keyed in MAP_META order, every door's arrival tile resolved. */
+function allMaps() {
+  const out = {};
+  for (const id of Object.keys(MAP_META)) out[id] = mapOf(id);
+  for (const id of Object.keys(out)) for (const pt of out[id].portals) arrivalOf(null, pt);
+  return out;
+}
+/** Whether a map has a waypoint stone (known without building it). */
+const hasWp = (id) => typeof id === "string" && Object.hasOwn(MAP_META, id) && MAP_META[id].wp;
+/** A map's waypoint stone { x, y, ax, ay } (builds the map), or null. */
+function wpOf(id) {
+  return hasWp(id) && mapOf(id) && WP[id] ? WP[id] : null;
+}
+/**
+ * The tile a door puts you on: beside the named gate of the map behind it (a generated door),
+ * or the tile the editor gave it; the nearest open tile when that is in a wall, the map's
+ * entrance when the gate is gone (an editor map replaced the target). Worked out on first use
+ * and remembered on the door.
+ */
+function arrivalOf(S, pt) {
+  if (!pt.ok) {
+    const t = mapOfS(S, pt.to);
+    if (!t) return null;
+    let at = pt.gate !== undefined ? (t.gates && t.gates[pt.gate] ? t.gates[pt.gate].a[pt.k] : t.entry) : [pt.tx, pt.ty];
+    if (!inMap(t, at[0], at[1]) || !t.reach[at[1] * t.w + at[0]]) at = freeTile(t, at[0], at[1]) || t.entry;
+    pt.tx = at[0]; pt.ty = at[1]; pt.ok = 1;
+  }
+  return [pt.tx, pt.ty];
 }
 
-const MAPS = customWorld(buildMaps());
-const START = { map: "town", x: MAPS.town.entry[0] * T + 8, y: MAPS.town.entry[1] * T + 8 };
+// the town and the editor's maps, now
+for (const id of Object.keys(EAGER)) mapOf(id);
+const START = { map: "town", x: mapOf("town").entry[0] * T + 8, y: mapOf("town").entry[1] * T + 8 };
 /** Every monster that lives somewhere (no chests, no bosses), and each hunting ground's for its collection. */
-const HUNTED = [...new Set(Object.values(MAPS).flatMap((m) => m.spawns.map((sp) => sp.k)))].filter((k) => !MOBS[k].chest && !MOBS[k].boss);
+const HUNTED = [...new Set(Object.values(MAP_META).flatMap((mm) => mm.kinds))].filter((k) => !MOBS[k].chest && !MOBS[k].boss);
 const COL_MOBS = {};
-for (const id of Object.keys(MAPS)) {
-  if (MAPS[id].safe) continue;
-  const ks = [...new Set(MAPS[id].spawns.map((sp) => sp.k))].filter((k) => HUNTED.includes(k));
+for (const id of Object.keys(MAP_META)) {
+  if (MAP_META[id].safe) continue;
+  const ks = MAP_META[id].kinds.filter((k) => HUNTED.includes(k));
   if (ks.length) COL_MOBS[id] = ks;
 }
-/** NPC id → the map it stands on (side quests find their givers and talk targets here). */
-const NPC_MAP = {};
-for (const id of Object.keys(MAPS)) for (const n of MAPS[id].npcs) if (!NPC_MAP[n.id]) NPC_MAP[n.id] = id;
+// everyone's place, first map first: the people of built maps as they stand, of the others
+// those their generator places and the editor's
+for (const id of Object.keys(MAP_META)) {
+  if (MAP_CACHE[id]) { for (const n of MAP_CACHE[id].npcs) noteNpc(id, n.id, n.name); continue; }
+  for (const [nid, name] of GEN[id].npcs || []) noteNpc(id, nid, name);
+  for (const n of DATA.npcs) { const c = realId(n && n.map) === id && npcFrom(n, MAP_META[id]); if (c) noteNpc(id, c.id, c.name); }
+}
 
 /**
  * The map editor's playtest (local dev only; room.ts checks PLAYTEST and HF_ENV): put a saved
  * sheet on tile (tx, ty) of `map`, or the nearest tile a player can stand on, or the entrance.
  */
 export function devPlace(ch, map, tx, ty) {
-  if (!ch || typeof map !== "string" || !Object.hasOwn(MAPS, map)) return false;
-  const m = MAPS[map];
+  const m = typeof map === "string" ? mapOf(map) : null;
+  if (!ch || !m) return false;
   const at = (Number.isInteger(tx) && Number.isInteger(ty) && inMap(m, tx, ty) && m.reach[ty * m.w + tx] ? [tx, ty] : null) || freeTile(m, tx | 0, ty | 0) || m.entry;
   ch.map = map; ch.x = at[0] * T + 8; ch.y = at[1] * T + 10;
   if (ch.hp === 0) ch.hp = -1;
@@ -3152,9 +3255,9 @@ function migrate(ch) {
   ch.gm = ch.guild && ch.gm ? 1 : 0;
   ch.fish = ch.fish | 0;
   // the long game: waypoints, places seen, achievements, a title, counters, dailies, first steps
-  ch.wp = (Array.isArray(ch.wp) ? ch.wp : []).filter((id) => WP[id]);
+  ch.wp = (Array.isArray(ch.wp) ? ch.wp : []).filter((id) => hasWp(id));
   if (!ch.wp.includes("town")) ch.wp.unshift("town");
-  ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => MAPS[id]);
+  ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => typeof id === "string" && Object.hasOwn(MAP_META, id));
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
   ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
   ch.title = typeof ch.title === "string" && ch.ach.includes(ch.title) && ACH_BY[ch.title].title ? ch.title : "";
@@ -3296,6 +3399,8 @@ export function exportChar(S, pid) {
   if (!p) return null;
   const ch = p.ch;
   ch.map = p.map; ch.x = Math.round(p.x); ch.y = Math.round(p.y);
+  // a runtime instance is never saved: whoever is saved inside one wakes in town
+  if (!Object.hasOwn(MAP_META, p.map)) { ch.map = START.map; ch.x = START.x; ch.y = START.y; }
   ch.hp = p.dead ? 0 : Math.round(p.hp); ch.mp = Math.round(p.mp);
   p.save = false;
   return ch;
@@ -3359,24 +3464,65 @@ function guildNear(S, p) {
 function newMob(S, k, r, sp) {
   return { fix: (sp && sp.el) || 0, ep: sp && sp.elite !== undefined ? sp.elite : 0.08, id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false, tr: [], act: null, mv: 0, cn: 0 };
 }
+/**
+ * A channel's world. Maps come alive one at a time (runtime): the town at once, every other
+ * place when someone first walks in (or an event needs it). `dims` holds runtime instances.
+ */
 export function setup() {
-  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, parties: {}, chat: [], n: 0, evt: null };
-  for (const id of Object.keys(MAPS)) {
-    const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0 };
-    for (const [fx, fy] of FIRES[id] || []) {
-      const at = freeTile(MAPS[id], fx, fy);
-      if (at) rt.fires.push({ id: S.nextId++, x: at[0] * T + 8, y: at[1] * T + 10, until: 0 });
-    }
-    for (const sp of MAPS[id].spawns) {
-      for (let i = 0; i < sp.n; i++) {
-        const mob = newMob(S, sp.k, sp.r, sp);
-        placeMob(S, MAPS[id], mob);
-        rt.mobs.push(mob);
-      }
-    }
-    S.maps[id] = rt;
-  }
+  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, dims: {}, parties: {}, chat: [], n: 0, evt: null };
+  runtime(S, START.map);
   return S;
+}
+/**
+ * The live state of map `id` in world `S`, made on first use: its monsters placed, its camps lit.
+ * Same shape for every map, a runtime instance ("dim:<n>", registered first with registerDim) too.
+ * Null for a map the world does not have.
+ */
+export function runtime(S, id) {
+  const have = S.maps[id];
+  if (have) return have;
+  const m = mapOfS(S, id);
+  if (!m) return null;
+  const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0 };
+  for (const [fx, fy] of FIRES[id] || []) {
+    const at = freeTile(m, fx, fy);
+    if (at) rt.fires.push({ id: S.nextId++, x: at[0] * T + 8, y: at[1] * T + 10, until: 0 });
+  }
+  for (const sp of m.spawns) {
+    for (let i = 0; i < sp.n; i++) {
+      const mob = newMob(S, sp.k, sp.r, sp);
+      placeMob(S, m, mob);
+      rt.mobs.push(mob);
+    }
+  }
+  S.maps[id] = rt;
+  return rt;
+}
+/** The ids of every map alive in `S` (the world's maps that have woken, and runtime instances), in the order they woke. */
+function liveMapIds(S) {
+  return Object.keys(S.maps);
+}
+/**
+ * Add a runtime instance to the world: `map` a finalized map (generated, never in MAP_META) under
+ * an id "dim:<n>". Its live state is made at once. Returns the instance record.
+ */
+function registerDim(S, { id, map, party = 0, seed = 0, lv = 1, theme = null, expire = 0 }) {
+  if (typeof id !== "string" || !id.startsWith("dim:") || Object.hasOwn(S.dims, id) || Object.hasOwn(MAP_META, id)) return null;
+  map.id = id;
+  const dim = { id, seed, map, party, theme: theme || map.theme || null, lv, born: S.now, expire, state: "run" };
+  S.dims[id] = dim;
+  dim.rt = runtime(S, id);
+  return dim;
+}
+/** Close a runtime instance: anyone still inside goes to town, its state and loot are gone. */
+function closeDim(S, id) {
+  if (!Object.hasOwn(S.dims, id)) return;
+  for (const pid of Object.keys(S.players)) { const p = S.players[pid]; if (p.map === id) changeMap(S, p, START.map, START.x, START.y); }
+  for (const pid of Object.keys(S.parties)) if (S.parties[pid].dim === id) S.parties[pid].dim = 0;
+  delete S.maps[id];
+  delete S.dims[id];
+  delete FIRES[id];
+  delete WP[id];
 }
 
 /** What rank does to a monster: 1 is an elite, 2 a hunting ground's field boss. */
@@ -3436,7 +3582,7 @@ function bossSpot(S, m, ax, ay, clear = FB_CLEAR, away = FB_AWAY) {
  * hunters themselves, standing still for a moment inside a warning ring where it lands.
  */
 function spawnFieldBoss(S, rt, x, y) {
-  const m = MAPS[rt.id];
+  const m = mapOfS(S, rt.id);
   const mob = newMob(S, FIELD_BOSS[rt.id], [0, 0, 0, 0]);
   mob.el = 2; mob.temp = true;
   mob.tr = rollTraits(S, 2);
@@ -3462,22 +3608,24 @@ export function playerCount(S) {
 export function addPlayer(S, pid, ch) {
   if (S.players[pid]) removePlayer(S, pid);
   migrate(ch);
-  if (!MAPS[ch.map]) ch.map = START.map;
+  // a place that is gone (a closed instance, a map removed from the editor's data) is the town
+  if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, aim: AIM_N / 4, hp: 1, mp: 0, dead: false, stc: null,
     cds: [0, 0, 0, 0, 0, 0], atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, grit: 0, gritAt: 0, focus: 0, focusAt: 0, sword: null, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
-  if (!canStand(MAPS[p.map], p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
+  if (!canStand(mapOf(p.map), p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
   const st = stats(p);
   p.hp = ch.hp > 0 ? Math.min(ch.hp, st.mhp) : st.mhp;
   p.mp = ch.mp >= 0 ? Math.min(ch.mp, st.mmp) : st.mmp;
   if (ch.hp === 0) { p.map = START.map; p.x = START.x; p.y = START.y; }
   S.players[pid] = p;
   S.n++;
-  S.maps[p.map].n++;
-  S.maps[p.map].who = true;
+  const rt = runtime(S, p.map);
+  rt.n++;
+  rt.who = true;
   sys(S, `${ch.name}님이 접속했습니다.`);
   ensureDaily(S, p);
   explore(S, p);
@@ -3511,8 +3659,9 @@ function changeMap(S, p, to, x, y) {
   S.maps[p.map].who = true;
   p.map = to; p.x = x; p.y = y;
   classReset(p, false);
-  S.maps[to].n++;
-  S.maps[to].who = true;
+  const rt = runtime(S, to);
+  rt.n++;
+  rt.who = true;
   p.sendMap = true; p.fix = true;
   explore(S, p);
   sqProgress(S, p, "visit", (g) => g.map === to);
@@ -3893,7 +4042,7 @@ function killMob(S, rt, mob) {
   if (el === 2) {
     if (mob.evt) { if (S.evt) S.evt.bossDead = true; }
     else if (mob.temp) rt.fb = 0;
-    if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
+    if (top) sys(S, `${top.ch.name}님의 일행이 ${mapOfS(S, rt.id).name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   }
   // some monsters go off where they fall, and so does any elite with the trait
   if (d.burst || has(mob, "burst")) {
@@ -4061,7 +4210,7 @@ function basicAttack(S, p) {
   rt.ev.push(["a", p.eid, fxKind, Math.round(mob.x), Math.round(mob.y - 6), p.dir, p.combo]);
   if (butt) {
     const [ux, uy] = aimVec(p, mob);
-    if (!MOBS[mob.k].boss && mob.el !== 2) { knock(MAPS[p.map], mob, ux, uy, 16); mob.stun = Math.max(mob.stun, now + 350); }
+    if (!MOBS[mob.k].boss && mob.el !== 2) { knock(mapOfS(p.S, p.map), mob, ux, uy, 16); mob.stun = Math.max(mob.stun, now + 350); }
     hurtMob(S, rt, mob, p, 0.6);
     addGrit(p, 12);
     return;
@@ -4080,7 +4229,7 @@ function basicAttack(S, p) {
   // finisher most of all. Elites only reel; bosses and field bosses stand firm.
   const shove = (o, k) => {
     if (MOBS[o.k].boss || o.el === 2) return;
-    if (!o.el) { const [ux, uy] = aimVec(p, o); knock(MAPS[p.map], o, ux, uy, c.kb * k * (fin ? FINISH.kb : 1)); }
+    if (!o.el) { const [ux, uy] = aimVec(p, o); knock(mapOfS(p.S, p.map), o, ux, uy, c.kb * k * (fin ? FINISH.kb : 1)); }
     o.stun = Math.max(o.stun, now + (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + (tip && o === mob ? TIP.flinch : 0));
   };
   shove(mob, 1);
@@ -4166,7 +4315,7 @@ function weave(S, rt, p, e, x, y, k) {
   p.weave = { e, until: now + WEAVE_MS };
   if (!other) return null;
   const rx = REACT[pairKey(e, other)];
-  const m = MAPS[p.map];
+  const m = mapOfS(p.S, p.map);
   rt.ev.push(["rx", rx.id === "steam" ? 1 : rx.id === "super" ? 2 : 3, Math.round(x), Math.round(y), rx.r]);
   for (const o of mobsWithin(rt, x, y, rx.r)) {
     if (rx.vuln) { o.vuln = now + rx.vuln; rt.ev.push(["vu", o.id, rx.vuln]); }
@@ -4232,7 +4381,7 @@ function classProps(S, rt, m, now) {
 function danceStep(S, p, now) {
   const dn = p.dance;
   if (now < dn.next) return;
-  const rt = S.maps[p.map], m = MAPS[p.map];
+  const rt = S.maps[p.map], m = mapOfS(p.S, p.map);
   let mob = null;
   while (dn.i < dn.ids.length && !mob) { const id = dn.ids[dn.i++]; mob = rt.mobs.find((o) => o.id === id && !o.dead) || null; }
   const ox = p.x, oy = p.y;
@@ -4256,7 +4405,7 @@ function danceStep(S, p, now) {
 }
 /** What every class keeps track of from moment to moment. */
 function classTick(S, p, now) {
-  const rt = S.maps[p.map], m = MAPS[p.map];
+  const rt = S.maps[p.map], m = mapOfS(p.S, p.map);
   const cls = p.ch.cls;
   // a banner hurries the party standing by it
   let haste = 0;
@@ -4352,7 +4501,7 @@ function castSkill(S, p, i) {
   const st = stats(p);
   const c = st.arm;
   const rt = S.maps[p.map];
-  const m = MAPS[p.map];
+  const m = mapOfS(p.S, p.map);
   const now = S.now;
   const k = 1 + SK_STEP * (((p.ch.skl && p.ch.skl[i]) || 1) - 1);
   rouse(S, p);
@@ -4744,7 +4893,7 @@ function explore(S, p) {
   const w = wpNear(p);
   if (w && !ch.wp.includes(p.map)) {
     ch.wp.push(p.map);
-    toast(p, `[${MAPS[p.map].name}] 이동의 돌을 깨웠습니다. 다른 이동의 돌에서 이곳으로 올 수 있습니다.`);
+    toast(p, `[${mapOfS(p.S, p.map).name}] 이동의 돌을 깨웠습니다. 다른 이동의 돌에서 이곳으로 올 수 있습니다.`);
     S.maps[p.map].ev.push(["wp", p.eid, 2]);
     p.dirty = true;
     checkAch(S, p);
@@ -4859,7 +5008,7 @@ const ACH = [
   ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.st.evt >= 10, "균열 수호자", [["def", 3]]],
   ["wp3", "탐험", "이동의 돌", "이동의 돌 3개 깨우기", 5, (c) => c.wp.length >= 3],
   ["wpall", "탐험", "모든 길을 아는 자", "모든 이동의 돌 깨우기", 20, (c) => Object.keys(WP).every((id) => c.wp.includes(id))],
-  ["explore", "탐험", "세계 여행자", "모든 지역 방문", 20, (c) => Object.keys(MAPS).every((id) => c.seen.includes(id)), "여행자", [["spd", 3]]],
+  ["explore", "탐험", "세계 여행자", "모든 지역 방문", 20, (c) => Object.keys(MAP_META).every((id) => c.seen.includes(id)), "여행자", [["spd", 3]]],
   ["star10", "숙련", "숙련의 길", "토벌 숙련 별 10개", 10, (c) => stars(c) >= 10],
   ["star50", "숙련", "토벌의 장인", "토벌 숙련 별 50개", 30, (c) => stars(c) >= 50, "토벌의 장인", [["xp", 3]]],
   ["col1", "숙련", "첫 도감 완성", "한 지역의 몬스터 도감 완성", 10, (c) => REGIONS.some((id) => regionDone(c, id))],
@@ -4918,8 +5067,8 @@ function registered(S, p, k) {
   for (const id of REGIONS) {
     if (!COL_MOBS[id].includes(k) || !regionDone(ch, id)) continue;
     const words = REGION_BONUS[id].map(([s, v]) => `${s === "xp" || s === "mf" || s === "crit" || s === "atkp" ? `${v}%` : `+${v}`} ${STAT_WORD[s]}`).join(", ");
-    toast(p, words ? `[${MAPS[id].name}] 도감 완성! 영구 보너스: ${words}` : `[${MAPS[id].name}] 도감 완성!`);
-    sys(S, `${ch.name}님이 [${MAPS[id].name}] 몬스터 도감을 완성했습니다!`);
+    toast(p, words ? `[${MAP_META[id].name}] 도감 완성! 영구 보너스: ${words}` : `[${MAP_META[id].name}] 도감 완성!`);
+    sys(S, `${ch.name}님이 [${MAP_META[id].name}] 몬스터 도감을 완성했습니다!`);
     p.stc = null;
   }
 }
@@ -4927,8 +5076,8 @@ const STAT_WORD = { hp: "최대 HP", xp: "경험치", def: "방어력", crit: "�
 
 // ── the world event: a rift opens in one hunting ground every half hour
 const EVT = { every: 1800000, warn: 120000, len: 480000, waves: [0, 150000, 300000], boss: 360000 };
-/** Where a rift can open: every hunting ground with a waypoint stone, a field boss and monsters of its own. */
-const EVT_MAPS = Object.keys(MAPS).filter((id) => !MAPS[id].safe && WP[id] && FIELD_BOSS[id] && COL_MOBS[id]);
+/** Where a rift can open: every hunting ground with a waypoint stone, a field boss and monsters of its own (never an instance). */
+const EVT_MAPS = Object.keys(MAP_META).filter((id) => !MAP_META[id].safe && MAP_META[id].wp && FIELD_BOSS[id] && COL_MOBS[id]);
 const evtMap = (slot) => EVT_MAPS[(Math.imul(slot, 2654435761) >>> 0) % EVT_MAPS.length];
 const newEvt = (slot) => ({ slot, map: evtMap(slot), phase: "warn", start: slot * EVT.every, end: slot * EVT.every + EVT.len, waves: 0, boss: 0, bossDead: false, dmg: {}, top: null });
 function worldEvent(S, now) {
@@ -4939,7 +5088,7 @@ function worldEvent(S, now) {
   const next = slot + 1;
   if (now >= next * EVT.every - EVT.warn && (!e || e.slot !== next)) {
     S.evt = e = newEvt(next);
-    sys(S, `2분 뒤 [${MAPS[e.map].name}]에 균열 침공이 시작됩니다!`);
+    sys(S, `2분 뒤 [${MAP_META[e.map].name}]에 균열 침공이 시작됩니다!`);
     dirtyAll(S);
     return;
   }
@@ -4949,7 +5098,7 @@ function worldEvent(S, now) {
 }
 function beginEvent(S, e) {
   e.phase = "on";
-  sys(S, `균열 침공 시작! [${MAPS[e.map].name}]에 정예 몬스터가 몰려옵니다. (8분)`);
+  sys(S, `균열 침공 시작! [${MAP_META[e.map].name}]에 정예 몬스터가 몰려옵니다. (8분)`);
   dirtyAll(S);
   runEvent(S, e, S.now);
 }
@@ -4959,9 +5108,9 @@ function runEvent(S, e, now) {
   if (now >= e.end || e.bossDead) endEvent(S, e);
 }
 /** Where an event's monsters gather: beside the map's waypoint stone. */
-const evtSpot = (id) => [WP[id].ax, WP[id].ay];
+const evtSpot = (id) => { const w = wpOf(id); return [w.ax, w.ay]; };
 function spawnWave(S, e) {
-  const m = MAPS[e.map], rt = S.maps[e.map], [cx, cy] = evtSpot(e.map);
+  const m = mapOf(e.map), rt = runtime(S, e.map), [cx, cy] = evtSpot(e.map);
   const kinds = COL_MOBS[e.map].slice().sort((a, b) => MOBS[b].lv - MOBS[a].lv).slice(0, 2);
   const n = clamp(5 + 2 * rt.n, 5, 14);
   for (let i = 0; i < n; i++) {
@@ -4977,7 +5126,7 @@ function spawnWave(S, e) {
 }
 function spawnEvtBoss(S, e) {
   // the rift's lord gathers by the stone too, but never on it or on a signpost
-  const m = MAPS[e.map], rt = S.maps[e.map], [cx, cy] = bossSpot(S, m, ...evtSpot(e.map), FB_CLEAR, 0);
+  const m = mapOf(e.map), rt = runtime(S, e.map), [cx, cy] = bossSpot(S, m, ...evtSpot(e.map), FB_CLEAR, 0);
   const mob = newMob(S, FIELD_BOSS[e.map], [0, 0, 0, 0]);
   mob.el = 2; mob.temp = true; mob.evt = true; mob.tr = rollTraits(S, 2);
   mob.x = mob.hx = mob.wx = cx * T + 8; mob.y = mob.hy = mob.wy = cy * T + 10;
@@ -4990,11 +5139,11 @@ function spawnEvtBoss(S, e) {
   dirtyAll(S);
 }
 function endEvent(S, e) {
-  const rt = S.maps[e.map];
+  const rt = runtime(S, e.map);
   for (const mob of rt.mobs) if (mob.evt && !mob.dead) { mob.dead = true; rt.ev.push(["k", mob.id]); }
   const list = Object.entries(e.dmg).filter(([pid]) => S.players[pid]).sort((a, b) => b[1] - a[1]);
   const total = list.reduce((n, [, d]) => n + d, 0) || 1;
-  const hi = MAPS[e.map].band ? MAPS[e.map].band[1] : 10;
+  const hi = MAP_META[e.map].band ? MAP_META[e.map].band[1] : 10;
   list.forEach(([pid, d], rank) => {
     const p = S.players[pid], share = d / total;
     const lv = Math.min(p.ch.lvl, MAXLV - 1);
@@ -5015,7 +5164,7 @@ function endEvent(S, e) {
 function evtView(S, p) {
   const e = S.evt, now = S.now, next = Math.floor(now / EVT.every) + 1;
   const out = { phase: e ? e.phase : "idle", next: next * EVT.every - now, nextMap: evtMap(next) };
-  if (e) Object.assign(out, { map: e.map, name: MAPS[e.map].name, in: e.start - now, left: e.end - now, waves: e.waves, mine: e.dmg[p.pid] || 0, top: e.top });
+  if (e) Object.assign(out, { map: e.map, name: MAP_META[e.map].name, in: e.start - now, left: e.end - now, waves: e.waves, mine: e.dmg[p.pid] || 0, top: e.top });
   return out;
 }
 
@@ -5093,7 +5242,8 @@ function wxRoll(id, slot) {
 }
 /** The weather on a map at a moment: an index into WEATHER, or -1 indoors and underground. */
 function weatherAt(id, now) {
-  const m = MAPS[id];
+  // (from what is known of the map: the weather never builds one; an instance is underground)
+  const m = MAP_META[id];
   if (!outdoor(m)) return -1;
   const odds = WX_ODDS[m.theme || m.id];
   let r = wxRoll(id, Math.floor(now / WX_MS)) * odds.reduce((a, b) => a + b, 0), w = 0;
@@ -5111,9 +5261,9 @@ const WARM_N = 4, WARM_BASE = 10, WARM_STEP = 3, WARM_NIGHT = 1, WARM_REGEN = 0.
 /** Snapping onto a stump: how close you must stand to it. */
 const SEAT_R = 18;
 /** Fires and their seats, by map: { x, y, seats: [[x, y]…] } in world pixels. */
-const CAMPS = {};
 function campsOf(m) {
-  const out = [];
+  if (m.camps) return m.camps;
+  const out = (m.camps = []);
   // indoors the fire burns in a fireplace: no stumps round it, you sit where you stand (armchairs are furniture)
   if (m.theme === "interior") return out;
   for (const [fx, fy] of FIRES[m.id] || []) {
@@ -5129,7 +5279,6 @@ function campsOf(m) {
   }
   return out;
 }
-for (const id of Object.keys(MAPS)) CAMPS[id] = campsOf(MAPS[id]);
 
 /** Players sitting around the fire `f` on `p`'s map, `p` counted if they sit too. */
 function sittersAt(S, map, f) {
@@ -5152,7 +5301,7 @@ function warmthFor(n, night) {
 function sitDown(S, p) {
   p.sit = true; p.warmT = 0;
   let best = null, bd = SEAT_R;
-  for (const c of CAMPS[p.map] || []) for (const [sx, sy] of c.seats) {
+  for (const c of campsOf(mapOfS(S, p.map))) for (const [sx, sy] of c.seats) {
     const d = dist(p.x, p.y, sx, sy);
     if (d > bd) continue;
     let taken = false;
@@ -5169,7 +5318,7 @@ function sitDown(S, p) {
 function warmTick(S, p, fire, now) {
   if (++p.warmT < WARM_SEC) return;
   p.warmT = 0;
-  const n = sittersAt(S, p.map, fire), w = warmthFor(n, outdoor(MAPS[p.map]) && isNight(now));
+  const n = sittersAt(S, p.map, fire), w = warmthFor(n, outdoor(mapOfS(p.S, p.map)) && isNight(now));
   const live = p.warm > now, had = live ? p.warmPct : 0;
   if (w.pct > had) toast(p, `모닥불의 온기 — 10분간 경험치 +${w.pct}%, 회복 +${(w.regen * 100).toFixed(1)}%/초${n > 1 ? ` (함께 앉은 ${n}명)` : ""}`);
   // the warmth keeps the best company it has had while it lasts
@@ -5205,7 +5354,7 @@ const TALES = [
   "안개 낀 날엔 짐승들도 앞이 잘 안 보인단다. 살금살금 지나가면 들키지 않을지도 몰라.",
   "새벽녘 정령나무 아래에서 소원을 빌면, 그날 사냥은 운이 좋다는구나. 할미도 젊을 적엔 매일 빌었지.",
 ];
-MAPS.town.npcs.push(TELLER);
+mapOf("town").npcs.push(TELLER);
 /** The storyteller of `map` if she is out at `now` (only by night), else null. */
 function nightNpc(map, now) { return map === "town" && isNight(now) ? TELLER : null; }
 /** Which tale is being told at `now` (an index into TALES), or -1 by day. */
@@ -5227,8 +5376,8 @@ function skyTick(S, now) {
  * weather, whether the storyteller is out and which tale she tells, and the camps.
  */
 export function skyAt(map, now) {
-  const ph = dayPhase(now), m = MAPS[map];
-  return { hour: dayHour(now), phase: ph, name: PHASES[ph][0], night: ph === PH_NIGHT, outdoor: outdoor(m), wx: weatherAt(map, now), npc: nightNpc(map, now), tale: map === "town" ? taleAt(now) : -1, camps: CAMPS[map] || [] };
+  const ph = dayPhase(now), m = mapOf(map);
+  return { hour: dayHour(now), phase: ph, name: PHASES[ph][0], night: ph === PH_NIGHT, outdoor: outdoor(m), wx: weatherAt(map, now), npc: nightNpc(map, now), tale: map === "town" ? taleAt(now) : -1, camps: m ? campsOf(m) : [] };
 }
 // ───────────────────────────── side quests (world map editor) ─────────────────────────────
 // data/quests.json "side": errands NPCs hand out beside the main chain. A goal is to kill
@@ -5253,7 +5402,7 @@ const SIDE = DATA.quests.side.filter((q) => typeof q.id === "string" && /^[a-z][
     repeat: !!q.repeat,
   };
 }).filter((q, i, all) => all.findIndex((o) => o.id === q.id) === i && NPC_MAP[q.giver] && (
-  q.goal.type === "kill" ? Object.hasOwn(MOBS, q.goal.mob) : q.goal.type === "collect" ? Object.hasOwn(ITEMS, q.goal.item) : q.goal.type === "talk" ? !!NPC_MAP[q.goal.npc] : Object.hasOwn(MAPS, q.goal.map)));
+  q.goal.type === "kill" ? Object.hasOwn(MOBS, q.goal.mob) : q.goal.type === "collect" ? Object.hasOwn(ITEMS, q.goal.item) : q.goal.type === "talk" ? !!NPC_MAP[q.goal.npc] : Object.hasOwn(MAP_META, q.goal.map)));
 const SQ_BY = {};
 for (const q of SIDE) SQ_BY[q.id] = q;
 for (const q of SIDE) if (q.req.quest && !SQ_BY[q.req.quest]) q.req.quest = null;
@@ -5278,10 +5427,10 @@ function sqState(ch, q) {
 }
 /** An NPC with this id stands within talking distance. */
 function npcNearId(p, id) {
-  for (const n of MAPS[p.map].npcs) if (n.id === id && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < 56) return true;
+  for (const n of mapOfS(p.S, p.map).npcs) if (n.id === id && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < 56) return true;
   return false;
 }
-const npcName = (id) => { const m = MAPS[NPC_MAP[id]]; const n = m && m.npcs.find((o) => o.id === id); return n ? n.name : id; };
+const npcName = (id) => (Object.hasOwn(NPC_NAME, id) ? NPC_NAME[id] : id);
 /** Credit `n` toward every active quest of this type that `match` accepts. */
 function sqProgress(S, p, type, match, n = 1) {
   const ch = p.ch;
@@ -5479,7 +5628,7 @@ function cosFrom(S, p, src, why) {
 // ───────────────────────────── actions ─────────────────────────────
 
 function npcNear(p, role) {
-  for (const n of MAPS[p.map].npcs) {
+  for (const n of mapOfS(p.S, p.map).npcs) {
     if (n.role === role && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < 56) return true;
   }
   return false;
@@ -5487,7 +5636,7 @@ function npcNear(p, role) {
 /** What the shopkeepers within reach sell: their own `goods`, or the general SHOP list. */
 function goodsNear(p) {
   const out = new Set();
-  for (const n of MAPS[p.map].npcs) {
+  for (const n of mapOfS(p.S, p.map).npcs) {
     if (n.role !== "shop" || dist(p.x, p.y, n.x * T + 8, n.y * T + 12) >= 56) continue;
     for (const id of n.goods || SHOP) out.add(id);
   }
@@ -5535,7 +5684,7 @@ export function validateAction(S, pid, a) {
     case "look": {
       // a new look at the mirror in town, for gold
       if (!Array.isArray(a.look) || a.look.length > LOOK_MAX.length || !a.look.every((v, i) => Number.isInteger(v) && v >= 0 && v <= LOOK_MAX[i])) return bad("잘못된 외형");
-      if (!MAPS[p.map].safe) return bad("마을에서만 외형을 바꿀 수 있습니다");
+      if (!mapOfS(p.S, p.map).safe) return bad("마을에서만 외형을 바꿀 수 있습니다");
       if (ch.gold < LOOK_COST) return bad(`골드가 부족합니다 (${LOOK_COST}G)`);
       return OK;
     }
@@ -5659,7 +5808,7 @@ export function validateAction(S, pid, a) {
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
     case "warp": {
-      if (typeof a.to !== "string" || !WP[a.to]) return bad("그곳에는 이동의 돌이 없습니다");
+      if (!hasWp(a.to)) return bad("그곳에는 이동의 돌이 없습니다");
       if (!wpNear(p)) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
       if (!ch.wp.includes(a.to)) return bad("아직 깨우지 않은 이동의 돌입니다");
       if (a.to === p.map) return bad("이미 이곳에 있습니다");
@@ -5794,8 +5943,8 @@ export function validateAction(S, pid, a) {
     case "fish":
       if (p.fish) return bad("이미 낚시 중입니다");
       if (now - p.hitAt < 3000) return bad("싸우는 중에는 낚시할 수 없습니다");
-      if (MAPS[p.map].nofish) return bad("이곳에서는 낚시를 할 수 없습니다");
-      if (!waterNear(MAPS[p.map], p)) return bad("물가에서만 낚시할 수 있습니다");
+      if (mapOfS(p.S, p.map).nofish) return bad("이곳에서는 낚시를 할 수 없습니다");
+      if (!waterNear(mapOfS(p.S, p.map), p)) return bad("물가에서만 낚시할 수 있습니다");
       if (!canAdd(ch, "fish_s", 1)) return bad("가방이 가득 찼습니다");
       return OK;
     case "hook": return p.fish && p.fish.bite && !p.fish.hook ? OK : bad("아직 입질이 없습니다");
@@ -5848,7 +5997,7 @@ export function applyAction(S, pid, a) {
   const p = S.players[pid];
   const ch = p.ch;
   const now = S.now;
-  const m = MAPS[p.map];
+  const m = mapOfS(p.S, p.map);
   switch (a.t) {
     case "mv": {
       if (p.dance) { p.fix = true; break; }
@@ -5863,7 +6012,7 @@ export function applyAction(S, pid, a) {
       if (validAim(a.a)) p.aim = a.a;
       // stepping anywhere on a gate tile (or brushing its edge) takes you through
       for (const pt of m.portals) {
-        if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) < 12) { changeMap(S, p, pt.to, pt.tx * T + 8, pt.ty * T + 10); break; }
+        if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) < 12) { const at = arrivalOf(S, pt); if (at) changeMap(S, p, pt.to, at[0] * T + 8, at[1] * T + 10); break; }
       }
       break;
     }
@@ -6348,11 +6497,11 @@ export function applyAction(S, pid, a) {
     }
     case "tut": tutStep(S, p, a.s); break;
     case "warp": {
-      const w = WP[a.to];
+      const w = wpOf(a.to);
       S.maps[p.map].ev.push(["wp", p.eid, 0]);
       changeMap(S, p, a.to, w.ax * T + 8, w.ay * T + 10);
       S.maps[a.to].ev.push(["wp", p.eid, 1]);
-      toast(p, `[${MAPS[a.to].name}]의 이동의 돌로 건너왔습니다.`);
+      toast(p, `[${MAP_META[a.to].name}]의 이동의 돌로 건너왔습니다.`);
       p.dirty = true;
       break;
     }
@@ -6618,10 +6767,10 @@ export function tick(S, now) {
   worldEvent(S, now);
   skyTick(S, now);
   const pids = Object.keys(S.players);
-  for (const id of Object.keys(MAPS)) {
+  for (const id of liveMapIds(S)) {
     const rt = S.maps[id];
     if (rt.n <= 0) continue;
-    const m = MAPS[id];
+    const m = mapOfS(S, id);
     // how many monsters are already after each player here
     for (const pid of pids) if (S.players[pid].map === id) S.players[pid].foes = 0;
     for (const mob of rt.mobs) { const o = !mob.dead && mob.tgt ? S.players[mob.tgt] : null; if (o && o.map === id) o.foes++; }
@@ -6734,7 +6883,7 @@ export function tick(S, now) {
     const calm = now - p.hitAt > 5000;
     // a campfire is a place to catch your breath; sitting by it is better still
     const fire = calm ? fireNear(S.maps[p.map], p) : null;
-    const rest = fire ? (p.sit ? 0.12 : 0.06) : MAPS[p.map].safe ? 0.08 : 0.02;
+    const rest = fire ? (p.sit ? 0.12 : 0.06) : mapOfS(p.S, p.map).safe ? 0.08 : 0.02;
     // a fire's warmth carries on after you stand up, as long as you keep out of a fight
     const wr = calm ? warmRegen(p, now) : 0;
     if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * (rest + wr) + 1);
@@ -6797,7 +6946,7 @@ function selfPayload(p) {
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), st: ch.st,
     daily: dailyView(p), tut: { i: ch.tut.i, n: ch.tut.n }, evt: evtView(p.S, p), recall: p.recall ? Math.max(0, p.recall.at - now) : 0,
-    gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, MAPS[o.map].name, o.ch.gm]) : [],
+    gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
   };
 }
 
@@ -6832,7 +6981,7 @@ export function viewFor(S, pid) {
   if (rt.ev.length) out.ev = rt.ev;
   // guild chat reaches only the guild
   if (S.chat.length) { const chat = S.chat.filter((c) => (!c.g || c.g === p.ch.guild) && (!c.pt || c.pt === p.party)); if (chat.length) out.chat = chat; }
-  if (p.sendMap) out.map = mapPayload(MAPS[p.map]);
+  if (p.sendMap) out.map = mapPayload(mapOfS(S, p.map));
   // the sky: [weather (-1 under a roof), server clock in seconds], when the weather turns, on
   // arrival, and once a minute to keep everyone's hour of the day in step
   const wx = rt.wx ?? weatherAt(p.map, S.now);
@@ -6852,7 +7001,7 @@ export function viewFor(S, pid) {
     }
   }
   if (p.party) {
-    out.party = members(S, p).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, Math.round(o.hp), stats(o).mhp, o.map === p.map ? "" : MAPS[o.map].name]);
+    out.party = members(S, p).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, Math.round(o.hp), stats(o).mhp, o.map === p.map ? "" : mapOfS(o.S, o.map).name]);
   }
   if (p.pinv) {
     const from = S.players[p.pinv.from];
@@ -6872,12 +7021,22 @@ export function viewFor(S, pid) {
 /** Static tables the browser needs to draw windows and tooltips. Sent once. */
 /**
  * The generated world as the generators left it, for the map tests: every map with
- * its spawns, set pieces and region count, plus the camps and waypoint stones. With
- * `fresh`, everything is generated again from the seeds (for checking determinism).
+ * its spawns, set pieces and region count, plus the camps and waypoint stones (this
+ * builds every map). With `fresh`, everything (or only `ids`) is generated again from
+ * the seeds, apart from the kept maps (for checking determinism and build time).
  */
-export function atlas(fresh = false) {
-  const maps = fresh ? customWorld(buildMaps()) : MAPS;
+export function atlas(fresh = false, ids = null) {
+  if (!fresh) return { maps: allMaps(), fires: FIRES, waypoints: WP };
+  const maps = {};
+  for (const id of ids || Object.keys(MAP_META)) {
+    maps[id] = finishMap(baseMap(id));
+    for (const pt of maps[id].portals) arrivalOf(null, pt);
+  }
   return { maps, fires: FIRES, waypoints: WP };
+}
+/** The registry, for the tests: which maps are built so far, and what is known of every map without building it. */
+export function mapStats() {
+  return { built: Object.keys(MAP_CACHE), meta: MAP_META };
 }
 
 export function defs() {
@@ -6898,7 +7057,7 @@ export function defs() {
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
     traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], skMax: SK_MAX, mech: { grit: GRIT_MAX, marks: MARK_MAX, focus: FOCUS_MAX, tip: TIP.at, tipMult: TIP.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, skStep: SK_STEP, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
-    waypoints: Object.keys(WP).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null })),
+    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
     cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N,
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
@@ -6906,10 +7065,10 @@ export function defs() {
     event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },
     daily: { resetKST: 6, text: DAILY_TEXT }, tutorial: TUT.map(({ id, title, hint, need }) => ({ id, title, hint, need: need || 1 })), recallMs: RECALL_MS,
     // side quests from the world map editor, with who gives them and where they stand
-    side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAPS[NPC_MAP[q.giver]].name,
-      target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAPS[q.goal.map].name })),
+    side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAP_META[NPC_MAP[q.giver]].name,
+      target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
-    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
+    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band, mobs: MAP_META[id].kinds.slice() })),
   };
 }

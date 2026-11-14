@@ -78,10 +78,23 @@ function buildTown() {
   return m;
 }
 
-function buildMaps() {
-  for (const id of ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"]) FIRES[id] = [];
-  const town = buildTown();
-  const meadow = wilds({
+// ───────────────────────────── the generated world, map by map ─────────────────────────────
+// Nothing here is built when the rules load: each hunting ground is generated the first time
+// someone needs it (mapOf in 36-custom-maps.js) and kept. GEN holds what each one is made
+// from — its generator, its level band and its settings (a function, so every build starts
+// from a fresh copy) — and GATE_LINKS how the doors join them. What the rest of the rules must
+// know without building anything (names, bands, monster lists) is read from here into MAP_META.
+
+/** The generated maps in their fixed order (also the order of every list made from them). */
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
+/**
+ * Every generated hunting ground: `make` the generator, `band` the level a character should
+ * be to walk in (shown on every door that leads there), `cfg()` its settings; `theme` where the
+ * generator sets one of its own, `kinds` monsters the generator places by itself, `after(m)`
+ * a finishing touch, `npcs` the ids of the people it places.
+ */
+const GEN = {
+  meadow: { make: wilds, band: [1, 7], cfg: () => ({
     id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 76, h: 51, r: 9.6, warp: 9, wind: 0.55, loops: 0.12, merge: 0.32, cliff: 0.15, gap: 2,
     ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 2, lakeR: 5, vaults: 3, ruins: 1, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
@@ -95,8 +108,8 @@ function buildMaps() {
       : b === "flowers" ? (h < 0.03 ? "B" : h < 0.036 ? "T" : null)
       : b === "tallgrass" ? (h < 0.012 ? "T" : h < 0.02 ? "B" : null)
       : h < 0.018 ? "T" : h < 0.036 ? "B" : h < 0.043 ? "R" : h < 0.047 ? "u" : h < 0.05 ? "l" : null),
-  });
-  const forest = wilds({
+  }) },
+  forest: { make: wilds, band: [8, 13], cfg: () => ({
     id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 76, h: 51, r: 8.2, warp: 10, wind: 0.6, loops: 0.1, merge: 0.18, cliff: 0.22, gap: 2,
     ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 1, lakeR: 4, vaults: 3, ruins: 2, tpm: 15.5, stair: "crypt",
     walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
@@ -110,30 +123,30 @@ function buildMaps() {
       : b === "birch" ? (h < 0.05 ? "T" : h < 0.058 ? "q" : h < 0.064 ? "u" : null)
       : b === "fern" ? (h < 0.04 ? "P" : h < 0.055 ? "B" : h < 0.065 ? "R" : null)
       : (n1 > 0.55 ? h < 0.24 : h < 0.09) ? "P" : h < 0.1 ? "B" : h < 0.107 ? "l" : h < 0.113 ? "u" : null),
-  });
-  const cave = cavern({
+  }) },
+  cave: { make: cavern, band: [24, 32], theme: "cave", kinds: ["boss"], cfg: () => ({
     id: "cave", name: "수정 동굴", seed: 44093, w: 66, h: 50, r: 8, vaults: 4, tpm: 16, chest: "chest_cave",
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
-  });
-  const town2 = metro({
+  }) },
+  city: { make: metro, band: [14, 21], theme: "city", cfg: () => ({
     id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 76, h: 51, gate: "east", gateY: 0.5, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
     mobs: ["pigeonmass", "gutfrog_poison", "doghead", "squidrat", "catsplit", "fishwalker"], chest: "chest_city",
-  });
+  }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
-  const crypt = catacomb({
+  crypt: { make: catacomb, band: [12, 17], cfg: () => ({
     id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 66, h: 51, min: 9, minH: 8, leaf: 150, entryY: 0.8, wind: 0.6, loops: 0.06, out: true, n: 3,
     shapes: ["plain", "chapel", "cross", "octagon", "ell", "chapel", "cross"], styles: ["pillars", "pool", "rows", "rubble", "shrine", "plain", "plain"], vaultName: "ossuary",
     mobs: ["ratking", "twinhare_bone", "bonehound", "toadbrood", "batcluster"], guard: "bonehound", chest: "chest_crypt",
     dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4" },
-  });
-  const sewer = sewers({
+  }) },
+  sewer: { make: sewers, band: [22, 27], cfg: () => ({
     id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 76, h: 51, r: 10.5, wind: 0.5, loops: 0.16, n: 3,
     mobs: ["leechmaw", "ratking_bile", "gatorhalf", "crabskull", "eelknot"], guard: "gatorhalf", chest: "chest_sewer",
-  });
+  }) },
   // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
   // wood to the chasm that swallowed the capital (a ledge down into the abyss, behind the mother). Crimson maple
   // groves on red litter, golden stands on gold, pine on the heights, clearings, and hollows where the blight fruits
-  const maple = wilds({
+  maple: { make: wilds, band: [40, 46], npcs: [["hermit", "은자 바스"]], after: hermitAt, cfg: () => ({
     id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 80, h: 56, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
     ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 1, lakeR: 4, vaults: 4, ruins: 2, tpm: 15,
     walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3]], exit: "east",
@@ -153,68 +166,84 @@ function buildMaps() {
       : b === "pine" ? ((n1 > 0.5 ? h < 0.22 : h < 0.09) ? "P" : h < 0.1 ? "R" : h < 0.11 ? "B" : h < 0.114 ? "u" : null)
       : b === "hollow" ? (h < 0.03 ? "Y" : h < 0.045 ? "A" : h < 0.055 ? "T" : h < 0.06 ? "u" : null)
       : h < 0.03 ? "T" : h < 0.038 ? "u" : h < 0.046 ? "B" : h < 0.05 ? "l" : null),
-  });
-  // a hermit keeps the cottage fire
-  if (maple.camp) {
-    const [fx, fy] = FIRES.maple[0];
-    const at = [[2, 0], [-2, 0], [0, 2], [2, 1], [-2, 1], [1, 2], [-1, 2]].map(([dx, dy]) => [fx + dx, fy + dy]).find(([x, y]) => maple.o[y][x] === " " && !SOLID_G.includes(maple.g[y][x]));
-    if (at) maple.npcs.push({ id: "hermit", name: "은자 바스", role: "talk", x: at[0], y: at[1], look: [2, 4, 0, "#8a5a2a"],
-      say: "이 숲은 옛 단풍 왕국의 왕도였지. 심연이 열리던 밤 왕성은 통째로 가라앉고, 남은 것들은 보랏빛 병에 물들었다네. 무너진 예배당엔 왕관 쓴 사슴이 지키고 있으니, 불을 쬐고 가게." });
-  }
-  const abyss = abyssal({
+  }) },
+  abyss: { make: abyssal, band: [32, 40], cfg: () => ({
     id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 76, h: 60, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
     mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss",
-  });
-  // the level a character should be to walk in, shown on every door that leads there
-  for (const [m, lo, hi] of [[meadow, 1, 7], [forest, 8, 13], [crypt, 12, 17], [town2, 14, 21], [sewer, 22, 27], [cave, 24, 32], [abyss, 32, 40], [maple, 40, 46]]) m.band = [lo, hi];
-  // doors between the worlds: stepping on a gate tile puts you on the matching arrival tile next door
-  const join = (a, ga, b, gb) => {
-    for (let k = 0; k < 2; k++) {
-      portal(a, a.gates[ga].t[k][0], a.gates[ga].t[k][1], b.id, b.gates[gb].a[k][0], b.gates[gb].a[k][1]);
-      portal(b, b.gates[gb].t[k][0], b.gates[gb].t[k][1], a.id, a.gates[ga].a[k][0], a.gates[ga].a[k][1]);
-    }
-  };
-  /** A one-way door: out of `a` at gate `ga`, arriving beside `b`'s gate `gb`. */
-  const leave = (a, ga, b, gb) => { for (let k = 0; k < 2; k++) portal(a, a.gates[ga].t[k][0], a.gates[ga].t[k][1], b.id, b.gates[gb].a[k][0], b.gates[gb].a[k][1]); };
-  join(town, "east", meadow, "west");
-  join(town, "west", town2, "east");
-  join(meadow, "east", forest, "west");
-  join(forest, "north", cave, "west");
-  join(forest, "crypt", crypt, "in");
-  join(town2, "sewer", sewer, "in");
-  join(cave, "rift", abyss, "in");
-  join(forest, "east", maple, "west");
-  join(maple, "east", abyss, "out");
-  leave(crypt, "out", forest, "crypt");
-  leave(sewer, "out", town2, "sewer");
-  // the hunt wants a crowd: every hunting ground holds more than its layout asked for
-  // (chests, guardians and bosses stay as placed)
-  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss, maple]) {
-    const grows = (sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el;
-    let base = 0, fixed = 0;
-    for (const sp of m.spawns) { if (grows(sp)) base += sp.n; else fixed += sp.n; }
-    // as many as the ground has room for, at the density each kind of ground is meant to have
-    let open = 0;
-    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x])) open++;
-    const k = Math.min(CROWD_MAX - fixed, open / DENSITY[m.id]) / base;
-    let carry = 0;
-    for (const sp of m.spawns) {
-      if (!grows(sp)) continue;
-      const want = sp.n * k + carry, n = Math.max(sp.n, Math.round(want));
-      carry = want - n;
-      sp.n = n;
-    }
+  }) },
+};
+/** A hermit keeps the maple cottage fire. */
+function hermitAt(maple) {
+  if (!maple.camp) return;
+  const [fx, fy] = FIRES.maple[0];
+  const at = [[2, 0], [-2, 0], [0, 2], [2, 1], [-2, 1], [1, 2], [-1, 2]].map(([dx, dy]) => [fx + dx, fy + dy]).find(([x, y]) => maple.o[y][x] === " " && !SOLID_G.includes(maple.g[y][x]));
+  if (at) maple.npcs.push({ id: "hermit", name: "은자 바스", role: "talk", x: at[0], y: at[1], look: [2, 4, 0, "#8a5a2a"],
+    say: "이 숲은 옛 단풍 왕국의 왕도였지. 심연이 열리던 밤 왕성은 통째로 가라앉고, 남은 것들은 보랏빛 병에 물들었다네. 무너진 예배당엔 왕관 쓴 사슴이 지키고 있으니, 불을 쬐고 가게." });
+}
+/** Every monster kind a generated map places, read from its settings alone (the map tests check it against the built map). */
+function genKinds(id) {
+  const g = GEN[id], c = g.cfg();
+  const ks = [...c.mobs, c.pondMob, c.guard, c.lair && c.lair.guard, c.lair && c.lair.pack, ...Object.values(c.vaultMobs || {}), c.boss, ...(g.kinds || []), c.chest];
+  return [...new Set(ks.filter((k) => k && Object.hasOwn(MOBS, k)))];
+}
+/**
+ * Doors between the worlds, [a, gate of a, b, gate of b, both ways]: stepping on a gate tile of
+ * `a` puts you beside gate `gb` of `b` (and back, unless the door is one way). A door holds only
+ * the gate's name; the tile you arrive on is looked up when you go through (arrivalOf), so
+ * building one map never builds its neighbours.
+ */
+const GATE_LINKS = [
+  ["town", "east", "meadow", "west", 1], ["town", "west", "city", "east", 1], ["meadow", "east", "forest", "west", 1],
+  ["forest", "north", "cave", "west", 1], ["forest", "crypt", "crypt", "in", 1], ["city", "sewer", "sewer", "in", 1],
+  ["cave", "rift", "abyss", "in", 1], ["forest", "east", "maple", "west", 1], ["maple", "east", "abyss", "out", 1],
+  ["crypt", "out", "forest", "crypt", 0], ["sewer", "out", "city", "sewer", 0],
+];
+/** A generated map's own doors out (in GATE_LINKS order, as the generators always laid them). */
+function gateDoors(m) {
+  const add = (ga, to, gb) => { for (let k = 0; k < 2; k++) { const [x, y] = m.gates[ga].t[k]; portal(m, x, y, to, undefined, undefined); m.portals[m.portals.length - 1] = { x, y, to, gate: gb, k }; } };
+  for (const [a, ga, b, gb, both] of GATE_LINKS) {
+    if (a === m.id) add(ga, b, gb);
+    if (both && b === m.id) add(gb, a, ga);
   }
-  const byId = { town, meadow, forest, crypt, city: town2, sewer, cave, abyss, maple };
-  const labelOf = (id) => (byId[id].band ? `${byId[id].name} Lv.${byId[id].band[0]}–${byId[id].band[1]}` : byId[id].name);
-  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss, maple]) {
-    const lo = m.band[0];
-    // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
-    markRoutes(m, labelOf, (id) => (byId[id].band && byId[id].band[0] > lo && byId[id].band[0] <= lo + 20 ? byId[id].band[0] : 0));
+}
+/**
+ * The hunt wants a crowd: every hunting ground holds more than its layout asked for, as many
+ * as the ground has room for at the density each kind of ground is meant to have (chests,
+ * guardians and bosses stay as placed).
+ */
+function crowdUp(m) {
+  const grows = (sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el;
+  let base = 0, fixed = 0;
+  for (const sp of m.spawns) { if (grows(sp)) base += sp.n; else fixed += sp.n; }
+  let open = 0;
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x])) open++;
+  const k = Math.min(CROWD_MAX - fixed, open / DENSITY[m.id]) / base;
+  let carry = 0;
+  for (const sp of m.spawns) {
+    if (!grows(sp)) continue;
+    const want = sp.n * k + carry, n = Math.max(sp.n, Math.round(want));
+    carry = want - n;
+    sp.n = n;
   }
-  const out = {};
-  for (const m of [town, meadow, forest, crypt, town2, sewer, cave, abyss, maple]) out[m.id] = finalize(m);
-  return out;
+}
+/** A door's label: where it leads and how strong you should be to go there (from MAP_META, nothing built). */
+const labelOf = (id) => doorName(MAP_META[id]);
+/**
+ * One generated map, built from its settings (rows still arrays; 36-custom-maps.js finalizes it):
+ * terrain, doors, the crowd, then the waypoint stone and signposts along its routes.
+ */
+function genMap(id) {
+  const g = GEN[id];
+  FIRES[id] = [];
+  const m = g.make(g.cfg());
+  if (g.after) g.after(m);
+  m.band = g.band.slice();
+  gateDoors(m);
+  crowdUp(m);
+  const lo = m.band[0];
+  // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
+  markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
+  return m;
 }
 /**
  * Waypoint stone and signposts for a hunting ground. The route a player walks
@@ -362,7 +391,7 @@ function markRoutes(m, labelOf, deeper) {
 }
 
 
-// MAPS, START, HUNTED and COL_MOBS are made in 36-custom-maps.js, once the editor's maps are laid over these.
+// MAP_META, mapOf, START, HUNTED and COL_MOBS are made in 36-custom-maps.js, with the editor's maps laid over these.
 
 function solidAt(m, px, py) {
   const tx = Math.floor(px / T), ty = Math.floor(py / T);
@@ -386,10 +415,11 @@ function mapPayload(m) {
     theme: m.theme || null, band: m.band || null, marks: m.marks || [],
     // a door names where it leads and how strong you should be to go there
     // (a house door, into or out of an interior, is drawn as a door, not a magic gate)
-    portals: m.portals.map((p) => (m.theme === "interior" || MAPS[p.to].theme === "interior" ? { x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]), door: 1 } : { x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]) })),
+    // (labels come from MAP_META: describing a door never builds the map behind it)
+    portals: m.portals.map((p) => { const t = MAP_META[p.to] || { name: p.to }; return m.theme === "interior" || t.theme === "interior" ? { x: p.x, y: p.y, to: p.label || doorName(t), door: 1 } : { x: p.x, y: p.y, to: p.label || doorName(t) }; }),
     npcs: m.npcs, style: m.style || null,
     // fires that always burn, with the stumps around them ({ x, y, seats: [[x, y]…] }, world pixels)
-    camps: CAMPS[m.id] || [],
+    camps: campsOf(m),
   };
 }
 

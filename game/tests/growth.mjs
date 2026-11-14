@@ -26,7 +26,7 @@ function world(name = "성장", cls = "warrior", lvl = 40) {
     self() { S.players[PID].dirty = true; return W.step().self; },
     get p() { return S.players[PID]; },
     get ch() { return S.players[PID].ch; },
-    to(id, tx, ty) { const p = W.p; S.maps[p.map].n--; p.map = id; S.maps[id].n++; p.x = tx * T + 8; p.y = ty * T + 10; p.mvAt = now; p.sendMap = true; },
+    to(id, tx, ty) { const p = W.p; L.runtime(S, p.map).n--; p.map = id; L.runtime(S, id).n++; p.x = tx * T + 8; p.y = ty * T + 10; p.mvAt = now; p.sendMap = true; },
     /** Stand in front of a townsperson. */
     npc(role) { const n = W.townNpcs.find((o) => o.role === role); assert.ok(n, role + " lives in town"); W.to("town", n.x, n.y); W.p.y = n.y * T + 30; },
     townNpcs: null,
@@ -110,7 +110,7 @@ assert.ok(D.tutorial.length >= 1);
   L.exportChar(W.S, W.PID);
   assert.deepEqual(L.takeSaves(W.S), [], "the 15 s save already covered it");
   // a level-up from a kill's experience asks too
-  const p = W.p, rt = W.S.maps.meadow;
+  const p = W.p, rt = L.runtime(W.S, "meadow");
   W.to("meadow", 20, 20);
   ch.lvl = 5; ch.xp = 0;
   W.step(); L.takeSaves(W.S);
@@ -128,7 +128,7 @@ assert.ok(D.tutorial.length >= 1);
     W.ch.skl[0] = L1;
     W.to("meadow", 20, 22);
     W.step();
-    const p = W.p, rt = W.S.maps.meadow;
+    const p = W.p, rt = L.runtime(W.S, "meadow");
     let total = 0;
     for (let k = 0; k < 30; k++) {
       const m = rt.mobs.find((o) => o.k === "twinhare");
@@ -155,7 +155,7 @@ for (const cls of Object.keys(D.classes)) {
   const W = world("궁극" + cls.slice(0, 2), cls, 40);
   W.to("meadow", 20, 22);
   W.step();
-  const p = W.p, rt = W.S.maps.meadow;
+  const p = W.p, rt = L.runtime(W.S, "meadow");
   for (const i of [4, 5]) {
     const list = rt.mobs.filter((o) => !D.mobs[o.k].chest && !D.mobs[o.k].boss).slice(0, 6);
     for (const o of rt.mobs) if (!list.includes(o)) { o.dead = true; o.respAt = W.now + 1e9; }
@@ -231,7 +231,7 @@ for (const cls of Object.keys(D.classes)) {
   let v = W.step();
   const row = v.who.find((r) => r[0] === W.p.eid);
   assert.equal(row[10], "pet_chick", "everyone can see the pet");
-  const rt = W.S.maps.town, p = W.p;
+  const rt = L.runtime(W.S, "town"), p = W.p;
   const drop = (it, dx, extra = {}) => { const dr = { id: W.S.nextId++, it, g: null, n: 1, q: 0, x: p.x + dx, y: p.y, own: W.PID, freeAt: W.now + 20000, dieAt: W.now + 60000, ...extra }; rt.drops.push(dr); return dr; };
   const g0 = ch.gold;
   drop("gold", 40, { n: 77 });
@@ -290,7 +290,7 @@ for (const cls of Object.keys(D.classes)) {
   ch.tut = { i: D.tutorial.length - 1, n: 0 };
   W.to("meadow", 20, 22);
   W.step();
-  const p = W.p, m = W.S.maps.meadow.mobs.find((o) => o.k === "twinhare");
+  const p = W.p, m = L.runtime(W.S, "meadow").mobs.find((o) => o.k === "twinhare");
   m.dead = false; m.hp = 500; m.x = p.x + 16; m.y = p.y;
   p.mp = 999;
   assert.ok(W.act({ t: "sk", i: 0 }).ok);
@@ -325,7 +325,7 @@ for (const cls of Object.keys(D.classes)) {
     W2.to("meadow", 20, 22);
     W2.step();
     if (guard) W2.ch.scr.def = W2.now + 600000;
-    const p = W2.p, rt = W2.S.maps.meadow;
+    const p = W2.p, rt = L.runtime(W2.S, "meadow");
     for (const o of rt.mobs) { o.dead = true; o.respAt = W2.now + 1e9; }
     let taken = 0;
     for (let k = 0; k < 40; k++) {
@@ -372,7 +372,7 @@ for (const cls of Object.keys(D.classes)) {
   assert.equal(st.dead, null);
   // a moment's grace after rising
   const h = p.hp;
-  const m = W.S.maps.forest.mobs.find((o) => !o.dead && !D.mobs[o.k].chest);
+  const m = L.runtime(W.S, "forest").mobs.find((o) => !o.dead && !D.mobs[o.k].chest);
   m.x = p.x + 12; m.y = p.y; m.tgt = W.PID; m.st = 1; m.atkAt = 0;
   W.step(300);
   assert.equal(p.hp, h, "no harm in the first moments");

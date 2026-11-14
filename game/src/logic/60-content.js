@@ -20,7 +20,7 @@ function explore(S, p) {
   const w = wpNear(p);
   if (w && !ch.wp.includes(p.map)) {
     ch.wp.push(p.map);
-    toast(p, `[${MAPS[p.map].name}] 이동의 돌을 깨웠습니다. 다른 이동의 돌에서 이곳으로 올 수 있습니다.`);
+    toast(p, `[${mapOfS(p.S, p.map).name}] 이동의 돌을 깨웠습니다. 다른 이동의 돌에서 이곳으로 올 수 있습니다.`);
     S.maps[p.map].ev.push(["wp", p.eid, 2]);
     p.dirty = true;
     checkAch(S, p);
@@ -135,7 +135,7 @@ const ACH = [
   ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.st.evt >= 10, "균열 수호자", [["def", 3]]],
   ["wp3", "탐험", "이동의 돌", "이동의 돌 3개 깨우기", 5, (c) => c.wp.length >= 3],
   ["wpall", "탐험", "모든 길을 아는 자", "모든 이동의 돌 깨우기", 20, (c) => Object.keys(WP).every((id) => c.wp.includes(id))],
-  ["explore", "탐험", "세계 여행자", "모든 지역 방문", 20, (c) => Object.keys(MAPS).every((id) => c.seen.includes(id)), "여행자", [["spd", 3]]],
+  ["explore", "탐험", "세계 여행자", "모든 지역 방문", 20, (c) => Object.keys(MAP_META).every((id) => c.seen.includes(id)), "여행자", [["spd", 3]]],
   ["star10", "숙련", "숙련의 길", "토벌 숙련 별 10개", 10, (c) => stars(c) >= 10],
   ["star50", "숙련", "토벌의 장인", "토벌 숙련 별 50개", 30, (c) => stars(c) >= 50, "토벌의 장인", [["xp", 3]]],
   ["col1", "숙련", "첫 도감 완성", "한 지역의 몬스터 도감 완성", 10, (c) => REGIONS.some((id) => regionDone(c, id))],
@@ -194,8 +194,8 @@ function registered(S, p, k) {
   for (const id of REGIONS) {
     if (!COL_MOBS[id].includes(k) || !regionDone(ch, id)) continue;
     const words = REGION_BONUS[id].map(([s, v]) => `${s === "xp" || s === "mf" || s === "crit" || s === "atkp" ? `${v}%` : `+${v}`} ${STAT_WORD[s]}`).join(", ");
-    toast(p, words ? `[${MAPS[id].name}] 도감 완성! 영구 보너스: ${words}` : `[${MAPS[id].name}] 도감 완성!`);
-    sys(S, `${ch.name}님이 [${MAPS[id].name}] 몬스터 도감을 완성했습니다!`);
+    toast(p, words ? `[${MAP_META[id].name}] 도감 완성! 영구 보너스: ${words}` : `[${MAP_META[id].name}] 도감 완성!`);
+    sys(S, `${ch.name}님이 [${MAP_META[id].name}] 몬스터 도감을 완성했습니다!`);
     p.stc = null;
   }
 }
@@ -203,8 +203,8 @@ const STAT_WORD = { hp: "최대 HP", xp: "경험치", def: "방어력", crit: "�
 
 // ── the world event: a rift opens in one hunting ground every half hour
 const EVT = { every: 1800000, warn: 120000, len: 480000, waves: [0, 150000, 300000], boss: 360000 };
-/** Where a rift can open: every hunting ground with a waypoint stone, a field boss and monsters of its own. */
-const EVT_MAPS = Object.keys(MAPS).filter((id) => !MAPS[id].safe && WP[id] && FIELD_BOSS[id] && COL_MOBS[id]);
+/** Where a rift can open: every hunting ground with a waypoint stone, a field boss and monsters of its own (never an instance). */
+const EVT_MAPS = Object.keys(MAP_META).filter((id) => !MAP_META[id].safe && MAP_META[id].wp && FIELD_BOSS[id] && COL_MOBS[id]);
 const evtMap = (slot) => EVT_MAPS[(Math.imul(slot, 2654435761) >>> 0) % EVT_MAPS.length];
 const newEvt = (slot) => ({ slot, map: evtMap(slot), phase: "warn", start: slot * EVT.every, end: slot * EVT.every + EVT.len, waves: 0, boss: 0, bossDead: false, dmg: {}, top: null });
 function worldEvent(S, now) {
@@ -215,7 +215,7 @@ function worldEvent(S, now) {
   const next = slot + 1;
   if (now >= next * EVT.every - EVT.warn && (!e || e.slot !== next)) {
     S.evt = e = newEvt(next);
-    sys(S, `2분 뒤 [${MAPS[e.map].name}]에 균열 침공이 시작됩니다!`);
+    sys(S, `2분 뒤 [${MAP_META[e.map].name}]에 균열 침공이 시작됩니다!`);
     dirtyAll(S);
     return;
   }
@@ -225,7 +225,7 @@ function worldEvent(S, now) {
 }
 function beginEvent(S, e) {
   e.phase = "on";
-  sys(S, `균열 침공 시작! [${MAPS[e.map].name}]에 정예 몬스터가 몰려옵니다. (8분)`);
+  sys(S, `균열 침공 시작! [${MAP_META[e.map].name}]에 정예 몬스터가 몰려옵니다. (8분)`);
   dirtyAll(S);
   runEvent(S, e, S.now);
 }
@@ -235,9 +235,9 @@ function runEvent(S, e, now) {
   if (now >= e.end || e.bossDead) endEvent(S, e);
 }
 /** Where an event's monsters gather: beside the map's waypoint stone. */
-const evtSpot = (id) => [WP[id].ax, WP[id].ay];
+const evtSpot = (id) => { const w = wpOf(id); return [w.ax, w.ay]; };
 function spawnWave(S, e) {
-  const m = MAPS[e.map], rt = S.maps[e.map], [cx, cy] = evtSpot(e.map);
+  const m = mapOf(e.map), rt = runtime(S, e.map), [cx, cy] = evtSpot(e.map);
   const kinds = COL_MOBS[e.map].slice().sort((a, b) => MOBS[b].lv - MOBS[a].lv).slice(0, 2);
   const n = clamp(5 + 2 * rt.n, 5, 14);
   for (let i = 0; i < n; i++) {
@@ -253,7 +253,7 @@ function spawnWave(S, e) {
 }
 function spawnEvtBoss(S, e) {
   // the rift's lord gathers by the stone too, but never on it or on a signpost
-  const m = MAPS[e.map], rt = S.maps[e.map], [cx, cy] = bossSpot(S, m, ...evtSpot(e.map), FB_CLEAR, 0);
+  const m = mapOf(e.map), rt = runtime(S, e.map), [cx, cy] = bossSpot(S, m, ...evtSpot(e.map), FB_CLEAR, 0);
   const mob = newMob(S, FIELD_BOSS[e.map], [0, 0, 0, 0]);
   mob.el = 2; mob.temp = true; mob.evt = true; mob.tr = rollTraits(S, 2);
   mob.x = mob.hx = mob.wx = cx * T + 8; mob.y = mob.hy = mob.wy = cy * T + 10;
@@ -266,11 +266,11 @@ function spawnEvtBoss(S, e) {
   dirtyAll(S);
 }
 function endEvent(S, e) {
-  const rt = S.maps[e.map];
+  const rt = runtime(S, e.map);
   for (const mob of rt.mobs) if (mob.evt && !mob.dead) { mob.dead = true; rt.ev.push(["k", mob.id]); }
   const list = Object.entries(e.dmg).filter(([pid]) => S.players[pid]).sort((a, b) => b[1] - a[1]);
   const total = list.reduce((n, [, d]) => n + d, 0) || 1;
-  const hi = MAPS[e.map].band ? MAPS[e.map].band[1] : 10;
+  const hi = MAP_META[e.map].band ? MAP_META[e.map].band[1] : 10;
   list.forEach(([pid, d], rank) => {
     const p = S.players[pid], share = d / total;
     const lv = Math.min(p.ch.lvl, MAXLV - 1);
@@ -291,7 +291,7 @@ function endEvent(S, e) {
 function evtView(S, p) {
   const e = S.evt, now = S.now, next = Math.floor(now / EVT.every) + 1;
   const out = { phase: e ? e.phase : "idle", next: next * EVT.every - now, nextMap: evtMap(next) };
-  if (e) Object.assign(out, { map: e.map, name: MAPS[e.map].name, in: e.start - now, left: e.end - now, waves: e.waves, mine: e.dmg[p.pid] || 0, top: e.top });
+  if (e) Object.assign(out, { map: e.map, name: MAP_META[e.map].name, in: e.start - now, left: e.end - now, waves: e.waves, mine: e.dmg[p.pid] || 0, top: e.top });
   return out;
 }
 

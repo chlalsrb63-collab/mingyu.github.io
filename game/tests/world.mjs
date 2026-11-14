@@ -48,7 +48,7 @@ const flood = (m, sx, sy) => {
   }
   return dist;
 };
-const place = (id, x, y) => { S.maps[p.map].n--; p.map = id; S.maps[id].n++; p.x = x; p.y = y; p.mvAt = now; p.sendMap = true; p.hp = 1e9; };
+const place = (id, x, y) => { L.runtime(S, p.map).n--; p.map = id; L.runtime(S, id).n++; p.x = x; p.y = y; p.mvAt = now; p.sendMap = true; p.hp = 1e9; };
 const seen = {}, maps = {}, todo = [["town", 20 * 16 + 8, 18 * 16 + 8]];
 while (todo.length) {
   const [id, px, py] = todo.pop();
@@ -77,7 +77,7 @@ for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss",
 // ── the dungeons: harder the deeper you go, a camp on the way, a guardian at the end
 for (const id of ["crypt", "sewer", "abyss"]) {
   // measured from the way in (the walk above may have come in by a back door, like the abyss's ledge up to the old kingdom)
-  const { m } = maps[id], rt = S.maps[id], [ex, ey] = L.atlas().maps[id].entry, dist = flood(m, ex, ey);
+  const { m } = maps[id], rt = L.runtime(S, id), [ex, ey] = L.atlas().maps[id].entry, dist = flood(m, ex, ey);
   assert.ok(["crypt", "sewer", "abyss"].includes(m.theme), id + " names its theme");
   const at = (o) => dist[Math.floor(o.y / 16) * m.w + Math.floor(o.x / 16)];
   const kinds = D.maps.find((o) => o.id === id).mobs.filter((k) => !D.mobs[k].chest && !D.mobs[k].boss).sort((a, b) => D.mobs[a].lv - D.mobs[b].lv);
@@ -109,7 +109,7 @@ for (const id of ["crypt", "sewer", "abyss"]) {
   assert.ok(!g.dead && g.el === 2, "then comes back, a guardian still");
 }
 // the final boss waits at the bottom of the abyss; the cave keeps its own
-assert.ok(S.maps.abyss.mobs.some((o) => o.k === "abyssboss") && S.maps.cave.mobs.some((o) => o.k === "boss"));
+assert.ok(L.runtime(S, "abyss").mobs.some((o) => o.k === "abyssboss") && L.runtime(S, "cave").mobs.some((o) => o.k === "boss"));
 assert.equal(D.mobs.abyssboss.boss, 1);
 JSON.stringify(L.removePlayer(S, PID));
 console.log("world ok — maps", Object.keys(seen).join(","));

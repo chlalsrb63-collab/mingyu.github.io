@@ -40,3 +40,9 @@ export function defs(): unknown;
 export function devPlace(char: Char, map: string, tx: number, ty: number): boolean;
 /** The sky over a map at `now`: hour, phase, weather, the night storyteller and the camps (tests, tools). */
 export function skyAt(map: string, now: number): { hour: number; phase: number; name: string; night: boolean; outdoor: boolean; wx: number; npc: unknown; tale: number; camps: { x: number; y: number; seats: number[][] }[] };
+/** The live state of a map in the world, made on first use (monsters placed, camps lit); null for an unknown id (tests). */
+export function runtime(state: World, mapId: string): { id: string; mobs: unknown[]; n: number; [key: string]: unknown } | null;
+/** Every map built (tests, tools); `fresh` builds them (or only `ids`) again from the seeds. */
+export function atlas(fresh?: boolean, ids?: string[] | null): { maps: Record<string, unknown>; fires: Record<string, number[][]>; waypoints: Record<string, unknown> };
+/** The map registry (tests): the maps built so far, and what is known of every map without building it. */
+export function mapStats(): { built: string[]; meta: Record<string, { id: string; name: string; theme: string | null; band: number[] | null; safe: boolean; w: number; h: number; wp: boolean; kinds: string[]; eager: boolean }> };

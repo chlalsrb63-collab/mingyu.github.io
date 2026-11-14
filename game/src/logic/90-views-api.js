@@ -35,7 +35,7 @@ function selfPayload(p) {
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), st: ch.st,
     daily: dailyView(p), tut: { i: ch.tut.i, n: ch.tut.n }, evt: evtView(p.S, p), recall: p.recall ? Math.max(0, p.recall.at - now) : 0,
-    gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, MAPS[o.map].name, o.ch.gm]) : [],
+    gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
   };
 }
 
@@ -70,7 +70,7 @@ export function viewFor(S, pid) {
   if (rt.ev.length) out.ev = rt.ev;
   // guild chat reaches only the guild
   if (S.chat.length) { const chat = S.chat.filter((c) => (!c.g || c.g === p.ch.guild) && (!c.pt || c.pt === p.party)); if (chat.length) out.chat = chat; }
-  if (p.sendMap) out.map = mapPayload(MAPS[p.map]);
+  if (p.sendMap) out.map = mapPayload(mapOfS(S, p.map));
   // the sky: [weather (-1 under a roof), server clock in seconds], when the weather turns, on
   // arrival, and once a minute to keep everyone's hour of the day in step
   const wx = rt.wx ?? weatherAt(p.map, S.now);
@@ -90,7 +90,7 @@ export function viewFor(S, pid) {
     }
   }
   if (p.party) {
-    out.party = members(S, p).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, Math.round(o.hp), stats(o).mhp, o.map === p.map ? "" : MAPS[o.map].name]);
+    out.party = members(S, p).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, Math.round(o.hp), stats(o).mhp, o.map === p.map ? "" : mapOfS(o.S, o.map).name]);
   }
   if (p.pinv) {
     const from = S.players[p.pinv.from];
@@ -110,12 +110,22 @@ export function viewFor(S, pid) {
 /** Static tables the browser needs to draw windows and tooltips. Sent once. */
 /**
  * The generated world as the generators left it, for the map tests: every map with
- * its spawns, set pieces and region count, plus the camps and waypoint stones. With
- * `fresh`, everything is generated again from the seeds (for checking determinism).
+ * its spawns, set pieces and region count, plus the camps and waypoint stones (this
+ * builds every map). With `fresh`, everything (or only `ids`) is generated again from
+ * the seeds, apart from the kept maps (for checking determinism and build time).
  */
-export function atlas(fresh = false) {
-  const maps = fresh ? customWorld(buildMaps()) : MAPS;
+export function atlas(fresh = false, ids = null) {
+  if (!fresh) return { maps: allMaps(), fires: FIRES, waypoints: WP };
+  const maps = {};
+  for (const id of ids || Object.keys(MAP_META)) {
+    maps[id] = finishMap(baseMap(id));
+    for (const pt of maps[id].portals) arrivalOf(null, pt);
+  }
   return { maps, fires: FIRES, waypoints: WP };
+}
+/** The registry, for the tests: which maps are built so far, and what is known of every map without building it. */
+export function mapStats() {
+  return { built: Object.keys(MAP_CACHE), meta: MAP_META };
 }
 
 export function defs() {
@@ -136,7 +146,7 @@ export function defs() {
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
     traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], skMax: SK_MAX, mech: { grit: GRIT_MAX, marks: MARK_MAX, focus: FOCUS_MAX, tip: TIP.at, tipMult: TIP.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, skStep: SK_STEP, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
-    waypoints: Object.keys(WP).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null })),
+    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
     cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N,
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
@@ -144,10 +154,10 @@ export function defs() {
     event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },
     daily: { resetKST: 6, text: DAILY_TEXT }, tutorial: TUT.map(({ id, title, hint, need }) => ({ id, title, hint, need: need || 1 })), recallMs: RECALL_MS,
     // side quests from the world map editor, with who gives them and where they stand
-    side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAPS[NPC_MAP[q.giver]].name,
-      target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAPS[q.goal.map].name })),
+    side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAP_META[NPC_MAP[q.giver]].name,
+      target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
-    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, maps: Object.keys(MAPS).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null, mobs: [...new Set(MAPS[id].spawns.map((sp) => sp.k))] })),
+    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band, mobs: MAP_META[id].kinds.slice() })),
   };
 }

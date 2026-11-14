@@ -80,7 +80,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `accounts.js` [382] | plain JS (runs in DO and node): `SERVERS`, `CHANNELS`, `class Accounts` (signup/login/logout/auth/me/servers), `parseApiBody`, storage key scheme `K`, `pidFor`, throttle rules |
 | `accounts.d.ts` [75], `logic.d.ts` [36] | types for the two plain-JS modules (update when exports change) |
 | `env.ts` [22] | `Env` bindings: `ASSETS`, `ROOMS`, `HF_ENV`, `APP_SLUG`, `PLAYTEST` (local only: map-editor playtest join) |
-| `logic.js` [6046] | **GENERATED** — never edit; built from `src/logic/*.js` |
+| `logic.js` [7074] | **GENERATED** — never edit; built from `src/logic/*.js` |
 
 ### Rules — `game/src/logic/` (fragments of ONE scope, concatenated in name order; not modules)
 | part | contents |
@@ -91,9 +91,9 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `30-maps-overworld.js` [722] | set pieces `PIECE` legend + **`PIECES`** (incl. the fallen kingdom: chapel cottage watchtower kinggate graveyard …; `UPRIGHT` = never rotated, their ruin art stands on footprint chars `N d i f`), `piece()`, `wilds(cfg)` (meadow/forest/maple generator; optional `lair` `campPiece` `vaultMobs` `trail` `padMin`), `metro(cfg)` (city generator) |
 | `32-maps-underground.js` [630] | `tunnel`, `cavern` (cave), `catacomb` (crypt), `sewers`, `abyssal` (abyss) |
 | *(generated)* | `const DATA = {maps, links, npcs, quests}` — `build-logic.mjs` inserts `game/data/**` right after 00-header |
-| `34-maps-world.js` [389] | `buildTown()`, **`buildMaps()`** (every map's cfg: seed, size, mobs, chest, features), `markRoutes`, collision `solidAt/canStand/canFly`, `mapPayload` |
-| `36-custom-maps.js` [182] | editor maps over the generated world: `fromEditor` (map file → map), `customWorld` (replaces, doors, links, NPCs), **`MAPS`**, `START`, `HUNTED`, `COL_MOBS`, `NPC_MAP`, `devPlace` (playtest) |
-| `40-characters-world.js` [426] | `validName`, **`newChar`** (sheet `v:7`), **`migrate`** (old sheets), gear stats `stats()`, `exportChar`; world `setup`, mobs `newMob/placeMob`, field boss, `addPlayer/removePlayer`, `changeMap`, `sys/toast`; parties |
+| `34-maps-world.js` [425] | `buildTown()`, **`GEN`** (every generated map's generator, band and `cfg()`: seed, size, mobs, chest, features), `GATE_LINKS` (doors by gate name), `genMap(id)` (one map: terrain, doors, crowd, `markRoutes`), collision `solidAt/canStand/canFly`, `mapPayload` |
+| `36-custom-maps.js` [269] | editor maps over the generated world: `fromEditor` (map file → map), `finishMap` (doors, links, NPCs, finalize); the **lazy map registry**: `MAP_META` (name/theme/band/size/wp/kinds of every map, nothing built), **`mapOf(id)`** (built on first use, cached), **`mapOfS(S,id)`** (+ instances `S.dims`), `allMaps()` (tools/tests), `arrivalOf` (a door's landing tile, resolved at warp time), `hasWp/wpOf`; `START`, `HUNTED`, `COL_MOBS`, `NPC_MAP`/`NPC_NAME`, `devPlace` (playtest). Town + editor maps are built at load, hunting grounds on first entry: never index a map table directly |
+| `40-characters-world.js` [536] | `validName`, **`newChar`** (sheet `v:7`), **`migrate`** (old sheets), gear stats `stats()`, `exportChar`; world `setup`, **`runtime(S,id)`** (a map's live state, made on first use), `liveMapIds`, instances `registerDim/closeDim`, mobs `newMob/placeMob`, field boss, `addPlayer/removePlayer`, `changeMap`, `sys/toast`; parties |
 | `50-loot-combat.js` [503] | bag/stack/warehouse helpers, pickup, prices, `rollGear`, `rollRarity`, `lootFor`; `gainXp`, `hurtMob`, `killMob`, `hurtPlayer`, targeting + aim helpers (`AIM_V setAim inArc aimMob`), `basicAttack` |
 | `55-class-skills.js` [611] | class mechanics (grit, marks, focus, weave), `classTick`, `crView` gauge, **`castSkill`** (switch on skill id; emits numeric fx events `ev(code,…)`) |
 | `60-content.js` [317] | waypoints + recall, dailies (06:00 KST), achievements `ACH` + titles, collection, world event (rift), tutorial `TUT` |
@@ -103,7 +103,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `70-validate.js` [348] | **`validateAction`** — one `case` per action `t`: respawn opt look chat p*/g* (party/guild) qs sort emo cos_* title daily tut mv atk warp sk use eq uneq rune train sklv wh sellall buy sell enh sit fish hook reel cook salv bq quest |
 | `75-apply.js` [522] | **`applyAction`** (same cases, mutates state), `afterGear` |
 | `80-simulation.js` [394] | mob AI (`tickMob`, specials, traits), **`tick(S, now)`**, `endTick`, `isGameOver` |
-| `90-views-api.js` [144] | `selfPayload`, **`viewFor`**, `atlas` (tests), **`defs()`** (tables sent to the client) |
+| `90-views-api.js` [163] | `selfPayload`, **`viewFor`**, `atlas`/`mapStats` (tests), **`defs()`** (tables sent to the client) |
 
 ### Client — `game/public/` (plain ES modules, no build step; `index.html` loads `client.js?v=…`)
 | file | owns · key exports |
@@ -149,7 +149,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 sim (smoke) · party · loot (gear, repeat hunting) · life (fires, fishing, cooking, guilds) · world
 (map graph, dungeons, quests) · hard (crowds, elites, traits) · content (long game, old sheets) ·
 growth (skill levels, warehouse, pets, scrolls) · skills (class mechanics) · aim (blows/skills go where you aim, nothing behind) · maps (generators:
-connectivity, determinism, speed) · hotbar (quick slots, party chat, tidy) · wardrobe (cosmetics) · cosmetics (every cosmetic × species × view ×
+connectivity, determinism, per-map build time, lazy registry + MAP_META ↔ built map, instances) · hotbar (quick slots, party chat, tidy) · wardrobe (cosmetics) · cosmetics (every cosmetic × species × view ×
 frame: inside the sheet, closed outline, eyes uncovered, art in every view, in its place) ·
 looks (species ↔ LOOK_MAX) · mobart (every mob has a model that fits its canvas) · accounts (vault
 logic with a fake store + client contract) · daynight (clock, weather per map/slot, wire `dn`, stumps, warmth 1–4, 연주/건배, storyteller, rain/fog flavour) · data (editor data: sample map, links, side quests, round
@@ -275,7 +275,7 @@ lives in `game/.wrangler/` (delete it to reset local accounts/characters).
 **Add a monster**
 1. `src/logic/10-tables.js` `MOBS`: `key: { name:"한글", lv, hp, atk, def, spd, xp, gold:[a,b], aggro, range, cd, …moves }`
    (moves: `charge leap slam pool fan`, `fly`; `sp`/`tint` reuse another body in another colour).
-2. Spawn it: the map cfg `mobs:[…]` in `src/logic/34-maps-world.js buildMaps()` (and `FIELD_BOSS`/
+2. Spawn it: the map cfg `mobs:[…]` in `src/logic/34-maps-world.js GEN` (and `FIELD_BOSS`/
    `QUESTS`/`REGION_BONUS` if relevant).
 3. Art: a `BEASTS_*` entry in `public/mobart_a|b|c.js` (zone file) using `mobart_kit.js` parts; add it
    to the zone list in `public/_mobs.html`.

@@ -1,6 +1,6 @@
 # 사냥터 4배 확장 + 파티 전용 「차원 균열」 던전 — 설계서
 
-Status: design, not implemented. Audience: two implementers working in parallel (Phase 1 / Phase 2) after one
+Status: Phase 0 in progress (see F. for what is built). Audience: two implementers working in parallel (Phase 1 / Phase 2) after one
 foundation task (Phase 0). Code, identifiers and commit messages are English; every player-facing string is Korean
 (AGENTS.md rule 6). All numbers marked (measured) come from throwaway node scripts run against the built `logic.js`
 on this repo; numbers marked (est.) are estimates.
@@ -458,3 +458,43 @@ are added (same commit).
 - Should the cell system ever disappear mobs killed by the player's own "farming" (anti-AFK)? Default: no, sleep only.
 - Client chunk bake time at 4x has not been measured in a browser (no Playwright in this sandbox); Phase 0 must record real `bake().ms` at 1x and 4x
   before choosing between chunking only vs chunking + Worker-side pre-baked tiles.
+
+---------------------------------------------------------------------------------------------------------------
+
+## F. Phase 0 — as built (notes for Phases 1 and 2)
+
+### F.1 Lazy map registry (step 0.1, done)
+
+Where: `34-maps-world.js` (`GEN`, `GATE_LINKS`, `gateDoors`, `crowdUp`, `genMap`), `36-custom-maps.js` (registry),
+`40-characters-world.js` (`runtime`, `liveMapIds`, `registerDim`, `closeDim`). The `MAPS` table is gone (no proxy left).
+
+- `GEN[id] = {make, band, cfg(), theme?, kinds?, after?, npcs?}` replaces `buildMaps()`. `cfg()` is a function so each
+  build starts from a fresh settings object. Phase 1 edits sizes/counts in `cfg()` only; `band` lives beside it.
+- `MAP_META[id] = {id, name, theme, band, safe, w, h, wp, kinds, eager}` in a fixed order (`BUILTIN_MAPS` then
+  editor-only maps). Generated maps take it from `GEN` without building; eager maps (town + every `data/maps` file,
+  replacements included) from their built geometry. `kinds` = every monster kind the map places (cfg `mobs`,
+  `pondMob`, `guard`, `lair`, `vaultMobs`, `boss`, `chest`, + `GEN.kinds`); `tests/maps.mjs` asserts each meta field
+  equals the built map, so a generator change that adds a kind must add it to cfg (or `GEN.kinds`).
+- `mapOf(id)`, `mapOfS(S,id)`, `allMaps()`, `hasWp(id)` (no build), `wpOf(id)` (builds), `arrivalOf(S, portal)`.
+  Generated doors are `{x, y, to, gate, k}`; editor/links doors `{x, y, to, tx, ty}`; `arrivalOf` resolves the
+  landing tile on first use (gate's arrival tile → the tile itself → nearest reachable → `entry`) and memoises
+  `tx, ty, ok` on the door. `allMaps()` and `atlas()` resolve every door (tools see `tx/ty` as before).
+- `runtime(S,id)` creates `S.maps[id]` on first use (fires lit, spawns placed); `setup()` creates only the town.
+  `tick` loops `liveMapIds(S)` (= `Object.keys(S.maps)`, wake order; deterministic for a given history).
+  `S.dims = {}`; `registerDim(S, {id:"dim:<n>", map, party, seed, lv, theme, expire})` sets `map.id = id`,
+  registers, creates the runtime and returns `{id, seed, map, party, theme, lv, born, expire, state:"run", rt}`;
+  refuses ids that exist or are in `MAP_META`. `closeDim(S,id)` moves anyone inside to `START`, clears
+  `party.dim`, deletes `S.maps[id]`, `S.dims[id]`, `FIRES[id]`, `WP[id]`. `exportChar` saves a player inside an
+  instance as standing at `START`; `addPlayer` sends an unknown `ch.map` to town.
+- Camps: `CAMPS` is gone; `campsOf(m)` memoises on `m.camps` (works for instances). Weather reads `MAP_META`
+  (an instance has none → `-1`, underground). Door labels in `mapPayload` read `MAP_META`, never the target map.
+- `NPC_MAP` / `NPC_NAME` are static (eager maps' people, `GEN.npcs`, `data/npcs.json`); `npcName` never builds.
+- Exports added for tests: `runtime`, `mapStats()` (`{built, meta}`), `atlas(fresh, ids)` (fresh build of only `ids`).
+- Deviations: (1) collection lists (`COL_MOBS`), `HUNTED` and `defs().maps[].mobs` are in cfg order (was first-spawn
+  order), same sets. (2) A door into a map an editor file `replaces` lands on that map's entrance (the replaced
+  geometry's gate is not built), as B.4a allows. Everything else is identical: a dump of every map (g, o, spawns,
+  marks, npcs, big, reach, fires, waypoints, resolved doors, `mapPayload`) before/after is byte-identical.
+- Measured (node 22, this container, cold process): module load **194-238 ms → 22-29 ms**; `setup()` 5 ms → 0.3 ms
+  (town only). First entry (build + runtime, cold): meadow 44-53 ms, forest 26-34, maple 25, cave 19-26, crypt
+  12-14, city 8-12, sewer 6-8, abyss 9-13 ms. `tests/maps.mjs` budgets: each map `< 150 ms`, eager maps `< 100 ms`,
+  load `< 1000 ms`.

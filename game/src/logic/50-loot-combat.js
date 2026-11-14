@@ -341,7 +341,7 @@ function killMob(S, rt, mob) {
   if (el === 2) {
     if (mob.evt) { if (S.evt) S.evt.bossDead = true; }
     else if (mob.temp) rt.fb = 0;
-    if (top) sys(S, `${top.ch.name}님의 일행이 ${MAPS[rt.id].name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
+    if (top) sys(S, `${top.ch.name}님의 일행이 ${mapOfS(S, rt.id).name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   }
   // some monsters go off where they fall, and so does any elite with the trait
   if (d.burst || has(mob, "burst")) {
@@ -509,7 +509,7 @@ function basicAttack(S, p) {
   rt.ev.push(["a", p.eid, fxKind, Math.round(mob.x), Math.round(mob.y - 6), p.dir, p.combo]);
   if (butt) {
     const [ux, uy] = aimVec(p, mob);
-    if (!MOBS[mob.k].boss && mob.el !== 2) { knock(MAPS[p.map], mob, ux, uy, 16); mob.stun = Math.max(mob.stun, now + 350); }
+    if (!MOBS[mob.k].boss && mob.el !== 2) { knock(mapOfS(p.S, p.map), mob, ux, uy, 16); mob.stun = Math.max(mob.stun, now + 350); }
     hurtMob(S, rt, mob, p, 0.6);
     addGrit(p, 12);
     return;
@@ -528,7 +528,7 @@ function basicAttack(S, p) {
   // finisher most of all. Elites only reel; bosses and field bosses stand firm.
   const shove = (o, k) => {
     if (MOBS[o.k].boss || o.el === 2) return;
-    if (!o.el) { const [ux, uy] = aimVec(p, o); knock(MAPS[p.map], o, ux, uy, c.kb * k * (fin ? FINISH.kb : 1)); }
+    if (!o.el) { const [ux, uy] = aimVec(p, o); knock(mapOfS(p.S, p.map), o, ux, uy, c.kb * k * (fin ? FINISH.kb : 1)); }
     o.stun = Math.max(o.stun, now + (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + (tip && o === mob ? TIP.flinch : 0));
   };
   shove(mob, 1);

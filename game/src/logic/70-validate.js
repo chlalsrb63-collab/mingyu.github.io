@@ -1,7 +1,7 @@
 // ───────────────────────────── actions ─────────────────────────────
 
 function npcNear(p, role) {
-  for (const n of MAPS[p.map].npcs) {
+  for (const n of mapOfS(p.S, p.map).npcs) {
     if (n.role === role && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < 56) return true;
   }
   return false;
@@ -9,7 +9,7 @@ function npcNear(p, role) {
 /** What the shopkeepers within reach sell: their own `goods`, or the general SHOP list. */
 function goodsNear(p) {
   const out = new Set();
-  for (const n of MAPS[p.map].npcs) {
+  for (const n of mapOfS(p.S, p.map).npcs) {
     if (n.role !== "shop" || dist(p.x, p.y, n.x * T + 8, n.y * T + 12) >= 56) continue;
     for (const id of n.goods || SHOP) out.add(id);
   }
@@ -57,7 +57,7 @@ export function validateAction(S, pid, a) {
     case "look": {
       // a new look at the mirror in town, for gold
       if (!Array.isArray(a.look) || a.look.length > LOOK_MAX.length || !a.look.every((v, i) => Number.isInteger(v) && v >= 0 && v <= LOOK_MAX[i])) return bad("잘못된 외형");
-      if (!MAPS[p.map].safe) return bad("마을에서만 외형을 바꿀 수 있습니다");
+      if (!mapOfS(p.S, p.map).safe) return bad("마을에서만 외형을 바꿀 수 있습니다");
       if (ch.gold < LOOK_COST) return bad(`골드가 부족합니다 (${LOOK_COST}G)`);
       return OK;
     }
@@ -181,7 +181,7 @@ export function validateAction(S, pid, a) {
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
     case "warp": {
-      if (typeof a.to !== "string" || !WP[a.to]) return bad("그곳에는 이동의 돌이 없습니다");
+      if (!hasWp(a.to)) return bad("그곳에는 이동의 돌이 없습니다");
       if (!wpNear(p)) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
       if (!ch.wp.includes(a.to)) return bad("아직 깨우지 않은 이동의 돌입니다");
       if (a.to === p.map) return bad("이미 이곳에 있습니다");
@@ -316,8 +316,8 @@ export function validateAction(S, pid, a) {
     case "fish":
       if (p.fish) return bad("이미 낚시 중입니다");
       if (now - p.hitAt < 3000) return bad("싸우는 중에는 낚시할 수 없습니다");
-      if (MAPS[p.map].nofish) return bad("이곳에서는 낚시를 할 수 없습니다");
-      if (!waterNear(MAPS[p.map], p)) return bad("물가에서만 낚시할 수 있습니다");
+      if (mapOfS(p.S, p.map).nofish) return bad("이곳에서는 낚시를 할 수 없습니다");
+      if (!waterNear(mapOfS(p.S, p.map), p)) return bad("물가에서만 낚시할 수 있습니다");
       if (!canAdd(ch, "fish_s", 1)) return bad("가방이 가득 찼습니다");
       return OK;
     case "hook": return p.fish && p.fish.bite && !p.fish.hook ? OK : bad("아직 입질이 없습니다");

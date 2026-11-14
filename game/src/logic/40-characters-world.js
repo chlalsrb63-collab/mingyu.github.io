@@ -90,9 +90,9 @@ function migrate(ch) {
   ch.gm = ch.guild && ch.gm ? 1 : 0;
   ch.fish = ch.fish | 0;
   // the long game: waypoints, places seen, achievements, a title, counters, dailies, first steps
-  ch.wp = (Array.isArray(ch.wp) ? ch.wp : []).filter((id) => WP[id]);
+  ch.wp = (Array.isArray(ch.wp) ? ch.wp : []).filter((id) => hasWp(id));
   if (!ch.wp.includes("town")) ch.wp.unshift("town");
-  ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => MAPS[id]);
+  ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => typeof id === "string" && Object.hasOwn(MAP_META, id));
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
   ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
   ch.title = typeof ch.title === "string" && ch.ach.includes(ch.title) && ACH_BY[ch.title].title ? ch.title : "";
@@ -234,6 +234,8 @@ export function exportChar(S, pid) {
   if (!p) return null;
   const ch = p.ch;
   ch.map = p.map; ch.x = Math.round(p.x); ch.y = Math.round(p.y);
+  // a runtime instance is never saved: whoever is saved inside one wakes in town
+  if (!Object.hasOwn(MAP_META, p.map)) { ch.map = START.map; ch.x = START.x; ch.y = START.y; }
   ch.hp = p.dead ? 0 : Math.round(p.hp); ch.mp = Math.round(p.mp);
   p.save = false;
   return ch;
@@ -297,24 +299,65 @@ function guildNear(S, p) {
 function newMob(S, k, r, sp) {
   return { fix: (sp && sp.el) || 0, ep: sp && sp.elite !== undefined ? sp.elite : 0.08, id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false, tr: [], act: null, mv: 0, cn: 0 };
 }
+/**
+ * A channel's world. Maps come alive one at a time (runtime): the town at once, every other
+ * place when someone first walks in (or an event needs it). `dims` holds runtime instances.
+ */
 export function setup() {
-  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, parties: {}, chat: [], n: 0, evt: null };
-  for (const id of Object.keys(MAPS)) {
-    const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0 };
-    for (const [fx, fy] of FIRES[id] || []) {
-      const at = freeTile(MAPS[id], fx, fy);
-      if (at) rt.fires.push({ id: S.nextId++, x: at[0] * T + 8, y: at[1] * T + 10, until: 0 });
-    }
-    for (const sp of MAPS[id].spawns) {
-      for (let i = 0; i < sp.n; i++) {
-        const mob = newMob(S, sp.k, sp.r, sp);
-        placeMob(S, MAPS[id], mob);
-        rt.mobs.push(mob);
-      }
-    }
-    S.maps[id] = rt;
-  }
+  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, dims: {}, parties: {}, chat: [], n: 0, evt: null };
+  runtime(S, START.map);
   return S;
+}
+/**
+ * The live state of map `id` in world `S`, made on first use: its monsters placed, its camps lit.
+ * Same shape for every map, a runtime instance ("dim:<n>", registered first with registerDim) too.
+ * Null for a map the world does not have.
+ */
+export function runtime(S, id) {
+  const have = S.maps[id];
+  if (have) return have;
+  const m = mapOfS(S, id);
+  if (!m) return null;
+  const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0 };
+  for (const [fx, fy] of FIRES[id] || []) {
+    const at = freeTile(m, fx, fy);
+    if (at) rt.fires.push({ id: S.nextId++, x: at[0] * T + 8, y: at[1] * T + 10, until: 0 });
+  }
+  for (const sp of m.spawns) {
+    for (let i = 0; i < sp.n; i++) {
+      const mob = newMob(S, sp.k, sp.r, sp);
+      placeMob(S, m, mob);
+      rt.mobs.push(mob);
+    }
+  }
+  S.maps[id] = rt;
+  return rt;
+}
+/** The ids of every map alive in `S` (the world's maps that have woken, and runtime instances), in the order they woke. */
+function liveMapIds(S) {
+  return Object.keys(S.maps);
+}
+/**
+ * Add a runtime instance to the world: `map` a finalized map (generated, never in MAP_META) under
+ * an id "dim:<n>". Its live state is made at once. Returns the instance record.
+ */
+function registerDim(S, { id, map, party = 0, seed = 0, lv = 1, theme = null, expire = 0 }) {
+  if (typeof id !== "string" || !id.startsWith("dim:") || Object.hasOwn(S.dims, id) || Object.hasOwn(MAP_META, id)) return null;
+  map.id = id;
+  const dim = { id, seed, map, party, theme: theme || map.theme || null, lv, born: S.now, expire, state: "run" };
+  S.dims[id] = dim;
+  dim.rt = runtime(S, id);
+  return dim;
+}
+/** Close a runtime instance: anyone still inside goes to town, its state and loot are gone. */
+function closeDim(S, id) {
+  if (!Object.hasOwn(S.dims, id)) return;
+  for (const pid of Object.keys(S.players)) { const p = S.players[pid]; if (p.map === id) changeMap(S, p, START.map, START.x, START.y); }
+  for (const pid of Object.keys(S.parties)) if (S.parties[pid].dim === id) S.parties[pid].dim = 0;
+  delete S.maps[id];
+  delete S.dims[id];
+  delete FIRES[id];
+  delete WP[id];
 }
 
 /** What rank does to a monster: 1 is an elite, 2 a hunting ground's field boss. */
@@ -374,7 +417,7 @@ function bossSpot(S, m, ax, ay, clear = FB_CLEAR, away = FB_AWAY) {
  * hunters themselves, standing still for a moment inside a warning ring where it lands.
  */
 function spawnFieldBoss(S, rt, x, y) {
-  const m = MAPS[rt.id];
+  const m = mapOfS(S, rt.id);
   const mob = newMob(S, FIELD_BOSS[rt.id], [0, 0, 0, 0]);
   mob.el = 2; mob.temp = true;
   mob.tr = rollTraits(S, 2);
@@ -400,22 +443,24 @@ export function playerCount(S) {
 export function addPlayer(S, pid, ch) {
   if (S.players[pid]) removePlayer(S, pid);
   migrate(ch);
-  if (!MAPS[ch.map]) ch.map = START.map;
+  // a place that is gone (a closed instance, a map removed from the editor's data) is the town
+  if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, aim: AIM_N / 4, hp: 1, mp: 0, dead: false, stc: null,
     cds: [0, 0, 0, 0, 0, 0], atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, grit: 0, gritAt: 0, focus: 0, focusAt: 0, sword: null, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
-  if (!canStand(MAPS[p.map], p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
+  if (!canStand(mapOf(p.map), p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
   const st = stats(p);
   p.hp = ch.hp > 0 ? Math.min(ch.hp, st.mhp) : st.mhp;
   p.mp = ch.mp >= 0 ? Math.min(ch.mp, st.mmp) : st.mmp;
   if (ch.hp === 0) { p.map = START.map; p.x = START.x; p.y = START.y; }
   S.players[pid] = p;
   S.n++;
-  S.maps[p.map].n++;
-  S.maps[p.map].who = true;
+  const rt = runtime(S, p.map);
+  rt.n++;
+  rt.who = true;
   sys(S, `${ch.name}님이 접속했습니다.`);
   ensureDaily(S, p);
   explore(S, p);
@@ -449,8 +494,9 @@ function changeMap(S, p, to, x, y) {
   S.maps[p.map].who = true;
   p.map = to; p.x = x; p.y = y;
   classReset(p, false);
-  S.maps[to].n++;
-  S.maps[to].who = true;
+  const rt = runtime(S, to);
+  rt.n++;
+  rt.who = true;
   p.sendMap = true; p.fix = true;
   explore(S, p);
   sqProgress(S, p, "visit", (g) => g.map === to);

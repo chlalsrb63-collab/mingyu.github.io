@@ -24,9 +24,9 @@ function world(name = "모험가", t0 = BASE) {
     act(a) { S.now = now; const v = L.validateAction(S, PID, a); if (v.ok) L.applyAction(S, PID, a); return v; },
     self() { S.players[PID].dirty = true; return W.step().self; },
     get p() { return S.players[PID]; },
-    to(id, tx, ty) { const p = W.p; S.maps[p.map].n--; p.map = id; S.maps[id].n++; p.x = tx * T + 8; p.y = ty * T + 10; p.mvAt = now; p.sendMap = true; },
+    to(id, tx, ty) { const p = W.p; L.runtime(S, p.map).n--; p.map = id; L.runtime(S, id).n++; p.x = tx * T + 8; p.y = ty * T + 10; p.mvAt = now; p.sendMap = true; },
     kill(k, el = 0) {
-      const p = W.p, rt = S.maps[p.map];
+      const p = W.p, rt = L.runtime(S, p.map);
       const m = rt.mobs.find((x) => x.k === k && !x.dead && !x.evt) || rt.mobs.find((x) => x.k === k && !x.evt);
       assert.ok(m, `a ${k} lives in ${p.map}`);
       m.dead = false; m.el = el; m.tr = []; m.hp = 1; m.x = p.x + 12; m.y = p.y; m.by = {};
@@ -132,7 +132,7 @@ assert.equal(D.tutorial.length, 7);
   // ── the return scroll: two seconds of reading, then home
   p.ch.inv.push({ id: "recall", n: 2 });
   p.hitAt = 0;
-  for (const m of W.S.maps.forest.mobs) { m.dead = true; m.respAt = W.now + 1e9; }
+  for (const m of L.runtime(W.S, "forest").mobs) { m.dead = true; m.respAt = W.now + 1e9; }
   W.to("forest", 10, 10); W.step();
   assert.ok(W.act({ t: "use", id: "recall" }).ok);
   v = W.step();
@@ -147,7 +147,7 @@ assert.equal(D.tutorial.length, 7);
   assert.equal(W.act({ t: "use", id: "recall" }).error, "이미 마을에 있습니다");
 
   // a blow breaks the reading, and so does walking off
-  for (const m of W.S.maps.meadow.mobs) { m.dead = true; m.respAt = W.now + 1e9; }
+  for (const m of L.runtime(W.S, "meadow").mobs) { m.dead = true; m.respAt = W.now + 1e9; }
   const M = maps.meadow, free = (x, y) => M.o[y][x] === " " && !"wW".includes(M.g[y][x]);
   let spot = null;
   for (let y = 15; y < M.h - 3 && !spot; y++) for (let x = 15; x < M.w - 3 && !spot; x++) {
@@ -157,7 +157,7 @@ assert.equal(D.tutorial.length, 7);
   p.hp = 1e6;
   assert.ok(W.act({ t: "use", id: "recall" }).ok);
   W.step();
-  const hare = W.S.maps.meadow.mobs.find((m) => m.k === "twinhare");
+  const hare = L.runtime(W.S, "meadow").mobs.find((m) => m.k === "twinhare");
   hare.dead = false; hare.hp = 999; hare.x = hare.hx = hare.wx = p.x + 10; hare.y = hare.hy = hare.wy = p.y; hare.tgt = W.PID; hare.atkAt = 0; hare.st = 1; hare.castAt = 0;
   let broke = false;
   for (let i = 0; i < 25 && !broke; i++) { v = W.step(100); if (evts(v, "rc").some((e) => e[1] === p.eid && e[2] === 0)) broke = true; }
@@ -322,14 +322,14 @@ assert.equal(D.tutorial.length, 7);
   v = W.step();
   assert.equal(v.self.evt.phase, "on");
   assert.equal(v.self.evt.waves, 1);
-  const rt = W.S.maps[evMap];
+  const rt = L.runtime(W.S, evMap);
   const wave1 = rt.mobs.filter((m) => m.evt && !m.dead);
   assert.ok(wave1.length >= 5 && wave1.every((m) => m.el === 1 && m.temp), "the first wave is elites");
   // both players fight; the hero does most of the work
   const p = W.p, p2 = W.S.players["pid-" + W2name];
-  const wp = W.S.maps[evMap] && D.waypoints.find((o) => o.id === evMap);
+  const wp = L.runtime(W.S, evMap) && D.waypoints.find((o) => o.id === evMap);
   assert.ok(wp);
-  for (const q of [p, p2]) { W.S.maps[q.map].n--; q.map = evMap; W.S.maps[evMap].n++; q.x = wave1[0].x - 12; q.y = wave1[0].y; q.sendMap = true; q.ch.lvl = 40; q.stc = null; }
+  for (const q of [p, p2]) { L.runtime(W.S, q.map).n--; q.map = evMap; L.runtime(W.S, evMap).n++; q.x = wave1[0].x - 12; q.y = wave1[0].y; q.sendMap = true; q.ch.lvl = 40; q.stc = null; }
   const hitAll = (who, list) => {
     for (const m of list) {
       if (m.dead) continue;
@@ -356,6 +356,8 @@ assert.equal(D.tutorial.length, 7);
   assert.ok(boss, "an event boss stands by the waypoint");
   assert.ok(chatHas(W, "균열 침공의 우두머리"));
   const g1 = p.ch.gold, g2 = p2.ch.gold;
+  // (the map's own monsters that wandered over step back, so the blow finds the boss)
+  for (const m of rt.mobs) if (m !== boss && !m.dead && Math.abs(m.x - p.x) < 80 && Math.abs(m.y - p.y) < 80) m.dead = true;
   boss.hp = 1; boss.x = p.x + 12; boss.y = p.y; p.atkAt = 0; p.dir = 2; p.aim = 0; p.hp = 1e6;
   W.S.now = W.now;
   assert.ok(L.validateAction(W.S, W.PID, { t: "atk" }).ok);
@@ -411,7 +413,7 @@ assert.equal(D.tutorial.length, 7);
   me = W.self();
   assert.equal(D.tutorial[me.tut.i].id, "rest", "three hares");
   // sitting by the fire until its warmth settles in
-  const f = W.S.maps.meadow.fires[0];
+  const f = L.runtime(W.S, "meadow").fires[0];
   W.p.x = f.x + 10; W.p.y = f.y + 12; W.p.mvAt = W.now; W.p.hitAt = -1e9; W.p.warm = 0;
   assert.ok(W.act({ t: "sit" }).ok);
   for (let i = 0; i < 400 && D.tutorial[W.p.ch.tut.i].id === "rest"; i++) { W.p.hitAt = -1e9; W.step(100); }

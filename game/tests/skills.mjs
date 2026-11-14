@@ -25,7 +25,7 @@ function world(name, cls, lvl = 40) {
   };
   // the open middle of the meadow, every monster put away until a test calls one up
   const p = W.p;
-  S.maps[p.map].n--; p.map = "meadow"; S.maps.meadow.n++; p.sendMap = true;
+  L.runtime(S, p.map).n--; p.map = "meadow"; L.runtime(S, "meadow").n++; p.sendMap = true;
   const mp = W.step().map;
   const clear = (x, y) => mp.o[y] && mp.o[y][x] === " " && !"wW".includes(mp.g[y][x]);
   let spot = null;

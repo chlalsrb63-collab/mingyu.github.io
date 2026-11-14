@@ -20,7 +20,7 @@ function world(name = "옷장", cls = "warrior") {
     join(pid, nm, c = cls, sheet = null) { L.addPlayer(S, pid, sheet || L.newChar(nm, c, [])); return S.players[pid]; },
     step(pid = "A", ms = 100) { now += ms; L.tick(S, now); const v = JSON.parse(JSON.stringify(L.viewFor(S, pid))); L.endTick(S); return v; },
     act(a, pid = "A") { S.now = now; const v = L.validateAction(S, pid, a); if (v.ok) L.applyAction(S, pid, a); return v; },
-    to(pid, tx, ty) { const p = S.players[pid]; S.maps[p.map].n--; p.map = "town"; S.maps.town.n++; p.x = tx * T + 8; p.y = ty * T + 10; p.mvAt = now; p.sendMap = true; },
+    to(pid, tx, ty) { const p = S.players[pid]; L.runtime(S, p.map).n--; p.map = "town"; L.runtime(S, "town").n++; p.x = tx * T + 8; p.y = ty * T + 10; p.mvAt = now; p.sendMap = true; },
   };
   W.join("A", name);
   return W;
@@ -175,7 +175,7 @@ for (const k of Object.keys(D.sets)) assert.ok(MOTIFS.includes(k), "set " + k + 
   assert.equal(v.who.find((r) => r[0] === a.eid)[14][0], 0);
   // a legendary weapon's power is sent for its look
   a.ch.eq.weapon = { id: "w_warrior_4", q: 3, enh: 7, af: [], sk: 0, ru: [], lg: "chain" };
-  W.S.maps[a.map].who = true;
+  L.runtime(W.S, a.map).who = true;
   v = W.step("B");
   row = v.who.find((r) => r[0] === a.eid);
   assert.equal(row[15], "chain");

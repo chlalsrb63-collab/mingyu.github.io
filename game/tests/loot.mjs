@@ -100,8 +100,8 @@ assert.ok(ch.gold > g0 && ch.bn === 1 && ch.bq.n === 0 && ch.bq.k === "twinhare"
 
 // ── the hunt: streaks, mastery, and the field boss that enough kills call out
 const p = S.players[PID];
-const rt = S.maps.meadow;
-p.map = "meadow"; rt.n++; S.maps.town.n--; p.sendMap = true;
+const rt = L.runtime(S, "meadow");
+p.map = "meadow"; rt.n++; L.runtime(S, "town").n--; p.sendMap = true;
 ch.eq.weapon = gear("w_lancer_5", { enh: 10 }); p.stc = null;
 const acorns = rt.mobs.filter((m) => m.k === "twinhare");
 let killed = 0;

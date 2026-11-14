@@ -27,8 +27,8 @@ for (const m of D.maps) for (const k of m.mobs) if (m.band && !D.mobs[k].chest) 
 const S = L.setup();
 let now = 1000;
 S.now = now;
-for (const id of Object.keys(S.maps)) {
-  const rt = S.maps[id];
+for (const { id } of L.defs().maps) {
+  const rt = L.runtime(S, id);
   if (id === "town" || L.atlas().maps[id].safe) continue; // the town, and safe places from the map editor (data/maps)
   assert.ok(rt.mobs.length >= 100 && rt.mobs.length <= 230, `${id}: ${rt.mobs.length} monsters`);
   for (const m of rt.mobs) {
@@ -37,15 +37,15 @@ for (const id of Object.keys(S.maps)) {
     for (const t of m.tr) assert.ok(TRAITS.includes(t));
   }
 }
-assert.ok(S.maps.crypt.mobs.some((m) => m.el === 2 && m.tr.length === 2), "a guardian carries two");
+assert.ok(L.runtime(S, "crypt").mobs.some((m) => m.el === 2 && m.tr.length === 2), "a guardian carries two");
 
 const PID = "pid-hard0001";
 const ch = L.newChar("단단이", "warrior", []);
 ch.lvl = 6;
 L.addPlayer(S, PID, ch);
 const p = S.players[PID];
-const rt = S.maps.meadow;
-S.maps[p.map].n--; p.map = "meadow"; rt.n++; p.sendMap = true;
+const rt = L.runtime(S, "meadow");
+L.runtime(S, p.map).n--; p.map = "meadow"; rt.n++; p.sendMap = true;
 const view = () => JSON.parse(JSON.stringify(L.viewFor(S, PID)));
 const step = (ms = 100) => { now += ms; L.tick(S, now); const v = view(); L.endTick(S); return v; };
 const act = (a) => { S.now = now; const v = L.validateAction(S, PID, a); if (v.ok) L.applyAction(S, PID, a); return v; };

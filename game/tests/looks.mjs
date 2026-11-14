@@ -155,7 +155,7 @@ assert.equal(SPC.withSpecies(SPC.withSpecies([], 13), 1)[SPC.LI.pat], 0);
   assert.deepEqual(ch.look, [1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   // only in town
   const field = Object.keys(D.maps.reduce((o, m) => (o[m.id] = 1, o), {})).find((id) => id !== "town" && id !== "home");
-  S.maps.town.n--; p.map = "meadow"; S.maps.meadow.n++;
+  L.runtime(S, "town").n--; p.map = "meadow"; L.runtime(S, "meadow").n++;
   assert.match(act({ t: "look", look: want }).error, /마을/);
   void field;
 }

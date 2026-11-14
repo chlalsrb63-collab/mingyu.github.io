@@ -58,7 +58,7 @@ function weave(S, rt, p, e, x, y, k) {
   p.weave = { e, until: now + WEAVE_MS };
   if (!other) return null;
   const rx = REACT[pairKey(e, other)];
-  const m = MAPS[p.map];
+  const m = mapOfS(p.S, p.map);
   rt.ev.push(["rx", rx.id === "steam" ? 1 : rx.id === "super" ? 2 : 3, Math.round(x), Math.round(y), rx.r]);
   for (const o of mobsWithin(rt, x, y, rx.r)) {
     if (rx.vuln) { o.vuln = now + rx.vuln; rt.ev.push(["vu", o.id, rx.vuln]); }
@@ -124,7 +124,7 @@ function classProps(S, rt, m, now) {
 function danceStep(S, p, now) {
   const dn = p.dance;
   if (now < dn.next) return;
-  const rt = S.maps[p.map], m = MAPS[p.map];
+  const rt = S.maps[p.map], m = mapOfS(p.S, p.map);
   let mob = null;
   while (dn.i < dn.ids.length && !mob) { const id = dn.ids[dn.i++]; mob = rt.mobs.find((o) => o.id === id && !o.dead) || null; }
   const ox = p.x, oy = p.y;
@@ -148,7 +148,7 @@ function danceStep(S, p, now) {
 }
 /** What every class keeps track of from moment to moment. */
 function classTick(S, p, now) {
-  const rt = S.maps[p.map], m = MAPS[p.map];
+  const rt = S.maps[p.map], m = mapOfS(p.S, p.map);
   const cls = p.ch.cls;
   // a banner hurries the party standing by it
   let haste = 0;
@@ -244,7 +244,7 @@ function castSkill(S, p, i) {
   const st = stats(p);
   const c = st.arm;
   const rt = S.maps[p.map];
-  const m = MAPS[p.map];
+  const m = mapOfS(p.S, p.map);
   const now = S.now;
   const k = 1 + SK_STEP * (((p.ch.skl && p.ch.skl[i]) || 1) - 1);
   rouse(S, p);

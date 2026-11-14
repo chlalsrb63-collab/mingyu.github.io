@@ -15,7 +15,7 @@ const PID = "pid-rooms01";
 L.addPlayer(S, PID, L.newChar("문지기", "warrior", []));
 const p = S.players[PID];
 const view = () => { now += 100; S.now = now; L.tick(S, now); const v = JSON.parse(JSON.stringify(L.viewFor(S, PID))); L.endTick(S); return v; };
-const place = (id, x, y) => { S.maps[p.map].n--; p.map = id; S.maps[id].n++; p.x = x; p.y = y; p.mvAt = now; p.sendMap = true; p.hp = 1e9; };
+const place = (id, x, y) => { L.runtime(S, p.map).n--; p.map = id; L.runtime(S, id).n++; p.x = x; p.y = y; p.mvAt = now; p.sendMap = true; p.hp = 1e9; };
 const mapOf = (id) => { place(id, 0, 0); return view().map; };
 const open = (m, x, y) => x >= 0 && y >= 0 && x < m.w && y < m.h && m.o[y][x] === " " && !"wW".includes(m.g[y][x]);
 const flood = (m, sx, sy) => {
@@ -48,7 +48,7 @@ for (const id of ROOMS) {
   assert.equal(m.theme, "interior", `${id} is an interior`);
   assert.ok(m.safe, `${id} is a safe place`);
   assert.ok(["cafe", "hall", "inn"].includes(m.style), `${id} has a room style`);
-  assert.equal(S.maps[id].mobs.length, 0, `${id}: no monsters indoors`);
+  assert.equal(L.runtime(S, id).mobs.length, 0, `${id}: no monsters indoors`);
   // a diorama: tall walls only along the back (north row, west column), the front cut down low
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     const c = m.o[y][x];
@@ -85,7 +85,7 @@ for (const id of ROOMS) {
     assert.ok(open(m, n.x, n.y), `${id}: ${n.name} stands on open floor`);
     assert.ok([[0, 1], [1, 0], [0, -1], [-1, 0], [0, 0]].some(([dx, dy]) => reachRoom[(n.y + dy) * m.w + n.x + dx]), `${id}: ${n.name} can be walked up to`);
   }
-  const fires = S.maps[id].fires;
+  const fires = L.runtime(S, id).fires;
   assert.ok(fires.length >= 1, `${id}: a fire burns in the hearth`);
   for (const f of fires) assert.ok(reachRoom[Math.floor(f.y / 16) * m.w + Math.floor(f.x / 16)], `${id}: the hearth can be reached`);
 }

@@ -18,7 +18,7 @@ let v = step();
 assert.ok(v.a.F.length >= 1, "the town has a campfire that always burns");
 
 // ── sitting by a fire heals fast and, after a while, warms
-const fire = S.maps.town.fires[0];
+const fire = L.runtime(S, "town").fires[0];
 for (const p of [a, b]) { p.x = fire.x + 10; p.y = fire.y + 12; p.mvAt = now; p.hitAt = -1e9; }
 a.hp = 10;
 assert.ok(act(A, { t: "sit" }).ok && act(B, { t: "sit" }).ok);
@@ -39,13 +39,13 @@ a.ch.inv.push({ id: "camp", n: 1 });
 assert.equal(act(A, { t: "use", id: "camp" }).ok, false, "not right next to another fire");
 a.x += 80; a.mvAt = now;
 assert.ok(act(A, { t: "use", id: "camp" }).ok);
-assert.equal(S.maps.town.fires.length, 2);
+assert.equal(L.runtime(S, "town").fires.length, 2);
 for (let i = 0; i < 20; i++) step(10000);
-assert.equal(S.maps.town.fires.length, 1, "it burns out after three minutes");
+assert.equal(L.runtime(S, "town").fires.length, 1, "it burns out after three minutes");
 
 // ── fishing: wait for the bite, then reel
-const m = S.maps.meadow;
-for (const p of [a, b]) { S.maps[p.map].n--; p.map = "meadow"; m.n++; p.sendMap = true; }
+const m = L.runtime(S, "meadow");
+for (const p of [a, b]) { L.runtime(S, p.map).n--; p.map = "meadow"; m.n++; p.sendMap = true; }
 assert.equal(act(B, { t: "fish" }).ok, false, "no water here");
 // stand on the sandy shore of one of the meadow's ponds
 const mapV = step().b.map;

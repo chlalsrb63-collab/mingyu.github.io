@@ -242,10 +242,10 @@ export function tick(S, now) {
   worldEvent(S, now);
   skyTick(S, now);
   const pids = Object.keys(S.players);
-  for (const id of Object.keys(MAPS)) {
+  for (const id of liveMapIds(S)) {
     const rt = S.maps[id];
     if (rt.n <= 0) continue;
-    const m = MAPS[id];
+    const m = mapOfS(S, id);
     // how many monsters are already after each player here
     for (const pid of pids) if (S.players[pid].map === id) S.players[pid].foes = 0;
     for (const mob of rt.mobs) { const o = !mob.dead && mob.tgt ? S.players[mob.tgt] : null; if (o && o.map === id) o.foes++; }
@@ -358,7 +358,7 @@ export function tick(S, now) {
     const calm = now - p.hitAt > 5000;
     // a campfire is a place to catch your breath; sitting by it is better still
     const fire = calm ? fireNear(S.maps[p.map], p) : null;
-    const rest = fire ? (p.sit ? 0.12 : 0.06) : MAPS[p.map].safe ? 0.08 : 0.02;
+    const rest = fire ? (p.sit ? 0.12 : 0.06) : mapOfS(p.S, p.map).safe ? 0.08 : 0.02;
     // a fire's warmth carries on after you stand up, as long as you keep out of a fight
     const wr = calm ? warmRegen(p, now) : 0;
     if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * (rest + wr) + 1);

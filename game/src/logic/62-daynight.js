@@ -47,7 +47,8 @@ function wxRoll(id, slot) {
 }
 /** The weather on a map at a moment: an index into WEATHER, or -1 indoors and underground. */
 function weatherAt(id, now) {
-  const m = MAPS[id];
+  // (from what is known of the map: the weather never builds one; an instance is underground)
+  const m = MAP_META[id];
   if (!outdoor(m)) return -1;
   const odds = WX_ODDS[m.theme || m.id];
   let r = wxRoll(id, Math.floor(now / WX_MS)) * odds.reduce((a, b) => a + b, 0), w = 0;
@@ -65,9 +66,9 @@ const WARM_N = 4, WARM_BASE = 10, WARM_STEP = 3, WARM_NIGHT = 1, WARM_REGEN = 0.
 /** Snapping onto a stump: how close you must stand to it. */
 const SEAT_R = 18;
 /** Fires and their seats, by map: { x, y, seats: [[x, y]…] } in world pixels. */
-const CAMPS = {};
 function campsOf(m) {
-  const out = [];
+  if (m.camps) return m.camps;
+  const out = (m.camps = []);
   // indoors the fire burns in a fireplace: no stumps round it, you sit where you stand (armchairs are furniture)
   if (m.theme === "interior") return out;
   for (const [fx, fy] of FIRES[m.id] || []) {
@@ -83,7 +84,6 @@ function campsOf(m) {
   }
   return out;
 }
-for (const id of Object.keys(MAPS)) CAMPS[id] = campsOf(MAPS[id]);
 
 /** Players sitting around the fire `f` on `p`'s map, `p` counted if they sit too. */
 function sittersAt(S, map, f) {
@@ -106,7 +106,7 @@ function warmthFor(n, night) {
 function sitDown(S, p) {
   p.sit = true; p.warmT = 0;
   let best = null, bd = SEAT_R;
-  for (const c of CAMPS[p.map] || []) for (const [sx, sy] of c.seats) {
+  for (const c of campsOf(mapOfS(S, p.map))) for (const [sx, sy] of c.seats) {
     const d = dist(p.x, p.y, sx, sy);
     if (d > bd) continue;
     let taken = false;
@@ -123,7 +123,7 @@ function sitDown(S, p) {
 function warmTick(S, p, fire, now) {
   if (++p.warmT < WARM_SEC) return;
   p.warmT = 0;
-  const n = sittersAt(S, p.map, fire), w = warmthFor(n, outdoor(MAPS[p.map]) && isNight(now));
+  const n = sittersAt(S, p.map, fire), w = warmthFor(n, outdoor(mapOfS(p.S, p.map)) && isNight(now));
   const live = p.warm > now, had = live ? p.warmPct : 0;
   if (w.pct > had) toast(p, `모닥불의 온기 — 10분간 경험치 +${w.pct}%, 회복 +${(w.regen * 100).toFixed(1)}%/초${n > 1 ? ` (함께 앉은 ${n}명)` : ""}`);
   // the warmth keeps the best company it has had while it lasts
@@ -159,7 +159,7 @@ const TALES = [
   "안개 낀 날엔 짐승들도 앞이 잘 안 보인단다. 살금살금 지나가면 들키지 않을지도 몰라.",
   "새벽녘 정령나무 아래에서 소원을 빌면, 그날 사냥은 운이 좋다는구나. 할미도 젊을 적엔 매일 빌었지.",
 ];
-MAPS.town.npcs.push(TELLER);
+mapOf("town").npcs.push(TELLER);
 /** The storyteller of `map` if she is out at `now` (only by night), else null. */
 function nightNpc(map, now) { return map === "town" && isNight(now) ? TELLER : null; }
 /** Which tale is being told at `now` (an index into TALES), or -1 by day. */
@@ -181,6 +181,6 @@ function skyTick(S, now) {
  * weather, whether the storyteller is out and which tale she tells, and the camps.
  */
 export function skyAt(map, now) {
-  const ph = dayPhase(now), m = MAPS[map];
-  return { hour: dayHour(now), phase: ph, name: PHASES[ph][0], night: ph === PH_NIGHT, outdoor: outdoor(m), wx: weatherAt(map, now), npc: nightNpc(map, now), tale: map === "town" ? taleAt(now) : -1, camps: CAMPS[map] || [] };
+  const ph = dayPhase(now), m = mapOf(map);
+  return { hour: dayHour(now), phase: ph, name: PHASES[ph][0], night: ph === PH_NIGHT, outdoor: outdoor(m), wx: weatherAt(map, now), npc: nightNpc(map, now), tale: map === "town" ? taleAt(now) : -1, camps: m ? campsOf(m) : [] };
 }

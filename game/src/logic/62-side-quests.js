@@ -21,7 +21,7 @@ const SIDE = DATA.quests.side.filter((q) => typeof q.id === "string" && /^[a-z][
     repeat: !!q.repeat,
   };
 }).filter((q, i, all) => all.findIndex((o) => o.id === q.id) === i && NPC_MAP[q.giver] && (
-  q.goal.type === "kill" ? Object.hasOwn(MOBS, q.goal.mob) : q.goal.type === "collect" ? Object.hasOwn(ITEMS, q.goal.item) : q.goal.type === "talk" ? !!NPC_MAP[q.goal.npc] : Object.hasOwn(MAPS, q.goal.map)));
+  q.goal.type === "kill" ? Object.hasOwn(MOBS, q.goal.mob) : q.goal.type === "collect" ? Object.hasOwn(ITEMS, q.goal.item) : q.goal.type === "talk" ? !!NPC_MAP[q.goal.npc] : Object.hasOwn(MAP_META, q.goal.map)));
 const SQ_BY = {};
 for (const q of SIDE) SQ_BY[q.id] = q;
 for (const q of SIDE) if (q.req.quest && !SQ_BY[q.req.quest]) q.req.quest = null;
@@ -46,10 +46,10 @@ function sqState(ch, q) {
 }
 /** An NPC with this id stands within talking distance. */
 function npcNearId(p, id) {
-  for (const n of MAPS[p.map].npcs) if (n.id === id && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < 56) return true;
+  for (const n of mapOfS(p.S, p.map).npcs) if (n.id === id && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < 56) return true;
   return false;
 }
-const npcName = (id) => { const m = MAPS[NPC_MAP[id]]; const n = m && m.npcs.find((o) => o.id === id); return n ? n.name : id; };
+const npcName = (id) => (Object.hasOwn(NPC_NAME, id) ? NPC_NAME[id] : id);
 /** Credit `n` toward every active quest of this type that `match` accepts. */
 function sqProgress(S, p, type, match, n = 1) {
   const ch = p.ch;

@@ -47,7 +47,7 @@ for (const id of ["cave", "crypt", "sewer", "abyss"]) assert.equal(L.skyAt(id, a
 const S1 = L.setup(), S2 = L.setup();
 const nowWx = at(13, 2);
 L.tick(S1, nowWx); L.tick(S2, nowWx + 50);
-for (const id of outdoorMaps) assert.equal(S1.maps[id].wx, S2.maps[id].wx, "every channel shares the sky");
+for (const id of outdoorMaps) assert.equal(L.runtime(S1, id).wx, L.runtime(S2, id).wx, "every channel shares the sky");
 
 // ── the weather on the wire: on arrival, when it turns, and once a minute
 {
@@ -82,7 +82,7 @@ const ids = ["c-1", "c-2", "c-3", "c-4", "c-5"];
 ids.forEach((id, i) => L.addPlayer(S, id, L.newChar("불멍" + i, ["warrior", "rogue", "lancer", "mage", "warrior"][i], [])));
 const P = ids.map((id) => S.players[id]);
 L.tick(S, now); L.endTick(S);
-const camp = L.skyAt("town", now).camps[0], fire = S.maps.town.fires[0];
+const camp = L.skyAt("town", now).camps[0], fire = L.runtime(S, "town").fires[0];
 assert.ok(camp, "the town's fire has a camp");
 assert.equal(camp.x, fire.x); assert.equal(camp.y, fire.y);
 assert.equal(camp.seats.length, 4, "four stumps around the town's fire");
@@ -137,7 +137,7 @@ near(P[2], fire.x + 200, fire.y);
 assert.equal(act(ids[2], { t: "jam", k: 0 }).ok, false, "a song needs a seat");
 act(ids[2], { t: "sit" });
 assert.ok(act(ids[2], { t: "jam", k: 0 }).ok, "strumming while sitting anywhere");
-assert.ok(S.maps.town.ev.some((e) => e[0] === "j" && e[1] === P[2].eid && e[2] === 0), "everyone around hears it");
+assert.ok(L.runtime(S, "town").ev.some((e) => e[0] === "j" && e[1] === P[2].eid && e[2] === 0), "everyone around hears it");
 assert.equal(act(ids[2], { t: "jam", k: 0 }).ok, false, "not again at once");
 now += 2000;
 assert.equal(act(ids[2], { t: "jam", k: 1 }).ok, false, "a toast is for the fireside");
@@ -204,8 +204,8 @@ assert.ok(L.atlas().maps.town.npcs.some((n) => n.id === teller.id && n.night), "
   const sees = (t) => {
     const W = L.setup();
     L.addPlayer(W, "g-1", L.newChar("안개", "rogue", []));
-    const p = W.players["g-1"], rt = W.maps.meadow;
-    W.maps.town.n = 0; p.map = "meadow"; rt.n = 1;
+    const p = W.players["g-1"], rt = L.runtime(W, "meadow");
+    L.runtime(W, "town").n = 0; p.map = "meadow"; rt.n = 1;
     const mob = rt.mobs.find((m) => !m.dead && D.mobs[m.k].aggro > 0 && !D.mobs[m.k].chest);
     for (const m of rt.mobs) if (m !== mob) { m.dead = true; m.temp = false; m.respAt = Infinity; }
     p.x = mob.x + 0.95 * D.mobs[mob.k].aggro; p.y = mob.y; p.hitAt = -1e9;

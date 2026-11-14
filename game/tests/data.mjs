@@ -42,7 +42,7 @@ function world(Lx, name = "모험가") {
     self() { S.players[PID].dirty = true; return W.step().self; },
     get p() { return S.players[PID]; },
     /** Stand on tile (tx, ty) of map `id` (a teleport for the test's sake). */
-    to(id, tx, ty) { const p = W.p; S.maps[p.map].n--; p.map = id; S.maps[id].n++; p.x = tx * T + 8; p.y = ty * T + 10; p.mvAt = now; p.sendMap = true; },
+    to(id, tx, ty) { const p = W.p; L.runtime(S, p.map).n--; p.map = id; L.runtime(S, id).n++; p.x = tx * T + 8; p.y = ty * T + 10; p.mvAt = now; p.sendMap = true; },
     /** Walk straight onto tile (tx, ty) in small steps (doors take you through). */
     walk(tx, ty) {
       const p = W.p, gx = tx * T + 8, gy = ty * T + 10;
@@ -58,7 +58,7 @@ function world(Lx, name = "모험가") {
     /** Stand right below an NPC. */
     meet(id) { const { map, n } = W.npc(id); W.to(map, n.x, n.y + 1); W.p.y -= 4; },
     kill(k) {
-      const p = W.p, rt = S.maps[p.map];
+      const p = W.p, rt = L.runtime(S, p.map);
       const m = rt.mobs.find((x) => x.k === k && !x.dead && !x.evt) || rt.mobs.find((x) => x.k === k && !x.evt);
       assert.ok(m, `a ${k} lives in ${p.map}`);
       m.dead = false; m.el = 0; m.tr = []; m.hp = 1; m.x = p.x + 12; m.y = p.y; m.by = {};
@@ -223,7 +223,9 @@ const cloneData = () => JSON.parse(JSON.stringify(EMPTY_DATA()));
   assert.deepEqual(b.g, a.g, "same ground, tile for tile");
   assert.deepEqual(b.o, a.o, "same objects, tile for tile");
   assert.deepEqual(b.spawns, a.spawns, "same spawns");
-  assert.deepEqual(b.portals, a.portals, "same doors");
+  // (a generated door names the gate it leads to; the editor's names the tile: both arrive on the same one)
+  const doors = (m) => m.portals.map(({ x, y, to, tx, ty }) => ({ x, y, to, tx, ty }));
+  assert.deepEqual(doors(R.E.MAPS.meadow), doors(L.atlas().maps.meadow), "same doors");
   assert.deepEqual(R.E.WP.meadow, L.atlas().waypoints.meadow, "same waypoint stone");
   assert.deepEqual(R.E.FIRES.meadow, L.atlas().fires.meadow, "same camps");
   assert.deepEqual(b.marks, a.marks, "same signposts");
@@ -232,7 +234,7 @@ const cloneData = () => JSON.parse(JSON.stringify(EMPTY_DATA()));
   const D = R.L.defs();
   assert.ok(D.event.maps.includes("meadow") && D.collection.meadow);
   const S = R.L.setup();
-  assert.ok(S.maps.meadow.mobs.length >= 100);
+  assert.ok(L.runtime(S, "meadow").mobs.length >= 100);
   // every generated map converts and comes back the same
   for (const id of ["town", "crypt", "city", "abyss"]) {
     const d2 = cloneData();

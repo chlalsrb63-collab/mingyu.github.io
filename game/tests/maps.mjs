@@ -1,11 +1,12 @@
 // Headless test of the generated world — every hunting ground connected from its entrance to
 // everything that matters, every spawn standable, the same world from the same seeds, built
-// quickly, and built with variety rather than boxes: node tests/maps.mjs
+// only when first needed and quickly then, and built with variety rather than boxes: node tests/maps.mjs
 import assert from "node:assert/strict";
 
 const t0 = performance.now();
 const L = await import("../src/logic.js");
 const loadMs = performance.now() - t0;
+const { built: builtAtLoad, meta } = (({ built, meta }) => ({ built: built.slice(), meta }))(L.mapStats());
 
 const { maps, fires, waypoints } = L.atlas();
 const D = L.defs();
@@ -96,13 +97,85 @@ for (const id of ["meadow", "forest", "cave", "maple"]) {
 // ── deterministic: the same seeds give the same world, tile for tile and monster for monster
 const shape = (all) => JSON.stringify(HUNT.map((id) => { const m = all[id]; return [m.g, m.o, m.spawns, m.portals, m.marks, m.pieces]; }));
 const before = shape(maps), firesBefore = JSON.stringify(fires);
-const t1 = performance.now();
 const again = L.atlas(true);
-const buildMs = performance.now() - t1;
 assert.equal(shape(again.maps), before, "rebuilding from the seeds gives the same world");
 assert.equal(JSON.stringify(again.fires), firesBefore, "and the same camps");
 
-// ── quick: the whole world is generated as the server starts, so it must stay cheap
-assert.ok(buildMs < 250, `the world is built in ${buildMs.toFixed(0)} ms`);
-assert.ok(loadMs < 1500, `the rules load in ${loadMs.toFixed(0)} ms`);
-console.log("maps ok — load " + loadMs.toFixed(0) + " ms, rebuild " + buildMs.toFixed(0) + " ms\n  " + report.join("\n  "));
+// ── lazy: loading the rules builds only the town and the editor's maps; every hunting ground waits for its first visitor
+const eager = Object.keys(meta).filter((id) => meta[id].eager);
+assert.deepEqual(builtAtLoad.slice().sort(), eager.slice().sort(), `only ${eager} are built when the rules load (built: ${builtAtLoad})`);
+for (const id of HUNT) assert.ok(meta[id].eager || !builtAtLoad.includes(id), id + " is not built at load");
+// what is known without building a map is what the built map turns out to be
+for (const id of Object.keys(meta)) {
+  const mm = meta[id], m = maps[id];
+  assert.equal(mm.name, m.name, id + ": name");
+  assert.equal(mm.theme, m.theme || null, id + ": theme");
+  assert.deepEqual(mm.band, m.band || null, id + ": band");
+  assert.equal(mm.safe, !!m.safe, id + ": safe");
+  assert.deepEqual([mm.w, mm.h], [m.w, m.h], id + ": size");
+  assert.equal(mm.wp, !!waypoints[id], id + ": waypoint stone");
+  assert.deepEqual(mm.kinds.slice().sort(), [...new Set(m.spawns.map((sp) => sp.k))].sort(), id + ": the monsters it lists are the ones it places");
+  for (const p of m.portals) assert.ok(meta[p.to] && Number.isInteger(p.tx) && maps[p.to].reach[p.ty * maps[p.to].w + p.tx], `${id}: the door to ${p.to} lands on open ground`);
+}
+// a rift opens only where a stone stands
+for (const id of D.event.maps) assert.ok(waypoints[id], id + " (rift map) has a waypoint stone");
+
+// ── maps come alive one at a time: a fresh world has only the town; a door, a waypoint or an event wakes the rest
+{
+  const S = L.setup();
+  assert.deepEqual(Object.keys(S.maps), ["town"], "a new channel holds only the town");
+  assert.deepEqual(S.dims, {}, "and no instances");
+  const ch = L.newChar("길손", "warrior", []);
+  L.addPlayer(S, "pid-lazy", ch);
+  const p = S.players["pid-lazy"];
+  // walk through the town's east gate
+  const gate = maps.town.portals.find((pt) => pt.to === "meadow");
+  p.x = gate.x * 16 + 8; p.y = gate.y * 16 + 9; p.mvAt = 0; S.now = 10000;
+  const a = { t: "mv", x: p.x, y: p.y + 1, d: 0 };
+  assert.ok(L.validateAction(S, "pid-lazy", a).ok);
+  L.applyAction(S, "pid-lazy", a);
+  assert.equal(p.map, "meadow", "the gate leads into the meadow");
+  assert.deepEqual([Math.floor(p.x / 16), Math.floor(p.y / 16)], maps.meadow.gates.west.a[maps.town.portals.filter((pt) => pt.to === "meadow").indexOf(gate)], "beside its west gate");
+  assert.deepEqual(Object.keys(S.maps), ["town", "meadow"], "the meadow woke when someone walked in");
+  assert.equal(S.maps.meadow.n, 1);
+  L.tick(S, 10100);
+  const v = L.viewFor(S, "pid-lazy");
+  assert.equal(v.map.id, "meadow");
+  // an instance: a runtime map under an id the registry does not have (Phase 2's dimension rifts)
+  const src = (await import("node:fs")).readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
+    "\nexport const __reg = { registerDim, closeDim, mapOfS, liveMapIds, changeMap, runtime };\n";
+  const X = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
+  const W = X.setup();
+  X.addPlayer(W, "pid-dim", X.newChar("차원객", "mage", []));
+  const q = W.players["pid-dim"];
+  const inst = X.atlas(true, ["crypt"]).maps.crypt;
+  const dim = X.__reg.registerDim(W, { id: "dim:1", map: inst, party: 0, seed: 7, lv: 15, theme: "crypt", expire: 900000 });
+  assert.ok(dim && W.dims["dim:1"] === dim && W.maps["dim:1"] === dim.rt, "an instance is registered with its live state");
+  assert.ok(dim.rt.mobs.length > 0, "and its monsters");
+  assert.equal(X.__reg.mapOfS(W, "dim:1"), inst);
+  assert.deepEqual(X.__reg.liveMapIds(W), ["town", "dim:1"]);
+  assert.equal(X.__reg.registerDim(W, { id: "dim:1", map: inst }), null, "an id is taken once");
+  assert.equal(X.__reg.registerDim(W, { id: "meadow", map: inst }), null, "never a world map's id");
+  X.__reg.changeMap(W, q, "dim:1", inst.entry[0] * 16 + 8, inst.entry[1] * 16 + 10);
+  X.tick(W, 5000);
+  const vd = X.viewFor(W, "pid-dim");
+  assert.equal(vd.map.id, "dim:1", "the instance's map goes out under its own id");
+  assert.equal(X.exportChar(W, "pid-dim").map, "town", "a sheet is never saved inside an instance");
+  X.__reg.closeDim(W, "dim:1");
+  assert.equal(q.map, "town", "closing it sends whoever is inside to town");
+  assert.ok(!W.maps["dim:1"] && !W.dims["dim:1"], "and leaves nothing behind");
+  X.tick(W, 5100);
+}
+
+// ── quick: each map is built the first time someone walks in, while the room keeps ticking, so each must stay cheap
+const ms = {};
+for (const id of Object.keys(meta)) {
+  const t = performance.now();
+  L.atlas(true, [id]);
+  ms[id] = performance.now() - t;
+}
+const eagerMs = eager.reduce((n, id) => n + ms[id], 0);
+for (const id of HUNT) assert.ok(ms[id] < 150, `${id} is built in ${ms[id].toFixed(0)} ms`);
+assert.ok(eagerMs < 100, `the maps built at load take ${eagerMs.toFixed(0)} ms`);
+assert.ok(loadMs < 1000, `the rules load in ${loadMs.toFixed(0)} ms`);
+console.log("maps ok — load " + loadMs.toFixed(0) + " ms (eager maps " + eagerMs.toFixed(0) + " ms), per map " + HUNT.map((id) => `${id} ${ms[id].toFixed(0)}`).join(", ") + " ms\n  " + report.join("\n  "));

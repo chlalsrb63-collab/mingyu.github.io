@@ -2,7 +2,7 @@ export function applyAction(S, pid, a) {
   const p = S.players[pid];
   const ch = p.ch;
   const now = S.now;
-  const m = MAPS[p.map];
+  const m = mapOfS(p.S, p.map);
   switch (a.t) {
     case "mv": {
       if (p.dance) { p.fix = true; break; }
@@ -17,7 +17,7 @@ export function applyAction(S, pid, a) {
       if (validAim(a.a)) p.aim = a.a;
       // stepping anywhere on a gate tile (or brushing its edge) takes you through
       for (const pt of m.portals) {
-        if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) < 12) { changeMap(S, p, pt.to, pt.tx * T + 8, pt.ty * T + 10); break; }
+        if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) < 12) { const at = arrivalOf(S, pt); if (at) changeMap(S, p, pt.to, at[0] * T + 8, at[1] * T + 10); break; }
       }
       break;
     }
@@ -502,11 +502,11 @@ export function applyAction(S, pid, a) {
     }
     case "tut": tutStep(S, p, a.s); break;
     case "warp": {
-      const w = WP[a.to];
+      const w = wpOf(a.to);
       S.maps[p.map].ev.push(["wp", p.eid, 0]);
       changeMap(S, p, a.to, w.ax * T + 8, w.ay * T + 10);
       S.maps[a.to].ev.push(["wp", p.eid, 1]);
-      toast(p, `[${MAPS[a.to].name}]의 이동의 돌로 건너왔습니다.`);
+      toast(p, `[${MAP_META[a.to].name}]의 이동의 돌로 건너왔습니다.`);
       p.dirty = true;
       break;
     }
