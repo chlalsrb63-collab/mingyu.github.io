@@ -329,6 +329,8 @@ const GEN = {
   }) },
   cave: { make: cavern, band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
     id: "cave", name: "수정 동굴", seed: 44093, w: 132, h: 100, r: 8, vaults: 10, tpm: 16, chest: "chest_cave",
+    // maps-v2 비취 수정굴: the moss way (sites `r` apart, half-width `w`), shelves where the swell passes `shelf`
+    moss: { r: 15, w: 3, wind: 0.55, loops: 0.55, shelf: [0.56, 0.7], rings: 7, stream: 0.018 },
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
   city: { make: metro, band: [14, 21], stones: 3, theme: "city", cfg: () => ({
@@ -431,7 +433,7 @@ function genMap(id) {
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
   markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
   // maps-v2: once the signs and stones stand, the ways that must stay three wide are checked once more
-  if (m.keepWide) widen(m, m.keepWide, m.widenSoft);
+  if (m.keepWide) widen(m, m.keepWide, m.widenSoft, m.widenDig);
   // a pocket is the ground still open in it once the signs and stones stand
   for (const pk of m.pockets) pk.tiles = pk.tiles.filter((i) => m.o[Math.floor(i / m.w)][i % m.w] === " ");
   return m;

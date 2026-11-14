@@ -501,10 +501,11 @@ function knit(m, pts, floor, minPocket = 6) {
  * Widen the ways (maps-v2 path-quality rule: the main routes are at least three tiles wide). A tile is
  * "wide" when the 3 × 3 round it is all walkable; every point in `pts` must join the entrance's wide ground.
  * Where one does not, the cheapest way is cut whose every 3 × 3 holds nothing harder than the `soft`
- * objects (trees, bushes, rocks … — cleared along it) or a cliff (cut back into steps, dearly); walls, water and
- * set pieces are never touched.
+ * objects (trees, bushes, rocks … — cleared along it) or a cliff (cut back into steps, dearly); water and set
+ * pieces are never touched, and walls only underground: with `dig` (a floor char) the rock is dug out as that floor
+ * (never where `m.noDig` is set: a boss's shell of rock).
  */
-function widen(m, pts, soft) {
+function widen(m, pts, soft, dig) {
   const W = m.w, H = m.h, n = W * H;
   const wk = (x, y) => !blockedAt(m, x, y);
   const isWide = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!wk(x + dx, y + dy)) return false; return true; };
@@ -531,6 +532,7 @@ function widen(m, pts, soft) {
     let c = 1;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       const X = x + dx, Y = y + dy, o = m.o[Y][X];
+      if (dig && m.g[Y][X] === "W" && o === " ") { if (m.noDig && m.noDig[Y * W + X]) return Infinity; c += 4; continue; }
       if (SOLID_G.includes(m.g[Y][X]) || (o !== " " && !soft.includes(o) && o !== "C")) return Infinity;
       if (o === "C") c += 8;
       else if (o !== " ") c += 3;
@@ -547,13 +549,16 @@ function widen(m, pts, soft) {
     for (const c of path) {
       const x = c % W, y = (c - x) / W;
       // (a cliff in the way is cut back into steps: the ramp grows to three wide)
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (m.o[y + dy][x + dx] !== " ") { if (m.o[y + dy][x + dx] === "C") m.g[y + dy][x + dx] = "v"; m.o[y + dy][x + dx] = " "; cut++; }
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (dig && m.g[y + dy][x + dx] === "W") { m.g[y + dy][x + dx] = dig; cut++; }
+        if (m.o[y + dy][x + dx] !== " ") { if (m.o[y + dy][x + dx] === "C") m.g[y + dy][x + dx] = "v"; m.o[y + dy][x + dx] = " "; cut++; }
+      }
     }
     spread(path.concat(near));
   }
   return cut;
 }
-/** Fill the little walkable pockets (under `max` tiles) that cannot be walked to from the entrance. */
+/** Fill the little walkable pockets (under `max` tiles) that cannot be walked to from the entrance (`W`: with rock). */
 function seal(m, ch, max = 6) {
   const W = m.w, H = m.h, n = W * H;
   const open = (i) => { const x = i % W; return !blockedAt(m, x, (i - x) / W); };
@@ -564,7 +569,7 @@ function seal(m, ch, max = 6) {
     const q = [s];
     seen[s] = 1;
     for (let h = 0; h < q.length; h++) { const c = q[h], x = c % W; for (const j of [x + 1 < W ? c + 1 : -1, x > 0 ? c - 1 : -1, c + W < n ? c + W : -1, c - W]) if (j >= 0 && !seen[j] && reach[j] < 0 && open(j)) { seen[j] = 1; q.push(j); } }
-    if (q.length < max) for (const c of q) { const x = c % W; m.o[(c - x) / W][x] = ch; }
+    if (q.length < max) for (const c of q) { const x = c % W; if (ch === "W") m.g[(c - x) / W][x] = "W"; else m.o[(c - x) / W][x] = ch; }
   }
 }
 
