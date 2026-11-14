@@ -52,9 +52,9 @@ banner or function it names. **When you add, move or split a file, update its ro
 ### Client — `game/public/` (plain ES modules, no build step; `index.html` loads `client.js?v=…`)
 | file | owns · key exports |
 | --- | --- |
-| `index.html` [439] | all HUD/window markup (`section.window#w-<id>`), `#menu`, cache tag `?v=` |
+| `index.html` [444] | all HUD/window markup (`section.window#w-<id>`), side column (`#mini #quest-track #side-char #w-inv #menu`), `#menu`, cache tag `?v=` |
 | `client.js` [125] | the entry: outside imports (kept first, in their old order), `await Assets.ready()`, start-up wiring in the old order (`setup*()` of each module below, `Mini/Dim/Housing/Life.init`, menu glyphs), `Looks.installMirror`, `Lobby.init`, main loop `frame` (update → render → radar → `hudTick`), `window.__game = {G, act, S3, go, openWin, closeWin, closeAll}` for automation. The client is split into the modules below (one `// ───` section or two each); a module's start-up listeners live in its `setup<Name>()` |
-| `state.js` [89] | helpers `$ $$ el clamp dist now T`; **`G`** (the one state object, mutated in place everywhere); world/text canvases; screen layout `VP`, `sideW`/`dockH`, `layout()` (docks, `--vpw --vph --zone-w --zone-h`), `resize()` |
+| `state.js` [97] | helpers `$ $$ el clamp dist now T`; **`G`** (the one state object, mutated in place everywhere); world/text canvases; screen layout `VP`, `sideW`/`dockH`, `layout()` (docks, `--vpw --vph --zone-w --zone-h`; moves the paper-doll `.doll` into `#sc-doll` on a desktop), `dollDocked`, `resize()` |
 | `net.js` [271] | socket `connect open disconnect act` (`ws channel`, `LIVE_HOST`), `onMessage` (welcome, errors…), `stopGame`, `loadMap`, **`onSnap`** (snapshot decoder), entity reconcile `sync`, `entityPos` |
 | `events.js` [294] | **`onEvent`** (the snapshot's `ev`: hits, kills, spawns, warps, fishing, tales…), `onGain`, `floatText`, own swing `attackFx`; `MOB_COL mobMax RANK_NAME JOB_ALIAS DUNGEONS` |
 | `input.js` [236] | keydown hotkeys (the switch; Korean 2-set keys), `moveVector`, click-to-walk `pathTo`, pointer aim/attack, touch stick and buttons, `setCrt setAimArrow toggleSound soundUi toggleAuto` |
@@ -63,8 +63,8 @@ banner or function it names. **When you add, move or split a file, update its ro
 | `overlay.js` [263] | **`render(t,dt)`** (scene2d, then the text canvas): `renderText` names/labels/bubbles/HP bars/numbers, `bubble bubbleFrame bar label`, `forgeHammer`, `wpWoke` |
 | `windows.js` [387] | **`WIN`** list, `openWin closeWin toggleWin closeAll closeTop isOpen`, placement `zone homeOf placeWin keepIn front`, fold to tabs `fold unfold layTabs` (safe zone, side by side, else tabs; saved spots `lumentale:win2:<id>`), phone drawer, `toast banner`, chat `addChat`, tooltips `showTip hideTip hoverTip` |
 | `items.js` [160] | item text: `itemName itemDesc describe statText runewordOf sellPrice`, `itemTip`, slot widget **`itemSlot`** + `useSlot`, bag order, `QS_USE` |
-| `hud.js` [305] | portrait `drawFace drawPortrait`, `hudBars hudPurse hudFrame hudMastery`, `hotbar`, quest `tracker`; **`draw(id, keyOf, fn)`** + **`refreshUi()`** (re-render a window only when its key changed), `section`; sky widget `skyTick`, **`hudTick`** (event widget, cast bar, weapon gauge, streak, buffs) |
-| `win_char.js` [226] | `renderInv`, `renderChar` (tabs 장비 · 능력치 · 외형), `renderSkills skillRows`, char tab buttons, `openStats openTree` |
+| `hud.js` [318] | portrait `drawFace drawPortrait`, `hudBars hudPurse hudFrame hudMastery`, `hotbar`, quest `tracker`; **`draw(id, keyOf, fn)`** + **`refreshUi()`** (re-render a window only when its key changed; the docked paper-doll `dockedDoll`), `section`; sky widget `skyTick`, **`hudTick`** (event widget, cast bar, weapon gauge, streak, buffs) |
+| `win_char.js` [249] | `renderInv`, `renderChar` (tabs 장비 · 능력치 · 외형; 장비 reads 상세 when the doll is docked), `renderDoll` (paper-doll: portrait + gear slots, docked in the side column on a desktop), `renderSkills skillRows`, char tab buttons + the dock's `#sc-tabs`, `openStats openCharTab openTree` |
 | `win_world.js` [285] | `renderWarp`, `renderDaily tickDaily`, `renderAchieve`, `renderCollect mobThumb`, tutorial `tutTry tutCard`, `eventWidget`, `castBar`, `doorFade fadeIn` |
 | `win_shop.js` [169] | `renderShop renderSmith renderQuest` |
 | `win_social.js` [189] | `renderPartyHud`, `renderParty` + invites, `renderGuild`, `openEmotes`, `renderRank` |
@@ -113,7 +113,7 @@ banner or function it names. **When you add, move or split a file, update its ro
 | `audio.js` · `bgm.js` | Web Audio score player, map/day-night tracks, `SFX` catalogue, `Sound.play(name)`. Score authoring and offline previews in `.agents/skills/tales-tales-bgm/`. |
 | `titlescene.js` [604] | title-screen diorama, pixel logo `logo(S)` and subtitle wordmark `subtitle(S)` (Fantasy Life in forest) |
 | `assetlib.js` [131] | external asset loader, `ready()` awaited at client start-up; `canvas meta has loadImage loadAudio loadSounds play`. Used by weapons.js and art.js `buildIcons` (`icon.item.<id>`) |
-| `style.css` [351] · `hud.css` [721] · `lobby.css` [225] | base + CRT, HUD/windows (the last section, "responsive": breakpoints ≤1100 wide / ≤640 high / ≤860 phones, the window safe zone, scrolling bodies, folded tabs, text wrapping), lobby |
+| `style.css` [351] · `hud.css` [1053] · `lobby.css` [225] | base + CRT, HUD/windows (the "responsive" section: breakpoints ≤1100 wide / ≤640 high / ≤860 phones, the window safe zone, scrolling bodies, folded tabs, text wrapping; the docked paper-doll `#side-char` block at the end), lobby |
 | `assets/manifest.json` | installed external images/sounds by key (empty = all code-drawn); written by `scripts/import-art.mjs --install` |
 | `fonts/` | Galmuri pixel fonts (OFL) |
 | `_*.html` | dev preview pages (never deployed, `.assetsignore`): scene world iso over mobs sheet species wardrobe swing feel (skill blasts, hits, footsteps as frame strips; `rows=sk80,sk89:64,pr:grav` plays weapon-skill fx codes and props) bow (`?m=art|draw|arrows|fight`: tiers × pulls, the shot in 8 aims, arrows) title icons uicons emo mini house (furniture icons + every piece turned N W S E) chunks (chunked vs whole ground bake, pixel by pixel; `scripts/bake-check.mjs`) |
