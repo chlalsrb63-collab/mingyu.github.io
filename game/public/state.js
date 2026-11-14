@@ -78,7 +78,15 @@ function layout() {
   const buffs = $("#st-buffs"), tl = $("#topleft"), upright = VP.lay === "port";
   if (!upright && buffs.parentNode !== tl) tl.append(buffs);
   else if (upright && buffs.parentNode === tl) $(".st-side").append(buffs);
+  // the paper-doll (portrait + gear slots): docked in the side column on a desktop, in the C window's 장비 tab on a phone
+  const doll = $(".doll"), dockDoll = $("#sc-doll"), gear = $("#char-gear");
+  if (doll && dockDoll && gear) {
+    if (VP.lay === "full" && doll.parentNode !== dockDoll) dockDoll.append(doll);
+    else if (VP.lay !== "full" && doll.parentNode !== gear) gear.prepend(doll);
+  }
 }
+/** Is the paper-doll docked in the side column (a desktop layout)? */
+export const dollDocked = () => VP.lay === "full";
 export function resize() {
   layout();
   const W = VP.w, H = VP.h;

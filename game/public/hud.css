@@ -1022,3 +1022,32 @@ body.touch #wm .wm-tab { display: none; }
 .jt-key span i { flex: none; width: 8px; height: 8px; border: 2px solid #2a2236; background: #1a1622; }
 .jt-key span.single i { border-color: #4a3f5a; background: #221b2b; }
 .jt-key small { color: #8a8098; font: inherit; }
+
+/* ─────────────── the docked paper-doll (desktop side column: map, quests, the character, the bag) ─────────────── */
+/* state.js layout() moves #w-char's .doll into #sc-doll on a desktop; on a phone it stays in the C window */
+#side-char { flex: none; display: flex; flex-direction: column; gap: 3px; }
+body:not([data-lay="full"]) #side-char { display: none; }
+#sc-doll { padding: 2px 4px; background: #15111b; }
+#sc-doll .doll { grid-template-columns: 36px 1fr 36px; gap: 4px; }
+#sc-doll .doll .col { gap: 2px; }
+#sc-doll .slot { width: 36px; height: 36px; }
+#sc-doll .slot img { left: 2px; top: 2px; }
+/* the portrait at 4 screen px per sprite pixel (the canvas draws 5) */
+#sc-doll #char-cv { width: 106px; height: 134px; border: 0; background: none; }
+#sc-doll #char-title { margin-top: 1px; gap: 3px; font: 700 12px/1.2 var(--pix); white-space: nowrap; overflow: hidden; }
+#sc-doll #char-title small { font: 10px/1.2 var(--pix9); }
+#sc-tabs { display: flex; gap: 2px; }
+#sc-tabs button { flex: 1; height: 20px; padding: 0 4px; font: 12px/1 var(--pix); color: var(--cream); background: #3a3146; border: 2px solid var(--ink); border-radius: 0;
+  box-shadow: inset 1px 1px 0 #5b4d6c, inset -1px -1px 0 #1f1a28; cursor: pointer; }
+#sc-tabs button:hover { background: #463b55; color: #fff6dc; }
+#sc-tabs button.on { color: #2a1806; background: var(--b-mid); box-shadow: inset 1px 1px 0 var(--b-hi), inset -1px -1px 0 var(--b-lo); }
+/* with the character docked the quest list gives up a little height, so the bag keeps a few rows */
+body[data-lay="full"] #quest-track { max-height: clamp(56px, 16vh, 180px); }
+body[data-lay="full"] #w-inv.docked { min-height: 120px; }
+@media (max-height: 760px) {
+  body[data-lay="full"] #sc-doll .slot { width: 30px; height: 30px; }
+  body[data-lay="full"] #sc-doll .slot img { left: -1px; top: -1px; }
+  body[data-lay="full"] #sc-doll .doll { grid-template-columns: 30px 1fr 30px; }
+  body[data-lay="full"] #sc-doll #char-cv { width: 80px; height: 101px; }
+  body[data-lay="full"] #quest-track { max-height: clamp(44px, 14vh, 96px); }
+}
