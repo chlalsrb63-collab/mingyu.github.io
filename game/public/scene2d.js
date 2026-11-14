@@ -17,6 +17,7 @@
  */
 
 import * as SP from "./sprites.js";
+import * as Sw from "./swing.js";
 import * as DC from "./decor.js";
 import * as IT from "./isotiles.js";
 import * as Art from "./art.js";
@@ -1251,19 +1252,22 @@ function drawPerson(s, e, t, dt, x, y) {
   const hs = e.hs && e.atkT <= e.hs.at ? e.hs : null;
   const te = !hs || t < hs.at ? t : t < hs.at + hs.dur ? hs.at : t - hs.dur;
   const atk = (te - e.atkT) / 1000;
+  // a whole stroke and the beat it is held after: the time the attacker keeps facing the target
+  const strokeT = (SP.HOLD[s.wk] || SP.HOLD.sword).time * ((e.atkN | 0) === 2 ? 1.15 : 1);
+  const engaged = !!e.aim && atk > -0.2 && atk < strokeT + 0.35;
   // which way they face on screen: the way they last moved, or the way the server says they turned
   let view;
   if (e.scr) {
     // the title stage still speaks in screen directions: 0 front, 1 left, 2 right, 3 back
     view = e.dir === 3 ? "back" : e.dir === 0 ? "front" : "side";
     if (e.dir === 1) s.face = -1; else if (e.dir === 2) s.face = 1;
-    if (e.aim && atk < 0.5) s.face = e.aim[0] < e.x ? -1 : 1;
+    if (engaged) s.face = e.aim[0] < e.x ? -1 : 1;
   } else {
     if (s.lx !== undefined && Math.hypot(e.x - s.lx, e.y - s.ly) > 0.05) { s.fa = sAng(e.x - s.lx, e.y - s.ly); s.ldir = e.dir; }
     else if (s.fa === undefined || e.dir !== s.ldir) { s.fa = sAng(DXW[e.dir | 0], DYW[e.dir | 0]); s.ldir = e.dir; }
     s.lx = e.x; s.ly = e.y;
     let fa = s.fa;
-    if (e.aim && atk < 0.5 && atk > -0.2 && Math.hypot(e.aim[0] - e.x, e.aim[1] - e.y) > 2) fa = sAng(e.aim[0] - e.x, e.aim[1] - e.y);
+    if (engaged && (!e.moving || atk < 0.5) && Math.hypot(e.aim[0] - e.x, e.aim[1] - e.y) > 2) fa = sAng(e.aim[0] - e.x, e.aim[1] - e.y);
     // eight ways on screen: straight down shows the face, the three ways up show the back,
     // and everything else is the three-quarter turn, mirrored for the left
     const sec = ((Math.round(fa / (Math.PI / 4)) % 8) + 8) % 8;
@@ -1275,15 +1279,31 @@ function drawPerson(s, e, t, dt, x, y) {
   // walking steps foot to foot; standing still breathes, and blinks now and then
   if (s.ph === undefined) s.ph = Math.random() * 4000;
   const F = SP.FRAME;
-  const frame = e.dead ? F.stand
+  let frame = e.dead ? F.stand
     : e.sit ? F.breathe
     : e.moving ? [F.stepA, F.stretch, F.stepB, F.stretch][Math.floor(s.walk) % 4]
     : (t + s.ph) % 3600 < 140 ? F.blink
     : Math.floor((t + s.ph) / 560) % 2 ? F.breathe : F.stand;
+  const sg = s.face;
+  // the stroke being made, if any (swing.js): poses keyed on a 0–1 clock, the blow landing at 0.23
+  const hold = SP.HOLD[s.wk] || SP.HOLD.sword;
+  const beat = e.atkN | 0, fin = beat === 2, stroke = strokeT;
+  const k = atk / stroke, resting = k >= 1, live = !!e.aim && atk >= 0 && !resting && !e.dead;
+  const aimS = e.aim ? ang(e.aim[0] - e.x, e.aim[1] - e.y) : sg > 0 ? 0.25 : Math.PI - 0.25;
+  const aimYaw = e.aim ? (e.scr ? Sw.groundYaw(e.aim[0] - e.x, e.aim[1] - e.y) : Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x)) : 0;
+  const sk = Sw.has(s.wk) ? s.wk : hold.style === "sweep" ? "sword" : hold.style === "stab" ? "spear" : "staff";
+  const side = (beat === 1 ? -1 : 1) * sg;             // the second stroke comes back the other way
+  const P = !live ? null : hold.style === "float" ? Sw.bookPose(beat, k) : Sw.pose(sk, beat, k, side);
+  if (s.t0 !== e.atkT) { s.t0 = e.atkT; s.from = s.ang; s.fromLen = s.len ?? 1; s.fromPush = s.push || 0; s.fromLean = s.lean || 0; }
+  // the body rocks back on the wind-up, leans (or steps) into the blow, and settles back after
+  if (P) s.lean = P.pre !== undefined ? s.fromLean + (P.lean - s.fromLean) * Sw.eOut(P.pre) : P.lean;
+  else s.lean = (s.lean || 0) * Math.max(0, 1 - dt * 7);
+  if (s.lean) { x += Math.cos(aimS) * s.lean; y += Math.sin(aimS) * s.lean * 0.75; }
+  // the weight shows in the body: crouched on the wind-up and the landing, stretched at full reach
+  if (P && P.fr && !e.moving && !e.sit) frame = P.fr === "crouch" ? F.breathe : F.stretch;
   // facing the camera shows the full face; walking sideways turns it three-quarters
   const img = s.sheet[view][frame];
   s.img = img;
-  const sg = s.face;
   g.fillStyle = "rgba(20,24,50,.26)";
   g.beginPath(); g.ellipse(x, y, 5, 2, 0, 0, 7); g.fill();
   const fl = e.fl | 0;
@@ -1298,29 +1318,15 @@ function drawPerson(s, e, t, dt, x, y) {
     g.restore();
   };
   if (!s.weapon || e.dead || (fl & 2)) return body();    // (the greatsword is off stuck in the ground)
-  const hold = SP.HOLD[s.wk] || SP.HOLD.sword;
-  // which blow of the three this is: 0 and 1 are the strokes, 2 the finisher (slower, bigger)
-  const beat = e.atkN | 0, fin = beat === 2;
-  const stroke = hold.time * (fin ? 1.15 : 1);
-  const k = atk / stroke, resting = k >= 1;
-  // the body rocks back on the wind-up and leans into the strike
-  if (e.aim && !resting && atk >= 0) {
-    const u = k < 0.1 ? -0.35 * (k / 0.1) : k < 0.44 ? Math.sin(((k - 0.1) / 0.34) * Math.PI) : 0;
-    const a = ang(e.aim[0] - e.x, e.aim[1] - e.y), n = u * (fin ? 8 : 4.5);
-    x += Math.cos(a) * n; y += Math.sin(a) * n;
-  }
   const bob = frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0;
-  // angles here are canvas angles: 0 points right, positive turns clockwise
-  const aim = e.aim && atk < 0.6 ? ang(e.aim[0] - e.x, e.aim[1] - e.y) : sg > 0 ? 0.25 : Math.PI - 0.25;
   const glow = RARITY[s.gear.wq | 0] || (s.gear.we >= 7 ? "#ffffff" : null);
   if (hold.style === "float") {
-    // a spellbook hovers open beside its reader and darts forward to cast
-    const out = resting ? 0 : Math.sin(k * Math.PI) * hold.push * (fin ? 2.2 : 1) * (beat === 1 ? -0.6 : 1);
-    const big = resting ? 1 : 1 + Math.sin(k * Math.PI) * (fin ? 0.7 : 0.35);
-    const bx = x + sg * 9 + Math.cos(aim) * out, by = y - 8 + Math.sin(t / 380 + s.ph) * 1.2 + Math.sin(aim) * out + bob;
+    // a spellbook hovers open beside its reader, is drawn back to the chest, and darts out to cast
+    const out = P ? P.out * hold.push : 0, big = P ? P.big : 1;
+    const bx = x + sg * 9 + Math.cos(aimS) * out, by = y - 8 + Math.sin(t / 380 + s.ph) * 1.2 + Math.sin(aimS) * out + bob - (P ? P.lift : 0);
     const book = () => {
       g.save();
-      if (!resting) { g.shadowColor = "#fff2b0"; g.shadowBlur = 10; } else if (glow) { g.shadowColor = glow; g.shadowBlur = 5; }
+      if (P && k > 0.1 && k < 0.5) { g.shadowColor = "#fff2b0"; g.shadowBlur = 10; } else if (glow) { g.shadowColor = glow; g.shadowBlur = 5; }
       g.translate(Math.round(bx), Math.round(by)); g.scale(big, big);
       g.drawImage(s.weapon, -16, -16);
       g.restore();
@@ -1329,74 +1335,73 @@ function drawPerson(s, e, t, dt, x, y) {
     return;
   }
   const rest = sg > 0 ? -hold.rest * DEG : Math.PI + hold.rest * DEG;
-  if (s.ang === null) s.ang = rest;
-  // every stroke starts from wherever the weapon is, which after a stroke is
-  // where that stroke ended: right to left, a beat's pause, then straight back
-  if (s.t0 !== e.atkT) { s.t0 = e.atkT; s.from = s.ang; s.fromPush = s.push || 0; }
-  const sm = (v) => v * v * (3 - 2 * v);
+  if (s.ang === null) { s.ang = rest; s.len = 1; }
   const turn = (a, b, u) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * u; };
-  const side = beat === 1 ? -sg : sg;                   // the second stroke comes back the other way
-  const arc = hold.arc * DEG;
-  /** Where the weapon is at stroke position `w` (0 the start of the cut, 1 its end): [angle, reach]. */
-  const path = (w) => {
-    if (hold.style === "sweep") {
-      // a greatsword: left to right, right to left, then an overhead chop that ends on the target
-      return fin ? [aim - sg * 3.3 + sg * 3.6 * w, hold.push + 6 * Math.max(0, w)] : [aim - side * arc / 2 + side * arc * w, hold.push + 1];
-    }
-    if (hold.style === "stab") {
-      // a thrust, a cut across, then a long lunge
-      if (beat === 1) return [aim - side * arc / 2 + side * arc * w, hold.push * 0.45];
-      return [aim, w < 0 ? w * 14 : Math.sin(Math.min(1, w) * Math.PI) * hold.push * (fin ? 1.7 : 1)];
-    }
-    if (fin) return [aim + sg * Math.PI * 2 * (1 - Math.max(0, w)), hold.push + 3];   // a full twirl of the staff
-    return [aim - side * arc * (1 - w), hold.push];
-  };
   const held = resting && atk < stroke + 0.6;           // poised at the end of the stroke, ready for the next
-  let push = 0, grow = 0;
-  if (!resting) {
-    // three parts: from where it was into the wind-up (0–0.1), the strike (0.1–0.36), and a
-    // follow-through that carries on, slowing, until just before the next stroke is due
-    const w = k < 0.1 ? -0.12 : k < 0.36 ? -0.12 + 1.12 * sm((k - 0.1) / 0.26) : 1 + 0.14 * (1 - (1 - (k - 0.36) / 0.64) ** 2);
-    const [pa, pp] = path(w);
-    if (k < 0.1) { const u = sm(k / 0.1); s.ang = turn(s.from, pa, u); push = s.fromPush + (pp - s.fromPush) * u; }
-    else { s.ang = pa; push = pp; }
-    if (k >= 0.1 && k < 0.46) grow = Math.sin(((k - 0.1) / 0.36) * Math.PI) * hold.grow * (fin ? 1.6 : 1);
-    // mid-stroke the weapon swells toward the eye and leaves its last two positions behind as a smear
-    if (!s.smear) s.smear = [];
-    s.smear.unshift(s.ang); s.smear.length = Math.min(s.smear.length, 3);
-    s.endAng = s.ang; s.endPush = push;
+  let push = 0, len = 1, depth = 0, grow = 0;
+  /** A pose → [screen angle, foreshortened length, depth, hand push]. */
+  const place = (p) => { const [a, l, d] = Sw.project(aimYaw + p.yaw, p.pitch); return [a, l, d, p.reach]; };
+  if (P) {
+    let [pa, pl, pd, pp] = place(P);
+    // the wind-up starts from wherever the weapon was: at rest, or where the last stroke ended
+    if (P.pre !== undefined) { const u = Sw.eOut(P.pre); pa = turn(s.from ?? pa, pa, u); pl = (s.fromLen ?? 1) + (pl - (s.fromLen ?? 1)) * u; pp = s.fromPush + (pp - s.fromPush) * u; }
+    s.ang = pa; len = pl; depth = pd; push = pp;
+    // through the strike the weapon swells toward the eye
+    if (P.strike) grow = Math.sin(clamp((k - 0.1) / 0.24, 0, 1) * Math.PI) * hold.grow * (fin ? 1.4 : 1);
+    s.endAng = s.ang; s.endLen = len; s.endPush = push; s.endDepth = depth;
   } else if (held) {
-    s.smear = null;
-    s.ang = s.endAng ?? s.ang; push = s.endPush ?? 0;
+    s.ang = s.endAng ?? s.ang; len = s.endLen ?? 1; push = s.endPush ?? 0; depth = s.endDepth ?? 0;
   } else {
     // the run is over: the weapon comes down and is slung again, unhurried
-    s.smear = null;
     s.ang = turn(s.ang, rest, Math.min(1, dt * 5));
+    len = (s.len ?? 1) + (1 - (s.len ?? 1)) * Math.min(1, dt * 6);
     push = (s.push || 0) * Math.max(0, 1 - dt * 6);
   }
-  s.push = push;
+  s.push = push; s.len = len;
   // a greatsword is slung across the back between fights, and comes off it to fight
   s.sl = (s.sl ?? 1) + ((hold.style === "sweep" && resting && !held ? 1 : 0) - (s.sl ?? 1)) * Math.min(1, dt * 8);
   // with no arms, the weapon simply floats at the body's side
-  const hx = x + sg * (7 - 4 * s.sl) + Math.cos(s.ang) * push;
-  const hy = y - (3 + 2 * s.sl) + Math.sin(s.ang) * push + bob;
-  const blade = (ang, alpha) => {
+  const hx0 = x + sg * (7 - 4 * s.sl), hy0 = y - (3 + 2 * s.sl) + bob;
+  const hx = hx0 + Math.cos(s.ang) * push * len, hy = hy0 + Math.sin(s.ang) * push * len;
+  const long = Sw.bladeLen(s.weapon, SP.GRIP);
+  const weapon = () => {
+    // the smear: the band the blade's outer half swept through in the last few hundredths of a
+    // second, sampled along the stroke itself so it bends with the arc as the view shows it
+    if (P && P.strike && grow > 0.05) {
+      const pts = [], inner = [], span = 0.07 / stroke;
+      for (let j = 0; j <= 6; j++) {
+        const kk = Math.max(0.1, k - (span * j) / 6);
+        const q = Sw.pose(sk, beat, kk, side);
+        if (!q) continue;
+        const [a, l, , r] = place(q), L = long * Math.max(0.45, l) * (1 + grow);
+        const ox = hx0 + Math.cos(a) * r * l, oy = hy0 + Math.sin(a) * r * l;
+        pts.push([ox + Math.cos(a) * L, oy + Math.sin(a) * L]);
+        inner.push([ox + Math.cos(a) * L * 0.62, oy + Math.sin(a) * L * 0.62]);
+      }
+      if (pts.length > 2) {
+        g.save();
+        g.beginPath();
+        pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py)));
+        for (let i = inner.length - 1; i >= 0; i--) g.lineTo(inner[i][0], inner[i][1]);
+        g.closePath();
+        g.globalAlpha = 0.6; g.fillStyle = glow || "#dfe8ff"; g.fill();
+        g.globalAlpha = 0.9; g.strokeStyle = "#ffffff"; g.lineWidth = 1;
+        g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.stroke();
+        g.restore();
+      }
+    }
     g.save();
     g.translate(Math.round(hx), Math.round(hy));
-    g.rotate(ang);
-    if (Math.cos(ang) < 0) g.scale(1, -1);
-    g.scale(1 + grow, 1 + grow);
-    g.globalAlpha = alpha;
-    if (glow && alpha === 1) { g.shadowColor = glow; g.shadowBlur = s.gear.we >= 7 ? 9 : 5; }
+    g.rotate(s.ang);
+    if (Math.cos(s.ang) < 0) g.scale(1, -1);
+    // turned toward or away from the camera, the blade is seen end-on and looks shorter
+    g.scale((1 + grow) * Math.max(0.45, len), 1 + grow);
+    if (glow) { g.shadowColor = glow; g.shadowBlur = s.gear.we >= 7 ? 9 : 5; }
     g.drawImage(s.weapon, -SP.GRIP[0], -SP.GRIP[1]);
     g.restore();
   };
-  const weapon = () => {
-    if (s.smear && grow > 0.08) { if (s.smear[2] !== undefined) blade(s.smear[2], 0.16); if (s.smear[1] !== undefined) blade(s.smear[1], 0.34); }
-    blade(s.ang, 1);
-  };
-  // a slung greatsword sits behind the body; everything else is held in front
-  const behind = resting && !held ? (hold.style === "sweep") !== back : Math.sin(s.ang) < -0.2;
+  // a slung greatsword sits behind the body; in a stroke, a blade pointing away from the camera does too
+  const behind = resting && !held ? (hold.style === "sweep") !== back : depth < -0.35 || (Math.sin(s.ang) < -0.45 && depth < 0.2);
   if (behind) { weapon(); body(); } else { body(); weapon(); }
 }
 

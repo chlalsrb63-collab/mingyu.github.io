@@ -724,6 +724,7 @@ function castSkill(i) {
   act({ t: "sk", i });
   G.cdEnd[i] = t + sk.cd;
   G.me.atkT = t; G.me.atkN = 2; G.lastAtk = t; G.lastSkill = t;
+  preAim();
   return true;
 }
 function countItem(id) {
@@ -750,7 +751,17 @@ function attack() {
   G.me.atkN = G.combo;
   G.lastAtk = t; G.me.atkT = t;
   G.impactAt = t + S3.impactMs(G.self.wk, G.combo);
+  preAim();
   act({ t: "atk" });
+}
+/** Turn toward the nearest monster within reach the moment the swing starts, as the server will;
+ *  its own word on the target arrives a moment later and only corrects this. */
+function preAim() {
+  const me = G.me, reach = (G.self.range || 40) + 24;
+  let best = null, bd = reach;
+  for (const m of G.mobs.values()) { const d = dist(me.x, me.y, m.x, m.y); if (d < bd) { bd = d; best = m; } }
+  if (best) me.aim = [best.x, best.y + 6];
+  else me.aim = [me.x + [0, -1, 1, 0][me.dir | 0] * 30, me.y + [1, 0, 0, -1][me.dir | 0] * 30 + 6];
 }
 
 function nearestNpc() {
