@@ -1,6 +1,6 @@
 # 사냥터 4배 확장 + 파티 전용 「차원 균열」 던전 — 설계서
 
-Status: Phase 0 done (F.), Phase 1 built (G.); Phase 2 not started. Audience: two implementers working in parallel (Phase 1 / Phase 2) after one
+Status: Phase 0 done (F.), Phase 1 built (G.), Phase 2 built (H.: as built, tuned numbers, deviations). Audience: two implementers working in parallel (Phase 1 / Phase 2) after one
 foundation task (Phase 0). Code, identifiers and commit messages are English; every player-facing string is Korean
 (AGENTS.md rule 6). All numbers marked (measured) come from throwaway node scripts run against the built `logic.js`
 on this repo; numbers marked (est.) are estimates.
@@ -704,3 +704,84 @@ is: `zoneSpawns` recomputes every count. No generator needed a new algorithm (no
 - Payload 28-41 KB per arrival: acceptable per B.3; RLE left out (F.3 measured it saves little on the overworld).
 - Cold first entry ≈ 80-140 ms per map per isolate (one tick late, once).
 - The `wpall` achievement still means "the first stone of every map" (F.4's rule).
+---------------------------------------------------------------------------------------------------------------
+
+## H. Phase 2 — as built (차원 균열)
+
+Where: `31-maps-dim.js` (`DIM` table — every number below lives there —, `DIM_THEMES`, `DIM_TOWN`, `dimPool`,
+`dimension`), `64-dim.js` (manager, actions, wire), hooks: `dealMob` (`mob.hk`), `mobHit` (vamp heal ÷ `hk`, master's
+`mob.ak`), `killMob` → `dimKill`, `lootFor` (gold ×`lootGold`), `stats().guard` (`p.dimWard`), `tick` → `dimTick`,
+`viewFor` → `dimView`, `defs().dim`, `respawn` (validate wait / apply `dimRespawn`), actions appended as one block at
+the end of the 70/75 switches. Town: `buildTown()` one block (obelisk `big` on an `a` tile at (24,18), keeper
+`dimkeeper` role `dim` at (23,19), landing (22,18)); `NPC_ROLES` and the editor's `big` check accept them.
+Client: `public/dimart.js` (obelisk, shrines, orb, way home, chest), `public/dimrift.js` (HUD, ready check, keeper
+window, scene props, events, minimap marks), hooks in `client.js` (import, `WIN += dim rc`, `onSnap`, `onEvent`,
+`interact`, minimap, render), `scene2d.js` (obelisk big piece), `audio.js` (`rc_ping dim_open dim_orb dim_pylon
+dim_boss dim_clear dim_portal`, track `dim`), `index.html` (`#dim-hud #w-dim #w-rc`), `hud.css`. Sheet v9 (Phase 0 step 0.4):
+`ch.dim = {day, n}`; counter `ch.st.dim` (through `dimCnt(ch)`; jobs-and-stats J1 renames counters); achievements
+`dim1` 차원의 틈, `dim10` 차원 탐험가. Party level → instance level through `dimLvOf` (one place for J1's level change).
+
+### H.1 Generator (deviations from D.2)
+- Rooms on a jittered **4 × 3 grid** of 13 × 12-tile cells (7–9 rooms grown as a connected set, 7–11 × 6–9 each,
+  shapes plain/cross/octagon/ell), random spanning tree over neighbouring cells + 1–2 loops, L-corridors 2–3 wide.
+  Start = one end of the longest walk, master's hall = the largest room at ≥ 85% of it (both plain). 2–3 vaults
+  (5–7 × 5–6) in free cells next to rooms ≥ 60% of the way, one corridor each: guardian elite + `chest_<theme>`.
+- Way to the master: **52–100 tiles** (avg ≈ 65), not 70–110 (a 56 × 40 grid does not hold more); a layout under 52
+  is laid out again from a derived seed (≤ 6 tries; still pure). Build: median 0.6 ms, max ≈ 12 ms (800 rifts).
+- Pool: the theme's kinds within **[lv−3, lv+2]**, else the 4 kinds of all hunting grounds nearest lv−1 (lv 10 gets
+  meadow/forest beasts in a crypt look; lv 45+ gets maple's). Master: the theme's field boss if within 6 levels, else
+  the pool's toughest. Theme by level as planned.
+- Packs 12–16 of 3–6 (≤ 70 normal), 1 elite per room not next to the start (2 in big rooms 40%), measured
+  45–70 normal, 5–12 elites (avg 62 / 7.7). Monsters are `temp` (no respawn, no cells: `m.spawns` is empty).
+
+### H.2 Gauge and toughness (tuned with the bot party; D.3 first guesses replaced)
+- Kill +0.9, elite +4, orb +3 as planned, **scaled by `dim.gK = max(1, 118 / (0.9·N + 7·E))`** so a sparse layout can
+  still reach 100% (one seed had only 75 points in it).
+- Toughness is a **damage divisor `mob.hk`** (not an hp multiplier: the client's hp% stays right):
+  `hk = (5.8 + 1.0 × max(0, 24 − lv)) × [0.35, 0.6, 0.8, 1][n−1] × (1 + 0.1 × max(0, lv−1 − mobLv))`. The doc's
+  ×(1+0.25(n−1)) made a 4-party clear in **1.4–4 min**; with ×3–4 flat the low bands stayed fast and the high bands
+  slow, hence the low-level term. The master: `hk × 0.6`, hits **×0.7** (`mob.ak`), **2 traits** (3 traits + full hp
+  wiped every bot party: vamp healed by raw damage, so its heal is now ÷ `hk` too).
+- Measured clears (4 bots, gear of their tier q1, no training; walk BFS paths, dodge ground rings, drink at 45%):
+  | Lv | theme | master at | clear |
+  | --- | --- | --- | --- |
+  | 17 | crypt | 4.3 | 5.8 |
+  | 24 | sewer | 4.6 | 5.6 |
+  | 32 | cave | 4.6 | 5.6 |
+  | 40 | cave | 7.1 | 8.4 |
+  | extra seeds (`MORE=1`, before the last small tune): 14 6.6 · 20 8.9 · 28 5.7 · 36 7.0 · 44 9.4 · 17 6.0 · 32(abyss) 6.4 |
+  Average 6.4 min (test: each 4.5–10.5, average 5.5–9). Solo bot at Lv.22: reaches the master at ≈ 6 min but does not
+  kill it (it does not kite; 11 deaths) — measured, not asserted. Re-tune after J1 (stats rework) with
+  `HPB= BOSSHP= BOSSATK= LVK= NOCLEAR=1 MORE=1 node tests/dimrift.mjs -v`.
+
+### H.3 Rules that differ from D.3–D.7
+- **A wipe does not fail the rift**: everyone gets up in the start room after **25 s** (no XP loss); only the clock
+  (15 min) fails it (8 s later everyone is home with `lv × 30` gold). The dead cannot `dim_leave` (they get up first).
+- Master spawn: ≥ 10 tiles from its hall → it walks 10 steps from the party toward the hall and lands ≥ 8 tiles away,
+  but never within 12 tiles of the start room (where the fallen get up); else in its hall.
+- The way home refuses anyone who earned a chest and has not opened it ("먼저 보상 상자를 여세요!").
+- Chest: gold 60·lv, **xp 0.05 × xpNeed(lv)** (the plan's 0.5 contradicted its own "4–5% of a level"), rare gear,
+  2 stones, rune 60%; full xp for the first 3 clears a day, then half. No new cosmetic source: the master's kill already
+  rolls the `boss` source. Eligible: anyone who shared a kill inside or stood within party range of the master.
+- Shrines: atk +25% (existing `atkBuff`), spd = the existing ×1.4 move buff, **shield = −25% damage taken**
+  (`p.dimWard`), gauge = +30% MP and a full warrior grit / lancer focus. Reach 400 px, 30 s, 35% per elite, always 3rd/6th.
+- Party leader = `party.m[0]` (parties have no leader field). A solo open skips the ready check.
+- Joining (`dim_join`): anyone seen inside in the last 3 min, or anyone of the instance's party, while it runs, ≤ 4
+  inside. Leaving (`dim_leave`, the start room's door, a recall scroll) lands beside the obelisk (the scroll: plaza).
+
+### H.4 Wire as built (D.8)
+- `dim` (only on change, `0` once on leaving): `[gauge×10, secs, state 0 run·1 master·2 cleared·3 failed, masterId,
+  lv, [[eid, hp%, alive]…], [[id, kind, x, y, secs]…], [[id, x, y]…], [x,y]|0 way home, [x, y, 0 yours·1 opened·2 not
+  yours]|0 chest, theme, [x, y]|0 master's hall (minimap), ward secs, revive wait secs]`; measured 19–43 B per snapshot
+  averaged over a whole run (test asserts ≤ 120).
+- `rc`: `[id, secs, [[eid, name, 0 asked·1 yes·2 no·3 away]…], lv, leader?]` (index 3 is the level, not a seed hint);
+  `rc: 0` once when it ends. `dj` (new, in town): `[secs, inside, gauge×10, lv]` when a rift can be joined, `0` after.
+- Events: `["dm", kind, x, y]` (orb, atk/spd/shield/gauge, chest, open, boss), `["dp", x, y]`, and new `["dz", id, x, y]`
+  (a monster dissolving at 100%).
+- `defs().dim = {themes, pylons, limit, party, max, rcMs, obelisk, reviveMs, near}`.
+
+### H.5 Known issues / next
+- Solo is very hard against the master (see H.2); consider an el-1 master for parties of one.
+- `tests/dimrift.mjs` takes ≈ 8–9 s (the bot runs). Its pool depends on `MAP_META.kinds`: Phase 1 adding kinds may
+  move clear times; rerun with `-v`.
+- Editor towns that `replace` the town must place the obelisk (`big` `obelisk`) and an NPC with role `dim` themselves.
