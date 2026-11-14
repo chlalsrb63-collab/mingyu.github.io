@@ -1,5 +1,7 @@
 # 파일 지도 — file map of 테일즈테일즈 (lines in brackets)
 
+> One-page system summaries (server/saves, maps, loot, rift, world life, wire/client): [`docs/systems/README.md`](systems/README.md).
+
 Moved out of `AGENTS.md` so it is read only when needed. Open the row you need, then `grep -n` the
 banner or function it names. **When you add, move or split a file, update its row here in the same commit.**
 
