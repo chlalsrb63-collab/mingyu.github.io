@@ -13,6 +13,7 @@ import { G, T, dist, $, el } from "./state.js";
 import { act } from "./net.js";
 import { moveVector, typing, keys, held, pathTo } from "./input.js";
 import { aimAtPoint, castSkill, usePotion, aimIdx, canStand, attack, nearestNpc, fireNear } from "./actions.js";
+import * as Gather from "./gather.js";
 import { toast, closeWin, isOpen, shown } from "./windows.js";
 import { refreshUi } from "./hud.js";
 
@@ -208,14 +209,17 @@ export function update(dt, t) {
   G.flash = Math.max(0, G.flash - dt * 4);
 
   const near = me.dead ? null : nearestNpc();
-  if (near !== G.near) {
-    G.near = near;
+  // with no NPC by you, a gathering node in reach names itself on the prompt (gather.js)
+  const gat = near ? "" : Gather.label();
+  if (near !== G.near || gat !== G.gatLabel) {
+    const moved = near !== G.near;
+    G.near = near; G.gatLabel = gat;
     const p = $("#prompt");
-    p.hidden = !near;
-    if (near) { p.textContent = ""; p.append(el("b", "", document.body.classList.contains("touch") ? "▶ " : "F  "), near.name); }
-    else { closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); closeWin("job"); if (isOpen("warp")) delete shown.warp; }
+    p.hidden = !near && !gat;
+    if (near || gat) { p.textContent = ""; p.append(el("b", "", document.body.classList.contains("touch") ? "▶ " : "F  "), near ? near.name : gat); }
+    if (moved && !near) { closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); closeWin("job"); if (isOpen("warp")) delete shown.warp; }
     // the stat tab and the job card say what can be done where you stand
-    if (isOpen("char") || isOpen("skill")) refreshUi();
+    if (moved && (isOpen("char") || isOpen("skill"))) refreshUi();
   }
   // stepping into (or out of) a campfire's warmth turns the stat tab's buttons on or off
   const warm = !!G.self && fireNear();

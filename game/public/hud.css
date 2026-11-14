@@ -1064,3 +1064,23 @@ body[data-lay="full"] #w-inv.docked { min-height: 120px; }
   body[data-lay="full"] #sc-doll .slot.empty .ph { padding-top: 3px; }
   body[data-lay="full"] #sc-doll .slot.empty .ph img.gi { width: 12px; height: 12px; opacity: .45; }
 }
+/* ── gathering (gather.js): the "반짝!" prompt over the channel bar, the bar's colour, the 재료 주머니 ── */
+#gat-tap { left: calc(var(--vpw) / 2); transform: translateX(-50%); top: calc(var(--vph) - 118px); padding: 5px 16px; z-index: 8;
+  font: 13px var(--pix); white-space: nowrap; color: #fff2a0; cursor: pointer; animation: gat-tap .28s steps(2) infinite alternate; }
+#gat-tap.good { color: #b8f07a; animation: none; }
+@keyframes gat-tap { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.08); } }
+#cast.gat > i { border-color: #3e5a22; }
+#cast.gat > i > i { background: #8fd060; }
+.window .pouch { margin-top: 6px; }
+.window .pouch:empty { display: none; }
+.window .pouch-hd { display: flex; align-items: center; gap: 6px; width: 100%; padding: 3px 6px; background: #1a1622; border: 2px solid #3a3146;
+  color: var(--cream); font: 12px var(--pix); cursor: pointer; text-align: left; }
+.window .pouch-hd b { font-weight: 400; color: var(--b-hi); }
+.window .pouch-hd span { margin-left: auto; color: #a898b8; }
+.window .pouch-hd::after { content: "▸"; color: #a898b8; }
+.window .pouch-hd.open::after { content: "▾"; }
+.window .pouch .hint { margin: 4px 2px 0; }
+.window .pouch-grid { --slot: 36px; display: grid; grid-template-columns: repeat(auto-fill, var(--slot)); gap: 2px; margin-top: 4px; justify-content: start; }
+.window .pouch-grid .slot { width: var(--slot); height: var(--slot); }
+.window .pouch-grid .slot img { left: 2px; top: 2px; }
+.window .pouch-grid .slot.full .n { color: #ffb04a; }

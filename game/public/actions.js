@@ -13,6 +13,7 @@ import * as NpcTalk from "./npctalk.js";
 import * as SideQ from "./sidequests.js";
 import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
+import * as Gather from "./gather.js";
 import { G, T, now, dist, $, el } from "./state.js";
 import { act } from "./net.js";
 import { toast, openWin, addChat, shown } from "./windows.js";
@@ -142,6 +143,7 @@ function talkSheet() {
 export function interact() {
   const n = G.near;
   if (G.me.dead) return;
+  if (Gather.interactBusy()) return;               // gathering: F is the "반짝!" tap (gather.js)
   // a line already out is reeled in; with nobody to talk to, water is for fishing
   const bob = G.bobs.get(G.you);
   if (bob) {
@@ -153,7 +155,8 @@ export function interact() {
     return;
   }
   if (Housing.interact()) return;                  // at home: a chest opens the storage, a bed gives a rest
-  if (!n) { if (waterNear()) { act({ t: "fish" }); Sound.play("ui"); } return; }
+  // with nobody to talk to: a gathering node in reach (gather.js), else water is for fishing
+  if (!n) { if (Gather.interact()) return; if (waterNear()) { act({ t: "fish" }); Sound.play("ui"); } return; }
   Sound.play("ui");
   SideQ.onTalk(n, G.self);
   if (n.role === "shop") { openWin("shop"); openWin("inv"); }

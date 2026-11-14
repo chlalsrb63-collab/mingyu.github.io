@@ -19,6 +19,7 @@ import * as JobTree from "./jobtree.js";
 import * as Lobby from "./lobby.js";
 import * as Sky from "./sky.js";
 import * as Dim from "./dimrift.js";
+import * as Gather from "./gather.js";
 import * as Radar from "./radar.js";
 import * as Housing from "./housing.js";
 import { G, el, $, resize, $$, tg, text, now, T } from "./state.js";
@@ -167,6 +168,7 @@ function loadMap(m) {
   G.comboWeapon = null;
   S3.loadMap(m);
   Radar.loadMap(m);
+  Gather.loadMap(m);                           // its gathering nodes stand up as scene props (gather.js)
   G.fb = null;
   G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear();
   G.texts.length = 0;
@@ -240,6 +242,7 @@ function onSnap(s) {
   if (pk !== G.partyKey) { if (G.partyKey !== undefined && (s.party || []).length > (G.party || []).length) Sound.play("party"); G.partyKey = pk; G.party = s.party || []; renderPartyHud(); if (isOpen("party")) renderParty(); }
   const gi = s.ginv ? s.ginv.join("|") : null;
   if ((s.pinv || null) !== G.pinv || gi !== G.ginv) { G.pinv = s.pinv || null; G.ginv = gi; renderInvite(); }
+  Gather.onSnap(s);                            // `ng`: the nodes you have spent here (gather.js)
   Dim.onSnap(s);                               // 차원 균열: HUD, ready check, shrines and orbs (dimrift.js)
   Housing.onSnap(s);                           // a house of one's own: its bar, the ghost, the windows (housing.js)
   hudBars();

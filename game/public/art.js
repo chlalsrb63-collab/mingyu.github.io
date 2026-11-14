@@ -12,6 +12,7 @@
 import * as WPN from "./weapons.js";
 import * as Assets from "./assetlib.js";
 import { furnIcon } from "./houseart.js";
+import { matIcon } from "./gatherart.js";
 
 export const TILE = 16;
 
@@ -955,6 +956,8 @@ export function buildIcons(items) {
     else if (it.type === "amulet") cv[id] = amuletIcon(it.tier);
     else if (it.type === "rune") cv[id] = runeIcon(it.rune);
     else if (it.type === "furn") cv[id] = furnIcon(id) || gem();
+    // the 재료 주머니's goods: herbs, ores, woods and ingots by grade, 식재료 꾸러미, 빈 병 (gatherart.js)
+    else if (it.type === "lmat" || id === "staple" || id === "flask") { const m = matIcon(id, it); if (m) cv[id] = m; }
   }
   // an approved external icon (public/assets/manifest.json "icon.item.<id>") wins over the code
   for (const id of new Set([...Object.keys(cv), ...Object.keys(items)])) { const a = Assets.canvas("icon.item." + id); if (a) cv[id] = a; }

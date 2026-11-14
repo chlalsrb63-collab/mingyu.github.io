@@ -14,6 +14,7 @@ import * as StatWin from "./statwin.js";
 import * as JobTree from "./jobtree.js";
 import * as Housing from "./housing.js";
 import { G, $, el, now, $$, dollDocked } from "./state.js";
+import * as Gather from "./gather.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
 import { isOpen, touch, hideTip, closeWin, openWin } from "./windows.js";
@@ -52,6 +53,8 @@ export function renderInv(s) {
     grid.append(node);
   }
   Housing.bagBar(s, $("#inv-grow"));
+  // the 재료 주머니 under the bag (gather.js); at a shop a click sells from it
+  Gather.renderPouch($("#inv-pouch"), s, { where: "inv", sell: isOpen("shop") ? (id, n) => act({ t: "sell", pid: id, n }) : null, price: (id) => sellPrice({ id }) });
   const det = $("#inv-detail");
   det.textContent = "";
   const entry = s.inv[G.sel];
