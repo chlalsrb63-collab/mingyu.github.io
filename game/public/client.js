@@ -24,6 +24,7 @@ import * as Wardrobe from "./wardrobe_ui.js";
 import { entryIconUrl } from "./weapons.js";
 import * as Looks from "./looks.js";
 import * as QS from "./quickslots.js";
+import * as NpcTalk from "./npctalk.js";
 import * as SkillFx from "./skillfx.js";
 import { drawClassGauge, gaugeTip } from "./classgauge.js";
 import { installFrames } from "./frames.js";
@@ -816,7 +817,31 @@ function interact() {
   else if (n.role === "train") openWin("train");
   else if (n.role === "bank") openWin("bank");
   else if (n.role === "costume") openWin("costume");
-  else { $("#talk-name").textContent = n.name; $("#talk-text").textContent = n.say || "…"; openWin("talk"); }
+  else { talkTo(n); return; }
+  // the townsfolk have a word to say as they serve you (npctalk.js)
+  const line = n.role !== "stone" && NpcTalk.lineFor(n, G.self);
+  if (line) addChat(line, "npc", n.name);
+}
+/** The talk window: the NPC's greeting, then more on "다음 이야기", round and round. */
+const talk = { npc: null, lines: [], i: 0 };
+function talkTo(n) {
+  talk.npc = n; talk.lines = NpcTalk.allLines(n, G.self); talk.i = 0;
+  if (!talk.lines.length) talk.lines = ["…"];
+  $("#talk-name").textContent = n.name;
+  talkShow();
+  openWin("talk");
+}
+function talkShow() {
+  $("#talk-text").textContent = talk.lines[talk.i % talk.lines.length];
+  let more = $("#talk-more");
+  if (!more) {
+    more = el("button", "btn small", "");
+    more.id = "talk-more";
+    more.addEventListener("click", () => { talk.i++; talkShow(); Sound.play("blip"); });
+    $("#talk-text").after(more);
+  }
+  more.hidden = talk.lines.length < 2;
+  more.textContent = `다음 이야기 (${(talk.i % talk.lines.length) + 1}/${talk.lines.length})`;
 }
 
 // ───────────────────────────── update ─────────────────────────────

@@ -130,6 +130,8 @@ body.playing #crt, body.playing #crt-frame { right: auto; bottom: auto; width: v
 body.chat-folded #chat-fold::before { content: "▴"; }
 #chat-log { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 2px 6px; font: 12px/1.45 var(--pix); scrollbar-width: thin; scrollbar-color: var(--b-lo) transparent; }
 #chat-log p { margin: 0; word-break: break-all; color: #ece4d0; }
+#chat-log p.npc { color: #e8dcb0; } #chat-log p.npc .who { color: #e2c486; } #chat-log p.party .who { color: #8fd0ff; }
+#talk-more { margin-top: 8px; }
 #chat-log .sys { color: var(--b-hi); }
 #chat-log .loot { color: #b8c4d4; }
 #chat-log .err { color: #ff9a9a; }

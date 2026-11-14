@@ -502,6 +502,7 @@ const BOOST = {
   hit: 2, crit: 1.6, hurt: 2, die: 2, die_small: 2.2, die_big: 1.8, mob_shot: 1.8, charge: 2, volley: 1.8, spit: 2, pop: 2, buff: 1.5,
   ui: 1.8, open: 2, close: 2, tab: 2, blip: 1.8, emote: 1.6, cast: 1.8, coin: 1.5, salvage: 1.5, recall: 1.4, warp_out: 1.4, rift_warn: 1.5, fail: 1.4,
   step_grass: 2.5, step_dirt: 2.5, step_stone: 2, step_wood: 1.6,
+  drip: 1.6, reel: 1.8, slack: 1.6, sizzle: 1.4, pan_place: 1.8, pan_turn: 1.6, pan_bump: 1.6,
 };
 /** Effects that play even when many voices are already sounding. */
 const IMPORTANT = new Set(["heads", "steam", "overload", "supercon", "giant", "hundred", "level", "achieve", "death", "rift_start", "rift_boss", "announce", "enh_ok", "enh_fail", "warp", "loot"]);
@@ -620,6 +621,31 @@ const SFX = {
   emote() { this.tone("sine", 600, 1200, 0.08, 0.1); this.tone("sine", 900, 1800, 0.08, 0.05, 0.05); },
   blip() { this.tone(0.25, 1100, 1100, 0.025, 0.035); this.tone(0.25, 1400, 1400, 0.025, 0.03, 0.04); },
   party() { this.arp("triangle", [659, 784, 1047], 0.07, 0.16, 0.12); },
+  // ── the fishing and cooking mini-games ──
+  /** A ripple reaching the float: a soft drip on the beat. */
+  drip() { this.tone("sine", 1400, 700, 0.06, 0.05); this.noise(0.04, 0.03, 1800, "bandpass"); },
+  /** The line pulled on the beat: 2 perfect, 1 good, 0 barely. */
+  reel(q = 1) {
+    this.noise(0.07, 0.14, 1500, "bandpass", 0, 4200);
+    this.tone(0.25, 520 + q * 180, 720 + q * 260, 0.06, 0.09);
+    if (q >= 2) this.tone("sine", 1568, 2093, 0.1, 0.06, 0.04);
+  },
+  /** Too early, too late, or nothing there: the line goes slack. */
+  slack() { this.tone("triangle", 220, 140, 0.16, 0.08); this.noise(0.12, 0.06, 600, "lowpass"); },
+  /** The fish comes out of the water. */
+  landed() { this.noise(0.25, 0.22, 1400, "lowpass", 0, 300); this.noise(0.1, 0.1, 3000, "bandpass", 0.18); this.noise(0.1, 0.1, 3000, "bandpass", 0.3); this.arp("triangle", [659, 880, 1175], 0.07, 0.16, 0.1, 0.25); },
+  /** Something snapped. */
+  snap() { this.tone(0.5, 1800, 400, 0.05, 0.08); this.noise(0.3, 0.1, 900, "lowpass", 0.05, 200); },
+  /** Oil in a hot pan, now and then while cooking; `heat` 0–1 makes it fiercer as time runs out. */
+  sizzle(heat = 0) { this.noise(0.35 + heat * 0.2, 0.05 + heat * 0.05, 5200, "highpass", 0, 3000); this.noise(0.12, 0.025, 2200, "bandpass", 0.12); },
+  /** An ingredient set down in the pan: a soft thunk and a burst of sizzle. */
+  pan_place() { this.tone("sine", 180, 110, 0.08, 0.14); this.noise(0.4, 0.12, 4800, "highpass", 0.02, 2600); },
+  /** A piece turned over, or picked back up. */
+  pan_turn() { this.noise(0.06, 0.08, 1600, "bandpass", 0, 900); this.tone(0.25, 440, 520, 0.03, 0.04); },
+  /** It does not fit there. */
+  pan_bump() { this.tone("square", 160, 130, 0.08, 0.07); },
+  dish_done() { this.noise(0.6, 0.08, 5000, "highpass", 0, 2000); this.arp("triangle", [523, 659, 784, 1047], 0.07, 0.2, 0.12, 0.1); },
+  dish_burnt() { this.noise(0.5, 0.12, 2400, "lowpass", 0, 300); this.arp("sawtooth", [330, 294, 247], 0.12, 0.2, 0.07, 0.08); },
   // ── life and death ──
   death() { this.arp("sawtooth", [392, 370, 349, 330, 262], 0.16, 0.3, 0.07); this.tone("sine", 110, 55, 1.2, 0.18, 0.4); },
   revive() { this.arp("sine", [262, 392, 523, 784, 1047], 0.08, 0.3, 0.1); this.noise(0.6, 0.04, 5000, "highpass", 0.2); },

@@ -56,9 +56,10 @@ export function fishing(onDone) {
     // the closest ripple still waiting, within reach
     let best = null, bd = 190;
     for (const n of notes) { if (n.hit !== null) continue; const d = Math.abs(n.t - now); if (d < bd) { bd = d; best = n; } }
-    if (!best) { combo = 0; word = "헛손질"; wordCol = "#9aa0b0"; return; }
+    if (!best) { combo = 0; word = "헛손질"; wordCol = "#9aa0b0"; Sound.play("slack"); return; }
     best.hit = bd <= 75 ? 100 : bd <= 150 ? 65 : 25;
-    if (best.hit >= 65) { combo++; Sound.play(best.hit === 100 ? "crit" : "hit"); } else combo = 0;
+    if (best.hit >= 65) combo++; else combo = 0;
+    Sound.play(best.hit >= 65 ? "reel" : "slack", best.hit === 100 ? 2 : 1);
     word = best.hit === 100 ? "완벽!" : best.hit === 65 ? "좋아요" : "아슬아슬";
     wordCol = best.hit === 100 ? "#ffe04a" : best.hit === 65 ? "#9af0ae" : "#ffb070";
     flash = 1;
@@ -78,7 +79,7 @@ export function fishing(onDone) {
     for (const n of notes) if (n.hit === null) n.hit = 0;
     const score = gaveUp ? 0 : Math.round(notes.reduce((s, n) => s + n.hit, 0) / notes.length);
     info.textContent = score >= 95 ? `완벽한 낚시! ${score}점` : score >= 30 ? `낚았다! ${score}점` : `줄이 끊어졌다… ${score}점`;
-    Sound.play(score >= 30 ? "ok" : "fail");
+    Sound.play(gaveUp ? "fail" : score >= 30 ? "landed" : "snap");
     setTimeout(() => { if (closer) closer(); onDone(score); }, 650);
   };
   const draw = () => {
@@ -96,7 +97,9 @@ export function fishing(onDone) {
     let left = 0;
     for (const n of notes) {
       const k = (n.t - now) / LEAD;                      // 1 far away, 0 on the float
-      if (n.hit === null && n.t - now < -150) { n.hit = 0; combo = 0; word = "놓침"; wordCol = "#ff7a7a"; }
+      if (n.hit === null && n.t - now < -150) { n.hit = 0; combo = 0; word = "놓침"; wordCol = "#ff7a7a"; Sound.play("slack"); }
+      // each ripple drips as it reaches the float, so the beat can be heard as well as seen
+      if (!n.dripped && n.t - now <= 0) { n.dripped = true; if (n.hit === null) Sound.play("drip"); }
       if (n.hit === null) left++;
       if (n.hit !== null || k > 1) continue;
       const x = HIT_X + (FAR_X - HIT_X) * k;
@@ -210,7 +213,7 @@ export function cooking(dish, onDone) {
       b.style.gridTemplateColumns = `repeat(${w}, 14px)`;
       const on = new Set(p.cells.map(([x, y]) => y * w + x));
       for (let i = 0; i < w * h; i++) { const d = el("i"); if (on.has(i)) d.style.background = p.color; b.append(d); }
-      b.addEventListener("click", () => { if (sel === p.id) p.cells = turn(p.cells); else sel = p.id; Sound.play("ui"); render(); });
+      b.addEventListener("click", () => { if (sel === p.id) p.cells = turn(p.cells); else sel = p.id; Sound.play("pan_turn"); render(); });
       tray.append(b);
     }
     info.textContent = sel >= 0 ? "팬의 칸을 눌러 놓기 · 재료를 다시 누르거나 R 키로 회전" : filled() ? "놓은 재료를 누르면 다시 집습니다" : "재료를 하나 고르세요";
@@ -222,15 +225,15 @@ export function cooking(dish, onDone) {
       const id = grid[i];
       for (let k = 0; k < grid.length; k++) if (grid[k] === id) grid[k] = -1;
       pieces[id].at = null; sel = id;
-      Sound.play("ui"); render();
+      Sound.play("pan_turn"); render();
       return;
     }
     if (sel < 0) return;
     const p = pieces[sel], cx = i % N, cy = Math.floor(i / N);
-    if (!fits(p, cx, cy)) { Sound.play("fail"); return; }
+    if (!fits(p, cx, cy)) { Sound.play("pan_bump"); return; }
     for (const [x, y] of p.cells) grid[(cy + y) * N + cx + x] = p.id;
     p.at = i; sel = -1;
-    Sound.play("hit");
+    Sound.play("pan_place");
     render();
     if (filled() === N * N) finish();
   };
@@ -241,15 +244,18 @@ export function cooking(dish, onDone) {
     const full = filled() === N * N;
     const score = full ? Math.round(70 + 30 * left) : Math.round((filled() / (N * N)) * 60);
     info.textContent = score >= 85 ? `완벽한 요리! ${score}점` : score >= 35 ? `먹을 만하다. ${score}점` : `타 버렸다… ${score}점`;
-    Sound.play(score >= 35 ? "ok" : "fail");
+    Sound.play(score >= 35 ? "dish_done" : "dish_burnt");
     setTimeout(() => { if (closer) closer(); onDone(score); }, 700);
   };
   const key = (e) => {
     if (e.key === "Escape") { e.preventDefault(); finish(); return; }
-    if ((e.key === "r" || e.key === "R" || e.key === "ㄱ") && sel >= 0) { e.preventDefault(); pieces[sel].cells = turn(pieces[sel].cells); render(); }
+    if ((e.key === "r" || e.key === "R" || e.key === "ㄱ") && sel >= 0) { e.preventDefault(); pieces[sel].cells = turn(pieces[sel].cells); Sound.play("pan_turn"); render(); }
   };
+  let sizzleAt = 0;
   const tick = () => {
     const left = 1 - (performance.now() - t0) / TIME;
+    // the pan keeps sizzling, hotter and quicker as the time runs out
+    if (performance.now() > sizzleAt) { sizzleAt = performance.now() + 420 + Math.max(0, left) * 380; Sound.play("sizzle", 1 - Math.max(0, left)); }
     fill.style.width = `${Math.max(0, left) * 100}%`;
     fill.style.background = left > 0.5 ? "#9af0ae" : left > 0.2 ? "#ffd060" : "#ff7a7a";
     if (left <= 0) finish();
