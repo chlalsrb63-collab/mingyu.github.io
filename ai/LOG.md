@@ -1,5 +1,12 @@
 # 작업 기록 (AI LOG)
 
+## 2026-11-15 · Claude — Codex와 진척도 통일 (주인 결정: 한 프로젝트, 한 줄)
+- 로컬 `main` 하나로 합침: 원격 `origin/main`(클라우드 작업 107커밋) + Codex `codex/willow-plaza-release`(버드나무광장·고정 크기 무기 동작·대검 두 횡베기·전설 실루엣 27종·지도 음악 24곡·서비스 NPC 의뢰, 분할된 클라이언트 위로 Codex가 직접 병합한 `5e0b154`) + `codex/work`의 거울 테스트 + `codex/asset-review-2026-11-14`의 검 아이콘 검수.
+- 예전 로컬 `main`의 4커밋(옛 이펙트 정리·전설 실루엣·지도 음악 2건)은 Codex가 `5a2fad1`에서 새 구조로 다시 옮겨 놓은 것을 확인(`SIL/MOTIF_SIL`, `BGM_KEYS`, `showcase` 제거) → 내용은 통합본 것을 쓰고 기록만 병합(`-s ours`).
+- 합치지 않은 것: `codex/combat-effects`(`c62b345`, 6,700줄, 옛 v11 규칙 위의 별도 설계) → `ai/TASKS.md` "이식" 6항목으로.
+- 검사: `check:split` 최신, `data:check` 통과, `typecheck` 통과, 규칙 테스트 29/29.
+- 분담: Codex = N1 NPC 일과 서버 규칙(`codex/npc-life`), Claude = L2 생활 화면(`claude/life-client`). 규칙은 `ai/HANDOFF.md` §1, 진행 표는 `ai/TASKS.md` 맨 위.
+
 ## 2026-11-14 · Claude — 플레이테스트 후속 5건 (CODEX 백로그의 Claude 진행 중 항목)
 - 필드 보스 위치: 처치 자리(또는 맞춤 맵 `boss.x,y`) 근처에서 이동의 돌·표지판과 3칸 이상, 가장 가까운 플레이어와 6칸 이상 떨어진 갈 수 있는 칸을 고름 (`bossSpot`; 좁은 맵은 가장 나은 타협 칸). 착지 자리에 경고 원(`t` 이벤트)과 1.5초 정지 후 움직임. 균열 침공 우두머리도 돌·표지판 위엔 서지 않음. 테스트: `loot.mjs`.
 - 저장 앞당기기: 의뢰 수락/완료(`quest bq sq`)·튜토리얼·일일·강화·스킬 레벨/수련·창고·외형 구매·레벨업이 `p.save` 표시 → `logic.takeSaves()` → `room.ts`가 1초에 한 번 표시된 캐릭터만 한 번의 금고 호출로 저장 (15초 정기 저장은 그대로, 정기 저장이 표시를 지움). 테스트: `growth.mjs`.

@@ -1,26 +1,32 @@
-# 인수인계 — handoff from the cloud session to the local PC session (2026-11-14)
+# 인수인계 — Claude and Codex, one project on the owner's PC (updated 2026-11-15)
 
-For the next integrator session: Claude Code on the owner's PC, folder `Tales Tales`. From now on development is
-**local first** (work and test on the PC, push to GitHub `main`), side by side with Codex in its worktree.
+Read by every AI session on this PC (Claude Code in the desktop folder `Tales Tales`, Codex in its worktree).
+Development is **local first**: work and test on the PC; the owner decides when anything goes online (§4).
 Read this, `AGENTS.md` (loaded), `ai/BRIEF.md`, `docs/design/README.md`, `docs/systems/README.md`; then continue.
 Reply to the owner in Korean; they want reports **with screenshots** ("다 끝나면 화면과 함께 알려줘").
 
-Nothing is in flight in the cloud any more: everything is on `origin/main`. Start with `git pull` (UPDATE.bat).
+## 1. One project, one line — how Claude and Codex work together (owner's decision, 2026-11-15)
 
-## 1. Local coordination — Codex and Claude
-
-- Shared integration branch: `origin/codex/willow-plaza-release`. It includes the split client/renderer and the
-  local play changes (버드나무광장, fixed-size weapon motions, two greatsword sweeps, legendary silhouettes,
-  map BGM and service NPC quests). See [local verification](reports/codex-willow-plaza-sync.md).
-- The running copy is the Codex worktree at `http://127.0.0.1:8865/`. Keep a separate checkout and port for Claude.
-  The desktop checkout has independent local commits: fetch and branch from the shared integration ref when
-  testing it there. This preserves the desktop branch and its local player data.
-- NPC routines are the next shared feature. Codex is taking the N1 rules slice in
-  [the NPC life contract](../docs/design/npc-life.md). Once its API and wire are available, the next client
-  task is N2 and the cast data task is N3. Claude can work on the L2 life client in the meantime, following
-  [the L2 client contract](../docs/design/life-and-coop.md). Record progress and changed files in ai/reports.
-- For merges, keep sheet v12, use `defs().npclife` for the routines, and rebuild `game/src/logic.js` from
-  the rules fragments. Run rules, data, type and a live check before sharing new code.
+- **The integration branch is the local `main`.** Every worktree on this PC (desktop folder, `.work/codex`,
+  `~/.codex/worktrees/*`) shares one `.git`, so `main` is the same for both AIs without any push. As of
+  2026-11-15 `main` holds everything: `origin/main` (the cloud work), Codex's `codex/willow-plaza-release`
+  (버드나무광장, fixed-size weapon motions, two greatsword sweeps, legendary silhouettes, map BGM, service-NPC
+  quests, the split client), `codex/work` (mirror test), `codex/asset-review-2026-11-14` (sword icon review),
+  `codex/map-bgm` and `codex/weapon-sil` (ported in `5a2fad1`). `codex/combat-effects` is **not** merged: it was
+  built on the old v11 rules and is being ported piece by piece (`ai/TASKS.md`, "이식").
+- **Start every task from `main`, hand it back on top of `main`.** Branch `codex/<task>` / `claude/<task>` from
+  `main`; before handing back `git rebase main` (rebuild `game/src/logic.js` after part conflicts, never
+  hand-merge it), run `npm run test:rules`, `data:check`, `typecheck`, `check:split`, write `ai/reports/<task>.md`.
+  Claude reviews and merges into `main` (`ai/merge.md`); nobody else commits to `main`, nobody rewrites it.
+- **Claim before you start.** The "진행 중" table at the top of `ai/TASKS.md` says who is doing what. Add your row
+  before the first edit, remove it when merged; never start a task someone else holds. Two AIs never share a
+  working tree.
+- **Now:** Codex — N1 NPC-life rules ([contract](../docs/design/npc-life.md) §B–D, K), branch `codex/npc-life`,
+  worktree `~/.codex/worktrees/willow-plaza-release`, dev server `http://127.0.0.1:8865/`. Claude — L2 life client
+  ([contract](../docs/design/life-and-coop.md) H2), branch `claude/life-client`, desktop folder, dev server
+  `http://localhost:8787/`. After N1 lands: N2 client and N3 cast data (split in `ai/TASKS.md`).
+- For merges, keep sheet v12, use `defs().npclife` for the routines, and keep the owner's local player data
+  (`game/.wrangler/` in each folder is per-folder and never committed).
 
 ## 2. State of main
 
@@ -61,7 +67,9 @@ cosmetics are titles only (need wardrobe art) · no side quests yet from service
 
 - **No online deploy until the owner asks.** Then `npm run stamp`, commit, deploy (Higgsfield website
   `b29f4e07-243a-4614-aedf-47202eeb93fd`, slug lumentale-online; or `npm run deploy:cf`).
-- Local development on the PC, pushing to GitHub `main`; Codex works in parallel (`ai/TEAM.txt` GEMINI=off).
+- Local development on the PC; Codex works in parallel (`ai/TEAM.txt` GEMINI=off). A push to GitHub `main` runs
+  `.github/workflows/deploy-game.yml`, which **deploys** when the repo has its Cloudflare secrets — so push `main`
+  only when the owner says so (or with `[skip ci]` in the head commit's message when the owner wants a backup push).
   Give Codex small, well-specified tasks through `ai/TASKS.md`; point it at the design contracts.
 - Art is code-drawn; external/AI images only via `asset/` + import-art + owner approval (AGENTS rule 7).
 - Small commits, English messages, Korean UI text; never edit `src/logic.js`; never bump `?v=` by hand.

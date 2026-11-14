@@ -4,10 +4,33 @@
 각 AI는 자기 섹션에서 **위에서부터 체크 안 된 첫 번째 일**을 합니다. 끝난 일은 `AI-MERGE.bat`(Claude)이
 검토·합치기 후 `[x]`로 바꿉니다. 한 번 실행에 AI마다 한 가지 일만 합니다.
 
+**Claude와 Codex는 한 프로젝트입니다** (규칙: `ai/HANDOFF.md` §1). 기준은 언제나 로컬 `main` 하나 —
+일은 `main`에서 브랜치를 따서 시작하고, 끝나면 `main` 위로 rebase해서 넘기고, Claude가 `main`에 합칩니다.
+시작하기 전에 아래 "진행 중" 표에 한 줄을 적고, 남이 잡은 일은 하지 않습니다.
+
+## 진행 중 (누가 · 무엇을 · 어디서)
+
+| 누가 | 일 | 브랜치 · 폴더 | 시작 |
+| --- | --- | --- | --- |
+| Codex | N1 NPC 일과 서버 규칙 (`docs/design/npc-life.md` B–D, K) | `codex/npc-life` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
+| Claude | L2 생활 화면 (`docs/design/life-and-coop.md` H2) | `claude/life-client` · 바탕화면 `Tales Tales` | 2026-11-15 |
+
+## 이식 — `codex/combat-effects`(`c62b345`, 옛 v11 규칙 위)에서 지금 `main`(v12)으로 옮길 것
+
+Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)의 "통합 시 확인" 표 순서. N1이 끝난 뒤
+하나씩, 한 항목 = 한 브랜치. 저장 시트 모양이 바뀌는 항목은 시작 전에 Claude와 설계를 맞춥니다.
+
+- [ ] 지역 서사·몬스터 41종 이름과 도감 문구·지역 목격자 의뢰 7개·모리 후속 3개 (데이터·글만, 기존 퀘스트 진행 번호 유지) — 아래 "몬스터 도감 lore" 일을 대신함
+- [ ] 창 Lv.15 전열 구호기·마법서 Lv.15 되살림 제본(파티 회복)과 근접 무기 HP 비용을 `57-weapon-skills.js`로, FX 번호는 빈 번호에
+- [ ] 무기별 패시브 5개 + 타 무기 패시브 차용 2칸 (`45-jobs.js` `cleanJobs`, 시트 변경 — 설계 확인 먼저)
+- [ ] 되새김 인장 제작 + 레벨별 골드 재분배를 `12-life-tables.js` 레시피에
+- [ ] 협동 근무지 5곳 → `life-and-coop.md` F의 C1–C3 순서로 (새 마을의 건물·실내 사용, `coopjobs.js`를 출발점으로)
+- [ ] `89afb18` 스킬 이펙트·타격음 다듬기를 지금의 `skillfx.js` 코드 번호에 맞춰
+
 ## CODEX (구현 · 테스트)
 
-- [ ] 거울(외형 변경)을 골드가 부족할 때 시도하면 거절되고 골드·외형이 그대로인지 확인하는 테스트를 `game/tests/looks.mjs`에 추가
-- [ ] 더 이상 쓰지 않는 옛 스킬 이펙트 코드 정리: `game/public/growth.js`의 `skillFx` 25–32번·`zoneFx` 4–6번, `game/public/client.js`의 `attackFx` 10–24번, `game/public/scene2d.js`의 `showcase`/`renderStage`/`leaveStage` — 호출하는 곳이 없는지 grep으로 확인한 뒤 삭제, 테스트와 `shot.mjs --live`로 오류 없음 확인
+- [x] 거울(외형 변경)을 골드가 부족할 때 시도하면 거절되고 골드·외형이 그대로인지 확인하는 테스트를 `game/tests/looks.mjs`에 추가
+- [x] 더 이상 쓰지 않는 옛 스킬 이펙트 코드 정리: `game/public/growth.js`의 `skillFx` 25–32번·`zoneFx` 4–6번, `game/public/client.js`의 `attackFx` 10–24번, `game/public/scene2d.js`의 `showcase`/`renderStage`/`leaveStage` — 호출하는 곳이 없는지 grep으로 확인한 뒤 삭제, 테스트와 `shot.mjs --live`로 오류 없음 확인
 - [ ] 휴대폰 가로 화면의 캐릭터 생성 페이지에서 추천 모습 버튼에 이름이 안 보이는 문제 수정 (`game/public/lobby.css`), `shot.mjs`로 iPhone 가로 크기 한 장 확인
 - [ ] 몬스터 도감에 몬스터별 한 줄 설명(한국어, 귀엽고 짧게, 괴수는 기괴하게): `game/src/logic/10-tables.js` `MOBS`에 `lore` 필드 + `defs()`로 전달 + 도감 창에 표시, 테스트(모든 몬스터에 lore 있음) 추가
 - [ ] 일일 과제 종류 2가지 추가 (모닥불에서 요리 1회, 파티로 몬스터 10마리) — `game/src/logic/60-content.js`, 테스트 추가
