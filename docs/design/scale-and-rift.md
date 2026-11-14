@@ -696,4 +696,7 @@ is: `zoneSpawns` recomputes every count. No generator needed a new algorithm (no
 - Payload 28-41 KB per arrival: acceptable per B.3; RLE left out (F.3 measured it saves little on the overworld).
 - Cold first entry ≈ 80-140 ms per map per isolate (one tick late, once).
 - The `wpall` achievement still means "the first stone of every map" (F.4's rule).
-- Rift invasion waves gather at the first stone, which now stands in the safe plaza by the entrance (as C.3 says).
+- Rift invasion waves gather at the first stone, which now stands in the safe plaza by the entrance (as C.3 says, and
+  as at 1x where it stood a dozen steps in). Seen live: a Lv.1 arriving in the meadow during an invasion dies in the
+  plaza. Owner/designer call: move `evtSpot` to the middle stone (`stonesOf(m)[1]`; players then warp or walk a third
+  of the way in) or keep the plaza fight. Left as is.
