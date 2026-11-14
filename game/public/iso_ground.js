@@ -306,6 +306,24 @@ export function materials(theme) {
   };
   if (theme === "autumn") { T[";"] = goldL; T[":"] = needle; }
   if (cave) Object.assign(T, cave);
+  // the brick halls' plazas (maps-v2 A.4): big flagstones, cracked, chipped at the corners, some lost —
+  // the broken edge of the paving bites raggedly into the brick floor round it
+  if (theme === "crypt" || theme === "sewer") {
+    const cr = theme === "crypt";
+    const P = cr ? ["#8a8478", "#625d55", "#a49e90", "#7a7468", "#948e80"] : ["#727a6a", "#4e5648", "#8a927e", "#646c5a", "#7c8470"];
+    const slab = mk(MID.slab, 3.8, P[0], { pal: P, style: "lip", amp: 1.8, depth: 1, line: cr ? "#45403a" : "#2e3628" });
+    const chip = C(cr ? "#3e3a36" : "#2a3226"), grime = C("#4a6a3e"), stoneT = laid(slab, 12, 10, 6, 221, { crack: true });
+    slab.tex = (A, B) => {
+      // a corner knocked off one slab in four
+      const row = Math.floor(B / 10), a2 = A + (row & 1 ? 6 : 0), col = Math.floor(a2 / 12), la = a2 - col * 12, lb = B - row * 10;
+      const t = hash(col, row, 222);
+      if (t < 0.25 && la + lb < 4) return chip;
+      if (t > 0.88 && 11 - la + 9 - lb < 3) return chip;
+      if (!cr && hash(A >> 2, B >> 2, 223) < 0.06 && (A + B) & 1) return grime;
+      return stoneT(A, B);
+    };
+    T.k = slab;
+  }
   matCache.set(theme, T);
   return T;
 }

@@ -107,11 +107,14 @@ function pal(theme) {
 /** A wall of the underground, by theme. */
 function wallFace(theme, P, x, y, v) {
   const F = P.F;
+  // the brick halls (maps-v2 A.4): grey brick in the crypt, a damp darker band low down, the odd brick
+  // fallen out (a dark hole) or a paler new one
   if (theme === "crypt") return (side, s, z) => {
-    const k = coursed(s, z, 6, 8, 3, v), f = F[side];
+    const k = coursed(s, z, 4, 8, 3, v), f = F[side];
     if (k.seam) return f[2];
-    if (k.top) return f[1];
-    return k.t < 0.2 ? f[3] : f[0];
+    if (k.t > 0.97 && k.lz > 0) return f[2];
+    if (k.top) return z < 6 ? f[0] : f[1];
+    return k.t < 0.2 || z < 5 ? f[3] : k.t > 0.85 ? f[1] : f[0];
   };
   if (theme === "sewer") return (side, s, z) => {
     const k = coursed(s, z, 4, 8, 5, v), f = F[side];
