@@ -1,6 +1,7 @@
 /**
- * Two small games played over the world: reeling a fish in to a rhythm, and
- * packing a pan like a tangram. Each ends by reporting a score from 0 to 100;
+ * Small games played over the world: reeling a fish in to a rhythm, packing a
+ * pan like a tangram, and (L2b stations) hammering on a heat bar and stirring a
+ * brew. Each ends by reporting a score from 0 to 100 (`null`: walked away);
  * the server decides what that score is worth.
  */
 import { Sound } from "./audio.js";
@@ -266,4 +267,190 @@ export function cooking(dish, onDone) {
   shut(() => { done = true; cancelAnimationFrame(raf); removeEventListener("keydown", key, true); });
   render();
   raf = requestAnimationFrame(tick);
+}
+
+// ───────────────────────────── forging: hammer on the heat (L2b) ─────────────────────────────
+// The ingot's heat swings along a bar; strike when the glow sits in the bright band. Five blows,
+// each judged by how close it lands; the band narrows and the swing quickens as the work goes on.
+// `onDone(score)` with 0..100, or `onDone(null)` when the player steps back from the anvil (Esc).
+
+const BLOWS = 5;
+export function forge(title, onDone) {
+  const box = open(`제작 — ${title}`, "달군 쇠의 빛이 노란 칸에 들 때 F · Space · 화면을 눌러 두드리세요 (5번)");
+  const cv = el("canvas", "mg-lane");
+  cv.width = 340; cv.height = 120;
+  const g = cv.getContext("2d");
+  const info = el("div", "mg-info", "준비…");
+  box.append(cv, info);
+  const blows = [];
+  let phase = Math.random() * 6.28, last = performance.now(), zone = 0.55, word = "", wordCol = "#fff", swing = 0, sparks = [];
+  let done = false, raf = 0, lock = 0;
+  const t0 = performance.now() + 600;
+  const width = () => 0.17 - 0.016 * blows.length;
+  const heat = () => 0.5 - 0.5 * Math.cos(phase);
+  const strike = (now) => {
+    if (done || now < t0 || now < lock) return;
+    const d = Math.abs(heat() - zone), w = width();
+    const q = d <= w * 0.25 ? 100 : d <= w * 0.5 ? 75 : d <= w ? 40 : 5;
+    blows.push(q);
+    word = q === 100 ? "완벽!" : q >= 75 ? "좋아요" : q >= 40 ? "아슬아슬" : "빗나감";
+    wordCol = q === 100 ? "#ffe04a" : q >= 75 ? "#9af0ae" : q >= 40 ? "#ffb070" : "#ff7a7a";
+    Sound.play("forge_hit", q / 100);
+    swing = 1; lock = now + 280;
+    for (let i = 0; i < 4 + q / 15; i++) sparks.push({ x: 170, y: 54, vx: (Math.random() - 0.5) * 5, vy: -Math.random() * 4 - 1, t: 1 });
+    zone = 0.25 + Math.random() * 0.6;
+    if (blows.length >= BLOWS) finish(false);
+  };
+  const press = (e) => {
+    if (e.type === "keydown") {
+      if (e.repeat) return;
+      if (e.key === "Escape") { e.preventDefault(); finish(true); return; }
+      if (!["f", "F", "ㄹ", " ", "Enter"].includes(e.key)) return;
+      e.preventDefault();
+    }
+    strike(performance.now());
+  };
+  const finish = (gaveUp) => {
+    if (done) return;
+    done = true;
+    const score = gaveUp ? null : Math.round(blows.reduce((s, q) => s + q, 0) / BLOWS);
+    info.textContent = gaveUp ? "모루에서 물러났습니다" : score >= 85 ? `훌륭한 담금질! ${score}점` : score >= 40 ? `쓸 만하게 두드렸다. ${score}점` : `쇠가 식어 버렸다… ${score}점`;
+    Sound.play(gaveUp ? "close" : score >= 40 ? "forge_quench" : "fail");
+    setTimeout(() => { if (closer) closer(); onDone(score); }, gaveUp ? 200 : 750);
+  };
+  const draw = () => {
+    const now = performance.now(), dt = Math.min(50, now - last);
+    last = now;
+    if (now >= t0 && !done) phase += dt * (0.0042 + 0.00075 * blows.length);
+    const h = heat();
+    g.fillStyle = "#1c1620"; g.fillRect(0, 0, cv.width, cv.height);
+    // the forge's glow behind
+    g.fillStyle = "#3a2228"; g.fillRect(0, 0, cv.width, 76);
+    g.fillStyle = "#552a26"; for (let i = 0; i < 6; i++) g.fillRect(14 + i * 56, 64 - (i % 2) * 4, 40, 12);
+    // the anvil
+    g.fillStyle = "#2b2233"; g.fillRect(112, 62, 116, 14); g.fillRect(140, 76, 60, 10); g.fillRect(126, 86, 88, 6);
+    g.fillStyle = "#6c6a7c"; g.fillRect(114, 62, 112, 4); g.fillStyle = "#4a4858"; g.fillRect(114, 66, 112, 8);
+    // the ingot: red → orange → yellow → white with the heat
+    const col = h < 0.35 ? "#b8402e" : h < 0.6 ? "#e8742a" : h < 0.85 ? "#f8c440" : "#fff4c8";
+    g.fillStyle = "#2b2233"; g.fillRect(146, 52, 48, 12);
+    g.fillStyle = col; g.fillRect(148, 54, 44, 8);
+    g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(148, 54, 44, 2);
+    // the hammer: up, then down on a blow
+    const hy = swing > 0.5 ? 30 : 12 + (1 - swing) * 4;
+    g.fillStyle = "#2b2233"; g.fillRect(196, hy - 2, 8, 34); g.fillRect(180, hy - 8, 34, 14);
+    g.fillStyle = "#8a6a4a"; g.fillRect(198, hy, 4, 30);
+    g.fillStyle = "#9a98aa"; g.fillRect(182, hy - 6, 30, 10); g.fillStyle = "#c8c8d8"; g.fillRect(182, hy - 6, 30, 2);
+    swing = Math.max(0, swing - dt / 180);
+    // sparks
+    for (const s of sparks) { s.x += s.vx; s.y += s.vy; s.vy += 0.25; s.t -= dt / 500; if (s.t > 0) { g.fillStyle = s.t > 0.5 ? "#fff4c8" : "#f8a040"; g.fillRect(Math.round(s.x), Math.round(s.y), 2, 2); } }
+    sparks = sparks.filter((s) => s.t > 0);
+    // the heat bar and its bright band (white core = 완벽)
+    const BX = 20, BW = 300, BY = 98;
+    g.fillStyle = "#2b2233"; g.fillRect(BX - 2, BY - 2, BW + 4, 14);
+    const grd = g.createLinearGradient(BX, 0, BX + BW, 0);
+    grd.addColorStop(0, "#5a1e1e"); grd.addColorStop(0.5, "#c0582a"); grd.addColorStop(1, "#fff0c0");
+    g.fillStyle = grd; g.fillRect(BX, BY, BW, 10);
+    const w = width();
+    g.fillStyle = "rgba(255,236,90,.85)"; g.fillRect(BX + (zone - w) * BW, BY, 2 * w * BW, 10);
+    g.fillStyle = "#fff"; g.fillRect(BX + (zone - w * 0.25) * BW, BY, 0.5 * w * BW, 10);
+    const mx = BX + h * BW;
+    g.fillStyle = "#2b2233"; g.fillRect(mx - 3, BY - 8, 6, 22);
+    g.fillStyle = "#ffffff"; g.fillRect(mx - 1, BY - 6, 2, 18);
+    g.font = "bold 15px sans-serif"; g.textAlign = "center";
+    if (word) { g.fillStyle = wordCol; g.fillText(word, 64, 30); }
+    g.textAlign = "right"; g.fillStyle = "#fff6dc"; g.fillText(`${blows.length}/${BLOWS}`, cv.width - 12, 24);
+    if (!done) info.textContent = now < t0 ? "준비…" : `남은 망치질 ${BLOWS - blows.length}`;
+    if (!done) raf = requestAnimationFrame(draw);
+  };
+  addEventListener("keydown", press, true);
+  cv.addEventListener("pointerdown", press);
+  shut(() => { done = true; cancelAnimationFrame(raf); removeEventListener("keydown", press, true); });
+  raf = requestAnimationFrame(draw);
+}
+
+// ───────────────────────────── brewing: keep the needle in the green (L2b) ─────────────────────────────
+// Hold to stir (the needle climbs), let go and it sinks; the green band wanders. The share of the time
+// the needle spends inside the band is the score. It runs at least `ms` (+1.2 s). `onDone(null)` on Esc.
+
+export function brew(title, ms, onDone) {
+  const box = open(`연금 — ${title}`, "F · Space · 화면을 누르고 있으면 바늘이 오르고, 떼면 내려갑니다. 초록 칸 안에 머물게 하세요");
+  const cv = el("canvas", "mg-lane");
+  cv.width = 340; cv.height = 120;
+  const g = cv.getContext("2d");
+  const bar = el("div", "mg-time"); const fill = el("i"); bar.append(fill);
+  const info = el("div", "mg-info", "준비…");
+  box.append(bar, cv, info);
+  const DUR = Math.max(5000, ms + 1200), t0 = performance.now() + 700, W = 0.22;
+  let x = 0.3, v = 0, c = 0.5, aim = 0.5, nextAim = 0, hold = false, inside = 0, last = performance.now();
+  let done = false, raf = 0, bubbleAt = 0, bubbles = [];
+  const KEYS = [" ", "f", "F", "ㄹ", "Enter"];
+  const down = (e) => {
+    if (e.type === "keydown") {
+      if (e.repeat) { if (KEYS.includes(e.key)) e.preventDefault(); return; }
+      if (e.key === "Escape") { e.preventDefault(); finish(true); return; }
+      if (!KEYS.includes(e.key)) return;
+      e.preventDefault();
+    }
+    if (!hold) Sound.play("brew_stir");
+    hold = true;
+  };
+  const up = (e) => { if (e.type === "keyup" && !KEYS.includes(e.key)) return; hold = false; };
+  const share = () => Math.round(Math.min(1, inside / (DUR * 0.92)) * 100);
+  const finish = (gaveUp) => {
+    if (done) return;
+    done = true;
+    const score = gaveUp ? null : share();
+    info.textContent = gaveUp ? "가마에서 물러났습니다" : score >= 85 ? `맑게 우러났다! ${score}점` : score >= 40 ? `그럭저럭 달였다. ${score}점` : `탁해져 버렸다… ${score}점`;
+    Sound.play(gaveUp ? "close" : score >= 40 ? "brew_done" : "fail");
+    setTimeout(() => { if (closer) closer(); onDone(score); }, gaveUp ? 200 : 750);
+  };
+  const draw = () => {
+    const now = performance.now(), dt = Math.min(50, now - last);
+    last = now;
+    if (now >= t0 && !done) {
+      v += (hold ? 0.0000034 : -0.000003) * dt;
+      v *= Math.pow(0.96, dt / 16);
+      x += v * dt;
+      if (x < 0) { x = 0; v = 0; }
+      if (x > 1) { x = 1; v = 0; }
+      if (now > nextAim) { aim = 0.15 + Math.random() * 0.7; nextAim = now + 700 + Math.random() * 900; }
+      c += Math.sign(aim - c) * Math.min(Math.abs(aim - c), 0.00016 * dt);
+      if (Math.abs(x - c) <= W / 2) {
+        inside += dt;
+        if (now > bubbleAt) { bubbleAt = now + 280; Sound.play("brew_bubble"); }
+      }
+      if (now - t0 >= DUR) finish(false);
+    }
+    const inn = Math.abs(x - c) <= W / 2;
+    if (Math.random() < (inn ? 0.5 : 0.15)) bubbles.push({ x: 132 + Math.random() * 76, y: 64, t: 1, r: 1 + Math.round(Math.random() * 2) });
+    g.fillStyle = "#1a1c24"; g.fillRect(0, 0, cv.width, cv.height);
+    // the cauldron: the brew runs clear inside the band and clouds outside it
+    g.fillStyle = "#2b2233"; g.beginPath(); g.ellipse(170, 70, 58, 26, 0, 0, 7); g.fill();
+    g.fillStyle = inn ? "#7ee07a" : "#7a8a5a"; g.beginPath(); g.ellipse(170, 64, 50, 10, 0, 0, 7); g.fill();
+    g.fillStyle = inn ? "#b8ffb0" : "#9aa878"; g.fillRect(140, 60, 30, 2);
+    g.fillStyle = "#4a4858"; g.fillRect(118, 72, 104, 4);
+    g.fillStyle = "#e8742a"; for (let i = 0; i < 5; i++) g.fillRect(132 + i * 18, 92 - ((now / 90 + i * 3) % 4), 8, 4);
+    for (const b of bubbles) { b.y -= dt / 30; b.t -= dt / 700; if (b.t > 0) { g.fillStyle = inn ? "#d8ffd0" : "#c0c8a0"; g.fillRect(Math.round(b.x), Math.round(b.y), b.r, b.r); } }
+    bubbles = bubbles.filter((b) => b.t > 0).slice(-40);
+    // the paddle leans with the needle
+    g.strokeStyle = "#8a6a4a"; g.lineWidth = 4; g.beginPath(); g.moveTo(170 + (x - 0.5) * 30, 62); g.lineTo(190 + (x - 0.5) * 70, 16); g.stroke();
+    // the gauge
+    const BX = 20, BW = 300, BY = 100;
+    g.fillStyle = "#2b2233"; g.fillRect(BX - 2, BY - 2, BW + 4, 14);
+    g.fillStyle = "#3a3448"; g.fillRect(BX, BY, BW, 10);
+    g.fillStyle = inn ? "#9af07a" : "#5aa04a"; g.fillRect(BX + (c - W / 2) * BW, BY, W * BW, 10);
+    const nx = BX + x * BW;
+    g.fillStyle = "#2b2233"; g.fillRect(nx - 3, BY - 8, 6, 22);
+    g.fillStyle = "#ffe08a"; g.fillRect(nx - 1, BY - 6, 2, 18);
+    fill.style.width = `${Math.max(0, 1 - Math.max(0, now - t0) / DUR) * 100}%`;
+    fill.style.background = "#9af0ae";
+    if (!done) info.textContent = now < t0 ? "준비…" : `잘 젓는 중 ${share()}%`;
+    if (!done) raf = requestAnimationFrame(draw);
+  };
+  addEventListener("keydown", down, true);
+  addEventListener("keyup", up, true);
+  cv.addEventListener("pointerdown", down);
+  addEventListener("pointerup", up);
+  shut(() => { done = true; cancelAnimationFrame(raf); removeEventListener("keydown", down, true); removeEventListener("keyup", up, true); removeEventListener("pointerup", up); });
+  raf = requestAnimationFrame(draw);
 }
