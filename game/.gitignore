@@ -4,5 +4,9 @@ dist
 .dev.vars
 package-lock.json
 *.log
-public/_*
+# Dev preview pages (public/_*.html) are committed but never deployed (public/.assetsignore).
+# Their map data is generated (node scripts/dump-maps.mjs); _*.js are old local experiments.
+public/_maps.json
+public/_*.js
+# screenshots (scripts/shot.mjs writes to shots/, plus its throwaway login)
 shots*/

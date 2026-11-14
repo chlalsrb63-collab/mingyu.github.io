@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8">
+<body style="margin:0;background:#101426"><canvas id="c" style="display:block"></canvas>
+<script type="module">
+// Whole map through the real renderer at world size: ?map=meadow (reads _maps.json). Dev only.
+import * as S from "./scene2d.js";
+const q = new URLSearchParams(location.search);
+globalThis.__dayK = 0.2;
+const maps = await (await fetch("./_maps.json")).json();
+const m = maps[q.get("map") || "meadow"];
+const cv = document.getElementById("c");
+S.init(cv);
+S.resize(m.w * 32, m.h * 32, 1);
+S.loadMap(m);
+const G = { you: 1, me: { x: m.w * 8, y: m.h * 8, dir: 0, moving: false, atkT: -1e9, dead: true, aim: null }, players: new Map(), mobs: new Map(), drops: new Map(), who: new Map(), defs: { mobs: {} }, icons: { cv: {} }, fires: new Map((m.fires || []).map(([x, y], i) => [i, { id: i, x: x * 16 + 8, y: y * 16 + 10 }])) };
+S.sync(G);
+let n = 0;
+function loop(t) { S.render(m.w * 8, m.h * 8, 0.016, t, true); if (++n === 6) document.title = "ready"; if (n < 8) requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+</script>

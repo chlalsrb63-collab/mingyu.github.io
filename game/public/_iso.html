@@ -1,0 +1,79 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>iso preview</title>
+<style>body{margin:0;background:#101018;color:#ccc;font:12px monospace}canvas{image-rendering:pixelated;display:block}#info{position:fixed;right:4px;top:4px;background:#000a;padding:4px}</style>
+</head><body>
+<div id="info"></div>
+<canvas id="v"></canvas>
+<script type="module">
+import * as IT from "./isotiles.js";
+import * as SP from "./sprites.js";
+const q = new URLSearchParams(location.search);
+const id = q.get("map") || "meadow";
+const maps = await (await fetch("./_maps.json")).json();
+const m = maps[id];
+function themeOf(m) {
+  let cave = 0, city = 0, forest = 0;
+  for (const row of m.g) for (const ch of row) { if (ch === "W" || ch === "c") cave++; else if (ch === "a" || ch === "k") city++; else if (ch === ":" || ch === ";") forest++; }
+  const n = m.w * m.h;
+  return cave > n * 0.3 ? "cave" : city > n * 0.3 ? "city" : forest > n * 0.3 ? "forest" : m.safe ? "town" : "meadow";
+}
+const theme = m.theme || themeOf(m);
+if (q.has("warm")) for (const k of Object.keys(maps)) { const mm = maps[k]; IT.bakeGround(mm, mm.theme || themeOf(mm)); }
+const t0 = performance.now();
+const G = IT.bakeGround(m, theme);
+const t1 = performance.now();
+const frame = +(q.get("f") || 0);
+// the whole scene at 1×, with a margin above for what stands up
+const PAD = 140;
+const full = document.createElement("canvas");
+full.width = G.frames[0].width; full.height = G.frames[0].height + PAD;
+const g = full.getContext("2d");
+g.imageSmoothingEnabled = false;
+g.fillStyle = "#101018"; g.fillRect(0, 0, full.width, full.height);
+g.drawImage(G.frames[frame], 0, PAD);
+const items = [];
+const top = (x, y) => [G.ox + (x - y) * 16, PAD + G.oy + (x + y) * 8];
+let nt = 0;
+const t2 = performance.now();
+for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+  const p = IT.tallAt(m, x, y, theme);
+  const [X, Y] = top(x, y);
+  if (p) { const pp = q.has("low") && p.low ? p.low : p; nt++; items.push({ d: x + y + 1, k: 0, draw: () => g.drawImage(pp.img, X + pp.dx, Y + pp.dy) }); continue; }
+  const o = m.o[y][x];
+  if (o === " " || o === "h" || o === "a") continue;
+  // placeholders for what the engine draws itself
+  items.push({ d: x + y + 1, k: 0, draw: () => {
+    if (o === "T" || o === "P") { g.fillStyle = o === "P" ? "#2a6a50" : "#4faa5a"; g.fillRect(X - 9, Y - 22, 18, 22); g.fillStyle = "#1f5440"; g.fillRect(X - 9, Y - 4, 18, 4); g.fillStyle = "#6a4226"; g.fillRect(X - 2, Y, 4, 8); }
+    else { g.fillStyle = "#c0a0ff"; g.fillRect(X - 3, Y + 2, 6, 6); }
+  } });
+}
+const t3 = performance.now();
+// a few people for scale
+const sheet = SP.personSheet(SP.playerLook("warrior", [0, 0, 0, 2, 0, 0, 1]));
+for (const n of m.npcs || []) {
+  const [X, Y] = top(n.x + 0.5, n.y + 0.5);
+  items.push({ d: n.x + n.y + 1, k: 1, draw: () => g.drawImage(sheet.front[0], X - SP.FOOT[0], Y + 8 - SP.FOOT[1]) });
+}
+for (const p of (m.portals || []).slice(0, 4)) {
+  const [X, Y] = top(p.x + 0.5, p.y + 0.5);
+  items.push({ d: p.x + p.y + 1, k: 1, draw: () => g.drawImage(sheet.front[0], X - SP.FOOT[0], Y + 8 - SP.FOOT[1]) });
+}
+items.sort((a, b) => a.d - b.d || a.k - b.k);
+for (const it of items) it.draw();
+const v = document.getElementById("v");
+const Z = +(q.get("z") || 1);
+if (q.has("cx")) {
+  // a game-sized window (480×270) around tile (cx, cy), scaled up
+  const [X, Y] = top(+q.get("cx"), +q.get("cy"));
+  const w = +(q.get("w") || 480), h = +(q.get("h") || 270);
+  v.width = w * Z; v.height = h * Z;
+  const c = v.getContext("2d"); c.imageSmoothingEnabled = false;
+  c.drawImage(full, X - w / 2, Y - h / 2, w, h, 0, 0, w * Z, h * Z);
+} else {
+  v.width = full.width * Z; v.height = full.height * Z;
+  const c = v.getContext("2d"); c.imageSmoothingEnabled = false;
+  c.drawImage(full, 0, 0, full.width * Z, full.height * Z);
+}
+document.getElementById("info").textContent = `${id} ${theme} ${m.w}×${m.h} bake ${(t1 - t0).toFixed(0)}ms [${G.parts}] tall ${(t3 - t2).toFixed(0)}ms (${nt})`;
+window.DONE = true;
+</script></body></html>

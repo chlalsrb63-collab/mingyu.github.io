@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<body style="margin:0;background:#4a8a52;min-height:100vh"><div id="minigame" hidden></div><pre id="out" style="position:fixed;left:8px;top:8px;color:#fff"></pre>
+<script type="module">
+import * as Mini from "./minigames.js";
+Mini.mount(document.getElementById("minigame"));
+const which = new URLSearchParams(location.search).get("g") || "fish";
+const done = (s) => { document.getElementById("out").textContent = "score " + s; document.title = "score:" + s; };
+if (which === "fish") Mini.fishing(done); else Mini.cooking("송어 소금구이", done);
+window.Mini = Mini;
+document.title = "ready";
+</script>

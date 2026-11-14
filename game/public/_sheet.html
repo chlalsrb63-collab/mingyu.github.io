@@ -1,0 +1,88 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#22202a"><canvas id="c"></canvas>
+<script type="module">
+import * as SP from "./sprites.js";
+const mode = new URLSearchParams(location.search).get("m") || "mobs";
+const cv = document.getElementById("c"), g = cv.getContext("2d");
+const ZONES = [
+  ["meadow", "#6aa864", ["twinhare", "gutfrog", "eyecrow"]],
+  ["forest", "#3f6a48", ["splitboar", "ribdeer", "hydrasnake", "mothface"]],
+  ["crypt", "#4a4658", ["ratking", "bonehound", "batcluster"]],
+  ["city", "#565a68", ["pigeonmass", "doghead", "catsplit", "fishwalker"]],
+  ["sewer", "#3c4a46", ["leechmaw", "gatorhalf", "eelknot"]],
+  ["cave", "#39406a", ["spiderhand", "bearmaw", "owlstare"]],
+  ["abyss", "#2a1c2c", ["twingoat", "horsehalf", "serpentwing"]],
+];
+const me = SP.personSheet(SP.playerLook("warrior", [1, 0, 0, 0, 0, 0, 1])).side[0];
+if (mode === "mobs" || mode === "a" || mode === "b") {
+  // every creature, both frames, on its own ground, with an adventurer for scale
+  const z = 6, W = 32 * z;
+  const zones = mode === "a" ? ZONES.slice(0, 4) : mode === "b" ? ZONES.slice(4) : ZONES;
+  cv.width = 9 * W; cv.height = zones.length * W;
+  g.imageSmoothingEnabled = false;
+  zones.forEach(([, col, keys], r) => {
+    g.fillStyle = col; g.fillRect(0, r * W, cv.width, W);
+    keys.forEach((k, i) => { const fr = SP.monsterSheet(k); g.drawImage(fr[0], i * 2 * W, r * W, W, W); g.drawImage(fr[1], i * 2 * W + W, r * W, W, W); });
+    g.drawImage(me, 8 * W, r * W, W, W);
+  });
+} else if (mode === "boss") {
+  const z = 4, W = 96 * z;
+  cv.width = 4 * W + 32 * z; cv.height = W;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#39406a"; g.fillRect(0, 0, 2 * W, W); g.fillStyle = "#2a1c2c"; g.fillRect(2 * W, 0, 2 * W + 32 * z, W);
+  ["boss", "abyssboss"].forEach((k, i) => { const fr = SP.monsterSheet(k); g.drawImage(fr[0], i * 2 * W, 0, W, W); g.drawImage(fr[1], i * 2 * W + W, 0, W, W); });
+  g.drawImage(me, 4 * W, W - 32 * z - 16, 32 * z, 32 * z);
+} else if (mode === "small") {
+  // at the size they are met in the game (3×), all together, plus the silhouette test
+  const z = 3, W = 32 * z, all = ZONES.flatMap((zn) => zn[2]);
+  cv.width = 12 * W; cv.height = 4 * W;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#6aa864"; g.fillRect(0, 0, cv.width, 2 * W); g.fillStyle = "#e8e4dc"; g.fillRect(0, 2 * W, cv.width, 2 * W);
+  all.concat(["chest", "old-unknown-key", "acorn", "golem"]).forEach((k, i) => {
+    const fr = SP.monsterSheet(k), x = (i % 12) * W, y = Math.floor(i / 12) * W;
+    g.drawImage(fr[0], x, y, W, W);
+    const t = document.createElement("canvas"); t.width = t.height = fr[0].width; const tg = t.getContext("2d");
+    tg.drawImage(fr[0], 0, 0); tg.globalCompositeOperation = "source-in"; tg.fillStyle = "#16141c"; tg.fillRect(0, 0, t.width, t.height);
+    g.drawImage(t, x, y + 2 * W, W, W);
+  });
+  g.drawImage(me, 11 * W, W, W, W);
+}
+const NEW = ["lambmaw", "foxtwine", "toadbrood", "squidrat", "crabskull", "moleworm", "lionhand", "sowseer"];
+if (mode === "new") {
+  // round two: the eight new creatures, both frames, on four kinds of ground, then at game scale with silhouettes
+  const z = 6, W = 32 * z, grounds = ["#6aa864", "#3f6a48", "#565a68", "#2a1c2c"];
+  cv.width = 9 * W; cv.height = 2 * W + 2 * 96 + 16;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#22202a"; g.fillRect(0, 0, cv.width, cv.height);
+  NEW.forEach((k, i) => {
+    const r = Math.floor(i / 4), c = i % 4, fr = SP.monsterSheet(k);
+    g.fillStyle = grounds[(i >> 1) % 4]; g.fillRect(c * 2 * W, r * W, 2 * W, W);
+    g.drawImage(fr[0], c * 2 * W, r * W, W, W); g.drawImage(fr[1], c * 2 * W + W, r * W, W, W);
+  });
+  g.fillStyle = "#6aa864"; g.fillRect(8 * W, 0, W, 2 * W); g.drawImage(me, 8 * W, 0, W, W); g.drawImage(SP.monsterSheet("spiderhand")[0], 8 * W, W, W, W);
+  const y0 = 2 * W + 8;
+  g.fillStyle = "#6aa864"; g.fillRect(0, y0, cv.width, 96); g.fillStyle = "#e8e4dc"; g.fillRect(0, y0 + 96, cv.width, 96);
+  NEW.concat(["spiderhand"]).forEach((k, i) => {
+    const fr = SP.monsterSheet(k);
+    g.drawImage(fr[0], i * 100, y0, 96, 96);
+    const t = document.createElement("canvas"); t.width = t.height = 32; const tg = t.getContext("2d");
+    tg.drawImage(fr[0], 0, 0); tg.globalCompositeOperation = "source-in"; tg.fillStyle = "#16141c"; tg.fillRect(0, 0, 32, 32);
+    g.drawImage(t, i * 100, y0 + 96, 96, 96);
+  });
+  g.drawImage(me, 9 * 100, y0, 96, 96);
+} else if (mode === "tint") {
+  // the tint matrix: creatures down, base then the nine tints across, at game scale (3×)
+  const keys = (new URLSearchParams(location.search).get("k") || "twinhare,bonehound,toadbrood,lionhand").split(","), z = 3, W = 32 * z;
+  const tints = [undefined].concat(SP.MOB_TINTS);
+  cv.width = tints.length * W; cv.height = keys.length * W + 96 * 2;
+  g.imageSmoothingEnabled = false;
+  keys.forEach((k, r) => {
+    g.fillStyle = ["#6aa864", "#4a4658", "#3c4a46", "#2a1c2c"][r % 4]; g.fillRect(0, r * W, cv.width, W);
+    tints.forEach((t, c) => g.drawImage(SP.monsterSheet(k, t)[0], c * W, r * W, W, W));
+  });
+  // and a boss, at twice its sheet size
+  const y0 = keys.length * W;
+  g.fillStyle = "#2a1c2c"; g.fillRect(0, y0, cv.width, 192);
+  [undefined, "fire", "frost", "poison", "bone"].forEach((t, c) => g.drawImage(SP.monsterSheet("boss", t)[0], c * 192, y0, 192, 192));
+}
+document.title = "ready";
+</script>

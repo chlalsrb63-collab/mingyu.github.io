@@ -1,0 +1,56 @@
+<!doctype html><meta charset="utf-8">
+<body style="margin:0;background:#101426;overflow:hidden"><canvas id="c" style="image-rendering:pixelated;display:block"></canvas>
+<script type="module">
+// Static scene preview: ?map=town&x=20&y=14&cls=warrior&wk=sword&mobs=acorn,potcrab&el=1&t=1200
+import * as S from "./scene2d.js";
+import * as SP from "./sprites.js";
+const q = new URLSearchParams(location.search);
+const maps = await (await fetch("./_maps.json")).json();
+const m = maps[q.get("map") || "town"];
+if (q.get("day")) globalThis.__dayK = +q.get("day");
+// ?marks=1 puts a waypoint stone and two signposts beside the start, as the server would send them
+if (q.get("marks")) {
+  const X = +(q.get("x") || 20), Y = +(q.get("y") || 14);
+  const put = (x, y, ch) => { if (m.o[y] && m.o[y][x] === " ") m.o[y] = m.o[y].slice(0, x) + ch + m.o[y].slice(x + 1); };
+  const gate = m.portals[m.portals.length - 1];
+  m.marks = [{ x: X + 3, y: Y - 2, kind: "waypoint" }, { x: X - 3, y: Y - 2, kind: "sign", label: gate.to.split(" Lv")[0], to: gate.to }, { x: X + 6, y: Y + 1, kind: "sign", label: "광장" }];
+  put(X + 3, Y - 2, "Q"); put(X - 3, Y - 2, "G"); put(X + 6, Y + 1, "G");
+}
+if (q.get("npcs")) ["warp", "collector", "achieve", "daily"].forEach((role, i) => m.npcs.push({ id: role, name: role, role, x: +(q.get("x") || 20) - 4 + i * 2, y: +(q.get("y") || 14) + 3, look: [i, 0, 0, "#5a5a8a"] }));
+const fx = +(q.get("x") || 20), fy = +(q.get("y") || 14);
+const mobKeys = (q.get("mobs") || "").split(",").filter(Boolean);
+const defs = { mobs: {} };
+mobKeys.forEach((k) => (defs.mobs[k] = { sp: k }));
+const me = { x: fx * 16 + 8, y: fy * 16 + 8, dir: +(q.get("dir") || 0), moving: false, atkT: -1e9, dead: false, aim: null };
+const G = { you: 1, me, players: new Map(), mobs: new Map(), drops: new Map(), who: new Map(), defs, icons: { cv: {} } };
+const cls = q.get("cls") || "warrior";
+G.self = q.get("wps") === "none" ? { wp: [] } : null;
+G.who.set(1, { cls, look: [1, 0, 0, 0, 0, 0, 1], gear: { wk: q.get("wk") || undefined, wt: +(q.get("wt") || 2), wq: +(q.get("wq") || 0) } });
+// a few other adventurers so every weapon is on show
+[["rogue", "dagger", [0, 2, 1, 3, 0, 0, 2]], ["lancer", "spear", [3, 1, 0, 7, 0, 0, 3]], ["mage", "staff", [2, 0, 2, 5, 0, 0, 4]], ["mage", "book", [5, 3, 1, 1, 0, 0, 5]]].forEach(([c2, wk, look], i) => {
+  G.players.set(10 + i, { x: me.x - 44 + i * 26, y: me.y + 26, dir: i === 1 ? 2 : i === 2 ? 1 : 0, moving: false, atkT: i === 3 ? performance.now() + 200 : -1e9, dead: false, aim: i === 3 ? [me.x + 60, me.y + 30] : null });
+  G.who.set(10 + i, { cls: c2, look, gear: { wk, wt: 2 + i, wq: i } });
+});
+for (let i = 0; i < +(q.get("crowd") || 0); i++) { G.players.set(100 + i, { x: me.x - 150 + (i % 10) * 30, y: me.y - 60 + Math.floor(i / 10) * 30, dir: i % 3, moving: false, atkT: -1e9, dead: false, aim: null }); G.who.set(100 + i, { cls: ["warrior", "rogue", "lancer", "mage"][i % 4], look: [i % 6, i % 5, i % 4, i % 10, 0, i % 4, i % 6], gear: { wk: ["sword", "dagger", "spear", "staff"][i % 4], wt: 2, wq: i % 4 } }); }
+mobKeys.forEach((k, i) => {
+  const el = +(q.get("el") || 0) && i === 0 ? +(q.get("el")) : 0;
+  G.mobs.set(i + 1, { id: i + 1, k, x: me.x - 70 + (i % 6) * 30, y: me.y - 34 - Math.floor(i / 6) * 28, moving: i % 2 === 0, atkT: -1e9, hurtT: -1e9, el });
+});
+const cv = document.getElementById("c");
+S.init(cv);
+const lab = document.createElement("canvas"); lab.width = innerWidth; lab.height = innerHeight; lab.style.cssText = "position:fixed;left:0;top:0;pointer-events:none"; document.body.appendChild(lab); const lc = lab.getContext("2d");
+S.loadMap(m);
+S.sync(G);
+let last = performance.now(), frames = 0, t0 = last;
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const r0 = performance.now();
+  S.render(me.x, me.y + (+(q.get("cam") || 0)) * 16, dt, now, frames < 2);
+  if (frames > 30) { window.__ms = (window.__ms || 0) + performance.now() - r0; window.__n = (window.__n || 0) + 1; }
+  if (S.labels) { const L = S.labels(); lc.clearRect(0, 0, lab.width, lab.height); lc.font = "bold 11px sans-serif"; lc.textAlign = "center"; lc.textBaseline = "middle"; for (const l of L) { const w = lc.measureText(l.text).width + 12; lc.fillStyle = "rgba(43,34,51,.78)"; lc.fillRect(Math.round(l.x - w / 2), Math.round(l.y - 9), Math.round(w), 18); lc.fillStyle = "#ffe9b8"; lc.fillText(l.text, l.x, l.y + 1); } }
+  frames++;
+  if (frames === 30) { document.title = "ready"; window.__fps = Math.round(30000 / (now - t0)); }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>

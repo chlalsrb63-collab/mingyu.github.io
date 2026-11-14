@@ -1,0 +1,61 @@
+<!doctype html><meta charset="utf-8">
+<body style="margin:0;background:#101426;overflow:hidden"><canvas id="c" style="image-rendering:pixelated;display:block"></canvas>
+<canvas id="out" style="position:fixed;left:0;top:0;image-rendering:pixelated"></canvas>
+<script type="module">
+// Attack-motion contact sheet: every weapon kind, each beat of the combo, frame by frame.
+// ?ms=33&n=16&aim=e (e, w, n, s, se…) — dev preview only, not part of the game.
+import * as S from "./scene2d.js";
+const q = new URLSearchParams(location.search);
+const maps = await (await fetch("./_maps.json")).json();
+const m = maps.meadow || maps.town;
+// an open patch of ground
+let fx = 20, fy = 14;
+outer: for (let y = 6; y < m.h - 6; y++) for (let x = 6; x < m.w - 6; x++) {
+  let ok = true;
+  for (let dy = -3; dy <= 3 && ok; dy++) for (let dx = -3; dx <= 3 && ok; dx++) if (m.o[y + dy][x + dx] !== " " || "wW".includes(m.g[y + dy][x + dx])) ok = false;
+  if (ok) { fx = x; fy = y; break outer; }
+}
+const me = { x: fx * 16 + 8, y: fy * 16 + 8, dir: 0, moving: false, atkT: -1e9, dead: false, aim: null, atkN: 0 };
+const G = { you: 1, me, players: new Map(), mobs: new Map(), drops: new Map(), who: new Map(), defs: { mobs: {} }, icons: { cv: {} }, self: null, fires: new Map(), bobs: new Map() };
+const AIMS = { e: [1, 0], w: [-1, 0], n: [0, -1], s: [0, 1], ne: [1, -1], nw: [-1, -1], se: [1, 1], sw: [-1, 1] };
+console.log("found", fx, fy);
+const cv = document.getElementById("c");
+S.init(cv);
+S.resize(320, 200, 1);
+S.loadMap(m);
+S.sync(G); console.log("loaded");
+const ms = +(q.get("ms") || 33), n = +(q.get("n") || 18), Z = 3, cw = 80, ch = 84;
+const kinds = (q.get("wk") || "sword,dagger,spear,staff,book").split(","), cls = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "mage" };
+const dirs = (q.get("aim") || "e").split(",");
+const rows = [];
+for (const wk of kinds) for (const d of dirs) for (const beat of [0, 1, 2]) rows.push([wk, d, beat]);
+const out = document.getElementById("out");
+out.width = n * cw * Z + 70; out.height = rows.length * ch * Z;
+const o = out.getContext("2d"); o.imageSmoothingEnabled = false;
+o.fillStyle = "#000"; o.fillRect(0, 0, out.width, out.height);
+let t = 10000;
+for (let r = 0; r < rows.length; r++) {
+  const [wk, d, beat] = rows[r]; console.log("row", r, performance.now() | 0);
+  G.who.set(1, { cls: cls[wk], look: [1, 0, 0, 0, 0, 0, 1], gear: { wk, wt: 3, wq: 0 } });
+  const [ax, ay] = AIMS[d];
+  // settle at rest, then the previous beats so each stroke starts where the last one ended
+  me.aim = [me.x + ax * 30, me.y + ay * 30 + 6];
+  me.atkT = -1e9;
+  for (let i = 0; i < 40; i++) { t += 16; S.render(me.x, me.y, 0.016, t, true); }
+  for (let b = 0; b <= beat; b++) {
+    me.atkT = t; me.atkN = b;
+    const last = b === beat;
+    for (let i = 0; i < (last ? n : 0); i++) {
+      if (i) { for (let k = 0; k < Math.round(ms / 16); k++) { t += ms / Math.round(ms / 16); S.render(me.x, me.y, ms / 1000 / Math.round(ms / 16), t, true); } }
+      else S.render(me.x, me.y, 0.016, t, true);
+      o.drawImage(cv, cv.width / 2 - cw / 2, cv.height / 2 + 14 - 50, cw, ch, 70 + i * cw * Z, r * ch * Z, cw * Z, ch * Z);
+    }
+    if (!last) { const stroke = { sword: 920, dagger: 520, spear: 780, staff: 980, book: 800 }[wk]; for (let k = 0; k < stroke / 16; k++) { t += 16; S.render(me.x, me.y, 0.016, t, true); } }
+  }
+  o.fillStyle = "#fff"; o.font = "14px monospace"; o.fillText(`${wk}`, 4, r * ch * Z + 20); o.fillText(`${d} b${beat}`, 4, r * ch * Z + 40);
+  // the moment the blow lands
+  const hit = S.impactMs(wk, beat) / ms;
+  o.fillStyle = "#ff3040"; o.fillRect(70 + hit * cw * Z, r * ch * Z, 2, 10);
+}
+window.__done = true;
+</script>

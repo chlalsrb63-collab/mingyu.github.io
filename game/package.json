@@ -15,11 +15,15 @@
     "predev:local": "node scripts/build-logic.mjs",
     "dev:local": "wrangler dev -c wrangler.local.jsonc",
     "predeploy:cf": "node scripts/build-logic.mjs --check && node scripts/test-all.mjs --no-build",
-    "deploy:cf": "wrangler deploy -c wrangler.deploy.jsonc"
+    "deploy:cf": "wrangler deploy -c wrangler.deploy.jsonc",
+    "maps:dump": "node scripts/dump-maps.mjs",
+    "preview": "node scripts/shot.mjs --serve",
+    "shot": "node scripts/shot.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.20.1",
     "@cloudflare/workers-types": "5.20260804.1",
+    "playwright": "1.63.0",
     "typescript": "7.0.2",
     "vitest": "4.1.10",
     "wrangler": "4.118.0"

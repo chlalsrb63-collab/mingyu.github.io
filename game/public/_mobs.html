@@ -1,0 +1,116 @@
+<!doctype html><meta charset="utf-8"><title>monsters</title>
+<body style="margin:0;background:#1c1a22;color:#ddd;font:12px monospace"><canvas id="c"></canvas>
+<script type="module">
+import * as MA from "./mobart.js";
+import * as SP from "./sprites.js";
+const q = new URLSearchParams(location.search);
+const mode = q.get("m") || "frames", z = +(q.get("z") || 3);
+const ZONE = { meadow: "#6aa864", forest: "#3f6a48", crypt: "#4a4658", city: "#565a68", sewer: "#3c4a46", cave: "#39406a", abyss: "#2a1c2c" };
+const ZK = {
+  meadow: ["twinhare", "gutfrog", "eyecrow", "lambmaw"], forest: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"],
+  crypt: ["ratking", "bonehound", "toadbrood", "batcluster"], city: ["pigeonmass", "doghead", "squidrat", "catsplit", "fishwalker"],
+  sewer: ["leechmaw", "gatorhalf", "crabskull", "eelknot"], cave: ["spiderhand", "moleworm", "bearmaw", "owlstare", "boss"],
+  abyss: ["twingoat", "horsehalf", "lionhand", "serpentwing", "sowseer", "abyssboss", "chest"],
+};
+const zoneOf = (k) => Object.keys(ZK).find((z) => ZK[z].includes(k)) || "city";
+let kinds = q.get("k") ? q.get("k").split(",") : Object.values(ZK).flat();
+kinds = kinds.filter((k) => MA.has(k));
+const cv = document.getElementById("c"), g = cv.getContext("2d");
+const me = SP.personSheet(SP.playerLook("warrior", [1, 0, 0, 0, 0, 0, 1])).front[0];
+const t0 = performance.now();
+if (mode === "frames") {
+  // every frame of every facing at z×, and the same at 1× to its right
+  const sc = +(q.get("sc") || 1), tint = q.get("t") || "";
+  const DS = q.get("d") ? q.get("d").split(",").map(Number) : [0, 1, 2, 3];
+  const FS = q.get("f") ? q.get("f").split(",").map(Number) : [...Array(12).keys()];
+  const rows = kinds.map((k) => MA.rig(k, tint, sc));
+  const H = rows.reduce((a, r) => a + r.N * z * DS.length + 6, 0);
+  cv.width = Math.max(...rows.map((r) => r.N * z * FS.length + r.N * FS.length + 20)); cv.height = H;
+  g.imageSmoothingEnabled = false;
+  let y = 0;
+  for (const r of rows) {
+    g.fillStyle = ZONE[zoneOf(r.kind)]; g.fillRect(0, y, cv.width, r.N * z * DS.length);
+    DS.forEach((d, di) => FS.forEach((f, j) => {
+      const c = r.frame(d, f);
+      g.drawImage(c, j * r.N * z, y + di * r.N * z, r.N * z, r.N * z);
+      g.drawImage(c, r.N * z * FS.length + 10 + j * r.N, y + di * r.N * z + r.N * z - r.N);
+    }));
+    g.drawImage(me, r.N * z * FS.length + 10, y + 4, 32 * z, 32 * z);
+    g.fillStyle = "#fff"; g.fillText(r.kind, 4, y + 12);
+    y += r.N * z * DS.length + 6;
+  }
+} else if (mode === "tints") {
+  const tints = ["", ...MA.MOB_TINTS];
+  const N = Math.max(...kinds.map((k) => MA.rig(k).N));
+  cv.width = tints.length * N * z + tints.length * N + 20; cv.height = kinds.length * N * z;
+  g.imageSmoothingEnabled = false;
+  kinds.forEach((k, i) => {
+    g.fillStyle = ZONE[zoneOf(k)]; g.fillRect(0, i * N * z, cv.width, N * z);
+    tints.forEach((t, j) => { const c = MA.rig(k, t).frame(0, 0); g.drawImage(c, j * N * z, i * N * z, c.width * z, c.height * z); g.drawImage(c, tints.length * N * z + 10 + j * N, i * N * z + N * z - c.height); });
+  });
+} else if (mode === "live") {
+  // the scene's own drawing, run through a loop: walk, wind up, strike, flinch, die, come back
+  const Z = +(q.get("z") || 3), W = Math.floor(1280 / Z), H = Math.floor(720 / Z);
+  cv.width = 1280; cv.height = 720;
+  const off = document.createElement("canvas"); off.width = W; off.height = H;
+  const o = off.getContext("2d");
+  const el = +(q.get("el") || 0), tint = q.get("t") || null;
+  const defs = {}; for (const k of kinds) defs[k] = { sp: k, boss: k === "boss" || k === "abyssboss", tint };
+  const props = new Map(), S3 = { props };
+  const G = { me: { x: 0, y: 200, dead: false }, players: new Map(), mobs: new Map(), gone: new Map(), defs: { mobs: defs } };
+  const cols = Math.min(kinds.length, +(q.get("cols") || 4));
+  kinds.forEach((k, i) => G.mobs.set(i + 1, { id: i + 1, k, x: 0, y: 0, hx: 70 + (i % cols) * ((W - 80) / cols), hy: 70 + Math.floor(i / cols) * 90, el, tr: [], atkT: -1e9, hurtT: -1e9 }));
+  const states = new Map(), parts = [];
+  const T0 = performance.now();
+  const loop = () => {
+    const t = performance.now() - T0, ph = t % 6000;
+    o.fillStyle = ZONE[zoneOf(kinds[0])]; o.fillRect(0, 0, W, H);
+    for (const m of G.mobs.values()) {
+      if (m.gone) { if (ph < 300) { m.gone = false; } else continue; }
+      // walking a little loop on the ground
+      const a = ph < 1600 ? (ph / 1600) * Math.PI * 2 : 0;
+      const sx = m.hx + Math.cos(a) * 14 - 14, sy = m.hy + Math.sin(a) * 7;
+      m.x = sy + sx / 2; m.y = sy - sx / 2;            // screen → server units (iso inverse)
+      G.me.x = m.x + 20; G.me.y = m.y + 20;
+      if (ph >= 1700 && !m.w1) { m.w1 = 1; MA.onEvent(["c", m.id, m.x, m.y, m.x + 30, m.y + 30, 850], G, S3, t); }
+      if (ph >= 2550 && !m.s1) { m.s1 = 1; m.atkT = t; MA.onEvent(["m", m.id], G, S3, t); }
+      if (ph >= 3100 && !m.h1) { m.h1 = 1; m.hurtT = t; m.hurtA = 0.6; }
+      if (ph >= 3600 && !m.s2) { m.s2 = 1; m.atkT = t; }
+      if (ph >= 4300 && !m.k1) { m.k1 = 1; MA.onEvent(["k", m.id], G, S3, t); m.gone = true; }
+      if (ph < 100) m.w1 = m.s1 = m.h1 = m.s2 = m.k1 = 0;
+      if (m.gone) continue;
+      if (!states.has(m.id)) states.set(m.id, {});
+      const X = m.x - m.y, Y = (m.x + m.y) / 2;
+      MA.draw(o, m, defs[m.k], tint, states.get(m.id), t, X, Y, parts, G);
+    }
+    for (const [id, pr] of props) { if (t >= pr.until) props.delete(id); else pr.draw(o, t, pr.x - pr.y, (pr.x + pr.y) / 2); }
+    for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.life -= 1 / 60; if (p.life <= 0) { parts.splice(i, 1); continue; } p.y += p.vy / 60; o.fillStyle = p.color; o.fillRect(Math.round(p.x), Math.round(p.y), 1, 1); }
+    g.imageSmoothingEnabled = false; g.drawImage(off, 0, 0, W * Z, H * Z);
+    g.fillStyle = "#fff"; g.fillText(Math.round(ph) + "ms", 4, 12);
+    requestAnimationFrame(loop);
+  };
+  loop();
+} else {
+  // the contact sheet: one row per creature at an honest 2× — front, a step to the right, the back, the strike, the fall — with an adventurer
+  const zz = +(q.get("z") || 2), pick = [[0, 0], [1, 3], [2, 0], [3, 4], [0, 6], [0, 7], [1, 8], [0, 11]];
+  const rows = kinds.map((k) => MA.rig(k));
+  const cols = +(q.get("cols") || 2), RW = 1 + pick.length;
+  const colW = Math.max(...rows.filter((r) => r.N < 100).map((r) => r.N)) * zz * 0.62 * RW;
+  const rz = (r) => Math.min(zz, colW / (r.N * 0.62 * RW));
+  const rowH = rows.map((r) => Math.round(r.N * rz(r) * 0.8));
+  const nr = Math.ceil(rows.length / cols), heights = [];
+  for (let i = 0; i < nr; i++) heights.push(Math.max(...rowH.slice(i * cols, i * cols + cols)));
+  cv.width = cols * colW; cv.height = heights.reduce((a, b) => a + b + 4, 0);
+  g.imageSmoothingEnabled = false;
+  rows.forEach((r, i) => {
+    const cx = (i % cols) * colW, ri = Math.floor(i / cols), cy = heights.slice(0, ri).reduce((a, b) => a + b + 4, 0), H = heights[ri];
+    g.fillStyle = ZONE[zoneOf(r.kind)]; g.fillRect(cx, cy, colW - 4, H);
+    const z2 = rz(r), step = r.N * z2 * 0.6;
+    pick.forEach(([d, f], j) => g.drawImage(r.frame(d, f), cx + j * step - r.N * z2 * 0.15, cy + H - r.N * z2, r.N * z2, r.N * z2));
+    g.drawImage(me, cx + pick.length * step, cy + H - 31 * z2, 32 * z2, 32 * z2);
+    g.fillStyle = "#fff"; g.fillText(r.kind, cx + 3, cy + 11);
+  });
+}
+document.title = "monsters " + Math.round(performance.now() - t0) + "ms";
+console.log("built in", Math.round(performance.now() - t0), "ms");
+</script>

@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#101426"><canvas id="c"></canvas>
+<script type="module">
+// Whole-map overview: ?map=meadow&s=12 — ground colours, objects as marks, spawn regions, fires, portals.
+const q = new URLSearchParams(location.search);
+const maps = await (await fetch("./_maps.json")).json();
+const m = maps[q.get("map") || "meadow"], s = +(q.get("s") || 12);
+const cv = document.getElementById("c"), g = cv.getContext("2d");
+cv.width = m.w * s; cv.height = m.h * s;
+const GC = { ".": "#6cbf5e", ",": "#62b556", '"': "#8fd07a", t: "#4f9f48", ":": "#3f8a5c", ";": "#377d52", p: "#d9ab6c", o: "#b4b9c6", r: "#a8a89a", s: "#ecd9a2", w: "#4aa2e2", b: "#8a5a30", c: "#486a8a", d: "#527696", W: "#131a32", a: "#474b5a", m: "#6a6e7c", k: "#9aa0ae", j: "#5a5a3a", v: "#c8b890", g: "#3a4a3a" };
+const OC = { T: "#2a6a34", P: "#1d4a30", R: "#7a7e8c", B: "#3f8a44", C: "#6a6258", H: "#2f7a3a", U: "#8a8478", l: "#7a5230", u: "#8a6238", e: "#9ac86a", q: "#b8b4a8", n: "#c89a5e", M: "#8a5a34", D: "#3a6a5a", E: "#e0c090", F: "#b88a52", L: "#ffe690", G: "#e0b87a", K: "#72e6f4", S: "#5a7896", Z: "#343846", c: "#c84a50", y: "#d84c4c", x: "#5c6474", h: "#7c665a", a: "#6a9ac8", O: "#d0d0e0", A: "#6a5040", Y: "#e05a6a", X: "#ff2040" };
+for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+  g.fillStyle = GC[m.g[y][x]] || "#f0f"; g.fillRect(x * s, y * s, s, s);
+  const o = m.o[y][x];
+  if (o !== " ") { g.fillStyle = OC[o] || "#f0f"; const big = "CHUZh".includes(o); g.fillRect(x * s + (big ? 0 : 2), y * s + (big ? 0 : 2), s - (big ? 0 : 4), s - (big ? 0 : 4)); }
+  if (m.o[y][x] === " " && !"wW".includes(m.g[y][x]) && m.reach[y * m.w + x] !== "1") { g.fillStyle = "rgba(255,0,255,.7)"; g.fillRect(x * s + 3, y * s + 3, s - 6, s - 6); }
+}
+g.lineWidth = 1;
+const MC = {}; let hue = 0;
+for (const sp of m.spawns) { if (!MC[sp.k]) MC[sp.k] = `hsl(${(hue += 67) % 360} 90% 60%)`; g.strokeStyle = MC[sp.k]; g.strokeRect(sp.r[0] * s + 1.5, sp.r[1] * s + 1.5, (sp.r[2] - sp.r[0] + 1) * s - 3, (sp.r[3] - sp.r[1] + 1) * s - 3); g.fillStyle = MC[sp.k]; g.font = "10px sans-serif"; g.fillText(sp.k.slice(0, 6) + "×" + sp.n, sp.r[0] * s + 3, sp.r[1] * s + 11 + (sp.k.startsWith("chest") ? 0 : 0)); }
+for (const [x, y] of m.fires) { g.fillStyle = "#ff8a20"; g.beginPath(); g.arc(x * s + s / 2, y * s + s / 2, s * 0.7, 0, 7); g.fill(); }
+for (const p of m.portals) { g.fillStyle = "#ff40ff"; g.fillRect(p.x * s, p.y * s, s, s); }
+for (const n of m.npcs) { g.fillStyle = "#ffffff"; g.fillRect(n.x * s + 2, n.y * s + 2, s - 4, s - 4); }
+document.title = "ready";
+</script>

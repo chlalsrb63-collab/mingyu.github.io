@@ -1,0 +1,103 @@
+<!doctype html><meta charset="utf-8"><title>wardrobe</title><body style="margin:0;background:#2a2834;color:#ddd;font:12px sans-serif"><canvas id="c"></canvas>
+<script type="module">
+// dev-only preview: every weapon tier, motif and glow; every cosmetic on several looks in every facing
+import * as WP from "./weapons.js";
+import * as SP from "./sprites.js";
+const q = new URLSearchParams(location.search), mode = q.get("m") || "weapons";
+const cv = document.getElementById("c"), g = cv.getContext("2d");
+const txt = (s, x, y, col = "#ddd") => { g.fillStyle = col; g.font = "12px sans-serif"; g.fillText(s, x, y); };
+const KINDS = ["sword", "dagger", "spear", "staff", "book"];
+if (mode === "weapons") {
+  const z = 4, CW = 52 * z + 8, RH = 32 * z + 4;
+  cv.width = 5 * CW + 120; cv.height = KINDS.length * RH + 470;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#3c5a3a"; g.fillRect(0, 0, cv.width, cv.height);
+  KINDS.forEach((k, r) => {
+    for (let t = 1; t <= 5; t++) {
+      const s = WP.weaponSprite(k, { wt: t });
+      g.drawImage(s, 100 + (t - 1) * CW, r * RH, s.width * z, s.height * z);
+      const ic = WP.weaponIcon(k, t);
+      g.drawImage(ic, 100 + (t - 1) * CW + 52 * z - 64, r * RH + 64, 64, 64);
+    }
+    txt(k, 6, r * RH + 20);
+  });
+  // motifs on a tier-3 of each axis kind, at 2×, plus icons at 3×
+  const y0 = KINDS.length * RH + 10, mz = 2;
+  WP.MOTIFS.forEach((mo, i) => {
+    const x = 6 + (i % 9) * 150, y = y0 + Math.floor(i / 9) * 170;
+    txt(mo, x, y + 12);
+    ["sword", "dagger", "spear", "staff"].forEach((k, j) => {
+      const s = WP.weaponSprite(k, { wt: 3, ws: mo });
+      g.drawImage(s, x, y + 14 + j * 28, s.width * mz, s.height * mz);
+    });
+    g.drawImage(WP.weaponIcon("sword", 4, { ws: mo }), x + 104, y + 20, 48, 48);
+    g.drawImage(WP.weaponIcon("book", 2, { ws: mo }), x + 104, y + 74, 48, 48);
+  });
+  const y1 = y0 + 345;
+  [0, 7, 10].forEach((e, i) => {
+    const s = WP.weaponSprite("sword", { wt: 4, we: e, wq: 3 });
+    g.drawImage(s, 6 + i * 300, y1, s.width * 3, s.height * 3);
+    g.drawImage(WP.weaponIcon("sword", 4, { we: e }), 6 + i * 300 + 140, y1 + 96, 48, 48);
+    txt("+" + e, 6 + i * 300, y1 + 10);
+  });
+}
+if (mode === "cos") {
+  // every cosmetic of one slot (?s=hat|top|back|face) on six looks: species, facings and frames mixed
+  const SPC = await import("./species.js");
+  const WR = await import("./wardrobe.js");
+  const slot = q.get("s") || "hat";
+  const ids = Object.keys(WR.ART).filter((id) => WR.ART[id][0] === slot);
+  const P = Object.fromEntries(SPC.PRESETS);
+  const picks = (q.get("l") || "치즈 고양이,흰 토끼,시바견,꽃사슴,청개구리,곰돌이,솜사탕 양,기본").split(",");
+  const looks = picks.map((n) => P[n] || []);
+  const views = ["front", "front", "side", "back", "front", "side", "front", "back"];
+  const frames = [0, 2, 1, 0, 3, 4, 5, 0];
+  const z = 3, F = 22 * z, cols = 2;
+  const CW = looks.length * F + 16;
+  cv.width = cols * CW + 8; cv.height = Math.ceil(ids.length / cols) * (F + 18) + 10;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#6a9a5a"; g.fillRect(0, 0, cv.width, cv.height);
+  ids.forEach((id, i) => {
+    const x = 8 + (i % cols) * CW, y = 4 + Math.floor(i / cols) * (F + 18);
+    txt(id, x, y + 12, "#fff");
+    looks.forEach((lk, j) => {
+      const o = { ...SP.playerLook("warrior", lk, { cos: [id] }) };
+      const fr = SP.personSheet(o)[views[j]][frames[j]];
+      g.save();
+      if (views[j] === "side" && j % 2) { g.translate(x + j * F + F, 0); g.scale(-1, 1); g.drawImage(fr, 5, 8, 22, 22, 0, y + 16, F, F); }
+      else g.drawImage(fr, 5, 8, 22, 22, x + j * F, y + 16, F, F);
+      g.restore();
+    });
+  });
+}
+if (mode === "walk") {
+  // one outfit through every frame and view, at 4×
+  const ids = (q.get("c") || "hat_wizard,top_robe,back_cape_red,face_glasses").split(",");
+  const SPC = await import("./species.js");
+  const P = Object.fromEntries(SPC.PRESETS);
+  const lk = P[q.get("l") || "치즈 고양이"] || [];
+  const z = 4, F = 24 * z;
+  cv.width = 6 * F + 20; cv.height = 3 * F + 20;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#6a9a5a"; g.fillRect(0, 0, cv.width, cv.height);
+  ["front", "side", "back"].forEach((v, r) => [0, 1, 2, 3, 4, 5].forEach((f) => {
+    const fr = SP.personSheet(SP.playerLook("warrior", lk, { cos: ids }))[v][f];
+    g.drawImage(fr, 4, 6, 24, 24, 10 + f * F, 10 + r * F, F, F);
+  }));
+}
+if (mode === "all") {
+  // chosen pieces (?c=a,b) on every preset look, front / side / back, each piece its own row
+  const SPC = await import("./species.js");
+  const ids = (q.get("c") || "hat_beanie_red,hat_wizard,hat_crown,hat_straw,hat_helm,face_glasses").split(",");
+  const z = 3, F = 22 * z, P = SPC.PRESETS, V = (q.get("v") || "front").split(",");
+  cv.width = P.length * F + 10; cv.height = ids.length * V.length * (F + 4) + 10;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#6a9a5a"; g.fillRect(0, 0, cv.width, cv.height);
+  let r = 0;
+  for (const id of ids) for (const v of V) {
+    P.forEach(([n, lk], i) => { const fr = SP.personSheet(SP.playerLook("warrior", lk, { cos: [id] }))[v][0]; g.drawImage(fr, 5, 5, 22, 22, 5 + i * F, 5 + r * (F + 4), F, F); });
+    r++;
+  }
+}
+document.title = "ready";
+</script>

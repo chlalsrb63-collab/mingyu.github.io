@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#15161c"><canvas id="c"></canvas><pre id="o" style="color:#f88"></pre>
+<script type="module">
+import * as I from "./skillicons.js";
+const cv = document.getElementById("c"), g = cv.getContext("2d");
+const z = 8, W = 16 * z + 24;
+cv.width = 8 * W; cv.height = 3 * W + 80;
+g.imageSmoothingEnabled = false;
+g.fillStyle = "#15161c"; g.fillRect(0, 0, cv.width, cv.height);
+I.ALL.forEach((id, i) => {
+  const x = (i % 8) * W + 12, y = Math.floor(i / 8) * W + 12;
+  g.fillStyle = "#23252e"; g.fillRect(x - 6, y - 6, 16 * z + 12, 16 * z + 12);
+  g.drawImage(I.skillIcon(id), x, y, 16 * z, 16 * z);
+});
+// the same icons at the size they are used
+I.ALL.forEach((id, i) => { g.fillStyle = "#23252e"; g.beginPath(); g.arc(30 + i * 52, 3 * W + 40, 22, 0, 7); g.fill(); g.drawImage(I.skillIcon(id), 30 + i * 52 - 16, 3 * W + 24, 32, 32); });
+document.getElementById("o").textContent = I.badRows().join(" ");
+document.title = "ready";
+</script>

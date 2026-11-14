@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden;background:#000}canvas{image-rendering:pixelated;position:absolute;left:0;top:0}#lg{left:50%;top:30px;transform:translateX(-50%)}</style></head>
+<body><canvas id="cv"></canvas><canvas id="lg"></canvas>
+<script type="module">
+import * as TS from "./titlescene.js";
+TS.init(document.getElementById("cv"));
+const L = TS.logo(5); const lg = document.getElementById("lg"); lg.width = L.width; lg.height = L.height; lg.getContext("2d").drawImage(L, 0, 0);
+let last = performance.now();
+function f(t){ TS.render(t, Math.min(0.05,(t-last)/1000)); last=t; requestAnimationFrame(f); }
+requestAnimationFrame(f);
+</script></body></html>

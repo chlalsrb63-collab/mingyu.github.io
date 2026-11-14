@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#3a6a40"><canvas id="c"></canvas><pre id="o" style="color:#fbb"></pre>
+<script type="module">
+import * as E from "./emoticons.js";
+const cv = document.getElementById("c"), g = cv.getContext("2d");
+const z = 6, W = 16 * z + 16;
+cv.width = 9 * W; cv.height = 3 * W + 60;
+g.imageSmoothingEnabled = false;
+g.fillStyle = "#3a6a40"; g.fillRect(0, 0, cv.width, cv.height);
+g.font = "12px sans-serif"; g.fillStyle = "#fff";
+for (let i = 0; i < E.COUNT; i++) {
+  const x = (i % 9) * W + 8, y = Math.floor(i / 9) * W + 6;
+  g.drawImage(E.emoCanvas(i), x, y, 16 * z, 16 * z);
+  g.fillText(E.EMO[i][1], x, y + 16 * z + 10);
+}
+for (let i = 0; i < E.COUNT; i++) g.drawImage(E.emoCanvas(i), 8 + i * 22, 3 * W + 20, 16, 16);
+document.getElementById("o").textContent = E.badRows().join(" ") + " parse:" + JSON.stringify(E.parse("안녕(웃음)하세요(하트)(없음)"));
+document.title = "ready";
+</script>
