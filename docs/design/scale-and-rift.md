@@ -745,13 +745,14 @@ dim_boss dim_clear dim_portal`, track `dim`), `index.html` (`#dim-hud #w-dim #w-
 - Measured clears (4 bots, gear of their tier q1, no training; walk BFS paths, dodge ground rings, drink at 45%):
   | Lv | theme | master at | clear |
   | --- | --- | --- | --- |
-  | 17 | crypt | 4.3 | 5.8 |
-  | 24 | sewer | 4.6 | 5.6 |
-  | 32 | cave | 4.6 | 5.6 |
-  | 40 | cave | 7.1 | 8.4 |
+  | 17 | crypt | 4.3 | 5.3 |
+  | 24 | sewer | 6.1 | 7.9 |
+  | 32 | cave | 4.2 | 5.0 |
+  | 40 | cave | 7.9 | 9.5 |
   | extra seeds (`MORE=1`, before the last small tune): 14 6.6 · 20 8.9 · 28 5.7 · 36 7.0 · 44 9.4 · 17 6.0 · 32(abyss) 6.4 |
-  Average 6.4 min (test: each 4.5–10.5, average 5.5–9). Solo bot at Lv.22: reaches the master at ≈ 6 min but does not
-  kill it (it does not kite; 11 deaths) — measured, not asserted. Re-tune after J1 (stats rework) with
+  Average 6.9 min (after rebasing on Phase 1; before it 5.8/5.6/5.6/8.4, avg 6.4) (test: each 4.5–10.5, average 5.5–9).
+  Solo bot at Lv.22: master at 5.6 min, cleared at 13.9 min with 9 deaths (before Phase 1's combat fixes it could not
+  beat the master) — measured, asserted only that the master is reached in time. Re-tune after J1 (stats rework) with
   `HPB= BOSSHP= BOSSATK= LVK= NOCLEAR=1 MORE=1 node tests/dimrift.mjs -v`.
 
 ### H.3 Rules that differ from D.3–D.7
@@ -781,7 +782,7 @@ dim_boss dim_clear dim_portal`, track `dim`), `index.html` (`#dim-hud #w-dim #w-
 - `defs().dim = {themes, pylons, limit, party, max, rcMs, obelisk, reviveMs, near}`.
 
 ### H.5 Known issues / next
-- Solo is very hard against the master (see H.2); consider an el-1 master for parties of one.
+- Solo is hard against the master (see H.2: ≈ 14 min with deaths); consider an el-1 master for parties of one.
 - `tests/dimrift.mjs` takes ≈ 8–9 s (the bot runs). Its pool depends on `MAP_META.kinds`: Phase 1 adding kinds may
   move clear times; rerun with `-v`.
 - Editor towns that `replace` the town must place the obelisk (`big` `obelisk`) and an NPC with role `dim` themselves.
