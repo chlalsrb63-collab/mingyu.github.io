@@ -58,8 +58,8 @@ export const STAT_ICON = { atk: "sword", def: "shield", hp: "heart", mp: "drop",
 export const MENU_ICON = { inv: "bag", char: "person", skill: "book", quest: "scroll", party: "party", guild: "banner", rank: "crown", help: "help", settings: "gear", sit: "fire", emo: "smile", sound: "note", auto: "auto", daily: "cal", achieve: "trophy", collect: "paw", warp: "stone", event: "rift", bank: "bag" };
 /** Each class is marked by its weapon. */
 export const CLASS_ICON = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" };
-/** In the order of `self.buffs`: attack up, speed up, warmth, food, slowed, burning, poisoned — then the scrolls of attack, defence, experience. */
-export const BUFF_ICON = ["sword", "chevron", "fire", "fish", "snow", "fire", "venom", "swords", "shieldp", "star"];
+/** In the order of `self.buffs`: attack up, speed up, warmth, food, slowed, burning, poisoned — then the scrolls of attack, defence, experience — then a wind shrine's push. */
+export const BUFF_ICON = ["sword", "chevron", "fire", "fish", "snow", "fire", "venom", "swords", "shieldp", "star", "chevron"];
 export const TRAIT = {
   tough: ["shield", "#b8c4d8"], fire: ["fire", "#ff8a3a"], poison: ["venom", "#9be05a"], swift: ["chevron", "#ffe070"],
   vamp: ["fang", "#e84a6a"], frost: ["snow", "#8ad8ff"], burst: ["bomb", "#ffb04a"], thorn: ["thorn", "#e8dcc0"],

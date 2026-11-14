@@ -472,6 +472,15 @@ function scenery() {
       }
       b.r(0, 38, 8, 4, "#5c1e2b"); b.r(22, 38, 8, 4, "#5c1e2b"); b.r(1, 37, 5, 1, "#9e4855"); b.r(24, 37, 5, 1, "#9e4855");
     })),
+    // 질주의 바람: a wind shrine — a carved plinth with a glowing rune, a pole, a long green pennant streaming in the wind
+    "/": prop(26, 46, (b) => {
+      b.r(4, 36, 18, 7, "#8f93a3"); b.r(4, 36, 18, 2, "#b4b8c6"); b.r(18, 38, 4, 5, "#6e7284"); b.r(2, 42, 22, 4, "#6a6e80"); b.r(2, 42, 22, 1, "#8f93a3");
+      b.r(8, 39, 2, 2, "#5ae4a0"); b.r(11, 39, 4, 1, "#5ae4a0"); b.r(16, 39, 1, 2, "#5ae4a0");
+      b.r(12, 4, 3, 33, "#8a5a34"); b.r(14, 4, 1, 33, "#6a4226"); b.r(11, 1, 5, 4, "#e0c070"); b.r(11, 1, 5, 1, "#fff0b0");
+      b.tri([[15, 6], [26, 10], [21, 12], [26, 16], [15, 17]], "#3fae72");
+      b.tri([[15, 6], [26, 10], [15, 11]], "#7ae0a4");
+      b.r(16, 7, 4, 1, "#c8ffe0"); b.r(18, 14, 5, 1, "#2a8a58");
+    }),
     // a stalk of flesh with an eye at the end of it
     0: [0, 1].map((v) => prop(22, 30, (b) => {
       b.r(8, 12, 6, 16, "#8c2c3a"); b.r(12, 12, 2, 16, "#5a1622"); b.r(8, 14, 1, 10, "#ba4e5a"); b.r(4, 26, 14, 4, "#6e2230"); b.r(4, 26, 14, 1, "#9e4855");
@@ -1280,7 +1289,7 @@ export function loadMap(m) {
     else if (ch === "I") sp = sp[pewAlongX(m, x, y) ? 0 : 1];
     else if (Array.isArray(sp)) sp = sp[Math.floor(h * sp.length)];
     statics.push(stand({
-      sp, glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" || ch === "9" ? "#ffd070" : ch === "0" || ch === "X" ? "#ff6a7a" : ch === "Y" && theme === "cave" ? "#5ae4d0" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
+      sp, glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" || ch === "9" ? "#ffd070" : ch === "0" || ch === "X" ? "#ff6a7a" : ch === "Y" && theme === "cave" ? "#5ae4d0" : ch === "/" ? "#9affc8" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
     }, x, y, ch === "T" || ch === "P" ? Math.round((hash(x, y, 8) - 0.5) * 6) : 0));
   }
   // cars stand across two tiles; houses and city blocks over four by three

@@ -434,6 +434,14 @@ function onEvent(e, t) {
       }
       break;
     }
+    case "wd": {
+      // 질주의 바람: a wind shrine pushes someone on (e: [_, eid, shrine x, shrine y])
+      const p = entityPos(e[1]);
+      S3.fx.ring(e[2], e[3], 26, "#9affc8", 520, true);
+      if (p) S3.fx.sparkle(p.x, p.y, 0.7, "#c8ffe0", 16);
+      if (e[1] === G.you) Sound.play("wp_wake");
+      break;
+    }
     case "rc": {
       // reading the return scroll: a cast bar for me, a ring round anyone reading
       const p = entityPos(e[1]);
@@ -1406,7 +1414,9 @@ function renderMini(t) {
   g.imageSmoothingEnabled = false;
   g.drawImage(mini, 0, 0);
   // the map turned to match the view: tile (x, y) is a 4×2 diamond, the map's west corner at the left edge
-  const dot = (x, y, col, r = 2) => { const tx = x / T, ty = y / T; g.fillStyle = col; g.fillRect(Math.round((tx - ty) * 2 + m.h * 2 - r / 2), Math.round(tx + ty - r / 2), r, r); };
+  // (a 4× ground's minimap is shrunk to fit the frame: its dots are drawn twice as big to stay readable)
+  const big = m.w > 100 ? 2 : 1;
+  const dot = (x, y, col, r0 = 2) => { const r = r0 * big, tx = x / T, ty = y / T; g.fillStyle = col; g.fillRect(Math.round((tx - ty) * 2 + m.h * 2 - r / 2), Math.round(tx + ty - r / 2), r, r); };
   for (const p of m.portals) dot(p.x * T + 8, p.y * T + 8, "#e080ff", 3);
   for (const n of m.npcs) if (S3.npcOut(n)) dot(n.x * T + 8, n.y * T + 8, "#ffd84a", 3);
   for (const mob of G.mobs.values()) dot(mob.x, mob.y, mob.el ? "#ffbe3c" : "#ff5050");
@@ -2128,17 +2138,20 @@ function renderWarp(s) {
   const here = G.map && G.map.id, can = stoneNear() || (G.near && G.near.role === "warp");
   box.append(el("p", "say", can ? "깨운 이동의 돌끼리는 한순간에 오갈 수 있다네. 어디로 가겠나?" : "이동의 돌 곁에서만 다른 돌로 건너갈 수 있습니다. 돌에 다가가 F를 누르세요."));
   const list = el("div", "list");
-  for (const w of G.defs.waypoints || []) {
-    const open = wpWoke(s, w.id), cur = w.id === here;
-    const row = el("div", "it wp" + (open ? "" : " locked") + (cur ? " cur" : "") + (G.warpPick === w.id ? " pick" : ""));
+  // a big hunting ground has several stones (self.wp: { mapId: bitmask }, bit i = stone i); the one I stand by is "here"
+  const stones = ((G.map && G.map.marks) || []).filter((k) => k.kind === "waypoint");
+  const hereI = stones.findIndex((k) => dist(G.me.x, G.me.y, k.x * T + 8, k.y * T + 8) < 40);
+  for (const w of G.defs.waypoints || []) for (let i = 0; i < (w.n || 1); i++) {
+    const open = wpWoke(s, w.id, i), cur = w.id === here && (hereI < 0 ? i === 0 : hereI === i);
+    const row = el("div", "it wp" + (open ? "" : " locked") + (cur ? " cur" : "") + (G.warpPick === w.id && i === 0 ? " pick" : ""));
     const ic = el("span", "wpi"); ic.append(iconImg("stone", open ? "#8ad8ff" : "#6a6658"));
-    const tx = el("div", "tx", w.name);
+    const tx = el("div", "tx", (w.n || 1) > 1 ? `${w.name} · ${(w.names && w.names[i]) || i + 1}` : w.name);
     tx.append(el("small", "", `${bandText(w.band)} · ${cur ? "현재 위치" : open ? "이동 가능" : "아직 깨우지 않음"}`));
     row.append(ic, tx);
     if (!cur) {
       const b = el("button", open ? "btn gold small" : "btn small", "이동");
       b.disabled = !open || !can;
-      b.addEventListener("click", () => { act({ t: "warp", to: w.id }); Sound.play("ui"); G.warpPick = null; });
+      b.addEventListener("click", () => { act(i ? { t: "warp", to: w.id, i } : { t: "warp", to: w.id }); Sound.play("ui"); G.warpPick = null; });
       row.append(b);
     }
     list.append(row);
@@ -2777,7 +2790,7 @@ function hudTick(t) {
   }
   const buffs = $("#st-buffs");
   // each status is its glyph and the time left; the last three are things done to you
-  const names = ["공격력 증가", "이동속도 증가", `모닥불의 온기: 경험치 +${s.warm}%`, s.food ? G.defs.items[s.food].name : "음식", "둔화: 이동속도 감소", "화상: 지속 피해", "중독: 지속 피해", "공격의 주문서: 공격력 +10%", "방어의 주문서: 받는 피해 -12%", "경험의 주문서: 경험치 +20%"];
+  const names = ["공격력 증가", "이동속도 증가", `모닥불의 온기: 경험치 +${s.warm}%`, s.food ? G.defs.items[s.food].name : "음식", "둔화: 이동속도 감소", "화상: 지속 피해", "중독: 지속 피해", "공격의 주문서: 공격력 +10%", "방어의 주문서: 받는 피해 -12%", "경험의 주문서: 경험치 +20%", "질주의 바람: 이동속도 +30%"];
   const bad = (i) => i >= 4 && i < 7;
   const left = (ms) => (ms > 90000 ? `${Math.ceil(ms / 60000)}분` : `${Math.ceil(ms / 1000)}`);
   const shownB = G.buffEnd.map((e, i) => (e > t ? [i, left(e - t)] : null)).filter(Boolean);
@@ -2786,9 +2799,10 @@ function hudTick(t) {
     buffs.dataset.v = want;
     buffs.textContent = "";
     for (const [i, l] of shownB) {
-      const sp = el("span", bad(i) ? "bad" : i >= 7 ? "scr" : "", l);
+      const scr = i >= 7 && i < 10;
+      const sp = el("span", bad(i) ? "bad" : scr ? "scr" : "", l);
       sp.title = names[i];
-      sp.prepend(iconImg(BUFF_ICON[i], bad(i) ? "#ff9a8a" : i >= 7 ? "#9ad8ff" : "#e2c486"));
+      sp.prepend(iconImg(BUFF_ICON[i], bad(i) ? "#ff9a8a" : scr ? "#9ad8ff" : i === 10 ? "#9affc8" : "#e2c486"));
       buffs.append(sp);
     }
   }

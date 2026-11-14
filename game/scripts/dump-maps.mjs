@@ -17,7 +17,7 @@ const OUT = join(ROOT, "public", "_maps.json");
 // logic.js keeps its maps / FIRES / mapPayload private; evaluate a copy with one extra export
 // (allMaps() builds every map: the generated ones are otherwise only built on first use).
 const src = readFileSync(join(ROOT, "src", "logic.js"), "utf8") +
-  "\nconst __all = allMaps();\nexport const __dump = Object.fromEntries(Object.keys(__all).map((k) => [k, { ...mapPayload(__all[k]), fires: FIRES[k] || [], spawns: __all[k].spawns, reach: Array.from(__all[k].reach || []).join('') }]));\n";
+  "\nconst __all = allMaps();\nexport const __dump = Object.fromEntries(Object.keys(__all).map((k) => [k, { ...mapPayload(__all[k]), fires: FIRES[k] || [], spawns: __all[k].spawns, reach: Array.from(__all[k].reach || []).join(''), zone: __all[k].zone ? Array.from(__all[k].zone).join('') : null }]));\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 writeFileSync(OUT, JSON.stringify(L.__dump));
 console.log(`public/_maps.json: ${Object.keys(L.__dump).join(", ")}`);

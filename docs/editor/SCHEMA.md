@@ -63,6 +63,13 @@ generated map round-trips tile for tile):
   `n` 1..40. `spawns` of a `safe` map are ignored.
 - `waypoint`: `[x, y]` or `[x, y, ax, ay]` (ax, ay = the open tile beside the stone travellers
   arrive on; default: the first open side). The stone tile becomes object `Q`.
+- `stones`: `[[x, y, ax, ay], …]` (≤ 3) more waypoint stones after `waypoint`, same form; each is
+  woken on its own (sheet key `"<id>#<i>"`, i = 1…). Needs `waypoint`. The 4× generated grounds
+  export their second and third stones here.
+- `shrines`: `[[x, y], …]` (≤ 8) wind shrines (질주의 바람, object `/`): brushing past one gives
+  +30% move speed for 20 s, each shrine once a minute per player.
+- `spawns[].zone` (written by `mapToEditor` for generated grounds, ignored on editor maps: they
+  are not zoned).
 - `boss`: `{ k }` = the field boss the map's kills call out (like generated hunting grounds);
   `x, y` (optional) is where it prefers to walk in, still kept ≥3 tiles from the waypoint and signs
   and ≥6 from players. A map with monsters, a waypoint and a boss joins the rift rotation;
