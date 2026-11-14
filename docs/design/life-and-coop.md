@@ -1,6 +1,6 @@
 # 생활 기술 · 협동 아르바이트 — 설계서 (life skills and co-op part-time jobs)
 
-Status: **L1 built** (section H, sheet v12); L2, C1–C3 design only. Originally ready for implementation **after J1** of [`jobs-and-stats.md`](jobs-and-stats.md) (sheet v10,
+Status: **L1 built** (section H, sheet v12); **L2 rules built** (section H2: the wire and actions for the client), L2 client and C1–C3 next. Originally ready for implementation **after J1** of [`jobs-and-stats.md`](jobs-and-stats.md) (sheet v10,
 `toTier`, `tierXp`, `ch.cnt`) and **after Phase 2** of [`scale-and-rift.md`](scale-and-rift.md) (ready check,
 instance closing). Phases L1 → L2 and C1 → C2 → C3 (section F). Code, identifiers and commit messages are English;
 every player-facing string is Korean (AGENTS.md rule 6). Numbers are first values that live in tables, so balance
@@ -727,3 +727,93 @@ test:rules`, `npm run data:check`, one targeted screenshot for art (`shot.mjs --
   the `#menu` button with the `life` sprout glyph. The level-up sound reuses `achieve` (audio.js untouched).
 - Tests: `tests/lifeskills.mjs` (in LIST after `life`), old-sheet rows v9/v10/v11 + a messy v12 + idempotence in
   `content.mjs`; every `v === 11` assertion now says 12.
+
+---------------------------------------------------------------------------------------------------------------
+
+## H2. L2 rules as built (contracts for the client agent; deviations)
+
+The server half of L2 is in `12-life-tables.js` / `58-life.js` (+ one line or branch each in 34 40 45 50 60 70 75 80
+90). No sheet bump (v12 carries every field). The client half (station and board windows, node sprites, the channel
+bar, `forge`/`brew` mini-games, SFX, icons) only has to draw and ask, as below.
+
+**Map payload** `map.nodes = [[kind, grade, tx, ty]…]` — kind 0 약초 · 1 광맥 · 2 통나무, grade 1–5 (= the map's grade),
+tile coordinates; the array index is the node id. Only hunting grounds (not safe maps, not instances): 8–60 per map
+(one per 150 open tiles: meadow/forest/maple 60, city 54, cave 42, abyss 43, sewer 37, crypt 32), placed once from
+the map id (`lifeNodes`, ≈ 5–10 ms on first use). A node is not solid; you stand on it.
+
+**Snapshot** `ng = [nodeIdx…]` — this map's nodes *this player* has spent (each waits `NODE.cd` = 5 min per player),
+sorted; sent on arrival and whenever the list changes (an empty list when the last one is back). Draw those as
+harvested for this player only.
+
+**self** (only when dirty, appended after `life`):
+- `jb = [day, offers, doneIds, active]` — `offers` ≤ 4 rows `[id, kind, npcName, text, gold, skIdx]` (kind `bring` ·
+  `make` · `fish` · `deliver`; `gold` before a delivery's tip, with the 단골 +10 %; `skIdx` into `LIFE`); `doneIds`
+  today's finished template ids (≤ 3); `active` = `0` or `[id, prog, n, secsLeft]` — `prog` 0 = to do / pick up,
+  1 = carrying a parcel; `n` items to hand in (0 for deliveries); `secsLeft` only while carrying (count down locally).
+- `rep = [[npcId, 0..100]…]` (only non-zero) · `pouch = {itemId: n}` (materials incl. ingots, `staple`, `flask`;
+  ≤ 999 each) · `cnt` gains `gat craft deliver` · `spd` already includes the parcel factor (predict with it).
+
+**Events** (in `ev`): `["gs", eid, kind, ms]` gathering started (pose + channel bar of `ms`) · `["gt", eid, 700]` 반짝!
+(tap now; the server accepts `gat_tap` up to 700 + 250 ms after it) · `["ga", eid, kind, r]` r = 0 done, 1 대성공,
+−1 interrupted · `["mk", eid, recipeId]` a station mini-game may start (`RECIPES[r].mg` = `pan` / `forge` / `brew`;
+it must run at least `ms × (1 − 0.008·L)` before `craft`) · `["mo", eid, recipeId, best]` craft result 0 failed (or
+burnt) / 1 made / 2 대성공 (batch: the best of the batch) · `["dl", eid, c]` c = 1 parcel picked, 2 an 알바 handed in
+(any kind), 0 parcel lost · `["e", eid, 1]` after a punch/whetstone (reuses the enhancement flash) · `["u", eid, 2]`
+an elixir drunk · `["lv2", …]` unchanged. Gains arrive in `gain` as before (`["item", id, n, q]`, `["gold", n]`).
+
+**defs().life additions**: `nodes {kinds:["h","o","w"], names, cd, ch, range, tap}`, `mg {at: [mg, ms]}`, `craft {batch:10,
+batchS:70, batchD:20, failXp}`, `bless` 10, `gearCraft {q:[1,2]}`, `jb {id: {kind, npc, lv, sk, item?, n?, to?, text,
+npcName, toName}}`, `jbPay`, `rep {tier:[10,30,60], name:["단골","친구","가족"], disc, tip, perk}`, `pouch {max, ids}`,
+`master` (Lv-50 titles); `recipes` = 84 rows `{id, sk, lv, at, in, out, fee, mg, ms, any?, rep?, eq?, gear?}` —
+`at` fire (any campfire or 쥬쥬's stove) · cook (쥬쥬의 화덕) · craft (캉캉) · alch (보글); input/output `"rune*"` = any
+rune (`ru_mix`: three of your most plentiful runes + `m_h5` → one random rune); `any` = an L1 fish dish (any level,
+pan rules); `rep` = needs that NPC's trust ≥ 30; `gear` = no batch, comes 마법/희귀.
+
+**Actions** (Korean errors in `error`):
+| action | where / when | effect |
+| --- | --- | --- |
+| `gat {i}` | within 24 px of node `i`, ready for you, 채집 Lv ≥ grade's unlock, not hit for 3 s, room for 2 | channel `2400 × time` ms; breaks on > 6 px movement, a hit taken or struck, sitting, fishing, death, map change |
+| `gat_tap {}` | while gathering | the first tap only; inside the window → +15 %p 대성공 |
+| `craft_open {r}` | at the station, recipe known, inputs, fee, room | `p.mk`, event `mk` |
+| `craft {r, s}` | after `craft_open {r}` and its minimum time; `s` 0–100 | one craft (fee only on success; a failure gives back ⌊n/2⌋ of each input, half XP) |
+| `craft {r, n}` (no `s`) | batch: life Lv ≥ recipe + 20, n 1–10, not gear, not L1 fish | n crafts scored 70 |
+| `cook {id, s}` | unchanged (L1 alias) | — |
+| `jb {a:"take", id}` | near 알바 중개인 포포 (`role: "jobs"`, town hall); an offer of today, not done, none active, < 3 done | `active` |
+| `jb {a:"pick"}` | delivery, prog 0, near the sender | parcel, `prog 1`, deadline `path / (48·0.85) × 1.8 + 20 s`, speed × (0.85 + 0.006·L) |
+| `jb {a:"give"}` | near `npc` (deliveries: `to`) with the items (bag + pouch) or the parcel in time | pay, trust, `done` |
+| `jb {a:"drop"}` | anywhere | the job (and parcel) dropped, not counted |
+| `enh {k, b:1}` | as `enh`, plus a `stone_b` | +10 %p; a failure at +5 or more keeps the step |
+| `use {id:"punch", k}` · `use {id:"whet", k}` | `k` an equipped slot | +1 socket up to 3 (gloves/boots 1, jewellery none) · the weakest affix rerolled (no duplicate key) |
+| `use {id:"el_*"}` | — | the scroll's buff for 15 min (`el_all` all three, 20 min; `el_spd` the ×1.4 speed buff 60 s); never shortens a running one |
+| `sell {pid, n}` · `wh {a:"put", pid, n}` | at a shop · at 도담 | from the pouch (`wh take` and `buy` refill the pouch through `addItem`) |
+| `buy` | unchanged shape | 5 % off at a counter whose keeper counts you a 단골 (trust ≥ 10) |
+
+**NPCs** (data): `kangkang` 캉캉 (`craft`, forge (11,6)), `bogle` 보글 (`talk` → `alch`), `bogle_shelf` 빈 병 선반 (thing,
+`shop`, goods `flask`), `juju_stove` 쥬쥬의 화덕 (thing on the stove, `cook`), 쥬쥬 keeps `shop` and sells `staple`,
+`popo` 알바 중개인 포포 (`jobs`, town hall (4,9)). The client should drop the "곧 문을 엽니다" lines for `craft alch cook
+jobs` and open the station / board windows.
+
+**Numbers (B.7 guard, enforced by `lifeskills.mjs`)** — inputs at sell value + fee against the shop: stone 90/150
+(0.60), camp 72/120, potions ×3 0.60 each, elixirs against their scrolls 0.60 (`el_all` 0.80 of all three), feather
+0.84, 산딸기 파이 0.60, 여관 스튜 0.67, tier-2 gear against 무쇠's counter 0.63–0.84; no non-gear recipe sells for more
+than its inputs + fee. Faucets: the board (≤ 3 a day) pays 30 + 6·L gold (deliveries 20 + 4·L + up to 50 % tip;
++10 % for a 단골), at most ≈ 1,100 G a day at Lv 50, and lifeNeed(L)·0.25 life XP per job.
+
+**Deviations from B**
+- **No new cosmetics.** The Lv-50 and 가족 cosmetics need wardrobe art (client/art phase); Lv 50 in each skill gives
+  a title (`life50_<skill>`, 명인 낚시꾼 …), trust 60 gives "<NPC>의 단골" (`rep_<id>`); plus `life10`, `life30`,
+  `gat100`, `craft50`, `deliver20`. Daily kinds `gather` / `craft` joined `DAILY_OTHER` (rolls change from the next reset).
+- **Elixirs = scroll strength, longer** (the stats read the scrolls' `pct`); B.6's 12 % / 14 % were not used. 들꽃
+  주먹밥 gives xp +4 % atk +2 % (food has no defence buff).
+- **Fees raised to meet the guard**: stone 60 G (B.6 said 40 → 70 G < 90 G), camp 42 G, potions/elixirs as above;
+  주먹밥/꼬치 sell prices lowered so a cook → sell loop never pays. L1 campfire fish dishes are exempt (`any`).
+- **Stations**: 쥬쥬 stays a shop (her counter keeps working on today's client); the stove is a `cook` thing; flasks
+  come from a shelf thing in the lab instead of 보글's own `goods` (roles other than `shop` carry no goods).
+- **Runes have no tiers**: 룬 변환 is three runes → one random rune. **Gear rarity** caps at 희귀 ("cap 3" read as
+  "never 전설").
+- **Delivery**: routes are computed on first use (`jbRoute`, memo `JB_ROUTES`), 27–94 tiles (39–86 s); no Lv-40
+  단풍 왕도 route (that map is built lazily); Lv 25 routes are 쥬쥬 → 동동 and 캉캉 → 보글. Board XP is B.9's
+  `lifeNeed(L)·0.25` for every kind; gold for deliveries is B.8's.
+- **Offers** are drawn once per session-day (`p.jbOff`), so a level gained at noon does not reshuffle them.
+- **Perks** (proposal filled in): 모카 → 산딸기 파이, 마루 → 여관 스튜, 캉캉 → `stone_x2` (two stones a craft), 보글 →
+  elixirs +5 min, 쥬쥬 → +10 %p 대성공 at her stove. Editor maps' optional `"nodes"` list is not wired.
