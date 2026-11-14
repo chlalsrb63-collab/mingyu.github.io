@@ -1032,7 +1032,7 @@ function autoOk(m, s, t, d) {
   if (!md) return false;
   if (t - (m.atkT || -1e9) < 2500 && d < 70) return true;
   if (md.boss || m.el === 2) return false;
-  return !(m.el && md.lv >= s.lvl + 3);
+  return !(m.el && md.lv >= s.lvl + 12);   // (shown levels: 12 = three old levels)
 }
 
 /** What the ground under a tile sounds like underfoot. */
@@ -1104,7 +1104,7 @@ function update(dt, t) {
     let threat = null, td = 110;
     for (const m of G.mobs.values()) {
       const md = G.defs.mobs[m.k], d = dist(me.x, me.y, m.x, m.y);
-      if (md && !md.chest && d < td && md.lv > s.lvl && (md.boss || m.el === 2 || (m.el && md.lv >= s.lvl + 3))) { threat = m; td = d; }
+      if (md && !md.chest && d < td && md.lv > s.lvl && (md.boss || m.el === 2 || (m.el && md.lv >= s.lvl + 12))) { threat = m; td = d; }   // shown levels: 12 = three old ones
     }
     if (threat) {
       autoSt.home = null;                            // hunt again wherever the retreat ends

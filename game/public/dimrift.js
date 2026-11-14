@@ -125,6 +125,7 @@ function renderHud() {
   const pct = Math.min(100, d[0] / 10);
   const name = D().themes[d[10]] || "차원 균열";
   const label = ["", "균열의 주인 출현!", "정화 완료 — 귀환의 문까지", "균열이 닫힙니다…"][d[2]];
+  // (the wire carries the rift's world tier; players see levels as 4·tier − 3, like monsters and doors)
   $("#dim-title").textContent = `차원 균열 Lv.${4 * d[4] - 3} · ${name}`;
   $("#dim-time").textContent = d[2] === 2 ? `문 ${mmss(secs)}` : d[2] === 3 ? `${secs}초` : mmss(secs);
   $("#dim-time").classList.toggle("low", d[2] <= 1 && secs <= 180);

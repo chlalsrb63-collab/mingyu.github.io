@@ -754,6 +754,10 @@ dim_boss dim_clear dim_portal`, track `dim`), `index.html` (`#dim-hud #w-dim #w-
   Solo bot at Lv.22: master at 5.6 min, cleared at 13.9 min with 9 deaths (before Phase 1's combat fixes it could not
   beat the master) — measured, asserted only that the master is reached in time. Re-tune after J1 (stats rework) with
   `HPB= BOSSHP= BOSSATK= LVK= NOCLEAR=1 MORE=1 node tests/dimrift.mjs -v`.
+  **Re-tuned after J1** (jobs-and-stats): heroes of the mapped level (4L−3, mastery L, job from 20) killed ≈ 30 % faster
+  (clears 4.4 / 5.1 / 3.8 / 6.1); `hpBase` 5.8 → 8.2 brings them back to 6.2 / 7.6 / 5.7 / 7.3 (avg 6.7). The rift's
+  `lv` is now the world tier `floor(toTier(max level))` clamped [10, 49]; the client shows it as Lv.4·tier−3; rift
+  clears count in `ch.cnt.dim`.
 
 ### H.3 Rules that differ from D.3–D.7
 - **A wipe does not fail the rift**: everyone gets up in the start room after **25 s** (no XP loss); only the clock
