@@ -182,7 +182,11 @@ function wallDeco(theme, h, x, y, v, faceL, faceR) {
       const eye = [".1111.", "122221", "123321", "122221", ".1111."];
       eye.forEach((row, j) => [...row].forEach((c2, i) => { if (c2 === ".") return; const [X, Y] = at(s0 + i, z0 + 4 - j); buf.px(X, Y, [0, C("#330e18"), C("#f4ecd8"), C("#c41830")][+c2]); }));
     } else if (theme === "abyss" && k > 0.88) {
-      for (let i = 0; i < 4; i++) for (let j = 0; j < 4 - Math.abs(1.5 - (j)) ; j++) { const [X, Y] = at(2 + i * 4, 1 + j); buf.px(X, Y, C("#ece4cc")); const [X2, Y2] = at(3 + i * 4, 1 + j); if (j < 2) buf.px(X2, Y2, C("#ece4cc")); }
+      // a row of teeth along the foot of the wall
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 5; j++) {
+        const w = j < 2 ? 3 : j < 4 ? 2 : 1;
+        for (let q = 0; q < w; q++) { const [X, Y] = at(1 + i * 5 + q + (3 - w + 1) / 2 | 0, 1 + j); buf.px(X, Y, q === 0 ? C("#f8f2e0") : C("#d8ccb0")); }
+      }
     }
   };
 }
