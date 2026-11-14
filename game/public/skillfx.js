@@ -12,7 +12,9 @@ import * as S3 from "./scene2d.js";
 import * as SP from "./sprites.js";
 import { Sound } from "./audio.js";
 
-const P = 2;                       // world unit → world pixel, as in scene2d
+const P = 2;                       // world unit → world pixel, as in scene2d (flat effects are drawn in these)
+/** Server units → iso pixels, lifted `up` pixels: where things in the air are drawn. */
+const at = (wx, wy, up = 0) => { const [x, y] = S3.iso(wx, wy); return [x, y - up]; };
 /** What classgauge.js reads: the client state and the live number off the snapshot. */
 export const live = { G: null };
 /** Monster signs: id → { fz, cf, vu } (end times). */
@@ -42,9 +44,9 @@ function groundRing(wx, wy, r, ms, col) {
   S3.fxCustom((g, k) => {
     const a = Math.min(1, k * 8, (1 - k) * 8);
     g.globalAlpha = 0.16 * a; g.fillStyle = col;
-    g.beginPath(); g.ellipse(wx * P, wy * P, r * P, r * P * 0.86, 0, 0, 7); g.fill();
-    g.globalAlpha = 0.5 * a; g.strokeStyle = col; g.lineWidth = 2; g.setLineDash([6, 6]); g.lineDashOffset = -k * ms / 40;
-    g.beginPath(); g.ellipse(wx * P, wy * P, r * P, r * P * 0.86, 0, 0, 7); g.stroke();
+    g.beginPath(); g.arc(wx * P, wy * P, r * P, 0, 7); g.fill();
+    g.globalAlpha = 0.5 * a; g.strokeStyle = col; g.lineWidth = 4; g.setLineDash([12, 12]); g.lineDashOffset = -k * ms / 20;
+    g.beginPath(); g.arc(wx * P, wy * P, r * P, 0, 7); g.stroke();
   }, ms, true);
 }
 /** A tinted copy of a sprite (for the rogue's puppet). */
@@ -66,7 +68,7 @@ function flyingBlade(eid, ax, ay, bx, by, ms, spins = 2) {
   const fr = S3.personFrame(eid);
   if (!fr || !fr.weapon) { S3.fx.beam(ax, ay, bx, by, "#dfe8ff", 0.6); return; }
   S3.fxCustom((g, k) => {
-    const x = (ax + (bx - ax) * k) * P, y = (ay + (by - ay) * k) * P - 14 - Math.sin(k * Math.PI) * 10;
+    const [x, y] = at(ax + (bx - ax) * k, ay + (by - ay) * k, 14 + Math.sin(k * Math.PI) * 10);
     g.translate(Math.round(x), Math.round(y)); g.rotate(k * spins * Math.PI * 2);
     g.drawImage(fr.weapon, -SP.GRIP[0] - 8, -SP.GRIP[1]);
   }, ms);
@@ -165,9 +167,9 @@ function overlay(g, t) {
   if (!G) return;
   // a rogue's marks over each monster: little violet diamonds, one per stack
   for (const m of G.mobs.values()) {
-    const top = m.y * P - (m.h3 || 1.3) * 26 - 4;
+    const [mx, my] = at(m.x, m.y), top = my - (m.h3 || 1.3) * 26 - 4;
     if (m.mk) {
-      const n = m.mk, w = n * 5 - 1, x0 = Math.round(m.x * P - w / 2), y0 = Math.round(top - 4);
+      const n = m.mk, w = n * 5 - 1, x0 = Math.round(mx - w / 2), y0 = Math.round(top - 4);
       const hot = n >= 5 && Math.sin(t / 90) > 0;
       for (let i = 0; i < n; i++) {
         const x = x0 + i * 5;
@@ -179,19 +181,19 @@ function overlay(g, t) {
     if (!s) continue;
     if (s.fz > t) {
       const w = 22, h = Math.max(18, (m.h3 || 1.3) * 22);
-      g.globalAlpha = 0.38; g.fillStyle = "#bfe8ff"; g.fillRect(Math.round(m.x * P - w / 2), Math.round(m.y * P - h), w, h);
-      g.globalAlpha = 0.9; g.strokeStyle = "#e8f8ff"; g.lineWidth = 1; g.strokeRect(Math.round(m.x * P - w / 2) + 0.5, Math.round(m.y * P - h) + 0.5, w - 1, h - 1);
-      g.globalAlpha = 1; px(g, m.x * P - w / 2 + 3, m.y * P - h + 3, 2, 5, "#ffffff");
+      g.globalAlpha = 0.38; g.fillStyle = "#bfe8ff"; g.fillRect(Math.round(mx - w / 2), Math.round(my - h), w, h);
+      g.globalAlpha = 0.9; g.strokeStyle = "#e8f8ff"; g.lineWidth = 1; g.strokeRect(Math.round(mx - w / 2) + 0.5, Math.round(my - h) + 0.5, w - 1, h - 1);
+      g.globalAlpha = 1; px(g, mx - w / 2 + 3, my - h + 3, 2, 5, "#ffffff");
     }
     if (s.cf > t) {
       for (let i = 0; i < 3; i++) {
-        const a = t / 160 + i * 2.1, x = m.x * P + Math.cos(a) * 9, y = top - 2 + Math.sin(a) * 3;
+        const a = t / 160 + i * 2.1, x = mx + Math.cos(a) * 9, y = top - 2 + Math.sin(a) * 3;
         px(g, x - 1, y, 3, 1, "#ffe86a"); px(g, x, y - 1, 1, 3, "#ffe86a");
       }
     }
     if (s.vu > t && Math.sin(t / 110) > -0.4) {
       // a cracked shield: armour that will not hold
-      const x = Math.round(m.x * P + 10), y = Math.round(top + 2);
+      const x = Math.round(mx + 10), y = Math.round(top + 2);
       px(g, x - 1, y - 1, 7, 8, INK); px(g, x, y, 5, 5, "#8ad8ff"); px(g, x + 1, y + 5, 3, 1, "#8ad8ff"); px(g, x + 2, y, 1, 3, INK); px(g, x + 1, y + 3, 1, 2, INK);
     }
   }
@@ -200,7 +202,7 @@ function overlay(g, t) {
   const people = [[G.me, true]];
   for (const p of G.players.values()) people.push([p, false]);
   for (const [p, me] of people) {
-    const fl = p.fl | 0, x = p.x * P, y = p.y * P;
+    const fl = p.fl | 0, [x, y] = at(p.x, p.y);
     if (fl & 4) {
       g.strokeStyle = `rgba(255,216,90,${0.55 + 0.3 * Math.sin(t / 60)})`; g.lineWidth = 2;
       g.beginPath(); g.ellipse(x, y - 10, 15, 17, 0, Math.PI, 0); g.stroke();
@@ -311,7 +313,7 @@ export function skillEvent(e, ctx) {
       const ax = o.x, ay = o.y;
       S3.fxCustom((g, k) => {
         const u = Math.min(1, k / 0.75);
-        const cx = (ax + (x - ax) * u) * P, cy = (ay + (y - ay) * u) * P - 22 - Math.sin(u * Math.PI) * 30;
+        const [cx, cy] = at(ax + (x - ax) * u, ay + (y - ay) * u, 22 + Math.sin(u * Math.PI) * 30);
         const w = k < 0.75 ? [7, 5, 2, 5][Math.floor(k * 24) % 4] : 7;
         const face = k < 0.75 ? Math.floor(k * 12) % 2 : !heads;
         g.translate(Math.round(cx), Math.round(cy));
@@ -332,7 +334,7 @@ export function skillEvent(e, ctx) {
         // the hook's chain, drawn out and wound back in
         S3.fxCustom((g, k) => {
           const u = k < 0.4 ? k / 0.4 : 1 - (k - 0.4) / 0.6;
-          const x0 = ax * P, y0 = ay * P - 12, x1 = x0 + (bx * P - x0) * u, y1 = y0 + (by * P - 10 - y0) * u;
+          const [x0, y0] = at(ax, ay, 12), [bx2, by2] = at(bx, by, 10), x1 = x0 + (bx2 - x0) * u, y1 = y0 + (by2 - y0) * u;
           const n = Math.max(2, Math.floor(Math.hypot(x1 - x0, y1 - y0) / 4));
           for (let i = 0; i <= n; i++) px(g, x0 + (x1 - x0) * i / n - 1, y0 + (y1 - y0) * i / n - 1, 2, 2, i % 2 ? "#8f8b80" : "#d8d8e0");
           px(g, x1 - 2, y1 - 3, 4, 2, "#e6e0d0"); px(g, x1 + 1, y1 - 1, 2, 3, "#e6e0d0");
@@ -353,7 +355,7 @@ export function skillEvent(e, ctx) {
           for (let i = 0; i <= 12; i++) {
             const u = i / 12;
             if (u > k * 1.6) break;
-            const x = (ax + (bx - ax) * u) * P, y = (ay + (by - ay) * u) * P - 10 - Math.sin(u * Math.PI) * 36;
+            const [x, y] = at(ax + (bx - ax) * u, ay + (by - ay) * u, 10 + Math.sin(u * Math.PI) * 36);
             g.globalAlpha = 1 - k; px(g, x - 1, y - 1, 2, 2, "#d0f0e8");
           }
         }, 420);

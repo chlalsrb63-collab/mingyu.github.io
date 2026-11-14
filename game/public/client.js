@@ -200,7 +200,7 @@ function loadMap(m) {
   G.path = null;
   S3.leaveStage();
   S3.loadMap(m);
-  mini = Art.renderMini(m);
+  mini = isoMini(m);
   const cv = $("#mini-cv");
   cv.width = mini.width; cv.height = mini.height;
   G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear();
@@ -552,7 +552,12 @@ addEventListener("keydown", (e) => {
 addEventListener("keyup", (e) => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
 addEventListener("blur", () => { keys.clear(); held.atk = false; });
 
-/** Which way to walk: keys, the stick, or the next step of a clicked route. */
+/**
+ * Which way to walk on the ground: keys, the stick, or the next step of a clicked route.
+ * Keys and stick speak in screen directions, and the view looks at the ground from
+ * the diagonal: screen-up is north-west and north-east together, screen-right is
+ * east and north, and a screen diagonal runs straight along the tile edges.
+ */
 function moveVector() {
   let x = 0, y = 0;
   if (Mini.active()) { keys.clear(); G.path = null; return [0, 0]; }
@@ -561,7 +566,7 @@ function moveVector() {
   if (keys.has("ArrowUp") || keys.has("w") || keys.has("ㅈ")) y -= 1;
   if (keys.has("ArrowDown") || keys.has("s") || keys.has("ㄴ")) y += 1;
   if (joy.on) { x = joy.x; y = joy.y; }
-  if (x || y) G.path = null;
+  if (x || y) { G.path = null; [x, y] = [x + y, y - x]; }
   else if (G.path) {
     while (G.path.length && dist(G.me.x, G.me.y, G.path[0][0], G.path[0][1]) < 2.5) G.path.shift();
     if (!G.path.length) G.path = null;
@@ -1139,6 +1144,17 @@ function renderText(t) {
   if (G.punch > 0) { tg.fillStyle = `rgba(255,255,255,${G.punch * 0.16})`; tg.fillRect(0, 0, text.width, text.height); G.punch = Math.max(0, G.punch - 0.25); }
 }
 
+/** The minimap as a diamond, turned the way the world is seen: screen-up on the map is screen-up in the world. */
+function isoMini(m) {
+  const sq = Art.renderMini(m, 4);
+  const c = document.createElement("canvas");
+  c.width = (m.w + m.h) * 2; c.height = m.w + m.h;
+  const g = c.getContext("2d");
+  g.imageSmoothingEnabled = false;
+  g.setTransform(0.5, 0.25, -0.5, 0.25, m.h * 2, 0);
+  g.drawImage(sq, 0, 0);
+  return c;
+}
 let miniAt = 0;
 function renderMini(t) {
   if (!mini || t - miniAt < 200) return;
@@ -1147,8 +1163,8 @@ function renderMini(t) {
   const m = G.map;
   g.imageSmoothingEnabled = false;
   g.drawImage(mini, 0, 0);
-  const k = mini.width / m.w / T;
-  const dot = (x, y, col, r = 2) => { g.fillStyle = col; g.fillRect(Math.round(x * k - r / 2), Math.round(y * k - r / 2), r, r); };
+  // the map turned to match the view: tile (x, y) is a 4×2 diamond, the map's west corner at the left edge
+  const dot = (x, y, col, r = 2) => { const tx = x / T, ty = y / T; g.fillStyle = col; g.fillRect(Math.round((tx - ty) * 2 + m.h * 2 - r / 2), Math.round(tx + ty - r / 2), r, r); };
   for (const p of m.portals) dot(p.x * T + 8, p.y * T + 8, "#e080ff", 3);
   for (const n of m.npcs) dot(n.x * T + 8, n.y * T + 8, "#ffd84a", 3);
   for (const mob of G.mobs.values()) dot(mob.x, mob.y, mob.el ? "#ffbe3c" : "#ff5050");

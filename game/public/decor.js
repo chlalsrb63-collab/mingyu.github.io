@@ -354,15 +354,15 @@ export function plan(m, theme) {
     if (pen) for (let i = 0; i < w; i++) for (let j = y + h; j < m.h && base(m, x + i, j, extra.on); j++) covered.add(`${x + i},${j}`);
     if (key === "falls") {
       if (extra.culvert) {
-        statics.push({ sp: S.culvert, x: (x + w / 2) * T, y: (y + h) * T - 2, glow: null, glint: -1 });
-        falls.push({ x: (x + w / 2) * T - 14, w: 28, top: (y + h) * T - 20, bottom: (y + h) * T + 16, water: extra.water, foam: extra.foam, ph: hash(x, y, 2) * 9, pool: true });
+        statics.push({ sp: S.culvert, x: (x + w / 2) * T, y: (y + h) * T - 2, glow: null, glint: -1, foot: [x, y, w, h] });
+        falls.push({ x: (x + w / 2) * T - 14, w: 28, top: (y + h) * T - 20, bottom: (y + h) * T + 16, edge: (y + h) * T, water: extra.water, foam: extra.foam, ph: hash(x, y, 2) * 9, pool: true });
       } else {
-        statics.push({ sp: S.lip(w * T, ["#aaa290", "#7c7666", "#5a5650"]), x: (x + w / 2) * T, y: (y + h) * T - 12, glow: null, glint: -1 });
-        falls.push({ x: x * T + 4, w: w * T - 8, top: (y + h) * T - 14, bottom: (y + h) * T + 22, water: extra.water, foam: extra.foam, ph: hash(x, y, 2) * 9 });
+        statics.push({ sp: S.lip(w * T, ["#aaa290", "#7c7666", "#5a5650"]), x: (x + w / 2) * T, y: (y + h) * T - 12, glow: null, glint: -1, lip: true });
+        falls.push({ x: x * T + 4, w: w * T - 8, top: (y + h) * T - 14, bottom: (y + h) * T + 22, edge: (y + h) * T, water: extra.water, foam: extra.foam, ph: hash(x, y, 2) * 9 });
       }
       continue;
     }
-    statics.push({ sp, x: (x + w / 2) * T, y: (y + h) * T + 2, glow: GLOW[key] || null, glint: key === "crystals" ? hash(x, y, 9) * 6 : -1, big: !!GLOW[key], land: key, ph: hash(x, y, 3) * 9 });
+    statics.push({ sp, x: (x + w / 2) * T, y: (y + h) * T + 2, glow: GLOW[key] || null, glint: key === "crystals" ? hash(x, y, 9) * 6 : -1, big: !!GLOW[key], land: key, ph: hash(x, y, 3) * 9, foot: [x, y, w, h] });
   }
   return { statics, covered, falls };
 }
@@ -378,7 +378,7 @@ export function town(m) {
   for (let y = 1; y < m.h - 1; y++) for (let x = 1; x < m.w - 1; x++) {
     if (m.o[y][x] !== "B" || hash(x, y, 31) > 0.55) continue;
     swap.add(`${x},${y}`);
-    out.push({ sp: S.stall[k++ % 3], x: x * T + 16, y: (y + 1) * T - 2, glow: null, glint: -1, nightGlow: "#ffd890" });
+    out.push({ sp: S.stall[k++ % 3], x: x * T + 16, y: (y + 1) * T - 2, glow: null, glint: -1, nightGlow: "#ffd890", tile: [x, y] });
   }
   // the day's tasks pinned up beside the one who hands them out, on a blocked tile so it never stands in the way
   for (const n of m.npcs || []) {
@@ -390,10 +390,10 @@ export function town(m) {
       const d = Math.abs(dx) + Math.abs(dy) + (dy > 0 ? 0.5 : 0);
       if (d < bd) { bd = d; best = [x, y]; }
     }
-    if (best) { swap.add(`${best[0]},${best[1]}`); out.push({ sp: S.notice, x: best[0] * T + 16, y: (best[1] + 1) * T - 2, glow: null, glint: -1 }); }
-    else out.push({ sp: S.notice, x: n.x * T + 16, y: n.y * T + 6, glow: null, glint: -1 });
+    if (best) { swap.add(`${best[0]},${best[1]}`); out.push({ sp: S.notice, x: best[0] * T + 16, y: (best[1] + 1) * T - 2, glow: null, glint: -1, tile: best }); }
+    else out.push({ sp: S.notice, x: n.x * T + 16, y: n.y * T + 6, glow: null, glint: -1, tile: [n.x, n.y - 0.6] });
   }
-  for (const b of m.big || []) if (b.t === "fountain") out.push({ sp: S.statue, x: (b.x + 1) * T, y: (b.y + 2) * T - 1, lift: 50, glow: null, glint: -1 });
+  for (const b of m.big || []) if (b.t === "fountain") out.push({ sp: S.statue, x: (b.x + 1) * T, y: (b.y + 2) * T - 1, lift: 46, glow: null, glint: -1, tile: [b.x + 0.5, b.y + 0.5] });
   // lantern strings between lamp posts that stand near each other
   const lamps = [];
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.o[y][x] === "L") lamps.push([x, y]);
@@ -470,18 +470,24 @@ export function pulse(m, theme) {
 
 // ───────────────────────────── live effects ─────────────────────────────
 
-/** Falling water (or sludge) over a ledge, its foam churning where it lands. */
+/**
+ * Falling water (or sludge) over a ledge, its foam churning where it lands. The
+ * ledge runs along the diagonal in the quarter view: each fall is a curtain whose
+ * foot starts at (X0, Y0) and runs `len` pixels to the right, dropping half a
+ * pixel for every one across; `H` is how far it falls.
+ */
 export function drawFalls(g, falls, t, ox, oy, vw, vh) {
   for (const f of falls) {
-    if (f.x > ox + vw || f.x + f.w < ox || f.top > oy + vh || f.bottom < oy) continue;
-    const h = f.bottom - f.top - 8;
-    g.fillStyle = f.water; g.fillRect(f.x, f.top, f.w, h);
-    g.fillStyle = lt(f.water, 1.25);
-    for (let i = 0; i < f.w; i += 4) { const off = (t / 6 + i * 13 + f.ph * 40) % h; g.fillRect(f.x + i, f.top + off, 2, 6); }
-    g.fillStyle = f.foam;
-    for (let i = 0; i < f.w; i += 3) { const k = Math.sin(t / 90 + i + f.ph) * 2; g.fillRect(f.x + i - 1, f.top + h - 2 + k, 4, 3); }
-    if (f.pool) { g.fillStyle = f.water; g.beginPath(); g.ellipse(f.x + f.w / 2, f.top + h + 3, f.w / 2 + 8, 5, 0, 0, 7); g.fill(); g.fillStyle = f.foam; }
-    g.fillRect(f.x - 3, f.top + h + 2, f.w + 6, 2);
+    if (f.X0 > ox + vw || f.X0 + f.len < ox || f.Y0 - f.H > oy + vh + 20 || f.Y0 + f.len / 2 < oy - 20) continue;
+    const H = f.H, light = lt(f.water, 1.25);
+    for (let i = 0; i < f.len; i += 2) {
+      const x = Math.round(f.X0 + i), base = Math.round(f.Y0 + i / 2);
+      g.fillStyle = f.water; g.fillRect(x, base - H, 2, H);
+      const off = (t / 6 + i * 13 + f.ph * 40) % H;
+      g.fillStyle = light; g.fillRect(x, base - H + off, 1, 5);
+      g.fillStyle = f.foam; g.fillRect(x - 1, base - 2 + Math.round(Math.sin(t / 90 + i + f.ph) * 1.5), 3, 3);
+    }
+    if (f.pool) { g.fillStyle = f.water; g.beginPath(); g.ellipse(f.X0 + f.len / 2, f.Y0 + f.len / 4 + 3, f.len / 2 + 6, 4, 0, 0, 7); g.fill(); }
   }
 }
 
@@ -552,7 +558,7 @@ export function drawStrings(g, strings, t, ox, oy, vw, vh, night) {
     for (let i = 0; i <= n; i++) { const k = i / n, x = s.ax + (s.bx - s.ax) * k, y = s.ay + Math.sin(k * Math.PI) * (14 + sway); g.fillRect(Math.round(x), Math.round(y), 2, 1); }
     const m = Math.max(3, Math.floor(n / 4));
     for (let i = 1; i < m; i++) {
-      const k = i / m, x = Math.round(s.ax + (s.bx - s.ax) * k), y = Math.round(s.ay + Math.sin(k * Math.PI) * (14 + sway)) + 1, c = COL[(i + Math.round(s.ax / T)) % 5];
+      const k = i / m, x = Math.round(s.ax + (s.bx - s.ax) * k), y = Math.round(s.ay + Math.sin(k * Math.PI) * (14 + sway)) + 1, c = COL[(((i + Math.round(s.ax / T)) % 5) + 5) % 5];
       g.fillStyle = "#3a3448"; g.fillRect(x - 2, y + 1, 5, 6);
       g.fillStyle = night > 0.3 ? lt(c, 1.25) : c; g.fillRect(x - 1, y + 2, 3, 4);
       if (night > 0.3) { g.globalCompositeOperation = "lighter"; g.globalAlpha = night * 0.55; g.drawImage(glow(c, 10), x - 10, y - 6); g.globalAlpha = 1; g.globalCompositeOperation = "source-over"; }

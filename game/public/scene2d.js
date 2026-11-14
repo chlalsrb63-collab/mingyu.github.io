@@ -1,22 +1,40 @@
 /**
- * The world, drawn top-down in chunky pixels.
+ * The world, seen from the diagonal (a 2:1 quarter view) in chunky pixels.
  *
  * Ground, scenery, creatures and effects are all painted here in one style:
  * flat colours, one shadow tone, and a thick dark outline around everything
- * that stands up. Terrain is laid out as soft-cornered patches with a darker
- * rim where two kinds of ground meet. People and monsters come from
- * sprites.js; a weapon is a separate sprite that is rotated around the hand,
- * so an attack is the weapon itself being swung.
+ * that stands up. People and monsters come from sprites.js; a weapon is a
+ * separate sprite that is rotated around the hand, so an attack is the weapon
+ * itself being swung.
  *
- * Units: the server speaks in sixteenths of a tile. One tile is 32 pixels
- * here, so one server unit is two pixels. The view is scaled by a whole number
- * so every pixel stays square.
+ * Units: the server speaks in sixteenths of a tile, on a square grid. The
+ * ground is laid out in that square grid first ("world pixels", one tile = 32,
+ * one server unit = 2) and then projected onto diamonds: a server point
+ * (wx, wy) lands at iso pixel (wx − wy, (wx + wy) / 2), so one tile is a
+ * 32×16 diamond and a character (32 px) is about a tile wide. Everything that
+ * stands up is drawn upright at its projected foot and painted back to front
+ * by wx + wy. The view is scaled by a whole number so every pixel stays square.
  */
 
 import * as SP from "./sprites.js";
 import * as DC from "./decor.js";
+import * as IT from "./isotiles.js";
+import * as Art from "./art.js";
 
 const T = 32, P = 2;
+/** Iso pixels per server unit along the screen's x; y is half that. Height lifts by 26 px per unit `h`. */
+const K = 1, LIFT = 26;
+/** Server units → iso pixels (camera-free). */
+export function iso(wx, wy, h = 0) { return [(wx - wy) * K, ((wx + wy) * K) / 2 - h * LIFT]; }
+/** World pixels (the square ground's, two per server unit) → iso pixels. */
+const sqI = (u, v) => [((u - v) * K) / 2, ((u + v) * K) / 4];
+/** Tile coordinates (fractions allowed) → iso pixels. */
+const tI = (tx, ty) => [(tx - ty) * 16 * K, (tx + ty) * 8 * K];
+/** The screen angle (canvas convention) of a direction on the ground. */
+export function sAng(dx, dy) { return Math.atan2((dx + dy) / 2, dx - dy); }
+/** The matrix that lays world-pixel drawing flat onto the diamond ground. */
+const FLAT = [K / 2, K / 4, -K / 2, K / 4];
+const DXW = [0, -1, 1, 0], DYW = [1, 0, 0, -1];
 const INK = "#2b2233";
 const DEG = Math.PI / 180;
 const hash = (x, y, s = 0) => {
@@ -859,41 +877,201 @@ function paintExtras(m, c) {
 let theme = "meadow", waterTiles = [], smokers = [];
 /** Level art from decor.js: falling water, a layer that breathes, little emitters, lantern strings, critters, signs. */
 let falls = [], pulseCv = null, emit = [], strings = [], critters = [], signs = [], lights = [];
+/** Whether the ground came from isotiles.js (its water animates itself). */
+let artGround = false;
+
+/** Project a square world-pixel canvas of the whole map onto the diamond grid. */
+function toIso(m, src, smooth = false) {
+  const [c, x] = sheet((m.w + m.h) * 16 * K, (m.w + m.h) * 8 * K);
+  x.imageSmoothingEnabled = smooth;
+  x.setTransform(FLAT[0], FLAT[1], FLAT[2], FLAT[3], m.h * 16 * K, 0);
+  x.drawImage(src, 0, 0);
+  x.setTransform(1, 0, 0, 1, 0, 0);
+  return c;
+}
+
+/** Stand a sprite on tile (tx, ty): its foot a little in front of the tile's middle, sorted at the middle. */
+function stand(st, tx, ty, nudge = 0) {
+  const [X, Y] = tI(tx + 0.5, ty + 0.5);
+  st.x = X + nudge; st.y = Y + 4;
+  st.dx = Math.round(st.x - st.sp.width / 2); st.dy = Math.round(st.y - st.sp.height + 2 - (st.lift || 0));
+  st.d = Y + (st.lift ? 1 : 0);
+  return st;
+}
+/** Stand a big sprite over a footprint of fw×fh tiles at (fx, fy), painted in upright strips. */
+function standBig(st, fx, fy, fw, fh, down = 0) {
+  const [X, Y] = tI(fx + fw / 2, fy + fh / 2);
+  st.x = X; st.y = Y + (fw + fh) * 2 + down;
+  st.dx = Math.round(st.x - st.sp.width / 2); st.dy = Math.round(st.y - st.sp.height + 2 - (st.lift || 0));
+  st.d = Y;
+  slice(st, fx, fy, fw, fh);
+  return st;
+}
+/**
+ * Cut a wide sprite into strips 16 pixels across, each sorted by the front edge of
+ * the footprint under it, so someone standing before one face of a building is
+ * painted over it while someone behind it is hidden.
+ */
+function slice(st, fx, fy, fw, fh) {
+  const [Lx, Ly] = tI(fx, fy + fh), [Bx, By] = tI(fx + fw, fy + fh), [Rx, Ry] = tI(fx + fw, fy);
+  const front = (X) => (X <= Lx ? Ly : X >= Rx ? Ry : X < Bx ? Ly + ((X - Lx) * (By - Ly)) / (Bx - Lx) : By + ((X - Bx) * (Ry - By)) / (Rx - Bx));
+  st.slices = [];
+  const w = st.sp.width;
+  for (let sx = 0; sx < w; sx += 16) {
+    const sw = Math.min(16, w - sx), X0 = st.dx + sx;
+    st.slices.push({ sx, w: sw, d: Math.min(front(X0), front(X0 + sw)) - 3 });
+  }
+  st.foot = [fx, fy, fw, fh];
+}
+
+// ── raised blocks: cliffs, hedges, walls, the city's panels and underground rock, one per tile
+/** [height, top, lit rim, dark rim, south face, east face, seam]. */
+function blockStyle(kind) {
+  if (kind === "W") {
+    const U = UG[theme];
+    if (U) return { h: 30, top: lt(U.rock, 1.6), rim: U.face[2], low: U.face[3], s: U.face[0], e: dk(U.face[0], 0.72), seam: U.face[3], cap: U.face[1], kind };
+    return { h: 30, top: "#1b2644", rim: "#4a6a98", low: "#141c34", s: "#2e4468", e: "#223450", seam: "#141c34", cap: "#3a5680", kind };
+  }
+  return {
+    C: { h: 20, top: "#b4aa8c", rim: "#d2c8a8", low: "#8c8168", s: "#a1967a", e: "#776c56", seam: "#8c8168", cap: "#c6bc9c", kind },
+    H: { h: 14, top: "#4aa552", rim: "#84d474", low: "#256a32", s: "#33863f", e: "#256a32", seam: "#2a7036", cap: "#6ac060", kind },
+    U: { h: 16, top: "#cbc6b6", rim: "#e2decf", low: "#8c8678", s: "#9c9686", e: "#726c5e", seam: "#827c6e", cap: "#bcb6a6", kind },
+    Z: { h: 34, top: "#5a6278", rim: "#848ca2", low: "#2e3240", s: "#4a5064", e: "#343846", seam: "#3c4254", cap: "#6a7288", kind },
+  }[kind];
+}
+const blockCache = new Map();
+/**
+ * One raised tile: a lit top diamond and the two faces that look at the camera.
+ * `mask` says which neighbours are blocks too (1 north, 2 east, 4 south, 8 west)
+ * so joined pieces read as one mass. The image's top-left sits at the tile's top
+ * corner + (−16, −h), as isotiles.js pieces do.
+ */
+function blockSprite(kind, mask, v, topOnly) {
+  const key = theme + kind + mask + v + (topOnly ? "t" : "");
+  let c = blockCache.get(key);
+  if (c) return c;
+  const B = blockStyle(kind), H = B.h;
+  let x;
+  [c, x] = sheet(32, 16 + H);
+  const r = (a, b, w, h, col) => { x.fillStyle = col; x.fillRect(a, b, w, h); };
+  const top = (cl) => (cl < 16 ? 7 - (cl >> 1) : (cl - 16) >> 1), bot = (cl) => (cl < 16 ? 8 + (cl >> 1) : 15 - ((cl - 16) >> 1));
+  const h = (s) => hash(mask, v, s);
+  // the faces, where nothing of the same stands in front of them
+  if (!topOnly) for (let cl = 0; cl < 32; cl++) {
+    const south = cl < 16;
+    if (south ? mask & 4 : mask & 2) continue;
+    const y0 = bot(cl) + 1, col = south ? B.s : B.e;
+    r(cl, y0, 1, H, col);
+    // courses of stone (or strata, or leaves) running along the face
+    if (B.kind === "H") { for (let k = 3; k < H; k += 4) if (hash(cl, k, v) < 0.5) r(cl, y0 + k, 1, 1, south ? B.cap : B.seam); }
+    else if (B.kind === "Z") { if (cl % 8 === 3) r(cl, y0, 1, H, B.seam); r(cl, y0 + 3, 1, 1, B.seam); }
+    else for (let k = 5; k < H - 1; k += B.kind === "C" ? 6 : 5) {
+      r(cl, y0 + k, 1, 1, B.seam);
+      const joint = ((cl + (((k / 5) | 0) % 2) * 4 + v * 3) % 8) === 0;
+      if (joint && B.kind !== "C") r(cl, y0 + k - 4, 1, 4, B.seam);
+    }
+    if (B.kind === "C" && hash(cl, v, 7) < 0.12) r(cl, y0 + 3 + Math.floor(hash(cl, v, 8) * (H - 8)), 1, 3, B.seam);
+    r(cl, y0 + H - 1, 1, 1, INK);                                     // where it meets the ground
+  }
+  // the top: flat, lit along the edges that face the light, dark along the others
+  for (let cl = 0; cl < 32; cl++) r(cl, top(cl), 1, bot(cl) - top(cl) + 1, B.top);
+  for (let i = 0; i < 3; i++) {
+    const a = 6 + Math.floor(h(i) * 20), b = Math.max(top(a) + 2, Math.min(bot(a) - 2, 4 + Math.floor(h(i + 5) * 8)));
+    if (B.kind === "C") { r(a, b, 3, 1, i ? "#6cbf5e" : B.seam); if (!i) r(a + 1, b - 1, 1, 1, "#8ad070"); }
+    else if (B.kind === "H") { r(a, b, 2, 1, i % 2 ? B.cap : B.low); }
+    else if (B.kind === "W") { if (i < 2) r(a, b, 2, 1, B.low); }
+    else r(a, b, 2, 1, B.seam);
+  }
+  for (let cl = 0; cl < 32; cl++) {
+    if (cl < 16 ? !(mask & 8) : !(mask & 1)) { r(cl, top(cl), 1, 1, B.rim); if (B.kind !== "W") r(cl, top(cl) + 1, 1, 1, B.cap); }
+    if (cl < 16 ? !(mask & 4) : !(mask & 2)) r(cl, bot(cl), 1, 1, B.low);
+  }
+  // an outline where the mass ends
+  if (!topOnly) {
+    if (!(mask & 8) && !(mask & 4)) r(0, 7, 1, H + 2, INK);
+    if (!(mask & 1) && !(mask & 2)) r(31, 7, 1, H + 2, INK);
+  }
+  c.H = H;
+  blockCache.set(key, c);
+  return c;
+}
+
+/** The iso house, city block and car sprites from art.js, used until isotiles.js has its own. */
+let ARTSC = null;
+const artSc = () => ARTSC || (ARTSC = Art.buildScenery());
+
 export function loadMap(m) {
   map = m;
   theme = m.theme || themeOf(m);
-  ground = paintGround(m, theme);
-  DC.decals(m, theme, ground.getContext("2d"));
-  paintExtras(m, ground);
+  // the ground: painted flat on the square grid, then laid onto diamonds — unless isotiles.js has the real thing
+  const flat = paintGround(m, theme);
+  DC.decals(m, theme, flat.getContext("2d"));
+  paintExtras(m, flat);
+  ground = { frames: [toIso(m, flat)], ox: m.h * 16 * K, oy: 0 };
+  artGround = false;
+  if (IT.ready) {
+    const b = IT.bakeGround(m, theme);
+    if (b && b.frames && b.frames.length) { ground = b; artGround = true; }
+  }
   const S = scenery(), D = DC.sprites();
   statics = []; waterTiles = []; smokers = []; signs = []; lights = [];
   const lay = DC.plan(m, theme), mkt = theme === "town" ? DC.town(m) : { statics: [], swap: new Set(), strings: [] };
-  falls = lay.falls; pulseCv = DC.pulse(m, theme); emit = DC.emitters(m, theme); strings = mkt.strings; critters = [];
+  const pc = DC.pulse(m, theme);
+  pulseCv = pc ? toIso(m, pc) : null;
+  // falling water runs down the face of a ledge, which now runs along the diagonal
+  falls = lay.falls.map((f) => { const [X0, Y0] = sqI(f.x, f.edge), [X1] = sqI(f.x + f.w, f.edge); return { ...f, X0, Y0, len: X1 - X0, H: f.pool ? 22 : 30 }; });
+  emit = DC.emitters(m, theme).map((e) => { const [X, Y] = sqI(e.x, e.y); return { ...e, x: X, y: Y - (e.k === "drip" ? 26 : e.k === "eyes" ? 12 : 0) }; });
+  strings = mkt.strings.map((s) => {
+    const lamp = (x, y) => { const [X, Y] = tI((x - 16) / T + 0.5, (y + 20) / T + 0.5); return [X, Y - 44]; };
+    const [ax, ay] = lamp(s.ax, s.ay), [bx, by] = lamp(s.bx, s.by);
+    return { ax, ay, bx, by };
+  });
+  critters = [];
   const marks = new Map((m.marks || []).map((k) => [k.x + "," + k.y, k]));
   const edge = (x, y) => x < 2 || y < 2 || x >= m.w - 2 || y >= m.h - 2;
+  // the pieces isotiles.js stands up, by tile; a house it draws is not drawn again here
+  const art = new Map(), artHouse = new Set();
+  const houseAt = (x, y) => m.big.find((b) => b.t === "house" && x >= b.x && x < b.x + 4 && y >= b.y && y < b.y + 3);
+  const isRock = (x, y) => { const r = m.g[y]; return !!r && r[x] === "W" && m.o[y][x] === " "; };
+  const blockKind = (x, y) => { const r = m.o[y]; if (!r || x < 0 || x >= m.w) return null; const ch = r[x]; return ch === " " ? (isRock(x, y) ? "W" : null) : WALL[ch] || ch === "Z" ? ch : null; };
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     if (m.g[y][x] === "w") {
       const sh = (dx, dy) => { const r = m.g[y + dy], ch = r && r[x + dx]; return ch !== undefined && ch !== "w" && ch !== "b" ? 1 : 0; };
-      waterTiles.push({ x: x * T, y: y * T, h: hash(x, y, 5), n: sh(0, -1), s: sh(0, 1), w: sh(-1, 0), e: sh(1, 0) });
+      const [X, Y] = tI(x, y);
+      waterTiles.push({ X, Y, x: x * T, y: y * T, h: hash(x, y, 5), n: sh(0, -1), s: sh(0, 1), w: sh(-1, 0), e: sh(1, 0) });
     }
     const ch = m.o[y][x], key = x + "," + y;
+    if (IT.ready && (ch !== " " || isRock(x, y))) {
+      const pc2 = IT.tallAt(m, x, y, theme);
+      if (pc2 && pc2.img) {
+        const [X, Y] = tI(x, y), st = { sp: pc2.img, dx: X + pc2.dx, dy: Y + pc2.dy, x: X, y: Y + 16, d: Y + 8, glow: null, glint: -1, art: true };
+        if (ch === "h") { const hb = houseAt(x, y); if (hb) { artHouse.add(hb); slice(st, hb.x, hb.y, 4, 3); } }
+        art.set(key, st);
+        statics.push(st);
+        continue;
+      }
+    }
     if (lay.covered.has(key)) continue;
-    if (ch === "Q") { statics.push({ sp: D.waypoint, x: x * T + 16, y: (y + 1) * T - 3, glow: null, glint: -1, wp: true, ph: hash(x, y, 6) * 9 }); continue; }
+    if (ch === "Q") { statics.push(stand({ sp: D.waypoint, glow: null, glint: -1, wp: true, ph: hash(x, y, 6) * 9 }, x, y)); continue; }
     if (ch === "G" && marks.has(key)) {
       const k = marks.get(key), way = signWay(m, x, y, k);
-      const st = { sp: D.sign[way + 1], x: x * T + 16, y: (y + 1) * T - 3, glow: null, glint: -1, label: k && k.label ? k.label : null };
+      const st = stand({ sp: D.sign[way + 1], glow: null, glint: -1, label: k && k.label ? k.label : null }, x, y);
       statics.push(st); if (st.label) signs.push(st);
       continue;
     }
     if (mkt.swap.has(key)) continue;
-    if (WALL[ch]) {
-      const same = (dx, dy) => { const r = m.o[y + dy]; return r && r[x + dx] === ch ? 1 : 0; };
-      const piece = wallPiece(ch, same(0, -1) | (same(1, 0) << 1) | (same(0, 1) << 2) | (same(-1, 0) << 3), hash(x, y, 4) < 0.5 ? 0 : 1, theme === "forest" ? GROUND[":"] : GROUND["."]);
-      statics.push({ sp: piece, x: x * T + 16 + piece.ax, y: y * T - 14 - piece.padT + piece.height - 2, glow: null, glint: -1 });
+    const bk = blockKind(x, y);
+    if (bk) {
+      // underground rock deep inside the mass shows only its top
+      const same = (dx, dy) => (blockKind(x + dx, y + dy) ? 1 : 0);
+      const mask = same(0, -1) | (same(1, 0) << 1) | (same(0, 1) << 2) | (same(-1, 0) << 3);
+      const sp = blockSprite(bk, mask, hash(x, y, 4) < 0.5 ? 0 : 1, (mask & 6) === 6);
+      const [X, Y] = tI(x, y);
+      statics.push({ sp, dx: X - 16 * K, dy: Y - sp.H, x: X, y: Y + 16, d: Y + 8, glow: null, glint: -1, block: true });
       continue;
     }
     let sp = S[ch];
-    if (!sp) continue;
+    if (!sp || ch === "c") continue;
     const h = hash(x, y, 3);
     if (ch === "T") sp = sp[edge(x, y) ? (h < 0.7 ? 0 : 2) : h < 0.5 ? 0 : h < 0.72 ? 2 : h < 0.88 ? 1 : 3];
     else if (ch === "B") sp = theme === "town" ? S.TB[Math.floor(h * 3)] : sp[Math.floor(h * 3)];
@@ -901,24 +1079,40 @@ export function loadMap(m) {
     else if (ch === "K") sp = hash(x, y, 7) > 0.6 ? S.K2 : S.K;
     else if (ch === "Y") sp = (theme === "cave" ? S.Y2 : S.Y)[Math.floor(h * 2)];
     else if (Array.isArray(sp)) sp = sp[Math.floor(h * sp.length)];
-    const wide = ch === "c" ? T : 0;
-    statics.push({
-      sp, x: x * T + T / 2 + wide / 2 + (ch === "T" || ch === "P" ? Math.round((hash(x, y, 8) - 0.5) * 6) : 0), y: (y + 1) * T - 3,
-      glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" ? "#ffd070" : ch === "0" || ch === "X" ? "#ff6a7a" : ch === "Y" && theme === "cave" ? "#5ae4d0" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
-    });
+    statics.push(stand({
+      sp, glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" ? "#ffd070" : ch === "0" || ch === "X" ? "#ff6a7a" : ch === "Y" && theme === "cave" ? "#5ae4d0" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
+    }, x, y, ch === "T" || ch === "P" ? Math.round((hash(x, y, 8) - 0.5) * 6) : 0));
+  }
+  // cars stand across two tiles; houses and city blocks over four by three
+  const A = artSc();
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    if (m.o[y][x] !== "c" || art.has(x + "," + y)) continue;
+    const car = A.c[Math.floor(hash(x, y, 3) * A.c.length)], [X, Y] = tI(x, y);
+    const st = { sp: car.cv, dx: X - car.ax, dy: Y - car.ay, x: X + 8, y: Y + 16, d: Y + 12, glow: null, glint: -1 };
+    slice(st, x, y, 2, 1);
+    statics.push(st);
   }
   for (const b of m.big) {
     if (b.t === "house") {
-      const city = b.v >= 4, s = { sp: S.house[b.v % 8], x: (b.x + 2) * T, y: (b.y + 3) * T - 2, glow: city ? NEON[b.v % 4] : null, big: true, neon: city ? NEON[b.v % 4] : null, ph: hash(b.x, b.y, 2) * 9 };
+      if (artHouse.has(b)) continue;
+      const city = b.v >= 4, hs = A.house[b.v % 8], [X, Y] = tI(b.x, b.y);
+      const s = { sp: hs.cv, dx: X - hs.ax, dy: Y - hs.ay, x: tI(b.x + 2, b.y + 1.5)[0], y: tI(b.x + 4, b.y + 3)[1], glow: city ? NEON[b.v % 4] : null, big: true, neon: city ? NEON[b.v % 4] : null, ph: hash(b.x, b.y, 2) * 9, house: !city };
+      slice(s, b.x, b.y, 4, 3);
       statics.push(s);
-      if (!city) smokers.push({ x: s.x + 31, y: s.y - 134 });
-    } else statics.push({ sp: S.fountain, x: (b.x + 1) * T, y: (b.y + 2) * T - 2, water: true });
+      if (!city) smokers.push({ x: s.x + 6, y: s.dy + 10 });
+    } else statics.push(standBig({ sp: S.fountain, water: true }, b.x, b.y, 2, 2, -4));
   }
-  for (const st of lay.statics) statics.push(st);
-  for (const st of mkt.statics) statics.push(st);
+  const fromDC = (st) => {
+    if (st.lip) return null;
+    if (st.foot) { const [x, y, w, h] = st.foot; return standBig(st, x, y, w, h); }
+    if (st.tile) return stand(st, st.tile[0], st.tile[1]);
+    return stand(st, (st.x - 16) / T, (st.y + 3) / T - 1);
+  };
+  for (const st of lay.statics) { const s = fromDC(st); if (s) statics.push(s); }
+  for (const st of mkt.statics) { const s = fromDC(st); if (s) statics.push(s); }
   // what lights up after dark: lamps, windows, landmarks, runes
-  for (const st of statics) if (st.glow || st.wp || st.nightGlow || (st.big && !st.neon && st.sp.width === S.house[0].width)) lights.push(st);
-  npcs = m.npcs.map((n) => ({ n, x: n.x * T + T / 2, y: n.y * T + 24, sheet: SP.personSheet(SP.npcLook(n.look, n.role)) }));
+  for (const st of statics) if (st.glow || st.wp || st.nightGlow || st.house) lights.push(st);
+  npcs = m.npcs.map((n) => { const [x, y] = iso(n.x * 16 + 8, n.y * 16 + 12); return { n, x, y, sheet: SP.personSheet(SP.npcLook(n.look, n.role)) }; });
   ents.clear();
   fx.clear();
   amb.length = 0;
@@ -995,24 +1189,26 @@ function drawAmbient(dt, t, ox, oy) {
   }
   g.globalAlpha = 1;
 }
-/** Water never sits still: glints slide across it and foam breathes along the shore. */
+/** Water never sits still: glints slide across it and foam breathes along the shore. (Iso pixels.) */
 function drawWater(t, ox, oy) {
   const beat = Math.floor(t / 520);
+  const wet = UG[theme] ? UG[theme].wet : null;
   for (const w of waterTiles) {
-    if (w.x < ox - T || w.x > ox + vw || w.y < oy - T || w.y > oy + vh) continue;
-    const ph = (beat + Math.floor(w.h * 8)) % 4;
-    const wet = UG[theme] ? UG[theme].wet : null;
+    if (w.X < ox - 20 || w.X > ox + vw + 20 || w.Y < oy - 20 || w.Y > oy + vh) continue;
+    const ph = (beat + Math.floor(w.h * 8)) % 4, cx = w.X, cy = w.Y + 8;
     g.fillStyle = wet ? wet[2] : "#8accf6";
-    g.fillRect(w.x + 3 + ph * 5 + Math.floor(w.h * 6), w.y + 8, 6, 1);
-    g.fillRect(w.x + 20 - ph * 4, w.y + 22, 5, 1);
-    if (ph === 0 && w.h > 0.6) { g.fillStyle = "#ffffff"; g.fillRect(w.x + 12 + Math.floor(w.h * 10), w.y + 15, 2, 1); }
+    g.fillRect(cx - 9 + ph * 3 + Math.floor(w.h * 4), cy - 3, 4, 1);
+    g.fillRect(cx + 4 - ph * 2, cy + 2, 3, 1);
+    if (ph === 0 && w.h > 0.6) { g.fillStyle = "#ffffff"; g.fillRect(cx - 1 + Math.floor(w.h * 6), cy, 2, 1); }
     if (w.n | w.s | w.w | w.e) {
+      // foam along the diamond's open edges: north runs up-right from the top corner, west up-left, and so on
       g.fillStyle = wet ? wet[4] : "#e8f8ff";
       const o = ph % 2;
-      if (w.n) g.fillRect(w.x + (o ? 4 : 0), w.y + 5 + o, 12, 1), g.fillRect(w.x + 18 + (o ? 2 : 0), w.y + 6 - o, 10, 1);
-      if (w.s) g.fillRect(w.x + (o ? 2 : 6), w.y + T - 7 - o, 12, 1);
-      if (w.w) g.fillRect(w.x + 5 + o, w.y + (o ? 4 : 0), 1, 12);
-      if (w.e) g.fillRect(w.x + T - 7 - o, w.y + (o ? 14 : 18), 1, 12);
+      const dash = (x0, y0, dx, dy) => { for (const f of [0.18 + o * 0.1, 0.6 - o * 0.08]) g.fillRect(Math.round(x0 + dx * f * 16), Math.round(y0 + dy * f * 8), 3, 1); };
+      if (w.n) dash(cx + 1, w.Y + 1, 1, 1);
+      if (w.w) dash(cx - 4, w.Y + 1, -1, 1);
+      if (w.e) dash(cx + 13, w.Y + 9, -1, 1);
+      if (w.s) dash(cx - 2, w.Y + 15, -1, -1);
     }
   }
 }
@@ -1044,14 +1240,32 @@ const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30", "#5fd47a"];
  * levelled and kicked back.
  */
 function drawPerson(s, e, t, dt, x, y) {
-  const back = e.dir === 3;
-  if (e.dir === 1) s.face = -1; else if (e.dir === 2) s.face = 1;
   if (e.moving) s.walk += dt * 6;
   // a blow that connects freezes for a beat (`e.hs`), then carries on from where it stopped
   const hs = e.hs && e.atkT <= e.hs.at ? e.hs : null;
   const te = !hs || t < hs.at ? t : t < hs.at + hs.dur ? hs.at : t - hs.dur;
   const atk = (te - e.atkT) / 1000;
-  if (e.aim && atk < 0.5) s.face = e.aim[0] < e.x ? -1 : 1;
+  // which way they face on screen: the way they last moved, or the way the server says they turned
+  let view;
+  if (e.scr) {
+    // the title stage still speaks in screen directions: 0 front, 1 left, 2 right, 3 back
+    view = e.dir === 3 ? "back" : e.dir === 0 ? "front" : "side";
+    if (e.dir === 1) s.face = -1; else if (e.dir === 2) s.face = 1;
+    if (e.aim && atk < 0.5) s.face = e.aim[0] < e.x ? -1 : 1;
+  } else {
+    if (s.lx !== undefined && Math.hypot(e.x - s.lx, e.y - s.ly) > 0.05) { s.fa = sAng(e.x - s.lx, e.y - s.ly); s.ldir = e.dir; }
+    else if (s.fa === undefined || e.dir !== s.ldir) { s.fa = sAng(DXW[e.dir | 0], DYW[e.dir | 0]); s.ldir = e.dir; }
+    s.lx = e.x; s.ly = e.y;
+    let fa = s.fa;
+    if (e.aim && atk < 0.5 && atk > -0.2 && Math.hypot(e.aim[0] - e.x, e.aim[1] - e.y) > 2) fa = sAng(e.aim[0] - e.x, e.aim[1] - e.y);
+    // eight ways on screen: straight down shows the face, the three ways up show the back,
+    // and everything else is the three-quarter turn, mirrored for the left
+    const sec = ((Math.round(fa / (Math.PI / 4)) % 8) + 8) % 8;
+    view = sec === 2 ? "front" : sec >= 5 ? "back" : "side";
+    if (sec === 0 || sec === 1 || sec === 7) s.face = 1; else if (sec >= 3 && sec <= 5) s.face = -1;
+  }
+  const back = view === "back";
+  const ang = (dx, dy) => (e.scr ? Math.atan2(dy, dx) : sAng(dx, dy));
   // walking steps foot to foot; standing still breathes, and blinks now and then
   if (s.ph === undefined) s.ph = Math.random() * 4000;
   const F = SP.FRAME;
@@ -1061,7 +1275,8 @@ function drawPerson(s, e, t, dt, x, y) {
     : (t + s.ph) % 3600 < 140 ? F.blink
     : Math.floor((t + s.ph) / 560) % 2 ? F.breathe : F.stand;
   // facing the camera shows the full face; walking sideways turns it three-quarters
-  const img = (back ? s.sheet.back : e.dir === 0 ? s.sheet.front : s.sheet.side)[frame];
+  const img = s.sheet[view][frame];
+  s.img = img;
   const sg = s.face;
   g.fillStyle = "rgba(20,24,50,.26)";
   g.beginPath(); g.ellipse(x, y, 5, 2, 0, 0, 7); g.fill();
@@ -1085,12 +1300,12 @@ function drawPerson(s, e, t, dt, x, y) {
   // the body rocks back on the wind-up and leans into the strike
   if (e.aim && !resting && atk >= 0) {
     const u = k < 0.1 ? -0.35 * (k / 0.1) : k < 0.44 ? Math.sin(((k - 0.1) / 0.34) * Math.PI) : 0;
-    const a = Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x), n = u * (fin ? 8 : 4.5);
+    const a = ang(e.aim[0] - e.x, e.aim[1] - e.y), n = u * (fin ? 8 : 4.5);
     x += Math.cos(a) * n; y += Math.sin(a) * n;
   }
   const bob = frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0;
   // angles here are canvas angles: 0 points right, positive turns clockwise
-  const aim = e.aim && atk < 0.6 ? Math.atan2(e.aim[1] - e.y, e.aim[0] - e.x) : sg > 0 ? 0.25 : Math.PI - 0.25;
+  const aim = e.aim && atk < 0.6 ? ang(e.aim[0] - e.x, e.aim[1] - e.y) : sg > 0 ? 0.25 : Math.PI - 0.25;
   const glow = RARITY[s.gear.wq | 0] || (s.gear.we >= 7 ? "#ffffff" : null);
   if (hold.style === "float") {
     // a spellbook hovers open beside its reader and darts forward to cast
@@ -1205,6 +1420,13 @@ export const FOOT = SP.FOOT;
 /** A custom effect: draw(g, k, f) is called with k running 0 → 1 over `dur` ms. */
 export function fxCustom(draw, dur, flat = false, delay = 0) { fx.add({ k: "custom", draw, dur, flat, delay }); }
 
+/**
+ * Effects. Things flat on the ground (rings, telegraphs, lanes, puddles, cracks,
+ * snow) keep world-pixel coordinates and are drawn through the FLAT matrix, so a
+ * circle on the ground comes out as a 2:1 ellipse; things in the air (sparks,
+ * crescents, shots, beams, bolts) are placed at their projected point and drawn
+ * upright in iso pixels.
+ */
 export const fx = {
   list: [],
   clear() { this.list.length = 0; parts.length = 0; },
@@ -1212,16 +1434,17 @@ export const fx = {
   ring(wx, wy, r, color, dur = 300, filled = false, delay = 0) { this.add({ k: "ring", x: wx * P, y: wy * P, r: r * P, color, dur, filled, delay }); },
   tele(wx, wy, r, ms) { this.add({ k: "tele", x: wx * P, y: wy * P, r: r * P, dur: ms }); },
   proj(ax, ay, ah, bx, by, bh, color, size, speed, done) {
-    const x0 = ax * P, y0 = ay * P - ah * 22, x1 = bx * P, y1 = by * P - bh * 22;
-    this.add({ k: "proj", x0, y0, x1, y1, color, size: Math.max(2, Math.round(size * 44)), dur: Math.max(70, (Math.hypot(x1 - x0, y1 - y0) / (speed * 26)) * 1000), done });
+    const [x0, y0] = iso(ax, ay), [x1, y1] = iso(bx, by), far = Math.hypot(bx - ax, by - ay) * P;
+    this.add({ k: "proj", x0, y0: y0 - ah * 22, x1, y1: y1 - bh * 22, arc: Math.min(16, far * 0.05), color, size: Math.max(2, Math.round(size * 44)), dur: Math.max(70, (far / (speed * 26)) * 1000), done });
   },
-  /** A blade's crescent, centred on the attacker and opening toward `ang`. */
-  spark(wx, wy, color = "#ffffff", size = 1) { this.add({ k: "spark", x: wx * P, y: wy * P - 6, color, r: 13 * size, n: size > 1.3 ? 8 : 6, a0: Math.random() * 6.28, dur: 190 }); },
-  slash(wx, wy, ang, color, size = 0.8, rev = false) { this.add({ k: "slash", x: wx * P, y: wy * P - 5, ang, color, r: size * 32, rev, dur: 260, delay: 90 }); },
-  beam(ax, ay, bx, by, color, h = 0.6) { this.add({ k: "beam", x0: ax * P, y0: ay * P - h * 22, x1: bx * P, y1: by * P - h * 22, color, dur: 260 }); },
-  pillar(wx, wy) { this.add({ k: "pillar", x: wx * P, y: wy * P, dur: 900 }); this.sparkle(wx, wy, 0.5, "#ffd84a", 24); },
-  burst(wx, wy, h, color, n = 8, speed = 1.4) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = speed * 34 * (0.3 + Math.random() * 0.7); parts.push({ x: wx * P, y: wy * P - h * 22, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: 0.25 + Math.random() * 0.3, color, g: 220 }); } },
-  sparkle(wx, wy, h, color, n = 10) { for (let i = 0; i < n; i++) parts.push({ x: wx * P + Math.random() * 28 - 14, y: wy * P - h * 22 + Math.random() * 18 - 6, vx: 0, vy: -26 - Math.random() * 34, life: 0.4 + Math.random() * 0.5, color, g: 0 }); },
+  /** An impact: spokes thrown out from a point a little above the ground. */
+  spark(wx, wy, color = "#ffffff", size = 1) { const [x, y] = iso(wx, wy); this.add({ k: "spark", x, y: y - 6, color, r: 13 * size, n: size > 1.3 ? 8 : 6, a0: Math.random() * 6.28, dur: 190 }); },
+  /** A blade's crescent, centred on the attacker and opening toward `ang` (an angle on the ground). */
+  slash(wx, wy, ang, color, size = 0.8, rev = false) { const [x, y] = iso(wx, wy); this.add({ k: "slash", x, y: y - 8, ang: sAng(Math.cos(ang), Math.sin(ang)), color, r: size * 30, rev, dur: 260, delay: 90 }); },
+  beam(ax, ay, bx, by, color, h = 0.6) { const [x0, y0] = iso(ax, ay), [x1, y1] = iso(bx, by); this.add({ k: "beam", x0, y0: y0 - h * 22, x1, y1: y1 - h * 22, color, dur: 260 }); },
+  pillar(wx, wy) { const [x, y] = iso(wx, wy); this.add({ k: "pillar", x, y, dur: 900 }); this.sparkle(wx, wy, 0.5, "#ffd84a", 24); },
+  burst(wx, wy, h, color, n = 8, speed = 1.4) { const [x, y] = iso(wx, wy); for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = speed * 34 * (0.3 + Math.random() * 0.7); parts.push({ x, y: y - h * 22, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.7 - 30, life: 0.25 + Math.random() * 0.3, color, g: 220 }); } },
+  sparkle(wx, wy, h, color, n = 10) { const [x, y] = iso(wx, wy); for (let i = 0; i < n; i++) parts.push({ x: x + Math.random() * 28 - 14, y: y - h * 22 + Math.random() * 18 - 6, vx: 0, vy: -26 - Math.random() * 34, life: 0.4 + Math.random() * 0.5, color, g: 0 }); },
   flash() {},
   /** A marked line something is about to run down, from a to b; it fills as the moment (`ms`) nears. */
   lane(ax, ay, bx, by, ms, color = "#ff5a6a", width = 13) { this.add({ k: "lane", x0: ax * P, y0: ay * P, x1: bx * P, y1: by * P, w: width * P, color, dur: ms }); },
@@ -1230,7 +1453,8 @@ export const fx = {
   /** Something lobbed from a to b: it arcs over for `ms`, with its landing spot marked meanwhile. */
   lob(ax, ay, bx, by, ms, color = "#ff8a5a", r = 13) {
     this.add({ k: "mark", x: bx * P, y: by * P, r: r * P, color, dur: ms });
-    this.add({ k: "lob", x0: ax * P, y0: ay * P - 10, x1: bx * P, y1: by * P, color, dur: ms });
+    const [x0, y0] = iso(ax, ay), [x1, y1] = iso(bx, by);
+    this.add({ k: "lob", x0, y0: y0 - 10, x1, y1, color, dur: ms });
   },
   /** A spread of shots from one point to several (`pts` is [[x, y], …]), all landing after `ms`. */
   volley(ax, ay, pts, ms, color = "#ff8a5a") { for (const [bx, by] of pts) this.lob(ax, ay, bx, by, ms, color); },
@@ -1239,18 +1463,18 @@ export const fx = {
   /** A small hit on the ground where a shot lands: no shake, no noise. */
   pop(wx, wy, r = 13, color = "#ff8a5a") { this.ring(wx, wy, r, color, 220, true); this.burst(wx, wy, 0.1, color, 6, 1.2); },
   // ── for the second-tier skills and the ultimates
-  /** Blades whirling round a point: `n` short arcs sweeping a ring of radius `r`. */
-  storm(wx, wy, r, color = "#d8e8ff", dur = 420, n = 5) { this.add({ k: "storm", x: wx * P, y: wy * P - 6, r: r * P, color, dur, n, a0: Math.random() * 6.28 }); },
+  /** Blades whirling round a point: `n` short arcs sweeping a ring of radius `r` (an ellipse on the ground). */
+  storm(wx, wy, r, color = "#d8e8ff", dur = 420, n = 5) { const [x, y] = iso(wx, wy); this.add({ k: "storm", x, y: y - 6, r: r * Math.SQRT2 * K, color, dur, n, a0: Math.random() * 6.28 }); },
   /** The ground split open: jagged cracks running out from a point, flat on the ground. */
   crack(wx, wy, r, color = "#ffb04a", dur = 700) {
     const rays = [];
-    for (let i = 0; i < 9; i++) { const a = (i / 9) * 6.28 + Math.random() * 0.4, pts = [[0, 0]]; let d = 0; while (d < 1) { d += 0.18 + Math.random() * 0.12; pts.push([Math.cos(a) * d + (Math.random() - 0.5) * 0.12, Math.sin(a) * d * 0.86 + (Math.random() - 0.5) * 0.1]); } rays.push(pts); }
+    for (let i = 0; i < 9; i++) { const a = (i / 9) * 6.28 + Math.random() * 0.4, pts = [[0, 0]]; let d = 0; while (d < 1) { d += 0.18 + Math.random() * 0.12; pts.push([Math.cos(a) * d + (Math.random() - 0.5) * 0.12, Math.sin(a) * d + (Math.random() - 0.5) * 0.12]); } rays.push(pts); }
     this.add({ k: "crack", x: wx * P, y: wy * P, r: r * P, color, dur, rays });
   },
   /** A jagged bolt of lightning from a to b, redrawn a little differently each frame. */
-  bolt(ax, ay, bx, by, color = "#9fdcff", dur = 240) { this.add({ k: "bolt", x0: ax * P, y0: ay * P - 14, x1: bx * P, y1: by * P - 14, color, dur }); },
+  bolt(ax, ay, bx, by, color = "#9fdcff", dur = 240) { const [x0, y0] = iso(ax, ay), [x1, y1] = iso(bx, by); this.add({ k: "bolt", x0, y0: y0 - 14, x1, y1: y1 - 14, color, dur }); },
   /** Something huge coming straight down out of the sky onto (wx, wy), landing at `ms`. */
-  fall(wx, wy, color = "#ffd84a", ms = 450) { this.add({ k: "fall", x: wx * P, y: wy * P, color, dur: ms + 260, land: ms / (ms + 260) }); },
+  fall(wx, wy, color = "#ffd84a", ms = 450) { const [x, y] = iso(wx, wy); this.add({ k: "fall", x, y, color, dur: ms + 260, land: ms / (ms + 260) }); },
   /** Snow driven across a round patch of ground for `ms`. */
   snow(wx, wy, r, ms = 3600) { this.add({ k: "snow", x: wx * P, y: wy * P, r: r * P, dur: ms }); },
 };
@@ -1286,7 +1510,8 @@ function petsNow(dt, t) {
     }
     pt.x += (tx - pt.x) * Math.min(1, dt * k);
     pt.y += (ty - pt.y) * Math.min(1, dt * k);
-    if (pt.x > pt.px + 0.05) pt.face = 1; else if (pt.x < pt.px - 0.05) pt.face = -1;
+    const sdx = (pt.x - pt.px) - (pt.y - (pt.py ?? pt.y));
+    if (sdx > 0.05) pt.face = 1; else if (sdx < -0.05) pt.face = -1;
     pt.moving = Math.abs(pt.x - pt.px) + Math.abs(pt.y - pt.py || 0) > 0.03;
     pt.px = pt.x; pt.py = pt.y;
     out.push(pt);
@@ -1296,7 +1521,7 @@ function petsNow(dt, t) {
 }
 function drawPet(pt, t) {
   const frames = SP.petSheet(pt.kind), hover = SP.PET_HOVER[pt.kind] || 0;
-  const x = Math.round(pt.x * P), y = Math.round(pt.y * P);
+  const [ix, iy] = iso(pt.x, pt.y), x = Math.round(ix), y = Math.round(iy);
   // walkers hop when they move, flyers flap and bob all the time
   const fr = hover ? Math.floor(t / 140 + pt.id) % 2 : pt.moving ? Math.floor(t / 120) % 2 : Math.floor(t / 900) % 6 === 0 ? 1 : 0;
   const lift = hover ? hover + Math.round(Math.sin(t / 260 + pt.id) * 2) : 0;
@@ -1319,38 +1544,39 @@ function drawFx(now, ground2) {
     if (f.k === "custom") { g.save(); f.draw(g, k, f); g.restore(); continue; }
     if (f.k === "ring") {
       g.globalAlpha = 1 - k;
-      if (f.filled) { g.fillStyle = f.color; g.globalAlpha = (1 - k) * 0.35; g.beginPath(); g.ellipse(f.x, f.y, f.r * k, f.r * k * 0.86, 0, 0, 7); g.fill(); g.globalAlpha = 1 - k; }
-      g.strokeStyle = f.color; g.lineWidth = 3;
-      g.beginPath(); g.ellipse(f.x, f.y, f.r * k, f.r * k * 0.86, 0, 0, 7); g.stroke();
+      if (f.filled) { g.fillStyle = f.color; g.globalAlpha = (1 - k) * 0.35; g.beginPath(); g.arc(f.x, f.y, f.r * k, 0, 7); g.fill(); g.globalAlpha = 1 - k; }
+      g.strokeStyle = f.color; g.lineWidth = 5;
+      g.beginPath(); g.arc(f.x, f.y, f.r * k, 0, 7); g.stroke();
     } else if (f.k === "tele") {
       g.fillStyle = `rgba(255,60,120,${0.16 + 0.16 * Math.abs(Math.sin(now / 70))})`;
-      g.beginPath(); g.ellipse(f.x, f.y, f.r, f.r * 0.86, 0, 0, 7); g.fill();
-      g.strokeStyle = "#ff6ad0"; g.lineWidth = 2;
-      g.beginPath(); g.ellipse(f.x, f.y, f.r * k, f.r * k * 0.86, 0, 0, 7); g.stroke();
+      g.beginPath(); g.arc(f.x, f.y, f.r, 0, 7); g.fill();
+      g.strokeStyle = "#ff6ad0"; g.lineWidth = 4;
+      g.beginPath(); g.arc(f.x, f.y, f.r * k, 0, 7); g.stroke();
     } else if (f.k === "lane") {
       // a band along the ground, pulsing, with a brighter part that runs out to the far end as time runs out
-      const dx = f.x1 - f.x0, dy = f.y1 - f.y0, len = Math.hypot(dx, dy) || 1, nx = (-dy / len) * f.w / 2, ny = (dx / len) * f.w / 2 * 0.86;
+      const dx = f.x1 - f.x0, dy = f.y1 - f.y0, len = Math.hypot(dx, dy) || 1, nx = (-dy / len) * f.w / 2, ny = (dx / len) * f.w / 2;
       const quad = (t) => { g.beginPath(); g.moveTo(f.x0 + nx, f.y0 + ny); g.lineTo(f.x0 + dx * t + nx, f.y0 + dy * t + ny); g.lineTo(f.x0 + dx * t - nx, f.y0 + dy * t - ny); g.lineTo(f.x0 - nx, f.y0 - ny); g.closePath(); };
       g.fillStyle = f.color;
       g.globalAlpha = 0.16 + 0.12 * Math.abs(Math.sin(now / 70)); quad(1); g.fill();
       g.globalAlpha = 0.42; quad(k); g.fill();
-      g.globalAlpha = 0.9; g.strokeStyle = f.color; g.lineWidth = 1; quad(1); g.stroke();
+      g.globalAlpha = 0.9; g.strokeStyle = f.color; g.lineWidth = 2; quad(1); g.stroke();
     } else if (f.k === "pool") {
       // a lumpy puddle that seeps in, lies, and dries out
       const a = k < 0.06 ? k / 0.06 : k > 0.85 ? (1 - k) / 0.15 : 1;
       g.fillStyle = f.color;
       g.globalAlpha = 0.46 * a;
-      g.beginPath(); g.ellipse(f.x, f.y, f.r, f.r * 0.8, 0, 0, 7); g.fill();
-      for (let j = 0; j < 5; j++) { const an = f.seed + j * 1.257, rr = f.r * 0.8; g.beginPath(); g.ellipse(f.x + Math.cos(an) * rr, f.y + Math.sin(an) * rr * 0.8, f.r * 0.3, f.r * 0.24, 0, 0, 7); g.fill(); }
-      g.globalAlpha = 0.85 * a; g.strokeStyle = f.color; g.lineWidth = 1;
-      g.beginPath(); g.ellipse(f.x, f.y, f.r * (0.5 + 0.12 * Math.sin(now / 300 + f.seed)), f.r * (0.4 + 0.1 * Math.sin(now / 300 + f.seed)), 0, 0, 7); g.stroke();
-      if (Math.random() < 0.12) parts.push({ x: f.x + (Math.random() - 0.5) * f.r * 1.4, y: f.y + (Math.random() - 0.5) * f.r, vx: 0, vy: -14, life: 0.5, color: f.color, g: 0, s: 2 });
+      g.beginPath(); g.arc(f.x, f.y, f.r, 0, 7); g.fill();
+      for (let j = 0; j < 5; j++) { const an = f.seed + j * 1.257, rr = f.r * 0.8; g.beginPath(); g.ellipse(f.x + Math.cos(an) * rr, f.y + Math.sin(an) * rr, f.r * 0.3, f.r * 0.26, an, 0, 7); g.fill(); }
+      g.globalAlpha = 0.85 * a; g.strokeStyle = f.color; g.lineWidth = 2;
+      const pr = f.r * (0.5 + 0.12 * Math.sin(now / 300 + f.seed));
+      g.beginPath(); g.arc(f.x, f.y, pr, 0, 7); g.stroke();
+      if (Math.random() < 0.12) { const [px2, py2] = sqI(f.x + (Math.random() - 0.5) * f.r * 1.4, f.y + (Math.random() - 0.5) * f.r * 1.4); parts.push({ x: px2, y: py2, vx: 0, vy: -14, life: 0.5, color: f.color, g: 0, s: 2 }); }
     } else if (f.k === "mark") {
       // where a lobbed shot will land: a ring that fills in as it comes down
-      g.strokeStyle = f.color; g.lineWidth = 1; g.globalAlpha = 0.9;
-      g.beginPath(); g.ellipse(f.x, f.y, f.r, f.r * 0.86, 0, 0, 7); g.stroke();
+      g.strokeStyle = f.color; g.lineWidth = 2; g.globalAlpha = 0.9;
+      g.beginPath(); g.arc(f.x, f.y, f.r, 0, 7); g.stroke();
       g.fillStyle = f.color; g.globalAlpha = 0.14 + 0.3 * k;
-      g.beginPath(); g.ellipse(f.x, f.y, f.r * k, f.r * k * 0.86, 0, 0, 7); g.fill();
+      g.beginPath(); g.arc(f.x, f.y, f.r * k, 0, 7); g.fill();
     } else if (f.k === "slash") {
       // a tapered crescent that sweeps open and fades
       const way = f.rev ? -1 : 1;
@@ -1376,7 +1602,7 @@ function drawFx(now, ground2) {
       }
       if (k < 0.35) { g.fillStyle = "#ffffff"; const c = Math.round(f.r * 0.45 * (1 - k)); g.fillRect(Math.round(f.x - c), Math.round(f.y - c), c * 2, c * 2); }
     } else if (f.k === "proj") {
-      const x = f.x0 + (f.x1 - f.x0) * k, y = f.y0 + (f.y1 - f.y0) * k;
+      const x = f.x0 + (f.x1 - f.x0) * k, y = f.y0 + (f.y1 - f.y0) * k - Math.sin(k * Math.PI) * (f.arc || 0);
       g.fillStyle = f.color; g.fillRect(Math.round(x - f.size / 2), Math.round(y - f.size / 2), f.size, f.size);
       g.fillStyle = "#ffffff"; g.fillRect(Math.round(x - f.size / 4), Math.round(y - f.size / 4), Math.ceil(f.size / 2), Math.ceil(f.size / 2));
       if (Math.random() < 0.7) parts.push({ x, y, vx: 0, vy: 0, life: 0.18, color: f.color, g: 0 });
@@ -1401,17 +1627,17 @@ function drawFx(now, ground2) {
         for (const [col, rr, w] of [[f.color, f.r, 4], ["#ffffff", f.r - 1, 2]]) {
           g.strokeStyle = col; g.lineWidth = w;
           g.beginPath();
-          for (let q = 0; q <= n; q++) { const a = a0 + (q / n) * 0.9; g.lineTo(f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr * 0.6); }
+          for (let q = 0; q <= n; q++) { const a = a0 + (q / n) * 0.9; g.lineTo(f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr * 0.5); }
           g.stroke();
         }
       }
-      if (Math.random() < 0.6) { const a = Math.random() * 6.28; parts.push({ x: f.x + Math.cos(a) * f.r, y: f.y + Math.sin(a) * f.r * 0.6, vx: -Math.sin(a) * 60, vy: Math.cos(a) * 36 - 10, life: 0.25, color: f.color, g: 0, s: 2 }); }
+      if (Math.random() < 0.6) { const a = Math.random() * 6.28; parts.push({ x: f.x + Math.cos(a) * f.r, y: f.y + Math.sin(a) * f.r * 0.5, vx: -Math.sin(a) * 60, vy: Math.cos(a) * 30 - 10, life: 0.25, color: f.color, g: 0, s: 2 }); }
     } else if (f.k === "crack") {
       // cracks run out in the first fifth, glow, then darken and fade
       const run = Math.min(1, k * 5), a = k < 0.6 ? 1 : (1 - k) / 0.4;
       for (const pts of f.rays) {
         const m = Math.max(1, Math.ceil(pts.length * run));
-        for (const [col, w] of [["#2b2233", 5], [k < 0.35 ? "#fff0b0" : f.color, 2]]) {
+        for (const [col, w] of [["#2b2233", 8], [k < 0.35 ? "#fff0b0" : f.color, 3.5]]) {
           g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = w;
           g.beginPath();
           for (let q = 0; q < m; q++) g.lineTo(f.x + pts[q][0] * f.r, f.y + pts[q][1] * f.r);
@@ -1442,12 +1668,12 @@ function drawFx(now, ground2) {
       // flakes blown slantwise over the patch, a pale wash under them
       const a = k < 0.08 ? k / 0.08 : k > 0.9 ? (1 - k) / 0.1 : 1;
       g.globalAlpha = 0.24 * a; g.fillStyle = "#cfeaff";
-      g.beginPath(); g.ellipse(f.x, f.y, f.r, f.r * 0.8, 0, 0, 7); g.fill();
+      g.beginPath(); g.arc(f.x, f.y, f.r, 0, 7); g.fill();
       // a pale rim turning slowly, so the patch reads as one storm
-      g.globalAlpha = 0.7 * a; g.strokeStyle = "#ffffff"; g.lineWidth = 2;
-      for (let j = 0; j < 4; j++) { const a0 = now / 500 + j * 1.57; g.beginPath(); g.ellipse(f.x, f.y, f.r, f.r * 0.8, 0, a0, a0 + 0.8); g.stroke(); }
+      g.globalAlpha = 0.7 * a; g.strokeStyle = "#ffffff"; g.lineWidth = 4;
+      for (let j = 0; j < 4; j++) { const a0 = now / 500 + j * 1.57; g.beginPath(); g.arc(f.x, f.y, f.r, a0, a0 + 0.8); g.stroke(); }
       g.globalAlpha = a;
-      for (let q = 0; q < 7; q++) if (Math.random() < 0.9) { const ang = Math.random() * 6.28, rr = Math.sqrt(Math.random()) * f.r; parts.push({ x: f.x + Math.cos(ang) * rr - 20, y: f.y + Math.sin(ang) * rr * 0.8 - 46, vx: 70 + Math.random() * 30, vy: 60 + Math.random() * 30, life: 0.6, color: Math.random() < 0.6 ? "#ffffff" : "#bfe6ff", g: 0, s: Math.random() < 0.3 ? 3 : 2 }); }
+      for (let q = 0; q < 7; q++) if (Math.random() < 0.9) { const ang = Math.random() * 6.28, rr = Math.sqrt(Math.random()) * f.r, [sx2, sy2] = sqI(f.x + Math.cos(ang) * rr, f.y + Math.sin(ang) * rr); parts.push({ x: sx2 - 20, y: sy2 - 46, vx: 70 + Math.random() * 30, vy: 60 + Math.random() * 30, life: 0.6, color: Math.random() < 0.6 ? "#ffffff" : "#bfe6ff", g: 0, s: Math.random() < 0.3 ? 3 : 2 }); }
     }
     g.globalAlpha = 1; g.lineWidth = 1;
   }
@@ -1470,33 +1696,33 @@ function drawRune(st, dx, dy, t) {
 }
 /** After dark: warm light in windows, pools under lamps, runes and landmarks brighter. */
 function drawNightLights(night, t, ox, oy) {
-  const S = scenery();
   g.globalCompositeOperation = "lighter";
   for (const st of lights) {
     const sx = st.x - ox, sy = st.y - oy;
     if (sx < -140 || sx > vw + 140 || sy < -40 || sy > vh + 240) continue;
-    if (st.big && !st.neon && st.sp.width === S.house[0].width) {
-      // a cottage's two windows, lit from inside, flickering a little
-      const dx = Math.round(sx - st.sp.width / 2), dy = Math.round(sy - st.sp.height + 2);
+    if (st.house) {
+      // a cottage's windows on its two walls, lit from inside, flickering a little
       const f = 0.8 + 0.2 * Math.sin(t / 300 + st.ph * 4);
-      g.globalAlpha = night * 0.75 * f; g.fillStyle = "#ffb050";
-      for (const wx of [18, 94]) { g.fillRect(dx + wx + 4, dy + 84, 7, 7); g.fillRect(dx + wx + 13, dy + 84, 5, 7); g.fillRect(dx + wx + 4, dy + 93, 7, 5); g.fillRect(dx + wx + 13, dy + 93, 5, 5); }
-      g.globalAlpha = night * 0.35 * f;
-      for (const wx of [18, 94]) g.drawImage(DC.glow("#ffb050", 28), dx + wx + 12 - 28, dy + 92 - 28);
+      g.globalAlpha = night * 0.42 * f;
+      g.drawImage(DC.glow("#ffb050", 26), Math.round(sx - 26 - 26), Math.round(sy - 26 - 30));
+      g.drawImage(DC.glow("#ffb050", 26), Math.round(sx - 26 + 24), Math.round(sy - 26 - 32));
       continue;
     }
     const col = st.nightGlow || st.glow || "#7ae0ff", r = st.big || st.land ? 60 : st.nightGlow ? 26 : 40;
-    const cy = st.wp ? sy - 22 : st.land ? sy - st.sp.height * 0.5 : st.nightGlow ? sy - 30 : sy - st.sp.height + 10;
+    const cy = st.wp ? sy - 22 : st.big ? sy - 60 : st.land ? sy - st.sp.height * 0.5 : st.nightGlow ? sy - 30 : sy - st.sp.height + 10;
     g.globalAlpha = night * (st.nightGlow ? 0.3 : 0.45);
     g.drawImage(DC.glow(col, r), Math.round(sx - r), Math.round(cy - r));
     if (st.glow === "#ffe690") { g.globalAlpha = night * 0.22; g.drawImage(DC.glow(col, 44), Math.round(sx - 44), Math.round(sy - 26)); }
   }
-  for (const f of G.fires ? G.fires.values() : []) { g.globalAlpha = night * 0.5; g.drawImage(DC.glow("#ff9a40", 56), Math.round(f.x * P - ox - 56), Math.round(f.y * P - oy - 64)); }
+  for (const f of G.fires ? G.fires.values() : []) { const [X, Y] = iso(f.x, f.y); g.globalAlpha = night * 0.5; g.drawImage(DC.glow("#ff9a40", 56), Math.round(X - ox - 56), Math.round(Y - oy - 64)); }
   g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
 }
 
 /** How dark each world is, and the colour of its darkness. */
 const DARK = { forest: ["#06242a", 0.1], city: ["#0a0e30", 0.18], cave: ["#060a22", 0.17], crypt: ["#0a0810", 0.2], sewer: ["#04100a", 0.17], abyss: ["#1e0208", 0.16] };
+/** What lies beyond the edge of the map, and the earth its edge is cut from. */
+const VOID = { cave: "#05060e", crypt: "#060508", sewer: "#040806", abyss: "#0c0204", city: "#07080e" };
+const SKIRT = { meadow: ["#7a5a3a", "#5a4030"], town: ["#7a5a3a", "#5a4030"], forest: ["#5a4632", "#3e3024"], city: ["#4a5064", "#343846"], cave: ["#2e4468", "#1b2644"] };
 let lightCv = null, lg = null;
 
 export function sync(state2) { G = state2; }
@@ -1506,66 +1732,94 @@ export function impactMs(wk, beat) {
   return hold.time * (beat === 2 ? 1.15 : 1) * 1000 * 0.23;
 }
 
+/** Draw the on-screen part of a whole-map layer whose map origin sits at (lx, ly) inside it. */
+function drawLayer(c, lx, ly, ox, oy) {
+  const sx = Math.max(0, Math.floor(ox + lx)), sy = Math.max(0, Math.floor(oy + ly));
+  const sw = Math.min(c.width - sx, vw + 2), sh = Math.min(c.height - sy, vh + 2);
+  if (sw > 0 && sh > 0) g.drawImage(c, sx, sy, sw, sh, sx - lx, sy - ly, sw, sh);
+}
+/** The map's two front edges fall away into the dark, so it reads as a slab of land. */
+function drawSkirt() {
+  const U = UG[theme], [a, b] = U ? [U.face[0], U.face[3]] : SKIRT[theme] || SKIRT.meadow, d = 18;
+  const [Lx, Ly] = tI(0, map.h), [Bx, By] = tI(map.w, map.h), [Rx, Ry] = tI(map.w, 0);
+  const quad = (x0, y0, x1, y1, col) => { g.fillStyle = col; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.lineTo(x1, y1 + d); g.lineTo(x0, y0 + d); g.closePath(); g.fill(); };
+  quad(Lx, Ly, Bx, By, a); quad(Bx, By, Rx, Ry, b);
+  g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(Bx - 1, By, 2, d);
+}
+
 export function render(focusX, focusY, dt, t, snap) {
   if (!map || !ground || !G) return;
-  const mw = map.w * T, mh = map.h * T;
-  const tx = mw > vw ? clamp(focusX * P - vw / 2, 0, mw - vw) : (mw - vw) / 2;
-  const ty = mh > vh ? clamp(focusY * P - 16 - vh / 2, 0, mh - vh) : (mh - vh) / 2;
+  const [fX, fY] = iso(focusX, focusY);
+  const minX = -map.h * 16 * K, maxX = map.w * 16 * K, maxY = (map.w + map.h) * 8 * K;
+  // the view follows you, but never wanders far past the corners of the map's diamond
+  let tx = fX - vw / 2, ty = fY - 14 - vh / 2;
+  tx = maxX - minX > vw ? clamp(tx, minX - 24, maxX - vw + 24) : (minX + maxX - vw) / 2;
+  ty = maxY > vh ? clamp(ty, -60, maxY - vh + 40) : (maxY - vh) / 2;
   if (snap) { cam.x = tx; cam.y = ty; } else { cam.x += (tx - cam.x) * Math.min(1, dt * 10); cam.y += (ty - cam.y) * Math.min(1, dt * 10); }
   shakeAmt = Math.max(0, shakeAmt - dt * 18);
   const ox = Math.round(cam.x + (Math.random() - 0.5) * shakeAmt), oy = Math.round(cam.y + (Math.random() - 0.5) * shakeAmt);
   const now = performance.now();
 
   g.setTransform(1, 0, 0, 1, 0, 0);
-  g.fillStyle = "#101426";
+  g.fillStyle = VOID[theme] || "#0b0d18";
   g.fillRect(0, 0, vw, vh);
   g.translate(-ox, -oy);
-  g.drawImage(ground, 0, 0);
-  drawWater(t, ox, oy);
+  drawSkirt();
+  drawLayer(ground.frames[artGround ? Math.floor(t / 650) % ground.frames.length : 0], ground.ox, ground.oy, ox, oy);
+  if (!artGround) drawWater(t, ox, oy);
   if (pulseCv) {
-    const sx = Math.max(0, ox), sy = Math.max(0, oy), sw = Math.min(vw, pulseCv.width - sx), sh = Math.min(vh, pulseCv.height - sy);
     const beat = theme === "abyss" ? Math.max(0, Math.sin(t / 260)) ** 3 * 0.6 + Math.max(0, Math.sin(t / 260 - 0.9)) ** 3 * 0.3 : 0.5 + 0.5 * Math.sin(t / 1100);
-    if (sw > 0 && sh > 0) { g.globalAlpha = 0.25 + beat * 0.6; g.drawImage(pulseCv, sx, sy, sw, sh, sx, sy, sw, sh); g.globalAlpha = 1; }
+    g.globalAlpha = 0.25 + beat * 0.6; drawLayer(pulseCv, map.h * 16 * K, 0, ox, oy); g.globalAlpha = 1;
   }
-  DC.drawFalls(g, falls, t, ox, oy, vw, vh);
-  for (const s of smokers) if (s.x > ox - 20 && s.x < ox + vw + 20 && s.y > oy - 60 && s.y < oy + vh && Math.random() < 0.07) parts.push({ x: s.x + Math.random() * 4, y: s.y, vx: 5 + Math.random() * 5, vy: -13, life: 1.3 + Math.random(), color: "#eef0f6", g: -5, s: 3 });
-
-  // gates
+  // gates and everything else that lies flat on the ground, drawn through the diamond matrix
+  g.setTransform(FLAT[0], FLAT[1], FLAT[2], FLAT[3], -ox, -oy);
   for (const p of map.portals) {
-    const px = p.x * T + 16, py = p.y * T + 18;
-    for (let i = 0; i < 3; i++) { const ph = (t / 700 + i / 3) % 1; g.strokeStyle = `rgba(${i % 2 ? "170,225,255" : "205,160,255"},${1 - ph})`; g.lineWidth = 2; g.beginPath(); g.ellipse(px, py, 6 + ph * 16, 4 + ph * 10, 0, 0, 7); g.stroke(); }
-    if (Math.random() < 0.2) parts.push({ x: px + Math.random() * 24 - 12, y: py, vx: 0, vy: -40, life: 0.6, color: "#d6b8ff", g: 0 });
+    const px = p.x * T + 16, py = p.y * T + 16;
+    for (let i = 0; i < 3; i++) { const ph = (t / 700 + i / 3) % 1; g.strokeStyle = `rgba(${i % 2 ? "170,225,255" : "205,160,255"},${1 - ph})`; g.lineWidth = 4; g.beginPath(); g.arc(px, py, 8 + ph * 20, 0, 7); g.stroke(); }
   }
   g.lineWidth = 1;
   drawFx(now, true);
+  g.setTransform(1, 0, 0, 1, -ox, -oy);
+  for (const p of map.portals) if (Math.random() < 0.2) { const [px, py] = tI(p.x + 0.5, p.y + 0.5); parts.push({ x: px + Math.random() * 24 - 12, y: py + Math.random() * 8 - 4, vx: 0, vy: -40, life: 0.6, color: "#d6b8ff", g: 0 }); }
+  DC.drawFalls(g, falls, t, ox, oy, vw, vh);
+  for (const s of smokers) if (s.x > ox - 20 && s.x < ox + vw + 20 && s.y > oy - 60 && s.y < oy + vh && Math.random() < 0.07) parts.push({ x: s.x + Math.random() * 4, y: s.y, vx: 5 + Math.random() * 5, vy: -13, life: 1.3 + Math.random(), color: "#eef0f6", g: -5, s: 3 });
 
-  // everything that stands up, sorted by its feet
+  // everything that stands up, painted back to front by how far down the diagonal it stands
   const list = [];
-  const x0 = ox - 80, x1 = ox + vw + 80, y0 = oy - 20, y1 = oy + vh + 220;
-  for (const s of statics) if (s.x > x0 && s.x < x1 && s.y > y0 && s.y < y1) list.push({ y: s.y, s });
-  for (const n of npcs) list.push({ y: n.y, n });
-  for (const d of G.drops.values()) list.push({ y: d.y * P - 2, d });
-  if (G.fires) for (const f of G.fires.values()) list.push({ y: f.y * P, f });
-  if (G.bobs) for (const b of G.bobs.values()) list.push({ y: b.y * P - 1, b });
-  for (const m of G.mobs.values()) list.push({ y: m.y * P, m });
-  for (const [eid, p] of G.players) list.push({ y: p.y * P, p, eid });
-  list.push({ y: G.me.y * P, p: G.me, eid: G.you });
-  for (const pt of petsNow(dt, t)) list.push({ y: pt.y * P - 1, pet: pt });
-  for (const [id, pr] of props) { if (t >= pr.until) props.delete(id); else list.push({ y: pr.y * P - (pr.lift || 0), pr }); }
+  const X0 = ox - 8, X1 = ox + vw + 8, Y0 = oy - 8, Y1 = oy + vh + 8;
+  const on = (X, Y, up = 80) => X > X0 - 48 && X < X1 + 48 && Y > Y0 && Y - up < Y1;
+  for (const st of statics) {
+    const sp = st.sp;
+    if (st.dx > X1 || st.dx + sp.width < X0 || st.dy > Y1 || st.dy + sp.height < Y0) continue;
+    if (st.slices) { for (const sl of st.slices) if (st.dx + sl.sx < X1 && st.dx + sl.sx + sl.w > X0) list.push({ y: sl.d, s: st, sl }); }
+    else list.push({ y: st.d, s: st });
+  }
+  for (const n of npcs) if (on(n.x, n.y)) list.push({ y: n.y, X: n.x, Y: n.y, n });
+  const add = (wx, wy, o, dy = 0) => { const [X, Y] = iso(wx, wy); if (!on(X, Y, 140)) return; o.X = X; o.Y = Y; o.y = Y + dy; list.push(o); };
+  for (const d of G.drops.values()) add(d.x, d.y, { d }, -1);
+  if (G.fires) for (const f of G.fires.values()) add(f.x, f.y, { f });
+  if (G.bobs) for (const b of G.bobs.values()) add(b.x, b.y, { b }, -1);
+  for (const m of G.mobs.values()) add(m.x, m.y, { m });
+  for (const [eid, p] of G.players) add(p.x, p.y, { p, eid });
+  add(G.me.x, G.me.y, { p: G.me, eid: G.you, me: true }, 0.01);
+  for (const pt of petsNow(dt, t)) add(pt.x, pt.y, { pet: pt }, -1);
+  for (const [id, pr] of props) { if (t >= pr.until) props.delete(id); else add(pr.x, pr.y, { pr }, -(pr.lift || 0)); }
   list.sort((a, b) => a.y - b.y);
   for (const s of ents.values()) s.seen = false;
 
-  const meX = G.me.x * P, meY = G.me.y * P;
+  const [meX, meY] = iso(G.me.x, G.me.y);
+  let hidden = false, meDrawn = false;
   for (const o of list) {
     if (o.s) {
-      const st = o.s, sp = st.sp, dx = Math.round(st.x - sp.width / 2), dy = Math.round(st.y - sp.height + 2 - (st.lift || 0));
-      // tall things in front of you turn translucent
-      const hides = sp.height > 60 && st.y > meY && meX > dx + 6 && meX < dx + sp.width - 6 && meY - 20 > dy;
-      if (hides) g.globalAlpha = 0.42;
-      g.drawImage(sp, dx, dy);
+      const st = o.s, sp = st.sp, sl = o.sl, dx = st.dx, dy = st.dy;
+      // what stands in front of you and covers you turns see-through
+      const ax = sl ? dx + sl.sx : dx, aw = sl ? sl.w : sp.width;
+      if (meDrawn && sp.height > 20 && ax < meX + 8 && ax + aw > meX - 8 && dy < meY - 4 && dy + sp.height > meY - 26 && !G.me.dead) { g.globalAlpha = 0.48; hidden = true; }
+      if (sl) g.drawImage(sp, sl.sx, 0, sl.w, sp.height, ax, dy, sl.w, sp.height);
+      else g.drawImage(sp, dx, dy);
       g.globalAlpha = 1;
-      // a neon sign that sputters, a crystal that catches the light, a fountain that splashes
-      if (st.neon && Math.sin(t / 130 + st.ph) + Math.sin(t / 71 + st.ph * 3) > 1.55) { g.globalAlpha = 0.55; g.fillStyle = "#181a22"; g.fillRect(dx + 12, dy + 148, 112, 14); g.globalAlpha = 1; }
+      if (sl && sl.sx !== 0) continue;           // what goes on a big sprite goes on once
+      // a crystal that catches the light, a waypoint's rune, a landmark's glow, a fountain that splashes
       if (st.glint >= 0 && Math.sin(t / 420 + st.glint) > 0.86) { g.fillStyle = "#ffffff"; g.fillRect(dx + 16, dy + 6, 5, 1); g.fillRect(dx + 18, dy + 4, 1, 5); }
       if (st.wp) drawRune(st, dx, dy, t);
       if (st.land && st.glow) {
@@ -1576,52 +1830,55 @@ export function render(focusX, focusY, dt, t, snap) {
         g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
         if (st.land === "crystals" && Math.random() < 0.04) parts.push({ x: dx + 10 + Math.random() * (sp.width - 20), y: dy + 20 + Math.random() * 60, vx: 0, vy: -8, life: 1.2, color: "#cffaff", g: 0, s: 1 });
       }
-      if (st.water && Math.random() < 0.45) parts.push({ x: st.x - 9 + Math.random() * 18, y: st.y - 52, vx: (Math.random() - 0.5) * 34, vy: -24 - Math.random() * 20, life: 0.55, color: "#dff4ff", g: 170, s: 2 });
+      if (st.water && Math.random() < 0.45) parts.push({ x: st.x - 9 + Math.random() * 18, y: st.y - 50, vx: (Math.random() - 0.5) * 34, vy: -24 - Math.random() * 20, life: 0.55, color: "#dff4ff", g: 170, s: 2 });
     } else if (o.n) {
-      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 5, 2, 0, 0, 7); g.fill();
+      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 6, 3, 0, 0, 7); g.fill();
       const nt = t + o.n.x * 37, nf = nt % 3900 < 140 ? SP.FRAME.blink : Math.floor(nt / 620) % 2 ? SP.FRAME.breathe : SP.FRAME.stand;
       g.drawImage(o.n.sheet.front[nf], Math.round(o.n.x - SP.FOOT[0]), Math.round(o.n.y - SP.FOOT[1]));
     } else if (o.f) {
       // a campfire: warm light on the ground, a flickering flame, sparks drifting up
-      const x = o.f.x * P, y = o.f.y * P, fr = SP.campfire()[Math.floor(t / 140 + o.f.id) % 3];
-      g.fillStyle = "rgba(255,170,60,.13)"; g.beginPath(); g.ellipse(x, y - 2, 30, 14, 0, 0, 7); g.fill();
+      const x = o.X, y = o.Y, fr = SP.campfire()[Math.floor(t / 140 + o.f.id) % 3];
+      g.fillStyle = "rgba(255,170,60,.13)"; g.beginPath(); g.ellipse(x, y - 2, 30, 15, 0, 0, 7); g.fill();
       g.drawImage(fr, Math.round(x - SP.FOOT[0]), Math.round(y - SP.FOOT[1] + 2));
       if (Math.random() < 0.12) parts.push({ x: x - 3 + Math.random() * 6, y: y - 16, vx: (Math.random() - 0.5) * 10, vy: -18 - Math.random() * 14, life: 0.7, color: Math.random() < 0.5 ? "#ffd070" : "#ff9040", g: -10, s: 1 });
     } else if (o.b) {
       // a fishing float riding the water, its line running back to the angler
-      const bx = Math.round(o.b.x * P), by = Math.round(o.b.y * P + Math.sin(t / 260) * 1.2 + (o.b.bite ? Math.sin(t / 40) * 2 : 0));
+      const bx = Math.round(o.X), by = Math.round(o.Y + Math.sin(t / 260) * 1.2 + (o.b.bite ? Math.sin(t / 40) * 2 : 0));
       const who = o.b.eid === G.you ? G.me : G.players.get(o.b.eid);
       g.lineWidth = 1;
-      if (who) { g.strokeStyle = "rgba(240,240,255,.6)"; g.beginPath(); g.moveTo(bx, by - 4); g.lineTo(Math.round(who.x * P) + 4, Math.round(who.y * P) - 12); g.stroke(); }
-      g.strokeStyle = "rgba(255,255,255,.5)"; g.beginPath(); g.ellipse(bx, by + 1, 4 + ((t / 200) % 3), 1.5, 0, 0, 7); g.stroke();
+      if (who) { const [wx2, wy2] = iso(who.x, who.y); g.strokeStyle = "rgba(240,240,255,.6)"; g.beginPath(); g.moveTo(bx, by - 4); g.lineTo(Math.round(wx2) + 4, Math.round(wy2) - 12); g.stroke(); }
+      g.strokeStyle = "rgba(255,255,255,.5)"; g.beginPath(); g.ellipse(bx, by + 1, 4 + ((t / 200) % 3), 2, 0, 0, 7); g.stroke();
       g.fillStyle = "#2b2233"; g.fillRect(bx - 2, by - 4, 4, 5); g.fillStyle = "#ffffff"; g.fillRect(bx - 1, by - 3, 2, 1); g.fillStyle = "#e84a5a"; g.fillRect(bx - 1, by - 2, 2, 2);
     } else if (o.d) {
-      const d = o.d, x = d.x * P, y = d.y * P, ic = G.icons.cv[d.it];
-      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(x, y, 8, 3, 0, 0, 7); g.fill();
+      const d = o.d, x = o.X, y = o.Y, ic = G.icons.cv[d.it];
+      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(x, y, 8, 4, 0, 0, 7); g.fill();
       if (d.q) { g.fillStyle = RARITY[d.q]; g.globalAlpha = 0.3 + 0.15 * Math.sin(t / 180 + d.id); g.fillRect(x - 2, y - 26 - d.q * 16, 4, d.q * 16 + 22); g.globalAlpha = 1; }
       if (ic) g.drawImage(ic, Math.round(x - 8), Math.round(y - 18 + Math.sin(t / 220 + d.id) * 2), 16, 16);
     } else if (o.m) {
-      const m = o.m, kind = G.defs.mobs[m.k].sp, x = m.x * P, y = m.y * P, el = m.el | 0;
-      // an elite glows gold; a field boss is twice the size and glows like the rift
+      const m = o.m, kind = G.defs.mobs[m.k].sp, x = o.X, y = o.Y, el = m.el | 0;
       // an elite wears the colour of its first trait; a recoloured kind wears its own
       const tint = (m.tr && TRAIT_TINT[m.tr[0]]) || G.defs.mobs[m.k].tint || null;
-      const s = state("m" + m.id, kind + ":" + el + ":" + (tint || ""), () => { const z = SP.MOB_SIZE[kind] || [1, 0]; return { frames: SP.monsterSheet(kind, tint), size: z[0] * (el === 2 ? 2 : 1), hover: z[1] * (el === 2 ? 1.5 : 1), px: m.x }; });
-      if (m.x > s.px + 0.05) s.face = -1; else if (m.x < s.px - 0.05) s.face = 1;
-      s.px = m.x;
+      const s = state("m" + m.id, kind + ":" + el + ":" + (tint || ""), () => { const z = SP.MOB_SIZE[kind] || [1, 0]; return { frames: SP.monsterSheet(kind, tint), size: z[0] * (el === 2 ? 2 : 1), hover: z[1] * (el === 2 ? 1.5 : 1), px: m.x, py: m.y }; });
+      // sprites face left; they turn by which way they move across the screen
+      const sdx = (m.x - s.px) - (m.y - (s.py ?? m.y));
+      if (sdx > 0.05) s.face = -1; else if (sdx < -0.05) s.face = 1;
+      s.px = m.x; s.py = m.y;
       const img = s.frames[Math.floor(t / (m.moving ? 180 : 360) + m.id) % 2], w = SP.SIZE * s.size;
       const a = t - m.atkT, lunge = a < 220 ? Math.sin((a / 220) * Math.PI) * 6 * -s.face : 0;
-      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(x, y, w * 0.24, w * 0.09, 0, 0, 7); g.fill();
+      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(x, y, w * 0.26, w * 0.13, 0, 0, 7); g.fill();
       if (el) {
         const pulse = 0.55 + 0.3 * Math.sin(t / 160 + m.id);
         g.strokeStyle = el === 2 ? `rgba(255,110,214,${pulse})` : `rgba(255,196,64,${pulse})`; g.lineWidth = 1;
-        g.beginPath(); g.ellipse(x, y, w * 0.3, w * 0.12, 0, 0, 7); g.stroke();
-        if (el === 2) { g.strokeStyle = `rgba(138,232,248,${pulse * 0.8})`; g.beginPath(); g.ellipse(x, y, w * 0.38 + Math.sin(t / 240) * 2, w * 0.15, 0, 0, 7); g.stroke(); }
+        g.beginPath(); g.ellipse(x, y, w * 0.32, w * 0.16, 0, 0, 7); g.stroke();
+        if (el === 2) { g.strokeStyle = `rgba(138,232,248,${pulse * 0.8})`; g.beginPath(); g.ellipse(x, y, w * 0.4 + Math.sin(t / 240) * 2, w * 0.2, 0, 0, 7); g.stroke(); }
         if (Math.random() < (el === 2 ? 0.3 : 0.1)) parts.push({ x: x + (Math.random() - 0.5) * w * 0.5, y: y - Math.random() * w * 0.4, vx: 0, vy: -22, life: 0.5, color: el === 2 ? "#ff8ae0" : "#ffe08a", g: 0, s: 1 });
       }
       g.save();
       const hk = (t - m.hurtT) / 200, rec = hk < 1 ? (1 - hk) * (1 - hk) : 0;
       const pow = m.hurtP || 1;
-      const jx = rec ? Math.cos(m.hurtA || 0) * rec * 8 * pow + Math.sin(t / 14) * rec * 2 : 0, jy = rec ? Math.sin(m.hurtA || 0) * rec * 5 * pow : 0;
+      // knocked back along the blow, as the blow looks on screen
+      const ha = m.hurtA || 0, hx = Math.cos(ha) - Math.sin(ha), hy = (Math.cos(ha) + Math.sin(ha)) / 2;
+      const jx = rec ? hx * rec * 6 * pow + Math.sin(t / 14) * rec * 2 : 0, jy = rec ? hy * rec * 6 * pow : 0;
       g.translate(Math.round(x + lunge + jx), Math.round(y + jy - s.hover - (s.hover ? Math.sin(t / 320 + m.id) * 2 : 0)));
       g.scale(s.face * (1 + rec * 0.24), 1 - rec * 0.2);
       if (t - m.hurtT < 110) g.filter = "brightness(2.2)";
@@ -1630,20 +1887,28 @@ export function render(focusX, focusY, dt, t, snap) {
       g.restore();
       m.h3 = (w * (G.defs.mobs[m.k].boss ? 0.92 : 0.72) + s.hover) / 26;
     } else if (o.pr) {
-      g.save(); o.pr.draw(g, t, o.pr.x * P, o.pr.y * P); g.restore();
+      g.save(); o.pr.draw(g, t, o.X, o.Y); g.restore();
     } else if (o.pet) {
       drawPet(o.pet, t);
     } else if (o.p) {
       const w = G.who.get(o.eid);
       if (!w) continue;
       const s = personState(o.eid, playerLook(w.cls, w.look, w.gear));
-      const px = o.p.x * P, py = o.p.y * P;
+      const px = o.X, py = o.Y;
       // a giant grows (and shrinks back) over a quarter of a second
       const gz = o.p.gz = (o.p.gz || 1) + (((o.p.fl | 0) & 1 ? 1.6 : 1) - (o.p.gz || 1)) * Math.min(1, dt * 8);
       if (gz > 1.01) { g.save(); g.translate(px, py); g.scale(gz, gz); g.translate(-px, -py); drawPerson(s, o.p, t, dt, px, py); g.restore(); }
       else drawPerson(s, o.p, t, dt, px, py);
       o.p.h3 = s.h * gz;
+      if (o.me) { meDrawn = true; ghost.s = s; ghost.gz = gz; }
     }
+  }
+  // seen through a wall: a pale ghost of you on top of whatever hides you
+  if (hidden && ghost.s && ghost.s.img) {
+    const s = ghost.s;
+    g.save(); g.globalAlpha = 0.42; g.translate(Math.round(meX), Math.round(meY)); g.scale(s.face * ghost.gz, ghost.gz);
+    g.drawImage(s.img, -SP.FOOT[0], -SP.FOOT[1]);
+    g.restore();
   }
   for (const [id, s] of ents) if (!s.seen) ents.delete(id);
   for (const h of hooks) { g.save(); h(g, t, P); g.restore(); }
@@ -1674,8 +1939,15 @@ export function render(focusX, focusY, dt, t, snap) {
     lg.globalAlpha = dark[1]; lg.fillStyle = dark[0]; lg.fillRect(0, 0, vw, vh); lg.globalAlpha = 1;
     lg.globalCompositeOperation = "destination-out";
     const hole = (x, y, r, k = 1) => { const sx = x - ox, sy = y - oy; if (sx < -r || sy < -r || sx > vw + r || sy > vh + r) return; const gr = lg.createRadialGradient(sx, sy, 0, sx, sy, r); gr.addColorStop(0, `rgba(0,0,0,${k})`); gr.addColorStop(1, "rgba(0,0,0,0)"); lg.fillStyle = gr; lg.fillRect(sx - r, sy - r, r * 2, r * 2); };
-    for (const o of list) { if (o.f) hole(o.f.x * P, o.f.y * P - 8, 120, 0.95); else if (o.s && o.s.wp) hole(o.s.x, o.s.y - 22, 70, wpLit() ? 0.85 : 0.3); else if (o.s && o.s.glow) hole(o.s.x, o.s.y - (o.s.big ? 60 : o.s.sp.height - 12), o.s.big ? 120 : o.s.glow === "#ffe690" ? 110 : 60, 0.85); else if (o.d && o.d.q) hole(o.d.x * P, o.d.y * P - 10, 36, 0.7); else if (o.m && SP.MOB_GLOW[G.defs.mobs[o.m.k].sp]) hole(o.m.x * P, o.m.y * P - 14, o.m.el === 2 ? 90 : 48, 0.75); }
-    for (const p of map.portals) hole(p.x * T + 16, p.y * T + 16, 80, 0.8);
+    for (const o of list) {
+      if (o.sl && o.sl.sx !== 0) continue;
+      if (o.f) hole(o.X, o.Y - 8, 120, 0.95);
+      else if (o.s && o.s.wp) hole(o.s.x, o.s.y - 22, 70, wpLit() ? 0.85 : 0.3);
+      else if (o.s && o.s.glow) hole(o.s.x, o.s.y - (o.s.big ? 60 : o.s.sp.height - 12), o.s.big ? 120 : o.s.glow === "#ffe690" ? 110 : 60, 0.85);
+      else if (o.d && o.d.q) hole(o.X, o.Y - 10, 36, 0.7);
+      else if (o.m && SP.MOB_GLOW[G.defs.mobs[o.m.k].sp]) hole(o.X, o.Y - 14, o.m.el === 2 ? 90 : 48, 0.75);
+    }
+    for (const p of map.portals) { const [px, py] = tI(p.x + 0.5, p.y + 0.5); hole(px, py, 80, 0.8); }
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.drawImage(lightCv, 0, 0);
   }
@@ -1688,14 +1960,30 @@ export function render(focusX, focusY, dt, t, snap) {
   drawAmbient(dt, t, ox, oy);
   cam.ox = ox; cam.oy = oy;
 }
+/** The local player's last drawn look, for the ghost shown through walls. */
+const ghost = { s: null, gz: 1 };
 
 /** Where a point of the world lands on screen (CSS pixels). `h` lifts it, in tiles. */
 export function project(wx, wy, h = 0) {
-  return [(wx * P - (cam.ox ?? cam.x)) * Z, (wy * P - h * 26 - (cam.oy ?? cam.y)) * Z];
+  const [X, Y] = iso(wx, wy, h);
+  return [(X - (cam.ox ?? cam.x)) * Z, (Y - (cam.oy ?? cam.y)) * Z];
 }
-/** The ground point under a screen position, in server units. */
+/**
+ * What is under a screen position, in server units: the feet of whatever stands
+ * there (a monster, one of the townsfolk, a waypoint stone) if the click is on
+ * its body, else the point on the ground.
+ */
 export function pick(clientX, clientY) {
-  return [(clientX / Z + (cam.ox ?? cam.x)) / P, (clientY / Z + (cam.oy ?? cam.y)) / P];
+  const X = clientX / Z + (cam.ox ?? cam.x), Y = clientY / Z + (cam.oy ?? cam.y);
+  let best = null, bd = -1e9;
+  const test = (wx, wy, w, h) => { const [x, y] = iso(wx, wy); if (X > x - w / 2 && X < x + w / 2 && Y > y - h && Y < y + 4 && y > bd) { bd = y; best = [wx, wy]; } };
+  if (G && map && G.defs) {
+    for (const m of G.mobs.values()) { const d = G.defs.mobs[m.k], z = ((SP.MOB_SIZE[d && d.sp] || [1])[0] * (m.el === 2 ? 2 : 1)) * SP.SIZE; test(m.x, m.y, z * 0.6, z * 0.75); }
+    for (const n of map.npcs) test(n.x * 16 + 8, n.y * 16 + 12, 18, 28);
+    for (const k of map.marks || []) if (k.kind === "waypoint") test(k.x * 16 + 8, k.y * 16 + 8, 18, 44);
+  }
+  if (best) return best;
+  return [Y / K + X / (2 * K), Y / K - X / (2 * K)];
 }
 
 // ───────────────────────────── title and creation ─────────────────────────────
@@ -1727,8 +2015,8 @@ export function renderStage(dt, t) {
     if (stage.draft) {
       const k = (t % 3200) / 1000, dir = [2, 1, 3, 2][Math.floor(t / 3200) % 4], z = Math.max(3, Math.round(15 / Z));
       g.save(); g.translate(cx + Math.min(120, vw * 0.18), gy + 34); g.scale(z, z);
-      drawPerson(s, { x: 0, y: 0, dir, moving: k > 1 && k < 2.2, atkT: k > 2.5 ? t - (k - 2.5) * 1000 : -1e9, dead: false, aim: k > 2.5 ? [dir === 1 ? -40 : 40, 6] : null }, t, dt, 0, 0);
+      drawPerson(s, { scr: true, x: 0, y: 0, dir, moving: k > 1 && k < 2.2, atkT: k > 2.5 ? t - (k - 2.5) * 1000 : -1e9, dead: false, aim: k > 2.5 ? [dir === 1 ? -40 : 40, 6] : null }, t, dt, 0, 0);
       g.restore();
-    } else drawPerson(s, { x: 0, y: 0, dir: 2, moving: true, atkT: -1e9, dead: false, aim: null }, t, dt, cx - 66 + i * 44, gy + 12);
+    } else drawPerson(s, { scr: true, x: 0, y: 0, dir: 2, moving: true, atkT: -1e9, dead: false, aim: null }, t, dt, cx - 66 + i * 44, gy + 12);
   });
 }
