@@ -29,7 +29,7 @@ const ms = +(q.get("ms") || 33), n = +(q.get("n") || 18), Z = 3, cw = 80, ch = 8
 const kinds = (q.get("wk") || "sword,dagger,spear,staff,book").split(","), cls = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "mage", bow: "lancer" };
 const dirs = (q.get("aim") || "e").split(",");
 const rows = [];
-for (const wk of kinds) for (const d of dirs) for (const beat of [0, 1, 2]) rows.push([wk, d, beat]);
+for (const wk of kinds) for (const d of dirs) for (const beat of (wk === "sword" ? [0, 1] : [0, 1, 2])) rows.push([wk, d, beat]);
 const out = document.getElementById("out");
 out.width = n * cw * Z + 70; out.height = rows.length * ch * Z;
 const o = out.getContext("2d"); o.imageSmoothingEnabled = false;

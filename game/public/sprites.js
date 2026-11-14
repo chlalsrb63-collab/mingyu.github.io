@@ -415,14 +415,14 @@ export const HOLD = {
   // `time` is a whole stroke — wind-up, snap, follow-through (swing.js) — played fast (about
   // 30% quicker than the old 0.8/0.42/0.66/0.86/0.68 s) well inside the weapon's attack
   // interval, so each blow snaps out and the figure stays poised until the next one
-  sword: { rest: 58, arc: 260, time: 0.56, push: 6, grow: 0.4, style: "sweep" },
-  dagger: { rest: -38, arc: 160, time: 0.3, push: 13, grow: 0.3, style: "stab" },
-  spear: { rest: 64, arc: 220, time: 0.46, push: 18, grow: 0.3, style: "stab" },
-  staff: { rest: 84, arc: 110, time: 0.6, push: 7, grow: 0.3, style: "cast" },
-  book: { rest: 0, arc: 0, time: 0.48, push: 9, grow: 0.3, style: "float" },
+  sword: { rest: 58, arc: 260, time: 0.56, push: 6, style: "sweep" },
+  dagger: { rest: -38, arc: 160, time: 0.3, push: 13, style: "stab" },
+  spear: { rest: 64, arc: 220, time: 0.46, push: 18, style: "stab" },
+  staff: { rest: 84, arc: 110, time: 0.6, push: 7, style: "cast" },
+  book: { rest: 0, arc: 0, time: 0.48, push: 9, style: "float" },
   // a bow is held square to the shot (weapons.js: the limbs across, the arrow along) and drawn,
   // not swung: no smear, no swell; at rest it hangs nearly upright at the body's side
-  bow: { rest: -16, arc: 0, time: 0.42, push: 0, grow: 0, style: "bow" },
+  bow: { rest: -16, arc: 0, time: 0.42, push: 0, style: "bow" },
 };
 /** A bow at a moment of its shot (pull −0.25 … 1, an arrow on the string or not): see weapons.js bowSprite. */
 export const bowSprite = (gear, pull, arrow) => WPN.bowSprite(gear || {}, pull, arrow);

@@ -43,6 +43,26 @@ if (mode === "weapons") {
     txt("+" + e, 6 + i * 300, y1 + 10);
   });
 }
+if (mode === "sil") {
+  const z = 4, cols = 5, cw = 244, rh = 172;
+  const samples = KINDS.flatMap((kind) => WP.silhouetteSamples(kind).map(([name, motif]) => ({ kind, name, motif })));
+  cv.width = 1240; cv.height = 16 + Math.ceil(samples.length / cols) * rh;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#242131"; g.fillRect(0, 0, cv.width, cv.height);
+  samples.forEach(({ kind, name, motif }, i) => {
+    const x = 10 + (i % cols) * cw, y = 8 + Math.floor(i / cols) * rh;
+    const sprite = WP.weaponSprite(kind, { wt: 3, wl: motif });
+    const icon = WP.weaponIcon(kind, 3, { wl: motif });
+    g.fillStyle = "#39464a"; g.fillRect(x, y, cw - 8, rh - 8);
+    g.fillStyle = "#263235"; g.fillRect(x + 158, y + 92, 64, 64);
+    txt(kind + " / " + name, x + 12, y + 19);
+    txt(WP.motifName(motif), x + 12, y + 151, "#b4ceca");
+    g.drawImage(sprite, x + 12 + (208 - sprite.width * z) / 2, y + 4, sprite.width * z, sprite.height * z);
+    g.drawImage(sprite, x + 104, y + 121);
+    g.drawImage(icon, x + 158, y + 92, 64, 64);
+  });
+}
+
 if (mode === "cos") {
   // every cosmetic of one slot (?s=hat|top|back|face) on six looks: species, facings and frames mixed
   const SPC = await import("./species.js");

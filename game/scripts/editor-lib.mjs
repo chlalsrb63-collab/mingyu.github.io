@@ -19,6 +19,8 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { buildLogic, readData, EMPTY_DATA, ROOT, DATA_DIR } from "./build-logic.mjs";
 
+import { BGM_KEYS } from "../public/audio.js";
+
 export { DATA_DIR, ROOT };
 
 // (MAPS: every map built — the rules build the generated ones only on first use)
@@ -77,16 +79,6 @@ function miniColours() {
   };
   return { MINI: grab("MINI"), MINI_OBJ: grab("MINI_OBJ"), MINI_THEME: grab("MINI_THEME") };
 }
-/** audio.js TRACKS keys, plus its aliases. */
-function bgmKeys() {
-  const src = readFileSync(join(ROOT, "public", "audio.js"), "utf8");
-  const start = src.indexOf("const TRACKS = {"), end = src.indexOf("const ALIAS", start);
-  const keys = [...src.slice(start, end).matchAll(/^ {2}([a-z]\w*): \{/gm)].map((m) => m[1]);
-  const alias = /const ALIAS = \{([^}]*)\}/.exec(src);
-  if (alias) for (const m of alias[1].matchAll(/(\w+):/g)) keys.push(m[1]);
-  return [...new Set(keys)];
-}
-
 /** Every ground/object character with its Korean name, minimap colour, solidity and the themes that use it. */
 export async function palette() {
   const { E } = await pure();
@@ -170,7 +162,7 @@ export async function defsForEditor(dataDir = DATA_DIR) {
   const npcs = [];
   for (const id of Object.keys(E.MAPS)) for (const n of E.MAPS[id].npcs) npcs.push({ id: n.id, name: n.name, role: n.role, map: id, x: n.x, y: n.y });
   return {
-    mobs, items, roles: E.NPC_ROLES.slice(), themes: E.THEMES.slice(), bgm: bgmKeys(),
+    mobs, items, roles: E.NPC_ROLES.slice(), themes: E.THEMES.slice(), bgm: BGM_KEYS,
     maps: Object.keys(E.MAPS).map((id) => ({ id, name: E.MAPS[id].name, builtin: E.BUILTIN_MAPS.includes(id), w: E.MAPS[id].w, h: E.MAPS[id].h })),
     npcs, quests: E.QUESTS.map((q) => ({ mob: q.mob, n: q.n, title: q.title })), goals: ["kill", "collect", "talk", "visit"],
   };
@@ -225,7 +217,7 @@ export async function checkData(dataDir = DATA_DIR) {
   const G = base.E;
   const pal = await palette();
   const GCH = new Set(pal.ground.map((p) => p.ch)), OCH = new Set(pal.objects.map((p) => p.ch));
-  const bgm = new Set(bgmKeys());
+  const bgm = new Set(BGM_KEYS);
   const solidG = G.SOLID_G;
   const mob = (k) => typeof k === "string" && Object.hasOwn(G.MOBS, k);
   const item = (id) => typeof id === "string" && Object.hasOwn(G.ITEMS, id);
@@ -423,7 +415,7 @@ export async function checkData(dataDir = DATA_DIR) {
     seenSq.add(q.id);
     const giver = npcIds.get(q.giver);
     if (!giver) err(qf, `${p}.giver`, `퀘스트를 주는 NPC "${q.giver}"가 없습니다`);
-    else if (giver.role !== "quest") warn(qf, `${p}.giver`, `NPC "${q.giver}"의 역할이 "quest"가 아닙니다 — 말을 걸어도 퀘스트 창이 열리지 않습니다`);
+    else if (giver.thing) warn(qf, `${p}.giver`, `의뢰인 "${q.giver}"이 고정 오브젝트입니다`);
     for (const k of ["title", "text"]) if (typeof q[k] !== "string" || !q[k].trim()) err(qf, `${p}.${k}`, `${k === "title" ? "제목" : "내용"}이 비어 있습니다`);
     const g = q.goal;
     if (!isObj(g)) err(qf, `${p}.goal`, "목표(goal)가 없습니다");

@@ -1575,7 +1575,7 @@ function drawPerson(s, e, t, dt, x, y) {
   const side = (beat === 1 ? -1 : 1) * sg;             // the second stroke comes back the other way
   const bowy = hold.style === "bow";
   const P = !live ? null : hold.style === "float" ? Sw.bookPose(beat, k) : bowy ? Sw.bowPose(beat, k, side, e.bowUp) : Sw.pose(sk, beat, k, side);
-  if (s.t0 !== e.atkT) { s.t0 = e.atkT; s.from = s.ang; s.fromLen = s.len ?? 1; s.fromPush = s.push || 0; s.fromLean = s.lean || 0; }
+  if (s.t0 !== e.atkT) { s.t0 = e.atkT; s.from = s.ang; s.fromPush = s.push || 0; s.fromLean = s.lean || 0; }
   // the body rocks back on the wind-up, leans (or steps) into the blow, and settles back after
   if (P) s.lean = P.pre !== undefined ? s.fromLean + (P.lean - s.fromLean) * Sw.eOut(P.pre) : P.lean;
   else s.lean = (s.lean || 0) * Math.max(0, 1 - dt * 7);
@@ -1610,12 +1610,12 @@ function drawPerson(s, e, t, dt, x, y) {
   const glow = RARITY[s.gear.wq | 0] || (s.gear.we >= 7 ? "#ffffff" : null);
   if (hold.style === "float") {
     // a spellbook hovers open beside its reader, is drawn back to the chest, and darts out to cast
-    const out = P ? P.out * hold.push : 0, big = P ? P.big : 1;
+    const out = P ? P.out * hold.push : 0;
     const bx = x + sg * 9 + Math.cos(aimS) * out, by = y - 8 + Math.sin(t / 380 + s.ph) * 1.2 + Math.sin(aimS) * out + bob - (P ? P.lift : 0);
     const book = () => {
       g.save();
       if (P && k > Sw.WIND * 0.8 && k < 0.4) { g.shadowColor = "#fff2b0"; g.shadowBlur = 10; } else if (glow) { g.shadowColor = glow; g.shadowBlur = 5; }
-      g.translate(Math.round(bx), Math.round(by)); g.scale(big, big);
+      g.translate(Math.round(bx), Math.round(by));
       g.drawImage(s.weapon, -16, -16);
       g.restore();
     };
@@ -1624,30 +1624,32 @@ function drawPerson(s, e, t, dt, x, y) {
     return;
   }
   const rest = sg > 0 ? -hold.rest * DEG : Math.PI + hold.rest * DEG;
-  if (s.ang === null) { s.ang = rest; s.len = 1; }
+  if (s.ang === null) s.ang = rest;
   const turn = (a, b, u) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * u; };
   const held = resting && atk < stroke + 0.6;           // poised at the end of the stroke, ready for the next
-  let push = 0, len = 1, depth = 0, grow = 0;
-  /** A pose → [screen angle, foreshortened length, depth, hand push]. */
-  const place = (p) => { const [a, l, d] = Sw.project(aimYaw + p.yaw, p.pitch); return [a, l, d, p.reach]; };
+  let push = 0, depth = 0;
+  const place = (p) => {
+    const [angle, layer] = Sw.project(aimYaw + p.yaw, p.pitch);
+    return [angle, layer, p.reach];
+  };
   if (P) {
-    let [pa, pl, pd, pp] = place(P);
-    // the wind-up starts from wherever the weapon was: at rest, or where the last stroke ended
-    // (a bow is not wound up from where it hung: it comes straight onto the aim, raised by s.bw)
-    if (P.pre !== undefined && !bowy) { const u = Sw.eOut(P.pre); pa = turn(s.from ?? pa, pa, u); pl = (s.fromLen ?? 1) + (pl - (s.fromLen ?? 1)) * u; pp = s.fromPush + (pp - s.fromPush) * u; }
-    s.ang = pa; len = pl; depth = pd; push = pp;
-    // through the strike the weapon swells toward the eye
-    if (P.strike) grow = Math.sin(clamp((k - Sw.WIND + 0.02) / 0.16, 0, 1) * Math.PI) * hold.grow * (fin ? 1.4 : 1);
-    s.endAng = s.ang; s.endLen = len; s.endPush = push; s.endDepth = depth;
+    let [angle, layer, reach] = place(P);
+    // The wind-up starts where the weapon was. A bow raises directly onto the aim.
+    if (P.pre !== undefined && !bowy) {
+      const u = Sw.eOut(P.pre);
+      angle = turn(s.from ?? angle, angle, u);
+      reach = s.fromPush + (reach - s.fromPush) * u;
+    }
+    s.ang = s.endAng = angle;
+    push = s.endPush = reach;
+    depth = s.endDepth = layer;
   } else if (held) {
-    s.ang = s.endAng ?? s.ang; len = s.endLen ?? 1; push = s.endPush ?? 0; depth = s.endDepth ?? 0;
+    s.ang = s.endAng ?? s.ang; push = s.endPush ?? 0; depth = s.endDepth ?? 0;
   } else {
-    // the run is over: the weapon comes down and is slung again, unhurried
     s.ang = turn(s.ang, rest, Math.min(1, dt * 5));
-    len = (s.len ?? 1) + (1 - (s.len ?? 1)) * Math.min(1, dt * 6);
     push = (s.push || 0) * Math.max(0, 1 - dt * 6);
   }
-  s.push = push; s.len = len;
+  s.push = push;
   // a greatsword is slung across the back between fights, and comes off it to fight
   s.sl = (s.sl ?? 1) + ((hold.style === "sweep" && resting && !held ? 1 : 0) - (s.sl ?? 1)) * Math.min(1, dt * 8);
   // with no arms, the weapon simply floats at the body's side; a bow's pivot is the drawing hand:
@@ -1656,7 +1658,7 @@ function drawPerson(s, e, t, dt, x, y) {
   if (bowy) s.bw = P ? 1 : (s.bw ?? 0) + ((held ? 1 : 0) - (s.bw ?? 0)) * Math.min(1, dt * 8);
   const hx0 = bowy ? x - sg * 1.5 * (1 - s.bw) + Math.cos(aimS) * 3 * s.bw : x + sg * (7 - 4 * s.sl);
   const hy0 = bowy ? y - 5 - 2 * s.bw + Math.sin(aimS) * 1.5 * s.bw + bob : y - (3 + 2 * s.sl) + bob;
-  const hx = hx0 + Math.cos(s.ang) * push * len, hy = hy0 + Math.sin(s.ang) * push * len;
+  const hx = hx0 + Math.cos(s.ang) * push, hy = hy0 + Math.sin(s.ang) * push;
   const long = Sw.bladeLen(s.weapon, SP.GRIP);
   // the bow at this moment of its shot: the string's pull and whether an arrow is on it
   const bs = bowy ? P || (held ? Sw.BOW_READY : null) : null;
@@ -1664,16 +1666,16 @@ function drawPerson(s, e, t, dt, x, y) {
   const weapon = () => {
     // the smear: the band the blade's outer half swept through in the last few hundredths of a
     // second, sampled along the stroke itself so it bends with the arc as the view shows it
-    if (P && P.strike && grow > 0.05) {
+    if (P?.strike && !bowy && k < 0.4) {
       const pts = [], inner = [], span = 0.07 / stroke;
       for (let j = 0; j <= 6; j++) {
         const kk = Math.max(Sw.WIND, k - (span * j) / 6);
         const q = Sw.pose(sk, beat, kk, side);
         if (!q) continue;
-        const [a, l, , r] = place(q), L = long * Math.max(0.45, l) * (1 + grow);
-        const ox = hx0 + Math.cos(a) * r * l, oy = hy0 + Math.sin(a) * r * l;
-        pts.push([ox + Math.cos(a) * L, oy + Math.sin(a) * L]);
-        inner.push([ox + Math.cos(a) * L * 0.62, oy + Math.sin(a) * L * 0.62]);
+        const [a, , reach] = place(q);
+        const ox = hx0 + Math.cos(a) * reach, oy = hy0 + Math.sin(a) * reach;
+        pts.push([ox + Math.cos(a) * long, oy + Math.sin(a) * long]);
+        inner.push([ox + Math.cos(a) * long * 0.62, oy + Math.sin(a) * long * 0.62]);
       }
       if (pts.length > 2) {
         g.save();
@@ -1691,14 +1693,12 @@ function drawPerson(s, e, t, dt, x, y) {
     g.translate(Math.round(hx), Math.round(hy));
     g.rotate(s.ang);
     if (Math.cos(s.ang) < 0) g.scale(1, -1);
-    // turned toward or away from the camera, the blade is seen end-on and looks shorter
-    g.scale((1 + grow) * Math.max(0.45, len), 1 + grow);
     if (glow) { g.shadowColor = glow; g.shadowBlur = s.gear.we >= 7 ? 9 : 5; }
     g.drawImage(wimg, -SP.GRIP[0], -SP.GRIP[1]);
     g.restore();
     // the finisher's overdraw: the arrowhead catches the light, a four-point glint blinking at full draw
     if (bs && bs.glint && Math.floor(t / 45) % 2 === 0) {
-      const tl = (13 + push) * Math.max(0.45, len), gx = Math.round(hx0 + Math.cos(s.ang) * tl), gy = Math.round(hy0 + Math.sin(s.ang) * tl);
+      const tl = 13 + push, gx = Math.round(hx0 + Math.cos(s.ang) * tl), gy = Math.round(hy0 + Math.sin(s.ang) * tl);
       g.fillStyle = "#fff6c0"; g.fillRect(gx - 2, gy, 5, 1); g.fillRect(gx, gy - 2, 1, 5);
       g.fillStyle = "#ffffff"; g.fillRect(gx, gy, 1, 1);
     }
@@ -1710,11 +1710,11 @@ function drawPerson(s, e, t, dt, x, y) {
   // (a bow throws no qi: the string snaps, and the arrow is the blow — fx.arrow, from the server's shot)
   if (live && bowy && k >= Sw.IMPACT && k < Sw.IMPACT + 0.2 && s.qiT !== e.atkT) {
     s.qiT = e.atkT;
-    bowSnap(hx0 + Math.cos(s.ang) * (7 + push) * len, hy0 + Math.sin(s.ang) * (7 + push) * len, s.ang, fin || !!e.bowUp, glow);
+    bowSnap(hx0 + Math.cos(s.ang) * (7 + push), hy0 + Math.sin(s.ang) * (7 + push), s.ang, fin || !!e.bowUp, glow);
   } else if (live && !bowy && k >= Sw.IMPACT && k < Sw.IMPACT + 0.2 && s.qiT !== e.atkT) {
     s.qiT = e.atkT;
-    const [ia, il, , ir] = place(Sw.pose(sk, beat, Sw.IMPACT, side));
-    const tipX = hx0 + Math.cos(ia) * (ir * il + long * Math.max(0.45, il)), tipY = hy0 + Math.sin(ia) * (ir * il + long * Math.max(0.45, il));
+    const [ia, , reach] = place(Sw.pose(sk, beat, Sw.IMPACT, side));
+    const tipX = hx0 + Math.cos(ia) * (reach + long), tipY = hy0 + Math.sin(ia) * (reach + long);
     qiBurst(s.wk in QI_COL ? s.wk : sk, beat, hold.style === "sweep" || (beat === 1 && hold.style === "stab") ? hx0 : tipX, hold.style === "sweep" || (beat === 1 && hold.style === "stab") ? hy0 : tipY, aimS, side, long + 6, glow);
   }
 }
@@ -3026,13 +3026,6 @@ export function pick(clientX, clientY) {
 
 // ───────────────────────────── title and creation ─────────────────────────────
 
-let stage = null;
-export function showcase(draft) {
-  const cast = draft ? [draft] : [playerLook("warrior", [1, 0, 0, 0, 0, 0, 1, 3, 5, 0, 0], { wt: 3 }), playerLook("mage", [11, 6, 8, 15, 0, 7, 4, 8, 10, 1, 0], { wt: 3 }), playerLook("lancer", [3, 1, 6, 10, 2, 3, 3, 5, 4, 1, 4], { wt: 3 }), playerLook("rogue", [0, 2, 10, 10, 2, 2, 0, 1, 3, 2, 4], { wt: 2 })];
-  stage = { draft: !!draft, cast: cast.map((look, i) => ({ s: { key: "", face: 1, walk: 0, ang: null, ...makePerson(look) }, i })) };
-  map = null;
-}
-export function leaveStage() { stage = null; }
 /**
  * One person with their weapon, drawn on another canvas (the title diorama and the
  * creation preview, lobby.js): `figure(look)` makes the scratch state, `drawFigure`
@@ -3043,29 +3036,4 @@ export function drawFigure(ctx, s, e, t, dt, x, y) {
   const keep = g;
   g = ctx;
   try { drawPerson(s, { scr: true, x: 0, y: 0, dir: 2, moving: false, atkT: -1e9, dead: false, aim: null, ...e }, t, dt, x, y); } finally { g = keep; }
-}
-export function renderStage(dt, t) {
-  if (!cv || !stage) return;
-  const S = scenery();
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.fillStyle = "#6cbf5e"; g.fillRect(0, 0, vw, vh);
-  // a strip of meadow scrolling past
-  const scroll = stage.draft ? 0 : (t / 28) % 64;
-  for (let x = -64; x < vw + 64; x += 32) for (let y = 0; y < vh; y += 32) {
-    const hx = Math.floor((x + scroll) / 32) + (stage.draft ? 0 : Math.floor(t / 28 / 64) * 2), h = hash(hx, y, 1);
-    g.fillStyle = "#57a850"; const px = x - (stage.draft ? 0 : scroll % 32);
-    g.fillRect(px + 4 + h * 20, y + 6 + hash(hx, y, 2) * 18, 2, 4); g.fillRect(px + 7 + h * 20, y + 7 + hash(hx, y, 2) * 18, 2, 3);
-  }
-  const gy = Math.round(vh * 0.62);
-  g.fillStyle = "#d9ab6c"; g.fillRect(0, gy - 6, vw, 30); g.fillStyle = "#8f6238"; g.fillRect(0, gy - 6, vw, 1); g.fillRect(0, gy + 23, vw, 1); g.fillStyle = "#bd8c54"; g.fillRect(0, gy - 5, vw, 2); g.fillRect(0, gy + 21, vw, 2);
-  if (!stage.draft) for (let i = 0; i < Math.ceil(vw / 150) + 2; i++) { const x = ((i * 150 - (t / 28) % 150) + 150) % (vw + 150) - 60, sp = i % 2 ? S.T[i % 4] : S.P[0]; g.drawImage(sp, Math.round(x), gy - 20 - sp.height); g.drawImage(S.B[i % 3], Math.round(x + 70), gy + 40); }
-  const cx = Math.round(vw / 2);
-  stage.cast.forEach(({ s, i }) => {
-    if (stage.draft) {
-      const k = (t % 3200) / 1000, dir = [0, 2, 3, 1][Math.floor(t / 3200) % 4], z = Math.max(3, Math.round(15 / Z));
-      g.save(); g.translate(cx + Math.min(120, vw * 0.18), gy + 34); g.scale(z, z);
-      drawPerson(s, { scr: true, x: 0, y: 0, dir, moving: k > 1 && k < 2.2, atkT: k > 2.5 ? t - (k - 2.5) * 1000 : -1e9, dead: false, aim: k > 2.5 ? [dir === 1 ? -40 : 40, 6] : null }, t, dt, 0, 0);
-      g.restore();
-    } else drawPerson(s, { scr: true, x: 0, y: 0, dir: 2, moving: true, atkT: -1e9, dead: false, aim: null }, t, dt, cx - 66 + i * 44, gy + 12);
-  });
 }

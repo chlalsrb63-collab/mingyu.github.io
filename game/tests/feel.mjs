@@ -192,4 +192,20 @@ const mobEv = (v, id) => (v.ev || []).filter((e) => e[0] === "m" && e[1] === id)
   assert.equal(run(), run(), "deterministic");
 }
 
+// A normal greatsword chain only sends the two horizontal attack beats, even on misses.
+{
+  const W = world("횡베기");
+  W.ready();
+  const swing = () => {
+    assert.ok(W.act({ t: "atk", a: 0 }).ok);
+    return W.step(1000).ev.find((event) => event[0] === "a")[6];
+  };
+  const beats = [], damageBeats = [];
+  for (let i = 0; i < 6; i++) { beats.push(swing()); damageBeats.push(W.p.combo); }
+  assert.deepEqual(beats, [0, 1, 0, 1, 0, 1]);
+  assert.deepEqual(damageBeats, [0, 1, 2, 0, 1, 2], "damage bonuses retain the earlier cadence");
+  W.step(1000);
+  assert.equal(swing(), 0, "an expired chain begins on the first side");
+}
+
 console.log("feel ok");

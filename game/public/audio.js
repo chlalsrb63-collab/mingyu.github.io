@@ -1,12 +1,13 @@
 /**
- * Sound, synthesised on the fly in the spirit of an old console's sound chip:
- * pulse and triangle waves, a little noise, and the odd soft pad. No audio files.
+ * The game's Web Audio score player and synthesised effects. No audio files.
  *
  * Music: every map has its own composed loop (melody, bass, chords, drums),
  * plus a title theme, a boss theme and a rift-invasion theme. Notes are
  * scheduled a little ahead on the audio clock, and tracks crossfade.
  * Effects: a named catalogue, played through a voice limiter.
  */
+
+import { TRACKS } from "./bgm.js";
 
 // ───────────────────────────── notes and chords ─────────────────────────────
 
@@ -19,15 +20,17 @@ function hz(n) {
   return 440 * Math.pow(2, (semi - 69) / 12);
 }
 const midiHz = (k) => 440 * Math.pow(2, (k - 69) / 12);
-/** "F#m", "Bb", "G7", "Bdim" → MIDI notes of the chord rooted in octave 3. */
+/** MIDI notes of the chord rooted in octave 3. */
 function chord(sym) {
-  const m = /^([A-G])([#b]?)(m|7|dim|sus)?$/.exec(sym);
-  if (!m) return [48, 52, 55];
+  const m = /^([A-G])([#b]?)(maj7|m7|add9|m|7|dim|sus)?$/.exec(sym);
+  if (!m) throw new Error("Invalid chord " + sym);
   const root = 48 + PITCH[m[1]] + (m[2] === "#" ? 1 : m[2] === "b" ? -1 : 0);
   const q = m[3] || "";
-  const third = q === "m" || q === "dim" ? 3 : q === "sus" ? 5 : 4, fifth = q === "dim" ? 6 : 7;
+  const third = ["m", "m7", "dim"].includes(q) ? 3 : q === "sus" ? 5 : 4, fifth = q === "dim" ? 6 : 7;
   const tones = [root, root + third, root + fifth];
-  if (q === "7") tones.push(root + 10);
+  if (q === "7" || q === "m7") tones.push(root + 10);
+  if (q === "maj7") tones.push(root + 11);
+  if (q === "add9") tones.push(root + 14);
   return tones;
 }
 /** "E5:4 G5:2 -:2" → [[hz, startStep, lengthSteps], …]; rests are skipped. */
@@ -51,235 +54,6 @@ function melody(src) {
 // T third, L the root an octave down, . nothing. Comp: digits pick chord
 // tones (0 root, 1 third, 2 fifth, 3 octave). Drums: x hit, o soft hit.
 
-const TRACKS = {
-  // C major, 96 — the title: an open, hopeful call
-  title: {
-    bpm: 96, lead: "pulse25", vol: 0.11, bass: "tri", comp: "pluck", pad: false, delay: 0.18,
-    bassPat: "R.......R...F...", compPat: "0.2.1.2.0.2.1.2.",
-    drums: { k: "x.......x.......", s: "....o.......o...", h: "o.o.o.o.o.o.o.o." },
-    sections: {
-      A: ["C G Am F C G F G",
-        "E5:4 G5:4 C6:6 B5:2  A5:4 G5:4 D5:8  E5:4 A5:4 C6:4 B5:4  A5:6 G5:2 F5:8  E5:4 G5:4 C6:6 D6:2  E6:4 D6:4 B5:8  C6:4 A5:4 G5:4 F5:4  G5:12 -:4"],
-      B: ["Am F C G Am F G G",
-        "A5:6 B5:2 C6:4 A5:4  F5:6 G5:2 A5:8  G5:4 E5:4 C5:4 E5:4  D5:12 -:4  A5:6 B5:2 C6:4 E6:4  D6:6 C6:2 A5:8  B5:4 C6:4 D6:4 B5:4  G5:8 -:8"],
-    },
-    form: "A B A",
-  },
-  // D major, 84 — the cafe: a slow, warm waltz-like sway, a bell over soft plucked chords
-  cafe: {
-    bpm: 84, lead: "bell", vol: 0.1, bass: "tri", comp: "pluck", compVol: 0.035, pad: true, padVol: 0.02, delay: 0.16,
-    bassPat: "R.......F.......", compPat: "....1.2.....1.2.",
-    drums: { h: "....o.......o..." },
-    sections: {
-      A: ["D Bm G A D Bm Em A",
-        "F#5:6 A5:2 D6:8  B5:4 A5:4 F#5:8  G5:6 B5:2 D6:4 B5:4  A5:12 -:4  F#5:6 A5:2 D6:4 E6:4  D6:4 B5:4 F#5:8  G5:4 E5:4 G5:4 B5:4  A5:12 -:4"],
-      B: ["G A F#m Bm G A D D",
-        "B5:6 A5:2 G5:8  C#6:6 B5:2 A5:8  A5:4 F#5:4 C#5:8  D5:4 F#5:4 B5:8  B5:4 D6:4 G5:8  A5:4 C#6:4 E6:8  D6:8 A5:8  F#5:12 -:4"],
-    },
-    form: "A B A",
-  },
-  // Bb major, 76 — the town hall: a stately, gentle organ hymn
-  hall: {
-    bpm: 76, lead: "flute", vol: 0.09, bass: "organ", comp: "organ", compVol: 0.025, pad: true, padType: "organ", padVol: 0.02, delay: 0.22,
-    bassPat: "R.......R.......", compPat: "0...1...2...1...",
-    sections: {
-      A: ["Bb F Gm Eb Bb F Eb F",
-        "D5:8 F5:8  C5:8 A4:8  Bb4:4 D5:4 G5:8  G5:8 Eb5:8  F5:8 D5:8  C5:4 A4:4 F5:8  Eb5:4 G5:4 Bb5:8  A5:12 -:4"],
-      B: ["Gm Eb Bb F Gm Cm F Bb",
-        "G5:8 Bb5:8  G5:8 Eb5:8  F5:4 D5:4 Bb4:8  C5:12 -:4  D5:8 G5:8  Eb5:8 C5:8  A4:4 C5:4 F5:8  D5:12 -:4"],
-    },
-    form: "A B",
-  },
-  // G major, 92 — the inn: a fireside folk tune on a flute, a lazy strum
-  inn: {
-    bpm: 92, lead: "flute", vol: 0.1, bass: "tri", comp: "pluck", compVol: 0.04, pad: false, delay: 0.14,
-    bassPat: "R.....F.R.....F.", compPat: "..2.1...2.2.1...",
-    drums: { k: "x...............", h: "......o.......o." },
-    sections: {
-      A: ["G C G D G C D G",
-        "B4:4 D5:4 G5:6 F#5:2  E5:4 G5:4 C5:8  B4:4 D5:4 G5:4 B5:4  A5:12 -:4  B5:6 A5:2 G5:4 E5:4  E5:4 G5:4 C6:8  B5:4 A5:4 F#5:4 D5:4  G5:12 -:4"],
-      B: ["Em C G D Em C D D",
-        "E5:6 F#5:2 G5:8  E5:4 C5:4 E5:8  D5:4 G5:4 B5:8  A5:6 G5:2 F#5:8  G5:6 A5:2 B5:8  C6:4 B5:4 A5:8  F#5:4 A5:4 D6:8  D6:12 -:4"],
-    },
-    form: "A B A",
-  },
-  // F major, 100 — the plaza: a lilting tune over an off-beat strum
-  town: {
-    bpm: 100, lead: "bell", vol: 0.12, bass: "tri", comp: "pluck", pad: false, delay: 0.12,
-    bassPat: "R.....F.R.....F.", compPat: "..2...1...2...1.",
-    drums: { k: "x.......x.......", s: "........o.......", h: "..o...o...o...o." },
-    sections: {
-      A: ["F C Dm Bb F C Bb C",
-        "C5:2 F5:2 A5:4 G5:2 F5:2 C5:4  E5:2 G5:2 C6:4 Bb5:2 A5:2 G5:4  F5:2 A5:2 D6:4 C6:2 A5:2 F5:4  D5:4 F5:4 Bb5:6 A5:2  C5:2 F5:2 A5:4 C6:4 A5:4  G5:2 A5:2 Bb5:4 G5:4 E5:4  F5:2 G5:2 A5:4 D5:4 E5:4  G5:6 E5:2 C5:8"],
-      B: ["Gm C F Dm Gm C F F",
-        "Bb5:4 A5:2 G5:2 D5:8  E5:2 F5:2 G5:4 C6:8  A5:4 G5:2 F5:2 C5:8  D5:2 E5:2 F5:4 A5:8  Bb5:4 C6:2 D6:2 Bb5:8  G5:4 A5:2 Bb5:2 E5:8  F5:4 A5:4 C6:4 A5:4  F5:12 -:4"],
-    },
-    form: "A B A",
-  },
-  // G major, 128 — the meadow: off on an adventure
-  meadow: {
-    bpm: 128, lead: "pulse50", vol: 0.1, bass: "tri", comp: "pulse12", pad: false, delay: 0.1,
-    bassPat: "R.R.F.R.R.R.F.O.", compPat: "0123012301230123", compVol: 0.035,
-    drums: { k: "x...x...x...x...", s: "....x.......x...", h: "o.oo.oo.o.oo.oo." },
-    sections: {
-      A: ["G D Em C G D C D",
-        "D5:2 G5:2 B5:4 A5:2 G5:2 D5:4  F#5:2 A5:2 D6:4 C6:2 A5:2 F#5:4  G5:2 B5:2 E6:4 D6:2 B5:2 G5:4  E5:4 G5:4 C6:6 B5:2  B5:4 D6:4 B5:2 A5:2 G5:4  A5:4 F#5:4 D5:8  E5:2 G5:2 C6:4 B5:2 G5:2 E5:4  F#5:4 A5:4 D6:8"],
-      B: ["Em C G D Em C D D",
-        "E5:6 G5:2 B5:8  C6:4 B5:4 G5:8  D5:2 G5:2 B5:4 D6:8  C6:4 A5:4 F#5:8  E6:6 D6:2 B5:8  C6:4 E6:4 G5:8  A5:4 B5:4 C6:4 D6:4  D6:8 -:8"],
-    },
-    form: "A B A",
-  },
-  // D dorian, 80 — the forest: a wooden flute among the trees
-  forest: {
-    bpm: 80, lead: "flute", vol: 0.13, bass: "tri", comp: null, pad: true, padVol: 0.035, delay: 0.25,
-    bassPat: "R.......F.......",
-    drums: { t: "x.....x...x.....", h: "..o...o...o...o." },
-    sections: {
-      A: ["Dm C G Dm Dm Am Bb C",
-        "D5:6 F5:2 A5:8  G5:4 E5:4 C5:8  B4:4 D5:4 G5:6 F5:2  A5:12 -:4  D6:6 C6:2 A5:8  E5:4 G5:4 A5:8  F5:4 D5:4 Bb4:8  C5:4 E5:4 G5:8"],
-      B: ["Bb C Dm Dm Gm Am Dm Dm",
-        "F5:6 G5:2 A5:4 Bb5:4  C6:8 G5:8  A5:6 G5:2 F5:4 E5:4  D5:12 -:4  G5:6 A5:2 Bb5:4 D6:4  C6:4 A5:4 E5:8  F5:4 E5:4 D5:4 A4:4  D5:12 -:4"],
-    },
-    form: "A B",
-  },
-  // A minor, 124 — the city: synths over a running bass
-  city: {
-    bpm: 124, lead: "duo", vol: 0.085, bass: "saw", comp: "pulse12", pad: false, delay: 0.14,
-    bassPat: "RROR.RRORROR.RRO", compPat: "....0.......0...", compVol: 0.04,
-    drums: { k: "x...x...x...x...", s: "....x.......x...", h: ".o.o.o.o.o.o.o.o" },
-    sections: {
-      A: ["Am Am F G Am Am F E",
-        "A4:2 -:2 A4:2 C5:2 -:2 A4:2 E5:4  D5:2 C5:2 A4:2 G4:2 A4:8  A4:2 -:2 A4:2 C5:2 -:2 F5:2 E5:4  D5:2 B4:2 G4:4 B4:4 D5:4  E5:2 -:2 E5:2 G5:2 -:2 E5:2 A5:4  G5:2 E5:2 D5:2 C5:2 A4:8  C5:2 D5:2 F5:4 A5:4 F5:4  E5:4 G#5:4 B5:8"],
-      B: ["Dm Am F G Dm Am E E",
-        "F5:4 A5:4 D6:4 C6:4  C6:4 B5:2 A5:2 E5:8  F5:4 A5:4 C6:4 A5:4  B5:4 D6:4 G5:8  D6:4 F6:4 E6:2 D6:2 C6:4  E6:4 C6:4 A5:8  G#5:4 B5:4 E6:4 D6:4  B5:8 G#5:8"],
-    },
-    form: "A B A",
-  },
-  // E minor, 68 — the cave: bells ringing into the dark, water dripping
-  cave: {
-    bpm: 68, lead: "bell", vol: 0.12, bass: "tri", comp: null, pad: true, padVol: 0.03, delay: 0.42,
-    bassPat: "R...............",
-    drums: { d: "......x.......x." },
-    sections: {
-      A: ["Em Em C C Am Am B B",
-        "E5:4 -:4 G5:4 B5:4  A5:8 G5:8  E5:4 -:4 G5:4 C6:4  B5:12 -:4  A5:4 -:4 C6:4 E6:4  D6:8 C6:8  B5:4 A5:4 F#5:4 D#5:4  B4:12 -:4"],
-      B: ["Em G D C Am B Em Em",
-        "G5:8 F#5:4 E5:4  D5:8 B4:8  A5:8 F#5:4 D5:4  E5:12 -:4  C6:6 B5:2 A5:8  D#6:6 C6:2 B5:8  G5:4 F#5:4 E5:4 B4:4  E5:12 -:4"],
-    },
-    form: "A B",
-  },
-  // E phrygian, 116 — 차원 균열: a driving, uneasy pulse under a tune that keeps slipping a half step
-  dim: {
-    bpm: 116, lead: "dark", vol: 0.1, bass: "tri", comp: null, pad: true, padVol: 0.03, padTritone: true, delay: 0.3,
-    bassPat: "R.R.O.R.R.R.F.T.",
-    drums: { k: "x...x...x...x...", s: "....o.......o...", h: "..o...o...o...o." },
-    sections: {
-      A: ["Em Em F F Em Em D B",
-        "E5:2 -:2 G5:2 -:2 F5:2 E5:2 B4:4  E5:4 F5:2 G5:2 B5:8  C6:2 -:2 B5:2 A5:2 F5:4 A5:4  G5:2 F5:2 E5:4 F5:8  E5:2 -:2 G5:2 -:2 B5:2 C6:2 B5:4  G5:4 F5:2 E5:2 G5:8  F#5:2 -:2 A5:2 -:2 D6:4 C6:4  B5:8 D#5:4 F#5:4"],
-      B: ["Am Am Em Em F G B B",
-        "A5:4 C6:4 E6:4 C6:4  B5:2 A5:2 G5:4 A5:8  G5:4 B5:4 E6:4 B5:4  A5:2 G5:2 F#5:4 E5:8  F5:4 A5:4 C6:4 A5:4  G5:4 B5:4 D6:4 B5:4  B5:4 A5:4 F#5:4 D#5:4  B4:12 -:4"],
-    },
-    form: "A B",
-  },
-  // C minor, 64 — the crypt: a slow organ in a cold nave
-  crypt: {
-    bpm: 64, lead: "organ", vol: 0.09, bass: "organ", comp: null, pad: true, padVol: 0.04, padType: "organ", delay: 0.32,
-    bassPat: "R...............",
-    drums: { b: "x..............." },
-    sections: {
-      A: ["Cm Cm Ab Ab Fm Fm G G",
-        "C5:8 Eb5:4 G5:4  F5:8 Eb5:8  C5:8 Eb5:4 Ab5:4  G5:12 -:4  F5:8 Ab5:4 C6:4  Bb5:8 Ab5:8  G5:4 F5:4 Eb5:4 D5:4  B4:12 -:4"],
-      B: ["Cm Bb Ab G Fm G Cm Cm",
-        "G5:8 Ab5:4 G5:4  F5:8 D5:8  Eb5:8 F5:4 Eb5:4  D5:12 -:4  C6:8 Ab5:4 F5:4  D5:4 F5:4 B5:8  C6:8 G5:8  C5:12 -:4"],
-    },
-    form: "A B",
-  },
-  // G minor, 96 — the sewer: a crooked, creeping groove
-  sewer: {
-    bpm: 96, lead: "pulse12", vol: 0.1, bass: "tri", comp: null, pad: false, delay: 0.22,
-    bassPat: "R...R...R.T.F...",
-    drums: { k: "x.....x...x.....", s: "....o.......o...", d: "..x.....x.x....." },
-    sections: {
-      A: ["Gm Gm Eb D Gm Gm Ab D",
-        "G4:2 -:2 Bb4:2 -:2 A4:2 -:2 G4:4  D5:2 -:2 C#5:2 D5:2 -:8  Eb5:2 -:2 D5:2 -:2 C5:2 -:2 Bb4:4  A4:4 F#4:4 D4:8  G4:2 Bb4:2 D5:2 -:2 F#5:2 G5:2 -:4  F5:2 Eb5:2 D5:4 Bb4:8  C5:2 -:2 Eb5:2 -:2 D5:2 -:2 C5:4  A4:2 Bb4:2 C5:2 C#5:2 D5:8"],
-      B: ["Cm Cm Gm Gm Eb D Gm Gm",
-        "Eb5:4 -:2 Eb5:2 D5:4 C5:4  G5:8 -:8  D5:4 -:2 D5:2 C5:4 Bb4:4  G4:8 -:8  Bb4:2 C5:2 Eb5:4 G5:4 Eb5:4  F#5:4 A5:4 D5:8  G5:2 F5:2 D5:2 Bb4:2 A4:4 G4:4  G4:12 -:4"],
-    },
-    form: "A B",
-  },
-  // D phrygian, 70 — the abyss: a heartbeat under a wrong, swollen tune
-  abyss: {
-    bpm: 70, lead: "dark", vol: 0.1, bass: "tri", comp: null, pad: true, padVol: 0.045, padTritone: true, delay: 0.36,
-    bassPat: "L.......L.......",
-    drums: { hb: "x..x............" },
-    sections: {
-      A: ["Dm Eb Dm Eb Bb A Dm Dm",
-        "D5:8 Eb5:8  G5:8 F5:4 Eb5:4  D5:6 A4:2 Bb4:8  A4:12 -:4  F5:8 G#5:8  A5:8 C#5:8  D5:4 F5:4 A5:4 G#5:4  A5:12 -:4"],
-      B: ["Gm Eb A A Dm Eb A Dm",
-        "Bb5:8 A5:4 G5:4  G5:8 Eb5:8  E5:4 F5:4 G#5:8  A5:12 -:4  D6:8 C#6:8  Bb5:8 G5:8  A5:4 G#5:4 F5:4 E5:4  D5:12 -:4"],
-    },
-    form: "A B",
-  },
-  // A minor, 84 — 단풍 왕도: a flute over a plucked lute, a fallen kingdom remembered fondly; the leaves rustle between phrases
-  autumn: {
-    bpm: 84, lead: "flute", vol: 0.12, bass: "tri", comp: "pluck", pad: true, padVol: 0.025, delay: 0.3, rustle: true,
-    bassPat: "R.......F...R...", compPat: "0.2.1.2.3.2.1.2.", compVol: 0.03,
-    drums: { h: "....o.......o..." },
-    sections: {
-      A: ["Am F C G Am F E E",
-        "E5:4 A5:4 C6:6 B5:2  A5:4 F5:4 C5:8  E5:4 G5:4 C6:4 E6:4  D6:6 C6:2 B5:8  C6:4 B5:4 A5:4 E5:4  F5:6 G5:2 A5:8  G#5:4 B5:4 E6:4 D6:4  B5:12 -:4"],
-      B: ["Dm G C Am Dm E Am Am",
-        "F5:6 E5:2 D5:8  B4:4 D5:4 G5:8  E5:6 F5:2 G5:4 C6:4  A5:12 -:4  D6:6 C6:2 A5:4 F5:4  G#5:4 B5:4 E5:8  A5:4 C6:4 E6:4 C6:4  A5:12 -:4"],
-    },
-    form: "A B A",
-  },
-  // E minor, 148 — a boss on screen
-  boss: {
-    bpm: 148, lead: "pulse25", vol: 0.1, bass: "saw", comp: "pulse12", pad: false, delay: 0.08,
-    bassPat: "R.R.R.R.R.R.F.O.", compPat: "0.1.2.1.0.1.2.1.", compVol: 0.03,
-    drums: { k: "x...x.x.x...x.x.", s: "....x.......x...", h: "oooooooooooooooo" },
-    sections: {
-      A: ["Em C D B Em C D B",
-        "E5:2 E5:2 G5:2 E5:2 B5:4 A5:2 G5:2  E5:2 E5:2 G5:2 E5:2 C6:4 B5:2 G5:2  F#5:2 F#5:2 A5:2 F#5:2 D6:4 C6:2 A5:2  B5:4 A5:2 G5:2 F#5:4 D#5:4  E6:4 D6:2 B5:2 G5:4 E5:4  C6:4 B5:2 G5:2 E5:4 C5:4  D6:4 C6:2 A5:2 F#5:4 D5:4  D#5:4 F#5:4 B5:8"],
-      B: ["Am Em B Em C D B B",
-        "A5:6 B5:2 C6:4 E6:4  B5:6 A5:2 G5:4 E5:4  F#5:4 A5:4 B5:4 D#6:4  E6:12 -:4  G5:4 C6:4 E6:4 G6:4  F#6:4 D6:4 A5:4 F#5:4  B5:4 D#6:4 F#6:4 D#6:4  B5:8 -:8"],
-    },
-    form: "A B",
-  },
-  // F# minor, 138 — the rift is open on this map
-  rift: {
-    bpm: 138, lead: "duo", vol: 0.09, bass: "saw", comp: "pulse12", pad: false, delay: 0.1,
-    bassPat: "R.RR.RR.R.RR.RF.", compPat: "3...3...3...3...", compVol: 0.035,
-    drums: { k: "x...x...x...x...", s: "....x..x....x...", h: "o.o.o.o.o.o.o.o." },
-    sections: {
-      A: ["F#m D E C#m F#m D E C#",
-        "C#5:4 F#5:4 A5:4 C#6:4  D6:4 C#6:4 A5:8  B5:4 G#5:4 E5:4 B5:4  C#6:8 G#5:8  A5:2 B5:2 C#6:4 F#6:4 E6:4  D6:4 A5:4 F#5:8  E5:4 G#5:4 B5:4 D6:4  C#6:4 F5:4 G#5:8"],
-      B: ["Bm F#m D E Bm C# F#m F#m",
-        "D6:6 C#6:2 B5:8  A5:6 G#5:2 F#5:8  F#5:4 A5:4 D6:4 F#6:4  E6:12 -:4  B5:4 D6:4 F#6:4 D6:4  F6:4 C#6:4 G#5:8  A5:4 C#6:4 F#6:4 E6:4  F#6:8 -:8"],
-    },
-    form: "A B",
-  },
-  // F major, 72 — the plaza by night: a lullaby on bells over a soft pad, no drums
-  town_night: {
-    bpm: 72, lead: "bell", vol: 0.1, bass: "tri", comp: "pluck", pad: true, padVol: 0.022, delay: 0.24,
-    bassPat: "R.......F.......", compPat: "0...2...1...2...", compVol: 0.03,
-    sections: {
-      A: ["F Dm Bb C F Am Bb C",
-        "A4:6 C5:2 F5:8  E5:4 D5:4 A4:8  D5:6 F5:2 Bb5:8  A5:4 G5:4 E5:8  F5:6 A5:2 C6:8  C6:4 B5:2 A5:2 E5:8  D5:4 F5:4 Bb5:4 A5:4  G5:12 -:4"],
-    },
-    form: "A A",
-  },
-  // D dorian, 66 — the fields by night: a wooden flute among the crickets
-  field_night: {
-    bpm: 66, lead: "flute", vol: 0.1, bass: "tri", comp: "pluck", pad: true, padVol: 0.02, delay: 0.26,
-    bassPat: "R...............", compPat: "0.......2.......", compVol: 0.028,
-    sections: {
-      A: ["Dm Am Bb C Dm Am G Am",
-        "D5:6 F5:2 A5:8  C6:4 A5:4 E5:8  F5:6 D5:2 Bb4:8  C5:4 E5:4 G5:8  A5:6 G5:2 F5:4 E5:4  E5:8 C5:8  D5:4 G5:4 B5:8  A5:12 -:4"],
-    },
-    form: "A A",
-  },
-};
 /** The calmer tune a map's music turns into after dark. */
 const NIGHT = { town: "town_night", meadow: "field_night", forest: "field_night" };
 /** Per-track level trims, measured by rendering each offline, so all sit near the same loudness. */
@@ -291,10 +65,11 @@ const ALIAS = { field: "meadow" };
 function compile(def) {
   const bars = [];
   for (const name of def.form.split(/\s+/)) {
-    const [chords, mel] = def.sections[name];
+    const [chords, mel, arrangement] = def.sections[name];
+    const parts = arrangement ? { ...def, ...arrangement } : def;
     const syms = chords.split(/\s+/);
     const notes = melody(mel);
-    syms.forEach((sym, b) => bars.push({ chord: chord(sym), notes: notes.filter((n) => n[1] >= b * 16 && n[1] < (b + 1) * 16).map((n) => [n[0], n[1] - b * 16, n[2]]) }));
+    syms.forEach((sym, b) => bars.push({ chord: chord(sym), parts, notes: notes.filter((n) => n[1] >= b * 16 && n[1] < (b + 1) * 16).map((n) => [n[0], n[1] - b * 16, n[2]]) }));
   }
   return bars;
 }
@@ -305,14 +80,24 @@ for (const k of Object.keys(TRACKS)) SONGS[k] = compile(TRACKS[k]);
 export function checkTracks() {
   const bad = [];
   for (const [k, def] of Object.entries(TRACKS)) {
-    for (const [name, [chords, mel]] of Object.entries(def.sections)) {
-      const want = chords.split(/\s+/).length * 16, got = melody(mel).total;
-      if (want !== got) bad.push(`${k}.${name}: ${got}/${want}`);
+    for (const [name, [chords, mel, arrangement]] of Object.entries(def.sections)) {
+      const label = k + "." + name;
+      const want = chords.split(/\s+/).length * 16, notes = melody(mel);
+      if (notes.total !== want) bad.push(label + " has " + notes.total + "/" + want + " melody steps");
+      if (notes.some(([f, at, len]) => !f || len <= 0 || at % 16 + len > 16)) bad.push(label + " has an invalid note");
+      const parts = { ...def, ...arrangement };
+      for (const [pattern, syntax] of [[parts.bassPat, /^[RFOTL.]{16}$/], [parts.compPat, /^[0-4.]{16}$/], [parts.padPat, /^[xo.]{16}$/]]) {
+        if (pattern && !syntax.test(pattern)) bad.push(label + " has an invalid pattern " + pattern);
+      }
+      for (const [drum, pattern] of Object.entries(parts.drums || {})) {
+        if (!/^(k|s|h|t|d|b|hb)$/.test(drum) || !/^[xo.]{16}$/.test(pattern)) bad.push(label + " has an invalid drum pattern " + drum);
+      }
     }
   }
   return bad;
 }
 export const TRACK_NAMES = Object.keys(TRACKS);
+export const BGM_KEYS = [...TRACK_NAMES, ...Object.keys(ALIAS)];
 
 // ───────────────────────────── the engine ─────────────────────────────
 
@@ -329,11 +114,24 @@ export const Sound = {
 
   /** Browsers only allow audio after a gesture — call this from a click/keypress. */
   unlock() {
-    if (this.ctx) { if (this.ctx.state === "suspended" && !document.hidden) this.ctx.resume(); return; }
+    if (this.ctx) { this.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     try { Object.assign(this.vol, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch { /* defaults */ }
-    const c = (this.ctx = new AC());
+    this.init(new AC());
+    this.resume();
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) this.ctx.suspend().catch(() => {}); else this.resume();
+    });
+    this.timer = setInterval(() => this.pump(), 50);
+    this.pick();
+  },
+  resume() {
+    if (!document.hidden && this.ctx.state !== "running" && this.ctx.state !== "closed") this.ctx.resume().catch(() => {});
+  },
+  /** Set up the same mix graph for live audio and offline score previews. */
+  init(c) {
+    this.ctx = c;
     // master → a gentle limiter → speakers; music and effects each have a bus
     const comp = c.createDynamicsCompressor();
     comp.threshold.value = -14; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
@@ -355,13 +153,6 @@ export const Sound = {
       this.waves[duty] = c.createPeriodicWave(re, im);
     }
     this.applyVolume();
-    // nothing plays in a hidden tab
-    document.addEventListener("visibilitychange", () => {
-      if (!this.ctx) return;
-      if (document.hidden) this.ctx.suspend(); else this.ctx.resume();
-    });
-    this.timer = setInterval(() => this.pump(), 50);
-    this.pick();
   },
 
   // ── volume ──
@@ -382,7 +173,7 @@ export const Sound = {
   // ── music ──
   /** The map's own music: its id has a track, or else its `fallback` name does. */
   bgm(name, fallback) {
-    const own = (k) => (TRACKS[k] ? k : TRACKS[ALIAS[k]] ? ALIAS[k] : null);
+    const own = (k) => Object.hasOwn(TRACKS, k) ? k : Object.hasOwn(ALIAS, k) ? ALIAS[k] : null;
     this.base = own(name) || own(fallback) || "meadow";
     this.pick();
   },
@@ -403,7 +194,7 @@ export const Sound = {
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(TRIM[want] || 1, t + FADE);
     g.connect(this.music);
     const send = c.createGain(); send.gain.value = TRACKS[want].delay || 0; g.connect(send); send.connect(this.verb);
-    this.playing.push({ name: want, def: TRACKS[want], song: SONGS[want], gain: g, step: 0, next: t + 0.12, dying: 0 });
+    this.playing.push({ name: want, def: TRACKS[want], song: SONGS[want], gain: g, send, step: 0, next: t + 0.12, dying: 0 });
   },
   /** Schedule music (and the fire's crackle) a little ahead of the audio clock. */
   pump() {
@@ -412,7 +203,7 @@ export const Sound = {
     const now = c.currentTime;
     for (let i = this.playing.length - 1; i >= 0; i--) {
       const p = this.playing[i];
-      if (p.dying && now > p.dying) { p.gain.disconnect(); this.playing.splice(i, 1); continue; }
+      if (p.dying && now > p.dying) { p.gain.disconnect(); p.send.disconnect(); this.playing.splice(i, 1); continue; }
       const sixteenth = 60 / p.def.bpm / 4;
       if (p.next < now - 0.5) p.next = now + 0.05;          // woke from a long sleep: don't rush to catch up
       while (p.next < now + LOOKAHEAD) {
@@ -446,23 +237,32 @@ export const Sound = {
   },
   /** Everything that sounds on one sixteenth step of a track. */
   tick(p, t, s16) {
-    const def = p.def, bars = p.song, bar = bars[Math.floor(p.step / 16) % bars.length], i = p.step % 16;
-    const out = p.gain, ch = bar.chord;
-    for (const [f, at, len] of bar.notes) if (at === i) this.inst(def.lead, f, t, len * s16, def.vol, out);
+    const bars = p.song, bar = bars[Math.floor(p.step / 16) % bars.length], i = p.step % 16;
+    const def = bar.parts, out = p.gain, ch = bar.chord;
+    if (i % 2) t += (def.swing || 0) * s16;
+    for (const [f, at, len] of bar.notes) if (at === i) {
+      const length = len * s16;
+      this.inst(def.lead, f, t, length, def.vol, out);
+      if (def.double && len >= 3) this.inst(def.double, f / 2, t + 0.009, length * 0.84, def.vol * 0.24, out);
+    }
     const bc = def.bassPat && def.bassPat[i];
     if (bc && bc !== ".") {
       const root = ch[0] - 12, k = bc === "R" ? root : bc === "F" ? root + 7 : bc === "O" ? root + 12 : bc === "T" ? ch[1] - 12 : root - 12;
       let len = 1; while (i + len < 16 && def.bassPat[i + len] === ".") len++;
-      this.inst(def.bass, midiHz(k), t, Math.min(len, 8) * s16 * 0.95, def.bass === "saw" ? 0.07 : def.bass === "organ" ? 0.05 : 0.2, out);
+      this.inst(def.bass, midiHz(k), t, Math.min(len, 8) * s16 * 0.95, def.bassVol ?? (def.bass === "saw" ? 0.07 : def.bass === "organ" ? 0.05 : 0.2), out);
     }
     const cc = def.compPat && def.compPat[i];
     if (def.comp && cc && cc !== ".") {
-      const k = Number(cc), n = k === 3 ? ch[0] + 12 : ch[k % ch.length];
+      const k = Number(cc), n = k === 3 ? ch[0] + 12 : ch[k === 4 ? Math.min(3, ch.length - 1) : k];
       this.inst(def.comp, midiHz(n + 12), t, s16 * 1.6, def.compVol || 0.045, out);
     }
-    if (def.pad && i === 0) {
+    const padPat = def.padPat || "x...............";
+    if (def.pad && padPat[i] !== ".") {
+      let len = 1;
+      while (i + len < 16 && padPat[i + len] === ".") len++;
       const tones = def.padTritone ? [...ch, ch[0] + 6] : ch;
-      for (const n of tones) this.inst(def.padType || "pad", midiHz(n + 12), t, s16 * 16, def.padVol || 0.035, out);
+      const volume = (def.padVol || 0.035) * (padPat[i] === "o" ? 0.55 : 1);
+      for (const n of tones) this.inst(def.padType || "pad", midiHz(n + 12), t, s16 * len, volume, out);
     }
     const d = def.drums;
     if (d) for (const kind of Object.keys(d)) { const v = d[kind][i]; if (v && v !== ".") this.drum(kind, t, v === "x" ? 1 : 0.55, out); }
@@ -492,12 +292,79 @@ export const Sound = {
     };
     const lowpass = (fc, q = 0.7) => { const f2 = c.createBiquadFilter(); f2.type = "lowpass"; f2.frequency.value = fc; f2.Q.value = q; f2.connect(g); return f2; };
     switch (type) {
+      case "felt": {
+        const lp = lowpass(Math.min(3400, f * 6));
+        osc("triangle", f, 0.62, -1.2).connect(lp);
+        osc("sine", f, 0.41, 1.0).connect(lp);
+        const strike = c.createGain();
+        strike.gain.setValueAtTime(0.18, t);
+        strike.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        osc("sine", f * 2.005).connect(strike);
+        osc("sine", f * 3.016, 0.31).connect(strike);
+        strike.connect(lp);
+        env(0.007, 0.3, 0.18);
+        break;
+      }
+      case "strings": {
+        const lp = lowpass(Math.min(2200, f * 5.5));
+        for (const [detune, pan] of [[-8, -0.47], [6, 0.47]]) {
+          const stereo = c.createStereoPanner();
+          stereo.pan.value = pan;
+          osc("sawtooth", f, 0.33, detune).connect(stereo);
+          osc("triangle", f, 0.15, -detune).connect(stereo);
+          stereo.connect(lp);
+        }
+        env(Math.min(0.21, dur * 0.36), 0.78, 0.26);
+        break;
+      }
       case "pulse12": osc(0.125, f).connect(g); env(0.005, 0.55, 0.05); break;
       case "pulse25": osc(0.25, f).connect(g); env(0.005, 0.6, 0.06); break;
       case "pulse50": osc(0.5, f).connect(g); env(0.005, 0.55, 0.06); break;
       case "duo": { const lp = lowpass(3200); osc(0.5, f, 0.6, -7).connect(lp); osc(0.25, f, 0.6, 7).connect(lp); env(0.006, 0.6, 0.07); break; }
+      case "sub": osc("sine", f).connect(g); osc("triangle", f * 2, 0.2).connect(g); env(0.012, 0.78, 0.09); break;
+      case "keys": {
+        const lp = lowpass(Math.min(3400, f * 6));
+        osc("sine", f, 0.76, -2).connect(lp);
+        osc("triangle", f, 0.32, 3).connect(lp);
+        const tine = c.createGain();
+        tine.gain.setValueAtTime(0.34, t);
+        tine.gain.exponentialRampToValueAtTime(0.006, t + 0.14);
+        osc("sine", f * 3, 0.62).connect(tine);
+        tine.connect(lp);
+        env(0.006, 0.38, 0.16);
+        break;
+      }
+      case "wide": {
+        const lp = lowpass(2600);
+        lp.frequency.setValueAtTime(1300, t);
+        lp.frequency.exponentialRampToValueAtTime(2650, t + 0.09);
+        for (const detune of [-13, 0, 13]) {
+          const pan = c.createStereoPanner();
+          pan.pan.value = detune / 15;
+          osc("sawtooth", f, 0.33, detune).connect(pan);
+          pan.connect(lp);
+        }
+        env(0.028, 0.58, 0.08);
+        break;
+      }
       case "tri": osc("triangle", f).connect(g); env(0.004, 0.8, 0.05); break;
       case "saw": { const lp = lowpass(f * 6, 2); osc("sawtooth", f).connect(lp); env(0.004, 0.7, 0.05); break; }
+      case "softPluck": {
+        const lp = lowpass(2600);
+        osc("triangle", f, 0.75).connect(lp);
+        osc("sine", f * 2, 0.16).connect(lp);
+        osc("sine", f * 3, 0.08).connect(lp);
+        env(0.008, 0.18, 0.085);
+        break;
+      }
+      case "softLead": {
+        const lp = lowpass(2100);
+        osc("triangle", f, 0.74, -4).connect(lp);
+        osc("sine", f, 0.44, 4).connect(lp);
+        osc("sine", f * 2, 0.16).connect(lp);
+        env(0.024, 0.68, 0.13);
+        break;
+      }
       case "pluck": osc(0.25, f).connect(g); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18); break;
       case "bell": {
         osc("sine", f).connect(g); osc("sine", f * 2.76, 0.28).connect(g); osc("sine", f * 5.4, 0.08).connect(g);

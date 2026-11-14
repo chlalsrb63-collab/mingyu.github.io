@@ -407,6 +407,7 @@ function castSkill(S, p, id) {
   p.cds[id] = now + Math.round(sk.cd * (1 - st.cdr));
   if (st.lg.echo && rnd(S) < 0.2 * st.proc) { p.cds[id] = now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
   p.atkAt = now;
+  p.swordBeat = null;
   p.dirty = true;
   const opt = { mag: sk.mag, sk };
   const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult * k, !!(more && more.sure), more ? { ...opt, ...more } : opt);

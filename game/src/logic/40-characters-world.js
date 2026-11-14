@@ -544,7 +544,8 @@ function changeMap(S, p, to, x, y) {
   dropAggro(S, p);
   S.maps[p.map].n--;
   S.maps[p.map].who = true;
-  p.map = to; p.x = x; p.y = y;
+  p.map = to;
+  p.swordBeat = null; p.x = x; p.y = y;
   weaponReset(p, false);
   const rt = runtime(S, to);
   rt.n++;

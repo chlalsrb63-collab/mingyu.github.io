@@ -1,5 +1,5 @@
 /**
- * How a held weapon moves through a stroke — the basic attack's three beats and
+ * How a held weapon moves through a stroke — the basic attack chain and
  * the cast that a skill swings like a finisher — in the quarter view.
  *
  * A stroke is a handful of key poses on a 0 → 1 clock (k = time / stroke time).
@@ -15,16 +15,16 @@
  * way (15% of the stroke, under ~85 ms), a snap (35%) that crosses the target in
  * its first hundredths and brakes on an out-expo curve, then a held beat and an
  * out-back settle (50%). Poses are 3-D, so a level
- * sweep draws a flat ellipse on the ground — foreshortened as the blade swings
+ * sweep follows the ground's projected ellipse as the blade swings
  * toward or away from the camera — instead of a clock hand.
  */
 
 const D = Math.PI / 180;
-/** World direction (yaw on the ground, pitch up) → [screen angle, screen length 0–1, depth toward the camera]. */
+/** World direction (yaw on the ground, pitch up) → [screen angle, depth toward the camera]. */
 export function project(yaw, pitch) {
   const cp = Math.cos(pitch), vx = cp * Math.cos(yaw), vy = cp * Math.sin(yaw), vz = Math.sin(pitch);
   const X = (vx - vy) * Math.SQRT1_2, Y = ((vx + vy) * Math.SQRT1_2) / 2 - vz;
-  return [Math.atan2(Y, X), Math.hypot(X, Y), vx + vy];
+  return [Math.atan2(Y, X), vx + vy];
 }
 /** A screen direction back onto the ground: its yaw (for the title stage, which speaks in screen terms). */
 export function groundYaw(sx, sy) {
@@ -55,9 +55,9 @@ const K = (k, yaw, pitch, reach, lean, fr, ease) => ({ k, yaw: yaw * D, pitch: p
 // snap (out-expo, so a sweep carries on as fast as it crossed and then brakes) -> a held beat
 // -> the settle (out-back). Thrusts keep an extra key: still out at full reach, then drawn back.
 const STROKES = {
-  // the greatsword: heavy level sweeps, one way then back, then an overhead chop with a step in
+  // Two mirrored horizontal cuts. The overhead pose is reserved for sword skills.
   sword: [
-    [K(0.15, -128, 34, 1, -2, "crouch", eOut), K(0.2, 0, 2, 7, 3, "stretch", lin), K(0.5, 126, -20, 4, 2, "", oExpo), K(0.6, 130, -21, 4, 2, "", lin), K(1, 112, -8, 3, 0, "", oBack)],
+    [K(WIND, -116, 8, 2, -2, "crouch", eOut), K(IMPACT, 0, 4, 7, 3, "stretch", lin), K(SNAP, 116, -7, 4, 2, "", oExpo), K(0.6, 118, -7, 4, 2, "", lin), K(1, 112, 2, 3, 0, "", oBack)],
     null, // the second beat is the first, mirrored
     [K(0.15, -18, 118, 0, -3, "crouch", eOut), K(0.2, 0, 6, 9, 7, "stretch", lin), K(0.5, 4, -42, 7, 7, "crouch", oExpo), K(0.6, 4, -42, 7, 7, "", lin), K(1, 10, -22, 4, 3, "", oBack)],
   ],
@@ -147,7 +147,7 @@ export function bowPose(beat, k, side, up) {
 /** The pull and arrow of a bow held ready between shots. */
 export const BOW_READY = { pull: 0.12, arrow: true };
 
-/** The book: how far it darts out (-: pulled back to the chest) and how much it swells, at k (the strokes' clock). */
+/** The book's travel, lift and recoil at k (the stroke's clock). */
 export function bookPose(beat, k) {
   const fin = beat === 2, W = WIND, I = IMPACT;
   let o;
@@ -156,11 +156,10 @@ export function bookPose(beat, k) {
   else if (k < SNAP) o = 1 - 0.75 * oExpo((k - I) / (SNAP - I));
   else if (k < 0.6) o = 0.25;
   else o = 0.25 * (1 - oBack((k - 0.6) / 0.4));
-  const big = k < W ? 1 - 0.1 * eOut(k / W) : k < 0.4 ? 1 + Math.sin(((k - W) / (0.4 - W)) * Math.PI) * (fin ? 0.7 : 0.35) : 1;
   // drawn up over the shoulder on the wind-up rather than back into the reader
   const lift = k < W ? 4 * eOut(k / W) : k < I ? 4 * (1 - eIn((k - W) / (I - W))) : 0;
   const lean = k < W ? -1.5 * eOut(k / W) : k < I ? -1.5 + 4 * eIn((k - W) / (I - W)) : k < 0.6 ? 2.5 * (1 - oExpo((k - I) / (0.6 - I))) : 0;
-  return { out: o * (fin ? 2.2 : 1) * (beat === 1 ? -0.6 : 1), big, lift, lean, fr: k < W ? "crouch" : k < 0.3 ? "stretch" : "" };
+  return { out: o * (fin ? 2.2 : 1) * (beat === 1 ? -0.6 : 1), lift, lean, fr: k < W ? "crouch" : k < 0.3 ? "stretch" : "" };
 }
 
 /** How far the drawn weapon reaches from its grip, measured once from its own pixels. */

@@ -262,7 +262,7 @@ function loadMap(m) {
   if (G.map && G.map.id !== m.id && (G.map.theme === "interior" || m.theme === "interior")) { doorFade(); Sound.play("door"); }
   G.map = m;
   G.path = null;
-  S3.leaveStage();
+  G.comboWeapon = null;
   S3.loadMap(m);
   Radar.loadMap(m);
   G.fb = null;
@@ -412,10 +412,10 @@ function onEvent(e, t) {
       // which blow of the combo this is; a skill swings like a finisher
       const beat = kind >= 10 ? 2 : e[6] | 0;
       if (eid !== G.you) { src.atkT = t; src.dir = e[5]; src.atkN = beat; }
-      else { G.me.dir = e[5]; G.me.atkN = beat; if (kind < 10) G.combo = beat; }
+      else { G.me.dir = e[5]; G.me.atkN = beat; if (kind < 10 && G.defs.wkinds?.[G.comboWeapon]?.fx === kind) G.combo = beat; }
       src.aim = [tx, ty + 6];
       G.hitFrom = [src.x, src.y];
-      attackFx(kind, src, tx, ty + 6, e[5], beat);
+      attackFx(kind, src, tx, ty + 6, beat);
       break;
     }
     case "h": {
@@ -431,7 +431,7 @@ function onEvent(e, t) {
         if (!isPlayer && G.hitFrom) {
           tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]);
           // was this my own blow landing? then it gets the full treatment: a held frame, a kick, a burst
-          const mine = t - G.lastAtk < 420, fin = mine && G.me.atkN === 2, heavy = crit || fin;
+          const mine = t - G.lastAtk < 420, fin = mine && (G.me.atkN === 2 || (G.self?.wk === "sword" && G.me.atkN === 1)), heavy = crit || fin;
           tgt.hurtP = heavy ? 1.6 : 1;
           S3.fx.spark(tgt.x, tgt.y, crit ? "#ffe04a" : "#ffffff", heavy ? 1.7 : 1.1);
           S3.fx.ring(tgt.x, tgt.y - 4, heavy ? 20 : 11, crit ? "#ffe04a" : "#ffffff", heavy ? 220 : 150);
@@ -469,8 +469,7 @@ function onEvent(e, t) {
     case "b": {
       // a blast on the ground: a monster's (pink, it hurts) or a player's skill landing
       const col = [null, "#ffb04a", "#ff8a3a", "#cfe4ff"][e[4] | 0];
-      if ((e[4] | 0) >= 4) Growth.zoneFx(e, S3.big());       // the blade storm, the blizzard, the dragon's spear
-      else if (col) { const B = S3.big(); B.fx.ring(e[1], e[2], e[3], col, 300, true); B.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); B.shake(2); Sound.play("boom"); }
+      if (col) { const B = S3.big(); B.fx.ring(e[1], e[2], e[3], col, 300, true); B.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); B.shake(2); Sound.play("boom"); }
       else { S3.fx.ring(e[1], e[2], e[3], "#ff6ad0", 350, true); S3.fx.burst(e[1], e[2], 0.4, "#ff6ad0", 34, 3); S3.shake(6); Sound.play("slam"); }
       break;
     }
@@ -611,14 +610,12 @@ function floatText(str, x, y, h, col, big, dmg = false) {
   G.texts.push({ str, x, y, h, col, big: !!big, t0: now(), dmg, vx: dmg ? (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8) : 0 });
 }
 /** `src` is the attacker, (tx, ty) the point of impact on the ground. */
-function attackFx(kind, src, tx, ty, dir, beat = 0) {
+function attackFx(kind, src, tx, ty, beat = 0) {
   const fin = beat === 2;
   const f = S3.fx;
-  // the blade's crescent opens toward the target (or the way the attacker faces)
-  const ang = Math.hypot(tx - src.x, ty - src.y) > 2 ? Math.atan2(ty - src.y, tx - src.x) : [Math.PI / 2, Math.PI, 0, -Math.PI / 2][dir] || 0;
   switch (kind) {
     // (the blades' crescents and thrust waves are thrown off by the stroke itself at its snap: scene2d qiBurst)
-    case 0: Sound.play("swing_sword", fin); break;
+    case 0: Sound.play("swing_sword", beat === 1); break;
     case 1: f.proj(src.x, src.y, 0.75, tx, ty, 0.5, "#fff0c0", 0.04, 42); f.burst(src.x + (tx - src.x) * 0.15, src.y + (ty - src.y) * 0.15, 0.75, "#ffd84a", 4, 0.8); Sound.play("shoot"); break;
     case 2: f.proj(src.x, src.y, 1.1, tx, ty, 0.5, "#b08aff", fin ? 0.15 : 0.09, 15, fin ? () => f.ring(tx, ty, 18, "#b08aff", 220, true) : undefined); Sound.play("swing_staff"); break;
     case 3: Sound.play("swing_dagger"); break;
@@ -626,21 +623,7 @@ function attackFx(kind, src, tx, ty, dir, beat = 0) {
     case 5: f.proj(src.x, src.y, 0.9, tx, ty, 0.5, "#c8a0ff", 0.07, 20, () => { f.ring(tx, ty, fin ? 34 : 26, "#c8a0ff", 220, true); }); Sound.play("swing_book"); break;
     // the bow: drawn and loosed by the stroke itself; its arrow comes as its own event ("ar", skillfx.js)
     case 6: SkillFx.bowFire(G, src, beat); break;
-    case 23: f.beam(src.x, src.y, tx, ty, "#e0b070", 1.1); f.burst(tx, ty, 0.4, "#e0b070", 20, 2.4); S3.shake(5); Sound.play("boom"); break;
-    case 24: f.sparkle(src.x, src.y, 0.8, "#ffe9a0", 12); Sound.play("magic"); break;
-    case 10: f.slash(src.x, src.y, ang, "#ffd84a", 1.05); S3.shake(2); Sound.play("crit"); break;
-    case 11: f.ring(src.x, src.y, 48, "#ffffff", 260); f.ring(src.x, src.y, 34, "#ffd84a", 240, false, 60); Sound.play("swing"); break;
-    case 12: f.ring(src.x, src.y, 60, "#ff7a5a", 500); f.sparkle(src.x, src.y, 0.9, "#ff7a5a", 16); Sound.play("buff"); break;
-    case 13: f.beam(src.x, src.y, tx, ty, "#9fe8ff", 0.7); Sound.play("shoot"); break;
-    case 14: f.sparkle(src.x, src.y, 0.4, "#b8ffd0", 18); f.ring(src.x, src.y, 22, "#b8ffd0", 400); Sound.play("buff"); break;
-    case 15: f.proj(src.x, src.y, 1.1, tx, ty, 0.4, "#ff8a3a", 0.14, 13, () => { f.ring(tx, ty, 34, "#ff8a3a", 300, true); f.burst(tx, ty, 0.4, "#ffd84a", 22, 2.6); S3.shake(3); Sound.play("boom"); }); Sound.play("magic"); break;
-    case 16: f.ring(src.x, src.y, 58, "#9fe8ff", 420, true); f.sparkle(src.x, src.y, 0.6, "#d0f4ff", 22); Sound.play("ice"); break;
-    case 17: f.ring(src.x, src.y, 90, "#8cff8c", 500); f.sparkle(src.x, src.y, 0.6, "#8cff8c", 22); Sound.play("heal"); break;
-    case 18: f.slash(src.x, src.y, ang, "#e04860", 0.7); f.burst(tx, ty, 0.6, "#e04860", 10, 1.8); Sound.play("crit"); break;
     case 19: f.burst(src.x, src.y, 0.6, "#4a4468", 10, 1); break;
-    case 20: f.burst(src.x, src.y, 0.5, "#8a8a98", 40, 1.2); Sound.play("buff"); break;
-    case 21: f.proj(src.x, src.y, 1, tx, ty, 0.2, "#6a7a5a", 0.1, 11, () => { f.ring(tx, ty, 42, "#ffb04a", 320, true); f.burst(tx, ty, 0.4, "#ffd84a", 28, 3); S3.shake(4); Sound.play("boom"); }); Sound.play("swing"); break;
-    default: Growth.skillFx(kind, src, tx, ty, ang, S3.big(ang));     // 25–32: the second-tier skills and the ultimates
   }
 }
 
@@ -882,7 +865,7 @@ function castSkill(id) {
   if (t < (G.cdEnd[id] || 0) || G.me.mp < mpc) { if (G.me.mp < mpc && !G.auto) toast("MP가 부족합니다"); return false; }
   act({ t: "sk", id, a: G.me.aimI });
   G.cdEnd[id] = t + sk.cd * (1 - (s.dv ? s.dv[3] : 0) / 100);
-  G.me.atkT = t; G.me.atkN = 2; G.lastAtk = t; G.lastSkill = t;
+  G.me.atkT = t; G.me.atkN = 2; G.lastAtk = t; G.lastSkill = t; G.comboWeapon = null;
   preAim(aimCone());
   return true;
 }
@@ -910,12 +893,15 @@ function usePotion(kind) {
 function attack() {
   const t = now();
   if (t - G.lastAtk < G.self.acd) return;
-  // the same count the server keeps, so the swing starts on the right foot
-  G.combo = t - G.lastAtk < G.self.acd + 700 ? ((G.combo | 0) + 1) % 3 : 0;
+  // Predict the next beat using the same weapon and window as the server.
+  const kind = G.self.wk, wk = G.defs.wkinds?.[kind];
+  const chained = t - G.lastAtk < G.self.acd + 700;
+  G.combo = kind === "sword" ? (chained && G.comboWeapon === kind ? 1 - (G.combo | 0) : 0) :
+    chained && G.comboWeapon !== "sword" ? ((G.combo | 0) + 1) % 3 : 0;
+  G.comboWeapon = kind;
   G.me.atkN = G.combo;
   G.lastAtk = t; G.me.atkT = t;
   G.impactAt = t + S3.impactMs(G.self.wk, G.combo);
-  const wk = G.defs.wkinds && G.defs.wkinds[G.self.wk];
   preAim((wk && wk.arc) || aimCone());
   G.aimFlash = t;
   act({ t: "atk", a: G.me.aimI });
@@ -1008,6 +994,7 @@ function interact() {
   else if (n.role === "dim") Dim.openKeeper();
   else if (n.role === "house") { Housing.openAgent(); openWin("inv"); }
   else { talkTo(n); return; }
+  if (SideQ.gives(n)) talkTo(n);
   // the townsfolk have a word to say as they serve you (npctalk.js)
   const line = n.role !== "stone" && NpcTalk.lineFor(n, talkSheet());
   if (line) addChat(line, "npc", n.name);

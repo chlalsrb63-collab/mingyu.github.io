@@ -549,9 +549,12 @@ function basicAttack(S, p) {
   const c = st.arm;
   const rt = S.maps[p.map];
   const now = S.now;
-  // one, two, three: the third blow of an unbroken run is the finisher
-  p.combo = now - p.atkAt < atkCd(p) + COMBO_MS ? (p.combo + 1) % 3 : 0;
+  const chained = now - p.atkAt < atkCd(p) + COMBO_MS;
+  p.combo = chained ? (p.combo + 1) % 3 : 0;
   const fin = p.combo === 2;
+  // The greatsword alternates its horizontal poses independently of the damage cadence.
+  p.swordBeat = c === WKIND.sword ? (chained ? 1 - (p.swordBeat ?? 1) : 0) : null;
+  const beat = p.swordBeat ?? p.combo;
   p.atkAt = now;
   newAct(p, false);
   // a bow looses an arrow that flies (45-jobs.js): it lands, or not, a few ticks later
@@ -562,14 +565,14 @@ function basicAttack(S, p) {
   const mob = aimMob(rt, p, range, arc);
   if (!mob) {
     const far = range < 60 ? 14 : range * 0.7, [ax, ay] = AIM_V[p.aim | 0];
-    rt.ev.push(["a", p.eid, c.fx, Math.round(p.x + ax * far), Math.round(p.y - 6 + ay * far), p.dir, p.combo]);
+    rt.ev.push(["a", p.eid, c.fx, Math.round(p.x + ax * far), Math.round(p.y - 6 + ay * far), p.dir, beat]);
     return;
   }
   face(p, mob);
   // 창끝의 거리: a spear blow landing at the far end of the reach hits harder and through armour
   const tip = c === WKIND.spear && pasOn(p, "tip") && dist(p.x, p.y, mob.x, mob.y) - big(mob) >= c.range * SKILL.tip.at;
   if (tip) rt.ev.push(["tip", mob.id]);
-  rt.ev.push(["a", p.eid, c.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir, p.combo]);
+  rt.ev.push(["a", p.eid, c.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir, beat]);
   const mult = (c.mult || 1) * (fin ? FINISH.mult : 1);
   // a greatsword's arc catches what stands beside the target, a spear runs through
   // what stands behind it, and a spellbook's burst splashes around it

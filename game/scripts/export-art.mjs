@@ -52,7 +52,12 @@ try {
           put(`${dir}${k}_t${t}.png`, WP.weaponSprite(k, { wt: t }), n);
           put(`${dir}icon_${k}_t${t}.png`, WP.weaponIcon(k, t), n);
         }
-        // a power, set or skin recolours the design of whatever tier it sits on: shown on tier 3
+        for (const [name, motif] of WP.silhouetteSamples(k)) {
+          const gear = { wt: 3, wl: motif };
+          put(`${dir}${k}_sil_${name}.png`, WP.weaponSprite(k, gear), name);
+          put(`${dir}icon_${k}_sil_${name}.png`, WP.weaponIcon(k, 3, gear), name);
+        }
+        // Legendary powers, sets and skins are shown on tier 3.
         for (const m of WP.MOTIFS) {
           const what = D.legend.includes(m) ? "lg" : D.sets.includes(m) ? "set" : "skin";
           const o = what === "skin" ? { ws: m } : { wl: m };
