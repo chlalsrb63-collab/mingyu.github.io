@@ -215,7 +215,7 @@ const TUT_TOUCH = {
 export function tutCard(s) {
   const card = $("#tut"), steps = G.defs.tutorial || [], i = s.tut ? s.tut.i : steps.length, step = steps[i];
   const hide = !step || +localStorage.getItem("lumentale:tuthide") === i + 1;
-  // on a wide screen the bag sits open in the side column from the start: nothing to press, so the step is done
+  // the bag already showing (the phone drawer's, or the desktop side panel's): nothing to press, so the step is done
   if (step && step.id === "bag" && !$("#w-inv").hidden && tutCard.bag !== i) { tutCard.bag = i; tutTry("bag"); }
   if (card.hidden !== hide) { card.hidden = hide; placeToasts(); }
   if (hide) return;

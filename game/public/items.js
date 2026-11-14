@@ -11,7 +11,7 @@ import { entryIconUrl } from "./weapons.js";
 import { G, el, $ } from "./state.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
-import { hoverTip, hideTip, closeWin, toast } from "./windows.js";
+import { hoverTip, hideTip, closeDrawer, toast } from "./windows.js";
 import { refreshUi } from "./hud.js";
 
 // ── items ──
@@ -131,10 +131,10 @@ export function useSlot(i) {
   const d = G.defs.items[entry.id];
   hideTip();
   if (d.type === "pot" || d.type === "food" || d.type === "scroll" || d.type === "buff" || d.type === "pet") act({ t: "use", id: entry.id });
-  else if (d.type === "camp") { act({ t: "use", id: entry.id }); closeWin("inv"); }
+  else if (d.type === "camp") { act({ t: "use", id: entry.id }); closeDrawer(); }
   else if (d.type === "fish") {
     if (!fireNear()) { toast("모닥불 곁에서 구울 수 있습니다"); return; }
-    closeWin("inv"); Mini.cooking(G.defs.items[d.cook].name, (score) => act({ t: "cook", id: entry.id, s: score }));
+    closeDrawer(); Mini.cooking(G.defs.items[d.cook].name, (score) => act({ t: "cook", id: entry.id, s: score }));
   } else if (isGear(entry.id)) {
     if (d.cls && d.cls !== s.cls) { toast(`${G.defs.classes[d.cls].name} 전용 장비입니다`); Sound.play("no"); return; }
     if (s.lvl < d.req) { toast(`레벨 ${d.req}부터 장착할 수 있습니다`); Sound.play("no"); return; }

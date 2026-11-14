@@ -186,7 +186,7 @@ export function editor(box, get, set, onSound, opts = {}) {
  */
 export function installMirror(ctx) {
   style();
-  // the paper-doll's portrait: in the C window, or docked in the side column on a desktop (state.js layout)
+  // the paper-doll's portrait, in the C window's 장비 tab
   const portrait = document.querySelector(".doll .portrait");
   if (!portrait || document.querySelector(".lk-mirror-btn")) return;
   if (getComputedStyle(portrait).position === "static") portrait.style.position = "relative";
