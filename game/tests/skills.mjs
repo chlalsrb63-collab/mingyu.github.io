@@ -89,6 +89,8 @@ assert.ok(D.mech && D.mech.react && D.mech.grit === 100);
     W.ready();
     const ms = W.mobs([[20, 0], [-30, 10], [50, 0]]);
     p.grit = grit;
+    // the same dice for both blasts, so the comparison is about the gauge and not a lucky crit
+    W.S.seed = 7777;
     assert.ok(W.act({ t: "sk", i: sk("warrior", "burst") }).ok);
     const ev = evts(W.step(), "a").find((e) => e[2] === 46);
     assert.equal(p.grit, 0, "all of it spent");
@@ -221,6 +223,7 @@ assert.ok(D.mech && D.mech.react && D.mech.grit === 100);
   m2.dead = true;
   const [a, b] = W.mobs([[30, 0], [-30, 0]]);
   a.mk = 5; a.mkAt = W.now + 9000; b.mk = 1; b.mkAt = W.now + 9000;
+  W.S.seed = 7777; // fixed dice: a lucky crit on the one-mark target must not decide the comparison
   assert.ok(W.act({ t: "sk", i: sk("rogue", "harvest") }).ok);
   W.step();
   assert.ok(a.mk === 0 && b.mk === 0, "the marks are spent");

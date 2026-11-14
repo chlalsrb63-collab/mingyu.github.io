@@ -248,6 +248,8 @@ function markRoutes(m, labelOf, deeper) {
   const busy = (x, y) => {
     for (const pt of m.portals) if (Math.abs(pt.x - x) <= 2 && Math.abs(pt.y - y) <= 2) return true;
     for (const [fx, fy] of FIRES[m.id]) if (Math.abs(fx - x) <= 1 && Math.abs(fy - y) <= 1) return true;
+    // a chest or a boss stands on one exact square: never plant a sign on (or right beside) it
+    for (const sp of m.spawns) if (sp.r[0] === sp.r[2] && sp.r[1] === sp.r[3] && Math.abs(sp.r[0] - x) <= 1 && Math.abs(sp.r[1] - y) <= 1) return true;
     return m.marks.some((k) => Math.abs(k.x - x) <= 2 && Math.abs(k.y - y) <= 2);
   };
   /**

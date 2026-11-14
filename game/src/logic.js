@@ -1973,14 +1973,48 @@ function catacomb(cfg) {
   const free = (x, y) => m.g[y][x] !== "W" && m.o[y][x] === " " && !hall[y * W + x];
   const T2 = cfg.dress;
   const pts = [], gates = {};
+  /**
+   * The two holy rooms. A chapel: a runner carpet (`n`) down its long axis to an altar (`9`)
+   * against the far wall, candles (`3`) either side of it, pews (`I`) in rows across the nave
+   * with an aisle by the carpet. An octagon: a ring of inlaid stone (`i`) round a sarcophagus
+   * (`1`) on the middle, candles at the four diagonals.
+   */
+  const hallow = (r, k) => {
+    const inRoom = (x, y) => roomOf[y * W + x] === k && m.g[y][x] !== "W" && m.g[y][x] !== "w" && !hall[y * W + x];
+    const edge = (x, y) => [[0, -1], [1, 0], [0, 1], [-1, 0]].some(([dx, dy]) => m.g[y + dy][x + dx] === "W");
+    const put = (x, y, ch) => { if (inRoom(x, y) && m.o[y][x] === " ") m.o[y][x] = ch; };
+    if (r.shape === "chapel") {
+      // along y when the room is taller than wide: the altar at the north end; else along x, the altar at the west end
+      const vert = r.h >= r.w;
+      const at = (s, t) => (vert ? [r.cx + t, s] : [s, r.cy + t]);
+      const s0 = vert ? r.y0 : r.x0, s1 = vert ? r.y1 : r.x1;
+      let head = s0;
+      while (head < s1 && !inRoom(...at(head, 0))) head++;
+      for (let s = head + 1; s <= s1; s++) { const [x, y] = at(s, 0); if (inRoom(x, y)) { m.g[y][x] = "n"; m.o[y][x] = " "; } }
+      { const [x, y] = at(head, 0); m.o[y][x] = "9"; }
+      for (const t of [-1, 1]) put(...at(head, t), "3");
+      const half = Math.floor((vert ? r.w : r.h) / 2);
+      for (let s = head + 3; s <= s1 - 1; s += 2) for (let t = 2; t <= half; t++) for (const sg of [-1, 1]) {
+        const [x, y] = at(s, t * sg);
+        if (inRoom(x, y) && !edge(x, y)) put(x, y, "I");
+      }
+    } else {
+      const cx = (r.x0 + r.x1) / 2, cy = (r.y0 + r.y1) / 2, R = Math.min(r.w, r.h) / 2 - 1;
+      for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) if (inRoom(x, y) && Math.hypot(x - cx, y - cy) <= R && m.g[y][x] === "c") m.g[y][x] = "i";
+      m.o[r.cy][r.cx] = "1";
+      if (R >= 2.5) for (const [dx, dy] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) put(r.cx + dx, r.cy + dy, "3");
+    }
+  };
   rooms.forEach((r) => {
     const k = r.k, t = Math.max(0, tree.dist[k]) / far, d = tree.dist[k];
     const inner = [r.x0, r.y0, r.x1, r.y1];
     const cellFree = (x, y) => roomOf[y * W + x] === k && free(x, y);
-    pts.push(spot(m, r.cx, r.cy));
+    const ptI = pts.push(spot(m, r.cx, r.cy)) - 1;
     const wallN = (x, y) => m.g[y - 1][x] === "W";
     if (kind[k] === "room") {
-      const style = cfg.styles[ri(box, 0, cfg.styles.length - 1)];
+      // a chapel and an octagon are furnished as what they are (see `hallow` below), whatever else was drawn
+      let style = cfg.styles[ri(box, 0, cfg.styles.length - 1)];
+      if (r.shape === "chapel" || r.shape === "octagon") style = r.shape;
       m.pieces.push(style);
       for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) {
         if (!cellFree(x, y)) continue;
@@ -1992,7 +2026,7 @@ function catacomb(cfg) {
         else if (style === "shrine") { if (Math.abs(Math.hypot(x - r.cx, (y - r.cy) * 1.3) - Math.min(r.w, r.h) * 0.36) < 0.5 && h < 0.6) m.o[y][x] = T2.ring; }
         if (m.o[y][x] === " " && m.g[y][x] !== "w" && m.g[y][x] !== "W") {
           if (wallN(x, y)) { let acc = 0; for (const [ch2, p] of T2.wall) { acc += p; if (h < acc) { m.o[y][x] = ch2; break; } } }
-          else if (!edge) { let acc = 0; for (const [ch2, p] of T2.floor) { acc += p; if (h > 1 - acc) { m.o[y][x] = ch2; break; } } }
+          else if (!edge && style !== "chapel" && style !== "octagon") { let acc = 0; for (const [ch2, p] of T2.floor) { acc += p; if (h > 1 - acc) { m.o[y][x] = ch2; break; } } }
         }
       }
       if (style === "pool") pts.push([r.x0, r.y0]);
@@ -2005,8 +2039,12 @@ function catacomb(cfg) {
       FIRES[cfg.id].push([r.cx, r.cy]);
       m.pieces.push("camp");
     } else if (kind[k] === "vault") {
-      // a side branch worth the detour: a chest among the dead, and guards a notch above the rooms around
-      for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) if (cellFree(x, y) && (x === r.x0 || x === r.x1) && h2(x, y, 5) < 0.6) m.o[y][x] = T2.vault;
+      // a side branch worth the detour: a chest among the dead, and guards a notch above the rooms around;
+      // in the ossuary the floor itself is strewn with bones (`d`)
+      for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) {
+        if (cellFree(x, y) && (x === r.x0 || x === r.x1) && h2(x, y, 5) < 0.6) m.o[y][x] = T2.vault;
+        if (cfg.vaultName === "ossuary" && roomOf[y * W + x] === k && m.g[y][x] === "c") m.g[y][x] = "d";
+      }
       m.spawns.push({ k: cfg.chest, n: 1, r: [r.cx, r.y0, r.cx, r.y0] });
       m.o[r.y0][r.cx] = " ";
       m.spawns.push({ k: cfg.mobs[Math.min(cfg.mobs.length - 1, Math.floor(t * cfg.mobs.length) + 1)], n: 2 + (t > 0.5 ? 1 : 0), r: inner, elite: 0.35 });
@@ -2025,6 +2063,7 @@ function catacomb(cfg) {
     }
     // keep the middle of every room walkable
     for (let y = r.cy - 1; y <= r.cy + 1; y++) for (let x = r.cx - 1; x <= r.cx + 1; x++) if (roomOf[y * W + x] === k) { m.o[y][x] = " "; if (m.g[y][x] === "W") m.g[y][x] = "c"; }
+    if (kind[k] === "room" && (r.shape === "chapel" || r.shape === "octagon")) { hallow(r, k); pts[ptI] = spot(m, r.cx, r.cy); }
   });
   for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) if (m.g[y][x] === "c" && h2(x, y, S0) < 0.12) m.g[y][x] = "d";
   for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) { m.o[y][x] = " "; if (m.g[y][x] !== "d") m.g[y][x] = "c"; pts.push([x, y]); }
@@ -2224,22 +2263,38 @@ function abyssal(cfg) {
   for (let y = 2; y <= isl[1].y - 4; y++) for (let x = isl[1].x - 9; x <= isl[1].x + 9; x++) if (inMap(m, x, y) && y < isl[1].y - 4 + Math.round(Math.abs(x - isl[1].x) / 3)) { m.g[y][x] = "W"; owner[y * W + x] = -1; }
   // the way in: the first island reaches back to the rock of the rim
   for (let x = 3; x <= isl[0].x; x++) for (const y of [isl[0].y, isl[0].y + 1]) { m.g[y][x] = "c"; }
-  // bridges: bone, two planks wide, or now and then a neck of flesh
+  // bridges: bone, two planks wide, or now and then a neck of flesh. Each runs along the grid
+  // (a straight run, or two runs with one corner) so it reads as a clean diagonal in the iso
+  // view instead of a staircase; of the two corners the one that keeps clear of other islands wins
   const bridges = [];
+  const legs = (A, B, wide, hFirst) => {
+    // rectangles [x0, y0, x1, y1]: a horizontal run on A's row, then a vertical run on B's column
+    const o = wide === 3 ? -1 : 0, e = wide - 1 + o;
+    if (Math.abs(B.y - A.y) <= 1) { const y = Math.min(A.y, B.y); return [[Math.min(A.x, B.x), y + o, Math.max(A.x, B.x), y + e]]; }
+    if (Math.abs(B.x - A.x) <= 1) { const x = Math.min(A.x, B.x); return [[x + o, Math.min(A.y, B.y), x + e, Math.max(A.y, B.y)]]; }
+    const [P, Q] = hFirst ? [A, B] : [B, A];
+    return [[Math.min(P.x, Q.x + o), P.y + o, Math.max(P.x, Q.x + e), P.y + e], [Q.x + o, Math.min(P.y, Q.y), Q.x + e, Math.max(P.y + e, Q.y)]];
+  };
+  const cells = (rs) => { const out = []; for (const [x0, y0, x1, y1] of rs) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (x >= 3 && y >= 3 && x < W - 3 && y < H - 3) out.push([x, y]); return out; };
   for (const [a, b] of [...edges, [guardI, 1]]) {
     if (!tree.linked(a, b)) continue;
-    const A = isl[a], B = isl[b], len = Math.hypot(B.x - A.x, B.y - A.y), steps = Math.ceil(len * 2);
-    const flesh = a !== guardI && b !== 1 && rnd(box) < 0.2;
-    const bend = (rnd(box) - 0.5) * 4;
-    for (let s = 0; s <= steps; s++) {
-      const f = s / steps, ox = -(B.y - A.y) / len * Math.sin(f * Math.PI) * bend, oy = (B.x - A.x) / len * Math.sin(f * Math.PI) * bend;
-      const x = Math.round(A.x + (B.x - A.x) * f + ox), y = Math.round(A.y + (B.y - A.y) * f + oy);
-      for (const [dx, dy] of flesh ? [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0]] : [[0, 0], [1, 0], [0, 1]]) {
-        const X = x + dx, Y = y + dy;
-        if (X < 3 || Y < 3 || X >= W - 3 || Y >= H - 3) continue;
-        if (m.g[Y][X] === "w" || m.g[Y][X] === "W") m.g[Y][X] = flesh ? "c" : "b";
+    const A = isl[a], B = isl[b];
+    const flesh = a !== guardI && b !== 1 && rnd(box) < 0.2, wide = flesh ? 3 : 2;
+    const cost = (cs) => {
+      let c = 0;
+      for (const [x, y] of cs) {
+        const k = owner[y * W + x];
+        if (k >= 0 && k !== a && k !== b) c += 4;
+        // nothing but the guard's bridge may come near the mother's island
+        if (b !== 1) for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (owner[(y + dy) * W + x + dx] === 1) c += 100;
+        if (m.g[y][x] === "b") c += 2;
       }
-    }
+      return c;
+    };
+    const opts = [true, false].map((h) => cells(legs(A, B, wide, h)));
+    const ca = cost(opts[0]), cb = cost(opts[1]);
+    const pick = ca < cb ? opts[0] : cb < ca ? opts[1] : opts[rnd(box) < 0.5 ? 0 : 1];
+    for (const [X, Y] of pick) if (m.g[Y][X] === "w" || m.g[Y][X] === "W") m.g[Y][X] = flesh ? "c" : "b";
     bridges.push({ a, b, flesh });
     m.pieces.push(flesh ? "neck" : "bridge");
   }
@@ -2546,6 +2601,8 @@ function markRoutes(m, labelOf, deeper) {
   const busy = (x, y) => {
     for (const pt of m.portals) if (Math.abs(pt.x - x) <= 2 && Math.abs(pt.y - y) <= 2) return true;
     for (const [fx, fy] of FIRES[m.id]) if (Math.abs(fx - x) <= 1 && Math.abs(fy - y) <= 1) return true;
+    // a chest or a boss stands on one exact square: never plant a sign on (or right beside) it
+    for (const sp of m.spawns) if (sp.r[0] === sp.r[2] && sp.r[1] === sp.r[3] && Math.abs(sp.r[0] - x) <= 1 && Math.abs(sp.r[1] - y) <= 1) return true;
     return m.marks.some((k) => Math.abs(k.x - x) <= 2 && Math.abs(k.y - y) <= 2);
   };
   /**

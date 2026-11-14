@@ -423,6 +423,29 @@ function scenery() {
       b.r(1, 2, 18, 7, "#989080"); b.r(1, 2, 18, 1, "#b8b09c"); b.r(1, 8, 18, 1, "#5a5550");
       for (const x of [3, 11]) { b.r(x, 3, 6, 5, BONE); b.r(x + 1, 5, 1, 2, "#2f2a29"); b.r(x + 4, 5, 1, 2, "#2f2a29"); }
     }),
+    // a chapel altar: a stone table under a wine-red cloth, a skull, an open book and a gold cup on top
+    9: prop(32, 28, (b) => {
+      b.r(1, 14, 26, 13, "#8a8478"); b.r(27, 13, 5, 14, "#5a5550"); b.r(1, 25, 31, 2, "#4a4642");
+      b.r(0, 8, 32, 6, "#b8b09c"); b.r(0, 8, 32, 1, "#d2c8b0"); b.r(0, 13, 32, 1, "#6a645c");
+      b.r(10, 8, 11, 6, "#7a2a3a"); b.r(10, 14, 11, 10, "#7a2a3a"); b.r(10, 14, 11, 1, "#5a1e2c"); b.r(19, 14, 2, 10, "#5a1e2c");
+      b.r(10, 23, 11, 1, "#c8a050"); b.r(14, 16, 2, 6, "#c8a050"); b.r(12, 18, 6, 2, "#c8a050");
+      b.r(2, 3, 6, 5, BONE); b.r(2, 3, 6, 1, BONE_L); b.r(3, 5, 1, 1, "#2f2a29"); b.r(6, 5, 1, 1, "#2f2a29"); b.r(3, 8, 4, 1, BONE_D);
+      b.r(11, 6, 9, 2, "#f2ead0"); b.r(11, 5, 4, 1, "#f2ead0"); b.r(16, 5, 4, 1, "#f2ead0"); b.r(15, 5, 1, 3, "#8a8070");
+      b.r(24, 1, 5, 3, "#e0b860"); b.r(24, 1, 5, 1, "#f4dc90"); b.r(25, 4, 3, 2, "#c8a050"); b.r(24, 6, 5, 2, "#8a6a34");
+    }),
+    // a pew, seen from behind: a slanted back-board along the row (two ways: along x, along y)
+    I: [0, 1].map((v) => prop(24, 30, (b) => {
+      const face = v ? ["#5a3a22", "#7a5030", "#3a2416", "#9a6a3c"] : ["#6a4226", "#8a5a34", "#4a2e1a", "#b08048"];
+      for (let i = 0; i < 18; i++) {
+        const x = v ? 20 - i : 3 + i, yb = 21 + (i >> 1);
+        b.r(x, yb - 9, 1, 2, face[3]);            // the seat behind, catching the light
+        b.r(x, yb - 7, 1, 1, face[1]);            // the top rail
+        b.r(x, yb - 6, 1, 7, face[0]);            // the board
+        b.r(x, yb - 3, 1, 1, face[2]);            // a groove
+        b.r(x, yb + 1, 1, 1, face[2]);            // its foot
+      }
+      for (const i of [0, 17]) { const x = v ? 20 - i : 3 + i, yb = 21 + (i >> 1); b.r(x - (v ? 1 : 0), yb - 10, 2, 12, face[2]); b.r(x - (v ? 1 : 0), yb - 10, 1, 1, face[3]); }
+    })),
     // a pipe mouth in the wall, drooling
     6: [0, 1].map((v) => prop(24, 30, (b) => {
       b.r(2, 2, 20, 14, "#6a7280"); b.r(2, 2, 20, 2, "#98a2b2"); b.r(2, 13, 20, 3, "#48505e"); b.r(0, 0, 4, 18, "#7a8494"); b.r(20, 0, 4, 18, "#565e6e");
@@ -528,8 +551,8 @@ function wallPiece(kind, mask, v, grass) {
 
 // ───────────────────────────── ground ─────────────────────────────
 
-const GROUND = { t: "#6cbf5e", r: "#aeb0a0", ".": "#6cbf5e", ",": "#6cbf5e", '"': "#6cbf5e", ":": "#3f8a5c", ";": "#3f8a5c", p: "#d9ab6c", o: "#b4b9c6", s: "#ecd9a2", w: "#4aa2e2", b: "#b98a50", c: "#486a8a", d: "#486a8a", W: "#131a32", a: "#474b5a", m: "#474b5a", k: "#9aa0ae", j: "#6a6444", v: "#bdb39a", g: "#486a8a" };
-const GROUP = { t: 0, r: 3, ".": 0, ",": 0, '"': 0, ":": 1, ";": 1, p: 2, o: 3, s: 4, w: 5, b: 6, c: 7, d: 7, g: 7, W: 8, a: 9, m: 9, k: 10, j: 11, v: 12 };
+const GROUND = { t: "#6cbf5e", r: "#aeb0a0", ".": "#6cbf5e", ",": "#6cbf5e", '"': "#6cbf5e", ":": "#3f8a5c", ";": "#3f8a5c", p: "#d9ab6c", o: "#b4b9c6", s: "#ecd9a2", w: "#4aa2e2", b: "#b98a50", c: "#486a8a", d: "#486a8a", n: "#486a8a", i: "#486a8a", W: "#131a32", a: "#474b5a", m: "#474b5a", k: "#9aa0ae", j: "#6a6444", v: "#bdb39a", g: "#486a8a" };
+const GROUP = { t: 0, r: 3, ".": 0, ",": 0, '"': 0, ":": 1, ";": 1, p: 2, o: 3, s: 4, w: 5, b: 6, c: 7, d: 7, g: 7, n: 7, i: 7, W: 8, a: 9, m: 9, k: 10, j: 11, v: 12 };
 /** The outline where a patch of ground ends: [dark edge line, soft inner rim]. */
 const EDGE = { 2: ["#8f6238", "#bd8c54"], 3: ["#6e7486", "#969cac"], 4: ["#b89a5e", "#d8c088"], 5: ["#2f78c0", "#86c8f4"], 6: ["#6a4426", "#96683a"], 7: ["#2a4262", "#3a5878"], 10: ["#5e6474", "#c4c8d2"], 11: ["#4a4430", "#7e7652"], 12: ["#7e7562", "#d6cdb4"] };
 const FLOWER = ["#fffbe8", "#ffd84a", "#ff9ac0", "#9ac8ff", "#f06a7a"];
@@ -900,6 +923,14 @@ function stand(st, tx, ty, nudge = 0) {
   st.d = Y + (st.lift ? 1 : 0);
   return st;
 }
+/** Does the pew at (x, y) run along x? With its row-mates if it has any, else across the nearest runner. */
+function pewAlongX(m, x, y) {
+  const o = (i, j) => (m.o[j] && m.o[j][i]) || null, g = (i, j) => (m.g[j] && m.g[j][i]) || null;
+  if (o(x - 1, y) === "I" || o(x + 1, y) === "I") return true;
+  if (o(x, y - 1) === "I" || o(x, y + 1) === "I") return false;
+  for (let d = 1; d < 8; d++) { if (g(x - d, y) === "n" || g(x + d, y) === "n") return true; if (g(x, y - d) === "n" || g(x, y + d) === "n") return false; }
+  return true;
+}
 /** Stand a big sprite over a footprint of fw×fh tiles at (fx, fy), painted in upright strips. */
 function standBig(st, fx, fy, fw, fh, down = 0) {
   const [X, Y] = tI(fx + fw / 2, fy + fh / 2);
@@ -1085,9 +1116,10 @@ export function loadMap(m) {
     else if (ch === "L") sp = theme === "city" ? S.L2 : S.L;
     else if (ch === "K") sp = hash(x, y, 7) > 0.6 ? S.K2 : S.K;
     else if (ch === "Y") sp = (theme === "cave" ? S.Y2 : S.Y)[Math.floor(h * 2)];
+    else if (ch === "I") sp = sp[pewAlongX(m, x, y) ? 0 : 1];
     else if (Array.isArray(sp)) sp = sp[Math.floor(h * sp.length)];
     statics.push(stand({
-      sp, glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" ? "#ffd070" : ch === "0" || ch === "X" ? "#ff6a7a" : ch === "Y" && theme === "cave" ? "#5ae4d0" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
+      sp, glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" || ch === "9" ? "#ffd070" : ch === "0" || ch === "X" ? "#ff6a7a" : ch === "Y" && theme === "cave" ? "#5ae4d0" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
     }, x, y, ch === "T" || ch === "P" ? Math.round((hash(x, y, 8) - 0.5) * 6) : 0));
   }
   // cars stand across two tiles; houses and city blocks over four by three

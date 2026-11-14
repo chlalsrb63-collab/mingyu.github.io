@@ -233,7 +233,7 @@ export function materials(theme) {
   T = {
     ".": grass, ",": grass, '"': grass, t: grass, ":": grass, ";": grass,
     p: path, s: sand, o: plaza, r: ruin, j: mud, v: steps, w: water, b: water,
-    a: asph, m: asph, k: pave, c: floor, d: floor, g: floor, W: rock,
+    a: asph, m: asph, k: pave, c: floor, d: floor, g: floor, n: floor, i: floor, W: rock,
     _deep: deep, _water: water, _floor: floor, _grass: grass,
   };
   matCache.set(theme, T);
@@ -450,6 +450,15 @@ function details(S) {
   const MT = S.MT, G = MT._grass, gm = [G.id];
   const gl = C(light(G.hex, 1.3)), gd = C(shade(G.hex, 0.82)), gL = C(light(G.hex, 1.14)), stem = C(shade(G.hex, 0.7));
   const yel = C("#f0b030");
+  // tall grass: root shadow, blade, lit blade, warm tip (highlights lean yellow)
+  const tgD = C(shade(G.hex, 0.66)), tgL = C(shade(G.hex, 0.84)), tgR = C(light(G.hex, 1.22)), tgT = C(light(G.hex, 1.42));
+  const fleaf = C(shade(G.hex, 0.62));
+  // flower drifts change colour every few squares, smoothly enough to read as planted swathes
+  const flowerFam = (x, y) => {
+    const n = Math.sin(x * 0.23 + y * 0.11) * 1.3 + Math.sin(x * 0.07 - y * 0.29) + hash(x >> 2, y >> 2, 140) * 0.6;
+    const k = ((Math.floor((n + 3) * 1.4) % 6) + 6) % 6;
+    return theme === "forest" ? [0, 1, 2][k % 3] : [0, 2, 1, 3, 5, 4][k];
+  };
   const free = (x, y) => m.o[y][x] === " ";
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     const ch = m.g[y][x], h = (s) => hash(x, y, s);
@@ -461,19 +470,26 @@ function details(S) {
           ? ["1.....1", ".1...1.", "..1.1..", "1..1..1", ".1.2.1.", "..222.."]
           : ["..1.2..", "1.1.2.2", ".11.22.", "..121..", "...2..."], [0, gL, gd], gm);
       } else if (ch === "t") {
-        // tall grass: clumps of blades standing clear of one another
-        for (let i = 0; i < 5; i++) {
-          const [X, Y] = spot(S, x, y, 0.15 + ((i * 0.37 + h(30 + i) * 0.3) % 0.75), 0.15 + ((i * 0.61 + h(40 + i) * 0.3) % 0.75));
-          const tall = h(50 + i) > 0.5;
-          stamp(S, X - 2, Y - (tall ? 8 : 6), tall
-            ? ["1...2", "1..2.", ".1.2.", ".1.2.", ".1.2.", "..12.", "..12.", ".333."]
-            : ["1..2", ".1.2", ".1.2", ".12.", ".12.", "333."], [0, gL, gl, gd], gm);
+        // tall grass: a jittered 3×2 grid of clumps, each a dark root patch with blades over it —
+        // the dark bases make the stand read as one mass, the warm tips catch the light
+        for (let i = 0; i < 6; i++) {
+          if (h(60 + i) < 0.12) continue;
+          const fa = 0.12 + (i % 3) * 0.28 + h(30 + i) * 0.16, fb = 0.14 + Math.floor(i / 3) * 0.42 + h(40 + i) * 0.22;
+          const [X, Y] = spot(S, x, y, fa, fb);
+          const tall = h(50 + i) > 0.45;
+          stamp(S, X - 3, Y - (tall ? 8 : 6), tall
+            ? ["4....4.", "1...12.", "1..12..", ".1.2.2.", ".1.22..", "..122..", "3.122.3", ".33333."]
+            : ["4...4.", "1..2..", ".1.2.2", ".122..", "3122.3", ".3333."], [0, tgD, tgL, tgR, tgT], gm);
         }
       } else if (ch === '"') {
-        for (let i = 0; i < 3; i++) {
-          const [X, Y] = spot(S, x, y, 0.15 + h(30 + i) * 0.7, 0.15 + h(40 + i) * 0.7);
-          const col = FLOWER[Math.floor(h(50 + i) * (theme === "forest" ? 3 : 5))];
-          stamp(S, X - 1, Y - 3, [".1.", "121", ".1.", ".3."], [0, col, yel, stem], gm);
+        // a flower field: blooms in drifts of one colour (with the odd stray), each on a dark leaf pair
+        const fam = flowerFam(x, y);
+        for (let i = 0; i < 6; i++) {
+          if (h(60 + i) < 0.18) continue;
+          const fa = 0.12 + (i % 3) * 0.28 + h(30 + i) * 0.14, fb = 0.12 + Math.floor(i / 3) * 0.42 + h(40 + i) * 0.2;
+          const [X, Y] = spot(S, x, y, fa, fb);
+          const pi = h(50 + i) < 0.78 ? fam : Math.floor(h(55 + i) * (theme === "forest" ? 3 : 6));
+          stamp(S, X - 1, Y - 3, [".1.", "121", "313", ".3."], [0, FLOWER[pi], pi === 1 ? C("#e0782a") : yel, fleaf], gm);
         }
       } else if (free(x, y)) {
         const k = h(70);
@@ -486,7 +502,7 @@ function details(S) {
         }
       }
       // drifts of flowers where the meadow grass is undisturbed
-      if ((theme === "meadow" || theme === "town") && free(x, y) && ch !== "t") {
+      if ((theme === "meadow" || theme === "town") && free(x, y) && ch !== "t" && ch !== '"') {
         const drift = Math.sin(x * 0.31 + y * 0.17) + Math.sin(x * 0.11 - y * 0.27) > 1.1;
         if (drift && h(101) < 0.7) for (let i = 0; i < 3; i++) {
           const [X, Y] = spot(S, x, y, 0.1 + hash(x, y, 110 + i) * 0.8, 0.1 + hash(x, y, 120 + i) * 0.8);
@@ -598,39 +614,119 @@ function extras(m, theme, MT) {
     else if (ch === "v") stepsTex(x, y, me, TEX, PA, PB);
     else if (ch === "g") grate(x, y, me, TEX, PA, PB);
     else if (ch === "m") lane(x, y, TEX, PA, PB);
+    else if (ch === "n") carpet(x, y, TEX, TM, PA, PB);
+    else if (ch === "i") inlay(x, y, TEX, TM, PA, PB);
     if (theme === "city" && (ch === "a" || ch === "m")) zebra(x, y, TEX, PA, PB);
   }
   const hexOfC = (u) => "#" + (((u & 255) << 16) | (u & 0xff00) | ((u >> 16) & 255)).toString(16).padStart(6, "0");
 
+  // the run of bridge squares through (x, y) along one axis
+  const runB = (x, y, dx, dy) => { let n = 1; for (let i = 1; isB(x + dx * i, y + dy * i); i++) n++; for (let i = 1; isB(x - dx * i, y - dy * i); i++) n++; return n; };
+  const overWater = (x, y) => { const c = at(x, y); return c === "w" || c === "W"; };
   function deck(x, y, TEX, TM, PA, PB) {
-    const alongX = axis.get(x + "," + y) === 1;
-    const sideN = alongX ? !isB(x, y - 1) : !isB(x - 1, y), sideS = alongX ? !isB(x, y + 1) : !isB(x + 1, y);
+    // planks run across the leg this square belongs to (an L-shaped bridge turns at its corner)
+    const rx = runB(x, y, 1, 0), ry = runB(x, y, 0, 1);
+    const alongX = rx !== ry ? rx > ry : axis.get(x + "," + y) === 1;
+    // a rail on every edge that faces the drop; the ends, where the bridge meets land, stay open
+    const wN = overWater(x, y - 1), wS = overWater(x, y + 1), wW = overWater(x - 1, y), wE = overWater(x + 1, y);
     for (let k = 0; k < 256; k++) {
       const a = PA[k], b = PB[k];
       const along = alongX ? a : b, across = alongX ? b : a, wA = (alongX ? x : y) * 16 + along;
+      // distance to the nearest railed edge; `lit` = a north or west rail (light from the upper left)
+      let d = 99, lit = true;
+      if (wN && b < d) d = b;
+      if (wW && a < d) d = a;
+      if (wS && 15 - b < d) { d = 15 - b; lit = false; }
+      if (wE && 15 - a < d) { d = 15 - a; lit = false; }
       let c;
       if (theme === "abyss") {
         // ribs laid across, bound with sinew along both rails
         const r = wA % 6;
         c = r === 5 ? C("#3c0e16") : r === 0 ? C("#f4f0e0") : r === 4 ? C("#a8a08a") : C("#e2dcc6");
-        if ((sideN && across < 3) || (sideS && across > 12)) c = across === 1 || across === 14 ? C("#8c2c3a") : r === 5 ? C("#3c0e16") : C("#c8c0a8");
+        if (d < 3) c = d === 1 ? C("#8c2c3a") : r === 5 ? C("#3c0e16") : C("#c8c0a8");
       } else if (theme === "crypt") {
         // slabs of stone with a low kerb either side
         const r = wA % 8, t = hash(Math.floor(wA / 8), across >> 3, 6);
         c = r === 7 ? C("#55504c") : r === 0 ? C("#a8a294") : t < 0.3 ? C("#8b867c") : C("#7d786e");
-        if ((sideN && across < 3) || (sideS && across > 12)) c = across === 0 || across === 13 ? C("#b8b2a4") : across === 2 || across === 15 ? C("#4b4540") : C("#989080");
+        if (d < 3) c = d === 1 ? C("#989080") : (d === 0) === lit ? C("#b8b2a4") : C("#4b4540");
       } else if (theme === "sewer") {
         // an iron grating between two rails
         c = (along % 4 === 0 || across % 4 === 0) ? C("#2a302c") : C("#5a625c");
-        if ((sideN && across < 2) || (sideS && across > 13)) c = across === 0 || across === 14 ? C("#8a948c") : C("#3a423e");
+        if (d < 2) c = (d === 0) === lit ? C("#8a948c") : C("#3a423e");
       } else {
         const r = wA % 5, plank = Math.floor(wA / 5), t = hash(plank, alongX ? y : x, 3);
         c = r === 4 ? wood.seam : t < 0.3 ? wood.lt : t > 0.8 ? wood.dk : wood.mid;
         if (r === 1 && (across === 3 || across === 12)) c = wood.nail;
         if (r !== 4 && hash(plank, across >> 2, 4) < 0.08) c = wood.seam;
-        if ((sideN && across < 2) || (sideS && across > 13)) c = across === 0 || across === 14 ? wood.railT : wood.rail;
+        if (d < 2) c = (d === 0) === lit ? wood.railT : wood.rail;
       }
       TEX[k] = c; TM[k] = MID.deck;
+    }
+  }
+  // a chapel's runner: wine-red, a gold border where it ends, a row of lozenges down the middle
+  const isN = (x, y) => at(x, y) === "n";
+  const CAR = { edge: C("#2f2a29"), gold: C("#c8a050"), goldD: C("#8a6a34"), wine: C("#7a2a3a"), wineD: C("#5a1e2c"), wineL: C("#a04850") };
+  function carpet(x, y, TEX, TM, PA, PB) {
+    const alongX = isN(x - 1, y) || isN(x + 1, y);
+    const eN = !isN(x, y - 1), eS = !isN(x, y + 1), eW = !isN(x - 1, y), eE = !isN(x + 1, y);
+    for (let k = 0; k < 256; k++) {
+      const a = PA[k], b = PB[k];
+      let d = 99;
+      if (eN) d = Math.min(d, b);
+      if (eW) d = Math.min(d, a);
+      if (eS) d = Math.min(d, 15 - b);
+      if (eE) d = Math.min(d, 15 - a);
+      const along = alongX ? a : b, across = alongX ? b : a;
+      let c;
+      if (d === 0) c = CAR.edge;
+      else if (d === 1) c = CAR.gold;
+      else if (d === 2) c = CAR.goldD;
+      else {
+        const u = Math.abs(across - 7.5), v = Math.abs((along % 8) - 3.5);
+        const q = u / 1.6 + v;
+        c = q < 1.2 ? CAR.gold : q < 3.4 ? CAR.wineL : q < 4.4 ? CAR.wineD : CAR.wine;
+      }
+      TEX[k] = c; TM[k] = MID.line;
+    }
+  }
+  // an octagon's floor: a ring of brass set in the stone round a rosette of pale and dark marble
+  const inl = new Map();
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    if (at(x, y) !== "i" || inl.has(x + "," + y)) continue;
+    const comp = [], st = [[x, y]], key = (a, b) => a + "," + b;
+    const rec = {};
+    inl.set(key(x, y), rec);
+    while (st.length) {
+      const [cx, cy] = st.pop(); comp.push([cx, cy]);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (at(cx + dx, cy + dy) === "i" && !inl.has(key(cx + dx, cy + dy))) { inl.set(key(cx + dx, cy + dy), rec); st.push([cx + dx, cy + dy]); }
+    }
+    rec.cx = comp.reduce((s, p) => s + p[0], 0) / comp.length * 16 + 8;
+    rec.cy = comp.reduce((s, p) => s + p[1], 0) / comp.length * 16 + 8;
+    let R = Infinity;
+    for (const [cx, cy] of comp) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (at(cx + dx, cy + dy) !== "i") R = Math.min(R, Math.hypot((cx + dx) * 16 + 8 - rec.cx, (cy + dy) * 16 + 8 - rec.cy) - 8);
+    rec.R = Math.max(12, R);
+  }
+  const INL = { edge: C("#2f2a29"), brass: C("#c8a050"), brassD: C("#8a6a34"), pale: C("#aca696"), mid: C("#78726a"), dark: C("#4b4540") };
+  function inlay(x, y, TEX, TM, PA, PB) {
+    const rec = inl.get(x + "," + y);
+    if (!rec) return;
+    const R = rec.R, ri = Math.max(6, (R - 4) * 0.42);
+    for (let k = 0; k < 256; k++) {
+      const A = x * 16 + PA[k] + 0.5, B = y * 16 + PB[k] + 0.5, d = Math.hypot(A - rec.cx, B - rec.cy), e = R - d;
+      if (e < 0) continue;
+      let c;
+      if (e < 1) c = INL.edge;
+      else if (e < 2) c = INL.brass;
+      else if (e < 3) c = INL.brassD;
+      else if (e < 4) c = INL.edge;
+      else if (d < ri - 1.5) c = INL.dark;
+      else if (d < ri) c = INL.brass;
+      else {
+        // sixteen petals, pale and darker by turns
+        const t = ((Math.atan2(B - rec.cy, A - rec.cx) / 6.2832) * 16 + 16) % 16;
+        c = Math.floor(t) & 1 ? INL.mid : INL.pale;
+      }
+      TEX[k] = c; TM[k] = MID.line;
     }
   }
   function stepsTex(x, y, me, TEX, PA, PB) {
@@ -696,7 +792,7 @@ function extras(m, theme, MT) {
       if (!free) continue;
       const [X, Y] = spot(S, x, y, 0.3 + h(5) * 0.4, 0.3 + h(6) * 0.4);
       const fl = [MID.floor];
-      if (theme === "crypt" && (ch === "d" ? h(7) < 0.8 : h(7) < 0.05)) {
+      if (theme === "crypt" && (ch === "d" ? h(7) < 0.8 : ch === "c" && h(7) < 0.05)) {
         if (h(8) < 0.5) stamp(S, X - 4, Y - 2, ["1......1", "21111112", "1.3333.1"], [0, C("#e8e2cc"), C("#d8d0b8"), C("#a8a08a")], fl);
         else stamp(S, X - 3, Y - 4, [".1111.", "122221", "131131", ".2222.", "..33.."], [0, C("#f4f0e0"), C("#e2dcc6"), C("#2f2a29")], fl);
       } else if (theme === "sewer" && ch === "d" && h(7) < 0.7) {
