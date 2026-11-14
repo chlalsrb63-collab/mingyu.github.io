@@ -483,7 +483,7 @@ export function stage(c, fig, e, t, dt) {
     const bh = Math.ceil((gy - 10) / bands.length);
     bands.forEach((col, i) => px(0, i * bh, iw, bh + 1, col));
     const DEEP = { lit: FAR.lit, mid: FAR.mid, dk: FAR.dk, deeper: FAR.deeper };
-    for (let i = -1; i < iw / 9 + 1; i++) pine(i * 9 + R(hash(i, 5) * 4), gy - 4, 16 + R(hash(i, 7) * 14), DEEP);
+    for (let i = -1; i < iw / 9 + 1; i++) pine(i * 9 + R(hash(i, 5) * 4), gy - 2, 16 + R(hash(i, 7) * 14), DEEP);
     px(0, gy - 4, iw, ih - gy + 4, GRASS.mid);
     px(0, gy - 4, iw, 1, GRASS.dk);
     px(0, gy - 3, iw, 1, GRASS.lit);

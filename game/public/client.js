@@ -205,7 +205,7 @@ const channelName = () => Lobby.label(channel);
 function stopGame() {
   G.playing = false;
   G.auto = false;
-  $("#hud").hidden = true;
+  $("#hud").hidden = true; $("#dead").hidden = true; G.me.dead = false; $("#tip").hidden = true;
   for (const w of $$("#windows .window")) if (!w.hidden) closeWin(w.id.slice(2));
   resize();
   tg.clearRect(0, 0, text.width, text.height);

@@ -62,13 +62,16 @@ export function init(ctx) {
   // press start: a click, a tap or any key
   const start = (e) => {
     if (view !== "title") return;
-    if (e && e.type === "keydown" && (e.metaKey || e.ctrlKey || e.altKey || e.key === "Tab")) return;
+    if (e && e.type === "keydown" && (e.metaKey || e.ctrlKey || e.altKey || e.key === "Tab" || /^F\d+$/.test(e.key))) return;
     Sound.unlock(); Sound.play("ok");
     if (Account.session()) showServers(); else showAuth("login");
   };
   $("#t-press").addEventListener("click", start);
   $("#title-cv").addEventListener("pointerdown", (e) => { if (view === "title") { e.preventDefault(); start(e); } });
-  addEventListener("keydown", (e) => { if (view === "title" && !$("#title").hidden) { e.preventDefault(); start(e); } });
+  addEventListener("keydown", (e) => {
+    if (view === "title" && !$("#title").hidden && !e.metaKey && !e.ctrlKey && !e.altKey && !/^F\d+$/.test(e.key)) { e.preventDefault(); start(e); }
+    else if (e.key === "Escape" && view === "auth") show("title");
+  });
   wireAuth();
   wireCreate();
   wireSettings();
@@ -315,7 +318,7 @@ export function createError(text) {
 export function fatal(msg) {
   const text = msg.error || "연결이 끊겼습니다";
   // the character is still being let go by the other channel: wait and knock again
-  if (/다른 채널에서 접속 중/.test(text) && pending && pending.tries < 14) {
+  if (/다른 채널에서 접속 중/.test(text) && pending && pending.tries < (pending.why === "switch" ? 14 : 4)) {
     pending.tries++;
     const left = 3;
     const note = `이전 채널에서 캐릭터를 데려오는 중… (${pending.tries})`;
@@ -450,7 +453,7 @@ function markClass() {
 }
 function nameCheck() {
   const v = $("#c-name").value, err = nameError(v), m = $("#c-name-msg");
-  m.textContent = v ? err || "좋은 이름이에요! (같은 서버에 같은 이름이 있으면 생성할 때 알려 드려요)" : "한글·영문·숫자 2~10자";
+  m.textContent = v ? err || "좋은 이름이에요! (이미 있는 이름인지는 생성할 때 확인해요)" : "한글·영문·숫자 2~10자";
   m.className = "fmsg " + (v ? (err ? "bad" : "good") : "");
   $("#c-name").classList.toggle("bad", !!(v && err));
   return !err;
@@ -549,7 +552,7 @@ function sizeStage() {
   if (!box || view !== "create") return;
   const r = box.getBoundingClientRect();
   if (!r.width || !r.height) return;
-  stageZ = Math.max(2, Math.min(7, Math.floor(Math.min(r.width / 100, r.height / 72))));
+  stageZ = Math.max(2, Math.min(6, Math.floor(Math.min(r.width / 86, r.height / 62))));
   cv.width = Math.ceil(r.width / stageZ); cv.height = Math.ceil(r.height / stageZ);
   cv.style.width = cv.width * stageZ + "px"; cv.style.height = cv.height * stageZ + "px";
 }
