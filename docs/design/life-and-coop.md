@@ -292,6 +292,13 @@ cancels them on movement or damage, and expires delivery deadlines.
 
 ### C.1 Buildings and town placement (checked against the current town)
 
+> **Superseded coordinates.** The town is being rebuilt at 100×76 by `docs/design/town.md`; the four buildings
+> keep their names and interior ids but stand where that doc puts them: 캉캉대장간 = `smithy` (70,33) door
+> (72–73,37) → `kangkang_forge`; 동동아파트 = `apt` (8,30) door (10–11,34) → `dongdong_apt`; 보글연금공방 = `lab`
+> (78,25) door (80–81,28) → `bogle_lab`; 쥬쥬식당 = `diner` (70,45) door (72–73,49) → `juju_diner`. town.md also
+> builds the four lobby interiors (owners as talk/shop NPCs: `juju`, `dongdong`, `bogle`, a reserved tile for 캉캉);
+> C1 later adds the `coop` fields and roles. The 40×30 coordinates below are kept only as history.
+
 Free tiles were checked against a dump of `buildTown()` + `links.json` at d54f0d3. Phase 2's obelisk (24,18)/NPC
 (23,19), the spirit tree (20,20), the campfire (22,22), 이야기꾼 소담 (20,22), 길잡이 다람 (21,26) and the south door to
 버드나무 마을 (19–20,27) are all left clear. Two of the four buildings reuse the houses that have no door today.
