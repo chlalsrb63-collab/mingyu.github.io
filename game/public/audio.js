@@ -88,6 +88,7 @@ export function checkTracks() {
   return bad;
 }
 export const TRACK_NAMES = Object.keys(TRACKS);
+export const BGM_KEYS = [...TRACK_NAMES, ...Object.keys(ALIAS)];
 
 // ───────────────────────────── the engine ─────────────────────────────
 
@@ -292,6 +293,22 @@ export const Sound = {
       }
       case "tri": osc("triangle", f).connect(g); env(0.004, 0.8, 0.05); break;
       case "saw": { const lp = lowpass(f * 6, 2); osc("sawtooth", f).connect(lp); env(0.004, 0.7, 0.05); break; }
+      case "softPluck": {
+        const lp = lowpass(2600);
+        osc("triangle", f, 0.75).connect(lp);
+        osc("sine", f * 2, 0.16).connect(lp);
+        osc("sine", f * 3, 0.08).connect(lp);
+        env(0.008, 0.18, 0.085);
+        break;
+      }
+      case "softLead": {
+        const lp = lowpass(2100);
+        osc("triangle", f, 0.74, -4).connect(lp);
+        osc("sine", f, 0.44, 4).connect(lp);
+        osc("sine", f * 2, 0.16).connect(lp);
+        env(0.024, 0.68, 0.13);
+        break;
+      }
       case "pluck": osc(0.25, f).connect(g); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18); break;
       case "bell": {
         osc("sine", f).connect(g); osc("sine", f * 2.76, 0.28).connect(g); osc("sine", f * 5.4, 0.08).connect(g);

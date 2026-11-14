@@ -34,7 +34,7 @@ export const TRACKS = {
           B5:4 A5:2 F#5:2 D5:3 B4:3 -:2
           C#5:2 E5:2 B5:4 A5:6 -:2
         `,
-        { lead: "duo", vol: 0.084, comp: null, bassPat: "R.....R...O.F...", padType: "wide", padVol: 0.039,
+        { lead: "softLead", vol: 0.105, comp: null, bassPat: "R.....R...O.F...", padType: "wide", padVol: 0.039,
           padPat: "x.....x...x.x...", drums: { k: "x.....o...x.....", s: "........x.......", h: "o.o.o.ooo.o.oooo" } }],
       C: ["Bm7 Gmaj7 Dadd9 Asus Gmaj7 Bm7 Em7 A7",
         `
@@ -87,7 +87,7 @@ export const TRACKS = {
   },
   // G major · bright woodwinds and plucked strings in the open fields
   meadow: {
-    bpm: 114, lead: "flute", vol: 0.105, bass: "tri", comp: "pluck", compVol: 0.032, delay: 0.14,
+    bpm: 114, lead: "flute", vol: 0.105, bass: "tri", comp: "softPluck", compVol: 0.046, delay: 0.14,
     bassPat: "R...F..OR...F...", compPat: "..2.1..0..2.1...",
     drums: { k: "o.......o.......", s: "....o.......o...", h: "o.o...o.o.o...o." },
     sections: {
@@ -151,7 +151,7 @@ export const TRACKS = {
   },
   // A minor · synth bass and syncopated arpeggios for the neon streets
   city: {
-    bpm: 116, lead: "duo", vol: 0.08, bass: "saw", bassVol: 0.1, comp: "pulse12", compVol: 0.031,
+    bpm: 116, lead: "softLead", vol: 0.11, bass: "sub", bassVol: 0.16, comp: "softPluck", compVol: 0.046,
     pad: true, padType: "wide", padVol: 0.014, padPat: "x.......x.......", delay: 0.14,
     bassPat: "R.R..OR.R.R.F.R.", compPat: "012.2.1.13..2.1.",
     drums: { k: "x...x...x...x...", s: "....o.......x...", h: "..o...o...o...oo" },
@@ -248,7 +248,7 @@ export const TRACKS = {
   },
   // G minor · lopsided percussion and short water-drop phrases
   sewer: {
-    bpm: 93, lead: "keys", vol: 0.1, bass: "sub", bassVol: 0.154, comp: "pulse12", compVol: 0.025, delay: 0.24, swing: 0.14,
+    bpm: 93, lead: "keys", vol: 0.1, bass: "sub", bassVol: 0.154, comp: "softPluck", compVol: 0.036, delay: 0.24, swing: 0.14,
     bassPat: "R.....R..F..T...", compPat: "...2....1.....2.",
     drums: { k: "o.....o...o.....", s: ".....o......o...", d: "..o.....o......o" },
     sections: {
@@ -274,7 +274,7 @@ export const TRACKS = {
           Eb5:3 Ab5:3 G5:2 Eb5:4 C5:4
           D5:3 A4:3 F#4:3 D4:4 -:3
         `,
-        { lead: "duo", vol: 0.065, drums: { k: "o.........o.....", s: ".....o......o...", d: "..o.......o....." } }],
+        { lead: "softLead", vol: 0.092, drums: { k: "o.........o.....", s: ".....o......o...", d: "..o.......o....." } }],
     },
     form: "A B",
   },
@@ -312,7 +312,7 @@ export const TRACKS = {
   },
   // E minor, 148 — a boss on screen
   boss: {
-    bpm: 148, lead: "pulse25", vol: 0.1, bass: "saw", comp: "pulse12", pad: false, delay: 0.08,
+    bpm: 148, lead: "softLead", vol: 0.128, bass: "saw", comp: "softPluck", pad: true, padType: "wide", padVol: 0.023, padPat: "x.......x.......", delay: 0.08,
     bassPat: "R.R.R.R.R.R.F.O.", compPat: "0.1.2.1.0.1.2.1.", compVol: 0.03,
     drums: { k: "x...x.x.x...x.x.", s: "....x.......x...", h: "oooooooooooooooo" },
     sections: {
@@ -325,7 +325,7 @@ export const TRACKS = {
   },
   // F# minor, 138 — the rift is open on this map
   rift: {
-    bpm: 138, lead: "duo", vol: 0.09, bass: "saw", comp: "pulse12", pad: false, delay: 0.1,
+    bpm: 138, lead: "softLead", vol: 0.12, bass: "sub", bassVol: 0.13, comp: "softPluck", pad: true, padType: "wide", padVol: 0.022, padPat: "x.....o...x.....", delay: 0.1,
     bassPat: "R.RR.RR.R.RR.RF.", compPat: "3...3...3...3...", compVol: 0.035,
     drums: { k: "x...x...x...x...", s: "....x..x....x...", h: "o.o.o.o.o.o.o.o." },
     sections: {

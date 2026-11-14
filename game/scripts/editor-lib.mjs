@@ -17,6 +17,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
+import { BGM_KEYS } from "../public/audio.js";
 import { buildLogic, readData, EMPTY_DATA, ROOT, DATA_DIR } from "./build-logic.mjs";
 
 export { DATA_DIR, ROOT };
@@ -34,7 +35,7 @@ export async function loadLogic(opts = {}) {
     cache.set(key, import("data:text/javascript;base64," + Buffer.from(src).toString("base64")));
   }
   const L = await cache.get(key);
-  return Object.assign(Object.create(L), { L, problems, E: L.__editor });
+  return { ...L, L, problems, E: L.__editor };
 }
 /** The rules with no editor data at all: the generated world. */
 const pure = () => loadLogic({ data: EMPTY_DATA() });
@@ -64,15 +65,6 @@ function miniColours() {
     return m ? Function(`"use strict"; return (${m[1]});`)() : {};
   };
   return { MINI: grab("MINI"), MINI_OBJ: grab("MINI_OBJ"), MINI_THEME: grab("MINI_THEME") };
-}
-/** audio.js TRACKS keys, plus its aliases. */
-function bgmKeys() {
-  const src = readFileSync(join(ROOT, "public", "audio.js"), "utf8");
-  const start = src.indexOf("const TRACKS = {"), end = src.indexOf("const ALIAS", start);
-  const keys = [...src.slice(start, end).matchAll(/^ {2}([a-z]\w*): \{/gm)].map((m) => m[1]);
-  const alias = /const ALIAS = \{([^}]*)\}/.exec(src);
-  if (alias) for (const m of alias[1].matchAll(/(\w+):/g)) keys.push(m[1]);
-  return [...new Set(keys)];
 }
 
 /** Every ground/object character with its Korean name, minimap colour, solidity and the themes that use it. */
@@ -155,7 +147,7 @@ export async function defsForEditor(dataDir = DATA_DIR) {
   const npcs = [];
   for (const id of Object.keys(E.MAPS)) for (const n of E.MAPS[id].npcs) npcs.push({ id: n.id, name: n.name, role: n.role, map: id, x: n.x, y: n.y });
   return {
-    mobs, items, roles: E.NPC_ROLES.slice(), themes: E.THEMES.slice(), bgm: bgmKeys(),
+    mobs, items, roles: E.NPC_ROLES.slice(), themes: E.THEMES.slice(), bgm: BGM_KEYS.slice(),
     maps: Object.keys(E.MAPS).map((id) => ({ id, name: E.MAPS[id].name, builtin: E.BUILTIN_MAPS.includes(id), w: E.MAPS[id].w, h: E.MAPS[id].h })),
     npcs, quests: E.QUESTS.map((q) => ({ mob: q.mob, n: q.n, title: q.title })), goals: ["kill", "collect", "talk", "visit"],
   };
@@ -210,7 +202,7 @@ export async function checkData(dataDir = DATA_DIR) {
   const G = base.E;
   const pal = await palette();
   const GCH = new Set(pal.ground.map((p) => p.ch)), OCH = new Set(pal.objects.map((p) => p.ch));
-  const bgm = new Set(bgmKeys());
+  const bgm = new Set(BGM_KEYS);
   const solidG = G.SOLID_G;
   const mob = (k) => typeof k === "string" && Object.hasOwn(G.MOBS, k);
   const item = (id) => typeof id === "string" && Object.hasOwn(G.ITEMS, id);
@@ -284,7 +276,7 @@ export async function checkData(dataDir = DATA_DIR) {
     if (d.v !== 1) warn(f, "v", '"v": 1 이 없습니다');
     if (typeof d.name !== "string" || !d.name.trim()) err(f, "name", "지도 이름이 비어 있습니다");
     if (!G.THEMES.includes(d.theme)) err(f, "theme", `알 수 없는 테마 "${d.theme}" (${G.THEMES.join(", ")})`);
-    if (d.bgm !== undefined && !bgm.has(d.bgm)) warn(f, "bgm", `음악 "${d.bgm}"이 audio.js에 없습니다 (${[...bgm].join(", ")})`);
+    if (d.bgm !== undefined && !bgm.has(d.bgm)) warn(f, "bgm", `음악 "${d.bgm}"이 BGM 목록에 없습니다 (${[...bgm].join(", ")})`);
     if (d.band !== null && d.band !== undefined && !(Array.isArray(d.band) && d.band.length === 2 && d.band.every(isInt) && d.band[0] <= d.band[1])) err(f, "band", "band는 [최소, 최대] 레벨 또는 null이어야 합니다");
     for (const layer of ["ground", "objects"]) {
       const okCh = layer === "ground" ? GCH : OCH;

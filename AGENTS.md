@@ -132,7 +132,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `npctalk.js` [80] | NPC flavour lines by role (an NPC with `lines` from the editor says those) |
 | `sidequests.js` [125] | side-quest cards in the talk window, quest-window entries, "!"/"?" over givers |
 | `frames.js` [85] | HUD 9-slice frame art → CSS custom properties |
-| `audio.js` [554] · `bgm.js` [339] | Web Audio synth, `SFX` catalogue, `Sound.play(name)`, and `TRACKS` per-map scores |
+| `audio.js` [570] · `bgm.js` [339] | Web Audio synth, `SFX` catalogue, `Sound.play(name)`, and `TRACKS` per-map scores |
 | `titlescene.js` [510] | title-screen diorama and pixel logo |
 | `assetlib.js` [131] | external asset loader, `ready()` awaited at client start-up; `canvas meta has loadImage loadAudio loadSounds play`. Used by weapons.js and art.js `buildIcons` (`icon.item.<id>`) |
 | `style.css` [351] · `hud.css` [473] · `lobby.css` [225] | base + CRT, HUD/windows, lobby |
