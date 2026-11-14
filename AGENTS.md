@@ -117,11 +117,11 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `art.js` [910] | item icons `buildIcons`, minimap `renderMini`, old scenery helpers; re-exports `chars.js` |
 | `chars.js` [471] | legacy smooth illustrated figures (re-exported by art.js; heroes now come from sprites.js) |
 | `sprites.js` [1259] | 32×32 sheets: heroes `personSheet/playerLook`, NPCs, pets, weapons `weaponSprite`, `monsterSheet`, tints |
-| `species.js` [356] | hero species and face parts: `SPECIES PARTS TABS PRESETS cleanLook withSpecies` (limits mirror logic `LOOK_MAX`) |
+| `species.js` [403] | hero species and face parts: `SPECIES PARTS TABS PRESETS cleanLook withSpecies` (limits mirror logic `LOOK_MAX`); fit data for worn things: `EARS headAnchor faceAnchor EYE_PIX HEAD_BOB` |
 | `looks.js` [244] | look editor (creation tabs) and the town mirror |
 | `mobart.js` [587] + `mobart_kit.js` [139] + `mobart_a/b/c.js` [376/309/561] | monsters as 3D-primitive models rasterised to pixels; `BEASTS_A` meadow/forest, `_B` crypt/city, `_C` sewer/cave/abyss/bosses/chest; `has draw icon KINDS` |
 | `weapons.js` [602] | weapon art per kind × tier, legendary/set looks, skins, glow: `DESIGNS weaponSprite weaponIcon`; an installed image (`assetKey`: manifest `weapon.<kind>.t<n>`/`.lg.`/`.set.`/`.skin.`, `icon.weapon.…`) replaces a look, rarity ink + glow still applied |
-| `wardrobe.js` [593] · `wardrobe_ui.js` [283] | cosmetic layers drawn over heroes (`ART SLOTS dress`); costume shop + 외형 tab |
+| `wardrobe.js` [807] · `wardrobe_ui.js` [283] | cosmetic layers drawn over heroes (`ART SLOTS dress anchors`; designs `HAT TOP BACK FACE`, rules in the header); costume shop + 외형 tab |
 | `swing.js` [131] | weapon stroke poses for attacks/casts |
 | `skillfx.js` [408] | skill visuals/sounds per server fx code (`skillEvent`, switch on codes 40–75), props, marks |
 | `skillicons.js` [471] · `uiicons.js` [105] · `emoticons.js` [164] | 16×16 skill glyphs, 12×12 UI glyphs (`MENU_ICON TRAIT`), chat emoticons |
@@ -144,7 +144,8 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 sim (smoke) · party · loot (gear, repeat hunting) · life (fires, fishing, cooking, guilds) · world
 (map graph, dungeons, quests) · hard (crowds, elites, traits) · content (long game, old sheets) ·
 growth (skill levels, warehouse, pets, scrolls) · skills (class mechanics) · aim (blows/skills go where you aim, nothing behind) · maps (generators:
-connectivity, determinism, speed) · hotbar (quick slots, party chat, tidy) · wardrobe (cosmetics) ·
+connectivity, determinism, speed) · hotbar (quick slots, party chat, tidy) · wardrobe (cosmetics) · cosmetics (every cosmetic × species × view ×
+frame: inside the sheet, closed outline, eyes uncovered, art in every view, in its place) ·
 looks (species ↔ LOOK_MAX) · mobart (every mob has a model that fits its canvas) · accounts (vault
 logic with a fake store + client contract) · data (editor data: sample map, links, side quests, round
 trip, data:check errors, sheet v8).
@@ -157,7 +158,9 @@ tests/LIST; `--no-build`, names to filter, `-v`) · `dump-maps.mjs` (public/_map
 `shot.mjs` (one screenshot; `--serve` for previews) · `artkit.mjs` (shared: browser launch, static server, PNG
 read/write) · `export-art.mjs` (`npm run art:export`: code-drawn art → `asset/_export/` PNGs) · `gallery.mjs`
 (`art:gallery`: index `asset/` → `gallery.json/.js`) · `import-art.mjs` (normalise AI/external images into
-`asset/<category>/`; `--install`/`--uninstall`/`--list` wire approved files into `public/assets/manifest.json`).
+`asset/<category>/`; `--install`/`--uninstall`/`--list` wire approved files into `public/assets/manifest.json`) ·
+`pixcanvas.mjs` (a tiny canvas so the code-drawn heroes render in node) · `cos-audit.mjs` (cosmetics × species
+contact sheets → `game/shots_cos/`).
 `build.mjs`/`check-logic.mjs` referenced by the `build` script are Higgsfield's and are not in the repo.
 
 ### Other
@@ -204,7 +207,7 @@ deploy) · root `index.html`/`profile.jpg` = the owner's unrelated GitHub Pages 
 npm install                 # once (Windows: also fine; .npmrc sets legacy-peer-deps)
 npm run dev:local           # builds logic, then wrangler dev → http://localhost:8787 (two tabs = two players)
 npm run watch:logic         # 2nd terminal while editing src/logic/*.js (wrangler reloads on change)
-npm run test:rules          # build + all 16 rule tests (~10 s); one: node scripts/test-all.mjs maps
+npm run test:rules          # build + all rule tests in tests/LIST (~15 s); one: node scripts/test-all.mjs maps
 npm run check:split         # is logic.js up to date?
 npm run data:check          # validate game/data/** (maps, doors, NPCs, quests)
 npm run typecheck           # tsc --noEmit for the TS server files
@@ -326,7 +329,8 @@ lives in `game/.wrangler/` (delete it to reset local accounts/characters).
   points right, hand at GRIP [5,16]; icons 16×16), writes `asset/…` + `asset/_preview/<name>.compare.png`. After owner
   approval: `--install <files>` → `public/assets/…` + manifest key + cache tag; `--uninstall <key>` reverts.
 - Code: `Assets.canvas("key") || drawnInCode()` (weapons.js, art.js buildIcons already do); keep the code path.
-  Prompts for weapon art (Codex code-drawn = preferred, ChatGPT image = concept/rough): `ai/prompts/weapon-assets.md`.
+  Prompts for weapon art (Codex code-drawn = preferred, ChatGPT image = concept/rough): `ai/prompts/weapon-assets.md`;
+  cosmetics (hats, tops, backs, face pieces — rules, anchors, preview, test): `ai/prompts/cosmetic-assets.md`.
 
 ## 10. Housekeeping
 

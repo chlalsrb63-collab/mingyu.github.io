@@ -93,3 +93,7 @@ AGENTS.md 를 읽고 <할 일>을 해 줘. 테스트로 확인하고, 화면이 
 전부 [`ai/prompts/weapon-assets.md`](prompts/weapon-assets.md)에 있습니다: 외부 시트 사용 검토, **프롬프트 A**
 (Codex가 무기 실루엣을 코드로 추가 — 권장), **프롬프트 B** (ChatGPT 이미지 생성 + `import-art.mjs` 정리 명령),
 **프롬프트 C** (Codex가 `asset/generated/` 묶음을 검수·정리·추천). 결과는 `ASSETS.bat` 갤러리에서 비교합니다.
+
+**외형 장비(모자·상의·등·얼굴)** 는 [`ai/prompts/cosmetic-assets.md`](prompts/cosmetic-assets.md): 종족마다 자연스럽게
+맞도록 지켜야 할 규칙(앵커, 귀 처리, 눈 보호, 외곽선, 상의 템플릿, 날개), 미리보기 시트(`cos-audit.mjs`),
+가드 테스트(`tests/cosmetics.mjs`), Codex용 프롬프트(한국어 + 영어).
