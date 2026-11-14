@@ -74,7 +74,8 @@ generated map round-trips tile for tile):
   `x, y` (optional) is where it prefers to walk in, still kept ≥3 tiles from the waypoint and signs
   and ≥6 from players. A map with monsters, a waypoint and a boss joins the rift rotation;
   with monsters it gets a collection page (no region bonus).
-- `fishing: false` forbids fishing on that map.
+- `fishing: false` forbids fishing on that map. Optional `grade: 1..5` sets the grade of its fish and life
+  materials (default: from `band`; town and bandless maps are grade 1). The editor does not show it yet.
 - `big`: `[{ "t": "house", "x", "y", "v": 0..7 }, { "t": "fountain", "x", "y" }]` — the 4×3 house
   sprites (v 0–3 town houses, 4–7 city blocks) and the plaza fountain. Omitted: one house per
   4×3 block of `h` objects.

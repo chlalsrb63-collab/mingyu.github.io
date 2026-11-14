@@ -1,6 +1,6 @@
 # 생활 기술 · 협동 아르바이트 — 설계서 (life skills and co-op part-time jobs)
 
-Status: design only, ready for implementation **after J1** of [`jobs-and-stats.md`](jobs-and-stats.md) (sheet v10,
+Status: **L1 built** (section H, sheet v12); L2, C1–C3 design only. Originally ready for implementation **after J1** of [`jobs-and-stats.md`](jobs-and-stats.md) (sheet v10,
 `toTier`, `tierXp`, `ch.cnt`) and **after Phase 2** of [`scale-and-rift.md`](scale-and-rift.md) (ready check,
 instance closing). Phases L1 → L2 and C1 → C2 → C3 (section F). Code, identifiers and commit messages are English;
 every player-facing string is Korean (AGENTS.md rule 6). Numbers are first values that live in tables, so balance
@@ -695,3 +695,35 @@ test:rules`, `npm run data:check`, one targeted screenshot for art (`shot.mjs --
 5. **Reward size and helpers.** Default: the C.7 table (≤ 440·T gold and ≤ 1.12 old levels of XP a day for all four
    jobs at S, below a day of 차원 균열), helpers who already cleared that job today get a tip only. The bot-crew test
    sets `par`, so the C/B/A/S cut-offs are measured, not guessed.
+
+---------------------------------------------------------------------------------------------------------------
+
+## H. L1 as built (deviations and contracts only)
+
+- **Sheet v12**, not v11 (housing took v10, J1 v11). One bump carries every field of D: `life jobBoard rep coopDay
+  coopDone pouch`; L2/C1 never bump for them. `migrate` → `lifeSheetClean` (58-life.js) runs last, after `cnt` is
+  cleaned; old sheets get 낚시 `ch.fish × 8` and 요리 `cnt.cook × 10` XP through `lifeAdd` capped at Lv 20. `JB` is
+  an empty table and `COOP_KINDS = ["apt","diner","forge","alch"]` lives in `12-life-tables.js` (C1 may move it).
+- **Town scope dropped** (the town redesign owns buildings, doors, interiors): L1 only adds the NPC roles `cook craft
+  alch jobs` (talk-only, "곧 문을 엽니다" lines in `public/npctalk.js`, names in the editor's role list). The NPC field
+  `coop` is not passed through yet (C1).
+- **Fish**: grade-3/4 fish `fish_c` 은빛 메기 (220 G) and `fish_v` 동굴 장님고기 (400 G) got **campfire dishes**
+  `food_c` 은빛 메기 구이 (HP 450, 12 min xp +10 % atk +3 %) and `food_v` 장님고기 꼬치구이 (HP 800, 15 min xp +12 %
+  atk +5 %), between the old 송어/잉어 dishes — the client cooks any fish by `ITEMS[id].cook`, and the cook ladder
+  now has one dish per grade (Lv 1/10/20/30/40). L2's stove rows (`fd_*`, staples) are not in `RECIPES` yet.
+- **Catch split** (`FISHING`, `fishLand`): candidates `FISH_G[0..cap−1]`, cap = min(map grade, angler grade);
+  황금 잉어 `0.01 + 0.07k² + 0.001L` first (any grade), then top `0.1 + 0.3k` (cap ≥ 2), next `0.2` (cap ≥ 3), stone
+  `0.04`, else 송사리. On a grade-5 map the top candidate is 황금 잉어 (≈ 45 % at k = 0.8, Lv 40). The meadow is
+  grade 1, so it no longer gives trout (tests/life.mjs adjusted). 대성공 = 2 fish (stones never), XP
+  `RXP[g] × (0.5 + s/100)`, ×1.5 on 대성공, ×0.25 when the fish's grade unlocked 20+ levels below.
+- **Cooking** keeps every fish cookable at any level (no level gate, as before); `cook {id, s}` goes through
+  `fishRecipe` → `RECIPES[ITEMS[id].recipe]` → `cookDish`. A burnt pan gives no XP. ×1.5 XP on 대성공 as in B.1.
+- **Map grade**: `gradeOfMap` = an editor map's optional `"grade"` (1–5, read by `fromEditor`; the editor does not
+  show it yet) else the first tier of its band against `GRADE_TIER = [1, 8, 14, 24, 40]`; `defs.life.mapGrade`
+  carries it for every map (town 1, willow 1, meadow 1, forest/crypt 2, city/sewer 3, cave/abyss 4, maple 5).
+- **Wire**: `self.life` (dirty only), `defs().life = {keys names max need grades gradeName rxp stale roll unlock fish
+  fishing cooking recipes mats mapGrade}`, event `["lv2", eid, k, lv]`. Not yet: `jb rep pouch nodes ng`.
+- **Client**: `public/life.js`, the 생활 window `#w-life`; no free letter key, so **Shift+L** (L alone stays 의뢰) and
+  the `#menu` button with the `life` sprout glyph. The level-up sound reuses `achieve` (audio.js untouched).
+- Tests: `tests/lifeskills.mjs` (in LIST after `life`), old-sheet rows v9/v10/v11 + a messy v12 + idempotence in
+  `content.mjs`; every `v === 11` assertion now says 12.
