@@ -11,6 +11,7 @@ game/data/                     ← everything the editor writes (committed to gi
   maps/<id>.json               ← one file per hand-made or hand-edited map
   links.json                   ← extra doors between maps (incl. into built-in maps)
   npcs.json                    ← NPCs added to built-in maps
+  npclife.json                 ← safe-map resident places, routines and relationships
   quests.json                  ← main quest chain override + side quests
 ```
 
@@ -138,6 +139,19 @@ generated map round-trips tile for tile):
 // npcs.json — NPCs added to built-in maps (custom maps keep their NPCs in their own file)
 { "v": 1, "npcs": [ { "map": "town", "id": "town_baker", "name": "빵집 주인 보리", "role": "talk", "x": 12, "y": 20, "look": [3,0,0,"#c88a3a"], "lines": ["갓 구운 빵이 있다네!"] } ] }
 ```
+
+## npclife.json
+
+Optional object with `v: 1`, `places`, `cast` and `rel`. See [the NPC day contract](../design/npc-life.md)
+for the fields and wire rows. An ordinary place has a safe map ID, a Korean label and `spots`, e.g.
+`[[9,8,"e","sit"],[11,8,"w","sit"]]`. Give a list of `round` waypoints for a patrol, or `in: true`
+for a hidden room with a knock spot. A cast entry uses an existing NPC ID, or a new ID with a
+name, a full player look (`hero`) and home. `plan` blocks use `h` (04:00–27:59), `at` and `act`.
+Optional `days` overrides pick 0–3 in the global four-day cycle. `with`, `rain`, `pose` and `lag`
+specify companions, shelter, custom poses and patrol spacing. Fixtures stay in `npcs.json` or their map file.
+
+`data:check` validates seat capacity, references, reachable spots and travel through map doors.
+The routines add no character sheet fields.
 
 ## quests.json
 

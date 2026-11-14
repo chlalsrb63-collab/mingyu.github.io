@@ -509,13 +509,16 @@ export function addPlayer(S, pid, ch) {
   if (S.players[pid]) removePlayer(S, pid);
   migrate(ch);
   // a place that is gone (a closed instance, a map removed from the editor's data) is the town
-  if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
+  const minLv = mapLevelNeed(ch, ch.map);
+  if (minLv) { ch.map = START.map; ch.x = START.x; ch.y = START.y; }
+  else if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, aim: AIM_N / 4, hp: 1, mp: 0, dead: false, stc: null,
     cds: {}, atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, inert: 0, inertAt: 0, reso: 0, vitSpd: 0, sanctAt: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
+  if (minLv) toast(p, mapLevelMessage(minLv));
   // a place that changed under their feet (the hunting grounds grew): the way in of that same ground
   const here = mapOf(p.map);
   if (!(p.x >= 0 && p.y >= 0) || !canStand(here, p.x, p.y) || !here.reach[Math.floor(p.y / T) * here.w + Math.floor(p.x / T)]) {
@@ -558,6 +561,14 @@ function dropAggro(S, p) {
 }
 
 function changeMap(S, p, to, x, y) {
+  const minLv = mapLevelNeed(p.ch, to);
+  if (minLv) {
+    if (S.now >= (p.gateHintAt || 0)) {
+      toast(p, mapLevelMessage(minLv));
+      p.gateHintAt = S.now + 1500;
+    }
+    return;
+  }
   rouse(S, p);
   dropAggro(S, p);
   S.maps[p.map].n--;

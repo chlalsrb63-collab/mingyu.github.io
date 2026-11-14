@@ -13,6 +13,7 @@ import * as WPN from "./weapons.js";
 import * as Assets from "./assetlib.js";
 import { furnIcon } from "./houseart.js";
 import { matIcon } from "./gatherart.js";
+import { LIFE_ICONS } from "./lifeicons.js";
 
 export const TILE = 16;
 
@@ -238,7 +239,7 @@ export function renderGround(m) {
 const MINI = { f: "#c48a52", l: "#8e5c3a", h: "#d8b07a", x: "#a2958a", q: "#c8604e", u: "#468a8e", y: "#a2323a", e: "#b8925a", t: "#447e38", r: "#8a8a80", ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86", j: "#5a5638", v: "#b0a68e", g: "#4a5248", "=": "#a8a090", "%": "#b0602a", "&": "#4a2a52",
   // maps-v2 M3 (the south-west coast): dune sand, white sand, shallows you can wade, the surf line
   z: "#d8a858", S: "#f0e8cc", "~": "#58c8c0", "-": "#d8f0ec" };
-const MINI_OBJ = { "=": "#3a2620", "+": "#bfe0ee", "^": "#2a3a34", "~": "#c89a3a", "@": "#5a3420", "!": "#a8343c", _: "#e8dcc0", o: "#9a6440", k: "#6e4428", s: "#9a4a3a", m: "#8a5634", j: "#c87a3a", "$": "#e8b860", b: "#5a8a4a", r: "#7a4a2c", t: "#d8a830", "#": "#b8a898", g: "#4e9a4a", "*": "#ffd890", v: "#c89a6a", "-": "#7a4a2c", p: "#4a6a9a", w: "#9a6440", "]": "#c8945a", "%": "#e89a50", "[": "#b07440", "Ω": "#6a7480", "Δ": "#7656b4", "Ψ": "#c08048", "Φ": "#5aa0d8", "?": "#e0b048", 
+const MINI_OBJ = { "=": "#3a2620", "+": "#bfe0ee", "^": "#2a3a34", "~": "#c89a3a", "@": "#5a3420", "!": "#a8343c", _: "#e8dcc0", o: "#9a6440", k: "#6e4428", s: "#9a4a3a", m: "#8a5634", j: "#c87a3a", "$": "#e8b860", b: "#5a8a4a", r: "#7a4a2c", t: "#d8a830", "#": "#b8a898", g: "#4e9a4a", "*": "#ffd890", v: "#c89a6a", "-": "#7a4a2c", p: "#4a6a9a", w: "#9a6440", "]": "#c8945a", "%": "#e89a50", "[": "#b07440", "Ω": "#6a7480", "Δ": "#7656b4", "Ψ": "#c08048", "Φ": "#5aa0d8", "?": "#e0b048",
   C: "#6e6654", H: "#2f7036", U: "#8a8478", l: "#6a4628", u: "#6a4628", e: "#5a9a58", q: "#a8a498", n: "#8a6a3a", M: "#6a4628", D: "#2c5a48", E: "#c8b888", T: "#2a6030", P: "#1d4a30", R: "#74747c", B: "#35803a", h: "#8a4a3a", a: "#6a9ac8", K: "#5ac8d8", S: "#3a3550", F: "#6a4628", L: "#c8b060", G: "#6a4628", Z: "#22242c", c: "#8a3a3a", y: "#a83a3a", x: "#4a4d56",
   1: "#8a8478", 2: "#5a3e2a", 3: "#d8a850", 4: "#c8c2ac", 5: "#8a8478", 6: "#6a7280", 7: "#6a5a44", 8: "#c8c2ac", 0: "#c0303c", 9: "#c8a050", I: "#6a4226", Q: "#7ae0ff", "/": "#9affc8", J: "#b4b2a8", V: "#3a5a9a", z: "#c8c4b4", N: "#9a9484", d: "#c8a050", i: "#9a9484", f: "#9a9484", O: "#9a9cb0", A: "#5a4434", Y: "#c8503e", X: "#e02a3a",
   // the town's stone terrace wall and the new interior pieces (docs/design/town.md E)
@@ -870,18 +871,6 @@ function campIcon() {
   outline(c, g, "#111118");
   return c;
 }
-/** A fish, raw (`cooked` false) or on a skewer. */
-function fishIcon(body, belly, cooked) {
-  const [c, g] = canvas(16, 16);
-  if (cooked) { g.fillStyle = "#8a6238"; g.fillRect(1, 8, 14, 1); }
-  disc(g, 7.5, 8, 5, 3, body);
-  g.fillStyle = belly; g.fillRect(4, 9, 7, 2);
-  g.fillStyle = body; g.fillRect(12, 6, 2, 5); g.fillRect(13, 5, 1, 7);
-  if (cooked) { g.fillStyle = "#5a3418"; g.fillRect(6, 6, 1, 4); g.fillRect(9, 6, 1, 4); }
-  else { px(g, 4, 7, "#111118"); px(g, 4, 6, "#ffffff"); }
-  outline(c, g, "#111118");
-  return c;
-}
 function helmIcon(tier) {
   const [c, g] = canvas(16, 16);
   const [m, md] = tier === 1 ? ["#b8ac90", "#8e8468"] : tier === 2 ? ["#8a6238", "#5e4022"] : METAL[tier];
@@ -986,14 +975,16 @@ export const charmKind = (c) => (!c || !c.rev ? "sealed" : c.lg && CHARM_ART[c.l
 
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items) {
-  const cv = { camp: campIcon(), fish_s: fishIcon("#8ab4d8", "#e8f0f8", false), fish_m: fishIcon("#e88aa8", "#b8e8d8", false), fish_l: fishIcon("#f0c040", "#fff0a0", false),
-    food_s: fishIcon("#c88a4a", "#e8b878", true), food_m: fishIcon("#d87a5a", "#f0b890", true), food_l: fishIcon("#e8a030", "#ffe090", true), burnt: fishIcon("#3a3038", "#5a4a50", true), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem(),
+  const cv = { camp: campIcon(), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem(),
     cafe_coffee: mugIcon("#f4ecdc", "#cfc4b2", "#5a3420", "#c8a070"), cafe_cocoa: mugIcon("#d86a6a", "#b04e56", "#8a4a2a", "#ffffff"), cafe_tea: mugIcon("#8ac0a0", "#6a9a80", "#c8b040", null),
-    // life skills' fish of grades 3 and 4 and their campfire dishes (12-life-tables.js)
-    fish_c: fishIcon("#a8b4c4", "#e4ecf4", false), fish_v: fishIcon("#d8c0d8", "#f6eef6", false),
-    food_c: fishIcon("#c8945a", "#ecc890", true), food_v: fishIcon("#d89a7a", "#f4d2b0", true),
     charm: charmIcon("sealed"), charm_nail: charmIcon("nail"),
     cafe_scone: bakeIcon("scone"), cafe_pie: bakeIcon("pie"), inn_stew: bakeIcon("stew"), inn_bread: bakeIcon("bread") };
+  for (const [id, { rows, palette }] of Object.entries(LIFE_ICONS)) {
+    const [c, g] = canvas(16, 16);
+    paint(g, rows, palette, 2, 2);
+    outline(c, g, "#2b2233");
+    cv[id] = c;
+  }
   for (const id of Object.keys(items)) {
     const it = items[id];
     if (it.type === "weapon") cv[id] = WPN.DESIGNS[it.wk] ? WPN.weaponIcon(it.wk, it.tier) : weaponIcon(it.wk, it.tier);

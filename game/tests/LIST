@@ -24,6 +24,7 @@ mobart
 accounts
 data
 daynight
+npclife
 interiors
 town
 dimrift
@@ -31,3 +32,5 @@ housing
 balance
 mapflow
 charms
+endgame-access
+hunt-routes

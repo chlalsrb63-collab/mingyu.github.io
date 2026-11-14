@@ -1,4 +1,4 @@
-/** Monsters of the sewer, the cave and the abyss, the two great bosses, and the treasure chest (see mobart.js). */
+/** Monsters of the sewer, cave, abyss and frostkeep, the great bosses and the treasure chest (see mobart.js). */
 import { mat, C, bez, gait, bob, lunge, legs4, teeth, ribs, tentacle, surf, both, rollPt, pitchPt, hand } from "./mobart_kit.js";
 
 // ── sewer: sludge browns, pale drowned skin and sick yellow-green
@@ -21,6 +21,10 @@ const SOW = mat("#b07880"), SOWD = mat("#8a5866"), SORE = mat("#b83a4a", { wet: 
 const RIFT = mat("#ff72d6", { role: "glow" }), VOID = mat("#1a0a2a", { role: "keep", flat: true }), HIDE = mat("#4a3a4e"), MANE = mat("#6a2a3a"), BULL = mat("#7a5040");
 const MOTHER = mat("#b898a8", { wet: true }), MOTHERD = mat("#6e4a6a"), BROOD = mat("#5a2a5a", { wet: true });
 const WOOD = mat("#8a5a3a"), WOODD = mat("#5e3a26"), IRON = mat("#6a6a7a"), GOLD = mat("#f0c050", { role: "keep" });
+// ── frostkeep: dark winter coats, opaque blue ice, and a warm eye highlight
+const RIME = mat("#66749b"), RIME_D = mat("#354364"), FROST = mat("#9ed7e3"), FROST_D = mat("#478da8");
+const MOTH_CLOAK = mat("#786db8"), MOTH_EDGE = mat("#a9a6dd"), MOTH_CORE = mat("#39324e");
+const STAG = mat("#354154"), STAG_MANE = mat("#64819a");
 
 export const BEASTS_C = {
   // ── sewer
@@ -543,6 +547,93 @@ export const BEASTS_C = {
         both((s) => M.eye([hd[0] + 1, hd[1] + 1.4, hd[2] + s * 1.4], 1, "#c8e040"));
         if (open > 0.8) M.dot([hd[0] + 2.4, hd[1] - 1.6 - open, hd[2]], "#b4cc3c", 1, 2);
       }
+    },
+  },
+
+  // ── frostkeep
+  /** Ice ears jut forward as the hare springs out of its crouch. */
+  rimehare: {
+    size: "s",
+    draw(M, p) {
+      const hop = p.walk ? [0, 1.5, 0.8, 0][Math.round(p.ph * 4)] : 0;
+      const [f, lift] = lunge(p);
+      const u = 4.8 + lift + hop;
+      const head = [f + 4.1, u + 2.1 - (p.wind ? 0.6 : 0), 0], hr = [2.4, 2.2, 2];
+      M.G("coat");
+      M.e([f - 0.7, u, 0], [4.7, 3.1, 3.5], RIME);
+      M.s([f - 5.2, u + 0.1, 0], 1.25, FROST);
+      M.e(head, hr, RIME);
+      M.e([head[0] + 1.5, head[1] - 1.1, 0], [1.5, 1, 1.4], RIME_D);
+      M.G();
+      both((s) => {
+        M.e([f - 2.7, u - 1.3, 2.4 * s], [2.6, 2.5, 1.2], RIME);
+        M.e([f - 1.6 - hop, 0.8 + hop, 2.5 * s], [2.2, 0.7, 0.9], RIME_D);
+        M.tube([[f + 2.5, u - 1, 1.7 * s], [f + 3.4 + hop, 0.7 + hop, 1.8 * s]], [0.85, 0.65], RIME_D);
+        const ear = [head[0] - 0.7, head[1] + 1.1, 0.95 * s];
+        const lean = p.wind ? -3 : p.strike ? 2.8 : -1.6;
+        M.cone(ear, [ear[0] + lean, ear[1] + (s === 1 ? 6.1 : 5.1), 2.1 * s], 1, s === 1 ? FROST : FROST_D);
+        M.eye(surf(head, hr, [0.67, 0.22, 0.72 * s]), 2, "#f0b45d");
+      });
+      M.dot([head[0] + 2.1, head[1] - 1.45, -0.55], "#d7eff0", 1, 2);
+    },
+  },
+
+  /** Four angular wings open to reveal a dark body and orange feelers. */
+  frostmoth: {
+    size: "m", hover: 10,
+    draw(M, p) {
+      const [f, lift] = lunge(p);
+      const u = 6.6 + lift;
+      const angle = p.dead ? 0 : p.wind ? 47 : p.strike ? -37 : p.hurt ? -10 : (p.fr % 2 === 0 ? 25 : -24);
+      M.G("body");
+      M.e([f - 1.6, u, 0], [4.1, 1.9, 1.75], MOTH_CORE);
+      M.s([f + 2.4, u + 0.4, 0], 1.75, MOTH_EDGE);
+      M.G();
+      both((s) => {
+        const root = [f + 0.7, u + 0.45, 0];
+        const turn = (df, du, side) => rollPt([f + df, u + du, s * side], -s * angle, root);
+        M.G("w" + s);
+        M.e(turn(-1.9, 0.12, 5.1), [2.8, 0.42, 4.3], MOTH_CLOAK, [s * 12, 0, -s * angle]);
+        M.box(turn(1.7, 0.45, 6), [2.35, 0.42, 4.8], MOTH_EDGE, [s * -25, 0, -s * angle]);
+        M.box(turn(2.4, 0.93, 6.8), [0.65, 0.28, 3.95], FROST, [s * -25, 0, -s * angle]);
+        M.G();
+        M.tube([[f + 3.3, u + 1, 0.7 * s], [f + 4.15, u + 2.65, 1.1 * s], [f + 4.6, u + 3.35, 2.1 * s]], [0.48, 0.27], MOTH_CORE);
+        M.dot([f + 4.6, u + 3.35, 2.1 * s], "#e8a761");
+        M.eye([f + 3.55, u + 0.7, 1.02 * s], 1, "#ffd49a");
+      });
+    },
+  },
+
+  /** A high, icy three-pronged crown tips forward before the stag slams. */
+  crownstag: {
+    size: "xl",
+    draw(M, p) {
+      const [f, lift] = lunge(p, 1.4);
+      const u = 12.1 + bob(p, 0.65) + lift + (p.wind ? 1.7 : 0);
+      legs4(M, p, { ff: f + 4.3, bf: f - 4.9, w: 2.3, hu: u - 1.8, r: 1.13, st: 2.8, li: 1.6, m: STAG, foot: RIME_D });
+      M.G("coat");
+      M.e([f - 0.6, u, 0], [7, 3.25, 3.05], STAG);
+      M.e([f + 3.4, u + 0.8, 0], [3.8, 3.65, 3.45], STAG_MANE);
+      M.cone([f - 6, u + 1, 0], [f - 8.2, u + 2, 0], 0.95, STAG_MANE);
+      const head = [f + 7.7 + (p.strike ? 1.5 : 0), u + 6.5 - (p.strike ? 2.7 : 0), 0], hr = [2.6, 2, 1.75];
+      M.tube([[f + 4.6, u + 1.25, 0], [f + 5.8, u + 4.2, 0], head], [2.4, 1.65], STAG_MANE);
+      M.e(head, hr, STAG_MANE);
+      M.e([head[0] + 2, head[1] - 0.7, 0], [1.65, 1.05, 1.26], STAG);
+      M.G();
+      both((s) => {
+        M.eye(surf(head, hr, [0.52, 0.18, 0.82 * s]), 2, "#f4bd65");
+        M.cone([head[0] - 1.5, head[1] + 0.85, 1.15 * s], [head[0] - 2.7, head[1] + 1.5, 2.8 * s], 0.7, STAG);
+        const n = p.strike ? 2.1 : p.wind ? -1.2 : 0;
+        const antler = (df, du, side) => [head[0] + df + du * n * 0.11, head[1] + du, s * side];
+        M.G("crown" + s);
+        M.tube([antler(-1, 1.4, 1.2), antler(-2.2, 4.1, 3.6), antler(-2.1, 6.7, 5.7)], [0.9, 0.6], FROST_D);
+        M.cone(antler(-2.1, 6.7, 5.7), antler(-2.9, 10.25, 6.3), 1.05, FROST);
+        M.cone(antler(-2.2, 5.1, 4.8), antler(0.4, 8.5, 5.8), 0.85, FROST);
+        M.cone(antler(-2.25, 4.4, 4), antler(-5.15, 6.1, 6.7), 0.75, FROST_D);
+        M.G();
+      });
+      M.box([head[0] - 0.3, head[1] + 1.65, 0], [1.2, 0.45, 1.38], FROST_D);
+      M.cone([head[0] + 0.2, head[1] + 1.7, 0], [head[0] - 0.4, head[1] + 5.25, 0], 0.9, FROST);
     },
   },
 

@@ -279,7 +279,7 @@ function buildTown() {
 // know without building anything (names, bands, monster lists) is read from here into MAP_META.
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
-const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea"];
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep"];
 /**
  * Every generated hunting ground: `make` the generator, `band` the level a character should
  * be to walk in (shown on every door that leads there), `stones` how many waypoint stones stand
@@ -296,7 +296,7 @@ const GEN = {
     tiers: 3, tierOpen: 0.6, ramp: 2, roadW: 3, pools: 2.6, widen: "TPBRulYAe",
     ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 4, lakeR: 5, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
-    mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "lambmaw", "eyecrow", "lambmaw", "eyecrow"], pondMob: "eyecrow", chest: "chest_meadow",
+    mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "eyecrow", "lambmaw", "lambmaw", "meadowram"], pondMob: "eyecrow", chest: "chest_meadow",
     vaultKinds: ["shrine", "circle", "bloom", "lookout", "cache", "menhir"], biomes: { plain: "plain" }, featureP: 0.6, features: ["pond", "boulders", "bigtree", "pen", "cairn", "logs", "stones"],
     // wet low ground flowers or grows tall; high ground is stony; dry ground is orchard or plain grass
     // by level: the valley floor wet and in flower, the middle shelves orchard and tall grass, the tops stony heath
@@ -316,7 +316,7 @@ const GEN = {
     tiers: 3, tierOpen: 0.12, ramp: 2, roadW: 3, gorge: { first: 16, every: 30 }, temple: {}, stoneFr: [0.36, 0.8], widen: "TPBRulYAe",
     ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 2, lakeR: 4, vaults: 9, ruins: 5, tpm: 15.5, stair: "crypt",
     walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
-    mobs: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
+    mobs: ["splitboar", "splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
     vaultKinds: ["deadgrove", "ring", "shrine", "lookout", "menhir", "cache"], biomes: { plain: "glade" }, featureP: 0.6, features: ["pond", "boulders", "ring", "dead", "logs", "stones", "cairn"],
     // the wettest hollows are bog, the heights fern and rock; elsewhere pine, with glades and old birch groves
     biome: (e, mo, r) => (mo > 0.64 ? "bog" : e > 0.68 ? "fern" : r < 0.22 ? "glade" : r < 0.38 ? "birch" : "pine"),
@@ -327,7 +327,7 @@ const GEN = {
       : b === "fern" ? (h < 0.04 ? "P" : h < 0.055 ? "B" : h < 0.065 ? "R" : null)
       : (n1 > 0.55 ? h < 0.24 : h < 0.09) ? "P" : h < 0.1 ? "B" : h < 0.107 ? "l" : h < 0.113 ? "u" : null),
   }) },
-  cave: { make: cavern, band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
+  cave: { make: cavern, after: (m) => corridorGate(m, "drain", 10, 34), route: "abyss", band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
     id: "cave", name: "수정 동굴", seed: 44093, w: 132, h: 100, r: 8, vaults: 10, tpm: 16, chest: "chest_cave",
     // maps-v2 비취 수정굴: the moss way (sites `r` apart, half-width `w`), shelves where the swell passes `shelf`
     // dungeon widening (`wide`): bigger caverns (`fill`), pillars only in the biggest halls, the moss way 9 wide
@@ -336,12 +336,12 @@ const GEN = {
     south: 0.52,
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
-  city: { make: metro, band: [14, 21], stones: 3, theme: "city", cfg: () => ({
+  city: { make: metro, after: (m) => corridorGate(m, "ossuary", 129, 72), route: "sewer", band: [14, 21], stones: 3, theme: "city", cfg: () => ({
     id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 152, h: 102, gate: "east", gateY: 0.5, south: 0.3, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
     mobs: ["pigeonmass", "gutfrog_poison", "doghead", "squidrat", "catsplit", "fishwalker"], chest: "chest_city",
   }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
-  crypt: { make: catacomb, band: [12, 17], stones: 3, cfg: () => ({
+  crypt: { make: catacomb, route: "city", band: [12, 17], stones: 3, cfg: () => ({
     // maps-v2 벽돌 회랑 (`halls`): plazas ≥ 11 × 9 in cells ≥ 14 × 12, corridors three wide, more loops
     id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 17, minH: 13, leaf: 620, entryY: 0.8, wind: 0.6, loops: 0.3, out: true, n: 3,
     // dungeon widening: rooms ≥ 15 × 11 (`room`), ways 5 wide on the critical path, 4 elsewhere, 3 to an ossuary
@@ -350,7 +350,7 @@ const GEN = {
     mobs: ["ratking", "twinhare_bone", "bonehound", "toadbrood", "batcluster"], guard: "bonehound", chest: "chest_crypt",
     dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4", light: "3" },
   }) },
-  sewer: { make: sewers, band: [22, 27], stones: 3, cfg: () => ({
+  sewer: { make: sewers, route: "cave", band: [22, 27], stones: 3, cfg: () => ({
     // maps-v2 벽돌 회랑 (`halls`): flagstone plazas, channel tunnels with a walkway three wide, dry side ways
     id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 25, wind: 0.5, loops: 0.55, n: 3,
     // dungeon widening (`plaza`): plazas 15 × 11 to 21 × 15, walkways 5 wide on the critical path and 4 elsewhere
@@ -360,11 +360,11 @@ const GEN = {
   // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
   // wood to the chasm that swallowed the capital (a ledge down into the abyss, behind the mother). Crimson maple
   // groves on red litter, golden stands on gold, pine on the heights, clearings, and hollows where the blight fruits
-  maple: { make: wilds, band: [40, 46], stones: 3, npcs: [["hermit", "은자 바스"]], after: hermitAt, cfg: () => ({
+  maple: { make: wilds, route: "frostkeep", band: [40, 50], stones: 3, npcs: [["hermit", "은자 바스"]], after: (m) => { hermitAt(m); corridorGate(m, "ice", 137, 81); }, cfg: () => ({
     id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 160, h: 112, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
     ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 2, lakeR: 4, vaults: 10, ruins: 4, tpm: 15,
     walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3]], exit: "east",
-    mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose"], pondMob: null, chest: "chest_maple",
+    mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose", "rotstag", "bogcrown", "hollowowl", "rootwarden"], pondMob: null, chest: "chest_maple",
     campPiece: "cottage", lair: { piece: "chapel", guard: "rotstag", pack: "rotstag" },
     vaultKinds: ["graveyard", "watchtower", "kinggate", "leafmound", "scarefield", "treetunnel"],
     vaultMobs: { graveyard: "gravrose", scarefield: "crowscare", leafmound: "shroomboar", treetunnel: "stumpmaw" },
@@ -384,8 +384,8 @@ const GEN = {
   // ── the south-west coast (maps-v2 M3, docs/design/maps-v2.md A.7–A.9): city → jungle road → coral coast → oasis → cave
   // 정글 해안도로: a made road, three of asphalt between yellow edge lines, winds from the city's south gate down
   // through dense jungle; the west side is a strand of black boulders and the deep sea; old shrines and stone rings in the dead ends
-  jungle: { make: wilds, band: [20, 26], stones: 3, cfg: () => ({
-    id: "jungle", name: "정글 해안도로", theme: "jungle", bgm: "forest", seed: 31337, w: 168, h: 112, r: 8.8, warp: 10, wind: 0.8, loops: 0.2, merge: 0.2, cliff: 0.2, gap: 2,
+  jungle: { make: wilds, route: "coast", band: [20, 26], stones: 3, cfg: () => ({
+    id: "jungle", name: "정글 해안도로", theme: "jungle", bgm: "jungle", seed: 31337, w: 168, h: 112, r: 8.8, warp: 10, wind: 0.8, loops: 0.2, merge: 0.2, cliff: 0.2, gap: 2,
     tiers: 2, tierOpen: 0.15, ramp: 2, roadEdge: "m", stoneFr: [0.36, 0.8], widen: "TPBRulYAeΨΩΦ",
     sea: { side: "w", at: 17, amp: 5, surf: 2, shallow: 0, beach: 4, sand: "r", rock: "Ω", rockP: 0.2, reef: 0 },
     ground: ":", edge: "T", treeCh: "T", treeCh2: "Ψ", road: "a", trail: "p", shore: "s", river: false, lakes: 4, lakeR: 5, vaults: 9, ruins: 4, tpm: 15.5,
@@ -402,8 +402,8 @@ const GEN = {
   }) },
   // 모래바람 오아시스: dunes in three levels of sand, ridges for cliffs; lakes ringed by grass, reeds and palms, mud-hut
   // hamlets in the dead ends, a caravan's camp on the way; the north pass climbs to the crystal cave
-  oasis: { make: wilds, band: [28, 34], stones: 3, wayOn: "cave", cfg: () => ({
-    id: "oasis", name: "모래바람 오아시스", theme: "desert", bgm: "field", seed: 52711, w: 168, h: 116, r: 10.2, warp: 9, wind: 0.55, loops: 0.28, merge: 0.3, cliff: 0.16, gap: 2,
+  oasis: { make: wilds, route: "cave", band: [28, 34], stones: 3, wayOn: "cave", cfg: () => ({
+    id: "oasis", name: "모래바람 오아시스", theme: "desert", bgm: "oasis", seed: 52711, w: 168, h: 116, r: 10.2, warp: 9, wind: 0.55, loops: 0.28, merge: 0.3, cliff: 0.16, gap: 2,
     tiers: 3, tierOpen: 0.55, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ", green: { r: 3, palm: 0.2 },
     ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 6, lakeR: 7, vaults: 9, ruins: 4, tpm: 15.5,
     walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north", doors: [["south", "s", 0.2143]],
@@ -419,8 +419,8 @@ const GEN = {
   }) },
   // 산호 해안: the dunes run down to a white beach; the whole south is sea — a surf line, then wide turquoise
   // shallows you can wade (reef rocks, sand islets with palms, sand bars where the ways cross, deep holes), then deep water
-  coast: { make: wilds, band: [34, 40], stones: 3, cfg: () => ({
-    id: "coast", name: "산호 해안", theme: "coast", bgm: "field", seed: 41519, w: 176, h: 120, r: 9.6, warp: 9, wind: 0.85, loops: 0.3, merge: 0.4, cliff: 0.2, gap: 2,
+  coast: { make: wilds, route: "oasis", band: [26, 32], stones: 3, cfg: () => ({
+    id: "coast", name: "산호 해안", theme: "coast", bgm: "coast", seed: 41519, w: 176, h: 120, r: 9.6, warp: 9, wind: 0.85, loops: 0.3, merge: 0.4, cliff: 0.2, gap: 2,
     tiers: 3, tierOpen: 0.15, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ",
     sea: { side: "s", at: 42, amp: 6, surf: 2, shallow: 26, beach: 7, sand: "S", bar: "S", reef: 0.16 },
     ground: "S", edge: "T", treeCh: "Ψ", treeCh2: "T", road: "p", shore: "S", river: false, lakes: 2, lakeR: 4, vaults: 9, ruins: 3, tpm: 15.5,
@@ -473,13 +473,50 @@ const GEN = {
         : b === "sea" ? null : h < 0.008 ? "Ψ" : h < 0.018 ? "R" : h < 0.024 ? "A" : null),
     };
   } },
-  abyss: { make: abyssal, band: [32, 40], stones: 3, cfg: () => ({
+  abyss: { make: abyssal, route: "maple", band: [32, 40], stones: 3, cfg: () => ({
     id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 152, h: 120, r: 16, wind: 0.55, loops: 0.3, n: 7, boss: "abyssboss", out: true,
     // dungeon widening (`plate`): islands are plates of flesh `r`…`r + vary` across the half, cracks of blood `gap` wide
     plate: { r: 14, vary: 3, gap: 2.6, gapVary: 2.6, soft: "804" },
     mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss",
   }) },
+  frostkeep: { make: frostkeep, minLv: MAXLV, band: [50, 50], stones: 3, cfg: () => ({
+    id: "frostkeep", name: "성에왕의 성채", theme: "cave", bgm: "frostkeep", seed: 91027, w: 96, h: 64,
+    mobs: ["rimehare", "rimehare", "frostmoth"], boss: "crownstag",
+  }) },
 };
+/** A paired threshold across an existing open hallway, with its arrival two tiles off the door. */
+function corridorGate(m, name, x, y) {
+  m.gates[name] = { t: [[x, y], [x, y + 1]], a: [[x + 2, y], [x + 2, y + 1]] };
+}
+
+/** Frost-blown galleries around two loops, with a final arena off the northern circuit. */
+function frostkeep(cfg) {
+  const m = blank(cfg.id, cfg.name, cfg.w, cfg.h, "W");
+  m.theme = cfg.theme;
+  m.bgm = cfg.bgm;
+  const rooms = [
+    [4, 42, 20, 59], [28, 39, 47, 57], [58, 41, 83, 59],
+    [9, 17, 29, 32], [39, 18, 57, 30], [66, 17, 86, 31], [39, 3, 58, 12],
+  ];
+  const galleries = [
+    [19, 47, 30, 51], [44, 46, 60, 50],
+    [13, 30, 17, 43], [22, 26, 43, 30], [55, 24, 68, 28], [73, 29, 77, 44],
+    [41, 27, 45, 41], [47, 10, 51, 20],
+  ];
+  for (const r of rooms) rect(m.g, ...r, "c");
+  for (const r of galleries) rect(m.g, ...r, "c");
+  // The crystals stand out of the fighting lanes and mark the two bends in each circuit.
+  for (const [x, y] of [[8, 44], [8, 57], [23, 19], [27, 30], [33, 42], [45, 54],
+    [61, 44], [81, 56], [69, 20], [83, 28], [42, 5], [55, 5], [42, 11], [55, 11]]) m.o[y][x] = "K";
+  m.entry = [8, 49];
+  m.gates = { west: { t: [[4, 49], [4, 50]], a: [[8, 49], [8, 50]] } };
+  FIRES[m.id].push([11, 45]);
+  m.spawns.push({ k: cfg.boss, n: 1, r: [49, 7, 49, 7] });
+  m.keepWide = [m.entry, [4, 49], [11, 45], [15, 24], [36, 48], [74, 48], [75, 26], [49, 23], [49, 7]];
+  m.widenSoft = "K";
+  m.widenDig = "c";
+  return m;
+}
 /** A hermit keeps the maple cottage fire. */
 function hermitAt(maple) {
   if (!maple.camp) return;
@@ -504,7 +541,8 @@ const GATE_LINKS = [
   ["town", "east", "meadow", "west", 1], ["town", "west", "city", "east", 1], ["meadow", "east", "forest", "west", 1],
   ["forest", "north", "cave", "west", 1], ["forest", "crypt", "crypt", "in", 1], ["city", "sewer", "sewer", "in", 1],
   ["cave", "rift", "abyss", "in", 1], ["forest", "east", "maple", "west", 1], ["maple", "east", "abyss", "out", 1],
-  ["crypt", "out", "forest", "crypt", 0], ["sewer", "out", "city", "sewer", 0],
+  ["crypt", "out", "city", "ossuary", 1], ["sewer", "out", "cave", "drain", 1],
+  ["maple", "ice", "frostkeep", "west", 1],
   // the south-west coast: the city's south gate, down the jungle road to the sea, inland over the dunes, up into the cave
   ["city", "south", "jungle", "north", 1], ["jungle", "south", "coast", "north", 1], ["coast", "east", "oasis", "west", 1], ["oasis", "north", "cave", "south", 1],
   // the dune sea: south out of the oasis into the high dunes, and west along the shore from the coral coast
@@ -539,7 +577,11 @@ function genMap(id) {
   m.stonesWant = g.stones || 1;
   const lo = m.band[0];
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
-  markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
+  markRoutes(m, labelOf, (to) => {
+    if (to === g.route) return TIER_MAX + 1;
+    const b = MAP_META[to]?.band;
+    return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0;
+  });
   // maps-v2: once the signs and stones stand, the ways that must stay three wide are checked once more
   // (underground the stones' own standing tiles are joined too: the rock may be dug for them)
   if (m.keepWide) widen(m, m.widenDig ? m.keepWide.concat((m.stones || []).map((s) => [s.ax, s.ay])) : m.keepWide, m.widenSoft, m.widenDig);
@@ -853,7 +895,7 @@ function canFly(m, x, y) {
   return m.g[ty][tx] !== "W";
 }
 
-const doorName = (m) => (m.band ? `${m.name} Lv.${shownLv(m.band[0])}–${shownLv(m.band[1])}` : m.name);
+const doorName = (m) => (m.minLv ? `${m.name} · Lv.${m.minLv} 전용` : m.band ? `${m.name} Lv.${shownLv(m.band[0])}–${shownLv(m.band[1])}` : m.name);
 function mapPayload(m) {
   // (a house's turns and floor, the town's "내 집" door: 64-housing.js homeWire)
   return homeWire(m, {

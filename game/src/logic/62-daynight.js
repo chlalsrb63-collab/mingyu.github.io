@@ -162,18 +162,23 @@ const TALES = [
   "새벽녘 정령나무 아래에서 소원을 빌면, 그날 사냥은 운이 좋다는구나. 할미도 젊을 적엔 매일 빌었지.",
 ];
 mapOf("town").npcs.push(TELLER);
+noteNpc("town", TELLER.id, TELLER.name);
 /** The storyteller of `map` if she is out at `now` (only by night), else null. */
-function nightNpc(map, now) { return map === "town" && isNight(now) ? TELLER : null; }
+function nightNpc(map, now) {
+  if (map !== "town" || !isNight(now)) return null;
+  const body = npcAt(TELLER.id, now);
+  return !body || (body.place === "fire" && !body.moving && !body.hidden) ? TELLER : null;
+}
 /** Which tale is being told at `now` (an index into TALES), or -1 by day. */
-function taleAt(now) { return isNight(now) ? Math.floor(now / TALE_MS) % TALES.length : -1; }
+function taleAt(now) { return nightNpc("town", now) ? Math.floor(now / TALE_MS) % TALES.length : -1; }
 
 /** Once a tick, per outdoor map: the weather, and at night in town the next tale by the fire. */
 function skyTick(S, now) {
   for (const id of Object.keys(S.maps)) {
     const rt = S.maps[id];
     rt.wx = weatherAt(id, now);
-    if (id !== "town") continue;
-    const slot = isNight(now) ? Math.floor(now / TALE_MS) : -1;
+    if (id !== "town" || rt.n <= 0) continue;
+    const slot = nightNpc(id, now) ? Math.floor(now / TALE_MS) : -1;
     if (slot !== rt.tale) { rt.tale = slot; if (slot >= 0) rt.ev.push(["tl", slot % TALES.length]); }
   }
 }

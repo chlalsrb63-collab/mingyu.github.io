@@ -10,9 +10,9 @@
     <meta property="og:image" content="https://lumentale-online.higgsfield.app/cover.png" />
     <meta name="theme-color" content="#0e0f14" />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="style.css?v=249yb7jz" />
-    <link rel="stylesheet" href="hud.css?v=249yb7jz" />
-    <link rel="stylesheet" href="lobby.css?v=249yb7jz" />
+    <link rel="stylesheet" href="style.css?v=4yhzsh6h" />
+    <link rel="stylesheet" href="hud.css?v=4yhzsh6h" />
+    <link rel="stylesheet" href="lobby.css?v=4yhzsh6h" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -335,6 +335,7 @@
           <div class="set-row"><span>계정 <b id="set-acc"></b></span><button id="btn-servers" class="btn">서버 선택</button><button id="btn-logout" class="btn">로그아웃</button></div>
           <div class="set-row"><span>소리</span><kbd>Shift+M</kbd><button id="btn-sound" class="btn toggle">켜짐</button></div>
           <div class="set-row"><span>배경음악</span><input type="range" id="vol-bgm" class="vol" min="0" max="100" step="1" value="70" aria-label="배경음악 음량"></div>
+          <div class="set-row"><label for="music-style">배경음악 편곡</label><select id="music-style" class="sel"><option value="newAge">뉴에이지 · 피아노와 현악</option><option value="classic">기존 · 로파이와 신스</option></select></div>
           <div class="set-row"><span>효과음</span><input type="range" id="vol-sfx" class="vol" min="0" max="100" step="1" value="85" aria-label="효과음 음량"></div>
           <div class="set-row"><span>CRT 화면 효과</span><kbd>V</kbd><button id="btn-crt" class="btn toggle">켜짐</button></div>
           <div class="set-row"><span>조준 화살표</span><button id="btn-aim" class="btn toggle">켜짐</button></div>
@@ -462,7 +463,7 @@
       </div>
     </div>
 
-    <script type="module" src="client.js?v=249yb7jz"></script>
+    <script type="module" src="client.js?v=4yhzsh6h"></script>
     <div id="crt-frame" aria-hidden="true"></div>
   </body>
 </html>

@@ -166,6 +166,28 @@ for the theme's signature two, tinted kin for the rest as M3 did), a `FIELD_BOSS
    field it hangs from; no quest (main, side `req.lv`, charm) asks a level above the band of the map it sends you
    to; XP/h by band is non-decreasing; `defs()` bands equal `bandLv(GEN.band)`.
 
+## Integration note — Codex's hunting routes and the frost keep (2026-11-15)
+
+Merging `codex/local-play` changed what §1–2 above describe; the tables there are the plan as written before it.
+
+- **성에왕의 성채 `frostkeep` is built and fills the top slot**: 96 × 64, tier 50 (shown Lv.197), entered only at
+  character Lv.200 (`minLv`, checked on the server for doors, stones, recall, reconnect), reached from the old
+  kingdom (`maple` "ice" ↔ `frostkeep` "west"), packs of rimehare / frostmoth and the permanent boss 성에왕
+  `crownstag`. It reuses the cave's ground and crystals — it has no snow art of its own yet.
+- **What that means for the roadmap**: the Lv.200 end point exists, so `citadel` (44–50) is no longer the map that
+  closes the top; it and `frostlake` (41–47) now have to fill Lv.161–199 *below* the keep, and `icevault`
+  (46–50, party dungeon with the tier-50 last boss) overlaps the keep — fold it into the keep (a party wing) or
+  drop it. The open question "is the last boss the citadel's 얼음 왕" is answered for now by 성에왕. `maple` was
+  stretched to 40–50 (four new kinds: bogcrown, hollowowl, rootwarden + rotstag in packs) to reach the keep.
+- **Bands that moved** (Codex's values kept for the maps it touched): `coast` 34–40 → **26–32** (its six kinds
+  rebalanced to tiers 26–32, chest 30), `maple` 40–46 → **40–50**. Ours kept where Codex had nothing: `dunesea`
+  31–37 (placeholders), the widened crypt/sewer/cave/abyss layouts, jungle/oasis/coast art.
+- **The route is a line now**: town → meadow → forest → crypt → city → sewer → cave → abyss → maple → frostkeep, with
+  the coast branch city → jungle → coast → oasis → cave and `dunesea` hanging off oasis (south) and coast (west).
+  A dungeon's far door leads on, not back: crypt "out" ↔ city "ossuary", sewer "out" ↔ cave "drain" (made two-way in
+  the merge so no door is a one-way trip). `GEN[id].route` names each ground's way on for the signposts.
+- Balance stays "later" (§3): Codex's early-mastery and coast numbers are in as built, not re-tuned here.
+
 ## Open questions for the owner
 
 - Target hours to Lv.200 (18.5 h model today) — longer for an MMO?

@@ -20,11 +20,12 @@ import { createHash } from "node:crypto";
 import { buildLogic, readData, EMPTY_DATA, ROOT, DATA_DIR } from "./build-logic.mjs";
 
 import { BGM_KEYS } from "../public/audio.js";
+import { checkNpcLife } from "../editor/validate.js";
 
 export { DATA_DIR, ROOT };
 
 // (MAPS: every map built — the rules build the generated ones only on first use)
-const EXTRA = "\nexport const __editor = { get MAPS() { return allMaps(); }, MAP_META, FIRES, WP, FIELD_BOSS, MOBS, ITEMS, QUESTS, SOLID_G, THEMES, NPC_ROLES, BUILTIN_MAPS, NPC_MAP, DATA, COL_MOBS, SIDE: typeof SIDE === 'undefined' ? [] : SIDE, mapPayload };\n";
+const EXTRA = "\nexport const __editor = { get MAPS() { return allMaps(); }, MAP_META, FIRES, WP, FIELD_BOSS, MOBS, ITEMS, QUESTS, SOLID_G, THEMES, NPC_ROLES, BUILTIN_MAPS, NPC_MAP, DATA, COL_MOBS, npcLifeProblems, SIDE: typeof SIDE === 'undefined' ? [] : SIDE, mapPayload };\n";
 const cache = new Map();
 
 /** The rules evaluated with a data set (default: data/**); cached by content. */
@@ -400,6 +401,14 @@ export async function checkData(dataDir = DATA_DIR) {
     checkNpc(f, p, n, map);
   });
 
+  if (data.npclife) {
+    for (const { path, msg } of checkNpcLife(data.npclife)) err("data/npclife.json", path, msg);
+    for (const [id, n] of Object.entries(data.npclife.cast || {})) {
+      const map = n && real(data.npclife.places?.[n.home]?.map);
+      if (map && n.name && n.hero && !npcIds.has(id)) npcIds.set(id, { map, role: "talk" });
+    }
+  }
+
   // ── quests.json
   const qf = "data/quests.json";
   if (Array.isArray(data.quests.main)) data.quests.main.forEach((q, i) => {
@@ -441,6 +450,7 @@ export async function checkData(dataDir = DATA_DIR) {
   if (!errors.length) {
     try {
       const { E } = await loadLogic({ dataDir });
+      for (const { path, msg } of E.npcLifeProblems()) err("data/npclife.json", path, msg);
       for (const id of Object.keys(custom)) if (!E.MAPS[id]) err(fileOf[custom[id].id], "", `지도 "${id}"를 게임이 만들지 못했습니다`);
     } catch (e) {
       err("src/logic.js", "", `데이터를 넣은 규칙을 불러오지 못했습니다: ${e.message}`);

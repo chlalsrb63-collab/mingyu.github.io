@@ -41,6 +41,7 @@ export function validateAction(S, pid, a) {
   const cg = charmGuard(ch, a);
   if (cg) return bad(cg);
   switch (a.t) {
+    case "nw": return p.npcWhereAt === undefined || now >= p.npcWhereAt ? OK : bad("잠시 뒤 주민 위치를 다시 확인하세요");
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");
       if (a.here && countItem(ch, "feather") < 1) return bad("부활 깃털이 없습니다");
@@ -184,6 +185,8 @@ export function validateAction(S, pid, a) {
       // a big ground has several stones: `i` picks one (0, the first, when left out)
       const i = a.i === undefined ? 0 : a.i;
       if (!hasWp(a.to) || !Number.isInteger(i) || i < 0 || i >= MAP_META[a.to].wpn) return bad("그곳에는 이동의 돌이 없습니다");
+      const minLv = mapLevelNeed(ch, a.to);
+      if (minLv) return bad(mapLevelMessage(minLv));
       const at = wpNear(p);
       if (!at) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
       if (!wpWoken(ch, a.to, i)) return bad("아직 깨우지 않은 이동의 돌입니다");

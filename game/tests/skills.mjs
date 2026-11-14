@@ -479,12 +479,12 @@ for (const [id, hand] of CASTS) {
 
 // ═════════ the bar: a skill a mastery level opens goes on it; a job's signature too
 {
-  const W = world("단축", { wk: "spear", wm: { spear: 9 } });
+  const W = world("단축", { lvl: 15, wk: "spear", wm: { spear: 9 } });
   const p = W.p, ch = W.ch;
   assert.deepEqual(ch.qs.filter(Boolean), [["s", "spiral"]], "a hero's bar starts with what the hand can use");
   const [m] = W.mobs([[30, 0]], 1);
   ch.wm.spear.xp = 22 * 81 - 1;
-  W.act({ t: "atk", a: 0 });
+  assert.ok(W.act({ t: "atk", a: 0 }).ok);
   const v = W.step();
   assert.equal(ch.wm.spear.lv, 10);
   assert.deepEqual(ch.qs[1], ["s", "comet"], "the new active takes the next slot");

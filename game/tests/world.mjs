@@ -49,6 +49,9 @@ const flood = (m, sx, sy) => {
   return dist;
 };
 const place = (id, x, y) => { L.runtime(S, p.map).n--; p.map = id; L.runtime(S, id).n++; p.x = x; p.y = y; p.mvAt = now; p.sendMap = true; p.hp = 1e9; };
+const hero = L.hero("길잡이", { wk: "sword", lvl: 200 });
+Object.assign(p.ch, { st: hero.st, lvl: hero.lvl });
+p.stc = null;
 const seen = {}, maps = {}, todo = [["town", 20 * 16 + 8, 18 * 16 + 8]];
 while (todo.length) {
   const [id, px, py] = todo.pop();
@@ -69,12 +72,12 @@ while (todo.length) {
     assert.notEqual(p.map, id, `${id}: stepping on the door to ${door.to} goes somewhere`);
     const there = D.maps.find((o) => o.id === p.map);
     assert.ok(door.to.startsWith(there.name), `the door is labelled with where it leads: ${door.to}`);
-    if (there.band) assert.ok(door.to.includes(`Lv.${there.band[0]}`), "and with the level it asks for");
+    if (there.band) assert.ok(door.to.includes(`Lv.${there.minLv || there.band[0]}`), "and with the level it asks for");
     todo.push([p.map, p.x, p.y]);
   }
 }
 assert.deepEqual(Object.keys(seen).sort(), D.maps.map((m) => m.id).sort(), "every map can be reached from town");
-for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
+for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
 
 // ── the dungeons: harder the deeper you go, a camp on the way, a guardian at the end
 for (const id of ["crypt", "sewer", "abyss"]) {

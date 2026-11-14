@@ -377,6 +377,7 @@ export function tick(S, now) {
   for (const id of liveMapIds(S)) {
     const rt = S.maps[id];
     if (rt.n <= 0) continue;
+    npcLifeTick(rt, now);
     const m = mapOfS(S, id);
     cellPass(S, m, rt, pids);
     // how many monsters are already after each player here
@@ -511,6 +512,7 @@ export function endTick(S) {
     const rt = S.maps[id];
     rt.ev.length = 0;
     rt.who = false;
+    if (rt.npcRows?.length) rt.npcRows = null;
   }
   S.chat.length = 0;
 }

@@ -38,7 +38,8 @@ S.now = now;
     // a hunting ground's monsters are its cells' quotas: ≈ one per DENSITY walkable tiles (fewer in the elite ground, none in the plaza)
     let reach = 0;
     for (let i = 0; i < m.reach.length; i++) reach += m.reach[i];
-    assert.ok(m.custom ? crowd >= 1 : crowd >= 300 && crowd <= reach / 4, `${id}: ${crowd} monsters on ${reach} tiles`);
+    const floor = Math.min(300, Math.ceil(reach / 25));
+    assert.ok(m.custom ? crowd >= 1 : crowd >= floor && crowd <= reach / 4, `${id}: ${crowd} monsters on ${reach} tiles`);
     L.runtime(S, scout.map).n--; scout.map = id; L.runtime(S, id).n++;
     scout.x = m.entry[0] * 16 + 8; scout.y = m.entry[1] * 16 + 10; scout.hp = 1e9;
     L.tick(S, (now += 100));

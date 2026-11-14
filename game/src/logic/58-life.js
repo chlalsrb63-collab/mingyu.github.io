@@ -387,7 +387,7 @@ function jbOffersOf(S, p) {
   return p.jbOff.ids;
 }
 /** Where a static NPC stands: { m, x, y }, or null. */
-function npcAt(id) {
+function lifePostAt(id) {
   const m = Object.hasOwn(NPC_MAP, id) ? mapOf(NPC_MAP[id]) : null;
   const n = m && m.npcs.find((o) => o.id === id);
   return n ? { m, x: n.x, y: n.y } : null;
@@ -406,7 +406,7 @@ function legTiles(m, fx, fy, tx, ty) {
  */
 function jbRoute(id) {
   if (Object.hasOwn(JB_ROUTES, id)) return JB_ROUTES[id];
-  const t = JB[id], A = npcAt(t.npc), B = npcAt(t.to), hub = mapOf(START.map);
+  const t = JB[id], A = lifePostAt(t.npc), B = lifePostAt(t.to), hub = mapOf(START.map);
   let n = Infinity;
   if (A && B && A.m === B.m) n = legTiles(A.m, A.x, A.y, B.x, B.y);
   else if (A && B) {
@@ -608,14 +608,14 @@ function lifeValidate(S, p, a) {
       if (a.a === "pick") {
         if (!t || t.kind !== "deliver") return bad("맡은 배달이 없습니다");
         if (act.prog !== 0) return bad("이미 꾸러미를 받았습니다");
-        if (!npcNearId(p, t.npc)) return bad(`${npcName(t.npc)}에게 가서 꾸러미를 받으세요`);
+        if (!npcReach(p, t.npc)) return bad(`${npcName(t.npc)}에게 가서 꾸러미를 받으세요`);
         if (p.dead) return bad("쓰러진 상태입니다");
         return OK;
       }
       if (a.a === "give") {
         if (!t) return bad("맡은 알바가 없습니다");
         const to = t.kind === "deliver" ? t.to : t.npc;
-        if (!npcNearId(p, to)) return bad(`${npcName(to)}에게 가져가세요`);
+        if (!npcReach(p, to)) return bad(`${npcName(to)}에게 가져가세요`);
         if (t.kind === "deliver") return act.prog === 1 && p.parcel && now <= p.parcel.until ? OK : bad("전할 꾸러미가 없습니다");
         return countItem(ch, t.item) >= t.n ? OK : bad(`${ITEMS[t.item].name}${pp(ITEMS[t.item].name, "이가")} 부족합니다 (${countItem(ch, t.item)}/${t.n})`);
       }

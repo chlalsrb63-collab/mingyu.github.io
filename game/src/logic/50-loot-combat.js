@@ -356,10 +356,11 @@ function killMob(S, rt, mob) {
   // everyone who hit it, plus their party members standing nearby, shares the kill
   const looters = new Set();
   let top = null, topDmg = 0;
-  for (const pid of Object.keys(mob.by)) {
+  const hitters = mob.by;
+  for (const pid of Object.keys(hitters)) {
     const p = S.players[pid];
     if (!p || p.map !== rt.id) continue;
-    if (mob.by[pid] > topDmg) { top = p; topDmg = mob.by[pid]; }
+    if (hitters[pid] > topDmg) { top = p; topDmg = hitters[pid]; }
     for (const o of allies(S, p)) if (!o.dead) looters.add(o);
   }
   mob.by = {};
@@ -373,7 +374,10 @@ function killMob(S, rt, mob) {
     p.streak = S.now - p.streakAt < STREAK_MS ? p.streak + 1 : 1;
     p.streakAt = S.now;
     const rank = masteryRank(ch, mob.k);
-    gainXp(S, p, xp * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
+    const early = hitters[p.pid] > 0 && wmEligible(p, d) && d.lv <= toTier(ch.lvl) + HUNT_EARLY.ahead
+      ? HUNT_EARLY.extra * clamp((HUNT_EARLY.end - ch.lvl) / (HUNT_EARLY.end - HUNT_EARLY.full), 0, 1)
+      : 0;
+    gainXp(S, p, xp * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
     ch.kills = (ch.kills || 0) + 1;
     ch.mk[mob.k] = (ch.mk[mob.k] || 0) + 1;
     const now = masteryRank(ch, mob.k);

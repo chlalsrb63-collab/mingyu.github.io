@@ -106,7 +106,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   for (const j of hybrids) {
     const [a, b] = D.jobs[j].wk;
     assert.ok(a !== b && D.wkOrder.includes(a) && D.wkOrder.includes(b), j + " pairs two different weapons");
-    assert.equal(D.jobs[j].cost, 20000, j + " costs 20,000 G");
+    assert.equal(D.jobs[j].cost, 5000, j + " costs 5,000 G");
     assert.equal(D.jobs[j].wm, 15, j + " asks mastery 15 of both");
     // the scale budget: real stats, nothing above 0.9; 2.2 for two different mains, less when the pair shares one (1.4–2.2)
     const sc = D.jobs[j].scale, sum = Object.values(sc).reduce((x, y) => x + y, 0);
@@ -115,7 +115,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
     for (const k of [a, b]) assert.ok(Object.keys(D.scale[k]).some((st) => sc[st] >= 0.5), `${j} scales with ${k}'s stats`);
     assert.ok(D.jobs[j].sig && D.skills[D.jobs[j].sig].job === j && D.skills[D.jobs[j].sig].kind === "h", j + " names its signature");
   }
-  for (const j of singles) { assert.equal(D.jobs[j].cost, 5000); assert.equal(D.jobs[j].wm, 20, j + " asks mastery 20"); }
+  for (const j of singles) { assert.equal(D.jobs[j].cost, 1000); assert.equal(D.jobs[j].wm, 20, j + " asks mastery 20"); }
   assert.equal(D.jobWm, 20); assert.equal(D.hybWm, 15, "defs carry both thresholds");
   // ids and names are all different
   const names = Object.values(D.jobs).map((j) => j.name);
@@ -123,7 +123,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.ok(names.every((n) => /^[가-힣]{2,5}$/.test(n)), "short Korean names");
   assert.deepEqual(D.jobs.swordsman.scale, { str: 0.95, wil: 0.6 }, "a single job adds 0.1 to its weapon's two grades");
   assert.deepEqual(D.jobs.spellblade.scale, { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 });
-  assert.equal(D.jobs.swordsman.cost, 5000); assert.equal(D.jobs.tracker.cost, 20000);
+  assert.equal(D.jobs.swordsman.cost, 1000); assert.equal(D.jobs.tracker.cost, 5000);
   assert.equal(D.jobs.adventurer.name, "모험가");
   assert.equal(D.wmNeed.length, 50); assert.equal(D.wmNeed[0], 22); assert.equal(D.wmNeed[9], 2200); assert.equal(D.wmNeed[48], 52822);
   // the bow: a real weapon kind, five tiers, sold at tier 1, legendary and set looks roll on it
@@ -320,13 +320,13 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   const W = world({ wk: "sword", lvl: 1 });
   const ch = W.ch;
   const mobs = arena(W);
-  // a hit: +1 per action that damaged a worthy monster, to the weapon in hand only
+  // A landed basic attack credits the weapon in hand once, with the early mastery bonus.
   const [m] = mobs([[16, 0]]);
   ready(W);
   assert.ok(W.act({ t: "atk", a: 0 }).ok);
-  assert.equal(ch.wm.sword.xp, 1, "one action, one point");
+  assert.equal(ch.wm.sword.xp, 5, "one early action, five points");
   assert.equal(ch.wm.dagger.xp, 0);
-  // a kill: (1 + floor(tier/2)) × rank, to whoever struck it
+  // A kill adds tier × rank and capped experience-based mastery to contributors.
   const ally = "pid-ally";
   L.addPlayer(W.S, ally, L.hero("동료", { wk: "dagger" }));
   const o = W.S.players[ally];
@@ -338,9 +338,9 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   const before = ch.wm.sword.xp;
   assert.ok(W.act({ t: "atk", a: 0 }).ok);
   assert.ok(m.dead);
-  assert.equal(ch.wm.sword.xp - before, 1 + (1 + Math.floor(D.mobs.ribdeer.tier / 2)) * 4, "hit + kill of an elite at tier 10");
+  assert.equal(ch.wm.sword.xp - before, 5 + 24 + 852, "landed hit and capped elite kill bonus");
   assert.equal(o.ch.wm.dagger.xp, 0, "the idle party member learns nothing");
-  assert.ok(o.ch.xp > 0, "(though they share the experience)");
+  assert.ok(o.ch.xp > 0 && ch.xp === o.ch.xp, "both share ordinary XP from a monster far above their level");
   // 22·m² a level, an event, a toast; capped at 50
   ch.wm.sword = { lv: 9, xp: 22 * 81 - 1 };
   const [m2] = mobs([[16, 0]]);
@@ -353,9 +353,13 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   ch.wm.sword = { lv: 19, xp: 22 * 361 - 1 };
   ready(W); m2.hp = 50000; W.act({ t: "atk", a: 0 }); v = W.step();
   assert.ok((v.toast || []).some((t) => t.includes("전직관 아르센") && t.includes("[대검전사]")), "at 20 the job is offered");
+  assert.deepEqual(ch.wm.sword, { lv: 20, xp: 0 }, "the overflow past 20 goes back to the normal rate");
   ch.wm.sword = { lv: 50, xp: 0 };
   ready(W); W.act({ t: "atk", a: 0 }); W.step();
   assert.deepEqual(ch.wm.sword, { lv: 50, xp: 0 }, "capped at 50");
+  ch.wm.sword = { lv: 20, xp: 0 };
+  ready(W); W.act({ t: "atk", a: 0 }); W.step();
+  assert.equal(ch.wm.sword.xp, 1, "ordinary mastery rate after job mastery");
   // at 15 the two-weapon jobs whose other weapon is already at 15 are named
   ch.wm.sword = { lv: 14, xp: 22 * 196 - 1 }; ch.wm.bow.lv = 15; ch.wm.staff.lv = 18; ch.wm.dagger.lv = 14;
   ready(W); m2.hp = 50000; W.act({ t: "atk", a: 0 }); v = W.step();
@@ -368,15 +372,19 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   const [low] = mobs2([[16, 0]]);
   ready(W2); W2.act({ t: "atk", a: 0 });
   assert.equal(W2.ch.wm.sword.xp, 0, "a tier-1 hare teaches a Lv.157 nothing");
-  low.k = "blightsquirrel";
+  low.hp = 1;
+  ready(W2); assert.ok(W2.act({ t: "atk", a: 0 }).ok);
+  assert.ok(low.dead);
+  assert.equal(W2.ch.wm.sword.xp, 0, "the kill of a trivial mob also teaches nothing");
+  mobs2([[16, 0]], { k: "blightsquirrel" });
   ready(W2); W2.act({ t: "atk", a: 0 });
-  assert.equal(W2.ch.wm.sword.xp, 1);
+  assert.equal(W2.ch.wm.sword.xp, 5);
   ready(W2); W2.act({ t: "sk", id: "slash", a: 0 });
   W2.step();
-  assert.equal(W2.ch.wm.sword.xp, 3, "a skill that lands is worth two");
+  assert.equal(W2.ch.wm.sword.xp, 15, "a landed skill adds ten to early mastery");
   // mastery shows up in the self payload: [lv, xp, need] in wire order
   const s = W2.self();
-  assert.deepEqual(s.wm[0], [12, 3, 22 * 144]);
+  assert.deepEqual(s.wm[0], [12, 15, 22 * 144]);
   assert.equal(s.wk, "sword");
 }
 
@@ -421,6 +429,32 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.ok(s2.dv[5] > 50 && s2.dv[6] > 50, "poise and knockback resistance from WIL and STR");
 }
 
+
+{
+  const levels = [1, 30, 35, 40];
+  const gains = levels.map((lvl) => {
+    const W = world({ lvl, wk: "sword" }), mobs = arena(W);
+    const [m] = mobs([[16, 0]], { hp: 1, k: "gutfrog" });
+    const before = W.ch.xp;
+    ready(W); assert.ok(W.act({ t: "atk", a: 0 }).ok); assert.ok(m.dead);
+    return W.ch.xp - before;
+  });
+  assert.deepEqual(gains, [29, 29, 23, 18], "hunter's early XP is full through 30 and gone at 40");
+
+  const boosted = world({ wk: "sword" }), high = arena(boosted);
+  const [outOfBand] = high([[16, 0]], { hp: 1, k: "ribdeer" });
+  ready(boosted);
+  assert.ok(boosted.act({ t: "atk", a: 0 }).ok && outOfBand.dead);
+  assert.equal(boosted.ch.xp, D.mobs.ribdeer.xp, "late-game carries get the regular reward");
+
+  const W = world({ wk: "sword" });
+  W.npc("elder");
+  W.ch.q = { i: 0, n: D.quests[0].n, st: 1 };
+  assert.ok(W.act({ t: "quest", a: "done" }).ok);
+  assert.equal(W.ch.xp, D.quests[0].xp);
+  assert.deepEqual(W.ch.wm.sword, { lv: 1, xp: 0 }, "quest turn-ins do not teach weapon mastery");
+}
+
 // ═════════ jobs (C.3, C.4) ═════════
 {
   const W = world({ wk: "sword", wm: { sword: 19, staff: 20 } });
@@ -435,7 +469,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(W.act({ t: "job_change", j: "adventurer" }).error, "없는 직업입니다");
   assert.equal(W.act({ t: "job_change", j: "thief" }).error, "[단검] 숙련 20이 필요합니다");
   assert.equal(W.act({ t: "job_change", j: "darkknight" }).error, "[대검]과 [마도서] 숙련이 모두 15 이상이어야 합니다");
-  ch.gold = 4999;
+  ch.gold = D.jobs.swordsman.cost - 1;
   assert.equal(W.act({ t: "job_change", j: "swordsman" }).error, "골드가 부족합니다");
   ch.gold = 30000;
   // two weapons at 15 open the hybrid of the pair (a single job still asks 20)
@@ -444,7 +478,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(W.act({ t: "job_change", j: "swordsman" }).error, "[대검] 숙련 20이 필요합니다", "a single job still asks 20");
   ch.wm.staff.lv = 15;
   assert.ok(W.act({ t: "job_change", j: "spellblade" }).ok, "sword 15 + staff 15 → 마검사");
-  assert.equal(ch.job, "spellblade"); assert.equal(ch.gold, 10000);
+  assert.equal(ch.job, "spellblade"); assert.equal(ch.gold, 30000 - D.jobs.spellblade.cost);
   let v = W.step();
   assert.ok(v.ev.some((e) => e[0] === "jc" && e[1] === W.p.eid));
   assert.ok(ch.ach.includes("job1") && ch.ach.includes("job2"));
@@ -474,7 +508,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(W2.act({ t: "wsw" }).error, "두 무기를 쓰는 직업만 무기를 바꿔 들 수 있습니다");
   // a single job: one weapon at 20; the job adds to that weapon
   const W3 = world({ wk: "bow", wm: { bow: 20 } });
-  W3.ch.gold = 5000;
+  W3.ch.gold = D.jobs.archer.cost;
   W3.npc("job");
   assert.ok(W3.act({ t: "job_change", j: "archer" }).ok, "bow 20 → 궁수");
   assert.equal(W3.ch.gold, 0);
@@ -513,7 +547,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 {
   for (const k of Object.keys(D.mobs)) assert.equal(D.mobs[k].lv, 4 * D.mobs[k].tier - 3);
   const maple = D.maps.find((m) => m.id === "maple");
-  assert.deepEqual(maple.band, [157, 181], "단풍 왕도 shows Lv.157–181");
+  assert.deepEqual(maple.band, [157, 197], "단풍 왕도 shows Lv.157–197");
   const W = world({ wk: "sword", lvl: 13 });   // tier 4
   const town = W.map;
   assert.ok(town.portals.some((pt) => pt.to.includes("바람초원 Lv.1–25")), "doors name shown levels");
