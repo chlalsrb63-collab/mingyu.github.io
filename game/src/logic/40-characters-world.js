@@ -164,7 +164,7 @@ function qsLearn(ch, i) {
 }
 
 /** Counters kept for achievements. */
-const ST_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily"];
+const ST_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {
@@ -237,7 +237,7 @@ function stats(p) {
     mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf,
     xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
-    guard: scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1,
+    guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
     spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.slowed > now && !(p.giant > now) ? SLOW : 1), spd0: c.spd0,
   };
 }

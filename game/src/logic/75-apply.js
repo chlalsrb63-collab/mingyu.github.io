@@ -346,6 +346,8 @@ export function applyAction(S, pid, a) {
         toast(p, "부활 깃털로 그 자리에서 일어났습니다. (경험치 손실 없음)");
         break;
       }
+      // inside a 차원 균열: up again in its start room, at no cost (64-dim.js)
+      if (dimRespawn(S, p)) break;
       const lost = deathLoss(ch);
       ch.xp -= lost;
       p.dead = false;
@@ -516,6 +518,8 @@ export function applyAction(S, pid, a) {
       leaveParty(S, p);
       toast(p, "파티를 떠났습니다.");
       break;
+    // ── 차원 균열 (64-dim.js)
+    case "dim_open": case "dim_ready": case "dim_cancel": case "dim_leave": case "dim_join": dimApply(S, p, a); break;
   }
   if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;

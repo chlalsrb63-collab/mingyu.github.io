@@ -35,6 +35,8 @@ function mobHit(S, rt, p, raw, mob) {
   if (p.dead) return;
   const before = p.hp;
   const src = mob && !mob.dead ? mob : null;
+  // a rift's master hits softer than its wild kin (64-dim.js)
+  if (mob && mob.ak) raw *= mob.ak;
   hurtPlayer(S, rt, p, raw, src);
   if (!src || src.dead || !src.tr || !src.tr.length) return;
   const atk = MOBS[src.k].atk * ELITE[src.el].atk;
@@ -45,7 +47,8 @@ function mobHit(S, rt, p, raw, mob) {
   }
   if (has(src, "vamp")) {
     // it drinks what it spills
-    const heal = Math.min(mobMax(src) - src.hp, Math.max(0, before - p.hp) * 3);
+    // (a rift monster made tougher heals by the same measure: 64-dim.js dimHk)
+    const heal = Math.min(mobMax(src) - src.hp, (Math.max(0, before - p.hp) * 3) / (src.hk || 1));
     if (heal >= 1) { src.hp += heal; rt.ev.push(["h", src.id, -Math.round(heal), 0, 0]); }
   }
 }
@@ -362,6 +365,7 @@ export function tick(S, now) {
   S.now = now;
   worldEvent(S, now);
   skyTick(S, now);
+  dimTick(S, now);
   const pids = Object.keys(S.players);
   for (const id of liveMapIds(S)) {
     const rt = S.maps[id];

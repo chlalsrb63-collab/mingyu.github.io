@@ -105,6 +105,7 @@ export function viewFor(S, pid) {
   }
   if (p.dirty) out.self = selfPayload(p);
   if (p.gain.length) out.gain = p.gain;
+  dimView(S, p, out);
   if (p.toast.length) out.toast = p.toast;
   p.sendMap = false; p.fix = false; p.dirty = false; p.gain = []; p.toast = [];
   return out;
@@ -162,6 +163,6 @@ export function defs() {
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
-    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band, mobs: MAP_META[id].kinds.slice() })),
+    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band, mobs: MAP_META[id].kinds.slice() })),
   };
 }

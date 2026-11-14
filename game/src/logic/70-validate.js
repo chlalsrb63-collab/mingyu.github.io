@@ -46,6 +46,7 @@ export function validateAction(S, pid, a) {
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");
       if (a.here && countItem(ch, "feather") < 1) return bad("부활 깃털이 없습니다");
+      if (!a.here && dimReviveWait(S, p) > 0) return bad(`${dimReviveWait(S, p)}초 뒤에 시작 지점에서 일어날 수 있습니다`);
       return OK;
     case "opt": {
       // settings kept with the character: loot filter, auto-potion thresholds (percent)
@@ -364,6 +365,8 @@ export function validateAction(S, pid, a) {
       }
       return bad("잘못된 요청입니다");
     }
+    // ── 차원 균열 (64-dim.js): open, answer the ready check, cancel it, leave, join again
+    case "dim_open": case "dim_ready": case "dim_cancel": case "dim_leave": case "dim_join": return dimValidate(S, p, a);
     default:
       return bad("알 수 없는 행동");
   }

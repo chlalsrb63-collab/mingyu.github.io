@@ -75,6 +75,11 @@ function buildTown() {
   // the spirit tree (정령나무) stands behind the plaza's campfire; its trunk blocks one tile
   m.o[20][20] = "T";
   m.big.push({ t: "spirit", x: 20, y: 20 });
+  // 차원의 오벨리스크 east of the spirit tree, its keeper beside it (64-dim.js; a solid tile under the big piece)
+  m.o[DIM_TOWN.ob[1]][DIM_TOWN.ob[0]] = "a";
+  m.big.push({ t: "obelisk", x: DIM_TOWN.ob[0], y: DIM_TOWN.ob[1] });
+  m.npcs.push({ id: "dimkeeper", name: "균열 지기 오르카", role: "dim", x: DIM_TOWN.keeper[0], y: DIM_TOWN.keeper[1], look: [3, 3, 0, "#5a3a8a"],
+    say: "오벨리스크 너머로 차원의 틈이 열려 있다네. 파티장이 균열을 열면 함께 들어갈 수 있지. 15분 안에 균열의 주인을 쓰러뜨리게!" });
   return m;
 }
 

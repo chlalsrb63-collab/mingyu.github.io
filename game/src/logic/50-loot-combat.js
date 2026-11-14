@@ -169,7 +169,7 @@ function lootFor(S, rt, mob, p) {
   const out = [];
   const share = allies(S, p).length;
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * (1 + st.gold / 100) * (mob.lucky ? 2 : 1);
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * (1 + st.gold / 100) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
   const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
   for (let i = 0; i < tries; i++) {
@@ -233,6 +233,8 @@ function gainXp(S, p, n) {
 /** Take `dmg` off a monster on behalf of `p`; true if that killed it. */
 function dealMob(S, rt, mob, p, dmg, crit) {
   if (mob.dead) return false;
+  // a rift's monster is made tougher for a bigger or stronger party (64-dim.js dimHk)
+  if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
   mob.hp -= dmg;
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
   if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
@@ -395,6 +397,8 @@ function killMob(S, rt, mob) {
     rt.kc++;
     if (rt.kc >= FB_KILLS && !rt.fb) spawnFieldBoss(S, rt, mob.x, mob.y);
   }
+  // inside a 차원 균열: the gauge, orbs and shrines, the master (64-dim.js)
+  if (mob.dim) dimKill(S, rt, mob, looters);
 }
 /**
  * The last thing that hurt a player, kept so a fall can say what did it (the death window

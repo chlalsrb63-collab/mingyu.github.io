@@ -97,6 +97,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `10-tables.js` [347] | gear names/tiers `GEAR`, **`ITEMS`**, `RUNES`, `RUNEWORDS`, `AFFIX`, `RARITY`, `LEGEND`, `SETS`, `TRAIN`, skill costs, `SHOP`, `ENH_RATE`, campfire/fishing/guild consts, `MASTERY`, `FIELD_BOSS`, elite `TRAITS`, `DENSITY`, cell spawning constants (`CELL WAKE_R SLEEP_R WAKE_MAX_MOBS SPAWN_MIN_D CELL_RESPAWN_MS` waves), **`MOBS`**, chests, **`QUESTS`** |
 | `20-helpers-mapkit.js` [568] | `rnd(box)`/`ri`/`clamp`/`dist`, XP curve `xpNeed`, map primitives (`blank rect road portal finalize`), noise (`fbm`), A* `walk`, `bfs`, `poisson`, Voronoi `partition`, `grow`, `knit`, `stamp`, cellular `automaton`, spawn banding |
 | `30-maps-overworld.js` [722] | set pieces `PIECE` legend + **`PIECES`** (incl. the fallen kingdom: chapel cottage watchtower kinggate graveyard …; `UPRIGHT` = never rotated, their ruin art stands on footprint chars `N d i f`), `piece()`, `wilds(cfg)` (meadow/forest/maple generator; optional `lair` `campPiece` `vaultMobs` `trail` `padMin`), `metro(cfg)` (city generator) |
+| `31-maps-dim.js` [287] | 차원 균열 (party instance, docs/design/scale-and-rift.md D): **`DIM`** table (caps, gauge, shrines, toughness, rewards — balance here), `DIM_THEMES`, `DIM_TOWN` (obelisk/keeper/landing tiles), `dimPool`, **`dimension(cfg)`** (seeded 56×40 rooms-and-corridors map + `m.dim` layout/spawns) |
 | `32-maps-underground.js` [630] | `tunnel`, `cavern` (cave), `catacomb` (crypt), `sewers`, `abyssal` (abyss) |
 | `33-maps-zones.js` [231] | 4× grounds (docs/design/scale-and-rift.md C): `zoneMap` (m.zone safe/normal/elite/hidden by walk from the entrance, hidden `pockets`, minimap `zq`), `zoneSpawns` (colonies per 8×8 block of each zone), waypoint keys `wpKey wpOk stonesOf stoneName`, 질주의 바람 `windTouch` (`WIND_*`) |
 | *(generated)* | `const DATA = {maps, links, npcs, quests}` — `build-logic.mjs` inserts `game/data/**` right after 00-header |
@@ -108,6 +109,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `60-content.js` [317] | waypoints + recall, dailies (06:00 KST), achievements `ACH` + titles, collection, world event (rift), tutorial `TUT` |
 | `62-daynight.js` [184] | sky: `SKY_DAY_MS` (one outdoor day = 48 real min), `PHASES` 새벽/아침/낮/노을/밤, `weatherAt(map, now)` (6-min slots, `WX_ODDS`, rain → fish, fog → aggro), `CAMPS`/seats `sitDown`, warmth `warmthFor`/`warmTick`, `JAM` 연주/건배, night storyteller `TELLER`/`TALES`, `skyTick`, `skyAt` (tests) |
 | `62-side-quests.js` [121] | editor side quests: `SIDE`, `ch.sq` (`sqClean`), `sqProgress` hooks (kill/pickup/talk/visit), `sqValidate`/`sqApply` (action `sq`), `sqView` |
+| `64-dim.js` [449] | 차원 균열 manager: ready check (`dimOpen rcCheck`), `dimStart`, `dimKill` (gauge, orbs, shrines), `dimBoss`, `dimClear`/`dimChest`, `dimTick` (timer, cleanup, pickups, portal), `dimRespawn`, actions `dimValidate/dimApply` (`dim_open dim_ready dim_cancel dim_leave dim_join`), wire `dimView` (`dim` `rc` `dj`), `dimDefs`; helpers `dimCnt` `dimLvOf` `dimHk` |
 | `65-cosmetics.js` [125] | `COSMETICS` catalogue, `COS_SLOTS`, wardrobe helpers `cosClean cosWire giveCos cosFrom` |
 | `70-validate.js` [348] | **`validateAction`** — one `case` per action `t`: respawn opt look chat p*/g* (party/guild) qs sort emo cos_* title daily tut mv atk warp sk use eq uneq rune train sklv wh sellall buy sell enh sit fish hook reel cook salv bq quest |
 | `75-apply.js` [522] | **`applyAction`** (same cases, mutates state), `afterGear` |
@@ -163,7 +165,7 @@ connectivity, determinism, per-map build time, lazy registry + MAP_META ↔ buil
 frame: inside the sheet, closed outline, eyes uncovered, art in every view, in its place) ·
 looks (species ↔ LOOK_MAX) · mobart (every mob has a model that fits its canvas) · accounts (vault
 logic with a fake store + client contract) · daynight (clock, weather per map/slot, wire `dn`, stumps, warmth 1–4, 연주/건배, storyteller, rain/fog flavour) · data (editor data: sample map, links, side quests, round
-trip, data:check errors, sheet v8) · interiors (town doors in and out of the cafe/hall/inn, diorama
+trip, data:check errors, sheet v9) · dimrift (차원 균열: generator, ready check, gauge/orbs/shrines, master, chest, death, cleanup, wire, bot-party clear time; `-v` prints the times, `HPB= BOSSHP= NOCLEAR=1 MORE=1` for tuning) · interiors (town doors in and out of the cafe/hall/inn, diorama
 walls, keepers' own goods).
 
 ### Scripts — `game/scripts/` (pure node; work on Windows)
