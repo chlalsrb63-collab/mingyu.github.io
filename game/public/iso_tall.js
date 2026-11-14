@@ -62,8 +62,18 @@ function block(o) {
   }
   if (o.after) o.after(buf, E);
   const cv = buf.canvas();
-  return { img: cv, dx: -16, dy: -h - E };
+  const piece = { img: cv, dx: -16, dy: -h - E };
+  // a cut-down stump of the same block, for a renderer that lowers walls standing in front of someone
+  if (!o.isLow && h > LOW_H) {
+    let low = null;
+    Object.defineProperty(piece, "low", {
+      enumerable: false,
+      get: () => low || (low = block({ ...o, isLow: true, h: LOW_H, E: 0, after: null, nh: o.nh.map((n) => (n ? LOW_H : 0)), nd: o.nd ? LOW_H : 0 })),
+    });
+  }
+  return piece;
 }
+const LOW_H = 6;
 
 // ───────────────────────────── the kinds ─────────────────────────────
 

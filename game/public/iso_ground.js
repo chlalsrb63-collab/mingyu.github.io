@@ -58,6 +58,7 @@ const SHP = {
   pebble: ["2/1", "22/11", "11", "33", "2./11", "3/1"].map(shape),
   sand: ["22", "11", "222", "1.1", "3/1"].map(shape),
   water: ["111", "1111", "22", "11.11"].map(shape),
+  sludge: [".22./2..2/.22.", "1111/.11.", ".2./2.2/.2."].map(shape),
   asph: ["11", "22", "1/1", "111"].map(shape),
   mud: ["22", "11", "111", "3/1"].map(shape),
   flesh: ["22", "222", "2/1", "11"].map(shape),
@@ -197,7 +198,7 @@ export function materials(theme) {
   // water: shallow and deep; the bank under a far shore
   const wet = U ? U.wet : ["#4aa2e2", "#3f8ad2", "#8accf6", "#2f78c0", "#86c8f4"];
   const water = mk(MID.water, 10, wet[0], { pal: [wet[0], wet[1], mix(wet[0], 1.08)], style: "bank", line: wet[3] });
-  water.tex = organic(water, SHP.water, null, 61, 0.2, 0, 11, 6);
+  water.tex = theme === "sewer" ? organic(water, SHP.water, SHP.sludge, 61, 0.42, 0.3, 9, 5) : organic(water, SHP.water, null, 61, 0.2, 0, 11, 6);
   water.foam = C(U ? wet[2] : "#d8f0ff"); water.foam2 = C(wet[4]);
   water.bank = (U ? [U.face[1], U.face[0], U.face[3]] : ["#b08650", "#8f6238", "#6a4426"]).map(C);
   const deep = mk(MID.deep, 11, wet[1], { pal: [wet[1], mix(wet[1], 0.9), mix(wet[1], 1.06)], style: "soft", amp: 3, depth: 2 });
@@ -216,7 +217,7 @@ export function materials(theme) {
     if (theme === "crypt") floor.tex = laid(floor, 16, 8, 8, 81, { crack: true });
     else if (theme === "sewer") {
       // brick, and grime spreading over it in patches with ragged edges
-      const grime = C("#4f7a3a");
+      const grime = C("#4a6a3e");
       floor.tex = veined(laid(floor, 8, 4, 4, 83), 8, 84, 4, 85, (n, n2, A, B) => (n > 0.72 && (n > 0.78 || ((A + B) & 1 && n2 > 0.4)) ? grime : 0));
     } else if (theme === "abyss") {
       // flesh: deep veins wandering through it, finer ones branching off
@@ -613,6 +614,11 @@ function extras(m, theme, MT) {
         const r = wA % 6;
         c = r === 5 ? C("#3c0e16") : r === 0 ? C("#f4f0e0") : r === 4 ? C("#a8a08a") : C("#e2dcc6");
         if ((sideN && across < 3) || (sideS && across > 12)) c = across === 1 || across === 14 ? C("#8c2c3a") : r === 5 ? C("#3c0e16") : C("#c8c0a8");
+      } else if (theme === "crypt") {
+        // slabs of stone with a low kerb either side
+        const r = wA % 8, t = hash(Math.floor(wA / 8), across >> 3, 6);
+        c = r === 7 ? C("#55504c") : r === 0 ? C("#a8a294") : t < 0.3 ? C("#8b867c") : C("#7d786e");
+        if ((sideN && across < 3) || (sideS && across > 12)) c = across === 0 || across === 13 ? C("#b8b2a4") : across === 2 || across === 15 ? C("#4b4540") : C("#989080");
       } else if (theme === "sewer") {
         // an iron grating between two rails
         c = (along % 4 === 0 || across % 4 === 0) ? C("#2a302c") : C("#5a625c");
@@ -670,7 +676,7 @@ function extras(m, theme, MT) {
     // the thickness of a bridge's deck, where it stands over water toward the viewer
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
       if (m.g[y][x] !== "b") continue;
-      const faceC = theme === "abyss" ? [C("#a8a08a"), C("#5c1e2b")] : theme === "sewer" ? [C("#3a423e"), C("#1c2220")] : [C("#7a5030"), C("#5a3a22")];
+      const faceC = theme === "abyss" ? [C("#a8a08a"), C("#5c1e2b")] : theme === "sewer" ? [C("#3a423e"), C("#1c2220")] : theme === "crypt" ? [C("#6a645c"), C("#3a3632")] : [C("#7a5030"), C("#5a3a22")];
       const X0 = S.ox + (x - y) * 16, Y0 = S.oy + (x + y) * 8;
       for (let sx = -15; sx <= 15; sx++) {
         const right = sx > 0;
