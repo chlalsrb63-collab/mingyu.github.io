@@ -2014,6 +2014,17 @@ export function showcase(draft) {
   map = null;
 }
 export function leaveStage() { stage = null; }
+/**
+ * One person with their weapon, drawn on another canvas (the title diorama and the
+ * creation preview, lobby.js): `figure(look)` makes the scratch state, `drawFigure`
+ * draws it with the same strokes as in the world. `e` speaks in screen directions.
+ */
+export function figure(look) { return { key: "", face: 1, walk: 0, ang: null, ...makePerson(look) }; }
+export function drawFigure(ctx, s, e, t, dt, x, y) {
+  const keep = g;
+  g = ctx;
+  try { drawPerson(s, { scr: true, x: 0, y: 0, dir: 2, moving: false, atkT: -1e9, dead: false, aim: null, ...e }, t, dt, x, y); } finally { g = keep; }
+}
 export function renderStage(dt, t) {
   if (!cv || !stage) return;
   const S = scenery();
