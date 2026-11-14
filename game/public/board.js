@@ -21,6 +21,7 @@ import { act, entityPos } from "./net.js";
 import { openWin, isOpen } from "./windows.js";
 import { countItem } from "./actions.js";
 import { iconImg } from "./uiicons.js";
+import * as Info from "./infocard.js";
 import { floatText } from "./events.js";
 
 /** The map each 알바 NPC stands on (static NPCs of the town, its interiors and 버드나무 마을). */
@@ -101,7 +102,7 @@ export function render(s) {
   if (!s.jb || !D()) { box.append(el("p", "hint", "불러오는 중…")); return; }
   const [, offers, done] = s.jb, per = D().jbPay.perDay, a = active(s), near = nearPopo();
   const top = el("div", "daily-top");
-  top.append(iconImg("note", "#e2c486"), el("span", "", `오늘의 알바 ${done.length}/${per}`), el("b", "", `${s.gold.toLocaleString()}G`));
+  top.append(iconImg("note", "#e2c486"), el("span", "", `오늘의 알바 ${done.length}/${per}`), Info.coin(s.gold, "purse"));
   box.append(top);
   if (a) box.append(jobCard(s, a, true));
   box.append(el("div", "section", "오늘의 의뢰"));
@@ -115,7 +116,8 @@ export function render(s) {
     hd.append(nm, el("span", "tag", (KIND[kind] || [kind])[0]));
     card.append(hd, el("p", "say", text));
     const ft = el("div", "df");
-    const pay = el("small", "pay", `${gold.toLocaleString()}G${kind === "deliver" ? ` + 팁 최대 ${Math.round(D().jbPay.tip * 100)}%` : ""}`);
+    const pay = el("small", "pay");
+    pay.append(Info.coin(gold), kind === "deliver" ? ` + 팁 최대 ${Math.round(D().jbPay.tip * 100)}%` : "");
     const lvl = t ? el("small", "", `${D().names[si]} Lv.${t.lv}+ · ${kind === "deliver" ? `${placeOf(t.npc)} → ${placeOf(t.to)}` : placeOf(t.npc)}`) : el("small", "");
     ft.append(pay, lvl);
     card.append(ft);
@@ -248,7 +250,7 @@ export const trackKey = (s) => { const a = active(s); return a ? [a.id, a.prog, 
 export function trackRows(s, qt, goal) {
   const a = active(s);
   if (!a) return false;
-  const t = el("div", "qt"); t.append(el("small", "", "알바"), a.t.text.replace(/[.!].*$/, ""));
+  const t = el("div", "qt"); t.append(Info.questMark("job"), a.t.text.replace(/[.!].*$/, ""));
   qt.append(t);
   const nx = nextStep(a);
   if (a.t.kind !== "deliver") {

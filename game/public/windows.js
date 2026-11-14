@@ -24,6 +24,7 @@ import { stoneNear } from "./actions.js";
 import { wpWoke } from "./overlay.js";
 import { refreshUi } from "./hud.js";
 import { tutTry } from "./win_world.js";
+import * as Info from "./infocard.js";
 import { renderParty, renderGuild } from "./win_social.js";
 
 // (the radar and the map window live in radar.js)
@@ -338,7 +339,12 @@ export const chatLog = $("#chat-log");
 export function addChat(m, cls, name) {
   const stick = chatLog.scrollTop + chatLog.clientHeight >= chatLog.scrollHeight - 12;
   const p = el("p", cls || "");
-  if (name) p.append(el("span", "who", `${name}: `));
+  if (name) {
+    const who = el("span", "who", `${name}: `);
+    // the speaker's job, when they stand in this place (chat carries a name only)
+    for (const w of G.who.values()) if (w.name === name) { who.prepend(Info.jobMark(w.cls)); break; }
+    p.append(who);
+  }
   if (typeof m === "string") {
     for (const seg of Emo.parse(m)) {
       if (seg.e === undefined) { p.append(seg.s); continue; }

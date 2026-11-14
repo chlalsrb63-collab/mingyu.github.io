@@ -8,7 +8,8 @@ import * as Art from "./art.js";
 import { Sound } from "./audio.js";
 import * as Mini from "./minigames.js";
 import { skillIconUrl } from "./skillicons.js";
-import { iconImg, iconUrl, CLASS_ICON } from "./uiicons.js";
+import { iconImg, iconUrl } from "./uiicons.js";
+import * as Info from "./infocard.js";
 import * as QS from "./quickslots.js";
 import * as StatWin from "./statwin.js";
 import * as JobTree from "./jobtree.js";
@@ -26,9 +27,11 @@ import * as Charms from "./charms.js";
 export function renderInv(s) {
   const it = G.defs.items;
   $("#inv-gold").textContent = "";
-  $("#inv-gold").append(iconImg("coin", "#e2c486"), `${s.gold.toLocaleString()} G`);
+  $("#inv-gold").append(iconImg("coin", "#e2c486"), s.gold.toLocaleString());
   const cap = s.bagCap || G.defs.inv;
-  $("#inv-count").textContent = `${s.inv.length} / ${cap}`;
+  $("#inv-count").textContent = "";
+  $("#inv-count").append(iconImg("bag", "#b8ac90"), `${s.inv.length}/${cap}`);
+  $("#inv-count").classList.toggle("full", s.inv.length >= cap);
   const sort = $("#inv-sort");
   sort.textContent = "";
   sort.append(iconImg("sort"), "정리");
@@ -108,19 +111,20 @@ export function renderInv(s) {
   }
   if (isOpen("shop")) {
     const each = sellPrice(entry);
-    add(`판매 ${each}G`, () => act({ t: "sell", s: G.sel, n: 1 }));
+    add(`판매 ${each.toLocaleString()}G`, () => act({ t: "sell", s: G.sel, n: 1 }));
     if (entry.n > 1) add(`전부 판매 ${(each * entry.n).toLocaleString()}G`, () => act({ t: "sell", s: G.sel, n: entry.n }));
   }
   if (btns.children.length) det.append(btns);
 }
 
 // ── the character sheet ──
+/** The sheet: groups of [infocard key, value]. Each is a glyph and its number; the name is the tooltip, a click opens the card. */
 const STAT_GROUPS = [
-  ["공격", [["공격력", "sword", (s) => s.atk], ["치명타", "target", (s) => `${s.crit}%`], ["치명 피해", "burst", (s) => `${s.critd}%`], ["공격 간격", "clock", (s) => `${(s.acd / 1000).toFixed(2)}초`], ["흡혈", "fang", (s) => `${s.ls}%`]]],
-  ["방어", [["방어력", "shield", (s) => s.def], ["최대 HP", "heart", (s) => s.mhp], ["최대 MP", "drop", (s) => s.mmp]]],
-  ["유틸", [["경험치 추가", "up", (s) => `${s.xpb}%`], ["아이템 발견", "gem", (s) => `${s.mf}%`], ["골드 획득", "coin", (s) => `+${s.goldb}%`], ["처치 수", "skull", (s) => s.kills.toLocaleString()]]],
-  ["능력치", [["힘", "fist", (s) => s.st.str], ["의지", "heart", (s) => s.st.wil], ["민첩", "feather", (s) => s.st.dex], ["지능", "burst", (s) => s.st.int], ["지혜", "eye", (s) => s.st.wis], ["행운", "clover", (s) => s.st.luk]]],
-  ["숙련", [["회피", "chevron", (s) => `${s.dv[1]}%`], ["공격 속도", "clock", (s) => `+${s.dv[2]}%`], ["재사용 감소", "clock", (s) => `${s.dv[3]}%`], ["무기 숙련", "up", (s) => `${s.skLv}`]]],
+  ["공격", [["atk", (s) => s.atk], ["crit", (s) => `${s.crit}%`], ["critd", (s) => `${s.critd}%`], ["acd", (s) => `${(s.acd / 1000).toFixed(2)}초`], ["ls", (s) => `${s.ls}%`]]],
+  ["방어", [["def", (s) => s.def], ["mhp", (s) => s.mhp], ["mmp", (s) => s.mmp]]],
+  ["유틸", [["xpb", (s) => `${s.xpb}%`], ["mf", (s) => `${s.mf}%`], ["goldb", (s) => `+${s.goldb}%`], ["kills", (s) => s.kills.toLocaleString()]]],
+  ["능력치", [["str", (s) => s.st.str], ["wil", (s) => s.st.wil], ["dex", (s) => s.st.dex], ["int", (s) => s.st.int], ["wis", (s) => s.st.wis], ["luk", (s) => s.st.luk]]],
+  ["숙련", [["eva", (s) => `${s.dv[1]}%`], ["aspd", (s) => `+${s.dv[2]}%`], ["cdr", (s) => `${s.dv[3]}%`], ["wm", (s) => `${s.skLv}`]]],
 ];
 export function renderChar(s) {
   // three tabs (the row is wardrobe_ui.js's): 장비 (the paper-doll and the sheet), 능력치 (statwin.js: buying points), 외형.
@@ -138,7 +142,7 @@ export function renderChar(s) {
 export function renderDoll(s) {
   const title = $("#char-title");
   title.textContent = "";
-  title.append(iconImg(CLASS_ICON[s.cls] || "sword", "#e2c486"), s.name, el("small", "", `Lv.${s.lvl} ${G.defs.classes[s.cls].name}`));
+  title.append(Info.jobMark(s.job), s.name, el("small", "", `Lv.${s.lvl} ${G.defs.classes[s.cls].name}`));
   for (const k of G.defs.slots) {
     const host = $(`#eq-${k}`);
     if (!host) continue;
@@ -164,12 +168,7 @@ function renderSheet(s) {
   for (const [name, rows] of STAT_GROUPS) {
     const grp = el("div", "grp");
     grp.append(el("h4", "", name));
-    for (const [label, glyph, val] of rows) {
-      const sp = el("span", "", label);
-      sp.prepend(iconImg(glyph));
-      sp.append(el("b", "", val(s)));
-      grp.append(sp);
-    }
+    for (const [key, val] of rows) grp.append(Info.statChip(key, val(s)));
     st.append(grp);
   }
   const pw = $("#char-sets");

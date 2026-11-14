@@ -9,10 +9,12 @@
  * A single job wears its weapon's colour with pale metal; a two-weapon job wears both of its weapons'
  * colours, so the fifteen pairs are fifteen different colour pairs as well as fifteen silhouettes.
  * The module has no DOM at import time (tests/jobicons.mjs reads `ART`, `colorsOf` and `mask`).
+ * Nothing here counts jobs or weapons: a job id without a mark (a job the rules gain later) wears the
+ * 모험가's compass until its own is drawn, and a mark may be drawn before its job exists (`destroyer`).
  */
 
 /** The six weapons' colours (also the tints of the tree and the cards). */
-export const WK_COLOR = { sword: "#f0705a", dagger: "#b98cf5", spear: "#4fd8c8", staff: "#ffb84a", book: "#7a9cff", bow: "#8fe070" };
+export const WK_COLOR = { sword: "#f0705a", dagger: "#b98cf5", spear: "#4fd8c8", staff: "#ffb84a", book: "#7a9cff", bow: "#8fe070", hammer: "#ff7eb0" };
 const PALE = "#e6e0d0", BRASS = "#e2a84a", OUT = "#1c1420", HI = "#fff6dc";
 
 /** job id → [first weapon, second weapon | null, 14 rows, what the mark is (Korean, for the detail card)] */
@@ -105,6 +107,11 @@ export const ART = {
     "......oo......", ".....oooo.....", "....oooooo....", "...ooo##ooo...", "..oooo##oooo..", ".ooo######ooo.", "oooooo##oooooo",
     "ooo.oo##oo.ooo", "o....oooo....o", "......oo......", "..#...oo...#..", ".###..oo..###.", "..#...oo...#..", "..............",
   ], "룬을 새긴 큰 화살촉과 먹물 방울"],
+  // drawn ahead of the rules: the two-handed hammer's job lights up when `JOBS` gains `destroyer`
+  destroyer: ["hammer", null, [
+    "......oo......", "......oo......", "......oo......", "......oo......", "..##########..", ".#*##########.", ".#*##########.",
+    ".############.", ".###------###.", "..##########..", "-..-..--..-..-", ".-..-.--.-..-.", "..-...-....-..", "..............",
+  ], "땅을 내리찍는 양손해머와 갈라지는 바닥"],
 };
 export const ALL = Object.keys(ART);
 /** The old class names some saved rows still carry. */
@@ -122,7 +129,7 @@ const shade = (hex, k = 0.58) => {
 export function colorsOf(id) {
   const [a, b] = ART[jobId(id)];
   if (!a) return [PALE, BRASS];
-  return [WK_COLOR[a], b ? WK_COLOR[b] : PALE];
+  return [WK_COLOR[a] || PALE, b ? WK_COLOR[b] || BRASS : PALE];
 }
 /** The filled cells of a mark, as 14 strings of `1`/`0` (the silhouette; tests compare these). */
 export const mask = (id) => ART[jobId(id)][2].map((r) => [...r].map((c) => (c === "." ? "0" : "1")).join(""));

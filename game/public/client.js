@@ -54,6 +54,7 @@ import * as Life from "./life.js";
 import * as Gather from "./gather.js";
 import * as Board from "./board.js";
 import * as Charms from "./charms.js";
+import * as Info from "./infocard.js";
 import { resize, world, $, G, el, $$, now } from "./state.js";
 import { act, entityPos, connect, disconnect, stopGame, channel, ws, setupNet } from "./net.js";
 import { pathTo, setupInput, toggleAuto } from "./input.js";
@@ -63,7 +64,7 @@ import { floatText } from "./events.js";
 import { openWin, closeWin, isOpen, hoverTip, toast, closeAll, setupWindows } from "./windows.js";
 import { itemSlot, setupItems } from "./items.js";
 import { draw, hudTick, setupHud } from "./hud.js";
-import { setupWinChar } from "./win_char.js";
+import { setupWinChar, openTree, openStats } from "./win_char.js";
 import { setupWinWorld } from "./win_world.js";
 import { setupWinSocial } from "./win_social.js";
 
@@ -94,6 +95,8 @@ setupHud();
 setupWinChar();
 setupWinWorld();
 setupWinSocial();
+// detail cards (infocard.js): every glyph that stands for a word answers a click with what it is and how to use it
+Info.setup({ openTree, openStats, openWin });
 
 // ───────────────────────────── title & creation ─────────────────────────────
 

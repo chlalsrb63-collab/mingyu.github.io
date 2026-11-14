@@ -19,6 +19,8 @@
  */
 import { iconImg } from "./uiicons.js";
 import { kindIcon } from "./mastery.js";
+import { jobImg } from "./jobicons.js";
+import * as Info from "./infocard.js";
 import { skillIconUrl } from "./skillicons.js";
 import { scaleText, gradeOf } from "./statwin.js";
 
@@ -69,7 +71,8 @@ function changeButton(host, s, j, atJob) {
     host.append(cf);
     return;
   }
-  const b = el("button", "btn small gold", `전직 ${fmt(job.cost)}G`);
+  const b = el("button", "btn small gold", "전직 ");
+  b.append(Info.coin(job.cost, "ink"));
   b.disabled = !atJob || s.gold < job.cost;
   b.title = !atJob ? "전직관 아르센 앞에서 할 수 있습니다" : s.gold < job.cost ? "골드가 부족합니다" : "";
   b.addEventListener("click", () => { ask = j; C.Sound.play("ui"); C.redraw(); });
@@ -94,8 +97,11 @@ function jobCard(s, j, atJob) {
   const d = D(), job = d.jobs[j], st = jobState(s, j), sig = sigOf(j);
   const card = el("div", `jt-card ${st}`);
   const hd = el("div", "hd");
-  for (const k of job.wk) { const ic = el("img", "wi"); ic.alt = ""; ic.src = kindIcon(k); hd.append(ic); }
-  hd.append(el("b", "", job.name), el("small", "", job.kind === "hybrid" ? `두 갈래 길 · ${fmt(job.cost)}G` : `${d.wkName[job.wk[0]]}의 길 · ${fmt(job.cost)}G`));
+  hd.append(Info.jobMark(j));
+  for (const k of job.wk) { const ic = el("img", "wi"); ic.alt = ""; ic.title = d.wkName[k]; ic.src = kindIcon(k); hd.append(ic); }
+  const kindOf = el("small", "", job.kind === "hybrid" ? "두 갈래 길 " : `${d.wkName[job.wk[0]]}의 길 `);
+  kindOf.append(Info.coin(job.cost));
+  hd.append(el("b", "", job.name), kindOf);
   if (STATE_TEXT[st]) hd.append(el("em", st, STATE_TEXT[st]));
   card.append(hd);
   card.append(needLines(s, j));
@@ -221,7 +227,7 @@ export function renderTree(box, s, { atJob }) {
   box.textContent = "";
   // the root: where this character stands
   const root = el("div", "jt-root" + (adv ? " cur" : ""));
-  root.append(iconImg("person", adv ? "#2a1806" : "#e2c486"), el("b", "", adv ? "모험가" : `모험가 ▸ ${jobs[s.job].name}`));
+  root.append(Info.jobMark(s.job), el("b", "", adv ? "모험가" : `모험가 ▸ ${jobs[s.job].name}`));
   root.append(el("small", "", adv ? "두 무기가 만나는 칸이 그 두 무기의 직업입니다. 전직은 한 번뿐입니다." : `지금 [${jobs[s.job].name}] — 전직은 되돌릴 수 없습니다`));
   box.append(root);
 
@@ -230,13 +236,17 @@ export function renderTree(box, s, { atJob }) {
   if (!jobs[jsel] || jobs[jsel].kind === "none") jsel = !adv ? s.job : open[0] || singleOf(d.wkOrder.includes(s.wk) ? s.wk : "sword");
 
   const grid = el("div", "jt-grid");
+  // one column and one row per weapon of the rules (six today), never a fixed count
+  grid.style.gridTemplateColumns = `30px repeat(${d.wkOrder.length}, minmax(0, 1fr))`;
+  grid.style.gridTemplateRows = `34px repeat(${d.wkOrder.length}, 38px)`;
   const hand = s.eq.weapon ? s.wk : "";
   const cell = (j, row, col) => {
     const job = jobs[j], st = jobState(s, j), need = needOf(j), lvs = job.wk.map((k) => wmOf(s, k)[0]);
     const b = el("button", `jt-node ${job.kind} ${st}` + (jsel === j ? " sel" : "") + (job.wk.includes(hand) ? " mine" : "") + (job.name.length > 4 ? " long" : ""));
     b.type = "button";
     b.style.gridRow = String(row + 2); b.style.gridColumn = String(col + 2);
-    b.append(el("b", "", job.name));
+    // the cell is the job's emblem; its name is the tooltip and the card under the table (a click picks the job)
+    b.append(jobImg(j, st === "shut" ? { mono: "#6f6a60" } : undefined));
     // how far: "숙련 17/20" for one weapon, "12·9/15" for two (a weapon that is there shows ✓)
     const prog = lvs.map((lv) => (lv >= need ? "✓" : String(lv)));
     const sub = st === "cur" || st === "ok" ? STATE_TEXT[st] : st === "shut" ? "—" : `${prog.length > 1 ? prog.join("·") : `숙련 ${prog[0]}`}/${need}`;
@@ -293,8 +303,10 @@ export function renderJobNpc(box, s, { atJob }) {
       for (const [j] of rest.slice(0, 4)) {
         const r = el("div", "it");
         const tx = el("div", "tx");
-        tx.append(el("b", "", jobs[j].name), el("small", "", ` ${jobs[j].kind === "hybrid" ? "두 갈래" : "한 무기"} · ${fmt(jobs[j].cost)}G`));
-        r.append(tx, needLines(s, j));
+        const sm = el("small", "", ` ${jobs[j].kind === "hybrid" ? "두 갈래" : "한 무기"} `);
+        sm.append(Info.coin(jobs[j].cost));
+        tx.append(el("b", "", jobs[j].name), sm);
+        r.append(Info.jobMark(j), tx, needLines(s, j));
         list.append(r);
       }
       box.append(list);
