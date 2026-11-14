@@ -43,25 +43,35 @@
 
 ## 구조
 
+개발 안내(파일 지도 · 규칙 · 작업 레시피)는 저장소 맨 위 [`AGENTS.md`](../AGENTS.md), 내 PC(Windows) 설정과
+여러 AI 함께 쓰기는 [`docs/LOCAL_SETUP.md`](../docs/LOCAL_SETUP.md)에 있습니다.
+
 ```
-src/logic.js    게임 규칙 전부: 아이템·몬스터·스킬 표, 맵 4개, 전투·드랍·의뢰·강화 시뮬레이션
-src/room.ts     채널 하나 = Durable Object 하나. 소켓과 시계(초당 10틱)를 맡고 캐릭터를 저장
-src/worker.ts   /ws/<채널> 웹소켓을 해당 채널로, /api/*(가입·로그인·로그아웃·내 캐릭터·서버 목록)를 저장소로 연결
-src/accounts.js 아이디·비밀번호(PBKDF2)·세션 토큰·로그인 제한, 1서버(s1-ch1·s1-ch2)·2서버(s2-ch1·s2-ch2), 서버별 캐릭터 키(아이디@s1)
-public/         브라우저: client.js(입력·UI·이름표), scene2d.js(탑다운 도트 지형·소품·이펙트·무기 휘두르기), sprites.js(32px 동물 캐릭터·무기·몬스터), species.js(동물 종류·얼굴 부위), looks.js(외형 고르기·거울), art.js(아이콘·미니맵), audio.js(칩튠 합성)
-public/growth.js 스킬 수련 · 창고 · 펫 · 주문서 · 부활 깃털 · 아이템 필터 · 자동 물약의 화면 쪽
-tests/          규칙 테스트 (node tests/sim.mjs · party.mjs · loot.mjs · life.mjs · world.mjs · hard.mjs · content.mjs · growth.mjs)
+src/worker.ts      /ws/<채널> 웹소켓을 해당 채널로, /api/*(가입·로그인·로그아웃·내 캐릭터·서버 목록)를 저장소로 연결
+src/room.ts        채널 하나 = Durable Object 하나. 소켓과 시계(초당 10틱), 캐릭터 저장(vault)
+src/accounts.js    아이디·비밀번호(PBKDF2)·세션·로그인 제한, 1서버/2서버 × 채널 1/2, 서버별 캐릭터 키(아이디@s1)
+src/logic/*.js     게임 규칙 전부를 순서대로 나눈 조각 15개 (00-header … 90-views-api) ← 규칙은 여기서 고침
+src/logic.js       위 조각을 이어 붙여 자동 생성되는 한 파일 (직접 고치지 않음: npm run build:logic)
+public/            브라우저: client.js(입력·UI), lobby.js(로그인·서버 선택·캐릭터 생성), scene2d.js + iso_*.js(쿼터뷰 화면),
+                   sprites.js · species.js(동물 캐릭터), mobart*.js(괴물), weapons.js · wardrobe.js(무기·외형), audio.js(칩튠)
+public/_*.html     그림 확인용 미리보기 페이지 (배포 안 됨)
+public/assets/     외부 에셋 중 실제로 쓰는 것 + manifest.json (지금은 비어 있음, 전부 코드 그림)
+assets/            받은 무료 에셋 원본 보관함 + CREDITS.md (배포 안 됨)
+tests/             규칙 테스트 15개 (목록: tests/LIST)
+scripts/           build-logic · test-all · dump-maps · shot (스크린샷 한 장)
 ```
 
 서버가 모든 판정을 합니다. 브라우저는 "이동/공격/구매" 같은 의도만 보내고, 서버는 위치·쿨타임·
 골드·NPC와의 거리까지 검사한 뒤 초당 10번 각 플레이어에게 자기 주변 상황만 보내 줍니다.
-캐릭터는 채널과 무관한 저장소에 보관되므로 어느 채널로 들어가도 같은 캐릭터입니다.
+캐릭터는 채널과 무관한 저장소에 보관되므로 같은 서버의 어느 채널로 들어가도 같은 캐릭터입니다.
 
 ## 로컬 실행
 
 ```bash
-npx wrangler dev -c wrangler.local.jsonc   # http://localhost:8787 — 탭 두 개로 접속해 보세요
-node tests/sim.mjs && node tests/party.mjs && node tests/loot.mjs && node tests/life.mjs && node tests/world.mjs && node tests/hard.mjs && node tests/content.mjs && node tests/growth.mjs
+npm install
+npm run dev:local     # http://localhost:8787 — 탭 두 개로 접속해 보세요
+npm run test:rules    # 규칙 테스트 전부
+npm run deploy:cf     # 내 Cloudflare 계정에 배포 (npx wrangler login 먼저)
 ```
 
 ## 밸런스
