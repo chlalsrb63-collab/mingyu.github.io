@@ -65,7 +65,7 @@ export const BEASTS_A = {
 
   /** 창자 개구리 — a frog swollen tight, its own guts hanging out where a tongue should be. */
   gutfrog: {
-    size: "s",
+    size: "s", n: 50,
     draw(M, p) {
       const hop = p.walk ? [0, 1, 0.5, 0][Math.round(p.ph * 4)] : 0;
       const [lf, lu] = lunge(p);
@@ -170,7 +170,7 @@ export const BEASTS_A = {
   // ── forest
   /** 반쪽 멧돼지 — the front half of a boar, still charging; the back half is a nest of tentacles. */
   splitboar: {
-    size: "m",
+    size: "m", n: 58,
     draw(M, p) {
       const [lf, lu] = lunge(p, 1.4);
       const f0 = lf, u0 = 6.4 + lu + bob(p, 0.6) - (p.wind ? 0.6 : 0);

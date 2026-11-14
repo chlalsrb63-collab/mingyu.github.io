@@ -16,7 +16,7 @@ const GOAT = mat("#d8d0c0"), GOATD = mat("#a89c8c");
 const HORSE = mat("#4a3436"), HORSEM = mat("#2a1e22"), TENDRIL = mat("#e0a8b0", { wet: true });
 const LION = mat("#c89a5a"), LIOND = mat("#8a5a34"), ARM = mat("#e0c0a8");
 const SERP = mat("#8a3048"), SERPB = mat("#e0c070"), SERPW = mat("#5a2234");
-const SOW = mat("#c08a8e"), SOWD = mat("#8a5866"), SORE = mat("#b83a4a", { wet: true, drip: true });
+const SOW = mat("#b07880"), SOWD = mat("#8a5866"), SORE = mat("#b83a4a", { wet: true, drip: true });
 // ── the great ones
 const RIFT = mat("#ff72d6", { role: "glow" }), VOID = mat("#1a0a2a", { role: "keep", flat: true }), HIDE = mat("#4a3a4e"), MANE = mat("#6a2a3a"), BULL = mat("#7a5040");
 const MOTHER = mat("#b898a8", { wet: true }), MOTHERD = mat("#6e4a6a"), BROOD = mat("#5a2a5a", { wet: true });
@@ -41,15 +41,15 @@ export const BEASTS_C = {
       // the mouth: a ring of pink flesh, teeth turned inward
       const mc = [lf + 6.2 + (p.strike ? 1 : 0), 3.4 + rear * 3.4, 0], open = p.strike ? 1.3 : p.wind ? 1.1 : 0.9;
       M.e(mc, [1.2, 3.2 * open, 3.2 * open], RING, [0, rear * 30, 0]);
-      M.e([mc[0] + 0.5, mc[1], mc[2]], [0.6, 1.6 * open, 1.6 * open], C.MAW, [0, rear * 30, 0]);
-      for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2, cu = Math.cos(a), cs = Math.sin(a); M.cone([mc[0] + 0.6, mc[1] + cu * 2.1 * open, mc[2] + cs * 2.1 * open], [mc[0] + 1, mc[1] + cu * 1 * open, mc[2] + cs * 1 * open], 0.42, C.TOOTH); }
+      M.e([mc[0] + 0.8, mc[1], mc[2]], [0.6, 1.8 * open, 1.8 * open], C.MAW, [0, rear * 30, 0]);
+      for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2, cu = Math.cos(a), cs = Math.sin(a); M.cone([mc[0] + 1.1, mc[1] + cu * 2.2 * open, mc[2] + cs * 2.2 * open], [mc[0] + 1.6, mc[1] + cu * 1.1 * open, mc[2] + cs * 1.1 * open], 0.5, C.TOOTH); }
       M.dot([mc[0] + 1, mc[1] - 2.8, 0], "#b4cc3c", 1, 2);
     },
   },
 
   /** 반쪽 악어 — the front half of an alligator, hauling itself on two legs and dragging the bare spine of the rest. */
   gatorhalf: {
-    size: "l", k: 1.15,
+    size: "l", n: 72, k: 1.15,
     draw(M, p) {
       const rear = p.wind ? 1 : 0;
       const [lf, lu] = lunge(p, 1);
@@ -87,7 +87,7 @@ export const BEASTS_C = {
 
   /** 두개골 게 — a crab that moved into a skull too big for anything alive, and grew more claws than it can count. */
   crabskull: {
-    size: "l", glow: "#ff5a5a",
+    size: "l", n: 70, glow: "#ff5a5a",
     draw(M, p) {
       const [lf, lu] = lunge(p, 1.6);
       const f0 = lf, u0 = 7 + lu + bob(p, 0.6) - (p.wind ? 1 : 0);
@@ -155,8 +155,7 @@ export const BEASTS_C = {
         if (p.strike || p.wind) M.dot([h[0], h[1] - 0.4, h[2]], "#2a0a14", 1, 1);
       });
       // the pupil: a slit that turns to follow you
-      M.eye([c[0] + 3.3 * look, c[1] + 0.4, c[2] - 0.6], 3, "#e8b020");
-      M.dot([c[0] + 3.4 * look, c[1] + 1.8, c[2] - 0.6], "#1a1216", 1, 3);
+      M.stare(c, 3.4 + (p.wind ? 0.3 : 0), p.strike ? "#ff8a20" : "#e8b020", 4 + look);
       M.tube([[c[0] - 1, 1.4, -1.6], [c[0] + 1.6, 0.6, -3.2], [c[0] + 3.6, 0.5, -2.4]], [0.9, 0.5], EEL);
       M.tube([[c[0] - 1.6, 1.4, 1.6], [c[0] - 3.6, 0.6, 3.2], [c[0] - 5.4, 0.5, 2]], [0.9, 0.5], EELB);
     },
@@ -165,7 +164,7 @@ export const BEASTS_C = {
   // ── cave
   /** 손가락 거미 — it walks on fingers. Whose, nobody has asked. A palm for a body, and one eye in it. */
   spiderhand: {
-    size: "m",
+    size: "m", n: 58,
     draw(M, p) {
       const [lf, lu] = lunge(p, 1.2);
       const f0 = lf, u0 = 6.4 + lu + bob(p, 0.7) - (p.wind ? 1.4 : 0);
@@ -193,7 +192,7 @@ export const BEASTS_C = {
 
   /** 눈먼 두더지 — no eyes, a nose made of wet pink fingers, and a jaw that opens sideways. It digs with hands. */
   moleworm: {
-    size: "l",
+    size: "l", n: 72,
     draw(M, p) {
       const [lf, lu] = lunge(p, 1.4);
       const rear = p.wind ? 1 : 0;
@@ -302,7 +301,7 @@ export const BEASTS_C = {
 
   /** 균열의 군주 크리온 — a beast-king stitched from four animals around a hole in the world: a bull's back, a lion's front, a ram's skull, and the rift where its heart was. */
   boss: {
-    size: "boss", glow: "#ff72d6",
+    size: "boss", n: 162, glow: "#ff72d6",
     draw(M, p) {
       const [lf, lu] = lunge(p, 2);
       const rear = p.wind ? 1 : 0;
@@ -386,7 +385,7 @@ export const BEASTS_C = {
 
   /** 반쪽 말 — a horse that kept walking after it lost its head; the stump grew a bundle of feelers and a mouth. */
   horsehalf: {
-    size: "l",
+    size: "l", n: 70,
     draw(M, p) {
       const [lf, lu] = lunge(p, 1.6);
       const f0 = lf, u0 = 11 + lu + bob(p, 0.8) - (p.wind ? 1 : 0);
@@ -447,7 +446,7 @@ export const BEASTS_C = {
 
   /** 날개 구렁이 — a serpent that grew wings and never learned to land. */
   serpentwing: {
-    size: "l", hover: 10, glow: "#e8c840", k: 1.3,
+    size: "l", n: 70, hover: 10, glow: "#e8c840", k: 1.3,
     draw(M, p) {
       const t = p.walk ? p.ph : p.idle * 0.25;
       const flap = p.dead ? 0 : [0.8, 0.1, -0.6, 0.1][p.walk ? Math.round(p.ph * 4) : p.idle ? 1 : 0] + (p.wind ? 0.8 : 0);
@@ -492,13 +491,13 @@ export const BEASTS_C = {
       // the eyes along her belly, each looking a different way
       both((s) => {
         for (let i = 0; i < 4; i++) {
-          const q = surf([f0, u0, 0], [8, 5.4, 5.6], [0.55 - i * 0.34, 0.1, s * 0.9]);
+          const q = surf([f0, u0, 0], [8, 5.4, 5.6], [0.6 - i * 0.36, 0.42, s * 0.85]);
           M.e(q, [1.1, 0.9, 0.7], SOWD);
-          if (!((i + (p.idle ? 1 : 0) + (s > 0 ? 1 : 0)) % 4 === 0) || p.wind) M.eye([q[0], q[1] - 0.2, q[2] + s * 0.4], 2, i % 2 ? "#c8a020" : "#e02838");
+          if (!((i + (p.idle ? 1 : 0) + (s > 0 ? 1 : 0)) % 4 === 0) || p.wind) M.eye([q[0], q[1] - 0.2, q[2] + s * 0.4], i === 1 ? 3 : 2, i % 2 ? "#c8a020" : "#e02838");
         }
       });
       // her face: the snout works, the eyes are stitched shut
-      const H = [f0 + 8.4 + (p.strike ? 1 : 0), u0 + 1 - (p.wind ? 1 : 0), 0], HR = [3, 3, 3.2];
+      const H = [f0 + 8.6 + (p.strike ? 1 : 0), u0 + 1.4 - (p.wind ? 1 : 0), 0], HR = [3.4, 3.4, 3.6];
       M.e(H, HR, SOW);
       M.e([H[0] + 2.8, H[1] - 0.6, 0], [1, 1.6, 1.8], mat("#e8b6ba"));
       both((s) => {
@@ -514,7 +513,7 @@ export const BEASTS_C = {
 
   /** 심연의 어미 — the mother of all of it: one swollen body, five necks, and a brood you can see moving inside. */
   abyssboss: {
-    size: "boss", glow: "#b4cc3c",
+    size: "boss", n: 160, glow: "#b4cc3c",
     draw(M, p) {
       const [lf, lu] = lunge(p, 2);
       const f0 = lf * 0.6, u0 = 15 + lu + bob(p, 1) + (p.idle ? 0.4 : 0), sw = p.idle ? 0.6 : 0;

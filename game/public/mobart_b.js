@@ -77,7 +77,7 @@ export const BEASTS_B = {
 
   /** 알 밴 두꺼비 — a toad whose back is a comb of pits, and something looks out of every one. */
   toadbrood: {
-    size: "l", glow: "#b4cc3c",
+    size: "l", n: 70, glow: "#b4cc3c",
     draw(M, p) {
       const hop = p.walk ? [0, 0.6, 0.3, 0][Math.round(p.ph * 4)] : 0;
       const [lf, lu] = lunge(p);

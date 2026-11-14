@@ -136,6 +136,8 @@ class Model {
   dot(c, col, w = 1, h = 1) { this.D.push({ k: "dot", c, col: hex(col), w, h }); return this; }
   /** An eye on a surface: size 1 (a red dot), 2 (2×2) or 3 (3×3); `iris` its colour. Closed when the creature is dead. */
   eye(c, size = 2, iris = "#e02838", o = {}) { this.D.push({ k: "eye", c, n: size, iris: hex(iris), shut: !!o.shut, white: hex(o.white || "#f4efe0") }); return this; }
+  /** A slit-pupilled eye painted on the side of ball `c` (radius r) that faces the viewer, whichever way the body turns. */
+  stare(c, r, iris = "#e8b020", n = 3) { this.D.push({ k: "slit", c, r, n, iris: hex(iris) }); return this; }
   /** A row of stitches along a line on the skin. */
   seam(pts, col = "#2a1a22") {
     for (let i = 0; i < pts.length - 1; i++) {
@@ -299,11 +301,18 @@ function raster(model, N, foot, dir, k, tint, p, rollK = 1) {
   // hand-placed pixels: shown only where their spot on the skin faces us
   const fwd = Vm[0][0];                                       // which way the face points on screen
   for (const d of model.D) {
-    const c = app(Vm, d.c), x = Math.floor(c[0] + ox), y = Math.floor(c[1] + oy), z = c[2] + oz;
+    const c = app(Vm, d.c), x = Math.floor(c[0] + ox), y = Math.floor(c[1] + oy), z = c[2] + oz - (d.k === "slit" ? d.r * k : 0);
     if (x < 0 || y < 0 || x >= N || y >= N) continue;
     const i = y * N + x;
     if (mi[i] < 0 || zb[i] < z - 1.6 * Math.max(1, k)) continue;
     if (d.k === "dot") { for (let a = 0; a < d.w; a++) for (let b = 0; b < d.h; b++) set(x + a, y + b, d.col); continue; }
+    if (d.k === "slit") {
+      const n = Math.round(d.n * Math.max(1, k * 0.8)), h0 = Math.floor(n / 2);
+      for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) if (!((a === 0 || a === n - 1) && (b === 0 || b === n - 1))) set(x + a - h0, y + b - h0, d.iris);
+      if (p.dead > 0.5 || p.hurt) { for (let a = 0; a < n; a++) set(x + a - h0, y, INK); continue; }
+      for (let b = 0; b < n; b++) set(x + (fwd < 0 ? -1 : 0) + (p.wind ? 0 : 0), y + b - h0, INK);
+      continue;
+    }
     const n = Math.max(1, Math.round(d.n * (k > 1.3 ? 1.5 : 1)));
     const shut = d.shut || p.dead > 0.5 || (p.hurt && n > 1);
     if (shut) { for (let a = 0; a < Math.max(2, n); a++) set(x + a - (n > 2 ? 1 : 0), y, INK); continue; }
@@ -348,8 +357,8 @@ const ALIAS = {
 };
 export const has = (kind) => !!BEASTS[ALIAS[kind] || kind];
 /** Canvas size by size class; the foot sits this far above the bottom. */
-const CANVAS = { s: 40, m: 48, l: 60, xl: 76, boss: 128 };
-const PAD = 6;
+const CANVAS = { s: 44, m: 54, l: 68, xl: 84, boss: 150 };
+const PAD = 8;
 /** Everything is built a third bigger than its model's pixel numbers: the cast reads at about one and a half adventurers. */
 const GK = 1.3;
 const rigs = new Map();
@@ -365,7 +374,7 @@ export function rig(kind, tint, sc = 1) {
   let R = rigs.get(key);
   if (R) return R;
   const def = BEASTS[kind] || BEASTS.chest;
-  const N = Math.ceil((CANVAS[def.size] || 48) * sc * GK / 2) * 2, foot = [N / 2, N - Math.round(PAD * sc)];
+  const N = Math.ceil((def.n || CANVAS[def.size] || 48) * sc * GK / 2) * 2, foot = [N / 2, N - Math.round(Math.max(PAD * sc, N * 0.14))];
   const frames = [[], [], [], []];
   R = {
     kind, def, N, foot, sc,
@@ -383,6 +392,9 @@ export function rig(kind, tint, sc = 1) {
   return R;
 }
 /** Everything a page needs to know about a kind: size class, hover, glow, how it dies. */
+/** For the headless checks (tests/mobart.mjs): the builder, the poses, the cast and how big its canvases are. */
+export const _test = { Model, pose, BEASTS, CANVAS, PAD, GK, NFR };
+
 export function info(kind) { const d = BEASTS[ALIAS[kind] || kind]; return d ? { size: d.size, hover: d.hover || 0, glow: d.glow || null, death: d.death || "fall" } : null; }
 export const KINDS = () => Object.keys(BEASTS);
 
