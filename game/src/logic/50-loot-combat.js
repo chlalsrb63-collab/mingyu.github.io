@@ -5,14 +5,15 @@ function resolveItem(key, ch) {
   if (key[0] === "W" && key.length === 2) return `w_${WK_ID[weaponKind(ch)]}_${key[1]}`;
   return key;
 }
+/** How many of `id` a character carries: the bag, plus the 재료 주머니 for materials (58-life.js pouchHas). */
 function countItem(ch, id) {
-  let n = 0;
+  let n = pouchHas(ch, id);
   for (const s of ch.inv) if (s.id === id) n += s.n || 1;
   return n;
 }
 function canAdd(ch, id, n) {
   if (isGear(id)) return ch.inv.length + n <= bagCap(ch);
-  let room = (bagCap(ch) - ch.inv.length) * STACK;
+  let room = (bagCap(ch) - ch.inv.length) * STACK + pouchRoom(ch, id);
   for (const s of ch.inv) if (s.id === id) room += STACK - s.n;
   return room >= n;
 }
@@ -22,6 +23,9 @@ function addItem(ch, id, n) {
     for (let i = 0; i < n; i++) ch.inv.push(plain(id));
     return true;
   }
+  // materials, staples and flasks go into the 재료 주머니 first (up to POUCH_MAX each), the rest into the bag
+  const pr = pouchRoom(ch, id);
+  if (pr > 0) { const put = Math.min(n, pr); ch.pouch[id] = pouchHas(ch, id) + put; n -= put; if (n <= 0) return true; }
   for (const s of ch.inv) {
     if (s.id !== id || n <= 0) continue;
     const put = Math.min(n, STACK - s.n);
@@ -97,6 +101,8 @@ function takeItem(ch, id, n) {
     s.n -= take; n -= take;
     if (s.n <= 0) ch.inv.splice(i, 1);
   }
+  // (what the bag did not have comes out of the pouch)
+  if (n > 0) pouchTake(ch, id, n);
 }
 /** A piece's name word: a legendary's power, a set's name, or its first affix (as the client shows it). */
 function gearWord(g) {

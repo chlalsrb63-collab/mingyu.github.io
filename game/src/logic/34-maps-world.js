@@ -662,6 +662,8 @@ function mapPayload(m) {
     camps: campsOf(m),
     // a zoned ground's zones by 4 × 4 block for the minimap (0 safe, 1 normal, 2 elite, 3 hidden, - none)
     zq: m.zq || null,
+    // gathering nodes [kind 0 herb · 1 ore · 2 wood, grade 1–5, tx, ty] (life skills, 58-life.js lifeNodes)
+    nodes: lifeNodes(m),
   });
 }
 

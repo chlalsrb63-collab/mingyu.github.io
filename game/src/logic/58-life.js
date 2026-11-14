@@ -1,8 +1,10 @@
 // ───────────────────────────── life skills: the engine (docs/design/life-and-coop.md B) ─────────────────────────────
 // Levels and experience (`gainLife`), the one bonus formula (`lifeOdds`/`lifeRoll`/`lifeTime`), grades of maps
 // and levels, what a reeled fish and a cooked fish turn into (`fishLand`, `cookDish`, called from 75 reel/cook),
-// the sheet's life fields cleaned (`lifeSheetClean`, called from migrate) and the wire (`lifeView`, `lifeDefs`).
-// Tables live in 12-life-tables.js.
+// the sheet's life fields cleaned (`lifeSheetClean`, called from migrate); L2: the pouch, gathering nodes
+// (`lifeNodes`), crafting at the stations (`craftOnce`), the 알바 board and delivery (`jbOffers`, `jbRoute`), trust
+// (`addRep`), the life actions (`lifeValidate`/`lifeApply`, `lifeUse*`), `lifeTick`; the wire (`lifeView`,
+// `jbView`, `repView`, `lifeSnap`, `lifeDefs`). Tables live in 12-life-tables.js.
 
 /** A fresh sheet's six skills. */
 const lifeEmpty = () => Object.fromEntries(LIFE.map((k) => [k, { lv: 1, xp: 0 }]));
@@ -68,6 +70,8 @@ function gainLife(S, p, k, n) {
     toast(p, lv >= LIFE_MAX ? `[${LIFE_NAME[i]}] 레벨 ${lv}! 명장의 경지에 올랐습니다.`
       : LIFE_UNLOCK[lv] ? `[${LIFE_NAME[i]}] 레벨 ${lv}! ${LIFE_UNLOCK[lv]} 재료를 다룰 수 있습니다.` : `[${LIFE_NAME[i]}] 레벨 ${lv}!`);
   }
+  // (Lv 10/30 in any skill and 50 in each are achievements with titles, 60-content.js ACH)
+  if (ups.length) checkAch(S, p);
   p.dirty = true;
   return ups.length;
 }
@@ -124,7 +128,7 @@ function lifeClean(v) {
   }
   return out;
 }
-/** May the 재료 주머니 hold this item? Materials, and (from L2) staples and flasks. */
+/** May the 재료 주머니 hold this item? Materials (ingots too), staples and flasks. */
 const pouchOk = (id) => Object.hasOwn(ITEMS, id) && (ITEMS[id].type === "lmat" || id === "staple" || id === "flask");
 /**
  * Bring the life fields of a sheet up to date (idempotent). A sheet from before life skills gets them from
@@ -159,7 +163,565 @@ function lifeSheetClean(ch) {
 /** A fresh sheet's life fields. */
 const lifeFresh = () => ({ life: lifeEmpty(), jobBoard: { day: 0, done: [], active: null }, rep: {}, coopDay: 0, coopDone: [], pouch: {} });
 
+// ───────────── L2: the 재료 주머니, gathering, crafting, the 알바 board, delivery, trust (B.4, B.6–B.11)
+
+// ── the pouch (B.10): 50 addItem/canAdd/countItem/takeItem route pouch items here first (bag items go first out)
+/** How many of `id` the pouch holds. */
+const pouchHas = (ch, id) => (ch.pouch && Object.hasOwn(ch.pouch, id) ? ch.pouch[id] : 0);
+/** Room left in the pouch for `id` (0 for anything it does not take). */
+const pouchRoom = (ch, id) => (ch.pouch && pouchOk(id) ? POUCH_MAX - pouchHas(ch, id) : 0);
+/** Take up to `n` of `id` out of the pouch; returns how many are still owed. */
+function pouchTake(ch, id, n) {
+  const t = Math.min(n, pouchHas(ch, id));
+  if (t > 0) { ch.pouch[id] -= t; if (!ch.pouch[id]) delete ch.pouch[id]; }
+  return n - t;
+}
+
+// ── gathering nodes (B.4)
+
+/** The material a node gives: its kind's letter and its grade (`m_h3`). */
+const nodeMat = (n) => `m_${NODE_KINDS[n[0]]}${n[1]}`;
+/**
+ * A map's gathering nodes [kind 0..2 (herb ore wood), grade, tx, ty], placed once from the map's id and kept on
+ * the map (the wire sends this list as `map.nodes`). Only hunting grounds have them: reachable tiles at least
+ * NODE.gap apart and NODE.clear from doors, signs, waypoint stones, NPCs and fires; one per NODE.per open tiles
+ * (clamped to NODE.min..max); hidden pockets weigh double; kinds by the theme's NODE_W.
+ */
+function lifeNodes(m) {
+  if (m.nodes) return m.nodes;
+  m.nodes = [];
+  if (m.safe || !m.reach || !Object.hasOwn(MAP_META, m.id)) return m.nodes;
+  const W = m.w, H = m.h, g = gradeOfMap(m), wt = NODE_W[m.theme] || NODE_W.meadow, c = NODE.clear;
+  const busy = new Uint8Array(W * H);
+  const keep = (x, y) => {
+    for (let dy = -c; dy <= c; dy++) for (let dx = -c; dx <= c; dx++) if (inMap(m, x + dx, y + dy)) busy[(y + dy) * W + x + dx] = 1;
+  };
+  for (const pt of m.portals) keep(pt.x, pt.y);
+  for (const k of m.marks || []) keep(k.x, k.y);
+  for (const n of m.npcs || []) keep(n.x, n.y);
+  for (const s of m.stones || []) keep(s.x, s.y);
+  for (const [fx, fy] of FIRES[m.id] || []) keep(fx, fy);
+  const box = { seed: (strHash(m.id) ^ 0x6e0d) | 0 };
+  let open = 0;
+  const cand = [];
+  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+    const i = y * W + x;
+    if (!m.reach[i]) continue;
+    open++;
+    // a weighted shuffle (key u^(1/w)): hidden pockets come up twice as often
+    if (!busy[i]) cand.push([Math.pow(rnd(box), 1 / (m.zone && m.zone[i] === Z_HIDDEN ? NODE.hidden : 1)), i]);
+  }
+  cand.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  const want = clamp(Math.round(open / NODE.per), NODE.min, NODE.max), got = [];
+  for (const [, i] of cand) {
+    if (got.length >= want) break;
+    const x = i % W, y = (i - x) / W;
+    if (got.some(([gx, gy]) => (gx - x) ** 2 + (gy - y) ** 2 < NODE.gap * NODE.gap)) continue;
+    got.push([x, y]);
+  }
+  for (const [x, y] of got) {
+    let r = rnd(box), k = 0;
+    while (k < 2 && (r -= wt[k]) >= 0) k++;
+    m.nodes.push([k, g, x, y]);
+  }
+  return m.nodes;
+}
+/** When node `i` of the player's map is ready for them again (0 = now). */
+const nodeReady = (p, i) => (p.ng && p.ng[p.map] && p.ng[p.map][i]) || 0;
+/** The nodes of this map the player has spent (waiting out their cooldown), sorted. */
+function nodesSpent(p, now) {
+  const o = p.ng && p.ng[p.map];
+  return o ? Object.keys(o).filter((i) => o[i] > now).map(Number).sort((a, b) => a - b) : [];
+}
+/** A gathering channel stops: event ["ga", eid, kind, −1] and a toast. */
+function gatStop(S, p, why) {
+  const g = p.gat;
+  p.gat = null;
+  S.maps[p.map].ev.push(["ga", p.eid, g ? g.k : 0, -1]);
+  if (why) toast(p, why);
+}
+/** A channel ran out: the material (two on a 대성공), maybe a bonus item, experience, the node's cooldown. */
+function gatDone(S, p) {
+  const g = p.gat, ch = p.ch, now = S.now;
+  p.gat = null;
+  const n = lifeNodes(mapOfS(S, p.map))[g.i];
+  const L = ch.life.gather.lv, unlock = GRADE_LV[n[1] - 1], id = nodeMat(n);
+  const great = rnd(S) * 100 < lifeOdds(L, unlock, 50, g.extra)[1];
+  const cnt = great && canAdd(ch, id, 2) ? 2 : 1;
+  if (addItem(ch, id, cnt)) p.gain.push(["item", id, cnt, 0]);
+  if (rnd(S) < NODE.bonus) {
+    // a herb's seed of the next grade, a stone in the vein, a bundle of kindling from the log
+    const b = n[0] === 0 ? `m_h${Math.min(5, n[1] + 1)}` : n[0] === 1 ? "stone" : "camp";
+    if (addItem(ch, b, 1)) { p.gain.push(["item", b, 1, 1]); toast(p, `덤으로 ${ITEMS[b].name}${pp(ITEMS[b].name, "을를")} 얻었습니다!`); }
+  }
+  if (great) toast(p, `대성공! ${ITEMS[id].name} ${cnt}개`);
+  gainLife(S, p, "gather", lifeXp(L, unlock, RXP[n[1] - 1] * (great ? 1.5 : 1)));
+  ch.cnt.gat++;
+  (p.ng || (p.ng = {}))[p.map] = p.ng[p.map] || {};
+  p.ng[p.map][g.i] = now + NODE.cd;
+  S.maps[p.map].ev.push(["ga", p.eid, n[0], great ? 1 : 0]);
+  dailyProg(S, p, "gather");
+  checkAch(S, p);
+  p.dirty = true;
+}
+
+// ── stations and recipes (B.6)
+
+const STATION_ERR = {
+  fire: "모닥불이나 화덕 곁에서만 만들 수 있습니다", cook: "쥬쥬식당의 화덕 곁에서만 만들 수 있습니다",
+  craft: "캉캉대장간의 캉캉 곁에서만 만들 수 있습니다", alch: "보글연금공방의 보글 곁에서만 만들 수 있습니다",
+};
+/** Whether `p` stands at a recipe's station: a campfire (or a stove) for `fire`, else an NPC (or thing) of that role. */
+const stationNear = (S, p, at) => (at === "fire" ? !!fireNear(S.maps[p.map], p) || npcNear(p, "cook") : npcNear(p, at));
+/** A recipe by id, or null. */
+const recipeOf = (id) => (typeof id === "string" && Object.hasOwn(RECIPES, id) ? RECIPES[id] : null);
+/** Trust with an NPC (0..100). */
+const repOf = (ch, id) => (ch.rep && Object.hasOwn(ch.rep, id) ? ch.rep[id] : 0);
+/** Why a recipe is not known yet (Korean), or "" — its level (a fish on a fire: any level) and its teacher's trust. */
+function recipeWhy(ch, r) {
+  if (!r.any && ch.life[r.sk].lv < r.lv) return `${LIFE_NAME[LIFE.indexOf(r.sk)]} 레벨이 부족합니다 (Lv.${r.lv} 필요)`;
+  if (r.rep && repOf(ch, r.rep) < REP_TIER[1]) return `${REP_PERK[r.rep].who}${pp(REP_PERK[r.rep].who, "과와")} 친구가 되어야 배울 수 있습니다`;
+  return "";
+}
+const runeCount = (ch) => RUNE_KEYS.reduce((n, k) => n + countItem(ch, `ru_${k}`), 0);
+/** How many of an input the character has (bag + pouch; "rune*" = every rune). */
+const haveOf = (ch, id) => (id === "rune*" ? runeCount(ch) : countItem(ch, id));
+/** Take `n` runes, the most plentiful kind first; returns the ids taken. */
+function takeRunes(ch, n) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    let best = "", bn = 0;
+    for (const k of RUNE_KEYS) { const c = countItem(ch, `ru_${k}`); if (c > bn) { bn = c; best = `ru_${k}`; } }
+    if (!best) break;
+    takeItem(ch, best, 1);
+    out.push(best);
+  }
+  return out;
+}
+/** Why `k` crafts of recipe `r` cannot start (Korean), or "": station, inputs, fee, room for the biggest result. */
+function craftWhy(S, p, r, k) {
+  const ch = p.ch;
+  if (p.dead) return "쓰러진 상태입니다";
+  const why = recipeWhy(ch, r);
+  if (why) return why;
+  if (!stationNear(S, p, r.at)) return STATION_ERR[r.at];
+  if (r.in.some(([id, n]) => haveOf(ch, id) < n * k)) return "재료가 부족합니다";
+  if (ch.gold < r.fee * k) return `골드가 부족합니다 (${r.fee * k}G 필요)`;
+  const room = r.gear ? ch.inv.length + k <= bagCap(ch) : r.out[0] === "rune*" ? ch.inv.length + 2 * k <= bagCap(ch) : canAdd(ch, r.out[0], r.out[1] * 2 * k);
+  return room ? "" : "가방이 가득 찼습니다";
+}
+/**
+ * One craft of `r` with a mini-game score `s`: inputs taken, success/대성공 rolled (B.2; 쥬쥬's friends get her
+ * stove's bonus); a failure gives back half of each input (rounded down) and costs no fee. A fish on a fire keeps
+ * L1's pan (cookDish). Gear comes 마법..희귀 (+1 on a 대성공). Returns 0 failed (or burnt), 1 made, 2 대성공.
+ */
+function craftOnce(S, p, r, s) {
+  const ch = p.ch;
+  if (r.any) {
+    takeItem(ch, r.in[0][0], 1);
+    const d = cookDish(S, p, r, s);
+    if (addItem(ch, d.id, d.n)) p.gain.push(["item", d.id, d.n, 0]);
+    if (!d.burnt) { ch.cnt.cook++; dailyProg(S, p, "cook"); }
+    return d.burnt ? 0 : d.great ? 2 : 1;
+  }
+  const L = ch.life[r.sk].lv;
+  const taken = r.in.map(([id, n]) => (id === "rune*" ? takeRunes(ch, n) : (takeItem(ch, id, n), [id, n])));
+  const extra = r.sk === "cook" && r.at === "cook" && REP_PERK.juju.great && repOf(ch, "juju") >= REP_TIER[1] ? REP_PERK.juju.great : 0;
+  const roll = lifeRoll(S, L, r.lv, s, extra);
+  const xp = lifeXp(L, r.lv, RXP[lifeGrade(r.lv) - 1] * (roll.great ? 1.5 : 1));
+  if (!roll.ok) {
+    r.in.forEach(([id, n], i) => {
+      const back = Math.floor(n / 2);
+      if (!back) return;
+      if (id === "rune*") for (const ru of taken[i].slice(0, back)) addItem(ch, ru, 1);
+      else addItem(ch, id, back);
+    });
+    gainLife(S, p, r.sk, Math.max(1, Math.round(xp * CRAFT.failXp)));
+    return 0;
+  }
+  ch.gold -= r.fee;
+  if (r.gear) {
+    const t = ITEMS[r.out[0]].tier;
+    let q = clamp(rollRarity(S, 0, 0), GEAR_CRAFT.q[0], GEAR_CRAFT.q[1]);
+    if (roll.great) q = Math.min(GEAR_CRAFT.q[1], q + 1);
+    const g = rollGear(S, r.out[0], q, GEAR_CRAFT.ilvl[t - 1]);
+    ch.inv.push(g);
+    p.gain.push(["item", g.id, 1, g.q]);
+  } else {
+    const n = r.out[1] * (roll.great ? 2 : 1);
+    if (r.out[0] === "rune*") for (let i = 0; i < n; i++) { const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`; if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]); }
+    else if (addItem(ch, r.out[0], n)) p.gain.push(["item", r.out[0], n, 0]);
+  }
+  gainLife(S, p, r.sk, xp);
+  ch.cnt.craft++;
+  if (r.sk === "cook") { ch.cnt.cook++; dailyProg(S, p, "cook"); }
+  dailyProg(S, p, "craft");
+  return roll.great ? 2 : 1;
+}
+
+// ── the 알바 board and delivery (B.8, B.9)
+
+/** A new day (06:00 KST) clears the board: done list, the job in hand, a parcel. */
+function jbEnsure(S, p) {
+  const ch = p.ch, day = dayOf(S.now);
+  if (ch.jobBoard.day === day) return;
+  if (p.parcel) { p.parcel = null; p.stc = null; }
+  if (ch.jobBoard.day && (ch.jobBoard.done.length || ch.jobBoard.active)) toast(p, "알바 게시판이 새로 바뀌었습니다.");
+  ch.jobBoard = { day, done: [], active: null };
+  p.jbOff = null;
+  p.dirty = true;
+}
+/** Today's offers for a sheet: up to JB_PAY.offers templates it qualifies for, seeded by name and day. */
+function jbOffers(ch, day) {
+  const box = { seed: strHash(`${ch.name}:${day}:jb`) | 0 };
+  const pool = Object.keys(JB).filter((id) => ch.life[JB[id].sk].lv >= JB[id].lv);
+  const out = [];
+  while (out.length < JB_PAY.offers && pool.length) out.push(pool.splice(ri(box, 0, pool.length - 1), 1)[0]);
+  return out;
+}
+/** The offers this player sees today (drawn once a day per session: a level gained at noon does not reshuffle them). */
+function jbOffersOf(S, p) {
+  jbEnsure(S, p);
+  const day = p.ch.jobBoard.day;
+  if (!p.jbOff || p.jbOff.day !== day) p.jbOff = { day, ids: jbOffers(p.ch, day) };
+  return p.jbOff.ids;
+}
+/** Where a static NPC stands: { m, x, y }, or null. */
+function npcAt(id) {
+  const m = Object.hasOwn(NPC_MAP, id) ? mapOf(NPC_MAP[id]) : null;
+  const n = m && m.npcs.find((o) => o.id === id);
+  return n ? { m, x: n.x, y: n.y } : null;
+}
+/** Tiles walked on `m` from beside (fx, fy) to beside (tx, ty); Infinity when there is no way. */
+function legTiles(m, fx, fy, tx, ty) {
+  const W = m.w, from = [];
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inMap(m, fx + dx, fy + dy) && m.reach[(fy + dy) * W + fx + dx]) from.push((fy + dy) * W + fx + dx);
+  if (!from.length) return Infinity;
+  const path = walk(W, m.h, from, (i) => Math.max(Math.abs((i % W) - tx), Math.abs(Math.floor(i / W) - ty)) <= 1, (j) => (m.reach[j] ? 1 : Infinity), tx, ty);
+  return path ? path.length - 1 : Infinity;
+}
+/**
+ * A delivery's path in tiles (JB_ROUTES, worked out on first use): sender → their door → across the town →
+ * the recipient's door → the recipient, each door JB_PAY.door tiles. Every place hangs off the town.
+ */
+function jbRoute(id) {
+  if (Object.hasOwn(JB_ROUTES, id)) return JB_ROUTES[id];
+  const t = JB[id], A = npcAt(t.npc), B = npcAt(t.to), hub = mapOf(START.map);
+  let n = Infinity;
+  if (A && B && A.m === B.m) n = legTiles(A.m, A.x, A.y, B.x, B.y);
+  else if (A && B) {
+    n = 0;
+    let at = [A.x, A.y];
+    if (A.m !== hub) {
+      const d = A.m.portals.find((pt) => pt.to === hub.id);
+      n += d ? legTiles(A.m, A.x, A.y, d.x, d.y) + JB_PAY.door : Infinity;
+      if (d) at = arrivalOf(null, d);
+    }
+    if (B.m !== hub) {
+      const d = hub.portals.find((pt) => pt.to === B.m.id);
+      n += d ? legTiles(hub, at[0], at[1], d.x, d.y) + JB_PAY.door : Infinity;
+      if (d) { at = arrivalOf(null, d); n += legTiles(B.m, at[0], at[1], B.x, B.y); }
+    } else n += legTiles(hub, at[0], at[1], B.x, B.y);
+  }
+  JB_ROUTES[id] = n;
+  return n;
+}
+/** A parcel's time limit (ms): the path at 85 % walking speed, × 1.8, + 20 s. */
+const jbLimit = (id) => Math.round(((jbRoute(id) * T) / (BASE_SPD * JB_PAY.limit[0])) * JB_PAY.limit[1] * 1000 + JB_PAY.limit[2]);
+/** Walking speed while carrying a parcel (deriveStats reads it): ×0.85 at 배달 1, ×1.0 at 25, ×1.15 at 50. */
+const parcelSpd = (ch) => JB_PAY.spd[0] + JB_PAY.spd[1] * ch.life.deliver.lv;
+/** A job's gold before any tip (deliveries: B.8, others: B.9), +10 % from a 단골's own NPC. */
+function jbGold(ch, t) {
+  const L = ch.life[t.sk].lv, base = t.kind === "deliver" ? JB_PAY.dGold[0] + JB_PAY.dGold[1] * L : JB_PAY.gold[0] + JB_PAY.gold[1] * L;
+  return Math.round(base * (repOf(ch, t.npc) >= REP_TIER[0] ? REP_TIP : 1));
+}
+/** A parcel is lost (late, or its carrier fell): nothing paid, no trust lost, the job off the board's hand. */
+function jbFail(S, p) {
+  p.parcel = null;
+  p.stc = null;
+  p.ch.jobBoard.active = null;
+  S.maps[p.map].ev.push(["dl", p.eid, 0]);
+  toast(p, "배달 실패… 꾸러미를 잃어버렸습니다.");
+  p.dirty = true;
+}
+/** Trust +n with an NPC (capped at 100); crossing a tier says what it opens. */
+function addRep(S, p, id, n) {
+  if (!Object.hasOwn(NPC_MAP, id) || !(n > 0)) return;
+  const ch = p.ch, was = repOf(ch, id), to = Math.min(100, was + n);
+  if (to === was) return;
+  ch.rep[id] = to;
+  const name = npcName(id), perk = REP_PERK[id];
+  if (was < REP_TIER[0] && to >= REP_TIER[0]) toast(p, `${name}의 ${REP_NAME[0]}이 되었습니다! (가게 물건 5% 할인, 알바 보수 +10%)`);
+  if (was < REP_TIER[1] && to >= REP_TIER[1]) {
+    toast(p, `${name}${pp(name, "과와")} ${REP_NAME[1]}가 되었습니다!` + (!perk ? "" : perk.recipe ? ` 제작법 [${ITEMS[RECIPES[perk.recipe].out[0]].name}]${pp(ITEMS[RECIPES[perk.recipe].out[0]].name, "을를")} 배웠습니다.`
+      : perk.elx ? ` 엘릭서의 지속 시간이 ${perk.elx}분 늘어납니다.` : perk.great ? ` 화덕 요리의 대성공 확률이 ${perk.great}%p 오릅니다.` : ""));
+  }
+  if (was < REP_TIER[2] && to >= REP_TIER[2]) toast(p, `${name}${pp(name, "과와")} ${REP_NAME[2]} 같은 사이가 되었습니다!`);
+  checkAch(S, p);
+  p.dirty = true;
+}
+/** A board job handed in: items taken (or the parcel), gold (+ the tip), life XP, trust; one more done today. */
+function jbPay(S, p) {
+  const ch = p.ch, a = ch.jobBoard.active, t = JB[a.id], now = S.now;
+  let gold = jbGold(ch, t);
+  if (t.kind === "deliver") {
+    gold += Math.round(gold * JB_PAY.tip * clamp((p.parcel.until - now) / p.parcel.limit, 0, 1));
+    p.parcel = null; p.stc = null;
+    addRep(S, p, t.to, JB_PAY.repTo);
+    addRep(S, p, t.npc, JB_PAY.repFrom);
+    ch.cnt.deliver++;
+  } else {
+    takeItem(ch, t.item, t.n);
+    addRep(S, p, t.npc, JB_PAY.rep);
+  }
+  ch.gold += gold;
+  p.gain.push(["gold", gold]);
+  gainLife(S, p, t.sk, Math.round(lifeNeed(ch.life[t.sk].lv) * JB_PAY.xp));
+  ch.jobBoard.done.push(a.id);
+  ch.jobBoard.active = null;
+  S.maps[p.map].ev.push(["dl", p.eid, 2]);
+  toast(p, `알바 완료! ${gold}G (${ch.jobBoard.done.length}/${JB_PAY.perDay})`);
+  checkAch(S, p);
+  p.dirty = true;
+}
+
+// ── items with a life use (B.11): elixirs, the punch, the whetstone
+
+const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (ITEMS[id].type === "tool" || ITEMS[id].el === 1);
+/** How many sockets a piece can ever have (as rollGear: gloves and boots 1, the rest 3; jewellery none). */
+const sockCap = (g) => (isJewel(g.id) ? 0 : ITEMS[g.id].type === "gloves" || ITEMS[g.id].type === "boots" ? 1 : 3);
+/** The weakest affix of a piece (value against its range's top), by index; −1 without one. */
+function weakAffix(g) {
+  let best = -1, bv = Infinity;
+  (g.af || []).forEach(([k, v], i) => {
+    const a = AFFIX.find((x) => x[0] === k);
+    const r = a ? v / Math.max(1, a[4]) : 0;
+    if (r < bv) { bv = r; best = i; }
+  });
+  return best;
+}
+function lifeUseValidate(S, p, a) {
+  const ch = p.ch, it = ITEMS[a.id];
+  if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
+  if (p.dead) return bad("쓰러진 상태입니다");
+  if (it.type !== "tool") return OK;
+  const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
+  if (!g) return bad("장착한 장비를 골라 주세요");
+  if (a.id === "punch" && g.sk >= sockCap(g)) return bad(sockCap(g) ? "더 이상 홈을 뚫을 수 없습니다" : "장신구에는 홈을 뚫을 수 없습니다");
+  if (a.id === "whet" && weakAffix(g) < 0) return bad("새로 굴릴 옵션이 없습니다");
+  return OK;
+}
+function lifeUseApply(S, p, a) {
+  const ch = p.ch, it = ITEMS[a.id], now = S.now;
+  takeItem(ch, a.id, 1);
+  if (it.el) {
+    // the scroll's buff with the elixir's time (보글's friends: + REP_PERK.bogle.elx minutes); never shortens one
+    const ms = it.sec ? it.sec * 1000 : (it.min + (repOf(ch, "bogle") >= REP_TIER[1] ? REP_PERK.bogle.elx : 0)) * 60000;
+    if (it.buff === "spd") p.spdBuff = Math.max(p.spdBuff, now + ms);
+    else for (const k of it.buff === "all" ? ["atk", "def", "xp"] : [it.buff]) ch.scr[k] = Math.max(ch.scr[k] || 0, now + ms);
+    S.maps[p.map].ev.push(["u", p.eid, 2]);
+    toast(p, `${it.name}${pp(it.name, "을를")} 마셨습니다. ${it.desc.split(".")[0]}.`);
+  } else {
+    const g = ch.eq[a.k];
+    if (a.id === "punch") {
+      g.sk++;
+      toast(p, `${gearName(g)}에 홈을 뚫었습니다 (${g.sk}/${sockCap(g)}).`);
+    } else {
+      // the weakest affix goes; a fresh one (not already on the piece) takes its place, rolled at the tier's level
+      const i = weakAffix(g), t = ITEMS[g.id].tier || 1;
+      const pool = AFFIX.filter((x) => !g.af.some(([k], j) => j !== i && k === x[0]));
+      const [key, , , min, max, grow] = pool[ri(S, 0, pool.length - 1)];
+      g.af[i] = [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * GEAR_CRAFT.ilvl[t - 1]) * ((g.q | 0) >= 3 ? 1.3 : 1)))];
+      toast(p, `${gearName(g)}의 옵션을 새로 다듬었습니다.`);
+    }
+    S.maps[p.map].ev.push(["e", p.eid, 1]);
+    afterGear(S, p);
+  }
+  p.dirty = true;
+}
+
+// ── buying from a 단골's counter, selling and storing from the pouch
+
+/** What `n` of `id` costs here: 5 % off at a counter whose keeper counts you a 단골 (`key` = what was asked for). */
+function buyCost(p, key, id, n) {
+  const base = ITEMS[id].price * n;
+  for (const nd of mapOfS(p.S, p.map).npcs) {
+    if (nd.role !== "shop" || repOf(p.ch, nd.id) < REP_TIER[0] || dist(p.x, p.y, nd.x * T + 8, nd.y * T + 12) >= 56) continue;
+    if ((nd.goods || SHOP).includes(key)) return Math.floor(base * REP_DISC);
+  }
+  return base;
+}
+
+// ── the life actions (B.11): gat gat_tap craft_open craft jb — appended to 70/75's switches
+
+function lifeValidate(S, p, a) {
+  const ch = p.ch, now = S.now;
+  switch (a.t) {
+    case "gat": {
+      if (p.dead) return bad("쓰러진 상태입니다");
+      if (p.gat) return bad("이미 채집 중입니다");
+      const n = Number.isInteger(a.i) ? lifeNodes(mapOfS(S, p.map))[a.i] : null;
+      if (!n) return bad("채집할 수 있는 곳이 아닙니다");
+      if (dist(p.x, p.y, n[2] * T + 8, n[3] * T + 10) > NODE.range) return bad("너무 멉니다");
+      if (nodeReady(p, a.i) > now) return bad("아직 다시 자라지 않았습니다");
+      const need = GRADE_LV[n[1] - 1];
+      if (ch.life.gather.lv < need) return bad(`채집 레벨이 부족합니다 (Lv.${need} 필요)`);
+      if (now - p.hitAt < NODE.hit) return bad("싸우는 중에는 채집할 수 없습니다");
+      if (!canAdd(ch, nodeMat(n), 2)) return bad("가방이 가득 찼습니다");
+      return OK;
+    }
+    case "gat_tap": return p.gat ? OK : bad("채집 중이 아닙니다");
+    case "craft_open": {
+      const r = recipeOf(a.r);
+      if (!r) return bad("그런 제작법은 없습니다");
+      const why = craftWhy(S, p, r, 1);
+      return why ? bad(why) : OK;
+    }
+    case "craft": {
+      const r = recipeOf(a.r);
+      if (!r) return bad("그런 제작법은 없습니다");
+      if (a.s === undefined) {
+        // batch: no mini-game, scored CRAFT.batchS, for recipes CRAFT.batchD+ levels below you (never gear)
+        if (!Number.isInteger(a.n) || a.n < 1 || a.n > CRAFT.batch) return bad("잘못된 수량");
+        if (r.gear) return bad("장비는 한 번에 하나씩 만들어야 합니다");
+        if (r.any || ch.life[r.sk].lv < r.lv + CRAFT.batchD) return bad(`일괄 제작은 제작법보다 ${CRAFT.batchD}레벨 높아야 할 수 있습니다`);
+        const why = craftWhy(S, p, r, a.n);
+        return why ? bad(why) : OK;
+      }
+      if (!Number.isFinite(a.s)) return bad("잘못된 요청입니다");
+      if (!p.mk || p.mk.r !== a.r) return bad("먼저 제작을 시작하세요");
+      if (now - p.mk.at < r.ms * lifeTime(ch.life[r.sk].lv)) return bad("너무 서둘렀습니다");
+      const why = craftWhy(S, p, r, 1);
+      return why ? bad(why) : OK;
+    }
+    case "jb": {
+      const jb = ch.jobBoard, act = jb.active, t = act ? JB[act.id] : null;
+      if (a.a === "take") {
+        if (!npcNear(p, "jobs")) return bad("알바 중개인이 너무 멉니다");
+        if (typeof a.id !== "string" || !jbOffersOf(S, p).includes(a.id)) return bad("오늘의 알바가 아닙니다");
+        if (jb.done.includes(a.id)) return bad("오늘 이미 끝낸 알바입니다");
+        if (act) return bad("이미 맡은 알바가 있습니다");
+        if (jb.done.length >= JB_PAY.perDay) return bad(`알바는 하루에 ${JB_PAY.perDay}개까지입니다`);
+        return OK;
+      }
+      if (a.a === "drop") return act ? OK : bad("맡은 알바가 없습니다");
+      if (a.a === "pick") {
+        if (!t || t.kind !== "deliver") return bad("맡은 배달이 없습니다");
+        if (act.prog !== 0) return bad("이미 꾸러미를 받았습니다");
+        if (!npcNearId(p, t.npc)) return bad(`${npcName(t.npc)}에게 가서 꾸러미를 받으세요`);
+        if (p.dead) return bad("쓰러진 상태입니다");
+        return OK;
+      }
+      if (a.a === "give") {
+        if (!t) return bad("맡은 알바가 없습니다");
+        const to = t.kind === "deliver" ? t.to : t.npc;
+        if (!npcNearId(p, to)) return bad(`${npcName(to)}에게 가져가세요`);
+        if (t.kind === "deliver") return act.prog === 1 && p.parcel && now <= p.parcel.until ? OK : bad("전할 꾸러미가 없습니다");
+        return countItem(ch, t.item) >= t.n ? OK : bad(`${ITEMS[t.item].name}${pp(ITEMS[t.item].name, "이가")} 부족합니다 (${countItem(ch, t.item)}/${t.n})`);
+      }
+      return bad("잘못된 요청입니다");
+    }
+  }
+  return bad("알 수 없는 행동");
+}
+
+function lifeApply(S, p, a) {
+  const ch = p.ch, now = S.now;
+  switch (a.t) {
+    case "gat": {
+      // a channel of NODE.ch × the time factor; the "반짝!" moment somewhere in tapAt of it (lifeTick sends it)
+      rouse(S, p);
+      const n = lifeNodes(mapOfS(S, p.map))[a.i], dur = Math.round(NODE.ch * lifeTime(ch.life.gather.lv));
+      p.gat = { i: a.i, k: n[0], map: p.map, x: p.x, y: p.y, at: now, end: now + dur, tapAt: now + Math.round(dur * (NODE.tapAt[0] + (NODE.tapAt[1] - NODE.tapAt[0]) * rnd(S))), sent: false, tapped: false, extra: 0 };
+      S.maps[p.map].ev.push(["gs", p.eid, n[0], dur]);
+      break;
+    }
+    case "gat_tap": {
+      // only the first tap counts, and only inside the window (plus a latency allowance)
+      const g = p.gat;
+      if (g.tapped) break;
+      g.tapped = true;
+      if (now >= g.tapAt && now <= g.tapAt + NODE.tap + NODE.lag) g.extra = NODE.tapBonus;
+      break;
+    }
+    case "craft_open":
+      p.mk = { r: a.r, at: now };
+      S.maps[p.map].ev.push(["mk", p.eid, a.r]);
+      break;
+    case "craft": {
+      const r = RECIPES[a.r], batch = a.s === undefined, k = batch ? a.n : 1, s = batch ? CRAFT.batchS : clamp(Math.round(a.s), 0, 100);
+      p.mk = null;
+      let made = 0, great = 0, best = 0;
+      for (let i = 0; i < k; i++) { const res = craftOnce(S, p, r, s); if (res) made++; if (res === 2) great++; best = Math.max(best, res); }
+      const name = r.out[0] === "rune*" ? "룬" : ITEMS[r.out[0]].name;
+      toast(p, k > 1 ? `일괄 제작: ${name} — 성공 ${made}/${k}${great ? `, 대성공 ${great}` : ""}`
+        : best === 2 ? `대성공! ${name}` : best === 1 ? `${name} 완성` : r.any ? "태워 버렸습니다…" : "제작 실패… 재료의 절반을 건졌습니다.");
+      S.maps[p.map].ev.push(["mo", p.eid, a.r, best]);
+      checkAch(S, p);
+      p.dirty = true;
+      break;
+    }
+    case "jb": {
+      const jb = ch.jobBoard;
+      if (a.a === "take") {
+        const t = JB[a.id];
+        jb.active = { id: a.id, npc: t.npc, prog: 0, expAt: 0 };
+        toast(p, `알바를 맡았습니다: ${t.text}`);
+      } else if (a.a === "drop") {
+        if (p.parcel) { p.parcel = null; p.stc = null; }
+        jb.active = null;
+        toast(p, "알바를 그만두었습니다.");
+      } else if (a.a === "pick") {
+        const t = JB[jb.active.id], limit = jbLimit(jb.active.id);
+        p.parcel = { id: jb.active.id, from: t.npc, to: t.to, until: now + limit, limit };
+        p.stc = null;
+        jb.active.prog = 1;
+        jb.active.expAt = now + limit;
+        S.maps[p.map].ev.push(["dl", p.eid, 1]);
+        toast(p, `꾸러미를 받았습니다! ${Math.ceil(limit / 1000)}초 안에 ${npcName(t.to)}에게 전해 주세요.`);
+      } else jbPay(S, p);
+      p.dirty = true;
+      break;
+    }
+  }
+}
+
+/**
+ * Once a tick per player (80 tick): a gathering channel sends its "반짝!", breaks on a step, a blow taken or
+ * struck, sitting, fishing or death, or finishes; a parcel past its time or with a fallen carrier is lost;
+ * spent nodes come back; the board turns over at 06:00 KST.
+ */
+function lifeTick(S, p, now) {
+  const g = p.gat;
+  if (g) {
+    if (p.map !== g.map || p.dead || p.sit || p.fish || dist(p.x, p.y, g.x, g.y) > NODE.move || p.hitAt > g.at || p.atkAt > g.at) gatStop(S, p, "채집이 끊겼습니다.");
+    else if (now >= g.end) gatDone(S, p);
+    else if (!g.sent && now >= g.tapAt) { g.sent = true; S.maps[p.map].ev.push(["gt", p.eid, NODE.tap]); }
+  }
+  if (p.parcel && (p.dead || now > p.parcel.until)) jbFail(S, p);
+  if (p.ng) for (const id of Object.keys(p.ng)) {
+    const o = p.ng[id];
+    for (const i of Object.keys(o)) if (o[i] <= now) delete o[i];
+    if (!Object.keys(o).length) delete p.ng[id];
+  }
+  jbEnsure(S, p);
+}
+
 // ── the wire (B.12)
+
+/** self.jb: [day, offers [[id, kind, npc name, text, gold, skill index]…], done ids, active ? [id, prog, need n, secs left] : 0]. */
+function jbView(p) {
+  const ch = p.ch, offers = jbOffersOf(p.S, p), a = ch.jobBoard.active;
+  return [ch.jobBoard.day, offers.map((id) => { const t = JB[id]; return [id, t.kind, npcName(t.npc), t.text, jbGold(ch, t), LIFE.indexOf(t.sk)]; }),
+    ch.jobBoard.done.slice(), a ? [a.id, a.prog, JB[a.id].n || 0, p.parcel ? Math.max(0, Math.ceil((p.parcel.until - p.S.now) / 1000)) : 0] : 0];
+}
+/** self.rep: [[npcId, trust]…] (only NPCs above 0). */
+const repView = (ch) => Object.keys(ch.rep).map((id) => [id, ch.rep[id]]);
+/** Snapshot field `ng`: this map's nodes the player has spent, only when the list changes (and on arrival). */
+function lifeSnap(S, p, out) {
+  const ng = nodesSpent(p, S.now), key = ng.join(",");
+  if (p.sendMap || key !== p.ngKey) { out.ng = ng; p.ngKey = key; }
+}
 
 /** self.life: [lv, xp, need (0 at the cap)] per skill, in LIFE order. */
 const lifeView = (ch) => LIFE.map((k) => [ch.life[k].lv, ch.life[k].xp, ch.life[k].lv >= LIFE_MAX ? 0 : lifeNeed(ch.life[k].lv)]);
@@ -172,5 +734,14 @@ function lifeDefs() {
     recipes: Object.keys(RECIPES).map((id) => ({ id, ...RECIPES[id] })),
     mats: Object.keys(ITEMS).filter((id) => ITEMS[id].type === "lmat"),
     mapGrade: Object.fromEntries(Object.keys(MAP_META).map((id) => [id, mapGradeOf(id)])),
+    // L2: nodes (kind letters/names, cooldown, channel at Lv 1, reach, tap window), stations, batch rules, the
+    // board's templates and pay, trust tiers and perks, the pouch
+    nodes: { kinds: NODE_KINDS, names: NODE_NAME, cd: NODE.cd, ch: NODE.ch, range: NODE.range, tap: NODE.tap },
+    mg: MG, craft: CRAFT, bless: ENH_BLESS, gearCraft: { q: GEAR_CRAFT.q },
+    jb: Object.fromEntries(Object.keys(JB).map((id) => [id, { ...JB[id], npcName: npcName(JB[id].npc), toName: JB[id].to ? npcName(JB[id].to) : "" }])),
+    jbPay: JB_PAY,
+    rep: { tier: REP_TIER, name: REP_NAME, disc: REP_DISC, tip: REP_TIP, perk: REP_PERK },
+    pouch: { max: POUCH_MAX, ids: Object.keys(ITEMS).filter(pouchOk) },
+    master: LIFE_MASTER,
   };
 }

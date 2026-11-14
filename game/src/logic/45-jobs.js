@@ -74,7 +74,8 @@ function deriveStats(p) {
     def: Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def),
     crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh : 0) + b.crit),
     critd: SFX.critd[0] + SFX.critd[1] * luk + b.critd / 100,
-    ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + Math.min(40, b.spd) / 100), xp: b.xp, gold: b.gold,
+    // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
+    ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + Math.min(40, b.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp, gold: b.gold,
     mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk),
     lg: b.lg, arm, wk, mag: arm.mag ? 1 : 0,
     acd: Math.round(arm.cd * (1 - Math.min(SFX.aspd[1], SFX.aspd[0] * dex)) * (b.lg.haste ? 0.85 : 1)),

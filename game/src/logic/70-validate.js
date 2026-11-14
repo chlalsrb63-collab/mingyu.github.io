@@ -203,6 +203,8 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "use": {
+      // elixirs, the punch and the whetstone (life skills, 58-life.js)
+      if (lifeUse(a.id)) return lifeUseValidate(S, p, a);
       const it = ITEMS[a.id];
       if (!it || !["pot", "food", "camp", "scroll", "buff", "pet"].includes(it.type)) return bad("사용할 수 없는 아이템");
       if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
@@ -269,6 +271,12 @@ export function validateAction(S, pid, a) {
         if (a.n < 0 && wh.gold < -a.n) return bad("창고에 골드가 부족합니다");
         return OK;
       }
+      // materials straight from the 재료 주머니: { a: "put", pid: itemId, n }
+      if (a.a === "put" && typeof a.pid === "string") {
+        const n = a.n | 0;
+        if (n < 1 || n > pouchHas(ch, a.pid)) return bad("잘못된 수량");
+        return whRoom(wh, a.pid, n) ? OK : bad("창고가 가득 찼습니다");
+      }
       const from = a.a === "put" ? ch.inv : a.a === "take" ? wh.items : null;
       if (!from) return bad("잘못된 요청입니다");
       const sl = Number.isInteger(a.s) ? from[a.s] : null;
@@ -288,11 +296,17 @@ export function validateAction(S, pid, a) {
       if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
       if (!goodsNear(p).has(a.id)) return bad("이 가게에서는 팔지 않는 물건입니다");
       const id = resolveItem(a.id, ch);
-      if (ch.gold < ITEMS[id].price * n) return bad("골드가 부족합니다");
+      if (ch.gold < buyCost(p, a.id, id, n)) return bad("골드가 부족합니다");
       if (!canAdd(ch, id, n)) return bad("가방이 가득 찼습니다");
       return OK;
     }
     case "sell": {
+      // from the 재료 주머니: { pid: itemId, n }
+      if (typeof a.pid === "string") {
+        const n = a.n | 0;
+        if (n < 1 || n > pouchHas(ch, a.pid)) return bad("잘못된 수량");
+        return npcNear(p, "shop") ? OK : bad("상인이 너무 멉니다");
+      }
       const s = ch.inv[a.s];
       if (!s) return bad("아이템이 없습니다");
       const n = a.n | 0;
@@ -309,6 +323,9 @@ export function validateAction(S, pid, a) {
       const c = enhCost(g);
       if (ch.gold < c.gold) return bad("골드가 부족합니다");
       if (countItem(ch, "stone") < c.stone) return bad("강화석이 부족합니다");
+      // b: 1 adds a 축복 강화석 (+10 %p, a failure never drops a step)
+      if (a.b !== undefined && a.b !== 0 && a.b !== 1) return bad("잘못된 요청입니다");
+      if (a.b === 1 && countItem(ch, "stone_b") < 1) return bad("축복 강화석이 없습니다");
       return OK;
     }
     case "sit": return OK;
@@ -395,6 +412,8 @@ export function validateAction(S, pid, a) {
       if (now < (p.wswAt || 0)) return bad("wsw");
       return OK;
     }
+    // life skills L2 (58-life.js): gathering, the stations, the 알바 board
+    case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": return lifeValidate(S, p, a);
     default:
       return bad("알 수 없는 행동");
   }

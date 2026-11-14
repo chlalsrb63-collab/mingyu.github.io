@@ -26,6 +26,7 @@ export function applyAction(S, pid, a) {
     case "atk": if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); break;
     case "sk": if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.id); break;
     case "use": {
+      if (lifeUse(a.id)) { lifeUseApply(S, p, a); break; }
       const it = ITEMS[a.id];
       const st = stats(p);
       if (it.type === "scroll") {
@@ -138,6 +139,10 @@ export function applyAction(S, pid, a) {
       if (a.a === "gold") {
         ch.gold -= a.n; wh.gold += a.n;
         toast(p, a.n > 0 ? `${a.n}G를 맡겼습니다.` : `${-a.n}G를 찾았습니다.`);
+      } else if (a.a === "put" && typeof a.pid === "string") {
+        // from the 재료 주머니 (taking it back out goes through addItem, so into the pouch again)
+        stackInto(wh.items, a.pid, a.n | 0);
+        pouchTake(ch, a.pid, a.n | 0);
       } else if (a.a === "put") {
         const sl = ch.inv[a.s];
         if (isGear(sl.id)) { ch.inv.splice(a.s, 1); wh.items.push(sl); }
@@ -192,7 +197,7 @@ export function applyAction(S, pid, a) {
     case "buy": {
       const id = resolveItem(a.id, ch);
       const n = a.n | 0;
-      ch.gold -= ITEMS[id].price * n;
+      ch.gold -= buyCost(p, a.id, id, n);
       addItem(ch, id, n);
       p.gain.push(["item", id, n, 0]);
       if (ITEMS[id].type === "pot") tutStep(S, p, "buy");
@@ -200,8 +205,17 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "sell": {
-      const s = ch.inv[a.s];
       const n = a.n | 0;
+      if (typeof a.pid === "string") {
+        // from the 재료 주머니
+        const each = sellPrice({ id: a.pid });
+        pouchTake(ch, a.pid, n);
+        ch.gold += each * n;
+        p.gain.push(["gold", each * n]);
+        p.dirty = true;
+        break;
+      }
+      const s = ch.inv[a.s];
       const each = sellPrice(s);
       ch.gold += each * n;
       if (isGear(s.id) || s.n <= n) ch.inv.splice(a.s, 1);
@@ -216,13 +230,18 @@ export function applyAction(S, pid, a) {
       const c = enhCost(g);
       ch.gold -= c.gold;
       takeItem(ch, "stone", c.stone);
-      const win = rnd(S) * 100 < ENH_RATE[g.enh];
+      // a 축복 강화석 (b: 1): +ENH_BLESS %p, and a failure keeps the step
+      const bless = a.b === 1;
+      if (bless) takeItem(ch, "stone_b", 1);
+      const win = rnd(S) * 100 < ENH_RATE[g.enh] + (bless ? ENH_BLESS : 0);
       if (win) {
         g.enh++;
         toast(p, `${gearFull(g)} 강화 성공!`);
         if (g.enh >= 7) sys(S, `${ch.name}님이 ${gearFull(g)} 강화에 성공했습니다!`);
         ch.cnt.enh = Math.max(ch.cnt.enh, g.enh);
         checkAch(S, p);
+      } else if (g.enh >= 5 && bless) {
+        toast(p, `${gearFull(g)} 강화 실패... 축복 덕분에 단계는 그대로입니다.`);
       } else if (g.enh >= 5) {
         g.enh--;
         toast(p, `강화 실패... ${gearFull(g)}${pp(gearFull(g), "으로")} 단계가 내려갔습니다.`);
@@ -560,6 +579,8 @@ export function applyAction(S, pid, a) {
       checkAch(S, p);
       break;
     }
+    // life skills L2 (58-life.js): gathering, the stations, the 알바 board
+    case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": lifeApply(S, p, a); break;
     case "wsw": {
       // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops
       [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];

@@ -54,8 +54,10 @@ function strHash(s) {
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
   return h >>> 0;
 }
-const DAILY_TEXT = { kill: "{mob} {need}마리 처치", elite: "정예 몬스터 {need}마리 처치", fish: "물고기 {need}마리 낚기", cook: "요리 {need}번 성공하기", chest: "보물 상자 {need}개 열기", bounty: "반복 의뢰 {need}번 보고하기" };
-const DAILY_OTHER = ["elite", "fish", "cook", "chest", "bounty"];
+const DAILY_TEXT = { kill: "{mob} {need}마리 처치", elite: "정예 몬스터 {need}마리 처치", fish: "물고기 {need}마리 낚기", cook: "요리 {need}번 성공하기", chest: "보물 상자 {need}개 열기", bounty: "반복 의뢰 {need}번 보고하기",
+  gather: "채집 {need}번 하기", craft: "제작·연금·요리 {need}번 성공하기" };
+// (gather and craft: life skills L2, counted in 58-life.js gatDone/craftOnce)
+const DAILY_OTHER = ["elite", "fish", "cook", "chest", "bounty", "gather", "craft"];
 function rollDaily(ch, day) {
   const box = { seed: strHash(`${ch.name}:${day}`) | 0 };
   // the monster to hunt is one around the character's level that lives somewhere they can reach
@@ -66,7 +68,7 @@ function rollDaily(ch, day) {
   const pool = DAILY_OTHER.slice();
   while (tasks.length < 3) {
     const kind = pool.splice(ri(box, 0, pool.length - 1), 1)[0];
-    const need = { elite: ri(box, 3, 5), fish: ri(box, 4, 6), cook: ri(box, 2, 4), chest: 2, bounty: 1 }[kind];
+    const need = { elite: ri(box, 3, 5), fish: ri(box, 4, 6), cook: ri(box, 2, 4), chest: 2, bounty: 1, gather: ri(box, 4, 6), craft: ri(box, 2, 3) }[kind];
     tasks.push({ kind, k: null, n: 0, need });
   }
   return { day, tasks, claimed: [false, false, false], bonus: false };
@@ -152,6 +154,15 @@ const ACH = [
   ["carp", "생활", "황금 잉어", "황금 잉어 낚기", 15, (c) => c.cnt.carp >= 1],
   ["cook10", "생활", "요리사", "요리 10번 성공", 10, (c) => c.cnt.cook >= 10, "요리사"],
   ["rest10", "생활", "모닥불 단골", "모닥불의 온기 10번 받기", 5, (c) => c.cnt.rest >= 10],
+  // life skills (58-life.js): any skill at 10 and 30, each at 50 with its master's title; gathering, making, deliveries
+  ["life10", "생활", "생활의 발견", "생활 기술 하나를 Lv.10까지 올리기", 5, (c) => !!c.life && LIFE.some((k) => c.life[k].lv >= 10)],
+  ["life30", "생활", "생활의 달인", "생활 기술 하나를 Lv.30까지 올리기", 15, (c) => !!c.life && LIFE.some((k) => c.life[k].lv >= 30), "생활의 달인"],
+  ...LIFE.map((k, i) => [`life50_${k}`, "생활", LIFE_MASTER[i], `${LIFE_NAME[i]} Lv.50 달성`, 30, (c) => !!c.life && c.life[k].lv >= LIFE_MAX, LIFE_MASTER[i]]),
+  ["gat100", "생활", "부지런한 채집꾼", "채집 100번", 5, (c) => c.cnt.gat >= 100],
+  ["craft50", "생활", "솜씨 좋은 손", "제작·연금·요리 50번 성공", 10, (c) => c.cnt.craft >= 50],
+  ["deliver20", "생활", "믿음직한 배달부", "배달 20번 성공", 10, (c) => c.cnt.deliver >= 20],
+  // trust 60 (가족) with an NPC who has perks: their title
+  ...Object.keys(REP_PERK).map((id) => [`rep_${id}`, "함께", REP_PERK[id].title, `${REP_PERK[id].who}의 신뢰 ${REP_TIER[2]} (${REP_NAME[2]})`, 10, (c) => !!c.rep && (c.rep[id] | 0) >= REP_TIER[2], REP_PERK[id].title]),
   ["leg", "장비", "첫 전설", "전설 장비 획득", 10, (c) => c.cnt.leg >= 1],
   ["set", "장비", "세트 수집가", "세트 장비 획득", 10, (c) => c.cnt.set >= 1],
   ["enh7", "장비", "강화의 손길", "장비 +7 강화 성공", 10, (c) => c.cnt.enh >= 7],

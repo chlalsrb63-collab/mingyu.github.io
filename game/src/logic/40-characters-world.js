@@ -192,7 +192,9 @@ function qsLearn(ch, id) {
 const qsStarter = (ch) => skillsFor(ch).filter((id) => SKILL[id].kind !== "p" && !skWhy(ch, SKILL[id]));
 
 /** Counters kept for achievements (`ch.cnt`; `dim` = 차원 균열 clears). */
-const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim"];
+const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim",
+  // life skills L2: gathered, crafted (any station), delivered
+  "gat", "craft", "deliver"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {
@@ -274,7 +276,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {

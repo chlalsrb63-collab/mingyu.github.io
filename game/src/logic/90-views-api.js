@@ -48,8 +48,8 @@ function selfPayload(p) {
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.job, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
     // the bag's size (46-bag.js) and the house (64-housing.js homeSelf)
     bagCap: bagCap(ch), house: homeSelf(p),
-    // life skills (58-life.js): [lv, xp, need] per skill in LIFE order
-    life: lifeView(ch),
+    // life skills (58-life.js): [lv, xp, need] per skill in LIFE order; L2: the 알바 board, trust, the 재료 주머니
+    life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch,
   };
 }
 
@@ -126,6 +126,8 @@ export function viewFor(S, pid) {
   if (p.dirty) out.self = selfPayload(p);
   if (p.gain.length) out.gain = p.gain;
   dimView(S, p, out);
+  // this map's gathering nodes the player has spent, when that changes (58-life.js)
+  lifeSnap(S, p, out);
   if (p.toast.length) out.toast = p.toast;
   p.sendMap = false; p.fix = false; p.dirty = false; p.gain = []; p.toast = [];
   return out;
