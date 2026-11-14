@@ -79,7 +79,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `protocol.ts` [60] | `parseClientMessage` — size limits and shape of untrusted frames |
 | `accounts.js` [382] | plain JS (runs in DO and node): `SERVERS`, `CHANNELS`, `class Accounts` (signup/login/logout/auth/me/servers), `parseApiBody`, storage key scheme `K`, `pidFor`, throttle rules |
 | `accounts.d.ts` [75], `logic.d.ts` [36] | types for the two plain-JS modules (update when exports change) |
-| `env.ts` [17] | `Env` bindings: `ASSETS`, `ROOMS`, `HF_ENV`, `APP_SLUG` |
+| `env.ts` [22] | `Env` bindings: `ASSETS`, `ROOMS`, `HF_ENV`, `APP_SLUG`, `PLAYTEST` (local only: map-editor playtest join) |
 | `logic.js` [6046] | **GENERATED** — never edit; built from `src/logic/*.js` |
 
 ### Rules — `game/src/logic/` (fragments of ONE scope, concatenated in name order; not modules)
@@ -90,11 +90,14 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `20-helpers-mapkit.js` [568] | `rnd(box)`/`ri`/`clamp`/`dist`, XP curve `xpNeed`, map primitives (`blank rect road portal finalize`), noise (`fbm`), A* `walk`, `bfs`, `poisson`, Voronoi `partition`, `grow`, `knit`, `stamp`, cellular `automaton`, spawn banding |
 | `30-maps-overworld.js` [667] | set pieces `PIECE` legend + **`PIECES`**, `piece()`, `wilds(cfg)` (meadow/forest generator), `metro(cfg)` (city generator) |
 | `32-maps-underground.js` [630] | `tunnel`, `cavern` (cave), `catacomb` (crypt), `sewers`, `abyssal` (abyss) |
-| `34-maps-world.js` [358] | `buildTown()`, **`buildMaps()`** (every map's cfg: seed, size, mobs, chest, features), `markRoutes`, `MAPS`, `START`, collision `solidAt/canStand/canFly`, `mapPayload` |
+| *(generated)* | `const DATA = {maps, links, npcs, quests}` — `build-logic.mjs` inserts `game/data/**` right after 00-header |
+| `34-maps-world.js` [358] | `buildTown()`, **`buildMaps()`** (every map's cfg: seed, size, mobs, chest, features), `markRoutes`, collision `solidAt/canStand/canFly`, `mapPayload` |
+| `36-custom-maps.js` [182] | editor maps over the generated world: `fromEditor` (map file → map), `customWorld` (replaces, doors, links, NPCs), **`MAPS`**, `START`, `HUNTED`, `COL_MOBS`, `NPC_MAP`, `devPlace` (playtest) |
 | `40-characters-world.js` [426] | `validName`, **`newChar`** (sheet `v:7`), **`migrate`** (old sheets), gear stats `stats()`, `exportChar`; world `setup`, mobs `newMob/placeMob`, field boss, `addPlayer/removePlayer`, `changeMap`, `sys/toast`; parties |
 | `50-loot-combat.js` [503] | bag/stack/warehouse helpers, pickup, prices, `rollGear`, `rollRarity`, `lootFor`; `gainXp`, `hurtMob`, `killMob`, `hurtPlayer`, targeting + aim helpers (`AIM_V setAim inArc aimMob`), `basicAttack` |
 | `55-class-skills.js` [611] | class mechanics (grit, marks, focus, weave), `classTick`, `crView` gauge, **`castSkill`** (switch on skill id; emits numeric fx events `ev(code,…)`) |
 | `60-content.js` [317] | waypoints + recall, dailies (06:00 KST), achievements `ACH` + titles, collection, world event (rift), tutorial `TUT` |
+| `62-side-quests.js` [121] | editor side quests: `SIDE`, `ch.sq` (`sqClean`), `sqProgress` hooks (kill/pickup/talk/visit), `sqValidate`/`sqApply` (action `sq`), `sqView` |
 | `65-cosmetics.js` [125] | `COSMETICS` catalogue, `COS_SLOTS`, wardrobe helpers `cosClean cosWire giveCos cosFrom` |
 | `70-validate.js` [348] | **`validateAction`** — one `case` per action `t`: respawn opt look chat p*/g* (party/guild) qs sort emo cos_* title daily tut mv atk warp sk use eq uneq rune train sklv wh sellall buy sell enh sit fish hook reel cook salv bq quest |
 | `75-apply.js` [522] | **`applyAction`** (same cases, mutates state), `afterGear` |
@@ -126,7 +129,8 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `growth.js` [292] | skill training, warehouse, pets, auto-potion, drop names (client side) |
 | `quickslots.js` [327] | quick slots 1–9 (drag skills/items, keys) |
 | `minigames.js` [269] | fishing rhythm game, cooking tangram |
-| `npctalk.js` [80] | NPC flavour lines by role |
+| `npctalk.js` [80] | NPC flavour lines by role (an NPC with `lines` from the editor says those) |
+| `sidequests.js` [125] | side-quest cards in the talk window, quest-window entries, "!"/"?" over givers |
 | `frames.js` [85] | HUD 9-slice frame art → CSS custom properties |
 | `audio.js` [658] | chiptune synth: `TRACKS` (per-map music), `SFX` catalogue, `Sound.play(name)` |
 | `titlescene.js` [510] | title-screen diorama and pixel logo |
@@ -142,10 +146,13 @@ sim (smoke) · party · loot (gear, repeat hunting) · life (fires, fishing, coo
 growth (skill levels, warehouse, pets, scrolls) · skills (class mechanics) · aim (blows/skills go where you aim, nothing behind) · maps (generators:
 connectivity, determinism, speed) · hotbar (quick slots, party chat, tidy) · wardrobe (cosmetics) ·
 looks (species ↔ LOOK_MAX) · mobart (every mob has a model that fits its canvas) · accounts (vault
-logic with a fake store + client contract).
+logic with a fake store + client contract) · data (editor data: sample map, links, side quests, round
+trip, data:check errors, sheet v8).
 
 ### Scripts — `game/scripts/` (pure node; work on Windows)
-`build-logic.mjs` (concat parts → logic.js; `--check`, `--watch`) · `test-all.mjs` (build + run
+`build-logic.mjs` (concat parts + `data/**` → logic.js; `--check`, `--watch`; exports `readData buildLogic`) ·
+`editor-lib.mjs` (for the map editor: `palette mapToEditor defsForEditor listMaps checkData loadLogic`) ·
+`data-check.mjs` (`npm run data:check`, Korean errors with file/path) · `test-all.mjs` (build + run
 tests/LIST; `--no-build`, names to filter, `-v`) · `dump-maps.mjs` (public/_maps.json for previews) ·
 `shot.mjs` (one screenshot; `--serve` for previews) · `artkit.mjs` (shared: browser launch, static server, PNG
 read/write) · `export-art.mjs` (`npm run art:export`: code-drawn art → `asset/_export/` PNGs) · `gallery.mjs`
@@ -154,7 +161,8 @@ read/write) · `export-art.mjs` (`npm run art:export`: code-drawn art → `asset
 `build.mjs`/`check-logic.mjs` referenced by the `build` script are Higgsfield's and are not in the repo.
 
 ### Other
-`ai/` AI team: `TASKS.md` task board, role files `codex.md` `gemini.md` `merge.md`, `reports/`, `worker.bat` (workers run in git worktrees `.work/<name>` on branch `<name>/work`) · root launchers `PLAY.bat` `AI-TEAM.bat` `AI-MERGE.bat` `UPDATE.bat` `TESTS.bat` `ASSETS.bat` (export + gallery), `install.ps1` (one-step Windows setup), `.vscode/tasks.json` (VS Code: starts the AI team on folder open) · `asset/` (repo root) art/sound library and gallery `index.html` (not deployed; §9) · `ai/prompts/weapon-assets.md`
+`game/data/` map-editor data, built into logic.js (contract: `docs/editor/SCHEMA.md`): `maps/<id>.json`
+(sample `willow.json` 버드나무 마을), `links.json`, `npcs.json`, `quests.json` · `ai/` AI team: `TASKS.md` task board, role files `codex.md` `gemini.md` `merge.md`, `reports/`, `worker.bat` (workers run in git worktrees `.work/<name>` on branch `<name>/work`) · root launchers `PLAY.bat` `AI-TEAM.bat` `AI-MERGE.bat` `UPDATE.bat` `TESTS.bat` `ASSETS.bat` (export + gallery), `install.ps1` (one-step Windows setup), `.vscode/tasks.json` (VS Code: starts the AI team on folder open) · `asset/` (repo root) art/sound library and gallery `index.html` (not deployed; §9) · `ai/prompts/weapon-assets.md`
 (asset review + Codex/ChatGPT weapon prompts) · `.claude/agents/` 22 specialist roles adapted from the MIT "Claude Code Game Studios" template (game/systems/economy/level designer, narrative, writer, art director, technical artist, sound, UX, gameplay/network programmer, QA, performance, live-ops, security, producer…); Claude uses them as subagents, and Codex/Gemini may read one as a role guide (e.g. Gemini doing balance → `economy-designer.md`) · `.claude/skills/pixel-art/` pixel-art
 rules (any AI may read `rules/*.md`) · `.github/workflows/deploy-game.yml` CI (split check, tests,
 deploy) · root `index.html`/`profile.jpg` = the owner's unrelated GitHub Pages profile.
@@ -198,6 +206,7 @@ npm run dev:local           # builds logic, then wrangler dev → http://localho
 npm run watch:logic         # 2nd terminal while editing src/logic/*.js (wrangler reloads on change)
 npm run test:rules          # build + all 16 rule tests (~10 s); one: node scripts/test-all.mjs maps
 npm run check:split         # is logic.js up to date?
+npm run data:check          # validate game/data/** (maps, doors, NPCs, quests)
 npm run typecheck           # tsc --noEmit for the TS server files
 npm run deploy:cf           # checks + tests, then wrangler deploy -c wrangler.deploy.jsonc (needs `npx wrangler login`)
 ```
@@ -284,6 +293,14 @@ lives in `game/.wrangler/` (delete it to reset local accounts/characters).
 3. Data it needs: `selfPayload` in `90-views-api.js` (send only when dirty) or `defs()`; actions via
    `act({t:…})` + validate/apply cases. Bump the `?v=` cache tag.
 4. `shot.mjs --live --keys <key>`.
+
+**Add content with the editor data files** (`game/data/`, format in `docs/editor/SCHEMA.md`)
+1. A map: `data/maps/<id>.json` (new id, or `"replaces": "<built-in id>"`; start from
+   `editor-lib.mjs mapToEditor(id)`); doors in its `portals` + an entry in `links.json` for the way in.
+2. NPCs on built-in maps: `npcs.json`; side quests: `quests.json` `side` (giver = an NPC with role
+   `quest`); `main` replaces the main chain. No rules code needed.
+3. `npm run data:check`, then `npm run test:rules` (rebuilds logic.js; commit data + logic.js together).
+   Playtest: `npm run dev:local`, open `http://localhost:8787/?dev=1&map=<id>&x=<tx>&y=<ty>`.
 
 **Add a sound / music**
 - Effect: a function in `public/audio.js SFX` (synth: `this.tone`, `this.noise`), optional level in

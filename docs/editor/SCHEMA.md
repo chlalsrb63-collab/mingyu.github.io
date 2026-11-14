@@ -53,6 +53,31 @@ logic.js stays one file with no imports. Missing files = empty defaults = the ga
 - Ground/object chars: the palette comes from the server (`GET /api/palette`), built from what
   logic/scene2d/iso art actually support, with Korean names, minimap colours and solidity.
 
+Additive fields and rules (game side, v1 files stay valid; `mapToEditor` writes them so a
+generated map round-trips tile for tile):
+- `replaces`: the map keeps the built-in id (`replaces` value); the file's own `id` is an alias
+  that other data may use too. Doors other maps have INTO a replaced map stay; their arrival
+  tiles must be open in the new grid (data:check error "대체한 지도 … 도착 칸을 막았습니다").
+  `band` omitted (not `null`) on a replacement keeps the built-in band.
+- `spawns[].el`: optional fixed rank, 1 elite, 2 guardian (dungeon guardians use it).
+  `n` 1..40. `spawns` of a `safe` map are ignored.
+- `waypoint`: `[x, y]` or `[x, y, ax, ay]` (ax, ay = the open tile beside the stone travellers
+  arrive on; default: the first open side). The stone tile becomes object `Q`.
+- `boss`: `{ k }` = the field boss the map's kills call out (like generated hunting grounds);
+  `x, y` are informational. A map with monsters, a waypoint and a boss joins the rift rotation;
+  with monsters it gets a collection page (no region bonus).
+- `fishing: false` forbids fishing on that map.
+- `big`: `[{ "t": "house", "x", "y", "v": 0..7 }, { "t": "fountain", "x", "y" }]` — the 4×3 house
+  sprites (v 0–3 town houses, 4–7 city blocks) and the plaza fountain. Omitted: one house per
+  4×3 block of `h` objects.
+- `marks`: `[{ "x", "y", "kind": "sign", "label": "↑ 넥서스 광장", "to"?: mapId }]` — signpost texts
+  for `G` objects (the waypoint mark is added by the game).
+- NPC `lines` (≤ 12 strings, `{n}` = player name) are what the talk window shows, replacing the
+  role's stock lines; role `elder` (main-quest giver) is allowed too.
+- links.json: each entry is ONE-WAY (a two-way connection is two entries, or one entry plus a
+  portal in the custom map's own file); the door tile's object is cleared; `label` replaces the
+  door's "map name Lv.a–b" caption.
+
 ## links.json, npcs.json
 
 ```jsonc
@@ -90,6 +115,17 @@ logic.js stays one file with no imports. Missing files = empty defaults = the ga
 
 Side-quest progress lives in the character sheet (`ch.sq`, migrated, sheet `v` bumped).
 
+Game side, as built (62-side-quests.js): `ch.sq = { on: { id: progress }, done: { id: times } }`
+(sheet v8; old sheets get `{on:{}, done:{}}`). Up to 10 under way. Actions (validated, Korean
+errors): `{t:"sq", a:"take"|"done", id}` beside the giver, `{a:"drop", id}` anywhere,
+`{a:"talk", npc}` beside that NPC (the client sends it when you talk to a talk target).
+Progress: kill = kills of `mob` (party credit like the main quest), collect = what is in the bag
+(taken on hand-in), talk = once, visit = arriving on the map (or taking it while there).
+The client gets `defs.side` (each quest + `giverName giverMap target`) and `self.sq` =
+`[[id, state, have, need]]`, state 0 locked · 1 can take · 2 under way · 3 ready · 4 done.
+`main` replacement quests are cleaned (unknown mobs/items dropped) and their `xp` is scaled by
+the game's XP curve exactly like the built-in chain.
+
 ## Editor server API (game/scripts/editor-server.mjs, http://localhost:5190, local only)
 
 All JSON. Writes are restricted to `game/data/**` and `asset/**`; paths are validated.
@@ -107,3 +143,28 @@ GET  /api/assets             → asset/gallery.json (regenerated)   POST /api/as
 POST /api/playtest {map,x,y} → make sure the local game server runs and return a URL that spawns a
                                dev character at that spot (local dev only; never in production)
 ```
+
+### /api/playtest — how the game honours it
+
+The URL is `http://localhost:8787/?dev=1&map=<id>&x=<tileX>&y=<tileY>` (the dev server started with
+`npm run dev:local`, i.e. `wrangler dev -c wrangler.local.jsonc`). The page logs in as usual; the
+FIRST join of that page carries `dev: {map, x, y}` (public/lobby.js `joinMsg`). room.ts applies it
+only when `env.PLAYTEST === "1"` (set in `wrangler.local.jsonc` only) and `HF_ENV !== "prod"`, via
+`logic.devPlace(char, map, x, y)`: the character's saved position becomes that tile, or the nearest
+standable one, or the map's entrance. The account needs a character already (make one first).
+Rebuild logic.js after saving data (`npm run build:logic`; wrangler reloads) before playtesting.
+
+### Game-side library (game/scripts/editor-lib.mjs) — import these, all async
+
+```js
+import { palette, mapToEditor, defsForEditor, listMaps, checkData, loadLogic } from "./editor-lib.mjs";
+await palette()              // → GET /api/palette  { ground: [{ch,name,color,solid,themes,themeColors}], objects: [{ch,name,color,solid,themes}] }
+await mapToEditor(id)        // the GENERATED map as editor JSON ("replaces": id for built-ins); null if unknown
+await mapToEditor(id, { withData: true })   // the map as the game builds it with data/ (or { dataDir })
+await defsForEditor()        // → GET /api/defs  { mobs, items, roles, themes, bgm, maps, npcs, quests, goals }
+await listMaps(dataDir?)     // → GET /api/maps  [{ id, name, builtin, custom, file, replaces, w, h, theme }]
+await checkData(dataDir?)    // → POST /api/check  { ok, errors: [{file, path, msg}], warnings } (Korean msg)
+await loadLogic({ dataDir? | data? })      // the rules evaluated with that data (+ .E internals), no file written
+```
+`scripts/build-logic.mjs` exports `readData(dataDir)` and `buildLogic({dataDir|data})` too;
+`node scripts/data-check.mjs [dataDir]` is the CLI (`npm run data:check`).
