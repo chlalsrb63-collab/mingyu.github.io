@@ -170,20 +170,21 @@ export function render() {
     if (!C.touch()) b.title = title;
     else b.removeAttribute("title");
   });
-  // a skill just learned and not on the bar yet: say where it is
+  // a skill just learned: the server put it on the bar if there was room (and its toast says
+  // which key); the log keeps a line, and says where to find it when the bar was full
   if (render.lvl !== undefined && s.lvl > render.lvl) {
     list.forEach((sk, i) => {
-      if (sk.lv > render.lvl && sk.lv <= s.lvl && !keysOf(["s", i])) {
-        C.toast(`새 스킬 [${sk.name}] — 스킬 창(K)에서 단축칸으로 끌어다 놓으세요`);
-        C.addChat(`새 스킬 [${sk.name}]을(를) 배웠습니다. 스킬 창(K)에서 아래 단축칸(1~9)으로 끌어다 놓으면 그 숫자 키로 씁니다.`, "sys");
-      }
+      if (sk.lv <= render.lvl || sk.lv > s.lvl) return;
+      const k = keysOf(["s", i]);
+      C.addChat(k ? `새 스킬 [${sk.name}] — 단축칸 ${k} 키로 씁니다.` : `새 스킬 [${sk.name}] — 단축칸이 가득 찼습니다. 스킬 창(K)에서 빈 칸으로 끌어다 놓으세요.`, "sys");
     });
   }
   render.lvl = s.lvl;
   // a gentle pointer at the empty bar until something is put in it
   const hint = $("#qs-hint");
   if (hint) { hint.hidden = any; hint.textContent = C.touch() ? "스킬(K)·가방의 [단축칸] → 칸 누르기" : "스킬(K)·아이템(가방)을 끌어다 놓으세요"; }
-  if (!any && !render.told && s.lvl >= 1) {
+  // (only once there is a skill to put there: a new Lv.1 has enough to read)
+  if (!any && !render.told && s.lvl >= 3) {
     render.told = true;
     C.addChat("단축칸 1~9는 비어 있습니다. 스킬 창(K)의 스킬이나 가방의 물약·음식·주문서를 아래 단축칸에 끌어다 놓으면 그 숫자 키로 씁니다. (터치: 스킬·아이템의 [단축칸] 버튼 → 칸 누르기)", "sys");
   }

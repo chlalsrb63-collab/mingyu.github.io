@@ -367,7 +367,8 @@ body[data-lay="port"] #qs-hint, body[data-lay="land"] #qs-hint { top: -16px; lef
 #b-hp { grid-area: hp; } #b-mp { grid-area: mp; } #b-auto { grid-area: au; }
 #q0 { grid-area: q0; } #q1 { grid-area: q1; } #q2 { grid-area: q2; } #q3 { grid-area: q3; } #q4 { grid-area: q4; } #q5 { grid-area: q5; } #q6 { grid-area: q6; } #q7 { grid-area: q7; } #q8 { grid-area: q8; }
 body[data-lay="port"] #emotes, body[data-lay="land"] #emotes { right: auto; left: 50%; transform: translateX(-50%); top: 56px; bottom: auto; }
-body[data-lay="port"] #prompt { left: auto; right: 56px; transform: none; top: calc(var(--vph) - 40px); }
+/* above the chat box (bottom-left) so a long NPC name is never half under it */
+body[data-lay="port"] #prompt { left: auto; right: 8px; transform: none; top: calc(var(--vph) - 112px); max-width: calc(100vw - 16px); }
 body[data-lay="port"] #b-drawer { top: auto; bottom: calc(var(--dock) + 6px); }
 
 /* the phone on its side: the world fills the screen, the controls float over it */
@@ -466,6 +467,7 @@ body.touch kbd { display: none; }
 
 /* the death panel and the mini-games */
 #dead { background: rgba(40, 6, 12, .45); }
+#dead-by { margin: 0 0 6px; max-width: 360px; color: #ffb4a0; line-height: 1.45; }
 #dead .frame { padding: 10px 16px 12px; }
 #minigame .mg header { font: 700 12px var(--pix); color: var(--b-hi); }
 #minigame .mg-hint, #minigame .mg-info { font-family: var(--pix); font-size: 12px; }

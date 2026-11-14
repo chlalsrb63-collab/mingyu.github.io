@@ -17,12 +17,12 @@ const LINES = {
     "강화석은 몬스터가 떨어뜨리기도 하고, 장비를 분해해서 얻기도 하지.",
     "+5부터는 실패하면 한 단계 내려갈 수 있어. 각오가 됐을 때 두드리게.",
     "홈이 난 장비에 룬을 순서대로 맞춰 끼우면 룬어가 깨어난다네.",
-    (s) => `그 ${s.eq && s.eq.weapon ? "무기" : "맨손"}으로 어디까지 가려고? 한번 보여 주게.`,
+    (s) => `그 ${s.eq && s.eq.weapon ? "무기로" : "맨손으로"} 어디까지 가려고? 한번 보여 주게.`,
   ],
   elder: [
     "균열이 열린 뒤로 짐승들이 이상하게 돌아왔지. 자네 같은 이가 있어 다행이야.",
-    (s) => (s.q && s.q.st === 1 ? "의뢰는 잘 되어 가나? 다 마치면 다시 찾아오게." : "새 의뢰가 있다네. L 키로 의뢰 창을 열어 보게."),
-    "반복 의뢰는 언제든 받을 수 있네. 강화석이 모자라면 해 보게.",
+    (s) => (s.qDone ? "오, 해냈군! 의뢰 창에서 [의뢰 완료]를 누르고 보상을 받아 가게." : s.q && s.q.st === 1 ? "의뢰는 잘 되어 가나? 다 마치면 다시 찾아오게." : "새 의뢰가 있다네. 의뢰 창에서 읽어 보고 수락하게."),
+    (s) => (s.qDone ? "보상은 의뢰 창 아래 [의뢰 완료] 버튼이라네. 잊지 말고 받아 가게." : "반복 의뢰는 언제든 받을 수 있네. 강화석이 모자라면 해 보게."),
   ],
   train: [
     "스킬 레벨은 경험치와 골드로 올리지. 5레벨과 10레벨에 재사용 대기시간이 줄어든다네.",
@@ -67,7 +67,8 @@ const said = new Map();
 export function lineFor(npc, s) {
   const list = LINES[npc.role];
   if (!list || !s) return null;
-  const i = (said.get(npc.name) ?? Math.floor(Math.random() * list.length)) % list.length;
+  // the elder opens with the quest line (what to do next); everyone else starts anywhere
+  const i = (said.get(npc.name) ?? (npc.role === "elder" ? 1 : Math.floor(Math.random() * list.length))) % list.length;
   said.set(npc.name, i + 1);
   const l = list[i];
   return (typeof l === "function" ? l(s) : l).replaceAll("{n}", s.name);

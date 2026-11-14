@@ -183,11 +183,27 @@ export const dropName = (d) => (d.it === "gold" ? "골드" : C.G.defs.items[d.it
 
 // ───────────────────────────── the player's sheet changed ─────────────────────────────
 
+/** One line of advice under "쓰러졌습니다", from what did it and what the bag holds. */
+function deathTip(s) {
+  const d = s.dead, hp = (s.inv || []).some((e) => e && C.G.defs.items[e.id] && C.G.defs.items[e.id].type === "pot" && /^hp_/.test(e.id));
+  if (d.el >= 2) return "우두머리는 혼자 상대하기 어렵습니다 — 파티를 맺어 도전하세요.";
+  if (d.lv >= s.lvl + 3) return `나보다 ${d.lv - s.lvl}레벨 높은 상대입니다. 입구 쪽 약한 몬스터부터 사냥하세요.`;
+  if (!hp) return "빨간 물약이 없었습니다. 보급상 리나에게서 넉넉히 사 두세요.";
+  if (d.el === 1) return "정예는 일반 몬스터보다 훨씬 셉니다. 체력이 줄면 물러서세요.";
+  return "체력이 줄면 물약(Q)을 마시고, 모닥불 곁에서 쉬어 가세요.";
+}
+
 export function onSelf(s) {
   // the death panel: what town costs, and whether there is a feather
   if (s.dead) {
     const pct = s.need ? ((s.dead.loss / s.need) * 100).toFixed(1) : "0";
     $("#dead-loss").textContent = s.dead.loss > 0 ? `마을에서 부활하면 경험치 ${s.dead.loss.toLocaleString()} (${pct}%)를 잃습니다.` : "마을에서 부활합니다. (잃을 경험치가 없습니다)";
+    // who did it, and a word of advice for next time
+    const by = $("#dead-by");
+    if (by) {
+      by.hidden = !s.dead.by;
+      by.textContent = s.dead.by ? `${s.dead.by}에게 쓰러졌습니다. ${deathTip(s)}` : "";
+    }
     $("#b-feather").disabled = s.dead.feather < 1;
     $("#dead-feather").textContent = s.dead.feather > 0 ? `부활 깃털 ${s.dead.feather}개 — 그 자리에서 HP·MP 60%로 일어나며 경험치를 잃지 않습니다.` : "부활 깃털이 없습니다. (보급상 리나에게서 살 수 있습니다)";
   }

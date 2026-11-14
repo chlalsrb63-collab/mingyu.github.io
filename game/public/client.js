@@ -233,6 +233,9 @@ function loadMap(m) {
   $("#mini-name").title = $("#mini-name").textContent;
   Sound.bgm(m.id, m.bgm); Sound.setTheme(null); snd.bossT = 0;
   banner(m.name, true);
+  // walking into a band above you: say so once, at the door
+  const lv = G.self && G.self.lvl;
+  if (m.band && lv && lv < m.band[0]) toast(`권장 레벨 Lv.${m.band[0]}–${m.band[1]} — 지금(Lv.${lv})은 위험합니다. 파티를 맺거나 입구 근처에서만 사냥하세요.`);
   closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train");
 }
 
@@ -737,8 +740,9 @@ $("#vol-sfx").addEventListener("input", (ev) => { Sound.unlock(); Sound.setSfx(e
 $("#vol-sfx").addEventListener("change", () => Sound.play("coin"));
 function toggleAuto() {
   G.auto = !G.auto;
+  autoSt.home = null;
   $("#b-auto").classList.toggle("on", G.auto);
-  toast(G.auto ? "자동사냥 시작" : "자동사냥 종료");
+  toast(G.auto ? "자동사냥 시작 (이 근처만 · 우두머리·강한 정예는 피함)" : "자동사냥 종료");
   Sound.play("ui");
 }
 
@@ -778,7 +782,12 @@ function usePotion(kind) {
   if (missing <= 0) return;
   // the smallest potion that covers most of what is missing (small, big, concentrated)
   const id = Growth.pickPotion(kind, missing);
-  if (!id) { if (!G.auto) toast(kind === "hp" ? "HP 물약이 없습니다" : "MP 물약이 없습니다"); return; }
+  if (!id) {
+    if (!G.auto) toast(kind === "hp" ? "HP 물약이 없습니다" : "MP 물약이 없습니다");
+    // auto-hunt used to drink in silence until there was nothing left: say so, now and then
+    else if (kind === "hp" && t - (G.potWarn || 0) > 30000) { G.potWarn = t; toast("빨간 물약이 다 떨어졌습니다! 마을(보급상 리나)에서 채우지 않으면 위험합니다."); Sound.play("no"); }
+    return;
+  }
   act({ t: "use", id });
   G.potAt = t + 950;
 }
@@ -845,6 +854,11 @@ function waterNear() {
 }
 const fireNear = () => { for (const f of G.fires.values()) if (dist(G.me.x, G.me.y, f.x, f.y) <= G.defs.fireR) return true; return false; };
 
+/** The sheet NPCs read their lines from, plus whether the main quest is ready to hand in. */
+function talkSheet() {
+  const s = G.self, q = s && s.q, quest = q && G.defs.quests[q.i];
+  return s && { ...s, qDone: !!(q && q.st === 1 && quest && q.n >= quest.n) };
+}
 function interact() {
   const n = G.near;
   if (G.me.dead) return;
@@ -872,13 +886,13 @@ function interact() {
   else if (n.role === "costume") openWin("costume");
   else { talkTo(n); return; }
   // the townsfolk have a word to say as they serve you (npctalk.js)
-  const line = n.role !== "stone" && NpcTalk.lineFor(n, G.self);
+  const line = n.role !== "stone" && NpcTalk.lineFor(n, talkSheet());
   if (line) addChat(line, "npc", n.name);
 }
 /** The talk window: the NPC's greeting, then more on "다음 이야기", round and round. */
 const talk = { npc: null, lines: [], i: 0 };
 function talkTo(n) {
-  talk.npc = n; talk.lines = NpcTalk.allLines(n, G.self); talk.i = 0;
+  talk.npc = n; talk.lines = NpcTalk.allLines(n, talkSheet()); talk.i = 0;
   if (!talk.lines.length) talk.lines = ["…"];
   $("#talk-name").textContent = n.name;
   talkShow();
@@ -900,7 +914,20 @@ function talkShow() {
 // ───────────────────────────── update ─────────────────────────────
 
 let lastSend = 0, sent = { x: 0, y: 0, d: 0, a: 16 };
-const autoSt = { stuck: 0, side: 0, sign: 1, lastSkill: 0, target: null, routed: 0, skip: new Map() };
+const autoSt = { stuck: 0, side: 0, sign: 1, lastSkill: 0, target: null, routed: 0, skip: new Map(), home: null, homing: false };
+/** How far from where it was switched on auto-hunt will go looking (px): it should not wander into a harder band. */
+const AUTO_LEASH = 220;
+/**
+ * Whether auto-hunt should pick this monster: never a boss or field boss, nor an elite
+ * three or more levels above you — unless it is already fighting you, then you answer.
+ */
+function autoOk(m, s, t, d) {
+  const md = G.defs.mobs[m.k];
+  if (!md) return false;
+  if (t - (m.atkT || -1e9) < 2500 && d < 70) return true;
+  if (md.boss || m.el === 2) return false;
+  return !(m.el && md.lv >= s.lvl + 3);
+}
 
 /** What the ground under a tile sounds like underfoot. */
 const STEP_KIND = { ".": "grass", ",": "grass", '"': "grass", ":": "grass", ";": "grass", p: "dirt", s: "dirt", b: "wood", w: "dirt" };
@@ -941,10 +968,39 @@ function update(dt, t) {
     const m = G.mobs.get(autoSt.routed);
     if (!m || dist(me.x, me.y, m.x, m.y) < s.range * 0.8) { G.path = null; autoSt.routed = 0; }
   }
+  // the player steering (keys, stick or a click to walk) moves the spot auto-hunt keeps to
+  if (!G.path) autoSt.homing = false;
+  if (G.auto && (mx || my || (G.path && !autoSt.routed && !autoSt.homing))) autoSt.home = null;
   if (G.auto && !me.dead && mx === 0 && my === 0 && !G.path && !G.map.safe) {
+    if (!autoSt.home || autoSt.home.map !== G.map.id) autoSt.home = { map: G.map.id, x: me.x, y: me.y };
+    const home = autoSt.home;
+    // something far too strong close by (a field boss turning up mid-hunt, a big elite): back off
+    let threat = null, td = 110;
+    for (const m of G.mobs.values()) {
+      const md = G.defs.mobs[m.k], d = dist(me.x, me.y, m.x, m.y);
+      if (md && !md.chest && d < td && md.lv > s.lvl && (md.boss || m.el === 2 || (m.el && md.lv >= s.lvl + 3))) { threat = m; td = d; }
+    }
+    if (threat) {
+      autoSt.home = null;                            // hunt again wherever the retreat ends
+      // run along a real path back toward the way in (the waypoint stone, else the first door) —
+      // open ground and weaker monsters; straight away from it only if there is no path
+      const wp = (G.map.marks || []).find((k) => k.kind === "waypoint"), door = G.map.portals[0];
+      const goal = wp ? [wp.x * T + 8, (wp.y + 2) * T + 8] : door ? [door.x * T + 8, door.y * T + 8] : null;
+      const route = goal && dist(me.x, me.y, goal[0], goal[1]) > 64 ? pathTo(goal[0], goal[1]) : null;
+      if (route && route.length > 1) { G.path = route; autoSt.homing = true; }
+      else { mx = (me.x - threat.x) / (td || 1); my = (me.y - threat.y) / (td || 1); }
+      if (t - (autoSt.fleeT || 0) > 10000) { autoSt.fleeT = t; toast(`${G.defs.mobs[threat.k].name} — 너무 강한 상대입니다. 자동사냥이 물러납니다.`); }
+    }
     let best = null, bd = 1e9;
-    for (const m of G.mobs.values()) { if ((autoSt.skip.get(m.id) || 0) > t) continue; const d = dist(me.x, me.y, m.x, m.y); if (d < bd) { bd = d; best = m; } }
+    if (!threat) for (const m of G.mobs.values()) {
+      if ((autoSt.skip.get(m.id) || 0) > t) continue;
+      const d = dist(me.x, me.y, m.x, m.y);
+      if (!autoOk(m, s, t, d) || (dist(home.x, home.y, m.x, m.y) > AUTO_LEASH && d > s.range * 1.5)) continue;
+      if (d < bd) { bd = d; best = m; }
+    }
     autoSt.target = best;
+    // nothing to hunt nearby: drift back to the spot and wait for the next to turn up
+    if (!threat && !best && dist(me.x, me.y, home.x, home.y) > 48) { const route = pathTo(home.x, home.y); if (route) { G.path = route; autoSt.homing = true; } }
     if (best) {
       const range = s.range * 0.8;
       if (bd > range) {
@@ -2136,14 +2192,27 @@ function tutTry(id) {
   const s = G.self, step = s && s.tut && G.defs.tutorial && G.defs.tutorial[s.tut.i];
   if (step && step.id === id) act({ t: "tut", s: id });
 }
+/** The first steps told for fingers: the server's hints name keyboard keys a phone does not have. */
+const TUT_TOUCH = {
+  talk: "광장 분수 앞의 관리자 엘더윈에게 걸어가, 아래에 뜨는 [▶ 관리자 엘더윈]을 누르세요.",
+  equip: "메뉴 → 캐릭터에서 무기를 장착하세요.",
+  bag: "메뉴 → 가방을 열어 보세요.",
+  buy: "보급상 리나에게 다가가 [▶ 보급상 리나]를 누르고 빨간 물약을 사 보세요.",
+  hunt: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. [공격] 버튼으로 치고, [자동]을 켜면 알아서 사냥합니다.",
+  rest: "모닥불 곁에서 메뉴 → 앉기를 눌러 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.",
+  skill: "레벨 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 칸을 눌러 써 보세요.",
+};
 function tutCard(s) {
   const card = $("#tut"), steps = G.defs.tutorial || [], i = s.tut ? s.tut.i : steps.length, step = steps[i];
   const hide = !step || +localStorage.getItem("lumentale:tuthide") === i + 1;
+  // on a wide screen the bag sits open in the side column from the start: nothing to press, so the step is done
+  if (step && step.id === "bag" && !$("#w-inv").hidden && tutCard.bag !== i) { tutCard.bag = i; tutTry("bag"); }
   if (card.hidden !== hide) card.hidden = hide;
   if (hide) return;
   setOnce($("#tut-title"), `${i}`, (n) => n.append(step.title));
   $("#tut-n").textContent = `첫걸음 ${i + 1}/${steps.length}${step.need > 1 ? ` · ${s.tut.n}/${step.need}` : ""}`;
-  if ($("#tut-hint").textContent !== step.hint) $("#tut-hint").textContent = step.hint;
+  const hint = (touch() && TUT_TOUCH[step.id]) || step.hint;
+  if ($("#tut-hint").textContent !== hint) $("#tut-hint").textContent = hint;
   if (card.dataset.i !== String(i)) { card.dataset.i = String(i); card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); if (i > 0) Sound.play("ok"); }
 }
 $("#tut-x").addEventListener("click", () => { const s = G.self; if (s && s.tut) localStorage.setItem("lumentale:tuthide", String(s.tut.i + 1)); $("#tut").hidden = true; Sound.play("ui"); });
@@ -2278,6 +2347,9 @@ function renderQuest(s) {
   wrap.append(list, det);
   body.append(wrap);
   const cur = Math.min(s.q.i, qs.length);
+  // a main quest just handed in: show the next one rather than the finished page
+  if (G.qCur !== undefined && G.qCur !== cur && G.qsel === `main:${G.qCur}`) G.qsel = `main:${cur}`;
+  G.qCur = cur;
   const picks = Object.keys(mobs).filter((k) => !mobs[k].boss && !mobs[k].chest && mobs[k].lv <= s.lvl + 4 && (!s.bq || s.bq.k !== k)).sort((a, b) => mobs[b].lv - mobs[a].lv).slice(0, 4);
   const keys = [];
   const entry = (key, label, sub, cls) => {
