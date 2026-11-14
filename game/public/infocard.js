@@ -118,6 +118,16 @@ export const coinCard = () => ({
   how: "몬스터를 쓰러뜨리고, 의뢰와 알바를 마치고, 남는 장비와 재료를 상점에 팔아 법니다.", howLabel: "버는 법",
 });
 
+export const bagCard = () => {
+  const s = G.self, cap = s ? s.bagCap || G.defs.inv : 0;
+  return {
+    icon: iconImg("bag", "#e2c486"), title: "가방 칸", tag: "쓴 칸 / 전체 칸",
+    text: ["장비와 물약, 음식이 한 칸씩 차지합니다. 같은 소모품은 한 칸에 겹칩니다. 가득 차면 더 줍지 못합니다."],
+    rows: s ? [["지금", `${s.inv.length} / ${cap}`]] : [],
+    how: "가방 아래의 [가방 확장]으로 칸을 늘리고, 남는 것은 상점에 팔거나 창고에 맡깁니다. 채집 재료는 재료 주머니에 따로 쌓입니다.", howLabel: "넓히는 법",
+  };
+};
+
 // ── jobs ──
 const KIND = { none: "아직 직업 없음", single: "한 무기 직업", hybrid: "두 갈래 직업" };
 /** The card of the job `id`: what it is, its weapons, what it asks, its own skill. */

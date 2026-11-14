@@ -1336,3 +1336,9 @@ img.ji { width: 16px; height: 16px; flex: none; image-rendering: pixelated; vert
 /* phones: the card is as wide as the screen allows and the glyphs are finger-sized targets */
 body.touch #info { width: min(300px, calc(100vw - 16px)); font-size: 13px; }
 body.touch .window .stats .grp span.chip, body.touch .sw-dv span.chip { min-height: 24px; }
+/* the desktop menu and the attack buttons: the glyph alone (the name and the key are the tooltip) */
+body[data-lay="full"] #menu button span, body[data-lay="full"] #actions .act .nm { display: none; }
+body[data-lay="full"] #menu button img.gi { width: 24px; height: 24px; }
+body[data-lay="full"] #menu button { height: 32px; }
+#menu button { min-width: 0; overflow: hidden; }
+@media (max-width: 1100px) { body[data-lay="full"] #menu { grid-template-columns: repeat(6, 1fr); } }

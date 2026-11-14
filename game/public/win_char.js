@@ -32,6 +32,11 @@ export function renderInv(s) {
   $("#inv-count").textContent = "";
   $("#inv-count").append(iconImg("bag", "#b8ac90"), `${s.inv.length}/${cap}`);
   $("#inv-count").classList.toggle("full", s.inv.length >= cap);
+  if (!$("#inv-gold").dataset.info) {
+    Info.bind($("#inv-gold"), "보유 골드", () => Info.coinCard());
+    Info.bind($("#inv-count"), "가방 칸", () => Info.bagCard());
+  }
+  $("#inv-count").title = `가방 칸 ${s.inv.length} / ${cap}`;
   const sort = $("#inv-sort");
   sort.textContent = "";
   sort.append(iconImg("sort"), "정리");
