@@ -12,3 +12,5 @@ asset/gallery.js
 asset/reference/*
 !asset/reference/.gitkeep
 !asset/reference/README.md
+# agent worktrees (isolated working copies)
+.claude/worktrees/
