@@ -8,11 +8,11 @@
 
 /** A frame larger than this is refused unread. */
 const MAX_FRAME_BYTES = 16 * 1024;
-const MAX_PLAYER_ID = 64;
+const MAX_TOKEN = 128;
 const MAX_ACTION_BYTES = 4 * 1024;
 
 export type ClientMessage =
-  | { type: "join"; playerId: string }
+  | { type: "join"; token: string }
   | { type: "action"; action: unknown }
   | { type: "reset" };
 
@@ -39,13 +39,13 @@ export function parseClientMessage(raw: string | ArrayBuffer): ParseResult {
 
   switch (parsed.type) {
     case "join": {
-      const rawId = parsed.playerId;
-      if (typeof rawId !== "string" && typeof rawId !== "number") {
-        return { ok: false, error: "playerId required" };
+      // Accounts only: the session token from /api/login (the vault checks it).
+      // The old anonymous {playerId} join is gone; an old client gets "token required".
+      const token = parsed.token;
+      if (typeof token !== "string" || !token || token.length > MAX_TOKEN) {
+        return { ok: false, error: "token required" };
       }
-      const playerId = String(rawId).slice(0, MAX_PLAYER_ID);
-      if (!playerId) return { ok: false, error: "playerId required" };
-      return { ok: true, msg: { type: "join", playerId } };
+      return { ok: true, msg: { type: "join", token } };
     }
     case "action": {
       if (!("action" in parsed)) return { ok: false, error: "action required" };

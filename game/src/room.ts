@@ -21,9 +21,17 @@
  * vault; identity rides on the socket attachment for exactly that reason.
  *
  * ── WIRE PROTOCOL ───────────────────────────────────────────────────────
- *   in:  {type:"join", playerId} · {type:"action", action:{t, …}}
- *   out: {type:"need_char"} · {type:"welcome", you, defs, room}
+ *   in:  {type:"join", token} · {type:"action", action:{t, …}}
+ *   out: {type:"need_char"} · {type:"welcome", you, defs, room, server}
  *        {type:"snap", …} · {type:"rank", list} · {type:"error", error}
+ *        {type:"error", error, fatal:true, auth:true} — no/expired session: log in again
+ *
+ * ── ACCOUNTS ────────────────────────────────────────────────────────────
+ * The vault also answers the account API (/api/*, see worker.ts and
+ * accounts.js). A join carries a session token; the vault turns it into the
+ * account id and the room into its server, and the character key ("pid") is
+ * `${id}@${server}`: one character per account per server, the same one in
+ * both channels of that server. Names, guilds and the ranking are per server.
  */
 
 import { DurableObject } from "cloudflare:workers";
@@ -32,6 +40,7 @@ import type { Env } from "./env";
 import * as logic from "./logic.js";
 import type { Char, World } from "./logic.js";
 import { parseClientMessage } from "./protocol";
+import { Accounts, K, pidFor, serverOf } from "./accounts.js";
 
 const TICK_MS = 100;
 const SAVE_MS = 15_000;
@@ -39,9 +48,9 @@ const SAVE_MS = 15_000;
 const LOCK_MS = 40_000;
 const RANK_SIZE = 20;
 
-/** Contains ":" — the Worker only routes `[A-Za-z0-9_-]` names, so players can never open it. */
+/** The Worker only routes the four channel names to rooms, so players can never open this one. */
 export const VAULT_NAME = "vault:characters";
-const VAULT_PATH = "/__vault/";
+export const VAULT_PATH = "/__vault/";
 
 const PING = "__ping";
 const PONG = "__pong";
@@ -66,7 +75,9 @@ interface RankRow {
   xp: number;
 }
 
-type VaultReply = { ok: true; char?: Char | null; list?: RankRow[] } | { ok: false; error: string };
+type VaultReply =
+  | { ok: true; char?: Char | null; list?: RankRow[]; id?: string }
+  | { ok: false; error: string; expired?: boolean };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -79,6 +90,8 @@ export class Room extends DurableObject<Env> {
   private roomName = "";
   private lastSave = 0;
   private nextTick = 0;
+  /** The account service; only ever created in the vault instance. */
+  private accounts: Accounts | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -89,7 +102,12 @@ export class Room extends DurableObject<Env> {
 
   override async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname.startsWith(VAULT_PATH)) return this.vault(url.pathname.slice(VAULT_PATH.length), request);
+    if (url.pathname.startsWith(VAULT_PATH)) {
+      // Only the worker and the rooms build vault URLs, and only for the vault
+      // instance; a channel instance never answers them.
+      if (!this.ctx.id.equals(this.env.ROOMS.idFromName(VAULT_NAME))) return new Response("not found", { status: 404 });
+      return this.vault(url.pathname.slice(VAULT_PATH.length), request);
+    }
 
     if (request.headers.get("Upgrade") !== "websocket") {
       return new Response("expected a websocket upgrade", { status: 426 });
@@ -161,7 +179,16 @@ export class Room extends DurableObject<Env> {
     world.now = Date.now();
     const you = logic.addPlayer(world, att.pid, char);
     this.attach(ws, { connId: att.connId, pid: att.pid, live: true });
-    this.send(ws, { type: "welcome", you, defs: logic.defs(), room: this.roomName, max: logic.meta.maxPlayers });
+    this.send(ws, {
+      type: "welcome",
+      you,
+      defs: logic.defs(),
+      room: this.roomName,
+      server: serverOf(this.roomName),
+      max: logic.meta.maxPlayers,
+    });
+    // Best-effort head count for /api/servers (saves and leaves report it too).
+    this.ctx.waitUntil(this.callVault("count", { room: this.roomName, n: logic.playerCount(world) }));
   }
 
   private async startClock(): Promise<void> {
@@ -186,14 +213,25 @@ export class Room extends DurableObject<Env> {
 
   private async onMessage(ws: WebSocket, att: Attachment, raw: string | ArrayBuffer): Promise<void> {
     const parsed = parseClientMessage(raw);
-    if (!parsed.ok) return this.send(ws, { type: "error", error: parsed.error });
+    if (!parsed.ok) {
+      if (parsed.error === "token required") return this.send(ws, { type: "error", error: "로그인이 필요합니다", fatal: true, auth: true });
+      return this.send(ws, { type: "error", error: parsed.error });
+    }
     const msg = parsed.msg;
     if (msg.type === "reset") return;
 
     if (msg.type === "join") {
       if (att.live) return;
-      const pid = msg.playerId;
-      if (pid.length < 8) return this.send(ws, { type: "error", error: "잘못된 접속 정보입니다" });
+      const server = serverOf(this.roomName);
+      if (!server) return this.send(ws, { type: "error", error: "없는 채널입니다", fatal: true });
+      const who = await this.callVault("auth", { token: msg.token });
+      if (!who.ok || !who.id) {
+        const expired = !who.ok && who.expired;
+        return this.send(ws, { type: "error", error: who.ok ? "로그인이 필요합니다" : who.error, fatal: true, auth: expired || who.ok });
+      }
+      // The awaits let other frames in; a socket joins once.
+      if (this.att(ws)?.pid) return;
+      const pid = pidFor(who.id, server);
       const world = await this.ready();
       // One character, one connection: a second tab takes over from the first.
       for (const other of this.ctx.getWebSockets()) {
@@ -220,7 +258,7 @@ export class Room extends DurableObject<Env> {
     const kind = isRecord(action) ? action.t : undefined;
 
     if (kind === "rank") {
-      const res = await this.callVault("rank", {});
+      const res = await this.callVault("rank", { room: this.roomName });
       return this.send(ws, { type: "rank", list: res.ok ? (res.list ?? []) : [] });
     }
 
@@ -242,12 +280,12 @@ export class Room extends DurableObject<Env> {
     }
 
     if (kind === "gcreate" && isRecord(action)) {
-      // A guild's name is claimed in the vault, so it is unique across every channel.
+      // A guild's name is claimed in the vault, so it is unique across the server's channels.
       const world = await this.ready();
       world.now = Date.now();
       const first = logic.validateAction(world, pid, action);
       if (!first.ok) return this.send(ws, { type: "error", error: first.error ?? "invalid action" });
-      const res = await this.callVault("guild", { name: String(action.name) });
+      const res = await this.callVault("guild", { name: String(action.name), room: this.roomName });
       if (!res.ok) return this.send(ws, { type: "error", error: res.error });
       // The await let other frames in: check again before spending the gold.
       world.now = Date.now();
@@ -290,7 +328,8 @@ export class Room extends DurableObject<Env> {
     if (!att.live || !this.world) return;
     const char = logic.removePlayer(this.world, att.pid);
     if (char) {
-      await this.callVault("save", { room: this.roomName, list: [{ pid: att.pid, char }], release: [att.pid] });
+      const n = logic.playerCount(this.world);
+      await this.callVault("save", { room: this.roomName, list: [{ pid: att.pid, char }], release: [att.pid], n });
     }
   }
 
@@ -308,6 +347,7 @@ export class Room extends DurableObject<Env> {
       if (live.length === 0) {
         // Nobody home: stop the clock. The next join starts it again.
         this.world = null;
+        this.ctx.waitUntil(this.callVault("count", { room: this.roomName, n: 0 }));
         return;
       }
       logic.tick(world, now);
@@ -325,7 +365,7 @@ export class Room extends DurableObject<Env> {
           if (char) list.push({ pid, char });
         }
         // Not awaited: a save must never stall the tick.
-        this.ctx.waitUntil(this.callVault("save", { room: this.roomName, list, release: [] }));
+        this.ctx.waitUntil(this.callVault("save", { room: this.roomName, list, release: [], n: live.length }));
       }
 
       // Hold a steady cadence even when a tick ran long.
@@ -354,16 +394,47 @@ export class Room extends DurableObject<Env> {
     }
   }
 
-  /** Runs only inside the vault instance; reachable solely through `callVault`. */
+  /**
+   * Runs only inside the vault instance; reachable solely through `callVault`
+   * (rooms) and the worker's /api routes (which call `api/<op>` with a clean,
+   * size-checked body plus the caller's address as `ip`).
+   */
   private async vault(op: string, request: Request): Promise<Response> {
     const body = (await request.json()) as Record<string, unknown>;
     const store = this.ctx.storage;
     const now = Date.now();
     const reply = (r: VaultReply): Response => Response.json(r);
     const room = String(body.room ?? "");
+    const server = serverOf(room) ?? "s1";
+    const accounts = (this.accounts ??= new Accounts(store, crypto));
+    const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
+
+    if (op.startsWith("api/")) {
+      const b = { id: str(body.id), pw: str(body.pw), legacy: str(body.legacy), token: str(body.token), ip: str(body.ip) };
+      switch (op) {
+        case "api/signup":
+          return Response.json(await accounts.signup(b, now));
+        case "api/login":
+          return Response.json(await accounts.login(b, now));
+        case "api/logout":
+          return Response.json(await accounts.logout(b));
+        case "api/me":
+          return Response.json(await accounts.me(b, now));
+        case "api/servers":
+          return Response.json(accounts.servers(now));
+      }
+      return reply({ ok: false, error: "unknown request" });
+    }
+
+    if (op === "auth") return Response.json(await accounts.auth(body.token, now));
+
+    if (op === "count") {
+      accounts.report(room, Number(body.n), now);
+      return reply({ ok: true });
+    }
 
     if (op === "load") {
-      const key = `c:${String(body.pid)}`;
+      const key = K.char(String(body.pid));
       const rec = await store.get<VaultRecord>(key);
       if (!rec) return reply({ ok: true, char: null });
       if (rec.sess && rec.sess.room !== room && now - rec.sess.t < LOCK_MS) {
@@ -376,43 +447,51 @@ export class Room extends DurableObject<Env> {
 
     if (op === "create") {
       const char = body.char as Char;
-      const nameKey = `n:${char.name.toLowerCase()}`;
-      const charKey = `c:${String(body.pid)}`;
+      const pid = String(body.pid);
+      // Names are unique per server: 1서버 and 2서버 may each have a "토끼".
+      const nameKey = K.name(server, char.name);
+      const charKey = K.char(pid);
       const [taken, mine] = await Promise.all([store.get<string>(nameKey), store.get<VaultRecord>(charKey)]);
       if (mine) return reply({ ok: false, error: "이미 캐릭터가 있습니다. 새로고침해 주세요." });
       if (taken) return reply({ ok: false, error: "이미 사용 중인 이름입니다" });
-      await store.put({ [nameKey]: String(body.pid), [charKey]: { char, sess: { room, t: now } } });
+      await store.put({ [nameKey]: pid, [charKey]: { char, sess: { room, t: now } }, ...accounts.summaryPuts([{ pid, char }]) });
       return reply({ ok: true });
     }
 
     if (op === "save") {
+      if (typeof body.n === "number") accounts.report(room, body.n, now);
       const list = (body.list ?? []) as Array<{ pid: string; char: Char }>;
       const release = new Set((body.release ?? []) as string[]);
       if (!list.length) return reply({ ok: true });
-      const keys = list.map((e) => `c:${e.pid}`);
-      const [recs, rankNow] = await Promise.all([store.get<VaultRecord>(keys), store.get<RankRow[]>("rank")]);
+      const rankKey = K.rank(server);
+      const keys = list.map((e) => K.char(e.pid));
+      const [recs, rankNow] = await Promise.all([store.get<VaultRecord>(keys), store.get<RankRow[]>(rankKey)]);
       const puts: Record<string, unknown> = {};
       const rank = new Map((rankNow ?? []).map((r) => [r.name, r]));
+      const kept: Array<{ pid: string; char: Char }> = [];
       for (const { pid, char } of list) {
-        const rec = recs.get(`c:${pid}`);
+        const rec = recs.get(K.char(pid));
         // A save from a channel that no longer holds the lock is stale — drop it.
         if (!rec || (rec.sess && rec.sess.room !== room)) continue;
         const next: VaultRecord = { char };
         if (!release.has(pid)) next.sess = { room, t: now };
-        puts[`c:${pid}`] = next;
+        puts[K.char(pid)] = next;
+        kept.push({ pid, char });
         rank.set(char.name, { name: char.name, cls: char.cls, lvl: char.lvl, xp: char.xp });
       }
-      puts.rank = [...rank.values()].sort((a, b) => b.lvl - a.lvl || b.xp - a.xp).slice(0, RANK_SIZE);
+      Object.assign(puts, accounts.summaryPuts(kept));
+      puts[rankKey] = [...rank.values()].sort((a, b) => b.lvl - a.lvl || b.xp - a.xp).slice(0, RANK_SIZE);
       await store.put(puts);
       return reply({ ok: true });
     }
 
     if (op === "rank") {
-      return reply({ ok: true, list: (await store.get<RankRow[]>("rank")) ?? [] });
+      return reply({ ok: true, list: (await store.get<RankRow[]>(K.rank(server))) ?? [] });
     }
 
     if (op === "guild") {
-      const key = `g:${String(body.name).toLowerCase()}`;
+      // Guild names are unique per server, like character names.
+      const key = K.guild(server, String(body.name));
       if (await store.get(key)) return reply({ ok: false, error: "이미 있는 길드 이름입니다" });
       await store.put(key, { name: String(body.name), t: now });
       return reply({ ok: true });
