@@ -30,6 +30,8 @@ const ACCENT = [null, "#fbfbff", "#fff0d8", "#e8d4ae", "#f2b27a", "#c08050", "#8
 const EYE_COL = [null, "#8a5a3a", "#4a90e0", "#4ab06a", "#e0a030", "#9a6ad8", "#e86a9a", "#5ac8e0"];
 const BLUSH = ["#f6a8a0", "#f07882", "#f8ba7c", null, "#d8b0f0", null];
 const FRECKLE = 5;
+/** Every colour an eye can be drawn in (pupils on light and dark fur, glints, irises, tears, stars, hearts): wardrobe.js keeps these uncovered. */
+export const EYE_PIX = ["#2b2233", "#f8e4a0", "#ffffff", "#7ac8ff", "#f0a828", "#fff2b0", "#e8506a", ...EYE_COL.filter(Boolean)];
 const CLOTH = [null, "#5a8ae0", "#e0605a", "#5ab87a", "#9a78e0", "#f0c050", "#ec8ab4", "#46b4bc", "#8a6a4a", "#3e4e72", "#f4f0e6", "#e8843a"];
 
 /**
@@ -137,19 +139,64 @@ const lum = (c) => { const n = parseInt(c.slice(1), 16); return (0.299 * ((n >> 
 export const HEAD_BOB = [0, 1, 0, -1, 0, 0];
 
 /**
- * Where the head is on the 32×32 sheet (feet at sprites.FOOT), for hats and such:
- * `top` the head's top row, `half` its widest half-width about x = 16, `earTop` the
- * highest row of the ears (or `top` when there are none), `eyeY` the eye row,
- * `tall` whether the ears stand up (a hat sits between them, or the ears poke
- * through). Add HEAD_BOB[frame] to every row for the frame being drawn.
+ * The ears, as things worn on the head see them (index = PARTS ear). `kind`:
+ * tall (stand up above the head: a hat lets them through or hides them),
+ * small (little round ones on the crown), side (hang beside the cheeks, under any hat),
+ * antler / horn (hard: always poke through), none. `top` the highest ear row on the
+ * original head, `inX` the inner column of the left ear at its root (the right one
+ * mirrors about x = 15.5), both before the species' own offsets (`fixed`: no row offset).
+ */
+export const EARS = [
+  { kind: "tall", top: 14, inX: 13 }, { kind: "tall", top: 14, inX: 13 }, { kind: "small", top: 15, inX: 11 },
+  { kind: "tall", top: 14, inX: 13 }, { kind: "side", top: 17, inX: 11 }, { kind: "tall", top: 14, inX: 12 },
+  { kind: "side", top: 17, inX: 12 }, { kind: "small", top: 16, inX: 11 }, { kind: "antler", top: 12, inX: 14, fixed: 1 },
+  { kind: "side", top: 19, inX: 9 }, { kind: "horn", top: 15, inX: 12 }, { kind: "none", top: 18, inX: 0 },
+  { kind: "small", top: 15, inX: 12 }, { kind: "tall", top: 12, inX: 13, fixed: 1 },
+];
+
+/**
+ * Where the head is on the 32×32 sheet (feet at sprites.FOOT), for hats and such
+ * (wardrobe.js). Add HEAD_BOB[frame] to every row for the frame being drawn.
+ *  - `top` the head's top row of fur (a frog's skull between its eye bumps, a sheep's
+ *    wool), `x0`/`x1` the fur on that row, `rows` the half-widths from `top` down
+ *    (`halfAt(y)` reads them), `half` the widest;
+ *  - `earTop` the highest row of the ears (or bumps), `ear` its EARS kind ("bumps" for a
+ *    frog without ears), `earIn` the inner column of the left ear's root (null without
+ *    standing ears), `bumps` a frog's eye bumps (worn things treat them like small ears),
+ *    `tall` standing ears or bumps;
+ *  - `eyeY` the eye row, `ox` how far the eyes sit from the usual columns.
  */
 export function headAnchor(look) {
   const o = Array.isArray(look) ? lookOf(look) : look;
   const sp = SPECIES[o.sp | 0] || SPECIES[0];
-  const dy = sp.top - 18;
-  const earTop = [14, 14, 15, 14, 17, 14, 17, 16, 12, 19, 15, 18, 15, 12][o.ear | 0] + (o.ear === 8 || o.ear === 13 ? 0 : dy);
-  const top = sp.top + (sp.ex === "bumps" ? -2 : sp.ex === "wool" ? -1 : 0);
-  return { cx: 16, top, half: Math.max(...sp.rows), earTop: Math.min(earTop, top), eyeY: sp.ey || 20, tall: [0, 1, 3, 5, 8, 10, 12, 13].includes(o.ear | 0) };
+  const dy = sp.top - 18, dx = 6 - (sp.ew || 6);
+  const E = EARS[o.ear | 0] || EARS[11];
+  const bumps = sp.ex === "bumps";
+  const top = sp.top + (sp.ex === "wool" ? -1 : 0);
+  const rows = top < sp.top ? [sp.rows[0], ...sp.rows] : sp.rows.slice();
+  const standing = E.kind !== "side" && E.kind !== "none";
+  let earTop = E.top + (E.fixed ? 0 : dy);
+  if (bumps) earTop = Math.min(earTop, 16);
+  return {
+    cx: 16, top, x0: 16 - rows[0], x1: 15 + rows[0], rows, half: Math.max(...sp.rows),
+    halfAt: (y) => rows[clamp(y - top, 0, rows.length - 1)],
+    earTop: Math.min(earTop, top), ear: bumps && !standing ? "bumps" : E.kind, earIn: standing ? E.inX + dx : bumps ? 13 : null, bumps,
+    eyeY: sp.ey || 20, ox: sp.ox | 0, tall: standing || bumps,
+  };
+}
+
+/**
+ * Where the face is drawn in a view (front or side): the left eye's column `lx` and the right
+ * eye's `rx` (each eye is up to three pixels wide from there, one more to the left for a few
+ * styles), the eye row `ey`, the nose's column `nx` and row `ny`, the cheeks' outer columns.
+ * The same numbers `animal()` draws with.
+ */
+export function faceAnchor(look, view) {
+  const o = Array.isArray(look) ? lookOf(look) : look;
+  const sp = SPECIES[o.sp | 0] || SPECIES[0];
+  const side = view === "side", ox = sp.ox | 0;
+  const wAt = (y) => sp.rows[clamp(y - sp.top, 0, sp.rows.length - 1)];
+  return { lx: (side ? 14 : 12) + ox, rx: (side ? 19 : 18) - ox, ey: sp.ey || 20, nx: side ? 17 : 15, ny: 22, cheekL: 16 - wAt(22), cheekR: 15 + wAt(22), side };
 }
 
 // ───────────────────────────── drawing ─────────────────────────────
