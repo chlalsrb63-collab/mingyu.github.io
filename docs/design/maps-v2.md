@@ -281,3 +281,52 @@ a field boss, gathering nodes of grade 3 / 4 / 4. The loop city → jungle → c
   전갈 등뼈 (spine scorpion), 미라 낙타 (two-headed mummy camel, oasis boss), 모래 지렁이 아가리 (sand-worm maw, burrows),
   독수리 갈비 (rib vulture), 선인장 고슴도치 (cactus hedgehog); 덩굴 원숭이 (vine monkey), 난초 사마귀 (orchid mantis),
   독개구리 떼 (dart-frog brood), 악어 통나무 (log gator, jungle boss).
+
+## J. dunesea as built — 모래바다 (the owner's "desert oasis + desert meets the sea", made huge)
+
+| map | size | band | doors | open | narrow targets | loops | dead ends (longest) | tortuosity |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `dunesea` 모래바다 (theme `desert`) | 288 × 192 | 31–37 (placeholder) | north ↔ oasis south, east ↔ coast west | 82 % | 0/24 | 451 | 31 (4) | east 1.50 |
+
+The biggest ground: 55,296 tiles, 2.6 × the coast, 3.6 × a 152 × 102 ground. Held strictly by tests/mapflow.mjs (loops ≥ 30).
+Built in ≈ 260–290 ms (tests/maps.mjs gives this one map 400 ms, the others keep 150); the `g` + `o` rows of its map payload
+are 109 KB (13 KB gzipped; the coast: 42 / 6); the client needed no change — the ground is baked in chunks as they come on
+screen (8 × 8 chunks, the first two in 256 ms), the map loads in ≈ 0.7 s, no page errors. Monsters wake by 16-tile cells,
+so the 3,100 spawn slots cost nothing where nobody walks.
+
+- **Regions, north to south** (one `wilds` map; every region is laid out by place, not by the dice):
+  1. **the dune sea** (rows 0–≈94): two upper levels in long ridges by turns (`tierOf`), each ridge climbed only by a
+     few seven-wide ramps (`rampP`), bare crests (`z`) and rippled slopes;
+  2. **the salt flat** in the north-east corner: one flat level of white `S` with standing stones, nearly no barriers;
+  3. **the dry riverbed** (`open`): a gravel bed nine wide winding from the north rim to the surf; no barrier stands in
+     it and it comes down each ridge in steps — the one way that crosses every level;
+  4. **the oasis belt** (rows ≈94–137): low desert with four oases (`oases`) — the largest (lake radius 8.5) keeps the
+     **village** (set piece `village`: mud huts and palms round a fire that always burns, a waypoint stone beside it), three
+     smaller ones in the belt's east and up in the dunes; each lake in a green ring with reeds and palms and a jetty;
+  5. **the buried ruin** in the west: the temple piece with its pool dry and drifts of dune sand over the flagstones
+     (`temple: { at, buried, arena }`) — `m.bossAt`, so the field boss rises there wherever it was summoned;
+  6. **the coast** (rows ≈137–185): a white beach, two rows of surf, 36 rows of walkable shallows with reef rocks and
+     natural sand flats, six **islets** (`sea.islets`: a round of sand with palms, a chest and two keepers) each joined
+     to the beach by a **sand bar** three wide, then a thin strip of deep sea.
+- **World graph**: `oasis` south ↔ `dunesea` north (the entrance), `coast` west ↔ `dunesea` east (the way on). Both doors
+  were cut into the finished maps (`doors` in their cfg): 9 object tiles changed on each, no ground, the stones, fires and
+  set pieces unmoved (their spawn boxes shift by a handful because a new door makes a quiet arrival). The oasis keeps the
+  cave as its way on (`wayOn`). The coast's door stands on its west rim at row 45 (a door further south was a straight
+  walk from the entrance and broke the tortuosity rule).
+- **Five stones** — 입구, 중턱, 안쪽 along the walk to the coast door, then 오아시스 마을 and 흰 모래 해변 placed by
+  point (`m.stonesAt`, `GEN.stoneNames`) — **two camps** (the caravan on the made way, the village) plus the plaza's fire,
+  14 chests (6 on islets, the ruin's, vaults), 5 hidden pockets, gathering nodes of grade 4. The made way calls at the
+  village and the beach on its way from the north door to the east one (`via`).
+- **wilds, new settings** (all behind their cfg keys; the other maps are byte-identical apart from the two doors):
+  `oases`, `tierOf`, `rampP`, `tierOpen` as a function, `wallAt`, `open`, `via`, `stonesAt`, `doors`, `sea.islets /
+  isletGap / isletKinds / isle`, `temple.at / buried / arena`; `biome` also gets the region, `paint` the tile.
+  33-maps-zones: `cfg.rosterAt(x, y)` — a habitat's own kinds; 34: `GEN.wayOn`, `GEN.stoneNames`, `m.stonesAt`.
+- **Monsters** (existing bodies in new tints, **placeholders to be balanced later** with the other new maps — see
+  level-bands.md): dunes `ratking_gold` 31, `spiderhand_bone` 32, `owlstare_gold` 34; belt and ruin `spiderhand_bone`,
+  `bonehound_gold` 33, `owlstare_gold`, `moleworm_gold` 37 (also the field boss); shallows `fishwalker_blood` 35,
+  `crabskull_frost` 36. Chest `chest_dunesea` (Lv 34). No new ground or object characters: the art agent's desert and
+  coast skins apply as they are. Wished-for species: the M3 list's desert and shore kinds (spine scorpion, sand-worm maw,
+  mummy camel, hermit-crab swarm, brain jellyfish).
+- **Tests**: mapflow (strict), maps (size, zones, stones — the two by-place stones need only stand apart —, build time),
+  world (doors both ways, four oases, village fire and stone, islet chests reachable, boss ground in the ruin, bands),
+  lifeskills (grade). Shots: `game/shots_dunesea/` (world, over, three scenes, live).
