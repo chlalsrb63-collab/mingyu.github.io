@@ -787,6 +787,9 @@ dim_boss dim_clear dim_portal`, track `dim`), `index.html` (`#dim-hud #w-dim #w-
 
 ### H.5 Known issues / next
 - Solo is hard against the master (see H.2: ≈ 14 min with deaths); consider an el-1 master for parties of one.
-- `tests/dimrift.mjs` takes ≈ 8–9 s (the bot runs). Its pool depends on `MAP_META.kinds`: Phase 1 adding kinds may
+- Retune with the town rebuild (T-A): the rift seed reads `S.nextId`, so one more permanent fire in town drew harder rifts and the
+  Lv.24 (cave) and Lv.17 (sewer) bot parties wiped. `hpBase` 5.4 → 4.9, `hpLow` step 1 → 0.85; the test now runs every
+  level on three draws (`S.nextId` +0/+1/+2; `SHIFTS=0,1,2,3,4` for tuning): over five draws all clear in 4.7–8.2 min, 6.2 on average.
+- `tests/dimrift.mjs` takes ≈ 20 s (the bot runs, three draws a level). Its pool depends on `MAP_META.kinds`: Phase 1 adding kinds may
   move clear times; rerun with `-v`.
 - Editor towns that `replace` the town must place the obelisk (`big` `obelisk`) and an NPC with role `dim` themselves.

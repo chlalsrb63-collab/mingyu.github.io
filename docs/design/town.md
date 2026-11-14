@@ -429,3 +429,35 @@ Screenshots (one each, T-A unless noted): `shot.mjs --map town --x 50 --y 40` (p
 `--x 76 --y 38` (market + forge yard); `--x 20 --y 44` (stream, bridges, residential); `--x 50 --y 12` (palisade,
 watch posts, blight); `--page over --map town` (whole layout). T-B: one per new interior
 (`--page scene --map <id>`), and `_house`-style preview of the eight new pieces if added to a preview page.
+
+---------------------------------------------------------------------------------------------------------------
+
+## L. T-A as built (town exterior)
+
+- **Rules** (`34-maps-world.js`): `TOWN_BLD` (the D table: sign, footprint, door face and tiles), `TOWN_COTTAGES`,
+  `buildTown()` lays B–D and H by hand, then hash scatter (`h2`) on tiles a `keep` mask leaves free (routes, doors,
+  people, fires, landings). `big` bld entries also carry `dx` (where along its face the door starts) for the art.
+  `TOWN_REV = 2`, sheet `tw` (newChar / migrate); `TELLER` sits two tiles west of `FIRES.town[0]`; `DIM_TOWN`
+  places the obelisk and 오르카, so neither can drift. Build: **6–7 ms** (tests/town.mjs median of 5; bound 60).
+- **Doc fixes, smallest possible:** gate sign labels cannot be computed in `buildTown` (it runs while the rules load,
+  before `shownLv` exists): they are getters that read `doorName(MAP_META[id])` when first read. The `bld`/`prop`
+  big entries needed `36 fromEditor` (`bigClean`) and `editor-lib checkData` to accept them, and `W` its editor name;
+  the inn's east door needed `interiors.mjs` to accept a step to the right of a door. So the world stayed whole before
+  T-B lands, T-A moved the four existing town doors (`links.json`), their rooms' and willow's ways back and the two
+  editor NPCs to the frozen tiles (identical to what T-B's files say).
+- **Client:** `iso_tall.js building/BSTYLE` (one model for all 15, styled per `k`; lazy, sliced for any footprint),
+  `stoneWall` (`W`), the palisade = `F` on `&` ground in town, `iso_ground stepsTex` follows a run of steps to a `W`
+  cheek wall; `decor.js townProps` (watch well bench cart dummy garden lookout anvil laundry; stalls are the old
+  awning stalls; with town props the `B` tubs are no longer swapped for stalls), `signPlank`, mist/spark/puff
+  emitters; `scene2d.js` hangs the signs (name plate within ~9 tiles), lights windows + door lamps at night, skips
+  `thing` NPCs (mats too, and radar, and name labels); `townfolk.js` + bubbles in `client.js`; forge `clang` near the
+  anvil by day (no volume by distance: `audio.js` belongs to J2); radar/map window roofs + sign glyphs.
+- **Residents nudged** (≤ 2 tiles, all tested): 콩알 pond (25,52), 보들 bench (44,47), 너굴 stall (65,39), 개굴 pond
+  fire (29,62), 리리 bench (13,41), 노을 plaza fire (60,48), 찍찍 forge yard (78,37). Benches are scenery (P2 not done).
+- **Budgets** (scene preview, 960×600, render ms/frame): town plaza 1.19 vs meadow 1.05 by day (+13 %), 1.58 vs 1.17 at
+  21 h (+35 %: the lamp, window and door light pools — the design's point; already trimmed to two window pools and one
+  lamp a building). Load 380–450 ms vs the meadow's 110: the 15 building models are made when the town loads (signs and
+  windows need their positions) — next: compute `bldInfo` without the model and stand `h` tiles up lazily.
+- **Rift retune** (integrator's call): one more permanent fire shifts `S.nextId`, which seeds rifts; two draws wiped the
+  bot party. `DIM.hpBase` 5.4 → 4.9, `hpLow` step 0.85; `dimrift.mjs` runs three draws a level (scale-and-rift H.5).
+  `skills.mjs` mastery check divides out the weapon attack mastery adds, 200 casts (it passed by luck on 40).
