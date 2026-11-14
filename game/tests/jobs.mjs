@@ -543,6 +543,59 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(W.act({ t: "starter", wk: "sword" }).error, "이미 무기를 받았습니다");
 }
 
+// ═════════ the weapon picked on the creation page ═════════
+{
+  // every starting weapon the rules list (logic starters()): no fixed six
+  const kinds = L.starters().map((r) => r[0]);
+  assert.ok(kinds.length >= 6 && kinds.includes("sword") && kinds.includes("bow"));
+  const FIRST = {}, WID = {};
+  for (const wk of kinds) {
+    FIRST[wk] = D.skillOrder.find((id) => D.skills[id].wk === wk && D.skills[id].kind === "a" && D.skills[id].need <= 1);
+    WID[wk] = Object.keys(D.items).find((id) => D.items[id].type === "weapon" && D.items[id].wk === wk && D.items[id].tier === 1);
+    assert.ok(FIRST[wk] && WID[wk], wk + " has a tier-1 weapon and a first skill");
+  }
+  const base = L.newChar("기준", []);
+  for (const wk of kinds) {
+    const ch = L.newChar("새" + wk, [1, 2, 3], wk);
+    assert.equal(ch.eq.weapon.id, WID[wk], wk + " is in hand");
+    assert.deepEqual(ch.qs[0], ["s", FIRST[wk]], wk + ": slot 1 is its first skill");
+    assert.equal(ch.qs.filter(Boolean).length, 1, wk + ": nothing else on the bar");
+    assert.equal(ch.sw, 1, wk + ": the free pick is spent");
+    assert.deepEqual(ch.wm, base.wm, wk + ": mastery as any new hero's");
+    assert.deepEqual(ch.inv, base.inv, wk + ": the same bag (no spare dagger)");
+    assert.deepEqual(ch.look, L.newChar("모습", [1, 2, 3]).look, "the look is still taken");
+    // in the world: the hand, the skill usable, and the 무기 step passed over after the first talk
+    const W = world({ ch });
+    const me = W.self();
+    assert.equal(me.wk, wk);
+    assert.equal(me.tut.i, 0, "the first step is still the elder");
+    W.npc("elder");
+    const gold = W.ch.gold;
+    assert.ok(W.act({ t: "tut", s: "talk" }).ok);
+    assert.equal(D.tutorial[W.ch.tut.i].id, "bag", wk + ": talk → bag, the weapon step is already done");
+    assert.equal(W.ch.gold - gold, 40, "both steps' gold");
+    assert.ok(W.p.toast.some((s) => s.includes("다음: 가방 열기")), "the weapon step is never announced as next");
+    assert.ok(!W.p.toast.some((s) => s.includes("다음: 무기")));
+    W.npc("train");
+    assert.equal(W.act({ t: "starter", wk: kinds.find((k) => k !== wk) }).error, "이미 무기를 받았습니다", "no second free weapon");
+    // a save and a load keep it
+    const back = L.exportChar(W.S, W.PID);
+    assert.equal(back.eq.weapon.id, WID[wk]); assert.equal(back.sw, 1);
+  }
+  // anything that is not one of the six: the old start (dagger, the pick still open, the step still to do)
+  for (const bad of [undefined, null, "gun", "", 3, {}, "__proto__", "toString", ["sword"]]) {
+    const ch = L.newChar("헌판", Array.isArray(bad) ? "warrior" : [], bad);
+    assert.equal(ch.eq.weapon.id, "w_rogue_1", String(bad) + " → the old dagger");
+    assert.deepEqual(ch.qs[0], ["s", "ambush"]);
+    assert.equal(ch.sw, 0);
+  }
+  assert.deepEqual(L.newChar("옛모습", "warrior", [1, 2, 3]).look, L.newChar("옛모습", [1, 2, 3]).look, "the four-class call shape still gives its look");
+  const W = world({ ch: L.newChar("옛길", []) });
+  W.npc("elder");
+  assert.ok(W.act({ t: "tut", s: "talk" }).ok);
+  assert.equal(D.tutorial[W.ch.tut.i].id, "equip", "an old client's hero still goes to 카이");
+}
+
 // ═════════ the world's tiers as players see them (B.8) ═════════
 {
   for (const k of Object.keys(D.mobs)) assert.equal(D.mobs[k].lv, 4 * D.mobs[k].tier - 3);

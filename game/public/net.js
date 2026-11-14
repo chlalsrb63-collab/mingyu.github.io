@@ -98,7 +98,7 @@ export function act(action) {
 function onMessage(msg) {
   switch (msg.type) {
     case "need_char":
-      Lobby.needChar();
+      Lobby.needChar(msg.starters);
       break;
     case "welcome":
       G.you = msg.you;

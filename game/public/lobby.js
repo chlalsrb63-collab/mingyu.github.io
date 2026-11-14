@@ -17,6 +17,7 @@ import * as Looks from "./looks.js";
 import { Sound } from "./audio.js";
 import { iconImg } from "./uiicons.js";
 import { kindIcon } from "./mastery.js";
+import { WORDS, DIFF_NAME, FAR_RANGE, FALLBACK, cleanStarters } from "./starter.js";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -309,8 +310,9 @@ function unlockServers() { for (const b of $$("#sv-list button")) b.disabled = f
 // ───────────────────────────── what the server says ─────────────────────────────
 
 /** No character on this server yet: open the creation page. */
-export function needChar() {
+export function needChar(list) {
   const ch = C.channel();
+  setStarters(cleanStarters(list));
   if (pending) pending.why = "create";
   openCreate(serverOf(ch));
 }
@@ -441,15 +443,17 @@ export function nameError(name) {
   return "";
 }
 
-// (`cls` only picks the preview's weapon now: a new 모험가 holds an old dagger)
-const draft = { cls: "rogue", look: SPC.cleanLook(SPC.PRESETS[0][1]) };
+// `wk`: the weapon the new 모험가 starts with (starter.js; the server whitelists it in newChar)
+const draft = { wk: FALLBACK[0][0], look: SPC.cleanLook(SPC.PRESETS[0][1]) };
+/** The starting weapons as the server lists them with `need_char` (logic starters()); the fallback until then. */
+let starters = FALLBACK;
 const history = [];
 let lookEd = null, fig = null, figKey = "";
 /** The preview: "auto" plays a loop; or stand / walk / attack facing `dir`. */
-const pv = { mode: "auto", dir: 0, t0: 0, atkT: -1e9, atkN: 0, next: 0 };
+const pv = { mode: "auto", dir: 0, t0: 0, atkT: -1e9, atkN: 0, next: 0, show: 0 };
 
 function remember() {
-  history.push({ cls: draft.cls, look: draft.look.slice() });
+  history.push({ wk: draft.wk, look: draft.look.slice() });
   if (history.length > 40) history.shift();
   $("#c-undo").disabled = false;
 }
@@ -458,8 +462,8 @@ function undo() {
   $("#c-undo").disabled = !history.length;
   if (!h) return;
   Sound.play("ui");
-  draft.cls = h.cls; draft.look = h.look;
-  pv.atkT = -1e9; if (lookEd) lookEd.refresh(); markPresets();
+  draft.wk = h.wk; draft.look = h.look;
+  pv.atkT = -1e9; if (lookEd) lookEd.refresh(); markPresets(); markWeapon();
 }
 function openCreate(sid) {
   const sv = SERVER(sid);
@@ -478,7 +482,7 @@ function nameCheck() {
   return !err;
 }
 function wireCreate() {
-  // nothing to pick but the look: everyone starts a 모험가 holding an old dagger; the way on, in three steps
+  // everyone starts a 모험가; the one thing to pick besides the look is the weapon in hand, then the way on in three steps
   const box = $("#c-cls");
   box.textContent = "";
   const card = el("div", "cls on start");
@@ -486,17 +490,12 @@ function wireCreate() {
   const ic = el("span", "cls-ic"); ic.append(iconImg("person", "#2a1806"));
   hd.append(ic, el("b", "", "모험가"), el("span", "cls-meta", "Lv.1"));
   card.append(hd, el("p", "cls-mech", "모든 모험가는 직업 없이 시작합니다. 무기를 쓰며 숙련을 쌓고, 숙련 20에 전직하세요."));
-  const wk = el("div", "cr-wk");
-  for (const [k, name] of [["sword", "대검"], ["dagger", "단검"], ["spear", "창"], ["staff", "스태프"], ["book", "마도서"], ["bow", "활"]]) {
-    const w = el("span", "");
-    const im = el("img"); im.alt = ""; im.src = kindIcon(k);
-    w.append(im, el("small", "", name));
-    w.title = name;
-    wk.append(w);
-  }
-  card.append(wk);
+  const wk = el("div", "cr-wk"); wk.id = "c-wk";
+  wk.setAttribute("role", "radiogroup"); wk.setAttribute("aria-label", "시작 무기");
+  const feel = el("p", "cr-feel"); feel.id = "c-wk-feel";
+  card.append(wk, feel);
   const steps = el("ol", "cr-steps");
-  for (const t of ["수련관 카이에게서 첫 무기를 하나 고릅니다", "모닥불 곁에서 경험치로 능력치를 올립니다 (C)", "무기 숙련 20 → 전직관 아르센에게서 전직 (K)"]) steps.append(el("li", "", t));
+  for (const t of ["고른 무기를 들고 바로 모험을 시작합니다", "모닥불 곁에서 경험치로 능력치를 올립니다 (C)", "무기 숙련 20 → 전직관 아르센에게서 전직 (K)"]) steps.append(el("li", "", t));
   card.append(steps);
   box.append(card);
   // the look editor (looks.js), without its presets: they get a row of their own
@@ -510,7 +509,7 @@ function wireCreate() {
     b.addEventListener("click", () => { remember(); draft.look = SPC.cleanLook(l); Sound.play("ui"); lookEd.refresh(); markPresets(); });
     pr.append(b);
   }
-  markPresets();
+  markPresets(); setStarters(starters);
   $("#c-rand").addEventListener("click", () => { remember(); draft.look = SPC.cleanLook(Looks.randomLook()); Sound.play("ui"); lookEd.refresh(); markPresets(); });
   $("#c-undo").addEventListener("click", undo);
   $("#c-undo").disabled = true;
@@ -529,12 +528,56 @@ function wireCreate() {
     if (view !== "create") return;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && document.activeElement !== $("#c-name")) { e.preventDefault(); undo(); }
   });
-  // drag the stage sideways to turn the figure
-  let dragX = null;
+  // drag the stage sideways to turn the figure; a plain click on it swings the weapon
+  let dragX = null, dragged = false;
   const st = $("#cr-stage");
-  st.addEventListener("pointerdown", (e) => { dragX = e.clientX; });
+  st.addEventListener("pointerdown", (e) => { dragX = e.clientX; dragged = false; });
   addEventListener("pointerup", () => { dragX = null; });
-  st.addEventListener("pointermove", (e) => { if (dragX === null) return; const d = e.clientX - dragX; if (Math.abs(d) > 40) { turn(d > 0 ? 1 : -1); dragX = e.clientX; } });
+  st.addEventListener("pointermove", (e) => { if (dragX === null) return; const d = e.clientX - dragX; if (Math.abs(d) > 40) { turn(d > 0 ? 1 : -1); dragX = e.clientX; dragged = true; } });
+  $("#cr-cv").addEventListener("click", () => { if (!dragged) { Sound.unlock(); swingNow(); } });
+}
+/** One tile per starting weapon, whatever the rules list: up to six in a row, more wrap into two even rows (7 → 4 + 3). */
+function setStarters(list) {
+  starters = list;
+  if (!starters.some((r) => r[0] === draft.wk)) draft.wk = starters[0][0];
+  const box = $("#c-wk");
+  if (!box) return;
+  box.textContent = "";
+  box.style.setProperty("--n", String(starters.length <= 6 ? starters.length : Math.ceil(starters.length / 2)));
+  box.classList.toggle("two", starters.length > 6);
+  for (const [k, name] of starters) {
+    const w = el("button", "");
+    w.type = "button"; w.dataset.wk = k; w.setAttribute("role", "radio");
+    const im = el("img"); im.alt = ""; im.src = kindIcon(k);
+    w.append(im, el("small", "", name));
+    w.title = WORDS[k] ? `${name} — ${WORDS[k].feel}` : name;
+    w.addEventListener("click", () => {
+      Sound.unlock();
+      if (draft.wk !== k) { remember(); draft.wk = k; markWeapon(); }
+      Sound.play("ui");
+      swingNow();
+    });
+    box.append(w);
+  }
+  markWeapon();
+}
+/** The picked tile, and the line under the tiles: reach · difficulty · the skill on quick slot 1 — the feel. */
+function markWeapon() {
+  for (const b of $$(".cr-wk button")) { const on = b.dataset.wk === draft.wk; b.classList.toggle("on", on); b.setAttribute("aria-checked", on ? "true" : "false"); }
+  const row = starters.find((r) => r[0] === draft.wk), w = WORDS[draft.wk], line = $("#c-wk-feel");
+  if (!line || !row) return;
+  line.textContent = "";
+  line.append(el("b", "", row[1]));
+  if (row[4]) line.append(el("span", "tag", row[4] >= FAR_RANGE ? "원거리" : "근접"));
+  if (w) line.append(el("span", "tag d" + w.diff, "난이도 " + DIFF_NAME[w.diff]));
+  if (row[3]) line.append(el("span", "tag sk", "첫 스킬 " + row[3]));
+  line.append(el("span", "fl", w ? w.feel : row[2] ? `[${row[2]}] 한 자루로 시작합니다` : ""));
+}
+/** The preview swings the weapon in hand a few times, whatever mode it is in. */
+function swingNow() {
+  const now = performance.now();
+  pv.show = now + (SP.HOLD[draft.wk] || SP.HOLD.sword).time * 2000 + 700;
+  pv.atkT = -1e9; pv.atkN = 0; pv.next = 0;
 }
 function markPresets() { const k = draft.look.join(); for (const b of $$("#c-presets .pr")) b.classList.toggle("on", b.dataset.k === k); }
 function markModes() { for (const b of $$("#cr-modes button")) b.classList.toggle("on", b.dataset.m === pv.mode); }
@@ -553,7 +596,7 @@ function create() {
   $("#create-msg").textContent = "";
   $("#b-create").disabled = true; $("#b-create").classList.add("busy"); $("#b-create").textContent = "만드는 중…";
   Sound.play("ok");
-  C.act({ t: "create", name: $("#c-name").value.trim(), look: draft.look.slice() });
+  C.act({ t: "create", name: $("#c-name").value.trim(), look: draft.look.slice(), wk: draft.wk });
 }
 
 /** Fit the preview canvas to its box: one art pixel is `z` screen pixels. */
@@ -569,9 +612,13 @@ function sizeStage() {
 }
 /** What the figure is doing at time t. */
 function pose(t) {
-  const strokeT = (SP.HOLD[SP.weaponKind(draft.cls)] || SP.HOLD.sword).time;
+  const strokeT = (SP.HOLD[draft.wk] || SP.HOLD.sword).time;
   let dir = pv.dir, moving = false, attack = false;
-  if (pv.mode === "auto") {
+  if (t < pv.show) {
+    // a weapon just picked (or the figure clicked): its strokes, seen from the side unless the player turned it
+    if (pv.mode === "auto") dir = 2;
+    attack = true;
+  } else if (pv.mode === "auto") {
     // turn round, walk a little, then three strokes
     const k = ((t - pv.t0) / 1000) % 9;
     if (k < 3.2) dir = RING[Math.floor(k / 0.8)];
@@ -591,8 +638,8 @@ function pose(t) {
 export function frame(t, dt) {
   if (view === "title" || view === "auth" || view === "servers") TS.render(t, dt);
   else if (view === "create") {
-    const key = draft.cls + draft.look.join();
-    if (key !== figKey) { figKey = key; fig = S3.figure(S3.playerLook(draft.cls, draft.look.slice(), {})); }
+    const key = draft.wk + draft.look.join();
+    if (key !== figKey) { figKey = key; fig = S3.figure(S3.playerLook("", draft.look.slice(), { wk: draft.wk })); }
     TS.stage($("#cr-cv"), fig, pose(t), t, dt);
   }
 }

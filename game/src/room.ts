@@ -22,7 +22,7 @@
  *
  * ── WIRE PROTOCOL ───────────────────────────────────────────────────────
  *   in:  {type:"join", token} · {type:"action", action:{t, …}}
- *   out: {type:"need_char"} · {type:"welcome", you, defs, room, server}
+ *   out: {type:"need_char", starters} · {type:"welcome", you, defs, room, server}
  *        {type:"snap", …} · {type:"rank", list} · {type:"error", error}
  *        {type:"error", error, fatal:true, auth:true} — no/expired session: log in again
  *
@@ -250,7 +250,7 @@ export class Room extends DurableObject<Env> {
       this.attach(ws, att);
       const res = await this.callVault("load", { pid, room: this.roomName });
       if (!res.ok) return this.send(ws, { type: "error", error: res.error, fatal: true });
-      if (!res.char) return this.send(ws, { type: "need_char" });
+      if (!res.char) return this.send(ws, { type: "need_char", starters: logic.starters() });
       // the map editor's playtest: local dev only, never in production
       if (msg.dev && this.env.PLAYTEST === "1" && this.env.HF_ENV !== "prod") logic.devPlace(res.char, msg.dev.map, msg.dev.x, msg.dev.y);
       this.enter(ws, att, res.char);
@@ -271,12 +271,13 @@ export class Room extends DurableObject<Env> {
 
     if (!att.live) {
       // The only thing a character-less connection may do is create one.
-      if (kind !== "create" || !isRecord(action)) return this.send(ws, { type: "need_char" });
+      if (kind !== "create" || !isRecord(action)) return this.send(ws, { type: "need_char", starters: logic.starters() });
       if (!logic.validName(action.name)) {
         return this.send(ws, { type: "error", error: "이름은 한글·영문·숫자 2~10자로 지어 주세요" });
       }
-      // everyone starts a 모험가: an old client's class choice is ignored
-      const char = logic.newChar(String(action.name), action.look);
+      // everyone starts a 모험가: an old client's class choice is ignored. `wk` is the weapon picked on the
+      // creation page; newChar whitelists it (an old client sends none and starts with the old dagger)
+      const char = logic.newChar(String(action.name), action.look, typeof action.wk === "string" ? action.wk : undefined);
       const res = await this.callVault("create", { pid, room: this.roomName, char });
       if (!res.ok) return this.send(ws, { type: "error", error: res.error });
       await this.ready();

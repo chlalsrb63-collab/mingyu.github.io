@@ -206,7 +206,7 @@ export function tutTry(id) {
 /** The first steps told for fingers: the server's hints name keyboard keys a phone does not have. */
 const TUT_TOUCH = {
   talk: "광장 분수 앞의 관리자 엘더윈에게 걸어가, 아래에 뜨는 [▶ 관리자 엘더윈]을 누르세요. 첫 의뢰를 맡겨 줍니다.",
-  equip: "수련관 카이에게 다가가 [▶ 수련관 카이]를 누르고 무기를 하나 고르세요. 고른 무기를 바로 손에 듭니다.",
+  equip: "수련관 카이에게 다가가 [▶ 수련관 카이]를 누르고 무기를 하나 받으세요. 받은 무기를 바로 손에 듭니다.",
   bag: "메뉴 → 가방을 열어 보세요.",
   buy: "보급상 리나에게 다가가 [▶ 보급상 리나]를 누르고 빨간 물약을 사 보세요.",
   hunt: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. [공격] 버튼으로 치고, [자동]을 켜면 알아서 사냥합니다.",

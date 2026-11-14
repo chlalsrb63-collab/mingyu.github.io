@@ -23,21 +23,39 @@ const cleanLook = (look) => { const lk = Array.isArray(look) ? look : []; return
 /** What a new look costs at the mirror in town (거울 · 미용실). */
 const LOOK_COST = 500;
 /**
+ * The weapon kinds a hero may start with (the creation page, 카이's free pick): every kind of the rules
+ * that has a tier-1 weapon, in WK_ORDER — a new kind joins by existing (`starter: 0` in WKIND holds one back).
+ */
+const STARTER_WKS = WK_ORDER.filter((k) => WKIND[k] && WKIND[k].starter !== 0 && WK_ID[k] && ITEMS[`w_${WK_ID[k]}_1`]);
+/** The first active skill of a weapon kind: known from mastery 1, what a fresh bar holds in slot 1. */
+const firstSkill = (wk) => (WK_SKILLS[wk] || []).find((id) => SKILL[id].kind === "a" && SKILL[id].need <= 1);
+/**
+ * What the creation page shows, sent with `need_char` (the lobby has no `defs` yet):
+ * [kind, name, tier-1 weapon name, first skill name, basic-attack range px] per starting weapon.
+ */
+export function starters() {
+  return STARTER_WKS.map((k) => [k, WK_NAME[k] || WKIND[k].name, ITEMS[`w_${WK_ID[k]}_1`].name, firstSkill(k) ? SKILL[firstSkill(k)].name : "", WKIND[k].range]);
+}
+/**
  * A brand-new character sheet — this is exactly what gets persisted. Everyone starts a 모험가
- * (adventurer) with six stats at 5, an old dagger in hand and a free weapon to pick at 수련관 카이.
+ * (adventurer) with six stats at 5. `wk` is the weapon kind picked on the creation page: that tier-1
+ * weapon is in hand, its first skill on the bar, and the free pick at 수련관 카이 is spent (`sw`), exactly
+ * as the `starter` action leaves a sheet (minus the old dagger in the bag). Anything else (an old client
+ * sends none) starts as before: an old dagger in hand and a free weapon to pick at 카이.
  * (Callers from the four-class days passed `newChar(name, cls, look)`: a look in third place is still taken.)
  */
-export function newChar(name, look, oldLook) {
-  const lk = Array.isArray(look) ? look : Array.isArray(oldLook) ? oldLook : [];
-  return {
+export function newChar(name, look, wk) {
+  const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
+  const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
+  const ch = {
     v: 13, name, job: "adventurer",
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
     lvl: 1, xp: 0, xpt: 0, gold: 50,
-    st: freshSt(), wm: freshWm(), rs: 0, sw: 0,
+    st: freshSt(), wm: freshWm(), rs: 0, sw: picked ? 1 : 0,
     inv: [{ id: "hp_s", n: 5 }, { id: "mp_s", n: 3 }],
-    eq: { weapon: plain("w_rogue_1"), helm: null, armor: plain("a_1"), gloves: null, boots: null, ring1: null, ring2: null, amulet: null, weapon2: null },
+    eq: { weapon: plain(`w_${WK_ID[kind]}_1`), helm: null, armor: plain("a_1"), gloves: null, boots: null, ring1: null, ring2: null, amulet: null, weapon2: null },
     q: { i: 0, n: 0, st: 0 },
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
     // waypoint stones woken, per map a bitmask of its stones (bit 0 = its first stone)
@@ -45,8 +63,8 @@ export function newChar(name, look, oldLook) {
     // 차원 균열 clears today (Phase 2: the daily count), by the day number they were made on
     dim: { day: 0, n: 0 },
     wh:{ items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
-    // the old dagger's first skill is on the bar from the start
-    qs: [["s", "ambush"], ...QS_EMPTY().slice(1)], cos: cosEmpty(), sq: sqEmpty(),
+    // the first skill of the weapon in hand is on the bar from the start (filled below)
+    qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
     // the bag's size and a house of one's own (v10: 46-bag.js, 64-housing.js)
     bagCap: INV_BASE, house: homeEmpty(),
     // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
@@ -57,6 +75,8 @@ export function newChar(name, look, oldLook) {
     // the town layout it was saved under (34-maps-world.js TOWN_REV)
     tw: TOWN_REV,
   };
+  for (const id of WK_SKILLS[kind]) if (SKILL[id].kind === "a" && SKILL[id].need <= 1) qsLearn(ch, id);
+  return ch;
 }
 
 /** Ids that no longer exist, and what they became. */

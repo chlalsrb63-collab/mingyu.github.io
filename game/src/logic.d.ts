@@ -30,7 +30,8 @@ export function playerCount(state: World): number;
 
 export function validName(name: unknown): boolean;
 /** A new 모험가; `look` (an old caller's `(name, cls, look)` still works: the look in third place is taken). */
-export function newChar(name: string, look?: unknown, oldLook?: unknown): Char;
+/** `wk`: the weapon kind picked at creation (whitelisted; anything else = the old dagger). A look array there is the old call shape. */
+export function newChar(name: string, look?: unknown, wk?: unknown): Char;
 /** A test or probe hero (jobs-and-stats F.3). */
 export function hero(name: string, o?: { wk?: string; lvl?: number; st?: Record<string, number>; wm?: Record<string, number>; job?: string; wk2?: string; migrate?: boolean; look?: unknown[] }): Char;
 export function addPlayer(state: World, playerId: string, char: Char): number;
@@ -39,6 +40,8 @@ export function exportChar(state: World, playerId: string): Char | null;
 /** Players whose progress asked to be saved soon (quest, enhancement, level…); clears the flags. */
 export function takeSaves(state: World): string[];
 export function defs(): unknown;
+/** The starting weapons for the creation page: [kind, name, weapon name, first skill name, range] each. */
+export function starters(): [string, string, string, string, number][];
 /** Local playtest (map editor): put a sheet on a map tile (the nearest standable one). */
 export function devPlace(char: Char, map: string, tx: number, ty: number): boolean;
 /** The sky over a map at `now`: hour, phase, weather, the night storyteller and the camps (tests, tools). */
