@@ -56,6 +56,116 @@
       "req": { "lv": 1, "quest": null },
       "reward": { "xp": 120, "gold": 120, "items": [["recall", 2]] },
       "repeat": false
+    },
+    {
+      "id": "sq_kong_parcel",
+      "giver": "store_kong",
+      "title": "콩콩의 급한 배달",
+      "text": "보글 아저씨한테 이 상자 좀 전해 줄래? 다리가 짧아서 연금공방까지 가면 해가 질 거야!",
+      "done": "고마워! 보글 아저씨가 상자를 흔들어 봤다고? 앗, 조심하라고 했는데!",
+      "goal": { "type": "talk", "npc": "bogle" },
+      "req": { "lv": 1, "quest": null },
+      "reward": { "xp": 120, "gold": 90, "items": [["hp_s", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_borum_frogs",
+      "giver": "lib_borum",
+      "title": "표본 채집",
+      "text": "괴수 도감에 창자 개구리 항목이 비어 있어요. 바람초원에서 8마리를 잡아 와 주세요. 조용히, 도서관에서는 비명 금지!",
+      "done": "좋아요, 표본이 충분하네요. 도감이 한 장 두꺼워졌어요.",
+      "goal": { "type": "kill", "mob": "gutfrog", "n": 8 },
+      "req": { "lv": 3, "quest": null },
+      "reward": { "xp": 250, "gold": 170, "items": [["hp_s", 5], ["mp_s", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_mungchi_trout",
+      "giver": "diner_reg2",
+      "title": "쥬쥬표 송어 구이",
+      "text": "쥬쥬 아줌마의 송어 소금구이가 먹고 싶은데 재료가 똑 떨어졌대. 무지개 송어 3마리만 낚아다 줘!",
+      "done": "냠냠, 이 냄새! 약속대로 한 접시 몫은 네 거야.",
+      "goal": { "type": "collect", "item": "fish_m", "n": 3 },
+      "req": { "lv": 8, "quest": null },
+      "reward": { "xp": 650, "gold": 300, "items": [["food_m", 2], ["hp_s", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_bogle_crows",
+      "giver": "bogle",
+      "title": "보글보글 까마귀 눈",
+      "text": "새 시약에는 까마귀의 눈알이 한 방울 필요합니다. 눈알 까마귀 6마리를 바람초원에서 잡아 주세요. 폭발은 안 해요. 아마도.",
+      "done": "오오, 거품이 보랏빛으로! 이건 대성공입니다!",
+      "goal": { "type": "kill", "mob": "eyecrow", "n": 6 },
+      "req": { "lv": 12, "quest": "sq_kong_parcel" },
+      "reward": { "xp": 1110, "gold": 410, "items": [["hp_m", 3], ["mp_m", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_lira_song",
+      "giver": "inn_lira",
+      "title": "잠꾸러기를 위한 자장가",
+      "text": "새 자장가를 짓는 중인데, 여관 구석의 토토 씨가 어떤 노래를 좋아하는지 물어봐 줄래요?",
+      "done": "호오, 숲의 소리가 들어간 노래를 좋아한다고요? 영감이 마구 떠올라요!",
+      "goal": { "type": "talk", "npc": "inn_toto" },
+      "req": { "lv": 20, "quest": null },
+      "reward": { "xp": 1910, "gold": 510, "items": [["inn_bread", 3], ["hp_m", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_bori_scout",
+      "giver": "hall_bori",
+      "title": "숲길 정찰",
+      "text": "이장으로서 속삭임 숲 길이 안전한지 알아야겠네. 직접 가서 한 바퀴 둘러보고 오게. 조심하게나.",
+      "done": "무사히 다녀왔군! 숲이 아직 버틸 만하다니 마을도 한시름 놓겠네.",
+      "goal": { "type": "visit", "map": "forest" },
+      "req": { "lv": 25, "quest": null },
+      "reward": { "xp": 2730, "gold": 620, "items": [["recall", 2], ["hp_m", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_bawi_deer",
+      "giver": "merc_bawi",
+      "title": "갈비뼈 사슴의 뿔",
+      "text": "내가 젊을 때 갈비뼈 사슴한테 엉덩이를 찔렸지. 속삭임 숲에서 8마리만 혼내 주게. 복수는 후배가 하는 법이야.",
+      "done": "허허, 속이 다 시원하구먼. 이건 늙은이의 쌈짓돈일세.",
+      "goal": { "type": "kill", "mob": "ribdeer", "n": 8 },
+      "req": { "lv": 33, "quest": null },
+      "reward": { "xp": 6600, "gold": 990, "items": [["hp_m", 5], ["stone", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_toto_moths",
+      "giver": "inn_toto",
+      "title": "불빛 쫓는 나방",
+      "text": "으음... 잠을 잘 수가 없어... 인면 나방들이 창문에서 사람 얼굴로 웃고 있거든... 숲의 나방 8마리만 쫓아 줘...",
+      "done": "드디어... 조용해... 쿨쿨... 아, 고마워... 이건 꿈값이야...",
+      "goal": { "type": "kill", "mob": "mothface", "n": 8 },
+      "req": { "lv": 45, "quest": "sq_lira_song" },
+      "reward": { "xp": 14050, "gold": 1320, "items": [["hp_l", 3], ["stone", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_dongdong_pigeons",
+      "giver": "dongdong",
+      "title": "베란다의 비둘기 떼",
+      "text": "입주민들이 난리예요! 네온 시티의 비둘기 떼살이 자꾸 베란다에 앉는대요. 12마리만 정리해 주세요.",
+      "done": "살았다! 이제 빨래를 널 수 있겠어요. 관리비 대신 받으세요!",
+      "goal": { "type": "kill", "mob": "pigeonmass", "n": 12 },
+      "req": { "lv": 50, "quest": null },
+      "reward": { "xp": 18230, "gold": 1460, "items": [["hp_l", 3], ["stone", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_borum_blight",
+      "giver": "lib_borum",
+      "title": "시든 숲의 기록",
+      "text": "단풍 왕도의 다람쥐들이 가을 열병에 걸렸다는 소문이 있어요. 한 꼬리 다람쥐떼 12마리를 기록해 와 주세요. 위험하면 도망쳐도 좋아요!",
+      "done": "멋진 기록이에요. 이 한 장이 도감의 마지막 쪽을 채웠어요.",
+      "goal": { "type": "kill", "mob": "blightsquirrel", "n": 12 },
+      "req": { "lv": 150, "quest": "sq_borum_frogs" },
+      "reward": { "xp": 1017960, "gold": 4210, "items": [["hp_l", 5], ["mp_l", 3], ["stone", 3], ["sc_xp", 1]] },
+      "repeat": false
     }
   ]
 }
