@@ -224,7 +224,7 @@ const home = () => A.p.map;
   assert.equal(A.act({ t: "furn_place", id: "fn_rug_round", x: ex, y: ey }).ok, false, "but not two");
   assert.equal(W.mapNow(home()).g[ey][ex], "u");
   // never wall anyone in: a ring of plants round (1..3, 4..6) would close off the corner
-  const pieces = () => H().furn.length;
+  const pieces = () => H().furn.filter((f) => !D.house.furn[f.id].floor).length;
   assert.ok(A.act({ t: "furn_place", id: "fn_plant", x: 1, y: 4 }).ok);
   assert.ok(A.act({ t: "furn_place", id: "fn_plant", x: 2, y: 5 }).ok);
   r = A.act({ t: "furn_place", id: "fn_plant", x: 1, y: 6 });
@@ -237,6 +237,15 @@ const home = () => A.p.map;
   assert.equal(pieces(), lim);
   r = A.act({ t: "furn_place", id: "fn_plant", x: 3, y: 2 });
   assert.equal(r.ok, false); assert.ok(r.error.includes(`${lim}개`), r.error);
+  // rugs have a limit of their own (12 in the cottage), and lie even where the pieces are full
+  A.ch.inv.push({ id: "fn_rug_check", n: 20 });
+  const rugs = () => H().furn.filter((f) => D.house.furn[f.id].floor).length;
+  for (let y = 1; y <= 6 && rugs() < D.house.tiers[1].rugs; y++) for (let x = 1; x <= 8 && rugs() < D.house.tiers[1].rugs; x++) A.act({ t: "furn_place", id: "fn_rug_check", x, y });
+  assert.equal(rugs(), D.house.tiers[1].rugs);
+  r = A.act({ t: "furn_place", id: "fn_rug_check", x: 8, y: 6 });
+  assert.equal(r.ok, false); assert.ok(r.error.includes("카펫"), r.error);
+  for (const f of H().furn.filter((f) => f.id === "fn_rug_check")) assert.ok(A.act({ t: "furn_pick", u: f.uid }).ok);
+  A.ch.inv = A.ch.inv.filter((s) => s.id !== "fn_rug_check");
   // turning and picking up
   const chair = H().furn.find((f) => f.id === "fn_chair");
   assert.ok(A.act({ t: "furn_rot", u: chair.uid }).ok);
@@ -384,7 +393,7 @@ const home = () => A.p.map;
   // a guest may rest in the owner's bed (their own cooldown)
   const bed = H().furn.find((f) => f.id === "fn_bed");
   B.by(bed.x, bed.y);
-  assert.ok(B.act({ t: "h_rest", u: bed.uid }).ok, "a guest rests too");
+  assert.ok(B.act({ t: "h_rest", u: -1, x: bed.x, y: bed.y }).ok, "a guest rests too (asking by the tile: guests see no uids)");
   // C has a house of their own: visits from the agent
   C.ch.house.tier = 1;
   C.npc("house");

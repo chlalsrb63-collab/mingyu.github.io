@@ -292,7 +292,7 @@ export function renderBank(s) {
     p.append(grid);
     return p;
   };
-  panes.append(pane("가방", s.inv, G.defs.inv, "put"), pane("창고", wh.items, G.defs.whSlots, "take"));
+  panes.append(pane("가방", s.inv, s.bagCap || G.defs.inv, "put"), pane("창고", wh.items, G.defs.whSlots, "take"));
   box.append(panes);
   const gl = el("div", "bank-gold");
   const inp = el("input");

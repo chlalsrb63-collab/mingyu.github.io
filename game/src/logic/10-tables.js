@@ -365,15 +365,15 @@ const bagCost = (cap) => (cap >= INV_MAX ? 0 : BAG_COST[Math.max(0, Math.floor((
  * A house of one's own (64-housing.js): tier 1 is bought at the 하우징 안내인 in town, 2 and 3 are
  * upgrades (price = that step). w × h is the room with its walls (the back walls on row 0 and
  * column 0, the cut-down front on the last row and column), `furn` how many pieces it holds
- * (rugs count), `store` how many of them may be storage furniture. 10,000 G is a few hours of
+ * (not rugs: `rugs` rug tiles more), `store` how many of them may be storage furniture. 10,000 G is a few hours of
  * Lv.15–20 hunting (beside the 꼬마 박쥐 pet); 40,000 and 120,000 G are the big sinks of the
  * middle and late game (the job change is 5,000 / 20,000 G).
  */
 const HOUSE_TIER = [
   null,
-  { name: "아늑한 오두막", w: 10, h: 8, price: 10000, furn: 12, store: 2 },
-  { name: "넓은 목조주택", w: 14, h: 10, price: 40000, furn: 22, store: 3 },
-  { name: "고급 저택", w: 18, h: 13, price: 120000, furn: 34, store: 5 },
+  { name: "아늑한 오두막", w: 10, h: 8, price: 10000, furn: 12, rugs: 12, store: 2 },
+  { name: "넓은 목조주택", w: 14, h: 10, price: 40000, furn: 22, rugs: 24, store: 3 },
+  { name: "고급 저택", w: 18, h: 13, price: 120000, furn: 34, rugs: 40, store: 5 },
 ];
 /** Floors (a ground char of the interior theme, public/iso_interior.js) and wallpapers (its STYLE). */
 const HOUSE_FLOOR = [["f", "꿀빛 원목 마루"], ["l", "호두나무 마루"], ["x", "돌 타일"], ["h", "헤링본 마루"]];
@@ -412,9 +412,9 @@ const FURN_SHOP = Object.keys(FURN);
 /** 안락한 휴식: what a bed or a hearth gives (heal shares, the buff's XP % and time, the wait between two). */
 const HOUSE_REST = { hp: 0.5, mp: 0.5, xp: 8, ms: 15 * 60000, cd: 30 * 60000 };
 /**
- * The town's residential corner (south of the west gate, by the bank): the house with the "내 집"
+ * The town's residential corner (the quiet north-west lane beside 모닥별 여관): the house with the "내 집"
  * door (4 × 3 at `house`, its door the two tiles under its middle), the agent beside it, and
  * where a player stands when they come out.
  */
-const HOUSE_TOWN = { map: "town", house: [3, 17], door: [[4, 20], [5, 20]], out: [4, 21], agent: [7, 19] };
+const HOUSE_TOWN = { map: "town", house: [3, 3], door: [[4, 6], [5, 6]], out: [4, 7], agent: [6, 7] };
 

@@ -803,6 +803,17 @@ const SFX = {
   salvage() { this.noise(0.12, 0.2, 2000, "bandpass"); this.tone("square", 500, 250, 0.1, 0.08, 0.04); this.tone(0.5, 1320, 1320, 0.06, 0.06, 0.14); },
   // ── interface ──
   ui() { this.tone(0.5, 660, 660, 0.035, 0.06); },
+  // ── a house of one's own (housing.js) ──
+  /** A piece set down: a soft wooden knock, then a little settle. */
+  furn_place() { this.noise(0.05, 0.22, 700, "bandpass", 0, 300); this.tone("triangle", 220, 150, 0.08, 0.14); this.tone("triangle", 330, 300, 0.05, 0.06, 0.07); },
+  /** A piece lifted: a scrape upward and a light pop. */
+  furn_pick() { this.noise(0.08, 0.12, 900, "bandpass", 0, 1800); this.tone(0.5, 440, 660, 0.07, 0.06, 0.04); },
+  /** A piece turned: a short wooden creak. */
+  furn_turn() { this.tone("sawtooth", 160, 210, 0.07, 0.05); this.noise(0.04, 0.08, 1200, "bandpass", 0.03); },
+  /** A chest lid creaks open, a latch clicks. */
+  chest_open() { this.tone(0.5, 1800, 1800, 0.02, 0.06); this.tone("sawtooth", 120, 190, 0.18, 0.06, 0.03); this.tone("triangle", 392, 523, 0.12, 0.08, 0.16); },
+  /** 안락한 휴식: a warm, slow lullaby of three notes. */
+  cozy() { this.arp("triangle", [392, 494, 587, 784], 0.14, 0.3, 0.1); this.tone("sine", 196, 196, 0.8, 0.06, 0.2); },
   open() { this.tone(0.25, 520, 780, 0.06, 0.06); },
   close() { this.tone(0.25, 700, 460, 0.06, 0.05); },
   tab() { this.tone(0.125, 880, 880, 0.03, 0.05); },

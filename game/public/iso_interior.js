@@ -13,21 +13,25 @@
  *   drawPose(...)          a townsperson's little idle act (sipping, reading, dozing …)
  *
  * Ground chars (this theme only): f honey planks · l walnut planks · x hearth flagstones ·
- * q checked rug · u round rug · y runner carpet · e door mat.
+ * h herringbone parquet · q checked rug · u round rug · y runner carpet · e door mat.
  * Object chars (drawn in any theme; every object blocks):
  *   walls  = plain · + window · ^ chalkboard · ~ painting/map · @ clock · ! banner · _ cut-down front wall
  *   things o round table · k chair · m counter · j counter with coffee machine · $ pastry case ·
  *          b bookshelf · r jar cupboard · # fireplace · g potted plant · * lantern · v notice board ·
  *          - long table · p bed · s armchair · t trophy cabinet · w barrel · ] crates · % sleeping cat
+ *   a house of one's own (logic 64-housing.js) adds [ wooden chest · { iron safe · } magic storage chest ·
+ *          ( teddy bear · ) goldfish bowl · ? gramophone
  *   (the autumn kingdom owns d f i z N V J in the object layer, so the room uses symbols there)
- * Map `style` (cafe hall inn library) picks the wallpaper, curtains and banners.
+ * Map `style` (cafe hall inn library, and a house's cottage mint) picks the wallpaper, curtains and banners.
+ * A house's map also carries `fd` ("x,y" → 0 N · 1 W · 2 S · 3 E: which way its owner turned a piece)
+ * and `hf` (its floor, shown round the edge of a round rug).
  */
 import { hash, C, mix, tone, shade, light, Buf, TILE_PX } from "./iso_px.js";
 import { daylight } from "./decor.js";
 
-export const WALLS = "=+^~@!", STUB = "_", FURN = "okmj$br#g*v-pstw]%";
+export const WALLS = "=+^~@!", STUB = "_", FURN = "okmj$br#g*v-pstw]%[{}()?";
 export const OBJECTS = WALLS + STUB + FURN;
-export const FLOORS = "flxquye";
+export const FLOORS = "flxhquye";
 const INK = C("#2b2233");
 /** How tall the back walls stand, in pixels. */
 const WH = 46, STUB_H = 7;
@@ -39,6 +43,9 @@ const STYLE = {
   hall: { paper: "#4a6650", paper2: "#3e5844", pat: "damask", dot: "#c8a85a", wood: "#6e4a30", curtain: "#a8343c", banner: "#a8343c", trim: "#d8b050" },
   inn: { paper: "#c49c84", paper2: "#b48a74", pat: "flower", dot: "#efe0c4", wood: "#7a4c2e", curtain: "#4a6a9a", banner: "#4a6a9a", trim: "#c8955a" },
   library: { paper: "#5e5070", paper2: "#524462", pat: "damask", dot: "#c8b47a", wood: "#5e3c28", curtain: "#7a3a5a", banner: "#3a5a8a", trim: "#c8a860" },
+  // a house of one's own: cream stripes over honey wood, or mint stripes over pale wood
+  cottage: { paper: "#efe2c4", paper2: "#e2cfa8", pat: "stripe", wood: "#a06a42", curtain: "#d0786a", banner: "#d0786a", trim: "#d8aa6a" },
+  mint: { paper: "#bfe0cc", paper2: "#a8d0b8", pat: "stripe", wood: "#b88a5c", curtain: "#e8a0a8", banner: "#5a8aa8", trim: "#e0c890" },
 };
 const styleOf = (m) => STYLE[m.style] || STYLE.cafe;
 
@@ -207,6 +214,15 @@ function planks(P, A, B, alongB) {
   if (ls === 17 && lw === 2 && h > 0.85) return C(P.knot);
   return C(P.base[Math.floor(h * 3)]);
 }
+/** Herringbone parquet: short pale blocks laid in zigzag rows, a dark seam between them. */
+const HERR = ["#d8b07a", "#cca46e", "#e0ba86"];
+function herring(A, B) {
+  const row = Math.floor(B / 8), flip = (Math.floor(A / 8) + row) & 1;
+  const a = A & 7, b = B & 7, along = flip ? a : b, across = flip ? b : a;
+  if (across === 7 || (along === 7 && across > 3) || (along === 3 && across <= 3)) return C("#9a7046");
+  if (across === 0) return C("#ecc896");
+  return C(HERR[Math.floor(hash(Math.floor(A / 4), row * 2 + flip, 74) * 3)]);
+}
 function flags(A, B) {
   const row = Math.floor(B / 7), s = A + (row & 1 ? 5 : 0), col = Math.floor(s / 10);
   if (B % 7 === 6 || s % 10 === 9) return C("#5e5048");
@@ -303,8 +319,11 @@ export function bakeRoom(m) {
       let c;
       if (WALLS.includes(o)) c = darkFloor;
       else {
-        const plank = ch === "l" ? planks(WALNUT, A, B, true) : planks(PLANK, A, B, false);
+        // (a house's rugs lie over its own floor, which shows round a round rug's edge)
+        const fl = "quy".includes(ch) && m.hf ? m.hf : ch;
+        const plank = fl === "l" ? planks(WALNUT, A, B, true) : fl === "x" ? flags(A, B) : fl === "h" ? herring(A, B) : planks(PLANK, A, B, false);
         if (ch === "x") c = flags(A, B);
+        else if (ch === "h") c = herring(A, B);
         else if (ch === "e") c = matTex(A, B);
         else if ("quy".includes(ch)) c = rugTex(RUG.get(x + "," + y), A, B, plank);
         else c = plank;
@@ -526,8 +545,12 @@ function stubPiece(m, x, y) {
 const WOOD = "#9a6440", WOOD_D = "#6e4428", WOOD_L = "#c08a58";
 const BOOK = ["#a8443c", "#3e6a8a", "#5a8a4a", "#c8963a", "#7a4a7a", "#d8c8a0", "#4a4a6a", "#b86a3a"];
 
+/** The way its owner turned a piece in a house (map `fd`), or null. */
+const turned = (m, x, y) => (m.fd && m.fd[x + "," + y] !== undefined ? "NWSE"[m.fd[x + "," + y] & 3] : null);
 /** Which way a piece backs onto a wall: N (wall behind it to the north) or W, else free (N). */
 function backing(m, x, y) {
+  const t = turned(m, x, y);
+  if (t) return t;
   const o = (i, j) => (i < 0 || j < 0 || i >= m.w || j >= m.h ? null : m.o[j][i]);
   const wall = (c) => c !== null && WALLS.includes(c);
   if (wall(o(x, y - 1))) return "N";
@@ -536,6 +559,8 @@ function backing(m, x, y) {
 }
 /** Which way a chair or an armchair turns: its back away from the nearest table or hearth. */
 function facing(m, x, y) {
+  const t = turned(m, x, y);
+  if (t) return t;
   const o = (i, j) => (i < 0 || j < 0 || i >= m.w || j >= m.h ? null : m.o[j][i]);
   for (const want of ["o-", "#", "mj$"]) {
     if (want.includes(o(x, y + 1))) return "N";
@@ -598,6 +623,8 @@ function chair(m, x, y) {
 
 /** An armchair turns to the fireplace if one is near, else like a chair. */
 function hearthward(m, x, y) {
+  const t = turned(m, x, y);
+  if (t) return t;
   for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
     if (m.o[y + j] && m.o[y + j][x + i] === "#") return Math.abs(j) >= Math.abs(i) ? (j < 0 ? "S" : "N") : i < 0 ? "E" : "W";
   }
@@ -855,6 +882,90 @@ function catCushion(m, x, y) {
   return M.piece({ cat: { x: sx, y: sy } });
 }
 
+// ───────────────────────────── a house of one's own ─────────────────────────────
+// Storage furniture (each opens the house storage) and a few cute things. Same light, same
+// one-texel outline, three tones a material.
+
+/** 나무 보관함: a plank chest with a curved lid, two iron bands and a brass latch. */
+function chestWood(m, x, y) {
+  const M = new Model(18, facing(m, x, y));
+  const wood = (f, s, z, k) => (f === "top" ? 0 : s === 2 || s === 9 ? F("#4a4048", k) : z === 3 ? F("#8a5630", k) : 0);
+  M.box(2, 4, 0, 12, 8, 7, "#b07440", wood);
+  M.box(2, 4, 7, 12, 8, 2, "#c4884e", (f, s, z, k) => (f === "top" ? (s === 2 || s === 9 ? C("#5a5058") : 0) : s === 2 || s === 9 ? F("#4a4048", k) : 0));
+  M.box(3, 5, 9, 10, 6, 1, "#d09a5c", (f, s) => (f === "top" && (s === 1 || s === 8) ? C("#5a5058") : 0));
+  // the latch, on the front
+  M.box(7, 11, 4, 2, 1, 4, "#e8c050", (f, s, z) => (z === 1 && f !== "top" ? C("#7a5a20") : 0));
+  return M.piece();
+}
+/** 철제 대형 금고: a squat iron safe on little feet, a round dial and a handle, rivets round the door. */
+function safeIron(m, x, y) {
+  const M = new Model(26, facing(m, x, y));
+  for (const [u, v] of [[3, 4], [12, 4], [3, 12], [12, 12]]) M.box(u, v, 0, 1, 1, 2, "#2e3238");
+  M.box(2, 3, 2, 12, 10, 14, "#6a7480", (f, s, z, k) => {
+    if (f === "top") return s === 0 || z === 0 ? C("#8a96a2") : 0;
+    if (f !== "front") return z === 13 ? F("#8a96a2", k) : 0;
+    // the door: a recessed panel, rivets, a dial and a handle
+    if (s === 1 || s === 10 || z === 1 || z === 12) return (s + z) % 3 === 0 ? F("#c8d0d8", k) : F("#4a525c", k);
+    const dd = Math.hypot(s - 4.5, z - 7);
+    if (dd < 2.2) return F(dd < 1 ? "#e8c050" : "#3a4048", k);
+    if (s === 8 && z >= 5 && z <= 9) return F("#e8c050", k);
+    return F(z > 9 ? "#76808c" : "#6a7480", k);
+  });
+  return M.piece();
+}
+/** 마법 대형 창고함: a violet chest bound in gold, a glowing gem on its lid, runes that breathe. */
+function chestMagic(m, x, y) {
+  const M = new Model(22, facing(m, x, y));
+  const gold = "#e8c050";
+  M.box(1, 3, 0, 14, 10, 8, "#5a3e8e", (f, s, z, k) => {
+    if (f === "top") return 0;
+    if (s === 0 || s === (f === "front" ? 13 : 9) || z === 0) return F(gold, k);
+    if (f === "front" && z >= 3 && z <= 5 && s % 4 === 2) return F("#8ae8ff", k);
+    return 0;
+  });
+  M.box(1, 3, 8, 14, 10, 3, "#6e52a8", (f, s, z, k) => (f === "top" ? (s === 0 || s === 13 || z === 0 || z === 9 ? C(gold) : 0) : s === 0 || z === 2 ? F(gold, k) : 0));
+  M.cyl(8, 8, 1.6, 11, 2, "#8ae8ff", (kind, a, zz) => (kind === "top" ? C("#e0faff") : 0));
+  const [gx, gy] = M.scr(8, 8, 13);
+  return M.piece({ glow: { x: gx, y: gy, r: 40, col: "#a07aff", k: 0.7, flick: 0.1 }, magic: { x: gx, y: gy } });
+}
+/** 곰인형: a big honey-brown bear sitting up, a cream muzzle, button eyes and a red bow. */
+function teddy(m, x, y) {
+  const M = new Model(26, facing(m, x, y));
+  const fur = (lit) => C(lit > 0.45 ? "#d8a060" : lit > 0 ? "#b87a42" : lit > -0.4 ? "#94602e" : "#6e4422");
+  M.blob(8, 7.5, 5, 5, 4.4, 5, fur);
+  for (const fu of [4, 12]) M.blob(fu, 11, 2, 1.8, 2.2, 2, fur);
+  M.blob(8, 8, 13, 4, 3.6, 3.8, fur);
+  for (const eu of [5, 11]) { M.blob(eu, 7.5, 16.5, 1.5, 1.2, 1.5, fur); }
+  M.blob(8, 11, 12.4, 1.8, 1.2, 1.4, (lit) => C(lit > 0.2 ? "#f4e2c4" : "#d8c09c"));
+  for (const eu of [6.6, 9.6]) M.put(...M.at(eu, 11.3), 14, C("#2b2233"), 3);
+  M.put(...M.at(8, 12.2), 13, C("#2b2233"), 3);
+  M.box(6, 9, 9, 4, 3, 2, "#d8484a", (f, s) => (s === 1 || s === 2 ? C("#a82e34") : 0), 2);
+  return M.piece();
+}
+/** 금붕어 어항: a round glass bowl on a little wooden stand; two goldfish swim round it (anim). */
+function fishbowl(m, x, y) {
+  const M = new Model(30);
+  M.cyl(8, 8, 3.4, 0, 2, WOOD_D);
+  M.cyl(8, 8, 1.4, 2, 7, WOOD);
+  M.cyl(8, 8, 3.8, 9, 1, WOOD_D);
+  M.blob(8, 8, 15, 5, 5, 5, (lit, A, B, z) => C(z > 18 ? (lit > 0.5 ? "#f0faff" : "#c8e8f4") : lit > 0.55 ? "#e8f8ff" : lit > 0.1 ? "#88c8e8" : lit > -0.3 ? "#5aa0cc" : "#3a78a8"));
+  M.cyl(8, 8, 3.2, 19, 1, "#2a6a98", (kind) => (kind === "top" ? C("#a8dcf0") : 0), 1);
+  const [cx, cy] = M.scr(8, 8, 15);
+  return M.piece({ bowl: { x: cx, y: cy } });
+}
+/** 축음기: a dark wooden cabinet, a black record and a big brass horn. Notes drift up from it (anim). */
+function gramophone(m, x, y) {
+  const M = new Model(34, facing(m, x, y));
+  M.box(3, 4, 0, 10, 9, 8, "#6a3e24", (f, s, z, k) => (f === "top" ? 0 : z === 6 ? F("#c89a3a", k) : z === 0 ? F("#3e2414", k) : 0));
+  M.cyl(8, 8.5, 3.6, 8, 1, "#2a2228", (kind, a, d) => (kind === "top" ? C(d < 0.8 ? "#d84848" : d > 2.6 ? "#4a4048" : "#2a2228") : 0));
+  // the arm, then the horn: rings widening as they rise toward the back
+  M.box(11, 6, 8, 1, 1, 4, "#c89a3a");
+  const steps = [[10.5, 6, 11, 0.9], [10, 5.4, 13, 1.3], [9.4, 4.8, 15, 1.9], [8.8, 4.2, 17, 2.6], [8.2, 3.6, 19, 3.4], [7.8, 3.2, 21, 4.2]];
+  for (const [u, v, z, r] of steps) M.cyl(u, v, r, z, 2, "#e0b048", (kind, a, d) => (kind === "top" ? C(d < r - 1.2 ? "#5a3a18" : "#f4d070") : 0));
+  const [nx, ny] = M.scr(7.8, 3.2, 23);
+  return M.piece({ note: { x: nx, y: ny } });
+}
+
 // ───────────────────────────── per map ─────────────────────────────
 
 const perMap = new WeakMap();
@@ -882,6 +993,12 @@ export function roomPiece(m, x, y) {
     case "w": p = barrel(m, x, y); break;
     case "]": p = crates(m, x, y); break;
     case "%": p = catCushion(m, x, y); break;
+    case "[": p = chestWood(m, x, y); break;
+    case "{": p = safeIron(m, x, y); break;
+    case "}": p = chestMagic(m, x, y); break;
+    case "(": p = teddy(m, x, y); break;
+    case ")": p = fishbowl(m, x, y); break;
+    case "?": p = gramophone(m, x, y); break;
   }
   if (p) p.anim = animFor(p);
   S.set(key, p);
@@ -910,7 +1027,7 @@ const CAT = [
 const CAT_C = [null, "#2b2233", "#e8934a", "#f6e2c0", "#b8622e", "#5a2a2a"];
 
 function animFor(p) {
-  if (!p.fire && !p.steam && !p.cat && !p.candle && !p.glass) return null;
+  if (!p.fire && !p.steam && !p.cat && !p.candle && !p.glass && !p.bowl && !p.magic && !p.note) return null;
   return (g, t, X, Y, parts) => {
     if (p.glass) {
       // after dark the window goes deep blue, with a star or two
@@ -932,6 +1049,17 @@ function animFor(p) {
     }
     if (p.candle && Math.sin(t / 90 + X) > -0.6) { g.fillStyle = "#ffd060"; g.fillRect(Math.round(X + p.candle[0]), Math.round(Y + p.candle[1]) - 1, 1, 2); }
     if (p.steam) for (const [sx, sy] of p.steam) if (Math.random() < (p.puff ? 0.05 : 0.025)) parts.push({ x: X + sx + (Math.random() - 0.5) * 2, y: Y + sy, vx: (Math.random() - 0.5) * 3, vy: -7 - Math.random() * 4, life: 1.1 + Math.random() * 0.6, color: "#f4f0ea", g: -1, s: 1 });
+    if (p.bowl) {
+      // two goldfish going round and round, now and then a bubble
+      for (let i = 0; i < 2; i++) {
+        const a = t / (900 + i * 260) + i * 2.6, fx = Math.round(X + p.bowl.x + Math.cos(a) * 3), fy = Math.round(Y + p.bowl.y + 1 + Math.sin(a) * 1.5 - i);
+        g.fillStyle = "#ff8a2a"; g.fillRect(fx, fy, 2, 1);
+        g.fillStyle = "#ffd070"; g.fillRect(Math.sin(a) > 0 ? fx - 1 : fx + 2, fy, 1, 1);
+      }
+      if (Math.random() < 0.02) parts.push({ x: X + p.bowl.x + (Math.random() - 0.5) * 4, y: Y + p.bowl.y - 1, vx: 0, vy: -5, life: 0.7, color: "#f0faff", g: 0, s: 1 });
+    }
+    if (p.magic && Math.random() < 0.05) parts.push({ x: X + p.magic.x + (Math.random() - 0.5) * 14, y: Y + p.magic.y + (Math.random() - 0.5) * 6, vx: 0, vy: -9, life: 0.9, color: Math.random() < 0.5 ? "#c8b0ff" : "#a8f0ff", g: 0, s: 1 });
+    if (p.note && Math.random() < 0.012) parts.push({ x: X + p.note.x, y: Y + p.note.y, vx: 4 + Math.random() * 4, vy: -10, life: 1.6, color: Math.random() < 0.5 ? "#ffe080" : "#f4ecf8", g: 0, s: 2 });
     if (p.cat) {
       // breathing: on the in-breath the back rises a pixel
       const inb = Math.floor(t / 1500) % 2, x0 = Math.round(X + p.cat.x - 8), y0 = Math.round(Y + p.cat.y - 7);

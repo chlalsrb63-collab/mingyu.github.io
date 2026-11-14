@@ -10,9 +10,9 @@
     <meta property="og:image" content="https://lumentale-online.higgsfield.app/cover.png" />
     <meta name="theme-color" content="#0e0f14" />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="style.css?v=1795350200" />
-    <link rel="stylesheet" href="hud.css?v=1795350200" />
-    <link rel="stylesheet" href="lobby.css?v=1795350200" />
+    <link rel="stylesheet" href="style.css?v=1795420100" />
+    <link rel="stylesheet" href="hud.css?v=1795420100" />
+    <link rel="stylesheet" href="lobby.css?v=1795420100" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -41,6 +41,9 @@
         <div id="dim-boss" hidden><b id="dim-boss-name"></b><div class="dim-bbar"><i id="dim-boss-fill"></i></div></div>
         <button id="dim-leave" class="btn small" title="마을로 돌아가기">떠나기</button>
       </div>
+
+      <!-- a house of one's own: whose it is, decorate, storage, the way out (housing.js) -->
+      <div id="house-hud" class="frame" hidden></div>
 
       <!-- first steps: the current step and how to do it -->
       <div id="tut" class="frame" hidden><div class="tut-hd"><span id="tut-n"></span><b id="tut-title"></b><button id="tut-x" class="x" title="잠시 숨기기"></button></div><p id="tut-hint"></p></div>
@@ -72,6 +75,7 @@
           <header><span class="t plate">가방</span><span id="inv-gold" class="gold"></span><span id="inv-count"></span><button id="inv-sort" class="btn small" title="보기 정렬"></button><button class="x" title="닫기"></button></header>
           <div class="body">
             <div id="inv-grid" class="grid"></div>
+            <div id="inv-grow"></div>
             <div id="inv-detail" class="detail"></div>
           </div>
         </section>
@@ -220,6 +224,21 @@
       <section class="window" id="w-dim" hidden>
         <header><span class="t">차원의 오벨리스크 · 균열 지기 오르카</span><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body"><p id="dim-info" class="say"></p><div class="dim-btns"><button id="dim-open" class="btn gold">균열 열기</button><button id="dim-join" class="btn gold" hidden>합류하기</button></div></div>
+      </section>
+
+      <section class="window" id="w-house" hidden>
+        <header><span class="t">하우징 안내인 포근</span><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body"><div id="house-body"></div></div>
+      </section>
+
+      <section class="window" id="w-deco" hidden>
+        <header><span class="t">집 꾸미기</span><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body"><div id="deco-body"></div></div>
+      </section>
+
+      <section class="window" id="w-hstore" hidden>
+        <header><span class="t">집 보관함</span><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body"><div id="hstore-body"></div></div>
       </section>
 
       <section class="window" id="w-rc" hidden>
@@ -402,7 +421,7 @@
       </div>
     </div>
 
-    <script type="module" src="client.js?v=1795350200"></script>
+    <script type="module" src="client.js?v=1795420100"></script>
     <div id="crt-frame" aria-hidden="true"></div>
   </body>
 </html>

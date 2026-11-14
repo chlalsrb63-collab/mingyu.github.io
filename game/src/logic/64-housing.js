@@ -25,6 +25,9 @@ const homeAt = (S, id) => (S && S.homes && Object.hasOwn(S.homes, id) ? S.homes[
 const homeIdOf = (p) => HOUSE_PRE + p.eid;
 /** The house `p` stands in, or null. */
 const homeHere = (p) => (isHomeId(p.map) ? homeAt(p.S, p.map) : null);
+/** Pieces standing up (rugs apart) and rugs, each against its own limit. */
+const pieceCount = (H) => H.furn.filter((f) => !FURN[f.id].floor).length;
+const rugCount = (H) => H.furn.length - pieceCount(H);
 /** Storage furniture placed, and the slots it gives. */
 const storeCount = (H) => H.furn.filter((f) => FURN[f.id].kind === "store").length;
 const storeCap = (H) => H.furn.reduce((n, f) => n + (FURN[f.id].kind === "store" ? FURN[f.id].cap : 0), 0);
@@ -58,7 +61,7 @@ function houseClean(h, fix) {
   for (const f of Array.isArray(o.furn) ? o.furn : []) {
     if (!isObj(f) || typeof f.id !== "string" || !Object.hasOwn(FURN, f.id)) continue;
     const d = FURN[f.id], key = (d.floor ? "g" : "o") + f.x + "," + f.y;
-    const fits = lim && inRoom(tier, f.x, f.y) && !seen.has(key) && out.furn.length < lim.furn && (d.kind !== "store" || storeCount(out) < lim.store) &&
+    const fits = lim && inRoom(tier, f.x, f.y) && !seen.has(key) && (d.floor ? rugCount(out) < lim.rugs : pieceCount(out) < lim.furn) && (d.kind !== "store" || storeCount(out) < lim.store) &&
       (d.floor || ((!d.wall || f.x === 1 || f.y === 1) && !(f.x === entry[0] && f.y === entry[1])));
     if (!fits) { stackInto(out.storage, f.id, 1); continue; }
     seen.add(key);
@@ -219,7 +222,8 @@ function homeDoor(S, p) {
 function placeWhy(S, home, H, id, x, y) {
   const d = FURN[id], lim = HOUSE_TIER[H.tier];
   if (!inRoom(H.tier, x, y)) return "방 안의 바닥에만 놓을 수 있습니다";
-  if (H.furn.length >= lim.furn) return `${lim.name}에는 가구를 ${lim.furn}개까지 놓을 수 있습니다 (집을 넓히면 더 놓을 수 있어요)`;
+  if (d.floor && rugCount(H) >= lim.rugs) return `${lim.name}에는 카펫을 ${lim.rugs}장까지 깔 수 있습니다 (집을 넓히면 더 깔 수 있어요)`;
+  if (!d.floor && pieceCount(H) >= lim.furn) return `${lim.name}에는 가구를 ${lim.furn}개까지 놓을 수 있습니다 (집을 넓히면 더 놓을 수 있어요)`;
   if (d.kind === "store" && storeCount(H) >= lim.store) return `${lim.name}에는 보관 가구를 ${lim.store}개까지 놓을 수 있습니다`;
   if (H.furn.some((f) => f.x === x && f.y === y && !FURN[f.id].floor === !d.floor)) return d.floor ? "그 자리에는 이미 카펫이 깔려 있습니다" : "그 자리에는 이미 가구가 있습니다";
   if (d.floor) return null;
@@ -234,6 +238,8 @@ function placeWhy(S, home, H, id, x, y) {
 }
 /** The placed piece `uid` of a sheet's house, or null. */
 const furnOf = (H, uid) => (Number.isInteger(uid) ? H.furn.find((f) => f.uid === uid) || null : null);
+/** The bed or hearth a rest asks for: by uid (the owner knows them), or by its tile (a guest sees only the room). */
+const restOf = (H, a) => furnOf(H, a.u) || H.furn.find((f) => f.x === a.x && f.y === a.y && FURN[f.id].kind === "rest") || null;
 /** Whether `p` stands close enough to a placed piece (a tile and a bit). */
 const furnNear = (p, f) => dist(p.x, p.y - 4, f.x * T + 8, f.y * T + 8) <= 30;
 const storeNear = (p, H) => H.furn.some((f) => FURN[f.id].kind === "store" && furnNear(p, f));
@@ -318,7 +324,7 @@ function homeValidate(S, p, a) {
     case "h_rest": {
       if (!here) return bad("집 안에서만 쉴 수 있습니다");
       const host = S.players[here.owner];
-      const f = host ? furnOf(host.ch.house, a.u) : null;
+      const f = host ? restOf(host.ch.house, a) : null;
       if (!f || FURN[f.id].kind !== "rest") return bad("쉴 수 있는 가구가 아닙니다");
       if (!furnNear(p, f)) return bad("조금 더 가까이 가야 합니다");
       if (H.rest > now) return bad(`${Math.ceil((H.rest - now) / 60000)}분 뒤에 다시 쉴 수 있습니다`);
@@ -355,7 +361,7 @@ function homeApply(S, p, a) {
       if (here && here.owner === p.pid) homeRebuild(S, here);
       else { const h = homeAt(S, homeIdOf(p)); if (h) homeRebuild(S, h); }
       S.maps[p.map].ev.push(["u", p.eid, 2]);
-      toast(p, `집을 [${t.name}]으로 넓혔습니다! 가구를 ${t.furn}개, 보관 가구를 ${t.store}개까지 놓을 수 있습니다.`);
+      toast(p, `집을 [${t.name}]으로 넓혔습니다! 가구를 ${t.furn}개, 카펫을 ${t.rugs}장, 보관 가구를 ${t.store}개까지 놓을 수 있습니다.`);
       break;
     }
     case "house_style": {
@@ -422,7 +428,7 @@ function homeApply(S, p, a) {
     }
     case "h_sort": H.storage = sortSlots(H.storage); break;
     case "h_rest": {
-      const st = stats(p), host = S.players[here.owner], f = furnOf(host.ch.house, a.u);
+      const st = stats(p), host = S.players[here.owner], f = restOf(host.ch.house, a);
       p.hp = Math.min(st.mhp, p.hp + Math.round(st.mhp * HOUSE_REST.hp));
       p.mp = Math.min(st.mmp, p.mp + Math.round(st.mmp * HOUSE_REST.mp));
       H.cozy = now + HOUSE_REST.ms;
@@ -465,7 +471,7 @@ function homeWire(m, out) {
 /** What the browser needs to draw and price everything (defs().house). */
 function homeDefs() {
   return {
-    tiers: HOUSE_TIER.map((t) => (t ? { name: t.name, w: t.w, h: t.h, price: t.price, furn: t.furn, store: t.store } : null)),
+    tiers: HOUSE_TIER.map((t) => (t ? { name: t.name, w: t.w, h: t.h, price: t.price, furn: t.furn, rugs: t.rugs, store: t.store } : null)),
     floors: HOUSE_FLOOR, walls: HOUSE_WALL, shop: FURN_SHOP, rest: HOUSE_REST, door: HOUSE_TOWN.door,
     furn: Object.fromEntries(Object.keys(FURN).map((id) => [id, { ch: FURN[id].ch, kind: FURN[id].kind, cap: FURN[id].cap || 0, floor: FURN[id].floor || 0, wall: FURN[id].wall || 0 }])),
   };

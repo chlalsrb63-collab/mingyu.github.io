@@ -511,15 +511,15 @@ const bagCost = (cap) => (cap >= INV_MAX ? 0 : BAG_COST[Math.max(0, Math.floor((
  * A house of one's own (64-housing.js): tier 1 is bought at the 하우징 안내인 in town, 2 and 3 are
  * upgrades (price = that step). w × h is the room with its walls (the back walls on row 0 and
  * column 0, the cut-down front on the last row and column), `furn` how many pieces it holds
- * (rugs count), `store` how many of them may be storage furniture. 10,000 G is a few hours of
+ * (not rugs: `rugs` rug tiles more), `store` how many of them may be storage furniture. 10,000 G is a few hours of
  * Lv.15–20 hunting (beside the 꼬마 박쥐 pet); 40,000 and 120,000 G are the big sinks of the
  * middle and late game (the job change is 5,000 / 20,000 G).
  */
 const HOUSE_TIER = [
   null,
-  { name: "아늑한 오두막", w: 10, h: 8, price: 10000, furn: 12, store: 2 },
-  { name: "넓은 목조주택", w: 14, h: 10, price: 40000, furn: 22, store: 3 },
-  { name: "고급 저택", w: 18, h: 13, price: 120000, furn: 34, store: 5 },
+  { name: "아늑한 오두막", w: 10, h: 8, price: 10000, furn: 12, rugs: 12, store: 2 },
+  { name: "넓은 목조주택", w: 14, h: 10, price: 40000, furn: 22, rugs: 24, store: 3 },
+  { name: "고급 저택", w: 18, h: 13, price: 120000, furn: 34, rugs: 40, store: 5 },
 ];
 /** Floors (a ground char of the interior theme, public/iso_interior.js) and wallpapers (its STYLE). */
 const HOUSE_FLOOR = [["f", "꿀빛 원목 마루"], ["l", "호두나무 마루"], ["x", "돌 타일"], ["h", "헤링본 마루"]];
@@ -558,11 +558,11 @@ const FURN_SHOP = Object.keys(FURN);
 /** 안락한 휴식: what a bed or a hearth gives (heal shares, the buff's XP % and time, the wait between two). */
 const HOUSE_REST = { hp: 0.5, mp: 0.5, xp: 8, ms: 15 * 60000, cd: 30 * 60000 };
 /**
- * The town's residential corner (south of the west gate, by the bank): the house with the "내 집"
+ * The town's residential corner (the quiet north-west lane beside 모닥별 여관): the house with the "내 집"
  * door (4 × 3 at `house`, its door the two tiles under its middle), the agent beside it, and
  * where a player stands when they come out.
  */
-const HOUSE_TOWN = { map: "town", house: [3, 17], door: [[4, 20], [5, 20]], out: [4, 21], agent: [7, 19] };
+const HOUSE_TOWN = { map: "town", house: [3, 3], door: [[4, 6], [5, 6]], out: [4, 7], agent: [6, 7] };
 
 // ───────────────────────────── helpers ─────────────────────────────
 
@@ -6859,6 +6859,9 @@ const homeAt = (S, id) => (S && S.homes && Object.hasOwn(S.homes, id) ? S.homes[
 const homeIdOf = (p) => HOUSE_PRE + p.eid;
 /** The house `p` stands in, or null. */
 const homeHere = (p) => (isHomeId(p.map) ? homeAt(p.S, p.map) : null);
+/** Pieces standing up (rugs apart) and rugs, each against its own limit. */
+const pieceCount = (H) => H.furn.filter((f) => !FURN[f.id].floor).length;
+const rugCount = (H) => H.furn.length - pieceCount(H);
 /** Storage furniture placed, and the slots it gives. */
 const storeCount = (H) => H.furn.filter((f) => FURN[f.id].kind === "store").length;
 const storeCap = (H) => H.furn.reduce((n, f) => n + (FURN[f.id].kind === "store" ? FURN[f.id].cap : 0), 0);
@@ -6892,7 +6895,7 @@ function houseClean(h, fix) {
   for (const f of Array.isArray(o.furn) ? o.furn : []) {
     if (!isObj(f) || typeof f.id !== "string" || !Object.hasOwn(FURN, f.id)) continue;
     const d = FURN[f.id], key = (d.floor ? "g" : "o") + f.x + "," + f.y;
-    const fits = lim && inRoom(tier, f.x, f.y) && !seen.has(key) && out.furn.length < lim.furn && (d.kind !== "store" || storeCount(out) < lim.store) &&
+    const fits = lim && inRoom(tier, f.x, f.y) && !seen.has(key) && (d.floor ? rugCount(out) < lim.rugs : pieceCount(out) < lim.furn) && (d.kind !== "store" || storeCount(out) < lim.store) &&
       (d.floor || ((!d.wall || f.x === 1 || f.y === 1) && !(f.x === entry[0] && f.y === entry[1])));
     if (!fits) { stackInto(out.storage, f.id, 1); continue; }
     seen.add(key);
@@ -7053,7 +7056,8 @@ function homeDoor(S, p) {
 function placeWhy(S, home, H, id, x, y) {
   const d = FURN[id], lim = HOUSE_TIER[H.tier];
   if (!inRoom(H.tier, x, y)) return "방 안의 바닥에만 놓을 수 있습니다";
-  if (H.furn.length >= lim.furn) return `${lim.name}에는 가구를 ${lim.furn}개까지 놓을 수 있습니다 (집을 넓히면 더 놓을 수 있어요)`;
+  if (d.floor && rugCount(H) >= lim.rugs) return `${lim.name}에는 카펫을 ${lim.rugs}장까지 깔 수 있습니다 (집을 넓히면 더 깔 수 있어요)`;
+  if (!d.floor && pieceCount(H) >= lim.furn) return `${lim.name}에는 가구를 ${lim.furn}개까지 놓을 수 있습니다 (집을 넓히면 더 놓을 수 있어요)`;
   if (d.kind === "store" && storeCount(H) >= lim.store) return `${lim.name}에는 보관 가구를 ${lim.store}개까지 놓을 수 있습니다`;
   if (H.furn.some((f) => f.x === x && f.y === y && !FURN[f.id].floor === !d.floor)) return d.floor ? "그 자리에는 이미 카펫이 깔려 있습니다" : "그 자리에는 이미 가구가 있습니다";
   if (d.floor) return null;
@@ -7068,6 +7072,8 @@ function placeWhy(S, home, H, id, x, y) {
 }
 /** The placed piece `uid` of a sheet's house, or null. */
 const furnOf = (H, uid) => (Number.isInteger(uid) ? H.furn.find((f) => f.uid === uid) || null : null);
+/** The bed or hearth a rest asks for: by uid (the owner knows them), or by its tile (a guest sees only the room). */
+const restOf = (H, a) => furnOf(H, a.u) || H.furn.find((f) => f.x === a.x && f.y === a.y && FURN[f.id].kind === "rest") || null;
 /** Whether `p` stands close enough to a placed piece (a tile and a bit). */
 const furnNear = (p, f) => dist(p.x, p.y - 4, f.x * T + 8, f.y * T + 8) <= 30;
 const storeNear = (p, H) => H.furn.some((f) => FURN[f.id].kind === "store" && furnNear(p, f));
@@ -7152,7 +7158,7 @@ function homeValidate(S, p, a) {
     case "h_rest": {
       if (!here) return bad("집 안에서만 쉴 수 있습니다");
       const host = S.players[here.owner];
-      const f = host ? furnOf(host.ch.house, a.u) : null;
+      const f = host ? restOf(host.ch.house, a) : null;
       if (!f || FURN[f.id].kind !== "rest") return bad("쉴 수 있는 가구가 아닙니다");
       if (!furnNear(p, f)) return bad("조금 더 가까이 가야 합니다");
       if (H.rest > now) return bad(`${Math.ceil((H.rest - now) / 60000)}분 뒤에 다시 쉴 수 있습니다`);
@@ -7189,7 +7195,7 @@ function homeApply(S, p, a) {
       if (here && here.owner === p.pid) homeRebuild(S, here);
       else { const h = homeAt(S, homeIdOf(p)); if (h) homeRebuild(S, h); }
       S.maps[p.map].ev.push(["u", p.eid, 2]);
-      toast(p, `집을 [${t.name}]으로 넓혔습니다! 가구를 ${t.furn}개, 보관 가구를 ${t.store}개까지 놓을 수 있습니다.`);
+      toast(p, `집을 [${t.name}]으로 넓혔습니다! 가구를 ${t.furn}개, 카펫을 ${t.rugs}장, 보관 가구를 ${t.store}개까지 놓을 수 있습니다.`);
       break;
     }
     case "house_style": {
@@ -7256,7 +7262,7 @@ function homeApply(S, p, a) {
     }
     case "h_sort": H.storage = sortSlots(H.storage); break;
     case "h_rest": {
-      const st = stats(p), host = S.players[here.owner], f = furnOf(host.ch.house, a.u);
+      const st = stats(p), host = S.players[here.owner], f = restOf(host.ch.house, a);
       p.hp = Math.min(st.mhp, p.hp + Math.round(st.mhp * HOUSE_REST.hp));
       p.mp = Math.min(st.mmp, p.mp + Math.round(st.mmp * HOUSE_REST.mp));
       H.cozy = now + HOUSE_REST.ms;
@@ -7299,7 +7305,7 @@ function homeWire(m, out) {
 /** What the browser needs to draw and price everything (defs().house). */
 function homeDefs() {
   return {
-    tiers: HOUSE_TIER.map((t) => (t ? { name: t.name, w: t.w, h: t.h, price: t.price, furn: t.furn, store: t.store } : null)),
+    tiers: HOUSE_TIER.map((t) => (t ? { name: t.name, w: t.w, h: t.h, price: t.price, furn: t.furn, rugs: t.rugs, store: t.store } : null)),
     floors: HOUSE_FLOOR, walls: HOUSE_WALL, shop: FURN_SHOP, rest: HOUSE_REST, door: HOUSE_TOWN.door,
     furn: Object.fromEntries(Object.keys(FURN).map((id) => [id, { ch: FURN[id].ch, kind: FURN[id].kind, cap: FURN[id].cap || 0, floor: FURN[id].floor || 0, wall: FURN[id].wall || 0 }])),
   };

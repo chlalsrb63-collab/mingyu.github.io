@@ -35,6 +35,7 @@ import * as Assets from "./assetlib.js";
 import * as Sky from "./sky.js";
 import * as Dim from "./dimrift.js";
 import * as Radar from "./radar.js";
+import * as Housing from "./housing.js";
 
 // approved external images (public/assets/manifest.json) before anything is drawn; an
 // empty or missing manifest leaves every look code-drawn
@@ -319,6 +320,7 @@ function onSnap(s) {
   const gi = s.ginv ? s.ginv.join("|") : null;
   if ((s.pinv || null) !== G.pinv || gi !== G.ginv) { G.pinv = s.pinv || null; G.ginv = gi; renderInvite(); }
   Dim.onSnap(s);                               // 차원 균열: HUD, ready check, shrines and orbs (dimrift.js)
+  Housing.onSnap(s);                           // a house of one's own: its bar, the ghost, the windows (housing.js)
   hudBars();
 }
 
@@ -349,6 +351,7 @@ const RANK_NAME = ["", "정예 ", "우두머리 "];
 const DUNGEONS = new Set(["crypt", "sewer", "abyss"]);
 Mini.mount($("#minigame"));
 Dim.init({ G, S3, Sound, act, openWin, closeWin, isOpen: (id) => isOpen(id) });
+Housing.init({ G, S3, Sound, act, el, iconImg, itemSlot: (e, o) => itemSlot(e, o), openWin, closeWin, isOpen: (id) => isOpen(id), draw: (id, k, fn) => draw(id, k, fn), hoverTip: (d, f) => hoverTip(d, f), toast: (m) => toast(m) });
 Dim.bindUi();
 // every menu button wears its glyph above its word; the auto-hunt button wears one too
 for (const b of $$("#menu button")) { const g = MENU_ICON[b.dataset.win || b.id.slice(2)]; if (g) b.prepend(iconImg(g)); }
@@ -359,6 +362,7 @@ const heightOf = (e) => e.h3 || 1.3;
 function onEvent(e, t) {
   if (SkillFx.skillEvent(e, { G, S3, Sound, entityPos, heightOf, t })) return;
   if (Dim.onEvent(e)) return;
+  if (Housing.onEvent(e)) return;
   MobArt.onEvent(e, G, S3, t);              // wind-ups, strikes and the bodies monsters leave
   switch (e[0]) {
     // the storyteller by the town's fire tells a tale: a bubble over her, and a line in the chat for those close by
@@ -625,6 +629,8 @@ addEventListener("keydown", (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();
   if (e.repeat) return;
+  // decorating a house: R turns the piece in hand, Esc lets go of it, Delete picks a piece up (housing.js)
+  if (Housing.onKey(k)) { e.preventDefault(); return; }
   keys.add(k);
   switch (k) {
     case "1": case "2": case "3": case "4": case "5": case "6": case "7": case "8": case "9": QS.press(Number(k) - 1); break;
@@ -726,6 +732,7 @@ world.addEventListener("pointerdown", (e) => {
   if (!G.playing || !G.map || G.me.dead) return;
   const hit = S3.pick(e.clientX, e.clientY);
   if (!hit) return;
+  if (Housing.onWorldDown(e)) return;             // decorating a house: place or pick a piece
   const stone = (G.map.marks || []).find((m) => m.kind === "waypoint" && Math.floor(hit[0] / T) === m.x && Math.floor(hit[1] / T) === m.y);
   if (stone) {
     if (stoneNear()) { openWin("warp"); return; }
@@ -740,6 +747,9 @@ world.addEventListener("pointerdown", (e) => {
   G.path = pathTo(hit[0], hit[1]);
   if (G.path) G.mark = { at: now(), pos: G.path[G.path.length - 1] }
 });
+
+// decorating a house: the ghost of the piece in hand follows the pointer (housing.js)
+world.addEventListener("pointermove", (e) => { if (G.playing && G.map) Housing.onWorldMove(e); });
 
 // virtual joystick + touch buttons
 const joyEl = $("#joy"), knob = $("#joy-knob");
@@ -944,6 +954,7 @@ function interact() {
     Mini.fishing((score) => act({ t: "reel", s: score }));
     return;
   }
+  if (Housing.interact()) return;                  // at home: a chest opens the storage, a bed gives a rest
   if (!n) { if (waterNear()) { act({ t: "fish" }); Sound.play("ui"); } return; }
   Sound.play("ui");
   SideQ.onTalk(n, G.self);
@@ -958,6 +969,7 @@ function interact() {
   else if (n.role === "bank") openWin("bank");
   else if (n.role === "costume") openWin("costume");
   else if (n.role === "dim") Dim.openKeeper();
+  else if (n.role === "house") { Housing.openAgent(); openWin("inv"); }
   else { talkTo(n); return; }
   // the townsfolk have a word to say as they serve you (npctalk.js)
   const line = n.role !== "stone" && NpcTalk.lineFor(n, talkSheet());
@@ -1198,6 +1210,7 @@ function render(t, dt) {
   S3.render(G.me.x, G.me.y, dt, t, G.snapCam);
   G.snapCam = false;
   Dim.tick();
+  Housing.tick();
   renderText(t);
 }
 
@@ -1424,7 +1437,7 @@ function wpWoke(s, id, i = 0) { return !!(s && s.wp && !Array.isArray(s.wp) && (
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore"];
 const winEl = (id) => $(`#w-${id}`);
 /** The bag is docked in the side column, so it always counts as open (on a phone it lives in the drawer). */
 const isOpen = (id) => id === "inv" || !winEl(id).hidden;
@@ -1474,7 +1487,8 @@ function homeOf(id, w, h) {
   const [x0, y0, x1, y1] = zone(), top = y0 + 4;
   const right = x1 - w - 4, mid = (x0 + x1 - w) / 2;
   switch (id) {
-    case "char": case "shop": case "smith": case "train": case "bank": return [right, top];
+    case "char": case "shop": case "smith": case "train": case "bank": case "house": case "hstore": return [right, top];
+    case "deco": return [x0 + 4, top + 32];
     case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": return [x0 + 4, top + 32];
     case "talk": return [mid, y1 - h - 52];
     default: return [mid, Math.max(top, (y0 + y1 - h) / 2 - 30)];
@@ -1608,6 +1622,7 @@ function closeWin(id) {
   if (w.hidden) return;
   w.hidden = true;
   if (folded(id)) { w.classList.remove("mini"); w.title = ""; layTabs(); }
+  Housing.onWinClose(id);
   if (tip.from && w.contains(tip.from)) hideTip();
   syncMenu();
 }
@@ -2088,7 +2103,7 @@ function refreshUi() {
   hotbar(s);
   tracker(s);
   const near = G.near && G.near.role;
-  draw("inv", () => [s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs], renderInv);
+  draw("inv", () => [s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs, s.bagCap], renderInv);
   draw("char", () => [s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.tr, s.lg, s.lvl, s.name, s.guild], renderChar);
   draw("skill", () => [s.lvl, s.cls, s.wk, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.skl, s.qs], renderSkills);
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near], renderShop);
@@ -2102,6 +2117,7 @@ function refreshUi() {
   draw("achieve", () => [s.ach, s.title, s.pts, G.achTab], renderAchieve);
   draw("collect", () => [s.mk, s.col, G.colTab], renderCollect);
   Wardrobe.refresh(s);
+  Housing.refresh(s);
   tutCard(s);
 }
 function section(text, glyph) {
@@ -2116,7 +2132,8 @@ function renderInv(s) {
   const it = G.defs.items;
   $("#inv-gold").textContent = "";
   $("#inv-gold").append(iconImg("coin", "#e2c486"), `${s.gold.toLocaleString()} G`);
-  $("#inv-count").textContent = `${s.inv.length} / ${G.defs.inv}`;
+  const cap = s.bagCap || G.defs.inv;
+  $("#inv-count").textContent = `${s.inv.length} / ${cap}`;
   const sort = $("#inv-sort");
   sort.textContent = "";
   sort.append(iconImg("sort"), "정리");
@@ -2125,7 +2142,7 @@ function renderInv(s) {
   grid.textContent = "";
   if (G.sel >= s.inv.length) G.sel = -1;
   const order = invOrder(s.inv);
-  for (let n = 0; n < G.defs.inv; n++) {
+  for (let n = 0; n < cap; n++) {
     const i = order[n];
     if (i === undefined) { grid.append(itemSlot(null)); continue; }
     const entry = s.inv[i];
@@ -2141,6 +2158,7 @@ function renderInv(s) {
     if (usable) { QS.dragSource(node, ["i", entry.id]); if (at) node.append(el("span", "qk", at)); }
     grid.append(node);
   }
+  Housing.bagBar(s, $("#inv-grow"));
   const det = $("#inv-detail");
   det.textContent = "";
   const entry = s.inv[G.sel];
@@ -2928,7 +2946,7 @@ function hudTick(t) {
   }
   const buffs = $("#st-buffs");
   // each status is its glyph and the time left; the last three are things done to you
-  const names = ["공격력 증가", "이동속도 증가", `모닥불의 온기: 경험치 +${s.warm}%`, s.food ? G.defs.items[s.food].name : "음식", "둔화: 이동속도 감소", "화상: 지속 피해", "중독: 지속 피해", "공격의 주문서: 공격력 +10%", "방어의 주문서: 받는 피해 -12%", "경험의 주문서: 경험치 +20%", "질주의 바람: 이동속도 +30%"];
+  const names = ["공격력 증가", "이동속도 증가", `모닥불의 온기: 경험치 +${s.warm}%`, s.food ? G.defs.items[s.food].name : "음식", "둔화: 이동속도 감소", "화상: 지속 피해", "중독: 지속 피해", "공격의 주문서: 공격력 +10%", "방어의 주문서: 받는 피해 -12%", "경험의 주문서: 경험치 +20%", "질주의 바람: 이동속도 +30%", `안락한 휴식: 경험치 +${G.defs.house ? G.defs.house.rest.xp : 8}%`];
   const bad = (i) => i >= 4 && i < 7;
   const left = (ms) => (ms > 90000 ? `${Math.ceil(ms / 60000)}분` : `${Math.ceil(ms / 1000)}`);
   const shownB = G.buffEnd.map((e, i) => (e > t ? [i, left(e - t)] : null)).filter(Boolean);
@@ -2940,7 +2958,7 @@ function hudTick(t) {
       const scr = i >= 7 && i < 10;
       const sp = el("span", bad(i) ? "bad" : scr ? "scr" : "", l);
       sp.title = names[i];
-      sp.prepend(iconImg(BUFF_ICON[i], bad(i) ? "#ff9a8a" : scr ? "#9ad8ff" : i === 10 ? "#9affc8" : "#e2c486"));
+      sp.prepend(iconImg(BUFF_ICON[i], bad(i) ? "#ff9a8a" : scr ? "#9ad8ff" : i === 10 ? "#9affc8" : i === 11 ? "#ffb0c8" : "#e2c486"));
       buffs.append(sp);
     }
   }

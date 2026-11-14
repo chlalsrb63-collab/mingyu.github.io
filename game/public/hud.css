@@ -751,3 +751,50 @@ body.touch #mini-bar #mini-map kbd { display: none; }
 #map-legend span { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
 #map-legend img { image-rendering: pixelated; }
 body[data-lay="port"] #map-box, body[data-lay="land"] #map-box { height: clamp(150px, calc(100vh - 200px), 420px); }
+/* ─────────────────────────── the bag's size and a house of one's own (housing.js) ─────────────────────────── */
+/* the bag grows to 100 slots: on a desktop the docked bag scrolls in its column (above); in the
+   phone drawer it scrolls past four rows, in the landscape drawer past six */
+#inv-grid { overscroll-behavior: contain; }
+body[data-lay="port"] #inv-grid { max-height: calc(4 * 42px); overflow-y: auto; overflow-x: hidden; }
+body[data-lay="land"] #inv-grid { max-height: calc(6 * 42px); overflow-y: auto; overflow-x: hidden; }
+#inv-grow { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 4px; }
+#inv-grow .cap { font: 10px var(--pix9); color: #c8b896; white-space: nowrap; }
+#inv-grow .max { font: 10px var(--pix9); color: #9af0ae; }
+#inv-grow .btn { display: inline-flex; align-items: center; gap: 2px; font-size: 11px !important; padding: 2px 6px !important; }
+#inv-grow .btn img { vertical-align: middle; }
+#house-hud { left: 50%; transform: translateX(-50%); top: 8px; z-index: 6 !important; display: flex; align-items: center; gap: 6px; padding: 4px 8px; color: #f4e4b0; max-width: calc(var(--vpw) - 16px); }
+#house-hud b { font: 700 12px/1.3 var(--pix); color: var(--b-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 4px; }
+#house-hud .btn { font-size: 11px !important; padding: 2px 7px !important; white-space: nowrap; }
+body[data-lay="port"] #house-hud { top: 56px; }
+body.in-house #tut { display: none !important; }
+#w-house { width: min(400px, calc(100vw - 8px)); }
+#w-house .say { margin: 0 0 8px; line-height: 1.55; }
+.house-top { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.house-top .btn, .window .deco-up { display: inline-flex; align-items: center; gap: 3px; }
+.house-visit { display: flex; flex-wrap: wrap; gap: 4px; }
+.house-visit .section { flex-basis: 100%; }
+.furn-shop, .deco-placed { display: flex; flex-direction: column; gap: 2px; max-height: 300px; overflow-y: auto; padding-right: 2px; }
+.furn-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; background: #1c1724; border: 1px solid #2c2537; cursor: default; }
+.furn-row.sel { border-color: var(--b-hi); background: #2c2336; }
+.furn-row img { width: 32px; height: 32px; image-rendering: pixelated; flex: none; }
+.furn-row .nm { flex: 1; font: 12px var(--pix); color: #f4e4b0; min-width: 0; }
+.furn-row .nm em { font: 10px var(--pix9); font-style: normal; margin-left: 6px; color: #a898b8; }
+.furn-row .nm em.store { color: #8ad8ff; } .furn-row .nm em.rest { color: #ffb0c8; }
+.furn-row .have { font: 10px var(--pix9); color: #9af0ae; white-space: nowrap; }
+.furn-row .btn { font-size: 11px !important; padding: 2px 6px !important; white-space: nowrap; }
+.deco-placed .furn-row { cursor: pointer; }
+.deco-placed .furn-row img { width: 24px; height: 24px; }
+#w-deco { width: min(360px, calc(100vw - 8px)); }
+#w-deco .deco-sum { margin: 0 0 4px; font: 11px var(--pix9); color: #c8b896; }
+.deco-grid { grid-template-columns: repeat(6, 42px); max-height: calc(2 * 45px); overflow-y: auto; }
+.deco-hand { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; font: 12px var(--pix); color: var(--b-hi); }
+.deco-hand:empty { display: none; }
+.deco-hand .hint { flex-basis: 100%; margin: 0; }
+.deco-hand .why { flex-basis: 100%; margin: 0; font: 11px var(--pix9); color: #9af0ae; min-height: 12px; }
+.deco-hand .why.bad { color: #ff9a8a; }
+.deco-style { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; margin-bottom: 4px; }
+.deco-style .lb { font: 11px var(--pix9); color: #a898b8; width: 28px; }
+.deco-style .btn { font-size: 10px !important; padding: 2px 5px !important; }
+.deco-style .btn.on { color: #2a1806; background: var(--b-mid); opacity: 1; }
+#w-hstore { width: min(620px, calc(100vw - 8px)); }
+#w-hstore .bank-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; font: 12px var(--pix); color: var(--b-hi); }
