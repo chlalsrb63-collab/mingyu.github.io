@@ -1,0 +1,60 @@
+<!doctype html><meta charset="utf-8">
+<title>쿼터뷰 미리보기</title>
+<body style="margin:0;background:#101426;overflow:hidden;font:12px Galmuri11,sans-serif;color:#f3e8cc">
+<canvas id="c" style="image-rendering:pixelated;display:block"></canvas>
+<canvas id="lab" style="position:fixed;left:0;top:0;pointer-events:none"></canvas>
+<div id="msg" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#a49c8a">맵을 열면 여기에 게임 화면처럼 보여요.</div>
+<script type="module">
+// The editor's quarter-view preview: the game's own renderer (public/scene2d.js) drawing the
+// map the editor sends with postMessage({ type: "show", map, x, y, mobs, fires, zoom }).
+// One hero stands at the focus for scale; one monster stands in each spawn zone near it.
+import * as S from "/public/scene2d.js";
+const cv = document.getElementById("c"), lab = document.getElementById("lab"), lc = lab.getContext("2d"), msg = document.getElementById("msg");
+const me = { x: 0, y: 0, dir: 0, moving: false, atkT: -1e9, dead: false, aim: null };
+const G = { you: 1, me, players: new Map(), mobs: new Map(), drops: new Map(), fires: new Map(), who: new Map(), defs: { mobs: {} }, icons: { cv: {} }, self: null };
+G.who.set(1, { cls: "warrior", look: [0, 2, 10, 10, 2, 2, 5, 1, 3, 2, 4], gear: { wk: "sword", wt: 2 } });
+let ready = false, zoom = 0, frames = 0;
+function fit() {
+  lab.width = innerWidth; lab.height = innerHeight;
+  S.resize(innerWidth, innerHeight, zoom || (innerWidth > 700 ? 2 : 1));
+}
+S.init(cv);
+fit();
+addEventListener("resize", fit);
+addEventListener("message", (e) => {
+  const d = e.data;
+  if (!d || d.type !== "show" || !d.map) return;
+  try {
+    S.loadMap(d.map);
+    me.x = d.x * 16 + 8; me.y = d.y * 16 + 8;
+    G.mobs.clear(); G.fires.clear();
+    G.defs.mobs = d.defs || {};
+    (d.mobs || []).forEach((m, i) => G.mobs.set(i + 1, { id: i + 1, k: m.k, x: m.x * 16 + 8, y: m.y * 16 + 8, moving: i % 2 === 0, atkT: -1e9, hurtT: -1e9, el: 0 }));
+    (d.fires || []).forEach((f, i) => G.fires.set(i + 1, { id: i + 1, x: f[0] * 16 + 8, y: f[1] * 16 + 8 }));
+    S.sync(G);
+    if (d.zoom !== undefined && d.zoom !== zoom) { zoom = d.zoom; fit(); }
+    ready = true; msg.hidden = true; frames = 0;
+  } catch (err) {
+    ready = false; msg.hidden = false; msg.textContent = "미리보기를 그리지 못했어요: " + err.message;
+    console.error(err);
+  }
+});
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (ready) {
+    S.render(me.x, me.y, dt, now, frames < 2);
+    frames++;
+    if (S.labels) {
+      const L = S.labels();
+      lc.clearRect(0, 0, lab.width, lab.height);
+      lc.font = "11px Galmuri11, sans-serif"; lc.textAlign = "center"; lc.textBaseline = "middle";
+      for (const l of L) { const w = lc.measureText(l.text).width + 10; lc.fillStyle = "rgba(43,34,51,.8)"; lc.fillRect(Math.round(l.x - w / 2), Math.round(l.y - 8), Math.round(w), 16); lc.fillStyle = "#ffe9b8"; lc.fillText(l.text, l.x, l.y + 1); }
+    }
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+parent.postMessage({ type: "preview-ready" }, "*");
+</script>
+</body>

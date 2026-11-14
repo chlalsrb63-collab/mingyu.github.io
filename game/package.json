@@ -22,7 +22,8 @@
     "shot": "node scripts/shot.mjs",
     "art:export": "node scripts/export-art.mjs",
     "art:gallery": "node scripts/gallery.mjs",
-    "art:import": "node scripts/import-art.mjs"
+    "art:import": "node scripts/import-art.mjs",
+    "editor": "node scripts/editor-server.mjs"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.20.1",

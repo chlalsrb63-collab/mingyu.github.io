@@ -10,3 +10,5 @@ public/_maps.json
 public/_*.js
 # screenshots (scripts/shot.mjs writes to shots/, plus its throwaway login)
 shots*/
+# editor backups of game/data files (scripts/editor-server.mjs)
+data/.backup/

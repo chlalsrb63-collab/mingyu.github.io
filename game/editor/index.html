@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>테일즈테일즈 월드맵에디터</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<header id="top">
+  <div class="logo plate">테일즈테일즈 <b>월드맵에디터</b></div>
+  <nav id="tabs">
+    <button data-tab="map" data-ic="stone" class="on" title="맵을 그리고 몬스터·NPC·문을 놓아요">맵</button>
+    <button data-tab="quest" data-ic="scroll" title="메인·사이드 퀘스트를 만들어요">퀘스트</button>
+    <button data-tab="npc" data-ic="smile" title="모든 NPC와 대사를 한곳에서 고쳐요">NPC·대사</button>
+    <button data-tab="asset" data-ic="gem" title="asset 폴더의 그림을 보고 게임에 넣어요">에셋</button>
+    <button data-tab="build" data-ic="gear" title="검사하고, 게임에 반영하고, 실행해요">빌드·테스트</button>
+  </nav>
+  <div id="state" title="저장 상태"></div>
+  <button id="help-btn" class="btn" title="처음 사용하기 안내를 다시 봐요">? 처음 사용하기</button>
+</header>
+
+<!-- ───────────── 맵 ───────────── -->
+<section id="tab-map" class="tab">
+  <aside id="map-left" class="col">
+    <div class="panel gba">
+      <h3 class="ttl">맵 목록</h3>
+      <ul id="map-list" class="list sunk"></ul>
+      <div class="row wrap">
+        <button id="map-new" class="btn gold" title="빈 땅에서 새 맵을 만들어요">새 맵</button>
+        <button id="map-dup" class="btn" title="고른 맵을 새 아이디로 복사해서 고쳐요 (원본은 그대로)">복제해서 편집</button>
+        <button id="map-del" class="btn red" title="직접 만든 맵을 지워요 (기본 맵은 원래대로 돌아와요)">삭제</button>
+      </div>
+    </div>
+    <div class="panel gba grow">
+      <h3 class="ttl">맵 정보</h3>
+      <div id="map-props" class="form"></div>
+    </div>
+  </aside>
+
+  <div id="map-center" class="col">
+    <div id="toolbar" class="gba">
+      <div class="tgroup" id="layers" title="무엇을 고칠지 고르세요"></div>
+      <div class="tgroup" id="tools"></div>
+      <div class="tgroup">
+        <button class="btn icon" id="undo" title="되돌리기 (Ctrl+Z)">↶</button>
+        <button class="btn icon" id="redo" title="다시 하기 (Ctrl+Y)">↷</button>
+        <button class="btn icon" id="zoom-out" title="작게 보기 (마우스 휠)">−</button>
+        <span id="zoom-lab" class="lab">4×</span>
+        <button class="btn icon" id="zoom-in" title="크게 보기 (마우스 휠)">+</button>
+        <button class="btn icon" id="grid-btn" title="칸 선 보이기/숨기기 (G)">▦</button>
+        <button class="btn icon" id="fit-btn" title="맵 전체가 보이게 (F)">⤢</button>
+      </div>
+      <div class="tgroup right">
+        <button class="btn gold" id="save-btn" title="맵을 저장해요 (Ctrl+S)">저장</button>
+        <button class="btn" id="play-btn" title="저장하고, 게임을 켜서 이 맵에서 바로 시작해요">게임에서 테스트</button>
+      </div>
+    </div>
+    <div id="banner" hidden></div>
+    <div id="canvas-wrap" class="sunk">
+      <canvas id="map-canvas"></canvas>
+      <div id="empty-hint">왼쪽 목록에서 맵을 고르거나 <b>새 맵</b>을 누르세요.</div>
+    </div>
+    <div id="statusbar"><span id="st-xy">-</span><span id="st-tile"></span><span id="st-hint"></span></div>
+  </div>
+
+  <aside id="map-right" class="col">
+    <div class="panel gba grow">
+      <h3 class="ttl" id="side-title">팔레트</h3>
+      <div id="side" class="scroll"></div>
+    </div>
+    <div class="panel gba">
+      <h3 class="ttl">검사 <span id="val-count" class="badge"></span></h3>
+      <ul id="val-list" class="list sunk small"></ul>
+    </div>
+    <div class="panel gba" id="pv-panel">
+      <h3 class="ttl">쿼터뷰 미리보기
+        <label class="mini" title="고치는 동안 몇 초마다 새로 그려요"><input type="checkbox" id="pv-auto" checked> 자동</label>
+        <button class="btn tiny" id="pv-refresh" title="지금 화면 가운데를 게임 그림으로 다시 그려요">새로 그리기</button>
+        <button class="btn tiny" id="pv-big" title="미리보기를 크게/작게">크게</button>
+      </h3>
+      <iframe id="pv" class="sunk" src="preview.html" title="쿼터뷰 미리보기"></iframe>
+    </div>
+  </aside>
+</section>
+
+<!-- ───────────── 퀘스트 ───────────── -->
+<section id="tab-quest" class="tab" hidden>
+  <aside class="col side-l">
+    <div class="panel gba grow">
+      <h3 class="ttl">사이드 퀘스트</h3>
+      <ul id="sq-list" class="list sunk"></ul>
+      <div class="row wrap">
+        <button id="sq-new" class="btn gold" title="새 사이드 퀘스트를 만들어요">새 퀘스트</button>
+        <button id="sq-del" class="btn red" title="고른 퀘스트를 지워요">삭제</button>
+      </div>
+    </div>
+    <div class="panel gba">
+      <h3 class="ttl">메인 퀘스트</h3>
+      <div class="form">
+        <label class="chk" title="게임에 원래 있는 메인 퀘스트 줄거리를 그대로 써요"><input type="radio" name="mainmode" value="builtin"> 기본 퀘스트 사용</label>
+        <label class="chk" title="메인 퀘스트를 직접 고쳐서 써요"><input type="radio" name="mainmode" value="custom"> 직접 만든 메인 퀘스트</label>
+        <button id="main-edit" class="btn">메인 퀘스트 표 열기</button>
+      </div>
+    </div>
+    <div class="panel gba">
+      <h3 class="ttl">검사 <span id="q-count" class="badge"></span></h3>
+      <ul id="q-val" class="list sunk small"></ul>
+      <button id="q-save" class="btn gold wide" title="quests.json에 저장해요 (Ctrl+S)">퀘스트 저장</button>
+    </div>
+  </aside>
+  <div class="col grow">
+    <div class="panel gba grow scroll" id="q-form"></div>
+  </div>
+</section>
+
+<!-- ───────────── NPC·대사 ───────────── -->
+<section id="tab-npc" class="tab" hidden>
+  <aside class="col side-l">
+    <div class="panel gba grow">
+      <h3 class="ttl">모든 NPC</h3>
+      <input id="npc-search" class="inp" placeholder="이름·맵으로 찾기" title="이름이나 맵 이름 일부를 적으세요">
+      <ul id="npc-list" class="list sunk"></ul>
+      <button id="npc-add" class="btn gold wide" title="원래 있는 맵(광장·초원…)에 NPC를 더해요 (npcs.json)">기본 맵에 NPC 추가</button>
+    </div>
+  </aside>
+  <div class="col grow">
+    <div class="panel gba grow scroll" id="npc-form"></div>
+  </div>
+</section>
+
+<!-- ───────────── 에셋 ───────────── -->
+<section id="tab-asset" class="tab" hidden>
+  <aside class="col side-l">
+    <div class="panel gba grow">
+      <h3 class="ttl">폴더</h3>
+      <ul id="as-tree" class="list sunk"></ul>
+      <button id="as-reload" class="btn wide" title="asset 폴더를 다시 읽어요">다시 읽기</button>
+      <button id="as-readme" class="btn wide" title="에셋 넣는 순서 안내 (asset/README.md)">에셋 작업 순서 보기</button>
+    </div>
+    <div class="panel gba">
+      <h3 class="ttl">게임에 들어간 그림</h3>
+      <ul id="as-installed" class="list sunk small"></ul>
+    </div>
+  </aside>
+  <div class="col grow">
+    <div class="panel gba">
+      <div class="row">
+        <input id="as-search" class="inp grow" placeholder="파일 이름으로 찾기" title="이름 일부를 적으세요">
+        <span class="lab">확대</span>
+        <select id="as-zoom" class="inp" title="그림 확대"><option>1</option><option selected>2</option><option>4</option><option>8</option></select>
+        <span class="lab">배경</span>
+        <select id="as-bg" class="inp" title="그림 뒤 배경"><option value="dark">어둡게</option><option value="light">밝게</option><option value="check">체크</option><option value="grass">풀밭</option></select>
+      </div>
+    </div>
+    <div class="panel gba grow scroll" id="as-grid"></div>
+  </div>
+  <aside class="col side-r">
+    <div class="panel gba grow scroll" id="as-detail"><p class="muted">그림을 하나 고르세요.</p></div>
+  </aside>
+</section>
+
+<!-- ───────────── 빌드·테스트 ───────────── -->
+<section id="tab-build" class="tab" hidden>
+  <div class="col side-l">
+    <div class="panel gba">
+      <h3 class="ttl">게임에 반영하기</h3>
+      <p class="muted">저장한 맵·퀘스트·NPC는 <b>빌드</b>를 해야 게임에 들어가요.</p>
+      <button id="b-check" class="btn wide" title="저장된 데이터에 잘못된 곳이 없는지 봐요">검사</button>
+      <button id="b-build" class="btn gold wide" title="게임 규칙을 다시 만들고 빠른 테스트를 돌려요">빌드</button>
+      <button id="b-play" class="btn wide" title="게임을 켜고 새 탭에서 열어요">게임 실행</button>
+      <p class="muted small" id="b-status"></p>
+    </div>
+    <div class="panel gba grow">
+      <h3 class="ttl">검사 결과 <span id="b-count" class="badge"></span></h3>
+      <ul id="b-problems" class="list sunk small"></ul>
+    </div>
+  </div>
+  <div class="col grow">
+    <div class="panel gba grow">
+      <h3 class="ttl">기록 <button id="b-wlog" class="btn tiny" title="게임 서버(wrangler)의 기록을 봐요">게임 서버 기록</button></h3>
+      <pre id="b-log" class="sunk"></pre>
+    </div>
+  </div>
+</section>
+
+<div id="toasts"></div>
+<div id="modal" hidden><div class="dlg gba"><h3 class="ttl" id="dlg-title"></h3><div id="dlg-body"></div><div class="row end" id="dlg-btns"></div></div></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
