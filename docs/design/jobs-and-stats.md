@@ -1,6 +1,6 @@
 # 무직 시작 · 여섯 능력치 · 무기 숙련 · 전직 — 설계서 (jobs and stats)
 
-Status: design, ready for implementation (J1 → J2 → J3, section F). Audience: the implementers of J1/J2/J3 and the
+Status: J1 and J2 built (see their "as built" notes in F.4); J3 next. Audience: the implementers of J1/J2/J3 and the
 agents running Phase 0/1/2 of [`scale-and-rift.md`](scale-and-rift.md) and the game-feel upgrade. Code, identifiers and
 commit messages are English; every player-facing string is Korean (AGENTS.md rule 6). Numbers marked (measured) come
 from throwaway node scripts run against the built `logic.js` of `origin/main` at 6e80ef5; (model) = a kill-rate model
@@ -553,6 +553,48 @@ hooks, `80-simulation` `classTick` → `weaponTick` (one line), `70/75` `sk`/`qs
 `sk`/`cr`. Client glue in the same change: `client.js` (`castSkill(id)`, auto-hunt), `quickslots.js`, `skillfx.js`
 (cases 6, 80–115; delete retired), `skillicons.js` (24 glyphs + 6 passive glyphs), `audio.js` SFX (one per active +
 `bow_*`, `swap`), `classgauge.js` → `weapongauge.js`. Contracts: `SKILL` ids/kinds, `sk` wire, `cr` shape, fx codes.
+
+**J2 as built** (what differs from or adds to the plan above; contracts for J3):
+- `SKILL` has **30** entries (C.2–C.4 list 18 + 6 + 6; the "36" above was a miscount), `SKILL_ORDER` = its key order,
+  kinds `aap`×6 then `j`×6 then `h`×6. Tables in `03-skills.js` (+ `SK_GROW`, `WK_SKILLS JOB_SKILL WK_PASSIVE`), code in
+  `57-weapon-skills.js`; `55-class-skills.js`, `CLASSES`, `SKILLS`, `GRIT_MAX FOCUS_* SURGE_NEXT`, `LEGACY_CLS`/`legacyCls`,
+  `self.lc` and `defs.legacyCls` are gone. `defs.skills` = `SKILL` (by id), `defs.skillOrder` = `SKILL_ORDER`, `defs.skGrow`.
+- Balance (tuned in the table, asserted by `tests/balance.mjs`): kills/min vs the pre-J1 class at T5/T13/T25/T40 —
+  sword ×1.15/0.99/0.93/1.10, dagger ×0.85/1.19/1.13/0.95, spear ×0.93/0.91/0.90/1.12, staff ×1.07/1.18/1.07/1.15,
+  book ×1.11/1.16/1.15/1.12, bow ×0.87/0.94/0.85/1.09. To fit, most mults are below C.2–C.4 (e.g. slash 1.9, rend 1.7/1.2,
+  verdict 1.3 at cd 36 s, ambush 1.3, shade 0.5, spiral 1.3, comet 0.9, dragon 0.4/0.8, fireball 1.6 + burn 0.12,
+  frostring 0.9, meteor 0.6/0.35, rain 0.25, pierce 1.6, vitals crit 3 %/mark + bleed 0.08, inertia crit damage +6 %/stack,
+  hawk +15 % at most) and `SK_GROW` is **0.004** (not 1.2 %/level: mastery 40 + the job already make T40 strong). The
+  probe now walks back to its clearing when a skill carried it out (backsteps, leaps, dashes) and casts `SKILL_ORDER`.
+- The rift was tuned for the old kits' heals/taunts/guards: `DIM.hpBase` 8.2 → 5.4 and a lone player's `hpN[0]` 0.35 → 0.3
+  (bot clears 5.2/5.6/6.3/7.0 min at Lv 17/24/32/40).
+- Sheet stays **v11** (no bump): `qs` entries are `["s", id]`; `migrate` turns a bar holding old `["s", index]` entries
+  (J1-era or four-class sheets) into the hand's usable actives (`qsStarter`). A new character starts with `["s","ambush"]`
+  in slot 1 (the old dagger's L1); taking up a weapon kind never used before (mastery 1, no XP) puts its L1 active on the
+  bar; a mastery level puts what it opens there (`skLearnNew`); a job change its signature. `hero()` fills its bar too.
+- Gating: a skill needs a weapon in hand (bare hands: none); errors exactly as C.1, plus "저절로 발동하는 패시브 스킬입니다"
+  (passive), "무영난무 중입니다" (dance), "없는 스킬". `p.cds` is `{id: until}`.
+- Wire: `self.sk` lists every learned skill of **every** weapon (all six L1s from the start), passives as `[id, 0, 0, on]`.
+  `cr` = the hand's passive view (`inertia{v,max} mark{max} tip{tip} reso{v,max,e} brand hawk{d0,span}`), a hybrid adds
+  the other weapon's as `cr.o`; null while not learned. `me[9]` = inertia stacks (sword) or resonance + 4 × element
+  (staff). Monster rows append `mk` then `1` when branded (`M[i][8]`, `M[i][9]`). `flagsOf`: 4 untouchable (dive,
+  comet, flurry), 16 dancing, 32 resonance full (staff in hand), 64 hidden (traps).
+- Events: props `["pr", id, kind, x, y, r, ms, eid]` (kinds grav phantom rain storm field pillar meteor trap burst sanct),
+  `["pp", id, x, y, extra]` (a beat: phantom bite → mob id, pillar 1 = the last stroke), `["pe", id, how, mobId]` (1 = a
+  trap sprung); `ln` 7 shadow blade, 8 hop back; `bw` 15 the phantom's curse; arrows `kind` 2 관통 화살, 3 도약 사격 fan;
+  passives 110 inertia full, 111 bleed starts, 113 resonance full, 114 brand (new), 115 hawk far hit (≥ 60 % of its bonus).
+  Retired events: `sw sr bn tp tq cn fo bk bl wl cf`, fx 40–65, 72, 74, 75 (handlers deleted).
+- Choices: inertia stacks once per action (a cleave of three is one stack); vitals marks before checking (a stab on an
+  unmarked monster marks it, the next one bleeds it); spiral's tip and the tip passive both need mastery 10; resonance
+  counts every staff skill and the staff jobs' signatures (meteor, crimson); brand comes from book skills and the book jobs'
+  signatures; aimed area skills (dragon, meteor, gravity, pact, rain, dive) centre on the aimed monster within reach, else
+  the ground ahead; 추적자 traps also leave a lure (the old decoy) where you stood; bloodburst's damage lands 1.2 s after the
+  root; the sanctuary follows its knight and costs 20 % of current HP as HP; 무영난무 cashes in marks per slash and returns
+  home. `tickMob` is untouched (its old `wheel` shot-block line is now dead code).
+- Client: `weapongauge.js` replaces `classgauge.js`; the K window lists the hand's (and a hybrid's other) weapon skills and
+  the job's signature (J3 draws the full tree); quick slots dim a skill the hand cannot use and label it with the weapon,
+  "숙련N" or "전직", pressing it toasts the server's reason; auto-hunt skips `autoHp` (sanctuary below 60 % HP). `_feel.html`
+  plays any fx code (`rows=sk80,sk89:64,pr:grav`).
 
 **J3 — client UI and art** (art may start at once on `wk:"bow"` in parallel; merge after game-feel because of
 `swing.js`/`scene2d.js`). `weapons.js` bow designs, `swing.js` bow stroke, `sprites.js` held bow, arrow sprite/trails in

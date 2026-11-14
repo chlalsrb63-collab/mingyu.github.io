@@ -21,12 +21,13 @@ Moved out of `AGENTS.md`; read the one recipe your task needs.
 4. Test in `tests/loot.mjs` or `growth.mjs`.
 
 **Add a skill**
-1. `src/logic/00-header.js SKILLS.<class>`: `{ id, name, lv, mp, cd, mult, …, desc }` (Korean name/desc).
-2. Behaviour: `case "<id>"` in `55-class-skills.js castSkill`; emit a new fx code with the local
-   `ev(code, x, y)` helper (codes 40s warrior, 50s rogue, 60s lancer, 70s mage).
-3. Client: visuals/sound for that code in `public/skillfx.js skillEvent`; icon glyph in
-   `public/skillicons.js GLYPH` (`_icons.html` previews); new sound in `audio.js SFX`.
-4. `tests/skills.mjs`.
+1. `src/logic/03-skills.js SKILL`: `id: { kind: "a"|"p"|"j"|"h", wk, job?, need, name, mp, cd, mult, …, fx, desc }`
+   (Korean name/desc; a skill belongs to a weapon at a mastery level, or to a job). Its place in `SKILL` is its order.
+2. Behaviour: `case "<id>"` in `57-weapon-skills.js castSkill` (hits through `hit(mob, mult)`, lingering things
+   through `prop({kind, wire, …})` + a `propPulse` case); emit a new fx code with the local `ev(code, x, y, extra)`.
+3. Client: visuals/sound for that code in `public/skillfx.js cast` (props: `placeProp`/`propBeat`); icon glyph in
+   `public/skillicons.js GLYPH` (`_icons.html` previews; `_feel.html?rows=sk<code>` plays it); new sound in `audio.js SFX`.
+4. `tests/skills.mjs` (casts every skill and checks its fx code), then `tests/balance.mjs`.
 
 **Add a map set piece**
 1. Rows in `src/logic/30-maps-overworld.js PIECES` using the `PIECE` legend (`*` chest, `#` fire …).

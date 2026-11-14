@@ -165,7 +165,7 @@ git -C ..\tt-codex diff
 2. "`tests/loot.mjs`에 전설 장비 드랍률이 정예에서 더 높은지 검사하는 테스트를 추가해. 규칙은 고치지 마."
 3. "파티 초대가 다른 맵에 있는 사람에게도 가는지 tests/party.mjs에 테스트를 먼저 쓰고, 틀리면 규칙을 고쳐."
 4. "새 행동 `t: \"gnotice\"` (길드 공지, 40자, 길드장만) 을 validate/apply와 selfPayload에 추가하고 테스트해."
-5. "`game/src/logic/55-class-skills.js` 의 `castSkill`에서 중복된 범위 계산을 helper로 정리해. 동작은 바꾸지 말고 테스트로 확인."
+5. "`game/src/logic/57-weapon-skills.js` 의 `castSkill`에서 중복된 범위 계산을 helper로 정리해. 동작은 바꾸지 말고 테스트로 확인."
 6. "`npm run typecheck` 오류를 고쳐. `src/*.ts`만."
 
 **Gemini**
