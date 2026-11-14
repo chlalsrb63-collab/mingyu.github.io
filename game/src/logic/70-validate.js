@@ -398,7 +398,7 @@ export function validateAction(S, pid, a) {
     }
     case "starter": {
       if (ch.sw) return bad("이미 무기를 받았습니다");
-      if (!WK_ORDER.includes(a.wk)) return bad("그런 무기는 없습니다");
+      if (!STARTER_WKS.includes(a.wk)) return bad("그런 무기는 없습니다");
       if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
       if (ch.inv.length >= bagCap(ch)) return bad("가방이 가득 찼습니다");
       return OK;

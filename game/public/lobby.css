@@ -230,7 +230,8 @@
 #c-cls .cls.start { cursor: default; }
 #c-cls .cls.start:hover { background: #4e4030; }
 #c-cls .cls.start .cls-meta { font: 11px var(--pix9); }
-.cr-wk { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-top: 2px; }
+.cr-wk { display: grid; grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); gap: 3px; margin-top: 2px; }
+.cr-wk.two img { width: 32px; height: 32px; }
 .cr-wk button { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 5px 0 4px; background: #1a1522; border: 2px solid #0d0b12; border-radius: 0; color: #d8cfe6; cursor: pointer; touch-action: manipulation; }
 .cr-wk button:hover { background: #2a2236; }
 .cr-wk button.on { background: #6a5430; border-color: var(--ink); color: #fff3c8; box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px -2px 0 var(--b-lo), 0 0 0 2px var(--b-hi); }

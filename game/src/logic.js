@@ -5669,6 +5669,20 @@ const cleanLook = (look) => { const lk = Array.isArray(look) ? look : []; return
 /** What a new look costs at the mirror in town (거울 · 미용실). */
 const LOOK_COST = 500;
 /**
+ * The weapon kinds a hero may start with (the creation page, 카이's free pick): every kind of the rules
+ * that has a tier-1 weapon, in WK_ORDER — a new kind joins by existing (`starter: 0` in WKIND holds one back).
+ */
+const STARTER_WKS = WK_ORDER.filter((k) => WKIND[k] && WKIND[k].starter !== 0 && WK_ID[k] && ITEMS[`w_${WK_ID[k]}_1`]);
+/** The first active skill of a weapon kind: known from mastery 1, what a fresh bar holds in slot 1. */
+const firstSkill = (wk) => (WK_SKILLS[wk] || []).find((id) => SKILL[id].kind === "a" && SKILL[id].need <= 1);
+/**
+ * What the creation page shows, sent with `need_char` (the lobby has no `defs` yet):
+ * [kind, name, tier-1 weapon name, first skill name, basic-attack range px] per starting weapon.
+ */
+export function starters() {
+  return STARTER_WKS.map((k) => [k, WK_NAME[k] || WKIND[k].name, ITEMS[`w_${WK_ID[k]}_1`].name, firstSkill(k) ? SKILL[firstSkill(k)].name : "", WKIND[k].range]);
+}
+/**
  * A brand-new character sheet — this is exactly what gets persisted. Everyone starts a 모험가
  * (adventurer) with six stats at 5. `wk` is the weapon kind picked on the creation page: that tier-1
  * weapon is in hand, its first skill on the bar, and the free pick at 수련관 카이 is spent (`sw`), exactly
@@ -5678,7 +5692,7 @@ const LOOK_COST = 500;
  */
 export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
-  const picked = typeof wk === "string" && WK_ORDER.includes(wk), kind = picked ? wk : "dagger";
+  const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
     v: 13, name, job: "adventurer",
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -12104,7 +12118,7 @@ export function validateAction(S, pid, a) {
     }
     case "starter": {
       if (ch.sw) return bad("이미 무기를 받았습니다");
-      if (!WK_ORDER.includes(a.wk)) return bad("그런 무기는 없습니다");
+      if (!STARTER_WKS.includes(a.wk)) return bad("그런 무기는 없습니다");
       if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
       if (ch.inv.length >= bagCap(ch)) return bad("가방이 가득 찼습니다");
       return OK;

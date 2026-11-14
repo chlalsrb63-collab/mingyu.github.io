@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import * as L from "../src/logic.js";
 import * as SPC from "../public/species.js";
-import { STARTER, STARTER_ORDER, DIFF_NAME, FAR_RANGE } from "../public/starter.js";
+import { WORDS, DIFF_NAME, FAR_RANGE, FALLBACK, cleanStarters } from "../public/starter.js";
 
 const D = L.defs();
 
@@ -26,19 +26,29 @@ for (const p of SPC.PARTS) assert.equal(new Set(p.names || p.colors).size, (p.na
 assert.ok(SPC.SPECIES.length >= 12, "a dozen animals or more");
 assert.ok(SPC.LOOK_N[1] >= 14 && SPC.LOOK_N[2] >= 12 && SPC.LOOK_N[0] >= 12 && SPC.LOOK_N[3] >= 20, "many eyes, mouths, ears and colours");
 
-// ── the creation page's weapon tiles (public/starter.js) say what the rules say
+// ── the creation page's weapon tiles: the list is the rules' (logic starters(), sent with need_char)
 {
-  assert.deepEqual(STARTER_ORDER, D.wkOrder, "the six weapons, in the rules' order");
-  assert.deepEqual(Object.keys(STARTER), D.wkOrder);
-  for (const k of D.wkOrder) {
-    const w = STARTER[k], first = D.skillOrder.find((id) => D.skills[id].wk === k && D.skills[id].kind === "a" && D.skills[id].need <= 1);
-    assert.equal(w.name, D.wkName[k], k + ": its name");
-    assert.equal(w.skill, D.skills[first].name, k + ": the first skill's name");
-    assert.equal(w.reach, D.wkinds[k].range >= FAR_RANGE ? "원거리" : "근접", k + ": reach follows the basic attack's range");
-    assert.ok(DIFF_NAME[w.diff] && w.feel, k + ": a difficulty and a feel");
-    // …and that skill is what a hero created with it finds on quick slot 1
-    assert.deepEqual(L.newChar("시작" + k, [], k).qs[0], ["s", first]);
+  const list = L.starters();
+  assert.ok(list.length >= 6, "six starting weapons or more");
+  assert.deepEqual(list.map((r) => r[0]), D.wkOrder.filter((k) => Object.values(D.items).some((it) => it.type === "weapon" && it.wk === k && it.tier === 1)), "every kind with a tier-1 weapon, in the rules' order");
+  for (const [k, name, wname, skill, range] of list) {
+    const first = D.skillOrder.find((id) => D.skills[id].wk === k && D.skills[id].kind === "a" && D.skills[id].need <= 1);
+    const ch = L.newChar("시작" + k, [], k);
+    assert.equal(name, D.wkName[k], k + ": its name");
+    assert.equal(wname, D.items[ch.eq.weapon.id].name, k + ": the weapon a hero created with it holds");
+    assert.equal(D.items[ch.eq.weapon.id].wk, k);
+    assert.equal(skill, first ? D.skills[first].name : "", k + ": the first skill's name");
+    assert.equal(range, D.wkinds[k].range);
+    if (first) assert.deepEqual(ch.qs[0], ["s", first], k + ": that skill is on quick slot 1");
   }
+  // what the lobby shows before the server has spoken is the same list; its own words name real kinds only
+  assert.deepEqual(cleanStarters(JSON.parse(JSON.stringify(list))), list, "the server's list passes the lobby's check as it is");
+  for (const r of FALLBACK) assert.deepEqual(r, list.find((x) => x[0] === r[0]), r[0] + ": the fallback row says what the rules say");
+  for (const k of Object.keys(WORDS)) { assert.ok(list.some((r) => r[0] === k), k + " is a starting weapon"); assert.ok(DIFF_NAME[WORDS[k].diff] && WORDS[k].feel); }
+  assert.ok(FAR_RANGE > 0);
+  for (const bad of [undefined, null, [], "x", [["sword"]], [[1, "a"]], [["<img>", "a"]], Array.from({ length: 30 }, () => ["sword", "대검"])]) assert.equal(cleanStarters(bad), FALLBACK, "a malformed list falls back");
+  // a kind the lobby has no words for yet (a seventh weapon) still passes
+  assert.equal(cleanStarters([...list, ["hammer", "양손해머", "낡은 해머", "", 40]]).length, list.length + 1);
 }
 
 // ── a new character: anything sent is clamped into a full, valid look

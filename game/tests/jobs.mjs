@@ -545,10 +545,17 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 
 // ═════════ the weapon picked on the creation page ═════════
 {
-  const FIRST = { sword: "slash", dagger: "ambush", spear: "spiral", staff: "fireball", book: "soulbolt", bow: "pierce" };
-  const WID = { sword: "w_warrior_1", dagger: "w_rogue_1", spear: "w_lancer_1", staff: "w_mage_1", book: "w_book_1", bow: "w_bow_1" };
+  // every starting weapon the rules list (logic starters()): no fixed six
+  const kinds = L.starters().map((r) => r[0]);
+  assert.ok(kinds.length >= 6 && kinds.includes("sword") && kinds.includes("bow"));
+  const FIRST = {}, WID = {};
+  for (const wk of kinds) {
+    FIRST[wk] = D.skillOrder.find((id) => D.skills[id].wk === wk && D.skills[id].kind === "a" && D.skills[id].need <= 1);
+    WID[wk] = Object.keys(D.items).find((id) => D.items[id].type === "weapon" && D.items[id].wk === wk && D.items[id].tier === 1);
+    assert.ok(FIRST[wk] && WID[wk], wk + " has a tier-1 weapon and a first skill");
+  }
   const base = L.newChar("기준", []);
-  for (const wk of D.wkOrder) {
+  for (const wk of kinds) {
     const ch = L.newChar("새" + wk, [1, 2, 3], wk);
     assert.equal(ch.eq.weapon.id, WID[wk], wk + " is in hand");
     assert.deepEqual(ch.qs[0], ["s", FIRST[wk]], wk + ": slot 1 is its first skill");
@@ -570,7 +577,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
     assert.ok(W.p.toast.some((s) => s.includes("다음: 가방 열기")), "the weapon step is never announced as next");
     assert.ok(!W.p.toast.some((s) => s.includes("다음: 무기")));
     W.npc("train");
-    assert.equal(W.act({ t: "starter", wk: wk === "bow" ? "sword" : "bow" }).error, "이미 무기를 받았습니다", "no second free weapon");
+    assert.equal(W.act({ t: "starter", wk: kinds.find((k) => k !== wk) }).error, "이미 무기를 받았습니다", "no second free weapon");
     // a save and a load keep it
     const back = L.exportChar(W.S, W.PID);
     assert.equal(back.eq.weapon.id, WID[wk]); assert.equal(back.sw, 1);

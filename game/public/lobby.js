@@ -17,7 +17,7 @@ import * as Looks from "./looks.js";
 import { Sound } from "./audio.js";
 import { iconImg } from "./uiicons.js";
 import { kindIcon } from "./mastery.js";
-import { STARTER, STARTER_ORDER, DIFF_NAME } from "./starter.js";
+import { WORDS, DIFF_NAME, FAR_RANGE, FALLBACK, cleanStarters } from "./starter.js";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -310,8 +310,9 @@ function unlockServers() { for (const b of $$("#sv-list button")) b.disabled = f
 // ───────────────────────────── what the server says ─────────────────────────────
 
 /** No character on this server yet: open the creation page. */
-export function needChar() {
+export function needChar(list) {
   const ch = C.channel();
+  setStarters(cleanStarters(list));
   if (pending) pending.why = "create";
   openCreate(serverOf(ch));
 }
@@ -443,7 +444,9 @@ export function nameError(name) {
 }
 
 // `wk`: the weapon the new 모험가 starts with (starter.js; the server whitelists it in newChar)
-const draft = { wk: "sword", look: SPC.cleanLook(SPC.PRESETS[0][1]) };
+const draft = { wk: FALLBACK[0][0], look: SPC.cleanLook(SPC.PRESETS[0][1]) };
+/** The starting weapons as the server lists them with `need_char` (logic starters()); the fallback until then. */
+let starters = FALLBACK;
 const history = [];
 let lookEd = null, fig = null, figKey = "";
 /** The preview: "auto" plays a loop; or stand / walk / attack facing `dir`. */
@@ -487,22 +490,8 @@ function wireCreate() {
   const ic = el("span", "cls-ic"); ic.append(iconImg("person", "#2a1806"));
   hd.append(ic, el("b", "", "모험가"), el("span", "cls-meta", "Lv.1"));
   card.append(hd, el("p", "cls-mech", "모든 모험가는 직업 없이 시작합니다. 무기를 쓰며 숙련을 쌓고, 숙련 20에 전직하세요."));
-  const wk = el("div", "cr-wk");
+  const wk = el("div", "cr-wk"); wk.id = "c-wk";
   wk.setAttribute("role", "radiogroup"); wk.setAttribute("aria-label", "시작 무기");
-  for (const k of STARTER_ORDER) {
-    const w = el("button", "");
-    w.type = "button"; w.dataset.wk = k; w.setAttribute("role", "radio");
-    const im = el("img"); im.alt = ""; im.src = kindIcon(k);
-    w.append(im, el("small", "", STARTER[k].name));
-    w.title = `${STARTER[k].name} — ${STARTER[k].feel}`;
-    w.addEventListener("click", () => {
-      Sound.unlock();
-      if (draft.wk !== k) { remember(); draft.wk = k; markWeapon(); }
-      Sound.play("ui");
-      swingNow();
-    });
-    wk.append(w);
-  }
   const feel = el("p", "cr-feel"); feel.id = "c-wk-feel";
   card.append(wk, feel);
   const steps = el("ol", "cr-steps");
@@ -520,7 +509,7 @@ function wireCreate() {
     b.addEventListener("click", () => { remember(); draft.look = SPC.cleanLook(l); Sound.play("ui"); lookEd.refresh(); markPresets(); });
     pr.append(b);
   }
-  markPresets(); markWeapon();
+  markPresets(); setStarters(starters);
   $("#c-rand").addEventListener("click", () => { remember(); draft.look = SPC.cleanLook(Looks.randomLook()); Sound.play("ui"); lookEd.refresh(); markPresets(); });
   $("#c-undo").addEventListener("click", undo);
   $("#c-undo").disabled = true;
@@ -547,13 +536,42 @@ function wireCreate() {
   st.addEventListener("pointermove", (e) => { if (dragX === null) return; const d = e.clientX - dragX; if (Math.abs(d) > 40) { turn(d > 0 ? 1 : -1); dragX = e.clientX; dragged = true; } });
   $("#cr-cv").addEventListener("click", () => { if (!dragged) { Sound.unlock(); swingNow(); } });
 }
+/** One tile per starting weapon, whatever the rules list: up to six in a row, more wrap into two even rows (7 → 4 + 3). */
+function setStarters(list) {
+  starters = list;
+  if (!starters.some((r) => r[0] === draft.wk)) draft.wk = starters[0][0];
+  const box = $("#c-wk");
+  if (!box) return;
+  box.textContent = "";
+  box.style.setProperty("--n", String(starters.length <= 6 ? starters.length : Math.ceil(starters.length / 2)));
+  box.classList.toggle("two", starters.length > 6);
+  for (const [k, name] of starters) {
+    const w = el("button", "");
+    w.type = "button"; w.dataset.wk = k; w.setAttribute("role", "radio");
+    const im = el("img"); im.alt = ""; im.src = kindIcon(k);
+    w.append(im, el("small", "", name));
+    w.title = WORDS[k] ? `${name} — ${WORDS[k].feel}` : name;
+    w.addEventListener("click", () => {
+      Sound.unlock();
+      if (draft.wk !== k) { remember(); draft.wk = k; markWeapon(); }
+      Sound.play("ui");
+      swingNow();
+    });
+    box.append(w);
+  }
+  markWeapon();
+}
 /** The picked tile, and the line under the tiles: reach · difficulty · the skill on quick slot 1 — the feel. */
 function markWeapon() {
   for (const b of $$(".cr-wk button")) { const on = b.dataset.wk === draft.wk; b.classList.toggle("on", on); b.setAttribute("aria-checked", on ? "true" : "false"); }
-  const w = STARTER[draft.wk], line = $("#c-wk-feel");
-  if (!line) return;
+  const row = starters.find((r) => r[0] === draft.wk), w = WORDS[draft.wk], line = $("#c-wk-feel");
+  if (!line || !row) return;
   line.textContent = "";
-  line.append(el("b", "", w.name), el("span", "tag", w.reach), el("span", "tag d" + w.diff, "난이도 " + DIFF_NAME[w.diff]), el("span", "tag sk", "첫 스킬 " + w.skill), el("span", "fl", w.feel));
+  line.append(el("b", "", row[1]));
+  if (row[4]) line.append(el("span", "tag", row[4] >= FAR_RANGE ? "원거리" : "근접"));
+  if (w) line.append(el("span", "tag d" + w.diff, "난이도 " + DIFF_NAME[w.diff]));
+  if (row[3]) line.append(el("span", "tag sk", "첫 스킬 " + row[3]));
+  line.append(el("span", "fl", w ? w.feel : row[2] ? `[${row[2]}] 한 자루로 시작합니다` : ""));
 }
 /** The preview swings the weapon in hand a few times, whatever mode it is in. */
 function swingNow() {

@@ -40,6 +40,8 @@ export function exportChar(state: World, playerId: string): Char | null;
 /** Players whose progress asked to be saved soon (quest, enhancement, level…); clears the flags. */
 export function takeSaves(state: World): string[];
 export function defs(): unknown;
+/** The starting weapons for the creation page: [kind, name, weapon name, first skill name, range] each. */
+export function starters(): [string, string, string, string, number][];
 /** Local playtest (map editor): put a sheet on a map tile (the nearest standable one). */
 export function devPlace(char: Char, map: string, tx: number, ty: number): boolean;
 /** The sky over a map at `now`: hour, phase, weather, the night storyteller and the camps (tests, tools). */
