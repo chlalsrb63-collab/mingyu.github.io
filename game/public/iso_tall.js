@@ -824,7 +824,7 @@ function palisade(mask, v) {
   for (const [dx, dy] of runs) for (let t = 2; t <= 8; t += 2) pts.push([8 + dx * t, 8 + dy * t]);
   // back to front, so the nearer logs overlap the farther
   pts.sort((p, q) => p[0] + p[1] - (q[0] + q[1]));
-  const WOODS = [["#7a5636", "#9c7448", "#5a3c24"], ["#6e4e30", "#906a42", "#4e3420"]];
+  const WOODS = [["#7a5636", "#9c7448", "#5a3c24"], ["#6e4e30", "#906a42", "#4e3420"]].map((w) => w.map(C));
   for (const [a, b] of pts) {
     const [X, Y] = P(a, b), tall = 18 + Math.floor(hash(a * 3 + v, b * 5, 71) * 5), w = WOODS[(a + b + v) & 1];
     for (let z = 0; z < tall; z++) { buf.px(X - 1, Y - z, w[1]); buf.px(X, Y - z, w[0]); buf.px(X + 1, Y - z, w[2]); }
