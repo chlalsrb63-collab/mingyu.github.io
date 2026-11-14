@@ -1,0 +1,2308 @@
+From 42957b360a71c8144ecc9b43a715dd6c4d82ab81 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 14 Nov 2026 13:41:31 +0000
+Subject: [PATCH 3/5] Town interiors: ten new rooms behind the new town's
+ doors, things, hosts, merc quests
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+docs/design/town.md D/F: owl_library, merc_office, general_store, kangkang_forge,
+juju_diner, boutique, dojo, pet_house, dongdong_apt and bogle_lab as editor maps, each a
+diorama in its own style with themed hosts (full hero looks) and interactive objects
+(`thing: true`, whitelisted in npcFrom): the specimen case and records tablet and three
+lore books in the library, the request and party boards at the mercenaries', the anvil,
+the mirror, the job scroll, the mailboxes, the hall's town map. 피피 and 모모 move from the
+hall to the library; keepers sell only their own goods (the forge's armourer: tier-1
+weapons, armour, runes); the diner's stove is a hearth. links.json gets every building
+door at the new town's tiles, the rooms and willow land on the new steps, 아르센 and 다람
+move. Three side quests for 용병단장 그레이. Room styles and poses join ROOM_STYLES and
+NPC_POSES. tests/interiors.mjs checks all thirteen rooms against the frozen contract;
+its town-side round trips run once the 100x76 town is in (until then the door tiles lie
+outside the old town, so data:check, world, party, jobs and data fail on this branch alone).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01VHqoygdSy8NpLoKVbn9QhA
+---
+ game/data/links.json               | 240 +++++++++++++++++++++++++----
+ game/data/maps/bogle_lab.json      |  87 +++++++++++
+ game/data/maps/boutique.json       | 104 +++++++++++++
+ game/data/maps/dojo.json           | 108 +++++++++++++
+ game/data/maps/dongdong_apt.json   | 102 ++++++++++++
+ game/data/maps/general_store.json  | 127 +++++++++++++++
+ game/data/maps/juju_diner.json     | 180 ++++++++++++++++++++++
+ game/data/maps/kangkang_forge.json | 154 ++++++++++++++++++
+ game/data/maps/merc_office.json    | 183 ++++++++++++++++++++++
+ game/data/maps/owl_library.json    | 234 ++++++++++++++++++++++++++++
+ game/data/maps/pet_house.json      |  87 +++++++++++
+ game/data/maps/starlight_inn.json  |   4 +-
+ game/data/maps/tales_cafe.json     |   4 +-
+ game/data/maps/town_hall.json      |  66 +++-----
+ game/data/maps/willow.json         |   8 +-
+ game/data/npcs.json                |   4 +-
+ game/data/quests.json              |  33 ++++
+ game/src/logic.js                  |  30 ++--
+ game/src/logic/36-custom-maps.js   |   6 +-
+ game/tests/interiors.mjs           | 172 +++++++++++++++++----
+ 20 files changed, 1810 insertions(+), 123 deletions(-)
+ create mode 100644 game/data/maps/bogle_lab.json
+ create mode 100644 game/data/maps/boutique.json
+ create mode 100644 game/data/maps/dojo.json
+ create mode 100644 game/data/maps/dongdong_apt.json
+ create mode 100644 game/data/maps/general_store.json
+ create mode 100644 game/data/maps/juju_diner.json
+ create mode 100644 game/data/maps/kangkang_forge.json
+ create mode 100644 game/data/maps/merc_office.json
+ create mode 100644 game/data/maps/owl_library.json
+ create mode 100644 game/data/maps/pet_house.json
+
+diff --git a/game/data/links.json b/game/data/links.json
+index 2a0b2d6..85cd542 100644
+--- a/game/data/links.json
++++ b/game/data/links.json
+@@ -3,8 +3,8 @@
+   "links": [
+     {
+       "map": "town",
+-      "x": 19,
+-      "y": 27,
++      "x": 49,
++      "y": 73,
+       "to": "willow",
+       "tx": 19,
+       "ty": 3,
+@@ -12,8 +12,8 @@
+     },
+     {
+       "map": "town",
+-      "x": 20,
+-      "y": 27,
++      "x": 50,
++      "y": 73,
+       "to": "willow",
+       "tx": 20,
+       "ty": 3,
+@@ -21,26 +21,8 @@
+     },
+     {
+       "map": "town",
+-      "x": 29,
+-      "y": 23,
+-      "to": "tales_cafe",
+-      "tx": 10,
+-      "ty": 14,
+-      "label": "테일즈 카페"
+-    },
+-    {
+-      "map": "town",
+-      "x": 30,
+-      "y": 23,
+-      "to": "tales_cafe",
+-      "tx": 10,
+-      "ty": 14,
+-      "label": "테일즈 카페"
+-    },
+-    {
+-      "map": "town",
+-      "x": 18,
+-      "y": 5,
++      "x": 49,
++      "y": 25,
+       "to": "town_hall",
+       "tx": 11,
+       "ty": 16,
+@@ -48,8 +30,8 @@
+     },
+     {
+       "map": "town",
+-      "x": 19,
+-      "y": 5,
++      "x": 50,
++      "y": 25,
+       "to": "town_hall",
+       "tx": 11,
+       "ty": 16,
+@@ -57,8 +39,152 @@
+     },
+     {
+       "map": "town",
+-      "x": 9,
+-      "y": 8,
++      "x": 36,
++      "y": 21,
++      "to": "owl_library",
++      "tx": 11,
++      "ty": 14,
++      "label": "부엉이 도서관"
++    },
++    {
++      "map": "town",
++      "x": 37,
++      "y": 21,
++      "to": "owl_library",
++      "tx": 11,
++      "ty": 14,
++      "label": "부엉이 도서관"
++    },
++    {
++      "map": "town",
++      "x": 62,
++      "y": 20,
++      "to": "dojo",
++      "tx": 9,
++      "ty": 12,
++      "label": "넥서스 수련관"
++    },
++    {
++      "map": "town",
++      "x": 63,
++      "y": 20,
++      "to": "dojo",
++      "tx": 9,
++      "ty": 12,
++      "label": "넥서스 수련관"
++    },
++    {
++      "map": "town",
++      "x": 65,
++      "y": 37,
++      "to": "general_store",
++      "tx": 8,
++      "ty": 10,
++      "label": "다람쥐 잡화점"
++    },
++    {
++      "map": "town",
++      "x": 66,
++      "y": 37,
++      "to": "general_store",
++      "tx": 8,
++      "ty": 10,
++      "label": "다람쥐 잡화점"
++    },
++    {
++      "map": "town",
++      "x": 72,
++      "y": 37,
++      "to": "kangkang_forge",
++      "tx": 9,
++      "ty": 10,
++      "label": "캉캉대장간"
++    },
++    {
++      "map": "town",
++      "x": 73,
++      "y": 37,
++      "to": "kangkang_forge",
++      "tx": 9,
++      "ty": 10,
++      "label": "캉캉대장간"
++    },
++    {
++      "map": "town",
++      "x": 85,
++      "y": 36,
++      "to": "merc_office",
++      "tx": 10,
++      "ty": 12,
++      "label": "늑대발 용병사무소"
++    },
++    {
++      "map": "town",
++      "x": 86,
++      "y": 36,
++      "to": "merc_office",
++      "tx": 10,
++      "ty": 12,
++      "label": "늑대발 용병사무소"
++    },
++    {
++      "map": "town",
++      "x": 80,
++      "y": 28,
++      "to": "bogle_lab",
++      "tx": 9,
++      "ty": 10,
++      "label": "보글연금공방"
++    },
++    {
++      "map": "town",
++      "x": 81,
++      "y": 28,
++      "to": "bogle_lab",
++      "tx": 9,
++      "ty": 10,
++      "label": "보글연금공방"
++    },
++    {
++      "map": "town",
++      "x": 72,
++      "y": 49,
++      "to": "juju_diner",
++      "tx": 10,
++      "ty": 12,
++      "label": "쥬쥬식당 · 선술집"
++    },
++    {
++      "map": "town",
++      "x": 73,
++      "y": 49,
++      "to": "juju_diner",
++      "tx": 10,
++      "ty": 12,
++      "label": "쥬쥬식당 · 선술집"
++    },
++    {
++      "map": "town",
++      "x": 79,
++      "y": 49,
++      "to": "tales_cafe",
++      "tx": 10,
++      "ty": 14,
++      "label": "테일즈 카페"
++    },
++    {
++      "map": "town",
++      "x": 80,
++      "y": 49,
++      "to": "tales_cafe",
++      "tx": 10,
++      "ty": 14,
++      "label": "테일즈 카페"
++    },
++    {
++      "map": "town",
++      "x": 67,
++      "y": 51,
+       "to": "starlight_inn",
+       "tx": 10,
+       "ty": 14,
+@@ -66,12 +192,66 @@
+     },
+     {
+       "map": "town",
+-      "x": 10,
+-      "y": 8,
++      "x": 67,
++      "y": 52,
+       "to": "starlight_inn",
+       "tx": 10,
+       "ty": 14,
+       "label": "모닥별 여관"
++    },
++    {
++      "map": "town",
++      "x": 45,
++      "y": 51,
++      "to": "boutique",
++      "tx": 8,
++      "ty": 10,
++      "label": "루루 의상실"
++    },
++    {
++      "map": "town",
++      "x": 45,
++      "y": 52,
++      "to": "boutique",
++      "tx": 8,
++      "ty": 10,
++      "label": "루루 의상실"
++    },
++    {
++      "map": "town",
++      "x": 29,
++      "y": 47,
++      "to": "pet_house",
++      "tx": 7,
++      "ty": 8,
++      "label": "몽글 펫 돌봄집"
++    },
++    {
++      "map": "town",
++      "x": 30,
++      "y": 47,
++      "to": "pet_house",
++      "tx": 7,
++      "ty": 8,
++      "label": "몽글 펫 돌봄집"
++    },
++    {
++      "map": "town",
++      "x": 10,
++      "y": 34,
++      "to": "dongdong_apt",
++      "tx": 7,
++      "ty": 8,
++      "label": "동동아파트"
++    },
++    {
++      "map": "town",
++      "x": 11,
++      "y": 34,
++      "to": "dongdong_apt",
++      "tx": 7,
++      "ty": 8,
++      "label": "동동아파트"
+     }
+   ]
+ }
+diff --git a/game/data/maps/bogle_lab.json b/game/data/maps/bogle_lab.json
+new file mode 100644
+index 0000000..01e998c
+--- /dev/null
++++ b/game/data/maps/bogle_lab.json
+@@ -0,0 +1,87 @@
++{
++  "v": 1,
++  "id": "bogle_lab",
++  "replaces": null,
++  "name": "보글연금공방",
++  "theme": "interior",
++  "style": "lab",
++  "bgm": "cafe",
++  "safe": true,
++  "band": null,
++  "w": 18,
++  "h": 12,
++  "ground": [
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxqqqqqxxxxxx",
++    "xxxxxxxqqqqqxxxxxx",
++    "xxxxxxxqqqqqxxxxxx",
++    "xxxxxxxqqqqqxxxxxx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxexxxxxxxx"
++  ],
++  "objects": [
++    "==+==~==@==~==+===",
++    "= rrrr      rrrrg_",
++    "=      *         _",
++    "+                _",
++    "=;       :      w_",
++    "=;               _",
++    "=                _",
++    "=b           --- _",
++    "=b            k  _",
++    "+               *_",
++    "=                _",
++    "_________ ________"
++  ],
++  "entry": [
++    9,
++    10
++  ],
++  "spawns": [],
++  "npcs": [
++    {
++      "id": "bogle",
++      "name": "보글",
++      "role": "talk",
++      "x": 9,
++      "y": 3,
++      "look": [
++        11,
++        6,
++        13,
++        19,
++        3,
++        7,
++        4,
++        7,
++        1,
++        2,
++        0
++      ],
++      "pose": "stir",
++      "lines": [
++        "보글보글… 앗, 손님이다! 가마솥에 손 넣지 마!",
++        "초록색은 성공, 보라색은… 음, 그것도 성공이라 치자.",
++        "언젠가 이 공방에서 마을 최고의 물약을 만들 거야. 개굴!"
++      ]
++    }
++  ],
++  "portals": [
++    {
++      "x": 9,
++      "y": 11,
++      "to": "town",
++      "tx": 80,
++      "ty": 29
++    }
++  ],
++  "fires": [],
++  "waypoint": null,
++  "fishing": false,
++  "boss": null
++}
+diff --git a/game/data/maps/boutique.json b/game/data/maps/boutique.json
+new file mode 100644
+index 0000000..aacb763
+--- /dev/null
++++ b/game/data/maps/boutique.json
+@@ -0,0 +1,104 @@
++{
++  "v": 1,
++  "id": "boutique",
++  "replaces": null,
++  "name": "루루 의상실",
++  "theme": "interior",
++  "style": "boutique",
++  "bgm": "cafe",
++  "safe": true,
++  "band": null,
++  "w": 16,
++  "h": 12,
++  "ground": [
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "fffuuuuuffffffff",
++    "fffuuuufyyffffff",
++    "fffuuuufyyffffff",
++    "fffuuuufyyffffff",
++    "fffffffyyyffffff",
++    "ffffffffefffffff"
++  ],
++  "objects": [
++    "=+==!=~~==!==+==",
++    "=g      >>> ' g_",
++    "=              _",
++    "=>             _",
++    "+>             _",
++    "=>       mmmm $_",
++    "=              _",
++    "+   s          _",
++    "='             _",
++    "=     k       *_",
++    "=              _",
++    "________ _______"
++  ],
++  "entry": [
++    8,
++    10
++  ],
++  "spawns": [],
++  "npcs": [
++    {
++      "id": "bout_silvi",
++      "name": "재봉사 실비",
++      "role": "costume",
++      "x": 11,
++      "y": 3,
++      "look": [
++        0,
++        10,
++        10,
++        15,
++        0,
++        7,
++        6,
++        1,
++        3,
++        1,
++        4
++      ],
++      "pose": "knit",
++      "lines": [
++        "어머, 어서 와! 오늘은 어떤 모습이 되고 싶어?",
++        "치수 좀 잴게. 가만히… 꼬리도 가만히!",
++        "루루 언니는 밖에서 손님 맞는 중이야. 옷은 나한테 맡겨."
++      ]
++    },
++    {
++      "id": "bout_mirror",
++      "name": "전신 거울",
++      "role": "costume",
++      "x": 12,
++      "y": 1,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "거울 속 내가 오늘따라 멋져 보인다. 옷을 갈아입어 볼까?"
++      ]
++    }
++  ],
++  "portals": [
++    {
++      "x": 8,
++      "y": 11,
++      "to": "town",
++      "tx": 46,
++      "ty": 51
++    }
++  ],
++  "fires": [],
++  "waypoint": null,
++  "fishing": false,
++  "boss": null
++}
+diff --git a/game/data/maps/dojo.json b/game/data/maps/dojo.json
+new file mode 100644
+index 0000000..cf00bee
+--- /dev/null
++++ b/game/data/maps/dojo.json
+@@ -0,0 +1,108 @@
++{
++  "v": 1,
++  "id": "dojo",
++  "replaces": null,
++  "name": "넥서스 수련관",
++  "theme": "interior",
++  "style": "dojo",
++  "bgm": "town",
++  "safe": true,
++  "band": null,
++  "w": 18,
++  "h": 14,
++  "ground": [
++    "llllllllllllllllll",
++    "llllllllllllllllll",
++    "llllllllllllllllll",
++    "llllllllllllllllll",
++    "llllllllllllllllll",
++    "llllqqqqqqqqqqllll",
++    "llllqqqqqqqqqqllll",
++    "llllqqqqqqqqqqllll",
++    "llllqqqqqqqqqqllll",
++    "llllqqqqqqqqqqllll",
++    "llllqqqqqqqqqqllll",
++    "llllllllyyylllllll",
++    "llllllllyyylllllll",
++    "lllllllllellllllll"
++  ],
++  "objects": [
++    "=!=+==!=~@~=!==+!=",
++    "= >>>  v     >>>g_",
++    "=                _",
++    "=                _",
++    "+t              *_",
++    "=t               _",
++    "=    `      `    _",
++    "=                _",
++    "=*               _",
++    "+    `      `    _",
++    "=                _",
++    "=               w_",
++    "=g               _",
++    "_________ ________"
++  ],
++  "entry": [
++    9,
++    12
++  ],
++  "spawns": [],
++  "npcs": [
++    {
++      "id": "dojo_panpan",
++      "name": "사범 판판",
++      "role": "train",
++      "x": 9,
++      "y": 3,
++      "look": [
++        2,
++        8,
++        7,
++        0,
++        3,
++        12,
++        2,
++        13,
++        2,
++        9,
++        0
++      ],
++      "lines": [
++        "어서 오너라! 땀 한 방울이 힘 한 줌이다.",
++        "수련 인형은 마음껏 때려도 된다. 아프다고 안 하거든.",
++        "길을 정했으면 두루마리 앞에 서 보거라. 전직의 길이 보일 게다."
++      ]
++    },
++    {
++      "id": "dojo_scroll",
++      "name": "전직의 두루마리",
++      "role": "job",
++      "x": 7,
++      "y": 1,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "무기를 숙련 20까지 다룬 자에게 새 길이 열린다.",
++        "전직은 되돌릴 수 없다. 신중히 고르라."
++      ]
++    }
++  ],
++  "portals": [
++    {
++      "x": 9,
++      "y": 13,
++      "to": "town",
++      "tx": 62,
++      "ty": 21
++    }
++  ],
++  "fires": [],
++  "waypoint": null,
++  "fishing": false,
++  "boss": null
++}
+diff --git a/game/data/maps/dongdong_apt.json b/game/data/maps/dongdong_apt.json
+new file mode 100644
+index 0000000..8d12149
+--- /dev/null
++++ b/game/data/maps/dongdong_apt.json
+@@ -0,0 +1,102 @@
++{
++  "v": 1,
++  "id": "dongdong_apt",
++  "replaces": null,
++  "name": "동동아파트 1층 로비",
++  "theme": "interior",
++  "style": "lobby",
++  "bgm": "town",
++  "safe": true,
++  "band": null,
++  "w": 14,
++  "h": 10,
++  "ground": [
++    "hhhhhhhhhhhhhh",
++    "hhhhhhhhhhhhhh",
++    "hhhhhhhhhhhhhh",
++    "hhhhhhyyyhhhhh",
++    "hhhhhhyyyhhhhh",
++    "hhhhhhyyyhhhhh",
++    "hhhhhhyyyhhhhh",
++    "hhhhhhyyyhhhhh",
++    "hhhhhhyyyhhhhh",
++    "hhhhhhhehhhhhh"
++  ],
++  "objects": [
++    "=+==~====~==+=",
++    "=g rrrrr  * g_",
++    "=            _",
++    "+            _",
++    "=            _",
++    "=        --- _",
++    "=%           _",
++    "=           g_",
++    "=            _",
++    "_______ ______"
++  ],
++  "entry": [
++    7,
++    8
++  ],
++  "spawns": [],
++  "npcs": [
++    {
++      "id": "dongdong",
++      "name": "관리인 동동",
++      "role": "talk",
++      "x": 4,
++      "y": 3,
++      "look": [
++        11,
++        6,
++        8,
++        15,
++        0,
++        7,
++        11,
++        8,
++        10,
++        1,
++        0
++      ],
++      "pose": "sweep",
++      "lines": [
++        "동동아파트에 어서 오세요! 관리인 동동이에요.",
++        "복도에서 뛰면 안 돼요. 3층 할머니가 주무세요.",
++        "언젠가 모험가님들도 여기 살 수 있게 될 거예요. 방 청소 해 둘게요!"
++      ]
++    },
++    {
++      "id": "apt_mail",
++      "name": "우편함",
++      "role": "talk",
++      "x": 6,
++      "y": 1,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "편지가 없네요.",
++        "옆 칸에 꽂힌 쪽지: \"201호 펭귄님, 생선 잘 먹었어요!\"",
++        "또 다른 쪽지: \"밤마다 노래하는 분… 조금만 작게요.\""
++      ]
++    }
++  ],
++  "portals": [
++    {
++      "x": 7,
++      "y": 9,
++      "to": "town",
++      "tx": 10,
++      "ty": 35
++    }
++  ],
++  "fires": [],
++  "waypoint": null,
++  "fishing": false,
++  "boss": null
++}
+diff --git a/game/data/maps/general_store.json b/game/data/maps/general_store.json
+new file mode 100644
+index 0000000..ebcee69
+--- /dev/null
++++ b/game/data/maps/general_store.json
+@@ -0,0 +1,127 @@
++{
++  "v": 1,
++  "id": "general_store",
++  "replaces": null,
++  "name": "다람쥐 잡화점",
++  "theme": "interior",
++  "style": "shop",
++  "bgm": "town",
++  "safe": true,
++  "band": null,
++  "w": 16,
++  "h": 12,
++  "ground": [
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "ffffffffffffffff",
++    "ffffffqqqqqfffff",
++    "ffffffqqqqqfffff",
++    "ffffffffffffffff",
++    "ffffffffefffffff"
++  ],
++  "objects": [
++    "==+====^^=~==+==",
++    "=rrr g    g >rr_",
++    "+              _",
++    "=%            *_",
++    "=              _",
++    "=     mmjmm    _",
++    "=              _",
++    "+ $$        $$ _",
++    "=             w_",
++    "=]]           w_",
++    "=              _",
++    "________ _______"
++  ],
++  "entry": [
++    8,
++    10
++  ],
++  "spawns": [],
++  "npcs": [
++    {
++      "id": "store_dari",
++      "name": "잡화점 주인 다리",
++      "role": "shop",
++      "x": 8,
++      "y": 3,
++      "look": [
++        12,
++        0,
++        11,
++        10,
++        2,
++        7,
++        11,
++        14,
++        8,
++        2,
++        0
++      ],
++      "pose": "wipe",
++      "goods": [
++        "hp_s",
++        "hp_m",
++        "hp_l",
++        "mp_s",
++        "mp_m",
++        "mp_l",
++        "recall",
++        "camp",
++        "feather",
++        "sc_atk",
++        "sc_def",
++        "sc_xp",
++        "stone"
++      ],
++      "lines": [
++        "다람쥐 잡화점이에요! 물약부터 주문서까지 다 있어요.",
++        "도토리 한 줌… 아니 골드 한 줌이면 충분해요!",
++        "먼 길 떠나기 전엔 귀환 주문서 한 장, 꼭 챙기세요."
++      ]
++    },
++    {
++      "id": "store_kong",
++      "name": "심부름꾼 콩콩",
++      "role": "talk",
++      "x": 11,
++      "y": 8,
++      "look": [
++        7,
++        0,
++        11,
++        20,
++        0,
++        7,
++        1,
++        6,
++        2,
++        1,
++        0
++      ],
++      "pose": "carry",
++      "lines": [
++        "영차, 영차! 상자가 나보다 커요.",
++        "다리 언니가 그러는데, 물약은 흔들면 안 된대요. …방금 흔들었어요."
++      ]
++    }
++  ],
++  "portals": [
++    {
++      "x": 8,
++      "y": 11,
++      "to": "town",
++      "tx": 65,
++      "ty": 38
++    }
++  ],
++  "fires": [],
++  "waypoint": null,
++  "fishing": false,
++  "boss": null
++}
+diff --git a/game/data/maps/juju_diner.json b/game/data/maps/juju_diner.json
+new file mode 100644
+index 0000000..0768e72
+--- /dev/null
++++ b/game/data/maps/juju_diner.json
+@@ -0,0 +1,180 @@
++{
++  "v": 1,
++  "id": "juju_diner",
++  "replaces": null,
++  "name": "쥬쥬식당",
++  "theme": "interior",
++  "style": "tavern",
++  "bgm": "cafe",
++  "safe": true,
++  "band": null,
++  "w": 20,
++  "h": 14,
++  "ground": [
++    "ffffffffffffffffffff",
++    "ffffffffffffffffffff",
++    "fffxxxffffffffffffff",
++    "ffffffffffffffffffff",
++    "ffffffffffffffffffff",
++    "ffffffffffffffffffff",
++    "ffffffffqqqqqfffffff",
++    "ffffffffqqqqqfffffff",
++    "ffxfffffqqqqqfffffff",
++    "ffxfffffqqqqqfffffff",
++    "ffxfffffffffffffffff",
++    "ffffffffffffffffffff",
++    "ffffffffffffffffffff",
++    "ffffffffffefffffffff"
++  ],
++  "objects": [
++    "==+==^^===@==+==!===",
++    "=wr :       r www g_",
++    "=                  _",
++    "=          mmjmmm  _",
++    "+                  _",
++    "+ %                _",
++    "=    kok           _",
++    "=             kok  _",
++    "=  s     kok       _",
++    "=#                *_",
++    "+  s               _",
++    "=     kok     kok  _",
++    "=g                 _",
++    "__________ _________"
++  ],
++  "entry": [
++    10,
++    12
++  ],
++  "spawns": [],
++  "npcs": [
++    {
++      "id": "juju",
++      "name": "쥬쥬",
++      "role": "shop",
++      "x": 5,
++      "y": 2,
++      "look": [
++        2,
++        13,
++        0,
++        14,
++        3,
++        5,
++        10,
++        11,
++        9,
++        9,
++        4
++      ],
++      "pose": "stir",
++      "goods": [
++        "food_s",
++        "food_m",
++        "food_l",
++        "inn_bread"
++      ],
++      "lines": [
++        "쥬쥬식당에 어서 와! 오늘 국물은 끝내준다구.",
++        "배고픈 모험가는 못 싸워. 든든히 먹고 가!",
++        "화덕 옆에서 쉬어 가도 돼. 요리도 직접 해 볼래?"
++      ]
++    },
++    {
++      "id": "diner_piri",
++      "name": "떠돌이 악사 피리",
++      "role": "talk",
++      "x": 17,
++      "y": 5,
++      "look": [
++        8,
++        9,
++        3,
++        11,
++        0,
++        4,
++        4,
++        12,
++        2,
++        2,
++        1
++      ],
++      "lines": [
++        "♪ 국물 한 숟갈에 하루가 녹고, 노래 한 소절에 밤이 녹네 ♪",
++        "신청곡? 음… 동전 한 닢이면 생각해 볼게!"
++      ]
++    },
++    {
++      "id": "diner_reg1",
++      "name": "단골 손님 나비",
++      "role": "talk",
++      "x": 10,
++      "y": 9,
++      "look": [
++        0,
++        3,
++        10,
++        10,
++        2,
++        2,
++        3,
++        1,
++        3,
++        2,
++        4
++      ],
++      "pose": "sip",
++      "lines": [
++        "여기 스튜 먹으려고 매일 사냥 나간다니까.",
++        "쥬쥬한테 '곱빼기'라고 하면 진짜 두 배로 줘."
++      ]
++    },
++    {
++      "id": "diner_reg2",
++      "name": "단골 손님 뭉치",
++      "role": "talk",
++      "x": 15,
++      "y": 10,
++      "look": [
++        3,
++        3,
++        3,
++        11,
++        2,
++        7,
++        1,
++        2,
++        6,
++        1,
++        0
++      ],
++      "pose": "sip",
++      "lines": [
++        "건배! …아, 혼자구나. 그래도 건배!",
++        "바람초원 갔다 왔어? 토끼 머리가 둘이었지? 그치?"
++      ]
++    }
++  ],
++  "portals": [
++    {
++      "x": 10,
++      "y": 13,
++      "to": "town",
++      "tx": 72,
++      "ty": 50
++    }
++  ],
++  "fires": [
++    [
++      4,
++      2
++    ],
++    [
++      2,
++      9
++    ]
++  ],
++  "waypoint": null,
++  "fishing": false,
++  "boss": null
++}
+diff --git a/game/data/maps/kangkang_forge.json b/game/data/maps/kangkang_forge.json
+new file mode 100644
+index 0000000..1bfa6d7
+--- /dev/null
++++ b/game/data/maps/kangkang_forge.json
+@@ -0,0 +1,154 @@
++{
++  "v": 1,
++  "id": "kangkang_forge",
++  "replaces": null,
++  "name": "캉캉대장간",
++  "theme": "interior",
++  "style": "forge",
++  "bgm": "town",
++  "safe": true,
++  "band": null,
++  "w": 18,
++  "h": 12,
++  "ground": [
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxxxllllllx",
++    "xxxxxxxxxxxllllllx",
++    "xxxxxxxxxxxllllllx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxxxxxxxxxx",
++    "xxxxxxxxxexxxxxxxx",
++    "xxxxxxxxxexxxxxxxx"
++  ],
++  "objects": [
++    "==!==+===+===+==!=",
++    "=] <    >>>    ]w_",
++    "=                _",
++    "=w              *_",
++    "=    &           _",
++    "+           mmmm _",
++    "=>               _",
++    "=>               _",
++    "=              ]]_",
++    "=      *        ]_",
++    "=                _",
++    "_________ ________"
++  ],
++  "entry": [
++    9,
++    10
++  ],
++  "spawns": [],
++  "npcs": [
++    {
++      "id": "forge_tong",
++      "name": "견습 대장장이 통통",
++      "role": "smith",
++      "x": 6,
++      "y": 3,
++      "look": [
++        5,
++        2,
++        9,
++        8,
++        0,
++        0,
++        8,
++        10,
++        7,
++        10,
++        0
++      ],
++      "pose": "hammer",
++      "lines": [
++        "캉! 캉! 강화하실 거예요? 모루 앞으로 오세요!",
++        "볼칸 스승님만큼은 아니어도… 저도 꽤 한다고요!",
++        "화덕에 너무 가까이 오지 마세요. 꼬리털 탄다고요."
++      ]
++    },
++    {
++      "id": "forge_musoe",
++      "name": "갑옷장이 무쇠",
++      "role": "shop",
++      "x": 13,
++      "y": 3,
++      "look": [
++        2,
++        8,
++        7,
++        11,
++        3,
++        0,
++        9,
++        4,
++        2,
++        2,
++        0
++      ],
++      "pose": "wipe",
++      "goods": [
++        "w_warrior_1",
++        "w_rogue_1",
++        "w_lancer_1",
++        "w_mage_1",
++        "w_book_1",
++        "w_bow_1",
++        "h_1",
++        "a_1",
++        "g_1",
++        "b_1",
++        "h_2",
++        "a_2",
++        "g_2",
++        "b_2",
++        "ru_ign",
++        "ru_aeg",
++        "ru_vit",
++        "ru_men",
++        "ru_cel",
++        "ru_acu",
++        "ru_san",
++        "ru_lum",
++        "ru_fos"
++      ],
++      "lines": [
++        "튼튼한 갑옷 하나가 목숨 열 개보다 낫지.",
++        "룬도 있다네. 소켓 난 장비에 박으면 힘이 깃들지."
++      ]
++    },
++    {
++      "id": "forge_anvil",
++      "name": "모루",
++      "role": "smith",
++      "x": 5,
++      "y": 4,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "묵직한 모루. 장비를 강화하거나 분해할 수 있다."
++      ]
++    }
++  ],
++  "portals": [
++    {
++      "x": 9,
++      "y": 11,
++      "to": "town",
++      "tx": 72,
++      "ty": 38
++    }
++  ],
++  "fires": [],
++  "waypoint": null,
++  "fishing": false,
++  "boss": null
++}
+diff --git a/game/data/maps/merc_office.json b/game/data/maps/merc_office.json
+new file mode 100644
+index 0000000..f1e5108
+--- /dev/null
++++ b/game/data/maps/merc_office.json
+@@ -0,0 +1,183 @@
++{
++  "v": 1,
++  "id": "merc_office",
++  "replaces": null,
++  "name": "늑대발 용병사무소",
++  "theme": "interior",
++  "style": "office",
++  "bgm": "town",
++  "safe": true,
++  "band": null,
++  "w": 20,
++  "h": 14,
++  "ground": [
++    "llllllllllllllllllll",
++    "llllllllllllllllllll",
++    "llllllllllllllllxxxl",
++    "llllllllllllllllllll",
++    "llllllllllllllllllll",
++    "llllllllllllllllllll",
++    "lllllllllyyyllllllll",
++    "lllllllllyyyllllllll",
++    "lllllllllyyyllllllll",
++    "lllllllllyyyllllllll",
++    "lllllllllyyyllllllll",
++    "lllllllllyyyllllllll",
++    "lllllllllyyyllllllll",
++    "llllllllllelllllllll"
++  ],
++  "objects": [
++    "=!=+===~~~~==+==!=+=",
++    "=   >> g    v v  # _",
++    "=>                 _",
++    "=>              s s_",
++    "+      ----        _",
++    "=      k  k        _",
++    "=*                 _",
++    "+                  _",
++    "= mmmm       *     _",
++    "=                ]]_",
++    "=  k k            w_",
++    "=                 w_",
++    "=g                 _",
++    "__________ _________"
++  ],
++  "entry": [
++    10,
++    12
++  ],
++  "spawns": [],
++  "npcs": [
++    {
++      "id": "merc_grey",
++      "name": "용병단장 그레이",
++      "role": "quest",
++      "x": 9,
++      "y": 2,
++      "look": [
++        4,
++        8,
++        3,
++        14,
++        3,
++        1,
++        8,
++        2,
++        6,
++        9,
++        0
++      ],
++      "lines": [
++        "늑대발 용병사무소다. 일거리를 찾나?",
++        "북쪽 숲이 시끄럽다. 손 빌려줄 모험가는 언제나 환영이지.",
++        "의뢰는 게시판에, 동료는 파티 구인판에. 보수는 확실하다."
++      ]
++    },
++    {
++      "id": "merc_mimi",
++      "name": "접수원 미미",
++      "role": "daily",
++      "x": 4,
++      "y": 6,
++      "look": [
++        1,
++        2,
++        1,
++        0,
++        0,
++        0,
++        6,
++        3,
++        5,
++        0,
++        6
++      ],
++      "pose": "write",
++      "lines": [
++        "어서 오세요! 오늘의 의뢰는 아침 6시에 새로 붙어요.",
++        "다 끝내면 보수를 챙겨 드릴게요. 꼭 살아서 오세요!"
++      ]
++    },
++    {
++      "id": "merc_bawi",
++      "name": "은퇴한 용병 바위",
++      "role": "talk",
++      "x": 17,
++      "y": 4,
++      "look": [
++        2,
++        13,
++        7,
++        9,
++        3,
++        0,
++        3,
++        4,
++        2,
++        2,
++        0
++      ],
++      "pose": "doze",
++      "lines": [
++        "음… 내가 젊었을 땐 쌍두 토끼를 맨손으로… 쿨.",
++        "차원 균열에 들어갈 땐 꼭 넷이서 가게. 혼자는 무모해.",
++        "불 옆이 최고야. 무릎이 쑤시거든."
++      ]
++    },
++    {
++      "id": "merc_board",
++      "name": "의뢰 게시판",
++      "role": "daily",
++      "x": 12,
++      "y": 1,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "빼곡한 의뢰서들. 오늘의 의뢰를 확인하자."
++      ]
++    },
++    {
++      "id": "merc_party",
++      "name": "파티 구인판",
++      "role": "talk",
++      "x": 14,
++      "y": 1,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "【파티 모집 안내】 P 키로 파티 창을 열 수 있어요.",
++        "가까이 있는 모험가에게 초대를 보내면 함께 사냥할 수 있어요. 최대 4명!",
++        "광장의 오벨리스크에서 파티원 모두가 준비하면 차원 균열에 들어갈 수 있어요.",
++        "구석에 누가 낙서해 두었다: \"힐러 구함. 아니 그냥 친구 구함.\""
++      ]
++    }
++  ],
++  "portals": [
++    {
++      "x": 10,
++      "y": 13,
++      "to": "town",
++      "tx": 85,
++      "ty": 37
++    }
++  ],
++  "fires": [
++    [
++      17,
++      2
++    ]
++  ],
++  "waypoint": null,
++  "fishing": false,
++  "boss": null
++}
+diff --git a/game/data/maps/owl_library.json b/game/data/maps/owl_library.json
+new file mode 100644
+index 0000000..5388cd0
+--- /dev/null
++++ b/game/data/maps/owl_library.json
+@@ -0,0 +1,234 @@
++{
++  "v": 1,
++  "id": "owl_library",
++  "replaces": null,
++  "name": "부엉이 도서관",
++  "theme": "interior",
++  "style": "library",
++  "bgm": "cafe",
++  "safe": true,
++  "band": null,
++  "w": 22,
++  "h": 16,
++  "ground": [
++    "llllllllllllllllllllll",
++    "llllllllllllllllllllll",
++    "lllxxxxlllllllllllllll",
++    "llllllllllllllllllllll",
++    "llllllllllyyylllllllll",
++    "llllllllllyyylllllllll",
++    "llllllllllyyylllllllll",
++    "lluuuuulllyyylllllllll",
++    "lluuuuulllyyylllllllll",
++    "lluuuuulllyyylllllllll",
++    "lluuuuulllyyylllllllll",
++    "lluuuuulllyyylllllllll",
++    "lluuuuulllyyylllllllll",
++    "llllllllllyyylllllllll",
++    "llllllllllyyylllllllll",
++    "lllllllllllellllllllll"
++  ],
++  "objects": [
++    "=+==~~=!=+=@=+=!=~~=+=",
++    "=bbb#bbb ;;;;; bbbb g_",
++    "=                    _",
++    "+  s  s            % _",
++    "=                    _",
++    "=b      |     |      _",
++    "=b                   _",
++    "+              kkk   _",
++    "+  kok         ---  t_",
++    "=              kkk   _",
++    "=b                   _",
++    "=b kok               _",
++    "=b      *     *      _",
++    "+                  | _",
++    "=g                  g_",
++    "___________ __________"
++  ],
++  "entry": [
++    11,
++    14
++  ],
++  "spawns": [],
++  "npcs": [
++    {
++      "id": "lib_borum",
++      "name": "사서 보름",
++      "role": "talk",
++      "x": 7,
++      "y": 3,
++      "look": [
++        9,
++        12,
++        2,
++        1,
++        0,
++        0,
++        9,
++        9,
++        5,
++        2,
++        0
++      ],
++      "pose": "read",
++      "lines": [
++        "쉿… 도서관에서는 발소리도 살금살금.",
++        "독서대의 낡은 책들은 마을의 옛이야기예요. 천천히 읽어 보세요.",
++        "저 진열장 속 괴수가 자꾸 쳐다본다고요? …기분 탓이에요. 아마도요."
++      ]
++    },
++    {
++      "id": "hall_pipi",
++      "name": "지도 제작자 피피",
++      "role": "collector",
++      "x": 16,
++      "y": 4,
++      "look": [
++        3,
++        1,
++        2,
++        "#3a6a42",
++        "#a8845c",
++        1
++      ],
++      "pose": "read",
++      "lines": [
++        "몬스터를 많이 만나 볼수록 지도가 정확해져. 도감을 채워 오면 그 땅의 힘을 나눠 줄게.",
++        "회관보다 여기가 조용해서 좋아. 지도 그리기엔 딱이지!"
++      ]
++    },
++    {
++      "id": "hall_momo",
++      "name": "서기관 모모",
++      "role": "achieve",
++      "x": 17,
++      "y": 11,
++      "look": [
++        0,
++        2,
++        0,
++        "#d8a830",
++        "#fff0c0",
++        0
++      ],
++      "pose": "write",
++      "lines": [
++        "자네의 공적은 내가 빠짐없이 적어 두지. 기록의 서판에도 이름이 새겨질 걸세."
++      ]
++    },
++    {
++      "id": "lib_case",
++      "name": "괴수 도감 진열장",
++      "role": "collector",
++      "x": 11,
++      "y": 1,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "유리병 속 괴수가 눈을 깜빡였다…!",
++        "도감을 채우면 그 땅의 힘이 깃든다고 적혀 있다."
++      ]
++    },
++    {
++      "id": "lib_tablet",
++      "name": "기록의 서판",
++      "role": "achieve",
++      "x": 20,
++      "y": 8,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "모험가들의 이름과 공적이 빼곡히 새겨져 있다."
++      ]
++    },
++    {
++      "id": "lib_book_1",
++      "name": "낡은 책: 정령나무",
++      "role": "talk",
++      "x": 8,
++      "y": 5,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "광장의 정령나무는 마을보다 먼저 거기 있었다.",
++        "어둠이 숲을 삼키던 밤, 동물들은 그 나무 아래로 모여들었다.",
++        "나무는 잎을 떨어뜨려 빛의 울타리를 쳤고, 그 안은 따뜻했다.",
++        "그래서 우리는 지금도 해마다 그 뿌리에 물을 준다. 고맙다는 인사로."
++      ]
++    },
++    {
++      "id": "lib_book_2",
++      "name": "낡은 책: 어둠에 먹힌 숲",
++      "role": "talk",
++      "x": 14,
++      "y": 5,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "북쪽 숲은 원래 노래하는 숲이었다고 한다.",
++        "어느 날부터 새들이 울지 않았고, 나무들이 검게 말라 갔다.",
++        "숲에 남은 짐승들은 머리가 둘이 되거나, 눈이 셋이 되었다.",
++        "울타리 너머로 들리는 소리는… 아직 그 숲이 무언가를 부르는 소리일지도 모른다."
++      ]
++    },
++    {
++      "id": "lib_book_3",
++      "name": "낡은 책: 첫 이주민들",
++      "role": "talk",
++      "x": 19,
++      "y": 13,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "첫 이주민은 다람쥐 셋, 곰 하나, 그리고 아주 겁 많은 양 한 마리였다.",
++        "곰이 통나무를 나르고, 다람쥐들이 지붕을 엮고, 양은… 모두를 위해 털실을 떴다.",
++        "울타리 한 칸, 집 한 채씩. 그렇게 넥서스 마을이 생겼다.",
++        "책 끝에 삐뚤빼뚤한 글씨: \"다음 페이지는 네가 써 줘.\""
++      ]
++    }
++  ],
++  "portals": [
++    {
++      "x": 11,
++      "y": 15,
++      "to": "town",
++      "tx": 36,
++      "ty": 22
++    }
++  ],
++  "fires": [
++    [
++      4,
++      2
++    ]
++  ],
++  "waypoint": null,
++  "fishing": false,
++  "boss": null
++}
+diff --git a/game/data/maps/pet_house.json b/game/data/maps/pet_house.json
+new file mode 100644
+index 0000000..e9e2d57
+--- /dev/null
++++ b/game/data/maps/pet_house.json
+@@ -0,0 +1,87 @@
++{
++  "v": 1,
++  "id": "pet_house",
++  "replaces": null,
++  "name": "몽글 펫 돌봄집",
++  "theme": "interior",
++  "style": "inn",
++  "bgm": "cafe",
++  "safe": true,
++  "band": null,
++  "w": 14,
++  "h": 10,
++  "ground": [
++    "ffffffffffffff",
++    "ffffffffffffff",
++    "ffffffffffffff",
++    "ffffffffffffff",
++    "ffffffffffffff",
++    "ffuuuuffffffff",
++    "ffuuuuffffffff",
++    "ffuuuuffffffff",
++    "ffuuuuffffffff",
++    "fffffffeffffff"
++  ],
++  "objects": [
++    "==+==~@~==+===",
++    "=g g       ]w_",
++    "=            _",
++    "+            _",
++    "=    mmmmm  *_",
++    "=            _",
++    "= %        % _",
++    "=   %        _",
++    "=           g_",
++    "_______ ______"
++  ],
++  "entry": [
++    7,
++    8
++  ],
++  "spawns": [],
++  "npcs": [
++    {
++      "id": "pet_monggeul",
++      "name": "펫 돌보미 몽글",
++      "role": "shop",
++      "x": 7,
++      "y": 2,
++      "look": [
++        9,
++        4,
++        2,
++        3,
++        4,
++        0,
++        3,
++        9,
++        5,
++        2,
++        0
++      ],
++      "goods": [
++        "pet_chick",
++        "pet_bat",
++        "pet_wisp"
++      ],
++      "lines": [
++        "몽글몽글~ 펫 친구를 찾으러 왔구나!",
++        "펫은 사냥터에서 떨어진 물건을 주워 줘요. 착하죠?",
++        "고양이들은 손님이 아니라 하숙생이에요. 깨우지 말아 주세요."
++      ]
++    }
++  ],
++  "portals": [
++    {
++      "x": 7,
++      "y": 9,
++      "to": "town",
++      "tx": 29,
++      "ty": 48
++    }
++  ],
++  "fires": [],
++  "waypoint": null,
++  "fishing": false,
++  "boss": null
++}
+diff --git a/game/data/maps/starlight_inn.json b/game/data/maps/starlight_inn.json
+index 3f8cb19..7a42c6c 100644
+--- a/game/data/maps/starlight_inn.json
++++ b/game/data/maps/starlight_inn.json
+@@ -127,8 +127,8 @@
+       "x": 10,
+       "y": 15,
+       "to": "town",
+-      "tx": 9,
+-      "ty": 9
++      "tx": 68,
++      "ty": 51
+     }
+   ],
+   "fires": [
+diff --git a/game/data/maps/tales_cafe.json b/game/data/maps/tales_cafe.json
+index 499d70b..aedaebc 100644
+--- a/game/data/maps/tales_cafe.json
++++ b/game/data/maps/tales_cafe.json
+@@ -127,8 +127,8 @@
+       "x": 10,
+       "y": 15,
+       "to": "town",
+-      "tx": 29,
+-      "ty": 24
++      "tx": 79,
++      "ty": 50
+     }
+   ],
+   "fires": [
+diff --git a/game/data/maps/town_hall.json b/game/data/maps/town_hall.json
+index 13ee961..28e044a 100644
+--- a/game/data/maps/town_hall.json
++++ b/game/data/maps/town_hall.json
+@@ -28,7 +28,7 @@
+     "llllllllllyyylllllllll",
+     "llllllllllyyylllllllll",
+     "llllllllllyyylllllllll",
+-    "llllllllllyyylllllllll"
++    "llllllllllyeylllllllll"
+   ],
+   "objects": [
+     "==++=!==!=~~~=!==!=++=",
+@@ -76,44 +76,6 @@
+         "피곤하면 벽난로 곁에 앉아 쉬어 가게. 회관의 불은 꺼진 적이 없어."
+       ]
+     },
+-    {
+-      "id": "hall_momo",
+-      "name": "서기관 모모",
+-      "role": "achieve",
+-      "x": 16,
+-      "y": 3,
+-      "look": [
+-        0,
+-        2,
+-        0,
+-        "#d8a830",
+-        "#fff0c0",
+-        0
+-      ],
+-      "pose": "write",
+-      "lines": [
+-        "자네의 공적은 내가 빠짐없이 적어 두지. 저 진열장의 트로피들도 다 누군가의 이야기라네."
+-      ]
+-    },
+-    {
+-      "id": "hall_pipi",
+-      "name": "지도 제작자 피피",
+-      "role": "collector",
+-      "x": 5,
+-      "y": 3,
+-      "look": [
+-        3,
+-        1,
+-        2,
+-        "#3a6a42",
+-        "#a8845c",
+-        1
+-      ],
+-      "pose": "read",
+-      "lines": [
+-        "몬스터를 많이 만나 볼수록 지도가 정확해져. 도감을 채워 오면 그 땅의 힘을 나눠 줄게."
+-      ]
+-    },
+     {
+       "id": "hall_hana",
+       "name": "게시판지기 해나",
+@@ -131,6 +93,28 @@
+       "lines": [
+         "회관 게시판에도 오늘의 과제가 붙어 있어요. 매일 아침 6시에 새로 바뀐답니다!"
+       ]
++    },
++    {
++      "id": "hall_map",
++      "name": "마을 지도",
++      "role": "talk",
++      "x": 11,
++      "y": 0,
++      "look": [
++        0,
++        0,
++        0,
++        "#8a6a4a"
++      ],
++      "thing": true,
++      "lines": [
++        "【중앙 광장】 분수와 이동의 돌, 정령나무 모닥불. 리나의 노점과 균열의 오벨리스크도 여기 있다.",
++        "【윗마을】 계단 위 마을회관, 서쪽 부엉이 도서관, 동쪽 넥서스 수련관과 수련장.",
++        "【장터 거리】 동쪽 길 따라 다람쥐 잡화점, 캉캉대장간, 늑대발 용병사무소. 골목 위엔 보글연금공방.",
++        "【모닥별 뜰】 남동쪽 광장에 쥬쥬식당, 테일즈 카페, 모닥별 여관.",
++        "【살림 마을】 개울 건너 서쪽에 동동아파트와 내 집. 개울가에 마을 창고와 몽글 펫 돌봄집.",
++        "【광장 남쪽】 루루 의상실, 그리고 남쪽 길 끝 버드나무 마을과 연못."
++      ]
+     }
+   ],
+   "portals": [
+@@ -138,8 +122,8 @@
+       "x": 11,
+       "y": 17,
+       "to": "town",
+-      "tx": 19,
+-      "ty": 6
++      "tx": 49,
++      "ty": 26
+     }
+   ],
+   "fires": [
+diff --git a/game/data/maps/willow.json b/game/data/maps/willow.json
+index 031683b..f9452a1 100644
+--- a/game/data/maps/willow.json
++++ b/game/data/maps/willow.json
+@@ -136,15 +136,15 @@
+       "x": 19,
+       "y": 1,
+       "to": "town",
+-      "tx": 19,
+-      "ty": 25
++      "tx": 49,
++      "ty": 71
+     },
+     {
+       "x": 20,
+       "y": 1,
+       "to": "town",
+-      "tx": 20,
+-      "ty": 25
++      "tx": 50,
++      "ty": 71
+     }
+   ],
+   "fires": [
+diff --git a/game/data/npcs.json b/game/data/npcs.json
+index b2f6e44..3a16a1a 100644
+--- a/game/data/npcs.json
++++ b/game/data/npcs.json
+@@ -1,9 +1,9 @@
+ {
+   "v": 1,
+   "npcs": [
+-    { "map": "town", "id": "town_willow_guide", "name": "길잡이 다람", "role": "talk", "x": 21, "y": 26, "look": [3, 2, 0, "#7a8a3a"],
++    { "map": "town", "id": "town_willow_guide", "name": "길잡이 다람", "role": "talk", "x": 52, "y": 70, "look": [3, 2, 0, "#7a8a3a"],
+       "lines": ["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!", "버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."] },
+-    { "map": "town", "id": "town_job_arsen", "name": "전직관 아르센", "role": "job", "x": 26, "y": 12, "look": [5, 1, 0, "#3a4a7a"],
++    { "map": "town", "id": "town_job_arsen", "name": "전직관 아르센", "role": "job", "x": 70, "y": 23, "look": [5, 1, 0, "#3a4a7a"],
+       "lines": ["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.", "두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.", "전직은 되돌릴 수 없다네. 신중하게 고르게."] }
+   ]
+ }
+diff --git a/game/data/quests.json b/game/data/quests.json
+index d4043c6..8b91a0b 100644
+--- a/game/data/quests.json
++++ b/game/data/quests.json
+@@ -23,6 +23,39 @@
+       "req": { "lv": 5, "quest": "sq_willow_letter" },
+       "reward": { "xp": 300, "gold": 120, "items": [["mp_s", 3]] },
+       "repeat": false
++    },
++    {
++      "id": "sq_merc_hares",
++      "giver": "merc_grey",
++      "title": "초원의 두 머리",
++      "text": "바람초원의 쌍두 토끼가 울타리까지 내려온다. 10마리만 쫓아내 주게. 첫 의뢰로 딱이지.",
++      "done": "깔끔하군. 늑대발의 일원이 될 자격이 있어.",
++      "goal": { "type": "kill", "mob": "twinhare", "n": 10 },
++      "req": { "lv": 1, "quest": null },
++      "reward": { "xp": 150, "gold": 100, "items": [["hp_s", 5]] },
++      "repeat": false
++    },
++    {
++      "id": "sq_merc_boar",
++      "giver": "merc_grey",
++      "title": "반쪽 멧돼지 사냥",
++      "text": "몸이 반으로 갈라진 멧돼지들이 길을 막고 있다. 8마리만 부탁하지. 돌진하면 옆으로 피하게.",
++      "done": "잘했다. 그 녀석들 돌진은 우리 단원들도 무서워하지.",
++      "goal": { "type": "kill", "mob": "splitboar", "n": 8 },
++      "req": { "lv": 10, "quest": "sq_merc_hares" },
++      "reward": { "xp": 900, "gold": 400, "items": [["hp_m", 5], ["stone", 1]] },
++      "repeat": false
++    },
++    {
++      "id": "sq_merc_letter",
++      "giver": "merc_grey",
++      "title": "볼칸에게 보내는 주문서",
++      "text": "광장 동쪽 장터의 대장장이 볼칸에게 이 주문서를 전해 주게. 단원들 새 칼이 필요하거든.",
++      "done": "볼칸이 받았다고? 좋아. 이건 심부름 값이다.",
++      "goal": { "type": "talk", "npc": "smith" },
++      "req": { "lv": 1, "quest": null },
++      "reward": { "xp": 120, "gold": 120, "items": [["recall", 2]] },
++      "repeat": false
+     }
+   ]
+ }
+diff --git a/game/src/logic.js b/game/src/logic.js
+index 9116632..3c9f4e6 100644
+--- a/game/src/logic.js
++++ b/game/src/logic.js
+@@ -143,14 +143,24 @@ const SKILLS = {
+ /** Maps, doors, NPCs and quests made in the world map editor (docs/editor/SCHEMA.md). */
+ const DATA = {
+   maps: [
+-    {"v":1,"id":"starlight_inn","replaces":null,"name":"모닥별 여관","theme":"interior","style":"inn","bgm":"inn","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","fffffffffffllllllllf","ffffxxxffffllllllllf","fffffffffffllllllllf","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffffffefffffffff"],"objects":["===+==@=+==~===+=+==","=w  r#r    popop *g_","=                  _","=  s   s           _","=                  _","=                  _","+                  _","+  kkkkk           _","=  -----           _","=* kkkkk        ww _","=                 ]_","=ok          mmmmm _","=k                 _","=g                *_","=                  _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"inn_maru","name":"여관 주인 마루","role":"shop","x":15,"y":9,"look":[2,3,1,"#8a6a3a","#e6cca4",0],"pose":"wipe","goods":["inn_stew","inn_bread","hp_s","hp_m","mp_s","mp_m","recall","camp"],"lines":["모닥별 여관에 어서 오시게! 스튜가 막 끓었다네.","벽난로 곁에 앉아 쉬면 온기가 오래 남지. 먼 길 떠나기 전엔 꼭 쉬어 가게."]},{"id":"inn_lira","name":"음유시인 리라","role":"talk","x":9,"y":5,"look":[1,2,0,"#7a3a5a","#fff0e4",0],"lines":["♪ 별이 모닥불에 내려앉은 밤, 꼬리 긴 영웅이 길을 떠났네 ♪","심연의 노래를 아나? 아직 끝까지 들은 사람이 없다지."]},{"id":"inn_toto","name":"졸린 나그네 토토","role":"talk","x":8,"y":3,"look":[1,0,3,"#5e6a88","#c8b090",3],"pose":"doze","lines":["음냐… 오 분만 더…","…아, 미안. 숲에서 사흘을 걸었더니 눈이 감기네."]}],"portals":[{"x":10,"y":15,"to":"town","tx":9,"ty":9}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
+-    {"v":1,"id":"tales_cafe","replaces":null,"name":"테일즈 카페","theme":"interior","style":"cafe","bgm":"cafe","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","ffffffffffffffffffff","ffffxxxfffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","fuuuuuqqqqqqffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","ffffffffffefffffffff"],"objects":["==++===@=^^=~=======","=g  b#b      rrrb g_","=   %            ] _","=  s   s           _","=           m$$jmm _","=                 w_","+ k               g_","+ o          k     _","= k          o     _","=      kok   k ko  _","=*              k  _","=                  _","=  ok              _","=  k              *_","=g                 _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"cafe_moka","name":"카페 주인 모카","role":"shop","x":16,"y":2,"look":[0,3,1,"#7a4a2c","#f4e0c8",0],"pose":"wipe","goods":["cafe_coffee","cafe_cocoa","cafe_tea","cafe_scone","cafe_pie"],"lines":["어서 와요, 테일즈 카페예요! 오늘의 블렌드는 고소한 맛이 일품이죠.","사냥 나가기 전에 따뜻한 거 한 잔 어때요? 힘이 날 거예요.","벽난로 앞에 앉아 쉬면 몸이 금방 녹아요. 고양이 깨우지는 말고요!"]},{"id":"cafe_somi","name":"단골 손님 솜이","role":"talk","x":10,"y":10,"look":[3,1,0,"#d86a8a","#fff4e8",1],"pose":"sip","lines":["여기 코코아는 마시멜로가 두 개나 들어 있어!","창가 자리에 햇살이 들면 깜빡 졸게 된다니까.","바람초원 들꽃으로 우린 허브차, 꼭 마셔 봐."]},{"id":"cafe_lumi","name":"책벌레 루미","role":"talk","x":3,"y":9,"look":[1,4,2,"#3e6a8a","#d8ccff",0],"pose":"read","lines":["쉿, 지금 제일 재밌는 대목이야… 피의 심연 끝에는 뭐가 있을까?","옛날 모험가들은 이 카페에서 파티를 짰대. 지금 너처럼!"]}],"portals":[{"x":10,"y":15,"to":"town","tx":29,"ty":24}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
+-    {"v":1,"id":"town_hall","replaces":null,"name":"넥서스 마을회관","theme":"interior","style":"hall","bgm":"hall","safe":true,"band":null,"w":22,"h":18,"ground":["llllllllllllllllllllll","llllllllllllllllllllll","llllllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll"],"objects":["==++=!==!=~~~=!==!=++=","=g    tt *   * tt   g_","=                    _","=                    _","=#                   _","=                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=  kkkkk      kkkkk  _","+                    _","+                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=b kkkkk      kkkkk v_","=b                   _","=b       *   *       _","=g                  g_","___________ __________"],"entry":[11,16],"spawns":[],"npcs":[{"id":"hall_bori","name":"이장 보리","role":"talk","x":11,"y":3,"look":[2,0,3,"#5a3a6a","#e6d8c0",0],"lines":["넥서스 마을회관에 온 걸 환영하네. 이 마을은 모험가들 덕에 버티고 있지.","벽에 걸린 지도를 보게. 동쪽은 바람초원, 서쪽은 네온 시티 — 그 너머는 아직 아무도 다 그리지 못했다네.","피곤하면 벽난로 곁에 앉아 쉬어 가게. 회관의 불은 꺼진 적이 없어."]},{"id":"hall_momo","name":"서기관 모모","role":"achieve","x":16,"y":3,"look":[0,2,0,"#d8a830","#fff0c0",0],"pose":"write","lines":["자네의 공적은 내가 빠짐없이 적어 두지. 저 진열장의 트로피들도 다 누군가의 이야기라네."]},{"id":"hall_pipi","name":"지도 제작자 피피","role":"collector","x":5,"y":3,"look":[3,1,2,"#3a6a42","#a8845c",1],"pose":"read","lines":["몬스터를 많이 만나 볼수록 지도가 정확해져. 도감을 채워 오면 그 땅의 힘을 나눠 줄게."]},{"id":"hall_hana","name":"게시판지기 해나","role":"daily","x":19,"y":14,"look":[3,0,1,"#4a8ad0","#ffd0a0",2],"lines":["회관 게시판에도 오늘의 과제가 붙어 있어요. 매일 아침 6시에 새로 바뀐답니다!"]}],"portals":[{"x":11,"y":17,"to":"town","tx":19,"ty":6}],"fires":[[2,4]],"waypoint":null,"fishing":false,"boss":null},
+-    {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"town","safe":true,"band":null,"w":40,"h":32,"ground":["tt,t...............pp...\"..,.....tt.....",".t..tt....,........pp.,....\".......tt...","ttttt.t............pp.,,...\"..,.,tt.tt..","ttttttt\".,...\",...\"pp....,.,.....tt.tt..",".ttt,...,....,.....pp............,ttt..t","ttt...t...........,pp............tttt...","..,,.,.\"...........pp....,........\"...\".","\",.....,..\".,......pp..,......,.......,.","....,,...,...\".....pp.....,........,.,..","....,...pppppppppppppppppppppppp........","........pp.........pp.......\".pp........",".,......pp.........pp.,,......pp........",".......,pp\".,.\".oooooooo.,...ssssss.....","....\"\"\",pp.,...oooooooooo,.sswwwwwwss,..","....\"\"\"\"pp..,,oooooooooooo.swwwwwwwws...",".,.\"\"\"\",pp\"...oooooooooooobbbbwwwwwws.,.","....\"\"\".pp....oooooooooooo.swwwwwwwws..,","....\"\"\".pp....oooooooooooo,sswwwwwwss...","......\",pp.....oooooooooo....ssssss.....",".....,..pp.\"....oooooooo......pp...,,...",".,.,.,\".pp\"......\",pp.........pp,,.....,","...,....pppppppppppppppppppppppp....,...","....,,..pp,..,,..,....,..\"....pp........","..........,.....,..............,..\".,...","...,.\",\".,,.,............,...\"\".........","......,.....\".......,........,,.........",".....,..,..,....,..............,..,..,..","..........,,..,....,......\".\"...........","..tt.t...............,..........,,..tt.t","t..tttt\".,.....,..\"...,...........t,tt,t",".ttt.t...............,.....,.....ttttttt","...t.tt.,.....\"..,.\"....\".......\"t,..t,t"],"objects":["TTPTTTTTTTTTTTTTTT    TPTTPPTTTTTTTTTTTP","TTTTTTTPTTTTTTPTPT    TTTTTTTPTPTTTTTTTT","TT                                    PT","TT         HH     L  L    HH          TT","TT    hhhh   hhhh           hhhh      TT","TT    hhhh   hhhh     G     hhhh      PT","TT    hhhh   hhhh           hhhh   u  TT","TT                                    TT","TT                                  B TT","PT B                                  TT","TT                                    TT","TT                                    TT","TT FFFFF       L        L             TT","TT F   F   B                 e    e   TT","TP F   F                              TT","PT F   F           T                  TT","TP F   F                           e  PP","PT F   F   B                     e    PT","TP FF FF                              TP","TT             L        L             TT","TT  u                                 TT","TP                                    TT","TT                                    TT","TT  hhhh                       hhhh   TP","TT  hhhh      hhhh      B      hhhh   PT","TT  hhhh      hhhh             hhhh   TP","PT          B hhhh        B         B PT","TT        u      E    u               TP","PT                                    TT","PT                                    PT","TPPTPTPTTTTTTTTPTTTTTPPTTPTTTPTTTTTTPTTP","TPTTPTTTTTTPTTTTTTTTTTTTTTTPTTTTTPTTTTPT"],"entry":[20,4],"spawns":[],"npcs":[{"id":"willow_elder","name":"촌장 버들","role":"quest","x":18,"y":13,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 도와주면 섭섭지 않게 사례하지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":25,"y":16,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."]},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":15,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 울타리 안은 밟으면 안 돼!","넥서스 광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":22,"y":25,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 넥서스 광장이야. 거기서 동쪽은 바람초원이고."]}],"portals":[{"x":19,"y":1,"to":"town","tx":19,"ty":25},{"x":20,"y":1,"to":"town","tx":20,"ty":25}],"fires":[[19,25]],"waypoint":[22,7],"fishing":true,"boss":null,"marks":[{"x":22,"y":5,"kind":"sign","label":"↑ 넥서스 광장","to":"town"}]},
++    {"v":1,"id":"bogle_lab","replaces":null,"name":"보글연금공방","theme":"interior","style":"lab","bgm":"cafe","safe":true,"band":null,"w":18,"h":12,"ground":["xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxqqqqqxxxxxx","xxxxxxxqqqqqxxxxxx","xxxxxxxqqqqqxxxxxx","xxxxxxxqqqqqxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxexxxxxxxx"],"objects":["==+==~==@==~==+===","= rrrr      rrrrg_","=      *         _","+                _","=;       :      w_","=;               _","=                _","=b           --- _","=b            k  _","+               *_","=                _","_________ ________"],"entry":[9,10],"spawns":[],"npcs":[{"id":"bogle","name":"보글","role":"talk","x":9,"y":3,"look":[11,6,13,19,3,7,4,7,1,2,0],"pose":"stir","lines":["보글보글… 앗, 손님이다! 가마솥에 손 넣지 마!","초록색은 성공, 보라색은… 음, 그것도 성공이라 치자.","언젠가 이 공방에서 마을 최고의 물약을 만들 거야. 개굴!"]}],"portals":[{"x":9,"y":11,"to":"town","tx":80,"ty":29}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"boutique","replaces":null,"name":"루루 의상실","theme":"interior","style":"boutique","bgm":"cafe","safe":true,"band":null,"w":16,"h":12,"ground":["ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","fffuuuuuffffffff","fffuuuufyyffffff","fffuuuufyyffffff","fffuuuufyyffffff","fffffffyyyffffff","ffffffffefffffff"],"objects":["=+==!=~~==!==+==","=g      >>> ' g_","=              _","=>             _","+>             _","=>       mmmm $_","=              _","+   s          _","='             _","=     k       *_","=              _","________ _______"],"entry":[8,10],"spawns":[],"npcs":[{"id":"bout_silvi","name":"재봉사 실비","role":"costume","x":11,"y":3,"look":[0,10,10,15,0,7,6,1,3,1,4],"pose":"knit","lines":["어머, 어서 와! 오늘은 어떤 모습이 되고 싶어?","치수 좀 잴게. 가만히… 꼬리도 가만히!","루루 언니는 밖에서 손님 맞는 중이야. 옷은 나한테 맡겨."]},{"id":"bout_mirror","name":"전신 거울","role":"costume","x":12,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["거울 속 내가 오늘따라 멋져 보인다. 옷을 갈아입어 볼까?"]}],"portals":[{"x":8,"y":11,"to":"town","tx":46,"ty":51}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"dojo","replaces":null,"name":"넥서스 수련관","theme":"interior","style":"dojo","bgm":"town","safe":true,"band":null,"w":18,"h":14,"ground":["llllllllllllllllll","llllllllllllllllll","llllllllllllllllll","llllllllllllllllll","llllllllllllllllll","llllqqqqqqqqqqllll","llllqqqqqqqqqqllll","llllqqqqqqqqqqllll","llllqqqqqqqqqqllll","llllqqqqqqqqqqllll","llllqqqqqqqqqqllll","llllllllyyylllllll","llllllllyyylllllll","lllllllllellllllll"],"objects":["=!=+==!=~@~=!==+!=","= >>>  v     >>>g_","=                _","=                _","+t              *_","=t               _","=    `      `    _","=                _","=*               _","+    `      `    _","=                _","=               w_","=g               _","_________ ________"],"entry":[9,12],"spawns":[],"npcs":[{"id":"dojo_panpan","name":"사범 판판","role":"train","x":9,"y":3,"look":[2,8,7,0,3,12,2,13,2,9,0],"lines":["어서 오너라! 땀 한 방울이 힘 한 줌이다.","수련 인형은 마음껏 때려도 된다. 아프다고 안 하거든.","길을 정했으면 두루마리 앞에 서 보거라. 전직의 길이 보일 게다."]},{"id":"dojo_scroll","name":"전직의 두루마리","role":"job","x":7,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["무기를 숙련 20까지 다룬 자에게 새 길이 열린다.","전직은 되돌릴 수 없다. 신중히 고르라."]}],"portals":[{"x":9,"y":13,"to":"town","tx":62,"ty":21}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"dongdong_apt","replaces":null,"name":"동동아파트 1층 로비","theme":"interior","style":"lobby","bgm":"town","safe":true,"band":null,"w":14,"h":10,"ground":["hhhhhhhhhhhhhh","hhhhhhhhhhhhhh","hhhhhhhhhhhhhh","hhhhhhyyyhhhhh","hhhhhhyyyhhhhh","hhhhhhyyyhhhhh","hhhhhhyyyhhhhh","hhhhhhyyyhhhhh","hhhhhhyyyhhhhh","hhhhhhhehhhhhh"],"objects":["=+==~====~==+=","=g rrrrr  * g_","=            _","+            _","=            _","=        --- _","=%           _","=           g_","=            _","_______ ______"],"entry":[7,8],"spawns":[],"npcs":[{"id":"dongdong","name":"관리인 동동","role":"talk","x":4,"y":3,"look":[11,6,8,15,0,7,11,8,10,1,0],"pose":"sweep","lines":["동동아파트에 어서 오세요! 관리인 동동이에요.","복도에서 뛰면 안 돼요. 3층 할머니가 주무세요.","언젠가 모험가님들도 여기 살 수 있게 될 거예요. 방 청소 해 둘게요!"]},{"id":"apt_mail","name":"우편함","role":"talk","x":6,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["편지가 없네요.","옆 칸에 꽂힌 쪽지: \"201호 펭귄님, 생선 잘 먹었어요!\"","또 다른 쪽지: \"밤마다 노래하는 분… 조금만 작게요.\""]}],"portals":[{"x":7,"y":9,"to":"town","tx":10,"ty":35}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"general_store","replaces":null,"name":"다람쥐 잡화점","theme":"interior","style":"shop","bgm":"town","safe":true,"band":null,"w":16,"h":12,"ground":["ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffqqqqqfffff","ffffffqqqqqfffff","ffffffffffffffff","ffffffffefffffff"],"objects":["==+====^^=~==+==","=rrr g    g >rr_","+              _","=%            *_","=              _","=     mmjmm    _","=              _","+ $$        $$ _","=             w_","=]]           w_","=              _","________ _______"],"entry":[8,10],"spawns":[],"npcs":[{"id":"store_dari","name":"잡화점 주인 다리","role":"shop","x":8,"y":3,"look":[12,0,11,10,2,7,11,14,8,2,0],"pose":"wipe","goods":["hp_s","hp_m","hp_l","mp_s","mp_m","mp_l","recall","camp","feather","sc_atk","sc_def","sc_xp","stone"],"lines":["다람쥐 잡화점이에요! 물약부터 주문서까지 다 있어요.","도토리 한 줌… 아니 골드 한 줌이면 충분해요!","먼 길 떠나기 전엔 귀환 주문서 한 장, 꼭 챙기세요."]},{"id":"store_kong","name":"심부름꾼 콩콩","role":"talk","x":11,"y":8,"look":[7,0,11,20,0,7,1,6,2,1,0],"pose":"carry","lines":["영차, 영차! 상자가 나보다 커요.","다리 언니가 그러는데, 물약은 흔들면 안 된대요. …방금 흔들었어요."]}],"portals":[{"x":8,"y":11,"to":"town","tx":65,"ty":38}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"juju_diner","replaces":null,"name":"쥬쥬식당","theme":"interior","style":"tavern","bgm":"cafe","safe":true,"band":null,"w":20,"h":14,"ground":["ffffffffffffffffffff","ffffffffffffffffffff","fffxxxffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffqqqqqfffffff","ffffffffqqqqqfffffff","ffxfffffqqqqqfffffff","ffxfffffqqqqqfffffff","ffxfffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffefffffffff"],"objects":["==+==^^===@==+==!===","=wr :       r www g_","=                  _","=          mmjmmm  _","+                  _","+ %                _","=    kok           _","=             kok  _","=  s     kok       _","=#                *_","+  s               _","=     kok     kok  _","=g                 _","__________ _________"],"entry":[10,12],"spawns":[],"npcs":[{"id":"juju","name":"쥬쥬","role":"shop","x":5,"y":2,"look":[2,13,0,14,3,5,10,11,9,9,4],"pose":"stir","goods":["food_s","food_m","food_l","inn_bread"],"lines":["쥬쥬식당에 어서 와! 오늘 국물은 끝내준다구.","배고픈 모험가는 못 싸워. 든든히 먹고 가!","화덕 옆에서 쉬어 가도 돼. 요리도 직접 해 볼래?"]},{"id":"diner_piri","name":"떠돌이 악사 피리","role":"talk","x":17,"y":5,"look":[8,9,3,11,0,4,4,12,2,2,1],"lines":["♪ 국물 한 숟갈에 하루가 녹고, 노래 한 소절에 밤이 녹네 ♪","신청곡? 음… 동전 한 닢이면 생각해 볼게!"]},{"id":"diner_reg1","name":"단골 손님 나비","role":"talk","x":10,"y":9,"look":[0,3,10,10,2,2,3,1,3,2,4],"pose":"sip","lines":["여기 스튜 먹으려고 매일 사냥 나간다니까.","쥬쥬한테 '곱빼기'라고 하면 진짜 두 배로 줘."]},{"id":"diner_reg2","name":"단골 손님 뭉치","role":"talk","x":15,"y":10,"look":[3,3,3,11,2,7,1,2,6,1,0],"pose":"sip","lines":["건배! …아, 혼자구나. 그래도 건배!","바람초원 갔다 왔어? 토끼 머리가 둘이었지? 그치?"]}],"portals":[{"x":10,"y":13,"to":"town","tx":72,"ty":50}],"fires":[[4,2],[2,9]],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"kangkang_forge","replaces":null,"name":"캉캉대장간","theme":"interior","style":"forge","bgm":"town","safe":true,"band":null,"w":18,"h":12,"ground":["xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxllllllx","xxxxxxxxxxxllllllx","xxxxxxxxxxxllllllx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxexxxxxxxx","xxxxxxxxxexxxxxxxx"],"objects":["==!==+===+===+==!=","=] <    >>>    ]w_","=                _","=w              *_","=    &           _","+           mmmm _","=>               _","=>               _","=              ]]_","=      *        ]_","=                _","_________ ________"],"entry":[9,10],"spawns":[],"npcs":[{"id":"forge_tong","name":"견습 대장장이 통통","role":"smith","x":6,"y":3,"look":[5,2,9,8,0,0,8,10,7,10,0],"pose":"hammer","lines":["캉! 캉! 강화하실 거예요? 모루 앞으로 오세요!","볼칸 스승님만큼은 아니어도… 저도 꽤 한다고요!","화덕에 너무 가까이 오지 마세요. 꼬리털 탄다고요."]},{"id":"forge_musoe","name":"갑옷장이 무쇠","role":"shop","x":13,"y":3,"look":[2,8,7,11,3,0,9,4,2,2,0],"pose":"wipe","goods":["w_warrior_1","w_rogue_1","w_lancer_1","w_mage_1","w_book_1","w_bow_1","h_1","a_1","g_1","b_1","h_2","a_2","g_2","b_2","ru_ign","ru_aeg","ru_vit","ru_men","ru_cel","ru_acu","ru_san","ru_lum","ru_fos"],"lines":["튼튼한 갑옷 하나가 목숨 열 개보다 낫지.","룬도 있다네. 소켓 난 장비에 박으면 힘이 깃들지."]},{"id":"forge_anvil","name":"모루","role":"smith","x":5,"y":4,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["묵직한 모루. 장비를 강화하거나 분해할 수 있다."]}],"portals":[{"x":9,"y":11,"to":"town","tx":72,"ty":38}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"merc_office","replaces":null,"name":"늑대발 용병사무소","theme":"interior","style":"office","bgm":"town","safe":true,"band":null,"w":20,"h":14,"ground":["llllllllllllllllllll","llllllllllllllllllll","llllllllllllllllxxxl","llllllllllllllllllll","llllllllllllllllllll","llllllllllllllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","llllllllllelllllllll"],"objects":["=!=+===~~~~==+==!=+=","=   >> g    v v  # _","=>                 _","=>              s s_","+      ----        _","=      k  k        _","=*                 _","+                  _","= mmmm       *     _","=                ]]_","=  k k            w_","=                 w_","=g                 _","__________ _________"],"entry":[10,12],"spawns":[],"npcs":[{"id":"merc_grey","name":"용병단장 그레이","role":"quest","x":9,"y":2,"look":[4,8,3,14,3,1,8,2,6,9,0],"lines":["늑대발 용병사무소다. 일거리를 찾나?","북쪽 숲이 시끄럽다. 손 빌려줄 모험가는 언제나 환영이지.","의뢰는 게시판에, 동료는 파티 구인판에. 보수는 확실하다."]},{"id":"merc_mimi","name":"접수원 미미","role":"daily","x":4,"y":6,"look":[1,2,1,0,0,0,6,3,5,0,6],"pose":"write","lines":["어서 오세요! 오늘의 의뢰는 아침 6시에 새로 붙어요.","다 끝내면 보수를 챙겨 드릴게요. 꼭 살아서 오세요!"]},{"id":"merc_bawi","name":"은퇴한 용병 바위","role":"talk","x":17,"y":4,"look":[2,13,7,9,3,0,3,4,2,2,0],"pose":"doze","lines":["음… 내가 젊었을 땐 쌍두 토끼를 맨손으로… 쿨.","차원 균열에 들어갈 땐 꼭 넷이서 가게. 혼자는 무모해.","불 옆이 최고야. 무릎이 쑤시거든."]},{"id":"merc_board","name":"의뢰 게시판","role":"daily","x":12,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["빼곡한 의뢰서들. 오늘의 의뢰를 확인하자."]},{"id":"merc_party","name":"파티 구인판","role":"talk","x":14,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["【파티 모집 안내】 P 키로 파티 창을 열 수 있어요.","가까이 있는 모험가에게 초대를 보내면 함께 사냥할 수 있어요. 최대 4명!","광장의 오벨리스크에서 파티원 모두가 준비하면 차원 균열에 들어갈 수 있어요.","구석에 누가 낙서해 두었다: \"힐러 구함. 아니 그냥 친구 구함.\""]}],"portals":[{"x":10,"y":13,"to":"town","tx":85,"ty":37}],"fires":[[17,2]],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"owl_library","replaces":null,"name":"부엉이 도서관","theme":"interior","style":"library","bgm":"cafe","safe":true,"band":null,"w":22,"h":16,"ground":["llllllllllllllllllllll","llllllllllllllllllllll","lllxxxxlllllllllllllll","llllllllllllllllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","lllllllllllellllllllll"],"objects":["=+==~~=!=+=@=+=!=~~=+=","=bbb#bbb ;;;;; bbbb g_","=                    _","+  s  s            % _","=                    _","=b      |     |      _","=b                   _","+              kkk   _","+  kok         ---  t_","=              kkk   _","=b                   _","=b kok               _","=b      *     *      _","+                  | _","=g                  g_","___________ __________"],"entry":[11,14],"spawns":[],"npcs":[{"id":"lib_borum","name":"사서 보름","role":"talk","x":7,"y":3,"look":[9,12,2,1,0,0,9,9,5,2,0],"pose":"read","lines":["쉿… 도서관에서는 발소리도 살금살금.","독서대의 낡은 책들은 마을의 옛이야기예요. 천천히 읽어 보세요.","저 진열장 속 괴수가 자꾸 쳐다본다고요? …기분 탓이에요. 아마도요."]},{"id":"hall_pipi","name":"지도 제작자 피피","role":"collector","x":16,"y":4,"look":[3,1,2,"#3a6a42","#a8845c",1],"pose":"read","lines":["몬스터를 많이 만나 볼수록 지도가 정확해져. 도감을 채워 오면 그 땅의 힘을 나눠 줄게.","회관보다 여기가 조용해서 좋아. 지도 그리기엔 딱이지!"]},{"id":"hall_momo","name":"서기관 모모","role":"achieve","x":17,"y":11,"look":[0,2,0,"#d8a830","#fff0c0",0],"pose":"write","lines":["자네의 공적은 내가 빠짐없이 적어 두지. 기록의 서판에도 이름이 새겨질 걸세."]},{"id":"lib_case","name":"괴수 도감 진열장","role":"collector","x":11,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["유리병 속 괴수가 눈을 깜빡였다…!","도감을 채우면 그 땅의 힘이 깃든다고 적혀 있다."]},{"id":"lib_tablet","name":"기록의 서판","role":"achieve","x":20,"y":8,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["모험가들의 이름과 공적이 빼곡히 새겨져 있다."]},{"id":"lib_book_1","name":"낡은 책: 정령나무","role":"talk","x":8,"y":5,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["광장의 정령나무는 마을보다 먼저 거기 있었다.","어둠이 숲을 삼키던 밤, 동물들은 그 나무 아래로 모여들었다.","나무는 잎을 떨어뜨려 빛의 울타리를 쳤고, 그 안은 따뜻했다.","그래서 우리는 지금도 해마다 그 뿌리에 물을 준다. 고맙다는 인사로."]},{"id":"lib_book_2","name":"낡은 책: 어둠에 먹힌 숲","role":"talk","x":14,"y":5,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["북쪽 숲은 원래 노래하는 숲이었다고 한다.","어느 날부터 새들이 울지 않았고, 나무들이 검게 말라 갔다.","숲에 남은 짐승들은 머리가 둘이 되거나, 눈이 셋이 되었다.","울타리 너머로 들리는 소리는… 아직 그 숲이 무언가를 부르는 소리일지도 모른다."]},{"id":"lib_book_3","name":"낡은 책: 첫 이주민들","role":"talk","x":19,"y":13,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["첫 이주민은 다람쥐 셋, 곰 하나, 그리고 아주 겁 많은 양 한 마리였다.","곰이 통나무를 나르고, 다람쥐들이 지붕을 엮고, 양은… 모두를 위해 털실을 떴다.","울타리 한 칸, 집 한 채씩. 그렇게 넥서스 마을이 생겼다.","책 끝에 삐뚤빼뚤한 글씨: \"다음 페이지는 네가 써 줘.\""]}],"portals":[{"x":11,"y":15,"to":"town","tx":36,"ty":22}],"fires":[[4,2]],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"pet_house","replaces":null,"name":"몽글 펫 돌봄집","theme":"interior","style":"inn","bgm":"cafe","safe":true,"band":null,"w":14,"h":10,"ground":["ffffffffffffff","ffffffffffffff","ffffffffffffff","ffffffffffffff","ffffffffffffff","ffuuuuffffffff","ffuuuuffffffff","ffuuuuffffffff","ffuuuuffffffff","fffffffeffffff"],"objects":["==+==~@~==+===","=g g       ]w_","=            _","+            _","=    mmmmm  *_","=            _","= %        % _","=   %        _","=           g_","_______ ______"],"entry":[7,8],"spawns":[],"npcs":[{"id":"pet_monggeul","name":"펫 돌보미 몽글","role":"shop","x":7,"y":2,"look":[9,4,2,3,4,0,3,9,5,2,0],"goods":["pet_chick","pet_bat","pet_wisp"],"lines":["몽글몽글~ 펫 친구를 찾으러 왔구나!","펫은 사냥터에서 떨어진 물건을 주워 줘요. 착하죠?","고양이들은 손님이 아니라 하숙생이에요. 깨우지 말아 주세요."]}],"portals":[{"x":7,"y":9,"to":"town","tx":29,"ty":48}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"starlight_inn","replaces":null,"name":"모닥별 여관","theme":"interior","style":"inn","bgm":"inn","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","fffffffffffllllllllf","ffffxxxffffllllllllf","fffffffffffllllllllf","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffffffefffffffff"],"objects":["===+==@=+==~===+=+==","=w  r#r    popop *g_","=                  _","=  s   s           _","=                  _","=                  _","+                  _","+  kkkkk           _","=  -----           _","=* kkkkk        ww _","=                 ]_","=ok          mmmmm _","=k                 _","=g                *_","=                  _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"inn_maru","name":"여관 주인 마루","role":"shop","x":15,"y":9,"look":[2,3,1,"#8a6a3a","#e6cca4",0],"pose":"wipe","goods":["inn_stew","inn_bread","hp_s","hp_m","mp_s","mp_m","recall","camp"],"lines":["모닥별 여관에 어서 오시게! 스튜가 막 끓었다네.","벽난로 곁에 앉아 쉬면 온기가 오래 남지. 먼 길 떠나기 전엔 꼭 쉬어 가게."]},{"id":"inn_lira","name":"음유시인 리라","role":"talk","x":9,"y":5,"look":[1,2,0,"#7a3a5a","#fff0e4",0],"lines":["♪ 별이 모닥불에 내려앉은 밤, 꼬리 긴 영웅이 길을 떠났네 ♪","심연의 노래를 아나? 아직 끝까지 들은 사람이 없다지."]},{"id":"inn_toto","name":"졸린 나그네 토토","role":"talk","x":8,"y":3,"look":[1,0,3,"#5e6a88","#c8b090",3],"pose":"doze","lines":["음냐… 오 분만 더…","…아, 미안. 숲에서 사흘을 걸었더니 눈이 감기네."]}],"portals":[{"x":10,"y":15,"to":"town","tx":68,"ty":51}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"tales_cafe","replaces":null,"name":"테일즈 카페","theme":"interior","style":"cafe","bgm":"cafe","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","ffffffffffffffffffff","ffffxxxfffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","fuuuuuqqqqqqffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","ffffffffffefffffffff"],"objects":["==++===@=^^=~=======","=g  b#b      rrrb g_","=   %            ] _","=  s   s           _","=           m$$jmm _","=                 w_","+ k               g_","+ o          k     _","= k          o     _","=      kok   k ko  _","=*              k  _","=                  _","=  ok              _","=  k              *_","=g                 _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"cafe_moka","name":"카페 주인 모카","role":"shop","x":16,"y":2,"look":[0,3,1,"#7a4a2c","#f4e0c8",0],"pose":"wipe","goods":["cafe_coffee","cafe_cocoa","cafe_tea","cafe_scone","cafe_pie"],"lines":["어서 와요, 테일즈 카페예요! 오늘의 블렌드는 고소한 맛이 일품이죠.","사냥 나가기 전에 따뜻한 거 한 잔 어때요? 힘이 날 거예요.","벽난로 앞에 앉아 쉬면 몸이 금방 녹아요. 고양이 깨우지는 말고요!"]},{"id":"cafe_somi","name":"단골 손님 솜이","role":"talk","x":10,"y":10,"look":[3,1,0,"#d86a8a","#fff4e8",1],"pose":"sip","lines":["여기 코코아는 마시멜로가 두 개나 들어 있어!","창가 자리에 햇살이 들면 깜빡 졸게 된다니까.","바람초원 들꽃으로 우린 허브차, 꼭 마셔 봐."]},{"id":"cafe_lumi","name":"책벌레 루미","role":"talk","x":3,"y":9,"look":[1,4,2,"#3e6a8a","#d8ccff",0],"pose":"read","lines":["쉿, 지금 제일 재밌는 대목이야… 피의 심연 끝에는 뭐가 있을까?","옛날 모험가들은 이 카페에서 파티를 짰대. 지금 너처럼!"]}],"portals":[{"x":10,"y":15,"to":"town","tx":79,"ty":50}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"town_hall","replaces":null,"name":"넥서스 마을회관","theme":"interior","style":"hall","bgm":"hall","safe":true,"band":null,"w":22,"h":18,"ground":["llllllllllllllllllllll","llllllllllllllllllllll","llllllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyeylllllllll"],"objects":["==++=!==!=~~~=!==!=++=","=g    tt *   * tt   g_","=                    _","=                    _","=#                   _","=                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=  kkkkk      kkkkk  _","+                    _","+                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=b kkkkk      kkkkk v_","=b                   _","=b       *   *       _","=g                  g_","___________ __________"],"entry":[11,16],"spawns":[],"npcs":[{"id":"hall_bori","name":"이장 보리","role":"talk","x":11,"y":3,"look":[2,0,3,"#5a3a6a","#e6d8c0",0],"lines":["넥서스 마을회관에 온 걸 환영하네. 이 마을은 모험가들 덕에 버티고 있지.","벽에 걸린 지도를 보게. 동쪽은 바람초원, 서쪽은 네온 시티 — 그 너머는 아직 아무도 다 그리지 못했다네.","피곤하면 벽난로 곁에 앉아 쉬어 가게. 회관의 불은 꺼진 적이 없어."]},{"id":"hall_hana","name":"게시판지기 해나","role":"daily","x":19,"y":14,"look":[3,0,1,"#4a8ad0","#ffd0a0",2],"lines":["회관 게시판에도 오늘의 과제가 붙어 있어요. 매일 아침 6시에 새로 바뀐답니다!"]},{"id":"hall_map","name":"마을 지도","role":"talk","x":11,"y":0,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["【중앙 광장】 분수와 이동의 돌, 정령나무 모닥불. 리나의 노점과 균열의 오벨리스크도 여기 있다.","【윗마을】 계단 위 마을회관, 서쪽 부엉이 도서관, 동쪽 넥서스 수련관과 수련장.","【장터 거리】 동쪽 길 따라 다람쥐 잡화점, 캉캉대장간, 늑대발 용병사무소. 골목 위엔 보글연금공방.","【모닥별 뜰】 남동쪽 광장에 쥬쥬식당, 테일즈 카페, 모닥별 여관.","【살림 마을】 개울 건너 서쪽에 동동아파트와 내 집. 개울가에 마을 창고와 몽글 펫 돌봄집.","【광장 남쪽】 루루 의상실, 그리고 남쪽 길 끝 버드나무 마을과 연못."]}],"portals":[{"x":11,"y":17,"to":"town","tx":49,"ty":26}],"fires":[[2,4]],"waypoint":null,"fishing":false,"boss":null},
++    {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"town","safe":true,"band":null,"w":40,"h":32,"ground":["tt,t...............pp...\"..,.....tt.....",".t..tt....,........pp.,....\".......tt...","ttttt.t............pp.,,...\"..,.,tt.tt..","ttttttt\".,...\",...\"pp....,.,.....tt.tt..",".ttt,...,....,.....pp............,ttt..t","ttt...t...........,pp............tttt...","..,,.,.\"...........pp....,........\"...\".","\",.....,..\".,......pp..,......,.......,.","....,,...,...\".....pp.....,........,.,..","....,...pppppppppppppppppppppppp........","........pp.........pp.......\".pp........",".,......pp.........pp.,,......pp........",".......,pp\".,.\".oooooooo.,...ssssss.....","....\"\"\",pp.,...oooooooooo,.sswwwwwwss,..","....\"\"\"\"pp..,,oooooooooooo.swwwwwwwws...",".,.\"\"\"\",pp\"...oooooooooooobbbbwwwwwws.,.","....\"\"\".pp....oooooooooooo.swwwwwwwws..,","....\"\"\".pp....oooooooooooo,sswwwwwwss...","......\",pp.....oooooooooo....ssssss.....",".....,..pp.\"....oooooooo......pp...,,...",".,.,.,\".pp\"......\",pp.........pp,,.....,","...,....pppppppppppppppppppppppp....,...","....,,..pp,..,,..,....,..\"....pp........","..........,.....,..............,..\".,...","...,.\",\".,,.,............,...\"\".........","......,.....\".......,........,,.........",".....,..,..,....,..............,..,..,..","..........,,..,....,......\".\"...........","..tt.t...............,..........,,..tt.t","t..tttt\".,.....,..\"...,...........t,tt,t",".ttt.t...............,.....,.....ttttttt","...t.tt.,.....\"..,.\"....\".......\"t,..t,t"],"objects":["TTPTTTTTTTTTTTTTTT    TPTTPPTTTTTTTTTTTP","TTTTTTTPTTTTTTPTPT    TTTTTTTPTPTTTTTTTT","TT                                    PT","TT         HH     L  L    HH          TT","TT    hhhh   hhhh           hhhh      TT","TT    hhhh   hhhh     G     hhhh      PT","TT    hhhh   hhhh           hhhh   u  TT","TT                                    TT","TT                                  B TT","PT B                                  TT","TT                                    TT","TT                                    TT","TT FFFFF       L        L             TT","TT F   F   B                 e    e   TT","TP F   F                              TT","PT F   F           T                  TT","TP F   F                           e  PP","PT F   F   B                     e    PT","TP FF FF                              TP","TT             L        L             TT","TT  u                                 TT","TP                                    TT","TT                                    TT","TT  hhhh                       hhhh   TP","TT  hhhh      hhhh      B      hhhh   PT","TT  hhhh      hhhh             hhhh   TP","PT          B hhhh        B         B PT","TT        u      E    u               TP","PT                                    TT","PT                                    PT","TPPTPTPTTTTTTTTPTTTTTPPTTPTTTPTTTTTTPTTP","TPTTPTTTTTTPTTTTTTTTTTTTTTTPTTTTTPTTTTPT"],"entry":[20,4],"spawns":[],"npcs":[{"id":"willow_elder","name":"촌장 버들","role":"quest","x":18,"y":13,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 도와주면 섭섭지 않게 사례하지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":25,"y":16,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."]},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":15,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 울타리 안은 밟으면 안 돼!","넥서스 광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":22,"y":25,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 넥서스 광장이야. 거기서 동쪽은 바람초원이고."]}],"portals":[{"x":19,"y":1,"to":"town","tx":49,"ty":71},{"x":20,"y":1,"to":"town","tx":50,"ty":71}],"fires":[[19,25]],"waypoint":[22,7],"fishing":true,"boss":null,"marks":[{"x":22,"y":5,"kind":"sign","label":"↑ 넥서스 광장","to":"town"}]},
+   ],
+-  links: [{"map":"town","x":19,"y":27,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":20,"y":27,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"},{"map":"town","x":29,"y":23,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":30,"y":23,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":18,"y":5,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":19,"y":5,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":9,"y":8,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":10,"y":8,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"}],
+-  npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":21,"y":26,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":26,"y":12,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","전직은 되돌릴 수 없다네. 신중하게 고르게."]}],
+-  quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"넥서스 광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":5,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false}]},
++  links: [{"map":"town","x":49,"y":73,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":50,"y":73,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"},{"map":"town","x":49,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":50,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":36,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":37,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":62,"y":20,"to":"dojo","tx":9,"ty":12,"label":"넥서스 수련관"},{"map":"town","x":63,"y":20,"to":"dojo","tx":9,"ty":12,"label":"넥서스 수련관"},{"map":"town","x":65,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":66,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":72,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":73,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":85,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":86,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":80,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":81,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":72,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":73,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":79,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":80,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":67,"y":51,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":67,"y":52,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":45,"y":51,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":45,"y":52,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":29,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":30,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":10,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"},{"map":"town","x":11,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"}],
++  npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":52,"y":70,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":70,"y":23,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","전직은 되돌릴 수 없다네. 신중하게 고르게."]}],
++  quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"넥서스 광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":5,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false},{"id":"sq_merc_hares","giver":"merc_grey","title":"초원의 두 머리","text":"바람초원의 쌍두 토끼가 울타리까지 내려온다. 10마리만 쫓아내 주게. 첫 의뢰로 딱이지.","done":"깔끔하군. 늑대발의 일원이 될 자격이 있어.","goal":{"type":"kill","mob":"twinhare","n":10},"req":{"lv":1,"quest":null},"reward":{"xp":150,"gold":100,"items":[["hp_s",5]]},"repeat":false},{"id":"sq_merc_boar","giver":"merc_grey","title":"반쪽 멧돼지 사냥","text":"몸이 반으로 갈라진 멧돼지들이 길을 막고 있다. 8마리만 부탁하지. 돌진하면 옆으로 피하게.","done":"잘했다. 그 녀석들 돌진은 우리 단원들도 무서워하지.","goal":{"type":"kill","mob":"splitboar","n":8},"req":{"lv":10,"quest":"sq_merc_hares"},"reward":{"xp":900,"gold":400,"items":[["hp_m",5],["stone",1]]},"repeat":false},{"id":"sq_merc_letter","giver":"merc_grey","title":"볼칸에게 보내는 주문서","text":"광장 동쪽 장터의 대장장이 볼칸에게 이 주문서를 전해 주게. 단원들 새 칼이 필요하거든.","done":"볼칸이 받았다고? 좋아. 이건 심부름 값이다.","goal":{"type":"talk","npc":"smith"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":120,"items":[["recall",2]]},"repeat":false}]},
+ };
+ // ───────────────────────────── jobs and stats: tables ─────────────────────────────
+ // docs/design/jobs-and-stats.md. Everybody starts as a 모험가 (adventurer) with six stats at 5;
+@@ -3732,9 +3742,9 @@ function mapPayload(m) {
+ 
+ const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn", "interior"];
+ /** The looks an interior can have (wallpaper, wood and light; public/iso_interior.js). */
+-const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
++const ROOM_STYLES = ["cafe", "hall", "inn", "library", "office", "forge", "tavern", "shop", "boutique", "dojo", "lab", "lobby"];
+ /** Little idle acts an NPC can play out (public/iso_interior.js npcPose). */
+-const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
++const NPC_POSES = ["sip", "read", "wipe", "doze", "write", "sweep", "hammer", "stir", "carry", "fish", "water", "knit", "wave"];
+ /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
+ const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job",
+   // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
+@@ -3759,6 +3769,8 @@ function npcFrom(n, m) {
+     if (goods.length) out.goods = goods;
+   }
+   if (NPC_POSES.includes(n.pose)) out.pose = n.pose;
++  // an interactive object (a bookshelf, a notice board, a mirror): no body, it may stand on its furniture
++  if (n.thing === true) out.thing = true;
+   return out;
+ }
+ 
+diff --git a/game/src/logic/36-custom-maps.js b/game/src/logic/36-custom-maps.js
+index 34e34fa..07be06a 100644
+--- a/game/src/logic/36-custom-maps.js
++++ b/game/src/logic/36-custom-maps.js
+@@ -8,9 +8,9 @@
+ 
+ const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn", "interior"];
+ /** The looks an interior can have (wallpaper, wood and light; public/iso_interior.js). */
+-const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
++const ROOM_STYLES = ["cafe", "hall", "inn", "library", "office", "forge", "tavern", "shop", "boutique", "dojo", "lab", "lobby"];
+ /** Little idle acts an NPC can play out (public/iso_interior.js npcPose). */
+-const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
++const NPC_POSES = ["sip", "read", "wipe", "doze", "write", "sweep", "hammer", "stir", "carry", "fish", "water", "knit", "wave"];
+ /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
+ const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job",
+   // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
+@@ -35,6 +35,8 @@ function npcFrom(n, m) {
+     if (goods.length) out.goods = goods;
+   }
+   if (NPC_POSES.includes(n.pose)) out.pose = n.pose;
++  // an interactive object (a bookshelf, a notice board, a mirror): no body, it may stand on its furniture
++  if (n.thing === true) out.thing = true;
+   return out;
+ }
+ 
+diff --git a/game/tests/interiors.mjs b/game/tests/interiors.mjs
+index c7b85d7..ac38a83 100644
+--- a/game/tests/interiors.mjs
++++ b/game/tests/interiors.mjs
+@@ -1,12 +1,40 @@
+-// Headless test of the town's interiors (data/maps/tales_cafe, town_hall, starlight_inn; public/iso_interior.js):
+-// every house door in town leads in and back out, nobody arrives in a wall or on a door, the rooms are
+-// dioramas (back walls only behind, low cut walls in front), and the services inside work — the cafe and
+-// the inn sell their own goods and only theirs. node tests/interiors.mjs
++// Headless test of the town's interiors (data/maps/<room>.json, docs/design/town.md D/F; art in
++// public/iso_interior.js): every building door in town leads into its room and back out onto its step,
++// nobody arrives in a wall or on a door, the rooms are dioramas (back walls only behind, low cut walls in
++// front), everyone and every interactive object inside can be walked up to, the shopkeepers sell only their
++// own (buyable) goods, and the services inside work — the cafe and the inn sell their own goods and only
++// theirs. node tests/interiors.mjs
+ import assert from "node:assert/strict";
++import { readFileSync } from "node:fs";
+ import * as L from "../src/logic.js";
+ 
+-const ROOMS = ["tales_cafe", "town_hall", "starlight_inn"];
+-const WALLS = "=+^~@!";
++/** The frozen contract (docs/design/town.md D): size, style, the town's door tiles and the landing outside. */
++const ROOMS = {
++  town_hall: { w: 22, h: 18, style: "hall", doors: [[49, 25], [50, 25]], out: [49, 26] },
++  owl_library: { w: 22, h: 16, style: "library", doors: [[36, 21], [37, 21]], out: [36, 22] },
++  dojo: { w: 18, h: 14, style: "dojo", doors: [[62, 20], [63, 20]], out: [62, 21] },
++  general_store: { w: 16, h: 12, style: "shop", doors: [[65, 37], [66, 37]], out: [65, 38] },
++  kangkang_forge: { w: 18, h: 12, style: "forge", doors: [[72, 37], [73, 37]], out: [72, 38] },
++  merc_office: { w: 20, h: 14, style: "office", doors: [[85, 36], [86, 36]], out: [85, 37] },
++  bogle_lab: { w: 18, h: 12, style: "lab", doors: [[80, 28], [81, 28]], out: [80, 29] },
++  juju_diner: { w: 20, h: 14, style: "tavern", doors: [[72, 49], [73, 49]], out: [72, 50] },
++  tales_cafe: { w: 20, h: 16, style: "cafe", doors: [[79, 49], [80, 49]], out: [79, 50] },
++  starlight_inn: { w: 20, h: 16, style: "inn", doors: [[67, 51], [67, 52]], out: [68, 51] },
++  boutique: { w: 16, h: 12, style: "boutique", doors: [[45, 51], [45, 52]], out: [46, 51] },
++  pet_house: { w: 14, h: 10, style: "inn", doors: [[29, 47], [30, 47]], out: [29, 48] },
++  dongdong_apt: { w: 14, h: 10, style: "lobby", doors: [[10, 34], [11, 34]], out: [10, 35] },
++};
++/** Interactive objects the doc asks for, by room (id → role). */
++const THINGS = {
++  owl_library: { lib_case: "collector", lib_tablet: "achieve", lib_book_1: "talk", lib_book_2: "talk", lib_book_3: "talk" },
++  merc_office: { merc_board: "daily", merc_party: "talk" },
++  kangkang_forge: { forge_anvil: "smith" },
++  boutique: { bout_mirror: "costume" },
++  dojo: { dojo_scroll: "job" },
++  dongdong_apt: { apt_mail: "talk" },
++  town_hall: { hall_map: "talk" },
++};
++const WALLS = "=+^~@!", LIGHTS = "*o#<:+";
+ const D = L.defs();
+ const S = L.setup();
+ let now = 1000;
+@@ -14,6 +42,8 @@ S.now = now;
+ const PID = "pid-rooms01";
+ L.addPlayer(S, PID, L.newChar("문지기", "warrior", []));
+ const p = S.players[PID];
++/** Where a new character starts: the town's entry (the map payload does not carry it). */
++const START = [Math.floor(p.x / 16), Math.floor(p.y / 16)];
+ const view = () => { now += 100; S.now = now; L.tick(S, now); const v = JSON.parse(JSON.stringify(L.viewFor(S, PID))); L.endTick(S); return v; };
+ const place = (id, x, y) => { L.runtime(S, p.map).n--; p.map = id; L.runtime(S, id).n++; p.x = x; p.y = y; p.mvAt = now; p.sendMap = true; p.hp = 1e9; };
+ const mapOf = (id) => { place(id, 0, 0); return view().map; };
+@@ -31,6 +61,7 @@ const flood = (m, sx, sy) => {
+   }
+   return seen;
+ };
++const SIDES = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+ /** Step onto a door tile and see where you come out. */
+ const walkThrough = (id, door) => {
+   place(id, door.x * 16 + 8, door.y * 16 + 11);
+@@ -40,14 +71,24 @@ const walkThrough = (id, door) => {
+ };
+ /** No door within reach of where you arrive (or you would bounce straight back out). */
+ const clearOfDoors = (m, x, y) => m.portals.every((d) => Math.hypot(x - (d.x * 16 + 8), y - 3 - (d.y * 16 + 8)) >= 12);
++/** Within the server's reach of an NPC (70-validate npcNear) and the client's F prompt (client.js nearestNpc). */
++const reaches = (n, tx, ty) => {
++  const d = Math.hypot(tx * 16 + 8 - (n.x * 16 + 8), ty * 16 + 8 - (n.y * 16 + 12));
++  return d < 56 && d - (n.goods ? 14 : 0) < 40;
++};
+ 
+ const town = mapOf("town");
+-const reachTown = flood(town, 20, 18);
+-for (const id of ROOMS) {
++// The doors land on the redesigned town's tiles (docs/design/town.md B–D, 100 × 76). Until that town is built
++// (agent T-A) the town-side half of the round trip cannot be walked; the rooms themselves are still checked.
++const NEW_TOWN = town.w === 100 && town.h === 76;
++if (!NEW_TOWN) console.log("interiors: the new 100×76 town is not built yet — town-side door checks skipped");
++const reachTown = NEW_TOWN ? flood(town, START[0], START[1]) : null;
++for (const [id, want] of Object.entries(ROOMS)) {
+   const m = mapOf(id);
+   assert.equal(m.theme, "interior", `${id} is an interior`);
+   assert.ok(m.safe, `${id} is a safe place`);
+-  assert.ok(["cafe", "hall", "inn"].includes(m.style), `${id} has a room style`);
++  assert.equal(m.style, want.style, `${id} has its room style`);
++  assert.deepEqual([m.w, m.h], [want.w, want.h], `${id} is ${want.w}×${want.h}`);
+   assert.equal(L.runtime(S, id).mobs.length, 0, `${id}: no monsters indoors`);
+   // a diorama: tall walls only along the back (north row, west column), the front cut down low
+   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+@@ -55,41 +96,72 @@ for (const id of ROOMS) {
+     if (WALLS.includes(c)) assert.ok(y === 0 || x === 0, `${id}: a tall wall only at the back (${x},${y})`);
+     if (y === m.h - 1 || x === m.w - 1) assert.ok(c === "_" || c === " " || (WALLS.includes(c) && (y === 0 || x === 0)), `${id}: the front edge is a low cut wall or a doorway (${x},${y})`);
+   }
++  assert.ok(m.o.some((r) => [...r].some((c) => LIGHTS.includes(c))), `${id}: something gives light (a lamp, a fire, a window)`);
++  // one way out: a door mat in the front wall, the room's entry just inside it, out onto the building's landing
++  // (the game drops a door whose landing is off the map: until the new town is in, read the file's door)
++  const file = JSON.parse(readFileSync(new URL(`../data/maps/${id}.json`, import.meta.url), "utf8"));
++  assert.deepEqual(file.portals.map((d) => [d.to, d.tx, d.ty]), [["town", ...want.out]], `${id}: the way out leads to its landing in town`);
++  if (NEW_TOWN) {
++    assert.equal(m.portals.length, 1, `${id}: one way out`);
++    assert.ok(m.portals[0].door, `${id}: the way out is drawn as a door`);
++  }
++  const exit = NEW_TOWN ? m.portals[0] : file.portals[0];
++  assert.equal(exit.y, m.h - 1, `${id}: the way out is in the front wall`);
++  assert.equal(m.g[exit.y][exit.x], "e", `${id}: a door mat at the way out`);
++  const entry = [exit.x, m.h - 2];
++  assert.ok(open(m, ...entry), `${id}: the tile just inside the door is open`);
++  const reachRoom = flood(m, entry[0], entry[1]);
++  assert.ok(reachRoom[exit.y * m.w + exit.x], `${id}: the way out can be walked to`);
++  // everyone inside can be walked up to; an interactive object stands on its furniture with an open side
++  for (const n of m.npcs) {
++    if (n.thing) {
++      assert.ok(m.o[n.y][n.x] !== "_", `${id}: ${n.name} is not on the front wall`);
++      const side = SIDES.map(([dx, dy]) => [n.x + dx, n.y + dy]).find(([x, y]) => open(m, x, y) && reachRoom[y * m.w + x] && reaches(n, x, y));
++      assert.ok(side, `${id}: ${n.name} (a thing) can be walked up to and used`);
++    } else {
++      assert.ok(open(m, n.x, n.y), `${id}: ${n.name} stands on open floor`);
++      assert.ok(SIDES.concat([[0, 0]]).some(([dx, dy]) => reachRoom[(n.y + dy) * m.w + n.x + dx]), `${id}: ${n.name} can be walked up to`);
++    }
++    if (n.goods) {
++      assert.equal(n.role, "shop", `${id}: only a shopkeeper keeps goods`);
++      for (const g of n.goods) assert.ok(D.items[g] && D.items[g].price > 0, `${id}: ${n.name} sells only things that can be bought (${g})`);
++    }
++  }
++  for (const [tid, role] of Object.entries(THINGS[id] || {})) {
++    const n = m.npcs.find((o) => o.id === tid);
++    assert.ok(n && n.thing && n.role === role, `${id}: ${tid} is an interactive object with role ${role}`);
++  }
++  for (const f of L.runtime(S, id).fires) assert.ok(reachRoom[Math.floor(f.y / 16) * m.w + Math.floor(f.x / 16)], `${id}: the hearth can be reached`);
++  if (!NEW_TOWN) continue;
+   // the doors in town lead here; you arrive on open floor, clear of the way out, and can walk to it
+-  const doors = town.portals.filter((d) => d.to === m.name);
+-  assert.ok(doors.length >= 1, `${id}: a door in town leads here`);
++  const doors = want.doors.map(([x, y]) => town.portals.find((d) => d.x === x && d.y === y));
++  assert.ok(doors.every(Boolean), `${id}: its two door tiles in town are doors`);
+   assert.ok(doors.every((d) => d.door), `${id}: the town's door is drawn as a house door`);
+   assert.ok(doors.every((d) => reachTown[d.y * town.w + d.x]), `${id}: its door can be walked to from the plaza`);
+-  const reachRoom = flood(m, m.portals[0].x, m.portals[0].y);
+   for (const d of doors) {
+     const at = walkThrough("town", d);
+     assert.equal(at.map, id, `${id}: the door at (${d.x},${d.y}) goes in`);
+     const tx = Math.floor(at.x / 16), ty = Math.floor(at.y / 16);
+-    assert.ok(open(m, tx, ty), `${id}: you arrive on open floor`);
++    assert.deepEqual([tx, ty], entry, `${id}: you arrive just inside the door`);
+     assert.ok(clearOfDoors(m, at.x, at.y), `${id}: you arrive clear of the way out`);
+-    assert.ok(reachRoom[ty * m.w + tx], `${id}: the way out can be walked to from where you arrive`);
+   }
+-  // and back out: onto open ground in town, clear of the door, where the plaza can be reached
+-  assert.equal(m.portals.length, 1, `${id}: one way out`);
+-  const exit = m.portals[0];
+-  assert.ok(exit.door, `${id}: the way out is drawn as a door`);
+-  assert.equal(exit.y, m.h - 1, `${id}: the way out is in the front wall`);
++  // and back out: onto the open landing in town, clear of the door, on the step of the door you went in by
+   const out = walkThrough(id, exit);
+   assert.equal(out.map, "town", `${id}: the way out leads to town`);
+   const ox = Math.floor(out.x / 16), oy = Math.floor(out.y / 16);
++  assert.deepEqual([ox, oy], want.out, `${id}: you come out on the landing`);
+   assert.ok(open(town, ox, oy) && reachTown[oy * town.w + ox], `${id}: you come out on open ground in town`);
+   assert.ok(clearOfDoors(town, out.x, out.y), `${id}: you come out clear of the door`);
+-  assert.ok(Math.abs(ox - doors[0].x) <= 2 && oy === doors[0].y + 1, `${id}: you come out on the step of the door you went in by`);
+-  // everyone inside can be talked to, and the hearth can be sat by
+-  for (const n of m.npcs) {
+-    assert.ok(open(m, n.x, n.y), `${id}: ${n.name} stands on open floor`);
+-    assert.ok([[0, 1], [1, 0], [0, -1], [-1, 0], [0, 0]].some(([dx, dy]) => reachRoom[(n.y + dy) * m.w + n.x + dx]), `${id}: ${n.name} can be walked up to`);
+-  }
+-  const fires = L.runtime(S, id).fires;
+-  assert.ok(fires.length >= 1, `${id}: a fire burns in the hearth`);
+-  for (const f of fires) assert.ok(reachRoom[Math.floor(f.y / 16) * m.w + Math.floor(f.x / 16)], `${id}: the hearth can be reached`);
++  assert.ok(doors.some((d) => Math.abs(ox - d.x) + Math.abs(oy - d.y) === 1), `${id}: the landing is the door's step`);
+ }
+ 
++// ── the people who moved: the map-maker and the scribe work in the library now, the hall keeps the rest
++const hallNpcs = mapOf("town_hall").npcs, lib = mapOf("owl_library").npcs;
++assert.ok(lib.some((n) => n.id === "hall_pipi" && n.role === "collector") && lib.some((n) => n.id === "hall_momo" && n.role === "achieve"), "피피 and 모모 moved to the library");
++assert.ok(!hallNpcs.some((n) => n.id === "hall_pipi" || n.id === "hall_momo"), "and are no longer in the hall");
++assert.ok(hallNpcs.some((n) => n.id === "hall_bori") && hallNpcs.some((n) => n.id === "hall_hana"), "the hall keeps 보리 and 해나");
++// the mercenaries' captain gives three side quests
++assert.equal(D.side.filter((q) => q.giver === "merc_grey").length, 3, "그레이 has three side quests");
+ // ── the cafe and the inn sell their own goods, and only theirs
+ const buyAt = (id, npcId, item) => {
+   const m = mapOf(id), n = m.npcs.find((o) => o.id === npcId);
+@@ -120,7 +192,45 @@ assert.ok(L.validateAction(S, PID, { t: "use", id: "cafe_cocoa" }).ok, "the coco
+ L.applyAction(S, PID, { t: "use", id: "cafe_cocoa" });
+ assert.ok(p.food && p.food.id === "cafe_cocoa" && p.food.xp > 0 && p.food.until > now, "and warms you for a while");
+ 
+-// ── the hall's people are the town's services, indoors
+-const hall = mapOf("town_hall");
+-for (const role of ["achieve", "collector", "daily"]) assert.ok(hall.npcs.some((n) => n.role === role), `the town hall has a ${role} desk`);
++// ── the town's services, indoors: the hall's daily board, the library's collection and records, a shop in
++// every workshop selling only its own goods, the smith at the anvil, the job scroll in the dojo
++const hall = mapOf("town_hall"), library = mapOf("owl_library");
++assert.ok(hall.npcs.some((n) => n.role === "daily"), "the town hall keeps its daily board");
++for (const role of ["achieve", "collector"]) assert.ok(library.npcs.some((n) => n.role === role && !n.thing) && library.npcs.some((n) => n.role === role && n.thing), `the library has a ${role} desk and a ${role} object`);
++/** Stand on the first open tile within reach of the NPC (keepers are served across their counter). */
++const besideNpc = (id, npcId) => {
++  const m = mapOf(id), n = m.npcs.find((o) => o.id === npcId);
++  for (let r = 1; r <= 3; r++) for (const [dx, dy] of [[0, r], [r, 0], [-r, 0], [0, -r], [r, r], [-r, r]]) {
++    const x = n.x + dx, y = n.y + dy;
++    if (open(m, x, y) && reaches(n, x, y)) { place(id, x * 16 + 8, y * 16 + 8); return n; }
++  }
++  assert.fail(`${id}: nowhere to stand by ${n.name}`);
++};
++for (const [id, npcId, sells, not] of [
++  ["general_store", "store_dari", "hp_s", "cafe_cocoa"], ["kangkang_forge", "forge_musoe", "ru_ign", "hp_s"],
++  ["juju_diner", "juju", "food_m", "hp_s"], ["pet_house", "pet_monggeul", "pet_chick", "hp_s"],
++]) {
++  const n = besideNpc(id, npcId);
++  assert.ok(L.validateAction(S, PID, { t: "buy", id: sells, n: 1 }).ok, `${n.name} sells ${sells}`);
++  assert.ok(!L.validateAction(S, PID, { t: "buy", id: not, n: 1 }).ok, `${n.name} does not sell ${not}`);
++}
++// the diner's stove is a hearth to rest and cook by; the lab's cauldron is not
++assert.equal(L.runtime(S, "juju_diner").fires.length, 2, "the diner has the stove and the fireplace");
++assert.equal(L.runtime(S, "bogle_lab").fires.length, 0, "the lab's cauldron is no hearth");
++// an interactive object gives its service from beside it: the anvil, the mirror, the job scroll
++for (const [id, tid, role] of [["kangkang_forge", "forge_anvil", "smith"], ["boutique", "bout_mirror", "costume"], ["dojo", "dojo_scroll", "job"]]) {
++  const m = mapOf(id), n = m.npcs.find((o) => o.id === tid);
++  assert.ok(n.thing && n.role === role && !open(m, n.x, n.y), `${id}: ${n.name} stands on its furniture`);
++}
++const far = (m) => (m.o[m.h - 2][1] === " " ? [1, m.h - 2] : [m.w - 2, m.h - 2]);
++{
++  // the dojo's scroll alone answers for the job desk (the master beside it is the trainer)
++  const m = mapOf("dojo");
++  p.ch.wm.sword.lv = 99; p.ch.gold = 1e7;
++  besideNpc("dojo", "dojo_scroll");
++  assert.ok(L.validateAction(S, PID, { t: "job_change", j: "swordsman" }).ok, "a job can be taken at the dojo's scroll");
++  const [fx, fy] = far(m);
++  place("dojo", fx * 16 + 8, fy * 16 + 8);
++  assert.equal(L.validateAction(S, PID, { t: "job_change", j: "swordsman" }).error, "전직관이 너무 멉니다", "but not from across the room");
++}
+ console.log("interiors: OK");
+-- 
+2.43.0
+

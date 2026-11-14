@@ -1,0 +1,586 @@
+From f532bb813322ec5e81f68693fe5c27a1f647c0d0 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 14 Nov 2026 13:41:19 +0000
+Subject: [PATCH 1/5] =?UTF-8?q?Interiors=20art:=20the=20town's=20workshops?=
+ =?UTF-8?q?=20=E2=80=94=20eight=20new=20pieces,=20eight=20room=20styles,?=
+ =?UTF-8?q?=20eight=20idle=20acts?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+iso_interior.js draws the pieces docs/design/town.md E gives the new buildings: & anvil,
+< furnace (glow, flame, sparks), > rack (swords, spear, shield; clothes rail in a boutique,
+tool pegboard in a shop), | lectern with an open book, ; specimen case (a pickled hell-beast
+whose eye follows the room), : stove with a stew pot (a bubbling cauldron in a lab),
+' standing mirror, ` training dummy (drawn in any theme, so the dojo yard can use it).
+Styles office forge tavern shop boutique dojo lab lobby, with log, stone, tile,
+half-timber and paper-screen walls; tavern taps, shop till and potion case, lobby
+mailboxes and bench, office map table. Poses sweep hammer stir carry fish water knit wave.
+sprites.js npcLook takes a full hero look, so indoor hosts can be pandas, penguins, frogs.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01VHqoygdSy8NpLoKVbn9QhA
+---
+ game/public/iso_interior.js | 423 ++++++++++++++++++++++++++++++++++--
+ game/public/sprites.js      |   2 +
+ 2 files changed, 411 insertions(+), 14 deletions(-)
+
+diff --git a/game/public/iso_interior.js b/game/public/iso_interior.js
+index 8d74fd0..a107bb3 100644
+--- a/game/public/iso_interior.js
++++ b/game/public/iso_interior.js
+@@ -21,15 +21,21 @@
+  *          - long table · p bed · s armchair · t trophy cabinet · w barrel · ] crates · % sleeping cat
+  *   a house of one's own (logic 64-housing.js) adds [ wooden chest · { iron safe · } magic storage chest ·
+  *          ( teddy bear · ) goldfish bowl · ? gramophone
++ *   the town's workshops (docs/design/town.md E) add & anvil · < furnace (glow, sparks) · > rack (weapons and a
++ *          shield; a clothes rail in a boutique, tools in a shop) · | lectern with an open book · ; specimen case
++ *          (a pickled hell-beast that watches you) · : stove with a stew pot (a bubbling cauldron in a lab) ·
++ *          ' standing mirror · ` training dummy (drawn outdoors too)
+  *   (the autumn kingdom owns d f i z N V J in the object layer, so the room uses symbols there)
+- * Map `style` (cafe hall inn library, and a house's cottage mint) picks the wallpaper, curtains and banners.
++ * Map `style` (cafe hall inn library office forge tavern shop boutique dojo lab lobby, and a house's cottage
++ * mint) picks the wallpaper, curtains and banners, and turns a few pieces: `j` pours beer in a tavern and is a
++ * till and scale in a shop, `$` shows potions in a shop, `r` is a wall of mailboxes in a lobby.
+  * A house's map also carries `fd` ("x,y" → 0 N · 1 W · 2 S · 3 E: which way its owner turned a piece)
+  * and `hf` (its floor, shown round the edge of a round rug).
+  */
+ import { hash, C, mix, tone, shade, light, Buf, TILE_PX } from "./iso_px.js";
+ import { daylight } from "./decor.js";
+ 
+-export const WALLS = "=+^~@!", STUB = "_", FURN = "okmj$br#g*v-pstw]%[{}()?";
++export const WALLS = "=+^~@!", STUB = "_", FURN = "okmj$br#g*v-pstw]%[{}()?&<>|;:'`";
+ export const OBJECTS = WALLS + STUB + FURN;
+ export const FLOORS = "flxhquye";
+ const INK = C("#2b2233");
+@@ -46,6 +52,16 @@ const STYLE = {
+   // a house of one's own: cream stripes over honey wood, or mint stripes over pale wood
+   cottage: { paper: "#efe2c4", paper2: "#e2cfa8", pat: "stripe", wood: "#a06a42", curtain: "#d0786a", banner: "#d0786a", trim: "#d8aa6a" },
+   mint: { paper: "#bfe0cc", paper2: "#a8d0b8", pat: "stripe", wood: "#b88a5c", curtain: "#e8a0a8", banner: "#5a8aa8", trim: "#e0c890" },
++  // the town's workshops: a wolf-dark log lodge, a smoky stone forge, a half-timbered tavern, a striped acorn
++  // shop, a pink boutique, a paper-screen dojo, a tiled green lab and a flowered apartment lobby
++  office: { paper: "#7a5a40", paper2: "#6c4e38", pat: "logs", wood: "#4e3424", curtain: "#5a6a3a", banner: "#4a5a7a", trim: "#a87a4a", maps: true, cush: "#6a4a3a" },
++  forge: { paper: "#8a8078", paper2: "#766c64", pat: "stone", wood: "#4a3a30", curtain: "#7a4a3a", banner: "#a84a2a", trim: "#c8823a", cush: "#7a4a3a" },
++  tavern: { paper: "#e6d2a8", paper2: "#d8c094", pat: "timber", wood: "#6e4228", curtain: "#a8443c", banner: "#a8443c", trim: "#d8a050", cush: "#a8443c" },
++  shop: { paper: "#ecdcaa", paper2: "#dcc488", pat: "stripe", wood: "#8a5a34", curtain: "#d8843a", banner: "#d8843a", trim: "#c89a5a", cush: "#d8843a" },
++  boutique: { paper: "#f4d6de", paper2: "#e8c0cc", pat: "stripe", wood: "#b88a7a", curtain: "#e87a9a", banner: "#e87a9a", trim: "#e8c890", cush: "#e8a0b8" },
++  dojo: { paper: "#efe6cc", paper2: "#d8cca8", pat: "shoji", wood: "#7a5434", curtain: "#3a4a6a", banner: "#b83a34", trim: "#c8a050", cush: "#3a4a6a" },
++  lab: { paper: "#a8c8b0", paper2: "#94b8a0", pat: "tile", wood: "#5a4a3a", curtain: "#7a5a9a", banner: "#7a5a9a", trim: "#b8a060", cush: "#7a5a9a" },
++  lobby: { paper: "#e0d0a8", paper2: "#cfbc90", pat: "flower", dot: "#f4ead0", wood: "#7a5a3a", curtain: "#5a8a6a", banner: "#4a7aa8", trim: "#c8a060", cush: "#5a8a6a" },
+ };
+ const styleOf = (m) => STYLE[m.style] || STYLE.cafe;
+ 
+@@ -370,8 +386,46 @@ function wallSkin(S, u, z, k) {
+   if (z === 17) return F(light(S.trim, 1.1), k);
+   if (z === 18) return F(shade(S.wood, 0.72), k);
+   if (z >= WH - 3) return F(z === WH - 1 ? light(S.wood, 1.24) : z === WH - 2 ? S.wood : shade(S.wood, 0.62), k);
+-  // the paper: stripes, a damask diamond or a little flower
++  // the paper: stripes, a damask diamond or a little flower (or logs, stone, tiles, timber, paper screens)
+   if (S.pat === "stripe") return F((u % 8) < 3 ? S.paper2 : S.paper, k);
++  const zz = z - 19;
++  if (S.pat === "logs") {
++    // round logs laid flat: a dark seam, a lit crown, a shaded belly, a knot now and then
++    const r = zz % 6, course = Math.floor(zz / 6), su = u + course * 13, seg = Math.floor(su / 40);
++    if (r === 0) return F(shade(S.paper, 0.6), k);
++    if (r === 1) return F(light(S.paper, 1.14), k);
++    if (r === 5) return F(shade(S.paper, 0.82), k);
++    if (r === 3 && hash(seg, course, 141) < 0.3 && Math.abs((su % 40) - 20) < 1.5) return F(shade(S.paper, 0.66), k);
++    return F((seg + course) & 1 ? S.paper2 : S.paper, k);
++  }
++  if (S.pat === "stone") {
++    // coursed field stone, dark mortar, three tones
++    const row = Math.floor(zz / 5), su = u + (row & 1 ? 5 : 0);
++    if (zz % 5 === 4 || su % 10 === 0) return F(shade(S.paper, 0.58), k);
++    if (zz % 5 === 3) return F(shade(S.paper, 0.86), k);
++    const t = hash(Math.floor(su / 10), row, 142);
++    return F(t < 0.3 ? S.paper2 : t < 0.78 ? S.paper : light(S.paper, 1.1), k);
++  }
++  if (S.pat === "tile") {
++    // glazed tiles with pale grout, a gentle check
++    if (u % 6 === 0 || zz % 6 === 0) return F(light(S.paper, 1.2), k);
++    if (u % 6 === 1 && zz % 6 === 5) return F("#f4fff8", k);
++    return F((Math.floor(u / 6) + Math.floor(zz / 6)) & 1 ? S.paper2 : S.paper, k);
++  }
++  if (S.pat === "timber") {
++    // cream plaster between dark posts and a rail: a half-timbered tavern wall
++    const p = u % 24;
++    if (p < 2) return F(p === 0 ? shade(S.wood, 0.78) : S.wood, k);
++    if (zz === 12 || zz === 13) return F(zz === 12 ? light(S.wood, 1.16) : S.wood, k);
++    return F((u * 3 + z * 7) % 23 === 0 ? S.paper2 : S.paper, k);
++  }
++  if (S.pat === "shoji") {
++    // paper screens: posts every tile, a thin lattice over pale paper
++    const p = u % 16;
++    if (p < 2) return F(p === 0 ? shade(S.wood, 0.8) : S.wood, k);
++    if ((p - 2) % 7 === 6 || zz % 7 === 6) return F(light(S.wood, 1.3), k);
++    return F(S.paper, k);
++  }
+   if (S.pat === "damask") {
+     const du = Math.abs(((u + 4) % 8) - 4), dz = Math.abs(((z - 19 + (Math.floor((u + 4) / 8) & 1 ? 5 : 0)) % 10) - 5);
+     if (du + dz * 0.8 < 1.5) return F(S.dot, k);
+@@ -431,7 +485,7 @@ function wallDeco(S, ch, s, z, k, x, y, join) {
+     if (s < 2 || s > 13 || z < 22 || z > 38) return 0;
+     if (s === 2 || s === 13 || z === 22 || z === 38) return F("#c89a3a", k);
+     if (s === 3 || s === 12 || z === 23 || z === 37) return F("#8a6424", k);
+-    if (S.pat === "damask") {
++    if (S.pat === "damask" || S.maps) {
+       const coast = Math.sin(s * 0.9 + x) * 2 + 30;
+       if (Math.abs(z - coast) < 0.6) return F("#7a5a3a", k);
+       if (z > coast) return F("#8ab4c8", k);
+@@ -614,7 +668,7 @@ function chair(m, x, y) {
+   const c = m.style === "hall" ? "#6a3e26" : m.style === "inn" ? "#8a5a36" : "#9a6038";
+   for (const [lu, lv] of [[4, 5], [11, 5], [4, 11], [11, 11]]) M.box(lu, lv, 0, 1, 1, 6, WOOD_D);
+   M.box(3, 4, 5, 10, 9, 2, c);
+-  const cushion = m.style === "hall" ? "#a8343c" : m.style === "inn" ? "#4a6a9a" : "#6f9a6a";
++  const cushion = m.style === "hall" ? "#a8343c" : m.style === "inn" ? "#4a6a9a" : styleOf(m).cush || "#6f9a6a";
+   M.box(4, 6, 7, 8, 6, 1, cushion);
+   // the back, toward the wall side of the chair, with two slats
+   M.box(3, 4, 7, 10, 2, 9, c, (f, s, z) => (f !== "top" && z > 1 && z < 7 && (s === 3 || s === 6) ? C(shade(c, 0.6)) : 0));
+@@ -632,7 +686,7 @@ function hearthward(m, x, y) {
+ }
+ function armchair(m, x, y) {
+   const M = new Model(24, hearthward(m, x, y));
+-  const fab = m.style === "hall" ? "#8a2e38" : m.style === "inn" ? "#46669a" : "#a8503e", top = light(fab, 1.18);
++  const fab = m.style === "hall" ? "#8a2e38" : m.style === "inn" ? "#46669a" : styleOf(m).cush || "#a8503e", top = light(fab, 1.18);
+   for (const [lu, lv] of [[3, 4], [12, 4], [3, 13], [12, 13]]) M.box(lu, lv, 0, 1, 1, 3, WOOD_D);
+   // the seat, a plump cushion, a rolled back and two rolled arms
+   M.box(2, 3, 2, 12, 11, 5, fab, (f, s, z, k) => (f !== "top" && z === 0 ? F(shade(fab, 0.7), k) : 0));
+@@ -650,10 +704,20 @@ function counter(m, x, y, kind) {
+   if (kind === "$") {
+     // a pastry case: a wooden base, a glass box with two shelves of cakes and loaves
+     M.box(u0, 3, 0, u1 - u0, 10, 8, front, (f, s, z, k) => (f !== "top" && (z === 0 ? C("#3a2418") : (s & 7) === 0 ? F(shade(front, 0.7), k) : 0)));
+-    const pastry = ["#e8b860", "#d88a5a", "#f4e0c0", "#c86a5a", "#b07a40"];
+-    for (let i = 0; i < 4; i++) {
+-      const u = u0 + 2 + i * 3.4, c1 = pastry[(x * 3 + i) % 5], c2 = pastry[(x * 3 + i + 2) % 5];
+-      M.cyl(u, 8, 1.4, 8, 2, c1); M.cyl(u + 1, 7, 1.2, 12, 2, c2);
++    if (m.style === "shop") {
++      // a shop's case: red and blue potions with corks, a rolled scroll on the upper shelf
++      const pot = ["#d8404a", "#3a7ad8", "#d8404a", "#8a5ad8", "#3a7ad8"];
++      for (let i = 0; i < 4; i++) {
++        const u = u0 + 2 + i * 3.4, c1 = pot[(x + i) % 5];
++        M.cyl(u, 8, 1.3, 8, 3, c1, (kind, a, zz) => (kind === "top" ? C("#c8945a") : zz === 2 ? C(light(c1, 1.3)) : 0));
++        if (i % 2) M.box(Math.floor(u) - 1, 6, 12, 3, 2, 1, "#f2e6c8"); else M.cyl(u + 1, 7, 1, 12, 3, pot[(x + i + 1) % 5], (kind) => (kind === "top" ? C("#c8945a") : 0));
++      }
++    } else {
++      const pastry = ["#e8b860", "#d88a5a", "#f4e0c0", "#c86a5a", "#b07a40"];
++      for (let i = 0; i < 4; i++) {
++        const u = u0 + 2 + i * 3.4, c1 = pastry[(x * 3 + i) % 5], c2 = pastry[(x * 3 + i + 2) % 5];
++        M.cyl(u, 8, 1.4, 8, 2, c1); M.cyl(u + 1, 7, 1.2, 12, 2, c2);
++      }
+     }
+     M.box(u0, 4, 11, u1 - u0, 8, 1, "#f0e4d0");
+     // the glass: a thin frame and diagonal glints, so the cakes show through
+@@ -677,7 +741,19 @@ function counter(m, x, y, kind) {
+   });
+   M.box(u0 - (R.lo ? 0 : 1), 2, 11, u1 - u0 + (R.lo ? 0 : 1) + (R.hi ? 0 : 1), 12, 2, m.style === "cafe" ? "#e6dccc" : "#b07a48");
+   const extra = {};
+-  if (kind === "j") {
++  if (kind === "j" && m.style === "tavern") {
++    // beer taps: a brass tower with three handles, two foaming mugs beside it
++    M.box(6, 5, 13, 4, 3, 7, "#c89a3a", (f, s, z, k) => (f === "top" ? 0 : z === 5 ? F("#f0c860", k) : s === 0 ? F("#e8b850", k) : 0));
++    for (const [hu, col] of [[6, "#2b2233"], [8, "#a8443c"], [9, "#2b2233"]]) M.box(hu, 6, 20, 1, 1, 4, col);
++    for (const mu of [2, 12]) M.cyl(mu, 8, 1.5, 13, 4, "#e0a838", (kind2, a, z) => (kind2 === "top" ? C("#fff8e8") : z === 3 ? C("#fff4dc") : 0));
++  } else if (kind === "j" && m.style === "shop") {
++    // a till with its keys and a brass scale with two pans
++    M.box(8, 4, 13, 6, 6, 5, "#6a7a8a", (f, s, z, k) => (f === "top" ? ((s + z) % 2 ? C("#e8e0d0") : C("#4a5868")) : z === 4 ? F("#8a9aaa", k) : 0));
++    M.box(9, 5, 18, 3, 2, 2, "#f2e6c8");
++    M.cyl(4, 7, 1, 13, 7, "#c89a3a");
++    M.box(1, 7, 20, 7, 1, 1, "#c89a3a");
++    for (const pu of [1.5, 6.5]) M.cyl(pu, 7.5, 1.6, 17, 1, "#e0b048");
++  } else if (kind === "j") {
+     // a copper coffee machine with two spouts, a gauge and cups warming on top
+     const cu = "#c87a3a";
+     M.box(4, 4, 13, 8, 6, 10, cu, (f, s, z, k) => {
+@@ -735,6 +811,14 @@ function shelf(m, x, y, kind) {
+       if (which === 2 && ls === 2 && lz >= 3 && lz <= 7) return F(lz <= 4 ? "#e8b840" : "#3a5ab0", k);
+       return F("#3a2620", k);
+     }
++    if (kind === "r" && m.style === "lobby") {
++      // pigeon-hole mailboxes: little doors with brass plates, a letter sticking out of a few
++      const cs = (s - 1) % 4, cz = (z - 1) % 6, cell = Math.floor((s - 1) / 4) + Math.floor((z - 1) / 6) * 5;
++      if (cs === 3 || cz === 5) return F("#5a3a24", k);
++      if (cz === 4 && hash(cell, x + y, 143) < 0.35) return F(cs === 1 ? "#d8504a" : "#f8f4ec", k);
++      if (cz === 2 && (cs === 1 || cs === 2)) return F("#e8c050", k);
++      return F(cs === 0 ? "#d8b080" : "#c09060", k);
++    }
+     // jars of honey, tea and jam, and a clock
+     const slot = Math.floor((s - 1) / 5), ls = (s - 1) % 5;
+     const col = ["#e8a830", "#7aa85a", "#c0404a", "#d8c8a0", "#8a6a4a"][(slot + rz * 2 + x) % 5];
+@@ -744,7 +828,7 @@ function shelf(m, x, y, kind) {
+   });
+   // a crown along the top
+   M.box(0, 0, H, 16, 7, 2, light(frame, 1.08));
+-  if (kind === "r" && hash(x, y, 89) < 0.6) M.cyl(8, 3, 2, H + 2, 5, "#d8eef0", (kind2, a, z) => (z > 3 ? C("#a87a4c") : 0));
++  if (kind === "r" && m.style !== "lobby" && hash(x, y, 89) < 0.6) M.cyl(8, 3, 2, H + 2, 5, "#d8eef0", (kind2, a, z) => (z > 3 ? C("#a87a4c") : 0));
+   return M.piece();
+ }
+ 
+@@ -828,7 +912,21 @@ function longTable(m, x, y) {
+   if (!R.hi) { M.box(12, 4, 0, 2, 2, 8, WOOD_D); M.box(12, 10, 0, 2, 2, 8, WOOD_D); }
+   M.box(u0, 2, 8, u1 - u0, 12, 2, m.style === "hall" ? "#7a4a2c" : WOOD);
+   const h = hash(x, y, 93), extra = {};
+-  if (m.style === "hall") {
++  if (m.style === "lobby") {
++    // a lobby's long bench: bare wood, a folded newspaper left on one end
++    if (h < 0.3) M.box(4, 6, 10, 5, 4, 1, "#e8e0d0", (f, s, z) => (f === "top" && z % 2 === 1 && s > 0 ? C("#9a9488") : 0));
++  } else if (m.style === "office") {
++    // the map table: a parchment map spread across the run, routes in red, a dagger pinning it, a compass
++    M.box(u0 + (R.lo ? 0 : 1), 4, 10, u1 - u0 - (R.lo ? 0 : 1) - (R.hi ? 0 : 1), 8, 1, "#e8d8b0", (f, s, z) => {
++      if (f !== "top") return 0;
++      const wx = x * 16 + s;
++      if (Math.abs(z - 3.5 - Math.sin(wx * 0.4) * 2) < 0.6) return C("#6a9ac8");
++      if ((wx + z * 3) % 11 === 0) return C("#c03838");
++      return (wx * 7 + z * 13) % 17 === 0 ? C("#7a8a4a") : 0;
++    });
++    if (h < 0.5) { M.box(6, 7, 11, 5, 1, 1, "#c4c8d2"); M.box(11, 6, 11, 2, 3, 1, "#6a4a30"); }
++    else M.cyl(8, 8, 1.8, 11, 1, "#d8b050", (kind, a, d) => (kind === "top" && d < 0.9 ? C("#c03838") : 0));
++  } else if (m.style === "hall") {
+     // a cloth runner, papers, a candlestick
+     M.box(u0, 6, 10, u1 - u0, 4, 1, "#a8343c", (f, s, z) => (f === "top" && (z === 0 || z === 3) ? C("#d8b050") : 0));
+     if (h < 0.5) { M.box(3, 3, 10, 4, 3, 1, "#f2ead6"); M.box(10, 11, 10, 3, 4, 1, "#e8dcc0"); }
+@@ -966,6 +1064,231 @@ function gramophone(m, x, y) {
+   return M.piece({ note: { x: nx, y: ny } });
+ }
+ 
++// ───────────────────────────── the town's workshops ─────────────────────────────
++// docs/design/town.md E: the forge's anvil and furnace, racks, the library's lectern and specimen
++// cases, the diner's stove (the lab's cauldron), the boutique's mirror and the dojo's dummies.
++// Same light from the upper left, three tones a material, the one-texel outline.
++
++const IRON = "#5a5e6c", IRON_L = "#8a90a0", IRON_D = "#3a3e48";
++
++/** 모루: a dark iron anvil (horn to the left, a step to the right) on a banded stump, a hammer resting on it. */
++function anvil(m, x, y) {
++  const M = new Model(24, backing(m, x, y));
++  M.cyl(8, 8, 4.6, 0, 7, "#8a5a34", (kind, a, z, k) => (kind === "top" ? C(z > 3.4 ? "#6e4428" : "#b0804c") : z === 2 ? F("#4a4048", k) : Math.round(a * 5) % 2 === 0 ? F("#74482a", k) : 0));
++  const iron = (f, s, z, k) => (f === "top" ? 0 : z === 0 ? F(IRON_D, k) : 0);
++  M.box(5, 6, 7, 6, 4, 2, IRON, iron);
++  M.box(6, 7, 9, 4, 2, 2, IRON_D);
++  M.box(3, 5, 11, 10, 6, 3, IRON, (f, s, z, k) => (f === "top" ? (s === 0 || z === 0 ? C("#b8c0cc") : C(IRON_L)) : z === 2 ? F(IRON_L, k) : 0));
++  M.box(1, 6, 12, 2, 4, 2, IRON, (f) => (f === "top" ? C(IRON_L) : 0));
++  M.box(0, 7, 12, 1, 2, 1, IRON_L);
++  // the hammer: an ash handle across the face, a squat head
++  M.box(9, 6, 14, 1, 5, 1, "#a87a4a", null, 1);
++  M.box(8, 4, 14, 3, 2, 2, IRON_D, (f) => (f === "top" ? C("#6a7080") : 0), 1);
++  return M.piece();
++}
++
++/** 화덕 (용광로): a brick furnace with a glowing arched mouth, a stone hood and chimney up the wall, bellows. */
++function furnace(m, x, y) {
++  const o = backing(m, x, y), M = new Model(WH + 4, o);
++  const brick = (f, s, z, k) => {
++    if (f === "top") return 0;
++    const row = Math.floor(z / 3), ss = s + (row & 1 ? 2 : 0);
++    if (z % 3 === 2 || ss % 5 === 0) return F("#4a2a22", k);
++    const t = hash(Math.floor(ss / 5), row, 140 + x);
++    return F(t < 0.3 ? "#8a3e2e" : t < 0.72 ? "#9a4a36" : "#ac5a40", k);
++  };
++  const stone = (f, s, z, k) => {
++    if (f === "top") return 0;
++    const row = Math.floor(z / 4), ss = s + (row & 1 ? 3 : 0);
++    if (z % 4 === 3 || ss % 6 === 0) return F("#3e3836", k);
++    return F(hash(Math.floor(ss / 6), row, 144 + x) < 0.5 ? "#6a6058" : "#7a7068", k);
++  };
++  M.box(0, 0, 0, 16, 10, 22, "#9a4a36", (f, s, z, k) => {
++    if (f === "front" && s >= 4 && s <= 11 && z >= 2 && z <= 13) {
++      const arch = z > 9 && Math.abs(s - 7.5) > 3.5 - (z - 9) * 0.9;
++      if (!arch) return C(z <= 3 ? "#fff0a0" : z <= 6 ? "#ffb040" : z <= 9 ? "#e8642a" : "#a8341a");
++    }
++    if (f === "front" && s >= 3 && s <= 12 && z === 1) return F("#3a2420", k);
++    return brick(f, s, z, k);
++  });
++  M.box(1, 0, 22, 14, 9, 3, "#6a6058", stone);
++  M.box(4, 0, 25, 8, 6, WH - 25, "#6a6058", stone);
++  // a pair of leather bellows on the right, a coal scuttle on the left
++  M.box(13, 10, 3, 3, 4, 4, "#7a4a2c", (f, s, z, k) => (f === "top" ? C("#8a5a34") : z === 2 ? F("#4a2c1c", k) : 0));
++  M.box(0, 11, 0, 3, 3, 3, IRON_D, (f) => (f === "top" ? C("#1e1a1e") : 0));
++  const [fx, fy] = M.scr(7.5, 10, 4);
++  return M.piece({ fire: { x: fx, y: fy }, sparks: { x: fx, y: fy - 4 }, glow: { x: fx, y: fy - 2, r: 84, col: "#ff8a30", k: 1, flick: 0.2 } });
++}
++
++/** 진열대: by the room — swords, a spear and a shield on a rack; a rail of clothes in a boutique; tools in a shop. */
++function rack(m, x, y) {
++  const M = new Model(36, backing(m, x, y));
++  const wood = m.style === "boutique" ? "#c8a070" : WOOD_D;
++  if (m.style === "boutique") {
++    // a clothes rail: two posts on feet, a brass rod, dresses and coats on hangers
++    for (const pu of [1, 14]) { M.box(pu, 4, 0, 1, 8, 1, wood); M.box(pu, 7, 0, 1, 2, 24, wood); }
++    M.box(1, 7, 24, 14, 1, 1, "#d8b050");
++    const cl = ["#e87a9a", "#f4f0e6", "#7ab8d8", "#f0c050", "#9a78e0"];
++    for (let i = 0; i < 4; i++) {
++      const c0 = cl[(x * 2 + y + i) % 5], u = 2 + i * 3, len = 10 + ((x + i) % 3) * 2;
++      M.box(u + 1, 7, 23, 1, 1, 1, "#8a8a9a");
++      M.box(u, 6, 23 - len, 3, 3, len, c0, (f, s, z, k) => (f === "top" ? 0 : z === len - 2 ? F(light(c0, 1.15), k) : (s + z) % 7 === 0 ? F(shade(c0, 0.82), k) : 0));
++    }
++    return M.piece();
++  }
++  if (m.style === "shop") {
++    // a pegboard of tools: a spade, a coil of rope, a lantern and a pick
++    M.box(1, 0, 0, 14, 3, 26, "#c8945a", (f, s, z, k) => {
++      if (f === "top") return 0;
++      if (f !== "front") return z === 25 ? F("#e0b070", k) : 0;
++      if (s === 0 || s === 13 || z === 0 || z === 25) return F("#7a5230", k);
++      if (s >= 2 && s <= 3 && z >= 4 && z <= 20) return F(z < 9 ? "#a8b0bc" : "#8a5a34", k);
++      const rp = Math.hypot(s - 8, z - 18);
++      if (rp < 3.2 && rp > 1.6) return F((s + z) % 2 ? "#d8c088" : "#b89a60", k);
++      if (s >= 6 && s <= 9 && z >= 5 && z <= 10) return F(z === 10 || s === 6 || s === 9 ? "#4a3e44" : "#ffd890", k);
++      if ((s === 11 && z >= 4 && z <= 16) || (z === 16 && s >= 9 && s <= 12)) return F(s === 11 ? "#8a5a34" : "#8a90a0", k);
++      return (s + z) % 4 === 0 ? F("#a87a4a", k) : 0;
++    });
++    return M.piece();
++  }
++  // a weapon rack: two posts, two rails, three blades and a spear standing, a round shield hung at the end
++  M.box(0, 5, 0, 2, 2, 27, WOOD, (f) => (f === "top" ? C(WOOD_L) : 0)); M.box(14, 5, 0, 2, 2, 27, WOOD, (f) => (f === "top" ? C(WOOD_L) : 0));
++  M.box(0, 5, 7, 16, 2, 2, WOOD_L); M.box(0, 5, 21, 16, 2, 2, WOOD_L);
++  M.box(0, 8, 0, 16, 4, 2, WOOD);
++  // three swords point down, hilts up (gold and red guards), a spear behind them reaching higher
++  M.box(12, 7, 2, 1, 1, 30, "#8a5a34", null, 1);
++  M.box(11, 7, 32, 3, 1, 1, "#c4c8d2"); M.box(12, 7, 33, 1, 1, 3, "#e6ebf4");
++  for (const [u, len, guard] of [[2, 20, "#e0b848"], [5, 23, "#c03838"], [8, 19, "#e0b848"]]) {
++    M.box(u, 8, 2, 2, 1, len - 5, "#c4c8d2", (f, s, z, k) => (f === "top" ? 0 : s === 0 && k === 1 ? F("#ffffff", k) : F(k === 1 ? "#dde2ec" : "#9aa0ae", k)), 2);
++    M.box(u - 1, 8, len - 4, 4, 1, 1, guard, null, 2);
++    M.box(u, 8, len - 3, 2, 1, 3, "#6a4a30", (f) => (f === "top" ? C(guard) : 0), 2);
++  }
++  // a round shield hung on the right post, standing up toward the room: red with a gold boss and rim
++  for (let a = -4; a <= 4; a++) for (let b = -4; b <= 4; b++) {
++    const d = Math.hypot(a, b);
++    if (d > 4.3) continue;
++    const [A, B] = M.at(12 + a, 10);
++    M.put(A, B, 13 + b, C(d < 1.2 ? "#f0d060" : d > 3.4 ? "#d8b050" : (a + b) & 1 ? "#a8343c" : "#b8403c"), 3);
++  }
++  return M.piece();
++}
++
++/** 독서대: a turned pedestal, a sloping desk, an open book with a ribbon; a candle beside it. */
++function lectern(m, x, y) {
++  const M = new Model(30, backing(m, x, y));
++  M.cyl(8, 8, 3.4, 0, 2, WOOD_D);
++  M.cyl(8, 8, 1.4, 2, 14, WOOD, (kind, a, z, k) => (kind === "side" && (z === 3 || z === 10) ? F(WOOD_L, k) : 0));
++  // the desk slopes up toward the back: rows of texels stepping down to the front
++  for (let A = 2; A < 14; A++) for (let B = 3; B < 14; B++) {
++    const z = 16 + Math.round((13 - B) * 0.5), edge = A === 2 || A === 13 || B === 3 || B === 13;
++    M.put(A, B, z, C(edge ? WOOD_D : WOOD));
++    if (B === 13) for (let zz = 15; zz < z; zz++) M.put(A, B, zz, F(WOOD_D, 1));
++    if (A === 13) for (let zz = 15; zz < z; zz++) M.put(A, B, zz, F(WOOD_D, 2));
++    // the book: two pages and a spine, lines of writing, a red ribbon hanging out
++    if (A >= 3 && A <= 12 && B >= 5 && B <= 12) {
++      const spine = A === 7 || A === 8, line = !spine && (B & 1) && A !== 3 && A !== 12 && hash(A, B, 145 + x) < 0.7;
++      M.put(A, B, z + 1, C(spine ? "#8a5a34" : line ? "#8a8070" : A < 7 ? "#f8f0dc" : "#efe4c8"), 1);
++    }
++  }
++  for (let z = 10; z < 16; z++) M.put(8, 13, z, C("#c03838"), 2);
++  const [gx, gy] = M.scr(8, 9, 20);
++  return M.piece({ glow: { x: gx, y: gy, r: 28, col: "#ffd890", k: 0.35 } });
++}
++
++/** 표본 진열장: a glass case on a cabinet; inside a jar of green brine with a pickled hell-beast that looks at you. */
++function specimen(m, x, y) {
++  const M = new Model(34, backing(m, x, y));
++  M.box(1, 3, 0, 14, 10, 9, "#5e3c28", (f, s, z, k) => (f === "top" ? 0 : z === 0 ? F("#2a1c16", k) : z === 7 ? F("#8a5a34", k) : f === "front" && (s === 6 || s === 7) && z > 1 && z < 6 ? F("#d8b050", k) : 0));
++  // the jar and what floats in it (a lump with stubby tentacles and one big eye)
++  const brine = (kind, a, z) => (kind === "top" ? C("#a8f0c8") : z === 0 ? C("#4a8a6a") : 0);
++  M.cyl(8, 8, 3.6, 9, 13, "#6ac8a0", brine, -2);
++  M.blob(8, 8.6, 15, 2.6, 2.2, 2.8, (lit) => C(lit > 0.4 ? "#e8a0b0" : lit > 0 ? "#c8708a" : "#9a4a6a"));
++  for (const tu of [6.5, 9.5]) M.box(Math.floor(tu), 9, 10, 1, 1, 3, "#b8607a");
++  M.cyl(8, 8, 3.8, 22, 2, "#8a5a34", (kind) => (kind === "top" ? C("#a87048") : 0));
++  // the glass box over it, behind the jar in depth so the beast shows through
++  M.box(1, 3, 9, 14, 10, 17, "#c8e8ec", (f, s, z, k) => {
++    if (f === "top") return s === 0 || z === 0 || s === 13 || z === 9 ? C("#5e3c28") : 0;
++    if (z === 16 || s === 0 || ((f === "front" ? s === 13 : s === 9))) return F("#5e3c28", k);
++    if ((s + z) % 8 === 0) return F("#ffffff", k);
++    return 0;
++  }, -40);
++  const [ex, ey] = M.scr(8, 11, 15);
++  return M.piece({ eye: { x: ex, y: ey }, glow: { x: ex, y: ey, r: 26, col: "#8affc8", k: 0.4, flick: 0.04 } });
++}
++
++/** 화덕 (요리): an iron range with an oven door, a stovepipe up the wall and a big pot of stew; a lab's is a cauldron. */
++function stove(m, x, y) {
++  if (m.style === "lab") {
++    // 보글보글: a fat black cauldron on three legs over embers, a bright green brew
++    const M = new Model(26);
++    for (const [lu, lv] of [[4, 5], [12, 6], [8, 12]]) M.box(lu, lv, 0, 1, 1, 4, IRON_D);
++    M.cyl(8, 8, 2.6, 0, 1, "#e8642a", (kind) => (kind === "top" ? C("#ffb040") : 0));
++    M.blob(8, 8, 9, 6, 6, 6, (lit) => C(lit > 0.5 ? "#6a6e7a" : lit > 0.05 ? "#4a4e58" : lit > -0.4 ? "#34363e" : "#222228"));
++    M.cyl(8, 8, 5.2, 13, 2, "#3a3e48", (kind, a, d) => (kind === "top" ? C(d > 4.2 ? "#5a5e6c" : (Math.floor(d * 3 + a * 2) % 4 === 0) ? "#c8ff9a" : "#7ae86a") : 0));
++    const [bx, by] = M.scr(8, 8, 15);
++    return M.piece({ brew: { x: bx, y: by }, glow: { x: bx, y: by, r: 56, col: "#8aff7a", k: 0.7, flick: 0.12 } });
++  }
++  const o = backing(m, x, y), M = new Model(WH + 2, o);
++  M.box(1, 2, 0, 14, 11, 12, "#3a3a44", (f, s, z, k) => {
++    if (f === "top") return 0;
++    if (z === 0) return F("#1e1e24", k);
++    if (z === 11) return F("#5a5a68", k);
++    if (f === "front" && s >= 2 && s <= 7 && z >= 3 && z <= 8) return F(s === 2 || s === 7 || z === 3 || z === 8 ? "#6a6a78" : z === 6 && s === 6 ? "#d8b050" : "#4a4a56", k);
++    if (f === "front" && s >= 9 && s <= 12 && z >= 4 && z <= 5) return C(z === 4 ? "#ffb040" : "#e8642a");
++    return 0;
++  });
++  M.box(1, 2, 12, 14, 11, 1, "#4a4a56", (f, s, z) => (f === "top" && (s + z) % 5 === 0 ? C("#6a6a78") : 0));
++  // the stovepipe up to the cornice
++  M.box(11, 0, 13, 3, 3, WH - 13, IRON_D, (f, s, z, k) => (f !== "top" && z % 9 === 0 ? F("#5a5e6c", k) : 0));
++  // the stew pot: copper, a lid half off, stew showing
++  M.cyl(6, 8, 4, 13, 7, "#b8643a", (kind, a, z, k) => (kind === "top" ? C(Math.floor(a * 3 + z * 2) % 5 === 0 ? "#e8b860" : (Math.floor(a * 4) % 3 === 0 ? "#6a9a3a" : "#c8783a")) : z === 5 ? F("#d8844a", k) : 0));
++  M.box(2, 10, 19, 2, 1, 1, "#4a3e44");
++  const [sx, sy] = M.scr(6, 8, 21), [gx, gy] = M.scr(10, 13, 5);
++  return M.piece({ steam: [[sx - 2, sy], [sx + 2, sy - 1]], puff: true, glow: { x: gx, y: gy, r: 50, col: "#ff9a40", k: 0.6, flick: 0.14 } });
++}
++
++/** 전신 거울: a tall oval glass in a frame (gilded in a boutique) on a little stand, light gliding across it. */
++function mirror(m, x, y) {
++  const M = new Model(38, backing(m, x, y));
++  const fr = m.style === "boutique" || m.style === "hall" ? "#d8b050" : "#8a5634", frD = shade(fr, 0.66);
++  M.box(3, 6, 0, 10, 4, 1, frD); M.box(7, 7, 1, 2, 2, 3, fr);
++  M.box(2, 7, 4, 12, 2, 30, fr, (f, s, z, k) => {
++    if (f !== "front") return f === "top" ? C(light(fr, 1.2)) : 0;
++    const d = Math.hypot((s - 5.5) / 5.2, (z - 15) / 14.2);
++    if (d > 1) return F(z > 28 || z < 2 ? frD : fr, k);
++    if (d > 0.88) return F(light(fr, 1.2), k);
++    // the glass: pale sky above, the room's warm floor below, a diagonal sheen
++    const band = (s + z) % 13;
++    if (band === 0 || band === 1) return F("#f4fbff", k);
++    return F(z < 9 ? "#a8c8d4" : z < 13 ? "#bcd8e2" : "#d2ecf4", k);
++  });
++  M.box(5, 7, 34, 6, 2, 2, fr, (f, s, z, k) => (f === "top" ? C(light(fr, 1.2)) : 0));
++  return M.piece();
++}
++
++/** 수련 인형: a straw dummy on a post, a crossbar for arms, a burlap head with stitched X eyes and a target. */
++function dummy(m, x, y) {
++  const M = new Model(34);
++  M.cyl(8, 8, 4, 0, 2, "#7a5230", (kind) => (kind === "top" ? C("#9a6a40") : 0));
++  M.cyl(8, 8, 1, 2, 24, "#8a5a34");
++  const straw = (lit, A, B, z) => C((A + z * 3) % 7 === 0 ? "#b89040" : lit > 0.4 ? "#ecd078" : lit > -0.1 ? "#d8b860" : "#b0903e");
++  M.blob(8, 8, 15, 3.8, 3.6, 6, straw);
++  for (const rz of [11, 19]) M.cyl(8, 8, 3.7, rz, 1, "#8a5a34", null, 1);
++  M.box(1, 7, 18, 14, 2, 2, "#a87a4a", (f) => (f === "top" ? C("#c8945a") : 0));
++  M.blob(8, 8, 25, 3, 3, 3, (lit) => C(lit > 0.3 ? "#d8bc8c" : lit > -0.2 ? "#c0a070" : "#9a7e54"));
++  // the face toward the room: two stitched X eyes and a target on the chest
++  const [fa, fb] = M.at(8, 11.6);
++  for (const [du, dz] of [[-1.5, 0], [1.5, 0]]) {
++    for (const [a, b] of [[-0.5, -0.5], [0.5, 0.5], [-0.5, 0.5], [0.5, -0.5]]) M.put(fa + du + a, fb, 25.5 + dz + b * 2, C("#3a2a24"), 4);
++  }
++  for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) {
++    const d = Math.hypot(a, b);
++    if (d > 2.4) continue;
++    M.put(fa + a, fb + 0.2, 15 + b, C(d < 0.8 ? "#c03838" : d < 1.6 ? "#f4ecdc" : "#c03838"), 4);
++  }
++  return M.piece();
++}
++
+ // ───────────────────────────── per map ─────────────────────────────
+ 
+ const perMap = new WeakMap();
+@@ -999,6 +1322,14 @@ export function roomPiece(m, x, y) {
+     case "(": p = teddy(m, x, y); break;
+     case ")": p = fishbowl(m, x, y); break;
+     case "?": p = gramophone(m, x, y); break;
++    case "&": p = anvil(m, x, y); break;
++    case "<": p = furnace(m, x, y); break;
++    case ">": p = rack(m, x, y); break;
++    case "|": p = lectern(m, x, y); break;
++    case ";": p = specimen(m, x, y); break;
++    case ":": p = stove(m, x, y); break;
++    case "'": p = mirror(m, x, y); break;
++    case "`": p = dummy(m, x, y); break;
+   }
+   if (p) p.anim = animFor(p);
+   S.set(key, p);
+@@ -1027,8 +1358,25 @@ const CAT = [
+ const CAT_C = [null, "#2b2233", "#e8934a", "#f6e2c0", "#b8622e", "#5a2a2a"];
+ 
+ function animFor(p) {
+-  if (!p.fire && !p.steam && !p.cat && !p.candle && !p.glass && !p.bowl && !p.magic && !p.note) return null;
++  if (!p.fire && !p.steam && !p.cat && !p.candle && !p.glass && !p.bowl && !p.magic && !p.note && !p.sparks && !p.brew && !p.eye) return null;
+   return (g, t, X, Y, parts) => {
++    if (p.sparks && Math.random() < 0.09) {
++      // the furnace spits sparks that arc up and fall
++      parts.push({ x: X + p.sparks.x + (Math.random() - 0.5) * 6, y: Y + p.sparks.y, vx: (Math.random() - 0.5) * 30, vy: -26 - Math.random() * 22, life: 0.6 + Math.random() * 0.4, color: Math.random() < 0.6 ? "#ffd070" : "#ff7a30", g: 60, s: 1 });
++    }
++    if (p.brew && Math.random() < 0.08) {
++      // the brew bubbles and puffs coloured wisps
++      const green = Math.random() < 0.7;
++      parts.push({ x: X + p.brew.x + (Math.random() - 0.5) * 8, y: Y + p.brew.y - 1, vx: (Math.random() - 0.5) * 3, vy: -8 - Math.random() * 6, life: 0.8 + Math.random() * 0.6, color: green ? "#b8ff9a" : "#d8a8ff", g: -2, s: green ? 1 : 2 });
++    }
++    if (p.eye) {
++      // the pickled beast's eye: it rolls to follow the room and blinks now and then
++      const ex = Math.round(X + p.eye.x), ey = Math.round(Y + p.eye.y), shut = t % 4300 < 160;
++      g.fillStyle = "#2b2233"; g.fillRect(ex - 2, ey - 2, 4, 4);
++      if (shut) { g.fillStyle = "#c8708a"; g.fillRect(ex - 1, ey - 1, 2, 2); g.fillStyle = "#6a2a4a"; g.fillRect(ex - 1, ey, 2, 1); }
++      else { g.fillStyle = "#f4f0d8"; g.fillRect(ex - 1, ey - 1, 2, 2); g.fillStyle = "#2b2233"; g.fillRect(ex - 1 + (Math.sin(t / 1700) > 0 ? 1 : 0), ey - 1 + (Math.sin(t / 2300) > 0.6 ? 1 : 0), 1, 1); }
++      if (Math.random() < 0.012) parts.push({ x: ex + (Math.random() - 0.5) * 4, y: ey - 3, vx: 0, vy: -5, life: 0.9, color: "#d8fff0", g: 0, s: 1 });
++    }
+     if (p.glass) {
+       // after dark the window goes deep blue, with a star or two
+       const night = daylight().night;
+@@ -1093,8 +1441,55 @@ export function drawPose(g, pose, x, y, t, parts, seed = 0) {
+     px("#2b2233", 2 + q, -10, 5, 4); px("#e8eef4", 3 + q, -9, 3, 2);
+   } else if (pose === "doze") {
+     if (Math.random() < 0.012) parts.push({ x: x + 4, y: y - 24, vx: 4, vy: -7, life: 1.8, color: "#f4ecf8", g: 0, s: 2, z: 1 });
++  } else if (pose === "sweep") {
++    // a broom swishing side to side, a puff of dust now and then
++    const q = Math.round(Math.sin(T / 320) * 2);
++    line(px, 5, -14, 1 + q, -3, "#8a5a34");
++    px("#2b2233", q - 2, -4, 6, 4); px("#e8c870", q - 1, -3, 4, 2); px("#c8a050", q - 1, -2, 4, 1);
++    if (Math.random() < 0.02) parts.push({ x: x + q, y: y - 1, vx: (Math.random() - 0.5) * 8, vy: -3, life: 0.6, color: "#d8c8a8", g: 0, s: 1 });
++  } else if (pose === "hammer") {
++    // lift, hold, strike: sparks fly on the blow
++    const k = (T % 1100) / 1100, up = k < 0.55, hit = k > 0.55 && k < 0.62;
++    if (up) { line(px, 3, -9, 6, -17, "#8a5a34"); px("#2b2233", 4, -20, 5, 4); px("#8a90a0", 5, -19, 3, 2); }
++    else { line(px, 3, -9, 9, -8, "#8a5a34"); px("#2b2233", 8, -10, 4, 5); px("#8a90a0", 9, -9, 2, 3); }
++    if (hit && Math.random() < 0.6) parts.push({ x: x + 10, y: y - 6, vx: (Math.random() - 0.2) * 30, vy: -18 - Math.random() * 14, life: 0.4, color: Math.random() < 0.5 ? "#ffd070" : "#ff9040", g: 80, s: 1 });
++  } else if (pose === "stir") {
++    // a long ladle going round and round
++    const a = T / 380, tx = 6 + Math.round(Math.cos(a) * 2), ty = -5 + Math.round(Math.sin(a));
++    line(px, 2, -13, tx, ty, "#a87a4a");
++    px("#2b2233", tx - 1, ty - 1, 3, 3); px("#c4c8d2", tx, ty, 1, 1);
++  } else if (pose === "carry") {
++    // a crate carried on the head, bobbing with each breath
++    const b = Math.floor(T / 700) % 2, top = -31 + b;
++    px("#2b2233", -5, top, 11, 8); px("#c8945a", -4, top + 1, 9, 6); px("#7a5230", -4, top + 4, 9, 1); px("#e0b070", -4, top + 1, 9, 1);
++  } else if (pose === "fish") {
++    // a rod over the shoulder, the line trembling
++    line(px, 2, -9, 13, -22, "#8a5a34");
++    const wob = Math.round(Math.sin(T / 400));
++    px("#f4f4f8", 13, -21, 1, 12 + wob); px("#d8404a", 12, -9 + wob, 3, 2);
++  } else if (pose === "water") {
++    // a watering can tipped now and then, drops falling
++    const tip = (T % 3600) < 1600;
++    px("#2b2233", 2, -12, 7, 6); px("#6a9aa8", 3, -11, 5, 4); px("#8ac0cc", 3, -11, 5, 1);
++    line(px, 8, -10, tip ? 12 : 11, tip ? -7 : -12, "#5a8a98");
++    if (tip && Math.random() < 0.25) parts.push({ x: x + 12, y: y - 7, vx: 2, vy: 6, life: 0.4, color: "#a8dcf0", g: 120, s: 1 });
++  } else if (pose === "knit") {
++    // two needles clicking over a scarf, a ball of yarn at the feet
++    const q = Math.round(Math.sin(T / 160));
++    px("#2b2233", -4, -9, 9, 4); px("#e87a9a", -3, -8, 7, 2); px("#f4f0e6", -3, -7, 7, 1);
++    line(px, -3, -13 + q, 1, -8, "#d8b050"); line(px, 5, -13 - q, 1, -8, "#d8b050");
++    px("#2b2233", 5, -4, 5, 4); px("#e87a9a", 6, -3, 3, 2);
++  } else if (pose === "wave") {
++    // a paw up, waving hello
++    const q = Math.floor(T / 260) % 2;
++    px("#2b2233", 5 + q, -21, 4, 4); px("#f4ecdc", 6 + q, -20, 2, 2);
+   }
+ }
++/** A one-pixel line for the idle acts (handles, needles, a fishing rod). */
++function line(px, x0, y0, x1, y1, c) {
++  const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
++  for (let i = 0; i <= n; i++) px(c, Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n));
++}
+ 
+ // ───────────────────────────── the light ─────────────────────────────
+ 
+diff --git a/game/public/sprites.js b/game/public/sprites.js
+index 4c697f8..ff413c9 100644
+--- a/game/public/sprites.js
++++ b/game/public/sprites.js
+@@ -299,6 +299,8 @@ export function playerLook(cls, look = [], gear = {}) {
+ }
+ /** Townsfolk wear a tunic in their trade's colour. */
+ export function npcLook(look, role) {
++  // a full hero look (species.js, 8+ numbers): the townsfolk indoors are pandas, penguins, squirrels …
++  if (Array.isArray(look) && look.length >= 8 && look.every((v) => typeof v === "number")) return SPC.lookOf(look);
+   // an editor NPC with its own fur: [ear, eye, nose, cloth, fur, pat] (data/maps, data/npcs.json)
+   if (Array.isArray(look) && look.length >= 5 && typeof look[4] === "string") {
+     const n = (i, max) => Math.max(0, Math.min(max, look[i] | 0));
+-- 
+2.43.0
+

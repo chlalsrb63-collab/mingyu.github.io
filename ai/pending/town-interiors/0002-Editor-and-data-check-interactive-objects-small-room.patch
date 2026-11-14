@@ -1,0 +1,220 @@
+From 0b9c536066c2aa16090124edf9ee65e1511c92df Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 14 Nov 2026 13:41:19 +0000
+Subject: [PATCH 2/5] Editor and data check: interactive objects, small rooms,
+ the new chars
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+A `thing` NPC may stand on furniture or a back wall with one open side (validate.js and
+data:check), the NPC form gets a "상호작용 물건" checkbox, interiors may be 8..160 tiles a
+side (build-logic, validate, the editor's size fields), data:check flags a tall wall in
+front of a room and goods a keeper cannot sell, and the palette names the nine new object
+chars (W 석축 and the eight workshop pieces) and the herringbone floor.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01VHqoygdSy8NpLoKVbn9QhA
+---
+ game/editor/mapedit.js       | 18 +++++++++++-------
+ game/editor/validate.js      | 25 ++++++++++++++++++++++---
+ game/scripts/build-logic.mjs |  5 +++--
+ game/scripts/editor-lib.mjs  | 24 ++++++++++++++++++++++--
+ 4 files changed, 58 insertions(+), 14 deletions(-)
+
+diff --git a/game/editor/mapedit.js b/game/editor/mapedit.js
+index 77edf0a..d87dd91 100644
+--- a/game/editor/mapedit.js
++++ b/game/editor/mapedit.js
+@@ -9,7 +9,7 @@
+  */
+ import { $, $$, el, api, toast, dialog, confirmBox, ask, DB, reloadMaps, mapName, mobName, mobImg, mobIcon, fieldMobs,
+   checkCtx, npcCanvas, npcIcon, fullLook, pickFrom, mobEntries, ROLE_KO, THEME_KO, BGM_KO, icon } from "./ui.js";
+-import { checkMap, checkLinks, checkNpcs, standable, ID_RE, MIN_SIZE, MAX_SIZE } from "./validate.js";
++import { checkMap, checkLinks, checkNpcs, standable, ID_RE, MAX_SIZE, minSize } from "./validate.js";
+ import * as LK from "/public/looks.js";
+ import * as SPC from "/public/species.js";
+ import * as UIC from "/public/uiicons.js";
+@@ -819,6 +819,9 @@ export function npcForm(n, readOnly, onChange, onRemove, opts = {}) {
+       el("button.btn", { disabled: readOnly, title: "동물·얼굴·색을 골라요", onclick: () => lookDialog(n, () => upd(() => drawFace())) }, "모습 고르기"))),
+     field("아이디", el("input", { type: "text", value: n.id, disabled: readOnly, title: "영어 소문자·숫자·_ (퀘스트가 이 아이디로 NPC를 찾아요)", onchange: (e) => upd(() => { n.id = e.target.value.trim(); }) })));
+   if (opts.where) box.append(opts.where);
++  // an interactive object (bookshelf, notice board, mirror): no body, may stand on its furniture
++  box.append(el("label.chk", { title: "켜면 사람이 아니라 물건이에요 (책장·게시판·거울 등): 모습 없이 가구 칸 위에 놓을 수 있고, 이름이 F 안내에 보여요" },
++    el("input", { type: "checkbox", checked: !!n.thing, disabled: readOnly, onchange: (e) => upd(() => { if (e.target.checked) n.thing = true; else delete n.thing; }) }), "상호작용 물건"));
+   if (n.role === "quest") box.append(el("p.hint", null, "퀘스트 탭에서 이 NPC를 '의뢰인'으로 고르면 퀘스트를 줘요."));
+   // lines
+   const lines = el("div.lines");
+@@ -908,14 +911,14 @@ export function renderProps() {
+     el("label.chk", { title: "켜면 몬스터가 안 나오고 다치지 않아요 (마을처럼)" }, el("input", { type: "checkbox", checked: m.safe, disabled: ro, onchange: (e) => on(() => { m.safe = e.target.checked; }) }), "안전지대 (몬스터 없음)"),
+     el("label.chk", { title: "물가에서 낚시를 할 수 있어요" }, el("input", { type: "checkbox", checked: m.fishing, disabled: ro, onchange: (e) => on(() => { m.fishing = e.target.checked; }) }), "낚시 허용"),
+     el("div.subhead", null, "크기"),
+-    el("div.row", null, el("input", { type: "number", min: MIN_SIZE, max: MAX_SIZE, value: m.w, disabled: ro, title: "가로 칸 수", onchange: (e) => { nw = +e.target.value; } }), "×",
+-      el("input", { type: "number", min: MIN_SIZE, max: MAX_SIZE, value: m.h, disabled: ro, title: "세로 칸 수", onchange: (e) => { nh = +e.target.value; } }), anc),
++    el("div.row", null, el("input", { type: "number", min: minSize(m.theme), max: MAX_SIZE, value: m.w, disabled: ro, title: "가로 칸 수", onchange: (e) => { nw = +e.target.value; } }), "×",
++      el("input", { type: "number", min: minSize(m.theme), max: MAX_SIZE, value: m.h, disabled: ro, title: "세로 칸 수", onchange: (e) => { nh = +e.target.value; } }), anc),
+     el("button.btn", { disabled: ro, title: "맵 크기를 바꿔요 (줄이면 잘린 부분은 사라져요)", onclick: () => resize(nw, nh, anchor) }, "크기 바꾸기"));
+ }
+ async function resize(nw, nh, anchor) {
+   nw = Math.round(nw); nh = Math.round(nh);
+-  if (!(nw >= MIN_SIZE && nh >= MIN_SIZE && nw <= MAX_SIZE && nh <= MAX_SIZE)) return toast(`크기는 ${MIN_SIZE}~${MAX_SIZE}칸이에요.`, "bad");
+-  const m = E.m;
++  const m = E.m, lo = minSize(m.theme);
++  if (!(nw >= lo && nh >= lo && nw <= MAX_SIZE && nh <= MAX_SIZE)) return toast(`크기는 ${lo}~${MAX_SIZE}칸이에요.`, "bad");
+   if (nw === m.w && nh === m.h) return;
+   if ((nw < m.w || nh < m.h) && !(await confirmBox("크기 줄이기", "맵을 줄이면 잘리는 부분의 바닥·물체·몬스터 구역이 사라져요. 계속할까요?", "줄이기", true))) return;
+   push();
+@@ -1125,7 +1128,7 @@ export async function newMap() {
+   const name = el("input.inp", { type: "text", value: "새 마을", maxLength: 24 });
+   const id = el("input.inp", { type: "text", value: suggestId(), maxLength: 24 });
+   const th = el("select.inp", null, ...DB.defs.themes.map((t) => el("option", { value: t, selected: t === "meadow" }, THEME_KO[t] || t)));
+-  const w = el("input.inp", { type: "number", value: 48, min: MIN_SIZE, max: MAX_SIZE }), h = el("input.inp", { type: "number", value: 36, min: MIN_SIZE, max: MAX_SIZE });
++  const w = el("input.inp", { type: "number", value: 48, min: minSize("interior"), max: MAX_SIZE }), h = el("input.inp", { type: "number", value: 36, min: minSize("interior"), max: MAX_SIZE });
+   const body = el("div.form", null, field("이름", name, "게임에 보이는 이름"), field("아이디", id, "영어 소문자·숫자·_ (파일 이름)"), field("테마", th), field("크기", el("span", null, w, " × ", h)),
+     el("p.hint", null, "아이디는 영어 소문자로 시작하고 소문자·숫자·_ 만 쓸 수 있어요 (예: willow, cave2)."));
+   for (;;) {
+@@ -1135,7 +1138,8 @@ export async function newMap() {
+     if (!ID_RE.test(v.id)) { toast("아이디는 영어 소문자로 시작하고 소문자·숫자·_ 2~24글자예요.", "bad"); continue; }
+     if (DB.maps.some((m) => m.id === v.id)) { toast(`"${v.id}" 아이디는 이미 있어요.`, "bad"); continue; }
+     if (!v.name) { toast("이름을 적어 주세요.", "bad"); continue; }
+-    if (!(v.w >= MIN_SIZE && v.h >= MIN_SIZE && v.w <= MAX_SIZE && v.h <= MAX_SIZE)) { toast(`크기는 ${MIN_SIZE}~${MAX_SIZE}칸이에요.`, "bad"); continue; }
++    const lo = minSize(th.value);
++    if (!(v.w >= lo && v.h >= lo && v.w <= MAX_SIZE && v.h <= MAX_SIZE)) { toast(`크기는 ${lo}~${MAX_SIZE}칸이에요.`, "bad"); continue; }
+     const [links, npcs] = await Promise.all([api("/api/links"), api("/api/npcs")]);
+     E.links = links; E.npcsFile = npcs; E.saved.links = linksJson(); E.saved.npcs = npcsJson();
+     load(blankMap(v.id, v.name, th.value, v.w, v.h), { isNew: true });
+diff --git a/game/editor/validate.js b/game/editor/validate.js
+index bc21ded..b60e088 100644
+--- a/game/editor/validate.js
++++ b/game/editor/validate.js
+@@ -11,6 +11,9 @@ export const ID_RE = /^[a-z][a-z0-9_]{1,23}$/;
+ export const NPC_ID_RE = /^[a-z][a-z0-9_]{1,31}$/;
+ export const QUEST_ID_RE = /^[a-z][a-z0-9_]{2,31}$/;
+ export const MIN_SIZE = 16, MAX_SIZE = 160;
++/** A room indoors (theme "interior") may be smaller: a shop or a lobby. */
++export const MIN_ROOM = 8;
++export const minSize = (theme) => (theme === "interior" ? MIN_ROOM : MIN_SIZE);
+ 
+ const isInt = (v) => Number.isInteger(v);
+ const isStr = (v) => typeof v === "string";
+@@ -34,6 +37,15 @@ export function standable(m, x, y, solidG) {
+   return o === " " && !solidG.has(g);
+ }
+ 
++/** Is (x, y) a piece of furniture, or a back wall with something hung on it (a map, a picture)? A `thing`
++ * NPC may stand there; never on the cut-down front wall `_` (that is the way the room is seen and left). */
++export function onFurniture(m, x, y) {
++  const o = m.objects[y] && m.objects[y][x];
++  return !!o && o !== " " && o !== "_";
++}
++/** Is one of the four sides of (x, y) a tile `ok` accepts? */
++export function sideOpen(x, y, ok) { return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => ok(x + dx, y + dy)); }
++
+ /** Tiles reachable on foot from the entry (Uint8Array w*h), or null if the entry is bad. */
+ export function reach(m, solidG) {
+   if (!isXY(m.entry)) return null;
+@@ -75,8 +87,9 @@ export function checkMap(m, ctx, opts = {}) {
+   if (typeof m.safe !== "boolean") err("safe", "안전지대는 예/아니오(true/false)로 정해 주세요.");
+   if (m.band != null && !(Array.isArray(m.band) && m.band.length === 2 && isInt(m.band[0]) && isInt(m.band[1]) && m.band[0] >= 1 && m.band[0] <= m.band[1]))
+     err("band", "레벨대는 [최소, 최대] 숫자 두 개예요 (예: 5~9).");
+-  const sizeOk = isInt(m.w) && isInt(m.h) && m.w >= MIN_SIZE && m.h >= MIN_SIZE && m.w <= MAX_SIZE && m.h <= MAX_SIZE;
+-  if (!sizeOk) { err("w", `맵 크기는 가로·세로 ${MIN_SIZE}~${MAX_SIZE}칸이어야 해요.`); return P; }
++  const lo = minSize(m.theme);
++  const sizeOk = isInt(m.w) && isInt(m.h) && m.w >= lo && m.h >= lo && m.w <= MAX_SIZE && m.h <= MAX_SIZE;
++  if (!sizeOk) { err("w", `맵 크기는 가로·세로 ${lo}~${MAX_SIZE}칸이어야 해요.`); return P; }
+   for (const L of ["ground", "objects"]) {
+     const rows = m[L], ko = L === "ground" ? "바닥" : "물체", known = L === "ground" ? S.ground : S.objects;
+     if (!Array.isArray(rows) || rows.length !== m.h) { err(L, `${ko} 층의 줄 수가 맵 세로(${m.h})와 달라요.`); return P; }
+@@ -128,8 +141,14 @@ export function checkMap(m, ctx, opts = {}) {
+     if (!n) return;
+     if (!isStr(n.name) || !n.name.trim()) err(p, `NPC ${i + 1}: 이름을 적어 주세요.`, n.x, n.y);
+     if (roles.length && !roles.includes(n.role)) err(p, `${who}: 역할 "${n.role}"을(를) 모르겠어요.`, n.x, n.y);
++    if (n.thing != null && typeof n.thing !== "boolean") err(p, `${who}: 상호작용 물건(thing)은 예/아니오(true/false)예요.`, n.x, n.y);
+     if (!inb(n.x, n.y)) err(p, `${who}: 맵 밖에 있어요.`);
+-    else {
++    else if (n.thing === true && !stand(n.x, n.y)) {
++      // an interactive object stands on its furniture, with a free side to walk up to
++      if (!onFurniture(m, n.x, n.y)) err(p, `${who}: 물건은 빈칸·가구·뒷벽 위에만 놓을 수 있어요 (잘린 앞벽은 안 돼요).`, n.x, n.y);
++      else if (!sideOpen(n.x, n.y, stand)) err(p, `${who}: 물건 옆(위·아래·왼쪽·오른쪽)에 설 수 있는 빈칸이 하나는 있어야 해요.`, n.x, n.y);
++      else if (!sideOpen(n.x, n.y, (x, y) => stand(x, y) && reachable(x, y))) warn(p, `${who}: 입구에서 걸어갈 수 없는 곳에 있어요.`, n.x, n.y);
++    } else {
+       if (!stand(n.x, n.y)) err(p, `${who}: 막힌 칸 위에 서 있어요.`, n.x, n.y);
+       else if (!nearReach(n.x, n.y)) warn(p, `${who}: 입구에서 걸어갈 수 없는 곳에 있어요.`, n.x, n.y);
+     }
+diff --git a/game/scripts/build-logic.mjs b/game/scripts/build-logic.mjs
+index 70ac265..0051483 100644
+--- a/game/scripts/build-logic.mjs
++++ b/game/scripts/build-logic.mjs
+@@ -76,8 +76,9 @@ export function readData(dataDir = DATA_DIR) {
+       if (!m) continue;
+       if (!isObj(m) || typeof m.id !== "string" || !/^[a-z][a-z0-9_]{1,23}$/.test(m.id)) { problems.push(`${where}: "id"가 올바르지 않습니다`); continue; }
+       if (seen.has(m.id)) { problems.push(`${where}: 지도 id "${m.id}"가 중복됩니다`); continue; }
+-      const w = m.w, h = m.h;
+-      if (!Number.isInteger(w) || !Number.isInteger(h) || w < 16 || h < 16 || w > 160 || h > 160) { problems.push(`${where}: 크기(w, h)는 16..160 정수여야 합니다`); continue; }
++      // a room indoors may be small (a shop, a lobby): 8 tiles a side; everything else 16
++      const w = m.w, h = m.h, min = m.theme === "interior" ? 8 : 16;
++      if (!Number.isInteger(w) || !Number.isInteger(h) || w < min || h < min || w > 160 || h > 160) { problems.push(`${where}: 크기(w, h)는 ${min}..160 정수여야 합니다`); continue; }
+       const grid = (k) => Array.isArray(m[k]) && m[k].length === h && m[k].every((r) => typeof r === "string" && r.length === w);
+       if (!grid("ground") || !grid("objects")) { problems.push(`${where}: ground/objects는 ${w}글자 × ${h}줄이어야 합니다`); continue; }
+       seen.add(m.id);
+diff --git a/game/scripts/editor-lib.mjs b/game/scripts/editor-lib.mjs
+index 5d3ea38..1f4b811 100644
+--- a/game/scripts/editor-lib.mjs
++++ b/game/scripts/editor-lib.mjs
+@@ -49,7 +49,7 @@ const GROUND_NAME = {
+   n: "지하묘지 통로", i: "지하묘지 둥근 바닥", W: "암벽·낭떠러지 (못 건넘)", k: "보도", a: "아스팔트", m: "차선", g: "철판·배수 바닥",
+   "=": "왕도 포석", "%": "낙엽 더미", "&": "병든 땅",
+   // indoors (theme "interior", public/iso_interior.js)
+-  f: "실내 마루 (밝은 나무)", l: "실내 마루 (호두나무)", x: "벽난로 앞 돌바닥", q: "체크무늬 깔개", u: "둥근 깔개", y: "긴 카펫 (러너)", e: "현관 매트",
++  f: "실내 마루 (밝은 나무)", l: "실내 마루 (호두나무)", h: "실내 마루 (헤링본)", x: "벽난로 앞 돌바닥", q: "체크무늬 깔개", u: "둥근 깔개", y: "긴 카펫 (러너)", e: "현관 매트",
+ };
+ /** Korean names for every object character (any object blocks the tile). */
+ const OBJECT_NAME = {
+@@ -63,6 +63,9 @@ const OBJECT_NAME = {
+   "=": "실내 벽", "+": "실내 벽 (창문)", "^": "실내 벽 (칠판 메뉴)", "~": "실내 벽 (그림·지도)", "@": "실내 벽 (벽시계)", "!": "실내 벽 (깃발)", _: "잘린 앞벽 (낮은 벽)",
+   o: "둥근 탁자 (등불)", k: "의자 (탁자를 향함)", s: "안락의자", m: "카운터", j: "카운터 (커피 머신)", "$": "빵 진열장", b: "책장", r: "찬장 (병·시계)", t: "트로피 진열장",
+   "#": "벽난로", g: "화분", "*": "등불 기둥", v: "게시판", "-": "긴 탁자", p: "침대", w: "나무통", "]": "나무 상자", "%": "잠자는 고양이 (방석)",
++  // the town's buildings (docs/design/town.md E): the terrace wall outdoors, then the workshops' pieces
++  W: "석축 (돌 축대)", "&": "모루", "<": "화덕 (용광로)", ">": "진열대 (무기·옷·도구)", "|": "독서대", ";": "표본 진열장",
++  ":": "화덕 (요리·가마솥)", "'": "전신 거울", "`": "수련 인형",
+ };
+ /** The colours the minimap uses (public/art.js renderMini), read from the client source so they never drift. */
+ function miniColours() {
+@@ -283,9 +286,22 @@ export async function checkData(dataDir = DATA_DIR) {
+     if (n.lines !== undefined && (!Array.isArray(n.lines) || n.lines.some((l) => typeof l !== "string"))) err(f, `${path}.lines`, "lines는 문자열 배열이어야 합니다");
+     if (n.role === "talk" && (!Array.isArray(n.lines) || !n.lines.length)) warn(f, `${path}.lines`, `${n.name || n.id}: 대화 NPC에게 할 말(lines)이 없습니다`);
+     if (n.look !== undefined && !Array.isArray(n.look)) err(f, `${path}.look`, "look은 배열이어야 합니다");
++    if (n.thing !== undefined && typeof n.thing !== "boolean") err(f, `${path}.thing`, "thing은 true/false여야 합니다");
++    if (n.goods !== undefined) {
++      if (n.role !== "shop") warn(f, `${path}.goods`, `${n.name || n.id}: goods는 역할이 shop인 NPC만 씁니다`);
++      if (!Array.isArray(n.goods)) err(f, `${path}.goods`, "goods는 아이템 id 배열이어야 합니다");
++      else for (const id of n.goods) if (!item(id) || !(G.ITEMS[id].price > 0)) err(f, `${path}.goods`, `팔 수 없는 아이템 "${id}" (없는 id이거나 값이 없습니다)`);
++    }
+     const m = reachOf(map);
+     if (!inside(m, n.x, n.y)) { err(f, `${path}`, `NPC 위치 (${n.x},${n.y})가 지도 밖입니다`); return; }
+-    if (!m.open(n.x, n.y)) err(f, `${path}`, `NPC가 막힌 칸 (${n.x},${n.y})에 서 있습니다`);
++    const side = (ok) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => inside(m, n.x + dx, n.y + dy) && ok(n.x + dx, n.y + dy));
++    if (n.thing === true && !m.open(n.x, n.y)) {
++      // an interactive object stands on its furniture (or hangs on a back wall), with an open side to walk up to
++      const o = m.objects[n.y][n.x];
++      if (o === " " || o === "_") err(f, `${path}`, `물건 ${n.name || n.id}이(가) 잘린 앞벽이나 막힌 바닥 (${n.x},${n.y}) 위에 있습니다`);
++      else if (!side((x, y) => m.open(x, y))) err(f, `${path}`, `물건 ${n.name || n.id} (${n.x},${n.y}) 옆에 설 수 있는 빈칸이 없습니다`);
++      else if (!side((x, y) => m.open(x, y) && m.reach[y * m.w + x])) warn(f, `${path}`, `물건 ${n.name || n.id}에게 입구에서 걸어갈 수 없습니다 (${n.x},${n.y})`);
++    } else if (!m.open(n.x, n.y)) err(f, `${path}`, `NPC가 막힌 칸 (${n.x},${n.y})에 서 있습니다`);
+     else if (!nearReach(m.reach, m.w, m.h, n.x, n.y)) warn(f, `${path}`, `NPC ${n.name || n.id}에게 입구에서 걸어갈 수 없습니다 (${n.x},${n.y})`);
+   };
+ 
+@@ -304,6 +320,10 @@ export async function checkData(dataDir = DATA_DIR) {
+         for (let x = 0; x < row.length; x++) if (!okCh.has(row[x])) { err(f, `${layer}[${y}]`, `알 수 없는 ${layer === "ground" ? "바닥" : "물체"} 글자 "${row[x]}" (${x},${y})`); break; }
+       });
+     }
++    // a room is a diorama: tall walls only along the back (north row, west column), never in front
++    if (d.theme === "interior") d.objects.forEach((row, y) => {
++      for (let x = 0; x < row.length; x++) if ("=+^~@!".includes(row[x]) && x > 0 && y > 0) { err(f, `objects[${y}]`, `실내 벽은 뒤쪽(맨 윗줄·맨 왼쪽 줄)에만 세울 수 있습니다 (${x},${y}) — 앞쪽은 잘린 벽 "_"`); break; }
++    });
+     const m = reachOf(id);
+     if (!Array.isArray(d.entry) || !inside(m, d.entry[0], d.entry[1])) err(f, "entry", "입구(entry)가 지도 밖이거나 없습니다");
+     else if (!m.open(d.entry[0], d.entry[1])) err(f, "entry", `입구 (${d.entry[0]},${d.entry[1]})가 막힌 칸입니다`);
+-- 
+2.43.0
+

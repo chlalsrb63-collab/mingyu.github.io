@@ -1,0 +1,84 @@
+From 4543f7c6c55b400e4cc32f856c2e51df96e5a51f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 14 Nov 2026 13:41:31 +0000
+Subject: [PATCH 4/5] =?UTF-8?q?Docs:=20SCHEMA=20=E2=80=94=20workshop=20sty?=
+ =?UTF-8?q?les=20and=20pieces,=20idle=20acts,=20thing=20NPCs,=20full-look?=
+ =?UTF-8?q?=20NPCs,=20small=20rooms?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01VHqoygdSy8NpLoKVbn9QhA
+---
+ docs/editor/SCHEMA.md | 34 ++++++++++++++++++++++++++--------
+ 1 file changed, 26 insertions(+), 8 deletions(-)
+
+diff --git a/docs/editor/SCHEMA.md b/docs/editor/SCHEMA.md
+index 74ce075..c2005d6 100644
+--- a/docs/editor/SCHEMA.md
++++ b/docs/editor/SCHEMA.md
+@@ -31,7 +31,7 @@ logic.js stays one file with no imports. Missing files = empty defaults = the ga
+   "bgm": "field",                 // audio.js TRACKS key
+   "safe": false,                  // true = no monsters, no PvE damage (like town)
+   "band": [5, 9],                 // level band shown on doors, or null
+-  "w": 48, "h": 36,               // tiles; 16..160 each
++  "w": 48, "h": 36,               // tiles; 16..160 each (an interior: 8..160)
+   "ground":  ["......", "..."],   // h strings × w chars — ground layer (see palette below)
+   "objects": ["      ", "..."],   // h strings × w chars — object layer; " " = empty (any object blocks)
+   "entry": [24, 30],              // where players arrive by default (must be standable)
+@@ -87,26 +87,44 @@ generated map round-trips tile for tile):
+   `tales_cafe.json`, `town_hall.json`, `starlight_inn.json`): a diorama room. Back walls stand on
+   the north row (y = 0) and west column (x = 0) only; the south row and east column hold the low
+   cut-down wall `_`, with one open tile (ground `e`, door mat) as the way out — no tall wall ever
+-  stands in front of the player. Optional `"style"`: `cafe` `hall` `inn` `library` (wallpaper,
+-  curtains, banners). Floors: `f` honey planks, `l` walnut, `x` hearth flagstones, `q` checked rug,
+-  `u` round rug, `y` runner carpet, `e` door mat (rugs are drawn whole across touching tiles).
++  stands in front of the player. Optional `"style"`: `cafe` `hall` `inn` `library`, and for the
++  town's workshops (docs/design/town.md F) `office` (log walls, maps on the long table) `forge`
++  (coursed stone) `tavern` (half-timber; `j` = beer taps) `shop` (stripes; `j` = till and scale, `$` =
++  potion case) `boutique` (pink stripes; `>` = clothes rail) `dojo` (paper screens) `lab` (green
++  tiles; `:` = cauldron) `lobby` (flowers; `r` = mailboxes, `-` = a bare bench) — wallpaper,
++  curtains, banners, cushions. Floors: `f` honey planks, `l` walnut, `h` herringbone parquet, `x`
++  hearth flagstones, `q` checked rug, `u` round rug, `y` runner carpet, `e` door mat (rugs are drawn
++  whole across touching tiles). A room may be as small as 8 × 8.
+   Walls: `=` plain, `+` window (sunlight on the floor), `^` chalkboard (two side by side share a
+   frame), `~` picture/map, `@` clock, `!` banner. Furniture (any theme draws it, every object
+   blocks): `o` round table with lamp, `k` chair (turns to the next table), `s` armchair (turns to
+   the hearth), `m` counter, `j` counter with coffee machine, `$` pastry case (counters join in
+   runs), `b` bookshelf, `r` jar cupboard, `t` trophy cabinet, `#` fireplace (put a `fires` entry
+   on the tile in front: it becomes the hearth to rest and cook by), `g` plant, `*` lantern, `v`
+-  notice board, `-` long table (joins), `p` bed, `w` barrel, `]` crates, `%` sleeping cat
+-  (symbols because the autumn kingdom owns `d f i z N V J` in the object layer).
++  notice board, `-` long table (joins), `p` bed, `w` barrel, `]` crates, `%` sleeping cat,
++  `&` anvil, `<` furnace (glows, spits sparks), `>` rack (swords, a spear and a shield; clothes in a
++  boutique, tools in a shop), `|` lectern with an open book, `;` specimen case (a pickled hell-beast
++  that watches you), `:` stove with a stew pot (a `fires` entry in front makes it a hearth; a
++  cauldron in a `lab`), `'` standing mirror, `` ` `` training dummy (drawn outdoors too)
++  (symbols because the autumn kingdom owns `d f i z N V J` in the object layer). Outdoors `W` is
++  the town's terrace wall (석축).
+   Pieces against a back wall turn to face the room. Doors between town and a room (`links.json`
+   on the house's doorstep, the room's `portals` back out) are drawn as house doors with a mat,
+   not magic gates. Arrive one tile inside / one tile below the step, never on the door itself.
+ - NPC `goods` (role `shop` only): the item ids this keeper sells instead of the general shop
+   list (the cafe's drinks, the inn's stew); the server refuses anything else at that counter.
+   A keeper may stand one tile behind a counter (served across it).
+-- NPC `pose`: a small idle act drawn over the sprite — `sip` `read` `write` `wipe` `doze`.
++- NPC `pose`: a small idle act drawn over the sprite — `sip` `read` `write` `wipe` `doze` `sweep`
++  `hammer` `stir` `carry` `fish` `water` (a watering can) `knit` `wave`.
++- NPC `thing: true`: an interactive object, not a person (a bookshelf, a notice board, a mirror,
++  an anvil): no sprite, no mat, no idle act, no radar glyph; its `name` shows on the F prompt and
++  its `role` gives the service (`collector`, `achieve`, `daily`, `costume`, `smith`, `job`, or
++  `talk` with `lines`). It may stand ON a piece of furniture or a back wall (never on the cut-down
++  front wall `_`) as long as one of its four sides is open floor (data:check says when not).
+ - NPC `look` with 5–6 values `[ear 0–4, eye 0–4, nose 0–4, clothHex, furHex, pattern 0–3]` gives
+-  an editor NPC its own fur and clothes (4-value looks keep the role's built-in appearance).
++  an editor NPC its own fur and clothes (4-value looks keep the role's built-in appearance); a
++  full hero look (8–11 numbers, species.js `PARTS` order: ear eye nose fur blush pat cloth species
++  tail accent eyeColour) makes them any animal a hero can be (a panda, a penguin, a squirrel …).
+ - links.json: each entry is ONE-WAY (a two-way connection is two entries, or one entry plus a
+   portal in the custom map's own file); the door tile's object is cleared; `label` replaces the
+   door's "map name Lv.a–b" caption.
+-- 
+2.43.0
+

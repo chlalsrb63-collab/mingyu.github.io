@@ -1,0 +1,65 @@
+From f635e0b0486baf139d9d800f2d653ad57be6fddd Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 14 Nov 2026 13:41:56 +0000
+Subject: [PATCH 5/5] =?UTF-8?q?Docs:=20FILEMAP=20=E2=80=94=20the=20town's?=
+ =?UTF-8?q?=20interiors,=20workshop=20pieces=20and=20styles,=20thing=20NPC?=
+ =?UTF-8?q?s,=20the=20interiors=20test?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01VHqoygdSy8NpLoKVbn9QhA
+---
+ docs/FILEMAP.md | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/docs/FILEMAP.md b/docs/FILEMAP.md
+index 236d0a2..bdef663 100644
+--- a/docs/FILEMAP.md
++++ b/docs/FILEMAP.md
+@@ -30,7 +30,7 @@ banner or function it names. **When you add, move or split a file, update its ro
+ | `33-maps-zones.js` [231] | 4× grounds (docs/design/scale-and-rift.md C): `zoneMap` (m.zone safe/normal/elite/hidden by walk from the entrance, hidden `pockets`, minimap `zq`), `zoneSpawns` (colonies per 8×8 block of each zone), waypoint keys `wpKey wpOk stonesOf stoneName`, 질주의 바람 `windTouch` (`WIND_*`) |
+ | *(generated)* | `const DATA = {maps, links, npcs, quests}` — `build-logic.mjs` inserts `game/data/**` right after 00-header |
+ | `34-maps-world.js` [473] | `buildTown()` (being rebuilt as the 100×76 forest village: frozen contract `docs/design/town.md` — layout, buildings/doors, interiors, residents, T-A/T-B split), **`GEN`** (every generated map's generator, band, `stones` and `cfg()`: seed, size (2× per side since Phase 1), mobs, chest, features), `GATE_LINKS` (doors by gate name), `genMap(id)` (one map: terrain, doors, zones + `zoneSpawns`, `markRoutes`: stones, wind shrines `/`, plaza fire, signs incl. zone signs), collision `solidAt/canStand/canFly`, `mapPayload` |
+-| `36-custom-maps.js` [314] | editor maps over the generated world: `fromEditor` (map file → map), `finishMap` (doors, links, NPCs, finalize, `buildCells` → `m.cells` spawn quotas per 16×16 cell); the **lazy map registry**: `MAP_META` (name/theme/band/size/wp/kinds of every map, nothing built), **`mapOf(id)`** (built on first use, cached), **`mapOfS(S,id)`** (+ instances `S.dims`), `allMaps()` (tools/tests), `arrivalOf` (a door's landing tile, resolved at warp time), `hasWp/wpOf`, sheet stones `wpWoken/wpCount`; `START`, `HUNTED`, `COL_MOBS`, `NPC_MAP`/`NPC_NAME`, `devPlace` (playtest). Town + editor maps are built at load, hunting grounds on first entry: never index a map table directly |
++| `36-custom-maps.js` [340] | editor maps over the generated world: `ROOM_STYLES`, `NPC_POSES`, `NPC_ROLES`, `npcFrom` (an editor NPC cleaned: goods, pose, `thing` = interactive object), `fromEditor` (map file → map), `finishMap` (doors, links, NPCs, finalize, `buildCells` → `m.cells` spawn quotas per 16×16 cell); the **lazy map registry**: `MAP_META` (name/theme/band/size/wp/kinds of every map, nothing built), **`mapOf(id)`** (built on first use, cached), **`mapOfS(S,id)`** (+ instances `S.dims`), `allMaps()` (tools/tests), `arrivalOf` (a door's landing tile, resolved at warp time), `hasWp/wpOf`, sheet stones `wpWoken/wpCount`; `START`, `HUNTED`, `COL_MOBS`, `NPC_MAP`/`NPC_NAME`, `devPlace` (playtest). Town + editor maps are built at load, hunting grounds on first entry: never index a map table directly |
+ | `40-characters-world.js` [561] | `validName`, **`newChar`** (sheet `v:12`: v12 life skills `life jobBoard rep coopDay coopDone pouch` (58-life.js); v11 jobs `job st wm xpt rs sw cnt eq.weapon2`; v10 `bagCap`, `house`; v9 `wp` = {mapId: stone bitmask}, `dim` = {day, n}), **`migrate`** (old sheets), gear stats `stats()`, `exportChar`; world `setup`, **`runtime(S,id)`** (a map's live state, made on first use: fixed spawns + cell slots), `liveMapIds`, instances `registerDim/closeDim`, mobs `newMob/placeMob`, field boss, `addPlayer/removePlayer`, `changeMap`, `sys/toast`; parties |
+ | `45-jobs.js` [353] | `toTier shownLv eff pointCost batchCost levelOf nextCosts wmNeed scaleOf hybridOf jobOk legacyCls`, **`deriveStats(p)`** (the sheet's stats, cached in `p.stc`), mastery `gainWm wmHit newAct wmKill`, `grazeChance evadeBlow staggerPlayer`, arrows `fireArrow shotTick bowShot` (`rt.shots`), migration `allocate migrateV10 cleanJobs`, test helper `hero()` |
+ | `46-bag.js` [63] | the bag's size: `bagCap(ch)` (every bag check asks it; 40 → 100), `roomIn` (room in any list of slots), `sortSlots` (the 정리 of bag and house storage), `bagClean` (migrate), action `bag_expand` (`bagValidate/bagApply`, price curve `BAG_COST` in 10-tables) |
+@@ -57,7 +57,7 @@ banner or function it names. **When you add, move or split a file, update its ro
+ | `account.js` [99] | HTTP side of accounts: `session signup login logout me servers`, `API` base |
+ | `scene2d.js` [2986] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites (+ `autumnScenery`), ground (`drawGround`: whole canvas, or on big maps the visible chunks + one prefetched per frame; walls/rock stand up lazily near the screen, `lazyTall`; the deep places' glow in pieces, `pulsePart`), raised blocks, creatures (`drawPerson`; movement life `stepLife`: bob, lean, stop squash, terrain footsteps `footKind/footstep`, afterimage), effects `fx/fxCustom` (+ `flash wave zap`), sword-qi `qiBurst` at each stroke's impact, bow arrows `fx.arrow/arrowEnd/arrowHit` + `arrowSprite` (64 directions, trail, piercing streak, stuck in walls), the string's snap `bowSnap`, skills' scaled set `big(ang)`, `shake(n, ang)` (directional kick), pets, title/creation stage; `groundInfo()` (load/bake costs for tools) |
+ | `isotiles.js` [65] · `iso_px.js` [118] · `iso_ground.js` [939] · `iso_tall.js` [601] | quarter-view ground baking (`bakeGround` whole; `groundChunks` = 1024×512 pieces baked on demand with an LRU of 12 for maps over `CHUNK_AREA` 80×60 tiles, `?chunks=1` forces; `bakeChunk` gives the same pixels as the same part of `bake`), pixel buffers/projection (`TW=32, TH=16`), ground materials and transitions, tall blocks (cliffs, walls, houses) |
+-| `iso_interior.js` [1188] | indoors (theme `interior`): `bakeRoom` floors (herringbone too) and rugs, `roomPiece` back walls / cut front wall / furniture (a texel `Model` with depth buffer), `roomLight` warm lamp/fire/window light, `drawPose` NPC idle acts; a house's turns `fd` and its storage chests, teddy, fishbowl, gramophone; char legend in its header and SCHEMA.md |
++| `iso_interior.js` [1583] | indoors (theme `interior`): `bakeRoom` floors (herringbone too) and rugs, `roomPiece` back walls / cut front wall / furniture (a texel `Model` with depth buffer), `roomLight` warm lamp/fire/window light, `drawPose` NPC idle acts (sip read write wipe doze sweep hammer stir carry fish water knit wave); `STYLE` per room (cafe hall inn library office forge tavern shop boutique dojo lab lobby; wall patterns stripe damask flower logs stone tile timber shoji); a house's turns `fd` and its storage chests, teddy, fishbowl, gramophone; the town's workshops (banner "the town's workshops"): `anvil furnace rack lectern specimen stove mirror dummy` = `& < > \| ; : ' \``; char legend in its header and SCHEMA.md |
+ | `decor.js` [674] | landmarks (`LANDMARKS` per theme; autumn ruins stand exactly on their footprints), decals, pulses, critters, waypoint stones/signs, town dressing (old `daylight`/`wash`, unused) |
+ | `autumn.js` [40] | the autumn theme's turned colours: `HUE` (maple, oak, ginkgo, green) and `hueAt(m, x, y)`, shared by trees (scene2d) and their fallen leaves (iso_ground) |
+ | `sky.js` [366] | the outdoor sky: server-synced clock (`setSky(dn)`, `hour phase nightK clockText`), the grade (`grade`: one multiply + stepped light pools + bloom, never a vignette), weather (`drawWeather`: rain, fog, cloud shadows, wind, snow, fireflies), HUD icon; preview overrides `__skyHour`/`__skyWx` |
+@@ -101,8 +101,8 @@ connectivity, determinism, per-map build time, lazy registry + MAP_META ↔ buil
+ frame: inside the sheet, closed outline, eyes uncovered, art in every view, in its place) ·
+ looks (species ↔ LOOK_MAX) · mobart (every mob has a model that fits its canvas) · accounts (vault
+ logic with a fake store + client contract) · daynight (clock, weather per map/slot, wire `dn`, stumps, warmth 1–4, 연주/건배, storyteller, rain/fog flavour) · data (editor data: sample map, links, side quests, round
+-trip, data:check errors, sheet v9) · dimrift (차원 균열: generator, ready check, gauge/orbs/shrines, master, chest, death, cleanup, wire, bot-party clear time; `-v` prints the times, `HPB= BOSSHP= NOCLEAR=1 MORE=1` for tuning) · housing (bag 40→100 and its costs, bag size in every way in, house buy/upgrade, door, furniture place/turn/pick with collisions, wall pieces, reach and limits, storage and its chests, rest, party visits, instance cleanup, old sheets of every version) · interiors (town doors in and out of the cafe/hall/inn, diorama
+-walls, keepers' own goods).
++trip, data:check errors, sheet v9) · dimrift (차원 균열: generator, ready check, gauge/orbs/shrines, master, chest, death, cleanup, wire, bot-party clear time; `-v` prints the times, `HPB= BOSSHP= NOCLEAR=1 MORE=1` for tuning) · housing (bag 40→100 and its costs, bag size in every way in, house buy/upgrade, door, furniture place/turn/pick with collisions, wall pieces, reach and limits, storage and its chests, rest, party visits, instance cleanup, old sheets of every version) · interiors (all thirteen town rooms against docs/design/town.md D/F: size, style, door ↔ room round trips onto
++each landing, diorama walls, a light, hosts and `thing` objects reachable, keepers' own goods, the job scroll, merc quests).
+ 
+ ### Scripts — `game/scripts/` (pure node; work on Windows)
+ `build-logic.mjs` (concat parts + `data/**` → logic.js; `--check`, `--watch`; exports `readData buildLogic`) ·
+@@ -123,8 +123,10 @@ contact sheets → `game/shots_cos/`).
+ 
+ ### Other
+ `game/data/` map-editor data, built into logic.js (contract: `docs/editor/SCHEMA.md`): `maps/<id>.json`
+-(sample `willow.json` 버드나무 마을; the town's interiors `tales_cafe` 테일즈 카페, `town_hall` 넥서스 마을회관,
+-`starlight_inn` 모닥별 여관), `links.json`, `npcs.json`, `quests.json` · `game/editor/` the map
++(sample `willow.json` 버드나무 마을; the town's interiors, docs/design/town.md D/F: `town_hall` 넥서스 마을회관,
++`owl_library` 부엉이 도서관, `dojo` 넥서스 수련관, `general_store` 다람쥐 잡화점, `kangkang_forge` 캉캉대장간,
++`merc_office` 늑대발 용병사무소, `bogle_lab` 보글연금공방, `juju_diner` 쥬쥬식당, `tales_cafe` 테일즈 카페,
++`starlight_inn` 모닥별 여관, `boutique` 루루 의상실, `pet_house` 몽글 펫 돌봄집, `dongdong_apt` 동동아파트), `links.json` (every town door), `npcs.json`, `quests.json` · `game/editor/` the map
+ editor app (plain ES modules, Korean, no build; imports `/public/` art modules; owner guide
+ `docs/editor/README.md`): `app.js` (tabs, keys, help) · `ui.js` (DOM, API, dialogs, pickers, mob/item/NPC
+ pictures) · `validate.js` (map/links/npcs/quests checks, shared with the server) · `mapedit.js` (맵 tab:
+-- 
+2.43.0
+
