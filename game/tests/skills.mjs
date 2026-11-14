@@ -206,7 +206,8 @@ assert.ok(D.mech && D.mech.react && D.mech.grit === 100);
   m.dead = true;
   assert.ok(W.act({ t: "sk", i: 0 }).ok);
   v = W.step();
-  assert.ok(Math.abs(p.x - mx) < 1 && Math.abs(m2.x - px) < 1 && Math.abs(m2.y - py) < 1, "rogue and monster trade places");
+  // (the cut that follows the swap staggers the monster a few pixels further back: hitstun knockback)
+  assert.ok(Math.abs(p.x - mx) < 1 && Math.hypot(m2.x - px, m2.y - py) < 4, "rogue and monster trade places");
   assert.equal(m2.mk, 2, "two marks");
   assert.ok(evts(v, "cf").length === 1 && m2.stun > W.now, "it reels, confused");
   // 맹독 바르기: two marks a stab, and a poison as strong as the marks
