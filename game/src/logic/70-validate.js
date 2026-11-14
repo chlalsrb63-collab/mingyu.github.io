@@ -301,6 +301,7 @@ export function validateAction(S, pid, a) {
     case "fish":
       if (p.fish) return bad("이미 낚시 중입니다");
       if (now - p.hitAt < 3000) return bad("싸우는 중에는 낚시할 수 없습니다");
+      if (MAPS[p.map].nofish) return bad("이곳에서는 낚시를 할 수 없습니다");
       if (!waterNear(MAPS[p.map], p)) return bad("물가에서만 낚시할 수 있습니다");
       if (!canAdd(ch, "fish_s", 1)) return bad("가방이 가득 찼습니다");
       return OK;

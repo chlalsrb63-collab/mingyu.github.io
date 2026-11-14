@@ -325,12 +325,7 @@ function markRoutes(m, labelOf, deeper) {
 }
 
 
-const MAPS = buildMaps();
-const START = { map: "town", x: 20 * T + 8, y: 18 * T + 8 };
-/** Every monster that lives somewhere (no chests, no bosses), and each region's for its collection. */
-const HUNTED = [...new Set(Object.values(MAPS).flatMap((m) => m.spawns.map((sp) => sp.k)))].filter((k) => !MOBS[k].chest && !MOBS[k].boss);
-const COL_MOBS = {};
-for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"]) COL_MOBS[id] = [...new Set(MAPS[id].spawns.map((sp) => sp.k))].filter((k) => HUNTED.includes(k));
+// MAPS, START, HUNTED and COL_MOBS are made in 36-custom-maps.js, once the editor's maps are laid over these.
 
 function solidAt(m, px, py) {
   const tx = Math.floor(px / T), ty = Math.floor(py / T);
@@ -353,7 +348,7 @@ function mapPayload(m) {
     id: m.id, name: m.name, w: m.w, h: m.h, g: m.g, o: m.o, big: m.big, safe: m.safe, bgm: m.bgm,
     theme: m.theme || null, band: m.band || null, marks: m.marks || [],
     // a door names where it leads and how strong you should be to go there
-    portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: doorName(MAPS[p.to]) })),
+    portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: p.label || doorName(MAPS[p.to]) })),
     npcs: m.npcs,
   };
 }

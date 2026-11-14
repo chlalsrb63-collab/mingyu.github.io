@@ -183,6 +183,9 @@ const titleOf = (ch) => (ch.title && ACH_BY[ch.title] ? ACH_BY[ch.title].title :
 
 // ── the monster collection: a kind is registered at its first mastery star
 const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def", 2]], city: [["crit", 1]], sewer: [["mf", 5]], cave: [["atk", 3]], abyss: [["atkp", 2]] };
+// a hunting ground from the world map editor has a collection too, with no bonus; one with no monsters left has none
+for (const id of Object.keys(COL_MOBS)) if (!REGION_BONUS[id]) REGION_BONUS[id] = [];
+for (const id of Object.keys(REGION_BONUS)) if (!COL_MOBS[id]) delete REGION_BONUS[id];
 const REGIONS = Object.keys(REGION_BONUS);
 const regionDone = (ch, id) => COL_MOBS[id].every((k) => (ch.mk[k] || 0) >= MASTERY[0]);
 function registered(S, p, k) {
@@ -191,7 +194,7 @@ function registered(S, p, k) {
   for (const id of REGIONS) {
     if (!COL_MOBS[id].includes(k) || !regionDone(ch, id)) continue;
     const words = REGION_BONUS[id].map(([s, v]) => `${s === "xp" || s === "mf" || s === "crit" || s === "atkp" ? `${v}%` : `+${v}`} ${STAT_WORD[s]}`).join(", ");
-    toast(p, `[${MAPS[id].name}] 도감 완성! 영구 보너스: ${words}`);
+    toast(p, words ? `[${MAPS[id].name}] 도감 완성! 영구 보너스: ${words}` : `[${MAPS[id].name}] 도감 완성!`);
     sys(S, `${ch.name}님이 [${MAPS[id].name}] 몬스터 도감을 완성했습니다!`);
     p.stc = null;
   }
@@ -200,7 +203,8 @@ const STAT_WORD = { hp: "최대 HP", xp: "경험치", def: "방어력", crit: "�
 
 // ── the world event: a rift opens in one hunting ground every half hour
 const EVT = { every: 1800000, warn: 120000, len: 480000, waves: [0, 150000, 300000], boss: 360000 };
-const EVT_MAPS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"];
+/** Where a rift can open: every hunting ground with a waypoint stone, a field boss and monsters of its own. */
+const EVT_MAPS = Object.keys(MAPS).filter((id) => !MAPS[id].safe && WP[id] && FIELD_BOSS[id] && COL_MOBS[id]);
 const evtMap = (slot) => EVT_MAPS[(Math.imul(slot, 2654435761) >>> 0) % EVT_MAPS.length];
 const newEvt = (slot) => ({ slot, map: evtMap(slot), phase: "warn", start: slot * EVT.every, end: slot * EVT.every + EVT.len, waves: 0, boss: 0, bossDead: false, dmg: {}, top: null });
 function worldEvent(S, now) {

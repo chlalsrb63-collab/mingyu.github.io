@@ -110,7 +110,7 @@ export function viewFor(S, pid) {
  * `fresh`, everything is generated again from the seeds (for checking determinism).
  */
 export function atlas(fresh = false) {
-  const maps = fresh ? buildMaps() : MAPS;
+  const maps = fresh ? customWorld(buildMaps()) : MAPS;
   return { maps, fires: FIRES, waypoints: WP };
 }
 

@@ -283,8 +283,14 @@ for (const k of Object.keys(MOBS)) {
 /** How long a dungeon's guardian (a fixed rank-2 monster) stays down. */
 const GUARD_RESP = 180000;
 
-/** One chain of errands, leading through every ground in the order a character can survive them. */
-const QUESTS = [
+/**
+ * One chain of errands, leading through every ground in the order a character can survive them.
+ * The world map editor may replace the whole chain (data/quests.json "main"; checked by data:check).
+ */
+const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA.quests.main.map((q) => ({
+  mob: String(q.mob), n: Math.max(1, q.n | 0), title: String(q.title || ""), text: String(q.text || ""), xp: Math.max(0, q.xp | 0), gold: Math.max(0, q.gold | 0),
+  items: (Array.isArray(q.items) ? q.items : []).filter((it) => Array.isArray(it) && typeof it[0] === "string" && Object.hasOwn(ITEMS, it[0])).map(([id, n]) => [id, Math.max(1, n | 0)]),
+})).filter((q) => Object.hasOwn(MOBS, q.mob)) : [
   { mob: "twinhare", n: 5, title: "첫 발걸음", text: "차원이 겹친 뒤로 초원의 짐승들이 뒤틀려 돌아왔다네. 머리 둘 달린 토끼 5마리만 정리해 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
   { mob: "gutfrog", n: 6, title: "뒤집힌 개구리", text: "속이 밖으로 나온 개구리가 길목에서 뛰어든다네. 창자 개구리 6마리를 잡아 주게.", xp: 220, gold: 120, items: [["mp_s", 5]] },
   { mob: "eyecrow", n: 8, title: "지켜보는 것들", text: "연못 위를 도는 눈알 까마귀 8마리를 떨어뜨려 주게. 먼저 덤비진 않지만, 보고 있는 게 영 꺼림칙해.", xp: 520, gold: 200, items: [["stone", 2]] },
