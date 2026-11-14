@@ -1041,17 +1041,22 @@ export function loadMap(m) {
       waterTiles.push({ X, Y, x: x * T, y: y * T, h: hash(x, y, 5), n: sh(0, -1), s: sh(0, 1), w: sh(-1, 0), e: sh(1, 0) });
     }
     const ch = m.o[y][x], key = x + "," + y;
+    // a landmark stands where it stands: nothing else is drawn on the tiles it covers
+    if (lay.covered.has(key)) continue;
     if (IT.ready && (ch !== " " || isRock(x, y))) {
       const pc2 = IT.tallAt(m, x, y, theme);
       if (pc2 && pc2.img) {
-        const [X, Y] = tI(x, y), st = { sp: pc2.img, dx: X + pc2.dx, dy: Y + pc2.dy, x: X, y: Y + 16, d: Y + 8, glow: null, glint: -1, art: true };
+        const [X, Y] = tI(x, y), st = { sp: pc2.img, dx: X + pc2.dx, dy: Y + pc2.dy, x: X, y: Y + 16, d: Y + 8, glow: null, glint: -1, art: true, tx: X, ty: Y };
+        // a wall tall enough to hide someone can be cut down to a stump when they stand behind it
+        if (ch !== "h" && "low" in pc2) st.cut = pc2;
         if (ch === "h") { const hb = houseAt(x, y); if (hb) { artHouse.add(hb); slice(st, hb.x, hb.y, 4, 3); } }
         art.set(key, st);
         statics.push(st);
         continue;
       }
+      // the art draws the deep rock between walls into the ground itself
+      if (isRock(x, y) || "CHUZ".includes(ch)) continue;
     }
-    if (lay.covered.has(key)) continue;
     if (ch === "Q") { statics.push(stand({ sp: D.waypoint, glow: null, glint: -1, wp: true, ph: hash(x, y, 6) * 9 }, x, y)); continue; }
     if (ch === "G" && marks.has(key)) {
       const k = marks.get(key), way = signWay(m, x, y, k);
@@ -1811,10 +1816,16 @@ export function render(focusX, focusY, dt, t, snap) {
   let hidden = false, meDrawn = false;
   for (const o of list) {
     if (o.s) {
-      const st = o.s, sp = st.sp, sl = o.sl, dx = st.dx, dy = st.dy;
-      // what stands in front of you and covers you turns see-through
+      const st = o.s, sl = o.sl;
+      let sp = st.sp, dx = st.dx, dy = st.dy;
+      // walls just in front of you are cut down to their stumps, Diablo-style, so a corridor never swallows you
+      if (st.cut && meDrawn) {
+        const ex = (st.x - meX) / 72, ey = (st.d - meY) / 40;
+        if (ey > 0 && ex * ex + ey * ey < 1) { const lo = st.cut.low; if (lo) { sp = lo.img; dx = st.tx + lo.dx; dy = st.ty + lo.dy; } }
+      }
+      // anything else in front of you that covers you turns see-through
       const ax = sl ? dx + sl.sx : dx, aw = sl ? sl.w : sp.width;
-      if (meDrawn && sp.height > 20 && ax < meX + 8 && ax + aw > meX - 8 && dy < meY - 4 && dy + sp.height > meY - 26 && !G.me.dead) { g.globalAlpha = 0.48; hidden = true; }
+      if (meDrawn && !st.cut && sp.height > 20 && ax < meX + 8 && ax + aw > meX - 8 && dy < meY - 4 && dy + sp.height > meY - 26 && !G.me.dead) { g.globalAlpha = 0.48; hidden = true; }
       if (sl) g.drawImage(sp, sl.sx, 0, sl.w, sp.height, ax, dy, sl.w, sp.height);
       else g.drawImage(sp, dx, dy);
       g.globalAlpha = 1;
