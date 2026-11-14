@@ -47,7 +47,7 @@ function partFiles() {
 }
 
 /** The empty data set: the game exactly as it is without the editor. */
-export const EMPTY_DATA = () => ({ maps: [], links: [], npcs: [], quests: { main: null, side: [] } });
+export const EMPTY_DATA = () => ({ maps: [], links: [], npcs: [], npclife: null, quests: { main: null, side: [] } });
 
 function readJson(file, problems, label = file) {
   try {
@@ -95,6 +95,12 @@ export function readData(dataDir = DATA_DIR) {
   };
   data.links = list("links.json", "links");
   data.npcs = list("npcs.json", "npcs");
+  const lf = join(dataDir, "npclife.json");
+  if (existsSync(lf)) {
+    const life = readJson(lf, problems, "data/npclife.json");
+    if (isObj(life)) data.npclife = life;
+    else if (!problems.some((p) => p.startsWith("data/npclife.json:"))) problems.push("data/npclife.json: 객체여야 합니다");
+  }
   const qf = join(dataDir, "quests.json");
   if (existsSync(qf)) {
     const q = readJson(qf, problems, "data/quests.json");
@@ -116,7 +122,7 @@ function dataPart(data) {
   s += "const DATA = {\n  maps: [\n";
   for (const m of data.maps) s += `    ${j(m)},\n`;
   s += "  ],\n";
-  s += `  links: ${j(data.links)},\n  npcs: ${j(data.npcs)},\n  quests: ${j(data.quests)},\n};\n`;
+  s += `  links: ${j(data.links)},\n  npcs: ${j(data.npcs)},\n  npclife: ${j(data.npclife ?? null)},\n  quests: ${j(data.quests)},\n};\n`;
   return s;
 }
 

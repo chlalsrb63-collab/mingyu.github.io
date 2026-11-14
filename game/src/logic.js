@@ -114,6 +114,7 @@ const DATA = {
   ],
   links: [{"map":"town","x":49,"y":73,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":50,"y":73,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"},{"map":"town","x":49,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":50,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":36,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":37,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":62,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":63,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":65,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":66,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":72,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":73,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":85,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":86,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":80,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":81,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":72,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":73,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":79,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":80,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":67,"y":51,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":67,"y":52,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":45,"y":51,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":45,"y":52,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":29,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":30,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":10,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"},{"map":"town","x":11,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"}],
   npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":52,"y":70,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":70,"y":23,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","전직은 되돌릴 수 없다네. 신중하게 고르게."]}],
+  npclife: {"v":1,"places":{"fire":{"map":"town","name":"광장 모닥불","spots":[[56,46,"e"],[60,48,"n"],[56,48,"e"],[60,44,"s"],[61,46,"w"]]},"fountain":{"map":"town","name":"분수대","spots":[[48,37,"s"],[50,37,"s"],[48,42,"s"],[51,42,"s"],[49,43,"s"],[52,43,"s"]]},"bench":{"map":"town","name":"광장 벤치","spots":[[44,47,"s"],[45,47,"s"],[43,47,"s"]]},"garden":{"map":"town","name":"도서관 뜰","spots":[[36,24,"s"],[37,24,"s"],[38,24,"s"],[36,25,"s"]]},"steps":{"map":"town","name":"마을회관 계단","spots":[[48,27,"s"],[50,27,"s"],[52,27,"s"],[47,27,"s"]]},"yard":{"map":"town","name":"수련 마당","spots":[[67,24,"s"],[69,24,"s"],[71,24,"s"],[67,21,"s"],[69,21,"s"]]},"forgeyard":{"map":"town","name":"대장간 마당","spots":[[78,37,"s"],[78,36,"s"],[76,36,"s"]]},"market":{"map":"town","name":"장터 좌판","spots":[[65,39,"s"],[63,39,"s"],[64,40,"s"]]},"terrace":{"map":"town","name":"쥬쥬식당 야외석","spots":[[71,51,"s"],[72,52,"s"],[73,52,"s"],[74,53,"s"],[74,54,"s"],[76,53,"s"],[75,51,"s"]]},"pond":{"map":"town","name":"연못가","spots":[[24,52,"s"],[25,52,"s"],[25,56,"s"],[12,51,"s"]]},"pondfire":{"map":"town","name":"연못 모닥불","spots":[[29,62,"s"],[30,62,"s"],[28,62,"s"]]},"bridge":{"map":"town","name":"돌다리","spots":[[24,41,"s"],[24,46,"s"]]},"laundry":{"map":"town","name":"빨래터","spots":[[6,42,"s"],[7,42,"s"],[13,41,"s"]]},"flowers":{"map":"town","name":"꽃밭","spots":[[14,28,"s"],[15,28,"s"],[12,40,"s"],[40,27,"s"]]},"wall":{"map":"town","name":"북쪽 목책","spots":[[50,11,"s"],[41,12,"s"],[56,14,"s"],[65,12,"s"],[64,12,"s"],[30,11,"s"],[70,11,"s"]]},"egate":{"map":"town","name":"동문","spots":[[93,40,"s"],[92,38,"s"]]},"wgate":{"map":"town","name":"서문","spots":[[5,40,"s"],[6,41,"s"]]},"sroad":{"map":"town","name":"남쪽 길","spots":[[50,68,"s"],[51,68,"s"]]},"barn":{"map":"town","name":"창고 앞","spots":[[33,38,"s"],[34,38,"s"],[31,39,"s"]]},"obelisk":{"map":"town","name":"오벨리스크 앞","spots":[[56,36,"s"],[59,36,"s"]]},"stone":{"map":"town","name":"이동의 돌 곁","spots":[[47,45,"s"],[44,45,"s"]]},"cot1":{"map":"town","name":"살림 마을 1번 집","in":true,"spots":[[5,26,"s"]]},"cot2":{"map":"town","name":"살림 마을 2번 집","in":true,"spots":[[12,25,"s"]]},"cot3":{"map":"town","name":"살림 마을 3번 집","in":true,"spots":[[5,39,"s"]]},"cot4":{"map":"town","name":"살림 마을 4번 집","in":true,"spots":[[11,39,"s"]]},"cot5":{"map":"town","name":"살림 마을 5번 집","in":true,"spots":[[6,47,"s"]]},"r_fountain":{"map":"town","name":"분수대 술래잡기 길","round":[[47,38],[52,38],[53,42],[47,42]]},"r_mail":{"map":"town","name":"우편 배달 길","round":[[10,35],[50,26],[65,38],[72,50]]},"r_errand":{"map":"town","name":"심부름 길","round":[[33,38],[78,36]]},"r_watch":{"map":"town","name":"북문 순찰로","round":[[30,11],[70,11]]},"r_night":{"map":"town","name":"밤 순찰로","round":[[41,12],[30,11],[5,40],[50,68],[93,40],[70,11]]},"diner_t1":{"map":"juju_diner","name":"쥬쥬식당 창가 식탁","spots":[[5,6,"e","sit"],[7,6,"w","sit"]]},"diner_t2":{"map":"juju_diner","name":"쥬쥬식당 동쪽 식탁","spots":[[14,7,"e","sit"],[16,7,"w","sit"]]},"diner_t3":{"map":"juju_diner","name":"쥬쥬식당 가운데 식탁","spots":[[9,8,"e","sit"],[11,8,"w","sit"]]},"diner_t4":{"map":"juju_diner","name":"쥬쥬식당 입구 식탁","spots":[[6,11,"e","sit"],[8,11,"w","sit"]]},"diner_t5":{"map":"juju_diner","name":"쥬쥬식당 구석 식탁","spots":[[14,11,"e","sit"],[16,11,"w","sit"]]},"diner_bar":{"map":"juju_diner","name":"쥬쥬식당 바","spots":[[12,4,"n"],[13,4,"n"],[15,4,"n"]]},"diner_hearth":{"map":"juju_diner","name":"쥬쥬식당 난롯가","spots":[[3,8,"s","sit"],[3,10,"n","sit"]]},"diner_stage":{"map":"juju_diner","name":"쥬쥬식당 악사 자리","spots":[[16,5,"s"]]},"diner_back":{"map":"juju_diner","name":"쥬쥬식당 살림방","in":true,"spots":[[3,1,"s"]]},"cafe_t1":{"map":"tales_cafe","name":"테일즈 카페 안쪽 식탁","spots":[[7,9,"e","sit"],[9,9,"w","sit"]]},"cafe_t2":{"map":"tales_cafe","name":"테일즈 카페 오른쪽 식탁","spots":[[13,7,"s","sit"],[13,9,"n","sit"]]},"cafe_t3":{"map":"tales_cafe","name":"테일즈 카페 왼쪽 식탁","spots":[[2,6,"s","sit"],[2,8,"n","sit"]]},"cafe_hearth":{"map":"tales_cafe","name":"테일즈 카페 난롯가","spots":[[3,3,"s","sit"],[7,3,"s","sit"]]},"cafe_bar":{"map":"tales_cafe","name":"테일즈 카페 바","spots":[[13,5,"n"],[15,5,"n"]]},"inn_hearth":{"map":"starlight_inn","name":"모닥별 여관 난롯가","spots":[[3,3,"s","sit"],[7,3,"s","sit"]]},"inn_table":{"map":"starlight_inn","name":"모닥별 여관 큰 식탁","spots":[[3,7,"s","sit"],[4,7,"s","sit"],[5,7,"s","sit"],[6,7,"s","sit"],[7,7,"s","sit"],[3,9,"n","sit"],[4,9,"n","sit"],[5,9,"n","sit"],[6,9,"n","sit"],[7,9,"n","sit"]]},"inn_beds":{"map":"starlight_inn","name":"모닥별 여관 침상","spots":[[11,2,"s"],[13,2,"s"],[15,2,"s"]]},"inn_up":{"map":"starlight_inn","name":"모닥별 여관 위층","in":true,"spots":[[17,2,"s"]]},"lib_hearth":{"map":"owl_library","name":"부엉이 도서관 난롯가","spots":[[3,3,"s","sit"],[6,3,"s","sit"]]},"lib_table":{"map":"owl_library","name":"부엉이 도서관 열람석","spots":[[15,7,"s","sit"],[16,7,"s","sit"],[17,7,"s","sit"],[15,9,"s","sit"],[16,9,"s","sit"],[17,9,"s","sit"]]},"lib_nook":{"map":"owl_library","name":"부엉이 도서관 안쪽 자리","spots":[[3,8,"s","sit"],[5,8,"s","sit"],[3,11,"s","sit"],[5,11,"s","sit"]]},"lib_stacks":{"map":"owl_library","name":"부엉이 도서관 서가","spots":[[2,6,"s"],[8,2,"s"]]},"hall_seats":{"map":"town_hall","name":"마을회관 대기석","spots":[[3,6,"s","sit"],[4,6,"s","sit"],[14,6,"s","sit"],[15,6,"s","sit"]]},"hall_desk":{"map":"town_hall","name":"마을회관 집무석","spots":[[10,4,"s"],[12,4,"s"]]},"merc_hearth":{"map":"merc_office","name":"용병사무소 난롯가","spots":[[16,3,"s","sit"],[18,3,"s","sit"]]},"merc_table":{"map":"merc_office","name":"용병사무소 회의탁자","spots":[[7,5,"s","sit"],[10,5,"s","sit"]]},"merc_bench":{"map":"merc_office","name":"용병사무소 벤치","spots":[[3,10,"s","sit"],[5,10,"s","sit"]]},"apt_lobby":{"map":"dongdong_apt","name":"동동아파트 로비","spots":[[8,6,"s"],[10,6,"s"]]},"apt_up":{"map":"dongdong_apt","name":"동동아파트 위층","in":true,"spots":[[9,1,"s"]]},"forge_floor":{"map":"kangkang_forge","name":"캉캉대장간 작업대","spots":[[4,2,"s"],[8,4,"s"],[10,7,"n"]]},"forge_back":{"map":"kangkang_forge","name":"캉캉대장간 다락","in":true,"spots":[[2,2,"s"]]},"dojo_floor":{"map":"dojo","name":"버드나무광장 수련관 마룻바닥","spots":[[5,7,"s"],[12,7,"s"],[8,10,"s"]]},"store_floor":{"map":"general_store","name":"다람쥐 잡화점 진열대","spots":[[6,6,"s"],[9,6,"s"]]},"lab_floor":{"map":"bogle_lab","name":"보글연금공방 실험대","spots":[[10,5,"s"],[13,8,"s"]]},"bout_floor":{"map":"boutique","name":"루루 의상실 거울 앞","spots":[[8,6,"s"]]},"pet_floor":{"map":"pet_house","name":"몽글 펫 돌봄집 놀이방","spots":[[5,5,"s"]]}},"cast":{"smith":{"traits":["무뚝뚝","대식가","의리"],"home":"forge_back","cover":"forge_tong","away":"바깥 모루","plan":[{"h":4,"at":"forge_back","act":"sleep"},{"h":7,"at":"forge_floor","act":"work","pose":"hammer"},{"h":12,"at":"terrace","act":"eat","rain":"diner_hearth"},{"h":13.5,"at":"forge_floor","act":"work","pose":"hammer"},{"h":19.5,"at":"diner_t3","act":"eat","with":"bank","days":[0,1,2]},{"h":19.5,"at":"diner_bar","act":"drink","days":[3]},{"h":23,"at":"forge_back","act":"sleep"}],"lines":{"work":["이른 망치질은 소리가 다르지.","불꽃이 누렇게 뜨면 한숨 쉬고 한 번 더 치게."],"off":["망치는 내려놨네. 지금은 숟가락 들 시간이야.","바깥 모루는 그대로 쓰게. 통통이도 곧 나올 걸세."],"eat":["도담이 느린 덕에 국이 식을 틈도 없이 두 그릇 먹었네."],"with":["오늘은 내가 내지. 어제 들은 얘기는 됐고."],"knock":["문에 놓고 가게. 해 뜨면 답해 주지."]}},"bank":{"traits":["꼼꼼","느긋","장사"],"home":"apt_up","away":"창고 보관함","plan":[{"h":4,"at":"barn","act":"tend","pose":"carry"},{"h":7,"at":"post","act":"work"},{"h":12,"at":"diner_t4","act":"eat"},{"h":14,"at":"post","act":"work"},{"h":19.5,"at":"diner_t3","act":"eat","with":"smith","days":[0,1,2]},{"h":19.5,"at":"diner_hearth","act":"drink","days":[3]},{"h":23.5,"at":"apt_up","act":"sleep"}],"lines":{"work":["칸마다 표를 붙이면 돌 하나도 안 잃어버리지.","서두르지 말게. 장부는 기다려 주더라고."],"off":["창고 열쇠는 주머니에, 걱정은 창고에 두고 왔지.","물건 맡길 땐 창고 앞 보관함을 쓰게."],"with":["볼칸은 내게서 듣고 싶은 얘기만 들을 때 느긋해진다니까."],"knock":["아침에 창고에서 보세."]}},"juju":{"traits":["다정","손이 큼","불 조절 장인"],"home":"diner_back","away":"식당 주문대","plan":[{"h":4,"at":"diner_back","act":"sleep"},{"h":7,"at":"post","act":"work"},{"h":14,"at":"terrace","act":"tend","pose":"wipe","rain":"diner_hearth"},{"h":16,"at":"post","act":"work"},{"h":23,"at":"diner_back","act":"sleep"}],"lines":{"work":["한 숟갈 먼저 맛봐요. 오늘은 바람 부는 날 국이에요.","식탁이 가득 차면 물 먼저 내요."],"off":["빈 그릇은 제가 거둘게요.","오늘 메뉴는 주문대에 써 두었어요."],"rain":["비 오면 난롯가 자리가 먼저 차지요."],"knock":["화덕은 다 껐어요. 아침에 봐요!"]}},"forge_tong":{"traits":["성실","덤벙댐","스승 바라기"],"home":"forge_back","plan":[{"h":4,"at":"forge_back","act":"sleep"},{"h":7,"at":"post","act":"work"},{"h":12,"at":"forgeyard","act":"eat"},{"h":14,"at":"post","act":"work"},{"h":23,"at":"forge_back","act":"sleep"}],"lines":{"work":["스승님 안 계실 땐 제가 해 볼게요!","망치 손잡이를 오늘만 세 번 닦았어요."],"off":["점심은 대장간 마당에서 먹어요.","이 점심만 다 먹고 나면 저녁 당번이에요."],"eat":["장갑 벗은 김에 찬물도 한 모금."],"knock":["쉿. 볼칸 아저씨까지 깨면 혼나요."]}},"r_peng":{"name":"펭","hero":[11,6,8,15,0,7,2,8,10,1,0],"cos":["hat_cap_blue"],"traits":["부지런","수다","길눈"],"home":"cot3","plan":[{"h":4,"at":"cot3","act":"sleep"},{"h":7,"at":"r_mail","act":"walk","pose":"carry"},{"h":17,"at":"steps","act":"rest"},{"h":21,"at":"cot3","act":"sleep"}],"lines":{"work":["편지 왔어요! …아, 당신 건 아니네요.","종이마다 바람 냄새가 달라요."],"off":["오늘 배달은 끝! 거꾸로 돌아가는 길은 늘 신기해요.","분수에서 왼쪽으로 가면 우편함이 보여요."],"knock":["내일 첫 편지는 누구에게 갈까?"]}},"story":{"traits":["푸근","이야기꾼","귀 밝음"],"home":"cot1","plan":[{"h":4,"at":"cot1","act":"sleep"},{"h":7,"at":"bench","act":"tend","pose":"knit"},{"h":11,"at":"lib_nook","act":"read"},{"h":19.5,"at":"fire","act":"work"},{"h":26.5,"at":"cot1","act":"sleep"}],"lines":{"work":["불 가까이 앉으렴. 밤바람은 겉옷 사이로 잘도 드나드는구나.","옛날에는 저 정령나무가 우리보다 작았단다."],"off":["낮에는 이야기가 잠을 자요. 밤에 오렴.","볕이 있을 땐 책을 읽고, 해가 지면 기억을 읽지."],"night":["불씨 하나씩 품고 광장을 세웠단다."],"knock":["할미 이야기는 밤에 모닥불에서 이어 가자꾸나."]}}},"rel":[{"a":"smith","b":"bank","kind":"friend","story":"저녁마다 같은 식탁, 한 사람은 말이 없고 한 사람은 느리다.","chat":["a: 따뜻할 때 먹게.","b: 자네도 천천히 좀 먹어.","a: 천천히 먹으면 주인이 더 담아 주질 않아."]},{"a":"smith","b":"forge_tong","kind":"mentor","story":"스승이 식당에 간 밤, 견습생이 모루를 지킨다.","chat":["a: 망치는 팔이 아니라 어깨로 들어.","b: 좋아요, 오늘은 한 번만 넘어뜨릴게요."]}]},
   quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"버드나무광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":5,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false},{"id":"sq_merc_hares","giver":"merc_grey","title":"초원의 두 머리","text":"바람초원의 쌍두 토끼가 울타리까지 내려온다. 10마리만 쫓아내 주게. 첫 의뢰로 딱이지.","done":"깔끔하군. 늑대발의 일원이 될 자격이 있어.","goal":{"type":"kill","mob":"twinhare","n":10},"req":{"lv":1,"quest":null},"reward":{"xp":150,"gold":100,"items":[["hp_s",5]]},"repeat":false},{"id":"sq_merc_boar","giver":"merc_grey","title":"반쪽 멧돼지 사냥","text":"몸이 반으로 갈라진 멧돼지들이 길을 막고 있다. 8마리만 부탁하지. 돌진하면 옆으로 피하게.","done":"잘했다. 그 녀석들 돌진은 우리 단원들도 무서워하지.","goal":{"type":"kill","mob":"splitboar","n":8},"req":{"lv":10,"quest":"sq_merc_hares"},"reward":{"xp":900,"gold":400,"items":[["hp_m",5],["stone",1]]},"repeat":false},{"id":"sq_merc_letter","giver":"merc_grey","title":"볼칸에게 보내는 주문서","text":"광장 동쪽 장터의 대장장이 볼칸에게 이 주문서를 전해 주게. 단원들 새 칼이 필요하거든.","done":"볼칸이 받았다고? 좋아. 이건 심부름 값이다.","goal":{"type":"talk","npc":"smith"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":120,"items":[["recall",2]]},"repeat":false},{"id":"sq_kong_parcel","giver":"store_kong","title":"콩콩의 급한 배달","text":"보글 아저씨한테 이 상자 좀 전해 줄래? 다리가 짧아서 연금공방까지 가면 해가 질 거야!","done":"고마워! 보글 아저씨가 상자를 흔들어 봤다고? 앗, 조심하라고 했는데!","goal":{"type":"talk","npc":"bogle"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":90,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_borum_frogs","giver":"lib_borum","title":"표본 채집","text":"괴수 도감에 창자 개구리 항목이 비어 있어요. 바람초원에서 8마리를 잡아 와 주세요. 조용히, 도서관에서는 비명 금지!","done":"좋아요, 표본이 충분하네요. 도감이 한 장 두꺼워졌어요.","goal":{"type":"kill","mob":"gutfrog","n":8},"req":{"lv":3,"quest":null},"reward":{"xp":250,"gold":170,"items":[["hp_s",5],["mp_s",3]]},"repeat":false},{"id":"sq_mungchi_trout","giver":"diner_reg2","title":"쥬쥬표 송어 구이","text":"쥬쥬 아줌마의 송어 소금구이가 먹고 싶은데 재료가 똑 떨어졌대. 무지개 송어 3마리만 낚아다 줘!","done":"냠냠, 이 냄새! 약속대로 한 접시 몫은 네 거야.","goal":{"type":"collect","item":"fish_m","n":3},"req":{"lv":8,"quest":null},"reward":{"xp":650,"gold":300,"items":[["food_m",2],["hp_s",3]]},"repeat":false},{"id":"sq_bogle_crows","giver":"bogle","title":"보글보글 까마귀 눈","text":"새 시약에는 까마귀의 눈알이 한 방울 필요합니다. 눈알 까마귀 6마리를 바람초원에서 잡아 주세요. 폭발은 안 해요. 아마도.","done":"오오, 거품이 보랏빛으로! 이건 대성공입니다!","goal":{"type":"kill","mob":"eyecrow","n":6},"req":{"lv":12,"quest":"sq_kong_parcel"},"reward":{"xp":1110,"gold":410,"items":[["hp_m",3],["mp_m",2]]},"repeat":false},{"id":"sq_lira_song","giver":"inn_lira","title":"잠꾸러기를 위한 자장가","text":"새 자장가를 짓는 중인데, 여관 구석의 토토 씨가 어떤 노래를 좋아하는지 물어봐 줄래요?","done":"호오, 숲의 소리가 들어간 노래를 좋아한다고요? 영감이 마구 떠올라요!","goal":{"type":"talk","npc":"inn_toto"},"req":{"lv":20,"quest":null},"reward":{"xp":1910,"gold":510,"items":[["inn_bread",3],["hp_m",2]]},"repeat":false},{"id":"sq_bori_scout","giver":"hall_bori","title":"숲길 정찰","text":"이장으로서 속삭임 숲 길이 안전한지 알아야겠네. 직접 가서 한 바퀴 둘러보고 오게. 조심하게나.","done":"무사히 다녀왔군! 숲이 아직 버틸 만하다니 마을도 한시름 놓겠네.","goal":{"type":"visit","map":"forest"},"req":{"lv":25,"quest":null},"reward":{"xp":2730,"gold":620,"items":[["recall",2],["hp_m",3]]},"repeat":false},{"id":"sq_bawi_deer","giver":"merc_bawi","title":"갈비뼈 사슴의 뿔","text":"내가 젊을 때 갈비뼈 사슴한테 엉덩이를 찔렸지. 속삭임 숲에서 8마리만 혼내 주게. 복수는 후배가 하는 법이야.","done":"허허, 속이 다 시원하구먼. 이건 늙은이의 쌈짓돈일세.","goal":{"type":"kill","mob":"ribdeer","n":8},"req":{"lv":33,"quest":null},"reward":{"xp":6600,"gold":990,"items":[["hp_m",5],["stone",1]]},"repeat":false},{"id":"sq_toto_moths","giver":"inn_toto","title":"불빛 쫓는 나방","text":"으음... 잠을 잘 수가 없어... 인면 나방들이 창문에서 사람 얼굴로 웃고 있거든... 숲의 나방 8마리만 쫓아 줘...","done":"드디어... 조용해... 쿨쿨... 아, 고마워... 이건 꿈값이야...","goal":{"type":"kill","mob":"mothface","n":8},"req":{"lv":45,"quest":"sq_lira_song"},"reward":{"xp":14050,"gold":1320,"items":[["hp_l",3],["stone",1]]},"repeat":false},{"id":"sq_dongdong_pigeons","giver":"dongdong","title":"베란다의 비둘기 떼","text":"입주민들이 난리예요! 네온 시티의 비둘기 떼살이 자꾸 베란다에 앉는대요. 12마리만 정리해 주세요.","done":"살았다! 이제 빨래를 널 수 있겠어요. 관리비 대신 받으세요!","goal":{"type":"kill","mob":"pigeonmass","n":12},"req":{"lv":50,"quest":null},"reward":{"xp":18230,"gold":1460,"items":[["hp_l",3],["stone",2]]},"repeat":false},{"id":"sq_borum_blight","giver":"lib_borum","title":"시든 숲의 기록","text":"단풍 왕도의 다람쥐들이 가을 열병에 걸렸다는 소문이 있어요. 한 꼬리 다람쥐떼 12마리를 기록해 와 주세요. 위험하면 도망쳐도 좋아요!","done":"멋진 기록이에요. 이 한 장이 도감의 마지막 쪽을 채웠어요.","goal":{"type":"kill","mob":"blightsquirrel","n":12},"req":{"lv":150,"quest":"sq_borum_frogs"},"reward":{"xp":1017960,"gold":4210,"items":[["hp_l",5],["mp_l",3],["stone",3],["sc_xp",1]]},"repeat":false}]},
 };
 // ───────────────────────────── jobs and stats: tables ─────────────────────────────
@@ -7885,7 +7886,7 @@ function jbOffersOf(S, p) {
   return p.jbOff.ids;
 }
 /** Where a static NPC stands: { m, x, y }, or null. */
-function npcAt(id) {
+function lifePostAt(id) {
   const m = Object.hasOwn(NPC_MAP, id) ? mapOf(NPC_MAP[id]) : null;
   const n = m && m.npcs.find((o) => o.id === id);
   return n ? { m, x: n.x, y: n.y } : null;
@@ -7904,7 +7905,7 @@ function legTiles(m, fx, fy, tx, ty) {
  */
 function jbRoute(id) {
   if (Object.hasOwn(JB_ROUTES, id)) return JB_ROUTES[id];
-  const t = JB[id], A = npcAt(t.npc), B = npcAt(t.to), hub = mapOf(START.map);
+  const t = JB[id], A = lifePostAt(t.npc), B = lifePostAt(t.to), hub = mapOf(START.map);
   let n = Infinity;
   if (A && B && A.m === B.m) n = legTiles(A.m, A.x, A.y, B.x, B.y);
   else if (A && B) {
@@ -8106,14 +8107,14 @@ function lifeValidate(S, p, a) {
       if (a.a === "pick") {
         if (!t || t.kind !== "deliver") return bad("맡은 배달이 없습니다");
         if (act.prog !== 0) return bad("이미 꾸러미를 받았습니다");
-        if (!npcNearId(p, t.npc)) return bad(`${npcName(t.npc)}에게 가서 꾸러미를 받으세요`);
+        if (!npcReach(p, t.npc)) return bad(`${npcName(t.npc)}에게 가서 꾸러미를 받으세요`);
         if (p.dead) return bad("쓰러진 상태입니다");
         return OK;
       }
       if (a.a === "give") {
         if (!t) return bad("맡은 알바가 없습니다");
         const to = t.kind === "deliver" ? t.to : t.npc;
-        if (!npcNearId(p, to)) return bad(`${npcName(to)}에게 가져가세요`);
+        if (!npcReach(p, to)) return bad(`${npcName(to)}에게 가져가세요`);
         if (t.kind === "deliver") return act.prog === 1 && p.parcel && now <= p.parcel.until ? OK : bad("전할 꾸러미가 없습니다");
         return countItem(ch, t.item) >= t.n ? OK : bad(`${ITEMS[t.item].name}${pp(ITEMS[t.item].name, "이가")} 부족합니다 (${countItem(ch, t.item)}/${t.n})`);
       }
@@ -8765,18 +8766,23 @@ const TALES = [
   "새벽녘 정령나무 아래에서 소원을 빌면, 그날 사냥은 운이 좋다는구나. 할미도 젊을 적엔 매일 빌었지.",
 ];
 mapOf("town").npcs.push(TELLER);
+noteNpc("town", TELLER.id, TELLER.name);
 /** The storyteller of `map` if she is out at `now` (only by night), else null. */
-function nightNpc(map, now) { return map === "town" && isNight(now) ? TELLER : null; }
+function nightNpc(map, now) {
+  if (map !== "town" || !isNight(now)) return null;
+  const body = npcAt(TELLER.id, now);
+  return !body || (body.place === "fire" && !body.moving && !body.hidden) ? TELLER : null;
+}
 /** Which tale is being told at `now` (an index into TALES), or -1 by day. */
-function taleAt(now) { return isNight(now) ? Math.floor(now / TALE_MS) % TALES.length : -1; }
+function taleAt(now) { return nightNpc("town", now) ? Math.floor(now / TALE_MS) % TALES.length : -1; }
 
 /** Once a tick, per outdoor map: the weather, and at night in town the next tale by the fire. */
 function skyTick(S, now) {
   for (const id of Object.keys(S.maps)) {
     const rt = S.maps[id];
     rt.wx = weatherAt(id, now);
-    if (id !== "town") continue;
-    const slot = isNight(now) ? Math.floor(now / TALE_MS) : -1;
+    if (id !== "town" || rt.n <= 0) continue;
+    const slot = nightNpc(id, now) ? Math.floor(now / TALE_MS) : -1;
     if (slot !== rt.tale) { rt.tale = slot; if (slot >= 0) rt.ev.push(["tl", slot % TALES.length]); }
   }
 }
@@ -8788,6 +8794,462 @@ function skyTick(S, now) {
 export function skyAt(map, now) {
   const ph = dayPhase(now), m = mapOf(map);
   return { hour: dayHour(now), phase: ph, name: PHASES[ph][0], night: ph === PH_NIGHT, outdoor: outdoor(m), wx: weatherAt(map, now), npc: nightNpc(map, now), tale: map === "town" ? taleAt(now) : -1, camps: m ? campsOf(m) : [] };
+}
+// ───────────────────────────── NPC routines ─────────────────────────────
+//
+// World time picks a block and a leg. Paths are shared by worlds, while each
+// occupied map tracks which rows its players have already been sent.
+
+const NPC_ACTS = ["work", "walk", "eat", "drink", "rest", "sleep", "stroll", "chat", "shop", "fish", "train", "read", "play", "perform", "tend", "watch"];
+const NPC_REL_KINDS = ["friend", "family", "mentor", "rival", "crush", "avoid"];
+const NPC_CYCLE = 4, NPC_HOUR = SKY_DAY_MS / 24, NPC_EPOCH = 4 * NPC_HOUR;
+const NPC_TPS = BASE_SPD / T;
+const npcDay = (now) => Math.floor((now - NPC_EPOCH) / SKY_DAY_MS);
+const npcDayStart = (day) => NPC_EPOCH + day * SKY_DAY_MS;
+const npcMod = (n, mod) => ((n % mod) + mod) % mod;
+const npcSec = (ms, now) => Math.ceil((ms - npcDayStart(npcDay(now))) / 1000);
+const npcIdRx = /^[a-z][a-z0-9_]{1,31}$/;
+const npcDirection = { s: 0, w: 1, e: 2, n: 3 };
+const npcHours = (v) => Number.isFinite(v) && v >= 4 && v < 28 && Number.isInteger(v * NPC_HOUR / 1000);
+const npcDays = (days) => Array.isArray(days) ? days : [0, 1, 2, 3];
+const npcErrors = [];
+const npcProblem = (path, msg) => npcErrors.push({ path, msg });
+const npcPlaces = new Map(), npcCast = new Map(), npcMapIds = new Set(), npcRels = [];
+const npcPaths = new Map(), npcTransit = new Map();
+let npcFrame = null;
+
+function npcOpen(map, x, y) {
+  return Number.isInteger(x) && Number.isInteger(y) && inMap(map, x, y) && !!map.reach[y * map.w + x];
+}
+
+/** The tiles a body walks to: a seat may be joined by one final move from a free side. */
+function npcSpot(map, row, hidden) {
+  if (!Array.isArray(row) || !Number.isInteger(row[0]) || !Number.isInteger(row[1]) || !inMap(map, row[0], row[1])) return null;
+  const [x, y, rawDir, pose] = row, here = [x, y];
+  if (rawDir !== undefined && !Object.hasOwn(npcDirection, rawDir) && ![0, 1, 2, 3].includes(rawDir)) return null;
+  if (pose !== undefined && pose !== "sit") return null;
+  let entry = here;
+  if (!npcOpen(map, x, y)) {
+    if (pose !== "sit" || !["k", "s"].includes(map.o[y][x])) return null;
+    entry = D4.map(([dx, dy]) => [x + dx, y + dy]).find(([xx, yy]) => npcOpen(map, xx, yy));
+    if (!entry) return null;
+  }
+  return { map: map.id, x, y, dir: npcDirection[rawDir] ?? rawDir ?? 0, pose, hidden, entry };
+}
+
+function npcBlocks(actor, plan) {
+  if (!Array.isArray(plan) || !plan.length) { npcProblem(actor.id, "하루 일과가 비어 있습니다"); return; }
+  const days = Array.from({ length: NPC_CYCLE }, () => new Map());
+  for (const b of plan) {
+    if (!b || !npcHours(b.h) || !NPC_ACTS.includes(b.act) || (b.at === "post" ? !actor.post : !npcPlaces.has(b.at))) {
+      npcProblem(actor.id, "시간, 장소 또는 행동이 올바르지 않습니다"); continue;
+    }
+    if (b.pose !== undefined && !NPC_POSES.includes(b.pose)) npcProblem(actor.id, "등록되지 않은 동작입니다");
+    if (b.lag !== undefined && (!Number.isInteger(b.lag) || b.lag < 0)) npcProblem(actor.id, "순찰 간격은 0 이상의 정수입니다");
+    if (b.days !== undefined && (!Array.isArray(b.days) || !b.days.length || new Set(b.days).size !== b.days.length ||
+      b.days.some((day) => ![0, 1, 2, 3].includes(day)))) { npcProblem(actor.id, "일과 주기는 0~3일입니다"); continue; }
+    const rain = b.rain ?? actor.shelter;
+    if (rain !== undefined && !npcPlaces.has(rain)) npcProblem(actor.id, "비를 피할 장소를 찾을 수 없습니다");
+    for (const day of npcDays(b.days)) {
+      const current = days[day].get(b.h);
+      if (current && current.override === !!b.days) { npcProblem(actor.id, day + "일차 같은 시간에 일과가 겹칩니다"); continue; }
+      if (current?.override) continue;
+      days[day].set(b.h, { ...b, override: !!b.days, rain: npcPlaces.has(rain) ? rain : null, spot: null, rainSpot: null });
+    }
+  }
+  if (days.some((day) => !day.size)) { npcProblem(actor.id, "4일차까지 매일 순환할 일과가 필요합니다"); return; }
+  actor.days = days.map((day) => [...day.values()].sort((a, b) => a.h - b.h));
+}
+
+/** Assign one spot across each block, including its rain option. */
+function npcAssignSpots() {
+  for (let day = 0; day < NPC_CYCLE; day++) {
+    const uses = new Map(), occupiedTiles = new Map();
+    const claims = [...npcCast.values()].flatMap((actor) => actor.days[day].flatMap((b, i) => {
+      const [after] = actor.days[(day + 1) % NPC_CYCLE];
+      const end = actor.days[day][i + 1]?.h ?? (after.h + 24);
+      if (end - b.h < 1) npcProblem(actor.id, b.h + "시 일과에 한 시간 이상 필요합니다");
+      const place = npcPlaces.get(b.at);
+      const keys = [[b.at, "spot"]];
+      if (b.rain && b.rain !== b.at && place && !mapOf(place.map).indoor) keys.push([b.rain, "rainSpot"]);
+      return keys.map(([key, slot]) => ({ key, slot, b, end, actor }));
+    })).sort((a, b) => a.b.h - b.b.h || a.actor.i - b.actor.i);
+    for (const claim of claims) {
+      const { key, slot, b, end, actor } = claim;
+      const place = npcPlaces.get(key);
+      if (place?.hidden || place?.round) { b[slot] = place.spots[0]; continue; }
+      const candidates = key === "post" ? [actor.post] : place.spots;
+      const reserved = uses.get(key) || [];
+      const tileKey = (s) => s.map + ":" + s.x + "," + s.y;
+      const occupied = (s) => (occupiedTiles.get(tileKey(s)) || []).some((r) =>
+        r.actor !== actor && r.h < end && b.h < r.end);
+      const friend = b.with && reserved.find((r) => r.actor.id === b.with && r.h === b.h);
+      let spot = candidates.find((s) => !occupied(s) &&
+        (!friend || Math.abs(s.x - friend.spot.x) + Math.abs(s.y - friend.spot.y) <= 2));
+      if (!spot) {
+        npcProblem(key, day + "일차 " + b.h + "시의 자리가 부족합니다 (" + actor.id + ")");
+        const [first] = candidates, map = mapOf(first.map);
+        const choices = D4.map(([dx, dy]) => npcSpot(map, [first.x + dx, first.y + dy, first.dir], false));
+        spot = choices.find((s) => s && !occupied(s)) || first;
+      }
+      b[slot] = spot;
+      const reservation = { spot, h: b.h, end, actor };
+      reserved.push(reservation);
+      uses.set(key, reserved);
+      const tile = tileKey(spot), there = occupiedTiles.get(tile) || [];
+      there.push(reservation);
+      occupiedTiles.set(tile, there);
+    }
+  }
+}
+
+function npcInstall(data) {
+  if (!data) return;
+  if (data.v !== 1 || !isObj(data.places) || !isObj(data.cast) || !Array.isArray(data.rel)) {
+    npcProblem("", "{v:1, places, cast, rel} 형식이어야 합니다"); return;
+  }
+  for (const [id, item] of Object.entries(data.places)) {
+    const mapId = item && realId(item.map), map = mapId && MAP_META[mapId].safe ? mapOf(mapId) : null;
+    if (!npcIdRx.test(id) || id === "post" || !map || typeof item.name !== "string" || !item.name.trim()) {
+      npcProblem(id, "안전한 지도와 장소 이름이 필요합니다"); continue;
+    }
+    const isRound = item.round !== undefined, hidden = item.in === true;
+    const rows = isRound ? item.round : item.spots;
+    if (!Array.isArray(rows) || rows.length < (isRound ? 2 : 1) || (isRound && hidden)) {
+      npcProblem(id, "자리 또는 순찰의 좌표가 필요합니다"); continue;
+    }
+    const spots = rows.map((row) => npcSpot(map, row, hidden));
+    const keys = spots.map((s) => s && s.y * map.w + s.x);
+    if (spots.some((s) => !s) || new Set(keys).size !== keys.length) {
+      npcProblem(id, "자리가 중복되거나 입구에서 걸을 수 없습니다"); continue;
+    }
+    npcPlaces.set(id, { id, i: npcPlaces.size, map: mapId, name: item.name, hidden, spots,
+      round: isRound ? spots.map((s) => s.entry) : null });
+    npcMapIds.add(mapId);
+  }
+  for (const [id, desc] of Object.entries(data.cast)) {
+    if (!npcIdRx.test(id) || !isObj(desc)) { npcProblem(id, "NPC 식별자 또는 형식이 잘못됐습니다"); continue; }
+    const mapId = Object.hasOwn(NPC_MAP, id) ? NPC_MAP[id] : null;
+    const map = mapId && MAP_META[mapId].safe ? mapOf(mapId) : null;
+    const npc = map?.npcs.find((n) => n.id === id);
+    if ((mapId && !npc) || npc?.thing) { npcProblem(id, "안전한 지도의 주민만 이동할 수 있습니다"); continue; }
+    const home = npcPlaces.get(desc.home);
+    if (desc.home !== undefined && !home) npcProblem(id, "주민의 집을 찾을 수 없습니다");
+    if (!npc && (!home || typeof desc.name !== "string" || !desc.name.trim() ||
+      !Array.isArray(desc.hero) || desc.hero.length !== LOOK_MAX.length || desc.hero.some((v, i) => !Number.isInteger(v) || v < 0 || v > LOOK_MAX[i]))) {
+      npcProblem(id, "새 주민의 이름, 집, 외형이 필요합니다"); continue;
+    }
+    const post = npc && npcSpot(map, [npc.x, npc.y, 0, ["k", "s"].includes(map.o[npc.y]?.[npc.x]) ? "sit" : undefined], false);
+    if (npc && !post && desc.plan?.some?.((b) => b?.at === "post")) {
+      npcProblem(id, "일터의 위치에 갈 수 없습니다"); continue;
+    }
+    if (desc.lines !== undefined && (!isObj(desc.lines) || Object.values(desc.lines).some((lines) =>
+      !Array.isArray(lines) || lines.some((line) => typeof line !== "string" || !line.trim() || line.length > 180)))) npcProblem(id, "대사는 180자 이내의 문장 목록입니다");
+    const actor = { ...desc, id, i: npcCast.size, npc, post, postMap: mapId, name: npc?.name || desc.name, moves: new Map() };
+    npcBlocks(actor, desc.plan);
+    if (actor.days) {
+      npcCast.set(id, actor);
+      if (mapId) npcMapIds.add(mapId);
+      else noteNpc(home.map, id, actor.name);
+    }
+  }
+  for (const row of data.rel) {
+    const a = npcCast.get(row?.a), b = npcCast.get(row?.b);
+    if (!a || !b || a === b || !NPC_REL_KINDS.includes(row.kind) ||
+      npcRels.some((r) => (r.a === a && r.b === b) || (r.a === b && r.b === a))) {
+      npcProblem("rel", "주민 관계의 대상 또는 유형이 올바르지 않습니다"); continue;
+    }
+    if (row.chat !== undefined && (!Array.isArray(row.chat) || row.chat.some((line, i) =>
+      typeof line !== "string" || !line.startsWith(i % 2 ? "b: " : "a: ")))) npcProblem("rel", "대화는 a:와 b:를 번갈아 적어야 합니다");
+    npcRels.push({ ...row, a, b });
+  }
+  for (const a of npcCast.values()) {
+    if (a.cover && !npcCast.has(a.cover) && !Object.hasOwn(NPC_MAP, a.cover)) npcProblem(a.id, "대리 NPC가 존재하지 않습니다");
+    for (let d = 0; d < NPC_CYCLE; d++) for (const b of a.days[d]) {
+      if (!b.with) continue;
+      const friend = npcCast.get(b.with), peer = friend?.days[d].find((row) => row.h === b.h && row.at === b.at);
+      const rel = npcRels.find((r) => (r.a === a && r.b === friend) || (r.a === friend && r.b === a));
+      if (!peer || (peer.with && peer.with !== a.id) || !rel || ["crush", "avoid"].includes(rel.kind)) npcProblem(a.id, "동행 일과의 시간, 장소, 관계가 일치하지 않습니다");
+    }
+  }
+  for (const r of npcRels.filter(r => r.kind === "avoid")) for (let d = 0; d < NPC_CYCLE; d++) {
+    for (const a of r.a.days[d]) {
+      if (a.at !== "post" && r.b.days[d].some((b) => a.h === b.h && (a.at === b.at || a.rain === b.at || b.rain === a.at || (a.rain && a.rain === b.rain))))
+        npcProblem(a.at, "서로 피하는 두 주민이 같은 시간에 있습니다");
+    }
+  }
+  npcAssignSpots();
+  for (const id of npcMapIds) npcTransit.set(id, npcPlaces.size + npcTransit.size);
+}
+npcInstall(DATA.npclife);
+
+export function lifeCheck() {
+  return npcLifeProblems().map(({ path, msg }) => path ? path + ": " + msg : msg);
+}
+
+/** Stable delay in seconds. A companion leaves one second after the leader. */
+function npcDepart(actor, day, block) {
+  let seed = day | 0;
+  const peer = npcCast.get(block.with);
+  const leader = peer && peer.i < actor.i ? peer.id : actor.id;
+  for (let i = 0; i < leader.length; i++) seed = Math.imul(seed, 31) + leader.charCodeAt(i);
+  const offset = npcMod(Math.imul(seed, 31) + Math.round(block.h * 120), 31);
+  return npcDayStart(day) + Math.round((block.h - 4) * NPC_HOUR) + (offset + (leader === actor.id ? 0 : 1)) * 1000;
+}
+
+function npcSpan(actor, now) {
+  let day = npcDay(now), blocks = actor.days[npcMod(day, NPC_CYCLE)], i = blocks.length - 1;
+  for (; i >= 0; i--) if (npcDepart(actor, day, blocks[i]) <= now) break;
+  if (i < 0) { day--; blocks = actor.days[npcMod(day, NPC_CYCLE)]; i = blocks.length - 1; }
+  const nextDay = i + 1 < blocks.length ? day : day + 1;
+  const nextBlock = blocks[i + 1] || actor.days[npcMod(nextDay, NPC_CYCLE)][0];
+  return { block: blocks[i], start: npcDepart(actor, day, blocks[i]), end: npcDepart(actor, nextDay, nextBlock), nextBlock };
+}
+
+function npcDestination(block, start) {
+  if (block.rainSpot && weatherAt(block.spot.map, start) === WX.rain)
+    return { place: npcPlaces.get(block.rain), spot: block.rainSpot };
+  return { place: npcPlaces.get(block.at), spot: block.spot };
+}
+
+/** A four-way path with deterministic tie-breaking from the shared map search. */
+function npcPath(mapId, from, to) {
+  const key = mapId + ":" + from.join(",") + ">" + to.join(",");
+  if (npcPaths.has(key)) return npcPaths.get(key);
+  const map = mapOf(mapId), [tx, ty] = to;
+  const indices = walk(map.w, map.h, from[1] * map.w + from[0], (i) => i === ty * map.w + tx,
+    (i) => map.reach[i] ? 1 : Infinity, tx, ty);
+  const path = indices && indices.map((i) => [i % map.w, Math.floor(i / map.w)]);
+  if (npcPaths.size >= 400) npcPaths.delete(npcPaths.keys().next().value);
+  npcPaths.set(key, path);
+  return path;
+}
+const npcSameTile = (a, b) => a[0] === b[0] && a[1] === b[1];
+
+function npcRound(place, lag) {
+  const ring = place.round;
+  const path = ring.flatMap((p, i) => npcPath(place.map, p, ring[(i + 1) % ring.length])?.slice(0, -1) || []);
+  if (!path.length) return null;
+  const n = npcMod(-lag, path.length);
+  const rotated = path.slice(n).concat(path.slice(0, n));
+  return rotated.concat([rotated[0]]);
+}
+
+/** Rooms connect through the hub. An arrival tile is the same one players use. */
+function npcTrip(from, to) {
+  const legs = [];
+  let map = from.map, at = from.entry, leavingSeat = !npcSameTile([from.x, from.y], from.entry);
+  let entered = false;
+  while (map !== to.map) {
+    const via = map !== "town" && to.map !== "town" ? "town" : to.map;
+    const door = mapOf(map).portals.find((p) => p.to === via && npcOpen(mapOf(map), p.x, p.y));
+    if (!door) return null;
+    const path = npcPath(map, at, [door.x, door.y]);
+    if (!path) return null;
+    legs.push({ map, path: leavingSeat ? [[from.x, from.y], ...path] : path, fl: (entered ? 1 : 0) | 2 });
+    at = arrivalOf(null, door);
+    map = via;
+    leavingSeat = false; entered = true;
+  }
+  const path = npcPath(map, at, to.entry);
+  if (!path) return null;
+  const toTile = [to.x, to.y], start = [from.x, from.y];
+  const route = (leavingSeat ? [start] : []).concat(path, npcSameTile(to.entry, toTile) ? [] : [toTile]);
+  if (route.length > 1 || entered) legs.push({ map, path: route, fl: entered ? 1 : 0 });
+  return legs;
+}
+
+const npcLegMs = (leg) => Math.max(1000, Math.ceil((leg.path.length - 1) / NPC_TPS) * 1000);
+function npcMove(actor, span, depth = 0) {
+  const cached = actor.moves.get(span.start);
+  if (cached) return cached;
+  const dest = npcDestination(span.block, span.start);
+  const round = dest.place?.round && npcRound(dest.place, span.block.lag || 0);
+  const target = round ? { ...dest.spot, x: round[0][0], y: round[0][1], entry: round[0] } : dest.spot;
+  const before = npcSpan(actor, span.start - 1), previous = npcDestination(before.block, before.start);
+  let start = previous.spot;
+  if (previous.place?.round && depth < 8) {
+    const run = npcMove(actor, before, depth + 1);
+    if (run.round) {
+      const [x, y] = run.round[npcMod(Math.floor((span.start - run.arrival) * NPC_TPS / 1000), run.round.length - 1)];
+      start = { ...previous.spot, x, y, entry: [x, y] };
+    }
+  }
+  let arrival = span.start;
+  const legs = start.map === target.map && start.x === target.x && start.y === target.y ? [] : npcTrip(start, target) || [];
+  for (const leg of legs) { leg.start = arrival; arrival += npcLegMs(leg); leg.end = arrival; }
+  const move = { ...dest, legs, arrival, round };
+  if (depth === 0) {
+    if (actor.moves.size === 4) actor.moves.delete(actor.moves.keys().next().value);
+    actor.moves.set(span.start, move);
+  }
+  return move;
+}
+
+function npcAlong(path, step) {
+  const i = Math.min(path.length - 1, Math.max(0, Math.floor(step)));
+  const [x, y] = path[i], [nx, ny] = path[i + 1] || path[i];
+  const k = Math.max(0, Math.min(1, step - i));
+  return [x + (nx - x) * k, y + (ny - y) * k, dirOf(nx - x, ny - y)];
+}
+
+/** An actor's current pose, independent of visited maps and room uptime. */
+function npcState(actor, now) {
+  const span = npcSpan(actor, now), move = npcMove(actor, span);
+  const leg = move.legs.find((part) => now < part.end);
+  const walking = leg || (move.round && { map: move.spot.map, path: move.round, fl: 4, start: move.arrival, end: span.end });
+  let x = move.spot.x, y = move.spot.y, dir = move.spot.dir;
+  if (walking) {
+    const stepped = walking.fl & 4 ? npcMod((now - walking.start) * NPC_TPS / 1000, walking.path.length - 1)
+      : (now - walking.start) / (walking.end - walking.start) * (walking.path.length - 1);
+    [x, y, dir] = npcAlong(walking.path, stepped);
+  }
+  return { id: actor.id, map: walking?.map || move.spot.map, x: x * T + 8, y: y * T + 12,
+    tx: Math.floor(x), ty: Math.floor(y), dir, act: leg ? "walk" : span.block.act,
+    place: move.place?.id || "post", with: span.block.with || null, moving: !!walking,
+    hidden: !walking && !!move.spot.hidden, onPost: !walking && move.spot === actor.post,
+    until: Math.min(walking?.end ?? span.end, span.end), start: walking?.start ?? move.arrival, path: walking?.path, fl: walking?.fl || 0 };
+}
+
+function npcStates(now) {
+  if (npcFrame?.now === now) return npcFrame.states;
+  const states = new Map();
+  for (const actor of npcCast.values()) states.set(actor.id, npcState(actor, now));
+  npcFrame = { now, states };
+  return states;
+}
+export function npcAt(id, now) {
+  const actor = npcCast.get(id);
+  if (!actor || !Number.isFinite(now)) return null;
+  const { start, path, fl, ...state } = npcFrame?.now === now ? npcFrame.states.get(id) : npcState(actor, now);
+  return state;
+}
+function npcBlockPlan(actor, now) {
+  const span = npcSpan(actor, now);
+  const { place } = npcDestination(span.block, span.start);
+  const next = npcDestination(span.nextBlock, span.end);
+  return { place: place?.id || "post", act: span.block.act, until: span.end,
+    next: { place: next.place?.id || "post", act: span.nextBlock.act, at: span.end } };
+}
+export function npcPlan(id, now) {
+  const actor = npcCast.get(id);
+  return actor && Number.isFinite(now) ? npcBlockPlan(actor, now) : null;
+}
+export function npcsOn(mapId, now) {
+  if (!npcMapIds.has(mapId) || !Number.isFinite(now)) return [];
+  return [...npcStates(now).values()].filter((s) => s.map === mapId).map((s) => s.id);
+}
+
+/** Corner tiles suffice to reconstruct a four-way walk. */
+function npcCorners(path) {
+  const out = [...path[0]];
+  for (let i = 1; i < path.length - 1; i++) {
+    const [ax, ay] = path[i - 1], [bx, by] = path[i], [cx, cy] = path[i + 1];
+    if (bx - ax !== cx - bx || by - ay !== cy - by) out.push(bx, by);
+  }
+  if (path.length > 1) out.push(...path[path.length - 1]);
+  return out;
+}
+
+function npcRows(map, now, states, prev, resend) {
+  const rows = [];
+  for (const [id, state] of states) {
+    const actor = npcCast.get(id), act = NPC_ACTS.indexOf(state.act), end = npcSec(state.until, now);
+    const previous = prev?.get(id);
+    if (!resend && previous && previous.start === state.start && previous.until === state.until && previous.map === state.map) continue;
+    if (state.map !== map || state.hidden) {
+      if (actor.postMap === map || previous?.map === map) rows.push([actor.i, 2, end]);
+      continue;
+    }
+    if (state.onPost && !prev && state.act === "work") continue;
+    if (state.moving) {
+      rows.push([actor.i, 1, npcSec(state.start, now), end, act, state.fl, ...npcCorners(state.path)]);
+    } else {
+      const row = [actor.i, 0, state.tx, state.ty, state.dir, act, end], other = npcCast.get(state.with);
+      if (other) row.push(other.i);
+      rows.push(row);
+    }
+  }
+  return rows;
+}
+export function lifeLegs(map, now, since) {
+  if (!npcMapIds.has(map) || !Number.isFinite(now)) return [];
+  const previous = Number.isFinite(since) ? npcStates(since) : null;
+  const resend = previous && npcDay(now) !== npcDay(since);
+  return npcRows(map, now, npcStates(now), previous, resend);
+}
+
+export function lifeWhere(now) {
+  if (!Number.isFinite(now)) return [];
+  return [...npcStates(now)].map(([id, position]) => {
+    const actor = npcCast.get(id), plan = npcBlockPlan(actor, now);
+    // A travelling NPC belongs to the map it occupies until it passes through a door.
+    const place = position.moving && !(position.fl & 4) ? npcTransit.get(position.map) : npcPlaces.get(plan.place)?.i;
+    return [actor.i, place ?? -1, NPC_ACTS.indexOf(position.act), npcSec(plan.next.at, now), npcPlaces.get(plan.next.place)?.i ?? -1];
+  });
+}
+
+function npcLifeTick(rt, now) {
+  if (!npcMapIds.has(rt.id) || (now >= rt.npcAt && now < rt.npcNext)) return;
+  const states = npcStates(now);
+  const next = [...states.values()].reduce((end, s) => Math.min(end, s.until), npcDayStart(npcDay(now) + 1));
+  rt.npcRows = lifeLegs(rt.id, now, rt.npcAt);
+  rt.npcAt = now;
+  rt.npcNext = Math.max(now + 1, next);
+}
+
+function npcLifeSnap(S, p, out) {
+  const rows = p.sendMap ? lifeLegs(p.map, S.now) : S.maps[p.map].npcRows;
+  if (rows?.length) out.nl = rows;
+  if (p.npcWhere) { out.nw = lifeWhere(S.now); p.npcWhere = false; }
+}
+
+/** Body, service post, or the door of a hidden resident. */
+export function npcReach(p, id) {
+  for (const n of mapOfS(p.S, p.map)?.npcs || []) {
+    if (n.id === id && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < 56) return true;
+  }
+  const body = npcAt(id, p.S.now);
+  return !!body && body.map === p.map && dist(p.x, p.y, body.x, body.y) < (body.hidden ? 40 : body.moving ? 88 : 56);
+}
+
+function npcLifeDefs() {
+  return {
+    cast: [...npcCast.values()].map((a) => [a.id, a.name, a.npc?.look || a.hero, a.cos || [], a.postMap, a.traits || [],
+      a.npc?.pose || null, a.home || null, a.cover || null, a.away || null, a.kid ? 1 : 0]),
+    places: [...[...npcPlaces.values()].map((p) => [p.id, p.map, p.name]), ...[...npcTransit.keys()].map((id) => ["map:" + id, id, MAP_META[id].name])],
+    acts: NPC_ACTS, cycle: NPC_CYCLE,
+    rel: npcRels.map((r) => [r.a.i, r.b.i, r.kind]),
+    lines: Object.fromEntries([...npcCast.values()].filter((a) => isObj(a.lines)).map((a) => [a.id, a.lines])),
+    chat: npcRels.filter((r) => r.chat?.length).map((r) => [r.a.i, r.b.i, r.chat]),
+  };
+}
+
+function npcLifeProblems() {
+  const result = npcErrors.slice();
+  if (result.length) return result;
+  const err = (path, msg) => result.push({ path, msg });
+  // Check both destination variants without depending on the weather of a particular week.
+  for (const actor of npcCast.values()) for (let day = 0; day < NPC_CYCLE; day++) {
+    const all = actor.days[day];
+    const prev = actor.days[(day + NPC_CYCLE - 1) % NPC_CYCLE].at(-1);
+    for (let i = 0; i < all.length; i++) {
+      const b = all[i], before = all[i - 1] || prev;
+      if ((b.at === "post" && !actor.post) || !b.spot) continue;
+      const place = npcPlaces.get(b.at);
+      const options = [b.spot, b.rainSpot].filter(Boolean);
+      if (place?.round && !npcRound(place, b.lag || 0)) err(actor.id, "순찰로가 이어져 있지 않습니다");
+      for (const from of [before.spot, before.rainSpot].filter(Boolean)) for (const to of options) {
+        const trip = npcTrip(from, to);
+        if (!trip) { err(actor.id, before.at + "에서 " + b.at + "까지 길이 이어지지 않습니다"); continue; }
+        const duration = trip.reduce((ms, leg) => ms + npcLegMs(leg), 0);
+        const hours = (all[i + 1]?.h ?? actor.days[(day + 1) % NPC_CYCLE][0].h + 24) - b.h;
+        if (duration > 60000 || duration + 61000 > hours * NPC_HOUR)
+          err(actor.id, b.h + "시 " + b.at + "까지 이동이 너무 깁니다");
+      }
+    }
+  }
+  return result;
 }
 // ───────────────────────────── side quests (world map editor) ─────────────────────────────
 // data/quests.json "side": errands NPCs hand out beside the main chain. A goal is to kill
@@ -8835,11 +9297,6 @@ function sqState(ch, q) {
   if (ch.lvl < q.req.lv || (q.req.quest && !ch.sq.done[q.req.quest])) return 0;
   return 1;
 }
-/** An NPC with this id stands within talking distance. */
-function npcNearId(p, id) {
-  for (const n of mapOfS(p.S, p.map).npcs) if (n.id === id && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < 56) return true;
-  return false;
-}
 const npcName = (id) => (Object.hasOwn(NPC_NAME, id) ? NPC_NAME[id] : id);
 /** Credit `n` toward every active quest of this type that `match` accepts. */
 function sqProgress(S, p, type, match, n = 1) {
@@ -8867,10 +9324,10 @@ function sqPicked(p, item) {
 function sqValidate(S, p, a) {
   const ch = p.ch;
   if (a.a === "drop") return typeof a.id === "string" && Object.hasOwn(ch.sq.on, a.id) ? OK : bad("진행 중인 퀘스트가 아닙니다");
-  if (a.a === "talk") return typeof a.npc === "string" && npcNearId(p, a.npc) ? OK : bad("너무 멉니다");
+  if (a.a === "talk") return typeof a.npc === "string" && npcReach(p, a.npc) ? OK : bad("너무 멉니다");
   const q = typeof a.id === "string" && Object.hasOwn(SQ_BY, a.id) ? SQ_BY[a.id] : null;
   if (!q) return bad("없는 퀘스트입니다");
-  if (!npcNearId(p, q.giver)) return bad(`${npcName(q.giver)}에게 가까이 가야 합니다`);
+  if (!npcReach(p, q.giver)) return bad(`${npcName(q.giver)}에게 가까이 가야 합니다`);
   const st = sqState(ch, q);
   if (a.a === "take") {
     if (st === 2 || st === 3) return bad("이미 진행 중입니다");
@@ -10003,6 +10460,7 @@ export function validateAction(S, pid, a) {
   const ch = p.ch;
   const now = S.now;
   switch (a.t) {
+    case "nw": return p.npcWhereAt === undefined || now >= p.npcWhereAt ? OK : bad("잠시 뒤 주민 위치를 다시 확인하세요");
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");
       if (a.here && countItem(ch, "feather") < 1) return bad("부활 깃털이 없습니다");
@@ -10390,6 +10848,7 @@ export function applyAction(S, pid, a) {
   const now = S.now;
   const m = mapOfS(p.S, p.map);
   switch (a.t) {
+    case "nw": p.npcWhereAt = now + 5000; p.npcWhere = true; break;
     case "mv": {
       if (p.dance) { p.fix = true; break; }
       const dt = clamp(now - p.mvAt, 0, 600);
@@ -11391,6 +11850,7 @@ export function tick(S, now) {
   for (const id of liveMapIds(S)) {
     const rt = S.maps[id];
     if (rt.n <= 0) continue;
+    npcLifeTick(rt, now);
     const m = mapOfS(S, id);
     cellPass(S, m, rt, pids);
     // how many monsters are already after each player here
@@ -11525,6 +11985,7 @@ export function endTick(S) {
     const rt = S.maps[id];
     rt.ev.length = 0;
     rt.who = false;
+    if (rt.npcRows?.length) rt.npcRows = null;
   }
   S.chat.length = 0;
 }
@@ -11664,6 +12125,7 @@ export function viewFor(S, pid) {
   dimView(S, p, out);
   // this map's gathering nodes the player has spent, when that changes (58-life.js)
   lifeSnap(S, p, out);
+  npcLifeSnap(S, p, out);
   if (p.toast.length) out.toast = p.toast;
   p.sendMap = false; p.fix = false; p.dirty = false; p.gain = []; p.toast = [];
   return out;
@@ -11732,7 +12194,7 @@ export function defs() {
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
     // life skills: names, curve, grades, the bonus formula, fish, recipes, each map's grade (58-life.js)
-    life: lifeDefs(),
+    life: lifeDefs(), npclife: npcLifeDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), mobs: MAP_META[id].kinds.slice(),
       // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
       theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id] })),

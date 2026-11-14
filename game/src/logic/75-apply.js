@@ -4,6 +4,7 @@ export function applyAction(S, pid, a) {
   const now = S.now;
   const m = mapOfS(p.S, p.map);
   switch (a.t) {
+    case "nw": p.npcWhereAt = now + 5000; p.npcWhere = true; break;
     case "mv": {
       if (p.dance) { p.fix = true; break; }
       const dt = clamp(now - p.mvAt, 0, 600);

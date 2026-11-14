@@ -38,6 +38,7 @@ export function validateAction(S, pid, a) {
   const ch = p.ch;
   const now = S.now;
   switch (a.t) {
+    case "nw": return p.npcWhereAt === undefined || now >= p.npcWhereAt ? OK : bad("잠시 뒤 주민 위치를 다시 확인하세요");
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");
       if (a.here && countItem(ch, "feather") < 1) return bad("부활 깃털이 없습니다");

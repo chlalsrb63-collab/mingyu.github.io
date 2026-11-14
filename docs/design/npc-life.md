@@ -110,7 +110,7 @@ found on first use and cached by `map:fromTile>toTile`. `npcNear(p, role)` and `
 
 | where | field | content |
 | --- | --- | --- |
-| `welcome.defs` | `life` | `{ cast: [[id, name, look, cos, postMap, traits]], places: [[id, map, name]], acts: [key…], rel: [[i, j, kind]], lines: { id: {…} }, chat: [[i, j, [..]]], cycle: 4 }` — static, once. Budget ≤ 24 KB (the lines are most of it) |
+| `welcome.defs` | `npclife` | `{ cast: [[id, name, look, cos, postMap, traits]], places: [[id, map, name]], acts: [key…], rel: [[i, j, kind]], lines: { id: {…} }, chat: [[i, j, [..]]], cycle: 4 }` — static, once. Budget ≤ 24 KB (the lines are most of it) |
 | `snap` | `nl` | leg rows of **your map**: all of them with `map` (arrival), afterwards only a leg that just began |
 | `snap` | `nw` | whole-cast rows `[i, placeIdx, actIdx, nextLs, nextPlaceIdx]`, only in the snapshot after action `{t:"nw"}` (throttle 5 s) |
 
@@ -127,6 +127,13 @@ where it arrives; players on either map see their half. The client turns `ls` in
 
 Server cost: per **occupied** town-system map one compare per tick (`now < rt.lifeNext`); when a boundary passes,
 `lifeLegs(map, now, rt.lifeAt)` goes into that tick's snapshots (shared row list, like `rt.ev`). Empty maps: nothing.
+
+### N1 as built
+
+- Six sample schedules and section E landmarks are bundled. 볼칸 works inside 캉캉대장간 and the outside smith post remains usable.
+- `defs.npclife.places` appends synthetic `map:<id>` places for residents crossing a map. `nw` reports the current map and `walk` during a transfer. Place index −1 means the actor's static post.
+- Cast rows keep the six fields above and append `[postPose, home, cover, away, kid]`; nullable fields are JSON null. The returned body coordinates are pixels. End seconds can exceed 2880, and a leg already in progress at 04:00 can start below 0.
+- N2 consumes the snapshots and N3 adds the complete cast. The browser keeps its current storyteller and ambient-resident display until the client switches to `nl`.
 
 ### C.3 Acts (frozen order = `actIdx`) — Korean label · default pose
 

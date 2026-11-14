@@ -128,6 +128,7 @@ export function viewFor(S, pid) {
   dimView(S, p, out);
   // this map's gathering nodes the player has spent, when that changes (58-life.js)
   lifeSnap(S, p, out);
+  npcLifeSnap(S, p, out);
   if (p.toast.length) out.toast = p.toast;
   p.sendMap = false; p.fix = false; p.dirty = false; p.gain = []; p.toast = [];
   return out;
@@ -196,7 +197,7 @@ export function defs() {
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
     // life skills: names, curve, grades, the bonus formula, fish, recipes, each map's grade (58-life.js)
-    life: lifeDefs(),
+    life: lifeDefs(), npclife: npcLifeDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), mobs: MAP_META[id].kinds.slice(),
       // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
       theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id] })),
