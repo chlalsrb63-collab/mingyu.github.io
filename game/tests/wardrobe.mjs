@@ -5,7 +5,9 @@
 import assert from "node:assert/strict";
 import * as L from "../src/logic.js";
 import { ART, SLOTS as ART_SLOTS, skinMotif } from "../public/wardrobe.js";
-import { DESIGNS, MOTIFS } from "../public/weapons.js";
+import * as Weapons from "../public/weapons.js";
+
+const { DESIGNS, MOTIFS, SIL, MOTIF_SIL } = Weapons;
 
 const D = L.defs();
 const T = 16;
@@ -60,6 +62,39 @@ assert.ok(!"pb".includes(town.g[shopNpc.y][shopNpc.x]), "not on a road");
 for (const wk of Object.keys(D.wkinds)) assert.equal((DESIGNS[wk] || []).length, 5, wk + " has five tier designs");
 for (const k of Object.keys(D.legend)) assert.ok(MOTIFS.includes(k), "legendary " + k + " has a look");
 for (const k of Object.keys(D.sets)) assert.ok(MOTIFS.includes(k), "set " + k + " has a look");
+assert.ok(SIL && MOTIF_SIL, "legendary weapons have their own silhouette catalogue");
+assert.deepEqual(Object.keys(SIL).sort(), Object.keys(D.wkinds).sort());
+assert.deepEqual(Object.keys(MOTIF_SIL).sort(), Object.keys(D.wkinds).sort());
+const maxLength = { sword: 38, dagger: 20, spear: 48, staff: 28, book: 20 };
+for (const [kind, designs] of Object.entries(SIL)) {
+  assert.ok(Object.keys(designs).length >= 4, kind + " has distinct variants");
+  const mapping = MOTIF_SIL[kind];
+  assert.deepEqual(Object.keys(mapping).sort(), Object.keys(D.legend).sort(), kind + " maps every legendary power");
+  for (const [power, name] of Object.entries(mapping)) {
+    assert.ok(Object.hasOwn(designs, name), kind + " " + power + " maps to " + name);
+  }
+  const canvasWidth = kind === "spear" ? 52 : kind === "sword" ? 44 : 32;
+  const grip = kind === "book" ? 16 : 5;
+  const sMin = 1 - grip, sMax = canvasWidth - 1 - grip;
+  for (const [name, make] of Object.entries(designs)) {
+    const label = kind + " " + name;
+    assert.ok(Object.values(mapping).includes(name), label + " appears on a legendary weapon");
+    const { sh, head, blade } = make();
+    assert.ok(sh.length && blade.length, label + " has shapes and blade materials");
+    const points = sh.flatMap((part) => {
+      if (part.k === "p") return part.pts;
+      if (part.k === "c") return [[part.s - part.r, part.t - part.r], [part.s + part.r, part.t + part.r]];
+      if (part.k === "l") return [part.a, part.b].flatMap(([s, t]) => [[s, t], [s + 1, t + 1]]);
+      return [[part.s, part.t], [part.s + 1, part.t + 1]];
+    });
+    const ts = points.map(([, t]) => t), ss = points.map(([s]) => s);
+    assert.ok(points.every(([s, t]) => s >= sMin && s <= sMax && t >= -14 && t <= 14), label + " fits the canvas with its outline");
+    assert.ok(Math.max(...ss) - Math.min(...ss) <= maxLength[kind], label + " fits the pommel-to-tip limit");
+    if (kind === "book") assert.ok(Math.max(...ts) - Math.min(...ts) <= 14, label + " fits the book height");
+    const [hs0, hs1, ht0, ht1] = head;
+    assert.ok(hs0 >= sMin && hs0 < hs1 && hs1 <= sMax && ht0 >= -14 && ht0 < ht1 && ht1 <= 14, label + " has an in-bounds head");
+  }
+}
 
 // ── a new character: an empty wardrobe, the current sheet version
 {

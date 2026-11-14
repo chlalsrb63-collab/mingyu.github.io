@@ -339,6 +339,220 @@ export const DESIGNS = { sword: SWORD, dagger: DAGGER, spear: SPEAR, staff: STAF
 /** Extra designs other modules can register (new weapon kinds): kind → [tier1…tier5] design functions. */
 export function registerKind(kind, designs) { DESIGNS[kind] = designs; }
 
+// Legendary silhouettes share each weapon's grip position and canvas.
+export const SIL = {
+  sword: {
+    sabre: () => ({
+      sh: [
+        R(-3, 7, -1.5, 1.5, "leather"), R(-4, -2, -2.5, 2.5, "iron"),
+        P([[4, -5], [8, -4], [9, 1], [4, 5], [2, 4], [6, 0]], "gold"),
+        P([[7, -2], [22, -2], [31, -5], [34, -8], [34, -3], [30, 1], [22, 4], [7, 3]], "steel"),
+      ],
+      head: [8, 29, -2, 3], blade: ["steel"],
+    }),
+    flamberge: () => ({
+      sh: [
+        R(-4, 8, -1.5, 1.5, "leather"), R(-4, -2, -2.5, 2.5, "gold"), R(5, 9, -5, 5, "gold"),
+        P([[8, -2], [12, -2], [16, -5], [20, -5], [24, -2], [27, -2], [30, -4], [34, -1],
+          [30, 2], [27, 4], [24, 4], [20, 1], [16, 1], [12, 4], [8, 4]], "bright"),
+      ],
+      head: [9, 31, -2, 2], blade: ["bright"],
+    }),
+    cleaver: () => ({
+      sh: [
+        R(-4, 8, -2, 2, "leather"), R(-4, -2, -3, 3, "iron"),
+        P([[6, -5], [10, -5], [10, 6], [7, 6], [5, 3]], "iron"),
+        P([[9, -3], [15, -3], [16, -7], [31, -7], [34, -4], [34, 4], [30, 7], [12, 6], [9, 3]], "steel"),
+      ],
+      head: [12, 32, -4, 5], blade: ["steel"],
+    }),
+    rapier: () => ({
+      sh: [
+        R(-4, 7, -1.5, 1.5, "leather"), R(-4, -1, -2.5, 2.5, "gold"), R(5, 9, -4, 4, "gold"),
+        P([[0, 1], [2, 5], [5, 6], [8, 4], [8, 1], [10, 1], [10, 5], [6, 8], [2, 7], [-2, 2]], "gold"),
+        P([[8, -1.5], [27, -1.5], [34, -0.5], [30, 1.5], [8, 1.5]], "bright"),
+      ],
+      head: [10, 30, -1, 1], blade: ["bright"],
+    }),
+    serrated: () => ({
+      sh: [
+        R(-4, 9, -2, 2, "dwood"), R(-4, -2, -3, 3, "iron"), R(5, 9, -4, 4, "iron"),
+        P([[8, -2], [12, -2], [16, -7], [17, -2], [20, -2], [24, -7], [25, -2], [28, -2],
+          [33, -6], [34, 0], [30, 5], [10, 5], [8, 2]], "steel"),
+      ],
+      head: [9, 31, -2, 4], blade: ["steel"],
+    }),
+    bone: () => ({
+      sh: [
+        R(-3, 9, -2, 2, "black"), C(-1, 0, 3, "bone"),
+        P([[5, -2], [9, -5], [11, -6], [12, -2], [24, -4], [28, -6], [32, -4], [34, 0],
+          [31, 4], [27, 5], [24, 2], [13, 4], [11, 7], [7, 5]], "bone"),
+        R(14, 24, -1, 0, "iron"),
+      ],
+      head: [12, 31, -3, 3], blade: ["bone"],
+    }),
+    crystal: () => ({
+      sh: [
+        R(-4, 9, -1.5, 1.5, "black"), R(-4, -2, -3, 3, "gun"),
+        P([[5, -3], [10, -2], [13, -6], [19, -4], [23, -7], [34, -3], [29, 1], [23, 4], [17, 3], [13, 6], [9, 2], [6, 4]], "crystal"),
+        P([[14, -2], [23, -5], [31, -3], [23, 1], [19, 0], [14, 2]], "violet"),
+      ],
+      head: [12, 29, -3, 4], blade: ["crystal"],
+    }),
+  },
+  dagger: {
+    kris: () => ({
+      sh: [
+        R(-4, 5, -1.5, 1.5, "black"), R(-4, -2, -2.5, 2.5, "gold"), R(3, 6, -4, 4, "gold"),
+        P([[5, -2], [8, -2], [11, -5], [13, -4], [16, -1], [13, 1], [11, 0], [8, 4], [5, 3]], "steel"),
+      ],
+      head: [6, 15, -2, 2], blade: ["steel"],
+    }),
+    tanto: () => ({
+      sh: [
+        R(-4, 6, -1.5, 1.5, "leather"), R(-4, -2, -2.5, 2.5, "iron"), R(3, 5, -3, 3, "iron"),
+        P([[5, -3], [16, -3], [16, 0], [12, 4], [5, 4]], "steel"),
+      ],
+      head: [5, 16, -2, 3], blade: ["steel"],
+    }),
+    parrying: () => ({
+      sh: [
+        R(-4, 6, -1.5, 1.5, "black"), C(-2, 0, 2, "gold"),
+        P([[1, -2], [4, -5], [7, -6], [7, -4], [5, -2], [5, 2], [7, 4], [7, 6], [4, 5], [1, 2]], "gold"),
+        P([[5, -2], [10, -2.5], [16, 0], [10, 2.5], [5, 2]], "bright"),
+      ],
+      head: [6, 15, -2, 2], blade: ["bright"],
+    }),
+    hook: () => ({
+      sh: [
+        R(-4, 6, -2, 2, "dwood"), R(-4, -2, -3, 3, "bone"), R(3, 6, -3, 4, "bone"),
+        P([[5, -2], [8, -2], [11, -6], [15, -6], [16, -3], [13, -4], [11, 0], [10, 5], [6, 4]], "bone"),
+      ],
+      head: [6, 14, -4, 3], blade: ["bone"],
+    }),
+  },
+  spear: {
+    glaive: () => ({
+      sh: [
+        R(-3, 34, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "iron"), R(24, 29, -2.5, 2.5, "iron"),
+        P([[28, -2], [33, -2], [41, -7], [45, -7], [44, -2], [39, 3], [32, 4], [28, 2]], "steel"),
+      ],
+      head: [30, 42, -2, 3], blade: ["steel"],
+    }),
+    trident: () => ({
+      sh: [
+        R(-3, 34, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "gold"), R(25, 29, -2.5, 2.5, "gold"),
+        P([[29, -2], [33, -6], [42, -7], [40, -4], [34, -3], [34, 3], [40, 4], [42, 7], [33, 6], [29, 2]], "steel"),
+        P([[33, -2], [41, -2], [45, 0], [41, 2], [33, 2]], "steel"),
+      ],
+      head: [32, 43, -2, 2], blade: ["steel"],
+    }),
+    partisan: () => ({
+      sh: [
+        R(-3, 32, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "iron"), R(25, 29, -2.5, 2.5, "gold"),
+        P([[28, -2], [30, -3], [28, -7], [32, -6], [35, -4], [39, -3], [45, 0],
+          [39, 3], [35, 4], [32, 6], [28, 7], [30, 3], [28, 2]], "steel"),
+      ],
+      head: [29, 43, -3, 3], blade: ["steel"],
+    }),
+    scythe: () => ({
+      sh: [
+        R(-3, 34, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "iron"), R(26, 31, -2.5, 2.5, "iron"),
+        P([[29, 2], [30, -3], [34, -8], [39, -11], [45, -11], [44, -8], [40, -7],
+          [37, -4], [36, 0], [33, 4]], "steel"),
+      ],
+      head: [32, 43, -8, -4], blade: ["steel"],
+    }),
+  },
+  staff: {
+    crook: () => ({
+      sh: [
+        R(-3, 16, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "gold"), R(12, 15, -2, 2, "gold"),
+        P([[13, -2], [16, -6], [21, -7], [25, -4], [25, 1], [22, 4], [18, 3],
+          [18, 0], [21, 1], [22, -1], [20, -3], [17, -1], [16, 2], [13, 2]], "wood"),
+      ],
+      head: [14, 23, -4, 1], blade: ["wood"],
+    }),
+    fork: () => ({
+      sh: [
+        R(-3, 16, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "iron"), R(11, 14, -2.5, 2.5, "leather"),
+        P([[13, -2], [17, -5], [21, -9], [25, -8], [23, -4], [20, -4], [18, 0],
+          [20, 3], [25, 4], [24, 8], [20, 7], [16, 3], [13, 2]], "wood"),
+      ],
+      head: [14, 23, -5, 3], blade: ["wood"],
+    }),
+    cage: () => ({
+      sh: [
+        R(-3, 16, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "gold"), R(11, 14, -2.5, 2.5, "gold"),
+        P([[13, 0], [16, -5], [20, -7], [25, -4], [25, 4], [20, 7], [16, 5]], "gold"),
+        P([[16, 0], [19, -4], [23, -2], [23, 2], [19, 4]], null),
+        C(20, 0, 2.5, "crystal"),
+      ],
+      head: [17, 24, -3, 3], blade: ["crystal"],
+    }),
+    crescent: () => ({
+      sh: [
+        R(-3, 17, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "gold"), R(11, 15, -2, 2, "gold"),
+        P([[13, 0], [15, -5], [19, -8], [25, -7], [22, -4], [19, -4], [18, 0],
+          [19, 4], [23, 4], [25, 7], [20, 8], [15, 5]], "crystal"),
+      ],
+      head: [14, 23, -5, 4], blade: ["crystal"],
+    }),
+  },
+  book: {
+    chained: () => ({
+      sh: [
+        P([[-8, -6], [7, -6], [9, -3], [9, 3], [6, 5], [1, 5], [0, 7], [-2, 5], [-9, 5], [-9, -4]], "black"),
+        R(-7, 7, -5, 4, "oldpage"), R(-9, -6, -5, 5, "dwood"),
+        P([[-5, -5], [-2, -5], [5, 4], [2, 4]], "iron"), R(-7, 7, -1, 1, "iron"),
+        C(0, 0, 2, "gold"),
+      ],
+      head: [-6, 7, -4, 4], blade: ["oldpage"],
+    }),
+    skull: () => ({
+      sh: [
+        P([[-9, -4], [-6, -7], [6, -7], [9, -4], [8, 3], [5, 4], [5, 7], [-4, 7], [-5, 4], [-9, 3]], "black"),
+        P([[-7, -4], [-5, -5], [5, -5], [7, -3], [6, 2], [3, 3], [3, 5], [-3, 5], [-3, 3], [-6, 2]], "bone"),
+        R(-5, -2, -2, 0, "ink"), R(2, 5, -2, 0, "ink"),
+        R(-1, 1, 2, 4, "ink"),
+      ],
+      head: [-4, 5, -4, 4], blade: ["bone"],
+    }),
+    grimoire: () => ({
+      sh: [
+        P([[-10, -3], [-7, -6], [-3, -5], [1, -7], [7, -6], [10, -2], [8, 3], [6, 6], [1, 5], [-3, 7], [-9, 5]], "void"),
+        P([[-8, -2], [-6, -4], [6, -4], [8, -1], [6, 4], [-6, 4], [-8, 3]], "oldpage"),
+        P([[-4, 2], [-1, -3], [1, -6], [5, -3], [4, 2], [0, 5]], "crystal"),
+        L(0, -3, 2, -2, "energy"),
+      ],
+      head: [-5, 6, -3, 4], blade: ["crystal"],
+    }),
+    atlas: () => ({
+      sh: [
+        P([[-10, -4], [-4, -7], [0, -5], [4, -7], [10, -4], [10, 4], [4, 7], [0, 5], [-5, 7], [-10, 4]], "dwood"),
+        P([[-8, -3], [-4, -5], [-1, -3], [-1, 4], [-5, 5], [-8, 3]], "page"),
+        P([[1, -3], [4, -5], [8, -3], [8, 3], [4, 5], [1, 4]], "page"),
+        L(-6, 1, -3, 0, "line"), L(3, 0, 6, 1, "line"),
+      ],
+      head: [-7, 8, -4, 4], blade: ["page"],
+    }),
+  },
+};
+
+export const MOTIF_SIL = {
+  sword: { chain: "flamberge", nova: "cleaver", greed: "sabre", haste: "rapier", thorn: "serrated", feast: "bone", echo: "crystal", giant: "cleaver" },
+  dagger: { chain: "kris", nova: "tanto", greed: "parrying", haste: "tanto", thorn: "hook", feast: "hook", echo: "kris", giant: "parrying" },
+  spear: { chain: "trident", nova: "glaive", greed: "partisan", haste: "glaive", thorn: "trident", feast: "scythe", echo: "partisan", giant: "scythe" },
+  staff: { chain: "fork", nova: "cage", greed: "crook", haste: "crook", thorn: "fork", feast: "crescent", echo: "cage", giant: "crescent" },
+  book: { chain: "chained", nova: "grimoire", greed: "atlas", haste: "atlas", thorn: "grimoire", feast: "skull", echo: "chained", giant: "skull" },
+};
+
+/** One legendary rendering of each silhouette for previews and exports. */
+export function silhouetteSamples(kind) {
+  const mapping = Object.entries(MOTIF_SIL[kind] || {});
+  return Object.keys(SIL[kind] || {}).map((name) => [name, mapping.find(([, sil]) => sil === name)[0]]);
+}
+
 // ───────────────────────────── motifs ─────────────────────────────
 // A motif recolours a design's blade and adds a few shapes over its striking part.
 // Legendary powers, set pieces and weapon skins are all motifs.
@@ -450,7 +664,9 @@ function outline(c, inks) {
 /** The design for a kind and tier, with a motif (legendary, set or skin) applied. */
 function build(kind, tier, motif, icon) {
   const list = DESIGNS[kind] || DESIGNS.sword;
-  const d = list[Math.max(0, Math.min(list.length - 1, tier - 1))](icon);
+  const name = MOTIF_SIL[kind]?.[motif];
+  const design = name ? SIL[kind][name] : list[Math.max(0, Math.min(list.length - 1, tier - 1))];
+  const d = design(icon);
   const mats = {};
   let sh = d.sh.slice();
   const mo = MOTIF[motif];
