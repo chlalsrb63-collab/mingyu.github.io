@@ -30,6 +30,8 @@ function world(name = "모험가", t0 = BASE) {
       const m = rt.mobs.find((x) => x.k === k && !x.dead && !x.evt) || rt.mobs.find((x) => x.k === k && !x.evt);
       assert.ok(m, `a ${k} lives in ${p.map}`);
       m.dead = false; m.el = el; m.tr = []; m.hp = 1; m.x = p.x + 12; m.y = p.y; m.by = {};
+      // a duel: anything else standing within reach of the swing is moved off first
+      for (const o of rt.mobs) if (o !== m && !o.dead && Math.hypot(o.x - p.x, o.y - p.y) < 90) { o.x += 4000; o.hx = o.x; }
       p.atkAt = 0; p.dir = 2; p.hp = 1e6;
       assert.ok(W.act({ t: "atk" }).ok);
       assert.ok(m.dead, `the ${k} falls`);

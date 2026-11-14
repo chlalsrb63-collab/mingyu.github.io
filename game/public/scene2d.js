@@ -46,11 +46,12 @@ export function playerLook(cls, look, gear = {}) { return { cls, look, gear }; }
 
 export function init(canvas) { cv = canvas; g = cv.getContext("2d"); resize(); }
 /** Fit the world to a W×H screen rect (the HUD passes the play viewport; default the whole window). */
-export function resize(W = innerWidth, H = innerHeight) {
+export function resize(W = innerWidth, H = innerHeight, zoom = 0) {
   if (!cv) return;
   // about 440×256 world pixels on screen, so the small sprites stay readable
   Z = Math.max(1, Math.round(Math.min(W / 440, H / 256)));
   if (W < 560) Z = Math.max(2, Math.round(W / 220));
+  if (zoom) Z = zoom;                    // preview pages ask for a fixed zoom (1 = the whole map at world size)
   vw = Math.ceil(W / Z); vh = Math.ceil(H / Z);
   cv.width = vw; cv.height = vh;
   cv.style.width = vw * Z + "px"; cv.style.height = vh * Z + "px";
@@ -306,6 +307,54 @@ function scenery() {
       b.r(21, 0, 2, 5, "#8a5a34"); b.r(2, 32, 40, 2, "#b09866"); b.r(10, 22, 3, 1, "#f6ecd2"); b.r(7, 27, 4, 1, "#f6ecd2");
       b.r(0, 31, 3, 3, "#8a5a34"); b.r(41, 31, 3, 3, "#6a4226");
     }),
+    // a standing stone, leaning a little, with moss at its foot
+    O: [0, 1].map((v) => prop(24, 46, (b) => {
+      const lit = "#cfd0dc", mid = "#a2a4b6", dk2 = "#74768c", ln = "#5e6076";
+      b.tri([[2, 45], [22, 45], [20, 8], [14, 1], [5, 5]], mid);
+      b.tri([[14, 1], [20, 8], [22, 45], [16, 45]], dk2);
+      b.tri([[5, 5], [14, 1], [12, 7], [4, 12]], lit);
+      b.r(4, 12, 2, 30, lit); b.r(16, 9, 1, 34, ln);
+      b.r(8, 18, 4, 1, ln); b.r(9, 19, 1, 4, ln); b.r(9, 22, 4, 1, ln); b.r(12, 15, 1, 8, ln);          // a carved mark, worn almost away
+      if (v) { b.r(8, 30, 5, 1, ln); b.r(10, 27, 1, 6, ln); } else { b.r(7, 32, 1, 3, ln); b.r(8, 34, 4, 1, ln); }
+      b.r(2, 40, 9, 5, "#6ab85a"); b.r(3, 38, 4, 2, "#6ab85a"); b.r(16, 42, 6, 3, "#4faa5a"); b.r(3, 39, 2, 1, "#9ad884");
+      b.r(0, 44, 24, 2, "#4e5a4a");
+    })),
+    // a dead tree: bare branches, bark gone grey
+    A: [0, 1].map((v) => prop(40, 58, (b) => {
+      const bark = "#6e5e50", dark = "#4c4036", lit = "#8e7e6c";
+      const br = (x0, y0, x1, y1, w) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)); for (let i = 0; i <= n; i++) b.r(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n, w, w, bark); };
+      b.r(17, 24, 7, 32, bark); b.r(21, 24, 3, 32, dark); b.r(17, 24, 1, 32, lit);
+      b.r(12, 53, 17, 4, bark); b.r(10, 55, 4, 2, dark); b.r(27, 55, 5, 2, dark);
+      if (v) { br(19, 30, 5, 13, 3); br(6, 15, 2, 5, 2); br(6, 15, 11, 5, 2); br(21, 27, 34, 10, 3); br(32, 12, 37, 3, 2); br(20, 25, 22, 2, 3); }
+      else { br(19, 28, 7, 10, 3); br(9, 12, 9, 2, 2); br(21, 30, 35, 16, 3); br(33, 17, 38, 8, 2); br(33, 17, 28, 6, 2); br(20, 25, 16, 3, 3); br(17, 5, 21, 0, 2); }
+      b.oval(20, 40, 2, 3.4, "#2a2420"); b.r(18, 33, 1, 5, dark);
+      if (v) for (const [x, y] of [[8, 14], [30, 14]]) { b.r(x, y, 1, 7, "#7a8a5a"); b.r(x + 1, y + 2, 1, 4, "#5a6a42"); }
+    })),
+    // great mushrooms, red or amber caps flecked white
+    Y: [["#d0503e", "#fff4e4"], ["#e09a3a", "#fff4e4"]].map(([cap, spot]) => prop(30, 32, (b) => {
+      b.r(12, 15, 7, 15, "#efe4cc"); b.r(16, 15, 3, 15, "#cfc2a6"); b.r(10, 28, 11, 3, "#efe4cc");
+      b.oval(15, 12, 14, 8, dk(cap, 0.66)); b.oval(15, 10, 14, 8, cap); b.oval(10, 7, 6, 3.4, lt(cap, 1.25));
+      b.r(4, 16, 22, 2, "#e8dcc0");
+      for (const [x, y] of [[6, 9], [15, 5], [21, 9], [11, 12]]) b.r(x, y, 3, 2, spot);
+      b.r(24, 25, 2, 6, "#efe4cc"); b.oval(25, 24, 4, 2.6, cap); b.r(24, 23, 1, 1, spot);
+    })),
+    // underground, they glow
+    Y2: [["#3ac8c0", "#d8fffa"], ["#6a8ae8", "#e8f0ff"]].map(([cap, spot]) => prop(30, 32, (b) => {
+      b.r(12, 15, 7, 15, "#dff4ff"); b.r(16, 15, 3, 15, "#a8c8d8"); b.r(10, 28, 11, 3, "#dff4ff");
+      b.oval(15, 12, 14, 8, dk(cap, 0.6)); b.oval(15, 10, 14, 8, cap); b.oval(10, 7, 6, 3.4, lt(cap, 1.3));
+      b.r(4, 16, 22, 2, lt(cap, 1.45));
+      for (const [x, y] of [[6, 9], [15, 5], [21, 9], [11, 12]]) b.r(x, y, 3, 2, spot);
+      b.r(24, 25, 2, 6, "#dff4ff"); b.oval(25, 24, 4, 2.6, cap);
+    })),
+    // a blood altar: a slab of flesh-stone, a bowl brimming, candles of tallow
+    X: prop(40, 34, (b) => {
+      b.r(4, 14, 32, 18, "#5a1622"); b.r(4, 14, 32, 3, "#8c2c3a"); b.r(30, 16, 6, 16, "#3c0e16");
+      b.r(2, 10, 36, 6, "#9e4855"); b.r(2, 10, 36, 1, "#ba5e6a"); b.r(2, 15, 36, 1, "#5a1622");
+      b.oval(20, 11, 9, 3, "#3c0e16"); b.oval(20, 11, 8, 2.2, "#c41830"); b.r(15, 10, 4, 1, "#ff6a7a");
+      for (const x of [5, 33]) { b.r(x, 2, 2, 9, "#f2ead0"); b.r(x, 0, 2, 3, "#ffb030"); b.r(x, 0, 1, 1, "#fff0a0"); }
+      b.r(10, 16, 1, 6, "#c41830"); b.r(24, 16, 1, 9, "#c41830"); b.r(24, 25, 2, 1, "#c41830");
+      b.r(7, 31, 10, 2, "#e2dcc6"); b.r(6, 30, 2, 4, "#f4f0e0"); b.r(16, 30, 2, 4, "#f4f0e0");
+    }),
     house: [0, 1, 2, 3].map(house).concat([4, 5, 6, 7].map(building)),
     fountain: prop(72, 64, (b) => {
       b.oval(36, 45, 35, 18, "#8a909e"); b.oval(36, 43, 35, 18, "#c2c8d4"); b.oval(36, 41, 34, 16, "#dfe4ee"); b.oval(36, 43, 31, 14, "#aab0be");
@@ -459,10 +508,10 @@ function wallPiece(kind, mask, v, grass) {
 
 // ───────────────────────────── ground ─────────────────────────────
 
-const GROUND = { t: "#6cbf5e", r: "#aeb0a0", ".": "#6cbf5e", ",": "#6cbf5e", '"': "#6cbf5e", ":": "#3f8a5c", ";": "#3f8a5c", p: "#d9ab6c", o: "#b4b9c6", s: "#ecd9a2", w: "#4aa2e2", b: "#b98a50", c: "#486a8a", d: "#486a8a", W: "#131a32", a: "#474b5a", m: "#474b5a", k: "#9aa0ae" };
-const GROUP = { t: 0, r: 3, ".": 0, ",": 0, '"': 0, ":": 1, ";": 1, p: 2, o: 3, s: 4, w: 5, b: 6, c: 7, d: 7, W: 8, a: 9, m: 9, k: 10 };
+const GROUND = { t: "#6cbf5e", r: "#aeb0a0", ".": "#6cbf5e", ",": "#6cbf5e", '"': "#6cbf5e", ":": "#3f8a5c", ";": "#3f8a5c", p: "#d9ab6c", o: "#b4b9c6", s: "#ecd9a2", w: "#4aa2e2", b: "#b98a50", c: "#486a8a", d: "#486a8a", W: "#131a32", a: "#474b5a", m: "#474b5a", k: "#9aa0ae", j: "#6a6444", v: "#bdb39a", g: "#486a8a" };
+const GROUP = { t: 0, r: 3, ".": 0, ",": 0, '"': 0, ":": 1, ";": 1, p: 2, o: 3, s: 4, w: 5, b: 6, c: 7, d: 7, g: 7, W: 8, a: 9, m: 9, k: 10, j: 11, v: 12 };
 /** The outline where a patch of ground ends: [dark edge line, soft inner rim]. */
-const EDGE = { 2: ["#8f6238", "#bd8c54"], 3: ["#6e7486", "#969cac"], 4: ["#b89a5e", "#d8c088"], 5: ["#2f78c0", "#86c8f4"], 6: ["#6a4426", "#96683a"], 7: ["#2a4262", "#3a5878"], 10: ["#5e6474", "#c4c8d2"] };
+const EDGE = { 2: ["#8f6238", "#bd8c54"], 3: ["#6e7486", "#969cac"], 4: ["#b89a5e", "#d8c088"], 5: ["#2f78c0", "#86c8f4"], 6: ["#6a4426", "#96683a"], 7: ["#2a4262", "#3a5878"], 10: ["#5e6474", "#c4c8d2"], 11: ["#4a4430", "#7e7652"], 12: ["#7e7562", "#d6cdb4"] };
 const FLOWER = ["#fffbe8", "#ffd84a", "#ff9ac0", "#9ac8ff", "#f06a7a"];
 
 // ── the dungeons underground share the cave's bones (rock `W`, floor `c`/`d`, liquid `w`) but each has its own skin
@@ -516,7 +565,14 @@ function underFloor(b, U, theme, X, Y, ch, h, free, under) {
       else { b.oval(a + 4, q + 3, 5, 3, "#f4ecd8"); b.oval(a + 4, q + 3, 2.4, 2.4, "#3a0a12"); b.r(a + 3, q + 2, 1, 1, "#ffffff"); b.r(a - 1, q + 2, 1, 3, dark); b.r(a + 9, q + 2, 1, 3, dark); }   // an eye in the floor
     }
   }
+  if (ch === "g") grate(b, X, Y, dark, light);
   if (under) b.r(X, Y, T, 5, dark);                        // the wall's shadow falls a little way onto the floor
+}
+/** An iron grate set in the floor, black below the bars. */
+function grate(b, X, Y, dark, light) {
+  b.r(X + 3, Y + 3, 26, 26, "#1c2220"); b.r(X + 3, Y + 3, 26, 2, "#8a948c"); b.r(X + 3, Y + 27, 26, 2, "#3a423e"); b.r(X + 3, Y + 3, 2, 26, "#6a746c"); b.r(X + 27, Y + 3, 2, 26, "#3a423e");
+  for (let i = 9; i < 27; i += 6) { b.r(X + i, Y + 5, 2, 22, "#5e6862"); b.r(X + i, Y + 5, 1, 22, "#8a948c"); }
+  b.r(X + 5, Y + 15, 22, 2, "#5e6862");
 }
 
 /** One tile of dungeon rock: flat dark, with a lit face where it stands over open floor. */
@@ -559,8 +615,8 @@ function paintGround(m, theme) {
   const b = tools(x);
   const U = UG[theme] || null;
   const BASE = theme === "forest" ? { ...GROUND, ".": GROUND[":"], ",": GROUND[":"], '"': GROUND[":"], t: GROUND[":"] }
-    : U ? { ...GROUND, c: U.floor[0], d: U.floor[0], W: U.rock, w: U.wet[0] } : GROUND;
-  const EDG = U ? { ...EDGE, 5: [U.wet[3], U.wet[4]], 7: [U.floor[1], U.floor[2]] } : EDGE;
+    : U ? { ...GROUND, c: U.floor[0], d: U.floor[0], g: U.floor[0], W: U.rock, w: U.wet[0] } : GROUND;
+  const EDG = U ? { ...EDGE, 5: [U.wet[3], U.wet[4]], 7: [U.floor[1], U.floor[2]], 6: theme === "abyss" ? ["#5a1622", "#a8a08a"] : theme === "sewer" ? ["#1c2220", "#6a746c"] : EDGE[6] } : EDGE;
   const at = (tx, ty) => (ty < 0 || tx < 0 || ty >= m.h || tx >= m.w ? null : m.g[ty][tx]);
   const forest = theme === "forest";
   const grp = (tx, ty) => { const ch = at(tx, ty); return ch === null ? -1 : forest && GROUP[ch] === 0 ? 1 : GROUP[ch]; };
@@ -636,6 +692,21 @@ function paintGround(m, theme) {
         if (h(45) < 0.5) { const a = X + 3 + Math.floor(h(46) * 20), q = Y + 3 + Math.floor(h(47) * 20); b.r(a, q, 5, 2, "#7ab868"); b.r(a + 1, q + 2, 3, 1, "#6aa85a"); }
         if (h(48) < 0.3) { const a = X + 4 + Math.floor(h(49) * 20), q = Y + 18 + Math.floor(h(50) * 8); b.r(a, q, 1, 4, dk(col, 0.72)); b.r(a + 1, q + 3, 3, 1, dk(col, 0.72)); }
       }
+    } else if (ch === "j") {
+      // mud: a darker skin, wet hollows that catch the sky, a few pale stones half sunk
+      const d = dk(col, 0.8), l = lt(col, 1.14);
+      for (let i = 0; i < 4; i++) b.r(X + 2 + Math.floor(h(i) * 26), Y + 2 + Math.floor(h(i + 9) * 27), 3, 1, i % 2 ? d : l);
+      if (h(20) < 0.55) { const a = X + 5 + Math.floor(h(21) * 14), q = Y + 7 + Math.floor(h(22) * 14); b.oval(a + 7, q + 4, 8, 4, d); b.oval(a + 7, q + 4, 6.5, 2.8, "#4e5e58"); b.r(a + 3, q + 3, 4, 1, "#8aa6a0"); }
+      if (h(23) < 0.25) { const a = X + 6 + Math.floor(h(24) * 18), q = Y + 6 + Math.floor(h(25) * 18); b.r(a, q, 3, 2, "#a8a08a"); b.r(a, q, 2, 1, "#c8c0a8"); b.r(a + 1, q + 2, 2, 1, d); }
+    } else if (ch === "v") {
+      // stone steps cut into a rise: three treads, lit on the nose, dark at the riser
+      for (let s2 = 0; s2 < 3; s2++) {
+        const y0 = Y + 1 + s2 * 10;
+        b.r(X, y0, T, 2, lt(col, 1.16)); b.r(X, y0 + 2, T, 5, col); b.r(X, y0 + 7, T, 3, dk(col, 0.72));
+        b.r(X + Math.floor(h(s2) * 20) + 4, y0 + 3, 5, 1, dk(col, 0.9));
+      }
+      b.r(X, Y, 1, T, dk(col, 0.82)); b.r(X + T - 1, Y, 1, T, dk(col, 0.82));
+      if (h(30) < 0.4) b.r(X + 3 + Math.floor(h(31) * 22), Y + 8, 4, 2, "#7ab868");
     } else if (ch === "k") {
       b.r(X, Y, T, 1, lt(col, 1.1)); b.r(X + 15, Y, 1, T, dk(col, 0.9)); b.r(X, Y + 15, T, 1, dk(col, 0.9)); b.r(X + 31, Y, 1, T, dk(col, 0.86)); b.r(X, Y + 31, T, 1, dk(col, 0.86));
       if (h(1) < 0.2) b.r(X + 3 + Math.floor(h(2) * 22), Y + 3 + Math.floor(h(3) * 22), 5, 3, dk(col, 0.93));
@@ -645,6 +716,21 @@ function paintGround(m, theme) {
       if (deep) b.r(X, Y, T, T, U ? U.wet[1] : "#4196d8");
       if (U) { for (let i = 0; i < 2; i++) b.r(X + 4 + Math.floor(h(i + 2) * 20), Y + 6 + Math.floor(h(i + 5) * 20), 4, 1, U.wet[1]); }
       else if (deep && h(1) < 0.07) { const a = X + 8 + Math.floor(h(2) * 14), q = Y + 9 + Math.floor(h(3) * 12); b.oval(a + 4, q + 3, 5, 3.4, "#4faa5a"); b.r(a + 4, q + 3, 3, 1, "#4196d8"); b.oval(a + 3, q + 2, 2.4, 1.4, "#7acf70"); if (h(4) < 0.5) { b.r(a + 6, q + 1, 2, 2, "#ff9ac0"); b.r(a + 6, q + 1, 1, 1, "#fff2c0"); } }
+    } else if (ch === "b" && theme === "abyss") {
+      // a bridge of bone: ribs laid across, bound with sinew along both rails
+      const across = grp(tx - 1, ty) === 6 || grp(tx + 1, ty) === 6;
+      b.r(X, Y, T, T, "#3c0e16");
+      for (let i = 1; i < T; i += 8) {
+        if (across) { b.r(X + i, Y + 2, 5, 28, "#e2dcc6"); b.r(X + i, Y + 2, 5, 2, "#f4f0e0"); b.r(X + i + 4, Y + 2, 1, 28, "#a8a08a"); b.r(X + i - 1, Y + 1, 7, 3, "#e2dcc6"); b.r(X + i - 1, Y + 28, 7, 3, "#c8c0a8"); }
+        else { b.r(X + 2, Y + i, 28, 5, "#e2dcc6"); b.r(X + 2, Y + i, 28, 2, "#f4f0e0"); b.r(X + 2, Y + i + 4, 28, 1, "#a8a08a"); b.r(X + 1, Y + i - 1, 3, 7, "#e2dcc6"); b.r(X + 28, Y + i - 1, 3, 7, "#c8c0a8"); }
+      }
+      if (across) { b.r(X, Y + 3, T, 2, "#8c2c3a"); b.r(X, Y + 27, T, 2, "#8c2c3a"); } else { b.r(X + 3, Y, 2, T, "#8c2c3a"); b.r(X + 27, Y, 2, T, "#8c2c3a"); }
+    } else if (ch === "b" && theme === "sewer") {
+      // an iron footbridge: a grating between two rails, rivets at the joints
+      b.r(X, Y, T, T, "#4a524c");
+      for (let i = 2; i < T; i += 5) { b.r(X + i, Y, 2, T, "#2a302c"); b.r(X, Y + i, T, 1, "#2a302c"); }
+      b.r(X, Y, T, 2, "#8a948c"); b.r(X, Y + T - 2, T, 2, "#2a302c");
+      for (const [a, q] of [[2, 3], [T - 4, 3], [2, T - 5], [T - 4, T - 5]]) b.r(X + a, Y + q, 2, 2, "#b0b8b0");
     } else if (ch === "b") {
       for (let i = 0; i < T; i += 8) { b.r(X + i, Y, 1, T, dk(col, 0.72)); b.r(X + i + 1, Y, 2, T, lt(col, 1.14)); b.r(X + i + 4, Y + 3, 1, 1, "#5a3a22"); b.r(X + i + 4, Y + 28, 1, 1, "#5a3a22"); if (hash(tx * 4 + i, ty, 3) < 0.3) b.r(X + i + 3, Y + 8 + Math.floor(hash(tx * 4 + i, ty, 4) * 14), 3, 1, dk(col, 0.84)); }
       if (grp(tx, ty - 1) !== 6) { b.r(X, Y, T, 5, "#7a5030"); b.r(X, Y, T, 1, "#a87a48"); b.r(X, Y + 5, T, 2, dk(col, 0.7)); }
@@ -659,6 +745,7 @@ function paintGround(m, theme) {
       const d = dk(col, 0.84);
       for (let q = 0; q < 2; q++) for (let i = 0; i < 2; i++) { const a = X + i * 16 + (q ? 8 : 0), z = Y + q * 16; b.r(a + 2, z + 13, 12, 1, d); b.r(a + 1, z + 10, 1, 3, d); b.r(a + 14, z + 10, 1, 3, d); b.r(a + 4, z + 3, 5, 1, lt(col, 1.1)); }
       if (ch === "d") { const a = X + 6 + Math.floor(h(3) * 14), q = Y + 6 + Math.floor(h(4) * 14); b.r(a, q, 5, 3, "#5c80a0"); b.r(a, q, 5, 1, "#7a9cbc"); b.r(a + 7, q + 4, 3, 2, "#5c80a0"); }
+      if (ch === "g") grate(b, X, Y, d, lt(col, 1.1));
       if (grp(tx, ty - 1) === 8) b.r(X, Y, T, 5, dk(col, 0.8));
       if (free(tx, ty) && h(5) < 0.06) { const a = X + 8 + Math.floor(h(6) * 16), q = Y + 8 + Math.floor(h(7) * 16), kc = h(8) > 0.5 ? "#72e6f4" : "#c08af4"; b.r(a, q + 1, 3, 3, kc); b.r(a + 1, q, 1, 5, kc); b.r(a + 1, q + 1, 1, 1, "#ffffff"); }
       else if (free(tx, ty) && h(5) < 0.11) {
@@ -696,7 +783,7 @@ function paintGround(m, theme) {
       const nb = (dx, dy) => BASE[at(tx + dx, ty + dy)];
       const side = (dx, dy) => {
         if (!dif(dx, dy)) return false;
-        const bite = nb(dx, dy), straight = g0 === 3 || g0 === 5 || g0 === 10 || g0 === 6;
+        const bite = nb(dx, dy), straight = g0 === 3 || g0 === 5 || g0 === 10 || g0 === 6 || g0 === 12;
         for (let i = 0; i < 8; i++) {
           const dpt = straight ? 0 : 1 + Math.floor(hash(tx * 8 + i * (dx ? 0 : 1), ty * 8 + i * (dx ? 1 : 0), 3 + dx + dy * 2) * 3);
           const horiz = dy !== 0, a = i * 4;
@@ -812,11 +899,12 @@ export function loadMap(m) {
     else if (ch === "B") sp = theme === "town" ? S.TB[Math.floor(h * 3)] : sp[Math.floor(h * 3)];
     else if (ch === "L") sp = theme === "city" ? S.L2 : S.L;
     else if (ch === "K") sp = hash(x, y, 7) > 0.6 ? S.K2 : S.K;
+    else if (ch === "Y") sp = (theme === "cave" ? S.Y2 : S.Y)[Math.floor(h * 2)];
     else if (Array.isArray(sp)) sp = sp[Math.floor(h * sp.length)];
     const wide = ch === "c" ? T : 0;
     statics.push({
       sp, x: x * T + T / 2 + wide / 2 + (ch === "T" || ch === "P" ? Math.round((hash(x, y, 8) - 0.5) * 6) : 0), y: (y + 1) * T - 3,
-      glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" ? "#ffd070" : ch === "0" ? "#ff6a7a" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
+      glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" ? "#ffd070" : ch === "0" || ch === "X" ? "#ff6a7a" : ch === "Y" && theme === "cave" ? "#5ae4d0" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
     });
   }
   for (const b of m.big) {

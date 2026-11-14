@@ -242,7 +242,8 @@ assert.ok(D.mech && D.mech.react && D.mech.grit === 100);
     assert.ok(W.act({ t: "sk", i: 2 }).ok);
     const v = W.step();
     const c = evts(v, "cn")[0];
-    const crit = evts(v, "h").find((e) => e[1] === m.id);
+    // the coin's own blow: the first hit on the target after the flip (a skill cast just before may have landed in the same tick)
+    const crit = v.ev.slice(v.ev.indexOf(c)).find((e) => e[0] === "h" && e[1] === m.id);
     if (c[4]) { heads++; assert.equal(crit[3], 1, "heads is always a critical hit"); assert.ok(!p.coinFree); }
     else {
       tails++;

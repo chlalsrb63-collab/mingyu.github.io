@@ -230,14 +230,14 @@ export function renderGround(m) {
   return { frames: out, ox: m.h * TILE };
 }
 
-const MINI = { t: "#447e38", r: "#8a8a80", ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86" };
+const MINI = { t: "#447e38", r: "#8a8a80", ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86", j: "#5a5638", v: "#b0a68e", g: "#4a5248" };
 const MINI_OBJ = { C: "#6e6654", H: "#2f7036", U: "#8a8478", l: "#6a4628", u: "#6a4628", e: "#5a9a58", q: "#a8a498", n: "#8a6a3a", M: "#6a4628", D: "#2c5a48", E: "#c8b888", T: "#2a6030", P: "#1d4a30", R: "#74747c", B: "#35803a", h: "#8a4a3a", a: "#6a9ac8", K: "#5ac8d8", S: "#3a3550", F: "#6a4628", L: "#c8b060", G: "#6a4628", Z: "#22242c", c: "#8a3a3a", y: "#a83a3a", x: "#4a4d56",
-  1: "#8a8478", 2: "#5a3e2a", 3: "#d8a850", 4: "#c8c2ac", 5: "#8a8478", 6: "#6a7280", 7: "#6a5a44", 8: "#c8c2ac", 0: "#c0303c", Q: "#7ae0ff", J: "#d8b07a" };
+  1: "#8a8478", 2: "#5a3e2a", 3: "#d8a850", 4: "#c8c2ac", 5: "#8a8478", 6: "#6a7280", 7: "#6a5a44", 8: "#c8c2ac", 0: "#c0303c", Q: "#7ae0ff", J: "#d8b07a", O: "#9a9cb0", A: "#5a4434", Y: "#c8503e", X: "#e02a3a" };
 /** Dungeons share the cave's tiles but not its colours. */
 const MINI_THEME = {
   crypt: { c: "#5c5852", d: "#524e48", W: "#141218", w: "#3d5a66" },
-  sewer: { c: "#4c584e", d: "#435046", W: "#0c120e", w: "#5a8a30" },
-  abyss: { c: "#6a2632", d: "#5c1e2a", W: "#16060a", w: "#a01828" },
+  sewer: { c: "#4c584e", d: "#435046", W: "#0c120e", w: "#5a8a30", g: "#2c342e", b: "#6a7280" },
+  abyss: { c: "#6a2632", d: "#5c1e2a", W: "#16060a", w: "#a01828", b: "#d8d0b8" },
 };
 export function renderMini(m, s = 2) {
   const [c, g] = canvas(m.w * s, m.h * s);

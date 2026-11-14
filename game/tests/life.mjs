@@ -46,10 +46,10 @@ assert.equal(S.maps.town.fires.length, 1, "it burns out after three minutes");
 const m = S.maps.meadow;
 for (const p of [a, b]) { S.maps[p.map].n--; p.map = "meadow"; m.n++; p.sendMap = true; }
 assert.equal(act(B, { t: "fish" }).ok, false, "no water here");
-// the pond is around tile (41, 11): stand on its sandy shore
+// stand on the sandy shore of one of the meadow's ponds
 const mapV = step().b.map;
 let spot = null;
-for (let y = 4; y < 20 && !spot; y++) for (let x = 30; x < 52 && !spot; x++) if (mapV.g[y][x] === "s" && mapV.g[y][x + 1] === "w" && mapV.o[y][x] === " ") spot = [x, y];
+for (let y = 4; y < mapV.h - 4 && !spot; y++) for (let x = 4; x < mapV.w - 4 && !spot; x++) if (mapV.g[y][x] === "s" && mapV.g[y][x + 1] === "w" && mapV.o[y][x] === " ") spot = [x, y];
 assert.ok(spot, "found a shore tile");
 b.x = spot[0] * 16 + 8; b.y = spot[1] * 16 + 10; b.mvAt = now; b.hitAt = -1e9;
 for (const mob of m.mobs) { mob.dead = true; mob.respAt = 1e15; }                      // a quiet afternoon
@@ -133,7 +133,15 @@ assert.ok(act(B, { t: "gleave" }).ok && b.ch.guild === "");
 // ── emotes, and a blow that shoves
 assert.ok(act(A, { t: "emo", i: 1 }).ok);
 assert.equal(act(A, { t: "emo", i: 99 }).ok, false);
-a.x = 8 * 16 + 8; a.y = 22 * 16 + 10; a.mvAt = now;            // on the open road
+// on open ground: the first stretch of the meadow with nothing in the way for a few tiles east
+const mv = mapV, freeT = (x, y) => mv.o[y] && mv.o[y][x] === " " && !"wW".includes(mv.g[y][x]);
+let lane = null;
+for (let y = 4; y < mv.h - 4 && !lane; y++) for (let x = 4; x < mv.w - 8 && !lane; x++) {
+  let ok = true;
+  for (let i = 0; i < 6 && ok; i++) for (let dy = -1; dy <= 1; dy++) if (!freeT(x + i, y + dy)) ok = false;
+  if (ok) lane = [x, y];
+}
+a.x = lane[0] * 16 + 8; a.y = lane[1] * 16 + 10; a.mvAt = now;
 const mob = m.mobs.find((x) => x.k === "twinhare"); mob.dead = false; mob.el = 0; mob.tr = []; mob.act = null; mob.hp = 9999; mob.x = a.x + 14; mob.y = a.y; mob.stun = 0;
 a.atkAt = 0; a.dir = 2;
 const x0 = mob.x;
