@@ -30,12 +30,13 @@ export function vnoise(x, y, cell, s = 0) {
 // ───────────────────────────── colour ─────────────────────────────
 
 const CC = new Map();
-/** "#rrggbb" → a packed pixel (little-endian RGBA, opaque). */
+/** "#rrggbb" → a packed pixel (little-endian RGBA, opaque), as a signed 32-bit integer. */
 export function C(hex) {
   let v = CC.get(hex);
   if (v === undefined) {
     const n = parseInt(hex.slice(1), 16);
-    v = (((255 << 24) | ((n & 255) << 16) | (n & 0xff00) | ((n >> 16) & 255)) >>> 0);
+    // kept as a signed 32-bit value: opaque colours then fit V8's small integers and never box
+    v = (255 << 24) | ((n & 255) << 16) | (n & 0xff00) | ((n >> 16) & 255);
     CC.set(hex, v);
   }
   return v;
@@ -65,7 +66,7 @@ export const light = (hex, f = 1.18) => tone(mix(hex, f), "#fff4c0", 0.12);
 const SH = new Map();
 /** The shadowed version of a packed pixel (for shadows laid over finished ground). */
 export function shadePx(u, f = 0.74) {
-  const k = u * 8 + Math.round(f * 100);
+  const k = u * 128 + Math.round(f * 100);
   let v = SH.get(k);
   if (v === undefined) { v = C(shade(hexOf(u), f)); SH.set(k, v); }
   return v;

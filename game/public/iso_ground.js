@@ -75,16 +75,50 @@ function mk(id, rank, hex, o = {}) {
 
 // ───────────────────────────── textures ─────────────────────────────
 
-/** Organic ground: clusters in two layers, thicker where low noise says the ground is busy. */
+/** Which of a tile's 256 pixels sits at (sx + 16, sy) from its top corner, or −1. */
+const KAT = new Int16Array(32 * 16).fill(-1);
+TILE_PX.forEach(([sx, sy], k) => { KAT[sy * 32 + sx + 16] = k; });
+
+/**
+ * Organic ground: clusters in two layers, thicker where low noise says the
+ * ground is busy. `tex(A, B)` answers for one texel; `fill(x, y, TEX)` lays a
+ * whole tile at once by stamping just the clusters that touch it.
+ */
 function organic(m, l1, l2, seed, d1, d2, cw = 7, ch = 5) {
   let lastT = -1, busy = 1;
-  return (A, B) => {
-    const SX = A - B, SY = (A + B) >> 1, t = ((A >> 3) << 16) | (B >> 3);
-    if (t !== lastT) { lastT = t; busy = 0.45 + vnoise(A, B, 40, seed) * 1.1; }
-    let k = clu(SX, SY, cw, ch, seed, d1 * busy, l1);
-    if (k < 0 && l2) k = clu(SX + 3, SY + 2, cw + 4, ch + 3, seed + 7, d2 * busy, l2);
+  const busyAt = (tx, ty) => { const t = (tx << 16) | ty; if (t !== lastT) { lastT = t; busy = 0.45 + vnoise(tx * 16 + 8, ty * 16 + 8, 40, seed) * 1.1; } return busy; };
+  const tex = (A, B) => {
+    const SX = A - B, SY = (A + B) >> 1, bz = busyAt(A >> 4, B >> 4);
+    let k = clu(SX, SY, cw, ch, seed, d1 * bz, l1);
+    if (k < 0 && l2) k = clu(SX + 3, SY + 2, cw + 4, ch + 3, seed + 7, d2 * bz, l2);
     return k < 0 ? m.pal[0] : m.pal[k];
   };
+  const layer = (TEX, X0, Y0, ox, oy, cw2, ch2, sd, dens, shapes) => {
+    for (let cy = Math.floor((Y0 + oy) / ch2); cy <= Math.floor((Y0 + 15 + oy) / ch2); cy++) {
+      const sh0 = cy & 1 ? cw2 >> 1 : 0;
+      for (let cx = Math.floor((X0 - 15 + ox + sh0) / cw2); cx <= Math.floor((X0 + 15 + ox + sh0) / cw2); cx++) {
+        if (hash(cx, cy, sd) >= dens) continue;
+        const sh = shapes[(hash(cx, cy, sd + 1) * shapes.length) | 0];
+        const offx = (hash(cx, cy, sd + 2) * (cw2 - sh.w)) | 0, offy = (hash(cx, cy, sd + 3) * (ch2 - sh.h)) | 0;
+        for (let ly = 0; ly < sh.h; ly++) for (let lx = 0; lx < sh.w; lx++) {
+          const c = sh.p[ly * sh.w + lx];
+          if (c < 0) continue;
+          const sx = cx * cw2 + offx + lx - sh0 - ox - X0, sy = cy * ch2 + offy + ly - oy - Y0;
+          if (sx < -16 || sx > 15 || sy < 0 || sy > 15) continue;
+          const k = KAT[sy * 32 + sx + 16];
+          if (k >= 0) TEX[k] = m.pal[c];
+        }
+      }
+    }
+  };
+  const fill = (x, y, TEX) => {
+    TEX.fill(m.pal[0]);
+    const bz = busyAt(x, y), X0 = (x - y) * 16, Y0 = (x + y) * 8;
+    if (l2) layer(TEX, X0, Y0, 3, 2, cw + 4, ch + 3, seed + 7, d2 * bz, l2);
+    layer(TEX, X0, Y0, 0, 0, cw, ch, seed, d1 * bz, l1);
+  };
+  tex.fill = fill;
+  return tex;
 }
 /**
  * Laid stone: rectangles of sw×sh texels in courses (each course shifted by
@@ -101,6 +135,26 @@ function laid(m, sw, sh, bond, seed, o = {}) {
     if (o.crack && t < 0.05 && Math.abs(la - lb * (sw / sh) * 0.6 - 2) < 0.6) return m.pal[1];
     return t < 0.22 ? m.pal[3] || m.pal[2] : t > 0.82 ? m.pal[4] || m.pal[1] : m.pal[0];
   };
+}
+
+/**
+ * A base texture with marks laid over it by two smooth noises (lattice cells
+ * that divide 16): `pick(n1, n2, A, B)` gives a colour, or 0 to keep the base.
+ */
+function veined(baseTex, c1, s1, c2, s2, pick) {
+  const N1 = new Float32Array(256), N2 = new Float32Array(256);
+  const tex = (A, B) => pick(vnoise(A + 0.5, B + 0.5, c1, s1), vnoise(A + 0.5, B + 0.5, c2, s2), A, B) || baseTex(A, B);
+  tex.fill = (x, y, TEX) => {
+    if (baseTex.fill) baseTex.fill(x, y, TEX);
+    else for (let k = 0; k < 256; k++) TEX[k] = baseTex(x * 16 + TILE_PX[k][2], y * 16 + TILE_PX[k][3]);
+    tileNoise(x, y, c1, s1, N1, 1, false); tileNoise(x, y, c2, s2, N2, 1, false);
+    for (let k = 0; k < 256; k++) { const c = pick(N1[k], N2[k], x * 16 + TILE_PX[k][2], y * 16 + TILE_PX[k][3]); if (c) TEX[k] = c; }
+  };
+  return tex;
+}
+/** Rough rock underfoot: broken plates with dark cracks between, pebbles where it is busy. */
+function roughRock(m, crack, plate) {
+  return veined(organic(m, SHP.pebble, null, 88, 0.42, 0, 7, 5), 8, 89, 16, 90, (n, n2) => (Math.abs(n - 0.5) < 0.03 && n2 > 0.35 ? crack : n > 0.5 && n < 0.58 && n2 > 0.5 ? plate : 0));
 }
 
 /** The materials of a theme, by ground char. */
@@ -161,36 +215,19 @@ export function materials(theme) {
     floor = mk(MID.floor, 4, mid, { pal: [mid, dark, lit, mix(mid, 1.05), mix(mid, 0.95)], straight: true, depth: 1, line: dark });
     if (theme === "crypt") floor.tex = laid(floor, 16, 8, 8, 81, { crack: true });
     else if (theme === "sewer") {
-      const br = laid(floor, 8, 4, 4, 83), grime = C("#4f7a3a");
-      floor.tex = (A, B) => (vnoise(A, B, 9, 84) > 0.74 && ((A + B) & 1 || vnoise(A, B, 9, 84) > 0.8) ? grime : br(A, B));
+      // brick, and grime spreading over it in patches with ragged edges
+      const grime = C("#4f7a3a");
+      floor.tex = veined(laid(floor, 8, 4, 4, 83), 8, 84, 4, 85, (n, n2, A, B) => (n > 0.72 && (n > 0.78 || ((A + B) & 1 && n2 > 0.4)) ? grime : 0));
     } else if (theme === "abyss") {
-      const fl = organic(floor, SHP.flesh, null, 85, 0.35, 0, 8, 5), vein = C(dark), deepV = C(U.face[3]);
-      floor.tex = (A, B) => {
-        const n = vnoise(A, B, 13, 86), n2 = vnoise(A, B, 7, 87);
-        if (Math.abs(n - 0.5) < 0.028) return deepV;
-        if (Math.abs(n2 - 0.5) < 0.03 && n > 0.5) return vein;
-        return fl(A, B);
-      };
+      // flesh: deep veins wandering through it, finer ones branching off
+      const vein = C(dark), deepV = C(U.face[3]);
+      floor.tex = veined(organic(floor, SHP.flesh, null, 85, 0.35, 0, 8, 5), 16, 86, 8, 87, (n, n2) => (Math.abs(n - 0.5) < 0.035 ? deepV : Math.abs(n2 - 0.5) < 0.04 && n > 0.56 ? vein : 0));
     } else {
-      // rough rock underfoot: broken plates with dark cracks between, pebbles where it is busy
-      const rough = organic(floor, SHP.pebble, null, 88, 0.42, 0, 7, 5), crack = C(shade(mid, 0.72)), plate = C(mix(mid, 1.06));
-      floor.tex = (A, B) => {
-        const n = vnoise(A, B, 7, 89), n2 = vnoise(A, B, 13, 90);
-        if (Math.abs(n - 0.5) < 0.03 && n2 > 0.35) return crack;
-        if (n > 0.5 && n < 0.6 && n2 > 0.45) return plate;
-        return rough(A, B);
-      };
+      floor.tex = roughRock(floor, C(shade(mid, 0.72)), C(mix(mid, 1.06)));
     }
   } else {
     floor = mk(MID.floor, 4, "#486a8a", { pal: ["#486a8a", "#3c5a78", "#5a7ea0", "#4e7090", "#42627e"], straight: true, depth: 1, line: "#2a4262" });
-    // rough rock underfoot: broken plates with dark cracks between, pebbles where it is busy
-    const rough = organic(floor, SHP.pebble, null, 88, 0.42, 0, 7, 5), crack = C("#34506c"), plate = C("#4e7192");
-    floor.tex = (A, B) => {
-      const n = vnoise(A, B, 7, 89), n2 = vnoise(A, B, 13, 90);
-      if (Math.abs(n - 0.5) < 0.03 && n2 > 0.35) return crack;
-      if (n > 0.5 && n < 0.58 && n2 > 0.5) return plate;
-      return rough(A, B);
-    };
+    floor.tex = roughRock(floor, C("#34506c"), C("#4e7192"));
   }
   T = {
     ".": grass, ",": grass, '"': grass, t: grass, ":": grass, ";": grass,
@@ -233,8 +270,8 @@ export function bake(m, theme) {
   const ext = extras(m, theme, MT);
 
   const TEX = new Uint32Array(256), TM = new Uint8Array(256);
-  const PA = TILE_PX.map((p) => p[2]), PB = TILE_PX.map((p) => p[3]);
-  const OFF = TILE_PX.map(([sx, sy]) => sy * W + sx);
+  const PA = Int32Array.from(TILE_PX, (p) => p[2]), PB = Int32Array.from(TILE_PX, (p) => p[3]);
+  const OFF = Int32Array.from(TILE_PX, ([sx, sy]) => sy * W + sx);
   const nb = new Array(8), dn = [];
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     const me = tmat[y * m.w + x], ch = m.g[y][x];
@@ -255,7 +292,8 @@ export function bake(m, theme) {
         if (d > lim + 1 || (d > lim && (A + B) & 2)) { TEX[k] = deepTex(A, B); TM[k] = deepId; }
         else { TEX[k] = me.tex(A, B); TM[k] = wetId; }
       }
-    } else for (let k = 0; k < 256; k++) {
+    } else if (me.tex.fill) { me.tex.fill(x, y, TEX); TM.fill(me.id); }
+    else for (let k = 0; k < 256; k++) {
       const a = PA[k], b = PB[k], A = x * 16 + a, B = y * 16 + b;
       TEX[k] = me.tex(A, B); TM[k] = me.id;
     }
@@ -284,51 +322,72 @@ export function bake(m, theme) {
     for (let k = 0; k < 256; k++) { px[base + OFF[k]] = TEX[k]; mat[base + OFF[k]] = TM[k]; }
   }
   const S = { m, theme, W, H, ox, oy, px, mat, MT };
+  const t1 = performance.now();
   // 5 — upright details in screen space
   details(S);
   if (ext.screen) ext.screen(S);
+  const t2 = performance.now();
   // 6 — two frames of water
   const px2 = px.slice();
   glints(S, px, 0); glints(S, px2, 1);
+  const t3 = performance.now();
   const frames = [px, px2].map((d) => {
     const c = document.createElement("canvas");
     c.width = W; c.height = H;
-    const g = c.getContext("2d"), img = g.createImageData(W, H);
-    new Uint32Array(img.data.buffer).set(d);
-    g.putImageData(img, 0, 0);
+    c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(d.buffer), W, H), 0, 0);
     return c;
   });
-  return { frames, ox, oy, ms: performance.now() - t0 };
+  const t4 = performance.now();
+  return { frames, ox, oy, ms: t4 - t0, parts: [t1 - t0, t2 - t1, t3 - t2, t4 - t3].map(Math.round) };
 }
+
+/** Per-texel tables for one tile: distance to each side and corner, and the rounded outer corners. */
+const R0 = 8;
+const DT = [], RT = [];
+for (let i = 0; i < 12; i++) { DT.push(new Float32Array(256)); }
+for (let k = 0; k < 256; k++) {
+  const a = TILE_PX[k][2], b = TILE_PX[k][3], da = a + 0.5, db = b + 0.5, ea = 16 - da, eb = 16 - db;
+  const r = (p, q) => (p < R0 && q < R0 ? R0 - Math.hypot(R0 - p, R0 - q) : 99);
+  [db, ea, eb, da, Math.hypot(da, db), Math.hypot(ea, db), Math.hypot(ea, eb), Math.hypot(da, eb), r(da, db), r(ea, db), r(ea, eb), r(da, eb)].forEach((v, i) => { DT[i][k] = v; });
+}
+/** Smooth noise over one tile on a lattice of `cell` texels (cell divides 16). */
+const LAT = new Float32Array(81);
+function tileNoise(x, y, cell, seed, out, amp, add) {
+  const n = 16 / cell + 1, ia = (x * 16) / cell, ib = (y * 16) / cell;
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) LAT[j * n + i] = hash(ia + i, ib + j, seed);
+  for (let k = 0; k < 256; k++) {
+    const fa = (TILE_PX[k][2] + 0.5) / cell, fb = (TILE_PX[k][3] + 0.5) / cell, i = Math.floor(fa), j = Math.floor(fb);
+    let tx = fa - i, ty = fb - j;
+    tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+    const p = LAT[j * n + i], q = LAT[j * n + i + 1], r = LAT[(j + 1) * n + i], t = LAT[(j + 1) * n + i + 1];
+    const v = (p + (q - p) * tx) * (1 - ty) + (r + (t - r) * tx) * ty;
+    out[k] = add ? out[k] + v * amp : v * amp;
+  }
+}
+const NZ = new Float32Array(256);
 
 /** One donor material biting into this tile. */
 function fringe(D, R, x, y, nb, TEX, TM, PA, PB) {
   const has = nb.map((n) => n === D);
-  const R0 = 8;
   const straight = D.straight || R.straight;
   const style = R.style === "bank" || R.style === "soft" ? R.style : R.style === "curb" && D.id === MID.pave ? "curb" : "lip";
+  const dirs = [];
+  for (let i = 0; i < 8; i++) if (has[i]) dirs.push(i);
+  if (!straight) {
+    if (has[0] && has[3]) dirs.push(8);
+    if (has[0] && has[1]) dirs.push(9);
+    if (has[1] && has[2]) dirs.push(10);
+    if (has[2] && has[3]) dirs.push(11);
+    tileNoise(x, y, 4, 3, NZ, D.amp, false);
+    tileNoise(x, y, 2, 4, NZ, 0.9, true);
+  }
   for (let k = 0; k < 256; k++) {
-    const a = PA[k], b = PB[k], da = a + 0.5, db = b + 0.5, ea = 16 - da, eb = 16 - db;
     let d = 99, dir = -1;
-    const take = (v, i) => { if (v < d) { d = v; dir = i; } };
-    if (has[0]) take(db, 0);
-    if (has[1]) take(ea, 1);
-    if (has[2]) take(eb, 2);
-    if (has[3]) take(da, 3);
-    if (has[4]) take(Math.hypot(da, db), 4);
-    if (has[5]) take(Math.hypot(ea, db), 5);
-    if (has[6]) take(Math.hypot(ea, eb), 6);
-    if (has[7]) take(Math.hypot(da, eb), 7);
-    if (!straight) {
-      // round this patch's outer corners where two sides give way at once
-      if (has[0] && has[3] && da < R0 && db < R0) take(R0 - Math.hypot(R0 - da, R0 - db), 4);
-      if (has[0] && has[1] && ea < R0 && db < R0) take(R0 - Math.hypot(R0 - ea, R0 - db), 5);
-      if (has[1] && has[2] && ea < R0 && eb < R0) take(R0 - Math.hypot(R0 - ea, R0 - eb), 6);
-      if (has[2] && has[3] && da < R0 && eb < R0) take(R0 - Math.hypot(R0 - da, R0 - eb), 7);
-    }
+    for (let i = 0; i < dirs.length; i++) { const v = DT[dirs[i]][k]; if (v < d) { d = v; dir = dirs[i]; } }
     if (d > 9) continue;
-    const A = x * 16 + a, B = y * 16 + b;
-    const dep = straight ? D.depth : D.depth + Math.floor(vnoise(A, B, 5, 3) * D.amp + vnoise(A, B, 2.5, 4) * 0.9);
+    if (dir > 7) dir -= 4;
+    const a = PA[k], b = PB[k], A = x * 16 + a, B = y * 16 + b;
+    const dep = straight ? D.depth : D.depth + Math.floor(NZ[k]);
     const up = UP[dir], down = DOWN[dir];
     if (style === "lip") {
       if (d < dep - 1 || (d < dep && !down)) { TEX[k] = D.tex(A, B); TM[k] = D.id; }
