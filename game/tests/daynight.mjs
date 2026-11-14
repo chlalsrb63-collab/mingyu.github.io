@@ -179,7 +179,11 @@ assert.ok(L.atlas().maps.town.npcs.some((n) => n.id === teller.id && n.night), "
   const W = L.setup();
   L.addPlayer(W, "f-1", L.newChar("낚시왕", "mage", []));
   const p = W.players["f-1"];
-  p.x = 34 * 16 + 8; p.y = 18 * 16 + 8; p.hitAt = -1e9;
+  // out on the dock: the plank tile with the most water round it
+  const TM = L.atlas().maps.town, wet = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => TM.g[y + dy][x + dx] === "w").length;
+  let dock = null;
+  for (let y = 1; y < TM.h - 1; y++) for (let x = 1; x < TM.w - 1; x++) if (TM.g[y][x] === "b" && TM.reach[y * TM.w + x] && (!dock || wet(x, y) > wet(...dock))) dock = [x, y];
+  p.x = dock[0] * 16 + 8; p.y = dock[1] * 16 + 8; p.hitAt = -1e9;
   const waits = (t0) => {
     let max = 0;
     for (let i = 0; i < 40; i++) {

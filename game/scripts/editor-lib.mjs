@@ -53,7 +53,7 @@ const GROUND_NAME = {
 };
 /** Korean names for every object character (any object blocks the tile). */
 const OBJECT_NAME = {
-  T: "활엽수", P: "침엽수", B: "덤불 (마을: 화분·통)", R: "바위", C: "낭떠러지 바위", H: "생울타리", F: "나무 울타리", U: "무너진 돌벽",
+  T: "활엽수", P: "침엽수", B: "덤불 (마을: 화분·통)", R: "바위", C: "낭떠러지 바위", H: "생울타리", F: "나무 울타리", U: "무너진 돌벽", W: "석축",
   h: "집 (4×3 칸)", L: "가로등", G: "표지판", Q: "이동의 돌", "/": "질주의 바람 제단", E: "천막", a: "분수", e: "갈대 (물 위)", l: "쓰러진 통나무", u: "그루터기",
   q: "부서진 기둥", O: "선돌", A: "죽은 나무", Y: "큰 버섯", K: "수정", S: "종유석", M: "광석 수레", n: "잡동사니 더미", D: "쓰레기통",
   x: "콘크리트 블록", y: "소화전", Z: "콘크리트 벽", c: "자동차", I: "예배당 의자", 0: "살덩이 눈자루", 1: "석관", 2: "세워 둔 관",
@@ -343,7 +343,7 @@ export async function checkData(dataDir = DATA_DIR) {
       else if (!nearReach(m.reach, m.w, m.h, x, y) && ![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => inside(m, x + dx, y + dy) && m.reach[(y + dy) * m.w + x + dx])) err(f, "waypoint", `이동의 돌 (${x},${y}) 옆에 걸어갈 수 있는 칸이 없습니다`);
     }
     if (d.boss != null && (!isObj(d.boss) || !mob(d.boss.k))) err(f, "boss.k", `알 수 없는 몬스터 "${d.boss && d.boss.k}"`);
-    if (Array.isArray(d.big)) d.big.forEach((b, i) => { if (!isObj(b) || !["house", "fountain", "spirit", "obelisk"].includes(b.t) || !inside(m, b.x, b.y)) err(f, `big[${i}]`, "big 항목은 지도 안의 {t: house|fountain|spirit|obelisk, x, y}여야 합니다"); });
+    if (Array.isArray(d.big)) d.big.forEach((b, i) => { if (!isObj(b) || !["house", "fountain", "spirit", "obelisk", "bld", "prop"].includes(b.t) || !inside(m, b.x, b.y)) err(f, `big[${i}]`, "big 항목은 지도 안의 {t: house|fountain|spirit|obelisk|bld|prop, x, y}여야 합니다"); });
   }
   // generated maps keep their own doors
   for (const id of Object.keys(G.MAPS)) if (!custom[id]) for (const pt of G.MAPS[id].portals) addDoor(id, pt.to, pt.x, pt.y, pt.tx, pt.ty);

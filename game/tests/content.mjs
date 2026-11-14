@@ -498,6 +498,7 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   const ch = W.S.players[W.PID].ch;
   assert.deepEqual(ch.wp, { town: 1, meadow: 1, forest: 1 }, "each map it had keeps its first stone");
   assert.deepEqual(ch.dim, { day: 0, n: 0 });
+  assert.equal(ch.tw, 2, "it is moved onto the current town layout (TOWN_REV)");
   assert.equal(ch.v, 12);
   assert.deepEqual(W.step().self.wp, { town: 1, meadow: 1, forest: 1 }, "the wire carries the masks");
   assert.equal(L.newChar("새판", "warrior", []).v, 12);

@@ -389,5 +389,5 @@ const HOUSE_REST = { hp: 0.5, mp: 0.5, xp: 8, ms: 15 * 60000, cd: 30 * 60000 };
  * door (4 × 3 at `house`, its door the two tiles under its middle), the agent beside it, and
  * where a player stands when they come out.
  */
-const HOUSE_TOWN = { map: "town", house: [3, 3], door: [[4, 6], [5, 6]], out: [4, 7], agent: [6, 7] };
+const HOUSE_TOWN = { map: "town", house: [14, 43], door: [[15, 46], [16, 46]], out: [15, 47], agent: [18, 47] };
 

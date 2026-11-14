@@ -42,7 +42,7 @@ const walkThrough = (id, door) => {
 const clearOfDoors = (m, x, y) => m.portals.every((d) => Math.hypot(x - (d.x * 16 + 8), y - 3 - (d.y * 16 + 8)) >= 12);
 
 const town = mapOf("town");
-const reachTown = flood(town, 20, 18);
+const reachTown = flood(town, ...L.atlas().maps.town.entry);
 for (const id of ROOMS) {
   const m = mapOf(id);
   assert.equal(m.theme, "interior", `${id} is an interior`);
@@ -79,7 +79,9 @@ for (const id of ROOMS) {
   const ox = Math.floor(out.x / 16), oy = Math.floor(out.y / 16);
   assert.ok(open(town, ox, oy) && reachTown[oy * town.w + ox], `${id}: you come out on open ground in town`);
   assert.ok(clearOfDoors(town, out.x, out.y), `${id}: you come out clear of the door`);
-  assert.ok(Math.abs(ox - doors[0].x) <= 2 && oy === doors[0].y + 1, `${id}: you come out on the step of the door you went in by`);
+  // (a door in a south face lets you out below it, one in an east face to its right: town.md D)
+  const east = doors.length > 1 && doors.every((d) => d.x === doors[0].x);
+  assert.ok(east ? Math.abs(oy - doors[0].y) <= 2 && ox === doors[0].x + 1 : Math.abs(ox - doors[0].x) <= 2 && oy === doors[0].y + 1, `${id}: you come out on the step of the door you went in by (${ox},${oy})`);
   // everyone inside can be talked to, and the hearth can be sat by
   for (const n of m.npcs) {
     assert.ok(open(m, n.x, n.y), `${id}: ${n.name} stands on open floor`);

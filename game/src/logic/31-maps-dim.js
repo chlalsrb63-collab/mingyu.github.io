@@ -42,7 +42,7 @@ const DIM_THEMES = {
 const dimThemesFor = (lv) => (lv < 20 ? ["crypt", "sewer"] : lv < 32 ? ["cave", "sewer"] : ["abyss", "cave", "crypt"]);
 const dimTheme = (seed, lv) => { const t = dimThemesFor(lv); return t[((seed >>> 3) >>> 0) % t.length]; };
 /** Where the town's obelisk stands, its keeper, and where someone coming back from an instance lands (tiles). */
-const DIM_TOWN = { ob: [24, 18], keeper: [23, 19], land: [22, 18] };
+const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
 
 /**
  * The monsters of an instance: the theme's own kinds within [lv-3, lv+2] (DIM.poolLv), else the kinds of every

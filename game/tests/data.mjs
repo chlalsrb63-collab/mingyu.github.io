@@ -107,9 +107,10 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
 
   // walk it: down the town's south road into the village, and back out through its north door
   const W = world(L, "나그네");
-  W.to("town", 20, 24);
+  const wDoor = maps.town.portals.find((p) => p.to === "willow");
+  W.to("town", wDoor.x, wDoor.y - 3);
   W.step();
-  W.from = "town"; W.walk(20, 27);
+  W.from = "town"; W.walk(wDoor.x, wDoor.y);
   assert.equal(W.p.map, "willow", "the town's south door leads to willow");
   const v = W.step();
   assert.equal(v.map.id, "willow");
@@ -125,7 +126,7 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   let s = W.self();
   assert.equal(sqOf(s, "sq_willow_letter").st, 1, "the letter can be taken");
   assert.equal(sqOf(s, "sq_willow_frogs").st, 0, "the frogs wait for the letter and level 5");
-  W.to("town", 20, 18);
+  W.to("town", ...L.atlas().maps.town.entry);
   assert.match(W.act({ t: "sq", a: "take", id: "sq_willow_letter" }).error, hangul, "only beside the giver (in Korean)");
   W.meet("willow_elder");
   assert.ok(W.act({ t: "sq", a: "take", id: "sq_willow_letter" }).ok);

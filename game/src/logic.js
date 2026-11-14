@@ -97,13 +97,13 @@ const pairKey = (a, b) => [a, b].sort().join("");
 /** Maps, doors, NPCs and quests made in the world map editor (docs/editor/SCHEMA.md). */
 const DATA = {
   maps: [
-    {"v":1,"id":"starlight_inn","replaces":null,"name":"모닥별 여관","theme":"interior","style":"inn","bgm":"inn","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","fffffffffffllllllllf","ffffxxxffffllllllllf","fffffffffffllllllllf","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffffffefffffffff"],"objects":["===+==@=+==~===+=+==","=w  r#r    popop *g_","=                  _","=  s   s           _","=                  _","=                  _","+                  _","+  kkkkk           _","=  -----           _","=* kkkkk        ww _","=                 ]_","=ok          mmmmm _","=k                 _","=g                *_","=                  _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"inn_maru","name":"여관 주인 마루","role":"shop","x":15,"y":9,"look":[2,3,1,"#8a6a3a","#e6cca4",0],"pose":"wipe","goods":["inn_stew","inn_bread","hp_s","hp_m","mp_s","mp_m","recall","camp"],"lines":["모닥별 여관에 어서 오시게! 스튜가 막 끓었다네.","벽난로 곁에 앉아 쉬면 온기가 오래 남지. 먼 길 떠나기 전엔 꼭 쉬어 가게."]},{"id":"inn_lira","name":"음유시인 리라","role":"talk","x":9,"y":5,"look":[1,2,0,"#7a3a5a","#fff0e4",0],"lines":["♪ 별이 모닥불에 내려앉은 밤, 꼬리 긴 영웅이 길을 떠났네 ♪","심연의 노래를 아나? 아직 끝까지 들은 사람이 없다지."]},{"id":"inn_toto","name":"졸린 나그네 토토","role":"talk","x":8,"y":3,"look":[1,0,3,"#5e6a88","#c8b090",3],"pose":"doze","lines":["음냐… 오 분만 더…","…아, 미안. 숲에서 사흘을 걸었더니 눈이 감기네."]}],"portals":[{"x":10,"y":15,"to":"town","tx":9,"ty":9}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
-    {"v":1,"id":"tales_cafe","replaces":null,"name":"테일즈 카페","theme":"interior","style":"cafe","bgm":"cafe","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","ffffffffffffffffffff","ffffxxxfffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","fuuuuuqqqqqqffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","ffffffffffefffffffff"],"objects":["==++===@=^^=~=======","=g  b#b      rrrb g_","=   %            ] _","=  s   s           _","=           m$$jmm _","=                 w_","+ k               g_","+ o          k     _","= k          o     _","=      kok   k ko  _","=*              k  _","=                  _","=  ok              _","=  k              *_","=g                 _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"cafe_moka","name":"카페 주인 모카","role":"shop","x":16,"y":2,"look":[0,3,1,"#7a4a2c","#f4e0c8",0],"pose":"wipe","goods":["cafe_coffee","cafe_cocoa","cafe_tea","cafe_scone","cafe_pie"],"lines":["어서 와요, 테일즈 카페예요! 오늘의 블렌드는 고소한 맛이 일품이죠.","사냥 나가기 전에 따뜻한 거 한 잔 어때요? 힘이 날 거예요.","벽난로 앞에 앉아 쉬면 몸이 금방 녹아요. 고양이 깨우지는 말고요!"]},{"id":"cafe_somi","name":"단골 손님 솜이","role":"talk","x":10,"y":10,"look":[3,1,0,"#d86a8a","#fff4e8",1],"pose":"sip","lines":["여기 코코아는 마시멜로가 두 개나 들어 있어!","창가 자리에 햇살이 들면 깜빡 졸게 된다니까.","바람초원 들꽃으로 우린 허브차, 꼭 마셔 봐."]},{"id":"cafe_lumi","name":"책벌레 루미","role":"talk","x":3,"y":9,"look":[1,4,2,"#3e6a8a","#d8ccff",0],"pose":"read","lines":["쉿, 지금 제일 재밌는 대목이야… 피의 심연 끝에는 뭐가 있을까?","옛날 모험가들은 이 카페에서 파티를 짰대. 지금 너처럼!"]}],"portals":[{"x":10,"y":15,"to":"town","tx":29,"ty":24}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
-    {"v":1,"id":"town_hall","replaces":null,"name":"넥서스 마을회관","theme":"interior","style":"hall","bgm":"hall","safe":true,"band":null,"w":22,"h":18,"ground":["llllllllllllllllllllll","llllllllllllllllllllll","llllllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll"],"objects":["==++=!==!=~~~=!==!=++=","=g    tt *   * tt   g_","=                    _","=                    _","=#                   _","=                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=  kkkkk      kkkkk  _","+                    _","+                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=b kkkkk      kkkkk v_","=b                   _","=b       *   *       _","=g                  g_","___________ __________"],"entry":[11,16],"spawns":[],"npcs":[{"id":"hall_bori","name":"이장 보리","role":"talk","x":11,"y":3,"look":[2,0,3,"#5a3a6a","#e6d8c0",0],"lines":["넥서스 마을회관에 온 걸 환영하네. 이 마을은 모험가들 덕에 버티고 있지.","벽에 걸린 지도를 보게. 동쪽은 바람초원, 서쪽은 네온 시티 — 그 너머는 아직 아무도 다 그리지 못했다네.","피곤하면 벽난로 곁에 앉아 쉬어 가게. 회관의 불은 꺼진 적이 없어."]},{"id":"hall_momo","name":"서기관 모모","role":"achieve","x":16,"y":3,"look":[0,2,0,"#d8a830","#fff0c0",0],"pose":"write","lines":["자네의 공적은 내가 빠짐없이 적어 두지. 저 진열장의 트로피들도 다 누군가의 이야기라네."]},{"id":"hall_pipi","name":"지도 제작자 피피","role":"collector","x":5,"y":3,"look":[3,1,2,"#3a6a42","#a8845c",1],"pose":"read","lines":["몬스터를 많이 만나 볼수록 지도가 정확해져. 도감을 채워 오면 그 땅의 힘을 나눠 줄게."]},{"id":"hall_hana","name":"게시판지기 해나","role":"daily","x":19,"y":14,"look":[3,0,1,"#4a8ad0","#ffd0a0",2],"lines":["회관 게시판에도 오늘의 과제가 붙어 있어요. 매일 아침 6시에 새로 바뀐답니다!"]}],"portals":[{"x":11,"y":17,"to":"town","tx":19,"ty":6}],"fires":[[2,4]],"waypoint":null,"fishing":false,"boss":null},
-    {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"town","safe":true,"band":null,"w":40,"h":32,"ground":["tt,t...............pp...\"..,.....tt.....",".t..tt....,........pp.,....\".......tt...","ttttt.t............pp.,,...\"..,.,tt.tt..","ttttttt\".,...\",...\"pp....,.,.....tt.tt..",".ttt,...,....,.....pp............,ttt..t","ttt...t...........,pp............tttt...","..,,.,.\"...........pp....,........\"...\".","\",.....,..\".,......pp..,......,.......,.","....,,...,...\".....pp.....,........,.,..","....,...pppppppppppppppppppppppp........","........pp.........pp.......\".pp........",".,......pp.........pp.,,......pp........",".......,pp\".,.\".oooooooo.,...ssssss.....","....\"\"\",pp.,...oooooooooo,.sswwwwwwss,..","....\"\"\"\"pp..,,oooooooooooo.swwwwwwwws...",".,.\"\"\"\",pp\"...oooooooooooobbbbwwwwwws.,.","....\"\"\".pp....oooooooooooo.swwwwwwwws..,","....\"\"\".pp....oooooooooooo,sswwwwwwss...","......\",pp.....oooooooooo....ssssss.....",".....,..pp.\"....oooooooo......pp...,,...",".,.,.,\".pp\"......\",pp.........pp,,.....,","...,....pppppppppppppppppppppppp....,...","....,,..pp,..,,..,....,..\"....pp........","..........,.....,..............,..\".,...","...,.\",\".,,.,............,...\"\".........","......,.....\".......,........,,.........",".....,..,..,....,..............,..,..,..","..........,,..,....,......\".\"...........","..tt.t...............,..........,,..tt.t","t..tttt\".,.....,..\"...,...........t,tt,t",".ttt.t...............,.....,.....ttttttt","...t.tt.,.....\"..,.\"....\".......\"t,..t,t"],"objects":["TTPTTTTTTTTTTTTTTT    TPTTPPTTTTTTTTTTTP","TTTTTTTPTTTTTTPTPT    TTTTTTTPTPTTTTTTTT","TT                                    PT","TT         HH     L  L    HH          TT","TT    hhhh   hhhh           hhhh      TT","TT    hhhh   hhhh     G     hhhh      PT","TT    hhhh   hhhh           hhhh   u  TT","TT                                    TT","TT                                  B TT","PT B                                  TT","TT                                    TT","TT                                    TT","TT FFFFF       L        L             TT","TT F   F   B                 e    e   TT","TP F   F                              TT","PT F   F           T                  TT","TP F   F                           e  PP","PT F   F   B                     e    PT","TP FF FF                              TP","TT             L        L             TT","TT  u                                 TT","TP                                    TT","TT                                    TT","TT  hhhh                       hhhh   TP","TT  hhhh      hhhh      B      hhhh   PT","TT  hhhh      hhhh             hhhh   TP","PT          B hhhh        B         B PT","TT        u      E    u               TP","PT                                    TT","PT                                    PT","TPPTPTPTTTTTTTTPTTTTTPPTTPTTTPTTTTTTPTTP","TPTTPTTTTTTPTTTTTTTTTTTTTTTPTTTTTPTTTTPT"],"entry":[20,4],"spawns":[],"npcs":[{"id":"willow_elder","name":"촌장 버들","role":"quest","x":18,"y":13,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 도와주면 섭섭지 않게 사례하지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":25,"y":16,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."]},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":15,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 울타리 안은 밟으면 안 돼!","넥서스 광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":22,"y":25,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 넥서스 광장이야. 거기서 동쪽은 바람초원이고."]}],"portals":[{"x":19,"y":1,"to":"town","tx":19,"ty":25},{"x":20,"y":1,"to":"town","tx":20,"ty":25}],"fires":[[19,25]],"waypoint":[22,7],"fishing":true,"boss":null,"marks":[{"x":22,"y":5,"kind":"sign","label":"↑ 넥서스 광장","to":"town"}]},
+    {"v":1,"id":"starlight_inn","replaces":null,"name":"모닥별 여관","theme":"interior","style":"inn","bgm":"inn","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","fffffffffffllllllllf","ffffxxxffffllllllllf","fffffffffffllllllllf","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffffffefffffffff"],"objects":["===+==@=+==~===+=+==","=w  r#r    popop *g_","=                  _","=  s   s           _","=                  _","=                  _","+                  _","+  kkkkk           _","=  -----           _","=* kkkkk        ww _","=                 ]_","=ok          mmmmm _","=k                 _","=g                *_","=                  _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"inn_maru","name":"여관 주인 마루","role":"shop","x":15,"y":9,"look":[2,3,1,"#8a6a3a","#e6cca4",0],"pose":"wipe","goods":["inn_stew","inn_bread","hp_s","hp_m","mp_s","mp_m","recall","camp"],"lines":["모닥별 여관에 어서 오시게! 스튜가 막 끓었다네.","벽난로 곁에 앉아 쉬면 온기가 오래 남지. 먼 길 떠나기 전엔 꼭 쉬어 가게."]},{"id":"inn_lira","name":"음유시인 리라","role":"talk","x":9,"y":5,"look":[1,2,0,"#7a3a5a","#fff0e4",0],"lines":["♪ 별이 모닥불에 내려앉은 밤, 꼬리 긴 영웅이 길을 떠났네 ♪","심연의 노래를 아나? 아직 끝까지 들은 사람이 없다지."]},{"id":"inn_toto","name":"졸린 나그네 토토","role":"talk","x":8,"y":3,"look":[1,0,3,"#5e6a88","#c8b090",3],"pose":"doze","lines":["음냐… 오 분만 더…","…아, 미안. 숲에서 사흘을 걸었더니 눈이 감기네."]}],"portals":[{"x":10,"y":15,"to":"town","tx":68,"ty":51}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
+    {"v":1,"id":"tales_cafe","replaces":null,"name":"테일즈 카페","theme":"interior","style":"cafe","bgm":"cafe","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","ffffffffffffffffffff","ffffxxxfffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","fuuuuuqqqqqqffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","ffffffffffefffffffff"],"objects":["==++===@=^^=~=======","=g  b#b      rrrb g_","=   %            ] _","=  s   s           _","=           m$$jmm _","=                 w_","+ k               g_","+ o          k     _","= k          o     _","=      kok   k ko  _","=*              k  _","=                  _","=  ok              _","=  k              *_","=g                 _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"cafe_moka","name":"카페 주인 모카","role":"shop","x":16,"y":2,"look":[0,3,1,"#7a4a2c","#f4e0c8",0],"pose":"wipe","goods":["cafe_coffee","cafe_cocoa","cafe_tea","cafe_scone","cafe_pie"],"lines":["어서 와요, 테일즈 카페예요! 오늘의 블렌드는 고소한 맛이 일품이죠.","사냥 나가기 전에 따뜻한 거 한 잔 어때요? 힘이 날 거예요.","벽난로 앞에 앉아 쉬면 몸이 금방 녹아요. 고양이 깨우지는 말고요!"]},{"id":"cafe_somi","name":"단골 손님 솜이","role":"talk","x":10,"y":10,"look":[3,1,0,"#d86a8a","#fff4e8",1],"pose":"sip","lines":["여기 코코아는 마시멜로가 두 개나 들어 있어!","창가 자리에 햇살이 들면 깜빡 졸게 된다니까.","바람초원 들꽃으로 우린 허브차, 꼭 마셔 봐."]},{"id":"cafe_lumi","name":"책벌레 루미","role":"talk","x":3,"y":9,"look":[1,4,2,"#3e6a8a","#d8ccff",0],"pose":"read","lines":["쉿, 지금 제일 재밌는 대목이야… 피의 심연 끝에는 뭐가 있을까?","옛날 모험가들은 이 카페에서 파티를 짰대. 지금 너처럼!"]}],"portals":[{"x":10,"y":15,"to":"town","tx":79,"ty":50}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
+    {"v":1,"id":"town_hall","replaces":null,"name":"넥서스 마을회관","theme":"interior","style":"hall","bgm":"hall","safe":true,"band":null,"w":22,"h":18,"ground":["llllllllllllllllllllll","llllllllllllllllllllll","llllllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll"],"objects":["==++=!==!=~~~=!==!=++=","=g    tt *   * tt   g_","=                    _","=                    _","=#                   _","=                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=  kkkkk      kkkkk  _","+                    _","+                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=b kkkkk      kkkkk v_","=b                   _","=b       *   *       _","=g                  g_","___________ __________"],"entry":[11,16],"spawns":[],"npcs":[{"id":"hall_bori","name":"이장 보리","role":"talk","x":11,"y":3,"look":[2,0,3,"#5a3a6a","#e6d8c0",0],"lines":["넥서스 마을회관에 온 걸 환영하네. 이 마을은 모험가들 덕에 버티고 있지.","벽에 걸린 지도를 보게. 동쪽은 바람초원, 서쪽은 네온 시티 — 그 너머는 아직 아무도 다 그리지 못했다네.","피곤하면 벽난로 곁에 앉아 쉬어 가게. 회관의 불은 꺼진 적이 없어."]},{"id":"hall_momo","name":"서기관 모모","role":"achieve","x":16,"y":3,"look":[0,2,0,"#d8a830","#fff0c0",0],"pose":"write","lines":["자네의 공적은 내가 빠짐없이 적어 두지. 저 진열장의 트로피들도 다 누군가의 이야기라네."]},{"id":"hall_pipi","name":"지도 제작자 피피","role":"collector","x":5,"y":3,"look":[3,1,2,"#3a6a42","#a8845c",1],"pose":"read","lines":["몬스터를 많이 만나 볼수록 지도가 정확해져. 도감을 채워 오면 그 땅의 힘을 나눠 줄게."]},{"id":"hall_hana","name":"게시판지기 해나","role":"daily","x":19,"y":14,"look":[3,0,1,"#4a8ad0","#ffd0a0",2],"lines":["회관 게시판에도 오늘의 과제가 붙어 있어요. 매일 아침 6시에 새로 바뀐답니다!"]}],"portals":[{"x":11,"y":17,"to":"town","tx":49,"ty":26}],"fires":[[2,4]],"waypoint":null,"fishing":false,"boss":null},
+    {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"town","safe":true,"band":null,"w":40,"h":32,"ground":["tt,t...............pp...\"..,.....tt.....",".t..tt....,........pp.,....\".......tt...","ttttt.t............pp.,,...\"..,.,tt.tt..","ttttttt\".,...\",...\"pp....,.,.....tt.tt..",".ttt,...,....,.....pp............,ttt..t","ttt...t...........,pp............tttt...","..,,.,.\"...........pp....,........\"...\".","\",.....,..\".,......pp..,......,.......,.","....,,...,...\".....pp.....,........,.,..","....,...pppppppppppppppppppppppp........","........pp.........pp.......\".pp........",".,......pp.........pp.,,......pp........",".......,pp\".,.\".oooooooo.,...ssssss.....","....\"\"\",pp.,...oooooooooo,.sswwwwwwss,..","....\"\"\"\"pp..,,oooooooooooo.swwwwwwwws...",".,.\"\"\"\",pp\"...oooooooooooobbbbwwwwwws.,.","....\"\"\".pp....oooooooooooo.swwwwwwwws..,","....\"\"\".pp....oooooooooooo,sswwwwwwss...","......\",pp.....oooooooooo....ssssss.....",".....,..pp.\"....oooooooo......pp...,,...",".,.,.,\".pp\"......\",pp.........pp,,.....,","...,....pppppppppppppppppppppppp....,...","....,,..pp,..,,..,....,..\"....pp........","..........,.....,..............,..\".,...","...,.\",\".,,.,............,...\"\".........","......,.....\".......,........,,.........",".....,..,..,....,..............,..,..,..","..........,,..,....,......\".\"...........","..tt.t...............,..........,,..tt.t","t..tttt\".,.....,..\"...,...........t,tt,t",".ttt.t...............,.....,.....ttttttt","...t.tt.,.....\"..,.\"....\".......\"t,..t,t"],"objects":["TTPTTTTTTTTTTTTTTT    TPTTPPTTTTTTTTTTTP","TTTTTTTPTTTTTTPTPT    TTTTTTTPTPTTTTTTTT","TT                                    PT","TT         HH     L  L    HH          TT","TT    hhhh   hhhh           hhhh      TT","TT    hhhh   hhhh     G     hhhh      PT","TT    hhhh   hhhh           hhhh   u  TT","TT                                    TT","TT                                  B TT","PT B                                  TT","TT                                    TT","TT                                    TT","TT FFFFF       L        L             TT","TT F   F   B                 e    e   TT","TP F   F                              TT","PT F   F           T                  TT","TP F   F                           e  PP","PT F   F   B                     e    PT","TP FF FF                              TP","TT             L        L             TT","TT  u                                 TT","TP                                    TT","TT                                    TT","TT  hhhh                       hhhh   TP","TT  hhhh      hhhh      B      hhhh   PT","TT  hhhh      hhhh             hhhh   TP","PT          B hhhh        B         B PT","TT        u      E    u               TP","PT                                    TT","PT                                    PT","TPPTPTPTTTTTTTTPTTTTTPPTTPTTTPTTTTTTPTTP","TPTTPTTTTTTPTTTTTTTTTTTTTTTPTTTTTPTTTTPT"],"entry":[20,4],"spawns":[],"npcs":[{"id":"willow_elder","name":"촌장 버들","role":"quest","x":18,"y":13,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 도와주면 섭섭지 않게 사례하지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":25,"y":16,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."]},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":15,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 울타리 안은 밟으면 안 돼!","넥서스 광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":22,"y":25,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 넥서스 광장이야. 거기서 동쪽은 바람초원이고."]}],"portals":[{"x":19,"y":1,"to":"town","tx":49,"ty":71},{"x":20,"y":1,"to":"town","tx":50,"ty":71}],"fires":[[19,25]],"waypoint":[22,7],"fishing":true,"boss":null,"marks":[{"x":22,"y":5,"kind":"sign","label":"↑ 넥서스 광장","to":"town"}]},
   ],
-  links: [{"map":"town","x":19,"y":27,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":20,"y":27,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"},{"map":"town","x":29,"y":23,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":30,"y":23,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":18,"y":5,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":19,"y":5,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":9,"y":8,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":10,"y":8,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"}],
-  npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":21,"y":26,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":26,"y":12,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","전직은 되돌릴 수 없다네. 신중하게 고르게."]}],
+  links: [{"map":"town","x":49,"y":73,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":50,"y":73,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"},{"map":"town","x":79,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":80,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":49,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":50,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":67,"y":51,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":67,"y":52,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"}],
+  npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":52,"y":70,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":70,"y":23,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","전직은 되돌릴 수 없다네. 신중하게 고르게."]}],
   quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"넥서스 광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":5,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false}]},
 };
 // ───────────────────────────── jobs and stats: tables ─────────────────────────────
@@ -690,7 +690,7 @@ const HOUSE_REST = { hp: 0.5, mp: 0.5, xp: 8, ms: 15 * 60000, cd: 30 * 60000 };
  * door (4 × 3 at `house`, its door the two tiles under its middle), the agent beside it, and
  * where a player stands when they come out.
  */
-const HOUSE_TOWN = { map: "town", house: [3, 3], door: [[4, 6], [5, 6]], out: [4, 7], agent: [6, 7] };
+const HOUSE_TOWN = { map: "town", house: [14, 43], door: [[15, 46], [16, 46]], out: [15, 47], agent: [18, 47] };
 
 // ───────────────────────────── life skills: tables (docs/design/life-and-coop.md B) ─────────────────────────────
 // Six life skills, levels 1–50 on one curve, separate from combat level and weapon mastery. What they give is
@@ -2130,7 +2130,7 @@ const DIM_THEMES = {
 const dimThemesFor = (lv) => (lv < 20 ? ["crypt", "sewer"] : lv < 32 ? ["cave", "sewer"] : ["abyss", "cave", "crypt"]);
 const dimTheme = (seed, lv) => { const t = dimThemesFor(lv); return t[((seed >>> 3) >>> 0) % t.length]; };
 /** Where the town's obelisk stands, its keeper, and where someone coming back from an instance lands (tiles). */
-const DIM_TOWN = { ob: [24, 18], keeper: [23, 19], land: [22, 18] };
+const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
 
 /**
  * The monsters of an instance: the theme's own kinds within [lv-3, lv+2] (DIM.poolLv), else the kinds of every
@@ -3290,92 +3290,276 @@ function windTouch(S, p, now) {
     return;
   }
 }
+// ───────────────────────────── 넥서스 광장: the forest refuge (docs/design/town.md) ─────────────────────────────
+// A cosy, lamp-lit centre (plaza, market, hearths) fading outward into the woods; along the north edge a
+// palisade, watch posts and the creeping blight where the darkness-eaten forest presses in. Laid by hand on a
+// 100 × 76 grid (the tiles in town.md B–D are frozen: doors, interiors, tests and other docs read them); the
+// seed only varies the scatter. Height is visual only: the terrace's stone wall `W` and its steps.
+
+/** The town's layout revision: a sheet saved in town under an older one wakes at the entry (40 migrate). */
+const TOWN_REV = 2;
+/**
+ * The town's named buildings (town.md D, frozen): sign name and icon, footprint, which face the door is on
+ * ("s" the row below, "e" the column to the right, "" none) and its two door tiles. The doors themselves come
+ * from data/links.json (and HOUSE_TOWN for 내 집): this table places the building, its door art and its sign.
+ */
+const TOWN_BLD = [
+  { k: "hall", name: "넥서스 마을회관", icon: "banner", x: 46, y: 20, w: 8, h: 5, door: "s", d: [[49, 25], [50, 25]] },
+  { k: "library", name: "부엉이 도서관", icon: "book", x: 33, y: 16, w: 7, h: 5, door: "s", d: [[36, 21], [37, 21]] },
+  { k: "dojo", name: "넥서스 수련관", icon: "sword", x: 60, y: 16, w: 6, h: 4, door: "s", d: [[62, 20], [63, 20]] },
+  { k: "store", name: "다람쥐 잡화점", icon: "bag", x: 63, y: 33, w: 5, h: 4, door: "s", d: [[65, 37], [66, 37]] },
+  { k: "smithy", name: "캉캉대장간", icon: "anvil", x: 70, y: 33, w: 6, h: 4, door: "s", d: [[72, 37], [73, 37]] },
+  { k: "merc", name: "늑대발 용병사무소", icon: "swords", x: 83, y: 32, w: 6, h: 4, door: "s", d: [[85, 36], [86, 36]] },
+  { k: "lab", name: "보글연금공방", icon: "flask", x: 78, y: 25, w: 5, h: 3, door: "s", d: [[80, 28], [81, 28]] },
+  { k: "diner", name: "쥬쥬식당 · 선술집", icon: "bowl", x: 70, y: 45, w: 6, h: 4, door: "s", d: [[72, 49], [73, 49]] },
+  { k: "cafe", name: "테일즈 카페", icon: "cup", x: 78, y: 46, w: 5, h: 3, door: "s", d: [[79, 49], [80, 49]] },
+  { k: "inn", name: "모닥별 여관", icon: "bed", x: 61, y: 50, w: 6, h: 4, door: "e", d: [[67, 51], [67, 52]] },
+  { k: "boutique", name: "루루 의상실", icon: "shirt", x: 40, y: 50, w: 5, h: 3, door: "e", d: [[45, 51], [45, 52]] },
+  { k: "pet", name: "몽글 펫 돌봄집", icon: "paw", x: 28, y: 44, w: 4, h: 3, door: "s", d: [[29, 47], [30, 47]] },
+  { k: "apt", name: "동동아파트", icon: "house", x: 8, y: 30, w: 5, h: 4, door: "s", d: [[10, 34], [11, 34]] },
+  { k: "home", name: "내 집", icon: "house", x: 14, y: 43, w: 4, h: 3, door: "s", d: [[15, 46], [16, 46]] },
+  { k: "barn", name: "마을 창고", icon: "crate", x: 30, y: 33, w: 5, h: 4, door: "", d: [] },
+];
+/** Doorless villagers' cottages (legacy house() 4 × 3): x, y, look. */
+const TOWN_COTTAGES = [[4, 23, 0], [11, 22, 2], [4, 36, 3], [10, 36, 1], [4, 44, 2]];
+
+/** A named building or a prop from an editor map file, its fields whitelisted (36-custom-maps.js fromEditor). */
+function bigClean(b) {
+  const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
+  const out = { t: b.t, k: str(b.k, 16), x: b.x | 0, y: b.y | 0, w: clamp(b.w | 0, 1, 12), h: clamp(b.h | 0, 1, 12) };
+  if (b.t === "bld") Object.assign(out, { door: b.door === "s" || b.door === "e" ? b.door : "", dx: clamp(b.dx | 0, -1, 11), name: str(b.name, 24), icon: str(b.icon, 12) });
+  return out;
+}
+
 function buildTown() {
-  const box = { seed: 1101 };
-  const m = blank("town", "넥서스 광장", 40, 30, ".");
+  const W = 100, H = 76, S0 = 2203;
+  const m = blank("town", "넥서스 광장", W, H, ".");
   m.safe = true;
   m.bgm = "town";
-  m.entry = [20, 18];
-  scatter(m, box, m.g, ",", 0.14, ".");
-  scatter(m, box, m.g, '"', 0.04, ".");
-  border(m, "T", 2);
-  rect(m.g, 14, 10, 25, 19, "o");
-  road(m, 26, 14, 39, 14, "p");
-  road(m, 0, 14, 13, 14, "p");
-  road(m, 19, 4, 19, 9, "p");
-  road(m, 19, 20, 19, 25, "p");
-  road(m, 9, 9, 9, 14, "p");
-  road(m, 29, 8, 29, 14, "p");
-  road(m, 9, 14, 9, 20, "p");
-  house(m, 8, 5, 0);
-  house(m, 27, 4, 1);
-  house(m, 7, 21, 5);
-  house(m, 28, 20, 3);
-  house(m, 17, 2, 2);
-  rect(m.o, 19, 14, 20, 15, "a");
-  m.big.push({ t: "fountain", x: 19, y: 14 });
-  for (const [x, y] of [[14, 10], [25, 10], [14, 19], [25, 19]]) m.o[y][x] = "L";
-  for (let x = 4; x <= 12; x++) if (x !== 9 && x !== 10) m.o[26][x] = "F";
-  for (const [x, y] of [[5, 12], [33, 9], [5, 17], [13, 5], [24, 6]]) m.o[y][x] = "B";
-  for (const [x, y] of [[32, 13], [6, 13]]) m.o[y][x] = "G";
-  // the market corner by the supply shop: stacked goods and a stall's awning
-  for (const [x, y] of [[12, 8], [13, 8], [12, 10], [7, 9], [6, 10]]) m.o[y][x] = "B";
-  m.o[10][13] = "E";
-  // a pond to fish in, with a plank dock out over the water and reeds along the far bank
-  for (let y = 16; y <= 21; y++) for (let x = 31; x <= 38; x++) {
-    const d = ((x - 35) / 3.2) ** 2 + ((y - 18.5) / 2) ** 2;
-    if (d < 1) { m.g[y][x] = "w"; m.o[y][x] = " "; } else if (d < 1.9 && x < 38 && m.o[y][x] !== "h") { m.g[y][x] = "s"; if (m.o[y][x] !== "T") m.o[y][x] = " "; }
+  m.entry = [50, 43];
+  const g = m.g, o = m.o, hh = (x, y, s) => h2(x, y, S0 + s);
+  const at = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+  const O = (x, y, ch) => { if (at(x, y)) o[y][x] = ch; };
+  const both = (x0, y0, x1, y1, gc) => { rect(g, x0, y0, x1, y1, gc); rect(o, x0, y0, x1, y1, " "); };
+  const ell = (cx, cy, rx, ry, f) => {
+    for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+      const d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+      if (d <= 1 && at(x, y)) f(x, y, d);
+    }
+  };
+  // tiles the scatter leaves open: routes, doors, the people and the ground round them
+  const keep = new Uint8Array(W * H);
+  const K = (x0, y0, x1, y1) => { for (let y = Math.max(0, y0); y <= Math.min(H - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(W - 1, x1); x++) keep[y * W + x] = 1; };
+  /** A prop over a footprint of `a` (scene2d draws it whole). */
+  const prop = (k, x, y, w, h) => { rect(o, x, y, x + w - 1, y + h - 1, "a"); m.big.push({ t: "prop", k, x, y, w, h }); K(x - 1, y - 1, x + w, y + h); };
+
+  // ── the ground: meadow grass with a little variety
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const r = hh(x, y, 1); g[y][x] = r < 0.13 ? "," : r < 0.16 ? '"' : "."; }
+
+  // ── the woods all round, and beyond the north wall the dead forest the darkness ate
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const r = hh(x, y, 3);
+    if (y <= 8 && x >= 26) {
+      if (y >= 2) g[y][x] = hh(x, y, 2) < 0.18 && y < 4 ? ":" : "&";
+      o[y][x] = y < 2 ? (r < 0.5 ? "P" : "T") : r < 0.16 ? "A" : r < 0.26 ? "P" : r < 0.3 ? "R" : " ";
+    } else if (x < 2 || x > 95 || y > 71 || y < 2 || y <= 8) o[y][x] = r < 0.62 ? "T" : "P";
   }
-  for (let x = 31; x <= 34; x++) { m.g[18][x] = "b"; m.o[18][x] = " "; }
-  for (const [x, y] of [[36, 17], [37, 19], [35, 20]]) if (m.g[y][x] === "w") m.o[y][x] = "e";
-  // hedges framing the plaza's south side
-  for (const x of [15, 16, 17, 22, 23, 24]) m.o[20][x] = "H";
-  m.npcs.push(
-    { id: "shop", name: "보급상 리나", role: "shop", x: 10, y: 9, look: [4, 0, 1, "#8a4a6a"] },
-    { id: "smith", name: "대장장이 볼칸", role: "smith", x: 30, y: 8, look: [0, 1, 0, "#6a4a38"] },
-    { id: "elder", name: "관리자 엘더윈", role: "elder", x: 19, y: 11, look: [5, 0, 0, "#3f5a9a"] },
-    { id: "train", name: "수련관 카이", role: "train", x: 23, y: 12, look: [1, 2, 0, "#7a2e2e"] },
-    { id: "bank", name: "창고지기 도담", role: "bank", x: 7, y: 12, look: [2, 0, 0, "#6a5a3a"],
-      say: "맡길 물건이 있나? 캐릭터마다 60칸, 골드도 따로 맡아 두지. 같은 물건은 한 칸에 모아 준다네." },
-    { id: "guard", name: "경비병 토비", role: "talk", x: 35, y: 13, look: [1, 0, 0, "#5e6470"],
-      say: "동쪽 문은 바람초원, 서쪽 문은 네온 시티로 이어져. 길은 갈라지고 막히기도 하니 샛길을 살펴봐 — 막다른 곳엔 보물 상자나 모닥불, 그리고 가끔은 땅속으로 내려가는 계단이 있거든. 문 이름 옆의 레벨을 보고, 감당할 만한 곳부터 가!" },
-  );
-  // the hub's services stand around the plaza: a waypoint stone with its keeper, the
-  // collector, the hall of records and the board of daily tasks
-  m.npcs.push(
-    { id: "warp", name: "이동술사 노바", role: "warp", x: 15, y: 17, look: [2, 3, 0, "#4a6ac8"],
-      say: "이동의 돌을 깨우면 어디서든 돌과 돌 사이를 건널 수 있어. 사냥터마다 입구 가까이에 하나씩 있지." },
-    { id: "collector", name: "학자 몽", role: "collector", x: 24, y: 16, look: [3, 4, 0, "#7a6a3a"],
-      say: "같은 몬스터를 서른 마리 잡으면 도감에 오르지. 한 지역을 다 채우면 그 땅이 힘을 빌려준다네." },
-    { id: "achieve", name: "기록관 루", role: "achieve", x: 24, y: 14, look: [4, 1, 0, "#8a3a5a"],
-      say: "자네의 모험은 모두 이 비석에 새겨지네. 이름난 업적에는 칭호가 따르지." },
-    { id: "daily", name: "게시판지기 하루", role: "daily", x: 15, y: 13, look: [0, 2, 0, "#3a7a5a"],
-      say: "매일 아침 6시에 새 과제가 붙는다네. 셋을 다 하면 보상 상자도 있지!" },
-    // the costume shop, by the house on the south-west corner of the square, off both roads
-    { id: "costume", name: "의상실 주인 루루", role: "costume", x: 13, y: 22, look: [3, 1, 0, "#d86a9a"],
-      say: "어서 와요! 모자, 옷, 망토, 안경, 무기 외형까지 — 능력치는 그대로, 모습만 바뀌어요." },
-  );
-  m.o[16][16] = "Q";
-  WP.town = { x: 16, y: 16, ax: 17, ay: 16 };
-  m.marks = [
-    { x: 16, y: 16, kind: "waypoint" },
-    { x: 32, y: 13, kind: "sign", label: "바람초원 Lv.1–25 →", to: "meadow" },
-    { x: 6, y: 13, kind: "sign", label: "← 네온 시티 Lv.53–81", to: "city" },
-  ];
-  m.gates = { east: { t: [[38, 14], [38, 15]], a: [[36, 14], [36, 15]] }, west: { t: [[1, 14], [1, 15]], a: [[3, 14], [3, 15]] } };
-  FIRES.town.push([22, 22]);
-  // the spirit tree (정령나무) stands behind the plaza's campfire; its trunk blocks one tile
-  m.o[20][20] = "T";
-  m.big.push({ t: "spirit", x: 20, y: 20 });
-  // 차원의 오벨리스크 east of the spirit tree, its keeper beside it (64-dim.js; a solid tile under the big piece)
-  m.o[DIM_TOWN.ob[1]][DIM_TOWN.ob[0]] = "a";
+  // the forest margin thins inward: a ragged belt a few trees deep
+  for (let y = 9; y < 72; y++) for (let x = 2; x < 96; x++) {
+    const d = Math.min(x - 2, 95 - x, 71 - y, x < 26 ? y - 9 : 99);
+    if (d > 4 || o[y][x] !== " ") continue;
+    const r = hh(x, y, 6);
+    if (hh(x, y, 5) < 0.75 - d * 0.16) o[y][x] = r < 0.6 ? "T" : r < 0.85 ? "P" : "B";
+  }
+  // hills: the north-west mound and 노을 언덕 in the south-east (solid grassy rises with trees round them)
+  ell(10, 10, 6.5, 5.5, (x, y) => { o[y][x] = "C"; });
+  ell(89, 64, 6, 6, (x, y) => { o[y][x] = "C"; });
+  ell(89, 64, 8, 8, (x, y) => { if (o[y][x] === " " && hh(x, y, 7) < 0.4) o[y][x] = hh(x, y, 8) < 0.5 ? "T" : "P"; });
+
+  // ── water: the stream down its ravine into the pond, the pond's outflow south into the woods
+  both(22, 0, 23, 52, "w");
+  for (let y = 8; y <= 24; y++) { rect(o, 20, y, 21, y, "C"); rect(o, 24, y, 25, y, "C"); }
+  ell(18, 56, 7.5, 5.5, (x, y) => { g[y][x] = "w"; o[y][x] = " "; });
+  ell(18, 56, 9.2, 7, (x, y) => { if (g[y][x] !== "w") { g[y][x] = "s"; if ("TPB".includes(o[y][x])) o[y][x] = " "; } });
+  both(14, 61, 15, 75, "w");
+  for (let y = 25; y <= 50; y++) for (const x of [21, 24]) if (g[y][x] !== "w" && hh(x, y, 9) < 0.7) g[y][x] = "s";
+  ell(18, 56, 7.5, 5.5, (x, y, d) => { if (d > 0.62 && hh(x, y, 10) < 0.28 && !(y >= 55 && y <= 57 && x >= 21)) o[y][x] = "e"; });
+  for (let x = 23; x <= 26; x++) { g[56][x] = "b"; o[56][x] = " "; }
+  K(22, 55, 27, 57);
+
+  // ── the plaza: a stone ellipse round the fountain
+  ell(50, 40, 12.5, 8.5, (x, y) => { g[y][x] = "o"; o[y][x] = " "; });
+  K(37, 31, 63, 49);
+
+  // ── roads: west gate ← plaza → east gate, south to 버드나무 마을; then the lanes
+  const lay = (x0, y0, x1, y1) => { road(m, x0, y0, x1, y1, "p"); K(Math.min(x0, x1) - 1, Math.min(y0, y1) - 1, Math.max(x0, x1) + 2, Math.max(y0, y1) + 2); };
+  lay(0, 40, 38, 40); lay(62, 40, 98, 40); lay(49, 48, 49, 74);
+  both(0, 40, 1, 41, "p"); both(98, 40, 99, 41, "p");
+  // the south road ends at 버드나무 마을's door (49–50, 73) in a little clearing; nothing past it
+  rect(o, 46, 64, 53, 71, " "); rect(o, 48, 74, 51, 75, "T"); for (const x of [47, 48, 51, 52]) rect(o, x, 72, x, 73, "P");
+  // the bridges: the west road's, and the footbridge to 내 집 and the pet house
+  both(22, 40, 23, 41, "b"); both(22, 46, 23, 46, "b");
+  for (let x = 18; x <= 27; x++) if (x !== 22 && x !== 23) both(x, 46, x, 46, "p");
+  for (let x = 14; x <= 31; x++) if (x !== 22 && x !== 23) both(x, 47, x, 47, x % 3 ? "p" : "r");
+  K(13, 45, 32, 48); K(24, 42, 40, 48);
+  // the lane up to 동동아파트 between two cottages, and the lane north along the stream to the gardens
+  both(8, 34, 9, 39, "p"); both(8, 35, 12, 35, "p"); K(7, 33, 13, 39);
+  for (let y = 26; y <= 39; y++) both(16, y, 17, y, y % 4 ? "p" : "r");
+  both(6, 27, 17, 27, "p"); K(5, 26, 18, 39);
+  // the market lane north to 보글연금공방, the lane south to 모닥별 뜰, the square itself
+  both(80, 28, 81, 39, "r"); K(79, 27, 82, 40);
+  both(76, 42, 77, 49, "r"); K(75, 42, 78, 50);
+  both(68, 50, 80, 56, "r"); K(67, 49, 81, 57);
+  // the forge yard, open to the road; the gravel before the mercenaries' lodge
+  both(76, 33, 79, 38, "r"); K(76, 33, 79, 39);
+  rect(g, 82, 36, 90, 39, "r"); K(82, 36, 97, 42);
+  // stepping stones from the pond clearing to the south road
+  for (let x = 26; x <= 48; x++) { const y = 60 + Math.round(Math.sin(x / 4) * 1.2); if ((x & 1) || x > 44) g[y][x] = "r"; o[y][x] = " "; K(x, y - 1, x, y + 1); }
+  ell(29, 60, 3.2, 2.6, (x, y) => { o[y][x] = " "; keep[y * W + x] = 1; });
+
+  // ── 윗마을: the upper terrace, its promenade, the stone retaining wall and two flights of steps
+  for (let y = 10; y <= 28; y++) for (let x = 26; x <= 79; x++) if (o[y][x] === " ") { const r = hh(x, y, 11); g[y][x] = r < 0.3 ? "," : r < 0.36 ? '"' : "."; }
+  both(30, 26, 75, 27, "r"); K(29, 25, 76, 28);
+  for (let x = 30; x <= 72; x++) o[29][x] = "W";
+  for (let y = 10; y <= 29; y++) o[y][29] = "W";
+  both(48, 29, 52, 30, "v"); both(35, 29, 36, 30, "v");
+  for (const x of [47, 53, 34, 37]) for (let y = 28; y <= 30; y++) o[y][x] = "W";
+  // from the steps down to the plaza; the library's path; the gentle ramp at the east end
+  both(48, 31, 52, 32, "o");
+  both(35, 31, 36, 35, "p");
+  for (let x = 35; x <= 41; x++) for (const y of [34, 35]) if (g[y][x] !== "o") both(x, y, x, y, "p");
+  K(33, 28, 41, 36); K(46, 28, 54, 33);
+  for (let y = 28; y <= 30; y++) for (let x = 73; x <= 79; x++) if (o[y][x] === " ") g[y][x] = "r";
+  K(73, 24, 79, 30);
+  // paths on the terrace to each door, the hall's paving
+  both(36, 21, 37, 25, "p"); both(62, 20, 63, 25, "p"); both(48, 25, 51, 25, "o");
+  K(31, 20, 42, 25); K(58, 19, 66, 25); K(44, 24, 55, 26);
+  // the training yard: packed earth for the dummies
+  both(66, 17, 72, 25, "r"); K(65, 16, 73, 25);
+  // the darkness's tongues reaching under the palisade
+  for (const cx of [44, 80]) for (let y = 10; y <= 11; y++) for (let x = cx - 2 + (y - 10); x <= cx + 2 - (y - 10); x++) if (o[y][x] === " ") g[y][x] = "&";
+
+  // ── the palisade along the north and the east, the woods behind it
+  for (let x = 26; x <= 95; x++) { o[9][x] = "F"; g[9][x] = "&"; }
+  for (let y = 9; y <= 32; y++) { o[y][95] = "F"; g[y][95] = "&"; }
+  K(30, 10, 94, 12);
+
+  // ── the buildings (TOWN_BLD) and the villagers' cottages
+  for (const b of TOWN_BLD) {
+    for (const [dx, dy] of b.d) K(dx - 1, dy - 1, dx + 1, dy + 2);
+    if (b.door === "e") for (const [dx, dy] of b.d) K(dx, dy - 1, dx + 2, dy + 1);
+    rect(o, b.x, b.y, b.x + b.w - 1, b.y + b.h - 1, "h");
+    // `dx`: where along its face the door starts (tiles from the footprint's corner)
+    m.big.push({ t: "bld", k: b.k, x: b.x, y: b.y, w: b.w, h: b.h, door: b.door, dx: b.d.length ? (b.door === "e" ? b.d[0][1] - b.y : b.d[0][0] - b.x) : -1, name: b.name, icon: b.icon });
+    K(b.x - 1, b.y - 1, b.x + b.w, b.y + b.h);
+  }
+  for (const [x, y, v] of TOWN_COTTAGES) { house(m, x, y, v); K(x - 1, y - 1, x + 4, y + 3); }
+  K(29, 37, 36, 39);
+
+  // ── the plaza's furniture: fountain, waypoint stone, spirit tree and fire, obelisk
+  rect(o, 49, 39, 50, 40, "a");
+  m.big.push({ t: "fountain", x: 49, y: 39 });
+  o[43][46] = "Q";
+  WP.town = { x: 46, y: 43, ax: 47, ay: 43 };
+  o[44][56] = "T";
+  m.big.push({ t: "spirit", x: 56, y: 44 });
+  o[DIM_TOWN.ob[1]][DIM_TOWN.ob[0]] = "a";
   m.big.push({ t: "obelisk", x: DIM_TOWN.ob[0], y: DIM_TOWN.ob[1] });
-  m.npcs.push({ id: "dimkeeper", name: "균열 지기 오르카", role: "dim", x: DIM_TOWN.keeper[0], y: DIM_TOWN.keeper[1], look: [3, 3, 0, "#5a3a8a"],
-    say: "오벨리스크 너머로 차원의 틈이 열려 있다네. 파티장이 균열을 열면 함께 들어갈 수 있지. 15분 안에 균열의 주인을 쓰러뜨리게!" });
-  // the residential corner (64-housing.js): a house whose door is everyone's "내 집", and the agent beside it
-  house(m, HOUSE_TOWN.house[0], HOUSE_TOWN.house[1], 1);
-  m.npcs.push({ id: "housing", name: "하우징 안내인 포근", role: "house", x: HOUSE_TOWN.agent[0], y: HOUSE_TOWN.agent[1], look: [2, 1, 0, "#c8783a"],
-    say: "내 집 마련, 어렵지 않아요! 집을 사면 저 '내 집' 문이 언제나 당신의 집으로 이어진답니다. 가구도 여기서 팔아요." });
+  FIRES.town.push([58, 46], [29, 60]);
+  // the board of the day's tasks (decor.js stands it on the B beside 하루)
+  o[35][43] = "B";
+  // lamp posts, in pairs on a row so lantern strings hang between them (decor.js town)
+  for (const [x, y] of [[42, 33], [54, 33], [41, 47], [53, 47], [69, 50], [78, 50], [68, 56], [80, 56], [34, 25], [44, 25], [56, 25], [66, 25],
+    [64, 42], [74, 42], [84, 42], [91, 42], [26, 42], [33, 42], [12, 42], [20, 42], [51, 52], [51, 62], [48, 68]]) O(x, y, "L");
+  // flower tubs round the plaza, flower beds along the terrace's lip
+  for (const [x, y] of [[39, 37], [39, 44], [61, 36], [61, 44], [45, 32], [55, 32], [45, 48], [55, 48]]) O(x, y, "B");
+  for (let x = 31; x <= 71; x++) if (o[28][x] === " " && (x < 46 || x > 54) && (x < 33 || x > 38) && x % 3) o[28][x] = "B";
+
+  // ── props over a footprint (scene2d draws them; town.md H keeps them under 80 with the buildings)
+  prop("watch", 40, 10, 2, 2); prop("watch", 64, 10, 2, 2); prop("watch", 92, 22, 2, 2);
+  for (const [x, y] of [[42, 46], [31, 23], [40, 25], [12, 39], [70, 57], [80, 62], [57, 31]]) prop("bench", x, y, 2, 1);
+  prop("stall", 59, 37, 2, 1); prop("stall", 66, 39, 2, 1); prop("stall", 88, 39, 2, 1);
+  prop("cart", 68, 38, 2, 1); prop("cart", 26, 36, 2, 1); prop("cart", 90, 36, 2, 1);
+  prop("well", 74, 55, 1, 1); prop("well", 11, 44, 1, 1);
+  prop("anvil", 78, 35, 1, 1);
+  for (const [x, y] of [[67, 18], [69, 18], [71, 18], [71, 21]]) prop("dummy", x, y, 1, 1);
+  prop("garden", 12, 28, 2, 2); prop("garden", 4, 28, 2, 2); prop("garden", 9, 47, 2, 2);
+  prop("laundry", 7, 43, 2, 1); prop("laundry", 13, 32, 2, 1);
+  prop("lookout", 82, 66, 2, 2);
+  // spirit lanterns holding the blight back; the forge's barrels and crates; the square's tables
+  for (const [x, y] of [[42, 12], [46, 12], [78, 12], [82, 12]]) O(x, y, "*");
+  for (const [x, y] of [[79, 33], [76, 33], [69, 36], [62, 36], [82, 33], [89, 34], [68, 37]]) O(x, y, hh(x, y, 12) < 0.5 ? "w" : "]");
+  for (const [tx, ty] of [[71, 54], [77, 55]]) { O(tx, ty, "o"); O(tx - 1, ty, "k"); O(tx + 1, ty, "k"); }
+  O(87, 37, "v");                // the mercenaries' notice board
+  O(45, 25, "%");                // a cat asleep by the hall's door
+  O(40, 22, "O");                // the record stone in the reading garden
+
+  // ── signposts: every one names where it leads (the gates' from MAP_META, so the levels never drift)
+  // (the town is built while the rules load, before the level shown for a band is known: a gate's label is
+  // worked out the first time it is read, then kept)
+  const gateLabel = (id, f) => { let s = null; return () => s || (s = f(doorName(MAP_META[id]))); };
+  const signs = [
+    [93, 42, gateLabel("meadow", (n) => `${n} →`), "meadow"], [5, 42, gateLabel("city", (n) => `← ${n}`), "city"],
+    [47, 31, "↑ 마을회관 · 도서관 · 수련관", "town_hall"], [31, 26, "← 부엉이 도서관", "owl_library"],
+    [71, 28, "→ 수련장 · 전직관", "dojo"], [62, 43, "→ 장터 거리 · 잡화점 · 대장간", "general_store"],
+    [79, 39, "↑ 보글연금공방 · 용병사무소 →", "bogle_lab"], [75, 42, "↓ 쥬쥬식당 · 카페 · 여관", "juju_diner"],
+    [38, 43, "← 살림 마을 · 창고 · 펫 돌봄집", "dongdong_apt"], [24, 42, "← 동동아파트 · 내 집", "dongdong_apt"],
+    [52, 49, "↓ 버드나무 마을 · 연못", "willow"],
+  ];
+  m.marks = [{ x: 46, y: 43, kind: "waypoint" }];
+  for (const [x, y, label, to] of signs) {
+    o[y][x] = "G";
+    const k = { x, y, kind: "sign", label, to };
+    if (typeof label === "function") Object.defineProperty(k, "label", { get: label, enumerable: true });
+    m.marks.push(k);
+    K(x - 1, y - 1, x + 1, y + 1);
+  }
+  m.gates = { east: { t: [[98, 40], [98, 41]], a: [[96, 40], [96, 41]] }, west: { t: [[1, 40], [1, 41]], a: [[3, 40], [3, 41]] } };
+
+  // ── the people: every service you use each session stands outdoors near the stone (ids and roles unchanged)
+  m.npcs.push(
+    { id: "elder", name: "관리자 엘더윈", role: "elder", x: 52, y: 37, look: [5, 0, 0, "#3f5a9a"] },
+    { id: "shop", name: "보급상 리나", role: "shop", x: 61, y: 39, look: [4, 0, 1, "#8a4a6a"] },
+    { id: "smith", name: "대장장이 볼칸", role: "smith", x: 77, y: 37, look: [0, 1, 0, "#6a4a38"] },
+    { id: "train", name: "수련관 카이", role: "train", x: 68, y: 23, look: [1, 2, 0, "#7a2e2e"] },
+    { id: "bank", name: "창고지기 도담", role: "bank", x: 32, y: 38, look: [2, 0, 0, "#6a5a3a"],
+      say: "맡길 물건이 있나? 캐릭터마다 60칸, 골드도 따로 맡아 두지. 같은 물건은 한 칸에 모아 준다네." },
+    { id: "guard", name: "경비병 토비", role: "talk", x: 94, y: 38, look: [1, 0, 0, "#5e6470"],
+      say: "동쪽 문은 바람초원, 서쪽 문은 네온 시티로 이어져. 길은 갈라지고 막히기도 하니 샛길을 살펴봐 — 막다른 곳엔 보물 상자나 모닥불, 그리고 가끔은 땅속으로 내려가는 계단이 있거든. 문 이름 옆의 레벨을 보고, 감당할 만한 곳부터 가!" },
+    { id: "warp", name: "이동술사 노바", role: "warp", x: 45, y: 44, look: [2, 3, 0, "#4a6ac8"],
+      say: "이동의 돌을 깨우면 어디서든 돌과 돌 사이를 건널 수 있어. 사냥터마다 입구 가까이에 하나씩 있지." },
+    { id: "collector", name: "학자 몽", role: "collector", x: 34, y: 23, look: [3, 4, 0, "#7a6a3a"],
+      say: "같은 몬스터를 서른 마리 잡으면 도감에 오르지. 한 지역을 다 채우면 그 땅이 힘을 빌려준다네." },
+    { id: "achieve", name: "기록관 루", role: "achieve", x: 39, y: 23, look: [4, 1, 0, "#8a3a5a"],
+      say: "자네의 모험은 모두 이 비석에 새겨지네. 이름난 업적에는 칭호가 따르지." },
+    { id: "daily", name: "게시판지기 하루", role: "daily", x: 44, y: 36, look: [0, 2, 0, "#3a7a5a"],
+      say: "매일 아침 6시에 새 과제가 붙는다네. 셋을 다 하면 보상 상자도 있지!" },
+    { id: "costume", name: "의상실 주인 루루", role: "costume", x: 47, y: 53, look: [3, 1, 0, "#d86a9a"],
+      say: "어서 와요! 모자, 옷, 망토, 안경, 무기 외형까지 — 능력치는 그대로, 모습만 바뀌어요." },
+    { id: "dimkeeper", name: "균열 지기 오르카", role: "dim", x: DIM_TOWN.keeper[0], y: DIM_TOWN.keeper[1], look: [3, 3, 0, "#5a3a8a"],
+      say: "오벨리스크 너머로 차원의 틈이 열려 있다네. 파티장이 균열을 열면 함께 들어갈 수 있지. 15분 안에 균열의 주인을 쓰러뜨리게!" },
+    { id: "housing", name: "하우징 안내인 포근", role: "house", x: HOUSE_TOWN.agent[0], y: HOUSE_TOWN.agent[1], look: [2, 1, 0, "#c8783a"],
+      say: "내 집 마련, 어렵지 않아요! 집을 사면 저 '내 집' 문이 언제나 당신의 집으로 이어진답니다. 가구도 여기서 팔아요." },
+  );
+  // (the woods' margin was grown before anyone was placed: a tree never stands on anyone or right beside them)
+  for (const n of m.npcs) {
+    K(n.x - 1, n.y - 1, n.x + 1, n.y + 1);
+    for (let y = n.y - 1; y <= n.y + 1; y++) for (let x = n.x - 1; x <= n.x + 1; x++) if ("TPRu".includes(o[y][x])) o[y][x] = " ";
+  }
+  K(DIM_TOWN.land[0] - 1, DIM_TOWN.land[1] - 1, DIM_TOWN.land[0] + 1, DIM_TOWN.land[1] + 1);
+  for (const [fx, fy] of FIRES.town) K(fx - 2, fy - 2, fx + 2, fy + 2);
+  // the storyteller's place by the fire (62-daynight TELLER), the south door and the gates with their landings
+  K(55, 45, 57, 47); K(47, 69, 52, 75); K(0, 38, 4, 43); K(95, 38, 99, 43);
+
+  // ── the village's greenery: trees between the districts, wilder at the edges; a few rocks and stumps
+  for (let y = 10; y < 72; y++) for (let x = 2; x < 96; x++) {
+    if (keep[y * W + x] || o[y][x] !== " " || !".,\"".includes(g[y][x])) continue;
+    const r = hh(x, y, 13), r2 = hh(x, y, 14);
+    const p = (y > 57 && (x < 46 || x > 54)) || (x > 82 && y > 44) || (y < 25 && x < 20) || (x >= 26 && x <= 28) ? 0.2 : 0.06;
+    if (r < p) o[y][x] = r2 < 0.55 ? "T" : r2 < 0.75 ? "P" : "B";
+    else if (r < p + 0.012) o[y][x] = "R";
+    else if (r < p + 0.02) o[y][x] = "u";
+  }
   return m;
 }
 
@@ -3846,7 +4030,8 @@ function fromEditor(d, id) {
   m.pieces = [];
   m.entry = Array.isArray(d.entry) && xyOk(m, d.entry[0], d.entry[1]) ? [d.entry[0], d.entry[1]] : [m.w >> 1, m.h >> 1];
   m.big = Array.isArray(d.big)
-    ? d.big.filter((b) => b && (b.t === "house" || b.t === "fountain" || b.t === "spirit" || b.t === "obelisk") && xyOk(m, b.x, b.y)).map((b) => (b.t === "house" ? { t: "house", x: b.x, y: b.y, v: clamp(b.v | 0, 0, 7) } : { t: b.t, x: b.x, y: b.y }))
+    ? d.big.filter((b) => b && (b.t === "house" || b.t === "fountain" || b.t === "spirit" || b.t === "obelisk" || b.t === "bld" || b.t === "prop") && xyOk(m, b.x, b.y))
+      .map((b) => (b.t === "house" ? { t: "house", x: b.x, y: b.y, v: clamp(b.v | 0, 0, 7) } : b.t === "bld" || b.t === "prop" ? bigClean(b) : { t: b.t, x: b.x, y: b.y }))
     : housesFrom(m);
   if (!m.safe) {
     for (const sp of Array.isArray(d.spawns) ? d.spawns : []) {
@@ -4170,6 +4355,8 @@ export function newChar(name, look, oldLook) {
     // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
     ...lifeFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
+    // the town layout it was saved under (34-maps-world.js TOWN_REV)
+    tw: TOWN_REV,
   };
 }
 
@@ -4230,6 +4417,9 @@ function migrate(ch) {
   // a place inside the map the sheet names (maps change size; addPlayer then finds open ground)
   const mm = typeof ch.map === "string" && Object.hasOwn(MAP_META, ch.map) ? MAP_META[ch.map] : null;
   if (mm) { ch.x = clamp(Number(ch.x) || 0, 0, mm.w * T - 1); ch.y = clamp(Number(ch.y) || 0, 0, mm.h * T - 1); }
+  // saved in an older town layout: where it stood means nothing now, so it wakes at the entry (addPlayer)
+  if ((ch.tw | 0) < TOWN_REV && ch.map === "town") { ch.x = -1; ch.y = -1; }
+  ch.tw = TOWN_REV;
   ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => typeof id === "string" && Object.hasOwn(MAP_META, id));
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
   ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
@@ -7060,7 +7250,7 @@ const JAM_CD = 1200;
 
 // ── the storyteller: at night she sits by the town's fire and tells a tale every hundred seconds
 const TALE_MS = 100000;
-const TELLER = { id: "story", name: "이야기꾼 할머니 소담", role: "talk", x: 20, y: 22, night: 1, look: [5, 2, 0, "#7a5a8a"],
+const TELLER = { id: "story", name: "이야기꾼 할머니 소담", role: "talk", x: 56, y: 46, night: 1, look: [5, 2, 0, "#7a5a8a"],
   say: "밤이 깊었구나. 불 가까이 앉으렴 — 이야기는 혼자 듣는 것보다 여럿이 듣는 게 더 따뜻하단다." };
 const TALES = [
   "옛날 옛적, 넥서스 광장은 정령나무 한 그루뿐인 빈 들판이었단다. 길 잃은 이들이 그 푸른 빛을 보고 모여들었지.",

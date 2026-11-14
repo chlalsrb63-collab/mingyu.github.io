@@ -1,89 +1,273 @@
+// ───────────────────────────── 넥서스 광장: the forest refuge (docs/design/town.md) ─────────────────────────────
+// A cosy, lamp-lit centre (plaza, market, hearths) fading outward into the woods; along the north edge a
+// palisade, watch posts and the creeping blight where the darkness-eaten forest presses in. Laid by hand on a
+// 100 × 76 grid (the tiles in town.md B–D are frozen: doors, interiors, tests and other docs read them); the
+// seed only varies the scatter. Height is visual only: the terrace's stone wall `W` and its steps.
+
+/** The town's layout revision: a sheet saved in town under an older one wakes at the entry (40 migrate). */
+const TOWN_REV = 2;
+/**
+ * The town's named buildings (town.md D, frozen): sign name and icon, footprint, which face the door is on
+ * ("s" the row below, "e" the column to the right, "" none) and its two door tiles. The doors themselves come
+ * from data/links.json (and HOUSE_TOWN for 내 집): this table places the building, its door art and its sign.
+ */
+const TOWN_BLD = [
+  { k: "hall", name: "넥서스 마을회관", icon: "banner", x: 46, y: 20, w: 8, h: 5, door: "s", d: [[49, 25], [50, 25]] },
+  { k: "library", name: "부엉이 도서관", icon: "book", x: 33, y: 16, w: 7, h: 5, door: "s", d: [[36, 21], [37, 21]] },
+  { k: "dojo", name: "넥서스 수련관", icon: "sword", x: 60, y: 16, w: 6, h: 4, door: "s", d: [[62, 20], [63, 20]] },
+  { k: "store", name: "다람쥐 잡화점", icon: "bag", x: 63, y: 33, w: 5, h: 4, door: "s", d: [[65, 37], [66, 37]] },
+  { k: "smithy", name: "캉캉대장간", icon: "anvil", x: 70, y: 33, w: 6, h: 4, door: "s", d: [[72, 37], [73, 37]] },
+  { k: "merc", name: "늑대발 용병사무소", icon: "swords", x: 83, y: 32, w: 6, h: 4, door: "s", d: [[85, 36], [86, 36]] },
+  { k: "lab", name: "보글연금공방", icon: "flask", x: 78, y: 25, w: 5, h: 3, door: "s", d: [[80, 28], [81, 28]] },
+  { k: "diner", name: "쥬쥬식당 · 선술집", icon: "bowl", x: 70, y: 45, w: 6, h: 4, door: "s", d: [[72, 49], [73, 49]] },
+  { k: "cafe", name: "테일즈 카페", icon: "cup", x: 78, y: 46, w: 5, h: 3, door: "s", d: [[79, 49], [80, 49]] },
+  { k: "inn", name: "모닥별 여관", icon: "bed", x: 61, y: 50, w: 6, h: 4, door: "e", d: [[67, 51], [67, 52]] },
+  { k: "boutique", name: "루루 의상실", icon: "shirt", x: 40, y: 50, w: 5, h: 3, door: "e", d: [[45, 51], [45, 52]] },
+  { k: "pet", name: "몽글 펫 돌봄집", icon: "paw", x: 28, y: 44, w: 4, h: 3, door: "s", d: [[29, 47], [30, 47]] },
+  { k: "apt", name: "동동아파트", icon: "house", x: 8, y: 30, w: 5, h: 4, door: "s", d: [[10, 34], [11, 34]] },
+  { k: "home", name: "내 집", icon: "house", x: 14, y: 43, w: 4, h: 3, door: "s", d: [[15, 46], [16, 46]] },
+  { k: "barn", name: "마을 창고", icon: "crate", x: 30, y: 33, w: 5, h: 4, door: "", d: [] },
+];
+/** Doorless villagers' cottages (legacy house() 4 × 3): x, y, look. */
+const TOWN_COTTAGES = [[4, 23, 0], [11, 22, 2], [4, 36, 3], [10, 36, 1], [4, 44, 2]];
+
+/** A named building or a prop from an editor map file, its fields whitelisted (36-custom-maps.js fromEditor). */
+function bigClean(b) {
+  const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
+  const out = { t: b.t, k: str(b.k, 16), x: b.x | 0, y: b.y | 0, w: clamp(b.w | 0, 1, 12), h: clamp(b.h | 0, 1, 12) };
+  if (b.t === "bld") Object.assign(out, { door: b.door === "s" || b.door === "e" ? b.door : "", dx: clamp(b.dx | 0, -1, 11), name: str(b.name, 24), icon: str(b.icon, 12) });
+  return out;
+}
+
 function buildTown() {
-  const box = { seed: 1101 };
-  const m = blank("town", "넥서스 광장", 40, 30, ".");
+  const W = 100, H = 76, S0 = 2203;
+  const m = blank("town", "넥서스 광장", W, H, ".");
   m.safe = true;
   m.bgm = "town";
-  m.entry = [20, 18];
-  scatter(m, box, m.g, ",", 0.14, ".");
-  scatter(m, box, m.g, '"', 0.04, ".");
-  border(m, "T", 2);
-  rect(m.g, 14, 10, 25, 19, "o");
-  road(m, 26, 14, 39, 14, "p");
-  road(m, 0, 14, 13, 14, "p");
-  road(m, 19, 4, 19, 9, "p");
-  road(m, 19, 20, 19, 25, "p");
-  road(m, 9, 9, 9, 14, "p");
-  road(m, 29, 8, 29, 14, "p");
-  road(m, 9, 14, 9, 20, "p");
-  house(m, 8, 5, 0);
-  house(m, 27, 4, 1);
-  house(m, 7, 21, 5);
-  house(m, 28, 20, 3);
-  house(m, 17, 2, 2);
-  rect(m.o, 19, 14, 20, 15, "a");
-  m.big.push({ t: "fountain", x: 19, y: 14 });
-  for (const [x, y] of [[14, 10], [25, 10], [14, 19], [25, 19]]) m.o[y][x] = "L";
-  for (let x = 4; x <= 12; x++) if (x !== 9 && x !== 10) m.o[26][x] = "F";
-  for (const [x, y] of [[5, 12], [33, 9], [5, 17], [13, 5], [24, 6]]) m.o[y][x] = "B";
-  for (const [x, y] of [[32, 13], [6, 13]]) m.o[y][x] = "G";
-  // the market corner by the supply shop: stacked goods and a stall's awning
-  for (const [x, y] of [[12, 8], [13, 8], [12, 10], [7, 9], [6, 10]]) m.o[y][x] = "B";
-  m.o[10][13] = "E";
-  // a pond to fish in, with a plank dock out over the water and reeds along the far bank
-  for (let y = 16; y <= 21; y++) for (let x = 31; x <= 38; x++) {
-    const d = ((x - 35) / 3.2) ** 2 + ((y - 18.5) / 2) ** 2;
-    if (d < 1) { m.g[y][x] = "w"; m.o[y][x] = " "; } else if (d < 1.9 && x < 38 && m.o[y][x] !== "h") { m.g[y][x] = "s"; if (m.o[y][x] !== "T") m.o[y][x] = " "; }
+  m.entry = [50, 43];
+  const g = m.g, o = m.o, hh = (x, y, s) => h2(x, y, S0 + s);
+  const at = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+  const O = (x, y, ch) => { if (at(x, y)) o[y][x] = ch; };
+  const both = (x0, y0, x1, y1, gc) => { rect(g, x0, y0, x1, y1, gc); rect(o, x0, y0, x1, y1, " "); };
+  const ell = (cx, cy, rx, ry, f) => {
+    for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+      const d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+      if (d <= 1 && at(x, y)) f(x, y, d);
+    }
+  };
+  // tiles the scatter leaves open: routes, doors, the people and the ground round them
+  const keep = new Uint8Array(W * H);
+  const K = (x0, y0, x1, y1) => { for (let y = Math.max(0, y0); y <= Math.min(H - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(W - 1, x1); x++) keep[y * W + x] = 1; };
+  /** A prop over a footprint of `a` (scene2d draws it whole). */
+  const prop = (k, x, y, w, h) => { rect(o, x, y, x + w - 1, y + h - 1, "a"); m.big.push({ t: "prop", k, x, y, w, h }); K(x - 1, y - 1, x + w, y + h); };
+
+  // ── the ground: meadow grass with a little variety
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const r = hh(x, y, 1); g[y][x] = r < 0.13 ? "," : r < 0.16 ? '"' : "."; }
+
+  // ── the woods all round, and beyond the north wall the dead forest the darkness ate
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const r = hh(x, y, 3);
+    if (y <= 8 && x >= 26) {
+      if (y >= 2) g[y][x] = hh(x, y, 2) < 0.18 && y < 4 ? ":" : "&";
+      o[y][x] = y < 2 ? (r < 0.5 ? "P" : "T") : r < 0.16 ? "A" : r < 0.26 ? "P" : r < 0.3 ? "R" : " ";
+    } else if (x < 2 || x > 95 || y > 71 || y < 2 || y <= 8) o[y][x] = r < 0.62 ? "T" : "P";
   }
-  for (let x = 31; x <= 34; x++) { m.g[18][x] = "b"; m.o[18][x] = " "; }
-  for (const [x, y] of [[36, 17], [37, 19], [35, 20]]) if (m.g[y][x] === "w") m.o[y][x] = "e";
-  // hedges framing the plaza's south side
-  for (const x of [15, 16, 17, 22, 23, 24]) m.o[20][x] = "H";
-  m.npcs.push(
-    { id: "shop", name: "보급상 리나", role: "shop", x: 10, y: 9, look: [4, 0, 1, "#8a4a6a"] },
-    { id: "smith", name: "대장장이 볼칸", role: "smith", x: 30, y: 8, look: [0, 1, 0, "#6a4a38"] },
-    { id: "elder", name: "관리자 엘더윈", role: "elder", x: 19, y: 11, look: [5, 0, 0, "#3f5a9a"] },
-    { id: "train", name: "수련관 카이", role: "train", x: 23, y: 12, look: [1, 2, 0, "#7a2e2e"] },
-    { id: "bank", name: "창고지기 도담", role: "bank", x: 7, y: 12, look: [2, 0, 0, "#6a5a3a"],
-      say: "맡길 물건이 있나? 캐릭터마다 60칸, 골드도 따로 맡아 두지. 같은 물건은 한 칸에 모아 준다네." },
-    { id: "guard", name: "경비병 토비", role: "talk", x: 35, y: 13, look: [1, 0, 0, "#5e6470"],
-      say: "동쪽 문은 바람초원, 서쪽 문은 네온 시티로 이어져. 길은 갈라지고 막히기도 하니 샛길을 살펴봐 — 막다른 곳엔 보물 상자나 모닥불, 그리고 가끔은 땅속으로 내려가는 계단이 있거든. 문 이름 옆의 레벨을 보고, 감당할 만한 곳부터 가!" },
-  );
-  // the hub's services stand around the plaza: a waypoint stone with its keeper, the
-  // collector, the hall of records and the board of daily tasks
-  m.npcs.push(
-    { id: "warp", name: "이동술사 노바", role: "warp", x: 15, y: 17, look: [2, 3, 0, "#4a6ac8"],
-      say: "이동의 돌을 깨우면 어디서든 돌과 돌 사이를 건널 수 있어. 사냥터마다 입구 가까이에 하나씩 있지." },
-    { id: "collector", name: "학자 몽", role: "collector", x: 24, y: 16, look: [3, 4, 0, "#7a6a3a"],
-      say: "같은 몬스터를 서른 마리 잡으면 도감에 오르지. 한 지역을 다 채우면 그 땅이 힘을 빌려준다네." },
-    { id: "achieve", name: "기록관 루", role: "achieve", x: 24, y: 14, look: [4, 1, 0, "#8a3a5a"],
-      say: "자네의 모험은 모두 이 비석에 새겨지네. 이름난 업적에는 칭호가 따르지." },
-    { id: "daily", name: "게시판지기 하루", role: "daily", x: 15, y: 13, look: [0, 2, 0, "#3a7a5a"],
-      say: "매일 아침 6시에 새 과제가 붙는다네. 셋을 다 하면 보상 상자도 있지!" },
-    // the costume shop, by the house on the south-west corner of the square, off both roads
-    { id: "costume", name: "의상실 주인 루루", role: "costume", x: 13, y: 22, look: [3, 1, 0, "#d86a9a"],
-      say: "어서 와요! 모자, 옷, 망토, 안경, 무기 외형까지 — 능력치는 그대로, 모습만 바뀌어요." },
-  );
-  m.o[16][16] = "Q";
-  WP.town = { x: 16, y: 16, ax: 17, ay: 16 };
-  m.marks = [
-    { x: 16, y: 16, kind: "waypoint" },
-    { x: 32, y: 13, kind: "sign", label: "바람초원 Lv.1–25 →", to: "meadow" },
-    { x: 6, y: 13, kind: "sign", label: "← 네온 시티 Lv.53–81", to: "city" },
-  ];
-  m.gates = { east: { t: [[38, 14], [38, 15]], a: [[36, 14], [36, 15]] }, west: { t: [[1, 14], [1, 15]], a: [[3, 14], [3, 15]] } };
-  FIRES.town.push([22, 22]);
-  // the spirit tree (정령나무) stands behind the plaza's campfire; its trunk blocks one tile
-  m.o[20][20] = "T";
-  m.big.push({ t: "spirit", x: 20, y: 20 });
-  // 차원의 오벨리스크 east of the spirit tree, its keeper beside it (64-dim.js; a solid tile under the big piece)
-  m.o[DIM_TOWN.ob[1]][DIM_TOWN.ob[0]] = "a";
+  // the forest margin thins inward: a ragged belt a few trees deep
+  for (let y = 9; y < 72; y++) for (let x = 2; x < 96; x++) {
+    const d = Math.min(x - 2, 95 - x, 71 - y, x < 26 ? y - 9 : 99);
+    if (d > 4 || o[y][x] !== " ") continue;
+    const r = hh(x, y, 6);
+    if (hh(x, y, 5) < 0.75 - d * 0.16) o[y][x] = r < 0.6 ? "T" : r < 0.85 ? "P" : "B";
+  }
+  // hills: the north-west mound and 노을 언덕 in the south-east (solid grassy rises with trees round them)
+  ell(10, 10, 6.5, 5.5, (x, y) => { o[y][x] = "C"; });
+  ell(89, 64, 6, 6, (x, y) => { o[y][x] = "C"; });
+  ell(89, 64, 8, 8, (x, y) => { if (o[y][x] === " " && hh(x, y, 7) < 0.4) o[y][x] = hh(x, y, 8) < 0.5 ? "T" : "P"; });
+
+  // ── water: the stream down its ravine into the pond, the pond's outflow south into the woods
+  both(22, 0, 23, 52, "w");
+  for (let y = 8; y <= 24; y++) { rect(o, 20, y, 21, y, "C"); rect(o, 24, y, 25, y, "C"); }
+  ell(18, 56, 7.5, 5.5, (x, y) => { g[y][x] = "w"; o[y][x] = " "; });
+  ell(18, 56, 9.2, 7, (x, y) => { if (g[y][x] !== "w") { g[y][x] = "s"; if ("TPB".includes(o[y][x])) o[y][x] = " "; } });
+  both(14, 61, 15, 75, "w");
+  for (let y = 25; y <= 50; y++) for (const x of [21, 24]) if (g[y][x] !== "w" && hh(x, y, 9) < 0.7) g[y][x] = "s";
+  ell(18, 56, 7.5, 5.5, (x, y, d) => { if (d > 0.62 && hh(x, y, 10) < 0.28 && !(y >= 55 && y <= 57 && x >= 21)) o[y][x] = "e"; });
+  for (let x = 23; x <= 26; x++) { g[56][x] = "b"; o[56][x] = " "; }
+  K(22, 55, 27, 57);
+
+  // ── the plaza: a stone ellipse round the fountain
+  ell(50, 40, 12.5, 8.5, (x, y) => { g[y][x] = "o"; o[y][x] = " "; });
+  K(37, 31, 63, 49);
+
+  // ── roads: west gate ← plaza → east gate, south to 버드나무 마을; then the lanes
+  const lay = (x0, y0, x1, y1) => { road(m, x0, y0, x1, y1, "p"); K(Math.min(x0, x1) - 1, Math.min(y0, y1) - 1, Math.max(x0, x1) + 2, Math.max(y0, y1) + 2); };
+  lay(0, 40, 38, 40); lay(62, 40, 98, 40); lay(49, 48, 49, 74);
+  both(0, 40, 1, 41, "p"); both(98, 40, 99, 41, "p");
+  // the south road ends at 버드나무 마을's door (49–50, 73) in a little clearing; nothing past it
+  rect(o, 46, 64, 53, 71, " "); rect(o, 48, 74, 51, 75, "T"); for (const x of [47, 48, 51, 52]) rect(o, x, 72, x, 73, "P");
+  // the bridges: the west road's, and the footbridge to 내 집 and the pet house
+  both(22, 40, 23, 41, "b"); both(22, 46, 23, 46, "b");
+  for (let x = 18; x <= 27; x++) if (x !== 22 && x !== 23) both(x, 46, x, 46, "p");
+  for (let x = 14; x <= 31; x++) if (x !== 22 && x !== 23) both(x, 47, x, 47, x % 3 ? "p" : "r");
+  K(13, 45, 32, 48); K(24, 42, 40, 48);
+  // the lane up to 동동아파트 between two cottages, and the lane north along the stream to the gardens
+  both(8, 34, 9, 39, "p"); both(8, 35, 12, 35, "p"); K(7, 33, 13, 39);
+  for (let y = 26; y <= 39; y++) both(16, y, 17, y, y % 4 ? "p" : "r");
+  both(6, 27, 17, 27, "p"); K(5, 26, 18, 39);
+  // the market lane north to 보글연금공방, the lane south to 모닥별 뜰, the square itself
+  both(80, 28, 81, 39, "r"); K(79, 27, 82, 40);
+  both(76, 42, 77, 49, "r"); K(75, 42, 78, 50);
+  both(68, 50, 80, 56, "r"); K(67, 49, 81, 57);
+  // the forge yard, open to the road; the gravel before the mercenaries' lodge
+  both(76, 33, 79, 38, "r"); K(76, 33, 79, 39);
+  rect(g, 82, 36, 90, 39, "r"); K(82, 36, 97, 42);
+  // stepping stones from the pond clearing to the south road
+  for (let x = 26; x <= 48; x++) { const y = 60 + Math.round(Math.sin(x / 4) * 1.2); if ((x & 1) || x > 44) g[y][x] = "r"; o[y][x] = " "; K(x, y - 1, x, y + 1); }
+  ell(29, 60, 3.2, 2.6, (x, y) => { o[y][x] = " "; keep[y * W + x] = 1; });
+
+  // ── 윗마을: the upper terrace, its promenade, the stone retaining wall and two flights of steps
+  for (let y = 10; y <= 28; y++) for (let x = 26; x <= 79; x++) if (o[y][x] === " ") { const r = hh(x, y, 11); g[y][x] = r < 0.3 ? "," : r < 0.36 ? '"' : "."; }
+  both(30, 26, 75, 27, "r"); K(29, 25, 76, 28);
+  for (let x = 30; x <= 72; x++) o[29][x] = "W";
+  for (let y = 10; y <= 29; y++) o[y][29] = "W";
+  both(48, 29, 52, 30, "v"); both(35, 29, 36, 30, "v");
+  for (const x of [47, 53, 34, 37]) for (let y = 28; y <= 30; y++) o[y][x] = "W";
+  // from the steps down to the plaza; the library's path; the gentle ramp at the east end
+  both(48, 31, 52, 32, "o");
+  both(35, 31, 36, 35, "p");
+  for (let x = 35; x <= 41; x++) for (const y of [34, 35]) if (g[y][x] !== "o") both(x, y, x, y, "p");
+  K(33, 28, 41, 36); K(46, 28, 54, 33);
+  for (let y = 28; y <= 30; y++) for (let x = 73; x <= 79; x++) if (o[y][x] === " ") g[y][x] = "r";
+  K(73, 24, 79, 30);
+  // paths on the terrace to each door, the hall's paving
+  both(36, 21, 37, 25, "p"); both(62, 20, 63, 25, "p"); both(48, 25, 51, 25, "o");
+  K(31, 20, 42, 25); K(58, 19, 66, 25); K(44, 24, 55, 26);
+  // the training yard: packed earth for the dummies
+  both(66, 17, 72, 25, "r"); K(65, 16, 73, 25);
+  // the darkness's tongues reaching under the palisade
+  for (const cx of [44, 80]) for (let y = 10; y <= 11; y++) for (let x = cx - 2 + (y - 10); x <= cx + 2 - (y - 10); x++) if (o[y][x] === " ") g[y][x] = "&";
+
+  // ── the palisade along the north and the east, the woods behind it
+  for (let x = 26; x <= 95; x++) { o[9][x] = "F"; g[9][x] = "&"; }
+  for (let y = 9; y <= 32; y++) { o[y][95] = "F"; g[y][95] = "&"; }
+  K(30, 10, 94, 12);
+
+  // ── the buildings (TOWN_BLD) and the villagers' cottages
+  for (const b of TOWN_BLD) {
+    for (const [dx, dy] of b.d) K(dx - 1, dy - 1, dx + 1, dy + 2);
+    if (b.door === "e") for (const [dx, dy] of b.d) K(dx, dy - 1, dx + 2, dy + 1);
+    rect(o, b.x, b.y, b.x + b.w - 1, b.y + b.h - 1, "h");
+    // `dx`: where along its face the door starts (tiles from the footprint's corner)
+    m.big.push({ t: "bld", k: b.k, x: b.x, y: b.y, w: b.w, h: b.h, door: b.door, dx: b.d.length ? (b.door === "e" ? b.d[0][1] - b.y : b.d[0][0] - b.x) : -1, name: b.name, icon: b.icon });
+    K(b.x - 1, b.y - 1, b.x + b.w, b.y + b.h);
+  }
+  for (const [x, y, v] of TOWN_COTTAGES) { house(m, x, y, v); K(x - 1, y - 1, x + 4, y + 3); }
+  K(29, 37, 36, 39);
+
+  // ── the plaza's furniture: fountain, waypoint stone, spirit tree and fire, obelisk
+  rect(o, 49, 39, 50, 40, "a");
+  m.big.push({ t: "fountain", x: 49, y: 39 });
+  o[43][46] = "Q";
+  WP.town = { x: 46, y: 43, ax: 47, ay: 43 };
+  o[44][56] = "T";
+  m.big.push({ t: "spirit", x: 56, y: 44 });
+  o[DIM_TOWN.ob[1]][DIM_TOWN.ob[0]] = "a";
   m.big.push({ t: "obelisk", x: DIM_TOWN.ob[0], y: DIM_TOWN.ob[1] });
-  m.npcs.push({ id: "dimkeeper", name: "균열 지기 오르카", role: "dim", x: DIM_TOWN.keeper[0], y: DIM_TOWN.keeper[1], look: [3, 3, 0, "#5a3a8a"],
-    say: "오벨리스크 너머로 차원의 틈이 열려 있다네. 파티장이 균열을 열면 함께 들어갈 수 있지. 15분 안에 균열의 주인을 쓰러뜨리게!" });
-  // the residential corner (64-housing.js): a house whose door is everyone's "내 집", and the agent beside it
-  house(m, HOUSE_TOWN.house[0], HOUSE_TOWN.house[1], 1);
-  m.npcs.push({ id: "housing", name: "하우징 안내인 포근", role: "house", x: HOUSE_TOWN.agent[0], y: HOUSE_TOWN.agent[1], look: [2, 1, 0, "#c8783a"],
-    say: "내 집 마련, 어렵지 않아요! 집을 사면 저 '내 집' 문이 언제나 당신의 집으로 이어진답니다. 가구도 여기서 팔아요." });
+  FIRES.town.push([58, 46], [29, 60]);
+  // the board of the day's tasks (decor.js stands it on the B beside 하루)
+  o[35][43] = "B";
+  // lamp posts, in pairs on a row so lantern strings hang between them (decor.js town)
+  for (const [x, y] of [[42, 33], [54, 33], [41, 47], [53, 47], [69, 50], [78, 50], [68, 56], [80, 56], [34, 25], [44, 25], [56, 25], [66, 25],
+    [64, 42], [74, 42], [84, 42], [91, 42], [26, 42], [33, 42], [12, 42], [20, 42], [51, 52], [51, 62], [48, 68]]) O(x, y, "L");
+  // flower tubs round the plaza, flower beds along the terrace's lip
+  for (const [x, y] of [[39, 37], [39, 44], [61, 36], [61, 44], [45, 32], [55, 32], [45, 48], [55, 48]]) O(x, y, "B");
+  for (let x = 31; x <= 71; x++) if (o[28][x] === " " && (x < 46 || x > 54) && (x < 33 || x > 38) && x % 3) o[28][x] = "B";
+
+  // ── props over a footprint (scene2d draws them; town.md H keeps them under 80 with the buildings)
+  prop("watch", 40, 10, 2, 2); prop("watch", 64, 10, 2, 2); prop("watch", 92, 22, 2, 2);
+  for (const [x, y] of [[42, 46], [31, 23], [40, 25], [12, 39], [70, 57], [80, 62], [57, 31]]) prop("bench", x, y, 2, 1);
+  prop("stall", 59, 37, 2, 1); prop("stall", 66, 39, 2, 1); prop("stall", 88, 39, 2, 1);
+  prop("cart", 68, 38, 2, 1); prop("cart", 26, 36, 2, 1); prop("cart", 90, 36, 2, 1);
+  prop("well", 74, 55, 1, 1); prop("well", 11, 44, 1, 1);
+  prop("anvil", 78, 35, 1, 1);
+  for (const [x, y] of [[67, 18], [69, 18], [71, 18], [71, 21]]) prop("dummy", x, y, 1, 1);
+  prop("garden", 12, 28, 2, 2); prop("garden", 4, 28, 2, 2); prop("garden", 9, 47, 2, 2);
+  prop("laundry", 7, 43, 2, 1); prop("laundry", 13, 32, 2, 1);
+  prop("lookout", 82, 66, 2, 2);
+  // spirit lanterns holding the blight back; the forge's barrels and crates; the square's tables
+  for (const [x, y] of [[42, 12], [46, 12], [78, 12], [82, 12]]) O(x, y, "*");
+  for (const [x, y] of [[79, 33], [76, 33], [69, 36], [62, 36], [82, 33], [89, 34], [68, 37]]) O(x, y, hh(x, y, 12) < 0.5 ? "w" : "]");
+  for (const [tx, ty] of [[71, 54], [77, 55]]) { O(tx, ty, "o"); O(tx - 1, ty, "k"); O(tx + 1, ty, "k"); }
+  O(87, 37, "v");                // the mercenaries' notice board
+  O(45, 25, "%");                // a cat asleep by the hall's door
+  O(40, 22, "O");                // the record stone in the reading garden
+
+  // ── signposts: every one names where it leads (the gates' from MAP_META, so the levels never drift)
+  // (the town is built while the rules load, before the level shown for a band is known: a gate's label is
+  // worked out the first time it is read, then kept)
+  const gateLabel = (id, f) => { let s = null; return () => s || (s = f(doorName(MAP_META[id]))); };
+  const signs = [
+    [93, 42, gateLabel("meadow", (n) => `${n} →`), "meadow"], [5, 42, gateLabel("city", (n) => `← ${n}`), "city"],
+    [47, 31, "↑ 마을회관 · 도서관 · 수련관", "town_hall"], [31, 26, "← 부엉이 도서관", "owl_library"],
+    [71, 28, "→ 수련장 · 전직관", "dojo"], [62, 43, "→ 장터 거리 · 잡화점 · 대장간", "general_store"],
+    [79, 39, "↑ 보글연금공방 · 용병사무소 →", "bogle_lab"], [75, 42, "↓ 쥬쥬식당 · 카페 · 여관", "juju_diner"],
+    [38, 43, "← 살림 마을 · 창고 · 펫 돌봄집", "dongdong_apt"], [24, 42, "← 동동아파트 · 내 집", "dongdong_apt"],
+    [52, 49, "↓ 버드나무 마을 · 연못", "willow"],
+  ];
+  m.marks = [{ x: 46, y: 43, kind: "waypoint" }];
+  for (const [x, y, label, to] of signs) {
+    o[y][x] = "G";
+    const k = { x, y, kind: "sign", label, to };
+    if (typeof label === "function") Object.defineProperty(k, "label", { get: label, enumerable: true });
+    m.marks.push(k);
+    K(x - 1, y - 1, x + 1, y + 1);
+  }
+  m.gates = { east: { t: [[98, 40], [98, 41]], a: [[96, 40], [96, 41]] }, west: { t: [[1, 40], [1, 41]], a: [[3, 40], [3, 41]] } };
+
+  // ── the people: every service you use each session stands outdoors near the stone (ids and roles unchanged)
+  m.npcs.push(
+    { id: "elder", name: "관리자 엘더윈", role: "elder", x: 52, y: 37, look: [5, 0, 0, "#3f5a9a"] },
+    { id: "shop", name: "보급상 리나", role: "shop", x: 61, y: 39, look: [4, 0, 1, "#8a4a6a"] },
+    { id: "smith", name: "대장장이 볼칸", role: "smith", x: 77, y: 37, look: [0, 1, 0, "#6a4a38"] },
+    { id: "train", name: "수련관 카이", role: "train", x: 68, y: 23, look: [1, 2, 0, "#7a2e2e"] },
+    { id: "bank", name: "창고지기 도담", role: "bank", x: 32, y: 38, look: [2, 0, 0, "#6a5a3a"],
+      say: "맡길 물건이 있나? 캐릭터마다 60칸, 골드도 따로 맡아 두지. 같은 물건은 한 칸에 모아 준다네." },
+    { id: "guard", name: "경비병 토비", role: "talk", x: 94, y: 38, look: [1, 0, 0, "#5e6470"],
+      say: "동쪽 문은 바람초원, 서쪽 문은 네온 시티로 이어져. 길은 갈라지고 막히기도 하니 샛길을 살펴봐 — 막다른 곳엔 보물 상자나 모닥불, 그리고 가끔은 땅속으로 내려가는 계단이 있거든. 문 이름 옆의 레벨을 보고, 감당할 만한 곳부터 가!" },
+    { id: "warp", name: "이동술사 노바", role: "warp", x: 45, y: 44, look: [2, 3, 0, "#4a6ac8"],
+      say: "이동의 돌을 깨우면 어디서든 돌과 돌 사이를 건널 수 있어. 사냥터마다 입구 가까이에 하나씩 있지." },
+    { id: "collector", name: "학자 몽", role: "collector", x: 34, y: 23, look: [3, 4, 0, "#7a6a3a"],
+      say: "같은 몬스터를 서른 마리 잡으면 도감에 오르지. 한 지역을 다 채우면 그 땅이 힘을 빌려준다네." },
+    { id: "achieve", name: "기록관 루", role: "achieve", x: 39, y: 23, look: [4, 1, 0, "#8a3a5a"],
+      say: "자네의 모험은 모두 이 비석에 새겨지네. 이름난 업적에는 칭호가 따르지." },
+    { id: "daily", name: "게시판지기 하루", role: "daily", x: 44, y: 36, look: [0, 2, 0, "#3a7a5a"],
+      say: "매일 아침 6시에 새 과제가 붙는다네. 셋을 다 하면 보상 상자도 있지!" },
+    { id: "costume", name: "의상실 주인 루루", role: "costume", x: 47, y: 53, look: [3, 1, 0, "#d86a9a"],
+      say: "어서 와요! 모자, 옷, 망토, 안경, 무기 외형까지 — 능력치는 그대로, 모습만 바뀌어요." },
+    { id: "dimkeeper", name: "균열 지기 오르카", role: "dim", x: DIM_TOWN.keeper[0], y: DIM_TOWN.keeper[1], look: [3, 3, 0, "#5a3a8a"],
+      say: "오벨리스크 너머로 차원의 틈이 열려 있다네. 파티장이 균열을 열면 함께 들어갈 수 있지. 15분 안에 균열의 주인을 쓰러뜨리게!" },
+    { id: "housing", name: "하우징 안내인 포근", role: "house", x: HOUSE_TOWN.agent[0], y: HOUSE_TOWN.agent[1], look: [2, 1, 0, "#c8783a"],
+      say: "내 집 마련, 어렵지 않아요! 집을 사면 저 '내 집' 문이 언제나 당신의 집으로 이어진답니다. 가구도 여기서 팔아요." },
+  );
+  // (the woods' margin was grown before anyone was placed: a tree never stands on anyone or right beside them)
+  for (const n of m.npcs) {
+    K(n.x - 1, n.y - 1, n.x + 1, n.y + 1);
+    for (let y = n.y - 1; y <= n.y + 1; y++) for (let x = n.x - 1; x <= n.x + 1; x++) if ("TPRu".includes(o[y][x])) o[y][x] = " ";
+  }
+  K(DIM_TOWN.land[0] - 1, DIM_TOWN.land[1] - 1, DIM_TOWN.land[0] + 1, DIM_TOWN.land[1] + 1);
+  for (const [fx, fy] of FIRES.town) K(fx - 2, fy - 2, fx + 2, fy + 2);
+  // the storyteller's place by the fire (62-daynight TELLER), the south door and the gates with their landings
+  K(55, 45, 57, 47); K(47, 69, 52, 75); K(0, 38, 4, 43); K(95, 38, 99, 43);
+
+  // ── the village's greenery: trees between the districts, wilder at the edges; a few rocks and stumps
+  for (let y = 10; y < 72; y++) for (let x = 2; x < 96; x++) {
+    if (keep[y * W + x] || o[y][x] !== " " || !".,\"".includes(g[y][x])) continue;
+    const r = hh(x, y, 13), r2 = hh(x, y, 14);
+    const p = (y > 57 && (x < 46 || x > 54)) || (x > 82 && y > 44) || (y < 25 && x < 20) || (x >= 26 && x <= 28) ? 0.2 : 0.06;
+    if (r < p) o[y][x] = r2 < 0.55 ? "T" : r2 < 0.75 ? "P" : "B";
+    else if (r < p + 0.012) o[y][x] = "R";
+    else if (r < p + 0.02) o[y][x] = "u";
+  }
   return m;
 }
 

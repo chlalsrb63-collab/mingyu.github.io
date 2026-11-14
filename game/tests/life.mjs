@@ -38,10 +38,11 @@ assert.equal(a.sit, false);
 a.ch.inv.push({ id: "camp", n: 1 });
 assert.equal(act(A, { t: "use", id: "camp" }).ok, false, "not right next to another fire");
 a.x += 80; a.mvAt = now;
+const fires0 = L.runtime(S, "town").fires.length;
 assert.ok(act(A, { t: "use", id: "camp" }).ok);
-assert.equal(L.runtime(S, "town").fires.length, 2);
+assert.equal(L.runtime(S, "town").fires.length, fires0 + 1);
 for (let i = 0; i < 20; i++) step(10000);
-assert.equal(L.runtime(S, "town").fires.length, 1, "it burns out after three minutes");
+assert.equal(L.runtime(S, "town").fires.length, fires0, "it burns out after three minutes");
 
 // ── fishing: wait for the bite, then reel
 const m = L.runtime(S, "meadow");

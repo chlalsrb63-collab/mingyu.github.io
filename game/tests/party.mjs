@@ -48,7 +48,7 @@ assert.ok(rt.drops.some((d) => d.own === A) && rt.drops.some((d) => d.own === B)
 // ── stat points: bought with experience, at a campfire or by the trainer
 assert.equal(act(A, { t: "train", a: [1, 0, 0, 0, 0, 0] }).ok, false);
 pa.ch.xp = 5000;
-pa.x = 23 * 16 + 8; pa.y = 13 * 16 + 8;
+{ const kai = L.atlas().maps.town.npcs.find((n) => n.role === "train"); pa.x = kai.x * 16 + 8; pa.y = (kai.y + 1) * 16 + 8; }
 const before = L.viewFor(S, A).self.atk;
 assert.ok(act(A, { t: "train", a: [10, 0, 0, 0, 0, 0] }).ok);
 const self = L.viewFor(S, A).self;

@@ -19,7 +19,8 @@ assert.ok(v.self && v.who.length === 1);
 assert.ok(act({ t: "mv", x: 9999, y: 9999 }).ok);
 v = step();
 assert.equal(v.me[5], 1, "server should flag a position fix");
-assert.equal(v.me[0], 20 * 16 + 8);
+const TOWN = L.atlas().maps.town;
+assert.equal(v.me[0], TOWN.entry[0] * 16 + 8);
 
 // buying far from the merchant is refused
 assert.equal(act({ t: "buy", id: "hp_s", n: 1 }).ok, false);
@@ -27,7 +28,8 @@ assert.equal(act({ t: "sk", i: 0 }).ok, false, "skill is level-locked");
 
 // walk around the fountain, east along the road, through the gate, into the meadow
 let x = v.me[0];
-const y = 14 * 16 + 10, sideX = 23 * 16 + 8;
+// (beside the fountain, then up to the east road: its row and the gate from the map)
+const y = TOWN.gates.east.t[0][1] * 16 + 10, sideX = (TOWN.entry[0] + 5) * 16 + 8;
 for (let i = 0; i < 400 && v.map?.id !== "meadow"; i++) {
   const [cx, cy] = [v.me[0], v.me[1]];
   let nx = cx, ny = cy;
@@ -78,7 +80,13 @@ for (let i = 0; i < 3000 && kills < 3; i++) {
       act({ t: "mv", x: v.me[0] + ((gx - v.me[0]) / gd) * k, y: v.me[1] + ((gy - v.me[1]) / gd) * k });
     }
     else act({ t: "atk" });
-  } else act({ t: "mv", x: v.me[0] + 6, y: v.me[1] });
+  } else {
+    // nothing in sight: on along the ground's paths toward its far gate, out of the quiet ground by the entrance
+    const [sx, sy] = tileOf(v.me[0], v.me[1]), [tx, ty] = MM.gates.east.a[0];
+    const nt = towards(sx, sy, tx, ty), [gx, gy] = nt ? [nt[0] * 16 + 8, nt[1] * 16 + 10] : [v.me[0] + 6, v.me[1]];
+    const gd = Math.hypot(gx - v.me[0], gy - v.me[1]) || 1, k = Math.min(6, gd);
+    act({ t: "mv", x: v.me[0] + ((gx - v.me[0]) / gd) * k, y: v.me[1] + ((gy - v.me[1]) / gd) * k });
+  }
   v = step();
   for (const e of v.ev ?? []) if (e[0] === "k") kills++;
   if (v.gain) gained = true;

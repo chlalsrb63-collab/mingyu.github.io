@@ -52,6 +52,8 @@ export function newChar(name, look, oldLook) {
     // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
     ...lifeFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
+    // the town layout it was saved under (34-maps-world.js TOWN_REV)
+    tw: TOWN_REV,
   };
 }
 
@@ -112,6 +114,9 @@ function migrate(ch) {
   // a place inside the map the sheet names (maps change size; addPlayer then finds open ground)
   const mm = typeof ch.map === "string" && Object.hasOwn(MAP_META, ch.map) ? MAP_META[ch.map] : null;
   if (mm) { ch.x = clamp(Number(ch.x) || 0, 0, mm.w * T - 1); ch.y = clamp(Number(ch.y) || 0, 0, mm.h * T - 1); }
+  // saved in an older town layout: where it stood means nothing now, so it wakes at the entry (addPlayer)
+  if ((ch.tw | 0) < TOWN_REV && ch.map === "town") { ch.x = -1; ch.y = -1; }
+  ch.tw = TOWN_REV;
   ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => typeof id === "string" && Object.hasOwn(MAP_META, id));
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
   ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);

@@ -71,7 +71,8 @@ function fromEditor(d, id) {
   m.pieces = [];
   m.entry = Array.isArray(d.entry) && xyOk(m, d.entry[0], d.entry[1]) ? [d.entry[0], d.entry[1]] : [m.w >> 1, m.h >> 1];
   m.big = Array.isArray(d.big)
-    ? d.big.filter((b) => b && (b.t === "house" || b.t === "fountain" || b.t === "spirit" || b.t === "obelisk") && xyOk(m, b.x, b.y)).map((b) => (b.t === "house" ? { t: "house", x: b.x, y: b.y, v: clamp(b.v | 0, 0, 7) } : { t: b.t, x: b.x, y: b.y }))
+    ? d.big.filter((b) => b && (b.t === "house" || b.t === "fountain" || b.t === "spirit" || b.t === "obelisk" || b.t === "bld" || b.t === "prop") && xyOk(m, b.x, b.y))
+      .map((b) => (b.t === "house" ? { t: "house", x: b.x, y: b.y, v: clamp(b.v | 0, 0, 7) } : b.t === "bld" || b.t === "prop" ? bigClean(b) : { t: b.t, x: b.x, y: b.y }))
     : housesFrom(m);
   if (!m.safe) {
     for (const sp of Array.isArray(d.spawns) ? d.spawns : []) {
