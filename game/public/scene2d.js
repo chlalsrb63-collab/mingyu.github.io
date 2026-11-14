@@ -929,7 +929,7 @@ function slice(st, fx, fy, fw, fh) {
 function blockStyle(kind) {
   if (kind === "W") {
     const U = UG[theme];
-    if (U) return { h: 30, top: lt(U.rock, 1.6), rim: U.face[2], low: U.face[3], s: U.face[0], e: dk(U.face[0], 0.72), seam: U.face[3], cap: U.face[1], kind };
+    if (U) return { h: 30, top: tone(U.rock, U.face[3], 0.55), rim: U.face[1], low: tone(U.rock, U.face[0], 0.5), s: U.face[0], e: dk(U.face[0], 0.72), seam: U.face[3], cap: U.face[1], kind };
     return { h: 30, top: "#1b2644", rim: "#4a6a98", low: "#141c34", s: "#2e4468", e: "#223450", seam: "#141c34", cap: "#3a5680", kind };
   }
   return {
