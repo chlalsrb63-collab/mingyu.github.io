@@ -384,7 +384,7 @@ export function loadMap(m) {
   for (const st of statics) if (st.glow || st.wp || st.nightGlow || st.house || st.pot) lights.push(st);
   setLazyLeft(statics.filter((st) => st.lazy).length);
   // (an interactive object, `thing` (town.md E), is the furniture it stands on: no figure of its own)
-  npcs = m.npcs.filter((n) => !n.thing).map((n) => { const [x, y] = iso(n.x * 16 + 8, n.y * 16 + 12); return { n, x, y, sheet: SP.personSheet(SP.npcLook(n.look, n.role)) }; });
+  npcs = m.npcs.filter((n) => !n.thing).map((n) => { const [x, y] = iso(n.x * 16 + 8, n.y * 16 + 12); return { n, x, y, sheet: SP.npcSheet(n) }; });
   TF.load(m);
   ents.clear();
   fx.clear();
