@@ -7,8 +7,9 @@
    and colour is kept for health, mana and item rarity.
    ───────────────────────────────────────────────────────────────────────────── */
 :root {
-  --font: Pretendard, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
-  --serif: "Noto Serif KR", "Nanum Myeongjo", serif;
+  /* self-hosted Galmuri first (hud.css @font-face), then whatever the system has: no font CDN */
+  --font: "Galmuri11", Pretendard, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --serif: "Galmuri11", "Noto Serif KR", "Nanum Myeongjo", serif;
   --ink: #06070a;
   --panel-a: rgba(30, 32, 42, .94);
   --panel-b: rgba(17, 18, 25, .95);

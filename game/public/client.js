@@ -1480,9 +1480,22 @@ $("#btn-winreset").addEventListener("click", () => {
   toast("창을 처음 자리로 옮겼습니다");
 });
 
+/** Toasts stack under the tutorial card while it shows, never over it (every layout). */
+function placeToasts() {
+  const box = $("#toasts"), card = $("#tut");
+  box.style.top = "";
+  if (card.hidden) return;
+  // both are position: fixed children of #hud, so viewport coordinates are their own
+  const r = card.getBoundingClientRect();
+  if (!r.height) return;
+  const base = parseFloat(getComputedStyle(box).top) || 0, below = Math.ceil(r.bottom) + 6;
+  if (below > base) box.style.top = `${below}px`;
+}
+addEventListener("resize", placeToasts);
 function toast(m) {
   const box = $("#toasts");
   const p = el("p", "", m);
+  if (!box.children.length) placeToasts();
   box.append(p);
   while (box.children.length > 4) box.firstChild.remove();
   setTimeout(() => p.remove(), 3300);
@@ -2234,15 +2247,15 @@ function tutCard(s) {
   const hide = !step || +localStorage.getItem("lumentale:tuthide") === i + 1;
   // on a wide screen the bag sits open in the side column from the start: nothing to press, so the step is done
   if (step && step.id === "bag" && !$("#w-inv").hidden && tutCard.bag !== i) { tutCard.bag = i; tutTry("bag"); }
-  if (card.hidden !== hide) card.hidden = hide;
+  if (card.hidden !== hide) { card.hidden = hide; placeToasts(); }
   if (hide) return;
   setOnce($("#tut-title"), `${i}`, (n) => n.append(step.title));
   $("#tut-n").textContent = `첫걸음 ${i + 1}/${steps.length}${step.need > 1 ? ` · ${s.tut.n}/${step.need}` : ""}`;
   const hint = (touch() && TUT_TOUCH[step.id]) || step.hint;
-  if ($("#tut-hint").textContent !== hint) $("#tut-hint").textContent = hint;
+  if ($("#tut-hint").textContent !== hint) { $("#tut-hint").textContent = hint; placeToasts(); }
   if (card.dataset.i !== String(i)) { card.dataset.i = String(i); card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); if (i > 0) Sound.play("ok"); }
 }
-$("#tut-x").addEventListener("click", () => { const s = G.self; if (s && s.tut) localStorage.setItem("lumentale:tuthide", String(s.tut.i + 1)); $("#tut").hidden = true; Sound.play("ui"); });
+$("#tut-x").addEventListener("click", () => { const s = G.self; if (s && s.tut) localStorage.setItem("lumentale:tuthide", String(s.tut.i + 1)); $("#tut").hidden = true; placeToasts(); Sound.play("ui"); });
 
 // ── the world event, the return scroll's cast bar, the arrival fade ──
 function eventWidget(t) {
