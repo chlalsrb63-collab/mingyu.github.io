@@ -117,7 +117,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `client.js` [2563] | game client. Sections (grep `// ───`): connection, state `G`, messages (`onSnap`), effects, input (keydown hotkeys ~L537), player actions, update, render, HUD & windows (`WIN` list ~L1236, `openWin`, `render<Window>()`), main loop. `window.__game = {G, act, S3, go}` for automation |
 | `lobby.js` [593] | title, 로그인/회원가입, server/channel list, character creation, in-game channel switch/logout |
 | `account.js` [99] | HTTP side of accounts: `session signup login logout me servers`, `API` base |
-| `scene2d.js` [2357] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites (+ `autumnScenery`), ground, raised blocks, creatures, effects `fx/fxCustom/shake`, pets, title/creation stage |
+| `scene2d.js` [2686] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites (+ `autumnScenery`), ground, raised blocks, creatures (`drawPerson`; movement life `stepLife`: bob, lean, stop squash, terrain footsteps `footKind/footstep`, afterimage), effects `fx/fxCustom` (+ `flash wave zap`), sword-qi `qiBurst` at each stroke's impact, skills' scaled set `big(ang)`, `shake(n, ang)` (directional kick), pets, title/creation stage |
 | `isotiles.js` [31] · `iso_px.js` [118] · `iso_ground.js` [886] · `iso_tall.js` [601] | quarter-view ground baking (`bakeGround`), pixel buffers/projection (`TW=32, TH=16`), ground materials and transitions, tall blocks (cliffs, walls, houses) |
 | `iso_interior.js` [1059] | indoors (theme `interior`): `bakeRoom` floors and rugs, `roomPiece` back walls / cut front wall / furniture (a texel `Model` with depth buffer), `roomLight` warm lamp/fire/window light, `drawPose` NPC idle acts; char legend in its header and SCHEMA.md |
 | `decor.js` [674] | landmarks (`LANDMARKS` per theme; autumn ruins stand exactly on their footprints), decals, pulses, critters, waypoint stones/signs, town dressing (old `daylight`/`wash`, unused) |
@@ -132,7 +132,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `mobart.js` [588] + `mobart_kit.js` [139] + `mobart_a/b/c/d.js` [376/309/561/268] | monsters as 3D-primitive models rasterised to pixels; `BEASTS_A` meadow/forest, `_B` crypt/city, `_C` sewer/cave/abyss/bosses/chest, `_D` 단풍 왕도 (blighted beasts and plants); `has draw icon KINDS` |
 | `weapons.js` [602] | weapon art per kind × tier, legendary/set looks, skins, glow: `DESIGNS weaponSprite weaponIcon`; an installed image (`assetKey`: manifest `weapon.<kind>.t<n>`/`.lg.`/`.set.`/`.skin.`, `icon.weapon.…`) replaces a look, rarity ink + glow still applied |
 | `wardrobe.js` [807] · `wardrobe_ui.js` [283] | cosmetic layers drawn over heroes (`ART SLOTS dress anchors`; designs `HAT TOP BACK FACE`, rules in the header); costume shop + 외형 tab |
-| `swing.js` [131] | weapon stroke poses for attacks/casts |
+| `swing.js` [148] | weapon stroke poses for attacks/casts; the tempo `WIND IMPACT SNAP` (15% wind-up, snap, blow at 0.2) with out-expo/out-back easing |
 | `skillfx.js` [408] | skill visuals/sounds per server fx code (`skillEvent`, switch on codes 40–75), props, marks |
 | `skillicons.js` [471] · `uiicons.js` [105] · `emoticons.js` [164] | 16×16 skill glyphs, 12×12 UI glyphs (`MENU_ICON TRAIT`), chat emoticons |
 | `classgauge.js` [152] | class gauge in the status panel |
@@ -148,12 +148,12 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `style.css` [351] · `hud.css` [473] · `lobby.css` [225] | base + CRT, HUD/windows, lobby |
 | `assets/manifest.json` | installed external images/sounds by key (empty = all code-drawn); written by `scripts/import-art.mjs --install` |
 | `fonts/` | Galmuri pixel fonts (OFL) |
-| `_*.html` | dev preview pages (never deployed, `.assetsignore`): scene world iso over mobs sheet species wardrobe swing title icons uicons emo mini |
+| `_*.html` | dev preview pages (never deployed, `.assetsignore`): scene world iso over mobs sheet species wardrobe swing feel (skill blasts, hits, footsteps as frame strips) title icons uicons emo mini |
 
 ### Tests — `game/tests/*.mjs` (plain node + `node:assert`; list in `tests/LIST`)
 sim (smoke) · party · loot (gear, repeat hunting) · life (fires, fishing, cooking, guilds) · world
 (map graph, dungeons, quests) · hard (crowds, elites, traits) · content (long game, old sheets) ·
-growth (skill levels, warehouse, pets, scrolls) · skills (class mechanics) · aim (blows/skills go where you aim, nothing behind) · maps (generators:
+growth (skill levels, warehouse, pets, scrolls) · skills (class mechanics) · aim (blows/skills go where you aim, nothing behind) · feel (hitstun: stagger pauses cooldowns, knockback stops at walls, bosses immune) · maps (generators:
 connectivity, determinism, per-map build time, lazy registry + MAP_META ↔ built map, instances) · cells (wake/sleep, out of sight, farming not reset, party density, cap, waves) · hotbar (quick slots, party chat, tidy) · wardrobe (cosmetics) · cosmetics (every cosmetic × species × view ×
 frame: inside the sheet, closed outline, eyes uncovered, art in every view, in its place) ·
 looks (species ↔ LOOK_MAX) · mobart (every mob has a model that fits its canvas) · accounts (vault

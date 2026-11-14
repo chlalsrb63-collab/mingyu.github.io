@@ -1,0 +1,55 @@
+<!doctype html><meta charset="utf-8">
+<body style="margin:0;background:#101426;overflow:hidden"><canvas id="c" style="image-rendering:pixelated;display:block"></canvas>
+<canvas id="out" style="position:fixed;left:0;top:0;image-rendering:pixelated"></canvas>
+<script type="module">
+// Game-feel contact sheet: frame strips of skill blasts, hits and footsteps, time stepped by hand.
+// ?rows=slam,bolt,nova,hit,crit,walk,dash&map=meadow&ms=33&n=10&z=2&cw=180&ch=150 — dev preview only, not part of the game.
+import * as S from "./scene2d.js";
+const q = new URLSearchParams(location.search);
+const maps = await (await fetch("./_maps.json")).json();
+const m = maps[q.get("map") || "meadow"];
+if (q.get("hour") !== null) globalThis.__skyHour = +q.get("hour"); else globalThis.__skyHour = 12;
+globalThis.__skyWx = 0;
+// an open patch of ground
+let fx = 20, fy = 14;
+outer: for (let y = 8; y < m.h - 8; y++) for (let x = 8; x < m.w - 8; x++) {
+  let ok = true;
+  for (let dy = -4; dy <= 4 && ok; dy++) for (let dx = -6; dx <= 6 && ok; dx++) if (m.o[y + dy][x + dx] !== " " || "wW".includes(m.g[y + dy][x + dx])) ok = false;
+  if (ok) { fx = x; fy = y; break outer; }
+}
+const me = { x: fx * 16 + 8, y: fy * 16 + 8, dir: 0, moving: false, atkT: -1e9, dead: false, aim: null, atkN: 0 };
+const mob = { id: 1, k: q.get("mob") || "twinhare", x: me.x + 34, y: me.y + 4, moving: false, atkT: -1e9, hurtT: -1e9, el: 0 };
+const G = { you: 1, me, players: new Map(), mobs: new Map(), drops: new Map(), who: new Map(), defs: { mobs: { [mob.k]: { sp: mob.k, lv: 1 } } }, icons: { cv: {} }, self: null, fires: new Map(), bobs: new Map() };
+G.who.set(1, { cls: q.get("cls") || "warrior", look: [1, 0, 0, 0, 0, 0, 1], gear: { wk: q.get("wk") || "sword", wt: 3, wq: 0 } });
+const cv = document.getElementById("c");
+S.init(cv); S.resize(400, 260, 1); S.loadMap(m); S.sync(G);
+const ms = +(q.get("ms") || 33), n = +(q.get("n") || 10), Z = +(q.get("z") || 2), cw = +(q.get("cw") || 180), ch = +(q.get("ch") || 150);
+const rows = (q.get("rows") || "slam,bolt,nova,hit,crit,walk,dash").split(",");
+const out = document.getElementById("out");
+out.width = n * cw * Z + 60; out.height = rows.length * ch * Z;
+const o = out.getContext("2d"); o.imageSmoothingEnabled = false;
+let t = 50000;
+const frame = (dt = 0.016) => S.render(me.x, me.y, dt, t, true);
+const setup = {
+  slam() { const B = S.big(0); B.fx.crack(me.x + 30, me.y, 40, "#ffd84a", 700); B.fx.ring(me.x + 30, me.y, 40, "#ffffff", 320, true); B.fx.burst(me.x + 30, me.y, 0.1, "#e0c890", 34, 3); B.shake(10); },
+  bolt() { const B = S.big(0); B.fx.bolt(me.x, me.y - 8, me.x + 40, me.y + 8, "#fff27a", 260); B.fx.spark(me.x + 40, me.y + 6, "#fff6b0", 1.3); },
+  nova() { const B = S.big(); B.fx.ring(me.x, me.y, 56, "#9fe8ff", 420, true); B.fx.ring(me.x, me.y, 40, "#ffffff", 300, false, 60); B.fx.sparkle(me.x, me.y, 0.5, "#d0f4ff", 20); },
+  hit() { G.mobs.set(1, mob); me.aim = [mob.x, mob.y + 6]; me.atkT = t - 112; me.atkN = 0; mob.hurtT = t; mob.hsMs = 18; mob.hurtA = 0; mob.hurtP = 1; S.fx.spark(mob.x, mob.y, "#ffffff", 1.1); S.fx.ring(mob.x, mob.y - 4, 11, "#ffffff", 150); S.shake(2.5); },
+  crit() { G.mobs.set(1, mob); me.aim = [mob.x, mob.y + 6]; me.atkT = t - 129; me.atkN = 2; me.hs = { at: t, dur: 45 }; mob.hurtT = t; mob.hsMs = 45; mob.hurtA = 0; mob.hurtP = 1.6; S.fx.spark(mob.x, mob.y, "#ffe04a", 1.7); S.fx.ring(mob.x, mob.y - 4, 20, "#ffe04a", 220); S.shake(5, 0); },
+  walk() { me.moving = true; me.v = 48; },
+  dash() { me.moving = true; me.v = 110; },
+};
+for (let r = 0; r < rows.length; r++) {
+  const row = rows[r];
+  S.fx.clear(); G.mobs.clear(); me.moving = false; me.aim = null; me.atkT = -1e9; me.hs = null; me.x = fx * 16 + 8; me.y = fy * 16 + 8; me.v = 0;
+  for (let i = 0; i < 30; i++) { t += 16; frame(); }
+  setup[row] && setup[row]();
+  for (let i = 0; i < n; i++) {
+    const sub = Math.max(1, Math.round(ms / 16));
+    for (let k = 0; k < (i ? sub : 1); k++) { t += i ? ms / sub : 0; if (me.v) me.x += me.v * (ms / sub / 1000); frame(i ? ms / sub / 1000 : 0.016); }
+    o.drawImage(cv, cv.width / 2 - cw / 2, cv.height / 2 - ch / 2 - 10, cw, ch, 60 + i * cw * Z, r * ch * Z, cw * Z, ch * Z);
+  }
+  o.fillStyle = "#fff"; o.font = "14px monospace"; o.fillText(row, 4, r * ch * Z + 20);
+}
+window.__done = true;
+</script>

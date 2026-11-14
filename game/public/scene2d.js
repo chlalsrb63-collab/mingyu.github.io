@@ -1434,7 +1434,9 @@ const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30", "#5fd47a"];
  * levelled and kicked back.
  */
 function drawPerson(s, e, t, dt, x, y) {
-  if (e.moving) s.walk += dt * 6;
+  // a brisk, bouncy stride; the feet kick up whatever they walk on (stepLife, below)
+  if (e.moving) s.walk += dt * 8;
+  const life = e.scr || e.dead ? null : stepLife(s, e, t, dt, x, y);
   // a blow that connects freezes for a beat (`e.hs`), then carries on from where it stopped
   const hs = e.hs && e.atkT <= e.hs.at ? e.hs : null;
   const te = !hs || t < hs.at ? t : t < hs.at + hs.dur ? hs.at : t - hs.dur;
@@ -1473,7 +1475,7 @@ function drawPerson(s, e, t, dt, x, y) {
     : (t + s.ph) % 3600 < 140 ? F.blink
     : Math.floor((t + s.ph) / 560) % 2 ? F.breathe : F.stand;
   const sg = s.face;
-  // the stroke being made, if any (swing.js): poses keyed on a 0–1 clock, the blow landing at 0.23
+  // the stroke being made, if any (swing.js): poses keyed on a 0–1 clock, the blow landing at Sw.IMPACT
   const hold = SP.HOLD[s.wk] || SP.HOLD.sword;
   const beat = e.atkN | 0, fin = beat === 2, stroke = strokeT;
   const k = atk / stroke, resting = k >= 1, live = !!e.aim && atk >= 0 && !resting && !e.dead;
@@ -1495,18 +1497,25 @@ function drawPerson(s, e, t, dt, x, y) {
   g.fillStyle = "rgba(20,24,50,.26)";
   g.beginPath(); g.ellipse(x, y, 5, 2, 0, 0, 7); g.fill();
   const fl = e.fl | 0;
+  // walking: a 1-px hop on the stretched steps; a short squash when they stop or turn
+  const hop = life && e.moving && !e.sit && frame === F.stretch ? 1 : 0;
   const body = () => {
+    if (life) drawTrail(s, t);
     g.save();
-    g.translate(Math.round(x), Math.round(y));
+    g.translate(Math.round(x), Math.round(y - hop));
     if (e.dead) { g.rotate(sg * 1.45); g.globalAlpha = 0.6; }
     else if (fl & 64) g.globalAlpha = 0.4;             // slipped away behind a puppet
     else if (fl & 16) g.globalAlpha = 0.55 + 0.25 * Math.sin(t / 40);   // a shadow, blinking about
-    g.scale(sg, e.sit && !e.dead ? 0.8 : 1);       // sitting: tucked down a little
-    g.drawImage(img, -SP.FOOT[0], -SP.FOOT[1]);
+    const sq = life ? life.sq : 0;
+    g.scale(sg * (1 + sq * 0.9), (e.sit && !e.dead ? 0.8 : 1) * (1 - sq));       // sitting: tucked down a little
+    // leaning one pixel into the walk: the upper body drawn a pixel ahead of the legs
+    const ln = life ? life.lean * sg : 0, cut = SP.FOOT[1] - 6;
+    if (ln) { g.drawImage(img, 0, 0, img.width, cut, -SP.FOOT[0] + ln, -SP.FOOT[1], img.width, cut); g.drawImage(img, 0, cut, img.width, img.height - cut, -SP.FOOT[0], -SP.FOOT[1] + cut, img.width, img.height - cut); }
+    else g.drawImage(img, -SP.FOOT[0], -SP.FOOT[1]);
     g.restore();
   };
   if (!s.weapon || e.dead || (fl & 2)) return body();    // (the greatsword is off stuck in the ground)
-  const bob = frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0;
+  const bob = (frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0) - hop;
   const glow = RARITY[s.gear.wq | 0] || (s.gear.we >= 7 ? "#ffffff" : null);
   if (hold.style === "float") {
     // a spellbook hovers open beside its reader, is drawn back to the chest, and darts out to cast
@@ -1514,12 +1523,13 @@ function drawPerson(s, e, t, dt, x, y) {
     const bx = x + sg * 9 + Math.cos(aimS) * out, by = y - 8 + Math.sin(t / 380 + s.ph) * 1.2 + Math.sin(aimS) * out + bob - (P ? P.lift : 0);
     const book = () => {
       g.save();
-      if (P && k > 0.1 && k < 0.5) { g.shadowColor = "#fff2b0"; g.shadowBlur = 10; } else if (glow) { g.shadowColor = glow; g.shadowBlur = 5; }
+      if (P && k > Sw.WIND * 0.8 && k < 0.4) { g.shadowColor = "#fff2b0"; g.shadowBlur = 10; } else if (glow) { g.shadowColor = glow; g.shadowBlur = 5; }
       g.translate(Math.round(bx), Math.round(by)); g.scale(big, big);
       g.drawImage(s.weapon, -16, -16);
       g.restore();
     };
     if (back) { book(); body(); } else { body(); book(); }
+    if (live && k >= Sw.IMPACT && k < Sw.IMPACT + 0.2 && s.qiT !== e.atkT) { s.qiT = e.atkT; qiBurst("book", beat, bx, by, aimS, side, 12, glow); }
     return;
   }
   const rest = sg > 0 ? -hold.rest * DEG : Math.PI + hold.rest * DEG;
@@ -1535,7 +1545,7 @@ function drawPerson(s, e, t, dt, x, y) {
     if (P.pre !== undefined) { const u = Sw.eOut(P.pre); pa = turn(s.from ?? pa, pa, u); pl = (s.fromLen ?? 1) + (pl - (s.fromLen ?? 1)) * u; pp = s.fromPush + (pp - s.fromPush) * u; }
     s.ang = pa; len = pl; depth = pd; push = pp;
     // through the strike the weapon swells toward the eye
-    if (P.strike) grow = Math.sin(clamp((k - 0.1) / 0.24, 0, 1) * Math.PI) * hold.grow * (fin ? 1.4 : 1);
+    if (P.strike) grow = Math.sin(clamp((k - Sw.WIND + 0.02) / 0.16, 0, 1) * Math.PI) * hold.grow * (fin ? 1.4 : 1);
     s.endAng = s.ang; s.endLen = len; s.endPush = push; s.endDepth = depth;
   } else if (held) {
     s.ang = s.endAng ?? s.ang; len = s.endLen ?? 1; push = s.endPush ?? 0; depth = s.endDepth ?? 0;
@@ -1558,7 +1568,7 @@ function drawPerson(s, e, t, dt, x, y) {
     if (P && P.strike && grow > 0.05) {
       const pts = [], inner = [], span = 0.07 / stroke;
       for (let j = 0; j <= 6; j++) {
-        const kk = Math.max(0.1, k - (span * j) / 6);
+        const kk = Math.max(Sw.WIND, k - (span * j) / 6);
         const q = Sw.pose(sk, beat, kk, side);
         if (!q) continue;
         const [a, l, , r] = place(q), L = long * Math.max(0.45, l) * (1 + grow);
@@ -1572,7 +1582,7 @@ function drawPerson(s, e, t, dt, x, y) {
         pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py)));
         for (let i = inner.length - 1; i >= 0; i--) g.lineTo(inner[i][0], inner[i][1]);
         g.closePath();
-        g.globalAlpha = 0.6; g.fillStyle = glow || "#dfe8ff"; g.fill();
+        g.globalAlpha = 0.4; g.fillStyle = glow || "#dfe8ff"; g.fill();   // faint: the burst of qi at the snap carries the stroke
         g.globalAlpha = 0.9; g.strokeStyle = "#ffffff"; g.lineWidth = 1;
         g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.stroke();
         g.restore();
@@ -1591,6 +1601,111 @@ function drawPerson(s, e, t, dt, x, y) {
   // a slung greatsword sits behind the body; in a stroke, a blade pointing away from the camera does too
   const behind = resting && !held ? (hold.style === "sweep") !== back : depth < -0.35 || (Math.sin(s.ang) < -0.45 && depth < 0.2);
   if (behind) { weapon(); body(); } else { body(); weapon(); }
+  // the blow lands: a burst of sword-qi as big as the weapon, at the snap (once per stroke)
+  if (live && k >= Sw.IMPACT && k < Sw.IMPACT + 0.2 && s.qiT !== e.atkT) {
+    s.qiT = e.atkT;
+    const [ia, il, , ir] = place(Sw.pose(sk, beat, Sw.IMPACT, side));
+    const tipX = hx0 + Math.cos(ia) * (ir * il + long * Math.max(0.45, il)), tipY = hy0 + Math.sin(ia) * (ir * il + long * Math.max(0.45, il));
+    qiBurst(s.wk in QI_COL ? s.wk : sk, beat, hold.style === "sweep" || (beat === 1 && hold.style === "stab") ? hx0 : tipX, hold.style === "sweep" || (beat === 1 && hold.style === "stab") ? hy0 : tipY, aimS, side, long + 6, glow);
+  }
+}
+
+// ── movement life: the stride's bounce, a lean into the walk, a squash when stopping or
+// turning, footsteps that kick up the ground underfoot, and an afterimage when running fast
+
+/** What the ground under (wx, wy) gives a footstep: grass, leaf, dirt, stone, water, wet, mud, soft (indoors). */
+function footKind(wx, wy) {
+  if (!map || !map.g) return "dirt";
+  if (theme === "interior") return "soft";
+  const row = map.g[Math.floor(wy / 16)], c = row ? row[Math.floor(wx / 16)] : null;   // 16 server units a tile
+  if (c === "w" || c === "b") return "water";
+  if (c === "j") return "mud";
+  if (theme === "sewer" || theme === "abyss") return "wet";
+  if (theme === "autumn" && (c === "%" || c === ";" || c === ":" || c === "." || c === ",")) return "leaf";
+  if (c === "." || c === "," || c === '"' || c === "t" || c === ":" || c === ";") return UG[theme] ? "stone" : "grass";
+  if (c === "p" || c === "s") return "dirt";
+  return "stone";
+}
+const LEAF = ["#e0602a", "#f0a030", "#c83a2a", "#e8c040"];
+const WET = { sewer: ["#9ac860", "#cfe8a0"], abyss: ["#e06070", "#ffb0b8"] };
+/** One footfall (the sound of your own is client.js soundscape's) at iso pixel (x, y): a puff and bits of whatever the ground is made of. */
+function footstep(kind, x, y, fast, wx, wy) {
+  const R = Math.random, f = fast ? 1.3 : 1, x0 = wx * P, y0 = wy * P;   // flat effects speak in world pixels
+  const puff = (col, n) => { for (let i = 0; i < n; i++) parts.push({ x: x + (R() - 0.5) * 6, y: y - 1, vx: (R() - 0.5) * 20 * f, vy: -6 - R() * 7, life: 0.26 + R() * 0.14, color: col, g: 12, s: i ? 2 : 3 }); };
+  const bits = (cols, n, vy, grav, s = 1) => { for (let i = 0; i < n; i++) parts.push({ x: x + (R() - 0.5) * 6, y: y - 1, vx: (R() - 0.5) * 26 * f, vy: -vy * (0.7 + R() * 0.5), life: 0.28 + R() * 0.14, color: cols[(R() * cols.length) | 0], g: grav, s }); };
+  const ripple = (col) => fxCustom((q, k) => { q.globalAlpha = 1 - k; q.strokeStyle = col; q.lineWidth = 1.5; q.beginPath(); q.ellipse(x0, y0, 3 + k * 9, 3 + k * 9, 0, 0, 7); q.stroke(); }, 420, true);
+  if (kind === "grass") { puff("#e8e0c0", 1 + (R() < 0.5)); bits(["#2f7a34", "#b8f080", "#8ad86a"], 2, 30, 170); }
+  else if (kind === "leaf") { puff("#d8b888", 1); bits(LEAF, 2, 26, 90, R() < 0.5 ? 2 : 1); }
+  else if (kind === "dirt") puff(R() < 0.5 ? "#d8c08a" : "#c8ac78", 2);
+  else if (kind === "stone") puff(UG[theme] ? "#a8a4b0" : "#d0ccc4", 2);
+  else if (kind === "water" || kind === "wet" || kind === "mud") {
+    const cols = kind === "mud" ? ["#8a6a48", "#b0906a"] : WET[theme] || ["#cfeaff", "#9fd0f0", "#ffffff"];
+    bits(cols, 3, 40, 260);
+    ripple(kind === "mud" ? "rgba(120,90,60,.7)" : kind === "wet" && WET[theme] ? WET[theme][1] : "rgba(225,245,255,.85)");
+  } else if (kind === "soft" && R() < 0.5) parts.push({ x, y: y - 1, vx: (R() - 0.5) * 8, vy: -5, life: 0.25, color: "#c8b8a0", g: 0, s: 1 });
+}
+/** Per frame, for anyone standing in the world: how they lean and squash, and their footfalls. */
+function stepLife(s, e, t, dt, x, y) {
+  const out = { lean: 0, sq: 0 };
+  if (s.mx !== undefined && dt > 0) {
+    const dx = e.x - s.mx, dy = e.y - s.my, v = Math.hypot(dx, dy) / dt;
+    if (v < 900) s.v = (s.v || 0) * 0.75 + v * 0.25;          // (a warp is not a run)
+    const sdx = dx - dy;                                       // across the screen
+    if (e.moving && Math.abs(sdx) > 0.05) {
+      const d = sdx > 0 ? 1 : -1;
+      if (s.sdir && s.sdir !== d) s.landT = t;                 // turned round: a quick squash
+      s.sdir = d;
+    }
+    if (s.wasMv && !e.moving) s.landT = t;                     // stopped: the weight lands
+  }
+  s.mx = e.x; s.my = e.y; s.wasMv = e.moving;
+  if (e.sit) return out;
+  const fast = (s.v || 0) > 62;                                // hasted (×1.4), or dashing
+  if (e.moving) {
+    out.lean = s.sdir || 0;
+    const st = Math.floor(s.walk * (fast ? 2 : 1));
+    if (st !== s.step) {
+      if (s.step !== undefined && st % 2 === 0) {
+        footstep(footKind(e.x, e.y), x + (st % 4 ? 2 : -2), y, fast, e.x, e.y);
+      }
+      s.step = st;
+    }
+  }
+  const q = (t - (s.landT || -1e9)) / 120;
+  if (q >= 0 && q < 1) out.sq = 0.12 * (1 - q) * (1 - q);
+  // running fast leaves a faint afterimage behind
+  if (fast && e.moving && s.img && t - (s.trailT || 0) > 45) {
+    s.trailT = t;
+    (s.trail ||= []).push({ img: s.img, x: Math.round(x), y: Math.round(y), face: s.face, t0: t });
+  }
+  return out;
+}
+/** The afterimages, fading over 180 ms, drawn just before the body. */
+function drawTrail(s, t) {
+  if (!s.trail || !s.trail.length) return;
+  s.trail = s.trail.filter((a) => t - a.t0 < 180);
+  for (const a of s.trail) {
+    g.save();
+    g.globalAlpha = 0.28 * (1 - (t - a.t0) / 180);
+    g.translate(a.x, a.y); g.scale(a.face, 1);
+    g.drawImage(tintWhite(a.img, "#bfe0ff"), -SP.FOOT[0], -SP.FOOT[1]);
+    g.restore();
+  }
+}
+/** A one-colour silhouette of a sprite (afterimages, hit flashes), cached per sprite and colour. */
+const silCache = new WeakMap();
+export function tintWhite(img, col = "#ffffff") {
+  let m = silCache.get(img);
+  if (!m) { m = new Map(); silCache.set(img, m); }
+  let c = m.get(col);
+  if (c) return c;
+  let x;
+  [c, x] = sheet(img.width, img.height);
+  x.drawImage(img, 0, 0);
+  x.globalCompositeOperation = "source-in";
+  x.fillStyle = col; x.fillRect(0, 0, img.width, img.height);
+  m.set(col, c);
+  return c;
 }
 
 // ───────────────────────────── effects ─────────────────────────────
@@ -1618,6 +1733,104 @@ export function personFrame(eid) {
 export const FOOT = SP.FOOT;
 /** A custom effect: draw(g, k, f) is called with k running 0 → 1 over `dur` ms. */
 export function fxCustom(draw, dur, flat = false, delay = 0) { fx.add({ k: "custom", draw, dur, flat, delay }); }
+/** The effects' clock: the time of the frame being drawn (so previews that step time by hand animate them too). */
+let fxClock = null;
+const fxNow = () => fxClock ?? performance.now();
+
+// ── sword-qi: the burst each basic blow throws off at the snap (drawPerson calls qiBurst once a
+// stroke, at swing.js IMPACT). Pixel-built, never smoothed: a white-hot first frame or two, then
+// the weapon's colour, thinning and breaking into a dither as it evaporates.
+const QI_COL = { sword: "#cfe0ff", dagger: "#ecdcff", spear: "#d0f8ec", staff: "#c8a8ff", book: "#dcc0ff" };
+const hexRGB = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const qiCache = new Map();
+/**
+ * A crescent of sword-qi R pixels across, bulging toward screen angle `ang`, squashed `sq` up and
+ * down (a level sweep lies flat, a chop stands up), thickest toward the end the blade swept to.
+ * `ph` 0 white-hot, 1 coloured with a white edge, 2 thinner and dithered, 3 nearly gone.
+ */
+function qiSprite(R, ang, side, sq, ph, col) {
+  const step = ((Math.round((ang / (2 * Math.PI)) * 48) % 48) + 48) % 48, key = `${R}|${step}|${side}|${sq}|${ph}|${col}`;
+  let c = qiCache.get(key);
+  if (c) return c;
+  if (qiCache.size > 600) qiCache.clear();
+  const a = (step / 48) * 2 * Math.PI, au = Math.atan2(Math.sin(a) / sq, Math.cos(a));
+  const N = 2 * R + 3, mid = R + 1, span = 1.3, thick = R * 0.5 * [1, 0.8, 0.55, 0.38][ph];
+  let x;
+  [c, x] = sheet(N, N);
+  const im = x.createImageData(N, N), d = im.data, [cr, cg, cb] = hexRGB(col);
+  const put = (i, j, r, gg, b) => { const o = (j * N + i) * 4; d[o] = r; d[o + 1] = gg; d[o + 2] = b; d[o + 3] = 255; };
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const dx = i - mid, dy = (j - mid) / sq, rho = Math.hypot(dx, dy);
+    if (rho > R + 0.5) continue;
+    const th = Math.atan2(Math.sin(Math.atan2(dy, dx) - au), Math.cos(Math.atan2(dy, dx) - au));
+    if (Math.abs(th) > span) continue;
+    const u = (th * side / span + 1) / 2, w = thick * Math.sin(Math.PI * u ** 0.75);
+    if (w < 0.6 || rho < R - w) continue;
+    const rim = rho > R - 1.4, inner = rho < R - w + 1.2, odd = (i + j) & 1;
+    if (ph === 0) inner ? put(i, j, cr, cg, cb) : put(i, j, 255, 255, 255);
+    else if (ph === 1) rim ? put(i, j, 255, 255, 255) : put(i, j, cr, cg, cb);
+    else if (ph === 2) { if (rim) put(i, j, (cr + 255) >> 1, (cg + 255) >> 1, (cb + 255) >> 1); else if (!odd) put(i, j, cr, cg, cb); }
+    else if (!odd && (rim || (i & 1))) put(i, j, cr, cg, cb);
+  }
+  x.putImageData(im, 0, 0);
+  qiCache.set(key, c);
+  return c;
+}
+/**
+ * Throw off the burst of a blow landing: `wk` the weapon kind, `beat` the blow of the combo,
+ * (x, y) the hand (sweeps) or the point (thrusts, staff, book) in iso pixels, `ang` the aim on
+ * screen, `side` which way the stroke swept, `size` about the weapon's length, `glow` its rarity ink.
+ */
+export function qiBurst(wk, beat, x, y, ang, side, size, glow) {
+  const fin = beat === 2, col = glow && glow !== "#ffffff" ? glow : QI_COL[wk] || QI_COL.sword;
+  const sweep = (R, sq, dur) => fx.add({ k: "qi", s: "cres", x, y: y - 2, ang, side, R: Math.round(R), sq, col, dur, fin });
+  const thrust = (L, dur) => fx.add({ k: "qi", s: "thrust", x, y, ang, L, col, dur, fin });
+  if (wk === "sword") fin ? sweep(size * 1.3, 1, 240) : sweep(size + 4, 0.62, 190);
+  else if (wk === "dagger") beat === 1 ? sweep(size + 3, 0.7, 140) : thrust(size + 8 + (fin ? 6 : 0), 140);
+  else if (wk === "spear") beat === 1 ? sweep(size + 2, 0.6, 180) : thrust(size + 14 + (fin ? 10 : 0), 180);
+  else if (wk === "staff") fx.add({ k: "qi", s: "star", x, y, ang, R: fin ? 13 : 9, col, dur: 170, fin });
+  else fx.add({ k: "qi", s: "rune", x, y, ang, R: fin ? 13 : 9, col, dur: 180, fin });
+  if (fin) fx.add({ k: "qi", s: "shock", x: x + Math.cos(ang) * size * 0.8, y: y + Math.sin(ang) * size * 0.5 + 4, ang, R: size, col, dur: 260 });
+}
+/** Draw one burst of sword-qi at k (0-1 of its life). */
+function drawQi(f, k) {
+  const ph = k < 0.16 ? 0 : k < 0.42 ? 1 : k < 0.7 ? 2 : 3;
+  const px = (x, y, w, c) => { g.fillStyle = c; g.fillRect(Math.round(x - w / 2), Math.round(y - w / 2), w, w); };
+  const ux = Math.cos(f.ang), uy = Math.sin(f.ang);
+  if (f.s === "cres") {
+    const R = Math.round(f.R * (0.9 + 0.18 * Sw.oExpo(k))), img = qiSprite(R, f.ang, f.side, f.sq, ph, f.col);
+    g.drawImage(img, Math.round(f.x - R - 1), Math.round(f.y - R - 1));
+  } else if (f.s === "thrust") {
+    // a streak along the thrust that burns away from the back, and a ring of air punched off its point
+    const L = f.L, from = L * Math.min(1, k * 1.3);
+    for (let s = Math.floor(from); s <= L; s++) {
+      const q = s / L, w = q > 0.9 ? 1 : Math.max(1, Math.round((f.fin ? 5 : 4) * Math.sin(Math.PI * q) * (1 - k * 0.8)));
+      if (ph >= 2 && s & 1) continue;
+      px(f.x + ux * (s - L * 0.7), f.y + uy * (s - L * 0.7), w, ph === 0 || q > 0.8 ? "#ffffff" : f.col);
+    }
+    const r = 4 + (f.fin ? 13 : 10) * Sw.oExpo(k), cx = f.x + ux * (L * 0.3 + 4 * k), cy = f.y + uy * (L * 0.3 + 4 * k);
+    for (let i = 0; i < 28; i++) {
+      if (ph >= 2 && i & 1) continue;
+      const a = (i / 28) * 2 * Math.PI, along = Math.cos(a) * r * 0.35, across = Math.sin(a) * r;
+      px(cx + ux * along - uy * across, cy + uy * along + ux * across, ph === 0 ? 2 : 1, ph === 0 ? "#ffffff" : f.col);
+    }
+  } else if (f.s === "star") {
+    const n = 8, r0 = 1 + 5 * k, r1 = f.R * (0.5 + 0.7 * Sw.oExpo(k)), w = ph < 2 ? 2 : 1;
+    for (let j = 0; j < n; j++) {
+      const a = f.ang + (j / n) * 2 * Math.PI, long = j % 2 ? 0.6 : 1;
+      for (let r = r0; r <= r1 * long; r += w) px(f.x + Math.cos(a) * r, f.y + Math.sin(a) * r * 0.8, w, ph === 0 ? "#ffffff" : f.col);
+    }
+    if (ph === 0) px(f.x, f.y, 5, "#ffffff");
+  } else if (f.s === "rune") {
+    const r = f.R * (0.5 + 0.6 * Sw.oExpo(k));
+    for (let i = 0; i < 32; i++) { if (ph >= 2 && i & 1) continue; const a = (i / 32) * 2 * Math.PI; px(f.x + Math.cos(a) * r, f.y + Math.sin(a) * r * 0.6, 1, ph === 0 ? "#ffffff" : f.col); }
+    for (let j = 0; j < 4; j++) { const a = k * 3 + (j / 4) * 2 * Math.PI; px(f.x + Math.cos(a) * r, f.y + Math.sin(a) * r * 0.6, ph < 2 ? 3 : 2, ph < 2 ? "#ffffff" : f.col); }
+  } else if (f.s === "shock") {
+    // the finisher's ring of air lying on the ground where it lands
+    const r = f.R * (0.3 + 0.9 * Sw.oExpo(k));
+    for (let i = 0; i < 40; i++) { if (ph >= 2 && i % 3 === 0) continue; const a = (i / 40) * 2 * Math.PI; px(f.x + Math.cos(a) * r, f.y + Math.sin(a) * r * 0.45, ph < 2 ? 2 : 1, ph === 0 ? "#ffffff" : f.col); }
+  }
+}
 
 /**
  * Effects. Things flat on the ground (rings, telegraphs, lanes, puddles, cracks,
@@ -1629,7 +1842,7 @@ export function fxCustom(draw, dur, flat = false, delay = 0) { fx.add({ k: "cust
 export const fx = {
   list: [],
   clear() { this.list.length = 0; parts.length = 0; },
-  add(o) { o.t0 = performance.now() + (o.delay || 0); this.list.push(o); },
+  add(o) { o.t0 = fxNow() + (o.delay || 0); this.list.push(o); },
   ring(wx, wy, r, color, dur = 300, filled = false, delay = 0) { this.add({ k: "ring", x: wx * P, y: wy * P, r: r * P, color, dur, filled, delay }); },
   tele(wx, wy, r, ms) { this.add({ k: "tele", x: wx * P, y: wy * P, r: r * P, dur: ms }); },
   proj(ax, ay, ah, bx, by, bh, color, size, speed, done) {
@@ -1644,7 +1857,12 @@ export const fx = {
   pillar(wx, wy) { const [x, y] = iso(wx, wy); this.add({ k: "pillar", x, y, dur: 900 }); this.sparkle(wx, wy, 0.5, "#ffd84a", 24); },
   burst(wx, wy, h, color, n = 8, speed = 1.4) { const [x, y] = iso(wx, wy); for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = speed * 34 * (0.3 + Math.random() * 0.7); parts.push({ x, y: y - h * 22, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.7 - 30, life: 0.25 + Math.random() * 0.3, color, g: 220 }); } },
   sparkle(wx, wy, h, color, n = 10) { const [x, y] = iso(wx, wy); for (let i = 0; i < n; i++) parts.push({ x: x + Math.random() * 28 - 14, y: y - h * 22 + Math.random() * 18 - 6, vx: 0, vy: -26 - Math.random() * 34, life: 0.4 + Math.random() * 0.5, color, g: 0 }); },
-  flash() {},
+  /** A skill's core flash: a white-hot disc for the first frame or two, a yellow one shrinking after (60 ms). */
+  flash(wx, wy, r = 14, delay = 0, h = 0.35) { const [x, y] = iso(wx, wy); this.add({ k: "flash", x, y: y - h * 22, r, dur: 64, delay }); },
+  /** A shockwave: a thin bright ring racing out flat over the ground to radius r, a fainter one behind it. */
+  wave(wx, wy, r, color = "#ffffff", dur = 340, delay = 0) { this.add({ k: "wave", x: wx * P, y: wy * P, r: r * P, color, dur, delay }); },
+  /** A pillar of lightning striking (wx, wy) out of the sky, re-forked every frame. */
+  zap(wx, wy, color = "#bfe8ff", dur = 240, delay = 0) { const [x, y] = iso(wx, wy); this.add({ k: "zap", x, y, color, dur, delay }); this.flash(wx, wy, 16, delay, 0.1); this.wave(wx, wy, 26, color, 300, delay); },
   /** A marked line something is about to run down, from a to b; it fills as the moment (`ms`) nears. */
   lane(ax, ay, bx, by, ms, color = "#ff5a6a", width = 13) { this.add({ k: "lane", x0: ax * P, y0: ay * P, x1: bx * P, y1: by * P, w: width * P, color, dur: ms }); },
   /** A puddle on the ground: appears after `delay` ms and lies there for `ms`. */
@@ -1665,10 +1883,10 @@ export const fx = {
   /** Blades whirling round a point: `n` short arcs sweeping a ring of radius `r` (an ellipse on the ground). */
   storm(wx, wy, r, color = "#d8e8ff", dur = 420, n = 5) { const [x, y] = iso(wx, wy); this.add({ k: "storm", x, y: y - 6, r: r * Math.SQRT2 * K, color, dur, n, a0: Math.random() * 6.28 }); },
   /** The ground split open: jagged cracks running out from a point, flat on the ground. */
-  crack(wx, wy, r, color = "#ffb04a", dur = 700) {
+  crack(wx, wy, r, color = "#ffb04a", dur = 700, scar = false) {
     const rays = [];
     for (let i = 0; i < 9; i++) { const a = (i / 9) * 6.28 + Math.random() * 0.4, pts = [[0, 0]]; let d = 0; while (d < 1) { d += 0.18 + Math.random() * 0.12; pts.push([Math.cos(a) * d + (Math.random() - 0.5) * 0.12, Math.sin(a) * d + (Math.random() - 0.5) * 0.12]); } rays.push(pts); }
-    this.add({ k: "crack", x: wx * P, y: wy * P, r: r * P, color, dur, rays });
+    this.add({ k: "crack", x: wx * P, y: wy * P, r: r * P, color, dur, rays, scar });
   },
   /** A jagged bolt of lightning from a to b, redrawn a little differently each frame. */
   bolt(ax, ay, bx, by, color = "#9fdcff", dur = 240) { const [x0, y0] = iso(ax, ay), [x1, y1] = iso(bx, by); this.add({ k: "bolt", x0, y0: y0 - 14, x1, y1: y1 - 14, color, dur }); },
@@ -1677,7 +1895,52 @@ export const fx = {
   /** Snow driven across a round patch of ground for `ms`. */
   snow(wx, wy, r, ms = 3600) { this.add({ k: "snow", x: wx * P, y: wy * P, r: r * P, dur: ms }); },
 };
-export function shake(n) { shakeAmt = Math.max(shakeAmt, n); }
+/**
+ * The skills' effects, scaled up (skillfx.js and growth.js draw through this): bursts and sparkles
+ * 1.8× as dense and 1.35× as fast, sparks and slashes 1.5×, decorative rings 1.5× (a filled ring
+ * marks the real reach of a blast, so it keeps its size and gets a shockwave racing out to 1.6×
+ * past it instead), cracks 1.5× over a dark scar that lingers, a white-hot core flash wherever a
+ * blast, a spark or a falling thing lands (once per spot), a lightning pillar at the end of every
+ * bolt, and a shake that is stronger and, given `ang` (the skill's aim on the ground), directional.
+ */
+export function big(ang) {
+  const F = fx, flashed = new Set();
+  const flash = (wx, wy, r, delay = 0) => { const key = `${Math.round(wx / 8)},${Math.round(wy / 8)},${delay}`; if (!flashed.has(key)) { flashed.add(key); F.flash(wx, wy, r, delay); } };
+  const W = Object.create(F);
+  W.ring = (wx, wy, r, color, dur = 300, filled = false, delay = 0) => {
+    if (!filled) return F.ring(wx, wy, r * 1.5, color, dur * 1.15, false, delay);
+    F.ring(wx, wy, r, color, dur * 1.15, true, delay);
+    F.wave(wx, wy, r * 1.6, color, dur + 80, delay);
+    flash(wx, wy, Math.min(26, 8 + r * 0.22), delay);
+  };
+  W.burst = (wx, wy, h, color, n = 8, speed = 1.4) => F.burst(wx, wy, h, color, Math.round(n * 1.8), speed * 1.35);
+  W.sparkle = (wx, wy, h, color, n = 10) => F.sparkle(wx, wy, h, color, Math.round(n * 1.8));
+  W.spark = (wx, wy, color, size = 1) => { F.spark(wx, wy, color, size * 1.5); flash(wx, wy, 7 + size * 5); };
+  W.storm = (wx, wy, r, color, dur = 420, n = 5) => F.storm(wx, wy, r * 1.15, color, dur * 1.1, n + 2);
+  W.slash = (wx, wy, a, color, size = 0.8, rev = false) => F.slash(wx, wy, a, color, size * 1.5, rev);
+  W.crack = (wx, wy, r, color = "#ffb04a", dur = 700) => {
+    F.crack(wx, wy, r * 1.3, "#2b2233", dur + 1100, true);   // the scar it leaves, under the glow
+    F.crack(wx, wy, r * 1.5, color, dur);
+    F.wave(wx, wy, r * 2.2, "#ffffff", 300);
+    F.wave(wx, wy, r * 1.5, color, 380, 60);
+  };
+  W.bolt = (ax, ay, bx, by, color = "#9fdcff", dur = 240) => { F.bolt(ax, ay, bx, by, color, dur); F.zap(bx, by, color, dur); };
+  W.fall = (wx, wy, color = "#ffd84a", ms = 450) => { F.fall(wx, wy, color, ms); flash(wx, wy, 20, ms); F.wave(wx, wy, 44, color, 360, ms); };
+  return { fx: W, shake: (n, a = ang) => shake(n * 1.3, a), big };
+}
+/**
+ * Shake the view. With no direction: a short sharp jitter of about ±n/2 px (a plain hit: 2–3).
+ * With `ang` (a direction on the ground, radians): a kick of n px along it that swings back and
+ * forth and dies in about a tenth of a second — crits and the big skills, along the blow.
+ */
+export function shake(n, ang) {
+  if (ang === undefined || !isFinite(ang)) { shakeAmt = Math.max(shakeAmt, n); return; }
+  if (n < kick.amt) return;
+  const sx = Math.cos(ang) - Math.sin(ang), sy = (Math.cos(ang) + Math.sin(ang)) / 2, l = Math.hypot(sx, sy) || 1;
+  kick.x = sx / l; kick.y = sy / l; kick.amt = n; kick.t0 = fxNow();
+  shakeAmt = Math.max(shakeAmt, n * 0.25);
+}
+const kick = { x: 0, y: 0, amt: 0, t0: 0 };
 
 // ───────────────────────────── pets ─────────────────────────────
 // A pet trots a little behind its owner, on the side away from where they face,
@@ -1738,14 +2001,42 @@ function drawFx(now, ground2) {
     const f = fx.list[i], k = (now - f.t0) / f.dur;
     if (k < 0) continue;
     if (k >= 1) { fx.list.splice(i, 1); if (f.done) f.done(); continue; }
-    const flat = f.k === "ring" || f.k === "tele" || f.k === "lane" || f.k === "pool" || f.k === "mark" || f.k === "crack" || f.k === "snow" || (f.k === "custom" && f.flat);
+    const flat = f.k === "ring" || f.k === "wave" || f.k === "tele" || f.k === "lane" || f.k === "pool" || f.k === "mark" || f.k === "crack" || f.k === "snow" || (f.k === "custom" && f.flat);
     if (flat !== ground2) continue;
     if (f.k === "custom") { g.save(); f.draw(g, k, f); g.restore(); continue; }
+    if (f.k === "qi") { g.globalAlpha = 1; drawQi(f, k); continue; }
+    if (f.k === "flash") {
+      // pixel rows, no smoothing: white-hot with a yellow rim, then a smaller yellow core
+      const hot = k < 0.5, rx = Math.round(f.r * (hot ? 1 : 0.6)), ry = Math.max(1, Math.round(rx * 0.75));
+      g.globalAlpha = 1;
+      for (let dy = -ry; dy <= ry; dy++) {
+        const w = Math.round(rx * Math.sqrt(1 - (dy / ry) ** 2));
+        g.fillStyle = hot ? "#fff6b0" : "#ffd84a"; g.fillRect(Math.round(f.x) - w, Math.round(f.y) + dy, w * 2 + 1, 1);
+        if (hot && w > 2) { g.fillStyle = "#ffffff"; g.fillRect(Math.round(f.x) - w + 2, Math.round(f.y) + dy, w * 2 - 3, 1); }
+      }
+      continue;
+    }
+    if (f.k === "zap") {
+      // a jagged column from high above down to the ground, forked anew each frame, a branch now and then
+      const top = f.y - 150, n = 12, pts = [];
+      for (let q = 0; q <= n; q++) pts.push([f.x + (q === 0 || q === n ? 0 : (Math.random() - 0.5) * 14), top + ((f.y - top) * q) / n]);
+      g.globalAlpha = k < 0.6 ? 1 : (1 - k) / 0.4;
+      for (const [col, w] of [[f.color, 6], ["#ffffff", 2]]) { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); for (const [x, y] of pts) g.lineTo(x, y); g.stroke(); }
+      if (Math.random() < 0.5) { const [bx, by] = pts[4 + ((Math.random() * 5) | 0)]; g.strokeStyle = f.color; g.lineWidth = 2; g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + (Math.random() - 0.5) * 30, by + 10 + Math.random() * 14); g.stroke(); }
+      g.globalAlpha = 1; g.lineWidth = 1;
+      continue;
+    }
     if (f.k === "ring") {
       g.globalAlpha = 1 - k;
       if (f.filled) { g.fillStyle = f.color; g.globalAlpha = (1 - k) * 0.35; g.beginPath(); g.arc(f.x, f.y, f.r * k, 0, 7); g.fill(); g.globalAlpha = 1 - k; }
       g.strokeStyle = f.color; g.lineWidth = 5;
       g.beginPath(); g.arc(f.x, f.y, f.r * k, 0, 7); g.stroke();
+    } else if (f.k === "wave") {
+      const u = Sw.oExpo(k);
+      g.strokeStyle = f.color; g.globalAlpha = 1 - k; g.lineWidth = 3;
+      g.beginPath(); g.arc(f.x, f.y, f.r * (0.15 + 0.85 * u), 0, 7); g.stroke();
+      g.globalAlpha = (1 - k) * 0.5; g.lineWidth = 2;
+      g.beginPath(); g.arc(f.x, f.y, f.r * (0.1 + 0.68 * u), 0, 7); g.stroke();
     } else if (f.k === "tele") {
       g.fillStyle = `rgba(255,60,120,${0.16 + 0.16 * Math.abs(Math.sin(now / 70))})`;
       g.beginPath(); g.arc(f.x, f.y, f.r, 0, 7); g.fill();
@@ -1834,6 +2125,13 @@ function drawFx(now, ground2) {
     } else if (f.k === "crack") {
       // cracks run out in the first fifth, glow, then darken and fade
       const run = Math.min(1, k * 5), a = k < 0.6 ? 1 : (1 - k) / 0.4;
+      if (f.scar) {
+        // the scar a slam leaves: thin dark fissures, already there, fading slowly
+        g.globalAlpha = 0.5 * Math.min(1, (1 - k) / 0.5); g.strokeStyle = f.color; g.lineWidth = 3;
+        for (const pts of f.rays) { g.beginPath(); for (const [px2, py2] of pts) g.lineTo(f.x + px2 * f.r, f.y + py2 * f.r); g.stroke(); }
+        g.globalAlpha = 1; g.lineWidth = 1;
+        continue;
+      }
       for (const pts of f.rays) {
         const m = Math.max(1, Math.ceil(pts.length * run));
         for (const [col, w] of [["#2b2233", 8], [k < 0.35 ? "#fff0b0" : f.color, 3.5]]) {
@@ -1981,7 +2279,7 @@ export function sync(state2) { G = state2; }
 /** Milliseconds from the start of a stroke to the moment its blade crosses the target. */
 export function impactMs(wk, beat) {
   const hold = SP.HOLD[wk] || SP.HOLD.sword;
-  return hold.time * (beat === 2 ? 1.15 : 1) * 1000 * 0.23;
+  return hold.time * (beat === 2 ? 1.15 : 1) * 1000 * Sw.IMPACT;
 }
 
 /** Draw the on-screen part of a whole-map layer whose map origin sits at (lx, ly) inside it. */
@@ -2070,8 +2368,12 @@ export function render(focusX, focusY, dt, t, snap) {
   ty = maxY > vh ? clamp(ty, -60, maxY - vh + 40) : (maxY - vh) / 2;
   if (snap) { cam.x = tx; cam.y = ty; } else { cam.x += (tx - cam.x) * Math.min(1, dt * 10); cam.y += (ty - cam.y) * Math.min(1, dt * 10); }
   shakeAmt = Math.max(0, shakeAmt - dt * 18);
-  const ox = Math.round(cam.x + (Math.random() - 0.5) * shakeAmt), oy = Math.round(cam.y + (Math.random() - 0.5) * shakeAmt);
-  const now = performance.now();
+  // a directional kick (crits, big skills) swings along the blow and dies in a few swings
+  kick.amt = Math.max(0, kick.amt - dt * 40);
+  const kq = kick.amt * Math.cos(((t - kick.t0) / 1000) * 2 * Math.PI * 18);
+  const ox = Math.round(cam.x + (Math.random() - 0.5) * shakeAmt + kick.x * kq), oy = Math.round(cam.y + (Math.random() - 0.5) * shakeAmt + kick.y * kq);
+  fxClock = t;
+  const now = t;
 
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.fillStyle = VOID[theme] || "#0b0d18";
@@ -2220,9 +2522,11 @@ export function render(focusX, focusY, dt, t, snap) {
       const jx = rec ? hx * rec * 6 * pow + Math.sin(t / 14) * rec * 2 : 0, jy = rec ? hy * rec * 6 * pow : 0;
       g.translate(Math.round(x + lunge + jx), Math.round(y + jy - s.hover - (s.hover ? Math.sin(t / 320 + m.id) * 2 : 0)));
       g.scale(s.face * (1 + rec * 0.24), 1 - rec * 0.2);
-      if (t - m.hurtT < 110) g.filter = "brightness(2.2)";
-      else if (el) { g.shadowColor = el === 2 ? "#ff5ad0" : "#ffc040"; g.shadowBlur = el === 2 ? 8 : 4; }
-      g.drawImage(img, -w / 2, -w * (SP.FOOT[1] / SP.SIZE), w, w);
+      // struck: pure white for the first frames (and through a hitstop), then a bright blink
+      const hw = t - m.hurtT, white = hw >= 0 && hw < 36 + (m.hsMs || 0);
+      if (!white && hw >= 0 && hw < 110) g.filter = "brightness(1.8)";
+      else if (!white && el) { g.shadowColor = el === 2 ? "#ff5ad0" : "#ffc040"; g.shadowBlur = el === 2 ? 8 : 4; }
+      g.drawImage(white ? tintWhite(img) : img, -w / 2, -w * (SP.FOOT[1] / SP.SIZE), w, w);
       g.restore();
       m.h3 = (w * (G.defs.mobs[m.k].boss ? 0.92 : 0.72) + s.hover) / 26;
     } else if (o.pr) {

@@ -237,7 +237,8 @@ const REACT_NAME = [null, ["증기 폭발!", "#ffffff"], ["초전도!", "#b8a0ff
 
 export function skillEvent(e, ctx) {
   const { G, entityPos } = ctx;
-  const f = S3.fx, t = ctx.t;
+  // the skills' effects go through the scaled-up set (scene2d big): denser, bigger, a core flash, shockwaves
+  const B = S3.big(), f = B.fx, t = ctx.t;
   live.G = G;
   switch (e[0]) {
     case "a": {
@@ -262,25 +263,25 @@ export function skillEvent(e, ctx) {
     }
     case "bw": {
       const [, x, y, r, kind] = e;
-      if (kind === 1) { f.ring(x, y, r, "#ffd84a", 380, true); f.crack(x, y, r * 0.5, "#ffd84a", 500); f.burst(x, y, 0.3, "#ffe9a0", 26, 2.8); S3.shake(7); Sound.play("shock"); }
-      else if (kind === 2) { f.ring(x, y, r, "#ff8a3a", 420, true); f.ring(x, y, r * 0.7, "#ffffff", 300); f.crack(x, y, r * 0.6, "#ff7a3a", 650); f.burst(x, y, 0.3, "#ffb04a", 20 + r / 2, 3.4); S3.shake(Math.min(14, 4 + r / 8)); Sound.play("grit_burst"); }
-      else if (kind === 3) { f.ring(x, y, r, "#c8a878", 260); f.burst(x, y, 0.05, "#a89068", 10, 1.6); S3.shake(2); Sound.play("quake"); }
+      if (kind === 1) { f.ring(x, y, r, "#ffd84a", 380, true); f.crack(x, y, r * 0.5, "#ffd84a", 500); f.burst(x, y, 0.3, "#ffe9a0", 26, 2.8); B.shake(7); Sound.play("shock"); }
+      else if (kind === 2) { f.ring(x, y, r, "#ff8a3a", 420, true); f.ring(x, y, r * 0.7, "#ffffff", 300); f.crack(x, y, r * 0.6, "#ff7a3a", 650); f.burst(x, y, 0.3, "#ffb04a", 20 + r / 2, 3.4); B.shake(Math.min(14, 4 + r / 8)); Sound.play("grit_burst"); }
+      else if (kind === 3) { f.ring(x, y, r, "#c8a878", 260); f.burst(x, y, 0.05, "#a89068", 10, 1.6); B.shake(2); Sound.play("quake"); }
       else if (kind === 5) { f.ring(x, y, r, "#c070ff", 260, true); f.burst(x, y, 0.5, "#d8a0ff", 14, 2.4); f.spark(x, y, "#f0d0ff", 1.4); Sound.play("harvest"); }
-      else if (kind === 9) { f.crack(x, y, r * 0.6, "#ffd84a", 700); f.ring(x, y, r, "#ffffff", 320, true); f.burst(x, y, 0.1, "#e0c890", 34, 3); S3.shake(10); Sound.play("slam"); }
-      else if (kind === 13) { f.ring(x, y, r, "#ff8a3a", 380, true); f.ring(x, y, r * 0.8, "#9fe8ff", 380, false, 80); f.ring(x, y, r * 0.6, "#ffe86a", 380, false, 160); f.sparkle(x, y, 0.6, "#ffffff", 24); S3.shake(6); }
-      else if (kind === 14) { f.ring(x, y, r, "#d0f0e8", 300, true); f.burst(x, y, 0.1, "#b8a878", 16, 2.2); S3.shake(4); Sound.play("boom"); }
+      else if (kind === 9) { f.crack(x, y, r * 0.6, "#ffd84a", 700); f.ring(x, y, r, "#ffffff", 320, true); f.burst(x, y, 0.1, "#e0c890", 34, 3); B.shake(10); Sound.play("slam"); }
+      else if (kind === 13) { f.ring(x, y, r, "#ff8a3a", 380, true); f.ring(x, y, r * 0.8, "#9fe8ff", 380, false, 80); f.ring(x, y, r * 0.6, "#ffe86a", 380, false, 160); f.sparkle(x, y, 0.6, "#ffffff", 24); B.shake(6); }
+      else if (kind === 14) { f.ring(x, y, r, "#d0f0e8", 300, true); f.burst(x, y, 0.1, "#b8a878", 16, 2.2); B.shake(4); Sound.play("boom"); }
       return true;
     }
     case "rx": {
       const [, id, x, y, r] = e;
-      if (id === 1) { f.ring(x, y, r, "#ffffff", 420, true); for (let i = 0; i < 18; i++) f.sparkle(x + (Math.random() - 0.5) * r, y + (Math.random() - 0.5) * r * 0.6, 0.2, "#eef4ff", 2); f.burst(x, y, 0.3, "#d8e8f0", 30, 2.4); S3.shake(5); Sound.play("steam"); }
+      if (id === 1) { f.ring(x, y, r, "#ffffff", 420, true); for (let i = 0; i < 18; i++) f.sparkle(x + (Math.random() - 0.5) * r, y + (Math.random() - 0.5) * r * 0.6, 0.2, "#eef4ff", 2); f.burst(x, y, 0.3, "#d8e8f0", 30, 2.4); B.shake(5); Sound.play("steam"); }
       else if (id === 2) { f.ring(x, y, r, "#b8a0ff", 360, true); f.ring(x, y, r * 0.6, "#9fe8ff", 300); for (let i = 0; i < 4; i++) { const a = Math.random() * 6.28; f.bolt(x, y, x + Math.cos(a) * r, y + Math.sin(a) * r * 0.8, "#c8b0ff", 260); } Sound.play("supercon"); }
-      else { f.ring(x, y, r, "#ffb04a", 340, true); f.ring(x, y, r * 1.2, "#ffe86a", 300); f.crack(x, y, r * 0.7, "#ffb04a", 500); f.burst(x, y, 0.4, "#ffd84a", 30, 3.6); S3.shake(8); Sound.play("overload"); }
+      else { f.ring(x, y, r, "#ffb04a", 340, true); f.ring(x, y, r * 1.2, "#ffe86a", 300); f.crack(x, y, r * 0.7, "#ffb04a", 500); f.burst(x, y, 0.4, "#ffd84a", 30, 3.6); B.shake(8); Sound.play("overload"); }
       const [s, c] = REACT_NAME[id];
       text(G, s, x, y, 1.6, c, true);
       return true;
     }
-    case "sw": stuckSword(e[1], e[2], e[3], e[4]); f.burst(e[2], e[3], 0.1, "#a89068", 12, 1.8); S3.shake(2); return true;
+    case "sw": stuckSword(e[1], e[2], e[3], e[4]); f.burst(e[2], e[3], 0.1, "#a89068", 12, 1.8); B.shake(2); return true;
     case "sr": {
       S3.props.delete("sw" + e[1]);
       const o = entityPos(e[1]);
@@ -289,7 +290,7 @@ export function skillEvent(e, ctx) {
       return true;
     }
     case "dc": decoy(e[1], e[2], e[3], e[4], e[5]); f.burst(e[3], e[4], 0.6, "#6a5a88", 30, 1.4); Sound.play("decoy"); return true;
-    case "dx": S3.props.delete("dc" + e[1]); f.ring(e[2], e[3], e[4], "#a070e0", 320, true); f.burst(e[2], e[3], 0.6, "#c890ff", 30, 3); S3.shake(4); Sound.play("decoy_pop"); return true;
+    case "dx": S3.props.delete("dc" + e[1]); f.ring(e[2], e[3], e[4], "#a070e0", 320, true); f.burst(e[2], e[3], 0.6, "#c890ff", 30, 3); B.shake(4); Sound.play("decoy_pop"); return true;
     case "bn": banner(e[1], e[2], e[3], e[4], e[5]); Sound.play("banner"); return true;
     case "tp": teapot(e[1], e[2], e[3], e[4], e[5]); Sound.play("tea"); return true;
     case "tq": { const pr = S3.props.get("tp" + e[1]); if (pr) { f.sparkle(pr.x, pr.y, 0.6, "#b8ffc0", 6); Sound.play("tea"); } return true; }
@@ -303,7 +304,7 @@ export function skillEvent(e, ctx) {
       return true;
     }
     case "fo": { const o = entityPos(e[1]); if (o) { f.ring(o.x, o.y, 26, "#5ad0b8", 400, true); f.sparkle(o.x, o.y, 0.7, "#c8fff0", 14); if (e[1] === G.you) text(G, "집중 개방!", o.x, o.y, 1.7, "#7affe0", true); } Sound.play("focus"); return true; }
-    case "wl": { const m = G.mobs.get(e[1]); if (m) { text(G, "벽꿍!", m.x, m.y, (m.h3 || 1.3) + 0.5, "#ffe08a", true); f.burst(m.x, m.y, 0.5, "#e0c890", 22, 2.6); f.ring(m.x, m.y, 20, "#ffffff", 240); } S3.shake(6); Sound.play("wall"); return true; }
+    case "wl": { const m = G.mobs.get(e[1]); if (m) { text(G, "벽꿍!", m.x, m.y, (m.h3 || 1.3) + 0.5, "#ffe08a", true); f.burst(m.x, m.y, 0.5, "#e0c890", 22, 2.6); f.ring(m.x, m.y, 20, "#ffffff", 240); } B.shake(6); Sound.play("wall"); return true; }
     case "bl": { const o = entityPos(e[1]); if (o) { f.spark(o.x, o.y - 4, "#e6f4ff", 1.5); f.burst(o.x, o.y, 0.7, "#ffffff", 8, 2); } Sound.play("block"); return true; }
     case "bk": { const o = entityPos(e[1]); if (o) f.spark(o.x, o.y - 4, "#ffd84a", 1.3); Sound.play("clang"); return true; }
     case "cn": {
@@ -369,18 +370,19 @@ export function skillEvent(e, ctx) {
 
 /** A skill being used: what it looks like at the caster and where it lands. */
 function cast(kind, src, eid, tx, ty, extra, G) {
-  const f = S3.fx;
   const ang = Math.hypot(tx - src.x, ty - src.y) > 2 ? Math.atan2(ty - src.y, tx - src.x) : [Math.PI / 2, Math.PI, 0, -Math.PI / 2][src.dir] || 0;
+  // scaled-up effects, and a shake that kicks along the skill's aim
+  const B = S3.big(ang), f = B.fx;
   switch (kind) {
     // ── 전사
-    case 40: f.spark(tx, ty, "#ffe9a0", 1.2); f.burst(tx, ty, 0.6, "#ffffff", 6, 1.6); S3.shake(2); Sound.play("headbutt"); break;
+    case 40: f.spark(tx, ty, "#ffe9a0", 1.2); f.burst(tx, ty, 0.6, "#ffffff", 6, 1.6); B.shake(2); Sound.play("headbutt"); break;
     case 41: flyingBlade(eid, src.x, src.y, tx, ty, 200, 2); Sound.play("throw"); break;
     case 42: break;
     case 43: f.ring(src.x, src.y, 18, "#ffd84a", 300); Sound.play("brace"); break;
-    case 45: f.ring(src.x, src.y, extra || 96, "#ff6a4a", 520); f.ring(src.x, src.y, (extra || 96) * 0.6, "#ffb04a", 420, false, 80); f.sparkle(src.x, src.y, 0.9, "#ff8a6a", 16); S3.shake(5); Sound.play("roar"); break;
+    case 45: f.ring(src.x, src.y, extra || 96, "#ff6a4a", 520); f.ring(src.x, src.y, (extra || 96) * 0.6, "#ffb04a", 420, false, 80); f.sparkle(src.x, src.y, 0.9, "#ff8a6a", 16); B.shake(5); Sound.play("roar"); break;
     case 46: f.slash(src.x, src.y, ang, "#ffb04a", 1.6); break;
     case 47: f.ring(src.x, src.y, 40, "#c8a878", 360, true); Sound.play("quake"); break;
-    case 48: f.sparkle(src.x, src.y, 1.4, "#ffd84a", 30); f.ring(src.x, src.y, 30, "#ffd84a", 500); S3.shake(8); Sound.play("giant"); if (eid === G.you) text(G, "거신화!", src.x, src.y, 2.4, "#ffd84a", true); break;
+    case 48: f.sparkle(src.x, src.y, 1.4, "#ffd84a", 30); f.ring(src.x, src.y, 30, "#ffd84a", 500); B.shake(8); Sound.play("giant"); if (eid === G.you) text(G, "거신화!", src.x, src.y, 2.4, "#ffd84a", true); break;
     // ── 도적
     case 50: f.slash(tx, ty, ang, "#c890ff", 0.9); Sound.play("swap"); break;
     case 51: f.sparkle(src.x, src.y, 0.6, "#8ad84a", 16); f.burst(src.x, src.y, 0.6, "#5aa83a", 8, 1); Sound.play("venom"); break;
@@ -389,20 +391,20 @@ function cast(kind, src, eid, tx, ty, extra, G) {
     case 54: f.ring(src.x, src.y, extra || 110, "#c070ff", 380); Sound.play("harvest"); break;
     case 55: f.burst(src.x, src.y, 0.6, "#2a2040", 30, 1.8); f.storm(src.x, src.y, 24, "#a070e0", 300, 3); Sound.play("dance"); break;
     case 56: f.burst(src.x, src.y, 0.6, "#6a4a9a", 20, 1.6); f.ring(src.x, src.y, 20, "#c890ff", 300); break;
-    case 57: f.slash(tx, ty, ang + 0.8, "#c070ff", 1.1); f.slash(tx, ty, ang - 0.8, "#c070ff", 1.1, true); f.spark(tx, ty, "#f0d0ff", 1.5); S3.shake(3); Sound.play("crit"); break;
+    case 57: f.slash(tx, ty, ang + 0.8, "#c070ff", 1.1); f.slash(tx, ty, ang - 0.8, "#c070ff", 1.1, true); f.spark(tx, ty, "#f0d0ff", 1.5); B.shake(3); Sound.play("crit"); break;
     // ── 창술사
     case 60: Sound.play("hook"); break;
     case 61: Sound.play("pole"); break;
     case 62: break;
     case 63: f.storm(src.x, src.y, 36, "#e6f4ff", 300, 4); Sound.play("wheel"); break;
     case 64: Sound.play("javelin"); break;
-    case 65: f.slash(src.x, src.y, ang, "#ffffff", 2.2); f.ring(src.x, src.y, 30, "#5ad0b8", 400, true); S3.shake(9); Sound.play("hundred"); if (eid === G.you) text(G, extra ? `백보일섬 · 집중 ${extra}` : "백보일섬", src.x, src.y, 2.2, "#c8fff0", true); break;
+    case 65: f.slash(src.x, src.y, ang, "#ffffff", 2.2); f.ring(src.x, src.y, 30, "#5ad0b8", 400, true); B.shake(9); Sound.play("hundred"); if (eid === G.you) text(G, extra ? `백보일섬 · 집중 ${extra}` : "백보일섬", src.x, src.y, 2.2, "#c8fff0", true); break;
     // ── 마도사
-    case 70: f.proj(src.x, src.y, 1.1, tx, ty, 0.4, "#ff8a3a", 0.12, 15, () => { f.ring(tx, ty, 26, "#ff8a3a", 300, true); f.burst(tx, ty, 0.4, "#ffd84a", 18, 2.4); S3.shake(2); Sound.play("boom"); }); Sound.play("ember"); break;
+    case 70: f.proj(src.x, src.y, 1.1, tx, ty, 0.4, "#ff8a3a", 0.12, 15, () => { f.ring(tx, ty, 26, "#ff8a3a", 300, true); f.burst(tx, ty, 0.4, "#ffd84a", 18, 2.4); B.shake(2); Sound.play("boom"); }); Sound.play("ember"); break;
     case 71: f.ring(src.x, src.y, extra || 56, "#9fe8ff", 420, true); f.ring(src.x, src.y, (extra || 56) * 0.7, "#ffffff", 300, false, 60); f.sparkle(src.x, src.y, 0.5, "#d0f4ff", 20); Sound.play("frost"); break;
     case 72: break;
     case 73: f.sparkle(src.x, src.y, 0.9, "#fff27a", 10); break;
     case 74: f.ring(src.x, src.y, 24, "#9fd8ff", 500); Sound.play("rewind"); break;
-    case 75: f.sparkle(src.x, src.y, 1.2, "#ffffff", 30); S3.shake(6); Sound.play("surge"); if (eid === G.you) text(G, "원소 폭주!", src.x, src.y, 2.2, "#ffe86a", true); break;
+    case 75: f.sparkle(src.x, src.y, 1.2, "#ffffff", 30); B.shake(6); Sound.play("surge"); if (eid === G.you) text(G, "원소 폭주!", src.x, src.y, 2.2, "#ffe86a", true); break;
   }
 }

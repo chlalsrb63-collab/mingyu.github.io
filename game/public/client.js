@@ -374,8 +374,8 @@ function onEvent(e, t) {
       const h = heightOf(tgt);
       if (dmg < 0) floatText(`+${-dmg}`, tgt.x, tgt.y, h + 0.3, "#8cff8c");
       else {
-        floatText(crit ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit);
-        tgt.hurtT = t;
+        floatText(crit ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit, true);
+        tgt.hurtT = t; tgt.hsMs = 0;
         // recoil away from whoever struck last
         if (!isPlayer && G.hitFrom) {
           tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]);
@@ -385,8 +385,12 @@ function onEvent(e, t) {
           S3.fx.spark(tgt.x, tgt.y, crit ? "#ffe04a" : "#ffffff", heavy ? 1.7 : 1.1);
           S3.fx.ring(tgt.x, tgt.y - 4, heavy ? 20 : 11, crit ? "#ffe04a" : "#ffffff", heavy ? 220 : 150);
           if (mine) {
-            if (!G.me.hs || t > G.me.hs.at + G.me.hs.dur) G.me.hs = { at: t, dur: heavy ? 110 : 55 };
-            S3.shake(heavy ? 5 : 2);
+            // a local hitstop: the blow and what it struck hold still for a beat (2–3 frames on a
+            // crit, a finisher or a skill; barely one on a plain hit, so the tempo stays high)
+            const stop = heavy ? 45 : 18;
+            if (!G.me.hs || t > G.me.hs.at + G.me.hs.dur) G.me.hs = { at: t, dur: stop };
+            tgt.hsMs = stop;
+            if (heavy) S3.shake(5, tgt.hurtA); else S3.shake(2.5);
             if (heavy) { G.punch = 1; Sound.play(fin ? "finisher" : "crit"); }
           }
         }
@@ -414,8 +418,8 @@ function onEvent(e, t) {
     case "b": {
       // a blast on the ground: a monster's (pink, it hurts) or a player's skill landing
       const col = [null, "#ffb04a", "#ff8a3a", "#cfe4ff"][e[4] | 0];
-      if ((e[4] | 0) >= 4) Growth.zoneFx(e, S3);       // the blade storm, the blizzard, the dragon's spear
-      else if (col) { S3.fx.ring(e[1], e[2], e[3], col, 300, true); S3.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); S3.shake(2); Sound.play("boom"); }
+      if ((e[4] | 0) >= 4) Growth.zoneFx(e, S3.big());       // the blade storm, the blizzard, the dragon's spear
+      else if (col) { const B = S3.big(); B.fx.ring(e[1], e[2], e[3], col, 300, true); B.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); B.shake(2); Sound.play("boom"); }
       else { S3.fx.ring(e[1], e[2], e[3], "#ff6ad0", 350, true); S3.fx.burst(e[1], e[2], 0.4, "#ff6ad0", 34, 3); S3.shake(6); Sound.play("slam"); }
       break;
     }
@@ -472,7 +476,7 @@ function onEvent(e, t) {
     }
     case "z":
       // something flying from one point to another: a legendary's lightning, or a thrown knife
-      if (e[5] >= 2) Growth.lineFx(e, S3);              // chain lightning, a phantom's dash
+      if (e[5] >= 2) Growth.lineFx(e, S3.big());              // chain lightning, a phantom's dash
       else if (e[5]) S3.fx.proj(e[1], e[2] + 8, 0.6, e[3], e[4] + 8, 0.5, "#b8f060", 0.05, 30);
       else { S3.fx.beam(e[1], e[2] + 8, e[3], e[4] + 8, "#fff48a", 0.45); S3.fx.burst(e[3], e[4] + 8, 0.5, "#fff48a", 8, 1.6); Sound.play("magic"); }
       break;
@@ -536,8 +540,9 @@ function onGain([kind, a, b, q]) {
 // ───────────────────────────── effects ─────────────────────────────
 // Effects live in the 3D scene; floating text is drawn over it and follows its point in the world.
 
-function floatText(str, x, y, h, col, big) {
-  G.texts.push({ str, x, y, h, col, big: !!big, t0: now() });
+function floatText(str, x, y, h, col, big, dmg = false) {
+  // a damage number bounces off to one side (dmg: true), the rest rise straight up
+  G.texts.push({ str, x, y, h, col, big: !!big, t0: now(), dmg, vx: dmg ? (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8) : 0 });
 }
 /** `src` is the attacker, (tx, ty) the point of impact on the ground. */
 function attackFx(kind, src, tx, ty, dir, beat = 0) {
@@ -546,11 +551,12 @@ function attackFx(kind, src, tx, ty, dir, beat = 0) {
   // the blade's crescent opens toward the target (or the way the attacker faces)
   const ang = Math.hypot(tx - src.x, ty - src.y) > 2 ? Math.atan2(ty - src.y, tx - src.x) : [Math.PI / 2, Math.PI, 0, -Math.PI / 2][dir] || 0;
   switch (kind) {
-    case 0: f.slash(src.x, src.y, ang, "#cfe0ff", fin ? 1.9 : 1.4, beat === 1); if (fin) S3.shake(3); Sound.play("swing_sword", fin); break;
+    // (the blades' crescents and thrust waves are thrown off by the stroke itself at its snap: scene2d qiBurst)
+    case 0: Sound.play("swing_sword", fin); break;
     case 1: f.proj(src.x, src.y, 0.75, tx, ty, 0.5, "#fff0c0", 0.04, 42); f.burst(src.x + (tx - src.x) * 0.15, src.y + (ty - src.y) * 0.15, 0.75, "#ffd84a", 4, 0.8); Sound.play("shoot"); break;
     case 2: f.proj(src.x, src.y, 1.1, tx, ty, 0.5, "#b08aff", fin ? 0.15 : 0.09, 15, fin ? () => f.ring(tx, ty, 18, "#b08aff", 220, true) : undefined); Sound.play("swing_staff"); break;
-    case 3: f.slash(src.x, src.y, ang, "#e0d0f0", fin ? 1.15 : 0.8, beat === 1); Sound.play("swing_dagger"); break;
-    case 4: if (beat === 1) f.slash(src.x, src.y, ang, "#d0f0e8", 1.7, true); else { f.beam(src.x, src.y, src.x + Math.cos(ang) * (fin ? 74 : 54), src.y + Math.sin(ang) * (fin ? 74 : 54), "#eef4ff", fin ? 0.9 : 0.5); if (fin) S3.shake(2); } Sound.play("swing_spear", fin); break;
+    case 3: Sound.play("swing_dagger"); break;
+    case 4: Sound.play("swing_spear", fin); break;
     case 5: f.proj(src.x, src.y, 0.9, tx, ty, 0.5, "#c8a0ff", 0.07, 20, () => { f.ring(tx, ty, fin ? 34 : 26, "#c8a0ff", 220, true); }); Sound.play("swing_book"); break;
     case 23: f.beam(src.x, src.y, tx, ty, "#e0b070", 1.1); f.burst(tx, ty, 0.4, "#e0b070", 20, 2.4); S3.shake(5); Sound.play("boom"); break;
     case 24: f.sparkle(src.x, src.y, 0.8, "#ffe9a0", 12); Sound.play("magic"); break;
@@ -566,7 +572,7 @@ function attackFx(kind, src, tx, ty, dir, beat = 0) {
     case 19: f.burst(src.x, src.y, 0.6, "#4a4468", 10, 1); break;
     case 20: f.burst(src.x, src.y, 0.5, "#8a8a98", 40, 1.2); Sound.play("buff"); break;
     case 21: f.proj(src.x, src.y, 1, tx, ty, 0.2, "#6a7a5a", 0.1, 11, () => { f.ring(tx, ty, 42, "#ffb04a", 320, true); f.burst(tx, ty, 0.4, "#ffd84a", 28, 3); S3.shake(4); Sound.play("boom"); }); Sound.play("swing"); break;
-    default: Growth.skillFx(kind, src, tx, ty, ang, S3);     // 25–32: the second-tier skills and the ultimates
+    default: Growth.skillFx(kind, src, tx, ty, ang, S3.big(ang));     // 25–32: the second-tier skills and the ultimates
   }
 }
 
@@ -966,7 +972,7 @@ function autoOk(m, s, t, d) {
 }
 
 /** What the ground under a tile sounds like underfoot. */
-const STEP_KIND = { ".": "grass", ",": "grass", '"': "grass", ":": "grass", ";": "grass", p: "dirt", s: "dirt", b: "wood", w: "dirt" };
+const STEP_KIND = { ".": "grass", ",": "grass", '"': "grass", ":": "grass", ";": "grass", "%": "grass", p: "dirt", s: "dirt", b: "wood", w: "water", j: "water" };
 /** Indoors: boards creak, rugs and the door mat muffle (iso_interior.js floors). */
 const STEP_ROOM = { f: "wood", l: "wood", q: "grass", u: "grass", y: "grass", e: "dirt", x: "stone" };
 const snd = { foot: 0, look: 0, bossT: 0 };
@@ -977,7 +983,8 @@ function soundscape(t) {
   if (me.moving && f !== snd.foot && f % 2 === 0) {
     const row = G.map.g[Math.floor(me.y / T)];
     const ch = row && row[Math.floor(me.x / T)];
-    Sound.step((G.map.theme === "interior" ? STEP_ROOM[ch] : STEP_KIND[ch]) || "stone");
+    const wet = G.map.theme === "sewer" || G.map.theme === "abyss";   // the drains and the abyss squelch underfoot
+    Sound.step((G.map.theme === "interior" ? STEP_ROOM[ch] : wet ? "water" : STEP_KIND[ch]) || "stone");
   }
   snd.foot = f;
   if (t - snd.look < 250) return;
@@ -1342,6 +1349,16 @@ function renderText(t) {
     const k = (t - f.t0) / 900;
     if (k >= 1) { G.texts.splice(i, 1); continue; }
     tg.globalAlpha = k > 0.7 ? (1 - k) / 0.3 : 1;
+    if (f.dmg) {
+      // damage: punched out oversized and snapping to size on an elastic, hopping off to one side
+      // and bouncing once where it lands; a crit hits bigger and wobbles longer
+      const u = Math.min(1, k / (f.big ? 0.42 : 0.3)), el = u >= 1 ? 1 : 2 ** (-10 * u) * Math.sin((u * 10 - 0.75) * (2 * Math.PI) / 3) + 1;
+      const s0 = f.big ? 2.3 : 1.7, scale = s0 + (1 - s0) * el;
+      const [x, y] = at(f.x, f.y, f.h + 0.1);
+      const hop = k < 0.45 ? -Math.sin((k / 0.45) * Math.PI) * (f.big ? 22 : 15) : k < 0.62 ? -Math.sin(((k - 0.45) / 0.17) * Math.PI) * (f.big ? 6 : 4) : 0;
+      label(f.str, x + f.vx * Math.min(1, k / 0.6), y + hop - k * 10, f.col, (f.big ? 19 : 13) * scale);
+      continue;
+    }
     const [x, y] = at(f.x, f.y, f.h + k * 0.55);
     const pop = f.big && k < 0.15 ? -6 * Math.sin((k / 0.15) * Math.PI) : 0;
     label(f.str, x, y + pop, f.col, f.big ? 17 : 13);

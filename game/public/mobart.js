@@ -453,7 +453,9 @@ export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
   if (step > 0.04) { s.mvT = t; s.dist += step; facing(s, mx, my); }
   if (step > 2.6 && !def.hover && !(t - (s.leapT || -1e9) < 320) && !(m.windT && t - m.windT < (m.windMs || 0) + 400)) s.leapT = t;                // a pounce: it covers the ground in a bound
   s.px = m.x; s.py = m.y;
-  const a = t - m.atkT, h = t - m.hurtT, w = m.windT ? t - m.windT : 1e9, windMs = m.windMs || 0;
+  // a heavy blow holds the struck pose for a hitstop (`hsMs`, set by the client), then plays on
+  const h0 = t - m.hurtT, hsz = m.hsMs || 0, h = h0 >= 0 && h0 < hsz ? 0 : h0 - hsz;
+  const a = t - m.atkT, w = m.windT ? t - m.windT : 1e9, windMs = m.windMs || 0;
   // turn to whoever it is fighting
   if (w < windMs && m.windAim) facing(s, m.windAim[0], m.windAim[1]);
   else if (a < 450 || w < windMs + 300) { const p = nearest(G, m); if (p) facing(s, p.x - m.x, p.y - m.y); }
@@ -490,21 +492,38 @@ export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
     g.restore();
     if (Math.random() < (el === 2 || d.boss ? 0.35 : 0.12)) parts.push({ x: X + (Math.random() - 0.5) * span * 2.2, y: Y - Math.random() * R.h * 0.6, vx: 0, vy: -20 - Math.random() * 10, life: 0.6, color: el === 1 ? "#ffe08a" : Math.random() < 0.5 ? "#ff8ae0" : "#8ae8f8", g: 0, s: 1 });
   }
-  // knocked back along the blow, as the blow looks on screen; squashed by it
-  const hk = h / 200, rec = hk >= 0 && hk < 1 ? (1 - hk) * (1 - hk) : 0, pow = m.hurtP || 1;
+  // knocked back along the blow, as the blow looks on screen; squashed by it, then springing back
+  // through a stretch (a damped wobble: squash, stretch, a smaller squash) over 240 ms
+  const hk = h / 240, rec = hk >= 0 && hk < 1 ? (1 - hk) * (1 - hk) : 0, pow = m.hurtP || 1;
   const ha = m.hurtA || 0, hx = Math.cos(ha) - Math.sin(ha), hy = (Math.cos(ha) + Math.sin(ha)) / 2;
   const jx = rec ? hx * rec * 5 * pow : 0, jy = rec ? hy * rec * 5 * pow : 0;
   const lx = lp < 200 ? 0 : lunge * (s.fx ? 1 : -1), ly = lp < 200 ? lunge : lunge * (s.back ? -0.5 : 0.5);
   const fly = hover ? hover + Math.sin(t / 300 + m.id) * 2 : 0;
   g.save();
   g.translate(Math.round(X + lx + jx + shake), Math.round(Y + ly + jy - fly));
-  if (rec) g.scale(1 + rec * 0.18 * pow, 1 - rec * 0.16 * pow);
-  if (h >= 0 && h < 100) g.filter = "brightness(2.4)";
+  if (rec) { const wob = rec * Math.cos(hk * Math.PI * 3) * pow; g.scale(1 - wob * 0.2, 1 + wob * 0.14); }
+  // the first frames of a hit (and a hitstop) are pure white; a bright blink follows
+  const white = h >= 0 && h < 36;
+  if (!white && h >= 0 && h < 100) g.filter = "brightness(1.8)";
+  else if (white) { /* drawn as a silhouette below */ }
   else if (el === 2 || d.boss) { g.shadowColor = d.boss ? "#ff4a8a" : "#ff5ad0"; g.shadowBlur = 8; }
   else if (el) { g.shadowColor = "#ffc040"; g.shadowBlur = 4; }
-  g.drawImage(img, -R.foot[0], -R.foot[1]);
+  g.drawImage(white ? whiteOf(img) : img, -R.foot[0], -R.foot[1]);
   g.restore();
   m.h3 = (R.h + fly) / 26;
+}
+/** A frame as a pure white silhouette (the first frames of a hit), cached per frame. */
+const whites = new WeakMap();
+function whiteOf(img) {
+  let c = whites.get(img);
+  if (c) return c;
+  c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+  const x = c.getContext("2d");
+  x.drawImage(img, 0, 0);
+  x.globalCompositeOperation = "source-in";
+  x.fillStyle = "#ffffff"; x.fillRect(0, 0, c.width, c.height);
+  whites.set(img, c);
+  return c;
 }
 /** How tall the drawn part of a frame is, in pixels above its foot. */
 function height(c) {
