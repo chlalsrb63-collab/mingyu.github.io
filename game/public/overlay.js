@@ -8,6 +8,7 @@ import * as Art from "./art.js";
 import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
 import { icon, TRAIT } from "./uiicons.js";
+import { jobIcon } from "./jobicons.js";
 import * as Emo from "./emoticons.js";
 import * as Growth from "./growth.js";
 import * as SideQ from "./sidequests.js";
@@ -41,6 +42,15 @@ function forgeHammer(t) {
   if (anvil && h > 7 && h < 19 && Math.hypot(G.me.x - anvil.x * T - 8, G.me.y - anvil.y * T - 8) < 5 * T) Sound.play("clang");
 }
 
+/** A player's name line: the job's emblem (whole pixels, never smoothed), then the level and the name. */
+function nameLabel(w, sx, sy, col) {
+  const str = `Lv.${w.lvl} ${w.name}`, k = Math.max(1, Math.round(dpr)), px = 16 * k;
+  tg.font = `600 ${Math.round(12 * dpr)}px Pretendard, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
+  const half = tg.measureText(str).width / 2, shift = (px + 2 * dpr) / 2 / dpr;
+  tg.imageSmoothingEnabled = false;
+  tg.drawImage(jobIcon(w.cls), Math.round((sx + shift) * dpr - half - px - 2 * dpr), Math.round(sy * dpr - px + 3 * dpr), px, px);
+  label(str, sx + shift, sy, col);
+}
 function label(str, sx, sy, col, size = 12, bg = false) {
   const x = Math.round(sx * dpr), y = Math.round(sy * dpr);
   const px = Math.round(size * dpr);
@@ -218,13 +228,13 @@ function renderText(t) {
     const w = G.who.get(eid);
     if (!w) continue;
     const [x, y] = at(p.x, p.y, (p.h3 || 1.32) + 0.22);
-    label(`Lv.${w.lvl} ${w.name}`, x, y, p.dead ? "#9a9aa8" : w.party && w.party === myParty ? "#8cff8c" : "#dce6f2");
+    nameLabel(w, x, y, p.dead ? "#9a9aa8" : w.party && w.party === myParty ? "#8cff8c" : "#dce6f2");
     if (w.guild) label(`‹${w.guild}›`, x, y - 13, mine && w.guild === mine.guild ? "#9af0ae" : "#c8b8e8", 11);
     if (w.title) label(`「${w.title}」`, x, y - (w.guild ? 26 : 13), "#ffcf6a", 11);
     if (p.hp < p.mhp && !p.dead) bar(x, y + 4, 40, p.hp / p.mhp, "#58c070");
   }
   // your own name lifts while the aim arrow points up over your head
-  if (mine) { const [x, y] = at(me.x, me.y, (me.h3 || 1.32) + 0.22 + (G.aimArrow === false ? 0 : 0.3 * (G.aimUpK || 0))); label(`Lv.${mine.lvl} ${mine.name}`, x, y, "#f4e4b0"); if (mine.guild) label(`‹${mine.guild}›`, x, y - 13, "#9af0ae", 11); if (mine.title) label(`「${mine.title}」`, x, y - (mine.guild ? 26 : 13), "#ffcf6a", 11); }
+  if (mine) { const [x, y] = at(me.x, me.y, (me.h3 || 1.32) + 0.22 + (G.aimArrow === false ? 0 : 0.3 * (G.aimUpK || 0))); nameLabel(mine, x, y, "#f4e4b0"); if (mine.guild) label(`‹${mine.guild}›`, x, y - 13, "#9af0ae", 11); if (mine.title) label(`「${mine.title}」`, x, y - (mine.guild ? 26 : 13), "#ffcf6a", 11); }
   for (const b of G.bobs.values()) if (b.bite) { const [x, y] = at(b.x, b.y, 0.9); label("!", x, y + Math.sin(t / 60) * 2, "#ffe04a", 20); }
   for (const [eid, b] of G.bubbles) {
     if (t > b.until) { G.bubbles.delete(eid); continue; }

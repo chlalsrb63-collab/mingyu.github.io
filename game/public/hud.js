@@ -25,6 +25,7 @@ import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
 import * as Charms from "./charms.js";
+import * as Info from "./infocard.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
 import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn } from "./windows.js";
 import { openTree, openStats, renderInv, renderChar, renderSkills } from "./win_char.js";
@@ -82,7 +83,7 @@ function hudPurse(s) {
   if (s.gold === hudGold) return;
   const n = $("#st-gold-n"), fx = $("#st-gold-fx");
   if (!n.firstChild) n.append(iconImg("coin", "#e2c486"), document.createTextNode(""));
-  n.lastChild.textContent = `${s.gold.toLocaleString()} G`;
+  n.lastChild.textContent = s.gold.toLocaleString();
   if (hudGold !== null) {
     const d = s.gold - hudGold;
     fx.textContent = `${d > 0 ? "+" : "-"}${Math.abs(d).toLocaleString()}`;
@@ -100,9 +101,10 @@ export function setOnce(node, key, fill) {
 }
 function hudFrame(s) {
   $("#st-name").textContent = s.name;
-  // name and level on one line; the job is in the mastery card (hover the strip beside the bars)
+  // the job's emblem, the name and the level on one line: the emblem says the job (hover: its name, click: its card)
   const jobName = Mastery.jobOf(s, G.defs).name;
-  setOnce($("#st-lv"), `${s.lvl}:${jobName}`, (n) => { n.textContent = `Lv.${s.lvl}`; n.title = jobName; });
+  setOnce($("#st-job"), s.job || "", (n) => n.append(Info.jobMark(s.job)));
+  setOnce($("#st-lv"), `${s.lvl}:${jobName}`, (n) => { n.textContent = `Lv.${s.lvl}`; n.title = `레벨 ${s.lvl} · ${jobName}`; });
   drawFace();
   hudMastery(s);
   hudPurse(s);
@@ -153,8 +155,7 @@ function tracker(s) {
   const key = JSON.stringify([s.q, s.bq, dl, Board.trackKey(s)]);
   setOnce($("#quest-track"), key, (qt) => {
     if (!quest && !s.bq && !(dl && dl.length) && !Board.active(s)) return;
-    const head = el("div", "qh"); head.append(iconImg("scroll", "#e2c486"), "의뢰");
-    qt.append(head);
+    // no heading: each line's glyph says what kind of work it is (hover: the name, click: its card)
     const goal = (label, n, need, doneText) => {
       const done = n >= need, row = el("div", "qp");
       if (done) row.append(el("span", "done", doneText));
@@ -168,18 +169,18 @@ function tracker(s) {
     };
     Board.trackRows(s, qt, goal);                     // the 알바 in hand comes first: a parcel is on the clock (board.js)
     if (quest && s.q.st === 1) {
-      const t = el("div", "qt"); t.append(el("small", "", "주요"), quest.title);
+      const t = el("div", "qt"); t.append(Info.questMark("main"), quest.title);
       qt.append(t, goal(G.defs.mobs[quest.mob].name, s.q.n, quest.n, "완료! 엘더윈에게 돌아가세요"));
     } else if (quest) {
-      const t = el("div", "qt"); t.append(el("small", "", "주요"), "엘더윈에게 새 의뢰가 있습니다");
+      const t = el("div", "qt"); t.append(Info.questMark("main"), "엘더윈에게 새 의뢰가 있습니다");
       qt.append(t);
     }
     if (s.bq) {
-      const t = el("div", "qt"); t.append(el("small", "", "반복"), `${mobs[s.bq.k].name} 토벌`);
+      const t = el("div", "qt"); t.append(Info.questMark("repeat"), `${mobs[s.bq.k].name} 토벌`);
       qt.append(t, goal(mobs[s.bq.k].name, s.bq.n, s.bq.need, "완료! 엘더윈에게 보고하세요"));
     }
     if (dl && dl.length) {
-      const t = el("div", "qt"); t.append(el("small", "", "일일"), `오늘의 과제 ${3 - dl.length}/3`);
+      const t = el("div", "qt"); t.append(Info.questMark("daily"), `오늘의 과제 ${3 - dl.length}/3`);
       qt.append(t);
       for (const d of dl) qt.append(goal(d.text, d.n, d.need, `${d.text} — 완료! (U)`));
     }
@@ -267,6 +268,7 @@ export function hudTick(t) {
   try { drawWeaponGauge(cgauge, s, G.defs, t); } catch (err) { if (!hudTick.warned) { hudTick.warned = true; console.warn("weapon gauge:", err); } }
   QS.tick(t);
   if (tip.from && (!tip.from.isConnected || tip.from.closest("[hidden]"))) hideTip();
+  Info.tick();
   if (isOpen("char")) drawPortrait(t);
   // the kill streak: counts up while kills keep coming, drains between them
   const sb = $("#streak"), k = G.streak;
@@ -295,15 +297,28 @@ export function hudTick(t) {
     for (const [i, l] of shownB) {
       const scr = i >= 7 && i < 10;
       const sp = el("span", bad(i) ? "bad" : scr ? "scr" : "", l);
-      sp.title = names[i];
-      sp.prepend(iconImg(BUFF_ICON[i], bad(i) ? "#ff9a8a" : scr ? "#9ad8ff" : i === 10 ? "#9affc8" : i === 11 ? "#ffb0c8" : "#e2c486"));
+      const ink = bad(i) ? "#ff9a8a" : scr ? "#9ad8ff" : i === 10 ? "#9affc8" : i === 11 ? "#ffb0c8" : "#e2c486";
+      sp.prepend(iconImg(BUFF_ICON[i], ink));
+      Info.bind(sp, names[i], () => buffNow(i, names[i], ink, t));
       buffs.append(sp);
     }
   }
 }
 
+/** A buff's card with the time left as the chip showed it (the chip is rebuilt as the time runs, the card is not). */
+function buffNow(i, name, ink, t) {
+  const ms = (G.buffEnd[i] || 0) - t;
+  return Info.buffCard(i, name, ms > 90000 ? `${Math.ceil(ms / 60000)}분` : `${Math.max(0, Math.ceil(ms / 1000))}초`, iconImg(BUFF_ICON[i], ink));
+}
+
 /** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */
 export function setupHud() {
+  // the bars' and the purse's glyphs stand for the words HP, MP and 골드: hover names them, a click explains
+  $("#st-hp-ic").append(iconImg("heart", "#ff7a7a"));
+  $("#st-mp-ic").append(iconImg("drop", "#7ab4ff"));
+  Info.bind($("#st-hp-ic").parentNode, "HP (체력)", () => Info.barCard("hp"));
+  Info.bind($("#st-mp-ic").parentNode, "MP (마력)", () => Info.barCard("mp"));
+  Info.bind($("#st-gold"), "보유 골드", () => Info.coinCard());
   $("#wm").addEventListener("mouseenter", () => { if (!touch()) showMasteryTip(); });
   $("#wm").addEventListener("mouseleave", () => { if (tip.from === $("#wm")) hideTip(); });
   // a click (a tap) opens 전직의 길: every weapon's mastery and where it leads

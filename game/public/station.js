@@ -20,6 +20,7 @@ import { openWin, closeWin, isOpen, hoverTip, toast } from "./windows.js";
 import { countItem, fireNear } from "./actions.js";
 import { itemTip } from "./items.js";
 import { iconImg } from "./uiicons.js";
+import * as Info from "./infocard.js";
 import { floatText } from "./events.js";
 
 /** Station kinds: the window's title, the skill's glyph and colour, and which recipe `at`s it serves. */
@@ -116,7 +117,7 @@ export function render(s) {
   if (!rows.find((r) => r.id === st.sel)) st.sel = (rows.find((r) => !lockWhy(s, r) && !lackWhy(s, r)) || rows.find((r) => !lockWhy(s, r)) || rows[0] || {}).id || "";
   const sk = rows[0] ? rows[0].sk : "craft", L = lvOf(s, sk), si = D().keys.indexOf(sk);
   const top = el("div", "daily-top st-top");
-  top.append(iconImg(K.g, K.c), el("span", "", `${D().names[si]} Lv.${L}`), el("b", "", `${s.gold.toLocaleString()}G`));
+  top.append(iconImg(K.g, K.c), el("span", "", `${D().names[si]} Lv.${L}`), Info.coin(s.gold, "purse"));
   box.append(top);
   const lst = el("div", "st-list");
   const G5 = D().grades;
@@ -144,7 +145,7 @@ export function render(s) {
       chip.title = nameOf(id);
       ins.append(chip);
     }
-    if (r.fee) ins.append(el("span", "fee" + (s.gold < r.fee ? " short" : ""), `${r.fee.toLocaleString()}G`));
+    if (r.fee) { const fee = Info.coin(r.fee, "fee" + (s.gold < r.fee ? " short" : "")); fee.title = `수수료 ${r.fee.toLocaleString()} 골드${s.gold < r.fee ? " — 골드가 부족합니다" : ""}`; ins.append(fee); }
     tx.append(ins);
     if (lock) tx.append(el("small", "why", lock));
     row.append(img, tx);

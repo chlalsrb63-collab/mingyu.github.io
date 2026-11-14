@@ -11,6 +11,7 @@ import { G, $, el, clamp } from "./state.js";
 import { act } from "./net.js";
 import { countItem } from "./actions.js";
 import { hoverTip } from "./windows.js";
+import * as Info from "./infocard.js";
 import { itemDesc, itemTip, itemName, SLOT_NAME } from "./items.js";
 import { refreshUi } from "./hud.js";
 
@@ -43,8 +44,8 @@ export function renderShop(s) {
     const img = el("img"); img.src = G.icons.url[id]; img.alt = "";
     const tx = el("div", "tx", d.name);
     const pr = el("small", "");
-    if (off < 1) { pr.append(el("s", "", `${d.price.toLocaleString()}G`), " "); pr.append(el("b", "deal", `${cost(d, 1).toLocaleString()}G`)); }
-    else pr.append(`${d.price.toLocaleString()}G`);
+    if (off < 1) { pr.append(el("s", "", d.price.toLocaleString()), " "); pr.append(Info.coin(cost(d, 1), "deal")); }
+    else pr.append(Info.coin(d.price));
     pr.append(` · ${itemDesc({ id })}`);
     tx.append(pr);
     row.append(img, tx);

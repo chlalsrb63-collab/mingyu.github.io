@@ -12,6 +12,7 @@
  */
 import { iconImg } from "./uiicons.js";
 import { kindIcon } from "./mastery.js";
+import * as Info from "./infocard.js";
 
 let C = null;
 /** deps: { G, act, el, section, Sound, redraw, openStats } */
@@ -93,7 +94,10 @@ export function render(box, s, { here, atTrainer }) {
   if (pendLvl !== s.lvl || costOf(s, pend) > s.xp) { pend.fill(0); pendLvl = s.lvl; }
   box.textContent = "";
   const hd = el("div", "sw-head");
-  hd.append(el("b", "", `Lv.${s.lvl} ${jobName(s)}`), el("span", "", " · 보유 경험치 "), el("b", "xp", fmt(s.xp)));
+  const xpn = el("span", "xpn");
+  xpn.append(iconImg("up", "#9af0ae"), el("b", "xp", fmt(s.xp)));
+  xpn.title = "보유 경험치 — 능력치 포인트를 사는 데 씁니다";
+  hd.append(Info.jobMark(s.job), el("b", "", `Lv.${s.lvl} ${jobName(s)}`), xpn);
   box.append(hd);
   // what the hand wants: its scaling stats get a grade badge in their rows
   const hand = D.wkOrder.includes(s.wk) && s.eq.weapon ? s.wk : "";
@@ -114,6 +118,8 @@ export function render(box, s, { here, atTrainer }) {
     const row = el("div", "sw-row" + (sc[k] ? " hand" : "") + (lit === i ? " lit" : ""));
     const nm = el("div", "nm");
     nm.append(iconImg(glyph, ink), el("b", "", name));
+    // what the stat does is one click away (its card), not a sentence in every row
+    Info.bind(nm, `${name} — ${desc}`, () => Info.statCard(k));
     if (sc[k]) { const g = el("span", "gr", gradeOf(sc[k])); g.title = `${D.wkName[hand]}의 공격력이 ${name}에 따라 오릅니다 (등급 ${gradeOf(sc[k])})`; nm.append(g); }
     const val = el("div", "val");
     const vb = el("b", v + p >= SOFT[1] ? "cap2" : v + p >= SOFT[0] ? "cap1" : "", String(v + p));
@@ -143,9 +149,8 @@ export function render(box, s, { here, atTrainer }) {
     });
     const btns = el("div", "pmb");
     btns.append(minus, plus);
-    const ef = el("small", "ef", desc);
     const nx = el("small", "nx", s.nx[i] ? `다음 ${fmt(Number.isFinite(step) ? step : s.nx[i])}` : "최대");
-    row.append(nm, val, btns, ef, nx);
+    row.append(nm, val, btns, nx);
     // hovering a stat lights what it raises below
     row.addEventListener("mouseenter", () => { if (lit !== i) { lit = i; light(box, k, sc); } });
     row.addEventListener("mouseleave", () => { if (lit === i) { lit = -1; light(box, "", sc); } });
@@ -172,14 +177,14 @@ export function render(box, s, { here, atTrainer }) {
   // derived stats, each lit while a stat that raises it is hovered
   const dv = el("div", "sw-dv");
   for (const [k, label, val] of DERIVED) {
-    const r = el("span", "", k === "atk" && s.dv[0] ? "공격력(마법)" : label);
+    const name = k === "atk" && s.dv[0] ? "공격력(마법)" : label;
+    const r = Info.statChip(k, String(val(s)), name);
     r.dataset.k = k;
-    r.append(el("b", "", String(val(s))));
     dv.append(r);
   }
   box.append(dv);
   if (lit >= 0) light(box, ST[lit], sc);
-  box.append(el("p", "hint", `레벨 1 = 능력치 1포인트. 한 능력치는 40부터 절반, 60부터 1/4만 반영되니 고르게 올리는 편이 좋습니다. 위에 마우스를 올리면 그 능력치가 올리는 항목이 빛납니다.${atTrainer ? "" : ` 능력치 되돌리기는 수련관 카이에게서 (무료 ${s.rs}회).`}`));
+  box.append(el("p", "hint", `레벨 1 = 능력치 1포인트. 한 능력치는 40부터 절반, 60부터 1/4만 반영되니 고르게 올리는 편이 좋습니다. 능력치에 마우스를 올리면 그 능력치가 올리는 수치가 빛나고, 그림을 누르면 설명이 열립니다.${atTrainer ? "" : ` 능력치 되돌리기는 수련관 카이에게서 (무료 ${s.rs}회).`}`));
 }
 /** Light the derived rows stat `k` raises (attack too when the hand scales with it). */
 function light(box, k, sc) {

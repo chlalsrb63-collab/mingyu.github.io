@@ -4,7 +4,8 @@
  */
 
 import { Sound } from "./audio.js";
-import { iconImg, CLASS_ICON } from "./uiicons.js";
+import { iconImg } from "./uiicons.js";
+import * as Info from "./infocard.js";
 import * as Emo from "./emoticons.js";
 import { el, clamp, $, G } from "./state.js";
 import { act } from "./net.js";
@@ -18,7 +19,8 @@ function hpBar(hp, mhp) {
   bar.append(f);
   return bar;
 }
-function classMark(cls) { const c = el("span", "cg"); c.append(iconImg(CLASS_ICON[cls] || "sword", "#e2c486")); return c; }
+/** A player's job, as its emblem (hover: the job's name, click: its card). */
+function classMark(cls) { const c = el("span", "cg"); c.append(Info.jobMark(cls)); return c; }
 export function renderPartyHud() {
   const box = $("#party-hud");
   box.textContent = "";
@@ -27,7 +29,7 @@ export function renderPartyHud() {
     const row = el("div", "pm frame" + (i === 0 ? " lead" : "") + (where ? " away" : ""));
     const nm = el("span", "nm", name);
     nm.append(el("small", "", where ? `Lv.${lvl} · ${where}` : `Lv.${lvl}`));
-    row.append(iconImg(CLASS_ICON[cls] || "sword", "#e2c486"), nm, hpBar(hp, mhp));
+    row.append(Info.jobMark(cls), nm, hpBar(hp, mhp));
     row.title = `${name} · Lv.${lvl} ${G.defs.classes[cls].name}${where ? ` · ${where}` : ""}`;
     box.append(row);
   });
@@ -46,11 +48,11 @@ export function renderParty() {
   box.append(section(mine ? `파티원 ${G.party.length} / ${G.defs.partyMax}` : "파티 없음", "party"));
   if (mine) {
     G.party.forEach(([eid, name, cls, lvl, hp, mhp, where], i) => {
-      box.append(memberRow(eid, name, cls, `Lv.${lvl} ${G.defs.classes[cls].name}${where ? ` · ${where}` : ""}`, i === 0, hpBar(hp, mhp)));
+      box.append(memberRow(eid, name, cls, `Lv.${lvl}${where ? ` · ${where}` : ""}`, i === 0, hpBar(hp, mhp)));
     });
     box.append(el("p", "hint", "★ 파티를 처음 만든 사람 · 함께 잡으면 모두가 경험치와 전리품을 얻고, 인원이 많을수록 총 경험치가 늘어납니다."));
   } else {
-    box.append(memberRow(G.you, s.name, s.cls, `Lv.${s.lvl} ${G.defs.classes[s.cls].name}`, false, hpBar(G.me.hp, s.mhp)));
+    box.append(memberRow(G.you, s.name, s.cls, `Lv.${s.lvl}`, false, hpBar(G.me.hp, s.mhp)));
     box.append(el("p", "hint", "주변의 모험가를 초대해 보세요. 강한 적과 정예 몬스터는 파티로 잡는 것이 훨씬 빠릅니다."));
   }
   box.append(section("주변 모험가", "person"));
@@ -62,7 +64,7 @@ export function renderParty() {
     near++;
     const row = el("div", "it");
     const tx = el("div", "tx", w.name);
-    tx.append(el("small", "", `Lv.${w.lvl} ${G.defs.classes[w.cls].name}${w.guild ? ` · ‹${w.guild}›` : ""}`));
+    tx.append(el("small", "", `Lv.${w.lvl}${w.guild ? ` · ‹${w.guild}›` : ""}`));
     row.append(classMark(w.cls), tx);
     const b = el("button", "", w.party ? "다른 파티" : "초대");
     b.disabled = !!w.party || G.party.length >= G.defs.partyMax;
@@ -115,7 +117,7 @@ export function renderGuild() {
   }
   box.append(el("div", "q-title", `‹${s.guild}›`));
   box.append(section(`접속 중인 길드원 ${s.gmates.length}명`, "banner"));
-  for (const [eid, name, cls, lvl, where, gm] of s.gmates) box.append(memberRow(eid, name, cls, `Lv.${lvl} ${G.defs.classes[cls].name} · ${where}`, gm));
+  for (const [eid, name, cls, lvl, where, gm] of s.gmates) box.append(memberRow(eid, name, cls, `Lv.${lvl} · ${where}`, gm));
   box.append(el("p", "hint", "★ 길드장 · 채팅창의 길드 탭에서 쓰거나 /g 메시지로 길드 채팅"));
   box.append(section("주변 모험가", "person"));
   const list = el("div", "list");
@@ -125,7 +127,7 @@ export function renderGuild() {
     near++;
     const row = el("div", "it");
     const tx = el("div", "tx", w.name);
-    tx.append(el("small", "", `Lv.${w.lvl} ${G.defs.classes[w.cls].name}`));
+    tx.append(el("small", "", `Lv.${w.lvl}`));
     const b = el("button", "", "초대");
     b.addEventListener("click", () => { act({ t: "ginv", e: eid }); Sound.play("ui"); });
     row.append(classMark(w.cls), tx, b);
@@ -155,8 +157,8 @@ export function renderRank(list) {
   if (!list.length) { box.textContent = "아직 기록이 없습니다."; return; }
   list.forEach((r, i) => {
     const row = el("div", "rk" + (G.self && r.name === G.self.name ? " me" : ""));
-    row.append(el("i", "", i + 1), el("b", "", r.name), el("span", "", `Lv.${r.lvl} ${G.defs.classes[r.cls]?.name ?? ""}`));
-    if (G.defs.classes[r.cls]) row.prepend(iconImg(CLASS_ICON[r.cls] || "sword", "#e2c486"));
+    row.append(el("i", "", i + 1), el("b", "", r.name), el("span", "", `Lv.${r.lvl}`));
+    row.prepend(Info.jobMark(r.cls));
     box.append(row);
   });
   if (isOpen("rank")) keepIn("rank");

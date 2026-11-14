@@ -16,6 +16,7 @@ import * as SPC from "./species.js";
 import * as Looks from "./looks.js";
 import { Sound } from "./audio.js";
 import { iconImg } from "./uiicons.js";
+import { jobImg } from "./jobicons.js";
 import { kindIcon } from "./mastery.js";
 import { WORDS, DIFF_NAME, FAR_RANGE, FALLBACK, cleanStarters } from "./starter.js";
 
@@ -261,7 +262,9 @@ function renderServers(svs, loading) {
       who.append(portrait(ch.cls, ch.look));
       const t = el("div", "sv-ct");
       const jr = jobRow(ch);
-      t.append(el("b", "", ch.name), el("span", "", `Lv.${jr.lvl} ${JOB_NAME[jr.cls] || ""}`));
+      const jl = el("span", "", `Lv.${jr.lvl} ${JOB_NAME[jr.cls] || ""}`);
+      jl.prepend(jobImg(jr.cls));
+      t.append(el("b", "", ch.name), jl);
       who.append(t);
     } else {
       const b = el("button", "sv-new");

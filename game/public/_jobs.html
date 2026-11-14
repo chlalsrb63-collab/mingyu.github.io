@@ -1,0 +1,40 @@
+<!doctype html><meta charset="utf-8"><title>jobs</title>
+<style>
+  @font-face { font-family: Galmuri; src: url(fonts/Galmuri11.woff2); }
+  body { margin: 0; background: #15161c; color: #e6e0d0; font: 12px Galmuri, monospace; padding: 12px; }
+  #g { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 936px; }
+  .c { background: #23252e; padding: 6px; display: flex; gap: 8px; align-items: center; min-height: 72px; }
+  .c img { image-rendering: pixelated; }
+  .c .big { width: 64px; height: 64px; }
+  .c .s { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+  .c .s span { display: flex; gap: 2px; padding: 1px; }
+  .c b { display: block; color: #f4e4b0; font-weight: normal; }
+  .c small { color: #8f8b80; font-size: 10px; }
+  #row { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 3px; padding: 6px; background: #2a1c12; width: 924px; }
+  #row2 { display: flex; flex-wrap: wrap; gap: 3px; padding: 6px; background: #5a8a3c; width: 924px; }
+  #o { color: #f88; }
+</style>
+<div id="g"></div><div id="row"></div><div id="row2"></div><pre id="o"></pre>
+<script type="module">
+import * as J from "./jobicons.js";
+// names as the rules have them (tests/jobicons.mjs checks this list against defs().jobs)
+const NAME = { adventurer: "모험가", swordsman: "대검전사", thief: "도적", lancer: "창술사", wizard: "마법사", warlock: "마도사", archer: "궁수", spellblade: "마검사", tracker: "추적자", dragoon: "용기사", hexblade: "주술암살자", stormrider: "폭풍기수", darkknight: "암흑기사", bladedancer: "검무사", breaker: "파진사", arcblade: "검궁사", shadowlance: "섬창사", trickster: "환술사", spellspear: "마창사", runesage: "룬술사", spellarcher: "마궁사", runearcher: "각인궁사", destroyer: "파괴자" };
+const img = (id, px, opt) => { const im = new Image(); im.src = J.jobIconUrl(id, opt); im.width = im.height = px; return im; };
+const g = document.getElementById("g");
+for (const id of J.ALL) {
+  const c = document.createElement("div"); c.className = "c";
+  const big = img(id, 64); big.className = "big";
+  const s = document.createElement("div"); s.className = "s";
+  const one = document.createElement("span"); one.style.background = "#15161c"; one.append(img(id, 16), img(id, 16, { mono: "#e2c486" }), img(id, 16, { mono: "#6f6a60" }));
+  const two = document.createElement("span"); two.append(img(id, 32));
+  s.append(one, two);
+  const t = document.createElement("div"); const b = document.createElement("b"); b.textContent = NAME[id] || id; const sm = document.createElement("small"); sm.textContent = id;
+  t.append(b, sm);
+  c.append(big, s, t);
+  g.append(c);
+}
+// the whole set in a row at 1× on HUD brown and on grass: no two may look alike here
+for (const r of ["row", "row2"]) for (const id of J.ALL) document.getElementById(r).append(img(id, 16), img(id, 32));
+document.getElementById("o").textContent = J.badRows().join(" ");
+document.title = "ready";
+</script>
