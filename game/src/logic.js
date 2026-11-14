@@ -1,5 +1,5 @@
 /**
- * 루멘테일 온라인 — the whole game world, as plain rules.
+ * 테일즈테일즈 (Tales Tales) — the whole game world, as plain rules.
  *
  * A party-hunting RPG set where worlds overlap: a fantasy meadow, a neon city
  * and a crystal rift all hang off one hub. Three ideas drive the rules:
@@ -25,7 +25,7 @@
  * place; only characters are persisted (`exportChar`).
  */
 
-export const meta = { game: "루멘테일 온라인", minPlayers: 1, maxPlayers: 40 };
+export const meta = { game: "테일즈테일즈", minPlayers: 1, maxPlayers: 40 };
 
 const T = 16;
 const INV = 30;

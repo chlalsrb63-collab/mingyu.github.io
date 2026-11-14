@@ -1,5 +1,5 @@
 /**
- * 루멘테일 온라인 — the browser side.
+ * 테일즈테일즈 (Tales Tales) — the browser side.
  *
  * The server is authoritative: this file sends intents ({type:"action"}) and
  * draws the snapshots that come back ten times a second. The one thing it does
@@ -176,7 +176,7 @@ function onMessage(msg) {
       if (!G.playing) {
         G.playing = true;
         resize();
-        addChat(`루멘테일 온라인에 오신 것을 환영합니다! (${channelName()})`, "sys");
+        addChat(`테일즈테일즈에 오신 것을 환영합니다! (${channelName()})`, "sys");
         addChat("관리자 엘더윈에게 말을 걸어 첫 의뢰를 받아 보세요. 조작법은 H (도움말)에 있습니다.", "sys");
       }
       break;
