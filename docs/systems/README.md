@@ -10,5 +10,8 @@ functions, data shapes, flow, invariants, tests. Code is the truth; file map = `
 - [`rift.md`](rift.md) — 차원 균열 party instance and the older 균열 침공 world event
 - [`world-life.md`](world-life.md) — day/night, weather, camps, fishing/cooking, dailies, achievements, collection, tutorial, side quests
 - [`wire-and-client.md`](wire-and-client.md) — snapshot/`defs()`, action flow, client state, windows, renderer, radar
+- [`combat-skills-jobs.md`](combat-skills-jobs.md) — six stats, levels 1–200, mastery, jobs, weapon skills, basic attacks/bow arrows, aim, hitstun, mob damage hooks, balance probe
+- [`life-skills.md`](life-skills.md) — L1 as built (fishing/cooking levels, grades, rolls, wire) and what L2/C1–C3 add
+- [`housing-and-bag.md`](housing-and-bag.md) — bag expansion, the house (tiers, `house_<eid>` instances, furniture, storage, rest buff)
 
-Not covered yet (being rewritten): combat/skills/jobs (J2), life skills (L1), town redesign, housing internals.
+Not covered yet (being rewritten): town redesign.
