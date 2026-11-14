@@ -103,7 +103,7 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   const D = L.defs();
   assert.ok(D.waypoints.some((w) => w.id === "willow") && D.maps.some((x) => x.id === "willow"));
   assert.ok(!D.event.maps.includes("willow") && !D.collection.willow, "no rift or collection in a safe village");
-  assert.equal(D.side.length, 2);
+  assert.equal(D.side.length, 5, "the sample village's two side quests and the mercenary captain's three");
 
   // walk it: down the town's south road into the village, and back out through its north door
   const W = world(L, "나그네");

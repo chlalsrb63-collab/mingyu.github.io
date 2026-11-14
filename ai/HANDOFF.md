@@ -17,7 +17,7 @@ git fetch origin && git log --oneline origin/main | head -20
 - **J2 weapon skills** (`docs/design/jobs-and-stats.md` J2): commits starting "Skills"/"Jobs J2"
   (`57-weapon-skills.js`, fx 80–115 in `skillfx.js`, `skillicons.js`, balance asserts). Sheet v13 if it bumps.
   Until it lands, don't touch `55/57-*.js`, `skillfx.js`, `skillicons.js`, `audio.js`.
-- **T-B town interiors**: finished but NOT on main (its links point at T-A's new town). Saved as patches in
+- **T-B town interiors**: MERGED by the cloud session after T-A (skip this item). It was finished but not on main (its links point at T-A's new town). Saved as patches in
   `ai/pending/town-interiors/`. If `git log origin/main --oneline | grep "Town interiors"` already shows it, the
   cloud session merged it: delete `ai/pending/` and skip this. Otherwise, **after T-A is on main**:
   ```
