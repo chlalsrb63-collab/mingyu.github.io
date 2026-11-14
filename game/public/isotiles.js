@@ -25,7 +25,7 @@
  * (the baked ground) and iso_tall.js (what stands up).
  */
 import { bake, bakeChunk, groundSize } from "./iso_ground.js";
-import { tall } from "./iso_tall.js";
+import { tall, bldInfo } from "./iso_tall.js";
 import { bakeRoom, roomPiece, OBJECTS as ROOM_OBJ } from "./iso_interior.js";
 
 export const TW = 32, TH = 16;
@@ -63,3 +63,5 @@ export function groundChunks(m, theme, CW = 1024, CH = 512, keep = 12) {
   return { chunked: true, W, H, ox, oy, CW, CH, nx, ny, get, has, stats };
 }
 export function tallAt(m, x, y, theme) { return ROOM_OBJ.includes(m.o[y][x]) ? roomPiece(m, x, y) : tall(m, x, y, theme); }
+/** A named building's lit windows, sign, lamps, smoke and glow (iso_tall.js bldInfo), offsets from its footprint's top corner. */
+export { bldInfo };

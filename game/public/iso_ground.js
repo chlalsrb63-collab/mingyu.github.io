@@ -689,11 +689,11 @@ function extras(m, theme, MT) {
     const ax = lx > ly || (lx === ly && Math.max(...xs) - Math.min(...xs) >= Math.max(...ys) - Math.min(...ys)) ? 1 : 2;
     for (const [cx, cy] of comp) axis.set(cx + "," + cy, ax);
   }
-  const solid = (x, y) => { const c = at(x, y); return c === null || c === "W" || "CHUZTPRBF".includes(m.o[y][x]); };
+  const solid = (x, y) => { const c = at(x, y); return c === null || c === "W" || "CHUZWTPRBF".includes(m.o[y][x]); };
   // rings around the fountain, mats where the townsfolk stand (in texels)
   const rings = [];
   for (const big of m.big || []) if (big.t === "fountain") rings.push([(big.x + 1) * 16, (big.y + 1) * 16]);
-  const mats = (m.npcs || []).map((n) => [n.x * 16 + 8, n.y * 16 + 11, C({ shop: "#e07a8a", smith: "#8a90a0", elder: "#5a6ac0", train: "#b84a4a", warp: "#7a5ae0", collector: "#4a7a4a", achieve: "#d8a830", daily: "#4a8ad0", bank: "#a07a3a" }[n.role] || "#6a8a5a")]);
+  const mats = (m.npcs || []).filter((n) => !n.thing).map((n) => [n.x * 16 + 8, n.y * 16 + 11, C({ shop: "#e07a8a", smith: "#8a90a0", elder: "#5a6ac0", train: "#b84a4a", warp: "#7a5ae0", collector: "#4a7a4a", achieve: "#d8a830", daily: "#4a8ad0", bank: "#a07a3a" }[n.role] || "#6a8a5a")]);
   const beds = [];
   for (const big of m.big || []) if (big.t === "house" && big.v < 4) beds.push([big.x * 16 + 1, (big.y + 3) * 16, 13, 4], [(big.x + 3) * 16 + 2, (big.y + 3) * 16, 13, 4]);
   const ringC = [C("#8f95a6"), C("#d6dae4")], matC = C("#f2e0b0");
@@ -847,7 +847,10 @@ function extras(m, theme, MT) {
     }
   }
   function stepsTex(x, y, me, TEX, PA, PB) {
-    const alongY = solid(x - 1, y) || solid(x + 1, y);
+    // steps climb across the walls beside them; a wide flight between two cheek walls (the terrace's 석축) climbs
+    // the same way all along: follow the run of steps to its ends
+    const runEnd = (d) => { let i = x + d; while (at(i, y) === "v" && Math.abs(i - x) < 12) i += d; return solid(i, y) && m.o[y] && m.o[y][i] === "W"; };
+    const alongY = solid(x - 1, y) || solid(x + 1, y) || runEnd(-1) || runEnd(1);
     const col = me.hex, nose = C(light(col, 1.16)), riser = C(shade(col, 0.7)), mid = me.base, crack = C(shade(col, 0.88));
     for (let k = 0; k < 256; k++) {
       const a = PA[k], b = PB[k], s = alongY ? b : a, t = alongY ? a : b;

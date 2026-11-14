@@ -48,6 +48,8 @@ const ROLE = {
 };
 const roleOf = (n) => ROLE[n.role] || ROLE.talk;
 const PARTY_COL = ["#4ad0ff", "#3fe08c", "#8ac4ff", "#9af0c8"];
+/** Roofs on the radar and the map window, a shade under the buildings' own (iso_tall.js BSTYLE). */
+const ROOF = { hall: "#4e7a40", library: "#4a5a86", dojo: "#8e4a2a", store: "#a8643a", smithy: "#444c5c", merc: "#4a3a30", lab: "#3e8474", diner: "#a83c34", cafe: "#348686", inn: "#3456a0", boutique: "#c06a8c", pet: "#5a9040", apt: "#7a5034", home: "#b85444", barn: "#6a3a2e" };
 const COL = { gate: "#d890ff", door: "#e0a868", stone: "#8ad8ff", stoneOff: "#7a7468", fire: "#ff9a3a", obelisk: "#c890ff", wind: "#5ae4a0", boss: "#ff4a4a", me: "#ffd84a" };
 
 const sprites = {};
@@ -177,7 +179,21 @@ export function loadMap(m) {
   const shrines = [];
   for (let y = 0; y < m.h; y++) { const row = m.o[y]; for (let x = 0; x < m.w; x++) if (row[x] === "/") shrines.push([x, y]); }
   const ob = (m.big || []).find((b) => b.t === "obelisk");
-  M = { m, tex, stones, portals, shrines, obelisk: ob ? [ob.x, ob.y] : null };
+  // the town's buildings: roofs in a muted roof colour, the sign's glyph at the door (town.md G)
+  const blds = [];
+  const tg = tex.getContext("2d");
+  for (const b of m.big || []) {
+    if (b.t !== "bld" && b.t !== "house") continue;
+    const w = b.w || 4, h = b.h || 3;
+    tg.fillStyle = b.t === "bld" ? ROOF[b.k] || "#8a5a4a" : b.v >= 4 ? "#3a3e4a" : "#9a5a4a";
+    tg.fillRect(b.x, b.y, w, h);
+    tg.fillStyle = "rgba(255,255,255,.18)"; tg.fillRect(b.x, b.y, w, 1);
+    if (b.t !== "bld") continue;
+    const at = b.door === "e" ? [b.x + w, b.y + b.dx + 0.5] : b.door === "s" ? [b.x + b.dx + 0.5, b.y + h] : [b.x + w / 2 - 0.5, b.y + h];
+    blds.push({ x: at[0], y: at[1], icon: b.icon, name: b.name });
+  }
+  for (const p of portals) p.bld = blds.some((q) => Math.abs(q.x - p.x) < 1.6 && Math.abs(q.y - p.y) < 1.6);
+  M = { m, tex, stones, portals, shrines, blds, obelisk: ob ? [ob.x, ob.y] : null };
   view.reset = true;
   view.dirty = true;
 }
@@ -242,7 +258,7 @@ export function draw(t) {
   for (const c of m.camps || []) { const [x, y] = P(c.x, c.y); if (inView(x, y)) blit(g, spr("fire", COL.fire), x, y); }
   for (const [sx, sy] of M.shrines) { const [x, y] = Pt(sx, sy); if (inView(x, y)) blit(g, spr("wind", COL.wind), x, y - 2); }
   for (const n of m.npcs || []) {
-    if (!D.npcOut(n) || (n.role === "dim" && M.obelisk)) continue;
+    if (n.thing || !D.npcOut(n) || (n.role === "dim" && M.obelisk)) continue;
     const [x, y] = Pt(n.x, n.y);
     if (!inView(x, y)) continue;
     const [gl, col] = roleOf(n);
@@ -253,7 +269,8 @@ export function draw(t) {
     const [x, y] = Pt(st.x, st.y);
     if (inView(x, y)) blit(g, spr("stone", D.wpWoke(G.self, m.id, st.i) ? COL.stone : COL.stoneOff), x, y - 3);
   }
-  for (const p of M.portals) { const [x, y] = Pt(p.x, p.y); if (inView(x, y)) blit(g, spr(p.door ? "door" : "gate", p.door ? COL.door : COL.gate), x, y - 3); }
+  for (const p of M.portals) { if (p.bld) continue; const [x, y] = Pt(p.x, p.y); if (inView(x, y)) blit(g, spr(p.door ? "door" : "gate", p.door ? COL.door : COL.gate), x, y - 3); }
+  for (const b of M.blds) { const [x, y] = Pt(b.x, b.y); if (inView(x, y)) blit(g, spr(b.icon, "#f0d8a8"), x, y - 3); }
   // inside a rift: its own marks (dimrift.js speaks in dots)
   D.miniDots((wx, wy, col, r = 2) => { const [x, y] = P(wx, wy); if (inView(x, y)) dotAt(g, x, y, col, Math.max(3, r)); }, t);
   // passers-by (the party is drawn below, bigger)
@@ -355,7 +372,15 @@ function drawHere(g, W, H, t) {
   const hit = (x, y, r, tip, click) => view.hits.push({ x, y, r, tip, click });
   const names = u >= 4.5;
   // gates first: where each leads
+  // the town's buildings: the sign's glyph at the door and the name (their doors need no mark of their own)
+  for (const b of M.blds) {
+    const [x, y] = Pt(b.x, b.y);
+    blit(g, spr(b.icon, "#f0d8a8"), x, y - 3);
+    tag(b.name, x, y - 15, "#f0d8a8", 10, 2);
+    hit(x, y, 9, b.name);
+  }
   for (const p of M.portals) {
+    if (p.bld) continue;
     const [x, y] = Pt(p.x, p.y);
     blit(g, spr(p.door ? "door" : "gate", p.door ? COL.door : COL.gate), x, y - 3);
     tag(p.to, x, y - 15, p.door ? "#f0c890" : "#f0c8ff", 11, 2);
@@ -376,7 +401,7 @@ function drawHere(g, W, H, t) {
   for (const [sx, sy] of M.shrines) { const [x, y] = Pt(sx, sy); blit(g, spr("wind", COL.wind), x, y - 2); hit(x, y, 8, "질주의 바람 — 바람 신단"); }
   if (M.obelisk) { const [x, y] = Pt(...M.obelisk); blit(g, spr("rift", COL.obelisk), x, y - 3); tag("차원의 오벨리스크", x, y - 15, "#e0c8ff", 10, 4); hit(x, y, 9, "차원의 오벨리스크 — 균열 지기에게 말을 걸어 차원 균열을 엽니다"); }
   for (const n of m.npcs || []) {
-    if (!D.npcOut(n)) continue;
+    if (n.thing || !D.npcOut(n)) continue;
     const [x, y] = Pt(n.x, n.y), [gl, col, what] = roleOf(n);
     blit(g, spr(gl, col), x, y - 3);
     if (names && n.role !== "talk") tag(n.name, x, y + 11, "#f4ecd0", 10);

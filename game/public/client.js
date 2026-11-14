@@ -1236,7 +1236,16 @@ function render(t, dt) {
   G.snapCam = false;
   Dim.tick();
   Housing.tick();
+  forgeHammer(t);
   renderText(t);
+}
+/** Near 캉캉대장간's open forge yard by day, the outdoor anvil rings now and then (town.md H). */
+let hammerAt = 0;
+function forgeHammer(t) {
+  if (G.map.id !== "town" || t < hammerAt) return;
+  hammerAt = t + 1900 + Math.random() * 900;
+  const anvil = G.map.big && G.map.big.find((b) => b.t === "prop" && b.k === "anvil"), h = Sky.hour();
+  if (anvil && h > 7 && h < 19 && Math.hypot(G.me.x - anvil.x * T - 8, G.me.y - anvil.y * T - 8) < 5 * T) Sound.play("clang");
 }
 
 function label(str, sx, sy, col, size = 12, bg = false) {
@@ -1377,7 +1386,7 @@ function renderText(t) {
     label(`▸ ${p.to}`, x, y, "#e0c8ff");
   }
   for (const n of m.npcs) {
-    if (!S3.npcOut(n)) continue;
+    if (n.thing || !S3.npcOut(n)) continue;  // a thing's name shows on the F prompt only (town.md E)
     const [x, y] = at(n.x * T + 8, n.y * T + 12, 1.55);
     label(n.name, x, y, "#f0d48a");
     const sqm = SideQ.mark(n, G.self);
@@ -1388,6 +1397,8 @@ function renderText(t) {
       if (mark) label(mark, x, y - 18 + Math.sin(t / 200) * 3, mark === "!" ? "#ffd84a" : "#8cff8c", 18);
     }
   }
+  // the townsfolk's few words, when you come close (townfolk.js)
+  if (S3.townBubbles) for (const b of S3.townBubbles(t)) { const [x, y] = at(b.x, b.y, 1.55); bubble(b.b, x, y, t); }
   for (const mob of G.mobs.values()) {
     const d = G.defs.mobs[mob.k], max = mobMax(mob);
     if (!(d.boss || mob.el || mob.hp < max)) continue;

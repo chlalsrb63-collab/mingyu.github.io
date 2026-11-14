@@ -27,6 +27,8 @@ import * as Camp from "./camp.js";
 import { HUE, hueAt } from "./autumn.js";
 import * as IN from "./iso_interior.js";
 import * as DimArt from "./dimart.js";
+import { icon as uiIcon } from "./uiicons.js";
+import * as TF from "./townfolk.js";
 
 const T = 32, P = 2;
 /** Iso pixels per server unit along the screen's x; y is half that. Height lifts by 26 px per unit `h`. */
@@ -1024,6 +1026,7 @@ function paintExtras(m, c) {
     }
   }
   for (const n of m.npcs) {
+    if (n.thing) continue;           // an interactive object (town.md E) has no mat
     if (n.night) continue;
     // a woven mat marks where each of the townsfolk stands
     const cx = n.x * T + 16, cy = n.y * T + 25, col = { shop: "#e07a8a", smith: "#8a90a0", elder: "#5a6ac0", train: "#b84a4a", warp: "#7a5ae0", collector: "#4a7a4a", achieve: "#d8a830", daily: "#4a8ad0", bank: "#a07a3a" }[n.role] || "#6a8a5a";
@@ -1217,7 +1220,7 @@ export function loadMap(m) {
   const edge = (x, y) => x < 2 || y < 2 || x >= m.w - 2 || y >= m.h - 2;
   // the pieces isotiles.js stands up, by tile; a house it draws is not drawn again here
   const art = new Map(), artHouse = new Set();
-  const houseAt = (x, y) => m.big.find((b) => b.t === "house" && x >= b.x && x < b.x + 4 && y >= b.y && y < b.y + 3);
+  const houseAt = (x, y) => m.big.find((b) => (b.t === "house" || b.t === "bld") && x >= b.x && x < b.x + (b.w || 4) && y >= b.y && y < b.y + (b.h || 3));
   const isRock = (x, y) => { const r = m.g[y]; return !!r && r[x] === "W" && m.o[y][x] === " "; };
   const blockKind = (x, y) => { const r = m.o[y]; if (!r || x < 0 || x >= m.w) return null; const ch = r[x]; return ch === " " ? (isRock(x, y) ? "W" : null) : WALL[ch] || ch === "Z" ? ch : null; };
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
@@ -1231,7 +1234,7 @@ export function loadMap(m) {
     if (lay.covered.has(key) || spiritAt.has(key)) continue;
     // on a big (chunked) map the walls, cliffs, hedges and rock stand up when they first come near the
     // screen (render: lazyTall); what isotiles.js draws for them, or nothing, is decided then
-    if (lazyWalls && (isRock(x, y) || "CHUZ".includes(ch))) {
+    if (lazyWalls && (isRock(x, y) || "CHUZW".includes(ch))) {
       const [X, Y] = tI(x, y);
       statics.push({ lazy: [x, y], sp: null, dx: X, dy: Y, x: X, y: Y + 16, d: Y + 8, glow: null, glint: -1, art: true, tx: X, ty: Y });
       continue;
@@ -1242,17 +1245,17 @@ export function loadMap(m) {
         const [X, Y] = tI(x, y), st = { sp: pc2.img, dx: X + pc2.dx, dy: Y + pc2.dy, x: X, y: Y + 16, d: Y + 8, glow: null, glint: -1, art: true, tx: X, ty: Y };
         // a wall tall enough to hide someone can be cut down to a stump when they stand behind it
         if (ch !== "h" && "low" in pc2) st.cut = pc2;
-        if (ch === "h") { const hb = houseAt(x, y); if (hb) { artHouse.add(hb); slice(st, hb.x, hb.y, 4, 3); } }
+        if (ch === "h") { const hb = houseAt(x, y); if (hb) { artHouse.add(hb); slice(st, hb.x, hb.y, hb.w || 4, hb.h || 3); } }
         // indoors: a fire, steam, a sleeping cat; lamps and windows light the room (iso_interior.js)
         if (pc2.anim) st.anim = pc2.anim;
-        if (pc2.glow) roomL.glows.push({ ...pc2.glow, X: X + pc2.glow.x, Y: Y + pc2.glow.y });
+        if (pc2.glow) { roomL.glows.push({ ...pc2.glow, X: X + pc2.glow.x, Y: Y + pc2.glow.y }); if (theme !== "interior") st.nightGlow = "#ffd890"; }
         if (pc2.win) roomL.wins.push(IN.windowPatch(pc2.win, x, y, tI));
         art.set(key, st);
         statics.push(st);
         continue;
       }
       // the art draws the deep rock between walls into the ground itself
-      if (isRock(x, y) || "CHUZ".includes(ch)) continue;
+      if (isRock(x, y) || "CHUZW".includes(ch)) continue;
     }
     if (ch === "Q") { statics.push(stand({ sp: D.waypoint, glow: null, glint: -1, wp: true, ph: hash(x, y, 6) * 9 }, x, y)); continue; }
     if (ch === "G" && marks.has(key)) {
@@ -1303,9 +1306,47 @@ export function loadMap(m) {
     slice(st, x, y, 2, 1);
     statics.push(st);
   }
+  const TP = theme === "town" || theme === "meadow" ? DC.townProps() : null;
   for (const b of m.big) {
+    if (b.t === "bld") {
+      // a named building (iso_tall.js models it): its sign beside the door, its windows lit after dark,
+      // smoke from the chimney, the forge's sparks, the diner's steam, the alchemist's coloured puffs
+      const info = IT.ready && IT.bldInfo ? IT.bldInfo(m, b, theme) : null;
+      if (!info) continue;
+      const [X0, Y0] = tI(b.x, b.y), off = ([sx, sy]) => [X0 + sx, Y0 + sy];
+      if (info.sign) {
+        const [sx, sy] = off(info.sign), sp = DC.signPlank(uiIcon(b.icon, "#4a2e1a"));
+        const st = { sp, dx: Math.round(sx - 10), dy: Math.round(sy - 3), x: sx, y: sy + 30, d: sy + 25, glow: null, glint: -1, label: b.name, near: 9, sign: true };
+        statics.push(st); signs.push(st);
+      }
+      const [cx, cy] = tI(b.x + b.w / 2, b.y + b.h / 2);
+      // (a pool of light for a few of the windows, spread along the faces: the panes themselves are painted lit)
+      const step = Math.max(1, Math.ceil(info.wins.length / 2));
+      lights.push({ x: cx, y: cy, wins: info.wins.filter((_, i) => i % step === step >> 1).map(off), lamps: info.lamps.slice(0, 1).map(off), ph: hash(b.x, b.y, 2) * 9 });
+      for (const s of info.smoke) { const [x, y] = off(s); if (b.k !== "smithy") smokers.push({ x, y }); }
+      for (const s of info.glow) { const [x, y] = off(s); emit.push({ k: "spark", x, y, ph: 0 }); }
+      if (info.steam) { const [x, y] = off(info.steam); emit.push({ k: "steam", x, y, ph: 0 }); }
+      if (info.puff) { const [x, y] = off(info.puff); emit.push({ k: "puff", x, y, ph: 0 }); }
+      continue;
+    }
+    if (b.t === "prop") {
+      const sp = TP && TP[b.k];
+      if (!sp) continue;
+      const st = { sp: Array.isArray(sp) ? sp[0] : sp, prop: b.k };
+      if (b.k === "laundry") st.frames = sp;
+      if (b.k === "stall") st.sp = sp[hash(b.x, b.y, 5) * 3 | 0];
+      if (b.k === "stall") st.nightGlow = "#ffd890";
+      if (b.k === "watch") st.nightGlow = "#ffd870";
+      statics.push(standBig(st, b.x, b.y, b.w, b.h, (b.w + b.h) * 2 - 3));
+      continue;
+    }
     if (b.t === "house") {
-      if (artHouse.has(b)) continue;
+      if (artHouse.has(b)) {
+        // the art's cottage keeps its chimney smoking and its windows lit too
+        const [X, Y] = tI(b.x, b.y);
+        if (theme === "town") { smokers.push({ x: X + 32, y: Y - 34 }); lights.push({ x: X + 8, y: Y + 30, wins: [[X - 22, Y + 12], [X + 18, Y + 32]], lamps: [], ph: hash(b.x, b.y, 2) * 9 }); }
+        continue;
+      }
       const city = b.v >= 4, hs = A.house[b.v % 8], [X, Y] = tI(b.x, b.y);
       const s = { sp: hs.cv, dx: X - hs.ax, dy: Y - hs.ay, x: tI(b.x + 2, b.y + 1.5)[0], y: tI(b.x + 4, b.y + 3)[1], glow: city ? NEON[b.v % 4] : null, big: true, neon: city ? NEON[b.v % 4] : null, ph: hash(b.x, b.y, 2) * 9, house: !city };
       slice(s, b.x, b.y, 4, 3);
@@ -1344,7 +1385,9 @@ export function loadMap(m) {
   // what lights up after dark: lamps, windows, landmarks, runes
   for (const st of statics) if (st.glow || st.wp || st.nightGlow || st.house || st.pot) lights.push(st);
   lazyLeft = statics.filter((st) => st.lazy).length;
-  npcs = m.npcs.map((n) => { const [x, y] = iso(n.x * 16 + 8, n.y * 16 + 12); return { n, x, y, sheet: SP.personSheet(SP.npcLook(n.look, n.role)) }; });
+  // (an interactive object, `thing` (town.md E), is the furniture it stands on: no figure of its own)
+  npcs = m.npcs.filter((n) => !n.thing).map((n) => { const [x, y] = iso(n.x * 16 + 8, n.y * 16 + 12); return { n, x, y, sheet: SP.personSheet(SP.npcLook(n.look, n.role)) }; });
+  TF.load(m);
   ents.clear();
   fx.clear();
   amb.length = 0;
@@ -1375,7 +1418,10 @@ const labelOut = [];
 export function labels() {
   labelOut.length = 0;
   const ox = cam.ox ?? cam.x, oy = cam.oy ?? cam.y;
+  const [mx, my] = G && G.me ? iso(G.me.x, G.me.y) : [0, 0];
   for (const s of signs) {
+    // a building's name plate shows only when you are near it (the map window shows them all)
+    if (s.near && (Math.abs(s.x - mx) > s.near * 22 || Math.abs(s.y - 30 - my) > s.near * 12)) continue;
     const sx = s.x - ox, sy = s.y - 40 - oy;
     if (sx < -60 || sx > vw + 60 || sy < -20 || sy > vh + 40) continue;
     labelOut.push({ x: sx * Z, y: sy * Z, text: s.label });
@@ -2446,6 +2492,13 @@ function skyLights(t, ox, oy) {
   for (const st of lights) {
     const sx = st.x - ox, sy = st.y - oy;
     if (sx < -200 || sx > vw + 200 || sy < -60 || sy > vh + 300) continue;
+    if (st.wins) {
+      // a building's windows, warm behind the panes, and the lamp over its door
+      const f = 0.86 + 0.14 * Math.sin(t / 340 + st.ph * 4);
+      for (const [x, y] of st.wins) out.push({ x: x - ox, y: y - oy + 4, r: 20, col: "#ffb860", k: 0.6 * f, bloom: 7, by: y - oy });
+      for (const [x, y] of st.lamps) out.push({ x: x - ox, y: y - oy + 14, r: 34, col: "#ffd890", k: 0.75, bloom: 9, by: y - oy });
+      continue;
+    }
     if (st.house) {
       const f = 0.85 + 0.15 * Math.sin(t / 300 + st.ph * 4);
       out.push({ x: sx - 24, y: sy - 4, r: 34, col: "#ffb860", k: 0.75 * f, bloom: 14, by: sy - 34 }, { x: sx + 22, y: sy - 6, r: 30, col: "#ffb860", k: 0.65 * f, bloom: 12, by: sy - 36 });
@@ -2498,6 +2551,9 @@ const SKIRT = { interior: ["#5a3a26", "#3a2418"], meadow: ["#7a5a3a", "#5a4030"]
 let lightCv = null, lg = null;
 
 export function sync(state2) { G = state2; }
+// the townsfolk read the sky clock and wear heroes' looks; their bubbles are lettered by the page (client.js)
+TF.init({ hour: () => Sky.hour(), dayMs: () => (G && G.defs && G.defs.sky && G.defs.sky.dayMs) || 48 * 60000, sheet: (look, cos) => SP.personSheet(SP.playerLook(null, look, cos ? { cos } : {})) });
+export const townBubbles = (t) => TF.bubbles(t);
 /** Milliseconds from the start of a stroke to the moment its blade crosses the target. */
 export function impactMs(wk, beat) {
   const hold = SP.HOLD[wk] || SP.HOLD.sword;
@@ -2744,6 +2800,9 @@ export function render(focusX, focusY, dt, t, snap) {
   for (const [eid, p] of G.players) add(p.x, p.y, { p, eid });
   add(G.me.x, G.me.y, { p: G.me, eid: G.you, me: true }, 0.01);
   for (const pt of petsNow(dt, t)) add(pt.x, pt.y, { pet: pt }, -1);
+  // the townsfolk going about their day (townfolk.js: the sky clock places them, nothing on the wire)
+  TF.update(dt, G.me, t);
+  for (const r of TF.drawables(t)) add(r.x, r.y, { r });
   for (const [id, pr] of props) { if (t >= pr.until) props.delete(id); else add(pr.x, pr.y, { pr }, -(pr.lift || 0)); }
   list.sort((a, b) => a.y - b.y);
   for (const s of ents.values()) s.seen = false;
@@ -2754,6 +2813,7 @@ export function render(focusX, focusY, dt, t, snap) {
     if (o.s) {
       const st = o.s, sl = o.sl;
       let sp = st.sp, dx = st.dx, dy = st.dy;
+      if (st.frames) { const n = st.frames.length; sp = st.frames[((Math.floor(t / 420 + st.x / 37) % n) + n) % n]; }
       if (st.pot) {
         if (Math.floor(t / 380) % 3 === 0) sp = st.sp1;
         if (Math.random() < 0.18) parts.push({ x: st.x - 3 + Math.random() * 6, y: st.dy + 9, vx: 3 + Math.random() * 4, vy: -12 - Math.random() * 6, life: 1 + Math.random() * 0.6, color: Math.random() < 0.5 ? "#f4f0f8" : "#d8d4e4", g: -4, s: 2 });
@@ -2783,6 +2843,14 @@ export function render(focusX, focusY, dt, t, snap) {
         if (st.land === "crystals" && Math.random() < 0.04) parts.push({ x: dx + 10 + Math.random() * (sp.width - 20), y: dy + 20 + Math.random() * 60, vx: 0, vy: -8, life: 1.2, color: "#cffaff", g: 0, s: 1 });
       }
       if (st.water && Math.random() < 0.45) parts.push({ x: st.x - 9 + Math.random() * 18, y: st.y - 50, vx: (Math.random() - 0.5) * 34, vy: -24 - Math.random() * 20, life: 0.55, color: "#dff4ff", g: 170, s: 2 });
+    } else if (o.r) {
+      // a resident: a hero's figure walking or at their task (iso_interior.js poses)
+      const r = o.r, X = Math.round(o.X), Y = Math.round(o.Y), side = r.dir === "left" || r.dir === "right";
+      const fr = (side ? r.sheet.side : r.sheet[r.dir] || r.sheet.front)[r.pose === "doze" ? SP.FRAME.blink : r.frame];
+      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(X, Y, 6, 3, 0, 0, 7); g.fill();
+      if (r.dir === "left") { g.save(); g.translate(X, 0); g.scale(-1, 1); g.drawImage(fr, -SP.FOOT[0], Y - SP.FOOT[1]); g.restore(); }
+      else g.drawImage(fr, X - SP.FOOT[0], Y - SP.FOOT[1]);
+      if (r.pose) IN.drawPose(g, r.pose, X, Y, t, parts, r.seed);
     } else if (o.n) {
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 6, 3, 0, 0, 7); g.fill();
       const pose = o.n.n.pose, nt = t + o.n.x * 37;

@@ -451,6 +451,125 @@ export function plan(m, theme) {
   return { statics, covered, falls };
 }
 
+// ───────────────────────────── the town's props (docs/design/town.md H) ─────────────────────────────
+
+/**
+ * A prop standing over a footprint of fw × fh tiles, drawn in the quarter view: `draw(b, P, box)` gets the
+ * pen, P(a, b, z) → pixel for a point a texels along x, b along y and z up from the footprint's top corner,
+ * and an iso box. The sprite's bottom row is the footprint's front corner (scene2d standBig with `down`).
+ */
+function isoProp(fw, fh, H, draw) {
+  const W = (fw + fh) * 16;
+  return prop(W, H, (b) => {
+    const cx0 = W / 2 - (fw - fh) * 8, cy0 = H - 1 - (fw + fh) * 8;
+    const P = (a, bb, z = 0) => [cx0 + (a - bb), cy0 + (a + bb) / 2 - z];
+    const quad = (p, col) => b.tri(p, col);
+    /** A box from (a0, b0) to (a1, b1), z0 to z1: its top and the two faces toward the viewer. */
+    const box = (a0, b0, a1, b1, z0, z1, top, left, right) => {
+      quad([P(a0, b1, z0), P(a1, b1, z0), P(a1, b1, z1), P(a0, b1, z1)], left);
+      quad([P(a1, b0, z0), P(a1, b1, z0), P(a1, b1, z1), P(a1, b0, z1)], right);
+      quad([P(a0, b0, z1), P(a1, b0, z1), P(a1, b1, z1), P(a0, b1, z1)], top);
+    };
+    draw(b, P, box, quad);
+  });
+}
+let TP = null;
+/** The town's props by kind (`laundry` has three frames, the wind in the washing). */
+export function townProps() {
+  if (TP) return TP;
+  const W0 = [WOOD_L, WOOD, WOOD_D], ST = STONE;
+  const post = (box, a, bb, h, c = W0) => box(a - 1, bb - 1, a + 1, bb + 1, 0, h, c[0], c[1], c[2]);
+  TP = {
+    // a watch post: four log legs, a railed platform, a shingled roof, a lantern hanging under it
+    watch: isoProp(2, 2, 110, (b, P, box, quad) => {
+      for (const [a, bb] of [[4, 4], [28, 4], [4, 28], [28, 28]]) post(box, a, bb, 54);
+      box(2, 2, 30, 30, 40, 44, "#b08050", "#8a5a34", "#6a4226");
+      for (const [a, bb] of [[2, 2], [30, 2], [2, 30], [30, 30]]) post(box, a, bb, 62);
+      for (let i = 0; i <= 28; i += 4) { box(2 + i, 29, 3 + i, 31, 44, 52, WOOD_L, WOOD, WOOD_D); box(29, 2 + i, 31, 3 + i, 44, 52, WOOD_L, WOOD, WOOD_D); }
+      box(2, 29, 31, 31, 52, 54, "#c89a64", WOOD, WOOD_D); box(29, 2, 31, 31, 52, 54, "#c89a64", WOOD, WOOD_D);
+      quad([P(-2, -2, 62), P(34, -2, 62), P(16, 16, 80)], "#9a5a3a"); quad([P(34, -2, 62), P(34, 34, 62), P(16, 16, 80)], "#6a3a26");
+      quad([P(-2, 34, 62), P(34, 34, 62), P(16, 16, 80)], "#b8704a");
+      const [lx, ly] = P(30, 30, 58); b.r(lx - 2, ly, 5, 6, "#3a3448"); b.r(lx - 1, ly + 1, 3, 4, "#ffd870");
+    }),
+    // a stone well under a little roof, a bucket on the rim
+    well: isoProp(1, 1, 50, (b, P, box, quad) => {
+      box(1, 1, 15, 15, 0, 9, "#3a5a7a", ST[1], ST[2]);
+      box(3, 3, 13, 13, 8, 9, "#2a4466", ST[1], ST[2]);
+      post(box, 2, 8, 26); post(box, 14, 8, 26);
+      quad([P(-1, 2, 24), P(17, 2, 24), P(17, 14, 24), P(-1, 14, 24)], "#a8543a");
+      quad([P(-1, 8, 32), P(17, 8, 32), P(17, 14, 24), P(-1, 14, 24)], "#c86a4a");
+      quad([P(-1, 2, 24), P(17, 2, 24), P(17, 8, 32), P(-1, 8, 32)], "#8a4430");
+      box(10, 12, 14, 15, 9, 13, "#c8945a", "#8a5a34", "#6a4226");
+    }),
+    // a plank bench
+    bench: isoProp(2, 1, 30, (b, P, box) => {
+      for (const a of [4, 28]) box(a - 1, 5, a + 1, 11, 0, 6, W0[0], W0[1], W0[2]);
+      box(1, 4, 31, 12, 6, 8, "#c8945a", "#a8743e", "#7a5030");
+      box(1, 3, 31, 5, 8, 14, "#b08050", "#8a5a34", "#6a4226");
+    }),
+    // a hand cart loaded with fruit, its shafts down
+    cart: isoProp(2, 1, 40, (b, P, box) => {
+      box(2, 2, 30, 14, 8, 16, "#b8844e", "#9a6a3a", "#7a5030");
+      for (const [a, c] of [[6, "#e8584a"], [12, "#f0a030"], [18, "#9ad070"], [24, "#e8c040"]]) b.oval(...P(a, 8, 19), 3, 2, c);
+      for (const a of [8, 24]) { const [x, y] = P(a, 15, 6); b.oval(x, y, 3, 6, "#5a3a22"); b.oval(x, y, 1.5, 3.5, "#8a5a34"); }
+      box(30, 7, 40, 9, 9, 11, "#8a5a34", "#6a4226", "#5a3a22");
+    }),
+    // a training dummy of straw on a post, a target on its chest
+    dummy: isoProp(1, 1, 40, (b, P, box) => {
+      post(box, 8, 8, 30, ["#a87a44", "#8a5a34", "#6a4226"]);
+      const [x, y] = P(8, 8, 22);
+      b.oval(x, y, 6, 8, "#d8b060"); b.oval(x - 1, y - 1, 4, 6, "#e8c878"); b.oval(x, y - 12, 4, 4, "#d8b060");
+      b.r(x - 9, y - 4, 18, 3, "#c8a050"); b.oval(x, y + 1, 3, 3, "#c84a3a"); b.oval(x, y + 1, 1.5, 1.5, "#f6ecd2");
+    }),
+    // a vegetable bed in a plank frame: cabbages, carrot tops, beans on a cane
+    garden: isoProp(2, 2, 40, (b, P, box) => {
+      box(1, 1, 31, 31, 0, 4, "#6a4a2e", "#8a5a34", "#6a4226");
+      box(3, 3, 29, 29, 3, 4, "#5a3e28", "#5a3e28", "#5a3e28");
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+        const [x, y] = P(6 + i * 7, 6 + j * 7, 5), k = (i + j) % 3;
+        if (k === 0) { b.oval(x, y, 3, 2.5, "#7abf5a"); b.oval(x - 1, y - 1, 1.5, 1, "#a8e07a"); }
+        else if (k === 1) { b.r(x - 1, y - 4, 1, 4, "#4a9a3a"); b.r(x + 1, y - 3, 1, 3, "#5ab04a"); b.r(x, y, 2, 1, "#f08a30"); }
+        else { b.r(x, y - 9, 1, 9, "#a8845a"); b.r(x - 2, y - 7, 2, 2, "#4a9a3a"); b.r(x + 1, y - 5, 2, 2, "#5ab04a"); }
+      }
+    }),
+    // a stone lookout at the hill's foot: a low wall and a brass spyglass on its stand
+    lookout: isoProp(2, 2, 46, (b, P, box) => {
+      box(0, 0, 32, 32, 0, 3, ST[0], ST[1], ST[2]);
+      box(0, 0, 32, 4, 3, 10, ST[3], ST[1], ST[2]); box(28, 0, 32, 32, 3, 10, ST[3], ST[1], ST[2]);
+      for (const [a, bb] of [[12, 14], [18, 14], [15, 20]]) box(a, bb, a + 1, bb + 1, 3, 18, "#6a4226", "#6a4226", "#5a3a22");
+      const [x, y] = P(15, 16, 20); b.r(x - 2, y - 2, 12, 3, "#d8a840"); b.r(x - 2, y - 2, 12, 1, "#f0d070"); b.r(x + 9, y - 3, 2, 5, "#a87a28");
+    }),
+    anvil: isoProp(1, 1, 30, (b, P, box) => {
+      box(3, 3, 13, 13, 0, 8, "#8a5a34", "#6a4226", "#5a3a22");
+      box(4, 6, 12, 10, 8, 12, "#5a5e6c", "#4a4e5a", "#3a3e4a");
+      box(2, 5, 14, 11, 12, 15, "#8a90a0", "#5a5e6c", "#4a4e5a");
+      const [x, y] = P(8, 8, 15); b.r(x - 2, y - 1, 3, 1, "#ff9a40");
+    }),
+  };
+  // washing on a line between two posts, in three frames of wind
+  TP.laundry = [0, 1, 2].map((f) => isoProp(2, 1, 40, (b, P, box) => {
+    post(box, 2, 8, 24); post(box, 30, 8, 24);
+    const CL = ["#f6ecd2", "#8ab4f0", "#f078a8", "#9ad070", "#f0c040"];
+    for (let i = 0; i < 5; i++) {
+      const a = 5 + i * 5, [x, y] = P(a, 8, 22), sway = [0, 1, -1][(f + i) % 3];
+      b.r(x, y - 1, 5, 1, "#3a3448");
+      b.tri([[x, y], [x + 4, y], [x + 4 + sway, y + 7 + (i % 2) * 2], [x + sway, y + 7 + (i % 2) * 2]], CL[i]);
+    }
+  }));
+  TP.stall = sprites().stall;
+  return TP;
+}
+
+/** A hanging plank for a building's sign: a bracket off the wall, two chains, the trade's glyph burnt into it. */
+export function signPlank(glyph) {
+  return prop(20, 22, (b, x) => {
+    b.r(0, 0, 20, 2, WOOD_D); b.r(18, 0, 2, 4, WOOD_D);
+    b.r(3, 2, 1, 3, "#3a3448"); b.r(16, 2, 1, 3, "#3a3448");
+    b.r(1, 5, 18, 16, "#d8b078"); b.r(1, 5, 18, 2, "#f0d098"); b.r(1, 19, 18, 2, "#a87a44"); b.r(17, 7, 2, 12, "#b8864e");
+    if (glyph) x.drawImage(glyph, 4, 7);
+  });
+}
+
 // ───────────────────────────── the town's market ─────────────────────────────
 
 /** Stalls where some of the town's crates stand, a notice board by the task-giver, the fountain's statue. */
@@ -458,9 +577,11 @@ export function town(m) {
   const S = sprites();
   const out = [], swap = new Set();
   if (!m.safe) return { statics: out, swap, strings: [] };
+  // (a town laid out with props of its own, docs/design/town.md, has its stalls as props: its tubs stay tubs)
   let k = 0;
+  const ownStalls = (m.big || []).some((b) => b.t === "prop");
   for (let y = 1; y < m.h - 1; y++) for (let x = 1; x < m.w - 1; x++) {
-    if (m.o[y][x] !== "B" || hash(x, y, 31) > 0.55) continue;
+    if (ownStalls || m.o[y][x] !== "B" || hash(x, y, 31) > 0.55) continue;
     swap.add(`${x},${y}`);
     out.push({ sp: S.stall[k++ % 3], x: x * T + 16, y: (y + 1) * T - 2, glow: null, glint: -1, nightGlow: "#ffd890", tile: [x, y] });
   }
@@ -582,6 +703,11 @@ export function drawFalls(g, falls, t, ox, oy, vw, vh) {
 /** Points that make small things happen: steam out of the city's road, drips in the cave, rats' eyes in the sewer. */
 export function emitters(m, theme) {
   const out = [];
+  // the town: a slow dark-violet mist where the eaten forest presses on the palisade
+  if (theme === "town" && m.w >= 60) for (let y = 2; y <= 7; y += 2) for (let x = 26; x < m.w - 2; x += 7) {
+    if (m.g[y][x] !== "&") continue;
+    out.push({ k: "mist", x: x * T + 16, y: y * T + 16, ph: hash(x, y, 140) * 9000 });
+  }
   for (let y = 2; y < m.h - 2; y++) for (let x = 2; x < m.w - 2; x++) {
     const h = hash(x, y, 141);
     if (theme === "city" && open(m, x, y) && m.g[y][x] === "a" && h < 0.012) out.push({ k: "steam", x: x * T + 16, y: y * T + 20, ph: h * 900 });
@@ -594,6 +720,19 @@ export function drawEmitters(g, list, t, ox, oy, vw, vh, parts) {
   for (const e of list) {
     if (e.x < ox - 20 || e.x > ox + vw + 20 || e.y < oy - 40 || e.y > oy + vh + 20) continue;
     if (e.k === "steam") { if (Math.random() < 0.08) parts.push({ x: e.x - 3 + Math.random() * 6, y: e.y, vx: (Math.random() - 0.5) * 6, vy: -10 - Math.random() * 6, life: 1.4, color: "#d8dce8", g: -3, s: 3 }); }
+    else if (e.k === "mist") {
+      // two flat, stepped layers drifting along the wall, never a blur
+      const k = (t + e.ph) / 9000, dx = Math.sin(k * 6.283) * 18, a = 0.1 + 0.06 * Math.sin(k * 12.6);
+      g.fillStyle = `rgba(58,30,78,${a.toFixed(3)})`;
+      g.fillRect(Math.round(e.x - 44 + dx), Math.round(e.y - 6), 88, 12); g.fillRect(Math.round(e.x - 30 + dx), Math.round(e.y - 10), 60, 20);
+      g.fillStyle = `rgba(120,70,150,${(a * 0.6).toFixed(3)})`; g.fillRect(Math.round(e.x - 20 - dx * 0.5), Math.round(e.y - 3), 40, 6);
+    } else if (e.k === "spark") {
+      // the forge: sparks out of the chimney now and then
+      if (Math.random() < 0.06) parts.push({ x: e.x - 2 + Math.random() * 4, y: e.y, vx: (Math.random() - 0.5) * 14, vy: -26 - Math.random() * 18, life: 0.7, color: Math.random() < 0.5 ? "#ffd070" : "#ff8a3a", g: 18, s: 1 });
+    } else if (e.k === "puff") {
+      // the alchemist's pipe: puffs of colour
+      if (Math.random() < 0.05) parts.push({ x: e.x - 2 + Math.random() * 4, y: e.y, vx: 3 + Math.random() * 4, vy: -11 - Math.random() * 4, life: 1.6, color: ["#9affc8", "#d6a0ff", "#ffd070", "#8ad8ff"][Math.floor(Math.random() * 4)], g: -3, s: 3 });
+    }
     else if (e.k === "drip") {
       const k = ((t + e.ph) % 3200) / 3200;
       if (k < 0.22) { g.fillStyle = "#9ad0f0"; g.fillRect(e.x, e.y + Math.floor((k / 0.22) ** 2 * 26), 1, 2); }

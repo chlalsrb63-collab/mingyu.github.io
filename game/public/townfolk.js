@@ -74,7 +74,8 @@ export const RESIDENTS = [
 
 let deps = null, map = null;
 const paths = new Map();
-const state = new Map();
+const state = new Map(), sheets = new Map();
+const sheetOf = (r) => sheets.get(r.id) || (sheets.set(r.id, deps.sheet(r.look, r.cos)), sheets.get(r.id));
 export function init(d) { deps = d; }
 export function load(m) {
   paths.clear(); state.clear();
@@ -180,7 +181,7 @@ export function drawables(now = Date.now()) {
     if (fx && fy) fy = 0;
     const dir = DIRS[fx + "," + fy] || "front";
     const step = at.walk ? (Math.floor(now / 170 + r.id.length) % 2 ? 2 : 4) : Math.floor(now / 700 + r.id.length) % 2;
-    out.push({ id: r.id, x: at.x, y: at.y, sheet: deps.sheet(r.look, r.cos), dir, frame: step, pose: at.walk ? null : at.pose, seed: r.id.length * 13, kid: !!r.kid });
+    out.push({ id: r.id, x: at.x, y: at.y, sheet: sheetOf(r), dir, frame: step, pose: at.walk ? null : at.pose, seed: r.id.length * 13, kid: !!r.kid });
   }
   return out;
 }
