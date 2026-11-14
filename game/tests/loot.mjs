@@ -172,26 +172,27 @@ assert.ok(types.size >= 6, "every kind of piece drops, saw " + [...types]);
 assert.ok(rt.drops.concat(ch.inv).some((d) => (d.g || d).lg), "legendaries drop from elites");
 assert.ok(rt.drops.concat(ch.inv).some((d) => (d.g || d).set) || true);
 
-// ── every old skill (until J2: the old class of the weapon in hand) can be cast without a hitch
+// ── every weapon's actives and its single job's signature can be cast without a hitch
 L.removePlayer(S, PID);
-for (const wk of ["sword", "dagger", "spear", "staff"]) {
-  const cls = D.legacyCls[wk];
-  const c = L.hero("스킬" + wk.slice(0, 3), { wk, lvl: 157, wm: { [wk]: 40 } });
+const JOB = { sword: "swordsman", dagger: "thief", spear: "lancer", staff: "wizard", book: "warlock", bow: "archer" };
+for (const wk of Object.keys(JOB)) {
+  const c = L.hero("스킬" + wk.slice(0, 3), { wk, lvl: 157, wm: { [wk]: 40 }, job: JOB[wk] });
   c.map = "meadow"; c.x = 20 * 16; c.y = 22 * 16 + 8;
   L.addPlayer(S, PID, c);
   const q = S.players[PID];
   step();
-  assert.equal(D.skills[cls].length, 6, "four skills, a second-tier one and an ultimate");
-  for (let i = 0; i < 6; i++) {
-    const m = acorns[i]; m.dead = false; m.hp = 500; m.x = q.x + 20; m.y = q.y + 4;
+  const ids = D.skillOrder.filter((id) => D.skills[id].kind !== "p" && (D.skills[id].wk === wk) && (!D.skills[id].job || D.skills[id].job === JOB[wk]));
+  assert.equal(ids.length, 3, wk + ": two weapon actives and the signature");
+  for (const id of ids) {
+    const m = acorns[0]; m.dead = false; m.hp = 500; m.x = q.x + 20; m.y = q.y + 4;
     q.mp = 999; q.atkAt = 0; q.stag = 0;
-    const r = act({ t: "sk", i });
-    assert.ok(r.ok, cls + " skill " + i + " " + r.error);
+    const r = act({ t: "sk", id, a: 0 });
+    assert.ok(r.ok, wk + " skill " + id + " " + r.error);
     for (let k = 0; k < 40; k++) step(100);
   }
-  if (cls === "mage") {
+  if (wk === "staff") {
     q.ch.inv = [gear("w_book_1")];
-    assert.ok(act({ t: "eq", s: 0 }).ok, "a mage can hold a book");
+    assert.ok(act({ t: "eq", s: 0 }).ok, "a staff hand can take a book");
     q.dirty = true;
     const sv = step().self;
     assert.equal(sv.wk, "book");

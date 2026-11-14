@@ -270,21 +270,44 @@ function stagger(S, mob, p, crit) {
   return true;
 }
 
-function hurtMob(S, rt, mob, p, mult, sure) {
+/**
+ * A blow from `p` on `mob` for `mult` × attack. `sure`: a crit that cannot graze. `opt` (skills):
+ * `mag` magic damage whatever the weapon, `ign` share of armour ignored (the spear's tip), `crit` extra
+ * crit chance, `sk` the skill it came from (a book's skill brands what it hits).
+ */
+function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (mob.dead) return;
   const st = stats(p);
   const d = MOBS[mob.k];
+  const o = opt || {};
   // a blow beyond your depth, or from an unpractised hand, may only graze (×0.5, never a crit)
   const graze = !sure && rnd(S) * 100 < grazeChance(p, mob);
-  // a rogue finds the gaps their marks point to: +4% critical chance per mark
-  const crit = !graze && (sure || rnd(S) * 100 < st.crit + (legacyCls(p.ch) === "rogue" ? marksOf(S, mob) * 4 : 0));
-  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? st.critd : 1) * (graze ? SFX.grazeK : 1) - d.def * (st.mag ? SFX.magDef : SFX.physDef);
+  // 급소 도려내기: a dagger finds the gaps its marks point to (+4% critical chance per mark)
+  const vit = st.wk === "dagger" && pasOn(p, "vitals") ? marksOf(S, mob) * SKILL.vitals.crit : 0;
+  const crit = !graze && (sure || rnd(S) * 100 < st.crit + vit + (o.crit || 0));
+  // 거검의 관성: each stack a sword carries adds to its critical damage
+  const critd = st.critd + (st.wk === "sword" ? inertOf(p) * SKILL.inertia.critd : 0);
+  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - (o.ign || 0));
   // a dagger in a back that is not watching you
   if (st.wk === "dagger" && mob.tgt !== p.pid) dmg *= 1 + st.sneak;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
   if (st.lg.giant && (mob.el || d.boss)) dmg *= 1.3;
   if (has(mob, "tough")) dmg *= 0.6;
   if (mob.vuln > S.now) dmg *= 1.3;
+  // 금서의 낙인: a branded monster takes more from everyone
+  if (mob.brand > S.now) dmg *= 1 + SKILL.brand.k;
+  // a sword hit builds inertia, once an action
+  if (st.wk === "sword" && p.inAct !== p.actN && pasOn(p, "inertia")) {
+    p.inAct = p.actN;
+    p.inert = Math.min(SKILL.inertia.max, inertOf(p) + 1);
+    p.inertAt = S.now;
+    if (p.inert === SKILL.inertia.max) rt.ev.push(["a", p.eid, 110, Math.round(p.x), Math.round(p.y - 6), p.dir]);
+  }
+  // a book's skill brands what it strikes
+  if (o.sk && skOf(o.sk, "book") && !d.chest && pasOn(p, "brand")) {
+    if (!(mob.brand > S.now)) rt.ev.push(["a", p.eid, 114, Math.round(mob.x), Math.round(mob.y - 6), p.dir]);
+    mob.brand = S.now + SKILL.brand.ms;
+  }
   dmg = Math.max(1, Math.round(dmg));
   // thorns: a blow struck from up close costs the striker a little (never the last of their health)
   if (has(mob, "thorn") && st.arm.range < 60 && !p.dead) {
@@ -318,7 +341,7 @@ function killMob(S, rt, mob) {
   if (mob.slot) { mob.slot.mob = null; mob.slot.due = mob.respAt; rt.lastKill[mob.slot.c] = S.now; mob.slot = null; mob.cellGone = true; }
   mob.tgt = null;
   mob.dot = null;
-  mob.mk = 0; mob.dec = null; mob.vuln = 0;
+  mob.mk = 0; mob.dec = null; mob.vuln = 0; mob.brand = 0;
   rt.ev.push(["k", mob.id]);
   // the hands that struck it learn from it
   wmKill(S, rt, mob);
@@ -407,10 +430,9 @@ function blameOf(mob) {
 function hurtPlayer(S, rt, p, raw, mob) {
   if (p.dead || S.now < (p.ghost || 0)) return;
   const st = stats(p);
-  let dmg = Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard));
-  // braced: most of the blow is caught, to be thrown back when the stance breaks
-  if (p.brace && S.now < p.brace.until) { const held = Math.round(dmg * 0.8); dmg = Math.max(1, dmg - held); p.brace.stored += held; rt.ev.push(["bk", p.eid]); }
-  addGrit(p, 4);
+  // inside a dark knight's blood sanctuary a blow lands lighter (57-weapon-skills.js)
+  const ward = S.now < (p.sanctAt || 0) ? 1 - SKILL.sanctuary.guard : 1;
+  const dmg = Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard * ward));
   p.hp -= dmg;
   p.hitAt = S.now;
   rouse(S, p);
@@ -433,7 +455,7 @@ function fall(S, rt, p) {
   p.dead = true;
   p.streak = 0;
   p.burn = null; p.poison = null; p.slowed = 0;
-  classReset(p, true);
+  weaponReset(p, true);
   dropAggro(S, p);
   rt.ev.push(["pd", p.eid]);
   toast(p, p.blame ? `쓰러졌습니다... (${p.blame.by})` : "쓰러졌습니다...");
@@ -505,15 +527,14 @@ function aimVec(p, mob) {
   return [(mob.x - p.x) / d, (mob.y - p.y) / d];
 }
 
-/** How long a basic attack takes now: a headbutt is quick, and a banner hurries its party. */
+/** How long a basic attack takes now. */
 function atkCd(p) {
-  const st = stats(p);
-  return Math.round(st.acd * (p.sword ? 0.6 : 1) * (p.banHaste ? 1 - p.banHaste : 1));
+  return stats(p).acd;
 }
-/** How far a basic attack reaches now. */
+/** How far a basic attack reaches now: a greatsword with inertia (거검의 관성) reaches further. */
 function atkRange(p) {
-  const r = stats(p).arm.range;
-  return p.sword ? 22 : p.giant > p.S.now ? r + 10 : r;
+  const st = stats(p), r = st.arm.range;
+  return st.wk === "sword" ? r * (1 + inertOf(p) * SKILL.inertia.reach) : r;
 }
 
 function basicAttack(S, p) {
@@ -522,48 +543,34 @@ function basicAttack(S, p) {
   const c = st.arm;
   const rt = S.maps[p.map];
   const now = S.now;
-  const giant = p.giant > now;
-  // one, two, three: the third blow of an unbroken run is the finisher (a giant's every blow is one)
+  // one, two, three: the third blow of an unbroken run is the finisher
   p.combo = now - p.atkAt < atkCd(p) + COMBO_MS ? (p.combo + 1) % 3 : 0;
-  const fin = p.combo === 2 || giant;
+  const fin = p.combo === 2;
   p.atkAt = now;
   newAct(p, false);
   // a bow looses an arrow that flies (45-jobs.js): it lands, or not, a few ticks later
   if (c.shot) { bowShot(S, rt, p, fin); return; }
   const range = atkRange(p);
-  // a warrior without a sword puts their head down and butts
-  const butt = !!p.sword;
-  const fxKind = butt ? 40 : c.fx;
   // the blow goes where you aim: the nearest monster inside the weapon's arc, or nothing
-  const arc = butt ? AIM_CONE : c.arc || AIM_CONE;
+  const arc = c.arc || AIM_CONE;
   const mob = aimMob(rt, p, range, arc);
   if (!mob) {
     const far = range < 60 ? 14 : range * 0.7, [ax, ay] = AIM_V[p.aim | 0];
-    rt.ev.push(["a", p.eid, fxKind, Math.round(p.x + ax * far), Math.round(p.y - 6 + ay * far), p.dir, p.combo]);
+    rt.ev.push(["a", p.eid, c.fx, Math.round(p.x + ax * far), Math.round(p.y - 6 + ay * far), p.dir, p.combo]);
     return;
   }
   face(p, mob);
-  // the spear's tip: a blow landing at the far end of the reach (or right after a vault)
-  let tip = false;
-  if (c === WKIND.spear) {
-    tip = now < (p.tipNext || 0) || dist(p.x, p.y, mob.x, mob.y) - big(mob) >= c.range * TIP.at;
-    if (tip) { p.tipNext = 0; addFocus(S, p); rt.ev.push(["tip", mob.id]); }
-  }
-  rt.ev.push(["a", p.eid, fxKind, Math.round(mob.x), Math.round(mob.y - 6), p.dir, p.combo]);
-  if (butt) {
-    const [ux, uy] = aimVec(p, mob);
-    if (!MOBS[mob.k].boss && mob.el !== 2 && !steady(S, mob)) { knock(mapOfS(p.S, p.map), mob, ux, uy, 16); holdMob(S, mob, 350); }
-    hurtMob(S, rt, mob, p, 0.6);
-    addGrit(p, 12);
-    return;
-  }
-  const mult = (c.mult || 1) * (fin ? FINISH.mult : 1) * (tip ? TIP.mult : 1);
+  // 창끝의 거리: a spear blow landing at the far end of the reach hits harder and through armour
+  const tip = c === WKIND.spear && pasOn(p, "tip") && dist(p.x, p.y, mob.x, mob.y) - big(mob) >= c.range * SKILL.tip.at;
+  if (tip) rt.ev.push(["tip", mob.id]);
+  rt.ev.push(["a", p.eid, c.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir, p.combo]);
+  const mult = (c.mult || 1) * (fin ? FINISH.mult : 1);
   // a greatsword's arc catches what stands beside the target, a spear runs through
   // what stands behind it, and a spellbook's burst splashes around it
   // (only ever in front: nothing behind the swing is caught by it)
   let extra = [];
   const near = (a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y);
-  if (c.cleave) extra = mobsWithin(rt, p.x, p.y, (range + (fin ? 10 : 4)) * (giant ? 1.3 : 1)).filter((o) => o !== mob && inArc(p, o, arc * (fin ? 1.25 : 1))).sort(near).slice(0, c.cleave + (fin ? 1 : 0) + (giant ? 3 : 0));
+  if (c.cleave) extra = mobsWithin(rt, p.x, p.y, range + (fin ? 10 : 4)).filter((o) => o !== mob && inArc(p, o, arc * (fin ? 1.25 : 1))).sort(near).slice(0, c.cleave + (fin ? 1 : 0));
   else if (c.line) { const [ux, uy] = aimVec(p, mob); extra = mobsInLine(rt, p.x, p.y, ux, uy, c.range + 10, fin ? 16 : 11).slice(0, c.line + (fin ? 1 : 0)); }
   else if (c.splash) { const [ux, uy] = aimVec(p, mob); extra = mobsWithin(rt, mob.x, mob.y, c.splash + (fin ? 8 : 0)).filter((o) => (o.x - p.x) * ux + (o.y - p.y) * uy > -4).slice(0, 4); }
   const zx = mob.x, zy = mob.y;
@@ -575,19 +582,17 @@ function basicAttack(S, p) {
     holdMob(S, o, (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + (tip && o === mob ? TIP.flinch : 0));   // reels: cooldowns paused
   };
   shove(mob, 1);
-  hurtMob(S, rt, mob, p, mult);
-  const lc = legacyCls(p.ch);
-  if (lc === "warrior") addGrit(p, 8);
-  if (lc === "rogue" && !mob.dead) {
-    // every stab leaves a mark; a venomed blade leaves two and a poison that grows with them
-    const v = p.venom && p.venom.n > 0 && p.venom.until > now ? p.venom : null;
-    addMarks(S, mob, v ? 2 : 1);
-    if (v) {
-      v.n--;
-      mob.dot = { until: now + 4000, next: now + 1000, dmg: Math.max(1, Math.round(st.atk * v.dot * marksOf(S, mob))), pid: p.pid };
-      if (!v.n) p.venom = null;
-      p.dirty = true;
+  // 급소 도려내기: a stab on a marked monster opens it up (bleeding, and a burst of speed); every stab marks
+  const vit = c === WKIND.dagger && pasOn(p, "vitals") ? SKILL.vitals : null;
+  const marked = vit && marksOf(S, mob) > 0;
+  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1), false, tip ? { ign: SKILL.tip.ign } : null);
+  if (vit && !mob.dead) {
+    if (marked) {
+      if (!(mob.dot && mob.dot.until > now && mob.dot.pid === p.pid)) rt.ev.push(["a", p.eid, 111, Math.round(mob.x), Math.round(mob.y - 6), p.dir]);
+      mob.dot = { until: now + vit.ms, next: now + 1000, dmg: Math.max(1, Math.round(st.atk * vit.bleed)), pid: p.pid };
+      p.vitSpd = now + vit.spdMs;
     }
+    addMarks(S, mob, 1);
   }
   for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6); }
   if (st.lg.chain && rnd(S) < 0.25 * st.proc) {

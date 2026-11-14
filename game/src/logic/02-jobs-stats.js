@@ -89,8 +89,6 @@ const BUILD = {
 };
 /** Old class → [its weapon kind, the single job it becomes at old level 20+]. Mage picks by the weapon in hand. */
 const OLD_CLASS = { warrior: ["sword", "swordsman"], rogue: ["dagger", "thief"], lancer: ["spear", "lancer"], mage: ["staff", "wizard"] };
-/** Until J2: which old class's skills, gauge and tricks the weapon in hand brings (the bow has none). */
-const LEGACY_CLS = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "mage", bow: "" };
 /** How often a hybrid may swap weapons (Tab). */
 const WSW_MS = 800;
 /** Arrows: at most this many in flight per archer; a finisher pierces one more. */

@@ -11,13 +11,14 @@ const A = "pid-hotbar-a", B = "pid-hotbar-b", C = "pid-hotbar-c";
 const act = (pid, a) => { S.now = now; const v = L.validateAction(S, pid, a); if (v.ok) L.applyAction(S, pid, a); return v; };
 const view = (pid) => { now += 100; L.tick(S, now); S.players[pid].dirty = true; const v = JSON.parse(JSON.stringify(L.viewFor(S, pid))); L.endTick(S); return v; };
 
-// ── a new character starts with nine empty quick slots
+// ── a new character starts with the old dagger's first skill in slot 1 and the rest empty
 const fresh = L.newChar("단축", "warrior", []);
 assert.equal(fresh.qs.length, 9);
-assert.ok(fresh.qs.every((v) => v === null), "nothing pre-filled: the player sets the slots");
+assert.deepEqual(fresh.qs[0], ["s", "ambush"]);
+assert.ok(fresh.qs.slice(1).every((v) => v === null), "the rest is the player's to set");
 const ea = L.addPlayer(S, A, fresh);
 let self = view(A).self;
-assert.deepEqual(self.qs, Array(9).fill(null), "the slots ride along in the self payload");
+assert.deepEqual(self.qs, [["s", "ambush"], ...Array(8).fill(null)], "the slots ride along in the self payload");
 
 // ── an old sheet (before quick slots) migrates to nine empty slots and a newer version
 const old = JSON.parse(JSON.stringify(L.newChar("옛날", "mage", [])));
@@ -28,21 +29,29 @@ assert.ok(S.players[C].ch.qs.every((v) => v === null));
 assert.ok(S.players[C].ch.v >= 6, "the sheet version moved on");
 // a damaged list keeps only what is still valid
 const bent = JSON.parse(JSON.stringify(L.newChar("굽음", "rogue", [])));
-bent.qs = [["s", 2], ["s", 99], ["i", "hp_s"], ["i", "nope"], ["i", "a_1"], "x", null, ["s", -1], ["s", 0], ["extra"]];
+bent.qs = [["s", "slash"], ["s", "nope"], ["i", "hp_s"], ["i", "nope"], ["i", "a_1"], "x", null, ["s", "inertia"], ["s", "verdict"], ["extra"]];
 L.removePlayer(S, C);
 L.addPlayer(S, C, bent);
-assert.deepEqual(S.players[C].ch.qs, [["s", 2], null, ["i", "hp_s"], null, null, null, null, null, ["s", 0]]);
+assert.deepEqual(S.players[C].ch.qs, [["s", "slash"], null, ["i", "hp_s"], null, null, null, null, null, ["s", "verdict"]], "unknown skills and passives go");
+L.removePlayer(S, C);
+// a bar from before weapon skills (["s", index] into a class kit): the old entries go, what the hand can use goes on
+const j1 = JSON.parse(JSON.stringify(L.hero("옛단축", { wk: "spear", lvl: 61, wm: { spear: 16 } })));
+j1.qs = [["s", 0], ["i", "hp_s"], ["s", 3], null, null, null, null, null, null];
+L.addPlayer(S, C, j1);
+assert.deepEqual(S.players[C].ch.qs.slice(0, 3), [["s", "spiral"], ["i", "hp_s"], ["s", "comet"]]);
 L.removePlayer(S, C);
 
-// ── assigning: skills by index, usable items by id, anything else is refused
-assert.ok(act(A, { t: "qs", i: 0, v: ["s", 0] }).ok);
+// ── assigning: skills by id (actives and signatures), usable items by id, anything else is refused
+assert.ok(act(A, { t: "qs", i: 0, v: ["s", "slash"] }).ok);
 assert.ok(act(A, { t: "qs", i: 1, v: ["i", "hp_s"] }).ok);
-assert.ok(act(A, { t: "qs", i: 8, v: ["s", D.skills.warrior.length - 1] }).ok, "the ultimate can go anywhere");
-assert.equal(act(A, { t: "qs", i: 9, v: ["s", 0] }).ok, false, "only nine slots");
+assert.ok(act(A, { t: "qs", i: 8, v: ["s", "verdict"] }).ok, "a signature can go anywhere, before the job too");
+assert.equal(act(A, { t: "qs", i: 9, v: ["s", "slash"] }).ok, false, "only nine slots");
 assert.equal(act(A, { t: "qs", i: -1, v: null }).ok, false);
 assert.equal(act(A, { t: "qs", i: 1.5, v: null }).ok, false);
-assert.equal(act(A, { t: "qs", i: 2, v: ["s", D.skills.warrior.length] }).ok, false, "no such skill");
-assert.equal(act(A, { t: "qs", i: 2, v: ["s", "0"] }).ok, false);
+assert.equal(act(A, { t: "qs", i: 2, v: ["s", "nope"] }).ok, false, "no such skill");
+assert.equal(act(A, { t: "qs", i: 2, v: ["s", "hawk"] }).ok, false, "a passive is never pressed");
+assert.equal(act(A, { t: "qs", i: 2, v: ["s", 0] }).ok, false, "no more kit indices");
+assert.equal(act(A, { t: "qs", i: 2, v: ["s", "__proto__"] }).ok, false);
 assert.equal(act(A, { t: "qs", i: 2, v: ["i", "a_1"] }).ok, false, "armour is not something you use");
 assert.equal(act(A, { t: "qs", i: 2, v: ["i", "__proto__"] }).ok, false);
 assert.equal(act(A, { t: "qs", i: 2, v: ["i", "nope"] }).ok, false);
@@ -51,7 +60,7 @@ assert.equal(act(A, { t: "qs", i: 2, v: "hp_s" }).ok, false);
 assert.equal(act(A, { t: "qs", i: 0, j: 12 }).ok, false);
 for (const id of ["mp_s", "camp", "recall"]) if (D.items[id]) assert.ok(act(A, { t: "qs", i: 3, v: ["i", id] }).ok, id + " can sit in a slot");
 self = view(A).self;
-assert.deepEqual(self.qs[0], ["s", 0]);
+assert.deepEqual(self.qs[0], ["s", "slash"]);
 assert.deepEqual(self.qs[1], ["i", "hp_s"]);
 // an item the bag does not hold right now can still sit in a slot (the client greys it out)
 assert.ok(act(A, { t: "qs", i: 4, v: ["i", "mp_m" in D.items ? "mp_m" : "mp_s"] }).ok);
@@ -60,7 +69,7 @@ assert.ok(act(A, { t: "qs", i: 4, v: ["i", "mp_m" in D.items ? "mp_m" : "mp_s"] 
 assert.ok(act(A, { t: "qs", i: 0, j: 1 }).ok);
 self = view(A).self;
 assert.deepEqual(self.qs[0], ["i", "hp_s"]);
-assert.deepEqual(self.qs[1], ["s", 0]);
+assert.deepEqual(self.qs[1], ["s", "slash"]);
 assert.ok(act(A, { t: "qs", i: 3, v: null }).ok);
 assert.equal(view(A).self.qs[3], null);
 assert.ok(act(A, { t: "qs", i: 4 }).ok, "no value clears too");
@@ -68,30 +77,30 @@ assert.equal(view(A).self.qs[4], null);
 
 // ── persisted with the sheet and back again
 const saved = JSON.parse(JSON.stringify(L.exportChar(S, A)));
-assert.deepEqual(saved.qs.slice(0, 2), [["i", "hp_s"], ["s", 0]]);
+assert.deepEqual(saved.qs.slice(0, 2), [["i", "hp_s"], ["s", "slash"]]);
 L.removePlayer(S, A);
 L.addPlayer(S, A, saved);
 self = view(A).self;
-assert.deepEqual(self.qs.slice(0, 2), [["i", "hp_s"], ["s", 0]]);
-assert.deepEqual(self.qs[8], ["s", D.skills.warrior.length - 1]);
+assert.deepEqual(self.qs.slice(0, 2), [["i", "hp_s"], ["s", "slash"]]);
+assert.deepEqual(self.qs[8], ["s", "verdict"]);
 
 // ── pressing a slot: the client turns it into the action it already has — use the item, cast the skill
 const p = S.players[A];
 p.hp = 10;
-const qsAction = (v) => (v[0] === "s" ? { t: "sk", i: v[1] } : { t: "use", id: v[1] });
+const qsAction = (v) => (v[0] === "s" ? { t: "sk", id: v[1] } : { t: "use", id: v[1] });
 const potsBefore = p.ch.inv.find((s) => s.id === "hp_s").n;
 assert.ok(act(A, qsAction(self.qs[0])).ok, "slot 1 drinks the potion");
 assert.equal(p.ch.inv.find((s) => s.id === "hp_s").n, potsBefore - 1);
-// (until J2 a skill index means the old kit of the weapon in hand — a new hero's old dagger: the rogue's)
-assert.equal(act(A, qsAction(self.qs[1])).error, "[단검] 숙련 3에 배웁니다", "the first skill waits for dagger mastery 3");
-p.ch.wm.dagger.lv = 3; p.stc = null; p.mp = 999;
+// a skill needs its weapon in hand: a new hero holds the old dagger, the slot holds a sword skill
+assert.equal(act(A, qsAction(self.qs[1])).error, "[대검]을 들어야 쓸 수 있습니다", "the sword skill waits for a sword");
+p.ch.eq.weapon = { id: "w_warrior_1", q: 0, enh: 0, af: [], sk: 0, ru: [] }; p.stc = null; p.mp = 999;
 now += 2000;
 assert.ok(act(A, qsAction(self.qs[1])).ok, "slot 2 casts the first skill");
-assert.ok(p.cds[0] > now, "and it goes on cooldown");
+assert.ok(p.cds.slash > now, "and it goes on cooldown");
 
 // ── the quick slots work while dead too (just a setting)
 p.dead = true;
-assert.ok(act(A, { t: "qs", i: 5, v: ["s", 1] }).ok);
+assert.ok(act(A, { t: "qs", i: 5, v: ["s", "rend"] }).ok);
 p.dead = false; p.hp = 100;
 
 // ── party chat: only the party hears it
@@ -129,12 +138,12 @@ assert.equal(ch.inv.filter((s) => s.id === "hp_s").length, 2, "101 potions make 
 ch.inv = [ch.inv[0]];
 assert.equal(act(A, { t: "sort" }).ok, false, "nothing to tidy");
 
-// ── a skill just learned (until J2: the weapon's mastery reaching the old kit's level) goes onto the first
-// empty slot by itself (and says which key); one the player already placed stays where it is; a full bar is left alone
+// ── a skill just learned (the weapon's mastery reaching its level) goes onto the first empty slot by
+// itself (and says which key); one the player already placed stays where it is; a full bar is left alone
 {
   const T = 16, LV = "pid-hotbar-lv";
-  const kid = L.hero("새싹", { wk: "sword", wm: { sword: 2 } });
-  kid.qs[0] = ["i", "hp_s"];
+  const kid = L.hero("새싹", { wk: "sword", wm: { sword: 9 } });
+  kid.qs = [["i", "hp_s"], null, null, null, null, null, null, null, null];
   L.addPlayer(S, LV, kid);
   const q = S.players[LV];
   const meadow = L.runtime(S, "meadow");
@@ -152,23 +161,25 @@ assert.equal(act(A, { t: "sort" }).ok, false, "nothing to tidy");
     return view(LV);
   };
   let v = lvlUp();
-  assert.equal(q.ch.wm.sword.lv, 3, "the kill raises sword mastery");
-  assert.ok(v.ev.some((e) => e[0] === "wm" && e[1] === q.eid && e[2] === 0 && e[3] === 3), "with a mastery event (kind 0 = sword)");
-  assert.deepEqual(q.ch.qs.slice(0, 2), [["i", "hp_s"], ["s", 0]], "the first skill takes the first empty slot");
-  assert.deepEqual(v.self.qs[1], ["s", 0]);
-  assert.ok((v.toast || []).some((m) => m.includes("대검 투척") && m.includes("단축칸 2번")), "the toast names the key");
+  assert.equal(q.ch.wm.sword.lv, 10, "the kill raises sword mastery");
+  assert.ok(v.ev.some((e) => e[0] === "wm" && e[1] === q.eid && e[2] === 0 && e[3] === 10), "with a mastery event (kind 0 = sword)");
+  assert.deepEqual(q.ch.qs.slice(0, 2), [["i", "hp_s"], ["s", "rend"]], "the new skill takes the first empty slot");
+  assert.deepEqual(v.self.qs[1], ["s", "rend"]);
+  assert.ok((v.toast || []).some((m) => m.includes("대지 가르기") && m.includes("단축칸 2번") && m.includes("거검의 관성")), "the toast names the key, and the passive");
   assert.ok((v.toast || []).every((m) => !m.includes("(를)")), "the particle is spelled out");
+  assert.ok(v.self.sk.some((s) => s[0] === "inertia" && s[3] === 1), "the passive is on with the sword in hand");
   // learned again (another level that teaches nothing) it is not added twice
-  assert.equal(q.ch.qs.filter((x) => x && x[0] === "s" && x[1] === 0).length, 1);
+  lvlUp();
+  assert.equal(q.ch.qs.filter((x) => x && x[0] === "s" && x[1] === "rend").length, 1);
   // a skill the player already put on the bar is not copied
-  q.ch.wm.sword.lv = 6; q.ch.qs = [["s", 1], null, null, null, null, null, null, null, null];
+  q.ch.wm.sword.lv = 9; q.ch.qs = [["s", "rend"], null, null, null, null, null, null, null, null];
   lvlUp();
-  assert.equal(q.ch.wm.sword.lv, 7);
-  assert.equal(q.ch.qs.filter((x) => x && x[0] === "s" && x[1] === 1).length, 1, "already on the bar: left there");
+  assert.equal(q.ch.wm.sword.lv, 10);
+  assert.equal(q.ch.qs.filter((x) => x && x[0] === "s" && x[1] === "rend").length, 1, "already on the bar: left there");
   // a full bar is left as it is
-  q.ch.wm.sword.lv = 11; q.ch.qs = Array(9).fill(["i", "hp_s"]);
+  q.ch.wm.sword.lv = 9; q.ch.qs = Array(9).fill(["i", "hp_s"]);
   lvlUp();
-  assert.equal(q.ch.wm.sword.lv, 12);
+  assert.equal(q.ch.wm.sword.lv, 10);
   assert.ok(q.ch.qs.every((x) => x[0] === "i"), "no room: nothing is pushed out");
 
   // ── a fall says what did it, for the death window

@@ -22,10 +22,11 @@ const DIM = {
   atkK: 0.25, ward: 0.25, gaugeMp: 0.3,
   // how much more killing a rift monster takes than its wild kin, for a party of four at the band (measured with
   // the bot party in tests/dimrift.mjs; the low bands get more, `hpLow` = [below this level, + per level]); `hpN` by
-  // party size (a lone player faces 35% of it); `lvK` per level the party outranks it; the master `bossHp` of that, hitting
-  // `bossAtk` as hard as a field boss of its kind (hpBase 5.8 → 8.2 after jobs J1 made heroes ≈ 30 % quicker killers:
-  // bot clears 6.2 / 7.6 / 5.7 / 7.3 min at tiers 17 / 24 / 32 / 40, as before J1)
-  hpBase: 8.2, hpLow: [24, 1], hpN: [0.35, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
+  // party size (a lone player faces 30% of it); `lvK` per level the party outranks it; the master `bossHp` of that, hitting
+  // `bossAtk` as hard as a field boss of its kind (hpBase 5.8 → 8.2 after jobs J1 made heroes ≈ 30 % quicker killers,
+  // → 5.4 with J2's weapon skills, which lost the old kits' party heals, taunts and guards:
+  // bot clears 5.2 / 5.6 / 6.3 / 7.0 min at tiers 17 / 24 / 32 / 40)
+  hpBase: 5.4, hpLow: [24, 1], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
   reviveMs: 25000,
   // the master's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then
   reward: { gold: 60, xp: 0.05, gearQ: 3, stone: 2, rune: 0.6 }, dailyFull: 3, failGold: 30, lootGold: 0.5,

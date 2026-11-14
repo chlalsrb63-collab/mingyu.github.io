@@ -30,7 +30,7 @@ function world(name, cls = "warrior") {
   L.runtime(S, p.map).n--; p.map = "meadow"; L.runtime(S, "meadow").n++; p.sendMap = true;
   W.map = W.step().map;
   for (const o of W.rt.mobs) { o.dead = true; o.respAt = now + 1e12; }
-  W.ready = () => { p.hp = 1e6; p.mp = 9999; p.atkAt = 0; };
+  W.ready = () => { p.hp = 1e6; p.mp = 9999; p.atkAt = 0; p.stag = 0; };
   W.free = (tx, ty) => W.map.o[ty] && W.map.o[ty][tx] === " " && !"wW".includes(W.map.g[ty][tx]);
   /** One plain walking monster at (x, y), hunting the player, its attack ready in `cd` ms. */
   W.mob = (x, y, cd = 0, extra = {}) => {
@@ -86,11 +86,11 @@ const mobEv = (v, id) => (v.ev || []).filter((e) => e[0] === "m" && e[1] === id)
   // any skill that hurts a monster in front will do; walk the kit until one lands, in small steps
   // so the step it lands in shows the shove (it walks back toward the caster once it recovers)
   let hit = null;
-  for (let i = 0; i < D.skills.mage.length && !hit; i++) {
-    if (D.skills.mage[i].lv > 30) continue;
-    W.ready(); for (let j = 0; j < 6; j++) p.cds[j] = 0;
+  for (const id of ["fireball", "frostring"]) {
+    if (hit) break;
+    W.ready(); p.cds = {};
     const hp0 = m.hp, xb = m.x;
-    W.act({ t: "sk", i, a: 0 });
+    W.act({ t: "sk", id, a: 0 });
     for (let s = 0; s < 40 && !hit; s++) { const x0 = m.x, y0 = m.y; W.step(20); if (m.hp < hp0) hit = [m.x - (m.hp < hp0 && s === 0 ? xb : x0), m.y - y0]; }
   }
   assert.ok(hit, "a mage skill lands");

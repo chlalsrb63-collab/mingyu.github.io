@@ -47,9 +47,6 @@ function jobOk(ch, j) {
   return ch.wm[a].lv >= JOB_WM && ch.wm[b].lv >= JOB_WM ? "" : `[${WK_NAME[a]}]${pp(WK_NAME[a], "과와")} [${WK_NAME[b]}] 숙련이 모두 ${JOB_WM}이어야 합니다`;
 }
 const isHybrid = (ch) => !!JOBS[ch.job] && JOBS[ch.job].kind === "hybrid";
-/** Until J2: the old class whose skills and gauge the weapon in hand brings ("" for the bow or bare hands). */
-const legacyCls = (ch) => (ch.eq.weapon ? LEGACY_CLS[ITEMS[ch.eq.weapon.id].wk] || "" : "");
-const legacySkills = (ch) => SKILLS[legacyCls(ch)] || [];
 
 /**
  * Everything about a character that only changes with their sheet (cached in `p.stc` until the sheet
@@ -95,7 +92,7 @@ function deriveStats(p) {
 
 // ── weapon mastery
 
-/** Mastery experience for the weapon in hand; levels it up (events, toasts, old skills learned until J2). */
+/** Mastery experience for the weapon in hand; levels it up (events, toasts, the skills it opens go on the bar). */
 function gainWm(S, p, n) {
   const ch = p.ch;
   if (!ch.eq.weapon || !(n > 0)) return;
@@ -109,10 +106,10 @@ function gainWm(S, p, n) {
     p.stc = null;
     S.maps[p.map].ev.push(["wm", p.eid, WK_ORDER.indexOf(wk), r.lv]);
     saveSoon(p);
-    // until J2 the old skills of the hand's class come with mastery (at the level they used to)
-    const learned = [];
-    legacySkills(ch).forEach((sk, i) => { if (sk.lv === r.lv) { const key = qsLearn(ch, i); learned.push(`[${sk.name}]${key ? `(단축칸 ${key}번)` : ""}`); } });
-    toast(p, `[${WK_NAME[wk]}] 숙련 ${r.lv}!${learned.length ? ` 새 스킬 ${learned.join(", ")}` : ""}`);
+    // the weapon's skills that open at this level: actives onto the bar, the passive named
+    const opened = WK_SKILLS[wk].filter((id) => SKILL[id].need === r.lv);
+    const act = skLearnNew(p, opened.filter((id) => SKILL[id].kind !== "p")), pas = opened.filter((id) => SKILL[id].kind === "p").map((id) => `[${SKILL[id].name}]`);
+    toast(p, `[${WK_NAME[wk]}] 숙련 ${r.lv}!${act.length ? ` 새 스킬 ${act.join(", ")}` : ""}${pas.length ? ` · 패시브 ${pas.join(", ")}` : ""}`);
     if (r.lv === JOB_WM && ch.job === "adventurer") {
       const j = Object.keys(JOBS).find((id) => JOBS[id].kind === "single" && JOBS[id].wk[0] === wk);
       toast(p, `[${WK_NAME[wk]}] 숙련 ${JOB_WM}! 전직관 아르센에게 가면 [${JOBS[j].name}]${pp(JOBS[j].name, "으로")} 전직할 수 있습니다.`);
@@ -185,21 +182,32 @@ function staggerPlayer(S, rt, p, mob) {
  * Loose an arrow from `p` at `mob` (or along the aim). `kind` 0 plain, 1 finisher, 2+ skill (the
  * client's trail); `pierce` how many monsters it passes through before it stops.
  */
-function fireArrow(S, rt, p, mob, mult, pierce, kind) {
+function fireArrow(S, rt, p, mob, mult, pierce, kind, o = {}) {
   const arm = deriveStats(p).arm, sh = arm.shot || WKIND.bow.shot;
   if (!rt.shots) rt.shots = [];
   const mine = rt.shots.filter((s) => s.pid === p.pid);
-  if (mine.length >= SHOT_MAX) { const o = mine[0]; rt.shots.splice(rt.shots.indexOf(o), 1); rt.ev.push(["ae", o.id, Math.round(o.x), Math.round(o.y), 2]); }
-  const [ux, uy] = aimVec(p, mob);
-  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: sh.spd, left: arm.range || 150, r: sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0 };
+  // (a skill's volley may have more in the air at once)
+  if (mine.length >= SHOT_MAX + (kind >= 2 ? 6 : 0)) { const q = mine[0]; rt.shots.splice(rt.shots.indexOf(q), 1); rt.ev.push(["ae", q.id, Math.round(q.x), Math.round(q.y), 2]); }
+  // `o` (skills): spd, len, r, a direction ux/uy of its own, a `cap` {n, h} shared by a volley (at most n arrows a monster)
+  const [ux, uy] = o.ux !== undefined ? [o.ux, o.uy] : aimVec(p, mob);
+  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: o.spd || sh.spd, left: o.len || arm.range || 150, r: o.r || sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0, cap: o.cap || null };
   rt.shots.push(shot);
   rt.ev.push(["ar", shot.id, Math.round(shot.x), Math.round(shot.y), Math.round(ux * 1000), Math.round(uy * 1000), shot.spd, kind, p.eid]);
   return shot;
 }
-/** How hard an arrow lands on `mob`: from 90 px or more a sure eye adds DEX's ranged power. */
-function arrowMult(p, shot, mob) {
+/**
+ * How hard an arrow lands on `mob`: from 90 px or more a sure eye adds DEX's ranged power; with
+ * 매의 시야 (57-weapon-skills.js) the further it flew from where it was loosed, the harder.
+ */
+function arrowMult(S, rt, p, shot, mob) {
   const d = dist(shot.x0, shot.y0, mob.x, mob.y);
-  return shot.mult * (d >= SFX.far ? 1 + deriveStats(p).sneak : 1);
+  let k = d >= SFX.far ? 1 + deriveStats(p).sneak : 1;
+  if (pasOn(p, "hawk")) {
+    const h = SKILL.hawk, far = h.k * clamp((d - h.d0) / h.span, 0, 1);
+    if (far >= h.k * 0.6) rt.ev.push(["a", p.eid, 115, Math.round(mob.x), Math.round(mob.y - 6), p.dir]);
+    k *= 1 + far;
+  }
+  return shot.mult * k;
 }
 /** Move every arrow on one map one tick on: walls stop them, monsters take them (pierce + 1 at most). */
 function shotTick(S, rt, dt) {
@@ -216,7 +224,7 @@ function shotTick(S, rt, dt) {
     for (let k = 3; k <= seg + 0.01; k += 3) { if (!canFly(m, s.x + s.ux * k, s.y + 6 + s.uy * k) || solidAt(m, s.x + s.ux * k, s.y + 3 + s.uy * k)) { free = Math.max(0, k - 3); wall = true; break; } }
     const hits = [];
     for (const o of rt.mobs) {
-      if (o.dead || s.hit.includes(o.id)) continue;
+      if (o.dead || s.hit.includes(o.id) || (s.cap && (s.cap.h[o.id] | 0) >= s.cap.n)) continue;
       const rx = o.x - s.x, ry = o.y - 6 - s.y, along = rx * s.ux + ry * s.uy;
       if (along < -4 || along > free + 4) continue;
       if (Math.abs(rx * s.uy - ry * s.ux) <= s.r + big(o) + 4) hits.push([along, o]);
@@ -225,8 +233,9 @@ function shotTick(S, rt, dt) {
     let stop = null;
     for (const [along, o] of hits) {
       s.hit.push(o.id);
+      if (s.cap) s.cap.h[o.id] = (s.cap.h[o.id] | 0) + 1;
       p.hitAct = [s.act, s.gain];
-      hurtMob(S, rt, o, p, arrowMult(p, s, o));
+      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o));
       p.hitAct = null;
       if (s.hit.length > s.pierce) { stop = along; break; }
     }
@@ -250,7 +259,9 @@ function bowShot(S, rt, p, fin) {
 // ── migration of the four-class sheets (B.11) and the test hero
 
 /** Old skill-training prices (the refund on migration). */
-const oldSkillCost = (sk, L) => ({ gold: Math.round((50 + sk.lv * 25) * L * (L + 1) / 2), xp: Math.round(tierXp(sk.lv) * 0.12 * L) });
+const oldSkillCost = (lv, L) => ({ gold: Math.round((50 + lv * 25) * L * (L + 1) / 2), xp: Math.round(tierXp(lv) * 0.12 * L) });
+/** The levels the six skills of every old class were learned at (for the refund). */
+const OLD_SK_LV = [3, 7, 12, 18, 25, 35];
 /**
  * Spend `points` one by one on the stat furthest below its share (ties: stat order), none past 99.
  * Returns the stats and the experience that path cost (the xpt of a migrated sheet).
@@ -291,17 +302,13 @@ function migrateV10(ch) {
   for (const k of ["str", "vit", "int", "grd"]) { const n = clamp(tr[k] | 0, 0, 100000); xp += 120 * n + 20 * n * (n - 1); }
   // skill levels: every level bought, gold and experience, back
   const skl = Array.isArray(ch.skl) ? ch.skl : [];
-  SKILLS[cls].forEach((sk, i) => { const top = clamp(skl[i] | 0 || 1, 1, 10); for (let l = 1; l < top; l++) { const c = oldSkillCost(sk, l); gold += c.gold; xp += c.xp; } });
+  OLD_SK_LV.forEach((lv, i) => { const top = clamp(skl[i] | 0 || 1, 1, 10); for (let l = 1; l < top; l++) { const c = oldSkillCost(lv, l); gold += c.gold; xp += c.xp; } });
   const wm = freshWm();
   wm[wk].lv = Math.min(WM_MAX, L);
   if (cls === "mage") { const o = wk === "book" ? "staff" : "book"; wm[o].lv = Math.max(1, Math.floor(0.6 * L)); }
   ch.cnt = isObj(ch.st) ? ch.st : {};
   Object.assign(ch, { job: L >= JOB_WM ? job : "adventurer", lvl, st, xp: Math.min(2e9, xp), xpt, gold, wm, rs: 1, sw: 1 });
-  // skill entries are cleared (J2 fills its own); until then the old skills the mastery already holds go back on the bar
-  if (Array.isArray(ch.qs)) {
-    ch.qs = ch.qs.map((v) => (Array.isArray(v) && v[0] === "s" ? null : v));
-    SKILLS[cls].forEach((sk, i) => { const j = ch.qs.indexOf(null); if (sk.lv <= L && j >= 0 && j < 9) ch.qs[j] = ["s", i]; });
-  }
+  // the old class kit's entries on the bar (["s", index]) are cleared by migrate, which puts the hand's weapon skills there
   if (isObj(ch.eq) && !("weapon2" in ch.eq)) ch.eq.weapon2 = null;
   delete ch.cls; delete ch.tr; delete ch.skl;
   return ch;
@@ -349,5 +356,8 @@ export function hero(name, o = {}) {
   if (isObj(o.wm)) for (const k of WK_ORDER) if (num(o.wm[k])) ch.wm[k].lv = clamp(o.wm[k] | 0, 1, WM_MAX);
   if (typeof o.job === "string" && Object.hasOwn(JOBS, o.job)) ch.job = o.job;
   if (o.wk2) ch.eq.weapon2 = plain(`w_${WK_ID[o.wk2]}_1`);
+  // the bar holds what the hand can use, as a player's would
+  ch.qs = QS_EMPTY();
+  for (const id of qsStarter(ch)) qsLearn(ch, id);
   return ch;
 }

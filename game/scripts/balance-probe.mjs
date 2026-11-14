@@ -86,7 +86,8 @@ export function probe(L, who, tier, secs = PROBE.secs) {
   p.x = home[0]; p.y = home[1]; p.fix = false; p.mvAt = now;
   let kills = 0, taken = 0, deaths = 0, casts = 0;
   const ids = new Set(arena.map((m) => m.id));
-  const nSk = fresh && D.skills && !Array.isArray(D.skills) && D.skillOrder ? 0 : 6;
+  // the skills it tries, in order: weapon skills by id (J2: what auto-hunt puts on a fresh bar, in SKILL_ORDER), or the old six by index
+  const sks = D.skillOrder ? D.skillOrder.filter((id) => D.skills[id].kind !== "p").map((id) => ({ t: "sk", id })) : Array.from({ length: 6 }, (_, i) => ({ t: "sk", i }));
   const act = (a) => { S.now = now; const v = L.validateAction(S, PID, a); if (v.ok) L.applyAction(S, PID, a); return v.ok; };
   const AIM_N = D.aim[0];
   const ticks = Math.round((secs * 1000) / 100);
@@ -104,7 +105,10 @@ export function probe(L, who, tier, secs = PROBE.secs) {
     } else {
       let tgt = null, bd = 1e9;
       for (const m of arena) { if (m.dead) continue; const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < bd) { bd = d; tgt = m; } }
-      if (tgt) {
+      // a skill that carried the hero out of the clearing (a backstep, a leap, a dash): walk back first
+      const away = Math.hypot(p.x - home[0], p.y - home[1]);
+      if (away > ring) { const k = Math.min(4.8, away) / away; p.x += (home[0] - p.x) * k; p.y += (home[1] - p.y) * k; p.mvAt = now; }
+      else if (tgt) {
         const a = ((Math.round((Math.atan2(tgt.y - p.y, tgt.x - p.x) / (2 * Math.PI)) * AIM_N) % AIM_N) + AIM_N) % AIM_N;
         p.aim = a;
         const range = p.stc && p.stc.arm ? p.stc.arm.range : 30;
@@ -113,7 +117,7 @@ export function probe(L, who, tier, secs = PROBE.secs) {
           p.x += (tgt.x - p.x) * k; p.y += (tgt.y - p.y) * k; p.mvAt = now;
         } else {
           let cast = false;
-          for (let i = 0; i < nSk && !cast; i++) if (act({ t: "sk", i, a })) { cast = true; casts++; }
+          for (let i = 0; i < sks.length && !cast; i++) if (act({ ...sks[i], a })) { cast = true; casts++; }
           if (!cast) act({ t: "atk", a });
         }
       }

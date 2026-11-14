@@ -2,8 +2,8 @@
 // node tests/balance.mjs
 //
 // BASE was measured with scripts/balance-probe.mjs on the rules just before J1 (origin/main e14fb5e:
-// four classes, levels 1–50, old level = the tier probed). J1 only reports the new numbers next to it;
-// J2 turns the comparison into asserts (within ±25 % kills/min per weapon kind, bow −25 %/+10 %).
+// four classes, levels 1–50, old level = the tier probed). With weapon skills (J2) every weapon kind must land
+// within ±25 % of its old class's kills/min at every tier probed (the bow, against the average of all four: −25 %…+10 %). Tune the skill table (03-skills.js), not these ranges.
 import assert from "node:assert/strict";
 import * as L from "../src/logic.js";
 import { probe, PROBE } from "../scripts/balance-probe.mjs";
@@ -30,9 +30,10 @@ if (!L.hero) {
   for (const wk of Object.keys(VS)) for (const t of PROBE.tiers) {
     const r = probe(L, wk, t);
     const base = VS[wk].reduce((s, c) => s + BASE[c][t][0], 0) / VS[wk].length;
-    assert.ok(r.kpm > 0, `${wk} T${t} kills something`);
+    const x = r.kpm / base, [lo, hi] = wk === "bow" ? [0.75, 1.1] : [0.75, 1.25];
+    assert.ok(x >= lo && x <= hi, `${wk} T${t}: ${r.kpm} kills/min is ×${x.toFixed(2)} of the old ${base.toFixed(1)} (allowed ×${lo}–×${hi})`);
     rows.push(`${wk.padEnd(6)} T${String(t).padEnd(2)} ${String(r.kpm).padStart(5)} k/m (base ${base.toFixed(1)}, ×${(r.kpm / base).toFixed(2)})  ${String(r.dtpm).padStart(5)} dmg/m  ${r.deaths} deaths`);
   }
-  console.log(rows.join("\n"));
-  console.log("balance ok — probe reported (J2 asserts the ranges)");
+  if (process.argv.includes("-v")) console.log(rows.join("\n"));
+  console.log("balance ok — every weapon kind within its range of the old classes");
 }

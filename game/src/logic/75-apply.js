@@ -24,7 +24,7 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "atk": if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); break;
-    case "sk": if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.i); break;
+    case "sk": if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.id); break;
     case "use": {
       const it = ITEMS[a.id];
       const st = stats(p);
@@ -82,21 +82,21 @@ export function applyAction(S, pid, a) {
       // a ring goes where asked, else on the first bare finger
       const fits = slotsFor(ITEMS[s.id].type);
       const k = a.k === "weapon2" ? "weapon2" : fits.includes(a.k) ? a.k : fits.find((o) => !ch.eq[o]) || fits[0];
-      const old = ch.eq[k], was = legacyCls(ch);
+      const old = ch.eq[k], was = inHand(ch);
       ch.eq[k] = s;
       if (old) ch.inv[a.s] = old;
       else ch.inv.splice(a.s, 1);
-      // another kind of weapon in hand: whatever the last one had going is gone
-      if (legacyCls(ch) !== was) classReset(p, true);
+      // another kind of weapon in hand: a dance stops; a kind never used before puts its first skill on the bar
+      if (inHand(ch) !== was) handChanged(p);
       afterGear(S, p);
       if (k === "weapon") tutStep(S, p, "equip");
       break;
     }
     case "uneq": {
-      const was = legacyCls(ch);
+      const was = inHand(ch);
       ch.inv.push(ch.eq[a.k]);
       ch.eq[a.k] = null;
-      if (legacyCls(ch) !== was) classReset(p, true);
+      if (inHand(ch) !== was) handChanged(p);
       afterGear(S, p);
       break;
     }
@@ -555,14 +555,16 @@ export function applyAction(S, pid, a) {
       S.maps[p.map].ev.push(["jc", p.eid]);
       sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
       toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸이 열렸습니다 — Tab으로 두 무기를 바꿔 듭니다.` : `[${job.name}] 전직!`);
+      // the job's signature skill onto the bar
+      toast(p, `새 스킬 ${skLearnNew(p, [JOB_SKILL[a.j]]).join("")}`);
       checkAch(S, p);
       break;
     }
     case "wsw": {
-      const was = legacyCls(ch);
+      // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops
       [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];
       p.wswAt = S.now + WSW_MS;
-      if (legacyCls(ch) !== was) classReset(p, true);
+      p.dance = null;
       afterGear(S, p);
       S.maps[p.map].ev.push(["ws", p.eid]);
       break;
@@ -570,6 +572,14 @@ export function applyAction(S, pid, a) {
   }
   if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;
+}
+
+/** A different kind of weapon came into hand: a dance stops; a kind never used before puts its first skill on the bar. */
+function handChanged(p) {
+  const ch = p.ch, wk = inHand(ch);
+  p.dance = null;
+  if (!wk || ch.wm[wk].lv > 1 || ch.wm[wk].xp > 0) return;
+  for (const id of WK_SKILLS[wk]) if (SKILL[id].kind === "a" && SKILL[id].need <= 1) qsLearn(ch, id);
 }
 
 function afterGear(S, p) {

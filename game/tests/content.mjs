@@ -431,12 +431,12 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   assert.ok(W.act({ t: "sit" }).ok);
   for (let i = 0; i < 400 && D.tutorial[W.p.ch.tut.i].id === "rest"; i++) { W.p.hitAt = -1e9; W.step(100); }
   assert.equal(D.tutorial[W.p.ch.tut.i].id, "skill", "a rest by the fire");
-  // (until J2) the old warrior skills come with sword mastery: the first at 3
-  assert.equal(W.act({ t: "sk", i: 0 }).error, "[대검] 숙련 3에 배웁니다");
-  W.p.ch.wm.sword.lv = 3; W.p.mp = 999; W.p.stc = null;
+  // weapon skills come with mastery: the sword's second at 10, its first from the start
+  assert.equal(W.act({ t: "sk", id: "rend" }).error, "[대검] 숙련 10에 배웁니다");
+  W.p.mp = 999; W.p.stc = null;
   const items0 = JSON.stringify(W.p.ch.inv);
   W.p.skAt = {};
-  const r = W.act({ t: "sk", i: 0 });
+  const r = W.act({ t: "sk", id: "slash" });
   assert.ok(r.ok, "casting: " + r.error);
   me = W.self();
   assert.equal(D.tutorial[me.tut.i].id, "level", "skill → the appended last step");
@@ -535,7 +535,9 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
     assert.deepEqual([ch.cnt.elite, ch.cnt.carp], [7, 1], tag + ": achievement counters move to cnt");
     assert.equal(ch.eq.weapon.id, `w_${cls}_1`, tag + ": the weapon stays");
     assert.deepEqual(ch.qs[1], ["i", "hp_s"], tag + ": items stay on the bar");
-    assert.equal(ch.qs.filter((v) => v && v[0] === "s").length, [3, 7, 12, 18, 25, 35].filter((lv) => lv <= L0).length, tag + ": the skills the old level had are back on the bar");
+    const sks = ch.qs.filter((v) => v && v[0] === "s").map((v) => v[1]);
+    assert.equal(sks.length, [1, 10, 20].filter((lv) => lv <= L0).length, tag + ": the old kit's entries go, the weapon's skills the mastery holds (and the job's signature) come onto the bar");
+    assert.ok(sks.every((id) => typeof id === "string" && D.skills[id]), tag + ": skills on the bar by id");
   }
   // the class's stat shape: a warrior leans on STR and WIL, a rogue on DEX and LUK, a mage on INT
   const w = join(oldSheet("전사50", "warrior", 50)).st, r = join(oldSheet("도적50", "rogue", 50)).st, m = join(oldSheet("법사50", "mage", 50)).st;

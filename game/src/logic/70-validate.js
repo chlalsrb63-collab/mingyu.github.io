@@ -173,7 +173,7 @@ export function validateAction(S, pid, a) {
       return OK;
     case "atk":
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      if (p.dance) return bad("그림자 무도 중입니다");
+      if (p.dance) return bad("무영난무 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
@@ -189,16 +189,17 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "sk": {
-      // until J2: the old skills of the weapon in hand, learned by its mastery
-      const sk = Number.isInteger(a.i) ? legacySkills(ch)[a.i] : null;
-      if (!sk) return bad(legacyCls(ch) ? "없는 스킬" : "이 무기로 쓸 수 있는 스킬이 아직 없습니다");
+      // a skill by id (57-weapon-skills.js): its weapon in hand, its mastery or job, off cooldown, MP for it
+      const sk = typeof a.id === "string" && Object.hasOwn(SKILL, a.id) ? SKILL[a.id] : null;
+      if (!sk) return bad("없는 스킬");
+      if (sk.kind === "p") return bad("저절로 발동하는 패시브 스킬입니다");
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      const wk = weaponKind(ch);
-      if (ch.wm[wk].lv < sk.lv) return bad(`[${WK_NAME[wk]}] 숙련 ${sk.lv}에 배웁니다`);
-      if (p.dance) return bad("그림자 무도 중입니다");
+      const why = skWhy(ch, sk);
+      if (why) return bad(why);
+      if (p.dance) return bad("무영난무 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
-      if (now < p.cds[a.i]) return bad("재사용 대기 중입니다");
-      if (p.mp < skMp(p, a.i)) return bad("MP가 부족합니다");
+      if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
+      if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");
       return OK;
     }
     case "use": {

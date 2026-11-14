@@ -312,7 +312,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   low.k = "blightsquirrel";
   ready(W2); W2.act({ t: "atk", a: 0 });
   assert.equal(W2.ch.wm.sword.xp, 1);
-  ready(W2); W2.act({ t: "sk", i: 2, a: 0 });
+  ready(W2); W2.act({ t: "sk", id: "slash", a: 0 });
   W2.step();
   assert.equal(W2.ch.wm.sword.xp, 3, "a skill that lands is worth two");
   // mastery shows up in the self payload: [lv, xp, need] in wire order
@@ -546,7 +546,8 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.ok(endw[2] < (spot[0] + 3) * T + 8, "it stops at the wall");
   // from afar a sure eye hits harder (DEX); thorns never bite an archer
   const shotDmg = (dx) => {
-    const Wf = world({ wk: "bow", lvl: 37, wm: { bow: 50 }, st: { str: 5, wil: 5, dex: 99, int: 5, wis: 5, luk: 5 } });
+    // (mastery under 10: no 매의 시야 yet, that passive is tested in skills.mjs)
+    const Wf = world({ wk: "bow", lvl: 37, wm: { bow: 9 }, st: { str: 5, wil: 5, dex: 99, int: 5, wis: 5, luk: 5 } });
     const mf = arena(Wf);
     const [t] = mf([[dx, 0]]);
     let sum = 0;

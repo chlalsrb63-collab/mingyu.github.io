@@ -257,8 +257,9 @@ function dimBuff(S, dim, p, kind) {
     else {
       const st = stats(o);
       o.mp = Math.min(st.mmp, o.mp + st.mmp * DIM.gaugeMp);
-      if (legacyCls(o.ch) === "warrior") o.grit = GRIT_MAX;
-      if (legacyCls(o.ch) === "lancer") o.focus = FOCUS_MAX;
+      // the weapon gauges fill too: a sword's full inertia, a staff's resonance ready
+      if (pasOn(o, "inertia")) { o.inert = SKILL.inertia.max; o.inertAt = now; }
+      if (pasOn(o, "reso")) o.reso = SKILL.reso.n;
     }
     o.dirty = true;
     toast(o, `[${name}] ${kind === "atk" ? `공격력 +${Math.round(DIM.atkK * 100)}%` : kind === "spd" ? "이동 속도 증가" : kind === "shield" ? `받는 피해 -${Math.round(DIM.ward * 100)}%` : "마나와 기력 회복"}${ms ? ` (${ms / 1000}초)` : ""}`);

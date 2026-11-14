@@ -400,7 +400,7 @@ export function tick(S, now) {
       }
       if (--z.left <= 0) rt.zones.splice(i, 1);
     }
-    classProps(S, rt, m, now);
+    skillProps(S, rt, m, now);
     for (let i = rt.tele.length - 1; i >= 0; i--) {
       const t = rt.tele[i];
       if (now < t.at) continue;
@@ -409,7 +409,6 @@ export function tick(S, now) {
       for (const pid of pids) {
         const p = S.players[pid];
         if (p.map !== id || p.dead || dist(p.x, p.y, t.x, t.y) > t.r) continue;
-        if (t.ev === "q" && p.wheel > now) { rt.ev.push(["bl", p.eid]); continue; }
         mobHit(S, rt, p, t.dmg, t.by, t.ev === "q" ? "shot" : "tele");
       }
     }
@@ -484,7 +483,7 @@ export function tick(S, now) {
     }
     if (p.recall && now >= p.recall.at && !p.dead) finishRecall(S, p);
     windTouch(S, p, now);
-    if (!p.dead) classTick(S, p, now);
+    if (!p.dead) weaponTick(S, p, now);
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;
     ensureDaily(S, p);

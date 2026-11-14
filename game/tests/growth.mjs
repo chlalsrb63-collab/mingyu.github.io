@@ -1,5 +1,5 @@
-// Headless test of character growth and the comforts of a long hunt — skill levels and the
-// second-tier and ultimate skills, the warehouse, pets, scrolls of blessing, the revive
+// Headless test of character growth and the comforts of a long hunt — skill cooldowns and the
+// job signatures, the warehouse, pets, scrolls of blessing, the revive
 // feather, selling plain gear in one go, the loot filter and auto-potion settings:
 // node tests/growth.mjs
 import assert from "node:assert/strict";
@@ -9,7 +9,7 @@ const D = L.defs();
 const T = 16;
 const BASE = Date.UTC(2026, 10, 12, 23, 0, 0);
 
-/** The weapon each of the four old classes carried (until J2 it also brings that class's skills). */
+/** The weapon each of the four old classes carried (a test hero of that class holds it). */
 const WK = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" };
 /** A world with one hero carrying `cls`'s weapon at what used to be level `lvl` (level 4·lvl − 3, mastery lvl, the job from 20). */
 function world(name = "성장", cls = "warrior", lvl = 40) {
@@ -42,16 +42,11 @@ const gear = (id, q = 0, enh = 0) => ({ id, q, enh, af: [], sk: 0, ru: [] });
 const count = (ch, id) => ch.inv.reduce((a, s) => a + (s.id === id ? s.n || 1 : 0), 0);
 
 // ── definitions
-// (until J2 the old skills ride on the weapon in hand, learned at those mastery levels)
-for (const cls of Object.keys(WK)) {
-  const sks = D.skills[cls];
-  assert.equal(D.legacyCls[WK[cls]], cls);
-  assert.equal(sks.length, 6, cls + " has six skills");
-  assert.deepEqual(sks.map((s) => s.lv), [3, 7, 12, 18, 25, 35], cls + " learns them at 3, 7, 12, 18, 25 and 35");
-  assert.ok(sks[5].ult, cls + "'s last skill is an ultimate");
-  assert.equal(new Set(sks.map((s) => s.id)).size, 6);
+// (weapon skills: each weapon brings an active at mastery 1, another and a passive at 10; tests/skills.mjs has the rest)
+for (const wk of D.wkOrder) {
+  const own = D.skillOrder.filter((id) => D.skills[id].wk === wk && "ap".includes(D.skills[id].kind));
+  assert.deepEqual(own.map((id) => [D.skills[id].kind, D.skills[id].need]), [["a", 1], ["a", 10], ["p", 10]], wk + "'s three skills");
 }
-assert.equal(D.legacyCls.bow, "", "the bow brings no old skills");
 assert.equal(D.whSlots, 60);
 for (const id of ["sc_atk", "sc_def", "sc_xp", "feather", "pet_chick", "pet_bat", "pet_wisp", "hp_l", "mp_l"]) {
   assert.ok(D.items[id], id + " exists");
@@ -131,17 +126,17 @@ assert.ok(D.tutorial.length >= 1);
     for (let k = 0; k < 30; k++) {
       const m = rt.mobs.find((o) => o.k === "twinhare");
       m.dead = false; m.el = 0; m.tr = []; m.hp = 1e7; m.x = p.x + 16; m.y = p.y; m.by = {};
-      p.mp = 999; p.cds[0] = 0; p.atkAt = 0;
+      p.mp = 999; p.cds.slash = 0; p.atkAt = 0;
       const h0 = m.hp;
-      assert.ok(W.act({ t: "sk", i: 0, a: 0 }).ok);
+      assert.ok(W.act({ t: "sk", id: "slash", a: 0 }).ok);
       total += h0 - m.hp;
       W.step(50);
     }
-    const cd = W.self().cds[0];
+    const cd = W.self().sk.find((s) => s[0] === "slash")[2];
     return { total, cd };
   };
   const a = dmgOf(5), b = dmgOf(30), c = dmgOf(99);
-  const cd = D.skills.warrior[0].cd, cut = (w) => Math.min(0.25, 0.004 * w);
+  const cd = D.skills.slash.cd, cut = (w) => Math.min(0.25, 0.004 * w);
   const eff = (s) => Math.min(s, 40) + 0.5 * Math.min(20, Math.max(0, s - 40)) + 0.25 * Math.max(0, s - 60);
   for (const [r, w] of [[a, 5], [b, 30], [c, 99]]) assert.ok(Math.abs(r.cd + 150 - cd * (1 - cut(eff(w)))) <= 20, `WIS ${w}: ${r.cd}`);
   assert.ok(a.cd > b.cd && b.cd > c.cd, `cooldowns shorten: ${a.cd}, ${b.cd}, ${c.cd}`);
@@ -155,26 +150,25 @@ assert.ok(D.tutorial.length >= 1);
   assert.ok(lo > s1 && Math.abs(hi - lo - 64 * 0.49) <= 1, `mastery 1 → 50 adds 49% of a tier-5 sword's 64: ${lo} → ${hi}`);
 }
 
-// ── the second-tier and ultimate skills of every class go off, each with its own effect
+// ── every single job's signature goes off with its own effect and lands
 // (what each one does is tested in tests/skills.mjs)
-const FX = { warrior: [47, 48], rogue: [54, 55], lancer: [64, 65], mage: [74, 75] };
+const SIG = { warrior: ["verdict", 83], rogue: ["flurry", 86], lancer: ["dragon", 89], mage: ["meteor", 90] };
 for (const cls of Object.keys(WK)) {
   const W = world("궁극" + cls.slice(0, 2), cls, 40);
   W.to("meadow", 20, 22);
   W.step();
   const p = W.p, rt = L.runtime(W.S, "meadow");
-  for (const i of [4, 5]) {
-    const list = rt.mobs.filter((o) => !D.mobs[o.k].chest && !D.mobs[o.k].boss).slice(0, 6);
-    for (const o of rt.mobs) if (!list.includes(o)) { o.dead = true; o.respAt = W.now + 1e9; }
-    list.forEach((m, j) => { m.dead = false; m.el = 0; m.tr = []; m.hp = 5000; m.x = p.x + 18 + (j % 3) * 10; m.y = p.y - 8 + Math.floor(j / 3) * 14; m.by = {}; m.stun = 0; m.slow = 0; m.mk = 2; m.mkAt = W.now + 9000; });
-    p.mp = 999; p.cds[i] = 0; p.dir = 2; p.aim = 0; p.hp = 1e6;
-    assert.ok(W.act({ t: "sk", i }).ok, `${cls} casts ${D.skills[cls][i].name}`);
-    const v = W.step(50);
-    const kinds = evts(v, "a").filter((e) => e[1] === p.eid).map((e) => e[2]);
-    assert.ok(kinds.includes(FX[cls][i - 4]), `${cls} skill ${i} shows its own effect (${kinds})`);
-    for (let k = 0; k < 40; k++) { if (D.skills[cls][i].id === "stomp") p.x += k % 2 ? 6 : -6; W.step(100); }
-    if (D.skills[cls][i].id !== "rewind") assert.ok(list.some((m) => m.dead || m.hp < 5000), `${cls} skill ${i} lands`);
-  }
+  const [id, fx] = SIG[cls];
+  const list = rt.mobs.filter((o) => !D.mobs[o.k].chest && !D.mobs[o.k].boss).slice(0, 6);
+  for (const o of rt.mobs) if (!list.includes(o)) { o.dead = true; o.respAt = W.now + 1e9; }
+  list.forEach((m, j) => { m.dead = false; m.el = 0; m.tr = []; m.hp = 5000; m.x = p.x + 30 + (j % 3) * 10; m.y = p.y - 8 + Math.floor(j / 3) * 14; m.by = {}; m.stun = 0; m.slow = 0; m.mk = 2; m.mkAt = W.now + 9000; });
+  p.mp = 999; p.cds[id] = 0; p.dir = 2; p.aim = 0; p.hp = 1e6;
+  assert.ok(W.act({ t: "sk", id }).ok, `${cls} casts ${D.skills[id].name}`);
+  const v = W.step(50);
+  const kinds = evts(v, "a").filter((e) => e[1] === p.eid).map((e) => e[2]);
+  assert.ok(kinds.includes(fx), `${id} shows its own effect (${kinds})`);
+  for (let k = 0; k < 40; k++) W.step(100);
+  assert.ok(list.some((m) => m.dead || m.hp < 5000), `${id} lands`);
 }
 
 // ── the warehouse: sixty slots per character, stacks merge, and gold
@@ -300,7 +294,7 @@ for (const cls of Object.keys(WK)) {
   const p = W.p, m = L.runtime(W.S, "meadow").mobs.find((o) => o.k === "twinhare");
   m.dead = false; m.hp = 500; m.x = p.x + 16; m.y = p.y;
   p.mp = 999;
-  assert.ok(W.act({ t: "sk", i: 0 }).ok);
+  assert.ok(W.act({ t: "sk", id: "slash" }).ok);
   assert.equal(D.tutorial[ch.tut.i].id, "level", "the skill step done; the stat-point step is last");
   assert.equal(count(ch, "pet_chick"), 1, "the first steps end with a pet chick");
 }

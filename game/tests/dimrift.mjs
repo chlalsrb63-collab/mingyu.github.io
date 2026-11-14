@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, CLASSES, MOBS, SKILLS, xpNeed, stats, atkRange, aimIdx, EVT_MAPS, worldEvent, ITEMS, SOLID_G, MAXLV };\n";
+  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, xpNeed, stats, atkRange, aimIdx, EVT_MAPS, worldEvent, ITEMS, SOLID_G, MAXLV };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, D = X.DIM;
 // tuning runs: HPB=… BOSSHP=… NOCLEAR=1 node tests/dimrift.mjs -v
@@ -76,7 +76,7 @@ function world() {
   return S;
 }
 const [OBX, OBY] = [X.DIM_TOWN.keeper[0] * T + 8, (X.DIM_TOWN.keeper[1] - 1) * T + 10];
-/** The weapon each old class carried (jobs-and-stats: until J2 it also brings that class's skills). */
+/** The weapon each old class carried (a bot of that class holds it, with its weapon skills). */
 const WKOF = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" };
 /** A hero carrying `cls`'s weapon at what used to be level `lv` (world tier lv: level 4·lv − 3, mastery lv, the job from 20). */
 function hero(S, pid, name, cls = "warrior", lv = 20, gear = false) {
@@ -494,7 +494,7 @@ function runParty(lv, classes, seedSalt) {
       if (dd > X.atkRange(p) * 0.85) { walk(p, Math.floor(tgt.x / T), Math.floor(tgt.y / T)); continue; }
       // skills first (whichever are ready), then the plain blow
       let cast = false;
-      for (let i = X.SKILLS.warrior.length - 1; i >= 0 && !cast; i--) if (act(S, p.pid, { t: "sk", i, a: aim }).ok) cast = true;
+      for (let i = X.SKILL_ORDER.length - 1; i >= 0 && !cast; i--) { const id = X.SKILL_ORDER[i]; if (X.SKILL[id].kind !== "p" && act(S, p.pid, { t: "sk", id, a: aim }).ok) cast = true; }
       if (!cast) act(S, p.pid, { t: "atk", a: aim });
     }
     step(S);

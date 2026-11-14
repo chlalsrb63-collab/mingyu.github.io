@@ -1,20 +1,20 @@
-// Headless test of the class skills and the mechanic each class plays around:
-// 전사 투지, 도적 표식, 창술사 창끝·집중, 마도사 원소 엮기.   node tests/skills.mjs
+// Headless test of the weapon skills (docs/design/jobs-and-stats.md C): every skill castable or active with its
+// fx code, the gating, the six passives, the job and hybrid signatures, the bar, the wire.   node tests/skills.mjs
 import assert from "node:assert/strict";
 import * as L from "../src/logic.js";
 
 const D = L.defs();
 const T = 16;
+const SK = D.skills;
+const JOB = { sword: "swordsman", dagger: "thief", spear: "lancer", staff: "wizard", book: "warlock", bow: "archer" };
 
-/** Until J2 the old class skills come with the weapon in hand (its old class), learned by its mastery. */
-const WK = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" };
-function world(name, cls, lvl = 40) {
+/** A hero (L.hero options) alone on open meadow ground, every monster put away until a test calls one up. */
+function world(name, o) {
   const S = L.setup();
   let now = 1_000_000;
   S.now = now;
   const PID = "pid-" + name;
-  const ch = L.hero(name, { wk: WK[cls], lvl: Math.min(197, 4 * lvl - 3), migrate: true });
-  L.addPlayer(S, PID, ch);
+  L.addPlayer(S, PID, L.hero(name, { lvl: 157, ...o }));
   const W = {
     S, PID,
     get now() { return now; },
@@ -22,9 +22,9 @@ function world(name, cls, lvl = 40) {
     act(a) { S.now = now; const v = L.validateAction(S, PID, a); if (v.ok) L.applyAction(S, PID, a); return v; },
     self() { S.players[PID].dirty = true; return W.step().self; },
     get p() { return S.players[PID]; },
+    get ch() { return S.players[PID].ch; },
     get rt() { return S.maps[S.players[PID].map]; },
   };
-  // the open middle of the meadow, every monster put away until a test calls one up
   const p = W.p;
   L.runtime(S, p.map).n--; p.map = "meadow"; L.runtime(S, "meadow").n++; p.sendMap = true;
   const mp = W.step().map;
@@ -36,473 +36,345 @@ function world(name, cls, lvl = 40) {
     if (ok) spot = [x, y];
   }
   assert.ok(spot, "open ground");
-  p.x = spot[0] * T + 8; p.y = spot[1] * T + 10; p.mvAt = now; p.dir = 2; p.aim = 0;
-  for (const o of W.rt.mobs) { o.dead = true; o.respAt = now + 1e12; }
-  W.map = mp;
-  W.ready = () => { p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.stag = 0; for (let i = 0; i < 6; i++) p.cds[i] = 0; };
-  /** Call up `n` plain monsters at offsets from the player. */
-  W.mobs = (offs, hp = 50000) => {
-    const pool = W.rt.mobs.filter((o) => !D.mobs[o.k].chest && !D.mobs[o.k].boss && !D.mobs[o.k].fly);
+  const home = [spot[0] * T + 8, spot[1] * T + 10];
+  /** Back to the spot, rested, every cooldown spent, the monsters gone. */
+  W.ready = () => {
+    p.x = home[0]; p.y = home[1]; p.mvAt = now; p.fix = false; p.dir = 2; p.aim = 0;
+    p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.stag = 0; p.combo = 0; p.dance = null; p.ghost = 0; p.cds = {};
+    for (const o of W.rt.mobs) { o.dead = true; o.respAt = now + 1e12; }
+    W.rt.props = []; W.rt.zones = []; W.rt.decoys = []; W.rt.shots = [];
+  };
+  /** Call up plain monsters at offsets from the player. */
+  W.mobs = (offs, hp = 50000, more = {}) => {
+    const pool = W.rt.mobs.filter((q) => !D.mobs[q.k].chest && !D.mobs[q.k].boss && !D.mobs[q.k].fly);
     return offs.map(([dx, dy], j) => {
       const m = pool[j];
-      Object.assign(m, { dead: false, el: 0, tr: [], hp, x: p.x + dx, y: p.y + dy, hx: p.x + dx, hy: p.y + dy, by: {}, stun: 0, slow: 0, mk: 0, mkAt: 0, dec: null, vuln: 0, tgt: null, st: 0, act: null, castAt: now + 1e9, atkAt: now + 1e9 });
+      m.slot = null;
+      Object.assign(m, { dead: false, el: 0, tr: [], hp, x: p.x + dx, y: p.y + dy, hx: p.x + dx, hy: p.y + dy, wx: p.x + dx, wy: p.y + dy, by: {}, stun: 0, slow: 0, mk: 0, mkAt: 0, dec: null, vuln: 0, brand: 0, dot: null, tgt: null, st: 0, act: null, castAt: now + 1e12, atkAt: now + 1e12, mvAt: now + 1e12, hw: 0, hu: 0 }, more);
       return m;
     });
   };
+  W.ready();
   return W;
 }
 const evts = (v, tag) => (v.ev || []).filter((e) => e[0] === tag);
-const sk = (cls, id) => D.skills[cls].findIndex((s) => s.id === id);
+const fx = (vs, eid) => vs.flatMap((v) => evts(v, "a")).filter((e) => e[1] === eid).map((e) => e[2]);
+const hurt = (m, hp = 50000) => m.hp < hp;
+const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++) vs.push(W.step(ms)); return vs; };
 
-// ── the tables: four kits of six, each class with its own gauge
-for (const cls of Object.keys(WK)) {
-  assert.equal(D.legacyCls[WK[cls]], cls, "the weapon brings its old class's kit");
-  assert.equal(D.skills[cls].length, 6);
-  assert.deepEqual(D.skills[cls].map((s) => s.lv), [3, 7, 12, 18, 25, 35]);
-  for (const s of D.skills[cls]) assert.ok(s.desc && s.desc.length > 20, s.id + " is described");
-}
-assert.deepEqual(D.skills.mage.filter((s) => s.el).map((s) => s.el), ["f", "i", "l"], "fire, ice and lightning");
-assert.ok(D.mech && D.mech.react && D.mech.grit === 100);
-
-// ═════════ 전사 ═════════
+// ═════════ the tables
 {
-  const W = world("투지", "warrior");
+  assert.equal(D.skillOrder.length, 30, "per weapon L1, L10 and a passive (18), six single and six hybrid signatures");
+  assert.deepEqual(Object.keys(SK), D.skillOrder);
+  const kinds = D.skillOrder.map((id) => SK[id].kind).join("");
+  assert.equal(kinds, "aap".repeat(6) + "j".repeat(6) + "h".repeat(6));
+  for (const id of D.skillOrder) {
+    const s = SK[id];
+    assert.equal(s.id, id);
+    assert.ok(s.name && s.desc && s.desc.length > 20, id + " is named and described in Korean");
+    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && s.fx >= 70 && s.fx <= 102, id + " costs, waits and has an fx code");
+    if (s.kind === "j") { assert.equal(D.jobs[s.job].kind, "single"); assert.equal(D.jobs[s.job].wk[0], s.wk); assert.equal(s.need, 20); }
+    if (s.kind === "h") assert.equal(D.jobs[s.job].kind, "hybrid");
+  }
+  for (const j of Object.keys(D.jobs)) if (D.jobs[j].kind !== "none") assert.equal(D.skillOrder.filter((id) => SK[id].job === j).length, 1, j + " has one signature");
+  const codes = D.skillOrder.filter((id) => SK[id].kind !== "p").map((id) => SK[id].fx);
+  assert.equal(new Set(codes).size, codes.length, "one fx code each");
+}
+
+// ═════════ every active and signature casts, shows its fx code and lands
+const HYB = { spellblade: ["sword", "staff"], tracker: ["dagger", "bow"], dragoon: ["spear", "book"], hexblade: ["dagger", "book"], stormrider: ["spear", "bow"], darkknight: ["sword", "book"] };
+for (const id of D.skillOrder) {
+  const s = SK[id];
+  if (s.kind === "p") continue;
+  const wk = s.kind === "h" ? HYB[s.job][0] : s.wk;
+  const W = world("시전" + id, { wk, wm: { [wk]: 30, ...(s.kind === "h" ? { [HYB[s.job][1]]: 30 } : {}) }, job: s.job || undefined });
   const p = W.p;
+  // a crowd in front (the aim is east), spread a little: something is in reach of every skill
+  const ms = W.mobs([[24, 0], [40, 6], [56, -6], [72, 0], [90, 4], [110, -4]]);
+  // the tracker's traps need something to walk into them: one stands on a trap's ring
+  if (id === "traps") { ms[0].x = p.x + 32; ms[0].y = p.y + 32; }
+  const r = W.act({ t: "sk", id, a: 0 });
+  assert.ok(r.ok, `${id} casts: ${r.error}`);
+  assert.ok(p.cds[id] > W.now, id + " goes on cooldown");
+  p.dirty = true;
+  const vs = [W.step(50), ...run(W, 50)];
+  // the wire said it was on cooldown, usable in hand
+  const row = vs[0].self.sk.find((x) => x[0] === id);
+  assert.ok(row && row[2] > 0 && row[3] === 1, id + " is on the wire, cooling down, usable in hand");
+  assert.ok(fx(vs, p.eid).includes(s.fx), `${id} shows fx ${s.fx} (${[...new Set(fx(vs, p.eid))]})`);
+  assert.ok(ms.some((m) => hurt(m)), id + " lands");
+}
+
+// ═════════ gating: the weapon in hand, its mastery, the job; cooldown and MP
+{
+  const W = world("관문", { wk: "sword", wm: { sword: 9 } });
+  const p = W.p;
+  assert.equal(W.act({ t: "sk", id: "rend" }).error, "[대검] 숙련 10에 배웁니다");
+  assert.equal(W.act({ t: "sk", id: "fireball" }).error, "[스태프]를 들어야 쓸 수 있습니다");
+  assert.equal(W.act({ t: "sk", id: "pierce" }).error, "[활]을 들어야 쓸 수 있습니다");
+  assert.equal(W.act({ t: "sk", id: "verdict" }).error, "[대검전사]의 스킬입니다");
+  assert.equal(W.act({ t: "sk", id: "crimson" }).error, "[마검사]의 스킬입니다");
+  assert.equal(W.act({ t: "sk", id: "inertia" }).ok, false, "a passive is not cast");
+  assert.equal(W.act({ t: "sk", id: "nope" }).error, "없는 스킬");
+  assert.equal(W.act({ t: "sk", i: 0 }).error, "없는 스킬", "the old index form is gone");
+  assert.equal(W.act({ t: "sk", id: "__proto__" }).error, "없는 스킬");
+  assert.ok(W.act({ t: "sk", id: "slash" }).ok);
+  assert.equal(W.act({ t: "sk", id: "slash" }).error, "재사용 대기 중입니다");
+  p.cds = {}; p.mp = 2;
+  assert.equal(W.act({ t: "sk", id: "slash" }).error, "MP가 부족합니다");
+  p.mp = 999; p.stag = W.now + 500;
+  assert.equal(W.act({ t: "sk", id: "slash" }).error, "stag", "a stagger refuses quietly");
+  // bare hands: no skills at all (the job's weapon is only borrowed for the basic blow)
   W.ready();
-  const [m] = W.mobs([[20, 0]]);
-  assert.ok(W.act({ t: "atk" }).ok);
-  assert.equal(p.grit, 8, "a blow earns grit");
-  let v = W.step();
-  assert.equal(v.me[9], 8, "the gauge's number rides on every snapshot");
-  assert.equal(W.self().cr.k, "grit");
-  // being struck earns it too
-  m.atkAt = 0; m.castAt = W.now + 1e9; m.tgt = W.PID;
-  for (let i = 0; i < 20 && p.grit < 12; i++) W.step(100);
-  assert.ok(p.grit >= 12, "taking a blow earns grit, now " + p.grit);
-  m.dead = true;
-  // and it cools off after four quiet seconds
-  const g0 = p.grit;
-  for (let i = 0; i < 38; i++) W.step(100);
-  assert.equal(p.grit, g0, "kept while the fight is fresh");
-  for (let i = 0; i < 20; i++) W.step(100);
-  assert.ok(p.grit < g0, "and fades after");
-  // 투지 폭발: everything spent, wider and harder with more
-  const blast = (grit) => {
-    W.ready();
-    const ms = W.mobs([[20, 0], [-30, 10], [50, 0]]);
-    p.grit = grit;
-    // the same dice for both blasts, so the comparison is about the gauge and not a lucky crit
-    W.S.seed = 7777;
-    assert.ok(W.act({ t: "sk", i: sk("warrior", "burst") }).ok);
-    const ev = evts(W.step(), "a").find((e) => e[2] === 46);
-    assert.equal(p.grit, 0, "all of it spent");
-    const out = { r: ev[7], hurt: ms.filter((o) => o.hp < 50000).length, dmg: 50000 - ms[0].hp };
-    for (const o of ms) o.dead = true;
-    return out;
+  W.ch.inv.push(W.ch.eq.weapon); W.ch.eq.weapon = null; p.stc = null;
+  assert.equal(W.act({ t: "sk", id: "slash" }).error, "[대검]을 들어야 쓸 수 있습니다");
+  // the signature: the job, and its weapon in hand
+  const J = world("전직", { wk: "dagger", wm: { dagger: 20, sword: 5 }, job: "swordsman" });
+  assert.equal(J.act({ t: "sk", id: "verdict" }).error, "[대검]을 들어야 쓸 수 있습니다", "the job without its weapon");
+  J.ch.eq.weapon = { id: "w_warrior_1", q: 0, enh: 0, af: [], sk: 0, ru: [] }; J.p.stc = null;
+  assert.ok(J.act({ t: "sk", id: "verdict" }).ok, "the job with its weapon");
+  // mastery grows a skill: +SK_GROW a level past its need
+  const dmg = (lv) => {
+    const G = world("성장" + lv, { wk: "sword", wm: { sword: lv } });
+    let sum = 0;
+    for (let i = 0; i < 40; i++) { G.ready(); const [m] = G.mobs([[24, 0]]); G.act({ t: "sk", id: "slash", a: 0 }); sum += 50000 - m.hp; }
+    return sum;
   };
-  const lo = blast(0), hi = blast(100);
-  assert.ok(hi.r > lo.r + 30 && hi.hurt > lo.hurt, `a full gauge goes wider (${lo.r}→${hi.r}, ${lo.hurt}→${hi.hurt} hit)`);
-  assert.ok(hi.dmg > lo.dmg * 2.5, `and far harder (${lo.dmg}→${hi.dmg})`);
-}
-{
-  // 대검 투척: thrown, stuck, headbutting meanwhile, then called back through the pack
-  const W = world("투척", "warrior");
-  const p = W.p;
-  W.ready();
-  const ms = W.mobs([[30, 0], [60, 0]]);
-  const acd0 = W.self().acd;
-  assert.ok(W.act({ t: "sk", i: 0 }).ok);
-  let v = W.step();
-  assert.ok(p.sword && p.sword.x > p.x + 60, "the sword flies down the line and sticks");
-  assert.ok(ms.every((o) => o.hp < 50000), "cutting everything on the way");
-  assert.ok(evts(v, "sw").length === 1 && (v.me[8] & 2), "it is shown stuck, and gone from the hand");
-  const s1 = W.self();
-  assert.ok(s1.acd < acd0 && s1.range < 30, "barehanded the warrior butts — quick and close");
-  assert.equal(s1.skm[0], 0, "calling it back costs nothing");
-  // a headbutt
-  ms[0].x = p.x + 14; ms[0].y = p.y;
-  const x0 = ms[0].x, g0 = p.grit;
-  p.atkAt = 0;
-  assert.ok(W.act({ t: "atk" }).ok);
-  v = W.step();
-  assert.ok(evts(v, "a").some((e) => e[2] === 40), "a headbutt");
-  assert.ok(ms[0].x > x0 + 6 && p.grit >= g0 + 12, "that knocks back hard and fires the blood");
-  // the recall drags what it passes back to the warrior
-  for (let i = 0; i < 8; i++) W.step(100);
-  ms[1].x = p.sword.x - 20; ms[1].y = p.sword.y;
-  const far = ms[1].x - p.x, h1 = ms[1].hp;
-  assert.ok(W.act({ t: "sk", i: 0 }).ok, "pressed again: the recall");
-  v = W.step();
-  assert.ok(!p.sword && evts(v, "sr").length === 1, "the sword is back in hand");
-  assert.ok(ms[1].x - p.x < far - 30 && ms[1].hp < h1, "and dragged the monster home, cutting it");
-  assert.ok(p.cds[0] - W.now > D.skills.warrior[0].cd * 0.8, "now the real cooldown");
-  // left lying, it comes home by itself after eight seconds
-  W.ready();
-  W.act({ t: "sk", i: 0 });
-  for (let i = 0; i < 85; i++) W.step(100);
-  assert.ok(!p.sword, "the sword comes home on its own");
-}
-{
-  // 버티기: most of each blow is caught and sent back as a shockwave
-  const W = world("버티기", "warrior");
-  const p = W.p;
-  W.ready();
-  const [m] = W.mobs([[16, 0]]);
-  p.hp = 100000; p.grit = 0;
-  assert.ok(W.act({ t: "sk", i: 1 }).ok);
-  const hp0 = p.hp;
-  W.rt.tele.push({ x: p.x, y: p.y, r: 13, at: W.now + 50, dmg: 3000, by: m });
-  let v = W.step(100);
-  const taken = hp0 - p.hp;
-  assert.ok(p.brace && p.brace.stored > taken, `most of the blow is held back (${taken} taken, ${p.brace && p.brace.stored} held)`);
-  m.atkAt = W.now + 1e9;
-  const before = m.hp;
-  let wave = false;
-  for (let i = 0; i < 12; i++) { v = W.step(100); if (evts(v, "bw").some((e) => e[4] === 1)) wave = true; }
-  assert.ok(wave && !p.brace && m.hp < before, "then let loose");
-  assert.ok(p.grit >= 30, "with a surge of grit");
-}
-{
-  // 도발 포효 and 대지 걸음 and 거신화
-  const W = world("포효", "warrior");
-  const p = W.p;
-  W.ready();
-  const ms = W.mobs([[70, 0], [-60, 16], [60, -24]]);
-  const d0 = ms.map((o) => Math.hypot(o.x - p.x, o.y - p.y));
-  assert.ok(W.act({ t: "sk", i: sk("warrior", "roar") }).ok);
-  W.step();
-  ms.forEach((o, j) => assert.ok(Math.hypot(o.x - p.x, o.y - p.y) < d0[j] - 25 && o.tgt === W.PID, "pulled in and fixed on the warrior"));
-  assert.ok(p.grit >= 30 && p.atkBuff > W.now, "grit for each, and the party fired up");
-  for (const o of ms) o.dead = true;
-  W.ready();
-  W.mobs([[10, 0], [-10, 0]]);
-  assert.ok(W.act({ t: "sk", i: sk("warrior", "stomp") }).ok);
-  let quakes = 0;
-  for (let i = 0; i < 20; i++) { p.x += i % 2 ? 5 : -5; p.mvAt = W.now; quakes += evts(W.step(100), "bw").filter((e) => e[4] === 3).length; }
-  assert.ok(quakes >= 3, "walking shakes the ground, " + quakes + " times in two seconds");
-  W.ready();
-  p.slowed = W.now + 1e6;
-  assert.ok(W.act({ t: "sk", i: 5 }).ok);
-  const v = W.step();
-  assert.ok(v.me[8] & 1, "a giant, for all to see");
-  const [m] = W.mobs([[22, 0]]);
-  for (let i = 0; i < 3; i++) { p.atkAt = 0; W.act({ t: "atk" }); W.step(1200); }
-  assert.ok(p.combo >= 0 && m.stun > 0, "every blow a finisher");
-  for (let i = 0; i < 100; i++) W.step(100);
-  assert.ok(!(W.step().me[8] & 1), "and back to size after ten seconds");
+  const k = dmg(41) / dmg(1);
+  assert.ok(k > 1 + 30 * D.skGrow && k < 1 + 50 * D.skGrow, `mastery 41 hits ×${k.toFixed(3)} of mastery 1`);
 }
 
-// ═════════ 도적 ═════════
+// ═════════ passives
+// 거검의 관성: +1 a sword hit (once an action), 5 at most, gone 2.5 s after the last; reach and crit damage
 {
-  const W = world("표식", "rogue");
+  const W = world("관성", { wk: "sword", wm: { sword: 10 } });
   const p = W.p;
-  W.ready();
-  const [m, m2] = W.mobs([[16, 0], [60, 24]]);
-  W.act({ t: "atk" });
-  let v = W.step();
-  assert.equal(m.mk, 1, "every stab leaves a mark");
-  assert.equal(v.M.find((r) => r[0] === m.id)[8], 1, "shown over the monster");
-  assert.equal(v.M.find((r) => r[0] === m2.id).length, 8, "unmarked monsters cost nothing extra on the wire");
-  // 그림자 바꿔치기
-  const px = p.x, py = p.y, mx = m2.x, my = m2.y;
-  m.dead = true;
-  assert.ok(W.act({ t: "sk", i: 0 }).ok);
-  v = W.step();
-  // (the cut that follows the swap staggers the monster a few pixels further back: hitstun knockback)
-  assert.ok(Math.abs(p.x - mx) < 1 && Math.hypot(m2.x - px, m2.y - py) < 4, "rogue and monster trade places");
-  assert.equal(m2.mk, 2, "two marks");
-  assert.ok(evts(v, "cf").length === 1 && m2.stun > W.now, "it reels, confused");
-  // 맹독 바르기: two marks a stab, and a poison as strong as the marks
-  W.ready();
-  m2.x = p.x + 16; m2.y = p.y; m2.mk = 0;
-  assert.ok(W.act({ t: "sk", i: 1 }).ok);
-  W.step();
-  p.atkAt = 0; W.act({ t: "atk" }); W.step(600);
-  p.atkAt = 0; W.act({ t: "atk" });
-  assert.equal(m2.mk, 4, "venom marks twice");
-  assert.ok(m2.dot && m2.dot.dmg > 0 && p.venom.n === 4, "and poisons");
-  // 표식 수확: every mark goes off
-  W.ready();
-  m2.dead = true;
-  const [a, b] = W.mobs([[30, 0], [-30, 0]]);
-  a.mk = 5; a.mkAt = W.now + 9000; b.mk = 1; b.mkAt = W.now + 9000;
-  W.S.seed = 7777; // fixed dice: a lucky crit on the one-mark target must not decide the comparison
-  assert.ok(W.act({ t: "sk", i: sk("rogue", "harvest") }).ok);
-  W.step();
-  assert.ok(a.mk === 0 && b.mk === 0, "the marks are spent");
-  assert.ok(50000 - a.hp > (50000 - b.hp) * 3, `five marks hurt far more than one (${50000 - a.hp} vs ${50000 - b.hp})`);
-  // marks fade if left alone
-  a.mk = 3; a.mkAt = W.now + 9000;
-  for (let i = 0; i < 100; i++) W.step(100);
-  assert.ok(!W.step().M.find((r) => r[0] === a.id)[8], "marks fade after ten seconds");
-}
-{
-  // 행운의 동전: both faces turn up
-  const W = world("동전", "rogue");
-  const p = W.p;
-  let heads = 0, tails = 0;
-  for (let i = 0; i < 40 && !(heads && tails); i++) {
-    W.ready();
-    const [m] = W.mobs([[20, 0]]);
-    const h0 = m.hp;
-    assert.ok(W.act({ t: "sk", i: 2 }).ok);
-    const v = W.step();
-    const c = evts(v, "cn")[0];
-    // the coin's own blow: the first hit on the target after the flip (a skill cast just before may have landed in the same tick)
-    const crit = v.ev.slice(v.ev.indexOf(c)).find((e) => e[0] === "h" && e[1] === m.id);
-    if (c[4]) { heads++; assert.equal(crit[3], 1, "heads is always a critical hit"); assert.ok(!p.coinFree); }
-    else {
-      tails++;
-      assert.ok(p.coinFree, "tails: the next skill comes back at once");
-      assert.ok(W.act({ t: "sk", i: 0 }).ok);
-      assert.ok(p.cds[0] - W.now <= 300 && !p.coinFree, "and it did");
-    }
-    assert.ok(m.hp < h0);
-    m.dead = true;
-  }
-  assert.ok(heads && tails, `both faces (${heads} heads, ${tails} tails)`);
-}
-{
-  // 꼭두각시 분신: the monsters go for the puppet, and it goes off among them
-  const W = world("분신", "rogue");
-  const p = W.p;
-  W.ready();
-  const ms = W.mobs([[40, 0], [40, 20]]);
-  for (const o of ms) { o.tgt = W.PID; o.atkAt = 0; o.castAt = W.now + 1e9; }
-  assert.ok(W.act({ t: "sk", i: 3 }).ok);
-  let v = W.step();
-  assert.ok(evts(v, "dc").length === 1 && (v.me[8] & 64), "a puppet left behind, the rogue hidden");
-  assert.ok(ms.every((o) => o.dec && o.tgt !== W.PID), "and the monsters turn on it");
-  p.x -= 120; p.mvAt = W.now;
-  let popped = false;
-  for (let i = 0; i < 50 && !popped; i++) { v = W.step(100); popped = evts(v, "dx").length > 0; }
-  assert.ok(popped && ms.some((o) => o.mk >= 1 && o.hp < 50000), "struck, it goes off and marks them");
-}
-{
-  // 그림자 무도: untouchable, from mark to mark, then home
-  const W = world("무도", "rogue");
-  const p = W.p;
-  W.ready();
-  const ms = W.mobs([[40, 0], [-40, 20], [10, -26], [80, 20]]);
-  ms.forEach((o, j) => { o.mk = j < 3 ? 3 : 0; o.mkAt = W.now + 9000; });
-  const ox = p.x, oy = p.y;
-  assert.ok(W.act({ t: "sk", i: 5 }).ok);
-  assert.ok(!W.act({ t: "atk" }).ok, "no attacking mid-dance");
-  let blinks = 0;
-  for (let i = 0; i < 30; i++) {
-    const v = W.step(100);
-    blinks += evts(v, "ln").filter((e) => e[1] === 5).length;
-    if (i === 3) { const h = p.hp; ms[3].atkAt = 0; ms[3].tgt = W.PID; ms[3].x = p.x + 10; ms[3].y = p.y; blinks += evts(W.step(100), "ln").filter((e) => e[1] === 5).length; assert.equal(p.hp, h, "nothing touches a shadow"); }
-  }
-  assert.ok(ms.slice(0, 3).every((o) => o.hp < 50000 && !o.mk), "every marked one struck, marks spent");
-  assert.equal(ms[3].hp, 50000, "the unmarked one is left alone");
-  assert.ok(blinks >= 4 && Math.abs(p.x - ox) < 1 && Math.abs(p.y - oy) < 1, "and home again, " + blinks + " blinks");
-}
-
-// ═════════ 창술사 ═════════
-{
-  const W = world("창끝", "lancer");
-  const p = W.p;
-  W.ready();
-  const [m] = W.mobs([[48, 0]]);
-  W.act({ t: "atk" });
-  let v = W.step();
-  assert.ok(evts(v, "tip").length === 1 && p.focus === 1, "the far end of the reach is the spear's tip");
-  m.x = p.x + 18; p.atkAt = 0;
-  W.act({ t: "atk" });
-  v = W.step();
-  assert.ok(!evts(v, "tip").length && p.focus === 1, "up close is not");
-  // the tip hits harder
-  const dmg = (dx) => { let t = 0; for (let i = 0; i < 20; i++) { m.hp = 50000; m.x = p.x + dx; m.y = p.y; p.atkAt = 0; p.combo = 0; p.focus = 0; W.act({ t: "atk" }); t += 50000 - m.hp; W.step(2000); } return t; };
-  const near = dmg(18), tip = dmg(48);
-  assert.ok(tip > near * 1.3, `tip ${tip} vs close ${near}`);
-  // 갈고리 걸기: the farthest is hooked to the tip; with full focus, three are
-  W.ready();
-  m.dead = true;
-  const ms = W.mobs([[60, 0], [100, 4], [130, -4]]);
-  p.focus = 0;
-  assert.ok(W.act({ t: "sk", i: 0 }).ok);
-  W.step();
-  const tipAt = D.wkinds.spear.range * 0.85;
-  assert.ok(Math.abs(ms[2].x - p.x - tipAt) < 6 && ms[2].slow > W.now, "the farthest is pulled to exactly the tip, slowed");
-  assert.ok(Math.abs(ms[1].x - p.x - 100) < 8, "the others stay");
-  W.ready();
-  ms.forEach((o, j) => { o.x = p.x + 60 + j * 30; o.y = p.y; });
-  p.focus = 5; p.focusAt = W.now;
-  assert.ok(W.act({ t: "sk", i: 0 }).ok);
-  const v2 = W.step();
-  assert.ok(evts(v2, "fo").length === 1 && p.focus === 0, "full focus is spent");
-  assert.ok(ms.every((o) => Math.abs(o.x - p.x - tipAt) < 8), "and hooks all three");
-  for (const o of ms) o.dead = true;
-}
-{
-  // 장대 도약, 깃발 꽂기, 회전 방벽, 투창, 백보일섬
-  const W = world("도약", "lancer");
-  const p = W.p;
-  W.ready();
-  const ms = W.mobs([[30, 0], [80, 0]]);
-  const x0 = p.x;
-  assert.ok(W.act({ t: "sk", i: 1 }).ok);
-  W.step();
-  assert.ok(p.x > ms[0].x + 10, "over the first and down beyond it");
-  assert.ok(ms[1].hp < 50000 && p.tipNext > W.now, "landing hard, the next blow certain to find the tip");
-  ms[1].x = p.x + 14; p.atkAt = 0;
-  W.act({ t: "atk" });
-  assert.ok(evts(W.step(), "tip").length === 1, "a tip hit from up close, after the vault");
-  for (const o of ms) o.dead = true;
-  // the banner
-  W.ready();
-  const acd0 = W.self().acd;
-  assert.ok(W.act({ t: "sk", i: 2 }).ok);
-  W.step(); W.step();
-  const [m] = W.mobs([[30, 24]]);
-  W.step(600);
-  assert.ok(W.self().acd < acd0 * 0.85, "the banner hurries the lancer");
-  assert.ok(m.slow > W.now, "and slows the monster beside it");
-  p.x += 200; p.mvAt = W.now; W.step();
-  assert.equal(W.self().acd, acd0, "but only beside it");
-  p.x -= 200; m.dead = true;
-  // the wheel turns aside what is shot at it
-  W.ready();
-  assert.ok(W.act({ t: "sk", i: 3 }).ok);
-  W.step();
-  const rt = W.rt;
-  const shooter = W.mobs([[60, 0]])[0];
-  rt.tele.push({ x: p.x, y: p.y, r: 13, at: W.now + 50, dmg: 500, by: shooter, ev: "q" });
-  const h0 = p.hp;
-  const v = W.step(100);
-  assert.ok(p.hp === h0 && evts(v, "bl").length === 1, "a shot is blocked by the spinning spear");
-  shooter.dead = true;
-  // the javelin pins a monster to a wall: find a wall to throw at
-  const mp = W.map;
-  let wall = null;
-  for (let y = 4; y < mp.h - 4 && !wall; y++) for (let x = 12; x < mp.w - 4 && !wall; x++) {
-    const solid = (tx, ty) => mp.o[ty][tx] !== " " || "wW".includes(mp.g[ty][tx]);
-    if (!solid(x, y)) continue;
-    let ok = true;
-    for (let k = 1; k <= 7 && ok; k++) for (let dy = -1; dy <= 1 && ok; dy++) if (solid(x - k, y + dy)) ok = false;
-    if (ok) wall = [x, y];
-  }
-  assert.ok(wall, "a wall to pin against");
-  W.ready();
-  p.x = (wall[0] - 6) * T + 8; p.y = wall[1] * T + 10; p.dir = 2; p.aim = 0;
-  const [pm] = W.mobs([[48, 0]]);
-  pm.x = p.x + 48;
-  assert.ok(W.act({ t: "sk", i: 4 }).ok);
-  const vj = W.step();
-  assert.ok(evts(vj, "wl").length === 1 && pm.stun > W.now + 1500, "벽꿍 — pinned and stunned");
-  pm.dead = true;
-}
-{
-  const W = world("백보", "lancer");
-  const p = W.p;
-  W.ready();
-  const ms = W.mobs([[40, 0], [90, 0], [130, 0]]);
-  p.focus = 5; p.focusAt = W.now;
-  const x0 = p.x;
-  assert.ok(W.act({ t: "sk", i: 5 }).ok);
-  const v = W.step();
-  assert.ok(p.x > x0 + 120 && p.focus === 0, "the lancer is through, focus spent");
-  assert.ok(ms.every((o) => o.hp < 50000) && evts(v, "tip").length >= 3, "every one passed takes the tip");
-}
-
-// ═════════ 마도사 ═════════
-{
-  const W = world("원소", "mage");
-  const p = W.p;
-  W.ready();
-  const ms = W.mobs([[40, 0], [48, 8], [36, -6]]);
-  assert.ok(W.act({ t: "sk", i: 0 }).ok);
-  let v = W.step();
-  assert.equal(v.me[9], 1, "fire is held");
-  assert.ok(!evts(v, "rx").length, "one element alone makes nothing");
-  assert.ok(W.act({ t: "sk", i: 1 }).ok);
-  v = W.step();
-  assert.equal(evts(v, "rx")[0][1], 1, "fire then ice: steam");
-  assert.equal(v.me[9], 0, "and both are used up");
-  assert.ok(W.act({ t: "sk", i: 3 }).ok);
-  v = W.step();
-  assert.ok(!evts(v, "rx").length, "lightning on nothing");
-  W.ready();
-  for (const o of ms) { o.x = p.x + 40; o.y = p.y; }
-  assert.ok(W.act({ t: "sk", i: 1 }).ok);
-  v = W.step();
-  assert.equal(evts(v, "rx")[0][1], 2, "lightning then ice: superconduct");
-  assert.ok(ms.some((o) => o.vuln > W.now), "which leaves monsters open");
-  W.ready();
-  W.act({ t: "sk", i: 3 }); W.step();
-  W.act({ t: "sk", i: 0 });
-  v = W.step();
-  assert.equal(evts(v, "rx")[0][1], 3, "lightning then fire: overload");
-  // the held element fades
-  W.ready();
-  W.act({ t: "sk", i: 0 }); W.step();
-  for (let i = 0; i < 55; i++) W.step(100);
-  assert.equal(W.step().me[9], 0, "an element is held for five seconds");
-  // superconducted monsters take more
-  ms[1].dead = true; ms[2].dead = true;
-  const hurt = (vuln) => { const [m] = ms; let t = 0; for (let i = 0; i < 60; i++) { m.hp = 50000; m.vuln = vuln ? W.now + 9999 : 0; m.x = p.x + 40; m.y = p.y; p.atkAt = 0; W.act({ t: "atk" }); t += 50000 - m.hp; W.step(1100); } return t; };
-  const a = hurt(false), b = hurt(true);
-  assert.ok(b > a * 1.15, `superconduct: ${a} → ${b}`);
-  for (const o of ms) o.dead = true;
-}
-{
-  // the teapot, the rewind, the surge
-  const W = world("찻주전자", "mage");
-  const p = W.p;
-  W.ready();
-  const mhp = W.self().mhp;
-  p.hp = Math.round(mhp * 0.3);
-  assert.ok(W.act({ t: "sk", i: 2 }).ok);
-  let v = W.step();
-  assert.equal(evts(v, "tp").length, 1, "a teapot is set down");
-  const h0 = p.hp;
-  for (let i = 0; i < 85; i++) W.step(100);
-  assert.ok(p.hp - h0 > mhp * 0.3, `tea mends (${p.hp - h0} of ${mhp})`);
-  // rewind: back where the mage stood three seconds ago, with the health they had
-  W.ready();
-  p.hp = Math.round(mhp * 0.9);
-  const x0 = p.x, y0 = p.y;
-  for (let i = 0; i < 10; i++) W.step(100);
-  p.x += 60; p.mvAt = W.now;
-  for (let i = 0; i < 20; i++) { W.step(100); }
-  p.hp = Math.round(mhp * 0.3);
-  p.cds[0] = W.now + 4000;
-  assert.ok(W.act({ t: "sk", i: 4 }).ok);
-  W.step();
-  assert.ok(Math.abs(p.x - x0) < 2 && Math.abs(p.y - y0) < 2, "back to where it stood");
-  assert.ok(p.hp > mhp * 0.8, "and as hale as it was");
-  assert.ok(p.cds[0] - W.now <= 2000, "with the element spells' wait cut");
-  // surge: no cost, half the wait, every cast reacts
-  W.ready();
-  const ms = W.mobs([[40, 0], [44, 6]]);
-  assert.ok(W.act({ t: "sk", i: 5 }).ok);
-  W.step();
+  const [m] = W.mobs([[20, 0], [24, 8]]);
+  const range0 = W.self().range;
+  for (let i = 0; i < 6; i++) { m.x = p.x + 20; m.y = p.y; p.atkAt = 0; assert.ok(W.act({ t: "atk", a: 0 }).ok); if (i === 0) assert.equal(p.inert, 1, "a cleave of two is one stack"); W.step(50); }
+  assert.equal(p.inert, 5, "capped at five");
   const s = W.self();
-  assert.deepEqual([s.skm[0], s.skm[1], s.skm[3]], [0, 0, 0], "element spells cost nothing in a surge");
-  p.mp = 0;
-  for (let i = 0; i < 4; i++) p.cds[i] = 0;
-  assert.ok(W.act({ t: "sk", i: 0 }).ok, "even with an empty pool");
-  v = W.step();
-  assert.ok(p.cds[0] - W.now < D.skills.mage[0].cd * 0.6, "and comes back in half the time");
-  assert.equal(evts(v, "rx").length, 1, "every cast reacts, even the first");
-  for (let i = 0; i < 90; i++) W.step(100);
-  assert.equal(W.self().skm[0], D.skills.mage[0].mp, "until the surge ends");
-  for (const o of ms) o.dead = true;
+  assert.equal(s.cr.k, "inertia"); assert.equal(W.step().me[9], 5, "the gauge rides on every snapshot");
+  assert.ok(s.range > range0 * 1.25, `reach grows with it: ${range0} → ${s.range}`);
+  run(W, 26);
+  assert.equal(p.inert, 0, "gone 2.5 s after the last hit");
+  assert.equal(W.step().me[9], 0);
+  void m;
+  const U = world("관성전", { wk: "sword", wm: { sword: 9 } });
+  U.mobs([[20, 0]]);
+  U.act({ t: "atk", a: 0 });
+  assert.equal(U.p.inert | 0, 0, "not before mastery 10");
+  assert.equal(U.self().cr, null, "and no gauge");
 }
-
-// ── trained skill levels are retired: an old kit's levels are paid back (tests/content.mjs has the sums)
+// 급소 도려내기: stabs mark; a marked monster bleeds and the stabber runs faster
 {
-  const S = L.setup();
-  const ch = L.newChar("옛전사", []);
-  for (const k of ["job", "xpt", "st", "wm", "rs", "sw", "cnt"]) delete ch[k];
-  Object.assign(ch, { cls: "warrior", lvl: 40, skl: [4, 3, 2, 1, 6, 10], v: 5, gold: 0 });
-  ch.eq.weapon = { id: "w_warrior_3", q: 0, enh: 0, af: [], sk: 0, ru: [] };
-  L.addPlayer(S, "pid-old", ch);
-  const nc = S.players["pid-old"].ch;
-  assert.ok(!("skl" in nc) && nc.gold > 100000, "levels gone, their gold back: " + nc.gold);
-  const out = L.removePlayer(S, "pid-old");
-  assert.ok(!("grit" in out) && !("sword" in out), "nothing of the fight is saved with the sheet");
+  const W = world("급소", { wk: "dagger", wm: { dagger: 10 } });
+  const p = W.p;
+  const [m] = W.mobs([[16, 0]]);
+  const spd0 = W.self().spd;
+  p.atkAt = 0; W.act({ t: "atk", a: 0 });
+  assert.equal(m.mk, 1, "a stab marks");
+  assert.ok(!m.dot, "the first stab does not bleed it");
+  W.step(600); p.atkAt = 0;
+  W.act({ t: "atk", a: 0 });
+  const v = W.step();
+  assert.equal(m.mk, 2);
+  assert.ok(m.dot && m.dot.until > W.now && m.dot.pid === W.PID, "a marked monster bleeds");
+  assert.ok(fx([v], p.eid).includes(111), "with its fx");
+  assert.ok(p.vitSpd > W.now, "and the stabber is quicker for a moment");
+  const hp = m.hp;
+  run(W, 12);
+  assert.ok(m.hp < hp, "the bleeding bites on its own");
+  assert.ok(v.M.find((r) => r[0] === m.id)[8] === 2, "the marks ride on the monster's row");
+  void spd0;
+  // marks add 3% crit chance each: many stabs on a 5-mark monster crit more than on a clean one
+  const crits = (marks) => {
+    const C = world("치명" + marks, { wk: "dagger", wm: { dagger: 10 }, st: { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 } });
+    let n = 0;
+    for (let i = 0; i < 300; i++) { C.ready(); const [q] = C.mobs([[16, 0]], 50000, { tgt: C.PID, mk: marks, mkAt: C.now + 9000 }); C.act({ t: "atk", a: 0 }); const h = C.rt.ev.find((e) => e[0] === "h" && e[1] === q.id); if (h && h[3] === 1) n++; L.endTick(C.S); }
+    return n;
+  };
+  assert.ok(crits(4) > crits(0) + 15, "marks point to the gaps");
+}
+// 창끝의 거리: a blow at the far end of the reach hits ×1.5 and through 35% of the armour
+{
+  const hit = (dx, wm) => {
+    const W = world("창끝" + dx + wm, { wk: "spear", wm: { spear: wm } });
+    let sum = 0, tips = 0;
+    for (let i = 0; i < 40; i++) { W.ready(); const [m] = W.mobs([[dx, 0]], 50000, { k: "crabskull" }); W.act({ t: "atk", a: 0 }); sum += 50000 - m.hp; tips += W.rt.ev.filter((e) => e[0] === "tip").length; L.endTick(W.S); }
+    return { sum, tips };
+  };
+  const near = hit(20, 10), far = hit(48, 10), locked = hit(48, 9);
+  assert.equal(near.tips, 0); assert.equal(far.tips, 40, "every far blow is a tip");
+  assert.equal(locked.tips, 0, "not before mastery 10");
+  assert.ok(far.sum > near.sum * 1.5, `the tip hits harder and through armour: ${near.sum} → ${far.sum}`);
+  const W = world("창끝게이지", { wk: "spear", wm: { spear: 10 } });
+  assert.deepEqual(W.self().cr, { k: "tip", tip: Math.round(D.wkinds.spear.range * D.mech.tip) });
+}
+// 마력 공명: every third staff skill makes the next free and 30% stronger; elements react
+{
+  const W = world("공명", { wk: "staff", wm: { staff: 10 } });
+  const p = W.p;
+  const cast = () => { p.cds = {}; const mp = p.mp; const [m] = W.mobs([[40, 0]]); const r = W.act({ t: "sk", id: "fireball", a: 0 }); assert.ok(r.ok, r.error); const cost = mp - p.mp; const v = W.step(); W.ready(); return { cost, v, m }; };
+  W.ready();
+  assert.equal(cast().cost, SK.fireball.mp);
+  assert.equal(cast().cost, SK.fireball.mp);
+  const third = cast();
+  assert.ok(fx([third.v], p.eid).includes(113), "the third fills the resonance (fx 113)");
+  assert.equal(p.reso, 3);
+  assert.equal(W.self().sk.find((s) => s[0] === "fireball")[1], 0, "the wire shows it free");
+  assert.ok(W.step().me[8] & 32, "and others see it glowing");
+  const fourth = cast();
+  assert.equal(fourth.cost, 0, "the fourth costs nothing");
+  assert.equal(p.reso, 0, "and spends it");
+  // fire on held ice: steam
+  W.ready();
+  W.mobs([[30, 0], [40, 6]]);
+  p.weave = { e: "i", until: W.now + 4000 };
+  W.act({ t: "sk", id: "fireball", a: 0 });
+  assert.ok(evts(W.step(), "rx").some((e) => e[1] === 1), "fire meeting held ice explodes into steam");
+  const N = world("공명전", { wk: "staff", wm: { staff: 9 } });
+  for (let i = 0; i < 4; i++) { N.p.cds = {}; N.p.mp = 999; N.act({ t: "sk", id: "fireball", a: 0 }); }
+  assert.equal(N.p.reso | 0, 0, "no resonance before mastery 10");
+}
+// 금서의 낙인: a book skill brands; a branded monster takes 15% more from anyone
+{
+  const W = world("낙인", { wk: "book", wm: { book: 10 } });
+  const p = W.p;
+  const [m] = W.mobs([[60, 0]]);
+  W.act({ t: "sk", id: "soulbolt", a: 0 });
+  const vs = run(W, 6);
+  assert.ok(m.brand > W.now, "the soul bolt brands");
+  assert.ok(fx(vs, p.eid).includes(114), "fx 114");
+  assert.ok(vs[vs.length - 1].M.find((r) => r[0] === m.id)[9] === 1, "the brand rides on the monster's row");
+  assert.equal(W.self().cr.k, "brand");
+  const blows = (brand) => { let s = 0; for (let i = 0; i < 60; i++) { W.ready(); const [q] = W.mobs([[30, 0]], 50000, { brand: brand ? W.now + 5000 : 0 }); W.act({ t: "atk", a: 0 }); s += 50000 - q.hp; } return s; };
+  const r = blows(true) / blows(false);
+  assert.ok(r > 1.08 && r < 1.25, `branded takes more: ×${r.toFixed(3)}`);
+  const B = world("낙인전", { wk: "book", wm: { book: 9 } });
+  const [q] = B.mobs([[60, 0]]);
+  B.act({ t: "sk", id: "soulbolt", a: 0 }); run(B, 6);
+  assert.ok(!(q.brand > B.now), "not before mastery 10");
+}
+// 매의 시야: arrows hit harder the further they flew (+25% at most)
+{
+  const shots = (dx, wm) => {
+    const W = world("매" + dx + wm, { wk: "bow", wm: { bow: wm }, st: { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 } });
+    let s = 0, far = 0;
+    for (let i = 0; i < 60; i++) { W.ready(); const [m] = W.mobs([[dx, 0]]); W.act({ t: "atk", a: 0 }); for (let k = 0; k < 6; k++) { const v = W.step(); far += fx([v], W.p.eid).filter((c) => c === 115).length; } s += 50000 - m.hp; }
+    return { s, far };
+  };
+  const a = shots(140, 10), b = shots(140, 9), c = shots(30, 10);
+  const k = a.s / b.s;
+  assert.ok(k > 1 + SK.hawk.k * 0.6 && k < 1 + SK.hawk.k * 1.4, `a far shot with the hawk's eye: ×${k.toFixed(3)}`);
+  assert.ok(a.far > 30 && c.far === 0, "the far-hit fx (115) only for far hits");
+  assert.equal(world("매게이지", { wk: "bow", wm: { bow: 10 } }).self().cr.k, "hawk");
 }
 
-console.log("skills ok");
+// ═════════ skills worth a closer look
+// 대지 가르기 never leaps over a wall; 관통 화살 goes through everything in its line; 도약 사격 at most two a monster
+{
+  const W = world("관통", { wk: "bow", wm: { bow: 10 } });
+  const ms = W.mobs([[30, 0], [60, 2], [90, -2], [120, 0]]);
+  W.act({ t: "sk", id: "pierce", a: 0 });
+  run(W, 6);
+  assert.ok(ms.every((m) => hurt(m)), "the piercing arrow passes through all four");
+  W.ready();
+  const [one] = W.mobs([[50, 0]]);
+  const x0 = W.p.x;
+  W.act({ t: "sk", id: "leapshot", a: 0 });
+  assert.ok(W.p.x < x0 - 30, "a hop back");
+  const vs = run(W, 6);
+  const hits = vs.flatMap((v) => evts(v, "h")).filter((e) => e[1] === one.id).length;
+  assert.ok(hits >= 1 && hits <= 2, `five arrows, at most two in one monster (${hits})`);
+}
+// 무영난무: untouchable, seven blinks among the monsters near, marked first, then home
+{
+  const W = world("난무", { wk: "dagger", wm: { dagger: 20 }, job: "thief" });
+  const p = W.p, x0 = p.x, y0 = p.y;
+  const [a, b] = W.mobs([[40, 0], [-30, 20]]);
+  b.mk = 4; b.mkAt = W.now + 9000;
+  assert.ok(W.act({ t: "sk", id: "flurry", a: 0 }).ok);
+  assert.ok(W.step(150).me[8] & 16, "others see the dance");
+  assert.ok(Math.hypot(p.x - b.x, p.y - b.y) < 20, "the marked one first");
+  assert.equal(b.mk, 0, "its marks are cashed in");
+  assert.equal(W.act({ t: "sk", id: "ambush" }).error, "무영난무 중입니다");
+  const vs = run(W, 25);
+  assert.equal(fx(vs, p.eid).filter((c) => c === 86).length, 6, "seven blinks in all");
+  assert.ok(!p.dance && Math.abs(p.x - x0) < 1 && Math.abs(p.y - y0) < 1, `and home again (${JSON.stringify(p.dance)} ${W.now} ${p.x - x0} ${p.y - y0})`);
+  assert.ok(hurt(a) && hurt(b));
+}
+// 불멸의 성역: costs HP, wards the party inside, drains the monsters inside
+{
+  const W = world("성역", { wk: "sword", wm: { sword: 20, book: 20 }, job: "darkknight" });
+  const p = W.p;
+  W.mobs([[30, 0], [-30, 10]]);
+  p.hp = 1000; p.mp = 999;
+  assert.ok(W.act({ t: "sk", id: "sanctuary", a: 0 }).ok);
+  assert.equal(p.hp, 800, "a fifth of the HP");
+  W.step(200);
+  assert.ok(p.sanctAt > W.now, "warded inside");
+  assert.equal(SK.sanctuary.autoHp, 0.6, "auto-hunt keeps it for when HP is above 60%");
+}
+
+// ═════════ the hybrid: both passives on with either weapon; swapping keeps the gauges
+{
+  const W = world("마검", { wk: "sword", wk2: "staff", wm: { sword: 20, staff: 20 }, job: "spellblade" });
+  const p = W.p;
+  let s = W.self();
+  const on = (sv, id) => sv.sk.find((x) => x[0] === id)[3];
+  assert.ok(on(s, "inertia") && on(s, "reso"), "both passives with the sword");
+  assert.equal(s.cr.k, "inertia"); assert.equal(s.cr.o.k, "reso", "the other weapon's gauge rides along");
+  assert.equal(on(s, "fireball"), 0, "the staff's own skills need the staff");
+  assert.equal(on(s, "crimson"), 1, "the fusion signature works with either");
+  W.mobs([[20, 0]]);
+  W.act({ t: "atk", a: 0 });
+  assert.equal(p.inert, 1);
+  assert.ok(W.act({ t: "wsw" }).ok);
+  s = W.self();
+  assert.equal(s.wk, "staff");
+  assert.ok(on(s, "inertia") && on(s, "reso") && on(s, "fireball") && on(s, "crimson"), "both passives with the staff too");
+  assert.equal(p.inert, 1, "a swap keeps the gauges");
+  assert.equal(s.cr.k, "reso"); assert.equal(s.cr.o.k, "inertia");
+  // a single job sees only its own weapon's passive on in hand
+  const O = world("외길", { wk: "sword", wm: { sword: 20, staff: 20 }, job: "swordsman" });
+  const so = O.self();
+  assert.equal(on(so, "reso"), 0, "a single job does not carry the staff's passive in a sword hand");
+}
+
+// ═════════ the bar: a skill a mastery level opens goes on it; a job's signature too
+{
+  const W = world("단축", { wk: "spear", wm: { spear: 9 } });
+  const p = W.p, ch = W.ch;
+  assert.deepEqual(ch.qs.filter(Boolean), [["s", "spiral"]], "a hero's bar starts with what the hand can use");
+  const [m] = W.mobs([[30, 0]], 1);
+  ch.wm.spear.xp = 22 * 81 - 1;
+  W.act({ t: "atk", a: 0 });
+  const v = W.step();
+  assert.equal(ch.wm.spear.lv, 10);
+  assert.deepEqual(ch.qs[1], ["s", "comet"], "the new active takes the next slot");
+  assert.ok(!ch.qs.some((x) => x && x[1] === "tip"), "a passive never goes on the bar");
+  assert.ok((v.toast || []).some((t) => t.includes("[유성창]") && t.includes("[창끝의 거리]")), "the toast names both");
+  void m;
+  ch.wm.spear.lv = 20; ch.gold = 1e5;
+  L.runtime(W.S, p.map).n--; p.map = "town"; L.runtime(W.S, "town").n++; p.sendMap = true;
+  const arsen = W.step().map.npcs.find((n) => n.role === "job");
+  p.x = arsen.x * T + 8; p.y = arsen.y * T + 30; p.mvAt = W.now;
+  const r = W.act({ t: "job_change", j: "lancer" });
+  assert.ok(r.ok, r.error);
+  assert.ok(ch.qs.some((x) => x && x[1] === "dragon"), "the signature joins the bar on the job change");
+}
+
+// ═════════ the wire and defs
+{
+  const W = world("전선", { wk: "staff", wm: { staff: 20, book: 3 }, job: "wizard" });
+  const s = W.self();
+  assert.ok(!("skm" in s) && !("cds" in s) && !("lc" in s), "the old fields are gone");
+  assert.deepEqual(s.sk.map((x) => x[0]), ["slash", "ambush", "spiral", "fireball", "frostring", "reso", "soulbolt", "pierce", "meteor"], "every skill learned, in order (every weapon's first, and other weapons' too)");
+  for (const [id, mp, cd, use] of s.sk) {
+    assert.ok(Number.isInteger(mp) && Number.isInteger(cd) && (use === 0 || use === 1), id);
+    assert.equal(use, SK[id].wk === "staff" ? 1 : 0, id + " usable only with the staff in hand");
+  }
+  assert.ok(!("legacyCls" in D) && D.mech && !("grit" in D.mech), "no class kit left in defs");
+}
+console.log("skills ok — 30 skills, six passives, signatures, hybrids, the bar and the wire");

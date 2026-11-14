@@ -45,7 +45,8 @@ export function newChar(name, look, oldLook) {
     // 차원 균열 clears today (Phase 2: the daily count), by the day number they were made on
     dim: { day: 0, n: 0 },
     wh:{ items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
-    qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
+    // the old dagger's first skill is on the bar from the start
+    qs: [["s", "ambush"], ...QS_EMPTY().slice(1)], cos: cosEmpty(), sq: sqEmpty(),
     // the bag's size and a house of one's own (v10: 46-bag.js, 64-housing.js)
     bagCap: INV_BASE, house: homeEmpty(),
     // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
@@ -59,7 +60,8 @@ const OLD_ID = { c_1: "r_2", c_2: "n_3", c_3: "r_4" };
 /** Bring a sheet saved by an older version up to the current shape. */
 function migrate(ch) {
   // the four-class days (v ≤ 9): a jobless hero of level 4L−3, everything paid back (45-jobs.js)
-  if (typeof ch.cls === "string" && !ch.job) migrateV10(ch);
+  const fourClass = typeof ch.cls === "string" && !ch.job;
+  if (fourClass) migrateV10(ch);
   delete ch.cls; delete ch.tr; delete ch.skl;
   cleanJobs(ch);
   // an older, shorter look is padded with "as before"
@@ -133,7 +135,10 @@ function migrate(ch) {
   const opt = isObj(ch.opt) ? ch.opt : {};
   ch.opt = { filter: clamp(opt.filter | 0, 0, 2), ahp: clamp(opt.ahp | 0, 0, 90), amp: clamp(opt.amp | 0, 0, 90) };
   // the quick slots 1–9: sheets from before them start with all nine empty
+  // (a bar from before weapon skills held ["s", index] into a class kit: those go, and what the hand can use goes on)
+  const oldKit = Array.isArray(ch.qs) && ch.qs.some((v) => Array.isArray(v) && v[0] === "s" && typeof v[1] === "number");
   ch.qs = QS_EMPTY().map((_, i) => (Array.isArray(ch.qs) && ch.qs[i] && qsOk(ch, ch.qs[i]) ? ch.qs[i].slice() : null));
+  if (oldKit || fourClass) for (const id of qsStarter(ch)) qsLearn(ch, id);
   // the wardrobe (v7): owned cosmetics and the one worn in each slot
   ch.cos = cosClean(ch.cos, ch);
   // side quests from the world map editor (v8): what is under way and what is done
@@ -153,7 +158,7 @@ function migrate(ch) {
   return ch;
 }
 
-/** The quick slots under keys 1–9: each is empty, a skill (["s", index]) or a usable item (["i", id]). */
+/** The quick slots under keys 1–9: each is empty, a skill (["s", id]) or a usable item (["i", id]). */
 const QS_N = 9;
 const QS_EMPTY = () => Array(QS_N).fill(null);
 const QS_USE = ["pot", "food", "camp", "scroll", "buff", "pet"];
@@ -161,8 +166,8 @@ const QS_USE = ["pot", "food", "camp", "scroll", "buff", "pet"];
 function qsOk(ch, v) {
   if (v === null) return true;
   if (!Array.isArray(v) || v.length !== 2) return false;
-  // until J2 a skill is an index into the old skills of the hand's class (LEGACY_CLS)
-  if (v[0] === "s") return Number.isInteger(v[1]) && v[1] >= 0 && v[1] < SKILLS.warrior.length;
+  // a skill by id: any active or signature, learned or not, so the bar survives a change of weapon
+  if (v[0] === "s") return typeof v[1] === "string" && Object.hasOwn(SKILL, v[1]) && SKILL[v[1]].kind !== "p";
   if (v[0] === "i") return typeof v[1] === "string" && Object.hasOwn(ITEMS, v[1]) && QS_USE.includes(ITEMS[v[1]].type);
   return false;
 }
@@ -171,13 +176,15 @@ function qsOk(ch, v) {
  * A skill just learned takes the first empty quick slot, unless the player already put it on
  * the bar. Returns the key it went under (1–9), or 0 when it stayed off a full bar.
  */
-function qsLearn(ch, i) {
-  if (ch.qs.some((v) => v && v[0] === "s" && v[1] === i)) return 0;
+function qsLearn(ch, id) {
+  if (ch.qs.some((v) => v && v[0] === "s" && v[1] === id)) return 0;
   const j = ch.qs.indexOf(null);
   if (j < 0) return 0;
-  ch.qs[j] = ["s", i];
+  ch.qs[j] = ["s", id];
   return j + 1;
 }
+/** The actives a character can use with the weapon in hand (and its job's signature), in order: for a fresh bar. */
+const qsStarter = (ch) => skillsFor(ch).filter((id) => SKILL[id].kind !== "p" && !skWhy(ch, SKILL[id]));
 
 /** Counters kept for achievements (`ch.cnt`; `dim` = 차원 균열 clears). */
 const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim"];
@@ -242,7 +249,7 @@ function stats(p) {
     xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
-    spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.slowed > now && !(p.giant > now) ? SLOW : 1), spd0: c.spd0,
+    spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.vitSpd > now ? 1 + SKILL.vitals.spd : 1) * (p.slowed > now ? SLOW : 1), spd0: c.spd0,
   };
 }
 
@@ -480,9 +487,9 @@ export function addPlayer(S, pid, ch) {
   if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, aim: AIM_N / 4, hp: 1, mp: 0, dead: false, stc: null,
-    cds: [0, 0, 0, 0, 0, 0], atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
+    cds: {}, atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
-    atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, grit: 0, gritAt: 0, focus: 0, focusAt: 0, sword: null, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
+    atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, inert: 0, inertAt: 0, reso: 0, vitSpd: 0, sanctAt: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
   // a place that changed under their feet (the hunting grounds grew): the way in of that same ground
   const here = mapOf(p.map);
@@ -531,7 +538,7 @@ function changeMap(S, p, to, x, y) {
   S.maps[p.map].n--;
   S.maps[p.map].who = true;
   p.map = to; p.x = x; p.y = y;
-  classReset(p, false);
+  weaponReset(p, false);
   const rt = runtime(S, to);
   rt.n++;
   rt.who = true;

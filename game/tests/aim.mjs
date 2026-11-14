@@ -8,7 +8,7 @@ const T = 16;
 const [AIM_N, CONE] = D.aim;
 const EAST = 0, SOUTH = AIM_N / 4, WEST = AIM_N / 2, NORTH = (AIM_N * 3) / 4;
 
-/** The weapon each old class carried (until J2 it brings that class's skills); "bow" is itself. */
+/** The weapon a hero of each old class holds; "book" and "bow" are themselves. */
 const WK = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff", book: "book", bow: "bow" };
 function world(name, cls) {
   const S = L.setup();
@@ -40,8 +40,8 @@ function world(name, cls) {
   /** Back to the spot, rested, every cooldown spent, the monsters gone. */
   W.ready = () => {
     p.x = home[0]; p.y = home[1]; p.mvAt = now; p.fix = false;
-    p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.stag = 0; p.combo = 0; p.sword = null; p.dance = null; p.coinFree = false;
-    for (let i = 0; i < 6; i++) p.cds[i] = 0;
+    p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.stag = 0; p.combo = 0; p.dance = null;
+    p.cds = {};
     for (const o of W.rt.mobs) { o.dead = true; o.respAt = now + 1e12; }
   };
   /** Call up plain monsters at offsets from the player. */
@@ -56,7 +56,7 @@ function world(name, cls) {
   W.ready();
   return W;
 }
-const sk = (cls, id) => D.skills[cls].findIndex((s) => s.id === id);
+
 const hurt = (m, hp = 50000) => m.hp < hp;
 
 // ── the tables
@@ -71,7 +71,7 @@ assert.ok(D.wkinds.sword.arc > D.wkinds.dagger.arc && D.wkinds.dagger.arc > D.wk
   for (const a of [-1, AIM_N, 1.5, "3", null, true]) {
     assert.equal(W.act({ t: "atk", a }).ok, false, "atk refuses aim " + JSON.stringify(a));
     W.p.atkAt = 0;
-    assert.equal(W.act({ t: "sk", i: 0, a }).ok, false, "sk refuses aim " + JSON.stringify(a));
+    assert.equal(W.act({ t: "sk", id: "slash", a }).ok, false, "sk refuses aim " + JSON.stringify(a));
     assert.equal(W.act({ t: "mv", x: W.p.x, y: W.p.y, d: 0, a }).ok, false, "mv refuses aim " + JSON.stringify(a));
   }
   assert.equal(W.p.aim, SOUTH, "a new arrival faces down");
@@ -83,7 +83,7 @@ assert.ok(D.wkinds.sword.arc > D.wkinds.dagger.arc && D.wkinds.dagger.arc > D.wk
   assert.ok(W.act({ t: "atk", a: 9 }).ok);
   assert.equal(W.p.aim, 9, "an attack can carry its own aim");
   W.ready();
-  assert.ok(W.act({ t: "sk", i: sk("warrior", "brace"), a: NORTH }).ok);
+  assert.ok(W.act({ t: "sk", id: "slash", a: NORTH }).ok);
   assert.equal(W.p.aim, NORTH, "so can a skill");
   assert.equal(W.p.dir, 3, "and the body turns with it");
 }
@@ -139,34 +139,35 @@ for (const cls of Object.keys(WK)) {
   // a skill that picks its target looks in the cone: a coin flipped east lands on the east one
   W.ready();
   const [east, west] = W.mobs([[50, 0], [-20, 0]]);
-  assert.ok(W.act({ t: "sk", i: sk("rogue", "coin"), a: EAST }).ok);
-  assert.ok(hurt(east) && !hurt(west), "the coin goes where you aim, past a nearer monster behind");
+  assert.ok(W.act({ t: "sk", id: "ambush", a: EAST }).ok);
+  assert.ok(hurt(east) && !hurt(west), "the ambush goes where you aim, past a nearer monster behind");
   W.ready();
   const [w2, e2] = W.mobs([[-50, 0], [20, 0]]);
-  assert.ok(W.act({ t: "sk", i: sk("rogue", "swap"), a: WEST }).ok);
-  assert.ok(hurt(w2) && !hurt(e2), "the swap takes the one you aim at");
+  assert.ok(W.act({ t: "sk", id: "ambush", a: WEST }).ok);
+  assert.ok(hurt(w2) && !hurt(e2), "and takes the one you aim at");
 }
 
 // ── lines, throws and dashes go straight along the aim
 {
   const W = world("투창", "lancer");
   const [south, east] = W.mobs([[0, 40], [30, 0]]);
-  assert.ok(W.act({ t: "sk", i: sk("lancer", "javelin"), a: SOUTH }).ok);
-  assert.ok(hurt(south) && !hurt(east), "a javelin thrown south flies south, past a nearer monster to the east");
+  assert.ok(W.act({ t: "sk", id: "spiral", a: SOUTH }).ok);
+  assert.ok(hurt(south) && !hurt(east), "a thrust south runs south, past a nearer monster to the east");
   W.ready();
   const [e3, n3] = W.mobs([[40, 0], [0, -30]]);
-  assert.ok(W.act({ t: "sk", i: sk("lancer", "hook"), a: EAST }).ok);
-  assert.ok(hurt(e3) && !hurt(n3), "the hook reaches along the aim");
+  assert.ok(W.act({ t: "sk", id: "comet", a: EAST }).ok);
+  assert.ok(hurt(e3) && !hurt(n3), "the comet dash runs along the aim");
   W.ready();
   const y0 = W.p.y, x0 = W.p.x;
   W.mobs([[40, 0]]);
-  assert.ok(W.act({ t: "sk", i: sk("lancer", "hundred"), a: NORTH }).ok);
+  assert.ok(W.act({ t: "sk", id: "comet", a: NORTH }).ok);
   assert.ok(W.p.y < y0 - 6 && Math.abs(W.p.x - x0) < 1, "the charge runs north, the way you aim, not at the monster");
 
-  const V = world("검던지기", "warrior");
+  const V = world("대지가르기", "warrior");
   V.mobs([[30, 0]]);
-  assert.ok(V.act({ t: "sk", i: sk("warrior", "toss"), a: SOUTH }).ok);
-  assert.ok(V.p.sword && V.p.sword.y > V.p.y + 10 && Math.abs(V.p.sword.x - V.p.x) < 1, "a thrown sword flies along the aim");
+  const vx0 = V.p.x, vy0 = V.p.y;
+  assert.ok(V.act({ t: "sk", id: "rend", a: SOUTH }).ok);
+  assert.ok(V.p.y > vy0 + 10 && Math.abs(V.p.x - vx0) < 1, "the leap of 대지 가르기 goes along the aim, not at the monster");
 }
 
 console.log("aim ok");
