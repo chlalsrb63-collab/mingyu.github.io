@@ -4,6 +4,11 @@ The one shared guide for every AI working in this repo (Claude Code, OpenAI Code
 Gemini CLI). `CLAUDE.md` and `GEMINI.md` only import this file. Keep it accurate: when you add,
 move or split a file, update the file map here in the same commit.
 
+**Token rule #0: if the `codebase-memory` MCP tools are available** (owner's PC, see
+`docs/LOCAL_SETUP.md` §6), ask the code graph first — `search_graph`, `get_file_outline`,
+`get_code_snippet`, `trace_path`, `get_architecture`, `search_code` — instead of opening files;
+re-index after big merges (`index_repository` with `async: true`). Otherwise follow rule #1.
+
 **Token rule #1: do not re-explore.** Use the file map (§3) to open the one file you need, then
 `grep -n` for the banner or function named there instead of reading big files top to bottom.
 Run the rule tests instead of taking screenshots; take one targeted screenshot only for visual work.

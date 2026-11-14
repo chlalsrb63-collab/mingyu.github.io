@@ -185,3 +185,28 @@ git -C ..\tt-codex diff
 - 큰 파일(`src/logic.js`, `public/client.js`, `public/scene2d.js`, `public/sprites.js`)은 통째로 읽지 말라고 해 두세요
   (AGENTS.md에 이미 적혀 있습니다). `src/logic.js`는 자동 생성 파일이라 고치면 안 됩니다.
 - 긴 분석(밸런스, 전체 리뷰)은 Gemini에게, 범위가 좁은 구현은 Codex에게 맡기면 Claude의 토큰을 아낄 수 있습니다.
+
+
+---
+
+## 6. (선택) 코드 지도 MCP — codebase-memory-mcp
+
+AI가 파일을 통째로 읽지 않고 "코드 지도(그래프)"에 물어보게 해서 **토큰을 크게 아끼는 도구**입니다
+(MIT, https://github.com/DeusData/codebase-memory-mcp). 설치하면 Claude Code·Codex·Gemini CLI에
+자동으로 연결됩니다. 이 저장소의 `AGENTS.md`에 "도구가 있으면 먼저 코드 지도에 물어보라"는 규칙을
+넣어 두었습니다.
+
+1. PowerShell에서 설치 스크립트를 받아 **내용을 한 번 열어 본 뒤** 실행합니다 (외부 프로그램이므로):
+   ```powershell
+   Invoke-WebRequest -Uri https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.ps1 -OutFile cbm-install.ps1
+   notepad cbm-install.ps1
+   Unblock-File .\cbm-install.ps1
+   PowerShell -ExecutionPolicy Bypass -File .\cbm-install.ps1
+   ```
+2. 설치가 끝나면 Claude Code를 `Tales Tales` 폴더에서 열고 한 번만 이렇게 말합니다:
+   *"codebase-memory로 이 저장소를 인덱싱해 줘 (async)"* — 몇 분 걸립니다.
+3. 큰 작업을 합친 뒤에는 *"코드 지도 다시 인덱싱해 줘"*.
+
+주의: 설치 프로그램이 각 AI의 **전역 설정**(사용자 폴더의 Codex/Gemini/Claude 설정)에 연결 정보와
+안내를 추가합니다. 이 저장소의 `AGENTS.md`·`GEMINI.md`·`.gemini/settings.json`은 건드리지 않는지
+설치 후 `git status`로 확인하세요 (바뀌었다면 그 변경은 커밋하지 말고 되돌리면 됩니다).
