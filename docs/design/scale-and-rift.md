@@ -1,6 +1,6 @@
 # 사냥터 4배 확장 + 파티 전용 「차원 균열」 던전 — 설계서
 
-Status: Phase 0 done (see F. for what was built and measured); Phases 1 and 2 not started. Audience: two implementers working in parallel (Phase 1 / Phase 2) after one
+Status: Phase 0 done (F.), Phase 1 built (G.); Phase 2 not started. Audience: two implementers working in parallel (Phase 1 / Phase 2) after one
 foundation task (Phase 0). Code, identifiers and commit messages are English; every player-facing string is Korean
 (AGENTS.md rule 6). All numbers marked (measured) come from throwaway node scripts run against the built `logic.js`
 on this repo; numbers marked (est.) are estimates.
@@ -616,3 +616,84 @@ Where: `iso_ground.js` (`bakeRect`, `bake`, `bakeChunk`, `groundSize`; per-map p
   town reads "넥서스 광장".
 - Verified live (wrangler dev + `shot.mjs --live`): log in, walk town → meadow (monsters about) → forest through the
   gates, no page or worker errors.
+---------------------------------------------------------------------------------------------------------------
+
+## G. Phase 1 — as built (4× hunting grounds)
+
+Where: new part `33-maps-zones.js` (`zoneMap`, `zoneSpawns`, waypoint keys, `windTouch`), `34-maps-world.js` (`GEN`
+sizes/counts and `stones`, `genMap` calls the zoning, `markRoutes` places the extra stones, shrines, plaza fire and zone
+signs), small hooks in `36` (`MAP_META.wpn`, editor `stones`/`shrines`, quota `zone`), `40` (`migrate`, `addPlayer`,
+speed), `60`/`70`/`75` (stones and `warp`), `80` (`placeAway` zone, `windTouch`), `90` (`buffs[10]`, `defs.waypoints`).
+Client: `client.js` (warp window, `wd` event, buff), `scene2d.js` (shrine art), `art.js` (minimap tint), `uiicons.js`.
+
+### G.1 Sizes and counts (measured, node 22, this container)
+
+| map | before (w×h, reachable) | after (w×h, reachable) | cfg changes | D (walk) | safe/normal/elite/hidden tiles | pockets | cell quota (normal+elite) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| meadow | 76×51, 2402 | 152×102, 10583 | vaults 3→9, lakes 2→4, ruins 1→3 | 231 | 252/7020/3038/273 | 4 | 703 |
+| forest | 76×51, 2297 | 152×102, 10291 | vaults 3→9, ruins 2→5, lakes 1→2 | 251 | 483/6837/2707/264 | 3 | 694 |
+| crypt | 66×51, 1085 | 132×102, 4779 | leaf 150→300 | 379 | 461/2948/782/588 | 5 | 613 |
+| city | 76×51, 2066 | 152×102, 8103 | size only (metro subdivides by itself) | 277 | 214/5427/2233/229 | 3 | 640 |
+| sewer | 76×51, 1145 | 152×102, 5504 | size only | 352 | 239/3504/1336/425 | 5 | 696 |
+| cave | 66×50, 1407 | 132×100, 6266 | vaults 4→10 | 225 | 260/4121/1753/132 | 5 | 545 |
+| abyss | 76×60, 1256 | 152×120, 6507 | size only (boss arena keeps its far place) | 371 | 379/3960/1339/829 | 5 | 682 |
+| maple | 80×56, 2704 | 160×112, 12152 | vaults 4→10, ruins 2→4, lakes 1→2 | 463 | 445/8113/3468/126 | 2 | 867 |
+
+Every map: 3 waypoint stones, 2 wind shrines, a plaza fire beside the first stone plus the generator's camp, an "엘리트
+지대" sign, a "수상한 샛길" sign at the pockets' mouths. `n` of the underground generators (a per-room count) was left as
+is: `zoneSpawns` recomputes every count. No generator needed a new algorithm (no 1.5× fallback).
+
+### G.2 Budgets (measured)
+
+| item | value |
+| --- | --- |
+| module load | 20-28 ms (unchanged; nothing generated at load) |
+| build, warm (tests/maps.mjs) | meadow 86, forest 65, crypt 60, city 35, sewer 61, cave 80, abyss 57, maple 92 ms (budget < 150) |
+| first entry, cold process (`runtime()` on a fresh isolate: JIT cold) | meadow 138, forest 131, crypt 90, city 79, sewer 84, cave 107, abyss 85, maple 129 ms — one alarm tick stall per map per isolate |
+| zoning + spawns (`zoneMap` + `zoneSpawns`) | 2-20 ms of that (crypt slowest: many chest pocket searches; first ones JIT-cold) |
+| `mapPayload` JSON | 28-41 KB per 4× map (city 41.1, abyss 38.5, maple 37.9, meadow 35.0); town 5.4 KB. `zq` adds ≈ 1 KB. RLE (B.4c) not done |
+| awake monsters | one hunter at an entrance: 230 (the cap) after 1.5 s on every map but the crypt (207), none in the plaza: `WAKE_R` 3 cells is 112 × 112 tiles, most of a 4× map, so the cap (nearest cells first) is what bounds it |
+| client ground bake | before chunking landed (headless Chromium, whole bake of the real 4× maps): 2 frames 4064×2056 (meadow/forest/city/sewer, 64 MB), 3744×1896 (crypt 54 MB), 3712×1880 (cave 53 MB), 4352×2200 (abyss/maple 73 MB); `bakeGround` 244-535 ms; whole `loadMap` 0.7-1.2 s. With F.3's chunks (maps > 80×60 chunk by themselves) arrival is 2-4 chunks and ≤ 48 MB — the F.3 table holds for these maps (it was measured on a 4× dump of the same sizes) |
+
+### G.3 Deviations from C (decided while building)
+
+1. **Stones on the v9 sheet (F.4).** `ch.wp[id]` bit `i` = stone `i`; `explore` wakes the bit of the stone you stand
+   by, `warp {to, i?}` checks it; `migrate` also drops bits past the map's `MAP_META[id].wpn` (known without
+   building). `WP[id]` stays the first stone (events, boss spot and editor code read it) instead of becoming a list;
+   every stone is in `m.stones` (`{x, y, ax, ay, i}`, `stonesOf(m)`). A warp to another stone of the same map moves
+   the player without resending the map. `defs().waypoints[]` gained `n` and `names` (입구 · 중턱 · 안쪽);
+   `wpall` still asks for stone 0 of every map.
+2. **Elite share.** 0.55 D alone made 40-60% of a map elite (most ground lies deep): elite now starts at
+   `max(0.55 D, the walk beyond which only ELITE_SHARE = 30% of the ground lies)`. The doc's 0.85 D upper cut is gone:
+   everything past the elite cut that is not a pocket is elite.
+3. **Hidden pockets** are found from the chests, not from region leaves (works for every generator): from a chest, the
+   largest dead end round it (`{tiles walked further than L}` connected to the chest) whose mouth (tiles at exactly L)
+   is ≤ 3 tiles wide and that holds 10-260 tiles, no door, gate or fire; chest ≥ 0.3 D deep; at most 5 per map, deepest
+   first. Other chests stay in the open with the colonies round them. Each pocket gets one fixed elite guardian
+   (`el:1`, the generator's keeper kind there, else the roster kind for that depth) halfway between mouth and chest.
+   The pocket sign is always there (no "after discovery" state).
+4. **Safe ground** is also a 5-step ring round the arrival tiles of every gate someone can arrive by (not one-way
+   exits: the crypt's guardian by its way out stays).
+5. **Spawns**: `zoneSpawns` replaces the generator's roster spawns and the old crowd pass (`crowdUp`, `CROWD_MAX` are
+   gone). Per 8×8 block and zone: `n = open tiles × ZONE_DENS / DENSITY` (carried over), kind = roster sorted by level,
+   normal ground by progress through it (top 85% of the roster), elite ground the stronger half with `ep 0.35`; a
+   block of ≥ 4 takes two neighbouring kinds. Chests, bosses, guards, the maple lair guard and its pack stay as the
+   generator put them. Each quota carries `zone`; `placeAway` only uses tiles of that zone (no monster ever appears in
+   the plaza or a pocket).
+6. **질주의 바람** uses its own `p.wind` (×`WIND_K` 1.3, 20 s, 60 s per shrine per player, touched within 26 px), not
+   `spdBuff` (×1.4, skills); the two do not stack (`spdBuff` wins). Wire: `self.buffs[10]`, event `["wd", eid, x, y]`.
+7. **Minimap tint** (`mapPayload.zq`, one char per 4×4 block) is always shown for safe (cool) and elite (red);
+   pockets are never tinted. Not gated by owning a stone.
+8. **Editor format**: `stones` and `shrines` added (SCHEMA.md); `mapToEditor` also writes `spawns[].zone`, which an
+   editor map ignores (editor maps are never zoned). Round trip test kept. The editor UI does not place stones or
+   shrines yet: it keeps what the file has only if it keeps unknown fields.
+9. **Migration**: `addPlayer` moves a sheet whose (x, y) is not standable or not reachable to that same map's entrance
+   with the toast "지형이 넓어져 입구로 이동했습니다." (safe maps without the toast); `migrate` clamps x, y into the map.
+
+### G.4 Known issues / left for others
+
+- The minimap of a 4× map is shrunk into the same frame (half-scale `renderMini`, dots drawn 2× to stay readable).
+- Payload 28-41 KB per arrival: acceptable per B.3; RLE left out (F.3 measured it saves little on the overworld).
+- Cold first entry ≈ 80-140 ms per map per isolate (one tick late, once).
+- The `wpall` achievement still means "the first stone of every map" (F.4's rule).
+- Rift invasion waves gather at the first stone, which now stands in the safe plaza by the entrance (as C.3 says).
