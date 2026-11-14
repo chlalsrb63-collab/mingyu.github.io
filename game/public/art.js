@@ -9,6 +9,8 @@
  *     which is what makes it read as a hand-held-era sprite.
  */
 
+import * as WPN from "./weapons.js";
+
 export const TILE = 16;
 
 export function canvas(w, h) {
@@ -893,7 +895,7 @@ export function buildIcons(items) {
     food_s: fishIcon("#c88a4a", "#e8b878", true), food_m: fishIcon("#d87a5a", "#f0b890", true), food_l: fishIcon("#e8a030", "#ffe090", true), burnt: fishIcon("#3a3038", "#5a4a50", true), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem() };
   for (const id of Object.keys(items)) {
     const it = items[id];
-    if (it.type === "weapon") cv[id] = weaponIcon(it.wk, it.tier);
+    if (it.type === "weapon") cv[id] = WPN.DESIGNS[it.wk] ? WPN.weaponIcon(it.wk, it.tier) : weaponIcon(it.wk, it.tier);
     else if (it.type === "armor") cv[id] = armorIcon(it.tier);
     else if (it.type === "helm") cv[id] = helmIcon(it.tier);
     else if (it.type === "gloves") cv[id] = glovesIcon(it.tier);

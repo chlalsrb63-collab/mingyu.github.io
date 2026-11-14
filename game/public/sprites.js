@@ -13,6 +13,8 @@
  */
 
 /** Every sheet is 32×32. Weapons and monsters are drawn at twice that and halved. */
+import * as WPN from "./weapons.js";
+
 export const SIZE = 32;
 const S = 32, BIG = 64;
 /** Where the feet touch the ground, and the grip a weapon pivots on. */
@@ -338,6 +340,8 @@ export function weaponKind(cls, gear = {}) {
  */
 export function weaponSprite(kind, gear = {}) {
   if (!HOLD[kind]) kind = weaponKind(kind, gear);
+  // every tier, legendary, set, skin and glow has its own look (weapons.js)
+  if (WPN.DESIGNS[kind]) return WPN.weaponSprite(kind, gear);
   const wt = Math.max(1, Math.min(5, gear.wt | 0 || 1)), wq = Math.max(0, Math.min(4, gear.wq | 0));
   const key = `w:${kind}:${wt}:${wq}`;
   let c = cache.get(key);
