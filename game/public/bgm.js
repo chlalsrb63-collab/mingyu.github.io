@@ -6,7 +6,10 @@
 // for hits or soft hits. See audio.js for the Web Audio voices and scheduler.
 // "double" quietly doubles longer melody notes one octave down.
 
+import { COAST_THEMES } from "./bgm-regions.js";
+
 export const TRACKS = {
+  ...COAST_THEMES,
   // D major · the title screen gradually opens into a half-time future-bass hook
   title: {
     bpm: 140, lead: "keys", vol: 0.115, bass: "sub", bassVol: 0.13, comp: "bell", compVol: 0.027,
@@ -526,6 +529,51 @@ export const TRACKS = {
         "F5:6 E5:2 D5:8  B4:4 D5:4 G5:8  E5:6 F5:2 G5:4 C6:4  A5:12 -:4  D6:6 C6:2 A5:4 F5:4  G#5:4 B5:4 E5:8  A5:4 C6:4 E6:4 C6:4  A5:12 -:4"],
     },
     form: "A B A",
+  },
+  // Frostkeep · E minor; felt-piano lantern motif, a rising flute answer, then a quiet return.
+  frostkeep: {
+    bpm: 76, lead: "felt", vol: 0.155,
+    bass: "felt", bassVol: 0.125, bassPat: "R.......F.......",
+    comp: "felt", compVol: 0.068, compPat: "0.2.1.2.4.2.1.2.",
+    pad: false, padType: "strings", padVol: 0.025, delay: 0.29,
+    sections: {
+      A: ["Em7 Cmaj7 Gadd9 Dsus Am7 Em7 Cmaj7 B7",
+        `
+          -:2 G4:2 B4:3 E5:5 D5:2 B4:2
+          C5:5 E5:3 G5:5 E5:3
+          D5:4 B4:2 A4:2 G4:6 -:2
+          A4:5 D5:3 E5:2 A4:4 -:2
+          -:2 C5:3 A4:3 E5:6 G5:2
+          B5:4 A5:2 G5:3 E5:5 -:2
+          G5:4 E5:3 D5:3 C5:4 -:2
+          D#5:3 F#5:3 A5:4 F#5:2 B4:4
+        `],
+      B: ["Gadd9 Dsus Em7 Cmaj7 Am7 D Gadd9 B7",
+        `
+          D5:2 G5:4 A5:2 B5:6 -:2
+          A5:4 F#5:2 G5:4 D5:4 -:2
+          E5:3 G5:3 B5:4 D6:3 B5:3
+          C6:6 G5:3 E5:3 D5:4
+          E5:4 A5:3 C6:6 A5:3
+          F#5:4 A5:2 D6:4 A5:4 -:2
+          B5:5 A5:3 G5:6 D5:2
+          F#5:4 D#5:3 B4:5 -:4
+        `,
+        { lead: "flute", vol: 0.115, double: "felt", pad: true, compVol: 0.055 }],
+      C: ["Cmaj7 Gadd9 Am7 Em7 Cmaj7 Am7 B7 Em7",
+        `
+          -:4 E5:3 G5:3 B5:4 G5:2
+          A5:4 G5:4 D5:3 B4:3 -:2
+          -:2 A4:2 C5:3 E5:5 D5:2 C5:2
+          B4:4 G4:3 E4:5 -:4
+          E4:4 G4:4 B4:5 E5:3
+          A4:4 C5:3 B4:2 E5:5 -:2
+          D#5:6 F#5:2 B4:4 A4:4
+          G4:4 E4:8 -:4
+        `,
+        { pad: true, padVol: 0.014, bassPat: "R...............", compPat: "0...2...4.......", compVol: 0.048 }],
+    },
+    form: "A B C",
   },
   town_night: {
     bpm: 72, lead: "bell", vol: 0.1, bass: "tri", comp: "pluck", pad: true, padVol: 0.022, delay: 0.24,
