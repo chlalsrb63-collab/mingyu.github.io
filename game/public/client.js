@@ -17,6 +17,7 @@ import * as Mini from "./minigames.js";
 import { skillIconUrl } from "./skillicons.js";
 import { icon, iconImg, iconUrl, MENU_ICON, CLASS_ICON, BUFF_ICON, TRAIT } from "./uiicons.js";
 import * as SP from "./sprites.js";
+import * as MobArt from "./mobart.js";
 import * as Emo from "./emoticons.js";
 import * as Growth from "./growth.js";
 import * as Wardrobe from "./wardrobe_ui.js";
@@ -304,6 +305,7 @@ const heightOf = (e) => e.h3 || 1.3;
 
 function onEvent(e, t) {
   if (SkillFx.skillEvent(e, { G, S3, Sound, entityPos, heightOf, t })) return;
+  MobArt.onEvent(e, G, S3, t);              // wind-ups, strikes and the bodies monsters leave
   switch (e[0]) {
     case "a": {
       const [, eid, kind, tx, ty] = e;

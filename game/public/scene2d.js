@@ -20,6 +20,7 @@ import * as SP from "./sprites.js";
 import * as DC from "./decor.js";
 import * as IT from "./isotiles.js";
 import * as Art from "./art.js";
+import * as MA from "./mobart.js";
 
 const T = 32, P = 2;
 /** Iso pixels per server unit along the screen's x; y is half that. Height lifts by 26 px per unit `h`. */
@@ -1869,6 +1870,8 @@ export function render(focusX, focusY, dt, t, snap) {
       const m = o.m, kind = G.defs.mobs[m.k].sp, x = o.X, y = o.Y, el = m.el | 0;
       // an elite wears the colour of its first trait; a recoloured kind wears its own
       const tint = (m.tr && TRAIT_TINT[m.tr[0]]) || G.defs.mobs[m.k].tint || null;
+      // the quarter-view cast: four facings and a pose for every moment (mobart.js)
+      if (MA.has(kind)) { MA.draw(g, m, G.defs.mobs[m.k], tint, state("m" + m.id, "q", () => ({})), t, x, y, parts, G); continue; }
       const s = state("m" + m.id, kind + ":" + el + ":" + (tint || ""), () => { const z = SP.MOB_SIZE[kind] || [1, 0]; return { frames: SP.monsterSheet(kind, tint), size: z[0] * (el === 2 ? 2 : 1), hover: z[1] * (el === 2 ? 1.5 : 1), px: m.x, py: m.y }; });
       // sprites face left; they turn by which way they move across the screen
       const sdx = (m.x - s.px) - (m.y - (s.py ?? m.y));

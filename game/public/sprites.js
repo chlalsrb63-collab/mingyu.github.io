@@ -16,6 +16,7 @@
 import * as WPN from "./weapons.js";
 import * as WR from "./wardrobe.js";
 import * as SPC from "./species.js";
+import * as MobArt from "./mobart.js";
 WR.useSpecies(SPC);
 
 export const SIZE = 32;
@@ -1212,6 +1213,8 @@ function tinted(src, name) {
  * a plain blob rather than an error, and an unknown tint gets the creature as drawn.
  */
 export function monsterSheet(kind, tint) {
+  // the quarter-view cast (mobart.js): its two breathing frames, cut to size
+  if (MobArt.has(kind)) return [MobArt.icon(kind, tint, 0), MobArt.icon(kind, tint, 1)];
   kind = MOB_ALIAS[kind] || kind;
   if (!TINT[tint]) tint = "";
   const key = "m:" + kind + (tint ? ":" + tint : "");
