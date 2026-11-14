@@ -340,7 +340,7 @@ const bagCost = (cap) => (cap >= INV_MAX ? 0 : BAG_COST[Math.max(0, Math.floor((
  * column 0, the cut-down front on the last row and column), `furn` how many pieces it holds
  * (not rugs: `rugs` rug tiles more), `store` how many of them may be storage furniture. 10,000 G is a few hours of
  * Lv.15–20 hunting (beside the 꼬마 박쥐 pet); 40,000 and 120,000 G are the big sinks of the
- * middle and late game (the job change is 5,000 / 20,000 G).
+ * middle and late game (the job change is 1,000 / 5,000 G).
  */
 const HOUSE_TIER = [
   null,

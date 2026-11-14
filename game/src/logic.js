@@ -141,6 +141,9 @@ const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow"], WM_MAX = 
 const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활" };
 /** Mastery a single job asks for in its weapon; a hybrid asks HYB_WM in both of its two. */
 const JOB_WM = 20, HYB_WM = 15;
+const JOB_COST = 1000, HYB_COST = 5000;
+// Eligible PvE kills boost character XP through 30, then taper to the regular reward at 40.
+const HUNT_EARLY = { full: 30, end: 40, ahead: 3, extra: 0.6 };
 
 /** Scaling grades and what they are worth. */
 const GRADE = { S: 1.0, A: 0.85, B: 0.7, C: 0.5, D: 0.3 };
@@ -156,36 +159,36 @@ const SCALE = {
 /** A single job adds this to both of its weapon's coefficients. */
 const JOB_PLUS = 0.1;
 /**
- * The jobs. `single`: one weapon, mastery 20 (JOB_WM), 5,000 G. `hybrid`: stay a 모험가 until both weapons
- * of the pair reach 15 (HYB_WM), 20,000 G; `scale` replaces the table for both weapons. One hybrid for each
+ * The jobs. `single`: one weapon, mastery 20 (JOB_WM), 1,000 G. `hybrid`: stay a 모험가 until both weapons
+ * of the pair reach 15 (HYB_WM), 5,000 G; `scale` replaces the table for both weapons. One hybrid for each
  * of the 15 pairs. Scale budget: two weapons with different main stats → 0.8 + 0.8 and the two second stats
  * 0.3 each (≈ 2.2); a shared main or second stat folds into fewer, bigger coefficients (≈ 1.6–2.2).
  * Ids are frozen (persisted).
  */
 const JOBS = {
   adventurer: { name: "모험가", kind: "none", wk: [], cost: 0 },
-  swordsman: { name: "대검전사", kind: "single", wk: ["sword"], cost: 5000 },
-  thief: { name: "도적", kind: "single", wk: ["dagger"], cost: 5000 },
-  lancer: { name: "창술사", kind: "single", wk: ["spear"], cost: 5000 },
-  wizard: { name: "마법사", kind: "single", wk: ["staff"], cost: 5000 },
-  warlock: { name: "마도사", kind: "single", wk: ["book"], cost: 5000 },
-  archer: { name: "궁수", kind: "single", wk: ["bow"], cost: 5000 },
-  spellblade: { name: "마검사", kind: "hybrid", wk: ["sword", "staff"], scale: { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 }, cost: 20000 },
-  tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.8, luk: 0.8 }, cost: 20000 },
-  dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: 20000 },
-  hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wil: 0.3 }, cost: 20000 },
-  stormrider: { name: "폭풍기수", kind: "hybrid", wk: ["spear", "bow"], scale: { str: 0.8, dex: 0.8, wis: 0.3, luk: 0.3 }, cost: 20000 },
-  darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.8, str: 0.8, int: 0.3 }, cost: 20000 },
+  swordsman: { name: "대검전사", kind: "single", wk: ["sword"], cost: JOB_COST },
+  thief: { name: "도적", kind: "single", wk: ["dagger"], cost: JOB_COST },
+  lancer: { name: "창술사", kind: "single", wk: ["spear"], cost: JOB_COST },
+  wizard: { name: "마법사", kind: "single", wk: ["staff"], cost: JOB_COST },
+  warlock: { name: "마도사", kind: "single", wk: ["book"], cost: JOB_COST },
+  archer: { name: "궁수", kind: "single", wk: ["bow"], cost: JOB_COST },
+  spellblade: { name: "마검사", kind: "hybrid", wk: ["sword", "staff"], scale: { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 }, cost: HYB_COST },
+  tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.8, luk: 0.8 }, cost: HYB_COST },
+  dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: HYB_COST },
+  hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wil: 0.3 }, cost: HYB_COST },
+  stormrider: { name: "폭풍기수", kind: "hybrid", wk: ["spear", "bow"], scale: { str: 0.8, dex: 0.8, wis: 0.3, luk: 0.3 }, cost: HYB_COST },
+  darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.8, str: 0.8, int: 0.3 }, cost: HYB_COST },
   // the hybrid expansion: the other nine pairs (docs/design/jobs-and-stats.md "Hybrid expansion")
-  bladedancer: { name: "검무사", kind: "hybrid", wk: ["sword", "dagger"], scale: { str: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: 20000 },
-  breaker: { name: "파진사", kind: "hybrid", wk: ["sword", "spear"], scale: { str: 0.9, wil: 0.5, wis: 0.4 }, cost: 20000 },
-  arcblade: { name: "검궁사", kind: "hybrid", wk: ["sword", "bow"], scale: { str: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: 20000 },
-  shadowlance: { name: "섬창사", kind: "hybrid", wk: ["dagger", "spear"], scale: { dex: 0.8, str: 0.8, luk: 0.3, wis: 0.3 }, cost: 20000 },
-  trickster: { name: "환술사", kind: "hybrid", wk: ["dagger", "staff"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wis: 0.3 }, cost: 20000 },
-  spellspear: { name: "마창사", kind: "hybrid", wk: ["spear", "staff"], scale: { str: 0.8, int: 0.8, wis: 0.6 }, cost: 20000 },
-  runesage: { name: "룬술사", kind: "hybrid", wk: ["staff", "book"], scale: { int: 0.8, wis: 0.3, wil: 0.3 }, cost: 20000 },
-  spellarcher: { name: "마궁사", kind: "hybrid", wk: ["staff", "bow"], scale: { int: 0.8, dex: 0.8, wis: 0.3, luk: 0.3 }, cost: 20000 },
-  runearcher: { name: "각인궁사", kind: "hybrid", wk: ["book", "bow"], scale: { int: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: 20000 },
+  bladedancer: { name: "검무사", kind: "hybrid", wk: ["sword", "dagger"], scale: { str: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: HYB_COST },
+  breaker: { name: "파진사", kind: "hybrid", wk: ["sword", "spear"], scale: { str: 0.9, wil: 0.5, wis: 0.4 }, cost: HYB_COST },
+  arcblade: { name: "검궁사", kind: "hybrid", wk: ["sword", "bow"], scale: { str: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: HYB_COST },
+  shadowlance: { name: "섬창사", kind: "hybrid", wk: ["dagger", "spear"], scale: { dex: 0.8, str: 0.8, luk: 0.3, wis: 0.3 }, cost: HYB_COST },
+  trickster: { name: "환술사", kind: "hybrid", wk: ["dagger", "staff"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wis: 0.3 }, cost: HYB_COST },
+  spellspear: { name: "마창사", kind: "hybrid", wk: ["spear", "staff"], scale: { str: 0.8, int: 0.8, wis: 0.6 }, cost: HYB_COST },
+  runesage: { name: "룬술사", kind: "hybrid", wk: ["staff", "book"], scale: { int: 0.8, wis: 0.3, wil: 0.3 }, cost: HYB_COST },
+  spellarcher: { name: "마궁사", kind: "hybrid", wk: ["staff", "bow"], scale: { int: 0.8, dex: 0.8, wis: 0.3, luk: 0.3 }, cost: HYB_COST },
+  runearcher: { name: "각인궁사", kind: "hybrid", wk: ["book", "bow"], scale: { int: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: HYB_COST },
 };
 
 /**
@@ -203,8 +206,8 @@ const SFX = {
   /** graze% = graze[0] + graze[1]·tiers above + boss·graze[2] − mastery, within [0, graze[3]] */
   graze: [10, 3, 10, 60], grazeK: 0.5,
 };
-/** Weapon mastery gains: a hit action (+1, a skill +2) on a monster no more than `lowTier` tiers below you; a kill pays by rank. */
-const WM_GAIN = { hit: 1, skill: 2, lowTier: 8, kill: [1, 4, 10], boss: 20 };
+/** A hit grants mastery once per action. Kills add tier/rank credit and, before job mastery, capped practice XP. */
+const WM_GAIN = { hit: 1, skill: 2, lowTier: 8, kill: [1, 4, 10], boss: 20, earlyHit: 5, earlyKill: 3.55, earlyXpMax: 60 };
 
 /**
  * Stat templates (shares of the points above 5), by weapon kind: the migration of the old four classes
@@ -683,7 +686,7 @@ const bagCost = (cap) => (cap >= INV_MAX ? 0 : BAG_COST[Math.max(0, Math.floor((
  * column 0, the cut-down front on the last row and column), `furn` how many pieces it holds
  * (not rugs: `rugs` rug tiles more), `store` how many of them may be storage furniture. 10,000 G is a few hours of
  * Lv.15–20 hunting (beside the 꼬마 박쥐 pet); 40,000 and 120,000 G are the big sinks of the
- * middle and late game (the job change is 5,000 / 20,000 G).
+ * middle and late game (the job change is 1,000 / 5,000 G).
  */
 const HOUSE_TIER = [
   null,
@@ -5744,16 +5747,19 @@ function deriveStats(p) {
 // ── weapon mastery
 
 /** Mastery experience for the weapon in hand; levels it up (events, toasts, the skills it opens go on the bar). */
-function gainWm(S, p, n) {
-  const ch = p.ch;
-  if (!ch.eq.weapon || !(n > 0)) return;
-  const wk = ITEMS[ch.eq.weapon.id].wk, r = ch.wm[wk];
+function gainWm(S, p, n, bonus) {
+  const ch = p.ch, wk = inHand(ch);
+  if (!wk || !(n > 0)) return;
+  const r = ch.wm[wk];
   if (r.lv >= WM_MAX) return;
-  r.xp += Math.round(n);
+  const gain = n + (r.lv < JOB_WM ? bonus : 0);
+  r.xp += gain;
   p.dirty = true;
   while (r.lv < WM_MAX && r.xp >= wmNeed(r.lv)) {
     r.xp -= wmNeed(r.lv);
     r.lv++;
+    // Any excess at job mastery returns to the normal earning rate.
+    if (r.lv === JOB_WM) r.xp = Math.floor(r.xp * n / gain);
     p.stc = null;
     S.maps[p.map].ev.push(["wm", p.eid, WK_ORDER.indexOf(wk), r.lv]);
     saveSoon(p);
@@ -5773,17 +5779,17 @@ function gainWm(S, p, n) {
   }
   if (r.lv >= WM_MAX) r.xp = 0;
 }
-/**
- * A blow from `p` landed on `mob`: the action it came from (a basic attack +1, a skill +2) counts once,
- * if the monster is worth it (no more than WM_GAIN.lowTier tiers below; never a chest or a still thing).
- */
+/** Combat credit requires a real mob no more than WM_GAIN.lowTier tiers below the player. */
+function wmEligible(p, d) {
+  return !d.chest && !d.still && d.lv >= toTier(p.ch.lvl) - WM_GAIN.lowTier;
+}
+/** A landed basic attack or skill counts once, including volleys and attacks that hit several mobs. */
 function wmHit(S, p, mob) {
-  const d = MOBS[mob.k];
-  if (d.chest || d.still || d.lv < toTier(p.ch.lvl) - WM_GAIN.lowTier) return;
+  if (!wmEligible(p, MOBS[mob.k])) return;
   const [a, n] = p.hitAct || [p.actN | 0, p.actGain | 0];
   if (!a || a <= (p.wmAct | 0)) return;
   p.wmAct = a;
-  gainWm(S, p, n);
+  gainWm(S, p, n, n * (WM_GAIN.earlyHit - 1));
 }
 /** A new action (`skill` true for a skill): blows it lands until the next one count toward its mastery. */
 function newAct(p, skill) {
@@ -5794,8 +5800,14 @@ function newAct(p, skill) {
 function wmKill(S, rt, mob) {
   const d = MOBS[mob.k];
   if (d.chest || d.still) return;
-  const n = (1 + Math.floor(d.lv / 2)) * WM_GAIN.kill[mob.el | 0] * (d.boss ? WM_GAIN.boss : 1);
-  for (const pid of Object.keys(mob.by)) { const p = S.players[pid]; if (p && p.map === rt.id && !p.dead) gainWm(S, p, n); }
+  const rank = WM_GAIN.kill[mob.el | 0];
+  const n = (1 + Math.floor(d.lv / 2)) * rank * (d.boss ? WM_GAIN.boss : 1);
+  const bonus = Math.round(Math.min(d.xp, WM_GAIN.earlyXpMax) * WM_GAIN.earlyKill * rank);
+  for (const pid of Object.keys(mob.by)) {
+    const p = S.players[pid];
+    if (!p || p.map !== rt.id || p.dead || !wmEligible(p, d)) continue;
+    gainWm(S, p, n, bonus);
+  }
 }
 
 // ── accuracy, evasion, stagger
@@ -6439,10 +6451,11 @@ function killMob(S, rt, mob) {
   // everyone who hit it, plus their party members standing nearby, shares the kill
   const looters = new Set();
   let top = null, topDmg = 0;
-  for (const pid of Object.keys(mob.by)) {
+  const hitters = mob.by;
+  for (const pid of Object.keys(hitters)) {
     const p = S.players[pid];
     if (!p || p.map !== rt.id) continue;
-    if (mob.by[pid] > topDmg) { top = p; topDmg = mob.by[pid]; }
+    if (hitters[pid] > topDmg) { top = p; topDmg = hitters[pid]; }
     for (const o of allies(S, p)) if (!o.dead) looters.add(o);
   }
   mob.by = {};
@@ -6456,7 +6469,10 @@ function killMob(S, rt, mob) {
     p.streak = S.now - p.streakAt < STREAK_MS ? p.streak + 1 : 1;
     p.streakAt = S.now;
     const rank = masteryRank(ch, mob.k);
-    gainXp(S, p, xp * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
+    const early = hitters[p.pid] > 0 && wmEligible(p, d) && d.lv <= toTier(ch.lvl) + HUNT_EARLY.ahead
+      ? HUNT_EARLY.extra * clamp((HUNT_EARLY.end - ch.lvl) / (HUNT_EARLY.end - HUNT_EARLY.full), 0, 1)
+      : 0;
+    gainXp(S, p, xp * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
     ch.kills = (ch.kills || 0) + 1;
     ch.mk[mob.k] = (ch.mk[mob.k] || 0) + 1;
     const now = masteryRank(ch, mob.k);

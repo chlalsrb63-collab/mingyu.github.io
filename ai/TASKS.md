@@ -12,6 +12,7 @@
 
 | 누가 | 일 | 브랜치 · 폴더 | 시작 |
 | --- | --- | --- | --- |
+| Codex | 초반 캐릭터 Lv.30 ↔ 무기 숙련도 Lv.20 도달 구간 검증 및 조정 | `codex/early-mastery` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | N1 NPC 일과 서버 규칙 (`docs/design/npc-life.md` B–D, K) | `codex/npc-life` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Claude | 맵 그림 1단계 (수정굴·벽돌 회랑·폭포 고원 타일, `docs/design/maps-v2.md` 표 C) | `claude/maps-art-1` · 에이전트 워크트리 | 2026-11-15 |
 
