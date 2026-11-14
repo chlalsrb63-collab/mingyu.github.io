@@ -12,9 +12,9 @@
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;900&display=swap" />
-    <link rel="stylesheet" href="style.css?v=1795160101" />
-    <link rel="stylesheet" href="hud.css?v=1795160101" />
-    <link rel="stylesheet" href="lobby.css?v=1795160101" />
+    <link rel="stylesheet" href="style.css?v=1795160102" />
+    <link rel="stylesheet" href="hud.css?v=1795160102" />
+    <link rel="stylesheet" href="lobby.css?v=1795160102" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -96,13 +96,14 @@
         </div>
 
         <div id="center">
-          <!-- the unit frame: portrait, name, level, health and mana -->
+          <!-- the unit frame: portrait, name, level, short health and mana bars, gold -->
           <div id="status">
             <div class="face sunk"><canvas id="st-face" width="40" height="40"></canvas></div>
             <div class="st-main">
               <div class="row"><span id="st-name"></span><span id="st-lv"></span></div>
-              <div class="bar hp"><em>HP</em><i class="trail" id="st-hp-trail"></i><i id="st-hp"></i><b id="st-hpt"></b></div>
-              <div class="bar mp"><em>MP</em><i id="st-mp"></i><b id="st-mpt"></b></div>
+              <div class="meter hp"><em>HP</em><div class="bar hp"><i class="trail" id="st-hp-trail"></i><i id="st-hp"></i></div><b id="st-hpt"></b></div>
+              <div class="meter mp"><em>MP</em><div class="bar mp"><i id="st-mp"></i></div><b id="st-mpt"></b></div>
+              <div id="st-gold" title="보유 골드"><span id="st-gold-n"></span><i id="st-gold-fx"></i></div>
             </div>
             <div class="st-side">
               <div id="cg-box" class="sunk"><canvas id="cgauge" width="120" height="20"></canvas></div>
@@ -361,7 +362,7 @@
       </div>
     </div>
 
-    <script type="module" src="client.js?v=1795160101"></script>
+    <script type="module" src="client.js?v=1795160102"></script>
     <div id="crt-frame" aria-hidden="true"></div>
   </body>
 </html>

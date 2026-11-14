@@ -214,6 +214,7 @@ const channelName = () => Lobby.label(channel);
 function stopGame() {
   G.playing = false;
   G.auto = false;
+  hudGold = null; // the next character's purse starts without a +N
   $("#hud").hidden = true; $("#dead").hidden = true; G.me.dead = false; $("#tip").hidden = true;
   for (const w of $$("#windows .window")) if (!w.hidden) closeWin(w.id.slice(2));
   resize();
@@ -1751,8 +1752,24 @@ function hudBars() {
   $("#st-hp").style.width = hp;
   $("#st-hp-trail").style.width = hp;
   $("#st-mp").style.width = `${clamp((me.mp / s.mmp) * 100, 0, 100)}%`;
-  $("#st-hpt").textContent = `${me.hp} / ${s.mhp}`;
-  $("#st-mpt").textContent = `${me.mp} / ${s.mmp}`;
+  $("#st-hpt").textContent = `${me.hp}/${s.mhp}`;
+  $("#st-mpt").textContent = `${me.mp}/${s.mmp}`;
+}
+/** The purse under the bars: the coin and the sum, with a short +N / -N that floats off when it changes. */
+let hudGold = null;
+function hudPurse(s) {
+  if (s.gold === hudGold) return;
+  const n = $("#st-gold-n"), fx = $("#st-gold-fx");
+  if (!n.firstChild) n.append(iconImg("coin", "#e2c486"), document.createTextNode(""));
+  n.lastChild.textContent = `${s.gold.toLocaleString()} G`;
+  if (hudGold !== null) {
+    const d = s.gold - hudGold;
+    fx.textContent = `${d > 0 ? "+" : "-"}${Math.abs(d).toLocaleString()}`;
+    fx.classList.toggle("lose", d < 0);
+    fx.style.left = n.offsetWidth + 6 + "px";
+    fx.classList.remove("go"); void fx.offsetWidth; fx.classList.add("go");
+  }
+  hudGold = s.gold;
 }
 function setOnce(node, key, fill) {
   if (node.dataset.k === key) return;
@@ -1764,6 +1781,7 @@ function hudFrame(s) {
   $("#st-name").textContent = s.name;
   setOnce($("#st-lv"), `${s.lvl}:${s.cls}`, (n) => n.append(iconImg(CLASS_ICON[s.cls] || "sword", "#e2c486"), `Lv.${s.lvl} ${G.defs.classes[s.cls].name}`));
   drawFace();
+  hudPurse(s);
   const maxed = s.lvl >= G.defs.maxLv;
   $("#exp-fill").style.width = maxed ? "100%" : `${Math.min(100, (s.xp / s.need) * 100)}%`;
   $("#exp-text").textContent = maxed ? `수련 경험치 ${s.xp.toLocaleString()}` : `EXP ${s.xp.toLocaleString()} / ${s.need.toLocaleString()}  (${((s.xp / s.need) * 100).toFixed(2)}%)`;

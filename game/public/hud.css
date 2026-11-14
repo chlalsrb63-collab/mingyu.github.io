@@ -121,7 +121,7 @@ body.playing #crt, body.playing #crt-frame { right: auto; bottom: auto; width: v
 
 /* ───────────────────────────── the dock ───────────────────────────── */
 #dock { left: 0; bottom: 0; right: var(--side); height: var(--dock); display: flex; gap: 8px; }
-#chat { flex: 0 0 clamp(260px, 34%, 470px); min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+#chat { flex: 0 0 clamp(300px, 43%, 660px); min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 #chat-tabs { display: flex; gap: 2px; flex: none; }
 #chat-tabs button { padding: 2px 8px; font: 12px/1.2 var(--pix); color: #9a90a8; background: #2a2433; border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #3e344b; }
 #chat-tabs button.on { color: #2a1806; background: var(--b-mid); box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px 0 0 var(--b-lo); }
@@ -150,16 +150,28 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 
 /* the character: status on top, skills under it, experience along the bottom */
 #center { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; justify-content: space-between; }
-#status { display: grid; grid-template-columns: auto minmax(150px, 1fr) auto; gap: 8px; align-items: stretch; }
+#status { display: grid; grid-template-columns: auto auto 1fr; gap: 8px; align-items: stretch; }
 #status .face { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: #2a2433; }
 #st-face { width: 40px; height: 40px; }
-.st-main { min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+/* the unit frame stays short: name, two slim bars with the numbers beside them, then the purse */
+.st-main { width: 212px; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
 #status .row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; line-height: 1.2; }
 #st-name { font: 700 12px var(--pix); color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #st-lv { color: var(--b-hi); font-size: 12px; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
-#status .bar { height: 14px; margin-top: 3px; background: #000; border: 2px solid var(--ink); box-shadow: none; border-radius: 0; }
-#status .bar em { position: absolute; left: 3px; top: 0; z-index: 2; font: 10px/10px var(--pix9); font-style: normal; color: #fff; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
-#status .bar b { line-height: 10px; }
+#status .meter { display: grid; grid-template-columns: 14px 1fr 66px; align-items: center; gap: 4px; height: 10px; }
+#status .meter em { font: 10px/10px var(--pix9); font-style: normal; color: var(--hp-hi); text-shadow: 1px 1px 0 #000; }
+#status .meter.mp em { color: var(--mp-hi); }
+#status .meter b { font: 10px/10px var(--pix9); font-weight: normal; color: var(--cream); text-align: right; white-space: nowrap; text-shadow: 1px 1px 0 #000; }
+#status .bar { height: 10px; margin: 0; background: #000; border: 2px solid var(--ink); box-shadow: none; border-radius: 0; }
+#status .bar.hp i:not(.trail) { background: linear-gradient(var(--hp-hi) 0 1px, var(--hp) 1px 4px, var(--hp-lo) 4px); }
+#status .bar.mp i { background: linear-gradient(var(--mp-hi) 0 1px, var(--mp) 1px 4px, var(--mp-lo) 4px); }
+#st-gold { position: relative; display: flex; align-items: center; gap: 4px; height: 14px; font: 700 12px/14px var(--pix); color: var(--b-hi); white-space: nowrap; text-shadow: 1px 1px 0 #000; }
+#st-gold-n { display: inline-flex; align-items: center; gap: 4px; }
+#st-gold-n img.gi { width: 12px; height: 12px; }
+#st-gold-fx { position: absolute; left: 0; top: 0; font: 10px/14px var(--pix9); font-style: normal; color: #ffe9a8; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; pointer-events: none; opacity: 0; }
+#st-gold-fx.lose { color: #ff9a8a; }
+#st-gold-fx.go { animation: gold-pop 1.1s steps(6) forwards; }
+@keyframes gold-pop { 0% { opacity: 1; transform: translateY(0); } 70% { opacity: 1; transform: translateY(-6px); } 100% { opacity: 0; transform: translateY(-8px); } }
 .st-side { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; justify-content: center; }
 #cg-box { background: var(--scr); line-height: 0; cursor: help; }
 #cgauge { width: 240px; height: 40px; image-rendering: pixelated; display: block; }
@@ -347,6 +359,14 @@ body.touch #chat-form { display: none; }
 body[data-lay="port"] #center { order: 1; flex: none; justify-content: flex-start; }
 body[data-lay="port"] #status { grid-template-columns: auto 1fr; }
 body[data-lay="port"] #status .face { width: 48px; height: 48px; }
+body[data-lay="port"] .st-main, body[data-lay="land"] .st-main { width: auto; gap: 0; }
+body[data-lay="port"] #status .meter, body[data-lay="land"] #status .meter { position: relative; display: block; height: auto; margin-top: 3px; }
+body[data-lay="port"] #status .bar, body[data-lay="land"] #status .bar { height: 14px; }
+body[data-lay="port"] #status .bar.hp i:not(.trail), body[data-lay="land"] #status .bar.hp i:not(.trail) { background: linear-gradient(var(--hp-hi) 0 2px, var(--hp) 2px 8px, var(--hp-lo) 8px); }
+body[data-lay="port"] #status .bar.mp i, body[data-lay="land"] #status .bar.mp i { background: linear-gradient(var(--mp-hi) 0 2px, var(--mp) 2px 8px, var(--mp-lo) 8px); }
+body[data-lay="port"] #status .meter em, body[data-lay="land"] #status .meter em { position: absolute; left: 5px; top: 2px; z-index: 2; color: #fff; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
+body[data-lay="port"] #status .meter b, body[data-lay="land"] #status .meter b { position: absolute; left: 2px; right: 2px; top: 2px; z-index: 2; text-align: center; color: #fff; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
+body[data-lay="port"] #st-gold, body[data-lay="land"] #st-gold { display: none; }
 body[data-lay="port"] .st-side { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
 body[data-lay="port"] #cgauge { width: 120px; height: 20px; }
 body[data-lay="port"] #exp { order: -1; }
