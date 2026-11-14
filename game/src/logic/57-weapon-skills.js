@@ -3,7 +3,7 @@
 // while that weapon is in hand and its mastery has reached the skill's `need`; a job signature needs the
 // job (and its weapon in hand), a hybrid's either weapon of its pair. The passives (관성, 급소, 창끝, 공명,
 // 낙인, 매의 시야) hook into basicAttack, hurtMob and the arrows; whatever lingers (a vortex, a beast, rain,
-// traps, a sanctuary…) stands in `rt.props` and is stepped by skillProps every tick.
+// traps, a sanctuary, a rune circle…) stands in `rt.props` and is stepped by skillProps every tick.
 
 /** The weapon kind actually in hand ("" bare-handed: skills need a weapon). */
 const inHand = (ch) => (ch.eq.weapon ? ITEMS[ch.eq.weapon.id].wk : "");
@@ -241,6 +241,17 @@ function propPulse(S, rt, m, p, o, now) {
         dealMob(S, rt, mob, p, dmg, 0);
       }
       return true;
+    }
+    case "rune": {
+      // the circle beats: everything inside is struck (and branded, a book's skill); fire, ice and lightning
+      // take turns in it, so every other beat the element it holds meets the new one and they react (the
+      // circle keeps its own element: it does not feed the caster's weaving)
+      const e = "fil"[o.i++ % 3];
+      rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y), WEAVE_CODE[e]]);
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) hit(mob, o.mult);
+      if (o.held && o.held !== e) { const key = pairKey(e, o.held); o.held = ""; react(S, rt, p, key, o.x, o.y, o.k * o.rxK); }
+      else o.held = e;
+      return false;
     }
     case "sanct": {
       // blood sanctuary: the party inside is warded, the monsters inside bleed into the most hurt of them
@@ -664,6 +675,147 @@ function castSkill(S, p, id) {
     case "sanctuary": {
       ev(102, p.x, p.y - 6, sk.r);
       prop({ kind: "sanct", wire: 1, x: p.x, y: p.y, r: sk.r, every: sk.every, next: now + 100, until: now + sk.ms, mult: sk.mult * k });
+      break;
+    }
+
+    // ── the hybrid expansion (fx 120–128)
+    case "crosscut": {
+      // the great blade sweeps and marks; the dagger goes into every one it swept, cashing the marks in
+      ev(120, ...ahead(sk.r * 0.5), sk.r);
+      const list = mobsWithin(rt, p.x, p.y, sk.r).filter((o) => inArc(p, o, sk.arc));
+      for (const o of list) { hit(o, sk.mult); addMarks(S, o, sk.marks); }
+      for (const o of list) {
+        if (o.dead) continue;
+        const n = marksOf(S, o);
+        o.mk = 0;
+        hit(o, sk.stab + sk.per * n, o.tgt !== p.pid ? { sure: true } : { crit: sk.crit });
+      }
+      if (pasOn(p, "inertia")) { p.inert = SKILL.inertia.max; p.inertAt = now; ev(110, p.x, p.y - 6); }
+      break;
+    }
+    case "breach": {
+      // the spear leads the charge and carries what it meets; the great blade comes down where it stops
+      const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, aimX, aimY, sk.len);
+      const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 14, sk.half);
+      p.x = ox + aimX * far; p.y = oy + aimY * far;
+      p.fix = true; p.mvAt = now;
+      p.ghost = Math.max(p.ghost || 0, now + 300);
+      rt.ev.push(["ln", 3, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      line.forEach((o, j) => {
+        pullTo(m, o, p.x + aimX * 14 - aimY * ((j % 3) - 1) * 10, p.y + aimY * 14 + aimX * ((j % 3) - 1) * 10);
+        if (!MOBS[o.k].boss && o.el !== 2) o.stun = Math.max(o.stun, now + sk.stun);
+        hit(o, sk.path);
+      });
+      ev(121, p.x, p.y - 6, sk.r);
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 9]);
+      const tipOn = pasOn(p, "tip");
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        // the rim of the blow is where the spear's reach ends: those out there take the tip
+        const tip = tipOn && dist(p.x, p.y, o.x, o.y) >= sk.r * sk.far;
+        if (tip) rt.ev.push(["tip", o.id]);
+        const [vx, vy] = aimVec(p, o);
+        knock(m, o, vx, vy, sk.knock * (o.el ? 0.5 : 1));
+        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
+      }
+      break;
+    }
+    case "qiarrow": {
+      // a sword's edge loosed on an arrow: through all in its line, harder the further, fed by the inertia held
+      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len)), inert = inertOf(p);
+      if (inert) { p.inert = 0; p.dirty = true; }
+      const ex = p.x + aimX * far, ey = p.y + aimY * far, fed = 1 + sk.per * inert;
+      ev(122, ex, ey - 6, far);
+      for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, far + 6, sk.half)) {
+        const d = dist(p.x, p.y, o.x, o.y);
+        hit(o, sk.mult * fed * (1 + sk.far * clamp((d - sk.d0) / sk.span, 0, 1)));
+      }
+      // where it ends, the crescent of the stroke bursts
+      rt.ev.push(["bw", Math.round(ex), Math.round(ey), sk.r, 2]);
+      for (const o of mobsWithin(rt, ex, ey, sk.r)) hit(o, sk.blast * fed);
+      break;
+    }
+    case "shadowpierce": {
+      // a shadow runs the spear through everything on the way; the far end of the run is the tip
+      const ox = p.x, oy = p.y, far = Math.max(12, stepTo(m, ox, oy, aimX, aimY, sk.len));
+      const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 10, sk.half);
+      p.x = ox + aimX * far; p.y = oy + aimY * far;
+      p.fix = true; p.mvAt = now;
+      p.ghost = Math.max(p.ghost || 0, now + sk.ghost);
+      rt.ev.push(["ln", 6, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(123, p.x, p.y - 6, far);
+      const tipOn = pasOn(p, "tip");
+      for (const o of line) {
+        const n = marksOf(S, o), tip = tipOn && (o.x - ox) * aimX + (o.y - oy) * aimY >= far * sk.far;
+        if (tip) rt.ev.push(["tip", o.id]);
+        hit(o, (sk.mult + sk.per * n) * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
+        addMarks(S, o, sk.marks);
+      }
+      break;
+    }
+    case "elemfan": {
+      // three blades, fire, ice and lightning: two elements in one monster go off there
+      const a0 = Math.atan2(aimY, aimX), els = ["f", "i", "l"], got = new Map();
+      ev(124, ...ahead(40), 3);
+      els.forEach((e, j) => {
+        const a = a0 + ((j - 1) * sk.spread * Math.PI) / 180, ux = Math.cos(a), uy = Math.sin(a);
+        const far = Math.max(12, reach(m, p.x, p.y, ux, uy, sk.len));
+        rt.ev.push(["ln", 7, Math.round(p.x), Math.round(p.y), Math.round(p.x + ux * far), Math.round(p.y + uy * far)]);
+        for (const o of mobsInLine(rt, p.x, p.y, ux, uy, far, sk.half)) {
+          hit(o, sk.mult);
+          addMarks(S, o, 1);
+          if (e === "i") o.slow = Math.max(o.slow || 0, now + sk.slow);
+          if (!got.has(o)) got.set(o, []);
+          got.get(o).push(e);
+        }
+      });
+      let n = 0;
+      for (const [o, es] of got) if (es.length >= 2 && n < sk.rx) { n++; react(S, rt, p, pairKey(es[0], es[1]), o.x, o.y, k); }
+      break;
+    }
+    case "frostspire": {
+      // an ice-bound thrust: slows all it runs through, freezes what the tip finds, and ice bursts up at its end
+      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len));
+      const ex = p.x + aimX * far, ey = p.y + aimY * far;
+      ev(125, ex, ey - 6, far);
+      for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, far + 6, sk.half)) {
+        const tip = (o.x - p.x) * aimX + (o.y - p.y) * aimY >= far * sk.far;
+        if (tip) {
+          rt.ev.push(["tip", o.id]);
+          if (!MOBS[o.k].boss && o.el !== 2) { o.stun = Math.max(o.stun, now + sk.freeze * (o.el ? 0.5 : 1)); rt.ev.push(["fz", o.id, sk.freeze]); }
+        }
+        o.slow = Math.max(o.slow || 0, now + 3000);
+        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
+      }
+      for (const o of mobsWithin(rt, ex, ey, sk.r)) hit(o, sk.burst);
+      weave(S, rt, p, "i", ex, ey, k);
+      break;
+    }
+    case "runecircle": {
+      const [x, y] = aimPoint(rt, m, p, sk.at);
+      ev(126, x, y - 6, sk.r);
+      prop({ kind: "rune", wire: 1, x, y, r: sk.r, every: sk.every, next: now + 200, until: now + sk.ms, mult: sk.mult * k, rxK: sk.rxK, i: 0 });
+      break;
+    }
+    case "tristar": {
+      // fire, ice and lightning loosed together: each leaves its element where it first strikes
+      const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
+      if (mob) face(p, mob);
+      const [vx, vy] = aimVec(p, mob), a0 = Math.atan2(vy, vx);
+      ev(127, ...(mob ? [mob.x, mob.y] : ahead(80)));
+      ["f", "i", "l"].forEach((e, j) => {
+        const a = a0 + ((j - 1) * sk.spread * Math.PI) / 180;
+        fireArrow(S, rt, p, null, sk.mult * k, 99, 4 + j, { spd: sk.spd, len: sk.len, r: sk.r, ux: Math.cos(a), uy: Math.sin(a), opt, el: e, k });
+      });
+      break;
+    }
+    case "inkshot": {
+      // a fan of rune-inked arrows: each brands what it pierces, and a brand already there takes it harder
+      ev(128, ...ahead(60));
+      const cap = { n: sk.per, h: {} }, a0 = Math.atan2(aimY, aimX);
+      for (let j = 0; j < sk.n; j++) {
+        const a = a0 + ((j - (sk.n - 1) / 2) * ((2 * sk.spread) / (sk.n - 1)) * Math.PI) / 180;
+        fireArrow(S, rt, p, null, sk.mult * k, 99, 7, { len: sk.len, r: sk.r, ux: Math.cos(a), uy: Math.sin(a), cap, opt, brandK: sk.brandK });
+      }
       break;
     }
   }

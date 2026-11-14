@@ -14,6 +14,8 @@ import { fileURLToPath } from "node:url";
 export const PROBE = {
   secs: 120,
   tiers: [5, 13, 25, 40],
+  /** hybrids are probed from the first tier one can be had (both weapons at mastery 15) */
+  hybTiers: [13, 25, 40],
   mobs: {
     5: ["gutfrog", "lambmaw", "eyecrow"],
     13: ["ratking", "foxtwine", "twinhare_bone"],
@@ -26,12 +28,29 @@ export const PROBE = {
 const tierFor = (lv) => (lv < 8 ? 1 : lv < 16 ? 2 : lv < 26 ? 3 : lv < 38 ? 4 : 5);
 const WID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow" };
 const plain = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
+/** The template stat shares of each weapon kind (mirrors logic BUILD), for a hybrid's half-and-half build. */
+const BUILD = {
+  sword: { str: 0.45, wil: 0.35, dex: 0.05, wis: 0.05, luk: 0.1 },
+  dagger: { dex: 0.45, luk: 0.3, wil: 0.15, str: 0.05, wis: 0.05 },
+  spear: { str: 0.4, wis: 0.25, wil: 0.25, dex: 0.1 },
+  staff: { int: 0.45, wis: 0.3, wil: 0.2, luk: 0.05 },
+  book: { int: 0.45, wil: 0.3, wis: 0.2, luk: 0.05 },
+  bow: { dex: 0.45, luk: 0.3, wil: 0.15, str: 0.05, wis: 0.05 },
+};
+/** hero() options for a hybrid probe: the job, the other weapon on the back, both masteries, a mixed build. */
+function hybridHero(D, job, wk, tier) {
+  const [a, b] = D.jobs[job].wk, m = Math.max(D.hybWm || 20, tier), build = {};
+  for (const k of [a, b]) for (const [s, v] of Object.entries(BUILD[k])) build[s] = (build[s] || 0) + v / 2;
+  return { job, wk2: wk === a ? b : a, wm: { [a]: m, [b]: m }, build };
+}
 
 /**
  * One probe run. `who` is an old class id ("warrior"…) on the old rules, or a weapon kind
  * ("sword"… "bow") on the new ones. `tier` is the world tier (old level).
+ * `o.job` (new rules): a hybrid job holding `who` with the pair's other weapon on its back, both weapons
+ * at mastery max(HYB_WM, tier), stats laid out half and half by the two weapons' templates.
  */
-export function probe(L, who, tier, secs = PROBE.secs) {
+export function probe(L, who, tier, secs = PROBE.secs, o = {}) {
   const D = L.defs();
   const T = 16;
   const S = L.setup();
@@ -41,9 +60,10 @@ export function probe(L, who, tier, secs = PROBE.secs) {
   const tg = tierFor(tier);
   const fresh = !!L.hero;
   const wk = fresh ? who : null;
-  const ch = fresh ? L.hero("탐침", { wk, lvl: Math.min(197, 4 * tier - 3), migrate: true }) : L.newChar("탐침", who, []);
+  const ch = fresh ? L.hero("탐침", { wk, lvl: Math.min(197, 4 * tier - 3), migrate: true, ...(o.job ? hybridHero(D, o.job, wk, tier) : {}) }) : L.newChar("탐침", who, []);
   if (!fresh) ch.lvl = tier;
   ch.eq.weapon = plain(`w_${fresh ? WID[wk] : who}_${tg}`);
+  if (o.job) ch.eq.weapon2 = plain(`w_${WID[D.jobs[o.job].wk.find((k) => k !== wk)]}_${tg}`);
   Object.assign(ch.eq, { helm: plain(`h_${tg}`), armor: plain(`a_${tg}`), gloves: plain(`g_${tg}`), boots: plain(`b_${tg}`), ring1: plain(`r_${tg}`), amulet: plain(`n_${tg}`) });
   ch.inv = [];
   ch.tut = { i: 99, n: 0 };
@@ -143,6 +163,16 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     out[w] = {};
     for (const tier of PROBE.tiers) out[w][tier] = probe(L, w, tier);
     console.log(w.padEnd(8), PROBE.tiers.map((t) => `T${t}: ${out[w][t].kpm} k/m ${out[w][t].dtpm} dmg/m ${out[w][t].deaths} d`).join(" | "));
+  }
+  if (fresh) {
+    // every hybrid, holding each of its two weapons
+    const D = L.defs();
+    for (const j of Object.keys(D.jobs).filter((id) => D.jobs[id].kind === "hybrid")) for (const w of D.jobs[j].wk) {
+      const key = `${j}/${w}`;
+      out[key] = {};
+      for (const tier of PROBE.hybTiers) out[key][tier] = probe(L, w, tier, PROBE.secs, { job: j });
+      console.log(key.padEnd(20), PROBE.hybTiers.map((t) => `T${t}: ${out[key][t].kpm} k/m ${out[key][t].dtpm} dmg/m ${out[key][t].deaths} d`).join(" | "));
+    }
   }
   console.log(JSON.stringify(out));
 }

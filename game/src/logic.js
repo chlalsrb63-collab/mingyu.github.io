@@ -139,8 +139,8 @@ const TIER_MAX = 50;
 /** Weapon kinds in wire order (`wm`, `["wm", eid, kindIndex, lv]`), and the mastery cap. */
 const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow"], WM_MAX = 50;
 const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활" };
-/** Mastery a job asks for. */
-const JOB_WM = 20;
+/** Mastery a single job asks for in its weapon; a hybrid asks HYB_WM in both of its two. */
+const JOB_WM = 20, HYB_WM = 15;
 
 /** Scaling grades and what they are worth. */
 const GRADE = { S: 1.0, A: 0.85, B: 0.7, C: 0.5, D: 0.3 };
@@ -156,8 +156,11 @@ const SCALE = {
 /** A single job adds this to both of its weapon's coefficients. */
 const JOB_PLUS = 0.1;
 /**
- * The jobs. `single`: one weapon, mastery 20, 5,000 G. `hybrid`: stay a 모험가 until both weapons of
- * the pair reach 20, 20,000 G; `scale` replaces the table for both weapons. Ids are frozen (persisted).
+ * The jobs. `single`: one weapon, mastery 20 (JOB_WM), 5,000 G. `hybrid`: stay a 모험가 until both weapons
+ * of the pair reach 15 (HYB_WM), 20,000 G; `scale` replaces the table for both weapons. One hybrid for each
+ * of the 15 pairs. Scale budget: two weapons with different main stats → 0.8 + 0.8 and the two second stats
+ * 0.3 each (≈ 2.2); a shared main or second stat folds into fewer, bigger coefficients (≈ 1.6–2.2).
+ * Ids are frozen (persisted).
  */
 const JOBS = {
   adventurer: { name: "모험가", kind: "none", wk: [], cost: 0 },
@@ -169,10 +172,20 @@ const JOBS = {
   archer: { name: "궁수", kind: "single", wk: ["bow"], cost: 5000 },
   spellblade: { name: "마검사", kind: "hybrid", wk: ["sword", "staff"], scale: { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 }, cost: 20000 },
   tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.8, luk: 0.8 }, cost: 20000 },
-  dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.7, wil: 0.7, int: 0.7, wis: 0.3 }, cost: 20000 },
+  dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: 20000 },
   hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wil: 0.3 }, cost: 20000 },
   stormrider: { name: "폭풍기수", kind: "hybrid", wk: ["spear", "bow"], scale: { str: 0.8, dex: 0.8, wis: 0.3, luk: 0.3 }, cost: 20000 },
   darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.8, str: 0.8, int: 0.3 }, cost: 20000 },
+  // the hybrid expansion: the other nine pairs (docs/design/jobs-and-stats.md "Hybrid expansion")
+  bladedancer: { name: "검무사", kind: "hybrid", wk: ["sword", "dagger"], scale: { str: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: 20000 },
+  breaker: { name: "파진사", kind: "hybrid", wk: ["sword", "spear"], scale: { str: 0.85, wil: 0.4, wis: 0.4 }, cost: 20000 },
+  arcblade: { name: "검궁사", kind: "hybrid", wk: ["sword", "bow"], scale: { str: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: 20000 },
+  shadowlance: { name: "섬창사", kind: "hybrid", wk: ["dagger", "spear"], scale: { dex: 0.8, str: 0.8, luk: 0.3, wis: 0.3 }, cost: 20000 },
+  trickster: { name: "환술사", kind: "hybrid", wk: ["dagger", "staff"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wis: 0.3 }, cost: 20000 },
+  spellspear: { name: "마창사", kind: "hybrid", wk: ["spear", "staff"], scale: { str: 0.8, int: 0.8, wis: 0.6 }, cost: 20000 },
+  runesage: { name: "룬술사", kind: "hybrid", wk: ["staff", "book"], scale: { int: 0.8, wis: 0.3, wil: 0.3 }, cost: 20000 },
+  spellarcher: { name: "마궁사", kind: "hybrid", wk: ["staff", "bow"], scale: { int: 0.8, dex: 0.8, wis: 0.3, luk: 0.3 }, cost: 20000 },
+  runearcher: { name: "각인궁사", kind: "hybrid", wk: ["book", "bow"], scale: { int: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: 20000 },
 };
 
 /**
@@ -219,7 +232,7 @@ const SHOT_MAX = 6;
 // SKILL[id] = { id, name, kind, wk?, job?, need, mp, cd, mult, …params, mag?, el?, fx, desc }
 //   kind "a" weapon active · "p" weapon passive · "j" single-job signature · "h" hybrid signature
 //   wk   the weapon it needs in hand (a hybrid signature: either weapon of its job)
-//   need mastery of that weapon (signatures: the job, which asks 20)
+//   need mastery of that weapon (signatures: the job's — JOB_WM 20 a single, HYB_WM 15 a hybrid; growth counts from it)
 //   mult × attack, grown by mastery: × (1 + SK_GROW·(mastery − need)); r / len / half in px; times in ms
 //   mag  magic damage (a quarter of the monster's armour counts); el an element (f fire, i ice, l lightning)
 //   fx   the "a" event code the client draws it with (C.5)
@@ -287,21 +300,40 @@ const SKILL = {
     desc: "궁수의 기술 · 하늘로 쏘아 올린 화살이 3초간 앞쪽에 비처럼 쏟아져 안의 모든 적을 맞히고 느리게 한다." },
 
   // ── hybrid signatures (either weapon of the pair)
-  crimson: { kind: "h", job: "spellblade", need: 20, name: "원소 마검: 홍련참", mp: 40, cd: 34000, len: 160, half: 20, mult: 2.0, el: "f", fx: 97,
+  crimson: { kind: "h", job: "spellblade", need: 15, name: "원소 마검: 홍련참", mp: 40, cd: 34000, len: 160, half: 20, mult: 1.6, el: "f", fx: 97,
     desc: "마검사의 기술 · 불꽃을 두른 검기를 일직선으로 날린다. 맞은 적마다 번개가 겹쳐 과부하 폭발이 일어난다." },
-  traps: { kind: "h", job: "tracker", need: 20, name: "사방의 그림자 덫", mp: 38, cd: 36000, hide: 3000, back: 40, n: 4, ring: 45, ms: 8000, trig: 14, root: 1500, stab: 0.6, shot: 0.8, fx: 98,
+  traps: { kind: "h", job: "tracker", need: 15, name: "사방의 그림자 덫", mp: 38, cd: 36000, hide: 3000, back: 40, n: 4, ring: 45, ms: 8000, trig: 14, root: 1500, stab: 0.35, shot: 0.45, fx: 98,
     desc: "추적자의 기술 · 3초간 모습을 감추고(이동 속도 +40%) 뒤로 물러나며, 선 자리 둘레에 그림자 덫 넷을 깐다. 밟은 적은 묶이고, 튀어나온 분신이 세 번 찌르고 두 번 쏜다." },
-  dive: { kind: "h", job: "dragoon", need: 20, name: "심연의 강림", mp: 44, cd: 40000, at: 120, ghost: 800, r: 110, mult: 2.4, field: 70, ms: 4000, every: 500, drain: 0.25, heal: 0.3, mag: 1, fx: 99,
+  dive: { kind: "h", job: "dragoon", need: 15, name: "심연의 강림", mp: 44, cd: 40000, at: 120, ghost: 800, r: 110, mult: 2.0, field: 70, ms: 4000, every: 500, drain: 0.2, heal: 0.3, mag: 1, fx: 99,
     desc: "용기사의 기술 · 하늘로 솟구쳐(0.8초 무적) 앞쪽에 내리꽂는다(넓은 범위). 착지한 자리에 4초간 흡혈의 장이 남아 피해의 30%를 회복한다." },
-  bloodburst: { kind: "h", job: "hexblade", need: 20, name: "혈흔 폭발", mp: 36, cd: 30000, r: 100, root: 1200, base: 0.6, bleed: 0.5, mark: 0.4, brand: 0.6, fx: 100,
+  bloodburst: { kind: "h", job: "hexblade", need: 15, name: "혈흔 폭발", mp: 36, cd: 30000, r: 100, root: 1200, base: 0.6, bleed: 0.5, mark: 0.4, brand: 0.6, fx: 100,
     desc: "주술암살자의 기술 · 주변의 적을 1.2초간 묶은 뒤 피를 터뜨린다 — 방어를 무시하는 고정 피해(공격력의 60% + 출혈 50% + 표식 1개당 40% + 낙인 60%). 표식·출혈·낙인은 사라진다." },
-  thunder: { kind: "h", job: "stormrider", need: 20, name: "천뢰의 투창", mp: 38, cd: 32000, len: 200, half: 12, mult: 2.2, el: "l", r: 60, ms: 3000, every: 400, storm: 0.3, fx: 101,
+  thunder: { kind: "h", job: "stormrider", need: 15, name: "천뢰의 투창", mp: 38, cd: 32000, len: 200, half: 12, mult: 1.7, el: "l", r: 60, ms: 3000, every: 400, storm: 0.25, fx: 101,
     desc: "폭풍기수의 기술 · 번개 투창이 일직선을 꿰뚫고 맞은 적을 끝까지 끌고 간다. 꽂힌 자리에 3초간 자기 폭풍이 몰아친다." },
-  sanctuary: { kind: "h", job: "darkknight", need: 20, name: "불멸의 성역", mp: 20, hpCost: 0.2, cd: 45000, r: 90, ms: 8000, every: 1000, guard: 0.25, mult: 0.2, autoHp: 0.6, fx: 102,
+  sanctuary: { kind: "h", job: "darkknight", need: 15, name: "불멸의 성역", mp: 20, hpCost: 0.2, cd: 45000, r: 90, ms: 8000, every: 1000, guard: 0.25, mult: 0.2, autoHp: 0.6, fx: 102,
     desc: "암흑기사의 기술 · 현재 HP의 20%를 바쳐 8초간 피의 성역을 편다. 안의 파티원은 받는 피해 -25%, 안의 적은 매초 피해를 입고 그 절반이 가장 다친 파티원을 치유한다." },
+  // the hybrid expansion (docs/design/jobs-and-stats.md "Hybrid expansion"): fx 120–128
+  crosscut: { kind: "h", job: "bladedancer", need: 15, name: "십자 난도", mp: 36, cd: 32000, r: 64, arc: 100, mult: 1.0, marks: 2, stab: 0.5, per: 0.2, crit: 30, fx: 120,
+    desc: "검무사의 기술 · 대검으로 앞을 크게 휩쓸어 표식 둘을 새기고, 곧바로 휩쓸린 적마다 단검으로 파고들어 찌른다(표식 1개당 +20%, 나를 노리지 않던 적에게는 반드시 치명타). 관성이 가득 찬다." },
+  breach: { kind: "h", job: "breaker", need: 15, name: "파진돌격", mp: 38, cd: 32000, len: 120, half: 20, path: 0.6, stun: 400, r: 56, mult: 1.4, knock: 18, far: 0.72, fx: 121,
+    desc: "파진사의 기술 · 창을 앞세워 겨눈 쪽으로 돌진해 길 위의 적을 끝까지 끌고 가고, 멈춘 자리에서 대검으로 내리찍는다(범위, 밀쳐냄). 내리찍기의 가장자리에 걸린 적은 창끝으로 맞는다." },
+  qiarrow: { kind: "h", job: "arcblade", need: 15, name: "검기 화살", mp: 38, cd: 32000, len: 200, half: 14, mult: 1.6, far: 0.25, d0: 40, span: 150, per: 0.1, r: 44, blast: 1.0, fx: 122,
+    desc: "검궁사의 기술 · 대검의 검기를 화살에 실어 쏜다. 일직선을 모두 꿰뚫고 멀리 갈수록 세며(최대 +25%), 쌓인 관성 1개당 +10%(모두 쓴다). 끝에서 초승달 검기가 터진다." },
+  shadowpierce: { kind: "h", job: "shadowlance", need: 15, name: "그림자 관통", mp: 34, cd: 28000, len: 130, half: 18, mult: 1.4, per: 0.2, marks: 2, far: 0.72, ghost: 400, fx: 123,
+    desc: "섬창사의 기술 · 그림자가 되어 겨눈 쪽으로 꿰뚫고 지나간다(잠깐 무적). 지나친 적은 표식 1개당 +20%로 찔리고 표식 둘이 새겨진다. 길 끝(28%)에 있던 적은 창끝으로 맞는다." },
+  elemfan: { kind: "h", job: "trickster", need: 15, name: "원소 비수", mp: 36, cd: 30000, len: 140, half: 12, spread: 18, mult: 0.9, rx: 3, slow: 2000, mag: 1, fx: 124,
+    desc: "환술사의 기술 · 불·얼음·번개를 하나씩 두른 비수 셋을 부채꼴로 던진다. 꿰뚫린 적마다 표식이 남고, 두 원소에 맞은 적에게서 원소 반응이 터진다(한 번에 셋까지). 얼음 비수는 느리게 한다." },
+  frostspire: { kind: "h", job: "spellspear", need: 15, name: "빙결창", mp: 36, cd: 30000, len: 150, half: 14, mult: 1.4, far: 0.72, freeze: 1000, r: 44, burst: 1.0, el: "i", fx: 125,
+    desc: "마창사의 기술 · 얼음을 두른 창을 일직선으로 내지른다. 맞은 적은 느려지고, 창끝(끝 28%)에 걸린 적은 1초간 얼어붙는다. 창끝이 닿은 자리에서 얼음 기둥이 솟아 주변을 친다. 얼음 원소." },
+  runecircle: { kind: "h", job: "runesage", need: 15, name: "메아리 법진", mp: 46, cd: 45000, at: 80, r: 64, ms: 5000, every: 1000, mult: 0.2, rxK: 0.5, mag: 1, fx: 126,
+    desc: "룬술사의 기술 · 앞쪽에 5초간 룬 법진을 새긴다. 1초마다 안의 적을 치고 낙인을 새기며, 불·얼음·번개가 번갈아 깃들어 두 박동마다 법진 안에서 원소 반응이 메아리친다." },
+  tristar: { kind: "h", job: "spellarcher", need: 15, name: "삼원소 화살", mp: 36, cd: 30000, n: 3, spread: 8, spd: 520, len: 190, r: 10, mult: 1.0, mag: 1, fx: 127,
+    desc: "마궁사의 기술 · 불·얼음·번개 화살 셋을 한꺼번에 쏜다. 화살은 일직선을 꿰뚫고, 처음 맞힌 자리에 원소를 남겨 서로 원소 반응을 일으킨다." },
+  inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.7, per: 2, brandK: 0.4, mag: 1, fx: 128,
+    desc: "각인궁사의 기술 · 룬 먹물을 먹인 화살 다섯 대를 부채꼴로 쏜다. 꿰뚫린 적마다 낙인이 새겨지고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 한 적은 최대 두 대까지 맞는다." },
 };
 for (const id of Object.keys(SKILL)) SKILL[id].id = id;
-/** The order skills are listed in (per weapon: L1, L10 active, L10 passive; then single, then hybrid signatures). */
+/** The order skills are listed in (per weapon: L1, L10 active, L10 passive; then single, then hybrid signatures — the first six, then the nine of the expansion). */
 const SKILL_ORDER = Object.keys(SKILL);
 /** The skills each weapon kind brings, in order. */
 const WK_SKILLS = Object.fromEntries(["sword", "dagger", "spear", "staff", "book", "bow"].map((k) => [k, SKILL_ORDER.filter((id) => SKILL[id].wk === k && (SKILL[id].kind === "a" || SKILL[id].kind === "p"))]));
@@ -4946,8 +4978,10 @@ function jobOk(ch, j) {
   if (ch.job !== "adventurer") return "모험가만 전직할 수 있습니다";
   const [a, b] = job.wk;
   if (job.kind === "single") return ch.wm[a].lv >= JOB_WM ? "" : `[${WK_NAME[a]}] 숙련 ${JOB_WM}이 필요합니다`;
-  return ch.wm[a].lv >= JOB_WM && ch.wm[b].lv >= JOB_WM ? "" : `[${WK_NAME[a]}]${pp(WK_NAME[a], "과와")} [${WK_NAME[b]}] 숙련이 모두 ${JOB_WM}이어야 합니다`;
+  return ch.wm[a].lv >= HYB_WM && ch.wm[b].lv >= HYB_WM ? "" : `[${WK_NAME[a]}]${pp(WK_NAME[a], "과와")} [${WK_NAME[b]}] 숙련이 모두 ${HYB_WM} 이상이어야 합니다`;
 }
+/** The mastery a job asks of each of its weapons. */
+const jobWmOf = (j) => (JOBS[j] && JOBS[j].kind === "hybrid" ? HYB_WM : JOB_WM);
 const isHybrid = (ch) => !!JOBS[ch.job] && JOBS[ch.job].kind === "hybrid";
 
 /**
@@ -5015,6 +5049,11 @@ function gainWm(S, p, n) {
     if (r.lv === JOB_WM && ch.job === "adventurer") {
       const j = Object.keys(JOBS).find((id) => JOBS[id].kind === "single" && JOBS[id].wk[0] === wk);
       toast(p, `[${WK_NAME[wk]}] 숙련 ${JOB_WM}! 전직관 아르센에게 가면 [${JOBS[j].name}]${pp(JOBS[j].name, "으로")} 전직할 수 있습니다.`);
+    }
+    if (r.lv === HYB_WM && ch.job === "adventurer") {
+      // the two-weapon jobs this level opens: every pair whose other weapon is already there
+      const open = WK_ORDER.filter((k) => k !== wk && ch.wm[k].lv >= HYB_WM).map((k) => JOBS[hybridOf(wk, k)].name);
+      if (open.length) toast(p, `[${WK_NAME[wk]}] 숙련 ${HYB_WM}! 두 갈래 길 [${open.join("], [")}]${pp(open[open.length - 1], "이가")} 열렸습니다 — 전직관 아르센에게 가 보세요.`);
     }
   }
   if (r.lv >= WM_MAX) r.xp = 0;
@@ -5090,9 +5129,11 @@ function fireArrow(S, rt, p, mob, mult, pierce, kind, o = {}) {
   const mine = rt.shots.filter((s) => s.pid === p.pid);
   // (a skill's volley may have more in the air at once)
   if (mine.length >= SHOT_MAX + (kind >= 2 ? 6 : 0)) { const q = mine[0]; rt.shots.splice(rt.shots.indexOf(q), 1); rt.ev.push(["ae", q.id, Math.round(q.x), Math.round(q.y), 2]); }
-  // `o` (skills): spd, len, r, a direction ux/uy of its own, a `cap` {n, h} shared by a volley (at most n arrows a monster)
+  // `o` (skills): spd, len, r, a direction ux/uy of its own, a `cap` {n, h} shared by a volley (at most n arrows a monster);
+  // `opt` hurtMob's options (the skill: a book's brand, magic), `el` an element left where it first strikes (weave, power `k`),
+  // `brandK` more on a monster already branded
   const [ux, uy] = o.ux !== undefined ? [o.ux, o.uy] : aimVec(p, mob);
-  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: o.spd || sh.spd, left: o.len || arm.range || 150, r: o.r || sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0, cap: o.cap || null };
+  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: o.spd || sh.spd, left: o.len || arm.range || 150, r: o.r || sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0, cap: o.cap || null, opt: o.opt || null, el: o.el || "", k: o.k || 1, brandK: o.brandK || 0 };
   rt.shots.push(shot);
   rt.ev.push(["ar", shot.id, Math.round(shot.x), Math.round(shot.y), Math.round(ux * 1000), Math.round(uy * 1000), shot.spd, kind, p.eid]);
   return shot;
@@ -5137,8 +5178,9 @@ function shotTick(S, rt, dt) {
       s.hit.push(o.id);
       if (s.cap) s.cap.h[o.id] = (s.cap.h[o.id] | 0) + 1;
       p.hitAct = [s.act, s.gain];
-      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o));
+      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1), false, s.opt || undefined);
       p.hitAct = null;
+      if (s.el) { weave(S, rt, p, s.el, o.x, o.y, s.k); s.el = ""; }
       if (s.hit.length > s.pierce) { stop = along; break; }
     }
     if (stop !== null) { s.x += s.ux * Math.max(0, stop); s.y += s.uy * Math.max(0, stop); end(0); continue; }
@@ -5238,8 +5280,8 @@ function cleanJobs(ch) {
 }
 /**
  * A character for tests and probes: `wk` the weapon kind in hand (a tier-1 piece), `lvl` the level
- * (stats laid out by that weapon's BUILD unless `st` is given), `wm` mastery levels by kind,
- * `job` a job id. With `migrate`, mastery and job follow the old-class migration for that level.
+ * (stats laid out by that weapon's BUILD unless `st` or a `build` of shares is given), `wm` mastery levels
+ * by kind, `job` a job id. With `migrate`, mastery and job follow the old-class migration for that level.
  */
 export function hero(name, o = {}) {
   const ch = newChar(name, o.look || []);
@@ -5248,7 +5290,7 @@ export function hero(name, o = {}) {
   ch.sw = 1;
   const lvl = clamp(o.lvl | 0 || 1, 1, MAXLV);
   if (isObj(o.st)) { for (const k of ST_ORDER) if (num(o.st[k])) ch.st[k] = o.st[k]; }
-  else { const a = allocate(BUILD[wk], lvl - 1); ch.st = a.st; ch.xpt = a.xpt; }
+  else { const a = allocate(isObj(o.build) ? o.build : BUILD[wk], lvl - 1); ch.st = a.st; ch.xpt = a.xpt; }
   ch.lvl = levelOf(ch.st);
   if (o.migrate) {
     const L = Math.round(toTier(ch.lvl));
@@ -5936,7 +5978,7 @@ function basicAttack(S, p) {
 // while that weapon is in hand and its mastery has reached the skill's `need`; a job signature needs the
 // job (and its weapon in hand), a hybrid's either weapon of its pair. The passives (관성, 급소, 창끝, 공명,
 // 낙인, 매의 시야) hook into basicAttack, hurtMob and the arrows; whatever lingers (a vortex, a beast, rain,
-// traps, a sanctuary…) stands in `rt.props` and is stepped by skillProps every tick.
+// traps, a sanctuary, a rune circle…) stands in `rt.props` and is stepped by skillProps every tick.
 
 /** The weapon kind actually in hand ("" bare-handed: skills need a weapon). */
 const inHand = (ch) => (ch.eq.weapon ? ITEMS[ch.eq.weapon.id].wk : "");
@@ -6174,6 +6216,17 @@ function propPulse(S, rt, m, p, o, now) {
         dealMob(S, rt, mob, p, dmg, 0);
       }
       return true;
+    }
+    case "rune": {
+      // the circle beats: everything inside is struck (and branded, a book's skill); fire, ice and lightning
+      // take turns in it, so every other beat the element it holds meets the new one and they react (the
+      // circle keeps its own element: it does not feed the caster's weaving)
+      const e = "fil"[o.i++ % 3];
+      rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y), WEAVE_CODE[e]]);
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) hit(mob, o.mult);
+      if (o.held && o.held !== e) { const key = pairKey(e, o.held); o.held = ""; react(S, rt, p, key, o.x, o.y, o.k * o.rxK); }
+      else o.held = e;
+      return false;
     }
     case "sanct": {
       // blood sanctuary: the party inside is warded, the monsters inside bleed into the most hurt of them
@@ -6597,6 +6650,147 @@ function castSkill(S, p, id) {
     case "sanctuary": {
       ev(102, p.x, p.y - 6, sk.r);
       prop({ kind: "sanct", wire: 1, x: p.x, y: p.y, r: sk.r, every: sk.every, next: now + 100, until: now + sk.ms, mult: sk.mult * k });
+      break;
+    }
+
+    // ── the hybrid expansion (fx 120–128)
+    case "crosscut": {
+      // the great blade sweeps and marks; the dagger goes into every one it swept, cashing the marks in
+      ev(120, ...ahead(sk.r * 0.5), sk.r);
+      const list = mobsWithin(rt, p.x, p.y, sk.r).filter((o) => inArc(p, o, sk.arc));
+      for (const o of list) { hit(o, sk.mult); addMarks(S, o, sk.marks); }
+      for (const o of list) {
+        if (o.dead) continue;
+        const n = marksOf(S, o);
+        o.mk = 0;
+        hit(o, sk.stab + sk.per * n, o.tgt !== p.pid ? { sure: true } : { crit: sk.crit });
+      }
+      if (pasOn(p, "inertia")) { p.inert = SKILL.inertia.max; p.inertAt = now; ev(110, p.x, p.y - 6); }
+      break;
+    }
+    case "breach": {
+      // the spear leads the charge and carries what it meets; the great blade comes down where it stops
+      const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, aimX, aimY, sk.len);
+      const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 14, sk.half);
+      p.x = ox + aimX * far; p.y = oy + aimY * far;
+      p.fix = true; p.mvAt = now;
+      p.ghost = Math.max(p.ghost || 0, now + 300);
+      rt.ev.push(["ln", 3, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      line.forEach((o, j) => {
+        pullTo(m, o, p.x + aimX * 14 - aimY * ((j % 3) - 1) * 10, p.y + aimY * 14 + aimX * ((j % 3) - 1) * 10);
+        if (!MOBS[o.k].boss && o.el !== 2) o.stun = Math.max(o.stun, now + sk.stun);
+        hit(o, sk.path);
+      });
+      ev(121, p.x, p.y - 6, sk.r);
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 9]);
+      const tipOn = pasOn(p, "tip");
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        // the rim of the blow is where the spear's reach ends: those out there take the tip
+        const tip = tipOn && dist(p.x, p.y, o.x, o.y) >= sk.r * sk.far;
+        if (tip) rt.ev.push(["tip", o.id]);
+        const [vx, vy] = aimVec(p, o);
+        knock(m, o, vx, vy, sk.knock * (o.el ? 0.5 : 1));
+        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
+      }
+      break;
+    }
+    case "qiarrow": {
+      // a sword's edge loosed on an arrow: through all in its line, harder the further, fed by the inertia held
+      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len)), inert = inertOf(p);
+      if (inert) { p.inert = 0; p.dirty = true; }
+      const ex = p.x + aimX * far, ey = p.y + aimY * far, fed = 1 + sk.per * inert;
+      ev(122, ex, ey - 6, far);
+      for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, far + 6, sk.half)) {
+        const d = dist(p.x, p.y, o.x, o.y);
+        hit(o, sk.mult * fed * (1 + sk.far * clamp((d - sk.d0) / sk.span, 0, 1)));
+      }
+      // where it ends, the crescent of the stroke bursts
+      rt.ev.push(["bw", Math.round(ex), Math.round(ey), sk.r, 2]);
+      for (const o of mobsWithin(rt, ex, ey, sk.r)) hit(o, sk.blast * fed);
+      break;
+    }
+    case "shadowpierce": {
+      // a shadow runs the spear through everything on the way; the far end of the run is the tip
+      const ox = p.x, oy = p.y, far = Math.max(12, stepTo(m, ox, oy, aimX, aimY, sk.len));
+      const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 10, sk.half);
+      p.x = ox + aimX * far; p.y = oy + aimY * far;
+      p.fix = true; p.mvAt = now;
+      p.ghost = Math.max(p.ghost || 0, now + sk.ghost);
+      rt.ev.push(["ln", 6, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(123, p.x, p.y - 6, far);
+      const tipOn = pasOn(p, "tip");
+      for (const o of line) {
+        const n = marksOf(S, o), tip = tipOn && (o.x - ox) * aimX + (o.y - oy) * aimY >= far * sk.far;
+        if (tip) rt.ev.push(["tip", o.id]);
+        hit(o, (sk.mult + sk.per * n) * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
+        addMarks(S, o, sk.marks);
+      }
+      break;
+    }
+    case "elemfan": {
+      // three blades, fire, ice and lightning: two elements in one monster go off there
+      const a0 = Math.atan2(aimY, aimX), els = ["f", "i", "l"], got = new Map();
+      ev(124, ...ahead(40), 3);
+      els.forEach((e, j) => {
+        const a = a0 + ((j - 1) * sk.spread * Math.PI) / 180, ux = Math.cos(a), uy = Math.sin(a);
+        const far = Math.max(12, reach(m, p.x, p.y, ux, uy, sk.len));
+        rt.ev.push(["ln", 7, Math.round(p.x), Math.round(p.y), Math.round(p.x + ux * far), Math.round(p.y + uy * far)]);
+        for (const o of mobsInLine(rt, p.x, p.y, ux, uy, far, sk.half)) {
+          hit(o, sk.mult);
+          addMarks(S, o, 1);
+          if (e === "i") o.slow = Math.max(o.slow || 0, now + sk.slow);
+          if (!got.has(o)) got.set(o, []);
+          got.get(o).push(e);
+        }
+      });
+      let n = 0;
+      for (const [o, es] of got) if (es.length >= 2 && n < sk.rx) { n++; react(S, rt, p, pairKey(es[0], es[1]), o.x, o.y, k); }
+      break;
+    }
+    case "frostspire": {
+      // an ice-bound thrust: slows all it runs through, freezes what the tip finds, and ice bursts up at its end
+      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len));
+      const ex = p.x + aimX * far, ey = p.y + aimY * far;
+      ev(125, ex, ey - 6, far);
+      for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, far + 6, sk.half)) {
+        const tip = (o.x - p.x) * aimX + (o.y - p.y) * aimY >= far * sk.far;
+        if (tip) {
+          rt.ev.push(["tip", o.id]);
+          if (!MOBS[o.k].boss && o.el !== 2) { o.stun = Math.max(o.stun, now + sk.freeze * (o.el ? 0.5 : 1)); rt.ev.push(["fz", o.id, sk.freeze]); }
+        }
+        o.slow = Math.max(o.slow || 0, now + 3000);
+        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
+      }
+      for (const o of mobsWithin(rt, ex, ey, sk.r)) hit(o, sk.burst);
+      weave(S, rt, p, "i", ex, ey, k);
+      break;
+    }
+    case "runecircle": {
+      const [x, y] = aimPoint(rt, m, p, sk.at);
+      ev(126, x, y - 6, sk.r);
+      prop({ kind: "rune", wire: 1, x, y, r: sk.r, every: sk.every, next: now + 200, until: now + sk.ms, mult: sk.mult * k, rxK: sk.rxK, i: 0 });
+      break;
+    }
+    case "tristar": {
+      // fire, ice and lightning loosed together: each leaves its element where it first strikes
+      const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
+      if (mob) face(p, mob);
+      const [vx, vy] = aimVec(p, mob), a0 = Math.atan2(vy, vx);
+      ev(127, ...(mob ? [mob.x, mob.y] : ahead(80)));
+      ["f", "i", "l"].forEach((e, j) => {
+        const a = a0 + ((j - 1) * sk.spread * Math.PI) / 180;
+        fireArrow(S, rt, p, null, sk.mult * k, 99, 4 + j, { spd: sk.spd, len: sk.len, r: sk.r, ux: Math.cos(a), uy: Math.sin(a), opt, el: e, k });
+      });
+      break;
+    }
+    case "inkshot": {
+      // a fan of rune-inked arrows: each brands what it pierces, and a brand already there takes it harder
+      ev(128, ...ahead(60));
+      const cap = { n: sk.per, h: {} }, a0 = Math.atan2(aimY, aimX);
+      for (let j = 0; j < sk.n; j++) {
+        const a = a0 + ((j - (sk.n - 1) / 2) * ((2 * sk.spread) / (sk.n - 1)) * Math.PI) / 180;
+        fireArrow(S, rt, p, null, sk.mult * k, 99, 7, { len: sk.len, r: sk.r, ux: Math.cos(a), uy: Math.sin(a), cap, opt, brandK: sk.brandK });
+      }
       break;
     }
   }
@@ -10158,16 +10352,17 @@ export function defs() {
   for (const [k, label, prefix] of AFFIX) affix[k] = [label, prefix];
   // jobs and stats: the jobs (with each weapon's scaling as coefficients), the stats, the scaling grades,
   // the base cost of each of the 200 levels' point (pointCost at a stat ≤ 30) and the stat surcharge
-  // [STAT_K, STAT_K0] — the one rule the client mirrors for its cost preview; mastery need per level
+  // [STAT_K, STAT_K0] — the one rule the client mirrors for its cost preview; mastery need per level.
+  // jobs[id].wm: the mastery each of its weapons needs (single JOB_WM, hybrid HYB_WM); .sig its signature skill
   const jobs = {};
   for (const id of Object.keys(JOBS)) {
     const j = JOBS[id];
-    jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.kind === "hybrid" ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {} };
+    jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.kind === "hybrid" ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {}, wm: j.kind === "none" ? 0 : jobWmOf(id), sig: JOB_SKILL[id] || "" };
   }
   return {
     items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
     jobs, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
-    wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, wswMs: WSW_MS,
+    wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,

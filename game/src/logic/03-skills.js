@@ -6,7 +6,7 @@
 // SKILL[id] = { id, name, kind, wk?, job?, need, mp, cd, mult, …params, mag?, el?, fx, desc }
 //   kind "a" weapon active · "p" weapon passive · "j" single-job signature · "h" hybrid signature
 //   wk   the weapon it needs in hand (a hybrid signature: either weapon of its job)
-//   need mastery of that weapon (signatures: the job, which asks 20)
+//   need mastery of that weapon (signatures: the job's — JOB_WM 20 a single, HYB_WM 15 a hybrid; growth counts from it)
 //   mult × attack, grown by mastery: × (1 + SK_GROW·(mastery − need)); r / len / half in px; times in ms
 //   mag  magic damage (a quarter of the monster's armour counts); el an element (f fire, i ice, l lightning)
 //   fx   the "a" event code the client draws it with (C.5)
@@ -74,21 +74,40 @@ const SKILL = {
     desc: "궁수의 기술 · 하늘로 쏘아 올린 화살이 3초간 앞쪽에 비처럼 쏟아져 안의 모든 적을 맞히고 느리게 한다." },
 
   // ── hybrid signatures (either weapon of the pair)
-  crimson: { kind: "h", job: "spellblade", need: 20, name: "원소 마검: 홍련참", mp: 40, cd: 34000, len: 160, half: 20, mult: 2.0, el: "f", fx: 97,
+  crimson: { kind: "h", job: "spellblade", need: 15, name: "원소 마검: 홍련참", mp: 40, cd: 34000, len: 160, half: 20, mult: 1.6, el: "f", fx: 97,
     desc: "마검사의 기술 · 불꽃을 두른 검기를 일직선으로 날린다. 맞은 적마다 번개가 겹쳐 과부하 폭발이 일어난다." },
-  traps: { kind: "h", job: "tracker", need: 20, name: "사방의 그림자 덫", mp: 38, cd: 36000, hide: 3000, back: 40, n: 4, ring: 45, ms: 8000, trig: 14, root: 1500, stab: 0.6, shot: 0.8, fx: 98,
+  traps: { kind: "h", job: "tracker", need: 15, name: "사방의 그림자 덫", mp: 38, cd: 36000, hide: 3000, back: 40, n: 4, ring: 45, ms: 8000, trig: 14, root: 1500, stab: 0.35, shot: 0.45, fx: 98,
     desc: "추적자의 기술 · 3초간 모습을 감추고(이동 속도 +40%) 뒤로 물러나며, 선 자리 둘레에 그림자 덫 넷을 깐다. 밟은 적은 묶이고, 튀어나온 분신이 세 번 찌르고 두 번 쏜다." },
-  dive: { kind: "h", job: "dragoon", need: 20, name: "심연의 강림", mp: 44, cd: 40000, at: 120, ghost: 800, r: 110, mult: 2.4, field: 70, ms: 4000, every: 500, drain: 0.25, heal: 0.3, mag: 1, fx: 99,
+  dive: { kind: "h", job: "dragoon", need: 15, name: "심연의 강림", mp: 44, cd: 40000, at: 120, ghost: 800, r: 110, mult: 2.0, field: 70, ms: 4000, every: 500, drain: 0.2, heal: 0.3, mag: 1, fx: 99,
     desc: "용기사의 기술 · 하늘로 솟구쳐(0.8초 무적) 앞쪽에 내리꽂는다(넓은 범위). 착지한 자리에 4초간 흡혈의 장이 남아 피해의 30%를 회복한다." },
-  bloodburst: { kind: "h", job: "hexblade", need: 20, name: "혈흔 폭발", mp: 36, cd: 30000, r: 100, root: 1200, base: 0.6, bleed: 0.5, mark: 0.4, brand: 0.6, fx: 100,
+  bloodburst: { kind: "h", job: "hexblade", need: 15, name: "혈흔 폭발", mp: 36, cd: 30000, r: 100, root: 1200, base: 0.6, bleed: 0.5, mark: 0.4, brand: 0.6, fx: 100,
     desc: "주술암살자의 기술 · 주변의 적을 1.2초간 묶은 뒤 피를 터뜨린다 — 방어를 무시하는 고정 피해(공격력의 60% + 출혈 50% + 표식 1개당 40% + 낙인 60%). 표식·출혈·낙인은 사라진다." },
-  thunder: { kind: "h", job: "stormrider", need: 20, name: "천뢰의 투창", mp: 38, cd: 32000, len: 200, half: 12, mult: 2.2, el: "l", r: 60, ms: 3000, every: 400, storm: 0.3, fx: 101,
+  thunder: { kind: "h", job: "stormrider", need: 15, name: "천뢰의 투창", mp: 38, cd: 32000, len: 200, half: 12, mult: 1.7, el: "l", r: 60, ms: 3000, every: 400, storm: 0.25, fx: 101,
     desc: "폭풍기수의 기술 · 번개 투창이 일직선을 꿰뚫고 맞은 적을 끝까지 끌고 간다. 꽂힌 자리에 3초간 자기 폭풍이 몰아친다." },
-  sanctuary: { kind: "h", job: "darkknight", need: 20, name: "불멸의 성역", mp: 20, hpCost: 0.2, cd: 45000, r: 90, ms: 8000, every: 1000, guard: 0.25, mult: 0.2, autoHp: 0.6, fx: 102,
+  sanctuary: { kind: "h", job: "darkknight", need: 15, name: "불멸의 성역", mp: 20, hpCost: 0.2, cd: 45000, r: 90, ms: 8000, every: 1000, guard: 0.25, mult: 0.2, autoHp: 0.6, fx: 102,
     desc: "암흑기사의 기술 · 현재 HP의 20%를 바쳐 8초간 피의 성역을 편다. 안의 파티원은 받는 피해 -25%, 안의 적은 매초 피해를 입고 그 절반이 가장 다친 파티원을 치유한다." },
+  // the hybrid expansion (docs/design/jobs-and-stats.md "Hybrid expansion"): fx 120–128
+  crosscut: { kind: "h", job: "bladedancer", need: 15, name: "십자 난도", mp: 36, cd: 32000, r: 64, arc: 100, mult: 1.0, marks: 2, stab: 0.5, per: 0.2, crit: 30, fx: 120,
+    desc: "검무사의 기술 · 대검으로 앞을 크게 휩쓸어 표식 둘을 새기고, 곧바로 휩쓸린 적마다 단검으로 파고들어 찌른다(표식 1개당 +20%, 나를 노리지 않던 적에게는 반드시 치명타). 관성이 가득 찬다." },
+  breach: { kind: "h", job: "breaker", need: 15, name: "파진돌격", mp: 38, cd: 32000, len: 120, half: 20, path: 0.6, stun: 400, r: 56, mult: 1.4, knock: 18, far: 0.72, fx: 121,
+    desc: "파진사의 기술 · 창을 앞세워 겨눈 쪽으로 돌진해 길 위의 적을 끝까지 끌고 가고, 멈춘 자리에서 대검으로 내리찍는다(범위, 밀쳐냄). 내리찍기의 가장자리에 걸린 적은 창끝으로 맞는다." },
+  qiarrow: { kind: "h", job: "arcblade", need: 15, name: "검기 화살", mp: 38, cd: 32000, len: 200, half: 14, mult: 1.6, far: 0.25, d0: 40, span: 150, per: 0.1, r: 44, blast: 1.0, fx: 122,
+    desc: "검궁사의 기술 · 대검의 검기를 화살에 실어 쏜다. 일직선을 모두 꿰뚫고 멀리 갈수록 세며(최대 +25%), 쌓인 관성 1개당 +10%(모두 쓴다). 끝에서 초승달 검기가 터진다." },
+  shadowpierce: { kind: "h", job: "shadowlance", need: 15, name: "그림자 관통", mp: 34, cd: 28000, len: 130, half: 18, mult: 1.4, per: 0.2, marks: 2, far: 0.72, ghost: 400, fx: 123,
+    desc: "섬창사의 기술 · 그림자가 되어 겨눈 쪽으로 꿰뚫고 지나간다(잠깐 무적). 지나친 적은 표식 1개당 +20%로 찔리고 표식 둘이 새겨진다. 길 끝(28%)에 있던 적은 창끝으로 맞는다." },
+  elemfan: { kind: "h", job: "trickster", need: 15, name: "원소 비수", mp: 36, cd: 30000, len: 140, half: 12, spread: 18, mult: 0.9, rx: 3, slow: 2000, mag: 1, fx: 124,
+    desc: "환술사의 기술 · 불·얼음·번개를 하나씩 두른 비수 셋을 부채꼴로 던진다. 꿰뚫린 적마다 표식이 남고, 두 원소에 맞은 적에게서 원소 반응이 터진다(한 번에 셋까지). 얼음 비수는 느리게 한다." },
+  frostspire: { kind: "h", job: "spellspear", need: 15, name: "빙결창", mp: 36, cd: 30000, len: 150, half: 14, mult: 1.4, far: 0.72, freeze: 1000, r: 44, burst: 1.0, el: "i", fx: 125,
+    desc: "마창사의 기술 · 얼음을 두른 창을 일직선으로 내지른다. 맞은 적은 느려지고, 창끝(끝 28%)에 걸린 적은 1초간 얼어붙는다. 창끝이 닿은 자리에서 얼음 기둥이 솟아 주변을 친다. 얼음 원소." },
+  runecircle: { kind: "h", job: "runesage", need: 15, name: "메아리 법진", mp: 46, cd: 45000, at: 80, r: 64, ms: 5000, every: 1000, mult: 0.2, rxK: 0.5, mag: 1, fx: 126,
+    desc: "룬술사의 기술 · 앞쪽에 5초간 룬 법진을 새긴다. 1초마다 안의 적을 치고 낙인을 새기며, 불·얼음·번개가 번갈아 깃들어 두 박동마다 법진 안에서 원소 반응이 메아리친다." },
+  tristar: { kind: "h", job: "spellarcher", need: 15, name: "삼원소 화살", mp: 36, cd: 30000, n: 3, spread: 8, spd: 520, len: 190, r: 10, mult: 1.0, mag: 1, fx: 127,
+    desc: "마궁사의 기술 · 불·얼음·번개 화살 셋을 한꺼번에 쏜다. 화살은 일직선을 꿰뚫고, 처음 맞힌 자리에 원소를 남겨 서로 원소 반응을 일으킨다." },
+  inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.7, per: 2, brandK: 0.4, mag: 1, fx: 128,
+    desc: "각인궁사의 기술 · 룬 먹물을 먹인 화살 다섯 대를 부채꼴로 쏜다. 꿰뚫린 적마다 낙인이 새겨지고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 한 적은 최대 두 대까지 맞는다." },
 };
 for (const id of Object.keys(SKILL)) SKILL[id].id = id;
-/** The order skills are listed in (per weapon: L1, L10 active, L10 passive; then single, then hybrid signatures). */
+/** The order skills are listed in (per weapon: L1, L10 active, L10 passive; then single, then hybrid signatures — the first six, then the nine of the expansion). */
 const SKILL_ORDER = Object.keys(SKILL);
 /** The skills each weapon kind brings, in order. */
 const WK_SKILLS = Object.fromEntries(["sword", "dagger", "spear", "staff", "book", "bow"].map((k) => [k, SKILL_ORDER.filter((id) => SKILL[id].wk === k && (SKILL[id].kind === "a" || SKILL[id].kind === "p"))]));

@@ -163,16 +163,17 @@ export function defs() {
   for (const [k, label, prefix] of AFFIX) affix[k] = [label, prefix];
   // jobs and stats: the jobs (with each weapon's scaling as coefficients), the stats, the scaling grades,
   // the base cost of each of the 200 levels' point (pointCost at a stat ≤ 30) and the stat surcharge
-  // [STAT_K, STAT_K0] — the one rule the client mirrors for its cost preview; mastery need per level
+  // [STAT_K, STAT_K0] — the one rule the client mirrors for its cost preview; mastery need per level.
+  // jobs[id].wm: the mastery each of its weapons needs (single JOB_WM, hybrid HYB_WM); .sig its signature skill
   const jobs = {};
   for (const id of Object.keys(JOBS)) {
     const j = JOBS[id];
-    jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.kind === "hybrid" ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {} };
+    jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.kind === "hybrid" ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {}, wm: j.kind === "none" ? 0 : jobWmOf(id), sig: JOB_SKILL[id] || "" };
   }
   return {
     items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
     jobs, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
-    wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, wswMs: WSW_MS,
+    wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,

@@ -94,10 +94,33 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   const singles = Object.keys(D.jobs).filter((j) => D.jobs[j].kind === "single");
   const hybrids = Object.keys(D.jobs).filter((j) => D.jobs[j].kind === "hybrid");
   assert.deepEqual(singles, ["swordsman", "thief", "lancer", "wizard", "warlock", "archer"]);
-  assert.deepEqual(hybrids, ["spellblade", "tracker", "dragoon", "hexblade", "stormrider", "darkknight"]);
+  assert.deepEqual(hybrids, ["spellblade", "tracker", "dragoon", "hexblade", "stormrider", "darkknight",
+    "bladedancer", "breaker", "arcblade", "shadowlance", "trickster", "spellspear", "runesage", "spellarcher", "runearcher"]);
   assert.deepEqual(singles.map((j) => D.jobs[j].wk[0]), D.wkOrder, "one single job per weapon");
+  // every one of the 15 pairs of weapons has exactly one hybrid
   const pairs = hybrids.map((j) => D.jobs[j].wk.slice().sort().join("+"));
-  assert.deepEqual(pairs.sort(), ["book+dagger", "book+spear", "book+sword", "bow+dagger", "bow+spear", "staff+sword"]);
+  const want = [];
+  D.wkOrder.forEach((a, i) => D.wkOrder.slice(i + 1).forEach((b) => want.push([a, b].sort().join("+"))));
+  assert.equal(want.length, 15);
+  assert.deepEqual(pairs.slice().sort(), want.sort(), "one hybrid for each pair");
+  for (const j of hybrids) {
+    const [a, b] = D.jobs[j].wk;
+    assert.ok(a !== b && D.wkOrder.includes(a) && D.wkOrder.includes(b), j + " pairs two different weapons");
+    assert.equal(D.jobs[j].cost, 20000, j + " costs 20,000 G");
+    assert.equal(D.jobs[j].wm, 15, j + " asks mastery 15 of both");
+    // the scale budget: real stats, nothing above 0.9; 2.2 for two different mains, less when the pair shares one (1.4–2.2)
+    const sc = D.jobs[j].scale, sum = Object.values(sc).reduce((x, y) => x + y, 0);
+    assert.ok(Object.keys(sc).every((k) => ST.includes(k)) && Object.values(sc).every((v) => v > 0 && v <= 0.9), j + " scales on real stats");
+    assert.ok(sum >= 1.4 - 1e-9 && sum <= 2.2 + 1e-9, `${j} scale budget ${sum}`);
+    for (const k of [a, b]) assert.ok(Object.keys(D.scale[k]).some((st) => sc[st] >= 0.5), `${j} scales with ${k}'s stats`);
+    assert.ok(D.jobs[j].sig && D.skills[D.jobs[j].sig].job === j && D.skills[D.jobs[j].sig].kind === "h", j + " names its signature");
+  }
+  for (const j of singles) { assert.equal(D.jobs[j].cost, 5000); assert.equal(D.jobs[j].wm, 20, j + " asks mastery 20"); }
+  assert.equal(D.jobWm, 20); assert.equal(D.hybWm, 15, "defs carry both thresholds");
+  // ids and names are all different
+  const names = Object.values(D.jobs).map((j) => j.name);
+  assert.equal(new Set(names).size, names.length, "every job has its own name");
+  assert.ok(names.every((n) => /^[가-힣]{2,5}$/.test(n)), "short Korean names");
   assert.deepEqual(D.jobs.swordsman.scale, { str: 0.95, wil: 0.6 }, "a single job adds 0.1 to its weapon's two grades");
   assert.deepEqual(D.jobs.spellblade.scale, { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 });
   assert.equal(D.jobs.swordsman.cost, 5000); assert.equal(D.jobs.tracker.cost, 20000);
@@ -333,6 +356,12 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   ch.wm.sword = { lv: 50, xp: 0 };
   ready(W); W.act({ t: "atk", a: 0 }); W.step();
   assert.deepEqual(ch.wm.sword, { lv: 50, xp: 0 }, "capped at 50");
+  // at 15 the two-weapon jobs whose other weapon is already at 15 are named
+  ch.wm.sword = { lv: 14, xp: 22 * 196 - 1 }; ch.wm.bow.lv = 15; ch.wm.staff.lv = 18; ch.wm.dagger.lv = 14;
+  ready(W); m2.hp = 50000; W.act({ t: "atk", a: 0 }); v = W.step();
+  assert.equal(ch.wm.sword.lv, 15);
+  const t15 = (v.toast || []).find((t) => t.includes("두 갈래 길"));
+  assert.ok(t15 && t15.includes("[마검사]") && t15.includes("[검궁사]") && !t15.includes("[검무사]"), "at 15 the open hybrids are named: " + t15);
   // monsters far below you teach nothing; a skill teaches 2
   const W2 = world({ wk: "sword", lvl: 157, wm: { sword: 12 } });
   const mobs2 = arena(W2);
@@ -405,12 +434,16 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(W.act({ t: "job_change", j: "emperor" }).error, "없는 직업입니다");
   assert.equal(W.act({ t: "job_change", j: "adventurer" }).error, "없는 직업입니다");
   assert.equal(W.act({ t: "job_change", j: "thief" }).error, "[단검] 숙련 20이 필요합니다");
-  assert.equal(W.act({ t: "job_change", j: "darkknight" }).error, "[대검]과 [마도서] 숙련이 모두 20이어야 합니다");
+  assert.equal(W.act({ t: "job_change", j: "darkknight" }).error, "[대검]과 [마도서] 숙련이 모두 15 이상이어야 합니다");
   ch.gold = 4999;
   assert.equal(W.act({ t: "job_change", j: "swordsman" }).error, "골드가 부족합니다");
   ch.gold = 30000;
-  // two weapons at 20 open the hybrid of the pair
-  assert.ok(W.act({ t: "job_change", j: "spellblade" }).ok, "sword 20 + staff 20 → 마검사");
+  // two weapons at 15 open the hybrid of the pair (a single job still asks 20)
+  ch.wm.sword.lv = 15; ch.wm.staff.lv = 14;
+  assert.equal(W.act({ t: "job_change", j: "spellblade" }).error, "[대검]과 [스태프] 숙련이 모두 15 이상이어야 합니다", "15 + 14 is not enough");
+  assert.equal(W.act({ t: "job_change", j: "swordsman" }).error, "[대검] 숙련 20이 필요합니다", "a single job still asks 20");
+  ch.wm.staff.lv = 15;
+  assert.ok(W.act({ t: "job_change", j: "spellblade" }).ok, "sword 15 + staff 15 → 마검사");
   assert.equal(ch.job, "spellblade"); assert.equal(ch.gold, 10000);
   let v = W.step();
   assert.ok(v.ev.some((e) => e[0] === "jc" && e[1] === W.p.eid));
@@ -446,6 +479,19 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.ok(W3.act({ t: "job_change", j: "archer" }).ok, "bow 20 → 궁수");
   assert.equal(W3.ch.gold, 0);
   assert.equal(W3.act({ t: "job_change", j: "tracker" }).error, "모험가만 전직할 수 있습니다", "a single job never becomes a hybrid");
+}
+
+// ═════════ saved hybrids load as they were (no sheet change: a job is an id) ═════════
+{
+  for (const [job, wk, wk2, lv] of [["tracker", "dagger", "bow", 20], ["breaker", "spear", "sword", 15], ["runearcher", "bow", "book", 31]]) {
+    const W = world({ wk, wk2, wm: { [wk]: lv, [wk2]: lv }, job });
+    const saved = JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID)));
+    const W2 = world({ ch: saved });
+    assert.equal(W2.ch.job, job, job + " survives a save and a load");
+    assert.equal(W2.ch.eq.weapon2 && W2.ch.eq.weapon2.id, W.ch.eq.weapon2.id, "with its second weapon");
+    const s = W2.self();
+    assert.ok(s.sk.some((x) => x[0] === D.jobs[job].sig && x[3] === 1), job + "'s signature is on the wire, usable");
+  }
 }
 
 // ═════════ the starter weapon ═════════

@@ -44,8 +44,10 @@ function jobOk(ch, j) {
   if (ch.job !== "adventurer") return "모험가만 전직할 수 있습니다";
   const [a, b] = job.wk;
   if (job.kind === "single") return ch.wm[a].lv >= JOB_WM ? "" : `[${WK_NAME[a]}] 숙련 ${JOB_WM}이 필요합니다`;
-  return ch.wm[a].lv >= JOB_WM && ch.wm[b].lv >= JOB_WM ? "" : `[${WK_NAME[a]}]${pp(WK_NAME[a], "과와")} [${WK_NAME[b]}] 숙련이 모두 ${JOB_WM}이어야 합니다`;
+  return ch.wm[a].lv >= HYB_WM && ch.wm[b].lv >= HYB_WM ? "" : `[${WK_NAME[a]}]${pp(WK_NAME[a], "과와")} [${WK_NAME[b]}] 숙련이 모두 ${HYB_WM} 이상이어야 합니다`;
 }
+/** The mastery a job asks of each of its weapons. */
+const jobWmOf = (j) => (JOBS[j] && JOBS[j].kind === "hybrid" ? HYB_WM : JOB_WM);
 const isHybrid = (ch) => !!JOBS[ch.job] && JOBS[ch.job].kind === "hybrid";
 
 /**
@@ -113,6 +115,11 @@ function gainWm(S, p, n) {
     if (r.lv === JOB_WM && ch.job === "adventurer") {
       const j = Object.keys(JOBS).find((id) => JOBS[id].kind === "single" && JOBS[id].wk[0] === wk);
       toast(p, `[${WK_NAME[wk]}] 숙련 ${JOB_WM}! 전직관 아르센에게 가면 [${JOBS[j].name}]${pp(JOBS[j].name, "으로")} 전직할 수 있습니다.`);
+    }
+    if (r.lv === HYB_WM && ch.job === "adventurer") {
+      // the two-weapon jobs this level opens: every pair whose other weapon is already there
+      const open = WK_ORDER.filter((k) => k !== wk && ch.wm[k].lv >= HYB_WM).map((k) => JOBS[hybridOf(wk, k)].name);
+      if (open.length) toast(p, `[${WK_NAME[wk]}] 숙련 ${HYB_WM}! 두 갈래 길 [${open.join("], [")}]${pp(open[open.length - 1], "이가")} 열렸습니다 — 전직관 아르센에게 가 보세요.`);
     }
   }
   if (r.lv >= WM_MAX) r.xp = 0;
@@ -188,9 +195,11 @@ function fireArrow(S, rt, p, mob, mult, pierce, kind, o = {}) {
   const mine = rt.shots.filter((s) => s.pid === p.pid);
   // (a skill's volley may have more in the air at once)
   if (mine.length >= SHOT_MAX + (kind >= 2 ? 6 : 0)) { const q = mine[0]; rt.shots.splice(rt.shots.indexOf(q), 1); rt.ev.push(["ae", q.id, Math.round(q.x), Math.round(q.y), 2]); }
-  // `o` (skills): spd, len, r, a direction ux/uy of its own, a `cap` {n, h} shared by a volley (at most n arrows a monster)
+  // `o` (skills): spd, len, r, a direction ux/uy of its own, a `cap` {n, h} shared by a volley (at most n arrows a monster);
+  // `opt` hurtMob's options (the skill: a book's brand, magic), `el` an element left where it first strikes (weave, power `k`),
+  // `brandK` more on a monster already branded
   const [ux, uy] = o.ux !== undefined ? [o.ux, o.uy] : aimVec(p, mob);
-  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: o.spd || sh.spd, left: o.len || arm.range || 150, r: o.r || sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0, cap: o.cap || null };
+  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: o.spd || sh.spd, left: o.len || arm.range || 150, r: o.r || sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0, cap: o.cap || null, opt: o.opt || null, el: o.el || "", k: o.k || 1, brandK: o.brandK || 0 };
   rt.shots.push(shot);
   rt.ev.push(["ar", shot.id, Math.round(shot.x), Math.round(shot.y), Math.round(ux * 1000), Math.round(uy * 1000), shot.spd, kind, p.eid]);
   return shot;
@@ -235,8 +244,9 @@ function shotTick(S, rt, dt) {
       s.hit.push(o.id);
       if (s.cap) s.cap.h[o.id] = (s.cap.h[o.id] | 0) + 1;
       p.hitAct = [s.act, s.gain];
-      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o));
+      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1), false, s.opt || undefined);
       p.hitAct = null;
+      if (s.el) { weave(S, rt, p, s.el, o.x, o.y, s.k); s.el = ""; }
       if (s.hit.length > s.pierce) { stop = along; break; }
     }
     if (stop !== null) { s.x += s.ux * Math.max(0, stop); s.y += s.uy * Math.max(0, stop); end(0); continue; }
@@ -336,8 +346,8 @@ function cleanJobs(ch) {
 }
 /**
  * A character for tests and probes: `wk` the weapon kind in hand (a tier-1 piece), `lvl` the level
- * (stats laid out by that weapon's BUILD unless `st` is given), `wm` mastery levels by kind,
- * `job` a job id. With `migrate`, mastery and job follow the old-class migration for that level.
+ * (stats laid out by that weapon's BUILD unless `st` or a `build` of shares is given), `wm` mastery levels
+ * by kind, `job` a job id. With `migrate`, mastery and job follow the old-class migration for that level.
  */
 export function hero(name, o = {}) {
   const ch = newChar(name, o.look || []);
@@ -346,7 +356,7 @@ export function hero(name, o = {}) {
   ch.sw = 1;
   const lvl = clamp(o.lvl | 0 || 1, 1, MAXLV);
   if (isObj(o.st)) { for (const k of ST_ORDER) if (num(o.st[k])) ch.st[k] = o.st[k]; }
-  else { const a = allocate(BUILD[wk], lvl - 1); ch.st = a.st; ch.xpt = a.xpt; }
+  else { const a = allocate(isObj(o.build) ? o.build : BUILD[wk], lvl - 1); ch.st = a.st; ch.xpt = a.xpt; }
   ch.lvl = levelOf(ch.st);
   if (o.migrate) {
     const L = Math.round(toTier(ch.lvl));

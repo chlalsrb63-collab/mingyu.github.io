@@ -64,17 +64,17 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
 
 // ═════════ the tables
 {
-  assert.equal(D.skillOrder.length, 30, "per weapon L1, L10 and a passive (18), six single and six hybrid signatures");
+  assert.equal(D.skillOrder.length, 39, "per weapon L1, L10 and a passive (18), six single and fifteen hybrid signatures");
   assert.deepEqual(Object.keys(SK), D.skillOrder);
   const kinds = D.skillOrder.map((id) => SK[id].kind).join("");
-  assert.equal(kinds, "aap".repeat(6) + "j".repeat(6) + "h".repeat(6));
+  assert.equal(kinds, "aap".repeat(6) + "j".repeat(6) + "h".repeat(15));
   for (const id of D.skillOrder) {
     const s = SK[id];
     assert.equal(s.id, id);
     assert.ok(s.name && s.desc && s.desc.length > 20, id + " is named and described in Korean");
-    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && s.fx >= 70 && s.fx <= 102, id + " costs, waits and has an fx code");
+    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128)), id + " costs, waits and has an fx code");
     if (s.kind === "j") { assert.equal(D.jobs[s.job].kind, "single"); assert.equal(D.jobs[s.job].wk[0], s.wk); assert.equal(s.need, 20); }
-    if (s.kind === "h") assert.equal(D.jobs[s.job].kind, "hybrid");
+    if (s.kind === "h") { assert.equal(D.jobs[s.job].kind, "hybrid"); assert.equal(s.need, D.hybWm, id + " grows from mastery 15"); }
   }
   for (const j of Object.keys(D.jobs)) if (D.jobs[j].kind !== "none") assert.equal(D.skillOrder.filter((id) => SK[id].job === j).length, 1, j + " has one signature");
   const codes = D.skillOrder.filter((id) => SK[id].kind !== "p").map((id) => SK[id].fx);
@@ -82,12 +82,13 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
 }
 
 // ═════════ every active and signature casts, shows its fx code and lands
-const HYB = { spellblade: ["sword", "staff"], tracker: ["dagger", "bow"], dragoon: ["spear", "book"], hexblade: ["dagger", "book"], stormrider: ["spear", "bow"], darkknight: ["sword", "book"] };
-for (const id of D.skillOrder) {
+const HYB = Object.fromEntries(Object.keys(D.jobs).filter((j) => D.jobs[j].kind === "hybrid").map((j) => [j, D.jobs[j].wk]));
+// a hybrid's signature is cast once with each of its two weapons in hand (the second time under "<id>@2")
+const CASTS = D.skillOrder.filter((id) => SK[id].kind !== "p").flatMap((id) => (SK[id].kind === "h" ? [[id, 0], [id, 1]] : [[id, 0]]));
+for (const [id, hand] of CASTS) {
   const s = SK[id];
-  if (s.kind === "p") continue;
-  const wk = s.kind === "h" ? HYB[s.job][0] : s.wk;
-  const W = world("시전" + id, { wk, wm: { [wk]: 30, ...(s.kind === "h" ? { [HYB[s.job][1]]: 30 } : {}) }, job: s.job || undefined });
+  const wk = s.kind === "h" ? HYB[s.job][hand] : s.wk;
+  const W = world("시전" + id + hand, { wk, wm: { [wk]: 30, ...(s.kind === "h" ? { [HYB[s.job][1 - hand]]: 30 } : {}) }, job: s.job || undefined });
   const p = W.p;
   // a crowd in front (the aim is east), spread a little: something is in reach of every skill
   const ms = W.mobs([[24, 0], [40, 6], [56, -6], [72, 0], [90, 4], [110, -4]]);
@@ -344,6 +345,138 @@ for (const id of D.skillOrder) {
   assert.equal(on(so, "reso"), 0, "a single job does not carry the staff's passive in a sword hand");
 }
 
+// ═════════ the hybrid expansion: gating, and each signature's own trick
+{
+  const G = world("확장관문", { wk: "sword", wk2: "staff", wm: { sword: 20, staff: 20, dagger: 20 }, job: "spellblade" });
+  assert.equal(G.act({ t: "sk", id: "crosscut" }).error, "[검무사]의 스킬입니다", "another hybrid's signature is not yours");
+  const H = world("확장손", { wk: "staff", wm: { sword: 20, dagger: 20, staff: 20 }, job: "bladedancer" });
+  assert.equal(H.act({ t: "sk", id: "crosscut" }).error, "[대검]을 들어야 쓸 수 있습니다", "a weapon of the pair in hand");
+  const A = world("모험확장", { wk: "sword", wm: { sword: 30, dagger: 30 } });
+  assert.equal(A.act({ t: "sk", id: "crosscut" }).error, "[검무사]의 스킬입니다", "an adventurer with both weapons still needs the job");
+  assert.ok(!A.self().sk.some((x) => x[0] === "crosscut"), "and has not learned it");
+}
+// 십자 난도: the sweep marks what is in front, the stabs cash the marks in, the inertia is full
+{
+  const W = world("십자", { wk: "sword", wk2: "dagger", wm: { sword: 20, dagger: 20 }, job: "bladedancer" });
+  const p = W.p;
+  const [a, b, back] = W.mobs([[24, 0], [30, 20], [-40, 0]]);
+  assert.ok(W.act({ t: "sk", id: "crosscut", a: 0 }).ok);
+  const vs = run(W, 3);
+  assert.ok(hurt(a) && hurt(b) && !hurt(back), "the front, not behind");
+  assert.equal(a.mk, 0, "the marks are spent on the stab");
+  assert.equal(p.inert, SK.inertia.max, "the inertia is full");
+  assert.ok(fx(vs, p.eid).includes(110));
+  // two blows each (sweep, stab)
+  assert.equal(vs.flatMap((v) => evts(v, "h")).filter((e) => e[1] === a.id).length, 2);
+}
+// 파진돌격: a charge that carries the line to its end, a slam there; the slam's rim is the spear's tip
+{
+  const W = world("파진", { wk: "spear", wk2: "sword", wm: { sword: 20, spear: 20 }, job: "breaker" });
+  const p = W.p, x0 = p.x;
+  const [a, b] = W.mobs([[30, 0], [60, 4]]);
+  assert.ok(W.act({ t: "sk", id: "breach", a: 0 }).ok);
+  const land = p.x;
+  assert.ok(land - x0 >= 90, `a charge (${land - x0})`);
+  assert.ok(Math.abs(a.x - p.x) < 40 && Math.abs(b.x - p.x) < 40, `the line is carried to the end (${a.x - p.x}, ${b.x - p.x})`);
+  assert.ok(a.stun > W.now && b.stun > W.now, "and stunned");
+  W.ready();
+  const [rim] = W.mobs([[land - x0 + 46, 0]]);
+  assert.ok(W.act({ t: "sk", id: "breach", a: 0 }).ok);
+  const v = W.step();
+  assert.ok(hurt(rim), "the slam reaches the rim");
+  assert.ok(evts(v, "tip").some((e) => e[1] === rim.id), "the rim takes the spear's tip");
+}
+// 검기 화살: through the line; the inertia held feeds it and is spent; a crescent bursts at its end
+{
+  const W = world("검기", { wk: "bow", wk2: "sword", wm: { sword: 20, bow: 20 }, job: "arcblade" });
+  const p = W.p;
+  const ms = W.mobs([[30, 0], [70, 3], [110, -3]]);
+  p.inert = 5; p.inertAt = W.now;
+  assert.ok(W.act({ t: "sk", id: "qiarrow", a: 0 }).ok);
+  const v = W.step();
+  assert.ok(ms.every((m) => hurt(m)), "the whole line");
+  assert.equal(p.inert, 0, "the inertia is spent");
+  assert.ok(evts(v, "bw").some((e) => e[3] === SK.qiarrow.r), "the crescent at its end");
+  const dmg = (inert) => { let t = 0; for (let i = 0; i < 40; i++) { W.ready(); const [m] = W.mobs([[60, 0]]); p.inert = inert; p.inertAt = W.now; W.act({ t: "sk", id: "qiarrow", a: 0 }); t += 50000 - m.hp; } return t; };
+  const k = dmg(5) / dmg(0);
+  assert.ok(k > 1.3 && k < 1.7, `five stacks of inertia: ×${k.toFixed(2)}`);
+}
+// 그림자 관통: through them as a shadow, untouchable for a moment; marks cashed for more, two new ones left
+{
+  const W = world("관통창", { wk: "dagger", wk2: "spear", wm: { dagger: 20, spear: 20 }, job: "shadowlance" });
+  const p = W.p, x0 = p.x;
+  const [a, b] = W.mobs([[40, 0], [80, 0]]);
+  a.mk = 3; a.mkAt = W.now + 9000;
+  assert.ok(W.act({ t: "sk", id: "shadowpierce", a: 0 }).ok);
+  assert.ok(p.x - x0 > 90 && p.ghost > W.now, "a shadow's run, untouchable");
+  assert.ok(W.step().me[8] & 4, "others see it untouchable");
+  assert.ok(hurt(a) && hurt(b));
+  assert.equal(a.mk, 5, "three marks, two more"); assert.equal(b.mk, 2, "two new marks");
+}
+// 원소 비수: three elements in one monster set off a reaction there; the ice blade slows; marks
+{
+  const W = world("원소비수", { wk: "staff", wk2: "dagger", wm: { dagger: 20, staff: 20 }, job: "trickster" });
+  const [m] = W.mobs([[28, 0]]);
+  assert.ok(W.act({ t: "sk", id: "elemfan", a: 0 }).ok);
+  const v = W.step();
+  assert.ok(evts(v, "rx").length >= 1, "a reaction where two elements met");
+  assert.ok(m.slow > W.now && m.mk >= 2, "slowed by the ice, marked by the blades");
+}
+// 빙결창: the tip freezes, the rest is slowed; the ice is held for the next element
+{
+  const W = world("빙결창", { wk: "spear", wk2: "staff", wm: { spear: 20, staff: 20 }, job: "spellspear" });
+  const p = W.p;
+  const [near, tip] = W.mobs([[30, 0], [125, 0]]);
+  assert.ok(W.act({ t: "sk", id: "frostspire", a: 0 }).ok);
+  const v = W.step();
+  assert.ok(hurt(near) && hurt(tip));
+  assert.ok(near.slow > W.now && !(near.stun > W.now + 500), "the near one only slowed (a hit's flinch at most)");
+  assert.ok(tip.stun > W.now + 500 && evts(v, "fz").some((e) => e[1] === tip.id) && evts(v, "tip").some((e) => e[1] === tip.id), "the tip freezes");
+  assert.equal(p.weave && p.weave.e, "i", "the ice is held for a reaction");
+}
+// 메아리 법진: beats, brands, and every other beat the elements meet
+{
+  const W = world("법진", { wk: "book", wk2: "staff", wm: { staff: 20, book: 20 }, job: "runesage" });
+  const p = W.p;
+  const [m] = W.mobs([[70, 0]]);
+  assert.ok(W.act({ t: "sk", id: "runecircle", a: 0 }).ok);
+  const vs = run(W, 62);
+  assert.ok(vs.flatMap((v) => evts(v, "pr")).some((e) => e[2] === "rune"), "the circle stands (prop rune)");
+  const beats = vs.flatMap((v) => evts(v, "pp"));
+  assert.ok(beats.length >= Math.floor(SK.runecircle.ms / SK.runecircle.every) && beats.every((e) => e[4] >= 1 && e[4] <= 3), "beats carry their element");
+  assert.ok(vs.flatMap((v) => evts(v, "rx")).length >= 2, "the elements meet in it every other beat");
+  assert.ok(!p.weave, "the circle keeps its own element (the caster's weaving is untouched)");
+  assert.ok(hurt(m) && m.brand > W.now - 6000, "struck and branded");
+  assert.ok(vs.flatMap((v) => evts(v, "pe")).length >= 1, "and it fades");
+  void p;
+}
+// 삼원소 화살: three arrows, three elements: where they strike together, a reaction
+{
+  const W = world("삼원소", { wk: "bow", wk2: "staff", wm: { staff: 20, bow: 20 }, job: "spellarcher" });
+  const [m] = W.mobs([[60, 0]]);
+  assert.ok(W.act({ t: "sk", id: "tristar", a: 0 }).ok);
+  const vs = run(W, 5);
+  assert.deepEqual(vs.flatMap((v) => evts(v, "ar")).map((e) => e[7]).sort(), [4, 5, 6], "fire, ice and lightning arrows (kinds 4–6)");
+  assert.ok(vs.flatMap((v) => evts(v, "rx")).length >= 1, "a reaction on the target");
+  assert.ok(hurt(m));
+}
+// 룬 먹화살: five inked arrows, at most two in one; they brand, and a brand already there takes more
+{
+  const W = world("먹화살", { wk: "book", wk2: "bow", wm: { book: 20, bow: 20 }, job: "runearcher" });
+  const p = W.p;
+  const [m] = W.mobs([[50, 0]]);
+  assert.ok(W.act({ t: "sk", id: "inkshot", a: 0 }).ok);
+  const vs = run(W, 5);
+  assert.equal(vs.flatMap((v) => evts(v, "ar")).filter((e) => e[7] === 7).length, 5, "five arrows (kind 7)");
+  const hits = vs.flatMap((v) => evts(v, "h")).filter((e) => e[1] === m.id).length;
+  assert.ok(hits >= 1 && hits <= 2, `at most two in one (${hits})`);
+  assert.ok(m.brand > W.now, "branded");
+  const dmg = (brand) => { let t = 0; for (let i = 0; i < 40; i++) { W.ready(); const [q] = W.mobs([[50, 0]], 50000, { brand: brand ? W.now + 5000 : 0 }); W.act({ t: "sk", id: "inkshot", a: 0 }); run(W, 4); t += 50000 - q.hp; } return t; };
+  const k = dmg(true) / dmg(false);
+  assert.ok(k > 1.15, `a brand already there takes it harder: ×${k.toFixed(2)}`);
+  void p;
+}
+
 // ═════════ the bar: a skill a mastery level opens goes on it; a job's signature too
 {
   const W = world("단축", { wk: "spear", wm: { spear: 9 } });
@@ -379,4 +512,4 @@ for (const id of D.skillOrder) {
   }
   assert.ok(!("legacyCls" in D) && D.mech && !("grit" in D.mech), "no class kit left in defs");
 }
-console.log("skills ok — 30 skills, six passives, signatures, hybrids, the bar and the wire");
+console.log("skills ok — 39 skills, six passives, signatures, fifteen hybrids, the bar and the wire");
