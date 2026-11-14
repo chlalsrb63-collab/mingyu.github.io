@@ -4,7 +4,9 @@
 //   node scripts/test-all.mjs              build src/logic.js, then run all tests
 //   node scripts/test-all.mjs maps skills  run only these (still builds first)
 //   node scripts/test-all.mjs --no-build   skip the logic build (CI checks the split separately)
-//   node scripts/test-all.mjs -v           show each test's own output even when it passes
+//   node scripts/test-all.mjs -v           show each test's own output even when it passes, and PASS lines
+//
+// Quiet by default (cheap to read): only failures (their last 60 lines) and one summary line.
 //
 // Tests run one at a time (tests/maps.mjs asserts on timings). Pure node, no deps.
 import { readFileSync, readdirSync, existsSync } from "node:fs";
@@ -51,9 +53,10 @@ for (const name of run) {
   const ms = Date.now() - t0;
   const ok = r.status === 0;
   results.push({ name, ok, ms });
-  console.log(`${ok ? "PASS" : "FAIL"}  ${name.padEnd(10)} ${String(ms).padStart(6)} ms`);
+  if (!ok || verbose) console.log(`${ok ? "PASS" : "FAIL"}  ${name.padEnd(10)} ${String(ms).padStart(6)} ms`);
   if (!ok || verbose) {
-    const out = ((r.stdout || "") + (r.stderr || "")).trimEnd();
+    let out = ((r.stdout || "") + (r.stderr || "")).trimEnd();
+    if (!verbose) { const ls = out.split("\n"); if (ls.length > 60) out = `… ${ls.length - 60} lines cut (run with -v)\n` + ls.slice(-60).join("\n"); }
     if (out) console.log(out.replace(/^/gm, "      | "));
   }
 }

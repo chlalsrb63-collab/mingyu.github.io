@@ -17,7 +17,8 @@ Gemini CLI). `CLAUDE.md` and `GEMINI.md` only import this file. Keep it short: d
 2. **Design docs:** read the doc's contents list (`grep -n "^#"`) and only the sections for your phase
    (`docs/design/README.md` says which doc is live).
 3. **Tests over screenshots.** While developing run only the relevant tests (`node scripts/test-all.mjs maps
-   world`); the full suite once before pushing. Screenshots: only for visual work, ≤5 for your own checks.
+   world`); the full suite once before pushing. Screenshots: only for visual work, ≤5 for your own checks,
+   clipped to what changed (`shot.mjs --el "#w-bag"` / `--clip x,y,w,h`).
 4. **Small tasks, short reports.** One task = one improvement on a few files; reports ≤40 lines.
 5. **Never touch the cache tag** `?v=` — `scripts/stamp.mjs` sets it at deploy, so branches don't conflict.
 
@@ -187,6 +188,7 @@ external-asset pipeline: `docs/RECIPES.md`. Read only the recipe you need.
 
 ## 9. Housekeeping
 
-- Keep this file under ~200 lines; file rows go in `docs/FILEMAP.md`, recipes in `docs/RECIPES.md`.
+- Keep this file under ~200 lines and change it rarely: it is the cached prefix of every AI session, so each
+  edit makes every next session pay for it again. File rows go in `docs/FILEMAP.md`, recipes in `docs/RECIPES.md`.
 - Large files to avoid reading whole: `src/logic.js` (generated), `public/client.js`,
   `public/scene2d.js`, `public/sprites.js`. Grep their banners (`// ─────`) instead.

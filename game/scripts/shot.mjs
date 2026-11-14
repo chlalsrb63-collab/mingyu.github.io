@@ -21,6 +21,8 @@
 // pages in your own browser at http://127.0.0.1:5178/_scene.html?map=meadow (no Playwright).
 //
 // Common: --size 960x600 (viewport) · --wait <ms> extra settle time · --full (whole page)
+//         --clip x,y,w,h (only that part of the page) · --el "#w-bag" (only that element)
+//         Cheap first: a clipped/element shot of the part you changed costs a fraction of a full one.
 //         --channel msedge|chrome (use an installed browser instead of Playwright's Chromium)
 // Prints page errors and console errors, so a broken page is visible without the image.
 //
@@ -160,7 +162,11 @@ try {
   if (opt.eval) await pg.evaluate((code) => (0, eval)(code), String(opt.eval));
   await pg.waitForTimeout(extraWait);
   await mkdir(dirname(out), { recursive: true });
-  await pg.screenshot({ path: out, fullPage: !!opt.full });
+  if (opt.el) await pg.locator(String(opt.el)).first().screenshot({ path: out });
+  else if (opt.clip) {
+    const [x, y, width, height] = String(opt.clip).split(",").map(Number);
+    await pg.screenshot({ path: out, clip: { x, y, width, height } });
+  } else await pg.screenshot({ path: out, fullPage: !!opt.full });
   console.log("saved " + out);
 } catch (e) {
   errors.push("shot failed: " + e.message.split("\n")[0]);
