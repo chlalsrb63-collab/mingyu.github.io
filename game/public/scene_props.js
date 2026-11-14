@@ -214,10 +214,24 @@ export function scenery() {
   });
   SC = {
     "Ψ": [palm(0, 0), palm(1, 1), palm(-1, 0), palm(0.5, 1)],
-    "Φ": [reef(0), reef(1)],
+    "Φ": [reef(0), reef(1), prop(26, 18, (b, x) => {
+      // a low one, barely out of the water
+      b.oval(12, 11, 11, 6, "#8c9692"); b.oval(16, 13, 7, 4, "#5e6a6c"); b.oval(10, 9, 8, 3, "#b2bab0");
+      b.oval(10, 7, 7, 2.2, "#58a85e"); b.r(6, 6, 4, 1, "#8ad06c"); b.r(5, 9, 2, 2, "#3a7848"); b.r(13, 9, 2, 3, "#3a7848");
+      atop(x, () => { b.r(0, 13, 26, 5, "#3a4e56"); b.r(0, 13, 26, 1, "#4e666c"); });
+      b.r(2, 15, 3, 1, "#ffffff"); b.r(12, 16, 4, 1, "#ffffff"); b.r(18, 12, 2, 2, "#f08a8a");
+    })],
     "Ω": [basalt(0), basalt(1)],
     "Δ": [hut(0), hut(1)],
     JT: [jtree(0), jtree(1), jtree(2)],
+    // driftwood on the beach: a sea-bleached trunk, a forked branch
+    DW: [0, 1].map((v) => prop(30, 14, (b) => {
+      const w = "#c8c0b0", wD = "#9a9282", wL = "#e8e2d4";
+      b.r(2, 6, 25, 5, w); b.r(1, 7, 27, 3, w); b.r(2, 10, 25, 2, wD); b.r(4, 6, 18, 1, wL);
+      for (const x of [8, 15, 21]) b.r(x, 8, 3, 1, wD);
+      if (v) { b.r(18, 2, 2, 5, w); b.r(20, 1, 4, 2, w); b.r(19, 5, 1, 2, wD); } else { b.r(7, 3, 2, 4, w); b.r(4, 2, 4, 2, w); }
+      b.r(v ? 0 : 26, 7, 2, 3, wD);
+    })),
     T: [tree("#4faa5a"), tree("#58b05a", "#e8584a"), tree("#7abf52"), tree("#f4a8c4")],
     P: [pine(true), pine(false)],
     B: [bush(0), bush(1), bush(2)],
