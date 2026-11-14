@@ -318,18 +318,30 @@ export function runtime(S, id) {
   if (have) return have;
   const m = mapOfS(S, id);
   if (!m) return null;
-  const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0 };
+  if (!m.cells) buildCells(m);
+  const C = m.cells, nc = C.cw * C.ch;
+  const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0,
+    // the cells (80-simulation.js cellPass): awake or not, the monsters each should hold (slots), its last kill, when to look again
+    cells: new Uint8Array(nc), slots: [], lastKill: new Array(nc).fill(-1e9), cellAt: 0 };
   for (const [fx, fy] of FIRES[id] || []) {
     const at = freeTile(m, fx, fy);
     if (at) rt.fires.push({ id: S.nextId++, x: at[0] * T + 8, y: at[1] * T + 10, until: 0 });
   }
-  for (const sp of m.spawns) {
+  // chests, bosses and guardians are there from the start and never sleep
+  for (const sp of C.fixed) {
     for (let i = 0; i < sp.n; i++) {
       const mob = newMob(S, sp.k, sp.r, sp);
       placeMob(S, m, mob);
       rt.mobs.push(mob);
     }
   }
+  // everything else waits in its cell for someone to come near: one slot per monster, empty until the cell wakes
+  for (let c = 0; c < nc; c++) {
+    const list = [];
+    for (const q of C.spawns[c]) for (let i = 0; i < q.n; i++) list.push({ q, c, mob: null, due: 0, extra: false });
+    rt.slots.push(list);
+  }
+  rt.base = rt.slots.map((l) => l.length);
   S.maps[id] = rt;
   return rt;
 }
@@ -374,6 +386,10 @@ function placeMob(S, m, mob) {
       break;
     }
   }
+  readyMob(S, mob);
+}
+/** A monster standing where it was put, fresh: its rank and traits rolled, at full health. */
+function readyMob(S, mob) {
   // now and then an elite spawns: far tougher, far more rewarding — party prey
   // (how often depends on where: deeper chambers and side vaults breed more of them)
   mob.el = mob.fix || (!MOBS[mob.k].boss && !MOBS[mob.k].chest && rnd(S) < mob.ep ? 1 : 0);

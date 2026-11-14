@@ -206,6 +206,8 @@ assert.ok(L.atlas().maps.town.npcs.some((n) => n.id === teller.id && n.night), "
     L.addPlayer(W, "g-1", L.newChar("안개", "rogue", []));
     const p = W.players["g-1"], rt = L.runtime(W, "meadow");
     L.runtime(W, "town").n = 0; p.map = "meadow"; rt.n = 1;
+    p.x = 40 * 16 + 8; p.y = 25 * 16 + 10;
+    L.tick(W, t - 100); L.endTick(W); // the meadow's cells wake around the hunter
     const mob = rt.mobs.find((m) => !m.dead && D.mobs[m.k].aggro > 0 && !D.mobs[m.k].chest);
     for (const m of rt.mobs) if (m !== mob) { m.dead = true; m.temp = false; m.respAt = Infinity; }
     p.x = mob.x + 0.95 * D.mobs[mob.k].aggro; p.y = mob.y; p.hitAt = -1e9;

@@ -498,3 +498,40 @@ Where: `34-maps-world.js` (`GEN`, `GATE_LINKS`, `gateDoors`, `crowdUp`, `genMap`
   (town only). First entry (build + runtime, cold): meadow 44-53 ms, forest 26-34, maple 25, cave 19-26, crypt
   12-14, city 8-12, sewer 6-8, abyss 9-13 ms. `tests/maps.mjs` budgets: each map `< 150 ms`, eager maps `< 100 ms`,
   load `< 1000 ms`.
+
+### F.2 Active-area cells (step 0.2, done)
+
+Where: constants after `DENSITY` in `10-tables.js`; `buildCells(m)` in `36-custom-maps.js` (called by `finishMap`, so
+every built map has `m.cells`; `runtime()` builds them for an instance map that lacks them); slots in `runtime()`
+(`40`); `placeAway / crowdTo / sleepCell / cellPass` in `80-simulation.js` (start of each live map's tick); the kill
+hook in `killMob` (`50`).
+
+- `m.cells = {cw, ch, spawns, fixed, open, zone}`: `spawns[cell] = [{k, n, ep, r, zone}]` (box clipped to the cell;
+  every old spawn box shared out over its cells by walkable tiles, largest remainder), `fixed` = spawns that never
+  sleep (`MOBS.chest`, `MOBS.boss`, any `sp.el`: chests, bosses, guardians, the maple lair guard), `open[cell]` walkable
+  tiles, `zone` = `m.zone` if the generator set one (each quota takes the zone of its box centre; else 1).
+  **Phase 1**: set `m.zone` in the generator and/or rewrite the quotas in `buildCells` from zones (C.5); keep the
+  entry shape. A cell with no quota never wakes (safe plaza = give it none).
+- `rt.cells` (Uint8Array awake), `rt.slots[cell] = [{q, c, mob, due, extra}]` (one per monster the cell should
+  hold; `rt.base[cell]` of them permanent), `rt.lastKill[cell]`, `rt.cellAt`. A cell monster has `mob.slot`; when it
+  dies its slot gets `due = respAt` (today's per-kind respawn time) and the dead body leaves `rt.mobs`
+  (`mob.cellGone`). Fixed and `temp` monsters keep the old path (`placeMob` at `respAt` / spliced when dead).
+- `cellPass` every `CELL_PASS_MS = 500` on a map with players: wake at `≤ WAKE_R = 3`, sleep at `> SLEEP_R = 5`
+  (Chebyshev, living players only); density `crowdTo` = `round(base × min(1.5, 0.75 + 0.25 × players within
+  WAKE_R))` (extra slots are added, empty extras dropped; base slots never); waves every `WAVE_MS` per player
+  (`p.wave`); then fill empty slots whose `due` passed, nearest cells first, at a random walkable tile of the
+  quota box `≥ SPAWN_MIN_D = 14` tiles from every living player (24 tries, else next pass), until
+  `WAKE_MAX_MOBS = 230` standing (fixed + cell monsters). Sleeping: calm monsters (no `tgt`, no `act`) leave
+  (their slot ready at once on wake); empty slots `due = max(due, lastKill + CELL_RESPAWN_MS)`; a fighting monster
+  stays until a later pass finds it calm. New mobs get new ids (no `"r"` event: they appear out of sight).
+- Observed at 1x: a 76 × 51 map is 5 × 4 cells, so one player wakes almost all of it and nothing ever sleeps
+  (max distance 4 ≤ `SLEEP_R`). The visible change at 1x is the out-of-sight rule: arriving players see an empty
+  14-tile ring that fills behind them as they walk; with many players spread over one 1x map fewer slots find a
+  spot (bench: 40 spread players on the meadow → 122 standing vs 230 for 4). Phase 1's 4x maps remove both effects.
+  With 4+ players near, a 1x map now holds up to 230 (cap) instead of ≈ 200.
+- Tick cost (node 22, 600 frames, players wandering): 160 × 112 field, 840 quota: 4/20/40 players → tick
+  0.05/0.05/0.06 ms, `viewFor` for all 0.04/0.09/0.18 ms; 1x meadow: tick 0.08/0.29/0.21 ms.
+- Tests: `tests/cells.mjs` (cells and fixed split, fixed present before any wake, out of sight + only near the
+  living, replay determinism, farmed cell not reset by walking away, sleeping cell keeps its places and refills at
+  once, party ×1.5, cap 230 nearest-first, waves). Bot tests now walk a BFS path (`sim`), borrowed test monsters
+  drop their slot (`hard`, `hotbar`), and helpers tick once so the cells fill (`loot`, `data`, `daynight`).

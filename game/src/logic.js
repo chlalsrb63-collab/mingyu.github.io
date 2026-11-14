@@ -352,6 +352,19 @@ const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
 const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8 };
 const CROWD_MAX = 228, GEAR_CUT = 0.3, MOB_ATK = 1.27;
+/**
+ * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
+ * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
+ * out of sight (at least SPAWN_MIN_D tiles from everyone), and sleeps once nobody is within
+ * SLEEP_R: its calm monsters leave, and what was killed there comes back no sooner than
+ * CELL_RESPAWN_MS after the cell's last kill (so a farmed cell is not reset by walking away).
+ * Never more than WAKE_MAX_MOBS standing monsters (chests, guardians, cell monsters) on a map.
+ * A cell's crowd follows its hunters: ×(0.75 + 0.25 per player near), at most DENSITY_MAX.
+ * Every WAVE_MS a player who moved more than WAVE_MOVE tiles finds WAVE_K more monsters in the
+ * cell WAVE_AHEAD cells ahead (never past DENSITY_MAX of its crowd). Cells are looked at every CELL_PASS_MS.
+ */
+const CELL = 16, WAKE_R = 3, SLEEP_R = 5, WAKE_MAX_MOBS = 230, SPAWN_MIN_D = 14, CELL_RESPAWN_MS = 25000, CELL_PASS_MS = 500;
+const DENSITY_MAX = 1.5, WAVE_MS = 90000, WAVE_MOVE = 8, WAVE_AHEAD = 2, WAVE_K = 0.25;
 /** Past this level the extra bite tapers off, a little per level: the deep dungeons were already the sharpest. */
 const ATK_EASE = [16, 0.016];
 /**
@@ -3064,7 +3077,46 @@ function finishMap(m) {
     if (c && !m.npcs.some((o) => o.id === c.id)) m.npcs.push(c);
   }
   if (!FIRES[id]) FIRES[id] = [];
-  return finalize(m);
+  finalize(m);
+  buildCells(m);
+  return m;
+}
+/**
+ * The map's monsters by cell (CELL × CELL tiles): m.cells = { cw, ch, spawns, fixed, open, zone }.
+ * `spawns[cell]` lists the quotas that live in a cell ({ k, n, ep, r, zone }: kind, how many, elite
+ * chance, the box they stand in, clipped to the cell); every old spawn box is shared out over the
+ * cells it covers by their walkable tiles. `fixed` are the ones that never sleep (chests, bosses,
+ * guardians and other placed elites), `open` the walkable tiles per cell. A generator may set
+ * `m.zone` (a Uint8Array, one zone per tile) first; without one every quota is zone 1.
+ */
+function buildCells(m) {
+  const cw = Math.ceil(m.w / CELL), ch = Math.ceil(m.h / CELL), W = m.w;
+  const spawns = Array.from({ length: cw * ch }, () => []), fixed = [], open = new Int32Array(cw * ch);
+  const zone = m.zone || null;
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < W; x++) if (m.reach[y * W + x]) open[Math.floor(y / CELL) * cw + Math.floor(x / CELL)]++;
+  const reachIn = (x0, y0, x1, y1) => { let n = 0; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (m.reach[y * W + x]) n++; return n; };
+  for (const sp of m.spawns) {
+    if (MOBS[sp.k].chest || MOBS[sp.k].boss || sp.el) { fixed.push(sp); continue; }
+    const [x0, y0, x1, y1] = sp.r, parts = [];
+    let total = 0;
+    for (let cy = Math.floor(y0 / CELL); cy <= Math.floor(y1 / CELL); cy++) for (let cx = Math.floor(x0 / CELL); cx <= Math.floor(x1 / CELL); cx++) {
+      const r = [Math.max(x0, cx * CELL), Math.max(y0, cy * CELL), Math.min(x1, cx * CELL + CELL - 1), Math.min(y1, cy * CELL + CELL - 1)];
+      const n = reachIn(...r);
+      if (n) { parts.push({ i: cy * cw + cx, r, n }); total += n; }
+    }
+    if (!total) continue; // nowhere to stand: it never spawned anywhere before either
+    // shares by walkable tiles, the remainder to the largest fractions (first box first on a tie)
+    const want = parts.map((p) => (sp.n * p.n) / total), got = want.map(Math.floor);
+    let left = sp.n - got.reduce((a, b) => a + b, 0);
+    const order = parts.map((_, j) => j).sort((a, b) => want[b] - got[b] - (want[a] - got[a]) || a - b);
+    for (let j = 0; left > 0; j++, left--) got[order[j % order.length]]++;
+    parts.forEach((p, j) => {
+      if (!got[j]) return;
+      const z = zone ? zone[Math.floor((p.r[1] + p.r[3]) / 2) * W + Math.floor((p.r[0] + p.r[2]) / 2)] : 1;
+      spawns[p.i].push({ k: sp.k, n: got[j], ep: sp.elite !== undefined ? sp.elite : 0.08, r: p.r, zone: z });
+    });
+  }
+  m.cells = { cw, ch, spawns, fixed, open, zone };
 }
 const metaKinds = (m) => [...new Set(m.spawns.map((sp) => sp.k))];
 
@@ -3483,18 +3535,30 @@ export function runtime(S, id) {
   if (have) return have;
   const m = mapOfS(S, id);
   if (!m) return null;
-  const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0 };
+  if (!m.cells) buildCells(m);
+  const C = m.cells, nc = C.cw * C.ch;
+  const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0,
+    // the cells (80-simulation.js cellPass): awake or not, the monsters each should hold (slots), its last kill, when to look again
+    cells: new Uint8Array(nc), slots: [], lastKill: new Array(nc).fill(-1e9), cellAt: 0 };
   for (const [fx, fy] of FIRES[id] || []) {
     const at = freeTile(m, fx, fy);
     if (at) rt.fires.push({ id: S.nextId++, x: at[0] * T + 8, y: at[1] * T + 10, until: 0 });
   }
-  for (const sp of m.spawns) {
+  // chests, bosses and guardians are there from the start and never sleep
+  for (const sp of C.fixed) {
     for (let i = 0; i < sp.n; i++) {
       const mob = newMob(S, sp.k, sp.r, sp);
       placeMob(S, m, mob);
       rt.mobs.push(mob);
     }
   }
+  // everything else waits in its cell for someone to come near: one slot per monster, empty until the cell wakes
+  for (let c = 0; c < nc; c++) {
+    const list = [];
+    for (const q of C.spawns[c]) for (let i = 0; i < q.n; i++) list.push({ q, c, mob: null, due: 0, extra: false });
+    rt.slots.push(list);
+  }
+  rt.base = rt.slots.map((l) => l.length);
   S.maps[id] = rt;
   return rt;
 }
@@ -3539,6 +3603,10 @@ function placeMob(S, m, mob) {
       break;
     }
   }
+  readyMob(S, mob);
+}
+/** A monster standing where it was put, fresh: its rank and traits rolled, at full health. */
+function readyMob(S, mob) {
   // now and then an elite spawns: far tougher, far more rewarding — party prey
   // (how often depends on where: deeper chambers and side vaults breed more of them)
   mob.el = mob.fix || (!MOBS[mob.k].boss && !MOBS[mob.k].chest && rnd(S) < mob.ep ? 1 : 0);
@@ -3981,6 +4049,8 @@ function killMob(S, rt, mob) {
   const el = mob.el;
   mob.dead = true;
   mob.respAt = S.now + (mob.fix === 2 ? GUARD_RESP : d.resp);
+  // a cell's monster leaves its slot: the cell refills it once its time is up (80-simulation.js cellPass)
+  if (mob.slot) { mob.slot.mob = null; mob.slot.due = mob.respAt; rt.lastKill[mob.slot.c] = S.now; mob.slot = null; mob.cellGone = true; }
   mob.tgt = null;
   mob.dot = null;
   mob.mk = 0; mob.dec = null; mob.vuln = 0;
@@ -6655,7 +6725,8 @@ function tickMob(S, m, rt, mob, dt) {
   const d = MOBS[mob.k];
   const now = S.now;
   if (mob.dead) {
-    if (!mob.temp && now >= mob.respAt) { placeMob(S, m, mob); rt.ev.push(["r", mob.id]); }
+    // (a cell's monster is gone for good: its cell sends another in its place, cellPass)
+    if (!mob.temp && !mob.cellGone && now >= mob.respAt) { placeMob(S, m, mob); rt.ev.push(["r", mob.id]); }
     return;
   }
   if (mob.dot) {
@@ -6759,6 +6830,115 @@ function tickMob(S, m, rt, mob, dt) {
   stepMob(m, mob, mob.wx, mob.wy, speed * 0.5, dt, d.fly);
 }
 
+// ───────────────────────────── active-area cells ─────────────────────────────
+// docs/design/scale-and-rift.md B.4d: the monsters of a map live in its cells (m.cells, built
+// with the map; rt.slots, one per monster a cell should hold). Cells near the living players
+// wake and fill out of sight; far ones sleep and let their calm monsters go. Chests, bosses,
+// guardians and event monsters are not in cells and never sleep.
+
+/** A tile in box r that is walkable and at least SPAWN_MIN_D tiles from every one of `pts` (tile coordinates), or null. */
+function placeAway(S, m, r, pts) {
+  const [x0, y0, x1, y1] = r, d2 = SPAWN_MIN_D * SPAWN_MIN_D;
+  for (let i = 0; i < 24; i++) {
+    const tx = ri(S, x0, x1), ty = ri(S, y0, y1);
+    if (!m.reach[ty * m.w + tx]) continue;
+    let ok = true;
+    for (const [px, py] of pts) if ((tx + 0.5 - px) ** 2 + (ty + 0.5 - py) ** 2 < d2) { ok = false; break; }
+    if (ok) return [tx, ty];
+  }
+  return null;
+}
+/** A cell's crowd for `k` players near it: base × (0.75 + 0.25k), at most DENSITY_MAX; extra slots come and (empty) go. */
+function crowdTo(rt, c, k) {
+  const list = rt.slots[c], base = rt.base[c];
+  const target = Math.round(base * Math.min(DENSITY_MAX, 0.75 + 0.25 * k));
+  for (let i = list.length - 1; i >= base && list.length > target; i--) if (!list[i].mob) list.splice(i, 1);
+  for (let i = list.length; i < target; i++) list.push({ q: list[i % base].q, c, mob: null, due: 0, extra: true });
+}
+/**
+ * A cell falls asleep: its calm monsters leave (one still fighting stays until it calms, a later
+ * pass), the ones killed there come back no sooner than CELL_RESPAWN_MS after its last kill, and
+ * its extra slots go.
+ */
+function sleepCell(rt, c) {
+  rt.cells[c] = 0;
+  const list = rt.slots[c], since = rt.lastKill[c] + CELL_RESPAWN_MS;
+  let gone = 0;
+  for (const s of list) {
+    const mob = s.mob;
+    if (!mob) { s.due = Math.max(s.due, since); continue; }
+    if (mob.tgt || mob.act) continue;
+    mob.slot = null; mob.dead = true; mob.cellGone = true; s.mob = null; s.due = 0; gone++;
+  }
+  if (gone) for (let i = rt.mobs.length - 1; i >= 0; i--) if (rt.mobs[i].cellGone && rt.mobs[i].dead && !rt.mobs[i].slot) rt.mobs.splice(i, 1);
+  for (let i = list.length - 1; i >= rt.base[c]; i--) if (!list[i].mob) list.splice(i, 1);
+}
+/**
+ * Every CELL_PASS_MS on a map with players: wake the cells near the living, put to sleep the ones
+ * nobody is near, send the waves, then fill the awake cells' empty slots whose time has come,
+ * nearest cells first, out of sight, never past WAKE_MAX_MOBS standing monsters.
+ */
+function cellPass(S, m, rt, pids) {
+  const now = S.now;
+  if (now < rt.cellAt || !m.cells) return;
+  rt.cellAt = now + CELL_PASS_MS;
+  const C = m.cells, cw = C.cw, ch = C.ch, nc = cw * ch;
+  const folk = [];
+  for (const pid of pids) { const p = S.players[pid]; if (p.map === rt.id && !p.dead) folk.push(p); }
+  const cellX = (p) => clamp(Math.floor(p.x / T / CELL), 0, cw - 1), cellY = (p) => clamp(Math.floor(p.y / T / CELL), 0, ch - 1);
+  const near = new Int32Array(nc).fill(1 << 20), crowd = new Uint8Array(nc);
+  for (const p of folk) {
+    const px = cellX(p), py = cellY(p);
+    for (let cy = 0; cy < ch; cy++) for (let cx = 0; cx < cw; cx++) {
+      const d = Math.max(Math.abs(cx - px), Math.abs(cy - py)), c = cy * cw + cx;
+      if (d < near[c]) near[c] = d;
+      if (d <= WAKE_R) crowd[c]++;
+    }
+  }
+  for (let c = 0; c < nc; c++) {
+    if (!rt.base[c]) continue;
+    if (near[c] > SLEEP_R) {
+      if (rt.cells[c] || rt.slots[c].some((s) => s.mob)) sleepCell(rt, c);
+      continue;
+    }
+    if (!rt.cells[c] && near[c] <= WAKE_R) rt.cells[c] = 1;
+    if (rt.cells[c]) crowdTo(rt, c, crowd[c]);
+  }
+  // waves: a hunter on the move finds more ahead of them
+  for (const p of folk) {
+    const w = p.wave;
+    if (!w || w.map !== rt.id) { p.wave = { map: rt.id, at: now + WAVE_MS, x: p.x, y: p.y }; continue; }
+    if (now < w.at) continue;
+    const dx = (p.x - w.x) / T, dy = (p.y - w.y) / T, len = Math.hypot(dx, dy);
+    w.at = now + WAVE_MS; w.x = p.x; w.y = p.y;
+    if (len <= WAVE_MOVE) continue;
+    const c = clamp(cellY(p) + Math.round((dy / len) * WAVE_AHEAD), 0, ch - 1) * cw + clamp(cellX(p) + Math.round((dx / len) * WAVE_AHEAD), 0, cw - 1);
+    const base = rt.base[c], list = rt.slots[c];
+    if (!rt.cells[c] || !base) continue;
+    const add = Math.min(Math.ceil(base * WAVE_K), Math.floor(base * DENSITY_MAX) - list.length);
+    for (let i = 0; i < add; i++) list.push({ q: list[i % base].q, c, mob: null, due: 0, extra: true });
+  }
+  // fill
+  let standing = 0;
+  for (const mob of rt.mobs) if (!mob.dead && !mob.temp) standing++;
+  if (standing >= WAKE_MAX_MOBS) return;
+  const order = [];
+  for (let c = 0; c < nc; c++) if (rt.cells[c] && rt.base[c]) order.push(c);
+  order.sort((a, b) => near[a] - near[b] || a - b);
+  const pts = folk.map((p) => [p.x / T, p.y / T]);
+  for (const c of order) for (const s of rt.slots[c]) {
+    if (s.mob || now < s.due) continue;
+    const at = placeAway(S, m, s.q.r, pts);
+    if (!at) continue;
+    const mob = newMob(S, s.q.k, s.q.r, { elite: s.q.ep });
+    mob.x = mob.hx = at[0] * T + 8; mob.y = mob.hy = at[1] * T + 10;
+    readyMob(S, mob);
+    mob.slot = s; s.mob = mob;
+    rt.mobs.push(mob);
+    if (++standing >= WAKE_MAX_MOBS) return;
+  }
+}
+
 /** Advance the world to `now`. Maps nobody is standing in are frozen. */
 export function tick(S, now) {
   const dt = clamp(now - (S.last || now), 0, 300) / 1000;
@@ -6771,11 +6951,12 @@ export function tick(S, now) {
     const rt = S.maps[id];
     if (rt.n <= 0) continue;
     const m = mapOfS(S, id);
+    cellPass(S, m, rt, pids);
     // how many monsters are already after each player here
     for (const pid of pids) if (S.players[pid].map === id) S.players[pid].foes = 0;
     for (const mob of rt.mobs) { const o = !mob.dead && mob.tgt ? S.players[mob.tgt] : null; if (o && o.map === id) o.foes++; }
     for (const mob of rt.mobs) tickMob(S, m, rt, mob, dt);
-    for (let i = rt.mobs.length - 1; i >= 0; i--) if (rt.mobs[i].temp && rt.mobs[i].dead) rt.mobs.splice(i, 1);
+    for (let i = rt.mobs.length - 1; i >= 0; i--) if ((rt.mobs[i].temp || rt.mobs[i].cellGone) && rt.mobs[i].dead) rt.mobs.splice(i, 1);
     for (let i = rt.zones.length - 1; i >= 0; i--) {
       const z = rt.zones[i];
       if (now < z.next) continue;

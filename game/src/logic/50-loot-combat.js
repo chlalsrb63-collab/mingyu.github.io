@@ -280,6 +280,8 @@ function killMob(S, rt, mob) {
   const el = mob.el;
   mob.dead = true;
   mob.respAt = S.now + (mob.fix === 2 ? GUARD_RESP : d.resp);
+  // a cell's monster leaves its slot: the cell refills it once its time is up (80-simulation.js cellPass)
+  if (mob.slot) { mob.slot.mob = null; mob.slot.due = mob.respAt; rt.lastKill[mob.slot.c] = S.now; mob.slot = null; mob.cellGone = true; }
   mob.tgt = null;
   mob.dot = null;
   mob.mk = 0; mob.dec = null; mob.vuln = 0;

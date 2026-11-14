@@ -40,8 +40,30 @@ for (let i = 0; i < 400 && v.map?.id !== "meadow"; i++) {
 }
 assert.equal(v.map?.id, "meadow", "should have crossed the portal, stuck at x=" + x);
 
-// hunt: walk at the nearest monster and hit it until something dies
-let kills = 0, gained = false, side = 0;
+// hunt: walk at the nearest monster and hit it until something dies. Monsters come alive out of
+// sight (at least SPAWN_MIN_D tiles away), so the walk goes round trees and walls: a breadth-first
+// path over the meadow's walkable tiles, one tile centre at a time.
+const MM = L.atlas().maps.meadow;
+const tileOf = (px, py) => [Math.floor(px / 16), Math.floor(py / 16)];
+const towards = (sx, sy, tx, ty) => {
+  const W = MM.w, d = new Int32Array(W * MM.h).fill(-1), q = [ty * W + tx];
+  d[q[0]] = 0;
+  for (let h = 0; h < q.length; h++) {
+    const i = q[h], x = i % W, y = (i - x) / W;
+    for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+      const j = ny * W + nx;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= MM.h || !MM.reach[j] || d[j] >= 0) continue;
+      d[j] = d[i] + 1; q.push(j);
+    }
+  }
+  let best = null, bd = d[sy * W + sx] < 0 ? 1e9 : d[sy * W + sx];
+  for (const [nx, ny] of [[sx + 1, sy], [sx - 1, sy], [sx, sy + 1], [sx, sy - 1]]) {
+    const j = ny * W + nx;
+    if (nx >= 0 && ny >= 0 && nx < W && ny < MM.h && d[j] >= 0 && d[j] < bd) { bd = d[j]; best = [nx, ny]; }
+  }
+  return best;
+};
+let kills = 0, gained = false;
 for (let i = 0; i < 3000 && kills < 3; i++) {
   const mobs = v.M.slice().sort((a, b) => Math.hypot(a[2] - v.me[0], a[3] - v.me[1]) - Math.hypot(b[2] - v.me[0], b[3] - v.me[1]));
   if (v.me[4]) { act({ t: "respawn" }); v = step(); continue; }
@@ -49,11 +71,11 @@ for (let i = 0; i < 3000 && kills < 3; i++) {
     const [mx, my] = [mobs[0][2], mobs[0][3]];
     const d = Math.hypot(mx - v.me[0], my - v.me[1]);
     if (d > 20) {
-      // dumb steering: when the straight line is blocked by a tree, sidestep for a while
-      if (v.me[5] && !side) side = 12;
-      const ux = (mx - v.me[0]) / d, uy = (my - v.me[1]) / d;
-      if (side > 0) { side--; act({ t: "mv", x: v.me[0] - uy * 6, y: v.me[1] + ux * 6 }); }
-      else act({ t: "mv", x: v.me[0] + ux * 6, y: v.me[1] + uy * 6 });
+      const [sx, sy] = tileOf(v.me[0], v.me[1]), [tx, ty] = tileOf(mx, my);
+      const nt = towards(sx, sy, tx, ty);
+      const [gx, gy] = nt ? [nt[0] * 16 + 8, nt[1] * 16 + 10] : [mx, my];
+      const gd = Math.hypot(gx - v.me[0], gy - v.me[1]) || 1, k = Math.min(6, gd);
+      act({ t: "mv", x: v.me[0] + ((gx - v.me[0]) / gd) * k, y: v.me[1] + ((gy - v.me[1]) / gd) * k });
     }
     else act({ t: "atk" });
   } else act({ t: "mv", x: v.me[0] + 6, y: v.me[1] });

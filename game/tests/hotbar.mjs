@@ -139,7 +139,9 @@ assert.equal(act(A, { t: "sort" }).ok, false, "nothing to tidy");
   const q = S.players[LV];
   const meadow = L.runtime(S, "meadow");
   L.runtime(S, q.map).n--; q.map = "meadow"; meadow.n++;
+  L.tick(S, (now += 100)); L.endTick(S); // its cells wake and fill
   const hare = meadow.mobs.find((m) => m.k === "twinhare");
+  hare.slot = null; // borrowed from its cell: it stays in the world to be struck again
   q.x = hare.x - 12; q.y = hare.y; q.mvAt = now; q.dir = 2; q.aim = 0;
   for (const o of meadow.mobs) if (o !== hare && !o.dead && Math.hypot(o.x - q.x, o.y - q.y) < 90) { o.x += 4000; o.hx = o.x; }
   const lvlUp = () => {

@@ -207,6 +207,19 @@ const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
 const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8 };
 const CROWD_MAX = 228, GEAR_CUT = 0.3, MOB_ATK = 1.27;
+/**
+ * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
+ * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
+ * out of sight (at least SPAWN_MIN_D tiles from everyone), and sleeps once nobody is within
+ * SLEEP_R: its calm monsters leave, and what was killed there comes back no sooner than
+ * CELL_RESPAWN_MS after the cell's last kill (so a farmed cell is not reset by walking away).
+ * Never more than WAKE_MAX_MOBS standing monsters (chests, guardians, cell monsters) on a map.
+ * A cell's crowd follows its hunters: ×(0.75 + 0.25 per player near), at most DENSITY_MAX.
+ * Every WAVE_MS a player who moved more than WAVE_MOVE tiles finds WAVE_K more monsters in the
+ * cell WAVE_AHEAD cells ahead (never past DENSITY_MAX of its crowd). Cells are looked at every CELL_PASS_MS.
+ */
+const CELL = 16, WAKE_R = 3, SLEEP_R = 5, WAKE_MAX_MOBS = 230, SPAWN_MIN_D = 14, CELL_RESPAWN_MS = 25000, CELL_PASS_MS = 500;
+const DENSITY_MAX = 1.5, WAVE_MS = 90000, WAVE_MOVE = 8, WAVE_AHEAD = 2, WAVE_K = 0.25;
 /** Past this level the extra bite tapers off, a little per level: the deep dungeons were already the sharpest. */
 const ATK_EASE = [16, 0.016];
 /**

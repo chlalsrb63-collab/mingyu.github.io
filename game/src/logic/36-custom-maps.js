@@ -168,7 +168,46 @@ function finishMap(m) {
     if (c && !m.npcs.some((o) => o.id === c.id)) m.npcs.push(c);
   }
   if (!FIRES[id]) FIRES[id] = [];
-  return finalize(m);
+  finalize(m);
+  buildCells(m);
+  return m;
+}
+/**
+ * The map's monsters by cell (CELL × CELL tiles): m.cells = { cw, ch, spawns, fixed, open, zone }.
+ * `spawns[cell]` lists the quotas that live in a cell ({ k, n, ep, r, zone }: kind, how many, elite
+ * chance, the box they stand in, clipped to the cell); every old spawn box is shared out over the
+ * cells it covers by their walkable tiles. `fixed` are the ones that never sleep (chests, bosses,
+ * guardians and other placed elites), `open` the walkable tiles per cell. A generator may set
+ * `m.zone` (a Uint8Array, one zone per tile) first; without one every quota is zone 1.
+ */
+function buildCells(m) {
+  const cw = Math.ceil(m.w / CELL), ch = Math.ceil(m.h / CELL), W = m.w;
+  const spawns = Array.from({ length: cw * ch }, () => []), fixed = [], open = new Int32Array(cw * ch);
+  const zone = m.zone || null;
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < W; x++) if (m.reach[y * W + x]) open[Math.floor(y / CELL) * cw + Math.floor(x / CELL)]++;
+  const reachIn = (x0, y0, x1, y1) => { let n = 0; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (m.reach[y * W + x]) n++; return n; };
+  for (const sp of m.spawns) {
+    if (MOBS[sp.k].chest || MOBS[sp.k].boss || sp.el) { fixed.push(sp); continue; }
+    const [x0, y0, x1, y1] = sp.r, parts = [];
+    let total = 0;
+    for (let cy = Math.floor(y0 / CELL); cy <= Math.floor(y1 / CELL); cy++) for (let cx = Math.floor(x0 / CELL); cx <= Math.floor(x1 / CELL); cx++) {
+      const r = [Math.max(x0, cx * CELL), Math.max(y0, cy * CELL), Math.min(x1, cx * CELL + CELL - 1), Math.min(y1, cy * CELL + CELL - 1)];
+      const n = reachIn(...r);
+      if (n) { parts.push({ i: cy * cw + cx, r, n }); total += n; }
+    }
+    if (!total) continue; // nowhere to stand: it never spawned anywhere before either
+    // shares by walkable tiles, the remainder to the largest fractions (first box first on a tie)
+    const want = parts.map((p) => (sp.n * p.n) / total), got = want.map(Math.floor);
+    let left = sp.n - got.reduce((a, b) => a + b, 0);
+    const order = parts.map((_, j) => j).sort((a, b) => want[b] - got[b] - (want[a] - got[a]) || a - b);
+    for (let j = 0; left > 0; j++, left--) got[order[j % order.length]]++;
+    parts.forEach((p, j) => {
+      if (!got[j]) return;
+      const z = zone ? zone[Math.floor((p.r[1] + p.r[3]) / 2) * W + Math.floor((p.r[0] + p.r[2]) / 2)] : 1;
+      spawns[p.i].push({ k: sp.k, n: got[j], ep: sp.elite !== undefined ? sp.elite : 0.08, r: p.r, zone: z });
+    });
+  }
+  m.cells = { cw, ch, spawns, fixed, open, zone };
 }
 const metaKinds = (m) => [...new Set(m.spawns.map((sp) => sp.k))];
 

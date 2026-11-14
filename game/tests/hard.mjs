@@ -27,15 +27,29 @@ for (const m of D.maps) for (const k of m.mobs) if (m.band && !D.mobs[k].chest) 
 const S = L.setup();
 let now = 1000;
 S.now = now;
-for (const { id } of L.defs().maps) {
-  const rt = L.runtime(S, id);
-  if (id === "town" || L.atlas().maps[id].safe) continue; // the town, and safe places from the map editor (data/maps)
-  assert.ok(rt.mobs.length >= 100 && rt.mobs.length <= 230, `${id}: ${rt.mobs.length} monsters`);
-  for (const m of rt.mobs) {
-    assert.equal(m.tr.length, m.el, `${id}: a rank-${m.el} ${m.k} carries ${m.el} trait(s)`);
-    assert.equal(new Set(m.tr).size, m.tr.length);
-    for (const t of m.tr) assert.ok(TRAITS.includes(t));
+{
+  // a scout stands at each hunting ground's entrance: the cells around wake and fill, out of sight
+  L.addPlayer(S, "pid-scout", L.newChar("정찰병", "warrior", []));
+  const scout = S.players["pid-scout"];
+  for (const { id } of L.defs().maps) {
+    const m = L.atlas().maps[id];
+    if (id === "town" || m.safe) continue; // the town, and safe places from the map editor (data/maps)
+    const crowd = m.cells.spawns.flat().reduce((n, q) => n + q.n, 0) + m.cells.fixed.reduce((n, sp) => n + sp.n, 0);
+    assert.ok(crowd >= 100 && crowd <= 230, `${id}: ${crowd} monsters`);
+    L.runtime(S, scout.map).n--; scout.map = id; L.runtime(S, id).n++;
+    scout.x = m.entry[0] * 16 + 8; scout.y = m.entry[1] * 16 + 10; scout.hp = 1e9;
+    L.tick(S, (now += 100));
+    const rt = L.runtime(S, id);
+    assert.ok(rt.mobs.length >= crowd * 0.4, `${id}: ${rt.mobs.length} of ${crowd} monsters about the entrance`);
+    for (const mob of rt.mobs) {
+      assert.equal(mob.tr.length, mob.el, `${id}: a rank-${mob.el} ${mob.k} carries ${mob.el} trait(s)`);
+      assert.equal(new Set(mob.tr).size, mob.tr.length);
+      for (const t of mob.tr) assert.ok(TRAITS.includes(t));
+      if (mob.slot) assert.ok(Math.hypot(mob.x - scout.x, mob.y - scout.y) >= 14 * 16 - 16, `${id}: a ${mob.k} came alive out of sight`);
+    }
+    L.endTick(S);
   }
+  L.removePlayer(S, "pid-scout");
 }
 assert.ok(L.runtime(S, "crypt").mobs.some((m) => m.el === 2 && m.tr.length === 2), "a guardian carries two");
 
@@ -64,6 +78,7 @@ const X = lane[0] * 16 + 8, Y = lane[1] * 16 + 10;
 // everything else goes quiet; one monster is borrowed and dressed up for each trial
 for (const m of rt.mobs) { m.dead = true; m.respAt = 1e15; }
 const pet = rt.mobs.find((m) => m.k === "twinhare");
+pet.slot = null; // borrowed from its cell for good: it stays in the world between trials, as a placed monster does
 const stand = (dx = 0, dy = 0) => { p.x = X + dx; p.y = Y + dy; p.mvAt = now; p.dead = false; p.hp = 9999; p.burn = null; p.poison = null; p.slowed = 0; p.hitAt = -1e9; p.atkAt = 0; p.dir = 2; p.aim = 0; };
 const dress = (k, el, tr, dx, extra = {}) => Object.assign(pet, { k, el, tr, dead: false, hp: 1e6, x: X + dx, y: Y, hx: X + dx, hy: Y, wx: X + dx, wy: Y, tgt: PID, st: 0, stun: 0, slow: 0, dot: null, act: null, mv: 0, cn: 0, atkAt: now, castAt: 1e15, mvAt: 1e15, by: {} }, extra);
 const events = (ms) => { const out = []; for (let t = 0; t < ms; t += 100) for (const e of step().ev || []) out.push(e); return out; };
