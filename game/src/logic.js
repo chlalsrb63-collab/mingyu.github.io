@@ -316,7 +316,9 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 /** The tricks a monster may have besides its plain attack, in the order it tries them. */
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
-const CROWD = 1.4, CROWD_MAX = 228, GEAR_CUT = 0.3, MOB_ATK = 1.27;
+/** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 5.6, cave: 11.3, abyss: 6 };
+const CROWD_MAX = 228, GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /** Past this level the extra bite tapers off, a little per level: the deep dungeons were already the sharpest. */
 const ATK_EASE = [16, 0.016];
 /**
@@ -1362,11 +1364,14 @@ function wilds(cfg) {
     if (o) m.o[y][x] = o;
   }
 
-  // who lives where: deeper regions breed stronger kinds, more of them, and more elites
+  // who lives where: deeper regions breed stronger kinds, more of them, and more elites.
+  // Depth is taken as a rank, so the roster's weights hold however the regions happen to spread
+  const depthRank = new Map();
+  R.map((r) => r.k).filter((k) => D[k] >= 0).sort((a, b) => D[a] - D[b] || a - b).forEach((k, j, all) => depthRank.set(k, all.length > 1 ? j / (all.length - 1) : 0));
   for (const r of R) {
     const k = r.k;
     if (D[k] < 0 || role[k] === "camp") continue;
-    const t = D[k] / far, rect = coreRect(m, r, inner, 2);
+    const t = depthRank.get(k), rect = coreRect(m, r, inner, 2);
     let walkable = 0;
     for (const i of r.tiles) { const [x, y] = at(i); if (!blockedAt(m, x, y)) walkable++; }
     if (role[k] === "gate") { spawns.push({ k: k === 0 ? cfg.mobs[0] : cfg.mobs[cfg.mobs.length - 1], n: 2, r: rect, elite: k === 0 ? 0 : 0.1 }); continue; }
@@ -2442,7 +2447,10 @@ function buildMaps() {
     const grows = (sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el;
     let base = 0, fixed = 0;
     for (const sp of m.spawns) { if (grows(sp)) base += sp.n; else fixed += sp.n; }
-    const k = Math.min(CROWD, (CROWD_MAX - fixed) / base);
+    // as many as the ground has room for, at the density each kind of ground is meant to have
+    let open = 0;
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x])) open++;
+    const k = Math.min(CROWD_MAX - fixed, open / DENSITY[m.id]) / base;
     let carry = 0;
     for (const sp of m.spawns) {
       if (!grows(sp)) continue;
