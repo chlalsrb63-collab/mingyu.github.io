@@ -2143,7 +2143,7 @@ function renderWarp(s) {
   const hereI = stones.findIndex((k) => dist(G.me.x, G.me.y, k.x * T + 8, k.y * T + 8) < 40);
   for (const w of G.defs.waypoints || []) for (let i = 0; i < (w.n || 1); i++) {
     const open = wpWoke(s, w.id, i), cur = w.id === here && (hereI < 0 ? i === 0 : hereI === i);
-    const row = el("div", "it wp" + (open ? "" : " locked") + (cur ? " cur" : "") + (G.warpPick === w.id && i === 0 ? " pick" : ""));
+    const row = el("div", "it wp" + (open ? "" : " locked") + (cur ? " cur" : "") + (G.warpPick === w.id && i === (G.warpPickI | 0) ? " pick" : ""));
     const ic = el("span", "wpi"); ic.append(iconImg("stone", open ? "#8ad8ff" : "#6a6658"));
     const tx = el("div", "tx", (w.n || 1) > 1 ? `${w.name} · ${(w.names && w.names[i]) || i + 1}` : w.name);
     tx.append(el("small", "", `${bandText(w.band)} · ${cur ? "현재 위치" : open ? "이동 가능" : "아직 깨우지 않음"}`));
@@ -2371,8 +2371,10 @@ function eventWidget(t) {
 $("#evt").addEventListener("click", () => {
   const e = G.evt, s = G.self;
   if (!e || !s) return;
-  const target = e.phase === "idle" || e.phase === "done" ? e.nextMap : e.map;
-  if (wpWoke(s, target)) { G.warpPick = target; openWin("warp"); toast("이동의 돌 곁에서 균열 침공 지역으로 이동할 수 있습니다"); }
+  // the event gathers at one stone of its ground (the middle one, 중턱, on a big ground)
+  const next = e.phase === "idle" || e.phase === "done", target = next ? e.nextMap : e.map, st = (next ? e.nextSt : e.st) | 0;
+  if (wpWoke(s, target, st)) { G.warpPick = target; G.warpPickI = st; openWin("warp"); toast("이동의 돌 곁에서 균열 침공 지역으로 이동할 수 있습니다"); }
+  else if (wpWoke(s, target)) { G.warpPick = target; G.warpPickI = 0; openWin("warp"); toast("침공이 모이는 이동의 돌을 아직 깨우지 않았습니다 — 입구 돌로 건너가 걸어가세요"); }
   else toast("그 지역의 이동의 돌을 아직 깨우지 않았습니다");
   Sound.play("ui");
 });

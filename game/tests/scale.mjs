@@ -161,9 +161,35 @@ assert.equal(D.waypoints.find((w) => w.id === "town").n, 1);
   assert.ok(el.filter((o) => o.el === 1).length >= 1, "elites out there");
 }
 
-// ── the world event still gathers at a ground's first stone, in its safe plaza
-for (const id of D.event.maps) {
-  const s = maps[id].stones ? maps[id].stones[0] : null;
-  if (s) assert.equal(maps[id].zone[s.ay * maps[id].w + s.ax], 0, id + ": the rift gathers at the first stone");
+// ── the world event gathers at a big ground's middle stone (중턱), never in the entrance plaza; it says where,
+// and the snapshot names the stone so the client can offer the warp
+{
+  const W = world("침공");
+  L.addPlayer(W.S, W.PID, L.newChar("침공", "warrior", []));
+  const S = W.S, slot = 3, start = slot * 1800000;
+  // the 2-minute warning, then the start and its first wave
+  S.now = start - 100000; L.tick(S, S.now);
+  const e = S.evt, id = e.map, m = maps[id];
+  assert.ok(m.stones, id + " is a big ground");
+  assert.ok(S.chat.some((c) => c.m.includes(`${m.name} · 중턱`) && c.m.includes("이동의 돌")), "the warning names the stone: " + S.chat.map((c) => c.m).join(" / "));
+  W.p.dirty = true;
+  let v = JSON.parse(JSON.stringify(L.viewFor(S, W.PID)));
+  assert.equal(v.self.evt.st, 1, "the snapshot names the middle stone");
+  L.endTick(S);
+  S.now = start + 10; L.tick(S, S.now);
+  const rt = L.runtime(S, id), wave = rt.mobs.filter((o) => o.evt && !o.dead);
+  assert.ok(wave.length >= 5, "the first wave is out");
+  const s1 = m.stones[1];
+  for (const o of wave) {
+    assert.ok(Math.hypot(o.x / T - s1.ax, o.y / T - s1.ay) <= 9, `the wave gathers at the middle stone (${Math.round(o.x / T)},${Math.round(o.y / T)} vs ${s1.ax},${s1.ay})`);
+    assert.notEqual(m.zone[Math.floor(o.y / T) * m.w + Math.floor(o.x / T)], 0, "never in the entrance plaza");
+  }
+  assert.ok(S.chat.some((c) => c.m.startsWith("균열 침공 시작!") && c.m.includes("중턱")));
+  L.endTick(S);
+  // every rift map: the middle stone stands out of the plaza
+  for (const mid of D.event.maps) {
+    const s = maps[mid].stones ? maps[mid].stones[1] : null;
+    if (s) assert.notEqual(maps[mid].zone[s.ay * maps[mid].w + s.ax], 0, mid + ": the rift gathers out of the plaza");
+  }
 }
 console.log("scale ok — stones " + Object.keys(maps).filter((id) => maps[id].stones).map((id) => `${id} ${maps[id].stones.length}`).join(", "));

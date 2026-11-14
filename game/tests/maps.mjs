@@ -154,7 +154,7 @@ for (const id of HUNT) {
   assert.ok(m.marks.some((k) => k.kind === "sign" && k.label.startsWith("엘리트 지대")), `${id}: a warning where the elite ground begins`);
   // waypoint stones: as many as MAP_META says, deeper and deeper along the way on, each reachable; a wind shrine past each later one
   assert.equal(m.stones.length, meta[id].wpn, `${id}: ${meta[id].wpn} waypoint stones`);
-  assert.deepEqual(m.stones[0], waypoints[id], `${id}: the first stone is the one events gather at`);
+  assert.deepEqual(m.stones[0], waypoints[id], `${id}: the first stone is the map's own (WP)`);
   m.stones.forEach((s, i) => {
     assert.equal(s.i, i);
     assert.equal(m.o[s.y][s.x], "Q");

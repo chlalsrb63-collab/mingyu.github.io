@@ -659,7 +659,7 @@ is: `zoneSpawns` recomputes every count. No generator needed a new algorithm (no
 
 1. **Stones on the v9 sheet (F.4).** `ch.wp[id]` bit `i` = stone `i`; `explore` wakes the bit of the stone you stand
    by, `warp {to, i?}` checks it; `migrate` also drops bits past the map's `MAP_META[id].wpn` (known without
-   building). `WP[id]` stays the first stone (events, boss spot and editor code read it) instead of becoming a list;
+   building). `WP[id]` stays the first stone (boss spot and editor code read it) instead of becoming a list;
    every stone is in `m.stones` (`{x, y, ax, ay, i}`, `stonesOf(m)`). A warp to another stone of the same map moves
    the player without resending the map. `defs().waypoints[]` gained `n` and `names` (입구 · 중턱 · 안쪽);
    `wpall` still asks for stone 0 of every map.
@@ -689,6 +689,14 @@ is: `zoneSpawns` recomputes every count. No generator needed a new algorithm (no
    shrines yet: it keeps what the file has only if it keeps unknown fields.
 9. **Migration**: `addPlayer` moves a sheet whose (x, y) is not standable or not reachable to that same map's entrance
    with the toast "지형이 넓어져 입구로 이동했습니다." (safe maps without the toast); `migrate` clamps x, y into the map.
+10. **균열 침공 gathers at the middle stone (중턱)**, not the first (C.3 said stone 0). Seen live: a Lv.1 arriving in
+    the meadow during an invasion died in the entrance plaza, where the first stone stands. Lead's decision: `evtStone(id)`
+    = 1 on a map with ≥ 2 stones (else 0), `evtSpot` = that stone's arrival tile, so the plaza stays safe. The warning
+    and start broadcasts name it ("[바람초원 · 중턱] 이동의 돌 곁으로 모이세요 — 깨운 돌이라면 어느 이동의 돌에서든
+    건너갈 수 있습니다"); `self.evt` carries `st` / `nextSt` (the stone index) and its `name` is the stone's; clicking
+    the event widget picks that stone in the warp window, or the first stone with a "walk on from the entrance" toast
+    when the middle one is not woken yet. Test: `tests/scale.mjs` (broadcast, `st`, first wave around stone 1, none in
+    the plaza).
 
 ### G.4 Known issues / left for others
 
@@ -696,7 +704,3 @@ is: `zoneSpawns` recomputes every count. No generator needed a new algorithm (no
 - Payload 28-41 KB per arrival: acceptable per B.3; RLE left out (F.3 measured it saves little on the overworld).
 - Cold first entry ≈ 80-140 ms per map per isolate (one tick late, once).
 - The `wpall` achievement still means "the first stone of every map" (F.4's rule).
-- Rift invasion waves gather at the first stone, which now stands in the safe plaza by the entrance (as C.3 says, and
-  as at 1x where it stood a dozen steps in). Seen live: a Lv.1 arriving in the meadow during an invasion dies in the
-  plaza. Owner/designer call: move `evtSpot` to the middle stone (`stonesOf(m)[1]`; players then warp or walk a third
-  of the way in) or keep the plaza fight. Left as is.

@@ -5504,7 +5504,7 @@ function worldEvent(S, now) {
   const next = slot + 1;
   if (now >= next * EVT.every - EVT.warn && (!e || e.slot !== next)) {
     S.evt = e = newEvt(next);
-    sys(S, `2분 뒤 [${MAP_META[e.map].name}]에 균열 침공이 시작됩니다!`);
+    sys(S, `2분 뒤 [${MAP_META[e.map].name}]에 균열 침공이 시작됩니다! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁으로 모이세요 — 깨운 돌이라면 어느 이동의 돌에서든 건너갈 수 있습니다.`);
     dirtyAll(S);
     return;
   }
@@ -5514,7 +5514,7 @@ function worldEvent(S, now) {
 }
 function beginEvent(S, e) {
   e.phase = "on";
-  sys(S, `균열 침공 시작! [${MAP_META[e.map].name}]에 정예 몬스터가 몰려옵니다. (8분)`);
+  sys(S, `균열 침공 시작! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁에 정예 몬스터가 몰려옵니다. (8분)`);
   dirtyAll(S);
   runEvent(S, e, S.now);
 }
@@ -5523,8 +5523,13 @@ function runEvent(S, e, now) {
   if (!e.boss && now >= e.start + EVT.boss) spawnEvtBoss(S, e);
   if (now >= e.end || e.bossDead) endEvent(S, e);
 }
-/** Where an event's monsters gather: beside the map's waypoint stone. */
-const evtSpot = (id) => { const w = wpOf(id); return [w.ax, w.ay]; };
+/**
+ * Which stone an event gathers at: the middle one (중턱) on a big ground, so the entrance plaza
+ * stays safe for newcomers; the only one elsewhere.
+ */
+const evtStone = (id) => ((MAP_META[id] && MAP_META[id].wpn) >= 2 ? 1 : 0);
+/** Where an event's monsters gather: beside that stone. */
+const evtSpot = (id) => { const w = stonesOf(mapOf(id))[evtStone(id)] || wpOf(id); return [w.ax, w.ay]; };
 function spawnWave(S, e) {
   const m = mapOf(e.map), rt = runtime(S, e.map), [cx, cy] = evtSpot(e.map);
   const kinds = COL_MOBS[e.map].slice().sort((a, b) => MOBS[b].lv - MOBS[a].lv).slice(0, 2);
@@ -5579,8 +5584,9 @@ function endEvent(S, e) {
 }
 function evtView(S, p) {
   const e = S.evt, now = S.now, next = Math.floor(now / EVT.every) + 1;
-  const out = { phase: e ? e.phase : "idle", next: next * EVT.every - now, nextMap: evtMap(next) };
-  if (e) Object.assign(out, { map: e.map, name: MAP_META[e.map].name, in: e.start - now, left: e.end - now, waves: e.waves, mine: e.dmg[p.pid] || 0, top: e.top });
+  // st / nextSt: the stone (index) the event gathers at, for the warp shortcut
+  const out = { phase: e ? e.phase : "idle", next: next * EVT.every - now, nextMap: evtMap(next), nextSt: evtStone(evtMap(next)) };
+  if (e) Object.assign(out, { map: e.map, st: evtStone(e.map), name: stoneName(e.map, evtStone(e.map)), in: e.start - now, left: e.end - now, waves: e.waves, mine: e.dmg[p.pid] || 0, top: e.top });
   return out;
 }
 
