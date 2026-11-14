@@ -283,6 +283,7 @@ export function loadMap(m) {
       const grave = [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [0, 2], [-2, 0], [0, -2]].some(([dx, dy]) => "JF".includes((m.o[y + dy] || [])[x + dx] || "."));
       sp = sp[grave || m.g[y][x] === "&" || hash(x, y, 5) < 0.08 ? 3 : Math.min(2, hueAt(m, x, y))];
     }
+    else if (ch === "T" && theme === "jungle") sp = S.JT[h < 0.45 ? 0 : h < 0.85 ? 1 : 2];   // broad dark leaves (maps-v2 M3 art)
     else if (ch === "T") sp = sp[edge(x, y) ? (h < 0.7 ? 0 : 2) : h < 0.5 ? 0 : h < 0.72 ? 2 : h < 0.88 ? 1 : 3];
     else if (ch === "B") sp = theme === "town" ? S.TB[Math.floor(h * 3)] : sp[Math.floor(h * 3)];
     else if (ch === "L") sp = theme === "city" ? S.L2 : S.L;

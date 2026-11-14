@@ -130,36 +130,94 @@ export function scenery() {
     b.r(57, 16, 5, 4, "#ffe8a0"); b.r(0, 16, 3, 4, "#ff5050"); b.r(0, 24, 62, 2, "#3a3e4a");
     for (const x of [14, 47]) { b.oval(x, 26, 6, 5.4, "#22242c"); b.oval(x, 26, 3, 2.6, "#8a8e9c"); b.r(x - 1, 25, 2, 2, "#c8ccd8"); }
   });
-  // ── maps-v2 M3 placeholders (the art step redraws them): a palm, a reef rock, a black shore boulder, a mud hut
-  const palm = (lean) => prop(44, 62, (b) => {
-    const tr = "#a8824e", trD = "#7e5e36", leaf = "#3fae5a", d = "#237a44", hl = "#7ad86a";
-    for (let i = 0; i < 9; i++) { const x = 20 + Math.round(lean * (8 - i) * 0.5), y = 58 - i * 5; b.r(x, y - 5, 5, 6, i % 2 ? tr : trD); b.r(x + 3, y - 5, 2, 6, trD); }
-    b.r(17 + (lean ? 0 : 0), 58, 11, 3, trD);
-    const cx = 22 + lean * 4, cy = 14;
-    for (const [dx, dy, w, h] of [[-13, 2, 12, 4], [11, 2, 12, 4], [-9, -6, 9, 4], [8, -6, 9, 4], [-15, 8, 7, 4], [14, 8, 7, 4], [0, -9, 6, 5]]) b.oval(cx + dx, cy + dy, w, h, d);
-    for (const [dx, dy, w, h] of [[-12, 0, 10, 3], [10, 0, 10, 3], [-8, -7, 7, 3], [7, -7, 7, 3], [0, -10, 4, 4]]) b.oval(cx + dx, cy + dy, w, h, leaf);
-    b.oval(cx - 9, cy - 8, 4, 1.6, hl); b.oval(cx - 13, cy - 1, 5, 1.4, hl);
-    b.oval(cx, cy + 1, 4, 3, "#6a4a2a"); b.r(cx - 3, cy + 2, 2, 2, "#c8843a"); b.r(cx + 2, cy + 3, 2, 2, "#c8843a");
+  // ── maps-v2 M3 art (the south-west coast): palms, reef rocks, basalt boulders, mud huts, the jungle's trees
+  const atop = (x, f) => { x.globalCompositeOperation = "source-atop"; f(); x.globalCompositeOperation = "source-over"; };
+  // A coconut palm: a ringed trunk that curves as it leans, drooping fronds (dark behind, lit in front), nuts under the crown.
+  const palm = (lean, v) => prop(64, 68, (b) => {
+    const tr = "#b08a54", trD = "#84623a", trL = "#d0ac74", leaf = "#3fae5a", mid = "#2c9450", d = "#1c7446", hl = "#8ade6a";
+    const top = 19, base = 63, cx = 32;
+    const tx = (y) => cx + Math.round(lean * 8 * ((base - y) / (base - top)) ** 1.7);
+    for (let y = base; y >= top; y--) {
+      const x = tx(y), w = y > base - 4 ? 6 : y > 42 ? 5 : 4, x0 = x - (w >> 1);
+      b.r(x0, y, w, 1, y % 5 === 0 ? trD : tr); b.r(x0 + w - 2, y, 2, 1, trD);
+      if (y % 5 === 2) b.r(x0, y, 2, 1, trL);
+    }
+    b.r(tx(base) - 5, base, 10, 2, trD); b.r(tx(base) - 4, base, 4, 1, tr);
+    const hx = tx(top), hy = top;
+    const frond = (dir, len, rise, droop, c1, c2) => {
+      for (let i = 0; i <= len; i++) {
+        const t = i / len, x = Math.round(hx + dir * i), y = Math.round(hy - rise * Math.sin(t * 2) + droop * t * t), h = t < 0.2 ? 2 : t < 0.8 ? 3 : 2;
+        b.r(x, y, 1, h, c1); b.r(x, y, 1, 1, c2);
+        if (i > 3 && i % 2 === 0) b.r(x, y + h, 1, i % 4 === 0 ? 3 : 2, c1);
+      }
+    };
+    frond(-1, 21, 3, 15, d, d); frond(1, 21, 3, 15, d, d);
+    frond(0.72, 17, 10, 3, mid, leaf); frond(1, 20, 7, 8, mid, leaf);
+    frond(-0.72, 17, 10, 3, leaf, hl); frond(-1, 20, 7, 8, leaf, hl);
+    frond(v ? 0.25 : -0.2, 11, 9, -2, leaf, hl);
+    b.oval(hx, hy + 1, 4, 3, "#5e4226");
+    for (const [dx, dy] of v ? [[-3, 2], [2, 3]] : [[-3, 3], [0, 4], [3, 2]]) { b.r(hx + dx, hy + dy, 3, 3, "#8a5a2c"); b.r(hx + dx, hy + dy, 1, 1, "#c8904a"); }
   });
-  const lump = (c, top, dk, moss) => prop(30, 24, (b) => {
-    b.tri([[3, 23], [1, 13], [8, 4], [19, 2], [27, 9], [29, 20], [24, 23]], c);
-    b.tri([[8, 5], [19, 3], [25, 9], [14, 12], [5, 12]], top);
-    b.tri([[14, 12], [25, 9], [29, 20], [24, 23], [12, 23]], dk);
-    b.r(10, 5, 6, 1, lt(top, 1.2)); b.r(4, 21, 20, 2, dk);
-    if (moss) { b.oval(11, 6, 6, 2.4, moss); b.r(18, 5, 5, 2, moss); b.r(5, 11, 3, 2, moss); b.r(21, 13, 3, 1, "#f0a0a8"); b.r(8, 16, 2, 1, "#f0a0a8"); }
+  // A reef rock standing in the shallows: moss over its top, pink coral, a dark wet foot with foam against it.
+  const reef = (v) => prop(32, 26, (b, x) => {
+    const c = "#8c9692", top = "#b2bab0", dkc = "#5e6a6c", wet = "#3a4e56", moss = "#58a85e", mossL = "#8ad06c", mossD = "#3a7848";
+    b.oval(15, 15, 13, 9, c); if (v) b.oval(25, 18, 6, 6, c);
+    b.oval(20, 18, 9, 6, dkc); b.oval(12, 13, 10, 6, c); b.oval(13, 10, 9, 4, top);
+    if (v) b.oval(25, 16, 4, 3, top);
+    b.oval(13, 8, 9, 3.4, moss); b.oval(10, 7, 5, 1.8, mossL);
+    for (const [mx, mh] of [[5, 2], [8, 3], [12, 2], [16, 4], [20, 2], [22, 3]]) b.r(mx, 10, 2, mh, mossD);
+    if (v) { b.oval(25, 14, 4, 1.8, moss); b.r(23, 15, 2, 2, mossD); }
+    atop(x, () => { b.r(0, 20, 32, 6, wet); b.r(0, 20, 32, 1, "#4e666c"); });
+    for (const [fx, fy, fw] of [[2, 23, 4], [9, 24, 3], [17, 24, 5], [26, 23, 3]]) b.r(fx, fy, fw, 1, "#ffffff");
+    b.r(21, 13, 2, 2, "#f08a8a"); b.r(22, 12, 1, 1, "#ffb8b0"); b.r(7, 16, 2, 2, "#f0a060"); b.r(15, 18, 1, 1, "#f08a8a");
   });
-  const hut = (v) => prop(46, 42, (b) => {
-    const wall = "#c89a62", wD = "#a67a48", roof = v ? "#b08a4a" : "#9a7a44", rD = "#7a5e32";
-    b.r(6, 18, 34, 22, wall); b.r(28, 18, 12, 22, wD); b.r(6, 38, 34, 2, "#86603a");
-    b.tri([[2, 20], [44, 20], [23, 2]], roof); b.tri([[23, 20], [44, 20], [23, 2]], rD);
-    for (const y of [8, 12, 16]) b.r(23 - (y - 2), y, (y - 2) * 2, 1, rD);
-    b.r(15, 26, 8, 14, "#4a3222"); b.r(15, 26, 8, 2, "#6a4a30"); b.r(31, 24, 5, 5, "#4a3222"); b.r(8, 22, 3, 1, wD); b.r(10, 31, 4, 1, wD);
+  // Basalt on the strand: black angular blocks, a cold gloss along the edges that face the sky, spray at the foot.
+  const basalt = (v) => prop(34, 28, (b) => {
+    const k = "#24252c", m = "#3a3c48", t = "#565a6a", g = "#a2aec8";
+    const body = v ? [[2, 27], [1, 16], [6, 6], [15, 2], [24, 5], [32, 14], [33, 24], [28, 27]] : [[3, 27], [2, 13], [9, 4], [20, 3], [29, 10], [32, 22], [27, 27]];
+    b.tri(body, m);
+    b.tri(v ? [[6, 6], [15, 2], [24, 5], [20, 11], [9, 12]] : [[9, 4], [20, 3], [26, 9], [16, 13], [6, 11]], t);
+    b.tri(v ? [[20, 11], [24, 5], [32, 14], [33, 24], [28, 27], [17, 27]] : [[16, 13], [26, 9], [29, 10], [32, 22], [27, 27], [14, 27]], k);
+    b.tri(v ? [[1, 16], [9, 12], [11, 27], [2, 27]] : [[2, 13], [6, 11], [9, 27], [3, 27]], "#30323c");
+    // the gloss: thin lines on the upper edges, one hard glint
+    if (v) { b.r(8, 5, 6, 1, g); b.r(15, 3, 6, 1, g); b.r(10, 12, 9, 1, "#70788e"); b.r(4, 10, 1, 4, "#70788e"); b.r(17, 5, 2, 1, "#e8f0ff"); b.r(21, 13, 1, 9, "#30323c"); }
+    else { b.r(10, 5, 8, 1, g); b.r(19, 4, 5, 1, g); b.r(8, 12, 8, 1, "#70788e"); b.r(4, 9, 1, 4, "#70788e"); b.r(13, 6, 2, 1, "#e8f0ff"); b.r(18, 15, 1, 9, "#30323c"); }
+    b.r(22, 17, 2, 1, "#4a4e5c"); b.r(25, 21, 3, 1, "#4a4e5c");
+    if (v) { b.r(4, 25, 2, 1, "#dff4f4"); b.r(22, 26, 3, 1, "#dff4f4"); } else { b.r(11, 26, 3, 1, "#dff4f4"); b.r(27, 24, 2, 1, "#dff4f4"); }
+  });
+  // A round mud hut: daubed wall, a cone of thatch in courses with a ragged eave, a dark doorway.
+  const hut = (v) => prop(46, 44, (b, x) => {
+    const wall = v ? "#d4a66a" : "#c89a62", wD = "#a47a48", wL = "#e4bc84", th = v ? "#b08c48" : "#bc9850", thD = "#84642f", thL = "#dcbc6c";
+    b.r(8, 22, 30, 17, wall); b.oval(23, 38, 15, 4, wall);
+    atop(x, () => { b.r(28, 20, 12, 24, wD); b.r(8, 22, 3, 20, wL); b.r(8, 40, 30, 3, "#86603a"); });
+    b.r(18, 29, 8, 12, "#3a281c"); b.oval(22, 29, 4, 3, "#3a281c"); b.r(18, 40, 9, 1, "#6a4a30"); b.r(17, 29, 1, 11, wD);
+    b.r(31, 28, 4, 4, "#3a281c"); b.r(31, 28, 4, 1, "#5e4028");
+    b.r(11, 31, 3, 1, wD); b.r(13, 32, 1, 3, wD); b.r(12, 26, 2, 1, wL);
+    b.tri([[1, 23], [45, 23], [23, 2]], th); b.oval(23, 23, 22, 3, th);
+    atop(x, () => { b.r(23, 0, 23, 27, thD); });
+    for (const y of [8, 13, 18]) { const hw = Math.round(((y - 2) * 22) / 21); b.r(23 - hw, y, hw, 1, thD); b.r(23, y, hw, 1, "#644a22"); }
+    for (let i = 2; i < 44; i += 3) b.r(i, 25 + (i % 2), 2, 2, i < 23 ? th : thD);
+    b.r(21, 0, 4, 4, thD); b.r(21, 0, 2, 2, thL); b.r(11, 16, 5, 1, thL); b.r(16, 10, 3, 1, thL); b.r(8, 21, 4, 1, thL);
+  });
+  // A jungle tree: buttress roots, a wide dark crown built of broad leaves, vines hanging from it.
+  const jtree = (v) => prop(54, 68, (b) => {
+    const leaf = v === 1 ? "#2e8a50" : "#2a8048", d = "#134a38", l = "#4aac58", hl = "#84d470", tr = "#70543a", trD = "#4c3624";
+    b.r(23, 36, 8, 28, tr); b.r(28, 36, 3, 28, trD); b.r(24, 44, 1, 6, trD); b.r(25, 54, 1, 5, "#8e6e4c");
+    b.tri([[23, 56], [15, 65], [23, 65]], tr); b.tri([[31, 56], [39, 65], [31, 65]], trD); b.r(15, 64, 24, 2, trD);
+    b.oval(27, 23, 25, 17, d); b.oval(9, 31, 8, 7, d); b.oval(45, 31, 8, 7, d); b.oval(27, 8, 13, 6, d);
+    for (const [lx, ly, w] of [[13, 15, 8], [26, 8, 8], [39, 14, 7], [8, 26, 7], [21, 20, 9], [34, 23, 8], [45, 27, 6], [14, 33, 7], [28, 33, 8], [40, 35, 6]]) {
+      const lit = lx + ly < 44;
+      b.oval(lx, ly, w, 3.6, lit ? l : leaf); b.r(lx - w + 2, ly, w * 2 - 4, 1, lit ? hl : l); b.r(lx - w + 1, ly + 3, w, 1, d);
+    }
+    for (const [vx, vy, vh] of [[7, 37, 9], [12, 39, 5], [41, 40, 8], [47, 37, 6], [35, 39, 4]]) { b.r(vx, vy, 1, vh, d); b.r(vx, vy + vh, 1, 1, l); }
+    if (v === 2) for (const [fx, fy] of [[17, 12], [31, 19], [10, 28], [40, 30], [24, 30]]) { b.r(fx, fy, 3, 3, "#e8484e"); b.r(fx + 1, fy + 1, 1, 1, "#ffd24a"); }
   });
   SC = {
-    "Ψ": [palm(0), palm(1), palm(-1)],
-    "Φ": [lump("#7e8a8c", "#a6b4b0", "#5e6a70", "#4fb89a"), lump("#868e8a", "#b0b8ae", "#646c6a", "#5aa86a")],
-    "Ω": [lump("#34363e", "#50525c", "#22232a", null), lump("#3c3a40", "#5a5860", "#26252c", null)],
+    "Ψ": [palm(0, 0), palm(1, 1), palm(-1, 0), palm(0.5, 1)],
+    "Φ": [reef(0), reef(1)],
+    "Ω": [basalt(0), basalt(1)],
     "Δ": [hut(0), hut(1)],
+    JT: [jtree(0), jtree(1), jtree(2)],
     T: [tree("#4faa5a"), tree("#58b05a", "#e8584a"), tree("#7abf52"), tree("#f4a8c4")],
     P: [pine(true), pine(false)],
     B: [bush(0), bush(1), bush(2)],
