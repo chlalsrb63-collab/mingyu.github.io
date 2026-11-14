@@ -4035,18 +4035,29 @@ function dealMob(S, rt, mob, p, dmg, crit) {
  * rooted to the spot only flinch on screen. A wound-up charge still goes off (tickMob).
  */
 const STAGGER = { ms: 140, crit: 200, elite: 0.65, kb: 3, eliteKb: 2 };
-/** Hold a monster still until `S.now + ms`: its stun runs longer, and its cooldowns pause for the extra time. */
+/**
+ * No stun-lock: from a monster's first hold, for HOLD.win ms it is held (and its cooldowns paused)
+ * for at most HOLD.cap ms in all; past that it shrugs blows off (no hold, no shove) until the
+ * window ends. So however many hit it, it still strikes at least ~86% as often as unhurt.
+ */
+const HOLD = { win: 2400, cap: 340 };
+/** Is it shrugging hitstun off just now (its hold budget for this window spent)? */
+function steady(S, mob) { return S.now < (mob.hw || 0) && (mob.hu || 0) >= HOLD.cap; }
+/** Hold a monster still until `S.now + ms` (within its HOLD budget): its stun runs longer, and its cooldowns pause for the extra time. */
 function holdMob(S, mob, ms) {
-  const now = S.now, until = now + Math.round(ms), from = Math.max(mob.stun, now);
+  const now = S.now;
+  if (!(now < (mob.hw || 0))) { mob.hw = now + HOLD.win; mob.hu = 0; }
+  const from = Math.max(mob.stun, now), until = Math.min(now + Math.round(ms), from + HOLD.cap - mob.hu);
   if (until <= from) return;
   const add = until - from;
   mob.atkAt = Math.max(mob.atkAt, now) + add;
   if (mob.castAt > now) mob.castAt += add;
   mob.stun = until;
+  mob.hu += add;
 }
 function stagger(S, mob, p, crit) {
   const d = MOBS[mob.k];
-  if (d.boss || d.still || mob.el === 2 || mob.dead) return false;
+  if (d.boss || d.still || mob.el === 2 || mob.dead || steady(S, mob)) return false;
   holdMob(S, mob, (crit ? STAGGER.crit : STAGGER.ms) * (mob.el ? STAGGER.elite : 1));
   const dd = dist(p.x, p.y, mob.x, mob.y);
   if (dd > 0.5) knock(mapOfS(S, p.map), mob, (mob.x - p.x) / dd, (mob.y - p.y) / dd, mob.el ? STAGGER.eliteKb : STAGGER.kb);
@@ -4072,9 +4083,11 @@ function hurtMob(S, rt, mob, p, mult, sure) {
   }
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)));
   const x = mob.x, y = mob.y;
-  // whatever is hit staggers for a moment and is nudged back; the biggest things shrug it off
-  stagger(S, mob, p, crit);
-  if (!dealMob(S, rt, mob, p, dmg, crit)) return;
+  if (!dealMob(S, rt, mob, p, dmg, crit)) {
+    // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
+    if (!mob.dead) stagger(S, mob, p, crit);
+    return;
+  }
   // legendary powers that answer a kill
   if (st.lg.feast && !p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * 0.04);
   if (st.lg.nova && !p.chainKill) {
@@ -4321,7 +4334,7 @@ function basicAttack(S, p) {
   rt.ev.push(["a", p.eid, fxKind, Math.round(mob.x), Math.round(mob.y - 6), p.dir, p.combo]);
   if (butt) {
     const [ux, uy] = aimVec(p, mob);
-    if (!MOBS[mob.k].boss && mob.el !== 2) { knock(mapOfS(p.S, p.map), mob, ux, uy, 16); holdMob(S, mob, 350); }
+    if (!MOBS[mob.k].boss && mob.el !== 2 && !steady(S, mob)) { knock(mapOfS(p.S, p.map), mob, ux, uy, 16); holdMob(S, mob, 350); }
     hurtMob(S, rt, mob, p, 0.6);
     addGrit(p, 12);
     return;
@@ -4339,7 +4352,7 @@ function basicAttack(S, p) {
   // the blow lands with weight: whatever it hits is shoved back and reels, the
   // finisher most of all. Elites only reel; bosses and field bosses stand firm.
   const shove = (o, k) => {
-    if (MOBS[o.k].boss || o.el === 2) return;
+    if (MOBS[o.k].boss || o.el === 2 || steady(S, o)) return;
     if (!o.el) { const [ux, uy] = aimVec(p, o); knock(mapOfS(p.S, p.map), o, ux, uy, c.kb * k * (fin ? FINISH.kb : 1)); }
     holdMob(S, o, (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + (tip && o === mob ? TIP.flinch : 0));   // reels: cooldowns paused
   };
@@ -6889,11 +6902,14 @@ function placeAway(S, m, r, pts) {
   }
   return null;
 }
-/** A cell's crowd for `k` players near it: base × (0.75 + 0.25k), at most DENSITY_MAX; extra slots come and (empty) go. */
-function crowdTo(rt, c, k) {
+/**
+ * A cell's crowd for `k` players near it: base × (0.75 + 0.25k), at most DENSITY_MAX; extra slots
+ * come and (empty) go, but a wave's slots wait for their monster until their time (`exp`) is up.
+ */
+function crowdTo(rt, c, k, now) {
   const list = rt.slots[c], base = rt.base[c];
   const target = Math.round(base * Math.min(DENSITY_MAX, 0.75 + 0.25 * k));
-  for (let i = list.length - 1; i >= base && list.length > target; i--) if (!list[i].mob) list.splice(i, 1);
+  for (let i = list.length - 1; i >= base && list.length > target; i--) if (!list[i].mob && !(list[i].exp > now)) list.splice(i, 1);
   for (let i = list.length; i < target; i++) list.push({ q: list[i % base].q, c, mob: null, due: 0, extra: true });
 }
 /**
@@ -6916,34 +6932,39 @@ function sleepCell(rt, c) {
 }
 /**
  * Every CELL_PASS_MS on a map with players: wake the cells near the living, put to sleep the ones
- * nobody is near, send the waves, then fill the awake cells' empty slots whose time has come,
- * nearest cells first, out of sight, never past WAKE_MAX_MOBS standing monsters.
+ * nobody is near (the dead hold their ground too: dying never clears a crowd), send the waves, then
+ * fill the empty slots of the awake cells near the living whose time has come, nearest cells first,
+ * out of sight (of the dead too), never past WAKE_MAX_MOBS standing monsters.
  */
 function cellPass(S, m, rt, pids) {
   const now = S.now;
   if (now < rt.cellAt || !m.cells) return;
   rt.cellAt = now + CELL_PASS_MS;
   const C = m.cells, cw = C.cw, ch = C.ch, nc = cw * ch;
-  const folk = [];
-  for (const pid of pids) { const p = S.players[pid]; if (p.map === rt.id && !p.dead) folk.push(p); }
+  const folk = [], here = [];
+  for (const pid of pids) { const p = S.players[pid]; if (p.map !== rt.id) continue; here.push(p); if (!p.dead) folk.push(p); }
   const cellX = (p) => clamp(Math.floor(p.x / T / CELL), 0, cw - 1), cellY = (p) => clamp(Math.floor(p.y / T / CELL), 0, ch - 1);
-  const near = new Int32Array(nc).fill(1 << 20), crowd = new Uint8Array(nc);
-  for (const p of folk) {
-    const px = cellX(p), py = cellY(p);
-    for (let cy = 0; cy < ch; cy++) for (let cx = 0; cx < cw; cx++) {
+  // near: Chebyshev cells to the nearest living player; held: to the nearest player, dead or alive.
+  // Only the cells within SLEEP_R of a player are looked at (the rest stay far).
+  const near = new Int32Array(nc).fill(1 << 20), held = new Int32Array(nc).fill(1 << 20), crowd = new Uint8Array(nc);
+  for (const p of here) {
+    const px = cellX(p), py = cellY(p), live = !p.dead;
+    for (let cy = Math.max(0, py - SLEEP_R); cy <= Math.min(ch - 1, py + SLEEP_R); cy++) for (let cx = Math.max(0, px - SLEEP_R); cx <= Math.min(cw - 1, px + SLEEP_R); cx++) {
       const d = Math.max(Math.abs(cx - px), Math.abs(cy - py)), c = cy * cw + cx;
+      if (d < held[c]) held[c] = d;
+      if (!live) continue;
       if (d < near[c]) near[c] = d;
       if (d <= WAKE_R) crowd[c]++;
     }
   }
   for (let c = 0; c < nc; c++) {
     if (!rt.base[c]) continue;
-    if (near[c] > SLEEP_R) {
+    if (held[c] > SLEEP_R) {
       if (rt.cells[c] || rt.slots[c].some((s) => s.mob)) sleepCell(rt, c);
       continue;
     }
     if (!rt.cells[c] && near[c] <= WAKE_R) rt.cells[c] = 1;
-    if (rt.cells[c]) crowdTo(rt, c, crowd[c]);
+    if (rt.cells[c]) crowdTo(rt, c, crowd[c], now);
   }
   // waves: a hunter on the move finds more ahead of them
   for (const p of folk) {
@@ -6957,16 +6978,16 @@ function cellPass(S, m, rt, pids) {
     const base = rt.base[c], list = rt.slots[c];
     if (!rt.cells[c] || !base) continue;
     const add = Math.min(Math.ceil(base * WAVE_K), Math.floor(base * DENSITY_MAX) - list.length);
-    for (let i = 0; i < add; i++) list.push({ q: list[i % base].q, c, mob: null, due: 0, extra: true });
+    for (let i = 0; i < add; i++) list.push({ q: list[i % base].q, c, mob: null, due: 0, extra: true, exp: now + WAVE_MS });
   }
   // fill
   let standing = 0;
   for (const mob of rt.mobs) if (!mob.dead && !mob.temp) standing++;
   if (standing >= WAKE_MAX_MOBS) return;
   const order = [];
-  for (let c = 0; c < nc; c++) if (rt.cells[c] && rt.base[c]) order.push(c);
+  for (let c = 0; c < nc; c++) if (rt.cells[c] && rt.base[c] && near[c] <= SLEEP_R) order.push(c);
   order.sort((a, b) => near[a] - near[b] || a - b);
-  const pts = folk.map((p) => [p.x / T, p.y / T]);
+  const pts = here.map((p) => [p.x / T, p.y / T]);
   for (const c of order) for (const s of rt.slots[c]) {
     if (s.mob || now < s.due) continue;
     const at = placeAway(S, m, s.q.r, pts);

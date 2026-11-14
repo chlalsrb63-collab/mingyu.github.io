@@ -173,4 +173,47 @@ const cheb = (m, a, b) => Math.max(Math.abs((a % m.cells.cw) - (b % m.cells.cw))
   assert.ok(W.rt.slots[ahead].length <= Math.floor(W.rt.base[ahead] * X.DENSITY_MAX), "never past the cap");
 }
 
+// ── a wave's places wait for their monsters: if they cannot come at once (here a fallen hunter
+// lies in that cell, and nothing comes alive in anyone's sight) the places stay until they can
+{
+  const W = world(4, 2, 20, 50);
+  const [p, body] = W.ps;
+  body.hp = 0; body.dead = true; W.put(body, 72, 56);   // the middle of cell (4, 3), two cells ahead of where p goes
+  W.step();
+  W.run(X.WAVE_MS - 600);
+  W.put(p, 40, 50);
+  W.run(1000);
+  const ahead = W.cellOf(p) + 2;
+  assert.equal(ahead, W.cellOf(body), "the body lies in the cell ahead");
+  const base = W.rt.base[ahead];
+  assert.ok(W.rt.slots[ahead].length > base, "the wave adds places");
+  assert.ok(W.cellMobs(ahead).length < W.rt.slots[ahead].length, "which cannot all be filled while the body lies there");
+  W.run(3000);
+  assert.ok(W.rt.slots[ahead].length > base, "the empty wave places are not trimmed on the next passes");
+  L.removePlayer(W.S, body.pid);
+  W.run(1000);
+  assert.ok(W.cellMobs(ahead).length > base, `once nobody watches, the wave comes (${W.cellMobs(ahead).length} > ${base})`);
+}
+
+// ── dying never clears a crowd: the dead hold their ground (their cells stay awake), and only the living wake or fill cells
+{
+  const W = world(6);
+  W.step();
+  const p = W.ps[0], pc = W.cellOf(p);
+  W.run(1000);
+  const around = () => W.rt.mobs.filter((o) => o.slot && !o.dead && cheb(W.m, o.slot.c, pc) <= X.WAKE_R).length;
+  const before = around();
+  assert.ok(before > 50, `a crowd around the hunter (${before})`);
+  p.hp = 0; p.dead = true;
+  for (const o of W.rt.mobs) if (o.tgt === p.pid) o.tgt = null;
+  W.run(5000);
+  for (let c = 0; c < W.rt.cells.length; c++) if (cheb(W.m, c, pc) <= X.WAKE_R) assert.ok(W.rt.cells[c], `cell ${c} by the body stays awake`);
+  assert.equal(around(), before, "and its monsters stay where they were");
+  // walk the body far away (as a ghost would): now the cells sleep
+  W.put(p, 150, 100);
+  W.run(2000);
+  assert.ok(!W.rt.cells[pc], "with nobody near, dead or alive, the cell sleeps");
+  assert.equal(W.cellMobs(pc).length, 0, "and lets its calm monsters go");
+}
+
 console.log("cells ok");

@@ -975,16 +975,28 @@ function autoOk(m, s, t, d) {
 const STEP_KIND = { ".": "grass", ",": "grass", '"': "grass", ":": "grass", ";": "grass", "%": "grass", p: "dirt", s: "dirt", b: "wood", w: "water", j: "water" };
 /** Indoors: boards creak, rugs and the door mat muffle (iso_interior.js floors). */
 const STEP_ROOM = { f: "wood", l: "wood", q: "grass", u: "grass", y: "grass", e: "dirt", x: "stone" };
+/**
+ * In the drains and the abyss only wet ground squelches: sewer sludge ("d") and sumps ("g"), and
+ * floor at the edge of a channel or of the blood ("w"). Walkways, bridges and bone stay dry.
+ */
+function wetUnderfoot(g, tx, ty, theme) {
+  const ch = g[ty] && g[ty][tx];
+  if (ch === "g" || (theme === "sewer" && ch === "d")) return true;
+  if (ch !== "c") return false;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (g[ty + dy] && g[ty + dy][tx + dx] === "w") return true;
+  return false;
+}
 const snd = { foot: 0, look: 0, bossT: 0 };
 /** Footsteps, a nearby fire's crackle, an elite turning up, and boss / rift music over the map's own. */
 function soundscape(t) {
   const me = G.me;
   const f = Math.floor(me.walk);
   if (me.moving && f !== snd.foot && f % 2 === 0) {
-    const row = G.map.g[Math.floor(me.y / T)];
-    const ch = row && row[Math.floor(me.x / T)];
-    const wet = G.map.theme === "sewer" || G.map.theme === "abyss";   // the drains and the abyss squelch underfoot
-    Sound.step((G.map.theme === "interior" ? STEP_ROOM[ch] : wet ? "water" : STEP_KIND[ch]) || "stone");
+    const tx = Math.floor(me.x / T), ty = Math.floor(me.y / T), th = G.map.theme;
+    const row = G.map.g[ty];
+    const ch = row && row[tx];
+    const wet = (th === "sewer" || th === "abyss") && wetUnderfoot(G.map.g, tx, ty, th);
+    Sound.step((th === "interior" ? STEP_ROOM[ch] : wet ? "water" : STEP_KIND[ch]) || "stone");
   }
   snd.foot = f;
   if (t - snd.look < 250) return;

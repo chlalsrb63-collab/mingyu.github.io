@@ -2,7 +2,11 @@
 // a moment and its cooldowns pause), the micro-knockback that comes with it (never into a wall),
 // and the big things that shrug it off.   node tests/feel.mjs
 import assert from "node:assert/strict";
-import * as L from "../src/logic.js";
+import { readFileSync } from "node:fs";
+
+// the rules, with a back door to hurtMob for the killing-blow check
+const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") + "\nexport const __t = { hurtMob };\n";
+const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 
 const D = L.defs();
 const T = 16;
@@ -136,6 +140,42 @@ const mobEv = (v, id) => (v.ev || []).filter((e) => e[0] === "m" && e[1] === id)
     assert.ok(m.x < (tx + 1) * T, `blow ${i + 1}: not shoved through the wall`);
     W.step(1100);
   }
+}
+
+// ── no stun-lock: hammered every 100 ms for 5 s (a party's worth), a monster still strikes nearly as
+// often as one left alone (at least 85%), and a killing blow does not shove or stagger the body
+{
+  const strikes = (hit) => {
+    const W = world("난타");
+    const [tx, ty] = openSpot(W, 4);
+    const p = W.p;
+    p.x = tx * T + 8; p.y = ty * T + 8; p.aim = 0;
+    W.ready();
+    const m = W.mob(p.x + 14, p.y, 0);
+    let n = 0;
+    for (let t = 0; t < 5000; t += 100) {
+      if (hit) { W.ready(); p.x = m.x - 14; p.y = m.y; W.act({ t: "atk", a: 0 }); m.hp = 1e6; }
+      n += mobEv(W.step(100), m.id).length;
+    }
+    return { n, m };
+  };
+  const calm = strikes(false).n, { n: hammered, m } = strikes(true);
+  assert.ok(calm >= 3, `a monster left alone strikes (${calm} in 5 s)`);
+  assert.ok(hammered >= Math.floor(calm * 0.85), `hammered every 100 ms it still strikes ${hammered} of ${calm} times`);
+  assert.ok(m.hw > 0 && m.hu <= 340, "its hold budget is spent and capped");
+
+  const W = world("막타");
+  const [tx, ty] = openSpot(W);
+  const p = W.p;
+  p.x = tx * T + 8; p.y = ty * T + 8;
+  const k = W.mob(p.x + 18, p.y, 1e9, { hp: 1 });
+  const x0 = k.x, y0 = k.y, a0 = k.atkAt;
+  W.S.now = W.now;
+  L.__t.hurtMob(W.S, W.rt, k, p, 1);
+  assert.ok(k.dead, "the blow kills it");
+  assert.equal(k.stun, 0, "the slain are not staggered");
+  assert.equal(k.atkAt, a0, "nor their cooldowns held");
+  assert.ok(k.x === x0 && k.y === y0, "nor shoved");
 }
 
 // ── the same blows give the same stagger and the same shove (the rules are deterministic)

@@ -253,11 +253,14 @@ function placeAway(S, m, r, pts) {
   }
   return null;
 }
-/** A cell's crowd for `k` players near it: base × (0.75 + 0.25k), at most DENSITY_MAX; extra slots come and (empty) go. */
-function crowdTo(rt, c, k) {
+/**
+ * A cell's crowd for `k` players near it: base × (0.75 + 0.25k), at most DENSITY_MAX; extra slots
+ * come and (empty) go, but a wave's slots wait for their monster until their time (`exp`) is up.
+ */
+function crowdTo(rt, c, k, now) {
   const list = rt.slots[c], base = rt.base[c];
   const target = Math.round(base * Math.min(DENSITY_MAX, 0.75 + 0.25 * k));
-  for (let i = list.length - 1; i >= base && list.length > target; i--) if (!list[i].mob) list.splice(i, 1);
+  for (let i = list.length - 1; i >= base && list.length > target; i--) if (!list[i].mob && !(list[i].exp > now)) list.splice(i, 1);
   for (let i = list.length; i < target; i++) list.push({ q: list[i % base].q, c, mob: null, due: 0, extra: true });
 }
 /**
@@ -280,34 +283,39 @@ function sleepCell(rt, c) {
 }
 /**
  * Every CELL_PASS_MS on a map with players: wake the cells near the living, put to sleep the ones
- * nobody is near, send the waves, then fill the awake cells' empty slots whose time has come,
- * nearest cells first, out of sight, never past WAKE_MAX_MOBS standing monsters.
+ * nobody is near (the dead hold their ground too: dying never clears a crowd), send the waves, then
+ * fill the empty slots of the awake cells near the living whose time has come, nearest cells first,
+ * out of sight (of the dead too), never past WAKE_MAX_MOBS standing monsters.
  */
 function cellPass(S, m, rt, pids) {
   const now = S.now;
   if (now < rt.cellAt || !m.cells) return;
   rt.cellAt = now + CELL_PASS_MS;
   const C = m.cells, cw = C.cw, ch = C.ch, nc = cw * ch;
-  const folk = [];
-  for (const pid of pids) { const p = S.players[pid]; if (p.map === rt.id && !p.dead) folk.push(p); }
+  const folk = [], here = [];
+  for (const pid of pids) { const p = S.players[pid]; if (p.map !== rt.id) continue; here.push(p); if (!p.dead) folk.push(p); }
   const cellX = (p) => clamp(Math.floor(p.x / T / CELL), 0, cw - 1), cellY = (p) => clamp(Math.floor(p.y / T / CELL), 0, ch - 1);
-  const near = new Int32Array(nc).fill(1 << 20), crowd = new Uint8Array(nc);
-  for (const p of folk) {
-    const px = cellX(p), py = cellY(p);
-    for (let cy = 0; cy < ch; cy++) for (let cx = 0; cx < cw; cx++) {
+  // near: Chebyshev cells to the nearest living player; held: to the nearest player, dead or alive.
+  // Only the cells within SLEEP_R of a player are looked at (the rest stay far).
+  const near = new Int32Array(nc).fill(1 << 20), held = new Int32Array(nc).fill(1 << 20), crowd = new Uint8Array(nc);
+  for (const p of here) {
+    const px = cellX(p), py = cellY(p), live = !p.dead;
+    for (let cy = Math.max(0, py - SLEEP_R); cy <= Math.min(ch - 1, py + SLEEP_R); cy++) for (let cx = Math.max(0, px - SLEEP_R); cx <= Math.min(cw - 1, px + SLEEP_R); cx++) {
       const d = Math.max(Math.abs(cx - px), Math.abs(cy - py)), c = cy * cw + cx;
+      if (d < held[c]) held[c] = d;
+      if (!live) continue;
       if (d < near[c]) near[c] = d;
       if (d <= WAKE_R) crowd[c]++;
     }
   }
   for (let c = 0; c < nc; c++) {
     if (!rt.base[c]) continue;
-    if (near[c] > SLEEP_R) {
+    if (held[c] > SLEEP_R) {
       if (rt.cells[c] || rt.slots[c].some((s) => s.mob)) sleepCell(rt, c);
       continue;
     }
     if (!rt.cells[c] && near[c] <= WAKE_R) rt.cells[c] = 1;
-    if (rt.cells[c]) crowdTo(rt, c, crowd[c]);
+    if (rt.cells[c]) crowdTo(rt, c, crowd[c], now);
   }
   // waves: a hunter on the move finds more ahead of them
   for (const p of folk) {
@@ -321,16 +329,16 @@ function cellPass(S, m, rt, pids) {
     const base = rt.base[c], list = rt.slots[c];
     if (!rt.cells[c] || !base) continue;
     const add = Math.min(Math.ceil(base * WAVE_K), Math.floor(base * DENSITY_MAX) - list.length);
-    for (let i = 0; i < add; i++) list.push({ q: list[i % base].q, c, mob: null, due: 0, extra: true });
+    for (let i = 0; i < add; i++) list.push({ q: list[i % base].q, c, mob: null, due: 0, extra: true, exp: now + WAVE_MS });
   }
   // fill
   let standing = 0;
   for (const mob of rt.mobs) if (!mob.dead && !mob.temp) standing++;
   if (standing >= WAKE_MAX_MOBS) return;
   const order = [];
-  for (let c = 0; c < nc; c++) if (rt.cells[c] && rt.base[c]) order.push(c);
+  for (let c = 0; c < nc; c++) if (rt.cells[c] && rt.base[c] && near[c] <= SLEEP_R) order.push(c);
   order.sort((a, b) => near[a] - near[b] || a - b);
-  const pts = folk.map((p) => [p.x / T, p.y / T]);
+  const pts = here.map((p) => [p.x / T, p.y / T]);
   for (const c of order) for (const s of rt.slots[c]) {
     if (s.mob || now < s.due) continue;
     const at = placeAway(S, m, s.q.r, pts);
