@@ -104,11 +104,11 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 ### Client — `game/public/` (plain ES modules, no build step; `index.html` loads `client.js?v=…`)
 | file | owns · key exports |
 | --- | --- |
-| `index.html` [364] | all HUD/window markup (`section.window#w-<id>`), `#menu`, cache tag `?v=` |
-| `client.js` [2563] | game client. Sections (grep `// ───`): connection, state `G`, messages (`onSnap`), effects, input (keydown hotkeys ~L537), player actions, update, render, HUD & windows (`WIN` list ~L1236, `openWin`, `render<Window>()`), main loop. `window.__game = {G, act, S3, go}` for automation |
+| `index.html` [365] | all HUD/window markup (`section.window#w-<id>`), `#menu`, cache tag `?v=` |
+| `client.js` [2550] | game client. Sections (grep `// ───`): connection, state `G`, messages (`onSnap`), effects, input (keydown hotkeys ~L523), player actions, update, render, HUD & windows (`WIN` list ~L1223, `openWin`, `render<Window>()`), main loop. `window.__game = {G, act, S3, go}` for automation |
 | `lobby.js` [593] | title, 로그인/회원가입, server/channel list, character creation, in-game channel switch/logout |
 | `account.js` [99] | HTTP side of accounts: `session signup login logout me servers`, `API` base |
-| `scene2d.js` [2052] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites, ground, raised blocks, creatures, effects `fx/fxCustom/shake`, pets, title/creation stage |
+| `scene2d.js` [2020] | the world renderer: `iso/project/pick`, `init/resize`, `loadMap`, `sync(G)`, `render`, scenery sprites, ground, raised blocks, creatures, effects `fx/fxCustom/shake`, pets, lobby figures `figure/drawFigure` |
 | `isotiles.js` [29] · `iso_px.js` [118] · `iso_ground.js` [725] · `iso_tall.js` [601] | quarter-view ground baking (`bakeGround`), pixel buffers/projection (`TW=32, TH=16`), ground materials and transitions, tall blocks (cliffs, walls, houses) |
 | `decor.js` [590] | landmarks, decals, pulses, critters, waypoint stones/signs, town dressing, day/night `daylight` |
 | `art.js` [910] | item icons `buildIcons`, minimap `renderMini`, old scenery helpers; re-exports `chars.js` |
@@ -123,7 +123,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `skillfx.js` [408] | skill visuals/sounds per server fx code (`skillEvent`, switch on codes 40–75), props, marks |
 | `skillicons.js` [471] · `uiicons.js` [105] · `emoticons.js` [164] | 16×16 skill glyphs, 12×12 UI glyphs (`MENU_ICON TRAIT`), chat emoticons |
 | `classgauge.js` [152] | class gauge in the status panel |
-| `growth.js` [292] | skill training, warehouse, pets, auto-potion, drop names (client side) |
+| `growth.js` [270] | skill training, warehouse, pets, auto-potion, drop names, `lineFx` (client side) |
 | `quickslots.js` [327] | quick slots 1–9 (drag skills/items, keys) |
 | `minigames.js` [269] | fishing rhythm game, cooking tangram |
 | `npctalk.js` [80] | NPC flavour lines by role |

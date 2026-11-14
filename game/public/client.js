@@ -215,7 +215,6 @@ function stopGame() {
 function loadMap(m) {
   G.map = m;
   G.path = null;
-  S3.leaveStage();
   S3.loadMap(m);
   mini = isoMini(m);
   const cv = $("#mini-cv");
@@ -376,9 +375,10 @@ function onEvent(e, t) {
     case "t": if (e[5]) { S3.fx.ring(e[1], e[2], e[3], "#ffe08a", e[4]); break; } S3.fx.tele(e[1], e[2], e[3], e[4]); Sound.play("warn"); break;
     case "b": {
       // a blast on the ground: a monster's (pink, it hurts) or a player's skill landing
-      const col = [null, "#ffb04a", "#ff8a3a", "#cfe4ff"][e[4] | 0];
-      if ((e[4] | 0) >= 4) Growth.zoneFx(e, S3);       // the blade storm, the blizzard, the dragon's spear
-      else if (col) { S3.fx.ring(e[1], e[2], e[3], col, 300, true); S3.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); S3.shake(2); Sound.play("boom"); }
+      const kind = e[4] | 0;
+      if (kind >= 4) break;                       // class zones are handled by skillEvent
+      const col = [null, "#ffb04a", "#ff8a3a", "#cfe4ff"][kind];
+      if (col) { S3.fx.ring(e[1], e[2], e[3], col, 300, true); S3.fx.burst(e[1], e[2], 0.4, col, 18, 2.4); S3.shake(2); Sound.play("boom"); }
       else { S3.fx.ring(e[1], e[2], e[3], "#ff6ad0", 350, true); S3.fx.burst(e[1], e[2], 0.4, "#ff6ad0", 34, 3); S3.shake(6); Sound.play("slam"); }
       break;
     }
@@ -509,21 +509,7 @@ function attackFx(kind, src, tx, ty, dir, beat = 0) {
     case 3: f.slash(src.x, src.y, ang, "#e0d0f0", fin ? 1.15 : 0.8, beat === 1); Sound.play("swing_dagger"); break;
     case 4: if (beat === 1) f.slash(src.x, src.y, ang, "#d0f0e8", 1.7, true); else { f.beam(src.x, src.y, src.x + Math.cos(ang) * (fin ? 74 : 54), src.y + Math.sin(ang) * (fin ? 74 : 54), "#eef4ff", fin ? 0.9 : 0.5); if (fin) S3.shake(2); } Sound.play("swing_spear", fin); break;
     case 5: f.proj(src.x, src.y, 0.9, tx, ty, 0.5, "#c8a0ff", 0.07, 20, () => { f.ring(tx, ty, fin ? 34 : 26, "#c8a0ff", 220, true); }); Sound.play("swing_book"); break;
-    case 23: f.beam(src.x, src.y, tx, ty, "#e0b070", 1.1); f.burst(tx, ty, 0.4, "#e0b070", 20, 2.4); S3.shake(5); Sound.play("boom"); break;
-    case 24: f.sparkle(src.x, src.y, 0.8, "#ffe9a0", 12); Sound.play("magic"); break;
-    case 10: f.slash(src.x, src.y, ang, "#ffd84a", 1.05); S3.shake(2); Sound.play("crit"); break;
-    case 11: f.ring(src.x, src.y, 48, "#ffffff", 260); f.ring(src.x, src.y, 34, "#ffd84a", 240, false, 60); Sound.play("swing"); break;
-    case 12: f.ring(src.x, src.y, 60, "#ff7a5a", 500); f.sparkle(src.x, src.y, 0.9, "#ff7a5a", 16); Sound.play("buff"); break;
-    case 13: f.beam(src.x, src.y, tx, ty, "#9fe8ff", 0.7); Sound.play("shoot"); break;
-    case 14: f.sparkle(src.x, src.y, 0.4, "#b8ffd0", 18); f.ring(src.x, src.y, 22, "#b8ffd0", 400); Sound.play("buff"); break;
-    case 15: f.proj(src.x, src.y, 1.1, tx, ty, 0.4, "#ff8a3a", 0.14, 13, () => { f.ring(tx, ty, 34, "#ff8a3a", 300, true); f.burst(tx, ty, 0.4, "#ffd84a", 22, 2.6); S3.shake(3); Sound.play("boom"); }); Sound.play("magic"); break;
-    case 16: f.ring(src.x, src.y, 58, "#9fe8ff", 420, true); f.sparkle(src.x, src.y, 0.6, "#d0f4ff", 22); Sound.play("ice"); break;
-    case 17: f.ring(src.x, src.y, 90, "#8cff8c", 500); f.sparkle(src.x, src.y, 0.6, "#8cff8c", 22); Sound.play("heal"); break;
-    case 18: f.slash(src.x, src.y, ang, "#e04860", 0.7); f.burst(tx, ty, 0.6, "#e04860", 10, 1.8); Sound.play("crit"); break;
-    case 19: f.burst(src.x, src.y, 0.6, "#4a4468", 10, 1); break;
-    case 20: f.burst(src.x, src.y, 0.5, "#8a8a98", 40, 1.2); Sound.play("buff"); break;
-    case 21: f.proj(src.x, src.y, 1, tx, ty, 0.2, "#6a7a5a", 0.1, 11, () => { f.ring(tx, ty, 42, "#ffb04a", 320, true); f.burst(tx, ty, 0.4, "#ffd84a", 28, 3); S3.shake(4); Sound.play("boom"); }); Sound.play("swing"); break;
-    default: Growth.skillFx(kind, src, tx, ty, ang, S3);     // 25–32: the second-tier skills and the ultimates
+    case 19: f.burst(src.x, src.y, 0.6, "#4a4468", 10, 1); break; // the rogue's swap found no target
   }
 }
 
