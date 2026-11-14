@@ -674,6 +674,12 @@ function abyssal(cfg) {
       denSpawns(m, box, cfg, rect, t, d, !onMain.has(k), I.r > 4.6 ? 1 : 0);
     }
   });
+  // past the mother, a way up and out: a ledge from her island to the rim, where the chasm opened under the old kingdom
+  if (cfg.out) {
+    const I = isl[1];
+    for (let x = I.x; x <= W - 3; x++) for (const y of [I.y, I.y + 1]) { m.g[y][x] = "c"; m.o[y][x] = " "; }
+    gates.out = { t: [[W - 3, I.y], [W - 3, I.y + 1]], a: [[W - 5, I.y], [W - 5, I.y + 1]] };
+  }
   for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) { m.g[y][x] = "c"; m.o[y][x] = " "; pts.push([x, y]); }
   m.gates = gates;
   m.entry = gates.in.a[0];

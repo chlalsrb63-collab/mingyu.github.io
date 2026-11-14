@@ -6,6 +6,10 @@ const PIECE = {
   K: [undefined, "K"], S: [undefined, "S"], M: [undefined, "M"], n: [undefined, "n"], D: [undefined, "D"], x: [undefined, "x"], y: [undefined, "y"], L: [undefined, "L"],
   1: [undefined, "1"], 2: [undefined, "2"], 3: [undefined, "3"], 4: [undefined, "4"], 5: [undefined, "5"], 6: [undefined, "6"], 7: [undefined, "7"], 8: [undefined, "8"], 0: [undefined, "0"], X: [undefined, "X"],
   "*": [undefined, " ", "chest"], "#": ["p", " ", "fire"], "<": ["v", " ", "t"], ">": [undefined, " ", "a"], "@": [undefined, " ", "boss"], "g": ["g", " "],
+  // the fallen kingdom: royal flagstones, leaf litter, blighted soil, dry stalks; headstones, banners, a king's statue,
+  // and the footprints the big ruins stand on (the chapel N, a cottage d, a watchtower i, the toppled gate f)
+  "=": ["=", " "], "%": ["%", " "], "&": ["&", " "], t: ["t", " "], J: [undefined, "J"], V: [undefined, "V"], z: [undefined, "z"],
+  N: [undefined, "N"], $: [undefined, "d"], "!": [undefined, "i"], "^": [undefined, "f"],
 };
 const PIECES = {
   // 바람초원 · 속삭임 숲
@@ -19,7 +23,19 @@ const PIECES = {
   menhir: ["..O..", ".f.f.", "O.*.O", ".f.f.", "....."],
   camp: [".E...l.", "..ppp..", ".pp#pp.", "u.ppp..", "......."],
   stair: ["UUUUUU", "Uq<<qU", "UrrrrU", "U.>>.U", "......"],
+  // 단풍 왕도 — what is left of the kingdom. The chapel is the stag king's lair; the cottage is a camp with a hermit;
+  // the rest are dead ends with a chest and a keeper (the graveyard grows roses, the stalk field scarecrows ...)
+  chapel: ["J..NNNN.J", ".V.NNNN.V", "J.*====.J", "..=====..", "J.==@==.J", "........."],
+  cottage: [".l.$$$u.", "...$$$..", ".Y.ppp..", "..pp#pp.", "........"],
+  watchtower: [".R!!!.V.", "..!!!...", "R.rrr.R.", ".rr*rr..", ".R.r.rR.", "........"],
+  kinggate: ["z.^^^^.z.", "..^^^^...", "..====...", ".==.*.==.", "z.====.z.", "........."],
+  graveyard: ["FFF..FFFF", "F.J..J.JF", "FJ..*...F", "F.J...JBF", "F..J.J..F", "FFFF..FFF"],
+  scarefield: ["FF.FF.FF", "Ft.tt.tF", "F.t*t.tF", "Ftt.tt.F", "F.t..t.F", "FFF..FFF"],
+  leafmound: [".u...l.", "%%%%%%.", "%%%Y%%u", "u%%*%%%", ".%%%%%.", "...l..."],
+  treetunnel: [".TTTTTTT.", "T.=====.T", "..====*=T", "T.=====.T", ".TTTTTTT."],
 };
+/** Pieces whose ruin is one big picture standing on its footprint: never turned (a mirror is fine). */
+const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate"]);
 /** Stamp a set piece and return where its tags landed: { chest: [[x, y]], fire: [...], ... }. */
 function piece(m, name, x, y, rot, flip) {
   const rows = PIECES[name], out = {};
@@ -84,6 +100,11 @@ function wilds(cfg) {
     // the way down: a dead end partway in, roomy enough for the ruin over it (or failing that, any quiet corner)
     const tries = [(k) => tree.deg[k] === 1 && D[k] >= far * 0.3 && D[k] <= far * 0.85 && R[k].inr >= 5, (k) => tree.deg[k] === 1 && D[k] >= far * 0.2 && R[k].inr >= 4, (k) => !onMain.has(k) && D[k] >= 2 && R[k].inr >= 4];
     for (const f of tries) if (pickRole("stair", byDepth(f)) !== undefined) break;
+  }
+  // a lair: the deepest roomy dead end, where a guardian keeps a chest (the old kingdom's chapel)
+  if (cfg.lair) {
+    const tries = [(k) => tree.deg[k] === 1 && D[k] >= far * 0.5 && R[k].inr >= 5, (k) => !onMain.has(k) && D[k] >= far * 0.4 && R[k].inr >= 4, (k) => D[k] >= 2 && R[k].inr >= 4];
+    for (const f of tries) if (pickRole("lair", byDepth(f)) !== undefined) break;
   }
   for (let v = 0; v < cfg.vaults; v++) if (pickRole("vault", byDepth((k) => tree.deg[k] === 1 && R[k].inr >= 4)) === undefined) pickRole("vault", byDepth((k) => !onMain.has(k) && D[k] >= far * 0.3 && R[k].inr >= 4));
   const lakeList = R.map((r) => r.k).filter((k) => role[k] === "field" && !onMain.has(k) && R[k].inr >= 5 && D[k] > 1).sort((a, b) => R[a].e - R[b].e);
@@ -209,11 +230,11 @@ function wilds(cfg) {
   // set pieces
   const free = (x, y) => m.o[y][x] === " " && !"wbv".includes(m.g[y][x]) && !keep[y * W + x];
   const placeIn = (r, name, pad) => {
-    const rot = ri(box, 0, 3), flip = rnd(box) < 0.5;
+    const rot0 = ri(box, 0, 3), flip = rnd(box) < 0.5, rot = UPRIGHT.has(name) ? 0 : rot0;
     const [w, h] = stampSize(PIECES[name], rot);
     // a piece may stand where loose trees grow (it clears them), never on a barrier, water or a kept way
     const room = (x, y) => !"wbv".includes(m.g[y][x]) && !keep[y * W + x] && !"CHUZ".includes(m.o[y][x]);
-    const p = fitIn(m, lab, inner, r, w, h, pad, room) || fitIn(m, lab, inner, r, w, h, 2, room);
+    const p = fitIn(m, lab, inner, r, w, h, pad, room) || fitIn(m, lab, inner, r, w, h, 2, room) || (cfg.padMin === 1 ? fitIn(m, lab, inner, r, w, h, 1, room) : null);
     if (!p) return null;
     const tags = piece(m, name, p[0], p[1], rot, flip);
     m.pieces.push(name);
@@ -227,21 +248,39 @@ function wilds(cfg) {
     const k = r.k, t = D[k] / far;
     if (role[k] === "camp") {
       // a camp must exist: on the main way if it fits anywhere along it, else in the roomiest quiet region
-      let p = placeIn(r, "camp", 2);
-      for (const o of main.filter((q) => q !== k && role[q] === "field").sort((a, b) => R[b].inr - R[a].inr)) { if (p) break; p = placeIn(R[o], "camp", 2); }
-      for (const o of R.map((q) => q.k).filter((q) => q !== k && role[q] === "field" && D[q] >= 2).sort((a, b) => R[b].inr - R[a].inr)) { if (p) break; p = placeIn(R[o], "camp", 2); }
-      if (p) { FIRES[cfg.id].push(p.tags.fire[0]); special.push(p.tags.fire[0]); doors.push(p.tags.fire[0]); }
+      const cp = cfg.campPiece || "camp";
+      let p = placeIn(r, cp, 2);
+      for (const o of main.filter((q) => q !== k && role[q] === "field").sort((a, b) => R[b].inr - R[a].inr)) { if (p) break; p = placeIn(R[o], cp, 2); }
+      for (const o of R.map((q) => q.k).filter((q) => q !== k && role[q] === "field" && D[q] >= 2).sort((a, b) => R[b].inr - R[a].inr)) { if (p) break; p = placeIn(R[o], cp, 2); }
+      if (!p && cp !== "camp") p = placeIn(r, "camp", 2);
+      if (p) { FIRES[cfg.id].push(p.tags.fire[0]); special.push(p.tags.fire[0]); doors.push(p.tags.fire[0]); m.camp = { x: p.x, y: p.y, w: p.w, h: p.h }; }
+    } else if (role[k] === "lair") {
+      // the guardian's ground: if the piece will not fit here, the next deep quiet region with room takes it
+      let p = placeIn(r, cfg.lair.piece, 2);
+      for (const o of byDepth((q) => q !== k && role[q] === "field" && !onMain.has(q) && D[q] >= far * 0.4)) { if (p) break; p = placeIn(R[o], cfg.lair.piece, 2); }
+      if (p) {
+        const [bx, by] = p.tags.boss[0];
+        spawns.push({ k: cfg.lair.guard, n: 1, r: [bx, by, bx, by], el: 2 });
+        if (p.tags.chest) { const [cx, cy] = p.tags.chest[0]; spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] }); special.push([cx, cy]); }
+        spawns.push({ k: cfg.lair.pack || cfg.mobs[cfg.mobs.length - 1], n: 3, r: [p.x - 1, p.y - 1, p.x + p.w, p.y + p.h], elite: 0.25 });
+        special.push([bx, by]);
+        doors.push([bx, by]);
+        m.lair = [bx, by];
+      }
     } else if (role[k] === "vault") {
       // the piece meant for it, or failing that whichever of the others fits, smallest last
       const want = cfg.vaultKinds[vn++ % cfg.vaultKinds.length];
       const used = (q) => m.pieces.filter((x) => x === q).length;
       const kinds = [want, ...cfg.vaultKinds.filter((q) => q !== want).sort((a, b) => used(a) - used(b) || PIECES[b].length * PIECES[b][0].length - PIECES[a].length * PIECES[a][0].length)];
       let p = null;
-      for (const kind of kinds) if ((p = placeIn(r, kind, 2))) break;
+      let kind = null;
+      for (kind of kinds) if ((p = placeIn(r, kind, 2))) break;
       if (p) {
         const [cx, cy] = p.tags.chest[0];
         spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] });
-        spawns.push({ k: bandMob(box, cfg.mobs, Math.min(1, t + 0.15), D[k]), n: 2, r: [p.x - 1, p.y - 1, p.x + p.w, p.y + p.h], elite: 0.3 });
+        // some pieces breed their own keepers (roses in the graveyard, scarecrows in the stalks)
+        const keeper = bandMob(box, cfg.mobs, Math.min(1, t + 0.15), D[k]);
+        spawns.push({ k: (cfg.vaultMobs && cfg.vaultMobs[kind]) || keeper, n: 2, r: [p.x - 1, p.y - 1, p.x + p.w, p.y + p.h], elite: 0.3 });
         special.push([cx, cy]);
       }
     } else if (role[k] === "stair") {
@@ -297,6 +336,22 @@ function wilds(cfg) {
     ring(k, x, y) { for (let a = 0; a < 8; a++) if (a !== 2 && a !== 6) obj(k, x + Math.round(Math.cos(a * 0.785) * 2.4), y + Math.round(Math.sin(a * 0.785) * 2), "Y"); },
     dead(k, x, y) { obj(k, x, y, "A"); obj(k, x + ri(box, 2, 3), y + ri(box, -2, 2), "A"); obj(k, x - ri(box, 2, 3), y + ri(box, -1, 2), "A"); },
     stones(k, x, y) { for (let i = -2; i <= 2; i++) obj(k, x + i, y + ((i * 7) % 3 === 0 ? 0 : 1), i % 2 ? "U" : "q"); },
+    // the old kingdom: a drift of leaves round a fallen trunk, a king's statue on its flagstones,
+    // rotted banners either side of an old way, a few graves, and a hollow where the blight fruits
+    leafpile(k, x, y) {
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -3; dx <= 3; dx++) if (ok(k, x + dx, y + dy) && Math.hypot(dx * 0.75, dy) + (N2[(y + dy) * W + x + dx] - 0.5) < 2.4) m.g[y + dy][x + dx] = "%";
+      obj(k, x, y, "l"); obj(k, x + 2, y - 1, "u");
+    },
+    statue(k, x, y) {
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (ok(k, x + dx, y + dy)) m.g[y + dy][x + dx] = "=";
+      obj(k, x, y, "z"); obj(k, x - 2, y + 1, "q");
+    },
+    banners(k, x, y) { obj(k, x - 2, y, "V"); obj(k, x + 2, y, "V"); for (let dy = 0; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (ok(k, x + dx, y + dy)) m.g[y + dy][x + dx] = "="; },
+    graves(k, x, y) { for (const [dx, dy] of [[-2, 0], [0, -1], [2, 0], [-1, 2], [1, 2]]) if (rnd(box) < 0.8) obj(k, x + dx, y + dy, "J"); },
+    shrooms(k, x, y) {
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -3; dx <= 3; dx++) if (ok(k, x + dx, y + dy) && Math.hypot(dx * 0.8, dy) < 2.6 && N1[(y + dy) * W + x + dx] > 0.3) m.g[y + dy][x + dx] = "&";
+      for (let a = 0; a < 6; a++) if (a !== 1 && a !== 4) obj(k, x + Math.round(Math.cos(a * 1.047) * 2.6), y + Math.round(Math.sin(a * 1.047) * 2), "Y");
+    },
   };
   for (const r of R) {
     if (role[r.k] !== "field" || r.inr < 3 || rnd(box) > cfg.featureP) continue;
@@ -319,13 +374,13 @@ function wilds(cfg) {
     if (back >= 0 && j - i !== i - back) c += 0.4;
     return c;
   };
-  const pave = (path, wide) => {
+  const pave = (path, wide, ch = cfg.road) => {
     for (let s = 0; s < path.length; s++) {
       const t = path[s], [x, y] = at(t), nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
       const lay1 = (X, Y) => {
         if (X < 2 || Y < 2 || X >= W - 2 || Y >= H - 2) return;
         if (m.g[Y][X] === "w") { m.g[Y][X] = "b"; m.o[Y][X] = " "; }
-        else if (m.o[Y][X] === " " || m.o[Y][X] === "e") { if (!"bv".includes(m.g[Y][X])) m.g[Y][X] = cfg.road; m.o[Y][X] = " "; }
+        else if (m.o[Y][X] === " " || m.o[Y][X] === "e") { if (!"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch; m.o[Y][X] = " "; }
         keep[Y * W + X] = 1;
       };
       lay1(x, y);
@@ -355,7 +410,7 @@ function wilds(cfg) {
   // trails: a single file of worn earth from a camp or a stair to the road
   for (const [x, y] of doors) {
     const path = walk(W, H, y * W + x, (i) => roadMask[i] === 1, roadCost);
-    if (path) pave(path.slice(1).filter((i) => !roadMask[i]), false);
+    if (path) pave(path.slice(1).filter((i) => !roadMask[i]), false, cfg.trail || cfg.road);
   }
 
   // what grows everywhere else
@@ -398,7 +453,7 @@ function wilds(cfg) {
   for (const p of special) pts.push(p);
   for (const name of Object.keys(gates)) for (const a of gates[name].a) pts.push(a);
   cover(m, cfg.mobs);
-  knit(m, pts, cfg.road);
+  knit(m, pts, cfg.trail || cfg.road);
   m.regions = n;
   return m;
 }

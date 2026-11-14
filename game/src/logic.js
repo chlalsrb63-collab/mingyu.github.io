@@ -314,7 +314,7 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -339,7 +339,7 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8 };
 const CROWD_MAX = 228, GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /** Past this level the extra bite tapers off, a little per level: the deep dungeons were already the sharpest. */
 const ATK_EASE = [16, 0.016];
@@ -407,10 +407,18 @@ const MOBS = {
   sowseer: { name: "눈 달린 암퇘지", lv: 37, hp: 3000, atk: 112, def: 30, spd: 30, xp: 1300, gold: [90, 158], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
   doghead_fire: { name: "불타는 세 머리 들개", sp: "doghead", tint: "fire", lv: 38, hp: 2900, atk: 116, def: 26, spd: 52, xp: 1400, gold: [94, 164], aggro: 100, range: 20, cd: 1000, charge: 116, pool: 24, poolKind: 1 },
   abyssboss: { name: "심연의 어미", lv: 40, hp: 48000, atk: 200, def: 40, spd: 34, xp: 30000, gold: [4000, 6000], aggro: 140, range: 30, cd: 1400, resp: 240000, boss: true, gear: 1, fan: 160, pool: 34, poolKind: 2, charge: 150 },
+  // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
+  // beasts and plants alike sprouting violet rot and eyes
+  blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
+  stumpmaw: { name: "아가리 그루터기", lv: 41, hp: 3600, atk: 118, def: 34, spd: 24, xp: 1560, gold: [98, 170], aggro: 80, range: 22, cd: 1500, slam: 40 },
+  crowscare: { name: "까마귀 허수아비", lv: 42, hp: 2600, atk: 120, def: 18, spd: 30, xp: 1620, gold: [100, 174], aggro: 100, range: 78, cd: 1600, shot: true, fan: 96 },
+  shroomboar: { name: "버섯등 멧돼지", lv: 43, hp: 3300, atk: 124, def: 28, spd: 48, xp: 1700, gold: [104, 180], aggro: 92, range: 20, cd: 1100, charge: 116, pool: 26 },
+  gravrose: { name: "묘지 장미", lv: 44, hp: 3000, atk: 128, def: 22, spd: 22, xp: 1780, gold: [108, 186], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
+  rotstag: { name: "썩은 관 사슴왕", lv: 46, hp: 5200, atk: 136, def: 32, spd: 42, xp: 2200, gold: [120, 204], aggro: 92, range: 22, cd: 1300, charge: 124, slam: 42, fan: 100 },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
-  ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]]]) {
+  ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {
@@ -453,6 +461,9 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   { mob: "horsehalf", n: 12, title: "군주의 뒤편", text: "군주가 쓰러진 자리 뒤에 더 깊은 균열이 열렸네. 피의 심연의 반쪽 말 12마리를 쓰러뜨려 주게.", xp: 30000, gold: 5000, items: [["hp_m", 10], ["ru_fos", 1]] },
   { mob: "lionhand", n: 10, title: "손으로 된 갈기", text: "심연 깊은 곳의 손갈기 사자 10마리를 쓰러뜨려 주게. 땅을 치고, 멀리서는 무언가를 던진다네.", xp: 38000, gold: 6000, items: [["stone", 8]] },
   { mob: "abyssboss", n: 1, title: "심연의 어미", text: "뒤틀린 것들은 전부 한곳에서 태어났네. 심연의 어미를 쓰러뜨려, 이 일을 끝내 주게.", xp: 120000, gold: 20000, items: [["stone", 20], ["ru_lum", 2]] },
+  { mob: "blightsquirrel", n: 12, title: "단풍 아래의 병", text: "어미는 쓰러졌지만, 그 병은 뿌리를 타고 지상으로 번졌다네. 속삭임 숲 동쪽, 단풍에 묻힌 옛 왕도로 가서 한 꼬리 다람쥐떼 12마리를 정리해 주게.", xp: 40000, gold: 6500, items: [["hp_m", 10]] },
+  { mob: "shroomboar", n: 12, title: "포자 무덤", text: "왕도의 멧돼지들은 등에 버섯을 키운다네. 버섯등 멧돼지 12마리를 잡아 주게. 뱉어 낸 포자 웅덩이는 독이니 밟지 말게.", xp: 46000, gold: 7200, items: [["stone", 8], ["mp_m", 6]] },
+  { mob: "rotstag", n: 4, title: "썩은 왕관", text: "무너진 예배당엔 왕관을 쓴 사슴이 산다네. 옛 왕의 사냥감이었다지. 썩은 관 사슴왕 4마리를 쓰러뜨려, 왕도의 병을 끊어 주게.", xp: 60000, gold: 9000, items: [["stone", 12], ["ru_lum", 1]] },
 ];
 
 // ───────────────────────────── helpers ─────────────────────────────
@@ -1042,6 +1053,10 @@ const PIECE = {
   K: [undefined, "K"], S: [undefined, "S"], M: [undefined, "M"], n: [undefined, "n"], D: [undefined, "D"], x: [undefined, "x"], y: [undefined, "y"], L: [undefined, "L"],
   1: [undefined, "1"], 2: [undefined, "2"], 3: [undefined, "3"], 4: [undefined, "4"], 5: [undefined, "5"], 6: [undefined, "6"], 7: [undefined, "7"], 8: [undefined, "8"], 0: [undefined, "0"], X: [undefined, "X"],
   "*": [undefined, " ", "chest"], "#": ["p", " ", "fire"], "<": ["v", " ", "t"], ">": [undefined, " ", "a"], "@": [undefined, " ", "boss"], "g": ["g", " "],
+  // the fallen kingdom: royal flagstones, leaf litter, blighted soil, dry stalks; headstones, banners, a king's statue,
+  // and the footprints the big ruins stand on (the chapel N, a cottage d, a watchtower i, the toppled gate f)
+  "=": ["=", " "], "%": ["%", " "], "&": ["&", " "], t: ["t", " "], J: [undefined, "J"], V: [undefined, "V"], z: [undefined, "z"],
+  N: [undefined, "N"], $: [undefined, "d"], "!": [undefined, "i"], "^": [undefined, "f"],
 };
 const PIECES = {
   // 바람초원 · 속삭임 숲
@@ -1055,7 +1070,19 @@ const PIECES = {
   menhir: ["..O..", ".f.f.", "O.*.O", ".f.f.", "....."],
   camp: [".E...l.", "..ppp..", ".pp#pp.", "u.ppp..", "......."],
   stair: ["UUUUUU", "Uq<<qU", "UrrrrU", "U.>>.U", "......"],
+  // 단풍 왕도 — what is left of the kingdom. The chapel is the stag king's lair; the cottage is a camp with a hermit;
+  // the rest are dead ends with a chest and a keeper (the graveyard grows roses, the stalk field scarecrows ...)
+  chapel: ["J..NNNN.J", ".V.NNNN.V", "J.*====.J", "..=====..", "J.==@==.J", "........."],
+  cottage: [".l.$$$u.", "...$$$..", ".Y.ppp..", "..pp#pp.", "........"],
+  watchtower: [".R!!!.V.", "..!!!...", "R.rrr.R.", ".rr*rr..", ".R.r.rR.", "........"],
+  kinggate: ["z.^^^^.z.", "..^^^^...", "..====...", ".==.*.==.", "z.====.z.", "........."],
+  graveyard: ["FFF..FFFF", "F.J..J.JF", "FJ..*...F", "F.J...JBF", "F..J.J..F", "FFFF..FFF"],
+  scarefield: ["FF.FF.FF", "Ft.tt.tF", "F.t*t.tF", "Ftt.tt.F", "F.t..t.F", "FFF..FFF"],
+  leafmound: [".u...l.", "%%%%%%.", "%%%Y%%u", "u%%*%%%", ".%%%%%.", "...l..."],
+  treetunnel: [".TTTTTTT.", "T.=====.T", "..====*=T", "T.=====.T", ".TTTTTTT."],
 };
+/** Pieces whose ruin is one big picture standing on its footprint: never turned (a mirror is fine). */
+const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate"]);
 /** Stamp a set piece and return where its tags landed: { chest: [[x, y]], fire: [...], ... }. */
 function piece(m, name, x, y, rot, flip) {
   const rows = PIECES[name], out = {};
@@ -1120,6 +1147,11 @@ function wilds(cfg) {
     // the way down: a dead end partway in, roomy enough for the ruin over it (or failing that, any quiet corner)
     const tries = [(k) => tree.deg[k] === 1 && D[k] >= far * 0.3 && D[k] <= far * 0.85 && R[k].inr >= 5, (k) => tree.deg[k] === 1 && D[k] >= far * 0.2 && R[k].inr >= 4, (k) => !onMain.has(k) && D[k] >= 2 && R[k].inr >= 4];
     for (const f of tries) if (pickRole("stair", byDepth(f)) !== undefined) break;
+  }
+  // a lair: the deepest roomy dead end, where a guardian keeps a chest (the old kingdom's chapel)
+  if (cfg.lair) {
+    const tries = [(k) => tree.deg[k] === 1 && D[k] >= far * 0.5 && R[k].inr >= 5, (k) => !onMain.has(k) && D[k] >= far * 0.4 && R[k].inr >= 4, (k) => D[k] >= 2 && R[k].inr >= 4];
+    for (const f of tries) if (pickRole("lair", byDepth(f)) !== undefined) break;
   }
   for (let v = 0; v < cfg.vaults; v++) if (pickRole("vault", byDepth((k) => tree.deg[k] === 1 && R[k].inr >= 4)) === undefined) pickRole("vault", byDepth((k) => !onMain.has(k) && D[k] >= far * 0.3 && R[k].inr >= 4));
   const lakeList = R.map((r) => r.k).filter((k) => role[k] === "field" && !onMain.has(k) && R[k].inr >= 5 && D[k] > 1).sort((a, b) => R[a].e - R[b].e);
@@ -1245,11 +1277,11 @@ function wilds(cfg) {
   // set pieces
   const free = (x, y) => m.o[y][x] === " " && !"wbv".includes(m.g[y][x]) && !keep[y * W + x];
   const placeIn = (r, name, pad) => {
-    const rot = ri(box, 0, 3), flip = rnd(box) < 0.5;
+    const rot0 = ri(box, 0, 3), flip = rnd(box) < 0.5, rot = UPRIGHT.has(name) ? 0 : rot0;
     const [w, h] = stampSize(PIECES[name], rot);
     // a piece may stand where loose trees grow (it clears them), never on a barrier, water or a kept way
     const room = (x, y) => !"wbv".includes(m.g[y][x]) && !keep[y * W + x] && !"CHUZ".includes(m.o[y][x]);
-    const p = fitIn(m, lab, inner, r, w, h, pad, room) || fitIn(m, lab, inner, r, w, h, 2, room);
+    const p = fitIn(m, lab, inner, r, w, h, pad, room) || fitIn(m, lab, inner, r, w, h, 2, room) || (cfg.padMin === 1 ? fitIn(m, lab, inner, r, w, h, 1, room) : null);
     if (!p) return null;
     const tags = piece(m, name, p[0], p[1], rot, flip);
     m.pieces.push(name);
@@ -1263,21 +1295,39 @@ function wilds(cfg) {
     const k = r.k, t = D[k] / far;
     if (role[k] === "camp") {
       // a camp must exist: on the main way if it fits anywhere along it, else in the roomiest quiet region
-      let p = placeIn(r, "camp", 2);
-      for (const o of main.filter((q) => q !== k && role[q] === "field").sort((a, b) => R[b].inr - R[a].inr)) { if (p) break; p = placeIn(R[o], "camp", 2); }
-      for (const o of R.map((q) => q.k).filter((q) => q !== k && role[q] === "field" && D[q] >= 2).sort((a, b) => R[b].inr - R[a].inr)) { if (p) break; p = placeIn(R[o], "camp", 2); }
-      if (p) { FIRES[cfg.id].push(p.tags.fire[0]); special.push(p.tags.fire[0]); doors.push(p.tags.fire[0]); }
+      const cp = cfg.campPiece || "camp";
+      let p = placeIn(r, cp, 2);
+      for (const o of main.filter((q) => q !== k && role[q] === "field").sort((a, b) => R[b].inr - R[a].inr)) { if (p) break; p = placeIn(R[o], cp, 2); }
+      for (const o of R.map((q) => q.k).filter((q) => q !== k && role[q] === "field" && D[q] >= 2).sort((a, b) => R[b].inr - R[a].inr)) { if (p) break; p = placeIn(R[o], cp, 2); }
+      if (!p && cp !== "camp") p = placeIn(r, "camp", 2);
+      if (p) { FIRES[cfg.id].push(p.tags.fire[0]); special.push(p.tags.fire[0]); doors.push(p.tags.fire[0]); m.camp = { x: p.x, y: p.y, w: p.w, h: p.h }; }
+    } else if (role[k] === "lair") {
+      // the guardian's ground: if the piece will not fit here, the next deep quiet region with room takes it
+      let p = placeIn(r, cfg.lair.piece, 2);
+      for (const o of byDepth((q) => q !== k && role[q] === "field" && !onMain.has(q) && D[q] >= far * 0.4)) { if (p) break; p = placeIn(R[o], cfg.lair.piece, 2); }
+      if (p) {
+        const [bx, by] = p.tags.boss[0];
+        spawns.push({ k: cfg.lair.guard, n: 1, r: [bx, by, bx, by], el: 2 });
+        if (p.tags.chest) { const [cx, cy] = p.tags.chest[0]; spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] }); special.push([cx, cy]); }
+        spawns.push({ k: cfg.lair.pack || cfg.mobs[cfg.mobs.length - 1], n: 3, r: [p.x - 1, p.y - 1, p.x + p.w, p.y + p.h], elite: 0.25 });
+        special.push([bx, by]);
+        doors.push([bx, by]);
+        m.lair = [bx, by];
+      }
     } else if (role[k] === "vault") {
       // the piece meant for it, or failing that whichever of the others fits, smallest last
       const want = cfg.vaultKinds[vn++ % cfg.vaultKinds.length];
       const used = (q) => m.pieces.filter((x) => x === q).length;
       const kinds = [want, ...cfg.vaultKinds.filter((q) => q !== want).sort((a, b) => used(a) - used(b) || PIECES[b].length * PIECES[b][0].length - PIECES[a].length * PIECES[a][0].length)];
       let p = null;
-      for (const kind of kinds) if ((p = placeIn(r, kind, 2))) break;
+      let kind = null;
+      for (kind of kinds) if ((p = placeIn(r, kind, 2))) break;
       if (p) {
         const [cx, cy] = p.tags.chest[0];
         spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] });
-        spawns.push({ k: bandMob(box, cfg.mobs, Math.min(1, t + 0.15), D[k]), n: 2, r: [p.x - 1, p.y - 1, p.x + p.w, p.y + p.h], elite: 0.3 });
+        // some pieces breed their own keepers (roses in the graveyard, scarecrows in the stalks)
+        const keeper = bandMob(box, cfg.mobs, Math.min(1, t + 0.15), D[k]);
+        spawns.push({ k: (cfg.vaultMobs && cfg.vaultMobs[kind]) || keeper, n: 2, r: [p.x - 1, p.y - 1, p.x + p.w, p.y + p.h], elite: 0.3 });
         special.push([cx, cy]);
       }
     } else if (role[k] === "stair") {
@@ -1333,6 +1383,22 @@ function wilds(cfg) {
     ring(k, x, y) { for (let a = 0; a < 8; a++) if (a !== 2 && a !== 6) obj(k, x + Math.round(Math.cos(a * 0.785) * 2.4), y + Math.round(Math.sin(a * 0.785) * 2), "Y"); },
     dead(k, x, y) { obj(k, x, y, "A"); obj(k, x + ri(box, 2, 3), y + ri(box, -2, 2), "A"); obj(k, x - ri(box, 2, 3), y + ri(box, -1, 2), "A"); },
     stones(k, x, y) { for (let i = -2; i <= 2; i++) obj(k, x + i, y + ((i * 7) % 3 === 0 ? 0 : 1), i % 2 ? "U" : "q"); },
+    // the old kingdom: a drift of leaves round a fallen trunk, a king's statue on its flagstones,
+    // rotted banners either side of an old way, a few graves, and a hollow where the blight fruits
+    leafpile(k, x, y) {
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -3; dx <= 3; dx++) if (ok(k, x + dx, y + dy) && Math.hypot(dx * 0.75, dy) + (N2[(y + dy) * W + x + dx] - 0.5) < 2.4) m.g[y + dy][x + dx] = "%";
+      obj(k, x, y, "l"); obj(k, x + 2, y - 1, "u");
+    },
+    statue(k, x, y) {
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (ok(k, x + dx, y + dy)) m.g[y + dy][x + dx] = "=";
+      obj(k, x, y, "z"); obj(k, x - 2, y + 1, "q");
+    },
+    banners(k, x, y) { obj(k, x - 2, y, "V"); obj(k, x + 2, y, "V"); for (let dy = 0; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (ok(k, x + dx, y + dy)) m.g[y + dy][x + dx] = "="; },
+    graves(k, x, y) { for (const [dx, dy] of [[-2, 0], [0, -1], [2, 0], [-1, 2], [1, 2]]) if (rnd(box) < 0.8) obj(k, x + dx, y + dy, "J"); },
+    shrooms(k, x, y) {
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -3; dx <= 3; dx++) if (ok(k, x + dx, y + dy) && Math.hypot(dx * 0.8, dy) < 2.6 && N1[(y + dy) * W + x + dx] > 0.3) m.g[y + dy][x + dx] = "&";
+      for (let a = 0; a < 6; a++) if (a !== 1 && a !== 4) obj(k, x + Math.round(Math.cos(a * 1.047) * 2.6), y + Math.round(Math.sin(a * 1.047) * 2), "Y");
+    },
   };
   for (const r of R) {
     if (role[r.k] !== "field" || r.inr < 3 || rnd(box) > cfg.featureP) continue;
@@ -1355,13 +1421,13 @@ function wilds(cfg) {
     if (back >= 0 && j - i !== i - back) c += 0.4;
     return c;
   };
-  const pave = (path, wide) => {
+  const pave = (path, wide, ch = cfg.road) => {
     for (let s = 0; s < path.length; s++) {
       const t = path[s], [x, y] = at(t), nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
       const lay1 = (X, Y) => {
         if (X < 2 || Y < 2 || X >= W - 2 || Y >= H - 2) return;
         if (m.g[Y][X] === "w") { m.g[Y][X] = "b"; m.o[Y][X] = " "; }
-        else if (m.o[Y][X] === " " || m.o[Y][X] === "e") { if (!"bv".includes(m.g[Y][X])) m.g[Y][X] = cfg.road; m.o[Y][X] = " "; }
+        else if (m.o[Y][X] === " " || m.o[Y][X] === "e") { if (!"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch; m.o[Y][X] = " "; }
         keep[Y * W + X] = 1;
       };
       lay1(x, y);
@@ -1391,7 +1457,7 @@ function wilds(cfg) {
   // trails: a single file of worn earth from a camp or a stair to the road
   for (const [x, y] of doors) {
     const path = walk(W, H, y * W + x, (i) => roadMask[i] === 1, roadCost);
-    if (path) pave(path.slice(1).filter((i) => !roadMask[i]), false);
+    if (path) pave(path.slice(1).filter((i) => !roadMask[i]), false, cfg.trail || cfg.road);
   }
 
   // what grows everywhere else
@@ -1434,7 +1500,7 @@ function wilds(cfg) {
   for (const p of special) pts.push(p);
   for (const name of Object.keys(gates)) for (const a of gates[name].a) pts.push(a);
   cover(m, cfg.mobs);
-  knit(m, pts, cfg.road);
+  knit(m, pts, cfg.trail || cfg.road);
   m.regions = n;
   return m;
 }
@@ -2377,6 +2443,12 @@ function abyssal(cfg) {
       denSpawns(m, box, cfg, rect, t, d, !onMain.has(k), I.r > 4.6 ? 1 : 0);
     }
   });
+  // past the mother, a way up and out: a ledge from her island to the rim, where the chasm opened under the old kingdom
+  if (cfg.out) {
+    const I = isl[1];
+    for (let x = I.x; x <= W - 3; x++) for (const y of [I.y, I.y + 1]) { m.g[y][x] = "c"; m.o[y][x] = " "; }
+    gates.out = { t: [[W - 3, I.y], [W - 3, I.y + 1]], a: [[W - 5, I.y], [W - 5, I.y + 1]] };
+  }
   for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) { m.g[y][x] = "c"; m.o[y][x] = " "; pts.push([x, y]); }
   m.gates = gates;
   m.entry = gates.in.a[0];
@@ -2467,7 +2539,7 @@ function buildTown() {
 }
 
 function buildMaps() {
-  for (const id of ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"]) FIRES[id] = [];
+  for (const id of ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"]) FIRES[id] = [];
   const town = buildTown();
   const meadow = wilds({
     id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 76, h: 51, r: 9.6, warp: 9, wind: 0.55, loops: 0.12, merge: 0.32, cliff: 0.15, gap: 2,
@@ -2487,7 +2559,7 @@ function buildMaps() {
   const forest = wilds({
     id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 76, h: 51, r: 8.2, warp: 10, wind: 0.6, loops: 0.1, merge: 0.18, cliff: 0.22, gap: 2,
     ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 1, lakeR: 4, vaults: 3, ruins: 2, tpm: 15.5, stair: "crypt",
-    walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86]], exit: "north",
+    walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
     mobs: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
     vaultKinds: ["deadgrove", "ring", "shrine", "lookout", "menhir", "cache"], biomes: { plain: "glade" }, featureP: 0.6, features: ["pond", "boulders", "ring", "dead", "logs", "stones", "cairn"],
     // the wettest hollows are bog, the heights fern and rock; elsewhere pine, with glades and old birch groves
@@ -2518,12 +2590,43 @@ function buildMaps() {
     id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 76, h: 51, r: 10.5, wind: 0.5, loops: 0.16, n: 3,
     mobs: ["leechmaw", "ratking_bile", "gatorhalf", "crabskull", "eelknot"], guard: "gatorhalf", chest: "chest_sewer",
   });
+  // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
+  // wood to the chasm that swallowed the capital (a ledge down into the abyss, behind the mother). Crimson maple
+  // groves on red litter, golden stands on gold, pine on the heights, clearings, and hollows where the blight fruits
+  const maple = wilds({
+    id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 80, h: 56, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
+    ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 1, lakeR: 4, vaults: 4, ruins: 2, tpm: 15,
+    walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3]], exit: "east",
+    mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose"], pondMob: null, chest: "chest_maple",
+    campPiece: "cottage", lair: { piece: "chapel", guard: "rotstag", pack: "rotstag" },
+    vaultKinds: ["graveyard", "watchtower", "kinggate", "leafmound", "scarefield", "treetunnel"],
+    vaultMobs: { graveyard: "gravrose", scarefield: "crowscare", leafmound: "shroomboar", treetunnel: "stumpmaw" },
+    biomes: { plain: "clearing" }, featureP: 0.7, features: ["leafpile", "statue", "banners", "graves", "shrooms", "logs", "boulders", "dead", "stones"],
+    biome: (e, mo, r) => (mo > 0.62 ? "hollow" : e > 0.66 ? "pine" : r < 0.22 ? "clearing" : r < 0.5 ? "gold" : "maple"),
+    paint: (b, n1, n2) => (b === "maple" ? (n1 > 0.42 ? "%" : n2 > 0.7 ? "," : null)
+      : b === "gold" ? (n1 > 0.42 ? ";" : n2 > 0.72 ? "," : null)
+      : b === "clearing" ? (n1 > 0.64 ? "%" : n1 < 0.16 ? '"' : n2 > 0.74 ? "t" : null)
+      : b === "hollow" ? (n1 > 0.7 ? "&" : n1 > 0.48 ? "j" : n2 > 0.6 ? "%" : null)
+      : n2 > 0.6 ? ":" : null),
+    scatter: (b, h, n1) => (b === "maple" ? ((n1 > 0.5 ? h < 0.2 : h < 0.08) ? "T" : h < 0.095 ? "B" : h < 0.1 ? "u" : h < 0.104 ? "l" : null)
+      : b === "gold" ? ((n1 > 0.55 ? h < 0.16 : h < 0.07) ? "T" : h < 0.08 ? "B" : h < 0.086 ? "R" : null)
+      : b === "pine" ? ((n1 > 0.5 ? h < 0.22 : h < 0.09) ? "P" : h < 0.1 ? "R" : h < 0.11 ? "B" : h < 0.114 ? "u" : null)
+      : b === "hollow" ? (h < 0.03 ? "Y" : h < 0.045 ? "A" : h < 0.055 ? "T" : h < 0.06 ? "u" : null)
+      : h < 0.014 ? "T" : h < 0.022 ? "u" : h < 0.028 ? "B" : h < 0.031 ? "l" : null),
+  });
+  // a hermit keeps the cottage fire
+  if (maple.camp) {
+    const [fx, fy] = FIRES.maple[0];
+    const at = [[2, 0], [-2, 0], [0, 2], [2, 1], [-2, 1], [1, 2], [-1, 2]].map(([dx, dy]) => [fx + dx, fy + dy]).find(([x, y]) => maple.o[y][x] === " " && !SOLID_G.includes(maple.g[y][x]));
+    if (at) maple.npcs.push({ id: "hermit", name: "은자 바스", role: "talk", x: at[0], y: at[1], look: [2, 4, 0, "#8a5a2a"],
+      say: "이 숲은 옛 단풍 왕국의 왕도였지. 심연이 열리던 밤 왕성은 통째로 가라앉고, 남은 것들은 보랏빛 병에 물들었다네. 무너진 예배당엔 왕관 쓴 사슴이 지키고 있으니, 불을 쬐고 가게." });
+  }
   const abyss = abyssal({
-    id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 76, h: 60, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss",
+    id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 76, h: 60, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
     mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss",
   });
   // the level a character should be to walk in, shown on every door that leads there
-  for (const [m, lo, hi] of [[meadow, 1, 7], [forest, 8, 13], [crypt, 12, 17], [town2, 14, 21], [sewer, 22, 27], [cave, 24, 32], [abyss, 32, 40]]) m.band = [lo, hi];
+  for (const [m, lo, hi] of [[meadow, 1, 7], [forest, 8, 13], [crypt, 12, 17], [town2, 14, 21], [sewer, 22, 27], [cave, 24, 32], [abyss, 32, 40], [maple, 40, 46]]) m.band = [lo, hi];
   // doors between the worlds: stepping on a gate tile puts you on the matching arrival tile next door
   const join = (a, ga, b, gb) => {
     for (let k = 0; k < 2; k++) {
@@ -2540,11 +2643,13 @@ function buildMaps() {
   join(forest, "crypt", crypt, "in");
   join(town2, "sewer", sewer, "in");
   join(cave, "rift", abyss, "in");
+  join(forest, "east", maple, "west");
+  join(maple, "east", abyss, "out");
   leave(crypt, "out", forest, "crypt");
   leave(sewer, "out", town2, "sewer");
   // the hunt wants a crowd: every hunting ground holds more than its layout asked for
   // (chests, guardians and bosses stay as placed)
-  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss]) {
+  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss, maple]) {
     const grows = (sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el;
     let base = 0, fixed = 0;
     for (const sp of m.spawns) { if (grows(sp)) base += sp.n; else fixed += sp.n; }
@@ -2560,14 +2665,15 @@ function buildMaps() {
       sp.n = n;
     }
   }
-  const byId = { town, meadow, forest, crypt, city: town2, sewer, cave, abyss };
+  const byId = { town, meadow, forest, crypt, city: town2, sewer, cave, abyss, maple };
   const labelOf = (id) => (byId[id].band ? `${byId[id].name} Lv.${byId[id].band[0]}–${byId[id].band[1]}` : byId[id].name);
-  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss]) {
+  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss, maple]) {
     const lo = m.band[0];
-    markRoutes(m, labelOf, (id) => (byId[id].band && byId[id].band[0] > lo ? byId[id].band[0] : 0));
+    // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
+    markRoutes(m, labelOf, (id) => (byId[id].band && byId[id].band[0] > lo && byId[id].band[0] <= lo + 20 ? byId[id].band[0] : 0));
   }
   const out = {};
-  for (const m of [town, meadow, forest, crypt, town2, sewer, cave, abyss]) out[m.id] = finalize(m);
+  for (const m of [town, meadow, forest, crypt, town2, sewer, cave, abyss, maple]) out[m.id] = finalize(m);
   return out;
 }
 /**
@@ -2754,10 +2860,10 @@ function mapPayload(m) {
 // here it is moved to the nearest open tile so nobody is ever stuck in a wall).
 // Malformed entries are skipped: npm run data:check is where the owner hears about them.
 
-const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"];
+const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn"];
 /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
 const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder"];
-const BUILTIN_MAPS = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"];
+const BUILTIN_MAPS = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
 const openTile = (m, x, y) => inMap(m, x, y) && m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]);
@@ -4777,7 +4883,7 @@ const achPoints = (ch) => ch.ach.reduce((n, id) => n + (ACH_BY[id] ? ACH_BY[id].
 const titleOf = (ch) => (ch.title && ACH_BY[ch.title] ? ACH_BY[ch.title].title : "");
 
 // ── the monster collection: a kind is registered at its first mastery star
-const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def", 2]], city: [["crit", 1]], sewer: [["mf", 5]], cave: [["atk", 3]], abyss: [["atkp", 2]] };
+const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def", 2]], city: [["crit", 1]], sewer: [["mf", 5]], cave: [["atk", 3]], abyss: [["atkp", 2]], maple: [["hp", 60], ["mf", 4]] };
 // a hunting ground from the world map editor has a collection too, with no bonus; one with no monsters left has none
 for (const id of Object.keys(COL_MOBS)) if (!REGION_BONUS[id]) REGION_BONUS[id] = [];
 for (const id of Object.keys(REGION_BONUS)) if (!COL_MOBS[id]) delete REGION_BONUS[id];

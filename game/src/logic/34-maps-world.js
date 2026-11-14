@@ -79,7 +79,7 @@ function buildTown() {
 }
 
 function buildMaps() {
-  for (const id of ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"]) FIRES[id] = [];
+  for (const id of ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"]) FIRES[id] = [];
   const town = buildTown();
   const meadow = wilds({
     id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 76, h: 51, r: 9.6, warp: 9, wind: 0.55, loops: 0.12, merge: 0.32, cliff: 0.15, gap: 2,
@@ -99,7 +99,7 @@ function buildMaps() {
   const forest = wilds({
     id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 76, h: 51, r: 8.2, warp: 10, wind: 0.6, loops: 0.1, merge: 0.18, cliff: 0.22, gap: 2,
     ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 1, lakeR: 4, vaults: 3, ruins: 2, tpm: 15.5, stair: "crypt",
-    walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86]], exit: "north",
+    walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
     mobs: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
     vaultKinds: ["deadgrove", "ring", "shrine", "lookout", "menhir", "cache"], biomes: { plain: "glade" }, featureP: 0.6, features: ["pond", "boulders", "ring", "dead", "logs", "stones", "cairn"],
     // the wettest hollows are bog, the heights fern and rock; elsewhere pine, with glades and old birch groves
@@ -130,12 +130,43 @@ function buildMaps() {
     id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 76, h: 51, r: 10.5, wind: 0.5, loops: 0.16, n: 3,
     mobs: ["leechmaw", "ratking_bile", "gatorhalf", "crabskull", "eelknot"], guard: "gatorhalf", chest: "chest_sewer",
   });
+  // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
+  // wood to the chasm that swallowed the capital (a ledge down into the abyss, behind the mother). Crimson maple
+  // groves on red litter, golden stands on gold, pine on the heights, clearings, and hollows where the blight fruits
+  const maple = wilds({
+    id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 80, h: 56, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
+    ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 1, lakeR: 4, vaults: 4, ruins: 2, tpm: 15,
+    walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3]], exit: "east",
+    mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose"], pondMob: null, chest: "chest_maple",
+    campPiece: "cottage", lair: { piece: "chapel", guard: "rotstag", pack: "rotstag" },
+    vaultKinds: ["graveyard", "watchtower", "kinggate", "leafmound", "scarefield", "treetunnel"],
+    vaultMobs: { graveyard: "gravrose", scarefield: "crowscare", leafmound: "shroomboar", treetunnel: "stumpmaw" },
+    biomes: { plain: "clearing" }, featureP: 0.7, features: ["leafpile", "statue", "banners", "graves", "shrooms", "logs", "boulders", "dead", "stones"],
+    biome: (e, mo, r) => (mo > 0.62 ? "hollow" : e > 0.66 ? "pine" : r < 0.22 ? "clearing" : r < 0.5 ? "gold" : "maple"),
+    paint: (b, n1, n2) => (b === "maple" ? (n1 > 0.42 ? "%" : n2 > 0.7 ? "," : null)
+      : b === "gold" ? (n1 > 0.42 ? ";" : n2 > 0.72 ? "," : null)
+      : b === "clearing" ? (n1 > 0.64 ? "%" : n1 < 0.16 ? '"' : n2 > 0.74 ? "t" : null)
+      : b === "hollow" ? (n1 > 0.7 ? "&" : n1 > 0.48 ? "j" : n2 > 0.6 ? "%" : null)
+      : n2 > 0.6 ? ":" : null),
+    scatter: (b, h, n1) => (b === "maple" ? ((n1 > 0.5 ? h < 0.2 : h < 0.08) ? "T" : h < 0.095 ? "B" : h < 0.1 ? "u" : h < 0.104 ? "l" : null)
+      : b === "gold" ? ((n1 > 0.55 ? h < 0.16 : h < 0.07) ? "T" : h < 0.08 ? "B" : h < 0.086 ? "R" : null)
+      : b === "pine" ? ((n1 > 0.5 ? h < 0.22 : h < 0.09) ? "P" : h < 0.1 ? "R" : h < 0.11 ? "B" : h < 0.114 ? "u" : null)
+      : b === "hollow" ? (h < 0.03 ? "Y" : h < 0.045 ? "A" : h < 0.055 ? "T" : h < 0.06 ? "u" : null)
+      : h < 0.014 ? "T" : h < 0.022 ? "u" : h < 0.028 ? "B" : h < 0.031 ? "l" : null),
+  });
+  // a hermit keeps the cottage fire
+  if (maple.camp) {
+    const [fx, fy] = FIRES.maple[0];
+    const at = [[2, 0], [-2, 0], [0, 2], [2, 1], [-2, 1], [1, 2], [-1, 2]].map(([dx, dy]) => [fx + dx, fy + dy]).find(([x, y]) => maple.o[y][x] === " " && !SOLID_G.includes(maple.g[y][x]));
+    if (at) maple.npcs.push({ id: "hermit", name: "은자 바스", role: "talk", x: at[0], y: at[1], look: [2, 4, 0, "#8a5a2a"],
+      say: "이 숲은 옛 단풍 왕국의 왕도였지. 심연이 열리던 밤 왕성은 통째로 가라앉고, 남은 것들은 보랏빛 병에 물들었다네. 무너진 예배당엔 왕관 쓴 사슴이 지키고 있으니, 불을 쬐고 가게." });
+  }
   const abyss = abyssal({
-    id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 76, h: 60, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss",
+    id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 76, h: 60, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
     mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss",
   });
   // the level a character should be to walk in, shown on every door that leads there
-  for (const [m, lo, hi] of [[meadow, 1, 7], [forest, 8, 13], [crypt, 12, 17], [town2, 14, 21], [sewer, 22, 27], [cave, 24, 32], [abyss, 32, 40]]) m.band = [lo, hi];
+  for (const [m, lo, hi] of [[meadow, 1, 7], [forest, 8, 13], [crypt, 12, 17], [town2, 14, 21], [sewer, 22, 27], [cave, 24, 32], [abyss, 32, 40], [maple, 40, 46]]) m.band = [lo, hi];
   // doors between the worlds: stepping on a gate tile puts you on the matching arrival tile next door
   const join = (a, ga, b, gb) => {
     for (let k = 0; k < 2; k++) {
@@ -152,11 +183,13 @@ function buildMaps() {
   join(forest, "crypt", crypt, "in");
   join(town2, "sewer", sewer, "in");
   join(cave, "rift", abyss, "in");
+  join(forest, "east", maple, "west");
+  join(maple, "east", abyss, "out");
   leave(crypt, "out", forest, "crypt");
   leave(sewer, "out", town2, "sewer");
   // the hunt wants a crowd: every hunting ground holds more than its layout asked for
   // (chests, guardians and bosses stay as placed)
-  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss]) {
+  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss, maple]) {
     const grows = (sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el;
     let base = 0, fixed = 0;
     for (const sp of m.spawns) { if (grows(sp)) base += sp.n; else fixed += sp.n; }
@@ -172,14 +205,15 @@ function buildMaps() {
       sp.n = n;
     }
   }
-  const byId = { town, meadow, forest, crypt, city: town2, sewer, cave, abyss };
+  const byId = { town, meadow, forest, crypt, city: town2, sewer, cave, abyss, maple };
   const labelOf = (id) => (byId[id].band ? `${byId[id].name} Lv.${byId[id].band[0]}–${byId[id].band[1]}` : byId[id].name);
-  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss]) {
+  for (const m of [meadow, forest, crypt, town2, sewer, cave, abyss, maple]) {
     const lo = m.band[0];
-    markRoutes(m, labelOf, (id) => (byId[id].band && byId[id].band[0] > lo ? byId[id].band[0] : 0));
+    // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
+    markRoutes(m, labelOf, (id) => (byId[id].band && byId[id].band[0] > lo && byId[id].band[0] <= lo + 20 ? byId[id].band[0] : 0));
   }
   const out = {};
-  for (const m of [town, meadow, forest, crypt, town2, sewer, cave, abyss]) out[m.id] = finalize(m);
+  for (const m of [town, meadow, forest, crypt, town2, sewer, cave, abyss, maple]) out[m.id] = finalize(m);
   return out;
 }
 /**

@@ -72,11 +72,12 @@ while (todo.length) {
   }
 }
 assert.deepEqual(Object.keys(seen).sort(), D.maps.map((m) => m.id).sort(), "every map can be reached from town");
-for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
+for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
 
 // ── the dungeons: harder the deeper you go, a camp on the way, a guardian at the end
 for (const id of ["crypt", "sewer", "abyss"]) {
-  const { m, dist } = maps[id], rt = S.maps[id];
+  // measured from the way in (the walk above may have come in by a back door, like the abyss's ledge up to the old kingdom)
+  const { m } = maps[id], rt = S.maps[id], [ex, ey] = L.atlas().maps[id].entry, dist = flood(m, ex, ey);
   assert.ok(["crypt", "sewer", "abyss"].includes(m.theme), id + " names its theme");
   const at = (o) => dist[Math.floor(o.y / 16) * m.w + Math.floor(o.x / 16)];
   const kinds = D.maps.find((o) => o.id === id).mobs.filter((k) => !D.mobs[k].chest && !D.mobs[k].boss).sort((a, b) => D.mobs[a].lv - D.mobs[b].lv);

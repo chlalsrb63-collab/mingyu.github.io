@@ -9,7 +9,7 @@ const loadMs = performance.now() - t0;
 
 const { maps, fires, waypoints } = L.atlas();
 const D = L.defs();
-const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"];
+const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
 const blocked = (m, x, y) => x < 0 || y < 0 || x >= m.w || y >= m.h || m.o[y][x] !== " " || "wW".includes(m.g[y][x]);
 const flood = (m, sx, sy) => {
   const d = new Int32Array(m.w * m.h).fill(-1), q = [[sx, sy]];
@@ -86,7 +86,7 @@ for (const id of HUNT) {
   report.push(`${id} ${m.w}x${m.h} pieces ${pieces.size} things ${objs.size} corridor ${(cf * 100).toFixed(1)}%`);
 }
 // where there is water there is somewhere to fish from
-for (const id of ["meadow", "forest", "cave"]) {
+for (const id of ["meadow", "forest", "cave", "maple"]) {
   const m = maps[id];
   let shore = false;
   for (let y = 1; y < m.h - 1 && !shore; y++) for (let x = 1; x < m.w - 1 && !shore; x++) if (m.reach[y * m.w + x] && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => m.g[y + dy][x + dx] === "w")) shore = true;
