@@ -1,0 +1,17 @@
+# Rule tests, run in this order by scripts/test-all.mjs (npm run test:rules) and CI.
+# One name per line (tests/<name>.mjs). Lines starting with # are ignored.
+sim
+party
+loot
+life
+world
+hard
+content
+growth
+skills
+maps
+hotbar
+wardrobe
+looks
+mobart
+accounts

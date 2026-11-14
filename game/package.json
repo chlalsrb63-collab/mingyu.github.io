@@ -7,7 +7,15 @@
     "dev": "wrangler dev",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check:logic": "bun run scripts/check-logic.mjs"
+    "check:logic": "bun run scripts/check-logic.mjs",
+    "build:logic": "node scripts/build-logic.mjs",
+    "watch:logic": "node scripts/build-logic.mjs --watch",
+    "check:split": "node scripts/build-logic.mjs --check",
+    "test:rules": "node scripts/test-all.mjs",
+    "predev:local": "node scripts/build-logic.mjs",
+    "dev:local": "wrangler dev -c wrangler.local.jsonc",
+    "predeploy:cf": "node scripts/build-logic.mjs --check && node scripts/test-all.mjs --no-build",
+    "deploy:cf": "wrangler deploy -c wrangler.deploy.jsonc"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.20.1",

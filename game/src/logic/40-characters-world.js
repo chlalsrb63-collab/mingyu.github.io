@@ -1,0 +1,426 @@
+// ───────────────────────────── characters ─────────────────────────────
+
+const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
+export function validName(name) {
+  return typeof name === "string" && NAME_RE.test(name);
+}
+/** Where gear is worn. Two rings; everything else one of a kind. */
+const SLOTS = ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet"];
+const GEAR_TYPES = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet"];
+const isGear = (id) => GEAR_TYPES.includes(ITEMS[id].type);
+const isJewel = (id) => ITEMS[id].type === "ring" || ITEMS[id].type === "amulet";
+const slotsFor = (type) => (type === "ring" ? ["ring1", "ring2"] : [type]);
+const plain = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
+
+/**
+ * The highest choice allowed for each part of a character's look (public/species.js
+ * draws them): ear, eyes, nose, fur colour, blush, markings, tunic — then the kind of
+ * animal, tail, accent colour and eye colour, where 0 means "as before", so a sheet
+ * saved with the first seven alone looks exactly as it did.
+ */
+const LOOK_MAX = [13, 15, 13, 21, 5, 12, 11, 14, 11, 13, 7];
+const cleanLook = (look) => { const lk = Array.isArray(look) ? look : []; return LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)); };
+/** What a new look costs at the mirror in town (거울 · 미용실). */
+const LOOK_COST = 500;
+/** A brand-new character sheet — this is exactly what gets persisted. */
+export function newChar(name, cls, look) {
+  const c = CLASSES[cls] ? cls : "warrior";
+  const lk = Array.isArray(look) ? look : [];
+  return {
+    v: 7, name, cls: c,
+    // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
+    look: cleanLook(lk),
+    lvl: 1, xp: 0, gold: 50,
+    inv: [{ id: "hp_s", n: 5 }, { id: "mp_s", n: 3 }],
+    eq: { weapon: plain(`w_${c}_1`), helm: null, armor: plain("a_1"), gloves: null, boots: null, ring1: null, ring2: null, amulet: null },
+    tr: { str: 0, vit: 0, int: 0, grd: 0 },
+    q: { i: 0, n: 0, st: 0 },
+    bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
+    wp: ["town"], seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
+    skl: [1, 1, 1, 1, 1, 1], wh: { items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
+    qs: QS_EMPTY(), cos: cosEmpty(),
+    map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
+  };
+}
+
+/** Ids that no longer exist, and what they became. */
+const OLD_ID = { c_1: "r_2", c_2: "n_3", c_3: "r_4" };
+/** Bring a sheet saved by an older version up to the current shape. */
+function migrate(ch) {
+  if (ch.cls === "ranger" || ch.cls === "archer") ch.cls = "lancer";
+  if (!CLASSES[ch.cls]) ch.cls = "warrior";
+  // an older, shorter look is padded with "as before"
+  ch.look = cleanLook(ch.look);
+  const fix = (g) => {
+    if (!g || typeof g.id !== "string") return null;
+    const id = OLD_ID[g.id] || g.id.replace("w_ranger_", "w_lancer_");
+    if (!ITEMS[id]) return null;
+    if (!isGear(id)) return { id, n: g.n | 0 || 1 };
+    const out = { id, q: clamp(g.q | 0, 0, 4), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
+    if (LEGEND[g.lg]) out.lg = g.lg;
+    if (SETS[g.set]) out.set = g.set;
+    return out;
+  };
+  ch.inv = (Array.isArray(ch.inv) ? ch.inv : []).map(fix).filter(Boolean);
+  const old = isObj(ch.eq) ? ch.eq : {};
+  const eq = {};
+  for (const k of SLOTS) {
+    const g = fix(old[k]);
+    eq[k] = g && slotsFor(ITEMS[g.id].type).includes(k) ? g : null;
+  }
+  // the single accessory slot of old sheets becomes a ring or an amulet
+  const acc = fix(old.acc);
+  if (acc) {
+    const k = slotsFor(ITEMS[acc.id].type)[0];
+    if (!eq[k]) eq[k] = acc;
+    else if (ch.inv.length < INV) ch.inv.push(acc);
+  }
+  if (eq.weapon && ITEMS[eq.weapon.id].cls !== ch.cls) eq.weapon = plain(`w_${ch.cls}_1`);
+  ch.eq = eq;
+  const tr = isObj(ch.tr) ? ch.tr : {};
+  ch.tr = { str: tr.str | 0, vit: tr.vit | 0, int: tr.int | 0, grd: tr.grd | 0 };
+  if (!isObj(ch.q)) ch.q = { i: 0, n: 0, st: 0 };
+  ch.q = { i: clamp(ch.q.i | 0, 0, QUESTS.length), n: Math.max(0, ch.q.n | 0), st: ch.q.st === 1 ? 1 : 0 };
+  ch.bq = isObj(ch.bq) && MOBS[ch.bq.k] ? { k: ch.bq.k, n: ch.bq.n | 0, need: BOUNTY_N } : null;
+  ch.bn = ch.bn | 0;
+  const mk = {};
+  if (isObj(ch.mk)) for (const k of Object.keys(ch.mk)) if (MOBS[k]) mk[k] = ch.mk[k] | 0;
+  ch.mk = mk;
+  ch.guild = typeof ch.guild === "string" && NAME_RE.test(ch.guild) ? ch.guild : "";
+  ch.gm = ch.guild && ch.gm ? 1 : 0;
+  ch.fish = ch.fish | 0;
+  // the long game: waypoints, places seen, achievements, a title, counters, dailies, first steps
+  ch.wp = (Array.isArray(ch.wp) ? ch.wp : []).filter((id) => WP[id]);
+  if (!ch.wp.includes("town")) ch.wp.unshift("town");
+  ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => MAPS[id]);
+  if (!ch.seen.includes("town")) ch.seen.unshift("town");
+  ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
+  ch.title = typeof ch.title === "string" && ch.ach.includes(ch.title) && ACH_BY[ch.title].title ? ch.title : "";
+  const st = isObj(ch.st) ? ch.st : {};
+  ch.st = {};
+  for (const k of ST_KEYS) ch.st[k] = Math.max(0, st[k] | 0);
+  const dl = ch.daily;
+  ch.daily = isObj(dl) && Number.isInteger(dl.day) && Array.isArray(dl.tasks) && dl.tasks.length === 3 && dl.tasks.every((t) => isObj(t) && DAILY_TEXT[t.kind] && (t.kind !== "kill" || MOBS[t.k]))
+    ? { day: dl.day, tasks: dl.tasks.map((t) => ({ kind: t.kind, k: t.kind === "kill" ? t.k : null, n: clamp(t.n | 0, 0, t.need | 0), need: Math.max(1, t.need | 0) })), claimed: [0, 1, 2].map((i) => !!(Array.isArray(dl.claimed) && dl.claimed[i])), bonus: !!dl.bonus }
+    : null;
+  // a character from before the first-steps chain who has clearly found their feet skips it
+  ch.tut = isObj(ch.tut) ? { i: clamp(ch.tut.i | 0, 0, TUT.length), n: Math.max(0, ch.tut.n | 0) } : { i: ch.lvl >= 5 || (ch.kills | 0) >= 20 ? TUT.length : 0, n: 0 };
+  // skill levels, the warehouse, a pet, scrolls being read, settings
+  const skl = Array.isArray(ch.skl) ? ch.skl : [];
+  ch.skl = SKILLS[ch.cls].map((_, i) => clamp(skl[i] | 0 || 1, 1, SK_MAX));
+  const wh = isObj(ch.wh) ? ch.wh : {};
+  ch.wh = { items: (Array.isArray(wh.items) ? wh.items : []).map(fix).filter(Boolean).slice(0, WH), gold: Math.max(0, Math.floor(num(wh.gold) ? wh.gold : 0)) };
+  ch.pet = typeof ch.pet === "string" && ITEMS[ch.pet] && ITEMS[ch.pet].type === "pet" && countItem(ch, ch.pet) > 0 ? ch.pet : "";
+  const scr = isObj(ch.scr) ? ch.scr : {};
+  ch.scr = { atk: num(scr.atk) ? scr.atk : 0, def: num(scr.def) ? scr.def : 0, xp: num(scr.xp) ? scr.xp : 0 };
+  const opt = isObj(ch.opt) ? ch.opt : {};
+  ch.opt = { filter: clamp(opt.filter | 0, 0, 2), ahp: clamp(opt.ahp | 0, 0, 90), amp: clamp(opt.amp | 0, 0, 90) };
+  // the quick slots 1–9: sheets from before them start with all nine empty
+  ch.qs = QS_EMPTY().map((_, i) => (Array.isArray(ch.qs) && ch.qs[i] && qsOk(ch, ch.qs[i]) ? ch.qs[i].slice() : null));
+  // the wardrobe (v7): owned cosmetics and the one worn in each slot
+  ch.cos = cosClean(ch.cos, ch);
+  ch.v = Math.max(ch.v | 0, 7);
+  return ch;
+}
+
+/** The quick slots under keys 1–9: each is empty, a skill (["s", index]) or a usable item (["i", id]). */
+const QS_N = 9;
+const QS_EMPTY = () => Array(QS_N).fill(null);
+const QS_USE = ["pot", "food", "camp", "scroll", "buff", "pet"];
+/** Is `v` something a quick slot may hold for this character? */
+function qsOk(ch, v) {
+  if (v === null) return true;
+  if (!Array.isArray(v) || v.length !== 2) return false;
+  if (v[0] === "s") return Number.isInteger(v[1]) && v[1] >= 0 && v[1] < SKILLS[ch.cls].length;
+  if (v[0] === "i") return typeof v[1] === "string" && Object.hasOwn(ITEMS, v[1]) && QS_USE.includes(ITEMS[v[1]].type);
+  return false;
+}
+
+/** Counters kept for achievements. */
+const ST_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily"];
+function runeword(g) {
+  if (!g.sk || g.ru.length !== g.sk) return null;
+  for (const rw of RUNEWORDS) {
+    if (rw.seq.length === g.sk && rw.seq.every((r, i) => g.ru[i] === r)) return rw;
+  }
+  return null;
+}
+/** How a character's basic attack lands: the equipped weapon's kind, or the class's first. */
+function armOf(ch) {
+  const w = ch.eq.weapon;
+  return WKIND[(w && ITEMS[w.id].wk) || CLASSES[ch.cls].wk[0]];
+}
+const weaponKind = (ch) => (ch.eq.weapon && ITEMS[ch.eq.weapon.id].wk) || CLASSES[ch.cls].wk[0];
+/** Mastery rank (0–5) against one kind of monster. */
+function masteryRank(ch, k) {
+  const n = ch.mk[k] || 0;
+  let r = 0;
+  while (r < MASTERY.length && n >= MASTERY[r]) r++;
+  return r;
+}
+
+/** Everything gear adds up to: base stats, affixes, runes, runewords, set bonuses, legendary powers. */
+function gearBonus(ch) {
+  const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
+  const lg = {}, sets = {};
+  const add = (s, v) => { if (s in b) b[s] += v; };
+  for (const k of SLOTS) {
+    const g = ch.eq[k];
+    if (!g) continue;
+    const base = ITEMS[g.id].base;
+    // each enhancement level is worth a tenth of the piece's own stats
+    for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : 1 + 0.1 * g.enh));
+    for (const [s, v] of g.af) add(s, v);
+    for (const r of g.ru) if (r && RUNES[r]) add(RUNES[r][1], RUNES[r][2]);
+    const rw = runeword(g);
+    if (rw) for (const [s, v] of rw.add) add(s, v);
+    if (g.lg) lg[g.lg] = 1;
+    if (g.set) sets[g.set] = (sets[g.set] || 0) + 1;
+  }
+  for (const id of Object.keys(sets)) {
+    for (const [n, list] of SETS[id].bonus) if (sets[id] >= n) for (const [s, v] of list) add(s, v);
+  }
+  // a worn title and every finished region of the monster collection add their bit
+  const ttl = ch.title && ACH_BY[ch.title];
+  if (ttl && ttl.bonus) for (const [s, v] of ttl.bonus) add(s, v);
+  for (const id of REGIONS) if (regionDone(ch, id)) for (const [s, v] of REGION_BONUS[id]) add(s, v);
+  if (lg.greed) b.gold += 60;
+  b.lg = lg;
+  return b;
+}
+
+function stats(p) {
+  let c = p.stc;
+  if (!c) {
+    const ch = p.ch, cl = CLASSES[ch.cls], lv = ch.lvl, b = gearBonus(ch), w = ch.eq.weapon, arm = armOf(ch);
+    c = p.stc = {
+      mhp: Math.round(cl.hp[0] + cl.hp[1] * lv + b.hp + ch.tr.vit * TRAIN.vit.gain),
+      mmp: Math.round(cl.mp[0] + cl.mp[1] * lv + b.mp + ch.tr.int * TRAIN.int.gain),
+      atk0: (cl.atk[0] + cl.atk[1] * lv + b.atk + ch.tr.str * TRAIN.str.gain) * (1 + b.atkp / 100),
+      def: Math.round(cl.def[0] + cl.def[1] * lv + b.def + ch.tr.grd * TRAIN.grd.gain),
+      crit: Math.min(75, cl.crit + (w ? w.enh : 0) + b.crit),
+      critd: 1.6 + b.critd / 100, ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + Math.min(40, b.spd) / 100), xp: b.xp, mf: b.mf, gold: b.gold,
+      lg: b.lg, arm, acd: Math.round(arm.cd * (b.lg.haste ? 0.85 : 1)),
+    };
+  }
+  const now = p.S.now;
+  const food = p.food && p.food.until > now ? p.food : null;
+  const scr = p.ch.scr || {};
+  return {
+    mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf,
+    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
+    atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
+    guard: scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1,
+    spd: c.spd0 * (p.spdBuff > now ? 1.4 : 1) * (p.slowed > now && !(p.giant > now) ? SLOW : 1), spd0: c.spd0,
+  };
+}
+
+export function exportChar(S, pid) {
+  const p = S.players[pid];
+  if (!p) return null;
+  const ch = p.ch;
+  ch.map = p.map; ch.x = Math.round(p.x); ch.y = Math.round(p.y);
+  ch.hp = p.dead ? 0 : Math.round(p.hp); ch.mp = Math.round(p.mp);
+  return ch;
+}
+
+// ───────────────────────────── world ─────────────────────────────
+
+/** The nearest tile to (tx, ty) a player can stand on. */
+function freeTile(m, tx, ty) {
+  for (let r = 0; r < 6; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    const x = tx + dx, y = ty + dy;
+    if (x > 1 && y > 1 && x < m.w - 2 && y < m.h - 2 && m.reach[y * m.w + x]) return [x, y];
+  }
+  return null;
+}
+function fireNear(rt, p) {
+  for (const f of rt.fires) if (dist(p.x, p.y, f.x, f.y) <= FIRE_R) return f;
+  return null;
+}
+/** The centre of the closest water tile within reach of a fishing line, or null. */
+function waterNear(m, p) {
+  const tx = Math.floor(p.x / T), ty = Math.floor(p.y / T);
+  let best = null, bd = 34;
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    const x = tx + dx, y = ty + dy;
+    if (x < 0 || y < 0 || x >= m.w || y >= m.h || m.g[y][x] !== "w") continue;
+    const d = dist(p.x, p.y, x * T + 8, y * T + 8);
+    if (d < bd) { bd = d; best = [x * T + 8, y * T + 8]; }
+  }
+  return best;
+}
+/** Stand up, reel in: whatever a player was quietly doing stops. */
+function rouse(S, p) {
+  cancelRecall(S, p, "귀환이 취소되었습니다.");
+  p.sit = false;
+  if (p.fish) { p.fish = null; S.maps[p.map].ev.push(["f", p.eid, 0]); }
+}
+function guildNear(S, p) {
+  if (!p.ch.guild) return 0;
+  let n = 0;
+  for (const pid of Object.keys(S.players)) {
+    const o = S.players[pid];
+    if (o !== p && o.map === p.map && !o.dead && o.ch.guild === p.ch.guild && dist(o.x, o.y, p.x, p.y) <= PARTY_RANGE) n++;
+  }
+  return Math.min(3, n);
+}
+
+function newMob(S, k, r, sp) {
+  return { fix: (sp && sp.el) || 0, ep: sp && sp.elite !== undefined ? sp.elite : 0.08, id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false, tr: [], act: null, mv: 0, cn: 0 };
+}
+export function setup() {
+  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, parties: {}, chat: [], n: 0, evt: null };
+  for (const id of Object.keys(MAPS)) {
+    const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0 };
+    for (const [fx, fy] of FIRES[id] || []) {
+      const at = freeTile(MAPS[id], fx, fy);
+      if (at) rt.fires.push({ id: S.nextId++, x: at[0] * T + 8, y: at[1] * T + 10, until: 0 });
+    }
+    for (const sp of MAPS[id].spawns) {
+      for (let i = 0; i < sp.n; i++) {
+        const mob = newMob(S, sp.k, sp.r, sp);
+        placeMob(S, MAPS[id], mob);
+        rt.mobs.push(mob);
+      }
+    }
+    S.maps[id] = rt;
+  }
+  return S;
+}
+
+/** What rank does to a monster: 1 is an elite, 2 a hunting ground's field boss. */
+const ELITE = [{ hp: 1, atk: 1, xp: 1 }, { hp: 3.5, atk: 1.4, xp: 4 }, { hp: 14, atk: 1.8, xp: 30 }];
+const mobMax = (mob) => Math.round(MOBS[mob.k].hp * ELITE[mob.el].hp);
+
+function placeMob(S, m, mob) {
+  const [x0, y0, x1, y1] = mob.r;
+  for (let i = 0; i < 40; i++) {
+    const tx = ri(S, x0, x1), ty = ri(S, y0, y1);
+    if (m.reach[ty * m.w + tx]) {
+      mob.x = mob.hx = tx * T + 8;
+      mob.y = mob.hy = ty * T + 10;
+      break;
+    }
+  }
+  // now and then an elite spawns: far tougher, far more rewarding — party prey
+  // (how often depends on where: deeper chambers and side vaults breed more of them)
+  mob.el = mob.fix || (!MOBS[mob.k].boss && !MOBS[mob.k].chest && rnd(S) < mob.ep ? 1 : 0);
+  // an elite carries one trait, a guardian two
+  mob.tr = mob.el ? rollTraits(S, mob.el) : [];
+  mob.hp = mobMax(mob);
+  mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null; mob.act = null; mob.mv = 0; mob.cn = 0;
+  mob.wx = mob.x; mob.wy = mob.y;
+  mob.castAt = S.now + 3000 + rnd(S) * 3000;
+}
+/** A hunting ground's field boss walks in where the kill that summoned it was made. */
+function spawnFieldBoss(S, rt, x, y) {
+  const m = MAPS[rt.id];
+  const mob = newMob(S, FIELD_BOSS[rt.id], [0, 0, 0, 0]);
+  mob.el = 2; mob.temp = true;
+  mob.tr = rollTraits(S, 2);
+  mob.x = mob.hx = mob.wx = x; mob.y = mob.hy = mob.wy = y;
+  mob.hp = mobMax(mob);
+  mob.castAt = S.now + 4000;
+  rt.mobs.push(mob);
+  rt.fb = mob.id;
+  rt.kc = 0;
+  rt.ev.push(["r", mob.id]);
+  sys(S, `${m.name}에 우두머리 [${MOBS[mob.k].name}]이(가) 나타났습니다!`);
+}
+
+export function playerCount(S) {
+  return S.n;
+}
+
+/** Put a loaded character into the world. Returns the player's public entity id. */
+export function addPlayer(S, pid, ch) {
+  if (S.players[pid]) removePlayer(S, pid);
+  migrate(ch);
+  if (!MAPS[ch.map]) ch.map = START.map;
+  const p = {
+    S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, hp: 1, mp: 0, dead: false, stc: null,
+    cds: [0, 0, 0, 0, 0, 0], atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
+    sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
+    atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, grit: 0, gritAt: 0, focus: 0, focusAt: 0, sword: null, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
+  };
+  if (!canStand(MAPS[p.map], p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
+  const st = stats(p);
+  p.hp = ch.hp > 0 ? Math.min(ch.hp, st.mhp) : st.mhp;
+  p.mp = ch.mp >= 0 ? Math.min(ch.mp, st.mmp) : st.mmp;
+  if (ch.hp === 0) { p.map = START.map; p.x = START.x; p.y = START.y; }
+  S.players[pid] = p;
+  S.n++;
+  S.maps[p.map].n++;
+  S.maps[p.map].who = true;
+  sys(S, `${ch.name}님이 접속했습니다.`);
+  ensureDaily(S, p);
+  explore(S, p);
+  if (TUT[ch.tut.i] && TUT[ch.tut.i].id === "equip" && ch.eq.weapon) tutStep(S, p, "equip");
+  checkAch(S, p);
+  return p.eid;
+}
+
+/** Take a player out of the world; returns the sheet to persist. */
+export function removePlayer(S, pid) {
+  const p = S.players[pid];
+  if (!p) return null;
+  const ch = exportChar(S, pid);
+  leaveParty(S, p);
+  dropAggro(S, p);
+  S.maps[p.map].n--;
+  S.maps[p.map].who = true;
+  delete S.players[pid];
+  S.n--;
+  return ch;
+}
+
+function dropAggro(S, p) {
+  for (const mob of S.maps[p.map].mobs) if (mob.tgt === p.pid) mob.tgt = null;
+}
+
+function changeMap(S, p, to, x, y) {
+  rouse(S, p);
+  dropAggro(S, p);
+  S.maps[p.map].n--;
+  S.maps[p.map].who = true;
+  p.map = to; p.x = x; p.y = y;
+  classReset(p, false);
+  S.maps[to].n++;
+  S.maps[to].who = true;
+  p.sendMap = true; p.fix = true;
+  explore(S, p);
+}
+
+function sys(S, m) {
+  S.chat.push({ sys: 1, m });
+}
+function toast(p, m) {
+  if (p.toast.length < 6) p.toast.push(m);
+}
+
+// ───────────────────────────── parties ─────────────────────────────
+
+function members(S, p) {
+  const party = S.parties[p.party];
+  if (!party) return [p];
+  return party.m.map((pid) => S.players[pid]).filter(Boolean);
+}
+/** Party members close enough to share in what `p` does (always includes `p`). */
+function allies(S, p) {
+  return members(S, p).filter((o) => o === p || (o.map === p.map && !o.dead && dist(o.x, o.y, p.x, p.y) <= PARTY_RANGE));
+}
+function leaveParty(S, p) {
+  const party = S.parties[p.party];
+  p.party = 0;
+  if (!party) return;
+  party.m = party.m.filter((pid) => pid !== p.pid);
+  S.maps[p.map].who = true;
+  const rest = party.m.map((pid) => S.players[pid]).filter(Boolean);
+  for (const o of rest) { toast(o, `${p.ch.name}님이 파티를 떠났습니다.`); S.maps[o.map].who = true; }
+  if (rest.length < 2) {
+    for (const o of rest) { o.party = 0; toast(o, "파티가 해산되었습니다."); }
+    delete S.parties[party.id];
+  }
+}
+

@@ -1,0 +1,26 @@
+# Keep every text file LF on every OS (Windows checkouts included), so the
+# generated src/logic.js, the tests and the scripts behave the same everywhere.
+* text=auto eol=lf
+
+# Binaries: never touch line endings, never diff as text.
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.webp   binary
+*.bmp    binary
+*.ico    binary
+*.psd    binary
+*.ase    binary
+*.aseprite binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.otf    binary
+*.ogg    binary
+*.mp3    binary
+*.wav    binary
+*.flac   binary
+*.zip    binary
+*.7z     binary
+*.pdf    binary
