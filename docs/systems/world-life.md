@@ -13,8 +13,8 @@ town redesign moves the plaza — see `docs/design/README.md`; fishing/cooking h
 | `JAM` 연주/건배, `JAM_CD` (62), action `emo` | only while `p.sit` (validate "앉아서 할 수 있습니다") |
 | `TELLER`, `TALES`, `nightNpc`, `taleAt` (62) | night storyteller NPC pushed into the town map (hard-coded tile x20,y22, **tied to the old town**) |
 | `skyAt(map, now)` (62, exported) | test/tool view: hour, phase, weather, teller, camps |
-| fishing: actions `fish hook reel` (70/75), tick in `80-simulation` ~L473 | `fish`: needs water (`waterNear`), not in combat 3 s, bag room. Server sets `p.fish={at,bite,hook}`; bite after 2.5–7 s; unhooked bite lost after 1.8 s; hooked fight ≤25 s. `reel{s}` client score 0–100 (capped 40 if <2.5 s) → `fish_s/m/l` / `stone`; `ch.fish`, `cnt.carp`, daily `fish` |
-| cooking: action `cook{id,s}` (75) | fish → dish at a fire (`fireNear`); score <35 burnt, ≥85 two dishes; `cnt.cook`, daily `cook` |
+| fishing: actions `fish hook reel` (70/75), tick in `80-simulation` ~L473 | `fish`: needs water (`waterNear`), not in combat 3 s, bag room. Server sets `p.fish={at,bite,hook}`; bite after 2.5–7 s; unhooked bite lost after 1.8 s; hooked fight ≤25 s. `reel{s}` client score 0–100 (capped 40 if <2.5 s) → the fish of grade ≤ min(map grade, 낚시 grade) (`fishLand`, 58-life.js; keep threshold 30 − 0.3·L, bites ×(1 − 0.008·L), 대성공 = 2) / `stone`; 낚시 XP; `ch.fish`, `cnt.carp`, daily `fish` |
+| cooking: action `cook{id,s}` (75) | fish → dish at a fire (`fireNear`) by `RECIPES` (12-life-tables); burnt below 35 − 0.4·(L − recipe lv), two dishes at ≥85 or on a 대성공 (`cookDish`); 요리 XP; `cnt.cook`, daily `cook` |
 | `public/minigames.js` `fishing(onDone)`, `cooking(dish,onDone)` | rhythm / tangram mini-games; client computes score `s` — **server trusts it only within the caps above** |
 | daily (60-content): `dayOf`, `RESET_AT` 06:00 KST, `rollDaily`, `ensureDaily`, `dailyProg(S,p,kind,k)`, `dailyReward/Bonus`; action `daily` | 3 tasks/day: 1 kill (kind near tier) + 2 of `elite fish cook chest bounty`; seeded by `name:day` |
 | `ACH` (`[id,cat,name,desc,pts,test,title?,bonus?]`), `checkAch`, `achPoints`, `titleOf`, `ACH_BY` (60) | achievements tested on counters `ch.cnt` (`CNT_KEYS`), `ch.kills`; titles worn via action `title` add `bonus` stats (in `gearBonus`); cosmetics via `COS_ACH` |
@@ -41,4 +41,4 @@ town redesign moves the plaza — see `docs/design/README.md`; fishing/cooking h
 - Stump seats are computed from `FIRES` once per map (`m.camps` cache); interior fires have no seats.
 
 ## Tests
-`daynight.mjs` (clock, weather per map/slot, wire `dn`, stumps, warmth 1–4, 연주/건배, storyteller, rain/fog) · `life.mjs` (fires, fishing, cooking, guilds) · `content.mjs` (achievements, collection, dailies, old sheets, long game) · `data.mjs` (side quests, quest data errors) · `hotbar.mjs` · `party.mjs`.
+`daynight.mjs` (clock, weather per map/slot, wire `dn`, stumps, warmth 1–4, 연주/건배, storyteller, rain/fog) · `life.mjs` (fires, fishing, cooking, guilds) · `lifeskills.mjs` (life skills L1) · `content.mjs` (achievements, collection, dailies, old sheets, long game) · `data.mjs` (side quests, quest data errors) · `hotbar.mjs` · `party.mjs`.

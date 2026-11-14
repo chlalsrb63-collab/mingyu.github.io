@@ -32,12 +32,13 @@ upgraded. Source of truth: `game/src/worker.ts`, `room.ts`, `accounts.js`, `logi
 7. Close/error → `leave` → `removePlayer` (returns `exportChar`) → vault `save` with release.
 8. `gcreate` is special: validate → vault `guild` name claim → re-validate → apply (the await lets other frames in).
 
-## Sheet versioning (`newChar` writes `v`; current **v: 11**)
+## Sheet versioning (`newChar` writes `v`; current **v: 12**)
 `migrate(ch)` runs on every `addPlayer`, is idempotent, clamps everything, ends `ch.v = max(ch.v, 11)`. What each version added:
 - ≤v6: base fields (inv/eq/q/bq/mk/guild/fish, wp, seen, ach, cnt, daily, tut, wh, pet, scr, opt, qs) — all re-normalised on every load.
 - v7 `cos` (wardrobe, `cosClean`) · v8 `sq` (editor side quests, `sqClean`) · v9 `wp` = `{mapId: stone bitmask}` (was a map list) + `dim={day,n}` (rift clears today)
 - v10 `bagCap` 40..100 step 5 (`bagClean`, 46-bag.js; old bags were 30) + `house` (`houseClean`, 64-housing.js)
 - v11 jobs/stats: `job lvl xp xpt st wm rs sw` (`cleanJobs`, 45-jobs.js). A four-class sheet (`cls`, no `job`) goes through `migrateV10`: level 4L−3, stats re-allocated, training/skill spend refunded, free reset (`rs`,`sw`). `JOB_ALIAS` maps old class → job for summaries/rank rows lacking `v`.
+- v12 life skills: `life {fish cook gather craft alch deliver: {lv, xp}} jobBoard rep coopDay coopDone pouch` (`lifeSheetClean`, 58-life.js, last in `migrate`); older sheets get 낚시/요리 XP from `ch.fish`/`cnt.cook` (cap Lv 20).
 - Also in `migrate`: `OLD_ID` renames, `w_ranger_*`→`w_lancer_*`, single `acc` slot → ring/amulet, `weapon2` slot.
 
 `exportChar(S,pid)`: copies live pos/hp/mp into the sheet; inside a runtime instance (map not in `MAP_META`: rift, house) it saves the town (house: its door via `homeExit`); returns the same `ch` object, clears `p.save`.
@@ -50,4 +51,4 @@ upgraded. Source of truth: `game/src/worker.ts`, `room.ts`, `accounts.js`, `logi
 - Channel switch = leave + join (lock released on leave, else 40 s). Playtest `dev` join only when `PLAYTEST=1` and `HF_ENV!=prod`.
 
 ## Tests
-`accounts.mjs` (vault logic with fake store, throttles, legacy adoption, client contract) · `content.mjs` (old sheets, `v`==11, long game) · `wardrobe.mjs`, `data.mjs` (sheet fields) · `jobs.mjs` (`migrateV10`) · `housing.mjs` (house/bag fields) · `sim.mjs` (smoke).
+`accounts.mjs` (vault logic with fake store, throttles, legacy adoption, client contract) · `content.mjs` (old sheets, `v`==12, long game) · `wardrobe.mjs`, `data.mjs` (sheet fields) · `jobs.mjs` (`migrateV10`) · `housing.mjs` (house/bag fields) · `sim.mjs` (smoke).
