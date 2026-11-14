@@ -299,6 +299,8 @@ export function playerLook(cls, look = [], gear = {}) {
 }
 /** Townsfolk wear a tunic in their trade's colour. */
 export function npcLook(look, role) {
+  // a full hero look (species.js, 8+ numbers): the townsfolk indoors are pandas, penguins, squirrels …
+  if (Array.isArray(look) && look.length >= 8 && look.every((v) => typeof v === "number")) return SPC.lookOf(look);
   // an editor NPC with its own fur: [ear, eye, nose, cloth, fur, pat] (data/maps, data/npcs.json)
   if (Array.isArray(look) && look.length >= 5 && typeof look[4] === "string") {
     const n = (i, max) => Math.max(0, Math.min(max, look[i] | 0));
