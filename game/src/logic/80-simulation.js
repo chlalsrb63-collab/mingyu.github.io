@@ -241,12 +241,15 @@ function tickMob(S, m, rt, mob, dt) {
 // wake and fill out of sight; far ones sleep and let their calm monsters go. Chests, bosses,
 // guardians and event monsters are not in cells and never sleep.
 
-/** A tile in box r that is walkable and at least SPAWN_MIN_D tiles from every one of `pts` (tile coordinates), or null. */
-function placeAway(S, m, r, pts) {
-  const [x0, y0, x1, y1] = r, d2 = SPAWN_MIN_D * SPAWN_MIN_D;
+/**
+ * A tile in box r that is walkable and at least SPAWN_MIN_D tiles from every one of `pts` (tile
+ * coordinates), or null. On a zoned map (33-maps-zones.js) only a tile of zone `z` will do.
+ */
+function placeAway(S, m, r, pts, z) {
+  const [x0, y0, x1, y1] = r, d2 = SPAWN_MIN_D * SPAWN_MIN_D, zone = m.zone && z !== undefined ? m.zone : null;
   for (let i = 0; i < 24; i++) {
     const tx = ri(S, x0, x1), ty = ri(S, y0, y1);
-    if (!m.reach[ty * m.w + tx]) continue;
+    if (!m.reach[ty * m.w + tx] || (zone && zone[ty * m.w + tx] !== z)) continue;
     let ok = true;
     for (const [px, py] of pts) if ((tx + 0.5 - px) ** 2 + (ty + 0.5 - py) ** 2 < d2) { ok = false; break; }
     if (ok) return [tx, ty];
@@ -341,7 +344,7 @@ function cellPass(S, m, rt, pids) {
   const pts = here.map((p) => [p.x / T, p.y / T]);
   for (const c of order) for (const s of rt.slots[c]) {
     if (s.mob || now < s.due) continue;
-    const at = placeAway(S, m, s.q.r, pts);
+    const at = placeAway(S, m, s.q.r, pts, s.q.zone);
     if (!at) continue;
     const mob = newMob(S, s.q.k, s.q.r, { elite: s.q.ep });
     mob.x = mob.hx = at[0] * T + 8; mob.y = mob.hy = at[1] * T + 10;
@@ -468,6 +471,7 @@ export function tick(S, now) {
       }
     }
     if (p.recall && now >= p.recall.at && !p.dead) finishRecall(S, p);
+    windTouch(S, p, now);
     if (!p.dead) classTick(S, p, now);
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;

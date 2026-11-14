@@ -224,7 +224,11 @@ const cloneData = () => JSON.parse(JSON.stringify(EMPTY_DATA()));
   assert.ok(R.E.MAPS.meadow.custom, "the meadow now comes from the data file");
   assert.deepEqual(b.g, a.g, "same ground, tile for tile");
   assert.deepEqual(b.o, a.o, "same objects, tile for tile");
-  assert.deepEqual(b.spawns, a.spawns, "same spawns");
+  // (a generated ground's spawns name the zone they live in; an editor map has no zones)
+  const unzoned = (l) => l.map(({ zone, ...sp }) => sp);
+  assert.deepEqual(unzoned(b.spawns), unzoned(a.spawns), "same spawns");
+  assert.deepEqual(R.E.MAPS.meadow.stones, L.atlas().maps.meadow.stones, "same waypoint stones, all three");
+  assert.deepEqual(R.E.MAPS.meadow.shrines, L.atlas().maps.meadow.shrines, "same wind shrines");
   // (a generated door names the gate it leads to; the editor's names the tile: both arrive on the same one)
   const doors = (m) => m.portals.map(({ x, y, to, tx, ty }) => ({ x, y, to, tx, ty }));
   assert.deepEqual(doors(R.E.MAPS.meadow), doors(L.atlas().maps.meadow), "same doors");

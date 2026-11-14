@@ -110,8 +110,8 @@ const acorns = rt.mobs.filter((m) => m.k === "twinhare");
 assert.ok(acorns.length >= 10, "the hare's cells are awake");
 let killed = 0;
 for (const m of rt.mobs.slice()) { if (m.k !== "twinhare" && m.k !== "gutfrog") continue; if (rt.fb) break; revive(m); m.el = 0; m.hp = 1; p.x = m.x - 12; p.y = m.y; p.mvAt = now; p.atkAt = 0; p.aim = 0; assert.ok(act({ t: "atk" }).ok); if (m.dead) killed++; step(30); p.hp = 99999; }
-// not enough distinct monsters at once: revive and repeat until the count is reached
-for (let i = 0; !rt.fb && i < 500; i++) {
+// not enough distinct monsters at once: revive and repeat until the count is reached (and the hare's own tally)
+for (let i = 0; (!rt.fb || (ch.mk.twinhare || 0) < 30) && i < 500; i++) {
   const m = acorns[i % acorns.length];
   revive(m); m.el = 0; m.hp = 1; m.x = p.x + 12; m.y = p.y; p.atkAt = 0; p.aim = 0;
   assert.ok(act({ t: "atk" }).ok);

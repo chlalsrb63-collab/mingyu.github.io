@@ -35,12 +35,17 @@ S.now = now;
     const m = L.atlas().maps[id];
     if (id === "town" || m.safe) continue; // the town, and safe places from the map editor (data/maps)
     const crowd = m.cells.spawns.flat().reduce((n, q) => n + q.n, 0) + m.cells.fixed.reduce((n, sp) => n + sp.n, 0);
-    assert.ok(crowd >= 100 && crowd <= 230, `${id}: ${crowd} monsters`);
+    // a hunting ground's monsters are its cells' quotas: ≈ one per DENSITY walkable tiles (fewer in the elite ground, none in the plaza)
+    let reach = 0;
+    for (let i = 0; i < m.reach.length; i++) reach += m.reach[i];
+    assert.ok(m.custom ? crowd >= 1 : crowd >= 300 && crowd <= reach / 4, `${id}: ${crowd} monsters on ${reach} tiles`);
     L.runtime(S, scout.map).n--; scout.map = id; L.runtime(S, id).n++;
     scout.x = m.entry[0] * 16 + 8; scout.y = m.entry[1] * 16 + 10; scout.hp = 1e9;
     L.tick(S, (now += 100));
     const rt = L.runtime(S, id);
-    assert.ok(rt.mobs.length >= crowd * 0.4, `${id}: ${rt.mobs.length} of ${crowd} monsters about the entrance`);
+    // only the cells near the scout wake: never more than the cap, and never in the plaza by the way in
+    assert.ok(rt.mobs.length >= Math.min(40, crowd * 0.3) && rt.mobs.length <= 230, `${id}: ${rt.mobs.length} of ${crowd} monsters about the entrance`);
+    if (m.zone) for (const mob of rt.mobs) if (mob.slot) assert.notEqual(m.zone[Math.floor(mob.y / 16) * m.w + Math.floor(mob.x / 16)], 0, `${id}: a ${mob.k} in the safe plaza`);
     for (const mob of rt.mobs) {
       assert.equal(mob.tr.length, mob.el, `${id}: a rank-${mob.el} ${mob.k} carries ${mob.el} trait(s)`);
       assert.equal(new Set(mob.tr).size, mob.tr.length);
@@ -77,6 +82,7 @@ assert.ok(lane, "found open ground");
 const X = lane[0] * 16 + 8, Y = lane[1] * 16 + 10;
 // everything else goes quiet; one monster is borrowed and dressed up for each trial
 for (const m of rt.mobs) { m.dead = true; m.respAt = 1e15; }
+rt.cellAt = 1e15; // and no cell wakes round the trials (a 4× ground has cells far from where the hunter came in)
 const pet = rt.mobs.find((m) => m.k === "twinhare");
 pet.slot = null; // borrowed from its cell for good: it stays in the world between trials, as a placed monster does
 const stand = (dx = 0, dy = 0) => { p.x = X + dx; p.y = Y + dy; p.mvAt = now; p.dead = false; p.hp = 9999; p.burn = null; p.poison = null; p.slowed = 0; p.hitAt = -1e9; p.atkAt = 0; p.dir = 2; p.aim = 0; };
@@ -111,7 +117,7 @@ for (const [tr, slot, key] of [["fire", 5, "burn"], ["poison", 6, "poison"], ["f
   assert.ok(p[key], `${tr} leaves its mark`);
   pet.dead = true;                                              // nothing is hitting any more
   const s = self();
-  assert.equal(s.buffs.length, 10);
+  assert.equal(s.buffs.length, 11);
   assert.ok(s.buffs[slot] > 0, `${tr} shows in self.buffs[${slot}]`);
   if (key !== "slowed") {
     const h0 = p.hp;
@@ -197,8 +203,9 @@ assert.equal(rt.pools.length, 0, "and it dries up");
 // ── however thick the crowd, only a few come of their own accord
 stand();
 pet.dead = true;
-const pack = rt.mobs.filter((m) => m.k === "lambmaw").slice(0, 12);
-pack.forEach((m, i) => Object.assign(m, { dead: false, el: 0, tr: [], hp: 1e6, x: X + 20 + (i % 6) * 9, y: Y - 10 + Math.floor(i / 6) * 20, tgt: null, st: 0, stun: 0, act: null, castAt: 1e15, atkAt: 1e15, mvAt: 1e15, by: {} }));
+const pack = rt.mobs.filter((m) => !m.fix && m !== pet && !m.k.startsWith("chest")).slice(0, 12);
+assert.equal(pack.length, 12);
+pack.forEach((m, i) => Object.assign(m, { k: "lambmaw", dead: false, el: 0, tr: [], hp: 1e6, x: X + 20 + (i % 6) * 9, y: Y - 10 + Math.floor(i / 6) * 20, tgt: null, st: 0, stun: 0, act: null, castAt: 1e15, atkAt: 1e15, mvAt: 1e15, by: {} }));
 pack.forEach((m) => { m.hx = m.x; m.hy = m.y; m.wx = m.x; m.wy = m.y; });
 events(1500);
 assert.equal(pack.filter((m) => m.tgt === PID).length, 3, "three at a time");

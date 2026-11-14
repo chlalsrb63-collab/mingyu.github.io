@@ -8,19 +8,21 @@ const dirtyAll = (S) => { for (const pid of Object.keys(S.players)) S.players[pi
 
 // ── waypoints and the return scroll
 const WP_R = 40, RECALL_MS = 2000, WARP_CALM = 3000;
-/** The waypoint stone of the player's map, if they stand beside it. */
+/** The waypoint stone of the player's map they stand beside (a big ground has several: its `i` says which), or null. */
 function wpNear(p) {
-  const w = WP[p.map];
-  return w && dist(p.x, p.y, w.x * T + 8, w.y * T + 10) <= WP_R ? w : null;
+  const m = mapOfS(p.S, p.map);
+  if (!m) return null;
+  for (const w of stonesOf(m)) if (dist(p.x, p.y, w.x * T + 8, w.y * T + 10) <= WP_R) return w;
+  return null;
 }
 /** Waking the stone you stand beside, and noting the maps you have walked. */
 function explore(S, p) {
   const ch = p.ch;
   if (!ch.seen.includes(p.map)) { ch.seen.push(p.map); checkAch(S, p); }
-  const w = wpNear(p);
-  if (w && !wpWoken(ch, p.map)) {
-    ch.wp[p.map] = (ch.wp[p.map] | 0) | 1;
-    toast(p, `[${mapOfS(p.S, p.map).name}] 이동의 돌을 깨웠습니다. 다른 이동의 돌에서 이곳으로 올 수 있습니다.`);
+  const w = wpNear(p), i = w ? w.i || 0 : 0;
+  if (w && !wpWoken(ch, p.map, i)) {
+    ch.wp[p.map] = (ch.wp[p.map] | 0) | (1 << i);
+    toast(p, `[${MAP_META[p.map] ? stoneName(p.map, i) : mapOfS(p.S, p.map).name}] 이동의 돌을 깨웠습니다. 다른 이동의 돌에서 이곳으로 올 수 있습니다.`);
     S.maps[p.map].ev.push(["wp", p.eid, 2]);
     p.dirty = true;
     checkAch(S, p);

@@ -181,10 +181,13 @@ export function validateAction(S, pid, a) {
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
     case "warp": {
-      if (!hasWp(a.to)) return bad("그곳에는 이동의 돌이 없습니다");
-      if (!wpNear(p)) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
-      if (!wpWoken(ch, a.to)) return bad("아직 깨우지 않은 이동의 돌입니다");
-      if (a.to === p.map) return bad("이미 이곳에 있습니다");
+      // a big ground has several stones: `i` picks one (0, the first, when left out)
+      const i = a.i === undefined ? 0 : a.i;
+      if (!hasWp(a.to) || !Number.isInteger(i) || i < 0 || i >= MAP_META[a.to].wpn) return bad("그곳에는 이동의 돌이 없습니다");
+      const at = wpNear(p);
+      if (!at) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
+      if (!wpWoken(ch, a.to, i)) return bad("아직 깨우지 않은 이동의 돌입니다");
+      if (a.to === p.map && i === (at.i || 0)) return bad("이미 이곳에 있습니다");
       if (now - p.hitAt < WARP_CALM) return bad("전투 중에는 이동할 수 없습니다");
       return OK;
     }

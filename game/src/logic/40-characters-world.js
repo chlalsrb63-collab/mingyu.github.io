@@ -94,11 +94,15 @@ function migrate(ch) {
   ch.fish = ch.fish | 0;
   // the long game: waypoints, places seen, achievements, a title, counters, dailies, first steps
   // (v9: { mapId: bitmask of its stones }; before, a list of maps, each meaning its one stone)
+  // (a mask keeps only the stones the map has: a 4x ground has MAP_META.wpn of them)
   const wp = {};
   if (Array.isArray(ch.wp)) { for (const id of ch.wp) if (hasWp(id)) wp[id] = 1; }
-  else if (isObj(ch.wp)) for (const id of Object.keys(ch.wp)) { const k = ch.wp[id] & WP_MASK; if (k && hasWp(id)) wp[id] = k; }
+  else if (isObj(ch.wp)) for (const id of Object.keys(ch.wp)) { const k = ch.wp[id] & WP_MASK & ((1 << (hasWp(id) ? MAP_META[id].wpn || 1 : 0)) - 1); if (k) wp[id] = k; }
   wp.town = (wp.town | 0) | 1;
   ch.wp = wp;
+  // a place inside the map the sheet names (maps change size; addPlayer then finds open ground)
+  const mm = typeof ch.map === "string" && Object.hasOwn(MAP_META, ch.map) ? MAP_META[ch.map] : null;
+  if (mm) { ch.x = clamp(Number(ch.x) || 0, 0, mm.w * T - 1); ch.y = clamp(Number(ch.y) || 0, 0, mm.h * T - 1); }
   ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => typeof id === "string" && Object.hasOwn(MAP_META, id));
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
   ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
@@ -234,7 +238,7 @@ function stats(p) {
     xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1,
-    spd: c.spd0 * (p.spdBuff > now ? 1.4 : 1) * (p.slowed > now && !(p.giant > now) ? SLOW : 1), spd0: c.spd0,
+    spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.slowed > now && !(p.giant > now) ? SLOW : 1), spd0: c.spd0,
   };
 }
 
@@ -476,7 +480,12 @@ export function addPlayer(S, pid, ch) {
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, grit: 0, gritAt: 0, focus: 0, focusAt: 0, sword: null, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
-  if (!canStand(mapOf(p.map), p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
+  // a place that changed under their feet (the hunting grounds grew): the way in of that same ground
+  const here = mapOf(p.map);
+  if (!(p.x >= 0 && p.y >= 0) || !canStand(here, p.x, p.y) || !here.reach[Math.floor(p.y / T) * here.w + Math.floor(p.x / T)]) {
+    p.x = here.entry[0] * T + 8; p.y = here.entry[1] * T + 10;
+    if (!here.safe) toast(p, "지형이 넓어져 입구로 이동했습니다.");
+  }
   const st = stats(p);
   p.hp = ch.hp > 0 ? Math.min(ch.hp, st.mhp) : st.mhp;
   p.mp = ch.mp >= 0 ? Math.min(ch.mp, st.mmp) : st.mmp;

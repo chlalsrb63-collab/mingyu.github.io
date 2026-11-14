@@ -54,7 +54,7 @@ const GROUND_NAME = {
 /** Korean names for every object character (any object blocks the tile). */
 const OBJECT_NAME = {
   T: "활엽수", P: "침엽수", B: "덤불 (마을: 화분·통)", R: "바위", C: "낭떠러지 바위", H: "생울타리", F: "나무 울타리", U: "무너진 돌벽",
-  h: "집 (4×3 칸)", L: "가로등", G: "표지판", Q: "이동의 돌", E: "천막", a: "분수", e: "갈대 (물 위)", l: "쓰러진 통나무", u: "그루터기",
+  h: "집 (4×3 칸)", L: "가로등", G: "표지판", Q: "이동의 돌", "/": "질주의 바람 제단", E: "천막", a: "분수", e: "갈대 (물 위)", l: "쓰러진 통나무", u: "그루터기",
   q: "부서진 기둥", O: "선돌", A: "죽은 나무", Y: "큰 버섯", K: "수정", S: "종유석", M: "광석 수레", n: "잡동사니 더미", D: "쓰레기통",
   x: "콘크리트 블록", y: "소화전", Z: "콘크리트 벽", c: "자동차", I: "예배당 의자", 0: "살덩이 눈자루", 1: "석관", 2: "세워 둔 관",
   3: "촛대", 4: "뼈 무더기", 5: "해골 기둥", 6: "배수관", 7: "녹슨 드럼통", 8: "솟은 갈비뼈", 9: "제단", X: "피의 제단",
@@ -126,6 +126,9 @@ function toEditor(E, id) {
     portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: p.to, tx: p.tx, ty: p.ty })),
     fires: (E.FIRES[id] || []).map((f) => [f[0], f[1]]),
     waypoint: wp ? [wp.x, wp.y, wp.ax, wp.ay] : null,
+    // a big generated ground's other stones and its wind shrines (SCHEMA.md: additive)
+    stones: (m.stones || []).slice(1).map((s) => [s.x, s.y, s.ax, s.ay]),
+    shrines: (m.shrines || []).map(([x, y]) => [x, y]),
     fishing: !m.nofish,
     boss: E.FIELD_BOSS[id] ? { k: E.FIELD_BOSS[id], x: wp ? wp.ax : m.entry[0], y: wp ? wp.ay : m.entry[1] } : null,
     big: m.big.map((b) => ({ ...b })),

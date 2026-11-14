@@ -351,7 +351,7 @@ const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
 const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8 };
-const CROWD_MAX = 228, GEAR_CUT = 0.3, MOB_ATK = 1.27;
+const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
  * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
@@ -2482,6 +2482,230 @@ function abyssal(cfg) {
   return m;
 }
 
+// ───────────────────────────── zones: how deep into a hunting ground ─────────────────────────────
+// docs/design/scale-and-rift.md C.1–C.3. Every generated hunting ground is cut into zones by how
+// far a tile is walked from the entrance (BFS over open ground): a SAFE plaza round the way in
+// (and a little ring round every other way in), NORMAL ground where the colonies live, ELITE
+// ground in the far part (stronger kinds, far more elites), and HIDDEN pockets: the dead ends
+// behind a narrow mouth that hold a chest and its one guardian. The zones decide who lives
+// where (zoneSpawns: monsters per 8 × 8 block of each zone), and markRoutes reads them for the
+// extra waypoint stones, the wind shrines and the signs. Editor maps are never zoned.
+
+const Z_SAFE = 0, Z_NORMAL = 1, Z_ELITE = 2, Z_HIDDEN = 3;
+/**
+ * Zone cuts, as a share of the farthest walk D from the entrance: the safe plaza is ZONE_SAFE D deep
+ * (at least SAFE_MIN tiles; a side door's ring GATE_SAFE), elite ground starts at ZONE_ELITE D but
+ * never takes more than ELITE_SHARE of the walkable ground (a map that is all depth stays mostly normal).
+ */
+const ZONE_SAFE = 0.08, ZONE_ELITE = 0.55, ELITE_SHARE = 0.3, SAFE_MIN = 10, GATE_SAFE = 5;
+/**
+ * A hidden pocket: between POCKET_MIN and POCKET_MAX tiles, reached through at most POCKET_MOUTH
+ * tiles, found within POCKET_SCAN steps of its chest, its chest at least POCKET_DEEP D in; at most
+ * POCKET_N a map, the deepest first (other chests stay in the open with the colonies round them).
+ */
+const POCKET_MIN = 10, POCKET_MAX = 260, POCKET_MOUTH = 3, POCKET_SCAN = 60, POCKET_DEEP = 0.3, POCKET_N = 5;
+/** Monsters per tile against the map's DENSITY, by zone (safe none, normal as ever, elite fewer but far more often elite, hidden only its guardian). */
+const ZONE_DENS = [0, 1, 0.6, 0], ZONE_EP = 0.35;
+/** Spawn boxes are SUB × SUB tiles (four to a cell), each holding one zone's tiles of that block. */
+const SUB = 8;
+/** 질주의 바람: a wind shrine's push — move speed ×WIND_K for WIND_MS, the same shrine again after WIND_CD; touched within WIND_R px. */
+const WIND_K = 1.3, WIND_MS = 20000, WIND_CD = 60000, WIND_R = 26;
+/** What the waypoint stones of a map are called, by how many it has. */
+const STONE_NAMES = [[], [""], ["입구", "안쪽"], ["입구", "중턱", "안쪽"]];
+
+/**
+ * Cut map `m` (rows still arrays) into zones: m.zone (Uint8Array, a zone per tile; ground no one
+ * can walk to is 0), m.zdist (walk from the entrance, -1 where none), m.zinfo { D, safeR, eliteD },
+ * m.pockets (the hidden dead ends, each { tiles, chests, mouth, L }), m.zones (reachable tiles per
+ * zone, for the tests and tools) and m.zq (the zones by 4 × 4 block, for the minimap).
+ */
+function zoneMap(m) {
+  const W = m.w, H = m.h, N = W * H;
+  const open = new Uint8Array(N);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x])) open[y * W + x] = 1;
+  const flood = (starts, limit) => {
+    const d = new Int32Array(N).fill(-1), q = [];
+    for (const [x, y] of starts) { const i = y * W + x; if (open[i] && d[i] < 0) { d[i] = 0; q.push(i); } }
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h], x = i % W, di = d[i] + 1;
+      if (di > limit) continue;
+      if (x + 1 < W && open[i + 1] && d[i + 1] < 0) { d[i + 1] = di; q.push(i + 1); }
+      if (x > 0 && open[i - 1] && d[i - 1] < 0) { d[i - 1] = di; q.push(i - 1); }
+      if (i + W < N && open[i + W] && d[i + W] < 0) { d[i + W] = di; q.push(i + W); }
+      if (i >= W && open[i - W] && d[i - W] < 0) { d[i - W] = di; q.push(i - W); }
+    }
+    return d;
+  };
+  const d = flood([m.entry], 1e9);
+  let D = 1;
+  for (let i = 0; i < N; i++) if (d[i] > D) D = d[i];
+  const hist = new Int32Array(D + 1);
+  let walk = 0;
+  for (let i = 0; i < N; i++) if (d[i] >= 0) { hist[d[i]]++; walk++; }
+  let eliteD = D, tail = 0;
+  while (eliteD > 0 && tail + hist[eliteD] <= walk * ELITE_SHARE) tail += hist[eliteD--];
+  eliteD = Math.max(eliteD + 1, Math.round(D * ZONE_ELITE));
+  const safeR = Math.max(SAFE_MIN, Math.round(D * ZONE_SAFE));
+  // every other way in gets a little ring of quiet ground too: nobody steps through a door into a pack
+  // (only gates someone can come in by: a one-way door out, like the crypt's, keeps its guardian)
+  const gateA = [];
+  for (const [a, ga, b, gb, both] of GATE_LINKS) {
+    const g = b === m.id ? m.gates[gb] : both && a === m.id ? m.gates[ga] : null;
+    if (g) for (const t of g.a) gateA.push(t);
+  }
+  const near = flood(gateA, GATE_SAFE);
+  const zone = new Uint8Array(N);
+  for (let i = 0; i < N; i++) {
+    if (d[i] < 0) continue;
+    zone[i] = d[i] < safeR || near[i] >= 0 ? Z_SAFE : d[i] < eliteD ? Z_NORMAL : Z_ELITE;
+  }
+  // the hidden pockets: from each chest, the widest dead end round it whose mouth is narrow
+  const guard = new Uint8Array(N);
+  const keepOut = (x, y) => { if (inMap(m, x, y)) guard[y * W + x] = 1; };
+  for (const p of m.portals) keepOut(p.x, p.y);
+  for (const a of gateA) keepOut(a[0], a[1]);
+  for (const [fx, fy] of FIRES[m.id] || []) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) keepOut(fx + dx, fy + dy);
+  const seen = new Int32Array(N), mark = new Int32Array(N);
+  let stamp = 0;
+  const pockets = [], owner = new Int32Array(N).fill(-1);
+  const chests = m.spawns.filter((sp) => MOBS[sp.k].chest && d[sp.r[1] * W + sp.r[0]] >= D * POCKET_DEEP);
+  chests.sort((a, b) => d[b.r[1] * W + b.r[0]] - d[a.r[1] * W + a.r[0]] || a.r[1] - b.r[1] || a.r[0] - b.r[0]);
+  for (const sp of chests) {
+    const c = sp.r[1] * W + sp.r[0];
+    if (owner[c] >= 0) { pockets[owner[c]].chests.push([sp.r[0], sp.r[1]]); continue; }
+    let best = null;
+    for (let L = d[c] - 1; L >= Math.max(1, d[c] - POCKET_SCAN); L--) {
+      if (L < safeR) break;
+      stamp++;
+      const q = [c], mouth = [];
+      seen[c] = stamp;
+      let bad = guard[c] === 1;
+      for (let h = 0; h < q.length && !bad; h++) {
+        const i = q[h], x = i % W;
+        for (const j of [x + 1 < W ? i + 1 : -1, x > 0 ? i - 1 : -1, i + W < N ? i + W : -1, i >= W ? i - W : -1]) {
+          if (j < 0 || !open[j] || d[j] < 0) continue;
+          if (d[j] <= L) { if (mark[j] !== stamp) { mark[j] = stamp; mouth.push(j); } continue; }
+          if (seen[j] === stamp) continue;
+          seen[j] = stamp;
+          if (guard[j] || owner[j] >= 0) { bad = true; break; }
+          q.push(j);
+        }
+        if (q.length > POCKET_MAX) bad = true;
+      }
+      if (bad) break;
+      if (q.length >= POCKET_MIN && mouth.length <= POCKET_MOUTH) best = { tiles: q, mouth: mouth[mouth.length >> 1], L };
+    }
+    if (!best || pockets.length >= POCKET_N) continue;
+    const k = pockets.length;
+    for (const i of best.tiles) { owner[i] = k; zone[i] = Z_HIDDEN; }
+    pockets.push({ tiles: best.tiles, chests: [[sp.r[0], sp.r[1]]], mouth: [best.mouth % W, Math.floor(best.mouth / W)], L: best.L });
+  }
+  const count = [0, 0, 0, 0];
+  for (let i = 0; i < N; i++) if (d[i] >= 0) count[zone[i]]++;
+  // the minimap's tint: each 4 × 4 block takes the zone most of its walkable ground is in ("-" none)
+  const bw = Math.ceil(W / 4), bh = Math.ceil(H / 4);
+  let zq = "";
+  for (let by = 0; by < bh; by++) for (let bx = 0; bx < bw; bx++) {
+    const c4 = [0, 0, 0, 0];
+    for (let y = by * 4; y < Math.min(H, by * 4 + 4); y++) for (let x = bx * 4; x < Math.min(W, bx * 4 + 4); x++) if (d[y * W + x] >= 0) c4[zone[y * W + x]]++;
+    const top = c4.indexOf(Math.max(...c4));
+    zq += c4[top] ? String(top) : "-";
+  }
+  m.zone = zone; m.zdist = d; m.zinfo = { D, safeR, eliteD }; m.pockets = pockets; m.zq = zq;
+  m.zones = { D, safe: count[0], normal: count[1], elite: count[2], hidden: count[3], pockets: pockets.length };
+}
+
+/**
+ * Who lives where on a zoned map. Chests, bosses and placed guardians stay as the generator left
+ * them; the roster (cfg.mobs, weakest first) is laid out again block by block: normal ground takes
+ * the kinds by how far in the block lies, elite ground the stronger half of the roster with
+ * ZONE_EP elites, the safe plaza and the hidden pockets none — a pocket gets one guardian beside its
+ * chest instead. Counts follow the map's DENSITY (×ZONE_DENS of the zone), carried over block to block.
+ */
+function zoneSpawns(m, cfg) {
+  const W = m.w, H = m.h, z = m.zone, d = m.zdist, { D, safeR, eliteD } = m.zinfo;
+  const ros = cfg.mobs.map((k, i) => [k, i]).sort((a, b) => MOBS[a[0]].lv - MOBS[b[0]].lv || a[1] - b[1]).map((a) => a[0]);
+  const n = ros.length, normTop = Math.max(1, Math.ceil(n * 0.85)), eliteLo = Math.min(n - 1, Math.floor(n * 0.5));
+  const progN = (dd) => clamp((dd - safeR) / Math.max(1, eliteD - safeR), 0, 0.999);
+  const pick = (zone, dd, h) => {
+    if (zone === Z_ELITE) return ros[clamp(eliteLo + Math.floor(clamp((dd - eliteD) / Math.max(1, D - eliteD), 0, 0.999) * (n - eliteLo) + (h - 0.5) * 1.2), eliteLo, n - 1)];
+    return ros[clamp(Math.floor(progN(dd) * normTop + (h - 0.5) * 1.2), 0, normTop - 1)];
+  };
+  const zoneAt = (r) => z[Math.floor((r[1] + r[3]) / 2) * W + Math.floor((r[0] + r[2]) / 2)];
+  const old = m.spawns;
+  const out = old.filter((sp) => MOBS[sp.k].chest || MOBS[sp.k].boss || sp.el);
+  // a kind that is not on the roster (a lair's own pack) keeps its ground, unless that is the plaza or a pocket
+  for (const sp of old) if (!out.includes(sp) && !cfg.mobs.includes(sp.k) && zoneAt(sp.r) !== Z_SAFE && zoneAt(sp.r) !== Z_HIDDEN) out.push(sp);
+  const carry = [0, 0, 0, 0];
+  for (let by = 0; by < H; by += SUB) for (let bx = 0; bx < W; bx += SUB) for (const zz of [Z_NORMAL, Z_ELITE]) {
+    let cnt = 0, sd = 0, x0 = W, y0 = H, x1 = -1, y1 = -1;
+    for (let y = by; y < Math.min(H, by + SUB); y++) for (let x = bx; x < Math.min(W, bx + SUB); x++) {
+      const i = y * W + x;
+      if (d[i] < 0 || z[i] !== zz) continue;
+      cnt++; sd += d[i];
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    if (!cnt) continue;
+    const want = (cnt * ZONE_DENS[zz]) / DENSITY[m.id] + carry[zz], k = Math.round(want);
+    carry[zz] = want - k;
+    if (k <= 0) continue;
+    const h = h2(bx, by, cfg.seed + zz), dd = sd / cnt, r = [x0, y0, x1, y1];
+    const ep = zz === Z_ELITE ? ZONE_EP : eliteAt(progN(dd) * 0.5);
+    const k1 = pick(zz, dd, h), k2 = k >= 4 ? pick(zz, dd, 1 - h) : k1;
+    if (k2 === k1) { out.push({ k: k1, n: k, r, elite: ep, zone: zz }); continue; }
+    const a = Math.ceil(k * 0.65);
+    out.push({ k: k1, n: a, r: r.slice(), elite: ep, zone: zz }, { k: k2, n: k - a, r: r.slice(), elite: ep, zone: zz });
+  }
+  // each hidden pocket: its chest, and one guardian halfway between the mouth and the chest
+  for (const pk of m.pockets) {
+    const [cx, cy] = pk.chests[0], ci = cy * W + cx;
+    const keeper = old.find((sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el && sp.r[0] <= cx && cx <= sp.r[2] && sp.r[1] <= cy && cy <= sp.r[3]);
+    const kind = keeper ? keeper.k : pick(d[ci] >= eliteD ? Z_ELITE : Z_NORMAL, d[ci], 0.5);
+    const mid = (pk.L + 1 + d[ci]) / 2;
+    let at = -1, bd = Infinity;
+    for (const i of pk.tiles) {
+      const x = i % W, y = (i - x) / W;
+      if (Math.abs(x - cx) + Math.abs(y - cy) < 2) continue;
+      const s = Math.abs(d[i] - mid) * 4 + ((x * 7 + y * 13) % 5);
+      if (s < bd) { bd = s; at = i; }
+    }
+    if (at < 0) continue;
+    const gx = at % W, gy = (at - gx) / W;
+    pk.guard = [gx, gy];
+    out.push({ k: kind, n: 1, r: [gx, gy, gx, gy], el: 1, zone: Z_HIDDEN });
+  }
+  m.spawns = out;
+  // every kind the ground is meant to hold lives somewhere in it
+  cover(m, cfg.mobs);
+}
+
+// (a sheet's woken stones are ch.wp = { mapId: bitmask }, bit i = stone i: wpWoken in 36-custom-maps.js)
+/** A built map's waypoint stones, in order ({ x, y, ax, ay, i }). */
+function stonesOf(m) {
+  return m.stones || (WP[m.id] ? [WP[m.id]] : []);
+}
+/** A stone's name for a toast: the map's name, and which stone when it has more than one. */
+function stoneName(id, i) {
+  const n = (MAP_META[id] && MAP_META[id].wpn) || 1, nm = MAP_META[id] ? MAP_META[id].name : id;
+  return n > 1 ? `${nm} · ${STONE_NAMES[n][i] || i + 1}` : nm;
+}
+/** 질주의 바람: brushing past a wind shrine speeds you on (each shrine once a minute). */
+function windTouch(S, p, now) {
+  const m = mapOfS(S, p.map);
+  if (!m || !m.shrines || p.dead) return;
+  for (let i = 0; i < m.shrines.length; i++) {
+    const [x, y] = m.shrines[i];
+    if (Math.abs(p.x - (x * T + 8)) > WIND_R || Math.abs(p.y - (y * T + 10)) > WIND_R) continue;
+    const cd = p.windCd || (p.windCd = {}), key = p.map + "#" + i;
+    if (cd[key] > now) return;
+    cd[key] = now + WIND_CD;
+    p.wind = now + WIND_MS;
+    p.dirty = true;
+    S.maps[p.map].ev.push(["wd", p.eid, x * T + 8, y * T + 10]);
+    toast(p, `질주의 바람이 등을 떠밉니다! 이동속도 +${Math.round((WIND_K - 1) * 100)}% (${WIND_MS / 1000}초)`);
+    return;
+  }
+}
 function buildTown() {
   const box = { seed: 1101 };
   const m = blank("town", "넥서스 광장", 40, 30, ".");
@@ -2573,14 +2797,16 @@ function buildTown() {
 const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
 /**
  * Every generated hunting ground: `make` the generator, `band` the level a character should
- * be to walk in (shown on every door that leads there), `cfg()` its settings; `theme` where the
+ * be to walk in (shown on every door that leads there), `stones` how many waypoint stones stand
+ * along its way on (MAP_META.wpn; the map tests hold the built map to it), `cfg()` its settings
+ * (sizes are 2× per side the first worlds': docs/design/scale-and-rift.md C.2); `theme` where the
  * generator sets one of its own, `kinds` monsters the generator places by itself, `after(m)`
  * a finishing touch, `npcs` the ids of the people it places.
  */
 const GEN = {
-  meadow: { make: wilds, band: [1, 7], cfg: () => ({
-    id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 76, h: 51, r: 9.6, warp: 9, wind: 0.55, loops: 0.12, merge: 0.32, cliff: 0.15, gap: 2,
-    ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 2, lakeR: 5, vaults: 3, ruins: 1, tpm: 15.5,
+  meadow: { make: wilds, band: [1, 7], stones: 3, cfg: () => ({
+    id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 152, h: 102, r: 9.6, warp: 9, wind: 0.55, loops: 0.12, merge: 0.32, cliff: 0.15, gap: 2,
+    ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 4, lakeR: 5, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
     mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "lambmaw", "eyecrow", "lambmaw", "eyecrow"], pondMob: "eyecrow", chest: "chest_meadow",
     vaultKinds: ["shrine", "circle", "bloom", "lookout", "cache", "menhir"], biomes: { plain: "plain" }, featureP: 0.6, features: ["pond", "boulders", "bigtree", "pen", "cairn", "logs", "stones"],
@@ -2593,9 +2819,9 @@ const GEN = {
       : b === "tallgrass" ? (h < 0.012 ? "T" : h < 0.02 ? "B" : null)
       : h < 0.018 ? "T" : h < 0.036 ? "B" : h < 0.043 ? "R" : h < 0.047 ? "u" : h < 0.05 ? "l" : null),
   }) },
-  forest: { make: wilds, band: [8, 13], cfg: () => ({
-    id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 76, h: 51, r: 8.2, warp: 10, wind: 0.6, loops: 0.1, merge: 0.18, cliff: 0.22, gap: 2,
-    ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 1, lakeR: 4, vaults: 3, ruins: 2, tpm: 15.5, stair: "crypt",
+  forest: { make: wilds, band: [8, 13], stones: 3, cfg: () => ({
+    id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 152, h: 102, r: 8.2, warp: 10, wind: 0.6, loops: 0.1, merge: 0.18, cliff: 0.22, gap: 2,
+    ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 2, lakeR: 4, vaults: 9, ruins: 5, tpm: 15.5, stair: "crypt",
     walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
     mobs: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
     vaultKinds: ["deadgrove", "ring", "shrine", "lookout", "menhir", "cache"], biomes: { plain: "glade" }, featureP: 0.6, features: ["pond", "boulders", "ring", "dead", "logs", "stones", "cairn"],
@@ -2608,31 +2834,31 @@ const GEN = {
       : b === "fern" ? (h < 0.04 ? "P" : h < 0.055 ? "B" : h < 0.065 ? "R" : null)
       : (n1 > 0.55 ? h < 0.24 : h < 0.09) ? "P" : h < 0.1 ? "B" : h < 0.107 ? "l" : h < 0.113 ? "u" : null),
   }) },
-  cave: { make: cavern, band: [24, 32], theme: "cave", kinds: ["boss"], cfg: () => ({
-    id: "cave", name: "수정 동굴", seed: 44093, w: 66, h: 50, r: 8, vaults: 4, tpm: 16, chest: "chest_cave",
+  cave: { make: cavern, band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
+    id: "cave", name: "수정 동굴", seed: 44093, w: 132, h: 100, r: 8, vaults: 10, tpm: 16, chest: "chest_cave",
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
-  city: { make: metro, band: [14, 21], theme: "city", cfg: () => ({
-    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 76, h: 51, gate: "east", gateY: 0.5, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
+  city: { make: metro, band: [14, 21], stones: 3, theme: "city", cfg: () => ({
+    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 152, h: 102, gate: "east", gateY: 0.5, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
     mobs: ["pigeonmass", "gutfrog_poison", "doghead", "squidrat", "catsplit", "fishwalker"], chest: "chest_city",
   }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
-  crypt: { make: catacomb, band: [12, 17], cfg: () => ({
-    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 66, h: 51, min: 9, minH: 8, leaf: 150, entryY: 0.8, wind: 0.6, loops: 0.06, out: true, n: 3,
+  crypt: { make: catacomb, band: [12, 17], stones: 3, cfg: () => ({
+    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 9, minH: 8, leaf: 300, entryY: 0.8, wind: 0.6, loops: 0.06, out: true, n: 3,
     shapes: ["plain", "chapel", "cross", "octagon", "ell", "chapel", "cross"], styles: ["pillars", "pool", "rows", "rubble", "shrine", "plain", "plain"], vaultName: "ossuary",
     mobs: ["ratking", "twinhare_bone", "bonehound", "toadbrood", "batcluster"], guard: "bonehound", chest: "chest_crypt",
     dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4" },
   }) },
-  sewer: { make: sewers, band: [22, 27], cfg: () => ({
-    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 76, h: 51, r: 10.5, wind: 0.5, loops: 0.16, n: 3,
+  sewer: { make: sewers, band: [22, 27], stones: 3, cfg: () => ({
+    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 10.5, wind: 0.5, loops: 0.16, n: 3,
     mobs: ["leechmaw", "ratking_bile", "gatorhalf", "crabskull", "eelknot"], guard: "gatorhalf", chest: "chest_sewer",
   }) },
   // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
   // wood to the chasm that swallowed the capital (a ledge down into the abyss, behind the mother). Crimson maple
   // groves on red litter, golden stands on gold, pine on the heights, clearings, and hollows where the blight fruits
-  maple: { make: wilds, band: [40, 46], npcs: [["hermit", "은자 바스"]], after: hermitAt, cfg: () => ({
-    id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 80, h: 56, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
-    ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 1, lakeR: 4, vaults: 4, ruins: 2, tpm: 15,
+  maple: { make: wilds, band: [40, 46], stones: 3, npcs: [["hermit", "은자 바스"]], after: hermitAt, cfg: () => ({
+    id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 160, h: 112, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
+    ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 2, lakeR: 4, vaults: 10, ruins: 4, tpm: 15,
     walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3]], exit: "east",
     mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose"], pondMob: null, chest: "chest_maple",
     campPiece: "cottage", lair: { piece: "chapel", guard: "rotstag", pack: "rotstag" },
@@ -2651,8 +2877,8 @@ const GEN = {
       : b === "hollow" ? (h < 0.03 ? "Y" : h < 0.045 ? "A" : h < 0.055 ? "T" : h < 0.06 ? "u" : null)
       : h < 0.03 ? "T" : h < 0.038 ? "u" : h < 0.046 ? "B" : h < 0.05 ? "l" : null),
   }) },
-  abyss: { make: abyssal, band: [32, 40], cfg: () => ({
-    id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 76, h: 60, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
+  abyss: { make: abyssal, band: [32, 40], stones: 3, cfg: () => ({
+    id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 152, h: 120, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
     mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss",
   }) },
 };
@@ -2690,43 +2916,29 @@ function gateDoors(m) {
     if (both && b === m.id) add(gb, a, ga);
   }
 }
-/**
- * The hunt wants a crowd: every hunting ground holds more than its layout asked for, as many
- * as the ground has room for at the density each kind of ground is meant to have (chests,
- * guardians and bosses stay as placed).
- */
-function crowdUp(m) {
-  const grows = (sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el;
-  let base = 0, fixed = 0;
-  for (const sp of m.spawns) { if (grows(sp)) base += sp.n; else fixed += sp.n; }
-  let open = 0;
-  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x])) open++;
-  const k = Math.min(CROWD_MAX - fixed, open / DENSITY[m.id]) / base;
-  let carry = 0;
-  for (const sp of m.spawns) {
-    if (!grows(sp)) continue;
-    const want = sp.n * k + carry, n = Math.max(sp.n, Math.round(want));
-    carry = want - n;
-    sp.n = n;
-  }
-}
 /** A door's label: where it leads and how strong you should be to go there (from MAP_META, nothing built). */
 const labelOf = (id) => doorName(MAP_META[id]);
 /**
  * One generated map, built from its settings (rows still arrays; 36-custom-maps.js finalizes it):
- * terrain, doors, the crowd, then the waypoint stone and signposts along its routes.
+ * terrain, doors, its zones and who lives in each, then the waypoint stones and signposts along its routes.
  */
 function genMap(id) {
   const g = GEN[id];
   FIRES[id] = [];
-  const m = g.make(g.cfg());
+  const cfg = g.cfg();
+  const m = g.make(cfg);
   if (g.after) g.after(m);
   m.band = g.band.slice();
   gateDoors(m);
-  crowdUp(m);
+  // zones by how far in, then who lives in each (33-maps-zones.js)
+  zoneMap(m);
+  zoneSpawns(m, cfg);
+  m.stonesWant = g.stones || 1;
   const lo = m.band[0];
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
   markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
+  // a pocket is the ground still open in it once the signs and stones stand
+  for (const pk of m.pockets) pk.tiles = pk.tiles.filter((i) => m.o[Math.floor(i / m.w)][i % m.w] === " ");
   return m;
 }
 /**
@@ -2841,12 +3053,50 @@ function markRoutes(m, labelOf, deeper) {
   };
   const forks = (i) => { const x = i % W, y = (i - x) / W; return [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => open(x + dx, y + dy)).length; };
   // the waypoint, a dozen steps along the way on
+  let k0 = -1;
   for (let k = Math.min(12, C.length - 2); k < Math.min(C.length - 1, 48); k++) {
     const at = place(C[k], "Q");
     if (!at) continue;
-    WP[m.id] = { x: at[0], y: at[1], ax: C[k] % W, ay: Math.floor(C[k] / W) };
+    WP[m.id] = { x: at[0], y: at[1], ax: C[k] % W, ay: Math.floor(C[k] / W), i: 0 };
     m.marks.push({ x: at[0], y: at[1], kind: "waypoint" });
+    k0 = k;
     break;
+  }
+  if (m.zone && WP[m.id]) {
+    // a big ground has more stones along the way on (a third and two thirds in, or halfway), each with
+    // a wind shrine a few steps further on (33-maps-zones.js); a campfire burns in the plaza by the first
+    m.stones = [WP[m.id]];
+    m.shrines = [];
+    const fr = m.stonesWant >= 3 ? [1 / 3, 2 / 3] : m.stonesWant === 2 ? [0.5] : [];
+    for (const f of fr) {
+      const t = Math.round(C.length * f);
+      for (let s = 0; s <= 60; s++) {
+        const j = s % 2 ? t + (s + 1) / 2 : t - s / 2;
+        if (j <= k0 + 10 || j >= C.length - 3) continue;
+        const at = place(C[j], "Q");
+        if (!at) continue;
+        const st = { x: at[0], y: at[1], ax: C[j] % W, ay: Math.floor(C[j] / W), i: m.stones.length };
+        m.stones.push(st);
+        m.marks.push({ x: at[0], y: at[1], kind: "waypoint" });
+        for (let q = j + 3; q < Math.min(C.length - 2, j + 16); q++) { const sh = place(C[q], "/"); if (sh) { m.shrines.push(sh); break; } }
+        break;
+      }
+    }
+    // the plaza's fire: beside the way, a few steps past the stone, with room round it for the stumps
+    const roomy = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!open(x + dx, y + dy)) return false; return true; };
+    let lit = false;
+    const ring = [];
+    for (let r = 2; r <= 5; r++) for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [-1, 1], [1, 1], [-1, -1]]) ring.push([dx * r, dy * r]);
+    for (let k = Math.max(1, k0 - 8); k < Math.min(C.length - 1, k0 + 30) && !lit; k++) {
+      const cx = C[k] % W, cy = Math.floor(C[k] / W);
+      for (const [dx, dy] of ring) {
+        const x = cx + dx, y = cy + dy, i = y * W + x;
+        if (!inMap(m, x, y) || m.zone[i] !== Z_SAFE || base.d[i] < 0 || onPath.has(i) || !roomy(x, y) || busy(x, y)) continue;
+        FIRES[m.id].push([x, y]);
+        lit = true;
+        break;
+      }
+    }
   }
   // signposts at junctions along the way on
   for (const frac of [0.33, 0.62, 0.86]) {
@@ -2871,6 +3121,26 @@ function markRoutes(m, labelOf, deeper) {
       m.marks.push({ x: at[0], y: at[1], kind: "sign", label: `${d.label} ${arrow(P[a], P[Math.min(a + 8, P.length - 1)])}`, to: d.to || undefined });
       break;
     }
+  }
+  if (!m.zone) return;
+  // where the way on crosses into the elite ground, a warning; at the mouth of each hidden pocket, a hint
+  const into = C.findIndex((i) => m.zone[i] === Z_ELITE);
+  if (into > 0) {
+    for (let s = 0; s <= 16; s++) {
+      const j = into - 2 - s;
+      if (j < 1) break;
+      const at = place(C[j], "G");
+      if (!at) continue;
+      m.marks.push({ x: at[0], y: at[1], kind: "sign", label: `엘리트 지대 · 정예 출몰 ${arrow(C[j], C[Math.min(j + 8, C.length - 1)])}` });
+      break;
+    }
+  }
+  for (const pk of m.pockets || []) {
+    const [mx, my] = pk.mouth, [cx, cy] = pk.chests[0];
+    const at = place(my * W + mx, "G");
+    if (!at) continue;
+    const o = ((Math.round(Math.atan2(cy - my, cx - mx) / (Math.PI / 4)) % 8) + 8) % 8;
+    m.marks.push({ x: at[0], y: at[1], kind: "sign", label: `수상한 샛길 ${["→", "↘", "↓", "↙", "←", "↖", "↑", "↗"][o]}` });
   }
 }
 
@@ -2904,6 +3174,8 @@ function mapPayload(m) {
     npcs: m.npcs, style: m.style || null,
     // fires that always burn, with the stumps around them ({ x, y, seats: [[x, y]…] }, world pixels)
     camps: campsOf(m),
+    // a zoned ground's zones by 4 × 4 block for the minimap (0 safe, 1 normal, 2 elite, 3 hidden, - none)
+    zq: m.zq || null,
   };
 }
 
@@ -2998,15 +3270,23 @@ function fromEditor(d, id) {
     return out;
   });
   delete WP[id];
-  if (Array.isArray(d.waypoint) && xyOk(m, d.waypoint[0], d.waypoint[1])) {
-    // [x, y] the stone, and optionally [.., ax, ay] the tile travellers arrive on beside it
-    const [x, y, ax, ay] = d.waypoint;
+  /** [x, y] a stone, and optionally [.., ax, ay] the tile travellers arrive on beside it. */
+  const stoneAt = ([x, y, ax, ay], i) => {
     m.o[y][x] = "Q";
     const side = Number.isInteger(ax) && Number.isInteger(ay) && Math.abs(ax - x) <= 1 && Math.abs(ay - y) <= 1 && openTile(m, ax, ay) ? [ax - x, ay - y]
       : [[0, 1], [1, 0], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].find(([dx, dy]) => openTile(m, x + dx, y + dy)) || [0, 1];
-    WP[id] = { x, y, ax: x + side[0], ay: y + side[1] };
-    m.marks.unshift({ x, y, kind: "waypoint" });
+    return { x, y, ax: x + side[0], ay: y + side[1], i };
+  };
+  if (Array.isArray(d.waypoint) && xyOk(m, d.waypoint[0], d.waypoint[1])) {
+    WP[id] = stoneAt(d.waypoint, 0);
+    // more stones along the way (a big generated ground exported for the editor has three)
+    const more = (Array.isArray(d.stones) ? d.stones : []).filter((w) => Array.isArray(w) && xyOk(m, w[0], w[1])).slice(0, 3);
+    if (more.length) m.stones = [WP[id], ...more.map((w, k) => stoneAt(w, k + 1))];
+    m.marks.unshift(...(m.stones || [WP[id]]).map((w) => ({ x: w.x, y: w.y, kind: "waypoint" })));
   }
+  // wind shrines (질주의 바람): object "/" on each tile
+  const sh = (Array.isArray(d.shrines) ? d.shrines : []).filter((w) => Array.isArray(w) && xyOk(m, w[0], w[1])).slice(0, 8);
+  if (sh.length) m.shrines = sh.map(([x, y]) => { m.o[y][x] = "/"; return [x, y]; });
   // a hunting ground's field boss: called out by kills, like every generated one
   if (!m.safe && d.boss && typeof d.boss.k === "string" && Object.hasOwn(MOBS, d.boss.k)) {
     FIELD_BOSS[id] = d.boss.k;
@@ -3087,7 +3367,8 @@ function finishMap(m) {
  * chance, the box they stand in, clipped to the cell); every old spawn box is shared out over the
  * cells it covers by their walkable tiles. `fixed` are the ones that never sleep (chests, bosses,
  * guardians and other placed elites), `open` the walkable tiles per cell. A generator may set
- * `m.zone` (a Uint8Array, one zone per tile) first; without one every quota is zone 1.
+ * `m.zone` (a Uint8Array, one zone per tile) first; a quota takes its spawn's own `zone` (zoneSpawns),
+ * else the zone at its box's centre; without a zone map every quota is zone 1.
  */
 function buildCells(m) {
   const cw = Math.ceil(m.w / CELL), ch = Math.ceil(m.h / CELL), W = m.w;
@@ -3112,7 +3393,7 @@ function buildCells(m) {
     for (let j = 0; left > 0; j++, left--) got[order[j % order.length]]++;
     parts.forEach((p, j) => {
       if (!got[j]) return;
-      const z = zone ? zone[Math.floor((p.r[1] + p.r[3]) / 2) * W + Math.floor((p.r[0] + p.r[2]) / 2)] : 1;
+      const z = sp.zone !== undefined ? sp.zone : zone ? zone[Math.floor((p.r[1] + p.r[3]) / 2) * W + Math.floor((p.r[0] + p.r[2]) / 2)] : 1;
       spawns[p.i].push({ k: sp.k, n: got[j], ep: sp.elite !== undefined ? sp.elite : 0.08, r: p.r, zone: z });
     });
   }
@@ -3120,16 +3401,16 @@ function buildCells(m) {
 }
 const metaKinds = (m) => [...new Set(m.spawns.map((sp) => sp.k))];
 
-/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, kinds, eager }. */
+/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, wpn (how many stones), kinds, eager }. */
 const MAP_META = {};
 const EAGER = {};
 for (const id of [...BUILTIN_MAPS, ...Object.keys(FILES).filter((id) => !BUILTIN_MAPS.includes(id))]) {
   if (id === "town" || FILES[id]) {
     const m = (EAGER[id] = baseMap(id));
-    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], kinds: metaKinds(m), eager: true };
+    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, kinds: metaKinds(m), eager: true };
   } else {
     const g = GEN[id], c = g.cfg();
-    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, kinds: genKinds(id), eager: false };
+    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, kinds: genKinds(id), eager: false };
   }
 }
 /** Built maps by id. */
@@ -3317,11 +3598,15 @@ function migrate(ch) {
   ch.fish = ch.fish | 0;
   // the long game: waypoints, places seen, achievements, a title, counters, dailies, first steps
   // (v9: { mapId: bitmask of its stones }; before, a list of maps, each meaning its one stone)
+  // (a mask keeps only the stones the map has: a 4x ground has MAP_META.wpn of them)
   const wp = {};
   if (Array.isArray(ch.wp)) { for (const id of ch.wp) if (hasWp(id)) wp[id] = 1; }
-  else if (isObj(ch.wp)) for (const id of Object.keys(ch.wp)) { const k = ch.wp[id] & WP_MASK; if (k && hasWp(id)) wp[id] = k; }
+  else if (isObj(ch.wp)) for (const id of Object.keys(ch.wp)) { const k = ch.wp[id] & WP_MASK & ((1 << (hasWp(id) ? MAP_META[id].wpn || 1 : 0)) - 1); if (k) wp[id] = k; }
   wp.town = (wp.town | 0) | 1;
   ch.wp = wp;
+  // a place inside the map the sheet names (maps change size; addPlayer then finds open ground)
+  const mm = typeof ch.map === "string" && Object.hasOwn(MAP_META, ch.map) ? MAP_META[ch.map] : null;
+  if (mm) { ch.x = clamp(Number(ch.x) || 0, 0, mm.w * T - 1); ch.y = clamp(Number(ch.y) || 0, 0, mm.h * T - 1); }
   ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => typeof id === "string" && Object.hasOwn(MAP_META, id));
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
   ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
@@ -3457,7 +3742,7 @@ function stats(p) {
     xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1,
-    spd: c.spd0 * (p.spdBuff > now ? 1.4 : 1) * (p.slowed > now && !(p.giant > now) ? SLOW : 1), spd0: c.spd0,
+    spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.slowed > now && !(p.giant > now) ? SLOW : 1), spd0: c.spd0,
   };
 }
 
@@ -3699,7 +3984,12 @@ export function addPlayer(S, pid, ch) {
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, grit: 0, gritAt: 0, focus: 0, focusAt: 0, sword: null, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
-  if (!canStand(mapOf(p.map), p.x, p.y)) { p.map = START.map; p.x = START.x; p.y = START.y; }
+  // a place that changed under their feet (the hunting grounds grew): the way in of that same ground
+  const here = mapOf(p.map);
+  if (!(p.x >= 0 && p.y >= 0) || !canStand(here, p.x, p.y) || !here.reach[Math.floor(p.y / T) * here.w + Math.floor(p.x / T)]) {
+    p.x = here.entry[0] * T + 8; p.y = here.entry[1] * T + 10;
+    if (!here.safe) toast(p, "지형이 넓어져 입구로 이동했습니다.");
+  }
   const st = stats(p);
   p.hp = ch.hp > 0 ? Math.min(ch.hp, st.mhp) : st.mhp;
   p.mp = ch.mp >= 0 ? Math.min(ch.mp, st.mmp) : st.mmp;
@@ -5005,19 +5295,21 @@ const dirtyAll = (S) => { for (const pid of Object.keys(S.players)) S.players[pi
 
 // ── waypoints and the return scroll
 const WP_R = 40, RECALL_MS = 2000, WARP_CALM = 3000;
-/** The waypoint stone of the player's map, if they stand beside it. */
+/** The waypoint stone of the player's map they stand beside (a big ground has several: its `i` says which), or null. */
 function wpNear(p) {
-  const w = WP[p.map];
-  return w && dist(p.x, p.y, w.x * T + 8, w.y * T + 10) <= WP_R ? w : null;
+  const m = mapOfS(p.S, p.map);
+  if (!m) return null;
+  for (const w of stonesOf(m)) if (dist(p.x, p.y, w.x * T + 8, w.y * T + 10) <= WP_R) return w;
+  return null;
 }
 /** Waking the stone you stand beside, and noting the maps you have walked. */
 function explore(S, p) {
   const ch = p.ch;
   if (!ch.seen.includes(p.map)) { ch.seen.push(p.map); checkAch(S, p); }
-  const w = wpNear(p);
-  if (w && !wpWoken(ch, p.map)) {
-    ch.wp[p.map] = (ch.wp[p.map] | 0) | 1;
-    toast(p, `[${mapOfS(p.S, p.map).name}] 이동의 돌을 깨웠습니다. 다른 이동의 돌에서 이곳으로 올 수 있습니다.`);
+  const w = wpNear(p), i = w ? w.i || 0 : 0;
+  if (w && !wpWoken(ch, p.map, i)) {
+    ch.wp[p.map] = (ch.wp[p.map] | 0) | (1 << i);
+    toast(p, `[${MAP_META[p.map] ? stoneName(p.map, i) : mapOfS(p.S, p.map).name}] 이동의 돌을 깨웠습니다. 다른 이동의 돌에서 이곳으로 올 수 있습니다.`);
     S.maps[p.map].ev.push(["wp", p.eid, 2]);
     p.dirty = true;
     checkAch(S, p);
@@ -5932,10 +6224,13 @@ export function validateAction(S, pid, a) {
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
     case "warp": {
-      if (!hasWp(a.to)) return bad("그곳에는 이동의 돌이 없습니다");
-      if (!wpNear(p)) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
-      if (!wpWoken(ch, a.to)) return bad("아직 깨우지 않은 이동의 돌입니다");
-      if (a.to === p.map) return bad("이미 이곳에 있습니다");
+      // a big ground has several stones: `i` picks one (0, the first, when left out)
+      const i = a.i === undefined ? 0 : a.i;
+      if (!hasWp(a.to) || !Number.isInteger(i) || i < 0 || i >= MAP_META[a.to].wpn) return bad("그곳에는 이동의 돌이 없습니다");
+      const at = wpNear(p);
+      if (!at) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
+      if (!wpWoken(ch, a.to, i)) return bad("아직 깨우지 않은 이동의 돌입니다");
+      if (a.to === p.map && i === (at.i || 0)) return bad("이미 이곳에 있습니다");
       if (now - p.hitAt < WARP_CALM) return bad("전투 중에는 이동할 수 없습니다");
       return OK;
     }
@@ -6621,11 +6916,13 @@ export function applyAction(S, pid, a) {
     }
     case "tut": tutStep(S, p, a.s); break;
     case "warp": {
-      const w = wpOf(a.to);
+      const i = a.i || 0, w = stonesOf(mapOf(a.to))[i] || wpOf(a.to);
       S.maps[p.map].ev.push(["wp", p.eid, 0]);
-      changeMap(S, p, a.to, w.ax * T + 8, w.ay * T + 10);
+      // to another stone of the same ground: a step, not a journey (the map is not sent again)
+      if (a.to === p.map) { dropAggro(S, p); p.x = w.ax * T + 8; p.y = w.ay * T + 10; p.fix = true; }
+      else changeMap(S, p, a.to, w.ax * T + 8, w.ay * T + 10);
       S.maps[a.to].ev.push(["wp", p.eid, 1]);
-      toast(p, `[${MAP_META[a.to].name}]의 이동의 돌로 건너왔습니다.`);
+      toast(p, `[${stoneName(a.to, i)}]의 이동의 돌로 건너왔습니다.`);
       p.dirty = true;
       break;
     }
@@ -6890,12 +7187,15 @@ function tickMob(S, m, rt, mob, dt) {
 // wake and fill out of sight; far ones sleep and let their calm monsters go. Chests, bosses,
 // guardians and event monsters are not in cells and never sleep.
 
-/** A tile in box r that is walkable and at least SPAWN_MIN_D tiles from every one of `pts` (tile coordinates), or null. */
-function placeAway(S, m, r, pts) {
-  const [x0, y0, x1, y1] = r, d2 = SPAWN_MIN_D * SPAWN_MIN_D;
+/**
+ * A tile in box r that is walkable and at least SPAWN_MIN_D tiles from every one of `pts` (tile
+ * coordinates), or null. On a zoned map (33-maps-zones.js) only a tile of zone `z` will do.
+ */
+function placeAway(S, m, r, pts, z) {
+  const [x0, y0, x1, y1] = r, d2 = SPAWN_MIN_D * SPAWN_MIN_D, zone = m.zone && z !== undefined ? m.zone : null;
   for (let i = 0; i < 24; i++) {
     const tx = ri(S, x0, x1), ty = ri(S, y0, y1);
-    if (!m.reach[ty * m.w + tx]) continue;
+    if (!m.reach[ty * m.w + tx] || (zone && zone[ty * m.w + tx] !== z)) continue;
     let ok = true;
     for (const [px, py] of pts) if ((tx + 0.5 - px) ** 2 + (ty + 0.5 - py) ** 2 < d2) { ok = false; break; }
     if (ok) return [tx, ty];
@@ -6990,7 +7290,7 @@ function cellPass(S, m, rt, pids) {
   const pts = here.map((p) => [p.x / T, p.y / T]);
   for (const c of order) for (const s of rt.slots[c]) {
     if (s.mob || now < s.due) continue;
-    const at = placeAway(S, m, s.q.r, pts);
+    const at = placeAway(S, m, s.q.r, pts, s.q.zone);
     if (!at) continue;
     const mob = newMob(S, s.q.k, s.q.r, { elite: s.q.ep });
     mob.x = mob.hx = at[0] * T + 8; mob.y = mob.hy = at[1] * T + 10;
@@ -7117,6 +7417,7 @@ export function tick(S, now) {
       }
     }
     if (p.recall && now >= p.recall.at && !p.dead) finishRecall(S, p);
+    windTouch(S, p, now);
     if (!p.dead) classTick(S, p, now);
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;
@@ -7181,7 +7482,9 @@ function selfPayload(p) {
     // then the scrolls being read: attack, defence, experience
     buffs: [Math.max(0, p.atkBuff - now), Math.max(0, p.spdBuff - now), Math.max(0, p.warm - now), p.food ? Math.max(0, p.food.until - now) : 0,
       Math.max(0, (p.slowed || 0) - now), p.burn ? Math.max(0, p.burn.until - now) : 0, p.poison ? Math.max(0, p.poison.until - now) : 0,
-      Math.max(0, ch.scr.atk - now), Math.max(0, ch.scr.def - now), Math.max(0, ch.scr.xp - now)],
+      Math.max(0, ch.scr.atk - now), Math.max(0, ch.scr.def - now), Math.max(0, ch.scr.xp - now),
+      // then 질주의 바람 (a wind shrine's push)
+      Math.max(0, (p.wind || 0) - now)],
     // skill levels and what the next level of each costs ({ gold, xp, lvl } or null at the top)
     skl: ch.skl, skc: SKILLS[ch.cls].map((sk, i) => (ch.skl[i] >= SK_MAX ? null : skillCost(sk, ch.skl[i]))),
     wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, sq: sqView(ch),
@@ -7301,7 +7604,8 @@ export function defs() {
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
     traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], skMax: SK_MAX, mech: { grit: GRIT_MAX, marks: MARK_MAX, focus: FOCUS_MAX, tip: TIP.at, tipMult: TIP.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, skStep: SK_STEP, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
-    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band })),
+    // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
+    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band, n: MAP_META[id].wpn || 1, names: STONE_NAMES[MAP_META[id].wpn || 1] || [] })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
     cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N,
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),

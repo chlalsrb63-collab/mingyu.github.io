@@ -502,11 +502,13 @@ export function applyAction(S, pid, a) {
     }
     case "tut": tutStep(S, p, a.s); break;
     case "warp": {
-      const w = wpOf(a.to);
+      const i = a.i || 0, w = stonesOf(mapOf(a.to))[i] || wpOf(a.to);
       S.maps[p.map].ev.push(["wp", p.eid, 0]);
-      changeMap(S, p, a.to, w.ax * T + 8, w.ay * T + 10);
+      // to another stone of the same ground: a step, not a journey (the map is not sent again)
+      if (a.to === p.map) { dropAggro(S, p); p.x = w.ax * T + 8; p.y = w.ay * T + 10; p.fix = true; }
+      else changeMap(S, p, a.to, w.ax * T + 8, w.ay * T + 10);
       S.maps[a.to].ev.push(["wp", p.eid, 1]);
-      toast(p, `[${MAP_META[a.to].name}]의 이동의 돌로 건너왔습니다.`);
+      toast(p, `[${stoneName(a.to, i)}]의 이동의 돌로 건너왔습니다.`);
       p.dirty = true;
       break;
     }

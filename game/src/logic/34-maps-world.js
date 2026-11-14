@@ -89,14 +89,16 @@ function buildTown() {
 const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
 /**
  * Every generated hunting ground: `make` the generator, `band` the level a character should
- * be to walk in (shown on every door that leads there), `cfg()` its settings; `theme` where the
+ * be to walk in (shown on every door that leads there), `stones` how many waypoint stones stand
+ * along its way on (MAP_META.wpn; the map tests hold the built map to it), `cfg()` its settings
+ * (sizes are 2× per side the first worlds': docs/design/scale-and-rift.md C.2); `theme` where the
  * generator sets one of its own, `kinds` monsters the generator places by itself, `after(m)`
  * a finishing touch, `npcs` the ids of the people it places.
  */
 const GEN = {
-  meadow: { make: wilds, band: [1, 7], cfg: () => ({
-    id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 76, h: 51, r: 9.6, warp: 9, wind: 0.55, loops: 0.12, merge: 0.32, cliff: 0.15, gap: 2,
-    ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 2, lakeR: 5, vaults: 3, ruins: 1, tpm: 15.5,
+  meadow: { make: wilds, band: [1, 7], stones: 3, cfg: () => ({
+    id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 152, h: 102, r: 9.6, warp: 9, wind: 0.55, loops: 0.12, merge: 0.32, cliff: 0.15, gap: 2,
+    ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 4, lakeR: 5, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
     mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "lambmaw", "eyecrow", "lambmaw", "eyecrow"], pondMob: "eyecrow", chest: "chest_meadow",
     vaultKinds: ["shrine", "circle", "bloom", "lookout", "cache", "menhir"], biomes: { plain: "plain" }, featureP: 0.6, features: ["pond", "boulders", "bigtree", "pen", "cairn", "logs", "stones"],
@@ -109,9 +111,9 @@ const GEN = {
       : b === "tallgrass" ? (h < 0.012 ? "T" : h < 0.02 ? "B" : null)
       : h < 0.018 ? "T" : h < 0.036 ? "B" : h < 0.043 ? "R" : h < 0.047 ? "u" : h < 0.05 ? "l" : null),
   }) },
-  forest: { make: wilds, band: [8, 13], cfg: () => ({
-    id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 76, h: 51, r: 8.2, warp: 10, wind: 0.6, loops: 0.1, merge: 0.18, cliff: 0.22, gap: 2,
-    ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 1, lakeR: 4, vaults: 3, ruins: 2, tpm: 15.5, stair: "crypt",
+  forest: { make: wilds, band: [8, 13], stones: 3, cfg: () => ({
+    id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 152, h: 102, r: 8.2, warp: 10, wind: 0.6, loops: 0.1, merge: 0.18, cliff: 0.22, gap: 2,
+    ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 2, lakeR: 4, vaults: 9, ruins: 5, tpm: 15.5, stair: "crypt",
     walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
     mobs: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
     vaultKinds: ["deadgrove", "ring", "shrine", "lookout", "menhir", "cache"], biomes: { plain: "glade" }, featureP: 0.6, features: ["pond", "boulders", "ring", "dead", "logs", "stones", "cairn"],
@@ -124,31 +126,31 @@ const GEN = {
       : b === "fern" ? (h < 0.04 ? "P" : h < 0.055 ? "B" : h < 0.065 ? "R" : null)
       : (n1 > 0.55 ? h < 0.24 : h < 0.09) ? "P" : h < 0.1 ? "B" : h < 0.107 ? "l" : h < 0.113 ? "u" : null),
   }) },
-  cave: { make: cavern, band: [24, 32], theme: "cave", kinds: ["boss"], cfg: () => ({
-    id: "cave", name: "수정 동굴", seed: 44093, w: 66, h: 50, r: 8, vaults: 4, tpm: 16, chest: "chest_cave",
+  cave: { make: cavern, band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
+    id: "cave", name: "수정 동굴", seed: 44093, w: 132, h: 100, r: 8, vaults: 10, tpm: 16, chest: "chest_cave",
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
-  city: { make: metro, band: [14, 21], theme: "city", cfg: () => ({
-    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 76, h: 51, gate: "east", gateY: 0.5, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
+  city: { make: metro, band: [14, 21], stones: 3, theme: "city", cfg: () => ({
+    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 152, h: 102, gate: "east", gateY: 0.5, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
     mobs: ["pigeonmass", "gutfrog_poison", "doghead", "squidrat", "catsplit", "fishwalker"], chest: "chest_city",
   }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
-  crypt: { make: catacomb, band: [12, 17], cfg: () => ({
-    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 66, h: 51, min: 9, minH: 8, leaf: 150, entryY: 0.8, wind: 0.6, loops: 0.06, out: true, n: 3,
+  crypt: { make: catacomb, band: [12, 17], stones: 3, cfg: () => ({
+    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 9, minH: 8, leaf: 300, entryY: 0.8, wind: 0.6, loops: 0.06, out: true, n: 3,
     shapes: ["plain", "chapel", "cross", "octagon", "ell", "chapel", "cross"], styles: ["pillars", "pool", "rows", "rubble", "shrine", "plain", "plain"], vaultName: "ossuary",
     mobs: ["ratking", "twinhare_bone", "bonehound", "toadbrood", "batcluster"], guard: "bonehound", chest: "chest_crypt",
     dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4" },
   }) },
-  sewer: { make: sewers, band: [22, 27], cfg: () => ({
-    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 76, h: 51, r: 10.5, wind: 0.5, loops: 0.16, n: 3,
+  sewer: { make: sewers, band: [22, 27], stones: 3, cfg: () => ({
+    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 10.5, wind: 0.5, loops: 0.16, n: 3,
     mobs: ["leechmaw", "ratking_bile", "gatorhalf", "crabskull", "eelknot"], guard: "gatorhalf", chest: "chest_sewer",
   }) },
   // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
   // wood to the chasm that swallowed the capital (a ledge down into the abyss, behind the mother). Crimson maple
   // groves on red litter, golden stands on gold, pine on the heights, clearings, and hollows where the blight fruits
-  maple: { make: wilds, band: [40, 46], npcs: [["hermit", "은자 바스"]], after: hermitAt, cfg: () => ({
-    id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 80, h: 56, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
-    ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 1, lakeR: 4, vaults: 4, ruins: 2, tpm: 15,
+  maple: { make: wilds, band: [40, 46], stones: 3, npcs: [["hermit", "은자 바스"]], after: hermitAt, cfg: () => ({
+    id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 160, h: 112, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
+    ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 2, lakeR: 4, vaults: 10, ruins: 4, tpm: 15,
     walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3]], exit: "east",
     mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose"], pondMob: null, chest: "chest_maple",
     campPiece: "cottage", lair: { piece: "chapel", guard: "rotstag", pack: "rotstag" },
@@ -167,8 +169,8 @@ const GEN = {
       : b === "hollow" ? (h < 0.03 ? "Y" : h < 0.045 ? "A" : h < 0.055 ? "T" : h < 0.06 ? "u" : null)
       : h < 0.03 ? "T" : h < 0.038 ? "u" : h < 0.046 ? "B" : h < 0.05 ? "l" : null),
   }) },
-  abyss: { make: abyssal, band: [32, 40], cfg: () => ({
-    id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 76, h: 60, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
+  abyss: { make: abyssal, band: [32, 40], stones: 3, cfg: () => ({
+    id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 152, h: 120, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
     mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss",
   }) },
 };
@@ -206,43 +208,29 @@ function gateDoors(m) {
     if (both && b === m.id) add(gb, a, ga);
   }
 }
-/**
- * The hunt wants a crowd: every hunting ground holds more than its layout asked for, as many
- * as the ground has room for at the density each kind of ground is meant to have (chests,
- * guardians and bosses stay as placed).
- */
-function crowdUp(m) {
-  const grows = (sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el;
-  let base = 0, fixed = 0;
-  for (const sp of m.spawns) { if (grows(sp)) base += sp.n; else fixed += sp.n; }
-  let open = 0;
-  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x])) open++;
-  const k = Math.min(CROWD_MAX - fixed, open / DENSITY[m.id]) / base;
-  let carry = 0;
-  for (const sp of m.spawns) {
-    if (!grows(sp)) continue;
-    const want = sp.n * k + carry, n = Math.max(sp.n, Math.round(want));
-    carry = want - n;
-    sp.n = n;
-  }
-}
 /** A door's label: where it leads and how strong you should be to go there (from MAP_META, nothing built). */
 const labelOf = (id) => doorName(MAP_META[id]);
 /**
  * One generated map, built from its settings (rows still arrays; 36-custom-maps.js finalizes it):
- * terrain, doors, the crowd, then the waypoint stone and signposts along its routes.
+ * terrain, doors, its zones and who lives in each, then the waypoint stones and signposts along its routes.
  */
 function genMap(id) {
   const g = GEN[id];
   FIRES[id] = [];
-  const m = g.make(g.cfg());
+  const cfg = g.cfg();
+  const m = g.make(cfg);
   if (g.after) g.after(m);
   m.band = g.band.slice();
   gateDoors(m);
-  crowdUp(m);
+  // zones by how far in, then who lives in each (33-maps-zones.js)
+  zoneMap(m);
+  zoneSpawns(m, cfg);
+  m.stonesWant = g.stones || 1;
   const lo = m.band[0];
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
   markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
+  // a pocket is the ground still open in it once the signs and stones stand
+  for (const pk of m.pockets) pk.tiles = pk.tiles.filter((i) => m.o[Math.floor(i / m.w)][i % m.w] === " ");
   return m;
 }
 /**
@@ -357,12 +345,50 @@ function markRoutes(m, labelOf, deeper) {
   };
   const forks = (i) => { const x = i % W, y = (i - x) / W; return [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => open(x + dx, y + dy)).length; };
   // the waypoint, a dozen steps along the way on
+  let k0 = -1;
   for (let k = Math.min(12, C.length - 2); k < Math.min(C.length - 1, 48); k++) {
     const at = place(C[k], "Q");
     if (!at) continue;
-    WP[m.id] = { x: at[0], y: at[1], ax: C[k] % W, ay: Math.floor(C[k] / W) };
+    WP[m.id] = { x: at[0], y: at[1], ax: C[k] % W, ay: Math.floor(C[k] / W), i: 0 };
     m.marks.push({ x: at[0], y: at[1], kind: "waypoint" });
+    k0 = k;
     break;
+  }
+  if (m.zone && WP[m.id]) {
+    // a big ground has more stones along the way on (a third and two thirds in, or halfway), each with
+    // a wind shrine a few steps further on (33-maps-zones.js); a campfire burns in the plaza by the first
+    m.stones = [WP[m.id]];
+    m.shrines = [];
+    const fr = m.stonesWant >= 3 ? [1 / 3, 2 / 3] : m.stonesWant === 2 ? [0.5] : [];
+    for (const f of fr) {
+      const t = Math.round(C.length * f);
+      for (let s = 0; s <= 60; s++) {
+        const j = s % 2 ? t + (s + 1) / 2 : t - s / 2;
+        if (j <= k0 + 10 || j >= C.length - 3) continue;
+        const at = place(C[j], "Q");
+        if (!at) continue;
+        const st = { x: at[0], y: at[1], ax: C[j] % W, ay: Math.floor(C[j] / W), i: m.stones.length };
+        m.stones.push(st);
+        m.marks.push({ x: at[0], y: at[1], kind: "waypoint" });
+        for (let q = j + 3; q < Math.min(C.length - 2, j + 16); q++) { const sh = place(C[q], "/"); if (sh) { m.shrines.push(sh); break; } }
+        break;
+      }
+    }
+    // the plaza's fire: beside the way, a few steps past the stone, with room round it for the stumps
+    const roomy = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!open(x + dx, y + dy)) return false; return true; };
+    let lit = false;
+    const ring = [];
+    for (let r = 2; r <= 5; r++) for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [-1, 1], [1, 1], [-1, -1]]) ring.push([dx * r, dy * r]);
+    for (let k = Math.max(1, k0 - 8); k < Math.min(C.length - 1, k0 + 30) && !lit; k++) {
+      const cx = C[k] % W, cy = Math.floor(C[k] / W);
+      for (const [dx, dy] of ring) {
+        const x = cx + dx, y = cy + dy, i = y * W + x;
+        if (!inMap(m, x, y) || m.zone[i] !== Z_SAFE || base.d[i] < 0 || onPath.has(i) || !roomy(x, y) || busy(x, y)) continue;
+        FIRES[m.id].push([x, y]);
+        lit = true;
+        break;
+      }
+    }
   }
   // signposts at junctions along the way on
   for (const frac of [0.33, 0.62, 0.86]) {
@@ -387,6 +413,26 @@ function markRoutes(m, labelOf, deeper) {
       m.marks.push({ x: at[0], y: at[1], kind: "sign", label: `${d.label} ${arrow(P[a], P[Math.min(a + 8, P.length - 1)])}`, to: d.to || undefined });
       break;
     }
+  }
+  if (!m.zone) return;
+  // where the way on crosses into the elite ground, a warning; at the mouth of each hidden pocket, a hint
+  const into = C.findIndex((i) => m.zone[i] === Z_ELITE);
+  if (into > 0) {
+    for (let s = 0; s <= 16; s++) {
+      const j = into - 2 - s;
+      if (j < 1) break;
+      const at = place(C[j], "G");
+      if (!at) continue;
+      m.marks.push({ x: at[0], y: at[1], kind: "sign", label: `엘리트 지대 · 정예 출몰 ${arrow(C[j], C[Math.min(j + 8, C.length - 1)])}` });
+      break;
+    }
+  }
+  for (const pk of m.pockets || []) {
+    const [mx, my] = pk.mouth, [cx, cy] = pk.chests[0];
+    const at = place(my * W + mx, "G");
+    if (!at) continue;
+    const o = ((Math.round(Math.atan2(cy - my, cx - mx) / (Math.PI / 4)) % 8) + 8) % 8;
+    m.marks.push({ x: at[0], y: at[1], kind: "sign", label: `수상한 샛길 ${["→", "↘", "↓", "↙", "←", "↖", "↑", "↗"][o]}` });
   }
 }
 
@@ -420,6 +466,8 @@ function mapPayload(m) {
     npcs: m.npcs, style: m.style || null,
     // fires that always burn, with the stumps around them ({ x, y, seats: [[x, y]…] }, world pixels)
     camps: campsOf(m),
+    // a zoned ground's zones by 4 × 4 block for the minimap (0 safe, 1 normal, 2 elite, 3 hidden, - none)
+    zq: m.zq || null,
   };
 }
 

@@ -89,15 +89,23 @@ function fromEditor(d, id) {
     return out;
   });
   delete WP[id];
-  if (Array.isArray(d.waypoint) && xyOk(m, d.waypoint[0], d.waypoint[1])) {
-    // [x, y] the stone, and optionally [.., ax, ay] the tile travellers arrive on beside it
-    const [x, y, ax, ay] = d.waypoint;
+  /** [x, y] a stone, and optionally [.., ax, ay] the tile travellers arrive on beside it. */
+  const stoneAt = ([x, y, ax, ay], i) => {
     m.o[y][x] = "Q";
     const side = Number.isInteger(ax) && Number.isInteger(ay) && Math.abs(ax - x) <= 1 && Math.abs(ay - y) <= 1 && openTile(m, ax, ay) ? [ax - x, ay - y]
       : [[0, 1], [1, 0], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].find(([dx, dy]) => openTile(m, x + dx, y + dy)) || [0, 1];
-    WP[id] = { x, y, ax: x + side[0], ay: y + side[1] };
-    m.marks.unshift({ x, y, kind: "waypoint" });
+    return { x, y, ax: x + side[0], ay: y + side[1], i };
+  };
+  if (Array.isArray(d.waypoint) && xyOk(m, d.waypoint[0], d.waypoint[1])) {
+    WP[id] = stoneAt(d.waypoint, 0);
+    // more stones along the way (a big generated ground exported for the editor has three)
+    const more = (Array.isArray(d.stones) ? d.stones : []).filter((w) => Array.isArray(w) && xyOk(m, w[0], w[1])).slice(0, 3);
+    if (more.length) m.stones = [WP[id], ...more.map((w, k) => stoneAt(w, k + 1))];
+    m.marks.unshift(...(m.stones || [WP[id]]).map((w) => ({ x: w.x, y: w.y, kind: "waypoint" })));
   }
+  // wind shrines (질주의 바람): object "/" on each tile
+  const sh = (Array.isArray(d.shrines) ? d.shrines : []).filter((w) => Array.isArray(w) && xyOk(m, w[0], w[1])).slice(0, 8);
+  if (sh.length) m.shrines = sh.map(([x, y]) => { m.o[y][x] = "/"; return [x, y]; });
   // a hunting ground's field boss: called out by kills, like every generated one
   if (!m.safe && d.boss && typeof d.boss.k === "string" && Object.hasOwn(MOBS, d.boss.k)) {
     FIELD_BOSS[id] = d.boss.k;
@@ -178,7 +186,8 @@ function finishMap(m) {
  * chance, the box they stand in, clipped to the cell); every old spawn box is shared out over the
  * cells it covers by their walkable tiles. `fixed` are the ones that never sleep (chests, bosses,
  * guardians and other placed elites), `open` the walkable tiles per cell. A generator may set
- * `m.zone` (a Uint8Array, one zone per tile) first; without one every quota is zone 1.
+ * `m.zone` (a Uint8Array, one zone per tile) first; a quota takes its spawn's own `zone` (zoneSpawns),
+ * else the zone at its box's centre; without a zone map every quota is zone 1.
  */
 function buildCells(m) {
   const cw = Math.ceil(m.w / CELL), ch = Math.ceil(m.h / CELL), W = m.w;
@@ -203,7 +212,7 @@ function buildCells(m) {
     for (let j = 0; left > 0; j++, left--) got[order[j % order.length]]++;
     parts.forEach((p, j) => {
       if (!got[j]) return;
-      const z = zone ? zone[Math.floor((p.r[1] + p.r[3]) / 2) * W + Math.floor((p.r[0] + p.r[2]) / 2)] : 1;
+      const z = sp.zone !== undefined ? sp.zone : zone ? zone[Math.floor((p.r[1] + p.r[3]) / 2) * W + Math.floor((p.r[0] + p.r[2]) / 2)] : 1;
       spawns[p.i].push({ k: sp.k, n: got[j], ep: sp.elite !== undefined ? sp.elite : 0.08, r: p.r, zone: z });
     });
   }
@@ -211,16 +220,16 @@ function buildCells(m) {
 }
 const metaKinds = (m) => [...new Set(m.spawns.map((sp) => sp.k))];
 
-/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, kinds, eager }. */
+/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, wpn (how many stones), kinds, eager }. */
 const MAP_META = {};
 const EAGER = {};
 for (const id of [...BUILTIN_MAPS, ...Object.keys(FILES).filter((id) => !BUILTIN_MAPS.includes(id))]) {
   if (id === "town" || FILES[id]) {
     const m = (EAGER[id] = baseMap(id));
-    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], kinds: metaKinds(m), eager: true };
+    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, kinds: metaKinds(m), eager: true };
   } else {
     const g = GEN[id], c = g.cfg();
-    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, kinds: genKinds(id), eager: false };
+    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, kinds: genKinds(id), eager: false };
   }
 }
 /** Built maps by id. */

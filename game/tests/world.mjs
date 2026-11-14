@@ -80,14 +80,19 @@ for (const id of ["crypt", "sewer", "abyss"]) {
   const { m } = maps[id], rt = L.runtime(S, id), [ex, ey] = L.atlas().maps[id].entry, dist = flood(m, ex, ey);
   assert.ok(["crypt", "sewer", "abyss"].includes(m.theme), id + " names its theme");
   const at = (o) => dist[Math.floor(o.y / 16) * m.w + Math.floor(o.x / 16)];
-  const kinds = D.maps.find((o) => o.id === id).mobs.filter((k) => !D.mobs[k].chest && !D.mobs[k].boss).sort((a, b) => D.mobs[a].lv - D.mobs[b].lv);
-  const depth = (k) => { const list = rt.mobs.filter((o) => o.k === k && o.fix !== 2).map(at).filter((d) => d >= 0); return list.reduce((a, b) => a + b, 0) / list.length; };
+  // who lives where is read from the map's spawn quotas (only the cells near a player are ever awake)
+  const M = L.atlas().maps[id], qd = (sp) => dist[Math.floor((sp.r[1] + sp.r[3]) / 2) * m.w + Math.floor((sp.r[0] + sp.r[2]) / 2)];
+  const ord = M.spawns.filter((sp) => !D.mobs[sp.k].chest && !D.mobs[sp.k].boss && !sp.el && qd(sp) >= 0);
+  const kinds = [...new Set(ord.map((sp) => sp.k))].sort((a, b) => D.mobs[a].lv - D.mobs[b].lv);
+  const depth = (k) => { const l = ord.filter((sp) => sp.k === k); return l.reduce((a, sp) => a + qd(sp) * sp.n, 0) / l.reduce((a, sp) => a + sp.n, 0); };
   assert.ok(depth(kinds[0]) < depth(kinds[kinds.length - 1]), `${id}: the weakest kind lives nearer the door than the strongest (${depth(kinds[0]).toFixed(0)} vs ${depth(kinds[kinds.length - 1]).toFixed(0)})`);
-  // near the door it is quiet; far in, crowded
-  const all = rt.mobs.filter((o) => !D.mobs[o.k].chest).map(at).filter((d) => d >= 0);
-  const far = Math.max(...all);
-  const nearN = all.filter((d) => d < far * 0.25).length, deepN = all.filter((d) => d > far * 0.6).length;
-  assert.ok(deepN > nearN * 2, `${id}: the depths are more crowded than the entrance (${nearN} near, ${deepN} deep)`);
+  // near the door it is quiet; far in, the elites gather
+  let far = 0;
+  for (let i = 0; i < dist.length; i++) if (dist[i] > far) far = dist[i];
+  const rate = (f) => { const l = ord.filter(f); return l.reduce((a, sp) => a + sp.n * (sp.elite || 0), 0) / l.reduce((a, sp) => a + sp.n, 0); };
+  assert.equal(ord.filter((sp) => qd(sp) < far * 0.04).length, 0, `${id}: nobody lives right by the door`);
+  const nearE = rate((sp) => qd(sp) < far * 0.3), deepE = rate((sp) => qd(sp) > far * 0.6);
+  assert.ok(deepE > nearE * 2, `${id}: the depths breed elites far more often than the way in (${nearE.toFixed(2)} near, ${deepE.toFixed(2)} deep)`);
   assert.ok(rt.mobs.length <= 230, `${id}: ${rt.mobs.length} monsters`);
   assert.ok(rt.fires.length >= 1, id + " has a camp");
   const fire = rt.fires[0], fd = dist[Math.floor(fire.y / 16) * m.w + Math.floor(fire.x / 16)];
