@@ -8,6 +8,9 @@ move or split a file, update the file map here in the same commit.
 `docs/LOCAL_SETUP.md` §6), ask the code graph first — `search_graph`, `get_file_outline`,
 `get_code_snippet`, `trace_path`, `get_architecture`, `search_code` — instead of opening files;
 re-index after big merges (`index_repository` with `async: true`). Otherwise follow rule #1.
+Same idea with **graphify** (owner's PC, `docs/LOCAL_SETUP.md` §7): if `game/graphify-out/graph.json`
+exists, use `graphify query "<question>" --graph game/graphify-out/graph.json`, `graphify explain "<symbol>"`,
+`graphify affected "<symbol>"` before opening files; refresh with `graphify update game` (no LLM, ~15 s).
 
 **Token rule #1: do not re-explore.** Use the file map (§3) to open the one file you need, then
 `grep -n` for the banner or function named there instead of reading big files top to bottom.

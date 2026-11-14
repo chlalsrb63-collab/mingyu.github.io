@@ -210,3 +210,25 @@ AI가 파일을 통째로 읽지 않고 "코드 지도(그래프)"에 물어보�
 주의: 설치 프로그램이 각 AI의 **전역 설정**(사용자 폴더의 Codex/Gemini/Claude 설정)에 연결 정보와
 안내를 추가합니다. 이 저장소의 `AGENTS.md`·`GEMINI.md`·`.gemini/settings.json`은 건드리지 않는지
 설치 후 `git status`로 확인하세요 (바뀌었다면 그 변경은 커밋하지 말고 되돌리면 됩니다).
+
+
+## 7. (선택) graphify — 코드 지식 그래프
+
+코드를 "지식 그래프"로 만들어 AI가 파일을 덜 읽게 하는 또 하나의 도구입니다 (https://github.com/Graphify-Labs/graphify).
+AI 호출 없이 몇 초 만에 만들어지고, 그래프는 `game/graphify-out/`에 생깁니다 (깃에는 올리지 않음).
+
+```powershell
+# uv가 없으면 먼저:  winget install astral-sh.uv   (또는 https://docs.astral.sh/uv/)
+uv tool install graphifyy                      # 패키지 이름은 y가 두 개
+cd "C:\Users\mankyu\Desktop\Tales Tales"
+graphify update game                           # 코드 그래프 만들기 (~15초, 비용 없음)
+graphify install --platform claude             # (선택) Claude Code에 /graphify 스킬 추가
+graphify install --platform codex              # (선택) Codex에도
+```
+
+- 질문 예: `graphify query "몬스터가 맞을 때 무슨 일이 일어나?" --graph game/graphify-out/graph.json`,
+  `graphify affected "hurtMob"` (이 함수를 바꾸면 영향받는 곳), `graphify explain "cellPass"`.
+- `game/graphify-out/graph.html`을 브라우저로 열면 코드 구조를 그림으로 볼 수 있습니다.
+- 큰 작업을 합친 뒤에는 `graphify update game`으로 다시 만드세요. `AGENTS.md`에 "그래프가 있으면 먼저 물어보라"는
+  규칙이 들어 있어 세 AI가 알아서 씁니다.
+- `graphify install`은 각 AI의 설정 폴더에 스킬을 복사합니다. 설치 후 `git status`로 이 저장소 파일이 바뀌지 않았는지 확인하세요.

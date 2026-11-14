@@ -14,3 +14,5 @@ asset/reference/*
 !asset/reference/README.md
 # agent worktrees (isolated working copies)
 .claude/worktrees/
+# graphify code graph (local, rebuilt with `graphify update game`)
+graphify-out/
