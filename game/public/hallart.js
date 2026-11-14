@@ -1,8 +1,9 @@
 /**
  * The brick halls' set dressing (maps-v2 A.4, table C), from the map payload: arched doorways you walk under
- * (`m.arches` [x, y, 1 = the way runs east–west]) and wall torches in the alcoves (`m.torches` [x, y]).
+ * (`m.arches` [x, y, 1 = the way runs east–west], and for a way wider than three tiles its span [.., lo, hi]: the
+ * tiles across from (x, y)) and wall torches in the alcoves (`m.torches` [x, y]).
  *
- * An arch is a slab of brick standing across a 3-wide way: two piers at the rock on either side, a segmental
+ * An arch is a slab of brick standing across a way three to six tiles wide: two piers at the rock on either side, a segmental
  * arch between them (crown 28 px up, so a hero walks under it), its top a little above the walls. It is cut
  * into 4-px strips, each sorted at the depth of the floor under it, so someone walking through is drawn
  * behind the arch on the far side and in front of it on the near side.
@@ -22,14 +23,14 @@ const SKIN = {
   sewer: { b: ["#8a5a42", "#9c6a4e", "#74482f"], mortar: "#2e1e18", ring: ["#b08868", "#8e6a50"], key: "#c8a07a", top: "#a8806a", side: "#4e3226" },
 };
 
-const L = 48, PIER = 5, TOP = 34, THICK = 3;
-/** Height of the arch's underside at u along the span (piers solid to the top). */
-const under = (u) => (u < PIER || u > L - PIER ? TOP : 21 + 7 * Math.sqrt(Math.max(0, 1 - ((u - L / 2) / (L / 2 - PIER)) ** 2)));
+const PIER = 5, TOP = 34, THICK = 3;
+/** Height of the arch's underside at u along a span L px long (piers solid to the top). */
+const under = (u, L) => (u < PIER || u > L - PIER ? TOP : 21 + 7 * Math.sqrt(Math.max(0, 1 - ((u - L / 2) / (L / 2 - PIER)) ** 2)));
 
 const cache = new Map();
-/** One arch's sprite: `ew` 1 = the slab stands along y (plane x = const), 0 = along x. */
-function archSprite(theme, ew) {
-  const key = theme + ew;
+/** One arch's sprite, `n` tiles across: `ew` 1 = the slab stands along y (plane x = const), 0 = along x. */
+function archSprite(theme, ew, n = 3) {
+  const key = theme + ew + "/" + n, L = n * 16;
   if (cache.has(key)) return cache.get(key);
   const P = SKIN[theme] || SKIN.crypt, col = (h) => C(h);
   const brick = P.b.map(col), mortar = col(P.mortar), ring = P.ring.map(col), keyC = col(P.key), topC = col(P.top), side = col(P.side);
@@ -42,7 +43,7 @@ function archSprite(theme, ew) {
     buf.px(ox + A - B, oy + ((A + B) >> 1) - z, c);
   };
   for (let a = -THICK; a <= THICK; a++) for (let u = 0; u <= L; u++) {
-    const zi = Math.round(under(u));
+    const zi = Math.round(under(u, L));
     for (let z = u < PIER || u > L - PIER ? 0 : zi; z <= TOP; z++) {
       let c;
       if (z === TOP) c = (u + a) % 7 === 0 ? brick[2] : topC;
@@ -135,13 +136,13 @@ export function hallProps(m, theme) {
   }
   if (theme !== "crypt" && theme !== "sewer") return { statics: out, torchAt };
   const seen = new Set();
-  for (const [x, y, ew] of m.arches || []) {
-    const k = x + "," + y;
+  for (const [x, y, ew, lo = -1, hi = 1] of m.arches || []) {
+    const k = x + "," + y + "," + lo;
     if (seen.has(k)) continue;
     seen.add(k);
-    const sp = archSprite(theme, ew);
-    // texel origin of the span: ew → the plane x*16+8 across rows y−1…y+1; else the plane y*16+8 across x−1…x+1
-    const A0 = ew ? x * 16 + 8 : (x - 1) * 16, B0 = ew ? (y - 1) * 16 : y * 16 + 8;
+    const sp = archSprite(theme, ew, hi - lo + 1);
+    // texel origin of the span: ew → the plane x*16+8 across rows y+lo…y+hi; else the plane y*16+8 across x+lo…x+hi
+    const A0 = ew ? x * 16 + 8 : (x + lo) * 16, B0 = ew ? (y + lo) * 16 : y * 16 + 8;
     const [X0, Y0] = tI(A0 / 16, B0 / 16), dx = X0 - sp.ox, dy = Y0 - sp.oy;
     const st = { sp: sp.img, dx, dy, x: X0, y: Y0 + 16, d: Y0 + 8, glow: null, glint: -1, slices: [] };
     // each strip sorts at the floor under the slab's middle there

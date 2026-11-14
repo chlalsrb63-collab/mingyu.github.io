@@ -307,3 +307,67 @@ Left from table C: the 2 × 2 hut (no map marks one), tide pools and caravan ten
 foam line, heat shimmer / gulls, a worn centre strip on the asphalt (needs the road's direction), tufts on the oasis's
 green ring (details only run on the theme's base ground), minimap icons (the colours already separate sand /
 shallows / sea), BGM and the new monster species.
+
+## K. Dungeon widening as built
+
+Owner: "dungeon maps feel too cramped for a 4-player party — wider, close to the fields." New metric (`tests/mapflow.mjs
+roomy`): **party room** = share of the reachable ground lying where a 7 × 7 open square fits (four heroes and a pack);
+**route** = the widest k for which ground k wide (k × k squares overlapping step by step) joins the entry to every
+door, waypoint stone, camp and boss; **corridors** = the middle width (shorter open run) of the ground outside the
+party rooms. For scale: meadow 75 % open / 52 % party room, forest 73 % / 36 %.
+
+| map | open | rooms | party room | route | corridors (middle / narrow tenth) |
+| --- | --- | --- | --- | --- | --- |
+| crypt before | 48 % | rooms from 11 × 9; middle fighting area 140 tiles (14 × 10) | 12 % | 3 | 5 / 2 |
+| crypt after | 62 % | 26 halls: middle 15 × 22, smallest 16 × 11, nine ≥ 21 × 15 | 64 % | 5 | 4 / 1 |
+| sewer before | 45 % | plazas 13 × 9 – 15 × 11; middle area 93 tiles | 34 % | 3 | 6 / 3 |
+| sewer after | 60 % | 24 plazas: middle 21 × 15, smallest 17 × 13, fifteen 21 × 15 | 76 % | 5 | 5 / 3 |
+| abyss before | 36 % | islands ~7 × 9; middle area 49 tiles | 6 % | 1 | 5 / 2 |
+| abyss after | 59 % | 32 fighting areas: middle 217 tiles (~17 × 17), smallest 70 | 75 % | 5 | 5 / 2 |
+| cave before | 53 % | middle area 64 tiles (8 × 8) | 11 % | 3 | 5 / 2 |
+| cave after | 64 % | 21 fighting areas: middle 119 tiles, largest 774 | 52 % | 5 | 6 / 2 |
+
+Monsters follow the open ground (zoneSpawns: tiles / `DENSITY`), so density is unchanged (crypt 14.4 per 100 tiles
+before and after) and the totals rise with the floor: crypt 928 → 1197, sewer 967 → 1231, abyss 699 → 1297, cave
+623 → 753 (never more than `WAKE_MAX_MOBS` standing). Sizes, ids, gates, three stones, camps, bosses and guardians
+are as before; chests crypt 5 → 6, sewer 3 → 5, abyss 10 → 7, cave 2 → 4. Build: crypt ~50 ms, sewer ~30, cave ~95,
+abyss ~60–95 (bound 150).
+
+- **crypt** (`room: [15, 11]`, `ways: [5, 4, 3]`, cells ≥ 17 × 13, `leaf: 620`): a room fills its cell less one tile
+  of wall (never under 15 × 11, shrunk by at most a tile); chapels are squircles, crosses have broad arms; an ossuary is
+  a hall (up to 17 × 11) behind a 3-wide way. A corridor runs straight through its own two rooms and the wall between
+  them — a doorway 5 wide on the critical path, 4 elsewhere — instead of along the wall. Furniture keeps to the walls
+  (colonnade one tile off them, tomb rows down two sides, pool in a corner, rubble and loose props within two tiles
+  of a wall, pews only beside a 7-wide aisle), so the floor between is fighting room.
+- **sewer** (`plaza: true`, `r: 25`, `dead: 4`): junctions on a shaken grid (25 across, ~20 down, one in twelve left
+  out) instead of Poisson sites; plazas 17 × 13 to 21 × 15 with small chamfers; a channel tunnel is 5 walk + 2 sludge
+  + 5 walk, its bends dug square, footbridges 3 planks and more often; `loops: 0.55`, and the deepest two-way side
+  junctions give up a tunnel until four dead ends (pump hall 13 × 9, cistern hall 15 × 11) stand; loose drums only
+  within two tiles of a wall.
+- **abyss** (`plate`, `r: 16`, `loops: 0.3`): an island is a plate of flesh — its site's own (Voronoi) ground out to
+  14–17 tiles, pulled back from its neighbours by a crack of blood 2.6–5 wide; the chasm stays where sites are sparse
+  and round the mother. Bridges 5 wide on the critical path and for necks of flesh, 4 elsewhere, 3 to an altar, which
+  keeps a small island of its own (the hidden pockets). The ledges at both doors are 5 wide. Now held in mapflow.
+- **cave** (`wide`, `moss.w: 4`): start fill 0.55, no rock planted in mid-hall, pillars only ≥ 6 tiles from a wall,
+  shelves at `[0.63, 0.77]`, the moss way 9 wide (7 off the spine), neck, rift crack, west ledge and the M3 south
+  crack (a kept point of `wideWays`) 5 wide, loose
+  crystals/mushrooms/spires within two tiles of rock. A ridge of rock (`wide.ridges`, two) lies across the line from the way
+  in to the antechamber, and to the south crack, so the walk still winds (tortuosity rift 1.21, south 1.17). Where rock is too thin for a vault, a block that is
+  half rock and otherwise bare floor is walled up round it.
+- Shared: `widen(m, pts, soft, dig, r)` takes a half-width (`m.widenR`; 2 = five wide) and judges "wide" by a summed
+  table of blocked tiles; `wideWays(…, main)` cuts the doors, camp and boss five wide after the three-wide pass;
+  `markRoutes` keeps `m.widenR` when it sets signs and stones down (same code path as before when it is 1: meadow,
+  forest and maple come out tile for tile as before; the city differs only in a few placed objects that share the world's dice). `tunnel` digs any width 3–5. Rules-only: `m.rooms`, `m.widenR`.
+- Arches: `m.arches` entries may carry their span, `[x, y, ew, lo, hi]` (tiles across from (x, y)); a channel tunnel
+  has one over each walkway, a doorway through a two-thick wall has one arch, not two. `hallart.js` draws a span of
+  any width (3-tile entries unchanged).
+- Held (`ROOMY` in tests/mapflow.mjs): open ≥ 58 % (abyss 57), party room ≥ 55 % (cave 50), route ≥ 4.
+
+Deviations:
+- Map sizes not grown: the monster count already rises with the floor; rooms are fewer and bigger.
+- Cave party room 52 % (target 55): taking out more rock leaves a bare field; held at 50.
+- Abyss 59 % open (target 60–65): the blood is the theme. Sewer water is now only in the short tunnels and the
+  cisterns (2.4 % of the map) — the plazas nearly touch; a follow-up could run open channel stubs into the plazas.
+- `markRoutes` (34-maps-world.js) and `widen` were touched outside the dungeon cfg lines, for `m.widenR` only.
+- `tests/world.mjs`: the hero stands 8 px (was 14) from a guardian before the killing blow — on a wide platform one of
+  its pack stood nearer and took the blow.
