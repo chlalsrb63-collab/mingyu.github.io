@@ -1496,10 +1496,11 @@ function knit(m, pts, floor, minPocket = 6) {
  * Widen the ways (maps-v2 path-quality rule: the main routes are at least three tiles wide). A tile is
  * "wide" when the 3 × 3 round it is all walkable; every point in `pts` must join the entrance's wide ground.
  * Where one does not, the cheapest way is cut whose every 3 × 3 holds nothing harder than the `soft`
- * objects (trees, bushes, rocks … — cleared along it) or a cliff (cut back into steps, dearly); walls, water and
- * set pieces are never touched.
+ * objects (trees, bushes, rocks … — cleared along it) or a cliff (cut back into steps, dearly); water and set
+ * pieces are never touched, and walls only underground: with `dig` (a floor char) the rock is dug out as that floor
+ * (never where `m.noDig` is set: a boss's shell of rock).
  */
-function widen(m, pts, soft) {
+function widen(m, pts, soft, dig) {
   const W = m.w, H = m.h, n = W * H;
   const wk = (x, y) => !blockedAt(m, x, y);
   const isWide = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!wk(x + dx, y + dy)) return false; return true; };
@@ -1526,6 +1527,7 @@ function widen(m, pts, soft) {
     let c = 1;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       const X = x + dx, Y = y + dy, o = m.o[Y][X];
+      if (dig && m.g[Y][X] === "W" && o === " ") { if (m.noDig && m.noDig[Y * W + X]) return Infinity; c += 4; continue; }
       if (SOLID_G.includes(m.g[Y][X]) || (o !== " " && !soft.includes(o) && o !== "C")) return Infinity;
       if (o === "C") c += 8;
       else if (o !== " ") c += 3;
@@ -1534,21 +1536,29 @@ function widen(m, pts, soft) {
   };
   let cut = 0;
   for (const [px, py] of pts) {
-    const near = round(px, py);
-    if (near.some((i) => home[i])) continue;
+    let near = round(px, py);
+    if (near.some((i) => home[i])) {
+      // (underground, a stray piece of wide ground beside the point is joined too: it might be the one taken as nearest)
+      if (!dig) continue;
+      near = near.filter((i) => !home[i] && isWide(i));
+      if (!near.length) continue;
+    }
     // (a point in a walled piece — a chest behind a fence's narrow doorway — is joined from just outside it)
     const path = walk(W, H, near, (j) => home[j] === 1, cost) || walk(W, H, round(px, py, 5), (j) => home[j] === 1, cost);
     if (!path) continue;
     for (const c of path) {
       const x = c % W, y = (c - x) / W;
       // (a cliff in the way is cut back into steps: the ramp grows to three wide)
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (m.o[y + dy][x + dx] !== " ") { if (m.o[y + dy][x + dx] === "C") m.g[y + dy][x + dx] = "v"; m.o[y + dy][x + dx] = " "; cut++; }
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (dig && m.g[y + dy][x + dx] === "W") { m.g[y + dy][x + dx] = dig; cut++; }
+        if (m.o[y + dy][x + dx] !== " ") { if (m.o[y + dy][x + dx] === "C") m.g[y + dy][x + dx] = "v"; m.o[y + dy][x + dx] = " "; cut++; }
+      }
     }
     spread(path.concat(near));
   }
   return cut;
 }
-/** Fill the little walkable pockets (under `max` tiles) that cannot be walked to from the entrance. */
+/** Fill the little walkable pockets (under `max` tiles) that cannot be walked to from the entrance (`W`: with rock). */
 function seal(m, ch, max = 6) {
   const W = m.w, H = m.h, n = W * H;
   const open = (i) => { const x = i % W; return !blockedAt(m, x, (i - x) / W); };
@@ -1559,7 +1569,7 @@ function seal(m, ch, max = 6) {
     const q = [s];
     seen[s] = 1;
     for (let h = 0; h < q.length; h++) { const c = q[h], x = c % W; for (const j of [x + 1 < W ? c + 1 : -1, x > 0 ? c - 1 : -1, c + W < n ? c + W : -1, c - W]) if (j >= 0 && !seen[j] && reach[j] < 0 && open(j)) { seen[j] = 1; q.push(j); } }
-    if (q.length < max) for (const c of q) { const x = c % W; m.o[(c - x) / W][x] = ch; }
+    if (q.length < max) for (const c of q) { const x = c % W; if (ch === "W") m.g[(c - x) / W][x] = "W"; else m.o[(c - x) / W][x] = ch; }
   }
 }
 
@@ -2806,6 +2816,40 @@ function dimBuild(cfg, seed) {
 // ── underground: shared pieces
 /** Dig a floor tile (never the map's rim); `set` collects what was dug. */
 const digAt = (m, x, y, ch = "c") => { if (x > 1 && y > 1 && x < m.w - 2 && y < m.h - 2) { m.g[y][x] = ch; m.o[y][x] = " "; } };
+/**
+ * maps-v2 path quality underground: every point in `pts` joined to the entrance by ground three tiles wide (the
+ * rock dug out as floor where it must be, `soft` objects cleared; never where `shell[i] === 1`, a boss's shell),
+ * the crumbs nobody can reach filled with rock, and what genMap keeps joined once the signs and stones stand.
+ */
+function wideWays(m, pts, soft, shell, keep = pts) {
+  if (shell) m.noDig = Uint8Array.from(shell, (v) => (v === 1 ? 1 : 0));
+  widen(m, pts, soft, "c");
+  seal(m, "W");
+  // (only the doors and the places that matter are checked again: every point would make the signs slow to place)
+  m.keepWide = keep.slice(); m.widenSoft = soft; m.widenDig = "c";
+}
+/**
+ * maps-v2 벽돌 회랑, a room of the brick halls (box `r`, its tiles `inRoom`): broken flagstone paving over the
+ * floor (slabs `k`, the old brick `c` showing where they are gone, grit `d`), and torch alcoves — a niche dug a
+ * tile into the north wall every few tiles, a light (`light`) stood in it. Returns the alcoves [x, y].
+ */
+function brickRoom(m, r, inRoom, seed, light) {
+  const out = [];
+  for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) {
+    if (!inRoom(x, y) || m.g[y][x] !== "c") continue;
+    // (slabs lost in patches three tiles across, the odd one alone)
+    if (h2(Math.floor(x / 3), Math.floor(y / 3), seed) < 0.72 && h2(x, y, seed + 1) > 0.07) m.g[y][x] = "k";
+  }
+  const y = r.y0 - 1;
+  for (let x = r.x0 + 2; x <= r.x1 - 2; x++) {
+    if (!inRoom(x, r.y0) || m.o[r.y0][x] !== " " || !m.g[y - 1] || out.some(([ox]) => x - ox < 4)) continue;
+    if (m.g[y][x] !== "W" || m.g[y - 1][x] !== "W" || m.g[y][x - 1] !== "W" || m.g[y][x + 1] !== "W") continue;
+    digAt(m, x, y);
+    m.o[y][x] = light;
+    out.push([x, y]);
+  }
+  return out;
+}
 /** A chamber's monsters, by how deep it lies: sparse and weak by the door, crowded and mean in the depths. */
 function denSpawns(m, box, cfg, rect, t, d, side, extra = 0) {
   const K = cfg.mobs.length, band = d <= 1 ? 0 : Math.min(K - 1, Math.floor(t * K));
@@ -2833,6 +2877,14 @@ function tunnel(m, a, b, wd, avoid, turn = 3, ch = "c") {
     const t = path[s], x = t % W, y = (t - x) / W, nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
     if (m.g[y][x] === "W" || m.g[y][x] === "w") digAt(m, x, y, ch);
     if (wd > 1) { const X = horiz ? x : x + 1, Y = horiz ? y + 1 : y; if (m.g[Y] && (m.g[Y][X] === "W")) digAt(m, X, Y, ch); }
+    // (three wide: a tile either side, and the whole 3 × 3 at a bend so the corner keeps its width)
+    if (wd > 2) {
+      const bend = s > 0 && path[s + 1] !== undefined && path[s + 1] - t !== t - path[s - 1];
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (!bend && (horiz ? dx : dy)) continue;
+        if (m.g[y + dy] && m.g[y + dy][x + dx] === "W") digAt(m, x + dx, y + dy, ch);
+      }
+    }
   }
   return path;
 }
@@ -2860,8 +2912,10 @@ function cavern(cfg) {
   ell(arena[0], arena[1], 6.5, 6, 2);
   ell(start[0], start[1], 4.5, 3.5, 2);
   ell(ante[0], ante[1], 4.2, 3.2, 2);
-  for (let x = ante[0] + 3; x <= arena[0] - 5; x++) for (const y of [11, 12]) fixed[y * W + x] = 2;
-  for (let x = arena[0] + 5; x <= W - 3; x++) for (const y of [10, 11]) fixed[y * W + x] = 2;
+  // (maps-v2: the neck to the boss and the crack beyond it three tiles wide)
+  const neckY = cfg.moss ? [10, 11, 12] : [11, 12], riftY = cfg.moss ? [10, 11, 12] : [10, 11];
+  for (let x = ante[0] + 3; x <= arena[0] - 5; x++) for (const y of neckY) fixed[y * W + x] = 2;
+  for (let x = arena[0] + 5; x <= W - 3; x++) for (const y of riftY) fixed[y * W + x] = 2;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x;
     if (x < 3 || y < 3 || x >= W - 3 || y >= H - 3) { wall[i] = 1; continue; }
@@ -2886,7 +2940,7 @@ function cavern(cfg) {
   }
   cave = automaton(W, H, cave, 3, 5, 4, fixed);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!cave[y * W + x]) m.g[y][x] = "c";
-  for (let x = arena[0] + 5; x <= W - 3; x++) for (const y of [10, 11]) m.g[y][x] = "c";
+  for (let x = arena[0] + 5; x <= W - 3; x++) for (const y of riftY) m.g[y][x] = "c";
   // pieces of cavern apart from the main one: join the big ones with a drunkard's walk, fill in the crumbs
   const open = (i) => m.g[Math.floor(i / W)][i % W] !== "W";
   const startI = start[1] * W + start[0];
@@ -2923,6 +2977,124 @@ function cavern(cfg) {
     const i = y * W + x;
     if (toWall[i] >= 4 && !fixed[i] && N1[i] > 0.68 && Math.hypot(x - start[0], y - start[1]) > 6) m.g[y][x] = "W";
   }
+  // ── maps-v2 비취 수정굴: a winding moss floor through the caverns (the "river of green"), the grottos beside it
+  // joined into loops, grey rock shelves at two heights with ramps, streams forded where they cross the moss
+  const moss = new Uint8Array(W * H), level = new Uint8Array(W * H);
+  const nearKeep = (x, y) => Math.hypot(x - start[0], y - start[1]) < 9 || Math.hypot(x - ante[0], y - ante[1]) < 8 || (x > arena[0] + 2 && y < 16);
+  if (cfg.moss) {
+    const M = cfg.moss;
+    // how far each tile lies from the boss's shell: no way is dug within reach of it
+    const shell = bfs(W, H, [...Array(W * H).keys()].filter((i) => fixed[i] === 1), () => true);
+    const sites = poisson(box, 7, 7, W - 8, H - 8, M.r, [start, ante]).map(([x, y]) => [Math.round(x), Math.round(y)])
+      .filter(([x, y], k) => k < 2 || (shell[y * W + x] > M.w + 4 && !fixed[y * W + x]));
+    const n = sites.length, edges = [];
+    for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) {
+      const [ax, ay] = sites[a], [bx, by] = sites[b], cx = (ax + bx) / 2, cy = (ay + by) / 2, r2 = ((ax - bx) ** 2 + (ay - by) ** 2) / 4;
+      if (r2 > (M.r * 1.6) ** 2) continue;
+      let ok = true;
+      for (let c = 0; c < n && ok; c++) if (c !== a && c !== b && (sites[c][0] - cx) ** 2 + (sites[c][1] - cy) ** 2 < r2) ok = false;
+      if (ok) edges.push([a, b]);
+    }
+    const tree = grow(box, n, edges, 0, M.wind, M.loops);
+    const spine = new Set(tree.path(1).map((k, j, all) => (j ? ekey(all[j - 1], k) : -1)));
+    const meander = field(m, S0 + 11, 9, 2);
+    for (const [a, b] of edges) {
+      if (!tree.linked(a, b)) continue;
+      const main = spine.has(ekey(a, b)), [ax, ay] = sites[a], [bx, by] = sites[b];
+      const rad = main ? M.w : M.w - 1;
+      const path = walk(W, H, ay * W + ax, (i) => i === by * W + bx, (j, i, back) => {
+        const x = j % W, y = (j - x) / W;
+        if (x < 4 || y < 4 || x >= W - 4 || y >= H - 4 || !shell[j]) return Infinity;
+        let c = (m.g[y][x] === "W" ? 1.3 : 0.7) + meander[j] * 2.2 + (shell[j] <= rad + 1 ? 6 : 0);
+        if (back >= 0 && j - i !== i - back) c += 0.4;
+        return c;
+      }, bx, by, 0.5);
+      if (!path) continue;
+      for (const t of path) {
+        const x = t % W, y = (t - x) / W, r = rad + (N1[t] - 0.5) * 1.6;
+        for (let dy = -Math.ceil(r); dy <= Math.ceil(r); dy++) for (let dx = -Math.ceil(r); dx <= Math.ceil(r); dx++) {
+          const X = x + dx, Y = y + dy, j = Y * W + X, d = Math.hypot(dx, dy);
+          if (d > r || !inMap(m, X, Y) || fixed[j] === 1) continue;
+          digAt(m, X, Y);
+          // the green runs down the middle of the way, its edge broken by the noise
+          if (d < r - 1.1 + (N2[j] - 0.5) * 1.4) moss[j] = Math.max(moss[j], main || d < r - 1.6 ? 2 : 1);
+        }
+      }
+    }
+    for (let i = 0; i < W * H; i++) { const x = i % W, y = (i - x) / W; if (moss[i] && m.g[y][x] !== "W") m.g[y][x] = moss[i] === 2 ? ";" : ":"; }
+    // the shelves: where a slow swell of the ground rises, the floor stands up a level or two; the moss, the
+    // doors and the boss's ground stay low
+    const swell = field(m, S0 + 12, 16, 2);
+    for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
+      const i = y * W + x;
+      if (m.g[y][x] !== "c" || fixed[i] || moss[i] || nearKeep(x, y)) continue;
+      level[i] = swell[i] > M.shelf[1] ? 2 : swell[i] > M.shelf[0] ? 1 : 0;
+    }
+    // a shelf too small to stand on sinks back
+    const comps = (pass) => {
+      const lab = new Int32Array(W * H).fill(-1), out = [];
+      for (let s = 0; s < W * H; s++) {
+        if (lab[s] >= 0 || !pass(s)) continue;
+        const q = [s]; lab[s] = out.length;
+        for (let h = 0; h < q.length; h++) { const c = q[h]; for (const j of [c + 1, c - 1, c + W, c - W]) if (lab[j] < 0 && pass(j)) { lab[j] = out.length; q.push(j); } }
+        out.push(q);
+      }
+      return out;
+    };
+    for (const q of comps((i) => level[i] === 2)) if (q.length < 24) for (const i of q) level[i] = 1;
+    for (const q of comps((i) => level[i] >= 1)) if (q.length < 40) for (const i of q) level[i] = 0;
+    // a shelf's rim is a face of rock (the cliff block); each shelf gets a ramp of steps or two down to the floor
+    const gAt = (i) => m.g[(i / W) | 0][i % W], oAt = (i) => m.o[(i / W) | 0][i % W];
+    const lower = (i) => { for (const j of [i + 1, i - 1, i + W, i - W]) if (gAt(j) !== "W" && level[j] < level[i]) return j; return -1; };
+    for (let i = 0; i < W * H; i++) if (level[i] && lower(i) >= 0) m.o[(i / W) | 0][i % W] = "C";
+    let ramps = 0;
+    for (const L of [2, 1]) for (const q of comps((i) => level[i] >= L)) {
+      const faces = q.filter((i) => level[i] === L && oAt(i) === "C" && lower(i) >= 0 && level[lower(i)] === L - 1);
+      const want = q.length > 160 ? 2 : 1, got = [];
+      faces.sort((a, b) => h2(a % W, (a / W) | 0, S0 + 13) - h2(b % W, (b / W) | 0, S0 + 13) || a - b);
+      for (const i of faces) {
+        if (got.length >= want) break;
+        const x = i % W, y = (i - x) / W, j = lower(i), along = Math.abs(j - i) === 1 ? W : 1;
+        if (got.some((g) => Math.hypot(g % W - x, ((g / W) | 0) - y) < 12)) continue;
+        // three steps wide, on rim tiles that all face down the same way
+        const run = [i - along, i, i + along];
+        if (!run.every((r) => oAt(r) === "C" && level[r] === L && gAt(r + j - i) !== "W" && level[r + j - i] < L)) continue;
+        for (const r of run) { m.o[(r / W) | 0][r % W] = " "; m.g[(r / W) | 0][r % W] = "v"; }
+        got.push(i); ramps++;
+      }
+    }
+    // spires of crystal along the shelf tops by the rim, glowing mushroom rings in the low hollows
+    for (let i = 0; i < W * H; i++) {
+      const x = i % W, y = (i - x) / W;
+      if (!level[i] || m.o[y][x] !== " " || m.g[y][x] !== "c") continue;
+      const byRim = [i + 1, i - 1, i + W, i - W].some((j) => oAt(j) === "C");
+      const h = h2(x, y, S0 + 14);
+      if (byRim && h < 0.16) m.o[y][x] = h < 0.05 ? "S" : "K";
+    }
+    const toRock = bfs(W, H, [...Array(W * H).keys()].filter((i) => gAt(i) === "W" || oAt(i) !== " "), () => true);
+    const rings = [];
+    for (let y = 6; y < H - 6 && rings.length < M.rings; y += 3) for (let x = 6; x < W - 6 && rings.length < M.rings; x += 3) {
+      const i = y * W + x;
+      if (m.g[y][x] !== "c" || level[i] || moss[i] || toRock[i] < 4 || fixed[i] || nearKeep(x, y) || h2(x, y, S0 + 15) > 0.3) continue;
+      if (rings.some(([rx, ry]) => Math.hypot(rx - x, ry - y) < 14)) continue;
+      for (let a = 0; a < 8; a++) { if (a === 6) continue; const X = x + Math.round(Math.cos(a * Math.PI / 4) * 2.2), Y = y + Math.round(Math.sin(a * Math.PI / 4) * 2.2); if (m.g[Y][X] === "c" && m.o[Y][X] === " ") m.o[Y][X] = "Y"; }
+      m.g[y][x] = "d";
+      rings.push([x, y]);
+    }
+    // streams: thin water along the contour of a third field, forded where they cross the moss
+    const flow = field(m, S0 + 16, 11, 2);
+    let fords = 0;
+    for (let y = 4; y < H - 4; y++) for (let x = 4; x < W - 4; x++) {
+      const i = y * W + x;
+      if (Math.abs(flow[i] - 0.5) > M.stream || level[i] || fixed[i] || nearKeep(x, y) || m.o[y][x] !== " ") continue;
+      const g = m.g[y][x];
+      if (g === ";" || g === ":") { m.g[y][x] = "s"; fords++; }
+      else if (g === "c" || g === "d") m.g[y][x] = "w";
+    }
+    m.level = level; m.rings = rings; m.pieces.push("moss", "shelf", "ring");
+    if (ramps) m.pieces.push("ramp");
+    if (fords) m.pieces.push("ford");
+  }
   // zones: Poisson sites over the open floor, each a region of the cavern with its own depth and dressing
   const floor = (x, y) => m.g[y][x] !== "W";
   const sites = poisson(box, 4, 4, W - 5, H - 5, cfg.r, [start, ante, arena]).filter(([x, y], k) => k < 3 || floor(Math.round(x), Math.round(y)));
@@ -2947,6 +3119,8 @@ function cavern(cfg) {
       const wallish = m.g[y - 1][x] === "W" || m.g[y][x - 1] === "W" || m.g[y][x + 1] === "W";
       // never in a squeeze: a tile with rock on both sides is a passage
       if (z.kind !== "lake" && ((m.g[y][x - 1] === "W" && m.g[y][x + 1] === "W") || (m.g[y - 1][x] === "W" && m.g[y + 1][x] === "W"))) continue;
+      // (the moss way, the shelves' rims and ramps, the streams and their fords keep what they are)
+      if (moss[i] || m.o[y][x] !== " " || m.g[y][x] !== "c" && m.g[y][x] !== "d") continue;
       const h = h2(x, y, S0 + 9);
       if (N1[i] > 0.62) m.g[y][x] = "d";
       if (z.kind === "lake") { if (Math.hypot(x - r.px, (y - r.py) * 1.2) + (N1[i] - 0.5) * 3 < Math.min(r.inr, 5)) { m.g[y][x] = "w"; m.o[y][x] = " "; } else if (wallish && h < 0.25) m.o[y][x] = "K"; continue; }
@@ -2988,8 +3162,8 @@ function cavern(cfg) {
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (fixed[y * W + x] === 2) { m.o[y][x] = " "; if (m.g[y][x] === "W") m.g[y][x] = "c"; }
   for (const [x, y] of [[arena[0] - 4, arena[1] - 4], [arena[0] + 4, arena[1] - 4], [arena[0] - 4, arena[1] + 4], [arena[0] + 4, arena[1] + 4]]) m.o[y][x] = "K";
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (fixed[y * W + x] === 1) { m.g[y][x] = "W"; m.o[y][x] = " "; }
-  for (let x = ante[0] + 3; x <= arena[0] - 5; x++) for (const y of [11, 12]) digAt(m, x, y);
-  for (let x = arena[0] + 5; x <= W - 3; x++) for (const y of [10, 11]) digAt(m, x, y);
+  for (let x = ante[0] + 3; x <= arena[0] - 5; x++) for (const y of neckY) digAt(m, x, y);
+  for (let x = arena[0] + 5; x <= W - 3; x++) for (const y of riftY) digAt(m, x, y);
   clear(m, start[0] - 3, start[1] - 2, start[0] + 3, start[1] + 2);
   // who lives where: the further from the way in, the worse
   for (const z of order) {
@@ -3010,9 +3184,11 @@ function cavern(cfg) {
   m.entry = m.gates.west.a[0];
   const pts = [m.gates.west.a[1], [arena[0], arena[1] + 3], ante, m.gates.rift.a[0], m.gates.rift.t[0]];
   for (const z of order) pts.push(spot(m, z.r.px, z.r.py));
+  const wideTo = pts.slice();
   for (const [x, y] of vaults) pts.push([x + 1, y + 1], [x + 2, y + 1]);
   cover(m, cfg.mobs);
   knit(m, pts, "c");
+  if (cfg.moss) wideWays(m, wideTo.concat(FIRES[cfg.id]), "TPBRulYAeKSMn", fixed, wideTo.slice(0, 5).concat(FIRES[cfg.id]));
   m.regions = order.length;
   return m;
 }
@@ -3068,9 +3244,11 @@ function catacomb(cfg) {
   // the rooms: each cell's shape
   const roomOf = new Int16Array(W * H).fill(-1);
   const rooms = cells.map((c, k) => {
-    const pad = kind[k] === "vault" ? 2 : kind[k] === "room" ? 1 + ri(box, 0, 1) : 1;
+    const pad = kind[k] === "vault" ? 2 : kind[k] === "room" ? 1 + ri(box, 0, cfg.halls ? 0 : 1) : 1;
     let x0 = c.x0 + pad, y0 = c.y0 + pad, x1 = c.x1 - pad, y1 = c.y1 - pad;
-    if (kind[k] === "room" && rnd(box) < 0.5) { const sw = ri(box, 0, Math.max(0, (x1 - x0 - 5) >> 1)), sh = ri(box, 0, Math.max(0, (y1 - y0 - 4) >> 1)); x0 += sw; x1 -= ri(box, 0, sw); y0 += sh; y1 -= ri(box, 0, sh); }
+    // (maps-v2 벽돌 회랑: a room is a plaza, never under 11 × 9)
+    const [mw, mh] = cfg.halls ? [11, 9] : [6, 5];
+    if (kind[k] === "room" && rnd(box) < 0.5) { const sw = ri(box, 0, Math.max(0, (x1 - x0 + 1 - mw) >> 1)), sh = ri(box, 0, Math.max(0, (y1 - y0 + 1 - mh) >> 1)); x0 += sw; x1 -= ri(box, 0, sw); y0 += sh; y1 -= ri(box, 0, sh); }
     if (kind[k] === "vault") { const cx2 = (x0 + x1) >> 1, cy2 = (y0 + y1) >> 1; x0 = Math.max(x0, cx2 - 2); x1 = Math.min(x1, cx2 + 2); y0 = Math.max(y0, cy2 - 2); y1 = Math.min(y1, cy2 + 1); }
     const w = x1 - x0 + 1, h = y1 - y0 + 1, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
     const shapes = kind[k] === "room" ? cfg.shapes : kind[k] === "vault" ? ["octagon", "plain"] : ["plain"];
@@ -3095,16 +3273,23 @@ function catacomb(cfg) {
   // the corridors: two wide along the critical path, often single file elsewhere
   const avoid = new Float32Array(W * H);
   for (let i = 0; i < W * H; i++) if (roomOf[i] >= 0) avoid[i] = 2.5;
-  const hall = new Uint8Array(W * H);
+  const hall = new Uint8Array(W * H), arches = [], torches = [];
   for (const e of edges) {
     const [a, b] = e;
     if (!tree.linked(a, b)) continue;
     const A = rooms[a], B = rooms[b];
-    const wd = onMain.has(a) && onMain.has(b) ? 2 : rnd(box) < 0.5 ? 1 : 2;
+    const wd = cfg.halls ? 3 : onMain.has(a) && onMain.has(b) ? 2 : rnd(box) < 0.5 ? 1 : 2;
     const sa = spot(m, A.cx, A.cy), sb = spot(m, B.cx, B.cy);
     for (const i of [sa[1] * W + sa[0], sb[1] * W + sb[0]]) avoid[i] = 0;
     const p = tunnel(m, sa, sb, wd, avoid, 3);
     for (const t of p) if (roomOf[t] < 0) hall[t] = 1;
+    // an arched doorway where the corridor comes out of the rock into a room: [x, y, 1 when it runs east–west]
+    if (cfg.halls) for (let s = 1; s < p.length; s++) {
+      const u = p[s - 1], v = p[s];
+      if ((roomOf[u] < 0) === (roomOf[v] < 0)) continue;
+      const t = roomOf[u] < 0 ? u : v, x = t % W;
+      arches.push([x, (t - x) / W, Math.abs(u - v) === 1 ? 1 : 0]);
+    }
   }
   // furnishing, by room
   const free = (x, y) => m.g[y][x] !== "W" && m.o[y][x] === " " && !hall[y * W + x];
@@ -3156,7 +3341,9 @@ function catacomb(cfg) {
       for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) {
         if (!cellFree(x, y)) continue;
         const h = h2(x, y, S0 + 9), edge = wallN(x, y) || m.g[y][x - 1] === "W" || m.g[y][x + 1] === "W" || m.g[y + 1][x] === "W";
-        if (style === "pillars") { if ((x - r.x0) % 3 === 1 && (y - r.y0) % 3 === 1 && !edge && Math.abs(x - r.cx) + Math.abs(y - r.cy) > 1) m.o[y][x] = T2.pillar; }
+        // (in the brick halls the rows of pillars stand four apart: three wide ways between them)
+        const pp = cfg.halls ? 4 : 3, po = cfg.halls ? 2 : 1;
+        if (style === "pillars") { if ((x - r.x0) % pp === po && (y - r.y0) % pp === po && !edge && Math.abs(x - r.cx) + Math.abs(y - r.cy) > 1) m.o[y][x] = T2.pillar; }
         else if (style === "pool") { if (Math.hypot((x - r.cx) * 0.8, y - r.cy) + (N1[y * W + x] - 0.5) * 1.6 < Math.min(r.w, r.h) * 0.28) { m.g[y][x] = "w"; } }
         else if (style === "rows") { if (!edge && (y - r.y0) % 3 === 1 && (x - r.x0) % 4 !== 0 && (x - r.x0) % 4 !== 3 && x !== r.cx && h < 0.9) m.o[y][x] = T2.rows; }
         else if (style === "rubble") { if (N1[y * W + x] > 0.68 && !edge && Math.abs(x - r.cx) + Math.abs(y - r.cy) > 2) { m.g[y][x] = "W"; } else if (h < 0.08) m.o[y][x] = T2.junk; }
@@ -3201,6 +3388,7 @@ function catacomb(cfg) {
     // keep the middle of every room walkable
     for (let y = r.cy - 1; y <= r.cy + 1; y++) for (let x = r.cx - 1; x <= r.cx + 1; x++) if (roomOf[y * W + x] === k) { m.o[y][x] = " "; if (m.g[y][x] === "W") m.g[y][x] = "c"; }
     if (kind[k] === "room" && (r.shape === "chapel" || r.shape === "octagon")) { hallow(r, k); pts[ptI] = spot(m, r.cx, r.cy); }
+    if (cfg.halls && kind[k] !== "vault") torches.push(...brickRoom(m, r, (x, y) => roomOf[y * W + x] === k, S0 + k, T2.light));
   });
   for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) if (m.g[y][x] === "c" && h2(x, y, S0) < 0.12) m.g[y][x] = "d";
   for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) { m.o[y][x] = " "; if (m.g[y][x] !== "d") m.g[y][x] = "c"; pts.push([x, y]); }
@@ -3208,6 +3396,11 @@ function catacomb(cfg) {
   m.entry = gates.in.a[0];
   cover(m, cfg.mobs);
   knit(m, pts, "c");
+  if (cfg.halls) {
+    m.arches = arches; m.torches = torches; m.pieces.push("plaza", "arch", "alcove");
+    const doors = Object.values(gates).flatMap((g) => g.a);
+    wideWays(m, pts, cfg.soft, null, doors.concat(FIRES[cfg.id]));
+  }
   m.regions = cells.length;
   return m;
 }
@@ -3262,23 +3455,36 @@ function sewers(cfg) {
       return c;
     }, B.x, B.y, 1);
     if (!path) continue;
+    // maps-v2 벽돌 회랑: a channel tunnel has a walkway three wide either side of the channel;
+    // the way to a pump room or a cistern is a dry brick corridor three wide
+    const dead = (k) => kind[k] === "pump" || kind[k] === "cistern";
+    const wet = !cfg.halls || (!dead(a) && !dead(b));
+    const [o0, o1] = !cfg.halls ? [-2, 2] : wet ? [-3, 4] : [-1, 1];
     for (let s = 0; s < path.length; s++) {
       const t = path[s], x = t % W, y = (t - x) / W, nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
       // a walkway two wide, the channel, and a ledge one wide on the far side
-      for (let o = -2; o <= 2; o++) {
+      for (let o = o0; o <= o1; o++) {
         const X = horiz ? x : x + o, Y = horiz ? y + o : y;
         if (m.g[Y][X] === "W") digAt(m, X, Y);
-        if (o === 0 || o === 1) chan[Y * W + X] = 1;
+        if (wet && (o === 0 || o === 1)) chan[Y * W + X] = 1;
       }
     }
-    tunnels.push({ a, b, path });
+    tunnels.push({ a, b, path, wet });
   }
   for (let i = 0; i < W * H; i++) if (chan[i]) m.g[Math.floor(i / W)][i % W] = "w";
-  // chambers over the junctions: round floors, a grated sump in the middle
-  const room = (cx, cy, rx, ry) => { for (let y = cy - ry; y <= cy + ry; y++) for (let x = cx - rx; x <= cx + rx; x++) if (((x - cx) / (rx + 0.4)) ** 2 + ((y - cy) / (ry + 0.4)) ** 2 <= 1) { digAt(m, x, y); } };
+  // chambers over the junctions: round floors, a grated sump in the middle (maps-v2: flagstone plazas ≥ 13 × 11,
+  // their corners cut)
+  const plaza = new Int16Array(W * H).fill(-1);
+  const room = (cx, cy, rx, ry, k) => {
+    for (let y = cy - ry; y <= cy + ry; y++) for (let x = cx - rx; x <= cx + rx; x++) {
+      const inside = cfg.halls ? Math.abs(x - cx) / rx + Math.abs(y - cy) / ry <= 1.6 : ((x - cx) / (rx + 0.4)) ** 2 + ((y - cy) / (ry + 0.4)) ** 2 <= 1;
+      if (inside) { digAt(m, x, y); if (inMap(m, x, y)) plaza[y * W + x] = k; }
+    }
+  };
   node.forEach((nd, k) => {
     const big = kind[k] === "guard" || kind[k] === "camp" || kind[k] === "gate" ? 4 : kind[k] === "junction" ? 3 + (h2(nd.x, nd.y, S0) < 0.4 ? 1 : 0) : 0;
-    if (big) room(nd.x, nd.y, big + 1, big);
+    if (big && cfg.halls) room(nd.x, nd.y, big + 3, big + 1, k);
+    else if (big) room(nd.x, nd.y, big + 1, big, k);
     if (kind[k] === "junction") { m.g[nd.y][nd.x] = "g"; m.g[nd.y][nd.x + 1] = "g"; m.pieces.push("junction"); }
   });
   // dead ends: a pump room (drums, a chest) or a cistern (a tank of sludge with a walk round it)
@@ -3339,11 +3545,30 @@ function sewers(cfg) {
     else if (h > 0.96 && D4.some(([dx, dy]) => m.g[y + dy][x + dx] === "W")) m.o[y][x] = h > 0.968 ? "4" : "n";
     else if (h < 0.14) m.g[y][x] = "d";
   }
+  // maps-v2 벽돌 회랑: the plazas paved and lit, an arch wherever a tunnel comes into one
+  const torches = [], arches = [];
+  if (cfg.halls) {
+    node.forEach((nd, k) => {
+      if (kind[k] === "pump" || kind[k] === "cistern") return;
+      const box2 = { x0: nd.x - 7, y0: nd.y - 5, x1: nd.x + 7, y1: nd.y + 5 };
+      torches.push(...brickRoom(m, box2, (x, y) => inMap(m, x, y) && plaza[y * W + x] === k, S0 + k, cfg.light));
+    });
+    for (const tn of tunnels) for (let s = 1; s < tn.path.length; s++) {
+      const u = tn.path[s - 1], v = tn.path[s];
+      if ((plaza[u] < 0) === (plaza[v] < 0)) continue;
+      const t = plaza[u] < 0 ? u : v, x = t % W;
+      arches.push([x, (t - x) / W, Math.abs(u - v) === 1 ? 1 : 0]);
+    }
+  }
   for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) { digAt(m, x, y); pts.push([x, y]); }
   m.gates = gates;
   m.entry = gates.in.a[0];
   cover(m, cfg.mobs);
   knit(m, pts, "c");
+  if (cfg.halls) {
+    m.arches = arches; m.torches = torches; m.pieces.push("plaza", "arch", "alcove");
+    wideWays(m, pts, cfg.soft, null, Object.values(gates).flatMap((g) => g.a).concat(FIRES[cfg.id]));
+  }
   m.regions = n;
   return m;
 }
@@ -4049,6 +4274,8 @@ const GEN = {
   }) },
   cave: { make: cavern, band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
     id: "cave", name: "수정 동굴", seed: 44093, w: 132, h: 100, r: 8, vaults: 10, tpm: 16, chest: "chest_cave",
+    // maps-v2 비취 수정굴: the moss way (sites `r` apart, half-width `w`), shelves where the swell passes `shelf`
+    moss: { r: 15, w: 3, wind: 0.55, loops: 0.55, shelf: [0.56, 0.7], rings: 7, stream: 0.018 },
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
   city: { make: metro, band: [14, 21], stones: 3, theme: "city", cfg: () => ({
@@ -4057,13 +4284,17 @@ const GEN = {
   }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
   crypt: { make: catacomb, band: [12, 17], stones: 3, cfg: () => ({
-    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 9, minH: 8, leaf: 300, entryY: 0.8, wind: 0.6, loops: 0.06, out: true, n: 3,
+    // maps-v2 벽돌 회랑 (`halls`): plazas ≥ 11 × 9 in cells ≥ 14 × 12, corridors three wide, more loops
+    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 14, minH: 12, leaf: 420, entryY: 0.8, wind: 0.5, loops: 0.3, out: true, n: 3,
+    halls: true, soft: "12345I",
     shapes: ["plain", "chapel", "cross", "octagon", "ell", "chapel", "cross"], styles: ["pillars", "pool", "rows", "rubble", "shrine", "plain", "plain"], vaultName: "ossuary",
     mobs: ["ratking", "twinhare_bone", "bonehound", "toadbrood", "batcluster"], guard: "bonehound", chest: "chest_crypt",
-    dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4" },
+    dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4", light: "3" },
   }) },
   sewer: { make: sewers, band: [22, 27], stones: 3, cfg: () => ({
-    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 10.5, wind: 0.5, loops: 0.16, n: 3,
+    // maps-v2 벽돌 회랑 (`halls`): flagstone plazas, channel tunnels with a walkway three wide, dry side ways
+    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 14, wind: 0.5, loops: 0.35, n: 3,
+    halls: true, soft: "67x4n", light: "3",
     mobs: ["leechmaw", "ratking_bile", "gatorhalf", "crabskull", "eelknot"], guard: "gatorhalf", chest: "chest_sewer",
   }) },
   // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
@@ -4151,7 +4382,8 @@ function genMap(id) {
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
   markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
   // maps-v2: once the signs and stones stand, the ways that must stay three wide are checked once more
-  if (m.keepWide) widen(m, m.keepWide, m.widenSoft);
+  // (underground the stones' own standing tiles are joined too: the rock may be dug for them)
+  if (m.keepWide) widen(m, m.widenDig ? m.keepWide.concat((m.stones || []).map((s) => [s.ax, s.ay])) : m.keepWide, m.widenSoft, m.widenDig);
   // a pocket is the ground still open in it once the signs and stones stand
   for (const pk of m.pockets) pk.tiles = pk.tiles.filter((i) => m.o[Math.floor(i / m.w)][i % m.w] === " ");
   return m;
