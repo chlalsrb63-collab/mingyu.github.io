@@ -20,7 +20,7 @@
       "text": "바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?",
       "done": "고맙네! 이제 밤에 잠 좀 자겠군.",
       "goal": { "type": "kill", "mob": "gutfrog", "n": 6 },
-      "req": { "lv": 2, "quest": "sq_willow_letter" },
+      "req": { "lv": 5, "quest": "sq_willow_letter" },
       "reward": { "xp": 300, "gold": 120, "items": [["mp_s", 3]] },
       "repeat": false
     }

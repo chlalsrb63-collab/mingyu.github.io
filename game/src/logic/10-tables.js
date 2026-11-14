@@ -5,12 +5,13 @@ const WEAPON_NAMES = {
   spear: ["대나무 창", "강철 장창", "기사단 할버드", "플라즈마 랜스", "차원 관통창"],
   staff: ["견습 지팡이", "룬 지팡이", "현자의 지팡이", "플라즈마 로드", "공허의 홀"],
   book: ["낡은 주문서", "룬 마도서", "현자의 법전", "홀로그램 코덱스", "공허의 서"],
+  bow: ["나무 짧은활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위"],
 };
-/** Which class wields each weapon kind, and the word used in its item ids. */
-const WK_CLASS = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "mage" };
-const WK_ID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book" };
+/** The word each weapon kind uses in its item ids (persisted: the old class names stay). Anyone may wield anything. */
+const WK_ID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow" };
 const W_ATK = [6, 14, 26, 42, 64];
-const G_REQ = [1, 8, 16, 26, 38];
+/** The level each tier of gear asks for, on the 1–200 player scale (= 4·old − 3). */
+const G_REQ = [1, 29, 61, 101, 149];
 const G_PRICE = [80, 600, 2200, 7000, 20000];
 /** Everything worn: id prefix, names by tier, and the stats a plain piece carries. */
 const GEAR = {
@@ -61,7 +62,7 @@ const ITEMS = {
 for (const wk of Object.keys(WEAPON_NAMES)) {
   for (let t = 1; t <= 5; t++) {
     const base = wk === "book" ? { atk: Math.round(W_ATK[t - 1] * 0.85), mp: [15, 35, 60, 100, 150][t - 1] } : { atk: W_ATK[t - 1] };
-    ITEMS[`w_${WK_ID[wk]}_${t}`] = { name: WEAPON_NAMES[wk][t - 1], type: "weapon", wk, cls: WK_CLASS[wk], tier: t, base, req: G_REQ[t - 1], price: G_PRICE[t - 1] };
+    ITEMS[`w_${WK_ID[wk]}_${t}`] = { name: WEAPON_NAMES[wk][t - 1], type: "weapon", wk, tier: t, base, req: G_REQ[t - 1], price: G_PRICE[t - 1] };
   }
 }
 for (const type of Object.keys(GEAR)) {
@@ -119,34 +120,6 @@ const SETS = {
   rift: { name: "균열 추적자", tiers: [4, 5], types: ["weapon", "helm", "armor", "ring", "amulet"], bonus: [[2, [["mf", 25]]], [3, [["atkp", 12]]], [5, [["ls", 4], ["critd", 40]]]] },
 };
 
-/** Training: experience spent on a permanent stat point. Never capped. */
-const TRAIN = {
-  str: { name: "힘", gain: 1, stat: "atk", desc: "공격력 +1" },
-  vit: { name: "체력", gain: 14, stat: "hp", desc: "최대 HP +14" },
-  int: { name: "지력", gain: 9, stat: "mp", desc: "최대 MP +9" },
-  grd: { name: "수호", gain: 1, stat: "def", desc: "방어력 +1" },
-};
-const trainCost = (n) => 120 + 40 * n;
-/**
- * Skill growth, as at a 바람의나라 수련장 or with a 메이플 마스터리북: every skill
- * is raised from 1 to 10 at the trainer for gold and experience. Each level adds
- * SK_STEP to what it does; at 5 and at 10 its cooldown shortens.
- */
-const SK_MAX = 10, SK_STEP = 0.08;
-const skillCost = (sk, L) => ({ gold: Math.round((50 + sk.lv * 25) * L * (L + 1) / 2), xp: Math.round(xpNeed(sk.lv) * 0.12 * L), lvl: sk.lv + L });
-const skillCd = (L) => (L >= 10 ? 0.85 : L >= 5 ? 0.92 : 1);
-/** A skill as a character of their skill level casts it. */
-function levelled(ch, i) {
-  const sk = SKILLS[ch.cls][i], L = (ch.skl && ch.skl[i]) || 1;
-  if (L <= 1) return sk;
-  const o = { ...sk };
-  if (sk.mult) o.mult = sk.mult * (1 + SK_STEP * (L - 1));
-  if (sk.ret) o.ret = sk.ret * (1 + SK_STEP * (L - 1));
-  if (sk.pct) o.pct = sk.pct + 0.015 * (L - 1);
-  if (sk.durUp) o.dur = sk.dur + sk.durUp * (L - 1);
-  o.cd = Math.round(sk.cd * skillCd(L));
-  return o;
-}
 /** A warehouse (창고) holds this many slots per character, besides gold. */
 const WH = 60;
 /** The loot filter: the least rarity of gear a label is shown for and a pet fetches. */
@@ -154,7 +127,7 @@ const FILTER_Q = [0, 1, 2];
 /** How often a pet runs for something. */
 const PET_MS = 300;
 
-const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "W1", "w_book_1", "h_1", "a_1", "g_1", "b_1"];
+const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1", "h_1", "a_1", "g_1", "b_1"];
 const ENH_RATE = [100, 95, 90, 80, 70, 55, 45, 35, 25, 15];
 
 // ── the cosy side: campfires, fishing, guilds

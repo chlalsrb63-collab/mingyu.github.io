@@ -32,7 +32,8 @@ export const meta = { game: "테일즈테일즈", minPlayers: 1, maxPlayers: 40 
 const T = 16;
 /** The bag: INV_BASE slots to start, grown with bag_expand to INV_MAX (sheet field bagCap, 46-bag.js). */
 const INV_BASE = 40, INV_MAX = 100;
-const MAXLV = 50;
+/** Player levels run 1–200 (one level = one stat point); the world keeps its own 1–50 tiers (02-jobs-stats.js). */
+const MAXLV = 200;
 const STACK = 99;
 /** The order the bag's tidy button puts things in. */
 const SORT_KIND = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet", "rune", "pot", "food", "fish", "scroll", "buff", "camp", "revive", "pet", "mat", "furn"];
@@ -46,14 +47,20 @@ const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 
 // ───────────────────────────── tables ─────────────────────────────
 
-/** A weapon kind decides how a basic attack lands. */
+/**
+ * A weapon kind decides how a basic attack lands. Attack no longer depends on a class, so the
+ * per-hit mults follow the old classes' attack ratios (jobs-and-stats D.1). `crit` adds to the
+ * critical chance, `mag` makes it magic (half the monster's armour counts), `shot` fires arrows.
+ */
 const WKIND = {
   // unhurried, weighty blows: each lands harder than a quick one would
-  sword: { name: "양손검", cd: 920, range: 34, fx: 0, cleave: 3, kb: 9, mult: 1.3, arc: 65 },
-  dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 1.35, arc: 35 },
-  spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.4, arc: 25 },
-  staff: { name: "마법지팡이", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.2, arc: 40 },
-  book: { name: "마법책", cd: 800, range: 84, fx: 5, splash: 26, mult: 1, kb: 4, arc: 40 },
+  sword: { name: "대검", cd: 920, range: 34, fx: 0, cleave: 3, kb: 9, mult: 1.45, arc: 65, crit: 3 },
+  dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 1.1, arc: 35, crit: 10 },
+  spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.4, arc: 25, crit: 5 },
+  staff: { name: "스태프", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.25, arc: 40, crit: 3, mag: 1 },
+  book: { name: "마도서", cd: 800, range: 84, fx: 5, splash: 26, mult: 1.05, kb: 4, arc: 40, crit: 3, mag: 1 },
+  // an arrow flies (45-jobs.js shots): the finisher hits 1.4× and goes through one more
+  bow: { name: "활", cd: 760, range: 150, fx: 6, kb: 3, mult: 0.9, arc: 20, crit: 6, shot: { spd: 420, r: 6 } },
 };
 /**
  * Basic attacks come in threes: two strokes and a finisher. Strike again within
@@ -68,6 +75,7 @@ const COMBO_MS = 700, FINISH = { mult: 1.4, kb: 1.8, stun: 280 };
  * along the aim. Nothing behind you is ever hit by a blow aimed forward.
  */
 const AIM_N = 64, AIM_CONE = 40;
+/** The four classes before jobs. Rules no longer read them; until J2 the old skills below are picked by the weapon in hand (LEGACY_CLS). */
 const CLASSES = {
   warrior: { name: "전사", arm: "양손검", wk: ["sword"], hp: [130, 24], mp: [30, 4], atk: [10, 2.6], def: [3, 0.9], crit: 8 },
   rogue: { name: "도적", arm: "단검", wk: ["dagger"], hp: [92, 16], mp: [40, 6], atk: [7, 1.9], def: [1, 0.5], crit: 22 },
@@ -141,9 +149,108 @@ const DATA = {
     {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"town","safe":true,"band":null,"w":40,"h":32,"ground":["tt,t...............pp...\"..,.....tt.....",".t..tt....,........pp.,....\".......tt...","ttttt.t............pp.,,...\"..,.,tt.tt..","ttttttt\".,...\",...\"pp....,.,.....tt.tt..",".ttt,...,....,.....pp............,ttt..t","ttt...t...........,pp............tttt...","..,,.,.\"...........pp....,........\"...\".","\",.....,..\".,......pp..,......,.......,.","....,,...,...\".....pp.....,........,.,..","....,...pppppppppppppppppppppppp........","........pp.........pp.......\".pp........",".,......pp.........pp.,,......pp........",".......,pp\".,.\".oooooooo.,...ssssss.....","....\"\"\",pp.,...oooooooooo,.sswwwwwwss,..","....\"\"\"\"pp..,,oooooooooooo.swwwwwwwws...",".,.\"\"\"\",pp\"...oooooooooooobbbbwwwwwws.,.","....\"\"\".pp....oooooooooooo.swwwwwwwws..,","....\"\"\".pp....oooooooooooo,sswwwwwwss...","......\",pp.....oooooooooo....ssssss.....",".....,..pp.\"....oooooooo......pp...,,...",".,.,.,\".pp\"......\",pp.........pp,,.....,","...,....pppppppppppppppppppppppp....,...","....,,..pp,..,,..,....,..\"....pp........","..........,.....,..............,..\".,...","...,.\",\".,,.,............,...\"\".........","......,.....\".......,........,,.........",".....,..,..,....,..............,..,..,..","..........,,..,....,......\".\"...........","..tt.t...............,..........,,..tt.t","t..tttt\".,.....,..\"...,...........t,tt,t",".ttt.t...............,.....,.....ttttttt","...t.tt.,.....\"..,.\"....\".......\"t,..t,t"],"objects":["TTPTTTTTTTTTTTTTTT    TPTTPPTTTTTTTTTTTP","TTTTTTTPTTTTTTPTPT    TTTTTTTPTPTTTTTTTT","TT                                    PT","TT         HH     L  L    HH          TT","TT    hhhh   hhhh           hhhh      TT","TT    hhhh   hhhh     G     hhhh      PT","TT    hhhh   hhhh           hhhh   u  TT","TT                                    TT","TT                                  B TT","PT B                                  TT","TT                                    TT","TT                                    TT","TT FFFFF       L        L             TT","TT F   F   B                 e    e   TT","TP F   F                              TT","PT F   F           T                  TT","TP F   F                           e  PP","PT F   F   B                     e    PT","TP FF FF                              TP","TT             L        L             TT","TT  u                                 TT","TP                                    TT","TT                                    TT","TT  hhhh                       hhhh   TP","TT  hhhh      hhhh      B      hhhh   PT","TT  hhhh      hhhh             hhhh   TP","PT          B hhhh        B         B PT","TT        u      E    u               TP","PT                                    TT","PT                                    PT","TPPTPTPTTTTTTTTPTTTTTPPTTPTTTPTTTTTTPTTP","TPTTPTTTTTTPTTTTTTTTTTTTTTTPTTTTTPTTTTPT"],"entry":[20,4],"spawns":[],"npcs":[{"id":"willow_elder","name":"촌장 버들","role":"quest","x":18,"y":13,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 도와주면 섭섭지 않게 사례하지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":25,"y":16,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."]},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":15,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 울타리 안은 밟으면 안 돼!","넥서스 광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":22,"y":25,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 넥서스 광장이야. 거기서 동쪽은 바람초원이고."]}],"portals":[{"x":19,"y":1,"to":"town","tx":19,"ty":25},{"x":20,"y":1,"to":"town","tx":20,"ty":25}],"fires":[[19,25]],"waypoint":[22,7],"fishing":true,"boss":null,"marks":[{"x":22,"y":5,"kind":"sign","label":"↑ 넥서스 광장","to":"town"}]},
   ],
   links: [{"map":"town","x":19,"y":27,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":20,"y":27,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"},{"map":"town","x":29,"y":23,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":30,"y":23,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":18,"y":5,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":19,"y":5,"to":"town_hall","tx":11,"ty":16,"label":"넥서스 마을회관"},{"map":"town","x":9,"y":8,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":10,"y":8,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"}],
-  npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":21,"y":26,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]}],
-  quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"넥서스 광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":2,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false}]},
+  npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":21,"y":26,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":26,"y":12,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","전직은 되돌릴 수 없다네. 신중하게 고르게."]}],
+  quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"넥서스 광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":5,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false}]},
 };
+// ───────────────────────────── jobs and stats: tables ─────────────────────────────
+// docs/design/jobs-and-stats.md. Everybody starts as a 모험가 (adventurer) with six stats at 5;
+// a level is one stat point bought with experience; weapon mastery (1–50 per kind) grows by
+// using a weapon, and at mastery 20 opens a job. Functions live in 45-jobs.js.
+
+/** The six stats: [key, name, what it does]. Order is the wire order everywhere (`st`, `nx`, `train {a}`). */
+const STATS = [
+  ["str", "힘", "물리 공격 · 밀림 저항 — 대검·창"],
+  ["wil", "의지", "HP · 방어 · 강인도 · 상태 저항"],
+  ["dex", "민첩", "공격 속도 · 회피 · 기습/원거리 피해 — 단검·활"],
+  ["int", "지능", "마법 공격 · 원소 폭발 — 스태프·마도서"],
+  ["wis", "지혜", "MP · MP 회복 · 재사용 감소"],
+  ["luk", "행운", "치명타 · 치명 피해 · 아이템 발견 · 발동 확률"],
+];
+const ST_ORDER = STATS.map((s) => s[0]);
+const ST_BASE = 5, ST_CAP = 99;
+/** Point cost: pointCost(N, s) = round(tierXp(toTier(N)) / LV_DIV × (1 + STAT_K × max(0, s − STAT_K0))). */
+const LV_DIV = 4.4, STAT_K = 0.004, STAT_K0 = 30;
+/** The world's own scale (monster levels, map bands): 1–50. Players see 4·tier − 3. */
+const TIER_MAX = 50;
+/** Weapon kinds in wire order (`wm`, `["wm", eid, kindIndex, lv]`), and the mastery cap. */
+const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow"], WM_MAX = 50;
+const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활" };
+/** Mastery a job asks for. */
+const JOB_WM = 20;
+
+/** Scaling grades and what they are worth. */
+const GRADE = { S: 1.0, A: 0.85, B: 0.7, C: 0.5, D: 0.3 };
+/** How each weapon kind scales with the stats (B.5). */
+const SCALE = {
+  sword: { str: "A", wil: "C" },
+  dagger: { dex: "A", luk: "C" },
+  spear: { str: "A", wis: "C" },
+  staff: { int: "A", wis: "C" },
+  book: { int: "A", wil: "C" },
+  bow: { dex: "A", luk: "C" },
+};
+/** A single job adds this to both of its weapon's coefficients. */
+const JOB_PLUS = 0.1;
+/**
+ * The jobs. `single`: one weapon, mastery 20, 5,000 G. `hybrid`: stay a 모험가 until both weapons of
+ * the pair reach 20, 20,000 G; `scale` replaces the table for both weapons. Ids are frozen (persisted).
+ */
+const JOBS = {
+  adventurer: { name: "모험가", kind: "none", wk: [], cost: 0 },
+  swordsman: { name: "대검전사", kind: "single", wk: ["sword"], cost: 5000 },
+  thief: { name: "도적", kind: "single", wk: ["dagger"], cost: 5000 },
+  lancer: { name: "창술사", kind: "single", wk: ["spear"], cost: 5000 },
+  wizard: { name: "마법사", kind: "single", wk: ["staff"], cost: 5000 },
+  warlock: { name: "마도사", kind: "single", wk: ["book"], cost: 5000 },
+  archer: { name: "궁수", kind: "single", wk: ["bow"], cost: 5000 },
+  spellblade: { name: "마검사", kind: "hybrid", wk: ["sword", "staff"], scale: { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 }, cost: 20000 },
+  tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.8, luk: 0.8 }, cost: 20000 },
+  dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.7, wil: 0.7, int: 0.7, wis: 0.3 }, cost: 20000 },
+  hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wil: 0.3 }, cost: 20000 },
+  stormrider: { name: "폭풍기수", kind: "hybrid", wk: ["spear", "bow"], scale: { str: 0.8, dex: 0.8, wis: 0.3, luk: 0.3 }, cost: 20000 },
+  darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.8, str: 0.8, int: 0.3 }, cost: 20000 },
+};
+/** The old four classes as the lobby and rank rows written before jobs still name them. */
+const OLD_CLASS_JOB = { warrior: "swordsman", rogue: "thief", lancer: "lancer", mage: "wizard", ranger: "lancer", archer: "lancer" };
+
+/**
+ * Derived-stat constants (B.4), one table so tuning is data-only. Each formula reads eff(stat).
+ *   hp = hp[0] + hp[1]·lv + hp[2]·WIL;  mp = mp[0] + mp[1]·lv + mp[2]·WIS + mp[3]·INT;  def = def[0]·lv + def[1]·WIL
+ *   atk core = atk[0] + atk[1]·lv;  weapon attack × (1 + wm·wmAtk);  crit = crit[0] + kind crit + crit[1]·LUK
+ *   critd = critd[0] + critd[1]·LUK;  attack speed −min(aspd[1], aspd[0]·DEX);  evasion min(eva[1], eva[0]·DEX)
+ */
+const SFX = {
+  hp: [70, 2.5, 13], mp: [30, 0.6, 6, 2], def: [0.12, 0.25], atk: [3, 0.1], wmAtk: 0.01,
+  crit: [5, 0.3], critCap: 75, critd: [1.5, 0.008], aspd: [0.005, 0.3], eva: [0.3, 20], sneak: 0.004, far: 90,
+  cdr: [0.004, 0.25], mpReg: 0.0004, burst: 0.008, mf: [0.4, 25], proc: 0.01,
+  kbr: [0.015, 0.8], poise: [0.015, 0.8], res: [0.01, 0.5],
+  physDef: 0.5, magDef: 0.25, stagPx: 14, stagMs: 300,
+  /** graze% = graze[0] + graze[1]·tiers above + boss·graze[2] − mastery, within [0, graze[3]] */
+  graze: [10, 3, 10, 60], grazeK: 0.5,
+};
+/** Weapon mastery gains: a hit action (+1, a skill +2) on a monster no more than `lowTier` tiers below you; a kill pays by rank. */
+const WM_GAIN = { hit: 1, skill: 2, lowTier: 8, kill: [1, 4, 10], boss: 20 };
+
+/**
+ * Stat templates (shares of the points above 5), by weapon kind: the migration of the old four classes
+ * (B.11) and the test/probe hero. A mage carrying a book takes the book's.
+ */
+const BUILD = {
+  sword: { str: 0.45, wil: 0.35, dex: 0.05, wis: 0.05, luk: 0.1 },
+  dagger: { dex: 0.45, luk: 0.3, wil: 0.15, str: 0.05, wis: 0.05 },
+  spear: { str: 0.4, wis: 0.25, wil: 0.25, dex: 0.1 },
+  staff: { int: 0.45, wis: 0.3, wil: 0.2, luk: 0.05 },
+  book: { int: 0.45, wil: 0.3, wis: 0.2, luk: 0.05 },
+  bow: { dex: 0.45, luk: 0.3, wil: 0.15, str: 0.05, wis: 0.05 },
+};
+/** Old class → [its weapon kind, the single job it becomes at old level 20+]. Mage picks by the weapon in hand. */
+const OLD_CLASS = { warrior: ["sword", "swordsman"], rogue: ["dagger", "thief"], lancer: ["spear", "lancer"], mage: ["staff", "wizard"] };
+/** Until J2: which old class's skills, gauge and tricks the weapon in hand brings (the bow has none). */
+const LEGACY_CLS = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "mage", bow: "" };
+/** How often a hybrid may swap weapons (Tab). */
+const WSW_MS = 800;
+/** Arrows: at most this many in flight per archer; a finisher pierces one more. */
+const SHOT_MAX = 6;
 // ── gear: seven kinds of piece, five tiers each
 const WEAPON_NAMES = {
   sword: ["녹슨 대검", "강철 양손검", "기사단 클레이모어", "고주파 대검", "차원 절단기"],
@@ -151,12 +258,13 @@ const WEAPON_NAMES = {
   spear: ["대나무 창", "강철 장창", "기사단 할버드", "플라즈마 랜스", "차원 관통창"],
   staff: ["견습 지팡이", "룬 지팡이", "현자의 지팡이", "플라즈마 로드", "공허의 홀"],
   book: ["낡은 주문서", "룬 마도서", "현자의 법전", "홀로그램 코덱스", "공허의 서"],
+  bow: ["나무 짧은활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위"],
 };
-/** Which class wields each weapon kind, and the word used in its item ids. */
-const WK_CLASS = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "mage" };
-const WK_ID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book" };
+/** The word each weapon kind uses in its item ids (persisted: the old class names stay). Anyone may wield anything. */
+const WK_ID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow" };
 const W_ATK = [6, 14, 26, 42, 64];
-const G_REQ = [1, 8, 16, 26, 38];
+/** The level each tier of gear asks for, on the 1–200 player scale (= 4·old − 3). */
+const G_REQ = [1, 29, 61, 101, 149];
 const G_PRICE = [80, 600, 2200, 7000, 20000];
 /** Everything worn: id prefix, names by tier, and the stats a plain piece carries. */
 const GEAR = {
@@ -207,7 +315,7 @@ const ITEMS = {
 for (const wk of Object.keys(WEAPON_NAMES)) {
   for (let t = 1; t <= 5; t++) {
     const base = wk === "book" ? { atk: Math.round(W_ATK[t - 1] * 0.85), mp: [15, 35, 60, 100, 150][t - 1] } : { atk: W_ATK[t - 1] };
-    ITEMS[`w_${WK_ID[wk]}_${t}`] = { name: WEAPON_NAMES[wk][t - 1], type: "weapon", wk, cls: WK_CLASS[wk], tier: t, base, req: G_REQ[t - 1], price: G_PRICE[t - 1] };
+    ITEMS[`w_${WK_ID[wk]}_${t}`] = { name: WEAPON_NAMES[wk][t - 1], type: "weapon", wk, tier: t, base, req: G_REQ[t - 1], price: G_PRICE[t - 1] };
   }
 }
 for (const type of Object.keys(GEAR)) {
@@ -265,34 +373,6 @@ const SETS = {
   rift: { name: "균열 추적자", tiers: [4, 5], types: ["weapon", "helm", "armor", "ring", "amulet"], bonus: [[2, [["mf", 25]]], [3, [["atkp", 12]]], [5, [["ls", 4], ["critd", 40]]]] },
 };
 
-/** Training: experience spent on a permanent stat point. Never capped. */
-const TRAIN = {
-  str: { name: "힘", gain: 1, stat: "atk", desc: "공격력 +1" },
-  vit: { name: "체력", gain: 14, stat: "hp", desc: "최대 HP +14" },
-  int: { name: "지력", gain: 9, stat: "mp", desc: "최대 MP +9" },
-  grd: { name: "수호", gain: 1, stat: "def", desc: "방어력 +1" },
-};
-const trainCost = (n) => 120 + 40 * n;
-/**
- * Skill growth, as at a 바람의나라 수련장 or with a 메이플 마스터리북: every skill
- * is raised from 1 to 10 at the trainer for gold and experience. Each level adds
- * SK_STEP to what it does; at 5 and at 10 its cooldown shortens.
- */
-const SK_MAX = 10, SK_STEP = 0.08;
-const skillCost = (sk, L) => ({ gold: Math.round((50 + sk.lv * 25) * L * (L + 1) / 2), xp: Math.round(xpNeed(sk.lv) * 0.12 * L), lvl: sk.lv + L });
-const skillCd = (L) => (L >= 10 ? 0.85 : L >= 5 ? 0.92 : 1);
-/** A skill as a character of their skill level casts it. */
-function levelled(ch, i) {
-  const sk = SKILLS[ch.cls][i], L = (ch.skl && ch.skl[i]) || 1;
-  if (L <= 1) return sk;
-  const o = { ...sk };
-  if (sk.mult) o.mult = sk.mult * (1 + SK_STEP * (L - 1));
-  if (sk.ret) o.ret = sk.ret * (1 + SK_STEP * (L - 1));
-  if (sk.pct) o.pct = sk.pct + 0.015 * (L - 1);
-  if (sk.durUp) o.dur = sk.dur + sk.durUp * (L - 1);
-  o.cd = Math.round(sk.cd * skillCd(L));
-  return o;
-}
 /** A warehouse (창고) holds this many slots per character, besides gold. */
 const WH = 60;
 /** The loot filter: the least rarity of gear a label is shown for and a pet fetches. */
@@ -300,7 +380,7 @@ const FILTER_Q = [0, 1, 2];
 /** How often a pet runs for something. */
 const PET_MS = 300;
 
-const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "W1", "w_book_1", "h_1", "a_1", "g_1", "b_1"];
+const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1", "h_1", "a_1", "g_1", "b_1"];
 const ENH_RATE = [100, 95, 90, 80, 70, 55, 45, 35, 25, 15];
 
 // ── the cosy side: campfires, fishing, guilds
@@ -604,7 +684,13 @@ function XP_K(lv) {
 }
 /** Deeper monsters drop less gold for their level: the bands last longer, and the purse should not run away. */
 const goldK = (lv) => 1 - 0.7 * clamp((lv - 8) / 28, 0, 1);
-const xpNeed = (lv) => Math.round((34 * Math.pow(lv, 1.85) + 20) * XP_K(lv));
+/**
+ * The experience the world pays and charges at tier `t` (a real number: a player's level maps to
+ * `toTier(lvl) = (lvl + 3) / 4`). Once the experience to the next of the old 50 levels; now the yardstick
+ * for quest, daily and event rewards and for the price of a stat point (45-jobs.js pointCost).
+ */
+const tierXp = (t) => Math.round((34 * Math.pow(t, 1.85) + 20) * XP_K(t));
+const xpNeed = tierXp;
 // the errands pay in step with the levels they are given at
 for (const q of QUESTS) q.xp = Math.round(q.xp * XP_K(MOBS[q.mob].lv));
 
@@ -1890,8 +1976,9 @@ const DIM = {
   // how much more killing a rift monster takes than its wild kin, for a party of four at the band (measured with
   // the bot party in tests/dimrift.mjs; the low bands get more, `hpLow` = [below this level, + per level]); `hpN` by
   // party size (a lone player faces 35% of it); `lvK` per level the party outranks it; the master `bossHp` of that, hitting
-  // `bossAtk` as hard as a field boss of its kind
-  hpBase: 5.8, hpLow: [24, 1], hpN: [0.35, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
+  // `bossAtk` as hard as a field boss of its kind (hpBase 5.8 → 8.2 after jobs J1 made heroes ≈ 30 % quicker killers:
+  // bot clears 6.2 / 7.6 / 5.7 / 7.3 min at tiers 17 / 24 / 32 / 40, as before J1)
+  hpBase: 8.2, hpLow: [24, 1], hpN: [0.35, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
   reviveMs: 25000,
   // the master's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then
   reward: { gold: 60, xp: 0.05, gearQ: 3, stone: 2, rune: 0.6 }, dailyFull: 3, failGold: 30, lootGold: 0.5,
@@ -1954,7 +2041,7 @@ function dimBuild(cfg, seed) {
   const box = { seed };
   const W = DIM.w, H = DIM.h, theme = DIM_THEMES[cfg.theme] ? cfg.theme : "crypt", lv = cfg.lv | 0 || 10;
   const look = DIM_THEMES[theme];
-  const m = blank(cfg.id || "dim:0", `차원 균열 Lv.${lv}`, W, H, "W");
+  const m = blank(cfg.id || "dim:0", `차원 균열 Lv.${shownLv(lv)}`, W, H, "W");
   m.theme = theme; m.bgm = "dim"; m.band = null; m.marks = [];
   // ── the grid: 4 × 3 cells of 13 × 12 tiles; the rooms grow over a connected set of them
   const GX = 4, GY = 3, CW = 13, CH = 12;
@@ -3136,8 +3223,8 @@ function buildTown() {
   WP.town = { x: 16, y: 16, ax: 17, ay: 16 };
   m.marks = [
     { x: 16, y: 16, kind: "waypoint" },
-    { x: 32, y: 13, kind: "sign", label: "바람초원 Lv.1–7 →", to: "meadow" },
-    { x: 6, y: 13, kind: "sign", label: "← 네온 시티 Lv.14–21", to: "city" },
+    { x: 32, y: 13, kind: "sign", label: "바람초원 Lv.1–25 →", to: "meadow" },
+    { x: 6, y: 13, kind: "sign", label: "← 네온 시티 Lv.53–81", to: "city" },
   ];
   m.gates = { east: { t: [[38, 14], [38, 15]], a: [[36, 14], [36, 15]] }, west: { t: [[1, 14], [1, 15]], a: [[3, 14], [3, 15]] } };
   FIRES.town.push([22, 22]);
@@ -3532,12 +3619,12 @@ function canFly(m, x, y) {
   return m.g[ty][tx] !== "W";
 }
 
-const doorName = (m) => (m.band ? `${m.name} Lv.${m.band[0]}–${m.band[1]}` : m.name);
+const doorName = (m) => (m.band ? `${m.name} Lv.${shownLv(m.band[0])}–${shownLv(m.band[1])}` : m.name);
 function mapPayload(m) {
   // (a house's turns and floor, the town's "내 집" door: 64-housing.js homeWire)
   return homeWire(m, {
     id: m.id, name: m.name, w: m.w, h: m.h, g: m.g, o: m.o, big: m.big, safe: m.safe, bgm: m.bgm,
-    theme: m.theme || null, band: m.band || null, marks: m.marks || [],
+    theme: m.theme || null, band: m.band ? m.band.map(shownLv) : null, marks: m.marks || [],
     // a door names where it leads and how strong you should be to go there
     // (a house door, into or out of an interior, is drawn as a door, not a magic gate)
     // (labels come from MAP_META: describing a door never builds the map behind it)
@@ -3564,7 +3651,7 @@ const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
 /** Little idle acts an NPC can play out (public/iso_interior.js npcPose). */
 const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
 /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
-const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house"];
+const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job"];
 const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
@@ -3580,7 +3667,7 @@ function npcFrom(n, m) {
   if (n.custom) out.custom = 1;
   // a shopkeeper with their own counter sells only these (items that exist and can be bought)
   if (out.role === "shop" && Array.isArray(n.goods)) {
-    const goods = [...new Set(n.goods.filter((id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && ITEMS[id].price > 0 && !ITEMS[id].cls))].slice(0, 24);
+    const goods = [...new Set(n.goods.filter((id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && ITEMS[id].price > 0))].slice(0, 24);
     if (goods.length) out.goods = goods;
   }
   if (NPC_POSES.includes(n.pose)) out.pose = n.pose;
@@ -3612,7 +3699,7 @@ function fromEditor(d, id) {
   m.theme = THEMES.includes(d.theme) ? d.theme : "meadow";
   m.bgm = txt(d.bgm, 24) || "field";
   m.safe = !!d.safe;
-  m.band = Array.isArray(d.band) && d.band.length === 2 ? [clamp(d.band[0] | 0, 1, MAXLV), clamp(d.band[1] | 0, 1, MAXLV)] : null;
+  m.band = Array.isArray(d.band) && d.band.length === 2 ? [clamp(d.band[0] | 0, 1, TIER_MAX), clamp(d.band[1] | 0, 1, TIER_MAX)] : null;
   if (!m.band) delete m.band;
   m.nofish = d.fishing === false;
   m.pieces = [];
@@ -3894,8 +3981,8 @@ const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
-/** Where gear is worn. Two rings; everything else one of a kind. */
-const SLOTS = ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet"];
+/** Where gear is worn. Two rings; everything else one of a kind. `weapon2` is a hybrid's second weapon (Tab swaps; adds no stats). */
+const SLOTS = ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet", "weapon2"];
 const GEAR_TYPES = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet"];
 const isGear = (id) => GEAR_TYPES.includes(ITEMS[id].type);
 const isJewel = (id) => ITEMS[id].type === "ring" || ITEMS[id].type === "amulet";
@@ -3912,25 +3999,29 @@ const LOOK_MAX = [13, 15, 13, 21, 5, 12, 11, 14, 11, 13, 7];
 const cleanLook = (look) => { const lk = Array.isArray(look) ? look : []; return LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)); };
 /** What a new look costs at the mirror in town (거울 · 미용실). */
 const LOOK_COST = 500;
-/** A brand-new character sheet — this is exactly what gets persisted. */
-export function newChar(name, cls, look) {
-  const c = CLASSES[cls] ? cls : "warrior";
-  const lk = Array.isArray(look) ? look : [];
+/**
+ * A brand-new character sheet — this is exactly what gets persisted. Everyone starts a 모험가
+ * (adventurer) with six stats at 5, an old dagger in hand and a free weapon to pick at 수련관 카이.
+ * (Callers from the four-class days passed `newChar(name, cls, look)`: a look in third place is still taken.)
+ */
+export function newChar(name, look, oldLook) {
+  const lk = Array.isArray(look) ? look : Array.isArray(oldLook) ? oldLook : [];
   return {
-    v: 10, name, cls: c,
+    v: 11, name, job: "adventurer",
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
-    lvl: 1, xp: 0, gold: 50,
+    // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
+    lvl: 1, xp: 0, xpt: 0, gold: 50,
+    st: freshSt(), wm: freshWm(), rs: 0, sw: 0,
     inv: [{ id: "hp_s", n: 5 }, { id: "mp_s", n: 3 }],
-    eq: { weapon: plain(`w_${c}_1`), helm: null, armor: plain("a_1"), gloves: null, boots: null, ring1: null, ring2: null, amulet: null },
-    tr: { str: 0, vit: 0, int: 0, grd: 0 },
+    eq: { weapon: plain("w_rogue_1"), helm: null, armor: plain("a_1"), gloves: null, boots: null, ring1: null, ring2: null, amulet: null, weapon2: null },
     q: { i: 0, n: 0, st: 0 },
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
     // waypoint stones woken, per map a bitmask of its stones (bit 0 = its first stone)
-    wp: { town: 1 }, seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
+    wp: { town: 1 }, seen: ["town"], ach: [], title: "", cnt: Object.fromEntries(CNT_KEYS.map((k) => [k, 0])), daily: null, tut: { i: 0, n: 0 },
     // 차원 균열 clears today (Phase 2: the daily count), by the day number they were made on
     dim: { day: 0, n: 0 },
-    skl: [1, 1, 1, 1, 1, 1], wh: { items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
+    wh:{ items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
     // the bag's size and a house of one's own (v10: 46-bag.js, 64-housing.js)
     bagCap: INV_BASE, house: homeEmpty(),
@@ -3942,8 +4033,10 @@ export function newChar(name, cls, look) {
 const OLD_ID = { c_1: "r_2", c_2: "n_3", c_3: "r_4" };
 /** Bring a sheet saved by an older version up to the current shape. */
 function migrate(ch) {
-  if (ch.cls === "ranger" || ch.cls === "archer") ch.cls = "lancer";
-  if (!CLASSES[ch.cls]) ch.cls = "warrior";
+  // the four-class days (v ≤ 9): a jobless hero of level 4L−3, everything paid back (45-jobs.js)
+  if (typeof ch.cls === "string" && !ch.job) migrateV10(ch);
+  delete ch.cls; delete ch.tr; delete ch.skl;
+  cleanJobs(ch);
   // an older, shorter look is padded with "as before"
   ch.look = cleanLook(ch.look);
   const fix = (g) => {
@@ -3961,7 +4054,7 @@ function migrate(ch) {
   const eq = {};
   for (const k of SLOTS) {
     const g = fix(old[k]);
-    eq[k] = g && slotsFor(ITEMS[g.id].type).includes(k) ? g : null;
+    eq[k] = g && (k === "weapon2" ? ITEMS[g.id].type === "weapon" : slotsFor(ITEMS[g.id].type).includes(k)) ? g : null;
   }
   // the single accessory slot of old sheets becomes a ring or an amulet
   const acc = fix(old.acc);
@@ -3970,10 +4063,7 @@ function migrate(ch) {
     if (!eq[k]) eq[k] = acc;
     else if (ch.inv.length < bagCap(ch)) ch.inv.push(acc);
   }
-  if (eq.weapon && ITEMS[eq.weapon.id].cls !== ch.cls) eq.weapon = plain(`w_${ch.cls}_1`);
   ch.eq = eq;
-  const tr = isObj(ch.tr) ? ch.tr : {};
-  ch.tr = { str: tr.str | 0, vit: tr.vit | 0, int: tr.int | 0, grd: tr.grd | 0 };
   if (!isObj(ch.q)) ch.q = { i: 0, n: 0, st: 0 };
   ch.q = { i: clamp(ch.q.i | 0, 0, QUESTS.length), n: Math.max(0, ch.q.n | 0), st: ch.q.st === 1 ? 1 : 0 };
   ch.bq = isObj(ch.bq) && MOBS[ch.bq.k] ? { k: ch.bq.k, n: ch.bq.n | 0, need: BOUNTY_N } : null;
@@ -3999,18 +4089,17 @@ function migrate(ch) {
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
   ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
   ch.title = typeof ch.title === "string" && ch.ach.includes(ch.title) && ACH_BY[ch.title].title ? ch.title : "";
-  const st = isObj(ch.st) ? ch.st : {};
-  ch.st = {};
-  for (const k of ST_KEYS) ch.st[k] = Math.max(0, st[k] | 0);
+  // achievement counters (kept in `st` before the six stats took that name)
+  const cnt = isObj(ch.cnt) ? ch.cnt : {};
+  ch.cnt = {};
+  for (const k of CNT_KEYS) ch.cnt[k] = Math.max(0, cnt[k] | 0);
   const dl = ch.daily;
   ch.daily = isObj(dl) && Number.isInteger(dl.day) && Array.isArray(dl.tasks) && dl.tasks.length === 3 && dl.tasks.every((t) => isObj(t) && DAILY_TEXT[t.kind] && (t.kind !== "kill" || MOBS[t.k]))
     ? { day: dl.day, tasks: dl.tasks.map((t) => ({ kind: t.kind, k: t.kind === "kill" ? t.k : null, n: clamp(t.n | 0, 0, t.need | 0), need: Math.max(1, t.need | 0) })), claimed: [0, 1, 2].map((i) => !!(Array.isArray(dl.claimed) && dl.claimed[i])), bonus: !!dl.bonus }
     : null;
   // a character from before the first-steps chain who has clearly found their feet skips it
-  ch.tut = isObj(ch.tut) ? { i: clamp(ch.tut.i | 0, 0, TUT.length), n: Math.max(0, ch.tut.n | 0) } : { i: ch.lvl >= 5 || (ch.kills | 0) >= 20 ? TUT.length : 0, n: 0 };
-  // skill levels, the warehouse, a pet, scrolls being read, settings
-  const skl = Array.isArray(ch.skl) ? ch.skl : [];
-  ch.skl = SKILLS[ch.cls].map((_, i) => clamp(skl[i] | 0 || 1, 1, SK_MAX));
+  ch.tut = isObj(ch.tut) ? { i: clamp(ch.tut.i | 0, 0, TUT.length), n: Math.max(0, ch.tut.n | 0) } : { i: toTier(ch.lvl) >= 5 || (ch.kills | 0) >= 20 ? TUT.length : 0, n: 0 };
+  // the warehouse, a pet, scrolls being read, settings
   const wh = isObj(ch.wh) ? ch.wh : {};
   ch.wh = { items: (Array.isArray(wh.items) ? wh.items : []).map(fix).filter(Boolean).slice(0, WH), gold: Math.max(0, Math.floor(num(wh.gold) ? wh.gold : 0)) };
   ch.pet = typeof ch.pet === "string" && ITEMS[ch.pet] && ITEMS[ch.pet].type === "pet" && countItem(ch, ch.pet) > 0 ? ch.pet : "";
@@ -4030,7 +4119,9 @@ function migrate(ch) {
   bagClean(ch);
   ch.house = houseClean(ch.house, fix);
   // ──
-  ch.v = Math.max(ch.v | 0, 10);
+  // jobs and stats (v11): four-class sheets were turned into heroes at the top (migrateV10), every sheet's
+  // stats, mastery and job cleaned there too (cleanJobs) — before the counters and the bar above read them
+  ch.v = Math.max(ch.v | 0, 11);
   return ch;
 }
 
@@ -4042,7 +4133,8 @@ const QS_USE = ["pot", "food", "camp", "scroll", "buff", "pet"];
 function qsOk(ch, v) {
   if (v === null) return true;
   if (!Array.isArray(v) || v.length !== 2) return false;
-  if (v[0] === "s") return Number.isInteger(v[1]) && v[1] >= 0 && v[1] < SKILLS[ch.cls].length;
+  // until J2 a skill is an index into the old skills of the hand's class (LEGACY_CLS)
+  if (v[0] === "s") return Number.isInteger(v[1]) && v[1] >= 0 && v[1] < SKILLS.warrior.length;
   if (v[0] === "i") return typeof v[1] === "string" && Object.hasOwn(ITEMS, v[1]) && QS_USE.includes(ITEMS[v[1]].type);
   return false;
 }
@@ -4059,8 +4151,8 @@ function qsLearn(ch, i) {
   return j + 1;
 }
 
-/** Counters kept for achievements. */
-const ST_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim"];
+/** Counters kept for achievements (`ch.cnt`; `dim` = 차원 균열 clears). */
+const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {
@@ -4068,12 +4160,10 @@ function runeword(g) {
   }
   return null;
 }
-/** How a character's basic attack lands: the equipped weapon's kind, or the class's first. */
-function armOf(ch) {
-  const w = ch.eq.weapon;
-  return WKIND[(w && ITEMS[w.id].wk) || CLASSES[ch.cls].wk[0]];
-}
-const weaponKind = (ch) => (ch.eq.weapon && ITEMS[ch.eq.weapon.id].wk) || CLASSES[ch.cls].wk[0];
+/** The kind of weapon in hand; bare hands fight like the job's weapon, or a dagger. */
+const weaponKind = (ch) => (ch.eq.weapon && ITEMS[ch.eq.weapon.id].wk) || (JOBS[ch.job] && JOBS[ch.job].wk[0]) || "dagger";
+/** How a character's basic attack lands. */
+const armOf = (ch) => WKIND[weaponKind(ch)];
 /** Mastery rank (0–5) against one kind of monster. */
 function masteryRank(ch, k) {
   const n = ch.mk[k] || 0;
@@ -4089,7 +4179,7 @@ function gearBonus(ch) {
   const add = (s, v) => { if (s in b) b[s] += v; };
   for (const k of SLOTS) {
     const g = ch.eq[k];
-    if (!g) continue;
+    if (!g || k === "weapon2") continue;
     const base = ITEMS[g.id].base;
     // each enhancement level is worth a tenth of the piece's own stats
     for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : 1 + 0.1 * g.enh));
@@ -4112,25 +4202,15 @@ function gearBonus(ch) {
   return b;
 }
 
+/** The moment's stats: the sheet's (deriveStats, 45-jobs.js) with buffs, food, scrolls and warmth on top. */
 function stats(p) {
-  let c = p.stc;
-  if (!c) {
-    const ch = p.ch, cl = CLASSES[ch.cls], lv = ch.lvl, b = gearBonus(ch), w = ch.eq.weapon, arm = armOf(ch);
-    c = p.stc = {
-      mhp: Math.round(cl.hp[0] + cl.hp[1] * lv + b.hp + ch.tr.vit * TRAIN.vit.gain),
-      mmp: Math.round(cl.mp[0] + cl.mp[1] * lv + b.mp + ch.tr.int * TRAIN.int.gain),
-      atk0: (cl.atk[0] + cl.atk[1] * lv + b.atk + ch.tr.str * TRAIN.str.gain) * (1 + b.atkp / 100),
-      def: Math.round(cl.def[0] + cl.def[1] * lv + b.def + ch.tr.grd * TRAIN.grd.gain),
-      crit: Math.min(75, cl.crit + (w ? w.enh : 0) + b.crit),
-      critd: 1.6 + b.critd / 100, ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + Math.min(40, b.spd) / 100), xp: b.xp, mf: b.mf, gold: b.gold,
-      lg: b.lg, arm, acd: Math.round(arm.cd * (b.lg.haste ? 0.85 : 1)),
-    };
-  }
+  const c = deriveStats(p);
   const now = p.S.now;
   const food = p.food && p.food.until > now ? p.food : null;
   const scr = p.ch.scr || {};
   return {
-    mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf,
+    mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf, wk: c.wk, mag: c.mag,
+    eva: c.eva, aspd: c.aspd, sneak: c.sneak, cdr: c.cdr, mpReg: c.mpReg, burst: c.burst, proc: c.proc, kbr: c.kbr, poise: c.poise, res: c.res,
     xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
@@ -4154,7 +4234,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "sklv", "train", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {
@@ -4394,7 +4474,7 @@ export function addPlayer(S, pid, ch) {
   sys(S, `${ch.name}님이 접속했습니다.`);
   ensureDaily(S, p);
   explore(S, p);
-  if (TUT[ch.tut.i] && TUT[ch.tut.i].id === "equip" && ch.eq.weapon) tutStep(S, p, "equip");
+  if (TUT[ch.tut.i] && TUT[ch.tut.i].id === "equip" && ch.eq.weapon && ch.sw) tutStep(S, p, "equip");
   checkAch(S, p);
   return p.eid;
 }
@@ -4464,6 +4544,359 @@ function leaveParty(S, p) {
   }
 }
 
+// ───────────────────────────── jobs and stats ─────────────────────────────
+// docs/design/jobs-and-stats.md (tables in 02-jobs-stats.js). Levels, stat points, derived stats,
+// weapon mastery, jobs, the migration of the old four classes, and the arrows a bow looses.
+
+/** Player level (1–200) → world tier (1–50, real); tier → the level printed on screen. */
+const toTier = (lvl) => (lvl + 3) / 4;
+const shownLv = (t) => 4 * t - 3;
+/** Soft caps: a stat counts fully to 40, half to 60, a quarter beyond. */
+const eff = (s) => Math.min(s, 40) + 0.5 * clamp(s - 40, 0, 20) + 0.25 * Math.max(0, s - 60);
+/** The experience one stat point costs at level `N` (buying N → N+1) for a stat now at `s`. */
+const pointCost = (N, s) => Math.round((tierXp(toTier(N)) / LV_DIV) * (1 + STAT_K * Math.max(0, s - STAT_K0)));
+/** A batch of points `a` (six counts, ST_ORDER), bought one at a time in stat order. */
+function batchCost(ch, a) {
+  let lvl = ch.lvl, c = 0;
+  ST_ORDER.forEach((k, i) => { let s = ch.st[k]; for (let n = 0; n < a[i]; n++) c += pointCost(lvl++, s++); });
+  return c;
+}
+const levelOf = (st) => 1 + ST_ORDER.reduce((n, k) => n + st[k] - ST_BASE, 0);
+/** What the next point in each stat costs now (0 when that stat or the level is at its cap). */
+const nextCosts = (ch) => ST_ORDER.map((k) => (ch.st[k] >= ST_CAP || ch.lvl >= MAXLV ? 0 : pointCost(ch.lvl, ch.st[k])));
+/** Mastery experience from level m to m + 1. */
+const wmNeed = (m) => 22 * m * m;
+const freshWm = () => Object.fromEntries(WK_ORDER.map((k) => [k, { lv: 1, xp: 0 }]));
+const r1 = (v) => Math.round(v * 10) / 10;
+const freshSt = () => Object.fromEntries(ST_ORDER.map((k) => [k, ST_BASE]));
+
+/** How the weapon kind `wk` scales for this character: { stat: coefficient } (job and hybrid adjusted). */
+function scaleOf(ch, wk) {
+  const job = JOBS[ch.job];
+  if (job && job.kind === "hybrid" && job.wk.includes(wk)) return { ...job.scale };
+  const out = {}, g = SCALE[wk] || {};
+  for (const k of Object.keys(g)) out[k] = GRADE[g[k]] + (job && job.kind === "single" && job.wk[0] === wk ? JOB_PLUS : 0);
+  return out;
+}
+/** The hybrid job a pair of weapon kinds opens, if any. */
+function hybridOf(a, b) {
+  for (const id of Object.keys(JOBS)) { const j = JOBS[id]; if (j.kind === "hybrid" && j.wk.includes(a) && j.wk.includes(b) && a !== b) return id; }
+  return null;
+}
+/** Why `ch` may not take job `j` right now ("" when it may; place and gold are checked by the action). */
+function jobOk(ch, j) {
+  const job = Object.hasOwn(JOBS, j) ? JOBS[j] : null;
+  if (!job || job.kind === "none") return "없는 직업입니다";
+  if (ch.job !== "adventurer") return "모험가만 전직할 수 있습니다";
+  const [a, b] = job.wk;
+  if (job.kind === "single") return ch.wm[a].lv >= JOB_WM ? "" : `[${WK_NAME[a]}] 숙련 ${JOB_WM}이 필요합니다`;
+  return ch.wm[a].lv >= JOB_WM && ch.wm[b].lv >= JOB_WM ? "" : `[${WK_NAME[a]}]${pp(WK_NAME[a], "과와")} [${WK_NAME[b]}] 숙련이 모두 ${JOB_WM}이어야 합니다`;
+}
+const isHybrid = (ch) => !!JOBS[ch.job] && JOBS[ch.job].kind === "hybrid";
+/** Until J2: the old class whose skills and gauge the weapon in hand brings ("" for the bow or bare hands). */
+const legacyCls = (ch) => (ch.eq.weapon ? LEGACY_CLS[ITEMS[ch.eq.weapon.id].wk] || "" : "");
+const legacySkills = (ch) => SKILLS[legacyCls(ch)] || [];
+
+/**
+ * Everything about a character that only changes with their sheet (cached in `p.stc` until the sheet
+ * changes): the six stats through their soft caps, the weapon's scaling and mastery, gear. `arm` is the
+ * WKIND in hand, `mag` 1 for a magic weapon. stats(p) adds the moment's buffs on top.
+ */
+function deriveStats(p) {
+  if (p.stc) return p.stc;
+  const ch = p.ch, lv = ch.lvl, b = gearBonus(ch), w = ch.eq.weapon, wk = weaponKind(ch), arm = WKIND[wk];
+  const E = {};
+  for (const k of ST_ORDER) E[k] = eff(ch.st[k]);
+  const wAtk = w ? (ITEMS[w.id].base.atk || 0) * (1 + 0.1 * w.enh) : 0;
+  const sc = scaleOf(ch, wk);
+  let core = SFX.atk[0] + SFX.atk[1] * lv;
+  for (const k of Object.keys(sc)) core += sc[k] * E[k];
+  const wm = w ? ch.wm[wk].lv : 0;
+  const luk = E.luk, dex = E.dex, wil = E.wil, wis = E.wis;
+  p.stc = {
+    mhp: Math.round(SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp),
+    mmp: Math.round(SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp),
+    atk0: (core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100),
+    core,
+    def: Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def),
+    crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh : 0) + b.crit),
+    critd: SFX.critd[0] + SFX.critd[1] * luk + b.critd / 100,
+    ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + Math.min(40, b.spd) / 100), xp: b.xp, gold: b.gold,
+    mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk),
+    lg: b.lg, arm, wk, mag: arm.mag ? 1 : 0,
+    acd: Math.round(arm.cd * (1 - Math.min(SFX.aspd[1], SFX.aspd[0] * dex)) * (b.lg.haste ? 0.85 : 1)),
+    aspd: Math.min(SFX.aspd[1], SFX.aspd[0] * dex),
+    eva: Math.min(SFX.eva[1], SFX.eva[0] * dex),
+    sneak: SFX.sneak * dex,
+    cdr: Math.min(SFX.cdr[1], SFX.cdr[0] * wis),
+    mpReg: SFX.mpReg * wis,
+    burst: SFX.burst * E.int,
+    proc: 1 + SFX.proc * luk,
+    kbr: Math.min(SFX.kbr[1], SFX.kbr[0] * E.str),
+    poise: Math.min(SFX.poise[1], SFX.poise[0] * wil),
+    res: Math.min(SFX.res[1], SFX.res[0] * wil),
+  };
+  return p.stc;
+}
+
+// ── weapon mastery
+
+/** Mastery experience for the weapon in hand; levels it up (events, toasts, old skills learned until J2). */
+function gainWm(S, p, n) {
+  const ch = p.ch;
+  if (!ch.eq.weapon || !(n > 0)) return;
+  const wk = ITEMS[ch.eq.weapon.id].wk, r = ch.wm[wk];
+  if (r.lv >= WM_MAX) return;
+  r.xp += Math.round(n);
+  p.dirty = true;
+  while (r.lv < WM_MAX && r.xp >= wmNeed(r.lv)) {
+    r.xp -= wmNeed(r.lv);
+    r.lv++;
+    p.stc = null;
+    S.maps[p.map].ev.push(["wm", p.eid, WK_ORDER.indexOf(wk), r.lv]);
+    saveSoon(p);
+    // until J2 the old skills of the hand's class come with mastery (at the level they used to)
+    const learned = [];
+    legacySkills(ch).forEach((sk, i) => { if (sk.lv === r.lv) { const key = qsLearn(ch, i); learned.push(`[${sk.name}]${key ? `(단축칸 ${key}번)` : ""}`); } });
+    toast(p, `[${WK_NAME[wk]}] 숙련 ${r.lv}!${learned.length ? ` 새 스킬 ${learned.join(", ")}` : ""}`);
+    if (r.lv === JOB_WM && ch.job === "adventurer") {
+      const j = Object.keys(JOBS).find((id) => JOBS[id].kind === "single" && JOBS[id].wk[0] === wk);
+      toast(p, `[${WK_NAME[wk]}] 숙련 ${JOB_WM}! 전직관 아르센에게 가면 [${JOBS[j].name}]${pp(JOBS[j].name, "으로")} 전직할 수 있습니다.`);
+    }
+  }
+  if (r.lv >= WM_MAX) r.xp = 0;
+}
+/**
+ * A blow from `p` landed on `mob`: the action it came from (a basic attack +1, a skill +2) counts once,
+ * if the monster is worth it (no more than WM_GAIN.lowTier tiers below; never a chest or a still thing).
+ */
+function wmHit(S, p, mob) {
+  const d = MOBS[mob.k];
+  if (d.chest || d.still || d.lv < toTier(p.ch.lvl) - WM_GAIN.lowTier) return;
+  const [a, n] = p.hitAct || [p.actN | 0, p.actGain | 0];
+  if (!a || a <= (p.wmAct | 0)) return;
+  p.wmAct = a;
+  gainWm(S, p, n);
+}
+/** A new action (`skill` true for a skill): blows it lands until the next one count toward its mastery. */
+function newAct(p, skill) {
+  p.actN = (p.actN | 0) + 1;
+  p.actGain = skill ? WM_GAIN.skill : WM_GAIN.hit;
+}
+/** A kill: everyone who struck it (not idle party members) gets mastery by its tier and rank. */
+function wmKill(S, rt, mob) {
+  const d = MOBS[mob.k];
+  if (d.chest || d.still) return;
+  const n = (1 + Math.floor(d.lv / 2)) * WM_GAIN.kill[mob.el | 0] * (d.boss ? WM_GAIN.boss : 1);
+  for (const pid of Object.keys(mob.by)) { const p = S.players[pid]; if (p && p.map === rt.id && !p.dead) gainWm(S, p, n); }
+}
+
+// ── accuracy, evasion, stagger
+
+/** Chance (%) that a blow from `p` only grazes `mob`: deeper than you, a boss, an unpractised weapon. */
+function grazeChance(p, mob) {
+  const d = MOBS[mob.k];
+  if (d.chest || d.still) return 0;
+  const ch = p.ch, m = ch.eq.weapon ? ch.wm[ITEMS[ch.eq.weapon.id].wk].lv : 0, g = SFX.graze;
+  return clamp(g[0] + g[1] * Math.max(0, Math.ceil(d.lv - toTier(ch.lvl) - 1e-9)) + (d.boss ? g[2] : 0) - m, 0, g[3]);
+}
+/** A monster's direct blow or shot at `p`: true if they slipped it ("회피"). */
+function evadeBlow(S, rt, p) {
+  const e = deriveStats(p).eva;
+  if (!(e > 0) || rnd(S) * 100 >= e) return false;
+  rt.ev.push(["h", p.eid, 0, 3, 1]);
+  return true;
+}
+/** A charge, a leap, a slam, a fan, or any blow of an elite or a boss shoves `p` back and makes them reel. */
+function staggerPlayer(S, rt, p, mob) {
+  if (p.dead) return;
+  const st = deriveStats(p), m = mapOfS(S, p.map);
+  const far = SFX.stagPx * (1 - st.kbr);
+  if (mob) {
+    const d = dist(mob.x, mob.y, p.x, p.y);
+    if (d > 0.5) {
+      const ux = (p.x - mob.x) / d, uy = (p.y - mob.y) / d;
+      let go = 0;
+      for (let k = 2; k <= far; k += 2) { if (!canStand(m, p.x + ux * k, p.y + uy * k)) break; go = k; }
+      if (go > 0) { p.x += ux * go; p.y += uy * go; p.fix = true; p.mvAt = S.now; }
+    }
+  }
+  p.stag = S.now + Math.round(SFX.stagMs * (1 - st.poise));
+  rt.ev.push(["sg", p.eid]);
+}
+
+// ── arrows (D.2): simulated, wall-blocked, stepped every tick
+
+/**
+ * Loose an arrow from `p` at `mob` (or along the aim). `kind` 0 plain, 1 finisher, 2+ skill (the
+ * client's trail); `pierce` how many monsters it passes through before it stops.
+ */
+function fireArrow(S, rt, p, mob, mult, pierce, kind) {
+  const arm = deriveStats(p).arm, sh = arm.shot || WKIND.bow.shot;
+  if (!rt.shots) rt.shots = [];
+  const mine = rt.shots.filter((s) => s.pid === p.pid);
+  if (mine.length >= SHOT_MAX) { const o = mine[0]; rt.shots.splice(rt.shots.indexOf(o), 1); rt.ev.push(["ae", o.id, Math.round(o.x), Math.round(o.y), 2]); }
+  const [ux, uy] = aimVec(p, mob);
+  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: sh.spd, left: arm.range || 150, r: sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0 };
+  rt.shots.push(shot);
+  rt.ev.push(["ar", shot.id, Math.round(shot.x), Math.round(shot.y), Math.round(ux * 1000), Math.round(uy * 1000), shot.spd, kind, p.eid]);
+  return shot;
+}
+/** How hard an arrow lands on `mob`: from 90 px or more a sure eye adds DEX's ranged power. */
+function arrowMult(p, shot, mob) {
+  const d = dist(shot.x0, shot.y0, mob.x, mob.y);
+  return shot.mult * (d >= SFX.far ? 1 + deriveStats(p).sneak : 1);
+}
+/** Move every arrow on one map one tick on: walls stop them, monsters take them (pierce + 1 at most). */
+function shotTick(S, rt, dt) {
+  if (!rt.shots || !rt.shots.length) return;
+  const m = mapOfS(S, rt.id);
+  for (let i = rt.shots.length - 1; i >= 0; i--) {
+    const s = rt.shots[i], p = S.players[s.pid];
+    const end = (how) => { rt.shots.splice(i, 1); rt.ev.push(["ae", s.id, Math.round(s.x), Math.round(s.y), how]); };
+    // a shooter who fell or left takes their arrows with them
+    if (!p || p.dead || p.map !== rt.id) { end(2); continue; }
+    const seg = Math.min(s.left, s.spd * dt);
+    // how far along the segment it gets before a wall (flying height: the ground point is 6 px below)
+    let free = seg, wall = false;
+    for (let k = 3; k <= seg + 0.01; k += 3) { if (!canFly(m, s.x + s.ux * k, s.y + 6 + s.uy * k) || solidAt(m, s.x + s.ux * k, s.y + 3 + s.uy * k)) { free = Math.max(0, k - 3); wall = true; break; } }
+    const hits = [];
+    for (const o of rt.mobs) {
+      if (o.dead || s.hit.includes(o.id)) continue;
+      const rx = o.x - s.x, ry = o.y - 6 - s.y, along = rx * s.ux + ry * s.uy;
+      if (along < -4 || along > free + 4) continue;
+      if (Math.abs(rx * s.uy - ry * s.ux) <= s.r + big(o) + 4) hits.push([along, o]);
+    }
+    hits.sort((a, b) => a[0] - b[0] || a[1].id - b[1].id);
+    let stop = null;
+    for (const [along, o] of hits) {
+      s.hit.push(o.id);
+      p.hitAct = [s.act, s.gain];
+      hurtMob(S, rt, o, p, arrowMult(p, s, o));
+      p.hitAct = null;
+      if (s.hit.length > s.pierce) { stop = along; break; }
+    }
+    if (stop !== null) { s.x += s.ux * Math.max(0, stop); s.y += s.uy * Math.max(0, stop); end(0); continue; }
+    s.x += s.ux * free; s.y += s.uy * free; s.left -= free;
+    if (wall) end(1);
+    else if (s.left <= 0.5) end(2);
+  }
+}
+/** A bow's basic attack: aim, draw, loose. The third of a combo flies harder and goes through one more. */
+function bowShot(S, rt, p, fin) {
+  const st = deriveStats(p), c = st.arm;
+  const mob = aimMob(rt, p, atkRange(p), c.arc || AIM_CONE);
+  if (mob) face(p, mob);
+  const [ux, uy] = aimVec(p, mob);
+  const far = mob ? dist(p.x, p.y, mob.x, mob.y) : c.range * 0.7;
+  rt.ev.push(["a", p.eid, 6, Math.round(p.x + ux * far), Math.round(p.y - 6 + uy * far), p.dir, p.combo]);
+  fireArrow(S, rt, p, mob, (c.mult || 1) * (fin ? FINISH.mult : 1), fin ? 1 : 0, fin ? 1 : 0);
+}
+
+// ── migration of the four-class sheets (B.11) and the test hero
+
+/** Old skill-training prices (the refund on migration). */
+const oldSkillCost = (sk, L) => ({ gold: Math.round((50 + sk.lv * 25) * L * (L + 1) / 2), xp: Math.round(tierXp(sk.lv) * 0.12 * L) });
+/**
+ * Spend `points` one by one on the stat furthest below its share (ties: stat order), none past 99.
+ * Returns the stats and the experience that path cost (the xpt of a migrated sheet).
+ */
+function allocate(shares, points) {
+  const st = freshSt();
+  let xpt = 0;
+  for (let n = 0; n < points; n++) {
+    let best = null, bd = -Infinity;
+    for (const k of ST_ORDER) {
+      if (st[k] >= ST_CAP) continue;
+      const gap = (shares[k] || 0) * (n + 1) - (st[k] - ST_BASE);
+      if (gap > bd + 1e-9) { bd = gap; best = k; }
+    }
+    if (!best) break;
+    xpt += pointCost(1 + n, st[best]);
+    st[best]++;
+  }
+  return { st, xpt };
+}
+/**
+ * A sheet from the four-class days (has `cls`, no `job`): a level 4L−3 hero with stats laid out like
+ * its class, the class weapon's mastery at its old level, the class's job from old level 20, every
+ * point of training and every skill level paid back, one free reset, and nothing taken from the bag.
+ */
+function migrateV10(ch) {
+  let cls = ch.cls === "ranger" || ch.cls === "archer" ? "lancer" : ch.cls;
+  if (!OLD_CLASS[cls]) cls = "warrior";
+  const L = clamp(Math.floor(num(ch.lvl) ? ch.lvl : 1), 1, 50);
+  let [wk, job] = OLD_CLASS[cls];
+  const w = isObj(ch.eq) && ch.eq.weapon && typeof ch.eq.weapon.id === "string" ? ch.eq.weapon.id : "";
+  if (cls === "mage" && w.startsWith("w_book_")) { wk = "book"; job = "warlock"; }
+  const lvl = Math.min(197, 4 * L - 3);
+  const { st, xpt } = allocate(BUILD[wk], lvl - 1);
+  let xp = num(ch.xp) ? Math.max(0, Math.floor(ch.xp)) : 0, gold = num(ch.gold) ? Math.max(0, Math.floor(ch.gold)) : 0;
+  // stat training: 120 + 40n experience a point, all back
+  const tr = isObj(ch.tr) ? ch.tr : {};
+  for (const k of ["str", "vit", "int", "grd"]) { const n = clamp(tr[k] | 0, 0, 100000); xp += 120 * n + 20 * n * (n - 1); }
+  // skill levels: every level bought, gold and experience, back
+  const skl = Array.isArray(ch.skl) ? ch.skl : [];
+  SKILLS[cls].forEach((sk, i) => { const top = clamp(skl[i] | 0 || 1, 1, 10); for (let l = 1; l < top; l++) { const c = oldSkillCost(sk, l); gold += c.gold; xp += c.xp; } });
+  const wm = freshWm();
+  wm[wk].lv = Math.min(WM_MAX, L);
+  if (cls === "mage") { const o = wk === "book" ? "staff" : "book"; wm[o].lv = Math.max(1, Math.floor(0.6 * L)); }
+  ch.cnt = isObj(ch.st) ? ch.st : {};
+  Object.assign(ch, { job: L >= JOB_WM ? job : "adventurer", lvl, st, xp: Math.min(2e9, xp), xpt, gold, wm, rs: 1, sw: 1 });
+  // skill entries are cleared (J2 fills its own); until then the old skills the mastery already holds go back on the bar
+  if (Array.isArray(ch.qs)) {
+    ch.qs = ch.qs.map((v) => (Array.isArray(v) && v[0] === "s" ? null : v));
+    SKILLS[cls].forEach((sk, i) => { const j = ch.qs.indexOf(null); if (sk.lv <= L && j >= 0 && j < 9) ch.qs[j] = ["s", i]; });
+  }
+  if (isObj(ch.eq) && !("weapon2" in ch.eq)) ch.eq.weapon2 = null;
+  delete ch.cls; delete ch.tr; delete ch.skl;
+  return ch;
+}
+/** Clamp a v10 sheet's jobs-and-stats fields (every load; never trust what was stored). */
+function cleanJobs(ch) {
+  const st = isObj(ch.st) ? ch.st : {};
+  ch.st = {};
+  for (const k of ST_ORDER) ch.st[k] = clamp(Math.floor(num(st[k]) ? st[k] : ST_BASE), ST_BASE, ST_CAP);
+  // a level is one point above 5; a sheet claiming more than 200 gives the extra back from its highest stats
+  while (levelOf(ch.st) > MAXLV) { const k = ST_ORDER.reduce((a, b) => (ch.st[b] > ch.st[a] ? b : a)); ch.st[k]--; }
+  ch.lvl = levelOf(ch.st);
+  ch.xp = num(ch.xp) ? clamp(Math.floor(ch.xp), 0, 2e9) : 0;
+  ch.xpt = num(ch.xpt) ? clamp(Math.floor(ch.xpt), 0, 2e9) : 0;
+  const wm = isObj(ch.wm) ? ch.wm : {};
+  ch.wm = {};
+  for (const k of WK_ORDER) {
+    const r = isObj(wm[k]) ? wm[k] : {}, lv = clamp(r.lv | 0 || 1, 1, WM_MAX);
+    ch.wm[k] = { lv, xp: lv >= WM_MAX ? 0 : clamp(Math.floor(num(r.xp) ? r.xp : 0), 0, wmNeed(lv) - 1) };
+  }
+  // a job once taken is never revoked, whatever the mastery says now
+  ch.job = typeof ch.job === "string" && Object.hasOwn(JOBS, ch.job) ? ch.job : "adventurer";
+  ch.rs = clamp(ch.rs | 0, 0, 9);
+  ch.sw = ch.sw ? 1 : 0;
+}
+/**
+ * A character for tests and probes: `wk` the weapon kind in hand (a tier-1 piece), `lvl` the level
+ * (stats laid out by that weapon's BUILD unless `st` is given), `wm` mastery levels by kind,
+ * `job` a job id. With `migrate`, mastery and job follow the old-class migration for that level.
+ */
+export function hero(name, o = {}) {
+  const ch = newChar(name, o.look || []);
+  const wk = WK_ORDER.includes(o.wk) ? o.wk : "sword";
+  ch.eq.weapon = plain(`w_${WK_ID[wk]}_1`);
+  ch.sw = 1;
+  const lvl = clamp(o.lvl | 0 || 1, 1, MAXLV);
+  if (isObj(o.st)) { for (const k of ST_ORDER) if (num(o.st[k])) ch.st[k] = o.st[k]; }
+  else { const a = allocate(BUILD[wk], lvl - 1); ch.st = a.st; ch.xpt = a.xpt; }
+  ch.lvl = levelOf(ch.st);
+  if (o.migrate) {
+    const L = Math.round(toTier(ch.lvl));
+    ch.wm[wk].lv = Math.min(WM_MAX, L);
+    if (L >= JOB_WM) ch.job = Object.keys(JOBS).find((id) => JOBS[id].kind === "single" && JOBS[id].wk[0] === wk);
+  }
+  if (isObj(o.wm)) for (const k of WK_ORDER) if (num(o.wm[k])) ch.wm[k].lv = clamp(o.wm[k] | 0, 1, WM_MAX);
+  if (typeof o.job === "string" && Object.hasOwn(JOBS, o.job)) ch.job = o.job;
+  if (o.wk2) ch.eq.weapon2 = plain(`w_${WK_ID[o.wk2]}_1`);
+  return ch;
+}
 // ───────────────────────────── the bag: its size, its tidying ─────────────────────────────
 // A character's bag holds ch.bagCap slots: INV_BASE (40) to start, +BAG_STEP (5) per bag_expand
 // up to INV_MAX (100), for gold on the BAG_COST curve (10-tables.js). Every bag-space check
@@ -4529,8 +4962,9 @@ function bagApply(S, p, a) {
 }
 // ───────────────────────────── inventory & loot ─────────────────────────────
 
-function resolveItem(key, cls) {
-  if (key[0] === "W" && key.length === 2) return `w_${cls}_${key[1]}`;
+/** Old clients asked for "W<tier>": the weapon of that tier of the kind in hand. */
+function resolveItem(key, ch) {
+  if (key[0] === "W" && key.length === 2) return `w_${WK_ID[weaponKind(ch)]}_${key[1]}`;
   return key;
 }
 function countItem(ch, id) {
@@ -4603,8 +5037,8 @@ function pickUp(S, p, dr) {
   } else if (dr.g) {
     p.ch.inv.push(dr.g);
     p.gain.push(["item", dr.it, 1, dr.q]);
-    if (dr.q === 3) p.ch.st.leg++;
-    if (dr.q === 4) p.ch.st.set++;
+    if (dr.q === 3) p.ch.cnt.leg++;
+    if (dr.q === 4) p.ch.cnt.set++;
     if (dr.q >= 3) checkAch(S, p);
     if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]${pp(gearName(dr.g), "을를")} 획득했습니다!`);
   } else {
@@ -4615,8 +5049,8 @@ function pickUp(S, p, dr) {
   p.dirty = true;
   return true;
 }
-/** What dying costs: a share of the level's experience (a revive feather spares it). */
-const deathLoss = (ch) => Math.floor(Math.min(ch.xp, xpNeed(ch.lvl)) * 0.03);
+/** What dying costs: 3% of the unspent experience, up to about one old level's worth (a revive feather spares it). */
+const deathLoss = (ch) => Math.floor(Math.min(ch.xp, 4 * pointCost(ch.lvl, STAT_K0)) * 0.03);
 function takeItem(ch, id, n) {
   for (let i = ch.inv.length - 1; i >= 0 && n > 0; i--) {
     const s = ch.inv[i];
@@ -4691,6 +5125,8 @@ function tierFor(lv) {
 /** Which kind of piece drops: weapons most often, jewellery least. */
 const DROP_TYPES = [["weapon", 24], ["helm", 13], ["armor", 15], ["gloves", 13], ["boots", 13], ["ring", 13], ["amulet", 9]];
 
+/** A dropped weapon's kind: half the time the looter's own, else any of the six. */
+const dropKind = (S, p) => (rnd(S) < 0.5 ? weaponKind(p.ch) : WK_ORDER[ri(S, 0, WK_ORDER.length - 1)]);
 /** What one looter finds on one corpse. Everyone in the party rolls their own. */
 function lootFor(S, rt, mob, p) {
   const d = MOBS[mob.k];
@@ -4708,11 +5144,8 @@ function lootFor(S, rt, mob, p) {
     let roll = rnd(S) * 100, type = "weapon";
     for (const [t, w] of DROP_TYPES) { if (roll < w) { type = t; break; } roll -= w; }
     let id;
-    if (type === "weapon") {
-      // weapons always fit the looter's class; a mage finds staves and books alike
-      const kinds = CLASSES[p.ch.cls].wk;
-      id = `w_${WK_ID[kinds[ri(S, 0, kinds.length - 1)]]}_${tier}`;
-    } else id = `${GEAR[type].pre}_${tier}`;
+    if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
+    else id = `${GEAR[type].pre}_${tier}`;
     let q = rollRarity(S, rank, st.mf);
     if (isJewel(id) && q === 0) q = 1;
     out.push({ g: rollGear(S, id, q, d.lv) });
@@ -4731,30 +5164,18 @@ function lootFor(S, rt, mob, p) {
 
 // ───────────────────────────── combat ─────────────────────────────
 
+/**
+ * Experience only piles up: it is spent on stat points at a campfire or at 수련관 카이 (action
+ * `train`, one point = one level). The first time a point is affordable, a word says where.
+ */
 function gainXp(S, p, n) {
   const ch = p.ch;
   n = Math.max(1, Math.round(n * (1 + stats(p).xp / 100)));
-  ch.xp += n;
+  ch.xp = Math.min(2e9, ch.xp + n);
   p.gain.push(["xp", n]);
-  while (ch.lvl < MAXLV && ch.xp >= xpNeed(ch.lvl)) {
-    ch.xp -= xpNeed(ch.lvl);
-    ch.lvl++;
-    p.stc = null;
-    const st = stats(p);
-    p.hp = st.mhp; p.mp = st.mmp;
-    p.gain.push(["lvl", ch.lvl]);
-    saveSoon(p);
-    S.maps[p.map].ev.push(["l", p.eid]);
-    S.maps[p.map].who = true;
-    // a skill just learned goes straight onto the bar, so the key is there to press (and auto-hunt uses it)
-    SKILLS[ch.cls].forEach((sk, i) => {
-      if (sk.lv !== ch.lvl) return;
-      const key = qsLearn(ch, i);
-      toast(p, `새 스킬 [${sk.name}]${pp(sk.name, "을를")} 배웠습니다!${key ? ` 단축칸 ${key}번에 올려 두었습니다.` : ""}`);
-    });
-    if (ch.lvl % 10 === 0) sys(S, `${ch.name}님이 레벨 ${ch.lvl}${pp(ch.lvl, "을를")} 달성했습니다!`);
-    if (ch.lvl === MAXLV) toast(p, "최고 레벨 달성! 이제 경험치는 수련에 쓰입니다.");
-    checkAch(S, p);
+  if (!p.lvHint && ch.lvl < MAXLV && ch.xp >= Math.min(...nextCosts(ch).filter((c) => c > 0))) {
+    p.lvHint = true;
+    toast(p, "레벨을 올릴 수 있습니다 — 모닥불이나 수련관에서 능력치를 고르세요.");
   }
   p.dirty = true;
 }
@@ -4768,7 +5189,7 @@ function dealMob(S, rt, mob, p, dmg, crit) {
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
   if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
   if (!mob.tgt) mob.tgt = p.pid;
-  rt.ev.push(["h", mob.id, dmg, crit ? 1 : 0, 0]);
+  rt.ev.push(["h", mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0]);
   if (mob.hp > 0) return false;
   killMob(S, rt, mob);
   return true;
@@ -4815,9 +5236,13 @@ function hurtMob(S, rt, mob, p, mult, sure) {
   if (mob.dead) return;
   const st = stats(p);
   const d = MOBS[mob.k];
+  // a blow beyond your depth, or from an unpractised hand, may only graze (×0.5, never a crit)
+  const graze = !sure && rnd(S) * 100 < grazeChance(p, mob);
   // a rogue finds the gaps their marks point to: +4% critical chance per mark
-  const crit = sure || rnd(S) * 100 < st.crit + (p.ch.cls === "rogue" ? marksOf(S, mob) * 4 : 0);
-  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? st.critd : 1) - d.def * 0.5;
+  const crit = !graze && (sure || rnd(S) * 100 < st.crit + (legacyCls(p.ch) === "rogue" ? marksOf(S, mob) * 4 : 0));
+  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? st.critd : 1) * (graze ? SFX.grazeK : 1) - d.def * (st.mag ? SFX.magDef : SFX.physDef);
+  // a dagger in a back that is not watching you
+  if (st.wk === "dagger" && mob.tgt !== p.pid) dmg *= 1 + st.sneak;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
   if (st.lg.giant && (mob.el || d.boss)) dmg *= 1.3;
   if (has(mob, "tough")) dmg *= 0.6;
@@ -4830,7 +5255,8 @@ function hurtMob(S, rt, mob, p, mult, sure) {
   }
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)));
   const x = mob.x, y = mob.y;
-  if (!dealMob(S, rt, mob, p, dmg, crit)) {
+  wmHit(S, p, mob);
+  if (!dealMob(S, rt, mob, p, dmg, graze ? 2 : crit)) {
     // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
     if (!mob.dead) stagger(S, mob, p, crit);
     return;
@@ -4856,6 +5282,8 @@ function killMob(S, rt, mob) {
   mob.dot = null;
   mob.mk = 0; mob.dec = null; mob.vuln = 0;
   rt.ev.push(["k", mob.id]);
+  // the hands that struck it learn from it
+  wmKill(S, rt, mob);
   // everyone who hit it, plus their party members standing nearby, shares the kill
   const looters = new Set();
   let top = null, topDmg = 0;
@@ -4897,9 +5325,9 @@ function killMob(S, rt, mob) {
       if (bq.n >= bq.need) toast(p, `반복 의뢰 [${d.name} ${bq.need}마리] 달성! 관리자에게 보고하세요.`);
     }
     sqProgress(S, p, "kill", (g) => g.mob === mob.k);
-    if (el === 1) ch.st.elite++;
-    else if (el === 2) { if (mob.evt) ch.st.evb++; else if (mob.temp) ch.st.fb++; else ch.st.guard++; }
-    if (n >= 2) ch.st.party++;
+    if (el === 1) ch.cnt.elite++;
+    else if (el === 2) { if (mob.evt) ch.cnt.evb++; else if (mob.temp) ch.cnt.fb++; else ch.cnt.guard++; }
+    if (n >= 2) ch.cnt.party++;
     dailyProg(S, p, "kill", mob.k);
     if (el >= 1) dailyProg(S, p, "elite");
     if (mob.k === "twinhare") tutStep(S, p, "hunt");
@@ -4936,7 +5364,7 @@ function killMob(S, rt, mob) {
 function blameOf(mob) {
   const d = MOBS[mob.k];
   const rank = d.boss ? "보스 " : mob.el === 2 ? (mob.evt ? "침공 우두머리 " : mob.temp ? "우두머리 " : "수문장 ") : mob.el ? "정예 " : "";
-  return { by: `Lv.${d.lv} ${rank}${d.name}`, lv: d.lv, el: d.boss ? 3 : mob.el | 0 };
+  return { by: `Lv.${shownLv(d.lv)} ${rank}${d.name}`, lv: shownLv(d.lv), el: d.boss ? 3 : mob.el | 0 };
 }
 function hurtPlayer(S, rt, p, raw, mob) {
   if (p.dead || S.now < (p.ghost || 0)) return;
@@ -5061,6 +5489,9 @@ function basicAttack(S, p) {
   p.combo = now - p.atkAt < atkCd(p) + COMBO_MS ? (p.combo + 1) % 3 : 0;
   const fin = p.combo === 2 || giant;
   p.atkAt = now;
+  newAct(p, false);
+  // a bow looses an arrow that flies (45-jobs.js): it lands, or not, a few ticks later
+  if (c.shot) { bowShot(S, rt, p, fin); return; }
   const range = atkRange(p);
   // a warrior without a sword puts their head down and butts
   const butt = !!p.sword;
@@ -5107,8 +5538,9 @@ function basicAttack(S, p) {
   };
   shove(mob, 1);
   hurtMob(S, rt, mob, p, mult);
-  if (p.ch.cls === "warrior") addGrit(p, 8);
-  if (p.ch.cls === "rogue" && !mob.dead) {
+  const lc = legacyCls(p.ch);
+  if (lc === "warrior") addGrit(p, 8);
+  if (lc === "rogue" && !mob.dead) {
     // every stab leaves a mark; a venomed blade leaves two and a poison that grows with them
     const v = p.venom && p.venom.n > 0 && p.venom.until > now ? p.venom : null;
     addMarks(S, mob, v ? 2 : 1);
@@ -5120,7 +5552,7 @@ function basicAttack(S, p) {
     }
   }
   for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6); }
-  if (st.lg.chain && rnd(S) < 0.25) {
+  if (st.lg.chain && rnd(S) < 0.25 * st.proc) {
     for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
       rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
       hurtMob(S, rt, o, p, 0.6);
@@ -5129,17 +5561,18 @@ function basicAttack(S, p) {
 }
 
 // ── the class mechanics
+// (jobs-and-stats J1 bridge: "the class" is now the old class of the weapon in hand, legacyCls; J2 replaces this part)
 
 /** What a skill costs right now: nothing to call a thrown sword back, nothing for a spell in a surge. */
 function skMp(p, i) {
-  const sk = SKILLS[p.ch.cls][i];
+  const sk = legacySkills(p.ch)[i];
   if (!sk) return 0;
   if (sk.id === "toss" && p.sword) return 0;
   if (sk.el && p.surge > p.S.now) return 0;
   return sk.mp;
 }
 function addGrit(p, n) {
-  if (p.ch.cls !== "warrior") return;
+  if (legacyCls(p.ch) !== "warrior") return;
   p.grit = Math.min(GRIT_MAX, (p.grit || 0) + n);
   p.gritAt = p.S.now;
 }
@@ -5155,7 +5588,7 @@ function addFocus(S, p) {
 }
 /** Whether this cast spends full focus on its empowered form. */
 function spendFocus(p, sk) {
-  if (p.ch.cls !== "lancer" || sk.ult || (p.focus || 0) < FOCUS_MAX) return false;
+  if (legacyCls(p.ch) !== "lancer" || sk.ult || (p.focus || 0) < FOCUS_MAX) return false;
   p.focus = 0;
   return true;
 }
@@ -5193,14 +5626,14 @@ function weave(S, rt, p, e, x, y, k) {
   for (const o of mobsWithin(rt, x, y, rx.r)) {
     if (rx.vuln) { o.vuln = now + rx.vuln; rt.ev.push(["vu", o.id, rx.vuln]); }
     if (rx.knock) { const d = dist(x, y, o.x, o.y) || 1; knock(m, o, (o.x - x) / d, (o.y - y) / d, rx.knock); }
-    hurtMob(S, rt, o, p, rx.mult * k);
+    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst));
   }
   if (!(p.surge > now)) p.weave = null;    // a reaction uses both up — but a surge keeps the chain going
   return rx;
 }
 /** The mage's footprints, a few seconds of them, for the rewind. */
 function trailPush(S, p) {
-  if (p.ch.cls !== "mage") return;
+  if (legacyCls(p.ch) !== "mage") return;
   if (!p.trail) p.trail = [];
   const last = p.trail[p.trail.length - 1];
   if (last && S.now - last[0] < 200) return;
@@ -5279,7 +5712,7 @@ function danceStep(S, p, now) {
 /** What every class keeps track of from moment to moment. */
 function classTick(S, p, now) {
   const rt = S.maps[p.map], m = mapOfS(p.S, p.map);
-  const cls = p.ch.cls;
+  const cls = legacyCls(p.ch);
   // a banner hurries the party standing by it
   let haste = 0;
   if (rt.props) for (const o of rt.props) {
@@ -5353,7 +5786,7 @@ function flagsOf(p, now) {
 const WEAVE_CODE = { f: 1, i: 2, l: 3 };
 /** The class gauge's live number: grit, venomed strikes left, focus, or the element held. */
 function crValue(p, now) {
-  switch (p.ch.cls) {
+  switch (legacyCls(p.ch)) {
     case "warrior": return Math.round(p.grit || 0);
     case "rogue": return p.venom && p.venom.until > now ? p.venom.n : 0;
     case "lancer": return p.focus || 0;
@@ -5361,7 +5794,8 @@ function crValue(p, now) {
   }
 }
 function crView(p, now) {
-  switch (p.ch.cls) {
+  switch (legacyCls(p.ch)) {
+    case "": return null;
     case "warrior": return { k: "grit", v: crValue(p, now), max: GRIT_MAX, sw: p.sword ? Math.max(0, p.sword.until - now) : 0, gi: Math.max(0, (p.giant || 0) - now) };
     case "rogue": return { k: "mark", v: crValue(p, now), max: MARK_MAX, coin: p.coinFree ? 1 : 0 };
     case "lancer": return { k: "focus", v: crValue(p, now), max: FOCUS_MAX, tip: Math.round(WKIND.spear.range * TIP.at) };
@@ -5370,19 +5804,20 @@ function crView(p, now) {
 }
 
 function castSkill(S, p, i) {
-  const sk = levelled(p.ch, i);
+  const sk = legacySkills(p.ch)[i];
   const st = stats(p);
   const c = st.arm;
   const rt = S.maps[p.map];
   const m = mapOfS(p.S, p.map);
   const now = S.now;
-  const k = 1 + SK_STEP * (((p.ch.skl && p.ch.skl[i]) || 1) - 1);
+  const k = 1;
   rouse(S, p);
   tutStep(S, p, "skill");
+  newAct(p, true);
   p.mp -= skMp(p, i);
-  // an element spell in a surge comes back in half the time
-  p.cds[i] = now + (sk.el && p.surge > now ? sk.cd * 0.5 : sk.cd);
-  if (st.lg.echo && rnd(S) < 0.2) { p.cds[i] = now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
+  // an element spell in a surge comes back in half the time; WIS shortens every wait
+  p.cds[i] = now + Math.round((sk.el && p.surge > now ? sk.cd * 0.5 : sk.cd) * (1 - st.cdr));
+  if (st.lg.echo && rnd(S) < 0.2 * st.proc) { p.cds[i] = now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
   // the coin came up tails last time: this skill is free to use again at once
   if (p.coinFree && sk.id !== "coin" && !(sk.id === "toss" && !p.sword)) { p.coinFree = false; p.cds[i] = now + 300; toast(p, `행운! [${sk.name}] 재사용 대기 없음`); }
   p.atkAt = now;
@@ -5406,7 +5841,7 @@ function castSkill(S, p, i) {
         // the recall: the sword comes home down the line, cutting and dragging what it passes
         const sw = p.sword;
         p.sword = null;
-        p.cds[i] = now + sk.cd;
+        p.cds[i] = now + Math.round(sk.cd * (1 - st.cdr));
         const d = dist(sw.x, sw.y, p.x, p.y) || 1, ux = (p.x - sw.x) / d, uy = (p.y - sw.y) / d;
         face(p, { x: sw.x, y: sw.y });
         ev(42, sw.x, sw.y - 6);
@@ -5805,7 +6240,8 @@ const DAILY_OTHER = ["elite", "fish", "cook", "chest", "bounty"];
 function rollDaily(ch, day) {
   const box = { seed: strHash(`${ch.name}:${day}`) | 0 };
   // the monster to hunt is one around the character's level that lives somewhere they can reach
-  const near = HUNTED.filter((k) => MOBS[k].lv <= ch.lvl + 2).sort((a, b) => Math.abs(MOBS[a].lv - ch.lvl) - Math.abs(MOBS[b].lv - ch.lvl)).slice(0, 4);
+  const t = toTier(ch.lvl);
+  const near = HUNTED.filter((k) => MOBS[k].lv <= t + 2).sort((a, b) => Math.abs(MOBS[a].lv - t) - Math.abs(MOBS[b].lv - t)).slice(0, 4);
   const k = near.length ? near[ri(box, 0, near.length - 1)] : HUNTED[0];
   const tasks = [{ kind: "kill", k, n: 0, need: 30 + 10 * ri(box, 0, 2) }];
   const pool = DAILY_OTHER.slice();
@@ -5825,13 +6261,15 @@ function ensureDaily(S, p) {
   if (had) toast(p, "일일 과제가 새로 갱신되었습니다.");
 }
 const dailyText = (t) => DAILY_TEXT[t.kind].replace("{mob}", t.k ? MOBS[t.k].name : "").replace("{need}", t.need);
+/** Rewards are paid on the world's scale: the tier a level maps to (the same as before levels went to 200). */
+const rewardTier = (ch) => Math.min(toTier(ch.lvl), TIER_MAX - 1);
 function dailyReward(ch, t) {
-  const lv = Math.min(ch.lvl, MAXLV - 1);
-  return { gold: 60 + 25 * ch.lvl, xp: Math.round(xpNeed(lv) * 0.12), stone: t.kind === "kill" || t.kind === "elite" || t.kind === "chest" ? 1 : 0 };
+  const tr = rewardTier(ch);
+  return { gold: Math.round(60 + 25 * tr), xp: Math.round(tierXp(tr) * 0.12), stone: t.kind === "kill" || t.kind === "elite" || t.kind === "chest" ? 1 : 0 };
 }
 function dailyBonus(ch) {
-  const lv = Math.min(ch.lvl, MAXLV - 1);
-  return { gold: 150 + 40 * ch.lvl, xp: Math.round(xpNeed(lv) * 0.25), stone: 3, gear: 1 };
+  const tr = rewardTier(ch);
+  return { gold: Math.round(150 + 40 * tr), xp: Math.round(tierXp(tr) * 0.25), stone: 3, gear: 1 };
 }
 /** Count one more of `kind` (and, for hunting, of monster `k`) toward today's tasks. */
 function dailyProg(S, p, kind, k) {
@@ -5850,7 +6288,7 @@ function rewardGear(S, p, ilvl, minQ) {
   for (const [ty, w] of DROP_TYPES) { if (roll < w) { type = ty; break; } roll -= w; }
   const tier = tierFor(ilvl);
   let id;
-  if (type === "weapon") { const kinds = CLASSES[p.ch.cls].wk; id = `w_${WK_ID[kinds[ri(S, 0, kinds.length - 1)]]}_${tier}`; }
+  if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
   else id = `${GEAR[type].pre}_${tier}`;
   const g = rollGear(S, id, Math.max(minQ, rollRarity(S, 1, 0)), ilvl);
   p.ch.inv.push(g);
@@ -5861,7 +6299,7 @@ function payout(S, p, r) {
   if (r.gold) { ch.gold += r.gold; p.gain.push(["gold", r.gold]); }
   if (r.stone && addItem(ch, "stone", r.stone)) p.gain.push(["item", "stone", r.stone, 0]);
   if (r.rune) { const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`; if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]); }
-  if (r.gear) rewardGear(S, p, ch.lvl, r.gearQ || 2);
+  if (r.gear) rewardGear(S, p, Math.floor(toTier(ch.lvl)), r.gearQ || 2);
   if (r.xp) gainXp(S, p, r.xp);
   p.dirty = true;
 }
@@ -5872,15 +6310,15 @@ const ACH = [
   ["hunt100", "사냥", "첫 사냥꾼", "몬스터 100마리 처치", 5, (c) => c.kills >= 100],
   ["hunt1000", "사냥", "숙련된 사냥꾼", "몬스터 1,000마리 처치", 10, (c) => c.kills >= 1000, "사냥꾼"],
   ["hunt10000", "사냥", "학살자", "몬스터 10,000마리 처치", 30, (c) => c.kills >= 10000, "학살자", [["atkp", 2]]],
-  ["elite10", "사냥", "정예 사냥", "정예 몬스터 10마리 처치", 5, (c) => c.st.elite >= 10],
-  ["elite100", "사냥", "정예 학살", "정예 몬스터 100마리 처치", 15, (c) => c.st.elite >= 100, "정예 사냥꾼", [["crit", 1]]],
-  ["fb1", "사냥", "우두머리 토벌", "사냥터 우두머리 처치", 10, (c) => c.st.fb >= 1],
-  ["fb10", "사냥", "우두머리 사냥꾼", "사냥터 우두머리 10마리 처치", 20, (c) => c.st.fb >= 10, "우두머리 사냥꾼", [["hp", 40]]],
-  ["guard1", "사냥", "수문장 격파", "던전 수문장 처치", 10, (c) => c.st.guard >= 1],
+  ["elite10", "사냥", "정예 사냥", "정예 몬스터 10마리 처치", 5, (c) => c.cnt.elite >= 10],
+  ["elite100", "사냥", "정예 학살", "정예 몬스터 100마리 처치", 15, (c) => c.cnt.elite >= 100, "정예 사냥꾼", [["crit", 1]]],
+  ["fb1", "사냥", "우두머리 토벌", "사냥터 우두머리 처치", 10, (c) => c.cnt.fb >= 1],
+  ["fb10", "사냥", "우두머리 사냥꾼", "사냥터 우두머리 10마리 처치", 20, (c) => c.cnt.fb >= 10, "우두머리 사냥꾼", [["hp", 40]]],
+  ["guard1", "사냥", "수문장 격파", "던전 수문장 처치", 10, (c) => c.cnt.guard >= 1],
   ["boss", "사냥", "균열을 닫은 자", "균열의 군주 처치", 30, (c) => (c.mk.boss || 0) >= 1, "균열을 닫은 자", [["atkp", 3]]],
   ["abyss", "사냥", "심연을 넘은 자", "심연의 어미 처치", 50, (c) => (c.mk.abyssboss || 0) >= 1, "심연을 넘은 자", [["atkp", 4], ["critd", 10]]],
-  ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, (c) => c.st.evt >= 1],
-  ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.st.evt >= 10, "균열 수호자", [["def", 3]]],
+  ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, (c) => c.cnt.evt >= 1],
+  ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.cnt.evt >= 10, "균열 수호자", [["def", 3]]],
   ["dim1", "사냥", "차원의 틈", "차원 균열 정화", 10, (c) => dimCnt(c).dim >= 1],
   ["dim10", "사냥", "차원 탐험가", "차원 균열 10번 정화", 25, (c) => dimCnt(c).dim >= 10, "차원 탐험가", [["mf", 5]]],
   ["wp3", "탐험", "이동의 돌", "이동의 돌 3개 깨우기", 5, (c) => wpCount(c) >= 3],
@@ -5892,22 +6330,25 @@ const ACH = [
   ["colall", "숙련", "박물학자", "모든 지역의 몬스터 도감 완성", 50, (c) => REGIONS.every((id) => regionDone(c, id)), "박물학자", [["mf", 10]]],
   ["fish10", "생활", "낚시꾼", "물고기 10마리 낚기", 5, (c) => c.fish >= 10],
   ["fish100", "생활", "강태공", "물고기 100마리 낚기", 15, (c) => c.fish >= 100, "강태공"],
-  ["carp", "생활", "황금 잉어", "황금 잉어 낚기", 15, (c) => c.st.carp >= 1],
-  ["cook10", "생활", "요리사", "요리 10번 성공", 10, (c) => c.st.cook >= 10, "요리사"],
-  ["rest10", "생활", "모닥불 단골", "모닥불의 온기 10번 받기", 5, (c) => c.st.rest >= 10],
-  ["leg", "장비", "첫 전설", "전설 장비 획득", 10, (c) => c.st.leg >= 1],
-  ["set", "장비", "세트 수집가", "세트 장비 획득", 10, (c) => c.st.set >= 1],
-  ["enh7", "장비", "강화의 손길", "장비 +7 강화 성공", 10, (c) => c.st.enh >= 7],
-  ["enh10", "장비", "명장", "장비 +10 강화 성공", 30, (c) => c.st.enh >= 10, "명장", [["def", 4]]],
-  ["rw", "장비", "룬어 완성", "룬어 완성", 10, (c) => c.st.rw >= 1],
-  ["party100", "함께", "함께하는 사냥", "파티로 몬스터 100마리 처치", 10, (c) => c.st.party >= 100, "동료"],
+  ["carp", "생활", "황금 잉어", "황금 잉어 낚기", 15, (c) => c.cnt.carp >= 1],
+  ["cook10", "생활", "요리사", "요리 10번 성공", 10, (c) => c.cnt.cook >= 10, "요리사"],
+  ["rest10", "생활", "모닥불 단골", "모닥불의 온기 10번 받기", 5, (c) => c.cnt.rest >= 10],
+  ["leg", "장비", "첫 전설", "전설 장비 획득", 10, (c) => c.cnt.leg >= 1],
+  ["set", "장비", "세트 수집가", "세트 장비 획득", 10, (c) => c.cnt.set >= 1],
+  ["enh7", "장비", "강화의 손길", "장비 +7 강화 성공", 10, (c) => c.cnt.enh >= 7],
+  ["enh10", "장비", "명장", "장비 +10 강화 성공", 30, (c) => c.cnt.enh >= 10, "명장", [["def", 4]]],
+  ["rw", "장비", "룬어 완성", "룬어 완성", 10, (c) => c.cnt.rw >= 1],
+  ["party100", "함께", "함께하는 사냥", "파티로 몬스터 100마리 처치", 10, (c) => c.cnt.party >= 100, "동료"],
   ["guild", "함께", "길드원", "길드 가입", 5, (c) => !!c.guild],
-  ["gfound", "함께", "길드장", "길드 창설", 10, (c) => c.st.gfound >= 1, "길드장"],
-  ["lv10", "성장", "견습 모험가", "레벨 10 달성", 5, (c) => c.lvl >= 10],
-  ["lv30", "성장", "베테랑 모험가", "레벨 30 달성", 15, (c) => c.lvl >= 30, "베테랑"],
-  ["lv50", "성장", "전설의 모험가", "레벨 50 달성", 40, (c) => c.lvl >= 50, "전설의 모험가", [["hp", 80]]],
-  ["daily1", "성장", "성실한 하루", "일일 과제 보상 상자 받기", 5, (c) => c.st.daily >= 1],
-  ["daily30", "성장", "성실한 모험가", "일일 과제 보상 상자 30번 받기", 20, (c) => c.st.daily >= 30, "성실한 모험가", [["gold", 10]]],
+  ["gfound", "함께", "길드장", "길드 창설", 10, (c) => c.cnt.gfound >= 1, "길드장"],
+  // (ids from the 50-level days; holders keep them)
+  ["lv10", "성장", "견습 모험가", "레벨 40 달성", 5, (c) => c.lvl >= 40],
+  ["lv30", "성장", "베테랑 모험가", "레벨 120 달성", 15, (c) => c.lvl >= 120, "베테랑"],
+  ["lv50", "성장", "전설의 모험가", "레벨 200 달성", 40, (c) => c.lvl >= 200, "전설의 모험가", [["hp", 80]]],
+  ["job1", "성장", "첫 전직", "전직관 아르센에게서 전직하기", 10, (c) => c.job !== "adventurer"],
+  ["job2", "성장", "두 갈래 길", "두 무기의 길(혼합 직업)로 전직하기", 20, (c) => !!JOBS[c.job] && JOBS[c.job].kind === "hybrid"],
+  ["daily1", "성장", "성실한 하루", "일일 과제 보상 상자 받기", 5, (c) => c.cnt.daily >= 1],
+  ["daily30", "성장", "성실한 모험가", "일일 과제 보상 상자 30번 받기", 20, (c) => c.cnt.daily >= 30, "성실한 모험가", [["gold", 10]]],
 ].map(([id, cat, name, desc, pts, test, title, bonus]) => ({ id, cat, name, desc, pts, test, title: title || null, bonus: bonus || null }));
 const ACH_BY = Object.fromEntries(ACH.map((a) => [a.id, a]));
 /** Every mastery star a character has earned. */
@@ -6028,12 +6469,12 @@ function endEvent(S, e) {
   const hi = MAP_META[e.map].band ? MAP_META[e.map].band[1] : 10;
   list.forEach(([pid, d], rank) => {
     const p = S.players[pid], share = d / total;
-    const lv = Math.min(p.ch.lvl, MAXLV - 1);
+    const lv = rewardTier(p.ch);
     payout(S, p, {
-      gold: Math.round(40 * hi * (0.5 + 2 * share)), xp: Math.round(xpNeed(lv) * (0.06 + 0.3 * share)),
+      gold: Math.round(40 * hi * (0.5 + 2 * share)), xp: Math.round(tierXp(lv) * (0.06 + 0.3 * share)),
       stone: 1 + (share >= 0.25 ? 1 : 0) + (rank === 0 ? 2 : 0), rune: rank < 3, gear: rank === 0 ? 1 : 0, gearQ: 2,
     });
-    p.ch.st.evt++;
+    p.ch.cnt.evt++;
     if (rank === 0 || (rank < 3 && cosRoll(S, p, "rift") < COS_RIFT_TOP3)) cosFrom(S, p, "rift", "균열 침공");
     toast(p, `균열 침공 보상 — 기여도 ${Math.round(share * 100)}%${rank < 3 ? ` (${rank + 1}위)` : ""}`);
     checkAch(S, p);
@@ -6054,12 +6495,14 @@ function evtView(S, p) {
 // ── first steps: a short tutorial chain beside the main quests
 const TUT = [
   { id: "talk", title: "관리자에게 말 걸기", hint: "광장 분수 앞의 관리자 엘더윈에게 다가가 F를 누르세요.", reward: { gold: 20 } },
-  { id: "equip", title: "무기 장착하기", hint: "C로 캐릭터 창을 열어 무기를 장착하세요.", reward: { gold: 20 } },
+  { id: "equip", title: "무기 장착하기", hint: "수련관 카이에게 무기를 하나 받아 C 창에서 장착하세요.", reward: { gold: 20 } },
   { id: "bag", title: "가방 열기", hint: "I를 눌러 가방을 열어 보세요.", reward: { gold: 20 } },
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
   { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
   { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
-  { id: "skill", title: "스킬 써 보기", hint: "레벨 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 숫자 키(처음이면 1)를 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
+  { id: "skill", title: "스킬 써 보기", hint: "무기 숙련 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 숫자 키(처음이면 1)를 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
+  // appended (the index is persisted): spending experience on a stat point
+  { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁에서 C 창 → 능력치에서 한 칸 올려 보세요.", reward: { gold: 50 } },
 ];
 function tutStep(S, p, id) {
   const ch = p.ch, step = TUT[ch.tut.i];
@@ -6073,7 +6516,7 @@ function tutStep(S, p, id) {
   toast(p, `[첫걸음] ${step.title} 완료!${next ? ` 다음: ${next.title}` : " 모든 첫걸음을 마쳤습니다!"}`);
   p.dirty = true;
   // a step already done needs no doing
-  if (next && next.id === "equip" && ch.eq.weapon) tutStep(S, p, "equip");
+  if (next && next.id === "equip" && ch.eq.weapon && ch.sw) tutStep(S, p, "equip");
 }
 
 // ───────────────────────────── the turning day, the weather, the fire at night ─────────────────────────────
@@ -6207,7 +6650,7 @@ function warmTick(S, p, fire, now) {
   // the warmth keeps the best company it has had while it lasts
   p.warmN = clamp(Math.max(live ? p.warmN || 0 : 0, n), 1, WARM_N);
   p.warm = now + WARM_MS; p.warmPct = Math.max(had, w.pct);
-  p.ch.st.rest++;
+  p.ch.cnt.rest++;
   tutStep(S, p, "rest");
   checkAch(S, p);
   p.dirty = true;
@@ -6392,10 +6835,10 @@ const sqView = (ch) => SIDE.map((q) => [q.id, sqState(ch, q), Object.hasOwn(ch.s
 // fails. Nobody inside for 20 s, and it is gone. Never saved: a player saved inside wakes in town.
 // The map comes from dimension() (31-maps-dim.js); the world keeps it in S.dims (registerDim).
 
-/** Achievement counters live in `ch.st` today (a later rework renames them): every rift counter goes through here. */
-const dimCnt = (ch) => ch.st;
-/** The level an instance is made for, from the levels of the players going in (one place for the level rules). */
-const dimLvOf = (ps) => clamp(Math.max(...ps.map((o) => o.ch.lvl)), 10, MAXLV - 1);
+/** Achievement counters live in `ch.cnt` (jobs-and-stats J1 moved them from `ch.st`): every rift counter goes through here. */
+const dimCnt = (ch) => ch.cnt;
+/** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
+const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), 10, TIER_MAX - 1);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 const dimHk = (n, lv, mlv) => (DIM.hpBase + DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv)) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
 
@@ -6500,7 +6943,7 @@ function dimStart(S, ps, partyId) {
     const [x, y] = dimSpot(map, i);
     changeMap(S, o, id, x, y);
     dim.members[o.pid] = S.now;
-    toast(o, `[${DIM_THEMES[theme].name}] 차원 균열 Lv.${lv}에 들어왔습니다. 15분 안에 균열을 정화하세요!`);
+    toast(o, `[${DIM_THEMES[theme].name}] 차원 균열 Lv.${shownLv(lv)}에 들어왔습니다. 15분 안에 균열을 정화하세요!`);
     o.dirty = true;
   });
   rt.ev.push(["dm", "open", ...tilePx(map.dim.start)]);
@@ -6642,8 +7085,8 @@ function dimBuff(S, dim, p, kind) {
     else {
       const st = stats(o);
       o.mp = Math.min(st.mmp, o.mp + st.mmp * DIM.gaugeMp);
-      if (o.ch.cls === "warrior") o.grit = GRIT_MAX;
-      if (o.ch.cls === "lancer") o.focus = FOCUS_MAX;
+      if (legacyCls(o.ch) === "warrior") o.grit = GRIT_MAX;
+      if (legacyCls(o.ch) === "lancer") o.focus = FOCUS_MAX;
     }
     o.dirty = true;
     toast(o, `[${name}] ${kind === "atk" ? `공격력 +${Math.round(DIM.atkK * 100)}%` : kind === "spd" ? "이동 속도 증가" : kind === "shield" ? `받는 피해 -${Math.round(DIM.ward * 100)}%` : "마나와 기력 회복"}${ms ? ` (${ms / 1000}초)` : ""}`);
@@ -6787,7 +7230,7 @@ function dimApply(S, p, a) {
       const [x, y] = dimSpot(dim.map, dimInside(S, dim.id).length);
       dim.members[p.pid] = S.now;
       changeMap(S, p, dim.id, x, y);
-      toast(p, `차원 균열 Lv.${dim.lv}에 합류했습니다.`);
+      toast(p, `차원 균열 Lv.${shownLv(dim.lv)}에 합류했습니다.`);
       for (const o of dimInside(S, dim.id)) if (o !== p) toast(o, `${p.ch.name}님이 균열에 합류했습니다.`);
       p.dirty = true;
       break;
@@ -7458,11 +7901,6 @@ function enhCost(g) {
   const tier = ITEMS[g.id].tier;
   return { gold: 60 * tier * (g.enh + 1), stone: g.enh < 3 ? 1 : g.enh < 6 ? 2 : 3 };
 }
-function trainTotal(have, n) {
-  let c = 0;
-  for (let i = 0; i < n; i++) c += trainCost(have + i);
-  return c;
-}
 function byEid(S, eid) {
   for (const pid of Object.keys(S.players)) if (S.players[pid].eid === eid) return S.players[pid];
   return null;
@@ -7616,6 +8054,7 @@ export function validateAction(S, pid, a) {
     case "atk":
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       if (p.dance) return bad("그림자 무도 중입니다");
+      if (now < (p.stag || 0)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
     case "warp": {
@@ -7630,11 +8069,14 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "sk": {
-      const sk = Number.isInteger(a.i) ? SKILLS[ch.cls][a.i] : null;
-      if (!sk) return bad("없는 스킬");
+      // until J2: the old skills of the weapon in hand, learned by its mastery
+      const sk = Number.isInteger(a.i) ? legacySkills(ch)[a.i] : null;
+      if (!sk) return bad(legacyCls(ch) ? "없는 스킬" : "이 무기로 쓸 수 있는 스킬이 아직 없습니다");
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      if (ch.lvl < sk.lv) return bad(`레벨 ${sk.lv}에 배울 수 있습니다`);
+      const wk = weaponKind(ch);
+      if (ch.wm[wk].lv < sk.lv) return bad(`[${WK_NAME[wk]}] 숙련 ${sk.lv}에 배웁니다`);
       if (p.dance) return bad("그림자 무도 중입니다");
+      if (now < (p.stag || 0)) return bad("stag");
       if (now < p.cds[a.i]) return bad("재사용 대기 중입니다");
       if (p.mp < skMp(p, a.i)) return bad("MP가 부족합니다");
       return OK;
@@ -7662,8 +8104,13 @@ export function validateAction(S, pid, a) {
       const s = ch.inv[a.s];
       if (!s || !isGear(s.id)) return bad("장착할 수 없습니다");
       const it = ITEMS[s.id];
-      if (it.cls && it.cls !== ch.cls) return bad("다른 직업의 장비입니다");
       if (ch.lvl < it.req) return bad(`레벨 ${it.req}부터 착용할 수 있습니다`);
+      if (a.k === "weapon2") {
+        // a hybrid's second weapon: one of the pair
+        if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 보조 무기를 들 수 있습니다");
+        if (it.type !== "weapon" || !JOBS[ch.job].wk.includes(it.wk)) return bad(`${JOBS[ch.job].wk.map((k) => WK_NAME[k]).join("이나 ")}만 들 수 있습니다`);
+        return OK;
+      }
       if (a.k !== undefined && !slotsFor(it.type).includes(a.k)) return bad("그 부위에는 착용할 수 없습니다");
       return OK;
     }
@@ -7681,24 +8128,15 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "train": {
-      if (!TRAIN[a.k]) return bad("잘못된 능력치");
-      const n = a.n | 0;
-      if (n !== 1 && n !== 10) return bad("잘못된 횟수");
-      if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
-      if (ch.xp < trainTotal(ch.tr[a.k], n)) return bad("경험치가 부족합니다");
-      return OK;
-    }
-    case "sklv": {
-      const sk = Number.isInteger(a.i) ? SKILLS[ch.cls][a.i] : null;
-      if (!sk) return bad("없는 스킬");
-      if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
-      if (ch.lvl < sk.lv) return bad(`레벨 ${sk.lv}에 배울 수 있습니다`);
-      const L = ch.skl[a.i];
-      if (L >= SK_MAX) return bad("이미 최고 레벨입니다");
-      const c = skillCost(sk, L);
-      if (ch.lvl < c.lvl) return bad(`캐릭터 레벨 ${c.lvl}부터 올릴 수 있습니다`);
-      if (ch.gold < c.gold) return bad("골드가 부족합니다");
-      if (ch.xp < c.xp) return bad("경험치가 부족합니다");
+      // stat points bought with experience, at a campfire or at 수련관 카이: a = [str, wil, dex, int, wis, luk]
+      if (!Array.isArray(a.a) || a.a.length !== ST_ORDER.length || !a.a.every((v) => Number.isInteger(v) && v >= 0 && v <= 50)) return bad("잘못된 능력치");
+      const n = a.a.reduce((s, v) => s + v, 0);
+      if (n < 1 || n > 50) return bad("잘못된 능력치");
+      if (p.dead) return bad("쓰러진 상태입니다");
+      if (!fireNear(S.maps[p.map], p) && !npcNear(p, "train")) return bad("모닥불 곁이나 수련관 앞에서 레벨을 올릴 수 있습니다");
+      if (ST_ORDER.some((k, i) => ch.st[k] + a.a[i] > ST_CAP)) return bad(`능력치는 ${ST_CAP}까지 올릴 수 있습니다`);
+      if (ch.lvl + n > MAXLV) return bad("최고 레벨입니다");
+      if (ch.xp < batchCost(ch, a.a)) return bad("경험치가 부족합니다");
       return OK;
     }
     case "wh": {
@@ -7728,8 +8166,7 @@ export function validateAction(S, pid, a) {
       if (n < 1 || n > STACK) return bad("잘못된 수량");
       if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
       if (!goodsNear(p).has(a.id)) return bad("이 가게에서는 팔지 않는 물건입니다");
-      const id = resolveItem(a.id, ch.cls);
-      if (ITEMS[id].cls && ITEMS[id].cls !== ch.cls) return bad("다른 직업의 장비입니다");
+      const id = resolveItem(a.id, ch);
       if (ch.gold < ITEMS[id].price * n) return bad("골드가 부족합니다");
       if (!canAdd(ch, id, n)) return bad("가방이 가득 찼습니다");
       return OK;
@@ -7783,7 +8220,7 @@ export function validateAction(S, pid, a) {
       if (a.a === "take") {
         const d = MOBS[a.k];
         if (typeof a.k !== "string" || !d || d.boss || d.chest) return bad("그런 의뢰는 없습니다");
-        if (d.lv > ch.lvl + 4) return bad("아직 감당하기 어려운 상대입니다");
+        if (d.lv > toTier(ch.lvl) + 4) return bad("아직 감당하기 어려운 상대입니다");
         return OK;
       }
       if (a.a === "done") return ch.bq && ch.bq.n >= ch.bq.need ? OK : bad("아직 의뢰를 마치지 못했습니다");
@@ -7808,6 +8245,35 @@ export function validateAction(S, pid, a) {
     case "bag_expand": return bagValidate(S, p, a);
     case "house_buy": case "house_upgrade": case "house_style": case "house_visit": case "house_leave":
     case "furn_buy": case "furn_place": case "furn_rot": case "furn_pick": case "h_dep": case "h_wd": case "h_sort": case "h_rest": return homeValidate(S, p, a);
+    // ── jobs and stats (45-jobs.js): reset, the starter weapon, a job, a hybrid's swap
+    case "respec": {
+      if (p.dead) return bad("쓰러진 상태입니다");
+      if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
+      if (ch.lvl <= 1) return bad("되돌릴 능력치가 없습니다");
+      return OK;
+    }
+    case "starter": {
+      if (ch.sw) return bad("이미 무기를 받았습니다");
+      if (!WK_ORDER.includes(a.wk)) return bad("그런 무기는 없습니다");
+      if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
+      if (ch.inv.length >= bagCap(ch)) return bad("가방이 가득 찼습니다");
+      return OK;
+    }
+    case "job_change": {
+      if (typeof a.j !== "string") return bad("없는 직업입니다");
+      const why = jobOk(ch, a.j);
+      if (why) return bad(why);
+      if (!npcNear(p, "job")) return bad("전직관이 너무 멉니다");
+      if (ch.gold < JOBS[a.j].cost) return bad("골드가 부족합니다");
+      return OK;
+    }
+    case "wsw": {
+      if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 무기를 바꿔 들 수 있습니다");
+      if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
+      if (!ch.eq.weapon2) return bad("보조 무기가 없습니다");
+      if (now < (p.wswAt || 0)) return bad("wsw");
+      return OK;
+    }
     default:
       return bad("알 수 없는 행동");
   }
@@ -7896,20 +8362,25 @@ export function applyAction(S, pid, a) {
       const s = ch.inv[a.s];
       // a ring goes where asked, else on the first bare finger
       const fits = slotsFor(ITEMS[s.id].type);
-      const k = fits.includes(a.k) ? a.k : fits.find((o) => !ch.eq[o]) || fits[0];
-      const old = ch.eq[k];
+      const k = a.k === "weapon2" ? "weapon2" : fits.includes(a.k) ? a.k : fits.find((o) => !ch.eq[o]) || fits[0];
+      const old = ch.eq[k], was = legacyCls(ch);
       ch.eq[k] = s;
       if (old) ch.inv[a.s] = old;
       else ch.inv.splice(a.s, 1);
+      // another kind of weapon in hand: whatever the last one had going is gone
+      if (legacyCls(ch) !== was) classReset(p, true);
       afterGear(S, p);
       if (k === "weapon") tutStep(S, p, "equip");
       break;
     }
-    case "uneq":
+    case "uneq": {
+      const was = legacyCls(ch);
       ch.inv.push(ch.eq[a.k]);
       ch.eq[a.k] = null;
+      if (legacyCls(ch) !== was) classReset(p, true);
       afterGear(S, p);
       break;
+    }
     case "rune": {
       const g = ch.eq[a.k];
       const key = ITEMS[ch.inv[a.s].id].rune;
@@ -7918,29 +8389,29 @@ export function applyAction(S, pid, a) {
       g.ru[a.i] = key;
       const rw = runeword(g);
       toast(p, rw ? `룬어 [${rw.name}] 완성!` : `${RUNES[key][0]} 룬을 끼웠습니다.`);
-      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]${pp(rw.name, "을를")} 완성했습니다!`); ch.st.rw++; checkAch(S, p); }
+      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]${pp(rw.name, "을를")} 완성했습니다!`); ch.cnt.rw++; checkAch(S, p); }
       S.maps[p.map].ev.push(["e", p.eid, 1]);
       afterGear(S, p);
       break;
     }
     case "train": {
-      const n = a.n | 0;
-      ch.xp -= trainTotal(ch.tr[a.k], n);
-      ch.tr[a.k] += n;
+      // one point = one level: the stats rise, a full heal as of old, the news at every fifty
+      const cost = batchCost(ch, a.a), from = ch.lvl;
+      ch.xp -= cost;
+      ch.xpt += cost;
+      ST_ORDER.forEach((k, i) => { ch.st[k] += a.a[i]; });
+      ch.lvl = levelOf(ch.st);
       p.stc = null;
+      const st = stats(p);
+      p.hp = st.mhp; p.mp = st.mmp;
+      p.gain.push(["lvl", ch.lvl]);
+      S.maps[p.map].ev.push(["l", p.eid]);
+      S.maps[p.map].who = true;
+      toast(p, `레벨 ${ch.lvl}! ${STATS.filter((_, i) => a.a[i]).map((s) => `${s[1]} +${a.a[ST_ORDER.indexOf(s[0])]}`).join(" · ")}`);
+      for (let l = from + 1; l <= ch.lvl; l++) if (l % 50 === 0) sys(S, `${ch.name}님이 레벨 ${l}${pp(l, "을를")} 달성했습니다!`);
+      tutStep(S, p, "level");
+      checkAch(S, p);
       p.dirty = true;
-      S.maps[p.map].ev.push(["u", p.eid, 2]);
-      toast(p, `${TRAIN[a.k].name} +${n} (누적 ${ch.tr[a.k]})`);
-      break;
-    }
-    case "sklv": {
-      const sk = SKILLS[ch.cls][a.i], c = skillCost(sk, ch.skl[a.i]);
-      ch.gold -= c.gold;
-      ch.xp -= c.xp;
-      const L = ++ch.skl[a.i];
-      p.dirty = true;
-      S.maps[p.map].ev.push(["u", p.eid, 2]);
-      toast(p, `[${sk.name}] 스킬 레벨 ${L}!${L === 5 || L === 10 ? " 재사용 대기시간이 줄었습니다." : ""}`);
       break;
     }
     case "wh": {
@@ -8000,7 +8471,7 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     case "buy": {
-      const id = resolveItem(a.id, ch.cls);
+      const id = resolveItem(a.id, ch);
       const n = a.n | 0;
       ch.gold -= ITEMS[id].price * n;
       addItem(ch, id, n);
@@ -8031,7 +8502,7 @@ export function applyAction(S, pid, a) {
         g.enh++;
         toast(p, `${gearFull(g)} 강화 성공!`);
         if (g.enh >= 7) sys(S, `${ch.name}님이 ${gearFull(g)} 강화에 성공했습니다!`);
-        ch.st.enh = Math.max(ch.st.enh, g.enh);
+        ch.cnt.enh = Math.max(ch.cnt.enh, g.enh);
         checkAch(S, p);
       } else if (g.enh >= 5) {
         g.enh--;
@@ -8076,7 +8547,7 @@ export function applyAction(S, pid, a) {
       if (score >= 95) toast(p, "완벽한 낚시!");
       if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, id === "fish_l" ? 3 : id === "fish_m" ? 1 : 0]);
       ch.fish++;
-      if (id === "fish_l") { sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`); ch.st.carp++; }
+      if (id === "fish_l") { sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`); ch.cnt.carp++; }
       if (id.startsWith("fish")) dailyProg(S, p, "fish");
       checkAch(S, p);
       p.dirty = true;
@@ -8091,7 +8562,7 @@ export function applyAction(S, pid, a) {
       addItem(ch, out, n);
       p.gain.push(["item", out, n, 0]);
       toast(p, score < 35 ? "태워 버렸습니다…" : score >= 85 ? `완벽한 요리! ${ITEMS[out].name} 2개` : `${ITEMS[out].name} 완성`);
-      if (score >= 35) { ch.st.cook++; dailyProg(S, p, "cook"); checkAch(S, p); }
+      if (score >= 35) { ch.cnt.cook++; dailyProg(S, p, "cook"); checkAch(S, p); }
       S.maps[p.map].ev.push(["u", p.eid, 0]);
       p.dirty = true;
       break;
@@ -8207,7 +8678,7 @@ export function applyAction(S, pid, a) {
       ch.gold -= GUILD_COST;
       ch.guild = a.name; ch.gm = 1;
       sys(S, `${ch.name}님이 길드 [${a.name}]${pp(a.name, "을를")} 세웠습니다!`);
-      ch.st.gfound = 1;
+      ch.cnt.gfound = 1;
       checkAch(S, p);
       S.maps[p.map].who = true;
       p.dirty = true;
@@ -8297,7 +8768,7 @@ export function applyAction(S, pid, a) {
       const dl = ch.daily;
       if (a.i === "bonus") {
         dl.bonus = true;
-        ch.st.daily++;
+        ch.cnt.daily++;
         toast(p, "일일 과제 보상 상자를 열었습니다!");
         payout(S, p, dailyBonus(ch));
         cosFrom(S, p, "daily", "일일 과제 보상 상자");
@@ -8330,6 +8801,49 @@ export function applyAction(S, pid, a) {
     case "bag_expand": bagApply(S, p, a); break;
     case "house_buy": case "house_upgrade": case "house_style": case "house_visit": case "house_leave":
     case "furn_buy": case "furn_place": case "furn_rot": case "furn_pick": case "h_dep": case "h_wd": case "h_sort": case "h_rest": homeApply(S, p, a); break;
+    // ── jobs and stats (45-jobs.js)
+    case "respec": {
+      // 망각의 의식: every stat back to 5, the experience they cost back (the first reset is free)
+      const fee = ch.rs > 0 ? 0 : Math.ceil(0.1 * ch.xpt);
+      if (ch.rs > 0) ch.rs--;
+      ch.xp = Math.min(2e9, ch.xp + ch.xpt - fee);
+      ch.xpt = 0;
+      ch.st = freshSt();
+      ch.lvl = 1;
+      afterGear(S, p);
+      S.maps[p.map].ev.push(["u", p.eid, 2]);
+      toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (경험치 ${fee.toLocaleString()} 소모)` : " (무료)"}`);
+      break;
+    }
+    case "starter": {
+      const id = `w_${WK_ID[a.wk]}_1`;
+      ch.sw = 1;
+      ch.inv.push(plain(id));
+      p.gain.push(["item", id, 1, 0]);
+      toast(p, `[${ITEMS[id].name}]${pp(ITEMS[id].name, "을를")} 받았습니다. C 창에서 장착하세요.`);
+      p.dirty = true;
+      break;
+    }
+    case "job_change": {
+      const job = JOBS[a.j];
+      ch.gold -= job.cost;
+      ch.job = a.j;
+      afterGear(S, p);
+      S.maps[p.map].ev.push(["jc", p.eid]);
+      sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
+      toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸이 열렸습니다 — Tab으로 두 무기를 바꿔 듭니다.` : `[${job.name}] 전직!`);
+      checkAch(S, p);
+      break;
+    }
+    case "wsw": {
+      const was = legacyCls(ch);
+      [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];
+      p.wswAt = S.now + WSW_MS;
+      if (legacyCls(ch) !== was) classReset(p, true);
+      afterGear(S, p);
+      S.maps[p.map].ev.push(["ws", p.eid]);
+      break;
+    }
   }
   if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;
@@ -8370,20 +8884,26 @@ function rollTraits(S, n) {
 }
 /** Put a lingering condition on a player: "burn" and "poison" bite once a second, "slow" drags the feet. */
 function afflict(S, p, kind, atk) {
-  const now = S.now;
-  if (kind === "slow") p.slowed = Math.max(p.slowed || 0, now + SLOW_MS);
-  else if (kind === "burn") p.burn = { until: now + 4000, next: (p.burn && p.burn.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.14)) };
-  else p.poison = { until: now + 6000, next: (p.poison && p.poison.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.09)) };
+  const now = S.now, k = 1 - deriveStats(p).res;     // WIL shortens it and dulls its bite
+  if (kind === "slow") p.slowed = Math.max(p.slowed || 0, now + Math.round(SLOW_MS * k));
+  else if (kind === "burn") p.burn = { until: now + Math.round(4000 * k), next: (p.burn && p.burn.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.14 * k)) };
+  else p.poison = { until: now + Math.round(6000 * k), next: (p.poison && p.poison.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.09 * k)) };
   p.dirty = true;
 }
-/** A monster's blow landing on a player, and whatever its traits add to that. */
-function mobHit(S, rt, p, raw, mob) {
+/**
+ * A monster's blow landing on a player, and whatever its traits add to that. `how`: "blow" (a direct
+ * blow) and "shot" (a volley) can be evaded (DEX); "charge" and "tele" (a leap, slam or fan landing) —
+ * or any blow of an elite or a boss — shove the player back and make them reel (45-jobs.js).
+ */
+function mobHit(S, rt, p, raw, mob, how = "blow") {
   if (p.dead) return;
+  if ((how === "blow" || how === "shot") && evadeBlow(S, rt, p)) return;
   const before = p.hp;
   const src = mob && !mob.dead ? mob : null;
   // a rift's master hits softer than its wild kin (64-dim.js)
   if (mob && mob.ak) raw *= mob.ak;
   hurtPlayer(S, rt, p, raw, src);
+  if (!p.dead && (how === "charge" || (how === "tele" && mob) || (src && (src.el >= 1 || MOBS[src.k].boss)))) staggerPlayer(S, rt, p, mob);
   if (!src || src.dead || !src.tr || !src.tr.length) return;
   const atk = MOBS[src.k].atk * ELITE[src.el].atk;
   if (!p.dead) {
@@ -8470,7 +8990,7 @@ function dash(S, m, rt, mob, atk) {
     const p = S.players[pid];
     if (p.map !== m.id || p.dead) continue;
     const rx = p.x - x0, ry = p.y - y0, along = rx * a.ux + ry * a.uy;
-    if (along > -6 && along < far + 10 && Math.abs(rx * a.uy - ry * a.ux) < 13) mobHit(S, rt, p, atk * 1.7, mob);
+    if (along > -6 && along < far + 10 && Math.abs(rx * a.uy - ry * a.ux) < 13) mobHit(S, rt, p, atk * 1.7, mob, "charge");
   }
   mob.atkAt = Math.max(mob.atkAt, S.now + 600);
 }
@@ -8723,6 +9243,7 @@ export function tick(S, now) {
     for (const pid of pids) if (S.players[pid].map === id) S.players[pid].foes = 0;
     for (const mob of rt.mobs) { const o = !mob.dead && mob.tgt ? S.players[mob.tgt] : null; if (o && o.map === id) o.foes++; }
     for (const mob of rt.mobs) tickMob(S, m, rt, mob, dt);
+    shotTick(S, rt, dt);
     for (let i = rt.mobs.length - 1; i >= 0; i--) if ((rt.mobs[i].temp || rt.mobs[i].cellGone) && rt.mobs[i].dead) rt.mobs.splice(i, 1);
     for (let i = rt.zones.length - 1; i >= 0; i--) {
       const z = rt.zones[i];
@@ -8749,7 +9270,7 @@ export function tick(S, now) {
         const p = S.players[pid];
         if (p.map !== id || p.dead || dist(p.x, p.y, t.x, t.y) > t.r) continue;
         if (t.ev === "q" && p.wheel > now) { rt.ev.push(["bl", p.eid]); continue; }
-        mobHit(S, rt, p, t.dmg, t.by);
+        mobHit(S, rt, p, t.dmg, t.by, t.ev === "q" ? "shot" : "tele");
       }
     }
     for (let i = rt.pools.length - 1; i >= 0; i--) {
@@ -8836,7 +9357,7 @@ export function tick(S, now) {
     // a fire's warmth carries on after you stand up, as long as you keep out of a fight
     const wr = calm ? warmRegen(p, now) : 0;
     if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * (rest + wr) + 1);
-    if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr) + 1);
+    if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr + st.mpReg) + 1);
     if (fire && p.sit) warmTick(S, p, fire, now);
     else p.warmT = 0;
   }
@@ -8870,17 +9391,26 @@ function selfPayload(p) {
   const ch = p.ch;
   const st = stats(p);
   const now = p.S.now;
-  const trc = {};
-  for (const k of Object.keys(TRAIN)) trc[k] = [trainCost(ch.tr[k]), trainTotal(ch.tr[k], 10)];
   const enh = {};
   for (const k of SLOTS) enh[k] = ch.eq[k] && !isJewel(ch.eq[k].id) ? enhCost(ch.eq[k]) : null;
   return {
-    name: ch.name, cls: ch.cls, lvl: ch.lvl, xp: ch.xp, need: ch.lvl >= MAXLV ? 0 : xpNeed(ch.lvl), gold: ch.gold,
-    mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: st.crit, critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: st.mf, spd: st.spd0,
+    // jobs and stats: the job, the level (1 + points), unspent and spent experience, the six stats and
+    // what the next point in each costs (0 at a cap), resets left, the starter pick taken, mastery
+    // [lv, xp, need] per kind (WK_ORDER), the kinds in hand and on the back
+    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, st: ch.st, nx: nextCosts(ch), rs: ch.rs, sw: ch.sw,
+    wm: WK_ORDER.map((k) => [ch.wm[k].lv, ch.wm[k].xp, ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
+    wk2: ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "",
+    // until J2: the old class whose skills the weapon in hand brings ("" none)
+    lc: legacyCls(ch), gold: ch.gold,
+    mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: st.crit, critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
+    // derived: attack type (0 physical, 1 magic), evasion %, attack speed %, cooldown cut %, status resist %, poise %,
+    // knockback resist %, elemental burst %, item find from luck %, graze chance on a monster of your own tier %
+    dv: [st.mag, r1(st.eva), r1(st.aspd * 100), r1(st.cdr * 100), r1(st.res * 100), r1(st.poise * 100), r1(st.kbr * 100), r1(st.burst * 100),
+      r1(Math.min(SFX.mf[1], SFX.mf[0] * eff(ch.st.luk))), clamp(SFX.graze[0] - (ch.eq.weapon ? ch.wm[weaponKind(ch)].lv : 0), 0, SFX.graze[3])],
     // the class gauge, and what each skill costs this moment
-    cr: crView(p, now), skm: SKILLS[ch.cls].map((_, i) => skMp(p, i)),
-    inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, tr: ch.tr, trc, enh, qs: ch.qs,
+    cr: crView(p, now), skm: legacySkills(ch).map((_, i) => skMp(p, i)),
+    inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, enh, qs: ch.qs,
     bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     cds: p.cds.map((t) => Math.max(0, t - now)),
     // attack up, speed up, warmth, food — then what monsters leave on you: slowed, burning, poisoned —
@@ -8892,15 +9422,13 @@ function selfPayload(p) {
       Math.max(0, (p.wind || 0) - now),
       // then 안락한 휴식 (a bed or a hearth at home, 64-housing.js)
       Math.max(0, ch.house.cozy - now)],
-    // skill levels and what the next level of each costs ({ gold, xp, lvl } or null at the top)
-    skl: ch.skl, skc: SKILLS[ch.cls].map((sk, i) => (ch.skl[i] >= SK_MAX ? null : skillCost(sk, ch.skl[i]))),
     wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, sq: sqView(ch),
     dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather"), by: p.blame ? p.blame.by : null, lv: p.blame ? p.blame.lv : 0, el: p.blame ? p.blame.el : 0 } : null,
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     // waypoint stones woken: { mapId: bitmask } (bit 0 = the map's first stone)
-    wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), st: ch.st,
+    wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), cnt: ch.cnt,
     daily: dailyView(p), tut: { i: ch.tut.i, n: ch.tut.n }, evt: evtView(p.S, p), recall: p.recall ? Math.max(0, p.recall.at - now) : 0,
-    gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
+    gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.job, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
     // the bag's size (46-bag.js) and the house (64-housing.js homeSelf)
     bagCap: bagCap(ch), house: homeSelf(p),
   };
@@ -8952,15 +9480,17 @@ export function viewFor(S, pid) {
       // what everyone can see of this player: look, party, and the weapon in hand
       // (its tier, rarity, enhancement and kind)
       const ar = o.ch.eq.armor, wp = o.ch.eq.weapon;
-      out.who.push([o.eid, o.ch.name, o.ch.cls, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
+      out.who.push([o.eid, o.ch.name, o.ch.job, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
         wp ? wp.q : 0, wp ? wp.enh : 0, o.ch.pet || 0, weaponKind(o.ch), o.ch.guild, titleOf(o.ch),
         // the outfit (cosmetic codes, slot order) and the weapon's legendary power or set, for its look
-        cosWire(o.ch), wp ? wp.lg || wp.set || "" : ""]);
+        cosWire(o.ch), wp ? wp.lg || wp.set || "" : "",
+        // a hybrid's second weapon, on the back
+        o.ch.eq.weapon2 ? ITEMS[o.ch.eq.weapon2.id].wk : ""]);
     }
   }
   if (p.party) {
     // … then where each stands (pixels, for the radar and the map window) and the id of their map
-    out.party = members(S, p).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, Math.round(o.hp), stats(o).mhp, o.map === p.map ? "" : mapOfS(o.S, o.map).name, Math.round(o.x), Math.round(o.y), o.map]);
+    out.party = members(S, p).map((o) => [o.eid, o.ch.name, o.ch.job, o.ch.lvl, Math.round(o.hp), stats(o).mhp, o.map === p.map ? "" : mapOfS(o.S, o.map).name, Math.round(o.x), Math.round(o.y), o.map]);
   }
   if (p.pinv) {
     const from = S.players[p.pinv.from];
@@ -9003,22 +9533,28 @@ export function defs() {
   const mobs = {};
   for (const k of Object.keys(MOBS)) {
     const d = MOBS[k];
-    mobs[k] = { name: d.name, sp: d.sp, tint: d.tint || null, lv: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0, aggro: d.aggro || 0 };
-  }
-  const classes = {};
-  for (const k of Object.keys(CLASSES)) {
-    const arm = WKIND[CLASSES[k].wk[0]];
-    classes[k] = { name: CLASSES[k].name, arm: CLASSES[k].arm, wk: CLASSES[k].wk, cd: arm.cd, range: arm.range };
+    // levels as players see them (4·tier − 3); `tier` the world's own
+    mobs[k] = { name: d.name, sp: d.sp, tint: d.tint || null, lv: shownLv(d.lv), tier: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0, aggro: d.aggro || 0 };
   }
   const affix = {};
   for (const [k, label, prefix] of AFFIX) affix[k] = [label, prefix];
+  // jobs and stats: the jobs (with each weapon's scaling as coefficients), the stats, the scaling grades,
+  // the base cost of each of the 200 levels' point (pointCost at a stat ≤ 30) and the stat surcharge
+  // [STAT_K, STAT_K0] — the one rule the client mirrors for its cost preview; mastery need per level
+  const jobs = {};
+  for (const id of Object.keys(JOBS)) {
+    const j = JOBS[id];
+    jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.kind === "hybrid" ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {} };
+  }
   return {
-    items: ITEMS, mobs, classes, skills: SKILLS, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
-    affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
+    items: ITEMS, mobs, skills: SKILLS, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
+    jobs, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
+    wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, legacyCls: LEGACY_CLS, wswMs: WSW_MS,
+    affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
-    traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], skMax: SK_MAX, mech: { grit: GRIT_MAX, marks: MARK_MAX, focus: FOCUS_MAX, tip: TIP.at, tipMult: TIP.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, skStep: SK_STEP, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
+    traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], mech: { grit: GRIT_MAX, marks: MARK_MAX, focus: FOCUS_MAX, tip: TIP.at, tipMult: TIP.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
-    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band, n: MAP_META[id].wpn || 1, names: STONE_NAMES[MAP_META[id].wpn || 1] || [] })),
+    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: STONE_NAMES[MAP_META[id].wpn || 1] || [] })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
     cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N,
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
@@ -9030,7 +9566,7 @@ export function defs() {
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
-    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band, mobs: MAP_META[id].kinds.slice(),
+    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), mobs: MAP_META[id].kinds.slice(),
       // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
       theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id] })),
   };

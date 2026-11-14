@@ -21,11 +21,6 @@ function enhCost(g) {
   const tier = ITEMS[g.id].tier;
   return { gold: 60 * tier * (g.enh + 1), stone: g.enh < 3 ? 1 : g.enh < 6 ? 2 : 3 };
 }
-function trainTotal(have, n) {
-  let c = 0;
-  for (let i = 0; i < n; i++) c += trainCost(have + i);
-  return c;
-}
 function byEid(S, eid) {
   for (const pid of Object.keys(S.players)) if (S.players[pid].eid === eid) return S.players[pid];
   return null;
@@ -179,6 +174,7 @@ export function validateAction(S, pid, a) {
     case "atk":
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       if (p.dance) return bad("그림자 무도 중입니다");
+      if (now < (p.stag || 0)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
     case "warp": {
@@ -193,11 +189,14 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "sk": {
-      const sk = Number.isInteger(a.i) ? SKILLS[ch.cls][a.i] : null;
-      if (!sk) return bad("없는 스킬");
+      // until J2: the old skills of the weapon in hand, learned by its mastery
+      const sk = Number.isInteger(a.i) ? legacySkills(ch)[a.i] : null;
+      if (!sk) return bad(legacyCls(ch) ? "없는 스킬" : "이 무기로 쓸 수 있는 스킬이 아직 없습니다");
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      if (ch.lvl < sk.lv) return bad(`레벨 ${sk.lv}에 배울 수 있습니다`);
+      const wk = weaponKind(ch);
+      if (ch.wm[wk].lv < sk.lv) return bad(`[${WK_NAME[wk]}] 숙련 ${sk.lv}에 배웁니다`);
       if (p.dance) return bad("그림자 무도 중입니다");
+      if (now < (p.stag || 0)) return bad("stag");
       if (now < p.cds[a.i]) return bad("재사용 대기 중입니다");
       if (p.mp < skMp(p, a.i)) return bad("MP가 부족합니다");
       return OK;
@@ -225,8 +224,13 @@ export function validateAction(S, pid, a) {
       const s = ch.inv[a.s];
       if (!s || !isGear(s.id)) return bad("장착할 수 없습니다");
       const it = ITEMS[s.id];
-      if (it.cls && it.cls !== ch.cls) return bad("다른 직업의 장비입니다");
       if (ch.lvl < it.req) return bad(`레벨 ${it.req}부터 착용할 수 있습니다`);
+      if (a.k === "weapon2") {
+        // a hybrid's second weapon: one of the pair
+        if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 보조 무기를 들 수 있습니다");
+        if (it.type !== "weapon" || !JOBS[ch.job].wk.includes(it.wk)) return bad(`${JOBS[ch.job].wk.map((k) => WK_NAME[k]).join("이나 ")}만 들 수 있습니다`);
+        return OK;
+      }
       if (a.k !== undefined && !slotsFor(it.type).includes(a.k)) return bad("그 부위에는 착용할 수 없습니다");
       return OK;
     }
@@ -244,24 +248,15 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "train": {
-      if (!TRAIN[a.k]) return bad("잘못된 능력치");
-      const n = a.n | 0;
-      if (n !== 1 && n !== 10) return bad("잘못된 횟수");
-      if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
-      if (ch.xp < trainTotal(ch.tr[a.k], n)) return bad("경험치가 부족합니다");
-      return OK;
-    }
-    case "sklv": {
-      const sk = Number.isInteger(a.i) ? SKILLS[ch.cls][a.i] : null;
-      if (!sk) return bad("없는 스킬");
-      if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
-      if (ch.lvl < sk.lv) return bad(`레벨 ${sk.lv}에 배울 수 있습니다`);
-      const L = ch.skl[a.i];
-      if (L >= SK_MAX) return bad("이미 최고 레벨입니다");
-      const c = skillCost(sk, L);
-      if (ch.lvl < c.lvl) return bad(`캐릭터 레벨 ${c.lvl}부터 올릴 수 있습니다`);
-      if (ch.gold < c.gold) return bad("골드가 부족합니다");
-      if (ch.xp < c.xp) return bad("경험치가 부족합니다");
+      // stat points bought with experience, at a campfire or at 수련관 카이: a = [str, wil, dex, int, wis, luk]
+      if (!Array.isArray(a.a) || a.a.length !== ST_ORDER.length || !a.a.every((v) => Number.isInteger(v) && v >= 0 && v <= 50)) return bad("잘못된 능력치");
+      const n = a.a.reduce((s, v) => s + v, 0);
+      if (n < 1 || n > 50) return bad("잘못된 능력치");
+      if (p.dead) return bad("쓰러진 상태입니다");
+      if (!fireNear(S.maps[p.map], p) && !npcNear(p, "train")) return bad("모닥불 곁이나 수련관 앞에서 레벨을 올릴 수 있습니다");
+      if (ST_ORDER.some((k, i) => ch.st[k] + a.a[i] > ST_CAP)) return bad(`능력치는 ${ST_CAP}까지 올릴 수 있습니다`);
+      if (ch.lvl + n > MAXLV) return bad("최고 레벨입니다");
+      if (ch.xp < batchCost(ch, a.a)) return bad("경험치가 부족합니다");
       return OK;
     }
     case "wh": {
@@ -291,8 +286,7 @@ export function validateAction(S, pid, a) {
       if (n < 1 || n > STACK) return bad("잘못된 수량");
       if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
       if (!goodsNear(p).has(a.id)) return bad("이 가게에서는 팔지 않는 물건입니다");
-      const id = resolveItem(a.id, ch.cls);
-      if (ITEMS[id].cls && ITEMS[id].cls !== ch.cls) return bad("다른 직업의 장비입니다");
+      const id = resolveItem(a.id, ch);
       if (ch.gold < ITEMS[id].price * n) return bad("골드가 부족합니다");
       if (!canAdd(ch, id, n)) return bad("가방이 가득 찼습니다");
       return OK;
@@ -346,7 +340,7 @@ export function validateAction(S, pid, a) {
       if (a.a === "take") {
         const d = MOBS[a.k];
         if (typeof a.k !== "string" || !d || d.boss || d.chest) return bad("그런 의뢰는 없습니다");
-        if (d.lv > ch.lvl + 4) return bad("아직 감당하기 어려운 상대입니다");
+        if (d.lv > toTier(ch.lvl) + 4) return bad("아직 감당하기 어려운 상대입니다");
         return OK;
       }
       if (a.a === "done") return ch.bq && ch.bq.n >= ch.bq.need ? OK : bad("아직 의뢰를 마치지 못했습니다");
@@ -371,6 +365,35 @@ export function validateAction(S, pid, a) {
     case "bag_expand": return bagValidate(S, p, a);
     case "house_buy": case "house_upgrade": case "house_style": case "house_visit": case "house_leave":
     case "furn_buy": case "furn_place": case "furn_rot": case "furn_pick": case "h_dep": case "h_wd": case "h_sort": case "h_rest": return homeValidate(S, p, a);
+    // ── jobs and stats (45-jobs.js): reset, the starter weapon, a job, a hybrid's swap
+    case "respec": {
+      if (p.dead) return bad("쓰러진 상태입니다");
+      if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
+      if (ch.lvl <= 1) return bad("되돌릴 능력치가 없습니다");
+      return OK;
+    }
+    case "starter": {
+      if (ch.sw) return bad("이미 무기를 받았습니다");
+      if (!WK_ORDER.includes(a.wk)) return bad("그런 무기는 없습니다");
+      if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
+      if (ch.inv.length >= bagCap(ch)) return bad("가방이 가득 찼습니다");
+      return OK;
+    }
+    case "job_change": {
+      if (typeof a.j !== "string") return bad("없는 직업입니다");
+      const why = jobOk(ch, a.j);
+      if (why) return bad(why);
+      if (!npcNear(p, "job")) return bad("전직관이 너무 멉니다");
+      if (ch.gold < JOBS[a.j].cost) return bad("골드가 부족합니다");
+      return OK;
+    }
+    case "wsw": {
+      if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 무기를 바꿔 들 수 있습니다");
+      if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
+      if (!ch.eq.weapon2) return bad("보조 무기가 없습니다");
+      if (now < (p.wswAt || 0)) return bad("wsw");
+      return OK;
+    }
     default:
       return bad("알 수 없는 행동");
   }

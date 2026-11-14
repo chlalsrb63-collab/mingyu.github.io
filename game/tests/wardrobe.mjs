@@ -191,7 +191,7 @@ for (const k of Object.keys(D.sets)) assert.ok(MOTIFS.includes(k), "set " + k + 
   const dl = q.ch.daily;
   for (const t of dl.tasks) t.n = t.need;
   // an achievement with a cosmetic gives it the moment it is earned (claiming checks achievements)
-  q.ch.st.cook = 10;
+  q.ch.cnt.cook = 10;
   for (let i = 0; i < 3; i++) assert.ok(W2.act({ t: "daily", i }).ok);
   assert.ok(q.ch.ach.includes("cook10") && q.ch.cos.own.includes("hat_chef"), "the chef's hat comes with the cooking achievement");
   assert.ok(W2.act({ t: "daily", i: "bonus" }).ok);

@@ -1,15 +1,16 @@
 // ── the class mechanics
+// (jobs-and-stats J1 bridge: "the class" is now the old class of the weapon in hand, legacyCls; J2 replaces this part)
 
 /** What a skill costs right now: nothing to call a thrown sword back, nothing for a spell in a surge. */
 function skMp(p, i) {
-  const sk = SKILLS[p.ch.cls][i];
+  const sk = legacySkills(p.ch)[i];
   if (!sk) return 0;
   if (sk.id === "toss" && p.sword) return 0;
   if (sk.el && p.surge > p.S.now) return 0;
   return sk.mp;
 }
 function addGrit(p, n) {
-  if (p.ch.cls !== "warrior") return;
+  if (legacyCls(p.ch) !== "warrior") return;
   p.grit = Math.min(GRIT_MAX, (p.grit || 0) + n);
   p.gritAt = p.S.now;
 }
@@ -25,7 +26,7 @@ function addFocus(S, p) {
 }
 /** Whether this cast spends full focus on its empowered form. */
 function spendFocus(p, sk) {
-  if (p.ch.cls !== "lancer" || sk.ult || (p.focus || 0) < FOCUS_MAX) return false;
+  if (legacyCls(p.ch) !== "lancer" || sk.ult || (p.focus || 0) < FOCUS_MAX) return false;
   p.focus = 0;
   return true;
 }
@@ -63,14 +64,14 @@ function weave(S, rt, p, e, x, y, k) {
   for (const o of mobsWithin(rt, x, y, rx.r)) {
     if (rx.vuln) { o.vuln = now + rx.vuln; rt.ev.push(["vu", o.id, rx.vuln]); }
     if (rx.knock) { const d = dist(x, y, o.x, o.y) || 1; knock(m, o, (o.x - x) / d, (o.y - y) / d, rx.knock); }
-    hurtMob(S, rt, o, p, rx.mult * k);
+    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst));
   }
   if (!(p.surge > now)) p.weave = null;    // a reaction uses both up — but a surge keeps the chain going
   return rx;
 }
 /** The mage's footprints, a few seconds of them, for the rewind. */
 function trailPush(S, p) {
-  if (p.ch.cls !== "mage") return;
+  if (legacyCls(p.ch) !== "mage") return;
   if (!p.trail) p.trail = [];
   const last = p.trail[p.trail.length - 1];
   if (last && S.now - last[0] < 200) return;
@@ -149,7 +150,7 @@ function danceStep(S, p, now) {
 /** What every class keeps track of from moment to moment. */
 function classTick(S, p, now) {
   const rt = S.maps[p.map], m = mapOfS(p.S, p.map);
-  const cls = p.ch.cls;
+  const cls = legacyCls(p.ch);
   // a banner hurries the party standing by it
   let haste = 0;
   if (rt.props) for (const o of rt.props) {
@@ -223,7 +224,7 @@ function flagsOf(p, now) {
 const WEAVE_CODE = { f: 1, i: 2, l: 3 };
 /** The class gauge's live number: grit, venomed strikes left, focus, or the element held. */
 function crValue(p, now) {
-  switch (p.ch.cls) {
+  switch (legacyCls(p.ch)) {
     case "warrior": return Math.round(p.grit || 0);
     case "rogue": return p.venom && p.venom.until > now ? p.venom.n : 0;
     case "lancer": return p.focus || 0;
@@ -231,7 +232,8 @@ function crValue(p, now) {
   }
 }
 function crView(p, now) {
-  switch (p.ch.cls) {
+  switch (legacyCls(p.ch)) {
+    case "": return null;
     case "warrior": return { k: "grit", v: crValue(p, now), max: GRIT_MAX, sw: p.sword ? Math.max(0, p.sword.until - now) : 0, gi: Math.max(0, (p.giant || 0) - now) };
     case "rogue": return { k: "mark", v: crValue(p, now), max: MARK_MAX, coin: p.coinFree ? 1 : 0 };
     case "lancer": return { k: "focus", v: crValue(p, now), max: FOCUS_MAX, tip: Math.round(WKIND.spear.range * TIP.at) };
@@ -240,19 +242,20 @@ function crView(p, now) {
 }
 
 function castSkill(S, p, i) {
-  const sk = levelled(p.ch, i);
+  const sk = legacySkills(p.ch)[i];
   const st = stats(p);
   const c = st.arm;
   const rt = S.maps[p.map];
   const m = mapOfS(p.S, p.map);
   const now = S.now;
-  const k = 1 + SK_STEP * (((p.ch.skl && p.ch.skl[i]) || 1) - 1);
+  const k = 1;
   rouse(S, p);
   tutStep(S, p, "skill");
+  newAct(p, true);
   p.mp -= skMp(p, i);
-  // an element spell in a surge comes back in half the time
-  p.cds[i] = now + (sk.el && p.surge > now ? sk.cd * 0.5 : sk.cd);
-  if (st.lg.echo && rnd(S) < 0.2) { p.cds[i] = now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
+  // an element spell in a surge comes back in half the time; WIS shortens every wait
+  p.cds[i] = now + Math.round((sk.el && p.surge > now ? sk.cd * 0.5 : sk.cd) * (1 - st.cdr));
+  if (st.lg.echo && rnd(S) < 0.2 * st.proc) { p.cds[i] = now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
   // the coin came up tails last time: this skill is free to use again at once
   if (p.coinFree && sk.id !== "coin" && !(sk.id === "toss" && !p.sword)) { p.coinFree = false; p.cds[i] = now + 300; toast(p, `행운! [${sk.name}] 재사용 대기 없음`); }
   p.atkAt = now;
@@ -276,7 +279,7 @@ function castSkill(S, p, i) {
         // the recall: the sword comes home down the line, cutting and dragging what it passes
         const sw = p.sword;
         p.sword = null;
-        p.cds[i] = now + sk.cd;
+        p.cds[i] = now + Math.round(sk.cd * (1 - st.cdr));
         const d = dist(sw.x, sw.y, p.x, p.y) || 1, ux = (p.x - sw.x) / d, uy = (p.y - sw.y) / d;
         face(p, { x: sw.x, y: sw.y });
         ev(42, sw.x, sw.y - 6);

@@ -16,8 +16,7 @@ function world(name, cls = "warrior") {
   let now = 2_000_000;
   S.now = now;
   const PID = "pid-" + name;
-  const ch = L.newChar(name, cls, []);
-  ch.lvl = 30;
+  const ch = L.hero(name, { wk: { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" }[cls], lvl: 117, migrate: true });   // old level 30
   L.addPlayer(S, PID, ch);
   const W = {
     S,

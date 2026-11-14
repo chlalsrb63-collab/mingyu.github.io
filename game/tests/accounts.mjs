@@ -71,7 +71,9 @@ assert.equal(A.parseApiBody("nuke", "{}").ok, false);
 
 // ── a legacy (pre-account) character sitting in the vault
 const LEGACY = "x7k2m9q1p0abcdefgh1234";
-const oldChar = L.newChar("옛토끼", "rogue", [1, 2, 3]);
+// (saved in the four-class days: a class, the old level scale, no job)
+const oldChar = L.newChar("옛토끼", [1, 2, 3]);
+delete oldChar.job; oldChar.cls = "rogue";
 oldChar.lvl = 9;
 await store.put({ [`c:${LEGACY}`]: { char: oldChar, sess: { room: "ch1", t: now - 3600_000 } }, "n:옛토끼": LEGACY });
 
@@ -192,6 +194,17 @@ assert.deepEqual(Object.keys(puts), ["m:bunny@s2"], "only account characters get
 assert.deepEqual(acc.summaryPuts([{ pid: "bunny@s2", char: s2char }]), {}, "an unchanged summary is not rewritten");
 s2char.lvl = 2;
 assert.deepEqual(Object.keys(acc.summaryPuts([{ pid: "bunny@s2", char: s2char }])), ["m:bunny@s2"]);
+
+// ── jobs: summaries and rank rows carry the job under `cls` and say `v: 2`; rows from before are read on the new scale
+assert.deepEqual(A.summary(s2char), { name: "옛토끼", cls: "adventurer", lvl: 2, look: s2char.look, v: 2 });
+const hero = L.hero("영웅", { wk: "spear", lvl: 77, job: "lancer" });
+assert.deepEqual(A.rankRow(hero), { name: "영웅", cls: "lancer", lvl: 77, xp: hero.xpt, v: 2 });
+assert.ok(hero.xpt > 0, "ranked ties break on the experience spent");
+assert.deepEqual(A.fromOldRow({ name: "옛", cls: "mage", lvl: 20, xp: 999 }), { name: "옛", cls: "wizard", lvl: 77, xp: 0, v: 2 });
+assert.deepEqual(A.fromOldRow({ name: "옛", cls: "warrior", lvl: 50, xp: 1 }).lvl, 197);
+assert.equal(A.fromOldRow({ name: "옛", cls: "ranger", lvl: 3 }).cls, "lancer");
+const fresh = A.rankRow(hero);
+assert.equal(A.fromOldRow(fresh), fresh, "a new row is left alone");
 
 // ── live channel counts
 acc.report("s1-ch1", 3, now);

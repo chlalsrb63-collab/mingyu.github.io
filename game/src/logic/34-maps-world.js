@@ -67,8 +67,8 @@ function buildTown() {
   WP.town = { x: 16, y: 16, ax: 17, ay: 16 };
   m.marks = [
     { x: 16, y: 16, kind: "waypoint" },
-    { x: 32, y: 13, kind: "sign", label: "바람초원 Lv.1–7 →", to: "meadow" },
-    { x: 6, y: 13, kind: "sign", label: "← 네온 시티 Lv.14–21", to: "city" },
+    { x: 32, y: 13, kind: "sign", label: "바람초원 Lv.1–25 →", to: "meadow" },
+    { x: 6, y: 13, kind: "sign", label: "← 네온 시티 Lv.53–81", to: "city" },
   ];
   m.gates = { east: { t: [[38, 14], [38, 15]], a: [[36, 14], [36, 15]] }, west: { t: [[1, 14], [1, 15]], a: [[3, 14], [3, 15]] } };
   FIRES.town.push([22, 22]);
@@ -463,12 +463,12 @@ function canFly(m, x, y) {
   return m.g[ty][tx] !== "W";
 }
 
-const doorName = (m) => (m.band ? `${m.name} Lv.${m.band[0]}–${m.band[1]}` : m.name);
+const doorName = (m) => (m.band ? `${m.name} Lv.${shownLv(m.band[0])}–${shownLv(m.band[1])}` : m.name);
 function mapPayload(m) {
   // (a house's turns and floor, the town's "내 집" door: 64-housing.js homeWire)
   return homeWire(m, {
     id: m.id, name: m.name, w: m.w, h: m.h, g: m.g, o: m.o, big: m.big, safe: m.safe, bgm: m.bgm,
-    theme: m.theme || null, band: m.band || null, marks: m.marks || [],
+    theme: m.theme || null, band: m.band ? m.band.map(shownLv) : null, marks: m.marks || [],
     // a door names where it leads and how strong you should be to go there
     // (a house door, into or out of an interior, is drawn as a door, not a magic gate)
     // (labels come from MAP_META: describing a door never builds the map behind it)

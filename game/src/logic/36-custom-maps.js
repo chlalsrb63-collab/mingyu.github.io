@@ -12,7 +12,7 @@ const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
 /** Little idle acts an NPC can play out (public/iso_interior.js npcPose). */
 const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
 /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
-const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house"];
+const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job"];
 const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
@@ -28,7 +28,7 @@ function npcFrom(n, m) {
   if (n.custom) out.custom = 1;
   // a shopkeeper with their own counter sells only these (items that exist and can be bought)
   if (out.role === "shop" && Array.isArray(n.goods)) {
-    const goods = [...new Set(n.goods.filter((id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && ITEMS[id].price > 0 && !ITEMS[id].cls))].slice(0, 24);
+    const goods = [...new Set(n.goods.filter((id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && ITEMS[id].price > 0))].slice(0, 24);
     if (goods.length) out.goods = goods;
   }
   if (NPC_POSES.includes(n.pose)) out.pose = n.pose;
@@ -60,7 +60,7 @@ function fromEditor(d, id) {
   m.theme = THEMES.includes(d.theme) ? d.theme : "meadow";
   m.bgm = txt(d.bgm, 24) || "field";
   m.safe = !!d.safe;
-  m.band = Array.isArray(d.band) && d.band.length === 2 ? [clamp(d.band[0] | 0, 1, MAXLV), clamp(d.band[1] | 0, 1, MAXLV)] : null;
+  m.band = Array.isArray(d.band) && d.band.length === 2 ? [clamp(d.band[0] | 0, 1, TIER_MAX), clamp(d.band[1] | 0, 1, TIER_MAX)] : null;
   if (!m.band) delete m.band;
   m.nofish = d.fishing === false;
   m.pieces = [];

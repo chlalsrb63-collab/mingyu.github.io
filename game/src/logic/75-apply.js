@@ -81,20 +81,25 @@ export function applyAction(S, pid, a) {
       const s = ch.inv[a.s];
       // a ring goes where asked, else on the first bare finger
       const fits = slotsFor(ITEMS[s.id].type);
-      const k = fits.includes(a.k) ? a.k : fits.find((o) => !ch.eq[o]) || fits[0];
-      const old = ch.eq[k];
+      const k = a.k === "weapon2" ? "weapon2" : fits.includes(a.k) ? a.k : fits.find((o) => !ch.eq[o]) || fits[0];
+      const old = ch.eq[k], was = legacyCls(ch);
       ch.eq[k] = s;
       if (old) ch.inv[a.s] = old;
       else ch.inv.splice(a.s, 1);
+      // another kind of weapon in hand: whatever the last one had going is gone
+      if (legacyCls(ch) !== was) classReset(p, true);
       afterGear(S, p);
       if (k === "weapon") tutStep(S, p, "equip");
       break;
     }
-    case "uneq":
+    case "uneq": {
+      const was = legacyCls(ch);
       ch.inv.push(ch.eq[a.k]);
       ch.eq[a.k] = null;
+      if (legacyCls(ch) !== was) classReset(p, true);
       afterGear(S, p);
       break;
+    }
     case "rune": {
       const g = ch.eq[a.k];
       const key = ITEMS[ch.inv[a.s].id].rune;
@@ -103,29 +108,29 @@ export function applyAction(S, pid, a) {
       g.ru[a.i] = key;
       const rw = runeword(g);
       toast(p, rw ? `룬어 [${rw.name}] 완성!` : `${RUNES[key][0]} 룬을 끼웠습니다.`);
-      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]${pp(rw.name, "을를")} 완성했습니다!`); ch.st.rw++; checkAch(S, p); }
+      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]${pp(rw.name, "을를")} 완성했습니다!`); ch.cnt.rw++; checkAch(S, p); }
       S.maps[p.map].ev.push(["e", p.eid, 1]);
       afterGear(S, p);
       break;
     }
     case "train": {
-      const n = a.n | 0;
-      ch.xp -= trainTotal(ch.tr[a.k], n);
-      ch.tr[a.k] += n;
+      // one point = one level: the stats rise, a full heal as of old, the news at every fifty
+      const cost = batchCost(ch, a.a), from = ch.lvl;
+      ch.xp -= cost;
+      ch.xpt += cost;
+      ST_ORDER.forEach((k, i) => { ch.st[k] += a.a[i]; });
+      ch.lvl = levelOf(ch.st);
       p.stc = null;
+      const st = stats(p);
+      p.hp = st.mhp; p.mp = st.mmp;
+      p.gain.push(["lvl", ch.lvl]);
+      S.maps[p.map].ev.push(["l", p.eid]);
+      S.maps[p.map].who = true;
+      toast(p, `레벨 ${ch.lvl}! ${STATS.filter((_, i) => a.a[i]).map((s) => `${s[1]} +${a.a[ST_ORDER.indexOf(s[0])]}`).join(" · ")}`);
+      for (let l = from + 1; l <= ch.lvl; l++) if (l % 50 === 0) sys(S, `${ch.name}님이 레벨 ${l}${pp(l, "을를")} 달성했습니다!`);
+      tutStep(S, p, "level");
+      checkAch(S, p);
       p.dirty = true;
-      S.maps[p.map].ev.push(["u", p.eid, 2]);
-      toast(p, `${TRAIN[a.k].name} +${n} (누적 ${ch.tr[a.k]})`);
-      break;
-    }
-    case "sklv": {
-      const sk = SKILLS[ch.cls][a.i], c = skillCost(sk, ch.skl[a.i]);
-      ch.gold -= c.gold;
-      ch.xp -= c.xp;
-      const L = ++ch.skl[a.i];
-      p.dirty = true;
-      S.maps[p.map].ev.push(["u", p.eid, 2]);
-      toast(p, `[${sk.name}] 스킬 레벨 ${L}!${L === 5 || L === 10 ? " 재사용 대기시간이 줄었습니다." : ""}`);
       break;
     }
     case "wh": {
@@ -185,7 +190,7 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     case "buy": {
-      const id = resolveItem(a.id, ch.cls);
+      const id = resolveItem(a.id, ch);
       const n = a.n | 0;
       ch.gold -= ITEMS[id].price * n;
       addItem(ch, id, n);
@@ -216,7 +221,7 @@ export function applyAction(S, pid, a) {
         g.enh++;
         toast(p, `${gearFull(g)} 강화 성공!`);
         if (g.enh >= 7) sys(S, `${ch.name}님이 ${gearFull(g)} 강화에 성공했습니다!`);
-        ch.st.enh = Math.max(ch.st.enh, g.enh);
+        ch.cnt.enh = Math.max(ch.cnt.enh, g.enh);
         checkAch(S, p);
       } else if (g.enh >= 5) {
         g.enh--;
@@ -261,7 +266,7 @@ export function applyAction(S, pid, a) {
       if (score >= 95) toast(p, "완벽한 낚시!");
       if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, id === "fish_l" ? 3 : id === "fish_m" ? 1 : 0]);
       ch.fish++;
-      if (id === "fish_l") { sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`); ch.st.carp++; }
+      if (id === "fish_l") { sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`); ch.cnt.carp++; }
       if (id.startsWith("fish")) dailyProg(S, p, "fish");
       checkAch(S, p);
       p.dirty = true;
@@ -276,7 +281,7 @@ export function applyAction(S, pid, a) {
       addItem(ch, out, n);
       p.gain.push(["item", out, n, 0]);
       toast(p, score < 35 ? "태워 버렸습니다…" : score >= 85 ? `완벽한 요리! ${ITEMS[out].name} 2개` : `${ITEMS[out].name} 완성`);
-      if (score >= 35) { ch.st.cook++; dailyProg(S, p, "cook"); checkAch(S, p); }
+      if (score >= 35) { ch.cnt.cook++; dailyProg(S, p, "cook"); checkAch(S, p); }
       S.maps[p.map].ev.push(["u", p.eid, 0]);
       p.dirty = true;
       break;
@@ -392,7 +397,7 @@ export function applyAction(S, pid, a) {
       ch.gold -= GUILD_COST;
       ch.guild = a.name; ch.gm = 1;
       sys(S, `${ch.name}님이 길드 [${a.name}]${pp(a.name, "을를")} 세웠습니다!`);
-      ch.st.gfound = 1;
+      ch.cnt.gfound = 1;
       checkAch(S, p);
       S.maps[p.map].who = true;
       p.dirty = true;
@@ -482,7 +487,7 @@ export function applyAction(S, pid, a) {
       const dl = ch.daily;
       if (a.i === "bonus") {
         dl.bonus = true;
-        ch.st.daily++;
+        ch.cnt.daily++;
         toast(p, "일일 과제 보상 상자를 열었습니다!");
         payout(S, p, dailyBonus(ch));
         cosFrom(S, p, "daily", "일일 과제 보상 상자");
@@ -515,6 +520,49 @@ export function applyAction(S, pid, a) {
     case "bag_expand": bagApply(S, p, a); break;
     case "house_buy": case "house_upgrade": case "house_style": case "house_visit": case "house_leave":
     case "furn_buy": case "furn_place": case "furn_rot": case "furn_pick": case "h_dep": case "h_wd": case "h_sort": case "h_rest": homeApply(S, p, a); break;
+    // ── jobs and stats (45-jobs.js)
+    case "respec": {
+      // 망각의 의식: every stat back to 5, the experience they cost back (the first reset is free)
+      const fee = ch.rs > 0 ? 0 : Math.ceil(0.1 * ch.xpt);
+      if (ch.rs > 0) ch.rs--;
+      ch.xp = Math.min(2e9, ch.xp + ch.xpt - fee);
+      ch.xpt = 0;
+      ch.st = freshSt();
+      ch.lvl = 1;
+      afterGear(S, p);
+      S.maps[p.map].ev.push(["u", p.eid, 2]);
+      toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (경험치 ${fee.toLocaleString()} 소모)` : " (무료)"}`);
+      break;
+    }
+    case "starter": {
+      const id = `w_${WK_ID[a.wk]}_1`;
+      ch.sw = 1;
+      ch.inv.push(plain(id));
+      p.gain.push(["item", id, 1, 0]);
+      toast(p, `[${ITEMS[id].name}]${pp(ITEMS[id].name, "을를")} 받았습니다. C 창에서 장착하세요.`);
+      p.dirty = true;
+      break;
+    }
+    case "job_change": {
+      const job = JOBS[a.j];
+      ch.gold -= job.cost;
+      ch.job = a.j;
+      afterGear(S, p);
+      S.maps[p.map].ev.push(["jc", p.eid]);
+      sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
+      toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸이 열렸습니다 — Tab으로 두 무기를 바꿔 듭니다.` : `[${job.name}] 전직!`);
+      checkAch(S, p);
+      break;
+    }
+    case "wsw": {
+      const was = legacyCls(ch);
+      [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];
+      p.wswAt = S.now + WSW_MS;
+      if (legacyCls(ch) !== was) classReset(p, true);
+      afterGear(S, p);
+      S.maps[p.map].ev.push(["ws", p.eid]);
+      break;
+    }
   }
   if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;

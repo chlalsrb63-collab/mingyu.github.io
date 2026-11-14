@@ -49,9 +49,11 @@ for (const id of ["abyss", "cave", "city", "crypt", "forest", "meadow", "sewer",
 const BANDS = { meadow: [1, 7], forest: [8, 13], crypt: [12, 17], city: [14, 21], sewer: [22, 27], cave: [24, 32], abyss: [32, 40] };
 for (const [id, band] of Object.entries(BANDS)) {
   const m = D.maps.find((o) => o.id === id);
-  assert.deepEqual(m.band, band, id + " keeps its level band");
+  // the world keeps its tiers; players see them as levels 4·tier − 3
+  assert.deepEqual(m.band, band.map((t) => 4 * t - 3), id + " keeps its level band");
   for (const k of m.mobs) {
-    const lv = D.mobs[k].lv;
+    const lv = D.mobs[k].tier;
+    assert.equal(D.mobs[k].lv, 4 * lv - 3);
     if (!D.mobs[k].chest) assert.ok(lv >= band[0] - 1 && lv <= band[1], `${k} (Lv.${lv}) fits ${id}'s band`);
   }
   assert.ok(D.collection[id].mobs.length >= 2, id + " has a collection");
@@ -64,7 +66,8 @@ assert.ok(D.shop.includes("recall"), "the shop sells the return scroll");
 assert.equal(D.items.recall.type, "scroll");
 assert.equal(D.event.every, 30 * 60000); assert.equal(D.event.len, 8 * 60000); assert.equal(D.event.warn, 2 * 60000);
 assert.equal(D.daily.resetKST, 6);
-assert.equal(D.tutorial.length, 7);
+assert.equal(D.tutorial.length, 8);
+assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indices are persisted)");
 
 // ── waypoints: the town's is awake from the start; walking past one wakes it for good
 {
@@ -183,21 +186,19 @@ assert.equal(D.tutorial.length, 7);
 // ── daily tasks: three a day, the same for the same name and day, renewed at 06:00 KST
 {
   const W = world("하루");
-  const ch = L.newChar("하루", "warrior", []);
-  ch.lvl = 4;
+  const ch = L.hero("하루", { lvl: 13 });   // tier 4
   L.addPlayer(W.S, W.PID, ch);
   let me = W.step().self;
   assert.ok(me.daily && me.daily.tasks.length === 3, "three tasks");
   assert.equal(me.daily.tasks[0].kind, "kill");
-  assert.ok(D.mobs[me.daily.tasks[0].k].lv <= 6, "the hunt matches the level");
+  assert.ok(D.mobs[me.daily.tasks[0].k].tier <= 6, "the hunt matches the level (tier 4 + 2)");
   assert.equal(new Set(me.daily.tasks.map((t) => t.kind)).size, 3, "three different kinds");
   for (const t of me.daily.tasks) assert.ok(t.text && t.reward.gold > 0 && t.need >= 1);
   const first = JSON.stringify(me.daily.tasks.map((t) => [t.kind, t.k, t.need]));
 
   // the same character on another server the same day gets the same tasks
   const W2 = world("하루", BASE + 3 * HOUR);
-  const ch2 = L.newChar("하루", "warrior", []);
-  ch2.lvl = 4;
+  const ch2 = L.hero("하루", { lvl: 13 });
   L.addPlayer(W2.S, W2.PID, ch2);
   assert.equal(JSON.stringify(W2.step().self.daily.tasks.map((t) => [t.kind, t.k, t.need])), first, "rolled deterministically from day and name");
 
@@ -235,7 +236,7 @@ assert.equal(D.tutorial.length, 7);
   assert.equal(W.act({ t: "daily", i: "bonus" }).error, "이미 보상을 받았습니다");
   me = W.self();
   assert.ok(me.ach.includes("daily1"), "the first chest is an achievement");
-  assert.equal(me.st.daily, 1);
+  assert.equal(me.cnt.daily, 1);
 
   // 05:59 KST next day: still today's; 06:00: new tasks
   const day0 = me.daily.day;
@@ -253,8 +254,8 @@ assert.equal(D.tutorial.length, 7);
 // ── achievements and titles
 {
   const W = world("칭호");
-  const ch = L.newChar("칭호", "warrior", []);
-  ch.kills = 999; ch.lvl = 50;
+  const ch = L.hero("칭호", { lvl: 200 });
+  ch.kills = 999;
   L.addPlayer(W.S, W.PID, ch);
   let v = W.step();
   assert.ok(v.self.ach.includes("hunt100") && v.self.ach.includes("lv50"), "achievements already earned unlock on joining");
@@ -329,11 +330,11 @@ assert.equal(D.tutorial.length, 7);
   const p = W.p, p2 = W.S.players["pid-" + W2name];
   const wp = L.runtime(W.S, evMap) && D.waypoints.find((o) => o.id === evMap);
   assert.ok(wp);
-  for (const q of [p, p2]) { L.runtime(W.S, q.map).n--; q.map = evMap; L.runtime(W.S, evMap).n++; q.x = wave1[0].x - 12; q.y = wave1[0].y; q.sendMap = true; q.ch.lvl = 40; q.stc = null; }
+  for (const q of [p, p2]) { L.runtime(W.S, q.map).n--; q.map = evMap; L.runtime(W.S, evMap).n++; q.x = wave1[0].x - 12; q.y = wave1[0].y; q.sendMap = true; q.ch.lvl = 157; q.stc = null; }
   const hitAll = (who, list) => {
     for (const m of list) {
       if (m.dead) continue;
-      m.x = who.x + 12; m.y = who.y; m.hp = Math.min(m.hp, 50); who.atkAt = 0; who.dir = 2; who.aim = 0; who.hp = 1e6;
+      m.x = who.x + 12; m.y = who.y; m.hp = Math.min(m.hp, 50); who.atkAt = 0; who.stag = 0; who.dir = 2; who.aim = 0; who.hp = 1e6;
       W.S.now = W.now;
       const a = { t: "atk" };
       if (L.validateAction(W.S, who.pid, a).ok) L.applyAction(W.S, who.pid, a);
@@ -358,7 +359,7 @@ assert.equal(D.tutorial.length, 7);
   const g1 = p.ch.gold, g2 = p2.ch.gold;
   // (the map's own monsters that wandered over step back, so the blow finds the boss)
   for (const m of rt.mobs) if (m !== boss && !m.dead && Math.abs(m.x - p.x) < 80 && Math.abs(m.y - p.y) < 80) m.dead = true;
-  boss.hp = 1; boss.x = p.x + 12; boss.y = p.y; p.atkAt = 0; p.dir = 2; p.aim = 0; p.hp = 1e6;
+  boss.hp = 1; boss.x = p.x + 12; boss.y = p.y; p.atkAt = 0; p.stag = 0; p.dir = 2; p.aim = 0; p.hp = 1e6;
   W.S.now = W.now;
   assert.ok(L.validateAction(W.S, W.PID, { t: "atk" }).ok);
   L.applyAction(W.S, W.PID, { t: "atk" });
@@ -366,7 +367,7 @@ assert.equal(D.tutorial.length, 7);
   assert.equal(v.self.evt.phase, "done", "killing the boss ends the event early");
   assert.ok(rt.mobs.every((m) => !m.evt || m.dead), "what is left of the waves goes");
   assert.ok(p.ch.gold - g1 > p2.ch.gold - g2 && p2.ch.gold > g2, "everyone who fought is paid, more for more");
-  assert.equal(p.ch.st.evt, 1); assert.equal(p.ch.st.evb, 1);
+  assert.equal(p.ch.cnt.evt, 1); assert.equal(p.ch.cnt.evb, 1);
   assert.ok(p.ch.ach.includes("evt1") && p2.ch.ach.includes("evt1"));
   assert.ok(Array.isArray(v.self.evt.top) && v.self.evt.top[0][0] === "수호자", "the board shows the top three");
   assert.ok(chatHas(W, "1위 수호자"));
@@ -398,8 +399,20 @@ assert.equal(D.tutorial.length, 7);
   W.p.x = elder.x * T + 8; W.p.y = elder.y * T + 30;
   assert.ok(W.act({ t: "quest", a: "accept" }).ok, "accepting the first quest is talking to the elder");
   me = W.self();
-  // the starting sword is already in hand, so the equip step passes by itself
-  assert.equal(D.tutorial[me.tut.i].id, "bag", "talk → (equip already done) → bag");
+  // the old dagger in hand does not count: a 모험가 picks a weapon at 수련관 카이 and puts it on
+  assert.equal(D.tutorial[me.tut.i].id, "equip", "talk → equip");
+  const kai = town.npcs.find((n) => n.role === "train");
+  assert.equal(W.act({ t: "starter", wk: "sword" }).ok, false, "the trainer is too far");
+  W.p.x = kai.x * T + 8; W.p.y = kai.y * T + 30;
+  assert.equal(W.act({ t: "starter", wk: "gun" }).ok, false);
+  assert.ok(W.act({ t: "starter", wk: "sword" }).ok, "one free weapon");
+  assert.equal(W.act({ t: "starter", wk: "bow" }).error, "이미 무기를 받았습니다", "only one");
+  assert.ok(W.p.toast.some((s) => s.includes("[녹슨 대검]을 받았습니다")));
+  assert.ok(W.act({ t: "eq", s: W.p.ch.inv.findIndex((s) => s.id === "w_warrior_1") }).ok);
+  me = W.self();
+  assert.equal(me.wk, "sword");
+  assert.ok(me.inv.some((s) => s.id === "w_rogue_1"), "the old dagger goes back to the bag");
+  assert.equal(D.tutorial[me.tut.i].id, "bag", "equip → bag");
   assert.ok(W.act({ t: "tut", s: "bag" }).ok);
   me = W.self();
   assert.equal(D.tutorial[me.tut.i].id, "buy");
@@ -418,20 +431,39 @@ assert.equal(D.tutorial.length, 7);
   assert.ok(W.act({ t: "sit" }).ok);
   for (let i = 0; i < 400 && D.tutorial[W.p.ch.tut.i].id === "rest"; i++) { W.p.hitAt = -1e9; W.step(100); }
   assert.equal(D.tutorial[W.p.ch.tut.i].id, "skill", "a rest by the fire");
-  W.p.ch.lvl = 5; W.p.mp = 999; W.p.stc = null;
+  // (until J2) the old warrior skills come with sword mastery: the first at 3
+  assert.equal(W.act({ t: "sk", i: 0 }).error, "[대검] 숙련 3에 배웁니다");
+  W.p.ch.wm.sword.lv = 3; W.p.mp = 999; W.p.stc = null;
   const items0 = JSON.stringify(W.p.ch.inv);
   W.p.skAt = {};
   const r = W.act({ t: "sk", i: 0 });
   assert.ok(r.ok, "casting: " + r.error);
   me = W.self();
+  assert.equal(D.tutorial[me.tut.i].id, "level", "skill → the appended last step");
+  assert.notEqual(JSON.stringify(W.p.ch.inv), items0, "the skill step pays a campfire kit and return scrolls");
+  // the last step: a stat point by the fire
+  W.p.ch.xp = 1000;
+  assert.ok(W.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).ok, "a point by the meadow's fire");
+  me = W.self();
   assert.equal(me.tut.i, D.tutorial.length, "all first steps done");
-  assert.notEqual(JSON.stringify(W.p.ch.inv), items0, "the last step pays a campfire kit and return scrolls");
+  assert.equal(me.lvl, 2);
+}
+
+/** A sheet as the four-class days saved it (v9): a class, levels 1–50, stat training, skill levels, counters in `st`. */
+function oldSheet(name, cls, lvl = 1, extra = {}) {
+  const ch = L.newChar(name, []);
+  for (const k of ["job", "xpt", "st", "wm", "rs", "sw", "cnt"]) delete ch[k];
+  delete ch.eq.weapon2;
+  const id = { warrior: "w_warrior_1", rogue: "w_rogue_1", lancer: "w_lancer_1", ranger: "w_lancer_1", mage: "w_mage_1" }[cls];
+  Object.assign(ch, { v: 9, cls, lvl, tr: { str: 0, vit: 0, int: 0, grd: 0 }, skl: [1, 1, 1, 1, 1, 1], st: { elite: 0 } }, extra);
+  if (!extra.eq) ch.eq.weapon = { id, q: 0, enh: 0, af: [], sk: 0, ru: [] };
+  return ch;
 }
 
 // ── an old sheet (v3) is brought up to date
 {
   const W = world("고참");
-  const old = L.newChar("고참", "warrior", []);
+  const old = oldSheet("고참", "warrior");
   for (const k of ["wp", "seen", "ach", "title", "st", "daily", "tut"]) delete old[k];
   old.v = 3; old.lvl = 20; old.kills = 500;
   old.title = "hunt10000"; // not earned
@@ -460,15 +492,15 @@ assert.equal(D.tutorial.length, 7);
 // the 차원 균열 daily count; a v9 sheet's masks are cleaned, not trusted
 {
   const W = world("구판");
-  const old = L.newChar("구판", "rogue", []);
+  const old = oldSheet("구판", "rogue");
   old.v = 8; old.wp = ["town", "meadow", "forest", "nowhere"]; delete old.dim;
   L.addPlayer(W.S, W.PID, old);
   const ch = W.S.players[W.PID].ch;
   assert.deepEqual(ch.wp, { town: 1, meadow: 1, forest: 1 }, "each map it had keeps its first stone");
   assert.deepEqual(ch.dim, { day: 0, n: 0 });
-  assert.equal(ch.v, 10);
+  assert.equal(ch.v, 11);
   assert.deepEqual(W.step().self.wp, { town: 1, meadow: 1, forest: 1 }, "the wire carries the masks");
-  assert.equal(L.newChar("새판", "warrior", []).v, 10);
+  assert.equal(L.newChar("새판", "warrior", []).v, 11);
   assert.deepEqual(L.newChar("새판", "warrior", []).wp, { town: 1 });
   const odd = L.newChar("이상", "lancer", []);
   odd.wp = { meadow: 5, nowhere: 1, forest: 0, cave: "x", maple: 1 << 12 }; odd.dim = { day: -4, n: 1e6 };
@@ -479,6 +511,72 @@ assert.equal(D.tutorial.length, 7);
   // warping needs the destination's first stone
   W.S.players[W.PID].ch.wp = { town: 1 };
   assert.equal(L.validateAction(W.S, W.PID, { t: "warp", to: "meadow" }).ok, false);
+}
+
+// ── jobs (v10): a four-class sheet becomes a 모험가-scale hero of level 4L−3, stats laid out like its class,
+// its weapon's mastery at its old level, its class's job from old level 20, everything paid back, nothing lost
+{
+  const W = world("이주");
+  let n = 0;
+  const join = (ch) => { const pid = "pid-mig" + n++; L.addPlayer(W.S, pid, ch); return W.S.players[pid].ch; };
+  const SH = { warrior: ["sword", "swordsman"], rogue: ["dagger", "thief"], lancer: ["spear", "lancer"], mage: ["staff", "wizard"] };
+  const ST = ["str", "wil", "dex", "int", "wis", "luk"];
+  for (const cls of Object.keys(SH)) for (const L0 of [1, 19, 20, 35, 50]) {
+    const ch = join(oldSheet("이주" + n, cls, L0, { xp: 123, gold: 1000, st: { elite: 7, carp: 1 }, qs: [["s", 0], ["i", "hp_s"], null, null, null, null, null, null, null] }));
+    const tag = `${cls} L${L0}`;
+    assert.equal(ch.v, 11, tag);
+    assert.equal(ch.lvl, Math.min(197, 4 * L0 - 3), tag + ": level 4L−3");
+    assert.equal(ST.reduce((s, k) => s + ch.st[k] - 5, 0), ch.lvl - 1, tag + ": a level is a point");
+    assert.equal(ch.job, L0 >= 20 ? SH[cls][1] : "adventurer", tag + ": the class's job from old level 20");
+    assert.equal(ch.wm[SH[cls][0]].lv, L0, tag + ": the class weapon's mastery = the old level");
+    assert.ok(ch.xp >= 123 && (ch.lvl === 1 ? ch.xpt === 0 : ch.xpt > 0), tag + ": progress kept, the path's cost recorded");
+    assert.equal(ch.rs, 1, tag + ": one free reset"); assert.equal(ch.sw, 1, tag + ": no starter pick");
+    assert.ok(!("cls" in ch) && !("tr" in ch) && !("skl" in ch), tag + ": old fields gone");
+    assert.deepEqual([ch.cnt.elite, ch.cnt.carp], [7, 1], tag + ": achievement counters move to cnt");
+    assert.equal(ch.eq.weapon.id, `w_${cls}_1`, tag + ": the weapon stays");
+    assert.deepEqual(ch.qs[1], ["i", "hp_s"], tag + ": items stay on the bar");
+    assert.equal(ch.qs.filter((v) => v && v[0] === "s").length, [3, 7, 12, 18, 25, 35].filter((lv) => lv <= L0).length, tag + ": the skills the old level had are back on the bar");
+  }
+  // the class's stat shape: a warrior leans on STR and WIL, a rogue on DEX and LUK, a mage on INT
+  const w = join(oldSheet("전사50", "warrior", 50)).st, r = join(oldSheet("도적50", "rogue", 50)).st, m = join(oldSheet("법사50", "mage", 50)).st;
+  assert.ok(w.str > w.wil && w.wil > w.luk && w.int === 5, "warrior: " + JSON.stringify(w));
+  assert.ok(r.dex > r.luk && r.luk > r.wil && r.int === 5, "rogue: " + JSON.stringify(r));
+  assert.ok(m.int > m.wis && m.wis > m.wil && m.str === 5, "mage: " + JSON.stringify(m));
+  // a mage with a book in hand becomes a 마도사 and keeps the staff half-learned
+  const bk = join(oldSheet("책법사", "mage", 30, { eq: { weapon: { id: "w_book_2", q: 0, enh: 0, af: [], sk: 0, ru: [] }, armor: null } }));
+  assert.equal(bk.job, "warlock");
+  assert.deepEqual([bk.wm.book.lv, bk.wm.staff.lv], [30, 18]);
+  assert.ok(bk.st.wil > bk.st.wis, "a book mage leans on WIL before WIS");
+  const sf = join(oldSheet("봉법사", "mage", 30));
+  assert.equal(sf.job, "wizard");
+  assert.deepEqual([sf.wm.staff.lv, sf.wm.book.lv], [30, 18]);
+  // old ranger and archer sheets were lancers already; their guns became spears
+  const rg = join(oldSheet("옛사수", "ranger", 25, { eq: { weapon: { id: "w_ranger_3", q: 2, enh: 4, af: [["atk", 3]], sk: 0, ru: [] } } }));
+  assert.equal(rg.job, "lancer"); assert.equal(rg.wm.spear.lv, 25); assert.equal(rg.eq.weapon.id, "w_lancer_3"); assert.equal(rg.eq.weapon.enh, 4);
+  // a weapon of another class is no longer swapped for a rusty one
+  const mm = join(oldSheet("엉뚱", "warrior", 22, { eq: { weapon: { id: "w_mage_3", q: 3, enh: 7, af: [], sk: 1, ru: [], lg: "chain" } }, inv: [{ id: "w_rogue_2", q: 1, enh: 0, af: [], sk: 0, ru: [] }] }));
+  assert.equal(mm.eq.weapon.id, "w_mage_3"); assert.equal(mm.eq.weapon.lg, "chain"); assert.equal(mm.eq.weapon.enh, 7);
+  assert.deepEqual(mm.inv.map((s) => s.id), ["w_rogue_2"]);
+  assert.equal(mm.job, "swordsman", "the job follows the class, whatever is in hand");
+  // stat training and skill levels are paid back: 120 + 40n experience a point; every skill level's gold and experience
+  const xpNeed = (lv) => Math.round((34 * Math.pow(lv, 1.85) + 20) * 6);      // the old curve (factor 6 below level 7)
+  const tr = join(oldSheet("수련생", "warrior", 10, { xp: 0, gold: 0, tr: { str: 3, vit: 2, int: 0, grd: 1 } }));
+  assert.equal(tr.xp, 120 + 160 + 200 + 120 + 160 + 120, "training refunded");
+  const sl = join(oldSheet("숙련가", "warrior", 10, { xp: 0, gold: 0, skl: [3, 1, 1, 1, 1, 1] }));
+  assert.equal(sl.gold, 125 + 375, "two levels of 대검 투척: gold back");
+  assert.equal(sl.xp, Math.round(xpNeed(3) * 0.12) + Math.round(xpNeed(3) * 0.24), "and their experience");
+  // migrating twice changes nothing; a v10 sheet is only cleaned
+  const once = join(oldSheet("두번", "lancer", 33, { xp: 5000, tr: { str: 4, vit: 0, int: 0, grd: 0 } }));
+  const twice = join(JSON.parse(JSON.stringify(once)));
+  const strip = (c) => { const o = JSON.parse(JSON.stringify(c)); delete o.hp; delete o.mp; return o; };
+  assert.deepEqual(strip(twice), strip(once), "idempotent");
+  const forged = join({ ...JSON.parse(JSON.stringify(once)), st: { str: 400, wil: -3, dex: "x", int: 5, wis: 5, luk: 5 }, lvl: 999, job: "emperor", wm: { sword: { lv: 99, xp: -5 } }, xp: -1 });
+  assert.equal(forged.st.str, 99); assert.equal(forged.st.wil, 5); assert.equal(forged.st.dex, 5);
+  assert.equal(forged.lvl, 1 + 94, "the level is recomputed from the stats, never trusted");
+  assert.equal(forged.job, "adventurer"); assert.equal(forged.wm.sword.lv, 50); assert.equal(forged.wm.bow.lv, 1); assert.equal(forged.xp, 0);
+  // a single-job hero whose mastery is somehow below 20 keeps the job
+  const keep = join({ ...JSON.parse(JSON.stringify(once)), wm: {} });
+  assert.equal(keep.job, "lancer");
 }
 
 console.log("content ok — waypoints", D.waypoints.length, "achievements", D.achievements.length, "event every", D.event.every / 60000, "min");

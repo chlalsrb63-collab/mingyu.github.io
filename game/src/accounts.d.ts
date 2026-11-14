@@ -2,10 +2,23 @@
 
 export interface Summary {
   name: string;
+  /** the job id (a class id in summaries written before jobs, which have no `v`) */
   cls: string;
   lvl: number;
   look: unknown[];
+  /** 2 = jobs: levels 1–200 */
+  v?: number;
 }
+export interface RankRow {
+  name: string;
+  cls: string;
+  lvl: number;
+  xp: number;
+  v?: number;
+}
+export const JOB_ALIAS: Record<string, string>;
+export function rankRow(char: { name: unknown; job?: unknown; cls?: unknown; lvl?: unknown; xpt?: unknown }): RankRow;
+export function fromOldRow<T>(row: T): T;
 export interface ServerList {
   servers: Array<{ id: string; name: string; channels: Array<{ id: string; name: string; n?: number }> }>;
 }

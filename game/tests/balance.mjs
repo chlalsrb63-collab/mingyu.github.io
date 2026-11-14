@@ -1,8 +1,8 @@
 // The balance probe against the pre-jobs baseline (docs/design/jobs-and-stats.md F.3).
 // node tests/balance.mjs
 //
-// BASE was measured with scripts/balance-probe.mjs on the rules before J1 (four classes,
-// levels 1–50, old level = the tier probed). J1 only reports the new numbers next to it;
+// BASE was measured with scripts/balance-probe.mjs on the rules just before J1 (origin/main e14fb5e:
+// four classes, levels 1–50, old level = the tier probed). J1 only reports the new numbers next to it;
 // J2 turns the comparison into asserts (within ±25 % kills/min per weapon kind, bow −25 %/+10 %).
 import assert from "node:assert/strict";
 import * as L from "../src/logic.js";
@@ -10,10 +10,10 @@ import { probe, PROBE } from "../scripts/balance-probe.mjs";
 
 /** kills/min, damage taken/min, deaths in 120 s — old class at old level = tier. */
 export const BASE = {
-  warrior: { 5: [38.5, 546, 4], 13: [38, 1902, 7], 25: [23.5, 5067, 10], 40: [16, 4410, 5] },
-  rogue: { 5: [48, 620, 6], 13: [39, 2521, 12], 25: [23, 6417, 18], 40: [18.5, 6754, 10] },
-  lancer: { 5: [39.5, 521, 4], 13: [39.5, 1221, 5], 25: [20, 4487, 11], 40: [12.5, 3474, 4] },
-  mage: { 5: [31.5, 470, 5], 13: [33, 2185, 12], 25: [20, 5105, 15], 40: [17, 4036, 6] },
+  warrior: { 5: [37, 586, 4], 13: [37.5, 2063, 7], 25: [22.5, 5975, 12], 40: [15.5, 5076, 6] },
+  rogue: { 5: [49.5, 565, 6], 13: [38.5, 2735, 14], 25: [22.5, 7007, 20], 40: [19, 6980, 10] },
+  lancer: { 5: [41.5, 480, 4], 13: [40, 1570, 6], 25: [20, 5183, 12], 40: [12.5, 4316, 5] },
+  mage: { 5: [35.5, 758, 8], 13: [33.5, 2399, 13], 25: [20, 6214, 18], 40: [17, 5168, 8] },
 };
 /** Which old class each weapon kind is compared with (the bow with the average of all four). */
 const VS = { sword: ["warrior"], dagger: ["rogue"], spear: ["lancer"], staff: ["mage"], book: ["mage"], bow: ["warrior", "rogue", "lancer", "mage"] };

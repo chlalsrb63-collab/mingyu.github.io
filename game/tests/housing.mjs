@@ -444,7 +444,7 @@ const home = () => A.p.map;
   L.addPlayer(S, "a", ancient);
   assert.equal(S.players.a.ch.bagCap, 40);
   assert.deepEqual(S.players.a.ch.house, { tier: 0, style: { floor: 0, wall: 0 }, furn: [], storage: [], rest: 0, cozy: 0 });
-  assert.equal(S.players.a.ch.v, 10);
+  assert.equal(S.players.a.ch.v, 11);
   for (let v = 2; v <= 9; v++) {
     const old = L.newChar("옛" + v, "mage", []);
     delete old.bagCap; delete old.house; old.v = v;
@@ -455,7 +455,7 @@ const home = () => A.p.map;
     const ch = S.players["v" + v].ch;
     assert.equal(ch.bagCap, 40, `v${v}: a 40-slot bag`);
     assert.equal(ch.house.tier, 0, `v${v}: no house yet`);
-    assert.equal(ch.v, 10);
+    assert.equal(ch.v, 11);
   }
   // a bag fuller than 40 (an accessory moved in) keeps every item: the size rounds up to a step
   const full = L.newChar("가득", "rogue", []);
@@ -484,7 +484,7 @@ const home = () => A.p.map;
   const S2 = L.setup();
   L.addPlayer(S2, "m", again);
   assert.deepEqual(S2.players.m.ch.house, h);
-  assert.equal(L.newChar("새집", "warrior", []).v, 10);
+  assert.equal(L.newChar("새집", "warrior", []).v, 11);
 }
 
 console.log("housing ok");

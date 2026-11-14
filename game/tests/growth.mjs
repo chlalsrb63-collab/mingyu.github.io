@@ -9,13 +9,15 @@ const D = L.defs();
 const T = 16;
 const BASE = Date.UTC(2026, 10, 12, 23, 0, 0);
 
+/** The weapon each of the four old classes carried (until J2 it also brings that class's skills). */
+const WK = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" };
+/** A world with one hero carrying `cls`'s weapon at what used to be level `lvl` (level 4·lvl − 3, mastery lvl, the job from 20). */
 function world(name = "성장", cls = "warrior", lvl = 40) {
   const S = L.setup();
   let now = BASE;
   S.now = now;
   const PID = "pid-" + name;
-  const ch = L.newChar(name, cls, []);
-  ch.lvl = lvl;
+  const ch = L.hero(name, { wk: WK[cls], lvl: Math.min(197, 4 * lvl - 3), migrate: true });
   L.addPlayer(S, PID, ch);
   const W = {
     S, PID,
@@ -40,14 +42,16 @@ const gear = (id, q = 0, enh = 0) => ({ id, q, enh, af: [], sk: 0, ru: [] });
 const count = (ch, id) => ch.inv.reduce((a, s) => a + (s.id === id ? s.n || 1 : 0), 0);
 
 // ── definitions
-for (const cls of Object.keys(D.classes)) {
+// (until J2 the old skills ride on the weapon in hand, learned at those mastery levels)
+for (const cls of Object.keys(WK)) {
   const sks = D.skills[cls];
+  assert.equal(D.legacyCls[WK[cls]], cls);
   assert.equal(sks.length, 6, cls + " has six skills");
   assert.deepEqual(sks.map((s) => s.lv), [3, 7, 12, 18, 25, 35], cls + " learns them at 3, 7, 12, 18, 25 and 35");
   assert.ok(sks[5].ult, cls + "'s last skill is an ultimate");
   assert.equal(new Set(sks.map((s) => s.id)).size, 6);
 }
-assert.equal(D.skMax, 10);
+assert.equal(D.legacyCls.bow, "", "the bow brings no old skills");
 assert.equal(D.whSlots, 60);
 for (const id of ["sc_atk", "sc_def", "sc_xp", "feather", "pet_chick", "pet_bat", "pet_wisp", "hp_l", "mp_l"]) {
   assert.ok(D.items[id], id + " exists");
@@ -56,39 +60,30 @@ for (const id of ["sc_atk", "sc_def", "sc_xp", "feather", "pet_chick", "pet_bat"
 assert.ok(D.items.pet_chick.radius < D.items.pet_bat.radius && D.items.pet_bat.radius < D.items.pet_wisp.radius, "dearer pets reach further");
 assert.ok(D.tutorial.length >= 1);
 
-// ── skill levels: raised at the trainer, for gold and experience, step by step
+// ── stat points: experience bought into the six stats at the trainer (or a fire), shown with their prices
+// (the cost table, batches, caps and resets in detail: tests/jobs.mjs)
 {
-  const W = world("수련", "warrior", 40);
+  const W = world("수련", "warrior", 10);
   const ch = W.ch;
-  ch.gold = 1e7; ch.xp = 1e7;
+  ch.xp = 1e7;
   let s = W.self();
-  assert.deepEqual(s.skl, [1, 1, 1, 1, 1, 1], "every skill starts at level 1");
-  assert.equal(W.act({ t: "sklv", i: 0 }).ok, false, "only at the trainer");
+  assert.equal(s.lvl, 37); assert.equal(s.job, "adventurer");
+  assert.equal(s.nx.length, 6, "the next point's price in each stat");
+  assert.ok(s.nx.every((c) => c > 0));
+  assert.ok(s.nx[0] >= s.nx[3], "a stat already above 30 costs a little more than one at 5");
+  W.to("town", 30, 18);
+  assert.equal(W.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).error, "모닥불 곁이나 수련관 앞에서 레벨을 올릴 수 있습니다");
   W.npc("train");
-  const c0 = s.skc[0];
-  assert.ok(c0.gold > 0 && c0.xp > 0 && c0.lvl === D.skills.warrior[0].lv + 1, "the next level's price is shown");
-  const g0 = ch.gold, x0 = ch.xp;
-  assert.ok(W.act({ t: "sklv", i: 0 }).ok);
-  assert.equal(ch.skl[0], 2);
-  assert.equal(ch.gold, g0 - c0.gold);
-  assert.equal(ch.xp, x0 - c0.xp);
+  const x0 = ch.xp, st0 = { ...ch.st }, atk0 = s.atk, hp0 = s.mhp;
+  assert.ok(W.act({ t: "train", a: [2, 1, 0, 0, 0, 0] }).ok);
+  assert.equal(ch.lvl, 40); assert.equal(ch.st.str, st0.str + 2); assert.equal(ch.st.wil, st0.wil + 1);
+  assert.ok(ch.xp < x0 && ch.xpt > 0);
   s = W.self();
-  assert.ok(s.skc[0].gold > c0.gold && s.skc[0].xp > c0.xp, "each level costs more than the last");
-  for (let k = 2; k < 10; k++) assert.ok(W.act({ t: "sklv", i: 0 }).ok, "to level " + (k + 1));
-  assert.equal(ch.skl[0], 10);
-  assert.equal(W.act({ t: "sklv", i: 0 }).error, "이미 최고 레벨입니다");
-  assert.equal(W.self().skc[0], null, "nothing more to buy at the top");
-  // a skill cannot outgrow its owner: Lv.35's ultimate needs Lv.36 for its second level, Lv.44 for its tenth
-  ch.lvl = 36;
-  assert.ok(W.act({ t: "sklv", i: 5 }).ok);
-  assert.ok(!W.act({ t: "sklv", i: 5 }).ok, "the ultimate's third level waits for Lv.37");
-  ch.lvl = 30;
-  assert.ok(!W.act({ t: "sklv", i: 5 }).ok, "an unlearned skill cannot be raised");
-  ch.gold = 0; ch.lvl = 40;
-  assert.equal(W.act({ t: "sklv", i: 1 }).error, "골드가 부족합니다");
-  ch.gold = 1e7; ch.xp = 0;
-  assert.equal(W.act({ t: "sklv", i: 1 }).error, "경험치가 부족합니다");
-  assert.ok(!W.act({ t: "sklv", i: 9 }).ok && !W.act({ t: "sklv", i: "0" }).ok, "nonsense is refused");
+  assert.ok(s.atk > atk0 && s.mhp > hp0, "STR hits harder, WIL holds more");
+  assert.equal(W.p.hp, s.mhp, "a level heals in full, as of old");
+  for (const bad of [[1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [-1, 2, 0, 0, 0, 0], [51, 0, 0, 0, 0, 0], [0.5, 0, 0, 0, 0, 0], "1"]) assert.ok(!W.act({ t: "train", a: bad }).ok, "nonsense is refused: " + JSON.stringify(bad));
+  ch.xp = 0;
+  assert.equal(W.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).error, "경험치가 부족합니다");
 }
 
 // ── progress worth keeping asks the room for a save soon (not the 15 s cycle)
@@ -100,32 +95,35 @@ assert.ok(D.tutorial.length >= 1);
   assert.deepEqual(L.takeSaves(W.S), [], "walking about asks for nothing");
   ch.gold = 1e7; ch.xp = 1e7;
   W.npc("train");
-  assert.ok(!W.act({ t: "sklv", i: 9 }).ok);
+  assert.ok(!W.act({ t: "train", a: [0, 0, 0, 0, 0, 0] }).ok);
   assert.deepEqual(L.takeSaves(W.S), [], "a refused action asks for nothing");
-  assert.ok(W.act({ t: "sklv", i: 0 }).ok);
-  assert.deepEqual(L.takeSaves(W.S), [W.PID], "a skill level asks for a save");
+  assert.ok(W.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).ok);
+  assert.deepEqual(L.takeSaves(W.S), [W.PID], "a stat point asks for a save");
   assert.deepEqual(L.takeSaves(W.S), [], "and the flag is handed out once");
   // the regular save clears a pending flag
-  assert.ok(W.act({ t: "sklv", i: 0 }).ok);
+  assert.ok(W.act({ t: "train", a: [0, 1, 0, 0, 0, 0] }).ok);
   L.exportChar(W.S, W.PID);
   assert.deepEqual(L.takeSaves(W.S), [], "the 15 s save already covered it");
-  // a level-up from a kill's experience asks too
+  // a kill's experience only piles up: no level comes by itself, a word says where to spend it
   const p = W.p, rt = L.runtime(W.S, "meadow");
   W.to("meadow", 20, 20);
-  ch.lvl = 5; ch.xp = 0;
+  ch.xp = 0;
+  const lv0 = ch.lvl;
   W.step(); L.takeSaves(W.S);
   const mob = rt.mobs.find((o) => !o.dead && o.k === "twinhare");
-  ch.xp = 1e6; mob.el = 0; mob.hp = 1; mob.x = p.x + 12; mob.y = p.y; p.atkAt = 0; p.aim = 0; p.hp = 1e5;
+  mob.el = 0; mob.hp = 1; mob.x = p.x + 12; mob.y = p.y; p.atkAt = 0; p.aim = 0; p.hp = 1e5; p.toast.length = 0;
+  ch.xp = 1e6;
   assert.ok(W.act({ t: "atk" }).ok);
   W.step();
-  assert.ok(ch.lvl > 5 && L.takeSaves(W.S).includes(W.PID), "a level-up asks for a save");
+  assert.equal(ch.lvl, lv0, "experience never levels by itself");
+  assert.ok(ch.xp > 1e6, "it piles up");
 }
 
-// ── a levelled skill hits harder, and at 5 and 10 comes back sooner
+// ── WIS shortens every skill's wait (up to a quarter), and the sword's own mastery makes its attack grow
 {
-  const dmgOf = (L1) => {
-    const W = world("강타" + L1, "warrior", 40);
-    W.ch.skl[0] = L1;
+  const dmgOf = (wis) => {
+    const W = world("강타" + wis, "warrior", 40);
+    W.ch.st.wis = wis; W.p.stc = null;
     W.to("meadow", 20, 22);
     W.step();
     const p = W.p, rt = L.runtime(W.S, "meadow");
@@ -142,16 +140,25 @@ assert.ok(D.tutorial.length >= 1);
     const cd = W.self().cds[0];
     return { total, cd };
   };
-  const a = dmgOf(1), b = dmgOf(5), c = dmgOf(10);
-  assert.ok(b.total > a.total * 1.2 && c.total > b.total * 1.25, `levels add damage: ${a.total} → ${b.total} → ${c.total}`);
-  const cd = D.skills.warrior[0].cd;
-  assert.ok(Math.abs(a.cd + 150 - cd) <= 20 && Math.abs(b.cd + 150 - cd * 0.92) <= 20 && Math.abs(c.cd + 150 - cd * 0.85) <= 20, `cooldowns shorten: ${a.cd}, ${b.cd}, ${c.cd}`);
+  const a = dmgOf(5), b = dmgOf(30), c = dmgOf(99);
+  const cd = D.skills.warrior[0].cd, cut = (w) => Math.min(0.25, 0.004 * w);
+  const eff = (s) => Math.min(s, 40) + 0.5 * Math.min(20, Math.max(0, s - 40)) + 0.25 * Math.max(0, s - 60);
+  for (const [r, w] of [[a, 5], [b, 30], [c, 99]]) assert.ok(Math.abs(r.cd + 150 - cd * (1 - cut(eff(w)))) <= 20, `WIS ${w}: ${r.cd}`);
+  assert.ok(a.cd > b.cd && b.cd > c.cd, `cooldowns shorten: ${a.cd}, ${b.cd}, ${c.cd}`);
+  // mastery: +1% a level on the weapon's own attack
+  const W = world("숙련", "warrior", 1);
+  const s1 = W.self().atk;
+  W.ch.eq.weapon = gear("w_warrior_5"); W.p.stc = null;
+  const lo = W.self().atk;
+  W.ch.wm.sword.lv = 50; W.p.stc = null;
+  const hi = W.self().atk;
+  assert.ok(lo > s1 && Math.abs(hi - lo - 64 * 0.49) <= 1, `mastery 1 → 50 adds 49% of a tier-5 sword's 64: ${lo} → ${hi}`);
 }
 
 // ── the second-tier and ultimate skills of every class go off, each with its own effect
 // (what each one does is tested in tests/skills.mjs)
 const FX = { warrior: [47, 48], rogue: [54, 55], lancer: [64, 65], mage: [74, 75] };
-for (const cls of Object.keys(D.classes)) {
+for (const cls of Object.keys(WK)) {
   const W = world("궁극" + cls.slice(0, 2), cls, 40);
   W.to("meadow", 20, 22);
   W.step();
@@ -287,14 +294,14 @@ for (const cls of Object.keys(D.classes)) {
   // the last first step gives a pet
   const W = world("첫펫", "warrior", 3);
   const ch = W.ch;
-  ch.tut = { i: D.tutorial.length - 1, n: 0 };
+  ch.tut = { i: D.tutorial.findIndex((t) => t.id === "skill"), n: 0 };
   W.to("meadow", 20, 22);
   W.step();
   const p = W.p, m = L.runtime(W.S, "meadow").mobs.find((o) => o.k === "twinhare");
   m.dead = false; m.hp = 500; m.x = p.x + 16; m.y = p.y;
   p.mp = 999;
   assert.ok(W.act({ t: "sk", i: 0 }).ok);
-  assert.equal(ch.tut.i, D.tutorial.length);
+  assert.equal(D.tutorial[ch.tut.i].id, "level", "the skill step done; the stat-point step is last");
   assert.equal(count(ch, "pet_chick"), 1, "the first steps end with a pet chick");
 }
 
@@ -358,7 +365,7 @@ for (const cls of Object.keys(D.classes)) {
   p.hp = 0; p.dead = true;
   let s = W.self();
   assert.ok(s.dead && s.dead.loss > 0 && s.dead.feather === 0, "the death panel knows what town will cost");
-  assert.equal(s.dead.loss, Math.floor(Math.min(50000, s.need) * 0.03));
+  assert.equal(s.dead.loss, Math.floor(Math.min(50000, 4 * D.lvc[s.lvl - 1]) * 0.03), "3% of up to about one old level's worth");
   assert.equal(W.act({ t: "respawn", here: true }).error, "부활 깃털이 없습니다");
   ch.inv.push({ id: "feather", n: 2 });
   assert.equal(W.self().dead.feather, 2);
@@ -416,33 +423,27 @@ for (const cls of Object.keys(D.classes)) {
 {
   const S = L.setup();
   S.now = BASE;
-  const old = L.newChar("옛날", "mage", []);
-  old.v = 4; delete old.skl; delete old.wh; delete old.pet; delete old.scr; delete old.opt;
+  // a v4 mage: a class, stat training, no skill levels yet, none of the comforts
+  const old = L.newChar("옛날", []);
+  for (const k of ["job", "xpt", "st", "wm", "rs", "sw", "cnt", "wh", "pet", "scr", "opt"]) delete old[k];
+  Object.assign(old, { v: 4, cls: "mage", lvl: 12, tr: { str: 0, vit: 1, int: 0, grd: 0 } });
+  old.eq.weapon = gear("w_mage_2");
   old.pet = "pet_wisp";                                      // claims a pet it does not own
   L.addPlayer(S, "pid-old", old);
   const ch = S.players["pid-old"].ch;
-  assert.ok(ch.v >= 5);
-  assert.deepEqual(ch.skl, [1, 1, 1, 1, 1, 1]);
+  assert.equal(ch.v, 11);
+  assert.ok(!("skl" in ch) && !("tr" in ch) && !("cls" in ch));
+  assert.equal(ch.lvl, 45); assert.equal(ch.wm.staff.lv, 12); assert.equal(ch.job, "adventurer");
   assert.deepEqual(ch.wh, { items: [], gold: 0 });
   assert.equal(ch.pet, "");
   assert.deepEqual(ch.opt, { filter: 0, ahp: 0, amp: 0 });
 }
 
-// ── the experience curve: a quarter hour's hunting to Lv.7 must still be a curve that only climbs
+// ── the price of a level: a curve that only climbs, from the first point to the two-hundredth
 {
-  let last = 0;
-  const S = L.setup();
-  S.now = BASE;
-  const c = L.newChar("곡선", "warrior", []);
-  L.addPlayer(S, "pid-curve", c);
-  const p = S.players["pid-curve"];
-  for (let lv = 1; lv < 50; lv++) {
-    p.ch.lvl = lv; p.dirty = true;
-    const need = L.viewFor(S, "pid-curve").self.need;
-    L.endTick(S);
-    assert.ok(need > last, `Lv.${lv} needs more than Lv.${lv - 1}`);
-    last = need;
-  }
+  assert.equal(D.lvc.length, 200);
+  for (let lv = 1; lv < 200; lv++) assert.ok(D.lvc[lv] > D.lvc[lv - 1], `Lv.${lv + 1}'s point costs more than Lv.${lv}'s`);
+  assert.deepEqual(D.statK, [0.004, 30]);
 }
 
 console.log("growth ok");

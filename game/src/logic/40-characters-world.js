@@ -4,8 +4,8 @@ const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
-/** Where gear is worn. Two rings; everything else one of a kind. */
-const SLOTS = ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet"];
+/** Where gear is worn. Two rings; everything else one of a kind. `weapon2` is a hybrid's second weapon (Tab swaps; adds no stats). */
+const SLOTS = ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet", "weapon2"];
 const GEAR_TYPES = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet"];
 const isGear = (id) => GEAR_TYPES.includes(ITEMS[id].type);
 const isJewel = (id) => ITEMS[id].type === "ring" || ITEMS[id].type === "amulet";
@@ -22,25 +22,29 @@ const LOOK_MAX = [13, 15, 13, 21, 5, 12, 11, 14, 11, 13, 7];
 const cleanLook = (look) => { const lk = Array.isArray(look) ? look : []; return LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)); };
 /** What a new look costs at the mirror in town (거울 · 미용실). */
 const LOOK_COST = 500;
-/** A brand-new character sheet — this is exactly what gets persisted. */
-export function newChar(name, cls, look) {
-  const c = CLASSES[cls] ? cls : "warrior";
-  const lk = Array.isArray(look) ? look : [];
+/**
+ * A brand-new character sheet — this is exactly what gets persisted. Everyone starts a 모험가
+ * (adventurer) with six stats at 5, an old dagger in hand and a free weapon to pick at 수련관 카이.
+ * (Callers from the four-class days passed `newChar(name, cls, look)`: a look in third place is still taken.)
+ */
+export function newChar(name, look, oldLook) {
+  const lk = Array.isArray(look) ? look : Array.isArray(oldLook) ? oldLook : [];
   return {
-    v: 10, name, cls: c,
+    v: 11, name, job: "adventurer",
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
-    lvl: 1, xp: 0, gold: 50,
+    // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
+    lvl: 1, xp: 0, xpt: 0, gold: 50,
+    st: freshSt(), wm: freshWm(), rs: 0, sw: 0,
     inv: [{ id: "hp_s", n: 5 }, { id: "mp_s", n: 3 }],
-    eq: { weapon: plain(`w_${c}_1`), helm: null, armor: plain("a_1"), gloves: null, boots: null, ring1: null, ring2: null, amulet: null },
-    tr: { str: 0, vit: 0, int: 0, grd: 0 },
+    eq: { weapon: plain("w_rogue_1"), helm: null, armor: plain("a_1"), gloves: null, boots: null, ring1: null, ring2: null, amulet: null, weapon2: null },
     q: { i: 0, n: 0, st: 0 },
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
     // waypoint stones woken, per map a bitmask of its stones (bit 0 = its first stone)
-    wp: { town: 1 }, seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
+    wp: { town: 1 }, seen: ["town"], ach: [], title: "", cnt: Object.fromEntries(CNT_KEYS.map((k) => [k, 0])), daily: null, tut: { i: 0, n: 0 },
     // 차원 균열 clears today (Phase 2: the daily count), by the day number they were made on
     dim: { day: 0, n: 0 },
-    skl: [1, 1, 1, 1, 1, 1], wh: { items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
+    wh:{ items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
     // the bag's size and a house of one's own (v10: 46-bag.js, 64-housing.js)
     bagCap: INV_BASE, house: homeEmpty(),
@@ -52,8 +56,10 @@ export function newChar(name, cls, look) {
 const OLD_ID = { c_1: "r_2", c_2: "n_3", c_3: "r_4" };
 /** Bring a sheet saved by an older version up to the current shape. */
 function migrate(ch) {
-  if (ch.cls === "ranger" || ch.cls === "archer") ch.cls = "lancer";
-  if (!CLASSES[ch.cls]) ch.cls = "warrior";
+  // the four-class days (v ≤ 9): a jobless hero of level 4L−3, everything paid back (45-jobs.js)
+  if (typeof ch.cls === "string" && !ch.job) migrateV10(ch);
+  delete ch.cls; delete ch.tr; delete ch.skl;
+  cleanJobs(ch);
   // an older, shorter look is padded with "as before"
   ch.look = cleanLook(ch.look);
   const fix = (g) => {
@@ -71,7 +77,7 @@ function migrate(ch) {
   const eq = {};
   for (const k of SLOTS) {
     const g = fix(old[k]);
-    eq[k] = g && slotsFor(ITEMS[g.id].type).includes(k) ? g : null;
+    eq[k] = g && (k === "weapon2" ? ITEMS[g.id].type === "weapon" : slotsFor(ITEMS[g.id].type).includes(k)) ? g : null;
   }
   // the single accessory slot of old sheets becomes a ring or an amulet
   const acc = fix(old.acc);
@@ -80,10 +86,7 @@ function migrate(ch) {
     if (!eq[k]) eq[k] = acc;
     else if (ch.inv.length < bagCap(ch)) ch.inv.push(acc);
   }
-  if (eq.weapon && ITEMS[eq.weapon.id].cls !== ch.cls) eq.weapon = plain(`w_${ch.cls}_1`);
   ch.eq = eq;
-  const tr = isObj(ch.tr) ? ch.tr : {};
-  ch.tr = { str: tr.str | 0, vit: tr.vit | 0, int: tr.int | 0, grd: tr.grd | 0 };
   if (!isObj(ch.q)) ch.q = { i: 0, n: 0, st: 0 };
   ch.q = { i: clamp(ch.q.i | 0, 0, QUESTS.length), n: Math.max(0, ch.q.n | 0), st: ch.q.st === 1 ? 1 : 0 };
   ch.bq = isObj(ch.bq) && MOBS[ch.bq.k] ? { k: ch.bq.k, n: ch.bq.n | 0, need: BOUNTY_N } : null;
@@ -109,18 +112,17 @@ function migrate(ch) {
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
   ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
   ch.title = typeof ch.title === "string" && ch.ach.includes(ch.title) && ACH_BY[ch.title].title ? ch.title : "";
-  const st = isObj(ch.st) ? ch.st : {};
-  ch.st = {};
-  for (const k of ST_KEYS) ch.st[k] = Math.max(0, st[k] | 0);
+  // achievement counters (kept in `st` before the six stats took that name)
+  const cnt = isObj(ch.cnt) ? ch.cnt : {};
+  ch.cnt = {};
+  for (const k of CNT_KEYS) ch.cnt[k] = Math.max(0, cnt[k] | 0);
   const dl = ch.daily;
   ch.daily = isObj(dl) && Number.isInteger(dl.day) && Array.isArray(dl.tasks) && dl.tasks.length === 3 && dl.tasks.every((t) => isObj(t) && DAILY_TEXT[t.kind] && (t.kind !== "kill" || MOBS[t.k]))
     ? { day: dl.day, tasks: dl.tasks.map((t) => ({ kind: t.kind, k: t.kind === "kill" ? t.k : null, n: clamp(t.n | 0, 0, t.need | 0), need: Math.max(1, t.need | 0) })), claimed: [0, 1, 2].map((i) => !!(Array.isArray(dl.claimed) && dl.claimed[i])), bonus: !!dl.bonus }
     : null;
   // a character from before the first-steps chain who has clearly found their feet skips it
-  ch.tut = isObj(ch.tut) ? { i: clamp(ch.tut.i | 0, 0, TUT.length), n: Math.max(0, ch.tut.n | 0) } : { i: ch.lvl >= 5 || (ch.kills | 0) >= 20 ? TUT.length : 0, n: 0 };
-  // skill levels, the warehouse, a pet, scrolls being read, settings
-  const skl = Array.isArray(ch.skl) ? ch.skl : [];
-  ch.skl = SKILLS[ch.cls].map((_, i) => clamp(skl[i] | 0 || 1, 1, SK_MAX));
+  ch.tut = isObj(ch.tut) ? { i: clamp(ch.tut.i | 0, 0, TUT.length), n: Math.max(0, ch.tut.n | 0) } : { i: toTier(ch.lvl) >= 5 || (ch.kills | 0) >= 20 ? TUT.length : 0, n: 0 };
+  // the warehouse, a pet, scrolls being read, settings
   const wh = isObj(ch.wh) ? ch.wh : {};
   ch.wh = { items: (Array.isArray(wh.items) ? wh.items : []).map(fix).filter(Boolean).slice(0, WH), gold: Math.max(0, Math.floor(num(wh.gold) ? wh.gold : 0)) };
   ch.pet = typeof ch.pet === "string" && ITEMS[ch.pet] && ITEMS[ch.pet].type === "pet" && countItem(ch, ch.pet) > 0 ? ch.pet : "";
@@ -140,7 +142,9 @@ function migrate(ch) {
   bagClean(ch);
   ch.house = houseClean(ch.house, fix);
   // ──
-  ch.v = Math.max(ch.v | 0, 10);
+  // jobs and stats (v11): four-class sheets were turned into heroes at the top (migrateV10), every sheet's
+  // stats, mastery and job cleaned there too (cleanJobs) — before the counters and the bar above read them
+  ch.v = Math.max(ch.v | 0, 11);
   return ch;
 }
 
@@ -152,7 +156,8 @@ const QS_USE = ["pot", "food", "camp", "scroll", "buff", "pet"];
 function qsOk(ch, v) {
   if (v === null) return true;
   if (!Array.isArray(v) || v.length !== 2) return false;
-  if (v[0] === "s") return Number.isInteger(v[1]) && v[1] >= 0 && v[1] < SKILLS[ch.cls].length;
+  // until J2 a skill is an index into the old skills of the hand's class (LEGACY_CLS)
+  if (v[0] === "s") return Number.isInteger(v[1]) && v[1] >= 0 && v[1] < SKILLS.warrior.length;
   if (v[0] === "i") return typeof v[1] === "string" && Object.hasOwn(ITEMS, v[1]) && QS_USE.includes(ITEMS[v[1]].type);
   return false;
 }
@@ -169,8 +174,8 @@ function qsLearn(ch, i) {
   return j + 1;
 }
 
-/** Counters kept for achievements. */
-const ST_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim"];
+/** Counters kept for achievements (`ch.cnt`; `dim` = 차원 균열 clears). */
+const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {
@@ -178,12 +183,10 @@ function runeword(g) {
   }
   return null;
 }
-/** How a character's basic attack lands: the equipped weapon's kind, or the class's first. */
-function armOf(ch) {
-  const w = ch.eq.weapon;
-  return WKIND[(w && ITEMS[w.id].wk) || CLASSES[ch.cls].wk[0]];
-}
-const weaponKind = (ch) => (ch.eq.weapon && ITEMS[ch.eq.weapon.id].wk) || CLASSES[ch.cls].wk[0];
+/** The kind of weapon in hand; bare hands fight like the job's weapon, or a dagger. */
+const weaponKind = (ch) => (ch.eq.weapon && ITEMS[ch.eq.weapon.id].wk) || (JOBS[ch.job] && JOBS[ch.job].wk[0]) || "dagger";
+/** How a character's basic attack lands. */
+const armOf = (ch) => WKIND[weaponKind(ch)];
 /** Mastery rank (0–5) against one kind of monster. */
 function masteryRank(ch, k) {
   const n = ch.mk[k] || 0;
@@ -199,7 +202,7 @@ function gearBonus(ch) {
   const add = (s, v) => { if (s in b) b[s] += v; };
   for (const k of SLOTS) {
     const g = ch.eq[k];
-    if (!g) continue;
+    if (!g || k === "weapon2") continue;
     const base = ITEMS[g.id].base;
     // each enhancement level is worth a tenth of the piece's own stats
     for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : 1 + 0.1 * g.enh));
@@ -222,25 +225,15 @@ function gearBonus(ch) {
   return b;
 }
 
+/** The moment's stats: the sheet's (deriveStats, 45-jobs.js) with buffs, food, scrolls and warmth on top. */
 function stats(p) {
-  let c = p.stc;
-  if (!c) {
-    const ch = p.ch, cl = CLASSES[ch.cls], lv = ch.lvl, b = gearBonus(ch), w = ch.eq.weapon, arm = armOf(ch);
-    c = p.stc = {
-      mhp: Math.round(cl.hp[0] + cl.hp[1] * lv + b.hp + ch.tr.vit * TRAIN.vit.gain),
-      mmp: Math.round(cl.mp[0] + cl.mp[1] * lv + b.mp + ch.tr.int * TRAIN.int.gain),
-      atk0: (cl.atk[0] + cl.atk[1] * lv + b.atk + ch.tr.str * TRAIN.str.gain) * (1 + b.atkp / 100),
-      def: Math.round(cl.def[0] + cl.def[1] * lv + b.def + ch.tr.grd * TRAIN.grd.gain),
-      crit: Math.min(75, cl.crit + (w ? w.enh : 0) + b.crit),
-      critd: 1.6 + b.critd / 100, ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + Math.min(40, b.spd) / 100), xp: b.xp, mf: b.mf, gold: b.gold,
-      lg: b.lg, arm, acd: Math.round(arm.cd * (b.lg.haste ? 0.85 : 1)),
-    };
-  }
+  const c = deriveStats(p);
   const now = p.S.now;
   const food = p.food && p.food.until > now ? p.food : null;
   const scr = p.ch.scr || {};
   return {
-    mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf,
+    mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf, wk: c.wk, mag: c.mag,
+    eva: c.eva, aspd: c.aspd, sneak: c.sneak, cdr: c.cdr, mpReg: c.mpReg, burst: c.burst, proc: c.proc, kbr: c.kbr, poise: c.poise, res: c.res,
     xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
@@ -264,7 +257,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "sklv", "train", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {
@@ -504,7 +497,7 @@ export function addPlayer(S, pid, ch) {
   sys(S, `${ch.name}님이 접속했습니다.`);
   ensureDaily(S, p);
   explore(S, p);
-  if (TUT[ch.tut.i] && TUT[ch.tut.i].id === "equip" && ch.eq.weapon) tutStep(S, p, "equip");
+  if (TUT[ch.tut.i] && TUT[ch.tut.i].id === "equip" && ch.eq.weapon && ch.sw) tutStep(S, p, "equip");
   checkAch(S, p);
   return p.eid;
 }

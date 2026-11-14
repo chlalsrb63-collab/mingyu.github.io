@@ -124,7 +124,7 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   const W = world(L, "심부름꾼");
   let s = W.self();
   assert.equal(sqOf(s, "sq_willow_letter").st, 1, "the letter can be taken");
-  assert.equal(sqOf(s, "sq_willow_frogs").st, 0, "the frogs wait for the letter and level 2");
+  assert.equal(sqOf(s, "sq_willow_frogs").st, 0, "the frogs wait for the letter and level 5");
   W.to("town", 20, 18);
   assert.match(W.act({ t: "sq", a: "take", id: "sq_willow_letter" }).error, hangul, "only beside the giver (in Korean)");
   W.meet("willow_elder");
@@ -144,7 +144,7 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   assert.ok(W.p.ch.xp > xp || W.p.ch.lvl > 1, "experience paid");
   s = W.self();
   assert.equal(sqOf(s, "sq_willow_letter").st, 4, "done for good");
-  if (W.p.ch.lvl < 2) W.p.ch.lvl = 2;
+  if (W.p.ch.lvl < 5) W.p.ch.lvl = 5;   // levels went 1–200 with jobs: the old Lv.2 is 5
   s = W.self();
   assert.equal(sqOf(s, "sq_willow_frogs").st, 1, "the hunt opens");
   assert.ok(W.act({ t: "sq", a: "take", id: "sq_willow_frogs" }).ok);
@@ -329,13 +329,13 @@ const cloneData = () => JSON.parse(JSON.stringify(EMPTY_DATA()));
   const S = L.setup();
   L.addPlayer(S, "old", old);
   assert.deepEqual(S.players.old.ch.sq, { on: {}, done: {} });
-  assert.equal(S.players.old.ch.v, 10);
+  assert.equal(S.players.old.ch.v, 11);
   const messy = L.newChar("엉망", "rogue", []);
   messy.sq = { on: { sq_willow_letter: 99, sq_gone: 3, "Bad Id": 1 }, done: { sq_willow_frogs: 2, sq_retired: 1, "x y": 1 } };
   L.addPlayer(S, "messy", messy);
   assert.deepEqual(S.players.messy.ch.sq.on, { sq_willow_letter: 1 }, "progress clamped, unknown quests dropped");
   assert.deepEqual(S.players.messy.ch.sq.done, { sq_willow_frogs: 2, sq_retired: 1 }, "finished quests remembered");
-  assert.equal(L.newChar("새내기", "warrior", []).v, 10);
+  assert.equal(L.newChar("새내기", "warrior", []).v, 11);
 }
 
 // ── the playtest spot (room.ts, local dev only) lands on ground a player can stand on

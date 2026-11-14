@@ -85,7 +85,7 @@ for (const m of rt.mobs) { m.dead = true; m.respAt = 1e15; }
 rt.cellAt = 1e15; // and no cell wakes round the trials (a 4× ground has cells far from where the hunter came in)
 const pet = rt.mobs.find((m) => m.k === "twinhare");
 pet.slot = null; // borrowed from its cell for good: it stays in the world between trials, as a placed monster does
-const stand = (dx = 0, dy = 0) => { p.x = X + dx; p.y = Y + dy; p.mvAt = now; p.dead = false; p.hp = 9999; p.burn = null; p.poison = null; p.slowed = 0; p.hitAt = -1e9; p.atkAt = 0; p.dir = 2; p.aim = 0; };
+const stand = (dx = 0, dy = 0) => { p.x = X + dx; p.y = Y + dy; p.mvAt = now; p.dead = false; p.hp = 9999; p.burn = null; p.poison = null; p.slowed = 0; p.hitAt = -1e9; p.atkAt = 0; p.stag = 0; p.dir = 2; p.aim = 0; };
 const dress = (k, el, tr, dx, extra = {}) => Object.assign(pet, { k, el, tr, dead: false, hp: 1e6, x: X + dx, y: Y, hx: X + dx, hy: Y, wx: X + dx, wy: Y, tgt: PID, st: 0, stun: 0, slow: 0, dot: null, act: null, mv: 0, cn: 0, atkAt: now, castAt: 1e15, mvAt: 1e15, by: {} }, extra);
 const events = (ms) => { const out = []; for (let t = 0; t < ms; t += 100) for (const e of step().ev || []) out.push(e); return out; };
 const self = () => { p.dirty = true; return step().self; };
@@ -216,7 +216,8 @@ stand();
 let gear = 0;
 for (let i = 0; i < 3000; i++) { rt.kc = 0; dress("twinhare", 0, [], 14, { hp: 1, atkAt: 1e15 }); p.atkAt = 0; p.x = X; p.y = Y; act({ t: "atk" }); if (i % 50 === 0) { gear += rt.drops.filter((d) => d.g).length; rt.drops.length = 0; step(20); } }
 gear += rt.drops.filter((d) => d.g).length + p.ch.inv.filter((s) => s.q !== undefined).length;
-assert.ok(gear > 60 && gear < 165, "about four in a hundred: " + gear + " in 3000");
+// (0.06 + 0.002·lv) × GEAR_CUT 0.3 ≈ 1.9 in a hundred at level 1: ≈ 57 in 3000, give or take three spreads either way
+assert.ok(gear > 35 && gear < 90, "about two in a hundred: " + gear + " in 3000");
 
 // ── red potions keep their worth: a fixed amount plus a share of the drinker's health
 p.ch.inv = [{ id: "hp_s", n: 3 }];

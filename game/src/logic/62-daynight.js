@@ -129,7 +129,7 @@ function warmTick(S, p, fire, now) {
   // the warmth keeps the best company it has had while it lasts
   p.warmN = clamp(Math.max(live ? p.warmN || 0 : 0, n), 1, WARM_N);
   p.warm = now + WARM_MS; p.warmPct = Math.max(had, w.pct);
-  p.ch.st.rest++;
+  p.ch.cnt.rest++;
   tutStep(S, p, "rest");
   checkAch(S, p);
   p.dirty = true;

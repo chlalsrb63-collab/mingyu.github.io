@@ -15,7 +15,7 @@ const near = (role) => { const p = S.players[PID]; const n = D0.npcs.find((o) =>
 
 // ── an old sheet: a ranger with a gun and the single accessory slot
 const old = L.newChar("옛사람", "warrior", []);
-old.cls = "ranger"; old.lvl = 40;
+old.cls = "ranger"; old.lvl = 40; delete old.job; delete old.st; delete old.wm; delete old.xpt;   // a sheet from the four-class days
 old.eq = { weapon: gear("w_ranger_2", { q: 2, af: [["atk", 3]] }), armor: gear("a_2"), acc: gear("c_1", { q: 1, af: [["crit", 2]] }) };
 old.inv = [{ id: "hp_s", n: 3 }, gear("c_2"), gear("w_ranger_1"), { id: "nope", n: 1 }];
 delete old.mk; delete old.bq;
@@ -23,12 +23,14 @@ L.addPlayer(S, PID, old);
 let v = step();
 const D0 = v.map;
 let me = v.self;
-assert.equal(me.cls, "lancer", "rangers become lancers");
+assert.equal(me.job, "lancer", "rangers become lancers (창술사 from old level 20)");
+assert.equal(me.lvl, 157, "old level 40 → 4·40 − 3");
+assert.equal(me.wm[2][0], 40, "spear mastery = the old level");
 assert.equal(me.eq.weapon.id, "w_lancer_2");
 assert.equal(me.eq.ring1.id, "r_2", "the old accessory becomes a ring");
 assert.deepEqual(me.inv.map((s) => s.id), ["hp_s", "n_3", "w_lancer_1"]);
 assert.equal(me.wk, "spear");
-assert.deepEqual(D.slots, ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet"]);
+assert.deepEqual(D.slots, ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet", "weapon2"]);
 
 // ── eight slots: every kind of piece goes where it belongs, rings on both hands
 const ch = S.players[PID].ch;
@@ -44,7 +46,12 @@ assert.ok(act({ t: "eq", s: 1 }).ok);
 me = self();
 assert.equal(me.eq.ring1.id, "r_3"); assert.equal(me.eq.amulet.id, "n_2");
 assert.ok(me.atk > atk0 && me.mhp > hp0, "gloves, rings and an amulet add up");
-assert.equal(act({ t: "eq", s: me.inv.findIndex((s) => s.id === "w_mage_1") }).ok, false, "another class's weapon is refused");
+// no class locks: any hand holds any weapon (and the old one goes back to the bag)
+assert.equal(act({ t: "eq", s: me.inv.findIndex((s) => s.id === "w_mage_1") }).ok, true, "a lancer may pick up a staff");
+assert.equal(self().wk, "staff");
+assert.ok(act({ t: "eq", s: ch.inv.findIndex((s) => s.id === "w_lancer_2") }).ok, "and go back to the spear");
+me = self();
+assert.equal(me.wk, "spear");
 assert.equal(act({ t: "eq", s: me.inv.findIndex((s) => s.id === "a_5") }).ok, true, "level 40 can wear tier 5");
 assert.ok(act({ t: "uneq", k: "ring2" }).ok);
 
@@ -55,10 +62,12 @@ const crit1 = self().crit;
 ch.eq.boots = gear("b_3");
 S.players[PID].stc = null;
 assert.equal(crit1 - self().crit, 6, "two pieces of 네온 러너 give +6 crit");
+const acd0 = self().acd;
 ch.eq.helm = gear("h_3", { q: 3, lg: "haste" }); ch.eq.armor = gear("a_3", { q: 3, lg: "greed" });
 S.players[PID].stc = null;
 me = self();
-assert.equal(me.acd, Math.round(D.wkinds.spear.cd * 0.85), "haste shortens the attack");
+assert.ok(Math.abs(me.acd - acd0 * 0.85) <= 1, "haste shortens the attack");
+assert.ok(acd0 < D.wkinds.spear.cd, "DEX already quickens it a little");
 assert.equal(me.goldb, 60);
 assert.deepEqual(me.lg.sort(), ["greed", "haste"]);
 
@@ -163,19 +172,21 @@ assert.ok(types.size >= 6, "every kind of piece drops, saw " + [...types]);
 assert.ok(rt.drops.concat(ch.inv).some((d) => (d.g || d).lg), "legendaries drop from elites");
 assert.ok(rt.drops.concat(ch.inv).some((d) => (d.g || d).set) || true);
 
-// ── every skill of every class can be cast without a hitch
+// ── every old skill (until J2: the old class of the weapon in hand) can be cast without a hitch
 L.removePlayer(S, PID);
-for (const cls of Object.keys(D.classes)) {
-  const c = L.newChar("스킬" + cls.slice(0, 3), cls, []);
-  c.lvl = 40; c.map = "meadow"; c.x = 20 * 16; c.y = 22 * 16 + 8;
+for (const wk of ["sword", "dagger", "spear", "staff"]) {
+  const cls = D.legacyCls[wk];
+  const c = L.hero("스킬" + wk.slice(0, 3), { wk, lvl: 157, wm: { [wk]: 40 } });
+  c.map = "meadow"; c.x = 20 * 16; c.y = 22 * 16 + 8;
   L.addPlayer(S, PID, c);
   const q = S.players[PID];
   step();
   assert.equal(D.skills[cls].length, 6, "four skills, a second-tier one and an ultimate");
   for (let i = 0; i < 6; i++) {
     const m = acorns[i]; m.dead = false; m.hp = 500; m.x = q.x + 20; m.y = q.y + 4;
-    q.mp = 999; q.atkAt = 0;
-    assert.ok(act({ t: "sk", i }).ok, cls + " skill " + i);
+    q.mp = 999; q.atkAt = 0; q.stag = 0;
+    const r = act({ t: "sk", i });
+    assert.ok(r.ok, cls + " skill " + i + " " + r.error);
     for (let k = 0; k < 40; k++) step(100);
   }
   if (cls === "mage") {

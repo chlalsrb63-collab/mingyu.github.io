@@ -24,20 +24,26 @@ function rollTraits(S, n) {
 }
 /** Put a lingering condition on a player: "burn" and "poison" bite once a second, "slow" drags the feet. */
 function afflict(S, p, kind, atk) {
-  const now = S.now;
-  if (kind === "slow") p.slowed = Math.max(p.slowed || 0, now + SLOW_MS);
-  else if (kind === "burn") p.burn = { until: now + 4000, next: (p.burn && p.burn.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.14)) };
-  else p.poison = { until: now + 6000, next: (p.poison && p.poison.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.09)) };
+  const now = S.now, k = 1 - deriveStats(p).res;     // WIL shortens it and dulls its bite
+  if (kind === "slow") p.slowed = Math.max(p.slowed || 0, now + Math.round(SLOW_MS * k));
+  else if (kind === "burn") p.burn = { until: now + Math.round(4000 * k), next: (p.burn && p.burn.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.14 * k)) };
+  else p.poison = { until: now + Math.round(6000 * k), next: (p.poison && p.poison.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.09 * k)) };
   p.dirty = true;
 }
-/** A monster's blow landing on a player, and whatever its traits add to that. */
-function mobHit(S, rt, p, raw, mob) {
+/**
+ * A monster's blow landing on a player, and whatever its traits add to that. `how`: "blow" (a direct
+ * blow) and "shot" (a volley) can be evaded (DEX); "charge" and "tele" (a leap, slam or fan landing) —
+ * or any blow of an elite or a boss — shove the player back and make them reel (45-jobs.js).
+ */
+function mobHit(S, rt, p, raw, mob, how = "blow") {
   if (p.dead) return;
+  if ((how === "blow" || how === "shot") && evadeBlow(S, rt, p)) return;
   const before = p.hp;
   const src = mob && !mob.dead ? mob : null;
   // a rift's master hits softer than its wild kin (64-dim.js)
   if (mob && mob.ak) raw *= mob.ak;
   hurtPlayer(S, rt, p, raw, src);
+  if (!p.dead && (how === "charge" || (how === "tele" && mob) || (src && (src.el >= 1 || MOBS[src.k].boss)))) staggerPlayer(S, rt, p, mob);
   if (!src || src.dead || !src.tr || !src.tr.length) return;
   const atk = MOBS[src.k].atk * ELITE[src.el].atk;
   if (!p.dead) {
@@ -124,7 +130,7 @@ function dash(S, m, rt, mob, atk) {
     const p = S.players[pid];
     if (p.map !== m.id || p.dead) continue;
     const rx = p.x - x0, ry = p.y - y0, along = rx * a.ux + ry * a.uy;
-    if (along > -6 && along < far + 10 && Math.abs(rx * a.uy - ry * a.ux) < 13) mobHit(S, rt, p, atk * 1.7, mob);
+    if (along > -6 && along < far + 10 && Math.abs(rx * a.uy - ry * a.ux) < 13) mobHit(S, rt, p, atk * 1.7, mob, "charge");
   }
   mob.atkAt = Math.max(mob.atkAt, S.now + 600);
 }
@@ -377,6 +383,7 @@ export function tick(S, now) {
     for (const pid of pids) if (S.players[pid].map === id) S.players[pid].foes = 0;
     for (const mob of rt.mobs) { const o = !mob.dead && mob.tgt ? S.players[mob.tgt] : null; if (o && o.map === id) o.foes++; }
     for (const mob of rt.mobs) tickMob(S, m, rt, mob, dt);
+    shotTick(S, rt, dt);
     for (let i = rt.mobs.length - 1; i >= 0; i--) if ((rt.mobs[i].temp || rt.mobs[i].cellGone) && rt.mobs[i].dead) rt.mobs.splice(i, 1);
     for (let i = rt.zones.length - 1; i >= 0; i--) {
       const z = rt.zones[i];
@@ -403,7 +410,7 @@ export function tick(S, now) {
         const p = S.players[pid];
         if (p.map !== id || p.dead || dist(p.x, p.y, t.x, t.y) > t.r) continue;
         if (t.ev === "q" && p.wheel > now) { rt.ev.push(["bl", p.eid]); continue; }
-        mobHit(S, rt, p, t.dmg, t.by);
+        mobHit(S, rt, p, t.dmg, t.by, t.ev === "q" ? "shot" : "tele");
       }
     }
     for (let i = rt.pools.length - 1; i >= 0; i--) {
@@ -490,7 +497,7 @@ export function tick(S, now) {
     // a fire's warmth carries on after you stand up, as long as you keep out of a fight
     const wr = calm ? warmRegen(p, now) : 0;
     if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * (rest + wr) + 1);
-    if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr) + 1);
+    if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr + st.mpReg) + 1);
     if (fire && p.sit) warmTick(S, p, fire, now);
     else p.warmT = 0;
   }

@@ -40,7 +40,7 @@ import type { Env } from "./env";
 import * as logic from "./logic.js";
 import type { Char, World } from "./logic.js";
 import { parseClientMessage } from "./protocol";
-import { Accounts, K, pidFor, serverOf } from "./accounts.js";
+import { Accounts, K, pidFor, serverOf, rankRow, fromOldRow } from "./accounts.js";
 
 const TICK_MS = 100;
 const SAVE_MS = 15_000;
@@ -75,6 +75,8 @@ interface RankRow {
   cls: string;
   lvl: number;
   xp: number;
+  /** 2 = jobs: levels 1–200, `cls` a job id, `xp` the experience spent on points */
+  v?: number;
 }
 
 type VaultReply =
@@ -273,7 +275,8 @@ export class Room extends DurableObject<Env> {
       if (!logic.validName(action.name)) {
         return this.send(ws, { type: "error", error: "이름은 한글·영문·숫자 2~10자로 지어 주세요" });
       }
-      const char = logic.newChar(String(action.name), action.cls, action.look);
+      // everyone starts a 모험가: an old client's class choice is ignored
+      const char = logic.newChar(String(action.name), action.look);
       const res = await this.callVault("create", { pid, room: this.roomName, char });
       if (!res.ok) return this.send(ws, { type: "error", error: res.error });
       await this.ready();
@@ -486,7 +489,7 @@ export class Room extends DurableObject<Env> {
       const keys = list.map((e) => K.char(e.pid));
       const [recs, rankNow] = await Promise.all([store.get<VaultRecord>(keys), store.get<RankRow[]>(rankKey)]);
       const puts: Record<string, unknown> = {};
-      const rank = new Map((rankNow ?? []).map((r) => [r.name, r]));
+      const rank = new Map((rankNow ?? []).map((r) => [r.name, fromOldRow(r)]));
       const kept: Array<{ pid: string; char: Char }> = [];
       for (const { pid, char } of list) {
         const rec = recs.get(K.char(pid));
@@ -496,7 +499,7 @@ export class Room extends DurableObject<Env> {
         if (!release.has(pid)) next.sess = { room, t: now };
         puts[K.char(pid)] = next;
         kept.push({ pid, char });
-        rank.set(char.name, { name: char.name, cls: char.cls, lvl: char.lvl, xp: char.xp });
+        rank.set(char.name, rankRow(char));
       }
       Object.assign(puts, accounts.summaryPuts(kept));
       puts[rankKey] = [...rank.values()].sort((a, b) => b.lvl - a.lvl || b.xp - a.xp).slice(0, RANK_SIZE);
@@ -505,7 +508,7 @@ export class Room extends DurableObject<Env> {
     }
 
     if (op === "rank") {
-      return reply({ ok: true, list: (await store.get<RankRow[]>(K.rank(server))) ?? [] });
+      return reply({ ok: true, list: ((await store.get<RankRow[]>(K.rank(server))) ?? []).map(fromOldRow) });
     }
 
     if (op === "guild") {

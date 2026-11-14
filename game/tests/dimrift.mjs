@@ -76,12 +76,14 @@ function world() {
   return S;
 }
 const [OBX, OBY] = [X.DIM_TOWN.keeper[0] * T + 8, (X.DIM_TOWN.keeper[1] - 1) * T + 10];
+/** The weapon each old class carried (jobs-and-stats: until J2 it also brings that class's skills). */
+const WKOF = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" };
+/** A hero carrying `cls`'s weapon at what used to be level `lv` (world tier lv: level 4·lv − 3, mastery lv, the job from 20). */
 function hero(S, pid, name, cls = "warrior", lv = 20, gear = false) {
-  const ch = L.newChar(name, cls, []);
-  ch.lvl = lv;
+  const ch = L.hero(name, { wk: WKOF[cls], lvl: Math.min(197, 4 * lv - 3), migrate: true });
   if (gear) {
     const tier = X.tierFor(lv), box = { seed: lv * 31 + name.length };
-    const kinds = X.CLASSES[cls].wk;
+    const kinds = [WKOF[cls]];
     ch.eq.weapon = X.rollGear(S, `w_${X.WK_ID[kinds[0]]}_${tier}`, 1, lv);
     for (const t of ["helm", "armor", "gloves", "boots"]) ch.eq[t] = X.rollGear(S, `${X.GEAR[t].pre}_${tier}`, 1, lv);
     ch.inv.push({ id: lv < 26 ? "hp_m" : "hp_l", n: 60 }, { id: lv < 26 ? "mp_m" : "mp_l", n: 40 });
@@ -227,10 +229,10 @@ const dimIds = (S) => Object.keys(S.dims);
   const lv0 = p.ch.lvl;
   assert.ok(act(S, "g1", { t: "dim_open" }).ok);
   const dim = S.dims[p.map], rt = dim.rt;
-  assert.equal(dim.lv, lv0);
+  assert.equal(dim.lv, Math.floor((lv0 + 3) / 4), "the rift is made for the tier of the level going in");
   step(S);
   const v0 = last("g1", "dim");
-  assert.ok(Array.isArray(v0) && v0[0] === 0 && v0[2] === 0 && v0[4] === lv0, "the HUD block: " + JSON.stringify(v0));
+  assert.ok(Array.isArray(v0) && v0[0] === 0 && v0[2] === 0 && v0[4] === dim.lv, "the HUD block: " + JSON.stringify(v0));
   const kill = (mob) => { mob.by = { g1: 1 }; X.killMob(S, rt, mob); };
   const normal = rt.mobs.find((m) => !m.dead && !m.el && !X.MOBS[m.k].chest);
   kill(normal);
@@ -287,7 +289,7 @@ const dimIds = (S) => Object.keys(S.dims);
   kill(boss);
   assert.equal(dim.state, "clear");
   assert.ok(dim.chest && dim.portal);
-  assert.equal(p.ch.st.dim, 1, "a clear is counted");
+  assert.equal(p.ch.cnt.dim, 1, "a clear is counted");
   step(S);
   const vc = last("g1", "dim");
   assert.equal(vc[2], 2); assert.ok(vc[8] && vc[9] && vc[9][2] === 0, "chest waiting: " + JSON.stringify(vc));
@@ -394,7 +396,7 @@ const dimIds = (S) => Object.keys(S.dims);
   // a character saved inside wakes in town; the old sheet (v8) gains a rift record
   const old = L.newChar("옛날", "mage", []); delete old.dim; old.v = 8;
   L.addPlayer(S, "old", old);
-  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0 }); assert.equal(S.players.old.ch.v, 10);
+  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0 }); assert.equal(S.players.old.ch.v, 11);
   const odd = L.newChar("이상", "mage", []); odd.dim = { day: "x", n: -5 };
   L.addPlayer(S, "odd", odd);
   assert.deepEqual(S.players.odd.ch.dim, { day: 0, n: 0 });
@@ -492,7 +494,7 @@ function runParty(lv, classes, seedSalt) {
       if (dd > X.atkRange(p) * 0.85) { walk(p, Math.floor(tgt.x / T), Math.floor(tgt.y / T)); continue; }
       // skills first (whichever are ready), then the plain blow
       let cast = false;
-      for (let i = X.SKILLS[p.ch.cls].length - 1; i >= 0 && !cast; i--) if (act(S, p.pid, { t: "sk", i, a: aim }).ok) cast = true;
+      for (let i = X.SKILLS.warrior.length - 1; i >= 0 && !cast; i--) if (act(S, p.pid, { t: "sk", i, a: aim }).ok) cast = true;
       if (!cast) act(S, p.pid, { t: "atk", a: aim });
     }
     step(S);

@@ -125,7 +125,7 @@ function renderHud() {
   const pct = Math.min(100, d[0] / 10);
   const name = D().themes[d[10]] || "차원 균열";
   const label = ["", "균열의 주인 출현!", "정화 완료 — 귀환의 문까지", "균열이 닫힙니다…"][d[2]];
-  $("#dim-title").textContent = `차원 균열 Lv.${d[4]} · ${name}`;
+  $("#dim-title").textContent = `차원 균열 Lv.${4 * d[4] - 3} · ${name}`;
   $("#dim-time").textContent = d[2] === 2 ? `문 ${mmss(secs)}` : d[2] === 3 ? `${secs}초` : mmss(secs);
   $("#dim-time").classList.toggle("low", d[2] <= 1 && secs <= 180);
   $("#dim-fill").style.width = `${pct}%`;
@@ -162,7 +162,7 @@ function renderRc() {
   const left = Math.max(0, rc[1] - Math.floor((now() - st.rcAt) / 1000));
   const me = rc[2].find((r) => r[0] === A.G.you);
   const WORD = ["대기 중", "수락", "거절", "마을 밖"];
-  $("#rc-lv").textContent = `차원 균열 Lv.${rc[3]} · 최대 ${D().party}명`;
+  $("#rc-lv").textContent = `차원 균열 Lv.${4 * rc[3] - 3} · 최대 ${D().party}명`;
   $("#rc-time").textContent = `${left}초`;
   $("#rc-fill").style.width = `${(100 * left) / Math.max(1, D().rcMs / 1000)}%`;
   const rows = rc[2].map(([eid, name, s]) => `<li class="rc-${s}"><span class="rc-mark"></span><b>${esc(name)}</b><em>${WORD[s]}</em></li>`).join("");
@@ -198,7 +198,7 @@ function renderKeeper() {
   $("#dim-open").disabled = !lead;
   $("#dim-open").textContent = party.length ? (lead ? "균열 열기 (파티 입장 준비)" : "파티장만 열 수 있습니다") : "혼자 균열 열기";
   $("#dim-join").hidden = !dj;
-  if (dj) $("#dim-join").textContent = `합류하기 — Lv.${dj[3]} · ${dj[1]}명 · ${(dj[2] / 10).toFixed(0)}% · ${mmss(dj[0])}`;
+  if (dj) $("#dim-join").textContent = `합류하기 — Lv.${4 * dj[3] - 3} · ${dj[1]}명 · ${(dj[2] / 10).toFixed(0)}% · ${mmss(dj[0])}`;
 }
 
 // ───────────────────────────── the minimap ─────────────────────────────

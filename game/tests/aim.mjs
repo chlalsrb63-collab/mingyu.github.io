@@ -8,13 +8,14 @@ const T = 16;
 const [AIM_N, CONE] = D.aim;
 const EAST = 0, SOUTH = AIM_N / 4, WEST = AIM_N / 2, NORTH = (AIM_N * 3) / 4;
 
+/** The weapon each old class carried (until J2 it brings that class's skills); "bow" is itself. */
+const WK = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff", book: "book", bow: "bow" };
 function world(name, cls) {
   const S = L.setup();
   let now = 1_000_000;
   S.now = now;
   const PID = "pid-" + name;
-  const ch = L.newChar(name, cls, []);
-  ch.lvl = 40;
+  const ch = L.hero(name, { wk: WK[cls], lvl: 157, migrate: true });
   L.addPlayer(S, PID, ch);
   const W = {
     S, PID,
@@ -39,7 +40,7 @@ function world(name, cls) {
   /** Back to the spot, rested, every cooldown spent, the monsters gone. */
   W.ready = () => {
     p.x = home[0]; p.y = home[1]; p.mvAt = now; p.fix = false;
-    p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.combo = 0; p.sword = null; p.dance = null; p.coinFree = false;
+    p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.stag = 0; p.combo = 0; p.sword = null; p.dance = null; p.coinFree = false;
     for (let i = 0; i < 6; i++) p.cds[i] = 0;
     for (const o of W.rt.mobs) { o.dead = true; o.respAt = now + 1e12; }
   };
@@ -87,20 +88,23 @@ assert.ok(D.wkinds.sword.arc > D.wkinds.dagger.arc && D.wkinds.dagger.arc > D.wk
   assert.equal(W.p.dir, 3, "and the body turns with it");
 }
 
-// ── every weapon: a monster behind is never hit, one in front is
-for (const cls of Object.keys(D.classes)) {
+// ── every weapon (the bow's arrow flies a tick or two first): a monster behind is never hit, one in front is
+for (const cls of Object.keys(WK)) {
   const W = world("뒤" + cls.slice(0, 2), cls);
-  const reach = Math.min(20, D.classes[cls].range - 6);
+  const reach = Math.min(20, D.wkinds[WK[cls]].range - 6);
   const [back] = W.mobs([[-reach, 0]]);
   for (let i = 0; i < 3; i++) { W.p.atkAt = 0; assert.ok(W.act({ t: "atk", a: EAST }).ok); W.step(50); }
+  for (let i = 0; i < 4; i++) W.step(100);
   assert.ok(!hurt(back), `${cls}: a monster behind is not hit by a blow aimed forward`);
   W.ready();
   const [front] = W.mobs([[reach, 0]]);
   assert.ok(W.act({ t: "atk", a: EAST }).ok);
+  W.step(100); W.step(100);
   assert.ok(hurt(front), `${cls}: a monster in front is`);
   W.ready();
   const [side] = W.mobs([[0, reach]]);
   assert.ok(W.act({ t: "atk", a: EAST }).ok);
+  W.step(100); W.step(100);
   assert.ok(!hurt(side), `${cls}: nor one standing square to the side`);
   // the swing still goes off, forward, and simply misses
   W.ready();

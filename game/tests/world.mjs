@@ -27,8 +27,8 @@ let lastLv = 0;
 for (const q of D.quests) {
   assert.ok(D.mobs[q.mob], "quest monster exists: " + q.mob);
   assert.ok(homes[q.mob], "and has a home: " + q.mob);
-  assert.ok(D.mobs[q.mob].lv >= lastLv - 3, `quests rise in level (a neighbouring ground may overlap a little): ${q.mob}`);
-  lastLv = D.mobs[q.mob].lv;
+  assert.ok(D.mobs[q.mob].tier >= lastLv - 3, `quests rise in level (a neighbouring ground may overlap a little): ${q.mob}`);
+  lastLv = D.mobs[q.mob].tier;
 }
 for (const k of Object.keys(D.mobs)) assert.ok(homes[k], "every monster is placed on some map: " + k);
 

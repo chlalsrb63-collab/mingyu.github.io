@@ -1,7 +1,8 @@
 // ───────────────────────────── inventory & loot ─────────────────────────────
 
-function resolveItem(key, cls) {
-  if (key[0] === "W" && key.length === 2) return `w_${cls}_${key[1]}`;
+/** Old clients asked for "W<tier>": the weapon of that tier of the kind in hand. */
+function resolveItem(key, ch) {
+  if (key[0] === "W" && key.length === 2) return `w_${WK_ID[weaponKind(ch)]}_${key[1]}`;
   return key;
 }
 function countItem(ch, id) {
@@ -74,8 +75,8 @@ function pickUp(S, p, dr) {
   } else if (dr.g) {
     p.ch.inv.push(dr.g);
     p.gain.push(["item", dr.it, 1, dr.q]);
-    if (dr.q === 3) p.ch.st.leg++;
-    if (dr.q === 4) p.ch.st.set++;
+    if (dr.q === 3) p.ch.cnt.leg++;
+    if (dr.q === 4) p.ch.cnt.set++;
     if (dr.q >= 3) checkAch(S, p);
     if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]${pp(gearName(dr.g), "을를")} 획득했습니다!`);
   } else {
@@ -86,8 +87,8 @@ function pickUp(S, p, dr) {
   p.dirty = true;
   return true;
 }
-/** What dying costs: a share of the level's experience (a revive feather spares it). */
-const deathLoss = (ch) => Math.floor(Math.min(ch.xp, xpNeed(ch.lvl)) * 0.03);
+/** What dying costs: 3% of the unspent experience, up to about one old level's worth (a revive feather spares it). */
+const deathLoss = (ch) => Math.floor(Math.min(ch.xp, 4 * pointCost(ch.lvl, STAT_K0)) * 0.03);
 function takeItem(ch, id, n) {
   for (let i = ch.inv.length - 1; i >= 0 && n > 0; i--) {
     const s = ch.inv[i];
@@ -162,6 +163,8 @@ function tierFor(lv) {
 /** Which kind of piece drops: weapons most often, jewellery least. */
 const DROP_TYPES = [["weapon", 24], ["helm", 13], ["armor", 15], ["gloves", 13], ["boots", 13], ["ring", 13], ["amulet", 9]];
 
+/** A dropped weapon's kind: half the time the looter's own, else any of the six. */
+const dropKind = (S, p) => (rnd(S) < 0.5 ? weaponKind(p.ch) : WK_ORDER[ri(S, 0, WK_ORDER.length - 1)]);
 /** What one looter finds on one corpse. Everyone in the party rolls their own. */
 function lootFor(S, rt, mob, p) {
   const d = MOBS[mob.k];
@@ -179,11 +182,8 @@ function lootFor(S, rt, mob, p) {
     let roll = rnd(S) * 100, type = "weapon";
     for (const [t, w] of DROP_TYPES) { if (roll < w) { type = t; break; } roll -= w; }
     let id;
-    if (type === "weapon") {
-      // weapons always fit the looter's class; a mage finds staves and books alike
-      const kinds = CLASSES[p.ch.cls].wk;
-      id = `w_${WK_ID[kinds[ri(S, 0, kinds.length - 1)]]}_${tier}`;
-    } else id = `${GEAR[type].pre}_${tier}`;
+    if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
+    else id = `${GEAR[type].pre}_${tier}`;
     let q = rollRarity(S, rank, st.mf);
     if (isJewel(id) && q === 0) q = 1;
     out.push({ g: rollGear(S, id, q, d.lv) });
@@ -202,30 +202,18 @@ function lootFor(S, rt, mob, p) {
 
 // ───────────────────────────── combat ─────────────────────────────
 
+/**
+ * Experience only piles up: it is spent on stat points at a campfire or at 수련관 카이 (action
+ * `train`, one point = one level). The first time a point is affordable, a word says where.
+ */
 function gainXp(S, p, n) {
   const ch = p.ch;
   n = Math.max(1, Math.round(n * (1 + stats(p).xp / 100)));
-  ch.xp += n;
+  ch.xp = Math.min(2e9, ch.xp + n);
   p.gain.push(["xp", n]);
-  while (ch.lvl < MAXLV && ch.xp >= xpNeed(ch.lvl)) {
-    ch.xp -= xpNeed(ch.lvl);
-    ch.lvl++;
-    p.stc = null;
-    const st = stats(p);
-    p.hp = st.mhp; p.mp = st.mmp;
-    p.gain.push(["lvl", ch.lvl]);
-    saveSoon(p);
-    S.maps[p.map].ev.push(["l", p.eid]);
-    S.maps[p.map].who = true;
-    // a skill just learned goes straight onto the bar, so the key is there to press (and auto-hunt uses it)
-    SKILLS[ch.cls].forEach((sk, i) => {
-      if (sk.lv !== ch.lvl) return;
-      const key = qsLearn(ch, i);
-      toast(p, `새 스킬 [${sk.name}]${pp(sk.name, "을를")} 배웠습니다!${key ? ` 단축칸 ${key}번에 올려 두었습니다.` : ""}`);
-    });
-    if (ch.lvl % 10 === 0) sys(S, `${ch.name}님이 레벨 ${ch.lvl}${pp(ch.lvl, "을를")} 달성했습니다!`);
-    if (ch.lvl === MAXLV) toast(p, "최고 레벨 달성! 이제 경험치는 수련에 쓰입니다.");
-    checkAch(S, p);
+  if (!p.lvHint && ch.lvl < MAXLV && ch.xp >= Math.min(...nextCosts(ch).filter((c) => c > 0))) {
+    p.lvHint = true;
+    toast(p, "레벨을 올릴 수 있습니다 — 모닥불이나 수련관에서 능력치를 고르세요.");
   }
   p.dirty = true;
 }
@@ -239,7 +227,7 @@ function dealMob(S, rt, mob, p, dmg, crit) {
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
   if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
   if (!mob.tgt) mob.tgt = p.pid;
-  rt.ev.push(["h", mob.id, dmg, crit ? 1 : 0, 0]);
+  rt.ev.push(["h", mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0]);
   if (mob.hp > 0) return false;
   killMob(S, rt, mob);
   return true;
@@ -286,9 +274,13 @@ function hurtMob(S, rt, mob, p, mult, sure) {
   if (mob.dead) return;
   const st = stats(p);
   const d = MOBS[mob.k];
+  // a blow beyond your depth, or from an unpractised hand, may only graze (×0.5, never a crit)
+  const graze = !sure && rnd(S) * 100 < grazeChance(p, mob);
   // a rogue finds the gaps their marks point to: +4% critical chance per mark
-  const crit = sure || rnd(S) * 100 < st.crit + (p.ch.cls === "rogue" ? marksOf(S, mob) * 4 : 0);
-  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? st.critd : 1) - d.def * 0.5;
+  const crit = !graze && (sure || rnd(S) * 100 < st.crit + (legacyCls(p.ch) === "rogue" ? marksOf(S, mob) * 4 : 0));
+  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? st.critd : 1) * (graze ? SFX.grazeK : 1) - d.def * (st.mag ? SFX.magDef : SFX.physDef);
+  // a dagger in a back that is not watching you
+  if (st.wk === "dagger" && mob.tgt !== p.pid) dmg *= 1 + st.sneak;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
   if (st.lg.giant && (mob.el || d.boss)) dmg *= 1.3;
   if (has(mob, "tough")) dmg *= 0.6;
@@ -301,7 +293,8 @@ function hurtMob(S, rt, mob, p, mult, sure) {
   }
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)));
   const x = mob.x, y = mob.y;
-  if (!dealMob(S, rt, mob, p, dmg, crit)) {
+  wmHit(S, p, mob);
+  if (!dealMob(S, rt, mob, p, dmg, graze ? 2 : crit)) {
     // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
     if (!mob.dead) stagger(S, mob, p, crit);
     return;
@@ -327,6 +320,8 @@ function killMob(S, rt, mob) {
   mob.dot = null;
   mob.mk = 0; mob.dec = null; mob.vuln = 0;
   rt.ev.push(["k", mob.id]);
+  // the hands that struck it learn from it
+  wmKill(S, rt, mob);
   // everyone who hit it, plus their party members standing nearby, shares the kill
   const looters = new Set();
   let top = null, topDmg = 0;
@@ -368,9 +363,9 @@ function killMob(S, rt, mob) {
       if (bq.n >= bq.need) toast(p, `반복 의뢰 [${d.name} ${bq.need}마리] 달성! 관리자에게 보고하세요.`);
     }
     sqProgress(S, p, "kill", (g) => g.mob === mob.k);
-    if (el === 1) ch.st.elite++;
-    else if (el === 2) { if (mob.evt) ch.st.evb++; else if (mob.temp) ch.st.fb++; else ch.st.guard++; }
-    if (n >= 2) ch.st.party++;
+    if (el === 1) ch.cnt.elite++;
+    else if (el === 2) { if (mob.evt) ch.cnt.evb++; else if (mob.temp) ch.cnt.fb++; else ch.cnt.guard++; }
+    if (n >= 2) ch.cnt.party++;
     dailyProg(S, p, "kill", mob.k);
     if (el >= 1) dailyProg(S, p, "elite");
     if (mob.k === "twinhare") tutStep(S, p, "hunt");
@@ -407,7 +402,7 @@ function killMob(S, rt, mob) {
 function blameOf(mob) {
   const d = MOBS[mob.k];
   const rank = d.boss ? "보스 " : mob.el === 2 ? (mob.evt ? "침공 우두머리 " : mob.temp ? "우두머리 " : "수문장 ") : mob.el ? "정예 " : "";
-  return { by: `Lv.${d.lv} ${rank}${d.name}`, lv: d.lv, el: d.boss ? 3 : mob.el | 0 };
+  return { by: `Lv.${shownLv(d.lv)} ${rank}${d.name}`, lv: shownLv(d.lv), el: d.boss ? 3 : mob.el | 0 };
 }
 function hurtPlayer(S, rt, p, raw, mob) {
   if (p.dead || S.now < (p.ghost || 0)) return;
@@ -532,6 +527,9 @@ function basicAttack(S, p) {
   p.combo = now - p.atkAt < atkCd(p) + COMBO_MS ? (p.combo + 1) % 3 : 0;
   const fin = p.combo === 2 || giant;
   p.atkAt = now;
+  newAct(p, false);
+  // a bow looses an arrow that flies (45-jobs.js): it lands, or not, a few ticks later
+  if (c.shot) { bowShot(S, rt, p, fin); return; }
   const range = atkRange(p);
   // a warrior without a sword puts their head down and butts
   const butt = !!p.sword;
@@ -578,8 +576,9 @@ function basicAttack(S, p) {
   };
   shove(mob, 1);
   hurtMob(S, rt, mob, p, mult);
-  if (p.ch.cls === "warrior") addGrit(p, 8);
-  if (p.ch.cls === "rogue" && !mob.dead) {
+  const lc = legacyCls(p.ch);
+  if (lc === "warrior") addGrit(p, 8);
+  if (lc === "rogue" && !mob.dead) {
     // every stab leaves a mark; a venomed blade leaves two and a poison that grows with them
     const v = p.venom && p.venom.n > 0 && p.venom.until > now ? p.venom : null;
     addMarks(S, mob, v ? 2 : 1);
@@ -591,7 +590,7 @@ function basicAttack(S, p) {
     }
   }
   for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6); }
-  if (st.lg.chain && rnd(S) < 0.25) {
+  if (st.lg.chain && rnd(S) < 0.25 * st.proc) {
     for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
       rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
       hurtMob(S, rt, o, p, 0.6);

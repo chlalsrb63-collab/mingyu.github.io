@@ -59,7 +59,8 @@ const DAILY_OTHER = ["elite", "fish", "cook", "chest", "bounty"];
 function rollDaily(ch, day) {
   const box = { seed: strHash(`${ch.name}:${day}`) | 0 };
   // the monster to hunt is one around the character's level that lives somewhere they can reach
-  const near = HUNTED.filter((k) => MOBS[k].lv <= ch.lvl + 2).sort((a, b) => Math.abs(MOBS[a].lv - ch.lvl) - Math.abs(MOBS[b].lv - ch.lvl)).slice(0, 4);
+  const t = toTier(ch.lvl);
+  const near = HUNTED.filter((k) => MOBS[k].lv <= t + 2).sort((a, b) => Math.abs(MOBS[a].lv - t) - Math.abs(MOBS[b].lv - t)).slice(0, 4);
   const k = near.length ? near[ri(box, 0, near.length - 1)] : HUNTED[0];
   const tasks = [{ kind: "kill", k, n: 0, need: 30 + 10 * ri(box, 0, 2) }];
   const pool = DAILY_OTHER.slice();
@@ -79,13 +80,15 @@ function ensureDaily(S, p) {
   if (had) toast(p, "일일 과제가 새로 갱신되었습니다.");
 }
 const dailyText = (t) => DAILY_TEXT[t.kind].replace("{mob}", t.k ? MOBS[t.k].name : "").replace("{need}", t.need);
+/** Rewards are paid on the world's scale: the tier a level maps to (the same as before levels went to 200). */
+const rewardTier = (ch) => Math.min(toTier(ch.lvl), TIER_MAX - 1);
 function dailyReward(ch, t) {
-  const lv = Math.min(ch.lvl, MAXLV - 1);
-  return { gold: 60 + 25 * ch.lvl, xp: Math.round(xpNeed(lv) * 0.12), stone: t.kind === "kill" || t.kind === "elite" || t.kind === "chest" ? 1 : 0 };
+  const tr = rewardTier(ch);
+  return { gold: Math.round(60 + 25 * tr), xp: Math.round(tierXp(tr) * 0.12), stone: t.kind === "kill" || t.kind === "elite" || t.kind === "chest" ? 1 : 0 };
 }
 function dailyBonus(ch) {
-  const lv = Math.min(ch.lvl, MAXLV - 1);
-  return { gold: 150 + 40 * ch.lvl, xp: Math.round(xpNeed(lv) * 0.25), stone: 3, gear: 1 };
+  const tr = rewardTier(ch);
+  return { gold: Math.round(150 + 40 * tr), xp: Math.round(tierXp(tr) * 0.25), stone: 3, gear: 1 };
 }
 /** Count one more of `kind` (and, for hunting, of monster `k`) toward today's tasks. */
 function dailyProg(S, p, kind, k) {
@@ -104,7 +107,7 @@ function rewardGear(S, p, ilvl, minQ) {
   for (const [ty, w] of DROP_TYPES) { if (roll < w) { type = ty; break; } roll -= w; }
   const tier = tierFor(ilvl);
   let id;
-  if (type === "weapon") { const kinds = CLASSES[p.ch.cls].wk; id = `w_${WK_ID[kinds[ri(S, 0, kinds.length - 1)]]}_${tier}`; }
+  if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
   else id = `${GEAR[type].pre}_${tier}`;
   const g = rollGear(S, id, Math.max(minQ, rollRarity(S, 1, 0)), ilvl);
   p.ch.inv.push(g);
@@ -115,7 +118,7 @@ function payout(S, p, r) {
   if (r.gold) { ch.gold += r.gold; p.gain.push(["gold", r.gold]); }
   if (r.stone && addItem(ch, "stone", r.stone)) p.gain.push(["item", "stone", r.stone, 0]);
   if (r.rune) { const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`; if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]); }
-  if (r.gear) rewardGear(S, p, ch.lvl, r.gearQ || 2);
+  if (r.gear) rewardGear(S, p, Math.floor(toTier(ch.lvl)), r.gearQ || 2);
   if (r.xp) gainXp(S, p, r.xp);
   p.dirty = true;
 }
@@ -126,15 +129,15 @@ const ACH = [
   ["hunt100", "사냥", "첫 사냥꾼", "몬스터 100마리 처치", 5, (c) => c.kills >= 100],
   ["hunt1000", "사냥", "숙련된 사냥꾼", "몬스터 1,000마리 처치", 10, (c) => c.kills >= 1000, "사냥꾼"],
   ["hunt10000", "사냥", "학살자", "몬스터 10,000마리 처치", 30, (c) => c.kills >= 10000, "학살자", [["atkp", 2]]],
-  ["elite10", "사냥", "정예 사냥", "정예 몬스터 10마리 처치", 5, (c) => c.st.elite >= 10],
-  ["elite100", "사냥", "정예 학살", "정예 몬스터 100마리 처치", 15, (c) => c.st.elite >= 100, "정예 사냥꾼", [["crit", 1]]],
-  ["fb1", "사냥", "우두머리 토벌", "사냥터 우두머리 처치", 10, (c) => c.st.fb >= 1],
-  ["fb10", "사냥", "우두머리 사냥꾼", "사냥터 우두머리 10마리 처치", 20, (c) => c.st.fb >= 10, "우두머리 사냥꾼", [["hp", 40]]],
-  ["guard1", "사냥", "수문장 격파", "던전 수문장 처치", 10, (c) => c.st.guard >= 1],
+  ["elite10", "사냥", "정예 사냥", "정예 몬스터 10마리 처치", 5, (c) => c.cnt.elite >= 10],
+  ["elite100", "사냥", "정예 학살", "정예 몬스터 100마리 처치", 15, (c) => c.cnt.elite >= 100, "정예 사냥꾼", [["crit", 1]]],
+  ["fb1", "사냥", "우두머리 토벌", "사냥터 우두머리 처치", 10, (c) => c.cnt.fb >= 1],
+  ["fb10", "사냥", "우두머리 사냥꾼", "사냥터 우두머리 10마리 처치", 20, (c) => c.cnt.fb >= 10, "우두머리 사냥꾼", [["hp", 40]]],
+  ["guard1", "사냥", "수문장 격파", "던전 수문장 처치", 10, (c) => c.cnt.guard >= 1],
   ["boss", "사냥", "균열을 닫은 자", "균열의 군주 처치", 30, (c) => (c.mk.boss || 0) >= 1, "균열을 닫은 자", [["atkp", 3]]],
   ["abyss", "사냥", "심연을 넘은 자", "심연의 어미 처치", 50, (c) => (c.mk.abyssboss || 0) >= 1, "심연을 넘은 자", [["atkp", 4], ["critd", 10]]],
-  ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, (c) => c.st.evt >= 1],
-  ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.st.evt >= 10, "균열 수호자", [["def", 3]]],
+  ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, (c) => c.cnt.evt >= 1],
+  ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.cnt.evt >= 10, "균열 수호자", [["def", 3]]],
   ["dim1", "사냥", "차원의 틈", "차원 균열 정화", 10, (c) => dimCnt(c).dim >= 1],
   ["dim10", "사냥", "차원 탐험가", "차원 균열 10번 정화", 25, (c) => dimCnt(c).dim >= 10, "차원 탐험가", [["mf", 5]]],
   ["wp3", "탐험", "이동의 돌", "이동의 돌 3개 깨우기", 5, (c) => wpCount(c) >= 3],
@@ -146,22 +149,25 @@ const ACH = [
   ["colall", "숙련", "박물학자", "모든 지역의 몬스터 도감 완성", 50, (c) => REGIONS.every((id) => regionDone(c, id)), "박물학자", [["mf", 10]]],
   ["fish10", "생활", "낚시꾼", "물고기 10마리 낚기", 5, (c) => c.fish >= 10],
   ["fish100", "생활", "강태공", "물고기 100마리 낚기", 15, (c) => c.fish >= 100, "강태공"],
-  ["carp", "생활", "황금 잉어", "황금 잉어 낚기", 15, (c) => c.st.carp >= 1],
-  ["cook10", "생활", "요리사", "요리 10번 성공", 10, (c) => c.st.cook >= 10, "요리사"],
-  ["rest10", "생활", "모닥불 단골", "모닥불의 온기 10번 받기", 5, (c) => c.st.rest >= 10],
-  ["leg", "장비", "첫 전설", "전설 장비 획득", 10, (c) => c.st.leg >= 1],
-  ["set", "장비", "세트 수집가", "세트 장비 획득", 10, (c) => c.st.set >= 1],
-  ["enh7", "장비", "강화의 손길", "장비 +7 강화 성공", 10, (c) => c.st.enh >= 7],
-  ["enh10", "장비", "명장", "장비 +10 강화 성공", 30, (c) => c.st.enh >= 10, "명장", [["def", 4]]],
-  ["rw", "장비", "룬어 완성", "룬어 완성", 10, (c) => c.st.rw >= 1],
-  ["party100", "함께", "함께하는 사냥", "파티로 몬스터 100마리 처치", 10, (c) => c.st.party >= 100, "동료"],
+  ["carp", "생활", "황금 잉어", "황금 잉어 낚기", 15, (c) => c.cnt.carp >= 1],
+  ["cook10", "생활", "요리사", "요리 10번 성공", 10, (c) => c.cnt.cook >= 10, "요리사"],
+  ["rest10", "생활", "모닥불 단골", "모닥불의 온기 10번 받기", 5, (c) => c.cnt.rest >= 10],
+  ["leg", "장비", "첫 전설", "전설 장비 획득", 10, (c) => c.cnt.leg >= 1],
+  ["set", "장비", "세트 수집가", "세트 장비 획득", 10, (c) => c.cnt.set >= 1],
+  ["enh7", "장비", "강화의 손길", "장비 +7 강화 성공", 10, (c) => c.cnt.enh >= 7],
+  ["enh10", "장비", "명장", "장비 +10 강화 성공", 30, (c) => c.cnt.enh >= 10, "명장", [["def", 4]]],
+  ["rw", "장비", "룬어 완성", "룬어 완성", 10, (c) => c.cnt.rw >= 1],
+  ["party100", "함께", "함께하는 사냥", "파티로 몬스터 100마리 처치", 10, (c) => c.cnt.party >= 100, "동료"],
   ["guild", "함께", "길드원", "길드 가입", 5, (c) => !!c.guild],
-  ["gfound", "함께", "길드장", "길드 창설", 10, (c) => c.st.gfound >= 1, "길드장"],
-  ["lv10", "성장", "견습 모험가", "레벨 10 달성", 5, (c) => c.lvl >= 10],
-  ["lv30", "성장", "베테랑 모험가", "레벨 30 달성", 15, (c) => c.lvl >= 30, "베테랑"],
-  ["lv50", "성장", "전설의 모험가", "레벨 50 달성", 40, (c) => c.lvl >= 50, "전설의 모험가", [["hp", 80]]],
-  ["daily1", "성장", "성실한 하루", "일일 과제 보상 상자 받기", 5, (c) => c.st.daily >= 1],
-  ["daily30", "성장", "성실한 모험가", "일일 과제 보상 상자 30번 받기", 20, (c) => c.st.daily >= 30, "성실한 모험가", [["gold", 10]]],
+  ["gfound", "함께", "길드장", "길드 창설", 10, (c) => c.cnt.gfound >= 1, "길드장"],
+  // (ids from the 50-level days; holders keep them)
+  ["lv10", "성장", "견습 모험가", "레벨 40 달성", 5, (c) => c.lvl >= 40],
+  ["lv30", "성장", "베테랑 모험가", "레벨 120 달성", 15, (c) => c.lvl >= 120, "베테랑"],
+  ["lv50", "성장", "전설의 모험가", "레벨 200 달성", 40, (c) => c.lvl >= 200, "전설의 모험가", [["hp", 80]]],
+  ["job1", "성장", "첫 전직", "전직관 아르센에게서 전직하기", 10, (c) => c.job !== "adventurer"],
+  ["job2", "성장", "두 갈래 길", "두 무기의 길(혼합 직업)로 전직하기", 20, (c) => !!JOBS[c.job] && JOBS[c.job].kind === "hybrid"],
+  ["daily1", "성장", "성실한 하루", "일일 과제 보상 상자 받기", 5, (c) => c.cnt.daily >= 1],
+  ["daily30", "성장", "성실한 모험가", "일일 과제 보상 상자 30번 받기", 20, (c) => c.cnt.daily >= 30, "성실한 모험가", [["gold", 10]]],
 ].map(([id, cat, name, desc, pts, test, title, bonus]) => ({ id, cat, name, desc, pts, test, title: title || null, bonus: bonus || null }));
 const ACH_BY = Object.fromEntries(ACH.map((a) => [a.id, a]));
 /** Every mastery star a character has earned. */
@@ -282,12 +288,12 @@ function endEvent(S, e) {
   const hi = MAP_META[e.map].band ? MAP_META[e.map].band[1] : 10;
   list.forEach(([pid, d], rank) => {
     const p = S.players[pid], share = d / total;
-    const lv = Math.min(p.ch.lvl, MAXLV - 1);
+    const lv = rewardTier(p.ch);
     payout(S, p, {
-      gold: Math.round(40 * hi * (0.5 + 2 * share)), xp: Math.round(xpNeed(lv) * (0.06 + 0.3 * share)),
+      gold: Math.round(40 * hi * (0.5 + 2 * share)), xp: Math.round(tierXp(lv) * (0.06 + 0.3 * share)),
       stone: 1 + (share >= 0.25 ? 1 : 0) + (rank === 0 ? 2 : 0), rune: rank < 3, gear: rank === 0 ? 1 : 0, gearQ: 2,
     });
-    p.ch.st.evt++;
+    p.ch.cnt.evt++;
     if (rank === 0 || (rank < 3 && cosRoll(S, p, "rift") < COS_RIFT_TOP3)) cosFrom(S, p, "rift", "균열 침공");
     toast(p, `균열 침공 보상 — 기여도 ${Math.round(share * 100)}%${rank < 3 ? ` (${rank + 1}위)` : ""}`);
     checkAch(S, p);
@@ -308,12 +314,14 @@ function evtView(S, p) {
 // ── first steps: a short tutorial chain beside the main quests
 const TUT = [
   { id: "talk", title: "관리자에게 말 걸기", hint: "광장 분수 앞의 관리자 엘더윈에게 다가가 F를 누르세요.", reward: { gold: 20 } },
-  { id: "equip", title: "무기 장착하기", hint: "C로 캐릭터 창을 열어 무기를 장착하세요.", reward: { gold: 20 } },
+  { id: "equip", title: "무기 장착하기", hint: "수련관 카이에게 무기를 하나 받아 C 창에서 장착하세요.", reward: { gold: 20 } },
   { id: "bag", title: "가방 열기", hint: "I를 눌러 가방을 열어 보세요.", reward: { gold: 20 } },
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
   { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
   { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
-  { id: "skill", title: "스킬 써 보기", hint: "레벨 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 숫자 키(처음이면 1)를 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
+  { id: "skill", title: "스킬 써 보기", hint: "무기 숙련 3이 되면 첫 스킬이 아래 빈 단축칸에 저절로 올라갑니다. 몬스터 곁에서 그 숫자 키(처음이면 1)를 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
+  // appended (the index is persisted): spending experience on a stat point
+  { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁에서 C 창 → 능력치에서 한 칸 올려 보세요.", reward: { gold: 50 } },
 ];
 function tutStep(S, p, id) {
   const ch = p.ch, step = TUT[ch.tut.i];
@@ -327,6 +335,6 @@ function tutStep(S, p, id) {
   toast(p, `[첫걸음] ${step.title} 완료!${next ? ` 다음: ${next.title}` : " 모든 첫걸음을 마쳤습니다!"}`);
   p.dirty = true;
   // a step already done needs no doing
-  if (next && next.id === "equip" && ch.eq.weapon) tutStep(S, p, "equip");
+  if (next && next.id === "equip" && ch.eq.weapon && ch.sw) tutStep(S, p, "equip");
 }
 

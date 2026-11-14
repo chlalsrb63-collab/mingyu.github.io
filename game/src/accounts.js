@@ -130,9 +130,33 @@ export function ipBucket(ip) {
   return s.replace(/[^0-9.]/g, "") || "?";
 }
 
+/**
+ * The old four classes as job ids (jobs-and-stats: summaries and rank rows written before jobs carry
+ * `cls` = a class id and `lvl` on the old 1–50 scale, and no `v`).
+ */
+export const JOB_ALIAS = { warrior: "swordsman", rogue: "thief", lancer: "lancer", mage: "wizard", ranger: "lancer", archer: "lancer" };
+
+/**
+ * A character's lobby summary. `cls` keeps its key but carries the job id; `v: 2` marks the 1–200 level
+ * scale. A sheet still from the four-class days (not yet loaded into a world) is summarised as it was —
+ * no `v`, its class and old level — and readers convert it (fromOldRow).
+ */
 export function summary(char) {
   if (!char || typeof char !== "object") return null;
-  return { name: String(char.name), cls: String(char.cls), lvl: Number(char.lvl) || 1, look: Array.isArray(char.look) ? char.look : [] };
+  const look = Array.isArray(char.look) ? char.look : [];
+  if (typeof char.job === "string") return { name: String(char.name), cls: char.job, lvl: Number(char.lvl) || 1, look, v: 2 };
+  return { name: String(char.name), cls: String(char.cls), lvl: Number(char.lvl) || 1, look };
+}
+
+/** A ranking row: name, job (under `cls`), level, total experience spent on points (the tie-break), `v: 2`. */
+export function rankRow(char) {
+  return { name: String(char.name), cls: String(char.job || JOB_ALIAS[char.cls] || "adventurer"), lvl: Number(char.lvl) || 1, xp: Number(char.xpt) || 0, v: 2 };
+}
+
+/** A summary or rank row from before jobs (no `v`) read on the new scale: level 4L−3, the class's job. */
+export function fromOldRow(row) {
+  if (!row || typeof row !== "object" || row.v) return row;
+  return { ...row, cls: JOB_ALIAS[row.cls] || "adventurer", lvl: Math.min(197, 4 * (Number(row.lvl) || 1) - 3), xp: 0, v: 2 };
 }
 
 // ── request bodies ─────────────────────────────────────────────────────

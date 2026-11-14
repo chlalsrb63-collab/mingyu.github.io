@@ -7,10 +7,10 @@
 // fails. Nobody inside for 20 s, and it is gone. Never saved: a player saved inside wakes in town.
 // The map comes from dimension() (31-maps-dim.js); the world keeps it in S.dims (registerDim).
 
-/** Achievement counters live in `ch.st` today (a later rework renames them): every rift counter goes through here. */
-const dimCnt = (ch) => ch.st;
-/** The level an instance is made for, from the levels of the players going in (one place for the level rules). */
-const dimLvOf = (ps) => clamp(Math.max(...ps.map((o) => o.ch.lvl)), 10, MAXLV - 1);
+/** Achievement counters live in `ch.cnt` (jobs-and-stats J1 moved them from `ch.st`): every rift counter goes through here. */
+const dimCnt = (ch) => ch.cnt;
+/** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
+const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), 10, TIER_MAX - 1);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 const dimHk = (n, lv, mlv) => (DIM.hpBase + DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv)) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
 
@@ -115,7 +115,7 @@ function dimStart(S, ps, partyId) {
     const [x, y] = dimSpot(map, i);
     changeMap(S, o, id, x, y);
     dim.members[o.pid] = S.now;
-    toast(o, `[${DIM_THEMES[theme].name}] 차원 균열 Lv.${lv}에 들어왔습니다. 15분 안에 균열을 정화하세요!`);
+    toast(o, `[${DIM_THEMES[theme].name}] 차원 균열 Lv.${shownLv(lv)}에 들어왔습니다. 15분 안에 균열을 정화하세요!`);
     o.dirty = true;
   });
   rt.ev.push(["dm", "open", ...tilePx(map.dim.start)]);
@@ -257,8 +257,8 @@ function dimBuff(S, dim, p, kind) {
     else {
       const st = stats(o);
       o.mp = Math.min(st.mmp, o.mp + st.mmp * DIM.gaugeMp);
-      if (o.ch.cls === "warrior") o.grit = GRIT_MAX;
-      if (o.ch.cls === "lancer") o.focus = FOCUS_MAX;
+      if (legacyCls(o.ch) === "warrior") o.grit = GRIT_MAX;
+      if (legacyCls(o.ch) === "lancer") o.focus = FOCUS_MAX;
     }
     o.dirty = true;
     toast(o, `[${name}] ${kind === "atk" ? `공격력 +${Math.round(DIM.atkK * 100)}%` : kind === "spd" ? "이동 속도 증가" : kind === "shield" ? `받는 피해 -${Math.round(DIM.ward * 100)}%` : "마나와 기력 회복"}${ms ? ` (${ms / 1000}초)` : ""}`);
@@ -402,7 +402,7 @@ function dimApply(S, p, a) {
       const [x, y] = dimSpot(dim.map, dimInside(S, dim.id).length);
       dim.members[p.pid] = S.now;
       changeMap(S, p, dim.id, x, y);
-      toast(p, `차원 균열 Lv.${dim.lv}에 합류했습니다.`);
+      toast(p, `차원 균열 Lv.${shownLv(dim.lv)}에 합류했습니다.`);
       for (const o of dimInside(S, dim.id)) if (o !== p) toast(o, `${p.ch.name}님이 균열에 합류했습니다.`);
       p.dirty = true;
       break;

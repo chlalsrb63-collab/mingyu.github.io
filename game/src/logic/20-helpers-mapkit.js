@@ -38,7 +38,13 @@ function XP_K(lv) {
 }
 /** Deeper monsters drop less gold for their level: the bands last longer, and the purse should not run away. */
 const goldK = (lv) => 1 - 0.7 * clamp((lv - 8) / 28, 0, 1);
-const xpNeed = (lv) => Math.round((34 * Math.pow(lv, 1.85) + 20) * XP_K(lv));
+/**
+ * The experience the world pays and charges at tier `t` (a real number: a player's level maps to
+ * `toTier(lvl) = (lvl + 3) / 4`). Once the experience to the next of the old 50 levels; now the yardstick
+ * for quest, daily and event rewards and for the price of a stat point (45-jobs.js pointCost).
+ */
+const tierXp = (t) => Math.round((34 * Math.pow(t, 1.85) + 20) * XP_K(t));
+const xpNeed = tierXp;
 // the errands pay in step with the levels they are given at
 for (const q of QUESTS) q.xp = Math.round(q.xp * XP_K(MOBS[q.mob].lv));
 

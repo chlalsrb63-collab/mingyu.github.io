@@ -6,13 +6,14 @@ import * as L from "../src/logic.js";
 const D = L.defs();
 const T = 16;
 
+/** Until J2 the old class skills come with the weapon in hand (its old class), learned by its mastery. */
+const WK = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" };
 function world(name, cls, lvl = 40) {
   const S = L.setup();
   let now = 1_000_000;
   S.now = now;
   const PID = "pid-" + name;
-  const ch = L.newChar(name, cls, []);
-  ch.lvl = lvl;
+  const ch = L.hero(name, { wk: WK[cls], lvl: Math.min(197, 4 * lvl - 3), migrate: true });
   L.addPlayer(S, PID, ch);
   const W = {
     S, PID,
@@ -38,7 +39,7 @@ function world(name, cls, lvl = 40) {
   p.x = spot[0] * T + 8; p.y = spot[1] * T + 10; p.mvAt = now; p.dir = 2; p.aim = 0;
   for (const o of W.rt.mobs) { o.dead = true; o.respAt = now + 1e12; }
   W.map = mp;
-  W.ready = () => { p.mp = 9999; p.hp = 1e6; p.atkAt = 0; for (let i = 0; i < 6; i++) p.cds[i] = 0; };
+  W.ready = () => { p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.stag = 0; for (let i = 0; i < 6; i++) p.cds[i] = 0; };
   /** Call up `n` plain monsters at offsets from the player. */
   W.mobs = (offs, hp = 50000) => {
     const pool = W.rt.mobs.filter((o) => !D.mobs[o.k].chest && !D.mobs[o.k].boss && !D.mobs[o.k].fly);
@@ -54,7 +55,8 @@ const evts = (v, tag) => (v.ev || []).filter((e) => e[0] === tag);
 const sk = (cls, id) => D.skills[cls].findIndex((s) => s.id === id);
 
 // ── the tables: four kits of six, each class with its own gauge
-for (const cls of Object.keys(D.classes)) {
+for (const cls of Object.keys(WK)) {
+  assert.equal(D.legacyCls[WK[cls]], cls, "the weapon brings its old class's kit");
   assert.equal(D.skills[cls].length, 6);
   assert.deepEqual(D.skills[cls].map((s) => s.lv), [3, 7, 12, 18, 25, 35]);
   for (const s of D.skills[cls]) assert.ok(s.desc && s.desc.length > 20, s.id + " is described");
@@ -321,7 +323,7 @@ assert.ok(D.mech && D.mech.react && D.mech.grit === 100);
   p.focus = 0;
   assert.ok(W.act({ t: "sk", i: 0 }).ok);
   W.step();
-  const tipAt = D.classes.lancer.range * 0.85;
+  const tipAt = D.wkinds.spear.range * 0.85;
   assert.ok(Math.abs(ms[2].x - p.x - tipAt) < 6 && ms[2].slow > W.now, "the farthest is pulled to exactly the tip, slowed");
   assert.ok(Math.abs(ms[1].x - p.x - 100) < 8, "the others stay");
   W.ready();
@@ -439,7 +441,7 @@ assert.ok(D.mech && D.mech.react && D.mech.grit === 100);
   assert.equal(W.step().me[9], 0, "an element is held for five seconds");
   // superconducted monsters take more
   ms[1].dead = true; ms[2].dead = true;
-  const hurt = (vuln) => { const [m] = ms; let t = 0; for (let i = 0; i < 20; i++) { m.hp = 50000; m.vuln = vuln ? W.now + 9999 : 0; m.x = p.x + 40; m.y = p.y; p.atkAt = 0; W.act({ t: "atk" }); t += 50000 - m.hp; W.step(1100); } return t; };
+  const hurt = (vuln) => { const [m] = ms; let t = 0; for (let i = 0; i < 60; i++) { m.hp = 50000; m.vuln = vuln ? W.now + 9999 : 0; m.x = p.x + 40; m.y = p.y; p.atkAt = 0; W.act({ t: "atk" }); t += 50000 - m.hp; W.step(1100); } return t; };
   const a = hurt(false), b = hurt(true);
   assert.ok(b > a * 1.15, `superconduct: ${a} → ${b}`);
   for (const o of ms) o.dead = true;
@@ -489,13 +491,16 @@ assert.ok(D.mech && D.mech.react && D.mech.grit === 100);
   for (const o of ms) o.dead = true;
 }
 
-// ── trained skill levels carry over from the old kits slot by slot
+// ── trained skill levels are retired: an old kit's levels are paid back (tests/content.mjs has the sums)
 {
   const S = L.setup();
-  const ch = L.newChar("옛전사", "warrior", []);
-  ch.lvl = 40; ch.skl = [4, 3, 2, 1, 6, 10]; ch.v = 5;
+  const ch = L.newChar("옛전사", []);
+  for (const k of ["job", "xpt", "st", "wm", "rs", "sw", "cnt"]) delete ch[k];
+  Object.assign(ch, { cls: "warrior", lvl: 40, skl: [4, 3, 2, 1, 6, 10], v: 5, gold: 0 });
+  ch.eq.weapon = { id: "w_warrior_3", q: 0, enh: 0, af: [], sk: 0, ru: [] };
   L.addPlayer(S, "pid-old", ch);
-  assert.deepEqual(S.players["pid-old"].ch.skl, [4, 3, 2, 1, 6, 10], "levels stay with their slot");
+  const nc = S.players["pid-old"].ch;
+  assert.ok(!("skl" in nc) && nc.gold > 100000, "levels gone, their gold back: " + nc.gold);
   const out = L.removePlayer(S, "pid-old");
   assert.ok(!("grit" in out) && !("sword" in out), "nothing of the fight is saved with the sheet");
 }

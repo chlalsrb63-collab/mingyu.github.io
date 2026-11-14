@@ -7,8 +7,8 @@ const S = L.setup();
 let now = 1000;
 S.now = now;
 const A = "pid-aaaaaaaa", B = "pid-bbbbbbbb";
-const ea = L.addPlayer(S, A, L.newChar("가", "warrior", {}));
-const eb = L.addPlayer(S, B, L.newChar("나", "mage", {}));
+const ea = L.addPlayer(S, A, L.hero("가", { wk: "sword" }));
+const eb = L.addPlayer(S, B, L.hero("나", { wk: "staff" }));
 const act = (pid, a) => { S.now = now; const v = L.validateAction(S, pid, a); if (v.ok) L.applyAction(S, pid, a); return v; };
 const step = (pid) => { now += 100; L.tick(S, now); const v = JSON.parse(JSON.stringify(L.viewFor(S, pid))); const o = JSON.parse(JSON.stringify(L.viewFor(S, pid === A ? B : A))); L.endTick(S); return [v, o]; };
 
@@ -45,18 +45,20 @@ assert.ok(pa.ch.xp > 0 && pb.ch.xp > 0, "both party members gain experience");
 assert.ok(pa.ch.xp < 36, "a shared kill pays each member a share, not the full amount");
 assert.ok(rt.drops.some((d) => d.own === A) && rt.drops.some((d) => d.own === B), "each member rolls their own loot");
 
-// ── training: needs the trainer nearby and enough experience
-assert.equal(act(A, { t: "train", k: "str", n: 1 }).ok, false);
+// ── stat points: bought with experience, at a campfire or by the trainer
+assert.equal(act(A, { t: "train", a: [1, 0, 0, 0, 0, 0] }).ok, false);
 pa.ch.xp = 5000;
 pa.x = 23 * 16 + 8; pa.y = 13 * 16 + 8;
 const before = L.viewFor(S, A).self.atk;
-assert.ok(act(A, { t: "train", k: "str", n: 10 }).ok);
+assert.ok(act(A, { t: "train", a: [10, 0, 0, 0, 0, 0] }).ok);
 const self = L.viewFor(S, A).self;
-assert.equal(self.tr.str, 10);
-assert.equal(self.atk, before + 10);
+assert.equal(self.st.str, 15); assert.equal(self.lvl, 11);
+assert.ok(self.atk >= before + 8 && self.atk <= before + 9, "ten points of STR at grade A: +8.5 attack");
 assert.ok(self.xp < 5000);
 
 // ── runes: socket two in order and the runeword appears
+pa.dirty = true;
+const critd0 = L.viewFor(S, A).self.critd;
 pa.ch.eq.weapon.sk = 2;
 pa.ch.inv.push({ id: "ru_ign", n: 1 }, { id: "ru_acu", n: 1 });
 const slot = (id) => pa.ch.inv.findIndex((s) => s.id === id);
@@ -64,7 +66,7 @@ assert.equal(act(A, { t: "rune", s: slot("ru_ign"), k: "weapon", i: 5 }).ok, fal
 assert.ok(act(A, { t: "rune", s: slot("ru_ign"), k: "weapon", i: 0 }).ok);
 assert.ok(act(A, { t: "rune", s: slot("ru_acu"), k: "weapon", i: 1 }).ok);
 assert.deepEqual(pa.ch.eq.weapon.ru, ["ign", "acu"]);
-assert.ok(L.viewFor(S, A).self.critd >= 185, "runeword 섬광 adds critical damage");
+assert.equal(L.viewFor(S, A).self.critd, critd0 + 25, "runeword 섬광 adds critical damage");
 
 // ── leaving disbands a two-person party
 assert.ok(act(B, { t: "pleave" }).ok);
