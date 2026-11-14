@@ -317,7 +317,7 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 5.6, cave: 11.3, abyss: 6 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7 };
 const CROWD_MAX = 228, GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /** Past this level the extra bite tapers off, a little per level: the deep dungeons were already the sharpest. */
 const ATK_EASE = [16, 0.016];
@@ -2266,7 +2266,8 @@ function abyssal(cfg) {
       m.o[I.y - 1][I.x] = "X";
       for (const [x, y] of [[I.x - 2, I.y - 1], [I.x + 2, I.y - 1]]) if (m.g[y][x] === "c") m.o[y][x] = "0";
       m.spawns.push({ k: cfg.chest, n: 1, r: [I.x, I.y + 1, I.x, I.y + 1] });
-      m.spawns.push({ k: cfg.mobs[Math.min(cfg.mobs.length - 1, Math.floor(t * cfg.mobs.length) + 1)], n: 2 + (t > 0.5 ? 1 : 0), r: rect, elite: 0.35 });
+      // an island is a tight place to meet an elite: the altars' keepers are a little less often one than a vault's
+      m.spawns.push({ k: cfg.mobs[Math.min(cfg.mobs.length - 1, Math.floor(t * cfg.mobs.length) + 1)], n: 2 + (t > 0.5 ? 1 : 0), r: rect, elite: 0.2 });
       pts.push([I.x, I.y + 1]);
       m.pieces.push("altar");
     } else if (kind[k] === "guard") {
@@ -2540,6 +2541,26 @@ function markRoutes(m, labelOf, deeper) {
     for (const [fx, fy] of FIRES[m.id]) if (Math.abs(fx - x) <= 1 && Math.abs(fy - y) <= 1) return true;
     return m.marks.some((k) => Math.abs(k.x - x) <= 2 && Math.abs(k.y - y) <= 2);
   };
+  /**
+   * A cheap proof that blocking (x, y) cuts nothing off: its open side neighbours still
+   * reach one another around it, within the 3×3 square. (When they don't, flood to be sure.)
+   */
+  const RING = [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]];
+  const ringJoined = (x, y) => {
+    const on = RING.map(([dx, dy]) => open(x + dx, y + dy));
+    let seen = 0, start = -1;
+    for (let k = 1; k < 8; k += 2) if (on[k]) { if (start < 0) start = k; seen++; }
+    if (seen <= 1) return true;
+    // walk the ring both ways from one open side, through open squares only (sides step to corners and back)
+    const got = new Array(8).fill(false), stack = [start];
+    got[start] = true;
+    while (stack.length) {
+      const k = stack.pop();
+      for (const n of [(k + 1) & 7, (k + 7) & 7]) if (on[n] && !got[n]) { got[n] = true; stack.push(n); }
+    }
+    for (let k = 1; k < 8; k += 2) if (on[k] && !got[k]) return false;
+    return true;
+  };
   /** Put object `ch` beside the walk at index-tile `at`, where it blocks nothing. */
   const place = (at, ch) => {
     const ax = at % W, ay = (at - ax) / W;
@@ -2547,7 +2568,7 @@ function markRoutes(m, labelOf, deeper) {
       const x = ax + dx, y = ay + dy, i = y * W + x;
       if (!open(x, y) || onPath.has(i) || base.d[i] < 0 || busy(x, y)) continue;
       m.o[y][x] = ch;
-      if (flood(ex, ey).count === reach - 1) { reach--; return [x, y]; }
+      if (ringJoined(x, y) || flood(ex, ey).count === reach - 1) { reach--; return [x, y]; }
       m.o[y][x] = " ";
     }
     return null;
