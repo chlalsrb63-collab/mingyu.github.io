@@ -868,3 +868,33 @@ H2's, unchanged. Notes for L2c:
 - `nearestNpc` gives station roles (`craft alch cook`) the same −14 px counter bias as a shopkeeper: without it 쥬쥬 (goods)
   always won over her own stove; now the stove is the F target from its side of the counter.
 - The 생활 window now counts 제작 and 연금 as open (배달 waits for L2c).
+
+## H5. L2c client as built (알바 board, delivery, trust; deviations only)
+
+`public/board.js`, wired from actions/update/hud/events/life/win_shop/client; the contract is H2's, unchanged.
+- **Board** `#w-board` (WIN id `board`, no menu button or hotkey): F at 포포 opens it, and the 생활 window's 알바 card
+  has an "알바 게시판 보기" button, so it can be read anywhere; 맡기 is enabled only within 52 px of 포포 (the server's
+  56), otherwise greyed with "포포 곁에서 맡을 수 있습니다". It never closes itself. Offers show kind tag, NPC, text,
+  gold (+ "팁 최대 50%" for deliveries), skill Lv and where (deliveries: sender → recipient); done ones grey out; done
+  ids no longer offered are listed under "오늘 끝낸 알바". 포포 has editor `lines`, so `npctalk.js` `jobs` lines (now
+  board tips) only speak for an NPC without them.
+- **Where**: defs carry no NPC → map table, so `HOME` in board.js maps the 18 알바 NPC ids to their map ids (names
+  from `defs.maps`; "(여기)" when the NPC is on this map). A new 알바 NPC needs a row there (else no place is shown).
+- **Hand-ins**: F at the NPC the job wants next (sender to pick up, recipient to hand over, the giver for
+  bring/make/fish when bag + pouch hold enough) sends `jb pick`/`jb give` before that NPC's own window (shop,
+  station); the prompt reads "<이름> — 알바: 꾸러미 받기 / 꾸러미 전하기 / <아이템> ×n 전하기". Without the items F opens the
+  NPC as usual. A talk-role NPC's talk window shows the job card with the same button (disabled with have/need).
+- **Parcel**: `#dl` sits 28 px above `#cast` (same look, brown; red under 10 s), counting down from the latest
+  `secsLeft` (resynced on every new `self`). A 12×10 code-drawn parcel bobs over the carrier's head (S3 hook).
+  Others are known only from `dl` events seen while on their map (no snapshot field), so someone already carrying
+  when you arrive shows no parcel. `dl`: 1 `item` sound + "꾸러미!", 2 `quest` + "알바 완료!" + sparkle, 0 `fail` +
+  "배달 실패…" (the toasts are the server's).
+- **Trust**: `repBadge` = tier tag (낯선 사이 / 단골 / 친구 / 가족) + a bar with marks at 10/30/60 + "신뢰 n", the tooltip
+  lists what each tier gives (perks from `defs.life.rep.perk`); shown only for NPCs some 알바 names. In the talk
+  window (`#talk-rep`), the shop header (`#shop-rep`), and the 생활 window's 신뢰 list. A 단골's shop prices show the
+  old price struck and `floor(price·n·disc)` (as `buyCost`); the station window has no badge.
+- **Tracker**: the job in hand is listed first (before the main quest): its text up to the first "." / "!", a
+  have/need bar for item jobs, and "→ <NPC> · <map>".
+- Verified live (wrangler dev, fresh account): take at 포포, 마루 → 다리 delivery end to end (pick, 44 s, speed 48 →
+  41, door walk, give: +31 G, trust 다리 3 / 마루 1), take a bring job. The 단골 price look and the talk card were
+  checked with client-side staged state only (trust 12 and a fake job), not by the server.
