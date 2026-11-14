@@ -8,6 +8,9 @@ const q = new URLSearchParams(location.search);
 const maps = await (await fetch("./_maps.json")).json();
 const m = maps[q.get("map") || "town"];
 if (q.get("day")) globalThis.__dayK = +q.get("day");
+// ?hour=0..24 and ?wx=0..5 (맑음 흐림 비 안개 바람 눈) set the sky; ?sitters=1..4 seats adventurers at the first fire, ?jam=1 gives them a lute and a cup
+if (q.get("hour") !== null) globalThis.__skyHour = +q.get("hour");
+if (q.get("wx") !== null) globalThis.__skyWx = +q.get("wx");
 // ?marks=1 puts a waypoint stone and two signposts beside the start, as the server would send them
 if (q.get("marks")) {
   const X = +(q.get("x") || 20), Y = +(q.get("y") || 14);
@@ -34,6 +37,12 @@ G.who.set(1, { cls, look: [1, 0, 0, 0, 0, 0, 1], gear: { wk: q.get("wk") || unde
   G.who.set(10 + i, { cls: c2, look, gear: { wk, wt: 2 + i, wq: i } });
 });
 for (let i = 0; i < +(q.get("crowd") || 0); i++) { G.players.set(100 + i, { x: me.x - 150 + (i % 10) * 30, y: me.y - 60 + Math.floor(i / 10) * 30, dir: i % 3, moving: false, atkT: -1e9, dead: false, aim: null }); G.who.set(100 + i, { cls: ["warrior", "rogue", "lancer", "mage"][i % 4], look: [i % 6, i % 5, i % 4, i % 10, 0, i % 4, i % 6], gear: { wk: ["sword", "dagger", "spear", "staff"][i % 4], wt: 2, wq: i % 4 } }); }
+G.fires = new Map((m.camps || []).map((c, i) => [900 + i, { id: 900 + i, x: c.x, y: c.y }]));
+G.jams = new Map();
+const seats = (m.camps && m.camps[0] ? m.camps[0].seats : []).slice(0, +(q.get("sitters") || 0));
+const sitLooks = [["lancer", "spear", [3, 1, 0, 7, 0, 0, 3]], ["rogue", "dagger", [0, 2, 1, 3, 0, 0, 2]], ["mage", "staff", [2, 0, 2, 5, 0, 0, 4]], ["warrior", "sword", [5, 3, 1, 1, 0, 0, 5]]];
+seats.forEach(([x, y], i) => { G.players.set(200 + i, { x, y, dir: 0, sit: true, moving: false, atkT: -1e9, dead: false, aim: null }); G.who.set(200 + i, { cls: sitLooks[i][0], look: sitLooks[i][2], gear: { wk: sitLooks[i][1], wt: 2, wq: 0 } }); });
+if (q.get("jam")) setInterval(() => { const t = performance.now(); if (seats.length) G.jams.set(200, { k: 0, t0: t }); if (seats.length > 2) G.jams.set(202, { k: 1, t0: t - 900 }); }, 500);
 mobKeys.forEach((k, i) => {
   const el = +(q.get("el") || 0) && i === 0 ? +(q.get("el")) : 0;
   G.mobs.set(i + 1, { id: i + 1, k, x: me.x - 70 + (i % 6) * 30, y: me.y - 34 - Math.floor(i / 6) * 28, moving: i % 2 === 0, atkT: -1e9, hurtT: -1e9, el });
@@ -47,7 +56,7 @@ let last = performance.now(), frames = 0, t0 = last;
 function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   const r0 = performance.now();
-  S.render(me.x, me.y + (+(q.get("cam") || 0)) * 16, dt, now, frames < 2);
+  try { S.render(me.x, me.y + (+(q.get("cam") || 0)) * 16, dt, now, frames < 2); } catch (e) { console.error(e.stack); throw e; }
   if (frames > 30) { window.__ms = (window.__ms || 0) + performance.now() - r0; window.__n = (window.__n || 0) + 1; }
   if (S.labels) { const L = S.labels(); lc.clearRect(0, 0, lab.width, lab.height); lc.font = "bold 11px sans-serif"; lc.textAlign = "center"; lc.textBaseline = "middle"; for (const l of L) { const w = lc.measureText(l.text).width + 12; lc.fillStyle = "rgba(43,34,51,.78)"; lc.fillRect(Math.round(l.x - w / 2), Math.round(l.y - 9), Math.round(w), 18); lc.fillStyle = "#ffe9b8"; lc.fillText(l.text, l.x, l.y + 1); } }
   frames++;

@@ -31,6 +31,7 @@ import { drawClassGauge, gaugeTip } from "./classgauge.js";
 import { installFrames } from "./frames.js";
 import * as Lobby from "./lobby.js";
 import * as Assets from "./assetlib.js";
+import * as Sky from "./sky.js";
 
 // approved external images (public/assets/manifest.json) before anything is drawn; an
 // empty or missing manifest leaves every look code-drawn
@@ -176,6 +177,7 @@ function onMessage(msg) {
       G.you = msg.you;
       if (!G.defs) {
         G.defs = msg.defs;
+        Sky.configure(G.defs.sky);
         G.icons = Growth.icons(Art.buildIcons(G.defs.items));
         Growth.init({ G, act, el, iconImg, itemSlot, section, countItem, usePotion, isGear: (id) => isGear(id), sellPrice: (e) => sellPrice(e) });
         Wardrobe.init({ G, act, el, hoverTip });
@@ -246,6 +248,7 @@ function onSnap(s) {
   const t = now();
   const me = G.me;
   if (s.map) loadMap(s.map);
+  if (s.dn) Sky.setSky(s.dn, !!s.map);
   if (s.map || s.me[5]) { me.x = s.me[0]; me.y = s.me[1]; me.dir = s.me[6]; if (s.me[10] !== undefined) me.aimI = s.me[10]; }
   me.hp = s.me[2]; me.mp = s.me[3]; me.sit = !!s.me[7];
   const dead = !!s.me[4];
@@ -312,6 +315,7 @@ function sync(map, rows, apply, t, gone) {
 
 function entityPos(id) {
   if (id === G.you) return G.me;
+  if (typeof id === "string" && id.startsWith("npc:")) { const n = G.map && G.map.npcs.find((q) => "npc:" + q.id === id); return n ? { x: n.x * T + 8, y: n.y * T + 12, h3: 1.32 } : null; }
   return G.players.get(id) || G.mobs.get(id) || G.gone.get(id) || null;
 }
 
@@ -331,6 +335,23 @@ function onEvent(e, t) {
   if (SkillFx.skillEvent(e, { G, S3, Sound, entityPos, heightOf, t })) return;
   MobArt.onEvent(e, G, S3, t);              // wind-ups, strikes and the bodies monsters leave
   switch (e[0]) {
+    // the storyteller by the town's fire tells a tale: a bubble over her, and a line in the chat for those close by
+    case "tl": {
+      const tale = G.defs.sky && G.defs.sky.tales[e[1]], n = G.map.npcs.find((q) => q.night);
+      if (!tale || !n || dist(G.me.x, G.me.y, n.x * T + 8, n.y * T + 12) > 260) break;
+      G.bubbles.set("npc:" + n.id, { text: tale, t0: t, until: t + 9000 });
+      addChat(tale, "", n.name);
+      Sound.play("tale");
+      break;
+    }
+    // a song on the lute, or a cup raised by the fire
+    case "j": {
+      if (!G.jams) G.jams = new Map();
+      G.jams.set(e[1], { k: e[2], t0: t });
+      const p = entityPos(e[1]);
+      if (p && dist(G.me.x, G.me.y, p.x, p.y) < 320) Sound.play(e[2] === 0 ? "strum" : "cheers", 1 - dist(G.me.x, G.me.y, p.x, p.y) / 320);
+      break;
+    }
     case "a": {
       const [, eid, kind, tx, ty] = e;
       const src = entityPos(eid);
@@ -569,6 +590,8 @@ addEventListener("keydown", (e) => {
     case "e": case "ㄷ": usePotion("mp"); break;
     case "f": case "ㄹ": interact(); break;
     case "x": case "ㅌ": act({ t: "sit" }); break;
+    case "b": case "ㅠ": if (G.me.sit) act({ t: "jam", k: 0 }); break;
+    case "z": case "ㅋ": if (G.me.sit) act({ t: "jam", k: 1 }); break;
     case "g": case "ㅎ": toggleWin("guild"); break;
     case "t": case "ㅅ": openEmotes("emote"); break;
     case "i": case "ㅑ": toggleWin("inv"); break;
@@ -833,6 +856,7 @@ function preAim(arcDeg) {
 function nearestNpc() {
   let best = null, bd = 40;
   for (const n of G.map.npcs) {
+    if (!S3.npcOut(n)) continue;
     const d = dist(G.me.x, G.me.y, n.x * T + 8, n.y * T + 12);
     if (d < bd) { bd = d; best = n; }
   }
@@ -953,6 +977,10 @@ function soundscape(t) {
   let fire = 0;
   for (const fr of G.fires.values()) fire = Math.max(fire, 1 - dist(me.x, me.y, fr.x, fr.y) / 200);
   Sound.ambient(fire);
+  // the hour and the weather outdoors: night music, birds, crickets, owls, rain and wind
+  const out = Sky.weather() >= 0 && !G.map.indoor && ["town", "meadow", "forest", "city"].includes(G.map.theme || G.map.id);
+  Sound.scene({ out, ph: Sky.phase(), wx: out ? Sky.weather() : -1 });
+  Sound.setNight(out && Sky.nightK() > 0.6);
   // a boss or field boss close by and fighting keeps the boss theme up for a while
   for (const m of G.mobs.values()) {
     const d = dist(me.x, me.y, m.x, m.y);
@@ -1248,6 +1276,7 @@ function renderText(t) {
     label(`▸ ${p.to}`, x, y, "#e0c8ff");
   }
   for (const n of m.npcs) {
+    if (!S3.npcOut(n)) continue;
     const [x, y] = at(n.x * T + 8, n.y * T + 12, 1.55);
     label(n.name, x, y, "#f0d48a");
     const sqm = SideQ.mark(n, G.self);
@@ -1337,7 +1366,7 @@ function renderMini(t) {
   // the map turned to match the view: tile (x, y) is a 4×2 diamond, the map's west corner at the left edge
   const dot = (x, y, col, r = 2) => { const tx = x / T, ty = y / T; g.fillStyle = col; g.fillRect(Math.round((tx - ty) * 2 + m.h * 2 - r / 2), Math.round(tx + ty - r / 2), r, r); };
   for (const p of m.portals) dot(p.x * T + 8, p.y * T + 8, "#e080ff", 3);
-  for (const n of m.npcs) dot(n.x * T + 8, n.y * T + 8, "#ffd84a", 3);
+  for (const n of m.npcs) if (S3.npcOut(n)) dot(n.x * T + 8, n.y * T + 8, "#ffd84a", 3);
   for (const mob of G.mobs.values()) dot(mob.x, mob.y, mob.el ? "#ffbe3c" : "#ff5050");
   for (const p of G.players.values()) dot(p.x, p.y, "#7ad8ff", 3);
   dot(G.me.x, G.me.y, Math.floor(t / 300) % 2 ? "#ffffff" : "#08090c", 3);
@@ -2631,6 +2660,7 @@ function openEmotes(mode) {
 $("#chat-emo").addEventListener("pointerdown", (e) => e.preventDefault());   // keep the chat line focused
 $("#chat-emo").addEventListener("click", () => openEmotes("chat"));
 $("#b-sit").addEventListener("click", () => act({ t: "sit" }));
+for (const b of document.querySelectorAll("#jam button")) b.addEventListener("click", () => act({ t: "jam", k: +b.dataset.jam }));
 $("#b-emo").addEventListener("click", () => openEmotes("emote"));
 
 function renderRank(list) {
@@ -2647,8 +2677,26 @@ function renderRank(list) {
 }
 
 const cgauge = $("#cgauge");
+/** The sky widget over the minimap: the phase and hour (sun or moon), and the weather. */
+const skyHud = { at: 0, key: "" };
+function skyTick(t) {
+  if (t - skyHud.at < 500 || !G.map) return;
+  skyHud.at = t;
+  const out = Sky.weather() >= 0 && !G.map.indoor, box = $("#sky");
+  if (box.hidden === out) box.hidden = !out;
+  // the stumps' songs: shown while you sit
+  const jam = $("#jam");
+  if (jam.hidden === !!G.me.sit) jam.hidden = !G.me.sit;
+  if (!out) return;
+  const h = Sky.hour(), text = `${Sky.clockText(h)} · ${Sky.weatherName()}`;
+  if (text === skyHud.key) return;
+  skyHud.key = text;
+  $("#sky-t").textContent = text;
+  Sky.drawIcon($("#sky-ic"), h);
+}
 function hudTick(t) {
   eventWidget(t);
+  skyTick(t);
   castBar(t);
   if (isOpen("daily")) tickDaily(t);
   const s = G.self;

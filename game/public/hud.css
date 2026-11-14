@@ -500,3 +500,13 @@ body.touch kbd { display: none; }
 #w-talk .sq-card .btns { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
 
 
+
+/* the sky over the minimap: phase, hour and weather (sky.js) */
+#mini .sunk { position: relative; }
+#sky { position: absolute; left: 3px; top: 3px; display: flex; align-items: center; gap: 4px; padding: 1px 5px 1px 3px; background: rgba(20, 16, 30, .72); border: 1px solid #5a4a3a; font: 10px/1.2 var(--pix9); color: #f0e0b0; pointer-events: none; white-space: nowrap; }
+#sky canvas { width: 12px; height: 12px; image-rendering: pixelated; }
+/* songs and toasts by the fire, while you sit */
+#jam { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 6px; z-index: 5; }
+#jam button { font: 12px/1 var(--pix); color: #f4e4b0; background: #3a2c22; border: 1px solid #c89a5a; padding: 4px 8px; cursor: pointer; }
+#jam button:hover { background: #5a4030; }
+#jam kbd { font-size: 9px; color: #c8b088; margin-left: 3px; }

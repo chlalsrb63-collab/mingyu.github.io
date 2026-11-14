@@ -22,6 +22,8 @@ import * as DC from "./decor.js";
 import * as IT from "./isotiles.js";
 import * as Art from "./art.js";
 import * as MA from "./mobart.js";
+import * as Sky from "./sky.js";
+import * as Camp from "./camp.js";
 
 const T = 32, P = 2;
 /** Iso pixels per server unit along the screen's x; y is half that. Height lifts by 26 px per unit `h`. */
@@ -893,6 +895,7 @@ function paintExtras(m, c) {
     }
   }
   for (const n of m.npcs) {
+    if (n.night) continue;
     // a woven mat marks where each of the townsfolk stands
     const cx = n.x * T + 16, cy = n.y * T + 25, col = { shop: "#e07a8a", smith: "#8a90a0", elder: "#5a6ac0", train: "#b84a4a", warp: "#7a5ae0", collector: "#4a7a4a", achieve: "#d8a830", daily: "#4a8ad0", bank: "#a07a3a" }[n.role] || "#6a8a5a";
     b.oval(cx, cy, 15, 6.5, "#f2e0b0"); b.oval(cx, cy, 13, 5, col); b.oval(cx, cy, 9, 3, lt(col, 1.3)); b.oval(cx, cy, 5, 1.6, col);
@@ -900,6 +903,8 @@ function paintExtras(m, c) {
 }
 
 let theme = "meadow", waterTiles = [], smokers = [];
+/** The fires that always burn on this map, on screen, with their stumps (camp.js art; sky.js fireflies). */
+let camps = [];
 /** Level art from decor.js: falling water, a layer that breathes, little emitters, lantern strings, critters, signs. */
 let falls = [], pulseCv = null, emit = [], strings = [], critters = [], signs = [], lights = [];
 /** Whether the ground came from isotiles.js (its water animates itself). */
@@ -1048,6 +1053,7 @@ export function loadMap(m) {
   }
   const S = scenery(), D = DC.sprites();
   statics = []; waterTiles = []; smokers = []; signs = []; lights = [];
+  const spiritAt = new Set(m.big.filter((b) => b.t === "spirit").map((b) => b.x + "," + b.y));
   const lay = DC.plan(m, theme), mkt = theme === "town" ? DC.town(m) : { statics: [], swap: new Set(), strings: [] };
   const pc = DC.pulse(m, theme);
   pulseCv = pc ? toIso(m, pc) : null;
@@ -1075,7 +1081,7 @@ export function loadMap(m) {
     }
     const ch = m.o[y][x], key = x + "," + y;
     // a landmark stands where it stands: nothing else is drawn on the tiles it covers
-    if (lay.covered.has(key)) continue;
+    if (lay.covered.has(key) || spiritAt.has(key)) continue;
     if (IT.ready && (ch !== " " || isRock(x, y))) {
       const pc2 = IT.tallAt(m, x, y, theme);
       if (pc2 && pc2.img) {
@@ -1139,8 +1145,21 @@ export function loadMap(m) {
       slice(s, b.x, b.y, 4, 3);
       statics.push(s);
       if (!city) smokers.push({ x: s.x + 6, y: s.dy + 10 });
-    } else statics.push(standBig({ sp: S.fountain, water: true }, b.x, b.y, 2, 2, -4));
+    } else if (b.t === "spirit") statics.push(stand({ sp: Camp.spiritTree(), glow: "#5ab8ff", land: "spirit", spirit: true, ph: 1.3, glint: -1 }, b.x, b.y));
+    else statics.push(standBig({ sp: S.fountain, water: true }, b.x, b.y, 2, 2, -4));
   }
+  // every fire that always burns: a ring of stones, stumps to sit on; in town a tripod, a pot and a bedroll
+  camps = (m.camps || []).map((c) => {
+    const [X, Y] = iso(c.x, c.y), flat = (sp, cx, cy, d) => statics.push({ sp, dx: Math.round(X + cx), dy: Math.round(Y + cy), x: X, y: Y, d, glow: null, glint: -1 });
+    flat(Camp.ring(), -17, -10, Y - 30);
+    for (const [sx, sy] of c.seats) { const [SX, SY] = iso(sx, sy); statics.push({ sp: Camp.stump(), dx: Math.round(SX - 9), dy: Math.round(SY - 9), x: SX, y: SY, d: SY - 0.5, glow: null, glint: -1, stump: true }); }
+    if (m.safe) {
+      const [BX, BY] = iso(c.x + 23, c.y + 29);
+      statics.push({ sp: Camp.bedroll(), dx: Math.round(BX - 13), dy: Math.round(BY - 8), x: BX, y: BY, d: BY - 4, glow: null, glint: -1 });
+      statics.push({ sp: Camp.tripod(0), sp1: Camp.tripod(1), dx: Math.round(X - 17), dy: Math.round(Y - 31), x: X, y: Y, d: Y + 0.5, glow: null, glint: -1, pot: true });
+    }
+    return { x: X, y: Y, wx: c.x, wy: c.y, seats: c.seats, pot: !!m.safe };
+  });
   const fromDC = (st) => {
     if (st.lip) return null;
     if (st.foot) { const [x, y, w, h] = st.foot; return standBig(st, x, y, w, h); }
@@ -1150,7 +1169,7 @@ export function loadMap(m) {
   for (const st of lay.statics) { const s = fromDC(st); if (s) statics.push(s); }
   for (const st of mkt.statics) { const s = fromDC(st); if (s) statics.push(s); }
   // what lights up after dark: lamps, windows, landmarks, runes
-  for (const st of statics) if (st.glow || st.wp || st.nightGlow || st.house) lights.push(st);
+  for (const st of statics) if (st.glow || st.wp || st.nightGlow || st.house || st.pot) lights.push(st);
   npcs = m.npcs.map((n) => { const [x, y] = iso(n.x * 16 + 8, n.y * 16 + 12); return { n, x, y, sheet: SP.personSheet(SP.npcLook(n.look, n.role)) }; });
   ents.clear();
   fx.clear();
@@ -1299,6 +1318,7 @@ function drawPerson(s, e, t, dt, x, y) {
     else if (s.fa === undefined || e.dir !== s.ldir) { s.fa = sAng(DXW[e.dir | 0], DYW[e.dir | 0]); s.ldir = e.dir; }
     s.lx = e.x; s.ly = e.y;
     let fa = s.fa;
+    if (e.sit && e.seatFa !== undefined) fa = e.seatFa;       // on a stump, turned to the fire
     if (engaged && (!e.moving || atk < 0.5) && Math.hypot(e.aim[0] - e.x, e.aim[1] - e.y) > 2) fa = sAng(e.aim[0] - e.x, e.aim[1] - e.y);
     // eight ways on screen: straight down shows the face, the three ways up show the back,
     // and everything else is the three-quarter turn, mirrored for the left
@@ -1724,6 +1744,30 @@ function drawFx(now, ground2) {
 
 // ───────────────────────────── the frame ─────────────────────────────
 
+/** Townsfolk who come out only at night (the storyteller) are about only after dark. */
+export const npcOut = (n) => !n.night || (map && OUTDOOR.has(theme) && Sky.nightK() > 0.5);
+/** A song on the lute (strummed, notes rising) or a cup raised to the fire, over a seated figure. */
+function drawJam(j, s, t, x, y) {
+  const k = (t - j.t0) / 2600, face = s.face || 1;
+  if (j.k === 0) {
+    const strum = Math.floor(t / 120) % 2;
+    g.save(); g.translate(Math.round(x + face * 1), Math.round(y - 8 + strum * 0)); g.scale(face, 1);
+    g.drawImage(Camp.lute(), -6, -4); g.restore();
+    if (strum && Math.random() < 0.25) parts.push({ x: x + face * 4, y: y - 14, vx: face * 6, vy: -20, life: 1.1, color: ["#ffe08a", "#ffb8e0", "#b8e8ff"][Math.floor(Math.random() * 3)], g: 0, s: 2 });
+  } else {
+    const lift = k < 0.25 ? k / 0.25 : k > 0.8 ? (1 - k) / 0.2 : 1, cx = x + face * 6, cy = y - 10 - lift * 8;
+    g.drawImage(Camp.cup(), Math.round(cx - 3), Math.round(cy - 3));
+    if (Math.random() < 0.15) parts.push({ x: cx, y: cy - 4, vx: 0, vy: -10, life: 0.8, color: "#f4f0f8", g: 0, s: 1 });
+    if (k > 0.3 && k < 0.36) parts.push({ x: cx, y: cy - 6, vx: 0, vy: -26, life: 0.4, color: "#fff4b0", g: 0, s: 2 });
+  }
+}
+/** The stump someone sits on, if they sit on one: the camp it belongs to. */
+function seatOf(e) {
+  if (!e.sit) return null;
+  for (const c of camps) for (const [sx, sy] of c.seats) if (Math.abs(e.x - sx) < 2 && Math.abs(e.y - sy) < 2) return c;
+  return null;
+}
+
 /** The worlds under the open sky, where day turns to night. */
 const OUTDOOR = new Set(["town", "meadow", "forest", "city"]);
 /** A waypoint's rune: lit and breathing once touched, dark until then. */
@@ -1737,28 +1781,57 @@ function drawRune(st, dx, dy, t) {
   g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
   if (Math.random() < 0.06) parts.push({ x: st.x - 5 + Math.random() * 10, y: st.y - 20 - Math.random() * 16, vx: (Math.random() - 0.5) * 4, vy: -14, life: 1.1, color: Math.random() < 0.5 ? "#9af0ff" : "#ffffff", g: 0, s: 1 });
 }
-/** After dark: warm light in windows, pools under lamps, runes and landmarks brighter. */
-function drawNightLights(night, t, ox, oy) {
-  g.globalCompositeOperation = "lighter";
+/**
+ * What gives light after dark, on screen: pools on the ground under lamps, in front of lit
+ * windows, around runes, landmarks, gates and the spirit tree, and the warm round of every fire.
+ */
+function skyLights(t, ox, oy) {
+  const out = [];
   for (const st of lights) {
     const sx = st.x - ox, sy = st.y - oy;
-    if (sx < -140 || sx > vw + 140 || sy < -40 || sy > vh + 240) continue;
+    if (sx < -200 || sx > vw + 200 || sy < -60 || sy > vh + 300) continue;
     if (st.house) {
-      // a cottage's windows on its two walls, lit from inside, flickering a little
-      const f = 0.8 + 0.2 * Math.sin(t / 300 + st.ph * 4);
-      g.globalAlpha = night * 0.42 * f;
-      g.drawImage(DC.glow("#ffb050", 26), Math.round(sx - 26 - 26), Math.round(sy - 26 - 30));
-      g.drawImage(DC.glow("#ffb050", 26), Math.round(sx - 26 + 24), Math.round(sy - 26 - 32));
-      continue;
-    }
-    const col = st.nightGlow || st.glow || "#7ae0ff", r = st.big || st.land ? 60 : st.nightGlow ? 26 : 40;
-    const cy = st.wp ? sy - 22 : st.big ? sy - 60 : st.land ? sy - st.sp.height * 0.5 : st.nightGlow ? sy - 30 : sy - st.sp.height + 10;
-    g.globalAlpha = night * (st.nightGlow ? 0.3 : 0.45);
-    g.drawImage(DC.glow(col, r), Math.round(sx - r), Math.round(cy - r));
-    if (st.glow === "#ffe690") { g.globalAlpha = night * 0.22; g.drawImage(DC.glow(col, 44), Math.round(sx - 44), Math.round(sy - 26)); }
+      const f = 0.85 + 0.15 * Math.sin(t / 300 + st.ph * 4);
+      out.push({ x: sx - 24, y: sy - 4, r: 34, col: "#ffb860", k: 0.75 * f, bloom: 14, by: sy - 34 }, { x: sx + 22, y: sy - 6, r: 30, col: "#ffb860", k: 0.65 * f, bloom: 12, by: sy - 36 });
+    } else if (st.spirit) {
+      const b = 0.85 + 0.15 * Math.sin(t / 1300);
+      out.push({ x: sx, y: sy - 6, r: 104, col: "#4aa8ff", k: 0.85 * b, flat: 1.8 }, { x: sx, y: sy - 70, r: 64, col: "#3a78d8", k: 0.5 * b, flat: 1.3, bloom: 52, by: sy - 76 });
+    } else if (st.wp) out.push({ x: sx, y: sy - 4, r: 40, col: "#7ae0ff", k: wpLit() ? 0.9 : 0.35, bloom: 12, by: sy - 22 });
+    else if (st.land) out.push({ x: sx, y: sy - 10, r: 70, col: st.glow || "#ffe690", k: 0.7, flat: 1.7 });
+    else if (st.neon) out.push({ x: sx, y: sy - 10, r: 64, col: st.neon, k: 0.75 });
+    else if (st.glow === "#ffe690") out.push({ x: sx, y: sy - 2, r: 46, col: "#ffd890", k: 0.8, bloom: 14, by: sy - st.sp.height + 10 });
+    else if (st.nightGlow) out.push({ x: sx, y: sy - 4, r: 34, col: st.nightGlow, k: 0.7, bloom: 10, by: sy - 30 });
+    else if (st.glow) out.push({ x: sx, y: sy - 6, r: 40, col: st.glow, k: 0.7, bloom: 10, by: sy - st.sp.height + 10 });
   }
-  for (const f of G.fires ? G.fires.values() : []) { const [X, Y] = iso(f.x, f.y); g.globalAlpha = night * 0.5; g.drawImage(DC.glow("#ff9a40", 56), Math.round(X - ox - 56), Math.round(Y - oy - 64)); }
+  for (const f of G.fires ? G.fires.values() : []) {
+    const [X, Y] = iso(f.x, f.y), k = 0.9 + 0.1 * Math.sin(t / 70 + f.id) * Math.sin(t / 130);
+    out.push({ x: X - ox, y: Y - oy, r: 108, col: "#e85a10", k }, { x: X - ox, y: Y - oy - 2, r: 56, col: "#ff9a40", k: k * 0.9, bloom: 26, by: Y - oy - 14 });
+  }
+  for (const p of map.portals) { const [px, py] = tI(p.x + 0.5, p.y + 0.5); out.push({ x: px - ox, y: py - oy, r: 48, col: "#c8a0ff", k: 0.7 }); }
+  // your own feet keep a faint halo, so you never lose yourself in the dark
+  if (G.me) { const [mx, my] = iso(G.me.x, G.me.y); out.push({ x: mx - ox, y: my - oy - 4, r: 30, col: "#8a96c8", k: 0.4 }); }
+  return out;
+}
+
+/** What shines by its own light at night is laid on again over the grade: the spirit tree's crown, the flames. */
+function glowAfterDark(n, t, ox, oy) {
+  g.save();
+  g.setTransform(1, 0, 0, 1, -ox, -oy);
+  g.globalCompositeOperation = "screen";
+  for (const st of lights) {
+    if (!st.spirit || st.dx - ox > vw || st.dx + st.sp.width - ox < 0) continue;
+    g.globalAlpha = n * (0.42 + 0.08 * Math.sin(t / 1300));
+    g.drawImage(st.sp, st.dx, st.dy);
+  }
+  for (const f of G.fires ? G.fires.values() : []) {
+    const [X, Y] = iso(f.x, f.y), fr = SP.campfire()[Math.floor(t / 140 + f.id) % 3];
+    g.globalAlpha = n * 0.75;
+    g.drawImage(fr, Math.round(X - SP.FOOT[0]), Math.round(Y - SP.FOOT[1] + 2));
+  }
+  // the pot still hangs in front of the flame, lit by it
   g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+  for (const st of lights) if (st.pot) g.drawImage(Math.floor(t / 380) % 3 === 0 ? st.sp1 : st.sp, st.dx, st.dy);
+  g.restore();
 }
 
 /** How dark each world is, and the colour of its darkness. */
@@ -1899,7 +1972,7 @@ export function render(focusX, focusY, dt, t, snap) {
     if (st.slices) { for (const sl of st.slices) if (st.dx + sl.sx < X1 && st.dx + sl.sx + sl.w > X0) list.push({ y: sl.d, s: st, sl }); }
     else list.push({ y: st.d, s: st });
   }
-  for (const n of npcs) if (on(n.x, n.y)) list.push({ y: n.y, X: n.x, Y: n.y, n });
+  for (const n of npcs) if (on(n.x, n.y) && npcOut(n.n)) list.push({ y: n.y, X: n.x, Y: n.y, n });
   const add = (wx, wy, o, dy = 0) => { const [X, Y] = iso(wx, wy); if (!on(X, Y, 140)) return; o.X = X; o.Y = Y; o.y = Y + dy; list.push(o); };
   for (const d of G.drops.values()) add(d.x, d.y, { d }, -1);
   if (G.fires) for (const f of G.fires.values()) add(f.x, f.y, { f });
@@ -1918,6 +1991,10 @@ export function render(focusX, focusY, dt, t, snap) {
     if (o.s) {
       const st = o.s, sl = o.sl;
       let sp = st.sp, dx = st.dx, dy = st.dy;
+      if (st.pot) {
+        if (Math.floor(t / 380) % 3 === 0) sp = st.sp1;
+        if (Math.random() < 0.18) parts.push({ x: st.x - 3 + Math.random() * 6, y: st.dy + 9, vx: 3 + Math.random() * 4, vy: -12 - Math.random() * 6, life: 1 + Math.random() * 0.6, color: Math.random() < 0.5 ? "#f4f0f8" : "#d8d4e4", g: -4, s: 2 });
+      }
       // walls just in front of you are cut down to their stumps, Diablo-style, so a corridor never swallows you
       if (st.cut && meDrawn) {
         const ex = (st.x - meX) / 72, ey = (st.d - meY) / 40;
@@ -2007,11 +2084,15 @@ export function render(focusX, focusY, dt, t, snap) {
       const w = G.who.get(o.eid);
       if (!w) continue;
       const s = personState(o.eid, playerLook(w.cls, w.look, w.gear));
-      const px = o.X, py = o.Y;
+      const seat = seatOf(o.p);
+      o.p.seatFa = seat ? sAng(seat.wx - o.p.x, seat.wy - o.p.y) : undefined;
+      const px = o.X, py = o.Y - (seat ? 3 : 0);
       // a giant grows (and shrinks back) over a quarter of a second
       const gz = o.p.gz = (o.p.gz || 1) + (((o.p.fl | 0) & 1 ? 1.6 : 1) - (o.p.gz || 1)) * Math.min(1, dt * 8);
       if (gz > 1.01) { g.save(); g.translate(px, py); g.scale(gz, gz); g.translate(-px, -py); drawPerson(s, o.p, t, dt, px, py); g.restore(); }
       else drawPerson(s, o.p, t, dt, px, py);
+      const jam = G.jams && G.jams.get(o.eid);
+      if (jam && t - jam.t0 < 2600) drawJam(jam, s, t, px, py);
       o.p.h3 = s.h * gz;
       if (o.me) { meDrawn = true; ghost.s = s; ghost.gz = gz; }
     }
@@ -2038,7 +2119,7 @@ export function render(focusX, focusY, dt, t, snap) {
     g.globalAlpha = clamp(p.life * 3, 0, 1); g.fillStyle = p.color; g.fillRect(Math.round(p.x) - (sz >> 1), Math.round(p.y) - (sz >> 1), sz, sz);
   }
   g.globalAlpha = 1;
-  const day = DC.daylight(), night = OUTDOOR.has(theme) ? day.night : 0;
+  const outdoor = OUTDOOR.has(theme) && !map.indoor && Sky.weather() !== -1, night = outdoor ? Sky.nightK() : 0;
   DC.drawEmitters(g, emit, t, ox, oy, vw, vh, parts);
   DC.drawStrings(g, strings, t, ox, oy, vw, vh, night);
   g.setTransform(1, 0, 0, 1, 0, 0);
@@ -2067,12 +2148,12 @@ export function render(focusX, focusY, dt, t, snap) {
     g.drawImage(lightCv, 0, 0);
   }
   g.setTransform(1, 0, 0, 1, 0, 0);
-  // outdoors the day turns: a light, even wash at night, and every lamp and window lit against it
-  if (night > 0.01 || day.warm > 0.01) {
-    if (OUTDOOR.has(theme)) DC.wash(g, vw, vh, night, day.warm, Math.max(0, 0.2 - (dark ? dark[1] : 0)));
-    if (night > 0.05) drawNightLights(night, t, ox, oy);
-  }
+  // outdoors the day turns: the whole view graded by the hour and the weather (one even multiply,
+  // never darker at the edges), with lamps, windows, runes and fires cut into the night as pools
+  const L = outdoor ? Sky.grade(g, vw, vh, dt, t, skyLights(t, ox, oy), Sky.cloudPainter(ox, oy, t)) : null;
+  if (L && L.night > 0.05) glowAfterDark(L.night, t, ox, oy);
   drawAmbient(dt, t, ox, oy);
+  Sky.drawWeather(g, vw, vh, dt, t, ox, oy, outdoor, theme, outdoor ? camps.map((c) => ({ x: c.x - ox, y: c.y - oy })) : [], L);
   cam.ox = ox; cam.oy = oy;
 }
 /** The local player's last drawn look, for the ghost shown through walls. */
@@ -2094,7 +2175,7 @@ export function pick(clientX, clientY) {
   const test = (wx, wy, w, h) => { const [x, y] = iso(wx, wy); if (X > x - w / 2 && X < x + w / 2 && Y > y - h && Y < y + 4 && y > bd) { bd = y; best = [wx, wy]; } };
   if (G && map && G.defs) {
     for (const m of G.mobs.values()) { const d = G.defs.mobs[m.k], z = ((SP.MOB_SIZE[d && d.sp] || [1])[0] * (m.el === 2 ? 2 : 1)) * SP.SIZE; test(m.x, m.y, z * 0.6, z * 0.75); }
-    for (const n of map.npcs) test(n.x * 16 + 8, n.y * 16 + 12, 18, 28);
+    for (const n of map.npcs) if (npcOut(n)) test(n.x * 16 + 8, n.y * 16 + 12, 18, 28);
     for (const k of map.marks || []) if (k.kind === "waypoint") test(k.x * 16 + 8, k.y * 16 + 8, 18, 44);
   }
   if (best) return best;

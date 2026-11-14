@@ -195,7 +195,29 @@ const TRACKS = {
     },
     form: "A B",
   },
+  // F major, 72 — the plaza by night: a lullaby on bells over a soft pad, no drums
+  town_night: {
+    bpm: 72, lead: "bell", vol: 0.1, bass: "tri", comp: "pluck", pad: true, padVol: 0.022, delay: 0.24,
+    bassPat: "R.......F.......", compPat: "0...2...1...2...", compVol: 0.03,
+    sections: {
+      A: ["F Dm Bb C F Am Bb C",
+        "A4:6 C5:2 F5:8  E5:4 D5:4 A4:8  D5:6 F5:2 Bb5:8  A5:4 G5:4 E5:8  F5:6 A5:2 C6:8  C6:4 B5:2 A5:2 E5:8  D5:4 F5:4 Bb5:4 A5:4  G5:12 -:4"],
+    },
+    form: "A A",
+  },
+  // D dorian, 66 — the fields by night: a wooden flute among the crickets
+  field_night: {
+    bpm: 66, lead: "flute", vol: 0.1, bass: "tri", comp: "pluck", pad: true, padVol: 0.02, delay: 0.26,
+    bassPat: "R...............", compPat: "0.......2.......", compVol: 0.028,
+    sections: {
+      A: ["Dm Am Bb C Dm Am G Am",
+        "D5:6 F5:2 A5:8  C6:4 A5:4 E5:8  F5:6 D5:2 Bb4:8  C5:4 E5:4 G5:8  A5:6 G5:2 F5:4 E5:4  E5:8 C5:8  D5:4 G5:4 B5:8  A5:12 -:4"],
+    },
+    form: "A A",
+  },
 };
+/** The calmer tune a map's music turns into after dark. */
+const NIGHT = { town: "town_night", meadow: "field_night", forest: "field_night" };
 /** Per-track level trims, measured by rendering each offline, so all sit near the same loudness. */
 const TRIM = { city: 1.6, rift: 1.55, boss: 1.45, cave: 1.5, crypt: 1.15 };
 /** Old names some maps still carry. */
@@ -302,9 +324,11 @@ export const Sound = {
   },
   /** A theme over the map's music — "boss", "rift" — or null to go back. */
   setTheme(name) { if (this.theme === name) return; this.theme = name; this.pick(); },
+  /** Night falls (or lifts) outdoors: the map's music crossfades to its night variant and back. */
+  setNight(on) { on = !!on; if (this.night === on) return; this.night = on; this.pick(); },
   /** Crossfade to whichever track should be playing now. */
   pick() {
-    const want = this.theme || this.base || "title";
+    const want = this.theme || (this.night && NIGHT[this.base]) || this.base || "title";
     const c = this.ctx;
     if (!c) return;
     const live = this.playing.find((p) => !p.dying);
@@ -333,6 +357,7 @@ export const Sound = {
         p.next += sixteenth;
       }
     }
+    this.ambience(now);
     // a campfire nearby crackles and pops now and then
     if (this.amb > 0.02 && !this.vol.mute) {
       if (this.ambNext < now) this.ambNext = now;
@@ -446,6 +471,58 @@ export const Sound = {
     s.buffer = this.noiseBuf; f.type = "bandpass"; f.frequency.value = 1500 + Math.random() * 2500; f.Q.value = 2;
     g.gain.setValueAtTime(level * (0.04 + Math.random() * 0.06), t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03 + Math.random() * 0.05);
     s.connect(f); f.connect(g); g.connect(this.sfx); s.start(t, Math.random() * 0.9, 0.09);
+  },
+  /**
+   * The sounds of the place outdoors: { out, ph (0 새벽 … 4 밤), wx (weather), night 0–1 }.
+   * Birds at dawn and in the morning, a few by day, crickets from sunset, owls at night,
+   * a rain loop and a wind loop under it all.
+   */
+  scene(sc) { this.sc = sc; },
+  ambience(now) {
+    const c = this.ctx, sc = this.sc;
+    if (!c || !sc) return;
+    const rain = sc.out && (sc.wx === 2) ? 1 : 0, wind = sc.out && sc.wx === 4 ? 1 : sc.out && sc.wx === 3 ? 0.3 : 0;
+    this.loop("rain", rain * 0.16, 1400, "lowpass", 0.6);
+    this.loop("wind", wind * 0.1, 420, "lowpass", 2);
+    if (!sc.out || this.vol.mute) return;
+    if (!this.ambAt) this.ambAt = { bird: 0, cricket: 0, owl: 0 };
+    const A = this.ambAt, R = Math.random, wet = sc.wx === 2 || sc.wx === 5;
+    // birdsong: a short trill, often at dawn and in the morning, now and then by day
+    const birds = wet ? 0 : sc.ph === 0 ? 1 : sc.ph === 1 ? 0.7 : sc.ph === 2 ? 0.25 : 0;
+    if (birds && now > A.bird) {
+      const f = 2600 + R() * 1400, n = 2 + Math.floor(R() * 4);
+      for (let i = 0; i < n; i++) this.tone("sine", f * (1 + (i % 2) * 0.12), f * 0.86, 0.06, 0.018 * birds, i * 0.08);
+      A.bird = now + (1.2 + R() * 3) / birds;
+    }
+    // crickets: from sunset on, little chirps in threes
+    const crick = sc.ph === 3 ? 0.6 : sc.ph === 4 ? 1 : 0;
+    if (crick && !wet && now > A.cricket) {
+      const f = 4200 + R() * 500;
+      for (let i = 0; i < 3; i++) this.tone("sine", f, f, 0.03, 0.009 * crick, i * 0.06);
+      A.cricket = now + 0.5 + R() * 0.9;
+    }
+    // an owl, far off, two notes
+    if (sc.ph === 4 && now > A.owl) {
+      if (A.owl) { this.tone("sine", 420, 380, 0.32, 0.03); this.tone("sine", 380, 340, 0.5, 0.03, 0.45); }
+      A.owl = now + 14 + R() * 16;
+    }
+  },
+  /** A looping filtered noise bed (`rain`, `wind`) faded to `level`. */
+  loop(name, level, fc, type, q) {
+    const c = this.ctx;
+    if (!this.loops) this.loops = {};
+    let L = this.loops[name];
+    if (!L) {
+      if (level < 0.001) return;
+      const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+      src.buffer = this.noiseBuf; src.loop = true; f.type = type; f.frequency.value = fc; f.Q.value = q; g.gain.value = 0;
+      src.connect(f); f.connect(g); g.connect(this.sfx); src.start();
+      L = this.loops[name] = { g, f };
+    }
+    const t = c.currentTime, lv = this.vol.mute ? 0 : level;
+    // the wind rises and falls
+    const k = name === "wind" ? 0.6 + 0.4 * Math.sin(t / 2.3) : 1;
+    L.g.gain.setTargetAtTime(lv * k, t, 0.8);
   },
   /** How close a campfire is: 0 none … 1 sitting by it. */
   ambient(level) { this.amb = Math.max(0, Math.min(1, level)); },
@@ -621,6 +698,18 @@ const SFX = {
   emote() { this.tone("sine", 600, 1200, 0.08, 0.1); this.tone("sine", 900, 1800, 0.08, 0.05, 0.05); },
   blip() { this.tone(0.25, 1100, 1100, 0.025, 0.035); this.tone(0.25, 1400, 1400, 0.025, 0.03, 0.04); },
   party() { this.arp("triangle", [659, 784, 1047], 0.07, 0.16, 0.12); },
+  // ── by the fire at night ──
+  /** The storyteller begins: a soft, low chime. */
+  tale() { this.arp("sine", [392, 523, 659], 0.12, 0.6, 0.04); },
+  /** A strum on the lute (`near` 0–1: quieter farther away): a chord rolled up, plucked. */
+  strum(near = 1) {
+    const v = 0.05 * Math.max(0.15, near), roots = [[262, 330, 392, 523], [220, 262, 330, 440], [175, 220, 262, 349], [196, 247, 294, 392]];
+    const ch = roots[Math.floor(Math.random() * roots.length)];
+    ch.forEach((f, i) => { this.tone(0.25, f, f * 0.998, 0.5, v, i * 0.035); this.tone("triangle", f * 2, f * 2, 0.25, v * 0.4, i * 0.035); });
+    ch.slice(1).forEach((f, i) => this.tone(0.25, f, f, 0.4, v * 0.8, 0.45 + i * 0.03));
+  },
+  /** Cups knocked together: a bright clink and a little cheer. */
+  cheers(near = 1) { const v = Math.max(0.2, near); this.tone("sine", 2400, 2300, 0.18, 0.06 * v); this.tone("sine", 3150, 3000, 0.14, 0.035 * v, 0.01); this.arp("triangle", [784, 988, 1175], 0.06, 0.12, 0.04 * v, 0.15); },
   // ── the fishing and cooking mini-games ──
   /** A ripple reaching the float: a soft drip on the beat. */
   drip() { this.tone("sine", 1400, 700, 0.06, 0.05); this.noise(0.04, 0.03, 1800, "bandpass"); },
