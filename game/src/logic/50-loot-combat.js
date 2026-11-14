@@ -374,15 +374,6 @@ function fall(S, rt, p) {
 }
 
 const big = (mob) => (MOBS[mob.k].boss ? 12 : mob.el === 2 ? 8 : 0);
-function nearestMob(rt, x, y, range) {
-  let best = null, bd = range;
-  for (const mob of rt.mobs) {
-    if (mob.dead) continue;
-    const d = dist(x, y, mob.x, mob.y) - big(mob);
-    if (d <= bd) { bd = d; best = mob; }
-  }
-  return best;
-}
 function mobsWithin(rt, x, y, r) {
   return rt.mobs.filter((mob) => !mob.dead && dist(x, y, mob.x, mob.y) - big(mob) <= r);
 }
@@ -408,10 +399,41 @@ function knock(m, mob, ux, uy, far) {
 function face(p, mob) {
   p.dir = dirOf(mob.x - p.x, mob.y - p.y);
 }
-const DX = [0, -1, 1, 0], DY = [1, 0, 0, -1];
-/** The unit vector from a player toward a monster, or the way the player faces. */
+/** The AIM_N unit vectors a player can aim along (0 = +x, a quarter turn = +y). */
+const AIM_V = [];
+for (let i = 0; i < AIM_N; i++) { const a = (i / AIM_N) * 2 * Math.PI; AIM_V.push([Math.round(Math.cos(a) * 1e9) / 1e9, Math.round(Math.sin(a) * 1e9) / 1e9]); }
+/** The aim step nearest the direction (dx, dy). */
+const aimIdx = (dx, dy) => ((Math.round((Math.atan2(dy, dx) / (2 * Math.PI)) * AIM_N) % AIM_N) + AIM_N) % AIM_N;
+const validAim = (v) => Number.isInteger(v) && v >= 0 && v < AIM_N;
+/** Aim along step `i`; the body turns with it. */
+function setAim(p, i) {
+  p.aim = i;
+  p.dir = dirOf(AIM_V[i][0], AIM_V[i][1]);
+}
+/**
+ * Does monster `o` stand within `half` degrees either side of where the player aims?
+ * A big body is easier to catch at the edge, and one right underfoot is always caught.
+ */
+function inArc(p, o, half) {
+  const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
+  if (d < 4) return true;
+  const [ax, ay] = AIM_V[p.aim | 0];
+  const off = Math.acos(clamp((dx * ax + dy * ay) / d, -1, 1));
+  return off <= (half * Math.PI) / 180 + Math.atan2(big(o) + 4, d);
+}
+/** Aim assist: the nearest monster within `range` that stands in the arc, or null. */
+function aimMob(rt, p, range, half) {
+  let best = null, bd = range;
+  for (const mob of rt.mobs) {
+    if (mob.dead) continue;
+    const d = dist(p.x, p.y, mob.x, mob.y) - big(mob);
+    if (d <= bd && inArc(p, mob, half)) { bd = d; best = mob; }
+  }
+  return best;
+}
+/** The unit vector from a player toward a monster, or the way the player aims. */
 function aimVec(p, mob) {
-  if (!mob) return [DX[p.dir], DY[p.dir]];
+  if (!mob) return AIM_V[p.aim | 0];
   const d = dist(p.x, p.y, mob.x, mob.y) || 1;
   return [(mob.x - p.x) / d, (mob.y - p.y) / d];
 }
@@ -439,13 +461,15 @@ function basicAttack(S, p) {
   const fin = p.combo === 2 || giant;
   p.atkAt = now;
   const range = atkRange(p);
-  const mob = nearestMob(rt, p.x, p.y, range);
   // a warrior without a sword puts their head down and butts
   const butt = !!p.sword;
   const fxKind = butt ? 40 : c.fx;
+  // the blow goes where you aim: the nearest monster inside the weapon's arc, or nothing
+  const arc = butt ? AIM_CONE : c.arc || AIM_CONE;
+  const mob = aimMob(rt, p, range, arc);
   if (!mob) {
-    const far = range < 60 ? 14 : range * 0.7;
-    rt.ev.push(["a", p.eid, fxKind, Math.round(p.x + DX[p.dir] * far), Math.round(p.y - 6 + DY[p.dir] * far), p.dir, p.combo]);
+    const far = range < 60 ? 14 : range * 0.7, [ax, ay] = AIM_V[p.aim | 0];
+    rt.ev.push(["a", p.eid, fxKind, Math.round(p.x + ax * far), Math.round(p.y - 6 + ay * far), p.dir, p.combo]);
     return;
   }
   face(p, mob);
@@ -466,10 +490,12 @@ function basicAttack(S, p) {
   const mult = (c.mult || 1) * (fin ? FINISH.mult : 1) * (tip ? TIP.mult : 1);
   // a greatsword's arc catches what stands beside the target, a spear runs through
   // what stands behind it, and a spellbook's burst splashes around it
+  // (only ever in front: nothing behind the swing is caught by it)
   let extra = [];
-  if (c.cleave) extra = mobsWithin(rt, mob.x, mob.y, (fin ? 34 : 26) * (giant ? 1.6 : 1)).slice(0, c.cleave + (fin ? 1 : 0) + (giant ? 3 : 0));
+  const near = (a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y);
+  if (c.cleave) extra = mobsWithin(rt, p.x, p.y, (range + (fin ? 10 : 4)) * (giant ? 1.3 : 1)).filter((o) => o !== mob && inArc(p, o, arc * (fin ? 1.25 : 1))).sort(near).slice(0, c.cleave + (fin ? 1 : 0) + (giant ? 3 : 0));
   else if (c.line) { const [ux, uy] = aimVec(p, mob); extra = mobsInLine(rt, p.x, p.y, ux, uy, c.range + 10, fin ? 16 : 11).slice(0, c.line + (fin ? 1 : 0)); }
-  else if (c.splash) extra = mobsWithin(rt, mob.x, mob.y, c.splash + (fin ? 8 : 0)).slice(0, 4);
+  else if (c.splash) { const [ux, uy] = aimVec(p, mob); extra = mobsWithin(rt, mob.x, mob.y, c.splash + (fin ? 8 : 0)).filter((o) => (o.x - p.x) * ux + (o.y - p.y) * uy > -4).slice(0, 4); }
   const zx = mob.x, zy = mob.y;
   // the blow lands with weight: whatever it hits is shoved back and reels, the
   // finisher most of all. Elites only reel; bosses and field bosses stand firm.

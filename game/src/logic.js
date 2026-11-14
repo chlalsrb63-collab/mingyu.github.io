@@ -48,17 +48,25 @@ const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 /** A weapon kind decides how a basic attack lands. */
 const WKIND = {
   // unhurried, weighty blows: each lands harder than a quick one would
-  sword: { name: "양손검", cd: 920, range: 34, fx: 0, cleave: 3, kb: 9, mult: 1.3 },
-  dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 1.35 },
-  spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.4 },
-  staff: { name: "마법지팡이", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.2 },
-  book: { name: "마법책", cd: 800, range: 84, fx: 5, splash: 26, mult: 1, kb: 4 },
+  sword: { name: "양손검", cd: 920, range: 34, fx: 0, cleave: 3, kb: 9, mult: 1.3, arc: 65 },
+  dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 1.35, arc: 35 },
+  spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.4, arc: 25 },
+  staff: { name: "마법지팡이", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.2, arc: 40 },
+  book: { name: "마법책", cd: 800, range: 84, fx: 5, splash: 26, mult: 1, kb: 4, arc: 40 },
 };
 /**
  * Basic attacks come in threes: two strokes and a finisher. Strike again within
  * COMBO_MS of the last blow and the count goes on; wait longer and it starts over.
  */
 const COMBO_MS = 700, FINISH = { mult: 1.4, kb: 1.8, stun: 280 };
+/**
+ * Aim. Every player aims along one of AIM_N directions on the ground (0 = +x, AIM_N/4 = +y),
+ * set by the way they last walked or sent with an attack or skill. A basic attack reaches
+ * only into its weapon's arc (`arc`, degrees either side of the aim); skills that pick a
+ * target look within AIM_CONE degrees either side; lines, throws and dashes go straight
+ * along the aim. Nothing behind you is ever hit by a blow aimed forward.
+ */
+const AIM_N = 64, AIM_CONE = 40;
 const CLASSES = {
   warrior: { name: "전사", arm: "양손검", wk: ["sword"], hp: [130, 24], mp: [30, 4], atk: [10, 2.6], def: [3, 0.9], crit: 8 },
   rogue: { name: "도적", arm: "단검", wk: ["dagger"], hp: [92, 16], mp: [40, 6], atk: [7, 1.9], def: [1, 0.5], crit: 22 },
@@ -3052,7 +3060,7 @@ export function addPlayer(S, pid, ch) {
   migrate(ch);
   if (!MAPS[ch.map]) ch.map = START.map;
   const p = {
-    S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, hp: 1, mp: 0, dead: false, stc: null,
+    S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, aim: AIM_N / 4, hp: 1, mp: 0, dead: false, stc: null,
     cds: [0, 0, 0, 0, 0, 0], atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, grit: 0, gritAt: 0, focus: 0, focusAt: 0, sword: null, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
@@ -3513,15 +3521,6 @@ function fall(S, rt, p) {
 }
 
 const big = (mob) => (MOBS[mob.k].boss ? 12 : mob.el === 2 ? 8 : 0);
-function nearestMob(rt, x, y, range) {
-  let best = null, bd = range;
-  for (const mob of rt.mobs) {
-    if (mob.dead) continue;
-    const d = dist(x, y, mob.x, mob.y) - big(mob);
-    if (d <= bd) { bd = d; best = mob; }
-  }
-  return best;
-}
 function mobsWithin(rt, x, y, r) {
   return rt.mobs.filter((mob) => !mob.dead && dist(x, y, mob.x, mob.y) - big(mob) <= r);
 }
@@ -3547,10 +3546,41 @@ function knock(m, mob, ux, uy, far) {
 function face(p, mob) {
   p.dir = dirOf(mob.x - p.x, mob.y - p.y);
 }
-const DX = [0, -1, 1, 0], DY = [1, 0, 0, -1];
-/** The unit vector from a player toward a monster, or the way the player faces. */
+/** The AIM_N unit vectors a player can aim along (0 = +x, a quarter turn = +y). */
+const AIM_V = [];
+for (let i = 0; i < AIM_N; i++) { const a = (i / AIM_N) * 2 * Math.PI; AIM_V.push([Math.round(Math.cos(a) * 1e9) / 1e9, Math.round(Math.sin(a) * 1e9) / 1e9]); }
+/** The aim step nearest the direction (dx, dy). */
+const aimIdx = (dx, dy) => ((Math.round((Math.atan2(dy, dx) / (2 * Math.PI)) * AIM_N) % AIM_N) + AIM_N) % AIM_N;
+const validAim = (v) => Number.isInteger(v) && v >= 0 && v < AIM_N;
+/** Aim along step `i`; the body turns with it. */
+function setAim(p, i) {
+  p.aim = i;
+  p.dir = dirOf(AIM_V[i][0], AIM_V[i][1]);
+}
+/**
+ * Does monster `o` stand within `half` degrees either side of where the player aims?
+ * A big body is easier to catch at the edge, and one right underfoot is always caught.
+ */
+function inArc(p, o, half) {
+  const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
+  if (d < 4) return true;
+  const [ax, ay] = AIM_V[p.aim | 0];
+  const off = Math.acos(clamp((dx * ax + dy * ay) / d, -1, 1));
+  return off <= (half * Math.PI) / 180 + Math.atan2(big(o) + 4, d);
+}
+/** Aim assist: the nearest monster within `range` that stands in the arc, or null. */
+function aimMob(rt, p, range, half) {
+  let best = null, bd = range;
+  for (const mob of rt.mobs) {
+    if (mob.dead) continue;
+    const d = dist(p.x, p.y, mob.x, mob.y) - big(mob);
+    if (d <= bd && inArc(p, mob, half)) { bd = d; best = mob; }
+  }
+  return best;
+}
+/** The unit vector from a player toward a monster, or the way the player aims. */
 function aimVec(p, mob) {
-  if (!mob) return [DX[p.dir], DY[p.dir]];
+  if (!mob) return AIM_V[p.aim | 0];
   const d = dist(p.x, p.y, mob.x, mob.y) || 1;
   return [(mob.x - p.x) / d, (mob.y - p.y) / d];
 }
@@ -3578,13 +3608,15 @@ function basicAttack(S, p) {
   const fin = p.combo === 2 || giant;
   p.atkAt = now;
   const range = atkRange(p);
-  const mob = nearestMob(rt, p.x, p.y, range);
   // a warrior without a sword puts their head down and butts
   const butt = !!p.sword;
   const fxKind = butt ? 40 : c.fx;
+  // the blow goes where you aim: the nearest monster inside the weapon's arc, or nothing
+  const arc = butt ? AIM_CONE : c.arc || AIM_CONE;
+  const mob = aimMob(rt, p, range, arc);
   if (!mob) {
-    const far = range < 60 ? 14 : range * 0.7;
-    rt.ev.push(["a", p.eid, fxKind, Math.round(p.x + DX[p.dir] * far), Math.round(p.y - 6 + DY[p.dir] * far), p.dir, p.combo]);
+    const far = range < 60 ? 14 : range * 0.7, [ax, ay] = AIM_V[p.aim | 0];
+    rt.ev.push(["a", p.eid, fxKind, Math.round(p.x + ax * far), Math.round(p.y - 6 + ay * far), p.dir, p.combo]);
     return;
   }
   face(p, mob);
@@ -3605,10 +3637,12 @@ function basicAttack(S, p) {
   const mult = (c.mult || 1) * (fin ? FINISH.mult : 1) * (tip ? TIP.mult : 1);
   // a greatsword's arc catches what stands beside the target, a spear runs through
   // what stands behind it, and a spellbook's burst splashes around it
+  // (only ever in front: nothing behind the swing is caught by it)
   let extra = [];
-  if (c.cleave) extra = mobsWithin(rt, mob.x, mob.y, (fin ? 34 : 26) * (giant ? 1.6 : 1)).slice(0, c.cleave + (fin ? 1 : 0) + (giant ? 3 : 0));
+  const near = (a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y);
+  if (c.cleave) extra = mobsWithin(rt, p.x, p.y, (range + (fin ? 10 : 4)) * (giant ? 1.3 : 1)).filter((o) => o !== mob && inArc(p, o, arc * (fin ? 1.25 : 1))).sort(near).slice(0, c.cleave + (fin ? 1 : 0) + (giant ? 3 : 0));
   else if (c.line) { const [ux, uy] = aimVec(p, mob); extra = mobsInLine(rt, p.x, p.y, ux, uy, c.range + 10, fin ? 16 : 11).slice(0, c.line + (fin ? 1 : 0)); }
-  else if (c.splash) extra = mobsWithin(rt, mob.x, mob.y, c.splash + (fin ? 8 : 0)).slice(0, 4);
+  else if (c.splash) { const [ux, uy] = aimVec(p, mob); extra = mobsWithin(rt, mob.x, mob.y, c.splash + (fin ? 8 : 0)).filter((o) => (o.x - p.x) * ux + (o.y - p.y) * uy > -4).slice(0, 4); }
   const zx = mob.x, zy = mob.y;
   // the blow lands with weight: whatever it hits is shoved back and reels, the
   // finisher most of all. Elites only reel; bosses and field bosses stand firm.
@@ -3902,12 +3936,15 @@ function castSkill(S, p, i) {
   const emp = spendFocus(p, sk);
   if (emp) rt.ev.push(["fo", p.eid]);
   const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
+  // a skill that picks its target looks where you aim (the nearest monster in the cone);
+  // one that runs along a line, a throw or a dash goes straight along the aim
   const aimAt = (range) => {
-    const mob = nearestMob(rt, p.x, p.y, range);
+    const mob = aimMob(rt, p, range, AIM_CONE);
     if (mob) face(p, mob);
     return mob;
   };
-  const ahead = (n) => [p.x + DX[p.dir] * n, p.y + DY[p.dir] * n];
+  const [aimX, aimY] = AIM_V[p.aim | 0];
+  const ahead = (n) => [p.x + aimX * n, p.y + aimY * n];
   switch (sk.id) {
     // ── 전사: 투지
     case "toss": {
@@ -3928,7 +3965,7 @@ function castSkill(S, p, i) {
         }
         break;
       }
-      const [ux, uy] = aimVec(p, aimAt(sk.len));
+      const ux = aimX, uy = aimY;
       const far = Math.max(12, reach(m, p.x, p.y, ux, uy, sk.len));
       const x = p.x + ux * far, y = p.y + uy * far;
       p.sword = { x, y, until: now + sk.stay };
@@ -4062,7 +4099,9 @@ function castSkill(S, p, i) {
     case "dance": {
       let list = mobsWithin(rt, p.x, p.y, sk.len).filter((o) => marksOf(S, o) > 0)
         .sort((a, b) => marksOf(S, b) - marksOf(S, a)).slice(0, sk.n);
-      if (!list.length) list = mobsWithin(rt, p.x, p.y, sk.len).sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y)).slice(0, 4);
+      // nothing marked: the nearest few, those you aim at first
+      const front = (o) => (inArc(p, o, AIM_CONE) ? 0 : 1e4);
+      if (!list.length) list = mobsWithin(rt, p.x, p.y, sk.len).sort((a, b) => front(a) + dist(p.x, p.y, a.x, a.y) - front(b) - dist(p.x, p.y, b.x, b.y)).slice(0, 4);
       ev(55, p.x, p.y - 6);
       p.ghost = Math.max(p.ghost || 0, now + 2500);
       if (!list.length) break;
@@ -4072,7 +4111,7 @@ function castSkill(S, p, i) {
 
     // ── 창술사: 창끝과 집중
     case "hook": {
-      const [ux, uy] = aimVec(p, aimAt(sk.len));
+      const ux = aimX, uy = aimY;
       const tip = c.range * 0.85;
       const list = mobsInLine(rt, p.x, p.y, ux, uy, sk.len, 15)
         .sort((a, b) => dist(p.x, p.y, b.x, b.y) - dist(p.x, p.y, a.x, a.y)).slice(0, emp ? 3 : 1);
@@ -4088,8 +4127,9 @@ function castSkill(S, p, i) {
       break;
     }
     case "pole": {
-      const mob = aimAt(sk.len);
-      const [ux, uy] = aimVec(p, mob);
+      const ux = aimX, uy = aimY;
+      // the vault lands just past the first monster on the line, or most of the way along it
+      const mob = mobsInLine(rt, p.x, p.y, ux, uy, sk.len, 14).sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y))[0] || null;
       // over the heads of anything in the way, never over a wall
       let far = 0;
       const want = mob ? Math.min(sk.len, dist(p.x, p.y, mob.x, mob.y) + 18) : sk.len * 0.7;
@@ -4130,8 +4170,7 @@ function castSkill(S, p, i) {
       break;
     }
     case "javelin": {
-      const mob = aimAt(sk.len);
-      const [ux, uy] = aimVec(p, mob);
+      const ux = aimX, uy = aimY;
       const line = mobsInLine(rt, p.x, p.y, ux, uy, sk.len, 13).sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y));
       const carried = emp ? line : line.slice(0, 1);
       const far = line.length ? dist(p.x, p.y, line[0].x, line[0].y) : reach(m, p.x, p.y, ux, uy, sk.len);
@@ -4157,7 +4196,7 @@ function castSkill(S, p, i) {
     case "hundred": {
       const f = p.focus || 0;
       p.focus = 0;
-      const [ux, uy] = aimVec(p, aimAt(sk.len));
+      const ux = aimX, uy = aimY;
       const ox = p.x, oy = p.y;
       let far = 0;
       for (let d = 6; d <= sk.len; d += 6) { if (!canStand(m, ox + ux * d, oy + uy * d)) break; far = d; }
@@ -4854,8 +4893,10 @@ export function validateAction(S, pid, a) {
   switch (a.t) {
     case "mv":
       if (!num(a.x) || !num(a.y)) return bad("잘못된 좌표");
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       return OK;
     case "atk":
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       if (p.dance) return bad("그림자 무도 중입니다");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
@@ -4870,6 +4911,7 @@ export function validateAction(S, pid, a) {
     case "sk": {
       const sk = Number.isInteger(a.i) ? SKILLS[ch.cls][a.i] : null;
       if (!sk) return bad("없는 스킬");
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       if (ch.lvl < sk.lv) return bad(`레벨 ${sk.lv}에 배울 수 있습니다`);
       if (p.dance) return bad("그림자 무도 중입니다");
       if (now < p.cds[a.i]) return bad("재사용 대기 중입니다");
@@ -5057,14 +5099,15 @@ export function applyAction(S, pid, a) {
       if (d > 1.5) rouse(S, p);
       p.x = a.x; p.y = a.y;
       if (a.d >= 0 && a.d <= 3) p.dir = a.d | 0;
+      if (validAim(a.a)) p.aim = a.a;
       // stepping anywhere on a gate tile (or brushing its edge) takes you through
       for (const pt of m.portals) {
         if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) < 12) { changeMap(S, p, pt.to, pt.tx * T + 8, pt.ty * T + 10); break; }
       }
       break;
     }
-    case "atk": basicAttack(S, p); break;
-    case "sk": castSkill(S, p, a.i); break;
+    case "atk": if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); break;
+    case "sk": if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.i); break;
     case "use": {
       const it = ITEMS[a.id];
       const st = stats(p);
@@ -6009,7 +6052,7 @@ export function viewFor(S, pid) {
   const near = (o) => Math.abs(o.x - p.x) < VIEW_X && Math.abs(o.y - p.y) < VIEW_Y;
   const out = {
     type: "snap",
-    me: [Math.round(p.x), Math.round(p.y), Math.round(p.hp), Math.round(p.mp), p.dead ? 1 : 0, p.fix ? 1 : 0, p.dir, p.sit ? 1 : 0, flagsOf(p, S.now), crValue(p, S.now)],
+    me: [Math.round(p.x), Math.round(p.y), Math.round(p.hp), Math.round(p.mp), p.dead ? 1 : 0, p.fix ? 1 : 0, p.dir, p.sit ? 1 : 0, flagsOf(p, S.now), crValue(p, S.now), p.aim | 0],
     P: [], M: [], D: [], F: [],
   };
   for (const oid of Object.keys(S.players)) {
@@ -6090,7 +6133,7 @@ export function defs() {
     items: ITEMS, mobs, classes, skills: SKILLS, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV, maxLv: MAXLV,
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
-    traits: TRAITS, slow: SLOW, skMax: SK_MAX, mech: { grit: GRIT_MAX, marks: MARK_MAX, focus: FOCUS_MAX, tip: TIP.at, tipMult: TIP.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, skStep: SK_STEP, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
+    traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], skMax: SK_MAX, mech: { grit: GRIT_MAX, marks: MARK_MAX, focus: FOCUS_MAX, tip: TIP.at, tipMult: TIP.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, skStep: SK_STEP, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     waypoints: Object.keys(WP).map((id) => ({ id, name: MAPS[id].name, band: MAPS[id].band || null })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
     cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N,

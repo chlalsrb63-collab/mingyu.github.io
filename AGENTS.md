@@ -92,7 +92,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `32-maps-underground.js` [630] | `tunnel`, `cavern` (cave), `catacomb` (crypt), `sewers`, `abyssal` (abyss) |
 | `34-maps-world.js` [358] | `buildTown()`, **`buildMaps()`** (every map's cfg: seed, size, mobs, chest, features), `markRoutes`, `MAPS`, `START`, collision `solidAt/canStand/canFly`, `mapPayload` |
 | `40-characters-world.js` [426] | `validName`, **`newChar`** (sheet `v:7`), **`migrate`** (old sheets), gear stats `stats()`, `exportChar`; world `setup`, mobs `newMob/placeMob`, field boss, `addPlayer/removePlayer`, `changeMap`, `sys/toast`; parties |
-| `50-loot-combat.js` [503] | bag/stack/warehouse helpers, pickup, prices, `rollGear`, `rollRarity`, `lootFor`; `gainXp`, `hurtMob`, `killMob`, `hurtPlayer`, targeting helpers, `basicAttack` |
+| `50-loot-combat.js` [503] | bag/stack/warehouse helpers, pickup, prices, `rollGear`, `rollRarity`, `lootFor`; `gainXp`, `hurtMob`, `killMob`, `hurtPlayer`, targeting + aim helpers (`AIM_V setAim inArc aimMob`), `basicAttack` |
 | `55-class-skills.js` [611] | class mechanics (grit, marks, focus, weave), `classTick`, `crView` gauge, **`castSkill`** (switch on skill id; emits numeric fx events `ev(code,…)`) |
 | `60-content.js` [317] | waypoints + recall, dailies (06:00 KST), achievements `ACH` + titles, collection, world event (rift), tutorial `TUT` |
 | `65-cosmetics.js` [125] | `COSMETICS` catalogue, `COS_SLOTS`, wardrobe helpers `cosClean cosWire giveCos cosFrom` |
@@ -139,7 +139,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 ### Tests — `game/tests/*.mjs` (plain node + `node:assert`; list in `tests/LIST`)
 sim (smoke) · party · loot (gear, repeat hunting) · life (fires, fishing, cooking, guilds) · world
 (map graph, dungeons, quests) · hard (crowds, elites, traits) · content (long game, old sheets) ·
-growth (skill levels, warehouse, pets, scrolls) · skills (class mechanics) · maps (generators:
+growth (skill levels, warehouse, pets, scrolls) · skills (class mechanics) · aim (blows/skills go where you aim, nothing behind) · maps (generators:
 connectivity, determinism, speed) · hotbar (quick slots, party chat, tidy) · wardrobe (cosmetics) ·
 looks (species ↔ LOOK_MAX) · mobart (every mob has a model that fits its canvas) · accounts (vault
 logic with a fake store + client contract).
@@ -196,7 +196,7 @@ deploy) · root `index.html`/`profile.jpg` = the owner's unrelated GitHub Pages 
 npm install                 # once (Windows: also fine; .npmrc sets legacy-peer-deps)
 npm run dev:local           # builds logic, then wrangler dev → http://localhost:8787 (two tabs = two players)
 npm run watch:logic         # 2nd terminal while editing src/logic/*.js (wrangler reloads on change)
-npm run test:rules          # build + all 15 rule tests (~10 s); one: node scripts/test-all.mjs maps
+npm run test:rules          # build + all 16 rule tests (~10 s); one: node scripts/test-all.mjs maps
 npm run check:split         # is logic.js up to date?
 npm run typecheck           # tsc --noEmit for the TS server files
 npm run deploy:cf           # checks + tests, then wrangler deploy -c wrangler.deploy.jsonc (needs `npx wrangler login`)

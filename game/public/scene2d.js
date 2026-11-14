@@ -1790,6 +1790,58 @@ function drawSkirt() {
   g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(Bx - 1, By, 2, d);
 }
 
+// ── the aim arrow: a tiny see-through arrowhead on the ground in front of your own feet,
+// pointing where your blows and skills will go (G.me.aimI, the server's aim steps)
+const AIM_STEPS = 96, aimSprites = new Map(), aimArrow = { a: null };
+/** A notched arrowhead pointing along screen angle step `k`: pale body, one dark outline, crisp at any angle. */
+function aimSprite(k) {
+  let c = aimSprites.get(k);
+  if (c) return c;
+  const R = 5, N = R * 2 + 1, ang = (k / AIM_STEPS) * 2 * Math.PI, ax = Math.cos(ang), ay = Math.sin(ang);
+  const tip = 2.6, back = -2.4, notch = -0.6, H = 2.9;
+  const inside = (x, y) => {
+    const u = x * ax + y * ay, v = Math.abs(-x * ay + y * ax);
+    return v <= H && u <= tip - (v * (tip - back)) / H && u >= notch - (v * (notch - back)) / H;
+  };
+  const fill = [];
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) fill[j * N + i] = inside(i - R, j - R);
+  const on = (i, j) => i >= 0 && j >= 0 && i < N && j < N && fill[j * N + i];
+  let x;
+  [c, x] = sheet(N, N);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    if (on(i, j)) { x.fillStyle = "rgba(255,250,232,.85)"; x.fillRect(i, j, 1, 1); }
+    else if (on(i + 1, j) || on(i - 1, j) || on(i, j + 1) || on(i, j - 1)) { x.fillStyle = INK; x.fillRect(i, j, 1, 1); }
+  }
+  aimSprites.set(k, c);
+  return c;
+}
+/** Draw the arrow: under the bodies when it points down the screen, over them (fainter) when it
+ *  points up, where it would otherwise hide behind your back. It turns smoothly and brightens for
+ *  a moment with each blow or spell. */
+function drawAimArrow(t, dt, top) {
+  const me = G.me;
+  if (G.aimArrow === false || me.aimI === undefined || me.dead || me.sit || !G.defs) return;
+  const n = (G.defs.aim && G.defs.aim[0]) || 64, want = (me.aimI / n) * 2 * Math.PI;
+  if (!top) {
+    if (aimArrow.a === null) aimArrow.a = want;
+    let d = want - aimArrow.a;
+    d = Math.atan2(Math.sin(d), Math.cos(d));
+    aimArrow.a += d * Math.min(1, dt * 16);
+  }
+  const wx = Math.cos(aimArrow.a), wy = Math.sin(aimArrow.a);
+  const s = Math.atan2((wx + wy) / 2, wx - wy);           // the same way, as it looks on screen
+  const up = Math.sin(s) < -0.3;
+  if (up !== top) return;
+  const [fx, fy] = iso(me.x, me.y);
+  const cx = Math.round(fx + Math.cos(s) * (top ? 17 : 16)), cy = Math.round(fy + Math.sin(s) * (top ? 12 : 10));
+  const k = ((Math.round((s / (2 * Math.PI)) * AIM_STEPS) % AIM_STEPS) + AIM_STEPS) % AIM_STEPS;
+  const hit = t - Math.max(G.aimFlash || -1e9, G.lastSkill || -1e9);
+  const flash = hit >= 0 && hit < 260 ? 1 - hit / 260 : 0;
+  g.globalAlpha = (top ? 0.55 : 0.62) + 0.35 * flash;
+  g.drawImage(aimSprite(k), cx - 5, cy - 5);
+  g.globalAlpha = 1;
+}
+
 export function render(focusX, focusY, dt, t, snap) {
   if (!map || !ground || !G) return;
   const [fX, fY] = iso(focusX, focusY);
@@ -1823,6 +1875,7 @@ export function render(focusX, focusY, dt, t, snap) {
   g.lineWidth = 1;
   drawFx(now, true);
   g.setTransform(1, 0, 0, 1, -ox, -oy);
+  drawAimArrow(t, dt, false);
   for (const p of map.portals) if (Math.random() < 0.2) { const [px, py] = tI(p.x + 0.5, p.y + 0.5); parts.push({ x: px + Math.random() * 24 - 12, y: py + Math.random() * 8 - 4, vx: 0, vy: -40, life: 0.6, color: "#d6b8ff", g: 0 }); }
   DC.drawFalls(g, falls, t, ox, oy, vw, vh);
   for (const s of smokers) if (s.x > ox - 20 && s.x < ox + vw + 20 && s.y > oy - 60 && s.y < oy + vh && Math.random() < 0.07) parts.push({ x: s.x + Math.random() * 4, y: s.y, vx: 5 + Math.random() * 5, vy: -13, life: 1.3 + Math.random(), color: "#eef0f6", g: -5, s: 3 });
@@ -1962,6 +2015,8 @@ export function render(focusX, focusY, dt, t, snap) {
     g.restore();
   }
   for (const [id, s] of ents) if (!s.seen) ents.delete(id);
+  g.setTransform(1, 0, 0, 1, -ox, -oy);
+  drawAimArrow(t, dt, true);
   for (const h of hooks) { g.save(); h(g, t, P); g.restore(); }
 
   drawFx(now, false);

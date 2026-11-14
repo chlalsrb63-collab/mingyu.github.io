@@ -105,7 +105,7 @@ assert.ok(D.tutorial.length >= 1);
       m.dead = false; m.el = 0; m.tr = []; m.hp = 1e7; m.x = p.x + 16; m.y = p.y; m.by = {};
       p.mp = 999; p.cds[0] = 0; p.atkAt = 0;
       const h0 = m.hp;
-      assert.ok(W.act({ t: "sk", i: 0 }).ok);
+      assert.ok(W.act({ t: "sk", i: 0, a: 0 }).ok);
       total += h0 - m.hp;
       W.step(50);
     }
@@ -130,7 +130,7 @@ for (const cls of Object.keys(D.classes)) {
     const list = rt.mobs.filter((o) => !D.mobs[o.k].chest && !D.mobs[o.k].boss).slice(0, 6);
     for (const o of rt.mobs) if (!list.includes(o)) { o.dead = true; o.respAt = W.now + 1e9; }
     list.forEach((m, j) => { m.dead = false; m.el = 0; m.tr = []; m.hp = 5000; m.x = p.x + 18 + (j % 3) * 10; m.y = p.y - 8 + Math.floor(j / 3) * 14; m.by = {}; m.stun = 0; m.slow = 0; m.mk = 2; m.mkAt = W.now + 9000; });
-    p.mp = 999; p.cds[i] = 0; p.dir = 2; p.hp = 1e6;
+    p.mp = 999; p.cds[i] = 0; p.dir = 2; p.aim = 0; p.hp = 1e6;
     assert.ok(W.act({ t: "sk", i }).ok, `${cls} casts ${D.skills[cls][i].name}`);
     const v = W.step(50);
     const kinds = evts(v, "a").filter((e) => e[1] === p.eid).map((e) => e[2]);

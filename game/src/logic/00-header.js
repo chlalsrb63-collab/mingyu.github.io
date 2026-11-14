@@ -46,17 +46,25 @@ const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 /** A weapon kind decides how a basic attack lands. */
 const WKIND = {
   // unhurried, weighty blows: each lands harder than a quick one would
-  sword: { name: "양손검", cd: 920, range: 34, fx: 0, cleave: 3, kb: 9, mult: 1.3 },
-  dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 1.35 },
-  spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.4 },
-  staff: { name: "마법지팡이", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.2 },
-  book: { name: "마법책", cd: 800, range: 84, fx: 5, splash: 26, mult: 1, kb: 4 },
+  sword: { name: "양손검", cd: 920, range: 34, fx: 0, cleave: 3, kb: 9, mult: 1.3, arc: 65 },
+  dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 1.35, arc: 35 },
+  spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.4, arc: 25 },
+  staff: { name: "마법지팡이", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.2, arc: 40 },
+  book: { name: "마법책", cd: 800, range: 84, fx: 5, splash: 26, mult: 1, kb: 4, arc: 40 },
 };
 /**
  * Basic attacks come in threes: two strokes and a finisher. Strike again within
  * COMBO_MS of the last blow and the count goes on; wait longer and it starts over.
  */
 const COMBO_MS = 700, FINISH = { mult: 1.4, kb: 1.8, stun: 280 };
+/**
+ * Aim. Every player aims along one of AIM_N directions on the ground (0 = +x, AIM_N/4 = +y),
+ * set by the way they last walked or sent with an attack or skill. A basic attack reaches
+ * only into its weapon's arc (`arc`, degrees either side of the aim); skills that pick a
+ * target look within AIM_CONE degrees either side; lines, throws and dashes go straight
+ * along the aim. Nothing behind you is ever hit by a blow aimed forward.
+ */
+const AIM_N = 64, AIM_CONE = 40;
 const CLASSES = {
   warrior: { name: "전사", arm: "양손검", wk: ["sword"], hp: [130, 24], mp: [30, 4], atk: [10, 2.6], def: [3, 0.9], crit: 8 },
   rogue: { name: "도적", arm: "단검", wk: ["dagger"], hp: [92, 16], mp: [40, 6], atk: [7, 1.9], def: [1, 0.5], crit: 22 },

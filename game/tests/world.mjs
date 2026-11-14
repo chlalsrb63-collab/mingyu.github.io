@@ -99,7 +99,7 @@ for (const id of ["crypt", "sewer", "abyss"]) {
   assert.ok(at(g) > far * 0.6, `${id}: the guardian is deep (${at(g)} of ${far})`);
   // it stays down three minutes, then stands again, still a guardian
   place(id, g.x - 14, g.y);
-  g.hp = 1; p.atkAt = 0; p.dir = 2; S.now = now;
+  g.hp = 1; p.atkAt = 0; p.dir = 2; p.aim = 0; S.now = now;
   L.applyAction(S, PID, { t: "atk" });
   assert.ok(g.dead, id + ": the guardian can be killed");
   for (let i = 0; i < 100; i++) { now += 1000; p.hp = 1e9; L.tick(S, now); L.endTick(S); }

@@ -35,7 +35,7 @@ function world(name, cls, lvl = 40) {
     if (ok) spot = [x, y];
   }
   assert.ok(spot, "open ground");
-  p.x = spot[0] * T + 8; p.y = spot[1] * T + 10; p.mvAt = now; p.dir = 2;
+  p.x = spot[0] * T + 8; p.y = spot[1] * T + 10; p.mvAt = now; p.dir = 2; p.aim = 0;
   for (const o of W.rt.mobs) { o.dead = true; o.respAt = now + 1e12; }
   W.map = mp;
   W.ready = () => { p.mp = 9999; p.hp = 1e6; p.atkAt = 0; for (let i = 0; i < 6; i++) p.cds[i] = 0; };
@@ -382,7 +382,7 @@ assert.ok(D.mech && D.mech.react && D.mech.grit === 100);
   }
   assert.ok(wall, "a wall to pin against");
   W.ready();
-  p.x = (wall[0] - 6) * T + 8; p.y = wall[1] * T + 10; p.dir = 2;
+  p.x = (wall[0] - 6) * T + 8; p.y = wall[1] * T + 10; p.dir = 2; p.aim = 0;
   const [pm] = W.mobs([[48, 0]]);
   pm.x = p.x + 48;
   assert.ok(W.act({ t: "sk", i: 4 }).ok);

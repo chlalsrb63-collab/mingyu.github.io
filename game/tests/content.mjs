@@ -32,7 +32,7 @@ function world(name = "모험가", t0 = BASE) {
       m.dead = false; m.el = el; m.tr = []; m.hp = 1; m.x = p.x + 12; m.y = p.y; m.by = {};
       // a duel: anything else standing within reach of the swing is moved off first
       for (const o of rt.mobs) if (o !== m && !o.dead && Math.hypot(o.x - p.x, o.y - p.y) < 90) { o.x += 4000; o.hx = o.x; }
-      p.atkAt = 0; p.dir = 2; p.hp = 1e6;
+      p.atkAt = 0; p.dir = 2; p.aim = 0; p.hp = 1e6;
       assert.ok(W.act({ t: "atk" }).ok);
       assert.ok(m.dead, `the ${k} falls`);
       W.step(20);
@@ -332,7 +332,7 @@ assert.equal(D.tutorial.length, 7);
   const hitAll = (who, list) => {
     for (const m of list) {
       if (m.dead) continue;
-      m.x = who.x + 12; m.y = who.y; m.hp = Math.min(m.hp, 50); who.atkAt = 0; who.dir = 2; who.hp = 1e6;
+      m.x = who.x + 12; m.y = who.y; m.hp = Math.min(m.hp, 50); who.atkAt = 0; who.dir = 2; who.aim = 0; who.hp = 1e6;
       W.S.now = W.now;
       const a = { t: "atk" };
       if (L.validateAction(W.S, who.pid, a).ok) L.applyAction(W.S, who.pid, a);
@@ -355,7 +355,7 @@ assert.equal(D.tutorial.length, 7);
   assert.ok(boss, "an event boss stands by the waypoint");
   assert.ok(chatHas(W, "균열 침공의 우두머리"));
   const g1 = p.ch.gold, g2 = p2.ch.gold;
-  boss.hp = 1; boss.x = p.x + 12; boss.y = p.y; p.atkAt = 0; p.dir = 2; p.hp = 1e6;
+  boss.hp = 1; boss.x = p.x + 12; boss.y = p.y; p.atkAt = 0; p.dir = 2; p.aim = 0; p.hp = 1e6;
   W.S.now = W.now;
   assert.ok(L.validateAction(W.S, W.PID, { t: "atk" }).ok);
   L.applyAction(W.S, W.PID, { t: "atk" });

@@ -120,7 +120,7 @@ const gain = (pid, p) => {
   p.atkAt = 0; p.streak = 0; p.streakAt = -1e9; p.ch.mk = {};
   const before = p.ch.xp + 0;
   const lvl = p.ch.lvl;
-  assert.ok(act(pid, { t: "atk" }).ok);
+  assert.ok(act(pid, { t: "atk", a: 0 }).ok);
   return p.ch.lvl === lvl ? p.ch.xp - before : -1;
 };
 a.ch.lvl = 20; a.stc = null;
@@ -143,7 +143,7 @@ for (let y = 4; y < mv.h - 4 && !lane; y++) for (let x = 4; x < mv.w - 8 && !lan
 }
 a.x = lane[0] * 16 + 8; a.y = lane[1] * 16 + 10; a.mvAt = now;
 const mob = m.mobs.find((x) => x.k === "twinhare"); mob.dead = false; mob.el = 0; mob.tr = []; mob.act = null; mob.hp = 9999; mob.x = a.x + 14; mob.y = a.y; mob.stun = 0;
-a.atkAt = 0; a.dir = 2;
+a.atkAt = 0; a.aim = 0;
 const x0 = mob.x;
 act(A, { t: "atk" });
 assert.ok(mob.x > x0 && mob.stun > now, "a hit knocks the target back and staggers it");

@@ -112,7 +112,7 @@ setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) ws.send("__ping"
 
 const G = {
   playing: false, you: 0, defs: null, icons: null, self: null, map: null,
-  me: { x: 0, y: 0, dir: 0, hp: 1, mp: 0, dead: false, walk: 0, moving: false, atkT: -1e9, hurtT: -1e9 },
+  me: { x: 0, y: 0, dir: 0, aimI: 16, hp: 1, mp: 0, dead: false, walk: 0, moving: false, atkT: -1e9, hurtT: -1e9 },
   who: new Map(), players: new Map(), mobs: new Map(), gone: new Map(), drops: new Map(), fires: new Map(), bobs: new Map(), ginv: null,
   fx: [], parts: [], texts: [], bubbles: new Map(), statics: [],
   cdEnd: [0, 0, 0, 0, 0, 0], buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
@@ -239,7 +239,7 @@ function onSnap(s) {
   const t = now();
   const me = G.me;
   if (s.map) loadMap(s.map);
-  if (s.map || s.me[5]) { me.x = s.me[0]; me.y = s.me[1]; me.dir = s.me[6]; }
+  if (s.map || s.me[5]) { me.x = s.me[0]; me.y = s.me[1]; me.dir = s.me[6]; if (s.me[10] !== undefined) me.aimI = s.me[10]; }
   me.hp = s.me[2]; me.mp = s.me[3]; me.sit = !!s.me[7];
   const dead = !!s.me[4];
   if (dead !== me.dead) { me.dead = dead; $("#dead").hidden = !dead; Sound.play(dead ? "death" : "revive"); if (dead) G.auto = false; }
@@ -649,6 +649,12 @@ world.addEventListener("pointerdown", (e) => {
     if (stoneNear()) { openWin("warp"); return; }
     hit[1] = (stone.y + 1) * T + 8;                 // the tile in front of it
   }
+  // a monster clicked: aim at it, and strike at once if it is within reach
+  const mob = [...G.mobs.values()].find((m) => Math.abs(m.x - hit[0]) < 1 && Math.abs(m.y - hit[1]) < 1);
+  if (mob && G.self && !G.map.safe) {
+    aimAtPoint(mob.x, mob.y);
+    if (dist(G.me.x, G.me.y, mob.x, mob.y) < G.self.range) { G.path = null; attack(); return; }
+  }
   G.path = pathTo(hit[0], hit[1]);
   if (G.path) G.mark = { at: now(), pos: G.path[G.path.length - 1] }
 });
@@ -693,6 +699,15 @@ function setCrt(on) {
 }
 setCrt(localStorage.getItem("lumentale:crt") !== "0");
 $("#btn-crt").addEventListener("click", () => { setCrt(!document.body.classList.contains("crt")); Sound.play("ui"); });
+/** The small arrow at your feet that shows where your blows and skills go; on unless turned off. */
+function setAimArrow(on) {
+  G.aimArrow = on;
+  $("#btn-aim").classList.toggle("off", !on);
+  $("#btn-aim").textContent = on ? "켜짐" : "꺼짐";
+  localStorage.setItem("lumentale:aim", on ? "1" : "0");
+}
+setAimArrow(localStorage.getItem("lumentale:aim") !== "0");
+$("#btn-aim").addEventListener("click", () => { setAimArrow(!G.aimArrow); Sound.play("ui"); });
 function toggleSound() {
   Sound.setMute(!Sound.vol.mute);
   soundUi();
@@ -736,10 +751,10 @@ function castSkill(i) {
   if (s.lvl < sk.lv) { toast(`[${sk.name}] 레벨 ${sk.lv}에 배웁니다`); return false; }
   const mpc = s.skm ? s.skm[i] : sk.mp;          // a thrown sword comes back for nothing; a surge casts for nothing
   if (t < G.cdEnd[i] || G.me.mp < mpc) { if (G.me.mp < mpc && !G.auto) toast("MP가 부족합니다"); return false; }
-  act({ t: "sk", i });
+  act({ t: "sk", i, a: G.me.aimI });
   G.cdEnd[i] = t + sk.cd;
   G.me.atkT = t; G.me.atkN = 2; G.lastAtk = t; G.lastSkill = t;
-  preAim();
+  preAim(aimCone());
   return true;
 }
 function countItem(id) {
@@ -766,17 +781,32 @@ function attack() {
   G.me.atkN = G.combo;
   G.lastAtk = t; G.me.atkT = t;
   G.impactAt = t + S3.impactMs(G.self.wk, G.combo);
-  preAim();
-  act({ t: "atk" });
+  const wk = G.defs.wkinds && G.defs.wkinds[G.self.wk];
+  preAim((wk && wk.arc) || aimCone());
+  G.aimFlash = t;
+  act({ t: "atk", a: G.me.aimI });
 }
-/** Turn toward the nearest monster within reach the moment the swing starts, as the server will;
- *  its own word on the target arrives a moment later and only corrects this. */
-function preAim() {
-  const me = G.me, reach = (G.self.range || 40) + 24;
+// ── aim: the server counts AIM_N steps round the compass on the ground (0 = +x, a quarter = +y)
+const aimN = () => (G.defs && G.defs.aim ? G.defs.aim[0] : 64);
+const aimCone = () => (G.defs && G.defs.aim ? G.defs.aim[1] : 40);
+/** The aim step nearest the ground direction (dx, dy). */
+function aimIdx(dx, dy) { const n = aimN(); return ((Math.round((Math.atan2(dy, dx) / (2 * Math.PI)) * n) % n) + n) % n; }
+/** The unit vector of aim step `i`. */
+function aimVec(i) { const a = (i / aimN()) * 2 * Math.PI; return [Math.cos(a), Math.sin(a)]; }
+/** Aim at a point on the ground (a monster clicked, the auto-hunt's quarry). */
+function aimAtPoint(x, y) { if (Math.hypot(x - G.me.x, y - G.me.y) > 1) G.me.aimI = aimIdx(x - G.me.x, y - G.me.y); }
+/** Turn toward the nearest monster within reach inside the arc of the aim the moment the swing
+ *  starts, as the server will; with none there the swing goes straight ahead. The server's own
+ *  word on the target arrives a moment later and only corrects this. */
+function preAim(arcDeg) {
+  const me = G.me, reach = (G.self.range || 40) + 24, [ax, ay] = aimVec(me.aimI), half = (arcDeg * Math.PI) / 180 + 0.2;
   let best = null, bd = reach;
-  for (const m of G.mobs.values()) { const d = dist(me.x, me.y, m.x, m.y); if (d < bd) { bd = d; best = m; } }
+  for (const m of G.mobs.values()) {
+    const dx = m.x - me.x, dy = m.y - me.y, d = Math.hypot(dx, dy);
+    if (d < bd && (d < 4 || Math.acos(Math.max(-1, Math.min(1, (dx * ax + dy * ay) / d))) <= half)) { bd = d; best = m; }
+  }
   if (best) me.aim = [best.x, best.y + 6];
-  else me.aim = [me.x + [0, -1, 1, 0][me.dir | 0] * 30, me.y + [1, 0, 0, -1][me.dir | 0] * 30 + 6];
+  else me.aim = [me.x + ax * 30, me.y + ay * 30 + 6];
 }
 
 function nearestNpc() {
@@ -860,7 +890,7 @@ function talkShow() {
 
 // ───────────────────────────── update ─────────────────────────────
 
-let lastSend = 0, sent = { x: 0, y: 0, d: 0 };
+let lastSend = 0, sent = { x: 0, y: 0, d: 0, a: 16 };
 const autoSt = { stuck: 0, side: 0, sign: 1, lastSkill: 0, target: null, routed: 0, skip: new Map() };
 
 /** What the ground under a tile sounds like underfoot. */
@@ -914,6 +944,7 @@ function update(dt, t) {
         else { mx = ux; my = uy; }
       } else {
         wantAtk = true;
+        aimAtPoint(best.x, best.y);            // face the quarry before the blow or the spell
         if (t - autoSt.lastSkill > 500) {
           // only what the player put in the quick slots, in slot order
           for (const i of QS.autoSkills()) {
@@ -932,6 +963,9 @@ function update(dt, t) {
   // walk — applied immediately, checked by the server afterwards
   const speed = s.spd * (t < G.buffEnd[1] ? 1.4 : 1) * (t < (G.buffEnd[4] || 0) ? G.defs.slow || 0.65 : 1);    // hasted, or slowed by frost
   const ox = me.x, oy = me.y;
+  // the aim follows the way you walk; Shift held turns you on the spot without a step
+  if (mx || my) me.aimI = aimIdx(mx, my);
+  if (keys.has("Shift") && !G.path && !G.auto) { if (mx || my) me.dir = Math.abs(mx) > Math.abs(my) ? (mx < 0 ? 1 : 2) : my < 0 ? 3 : 0; mx = my = 0; }
   if (mx || my) {
     const nx = me.x + mx * speed * dt, ny = me.y + my * speed * dt;
     if (canStand(nx, me.y)) me.x = nx;
@@ -956,10 +990,10 @@ function update(dt, t) {
     }
     else autoSt.stuck = 0;
   }
-  if (t - lastSend > 90 && (Math.abs(me.x - sent.x) > 0.3 || Math.abs(me.y - sent.y) > 0.3 || me.dir !== sent.d)) {
+  if (t - lastSend > 90 && (Math.abs(me.x - sent.x) > 0.3 || Math.abs(me.y - sent.y) > 0.3 || me.dir !== sent.d || me.aimI !== sent.a)) {
     lastSend = t;
-    sent = { x: Math.round(me.x * 10) / 10, y: Math.round(me.y * 10) / 10, d: me.dir };
-    act({ t: "mv", x: sent.x, y: sent.y, d: sent.d });
+    sent = { x: Math.round(me.x * 10) / 10, y: Math.round(me.y * 10) / 10, d: me.dir, a: me.aimI };
+    act({ t: "mv", x: sent.x, y: sent.y, d: sent.d, a: sent.a });
   }
   if (wantAtk) attack();
 

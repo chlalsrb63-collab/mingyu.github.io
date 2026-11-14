@@ -28,7 +28,7 @@ const rt = S.maps.town;
 const mob = { id: 9999, k: "twinhare", r: [18, 16, 22, 20], x: pa.x + 10, y: pa.y, hx: pa.x, hy: pa.y, hp: 1, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 1e12, wx: pa.x, wy: pa.y, by: {}, dead: false, respAt: 0, slow: 0, castAt: 1e12, el: 1, stun: 0, dot: null, temp: false, fix: 0, ep: 0 };
 rt.mobs.push(mob);
 now += 1000;
-assert.ok(act(A, { t: "atk" }).ok);
+assert.ok(act(A, { t: "atk", a: 0 }).ok);
 assert.ok(mob.dead, "one hit should finish a 1 hp monster");
 assert.ok(pa.ch.xp > 0 && pb.ch.xp > 0, "both party members gain experience");
 assert.ok(pa.ch.xp < 36, "a shared kill pays each member a share, not the full amount");

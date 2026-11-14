@@ -260,12 +260,15 @@ function castSkill(S, p, i) {
   const emp = spendFocus(p, sk);
   if (emp) rt.ev.push(["fo", p.eid]);
   const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
+  // a skill that picks its target looks where you aim (the nearest monster in the cone);
+  // one that runs along a line, a throw or a dash goes straight along the aim
   const aimAt = (range) => {
-    const mob = nearestMob(rt, p.x, p.y, range);
+    const mob = aimMob(rt, p, range, AIM_CONE);
     if (mob) face(p, mob);
     return mob;
   };
-  const ahead = (n) => [p.x + DX[p.dir] * n, p.y + DY[p.dir] * n];
+  const [aimX, aimY] = AIM_V[p.aim | 0];
+  const ahead = (n) => [p.x + aimX * n, p.y + aimY * n];
   switch (sk.id) {
     // ── 전사: 투지
     case "toss": {
@@ -286,7 +289,7 @@ function castSkill(S, p, i) {
         }
         break;
       }
-      const [ux, uy] = aimVec(p, aimAt(sk.len));
+      const ux = aimX, uy = aimY;
       const far = Math.max(12, reach(m, p.x, p.y, ux, uy, sk.len));
       const x = p.x + ux * far, y = p.y + uy * far;
       p.sword = { x, y, until: now + sk.stay };
@@ -420,7 +423,9 @@ function castSkill(S, p, i) {
     case "dance": {
       let list = mobsWithin(rt, p.x, p.y, sk.len).filter((o) => marksOf(S, o) > 0)
         .sort((a, b) => marksOf(S, b) - marksOf(S, a)).slice(0, sk.n);
-      if (!list.length) list = mobsWithin(rt, p.x, p.y, sk.len).sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y)).slice(0, 4);
+      // nothing marked: the nearest few, those you aim at first
+      const front = (o) => (inArc(p, o, AIM_CONE) ? 0 : 1e4);
+      if (!list.length) list = mobsWithin(rt, p.x, p.y, sk.len).sort((a, b) => front(a) + dist(p.x, p.y, a.x, a.y) - front(b) - dist(p.x, p.y, b.x, b.y)).slice(0, 4);
       ev(55, p.x, p.y - 6);
       p.ghost = Math.max(p.ghost || 0, now + 2500);
       if (!list.length) break;
@@ -430,7 +435,7 @@ function castSkill(S, p, i) {
 
     // ── 창술사: 창끝과 집중
     case "hook": {
-      const [ux, uy] = aimVec(p, aimAt(sk.len));
+      const ux = aimX, uy = aimY;
       const tip = c.range * 0.85;
       const list = mobsInLine(rt, p.x, p.y, ux, uy, sk.len, 15)
         .sort((a, b) => dist(p.x, p.y, b.x, b.y) - dist(p.x, p.y, a.x, a.y)).slice(0, emp ? 3 : 1);
@@ -446,8 +451,9 @@ function castSkill(S, p, i) {
       break;
     }
     case "pole": {
-      const mob = aimAt(sk.len);
-      const [ux, uy] = aimVec(p, mob);
+      const ux = aimX, uy = aimY;
+      // the vault lands just past the first monster on the line, or most of the way along it
+      const mob = mobsInLine(rt, p.x, p.y, ux, uy, sk.len, 14).sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y))[0] || null;
       // over the heads of anything in the way, never over a wall
       let far = 0;
       const want = mob ? Math.min(sk.len, dist(p.x, p.y, mob.x, mob.y) + 18) : sk.len * 0.7;
@@ -488,8 +494,7 @@ function castSkill(S, p, i) {
       break;
     }
     case "javelin": {
-      const mob = aimAt(sk.len);
-      const [ux, uy] = aimVec(p, mob);
+      const ux = aimX, uy = aimY;
       const line = mobsInLine(rt, p.x, p.y, ux, uy, sk.len, 13).sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y));
       const carried = emp ? line : line.slice(0, 1);
       const far = line.length ? dist(p.x, p.y, line[0].x, line[0].y) : reach(m, p.x, p.y, ux, uy, sk.len);
@@ -515,7 +520,7 @@ function castSkill(S, p, i) {
     case "hundred": {
       const f = p.focus || 0;
       p.focus = 0;
-      const [ux, uy] = aimVec(p, aimAt(sk.len));
+      const ux = aimX, uy = aimY;
       const ox = p.x, oy = p.y;
       let far = 0;
       for (let d = 6; d <= sk.len; d += 6) { if (!canStand(m, ox + ux * d, oy + uy * d)) break; far = d; }

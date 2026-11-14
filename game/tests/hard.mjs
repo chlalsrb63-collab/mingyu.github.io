@@ -64,7 +64,7 @@ const X = lane[0] * 16 + 8, Y = lane[1] * 16 + 10;
 // everything else goes quiet; one monster is borrowed and dressed up for each trial
 for (const m of rt.mobs) { m.dead = true; m.respAt = 1e15; }
 const pet = rt.mobs.find((m) => m.k === "twinhare");
-const stand = (dx = 0, dy = 0) => { p.x = X + dx; p.y = Y + dy; p.mvAt = now; p.dead = false; p.hp = 9999; p.burn = null; p.poison = null; p.slowed = 0; p.hitAt = -1e9; p.atkAt = 0; p.dir = 2; };
+const stand = (dx = 0, dy = 0) => { p.x = X + dx; p.y = Y + dy; p.mvAt = now; p.dead = false; p.hp = 9999; p.burn = null; p.poison = null; p.slowed = 0; p.hitAt = -1e9; p.atkAt = 0; p.dir = 2; p.aim = 0; };
 const dress = (k, el, tr, dx, extra = {}) => Object.assign(pet, { k, el, tr, dead: false, hp: 1e6, x: X + dx, y: Y, hx: X + dx, hy: Y, wx: X + dx, wy: Y, tgt: PID, st: 0, stun: 0, slow: 0, dot: null, act: null, mv: 0, cn: 0, atkAt: now, castAt: 1e15, mvAt: 1e15, by: {} }, extra);
 const events = (ms) => { const out = []; for (let t = 0; t < ms; t += 100) for (const e of step().ev || []) out.push(e); return out; };
 const self = () => { p.dirty = true; return step().self; };

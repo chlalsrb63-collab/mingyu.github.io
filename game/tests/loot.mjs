@@ -92,11 +92,11 @@ p.map = "meadow"; rt.n++; S.maps.town.n--; p.sendMap = true;
 ch.eq.weapon = gear("w_lancer_5", { enh: 10 }); p.stc = null;
 const acorns = rt.mobs.filter((m) => m.k === "twinhare");
 let killed = 0;
-for (const m of rt.mobs) { if (m.k !== "twinhare" && m.k !== "gutfrog") continue; if (rt.fb) break; m.dead = false; m.el = 0; m.hp = 1; p.x = m.x - 12; p.y = m.y; p.mvAt = now; p.atkAt = 0; p.dir = 2; assert.ok(act({ t: "atk" }).ok); if (m.dead) killed++; step(30); p.hp = 99999; }
+for (const m of rt.mobs) { if (m.k !== "twinhare" && m.k !== "gutfrog") continue; if (rt.fb) break; m.dead = false; m.el = 0; m.hp = 1; p.x = m.x - 12; p.y = m.y; p.mvAt = now; p.atkAt = 0; p.aim = 0; assert.ok(act({ t: "atk" }).ok); if (m.dead) killed++; step(30); p.hp = 99999; }
 // not enough distinct monsters at once: revive and repeat until the count is reached
 for (let i = 0; !rt.fb && i < 500; i++) {
   const m = acorns[i % acorns.length];
-  m.dead = false; m.el = 0; m.hp = 1; m.x = p.x + 12; m.y = p.y; p.atkAt = 0; p.dir = 2;
+  m.dead = false; m.el = 0; m.hp = 1; m.x = p.x + 12; m.y = p.y; p.atkAt = 0; p.aim = 0;
   assert.ok(act({ t: "atk" }).ok);
   if (m.dead) killed++;
   step(30); p.hp = 99999;
@@ -108,12 +108,12 @@ const boss = rt.mobs.find((m) => m.el === 2);
 assert.ok(boss && boss.k === "lambmaw" && rt.fb === boss.id, "the field boss arrives");
 assert.equal(boss.hp, Math.round(D.mobs.lambmaw.hp * D.eliteHp[2]));
 boss.hp = 1; boss.x = p.x + 12; boss.y = p.y; p.atkAt = 0;
-act({ t: "atk" });
+act({ t: "atk", a: 0 });
 step(30);
 assert.ok(!rt.mobs.includes(boss) && rt.fb === 0, "and is gone for good once it falls");
 assert.ok(rt.drops.some((d) => d.g) || ch.inv.some((x) => x.q !== undefined), "leaving gear behind");
 const types = new Set();
-for (let i = 0; i < 3000; i++) { const m = acorns[i % acorns.length]; m.dead = false; m.el = 1; m.hp = 1; m.x = p.x + 12; m.y = p.y; p.atkAt = 0; act({ t: "atk" }); step(20); p.hp = 99999; }
+for (let i = 0; i < 3000; i++) { const m = acorns[i % acorns.length]; m.dead = false; m.el = 1; m.hp = 1; m.x = p.x + 12; m.y = p.y; p.atkAt = 0; act({ t: "atk", a: 0 }); step(20); p.hp = 99999; }
 for (const d of rt.drops) if (d.g) types.add(D.items[d.g.id].type);
 for (const s of ch.inv) if (D.items[s.id].type !== "pot" && s.q !== undefined) types.add(D.items[s.id].type);
 assert.ok(types.size >= 6, "every kind of piece drops, saw " + [...types]);
@@ -143,7 +143,7 @@ for (const cls of Object.keys(D.classes)) {
     assert.equal(sv.wk, "book");
     assert.equal(sv.range, D.wkinds.book.range);
     const m = acorns[0]; m.dead = false; m.hp = 5; m.x = q.x + 30; m.y = q.y; q.atkAt = 0;
-    assert.ok(act({ t: "atk" }).ok);
+    assert.ok(act({ t: "atk", a: 0 }).ok);
   }
   const out = L.removePlayer(S, PID);
   JSON.stringify(out);

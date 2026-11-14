@@ -14,14 +14,15 @@ export function applyAction(S, pid, a) {
       if (d > 1.5) rouse(S, p);
       p.x = a.x; p.y = a.y;
       if (a.d >= 0 && a.d <= 3) p.dir = a.d | 0;
+      if (validAim(a.a)) p.aim = a.a;
       // stepping anywhere on a gate tile (or brushing its edge) takes you through
       for (const pt of m.portals) {
         if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) < 12) { changeMap(S, p, pt.to, pt.tx * T + 8, pt.ty * T + 10); break; }
       }
       break;
     }
-    case "atk": basicAttack(S, p); break;
-    case "sk": castSkill(S, p, a.i); break;
+    case "atk": if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); break;
+    case "sk": if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.i); break;
     case "use": {
       const it = ITEMS[a.id];
       const st = stats(p);

@@ -159,8 +159,10 @@ export function validateAction(S, pid, a) {
   switch (a.t) {
     case "mv":
       if (!num(a.x) || !num(a.y)) return bad("잘못된 좌표");
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       return OK;
     case "atk":
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       if (p.dance) return bad("그림자 무도 중입니다");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
@@ -175,6 +177,7 @@ export function validateAction(S, pid, a) {
     case "sk": {
       const sk = Number.isInteger(a.i) ? SKILLS[ch.cls][a.i] : null;
       if (!sk) return bad("없는 스킬");
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       if (ch.lvl < sk.lv) return bad(`레벨 ${sk.lv}에 배울 수 있습니다`);
       if (p.dance) return bad("그림자 무도 중입니다");
       if (now < p.cds[a.i]) return bad("재사용 대기 중입니다");

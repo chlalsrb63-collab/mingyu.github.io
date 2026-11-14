@@ -11,9 +11,9 @@
     <meta name="theme-color" content="#0e0f14" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;900&display=swap" />
-    <link rel="stylesheet" href="style.css?v=1795150030" />
-    <link rel="stylesheet" href="hud.css?v=1795150030" />
-    <link rel="stylesheet" href="lobby.css?v=1795150030" />
+    <link rel="stylesheet" href="style.css?v=1795150040" />
+    <link rel="stylesheet" href="hud.css?v=1795150040" />
+    <link rel="stylesheet" href="lobby.css?v=1795150040" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -235,6 +235,7 @@
           <div class="set-row"><span>배경음악</span><input type="range" id="vol-bgm" class="vol" min="0" max="100" step="1" value="70" aria-label="배경음악 음량"></div>
           <div class="set-row"><span>효과음</span><input type="range" id="vol-sfx" class="vol" min="0" max="100" step="1" value="85" aria-label="효과음 음량"></div>
           <div class="set-row"><span>CRT 화면 효과</span><kbd>V</kbd><button id="btn-crt" class="btn toggle">켜짐</button></div>
+          <div class="set-row"><span>조준 화살표</span><button id="btn-aim" class="btn toggle">켜짐</button></div>
           <div class="set-row"><span>창 위치</span><button id="btn-winreset" class="btn">처음 자리로</button></div>
           <div class="set-row"><span>아이템 필터</span><select id="opt-filter" class="sel" aria-label="아이템 필터"><option value="0">모두</option><option value="1">마법 이상</option><option value="2">희귀 이상</option></select></div>
           <div class="set-row"><span>자동 HP 물약</span><input type="range" id="opt-ahp" class="vol" min="0" max="90" step="5" value="0" aria-label="자동 HP 물약"><b id="opt-ahp-v" class="pct">끔</b></div>
@@ -248,7 +249,7 @@
         <header><span class="t">도움말</span><kbd>H</kbd><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body help">
           <p><b>이동</b> 방향키 / WASD (여덟 방향) · 땅을 클릭(터치)하면 그곳까지 알아서 걸어갑니다. 모바일은 왼쪽 조이스틱.</p>
-          <p><b>전투</b> Space 공격 (가까운 적을 자동으로 겨냥, 세 번째 타격이 마무리 일격) · 1–9 단축칸 (스킬 창 K나 가방에서 스킬·물약·음식·주문서를 끌어다 놓기, 칸끼리 끌어 바꾸기, 우클릭으로 비우기) · Q / E 물약 · R 자동사냥 (단축칸의 스킬을 순서대로 씀)</p>
+          <p><b>전투</b> Space 공격 (발밑의 작은 화살표가 가리키는 쪽으로 나가며, 그 앞의 가까운 적을 겨냥 · 뒤의 적은 맞지 않음 · 세 번째 타격이 마무리 일격) · Shift+방향키 제자리에서 방향만 돌리기 · 몬스터 클릭 그쪽을 겨냥해 공격 · 1–9 단축칸 (스킬 창 K나 가방에서 스킬·물약·음식·주문서를 끌어다 놓기, 칸끼리 끌어 바꾸기, 우클릭으로 비우기) · Q / E 물약 · R 자동사냥 (단축칸의 스킬을 순서대로 씀)</p>
           <p><b>창</b> I 가방 · C 캐릭터 · K 스킬 · L 의뢰 · U 일일 의뢰 · Y 업적·칭호 · J 몬스터 도감 · P 파티 · G 길드 · N 랭킹 · O 설정 · H 도움말 · Esc 맨 위 창 닫기</p>
           <p><b>이동의 돌</b> 맵마다 하나씩 있는 돌비석에 다가가면 깨어납니다. 깨운 돌끼리는 F로 말을 걸어 순간이동할 수 있습니다. <b>귀환 주문서</b>는 2초 동안 읽으면 광장으로 돌아갑니다(움직이거나 맞으면 취소).</p>
           <p><b>매일</b> 아침 6시에 일일 의뢰 세 개가 새로 주어지고, 모두 끝내면 보너스 상자를 받습니다. 매시 정각과 30분에는 한 사냥터에 <b>균열 침공</b>이 열립니다(오른쪽 위에 남은 시간).</p>
@@ -358,7 +359,7 @@
       </div>
     </div>
 
-    <script type="module" src="client.js?v=1795150030"></script>
+    <script type="module" src="client.js?v=1795150040"></script>
     <div id="crt-frame" aria-hidden="true"></div>
   </body>
 </html>
