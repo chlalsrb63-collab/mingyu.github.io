@@ -61,6 +61,7 @@ if (process.env.EDITOR_LIB_WORKER === "1") {
     try { process.send({ id, ok: true, v: await fns[fn](...(args || [])), rss: process.memoryUsage().rss }); }
     catch (e) { process.send({ id, ok: false, err: e.message, rss: process.memoryUsage().rss }); }
   });
+  process.on("disconnect", () => process.exit(0));   // the editor went away (window closed, crash): go too
   process.send({ ready: true });
 } else {
   await server();
