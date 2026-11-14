@@ -503,12 +503,17 @@ function knit(m, pts, floor, minPocket = 6) {
  * Where one does not, the cheapest way is cut whose every 3 × 3 holds nothing harder than the `soft`
  * objects (trees, bushes, rocks … — cleared along it) or a cliff (cut back into steps, dearly); water and set
  * pieces are never touched, and walls only underground: with `dig` (a floor char) the rock is dug out as that floor
- * (never where `m.noDig` is set: a boss's shell of rock).
+ * (never where `m.noDig` is set: a boss's shell of rock). `r` is the half-width asked for (1 = three wide, 2 = five:
+ * the dungeons' main ways, `m.widenR`).
  */
-function widen(m, pts, soft, dig) {
+function widen(m, pts, soft, dig, r = m.widenR || 1) {
   const W = m.w, H = m.h, n = W * H;
   const wk = (x, y) => !blockedAt(m, x, y);
-  const isWide = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!wk(x + dx, y + dy)) return false; return true; };
+  // (blocked tiles summed over the map, so "is the square round this tile clear" is four lookups; summed again after each cut)
+  const SW = W + 1, sum = new Int32Array(SW * (H + 1));
+  const resum = () => { for (let y = 0; y < H; y++) { let row = 0; for (let x = 0; x < W; x++) { if (!wk(x, y)) row++; sum[(y + 1) * SW + x + 1] = sum[y * SW + x + 1] + row; } } };
+  const isWide = (i) => { const x = i % W, y = (i - x) / W; return x >= r && y >= r && x < W - r && y < H - r && sum[(y + r + 1) * SW + x + r + 1] - sum[(y - r) * SW + x + r + 1] - sum[(y + r + 1) * SW + x - r] + sum[(y - r) * SW + x - r] === 0; };
+  resum();
   const home = new Uint8Array(n);
   const spread = (seeds) => {
     const st = seeds.filter((i) => !home[i] && isWide(i));
@@ -519,18 +524,18 @@ function widen(m, pts, soft, dig) {
     }
   };
   // the walkable tiles within two steps of a point
-  const round = (px, py, r = 2) => {
+  const round = (px, py, q = 2) => {
     const out = [];
-    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const x = px + dx, y = py + dy; if (wk(x, y)) out.push(y * W + x); }
+    for (let dy = -q; dy <= q; dy++) for (let dx = -q; dx <= q; dx++) { const x = px + dx, y = py + dy; if (wk(x, y)) out.push(y * W + x); }
     return out;
   };
   const [ex, ey] = m.entry;
   spread(round(ex, ey));
   const cost = (j) => {
     const x = j % W, y = (j - x) / W;
-    if (x < 3 || y < 3 || x >= W - 3 || y >= H - 3) return Infinity;
+    if (x < r + 2 || y < r + 2 || x >= W - r - 2 || y >= H - r - 2) return Infinity;
     let c = 1;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
       const X = x + dx, Y = y + dy, o = m.o[Y][X];
       if (dig && m.g[Y][X] === "W" && o === " ") { if (m.noDig && m.noDig[Y * W + X]) return Infinity; c += 4; continue; }
       if (SOLID_G.includes(m.g[Y][X]) || (o !== " " && !soft.includes(o) && o !== "C")) return Infinity;
@@ -554,11 +559,13 @@ function widen(m, pts, soft, dig) {
     for (const c of path) {
       const x = c % W, y = (c - x) / W;
       // (a cliff in the way is cut back into steps: the ramp grows to three wide)
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
         if (dig && m.g[y + dy][x + dx] === "W") { m.g[y + dy][x + dx] = dig; cut++; }
-        if (m.o[y + dy][x + dx] !== " ") { if (m.o[y + dy][x + dx] === "C") m.g[y + dy][x + dx] = "v"; m.o[y + dy][x + dx] = " "; cut++; }
+        // (five wide: the swath round the first step may hold the stone or the sign the way is cut for — those stay)
+        if (m.o[y + dy][x + dx] !== " " && (r === 1 || soft.includes(m.o[y + dy][x + dx]) || m.o[y + dy][x + dx] === "C")) { if (m.o[y + dy][x + dx] === "C") m.g[y + dy][x + dx] = "v"; m.o[y + dy][x + dx] = " "; cut++; }
       }
     }
+    resum();
     spread(path.concat(near));
   }
   return cut;

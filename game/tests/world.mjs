@@ -106,7 +106,8 @@ for (const id of ["crypt", "sewer", "abyss"]) {
   assert.equal(g.el, 2);
   assert.ok(at(g) > far * 0.6, `${id}: the guardian is deep (${at(g)} of ${far})`);
   // it stays down three minutes, then stands again, still a guardian
-  place(id, g.x - 14, g.y);
+  // (close in: on a wide platform its pack may stand nearer than fourteen pixels, and the blow takes the nearest)
+  place(id, g.x - 8, g.y);
   g.hp = 1; p.atkAt = 0; p.dir = 2; p.aim = 0; S.now = now;
   L.applyAction(S, PID, { t: "atk" });
   assert.ok(g.dead, id + ": the guardian can be killed");

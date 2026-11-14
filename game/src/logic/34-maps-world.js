@@ -330,7 +330,8 @@ const GEN = {
   cave: { make: cavern, band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
     id: "cave", name: "수정 동굴", seed: 44093, w: 132, h: 100, r: 8, vaults: 10, tpm: 16, chest: "chest_cave",
     // maps-v2 비취 수정굴: the moss way (sites `r` apart, half-width `w`), shelves where the swell passes `shelf`
-    moss: { r: 15, w: 3, wind: 0.55, loops: 0.55, shelf: [0.56, 0.7], rings: 7, stream: 0.018 },
+    // dungeon widening (`wide`): bigger caverns (`fill`), pillars only in the biggest halls, the moss way 9 wide
+    moss: { r: 15, w: 4, wind: 0.55, loops: 0.55, shelf: [0.6, 0.74], rings: 7, stream: 0.018 }, wide: { fill: 0.55, plant: 0, pillar: [6, 0.74], ridge: [24, 27, 13, 2.5] },
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
   city: { make: metro, band: [14, 21], stones: 3, theme: "city", cfg: () => ({
@@ -340,16 +341,18 @@ const GEN = {
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
   crypt: { make: catacomb, band: [12, 17], stones: 3, cfg: () => ({
     // maps-v2 벽돌 회랑 (`halls`): plazas ≥ 11 × 9 in cells ≥ 14 × 12, corridors three wide, more loops
-    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 14, minH: 12, leaf: 420, entryY: 0.8, wind: 0.5, loops: 0.3, out: true, n: 3,
-    halls: true, soft: "12345I",
+    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 17, minH: 13, leaf: 620, entryY: 0.8, wind: 0.6, loops: 0.3, out: true, n: 3,
+    // dungeon widening: rooms ≥ 15 × 11 (`room`), ways 5 wide on the critical path, 4 elsewhere, 3 to an ossuary
+    halls: true, soft: "12345I", room: [15, 11], ways: [5, 4, 3],
     shapes: ["plain", "chapel", "cross", "octagon", "ell", "chapel", "cross"], styles: ["pillars", "pool", "rows", "rubble", "shrine", "plain", "plain"], vaultName: "ossuary",
     mobs: ["ratking", "twinhare_bone", "bonehound", "toadbrood", "batcluster"], guard: "bonehound", chest: "chest_crypt",
     dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4", light: "3" },
   }) },
   sewer: { make: sewers, band: [22, 27], stones: 3, cfg: () => ({
     // maps-v2 벽돌 회랑 (`halls`): flagstone plazas, channel tunnels with a walkway three wide, dry side ways
-    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 14, wind: 0.5, loops: 0.35, n: 3,
-    halls: true, soft: "67x4n", light: "3",
+    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 25, wind: 0.5, loops: 0.55, n: 3,
+    // dungeon widening (`plaza`): plazas 15 × 11 to 21 × 15, walkways 5 wide on the critical path and 4 elsewhere
+    halls: true, soft: "67x4n", light: "3", plaza: true, dead: 4,
     mobs: ["leechmaw", "ratking_bile", "gatorhalf", "crabskull", "eelknot"], guard: "gatorhalf", chest: "chest_sewer",
   }) },
   // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
@@ -377,7 +380,9 @@ const GEN = {
       : h < 0.03 ? "T" : h < 0.038 ? "u" : h < 0.046 ? "B" : h < 0.05 ? "l" : null),
   }) },
   abyss: { make: abyssal, band: [32, 40], stones: 3, cfg: () => ({
-    id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 152, h: 120, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
+    id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 152, h: 120, r: 16, wind: 0.55, loops: 0.3, n: 7, boss: "abyssboss", out: true,
+    // dungeon widening (`plate`): islands are plates of flesh `r`…`r + vary` across the half, cracks of blood `gap` wide
+    plate: { r: 14, vary: 3, gap: 2.6, gapVary: 2.6, soft: "804" },
     mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss",
   }) },
 };
@@ -538,10 +543,15 @@ function markRoutes(m, labelOf, deeper) {
   };
   // maps-v2: a generator that keeps its ways three tiles wide (m.keepWide: the points they must join) gets its
   // signs and stones only where every one of those points still joins the entrance's wide ground
+  // (`m.widenR`: the half-width those ways keep — 1 = three tiles, 2 = five, the widened dungeons)
   let homeNow = null;
+  const WR = m.widenR || 1;
   const wideOk = !m.keepWide ? null : () => {
     const n = W * H, home = new Uint8Array(n);
-    const isWide = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!open(x + dx, y + dy)) return false; return true; };
+    // (blocked tiles summed over the map: "is the square round this tile clear" is then four lookups)
+    const SW = W + 1, sum = new Int32Array(SW * (H + 1));
+    for (let y = 0; y < H; y++) { let row = 0; for (let x = 0; x < W; x++) { if (!open(x, y)) row++; sum[(y + 1) * SW + x + 1] = sum[y * SW + x + 1] + row; } }
+    const isWide = (i) => { const x = i % W, y = (i - x) / W; return x >= WR && y >= WR && x < W - WR && y < H - WR && sum[(y + WR + 1) * SW + x + WR + 1] - sum[(y - WR) * SW + x + WR + 1] - sum[(y + WR + 1) * SW + x - WR] + sum[(y - WR) * SW + x - WR] === 0; };
     const near = (px, py) => { const o = []; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (inMap(m, px + dx, py + dy)) o.push((py + dy) * W + px + dx); return o; };
     const st = near(ex, ey).filter(isWide);
     for (const i of st) home[i] = 1;
@@ -551,8 +561,8 @@ function markRoutes(m, labelOf, deeper) {
   };
   const wideWas = wideOk ? wideOk() : null;
   // only an object touching the wide ground can narrow it: anywhere else there is nothing to check
-  const touchesWide = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inMap(m, x + dx, y + dy) && homeNow[(y + dy) * W + x + dx]) return true; return false; };
-  const wideAt = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!open(x + dx, y + dy)) return false; return true; };
+  const touchesWide = (x, y) => { for (let dy = -WR; dy <= WR; dy++) for (let dx = -WR; dx <= WR; dx++) if (inMap(m, x + dx, y + dy) && homeNow[(y + dy) * W + x + dx]) return true; return false; };
+  const wideAt = (i) => { const x = i % W, y = (i - x) / W; for (let dy = -WR; dy <= WR; dy++) for (let dx = -WR; dx <= WR; dx++) if (!open(x + dx, y + dy)) return false; return true; };
   // the object (already set down at x, y) narrows nothing if the wide ground round it, two and three steps
   // out, still holds together inside the 7 × 7 square; near a point that must stay joined, look at the whole map
   const keepsWide = (x, y) => {
@@ -564,17 +574,37 @@ function markRoutes(m, labelOf, deeper) {
       return fine;
     }
     const win = [], ring = [];
-    for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+    for (let dy = -2 * WR - 1; dy <= 2 * WR + 1; dy++) for (let dx = -2 * WR - 1; dx <= 2 * WR + 1; dx++) {
       const X = x + dx, Y = y + dy, i = Y * W + X;
       if (!inMap(m, X, Y) || !homeNow[i] || !wideAt(i)) continue;
       win.push(i);
-      if (Math.max(Math.abs(dx), Math.abs(dy)) >= 2) ring.push(i);
+      if (Math.max(Math.abs(dx), Math.abs(dy)) >= WR + 1) ring.push(i);
     }
     if (!ring.length) return true;
     const inWin = new Set(win), got = new Set([ring[0]]), st = [ring[0]];
     while (st.length) { const i = st.pop(); for (const j of [i + 1, i - 1, i + W, i - W]) if (inWin.has(j) && !got.has(j)) { got.add(j); st.push(j); } }
     fine = ring.every((i) => got.has(i));
-    if (fine) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const X = x + dx, Y = y + dy; if (inMap(m, X, Y) && !wideAt(Y * W + X)) homeNow[Y * W + X] = 0; }
+    // (five wide: the window is big enough to hold the far side of a wall or a channel, which was never joined
+    // inside it — the object is fine if it leaves the wide ground in no more pieces than it found)
+    if (!fine && WR > 1) {
+      const parts = () => {
+        const tiles = new Set(), seen = new Set();
+        for (let dy = -2 * WR - 1; dy <= 2 * WR + 1; dy++) for (let dx = -2 * WR - 1; dx <= 2 * WR + 1; dx++) { const X = x + dx, Y = y + dy; if (inMap(m, X, Y) && homeNow[Y * W + X] && wideAt(Y * W + X)) tiles.add(Y * W + X); }
+        let n = 0;
+        for (const s0 of tiles) {
+          if (seen.has(s0)) continue;
+          const q = [s0]; seen.add(s0); let far = false;
+          while (q.length) { const i = q.pop(); if (Math.max(Math.abs(i % W - x), Math.abs(Math.floor(i / W) - y)) >= WR + 1) far = true; for (const j of [i + 1, i - 1, i + W, i - W]) if (tiles.has(j) && !seen.has(j)) { seen.add(j); q.push(j); } }
+          if (far) n++;
+        }
+        return n;
+      };
+      const after = parts(), o = m.o[y][x];
+      m.o[y][x] = " ";
+      fine = after <= parts();
+      m.o[y][x] = o;
+    }
+    if (fine) for (let dy = -WR; dy <= WR; dy++) for (let dx = -WR; dx <= WR; dx++) { const X = x + dx, Y = y + dy; if (inMap(m, X, Y) && !wideAt(Y * W + X)) homeNow[Y * W + X] = 0; }
     return fine;
   };
   /** Is the walk at this tile on the entrance's wide ground (or within two steps of it)? */
