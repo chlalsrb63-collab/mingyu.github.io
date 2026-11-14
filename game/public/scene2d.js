@@ -1790,18 +1790,20 @@ function drawSkirt() {
   g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(Bx - 1, By, 2, d);
 }
 
-// ── the aim arrow: a tiny see-through arrowhead on the ground in front of your own feet,
-// pointing where your blows and skills will go (G.me.aimI, the server's aim steps)
-const AIM_STEPS = 96, aimSprites = new Map(), aimArrow = { a: null };
-/** A notched arrowhead pointing along screen angle step `k`: pale body, one dark outline, crisp at any angle. */
+// ── the aim arrow: a small see-through arrowhead on the ground in front of your own feet, with
+// two dots trailing back to you, pointing where your blows and skills will go (G.me.aimI, the
+// server's aim steps). Pale body inside a dark outline, so it reads on grass, stone, crypt and abyss.
+const AIM_STEPS = 48, aimSprites = new Map(), aimArrow = { a: null };
+const AIM_FILL = "#fff6da", AIM_INK = "#1a1320";
+/** A solid arrowhead pointing along screen angle step `k`, worked out pixel by pixel so it stays crisp at any angle. */
 function aimSprite(k) {
   let c = aimSprites.get(k);
   if (c) return c;
-  const R = 5, N = R * 2 + 1, ang = (k / AIM_STEPS) * 2 * Math.PI, ax = Math.cos(ang), ay = Math.sin(ang);
-  const tip = 2.6, back = -2.4, notch = -0.6, H = 2.9;
+  const R = 6, N = R * 2 + 1, ang = (k / AIM_STEPS) * 2 * Math.PI, ax = Math.cos(ang), ay = Math.sin(ang);
+  const tip = 3.6, back = -2.9, H = 3.9;
   const inside = (x, y) => {
     const u = x * ax + y * ay, v = Math.abs(-x * ay + y * ax);
-    return v <= H && u <= tip - (v * (tip - back)) / H && u >= notch - (v * (notch - back)) / H;
+    return v <= H && u >= back && u <= tip - (v * (tip - back)) / H;
   };
   const fill = [];
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) fill[j * N + i] = inside(i - R, j - R);
@@ -1809,15 +1811,24 @@ function aimSprite(k) {
   let x;
   [c, x] = sheet(N, N);
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
-    if (on(i, j)) { x.fillStyle = "rgba(255,250,232,.85)"; x.fillRect(i, j, 1, 1); }
-    else if (on(i + 1, j) || on(i - 1, j) || on(i, j + 1) || on(i, j - 1)) { x.fillStyle = INK; x.fillRect(i, j, 1, 1); }
+    if (on(i, j)) { x.fillStyle = AIM_FILL; x.fillRect(i, j, 1, 1); }
+    else if (on(i + 1, j) || on(i - 1, j) || on(i, j + 1) || on(i, j - 1)) { x.fillStyle = AIM_INK; x.fillRect(i, j, 1, 1); }
   }
   aimSprites.set(k, c);
   return c;
 }
-/** Draw the arrow: under the bodies when it points down the screen, over them (fainter) when it
- *  points up, where it would otherwise hide behind your back. It turns smoothly and brightens for
- *  a moment with each blow or spell. */
+/** A 2×2 dot in its own outline, for the trail. */
+let aimDotCv = null;
+function aimDot() {
+  if (aimDotCv) return aimDotCv;
+  const [c, x] = sheet(4, 4);
+  x.fillStyle = AIM_INK; x.fillRect(1, 0, 2, 4); x.fillRect(0, 1, 4, 2);
+  x.fillStyle = AIM_FILL; x.fillRect(1, 1, 2, 2);
+  return (aimDotCv = c);
+}
+/** Draw the arrow: under the bodies when it points down the screen, over them when it points up,
+ *  where it would otherwise hide behind your back (which is all that shows that way, never a face).
+ *  It slides smoothly round the ring between steps and brightens for a moment with each blow or spell. */
 function drawAimArrow(t, dt, top) {
   const me = G.me;
   if (G.aimArrow === false || me.aimI === undefined || me.dead || me.sit || !G.defs) return;
@@ -1831,14 +1842,24 @@ function drawAimArrow(t, dt, top) {
   const wx = Math.cos(aimArrow.a), wy = Math.sin(aimArrow.a);
   const s = Math.atan2((wx + wy) / 2, wx - wy);           // the same way, as it looks on screen
   const up = Math.sin(s) < -0.3;
+  if (!top) G.aimUpK = (G.aimUpK || 0) + ((up ? 1 : 0) - (G.aimUpK || 0)) * Math.min(1, dt * 10);
   if (up !== top) return;
-  const [fx, fy] = iso(me.x, me.y);
-  const cx = Math.round(fx + Math.cos(s) * (top ? 17 : 16)), cy = Math.round(fy + Math.sin(s) * (top ? 12 : 10));
+  const [fx, fy] = iso(me.x, me.y - 1);
+  // out along the ground: wider across the screen than up and down, as a ring on the floor looks;
+  // straight up it clears the head instead (your name lifts to make room: G.aimUpK)
+  const ux = Math.cos(s) * 19, uy = Math.sin(s) * (13 + 12 * Math.max(0, -Math.sin(s)) ** 3);
   const k = ((Math.round((s / (2 * Math.PI)) * AIM_STEPS) % AIM_STEPS) + AIM_STEPS) % AIM_STEPS;
   const hit = t - Math.max(G.aimFlash || -1e9, G.lastSkill || -1e9);
-  const flash = hit >= 0 && hit < 260 ? 1 - hit / 260 : 0;
-  g.globalAlpha = (top ? 0.55 : 0.62) + 0.35 * flash;
-  g.drawImage(aimSprite(k), cx - 5, cy - 5);
+  const flash = hit >= 0 && hit < 300 ? 1 - hit / 300 : 0;
+  const alpha = 0.75 + 0.25 * flash;
+  g.globalAlpha = alpha * 0.85;
+  for (const f of [0.42, 0.66]) {
+    const dx = ux * f, dy = uy * f;
+    if (top && Math.abs(dx) < 9 && dy > -22) continue;   // a dot would only sit on your back
+    g.drawImage(aimDot(), Math.round(fx + dx) - 2, Math.round(fy + dy) - 2);
+  }
+  g.globalAlpha = alpha;
+  g.drawImage(aimSprite(k), Math.round(fx + ux) - 6, Math.round(fy + uy) - 6);
   g.globalAlpha = 1;
 }
 

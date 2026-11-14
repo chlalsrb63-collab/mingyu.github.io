@@ -93,7 +93,8 @@ function open() {
     if (!wantOnline || sock !== ws) return;
     retry = Math.min(retry + 1, 6);
     const wait = 400 * 2 ** (retry - 1);
-    if (G.playing) addChat("서버와의 연결이 끊겼습니다. 다시 연결하는 중…", "err");
+    // one line per outage, not one per retry; the welcome that follows says it is back
+    if (G.playing && retry === 1) addChat("서버와의 연결이 끊겼습니다. 다시 연결하는 중…", "err");
     else Lobby.connecting();
     connT = setTimeout(() => wantOnline && sock === ws && open(), wait);
   });
@@ -311,6 +312,8 @@ function entityPos(id) {
 const MOB_COL = { twinhare: "#a83848", gutfrog: "#7a9a4a", eyecrow: "#5c3c6c", splitboar: "#a83848", ribdeer: "#e0d8c8", hydrasnake: "#5a8a4a", mothface: "#b8a890", ratking: "#c87a8a", bonehound: "#a83848", batcluster: "#5c3c6c", pigeonmass: "#7a8aa0", doghead: "#7a5a48", catsplit: "#a83848", fishwalker: "#8ab0c0", leechmaw: "#b4cc3c", gatorhalf: "#5a7a4a", eelknot: "#4a5a6a", spiderhand: "#e0d8c8", bearmaw: "#a83848", owlstare: "#7a5a48", twingoat: "#e0d8c8", horsehalf: "#a83848", serpentwing: "#b4cc3c", boss: "#e050b8", abyssboss: "#b4cc3c", chest_meadow: "#f0c040", chest_forest: "#f0c040", chest_city: "#f0c040", chest_cave: "#f0c040", chest_crypt: "#f0c040", chest_sewer: "#f0c040", chest_abyss: "#f0c040" , lambmaw: "#a83848", foxtwine: "#c8643c", toadbrood: "#7a8a4a", squidrat: "#8a6a7a", crabskull: "#c85a3a", moleworm: "#5a566a", lionhand: "#b8905a", sowseer: "#d8a0a8", twinhare_bone: "#e0d8c8", gutfrog_poison: "#8ad84a", ratking_bile: "#b4cc3c", splitboar_frost: "#8ad8ff", hydrasnake_steel: "#a8b4c8", bonehound_ash: "#5a5a66", batcluster_blood: "#b02838", doghead_fire: "#ff8a3a" };
 const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * G.defs.eliteHp[m.el | 0]);
 const RANK_NAME = ["", "정예 ", "우두머리 "];
+// a dungeon's chosen guard is its 수문장; out in the open a summoned field boss is a 우두머리 (as the server calls them)
+const DUNGEONS = new Set(["crypt", "sewer", "abyss"]);
 Mini.mount($("#minigame"));
 // every menu button wears its glyph above its word; the auto-hunt button wears one too
 for (const b of $$("#menu button")) { const g = MENU_ICON[b.dataset.win || b.id.slice(2)]; if (g) b.prepend(iconImg(g)); }
@@ -392,7 +395,7 @@ function onEvent(e, t) {
       const p = entityPos(e[1]);
       if (p) { S3.fx.ring(p.x, p.y, e[2] === 2 ? 34 : 24, "#8ad8ff", 520, true); S3.fx.sparkle(p.x, p.y, 0.8, "#bfeaff", e[2] === 2 ? 22 : 14); }
       if (e[1] === G.you) {
-        if (e[2] === 2) { banner("이동의 돌을 깨웠습니다", true); Sound.play("wp_wake"); toast("이제 다른 이동의 돌에서 이곳으로 올 수 있습니다"); }
+        if (e[2] === 2) { banner("이동의 돌을 깨웠습니다", true); Sound.play("wp_wake"); }   // the server's toast says the rest
         else if (e[2] === 1) { fadeIn(); Sound.play("warp"); }
         else Sound.play("warp_out");
       }
@@ -414,7 +417,7 @@ function onEvent(e, t) {
       const a = (G.defs.achievements || []).find((x) => x.id === e[2]);
       if (!a) break;
       if (e[1] === G.you) { banner(`업적 달성 · ${a.name}`, true); Sound.play("achieve"); addChat(`업적 [${a.name}] 달성! (+${a.pts}점${a.title ? ` · 칭호 「${a.title}」` : ""})`, "sys"); }
-      else { const w = G.who.get(e[1]); if (w) addChat(`${w.name}님이 업적 [${a.name}]을(를) 달성했습니다.`, "sys"); }
+      else { const w = G.who.get(e[1]); if (w) addChat(`${w.name}님 업적 달성: [${a.name}]`, "sys"); }
       const p = entityPos(e[1]);
       if (p) S3.fx.sparkle(p.x, p.y, 0.9, "#ffd84a", 20);
       break;
@@ -485,14 +488,20 @@ function onEvent(e, t) {
 function onGain([kind, a, b, q]) {
   const me = G.me, h = heightOf(me);
   if (kind === "xp") floatText(`+${a} EXP`, me.x, me.y, h + 0.55, "#fff08a");
-  else if (kind === "gold") { addChat(`골드 +${a}`, "loot"); Sound.play("coin"); }
+  else if (kind === "gold") {
+    // coins picked up one after another add up on one line instead of flooding the log
+    const t = now(), gl = G.goldLine;
+    if (gl && gl.p === chatLog.lastElementChild && t - gl.t < 5000) { gl.n += a; gl.t = t; gl.p.textContent = `골드 +${gl.n.toLocaleString()}`; }
+    else G.goldLine = { p: addChat(`골드 +${a}`, "loot"), n: a, t };
+    Sound.play("coin");
+  }
   else if (kind === "item") {
     const p = addChat(`획득: ${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${b > 1 ? ` ×${b}` : ""}`, "loot");
     if (q) p.style.color = Art.RARITY_COL[q];
     Sound.play("loot", q | 0);
     if (q >= 3) banner(q === 4 ? "세트 획득!" : "전설 획득!", true);
   } else if (kind === "cos") { const d = G.defs.cos[a]; const p = addChat(`외형 획득: ${d ? d.name : a}`, "loot"); if (d) p.style.color = Art.RARITY_COL[d.q]; Sound.play("loot", d ? d.q : 1);
-  } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y, h + 0.9, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a}이(가) 되었습니다!`, "sys"); }
+  } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y, h + 0.9, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a} 달성!`, "sys"); }
 }
 
 // ───────────────────────────── effects ─────────────────────────────
@@ -1196,7 +1205,7 @@ function renderText(t) {
       tg.imageSmoothingEnabled = false;
       tr.forEach((k, i) => { const tk = TRAIT[k]; if (tk) tg.drawImage(icon(tk[0], tk[1]), Math.round(x - tr.length * 9 + i * 18 + 1), Math.round(y - 29), 16, 16); });
     }
-    label(`Lv.${d.lv} ${mob.el === 2 && G.map.theme ? "수문장 " : RANK_NAME[mob.el | 0]}${tn}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#ece0e0");
+    label(`Lv.${d.lv} ${mob.el === 2 && DUNGEONS.has(G.map.id) ? "수문장 " : RANK_NAME[mob.el | 0]}${tn}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#ece0e0");
     if (mob.hp < max) bar(x, y + 4, d.boss ? 90 : mob.el === 2 ? 70 : 42, mob.hp / max, mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#d8404c");
   }
   for (const d of G.drops.values()) {
@@ -1215,7 +1224,8 @@ function renderText(t) {
     if (w.title) label(`「${w.title}」`, x, y - (w.guild ? 26 : 13), "#ffcf6a", 11);
     if (p.hp < p.mhp && !p.dead) bar(x, y + 4, 40, p.hp / p.mhp, "#58c070");
   }
-  if (mine) { const [x, y] = at(me.x, me.y, (me.h3 || 1.32) + 0.22); label(`Lv.${mine.lvl} ${mine.name}`, x, y, "#f4e4b0"); if (mine.guild) label(`‹${mine.guild}›`, x, y - 13, "#9af0ae", 11); if (mine.title) label(`「${mine.title}」`, x, y - (mine.guild ? 26 : 13), "#ffcf6a", 11); }
+  // your own name lifts while the aim arrow points up over your head
+  if (mine) { const [x, y] = at(me.x, me.y, (me.h3 || 1.32) + 0.22 + (G.aimArrow === false ? 0 : 0.3 * (G.aimUpK || 0))); label(`Lv.${mine.lvl} ${mine.name}`, x, y, "#f4e4b0"); if (mine.guild) label(`‹${mine.guild}›`, x, y - 13, "#9af0ae", 11); if (mine.title) label(`「${mine.title}」`, x, y - (mine.guild ? 26 : 13), "#ffcf6a", 11); }
   for (const b of G.bobs.values()) if (b.bite) { const [x, y] = at(b.x, b.y, 0.9); label("!", x, y + Math.sin(t / 60) * 2, "#ffe04a", 20); }
   for (const [eid, b] of G.bubbles) {
     if (t > b.until) { G.bubbles.delete(eid); continue; }

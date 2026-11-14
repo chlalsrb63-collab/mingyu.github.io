@@ -23,11 +23,13 @@ const defs = { mobs: {} };
 mobKeys.forEach((k) => (defs.mobs[k] = { sp: k }));
 const me = { x: fx * 16 + 8, y: fy * 16 + 8, dir: +(q.get("dir") || 0), moving: false, atkT: -1e9, dead: false, aim: null };
 const G = { you: 1, me, players: new Map(), mobs: new Map(), drops: new Map(), who: new Map(), defs, icons: { cv: {} } };
+// ?aim=0..63 shows the aim arrow pointing that way (the server's steps: 0 = +x, 16 = +y)
+if (q.get("aim") !== null) { me.aimI = +q.get("aim"); defs.aim = [64, 40]; }
 const cls = q.get("cls") || "warrior";
 G.self = q.get("wps") === "none" ? { wp: [] } : null;
 G.who.set(1, { cls, look: [1, 0, 0, 0, 0, 0, 1], gear: { wk: q.get("wk") || undefined, wt: +(q.get("wt") || 2), wq: +(q.get("wq") || 0) } });
-// a few other adventurers so every weapon is on show
-[["rogue", "dagger", [0, 2, 1, 3, 0, 0, 2]], ["lancer", "spear", [3, 1, 0, 7, 0, 0, 3]], ["mage", "staff", [2, 0, 2, 5, 0, 0, 4]], ["mage", "book", [5, 3, 1, 1, 0, 0, 5]]].forEach(([c2, wk, look], i) => {
+// a few other adventurers so every weapon is on show (?solo=1: just you)
+(q.get("solo") ? [] : [["rogue", "dagger", [0, 2, 1, 3, 0, 0, 2]], ["lancer", "spear", [3, 1, 0, 7, 0, 0, 3]], ["mage", "staff", [2, 0, 2, 5, 0, 0, 4]], ["mage", "book", [5, 3, 1, 1, 0, 0, 5]]]).forEach(([c2, wk, look], i) => {
   G.players.set(10 + i, { x: me.x - 44 + i * 26, y: me.y + 26, dir: i === 1 ? 2 : i === 2 ? 1 : 0, moving: false, atkT: i === 3 ? performance.now() + 200 : -1e9, dead: false, aim: i === 3 ? [me.x + 60, me.y + 30] : null });
   G.who.set(10 + i, { cls: c2, look, gear: { wk, wt: 2 + i, wq: i } });
 });
