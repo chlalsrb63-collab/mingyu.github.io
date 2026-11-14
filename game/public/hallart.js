@@ -103,9 +103,36 @@ function torchAnim(seed) {
   };
 }
 
+/** Rune marks for the temple pool's ring: little 3×3 glyphs. */
+const RUNE = [[1, 0, 1, 0, 1, 0, 1, 0, 1], [0, 1, 0, 1, 1, 1, 0, 1, 0], [1, 1, 0, 0, 1, 0, 0, 1, 1], [1, 0, 0, 1, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0, 1, 1, 0]];
+function runePool(g, t, X, Y, parts) {
+  const b = 0.5 + 0.5 * Math.sin(t / 1100);
+  g.globalCompositeOperation = "lighter";
+  g.globalAlpha = 0.25 + 0.2 * b; g.drawImage(DC.glow("#40e0b0", 56), Math.round(X - 56), Math.round(Y - 56 + 12), 112, 64);
+  g.globalAlpha = 0.35 + 0.25 * b; g.drawImage(DC.glow("#9affe0", 22), Math.round(X - 22), Math.round(Y - 11), 44, 22);
+  g.globalAlpha = 1;
+  // twelve runes on an ellipse round the rim, each brightening as the wave of light passes it
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 + t / 9000, rx = Math.round(X + Math.cos(a) * 46), ry = Math.round(Y + Math.sin(a) * 23);
+    const lit = 0.35 + 0.65 * Math.max(0, Math.sin(t / 600 - i * 0.7));
+    g.fillStyle = `rgba(140,255,220,${lit})`;
+    const r = RUNE[i % RUNE.length];
+    for (let k = 0; k < 9; k++) if (r[k]) g.fillRect(rx - 1 + (k % 3), ry - 1 + ((k / 3) | 0), 1, 1);
+  }
+  g.globalCompositeOperation = "source-over";
+  if (Math.random() < 0.08) parts.push({ x: X - 24 + Math.random() * 48, y: Y - 4 + Math.random() * 10, vx: 0, vy: -10, life: 1.4, color: Math.random() < 0.5 ? "#9affe0" : "#e8fff8", g: 0, s: 1 });
+}
+
 /** The statics for a brick-hall map's arches and torches, and the alcove tiles whose candle stand they replace. */
 export function hallProps(m, theme) {
   const out = [], torchAt = new Set();
+  // the forgotten temple's rune pool (maps-v2 A.3, `m.temple.pool`): a breathing jade light on the water and
+  // a ring of runes turning slowly round its rim
+  if (m.temple && m.temple.pool) {
+    const [px, py] = m.temple.pool, [X, Y] = tI(px + 0.5, py + 0.5);
+    const blank = document.createElement("canvas"); blank.width = 120; blank.height = 20;
+    out.push({ sp: blank, dx: X - 60, dy: Y - 10, x: X, y: Y, d: Y - 40, glow: null, glint: -1, tx: X, ty: Y, anim: runePool });
+  }
   if (theme !== "crypt" && theme !== "sewer") return { statics: out, torchAt };
   const seen = new Set();
   for (const [x, y, ew] of m.arches || []) {

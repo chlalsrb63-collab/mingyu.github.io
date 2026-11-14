@@ -201,7 +201,10 @@ export function loadMap(m) {
   pulseCv = null; pulseParts = ground.chunked && ["cave", "abyss", "sewer", "crypt"].includes(theme) ? new Map() : null;
   if (!pulseParts) { const pc = DC.pulse(m, theme); pulseCv = pc ? toIso(m, pc) : null; }
   // falling water runs down the face of a ledge, which now runs along the diagonal
-  falls = lay.falls.map((f) => { const [X0, Y0] = sqI(f.x, f.edge), [X1] = sqI(f.x + f.w, f.edge); return { ...f, X0, Y0, len: X1 - X0, H: f.pool ? 22 : 30 }; });
+  falls = lay.falls.concat(DC.riverFalls(m, theme)).map((f) => {
+    const [X0, Y0] = sqI(f.x, f.edge), [X1] = sqI(f.x + f.w, f.edge), R = f.ring ? sqI(f.ring[0], f.ring[1]) : null;
+    return { ...f, X0, Y0, len: X1 - X0, H: f.H || (f.pool ? 22 : 30), RX: R ? R[0] : undefined, RY: R ? R[1] : undefined };
+  });
   emit = DC.emitters(m, theme).map((e) => { const [X, Y] = sqI(e.x, e.y); return { ...e, x: X, y: Y - (e.k === "drip" ? 26 : e.k === "eyes" ? 12 : 0) }; });
   strings = mkt.strings.map((s) => {
     const lamp = (x, y) => { const [X, Y] = tI((x - 16) / T + 0.5, (y + 20) / T + 0.5); return [X, Y - 44]; };

@@ -689,6 +689,27 @@ export function pulse(m, theme, part = null) {
 // ───────────────────────────── live effects ─────────────────────────────
 
 /**
+ * The waterfalls where a river drops over a terrace's cliff (maps-v2 A.2, `m.falls` [x, y, dir]), in plan()'s
+ * format: a curtain down the cliff face when the drop faces the camera (dir 1, the low side south), else only
+ * the white lip of the drop; either way churning foam rings on the pool below.
+ */
+export function riverFalls(m, theme) {
+  const out = [];
+  const water = theme === "autumn" ? "#6aaad4" : "#7ec4f2";
+  for (const [fx, fy, dir] of m.falls || []) {
+    const row = m.g[fy];
+    if (!row) continue;
+    let x0 = fx, x1 = fx;
+    while (x0 > 0 && row[x0 - 1] === "w") x0--;
+    while (x1 < m.w - 1 && row[x1 + 1] === "w") x1++;
+    const edge = (dir > 0 ? fy + 1 : fy) * T, ph = hash(fx, fy, 2) * 9;
+    out.push({ x: x0 * T + 2, w: (x1 - x0 + 1) * T - 4, top: edge - 20, bottom: edge, edge, water, foam: "#f0faff", ph, H: dir > 0 ? 20 : 3, lip: dir < 0,
+      ring: [((x0 + x1 + 1) / 2) * T, (fy + 0.5 + dir * 3) * T] });
+  }
+  return out;
+}
+
+/**
  * Falling water (or sludge) over a ledge, its foam churning where it lands. The
  * ledge runs along the diagonal in the quarter view: each fall is a curtain whose
  * foot starts at (X0, Y0) and runs `len` pixels to the right, dropping half a
@@ -706,6 +727,19 @@ export function drawFalls(g, falls, t, ox, oy, vw, vh) {
       g.fillStyle = f.foam; g.fillRect(x - 1, base - 2 + Math.round(Math.sin(t / 90 + i + f.ph) * 1.5), 3, 3);
     }
     if (f.pool) { g.fillStyle = f.water; g.beginPath(); g.ellipse(f.X0 + f.len / 2, f.Y0 + f.len / 4 + 3, f.len / 2 + 6, 4, 0, 0, 7); g.fill(); }
+    // a river's fall: foam rings spreading on the pool, white flecks churning where the water lands
+    if (f.RX !== undefined) {
+      for (let k = 0; k < 3; k++) {
+        const p = ((t / 1400 + k / 3 + f.ph) % 1), r = 8 + p * 26;
+        g.strokeStyle = `rgba(240,250,255,${0.55 * (1 - p)})`; g.lineWidth = 1;
+        g.beginPath(); g.ellipse(Math.round(f.RX), Math.round(f.RY), r, r / 2, 0, 0, 7); g.stroke();
+      }
+      g.fillStyle = f.foam;
+      for (let k = 0; k < 7; k++) {
+        const a = k * 0.9 + f.ph, rr = 4 + ((t / 120 + k * 37) % 9);
+        g.fillRect(Math.round(f.RX + Math.cos(a + t / 700) * rr * 1.4), Math.round(f.RY + Math.sin(a + t / 700) * rr * 0.6), 2, 1);
+      }
+    }
   }
 }
 

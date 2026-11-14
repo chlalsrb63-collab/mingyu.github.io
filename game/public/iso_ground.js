@@ -306,6 +306,26 @@ export function materials(theme) {
   };
   if (theme === "autumn") { T[";"] = goldL; T[":"] = needle; }
   if (cave) Object.assign(T, cave);
+  // a ford out of doors (maps-v2 A.6, the forest's crossings `m.cross`): clear shallows over sand, flat grey
+  // stepping stones in two staggered files with a wet dark rim and a lit top
+  if (!U) {
+    const fordW = mk(MID.ford, 9, "#6ab4d8", { pal: ["#6ab4d8", "#5aa2c8", "#9ad4ee", "#c8e4c8"], style: "soft", amp: 2.6, line: "#3f86b8" });
+    const shall = organic(fordW, SHP.water, SHP.sand, 231, 0.3, 0.2, 9, 5);
+    const top = C("#b4b6ac"), topL = C("#d2d4c8"), rim = C("#5e625c"), wetR = C("#3f6a7a");
+    fordW.tex = (A, B) => {
+      // a stone every 8 texels down the crossing, the files 7 apart, each one jittered
+      const r = Math.floor(B / 8), file = Math.floor((A + (r & 1 ? 3 : 0)) / 7);
+      const cx = file * 7 - (r & 1 ? 3 : 0) + 3.5 + (hash(file, r, 232) - 0.5) * 2, cy = r * 8 + 4 + (hash(file, r, 233) - 0.5) * 2;
+      if (hash(file, r, 234) < 0.75) {
+        const dx = A + 0.5 - cx, dy = B + 0.5 - cy, d = Math.hypot(dx * 0.9, dy);
+        if (d < 2.6) return dx + dy < -1.5 ? topL : top;
+        if (d < 3.4) return dx + dy > 0 ? rim : top;
+        if (d < 4.2 && dx + dy > 1) return wetR;
+      }
+      return shall(A, B);
+    };
+    T._ford = fordW;
+  }
   // the brick halls' plazas (maps-v2 A.4): big flagstones, cracked, chipped at the corners, some lost —
   // the broken edge of the paving bites raggedly into the brick floor round it
   if (theme === "crypt" || theme === "sewer") {
@@ -353,6 +373,10 @@ function prep(m, theme) {
   // the cave's shelves: the floor up on a level is grey rock
   const L = MT._shelf && levels(m);
   if (L) for (let i = 0; i < L.length; i++) if (L[i] && tmat[i] === MT._floor) tmat[i] = MT._shelf;
+  // the forest's fords ([row, 1]): the sand across the river in the band round that row is shallows with stones
+  if (MT._ford) for (const [yc, ford] of m.cross || []) if (ford) for (let y = Math.max(0, yc - 3); y <= Math.min(m.h - 1, yc + 3); y++) {
+    for (let x = 0; x < m.w; x++) if (m.g[y][x] === "s" && [-4, -3, 3, 4].some((d) => (m.g[yc + d] || "")[x] === "w")) tmat[y * m.w + x] = MT._ford;
+  }
   const out = { theme, MT, tmat, ext: extras(m, theme, MT) };
   PREP.set(m, out);
   return out;
