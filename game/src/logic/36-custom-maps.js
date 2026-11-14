@@ -12,7 +12,10 @@ const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
 /** Little idle acts an NPC can play out (public/iso_interior.js npcPose). */
 const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
 /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
-const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job"];
+const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job",
+  // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
+  // alchemist, 포포 the 알바 broker — until L2 they only talk ("곧 문을 엽니다", public/npctalk.js)
+  "cook", "craft", "alch", "jobs"];
 const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
@@ -63,6 +66,8 @@ function fromEditor(d, id) {
   m.band = Array.isArray(d.band) && d.band.length === 2 ? [clamp(d.band[0] | 0, 1, TIER_MAX), clamp(d.band[1] | 0, 1, TIER_MAX)] : null;
   if (!m.band) delete m.band;
   m.nofish = d.fishing === false;
+  // the grade of its fish and materials (life skills), else by its level band (58-life.js gradeOfMap)
+  if (Number.isInteger(d.grade) && d.grade >= 1 && d.grade <= 5) m.grade = d.grade;
   m.pieces = [];
   m.entry = Array.isArray(d.entry) && xyOk(m, d.entry[0], d.entry[1]) ? [d.entry[0], d.entry[1]] : [m.w >> 1, m.h >> 1];
   m.big = Array.isArray(d.big)

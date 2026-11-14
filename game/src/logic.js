@@ -642,6 +642,93 @@ const HOUSE_REST = { hp: 0.5, mp: 0.5, xp: 8, ms: 15 * 60000, cd: 30 * 60000 };
  */
 const HOUSE_TOWN = { map: "town", house: [3, 3], door: [[4, 6], [5, 6]], out: [4, 7], agent: [6, 7] };
 
+// ───────────────────────────── life skills: tables (docs/design/life-and-coop.md B) ─────────────────────────────
+// Six life skills, levels 1–50 on one curve, separate from combat level and weapon mastery. What they give is
+// goods: L1 (this phase) grows 낚시 and 요리 (graded fish by zone, cooking XP and bonuses); 채집 제작 연금 배달,
+// the 알바 board and the co-op jobs plug in later (L2, C1–C3) without another sheet bump.
+// Every number here is balance: edit freely, tests/lifeskills.mjs holds the golden values.
+
+/** The six skills in wire order (sheet `life` keys) and their Korean names. */
+const LIFE = ["fish", "cook", "gather", "craft", "alch", "deliver"];
+const LIFE_NAME = ["낚시", "요리", "채집", "제작", "연금", "배달"];
+const LIFE_MAX = 50;
+/** Experience from level L to L+1: 50 at 1, 1,040 at 10, 4,040 at 20, 9,040 at 30, 16,040 at 40, 24,050 at 49. */
+const lifeNeed = (L) => 10 * L * L + 40;
+/** Material grade g (1..5) unlocks at life level GRADE_LV[g−1]; 50 is the 명장 level. */
+const GRADE_LV = [1, 10, 20, 30, 40];
+/** Life experience for one action at grade g (index g−1); ×1.5 on a 대성공 where the skill says so. */
+const RXP = [8, 14, 22, 34, 50];
+/** Work on a grade unlocked this many levels below you is stale: ×LIFE_STALE experience. */
+const LIFE_STALE_D = 20, LIFE_STALE = 0.25;
+/**
+ * The bonus formula (B.2), d = max(0, L − unlock level): success min(100, 60 + 1.2·d) %, 대성공
+ * min(60, 3 + 1.2·d) %, time × (1 − 0.008·L); a mini-game score s shifts both rolls by (s − 50)·0.2 %p.
+ */
+const LIFE_ROLL = { ok: [60, 1.2, 100], great: [3, 1.2, 60], time: 0.008, score: 0.2 };
+/** A level-up toast names what the level opens. */
+const LIFE_UNLOCK = { 10: "2등급", 20: "3등급", 30: "4등급", 40: "5등급", 50: "명장" };
+
+/**
+ * Which grade a map's materials and fish are: by the first tier of its level band (meadow 1–7 → G1,
+ * forest/crypt → G2, city/sewer → G3, cave/abyss → G4, 단풍 왕도 → G5). An editor map may say `"grade"`.
+ */
+const GRADE_TIER = [1, 8, 14, 24, 40];
+const GRADE_NAME = ["1등급", "2등급", "3등급", "4등급", "5등급"];
+
+// ── materials (B.3): herb / ore / wood of each grade; gathered from L2 on, kept in the 재료 주머니 (pouch)
+const LMAT = {
+  h: ["들꽃잎", "이끼버섯", "형광 덩굴", "수정꽃", "붉은 단풍잎"],
+  o: ["구리 원석", "철광석", "네온 고철", "심연 결정", "왕도 은괴석"],
+  w: ["마른 가지", "참나무 목재", "기름 먹은 판자", "화석 목재", "단풍 고목"],
+};
+const LMAT_KIND = { h: "약초", o: "광석", w: "목재" };
+/** What one sells for (the shop pays 40 % of `price`). */
+const LMAT_SELL = [6, 14, 30, 60, 110];
+for (const k of Object.keys(LMAT)) LMAT[k].forEach((name, i) => {
+  ITEMS[`m_${k}${i + 1}`] = { name, type: "lmat", grade: i + 1, mk: k, price: Math.round(LMAT_SELL[i] / 0.4),
+    desc: `${GRADE_NAME[i]} ${LMAT_KIND[k]}. 생활 기술의 재료로 쓰인다.` };
+});
+
+// ── fish by grade (B.3, B.5): the zone and the angler's level decide what can bite
+// (fish_s/m/l are the old fish; 은빛 메기 and 동굴 장님고기 are new, each with a campfire dish)
+Object.assign(ITEMS, {
+  fish_c: { name: "은빛 메기", type: "fish", cook: "food_c", price: 220, desc: "도시 하수의 물이 키운 은빛 메기. 모닥불에서 구울 수 있다." },
+  fish_v: { name: "동굴 장님고기", type: "fish", cook: "food_v", price: 400, desc: "빛을 모르는 동굴 물고기. 모닥불에서 구울 수 있다." },
+  food_c: { name: "은빛 메기 구이", type: "food", heal: 450, buff: { xp: 10, atk: 3, min: 12 }, price: 300, desc: "HP 450 회복. 12분간 경험치 +10%, 공격력 +3%." },
+  food_v: { name: "장님고기 꼬치구이", type: "food", heal: 800, buff: { xp: 12, atk: 5, min: 15 }, price: 520, desc: "HP 800 회복. 15분간 경험치 +12%, 공격력 +5%." },
+});
+/** The fish of each grade (index g−1). 황금 잉어 is grade 5, and also a rare catch anywhere. */
+const FISH_G = ["fish_s", "fish_m", "fish_c", "fish_v", "fish_l"];
+for (const [i, id] of FISH_G.entries()) ITEMS[id].grade = i + 1;
+/**
+ * Fishing (B.5). The score k = s/100 of the rhythm game splits the catch: 황금 잉어 first
+ * (carp[0] + carp[1]·k² + carp[2]·L), then the top candidate (top[0] + top[1]·k), the next one down
+ * (next), a stone (stone), else the lowest. A fight below keep[0] − keep[1]·L gets away.
+ * The bite wait is (wait[0] + rnd·wait[1]) × the time factor.
+ */
+const FISHING = { carp: [0.01, 0.07, 0.001], top: [0.1, 0.3], next: 0.2, stone: 0.04, keep: [30, 0.3], wait: [2500, 4500] };
+
+// ── recipes (B.6): L1 has the campfire fish dishes only; L2 adds the stations, staples and the other skills.
+// RECIPES[id] = { sk, lv, at, in: [[item, n]…], out: [item, n], fee, mg, ms } — the id is the dish.
+// Every fish recipe can be cooked at any level (as before life skills); the level only adds bonuses.
+const RECIPES = {
+  food_s: { sk: "cook", lv: 1, at: "fire", in: [["fish_s", 1]], out: ["food_s", 1], fee: 0, mg: "pan", ms: 0 },
+  food_m: { sk: "cook", lv: 10, at: "fire", in: [["fish_m", 1]], out: ["food_m", 1], fee: 0, mg: "pan", ms: 0 },
+  food_c: { sk: "cook", lv: 20, at: "fire", in: [["fish_c", 1]], out: ["food_c", 1], fee: 0, mg: "pan", ms: 0 },
+  food_v: { sk: "cook", lv: 30, at: "fire", in: [["fish_v", 1]], out: ["food_v", 1], fee: 0, mg: "pan", ms: 0 },
+  food_l: { sk: "cook", lv: 40, at: "fire", in: [["fish_l", 1]], out: ["food_l", 1], fee: 0, mg: "pan", ms: 0 },
+};
+for (const id of Object.keys(RECIPES)) ITEMS[RECIPES[id].in[0][0]].recipe = id;
+/** Cooking (B.5): burnt below burnt[0] − burnt[1]·d (never below burnt[2]); two portions at `two` or on a 대성공. */
+const COOKING = { burnt: [35, 0.4, 10], two: 85 };
+
+// ── fields the later phases fill (the sheet carries them from L1 on, so they never bump it again)
+/** The solo 알바 board's templates (L2). Empty until then: no saved `jobBoard` entry survives `migrate`. */
+const JB = {};
+/** The co-op part-time jobs (C1–C3), by the building they run in. */
+const COOP_KINDS = ["apt", "diner", "forge", "alch"];
+/** The 재료 주머니 holds materials (and, from L2, staples and flasks) up to this many of each. */
+const POUCH_MAX = 999;
 // ───────────────────────────── helpers ─────────────────────────────
 
 /** Small seeded generator; `box.seed` is advanced in place. */
@@ -3649,7 +3736,10 @@ const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
 /** Little idle acts an NPC can play out (public/iso_interior.js npcPose). */
 const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
 /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
-const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job"];
+const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job",
+  // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
+  // alchemist, 포포 the 알바 broker — until L2 they only talk ("곧 문을 엽니다", public/npctalk.js)
+  "cook", "craft", "alch", "jobs"];
 const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
@@ -3700,6 +3790,8 @@ function fromEditor(d, id) {
   m.band = Array.isArray(d.band) && d.band.length === 2 ? [clamp(d.band[0] | 0, 1, TIER_MAX), clamp(d.band[1] | 0, 1, TIER_MAX)] : null;
   if (!m.band) delete m.band;
   m.nofish = d.fishing === false;
+  // the grade of its fish and materials (life skills), else by its level band (58-life.js gradeOfMap)
+  if (Number.isInteger(d.grade) && d.grade >= 1 && d.grade <= 5) m.grade = d.grade;
   m.pieces = [];
   m.entry = Array.isArray(d.entry) && xyOk(m, d.entry[0], d.entry[1]) ? [d.entry[0], d.entry[1]] : [m.w >> 1, m.h >> 1];
   m.big = Array.isArray(d.big)
@@ -4005,7 +4097,7 @@ const LOOK_COST = 500;
 export function newChar(name, look, oldLook) {
   const lk = Array.isArray(look) ? look : Array.isArray(oldLook) ? oldLook : [];
   return {
-    v: 11, name, job: "adventurer",
+    v: 12, name, job: "adventurer",
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -4023,6 +4115,8 @@ export function newChar(name, look, oldLook) {
     qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
     // the bag's size and a house of one's own (v10: 46-bag.js, 64-housing.js)
     bagCap: INV_BASE, house: homeEmpty(),
+    // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
+    ...lifeFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
   };
 }
@@ -4119,7 +4213,10 @@ function migrate(ch) {
   // ──
   // jobs and stats (v11): four-class sheets were turned into heroes at the top (migrateV10), every sheet's
   // stats, mastery and job cleaned there too (cleanJobs) — before the counters and the bar above read them
-  ch.v = Math.max(ch.v | 0, 11);
+  // life skills (v12): an older sheet's 낚시/요리 start from its fish and cook counters (cap Lv 20); the 알바
+  // board, trust, co-op days and the 재료 주머니 are cleaned (58-life.js)
+  lifeSheetClean(ch);
+  ch.v = Math.max(ch.v | 0, 12);
   return ch;
 }
 
@@ -6177,6 +6274,182 @@ function castSkill(S, p, i) {
   }
 }
 
+// ───────────────────────────── life skills: the engine (docs/design/life-and-coop.md B) ─────────────────────────────
+// Levels and experience (`gainLife`), the one bonus formula (`lifeOdds`/`lifeRoll`/`lifeTime`), grades of maps
+// and levels, what a reeled fish and a cooked fish turn into (`fishLand`, `cookDish`, called from 75 reel/cook),
+// the sheet's life fields cleaned (`lifeSheetClean`, called from migrate) and the wire (`lifeView`, `lifeDefs`).
+// Tables live in 12-life-tables.js.
+
+/** A fresh sheet's six skills. */
+const lifeEmpty = () => Object.fromEntries(LIFE.map((k) => [k, { lv: 1, xp: 0 }]));
+/** The highest grade a life level handles (1..5). */
+function lifeGrade(L) {
+  let g = 0;
+  for (const lv of GRADE_LV) if (L >= lv) g++;
+  return Math.max(1, g);
+}
+/** The grade of a map: its own `grade` (editor maps), else by the first tier of its level band; 1 without one. */
+function gradeOfMap(m) {
+  if (m && Number.isInteger(m.grade) && m.grade >= 1 && m.grade <= 5) return m.grade;
+  const band = m && (m.band || (m.id && Object.hasOwn(MAP_META, m.id) && MAP_META[m.id].band));
+  if (!band) return 1;
+  let g = 0;
+  for (const t of GRADE_TIER) if (band[0] >= t) g++;
+  return Math.max(1, g);
+}
+/** A map's grade by id without building a hunting ground (editor and town maps are built at load). */
+const mapGradeOf = (id) => (MAP_META[id].eager ? gradeOfMap(mapOf(id)) : gradeOfMap({ band: MAP_META[id].band }));
+
+const r1L = (v) => Math.round(v * 10) / 10;
+/**
+ * [success %, 대성공 %] at life level L for work unlocked at `unlockLv`, with a mini-game score `s` (50 = no
+ * shift) and `extra` %p on the 대성공 (a timing tap). B.2: d = max(0, L − unlockLv).
+ */
+function lifeOdds(L, unlockLv, s = 50, extra = 0) {
+  const d = Math.max(0, L - unlockLv), sh = (clamp(s, 0, 100) - 50) * LIFE_ROLL.score;
+  const ok = Math.min(LIFE_ROLL.ok[2], LIFE_ROLL.ok[0] + LIFE_ROLL.ok[1] * d);
+  const great = Math.min(LIFE_ROLL.great[2], LIFE_ROLL.great[0] + LIFE_ROLL.great[1] * d);
+  return [r1L(clamp(ok + sh, 0, 100)), r1L(clamp(great + sh + extra, 0, 100))];
+}
+/** One roll of both: { ok, great } (a 대성공 is always a success). */
+function lifeRoll(S, L, unlockLv, s = 50, extra = 0) {
+  const [ok, great] = lifeOdds(L, unlockLv, s, extra);
+  const g = rnd(S) * 100 < great;
+  return { ok: g || rnd(S) * 100 < ok, great: g };
+}
+/** The time factor for channels, bite waits and minimum craft times: −0.8 % a level (×0.6 at 50). */
+const lifeTime = (L) => 1 - LIFE_ROLL.time * clamp(L, 1, LIFE_MAX);
+/** Experience for work unlocked at `unlockLv`, stale work (20+ levels below) at a quarter; at least 1. */
+const lifeXp = (L, unlockLv, base) => Math.max(1, Math.round(L - unlockLv >= LIFE_STALE_D ? base * LIFE_STALE : base));
+
+/**
+ * Add `n` experience to one skill's { lv, xp }, levelling up as often as it reaches; never past `cap`
+ * (migration caps at 20). Returns the levels reached. Pure: `migrate` uses it on a sheet without a player.
+ */
+function lifeAdd(e, n, cap = LIFE_MAX) {
+  const ups = [];
+  if (e.lv >= LIFE_MAX) { e.xp = 0; return ups; }
+  e.xp += Math.max(0, Math.floor(n));
+  while (e.lv < cap && e.xp >= lifeNeed(e.lv)) { e.xp -= lifeNeed(e.lv); e.lv++; ups.push(e.lv); }
+  e.xp = e.lv >= LIFE_MAX ? 0 : Math.min(e.xp, lifeNeed(e.lv) - 1);
+  return ups;
+}
+/** A player gains life experience in skill `k`: each level reached is an event ["lv2", eid, skill index, lv] and a toast. */
+function gainLife(S, p, k, n) {
+  const i = LIFE.indexOf(k), e = p.ch.life[k];
+  if (i < 0 || !e || !(n > 0)) return 0;
+  const ups = lifeAdd(e, n);
+  for (const lv of ups) {
+    S.maps[p.map].ev.push(["lv2", p.eid, i, lv]);
+    toast(p, lv >= LIFE_MAX ? `[${LIFE_NAME[i]}] 레벨 ${lv}! 명장의 경지에 올랐습니다.`
+      : LIFE_UNLOCK[lv] ? `[${LIFE_NAME[i]}] 레벨 ${lv}! ${LIFE_UNLOCK[lv]} 재료를 다룰 수 있습니다.` : `[${LIFE_NAME[i]}] 레벨 ${lv}!`);
+  }
+  p.dirty = true;
+  return ups.length;
+}
+
+// ── fishing and cooking (B.5)
+
+/** The fight score below which a fish gets away, at this angler's level (30 at 1, 15 at 50). */
+const fishKeep = (ch) => FISHING.keep[0] - FISHING.keep[1] * ch.life.fish.lv;
+/** How long until a bite (ms), before the weather. */
+const fishWait = (S, ch) => (FISHING.wait[0] + rnd(S) * FISHING.wait[1]) * lifeTime(ch.life.fish.lv);
+/**
+ * What a well-enough played fish turns into: candidates are the fish of grade ≤ min(the map's grade, the
+ * angler's grade); 황금 잉어 has its own roll everywhere; then the top candidate, the next one down, a stone,
+ * else the lowest. 대성공 lands two. Gives the experience. Returns { id, n, great }.
+ */
+function fishLand(S, p, score) {
+  const ch = p.ch, L = ch.life.fish.lv, k = score / 100;
+  const cap = Math.min(gradeOfMap(mapOfS(S, p.map)), lifeGrade(L));
+  const carp = FISHING.carp[0] + FISHING.carp[1] * k * k + FISHING.carp[2] * L;
+  const top = cap >= 2 ? FISHING.top[0] + FISHING.top[1] * k : 0, next = cap >= 3 ? FISHING.next : 0;
+  let r = rnd(S);
+  const id = (r -= carp) < 0 ? "fish_l" : (r -= top) < 0 ? FISH_G[cap - 1] : (r -= next) < 0 ? FISH_G[cap - 2] : (r -= FISHING.stone) < 0 ? "stone" : FISH_G[0];
+  const g = ITEMS[id].grade || 1, unlock = GRADE_LV[g - 1];
+  const great = id !== "stone" && rnd(S) * 100 < lifeOdds(L, unlock, score)[1];
+  const n = great && canAdd(ch, id, 2) ? 2 : 1;
+  gainLife(S, p, "fish", lifeXp(L, unlock, RXP[g - 1] * (0.5 + score / 100) * (great ? 1.5 : 1)));
+  return { id, n, great: n === 2 };
+}
+/** The recipe a fish is cooked by, or null. */
+const fishRecipe = (id) => (Object.hasOwn(ITEMS, id) && ITEMS[id].recipe && RECIPES[ITEMS[id].recipe]) || null;
+/** The score below which the pan burns, for this cook and recipe (35 at d = 0, −0.4 a level above it, never below 10). */
+const cookBurnt = (L, r) => Math.max(COOKING.burnt[2], COOKING.burnt[0] - COOKING.burnt[1] * Math.max(0, L - r.lv));
+/**
+ * A recipe cooked with a pan score `s` (0–100): burnt below the threshold (no experience), else the dish,
+ * two portions at a near-perfect pan or on a 대성공 roll. Gives the experience. Returns { id, n, great, burnt }.
+ */
+function cookDish(S, p, r, s) {
+  const L = p.ch.life.cook.lv;
+  if (s < cookBurnt(L, r)) return { id: "burnt", n: 1, great: false, burnt: true };
+  const great = rnd(S) * 100 < lifeOdds(L, r.lv, s)[1];
+  gainLife(S, p, "cook", lifeXp(L, r.lv, RXP[lifeGrade(r.lv) - 1] * (great ? 1.5 : 1)));
+  return { id: r.out[0], n: r.out[1] * (great || s >= COOKING.two ? 2 : 1), great, burnt: false };
+}
+
+// ── the sheet (D): life, jobBoard, rep, coopDay, coopDone, pouch — cleaned by migrate, never trusted
+
+/** One skill table cleaned: every key, lv 1..50, 0 ≤ xp < lifeNeed(lv) (0 at 50); unknown keys dropped. */
+function lifeClean(v) {
+  const o = isObj(v) ? v : {}, out = {};
+  for (const k of LIFE) {
+    const e = isObj(o[k]) ? o[k] : {};
+    const lv = clamp(Number.isInteger(e.lv) ? e.lv : 1, 1, LIFE_MAX);
+    out[k] = { lv, xp: lv >= LIFE_MAX ? 0 : clamp(Math.floor(num(e.xp) ? e.xp : 0), 0, lifeNeed(lv) - 1) };
+  }
+  return out;
+}
+/** May the 재료 주머니 hold this item? Materials, and (from L2) staples and flasks. */
+const pouchOk = (id) => Object.hasOwn(ITEMS, id) && (ITEMS[id].type === "lmat" || id === "staple" || id === "flask");
+/**
+ * Bring the life fields of a sheet up to date (idempotent). A sheet from before life skills gets them from
+ * its counters: 낚시 8 XP a fish caught, 요리 10 XP a dish cooked, neither past Lv 20. Reads ch.fish and the
+ * cleaned ch.cnt, so migrate calls it after those.
+ */
+function lifeSheetClean(ch) {
+  if (isObj(ch.life)) ch.life = lifeClean(ch.life);
+  else {
+    const l = lifeEmpty();
+    lifeAdd(l.fish, (ch.fish | 0) * 8, 20);
+    lifeAdd(l.cook, (ch.cnt.cook | 0) * 10, 20);
+    ch.life = l;
+  }
+  const jb = isObj(ch.jobBoard) ? ch.jobBoard : {};
+  const done = Array.isArray(jb.done) ? [...new Set(jb.done.filter((id) => typeof id === "string" && Object.hasOwn(JB, id)))].slice(0, 3) : [];
+  const a = isObj(jb.active) ? jb.active : null;
+  const active = a && typeof a.id === "string" && Object.hasOwn(JB, a.id) && typeof a.npc === "string" && Object.hasOwn(NPC_MAP, a.npc)
+    // a parcel is never saved: a delivery loaded mid-way goes back to "pick it up"
+    ? (JB[a.id].kind === "deliver" ? { id: a.id, npc: a.npc, prog: 0, expAt: 0 } : { id: a.id, npc: a.npc, prog: Math.max(0, a.prog | 0), expAt: Math.max(0, num(a.expAt) ? Math.floor(a.expAt) : 0) })
+    : null;
+  ch.jobBoard = { day: Math.max(0, jb.day | 0), done, active };
+  const rep = {};
+  if (isObj(ch.rep)) for (const id of Object.keys(ch.rep)) { const n = clamp(ch.rep[id] | 0, 0, 100); if (n > 0 && Object.hasOwn(NPC_MAP, id)) rep[id] = n; }
+  ch.rep = rep;
+  ch.coopDay = Math.max(0, ch.coopDay | 0);
+  ch.coopDone = Array.isArray(ch.coopDone) ? [...new Set(ch.coopDone.filter((k) => COOP_KINDS.includes(k)))].slice(0, COOP_KINDS.length) : [];
+  const pouch = {};
+  if (isObj(ch.pouch)) for (const id of Object.keys(ch.pouch)) { const n = clamp(ch.pouch[id] | 0, 0, POUCH_MAX); if (n > 0 && pouchOk(id)) pouch[id] = n; }
+  ch.pouch = pouch;
+}
+/** A fresh sheet's life fields. */
+const lifeFresh = () => ({ life: lifeEmpty(), jobBoard: { day: 0, done: [], active: null }, rep: {}, coopDay: 0, coopDone: [], pouch: {} });
+
+// ── the wire (B.12)
+
+/** self.life: [lv, xp, need (0 at the cap)] per skill, in LIFE order. */
+const lifeView = (ch) => LIFE.map((k) => [ch.life[k].lv, ch.life[k].xp, ch.life[k].lv >= LIFE_MAX ? 0 : lifeNeed(ch.life[k].lv)]);
+/** defs().life: the names, the curve, grades, the bonus formula, fish and recipes, each map's grade. */
+function lifeDefs() {
+  return {
+    keys: LIFE, names: LIFE_NAME, max: LIFE_MAX, need: Array.from({ length: LIFE_MAX }, (_, i) => lifeNeed(i + 1)),
+    grades: GRADE_LV, gradeName: GRADE_NAME, rxp: RXP, stale: [LIFE_STALE_D, LIFE_STALE], roll: LIFE_ROLL, unlock: LIFE_UNLOCK,
+    fish: FISH_G, fishing: { keep: FISHING.keep }, cooking: COOKING,
+    recipes: Object.keys(RECIPES).map((id) => ({ id, ...RECIPES[id] })),
+    mats: Object.keys(ITEMS).filter((id) => ITEMS[id].type === "lmat"),
+    mapGrade: Object.fromEntries(Object.keys(MAP_META).map((id) => [id, mapGradeOf(id)])),
+  };
+}
 // ───────────────────────────── content: the long game ─────────────────────────────
 // What keeps a character coming back, each after a live game that does it well:
 // waypoints (Diablo II), a return scroll (Baram, Lineage), daily tasks (Lost Ark),
@@ -8200,11 +8473,11 @@ export function validateAction(S, pid, a) {
     case "hook": return p.fish && p.fish.bite && !p.fish.hook ? OK : bad("아직 입질이 없습니다");
     case "reel": return p.fish ? OK : bad("낚시 중이 아닙니다");
     case "cook": {
-      const it = ITEMS[a.id];
-      if (!it || it.type !== "fish") return bad("요리할 수 없는 아이템");
+      const r = typeof a.id === "string" ? fishRecipe(a.id) : null;
+      if (!r || ITEMS[a.id].type !== "fish") return bad("요리할 수 없는 아이템");
       if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
       if (!fireNear(S.maps[p.map], p)) return bad("모닥불 곁에서만 요리할 수 있습니다");
-      if (!canAdd(ch, it.cook, 2) || !canAdd(ch, "burnt", 1)) return bad("가방이 가득 찼습니다");
+      if (!canAdd(ch, r.out[0], r.out[1] * 2) || !canAdd(ch, "burnt", 1)) return bad("가방이 가득 찼습니다");
       return OK;
     }
     case "salv": {
@@ -8520,7 +8793,8 @@ export function applyAction(S, pid, a) {
     case "fish": {
       rouse(S, p);
       const [wx, wy] = waterNear(m, p);
-      p.fish = { at: now + (2500 + rnd(S) * 4500) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
+      // a practised angler gets bites sooner (life skills: −0.8 % a 낚시 level)
+      p.fish = { at: now + fishWait(S, ch) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
       p.dir = dirOf(wx - p.x, wy - p.y);
       S.maps[p.map].ev.push(["f", p.eid, 1, wx, wy]);
       break;
@@ -8539,12 +8813,13 @@ export function applyAction(S, pid, a) {
       // a fight that ended implausibly fast counts for little
       let score = hook ? clamp(a.s | 0, 0, 100) : 30;
       if (hook && now - hook < 2500) score = Math.min(score, 40);
-      if (score < 30) { toast(p, "물고기가 줄을 끊고 달아났습니다."); break; }
-      const k = score / 100, r = rnd(S);
-      const gold = 0.01 + 0.07 * k * k, trout = 0.1 + 0.3 * k;
-      const id = r < gold ? "fish_l" : r < gold + trout ? "fish_m" : r < gold + trout + 0.04 ? "stone" : "fish_s";
+      if (score < fishKeep(ch)) { toast(p, "물고기가 줄을 끊고 달아났습니다."); break; }
+      // what bites depends on the water's grade and the angler's 낚시 level; 대성공 lands two (58-life.js)
+      const { id, n, great } = fishLand(S, p, score);
       if (score >= 95) toast(p, "완벽한 낚시!");
-      if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, id === "fish_l" ? 3 : id === "fish_m" ? 1 : 0]);
+      if (great) toast(p, `대성공! ${ITEMS[id].name} ${n}마리`);
+      const g = ITEMS[id].grade | 0;
+      if (addItem(ch, id, n)) p.gain.push(["item", id, n, id === "fish_l" ? 3 : g >= 3 ? 2 : g === 2 ? 1 : 0]);
       ch.fish++;
       if (id === "fish_l") { sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`); ch.cnt.carp++; }
       if (id.startsWith("fish")) dailyProg(S, p, "fish");
@@ -8553,15 +8828,17 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "cook": {
-      const it = ITEMS[a.id];
+      // the fish's recipe (12-life-tables.js RECIPES; L2's `craft` takes the same path)
+      const r = fishRecipe(a.id);
       takeItem(ch, a.id, 1);
-      // how neatly the pan was packed (0–100): a mess burns, a perfect fit feeds two
+      // how neatly the pan was packed (0–100): a mess burns (less often for a practised cook), a perfect
+      // fit or a 대성공 feeds two (58-life.js cookDish)
       const score = clamp(a.s | 0, 0, 100);
-      const out = score < 35 ? "burnt" : it.cook, n = score >= 85 ? 2 : 1;
+      const { id: out, n, great, burnt } = cookDish(S, p, r, score);
       addItem(ch, out, n);
       p.gain.push(["item", out, n, 0]);
-      toast(p, score < 35 ? "태워 버렸습니다…" : score >= 85 ? `완벽한 요리! ${ITEMS[out].name} 2개` : `${ITEMS[out].name} 완성`);
-      if (score >= 35) { ch.cnt.cook++; dailyProg(S, p, "cook"); checkAch(S, p); }
+      toast(p, burnt ? "태워 버렸습니다…" : n > 1 ? `${great ? "대성공" : "완벽한 요리"}! ${ITEMS[out].name} ${n}개` : `${ITEMS[out].name} 완성`);
+      if (!burnt) { ch.cnt.cook++; dailyProg(S, p, "cook"); checkAch(S, p); }
       S.maps[p.map].ev.push(["u", p.eid, 0]);
       p.dirty = true;
       break;
@@ -9430,6 +9707,8 @@ function selfPayload(p) {
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.job, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
     // the bag's size (46-bag.js) and the house (64-housing.js homeSelf)
     bagCap: bagCap(ch), house: homeSelf(p),
+    // life skills (58-life.js): [lv, xp, need] per skill in LIFE order
+    life: lifeView(ch),
   };
 }
 
@@ -9565,6 +9844,8 @@ export function defs() {
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
+    // life skills: names, curve, grades, the bonus formula, fish, recipes, each map's grade (58-life.js)
+    life: lifeDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), mobs: MAP_META[id].kinds.slice(),
       // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
       theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id] })),

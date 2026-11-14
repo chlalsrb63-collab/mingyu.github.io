@@ -396,7 +396,7 @@ const dimIds = (S) => Object.keys(S.dims);
   // a character saved inside wakes in town; the old sheet (v8) gains a rift record
   const old = L.newChar("옛날", "mage", []); delete old.dim; old.v = 8;
   L.addPlayer(S, "old", old);
-  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0 }); assert.equal(S.players.old.ch.v, 11);
+  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0 }); assert.equal(S.players.old.ch.v, 12);
   const odd = L.newChar("이상", "mage", []); odd.dim = { day: "x", n: -5 };
   L.addPlayer(S, "odd", odd);
   assert.deepEqual(S.players.odd.ch.dim, { day: 0, n: 0 });

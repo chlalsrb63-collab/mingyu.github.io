@@ -30,7 +30,7 @@ const LOOK_COST = 500;
 export function newChar(name, look, oldLook) {
   const lk = Array.isArray(look) ? look : Array.isArray(oldLook) ? oldLook : [];
   return {
-    v: 11, name, job: "adventurer",
+    v: 12, name, job: "adventurer",
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -48,6 +48,8 @@ export function newChar(name, look, oldLook) {
     qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
     // the bag's size and a house of one's own (v10: 46-bag.js, 64-housing.js)
     bagCap: INV_BASE, house: homeEmpty(),
+    // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
+    ...lifeFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
   };
 }
@@ -144,7 +146,10 @@ function migrate(ch) {
   // ──
   // jobs and stats (v11): four-class sheets were turned into heroes at the top (migrateV10), every sheet's
   // stats, mastery and job cleaned there too (cleanJobs) — before the counters and the bar above read them
-  ch.v = Math.max(ch.v | 0, 11);
+  // life skills (v12): an older sheet's 낚시/요리 start from its fish and cook counters (cap Lv 20); the 알바
+  // board, trust, co-op days and the 재료 주머니 are cleaned (58-life.js)
+  lifeSheetClean(ch);
+  ch.v = Math.max(ch.v | 0, 12);
   return ch;
 }
 

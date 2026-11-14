@@ -498,9 +498,9 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   const ch = W.S.players[W.PID].ch;
   assert.deepEqual(ch.wp, { town: 1, meadow: 1, forest: 1 }, "each map it had keeps its first stone");
   assert.deepEqual(ch.dim, { day: 0, n: 0 });
-  assert.equal(ch.v, 11);
+  assert.equal(ch.v, 12);
   assert.deepEqual(W.step().self.wp, { town: 1, meadow: 1, forest: 1 }, "the wire carries the masks");
-  assert.equal(L.newChar("새판", "warrior", []).v, 11);
+  assert.equal(L.newChar("새판", "warrior", []).v, 12);
   assert.deepEqual(L.newChar("새판", "warrior", []).wp, { town: 1 });
   const odd = L.newChar("이상", "lancer", []);
   odd.wp = { meadow: 5, nowhere: 1, forest: 0, cave: "x", maple: 1 << 12 }; odd.dim = { day: -4, n: 1e6 };
@@ -524,7 +524,7 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   for (const cls of Object.keys(SH)) for (const L0 of [1, 19, 20, 35, 50]) {
     const ch = join(oldSheet("이주" + n, cls, L0, { xp: 123, gold: 1000, st: { elite: 7, carp: 1 }, qs: [["s", 0], ["i", "hp_s"], null, null, null, null, null, null, null] }));
     const tag = `${cls} L${L0}`;
-    assert.equal(ch.v, 11, tag);
+    assert.equal(ch.v, 12, tag);
     assert.equal(ch.lvl, Math.min(197, 4 * L0 - 3), tag + ": level 4L−3");
     assert.equal(ST.reduce((s, k) => s + ch.st[k] - 5, 0), ch.lvl - 1, tag + ": a level is a point");
     assert.equal(ch.job, L0 >= 20 ? SH[cls][1] : "adventurer", tag + ": the class's job from old level 20");
@@ -581,9 +581,67 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   const h10 = oldSheet("집주인", "rogue", 30, { v: 10, bagCap: 60, house: { tier: 1, storage: [{ id: "hp_m", n: 7 }] } });
   h10.inv = Array.from({ length: 50 }, () => ({ id: "h_1", q: 0, enh: 0, af: [], sk: 0, ru: [] }));
   const hj = join(h10);
-  assert.equal(hj.v, 11); assert.equal(hj.job, "thief"); assert.equal(hj.lvl, 117); assert.equal(hj.wm.dagger.lv, 30);
+  assert.equal(hj.v, 12); assert.equal(hj.job, "thief"); assert.equal(hj.lvl, 117); assert.equal(hj.wm.dagger.lv, 30);
   assert.equal(hj.bagCap, 60); assert.equal(hj.inv.length, 50, "nothing in the bigger bag is lost");
   assert.equal(hj.house.tier, 1); assert.deepEqual(hj.house.storage.map((s) => s.id), ["hp_m"]);
+}
+
+// ── life skills (v12): an older sheet's 낚시/요리 start from its counters (8 XP a fish, 10 a dish, at most Lv 20);
+// the 알바 board, trust, co-op days and the 재료 주머니 come up empty; a v12 sheet is cleaned, never trusted
+{
+  const W = world("생활");
+  L.addPlayer(W.S, W.PID, L.newChar("생활", []));
+  let n = 0;
+  const join = (ch) => { const pid = "pid-life" + n++; L.addPlayer(W.S, pid, ch); return W.S.players[pid].ch; };
+  const bare = (ch) => { for (const k of ["life", "jobBoard", "rep", "coopDay", "coopDone", "pouch"]) delete ch[k]; return ch; };
+  const need = D.life.need;
+  // the level and leftover experience `xp` buys from Lv 1, never past `cap`
+  const lvFor = (xp, cap = 20) => { let lv = 1; while (lv < cap && xp >= need[lv - 1]) { xp -= need[lv - 1]; lv++; } return { lv, xp: lv >= cap ? Math.min(xp, need[lv - 1] - 1) : xp }; };
+  const fresh = { day: 0, done: [], active: null };
+  // a four-class sheet (v9, counters still in `st`), a housing sheet (v10) and a jobs sheet (v11)
+  const v9 = join(bare(oldSheet("구판낚시", "rogue", 12, { fish: 50, st: { elite: 1, cook: 30 } })));
+  const v10 = join(bare(oldSheet("집낚시", "mage", 20, { v: 10, fish: 3, st: { cook: 0 }, bagCap: 60 })));
+  const s11 = bare(L.newChar("직업낚시", []));
+  Object.assign(s11, { v: 11, fish: 100000, cnt: { ...s11.cnt, cook: 7 } });
+  const v11 = join(s11);
+  for (const [ch, fish, cook, tag] of [[v9, 50, 30, "v9"], [v10, 3, 0, "v10"], [v11, 100000, 7, "v11"]]) {
+    assert.equal(ch.v, 12, tag);
+    assert.deepEqual(ch.life.fish, lvFor(fish * 8), tag + ": 낚시 from the fish caught");
+    assert.deepEqual(ch.life.cook, lvFor(cook * 10), tag + ": 요리 from the dishes cooked");
+    for (const k of ["gather", "craft", "alch", "deliver"]) assert.deepEqual(ch.life[k], { lv: 1, xp: 0 }, tag + " " + k);
+    assert.deepEqual([ch.jobBoard, ch.rep, ch.coopDay, ch.coopDone, ch.pouch], [fresh, {}, 0, [], {}], tag + ": the rest starts empty");
+  }
+  assert.deepEqual(v9.life.fish, { lv: 4, xp: 140 }, "400 XP: 50 + 80 + 130 spent, 140 toward Lv 5");
+  assert.deepEqual(v11.life.fish, { lv: 20, xp: need[19] - 1 }, "a lifetime of fishing stops at Lv 20");
+  assert.equal(v10.bagCap, 60, "the v10 fields stay");
+  // a new character starts every skill at Lv 1
+  const nc = L.newChar("새내기낚시", []);
+  assert.deepEqual(Object.keys(nc.life), D.life.keys);
+  assert.ok(D.life.keys.every((k) => nc.life[k].lv === 1 && nc.life[k].xp === 0));
+  assert.deepEqual([nc.jobBoard, nc.rep, nc.coopDay, nc.coopDone, nc.pouch], [fresh, {}, 0, [], {}]);
+  // a messy v12 sheet: levels and experience clamped, unknown skills, NPCs, jobs, co-op kinds and items dropped
+  const messy = L.newChar("엉망낚시", []);
+  Object.assign(messy, {
+    life: { fish: { lv: 99, xp: 5 }, cook: { lv: 10, xp: 1e9 }, gather: { lv: -3, xp: -5 }, craft: "x", sorcery: { lv: 5, xp: 0 } },
+    jobBoard: { day: -2, done: ["nope", 5, "nope"], active: { id: "nope", npc: "x", prog: 1, expAt: 9 } },
+    rep: { nope: 50, mocha: 0 }, coopDay: -9, coopDone: ["apt", "apt", "diner", "bowling"],
+    pouch: { m_h1: 1500, m_o3: 2.7, hp_s: 5, nope: 3, m_w2: 0, m_w5: -1 },
+  });
+  const mc = join(messy);
+  assert.deepEqual(mc.life.fish, { lv: 50, xp: 0 }); assert.deepEqual(mc.life.cook, { lv: 10, xp: need[9] - 1 });
+  assert.deepEqual(mc.life.gather, { lv: 1, xp: 0 }); assert.deepEqual(mc.life.craft, { lv: 1, xp: 0 });
+  assert.ok(!("sorcery" in mc.life));
+  assert.deepEqual(mc.jobBoard, fresh); assert.deepEqual(mc.rep, {}); assert.equal(mc.coopDay, 0);
+  assert.deepEqual(mc.coopDone, ["apt", "diner"]);
+  assert.deepEqual(mc.pouch, { m_h1: 999, m_o3: 2 }, "only materials, 1..999 of each");
+  // migrating twice changes nothing
+  const twice = join(JSON.parse(JSON.stringify(v9)));
+  const strip = (c) => { const o = JSON.parse(JSON.stringify(c)); delete o.hp; delete o.mp; return o; };
+  assert.deepEqual(strip(twice), strip(v9), "idempotent");
+  // the wire: [lv, xp, need] per skill
+  const sv = W.self();
+  assert.equal(sv.life.length, 6);
+  assert.deepEqual(sv.life[0], [1, 0, 50]);
 }
 
 console.log("content ok — waypoints", D.waypoints.length, "achievements", D.achievements.length, "event every", D.event.every / 60000, "min");

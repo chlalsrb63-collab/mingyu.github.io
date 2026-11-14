@@ -431,7 +431,7 @@ for (const cls of Object.keys(WK)) {
   old.pet = "pet_wisp";                                      // claims a pet it does not own
   L.addPlayer(S, "pid-old", old);
   const ch = S.players["pid-old"].ch;
-  assert.equal(ch.v, 11);
+  assert.equal(ch.v, 12);
   assert.ok(!("skl" in ch) && !("tr" in ch) && !("cls" in ch));
   assert.equal(ch.lvl, 45); assert.equal(ch.wm.staff.lv, 12); assert.equal(ch.job, "adventurer");
   assert.deepEqual(ch.wh, { items: [], gold: 0 });

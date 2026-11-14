@@ -71,7 +71,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 // ═════════ the sheet ═════════
 {
   const ch = L.newChar("새싹", [1, 2]);
-  assert.equal(ch.v, 11); assert.equal(ch.job, "adventurer"); assert.equal(ch.lvl, 1); assert.equal(ch.xp, 0); assert.equal(ch.xpt, 0);
+  assert.equal(ch.v, 12); assert.equal(ch.job, "adventurer"); assert.equal(ch.lvl, 1); assert.equal(ch.xp, 0); assert.equal(ch.xpt, 0);
   assert.deepEqual(ch.st, { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 });
   assert.deepEqual(Object.keys(ch.wm), ["sword", "dagger", "spear", "staff", "book", "bow"]);
   assert.ok(Object.values(ch.wm).every((r) => r.lv === 1 && r.xp === 0));

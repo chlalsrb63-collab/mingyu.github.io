@@ -50,6 +50,8 @@ function selfPayload(p) {
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.job, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
     // the bag's size (46-bag.js) and the house (64-housing.js homeSelf)
     bagCap: bagCap(ch), house: homeSelf(p),
+    // life skills (58-life.js): [lv, xp, need] per skill in LIFE order
+    life: lifeView(ch),
   };
 }
 
@@ -185,6 +187,8 @@ export function defs() {
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
+    // life skills: names, curve, grades, the bonus formula, fish, recipes, each map's grade (58-life.js)
+    life: lifeDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), mobs: MAP_META[id].kinds.slice(),
       // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
       theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id] })),

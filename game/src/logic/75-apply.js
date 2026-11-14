@@ -240,7 +240,8 @@ export function applyAction(S, pid, a) {
     case "fish": {
       rouse(S, p);
       const [wx, wy] = waterNear(m, p);
-      p.fish = { at: now + (2500 + rnd(S) * 4500) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
+      // a practised angler gets bites sooner (life skills: −0.8 % a 낚시 level)
+      p.fish = { at: now + fishWait(S, ch) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
       p.dir = dirOf(wx - p.x, wy - p.y);
       S.maps[p.map].ev.push(["f", p.eid, 1, wx, wy]);
       break;
@@ -259,12 +260,13 @@ export function applyAction(S, pid, a) {
       // a fight that ended implausibly fast counts for little
       let score = hook ? clamp(a.s | 0, 0, 100) : 30;
       if (hook && now - hook < 2500) score = Math.min(score, 40);
-      if (score < 30) { toast(p, "물고기가 줄을 끊고 달아났습니다."); break; }
-      const k = score / 100, r = rnd(S);
-      const gold = 0.01 + 0.07 * k * k, trout = 0.1 + 0.3 * k;
-      const id = r < gold ? "fish_l" : r < gold + trout ? "fish_m" : r < gold + trout + 0.04 ? "stone" : "fish_s";
+      if (score < fishKeep(ch)) { toast(p, "물고기가 줄을 끊고 달아났습니다."); break; }
+      // what bites depends on the water's grade and the angler's 낚시 level; 대성공 lands two (58-life.js)
+      const { id, n, great } = fishLand(S, p, score);
       if (score >= 95) toast(p, "완벽한 낚시!");
-      if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, id === "fish_l" ? 3 : id === "fish_m" ? 1 : 0]);
+      if (great) toast(p, `대성공! ${ITEMS[id].name} ${n}마리`);
+      const g = ITEMS[id].grade | 0;
+      if (addItem(ch, id, n)) p.gain.push(["item", id, n, id === "fish_l" ? 3 : g >= 3 ? 2 : g === 2 ? 1 : 0]);
       ch.fish++;
       if (id === "fish_l") { sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`); ch.cnt.carp++; }
       if (id.startsWith("fish")) dailyProg(S, p, "fish");
@@ -273,15 +275,17 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "cook": {
-      const it = ITEMS[a.id];
+      // the fish's recipe (12-life-tables.js RECIPES; L2's `craft` takes the same path)
+      const r = fishRecipe(a.id);
       takeItem(ch, a.id, 1);
-      // how neatly the pan was packed (0–100): a mess burns, a perfect fit feeds two
+      // how neatly the pan was packed (0–100): a mess burns (less often for a practised cook), a perfect
+      // fit or a 대성공 feeds two (58-life.js cookDish)
       const score = clamp(a.s | 0, 0, 100);
-      const out = score < 35 ? "burnt" : it.cook, n = score >= 85 ? 2 : 1;
+      const { id: out, n, great, burnt } = cookDish(S, p, r, score);
       addItem(ch, out, n);
       p.gain.push(["item", out, n, 0]);
-      toast(p, score < 35 ? "태워 버렸습니다…" : score >= 85 ? `완벽한 요리! ${ITEMS[out].name} 2개` : `${ITEMS[out].name} 완성`);
-      if (score >= 35) { ch.cnt.cook++; dailyProg(S, p, "cook"); checkAch(S, p); }
+      toast(p, burnt ? "태워 버렸습니다…" : n > 1 ? `${great ? "대성공" : "완벽한 요리"}! ${ITEMS[out].name} ${n}개` : `${ITEMS[out].name} 완성`);
+      if (!burnt) { ch.cnt.cook++; dailyProg(S, p, "cook"); checkAch(S, p); }
       S.maps[p.map].ev.push(["u", p.eid, 0]);
       p.dirty = true;
       break;

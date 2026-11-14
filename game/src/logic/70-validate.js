@@ -321,11 +321,11 @@ export function validateAction(S, pid, a) {
     case "hook": return p.fish && p.fish.bite && !p.fish.hook ? OK : bad("아직 입질이 없습니다");
     case "reel": return p.fish ? OK : bad("낚시 중이 아닙니다");
     case "cook": {
-      const it = ITEMS[a.id];
-      if (!it || it.type !== "fish") return bad("요리할 수 없는 아이템");
+      const r = typeof a.id === "string" ? fishRecipe(a.id) : null;
+      if (!r || ITEMS[a.id].type !== "fish") return bad("요리할 수 없는 아이템");
       if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
       if (!fireNear(S.maps[p.map], p)) return bad("모닥불 곁에서만 요리할 수 있습니다");
-      if (!canAdd(ch, it.cook, 2) || !canAdd(ch, "burnt", 1)) return bad("가방이 가득 찼습니다");
+      if (!canAdd(ch, r.out[0], r.out[1] * 2) || !canAdd(ch, "burnt", 1)) return bad("가방이 가득 찼습니다");
       return OK;
     }
     case "salv": {

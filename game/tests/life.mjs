@@ -69,7 +69,9 @@ for (let n = 0; n < 40; n++) {
   if (n >= 3) caught++;
 }
 assert.ok(b.ch.fish === caught, "a badly played fish gets away: " + b.ch.fish);
-assert.ok(b.ch.inv.some((s) => s.id === "fish_m"), "playing it well lands trout");
+// the meadow is grade-1 water: 송사리, the odd stone or 황금 잉어, never trout (tests/lifeskills.mjs has the grades)
+assert.ok(b.ch.inv.some((s) => s.id === "fish_s") && !b.ch.inv.some((s) => s.id === "fish_m"), "playing it well lands the meadow's fish");
+assert.ok(b.ch.life.fish.xp > 0 || b.ch.life.fish.lv > 1, "fishing trains 낚시");
 b.ch.inv.push({ id: "fish_s", n: 6 });
 // a bite left alone gets away
 act(B, { t: "fish" });
