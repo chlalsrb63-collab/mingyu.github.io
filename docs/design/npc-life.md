@@ -10,10 +10,12 @@ Words: **body** = the person walking about · **post** = the tile where a servic
 `map.npcs`, unchanged) · **place** = a named anchor with spots · **leg** = one stay or one walk on one map ·
 **life day** = one 48-min sky day counted from 04:00 · **cycle day** = life day mod 4.
 
+> Naming: the data file is `game/data/npclife.json` (`DATA.npclife`, `defs().npclife`) — `defs().life` and `self.life` already belong to the life skills (L1/L2).
+
 ## A. Decisions in one screen
 
 1. **One pure function, no simulation.** `npcAt(id, now)` gives every body's map, tile, act and companion from a
-   static plan (`game/data/life.json`) and the sky clock. No per-tick movement, no RNG (hashes of id + life day
+   static plan (`game/data/npclife.json`) and the sky clock. No per-tick movement, no RNG (hashes of id + life day
    only), nothing saved, identical on every channel and after every restart.
 2. **Posts keep the services; bodies live.** Every service is validated at the static post exactly as today
    (`npcNear(p, role)` is not touched). When the body is away the post still serves (a small "자리 비움" sign, the
@@ -71,7 +73,7 @@ found on first use and cached by `map:fromTile>toTile`. `npcNear(p, role)` and `
 
 ## C. Data, wire, client
 
-### C.1 `game/data/life.json` (new; `build-logic.mjs readData` → `DATA.life`; schema added to `docs/editor/SCHEMA.md`)
+### C.1 `game/data/npclife.json` (new; `build-logic.mjs readData` → `DATA.npclife`; schema added to `docs/editor/SCHEMA.md`)
 
 ```jsonc
 { "v": 1,
@@ -104,7 +106,7 @@ found on first use and cached by `map:fromTile>toTile`. `npcNear(p, role)` and `
   the map entry, every consecutive pair of places walkable, **every trip ≤ 60 s**, **every block ≥ 120 s (one game hour) with ≥ 30 s of it spent there**, capacity,
   `with` names an edge of `rel` whose two plans agree on `h`/`at`, `avoid` pairs never share a place, first `h` ≥ 4.
 
-### C.2 Wire (append-only, ints only; `i` = cast index in `defs().life.cast` order)
+### C.2 Wire (append-only, ints only; `i` = cast index in `defs().npclife.cast` order)
 
 | where | field | content |
 | --- | --- | --- |
@@ -167,7 +169,7 @@ body. The quest window shows where the next person is ("지금: 쥬쥬식당 · 
 Sitting by an NPC at a fire gives no warmth (`warmthFor` counts players only). The storyteller's `tl` tales fire
 only while 소담 is at `fire` at night (today's `nightNpc` becomes her plan).
 
-## E. Places (ids frozen; tiles are data in `life.json`, the editor may move them)
+## E. Places (ids frozen; tiles are data in `npclife.json`, the editor may move them)
 
 Town tiles below were checked open and reachable on the built town (commit 5df82df); room chairs are the maps'
 own `k`/`s`. `~` = suggestion, N3 settles within ±2 (data:check judges).
@@ -299,7 +301,7 @@ optional later: places on `willow`).
 | 소담 | "옛날 옛적, 숲이 아직 푸르던 때에…" | "낮에는 이야기가 잠을 자요. 밤에 오렴." | "이 나이엔 죽 한 그릇이면 든든해요." | "보들아, 그 목도리 내 이야기보다 길구나." | "비 오는 날 이야기는 지붕 밑에서 하는 법이지." | "불가에 앉으렴. 오늘 이야기는 조금 무섭단다." |
 | 그레이 | "의뢰는 게시판에. 목숨은 스스로 챙기게." | "검은 쉬어도 눈은 못 쉬는 게 이 일일세." | "먹어 둘 수 있을 때 먹어 두게. 전장의 첫 수칙이야." | "멍멍, 짖기 전에 세 번 보라고 했지." | "비는 발소리를 지워 주지. 놈들 것도." | "밤의 목책은 조용할수록 귀를 세워야 하네." |
 
-## G. Relationships (`life.json rel`; kinds frozen)
+## G. Relationships (`npclife.json rel`; kinds frozen)
 
 What a kind does — `friend`: may be each other's `with` (walk together, neighbouring spots, same table), paired
 chat · `family`: `friend` + shared home, a kid follows the parent home · `mentor`: `friend` + the junior may be
@@ -405,16 +407,16 @@ Kept: the 15 existing side quests unchanged (their `talk` goals work at posts). 
 | `nl` on arrival | ≤ 25 B per body present: town ≤ 1.2 KB, a room ≤ 300 B (the map payload it rides with is far larger) |
 | `nl` afterwards | ≈ 0; one row (≤ 60 B) per leg begun on your map — town average < 10 B/s, never > 6 rows in one snapshot |
 | `nw` | ≤ 1.2 KB, only on request |
-| `defs.life` | ≤ 24 KB once |
+| `defs.npclife` | ≤ 24 KB once |
 | client | ≤ 24 bodies animated (nearest), rest still; town render ≤ +0.25 ms/frame over today's residents |
 
 ## K. Work split (in order; N2 ∥ N3 after N1's first commit)
 
 | task | owns | does | accepts when |
 | --- | --- | --- | --- |
-| **N1 rules** (default model) | `src/logic/62-npc-life.js` (new), `70-validate.js` (`npcReach` in place of `npcNearId`), `80-simulation.js` (`rt.lifeNext`), `90-views-api.js` (`nl nw defs.life`), `62-daynight.js` (소담 from her plan), `scripts/build-logic.mjs` + `editor-lib.mjs` + `editor/validate.js` (life.json), `data/life.json` (places of E + a 6-member sample: smith, bank, juju, forge_tong, r_peng, story), `docs/editor/SCHEMA.md`, `tests/npclife.mjs`, `logic.d.ts` | sections B, C.1–C.3, D | `npclife.mjs`: same `now` ⇒ same answer on two worlds; every leg walkable, ends where the next begins; no two bodies on one spot over 4 cycle days at 1-min steps; door crossing = two rows; services pass at every hour at every post; `talk`/`take`/`done` reachable at every hour for every NPC; budgets of J; old tests green |
-| **N2 client** (default model) | `public/npclife.js` (new; delete `townfolk.js`), `scene2d.js` (bodies, post signs, door fade), `decor.js postSign`, `client.js` (F prompt, talk header, chip `이야기`, `onSnap nl nw`), `radar.js` (주민 tab, track, dots), `sidequests.js` (cards from the chip), `hud.css`, `tests/town.mjs` (resident section → reads life.json) | C.4, H | page errors none; 3 shots: plaza at noon, diner at night (볼칸 + 도담 at `diner_t3` with bubbles), map window 주민 tab; a body crossing a door seen from both sides (`bots.mjs` or two tabs) |
-| **N3 content** (sonnet; data only) | `data/life.json` `cast` `rel` lines | F (all 61 plans), G (all edges + `chat`), F.4 voices for everyone (≥ 9 lines each) | `npm run data:check` clean (capacity, trips, `with` agreement); `defs.life` ≤ 24 KB |
+| **N1 rules** (default model) | `src/logic/62-npc-life.js` (new), `70-validate.js` (`npcReach` in place of `npcNearId`), `80-simulation.js` (`rt.lifeNext`), `90-views-api.js` (`nl nw defs.npclife`), `62-daynight.js` (소담 from her plan), `scripts/build-logic.mjs` + `editor-lib.mjs` + `editor/validate.js` (npclife.json), `data/npclife.json` (places of E + a 6-member sample: smith, bank, juju, forge_tong, r_peng, story), `docs/editor/SCHEMA.md`, `tests/npclife.mjs`, `logic.d.ts` | sections B, C.1–C.3, D | `npclife.mjs`: same `now` ⇒ same answer on two worlds; every leg walkable, ends where the next begins; no two bodies on one spot over 4 cycle days at 1-min steps; door crossing = two rows; services pass at every hour at every post; `talk`/`take`/`done` reachable at every hour for every NPC; budgets of J; old tests green |
+| **N2 client** (default model) | `public/npclife.js` (new; delete `townfolk.js`), `scene2d.js` (bodies, post signs, door fade), `decor.js postSign`, `client.js` (F prompt, talk header, chip `이야기`, `onSnap nl nw`), `radar.js` (주민 tab, track, dots), `sidequests.js` (cards from the chip), `hud.css`, `tests/town.mjs` (resident section → reads npclife.json) | C.4, H | page errors none; 3 shots: plaza at noon, diner at night (볼칸 + 도담 at `diner_t3` with bubbles), map window 주민 tab; a body crossing a door seen from both sides (`bots.mjs` or two tabs) |
+| **N3 content** (sonnet; data only) | `data/npclife.json` `cast` `rel` lines | F (all 61 plans), G (all edges + `chat`), F.4 voices for everyone (≥ 9 lines each) | `npm run data:check` clean (capacity, trips, `with` agreement); `defs.npclife` ≤ 24 KB |
 | **N4 quests** (default model for rules, sonnet for text) | `62-side-quests.js` (`meet`, `grant auto hint rep`), `10-tables.js` (quest items), `50-loot-combat.js` (quest-item guards), `data/quests.json`, `sidequests.js` (hint line), `tests/npcquests.mjs`, `data.mjs` | I | each line finished by a scripted player moving the clock; wrong hour/place/companion refused in Korean; dropped quest returns its grant; `rep` caps; economy guard test green |
 
 Every task: `npm run test:rules`, `typecheck`, `check:split`; rules + rebuilt `logic.js` in one commit; an
@@ -425,9 +427,9 @@ Every task: `npm run test:rules`, `typecheck`, `check:split`; rules + rebuilt `l
 Keep whatever Codex built that already satisfies these; change the rest to match, in this order of importance:
 1. `L.npcAt(id, now)` exists, is pure (no state, no RNG, no tick movement) and returns the B.1 shape.
 2. Services are validated at the static posts; `npcNear` behaves as before at every hour (section D).
-3. Plans live in `game/data/life.json` with `places / cast / rel` (a `schedules.json` or a table in code is
+3. Plans live in `game/data/npclife.json` with `places / cast / rel` (a `schedules.json` or a table in code is
    converted by script; field names of C.1).
-4. Wire is `snap.nl` leg rows + on-request `nw` + `defs().life`; no NPC positions in every snapshot, no plans or
+4. Wire is `snap.nl` leg rows + on-request `nw` + `defs().npclife`; no NPC positions in every snapshot, no plans or
    path finding in the client.
 5. Residents are cast members; `townfolk.js` is gone; no second mover.
 6. Quest/talk reach = body ∪ post ∪ knock (`npcReach`); `meet` is the only new goal; the sheet stays v12.
