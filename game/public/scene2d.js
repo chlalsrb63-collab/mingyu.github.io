@@ -2001,7 +2001,7 @@ export function pick(clientX, clientY) {
 
 let stage = null;
 export function showcase(draft) {
-  const cast = draft ? [draft] : [playerLook("warrior", [1, 0, 0, 0, 0, 0, 1], { wt: 3 }), playerLook("mage", [0, 2, 1, 3, 0, 0, 4], { wt: 3 }), playerLook("lancer", [3, 1, 2, 7, 2, 3, 3], { wt: 3 }), playerLook("rogue", [2, 4, 3, 8, 3, 0, 0], { wt: 2 })];
+  const cast = draft ? [draft] : [playerLook("warrior", [1, 0, 0, 0, 0, 0, 1, 3, 5, 0, 0], { wt: 3 }), playerLook("mage", [11, 6, 8, 15, 0, 7, 4, 8, 10, 1, 0], { wt: 3 }), playerLook("lancer", [3, 1, 6, 10, 2, 3, 3, 5, 4, 1, 4], { wt: 3 }), playerLook("rogue", [0, 2, 10, 10, 2, 2, 0, 1, 3, 2, 4], { wt: 2 })];
   stage = { draft: !!draft, cast: cast.map((look, i) => ({ s: { key: "", face: 1, walk: 0, ang: null, ...makePerson(look) }, i })) };
   map = null;
 }
@@ -2024,7 +2024,7 @@ export function renderStage(dt, t) {
   const cx = Math.round(vw / 2);
   stage.cast.forEach(({ s, i }) => {
     if (stage.draft) {
-      const k = (t % 3200) / 1000, dir = [2, 1, 3, 2][Math.floor(t / 3200) % 4], z = Math.max(3, Math.round(15 / Z));
+      const k = (t % 3200) / 1000, dir = [0, 2, 3, 1][Math.floor(t / 3200) % 4], z = Math.max(3, Math.round(15 / Z));
       g.save(); g.translate(cx + Math.min(120, vw * 0.18), gy + 34); g.scale(z, z);
       drawPerson(s, { scr: true, x: 0, y: 0, dir, moving: k > 1 && k < 2.2, atkT: k > 2.5 ? t - (k - 2.5) * 1000 : -1e9, dead: false, aim: k > 2.5 ? [dir === 1 ? -40 : 40, 6] : null }, t, dt, 0, 0);
       g.restore();
