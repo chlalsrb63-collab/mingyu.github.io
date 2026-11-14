@@ -1051,3 +1051,16 @@ body[data-lay="full"] #w-inv.docked { min-height: 120px; }
   body[data-lay="full"] #sc-doll #char-cv { width: 80px; height: 101px; }
   body[data-lay="full"] #quest-track { max-height: clamp(44px, 14vh, 96px); }
 }
+
+/* ─────────────── empty paper-doll slots: what goes there (uiicons.js eq_*, at 2×) and the slot's name ─────────────── */
+.doll .slot.empty .ph { align-items: flex-start; padding-top: 1px; }
+.doll .slot.empty .ph img.gi { width: 24px; height: 24px; opacity: .3; }
+.doll .slot.empty .cap { position: absolute; left: -2px; right: -2px; bottom: -1px; text-align: center; font: 9px/9px var(--pix9); color: var(--b-mid); opacity: .75;
+  white-space: nowrap; letter-spacing: -1px; pointer-events: none; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000; }
+.doll .slot.empty:hover .ph img.gi { opacity: .5; }
+.doll .slot.empty:hover .cap { color: var(--b-hi); opacity: 1; }
+/* the small docked doll (30 px slots): the silhouette at 1× above the caption */
+@media (max-height: 760px) {
+  body[data-lay="full"] #sc-doll .slot.empty .ph { padding-top: 3px; }
+  body[data-lay="full"] #sc-doll .slot.empty .ph img.gi { width: 12px; height: 12px; opacity: .45; }
+}
