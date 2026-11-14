@@ -111,7 +111,7 @@ banner or function it names. **When you add, move or split a file, update its ro
 | `sidequests.js` [125] | side-quest cards in the talk window, quest-window entries, "!"/"?" over givers |
 | `frames.js` [85] | HUD 9-slice frame art → CSS custom properties |
 | `audio.js` · `bgm.js` | Web Audio score player, map/day-night tracks, `SFX` catalogue, `Sound.play(name)`. Score authoring and offline previews in `.agents/skills/tales-tales-bgm/`. |
-| `titlescene.js` [510] | title-screen diorama and pixel logo |
+| `titlescene.js` [604] | title-screen diorama, pixel logo `logo(S)` and subtitle wordmark `subtitle(S)` (Fantasy Life in forest) |
 | `assetlib.js` [131] | external asset loader, `ready()` awaited at client start-up; `canvas meta has loadImage loadAudio loadSounds play`. Used by weapons.js and art.js `buildIcons` (`icon.item.<id>`) |
 | `style.css` [351] · `hud.css` [721] · `lobby.css` [225] | base + CRT, HUD/windows (the last section, "responsive": breakpoints ≤1100 wide / ≤640 high / ≤860 phones, the window safe zone, scrolling bodies, folded tabs, text wrapping), lobby |
 | `assets/manifest.json` | installed external images/sounds by key (empty = all code-drawn); written by `scripts/import-art.mjs --install` |

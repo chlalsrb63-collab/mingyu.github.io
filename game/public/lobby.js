@@ -126,6 +126,12 @@ function drawLogo() {
   const src = TS.logo(S);
   box.width = src.width; box.height = src.height;
   box.getContext("2d").drawImage(src, 0, 0);
+  // the subtitle, at the same scale so its pixels match the logo's
+  const sub = TS.subtitle(S), sb = $("#t-sub");
+  sb.width = sub.width; sb.height = sub.height;
+  sb.getContext("2d").drawImage(sub, 0, 0);
+  // the logo canvas ends with eight empty rows under its ribbon: tuck the subtitle up into them
+  sb.style.marginTop = `${-6 * S}px`;
 }
 
 // ───────────────────────────── log in / sign up ─────────────────────────────

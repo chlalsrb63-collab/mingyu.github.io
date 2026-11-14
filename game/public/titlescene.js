@@ -464,6 +464,100 @@ export function logo(S = 4) {
   return cv2;
 }
 
+// ───────────────────────────── the subtitle ─────────────────────────────
+
+/**
+ * The subtitle's two hands, on one baseline (row 8): `y` is the glyph's first row.
+ * Bold — "Fantasy Life": 9-row capitals, 6-row x-height, two-pixel stems, one-pixel bars.
+ * Light — "in forest": 5-row x-height, one-pixel strokes. `@` is an i's dot, drawn as a leaf.
+ */
+const SUB_BOLD = {
+  F: { y: 0, r: ["#####", "##...", "##...", "##...", "####.", "##...", "##...", "##...", "##..."] },
+  L: { y: 0, r: ["##...", "##...", "##...", "##...", "##...", "##...", "##...", "##...", "#####"] },
+  a: { y: 3, r: [".###.", "...##", ".####", "##.##", "##.##", ".####"] },
+  e: { y: 3, r: [".###.", "##.##", "#####", "##...", "##...", ".####"] },
+  f: { y: 0, r: [".###", "##..", "##..", "####", "##..", "##..", "##..", "##..", "##.."] },
+  i: { y: 1, r: ["@@", "..", "##", "##", "##", "##", "##", "##"] },
+  n: { y: 3, r: ["####.", "##.##", "##.##", "##.##", "##.##", "##.##"] },
+  s: { y: 3, r: [".####", "##...", "###..", "..###", "...##", "####."] },
+  t: { y: 1, r: ["##..", "##..", "####", "##..", "##..", "##..", "##..", ".###"] },
+  y: { y: 3, r: ["##.##", "##.##", "##.##", "##.##", ".####", "...##", "...##", "####."] },
+};
+const SUB_LIGHT = {
+  e: { y: 4, r: [".##.", "#..#", "####", "#...", ".###"] },
+  f: { y: 2, r: [".##", "#..", "###", "#..", "#..", "#..", "#.."] },
+  i: { y: 2, r: ["@", ".", "#", "#", "#", "#", "#"] },
+  n: { y: 4, r: ["###.", "#..#", "#..#", "#..#", "#..#"] },
+  o: { y: 4, r: [".##.", "#..#", "#..#", "#..#", ".##."] },
+  r: { y: 4, r: ["#.##", "##..", "#...", "#...", "#..."] },
+  s: { y: 4, r: [".###", "#...", ".##.", "...#", "###."] },
+  t: { y: 2, r: ["#..", "#..", "###", "#..", "#..", "#..", ".##"] },
+};
+
+/** A leaf sprig with a pink bud at its tip, pointing left; mirrored for the right side. `3` stem, `4` leaf, `5` bud. */
+const SPRIG = { y: 3, r: [".44..", "..44.", "53333", "..44.", ".44.."] };
+const mirror = (g) => ({ y: g.y, r: g.r.map((r) => [...r].reverse().join("")) });
+
+/**
+ * The subtitle as a canvas, at the logo's scale: "Fantasy Life" in ivory with a pine-green
+ * block shadow, "in forest" in leaf green, leaves for the i's dots, framed by two mirrored
+ * leaf sprigs with pink buds, two sparkles; one dark outline round everything. `S` is
+ * screen pixels per pixel.
+ */
+export function subtitle(S = 4) {
+  const ox = 2, oy = 3, gh = 11;
+  const parts = [[null, SPRIG], 2, [SUB_BOLD, "Fantasy"], 4, [SUB_BOLD, "Life"], 4, [SUB_LIGHT, "in"], 4, [SUB_LIGHT, "forest"], 2, [null, mirror(SPRIG)]];
+  // lay the glyphs out first: [glyph, x, code] with code 1 bold face, 2 light face, 0 ornament
+  // (a number is the gap before the next part; letters inside a word are one pixel apart)
+  const placed = [];
+  let x = ox;
+  for (const p of parts) {
+    if (typeof p === "number") { x += p - 1; continue; }
+    const [font, what] = p;
+    if (!font) { placed.push([what, x, 0]); x += what.r[0].length + 1; continue; }
+    for (const ch of what) { const g = font[ch]; placed.push([g, x, font === SUB_BOLD ? 1 : 2]); x += g.r[0].length + 1; }
+  }
+  const W = x - 1 + ox, H = oy + gh + 2;
+  const m = Array.from({ length: H }, () => Array(W).fill(0));   // 1 bold, 2 light, 3 stem, 4 leaf, 5 bud
+  for (const [g, x0, code] of placed) g.r.forEach((r, y) => [...r].forEach((c, dx) => {
+    const v = c === "#" ? code : c === "@" ? 4 : "345".includes(c) ? +c : 0;
+    if (v) m[oy + g.y + y][x0 + dx] = v;
+  }));
+  const cv2 = document.createElement("canvas");
+  cv2.width = W * S; cv2.height = H * S;
+  const o = cv2.getContext("2d");
+  const at = (x, y) => (y >= 0 && y < H && x >= 0 && x < W ? m[y][x] : 0);
+  const dot = (x, y, c) => { o.fillStyle = c; o.fillRect(x * S, y * S, S, S); };
+  // block shadow one pixel down (pine under the ivory, deep moss under the rest), then the outline
+  const solid = (x, y) => at(x, y) || at(x, y - 1);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (solid(x, y)) { if (!at(x, y)) dot(x, y, at(x, y - 1) === 1 ? "#2c6a5c" : "#1d4744"); continue; }
+    let near = false;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (solid(x + dx, y + dy)) near = true;
+    if (near) dot(x, y, "#24122a");
+  }
+  // the faces: lit from above, shading toward the foot, a darker right edge on the lower half
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const v = at(x, y);
+    if (!v) continue;
+    const k = (y - oy) / 9, lit = !at(x, y - 1), edge = !at(x + 1, y) && k > 0.45;
+    let c;
+    if (v === 1) c = lit ? "#ffffff" : edge ? "#dcc488" : k < 0.4 ? "#fffbeb" : k < 0.75 ? "#fbefc6" : "#efd9a0";
+    else if (v === 2) c = lit ? "#e4f79a" : edge ? "#4f9a4a" : k < 0.6 ? "#b4ea6a" : k < 0.85 ? "#8ad25a" : "#62b44e";
+    else if (v === 3) c = "#4f9a4a";
+    else if (v === 5) c = "#ff9fc8";
+    else c = lit ? "#e4f79a" : "#7ccc4c";
+    dot(x, y, c);
+  }
+  // sparkles: one over the gap between the words, one above the right sprig
+  const right = placed[placed.length - 1][1];
+  for (const [sx, sy] of [[placed[8][1] - 3, 1], [right + 3, oy]]) {
+    if (sx < 1 || sx > W - 2 || at(sx, sy)) continue;
+    dot(sx, sy, "#ffffff"); dot(sx - 1, sy, "#fff2c4"); dot(sx + 1, sy, "#fff2c4"); dot(sx, sy - 1, "#fff2c4"); dot(sx, sy + 1, "#fff2c4");
+  }
+  return cv2;
+}
+
 // ───────────────────────────── the creation stage ─────────────────────────────
 
 /**
