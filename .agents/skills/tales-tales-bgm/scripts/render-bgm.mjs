@@ -3,11 +3,13 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { args, launch, serve, PUBLIC } from "../../../../game/scripts/artkit.mjs";
 import { atlas } from "../../../../game/src/logic.js";
-import { BGM_KEYS, checkTracks, TRACK_NAMES } from "../../../../game/public/audio.js";
+import { BGM_KEYS, checkTracks, DEFAULT_MUSIC_STYLE, MUSIC_STYLES, TRACK_NAMES } from "../../../../game/public/audio.js";
 
 const options = args();
+const style = options.style || DEFAULT_MUSIC_STYLE;
+assert.ok(MUSIC_STYLES.includes(style), "Unknown arrangement: " + style);
 const tracks = options._.length ? options._ : TRACK_NAMES;
-assert.deepEqual(checkTracks(), [], "all tracks need valid notes and bar lengths");
+assert.deepEqual(checkTracks(style), [], "all tracks need valid notes and bar lengths");
 for (const { id, bgm } of Object.values(atlas().maps)) {
   assert.ok(TRACK_NAMES.includes(id) || BGM_KEYS.includes(bgm), "Missing map track: " + id);
 }
@@ -24,16 +26,16 @@ try {
   const page = await browser.newPage();
   await page.goto("http://127.0.0.1:" + server.address().port + "/__bgm.html");
   for (const track of tracks) {
-    const result = await page.evaluate(async ({ track, save }) => {
-      const [{ Sound }, { TRACKS }] = await Promise.all([import("/audio.js"), import("/bgm.js")]);
-      const def = TRACKS[track];
+    const result = await page.evaluate(async ({ track, style, save }) => {
+      const [{ Sound }, { arrangedTrack }] = await Promise.all([import("/audio.js"), import("/bgm-arrangements.js")]);
+      const def = arrangedTrack(track, style);
       const s16 = 60 / def.bpm / 4;
       const steps = def.form.split(/\s+/).reduce((total, section) => total + def.sections[section][0].split(/\s+/).length * 16, 0);
       const seconds = steps * s16;
       const sampleRate = 44100;
       // The first cycle primes the synth and echo. The second cycle is the preview.
       const context = new OfflineAudioContext(2, Math.ceil((0.12 + 2 * seconds + 0.05) * sampleRate), sampleRate);
-      const sound = { ...Sound, playing: [], waves: {} };
+      const sound = { ...Sound, playing: [], waves: {}, vol: { ...Sound.vol, style } };
       sound.init(context);
       sound.bgm(track);
       const playing = sound.playing[0];
@@ -77,10 +79,10 @@ try {
         encoded = btoa(binary);
       }
       return { seconds, peak, rms: Math.sqrt(squared / frames), loudBars, seam, encoded };
-    }, { track, save: !!out });
+    }, { track, style, save: !!out });
     const { seconds, peak, rms, loudBars, seam, encoded } = result;
-    assert.ok(seconds >= 24 && Number.isFinite(peak) && peak < 0.98 && rms > 0.005 && loudBars > 8, track + " must render an audible, unclipped loop");
-    console.log(track + " " + seconds.toFixed(2) + " s · peak " + peak.toFixed(3) + " · RMS " + rms.toFixed(3) + " · seam " + seam.toFixed(3));
+    assert.ok(seconds >= 24 && seam < 0.035 && Number.isFinite(peak) && peak < 0.98 && rms > 0.005 && loudBars > 8, track + " must render an audible, unclipped loop");
+    console.log(style + " " + track + " " + seconds.toFixed(2) + " s · peak " + peak.toFixed(3) + " · RMS " + rms.toFixed(3) + " · seam " + seam.toFixed(3));
     if (out) await writeFile(join(out, track + ".wav"), Buffer.from(encoded, "base64"));
   }
 } finally {

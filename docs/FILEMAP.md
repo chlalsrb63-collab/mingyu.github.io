@@ -113,7 +113,7 @@ banner or function it names. **When you add, move or split a file, update its ro
 | `npctalk.js` [80] | NPC flavour lines by role (an NPC with `lines` from the editor says those) |
 | `sidequests.js` [125] | side-quest cards in the talk window, quest-window entries, "!"/"?" over givers |
 | `frames.js` [85] | HUD 9-slice frame art → CSS custom properties |
-| `audio.js` · `bgm.js` | Web Audio score player, map/day-night tracks, `SFX` catalogue (gathering: `gat_start gat_work gat_tap gat_hit gat_great gat_break`; stations: `forge_hit forge_quench brew_stir brew_bubble brew_done craft_ok craft_great craft_fail`), `Sound.play(name)`. Score authoring and offline previews in `.agents/skills/tales-tales-bgm/`. |
+| `audio.js`, `bgm.js`, `bgm-arrangements.js` | Web Audio score player, map/day-night themes and acoustic arrangements, `SFX` catalogue (gathering: `gat_start gat_work gat_tap gat_hit gat_great gat_break`; stations: `forge_hit forge_quench brew_stir brew_bubble brew_done craft_ok craft_great craft_fail`), `Sound.play(name)`. Score authoring and offline previews in `.agents/skills/tales-tales-bgm/`. |
 | `titlescene.js` [604] | title-screen diorama, pixel logo `logo(S)` and subtitle wordmark `subtitle(S)` (Fantasy Life in forest) |
 | `assetlib.js` [131] | external asset loader, `ready()` awaited at client start-up; `canvas meta has loadImage loadAudio loadSounds play`. Used by weapons.js and art.js `buildIcons` (`icon.item.<id>`) |
 | `style.css` [351] · `hud.css` [1053] · `lobby.css` [225] | base + CRT, HUD/windows (the "responsive" section: breakpoints ≤1100 wide / ≤640 high / ≤860 phones, the window safe zone, scrolling bodies, folded tabs, text wrapping; the docked paper-doll `#side-char` block at the end), lobby |

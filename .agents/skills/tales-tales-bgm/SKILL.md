@@ -13,8 +13,8 @@ Read [AGENTS.md](../../../AGENTS.md) for repository rules and [the music brief](
 4. From the repository root, render the requested tracks through the production synth:
 
    ```powershell
-   node .agents/skills/tales-tales-bgm/scripts/render-bgm.mjs title town --out game/shots/bgm
+   node .agents/skills/tales-tales-bgm/scripts/render-bgm.mjs title town --style newAge --out game/shots/bgm
    ```
 
-   Omit the track keys to verify everything. Omit `--out` for rendering checks without WAV files. Compare adjacent scenes at 1× playback speed and listen across the loop seam. WAV previews belong in the ignored `game/shots/` directory.
+   Use --style classic to audition the original synth/lo-fi arrangement. The game defaults to newAge. Omit the track keys to verify everything. Omit `--out` for rendering checks without WAV files. Compare adjacent scenes at 1× playback speed and listen across the loop seam. WAV previews belong in the ignored `game/shots/` directory.
 5. Run `npm run stamp` for a separate preview or deployment build. The repository stamps production releases automatically. In `game/`, run `npm run test:rules` and `node scripts/shot.mjs --live` against `npm run dev:local` after wiring. Record which tracks were played, their roles, and verification results.
