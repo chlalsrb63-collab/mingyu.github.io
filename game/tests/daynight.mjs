@@ -25,7 +25,7 @@ for (const [h, name] of want) {
 }
 
 // ── the weather: a pure function of map and time, steady within a slot, varied across them
-const outdoorMaps = ["town", "meadow", "forest", "city", "maple"];   // maple: theme autumn
+const outdoorMaps = ["town", "meadow", "forest", "city", "maple", "jungle", "coast"];   // maple: theme autumn
 for (const id of outdoorMaps) {
   const seen = new Set();
   for (let i = 0; i < 400; i++) {
@@ -41,6 +41,12 @@ for (const id of outdoorMaps) {
   }
   assert.ok(seen.has(0) && seen.has(1) && seen.has(2), `${id} sees clear, cloud and rain: ${[...seen]}`);
   if (id === "city" || id === "town") assert.ok(!seen.has(5), "no snow in the plaza or the city");
+}
+// (maps-v2 M3) the desert is under the open sky too, but it only ever sees clear skies, the odd cloud and wind
+{
+  const seen = new Set();
+  for (let i = 0; i < 400; i++) seen.add(L.skyAt("oasis", BASE + i * SKY.wxMs + 1234).wx);
+  assert.ok(seen.has(0) && seen.has(4) && !seen.has(2) && !seen.has(3) && !seen.has(5), `the oasis sees clear and wind, never rain, fog or snow: ${[...seen]}`);
 }
 for (const id of ["cave", "crypt", "sewer", "abyss"]) assert.equal(L.skyAt(id, at(12)).wx, -1, `${id} has no sky`);
 // two worlds (two channels) agree on the weather

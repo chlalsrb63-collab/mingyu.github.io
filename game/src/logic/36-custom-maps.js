@@ -15,7 +15,9 @@ const NPC_POSES = ["sip", "read", "wipe", "doze", "write", "sweep", "hammer", "s
 const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job",
   // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
   // alchemist, 포포 the 알바 broker — until L2 they only talk ("곧 문을 엽니다", public/npctalk.js)
-  "cook", "craft", "alch", "jobs"];
+  "cook", "craft", "alch", "jobs",
+  // 주아나 the charm appraiser (66-charms.js)
+  "charm"];
 const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
@@ -228,18 +230,25 @@ function buildCells(m) {
 }
 const metaKinds = (m) => [...new Set(m.spawns.map((sp) => sp.k))];
 
-/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, wpn (how many stones), kinds, eager }. */
+/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, wpn (how many stones), minLv, kinds, eager }. */
 const MAP_META = {};
 const EAGER = {};
 for (const id of [...BUILTIN_MAPS, ...Object.keys(FILES).filter((id) => !BUILTIN_MAPS.includes(id))]) {
+  const minLv = GEN[id]?.minLv || 0;
   if (id === "town" || FILES[id]) {
     const m = (EAGER[id] = baseMap(id));
-    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, kinds: metaKinds(m), eager: true };
+    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, minLv, kinds: metaKinds(m), eager: true };
   } else {
     const g = GEN[id], c = g.cfg();
-    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, kinds: genKinds(id), eager: false };
+    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, minLv, kinds: genKinds(id), eager: false };
   }
 }
+function mapLevelNeed(ch, id) {
+  const minLv = typeof id === "string" && Object.hasOwn(MAP_META, id) ? MAP_META[id].minLv : 0;
+  return ch.lvl < minLv ? minLv : 0;
+}
+const mapLevelMessage = (minLv) => `레벨 ${minLv}부터 입장할 수 있습니다.`;
+
 /** Built maps by id. */
 const MAP_CACHE = {};
 /** NPC id → the map it stands on, and its name (side quests find their givers and talk targets here). */
@@ -337,8 +346,9 @@ for (const id of Object.keys(MAP_META)) {
  * sheet on tile (tx, ty) of `map`, or the nearest tile a player can stand on, or the entrance.
  */
 export function devPlace(ch, map, tx, ty) {
+  if (!ch || mapLevelNeed(ch, map)) return false;
   const m = typeof map === "string" ? mapOf(map) : null;
-  if (!ch || !m) return false;
+  if (!m) return false;
   const at = (Number.isInteger(tx) && Number.isInteger(ty) && inMap(m, tx, ty) && m.reach[ty * m.w + tx] ? [tx, ty] : null) || freeTile(m, tx | 0, ty | 0) || m.entry;
   ch.map = map; ch.x = at[0] * T + 8; ch.y = at[1] * T + 10;
   if (ch.hp === 0) ch.hp = -1;

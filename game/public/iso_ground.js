@@ -26,7 +26,7 @@ export const UG = {
   abyss: { floor: ["#7c2f3c", "#5c1e2b", "#9e4855"], rock: "#19070c", face: ["#5a1622", "#8c2c3a", "#ba4e5a", "#330e18"], wet: ["#a81c2c", "#8e1424", "#e4606c", "#560a16", "#d04858"] },
   cave: { floor: ["#40606a", "#344f5a", "#527680"], rock: "#101a26", face: ["#2e4458", "#4a6a7c", "#5a7c8c", "#22343f"], wet: ["#26a08e", "#1e8a7a", "#8af4dc", "#145a50", "#58d6be"] },
 };
-export const GRASS = { meadow: "#6cbf5e", town: "#6cbf5e", city: "#6cbf5e", forest: "#3f8a5c", autumn: "#71843a" };
+export const GRASS = { meadow: "#6cbf5e", town: "#6cbf5e", city: "#6cbf5e", forest: "#3f8a5c", autumn: "#71843a", jungle: "#35944a", coast: "#74c060", desert: "#8ab850" };
 export const underground = (theme) => !!UG[theme];
 /**
  * The cave's shelf level (0/1/2) per tile from the map payload's `lv` (runs "<level><count>" joined by ","),
@@ -45,7 +45,7 @@ export function levels(m) {
 }
 
 /** Material ids, as stored per pixel so later passes know what they are drawing on. */
-export const MID = { void: 1, grass: 2, forest: 3, path: 4, sand: 5, plaza: 6, ruin: 7, water: 8, deep: 9, bank: 10, mud: 11, steps: 12, asph: 13, pave: 14, floor: 15, deck: 16, line: 17, curb: 18, leaves: 19, gold: 20, royal: 21, blight: 22, needle: 23, moss: 24, mossE: 25, shelf: 26, ford: 27, slab: 28 };
+export const MID = { void: 1, grass: 2, forest: 3, path: 4, sand: 5, plaza: 6, ruin: 7, water: 8, deep: 9, bank: 10, mud: 11, steps: 12, asph: 13, pave: 14, floor: 15, deck: 16, line: 17, curb: 18, leaves: 19, gold: 20, royal: 21, blight: 22, needle: 23, moss: 24, mossE: 25, shelf: 26, ford: 27, slab: 28, dune: 29, wsand: 30, shallow: 31, surf: 32 };
 
 /** A cluster shape: rows separated by "/", "." empty, a digit picks a colour from the material's palette. */
 function shape(s) {
@@ -238,7 +238,9 @@ export function materials(theme) {
   };
   const steps = mk(MID.steps, 2, "#bdb39a", { straight: true, depth: 1 });
   // water: shallow and deep; the bank under a far shore
-  const wet = U ? U.wet : theme === "autumn" ? ["#3f86b8", "#336fa0", "#80bede", "#285c8a", "#6aa8d0"] : ["#4aa2e2", "#3f8ad2", "#8accf6", "#2f78c0", "#86c8f4"];
+  const wet = U ? U.wet : theme === "autumn" ? ["#3f86b8", "#336fa0", "#80bede", "#285c8a", "#6aa8d0"]
+    : theme === "jungle" || theme === "coast" ? ["#2796a6", "#1d7c90", "#74d6d4", "#16627a", "#5cc4c8"]
+    : theme === "desert" ? ["#3aa8bc", "#2c90a8", "#8adcde", "#207890", "#74ccd4"] : ["#4aa2e2", "#3f8ad2", "#8accf6", "#2f78c0", "#86c8f4"];
   const water = mk(MID.water, 10, wet[0], { pal: [wet[0], wet[1], mix(wet[0], 1.08)], style: "bank", line: wet[3] });
   water.tex = theme === "sewer" ? organic(water, SHP.water, SHP.sludge, 61, 0.42, 0.3, 9, 5) : organic(water, SHP.water, null, 61, 0.2, 0, 11, 6);
   water.foam = C(U ? wet[2] : "#d8f0ff"); water.foam2 = C(wet[4]);
@@ -305,6 +307,29 @@ export function materials(theme) {
     _deep: deep, _water: water, _floor: floor, _grass: grass,
   };
   if (theme === "autumn") { T[";"] = goldL; T[":"] = needle; }
+  // ── the south-west coast (maps-v2 M3; placeholders, the art step gives them their own textures): rippled dune
+  // sand, white beach sand, turquoise shallows you can wade, the foam of the surf line
+  const dune = mk(MID.dune, 6.5, "#e0b468", { pal: ["#e0b468", "#c8984e", "#f0cc86", "#d2a458"], line: "#a87838" });
+  dune.tex = organic(dune, SHP.sand, null, 241, 0.62, 0, 8, 5);
+  const wsand = mk(MID.wsand, 7.2, "#f6efd8", { pal: ["#f6efd8", "#e4dabc", "#fffaf0", "#d8ccac"], line: "#c0b48e" });
+  wsand.tex = organic(wsand, SHP.sand, null, 243, 0.4, 0, 8, 5);
+  const shal = mk(MID.shallow, 9, "#5ccfc4", { pal: ["#5ccfc4", "#48bcb4", "#8ae6d8", "#b4f0dc"], style: "soft", amp: 2.6, line: "#2a9a9a" });
+  shal.tex = organic(shal, SHP.water, SHP.sand, 245, 0.3, 0.12, 9, 5);
+  const surf = mk(MID.surf, 8.5, "#d8f4f0", { pal: ["#d8f4f0", "#a8e4e0", "#ffffff", "#8adcd8"], style: "soft", amp: 3, line: "#8adcd8" });
+  surf.tex = organic(surf, SHP.water, null, 247, 0.6, 0, 6, 4);
+  T.z = dune; T.S = wsand; T["~"] = shal; T["-"] = surf;
+  if (theme === "desert") {
+    // the desert's own sand is warmer than a river bank's; what tops a dune's ridge is sand, not grass
+    const dsand = mk(MID.sand, 7, "#ecd09a", { pal: ["#ecd09a", "#d8b87e", "#f8e2b8", "#cca870"], line: "#b08a52" });
+    dsand.tex = organic(dsand, SHP.sand, null, 249, 0.5, 0, 8, 5);
+    T.s = dsand; T._grass = dsand;
+  } else if (theme === "coast") T._grass = wsand;
+  else if (theme === "jungle") {
+    // the strand of black boulders stands on dark wet shingle
+    const shingle = mk(MID.ruin, 4, "#5c5e68", { pal: ["#5c5e68", "#44464e", "#74767e", "#50525a"], line: "#2e3036" });
+    shingle.tex = organic(shingle, SHP.pebble, null, 251, 0.6, 0, 6, 4);
+    T.r = shingle;
+  }
   if (cave) Object.assign(T, cave);
   // a ford out of doors (maps-v2 A.6, the forest's crossings `m.cross`): clear shallows over sand, flat grey
   // stepping stones in two staggered files with a wet dark rim and a lit top
@@ -816,7 +841,7 @@ function extras(m, theme, MT) {
     if (ch === "b") deck(x, y, TEX, TM, PA, PB);
     else if (ch === "v") stepsTex(x, y, me, TEX, PA, PB);
     else if (ch === "g") grate(x, y, me, TEX, PA, PB);
-    else if (ch === "m") lane(x, y, TEX, PA, PB);
+    else if (ch === "m") (theme === "jungle" ? edgeLine : lane)(x, y, TEX, PA, PB);
     else if (ch === "n") carpet(x, y, TEX, TM, PA, PB);
     else if (ch === "i") inlay(x, y, TEX, TM, PA, PB);
     if (theme === "city" && (ch === "a" || ch === "m")) zebra(x, y, TEX, PA, PB);
@@ -962,6 +987,15 @@ function extras(m, theme, MT) {
     for (let k = 0; k < 256; k++) {
       const a = PA[k], b = PB[k], s = alongX ? a : b, t = alongX ? b : a;
       if ((t === 7 || t === 8) && s > 2 && s < 13) TEX[k] = t === 7 ? C("#e8e4d0") : C("#b8b4a0");
+    }
+  }
+  /** The jungle road's edge (maps-v2 M3): an unbroken yellow line along the asphalt it runs beside. */
+  function edgeLine(x, y, TEX, PA, PB) {
+    const A = (i, j) => at(x + i, y + j) === "a";
+    const ns = A(1, 0) || A(-1, 0), ew = A(0, 1) || A(0, -1);
+    for (let k = 0; k < 256; k++) {
+      const a = PA[k], b = PB[k];
+      if ((ns && (a === 7 || a === 8)) || (ew && (b === 7 || b === 8))) TEX[k] = (ns && a === 7) || (ew && b === 7) ? C("#f0c838") : C("#c89a28");
     }
   }
   function zebra(x, y, TEX, PA, PB) {

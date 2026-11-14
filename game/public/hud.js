@@ -215,7 +215,7 @@ export function refreshUi() {
   draw("bank", () => [s.inv, s.wh, s.gold], Growth.renderBank);
   draw("quest", () => [s.q, s.bq, s.bn, s.mk, s.lvl, near, G.qsel, s.sq], renderQuest);
   draw("talk", () => [s.sq, s.lvl, talk.npc && talk.npc.id, Board.talkKey(s)], () => { SideQ.renderTalk($("#talk-sq"), talk.npc, s, (line) => { $("#talk-text").textContent = line; }); Board.renderTalk(talk.npc, s); });
-  draw("warp", () => [s.wp, G.map && G.map.id, stoneNear(), near, G.warpPick], renderWarp);
+  draw("warp", () => [s.wp, s.lvl, G.map && G.map.id, stoneNear(), near, G.warpPick], renderWarp);
   draw("daily", () => [s.daily && s.daily.day, s.daily && s.daily.tasks, s.daily && s.daily.bonus, s.inv.length], renderDaily);
   draw("achieve", () => [s.ach, s.title, s.pts, G.achTab], renderAchieve);
   draw("collect", () => [s.mk, s.col, G.colTab], renderCollect);

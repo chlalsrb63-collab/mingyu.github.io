@@ -113,7 +113,7 @@ const DATA = {
     {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"willow","safe":true,"band":null,"w":40,"h":32,"ground":["tt,t...............pp...\"..,.....tt.....",".t..tt....,........pp.,....\".......tt...","ttttt.t............pp.,,...\"..,.,tt.tt..","ttttttt\".,...\",...\"pp....,.,.....tt.tt..",".ttt,...,....,.....pp............,ttt..t","ttt...t...........,pp............tttt...","..,,.,.\"...........pp....,........\"...\".","\",.....,..\".,......pp..,......,.......,.","....,,...,...\".....pp.....,........,.,..","....,...pppppppppppppppppppppppp........","........pp.........pp.......\".pp........",".,......pp.........pp.,,......pp........",".......,pp\".,.\".oooooooo.,...ssssss.....","....\"\"\",pp.,...oooooooooo,.sswwwwwwss,..","....\"\"\"\"pp..,,oooooooooooo.swwwwwwwws...",".,.\"\"\"\",pp\"...oooooooooooobbbbwwwwwws.,.","....\"\"\".pp....oooooooooooo.swwwwwwwws..,","....\"\"\".pp....oooooooooooo,sswwwwwwss...","......\",pp.....oooooooooo....ssssss.....",".....,..pp.\"....oooooooo......pp...,,...",".,.,.,\".pp\"......\",pp.........pp,,.....,","...,....pppppppppppppppppppppppp....,...","....,,..pp,..,,..,....,..\"....pp........","..........,.....,..............,..\".,...","...,.\",\".,,.,............,...\"\".........","......,.....\".......,........,,.........",".....,..,..,....,..............,..,..,..","..........,,..,....,......\".\"...........","..tt.t...............,..........,,..tt.t","t..tttt\".,.....,..\"...,...........t,tt,t",".ttt.t...............,.....,.....ttttttt","...t.tt.,.....\"..,.\"....\".......\"t,..t,t"],"objects":["TTPTTTTTTTTTTTTTTT    TPTTPPTTTTTTTTTTTP","TTTTTTTPTTTTTTPTPT    TTTTTTTPTPTTTTTTTT","TT                                    PT","TT         HH     L  L    HH          TT","TT    hhhh   hhhh           hhhh      TT","TT    hhhh   hhhh     G     hhhh      PT","TT    hhhh   hhhh           hhhh   u  TT","TT                                    TT","TT                                  B TT","PT B                                  TT","TT                                    TT","TT                                    TT","TT FFFFF       L        L             TT","TT F   F   B                 e    e   TT","TP F   F                              TT","PT F   F           T                  TT","TP F   F                           e  PP","PT F   F   B                     e    PT","TP FF FF                              TP","TT             L        L             TT","TT  u                                 TT","TP                                    TT","TT                                    TT","TT  hhhh                       hhhh   TP","TT  hhhh      hhhh      B      hhhh   PT","TT  hhhh      hhhh             hhhh   TP","PT          B hhhh        B         B PT","TT        u      E    u               TP","PT                                    TT","PT                                    PT","TPPTPTPTTTTTTTTPTTTTTPPTTPTTTPTTTTTTPTTP","TPTTPTTTTTTPTTTTTTTTTTTTTTTPTTTTTPTTTTPT"],"entry":[20,4],"spawns":[],"npcs":[{"id":"willow_elder","name":"촌장 버들","role":"quest","x":18,"y":13,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 도와주면 섭섭지 않게 사례하지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":25,"y":16,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."]},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":15,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 울타리 안은 밟으면 안 돼!","버드나무광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":22,"y":25,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 버드나무광장이야. 거기서 동쪽은 바람초원이고."]}],"portals":[{"x":19,"y":1,"to":"town","tx":49,"ty":71},{"x":20,"y":1,"to":"town","tx":50,"ty":71}],"fires":[[19,25]],"waypoint":[22,7],"fishing":true,"boss":null,"marks":[{"x":22,"y":5,"kind":"sign","label":"↑ 버드나무광장","to":"town"}]},
   ],
   links: [{"map":"town","x":49,"y":73,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":50,"y":73,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"},{"map":"town","x":49,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":50,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":36,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":37,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":62,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":63,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":65,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":66,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":72,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":73,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":85,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":86,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":80,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":81,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":72,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":73,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":79,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":80,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":67,"y":51,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":67,"y":52,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":45,"y":51,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":45,"y":52,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":29,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":30,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":10,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"},{"map":"town","x":11,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"}],
-  npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":52,"y":70,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":70,"y":23,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","전직은 되돌릴 수 없다네. 신중하게 고르게."]}],
+  npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":52,"y":70,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":70,"y":23,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","전직은 되돌릴 수 없다네. 신중하게 고르게."]},{"map":"town","id":"town_charm_juana","name":"참감정사 주아나","role":"charm","x":66,"y":23,"look":[7,0,11,11,0,0,4,6,2,0,0],"lines":["볼주머니에 넣기엔 제법 무거운 조각이네요. 빛을 품을 자리를 같이 찾아봐요.","여기, 테두리에 무늬가 보여요. 돌려 보면 작은 빈자리에도 맞겠어요.","사냥터에서 빛나는 조각을 주우면 가져오세요. 감정해서 참 보드에 놓으면 힘이 된답니다."]}],
   npclife: {"v":1,"places":{"fire":{"map":"town","name":"광장 모닥불","spots":[[56,46,"e"],[60,48,"n"],[56,48,"e"],[60,44,"s"],[61,46,"w"]]},"fountain":{"map":"town","name":"분수대","spots":[[48,37,"s"],[50,37,"s"],[48,42,"s"],[51,42,"s"],[49,43,"s"],[52,43,"s"]]},"bench":{"map":"town","name":"광장 벤치","spots":[[44,47,"s"],[45,47,"s"],[43,47,"s"]]},"garden":{"map":"town","name":"도서관 뜰","spots":[[36,24,"s"],[37,24,"s"],[38,24,"s"],[36,25,"s"]]},"steps":{"map":"town","name":"마을회관 계단","spots":[[48,27,"s"],[50,27,"s"],[52,27,"s"],[47,27,"s"]]},"yard":{"map":"town","name":"수련 마당","spots":[[67,24,"s"],[69,24,"s"],[71,24,"s"],[67,21,"s"],[69,21,"s"]]},"forgeyard":{"map":"town","name":"대장간 마당","spots":[[78,37,"s"],[78,36,"s"],[76,36,"s"]]},"market":{"map":"town","name":"장터 좌판","spots":[[65,39,"s"],[63,39,"s"],[64,40,"s"]]},"terrace":{"map":"town","name":"쥬쥬식당 야외석","spots":[[71,51,"s"],[72,52,"s"],[73,52,"s"],[74,53,"s"],[74,54,"s"],[76,53,"s"],[75,51,"s"]]},"pond":{"map":"town","name":"연못가","spots":[[24,52,"s"],[25,52,"s"],[25,56,"s"],[12,51,"s"]]},"pondfire":{"map":"town","name":"연못 모닥불","spots":[[29,62,"s"],[30,62,"s"],[28,62,"s"]]},"bridge":{"map":"town","name":"돌다리","spots":[[24,41,"s"],[24,46,"s"]]},"laundry":{"map":"town","name":"빨래터","spots":[[6,42,"s"],[7,42,"s"],[13,41,"s"]]},"flowers":{"map":"town","name":"꽃밭","spots":[[14,28,"s"],[15,28,"s"],[12,40,"s"],[40,27,"s"]]},"wall":{"map":"town","name":"북쪽 목책","spots":[[50,11,"s"],[41,12,"s"],[56,14,"s"],[65,12,"s"],[64,12,"s"],[30,11,"s"],[70,11,"s"]]},"egate":{"map":"town","name":"동문","spots":[[93,40,"s"],[92,38,"s"]]},"wgate":{"map":"town","name":"서문","spots":[[5,40,"s"],[6,41,"s"]]},"sroad":{"map":"town","name":"남쪽 길","spots":[[50,68,"s"],[51,68,"s"]]},"barn":{"map":"town","name":"창고 앞","spots":[[33,38,"s"],[34,38,"s"],[31,39,"s"]]},"obelisk":{"map":"town","name":"오벨리스크 앞","spots":[[56,36,"s"],[59,36,"s"]]},"stone":{"map":"town","name":"이동의 돌 곁","spots":[[47,45,"s"],[44,45,"s"]]},"cot1":{"map":"town","name":"살림 마을 1번 집","in":true,"spots":[[5,26,"s"]]},"cot2":{"map":"town","name":"살림 마을 2번 집","in":true,"spots":[[12,25,"s"]]},"cot3":{"map":"town","name":"살림 마을 3번 집","in":true,"spots":[[5,39,"s"]]},"cot4":{"map":"town","name":"살림 마을 4번 집","in":true,"spots":[[11,39,"s"]]},"cot5":{"map":"town","name":"살림 마을 5번 집","in":true,"spots":[[6,47,"s"]]},"r_fountain":{"map":"town","name":"분수대 술래잡기 길","round":[[47,38],[52,38],[53,42],[47,42]]},"r_mail":{"map":"town","name":"우편 배달 길","round":[[10,35],[50,26],[65,38],[72,50]]},"r_errand":{"map":"town","name":"심부름 길","round":[[33,38],[78,36]]},"r_watch":{"map":"town","name":"북문 순찰로","round":[[30,11],[70,11]]},"r_night":{"map":"town","name":"밤 순찰로","round":[[41,12],[30,11],[5,40],[50,68],[93,40],[70,11]]},"diner_t1":{"map":"juju_diner","name":"쥬쥬식당 창가 식탁","spots":[[5,6,"e","sit"],[7,6,"w","sit"]]},"diner_t2":{"map":"juju_diner","name":"쥬쥬식당 동쪽 식탁","spots":[[14,7,"e","sit"],[16,7,"w","sit"]]},"diner_t3":{"map":"juju_diner","name":"쥬쥬식당 가운데 식탁","spots":[[9,8,"e","sit"],[11,8,"w","sit"]]},"diner_t4":{"map":"juju_diner","name":"쥬쥬식당 입구 식탁","spots":[[6,11,"e","sit"],[8,11,"w","sit"]]},"diner_t5":{"map":"juju_diner","name":"쥬쥬식당 구석 식탁","spots":[[14,11,"e","sit"],[16,11,"w","sit"]]},"diner_bar":{"map":"juju_diner","name":"쥬쥬식당 바","spots":[[12,4,"n"],[13,4,"n"],[15,4,"n"]]},"diner_hearth":{"map":"juju_diner","name":"쥬쥬식당 난롯가","spots":[[3,8,"s","sit"],[3,10,"n","sit"]]},"diner_stage":{"map":"juju_diner","name":"쥬쥬식당 악사 자리","spots":[[16,5,"s"]]},"diner_back":{"map":"juju_diner","name":"쥬쥬식당 살림방","in":true,"spots":[[3,1,"s"]]},"cafe_t1":{"map":"tales_cafe","name":"테일즈 카페 안쪽 식탁","spots":[[7,9,"e","sit"],[9,9,"w","sit"]]},"cafe_t2":{"map":"tales_cafe","name":"테일즈 카페 오른쪽 식탁","spots":[[13,7,"s","sit"],[13,9,"n","sit"]]},"cafe_t3":{"map":"tales_cafe","name":"테일즈 카페 왼쪽 식탁","spots":[[2,6,"s","sit"],[2,8,"n","sit"]]},"cafe_hearth":{"map":"tales_cafe","name":"테일즈 카페 난롯가","spots":[[3,3,"s","sit"],[7,3,"s","sit"]]},"cafe_bar":{"map":"tales_cafe","name":"테일즈 카페 바","spots":[[13,5,"n"],[15,5,"n"]]},"inn_hearth":{"map":"starlight_inn","name":"모닥별 여관 난롯가","spots":[[3,3,"s","sit"],[7,3,"s","sit"]]},"inn_table":{"map":"starlight_inn","name":"모닥별 여관 큰 식탁","spots":[[3,7,"s","sit"],[4,7,"s","sit"],[5,7,"s","sit"],[6,7,"s","sit"],[7,7,"s","sit"],[3,9,"n","sit"],[4,9,"n","sit"],[5,9,"n","sit"],[6,9,"n","sit"],[7,9,"n","sit"]]},"inn_beds":{"map":"starlight_inn","name":"모닥별 여관 침상","spots":[[11,2,"s"],[13,2,"s"],[15,2,"s"]]},"inn_up":{"map":"starlight_inn","name":"모닥별 여관 위층","in":true,"spots":[[17,2,"s"]]},"lib_hearth":{"map":"owl_library","name":"부엉이 도서관 난롯가","spots":[[3,3,"s","sit"],[6,3,"s","sit"]]},"lib_table":{"map":"owl_library","name":"부엉이 도서관 열람석","spots":[[15,7,"s","sit"],[16,7,"s","sit"],[17,7,"s","sit"],[15,9,"s","sit"],[16,9,"s","sit"],[17,9,"s","sit"]]},"lib_nook":{"map":"owl_library","name":"부엉이 도서관 안쪽 자리","spots":[[3,8,"s","sit"],[5,8,"s","sit"],[3,11,"s","sit"],[5,11,"s","sit"]]},"lib_stacks":{"map":"owl_library","name":"부엉이 도서관 서가","spots":[[2,6,"s"],[8,2,"s"]]},"hall_seats":{"map":"town_hall","name":"마을회관 대기석","spots":[[3,6,"s","sit"],[4,6,"s","sit"],[14,6,"s","sit"],[15,6,"s","sit"]]},"hall_desk":{"map":"town_hall","name":"마을회관 집무석","spots":[[10,4,"s"],[12,4,"s"]]},"merc_hearth":{"map":"merc_office","name":"용병사무소 난롯가","spots":[[16,3,"s","sit"],[18,3,"s","sit"]]},"merc_table":{"map":"merc_office","name":"용병사무소 회의탁자","spots":[[7,5,"s","sit"],[10,5,"s","sit"]]},"merc_bench":{"map":"merc_office","name":"용병사무소 벤치","spots":[[3,10,"s","sit"],[5,10,"s","sit"]]},"apt_lobby":{"map":"dongdong_apt","name":"동동아파트 로비","spots":[[8,6,"s"],[10,6,"s"]]},"apt_up":{"map":"dongdong_apt","name":"동동아파트 위층","in":true,"spots":[[9,1,"s"]]},"forge_floor":{"map":"kangkang_forge","name":"캉캉대장간 작업대","spots":[[4,2,"s"],[8,4,"s"],[10,7,"n"]]},"forge_back":{"map":"kangkang_forge","name":"캉캉대장간 다락","in":true,"spots":[[2,2,"s"]]},"dojo_floor":{"map":"dojo","name":"버드나무광장 수련관 마룻바닥","spots":[[5,7,"s"],[12,7,"s"],[8,10,"s"]]},"store_floor":{"map":"general_store","name":"다람쥐 잡화점 진열대","spots":[[6,6,"s"],[9,6,"s"]]},"lab_floor":{"map":"bogle_lab","name":"보글연금공방 실험대","spots":[[10,5,"s"],[13,8,"s"]]},"bout_floor":{"map":"boutique","name":"루루 의상실 거울 앞","spots":[[8,6,"s"]]},"pet_floor":{"map":"pet_house","name":"몽글 펫 돌봄집 놀이방","spots":[[5,5,"s"]]}},"cast":{"smith":{"traits":["무뚝뚝","대식가","의리"],"home":"forge_back","cover":"forge_tong","away":"바깥 모루","plan":[{"h":4,"at":"forge_back","act":"sleep"},{"h":7,"at":"forge_floor","act":"work","pose":"hammer"},{"h":12,"at":"terrace","act":"eat","rain":"diner_hearth"},{"h":13.5,"at":"forge_floor","act":"work","pose":"hammer"},{"h":19.5,"at":"diner_t3","act":"eat","with":"bank","days":[0,1,2]},{"h":19.5,"at":"diner_bar","act":"drink","days":[3]},{"h":23,"at":"forge_back","act":"sleep"}],"lines":{"work":["이른 망치질은 소리가 다르지.","불꽃이 누렇게 뜨면 한숨 쉬고 한 번 더 치게."],"off":["망치는 내려놨네. 지금은 숟가락 들 시간이야.","바깥 모루는 그대로 쓰게. 통통이도 곧 나올 걸세."],"eat":["도담이 느린 덕에 국이 식을 틈도 없이 두 그릇 먹었네."],"with":["오늘은 내가 내지. 어제 들은 얘기는 됐고."],"knock":["문에 놓고 가게. 해 뜨면 답해 주지."]}},"bank":{"traits":["꼼꼼","느긋","장사"],"home":"apt_up","away":"창고 보관함","plan":[{"h":4,"at":"barn","act":"tend","pose":"carry"},{"h":7,"at":"post","act":"work"},{"h":12,"at":"diner_t4","act":"eat"},{"h":14,"at":"post","act":"work"},{"h":19.5,"at":"diner_t3","act":"eat","with":"smith","days":[0,1,2]},{"h":19.5,"at":"diner_hearth","act":"drink","days":[3]},{"h":23.5,"at":"apt_up","act":"sleep"}],"lines":{"work":["칸마다 표를 붙이면 돌 하나도 안 잃어버리지.","서두르지 말게. 장부는 기다려 주더라고."],"off":["창고 열쇠는 주머니에, 걱정은 창고에 두고 왔지.","물건 맡길 땐 창고 앞 보관함을 쓰게."],"with":["볼칸은 내게서 듣고 싶은 얘기만 들을 때 느긋해진다니까."],"knock":["아침에 창고에서 보세."]}},"juju":{"traits":["다정","손이 큼","불 조절 장인"],"home":"diner_back","away":"식당 주문대","plan":[{"h":4,"at":"diner_back","act":"sleep"},{"h":7,"at":"post","act":"work"},{"h":14,"at":"terrace","act":"tend","pose":"wipe","rain":"diner_hearth"},{"h":16,"at":"post","act":"work"},{"h":23,"at":"diner_back","act":"sleep"}],"lines":{"work":["한 숟갈 먼저 맛봐요. 오늘은 바람 부는 날 국이에요.","식탁이 가득 차면 물 먼저 내요."],"off":["빈 그릇은 제가 거둘게요.","오늘 메뉴는 주문대에 써 두었어요."],"rain":["비 오면 난롯가 자리가 먼저 차지요."],"knock":["화덕은 다 껐어요. 아침에 봐요!"]}},"forge_tong":{"traits":["성실","덤벙댐","스승 바라기"],"home":"forge_back","plan":[{"h":4,"at":"forge_back","act":"sleep"},{"h":7,"at":"post","act":"work"},{"h":12,"at":"forgeyard","act":"eat"},{"h":14,"at":"post","act":"work"},{"h":23,"at":"forge_back","act":"sleep"}],"lines":{"work":["스승님 안 계실 땐 제가 해 볼게요!","망치 손잡이를 오늘만 세 번 닦았어요."],"off":["점심은 대장간 마당에서 먹어요.","이 점심만 다 먹고 나면 저녁 당번이에요."],"eat":["장갑 벗은 김에 찬물도 한 모금."],"knock":["쉿. 볼칸 아저씨까지 깨면 혼나요."]}},"r_peng":{"name":"펭","hero":[11,6,8,15,0,7,2,8,10,1,0],"cos":["hat_cap_blue"],"traits":["부지런","수다","길눈"],"home":"cot3","plan":[{"h":4,"at":"cot3","act":"sleep"},{"h":7,"at":"r_mail","act":"walk","pose":"carry"},{"h":17,"at":"steps","act":"rest"},{"h":21,"at":"cot3","act":"sleep"}],"lines":{"work":["편지 왔어요! …아, 당신 건 아니네요.","종이마다 바람 냄새가 달라요."],"off":["오늘 배달은 끝! 거꾸로 돌아가는 길은 늘 신기해요.","분수에서 왼쪽으로 가면 우편함이 보여요."],"knock":["내일 첫 편지는 누구에게 갈까?"]}},"story":{"traits":["푸근","이야기꾼","귀 밝음"],"home":"cot1","plan":[{"h":4,"at":"cot1","act":"sleep"},{"h":7,"at":"bench","act":"tend","pose":"knit"},{"h":11,"at":"lib_nook","act":"read"},{"h":19.5,"at":"fire","act":"work"},{"h":26.5,"at":"cot1","act":"sleep"}],"lines":{"work":["불 가까이 앉으렴. 밤바람은 겉옷 사이로 잘도 드나드는구나.","옛날에는 저 정령나무가 우리보다 작았단다."],"off":["낮에는 이야기가 잠을 자요. 밤에 오렴.","볕이 있을 땐 책을 읽고, 해가 지면 기억을 읽지."],"night":["불씨 하나씩 품고 광장을 세웠단다."],"knock":["할미 이야기는 밤에 모닥불에서 이어 가자꾸나."]}}},"rel":[{"a":"smith","b":"bank","kind":"friend","story":"저녁마다 같은 식탁, 한 사람은 말이 없고 한 사람은 느리다.","chat":["a: 따뜻할 때 먹게.","b: 자네도 천천히 좀 먹어.","a: 천천히 먹으면 주인이 더 담아 주질 않아."]},{"a":"smith","b":"forge_tong","kind":"mentor","story":"스승이 식당에 간 밤, 견습생이 모루를 지킨다.","chat":["a: 망치는 팔이 아니라 어깨로 들어.","b: 좋아요, 오늘은 한 번만 넘어뜨릴게요."]}]},
   quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"버드나무광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":5,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false},{"id":"sq_merc_hares","giver":"merc_grey","title":"초원의 두 머리","text":"바람초원의 쌍두 토끼가 울타리까지 내려온다. 10마리만 쫓아내 주게. 첫 의뢰로 딱이지.","done":"깔끔하군. 늑대발의 일원이 될 자격이 있어.","goal":{"type":"kill","mob":"twinhare","n":10},"req":{"lv":1,"quest":null},"reward":{"xp":150,"gold":100,"items":[["hp_s",5]]},"repeat":false},{"id":"sq_merc_boar","giver":"merc_grey","title":"반쪽 멧돼지 사냥","text":"몸이 반으로 갈라진 멧돼지들이 길을 막고 있다. 8마리만 부탁하지. 돌진하면 옆으로 피하게.","done":"잘했다. 그 녀석들 돌진은 우리 단원들도 무서워하지.","goal":{"type":"kill","mob":"splitboar","n":8},"req":{"lv":10,"quest":"sq_merc_hares"},"reward":{"xp":900,"gold":400,"items":[["hp_m",5],["stone",1]]},"repeat":false},{"id":"sq_merc_letter","giver":"merc_grey","title":"볼칸에게 보내는 주문서","text":"광장 동쪽 장터의 대장장이 볼칸에게 이 주문서를 전해 주게. 단원들 새 칼이 필요하거든.","done":"볼칸이 받았다고? 좋아. 이건 심부름 값이다.","goal":{"type":"talk","npc":"smith"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":120,"items":[["recall",2]]},"repeat":false},{"id":"sq_kong_parcel","giver":"store_kong","title":"콩콩의 급한 배달","text":"보글 아저씨한테 이 상자 좀 전해 줄래? 다리가 짧아서 연금공방까지 가면 해가 질 거야!","done":"고마워! 보글 아저씨가 상자를 흔들어 봤다고? 앗, 조심하라고 했는데!","goal":{"type":"talk","npc":"bogle"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":90,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_borum_frogs","giver":"lib_borum","title":"표본 채집","text":"괴수 도감에 창자 개구리 항목이 비어 있어요. 바람초원에서 8마리를 잡아 와 주세요. 조용히, 도서관에서는 비명 금지!","done":"좋아요, 표본이 충분하네요. 도감이 한 장 두꺼워졌어요.","goal":{"type":"kill","mob":"gutfrog","n":8},"req":{"lv":3,"quest":null},"reward":{"xp":250,"gold":170,"items":[["hp_s",5],["mp_s",3]]},"repeat":false},{"id":"sq_mungchi_trout","giver":"diner_reg2","title":"쥬쥬표 송어 구이","text":"쥬쥬 아줌마의 송어 소금구이가 먹고 싶은데 재료가 똑 떨어졌대. 무지개 송어 3마리만 낚아다 줘!","done":"냠냠, 이 냄새! 약속대로 한 접시 몫은 네 거야.","goal":{"type":"collect","item":"fish_m","n":3},"req":{"lv":8,"quest":null},"reward":{"xp":650,"gold":300,"items":[["food_m",2],["hp_s",3]]},"repeat":false},{"id":"sq_bogle_crows","giver":"bogle","title":"보글보글 까마귀 눈","text":"새 시약에는 까마귀의 눈알이 한 방울 필요합니다. 눈알 까마귀 6마리를 바람초원에서 잡아 주세요. 폭발은 안 해요. 아마도.","done":"오오, 거품이 보랏빛으로! 이건 대성공입니다!","goal":{"type":"kill","mob":"eyecrow","n":6},"req":{"lv":12,"quest":"sq_kong_parcel"},"reward":{"xp":1110,"gold":410,"items":[["hp_m",3],["mp_m",2]]},"repeat":false},{"id":"sq_lira_song","giver":"inn_lira","title":"잠꾸러기를 위한 자장가","text":"새 자장가를 짓는 중인데, 여관 구석의 토토 씨가 어떤 노래를 좋아하는지 물어봐 줄래요?","done":"호오, 숲의 소리가 들어간 노래를 좋아한다고요? 영감이 마구 떠올라요!","goal":{"type":"talk","npc":"inn_toto"},"req":{"lv":20,"quest":null},"reward":{"xp":1910,"gold":510,"items":[["inn_bread",3],["hp_m",2]]},"repeat":false},{"id":"sq_bori_scout","giver":"hall_bori","title":"숲길 정찰","text":"이장으로서 속삭임 숲 길이 안전한지 알아야겠네. 직접 가서 한 바퀴 둘러보고 오게. 조심하게나.","done":"무사히 다녀왔군! 숲이 아직 버틸 만하다니 마을도 한시름 놓겠네.","goal":{"type":"visit","map":"forest"},"req":{"lv":25,"quest":null},"reward":{"xp":2730,"gold":620,"items":[["recall",2],["hp_m",3]]},"repeat":false},{"id":"sq_bawi_deer","giver":"merc_bawi","title":"갈비뼈 사슴의 뿔","text":"내가 젊을 때 갈비뼈 사슴한테 엉덩이를 찔렸지. 속삭임 숲에서 8마리만 혼내 주게. 복수는 후배가 하는 법이야.","done":"허허, 속이 다 시원하구먼. 이건 늙은이의 쌈짓돈일세.","goal":{"type":"kill","mob":"ribdeer","n":8},"req":{"lv":33,"quest":null},"reward":{"xp":6600,"gold":990,"items":[["hp_m",5],["stone",1]]},"repeat":false},{"id":"sq_toto_moths","giver":"inn_toto","title":"불빛 쫓는 나방","text":"으음... 잠을 잘 수가 없어... 인면 나방들이 창문에서 사람 얼굴로 웃고 있거든... 숲의 나방 8마리만 쫓아 줘...","done":"드디어... 조용해... 쿨쿨... 아, 고마워... 이건 꿈값이야...","goal":{"type":"kill","mob":"mothface","n":8},"req":{"lv":45,"quest":"sq_lira_song"},"reward":{"xp":14050,"gold":1320,"items":[["hp_l",3],["stone",1]]},"repeat":false},{"id":"sq_dongdong_pigeons","giver":"dongdong","title":"베란다의 비둘기 떼","text":"입주민들이 난리예요! 네온 시티의 비둘기 떼살이 자꾸 베란다에 앉는대요. 12마리만 정리해 주세요.","done":"살았다! 이제 빨래를 널 수 있겠어요. 관리비 대신 받으세요!","goal":{"type":"kill","mob":"pigeonmass","n":12},"req":{"lv":50,"quest":null},"reward":{"xp":18230,"gold":1460,"items":[["hp_l",3],["stone",2]]},"repeat":false},{"id":"sq_borum_blight","giver":"lib_borum","title":"시든 숲의 기록","text":"단풍 왕도의 다람쥐들이 가을 열병에 걸렸다는 소문이 있어요. 한 꼬리 다람쥐떼 12마리를 기록해 와 주세요. 위험하면 도망쳐도 좋아요!","done":"멋진 기록이에요. 이 한 장이 도감의 마지막 쪽을 채웠어요.","goal":{"type":"kill","mob":"blightsquirrel","n":12},"req":{"lv":150,"quest":"sq_borum_frogs"},"reward":{"xp":1017960,"gold":4210,"items":[["hp_l",5],["mp_l",3],["stone",3],["sc_xp",1]]},"repeat":false}]},
 };
@@ -378,6 +378,9 @@ const ITEMS = {
   mp_s: { name: "파란 물약", type: "pot", mana: 40, price: 25, desc: "MP를 40 회복한다." },
   mp_m: { name: "큰 파란 물약", type: "pot", mana: 140, price: 80, desc: "MP를 140 회복한다." },
   mp_l: { name: "농축 파란 물약", type: "pot", mana: 340, price: 170, desc: "MP를 340 회복한다." },
+  // charms (66-charms.js): one to a slot, never stacked, sold or stored; `charm_nail` opens a cell of the board
+  charm: { name: "참", type: "charm", price: 0, desc: "주아나가 감정해 주는 빛나는 조각. 감정한 참은 참 보드에 놓아야 힘을 낸다." },
+  charm_nail: { name: "참틀 확장못", type: "mat", price: 0, desc: "주아나에게 가져가면 골드와 함께 참 보드의 칸을 하나 연다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
   recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 버드나무광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
@@ -500,7 +503,7 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "ribdeer_bile", oasis: "bearmaw_gold", coast: "gatorhalf_steel" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -525,7 +528,7 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, frostkeep: 14 };
 const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
@@ -563,6 +566,7 @@ const MOBS = {
   gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80 },
   eyecrow: { name: "눈알 까마귀", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true },   // circles the pond and minds its own business, so the shore stays a fishing spot
   lambmaw: { name: "뒤집힌 양", lv: 6, hp: 110, atk: 15, def: 1, spd: 38, xp: 38, gold: [7, 16], aggro: 72, range: 18, cd: 1300, charge: 110 },
+  meadowram: { name: "금 간 뿔 숫양", sp: "lambmaw", tint: "ash", lv: 7, hp: 134, atk: 18, def: 2, spd: 40, xp: 49, gold: [8, 19], aggro: 64, range: 18, cd: 1400, charge: 100 },
   // 속삭임 숲
   splitboar: { name: "반쪽 멧돼지", lv: 8, hp: 170, atk: 23, def: 2, spd: 44, xp: 60, gold: [10, 22], aggro: 80, range: 18, cd: 1100, charge: 104 },
   ribdeer: { name: "갈비뼈 사슴", lv: 10, hp: 330, atk: 26, def: 8, spd: 26, xp: 92, gold: [12, 26], aggro: 64, range: 18, cd: 1400, slam: 34 },
@@ -606,6 +610,26 @@ const MOBS = {
   sowseer: { name: "눈 달린 암퇘지", lv: 37, hp: 3000, atk: 112, def: 30, spd: 30, xp: 1300, gold: [90, 158], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
   doghead_fire: { name: "불타는 세 머리 들개", sp: "doghead", tint: "fire", lv: 38, hp: 2900, atk: 116, def: 26, spd: 52, xp: 1400, gold: [94, 164], aggro: 100, range: 20, cd: 1000, charge: 116, pool: 24, poolKind: 1 },
   abyssboss: { name: "심연의 어미", lv: 40, hp: 48000, atk: 200, def: 40, spd: 34, xp: 30000, gold: [4000, 6000], aggro: 140, range: 30, cd: 1400, resp: 240000, boss: true, gear: 1, fan: 160, pool: 34, poolKind: 2, charge: 150 },
+  // 정글 해안도로 (maps-v2 M3) — beasts met before, grown worse in the wet heat (new coast species come in a later step)
+  catsplit_gold: { name: "표범 무늬 고양이", sp: "catsplit", tint: "gold", lv: 20, hp: 600, atk: 64, def: 6, spd: 56, xp: 290, gold: [32, 62], aggro: 94, range: 18, cd: 1000, leap: 100 },
+  toadbrood_poison: { name: "늪 알 밴 두꺼비", sp: "toadbrood", tint: "poison", lv: 21, hp: 760, atk: 68, def: 14, spd: 30, xp: 330, gold: [36, 70], aggro: 86, range: 20, cd: 1500, pool: 26 },
+  hydrasnake_poison: { name: "맹독 세 머리 뱀", sp: "hydrasnake", tint: "poison", lv: 23, hp: 780, atk: 78, def: 8, spd: 38, xp: 400, gold: [40, 76], aggro: 94, range: 66, cd: 1700, volley: true },
+  mothface_bile: { name: "독가루 나방", sp: "mothface", tint: "bile", lv: 24, hp: 880, atk: 82, def: 8, spd: 44, xp: 450, gold: [44, 84], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 22 },
+  ribdeer_bile: { name: "이끼 갈비뼈 사슴", sp: "ribdeer", tint: "bile", lv: 26, hp: 1500, atk: 92, def: 22, spd: 30, xp: 540, gold: [50, 94], aggro: 80, range: 20, cd: 1400, slam: 38 },
+  // 모래바람 오아시스
+  foxtwine_gold: { name: "사막 꼬인 여우", sp: "foxtwine", tint: "gold", lv: 28, hp: 1200, atk: 100, def: 12, spd: 62, xp: 680, gold: [58, 104], aggro: 98, range: 17, cd: 850, leap: 96 },
+  hydrasnake_gold: { name: "모래 세 머리 뱀", sp: "hydrasnake", tint: "gold", lv: 29, hp: 1250, atk: 102, def: 14, spd: 38, xp: 730, gold: [60, 108], aggro: 96, range: 70, cd: 1700, volley: true },
+  lambmaw_bone: { name: "말라붙은 양", sp: "lambmaw", tint: "bone", lv: 30, hp: 1500, atk: 100, def: 16, spd: 40, xp: 790, gold: [64, 114], aggro: 90, range: 19, cd: 1200, charge: 112 },
+  eyecrow_ash: { name: "잿빛 눈알 까마귀", sp: "eyecrow", tint: "ash", lv: 31, hp: 1400, atk: 98, def: 12, spd: 46, xp: 850, gold: [66, 118], aggro: 98, range: 18, cd: 1100, fly: true },
+  twingoat_gold: { name: "모래 쌍두 염소", sp: "twingoat", tint: "gold", lv: 33, hp: 2000, atk: 100, def: 24, spd: 44, xp: 980, gold: [74, 130], aggro: 90, range: 20, cd: 1100, charge: 110 },
+  bearmaw_gold: { name: "모래 아가리 곰", sp: "bearmaw", tint: "gold", lv: 34, hp: 2600, atk: 104, def: 28, spd: 28, xp: 1060, gold: [78, 136], aggro: 80, range: 21, cd: 1500, slam: 40 },
+  // 산호 해안
+  crabskull_blood: { name: "붉은 두개골 게", sp: "crabskull", tint: "blood", lv: 26, hp: 1370, atk: 92, def: 24, spd: 34, xp: 540, gold: [48, 88], aggro: 84, range: 20, cd: 1400, charge: 118 },
+  fishwalker_frost: { name: "푸른 다리 달린 생선", sp: "fishwalker", tint: "frost", lv: 27, hp: 1580, atk: 95, def: 22, spd: 32, xp: 590, gold: [52, 92], aggro: 80, range: 22, cd: 1500, slam: 38 },
+  eelknot_frost: { name: "산호 뱀장어 매듭", sp: "eelknot", tint: "frost", lv: 28, hp: 1320, atk: 99, def: 16, spd: 40, xp: 660, gold: [56, 100], aggro: 98, range: 76, cd: 1800, volley: true },
+  squidrat_blood: { name: "산호 촉수 쥐", sp: "squidrat", tint: "blood", lv: 29, hp: 1500, atk: 101, def: 18, spd: 56, xp: 715, gold: [59, 105], aggro: 96, range: 18, cd: 1000, pool: 24, poolKind: 2 },
+  leechmaw_bone: { name: "흰 거머리 아가리", sp: "leechmaw", tint: "bone", lv: 30, hp: 1700, atk: 103, def: 20, spd: 44, xp: 785, gold: [62, 111], aggro: 92, range: 19, cd: 1100, leap: 90 },
+  gatorhalf_steel: { name: "강철 반쪽 악어", sp: "gatorhalf", tint: "steel", lv: 32, hp: 2100, atk: 106, def: 30, spd: 30, xp: 880, gold: [69, 119], aggro: 82, range: 21, cd: 1500, slam: 42 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes
   blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
@@ -614,10 +638,18 @@ const MOBS = {
   shroomboar: { name: "버섯등 멧돼지", lv: 43, hp: 3300, atk: 124, def: 28, spd: 48, xp: 1700, gold: [104, 180], aggro: 92, range: 20, cd: 1100, charge: 116, pool: 26 },
   gravrose: { name: "묘지 장미", lv: 44, hp: 3000, atk: 128, def: 22, spd: 22, xp: 1780, gold: [108, 186], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
   rotstag: { name: "썩은 관 사슴왕", lv: 46, hp: 5200, atk: 136, def: 32, spd: 42, xp: 2200, gold: [120, 204], aggro: 92, range: 22, cd: 1300, charge: 124, slam: 42, fan: 100 },
+  bogcrown: { name: "검은 왕관 뿌리짐승", sp: "stumpmaw", tint: "ash", lv: 47, hp: 4250, atk: 138, def: 35, spd: 28, xp: 3100, gold: [118, 184], aggro: 82, range: 22, cd: 1600, slam: 42 },
+  hollowowl: { name: "눈먼 문지기 올빼미", sp: "owlstare", tint: "bone", lv: 49, hp: 4050, atk: 144, def: 30, spd: 34, xp: 3550, gold: [122, 195], aggro: 94, range: 68, cd: 1800, fly: true, fan: 105 },
+  rootwarden: { name: "얼어붙은 왕릉 파수꾼", sp: "rotstag", tint: "frost", lv: 50, hp: 5500, atk: 155, def: 42, spd: 39, xp: 3950, gold: [134, 210], aggro: 90, range: 22, cd: 1450, charge: 128, slam: 43 },
+  // 성에왕의 성채: the open approach, the paired galleries and the crown chamber
+  rimehare: { name: "서리창 쌍두토끼", lv: 50, hp: 4600, atk: 142, def: 30, spd: 52, xp: 3400, gold: [132, 204], aggro: 80, range: 18, cd: 1350, leap: 92 },
+  frostmoth: { name: "갈라진 유리날개", lv: 50, hp: 4500, atk: 149, def: 33, spd: 37, xp: 3900, gold: [142, 218], aggro: 92, range: 32, cd: 1900, fly: true, fan: 96 },
+  crownstag: { name: "성에왕 유리뿔", lv: 50, hp: 520000, atk: 205, def: 50, spd: 34, xp: 74000, gold: [5200, 7600], aggro: 124, range: 30, cd: 1500, resp: 300000, boss: true, gear: 1, charge: 148, slam: 48, fan: 144, pool: 34, poolKind: 2 },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
-  ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]]]) {
+  ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]],
+  ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 30, 1250, [440, 775]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {
@@ -649,13 +681,13 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   { mob: "ratking", n: 12, title: "무덤 아래", text: "숲의 막다른 폐허에 지하묘지로 내려가는 계단이 있다네. 꼬리가 엉킨 쥐 왕 12마리를 정리해 주게.", xp: 3000, gold: 750, items: [["hp_m", 5]] },
   { mob: "toadbrood", n: 10, title: "등에 밴 것", text: "지하묘지의 알 밴 두꺼비 10마리를 잡아 주게. 뱉어 놓은 웅덩이는 한참 남으니, 밟고 서 있지 말게.", xp: 3500, gold: 820, items: [["mp_m", 4]] },
   { mob: "batcluster", n: 10, title: "터지는 것", text: "지하묘지 깊은 곳의 박쥐 덩어리 10마리를 터뜨려 주게. 죽으면서 터지니, 쓰러뜨리고 물러서게.", xp: 4000, gold: 900, items: [["ru_ign", 1]] },
-  { mob: "pigeonmass", n: 10, title: "다른 세계의 하늘", text: "서쪽 문 너머는 '네온 시티'라는 다른 세계일세. 한 덩어리로 뭉친 비둘기 떼살 10마리를 떨어뜨려 주게.", xp: 4600, gold: 1000, items: [["mp_m", 5]] },
+  { mob: "pigeonmass", n: 10, title: "다른 세계의 하늘", text: "지하묘지 깊은 회랑 끝에서 네온 시티 변두리로 들어갈 수 있네. 한 덩어리로 뭉친 비둘기 떼살 10마리를 잡아 주게.", xp: 4600, gold: 1000, items: [["mp_m", 5]] },
   { mob: "catsplit", n: 12, title: "뒷골목의 울음", text: "네온 시티 골목의 갈라진 고양이 12마리를 잡아 주게. 소리 없이 뛰어든다네.", xp: 6500, gold: 1300, items: [["stone", 4]] },
   { mob: "fishwalker", n: 10, title: "뭍에 오른 것", text: "다리 달린 생선 10마리를 쓰러뜨려 주게. 단단하니 파티가 필요할 걸세.", xp: 9500, gold: 1800, items: [["stone", 5]] },
   { mob: "leechmaw", n: 12, title: "도시의 밑바닥", text: "네온 시티 뒷마당에 하수도로 내려가는 구멍이 있다네. 거머리 아가리 12마리를 떼어 내 주게.", xp: 12000, gold: 2200, items: [["hp_m", 8]] },
   { mob: "crabskull", n: 10, title: "남의 머리", text: "하수도에는 남의 두개골을 뒤집어쓴 게가 있다네. 두개골 게 10마리를 부숴 주게. 단단하고, 돌진이 매섭네.", xp: 13500, gold: 2400, items: [["stone", 4]] },
   { mob: "eelknot", n: 10, title: "매듭", text: "하수도 끝의 뱀장어 매듭 10마리를 풀어 주게. 멀리서 전기를 쏜다네.", xp: 15000, gold: 2600, items: [["ru_acu", 1]] },
-  { mob: "bearmaw", n: 8, title: "배에 난 입", text: "숲 끝의 수정 동굴은 균열의 중심일세. 아가리 곰 8마리를 쓰러뜨려 주게. 땅을 내리칠 땐 물러서게.", xp: 19000, gold: 3200, items: [["ru_san", 1], ["stone", 5]] },
+  { mob: "bearmaw", n: 8, title: "배에 난 입", text: "하수도 끝 회랑의 물길을 따라가면 수정 동굴이 나와. 아가리 곰 8마리를 쓰러뜨려 주게. 땅을 내리칠 땐 물러서게.", xp: 19000, gold: 3200, items: [["ru_san", 1], ["stone", 5]] },
   { mob: "boss", n: 1, title: "균열의 군주", text: "모든 세계를 뒤섞은 장본인, 균열의 군주 크리온을 쓰러뜨려 주게. 반드시 파티를 꾸려서 가게.", xp: 45000, gold: 8000, items: [["stone", 10], ["ru_lum", 1]] },
   { mob: "horsehalf", n: 12, title: "군주의 뒤편", text: "군주가 쓰러진 자리 뒤에 더 깊은 균열이 열렸네. 피의 심연의 반쪽 말 12마리를 쓰러뜨려 주게.", xp: 30000, gold: 5000, items: [["hp_m", 10], ["ru_fos", 1]] },
   { mob: "lionhand", n: 10, title: "손으로 된 갈기", text: "심연 깊은 곳의 손갈기 사자 10마리를 쓰러뜨려 주게. 땅을 치고, 멀리서는 무언가를 던진다네.", xp: 38000, gold: 6000, items: [["stone", 8]] },
@@ -663,6 +695,10 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   { mob: "blightsquirrel", n: 12, title: "단풍 아래의 병", text: "어미는 쓰러졌지만, 그 병은 뿌리를 타고 지상으로 번졌다네. 속삭임 숲 동쪽, 단풍에 묻힌 옛 왕도로 가서 한 꼬리 다람쥐떼 12마리를 정리해 주게.", xp: 40000, gold: 6500, items: [["hp_m", 10]] },
   { mob: "shroomboar", n: 12, title: "포자 무덤", text: "왕도의 멧돼지들은 등에 버섯을 키운다네. 버섯등 멧돼지 12마리를 잡아 주게. 뱉어 낸 포자 웅덩이는 독이니 밟지 말게.", xp: 46000, gold: 7200, items: [["stone", 8], ["mp_m", 6]] },
   { mob: "rotstag", n: 4, title: "썩은 왕관", text: "무너진 예배당엔 왕관을 쓴 사슴이 산다네. 옛 왕의 사냥감이었다지. 썩은 관 사슴왕 4마리를 쓰러뜨려, 왕도의 병을 끊어 주게.", xp: 60000, gold: 9000, items: [["stone", 12], ["ru_lum", 1]] },
+  { mob: "bogcrown", n: 24, title: "서리에 물든 뿌리", text: "단풍 왕도 안쪽부터 땅이 얼고 있네. 검은 왕관 뿌리짐승 24마리를 베어 오래된 왕릉으로 가는 길을 트게.", xp: 52000, gold: 9500, items: [["stone", 12]] },
+  { mob: "hollowowl", n: 28, title: "소리로 지키는 길", text: "왕도 깊은 폐허의 올빼미는 발자국 소리를 듣고 날아오르네. 눈먼 문지기 올빼미 28마리를 쓰러뜨려 사냥길을 열게.", xp: 61000, gold: 11000, items: [["hp_m", 15], ["mp_m", 10]] },
+  { mob: "rootwarden", n: 32, title: "얼어붙은 왕의 문", text: "단풍 왕도 남동쪽에서 얼어붙은 왕릉 파수꾼 32마리를 쓰러뜨려 주게. 성에왕의 성채는 Lv.200부터 들어갈 수 있네.", xp: 74000, gold: 15000, items: [["stone", 16], ["ru_fos", 2]] },
+  { mob: "crownstag", n: 1, title: "마지막 왕의 뿔", text: "성에왕의 성채 안쪽 왕좌에 유리뿔이 있다네. 원형 광장 바깥으로 빠질 길을 살핀 뒤, 동료와 함께 왕을 쓰러뜨려 주게.", xp: 40000, gold: 24000, items: [["stone", 20], ["ru_lum", 2]] },
 ];
 
 // ───────────────────────────── bag expansion and housing (46-bag.js, 64-housing.js) ─────────────────────────────
@@ -1677,6 +1713,8 @@ const PIECE = {
   N: [undefined, "N"], $: [undefined, "d"], "!": [undefined, "i"], "^": [undefined, "f"],
   // maps-v2: still water (the temple's rune pool; the art step gives it a glow of its own)
   "~": ["w", " "],
+  // maps-v2 M3, the south-west coast: palm Ψ, reef rock Φ, shore boulder Ω, mud hut Δ (Greek: every ASCII mark is taken by the rooms' furniture); shallows (walkable), white sand, dune sand
+  "Ψ": [undefined, "Ψ"], "Φ": [undefined, "Φ"], "Ω": [undefined, "Ω"], "Δ": [undefined, "Δ"], ",": ["~", " "], _: ["S", " "], ":": ["z", " "],
 };
 const PIECES = {
   // 바람초원 · 속삭임 숲
@@ -1700,6 +1738,14 @@ const PIECES = {
   scarefield: ["FF.FF.FF", "Ft.tt.tF", "F.t*t.tF", "Ftt.tt.F", "F.t..t.F", "FFF..FFF"],
   leafmound: [".u...l.", "%%%%%%.", "%%%Y%%u", "u%%*%%%", ".%%%%%.", "...l..."],
   treetunnel: [".TTTTTTT.", "T.=====.T", "..====*=T", "T.=====.T", ".TTTTTTT."],
+  // 모래바람 오아시스 · 산호 해안 · 정글 해안도로 (maps-v2 M3): mud huts round a yard, a caravan's tents by a fire,
+  // a dry well, a ring of palms, a tide pool walled by reef, a boulder cove
+  hamlet: [".Δ...Δ.", "...p...", "Δ.p*p.Δ", "...p...", ".Ψ...Δ."],
+  caravan: [".E...E.", "..ppp..", ".pp#pp.", "Ψ.ppp.l", "......."],
+  drywell: ["..Ψ..", ".rrr.", "Or*rO", ".rrr.", "....."],
+  palmring: ["Ψ.Ψ.Ψ", ".....", "Ψ.*.Ψ", ".....", "Ψ...Ψ"],
+  tidepool: [".Φ,Φ.", "Φ,,,Φ", ",,*,,", "Φ,,,.", ".Φ.Φ.", "....."],
+  cove: ["ΩΩ.ΩΩ", "Ω___Ω", "__*__", "Ω___.", ".Ω.Ω."],
   // 잊힌 신전 (maps-v2, reference 3): a processional way three flagstones wide from the south gate to the
   // shrine in the north, round a rune pool; broken colonnades and wall stubs make side chambers. Never turned.
   temple: [
@@ -1770,10 +1816,24 @@ function wilds(cfg) {
   for (const [name, side, f] of cfg.gates) {
     if (side === "w") { const gy = Math.round(f * H); gates[name] = { t: [[1, gy], [1, gy + 1]], a: [[4, gy], [4, gy + 1]] }; fixed.push([7, gy]); keepBox(1, gy - 2, 7, gy + 3); }
     else if (side === "e") { const gy = Math.round(f * H); gates[name] = { t: [[W - 2, gy], [W - 2, gy + 1]], a: [[W - 5, gy], [W - 5, gy + 1]] }; fixed.push([W - 8, gy]); keepBox(W - 8, gy - 2, W - 2, gy + 3); }
+    else if (side === "s") { const gx = Math.round(f * W); gates[name] = { t: [[gx, H - 2], [gx + 1, H - 2]], a: [[gx, H - 5], [gx + 1, H - 5]] }; fixed.push([gx, H - 8]); keepBox(gx - 2, H - 8, gx + 3, H - 2); }
     else { const gx = Math.round(f * W); gates[name] = { t: [[gx, 1], [gx + 1, 1]], a: [[gx, 4], [gx + 1, 4]] }; fixed.push([gx, 7]); keepBox(gx - 2, 1, gx + 3, 7); }
   }
-  const sites = poisson(box, 5, 5, W - 6, H - 6, cfg.r, fixed).map(([x, y]) => ({ x, y, w: 0.78 + rnd(box) * 0.5 }));
-  const lab = partition(m, sites, S0 + 3, cfg.warp, (x, y) => x >= 2 && y >= 2 && x < W - 2 && y < H - 2);
+  // the sea (maps-v2 M3): one side of the map is water. `sd` is how far a tile lies out from the waterline (tiles,
+  // < 0 on land): surf to `surf`, walkable shallows to `dz`, deep sea beyond — no region is grown out there
+  const sea = cfg.sea || null, sd = sea ? new Float32Array(W * H) : null, dz = sea ? sea.surf + (sea.shallow || 0) : 0;
+  let sx0 = 5, sy1 = H - 6;
+  if (sea) {
+    const p1 = rnd(box) * 6.28, p2 = rnd(box) * 6.28;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const u = sea.side === "w" ? y : x, out = sea.side === "w" ? x : H - 1 - y;
+      sd[y * W + x] = sea.at + Math.sin(u / 13 + p1) * sea.amp * 0.55 + Math.sin(u / 5.3 + p2) * sea.amp * 0.2 + (N1[y * W + x] - 0.5) * sea.amp * 0.5 - out;
+    }
+    const lim = Math.max(0, Math.ceil(sea.at + sea.amp - dz)) + 2;
+    if (sea.side === "w") sx0 += lim; else sy1 -= lim;
+  }
+  const sites = poisson(box, sx0, 5, W - 6, sy1, cfg.r, fixed).map(([x, y]) => ({ x, y, w: 0.78 + rnd(box) * 0.5 }));
+  const lab = partition(m, sites, S0 + 3, cfg.warp, (x, y) => x >= 2 && y >= 2 && x < W - 2 && y < H - 2 && !(sd && sd[y * W + x] > dz));
   const { R, E: bord, inner } = regionsOf(m, lab, sites.length);
   for (const r of R) { let e = 0, mo = 0; for (const i of r.tiles) { e += El[i]; mo += Mo[i]; } r.e = e / Math.max(1, r.area); r.mo = mo / Math.max(1, r.area); }
   const n = R.length;
@@ -1833,7 +1893,8 @@ function wilds(cfg) {
     if (kind === "cliff") m.o[y][x] = "C";
     else if (kind === "trees") m.o[y][x] = h2(x, y, S0) < 0.82 ? cfg.treeCh : cfg.treeCh2;
     else if (kind === "hedge") m.o[y][x] = "H";
-    else if (kind === "rocks") m.o[y][x] = h2(x, y, S0) < 0.5 ? "R" : "B";
+    else if (kind === "rocks") m.o[y][x] = cfg.rocks ? cfg.rocks[h2(x, y, S0) < 0.5 ? 0 : 1] : h2(x, y, S0) < 0.5 ? "R" : "B";
+    else if (kind === "palms") m.o[y][x] = h2(x, y, S0) < 0.8 ? "Ψ" : "B";
     else if (kind === "ruin") m.o[y][x] = h2(x, y, S0) < 0.85 ? "U" : "q";
     else if (kind === "bramble") m.o[y][x] = h2(x, y, S0) < 0.7 ? "B" : cfg.treeCh;
   };
@@ -1888,9 +1949,37 @@ function wilds(cfg) {
     if (d <= 3 && !keep[i] && N1[i] + (3 - d) * 0.17 > 0.86) m.o[y][x] = cfg.edge;
   }
 
+  // the sea and its shore: deep water, a band of walkable shallows with reef rocks, sand islets and the odd deep
+  // hole, the surf line, then the beach (sand, or a strand of black boulders); a barrier that ran out into the
+  // water stands on as reef
+  if (sea) {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x, d = sd[i], rim = x < 2 || y < 2 || x >= W - 2 || y >= H - 2;
+      if (d <= -sea.beach) continue;
+      if (d > dz || (d > 0 && rim)) { m.g[y][x] = "w"; m.o[y][x] = " "; continue; }
+      if (rim) continue;
+      const was = m.o[y][x] !== " ";
+      if (d > 0) {
+        const sh = d > sea.surf;
+        m.g[y][x] = sh ? "~" : "-";
+        m.o[y][x] = was && !keep[i] ? "Φ" : " ";
+        if (!sh || keep[i]) continue;
+        const inner2 = d > sea.surf + 2 && d < dz - 2;
+        if (inner2 && El[i] > 0.6) { m.g[y][x] = sea.sand; if (!was && h2(x, y, S0 + 21) < 0.1) m.o[y][x] = "Ψ"; }
+        else if (inner2 && !was && Mo[i] > 0.72 && N1[i] > 0.45) m.g[y][x] = "w";
+        else if (!was && N1[i] > 0.6 && h2(x, y, S0 + 22) < sea.reef) m.o[y][x] = "Φ";
+      } else {
+        m.g[y][x] = sea.sand;
+        if (keep[i]) continue;
+        if (was) { if (sea.rock) m.o[y][x] = sea.rock; }
+        else if (sea.rock && h2(x, y, S0 + 23) < sea.rockP * (N1[i] > 0.5 ? 1.6 : 0.6)) m.o[y][x] = sea.rock;
+      }
+    }
+  }
+
   // the river: it runs downhill from the top of the map to the bottom
   const falls = [], riverAt = new Uint8Array(W * H);
-  const water = (x, y) => { if (x < 2 || y < 1 || x >= W - 2 || y >= H - 1) return; m.g[y][x] = "w"; m.o[y][x] = " "; };
+  const water = (x, y) => { if (x < 2 || y < 1 || x >= W - 2 || y >= H - 1 || (sd && sd[y * W + x] > 0)) return; m.g[y][x] = "w"; m.o[y][x] = " "; };
   if (cfg.river) {
     // a meandering centre line — two sine waves of different length and some noise — from the top edge to the bottom
     const sx = W * (0.38 + rnd(box) * 0.24), a1 = 4 + rnd(box) * 2.5, l1 = 11 + rnd(box) * 5, p1 = rnd(box) * 6.28, a2 = 1.5 + rnd(box), l2 = 4.5 + rnd(box) * 2;
@@ -1986,12 +2075,12 @@ function wilds(cfg) {
   }
 
   // set pieces
-  const free = (x, y) => m.o[y][x] === " " && !"wbv".includes(m.g[y][x]) && !keep[y * W + x];
+  const free = (x, y) => m.o[y][x] === " " && !"wbv~-".includes(m.g[y][x]) && !keep[y * W + x];
   const placeIn = (r, name, pad) => {
     const rot0 = ri(box, 0, 3), flip = rnd(box) < 0.5, rot = UPRIGHT.has(name) ? 0 : rot0;
     const [w, h] = stampSize(PIECES[name], rot);
     // a piece may stand where loose trees grow (it clears them), never on a barrier, water or a kept way
-    const room = (x, y) => !"wbv".includes(m.g[y][x]) && !keep[y * W + x] && !"CHUZ".includes(m.o[y][x]);
+    const room = (x, y) => !"wbv~-".includes(m.g[y][x]) && !keep[y * W + x] && !"CHUZ".includes(m.o[y][x]);
     const p = fitIn(m, lab, inner, r, w, h, pad, room) || fitIn(m, lab, inner, r, w, h, 2, room) || (cfg.padMin === 1 ? fitIn(m, lab, inner, r, w, h, 1, room) : null);
     if (!p) return null;
     const tags = piece(m, name, p[0], p[1], rot, flip);
@@ -2160,6 +2249,23 @@ function wilds(cfg) {
     }
   }
 
+  // an oasis (maps-v2 M3): the ground within a few steps of water is green, and palms stand round it
+  if (cfg.green) {
+    const dist = new Int8Array(W * H).fill(-1), q = [];
+    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) if (m.g[y][x] === "w" && !(sd && sd[y * W + x] > 0)) { dist[y * W + x] = 0; q.push(y * W + x); }
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h], x = i % W, y = (i - x) / W;
+      if (dist[i] >= cfg.green.r) continue;
+      for (const [dx, dy] of D4) { const X = x + dx, Y = y + dy, j = Y * W + X; if (X < 2 || Y < 2 || X >= W - 2 || Y >= H - 2 || dist[j] >= 0) continue; dist[j] = dist[i] + 1; q.push(j); }
+    }
+    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+      const i = y * W + x, d = dist[i];
+      if (d < 1 || "wbv=r".includes(m.g[y][x]) || m.g[y][x] === cfg.road) continue;
+      if (d < cfg.green.r || N2[i] > 0.5) m.g[y][x] = d === 1 ? "t" : N2[i] > 0.62 ? '"' : d === 2 ? "." : ",";
+      if (d >= 2 && free(x, y) && h2(x, y, S0 + 24) < cfg.green.palm) m.o[y][x] = h2(x, y, S0 + 25) < 0.8 ? "Ψ" : "B";
+    }
+  }
+
   // roads: from the way in to every way on, the cheapest way over dry, flat ground; bridges where they cross water
   const roadCost = (j, i, back) => {
     const [x, y] = at(j);
@@ -2173,14 +2279,25 @@ function wilds(cfg) {
     for (let s = 0; s < path.length; s++) {
       const t = path[s], [x, y] = at(t), nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
       // (a shoulder keeps its grass: the worn path stays a thin line through a way three tiles wide)
-      const lay1 = (X, Y, shoulder) => {
+      const lay1 = (X, Y, shoulder, edge) => {
         if (X < 2 || Y < 2 || X >= W - 2 || Y >= H - 2) return;
         if (m.g[Y][X] === "w") { m.g[Y][X] = "b"; m.o[Y][X] = " "; }
-        else if (m.o[Y][X] === " " || m.o[Y][X] === "e" || (shoulder && !"CHUZ".includes(m.o[Y][X]))) { if (!shoulder && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch; m.o[Y][X] = " "; }
+        else if (m.o[Y][X] === " " || m.o[Y][X] === "e" || (shoulder && !"CHUZ".includes(m.o[Y][X]))) {
+          // (a way over the shallows is a sand bar, shoulders and all; a painted road keeps its edge lines)
+          const bar = sea && sea.bar && "~-".includes(m.g[Y][X]);
+          if (bar) m.g[Y][X] = sea.bar;
+          else if (!shoulder && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch;
+          else if (edge && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = edge;
+          m.o[Y][X] = " ";
+        }
         keep[Y * W + X] = 1;
       };
       lay1(x, y);
-      if (wide && cfg.roadW === 3) { if (horiz) { lay1(x, y + 1, true); lay1(x, y - 1, true); } else { lay1(x + 1, y, true); lay1(x - 1, y, true); } }
+      if (wide && cfg.roadEdge) {
+        // a made road five wide: three of asphalt and a painted line down either edge
+        for (const d of [1, -1]) { if (horiz) lay1(x, y + d); else lay1(x + d, y); }
+        for (const d of [2, -2]) { if (horiz) lay1(x, y + d, true, cfg.roadEdge); else lay1(x + d, y, true, cfg.roadEdge); }
+      } else if (wide && cfg.roadW === 3) { if (horiz) { lay1(x, y + 1, true); lay1(x, y - 1, true); } else { lay1(x + 1, y, true); lay1(x - 1, y, true); } }
       else if (wide) {
         if (horiz) lay1(x, y + 1); else lay1(x + 1, y);
         if (N2[t] > 0.72) { if (horiz) lay1(x, y - 1); else lay1(x - 1, y); }
@@ -2514,6 +2631,12 @@ function metro(cfg) {
     spawns.push({ k: d <= 1 ? cfg.mobs[0] : bandMob(box, cfg.mobs, t, d), n: clamp(Math.round(area / cfg.tpm), 1, 6), r, elite: eliteAt(t) });
   }
   m.spawns.push(...spawns);
+  // maps-v2 M3: a second way out, a slip road off the ring through the south wall (to the jungle road)
+  if (cfg.south) {
+    const gx = Math.round(W * cfg.south);
+    for (let y = Y1 - 1; y < H - 1; y++) for (const x of [gx - 1, gx, gx + 1, gx + 2]) { if (x === gx || x === gx + 1 || y <= Y1) { m.g[y][x] = "a"; m.o[y][x] = " "; } else m.o[y][x] = "Z"; }
+    gates.south = { t: [[gx, H - 2], [gx + 1, H - 2]], a: [[gx, H - 5], [gx + 1, H - 5]] };
+  }
   for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) m.o[y][x] = " ";
   m.gates = gates;
   m.entry = gates[cfg.gate].a[0];
@@ -2581,11 +2704,11 @@ const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
 function dimPool(theme, lv) {
   const ok = (k) => MOBS[k] && !MOBS[k].chest && !MOBS[k].boss;
   const own = [];
-  for (const id of Object.keys(MAP_META)) if (MAP_META[id].theme === theme && !MAP_META[id].safe) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
+  for (const id of Object.keys(MAP_META)) if (MAP_META[id].theme === theme && !MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
   let pool = own.filter((k) => MOBS[k].lv >= lv - DIM.poolLv[0] && MOBS[k].lv <= lv + DIM.poolLv[1]);
   if (pool.length < 3) {
     const all = [];
-    for (const id of Object.keys(MAP_META)) if (!MAP_META[id].safe) for (const k of MAP_META[id].kinds) if (ok(k) && !all.includes(k)) all.push(k);
+    for (const id of Object.keys(MAP_META)) if (!MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !all.includes(k)) all.push(k);
     all.sort((a, b) => Math.abs(MOBS[a].lv - (lv - 1)) - Math.abs(MOBS[b].lv - (lv - 1)) || MOBS[a].lv - MOBS[b].lv || (a < b ? -1 : 1));
     pool = all.slice(0, 4);
   }
@@ -3183,16 +3306,26 @@ function cavern(cfg) {
     west: { t: [[3, start[1] - 1], [3, start[1]]], a: [[6, start[1] - 1], [6, start[1]]] },
     rift: { t: [[W - 3, 10], [W - 3, 11]], a: [[arena[0] + 5, 10], [arena[0] + 5, 11]] },
   };
+  // maps-v2 M3: a crack three wide in the south wall, up to the first open floor (the way out to the oasis)
+  const pass = [];
+  if (cfg.south) {
+    const gx = Math.round(W * cfg.south);
+    let top = H - 4;
+    while (top > H - 30 && !(m.g[top][gx] !== "W" && m.o[top][gx] === " " && m.g[top][gx] !== "w")) top--;
+    for (let y = top; y <= H - 3; y++) for (const x of [gx - 1, gx, gx + 1]) { digAt(m, x, y); if (m.g[y][x] === "w") m.g[y][x] = "c"; }
+    m.gates.south = { t: [[gx, H - 3], [gx + 1, H - 3]], a: [[gx, H - 6], [gx + 1, H - 6]] };
+    pass.push(m.gates.south.a[0], [gx, top]);
+  }
   for (const name of Object.keys(m.gates)) for (const [x, y] of m.gates[name].t.concat(m.gates[name].a)) digAt(m, x, y);
   for (let x = 3; x <= start[0]; x++) for (const y of [start[1] - 1, start[1]]) digAt(m, x, y);
   m.entry = m.gates.west.a[0];
-  const pts = [m.gates.west.a[1], [arena[0], arena[1] + 3], ante, m.gates.rift.a[0], m.gates.rift.t[0]];
+  const pts = [m.gates.west.a[1], [arena[0], arena[1] + 3], ante, m.gates.rift.a[0], m.gates.rift.t[0]].concat(pass);
   for (const z of order) pts.push(spot(m, z.r.px, z.r.py));
   const wideTo = pts.slice();
   for (const [x, y] of vaults) pts.push([x + 1, y + 1], [x + 2, y + 1]);
   cover(m, cfg.mobs);
   knit(m, pts, "c");
-  if (cfg.moss) wideWays(m, wideTo.concat(FIRES[cfg.id]), "TPBRulYAeKSMn", fixed, wideTo.slice(0, 5).concat(FIRES[cfg.id]));
+  if (cfg.moss) wideWays(m, wideTo.concat(FIRES[cfg.id]), "TPBRulYAeKSMn", fixed, wideTo.slice(0, 5 + pass.length).concat(FIRES[cfg.id]));
   m.regions = order.length;
   return m;
 }
@@ -4228,7 +4361,7 @@ function buildTown() {
 // know without building anything (names, bands, monster lists) is read from here into MAP_META.
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
-const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "frostkeep"];
 /**
  * Every generated hunting ground: `make` the generator, `band` the level a character should
  * be to walk in (shown on every door that leads there), `stones` how many waypoint stones stand
@@ -4245,7 +4378,7 @@ const GEN = {
     tiers: 3, tierOpen: 0.6, ramp: 2, roadW: 3, pools: 2.6, widen: "TPBRulYAe",
     ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 4, lakeR: 5, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
-    mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "lambmaw", "eyecrow", "lambmaw", "eyecrow"], pondMob: "eyecrow", chest: "chest_meadow",
+    mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "eyecrow", "lambmaw", "lambmaw", "meadowram"], pondMob: "eyecrow", chest: "chest_meadow",
     vaultKinds: ["shrine", "circle", "bloom", "lookout", "cache", "menhir"], biomes: { plain: "plain" }, featureP: 0.6, features: ["pond", "boulders", "bigtree", "pen", "cairn", "logs", "stones"],
     // wet low ground flowers or grows tall; high ground is stony; dry ground is orchard or plain grass
     // by level: the valley floor wet and in flower, the middle shelves orchard and tall grass, the tops stony heath
@@ -4265,7 +4398,7 @@ const GEN = {
     tiers: 3, tierOpen: 0.12, ramp: 2, roadW: 3, gorge: { first: 16, every: 30 }, temple: {}, stoneFr: [0.36, 0.8], widen: "TPBRulYAe",
     ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 2, lakeR: 4, vaults: 9, ruins: 5, tpm: 15.5, stair: "crypt",
     walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
-    mobs: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
+    mobs: ["splitboar", "splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
     vaultKinds: ["deadgrove", "ring", "shrine", "lookout", "menhir", "cache"], biomes: { plain: "glade" }, featureP: 0.6, features: ["pond", "boulders", "ring", "dead", "logs", "stones", "cairn"],
     // the wettest hollows are bog, the heights fern and rock; elsewhere pine, with glades and old birch groves
     biome: (e, mo, r) => (mo > 0.64 ? "bog" : e > 0.68 ? "fern" : r < 0.22 ? "glade" : r < 0.38 ? "birch" : "pine"),
@@ -4276,18 +4409,20 @@ const GEN = {
       : b === "fern" ? (h < 0.04 ? "P" : h < 0.055 ? "B" : h < 0.065 ? "R" : null)
       : (n1 > 0.55 ? h < 0.24 : h < 0.09) ? "P" : h < 0.1 ? "B" : h < 0.107 ? "l" : h < 0.113 ? "u" : null),
   }) },
-  cave: { make: cavern, band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
+  cave: { make: cavern, after: (m) => corridorGate(m, "drain", 10, 34), route: "abyss", band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
     id: "cave", name: "수정 동굴", seed: 44093, w: 132, h: 100, r: 8, vaults: 10, tpm: 16, chest: "chest_cave",
     // maps-v2 비취 수정굴: the moss way (sites `r` apart, half-width `w`), shelves where the swell passes `shelf`
     moss: { r: 15, w: 3, wind: 0.55, loops: 0.55, shelf: [0.56, 0.7], rings: 7, stream: 0.018 },
+    // maps-v2 M3: a crack in the south wall climbs out to the desert (the oasis)
+    south: 0.52,
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
-  city: { make: metro, band: [14, 21], stones: 3, theme: "city", cfg: () => ({
-    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 152, h: 102, gate: "east", gateY: 0.5, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
+  city: { make: metro, after: (m) => corridorGate(m, "ossuary", 129, 72), route: "sewer", band: [14, 21], stones: 3, theme: "city", cfg: () => ({
+    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 152, h: 102, gate: "east", gateY: 0.5, south: 0.3, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
     mobs: ["pigeonmass", "gutfrog_poison", "doghead", "squidrat", "catsplit", "fishwalker"], chest: "chest_city",
   }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
-  crypt: { make: catacomb, band: [12, 17], stones: 3, cfg: () => ({
+  crypt: { make: catacomb, route: "city", band: [12, 17], stones: 3, cfg: () => ({
     // maps-v2 벽돌 회랑 (`halls`): plazas ≥ 11 × 9 in cells ≥ 14 × 12, corridors three wide, more loops
     id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 14, minH: 12, leaf: 420, entryY: 0.8, wind: 0.5, loops: 0.3, out: true, n: 3,
     halls: true, soft: "12345I",
@@ -4295,7 +4430,7 @@ const GEN = {
     mobs: ["ratking", "twinhare_bone", "bonehound", "toadbrood", "batcluster"], guard: "bonehound", chest: "chest_crypt",
     dress: { wall: [["2", 0.1], ["3", 0.09]], floor: [["1", 0.02], ["4", 0.03], ["5", 0.01]], pillar: "5", rows: "1", junk: "4", ring: "3", vault: "4", light: "3" },
   }) },
-  sewer: { make: sewers, band: [22, 27], stones: 3, cfg: () => ({
+  sewer: { make: sewers, route: "cave", band: [22, 27], stones: 3, cfg: () => ({
     // maps-v2 벽돌 회랑 (`halls`): flagstone plazas, channel tunnels with a walkway three wide, dry side ways
     id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 14, wind: 0.5, loops: 0.35, n: 3,
     halls: true, soft: "67x4n", light: "3",
@@ -4304,11 +4439,11 @@ const GEN = {
   // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
   // wood to the chasm that swallowed the capital (a ledge down into the abyss, behind the mother). Crimson maple
   // groves on red litter, golden stands on gold, pine on the heights, clearings, and hollows where the blight fruits
-  maple: { make: wilds, band: [40, 46], stones: 3, npcs: [["hermit", "은자 바스"]], after: hermitAt, cfg: () => ({
+  maple: { make: wilds, route: "frostkeep", band: [40, 50], stones: 3, npcs: [["hermit", "은자 바스"]], after: (m) => { hermitAt(m); corridorGate(m, "ice", 137, 81); }, cfg: () => ({
     id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 160, h: 112, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
     ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 2, lakeR: 4, vaults: 10, ruins: 4, tpm: 15,
     walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3]], exit: "east",
-    mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose"], pondMob: null, chest: "chest_maple",
+    mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose", "rotstag", "bogcrown", "hollowowl", "rootwarden"], pondMob: null, chest: "chest_maple",
     campPiece: "cottage", lair: { piece: "chapel", guard: "rotstag", pack: "rotstag" },
     vaultKinds: ["graveyard", "watchtower", "kinggate", "leafmound", "scarefield", "treetunnel"],
     vaultMobs: { graveyard: "gravrose", scarefield: "crowscare", leafmound: "shroomboar", treetunnel: "stumpmaw" },
@@ -4325,11 +4460,101 @@ const GEN = {
       : b === "hollow" ? (h < 0.03 ? "Y" : h < 0.045 ? "A" : h < 0.055 ? "T" : h < 0.06 ? "u" : null)
       : h < 0.03 ? "T" : h < 0.038 ? "u" : h < 0.046 ? "B" : h < 0.05 ? "l" : null),
   }) },
-  abyss: { make: abyssal, band: [32, 40], stones: 3, cfg: () => ({
+  // ── the south-west coast (maps-v2 M3, docs/design/maps-v2.md A.7–A.9): city → jungle road → coral coast → oasis → cave
+  // 정글 해안도로: a made road, three of asphalt between yellow edge lines, winds from the city's south gate down
+  // through dense jungle; the west side is a strand of black boulders and the deep sea; old shrines and stone rings in the dead ends
+  jungle: { make: wilds, route: "coast", band: [20, 26], stones: 3, cfg: () => ({
+    id: "jungle", name: "정글 해안도로", theme: "jungle", bgm: "jungle", seed: 31337, w: 168, h: 112, r: 8.8, warp: 10, wind: 0.8, loops: 0.2, merge: 0.2, cliff: 0.2, gap: 2,
+    tiers: 2, tierOpen: 0.15, ramp: 2, roadEdge: "m", stoneFr: [0.36, 0.8], widen: "TPBRulYAeΨΩΦ",
+    sea: { side: "w", at: 17, amp: 5, surf: 2, shallow: 0, beach: 4, sand: "r", rock: "Ω", rockP: 0.2, reef: 0 },
+    ground: ":", edge: "T", treeCh: "T", treeCh2: "Ψ", road: "a", trail: "p", shore: "s", river: false, lakes: 4, lakeR: 5, vaults: 9, ruins: 4, tpm: 15.5,
+    walls: [["trees", 0.6], ["bramble", 0.15], ["ruin", 0.1], ["rocks", 0.15]], rocks: ["Ω", "R"], gates: [["north", "n", 0.72], ["south", "s", 0.34]], exit: "south",
+    mobs: ["catsplit_gold", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile"], pondMob: null, chest: "chest_jungle",
+    vaultKinds: ["shrine", "ring", "circle", "cache", "menhir", "cove"], biomes: { plain: "glade" }, featureP: 0.6, features: ["pond", "boulders", "ring", "logs", "stones", "cairn", "bigtree"],
+    // wet hollows are swamp; elsewhere deep jungle, with palm groves and glades
+    biome: (e, mo, r) => (mo > 0.62 ? "swamp" : r < 0.2 ? "glade" : r < 0.45 ? "palm" : "deep"),
+    paint: (b, n1, n2) => (b === "swamp" ? (n1 > 0.8 ? "w" : n1 > 0.56 ? "j" : ";") : b === "glade" ? (n1 > 0.6 ? '"' : n2 > 0.7 ? "t" : ".") : b === "palm" ? (n2 > 0.6 ? "," : ".") : n1 > 0.4 ? ";" : null),
+    scatter: (b, h, n1) => (b === "swamp" ? (h < 0.03 ? "A" : h < 0.045 ? "Y" : h < 0.07 ? "Ψ" : null)
+      : b === "glade" ? (h < 0.02 ? "Ψ" : h < 0.03 ? "u" : h < 0.045 ? "B" : null)
+      : b === "palm" ? (h < 0.11 ? "Ψ" : h < 0.14 ? "B" : h < 0.146 ? "l" : null)
+      : (n1 > 0.5 ? h < 0.26 : h < 0.1) ? "T" : h < 0.3 && n1 > 0.5 ? "Ψ" : h < 0.12 ? "B" : h < 0.126 ? "l" : null),
+  }) },
+  // 모래바람 오아시스: dunes in three levels of sand, ridges for cliffs; lakes ringed by grass, reeds and palms, mud-hut
+  // hamlets in the dead ends, a caravan's camp on the way; the north pass climbs to the crystal cave
+  oasis: { make: wilds, route: "cave", band: [28, 34], stones: 3, cfg: () => ({
+    id: "oasis", name: "모래바람 오아시스", theme: "desert", bgm: "oasis", seed: 52711, w: 168, h: 116, r: 10.2, warp: 9, wind: 0.55, loops: 0.28, merge: 0.3, cliff: 0.16, gap: 2,
+    tiers: 3, tierOpen: 0.55, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ", green: { r: 3, palm: 0.2 },
+    ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 6, lakeR: 7, vaults: 9, ruins: 4, tpm: 15.5,
+    walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north",
+    mobs: ["foxtwine_gold", "hydrasnake_gold", "lambmaw_bone", "eyecrow_ash", "twingoat_gold", "bearmaw_gold"], pondMob: "eyecrow_ash", chest: "chest_oasis",
+    campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "hamlet"], biomes: { plain: "flat" }, featureP: 0.65, features: ["pond", "boulders", "cairn", "stones", "dead"],
+    // by level: scrub and flats below, rippled dunes on the middle shelves, bare stony ridges on top
+    biome: (e, mo, r, t) => (t === 2 ? "ridge" : t === 1 ? (r < 0.55 ? "dune" : "flat") : mo > 0.55 ? "scrub" : "flat"),
+    paint: (b, n1, n2) => (b === "ridge" ? (n1 > 0.45 ? "z" : n1 < 0.15 ? "r" : null) : b === "dune" ? (n1 > 0.5 ? "z" : null) : b === "scrub" ? (n1 > 0.72 ? "," : n2 > 0.76 ? "z" : null) : n2 > 0.8 ? "z" : null),
+    scatter: (b, h) => (b === "ridge" ? (h < 0.03 ? "R" : h < 0.04 ? "A" : null)
+      : b === "dune" ? (h < 0.012 ? "A" : h < 0.02 ? "R" : null)
+      : b === "scrub" ? (h < 0.04 ? "B" : h < 0.058 ? "Ψ" : h < 0.068 ? "A" : null)
+      : h < 0.008 ? "Ψ" : h < 0.018 ? "R" : h < 0.024 ? "A" : null),
+  }) },
+  // 산호 해안: the dunes run down to a white beach; the whole south is sea — a surf line, then wide turquoise
+  // shallows you can wade (reef rocks, sand islets with palms, sand bars where the ways cross, deep holes), then deep water
+  coast: { make: wilds, route: "oasis", band: [26, 32], stones: 3, cfg: () => ({
+    id: "coast", name: "산호 해안", theme: "coast", bgm: "coast", seed: 41519, w: 176, h: 120, r: 9.6, warp: 9, wind: 0.85, loops: 0.3, merge: 0.4, cliff: 0.2, gap: 2,
+    tiers: 3, tierOpen: 0.15, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ",
+    sea: { side: "s", at: 42, amp: 6, surf: 2, shallow: 26, beach: 7, sand: "S", bar: "S", reef: 0.16 },
+    ground: "S", edge: "T", treeCh: "Ψ", treeCh2: "T", road: "p", shore: "S", river: false, lakes: 2, lakeR: 4, vaults: 9, ruins: 3, tpm: 15.5,
+    walls: [["palms", 0.45], ["rocks", 0.35], ["trees", 0.2]], rocks: ["Ω", "R"], gates: [["north", "n", 0.16], ["east", "e", 0.5]], exit: "east",
+    mobs: ["crabskull_blood", "fishwalker_frost", "eelknot_frost", "squidrat_blood", "leechmaw_bone", "gatorhalf_steel"], pondMob: null, chest: "chest_coast",
+    vaultKinds: ["palmring", "tidepool", "cove", "cache", "menhir", "lookout"], biomes: { plain: "beach" }, featureP: 0.6, features: ["boulders", "logs", "cairn", "stones", "pond"],
+    // the upper level is dune and palm grove (the jungle's edge), the lower the open beach
+    biome: (e, mo, r, t) => (t === 1 ? (r < 0.5 ? "dune" : "grove") : mo > 0.6 ? "grove" : "beach"),
+    paint: (b, n1, n2) => (b === "dune" ? (n1 > 0.5 ? "z" : n2 > 0.72 ? "," : null) : b === "grove" ? (n1 > 0.35 ? "." : n2 > 0.6 ? "," : null) : n2 > 0.82 ? "z" : null),
+    scatter: (b, h, n1) => (b === "grove" ? ((n1 > 0.5 ? h < 0.2 : h < 0.08) ? "Ψ" : h < 0.1 ? "B" : h < 0.11 ? "T" : null)
+      : b === "dune" ? (h < 0.015 ? "Ψ" : h < 0.03 ? "B" : h < 0.04 ? "Ω" : null)
+      : h < 0.02 ? "Ψ" : h < 0.028 ? "l" : h < 0.034 ? "Ω" : null),
+  }) },
+  abyss: { make: abyssal, route: "maple", band: [32, 40], stones: 3, cfg: () => ({
     id: "abyss", name: "피의 심연", theme: "abyss", seed: 88041, w: 152, h: 120, r: 10.5, wind: 0.55, loops: 0.06, n: 7, boss: "abyssboss", out: true,
     mobs: ["twingoat", "bonehound_ash", "horsehalf", "batcluster_blood", "lionhand", "serpentwing", "sowseer", "doghead_fire"], guard: "horsehalf", chest: "chest_abyss",
   }) },
+  frostkeep: { make: frostkeep, minLv: MAXLV, band: [50, 50], stones: 3, cfg: () => ({
+    id: "frostkeep", name: "성에왕의 성채", theme: "cave", bgm: "frostkeep", seed: 91027, w: 96, h: 64,
+    mobs: ["rimehare", "rimehare", "frostmoth"], boss: "crownstag",
+  }) },
 };
+/** A paired threshold across an existing open hallway, with its arrival two tiles off the door. */
+function corridorGate(m, name, x, y) {
+  m.gates[name] = { t: [[x, y], [x, y + 1]], a: [[x + 2, y], [x + 2, y + 1]] };
+}
+
+/** Frost-blown galleries around two loops, with a final arena off the northern circuit. */
+function frostkeep(cfg) {
+  const m = blank(cfg.id, cfg.name, cfg.w, cfg.h, "W");
+  m.theme = cfg.theme;
+  m.bgm = cfg.bgm;
+  const rooms = [
+    [4, 42, 20, 59], [28, 39, 47, 57], [58, 41, 83, 59],
+    [9, 17, 29, 32], [39, 18, 57, 30], [66, 17, 86, 31], [39, 3, 58, 12],
+  ];
+  const galleries = [
+    [19, 47, 30, 51], [44, 46, 60, 50],
+    [13, 30, 17, 43], [22, 26, 43, 30], [55, 24, 68, 28], [73, 29, 77, 44],
+    [41, 27, 45, 41], [47, 10, 51, 20],
+  ];
+  for (const r of rooms) rect(m.g, ...r, "c");
+  for (const r of galleries) rect(m.g, ...r, "c");
+  // The crystals stand out of the fighting lanes and mark the two bends in each circuit.
+  for (const [x, y] of [[8, 44], [8, 57], [23, 19], [27, 30], [33, 42], [45, 54],
+    [61, 44], [81, 56], [69, 20], [83, 28], [42, 5], [55, 5], [42, 11], [55, 11]]) m.o[y][x] = "K";
+  m.entry = [8, 49];
+  m.gates = { west: { t: [[4, 49], [4, 50]], a: [[8, 49], [8, 50]] } };
+  FIRES[m.id].push([11, 45]);
+  m.spawns.push({ k: cfg.boss, n: 1, r: [49, 7, 49, 7] });
+  m.keepWide = [m.entry, [4, 49], [11, 45], [15, 24], [36, 48], [74, 48], [75, 26], [49, 23], [49, 7]];
+  m.widenSoft = "K";
+  m.widenDig = "c";
+  return m;
+}
 /** A hermit keeps the maple cottage fire. */
 function hermitAt(maple) {
   if (!maple.camp) return;
@@ -4354,7 +4579,10 @@ const GATE_LINKS = [
   ["town", "east", "meadow", "west", 1], ["town", "west", "city", "east", 1], ["meadow", "east", "forest", "west", 1],
   ["forest", "north", "cave", "west", 1], ["forest", "crypt", "crypt", "in", 1], ["city", "sewer", "sewer", "in", 1],
   ["cave", "rift", "abyss", "in", 1], ["forest", "east", "maple", "west", 1], ["maple", "east", "abyss", "out", 1],
-  ["crypt", "out", "forest", "crypt", 0], ["sewer", "out", "city", "sewer", 0],
+  ["crypt", "out", "city", "ossuary", 0], ["sewer", "out", "cave", "drain", 0],
+  ["maple", "ice", "frostkeep", "west", 1],
+  // the south-west coast: the city's south gate, down the jungle road to the sea, inland over the dunes, up into the cave
+  ["city", "south", "jungle", "north", 1], ["jungle", "south", "coast", "north", 1], ["coast", "east", "oasis", "west", 1], ["oasis", "north", "cave", "south", 1],
 ];
 /** A generated map's own doors out (in GATE_LINKS order, as the generators always laid them). */
 function gateDoors(m) {
@@ -4384,7 +4612,11 @@ function genMap(id) {
   m.stonesWant = g.stones || 1;
   const lo = m.band[0];
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
-  markRoutes(m, labelOf, (to) => { const b = MAP_META[to] && MAP_META[to].band; return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0; });
+  markRoutes(m, labelOf, (to) => {
+    if (to === g.route) return TIER_MAX + 1;
+    const b = MAP_META[to]?.band;
+    return b && b[0] > lo && b[0] <= lo + 20 ? b[0] : 0;
+  });
   // maps-v2: once the signs and stones stand, the ways that must stay three wide are checked once more
   // (underground the stones' own standing tiles are joined too: the rock may be dug for them)
   if (m.keepWide) widen(m, m.widenDig ? m.keepWide.concat((m.stones || []).map((s) => [s.ax, s.ay])) : m.keepWide, m.widenSoft, m.widenDig);
@@ -4658,7 +4890,7 @@ function canFly(m, x, y) {
   return m.g[ty][tx] !== "W";
 }
 
-const doorName = (m) => (m.band ? `${m.name} Lv.${shownLv(m.band[0])}–${shownLv(m.band[1])}` : m.name);
+const doorName = (m) => (m.minLv ? `${m.name} · Lv.${m.minLv} 전용` : m.band ? `${m.name} Lv.${shownLv(m.band[0])}–${shownLv(m.band[1])}` : m.name);
 function mapPayload(m) {
   // (a house's turns and floor, the town's "내 집" door: 64-housing.js homeWire)
   return homeWire(m, {
@@ -4719,7 +4951,9 @@ const NPC_POSES = ["sip", "read", "wipe", "doze", "write", "sweep", "hammer", "s
 const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job",
   // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
   // alchemist, 포포 the 알바 broker — until L2 they only talk ("곧 문을 엽니다", public/npctalk.js)
-  "cook", "craft", "alch", "jobs"];
+  "cook", "craft", "alch", "jobs",
+  // 주아나 the charm appraiser (66-charms.js)
+  "charm"];
 const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
@@ -4932,18 +5166,25 @@ function buildCells(m) {
 }
 const metaKinds = (m) => [...new Set(m.spawns.map((sp) => sp.k))];
 
-/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, wpn (how many stones), kinds, eager }. */
+/** What is known of every map without building it: { id, name, theme, band, safe, w, h, wp, wpn (how many stones), minLv, kinds, eager }. */
 const MAP_META = {};
 const EAGER = {};
 for (const id of [...BUILTIN_MAPS, ...Object.keys(FILES).filter((id) => !BUILTIN_MAPS.includes(id))]) {
+  const minLv = GEN[id]?.minLv || 0;
   if (id === "town" || FILES[id]) {
     const m = (EAGER[id] = baseMap(id));
-    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, kinds: metaKinds(m), eager: true };
+    MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, minLv, kinds: metaKinds(m), eager: true };
   } else {
     const g = GEN[id], c = g.cfg();
-    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, kinds: genKinds(id), eager: false };
+    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, minLv, kinds: genKinds(id), eager: false };
   }
 }
+function mapLevelNeed(ch, id) {
+  const minLv = typeof id === "string" && Object.hasOwn(MAP_META, id) ? MAP_META[id].minLv : 0;
+  return ch.lvl < minLv ? minLv : 0;
+}
+const mapLevelMessage = (minLv) => `레벨 ${minLv}부터 입장할 수 있습니다.`;
+
 /** Built maps by id. */
 const MAP_CACHE = {};
 /** NPC id → the map it stands on, and its name (side quests find their givers and talk targets here). */
@@ -5041,8 +5282,9 @@ for (const id of Object.keys(MAP_META)) {
  * sheet on tile (tx, ty) of `map`, or the nearest tile a player can stand on, or the entrance.
  */
 export function devPlace(ch, map, tx, ty) {
+  if (!ch || mapLevelNeed(ch, map)) return false;
   const m = typeof map === "string" ? mapOf(map) : null;
-  if (!ch || !m) return false;
+  if (!m) return false;
   const at = (Number.isInteger(tx) && Number.isInteger(ty) && inMap(m, tx, ty) && m.reach[ty * m.w + tx] ? [tx, ty] : null) || freeTile(m, tx | 0, ty | 0) || m.entry;
   ch.map = map; ch.x = at[0] * T + 8; ch.y = at[1] * T + 10;
   if (ch.hp === 0) ch.hp = -1;
@@ -5080,7 +5322,7 @@ const LOOK_COST = 500;
 export function newChar(name, look, oldLook) {
   const lk = Array.isArray(look) ? look : Array.isArray(oldLook) ? oldLook : [];
   return {
-    v: 12, name, job: "adventurer",
+    v: 13, name, job: "adventurer",
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -5101,6 +5343,8 @@ export function newChar(name, look, oldLook) {
     bagCap: INV_BASE, house: homeEmpty(),
     // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
     ...lifeFresh(),
+    // charms (v13, 66-charms.js): the board, 주아나's quests, what waits with her
+    charms: charmsEmpty(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
     // the town layout it was saved under (34-maps-world.js TOWN_REV)
     tw: TOWN_REV,
@@ -5122,6 +5366,7 @@ function migrate(ch) {
     if (!g || typeof g.id !== "string") return null;
     const id = OLD_ID[g.id] || g.id.replace("w_ranger_", "w_lancer_");
     if (!ITEMS[id]) return null;
+    if (id === "charm") return charmFix(g);
     if (!isGear(id)) return { id, n: g.n | 0 || 1 };
     const out = { id, q: clamp(g.q | 0, 0, 4), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
     if (LEGEND[g.lg]) out.lg = g.lg;
@@ -5209,7 +5454,9 @@ function migrate(ch) {
   // life skills (v12): an older sheet's 낚시/요리 start from its fish and cook counters (cap Lv 20); the 알바
   // board, trust, co-op days and the 재료 주머니 are cleaned (58-life.js)
   lifeSheetClean(ch);
-  ch.v = Math.max(ch.v | 0, 12);
+  // charms (v13): the board and its charms made whole; what cannot stay where it was waits in the recovery queue (66-charms.js)
+  charmsClean(ch);
+  ch.v = Math.max(ch.v | 0, 13);
   return ch;
 }
 
@@ -5554,13 +5801,16 @@ export function addPlayer(S, pid, ch) {
   if (S.players[pid]) removePlayer(S, pid);
   migrate(ch);
   // a place that is gone (a closed instance, a map removed from the editor's data) is the town
-  if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
+  const minLv = mapLevelNeed(ch, ch.map);
+  if (minLv) { ch.map = START.map; ch.x = START.x; ch.y = START.y; }
+  else if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, aim: AIM_N / 4, hp: 1, mp: 0, dead: false, stc: null,
     cds: {}, atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, inert: 0, inertAt: 0, reso: 0, vitSpd: 0, sanctAt: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
+  if (minLv) toast(p, mapLevelMessage(minLv));
   // a place that changed under their feet (the hunting grounds grew): the way in of that same ground
   const here = mapOf(p.map);
   if (!(p.x >= 0 && p.y >= 0) || !canStand(here, p.x, p.y) || !here.reach[Math.floor(p.y / T) * here.w + Math.floor(p.x / T)]) {
@@ -5603,6 +5853,14 @@ function dropAggro(S, p) {
 }
 
 function changeMap(S, p, to, x, y) {
+  const minLv = mapLevelNeed(p.ch, to);
+  if (minLv) {
+    if (S.now >= (p.gateHintAt || 0)) {
+      toast(p, mapLevelMessage(minLv));
+      p.gateHintAt = S.now + 1500;
+    }
+    return;
+  }
   rouse(S, p);
   dropAggro(S, p);
   S.maps[p.map].n--;
@@ -5711,7 +5969,9 @@ function deriveStats(p) {
   if (p.stc) return p.stc;
   const ch = p.ch, lv = ch.lvl, b = gearBonus(ch), w = ch.eq.weapon, wk = weaponKind(ch), arm = WKIND[wk];
   const E = {};
-  for (const k of ST_ORDER) E[k] = eff(ch.st[k]);
+  // the charm board (66-charms.js): stats on top of the soft-capped ones (combat only), HP, MP, attack after gear
+  const cm = charmSum(ch);
+  for (const k of ST_ORDER) E[k] = eff(ch.st[k]) + cm.st[k];
   const wAtk = w ? (ITEMS[w.id].base.atk || 0) * (1 + 0.1 * w.enh) : 0;
   const sc = scaleOf(ch, wk);
   let core = SFX.atk[0] + SFX.atk[1] * lv;
@@ -5719,10 +5979,10 @@ function deriveStats(p) {
   const wm = w ? ch.wm[wk].lv : 0;
   const luk = E.luk, dex = E.dex, wil = E.wil, wis = E.wis;
   p.stc = {
-    mhp: Math.round(SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp),
-    mmp: Math.round(SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp),
-    atk0: (core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100),
-    core,
+    mhp: Math.round(SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp),
+    mmp: Math.round(SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp),
+    atk0: (core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk,
+    core, cm,
     def: Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def),
     crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh : 0) + b.crit),
     critd: SFX.critd[0] + SFX.critd[1] * luk + b.critd / 100,
@@ -5906,8 +6166,10 @@ function shotTick(S, rt, dt) {
       s.hit.push(o.id);
       if (s.cap) s.cap.h[o.id] = (s.cap.h[o.id] | 0) + 1;
       p.hitAct = [s.act, s.gain];
-      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1), false, s.opt || undefined);
+      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
       p.hitAct = null;
+      // 길별의 렌즈참: a 관통 화살 that strikes a second target marks it (66-charms.js)
+      if (s.cl && s.hit.length === 2) charmLens(S, rt, p, o);
       if (s.el) { weave(S, rt, p, s.el, o.x, o.y, s.k); s.el = ""; }
       if (s.hit.length > s.pierce) { stop = along; break; }
     }
@@ -6064,7 +6326,7 @@ function sortSlots(list) {
   const out = [];
   for (const e of order) {
     const top = out[out.length - 1];
-    if (!isGear(e.id) && top && top.id === e.id && top.n < STACK) {
+    if (!isGear(e.id) && e.id !== "charm" && top && top.id === e.id && top.n < STACK) {
       const put = Math.min(e.n || 1, STACK - top.n);
       top.n += put;
       if ((e.n || 1) > put) out.push({ id: e.id, n: (e.n || 1) - put });
@@ -6163,6 +6425,7 @@ function wanted(ch, dr) {
 /** Whether `p` has room for a drop. */
 function fits(ch, dr) {
   if (dr.it === "gold") return true;
+  if (dr.c) return ch.inv.length < bagCap(ch);
   return dr.g ? ch.inv.length < bagCap(ch) : canAdd(ch, dr.it, dr.n);
 }
 function bagFull(S, p) {
@@ -6170,6 +6433,7 @@ function bagFull(S, p) {
 }
 /** Put a drop into `p`'s bag (or purse). False, with a reminder, if there is no room. */
 function pickUp(S, p, dr) {
+  if (dr.c) return charmPick(S, p, dr);   // a sealed charm (66-charms.js)
   if (!fits(p.ch, dr)) { bagFull(S, p); return false; }
   if (dr.it === "gold") {
     p.ch.gold += dr.n;
@@ -6503,6 +6767,7 @@ function killMob(S, rt, mob) {
     checkAch(S, p);
     p.dirty = true;
     lootFor(S, rt, mob, p);
+    charmKill(S, rt, mob, p);   // 주아나's quests, sealed charms (66-charms.js)
     // a field boss, a guardian or a boss may leave something to wear
     if ((el === 2 || d.boss) && cosRoll(S, p, "boss") < COS_BOSS) cosFrom(S, p, "boss", d.name);
   }
@@ -6696,7 +6961,7 @@ function basicAttack(S, p) {
   // 급소 도려내기: a stab on a marked monster opens it up (bleeding, and a burst of speed); every stab marks
   const vit = c === WKIND.dagger && pasOn(p, "vitals") ? SKILL.vitals : null;
   const marked = vit && marksOf(S, mob) > 0;
-  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1), false, tip ? { ign: SKILL.tip.ign } : null);
+  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1) * charmMarkK(S, rt, p, mob), false, tip ? { ign: SKILL.tip.ign } : null);
   if (vit && !mob.dead) {
     if (marked) {
       if (!(mob.dot && mob.dot.until > now && mob.dot.pid === p.pid)) rt.ev.push(["a", p.eid, 111, Math.round(mob.x), Math.round(mob.y - 6), p.dir]);
@@ -7111,7 +7376,7 @@ function castSkill(S, p, id) {
   newAct(p, true);
   const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
   // mastery grows a skill; a full resonance makes a staff skill free and 30% stronger
-  let k = skGrow(p.ch, sk);
+  let k = skGrow(p.ch, sk) * charmSkd(p, id);   // (and what the charm board adds to this skill, 66-charms.js)
   const cost = skMp(p, sk);
   if (skOf(sk, "staff") && pasOn(p, "reso")) {
     if ((p.reso | 0) >= SKILL.reso.n) { p.reso = 0; k *= 1 + SKILL.reso.k; }
@@ -7153,7 +7418,13 @@ function castSkill(S, p, id) {
       for (const o of mobsWithin(rt, p.x, p.y, sk.r)) hit(o, sk.mult);
       const wl = Math.max(18, reach(m, p.x, p.y, aimX, aimY, sk.len));
       ev(82, p.x + aimX * wl, p.y + aimY * wl - 6, wl);
-      for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, wl, sk.half)) { if (!MOBS[o.k].boss && o.el !== 2) holdMob(S, o, 300); hit(o, sk.wave); }
+      // (메아리 뿔참, 66-charms.js: the first monster in the wave's last 30% takes 18% of that hit again)
+      const wave = mobsInLine(rt, p.x, p.y, aimX, aimY, wl, sk.half), echo = charmEchoPick(S, p, wave, aimX, aimY, wl);
+      for (const o of wave) {
+        if (!MOBS[o.k].boss && o.el !== 2) holdMob(S, o, 300);
+        if (o === echo) charmEchoHit(S, rt, p, o, dealt(p, [o], () => hit(o, sk.wave)));
+        else hit(o, sk.wave);
+      }
       break;
     }
     case "verdict": {
@@ -7273,7 +7544,7 @@ function castSkill(S, p, id) {
       const [tx, ty] = mob ? [mob.x, mob.y] : ahead(sk.len * 0.6);
       const ms = Math.round((dist(p.x, p.y, tx, ty) / sk.spd) * 1000);
       ev(91, tx, ty - 6, ms);
-      if (mob) prop({ kind: "bolt", x: tx, y: ty, tgt: mob.id, next: now + ms, until: now + ms + 1000, every: 1000, mult: sk.mult * k, heal: sk.heal });
+      if (mob) prop({ kind: "bolt", x: tx, y: ty, tgt: mob.id, next: now + ms, until: now + ms + 1000, every: 1000, mult: sk.mult * k, heal: sk.heal * charmSkh(p, id) });
       break;
     }
     case "gravity": {
@@ -7294,7 +7565,8 @@ function castSkill(S, p, id) {
       const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
       if (mob) face(p, mob);
       ev(94, ...(mob ? [mob.x, mob.y] : ahead(80)));
-      fireArrow(S, rt, p, mob, sk.mult * k, 99, 2, { spd: sk.spd, len: sk.len, r: sk.r });
+      const shot = fireArrow(S, rt, p, mob, sk.mult * k, 99, 2, { spd: sk.spd, len: sk.len, r: sk.r });
+      if (deriveStats(p).cm.lg === "lens") shot.cl = 1;   // 길별의 렌즈참 (66-charms.js)
       break;
     }
     case "leapshot": {
@@ -7366,7 +7638,7 @@ function castSkill(S, p, id) {
       ev(99, p.x, p.y - 6, sk.r);
       rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 9]);
       for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { const [vx, vy] = aimVec(p, o); knock(m, o, vx, vy, 12); hit(o, sk.mult); }
-      prop({ kind: "field", wire: 1, x: p.x, y: p.y, r: sk.field, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.drain * k, heal: sk.heal });
+      prop({ kind: "field", wire: 1, x: p.x, y: p.y, r: sk.field, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.drain * k, heal: sk.heal * charmSkh(p, id) });
       break;
     }
     case "bloodburst": {
@@ -8489,7 +8761,7 @@ const achPoints = (ch) => ch.ach.reduce((n, id) => n + (ACH_BY[id] ? ACH_BY[id].
 const titleOf = (ch) => (ch.title && ACH_BY[ch.title] ? ACH_BY[ch.title].title : "");
 
 // ── the monster collection: a kind is registered at its first mastery star
-const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def", 2]], city: [["crit", 1]], sewer: [["mf", 5]], cave: [["atk", 3]], abyss: [["atkp", 2]], maple: [["hp", 60], ["mf", 4]] };
+const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def", 2]], city: [["crit", 1]], sewer: [["mf", 5]], cave: [["atk", 3]], abyss: [["atkp", 2]], maple: [["hp", 60], ["mf", 4]], frostkeep: [["def", 3], ["hp", 40]] };
 // a hunting ground from the world map editor has a collection too, with no bonus; one with no monsters left has none
 for (const id of Object.keys(COL_MOBS)) if (!REGION_BONUS[id]) REGION_BONUS[id] = [];
 for (const id of Object.keys(REGION_BONUS)) if (!COL_MOBS[id]) delete REGION_BONUS[id];
@@ -8678,6 +8950,7 @@ const WX_ODDS = {
   forest: [30, 18, 20, 22, 8, 2],
   city: [40, 30, 24, 6, 0, 0],
   autumn: [34, 22, 14, 16, 14, 0],
+  jungle: [30, 22, 30, 12, 6, 0], coast: [46, 14, 16, 0, 24, 0], desert: [62, 8, 0, 0, 30, 0],
 };
 /** Small flavour: rain brings the fish up sooner, fog hides you a little from monsters. */
 const WX_FISH = 0.75, WX_FOG_AGGRO = 0.9;
@@ -9626,12 +9899,14 @@ function dimClear(S, dim, mob) {
 /** Each member's own reward from the master's chest, once; full experience for the first few clears of the day. */
 function dimChest(S, dim, p) {
   const ch = p.ch, lv = dim.lv, R = DIM.reward;
+  if (charmChestHold(S, p)) return;   // a charm already waits at 주아나 and the bag is full (66-charms.js)
   dim.got[p.pid] = 1;
   const day = dayOf(S.now);
   if (!ch.dim || ch.dim.day !== day) ch.dim = { day, n: 0 };
   ch.dim.n++;
   const full = ch.dim.n <= DIM.dailyFull;
   payout(S, p, { gold: R.gold * lv, stone: R.stone, rune: rnd(S) < R.rune, gear: 1, gearQ: R.gearQ, xp: Math.round(R.xp * xpNeed(lv) * (full ? 1 : 0.5)) });
+  charmChest(S, dim, p);
   dim.rt.ev.push(["dm", "chest", dim.chest.x, dim.chest.y]);
   toast(p, full ? `균열의 보상을 받았습니다! (오늘 ${ch.dim.n}번째)` : `균열의 보상을 받았습니다. 오늘 ${DIM.dailyFull}번을 넘겨 경험치는 절반입니다.`);
   saveSoon(p);
@@ -10460,6 +10735,613 @@ function cosFrom(S, p, src, why) {
   return giveCos(S, p, left[Math.floor(cosRoll(S, p, src) * left.length)], why);
 }
 
+// ───────────────────────────── charms (주아나의 참 공방) ─────────────────────────────
+// docs/design/charms.md. A charm (참) is its own kind of thing, apart from gear: it drops sealed (미감정) in
+// the field and from a rift's own chest, 주아나 (town_charm_juana, role "charm") appraises it, and it then
+// sits on a board of up to 5 × 5 cells where its shape has to fit. Only charms on the board do anything.
+//
+// Sheet (v13): ch.charms = { unlocked, openN, intro, fu, kn, freeId, nextUid, placed, pending, rec }
+//   unlocked  the board is open (forever: a stat reset does not touch it)
+//   openN     cells bought beyond the inner 3 × 3, in CHARM_EXPAND order (0–16)
+//   intro     〈빛나는 조각의 자리〉 0 not taken · 1 hunting · 2 done;  fu  the Lv.50 / Lv.90 follow-ups, each 0/1/2
+//   kn        kills counted for the quest under way
+//   freeId    1 while the one free appraisal is unspent
+//   nextUid   the next charm's id (per character, never reused)
+//   placed    [{ c: charm, x, y, r }] — anchor (top-left of the turned shape) and quarter turns 0–3
+//   pending   one charm from a rift chest opened with a full bag (claimed at 주아나)
+//   rec       charms a migration took off a broken board (claimed at 주아나, never put back by themselves)
+// A charm in the bag: { id: "charm", n: 1, uid, seal, rv, tier, src, rev: 0 } and, once appraised,
+//   rev: 1, g (1 매직 · 2 레어 · 3 전설), sh (shape id), op [[kind, value, arg]], lg (legendary id).
+//   `seal` never leaves the server (charmWire); with `rv` (the rule version it was sealed under) and `src`
+//   it decides the appraisal, so asking again — or after a reconnect — gives the same charm.
+
+/** The appraisal rules' version: part of every seal's hash. */
+const CHARM_V = 1;
+const CHARM_SIZE = 5, CHARM_REC_MAX = 60;
+/** Monsters more than this many tiers below the hunter give neither charms nor quest kills. */
+const CHARM_LOW = 4;
+/** The cells bought one at a time after the inner (1,1)–(3,3), in this order. */
+const CHARM_EXPAND = [[4, 1], [4, 2], [4, 3], [1, 4], [2, 4], [3, 4], [4, 4], [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [2, 0], [3, 0], [4, 0], [0, 0]];
+/** The k-th expansion (k cells already bought, 0–15): 2,000 … 36,500 G, 252,000 G in all. */
+const charmExpandCost = (k) => 2000 + 800 * k + 100 * k * k;
+/** What an appraisal costs, by the tier the charm came from (never by what it turns out to be). */
+const charmIdCost = (tier) => Math.round(200 + 12 * tier);
+/** Shapes: cells in the base turn, and what a general option is multiplied by. */
+const CHARM_SHAPES = {
+  pin: { cells: [[0, 0]], k: 1.0, w: 40 },
+  bar2: { cells: [[0, 0], [1, 0]], k: 1.7, w: 25 },
+  bar3: { cells: [[0, 0], [1, 0], [2, 0]], k: 2.3, w: 12 },
+  elbow: { cells: [[0, 0], [0, 1], [1, 1]], k: 2.3, w: 13 },
+  tile2: { cells: [[0, 0], [1, 0], [0, 1], [1, 1]], k: 2.9, w: 10 },
+};
+const CHARM_SHAPE_IDS = Object.keys(CHARM_SHAPES);
+const CHARM_GRADE = ["", "매직", "레어", "전설"];
+/**
+ * Where a charm comes from (wire `src`): the chance of a sealed charm, the odds of 매직 / 레어 / 전설 once
+ * one fell (percent), and the chance of a 참틀 확장못. 4 is 주아나's first charm (always a 매직 1 × 1).
+ */
+const CHARM_SRC = [
+  { name: "필드 사냥", p: 0.006, g: [85, 14.8, 0.2], nail: 0.0005 },
+  { name: "필드 정예", p: 0.024, g: [79, 20.65, 0.35], nail: 0.002 },
+  { name: "우두머리·수문장", p: 0.12, g: [67, 32.5, 0.5], nail: 0.01 },
+  { name: "차원 균열 상자", p: 0.4, g: [60, 39, 1], nail: 0.08 },
+  { name: "주아나의 의뢰", p: 0, g: [100, 0, 0], nail: 0 },
+];
+/**
+ * General options on a 1 × 1 charm: [lo, hi] before the shape's coefficient, `pct` for tenths of a percent
+ * (whole numbers are floored), `cap` for the whole board, `w` how often it is rolled.
+ *   st a stat (arg: its key, added to the stat after its soft cap — combat only) · hp · mp · atk (after gear)
+ *   skd one weapon active's damage % (arg: skill id) · skh one healing skill's recovery % (arg: skill id)
+ */
+const CHARM_OPT = {
+  st: { name: "능력치", lo: 1, hi: 2, cap: 8, w: 30 },
+  hp: { name: "HP", lo: 8, hi: 14, cap: 120, w: 18 },
+  mp: { name: "MP", lo: 4, hi: 7, cap: 60, w: 14 },
+  atk: { name: "공격력", lo: 1, hi: 2, cap: 30, w: 14 },
+  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 12, w: 18 },
+  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 12, w: 6 },
+};
+const CHARM_OPT_IDS = Object.keys(CHARM_OPT);
+/** The skills an option can name: every weapon active (damage), every skill that heals its caster (recovery). */
+const CHARM_SKD = SKILL_ORDER.filter((id) => SKILL[id].kind === "a");
+const CHARM_SKH = SKILL_ORDER.filter((id) => SKILL[id].heal > 0);
+/**
+ * Legendary charms: a fixed shape, one power, one general option. Only one power works on a board (the
+ * first placed). `off`: not dropped yet — 수호의 매듭참 waits for a spear or book skill that heals the party.
+ */
+const CHARM_LEGEND = {
+  echo: { name: "메아리 뿔참", shape: "bar3", sk: "rend", k: 0.18, tail: 0.3, cd: 12000,
+    desc: "대검 [대지 가르기]의 파동 끝 30%에 처음 맞은 적에게 그 적중 피해의 18%를 한 번 더 준다. 시전당 1회, 12초마다." },
+  knot: { name: "수호의 매듭참", shape: "elbow", off: 1, k: 0.04, ms: 4000, cd: 18000,
+    desc: "창이나 마도서의 파티 회복 스킬로 HP 50% 미만의 아군을 회복하면 그 아군에게 최대 HP 4%의 보호막을 4초 준다. 18초마다. (아직 열리지 않음)" },
+  lens: { name: "길별의 렌즈참", shape: "tile2", sk: "pierce", k: 0.15, ms: 4000, cd: 14000,
+    desc: "활 [관통 화살]이 두 번째 표적을 맞히면 그 표적에 4초간 표식을 남긴다. 표식 있는 적에게 하는 다음 기본 공격 1회의 피해 +15%. 14초마다." },
+};
+const CHARM_LG_LIVE = Object.keys(CHARM_LEGEND).filter((id) => !CHARM_LEGEND[id].off);
+/** 주아나's commissions: the first opens the board; the two after it each bring a 참틀 확장못. */
+const CHARM_QUESTS = [
+  { id: "intro", lv: 30, n: 8, title: "빛나는 조각의 자리", text: "내 수준에 맞는 사냥터의 몬스터 8마리를 잡고 주아나에게 돌아가세요.", reward: "참 보드 3×3 · 미감정 참 1개 · 첫 감정 무료" },
+  { id: "f50", lv: 50, n: 8, title: "넓어지는 틀", text: "내 수준에 맞는 사냥터의 몬스터 8마리를 잡고 주아나에게 돌아가세요.", reward: "참틀 확장못 1개" },
+  { id: "f90", lv: 90, n: 8, title: "마지막 못 자리", text: "내 수준에 맞는 사냥터의 몬스터 8마리를 잡고 주아나에게 돌아가세요.", reward: "참틀 확장못 1개" },
+];
+const CHARM_SAY = {
+  accept: "볼주머니에 넣기엔 제법 무거운 조각이네요. 빛을 품을 자리를 같이 찾아봐요.",
+  appraise: "여기, 테두리에 무늬가 보여요. 돌려 보면 작은 빈자리에도 맞겠어요.",
+};
+
+const charmsEmpty = () => ({ unlocked: false, openN: 0, intro: 0, fu: [0, 0], kn: 0, freeId: 0, nextUid: 1, placed: [], pending: null, rec: [] });
+const isCharm = (s) => !!s && s.id === "charm";
+
+// ── shapes and the board
+
+/** The cells of shape `sh` after `r` quarter turns, moved back to the origin, in reading order. */
+function charmCells(sh, r) {
+  let cells = CHARM_SHAPES[sh].cells.map(([x, y]) => [x, y]);
+  for (let i = 0; i < (r & 3); i++) cells = cells.map(([x, y]) => [-y, x]);
+  const mx = Math.min(...cells.map((c) => c[0])), my = Math.min(...cells.map((c) => c[1]));
+  return cells.map(([x, y]) => [x - mx, y - my]).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+}
+/** The open cells of a board with `openN` expansions, as a set of "x,y" (nothing before the board is unlocked). */
+function charmOpen(cs) {
+  const out = new Set();
+  if (!cs.unlocked) return out;
+  for (let y = 1; y <= 3; y++) for (let x = 1; x <= 3; x++) out.add(`${x},${y}`);
+  for (let i = 0; i < cs.openN; i++) out.add(CHARM_EXPAND[i].join(","));
+  return out;
+}
+/** Why shape `sh` cannot lie at (x, y) turned `r` ("" when it can); `skip` is a charm whose own cells do not count. */
+function charmFit(cs, sh, x, y, r, skip) {
+  if (!Number.isInteger(x) || !Number.isInteger(y) || !Number.isInteger(r) || r < 0 || r > 3) return "잘못된 자리입니다";
+  const open = charmOpen(cs), used = new Set();
+  for (const e of cs.placed) if (e.c.uid !== skip) for (const [cx, cy] of charmCells(e.c.sh, e.r)) used.add(`${e.x + cx},${e.y + cy}`);
+  const at = charmCells(sh, r).map(([cx, cy]) => [x + cx, y + cy]);
+  // (the whole shape is looked at for each reason in turn: off the board, then locked, then taken)
+  if (at.some(([px, py]) => px < 0 || py < 0 || px >= CHARM_SIZE || py >= CHARM_SIZE)) return "보드 밖입니다";
+  if (at.some(([px, py]) => !open.has(`${px},${py}`))) return "잠긴 칸입니다";
+  if (at.some(([px, py]) => used.has(`${px},${py}`))) return "다른 참이 놓인 칸입니다";
+  return "";
+}
+
+// ── sealing and appraising
+
+/** A roll of the charm stream: apart from the world's own dice (so nothing else in a seeded run moves). */
+function charmRoll(S, p, salt) {
+  S.chN = (S.chN | 0) + 1;
+  // (the hash only seeds: the generator does the mixing, so counters next to each other do not roll alike)
+  return rnd({ seed: strHash(`${S.now}:${p.eid}:${p.ch.name}:${salt}:${S.chN}`) | 0 });
+}
+/** A sealed charm, not yet anyone's (no uid): from source `src` at world tier `tier`. */
+function charmSeal(S, p, src, tier) {
+  S.chN = (S.chN | 0) + 1;
+  return { seal: Math.floor(rnd({ seed: strHash(`seal:${S.now}:${p.pid}:${p.ch.name}:${p.ch.charms.nextUid}:${S.chN}`) | 0 }) * 4294967296) >>> 0, rv: CHARM_V, tier: clamp(Math.round(tier) || 1, 1, TIER_MAX), src };
+}
+/** Make a sealed charm this character's own (the next uid): the instance that goes into the bag. */
+function charmOwn(ch, c) {
+  const out = { id: "charm", n: 1, uid: ch.charms.nextUid++, seal: c.seal >>> 0, rv: c.rv | 0 || CHARM_V, tier: c.tier, src: c.src, rev: 0 };
+  if (c.fx) out.fx = 1;
+  return out;
+}
+/** One general option for a shape, not one of `have`: [kind, value, arg]. */
+function charmOption(box, sh, have) {
+  const total = CHARM_OPT_IDS.reduce((n, k) => n + CHARM_OPT[k].w, 0);
+  for (let tries = 0; ; tries++) {
+    let roll = rnd(box) * total, kind = CHARM_OPT_IDS[0];
+    for (const k of CHARM_OPT_IDS) { if (roll < CHARM_OPT[k].w) { kind = k; break; } roll -= CHARM_OPT[k].w; }
+    const o = CHARM_OPT[kind];
+    const arg = kind === "st" ? ST_ORDER[ri(box, 0, ST_ORDER.length - 1)] : kind === "skd" ? CHARM_SKD[ri(box, 0, CHARM_SKD.length - 1)] : kind === "skh" ? CHARM_SKH[ri(box, 0, CHARM_SKH.length - 1)] : "";
+    const base = o.pct ? ri(box, o.lo * 10, o.hi * 10) / 10 : ri(box, o.lo, o.hi);
+    if (tries < 40 && have.some((h) => h[0] === kind && h[2] === arg)) continue;
+    const v = base * CHARM_SHAPES[sh].k;
+    return [kind, o.pct ? Math.round(v * 10) / 10 : Math.floor(v), arg];
+  }
+}
+/** What a seal holds: { g, sh, op, lg }. The same for the same seal, rule version and source, every time. */
+function charmAppraise(c) {
+  const box = { seed: strHash(`charm:${c.seal >>> 0}:${c.rv | 0}:${c.src | 0}`) | 0 };
+  const odds = (CHARM_SRC[c.src] || CHARM_SRC[0]).g;
+  const x = rnd(box) * 100, pick = rnd(box);
+  let g = x < odds[0] ? 1 : x < odds[0] + odds[1] ? 2 : 3, sh = "pin", lg = "";
+  if (c.fx) g = 1;
+  else if (g === 3 && CHARM_LG_LIVE.length) { lg = CHARM_LG_LIVE[Math.floor(pick * CHARM_LG_LIVE.length)]; sh = CHARM_LEGEND[lg].shape; }
+  else {
+    if (g === 3) g = 2;
+    const total = CHARM_SHAPE_IDS.reduce((n, k) => n + CHARM_SHAPES[k].w, 0);
+    let roll = pick * total;
+    for (const k of CHARM_SHAPE_IDS) { if (roll < CHARM_SHAPES[k].w) { sh = k; break; } roll -= CHARM_SHAPES[k].w; }
+  }
+  const op = [];
+  for (let n = g === 2 ? 2 : 1; n > 0; n--) op.push(charmOption(box, sh, op));
+  return { g, sh, op, lg };
+}
+const charmName = (c) => (!c.rev ? "미감정 참" : c.lg ? CHARM_LEGEND[c.lg].name : `${CHARM_GRADE[c.g]} 참`);
+/** What the owner's client is told of a charm: never the seal, and of a sealed one only where it came from. */
+function charmWire(c) {
+  if (!c.rev) return { id: "charm", n: 1, uid: c.uid, src: c.src, tier: c.tier, rev: 0, cost: charmIdCost(c.tier) };
+  const out = { id: "charm", n: 1, uid: c.uid, src: c.src, tier: c.tier, rev: 1, g: c.g, sh: c.sh, op: c.op };
+  if (c.lg) out.lg = c.lg;
+  return out;
+}
+/** The bag as the client sees it (selfPayload): everything as it is, charms through charmWire. */
+const charmBag = (inv) => (inv.some(isCharm) ? inv.map((s) => (isCharm(s) ? charmWire(s) : s)) : inv);
+
+// ── the sheet
+
+/** A saved charm made whole, or null when it cannot be one (no seal, no uid). */
+function charmFix(g) {
+  if (!isObj(g) || !Number.isInteger(g.uid) || g.uid < 1 || !num(g.seal)) return null;
+  const out = { id: "charm", n: 1, uid: g.uid, seal: g.seal >>> 0, rv: clamp(g.rv | 0, 1, CHARM_V), tier: clamp(g.tier | 0, 1, TIER_MAX), src: clamp(g.src | 0, 0, CHARM_SRC.length - 1), rev: g.rev ? 1 : 0 };
+  if (g.fx) out.fx = 1;
+  if (!out.rev) return out;
+  // an appraised charm is what its seal says: anything else on the sheet is put right
+  const a = charmAppraise(out);
+  out.g = a.g; out.sh = a.sh; out.op = a.op;
+  if (a.lg) out.lg = a.lg;
+  return out;
+}
+/**
+ * The charm fields of a sheet being migrated (v13; idempotent, after the bag, the warehouse and the house
+ * are clean). Every uid is one charm: a second with the same uid, a charm on a cell that is locked, taken
+ * or off the board, one that is still sealed on the board, and any that strayed into the warehouse or a
+ * house chest go to the recovery queue (`rec`) with a uid of their own — never back onto the board.
+ */
+function charmsClean(ch) {
+  const old = isObj(ch.charms) ? ch.charms : {};
+  const cs = charmsEmpty();
+  cs.unlocked = !!old.unlocked;
+  cs.openN = cs.unlocked ? clamp(old.openN | 0, 0, CHARM_EXPAND.length) : 0;
+  cs.intro = cs.unlocked ? 2 : clamp(old.intro | 0, 0, 1);
+  cs.fu = [0, 1].map((i) => (cs.unlocked && Array.isArray(old.fu) ? clamp(old.fu[i] | 0, 0, 2) : 0));
+  cs.kn = clamp(old.kn | 0, 0, 999);
+  cs.freeId = old.freeId ? 1 : 0;
+  const seen = new Set(), stray = [];
+  let top = 0;
+  const all = [];
+  const take = (c) => { if (seen.has(c.uid)) return false; seen.add(c.uid); top = Math.max(top, c.uid); return true; };
+  // the bag first: what is carried is kept where it is
+  const inv = [];
+  for (const s of ch.inv) {
+    if (!isCharm(s)) { inv.push(s); continue; }
+    all.push(s);
+    if (take(s)) inv.push(s); else stray.push(s);
+  }
+  ch.inv = inv;
+  for (const e of Array.isArray(old.placed) ? old.placed : []) {
+    const c = isObj(e) ? charmFix(e.c) : null;
+    if (!c) continue;
+    all.push(c);
+    if (c.rev && !seen.has(c.uid) && !charmFit(cs, c.sh, e.x, e.y, e.r, 0)) { take(c); cs.placed.push({ c, x: e.x, y: e.y, r: e.r }); }
+    else stray.push(c);
+  }
+  const pend = charmFix(old.pending);
+  if (pend) { all.push(pend); if (take(pend)) cs.pending = pend; else stray.push(pend); }
+  for (const g of Array.isArray(old.rec) ? old.rec : []) {
+    const c = charmFix(g);
+    if (!c) continue;
+    all.push(c);
+    if (take(c)) cs.rec.push(c); else stray.push(c);
+  }
+  // charms never live in the warehouse or a house chest
+  const sweep = (list) => list.filter((s) => { if (!isCharm(s)) return true; const c = charmFix(s); if (c) { all.push(c); stray.push(c); } return false; });
+  if (isObj(ch.wh) && Array.isArray(ch.wh.items)) ch.wh.items = sweep(ch.wh.items);
+  if (isObj(ch.house) && Array.isArray(ch.house.storage)) ch.house.storage = sweep(ch.house.storage);
+  for (const c of all) top = Math.max(top, c.uid);
+  cs.nextUid = Math.max(1, old.nextUid | 0, top + 1);
+  for (const c of stray) {
+    if (seen.has(c.uid)) c.uid = cs.nextUid++;
+    seen.add(c.uid);
+    if (cs.rec.length < CHARM_REC_MAX) cs.rec.push(c);
+  }
+  ch.charms = cs;
+}
+
+// ── what the board adds
+
+/**
+ * The board's total: stats (after their soft caps), HP, MP, attack, per-skill damage and recovery percent —
+ * each held to its cap — and the one legendary power at work (the first placed).
+ */
+function charmSum(ch) {
+  const out = { st: Object.fromEntries(ST_ORDER.map((k) => [k, 0])), hp: 0, mp: 0, atk: 0, skd: {}, skh: {}, lg: "" };
+  const cs = ch.charms;
+  if (!cs || !cs.placed.length) return out;
+  for (const e of cs.placed) {
+    if (e.c.lg && !out.lg && !CHARM_LEGEND[e.c.lg].off) out.lg = e.c.lg;
+    for (const [kind, v, arg] of e.c.op) {
+      const cap = CHARM_OPT[kind].cap;
+      if (kind === "st") out.st[arg] = Math.min(cap, out.st[arg] + v);
+      else if (kind === "skd" || kind === "skh") out[kind][arg] = Math.min(cap, Math.round(((out[kind][arg] || 0) + v) * 10) / 10);
+      else out[kind] = Math.min(cap, out[kind] + v);
+    }
+  }
+  return out;
+}
+/** × a skill's damage, × a skill's healing, from the board (castSkill). */
+const charmSkd = (p, id) => 1 + (deriveStats(p).cm.skd[id] || 0) / 100;
+const charmSkh = (p, id) => 1 + (deriveStats(p).cm.skh[id] || 0) / 100;
+/** Is legendary power `id` at work for `p`, and off its inner cooldown? (The cooldown lives with the player, not the board.) */
+function charmReady(S, p, id) {
+  if (deriveStats(p).cm.lg !== id) return false;
+  return !(p.chCd && p.chCd[id] > S.now);
+}
+const charmUsed = (S, p, id) => { (p.chCd || (p.chCd = {}))[id] = S.now + CHARM_LEGEND[id].cd; };
+
+// ── legendary powers (called from the hit itself: 57-weapon-skills.js rend, 45-jobs.js shotTick, 50 basicAttack)
+
+/** 메아리 뿔참: of the monsters a 대지 가르기 wave of length `wl` is about to strike, the first in its last 30% — or null. */
+function charmEchoPick(S, p, list, ux, uy, wl) {
+  if (!charmReady(S, p, "echo")) return null;
+  const from = wl * (1 - CHARM_LEGEND.echo.tail);
+  let best = null, at = 0;
+  for (const o of list) {
+    const along = (o.x - p.x) * ux + (o.y - p.y) * uy;
+    if (along < from) continue;
+    if (!best || along < at || (along === at && o.id < best.id)) { best = o; at = along; }
+  }
+  return best;
+}
+/**
+ * … and once the wave has struck it for `dmg`: 18% of that again, as plain damage (no crit, no leech, no
+ * mastery, nothing that could set off anything else), and the 12 s wait starts.
+ */
+function charmEchoHit(S, rt, p, mob, dmg) {
+  if (mob.dead || !(dmg > 0)) return;
+  charmUsed(S, p, "echo");
+  rt.ev.push(["cm", p.eid, 0, Math.round(mob.x), Math.round(mob.y - 6)]);
+  // (`dmg` is what reached the monster: a rift's toughness is already in it)
+  const hk = mob.hk; mob.hk = 0;
+  dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * CHARM_LEGEND.echo.k)), 0);
+  mob.hk = hk;
+}
+/** 길별의 렌즈참: a 관통 화살 has struck its second target, which lives: it is marked for 4 s. */
+function charmLens(S, rt, p, mob) {
+  if (mob.dead || !charmReady(S, p, "lens")) return;
+  charmUsed(S, p, "lens");
+  mob.cmk = { pid: p.pid, until: S.now + CHARM_LEGEND.lens.ms };
+  rt.ev.push(["cm", p.eid, 1, Math.round(mob.x), Math.round(mob.y - 6), mob.id]);
+}
+/** × the marker's next basic attack on a marked monster (the mark is spent by it). */
+function charmMarkK(S, rt, p, mob) {
+  const mk = mob.cmk;
+  if (!mk || mk.pid !== p.pid) return 1;
+  mob.cmk = null;
+  if (mk.until <= S.now) return 1;
+  rt.ev.push(["cm", p.eid, 2, Math.round(mob.x), Math.round(mob.y - 6), mob.id]);
+  return 1 + CHARM_LEGEND.lens.k;
+}
+
+// ── finding them
+
+/** Does a kill of `mob` count for charms (drops, 주아나's quests) for `p`? A field monster no more than 4 tiers below. */
+function charmPrey(rt, mob, p) {
+  const d = MOBS[mob.k];
+  if (mob.dim || mob.evt || d.chest || d.still || !Object.hasOwn(MAP_META, rt.id)) return false;
+  return d.lv >= toTier(p.ch.lvl) - CHARM_LOW;
+}
+/** The quest under way or next in line: its index in CHARM_QUESTS and its state (0 not taken, 1 hunting), or null when all are done. */
+function charmQuest(cs) {
+  if (cs.intro < 2) return { i: 0, st: cs.intro };
+  for (let i = 0; i < 2; i++) if (cs.fu[i] < 2) return { i: i + 1, st: cs.fu[i] };
+  return null;
+}
+/** A kill credited to `p` (killMob, once per looter): the quest's count, then the dice for a sealed charm and a 확장못. */
+function charmKill(S, rt, mob, p) {
+  const ch = p.ch, cs = ch.charms;
+  if (!charmPrey(rt, mob, p)) return;
+  const q = charmQuest(cs);
+  if (q && q.st === 1 && cs.kn < CHARM_QUESTS[q.i].n) {
+    cs.kn++;
+    p.dirty = true;
+    if (cs.kn >= CHARM_QUESTS[q.i].n) toast(p, `의뢰 [${CHARM_QUESTS[q.i].title}] 달성! 주아나에게 돌아가세요.`);
+  }
+  if (!cs.unlocked) return;
+  const d = MOBS[mob.k], src = d.boss || mob.el === 2 ? 2 : mob.el === 1 ? 1 : 0, row = CHARM_SRC[src];
+  const drop = (o) => rt.drops.push({ id: S.nextId++, g: null, n: 1, q: 0, x: mob.x + Math.round(charmRoll(S, p, "x") * 20 - 10), y: mob.y + Math.round(charmRoll(S, p, "y") * 14 - 6), own: p.pid, freeAt: S.now + 20000, dieAt: S.now + 60000, ...o });
+  if (charmRoll(S, p, "f") < row.p) drop({ it: "charm", c: charmSeal(S, p, src, d.lv) });
+  if (charmRoll(S, p, "n") < row.nail) drop({ it: "charm_nail" });
+}
+/** Picking a sealed charm up off the ground (pickUp): one free slot, and it becomes the picker's own. */
+function charmPick(S, p, dr) {
+  const ch = p.ch;
+  if (ch.inv.length >= bagCap(ch)) { bagFull(S, p); return false; }
+  ch.inv.push(charmOwn(ch, dr.c));
+  p.gain.push(["item", "charm", 1, 0]);
+  if (!ch.charms.unlocked) toast(p, "미감정 참을 주웠습니다. 버드나무광장의 주아나가 감정해 줍니다.");
+  p.dirty = true;
+  saveSoon(p);
+  return true;
+}
+/**
+ * A rift's own chest (dimChest), before it opens: with a charm already waiting at 주아나 and no room for
+ * both the chest's gear and another charm, the chest stays shut (true) and says why.
+ */
+function charmChestHold(S, p) {
+  const ch = p.ch, cs = ch.charms;
+  if (!cs.unlocked || !cs.pending || bagCap(ch) - ch.inv.length >= 2) return false;
+  if (!(S.now - (p.chNag || -1e9) < 4000)) { p.chNag = S.now; toast(p, "주아나의 보류함에 참이 있고 가방이 가득 찼습니다 — 가방을 두 칸 비워야 보상 상자를 열 수 있습니다."); }
+  return true;
+}
+/** … and once it has paid out: maybe a sealed charm (into the bag, else the one-charm box at 주아나), maybe a 확장못. */
+function charmChest(S, dim, p) {
+  const ch = p.ch, cs = ch.charms, row = CHARM_SRC[3];
+  if (!cs.unlocked) return;
+  if (charmRoll(S, p, "d") < row.p) {
+    const c = charmOwn(ch, charmSeal(S, p, 3, dim.lv));
+    if (ch.inv.length < bagCap(ch)) { ch.inv.push(c); p.gain.push(["item", "charm", 1, 0]); }
+    else if (!cs.pending) { cs.pending = c; toast(p, "가방이 가득 차 미감정 참을 주아나가 맡아 두었습니다. 버드나무광장에서 찾아가세요."); }
+    p.dirty = true;
+  }
+  if (charmRoll(S, p, "dn") < row.nail) {
+    if (addItem(ch, "charm_nail", 1)) p.gain.push(["item", "charm_nail", 1, 0]);
+    else dim.rt.drops.push({ id: S.nextId++, it: "charm_nail", g: null, n: 1, q: 0, x: dim.chest.x, y: dim.chest.y + 8, own: p.pid, freeAt: S.now + 20000, dieAt: S.now + 60000 });
+    p.dirty = true;
+  }
+}
+
+// ── actions
+
+const CHARM_ACTS = ["charm_quest", "charm_id", "charm_place", "charm_move", "charm_remove", "charm_expand", "charm_claim", "charm_destroy"];
+/** Charms and 확장못 keep to their own ways: no shop, warehouse or house chest takes them ("" when the action is none of those). */
+function charmGuard(ch, a) {
+  if (a.t !== "sell" && a.t !== "h_dep" && !(a.t === "wh" && a.a === "put")) return "";
+  const s = Number.isInteger(a.s) ? ch.inv[a.s] : null;
+  if (isCharm(s)) return a.t === "sell" ? "참은 팔 수 없습니다" : "참은 맡길 수 없습니다";
+  if (a.t === "sell" && s && s.id === "charm_nail") return "참틀 확장못은 팔 수 없습니다";
+  return "";
+}
+const charmInBag = (ch, uid) => (Number.isInteger(uid) ? ch.inv.findIndex((s) => isCharm(s) && s.uid === uid) : -1);
+const charmOnBoard = (cs, uid) => (Number.isInteger(uid) ? cs.placed.findIndex((e) => e.c.uid === uid) : -1);
+const charmTown = (p) => !!mapOfS(p.S, p.map).safe;
+
+function charmValidate(S, p, a) {
+  const ch = p.ch, cs = ch.charms;
+  switch (a.t) {
+    case "charm_quest": {
+      if (!npcNear(p, "charm")) return bad("주아나가 너무 멉니다");
+      const q = charmQuest(cs);
+      if (!q) return bad("주아나의 의뢰를 모두 마쳤습니다");
+      const def = CHARM_QUESTS[q.i];
+      if (a.a === "accept") {
+        if (q.st !== 0) return bad("이미 진행 중입니다");
+        return ch.lvl >= def.lv ? OK : bad(`Lv.${def.lv}부터 받을 수 있는 의뢰입니다`);
+      }
+      if (a.a === "done") {
+        if (q.st !== 1 || cs.kn < def.n) return bad("아직 의뢰를 마치지 못했습니다");
+        if (q.i === 0 ? ch.inv.length >= bagCap(ch) : !canAdd(ch, "charm_nail", 1)) return bad("가방을 비우고 다시 오세요");
+        return OK;
+      }
+      return bad("잘못된 요청입니다");
+    }
+    case "charm_id": {
+      const c = ch.inv[charmInBag(ch, a.uid)];
+      if (!c) return bad("가방에 없는 참입니다");
+      if (c.rev) return bad("이미 감정한 참입니다");
+      if (!npcNear(p, "charm")) return bad("주아나가 너무 멉니다");
+      if (!cs.freeId && ch.gold < charmIdCost(c.tier)) return bad(`골드가 부족합니다 (${gStr(charmIdCost(c.tier))}G 필요)`);
+      return OK;
+    }
+    case "charm_place": {
+      if (!cs.unlocked) return bad("아직 참 보드가 없습니다");
+      const c = ch.inv[charmInBag(ch, a.uid)];
+      if (!c) return bad("가방에 없는 참입니다");
+      if (!c.rev) return bad("감정하지 않은 참은 놓을 수 없습니다");
+      if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
+      const why = charmFit(cs, c.sh, a.x, a.y, a.r, 0);
+      return why ? bad(why) : OK;
+    }
+    case "charm_move": {
+      const e = cs.placed[charmOnBoard(cs, a.uid)];
+      if (!e) return bad("보드에 없는 참입니다");
+      if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
+      if (e.x === a.x && e.y === a.y && e.r === a.r) return bad("이미 그 자리에 있습니다");
+      const why = charmFit(cs, e.c.sh, a.x, a.y, a.r, e.c.uid);
+      return why ? bad(why) : OK;
+    }
+    case "charm_remove":
+      if (charmOnBoard(cs, a.uid) < 0) return bad("보드에 없는 참입니다");
+      if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
+      return ch.inv.length < bagCap(ch) ? OK : bad("가방이 가득 찼습니다");
+    case "charm_expand": {
+      if (!cs.unlocked) return bad("아직 참 보드가 없습니다");
+      if (cs.openN >= CHARM_EXPAND.length) return bad("참 보드를 모두 열었습니다");
+      // `k`: the expansion being bought — a request sent twice buys one cell, not two
+      if (a.k !== cs.openN) return bad("이미 확장한 칸입니다");
+      if (!npcNear(p, "charm")) return bad("주아나가 너무 멉니다");
+      if (countItem(ch, "charm_nail") < 1) return bad("참틀 확장못이 없습니다");
+      const cost = charmExpandCost(cs.openN);
+      return ch.gold < cost ? bad(`골드가 부족합니다 (${gStr(cost)}G 필요)`) : OK;
+    }
+    case "charm_claim":
+      if (!cs.pending && !cs.rec.length) return bad("맡겨 둔 참이 없습니다");
+      if (!npcNear(p, "charm")) return bad("주아나가 너무 멉니다");
+      return ch.inv.length < bagCap(ch) ? OK : bad("가방이 가득 찼습니다");
+    case "charm_destroy":
+      if (charmInBag(ch, a.uid) < 0) return bad("가방에 없는 참입니다");
+      return a.ok === 1 ? OK : bad("참을 부수려면 확인이 필요합니다");
+    default: return bad("알 수 없는 행동");
+  }
+}
+
+function charmApply(S, p, a) {
+  const ch = p.ch, cs = ch.charms;
+  switch (a.t) {
+    case "charm_quest": {
+      const q = charmQuest(cs), def = CHARM_QUESTS[q.i];
+      const set = (v) => { if (q.i === 0) cs.intro = v; else cs.fu[q.i - 1] = v; };
+      if (a.a === "accept") {
+        set(1); cs.kn = 0;
+        toast(p, `주아나: “${CHARM_SAY.accept}”`);
+        toast(p, `의뢰 [${def.title}] — ${def.text}`);
+        break;
+      }
+      set(2); cs.kn = 0;
+      if (q.i === 0) {
+        cs.unlocked = true; cs.freeId = 1;
+        const c = charmOwn(ch, charmSeal(S, p, 4, Math.floor(toTier(ch.lvl))));
+        c.fx = 1;
+        ch.inv.push(c);
+        p.gain.push(["item", "charm", 1, 0]);
+        toast(p, "참 보드(3×3)가 열렸습니다! 미감정 참 1개를 받았습니다 — 첫 감정은 무료입니다.");
+      } else {
+        addItem(ch, "charm_nail", 1);
+        p.gain.push(["item", "charm_nail", 1, 0]);
+        toast(p, `의뢰 [${def.title}] 완료 — [참틀 확장못] 1개를 받았습니다.`);
+      }
+      S.maps[p.map].ev.push(["u", p.eid, 2]);
+      break;
+    }
+    case "charm_id": {
+      const c = ch.inv[charmInBag(ch, a.uid)], cost = cs.freeId ? 0 : charmIdCost(c.tier);
+      if (cs.freeId) cs.freeId = 0; else ch.gold -= cost;
+      const r = charmAppraise(c);
+      c.rev = 1; c.g = r.g; c.sh = r.sh; c.op = r.op;
+      if (r.lg) c.lg = r.lg;
+      toast(p, `주아나: “${CHARM_SAY.appraise}”`);
+      toast(p, `감정 결과: [${charmName(c)}]${cost ? ` (-${gStr(cost)}G)` : " (무료)"}`);
+      if (c.g === 3) sys(S, `${ch.name}님이 전설 참 [${charmName(c)}]${pp(charmName(c), "을를")} 감정받았습니다!`);
+      break;
+    }
+    case "charm_place": {
+      const i = charmInBag(ch, a.uid), c = ch.inv[i];
+      ch.inv.splice(i, 1);
+      cs.placed.push({ c, x: a.x, y: a.y, r: a.r });
+      afterGear(S, p);
+      break;
+    }
+    case "charm_move": {
+      const e = cs.placed[charmOnBoard(cs, a.uid)];
+      e.x = a.x; e.y = a.y; e.r = a.r;
+      break;
+    }
+    case "charm_remove": {
+      const i = charmOnBoard(cs, a.uid), e = cs.placed[i];
+      cs.placed.splice(i, 1);
+      ch.inv.push(e.c);
+      afterGear(S, p);
+      break;
+    }
+    case "charm_expand": {
+      const cost = charmExpandCost(cs.openN), cell = CHARM_EXPAND[cs.openN];
+      takeItem(ch, "charm_nail", 1);
+      ch.gold -= cost;
+      cs.openN++;
+      toast(p, `참 보드의 (${cell[0]}, ${cell[1]}) 칸을 열었습니다. (-${gStr(cost)}G, 확장못 1개)`);
+      break;
+    }
+    case "charm_claim": {
+      let n = 0;
+      const room = () => ch.inv.length < bagCap(ch);
+      if (cs.pending && room()) { ch.inv.push(cs.pending); cs.pending = null; n++; }
+      while (cs.rec.length && room()) { ch.inv.push(cs.rec.shift()); n++; }
+      p.gain.push(["item", "charm", n, 0]);
+      const left = (cs.pending ? 1 : 0) + cs.rec.length;
+      toast(p, `맡겨 둔 참 ${n}개를 받았습니다.${left ? ` 가방이 가득 차 ${left}개가 남았습니다.` : ""}`);
+      break;
+    }
+    case "charm_destroy": {
+      const i = charmInBag(ch, a.uid), c = ch.inv[i];
+      ch.inv.splice(i, 1);
+      toast(p, `[${charmName(c)}]${pp(charmName(c), "을를")} 부쉈습니다.`);
+      break;
+    }
+  }
+  p.dirty = true;
+  saveSoon(p);
+}
+
+// ── what the client is told
+
+/** `self.charms`: the board, what waits at 주아나, the quest, the totals and the power at work. */
+function charmSelf(p) {
+  const ch = p.ch, cs = ch.charms, q = charmQuest(cs), cm = deriveStats(p).cm;
+  const lg = cs.placed.find((e) => e.c.lg);
+  const sk = cm.lg && CHARM_LEGEND[cm.lg].sk ? SKILL[CHARM_LEGEND[cm.lg].sk] : null;
+  return {
+    un: cs.unlocked ? 1 : 0, openN: cs.openN, open: [...charmOpen(cs)].map((k) => k.split(",").map(Number)),
+    next: cs.unlocked && cs.openN < CHARM_EXPAND.length ? { k: cs.openN, cell: CHARM_EXPAND[cs.openN], cost: charmExpandCost(cs.openN), nail: countItem(ch, "charm_nail") } : null,
+    free: cs.freeId,
+    placed: cs.placed.map((e) => ({ c: charmWire(e.c), x: e.x, y: e.y, r: e.r })),
+    pending: cs.pending ? charmWire(cs.pending) : null, rec: cs.rec.map(charmWire),
+    quest: q ? { i: q.i, st: q.st, n: cs.kn, need: CHARM_QUESTS[q.i].n, lv: CHARM_QUESTS[q.i].lv, ok: ch.lvl >= CHARM_QUESTS[q.i].lv ? 1 : 0 } : null,
+    sum: { st: ST_ORDER.map((k) => cm.st[k]), hp: cm.hp, mp: cm.mp, atk: cm.atk, skd: cm.skd, skh: cm.skh },
+    // the power at work, why it cannot go off just now ("" when it can), and how many legendaries lie on the board
+    lg: cm.lg, lgWhy: sk ? skWhy(ch, sk) || "" : lg && !cm.lg ? "아직 열리지 않은 효과입니다" : "", lgN: cs.placed.filter((e) => e.c.lg).length,
+  };
+}
+/** `defs().charms`: everything the board UI draws from. */
+function charmDefs() {
+  return {
+    v: CHARM_V, size: CHARM_SIZE, lv: CHARM_QUESTS[0].lv, low: CHARM_LOW,
+    shapes: Object.fromEntries(CHARM_SHAPE_IDS.map((id) => [id, { cells: CHARM_SHAPES[id].cells, k: CHARM_SHAPES[id].k, rot: [0, 1, 2, 3].map((r) => charmCells(id, r)) }])),
+    grades: CHARM_GRADE, src: CHARM_SRC.map((s) => s.name),
+    opts: Object.fromEntries(CHARM_OPT_IDS.map((k) => [k, { name: CHARM_OPT[k].name, lo: CHARM_OPT[k].lo, hi: CHARM_OPT[k].hi, pct: CHARM_OPT[k].pct ? 1 : 0, cap: CHARM_OPT[k].cap }])),
+    skd: CHARM_SKD, skh: CHARM_SKH,
+    legend: Object.fromEntries(Object.keys(CHARM_LEGEND).map((id) => { const l = CHARM_LEGEND[id]; return [id, { name: l.name, shape: l.shape, sk: l.sk || "", cd: l.cd, off: l.off ? 1 : 0, desc: l.desc }]; })),
+    expand: CHARM_EXPAND, expandCost: CHARM_EXPAND.map((_, k) => charmExpandCost(k)), nail: "charm_nail",
+    // appraisal: round(idCost[0] + idCost[1] × the charm's tier) G; the first is free
+    idCost: [200, 12],
+    quests: CHARM_QUESTS.map(({ id, lv, n, title, text, reward }) => ({ id, lv, n, title, text, reward })), say: CHARM_SAY, npc: "town_charm_juana", role: "charm",
+  };
+}
 // ───────────────────────────── actions ─────────────────────────────
 
 function npcNear(p, role) {
@@ -10499,6 +11381,9 @@ export function validateAction(S, pid, a) {
   if (!isObj(a) || typeof a.t !== "string") return bad("잘못된 요청입니다");
   const ch = p.ch;
   const now = S.now;
+  // charms keep to their own ways (66-charms.js)
+  const cg = charmGuard(ch, a);
+  if (cg) return bad(cg);
   switch (a.t) {
     case "nw": return p.npcWhereAt === undefined || now >= p.npcWhereAt ? OK : bad("잠시 뒤 주민 위치를 다시 확인하세요");
     case "respawn":
@@ -10644,6 +11529,8 @@ export function validateAction(S, pid, a) {
       // a big ground has several stones: `i` picks one (0, the first, when left out)
       const i = a.i === undefined ? 0 : a.i;
       if (!hasWp(a.to) || !Number.isInteger(i) || i < 0 || i >= MAP_META[a.to].wpn) return bad("그곳에는 이동의 돌이 없습니다");
+      const minLv = mapLevelNeed(ch, a.to);
+      if (minLv) return bad(mapLevelMessage(minLv));
       const at = wpNear(p);
       if (!at) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
       if (!wpWoken(ch, a.to, i)) return bad("아직 깨우지 않은 이동의 돌입니다");
@@ -10877,6 +11764,8 @@ export function validateAction(S, pid, a) {
     }
     // life skills L2 (58-life.js): gathering, the stations, the 알바 board
     case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": return lifeValidate(S, p, a);
+    // charms (66-charms.js): 주아나's quests, appraisal, the board
+    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": return charmValidate(S, p, a);
     default:
       return bad("알 수 없는 행동");
   }
@@ -11417,6 +12306,8 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "warp": {
+      const minLv = mapLevelNeed(ch, a.to);
+      if (minLv) { toast(p, mapLevelMessage(minLv)); break; }
       const i = a.i || 0, w = stonesOf(mapOf(a.to))[i] || wpOf(a.to);
       S.maps[p.map].ev.push(["wp", p.eid, 0]);
       // to another stone of the same ground: a step, not a journey (the map is not sent again)
@@ -11446,6 +12337,7 @@ export function applyAction(S, pid, a) {
       ch.xpt = 0;
       ch.st = freshSt();
       ch.lvl = 1;
+      if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);
       afterGear(S, p);
       S.maps[p.map].ev.push(["u", p.eid, 2]);
       toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (경험치 ${fee.toLocaleString()} 소모)` : " (무료)"}`);
@@ -11488,6 +12380,8 @@ export function applyAction(S, pid, a) {
       S.maps[p.map].ev.push(["ws", p.eid]);
       break;
     }
+    // charms (66-charms.js)
+    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": charmApply(S, p, a); break;
   }
   if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;
@@ -12065,7 +12959,7 @@ function selfPayload(p) {
       r1(Math.min(SFX.mf[1], SFX.mf[0] * eff(ch.st.luk))), clamp(SFX.graze[0] - (ch.eq.weapon ? ch.wm[weaponKind(ch)].lv : 0), 0, SFX.graze[3])],
     // the weapon passive's gauge (57 crView), and every skill learned: [id, MP now, cooldown left ms, usable in hand 1/0]
     cr: crView(p, now), sk: skWire(p, now),
-    inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, enh, qs: ch.qs,
+    inv: charmBag(ch.inv), eq: ch.eq, q: ch.q, kills: ch.kills || 0, enh, qs: ch.qs,
     bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     // attack up, speed up, warmth, food — then what monsters leave on you: slowed, burning, poisoned —
     // then the scrolls being read: attack, defence, experience
@@ -12085,6 +12979,8 @@ function selfPayload(p) {
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.job, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
     // the bag's size (46-bag.js) and the house (64-housing.js homeSelf)
     bagCap: bagCap(ch), house: homeSelf(p),
+    // charms (66-charms.js): the board, what waits at 주아나, her quest; a sealed charm's seal never leaves the server
+    charms: charmSelf(p),
     // life skills (58-life.js): [lv, xp, need] per skill in LIFE order; L2: the 알바 board, trust, the 재료 주머니
     life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch,
   };
@@ -12221,7 +13117,7 @@ export function defs() {
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
     traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
-    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: STONE_NAMES[MAP_META[id].wpn || 1] || [] })),
+    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: STONE_NAMES[MAP_META[id].wpn || 1] || [], minLv: MAP_META[id].minLv || undefined })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
     cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N,
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
@@ -12235,8 +13131,10 @@ export function defs() {
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
     // life skills: names, curve, grades, the bonus formula, fish, recipes, each map's grade (58-life.js)
     life: lifeDefs(), npclife: npcLifeDefs(),
+    // charms: shapes, options and caps, legendaries, the expansion order and prices, 주아나's quests (66-charms.js)
+    charms: charmDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), mobs: MAP_META[id].kinds.slice(),
       // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
-      theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id] })),
+      theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id], minLv: MAP_META[id].minLv || undefined })),
   };
 }

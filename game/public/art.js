@@ -236,12 +236,16 @@ export function renderGround(m) {
   return { frames: out, ox: m.h * TILE };
 }
 
-const MINI = { f: "#c48a52", l: "#8e5c3a", h: "#d8b07a", x: "#a2958a", q: "#c8604e", u: "#468a8e", y: "#a2323a", e: "#b8925a", t: "#447e38", r: "#8a8a80", ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86", j: "#5a5638", v: "#b0a68e", g: "#4a5248", "=": "#a8a090", "%": "#b0602a", "&": "#4a2a52" };
-const MINI_OBJ = { "=": "#3a2620", "+": "#bfe0ee", "^": "#2a3a34", "~": "#c89a3a", "@": "#5a3420", "!": "#a8343c", _: "#e8dcc0", o: "#9a6440", k: "#6e4428", s: "#9a4a3a", m: "#8a5634", j: "#c87a3a", "$": "#e8b860", b: "#5a8a4a", r: "#7a4a2c", t: "#d8a830", "#": "#b8a898", g: "#4e9a4a", "*": "#ffd890", v: "#c89a6a", "-": "#7a4a2c", p: "#4a6a9a", w: "#9a6440", "]": "#c8945a", "%": "#e89a50", "[": "#b07440", "{": "#6a7480", "}": "#7656b4", "(": "#c08048", ")": "#5aa0d8", "?": "#e0b048", 
+const MINI = { f: "#c48a52", l: "#8e5c3a", h: "#d8b07a", x: "#a2958a", q: "#c8604e", u: "#468a8e", y: "#a2323a", e: "#b8925a", t: "#447e38", r: "#8a8a80", ".": "#4e8a3e", ",": "#4e8a3e", '"': "#568f46", ":": "#35693e", ";": "#35693e", p: "#b89a66", o: "#8e8a84", s: "#cdbd8a", w: "#3a6ea8", b: "#8a6034", c: "#4c475e", d: "#443f56", W: "#17142a", a: "#3a3d46", m: "#3a3d46", k: "#7c7f86", j: "#5a5638", v: "#b0a68e", g: "#4a5248", "=": "#a8a090", "%": "#b0602a", "&": "#4a2a52",
+  // maps-v2 M3 (the south-west coast): dune sand, white sand, shallows you can wade, the surf line
+  z: "#d8a858", S: "#f0e8cc", "~": "#58c8c0", "-": "#d8f0ec" };
+const MINI_OBJ = { "=": "#3a2620", "+": "#bfe0ee", "^": "#2a3a34", "~": "#c89a3a", "@": "#5a3420", "!": "#a8343c", _: "#e8dcc0", o: "#9a6440", k: "#6e4428", s: "#9a4a3a", m: "#8a5634", j: "#c87a3a", "$": "#e8b860", b: "#5a8a4a", r: "#7a4a2c", t: "#d8a830", "#": "#b8a898", g: "#4e9a4a", "*": "#ffd890", v: "#c89a6a", "-": "#7a4a2c", p: "#4a6a9a", w: "#9a6440", "]": "#c8945a", "%": "#e89a50", "[": "#b07440", "Ω": "#6a7480", "Δ": "#7656b4", "Ψ": "#c08048", "Φ": "#5aa0d8", "?": "#e0b048",
   C: "#6e6654", H: "#2f7036", U: "#8a8478", l: "#6a4628", u: "#6a4628", e: "#5a9a58", q: "#a8a498", n: "#8a6a3a", M: "#6a4628", D: "#2c5a48", E: "#c8b888", T: "#2a6030", P: "#1d4a30", R: "#74747c", B: "#35803a", h: "#8a4a3a", a: "#6a9ac8", K: "#5ac8d8", S: "#3a3550", F: "#6a4628", L: "#c8b060", G: "#6a4628", Z: "#22242c", c: "#8a3a3a", y: "#a83a3a", x: "#4a4d56",
   1: "#8a8478", 2: "#5a3e2a", 3: "#d8a850", 4: "#c8c2ac", 5: "#8a8478", 6: "#6a7280", 7: "#6a5a44", 8: "#c8c2ac", 0: "#c0303c", 9: "#c8a050", I: "#6a4226", Q: "#7ae0ff", "/": "#9affc8", J: "#b4b2a8", V: "#3a5a9a", z: "#c8c4b4", N: "#9a9484", d: "#c8a050", i: "#9a9484", f: "#9a9484", O: "#9a9cb0", A: "#5a4434", Y: "#c8503e", X: "#e02a3a",
   // the town's stone terrace wall and the new interior pieces (docs/design/town.md E)
-  W: "#9a9080", "&": "#5a5e6c", "<": "#d8603a", ">": "#8a6a4a", "|": "#7a5a3a", ";": "#9ad0c8", ":": "#b8a898", "'": "#bfe0ee", "`": "#c8a060" };
+  W: "#9a9080", "&": "#5a5e6c", "<": "#d8603a", ">": "#8a6a4a", "|": "#7a5a3a", ";": "#9ad0c8", ":": "#b8a898", "'": "#bfe0ee", "`": "#c8a060",
+  // maps-v2 M3: palm, reef rock, black shore boulder, mud hut
+  "Ψ": "#3a9a50", "Φ": "#6a8a80", "Ω": "#2e2e36", "Δ": "#b88a58" };
 /** The old kingdom's canopy turns: maples red, the rest gold; pines stay dark. */
 const AUTUMN_OBJ = { T: "#b4442a", P: "#24503a", B: "#a8582a" };
 /** Dungeons share the cave's tiles but not its colours. */
@@ -250,6 +254,9 @@ const MINI_THEME = {
   sewer: { c: "#4c584e", d: "#435046", W: "#0c120e", w: "#5a8a30", g: "#2c342e", b: "#6a7280" },
   abyss: { c: "#6a2632", d: "#5c1e2a", W: "#16060a", w: "#a01828", b: "#d8d0b8" },
   autumn: { ".": "#7a8a3e", ",": "#7a8a3e", t: "#9a8a3e", '"': "#8a8a46", ":": "#556a34", ";": "#c8a032" },
+  jungle: { w: "#1f7f92", ":": "#2f7a40", ";": "#2a6a3a", r: "#6a6a70", m: "#c8a838", T: "#1f5a2c" },
+  coast: { w: "#1f7f92", z: "#e4c890" },
+  desert: { s: "#e2c88a", w: "#3aa0b8", r: "#a89878" },
 };
 /** A zoned hunting ground's minimap tint by 4 × 4 block (m.zq): the safe plaza cool, the elite ground red; hidden pockets stay hidden. */
 const ZONE_TINT = { 0: "rgba(120,220,255,0.22)", 2: "rgba(255,70,60,0.2)" };

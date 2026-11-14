@@ -28,7 +28,7 @@ function selfPayload(p) {
       r1(Math.min(SFX.mf[1], SFX.mf[0] * eff(ch.st.luk))), clamp(SFX.graze[0] - (ch.eq.weapon ? ch.wm[weaponKind(ch)].lv : 0), 0, SFX.graze[3])],
     // the weapon passive's gauge (57 crView), and every skill learned: [id, MP now, cooldown left ms, usable in hand 1/0]
     cr: crView(p, now), sk: skWire(p, now),
-    inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, enh, qs: ch.qs,
+    inv: charmBag(ch.inv), eq: ch.eq, q: ch.q, kills: ch.kills || 0, enh, qs: ch.qs,
     bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     // attack up, speed up, warmth, food — then what monsters leave on you: slowed, burning, poisoned —
     // then the scrolls being read: attack, defence, experience
@@ -48,6 +48,8 @@ function selfPayload(p) {
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.job, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
     // the bag's size (46-bag.js) and the house (64-housing.js homeSelf)
     bagCap: bagCap(ch), house: homeSelf(p),
+    // charms (66-charms.js): the board, what waits at 주아나, her quest; a sealed charm's seal never leaves the server
+    charms: charmSelf(p),
     // life skills (58-life.js): [lv, xp, need] per skill in LIFE order; L2: the 알바 board, trust, the 재료 주머니
     life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch,
   };
@@ -184,7 +186,7 @@ export function defs() {
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
     traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
-    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: STONE_NAMES[MAP_META[id].wpn || 1] || [] })),
+    waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: STONE_NAMES[MAP_META[id].wpn || 1] || [], minLv: MAP_META[id].minLv || undefined })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
     cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N,
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
@@ -198,8 +200,10 @@ export function defs() {
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
     // life skills: names, curve, grades, the bonus formula, fish, recipes, each map's grade (58-life.js)
     life: lifeDefs(), npclife: npcLifeDefs(),
+    // charms: shapes, options and caps, legendaries, the expansion order and prices, 주아나's quests (66-charms.js)
+    charms: charmDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), mobs: MAP_META[id].kinds.slice(),
       // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
-      theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id] })),
+      theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id], minLv: MAP_META[id].minLv || undefined })),
   };
 }

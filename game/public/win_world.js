@@ -27,11 +27,13 @@ export function renderWarp(s) {
   const stones = ((G.map && G.map.marks) || []).filter((k) => k.kind === "waypoint");
   const hereI = stones.findIndex((k) => dist(G.me.x, G.me.y, k.x * T + 8, k.y * T + 8) < 40);
   for (const w of G.defs.waypoints || []) for (let i = 0; i < (w.n || 1); i++) {
-    const open = wpWoke(s, w.id, i), cur = w.id === here && (hereI < 0 ? i === 0 : hereI === i);
+    const levelOk = !w.minLv || s.lvl >= w.minLv;
+    const woke = wpWoke(s, w.id, i), open = levelOk && woke, cur = w.id === here && (hereI < 0 ? i === 0 : hereI === i);
     const row = el("div", "it wp" + (open ? "" : " locked") + (cur ? " cur" : "") + (G.warpPick === w.id && i === (G.warpPickI | 0) ? " pick" : ""));
     const ic = el("span", "wpi"); ic.append(iconImg("stone", open ? "#8ad8ff" : "#6a6658"));
     const tx = el("div", "tx", (w.n || 1) > 1 ? `${w.name} · ${(w.names && w.names[i]) || i + 1}` : w.name);
-    tx.append(el("small", "", `${bandText(w.band)} · ${cur ? "현재 위치" : open ? "이동 가능" : "아직 깨우지 않음"}`));
+    const band = w.minLv ? `Lv.${w.minLv} 전용` : bandText(w.band);
+    tx.append(el("small", "", `${band} · ${cur ? "현재 위치" : !levelOk ? "레벨 부족" : woke ? "이동 가능" : "아직 깨우지 않음"}`));
     row.append(ic, tx);
     if (!cur) {
       const b = el("button", open ? "btn gold small" : "btn small", "이동");

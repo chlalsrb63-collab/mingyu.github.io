@@ -9,9 +9,10 @@ const L = await import("../src/logic.js");
 const { maps, fires } = L.atlas();
 const D = L.defs();
 const VERBOSE = process.argv.includes("-v");
-const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple"];
+const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast"];
 /** Maps held to the rules, and their own minimum loop count (cycle rank of the coarse graph). */
-const STRICT = { meadow: { loops: 12 }, forest: { loops: 10 }, cave: { loops: 6 }, crypt: { loops: 6 }, sewer: { loops: 6 } };
+const STRICT = { meadow: { loops: 12 }, forest: { loops: 10 }, cave: { loops: 6 }, crypt: { loops: 6 }, sewer: { loops: 6 },
+  jungle: { loops: 10 }, oasis: { loops: 12 }, coast: { loops: 12 } };
 // tort: the target band is 1.15–2.2; held from 1.12 so a wide open ground with one short way round still passes
 const RULES = { open: [0.42, 0.9], tort: [1.12, 2.2], deadMax: 7, deadPer: 0.012 };
 const CELL = 8, DOORWAY = 8;

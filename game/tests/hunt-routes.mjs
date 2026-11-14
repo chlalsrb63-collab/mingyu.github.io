@@ -1,0 +1,66 @@
+// The hunting route remains playable when a roster or generator is changed.
+import assert from "node:assert/strict";
+import { atlas, defs } from "../src/logic.js";
+
+const D = defs();
+const { maps, fires } = atlas();
+const route = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "frostkeep"];
+const coastal = ["city", "jungle", "coast", "oasis"];
+const legs = (ids) => ids.slice(1).map((id, i) => [maps[ids[i]], maps[id]]);
+for (const [a, b] of [...legs(route), ...legs(coastal)]) {
+  const doors = a.portals.filter((p) => p.to === b.id);
+  assert.equal(doors.length, 2, `${a.id} to ${b.id} has a paired threshold`);
+  for (const p of doors) {
+    assert.equal(a.reach[p.y * a.w + p.x], 1, `${a.id} threshold is reachable`);
+    assert.equal(b.reach[p.ty * b.w + p.tx], 1, `${b.id} arrival is walkable`);
+    assert.equal(b.zone[p.ty * b.w + p.tx], 0, `${b.id} arrival is outside the hunting packs`);
+  }
+  if (a.band && b.band) assert.ok(b.band[0] - a.band[1] <= 1, `${a.id} and ${b.id} have adjacent bands`);
+}
+
+function stats(map, kind) {
+  const { w, reach, zone, zdist, cells } = map;
+  let total = 0, sum = 0, near = Infinity;
+  for (const q of cells.spawns.flat().filter((q) => q.k === kind)) {
+    let n = 0, d = 0;
+    for (let y = q.r[1]; y <= q.r[3]; y++) for (let x = q.r[0]; x <= q.r[2]; x++) {
+      const i = y * w + x;
+      if (!reach[i] || zone[i] !== q.zone) continue;
+      d += zdist[i];
+      near = Math.min(near, zdist[i]);
+      n++;
+    }
+    if (!n) continue;
+    total += q.n;
+    sum += q.n * d / n;
+  }
+  assert.ok(total >= 8, `${map.id} has repeatable packs of ${kind}`);
+  return { mean: sum / total, near };
+}
+
+function increasing(map, kinds) {
+  let mean = 0;
+  for (const k of kinds) {
+    const s = stats(map, k);
+    assert.ok(s.mean > mean, `${map.id} fights get harder along the route at ${k}`);
+    mean = s.mean;
+  }
+}
+increasing(maps.meadow, ["twinhare", "gutfrog", "eyecrow", "lambmaw", "meadowram"]);
+assert.ok(stats(maps.meadow, "meadowram").near > maps.meadow.zinfo.eliteD);
+assert.ok(stats(maps.forest, "splitboar").near < 30, "the job-level hunt is close to the forest entrance");
+increasing(maps.forest, ["splitboar", "ribdeer", "mothface"]);
+increasing(maps.jungle, ["catsplit_gold", "hydrasnake_poison", "ribdeer_bile"]);
+increasing(maps.coast, ["crabskull_blood", "squidrat_blood", "gatorhalf_steel"]);
+increasing(maps.oasis, ["foxtwine_gold", "eyecrow_ash", "bearmaw_gold"]);
+increasing(maps.maple, ["blightsquirrel", "gravrose", "bogcrown", "hollowowl", "rootwarden"]);
+assert.deepEqual(D.quests.slice(-4).map((q) => q.mob), ["bogcrown", "hollowowl", "rootwarden", "crownstag"]);
+
+const keep = maps.frostkeep;
+const boss = keep.cells.fixed.find((sp) => sp.k === "crownstag");
+assert.ok(boss, "there is a distinct permanent boss");
+assert.equal(keep.reach[boss.r[1] * keep.w + boss.r[0]], 1);
+assert.ok(keep.stones.length === 3 && fires.frostkeep.length > 0, "the keep has a camp and three standing stones");
+assert.ok(stats(keep, "rimehare").mean < stats(keep, "frostmoth").mean, "the ranged packs start farther in");
+assert.ok(maps.maple.portals.some((p) => p.to === keep.id), "the endgame threshold is in the old kingdom");
+console.log("hunt routes: safe arrivals, adjacent bands, starter and late progression, capped arena");

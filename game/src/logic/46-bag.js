@@ -29,7 +29,7 @@ function sortSlots(list) {
   const out = [];
   for (const e of order) {
     const top = out[out.length - 1];
-    if (!isGear(e.id) && top && top.id === e.id && top.n < STACK) {
+    if (!isGear(e.id) && e.id !== "charm" && top && top.id === e.id && top.n < STACK) {
       const put = Math.min(e.n || 1, STACK - top.n);
       top.n += put;
       if ((e.n || 1) > put) out.push({ id: e.id, n: (e.n || 1) - put });

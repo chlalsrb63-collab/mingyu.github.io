@@ -31,6 +31,9 @@ const ITEMS = {
   mp_s: { name: "파란 물약", type: "pot", mana: 40, price: 25, desc: "MP를 40 회복한다." },
   mp_m: { name: "큰 파란 물약", type: "pot", mana: 140, price: 80, desc: "MP를 140 회복한다." },
   mp_l: { name: "농축 파란 물약", type: "pot", mana: 340, price: 170, desc: "MP를 340 회복한다." },
+  // charms (66-charms.js): one to a slot, never stacked, sold or stored; `charm_nail` opens a cell of the board
+  charm: { name: "참", type: "charm", price: 0, desc: "주아나가 감정해 주는 빛나는 조각. 감정한 참은 참 보드에 놓아야 힘을 낸다." },
+  charm_nail: { name: "참틀 확장못", type: "mat", price: 0, desc: "주아나에게 가져가면 골드와 함께 참 보드의 칸을 하나 연다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
   recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 버드나무광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
@@ -153,7 +156,7 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "ribdeer_bile", oasis: "bearmaw_gold", coast: "gatorhalf_steel" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -178,7 +181,7 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, frostkeep: 14 };
 const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
@@ -216,6 +219,7 @@ const MOBS = {
   gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80 },
   eyecrow: { name: "눈알 까마귀", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true },   // circles the pond and minds its own business, so the shore stays a fishing spot
   lambmaw: { name: "뒤집힌 양", lv: 6, hp: 110, atk: 15, def: 1, spd: 38, xp: 38, gold: [7, 16], aggro: 72, range: 18, cd: 1300, charge: 110 },
+  meadowram: { name: "금 간 뿔 숫양", sp: "lambmaw", tint: "ash", lv: 7, hp: 134, atk: 18, def: 2, spd: 40, xp: 49, gold: [8, 19], aggro: 64, range: 18, cd: 1400, charge: 100 },
   // 속삭임 숲
   splitboar: { name: "반쪽 멧돼지", lv: 8, hp: 170, atk: 23, def: 2, spd: 44, xp: 60, gold: [10, 22], aggro: 80, range: 18, cd: 1100, charge: 104 },
   ribdeer: { name: "갈비뼈 사슴", lv: 10, hp: 330, atk: 26, def: 8, spd: 26, xp: 92, gold: [12, 26], aggro: 64, range: 18, cd: 1400, slam: 34 },
@@ -259,6 +263,26 @@ const MOBS = {
   sowseer: { name: "눈 달린 암퇘지", lv: 37, hp: 3000, atk: 112, def: 30, spd: 30, xp: 1300, gold: [90, 158], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
   doghead_fire: { name: "불타는 세 머리 들개", sp: "doghead", tint: "fire", lv: 38, hp: 2900, atk: 116, def: 26, spd: 52, xp: 1400, gold: [94, 164], aggro: 100, range: 20, cd: 1000, charge: 116, pool: 24, poolKind: 1 },
   abyssboss: { name: "심연의 어미", lv: 40, hp: 48000, atk: 200, def: 40, spd: 34, xp: 30000, gold: [4000, 6000], aggro: 140, range: 30, cd: 1400, resp: 240000, boss: true, gear: 1, fan: 160, pool: 34, poolKind: 2, charge: 150 },
+  // 정글 해안도로 (maps-v2 M3) — beasts met before, grown worse in the wet heat (new coast species come in a later step)
+  catsplit_gold: { name: "표범 무늬 고양이", sp: "catsplit", tint: "gold", lv: 20, hp: 600, atk: 64, def: 6, spd: 56, xp: 290, gold: [32, 62], aggro: 94, range: 18, cd: 1000, leap: 100 },
+  toadbrood_poison: { name: "늪 알 밴 두꺼비", sp: "toadbrood", tint: "poison", lv: 21, hp: 760, atk: 68, def: 14, spd: 30, xp: 330, gold: [36, 70], aggro: 86, range: 20, cd: 1500, pool: 26 },
+  hydrasnake_poison: { name: "맹독 세 머리 뱀", sp: "hydrasnake", tint: "poison", lv: 23, hp: 780, atk: 78, def: 8, spd: 38, xp: 400, gold: [40, 76], aggro: 94, range: 66, cd: 1700, volley: true },
+  mothface_bile: { name: "독가루 나방", sp: "mothface", tint: "bile", lv: 24, hp: 880, atk: 82, def: 8, spd: 44, xp: 450, gold: [44, 84], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 22 },
+  ribdeer_bile: { name: "이끼 갈비뼈 사슴", sp: "ribdeer", tint: "bile", lv: 26, hp: 1500, atk: 92, def: 22, spd: 30, xp: 540, gold: [50, 94], aggro: 80, range: 20, cd: 1400, slam: 38 },
+  // 모래바람 오아시스
+  foxtwine_gold: { name: "사막 꼬인 여우", sp: "foxtwine", tint: "gold", lv: 28, hp: 1200, atk: 100, def: 12, spd: 62, xp: 680, gold: [58, 104], aggro: 98, range: 17, cd: 850, leap: 96 },
+  hydrasnake_gold: { name: "모래 세 머리 뱀", sp: "hydrasnake", tint: "gold", lv: 29, hp: 1250, atk: 102, def: 14, spd: 38, xp: 730, gold: [60, 108], aggro: 96, range: 70, cd: 1700, volley: true },
+  lambmaw_bone: { name: "말라붙은 양", sp: "lambmaw", tint: "bone", lv: 30, hp: 1500, atk: 100, def: 16, spd: 40, xp: 790, gold: [64, 114], aggro: 90, range: 19, cd: 1200, charge: 112 },
+  eyecrow_ash: { name: "잿빛 눈알 까마귀", sp: "eyecrow", tint: "ash", lv: 31, hp: 1400, atk: 98, def: 12, spd: 46, xp: 850, gold: [66, 118], aggro: 98, range: 18, cd: 1100, fly: true },
+  twingoat_gold: { name: "모래 쌍두 염소", sp: "twingoat", tint: "gold", lv: 33, hp: 2000, atk: 100, def: 24, spd: 44, xp: 980, gold: [74, 130], aggro: 90, range: 20, cd: 1100, charge: 110 },
+  bearmaw_gold: { name: "모래 아가리 곰", sp: "bearmaw", tint: "gold", lv: 34, hp: 2600, atk: 104, def: 28, spd: 28, xp: 1060, gold: [78, 136], aggro: 80, range: 21, cd: 1500, slam: 40 },
+  // 산호 해안
+  crabskull_blood: { name: "붉은 두개골 게", sp: "crabskull", tint: "blood", lv: 26, hp: 1370, atk: 92, def: 24, spd: 34, xp: 540, gold: [48, 88], aggro: 84, range: 20, cd: 1400, charge: 118 },
+  fishwalker_frost: { name: "푸른 다리 달린 생선", sp: "fishwalker", tint: "frost", lv: 27, hp: 1580, atk: 95, def: 22, spd: 32, xp: 590, gold: [52, 92], aggro: 80, range: 22, cd: 1500, slam: 38 },
+  eelknot_frost: { name: "산호 뱀장어 매듭", sp: "eelknot", tint: "frost", lv: 28, hp: 1320, atk: 99, def: 16, spd: 40, xp: 660, gold: [56, 100], aggro: 98, range: 76, cd: 1800, volley: true },
+  squidrat_blood: { name: "산호 촉수 쥐", sp: "squidrat", tint: "blood", lv: 29, hp: 1500, atk: 101, def: 18, spd: 56, xp: 715, gold: [59, 105], aggro: 96, range: 18, cd: 1000, pool: 24, poolKind: 2 },
+  leechmaw_bone: { name: "흰 거머리 아가리", sp: "leechmaw", tint: "bone", lv: 30, hp: 1700, atk: 103, def: 20, spd: 44, xp: 785, gold: [62, 111], aggro: 92, range: 19, cd: 1100, leap: 90 },
+  gatorhalf_steel: { name: "강철 반쪽 악어", sp: "gatorhalf", tint: "steel", lv: 32, hp: 2100, atk: 106, def: 30, spd: 30, xp: 880, gold: [69, 119], aggro: 82, range: 21, cd: 1500, slam: 42 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes
   blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
@@ -267,10 +291,18 @@ const MOBS = {
   shroomboar: { name: "버섯등 멧돼지", lv: 43, hp: 3300, atk: 124, def: 28, spd: 48, xp: 1700, gold: [104, 180], aggro: 92, range: 20, cd: 1100, charge: 116, pool: 26 },
   gravrose: { name: "묘지 장미", lv: 44, hp: 3000, atk: 128, def: 22, spd: 22, xp: 1780, gold: [108, 186], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
   rotstag: { name: "썩은 관 사슴왕", lv: 46, hp: 5200, atk: 136, def: 32, spd: 42, xp: 2200, gold: [120, 204], aggro: 92, range: 22, cd: 1300, charge: 124, slam: 42, fan: 100 },
+  bogcrown: { name: "검은 왕관 뿌리짐승", sp: "stumpmaw", tint: "ash", lv: 47, hp: 4250, atk: 138, def: 35, spd: 28, xp: 3100, gold: [118, 184], aggro: 82, range: 22, cd: 1600, slam: 42 },
+  hollowowl: { name: "눈먼 문지기 올빼미", sp: "owlstare", tint: "bone", lv: 49, hp: 4050, atk: 144, def: 30, spd: 34, xp: 3550, gold: [122, 195], aggro: 94, range: 68, cd: 1800, fly: true, fan: 105 },
+  rootwarden: { name: "얼어붙은 왕릉 파수꾼", sp: "rotstag", tint: "frost", lv: 50, hp: 5500, atk: 155, def: 42, spd: 39, xp: 3950, gold: [134, 210], aggro: 90, range: 22, cd: 1450, charge: 128, slam: 43 },
+  // 성에왕의 성채: the open approach, the paired galleries and the crown chamber
+  rimehare: { name: "서리창 쌍두토끼", lv: 50, hp: 4600, atk: 142, def: 30, spd: 52, xp: 3400, gold: [132, 204], aggro: 80, range: 18, cd: 1350, leap: 92 },
+  frostmoth: { name: "갈라진 유리날개", lv: 50, hp: 4500, atk: 149, def: 33, spd: 37, xp: 3900, gold: [142, 218], aggro: 92, range: 32, cd: 1900, fly: true, fan: 96 },
+  crownstag: { name: "성에왕 유리뿔", lv: 50, hp: 520000, atk: 205, def: 50, spd: 34, xp: 74000, gold: [5200, 7600], aggro: 124, range: 30, cd: 1500, resp: 300000, boss: true, gear: 1, charge: 148, slam: 48, fan: 144, pool: 34, poolKind: 2 },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
-  ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]]]) {
+  ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]],
+  ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 30, 1250, [440, 775]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {
@@ -302,13 +334,13 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   { mob: "ratking", n: 12, title: "무덤 아래", text: "숲의 막다른 폐허에 지하묘지로 내려가는 계단이 있다네. 꼬리가 엉킨 쥐 왕 12마리를 정리해 주게.", xp: 3000, gold: 750, items: [["hp_m", 5]] },
   { mob: "toadbrood", n: 10, title: "등에 밴 것", text: "지하묘지의 알 밴 두꺼비 10마리를 잡아 주게. 뱉어 놓은 웅덩이는 한참 남으니, 밟고 서 있지 말게.", xp: 3500, gold: 820, items: [["mp_m", 4]] },
   { mob: "batcluster", n: 10, title: "터지는 것", text: "지하묘지 깊은 곳의 박쥐 덩어리 10마리를 터뜨려 주게. 죽으면서 터지니, 쓰러뜨리고 물러서게.", xp: 4000, gold: 900, items: [["ru_ign", 1]] },
-  { mob: "pigeonmass", n: 10, title: "다른 세계의 하늘", text: "서쪽 문 너머는 '네온 시티'라는 다른 세계일세. 한 덩어리로 뭉친 비둘기 떼살 10마리를 떨어뜨려 주게.", xp: 4600, gold: 1000, items: [["mp_m", 5]] },
+  { mob: "pigeonmass", n: 10, title: "다른 세계의 하늘", text: "지하묘지 깊은 회랑 끝에서 네온 시티 변두리로 들어갈 수 있네. 한 덩어리로 뭉친 비둘기 떼살 10마리를 잡아 주게.", xp: 4600, gold: 1000, items: [["mp_m", 5]] },
   { mob: "catsplit", n: 12, title: "뒷골목의 울음", text: "네온 시티 골목의 갈라진 고양이 12마리를 잡아 주게. 소리 없이 뛰어든다네.", xp: 6500, gold: 1300, items: [["stone", 4]] },
   { mob: "fishwalker", n: 10, title: "뭍에 오른 것", text: "다리 달린 생선 10마리를 쓰러뜨려 주게. 단단하니 파티가 필요할 걸세.", xp: 9500, gold: 1800, items: [["stone", 5]] },
   { mob: "leechmaw", n: 12, title: "도시의 밑바닥", text: "네온 시티 뒷마당에 하수도로 내려가는 구멍이 있다네. 거머리 아가리 12마리를 떼어 내 주게.", xp: 12000, gold: 2200, items: [["hp_m", 8]] },
   { mob: "crabskull", n: 10, title: "남의 머리", text: "하수도에는 남의 두개골을 뒤집어쓴 게가 있다네. 두개골 게 10마리를 부숴 주게. 단단하고, 돌진이 매섭네.", xp: 13500, gold: 2400, items: [["stone", 4]] },
   { mob: "eelknot", n: 10, title: "매듭", text: "하수도 끝의 뱀장어 매듭 10마리를 풀어 주게. 멀리서 전기를 쏜다네.", xp: 15000, gold: 2600, items: [["ru_acu", 1]] },
-  { mob: "bearmaw", n: 8, title: "배에 난 입", text: "숲 끝의 수정 동굴은 균열의 중심일세. 아가리 곰 8마리를 쓰러뜨려 주게. 땅을 내리칠 땐 물러서게.", xp: 19000, gold: 3200, items: [["ru_san", 1], ["stone", 5]] },
+  { mob: "bearmaw", n: 8, title: "배에 난 입", text: "하수도 끝 회랑의 물길을 따라가면 수정 동굴이 나와. 아가리 곰 8마리를 쓰러뜨려 주게. 땅을 내리칠 땐 물러서게.", xp: 19000, gold: 3200, items: [["ru_san", 1], ["stone", 5]] },
   { mob: "boss", n: 1, title: "균열의 군주", text: "모든 세계를 뒤섞은 장본인, 균열의 군주 크리온을 쓰러뜨려 주게. 반드시 파티를 꾸려서 가게.", xp: 45000, gold: 8000, items: [["stone", 10], ["ru_lum", 1]] },
   { mob: "horsehalf", n: 12, title: "군주의 뒤편", text: "군주가 쓰러진 자리 뒤에 더 깊은 균열이 열렸네. 피의 심연의 반쪽 말 12마리를 쓰러뜨려 주게.", xp: 30000, gold: 5000, items: [["hp_m", 10], ["ru_fos", 1]] },
   { mob: "lionhand", n: 10, title: "손으로 된 갈기", text: "심연 깊은 곳의 손갈기 사자 10마리를 쓰러뜨려 주게. 땅을 치고, 멀리서는 무언가를 던진다네.", xp: 38000, gold: 6000, items: [["stone", 8]] },
@@ -316,6 +348,10 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   { mob: "blightsquirrel", n: 12, title: "단풍 아래의 병", text: "어미는 쓰러졌지만, 그 병은 뿌리를 타고 지상으로 번졌다네. 속삭임 숲 동쪽, 단풍에 묻힌 옛 왕도로 가서 한 꼬리 다람쥐떼 12마리를 정리해 주게.", xp: 40000, gold: 6500, items: [["hp_m", 10]] },
   { mob: "shroomboar", n: 12, title: "포자 무덤", text: "왕도의 멧돼지들은 등에 버섯을 키운다네. 버섯등 멧돼지 12마리를 잡아 주게. 뱉어 낸 포자 웅덩이는 독이니 밟지 말게.", xp: 46000, gold: 7200, items: [["stone", 8], ["mp_m", 6]] },
   { mob: "rotstag", n: 4, title: "썩은 왕관", text: "무너진 예배당엔 왕관을 쓴 사슴이 산다네. 옛 왕의 사냥감이었다지. 썩은 관 사슴왕 4마리를 쓰러뜨려, 왕도의 병을 끊어 주게.", xp: 60000, gold: 9000, items: [["stone", 12], ["ru_lum", 1]] },
+  { mob: "bogcrown", n: 24, title: "서리에 물든 뿌리", text: "단풍 왕도 안쪽부터 땅이 얼고 있네. 검은 왕관 뿌리짐승 24마리를 베어 오래된 왕릉으로 가는 길을 트게.", xp: 52000, gold: 9500, items: [["stone", 12]] },
+  { mob: "hollowowl", n: 28, title: "소리로 지키는 길", text: "왕도 깊은 폐허의 올빼미는 발자국 소리를 듣고 날아오르네. 눈먼 문지기 올빼미 28마리를 쓰러뜨려 사냥길을 열게.", xp: 61000, gold: 11000, items: [["hp_m", 15], ["mp_m", 10]] },
+  { mob: "rootwarden", n: 32, title: "얼어붙은 왕의 문", text: "단풍 왕도 남동쪽에서 얼어붙은 왕릉 파수꾼 32마리를 쓰러뜨려 주게. 성에왕의 성채는 Lv.200부터 들어갈 수 있네.", xp: 74000, gold: 15000, items: [["stone", 16], ["ru_fos", 2]] },
+  { mob: "crownstag", n: 1, title: "마지막 왕의 뿔", text: "성에왕의 성채 안쪽 왕좌에 유리뿔이 있다네. 원형 광장 바깥으로 빠질 길을 살핀 뒤, 동료와 함께 왕을 쓰러뜨려 주게.", xp: 40000, gold: 24000, items: [["stone", 20], ["ru_lum", 2]] },
 ];
 
 // ───────────────────────────── bag expansion and housing (46-bag.js, 64-housing.js) ─────────────────────────────

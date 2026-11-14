@@ -59,7 +59,9 @@ function deriveStats(p) {
   if (p.stc) return p.stc;
   const ch = p.ch, lv = ch.lvl, b = gearBonus(ch), w = ch.eq.weapon, wk = weaponKind(ch), arm = WKIND[wk];
   const E = {};
-  for (const k of ST_ORDER) E[k] = eff(ch.st[k]);
+  // the charm board (66-charms.js): stats on top of the soft-capped ones (combat only), HP, MP, attack after gear
+  const cm = charmSum(ch);
+  for (const k of ST_ORDER) E[k] = eff(ch.st[k]) + cm.st[k];
   const wAtk = w ? (ITEMS[w.id].base.atk || 0) * (1 + 0.1 * w.enh) : 0;
   const sc = scaleOf(ch, wk);
   let core = SFX.atk[0] + SFX.atk[1] * lv;
@@ -67,10 +69,10 @@ function deriveStats(p) {
   const wm = w ? ch.wm[wk].lv : 0;
   const luk = E.luk, dex = E.dex, wil = E.wil, wis = E.wis;
   p.stc = {
-    mhp: Math.round(SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp),
-    mmp: Math.round(SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp),
-    atk0: (core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100),
-    core,
+    mhp: Math.round(SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp),
+    mmp: Math.round(SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp),
+    atk0: (core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk,
+    core, cm,
     def: Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def),
     crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh : 0) + b.crit),
     critd: SFX.critd[0] + SFX.critd[1] * luk + b.critd / 100,
@@ -254,8 +256,10 @@ function shotTick(S, rt, dt) {
       s.hit.push(o.id);
       if (s.cap) s.cap.h[o.id] = (s.cap.h[o.id] | 0) + 1;
       p.hitAct = [s.act, s.gain];
-      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1), false, s.opt || undefined);
+      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
       p.hitAct = null;
+      // 길별의 렌즈참: a 관통 화살 that strikes a second target marks it (66-charms.js)
+      if (s.cl && s.hit.length === 2) charmLens(S, rt, p, o);
       if (s.el) { weave(S, rt, p, s.el, o.x, o.y, s.k); s.el = ""; }
       if (s.hit.length > s.pierce) { stop = along; break; }
     }

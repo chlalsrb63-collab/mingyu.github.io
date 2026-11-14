@@ -71,7 +71,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 // ═════════ the sheet ═════════
 {
   const ch = L.newChar("새싹", [1, 2]);
-  assert.equal(ch.v, 12); assert.equal(ch.job, "adventurer"); assert.equal(ch.lvl, 1); assert.equal(ch.xp, 0); assert.equal(ch.xpt, 0);
+  assert.equal(ch.v, 13); assert.equal(ch.job, "adventurer"); assert.equal(ch.lvl, 1); assert.equal(ch.xp, 0); assert.equal(ch.xpt, 0);
   assert.deepEqual(ch.st, { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 });
   assert.deepEqual(Object.keys(ch.wm), ["sword", "dagger", "spear", "staff", "book", "bow"]);
   assert.ok(Object.values(ch.wm).every((r) => r.lv === 1 && r.xp === 0));
@@ -547,7 +547,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 {
   for (const k of Object.keys(D.mobs)) assert.equal(D.mobs[k].lv, 4 * D.mobs[k].tier - 3);
   const maple = D.maps.find((m) => m.id === "maple");
-  assert.deepEqual(maple.band, [157, 181], "단풍 왕도 shows Lv.157–181");
+  assert.deepEqual(maple.band, [157, 197], "단풍 왕도 shows Lv.157–197");
   const W = world({ wk: "sword", lvl: 13 });   // tier 4
   const town = W.map;
   assert.ok(town.portals.some((pt) => pt.to.includes("바람초원 Lv.1–25")), "doors name shown levels");

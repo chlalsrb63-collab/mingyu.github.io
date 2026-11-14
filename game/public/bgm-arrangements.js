@@ -1,6 +1,7 @@
 // Acoustic arrangements of the original map themes. Keep the notes and harmony
 // in bgm.js so a player can change instruments without learning a different tune.
 import { TRACKS } from "./bgm.js";
+import { COAST_THEMES } from "./bgm-regions.js";
 
 export const MUSIC_STYLES = ["newAge", "classic"];
 export const DEFAULT_MUSIC_STYLE = "newAge";
@@ -58,6 +59,17 @@ const ARRANGEMENTS = {
 export function arrangedTrack(name, style) {
   const original = TRACKS[name];
   if (style === "classic") return original;
+  if (Object.hasOwn(COAST_THEMES, name) || name === "frostkeep") {
+    const voice = (key) => ({ felt: "grand", strings: "bowed", softPluck: "harp" })[key] || key;
+    const acoustic = (parts) => {
+      const out = { ...parts, expressive: true };
+      for (const key of ["lead", "double", "bass", "comp", "padType"]) if (out[key]) out[key] = voice(out[key]);
+      return out;
+    };
+    const sections = Object.fromEntries(Object.entries(original.sections).map(([id, [chords, melody, parts]]) =>
+      [id, [chords, melody, parts && acoustic(parts)]]));
+    return { ...acoustic(original), sections };
+  }
   const { openingPad = true, reply, ...parts } = ARRANGEMENTS[name] || {};
   const sections = Object.fromEntries(Object.entries(original.sections).map(([id, [chords, melody]], i) => {
     const dynamics = i ? { double: reply } : { pad: openingPad && (parts.pad ?? ROOM.pad), compVol: (parts.compVol ?? ROOM.compVol) * 0.8 };
