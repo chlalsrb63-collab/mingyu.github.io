@@ -140,10 +140,15 @@ function zoneMap(m) {
  */
 function zoneSpawns(m, cfg) {
   const W = m.w, H = m.h, z = m.zone, d = m.zdist, { D, safeR, eliteD } = m.zinfo;
-  const ros = cfg.mobs.map((k, i) => [k, i]).sort((a, b) => MOBS[a[0]].lv - MOBS[b[0]].lv || a[1] - b[1]).map((a) => a[0]);
-  const n = ros.length, normTop = Math.max(1, Math.ceil(n * 0.85)), eliteLo = Math.min(n - 1, Math.floor(n * 0.5));
+  const sorted = (l) => l.map((k, i) => [k, i]).sort((a, b) => MOBS[a[0]].lv - MOBS[b[0]].lv || a[1] - b[1]).map((a) => a[0]);
+  const all = sorted(cfg.mobs);
   const progN = (dd) => clamp((dd - safeR) / Math.max(1, eliteD - safeR), 0, 0.999);
-  const pick = (zone, dd, h) => {
+  // (a ground of several habitats — dunesea: dunes, oasis belt, sea — names the kinds of a place: cfg.rosterAt(x, y))
+  const pick = (zone, dd, h, x, y) => {
+    const ros = cfg.rosterAt ? sorted(cfg.rosterAt(x, y)) : all;
+    const n = ros.length, normTop = Math.max(1, Math.ceil(n * 0.85)), eliteLo = Math.min(n - 1, Math.floor(n * 0.5));
+    // (a habitat's kinds are few and all its own: any of them anywhere in it, the stronger half on elite ground)
+    if (cfg.rosterAt) return zone === Z_ELITE ? ros[Math.min(n - 1, eliteLo + Math.floor(h * (n - eliteLo)))] : ros[Math.min(normTop - 1, Math.floor(h * normTop))];
     if (zone === Z_ELITE) return ros[clamp(eliteLo + Math.floor(clamp((dd - eliteD) / Math.max(1, D - eliteD), 0, 0.999) * (n - eliteLo) + (h - 0.5) * 1.2), eliteLo, n - 1)];
     return ros[clamp(Math.floor(progN(dd) * normTop + (h - 0.5) * 1.2), 0, normTop - 1)];
   };
@@ -167,7 +172,7 @@ function zoneSpawns(m, cfg) {
     if (k <= 0) continue;
     const h = h2(bx, by, cfg.seed + zz), dd = sd / cnt, r = [x0, y0, x1, y1];
     const ep = zz === Z_ELITE ? ZONE_EP : eliteAt(progN(dd) * 0.5);
-    const k1 = pick(zz, dd, h), k2 = k >= 4 ? pick(zz, dd, 1 - h) : k1;
+    const mx = (x0 + x1) >> 1, my = (y0 + y1) >> 1, k1 = pick(zz, dd, h, mx, my), k2 = k >= 4 ? pick(zz, dd, 1 - h, mx, my) : k1;
     if (k2 === k1) { out.push({ k: k1, n: k, r, elite: ep, zone: zz }); continue; }
     const a = Math.ceil(k * 0.65);
     out.push({ k: k1, n: a, r: r.slice(), elite: ep, zone: zz }, { k: k2, n: k - a, r: r.slice(), elite: ep, zone: zz });
@@ -176,7 +181,7 @@ function zoneSpawns(m, cfg) {
   for (const pk of m.pockets) {
     const [cx, cy] = pk.chests[0], ci = cy * W + cx;
     const keeper = old.find((sp) => !MOBS[sp.k].chest && !MOBS[sp.k].boss && !sp.el && sp.r[0] <= cx && cx <= sp.r[2] && sp.r[1] <= cy && cy <= sp.r[3]);
-    const kind = keeper ? keeper.k : pick(d[ci] >= eliteD ? Z_ELITE : Z_NORMAL, d[ci], 0.5);
+    const kind = keeper ? keeper.k : pick(d[ci] >= eliteD ? Z_ELITE : Z_NORMAL, d[ci], 0.5, cx, cy);
     const mid = (pk.L + 1 + d[ci]) / 2;
     let at = -1, bd = Infinity;
     for (const i of pk.tiles) {
@@ -200,10 +205,13 @@ function zoneSpawns(m, cfg) {
 function stonesOf(m) {
   return m.stones || (WP[m.id] ? [WP[m.id]] : []);
 }
+/** The names of a ground's stones (one with stones off the way on names them itself: GEN[id].stoneNames). */
+const stoneNames = (id) => (GEN[id] && GEN[id].stoneNames) || STONE_NAMES[(MAP_META[id] && MAP_META[id].wpn) || 1] || [];
 /** A stone's name for a toast: the map's name, and which stone when it has more than one. */
 function stoneName(id, i) {
   const n = (MAP_META[id] && MAP_META[id].wpn) || 1, nm = MAP_META[id] ? MAP_META[id].name : id;
-  return n > 1 ? `${nm} · ${STONE_NAMES[n][i] || i + 1}` : nm;
+  const names = stoneNames(id);
+  return n > 1 ? `${nm} · ${names[i] || i + 1}` : nm;
 }
 /** 질주의 바람: brushing past a wind shrine speeds you on (each shrine once a minute). */
 function windTouch(S, p, now) {

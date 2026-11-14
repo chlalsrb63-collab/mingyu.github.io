@@ -76,9 +76,9 @@ const count = (id) => ch.inv.filter((s) => s.id === id).reduce((n, s) => n + s.n
 
 // ── grades of the world (B.3): meadow 1 · forest, crypt 2 · city, sewer 3 · cave, abyss 4 · 단풍 왕도 5
 {
-  const want = { town: 1, willow: 1, meadow: 1, forest: 2, crypt: 2, city: 3, sewer: 3, cave: 4, abyss: 4, maple: 5, jungle: 3, oasis: 4, coast: 4 };
+  const want = { town: 1, willow: 1, meadow: 1, forest: 2, crypt: 2, city: 3, sewer: 3, cave: 4, abyss: 4, maple: 5, jungle: 3, oasis: 4, coast: 4, dunesea: 4 };
   for (const [id, g] of Object.entries(want)) if (D.life.mapGrade[id] !== undefined) assert.equal(D.life.mapGrade[id], g, id);
-  for (const id of ["meadow", "forest", "city", "cave", "maple", "jungle", "oasis", "coast"]) assert.equal(D.life.mapGrade[id], want[id], id);
+  for (const id of ["meadow", "forest", "city", "cave", "maple", "jungle", "oasis", "coast", "dunesea"]) assert.equal(D.life.mapGrade[id], want[id], id);
   assert.equal(X.gradeOfMap({ grade: 4, band: [1, 3] }), 4, "an editor map's own grade wins");
   assert.equal(X.gradeOfMap({ band: [24, 30] }), 4);
   assert.equal(X.gradeOfMap({}), 1);

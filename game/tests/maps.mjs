@@ -10,7 +10,7 @@ const { built: builtAtLoad, meta } = (({ built, meta }) => ({ built: built.slice
 
 const { maps, fires, waypoints } = L.atlas();
 const D = L.defs();
-const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast"];
+const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea"];
 const blocked = (m, x, y) => x < 0 || y < 0 || x >= m.w || y >= m.h || m.o[y][x] !== " " || "wW".includes(m.g[y][x]);
 const flood = (m, sx, sy) => {
   const d = new Int32Array(m.w * m.h).fill(-1), q = [[sx, sy]];
@@ -98,7 +98,7 @@ for (const id of ["meadow", "forest", "cave", "maple"]) {
 // hidden pockets with a chest and its guardian, three waypoint stones with a wind shrine past each later one
 const D0 = (k) => D.mobs[k];
 const DENS = Function(`return (${/const DENSITY = (\{[^}]*\})/.exec((await import("node:fs")).readFileSync(new URL("../src/logic/10-tables.js", import.meta.url), "utf8"))[1]})`)();
-const SIZE = { meadow: [152, 102], forest: [152, 102], crypt: [132, 102], city: [152, 102], sewer: [152, 102], cave: [132, 100], abyss: [152, 120], maple: [160, 112], jungle: [168, 112], oasis: [168, 116], coast: [176, 120] };
+const SIZE = { meadow: [152, 102], forest: [152, 102], crypt: [132, 102], city: [152, 102], sewer: [152, 102], cave: [132, 100], abyss: [152, 120], maple: [160, 112], jungle: [168, 112], oasis: [168, 116], coast: [176, 120], dunesea: [288, 192] };
 const zrep = [];
 for (const id of HUNT) {
   const m = maps[id], W = m.w, Z = m.zone, d = flood(m, m.entry[0], m.entry[1]);
@@ -159,7 +159,10 @@ for (const id of HUNT) {
     assert.equal(s.i, i);
     assert.equal(m.o[s.y][s.x], "Q");
     assert.ok(d[s.ay * W + s.ax] >= 0, `${id}: stone ${i} can be walked to`);
-    if (i) assert.ok(d[s.ay * W + s.ax] > d[m.stones[i - 1].ay * W + m.stones[i - 1].ax] + 20, `${id}: stone ${i} lies further in`);
+    // (dunesea's last stones stand at places off the way on — the oasis village, the beach: only well apart from the others)
+    const byPlace = i >= m.stones.length - (m.stonesAt ? m.stonesAt.length : 0);
+    if (i && !byPlace) assert.ok(d[s.ay * W + s.ax] > d[m.stones[i - 1].ay * W + m.stones[i - 1].ax] + 20, `${id}: stone ${i} lies further in`);
+    if (byPlace) assert.ok(m.stones.every((o) => o === s || Math.hypot(o.x - s.x, o.y - s.y) > 20), `${id}: stone ${i} stands apart from the others`);
   });
   assert.equal(zAt(m.stones[0].ax, m.stones[0].ay), 0, `${id}: the first stone stands in the safe plaza`);
   assert.equal(m.marks.filter((k) => k.kind === "waypoint").length, m.stones.length);
@@ -254,7 +257,8 @@ for (const id of Object.keys(meta)) {
   ms[id] = performance.now() - t;
 }
 const eagerMs = eager.reduce((n, id) => n + ms[id], 0);
-for (const id of HUNT) assert.ok(ms[id] < 150, `${id} is built in ${ms[id].toFixed(0)} ms`);
+// (dunesea is 2.6× the next biggest ground: its bound is the others' by area)
+for (const id of HUNT) assert.ok(ms[id] < (id === "dunesea" ? 400 : 150), `${id} is built in ${ms[id].toFixed(0)} ms`);
 assert.ok(eagerMs < 100, `the maps built at load take ${eagerMs.toFixed(0)} ms`);
 assert.ok(loadMs < 1000, `the rules load in ${loadMs.toFixed(0)} ms`);
 console.log("maps ok — load " + loadMs.toFixed(0) + " ms (eager maps " + eagerMs.toFixed(0) + " ms), per map " + HUNT.map((id) => `${id} ${ms[id].toFixed(0)}`).join(", ") + " ms\n  " + report.join("\n  ") + "\n  " + zrep.join("\n  "));
