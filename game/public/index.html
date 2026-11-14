@@ -81,7 +81,7 @@
         </section>
         <div id="menu">
           <button data-win="char" title="캐릭터 (C)"><span>캐릭터</span><kbd>C</kbd></button>
-          <button data-win="skill" title="스킬 (K)"><span>스킬</span><kbd>K</kbd></button>
+          <button data-win="skill" title="무기 · 스킬 (K)"><span>스킬</span><kbd>K</kbd></button>
           <button data-win="quest" title="의뢰 (L)"><span>의뢰</span><kbd>L</kbd></button>
           <button data-win="party" title="파티 (P)"><span>파티</span><kbd>P</kbd></button>
           <button data-win="guild" title="길드 (G)"><span>길드</span><kbd>G</kbd></button>
@@ -154,6 +154,8 @@
       <section class="window" id="w-char" hidden>
         <header><span class="t">캐릭터</span><kbd>C</kbd><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body">
+          <div id="char-stat" class="statwin" hidden></div>
+          <div id="char-gear">
           <div class="doll">
             <div class="col" id="doll-l"><div class="slot" id="eq-helm"></div><div class="slot" id="eq-armor"></div><div class="slot" id="eq-gloves"></div><div class="slot" id="eq-boots"></div></div>
             <div class="portrait"><canvas id="char-cv" width="132" height="168"></canvas><div id="char-title"></div></div>
@@ -162,12 +164,16 @@
           <div id="char-stats" class="stats"></div>
           <div id="char-sets"></div>
           <div id="char-skills" hidden></div>
+          </div>
         </div>
       </section>
 
       <section class="window" id="w-skill" hidden>
-        <header><span class="t">스킬</span><kbd>K</kbd><button class="x" title="닫기 (Esc)"></button></header>
-        <div class="body"><div id="skill-body"></div></div>
+        <header><span class="t">무기 · 스킬</span><kbd>K</kbd><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body">
+          <div class="tabs" id="skill-tabs"><button data-tab="wpn" class="on">무기 · 스킬</button><button data-tab="tree">전직의 길</button></div>
+          <div id="skill-body"></div>
+        </div>
       </section>
 
       <section class="window" id="w-shop" hidden>
@@ -194,12 +200,12 @@
 
       <section class="window" id="w-train" hidden>
         <header><span class="t">수련관 카이</span><button class="x" title="닫기 (Esc)"></button></header>
-        <div class="body">
-          <p class="say">경험은 레벨만 올리는 게 아니야. 쌓은 경험치를 바치면 네 육체 자체를 단련해 주지. 한계는 없다.</p>
-          <div id="train-xp" class="gold-line"></div>
-          <div id="train-list" class="list"></div>
-          <p class="hint">수련할수록 필요 경험치가 조금씩 늘어납니다. 레벨업에 쓸 경험치를 대신 써도 됩니다.</p>
-        </div>
+        <div class="body"><div id="train-body"></div></div>
+      </section>
+
+      <section class="window" id="w-job" hidden>
+        <header><span class="t">전직관 아르센</span><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body"><div id="job-body"></div></div>
       </section>
 
       <section class="window" id="w-party" hidden>
@@ -414,7 +420,7 @@
             <div id="c-presets"></div>
           </div>
           <div class="cr-col cr-r">
-            <div class="cr-lab"><span>직업</span><small>무기와 싸우는 법이 다릅니다</small></div>
+            <div class="cr-lab"><span>시작</span><small>직업은 고르지 않습니다 — 모습만 꾸미세요</small></div>
             <div id="c-cls"></div>
             <div class="cr-lab"><span>외형</span><span class="cr-tools"><button type="button" id="c-undo" class="btn small" title="되돌리기 (Ctrl+Z)">되돌리기</button><button type="button" id="c-rand" class="btn small">무작위</button></span></div>
             <div id="c-parts"></div>

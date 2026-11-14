@@ -2,7 +2,8 @@
  * Weapon mastery at a glance (docs/design/jobs-and-stats.md B.10, F.2): the strip beside the
  * HP/MP bars in the dock — the weapon in hand, "숙련 Lv.N" and a thin bar to the next level
  * (a hybrid job shows both of its weapons) — and the hover card listing all six weapons, the
- * job and what the next mastery level unlocks.
+ * job and what the next mastery level unlocks. A hybrid's back weapon carries a "Tab" key cap (the swap);
+ * a click on the strip opens the K window's 전직의 길 (client.js, jobtree.js).
  *
  * Reads only the wire: `self.wm` = [[lv, xp, need] × 6 in WK_ORDER], `self.wk` (in hand),
  * `self.wk2` (a hybrid's other weapon), `self.job` + `defs.jobs`. Before the server sends `wm`
@@ -98,6 +99,7 @@ export function renderStrip(box, s, defs, handUrl) {
       t.append(`Lv.${m.lv}`);
       const bar = el("i", "wb"), f = el("i"); f.style.width = `${pct(m)}%`; bar.append(f);
       c.append(ic, t, bar);
+      if (job.kind === "hybrid" && k !== s.wk) c.append(el("kbd", "wm-tab", "Tab"));
       c.dataset.k = k;
       box.append(c);
     });

@@ -29,6 +29,8 @@ import * as SideQ from "./sidequests.js";
 import * as SkillFx from "./skillfx.js";
 import { drawWeaponGauge, gaugeTip } from "./weapongauge.js";
 import * as Mastery from "./mastery.js";
+import * as StatWin from "./statwin.js";
+import * as JobTree from "./jobtree.js";
 import { installFrames } from "./frames.js";
 import * as Lobby from "./lobby.js";
 import * as Assets from "./assetlib.js";
@@ -203,13 +205,16 @@ function onMessage(msg) {
         G.defs.classes = {};
         for (const id of Object.keys(G.defs.jobs)) G.defs.classes[id] = { name: G.defs.jobs[id].name, wk: G.defs.jobs[id].wk };
         for (const [old, id] of Object.entries(JOB_ALIAS)) if (!G.defs.classes[old]) G.defs.classes[old] = G.defs.classes[id];
-        for (const id of Object.keys(G.defs.jobs)) { const k = G.defs.jobs[id].wk[0] || "dagger"; CLASS_ICON[id] = k === "book" ? "staff" : k === "bow" ? "target" : k; }
+        for (const id of Object.keys(G.defs.jobs)) { const k = G.defs.jobs[id].wk[0] || "dagger"; CLASS_ICON[id] = k === "book" ? "book" : k; }
         Sky.configure(G.defs.sky);
         G.icons = Growth.icons(Art.buildIcons(G.defs.items));
         Growth.init({ G, act, el, iconImg, itemSlot, section, countItem, usePotion, isGear: (id) => isGear(id), sellPrice: (e) => sellPrice(e) });
         Wardrobe.init({ G, act, el, hoverTip });
         QS.init({ G, act, el, toast, castSkill, useSlot, countItem, showTip, hideTip, touch, addChat });
         SideQ.init({ G, act, el, Sound });
+        // jobs and stats (J3): the C window's 능력치 tab and 카이's window; K's 무기 · 스킬 / 전직의 길 and 아르센's window
+        StatWin.init({ G, act, el, section, Sound, redraw: refreshUi, openStats });
+        JobTree.init({ G, act, el, section, Sound, hoverTip, redraw: refreshUi, openTree });
       }
       G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear(); G.who.clear();
       $("#hud").hidden = false;
@@ -271,7 +276,7 @@ function loadMap(m) {
   // walking into a band above you: say so once, at the door
   const lv = G.self && G.self.lvl;
   if (m.band && lv && lv < m.band[0]) toast(`권장 레벨 Lv.${m.band[0]}–${m.band[1]} — 지금(Lv.${lv})은 위험합니다. 파티를 맺거나 입구 근처에서만 사냥하세요.`);
-  closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train");
+  closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); closeWin("job");
 }
 
 function onSnap(s) {
@@ -541,6 +546,13 @@ function onEvent(e, t) {
       break;
     }
     case "pd": { const p = entityPos(e[1]); if (p) S3.fx.burst(p.x, p.y, 0.6, "#c8c8d8", 12, 1.4); break; }
+    case "jc": {
+      // a job change: light, a burst of brass, and for me a banner and a fanfare
+      const p = entityPos(e[1]);
+      if (p) { S3.fx.pillar(p.x, p.y); S3.fx.burst(p.x, p.y, 1, "#f4d27a", 24, 2.2); floatText("전직!", p.x, p.y, heightOf(p) + 0.6, "#f4d27a", true); }
+      if (e[1] === G.you) { Sound.play("achieve"); const j = G.self && G.defs.jobs[G.self.job]; banner(j && j.kind !== "none" ? `${j.name}의 길` : "전직!"); }
+      break;
+    }
     // what someone says floats over their head for a while, longer for longer lines
     case "s": G.bubbles.set(e[1], { text: e[2], t0: t, until: t + 3500 + Math.min(4000, e[2].length * 90) }); Sound.play("blip"); break;
     case "o": G.bubbles.set(e[1], { emo: e[2] | 0, t0: t, until: t + 2800 }); Sound.play("emote"); break;
@@ -989,7 +1001,8 @@ function interact() {
   else if (n.role === "daily") openWin("daily");
   else if (n.role === "collector") openWin("collect");
   else if (n.role === "achieve") openWin("achieve");
-  else if (n.role === "train" || n.role === "job") openWin("train");   // 전직관 아르센 offers jobs in the same window (J3 gives it its own)
+  else if (n.role === "train") openWin("train");          // 수련관 카이: the starter weapon, levels, 망각의 의식
+  else if (n.role === "job") openWin("job");              // 전직관 아르센: the jobs
   else if (n.role === "bank") openWin("bank");
   else if (n.role === "costume") openWin("costume");
   else if (n.role === "dim") Dim.openKeeper();
@@ -1221,8 +1234,13 @@ function update(dt, t) {
     const p = $("#prompt");
     p.hidden = !near;
     if (near) { p.textContent = ""; p.append(el("b", "", document.body.classList.contains("touch") ? "▶ " : "F  "), near.name); }
-    else { closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); if (isOpen("warp")) delete shown.warp; }
+    else { closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); closeWin("job"); if (isOpen("warp")) delete shown.warp; }
+    // the stat tab and the job card say what can be done where you stand
+    if (isOpen("char") || isOpen("skill")) refreshUi();
   }
+  // stepping into (or out of) a campfire's warmth turns the stat tab's buttons on or off
+  const warm = !!G.self && fireNear();
+  if (warm !== G.warmWas) { G.warmWas = warm; if (isOpen("char")) refreshUi(); }
 }
 
 // ───────────────────────────── render ─────────────────────────────
@@ -1473,7 +1491,7 @@ function wpWoke(s, id, i = 0) { return !!(s && s.wp && !Array.isArray(s.wp) && (
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job"];
 const winEl = (id) => $(`#w-${id}`);
 /** The bag is docked in the side column, so it always counts as open (on a phone it lives in the drawer). */
 const isOpen = (id) => id === "inv" || !winEl(id).hidden;
@@ -1523,7 +1541,7 @@ function homeOf(id, w, h) {
   const [x0, y0, x1, y1] = zone(), top = y0 + 4;
   const right = x1 - w - 4, mid = (x0 + x1 - w) / 2;
   switch (id) {
-    case "char": case "shop": case "smith": case "train": case "bank": case "house": case "hstore": return [right, top];
+    case "char": case "shop": case "smith": case "train": case "job": case "bank": case "house": case "hstore": return [right, top];
     case "deco": return [x0 + 4, top + 32];
     case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": case "life": return [x0 + 4, top + 32];
     case "talk": return [mid, y1 - h - 52];
@@ -1659,6 +1677,8 @@ function closeWin(id) {
   w.hidden = true;
   if (folded(id)) { w.classList.remove("mini"); w.title = ""; layTabs(); }
   Housing.onWinClose(id);
+  if (id === "train") StatWin.reset();
+  if (id === "job" || id === "skill") JobTree.reset();
   if (tip.from && w.contains(tip.from)) hideTip();
   syncMenu();
 }
@@ -2042,6 +2062,7 @@ function hudFrame(s) {
   const maxed = s.lvl >= G.defs.maxLv || !Number.isFinite(need);
   $("#exp-fill").style.width = maxed ? "100%" : `${Math.min(100, (s.xp / need) * 100)}%`;
   $("#exp-text").textContent = maxed ? `경험치 ${s.xp.toLocaleString()}` : s.xp >= need ? `EXP ${s.xp.toLocaleString()} — 레벨을 올릴 수 있습니다 (모닥불·수련관)` : `EXP ${s.xp.toLocaleString()} / ${need.toLocaleString()}  (${((s.xp / need) * 100).toFixed(2)}%)`;
+  $("#exp").classList.toggle("ready", !maxed && s.xp >= need);
   hudBars();
 }
 /** The weapon-mastery strip beside the bars (mastery.js); a level gained flashes it and chimes. */
@@ -2063,13 +2084,12 @@ function showMasteryTip() {
 }
 $("#wm").addEventListener("mouseenter", () => { if (!touch()) showMasteryTip(); });
 $("#wm").addEventListener("mouseleave", () => { if (tip.from === $("#wm")) hideTip(); });
-// a finger has no hover: a tap shows the card for a few seconds, a second tap hides it
-$("#wm").addEventListener("click", () => {
-  if (!touch()) return;
-  if (tip.from === $("#wm")) return hideTip();
-  showMasteryTip();
-  setTimeout(() => { if (tip.from === $("#wm")) hideTip(); }, 5000);
-});
+// a click (a tap) opens 전직의 길: every weapon's mastery and where it leads
+$("#wm").addEventListener("click", () => { if (!G.self) return; hideTip(); openTree(); });
+$("#wm").title = "눌러서 전직의 길 보기 (K)";
+// the EXP bar: a click opens the 능력치 tab
+$("#exp").addEventListener("click", () => { if (G.self) openStats(); });
+$("#exp").title = "눌러서 능력치 열기 — 모닥불 곁이나 수련관 앞에서 레벨을 올립니다";
 function setSrc(img, src) { if (img.dataset.src !== src) { img.dataset.src = src; img.src = src; } }
 function hotbar(s) {
   for (const [btn, kind] of [["#b-hp", "hp"], ["#b-mp", "mp"]]) {
@@ -2142,11 +2162,16 @@ function refreshUi() {
   tracker(s);
   const near = G.near && G.near.role;
   draw("inv", () => [s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs, s.bagCap], renderInv);
-  draw("char", () => [s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.lvl, s.name, s.guild], renderChar);
-  draw("skill", () => [s.lvl, s.job, s.skLv, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.qs, JSON.stringify(s.sk)], renderSkills);
+  // the C window: 장비 or 능력치 (points can be bought by a campfire or at 수련관 카이)
+  draw("char", () => G.charTab === "cos" ? ["cos", s.xp, s.nx] : G.charTab === "stat"
+    ? ["stat", s.st, s.lvl, s.xp, s.xpt, s.nx, s.rs, s.dv, s.atk, s.mhp, s.mmp, s.def, s.crit, s.critd, s.mf, s.job, s.wk, s.eq.weapon && s.eq.weapon.id, s.dead, fireNear(), near, StatWin.key()]
+    : ["gear", s.xp, s.nx, s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.lvl, s.name, s.guild], renderChar);
+  // K: 무기 · 스킬 or 전직의 길
+  draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey()], renderSkills);
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near], renderShop);
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone")], renderSmith);
-  draw("train", () => [s.xp, s.st, s.nx, s.rs, s.sw, s.job, s.wm, s.gold, s.lvl, fireNear(), G.near], renderTrain);
+  draw("train", () => [s.xp, s.xpt, s.nx, s.rs, s.sw, s.lvl, s.inv.length, near, StatWin.trainerKey()], (s) => StatWin.renderTrainer($("#train-body"), s, { atTrainer: near === "train" }));
+  draw("job", () => [s.job, s.wm, s.gold, near, JobTree.key()], (s) => JobTree.renderJobNpc($("#job-body"), s, { atJob: near === "job" }));
   draw("bank", () => [s.inv, s.wh, s.gold], Growth.renderBank);
   draw("quest", () => [s.q, s.bq, s.bn, s.mk, s.lvl, near, G.qsel, s.sq], renderQuest);
   draw("talk", () => [s.sq, s.lvl, talk.npc && talk.npc.id], () => SideQ.renderTalk($("#talk-sq"), talk.npc, s, (line) => { $("#talk-text").textContent = line; }));
@@ -2253,10 +2278,18 @@ const STAT_GROUPS = [
   ["공격", [["공격력", "sword", (s) => s.atk], ["치명타", "target", (s) => `${s.crit}%`], ["치명 피해", "burst", (s) => `${s.critd}%`], ["공격 간격", "clock", (s) => `${(s.acd / 1000).toFixed(2)}초`], ["흡혈", "fang", (s) => `${s.ls}%`]]],
   ["방어", [["방어력", "shield", (s) => s.def], ["최대 HP", "heart", (s) => s.mhp], ["최대 MP", "drop", (s) => s.mmp]]],
   ["유틸", [["경험치 추가", "up", (s) => `${s.xpb}%`], ["아이템 발견", "gem", (s) => `${s.mf}%`], ["골드 획득", "coin", (s) => `+${s.goldb}%`], ["처치 수", "skull", (s) => s.kills.toLocaleString()]]],
-  ["능력치", [["힘", "sword", (s) => s.st.str], ["의지", "heart", (s) => s.st.wil], ["민첩", "chevron", (s) => s.st.dex], ["지능", "drop", (s) => s.st.int], ["지혜", "book", (s) => s.st.wis], ["행운", "star", (s) => s.st.luk]]],
+  ["능력치", [["힘", "fist", (s) => s.st.str], ["의지", "heart", (s) => s.st.wil], ["민첩", "feather", (s) => s.st.dex], ["지능", "burst", (s) => s.st.int], ["지혜", "eye", (s) => s.st.wis], ["행운", "clover", (s) => s.st.luk]]],
   ["숙련", [["회피", "chevron", (s) => `${s.dv[1]}%`], ["공격 속도", "clock", (s) => `+${s.dv[2]}%`], ["재사용 감소", "clock", (s) => `${s.dv[3]}%`], ["무기 숙련", "up", (s) => `${s.skLv}`]]],
 ];
 function renderChar(s) {
+  // three tabs (the row is wardrobe_ui.js's): 장비 (the paper-doll and the sheet), 능력치 (statwin.js: buying points), 외형
+  const tab = G.charTab || "gear";
+  charTabBtn.classList.toggle("ready", s.lvl < G.defs.maxLv && s.xp >= StatWin.cheapest(s));
+  $("#char-gear").hidden = tab !== "gear";
+  $("#char-stat").hidden = tab !== "stat";
+  const role = G.near && G.near.role;
+  if (tab === "cos") return;
+  if (tab === "stat") { StatWin.render($("#char-stat"), s, { here: fireNear() || role === "train", atTrainer: role === "train" }); return; }
   const title = $("#char-title");
   title.textContent = "";
   title.append(iconImg(CLASS_ICON[s.cls] || "sword", "#e2c486"), s.name, el("small", "", `Lv.${s.lvl} ${G.defs.classes[s.cls].name}`));
@@ -2283,10 +2316,6 @@ function renderChar(s) {
     }
     st.append(grp);
   }
-  // the six stats are bought here too, by a campfire (J3: the C window's own 능력치 tab)
-  const up = el("button", "btn small", s.xp >= Math.min(...s.nx.filter((c) => c > 0), Infinity) ? "능력치 올리기 ★" : "능력치 올리기");
-  up.addEventListener("click", () => openWin("train"));
-  st.append(up);
   const pw = $("#char-sets");
   pw.textContent = "";
   const sets = Object.keys(G.defs.sets).filter((id) => setWorn(id));
@@ -2301,63 +2330,67 @@ function renderChar(s) {
   drawPortrait(now());
 }
 
-// ── skills ──
+// ── K: 무기 · 스킬 and 전직의 길 (jobtree.js draws the weapon rows and the tree; the skill rows are here, with the quick-slot drag) ──
 function renderSkills(s) {
+  const tab = G.skTab === "tree" ? "tree" : "wpn";
+  for (const b of $$("#skill-tabs button")) b.classList.toggle("on", b.dataset.tab === tab);
   const box = $("#skill-body");
-  box.textContent = "";
-  const wk = G.defs.wkinds[s.wk] || {};
-  box.append(section("기본 공격", "sword"));
-  const basic = el("div", "skill basic");
-  const bi = el("img", "ic"); bi.alt = ""; bi.src = s.eq.weapon ? G.icons.url[s.eq.weapon.id] : iconUrl("sword");
-  const bh = el("div", "hd");
-  bh.append(el("b", "", `${wk.name || "공격"}`), el("kbd", "", "Space"), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
-  basic.append(bi, bh, el("p", "", "가장 가까운 적을 알아서 겨냥합니다. 끊지 않고 이어 치면 세 번째 타격이 강한 마무리 일격이 됩니다."));
-  box.append(basic);
-  // weapon mastery, every kind (J3 draws the full 무기 · 스킬 window and the 전직의 길)
-  box.append(section("무기 숙련", "up"));
-  const wmBox = el("div", "list");
-  G.defs.wkOrder.forEach((k, j) => {
-    const [lv, xp, need] = s.wm[j];
-    const row = el("div", "skill" + (k === s.wk ? " on" : ""));
-    row.append(el("b", "", `${G.defs.wkName[k]} 숙련 ${lv}/50`), el("small", "", need ? ` ${xp.toLocaleString()} / ${need.toLocaleString()}` : " 최고"), el("small", "", lv >= G.defs.jobWm ? " · 전직 가능" : ""));
-    wmBox.append(row);
-  });
-  box.append(wmBox);
-  // weapon skills (J2): the weapon in hand (a hybrid's other weapon too), then the job's signature;
-  // J3 draws the full 무기 · 스킬 window and the 전직의 길 tree
-  const SK = G.defs.skills, job = G.defs.jobs[s.job] || { kind: "none", wk: [] };
-  const kinds = job.kind === "hybrid" ? [s.wk, ...job.wk.filter((k) => k !== s.wk)] : s.wk && s.eq.weapon ? [s.wk] : [];
-  const groups = kinds.filter((k) => G.defs.wkOrder.includes(k)).map((k) => [`${G.defs.wkName[k]} 스킬`, G.defs.skillOrder.filter((id) => SK[id].wk === k && !SK[id].job)]);
-  const sig = G.defs.skillOrder.filter((id) => SK[id].job === s.job);
-  if (sig.length) groups.push([`${job.name || "직업"} 전용`, sig]);
-  if (!groups.length) box.append(section("스킬", "book"), el("p", "hint", "무기를 들면 그 무기의 스킬이 보입니다."));
-  for (const [title, ids] of groups) {
-    box.append(section(title, "book"));
-    for (const id of ids) {
-      const sk = SK[id], w = G.skw && G.skw.get(id), pas = sk.kind === "p";
-      const why = pas ? (w ? (w[3] ? "" : "이 무기를 들면 켜집니다") : `숙련 ${sk.need}에 배웁니다`) : QS.skillWhy(id);
-      const row = el("div", "skill" + (why ? " locked" : "") + (sk.job ? " ult" : ""));
-      const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(id);
-      const hd = el("div", "hd");
-      const at = pas ? "" : QS.keysOf(["s", id]);
-      hd.append(el("b", "", sk.name), at ? el("kbd", "", at) : "");
-      if (pas) hd.append(el("small", "", "패시브"));
-      else hd.append(el("small", "mp", `MP ${w ? w[1] : sk.mp}`), el("small", "", `재사용 ${sk.cd / 1000}초`));
-      hd.append(el("small", "", why || (sk.job ? "전직 기술" : `숙련 ${sk.need} 습득`)));
-      row.append(ic, hd, el("p", "", sk.desc));
-      if (!pas) {
-        // drag the icon (or the whole row) onto the quick slots; or tap the button, then a slot
-        const put = el("button", "btn small qs-put", "단축칸");
-        put.title = "누른 뒤 아래 단축칸(1~9)을 누르면 거기에 놓입니다";
-        put.addEventListener("click", () => QS.pick(["s", id]));
-        row.append(put);
-        QS.dragSource(row, ["s", id]);
-      }
-      box.append(row);
-    }
-  }
-  box.append(el("p", "hint", "스킬은 무기에 딸려 있습니다 — 숙련 1과 10에 하나씩, 10에 패시브. 전직하면 그 직업의 기술이 더해집니다. 스킬을 끌어다 아래 단축칸(1~9)에 놓으면 그 숫자 키로 씁니다(우클릭·바깥에 놓으면 비움). 들고 있지 않은 무기의 스킬은 흐리게 보입니다. 자동사냥은 단축칸의 스킬을 칸 순서대로 씁니다."));
+  if (tab === "tree") JobTree.renderTree(box, s, { atJob: G.near && G.near.role === "job" });
+  else JobTree.renderWeapons(box, s, { skills: (host, k) => skillRows(host, s, k) });
 }
+/** Weapon `k`'s skills (L1, L10, the passive), then the job signatures it carries; the hand's basic attack first. */
+function skillRows(box, s, k) {
+  const SK = G.defs.skills, jobs = G.defs.jobs;
+  if (k === s.wk && s.eq.weapon) {
+    const wk = G.defs.wkinds[s.wk] || {};
+    const basic = el("div", "skill basic");
+    const bi = el("img", "ic"); bi.alt = ""; bi.src = G.icons.url[s.eq.weapon.id] || iconUrl("sword");
+    const bh = el("div", "hd");
+    bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), el("kbd", "", "Space"), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
+    basic.append(bi, bh, el("p", "", "가장 가까운 적을 겨냥합니다. 이어 치면 세 번째 타격이 마무리 일격이 됩니다."));
+    box.append(basic);
+  }
+  // the single job of this weapon, and a two-weapon job that carries it once it is yours
+  const ids = G.defs.skillOrder.filter((id) => {
+    const sk = SK[id];
+    if (!sk.job) return sk.wk === k;
+    const j = jobs[sk.job];
+    return j.kind === "single" ? j.wk[0] === k : sk.job === s.job && j.wk.includes(k);
+  });
+  for (const id of ids) {
+    const sk = SK[id], w = G.skw && G.skw.get(id), pas = sk.kind === "p";
+    const why = pas ? (w ? (w[3] ? "" : "이 무기를 들면 켜집니다") : `숙련 ${sk.need}에 배웁니다`) : sk.job && s.job !== sk.job ? `[${jobs[sk.job].name}] 전직 기술` : QS.skillWhy(id);
+    const row = el("div", "skill" + (why ? " locked" : "") + (sk.job ? " ult" : ""));
+    const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(id);
+    const hd = el("div", "hd");
+    const at = pas ? "" : QS.keysOf(["s", id]);
+    hd.append(el("b", "", sk.name), at ? el("kbd", "", at) : "");
+    if (pas) hd.append(el("small", "", "패시브"));
+    else hd.append(el("small", "mp", `MP ${w ? w[1] : sk.mp}`), el("small", "", `재사용 ${sk.cd / 1000}초`));
+    hd.append(el("small", "", why || (sk.job ? "전직 기술" : `숙련 ${sk.need} 습득`)));
+    row.append(ic, hd, el("p", "", sk.desc));
+    if (!pas) {
+      // drag the icon (or the whole row) onto the quick slots; or tap the button, then a slot
+      const put = el("button", "btn small qs-put", "단축칸");
+      put.title = "누른 뒤 아래 단축칸(1~9)을 누르면 거기에 놓입니다";
+      put.addEventListener("click", () => QS.pick(["s", id]));
+      row.append(put);
+      QS.dragSource(row, ["s", id]);
+    }
+    box.append(row);
+  }
+  box.append(el("p", "hint", "스킬을 끌어다 아래 단축칸(1~9)에 놓으면 그 숫자 키로 씁니다(우클릭·바깥에 놓으면 비움). 들고 있지 않은 무기의 스킬은 흐리게 보입니다. 자동사냥은 단축칸의 스킬을 칸 순서대로 씁니다."));
+}
+// the C window's tab row is the wardrobe's (장비 · 외형, wardrobe_ui.js shows and hides its parts); 능력치 joins it
+const charTabs = $("#w-char .wr-tabs"), charTabBtn = el("button", "", "능력치");
+charTabBtn.dataset.t = "stat";
+charTabs.children[0].after(charTabBtn);
+charTabs.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { G.charTab = b.dataset.t; refreshUi(); } });
+/** The C window on its 능력치 tab (the HUD's EXP bar, 카이, a campfire hint). */
+function openStats() { if (!isOpen("char")) Sound.play("open"); openWin("char"); if (G.charTab !== "stat") charTabBtn.click(); }
+/** K on its 전직의 길 tab (the mastery strip, 아르센). */
+function openTree() { G.skTab = "tree"; if (!isOpen("skill")) Sound.play("open"); openWin("skill"); }
+for (const b of $$("#skill-tabs button")) b.addEventListener("click", () => { G.skTab = b.dataset.tab; Sound.play("tab"); refreshUi(); });
 
 // ── waypoints ──
 const bandText = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
@@ -2624,7 +2657,7 @@ function fadeIn() {
   setTimeout(() => { f.hidden = true; }, 700);
 }
 
-// ── shop, smith, trainer ──
+// ── shop, smith (수련관 카이 and 전직관 아르센: statwin.js, jobtree.js) ──
 function renderShop(s) {
   const it = G.defs.items, list = $("#shop-list");
   list.textContent = "";
@@ -2682,76 +2715,6 @@ function renderSmith(s) {
   if (!any) list.append(el("div", "ds", "강화할 수 있는 장비를 착용하고 있지 않습니다."));
   void it;
 }
-function renderTrain(s) {
-  const list = $("#train-list");
-  list.textContent = "";
-  // (J1's plain list; J3 turns it into the C window's 능력치 tab and the 무기 · 스킬 window)
-  $("#train-xp").textContent = `Lv.${s.lvl} ${G.defs.classes[s.job].name} · 보유 경험치 ${s.xp.toLocaleString()} · 골드 ${s.gold.toLocaleString()}G`;
-  const role = G.near && G.near.role;
-  const here = role === "train" || fireNear();
-  // a new 모험가 picks one free weapon at 수련관 카이
-  if (!s.sw) {
-    list.append(section("첫 무기", "sword"));
-    list.append(el("p", "say", role === "train" ? "어떤 무기로 시작하겠나? 하나를 골라 가게." : "수련관 카이에게 가면 무기 하나를 골라 받을 수 있습니다."));
-    const feel = { sword: "힘·의지", dagger: "민첩·행운", spear: "힘·지혜", staff: "지능·지혜", book: "지능·의지", bow: "민첩·행운" };
-    const row = el("div", "it");
-    for (const k of G.defs.wkOrder) {
-      const b = el("button", "", `${G.defs.wkName[k]} — ${feel[k]}`);
-      b.disabled = role !== "train";
-      b.addEventListener("click", () => act({ t: "starter", wk: k }));
-      row.append(b);
-    }
-    list.append(row);
-  }
-  list.append(section("능력치", "person"));
-  if (!here) list.append(el("p", "hint", "모닥불 곁이나 수련관 앞에서 레벨을 올릴 수 있습니다."));
-  // what n more points in stat i cost (the client's mirror of the server's price; the server checks)
-  const [K, K0] = G.defs.statK;
-  const costOf = (i, n) => { let c = 0; for (let j = 0; j < n; j++) { const lv = s.lvl + j, v = s.st[G.defs.stats[i][0]] + j; if (lv >= G.defs.maxLv || v >= 99) return Infinity; c += Math.round(G.defs.lvc[lv - 1] * (1 + K * Math.max(0, v - K0))); } return c; };
-  G.defs.stats.forEach(([k, name, desc], i) => {
-    const row = el("div", "it");
-    const tx = el("div", "tx", `${name}  ${s.st[k]}`);
-    tx.append(el("small", "", `${desc} · 다음 1포인트 ${s.nx[i] ? `${s.nx[i].toLocaleString()} EXP` : "최대"}`));
-    row.append(tx);
-    for (const n of [1, 5]) {
-      const cost = costOf(i, n), a = [0, 0, 0, 0, 0, 0];
-      a[i] = n;
-      const b = el("button", "", `+${n}`);
-      b.disabled = !here || !s.nx[i] || s.xp < cost;
-      b.title = Number.isFinite(cost) ? `${cost.toLocaleString()} EXP` : "";
-      b.addEventListener("click", () => act({ t: "train", a }));
-      row.append(b);
-    }
-    list.append(row);
-  });
-  if (role === "train" && s.lvl > 1) {
-    const row = el("div", "it");
-    row.append(el("div", "tx", "망각의 의식 — 모든 능력치를 5로 되돌리고 쓴 경험치를 돌려받습니다."));
-    const b = el("button", "", s.rs > 0 ? `되돌리기 (무료 ${s.rs}회)` : `되돌리기 (경험치 10% 소모)`);
-    b.addEventListener("click", () => act({ t: "respec" }));
-    row.append(b);
-    list.append(row);
-  }
-  // jobs: offered by 전직관 아르센 (the server checks mastery, gold and where you stand)
-  if (s.job === "adventurer") {
-    const wmOf = (k) => s.wm[G.defs.wkOrder.indexOf(k)][0];
-    const open = Object.keys(G.defs.jobs).filter((j) => G.defs.jobs[j].kind !== "none" && G.defs.jobs[j].wk.every((k) => wmOf(k) >= G.defs.jobWm));
-    list.append(section("전직", "crown"));
-    if (!open.length) list.append(el("p", "hint", `무기 하나를 숙련 ${G.defs.jobWm}까지 다루면 전직관 아르센에게서 그 무기의 직업으로, 두 무기를 모두 ${G.defs.jobWm}까지 다루면 두 갈래 길로 전직할 수 있습니다.`));
-    for (const j of open) {
-      const d = G.defs.jobs[j], row = el("div", "it");
-      row.append(el("div", "tx", `${d.name} — ${d.wk.map((k) => G.defs.wkName[k]).join(" + ")} · ${d.cost.toLocaleString()}G`));
-      const b = el("button", "", "전직");
-      b.disabled = role !== "job" || s.gold < d.cost;
-      b.title = role === "job" ? "" : "전직관 아르센 앞에서 할 수 있습니다";
-      const ro = ((c) => (c >= 0 && c % 28 && c % 28 !== 8 ? "으로" : "로"))(d.name.charCodeAt(d.name.length - 1) - 0xac00);
-      b.addEventListener("click", () => { if (confirm(`[${d.name}]${ro} 전직합니다. 전직은 되돌릴 수 없습니다. 계속할까요? (${d.cost.toLocaleString()}G)`)) act({ t: "job_change", j }); });
-      row.append(b);
-      list.append(row);
-    }
-  }
-}
-
 // ── quests: a log on the left, the chosen entry on the right ──
 function renderQuest(s) {
   const qs = G.defs.quests, mobs = G.defs.mobs, it = G.defs.items;

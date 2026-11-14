@@ -807,3 +807,176 @@ body.in-house #tut { display: none !important; }
 #w-life .life-card .df small { white-space: nowrap; }
 #w-life .life-card .df .next { color: #a898b8; white-space: nowrap; }
 #w-life .life-card.soon { opacity: .55; }
+/* ─────────────── jobs and stats (J3): 능력치 tab, 카이, 무기 · 스킬, 전직의 길, 아르센 (statwin.js, jobtree.js) ─────────────── */
+/* the EXP bar glows (two steps, no blur) while a point is affordable; it and the mastery strip open their windows */
+#exp, #wm { cursor: pointer; }
+#wm .wm-c { position: relative; }
+#wm .wm-tab { position: absolute; right: 0; top: -1px; font: 9px/1 var(--pix9); padding: 1px 2px; color: #9a90a8; background: var(--scr); border: 1px solid var(--ink); }
+body.touch #wm .wm-tab { display: none; }
+#exp.ready { border-color: var(--b-mid); animation: exp-ready 1.2s steps(2) infinite; }
+#exp.ready i { background: linear-gradient(#fff4c8 0 2px, #f0c860 2px 7px, #a4782a 7px); }
+@keyframes exp-ready { 50% { border-color: var(--b-hi); box-shadow: inset 0 0 0 1px #f4dfa4; } }
+.window .tabs button.ready::after { content: " ★"; color: #ffe070; }
+.window .tabs button.on.ready::after { color: #7a3a0a; }
+#skill-tabs { display: flex; gap: 3px; margin: 0 0 6px; }
+#w-char .wr-tabs button.ready::after { content: " ★"; color: #ffe070; }
+
+/* the stat tab */
+.statwin { display: flex; flex-direction: column; gap: 5px; }
+.statwin[hidden] { display: none; }
+.sw-head { font: 12px var(--pix); color: #e8dcb8; }
+.sw-head b { color: var(--b-hi); }
+.sw-head b.xp { color: #9af0ae; }
+.sw-hand { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; font: 12px var(--pix); color: #e8dcb8; }
+.sw-hand .wi { width: 16px; height: 16px; image-rendering: pixelated; }
+.sw-hand b { color: var(--b-hi); }
+.sw-hand small { flex-basis: 100%; color: #a898b8; }
+.window .sw-away { margin: 0; padding: 3px 6px; color: #ffcf8a; background: #2a1c14; border: 2px solid #5a3a1a; box-shadow: none; }
+.sw-rows { display: flex; flex-direction: column; gap: 2px; }
+.sw-row { display: grid; grid-template-columns: 1fr 52px auto; grid-template-rows: auto auto; gap: 0 6px; align-items: center; padding: 3px 6px 3px 4px;
+  background: var(--scr); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #07060b, inset -2px -2px 0 #2a2433; }
+.sw-row.hand { border-color: #6e5226; }
+.sw-row.lit { border-color: var(--b-mid); background: #1c1724; }
+.sw-row .nm { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.sw-row .nm b { font: 12px var(--pix); color: var(--cream); }
+.sw-row .gr { font: 10px/1 var(--pix9); padding: 1px 3px; color: #2a1806; background: var(--b-mid); box-shadow: inset 1px 1px 0 var(--b-hi), inset -1px -1px 0 var(--b-lo); }
+.sw-row .val { display: flex; align-items: baseline; justify-content: flex-end; gap: 2px; }
+.sw-row .val b { font: 12px var(--pix); color: #cfe2f6; }
+.sw-row .val b.cap1 { color: #ffd27a; }
+.sw-row .val b.cap2 { color: #ff9a6a; }
+.sw-row .val .pn { font: 10px var(--pix9); font-style: normal; color: #9af0ae; }
+.sw-row .pmb { display: flex; gap: 2px; }
+.window .sw-row .pmb .btn.pm { width: 22px; height: 20px; padding: 0 !important; font: 12px/1 var(--pix) !important; }
+.window .sw-row .pmb .btn.pm:disabled { opacity: .35; }
+.sw-row .ef { grid-column: 1 / 3; color: #a898b8; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sw-row .nx { justify-self: end; color: #c8b896; white-space: nowrap; }
+.sw-foot { display: flex; align-items: center; gap: 4px; padding: 4px 0 2px; border-top: 2px solid #2c2537; }
+.sw-foot .sum { flex: 1; min-width: 0; font: 12px var(--pix); color: #e8dcb8; }
+.sw-foot .sum b { color: var(--b-hi); }
+.sw-foot .sum b.bad { color: #ff8a7a; }
+.window .sw-foot .btn:disabled { opacity: .45; }
+.sw-dv { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 12px; padding: 5px 8px; background: var(--scr); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #07060b, inset -2px -2px 0 #2a2433; }
+.sw-dv span { display: flex; justify-content: space-between; gap: 6px; font: 12px/1.5 var(--pix); color: #b8ac90; padding: 0 2px; }
+.sw-dv span b { color: #cfe2f6; font-weight: 400; }
+.sw-dv span.lit { color: #2a1806; background: var(--b-mid); }
+.sw-dv span.lit b { color: #2a1806; }
+.statwin .hint { margin: 0; }
+
+/* 수련관 카이 */
+#w-train { width: min(360px, calc(var(--zone-w) - 8px)); }
+.tw-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 6px 0; }
+.window .tw-card { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 3px 4px; cursor: pointer; color: var(--cream);
+  background: #2a2433; border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #3e344b, inset -2px -2px 0 #17131d; font: inherit; }
+.window .tw-card:hover { background: #352c42; }
+.window .tw-card.on { background: #4e4030; box-shadow: inset 2px 2px 0 #8a7448, inset -2px -2px 0 #1f1a28, 0 0 0 2px var(--b-hi); }
+.tw-card .wi { width: 32px; height: 32px; image-rendering: pixelated; }
+.tw-card b { font: 12px var(--pix); }
+.tw-card .st { color: var(--b-hi); }
+.tw-card .fl { color: #b8ac90; text-align: center; line-height: 1.3; }
+.tw-go { display: flex; align-items: center; gap: 6px; font: 10px/1.4 var(--pix9); color: #c8b896; margin-bottom: 4px; }
+.tw-go span { flex: 1; }
+.window .tw-go .btn:disabled { opacity: .45; }
+.tw-sec { margin-top: 6px; }
+.tw-line { display: flex; align-items: center; justify-content: space-between; gap: 6px; font: 12px var(--pix); color: #e8dcb8; margin-top: 4px; }
+.tw-line .free { color: #9af0ae; }
+.tw-line .fee { color: #ffcf8a; }
+.window .tw-txt { margin: 4px 0 0; color: #b8ac90; line-height: 1.45; }
+.window .confirm { margin-top: 5px; padding: 5px 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; background: #2a1c14; border: 2px solid #8a5a2a; }
+.window .confirm p { flex-basis: 100%; margin: 0 0 2px; color: #ffe2a8; line-height: 1.45; }
+.window .confirm .btn:disabled { opacity: .45; }
+
+/* K: 무기 · 스킬 */
+#w-skill { --win-max: 440px; width: min(440px, calc(var(--zone-w) - 8px)); }
+.wp-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
+.window .wp-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 0 6px; align-items: center; padding: 3px 4px; text-align: left; cursor: pointer; color: var(--cream);
+  background: var(--scr); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #07060b, inset -2px -2px 0 #2a2433; font: inherit; }
+.window .wp-row:hover { background: #1c1724; }
+.window .wp-row.sel { border-color: var(--b-mid); background: #221b2b; }
+.window .wp-row.hand { box-shadow: inset 0 0 0 2px #6e5226; }
+.wp-row .wi { width: 36px; height: 36px; padding: 0; box-sizing: border-box; image-rendering: pixelated; background: #1a1622; border: 2px solid var(--ink); }
+.wp-row.hand .wi { border-color: var(--b-mid); }
+.wp-row .mid { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wp-row .t { display: flex; align-items: baseline; gap: 3px; white-space: nowrap; }
+.wp-row .t b { font: 12px var(--pix); color: var(--b-hi); margin-right: 3px; }
+.wp-row .t .lv { font: 12px var(--pix); color: #cfe2f6; }
+.wp-row .t small { color: #7a7088; }
+.wp-row .tag { font: 10px/1 var(--pix9); font-style: normal; padding: 1px 3px; margin-left: 3px; color: #2a1806; background: var(--b-mid); }
+.wp-row .tag.back { background: #8a7aa0; }
+.wp-row .tag.job { background: #6ad08a; }
+.wp-row .bar { display: block; position: relative; height: 6px; background: #000; border: 1px solid #000; box-shadow: inset 0 0 0 1px #2c2537; }
+.wp-row .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#d4ffe4 0 1px, #8fe0b4 1px 3px, #2f7a5c 3px); }
+.wp-row .sc { color: #a898b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wp-row .chips { display: flex; gap: 2px; }
+.chip { position: relative; width: 22px; height: 22px; display: grid; place-items: center; background: #1a1622; border: 2px solid var(--ink); }
+.chip img { width: 16px; height: 16px; image-rendering: pixelated; }
+.chip.pas { border-color: #3a5a8a; }
+.chip.sig { border-color: #7a5a22; }
+.chip.off img { filter: grayscale(1) brightness(.45); }
+.chip i { position: absolute; right: -1px; bottom: -2px; font: 9px/1 var(--pix9); font-style: normal; color: #f4dfa4; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
+.wp-skills .skill { margin-bottom: 4px; }
+#tip .hint.ok { color: #9af0ae; }
+
+/* 전직의 길: the tree (absolute nodes over a canvas of 2-px pixel lines) */
+.jt-root { display: flex; align-items: center; flex-wrap: wrap; gap: 0 6px; padding: 3px 6px; margin-bottom: 6px; font: 12px var(--pix); color: #e8dcb8;
+  background: #2a2433; border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #3e344b, inset -2px -2px 0 #17131d; }
+.jt-root b { color: var(--b-hi); }
+.jt-root.cur { background: var(--b-mid); box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px -2px 0 var(--b-lo); }
+.jt-root.cur b, .jt-root.cur small { color: #2a1806; }
+.jt-root small { flex-basis: 100%; color: #b8ac90; }
+.jt-wrap { overflow: hidden; display: flex; justify-content: center; }
+.jt-map { position: relative; flex: none; }
+.jt-map canvas { position: absolute; left: 0; top: 0; image-rendering: pixelated; }
+.window .jt-node { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 0; cursor: pointer;
+  color: #8a8098; background: #1a1622; border: 2px solid #2a2236; box-shadow: inset 2px 2px 0 #2a2433, inset -2px -2px 0 #0c0a10; font: inherit; overflow: hidden; }
+.jt-node b { font: 12px/1.1 var(--pix); letter-spacing: -1px; white-space: nowrap; }
+.jt-node small { font: 10px/1 var(--pix9); white-space: nowrap; }
+.window .jt-node.half { color: #c8b896; border-color: #5a4426; }
+.window .jt-node.ok { color: #d4ffe4; border-color: #4ac06a; background: #18301f; animation: pulse 1.2s steps(2) infinite; }
+.window .jt-node.cur { color: #2a1806; background: var(--b-mid); border-color: var(--ink); box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px -2px 0 var(--b-lo); }
+.window .jt-node.shut { opacity: .45; }
+.window .jt-node.sel { outline: 2px solid var(--b-hi); outline-offset: 0; z-index: 1; }
+.window .jt-node:hover { filter: brightness(1.2); }
+.jt-wpn { position: absolute; display: grid; grid-template-columns: 16px 1fr; grid-template-rows: 16px 11px 4px; gap: 1px 4px; align-items: center; padding: 1px 4px 2px; box-sizing: border-box;
+  background: var(--scr); border: 2px solid #3a3146; }
+.jt-wpn .wi { width: 16px; height: 16px; image-rendering: pixelated; }
+.jt-wpn b { font: 12px/1 var(--pix); color: #cfe2f6; white-space: nowrap; }
+.jt-wpn.ready b { color: #f4d27a; }
+.jt-wpn small { grid-column: 1 / -1; text-align: center; font: 10px/1 var(--pix9); color: #e8dcb8; white-space: nowrap; }
+.jt-wpn .bar { grid-column: 1 / -1; position: relative; height: 4px; background: #000; }
+.jt-wpn .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: #8fe0b4; }
+.jt-wpn.ready { border-color: #b88a3a; }
+.jt-wpn.ready .bar i { background: #f4d27a; }
+.jt-wpn.hand { box-shadow: 0 0 0 2px #6e5226; }
+/* a job's card (the tree's pick, 아르센's list) */
+.jt-card { margin-top: 6px; padding: 5px 7px; background: var(--scr); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #07060b, inset -2px -2px 0 #2a2433; }
+.jt-card.ok { border-color: #4ac06a; }
+.jt-card.cur { border-color: var(--b-mid); }
+.jt-card .hd { display: flex; align-items: center; flex-wrap: wrap; gap: 0 4px; }
+.jt-card .hd .wi, .jt-need .wi { width: 16px; height: 16px; image-rendering: pixelated; vertical-align: middle; }
+.jt-card .hd b { font: 12px var(--pix); color: var(--b-hi); margin-left: 2px; }
+.jt-card .hd small { color: #a898b8; }
+.jt-card .hd em { margin-left: auto; font: 10px/1 var(--pix9); font-style: normal; padding: 2px 4px; color: #2a1806; background: #8a8098; }
+.jt-card .hd em.ok { background: #6ad08a; }
+.jt-card .hd em.cur { background: var(--b-mid); }
+.jt-card .hd em.half { background: #c8a050; }
+.jt-need { display: flex; flex-wrap: wrap; gap: 0 10px; margin-top: 3px; font: 12px var(--pix); }
+.jt-need .ok { color: #9af0ae; }
+.jt-need .no { color: #ff9a8a; }
+.jt-sig { display: grid; grid-template-columns: 22px 1fr; gap: 0 6px; margin-top: 4px; }
+.jt-sig .ic { width: 22px; height: 22px; padding: 1px; image-rendering: pixelated; background: #1a1622; border: 2px solid #7a5a22; box-sizing: border-box; }
+.jt-sig b { font: 12px var(--pix); color: #e8c27a; }
+.jt-sig small { color: #8ab4ff; }
+.window .jt-sig p { margin: 1px 0 0; line-height: 1.45; color: #cfc8b8; }
+.jt-scale { display: flex; flex-direction: column; margin-top: 4px; font: 12px var(--pix); color: #e8dcb8; }
+.jt-scale small { color: #a898b8; }
+.jt-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; margin-top: 5px; padding-top: 4px; border-top: 2px solid #2c2537; }
+.jt-foot small { color: #c8b896; flex: 1 1 160px; }
+.window .jt-foot .btn:disabled { opacity: .45; }
+.jt-foot .confirm { flex-basis: 100%; }
+/* 전직관 아르센 */
+#w-job { width: min(380px, calc(var(--zone-w) - 8px)); }
+.jt-near { display: flex; flex-direction: column; gap: 2px; }
+.window .jt-near .it { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; padding: 3px 6px; }
+.jt-near .tx b { font: 12px var(--pix); color: #c8b896; }
+.jt-near .jt-need { margin: 0; }
+.jt-more { display: flex; justify-content: flex-end; margin-top: 6px; }
