@@ -195,6 +195,36 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.ok(m.dead && W3.ch.lvl === lv && W3.ch.xp > 1e7, "a kill pays experience and never a level");
 }
 
+// ═════════ the stat panel's cost mirror (J3): defs.lvt / lvDiv / statK price a batch exactly as the server ═════════
+{
+  assert.equal(D.lvt.length, 200);
+  assert.equal(D.lvDiv, 4.4);
+  const [K, K0] = D.statK;
+  // statwin.js costOf: one point at a time in stat order, each at the then-current level and value
+  const mirror = (lvl, st, a) => {
+    let c = 0;
+    ST.forEach((k, i) => { let v = st[k]; for (let n = 0; n < a[i]; n++) c += Math.round((D.lvt[lvl++ - 1] / D.lvDiv) * (1 + K * Math.max(0, v++ - K0))); });
+    return c;
+  };
+  for (let N = 1; N < 200; N++) assert.equal(mirror(N, { str: 5 }, [1, 0, 0, 0, 0, 0]), D.lvc[N - 1], `level ${N} at a low stat = lvc`);
+  // a mixed batch above the surcharge line: exactly enough experience passes, one short fails
+  for (const [st, a] of [
+    [{ str: 60, wil: 30, dex: 5, int: 5, wis: 5, luk: 5 }, [3, 2, 0, 0, 0, 4]],
+    [{ str: 70, wil: 50, dex: 34, int: 5, wis: 5, luk: 5 }, [5, 7, 9, 0, 0, 1]],
+    [{ str: 97, wil: 60, dex: 33, int: 5, wis: 5, luk: 9 }, [2, 3, 4, 0, 0, 0]],
+  ]) {
+    const W = world({ wk: "sword", st });
+    W.npc("train");
+    assert.equal(W.ch.lvl, 1 + ST.reduce((n, k) => n + st[k] - 5, 0));
+    const cost = mirror(W.ch.lvl, W.ch.st, a);
+    W.ch.xp = cost - 1;
+    assert.equal(W.act({ t: "train", a }).error, "경험치가 부족합니다", "one short of the mirrored price");
+    W.ch.xp = cost;
+    assert.ok(W.act({ t: "train", a }).ok, "the mirrored price is enough");
+    assert.equal(W.ch.xp, 0, "and is exactly what it cost");
+  }
+}
+
 // ═════════ respec: 망각의 의식 (B.1) ═════════
 {
   const W = world({ wk: "spear", lvl: 77, job: "lancer", wm: { spear: 30 } });
