@@ -817,3 +817,28 @@ than its inputs + fee. Faucets: the board (≤ 3 a day) pays 30 + 6·L gold (del
 - **Offers** are drawn once per session-day (`p.jbOff`), so a level gained at noon does not reshuffle them.
 - **Perks** (proposal filled in): 모카 → 산딸기 파이, 마루 → 여관 스튜, 캉캉 → `stone_x2` (two stones a craft), 보글 →
   elixirs +5 min, 쥬쥬 → +10 %p 대성공 at her stove. Editor maps' optional `"nodes"` list is not wired.
+
+---------------------------------------------------------------------------------------------------------------
+
+## H3. L2a client as built (gathering + pouch; deviations only)
+
+`public/gather.js` (logic) + `public/gatherart.js` (art), wired from client/net/events/input/actions/update; the
+contract is H2's, unchanged. Notes for L2b/L2c:
+- **Nodes** are scene props (`S3.props` keys `gn<i>`, made in `Gather.loadMap` after scene2d's) at the server's own
+  spot `(tx·16+8, ty·16+10)`; spent ones (`ng`) draw a cut tuft / a picked rock / a stump. The node in reach (range
+  − 2 px, ready or not) names itself on the existing F prompt (`#prompt`, only when no NPC is nearer), with
+  "(다시 자라는 중)" or "(채집 Lv.N 필요)"; those two are refused on the client with the server's own words, so no
+  request is sent. No minimap marks for nodes yet (radar.js untouched).
+- **Asking**: F or a click/tap on the node's sprite (out of reach: walk there, start on arrival). Auto-hunt is
+  switched off when a channel starts. While a channel runs, F / Space / a click in the world / the `#gat-tap` button
+  are the tap, and never an attack or a talk. **Every** tap is sent (once), so an early tap is the player's one
+  miss — the client does not filter to the window (only the first 250 ms after the start are ignored, the starting
+  press bouncing). The channel bar reuses the recall scroll's `#cast` (`G.cast = {start, end, name, gat}`).
+- **Others**: `gs`/`ga` with another eid put that player in the pose (`e.gat`) and a small bar over their head
+  (drawn by the node's prop); the node is found as the nearest of that kind within range + 8 px.
+- **Pose**: no tool sprite; the hero crouches at a herb and dips on each beat at a vein or log, facing the node,
+  with chips/sparks/leaves (`fx.burst`) and a sound (`gat_work`) every 480 ms.
+- **Pouch**: shown under the bag (`#inv-pouch`, folded state per place in `lumentale:pouch:<where>`) and under the
+  생활 window's cards. At a shop a click sells one, Shift+click all (`sell {pid, n}`). Icons for all 22 pouch goods
+  (`m_*`, `ing_*`, `staple`, `flask`) are code-drawn (`matIcon`); preview `_gather.html`.
+- Gains of pouch goods also float over the head (`+들꽃잎 ×2`). 대성공 shows "대성공!" and its own sound.
