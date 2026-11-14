@@ -44,11 +44,6 @@ function sqState(ch, q) {
   if (ch.lvl < q.req.lv || (q.req.quest && !ch.sq.done[q.req.quest])) return 0;
   return 1;
 }
-/** An NPC with this id stands within talking distance. */
-function npcNearId(p, id) {
-  for (const n of mapOfS(p.S, p.map).npcs) if (n.id === id && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < 56) return true;
-  return false;
-}
 const npcName = (id) => (Object.hasOwn(NPC_NAME, id) ? NPC_NAME[id] : id);
 /** Credit `n` toward every active quest of this type that `match` accepts. */
 function sqProgress(S, p, type, match, n = 1) {
@@ -76,10 +71,10 @@ function sqPicked(p, item) {
 function sqValidate(S, p, a) {
   const ch = p.ch;
   if (a.a === "drop") return typeof a.id === "string" && Object.hasOwn(ch.sq.on, a.id) ? OK : bad("진행 중인 퀘스트가 아닙니다");
-  if (a.a === "talk") return typeof a.npc === "string" && npcNearId(p, a.npc) ? OK : bad("너무 멉니다");
+  if (a.a === "talk") return typeof a.npc === "string" && npcReach(p, a.npc) ? OK : bad("너무 멉니다");
   const q = typeof a.id === "string" && Object.hasOwn(SQ_BY, a.id) ? SQ_BY[a.id] : null;
   if (!q) return bad("없는 퀘스트입니다");
-  if (!npcNearId(p, q.giver)) return bad(`${npcName(q.giver)}에게 가까이 가야 합니다`);
+  if (!npcReach(p, q.giver)) return bad(`${npcName(q.giver)}에게 가까이 가야 합니다`);
   const st = sqState(ch, q);
   if (a.a === "take") {
     if (st === 2 || st === 3) return bad("이미 진행 중입니다");

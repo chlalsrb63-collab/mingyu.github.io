@@ -8,6 +8,7 @@
  */
 
 import { TRACKS } from "./bgm.js";
+import { arrangedTrack, DEFAULT_MUSIC_STYLE, MUSIC_STYLES } from "./bgm-arrangements.js";
 
 // ───────────────────────────── notes and chords ─────────────────────────────
 
@@ -73,13 +74,17 @@ function compile(def) {
   }
   return bars;
 }
-const SONGS = {};
-for (const k of Object.keys(TRACKS)) SONGS[k] = compile(TRACKS[k]);
+const styleOf = (value) => MUSIC_STYLES.includes(value) ? value : DEFAULT_MUSIC_STYLE;
+const SCORES = Object.fromEntries(MUSIC_STYLES.map((style) => [style, Object.fromEntries(Object.keys(TRACKS).map((key) => {
+  const def = arrangedTrack(key, style);
+  return [key, { def, song: compile(def) }];
+}))]));
+export { MUSIC_STYLES, DEFAULT_MUSIC_STYLE };
 
 /** For the test page: every section's melody must fill exactly its bars. */
-export function checkTracks() {
+export function checkTracks(style = DEFAULT_MUSIC_STYLE) {
   const bad = [];
-  for (const [k, def] of Object.entries(TRACKS)) {
+  for (const [k, { def }] of Object.entries(SCORES[styleOf(style)])) {
     for (const [name, [chords, mel, arrangement]] of Object.entries(def.sections)) {
       const label = k + "." + name;
       const want = chords.split(/\s+/).length * 16, notes = melody(mel);
@@ -108,7 +113,7 @@ export const Sound = {
   ctx: null, master: null, music: null, sfx: null, verb: null,
   /** Kept for older callers: both follow `muted`. */
   sfxOn: true, bgmOn: true,
-  vol: { music: 0.7, sfx: 0.85, mute: false },
+  vol: { music: 0.7, sfx: 0.85, mute: false, style: DEFAULT_MUSIC_STYLE },
   base: null, theme: null, playing: [], timer: 0,
   voices: 0, last: {}, k: 1, amb: 0, ambNext: 0, noiseBuf: null, waves: {},
 
@@ -165,10 +170,15 @@ export const Sound = {
   },
   save() { try { localStorage.setItem(STORE, JSON.stringify(this.vol)); } catch { /* private mode */ } },
   setMusic(v) { this.vol.music = Math.max(0, Math.min(1, v)); this.save(); this.applyVolume(); },
+  setMusicStyle(value) {
+    const style = styleOf(value);
+    if (this.vol.style === style) return;
+    this.vol.style = style; this.save(); this.pick();
+  },
   setSfx(v) { this.vol.sfx = Math.max(0, Math.min(1, v)); this.save(); this.applyVolume(); },
   setMute(m) { this.vol.mute = !!m; this.save(); this.applyVolume(); },
   /** Read before unlock, so the settings window can show saved values. */
-  load() { try { Object.assign(this.vol, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch { /* defaults */ } this.sfxOn = this.bgmOn = !this.vol.mute; return this.vol; },
+  load() { try { Object.assign(this.vol, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch { /* defaults */ } this.vol.style = styleOf(this.vol.style); this.sfxOn = this.bgmOn = !this.vol.mute; return this.vol; },
 
   // ── music ──
   /** The map's own music: its id has a track, or else its `fallback` name does. */
@@ -186,15 +196,29 @@ export const Sound = {
     const want = this.theme || (this.night && NIGHT[this.base]) || this.base || "title";
     const c = this.ctx;
     if (!c) return;
+    const style = styleOf(this.vol.style), { def, song } = SCORES[style][want];
     const live = this.playing.find((p) => !p.dying);
-    if (live && live.name === want) return;
+    if (live?.name === want && live.style === style) return;
     const t = c.currentTime;
-    for (const p of this.playing) if (!p.dying) { p.gain.gain.cancelScheduledValues(t); p.gain.gain.setValueAtTime(p.gain.gain.value, t); p.gain.gain.linearRampToValueAtTime(0, t + FADE); p.dying = t + FADE + 0.1; }
+    let step = 0, next = t + 0.12;
+    if (live?.name === want) {
+      // Catch the same phrase on the next unscheduled beat when only the orchestration changes.
+      step = live.step;
+      next = Math.max(t + 0.05, live.next);
+    }
+    const fade = live?.name === want ? 0.8 : FADE;
+    if (live) {
+      const gain = live.gain.gain;
+      if (gain.cancelAndHoldAtTime) gain.cancelAndHoldAtTime(t);
+      else { const value = gain.value; gain.cancelScheduledValues(t); gain.setValueAtTime(value, t); }
+      gain.linearRampToValueAtTime(0, t + fade);
+      live.dying = t + fade + 0.1;
+    }
     const g = c.createGain();
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(TRIM[want] || 1, t + FADE);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(def.trim ?? TRIM[want] ?? 1, t + fade);
     g.connect(this.music);
-    const send = c.createGain(); send.gain.value = TRACKS[want].delay || 0; g.connect(send); send.connect(this.verb);
-    this.playing.push({ name: want, def: TRACKS[want], song: SONGS[want], gain: g, send, step: 0, next: t + 0.12, dying: 0 });
+    const send = c.createGain(); send.gain.value = def.delay || 0; g.connect(send); send.connect(this.verb);
+    this.playing.push({ name: want, style, def, song, gain: g, send, step, next, dying: 0 });
   },
   /** Schedule music (and the fire's crackle) a little ahead of the audio clock. */
   pump() {
@@ -240,9 +264,11 @@ export const Sound = {
     const bars = p.song, bar = bars[Math.floor(p.step / 16) % bars.length], i = p.step % 16;
     const def = bar.parts, out = p.gain, ch = bar.chord;
     if (i % 2) t += (def.swing || 0) * s16;
+    if (def.expressive) t += [0, 0.008, 0.005, 0.012][i % 4];
     for (const [f, at, len] of bar.notes) if (at === i) {
       const length = len * s16;
-      this.inst(def.lead, f, t, length, def.vol, out);
+      const emphasis = def.expressive ? (i % 4 === 0 ? 1.02 : 0.83) : 1;
+      this.inst(def.lead, f, t, length, def.vol * emphasis, out);
       if (def.double && len >= 3) this.inst(def.double, f / 2, t + 0.009, length * 0.84, def.vol * 0.24, out);
     }
     const bc = def.bassPat && def.bassPat[i];
@@ -292,6 +318,52 @@ export const Sound = {
     };
     const lowpass = (fc, q = 0.7) => { const f2 = c.createBiquadFilter(); f2.type = "lowpass"; f2.frequency.value = fc; f2.Q.value = q; f2.connect(g); return f2; };
     switch (type) {
+      case "grand": {
+        const finish = t + dur + 0.48;
+        const soundboard = lowpass(Math.min(6800, 1300 + f * 12), 0.46);
+        // Each string partial decays at its own rate. Two strings start in tune and separate slightly.
+        const warmth = Math.max(0.35, Math.min(1.0, 420 / f));
+        for (const [ratio, amp, decay] of [[1, 0.79, 0.44], [2.001, 0.27, 0.23], [3.008, 0.15, 0.14], [4.024, 0.09, 0.085], [5.055, 0.042, 0.055], [7.1, 0.018, 0.034]]) {
+          const partial = c.createGain();
+          const level = vol * amp * (ratio === 1 ? 1 : warmth);
+          partial.gain.setValueAtTime(0.00001, t);
+          partial.gain.exponentialRampToValueAtTime(level, t + 0.005);
+          partial.gain.exponentialRampToValueAtTime(Math.max(0.00002, level * 0.16), t + Math.min(decay, dur * 0.7));
+          partial.gain.setTargetAtTime(0.00001, t + dur * 0.78, decay * 0.32);
+          osc("sine", f * ratio, 1, ratio === 1 ? -1.5 : 1.5).connect(partial);
+          if (ratio === 1) osc("sine", f, f > 350 ? 0.22 : 0.12, 3.3).connect(partial);
+          partial.connect(soundboard);
+        }
+        // A short, quiet hammer sound stays near the pitch, followed by the body of the note.
+        const strike = c.createGain();
+        strike.gain.setValueAtTime(vol * 0.057, t);
+        strike.gain.exponentialRampToValueAtTime(0.00001, t + 0.025);
+        osc("sine", f * 8.07).connect(strike);
+        strike.connect(soundboard);
+        g.gain.setValueAtTime(1, t);
+        g.gain.setTargetAtTime(0.0001, finish, 0.04);
+        break;
+      }
+      case "harp": {
+        const lp = lowpass(Math.min(4600, f * 8));
+        osc("sine", f, 0.78).connect(lp);
+        osc("triangle", f * 2.001, 0.23, -3).connect(lp);
+        const attack = c.createGain();
+        attack.gain.setValueAtTime(0.22, t);
+        attack.gain.exponentialRampToValueAtTime(0.0001, t + 0.075);
+        osc("sine", f * 3.017).connect(attack);
+        attack.connect(lp);
+        env(0.004, 0.21, 0.17);
+        break;
+      }
+      case "bowed": {
+        const lp = lowpass(Math.min(2550, f * 8), 0.56);
+        osc("triangle", f, 0.58, -3).connect(lp);
+        osc("sawtooth", f, 0.27, 4).connect(lp);
+        osc("sine", f * 2, 0.14, 1.5).connect(lp);
+        env(Math.min(0.16, dur * 0.36), 0.75, 0.23);
+        break;
+      }
       case "felt": {
         const lp = lowpass(Math.min(3400, f * 6));
         osc("triangle", f, 0.62, -1.2).connect(lp);

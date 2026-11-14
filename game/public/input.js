@@ -134,6 +134,7 @@ function soundUi() {
   $("#btn-sound").classList.toggle("off", !on);
   $("#btn-sound").textContent = on ? "켜짐" : "꺼짐";
   $("#vol-bgm").value = String(Math.round(Sound.vol.music * 100));
+  $("#music-style").value = Sound.vol.style;
   $("#vol-sfx").value = String(Math.round(Sound.vol.sfx * 100));
 }
 export function toggleAuto() {
@@ -235,6 +236,7 @@ export function setupInput() {
   Sound.load();
   soundUi();
   $("#vol-bgm").addEventListener("input", (ev) => { Sound.unlock(); Sound.setMusic(ev.target.value / 100); });
+  $("#music-style").addEventListener("change", (ev) => { Sound.unlock(); Sound.setMusicStyle(ev.target.value); });
   $("#vol-sfx").addEventListener("input", (ev) => { Sound.unlock(); Sound.setSfx(ev.target.value / 100); });
   $("#vol-sfx").addEventListener("change", () => Sound.play("coin"));
 }

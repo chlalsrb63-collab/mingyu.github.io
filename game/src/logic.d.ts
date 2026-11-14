@@ -49,3 +49,16 @@ export function runtime(state: World, mapId: string): { id: string; mobs: unknow
 export function atlas(fresh?: boolean, ids?: string[] | null): { maps: Record<string, unknown>; fires: Record<string, number[][]>; waypoints: Record<string, unknown> };
 /** The map registry (tests): the maps built so far, and what is known of every map without building it. */
 export function mapStats(): { built: string[]; meta: Record<string, { id: string; name: string; theme: string | null; band: number[] | null; safe: boolean; w: number; h: number; wp: boolean; kinds: string[]; eager: boolean }> };
+
+export type NpcAt = {
+  id: string; map: string; x: number; y: number; tx: number; ty: number;
+  dir: number; act: string; place: string; with: string | null;
+  moving: boolean; hidden: boolean; onPost: boolean; until: number;
+};
+export function npcAt(id: string, now: number): NpcAt | null;
+export function npcPlan(id: string, now: number): { place: string; act: string; until: number; next: { place: string; act: string; at: number } } | null;
+export function npcsOn(map: string, now: number): string[];
+export function lifeLegs(map: string, now: number, since?: number): number[][];
+export function lifeWhere(now: number): number[][];
+export function npcReach(player: { S: World; map: string; x: number; y: number }, id: string): boolean;
+export function lifeCheck(): string[];

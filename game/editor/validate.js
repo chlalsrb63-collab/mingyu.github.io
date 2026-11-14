@@ -295,3 +295,28 @@ export function checkQuests(f, ctx) {
   });
   return P;
 }
+
+/** The shape of npclife.json. The server also checks the built map's paths and capacity. */
+export function checkNpcLife(data) {
+  const obj = (v) => v && typeof v === "object" && !Array.isArray(v);
+  const errors = [];
+  const add = (path, msg) => errors.push({ level: "error", path, msg });
+  if (!obj(data) || data.v !== 1 || !obj(data.places) || !obj(data.cast) || !Array.isArray(data.rel)) {
+    add("", "{v:1, places, cast, rel} 형식이어야 합니다");
+    return errors;
+  }
+  for (const [id, p] of Object.entries(data.places)) {
+    if (!NPC_ID_RE.test(id) || !obj(p) || !ID_RE.test(p.map || "") || typeof p.name !== "string" || !p.name.trim()) {
+      add("places." + id, "장소 이름과 지도가 필요합니다");
+      continue;
+    }
+    if (p.round !== undefined ? !Array.isArray(p.round) || p.round.length < 2 || !p.round.every(isXY)
+      : !Array.isArray(p.spots) || !p.spots.length || !p.spots.every((spot) => Array.isArray(spot) && isXY(spot.slice(0, 2)))) {
+      add("places." + id, "장소의 자리나 순찰 좌표가 올바르지 않습니다");
+    }
+  }
+  for (const [id, n] of Object.entries(data.cast)) {
+    if (!NPC_ID_RE.test(id) || !obj(n) || !Array.isArray(n.plan) || !n.plan.length) add("cast." + id, "주민의 일과가 필요합니다");
+  }
+  return errors;
+}

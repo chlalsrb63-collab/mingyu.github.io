@@ -25,7 +25,7 @@ const L = await import(pathToFileURL(join(GAME, "src", "logic.js")).href);
 const defs = L.defs();
 const data = { items: defs.items, mobs: defs.mobs, cos: defs.cos, legend: Object.keys(defs.legend), sets: Object.keys(defs.sets), only: only ? [...only] : null };
 
-const PAGE = `<!doctype html><meta charset="utf-8"><title>export</title><body></body>`;
+const PAGE = `<!doctype html><meta charset="utf-8"><title>export</title><link rel="icon" href="data:,"><body></body>`;
 const srv = await serve(PUBLIC, 0, { "/__export.html": PAGE });
 const browser = await launch(opt.channel);
 const errors = [];
@@ -81,7 +81,10 @@ try {
         const it = D.items[id];
         if (it && it.type === "weapon") continue; // in weapons/
         if (it && GEAR.includes(it.type)) { if (want("gear")) put(`gear/${it.type}/${id}.png`, set.cv[id], it.name); continue; }
-        if (want("items")) put(`items/${(it && ITEM_DIR[it.type]) || "misc"}/${id}.png`, set.cv[id], it ? it.name : id);
+        if (want("items")) {
+          const dir = it?.el ? "potion" : (it && ITEM_DIR[it.type]) || "misc";
+          put(`items/${dir}/${id}.png`, set.cv[id], it ? it.name : id);
+        }
       }
     }
 
