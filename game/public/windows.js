@@ -28,7 +28,7 @@ import { renderParty, renderGuild } from "./win_social.js";
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 export const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft"];
 export const winEl = (id) => $(`#w-${id}`);
 /** The bag is docked in the side column, so it always counts as open (on a phone it lives in the drawer). */
 export const isOpen = (id) => id === "inv" || !winEl(id).hidden;

@@ -679,6 +679,25 @@ const SFX = {
   gat_great() { this.arp("sine", [1047, 1319, 1568, 2093], 0.05, 0.16, 0.07); this.tone("triangle", 523, 523, 0.4, 0.06, 0.05); },
   /** The channel broken: a soft falling note. */
   gat_break() { this.tone("triangle", 440, 260, 0.18, 0.06); },
+  // ── crafting stations (station.js, minigames.js forge/brew; L2b) ──
+  /** A hammer blow on the ingot: a ringing clank, brighter for a good blow (q 0..1). */
+  forge_hit(q = 1) {
+    const v = this.vary();
+    this.tone("square", (900 + 700 * q) * v, 700, 0.05, 0.07); this.tone("sine", (2200 + 900 * q) * v, 2000, 0.22, 0.03 + 0.03 * q, 0.01);
+    this.noise(0.05, 0.1, 3500, "highpass");
+  },
+  /** The finished piece dunked in water: a hiss. */
+  forge_quench() { this.noise(0.7, 0.09, 4200, "highpass", 0, 1500); this.tone("sine", 660, 880, 0.12, 0.04, 0.05); },
+  /** The paddle dips into the brew. */
+  brew_stir() { this.noise(0.14, 0.05, 900, "lowpass", 0, 1600); },
+  /** A bubble rises in the cauldron. */
+  brew_bubble() { const f = 260 + Math.random() * 220; this.tone("sine", f, f * 2.2, 0.07, 0.05); },
+  /** A clear brew: a glassy chime. */
+  brew_done() { this.arp("sine", [784, 1047, 1319, 1568], 0.06, 0.25, 0.06); this.noise(0.2, 0.03, 5000, "highpass"); },
+  /** A craft made (station.js `mo` 1) and a 대성공 (`mo` 2); a failure falls. */
+  craft_ok() { this.arp("triangle", [523, 659, 784], 0.06, 0.18, 0.08); },
+  craft_great() { this.arp("square", [523, 659, 784, 1047, 1319], 0.06, 0.2, 0.06); this.tone("triangle", 262, 262, 0.6, 0.08, 0.3); },
+  craft_fail() { this.tone("triangle", 392, 196, 0.35, 0.08); this.noise(0.25, 0.05, 700, "lowpass", 0.05); },
   // ── loot and progress ──
   coin() { this.tone(0.5, 1320, 1320, 0.05, 0.08); this.tone(0.5, 1760, 1760, 0.1, 0.08, 0.05); },
   item() { this.arp(0.5, [880, 1175, 1568], 0.05, 0.08, 0.08); },
