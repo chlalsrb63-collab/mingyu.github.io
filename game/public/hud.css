@@ -980,3 +980,45 @@ body.touch #wm .wm-tab { display: none; }
 .jt-near .tx b { font: 12px var(--pix); color: #c8b896; }
 .jt-near .jt-need { margin: 0; }
 .jt-more { display: flex; justify-content: flex-end; margin-top: 6px; }
+
+/* 전직의 길 as a weapon table (H2): six weapons across and down, a job where two meet — the diagonal is
+   the six single jobs (mastery 20), under it the fifteen two-weapon jobs (15 and 15) */
+.jt-grid { display: grid; grid-template-columns: 30px repeat(6, minmax(0, 1fr)); grid-template-rows: 34px repeat(6, 38px); gap: 2px; flex: 1 1 auto; width: 100%; max-width: 402px; box-sizing: border-box; }
+.jt-grid .jt-node.long b { letter-spacing: -2px; }
+.jt-grid > * { min-width: 0; box-sizing: border-box; }
+.window .jt-grid .jt-node { position: relative; }
+.window .jt-grid .jt-node.single { border-color: #4a3f5a; background: #221b2b; }
+.window .jt-grid .jt-node.mine { box-shadow: inset 0 0 0 1px #6e5226, inset 2px 2px 0 #2a2433; }
+.window .jt-grid .jt-node.half { color: #e8dcb8; }
+.window .jt-grid .jt-node.ok { border-color: #4ac06a; background: #18301f; }
+.window .jt-grid .jt-node.cur { color: #2a1806; background: var(--b-mid); border-color: var(--ink); box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px -2px 0 var(--b-lo); }
+.window .jt-grid .jt-node { justify-content: flex-start; gap: 1px; padding: 3px 0 0; }
+.jt-grid .jt-node b { line-height: 12px; }
+.jt-grid .jt-node .bars { position: absolute; left: 2px; right: 2px; bottom: 1px; display: flex; gap: 2px; height: 3px; }
+.jt-grid .jt-node .bars > i { position: relative; flex: 1; background: #000; }
+.jt-grid .jt-node .bars > i > i { position: absolute; left: 0; top: 0; bottom: 0; background: #8fe0b4; }
+.jt-grid .jt-node .bars > i.full > i { background: #f4d27a; }
+.jt-grid .jt-node.cur .bars { display: none; }
+.jt-corner { display: flex; align-items: center; justify-content: center; opacity: .6; }
+.jt-h { position: relative; display: grid; align-items: center; background: var(--scr); border: 2px solid #3a3146; }
+.jt-h.top { grid-template-columns: 16px 1fr; grid-template-rows: 16px 9px; gap: 0 3px; padding: 1px 3px 5px; overflow: hidden; }
+.jt-h.side { grid-template-columns: 1fr; grid-template-rows: 16px 11px; justify-items: center; padding: 1px 1px 5px; }
+.jt-h .wi { width: 16px; height: 16px; image-rendering: pixelated; }
+.jt-h b { font: 12px/1 var(--pix); color: #cfe2f6; white-space: nowrap; }
+.jt-h.side b { font: 10px/1 var(--pix9); }
+.jt-h small { grid-column: 1 / -1; text-align: center; font: 10px/1 var(--pix9); color: #e8dcb8; white-space: nowrap; }
+.jt-h .bar { position: absolute; left: 2px; right: 2px; bottom: 1px; height: 3px; background: #000; }
+.jt-h .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: #8fe0b4; }
+.jt-h .bar u { position: absolute; top: -1px; bottom: 0; width: 1px; background: #f4d27a; }
+.jt-h.half { border-color: #6a5a3a; }
+.jt-h.ready { border-color: #b88a3a; }
+.jt-h.half b, .jt-h.ready b { color: #f4d27a; }
+.jt-h.ready .bar i { background: #f4d27a; }
+.jt-h.hand { box-shadow: 0 0 0 2px #6e5226; z-index: 1; }
+.jt-h.back { box-shadow: 0 0 0 2px #4a3f5a; }
+.jt-key { grid-row: 2 / 4; grid-column: 4 / 8; align-self: start; display: flex; flex-direction: column; gap: 3px; padding: 4px 6px; font: 10px/1.2 var(--pix9); color: #c8b896;
+  background: #1a1622; border: 2px dashed #3a3146; }
+.jt-key span { display: flex; align-items: center; gap: 4px; }
+.jt-key span i { flex: none; width: 8px; height: 8px; border: 2px solid #2a2236; background: #1a1622; }
+.jt-key span.single i { border-color: #4a3f5a; background: #221b2b; }
+.jt-key small { color: #8a8098; font: inherit; }

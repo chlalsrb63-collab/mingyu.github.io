@@ -767,3 +767,25 @@ signature, so those signatures carry little at T13 by design. `node tests/balanc
 - The 전직의 길 tree (J3: six weapons in a row, five adjacent hybrids, 용기사 on a bottom row) must now place **15**
   hybrids, one per pair. `defs.jobs` lists them: the first six, then bladedancer breaker arcblade shadowlance trickster
   spellspear runesage spellarcher runearcher; each has `wk` (its pair), `wm` 15 and `sig`.
+
+
+### H.5 H2 as built — the client half
+
+- **Effects** (`public/skillfx.js` `cast` 120–128): each follows the H.4 line through the scaled set (`S3.big(ang)`,
+  a shake along the aim). Things that happen a beat later (the dagger X of 십자 난도, sparks along a flying blade) use
+  `later(ms, fn)`, a delay on the effects' clock, so `_feel.html` shows them too. 파진돌격 and 그림자 관통 read the line
+  of the `ln` just before them (`lineOf(kind)`); 원소 비수 colours the three `ln 7` after it fire / ice / lightning;
+  검기 화살 holds its `bw` kind 2 until the arrow arrives; 빙결창 raises three ice crystals (`iceSpire`).
+- **Arrows**: kinds 4–7 fly as scene2d's piercing arrow (ink by tier: gold, cyan, gold, violet) with a dress drawn over
+  it from skillfx (`ARROW_LOOK`, `dressArrow`: flame tongue, frost wake, lightning thread, black shaft shedding ink) —
+  `scene2d.js` was not edited. Ranges `ARROW_RANGE` 190 / 190 / 190 / 170; a volley shares one draw of the string.
+- **Rune circle**: prop `rune` (`runeCircle`): two rings, a turning triangle, six 3×3 marks; violet until its first
+  `pp`, then flooded with the beat's element (1 fire, 2 ice, 3 lightning) with a small show of it in the air.
+- **Icons**: nine glyphs in `skillicons.js`. **Sounds**: existing `SFX` reused, none added.
+- **전직의 길** is now a weapon table (`jobtree.js renderTree`, `hud.css .jt-grid`): the six weapons head the columns
+  and the rows; a weapon with itself is its single job (the diagonal), two weapons their hybrid (the 15 cells under it);
+  the empty half holds the key. A cell shows the job, "✓·9/15"-style progress and one bar per weapon; the hand's row and
+  column are edged. Columns are fluid (60 px, about 52 in a 400-px window) instead of scaled. Every threshold comes from
+  `needOf(j)` = `defs.jobs[j].wm` (fallback `defs.hybWm` / `defs.jobWm`).
+- `_feel.html`: rows `sk120`…`sk128` send the events the server sends round each skill (`ln`, `bw`, `ar`, `pr`/`pp`).
+- Not done: `mastery.js` and `lobby.js` still speak only of 20 (single jobs); a "두 갈래 길은 15" hint there is open.

@@ -5,12 +5,16 @@
  * - `renderWeapons`: six weapon rows (icon, "대검 숙련 17/50", bar, scaling grades, skill chips at
  *   1 / 10 / 10P / 20), the hand highlighted; a row picked shows that weapon's skills below (the
  *   client draws those rows, they carry the quick-slot drag).
- * - `renderTree`: 모험가 on top, the six weapons in the middle row, each one's single job above it
- *   (mastery 20) and the six two-weapon jobs below between their pairs (both at 20); lines light as
- *   mastery reaches 20; a picked node shows its card (needs, cost, signature, scaling, the way there).
+ * - `renderTree`: 모험가 on top, then the weapon table — the six weapons across the top and down the
+ *   side, and where two meet, their job: a weapon with itself is its single job (mastery `defs.jobWm`,
+ *   20), two different weapons their two-weapon job (both at that job's `wm`, `defs.hybWm` = 15), so
+ *   all 15 pairs and the 6 singles sit in one half of a 6×6 table (docs/design/jobs-and-stats.md H).
+ *   Every cell shows the job, how far each weapon is and a two-part bar; the hand's row and column are
+ *   lit; a picked cell shows its card (needs, cost, signature, scaling, the way there).
  * - `renderJobNpc`: 아르센 lists the jobs (open ones first) and changes job after a confirm.
  *
- * Reads `self`: job wm wk eq gold; `defs`: jobs skills skillOrder wkOrder wkName jobWm stats grade scale.
+ * Reads `self`: job wm wk eq gold; `defs`: jobs (each with its `wm`) skills skillOrder wkOrder wkName jobWm
+ * hybWm stats grade scale. No threshold is written here: a job's is `needOf(j)`.
  * Action: `job_change {j}` (the server checks place, mastery, gold, adventurer).
  */
 import { iconImg } from "./uiicons.js";
@@ -31,6 +35,8 @@ const wmOf = (s, k) => (Array.isArray(s.wm) ? s.wm[D().wkOrder.indexOf(k)] : nul
 // ── jobs: who may take what ──
 /** The single job of weapon `k`. */
 const singleOf = (k) => Object.keys(D().jobs).find((j) => D().jobs[j].kind === "single" && D().jobs[j].wk[0] === k);
+/** The mastery job `j` asks of each of its weapons: 20 for one weapon's job, 15 for a two-weapon job. */
+export const needOf = (j) => { const d = D(), job = d.jobs[j]; return job.wm || (job.kind === "hybrid" && d.hybWm) || d.jobWm; };
 /** A job's signature skill id. */
 const sigOf = (j) => D().skillOrder.find((id) => D().skills[id].job === j);
 /**
@@ -41,7 +47,7 @@ export function jobState(s, j) {
   const job = D().jobs[j];
   if (s.job === j) return "cur";
   if (s.job !== "adventurer") return "shut";
-  const ready = job.wk.filter((k) => wmOf(s, k)[0] >= D().jobWm).length;
+  const ready = job.wk.filter((k) => wmOf(s, k)[0] >= needOf(j)).length;
   return ready === job.wk.length ? "ok" : ready ? "half" : "no";
 }
 const STATE_TEXT = { cur: "현재 직업", ok: "전직 가능", half: "한 무기 준비", no: "", shut: "닫힌 길" };
@@ -70,14 +76,14 @@ function changeButton(host, s, j, atJob) {
   host.append(b);
 }
 
-/** One line per weapon a job needs: "✓ 대검 숙련 20" / "✗ 대검 숙련 17/20". */
+/** One line per weapon a job needs: "✓ 대검 숙련 15" / "✗ 대검 숙련 12/15". */
 function needLines(s, j) {
-  const box = el("div", "jt-need");
+  const box = el("div", "jt-need"), need = needOf(j);
   for (const k of D().jobs[j].wk) {
-    const lv = wmOf(s, k)[0], ok = lv >= D().jobWm;
+    const lv = wmOf(s, k)[0], ok = lv >= need;
     const r = el("span", ok ? "ok" : "no");
     const ic = el("img", "wi"); ic.alt = ""; ic.src = kindIcon(k);
-    r.append(ok ? "✓ " : "✗ ", ic, `${D().wkName[k]} 숙련 ${ok ? D().jobWm : `${lv}/${D().jobWm}`}`);
+    r.append(ok ? "✓ " : "✗ ", ic, `${D().wkName[k]} 숙련 ${ok ? need : `${lv}/${need}`}`);
     box.append(r);
   }
   return box;
@@ -115,13 +121,13 @@ function jobCard(s, j, atJob) {
   if (st === "cur") foot.append(el("small", "", "지금 걷고 있는 길입니다."));
   else if (st === "shut") foot.append(el("small", "", "이미 전직한 몸입니다. 전직은 되돌릴 수 없습니다."));
   else if (st === "ok") { if (!atJob) foot.append(el("small", "", "넥서스 광장의 전직관 아르센에게 가면 전직할 수 있습니다.")); changeButton(foot, s, j, atJob); }
-  else foot.append(el("small", "", job.kind === "hybrid" ? `모험가로 남아 두 무기를 모두 숙련 ${d.jobWm}까지 다루면 열립니다. 한 무기의 길로 먼저 전직하면 닫힙니다.` : `${d.wkName[job.wk[0]]}을 들고 싸워 숙련 ${d.jobWm}을 채우면 열립니다.`));
+  else foot.append(el("small", "", job.kind === "hybrid" ? `모험가로 남아 두 무기(${job.wk.map((k) => d.wkName[k]).join(" · ")})를 모두 숙련 ${needOf(j)}까지 다루면 열립니다. 한 무기의 길로 먼저 전직하면 닫힙니다.` : `[${d.wkName[job.wk[0]]}] 숙련 ${needOf(j)}을 채우면 열립니다. 그 무기를 들고 싸우세요.`));
   card.append(foot);
   return card;
 }
 
 // ── 무기 · 스킬 ──
-/** The four chips of a weapon: L1, L10, the L10 passive, and the job's signature (20). */
+/** The four chips of a weapon: L1, L10, the L10 passive, and the job's signature (its job's mastery). */
 function chipsOf(s, k) {
   const d = D(), own = d.skillOrder.filter((id) => d.skills[id].wk === k && !d.skills[id].job);
   const job = d.jobs[s.job];
@@ -134,7 +140,7 @@ function chip(s, id) {
   const c = el("span", "chip" + (open ? "" : " off") + (sk.kind === "p" ? " pas" : "") + (sk.job ? " sig" : ""));
   const ic = el("img"); ic.alt = ""; ic.src = skillIconUrl(id);
   c.append(ic);
-  if (!open) c.append(el("i", "", sk.job ? "20" : String(sk.need)));
+  if (!open) c.append(el("i", "", String(sk.job ? needOf(sk.job) : sk.need)));
   C.hoverTip(c, (n) => {
     n.append(el("div", "nm", sk.name));
     n.append(el("small", "", sk.kind === "p" ? "패시브" : sk.job ? `${d.jobs[sk.job].name} 전용 · MP ${sk.mp} · ${sk.cd / 1000}초` : `MP ${sk.mp} · ${sk.cd / 1000}초`));
@@ -181,108 +187,86 @@ export function renderWeapons(box, s, { skills }) {
   sec.append(C.section(`${d.wkName[cur]} 스킬`, "book"));
   skills(sec, cur);
   box.append(sec);
-  box.append(el("p", "hint", `스킬은 무기에 딸려 있습니다: 숙련 1과 10에 하나씩, 10에 패시브, 숙련 ${d.jobWm}에 전직하면 그 직업의 기술. 숙련은 그 무기를 들고 싸우면 오르고, 오를 때마다 그 무기 공격력이 1%씩 붙습니다.${job && job.kind === "hybrid" ? " Tab으로 두 무기를 바꿔 듭니다." : ""}`));
+  box.append(el("p", "hint", `스킬은 무기에 딸려 있습니다: 숙련 1과 10에 하나씩, 10에 패시브, 숙련 ${d.jobWm}에 전직하면 그 직업의 기술${d.hybWm ? ` (두 무기를 ${d.hybWm}씩 다루면 두 갈래 직업)` : ""}. 숙련은 그 무기를 들고 싸우면 오르고, 오를 때마다 그 무기 공격력이 1%씩 붙습니다.${job && job.kind === "hybrid" ? " Tab으로 두 무기를 바꿔 듭니다." : ""}`));
 }
 
 // ── 전직의 길 ──
-const COL = 64, NW = 58, W = COL * 6;
-const Y = { single: 0, wpn: 46, hyb: 110, far: 160 }, H = { single: 32, wpn: 40, hyb: 32 };
-const HEIGHT = Y.far + H.hyb + 2;
-/** The middle row's order: every pair of a two-weapon job side by side but one (marked `far`). */
-const ORDER = ["staff", "sword", "book", "dagger", "bow", "spear"];
-const cx = (k) => COL * ORDER.indexOf(k) + COL / 2;
+// The table (hud.css .jt-grid): a narrow side column of weapons, then six equal columns that share the
+// window's width (60 px each at most, about 52 in a 400-px window: no scaling, the pixels stay whole).
 
 let jsel = "";
 export const treeKey = () => jsel;
 
-/** A chunky 2-px line from a to b (pixel steps, no smoothing). */
-function line(g, x0, y0, x1, y1, col) {
-  g.fillStyle = col;
-  let a = Math.round(x0 / 2), b = Math.round(y0 / 2);
-  const ex = Math.round(x1 / 2), ey = Math.round(y1 / 2), dx = Math.abs(ex - a), dy = -Math.abs(ey - b), sx = a < ex ? 1 : -1, sy = b < ey ? 1 : -1;
-  let e = dx + dy;
-  for (;;) {
-    g.fillRect(a * 2, b * 2, 2, 2);
-    if (a === ex && b === ey) break;
-    const e2 = 2 * e;
-    if (e2 >= dy) { e += dy; a += sx; }
-    if (e2 <= dx) { e += dx; b += sy; }
-  }
-}
-const INK = { off: "#4a3f5a", ready: "#c8963e", cur: "#f4d27a" };
+/** The job where weapons `a` and `b` meet (the same weapon twice: its single job). */
+const jobAt = (a, b) => (a === b ? singleOf(a) : Object.keys(D().jobs).find((j) => D().jobs[j].kind === "hybrid" && D().jobs[j].wk.includes(a) && D().jobs[j].wk.includes(b)));
 
-/** The tree into `box`, then the card of the picked node. `atJob`: standing at 아르센. */
+/** A weapon heading a column (`top`) or a row: icon, mastery, a bar to 20 with a notch at the two-weapon 15. */
+function weaponHead(s, k, top) {
+  const d = D(), [lv] = wmOf(s, k), hyb = d.hybWm || d.jobWm;
+  const w = el("div", "jt-h " + (top ? "top" : "side") + (k === s.wk && s.eq.weapon ? " hand" : s.wk2 === k ? " back" : "") + (lv >= d.jobWm ? " ready" : lv >= hyb ? " half" : ""));
+  const ic = el("img", "wi"); ic.alt = ""; ic.src = kindIcon(k);
+  const bar = el("i", "bar"), f = el("i"), n = el("u");
+  f.style.width = `${Math.min(100, (lv / d.jobWm) * 100)}%`; n.style.left = `${(hyb / d.jobWm) * 100}%`;
+  bar.append(f, n);
+  w.append(ic, el("b", "", String(lv)));
+  if (top) w.append(el("small", "", d.wkName[k]));
+  w.append(bar);
+  w.title = `${d.wkName[k]} 숙련 ${lv} — 두 갈래 직업에 ${hyb}, ${d.jobs[singleOf(k)].name} 전직에 ${d.jobWm}`;
+  return w;
+}
+
+/** The table into `box`, then the card of the picked job. `atJob`: standing at 아르센. */
 export function renderTree(box, s, { atJob }) {
-  const d = D(), jobs = d.jobs, adv = s.job === "adventurer";
+  const d = D(), jobs = d.jobs, adv = s.job === "adventurer", hyb = d.hybWm || d.jobWm;
   box.textContent = "";
   // the root: where this character stands
   const root = el("div", "jt-root" + (adv ? " cur" : ""));
   root.append(iconImg("person", adv ? "#2a1806" : "#e2c486"), el("b", "", adv ? "모험가" : `모험가 ▸ ${jobs[s.job].name}`));
-  root.append(el("small", "", adv ? `▲ 한 무기 숙련 ${d.jobWm} → 그 무기의 직업 · ▼ 두 무기 모두 ${d.jobWm} → 두 갈래 직업` : `지금 [${jobs[s.job].name}] — 전직은 되돌릴 수 없습니다`));
+  root.append(el("small", "", adv ? "두 무기가 만나는 칸이 그 두 무기의 직업입니다. 전직은 한 번뿐입니다." : `지금 [${jobs[s.job].name}] — 전직은 되돌릴 수 없습니다`));
   box.append(root);
 
-  const map = el("div", "jt-map");
-  map.style.width = `${W}px`; map.style.height = `${HEIGHT}px`;
-  const cv = el("canvas");
-  cv.width = W; cv.height = HEIGHT;
-  map.append(cv);
-  const g = cv.getContext("2d");
-  const ready = (k) => wmOf(s, k)[0] >= d.jobWm;
-  const mine = (j) => s.job === j;
-  // the picked node: by default the current job, else the first open one, else the hand's job
+  // the picked job: by default the current one, else the first open one, else the hand's single job
   const open = Object.keys(jobs).filter((j) => jobState(s, j) === "ok");
   if (!jobs[jsel] || jobs[jsel].kind === "none") jsel = !adv ? s.job : open[0] || singleOf(d.wkOrder.includes(s.wk) ? s.wk : "sword");
 
-  const node = (j, x, y, h) => {
-    const job = jobs[j], st = jobState(s, j);
-    const b = el("button", `jt-node ${job.kind} ${st}` + (jsel === j ? " sel" : ""));
+  const grid = el("div", "jt-grid");
+  const hand = s.eq.weapon ? s.wk : "";
+  const cell = (j, row, col) => {
+    const job = jobs[j], st = jobState(s, j), need = needOf(j), lvs = job.wk.map((k) => wmOf(s, k)[0]);
+    const b = el("button", `jt-node ${job.kind} ${st}` + (jsel === j ? " sel" : "") + (job.wk.includes(hand) ? " mine" : "") + (job.name.length > 4 ? " long" : ""));
     b.type = "button";
-    b.style.left = `${x - NW / 2}px`; b.style.top = `${y}px`; b.style.width = `${NW}px`; b.style.height = `${h}px`;
+    b.style.gridRow = String(row + 2); b.style.gridColumn = String(col + 2);
     b.append(el("b", "", job.name));
-    // how far: "숙련 17/20" for one weapon, "17/20·9/20" for two
-    const prog = job.wk.map((k) => `${Math.min(wmOf(s, k)[0], d.jobWm)}/${d.jobWm}`);
-    const sub = st === "cur" || st === "ok" ? STATE_TEXT[st] : prog.length > 1 ? prog.join("·") : `숙련 ${prog[0]}`;
-    b.append(el("small", "", st === "shut" ? "—" : sub));
-    b.title = `${job.name} — ${job.wk.map((k) => `${d.wkName[k]} ${d.jobWm}`).join(" + ")} · ${fmt(job.cost)}G`;
+    // how far: "숙련 17/20" for one weapon, "12·9/15" for two (a weapon that is there shows ✓)
+    const prog = lvs.map((lv) => (lv >= need ? "✓" : String(lv)));
+    const sub = st === "cur" || st === "ok" ? STATE_TEXT[st] : st === "shut" ? "—" : `${prog.length > 1 ? prog.join("·") : `숙련 ${prog[0]}`}/${need}`;
+    b.append(el("small", "", sub));
+    // one bar per weapon, side by side, each filling toward what the job asks
+    const bars = el("span", "bars");
+    for (const lv of lvs) { const t = el("i", lv >= need ? "full" : ""), f = el("i"); f.style.width = `${Math.min(100, (lv / need) * 100)}%`; t.append(f); bars.append(t); }
+    b.append(bars);
+    b.title = `${job.name} — ${job.wk.map((k, i) => `${d.wkName[k]} ${lvs[i]}/${need}`).join(" + ")} · ${fmt(job.cost)}G`;
     b.addEventListener("click", () => { jsel = j; ask = ""; C.Sound.play("tab"); C.redraw(); });
-    map.append(b);
+    grid.append(b);
   };
-  // weapons, and each one's single job above it
-  for (const k of ORDER) {
-    const x = cx(k), j = singleOf(k), [lv] = wmOf(s, k);
-    line(g, x, Y.single + H.single, x, Y.wpn, mine(j) ? INK.cur : ready(k) && adv ? INK.ready : INK.off);
-    node(j, x, Y.single, H.single);
-    const w = el("div", "jt-wpn" + (k === s.wk && s.eq.weapon ? " hand" : "") + (ready(k) ? " ready" : ""));
-    w.style.left = `${x - NW / 2}px`; w.style.top = `${Y.wpn}px`; w.style.width = `${NW}px`; w.style.height = `${H.wpn}px`;
-    const ic = el("img", "wi"); ic.alt = ""; ic.src = kindIcon(k);
-    const bar = el("i", "bar"), f = el("i"); f.style.width = `${Math.min(100, (lv / d.jobWm) * 100)}%`; bar.append(f);
-    // the icon and the mastery level on top, the name under them, the way to 20 at the bottom
-    w.append(ic, el("b", "", String(lv)), el("small", "", d.wkName[k]), bar);
-    w.title = `${d.wkName[k]} 숙련 ${lv} / 전직에 ${d.jobWm}`;
-    map.append(w);
-  }
-  // the two-weapon jobs: side by side pairs hang between their weapons, the one far pair at the bottom
-  for (const j of Object.keys(jobs).filter((id) => jobs[id].kind === "hybrid")) {
-    const [a, b] = jobs[j].wk, xa = cx(a), xb = cx(b), ink = (k) => (mine(j) ? INK.cur : ready(k) && adv ? INK.ready : INK.off);
-    if (Math.abs(ORDER.indexOf(a) - ORDER.indexOf(b)) === 1) {
-      const x = (xa + xb) / 2;
-      line(g, xa, Y.wpn + H.wpn, x, Y.hyb, ink(a));
-      line(g, xb, Y.wpn + H.wpn, x, Y.hyb, ink(b));
-      node(j, x, Y.hyb, H.hyb);
-    } else {
-      const x = (xa + xb) / 2, ym = Y.far + H.hyb / 2, [l, r] = xa < xb ? [a, b] : [b, a];
-      for (const [k, edge] of [[l, x - NW / 2], [r, x + NW / 2]]) {
-        line(g, cx(k), Y.wpn + H.wpn, cx(k), ym, ink(k));
-        line(g, cx(k), ym, edge, ym, ink(k));
-      }
-      node(j, x, Y.far, H.hyb);
-    }
-  }
+  const corner = el("div", "jt-corner"); corner.append(iconImg("crown", "#8a7aa0"));
+  grid.append(corner);
+  d.wkOrder.forEach((k, i) => { const h = weaponHead(s, k, true); h.style.gridRow = "1"; h.style.gridColumn = String(i + 2); grid.append(h); });
+  d.wkOrder.forEach((k, r) => {
+    const h = weaponHead(s, k, false); h.style.gridRow = String(r + 2); h.style.gridColumn = "1"; grid.append(h);
+    for (let c = 0; c <= r; c++) { const j = jobAt(k, d.wkOrder[c]); if (j) cell(j, r, c); }
+  });
+  // the empty half of the table holds the key
+  const key = el("div", "jt-key");
+  const k1 = el("span", "single"), k2 = el("span", "hybrid");
+  k1.append(el("i"), `같은 무기 칸 — 한 무기의 길 · 숙련 ${d.jobWm}`);
+  k2.append(el("i"), `다른 두 무기 칸 — 두 갈래 길 · 둘 다 숙련 ${hyb}`);
+  key.append(k1, k2, el("small", "", "칸을 누르면 아래에 그 직업이 펼쳐집니다."));
+  grid.append(key);
+
   const wrap = el("div", "jt-wrap");
-  wrap.append(map);
+  wrap.append(grid);
   box.append(wrap);
-  // narrow windows shrink the map as a whole
-  requestAnimationFrame(() => { const w = wrap.clientWidth; map.style.zoom = w && w < W ? String(w / W) : ""; });
   box.append(jobCard(s, jsel, atJob));
 }
 
@@ -294,7 +278,7 @@ export function renderJobNpc(box, s, { atJob }) {
   if (s.job !== "adventurer") {
     box.append(el("p", "say", `이미 [${jobs[s.job].name}]의 길을 걷고 있군. 전직은 되돌릴 수 없다네. 그 길 끝까지 가 보게.`));
   } else {
-    box.append(el("p", "say", `무기 하나를 숙련 ${d.jobWm}까지 다뤘다면 그 무기의 길을, 두 무기를 모두 ${d.jobWm}까지 다뤘다면 두 갈래 길을 열어 주지. 한 번 걸으면 되돌릴 수 없다네.`));
+    box.append(el("p", "say", `무기 하나를 숙련 ${d.jobWm}까지 다뤘다면 그 무기의 길을, 두 무기를 모두 ${d.hybWm || d.jobWm}까지 다뤘다면 두 갈래 길을 열어 주지. 한 번 걸으면 되돌릴 수 없다네.`));
     const ids = Object.keys(jobs).filter((j) => jobs[j].kind !== "none");
     const open = ids.filter((j) => jobState(s, j) === "ok");
     if (open.length) {
@@ -302,7 +286,7 @@ export function renderJobNpc(box, s, { atJob }) {
       for (const j of open) box.append(jobCard(s, j, atJob));
     } else box.append(el("p", "hint", "아직 열린 길이 없습니다. 무기를 들고 싸워 숙련을 쌓으세요."));
     // the nearest of the rest: the two jobs closest to open
-    const rest = ids.filter((j) => !open.includes(j)).map((j) => [j, jobs[j].wk.reduce((n, k) => n + Math.min(d.jobWm, wmOf(s, k)[0]) / d.jobWm, 0) / jobs[j].wk.length]).sort((a, b) => b[1] - a[1]);
+    const rest = ids.filter((j) => !open.includes(j)).map((j) => [j, jobs[j].wk.reduce((n, k) => n + Math.min(needOf(j), wmOf(s, k)[0]) / needOf(j), 0) / jobs[j].wk.length]).sort((a, b) => b[1] - a[1]);
     if (rest.length) {
       box.append(C.section("가까운 길", "up"));
       const list = el("div", "jt-near");
