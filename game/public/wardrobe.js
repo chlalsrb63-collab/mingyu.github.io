@@ -564,11 +564,13 @@ export function cosIcon(id, sheetOf, lookOf) {
   g.imageSmoothingEnabled = false;
   if (a && a[0] !== "wskin") {
     const o = { ...lookOf(), cos: [id] };
-    const fr = sheetOf(o).front[0];
-    // hats and face pieces: the head; tops and back pieces: the whole small figure
+    const sh = sheetOf(o), fr = sh.front[0];
+    // a hat on the head; a face piece on the face; a top close up (twice the size) on the body;
+    // a back piece seen from behind
     if (a[0] === "hat") g.drawImage(fr, 8, 7, 16, 16, 0, 0, 16, 16);
-    else if (a[0] === "face") g.drawImage(fr, 8, 12, 16, 16, 0, 0, 16, 16);
-    else g.drawImage(fr, 8, 13, 16, 16, 0, 0, 16, 16);
+    else if (a[0] === "face") g.drawImage(fr, 8, 13, 16, 16, 0, 0, 16, 16);
+    else if (a[0] === "top") g.drawImage(fr, 12, 20, 8, 8, 0, 0, 16, 16);
+    else g.drawImage(sh.back[0], 8, 14, 16, 16, 0, 0, 16, 16);
   }
   icons.set(id, c);
   return c;

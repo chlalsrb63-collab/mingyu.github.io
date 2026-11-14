@@ -19,6 +19,8 @@ import { icon, iconImg, iconUrl, MENU_ICON, CLASS_ICON, BUFF_ICON, TRAIT } from 
 import * as SP from "./sprites.js";
 import * as Emo from "./emoticons.js";
 import * as Growth from "./growth.js";
+import * as Wardrobe from "./wardrobe_ui.js";
+import { entryIconUrl } from "./weapons.js";
 import * as Looks from "./looks.js";
 import * as QS from "./quickslots.js";
 import * as SkillFx from "./skillfx.js";
@@ -164,6 +166,7 @@ function onMessage(msg) {
         G.defs = msg.defs;
         G.icons = Growth.icons(Art.buildIcons(G.defs.items));
         Growth.init({ G, act, el, iconImg, itemSlot, section, countItem, usePotion, isGear: (id) => isGear(id), sellPrice: (e) => sellPrice(e) });
+        Wardrobe.init({ G, act, el, hoverTip });
         QS.init({ G, act, el, toast, castSkill, useSlot, countItem, showTip, hideTip, touch, addChat });
       }
       G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear(); G.who.clear();
@@ -227,8 +230,9 @@ function onSnap(s) {
 
   if (s.who) {
     G.who.clear();
-    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, pet, wk, guild, title] of s.who) {
-      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk }, party, guild, title, pet: pet || null });
+    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, pet, wk, guild, title, cos, wl] of s.who) {
+      // the outfit (cosmetic codes) and the weapon's legendary/set key ride along in `gear`
+      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk, ...Wardrobe.wireGear(G.defs, cos, wl) }, party, guild, title, pet: pet || null });
     }
     if (isOpen("party")) renderParty();
     if (isOpen("guild")) renderGuild();
@@ -470,6 +474,7 @@ function onGain([kind, a, b, q]) {
     if (q) p.style.color = Art.RARITY_COL[q];
     Sound.play("loot", q | 0);
     if (q >= 3) banner(q === 4 ? "세트 획득!" : "전설 획득!", true);
+  } else if (kind === "cos") { const d = G.defs.cos[a]; const p = addChat(`외형 획득: ${d ? d.name : a}`, "loot"); if (d) p.style.color = Art.RARITY_COL[d.q]; Sound.play("loot", d ? d.q : 1);
   } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y, h + 0.9, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a}이(가) 되었습니다!`, "sys"); }
 }
 
@@ -797,6 +802,7 @@ function interact() {
   else if (n.role === "achieve") openWin("achieve");
   else if (n.role === "train") openWin("train");
   else if (n.role === "bank") openWin("bank");
+  else if (n.role === "costume") openWin("costume");
   else { $("#talk-name").textContent = n.name; $("#talk-text").textContent = n.say || "…"; openWin("talk"); }
 }
 
@@ -1181,7 +1187,7 @@ function renderMini(t) {
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume"];
 const winEl = (id) => $(`#w-${id}`);
 /** The bag is docked in the side column, so it always counts as open (on a phone it lives in the drawer). */
 const isOpen = (id) => id === "inv" || !winEl(id).hidden;
@@ -1500,7 +1506,7 @@ function itemSlot(entry, o = {}) {
   if (entry.q) d.classList.add(`q${entry.q}`);
   if (o.selected) d.classList.add("sel");
   const img = el("img");
-  img.src = G.icons.url[entry.id];
+  img.src = entryIconUrl(entry, it) || G.icons.url[entry.id];
   img.alt = it.name;
   d.append(img);
   if (entry.sk) { const pips = el("span", "sk"); for (let i = 0; i < entry.sk; i++) pips.append(el("i", entry.ru && entry.ru[i] ? "on" : "")); d.append(pips); }
@@ -1552,10 +1558,10 @@ let faceKey = "";
 function drawFace() {
   const w = look(), s = G.self;
   if (!w || !s) return;
-  const key = JSON.stringify([s.cls, w.look]);
+  const key = JSON.stringify([s.cls, w.look, w.gear && w.gear.cos]);
   if (key === faceKey) return;
   faceKey = key;
-  const fr = SP.personSheet(SP.playerLook(s.cls, w.look)).front[0];
+  const fr = SP.personSheet(SP.playerLook(s.cls, w.look, w.gear)).front[0];
   const g = $("#st-face").getContext("2d");
   g.clearRect(0, 0, 40, 40);
   g.imageSmoothingEnabled = false;
@@ -1574,7 +1580,7 @@ function drawPortrait(t) {
   g.imageSmoothingEnabled = false;
   g.fillStyle = "rgba(0,0,0,.4)";
   g.beginPath(); g.ellipse(66, 147, 30, 6, 0, 0, Math.PI * 2); g.fill();
-  const fr = SP.personSheet(SP.playerLook(s.cls, w.look)).front[f];
+  const fr = SP.personSheet(SP.playerLook(s.cls, w.look, w.gear)).front[f];
   g.drawImage(fr, 4, 2, 24, 28, 6, 10, 120, 140);
 }
 function hudBars() {
@@ -1685,6 +1691,7 @@ function refreshUi() {
   draw("daily", () => [s.daily && s.daily.day, s.daily && s.daily.tasks, s.daily && s.daily.bonus, s.inv.length], renderDaily);
   draw("achieve", () => [s.ach, s.title, s.pts, G.achTab], renderAchieve);
   draw("collect", () => [s.mk, s.col, G.colTab], renderCollect);
+  Wardrobe.refresh(s);
   tutCard(s);
 }
 function section(text, glyph) {
