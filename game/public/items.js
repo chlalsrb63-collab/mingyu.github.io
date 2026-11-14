@@ -19,7 +19,8 @@ import { refreshUi } from "./hud.js";
 const GEAR = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet"];
 const TYPE_NAME = { weapon: "무기", helm: "투구", armor: "갑옷", gloves: "장갑", boots: "신발", ring: "반지", amulet: "목걸이" };
 export const SLOT_NAME = { weapon: "무기", helm: "투구", armor: "갑옷", gloves: "장갑", boots: "신발", ring1: "반지 1", ring2: "반지 2", amulet: "목걸이", weapon2: "보조 무기" };
-export const SLOT_GLYPH = { weapon: "sword", helm: "person", armor: "shield", gloves: "fang", boots: "chevron", ring1: "gem", ring2: "gem", amulet: "gem", weapon2: "swords" };
+/** The silhouette an empty paper-doll slot shows (uiicons.js `eq_*`). */
+export const SLOT_GLYPH = { weapon: "sword", helm: "eq_helm", armor: "eq_armor", gloves: "eq_gloves", boots: "eq_boots", ring1: "eq_ring", ring2: "eq_ring", amulet: "eq_amulet", weapon2: "eq_off" };
 export const isGear = (id) => GEAR.includes(G.defs.items[id].type);
 const slotsFor = (type) => (type === "ring" ? ["ring1", "ring2"] : [type]);
 function runewordOf(g) {

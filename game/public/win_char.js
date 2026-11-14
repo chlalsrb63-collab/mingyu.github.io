@@ -135,7 +135,12 @@ export function renderDoll(s) {
     const g = s.eq[k];
     const slot = itemSlot(g, g ? { worn: true, onClick: () => { hideTip(); act({ t: "uneq", k }); Sound.play("ui"); }, hint: `${SLOT_NAME[k]} · 클릭하면 벗습니다` } : {});
     slot.id = `eq-${k}`;
-    if (!g) { const ph = el("span", "ph"); ph.append(iconImg(SLOT_GLYPH[k])); slot.append(ph); slot.title = `${SLOT_NAME[k]} — 비어 있음`; }
+    if (!g) {
+      // an empty slot: the silhouette of what goes there and a tiny caption with the slot's name
+      const ph = el("span", "ph"); ph.append(iconImg(SLOT_GLYPH[k]));
+      slot.append(ph, el("span", "cap", k === "weapon2" ? "보조" : SLOT_NAME[k]));
+      slot.title = `${SLOT_NAME[k]} — 비어 있음`;
+    }
     if (k === "weapon2") slot.hidden = !g && !(G.defs.jobs[s.job] && G.defs.jobs[s.job].kind === "hybrid");
     host.replaceWith(slot);
   }

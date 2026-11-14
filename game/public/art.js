@@ -898,8 +898,9 @@ function glovesIcon(tier) {
 function bootsIcon(tier) {
   const [c, g] = canvas(16, 16);
   const [m, md] = tier === 1 ? ["#c8b070", "#9a8448"] : tier === 2 ? ["#8a6238", "#5e4022"] : METAL[tier];
-  g.fillStyle = m; g.fillRect(5, 2, 5, 9); g.fillRect(5, 10, 9, 4);
-  g.fillStyle = md; g.fillRect(8, 2, 2, 9); g.fillRect(5, 13, 9, 1); g.fillRect(12, 10, 2, 3);
+  // a folded cuff, the shaft, a rounded toe pointing right, a heel and a sole
+  g.fillStyle = m; g.fillRect(4, 2, 7, 2); g.fillRect(5, 4, 5, 7); g.fillRect(5, 10, 7, 3); g.fillRect(12, 11, 2, 2);
+  g.fillStyle = md; g.fillRect(4, 3, 7, 1); g.fillRect(8, 4, 2, 6); g.fillRect(5, 7, 5, 1); g.fillRect(5, 13, 3, 1); g.fillRect(9, 13, 5, 1);
   if (tier >= 4) { g.fillStyle = "#7af0ff"; g.fillRect(5, 12, 4, 1); }
   outline(c, g, "#111118");
   return c;
