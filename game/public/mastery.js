@@ -12,7 +12,7 @@ import { weaponIcon } from "./weapons.js";
 
 export const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow"];
 const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활" };
-/** The mastery-10 active of each weapon (C.2), until `defs.skills` carries them. */
+/** The mastery-10 active of each weapon (C.2), when `defs.skills` is not there yet. */
 const L10 = { sword: "대지 가르기", dagger: "그림자 칼날", spear: "유성창", staff: "서리 고리", book: "중력 왜곡진", bow: "도약 사격" };
 const JOB_WM = 20, WM_MAX = 50;
 
@@ -53,8 +53,9 @@ function shownKinds(s, job) {
 export function nextUnlock(k, lv, job, defs) {
   if (lv >= WM_MAX) return "최고 숙련 달성";
   if (lv < 10) {
-    const sk = defs.skills && Object.values(defs.skills.SKILL || defs.skills).find((x) => x && x.wk === k && x.need === 10 && x.kind === "a");
-    return `Lv.10: ${sk ? sk.name : L10[k]} 해금`;
+    const all = defs.skills ? Object.values(defs.skills) : [], at10 = (kind) => all.find((x) => x && x.wk === k && x.need === 10 && x.kind === kind && !x.job);
+    const sk = at10("a"), pas = at10("p");
+    return `Lv.10: ${sk ? sk.name : L10[k]}${pas ? ` · 패시브 ${pas.name}` : ""} 해금`;
   }
   const adventurer = job.kind === "none";
   if (lv < JOB_WM) return adventurer ? `Lv.${JOB_WM}: 전직 가능` : `Lv.${lv + 1}: 무기 공격력 +1%`;

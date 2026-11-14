@@ -645,7 +645,7 @@ function castSkill(S, p, id) {
       ev(100, p.x, p.y - 6, sk.r);
       const list = mobsWithin(rt, p.x, p.y, sk.r);
       for (const o of list) if (!MOBS[o.k].boss && o.el !== 2) o.stun = Math.max(o.stun, now + sk.root * (o.el ? 0.5 : 1));
-      prop({ kind: "burst", x: p.x, y: p.y, r: sk.r, ids: list.map((o) => o.id), every: 1000, next: now + sk.root, until: now + sk.root + 500, base: sk.base, bleed: sk.bleed, mark: sk.mark, brandK: sk.brand });
+      prop({ kind: "burst", wire: 1, x: p.x, y: p.y, r: sk.r, ids: list.map((o) => o.id), every: 1000, next: now + sk.root, until: now + sk.root + 500, base: sk.base, bleed: sk.bleed, mark: sk.mark, brandK: sk.brand });
       break;
     }
     case "thunder": {

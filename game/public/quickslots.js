@@ -4,7 +4,7 @@
  * Nothing is put there for the player: each slot is empty until a skill is
  * dragged in from the skill window (K) or a usable item from the bag (potions,
  * food, scrolls, the camp kit, a pet). The server keeps the nine slots with
- * the character (`self.qs`: null | ["s", skill index] | ["i", item id]) and
+ * the character (`self.qs`: null | ["s", skill id] | ["i", item id]) and
  * checks every change ({ t: "qs", i, v } to set, { t: "qs", i, j } to swap).
  *
  *   - drag onto a slot to set it, between slots to swap, off the bar to clear;
@@ -57,8 +57,27 @@ export function init(ctx) {
 
 /** The slots as the server last sent them. */
 const slots = () => (C.G.self && C.G.self.qs) || Array(N).fill(null);
-// until J2: the old kit of the weapon in hand (`lc`), learned by that weapon's mastery (`skLv`, set in client.js onSnap)
-const skills = () => C.G.defs.skills[C.G.self.lc] || [];
+/** The weapon skills (defs.skills, by id) and this character's wire row of one: [id, MP now, cooldown left, usable 1/0]. */
+const skills = () => C.G.defs.skills;
+const row = (id) => (C.G.skw && C.G.skw.get(id)) || null;
+const PP = (w, a, b) => { const c = w.charCodeAt(w.length - 1) - 0xac00; return c >= 0 && c <= 11171 && c % 28 ? a : b; };
+/**
+ * Why skill `id` cannot be used now with what is in hand ("" when it can): the same words the server
+ * gives (57-weapon-skills.js skWhy), so a press on a dim slot answers at once.
+ */
+export function skillWhy(id) {
+  const G = C.G, s = G.self, sk = G.defs.skills[id];
+  if (!s || !sk) return "없는 스킬";
+  const r = row(id);
+  if (r && r[3]) return "";
+  if (sk.job && s.job !== sk.job) return `[${G.defs.jobs[sk.job].name}]의 스킬입니다`;
+  const wk = sk.wk || (G.defs.jobs[sk.job] ? G.defs.jobs[sk.job].wk[0] : "");
+  if (!sk.job && !r) return `[${G.defs.wkName[sk.wk]}] 숙련 ${sk.need}에 배웁니다`;
+  const name = G.defs.wkName[wk] || "무기";
+  return `[${name}]${PP(name, "을", "를")} 들어야 쓸 수 있습니다`;
+}
+/** What skill `id` costs right now (a full resonance makes a staff skill free). */
+export const skillMp = (id) => { const r = row(id); return r ? r[1] : (C.G.defs.skills[id] || {}).mp || 0; };
 const same = (a, b) => !!a && !!b && a[0] === b[0] && a[1] === b[1];
 /** Where (if anywhere) a skill or item sits: "1", "1·4" … */
 export function keysOf(v) {
@@ -135,6 +154,7 @@ export function render() {
   if (!s || !btns.length) return;
   const list = skills(), cur = slots();
   let any = false;
+  const wkn = C.G.defs.wkName;
   cur.forEach((v, i) => {
     const b = btns[i], img = b.querySelector("img.ic");
     const kind = v ? v[0] : "";
@@ -147,11 +167,13 @@ export function render() {
       const sk = list[v[1]];
       if (sk) {
         setSrc(img, skillIconUrl(sk.id));
-        ult = v[1] === list.length - 1;
-        locked = s.skLv < sk.lv;
-        mp = String(s.skm ? s.skm[v[1]] : sk.mp);
-        b.dataset.lv = `Lv.${sk.lv}`;
-        title = `${sk.name} (${i + 1}) — MP ${sk.mp} · ${sk.cd / 1000}초${locked ? ` · 숙련 ${sk.lv}에 배웁니다` : ""}\n${sk.desc}`;
+        ult = !!sk.job;
+        const why = skillWhy(sk.id);
+        locked = !!why;
+        mp = String(skillMp(sk.id));
+        // a dim slot names what it waits for: the weapon (or the job) it needs, or the mastery
+        b.dataset.lv = !row(sk.id) && !sk.job ? `숙련${sk.need}` : sk.job && C.G.self.job !== sk.job ? "전직" : wkn[sk.wk || (C.G.defs.jobs[sk.job] || { wk: [""] }).wk[0]] || "";
+        title = `${sk.name} (${i + 1}) — MP ${sk.mp} · ${sk.cd / 1000}초${why ? ` · ${why}` : ""}\n${sk.desc}`;
       }
     } else if (kind === "i") {
       const it = G.defs.items[v[1]];
@@ -173,21 +195,22 @@ export function render() {
   });
   // a skill just learned: the server put it on the bar if there was room (and its toast says
   // which key); the log keeps a line, and says where to find it when the bar was full
-  if (render.lc !== s.lc) render.lvl = undefined;
-  render.lc = s.lc;
-  if (render.lvl !== undefined && s.skLv > render.lvl) {
-    list.forEach((sk, i) => {
-      if (sk.lv <= render.lvl || sk.lv > s.skLv) return;
-      const k = keysOf(["s", i]);
+  // (the skills learned, against the last sheet: a new active gets a line in the log)
+  const have = new Set((s.sk || []).map((r) => r[0]));
+  if (render.have && render.who === s.name) {
+    for (const id of have) {
+      const sk = list[id];
+      if (render.have.has(id) || !sk || sk.kind === "p") continue;
+      const k = keysOf(["s", id]);
       C.addChat(k ? `새 스킬 [${sk.name}] — 단축칸 ${k} 키로 씁니다.` : `새 스킬 [${sk.name}] — 단축칸이 가득 찼습니다. 스킬 창(K)에서 빈 칸으로 끌어다 놓으세요.`, "sys");
-    });
+    }
   }
-  render.lvl = s.skLv;
+  render.have = have; render.who = s.name;
   // a gentle pointer at the empty bar until something is put in it
   const hint = $("#qs-hint");
   if (hint) { hint.hidden = any; hint.textContent = C.touch() ? "스킬(K)·가방의 [단축칸] → 칸 누르기" : "스킬(K)·아이템(가방)을 끌어다 놓으세요"; }
   // (only once there is a skill to put there: a new Lv.1 has enough to read)
-  if (!any && !render.told && s.skLv >= 3) {
+  if (!any && !render.told && have.size) {
     render.told = true;
     C.addChat("단축칸 1~9는 비어 있습니다. 스킬 창(K)의 스킬이나 가방의 물약·음식·주문서를 아래 단축칸에 끌어다 놓으면 그 숫자 키로 씁니다. (터치: 스킬·아이템의 [단축칸] 버튼 → 칸 누르기)", "sys");
   }
@@ -204,7 +227,7 @@ export function tick(t) {
     if (v && v[0] === "s" && list[v[1]]) {
       const sk = list[v[1]];
       left = (G.cdEnd[v[1]] || 0) - t; full = sk.cd;
-      nomp = G.me.mp < (s.skm ? s.skm[v[1]] : sk.mp) && s.skLv >= sk.lv;
+      nomp = G.me.mp < skillMp(v[1]) && !skillWhy(v[1]);
     } else if (v && v[0] === "i" && G.defs.items[v[1]] && G.defs.items[v[1]].type === "pot") {
       left = G.potAt - t; full = 950;
     }
@@ -257,8 +280,9 @@ function slotTip(h, v) {
     const sk = skills()[v[1]];
     if (!sk) return;
     h.append(el("div", "nm", sk.name));
-    h.append(el("div", "ds", `MP ${s.skm ? s.skm[v[1]] : sk.mp} · 재사용 ${sk.cd / 1000}초${v[1] === skills().length - 1 ? " · 궁극기" : ""}`));
-    if (s.skLv < sk.lv) h.append(el("div", "err-line", `숙련 ${sk.lv}에 배웁니다`));
+    h.append(el("div", "ds", `MP ${skillMp(v[1])} · 재사용 ${sk.cd / 1000}초${sk.job ? " · 전직 기술" : ""}`));
+    const why = skillWhy(v[1]);
+    if (why) h.append(el("div", "err-line", why));
     h.append(el("div", "ds", sk.desc));
   } else {
     const it = G.defs.items[v[1]];
@@ -292,7 +316,7 @@ function onMove(e) {
     C.hideTip();
     const g = document.createElement("img");
     g.id = "qs-ghost";
-    g.src = drag.v[0] === "s" ? skillIconUrl(skills()[drag.v[1]].id) : C.G.icons.url[drag.v[1]];
+    g.src = drag.v[0] === "s" ? skillIconUrl(drag.v[1]) : C.G.icons.url[drag.v[1]];
     document.body.append(g);
     drag.ghost = g;
     document.body.classList.add("qs-drag");

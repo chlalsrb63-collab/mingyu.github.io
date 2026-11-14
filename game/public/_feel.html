@@ -3,8 +3,9 @@
 <canvas id="out" style="position:fixed;left:0;top:0;image-rendering:pixelated"></canvas>
 <script type="module">
 // Game-feel contact sheet: frame strips of skill blasts, hits and footsteps, time stepped by hand.
-// ?rows=slam,bolt,nova,hit,crit,walk,dash&map=meadow&ms=33&n=10&z=2&cw=180&ch=150 — dev preview only, not part of the game.
+// ?rows=slam,bolt,nova,hit,crit,walk,dash,sk80,sk89:64,pr:grav&map=meadow&ms=33&n=10&z=2&cw=180&ch=150 — dev preview only, not part of the game.
 import * as S from "./scene2d.js";
+import * as SkillFx from "./skillfx.js";
 const q = new URLSearchParams(location.search);
 const maps = await (await fetch("./_maps.json")).json();
 const m = maps[q.get("map") || "meadow"];
@@ -43,7 +44,24 @@ for (let r = 0; r < rows.length; r++) {
   const row = rows[r];
   S.fx.clear(); G.mobs.clear(); me.moving = false; me.aim = null; me.atkT = -1e9; me.hs = null; me.x = fx * 16 + 8; me.y = fy * 16 + 8; me.v = 0;
   for (let i = 0; i < 30; i++) { t += 16; frame(); }
-  setup[row] && setup[row]();
+  if (setup[row]) setup[row]();
+  // weapon skills by fx code (skillfx.js): "sk80", "sk89:64" (code:extra), "pr:grav" (a prop placed, then a beat)
+  else if (row.startsWith("sk")) {
+    const [code, extra] = row.slice(2).split(":").map(Number);
+    G.mobs.set(1, mob); G.texts = G.texts || [];
+    const ctx = { G, S3: S, entityPos: (id) => (id === 1 ? me : mob), heightOf: () => 1.3, t };
+    me.atkT = t;
+    SkillFx.skillEvent(["a", 1, code, Math.round(mob.x), Math.round(mob.y - 6), 2, 2, isNaN(extra) ? undefined : extra], ctx);
+    if (code === 94 || code === 95) SkillFx.skillEvent(["ar", 900 + r, me.x, me.y - 6, 1000, 0, 600, code === 94 ? 2 : 3, 1], ctx);
+    if (code === 101) SkillFx.skillEvent(["ln", 2, me.x, me.y, mob.x, mob.y], ctx);
+    if (code === 87 || code === 84) SkillFx.skillEvent(["tip", 1], ctx);
+  } else if (row.startsWith("pr:")) {
+    G.mobs.set(1, mob); G.texts = G.texts || [];
+    const ctx = { G, S3: S, entityPos: (id) => (id === 1 ? me : mob), heightOf: () => 1.3, t };
+    SkillFx.skillEvent(["pr", 700 + r, row.slice(3), mob.x, mob.y, 56, 3000, 1], ctx);
+    for (let i = 0; i < 6; i++) { t += 16; frame(); }
+    SkillFx.skillEvent(["pp", 700 + r, mob.x, mob.y, 1], ctx);
+  }
   for (let i = 0; i < n; i++) {
     const sub = Math.max(1, Math.round(ms / 16));
     for (let k = 0; k < (i ? sub : 1); k++) { t += i ? ms / sub : 0; if (me.v) me.x += me.v * (ms / sub / 1000); frame(i ? ms / sub / 1000 : 0.016); }

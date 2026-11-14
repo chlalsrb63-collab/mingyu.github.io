@@ -27,7 +27,7 @@ import * as QS from "./quickslots.js";
 import * as NpcTalk from "./npctalk.js";
 import * as SideQ from "./sidequests.js";
 import * as SkillFx from "./skillfx.js";
-import { drawClassGauge, gaugeTip } from "./classgauge.js";
+import { drawWeaponGauge, gaugeTip } from "./weapongauge.js";
 import * as Mastery from "./mastery.js";
 import { installFrames } from "./frames.js";
 import * as Lobby from "./lobby.js";
@@ -123,7 +123,7 @@ const G = {
   me: { x: 0, y: 0, dir: 0, aimI: 16, hp: 1, mp: 0, dead: false, walk: 0, moving: false, atkT: -1e9, hurtT: -1e9 },
   who: new Map(), players: new Map(), mobs: new Map(), gone: new Map(), drops: new Map(), fires: new Map(), bobs: new Map(), ginv: null,
   fx: [], parts: [], texts: [], bubbles: new Map(), statics: [],
-  cdEnd: [0, 0, 0, 0, 0, 0], buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
+  cdEnd: {}, buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
   auto: false, sel: -1, shake: 0, flash: 0, near: null, party: [], pinv: null, path: null, mark: null,
 };
 let dpr = 1;
@@ -301,11 +301,12 @@ function onSnap(s) {
 
   if (s.self) {
     G.self = s.self;
-    // jobs (J1): `cls` now names the job (the class names below read defs.classes, rebuilt from defs.jobs);
-    // until J2 the old kit of the weapon in hand (`lc`) is learned by that weapon's mastery (`skLv`)
+    // jobs: `cls` names the job (the class names below read defs.classes, rebuilt from defs.jobs); `skLv` the
+    // mastery of the weapon in hand; weapon skills (J2): `sk` = [[id, MP now, cooldown left ms, usable 1/0]…]
     s.self.cls = s.self.job;
     s.self.skLv = s.self.wm ? s.self.wm[Math.max(0, G.defs.wkOrder.indexOf(s.self.wk))][0] : 1;
-    for (let i = 0; i < s.self.cds.length; i++) G.cdEnd[i] = t + s.self.cds[i];
+    G.skw = new Map((s.self.sk || []).map((r) => [r[0], r]));
+    for (const r of s.self.sk || []) G.cdEnd[r[0]] = t + r[2];
     G.streak = { n: s.self.streak[0], end: t + s.self.streak[1] };
     G.buffEnd = s.self.buffs.map((ms) => t + ms);
     if (s.self.evt) { G.evt = s.self.evt; G.evtNext = t + s.self.evt.next; G.evtIn = t + (s.self.evt.in || 0); G.evtLeft = t + (s.self.evt.left || 0); }
@@ -856,17 +857,19 @@ function solid(px, py) {
 }
 const canStand = (x, y) => !(solid(x - 4, y - 5) || solid(x + 4, y - 5) || solid(x - 4, y) || solid(x + 4, y));
 
-function castSkill(i) {
+/** Cast weapon skill `id` (a quick slot, auto-hunt): refused here with the server's own words when it cannot be. */
+function castSkill(id) {
   const s = G.self;
-  if (!s || G.me.dead) return;
-  const sk = (G.defs.skills[s.lc] || [])[i];
-  if (!sk) return false;
+  if (!s || G.me.dead) return false;
+  const sk = G.defs.skills[id];
+  if (!sk || sk.kind === "p") return false;
   const t = now();
-  if (s.skLv < sk.lv) { toast(`[${sk.name}] 숙련 ${sk.lv}에 배웁니다`); return false; }
-  const mpc = s.skm ? s.skm[i] : sk.mp;          // a thrown sword comes back for nothing; a surge casts for nothing
-  if (t < G.cdEnd[i] || G.me.mp < mpc) { if (G.me.mp < mpc && !G.auto) toast("MP가 부족합니다"); return false; }
-  act({ t: "sk", i, a: G.me.aimI });
-  G.cdEnd[i] = t + sk.cd;
+  const why = QS.skillWhy(id);
+  if (why) { if (!G.auto) { toast(why); Sound.play("no"); } return false; }
+  const mpc = QS.skillMp(id);          // a full resonance makes a staff skill free
+  if (t < (G.cdEnd[id] || 0) || G.me.mp < mpc) { if (G.me.mp < mpc && !G.auto) toast("MP가 부족합니다"); return false; }
+  act({ t: "sk", id, a: G.me.aimI });
+  G.cdEnd[id] = t + sk.cd * (1 - (s.dv ? s.dv[3] : 0) / 100);
   G.me.atkT = t; G.me.atkN = 2; G.lastAtk = t; G.lastSkill = t;
   preAim(aimCone());
   return true;
@@ -1142,10 +1145,11 @@ function update(dt, t) {
         aimAtPoint(best.x, best.y);            // face the quarry before the blow or the spell
         if (t - autoSt.lastSkill > 500) {
           // only what the player put in the quick slots, in slot order
-          for (const i of QS.autoSkills()) {
-            const sk = (G.defs.skills[s.lc] || [])[i];
-            if (!sk) continue;
-            if (s.skLv >= sk.lv && t >= G.cdEnd[i] && me.mp >= (s.skm ? s.skm[i] : sk.mp) + 4) { if (castSkill(i)) { autoSt.lastSkill = t; break; } }
+          // (usable with the weapon in hand, not kept from auto-hunt, MP to spare; never swaps weapons)
+          for (const id of QS.autoSkills()) {
+            const sk = G.defs.skills[id];
+            if (!sk || QS.skillWhy(id) || sk.noAuto || (sk.autoHp && me.hp < s.mhp * sk.autoHp)) continue;
+            if (t >= (G.cdEnd[id] || 0) && me.mp >= QS.skillMp(id) + 4) { if (castSkill(id)) { autoSt.lastSkill = t; break; } }
           }
         }
       }
@@ -2128,7 +2132,7 @@ function refreshUi() {
   const near = G.near && G.near.role;
   draw("inv", () => [s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs, s.bagCap], renderInv);
   draw("char", () => [s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.lvl, s.name, s.guild], renderChar);
-  draw("skill", () => [s.lvl, s.lc, s.skLv, s.wk, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.qs], renderSkills);
+  draw("skill", () => [s.lvl, s.job, s.skLv, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.qs, JSON.stringify(s.sk)], renderSkills);
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near], renderShop);
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone")], renderSmith);
   draw("train", () => [s.xp, s.st, s.nx, s.rs, s.sw, s.job, s.wm, s.gold, s.lvl, fireNear(), G.near], renderTrain);
@@ -2308,27 +2312,40 @@ function renderSkills(s) {
     wmBox.append(row);
   });
   box.append(wmBox);
-  // until J2: the old kit of the weapon in hand, learned by its mastery
-  const list = G.defs.skills[s.lc] || [];
-  box.append(section(list.length ? `${G.defs.wkName[s.wk]} 스킬` : "스킬", "book"));
-  if (!list.length) box.append(el("p", "hint", "이 무기로 쓸 수 있는 스킬은 아직 없습니다."));
-  list.forEach((sk, i) => {
-    const locked = s.skLv < sk.lv;
-    const row = el("div", "skill" + (locked ? " locked" : ""));
-    const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(sk.id);
-    const hd = el("div", "hd");
-    const at = QS.keysOf(["s", i]);
-    hd.append(el("b", "", sk.name), at ? el("kbd", "", at) : "", el("small", "mp", `MP ${sk.mp}`), el("small", "", `재사용 ${sk.cd / 1000}초`), el("small", "", locked ? `숙련 ${sk.lv}에 배웁니다` : `숙련 ${sk.lv} 습득`));
-    if (i === list.length - 1) row.classList.add("ult");
-    // drag the icon (or the whole row) onto the quick slots; or tap the button, then a slot
-    const put = el("button", "btn small qs-put", "단축칸");
-    put.title = "누른 뒤 아래 단축칸(1~9)을 누르면 거기에 놓입니다";
-    put.addEventListener("click", () => QS.pick(["s", i]));
-    row.append(ic, hd, el("p", "", sk.desc), put);
-    QS.dragSource(row, ["s", i]);
-    box.append(row);
-  });
-  box.append(el("p", "hint", "스킬을 끌어다 아래 단축칸(1~9)에 놓으면 그 숫자 키로 씁니다. 칸끼리 끌어 바꾸고, 바깥에 놓거나 우클릭하면 비웁니다. 마지막 스킬은 궁극기입니다. 스킬은 손에 든 무기의 숙련으로 배웁니다. 자동사냥은 단축칸에 놓인 스킬을 칸 순서대로 씁니다."));
+  // weapon skills (J2): the weapon in hand (a hybrid's other weapon too), then the job's signature;
+  // J3 draws the full 무기 · 스킬 window and the 전직의 길 tree
+  const SK = G.defs.skills, job = G.defs.jobs[s.job] || { kind: "none", wk: [] };
+  const kinds = job.kind === "hybrid" ? [s.wk, ...job.wk.filter((k) => k !== s.wk)] : s.wk && s.eq.weapon ? [s.wk] : [];
+  const groups = kinds.filter((k) => G.defs.wkOrder.includes(k)).map((k) => [`${G.defs.wkName[k]} 스킬`, G.defs.skillOrder.filter((id) => SK[id].wk === k && !SK[id].job)]);
+  const sig = G.defs.skillOrder.filter((id) => SK[id].job === s.job);
+  if (sig.length) groups.push([`${job.name || "직업"} 전용`, sig]);
+  if (!groups.length) box.append(section("스킬", "book"), el("p", "hint", "무기를 들면 그 무기의 스킬이 보입니다."));
+  for (const [title, ids] of groups) {
+    box.append(section(title, "book"));
+    for (const id of ids) {
+      const sk = SK[id], w = G.skw && G.skw.get(id), pas = sk.kind === "p";
+      const why = pas ? (w ? (w[3] ? "" : "이 무기를 들면 켜집니다") : `숙련 ${sk.need}에 배웁니다`) : QS.skillWhy(id);
+      const row = el("div", "skill" + (why ? " locked" : "") + (sk.job ? " ult" : ""));
+      const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(id);
+      const hd = el("div", "hd");
+      const at = pas ? "" : QS.keysOf(["s", id]);
+      hd.append(el("b", "", sk.name), at ? el("kbd", "", at) : "");
+      if (pas) hd.append(el("small", "", "패시브"));
+      else hd.append(el("small", "mp", `MP ${w ? w[1] : sk.mp}`), el("small", "", `재사용 ${sk.cd / 1000}초`));
+      hd.append(el("small", "", why || (sk.job ? "전직 기술" : `숙련 ${sk.need} 습득`)));
+      row.append(ic, hd, el("p", "", sk.desc));
+      if (!pas) {
+        // drag the icon (or the whole row) onto the quick slots; or tap the button, then a slot
+        const put = el("button", "btn small qs-put", "단축칸");
+        put.title = "누른 뒤 아래 단축칸(1~9)을 누르면 거기에 놓입니다";
+        put.addEventListener("click", () => QS.pick(["s", id]));
+        row.append(put);
+        QS.dragSource(row, ["s", id]);
+      }
+      box.append(row);
+    }
+  }
+  box.append(el("p", "hint", "스킬은 무기에 딸려 있습니다 — 숙련 1과 10에 하나씩, 10에 패시브. 전직하면 그 직업의 기술이 더해집니다. 스킬을 끌어다 아래 단축칸(1~9)에 놓으면 그 숫자 키로 씁니다(우클릭·바깥에 놓으면 비움). 들고 있지 않은 무기의 스킬은 흐리게 보입니다. 자동사냥은 단축칸의 스킬을 칸 순서대로 씁니다."));
 }
 
 // ── waypoints ──
@@ -3019,8 +3036,8 @@ function hudTick(t) {
   if (isOpen("daily")) tickDaily(t);
   const s = G.self;
   if (!s) return;
-  // the class gauge (classgauge.js); a fault there must never stop the frame
-  try { drawClassGauge(cgauge, s, G.defs, t); } catch (err) { if (!hudTick.warned) { hudTick.warned = true; console.warn("class gauge:", err); } }
+  // the weapon gauge (weapongauge.js); a fault there must never stop the frame
+  try { drawWeaponGauge(cgauge, s, G.defs, t); } catch (err) { if (!hudTick.warned) { hudTick.warned = true; console.warn("weapon gauge:", err); } }
   QS.tick(t);
   if (tip.from && (!tip.from.isConnected || tip.from.closest("[hidden]"))) hideTip();
   if (isOpen("char")) drawPortrait(t);
