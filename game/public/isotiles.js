@@ -9,8 +9,14 @@
  *   tallAt(m, x, y, theme) → null | { img, dx, dy }
  *       an upright piece for tile (x, y), drawn with its top-left at the tile's
  *       top-corner screen position + (dx, dy), depth-sorted at x + y + 1.
+ *
+ * The art itself lives in iso_px.js (pixels and the projection), iso_ground.js
+ * (the baked ground) and iso_tall.js (what stands up).
  */
+import { bake } from "./iso_ground.js";
+import { tall } from "./iso_tall.js";
+
 export const TW = 32, TH = 16;
 export const ready = false;
-export function bakeGround(m, theme) { return null; }
-export function tallAt(m, x, y, theme) { return null; }
+export function bakeGround(m, theme) { return bake(m, theme); }
+export function tallAt(m, x, y, theme) { return tall(m, x, y, theme); }
