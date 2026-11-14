@@ -366,6 +366,7 @@ export function tick(S, now) {
   worldEvent(S, now);
   skyTick(S, now);
   dimTick(S, now);
+  homeTick(S, now);
   const pids = Object.keys(S.players);
   for (const id of liveMapIds(S)) {
     const rt = S.maps[id];

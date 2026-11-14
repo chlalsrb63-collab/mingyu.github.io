@@ -27,7 +27,7 @@ export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
   const lk = Array.isArray(look) ? look : [];
   return {
-    v: 9, name, cls: c,
+    v: 10, name, cls: c,
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     lvl: 1, xp: 0, gold: 50,
@@ -42,6 +42,8 @@ export function newChar(name, cls, look) {
     dim: { day: 0, n: 0 },
     skl: [1, 1, 1, 1, 1, 1], wh: { items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
+    // the bag's size and a house of one's own (v10: 46-bag.js, 64-housing.js)
+    bagCap: INV_BASE, house: homeEmpty(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
   };
 }
@@ -76,7 +78,7 @@ function migrate(ch) {
   if (acc) {
     const k = slotsFor(ITEMS[acc.id].type)[0];
     if (!eq[k]) eq[k] = acc;
-    else if (ch.inv.length < INV) ch.inv.push(acc);
+    else if (ch.inv.length < bagCap(ch)) ch.inv.push(acc);
   }
   if (eq.weapon && ITEMS[eq.weapon.id].cls !== ch.cls) eq.weapon = plain(`w_${ch.cls}_1`);
   ch.eq = eq;
@@ -134,7 +136,11 @@ function migrate(ch) {
   ch.sq = sqClean(ch.sq);
   // the 차원 균열 daily count (v9)
   ch.dim = isObj(ch.dim) ? { day: Math.max(0, ch.dim.day | 0), n: clamp(ch.dim.n | 0, 0, 999) } : { day: 0, n: 0 };
-  ch.v = Math.max(ch.v | 0, 9);
+  // ── bag expansion and housing (v10): the bag 40..100 (old bags were 30), the house cleaned ──
+  bagClean(ch);
+  ch.house = houseClean(ch.house, fix);
+  // ──
+  ch.v = Math.max(ch.v | 0, 10);
   return ch;
 }
 
@@ -235,7 +241,7 @@ function stats(p) {
   const scr = p.ch.scr || {};
   return {
     mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf,
-    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
+    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
     spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.slowed > now && !(p.giant > now) ? SLOW : 1), spd0: c.spd0,
@@ -247,8 +253,8 @@ export function exportChar(S, pid) {
   if (!p) return null;
   const ch = p.ch;
   ch.map = p.map; ch.x = Math.round(p.x); ch.y = Math.round(p.y);
-  // a runtime instance is never saved: whoever is saved inside one wakes in town
-  if (!Object.hasOwn(MAP_META, p.map)) { ch.map = START.map; ch.x = START.x; ch.y = START.y; }
+  // a runtime instance is never saved: whoever is saved inside one wakes in town (out of a house: at its door)
+  if (!Object.hasOwn(MAP_META, p.map)) { const back = homeExit(p.map) || START; ch.map = back.map; ch.x = back.x; ch.y = back.y; }
   ch.hp = p.dead ? 0 : Math.round(p.hp); ch.mp = Math.round(p.mp);
   p.save = false;
   return ch;
@@ -258,7 +264,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "sklv", "train", "wh", "cos_buy"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "sklv", "train", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {

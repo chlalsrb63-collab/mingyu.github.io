@@ -29,7 +29,9 @@ function selfPayload(p) {
       Math.max(0, (p.slowed || 0) - now), p.burn ? Math.max(0, p.burn.until - now) : 0, p.poison ? Math.max(0, p.poison.until - now) : 0,
       Math.max(0, ch.scr.atk - now), Math.max(0, ch.scr.def - now), Math.max(0, ch.scr.xp - now),
       // then 질주의 바람 (a wind shrine's push)
-      Math.max(0, (p.wind || 0) - now)],
+      Math.max(0, (p.wind || 0) - now),
+      // then 안락한 휴식 (a bed or a hearth at home, 64-housing.js)
+      Math.max(0, ch.house.cozy - now)],
     // skill levels and what the next level of each costs ({ gold, xp, lvl } or null at the top)
     skl: ch.skl, skc: SKILLS[ch.cls].map((sk, i) => (ch.skl[i] >= SK_MAX ? null : skillCost(sk, ch.skl[i]))),
     wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, sq: sqView(ch),
@@ -39,6 +41,8 @@ function selfPayload(p) {
     wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), st: ch.st,
     daily: dailyView(p), tut: { i: ch.tut.i, n: ch.tut.n }, evt: evtView(p.S, p), recall: p.recall ? Math.max(0, p.recall.at - now) : 0,
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.cls, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
+    // the bag's size (46-bag.js) and the house (64-housing.js homeSelf)
+    bagCap: bagCap(ch), house: homeSelf(p),
   };
 }
 
@@ -149,7 +153,7 @@ export function defs() {
   const affix = {};
   for (const [k, label, prefix] of AFFIX) affix[k] = [label, prefix];
   return {
-    items: ITEMS, mobs, classes, skills: SKILLS, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV, maxLv: MAXLV,
+    items: ITEMS, mobs, classes, skills: SKILLS, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, train: TRAIN, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
     traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], skMax: SK_MAX, mech: { grit: GRIT_MAX, marks: MARK_MAX, focus: FOCUS_MAX, tip: TIP.at, tipMult: TIP.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, skStep: SK_STEP, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,

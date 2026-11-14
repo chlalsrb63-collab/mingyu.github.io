@@ -99,7 +99,7 @@ function dailyProg(S, p, kind, k) {
 }
 /** A piece of gear for the looter's class, of at least rarity `minQ`, if the bag has room. */
 function rewardGear(S, p, ilvl, minQ) {
-  if (p.ch.inv.length >= INV) { toast(p, "가방이 가득 차 장비 보상을 받지 못했습니다."); return; }
+  if (p.ch.inv.length >= bagCap(p.ch)) { toast(p, "가방이 가득 차 장비 보상을 받지 못했습니다."); return; }
   let roll = rnd(S) * 100, type = "weapon";
   for (const [ty, w] of DROP_TYPES) { if (roll < w) { type = ty; break; } roll -= w; }
   const tier = tierFor(ilvl);

@@ -155,7 +155,7 @@ export function validateAction(S, pid, a) {
       if (a.i === "bonus") {
         if (dl.bonus) return bad("이미 보상을 받았습니다");
         if (!dl.claimed.every(Boolean)) return bad("세 과제의 보상을 모두 받아야 합니다");
-        return ch.inv.length + 2 <= INV ? OK : bad("가방이 가득 찼습니다");
+        return ch.inv.length + 2 <= bagCap(ch) ? OK : bad("가방이 가득 찼습니다");
       }
       const t = Number.isInteger(a.i) ? dl.tasks[a.i] : null;
       if (!t) return bad("없는 과제입니다");
@@ -233,7 +233,7 @@ export function validateAction(S, pid, a) {
     case "uneq":
       if (!SLOTS.includes(a.k)) return bad("잘못된 부위");
       if (!ch.eq[a.k]) return bad("장착한 장비가 없습니다");
-      if (ch.inv.length >= INV) return bad("가방이 가득 찼습니다");
+      if (ch.inv.length >= bagCap(ch)) return bad("가방이 가득 찼습니다");
       return OK;
     case "rune": {
       const s = ch.inv[a.s];
@@ -280,7 +280,7 @@ export function validateAction(S, pid, a) {
       const n = isGear(sl.id) ? 1 : a.n | 0;
       if (n < 1 || n > (sl.n || 1)) return bad("잘못된 수량");
       if (a.a === "put") return whRoom(wh, sl.id, n) ? OK : bad("창고가 가득 찼습니다");
-      return (isGear(sl.id) ? ch.inv.length < INV : canAdd(ch, sl.id, n)) ? OK : bad("가방이 가득 찼습니다");
+      return (isGear(sl.id) ? ch.inv.length < bagCap(ch) : canAdd(ch, sl.id, n)) ? OK : bad("가방이 가득 찼습니다");
     }
     case "sellall":
       if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
@@ -367,6 +367,10 @@ export function validateAction(S, pid, a) {
     }
     // ── 차원 균열 (64-dim.js): open, answer the ready check, cancel it, leave, join again
     case "dim_open": case "dim_ready": case "dim_cancel": case "dim_leave": case "dim_join": return dimValidate(S, p, a);
+    // ── the bag's size and housing (46-bag.js, 64-housing.js)
+    case "bag_expand": return bagValidate(S, p, a);
+    case "house_buy": case "house_upgrade": case "house_style": case "house_visit": case "house_leave":
+    case "furn_buy": case "furn_place": case "furn_rot": case "furn_pick": case "h_dep": case "h_wd": case "h_sort": case "h_rest": return homeValidate(S, p, a);
     default:
       return bad("알 수 없는 행동");
   }

@@ -60,6 +60,8 @@ while (todo.length) {
   seen[id] = true; maps[id] = { m, dist };
   for (const door of m.portals) {
     assert.ok(dist[door.y * m.w + door.x] >= 0, `${id}: the door to ${door.to} can be walked to`);
+    // the town's "내 집" door leads into a private house (tests/housing.mjs), not into the map graph
+    if (door.home) continue;
     place(id, door.x * 16 + 8, door.y * 16 + 11);
     S.now = now;
     assert.ok(L.validateAction(S, PID, { t: "mv", x: p.x, y: p.y, d: 0 }).ok);

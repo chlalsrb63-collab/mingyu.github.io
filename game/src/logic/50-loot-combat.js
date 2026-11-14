@@ -10,8 +10,8 @@ function countItem(ch, id) {
   return n;
 }
 function canAdd(ch, id, n) {
-  if (isGear(id)) return ch.inv.length + n <= INV;
-  let room = (INV - ch.inv.length) * STACK;
+  if (isGear(id)) return ch.inv.length + n <= bagCap(ch);
+  let room = (bagCap(ch) - ch.inv.length) * STACK;
   for (const s of ch.inv) if (s.id === id) room += STACK - s.n;
   return room >= n;
 }
@@ -60,7 +60,7 @@ function wanted(ch, dr) {
 /** Whether `p` has room for a drop. */
 function fits(ch, dr) {
   if (dr.it === "gold") return true;
-  return dr.g ? ch.inv.length < INV : canAdd(ch, dr.it, dr.n);
+  return dr.g ? ch.inv.length < bagCap(ch) : canAdd(ch, dr.it, dr.n);
 }
 function bagFull(S, p) {
   if (S.now > p.fullAt) { p.fullAt = S.now + 3000; toast(p, "가방이 가득 찼습니다."); }

@@ -117,7 +117,7 @@ for (const [tr, slot, key] of [["fire", 5, "burn"], ["poison", 6, "poison"], ["f
   assert.ok(p[key], `${tr} leaves its mark`);
   pet.dead = true;                                              // nothing is hitting any more
   const s = self();
-  assert.equal(s.buffs.length, 11);
+  assert.equal(s.buffs.length, 12);
   assert.ok(s.buffs[slot] > 0, `${tr} shows in self.buffs[${slot}]`);
   if (key !== "slowed") {
     const h0 = p.hp;

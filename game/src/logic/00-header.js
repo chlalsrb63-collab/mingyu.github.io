@@ -28,11 +28,12 @@
 export const meta = { game: "테일즈테일즈", minPlayers: 1, maxPlayers: 40 };
 
 const T = 16;
-const INV = 30;
+/** The bag: INV_BASE slots to start, grown with bag_expand to INV_MAX (sheet field bagCap, 46-bag.js). */
+const INV_BASE = 40, INV_MAX = 100;
 const MAXLV = 50;
 const STACK = 99;
 /** The order the bag's tidy button puts things in. */
-const SORT_KIND = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet", "rune", "pot", "food", "fish", "scroll", "buff", "camp", "revive", "pet", "mat"];
+const SORT_KIND = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet", "rune", "pot", "food", "fish", "scroll", "buff", "camp", "revive", "pet", "mat", "furn"];
 const VIEW_X = 280;
 const VIEW_Y = 280;
 const BASE_SPD = 48;

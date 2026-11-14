@@ -12,7 +12,7 @@ const ROOM_STYLES = ["cafe", "hall", "inn", "library"];
 /** Little idle acts an NPC can play out (public/iso_interior.js npcPose). */
 const NPC_POSES = ["sip", "read", "wipe", "doze", "write"];
 /** What an NPC can be: lines only, a side-quest giver, or one of the built-in services. */
-const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim"];
+const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house"];
 const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
@@ -250,9 +250,9 @@ function mapOf(id) {
   MAP_CACHE[id] = m;
   return m;
 }
-/** The map `id` as the world `S` sees it: a runtime instance ("dim:<n>", in S.dims) or mapOf(id). */
+/** The map `id` as the world `S` sees it: a runtime instance ("dim:<n>" in S.dims, a house "house_<eid>" in S.homes) or mapOf(id). */
 function mapOfS(S, id) {
-  return S && S.dims && Object.hasOwn(S.dims, id) ? S.dims[id].map : mapOf(id);
+  return S && S.dims && Object.hasOwn(S.dims, id) ? S.dims[id].map : S && S.homes && Object.hasOwn(S.homes, id) ? S.homes[id].map : mapOf(id);
 }
 /** Every map built (tests, tools, the editor), keyed in MAP_META order, every door's arrival tile resolved. */
 function allMaps() {

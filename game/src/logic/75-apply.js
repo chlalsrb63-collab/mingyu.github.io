@@ -19,6 +19,8 @@ export function applyAction(S, pid, a) {
       for (const pt of m.portals) {
         if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) < 12) { const at = arrivalOf(S, pt); if (at) changeMap(S, p, pt.to, at[0] * T + 8, at[1] * T + 10); break; }
       }
+      // the "내 집" door in town (64-housing.js)
+      homeDoor(S, p);
       break;
     }
     case "atk": if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); break;
@@ -434,19 +436,8 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     case "sort": {
-      // by kind, then the better piece first, then the higher level; stacks of the same thing merge
-      const rank = (e) => { const r = SORT_KIND.indexOf(ITEMS[e.id].type); return r < 0 ? 99 : r; };
-      const order = ch.inv.map((e, i) => [e, i]).sort(([a1, i1], [b1, i2]) => rank(a1) - rank(b1) || (b1.q || 0) - (a1.q || 0) || (ITEMS[b1.id].req || 0) - (ITEMS[a1.id].req || 0) || (a1.id < b1.id ? -1 : a1.id > b1.id ? 1 : 0) || i1 - i2).map(([e]) => e);
-      const out = [];
-      for (const e of order) {
-        const top = out[out.length - 1];
-        if (!isGear(e.id) && top && top.id === e.id && top.n < STACK) {
-          const put = Math.min(e.n || 1, STACK - top.n);
-          top.n += put;
-          if ((e.n || 1) > put) out.push({ id: e.id, n: (e.n || 1) - put });
-        } else out.push(e);
-      }
-      ch.inv = out;
+      // by kind, then the better piece first, then the higher level; stacks of the same thing merge (46-bag.js)
+      ch.inv = sortSlots(ch.inv);
       p.dirty = true;
       break;
     }
@@ -520,6 +511,10 @@ export function applyAction(S, pid, a) {
       break;
     // ── 차원 균열 (64-dim.js)
     case "dim_open": case "dim_ready": case "dim_cancel": case "dim_leave": case "dim_join": dimApply(S, p, a); break;
+    // ── the bag's size and housing (46-bag.js, 64-housing.js)
+    case "bag_expand": bagApply(S, p, a); break;
+    case "house_buy": case "house_upgrade": case "house_style": case "house_visit": case "house_leave":
+    case "furn_buy": case "furn_place": case "furn_rot": case "furn_pick": case "h_dep": case "h_wd": case "h_sort": case "h_rest": homeApply(S, p, a); break;
   }
   if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;

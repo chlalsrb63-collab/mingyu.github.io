@@ -345,3 +345,76 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   { mob: "rotstag", n: 4, title: "썩은 왕관", text: "무너진 예배당엔 왕관을 쓴 사슴이 산다네. 옛 왕의 사냥감이었다지. 썩은 관 사슴왕 4마리를 쓰러뜨려, 왕도의 병을 끊어 주게.", xp: 60000, gold: 9000, items: [["stone", 12], ["ru_lum", 1]] },
 ];
 
+// ───────────────────────────── bag expansion and housing (46-bag.js, 64-housing.js) ─────────────────────────────
+
+/**
+ * The bag grows from INV_BASE to INV_MAX slots BAG_STEP at a time (action bag_expand, anywhere).
+ * Twelve steps, each dearer than the last. The curve is set against what a character has earned
+ * by then (README bot: Lv.7 in ~15 min, Lv.40 in ~11 h; mob gold ≈ 5 G a kill at Lv.1–7, ≈ 20 G at
+ * Lv.20, ≈ 30 G at Lv.40 after goldK, a few hundred kills an hour): the first +5 (500 G) is an
+ * hour's pocket money at Lv.5–8, the middle steps sit next to a tier-3/4 weapon (2,200–7,000 G) and
+ * the 꼬마 박쥐 pet (9,000 G), the last ones beside the 도깨비불 pet (24,000 G) and a maxed late skill
+ * (≈ 150k G). All twelve: 202,500 G — a long-term sink that keeps paying off, never a wall.
+ */
+const BAG_STEP = 5;
+const BAG_COST = [500, 1000, 2000, 3500, 5500, 8000, 12000, 17000, 24000, 32000, 42000, 55000];
+/** The price of the next +5 slots for a bag of `cap` slots (0 at the top). */
+const bagCost = (cap) => (cap >= INV_MAX ? 0 : BAG_COST[Math.max(0, Math.floor((cap - INV_BASE) / BAG_STEP))] || 0);
+
+/**
+ * A house of one's own (64-housing.js): tier 1 is bought at the 하우징 안내인 in town, 2 and 3 are
+ * upgrades (price = that step). w × h is the room with its walls (the back walls on row 0 and
+ * column 0, the cut-down front on the last row and column), `furn` how many pieces it holds
+ * (rugs count), `store` how many of them may be storage furniture. 10,000 G is a few hours of
+ * Lv.15–20 hunting (beside the 꼬마 박쥐 pet); 40,000 and 120,000 G are the big sinks of the
+ * middle and late game (the job change is 5,000 / 20,000 G).
+ */
+const HOUSE_TIER = [
+  null,
+  { name: "아늑한 오두막", w: 10, h: 8, price: 10000, furn: 12, store: 2 },
+  { name: "넓은 목조주택", w: 14, h: 10, price: 40000, furn: 22, store: 3 },
+  { name: "고급 저택", w: 18, h: 13, price: 120000, furn: 34, store: 5 },
+];
+/** Floors (a ground char of the interior theme, public/iso_interior.js) and wallpapers (its STYLE). */
+const HOUSE_FLOOR = [["f", "꿀빛 원목 마루"], ["l", "호두나무 마루"], ["x", "돌 타일"], ["h", "헤링본 마루"]];
+const HOUSE_WALL = [["cottage", "크림 줄무늬 벽지"], ["inn", "들꽃 벽지"], ["mint", "민트 줄무늬 벽지"], ["hall", "초록 문양 벽지"], ["library", "보랏빛 서재 벽지"]];
+/**
+ * Furniture, by item id: `ch` the object char the room is drawn with (public/iso_interior.js;
+ * a rug is a floor char under the walkway, `floor: 1`), `kind` decor · store (adds `cap` slots to
+ * the house storage) · rest (a bed or a hearth: 안락한 휴식), `wall: 1` pieces must back onto a
+ * back wall. Prices: small things like a potion stack, the comforts like a tier-2 weapon, the big
+ * storage like a pet. Bought from the 하우징 안내인 (furn_buy).
+ */
+const FURN = {
+  fn_chair: { name: "나무 의자", ch: "k", kind: "decor", price: 300, desc: "등받이에 홈이 파인 원목 의자." },
+  fn_table: { name: "동그란 탁자", ch: "o", kind: "decor", price: 600, desc: "작은 등과 찻잔이 놓인 동그란 탁자." },
+  fn_plant: { name: "화분", ch: "g", kind: "decor", price: 400, desc: "잎이 무성한 초록 화분." },
+  fn_lamp: { name: "세움 등불", ch: "*", kind: "decor", price: 700, desc: "밤에도 방을 따뜻하게 밝히는 등불." },
+  fn_barrel: { name: "나무통", ch: "w", kind: "decor", price: 300, desc: "쇠테를 두른 튼튼한 나무통." },
+  fn_rug_round: { name: "둥근 카펫", ch: "u", kind: "decor", floor: 1, price: 500, desc: "바닥에 까는 둥근 카펫. 위를 걸을 수 있고, 나란히 깔면 커다란 한 장이 된다." },
+  fn_rug_check: { name: "체크 카펫", ch: "q", kind: "decor", floor: 1, price: 500, desc: "바닥에 까는 체크무늬 카펫. 위를 걸을 수 있고, 나란히 깔면 커다란 한 장이 된다." },
+  fn_shelf: { name: "책장", ch: "b", kind: "decor", wall: 1, price: 1200, desc: "책이 빼곡한 키 큰 책장. 벽에 붙여 둔다." },
+  fn_teddy: { name: "곰인형", ch: "(", kind: "decor", price: 1200, desc: "단추 눈의 커다란 곰인형. 리본이 달렸다." },
+  fn_armchair: { name: "안락의자", ch: "s", kind: "decor", price: 1500, desc: "푹신한 팔걸이 의자." },
+  fn_fishbowl: { name: "금붕어 어항", ch: ")", kind: "decor", price: 1800, desc: "받침대 위의 둥근 어항. 금붕어 두 마리가 산다." },
+  fn_cat: { name: "낮잠 고양이 방석", ch: "%", kind: "decor", price: 2500, desc: "방석 위에서 고양이가 둥글게 말려 잔다. 어디서 왔는지는 아무도 모른다." },
+  fn_trophy: { name: "트로피 장식장", ch: "t", kind: "decor", wall: 1, price: 3000, desc: "모험의 기념품을 늘어놓는 유리 장식장. 벽에 붙여 둔다." },
+  fn_music: { name: "축음기", ch: "?", kind: "decor", price: 3500, desc: "나팔이 달린 축음기. 집에 온기를 더한다." },
+  fn_bed: { name: "포근한 침대", ch: "p", kind: "rest", price: 2500, desc: "누우면 [안락한 휴식]: HP·MP 회복, 잠시 경험치 증가 (30분에 한 번)." },
+  fn_hearth: { name: "벽난로", ch: "#", kind: "rest", wall: 1, price: 5000, desc: "불을 쬐면 [안락한 휴식]: HP·MP 회복, 잠시 경험치 증가 (30분에 한 번). 벽에 붙여 둔다." },
+  fn_chest_wood: { name: "나무 보관함", ch: "[", kind: "store", cap: 20, price: 3000, desc: "집 보관함 +20칸. 집 안의 보관함들은 하나의 창고로 이어진다." },
+  fn_chest_iron: { name: "철제 대형 금고", ch: "{", kind: "store", cap: 40, price: 12000, desc: "집 보관함 +40칸. 집 안의 보관함들은 하나의 창고로 이어진다." },
+  fn_chest_magic: { name: "마법 대형 창고함", ch: "}", kind: "store", cap: 60, price: 40000, desc: "집 보관함 +60칸. 집 안의 보관함들은 하나의 창고로 이어진다." },
+};
+for (const id of Object.keys(FURN)) { const f = FURN[id]; ITEMS[id] = { name: f.name, type: "furn", furn: f.kind, price: f.price, desc: f.desc }; }
+/** What the 하우징 안내인 sells, in the window's order. */
+const FURN_SHOP = Object.keys(FURN);
+/** 안락한 휴식: what a bed or a hearth gives (heal shares, the buff's XP % and time, the wait between two). */
+const HOUSE_REST = { hp: 0.5, mp: 0.5, xp: 8, ms: 15 * 60000, cd: 30 * 60000 };
+/**
+ * The town's residential corner (south of the west gate, by the bank): the house with the "내 집"
+ * door (4 × 3 at `house`, its door the two tiles under its middle), the agent beside it, and
+ * where a player stands when they come out.
+ */
+const HOUSE_TOWN = { map: "town", house: [3, 17], door: [[4, 20], [5, 20]], out: [4, 21], agent: [7, 19] };
+

@@ -80,6 +80,10 @@ function buildTown() {
   m.big.push({ t: "obelisk", x: DIM_TOWN.ob[0], y: DIM_TOWN.ob[1] });
   m.npcs.push({ id: "dimkeeper", name: "균열 지기 오르카", role: "dim", x: DIM_TOWN.keeper[0], y: DIM_TOWN.keeper[1], look: [3, 3, 0, "#5a3a8a"],
     say: "오벨리스크 너머로 차원의 틈이 열려 있다네. 파티장이 균열을 열면 함께 들어갈 수 있지. 15분 안에 균열의 주인을 쓰러뜨리게!" });
+  // the residential corner (64-housing.js): a house whose door is everyone's "내 집", and the agent beside it
+  house(m, HOUSE_TOWN.house[0], HOUSE_TOWN.house[1], 1);
+  m.npcs.push({ id: "housing", name: "하우징 안내인 포근", role: "house", x: HOUSE_TOWN.agent[0], y: HOUSE_TOWN.agent[1], look: [2, 1, 0, "#c8783a"],
+    say: "내 집 마련, 어렵지 않아요! 집을 사면 저 '내 집' 문이 언제나 당신의 집으로 이어진답니다. 가구도 여기서 팔아요." });
   return m;
 }
 
@@ -461,7 +465,8 @@ function canFly(m, x, y) {
 
 const doorName = (m) => (m.band ? `${m.name} Lv.${m.band[0]}–${m.band[1]}` : m.name);
 function mapPayload(m) {
-  return {
+  // (a house's turns and floor, the town's "내 집" door: 64-housing.js homeWire)
+  return homeWire(m, {
     id: m.id, name: m.name, w: m.w, h: m.h, g: m.g, o: m.o, big: m.big, safe: m.safe, bgm: m.bgm,
     theme: m.theme || null, band: m.band || null, marks: m.marks || [],
     // a door names where it leads and how strong you should be to go there
@@ -473,6 +478,6 @@ function mapPayload(m) {
     camps: campsOf(m),
     // a zoned ground's zones by 4 × 4 block for the minimap (0 safe, 1 normal, 2 elite, 3 hidden, - none)
     zq: m.zq || null,
-  };
+  });
 }
 
