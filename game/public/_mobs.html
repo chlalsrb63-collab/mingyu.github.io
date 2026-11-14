@@ -5,12 +5,13 @@ import * as MA from "./mobart.js";
 import * as SP from "./sprites.js";
 const q = new URLSearchParams(location.search);
 const mode = q.get("m") || "frames", z = +(q.get("z") || 3);
-const ZONE = { meadow: "#6aa864", forest: "#3f6a48", crypt: "#4a4658", city: "#565a68", sewer: "#3c4a46", cave: "#39406a", abyss: "#2a1c2c" };
+const ZONE = { meadow: "#6aa864", forest: "#3f6a48", crypt: "#4a4658", city: "#565a68", sewer: "#3c4a46", cave: "#39406a", abyss: "#2a1c2c", maple: "#6a5a2c" };
 const ZK = {
   meadow: ["twinhare", "gutfrog", "eyecrow", "lambmaw"], forest: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"],
   crypt: ["ratking", "bonehound", "toadbrood", "batcluster"], city: ["pigeonmass", "doghead", "squidrat", "catsplit", "fishwalker"],
   sewer: ["leechmaw", "gatorhalf", "crabskull", "eelknot"], cave: ["spiderhand", "moleworm", "bearmaw", "owlstare", "boss"],
   abyss: ["twingoat", "horsehalf", "lionhand", "serpentwing", "sowseer", "abyssboss", "chest"],
+  maple: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose", "rotstag"],
 };
 const zoneOf = (k) => Object.keys(ZK).find((z) => ZK[z].includes(k)) || "city";
 let kinds = q.get("k") ? q.get("k").split(",") : Object.values(ZK).flat();

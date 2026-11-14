@@ -24,6 +24,7 @@ import { hex } from "./mobart_kit.js";
 import { BEASTS_A } from "./mobart_a.js";
 import { BEASTS_B } from "./mobart_b.js";
 import { BEASTS_C } from "./mobart_c.js";
+import { BEASTS_D } from "./mobart_d.js";
 
 const INK = [0x24, 0x1a, 0x2a];
 const ELEV = Math.PI / 6, CE = Math.cos(ELEV), SE = Math.sin(ELEV);
@@ -348,7 +349,7 @@ function raster(model, N, foot, dir, k, tint, p, rollK = 1) {
 
 // ───────────────────────────── the cast ─────────────────────────────
 
-const BEASTS = { ...BEASTS_A, ...BEASTS_B, ...BEASTS_C };
+const BEASTS = { ...BEASTS_A, ...BEASTS_B, ...BEASTS_C, ...BEASTS_D };
 /** Names from earlier rosters, so a stale server still draws something sensible. */
 const ALIAS = {
   acorn: "twinhare", potcrab: "gutfrog", puff: "eyecrow", capfrog: "gutfrog", stump: "ribdeer", lantern: "mothface", yarn: "spiderhand",
