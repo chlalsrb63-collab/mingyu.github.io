@@ -1790,23 +1790,28 @@ function drawSkirt() {
   g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(Bx - 1, By, 2, d);
 }
 
-// ── the aim arrow: a small see-through arrowhead on the ground in front of your own feet, with
-// two dots trailing back to you, pointing where your blows and skills will go (G.me.aimI, the
-// server's aim steps). Pale body inside a dark outline, so it reads on grass, stone, crypt and abyss.
-const AIM_STEPS = 48, aimSprites = new Map(), aimArrow = { a: null };
-const AIM_FILL = "#fff6da", AIM_INK = "#1a1320";
-/** A solid arrowhead pointing along screen angle step `k`, worked out pixel by pixel so it stays crisp at any angle. */
+// ── the aim mark: a tiny pointed crescent lying on the ground in front of your own feet, its
+// bulge toward where your blows and skills will go (G.me.aimI, the server's aim steps). A pale
+// sliver inside a dark outline, so it reads on grass, stone, crypt and abyss alike.
+const AIM_STEPS = 64, aimSprites = new Map(), aimArrow = { a: null };
+// the sliver a touch see-through inside a firmer outline: drawn at .82, the fill shows at about 70%
+const AIM_FILL = "rgba(255,246,218,.86)", AIM_INK = "#1a1320", AIM_C = 9;
+/**
+ * The crescent for screen angle step `k`, worked out pixel by pixel (no smoothed curves): an arc
+ * of a small circle whose outer edge bulges toward the aim, thickest in the middle and thinning
+ * to a point at each horn, squashed a little so it lies on the floor. The apex is at (AIM_C, AIM_C).
+ */
 function aimSprite(k) {
   let c = aimSprites.get(k);
   if (c) return c;
-  const R = 6, N = R * 2 + 1, ang = (k / AIM_STEPS) * 2 * Math.PI, ax = Math.cos(ang), ay = Math.sin(ang);
-  const tip = 3.6, back = -2.9, H = 3.9;
-  const inside = (x, y) => {
-    const u = x * ax + y * ay, v = Math.abs(-x * ay + y * ax);
-    return v <= H && u >= back && u <= tip - (v * (tip - back)) / H;
-  };
+  const ang = (k / AIM_STEPS) * 2 * Math.PI, ax = Math.cos(ang), ay = Math.sin(ang);
+  const R = 4.5, SPAN = (80 * Math.PI) / 180, TH = 2.2, SQ = 0.9, N = AIM_C * 2 + 1;
   const fill = [];
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) fill[j * N + i] = inside(i - R, j - R);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const cx = i - AIM_C + ax * R, cy = (j - AIM_C) / SQ + ay * R, rho = Math.hypot(cx, cy) || 1;
+    const d = Math.acos(clamp((cx * ax + cy * ay) / rho, -1, 1));
+    fill[j * N + i] = d <= SPAN && rho <= R + 0.5 && rho >= R + 0.5 - TH * (1 - (d / SPAN) ** 2);
+  }
   const on = (i, j) => i >= 0 && j >= 0 && i < N && j < N && fill[j * N + i];
   let x;
   [c, x] = sheet(N, N);
@@ -1817,18 +1822,9 @@ function aimSprite(k) {
   aimSprites.set(k, c);
   return c;
 }
-/** A 2×2 dot in its own outline, for the trail. */
-let aimDotCv = null;
-function aimDot() {
-  if (aimDotCv) return aimDotCv;
-  const [c, x] = sheet(4, 4);
-  x.fillStyle = AIM_INK; x.fillRect(1, 0, 2, 4); x.fillRect(0, 1, 4, 2);
-  x.fillStyle = AIM_FILL; x.fillRect(1, 1, 2, 2);
-  return (aimDotCv = c);
-}
-/** Draw the arrow: under the bodies when it points down the screen, over them when it points up,
- *  where it would otherwise hide behind your back (which is all that shows that way, never a face).
- *  It slides smoothly round the ring between steps and brightens for a moment with each blow or spell. */
+/** Draw the mark: under the bodies when it points down the screen, over them when it points up,
+ *  lifted clear of the head (your name lifts to make room: G.aimUpK) rather than lying on your back.
+ *  It slides smoothly round between steps and brightens for a moment with each blow or spell. */
 function drawAimArrow(t, dt, top) {
   const me = G.me;
   if (G.aimArrow === false || me.aimI === undefined || me.dead || me.sit || !G.defs) return;
@@ -1845,21 +1841,13 @@ function drawAimArrow(t, dt, top) {
   if (!top) G.aimUpK = (G.aimUpK || 0) + ((up ? 1 : 0) - (G.aimUpK || 0)) * Math.min(1, dt * 10);
   if (up !== top) return;
   const [fx, fy] = iso(me.x, me.y - 1);
-  // out along the ground: wider across the screen than up and down, as a ring on the floor looks;
-  // straight up it clears the head instead (your name lifts to make room: G.aimUpK)
-  const ux = Math.cos(s) * 19, uy = Math.sin(s) * (13 + 12 * Math.max(0, -Math.sin(s)) ** 3);
+  // out along the ground: wider across the screen than up and down, as a ring on the floor looks
+  const ux = Math.cos(s) * 18, uy = Math.sin(s) * (12 + 12 * Math.max(0, -Math.sin(s)) ** 3);
   const k = ((Math.round((s / (2 * Math.PI)) * AIM_STEPS) % AIM_STEPS) + AIM_STEPS) % AIM_STEPS;
   const hit = t - Math.max(G.aimFlash || -1e9, G.lastSkill || -1e9);
   const flash = hit >= 0 && hit < 300 ? 1 - hit / 300 : 0;
-  const alpha = 0.75 + 0.25 * flash;
-  g.globalAlpha = alpha * 0.85;
-  for (const f of [0.42, 0.66]) {
-    const dx = ux * f, dy = uy * f;
-    if (top && Math.abs(dx) < 9 && dy > -22) continue;   // a dot would only sit on your back
-    g.drawImage(aimDot(), Math.round(fx + dx) - 2, Math.round(fy + dy) - 2);
-  }
-  g.globalAlpha = alpha;
-  g.drawImage(aimSprite(k), Math.round(fx + ux) - 6, Math.round(fy + uy) - 6);
+  g.globalAlpha = 0.82 + 0.18 * flash;
+  g.drawImage(aimSprite(k), Math.round(fx + ux) - AIM_C, Math.round(fy + uy) - AIM_C);
   g.globalAlpha = 1;
 }
 
