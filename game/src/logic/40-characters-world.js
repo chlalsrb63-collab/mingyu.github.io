@@ -48,7 +48,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 13, name, job: "adventurer",
+    v: 14, name, job: "adventurer",
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -71,6 +71,8 @@ export function newChar(name, look, wk) {
     ...lifeFresh(),
     // charms (v13, 66-charms.js): the board, 주아나's quests, what waits with her
     charms: charmsEmpty(),
+    // social and the weekly book (v14, 63-social-weekly.js): blk (blocked names), pity (enhancement gauge), wk
+    ...socialFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
     // the town layout it was saved under (34-maps-world.js TOWN_REV)
     tw: TOWN_REV,
@@ -184,7 +186,9 @@ function migrate(ch) {
   lifeSheetClean(ch);
   // charms (v13): the board and its charms made whole; what cannot stay where it was waits in the recovery queue (66-charms.js)
   charmsClean(ch);
-  ch.v = Math.max(ch.v | 0, 13);
+  // social, the weekly book, enhancement pity (v14): block list, gauge, the week's baselines, the day's rest bonus (63-social-weekly.js)
+  socialSheetClean(ch, dl);
+  ch.v = Math.max(ch.v | 0, 14);
   return ch;
 }
 
@@ -314,7 +318,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {

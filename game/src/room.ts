@@ -41,6 +41,7 @@ import * as logic from "./logic.js";
 import type { Char, World } from "./logic.js";
 import { parseClientMessage } from "./protocol";
 import { Accounts, K, pidFor, serverOf, rankRow, fromOldRow } from "./accounts.js";
+import { Social } from "./social.js";
 
 const TICK_MS = 100;
 const SAVE_MS = 15_000;
@@ -53,6 +54,13 @@ const RANK_SIZE = 20;
 /** The Worker only routes the four channel names to rooms, so players can never open this one. */
 export const VAULT_NAME = "vault:characters";
 export const VAULT_PATH = "/__vault/";
+/**
+ * Channel-to-channel deliveries (a whisper, a friend notice): `/__room/push`. Like the vault path it
+ * cannot be reached from a URL — the worker only ever forwards `/ws/<channel>` to a room.
+ */
+export const ROOM_PATH = "/__room/";
+/** One friend-list request per connection at most this often. */
+const FRIEND_GAP_MS = 400;
 
 const PING = "__ping";
 const PONG = "__pong";
@@ -79,6 +87,19 @@ interface RankRow {
   v?: number;
 }
 
+/** What one channel hands another: a whisper for a name, or a note and a fresh friend list for a pid. */
+type Push = { kind: "w"; to: string; from: string; m: string } | { kind: "fr"; pid: string; note: string };
+interface FriendReply {
+  ok: boolean;
+  error?: string;
+  msg?: string;
+  peer?: { pid: string; note: string; room: string };
+  list?: { f: unknown[]; i: string[]; o: string[] };
+  pid?: string;
+  name?: string;
+  room?: string;
+}
+
 type VaultReply =
   | { ok: true; char?: Char | null; list?: RankRow[]; id?: string }
   | { ok: false; error: string; expired?: boolean };
@@ -97,6 +118,10 @@ export class Room extends DurableObject<Env> {
   private nextTick = 0;
   /** The account service; only ever created in the vault instance. */
   private accounts: Accounts | null = null;
+  /** Friends and presence; only ever created in the vault instance. */
+  private social: Social | null = null;
+  /** connId → when its last friend-list request was taken. */
+  private friendAt = new Map<string, number>();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -112,6 +137,12 @@ export class Room extends DurableObject<Env> {
       // instance; a channel instance never answers them.
       if (!this.ctx.id.equals(this.env.ROOMS.idFromName(VAULT_NAME))) return new Response("not found", { status: 404 });
       return this.vault(url.pathname.slice(VAULT_PATH.length), request);
+    }
+
+    if (url.pathname.startsWith(ROOM_PATH)) {
+      // Only another channel builds these, and never for the vault instance.
+      if (this.ctx.id.equals(this.env.ROOMS.idFromName(VAULT_NAME))) return new Response("not found", { status: 404 });
+      return Response.json({ ok: await this.pushHere((await request.json()) as Push) });
     }
 
     if (request.headers.get("Upgrade") !== "websocket") {
@@ -269,6 +300,11 @@ export class Room extends DurableObject<Env> {
       return this.send(ws, { type: "rank", list: res.ok ? (res.list ?? []) : [] });
     }
 
+    if (kind === "fr" && isRecord(action)) {
+      if (!att.live) return;
+      return this.friends(ws, att, action);
+    }
+
     if (!att.live) {
       // The only thing a character-less connection may do is create one.
       if (kind !== "create" || !isRecord(action)) return this.send(ws, { type: "need_char", starters: logic.starters() });
@@ -311,7 +347,104 @@ export class Room extends DurableObject<Env> {
       if (kind !== "mv" && kind !== "atk") this.send(ws, { type: "error", error: verdict.error ?? "invalid action" });
       return;
     }
+    // A whisper for someone who is not in this channel goes through the vault to the channel they are in.
+    if (kind === "w" && isRecord(action) && !logic.pidOfName(world, action.to)) return this.whisperAway(world, pid, String(action.to), String(action.m));
     logic.applyAction(world, pid, action);
+    // A block also ends the friendship (and any request either way), which lives in the vault.
+    if (kind === "blk" && isRecord(action) && action.a === "add") {
+      this.ctx.waitUntil(this.friendCall({ a: "drop", pid, me: logic.nameOf(world, pid), name: String(action.name) }).then((res) => this.afterFriend(ws, res, false)));
+    }
+  }
+
+  // ── 친구 · 귓속말 (docs/design/social-weekly.md) ─────────────────────────
+
+  private async friendCall(body: Record<string, unknown>): Promise<FriendReply> {
+    return (await this.callVault("fr", { ...body, room: this.roomName })) as unknown as FriendReply;
+  }
+
+  /** `{t:"fr", a:"list"|"add"|"ok"|"no"|"del", name?}` — the list lives in the vault; this only relays. */
+  private async friends(ws: WebSocket, att: Attachment, action: Record<string, unknown>): Promise<void> {
+    const pid = att.pid;
+    if (!pid) return;
+    const a = String(action.a);
+    const now = Date.now();
+    if (now - (this.friendAt.get(att.connId) ?? 0) < FRIEND_GAP_MS) return this.send(ws, { type: "error", error: "잠시 후 다시 시도해 주세요" });
+    this.friendAt.set(att.connId, now);
+    if (this.friendAt.size > 200) for (const [k, t] of this.friendAt) if (now - t > 60_000) this.friendAt.delete(k);
+    if (!["list", "add", "ok", "no", "del"].includes(a)) return this.send(ws, { type: "error", error: "잘못된 요청입니다" });
+    const world = await this.ready();
+    const me = logic.nameOf(world, pid);
+    if (!me) return;
+    const name = typeof action.name === "string" ? action.name.trim() : "";
+    if (a !== "list") {
+      if (!logic.validName(name)) return this.send(ws, { type: "error", error: "이름을 다시 확인해 주세요" });
+      if (a === "add" && logic.blockedBy(world, pid, name)) return this.send(ws, { type: "error", error: "차단한 상대입니다. 차단을 풀고 보내 주세요" });
+    }
+    await this.afterFriend(ws, await this.friendCall({ a, pid, me, name }), true);
+  }
+
+  /** Show the asker what happened and tell the other side, wherever they are. */
+  private async afterFriend(ws: WebSocket, res: FriendReply, loud: boolean): Promise<void> {
+    if (!res.ok) {
+      if (loud) this.send(ws, { type: "error", error: res.error ?? "잘못된 요청입니다" });
+      return;
+    }
+    if (res.list) this.send(ws, { type: "fr", f: res.list.f, i: res.list.i, o: res.list.o, msg: loud ? (res.msg ?? "") : "" });
+    const peer = res.peer;
+    if (!peer || !peer.room) return;
+    const push: Push = { kind: "fr", pid: peer.pid, note: peer.note };
+    if (peer.room === this.roomName) await this.pushHere(push);
+    else await this.pushAway(peer.room, push);
+  }
+
+  /** A whisper to a name that is not in this channel: ask the vault where they are, hand it to that channel. */
+  private async whisperAway(world: World, pid: string, to: string, m: string): Promise<void> {
+    const offline = { t: "w", to, m };
+    const res = (await this.callVault("where", { room: this.roomName, name: to })) as unknown as FriendReply;
+    let sent = false;
+    if (res.ok && res.room && res.room !== this.roomName && res.name) {
+      sent = await this.pushAway(res.room, { kind: "w", to: res.name, from: logic.nameOf(world, pid), m });
+    }
+    // The awaits let other frames in: the world may be a new one, the player gone, the rate limit spent.
+    const now = this.world;
+    if (!now) return;
+    now.now = Date.now();
+    if (!logic.validateAction(now, pid, offline).ok) return;
+    if (sent && res.name) logic.whisperOut(now, pid, res.name, m);
+    else logic.applyAction(now, pid, offline);
+  }
+
+  private async pushAway(room: string, push: Push): Promise<boolean> {
+    if (!serverOf(room)) return false;
+    try {
+      const stub = this.env.ROOMS.get(this.env.ROOMS.idFromName(room));
+      const res = await stub.fetch(`https://room${ROOM_PATH}push`, { method: "POST", body: JSON.stringify(push) });
+      return ((await res.json()) as { ok?: boolean }).ok === true;
+    } catch (err) {
+      console.error("room push failed:", err instanceof Error ? err.message : String(err));
+      return false;
+    }
+  }
+
+  /** Deliver in this channel. False when the reader is not here (an empty channel is never woken for it). */
+  private async pushHere(push: Push): Promise<boolean> {
+    const world = this.world;
+    if (!world || !isRecord(push)) return false;
+    world.now = Date.now();
+    if (push.kind === "w") {
+      if (typeof push.to !== "string" || typeof push.from !== "string" || typeof push.m !== "string") return false;
+      return logic.whisperIn(world, push.to, push.from, push.m);
+    }
+    if (push.kind !== "fr" || typeof push.pid !== "string") return false;
+    for (const ws of this.ctx.getWebSockets()) {
+      const att = this.att(ws);
+      if (!att?.live || att.pid !== push.pid) continue;
+      if (push.note) logic.noteTo(world, push.pid, String(push.note));
+      const res = await this.friendCall({ a: "list", pid: push.pid });
+      if (res.ok && res.list) this.send(ws, { type: "fr", f: res.list.f, i: res.list.i, o: res.list.o, msg: "" });
+      return true;
+    }
+    return false;
   }
 
   override async webSocketClose(ws: WebSocket): Promise<void> {
@@ -430,6 +563,7 @@ export class Room extends DurableObject<Env> {
     const room = String(body.room ?? "");
     const server = serverOf(room) ?? "s1";
     const accounts = (this.accounts ??= new Accounts(store, crypto));
+    const social = (this.social ??= new Social(store));
     const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
 
     if (op.startsWith("api/")) {
@@ -465,6 +599,7 @@ export class Room extends DurableObject<Env> {
       }
       rec.sess = { room, t: now };
       await store.put(key, rec);
+      social.seen(String(body.pid), room, rec.char.map, now);
       return reply({ ok: true, char: rec.char });
     }
 
@@ -478,6 +613,7 @@ export class Room extends DurableObject<Env> {
       if (mine) return reply({ ok: false, error: "이미 캐릭터가 있습니다. 새로고침해 주세요." });
       if (taken) return reply({ ok: false, error: "이미 사용 중인 이름입니다" });
       await store.put({ [nameKey]: pid, [charKey]: { char, sess: { room, t: now } }, ...accounts.summaryPuts([{ pid, char }]) });
+      social.seen(pid, room, char.map, now);
       return reply({ ok: true });
     }
 
@@ -498,6 +634,9 @@ export class Room extends DurableObject<Env> {
         if (!rec || (rec.sess && rec.sess.room !== room)) continue;
         const next: VaultRecord = { char };
         if (!release.has(pid)) next.sess = { room, t: now };
+        // presence for the friend list and for whispers across channels (social.js)
+        if (release.has(pid)) social.gone(pid);
+        else social.seen(pid, room, char.map, now);
         puts[K.char(pid)] = next;
         kept.push({ pid, char });
         rank.set(char.name, rankRow(char));
@@ -511,6 +650,13 @@ export class Room extends DurableObject<Env> {
     if (op === "rank") {
       return reply({ ok: true, list: ((await store.get<RankRow[]>(K.rank(server))) ?? []).map(fromOldRow) });
     }
+
+    // friends: one entry for list / add / ok / no / del / drop; the reply carries the fresh list
+    if (op === "fr") {
+      return Response.json(await social.op({ a: String(body.a), pid: String(body.pid), me: String(body.me ?? ""), name: str(body.name) }, now));
+    }
+    // which channel a name is in right now (a whisper on its way to another channel)
+    if (op === "where") return Response.json(await social.where(server, String(body.name), now, LOCK_MS));
 
     if (op === "guild") {
       // Guild names are unique per server, like character names.

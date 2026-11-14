@@ -52,6 +52,8 @@ function selfPayload(p) {
     charms: charmSelf(p),
     // life skills (58-life.js): [lv, xp, need] per skill in LIFE order; L2: the 알바 board, trust, the 재료 주머니
     life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch,
+    // the block list, the enhancement pity gauge, the weekly book (63-social-weekly.js)
+    ...socialSelf(p),
   };
 }
 
@@ -91,7 +93,8 @@ export function viewFor(S, pid) {
   for (const f of rt.fires) if (near(f)) out.F.push([f.id, f.x, f.y]);
   if (rt.ev.length) out.ev = rt.ev;
   // guild chat reaches only the guild
-  if (S.chat.length) { const chat = S.chat.filter((c) => (!c.g || c.g === p.ch.guild) && (!c.pt || c.pt === p.party)); if (chat.length) out.chat = chat; }
+  // (and a whisper only its reader, and nobody a name they blocked: 63-social-weekly.js chatFor)
+  if (S.chat.length) { const chat = chatFor(S, p, pid); if (chat.length) out.chat = chat; }
   if (p.sendMap) out.map = mapPayload(mapOfS(S, p.map));
   // the sky: [weather (-1 under a roof), server clock in seconds], when the weather turns, on
   // arrival, and once a minute to keep everyone's hour of the day in step
@@ -192,7 +195,7 @@ export function defs() {
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
     collection: Object.fromEntries(REGIONS.map((id) => [id, { mobs: COL_MOBS[id], bonus: REGION_BONUS[id] }])), colNeed: MASTERY[0],
     event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },
-    daily: { resetKST: 6, text: DAILY_TEXT }, tutorial: TUT.map(({ id, title, hint, need }) => ({ id, title, hint, need: need || 1 })), recallMs: RECALL_MS,
+    daily: { resetKST: 6, text: DAILY_TEXT }, social: socialDefs(), tutorial: TUT.map(({ id, title, hint, need }) => ({ id, title, hint, need: need || 1 })), recallMs: RECALL_MS,
     // side quests from the world map editor, with who gives them and where they stand
     side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAP_META[NPC_MAP[q.giver]].name,
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),

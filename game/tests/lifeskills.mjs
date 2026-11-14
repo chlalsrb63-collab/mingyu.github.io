@@ -512,7 +512,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   p.stc = null;
   let wins = 0, drops = 0;
   for (let k = 0; k < 2000; k++) {
-    w.enh = 7;
+    w.enh = 7; ch.pity.fill(0); // (the raw rate: the pity gauge of 63-social-weekly.js is tested in social.mjs)
     give("stone", 3); give("stone_b", 1);
     assert.ok(act({ t: "enh", k: "weapon", b: 1 }).ok);
     if (w.enh === 8) wins++;
