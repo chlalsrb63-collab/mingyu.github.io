@@ -31,6 +31,8 @@ const T = 16;
 const INV = 30;
 const MAXLV = 50;
 const STACK = 99;
+/** The order the bag's tidy button puts things in. */
+const SORT_KIND = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet", "rune", "pot", "food", "fish", "scroll", "buff", "camp", "revive", "pet", "mat"];
 const VIEW_X = 280;
 const VIEW_Y = 280;
 const BASE_SPD = 48;
@@ -2668,7 +2670,7 @@ export function newChar(name, cls, look) {
   const c = CLASSES[cls] ? cls : "warrior";
   const lk = Array.isArray(look) ? look : [];
   return {
-    v: 5, name, cls: c,
+    v: 6, name, cls: c,
     // ear, eyes, nose, colour, blush, markings, tunic
     look: LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)),
     lvl: 1, xp: 0, gold: 50,
@@ -2679,6 +2681,7 @@ export function newChar(name, cls, look) {
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
     wp: ["town"], seen: ["town"], ach: [], title: "", st: {}, daily: null, tut: { i: 0, n: 0 },
     skl: [1, 1, 1, 1, 1, 1], wh: { items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
+    qs: QS_EMPTY(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
   };
 }
@@ -2753,8 +2756,23 @@ function migrate(ch) {
   ch.scr = { atk: num(scr.atk) ? scr.atk : 0, def: num(scr.def) ? scr.def : 0, xp: num(scr.xp) ? scr.xp : 0 };
   const opt = isObj(ch.opt) ? ch.opt : {};
   ch.opt = { filter: clamp(opt.filter | 0, 0, 2), ahp: clamp(opt.ahp | 0, 0, 90), amp: clamp(opt.amp | 0, 0, 90) };
-  ch.v = 5;
+  // the quick slots 1–9: sheets from before them start with all nine empty
+  ch.qs = QS_EMPTY().map((_, i) => (Array.isArray(ch.qs) && ch.qs[i] && qsOk(ch, ch.qs[i]) ? ch.qs[i].slice() : null));
+  ch.v = Math.max(ch.v | 0, 6);
   return ch;
+}
+
+/** The quick slots under keys 1–9: each is empty, a skill (["s", index]) or a usable item (["i", id]). */
+const QS_N = 9;
+const QS_EMPTY = () => Array(QS_N).fill(null);
+const QS_USE = ["pot", "food", "camp", "scroll", "buff", "pet"];
+/** Is `v` something a quick slot may hold for this character? */
+function qsOk(ch, v) {
+  if (v === null) return true;
+  if (!Array.isArray(v) || v.length !== 2) return false;
+  if (v[0] === "s") return Number.isInteger(v[1]) && v[1] >= 0 && v[1] < SKILLS[ch.cls].length;
+  if (v[0] === "i") return typeof v[1] === "string" && Object.hasOwn(ITEMS, v[1]) && QS_USE.includes(ITEMS[v[1]].type);
+  return false;
 }
 
 /** Counters kept for achievements. */
@@ -4455,7 +4473,7 @@ const TUT = [
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
   { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
   { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
-  { id: "skill", title: "스킬 써 보기", hint: "레벨 3이 되면 1번 키로 첫 스킬을 쓸 수 있습니다.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
+  { id: "skill", title: "스킬 써 보기", hint: "레벨 3이 되면 K로 스킬 창을 열어 첫 스킬을 아래 단축칸(1~9)에 끌어다 놓고, 그 숫자 키로 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
 ];
 function tutStep(S, p, id) {
   const ch = p.ch, step = TUT[ch.tut.i];
@@ -4566,6 +4584,19 @@ export function validateAction(S, pid, a) {
       if (typeof a.m !== "string" || !a.m.trim()) return bad("빈 메시지");
       if (now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
       return OK;
+    case "pchat":
+      if (!S.parties[p.party]) return bad("파티에 속해 있지 않습니다");
+      if (typeof a.m !== "string" || !a.m.trim()) return bad("빈 메시지");
+      if (now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
+      return OK;
+    case "qs": {
+      // set slot i to v, or swap slots i and j
+      const slot = (i) => Number.isInteger(i) && i >= 0 && i < QS_N;
+      if (!slot(a.i)) return bad("없는 단축칸");
+      if (a.j !== undefined) return slot(a.j) ? OK : bad("없는 단축칸");
+      return qsOk(ch, a.v === undefined ? null : a.v) ? OK : bad("단축칸에 놓을 수 없습니다");
+    }
+    case "sort": return ch.inv.length > 1 ? OK : bad("정리할 것이 없습니다");
     case "emo":
       if (!Number.isInteger(a.i) || a.i < 0 || a.i >= EMOTES) return bad("없는 감정표현");
       return now - p.emoAt < 600 ? bad("잠시 후에") : OK;
@@ -5200,6 +5231,32 @@ export function applyAction(S, pid, a) {
       p.chatAt = now;
       S.chat.push({ n: ch.name, m: a.m.trim().slice(0, 80), g: ch.guild });
       break;
+    case "pchat":
+      p.chatAt = now;
+      S.chat.push({ n: ch.name, m: a.m.trim().slice(0, 80), pt: p.party });
+      break;
+    case "qs":
+      if (a.j !== undefined) [ch.qs[a.i], ch.qs[a.j]] = [ch.qs[a.j], ch.qs[a.i]];
+      else ch.qs[a.i] = a.v ? a.v.slice() : null;
+      p.dirty = true;
+      break;
+    case "sort": {
+      // by kind, then the better piece first, then the higher level; stacks of the same thing merge
+      const rank = (e) => { const r = SORT_KIND.indexOf(ITEMS[e.id].type); return r < 0 ? 99 : r; };
+      const order = ch.inv.map((e, i) => [e, i]).sort(([a1, i1], [b1, i2]) => rank(a1) - rank(b1) || (b1.q || 0) - (a1.q || 0) || (ITEMS[b1.id].req || 0) - (ITEMS[a1.id].req || 0) || (a1.id < b1.id ? -1 : a1.id > b1.id ? 1 : 0) || i1 - i2).map(([e]) => e);
+      const out = [];
+      for (const e of order) {
+        const top = out[out.length - 1];
+        if (!isGear(e.id) && top && top.id === e.id && top.n < STACK) {
+          const put = Math.min(e.n || 1, STACK - top.n);
+          top.n += put;
+          if ((e.n || 1) > put) out.push({ id: e.id, n: (e.n || 1) - put });
+        } else out.push(e);
+      }
+      ch.inv = out;
+      p.dirty = true;
+      break;
+    }
     case "emo":
       p.emoAt = now;
       S.maps[p.map].ev.push(["o", p.eid, a.i]);
@@ -5668,7 +5725,7 @@ function selfPayload(p) {
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
     // the class gauge, and what each skill costs this moment
     cr: crView(p, now), skm: SKILLS[ch.cls].map((_, i) => skMp(p, i)),
-    inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, tr: ch.tr, trc, enh,
+    inv: ch.inv, eq: ch.eq, q: ch.q, kills: ch.kills || 0, tr: ch.tr, trc, enh, qs: ch.qs,
     bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     cds: p.cds.map((t) => Math.max(0, t - now)),
     // attack up, speed up, warmth, food — then what monsters leave on you: slowed, burning, poisoned —
@@ -5717,7 +5774,7 @@ export function viewFor(S, pid) {
   for (const f of rt.fires) if (near(f)) out.F.push([f.id, f.x, f.y]);
   if (rt.ev.length) out.ev = rt.ev;
   // guild chat reaches only the guild
-  if (S.chat.length) { const chat = S.chat.filter((c) => !c.g || c.g === p.ch.guild); if (chat.length) out.chat = chat; }
+  if (S.chat.length) { const chat = S.chat.filter((c) => (!c.g || c.g === p.ch.guild) && (!c.pt || c.pt === p.party)); if (chat.length) out.chat = chat; }
   if (p.sendMap) out.map = mapPayload(MAPS[p.map]);
   if (p.sendMap || rt.who) {
     out.who = [];

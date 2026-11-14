@@ -28,7 +28,7 @@ jobs:
           node-version: 22
       - name: Rule tests
         run: |
-          for t in sim party loot life world hard content growth skills maps; do node tests/$t.mjs; done
+          for t in sim party loot life world hard content growth skills maps hotbar; do node tests/$t.mjs; done
       - name: Deploy
         if: env.HAS_TOKEN == 'true'
         run: npx --yes wrangler@4 deploy -c wrangler.deploy.jsonc
