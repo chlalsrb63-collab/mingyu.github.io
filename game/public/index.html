@@ -78,7 +78,9 @@
         <section class="window docked" id="w-inv">
           <header><span class="t plate">가방</span><span id="inv-gold" class="gold"></span><span id="inv-count"></span><button id="inv-sort" class="btn small" title="보기 정렬"></button><button class="x" title="닫기 (Esc)"></button></header>
           <div class="body">
+            <div id="inv-tabs" class="tabs" hidden></div>
             <div id="inv-grid" class="grid"></div>
+            <div id="inv-charms" hidden></div>
             <div id="inv-grow"></div>
             <div id="inv-pouch" class="pouch"></div>
             <div id="inv-detail" class="detail"></div>
@@ -96,6 +98,7 @@
           <button data-win="achieve" title="업적 · 칭호 (Y)"><span>업적</span><kbd>Y</kbd></button>
           <button data-win="collect" title="몬스터 도감 (J)"><span>도감</span><kbd>J</kbd></button>
           <button data-win="life" title="생활 기술 (Shift+L)"><span>생활</span><kbd>S+L</kbd></button>
+          <button data-win="charm" title="참 보드 (Shift+C)"><span>참</span><kbd>S+C</kbd></button>
           <button data-win="rank" title="랭킹 (N)"><span>랭킹</span><kbd>N</kbd></button>
           <button data-win="map" title="지도 (M)"><span>지도</span><kbd>M</kbd></button>
           <button id="b-emo" title="감정표현 (T)"><span>감정</span><kbd>T</kbd></button>
@@ -293,6 +296,16 @@
       <section class="window" id="w-board" hidden>
         <header><span class="t">알바 게시판</span><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body"><div id="board-body"></div></div>
+      </section>
+
+      <section class="window" id="w-charm" hidden>
+        <header><span class="t">참 보드</span><kbd>S+C</kbd><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body"><div id="charm-body"></div></div>
+      </section>
+
+      <section class="window" id="w-juana" hidden>
+        <header><span class="t">참감정사 주아나</span><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body"><div id="juana-body"></div></div>
       </section>
 
       <section class="window" id="w-collect" hidden>

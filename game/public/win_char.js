@@ -20,6 +20,7 @@ import { fireNear } from "./actions.js";
 import { isOpen, touch, hideTip, closeDrawer, openWin } from "./windows.js";
 import { invOrder, itemSlot, QS_USE, useSlot, isGear, sellPrice, itemTip, itemName, SLOT_NAME, SLOT_GLYPH, setWorn, statText } from "./items.js";
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
+import * as Charms from "./charms.js";
 
 // ── the bag ──
 export function renderInv(s) {
@@ -34,6 +35,12 @@ export function renderInv(s) {
   sort.title = "가방 정리: 종류별로, 좋은 것부터, 같은 것은 한 묶음으로";
   const grid = $("#inv-grid");
   grid.textContent = "";
+  // 전체 · 참: the 참 tab lists the charms as cards in place of the grid (charms.js)
+  Charms.bagTabs(s, $("#inv-tabs"));
+  const charmTab = Charms.bagTab() === "charm";
+  grid.hidden = charmTab;
+  $("#inv-charms").hidden = !charmTab;
+  if (charmTab) Charms.renderBagList(s, $("#inv-charms"));
   if (G.sel >= s.inv.length) G.sel = -1;
   const order = invOrder(s.inv);
   for (let n = 0; n < cap; n++) {
@@ -45,8 +52,8 @@ export function renderInv(s) {
       selected: i === G.sel,
       onClick: () => { G.sel = G.sel === i ? -1 : i; Sound.play("ui"); refreshUi(); },
       onUse: () => useSlot(i),
-      hint: isOpen("shop") ? "클릭해서 고른 뒤 아래 버튼으로 판매" : isOpen("smith") && isGear(entry.id) ? "클릭해서 고른 뒤 아래 버튼으로 분해" : usable ? `아래 단축칸(1~9)에 끌어다 놓을 수 있습니다${at ? ` · 지금 ${at}번` : ""}` : "",
-      price: isOpen("shop") ? `판매가 ${(sellPrice(entry) * (entry.n || 1)).toLocaleString()}G${entry.n > 1 ? ` (개당 ${sellPrice(entry)}G)` : ""}` : "",
+      hint: Charms.isCharm(entry) ? "참 탭에서 살펴보고, 참 보드(Shift+C)에 놓으면 효과를 냅니다" : isOpen("shop") ? "클릭해서 고른 뒤 아래 버튼으로 판매" : isOpen("smith") && isGear(entry.id) ? "클릭해서 고른 뒤 아래 버튼으로 분해" : usable ? `아래 단축칸(1~9)에 끌어다 놓을 수 있습니다${at ? ` · 지금 ${at}번` : ""}` : "",
+      price: isOpen("shop") && !Charms.isCharm(entry) ? `판매가 ${(sellPrice(entry) * (entry.n || 1)).toLocaleString()}G${entry.n > 1 ? ` (개당 ${sellPrice(entry)}G)` : ""}` : "",
     });
     // a usable thing can be dragged onto the quick slots; the slot it sits in shows in the corner
     if (usable) { QS.dragSource(node, ["i", entry.id]); if (at) node.append(el("span", "qk", at)); }
@@ -59,6 +66,8 @@ export function renderInv(s) {
   det.textContent = "";
   const entry = s.inv[G.sel];
   if (!entry) return;
+  // a charm is not gear: it is not sold, salvaged or put in a quick slot — it goes on the board or is broken (charms.js)
+  if (Charms.isCharm(entry)) { Charms.bagDetail(s, entry, det); return; }
   const d = it[entry.id];
   // on a touch screen there is no hovering, so the pane says everything the tooltip would
   if (touch()) itemTip(entry, det);

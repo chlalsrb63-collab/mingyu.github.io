@@ -321,6 +321,55 @@ export function npcLook(look, role) {
   if (role === "costume") return { ear: 3, eye: 3, nose: 1, fur: "#fff0e4", blush: PINK, pat: 0, cloth: null, cos: ["hat_beret", "top_dress_white", "face_glasses_gold"] };
   return { ear: 4, eye: 0, nose: 3, fur: "#f0e0c8", blush: PINK, pat: 0, cloth: "#5e6a88" };
 }
+/**
+ * 참감정사 주아나 (`town_charm_juana`, docs/design/charms.md §1): the hamster of her look, with what makes her her —
+ * chubby cheek pouches a shade lighter than her honey fur, a purple apron with a pale bib, and a small brass
+ * magnifier held up at her side (it bobs with her breath). Painted over the plain frames, then re-inked.
+ */
+const JUANA_LOOK = [7, 0, 11, 11, 0, 0, 4, 6, 2, 0, 0];
+let juana = null;
+export function juanaSheet() {
+  if (juana) return juana;
+  const base = personSheet(SPC.lookOf(JUANA_LOOK));
+  const APRON = "#8a4ab0", APRON_D = "#5e3080", BIB = "#e8d8f4", POUCH = "#f4d49a", POUCH_D = "#d8a860", BRASS = "#e8c060", BRASS_D = "#a87a2c", GLASS = "#bfeaff";
+  const dress = (view) => base[view].map((src, f) => {
+    const [c, g] = sheet(S);
+    g.drawImage(src, 0, 0);
+    const H = f === FRAME.breathe ? 1 : f === FRAME.stretch ? -1 : 0;
+    // her parts go over the inked figure; only the pixels they add get a new outline (no second ink round the rest)
+    const added = [];
+    const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) added.push([x + i, y + j]); };
+    // the apron: the tiny body in purple down to a darker hem, a pale bib under the chin (a bow at her back)
+    const bt = 24 + H;
+    r(13, bt, 6, 26 - bt, APRON); r(13, 26, 6, 1, APRON_D);
+    if (view === "back") { r(15, 24, 2, 1, BIB); r(14, 25, 1, 1, BIB); r(17, 25, 1, 1, BIB); }
+    else r(view === "side" ? 17 : 15, 24, 2, 1, BIB);
+    // cheek pouches: the cheeks swell a pixel past the head and sag a row below it
+    const hy = 20 + H;
+    if (view === "front") {
+      r(9, hy, 3, 3, POUCH); r(21, hy, 3, 3, POUCH); r(10, hy + 3, 2, 1, POUCH_D); r(21, hy + 3, 2, 1, POUCH_D);
+      r(11, hy + 2, 1, 1, "#f6a8a0"); r(21, hy + 2, 1, 1, "#f6a8a0");
+    } else if (view === "side") {
+      r(21, hy, 3, 3, POUCH); r(21, hy + 3, 2, 1, POUCH_D); r(21, hy + 2, 1, 1, "#f6a8a0");
+    } else { r(9, hy + 1, 1, 2, POUCH_D); r(23, hy + 1, 1, 2, POUCH_D); }
+    if (view !== "back") {
+      // the magnifier at her side: a brass ring round a pale glass, the handle down to her paw
+      const mx = 20, my = 24 + (f === FRAME.breathe ? 1 : 0);
+      r(mx, my, 3, 3, BRASS); r(mx + 1, my + 1, 1, 1, GLASS); r(mx + 2, my + 2, 1, 1, BRASS_D); r(mx, my, 1, 1, "#fff0b0");
+      r(mx - 1, my + 3, 1, 1, BRASS_D);
+    }
+    const d = g.getImageData(0, 0, S, S).data, clear = (x, y) => x >= 0 && y >= 0 && x < S && y < S && d[(y * S + x) * 4 + 3] === 0;
+    g.fillStyle = INK;
+    for (const [x, y] of added) for (const [i, j] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (clear(x + i, y + j)) g.fillRect(x + i, y + j, 1, 1);
+    return c;
+  });
+  return (juana = { front: dress("front"), side: dress("side"), back: dress("back") });
+}
+/** The sheet an NPC of the map is drawn with: its look or its trade's — and for a few, their own figure. */
+export function npcSheet(n) {
+  if (n.id === "town_charm_juana") return juanaSheet();
+  return personSheet(npcLook(n.look, n.role));
+}
 export function mobLook(kind) {
   if (kind === "thug") return { ear: 0, eye: 0, nose: 4, fur: "#8a8694", blush: null, pat: 0, cloth: "#6a3040", mask: 1 };
   return { bone: 1, ear: 0, fur: "#eef0f6" };

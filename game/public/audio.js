@@ -535,7 +535,7 @@ const BOOST = {
   swing: 3, swing_sword: 3, swing_dagger: 3, swing_spear: 3, swing_staff: 2, swing_book: 2.2, shoot: 1.6, magic: 1.5,
   bow_draw: 2, bow_shot: 2.6, release: 2.6, arrow_hit: 2, arrow_wall: 1.6,
   hit: 2, crit: 1.6, hurt: 2, die: 2, die_small: 2.2, die_big: 1.8, mob_shot: 1.8, charge: 2, volley: 1.8, spit: 2, pop: 2, buff: 1.5,
-  ui: 1.8, open: 2, close: 2, tab: 2, blip: 1.8, emote: 1.6, cast: 1.8, coin: 1.5, salvage: 1.5, recall: 1.4, warp_out: 1.4, rift_warn: 1.5, fail: 1.4,
+  charm_place: 1.6, charm_remove: 1.6, charm_id: 1.6, charm_expand: 1.5, ui: 1.8, open: 2, close: 2, tab: 2, blip: 1.8, emote: 1.6, cast: 1.8, coin: 1.5, salvage: 1.5, recall: 1.4, warp_out: 1.4, rift_warn: 1.5, fail: 1.4,
   step_grass: 2.5, step_dirt: 2.5, step_stone: 2, step_wood: 1.6, step_water: 2,
   drip: 1.6, reel: 1.8, slack: 1.6, sizzle: 1.4, pan_place: 1.8, pan_turn: 1.6, pan_bump: 1.6,
 };
@@ -717,6 +717,19 @@ const SFX = {
   fail() { this.arp("sawtooth", [392, 330, 262], 0.12, 0.2, 0.08); },
   enh_ok() { this.tone("square", 900, 900, 0.04, 0.1); this.tone("square", 900, 900, 0.04, 0.1, 0.12); this.arp("triangle", [784, 988, 1319, 1568], 0.06, 0.25, 0.14, 0.26); },
   enh_fail() { this.tone("square", 900, 900, 0.04, 0.1); this.tone("square", 900, 900, 0.04, 0.1, 0.12); this.noise(0.3, 0.2, 1200, "lowpass", 0.26, 200); this.tone("sawtooth", 220, 110, 0.4, 0.1, 0.26); },
+  // 참 (charms.js): a charm clicks into the board's frame, lifts out of it, a seal breaks (the sparkle climbs with
+  // the grade: 1 매직, 2 레어, 3 전설), a nail opens a cell, a legendary goes off
+  charm_place() { this.tone("sine", 620, 880, 0.07, 0.1); this.tone(0.5, 1760, 1760, 0.05, 0.05, 0.05); this.noise(0.03, 0.08, 3200, "bandpass"); },
+  charm_remove() { this.tone("sine", 780, 520, 0.08, 0.09); this.noise(0.04, 0.06, 1800, "bandpass", 0.02); },
+  charm_id(g = 1) {
+    this.noise(0.18, 0.1, 1400, "bandpass", 0, 5200);                       // the seal crumbling off
+    const notes = g >= 3 ? [784, 988, 1175, 1568, 1976, 2349] : g === 2 ? [784, 988, 1175, 1568] : [784, 988, 1175];
+    this.arp("sine", notes, 0.07, 0.22, 0.09, 0.14);
+    this.arp(0.5, notes.map((f) => f * 2), 0.07, 0.1, 0.03, 0.16);
+    if (g >= 3) { this.tone("sine", 392, 392, 0.9, 0.08, 0.14); this.tone("sine", 3136, 3136, 0.5, 0.04, 0.6); }
+  },
+  charm_expand() { this.tone("square", 180, 120, 0.05, 0.1); this.noise(0.03, 0.16, 2600, "bandpass"); this.tone("square", 200, 130, 0.05, 0.1, 0.12); this.noise(0.03, 0.16, 2800, "bandpass", 0.12); this.arp("sine", [660, 880, 1320], 0.06, 0.16, 0.08, 0.26); },
+  charm_proc(k = 0) { if (k === 0) { this.tone("sine", 440, 330, 0.18, 0.09); this.tone("sine", 660, 495, 0.22, 0.05, 0.08); } else this.arp("sine", k === 1 ? [1320, 1760] : [1760, 1320], 0.05, 0.12, 0.07); },
   salvage() { this.noise(0.12, 0.2, 2000, "bandpass"); this.tone("square", 500, 250, 0.1, 0.08, 0.04); this.tone(0.5, 1320, 1320, 0.06, 0.06, 0.14); },
   // ── interface ──
   ui() { this.tone(0.5, 660, 660, 0.035, 0.06); },

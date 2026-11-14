@@ -943,6 +943,47 @@ function armorIcon(tier) {
   outline(c, g, "#111118");
   return c;
 }
+// ── charms (주아나의 참 공방; docs/design/charms.md) ──
+// 16×16, light from the top-left, one dark outline. A sealed charm is a rough shard that tells nothing; an appraised
+// one is the same cut crystal in its grade's setting: a bronze band (매직), a silver mount (레어), and for a legendary
+// its own emblem (a horn, a knot, a lens) — the setting, not only the colour, names the grade.
+const CHARM_ART = {
+  sealed: [[
+    "", "", ".......ab", "......aabb", ".....alabbc", "....aalabbcc", "....aaabbbcc", "...aaabbkbccc", "...aabbykbccc", "...abbbbkcccc", "....bbbkcccc", "....bbbcccc", ".....bccc", "......cc",
+  ], { a: "#a096ac", b: "#72687c", c: "#4c4458", l: "#d0c8d8", k: "#3a3344", y: "#f6e6a0" }],
+  g1: [[
+    "", ".......oo", "......o..o", ".......oo", "......hggd", ".....hhgggd", "....hhggggdd", "....BBBBBBBB", "....bbbbbbbb", "....hgggggdd", ".....ggggdd", ".....gggddd", "......gddd", ".......dd",
+  ], { o: "#c8843c", B: "#e0a45a", b: "#8a5424", g: "#4ac0b0", h: "#b4f4e6", d: "#2a8078" }],
+  g2: [[
+    "", ".......ss", "......s..s", "......SSss", ".....Shggds", "....Shhgggds", "....Shggggds", "....SgggggdS", "....shggggds", "....sggggdds", ".....sgggds", ".....Ssgdss", "......Ssss", ".......ss",
+  ], { S: "#f2f5fa", s: "#9aa2b4", g: "#5a8cf0", h: "#c4dcff", d: "#3458b0" }],
+  g3: [[
+    "", ".......Y", "...Y...y...Y", "....y.yYy.y", ".....yYYYy", "....yYhppYy", "..YyYYhpppYYyY", "....yYppqqYy", ".....yYqqYy", "....y.yYy.y", "...Y...y...Y", ".......Y",
+  ], { Y: "#ffe070", y: "#d89a28", p: "#c070f0", h: "#f0d4ff", q: "#7a3ab0" }],
+  echo: [[
+    "", "", "..........ii", ".........iiw", "........iiiw", ".......iiiww", "......YYYww", ".....yyYYw", "....iiiyw", "...iiiww", "...iiww", "..hiww", "..hw",
+  ], { i: "#f4ecd8", w: "#b8a888", h: "#ffffff", Y: "#ffe070", y: "#d89a28" }],
+  knot: [[
+    "", "", "....rr....rr", "...rRRr..rRRd", "...rR.RrrR.Rd", "....rRrYYrRd", ".....rYhYYd", "....rRrYYdRd", "...rR.RddR.Rd", "...rRRd..dRRd", "....dd....dd",
+  ], { r: "#f08a8a", R: "#d84a5a", d: "#8a2a3c", Y: "#ffd84a", h: "#fff4c0" }],
+  lens: [[
+    "", ".....YYYYY", "....Yyllly", "...Yyllllly", "...Yllwllly", "...Ylwwwlly", "...Yllwlldy", "...Yylllddy", "....yyldddy", ".....yyyyyy", "..........yy", "...........yy", "............y",
+  ], { Y: "#ffe070", y: "#c8882a", l: "#8adcff", w: "#ffffff", d: "#4a9ad0" }],
+  nail: [[
+    "", "", ".........H", "........HHh", ".........Hhh", "........nmhhd", ".......nm..dd", "......nm", ".....nm", "....nm", "...nm", "...m",
+  ], { H: "#fff0b8", h: "#e8c060", d: "#a87a2c", n: "#e8c478", m: "#9a6e2c" }],
+};
+const charmCache = {};
+/** A charm's 16×16 icon: `sealed`, `g1` `g2` `g3` (grade settings), a legendary's own emblem (`echo knot lens`), `nail`. */
+export function charmIcon(kind) {
+  const k = CHARM_ART[kind] ? kind : "sealed";
+  if (!charmCache[k]) { const [c, g] = canvas(16, 16); paint(g, CHARM_ART[k][0], CHARM_ART[k][1]); outline(c, g, "#2b2233"); charmCache[k] = c; }
+  return charmCache[k];
+}
+export const charmIconUrl = (kind) => { const k = "url:" + kind; return charmCache[k] || (charmCache[k] = charmIcon(kind).toDataURL()); };
+/** Which icon a bag charm shows: nothing of a sealed one's grade leaks (it has none on the wire). */
+export const charmKind = (c) => (!c || !c.rev ? "sealed" : c.lg && CHARM_ART[c.lg] ? c.lg : `g${c.g || 1}`);
+
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items) {
   const cv = { camp: campIcon(), fish_s: fishIcon("#8ab4d8", "#e8f0f8", false), fish_m: fishIcon("#e88aa8", "#b8e8d8", false), fish_l: fishIcon("#f0c040", "#fff0a0", false),
@@ -951,6 +992,7 @@ export function buildIcons(items) {
     // life skills' fish of grades 3 and 4 and their campfire dishes (12-life-tables.js)
     fish_c: fishIcon("#a8b4c4", "#e4ecf4", false), fish_v: fishIcon("#d8c0d8", "#f6eef6", false),
     food_c: fishIcon("#c8945a", "#ecc890", true), food_v: fishIcon("#d89a7a", "#f4d2b0", true),
+    charm: charmIcon("sealed"), charm_nail: charmIcon("nail"),
     cafe_scone: bakeIcon("scone"), cafe_pie: bakeIcon("pie"), inn_stew: bakeIcon("stew"), inn_bread: bakeIcon("bread") };
   for (const id of Object.keys(items)) {
     const it = items[id];

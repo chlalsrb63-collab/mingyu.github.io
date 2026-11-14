@@ -18,6 +18,7 @@ import * as Life from "./life.js";
 import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
+import * as Charms from "./charms.js";
 import { G, dist, T, now } from "./state.js";
 import { entityPos } from "./net.js";
 import { addChat, banner, chatLog } from "./windows.js";
@@ -41,6 +42,7 @@ export function onEvent(e, t) {
   if (Gather.onEvent(e)) return;              // gathering: gs gt ga (gather.js)
   if (Station.onEvent(e)) return;             // the life stations: mk mo (station.js)
   if (Board.onEvent(e)) return;               // delivery: dl (board.js)
+  if (Charms.onEvent(e)) return;              // a legendary charm at work: cm (charms.js)
   MobArt.onEvent(e, G, S3, t);              // wind-ups, strikes and the bodies monsters leave
   switch (e[0]) {
     // the storyteller by the town's fire tells a tale: a bubble over her, and a line in the chat for those close by

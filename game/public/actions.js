@@ -16,6 +16,7 @@ import * as Housing from "./housing.js";
 import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
+import * as Charms from "./charms.js";
 import { G, T, now, dist, $, el } from "./state.js";
 import { act } from "./net.js";
 import { toast, openWin, addChat, shown } from "./windows.js";
@@ -184,6 +185,7 @@ export function interact() {
   else if (n.role === "dim") Dim.openKeeper();
   else if (n.role === "house") { Housing.openAgent(); openWin("inv"); }
   else if (n.role === "craft" || n.role === "alch" || n.role === "cook") Station.open(n.role);   // 캉캉 · 보글 · 쥬쥬의 화덕
+  else if (n.role === "charm") Charms.openJuana();        // 참감정사 주아나: quest, appraisal, expansion (charms.js)
   else if (n.role === "jobs") Board.open();               // 알바 중개인 포포: the board
   else { talkTo(n); return; }
   if (SideQ.gives(n)) talkTo(n);

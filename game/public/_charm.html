@@ -1,0 +1,48 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#15161c"><canvas id="c"></canvas><pre id="o" style="color:#f88"></pre>
+<script type="module">
+// Charm art preview: the 16×16 icons (sealed shard, the three grades, the legendaries' emblems, 참틀 확장못) at 8× and at
+// the size the bag shows them, then 주아나 beside the plain hamster of her look (front, side, back; stand and breathe).
+import * as Art from "./art.js";
+import * as SP from "./sprites.js";
+import * as SPC from "./species.js";
+const cv = document.getElementById("c"), g = cv.getContext("2d");
+const KINDS = ["sealed", "g1", "g2", "g3", "echo", "knot", "lens", "nail"];
+const z = 8, W = 16 * z + 24;
+cv.width = KINDS.length * W; cv.height = W + 70 + 32 * 6 + 40;
+g.imageSmoothingEnabled = false;
+g.fillStyle = "#15161c"; g.fillRect(0, 0, cv.width, cv.height);
+try {
+  KINDS.forEach((k, i) => {
+    const x = i * W + 12, y = 12;
+    g.fillStyle = "#23252e"; g.fillRect(x - 6, y - 6, 16 * z + 12, 16 * z + 12);
+    g.drawImage(Art.charmIcon(k), x, y, 16 * z, 16 * z);
+    g.fillStyle = "#0e0c14"; g.fillRect(x, W + 12, 36, 36);
+    g.drawImage(Art.charmIcon(k), x + 2, W + 14, 32, 32);
+    g.fillStyle = "#c8c0d0"; g.font = "12px monospace"; g.fillText(k, x + 44, W + 34);
+  });
+  const y0 = W + 70, plain = SP.personSheet(SPC.lookOf([7, 0, 11, 11, 0, 0, 4, 6, 2, 0, 0])), ju = SP.juanaSheet();
+  g.fillStyle = "#5a7a4a"; g.fillRect(0, y0, cv.width, 32 * 6 + 40);
+  let x = 8;
+  for (const [sheet, fs] of [[plain, [0]], [ju, [0, 1, 2]]]) for (const v of ["front", "side", "back"]) for (const f of fs) {
+    g.drawImage(sheet[v][f], x, y0 + 10, 32 * 6, 32 * 6); x += 32 * 3 + 2;
+  }
+  // ?grid=1: the plain hamster and 주아나 (front, side) at 14× with a pixel grid, rows 10–30, for placing her parts
+  if (new URLSearchParams(location.search).get("grid")) {
+    const Z = 14, R0 = 10, RN = 21;
+    cv.width = 4 * (32 * Z + 20); cv.height = RN * Z + 30;
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = "#5a7a4a"; g.fillRect(0, 0, cv.width, cv.height);
+    [[plain, "front"], [ju, "front"], [plain, "side"], [ju, "side"]].forEach(([sh, v], i) => {
+      const ox = i * (32 * Z + 20) + 16, oy = 14;
+      g.drawImage(sh[v][0], 0, R0, 32, RN, ox, oy, 32 * Z, RN * Z);
+      g.fillStyle = "rgba(0,0,0,.25)";
+      for (let k = 0; k <= 32; k++) g.fillRect(ox + k * Z, oy, 1, RN * Z);
+      for (let k = 0; k <= RN; k++) g.fillRect(ox, oy + k * Z, 32 * Z, 1);
+      g.fillStyle = "#fff"; g.font = "10px monospace";
+      for (let k = 0; k < 32; k += 2) g.fillText(k, ox + k * Z + 1, 10);
+      for (let k = 0; k < RN; k += 1) g.fillText(R0 + k, ox - 14, oy + k * Z + 11);
+    });
+  }
+} catch (e) { document.getElementById("o").textContent = String(e.stack || e); }
+document.title = "ready";
+</script>

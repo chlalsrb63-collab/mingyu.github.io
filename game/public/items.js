@@ -13,6 +13,7 @@ import { act } from "./net.js";
 import { fireNear } from "./actions.js";
 import { hoverTip, hideTip, closeDrawer, toast } from "./windows.js";
 import { refreshUi } from "./hud.js";
+import * as Charms from "./charms.js";
 
 // ── items ──
 /** The glyph beside each line of the character sheet. */
@@ -34,6 +35,7 @@ export function statText(k, v) {
 }
 /** "+3 뇌명의 강철 양손검" — a legendary's power, a set's name, or the first affix lends the prefix. */
 export function itemName(entry) {
+  if (Charms.isCharm(entry)) return Charms.charmName(entry);       // a charm's name comes from its wire, not ITEMS (charms.js)
   const it = G.defs.items[entry.id];
   const word = entry.lg ? G.defs.legend[entry.lg][0] : entry.set ? G.defs.sets[entry.set].name : entry.af && entry.af.length ? G.defs.affix[entry.af[0][0]][1] : "";
   return (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name;
@@ -58,6 +60,7 @@ export function setWorn(id) {
 }
 /** The full description: base line, rolled affixes, legendary power, set bonuses, sockets, runeword. */
 function describe(entry, host) {
+  if (Charms.isCharm(entry)) { Charms.describe(entry, host); return; }
   const it = G.defs.items[entry.id];
   const nm = el("div", "nm", itemName(entry));
   nm.style.color = Art.RARITY_COL[entry.q || 0];
@@ -87,6 +90,8 @@ export function sellPrice(entry) {
 }
 /** A tooltip's content: the item, a line on what clicking does, then whatever it would replace. */
 export function itemTip(entry, host, o = {}) {
+  // a charm has no gear fields, no price and nothing to compare with (charms.js)
+  if (Charms.isCharm(entry)) { Charms.describe(entry, host, { hint: o.hint }); return; }
   describe(entry, host);
   const s = G.self, d = G.defs.items[entry.id];
   if (!o.worn && isGear(entry.id)) {
@@ -110,7 +115,9 @@ export function itemSlot(entry, o = {}) {
   if (entry.q) d.classList.add(`q${entry.q}`);
   if (o.selected) d.classList.add("sel");
   const img = el("img");
-  img.src = entryIconUrl(entry, it) || G.icons.url[entry.id];
+  const charm = Charms.isCharm(entry);
+  img.src = charm ? Charms.iconUrl(entry) : entryIconUrl(entry, it) || G.icons.url[entry.id];
+  if (charm) d.classList.add("charm", `cg${entry.rev ? entry.g || 1 : 0}`);
   img.alt = it.name;
   d.append(img);
   if (entry.sk) { const pips = el("span", "sk"); for (let i = 0; i < entry.sk; i++) pips.append(el("i", entry.ru && entry.ru[i] ? "on" : "")); d.append(pips); }

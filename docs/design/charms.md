@@ -176,3 +176,51 @@ Refusals worth showing: `주아나가 너무 멉니다` · `참 보드는 마을
 - `ITEMS.charm.name` is just "참"; build the label from the wire (`rev`, `g`, `lg`) — sealed: "미감정 참" + `src` name.
 - The board is editable only on safe maps; appraisal, expansion, claim and quests need 주아나 in reach.
 - Juana's 16×16 art, the 참 tab, appraisal window, board UI, icons and sounds are all C2.
+
+---
+
+# C2 as built — client (2026-11-15)
+
+Code: `game/public/charms.js` (everything) + hooks: `art.js` (icons), `sprites.js` (`juanaSheet npcSheet`), `scene_map.js`
+(NPC sheets by `npcSheet(n)`), `audio.js` (5 effects), `items.js` / `win_char.js` (charm branches, the bag tabs), `windows.js`
+(`WIN` `charm` `juana`; `charm` in `PANEL`), `hud.js` (`sync` + two `draw`s), `input.js` (Shift+C, `onKey`), `actions.js` (F at role
+`charm`), `events.js` (`cm`), `net.js` (`onError`), `update.js` (her window closes when you walk off), `index.html`, `hud.css`
+(one block at the end). Preview: `node scripts/shot.mjs --page charm [--q grid=1]`. No rules, data or wire changed.
+
+- **Bag.** A tab row 전체 · 참 n over the grid. 전체 shows a charm as a slot (its icon, a grade band along the bottom edge);
+  참 lists them as cards — sealed: the shard and 획득처 only; appraised: name, a tag with the grade's letter and word
+  (`매 매직` `레 레어` `전 전설`), the shape drawn in cells, the options. A chosen charm's pane has 보드에 놓기 (appraised) and
+  부수기 → 정말 부수기 / 취소 → `charm_destroy {uid, ok:1}`. A charm is never offered for sale, salvage or a quick slot, and its
+  tooltip has no price.
+- **Grades are told three ways**: the icon's setting (bronze band, silver mount, the legendary's own emblem: horn / knot /
+  lens), the letter mark on the piece (`매 레 전`), and the word in the tag — colour is only the fourth.
+- **참 보드** (`Shift+C`, the 참 menu button; docked in the side panel on a desktop, 38 px cells): locked cells are hatched
+  with a padlock, the next cell to open has a brass one. A placed charm is one outlined piece over its cells. Drag from
+  the tray (가방의 참) or from the board: the cells it would cover show ✓ on green or ✕ on red hatching; or click a charm, then a
+  cell. 회전 (R) turns the charm in hand — one lying on the board turns where it lies (`charm_move` with the same anchor);
+  빼기 or a drag back onto the tray sends `charm_remove`; Esc lets go. The anchor sent is the hovered cell minus the cell
+  the charm was grabbed by. The client checks the same three things as the server (밖 / 잠긴 칸 / 다른 참) only to colour the
+  ghost and to spare a hopeless request; a request shows as a pale dashed piece until `self.charms` confirms it, and on a
+  refusal the piece is back where it was, the grid shakes and the server's sentence stays under the board (and as a toast).
+  효과 합계 lists each total against its cap (`상한` in gold at the cap); 전설 효과 shows the one at work with ✓ 활성 / ✕ 비활성 and
+  `lgWhy`; off a safe map a brass note says 마을에서만 변경 and the controls are off.
+- **주아나** (F): her portrait and line, the quest card (의뢰 받기 with the Lv. reason, the kill bar, 보고하기), 감정 — each
+  sealed charm with its cost (무료 while `free`), 감정 → "이 참을 296G에 감정할까요?" → `charm_id`; when the charm comes back
+  appraised the reveal card (rays, the icon rising, grade / shape / options, her appraisal line) and the sparkle sound that
+  climbs with the grade; 맡아 둔 참 (`pending` + `rec`) → `charm_claim`; 보드 확장 — a 5×5 miniature with the next cell blinking,
+  못 have/1, price → `charm_expand {k}`. Everything is disabled with "주아나 곁에서만" away from her.
+- **Her figure**: the hamster of her look with cheek pouches a pixel past the head and a row below it, a deeper purple
+  apron with a pale bib (a bow at the back) and a 3×3 brass magnifier at her side; only the added pixels are re-inked.
+- **`cm` events**: 0 two gold rings and a "메아리" float, 1 a blue ring and dot and "표식" on the monster, 2 a white ring;
+  `charm_proc` sounds for the owner only.
+
+## Deviations / not done
+- The window ids are `charm` (board) and `juana`: `board` was already the 알바 board.
+- Hotkey Shift+C (C alone stays the character window); R is the board's while a charm is in hand, otherwise auto-hunt.
+- The lens mark has no lasting marker over the monster (a ring when set, a ring when spent) — the server sends no expiry event.
+- Confirmations are in-window second clicks, not browser dialogs.
+- Verified live against a local server: 주아나 in town, F → her window, the quest card and the server's Lv.30 refusal, Shift+C,
+  the locked board, a real drag through the pointer handlers ending in the server's refusal on the board. **Staged only**
+  (client state set in the page; no local way to reach Lv.30 with charms): the filled board, totals, legendary panel,
+  appraisal confirm, reveal card, pending box, expansion row, the bag's 참 tab — and so the confirmed-path sounds
+  (place / remove / appraise / expand) and the `cm` visuals were not heard or seen end to end.
