@@ -104,7 +104,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 ### Client — `game/public/` (plain ES modules, no build step; `index.html` loads `client.js?v=…`)
 | file | owns · key exports |
 | --- | --- |
-| `index.html` [364] | all HUD/window markup (`section.window#w-<id>`), `#menu`, cache tag `?v=` |
+| `index.html` [366] | all HUD/window markup (`section.window#w-<id>`), `#menu`, cache tag `?v=` |
 | `client.js` [2563] | game client. Sections (grep `// ───`): connection, state `G`, messages (`onSnap`), effects, input (keydown hotkeys ~L537), player actions, update, render, HUD & windows (`WIN` list ~L1236, `openWin`, `render<Window>()`), main loop. `window.__game = {G, act, S3, go}` for automation |
 | `lobby.js` [593] | title, 로그인/회원가입, server/channel list, character creation, in-game channel switch/logout |
 | `account.js` [99] | HTTP side of accounts: `session signup login logout me servers`, `API` base |
@@ -128,7 +128,7 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
 | `minigames.js` [269] | fishing rhythm game, cooking tangram |
 | `npctalk.js` [80] | NPC flavour lines by role |
 | `frames.js` [85] | HUD 9-slice frame art → CSS custom properties |
-| `audio.js` [658] | chiptune synth: `TRACKS` (per-map music), `SFX` catalogue, `Sound.play(name)` |
+| `audio.js` [554] · `bgm.js` [339] | Web Audio synth, `SFX` catalogue, `Sound.play(name)`, and `TRACKS` per-map scores |
 | `titlescene.js` [510] | title-screen diorama and pixel logo |
 | `assetlib.js` [131] | external asset loader, `ready()` awaited at client start-up; `canvas meta has loadImage loadAudio loadSounds play`. Used by weapons.js and art.js `buildIcons` (`icon.item.<id>`) |
 | `style.css` [351] · `hud.css` [473] · `lobby.css` [225] | base + CRT, HUD/windows, lobby |
@@ -155,7 +155,7 @@ read/write) · `export-art.mjs` (`npm run art:export`: code-drawn art → `asset
 
 ### Other
 `ai/` AI team: `TASKS.md` task board, role files `codex.md` `gemini.md` `merge.md`, `reports/`, `worker.bat` (workers run in git worktrees `.work/<name>` on branch `<name>/work`) · root launchers `PLAY.bat` `AI-TEAM.bat` `AI-MERGE.bat` `UPDATE.bat` `TESTS.bat` `ASSETS.bat` (export + gallery), `install.ps1` (one-step Windows setup), `.vscode/tasks.json` (VS Code: starts the AI team on folder open) · `asset/` (repo root) art/sound library and gallery `index.html` (not deployed; §9) · `ai/prompts/weapon-assets.md`
-(asset review + Codex/ChatGPT weapon prompts) · `.claude/agents/` 22 specialist roles adapted from the MIT "Claude Code Game Studios" template (game/systems/economy/level designer, narrative, writer, art director, technical artist, sound, UX, gameplay/network programmer, QA, performance, live-ops, security, producer…); Claude uses them as subagents, and Codex/Gemini may read one as a role guide (e.g. Gemini doing balance → `economy-designer.md`) · `.claude/skills/pixel-art/` pixel-art
+(asset review + Codex/ChatGPT weapon prompts) · `.agents/skills/tales-tales-bgm/` (map BGM composition, map briefs and Web Audio preview renderer) · `.claude/agents/` 22 specialist roles adapted from the MIT "Claude Code Game Studios" template (game/systems/economy/level designer, narrative, writer, art director, technical artist, sound, UX, gameplay/network programmer, QA, performance, live-ops, security, producer…); Claude uses them as subagents, and Codex/Gemini may read one as a role guide (e.g. Gemini doing balance → `economy-designer.md`) · `.claude/skills/pixel-art/` pixel-art
 rules (any AI may read `rules/*.md`) · `.github/workflows/deploy-game.yml` CI (split check, tests,
 deploy) · root `index.html`/`profile.jpg` = the owner's unrelated GitHub Pages profile.
 
@@ -289,7 +289,7 @@ lives in `game/.wrangler/` (delete it to reset local accounts/characters).
 - Effect: a function in `public/audio.js SFX` (synth: `this.tone`, `this.noise`), optional level in
   `BOOST`, rate limit in `THROTTLE`, priority in `IMPORTANT`; play with `Sound.play("name")`. Server-driven sounds are
   played from event handlers in `client.js`/`skillfx.js`.
-- Music: a track in `audio.js TRACKS`; a map picks it with `bgm` in its cfg.
+- Music: a score in `bgm.js TRACKS`; `Sound.bgm` picks a map ID first and its config’s `bgm` as fallback. Use the [map BGM skill](.agents/skills/tales-tales-bgm/SKILL.md) for composition and audio previews.
 - External file instead: §9 + `Assets.play(ctx, "sfx.<key>")` (fall back to the synth).
 
 ## 9. External assets (외부 에셋)
