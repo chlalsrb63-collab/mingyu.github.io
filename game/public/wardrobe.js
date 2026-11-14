@@ -174,7 +174,8 @@ const HAT = {
       b.cr(T - 1, 6, 1, p.c); b.cr(T - 2, 6, 1, p.c);
       b.sym(2, T - 3, 1, 1, p.c); b.sym(0, T - 3, 1, 1, p.c);
       b.sym(2, T - 4, 1, 1, li(p.c));
-      b.cr(T - 2, 2, 1, p.g); b.r(Math.round(A.cx + 1.5), T - 2, 2, 1, sh(p.c));
+      if (!A.back) b.cr(T - 2, 2, 1, p.g);
+      b.r(Math.round(A.cx + 1.5), T - 2, 2, 1, sh(p.c));
     },
   },
   // a wreath of flowers lying across the head
@@ -362,8 +363,7 @@ const BACK = {
     } else if (A.side) {
       b.r(11, y, 3, A.foot - y, p.c); b.r(10 + sw, A.foot - 2, 3, 2, p.c); b.r(10 + sw, A.foot - 1, 2, 1, sh(p.c));
     } else {
-      b.r(12, y, 8, A.foot - y, sh(p.c)); b.r(11, A.foot - 1, 10, 2, sh(p.c));
-      b.px(13, y, "#f0cc60"); b.px(18, y, "#f0cc60");
+      b.r(11, y, 10, A.foot - y, sh(p.c)); b.r(10 + (sw > 0 ? 1 : 0), A.foot - 1, 12 - Math.abs(sw), 2, sh(p.c));
     }
   },
   angel: (b, A, p) => wings(b, A, p, [[0, 4], [1, 5], [2, 5], [3, 4], [4, 2]], true),
@@ -381,6 +381,19 @@ const BACK = {
     else { b.r(12, y, 1, 3, p.c); b.r(19, y, 1, 3, p.c); }
   },
   dragon: (b, A, p) => wings(b, A, p, [[0, 2], [1, 4], [2, 6], [3, 4], [4, 3], [5, 1]], false, true),
+};
+/** What a back piece shows in front of the body (a cape's collar and clasp, a pack's straps), front and side views. */
+const BACK_FRONT = {
+  cape: (b, A, p) => {
+    const y = A.bt;
+    if (A.side) { b.r(14, y, 4, 1, p.c); b.px(17, y, "#f0cc60"); return; }
+    b.r(13, y, 6, 1, p.c); b.px(13, y, sh(p.c)); b.px(18, y, sh(p.c)); b.cr(y, 2, 1, "#f0cc60");
+  },
+  pack: (b, A, p) => {
+    const y = A.bt;
+    if (A.side) { b.r(14, y, 1, A.foot - y - 1, sh(p.c, 0.3)); return; }
+    b.r(14, y, 1, A.foot - y - 1, sh(p.c, 0.3)); b.r(17, y, 1, A.foot - y - 1, sh(p.c, 0.3));
+  },
 };
 /** A pair of wings from the shoulders: `rows` [dy, length] from the top; flapping with the frames. */
 function wings(b, A, p, rows, round, spikes) {
@@ -541,6 +554,7 @@ export function dress(base, o, view, f) {
   g.drawImage(base, 0, 0);
   if (tp && TOP[tp[1]]) layer(g, TOP[tp[1]], A, tp[2], "out");
   if (bkFn && A.back) layer(g, bkFn, A, bk[2]);
+  if (bk && !A.back && BACK_FRONT[bk[1]]) layer(g, BACK_FRONT[bk[1]], A, bk[2], "none");
   if (fc && FACE[fc[1]]) layer(g, FACE[fc[1]], A, fc[2], "none");
   if (ht && HAT[ht[1]]) {
     const h = HAT[ht[1]];
