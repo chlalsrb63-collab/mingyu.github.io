@@ -612,22 +612,46 @@ function dressArrow(g, f, look) {
  * `glow` the body, `rim` the dark edge that keeps it readable on bright ground, `tail` nearest first.
  */
 const MISSILE_LOOK = {
-  8: { r: 2, hot: "#ffffff", glow: "#c8a8ff", rim: "#5a3aa8", tail: ["#e8dcff", "#b08aff", "#8a5ad8", "#5a3aa8"] },
-  9: { r: 3, hot: "#ffffff", glow: "#e0c8ff", rim: "#7a4ac8", tail: ["#e0c8ff", "#c8a0ff", "#a07ae0"] },
+  8: { r: 4, hot: "#ffffff", glow: "#c8a8ff", rim: "#5a3aa8", tail: ["#e8dcff", "#b08aff", "#8a5ad8", "#5a3aa8"] },
+  9: { r: 6, hot: "#ffffff", glow: "#e0c8ff", rim: "#7a4ac8", tail: ["#e0c8ff", "#c8a0ff", "#a07ae0"] },
 };
+/** A pixel disc (rows of fillRect, no anti-aliasing) of radius r centred on (x, y). */
+function disc(g, x, y, r, c) {
+  g.fillStyle = c;
+  for (let dy = -r; dy <= r; dy++) { const hw = Math.round(Math.sqrt(r * r + r - dy * dy)); g.fillRect(Math.round(x) - hw, Math.round(y) + dy, hw * 2 + 1, 1); }
+}
+/** One missile frame: the tail's sparks and motes, then the head (stepped halo, dark rim, body, white-hot core). */
+function drawMissile(g, m, L) {
+  const T = L.tail, n = m.n, r = L.r, nine = m.kind === 9;
+  for (let i = 1; i < m.trail.length; i++) {
+    const [tx, ty] = m.trail[i], j = ((n + i * 3) % 3) - 1, c = T[Math.min(T.length - 1, i >> 1)];
+    px(g, tx + j * 2, ty - j, 2, 2, c);
+    if (i < (nine ? 7 : 6)) px(g, tx - 1, ty - 1, 3, 3, c);
+  }
+  // loose motes drifting off the path
+  for (let k = 0; k < 3; k++) { const i = 3 + k * 3; if (i >= m.trail.length) break; const [tx, ty] = m.trail[i], s = (n + k * 5) % 6 - 3; px(g, tx + s * 2, ty + (k % 2 ? 4 : -4) + s, 1, 1, "#ffffff"); }
+  const [x, y] = m.trail[0], pulse = n % 4 < 2 ? 0 : 1;
+  g.globalAlpha = 0.22; disc(g, x, y, r + 3, L.glow);
+  g.globalAlpha = 0.45; disc(g, x, y, r + 1 + pulse, L.glow);
+  g.globalAlpha = 1;
+  disc(g, x, y, r, L.rim); disc(g, x, y, r - 1, L.glow); disc(g, x, y, Math.max(1, r >> 1), L.tail[0]); disc(g, x, y, Math.max(1, (r >> 2) + pulse), L.hot);
+}
 /** Missiles in flight: id → { x, y, ux, uy, spd, kind, home, trail, end }. */
 const missiles = new Map();
 /**
  * A magic missile cast at (x0, y0): flies at `spd`, steering at monster `home` (where it is drawn now)
  * while there is one, until the server's "ae" says where it ended (or it gives up after a while).
+ * It is drawn again over the night grade (S3.glows) so the dark never swallows it.
  */
-function missile(G, id, x0, y0, ux, uy, spd, kind, home) {
+export function missile(G, id, x0, y0, ux, uy, spd, kind, home) {
   const L = MISSILE_LOOK[kind], m = { x: x0, y: y0, ux, uy, spd: spd || 300, kind, home, trail: [], end: false, t: 0, n: 0 };
   missiles.set(id, m);
   if (missiles.size > 48) missiles.delete(missiles.keys().next().value);
-  const dur = 1600;
+  const dur = 1600, lit = (g) => { if (m.trail.length) { g.globalCompositeOperation = "screen"; drawMissile(g, m, L); g.globalCompositeOperation = "source-over"; drawMissile(g, m, L); } };
+  S3.glows.add(lit);
+  S3.fx.spark(x0, y0, "#ffffff", kind === 9 ? 1 : 0.8); S3.fx.ring(x0, y0, kind === 9 ? 12 : 9, L.glow, 160);   // launch flash
   S3.fxCustom((g, k) => {
-    if (m.end) return;
+    if (m.end || k >= 0.99) { S3.glows.delete(lit); if (m.end) return; }
     const t = k * dur, dt = Math.min(60, t - m.t) / 1000;
     m.t = t; m.n++;
     const o = m.home && G.mobs.get(m.home);
@@ -638,32 +662,32 @@ function missile(G, id, x0, y0, ux, uy, spd, kind, home) {
     }
     m.x += m.ux * step; m.y += m.uy * step;
     m.trail.unshift(at(m.x, m.y, 9));
-    if (m.trail.length > 7) m.trail.pop();
-    const [x, y] = m.trail[0], T = L.tail;
-    // the tail: sparks shed behind it, flickering either side of its path
-    for (let i = 2; i < m.trail.length; i++) {
-      const [tx, ty] = m.trail[i], j = ((m.n + i * 3) % 3) - 1;
-      px(g, tx + j, ty - j, 1, 1, T[Math.min(T.length - 1, i - 2)]);
-      if (i < (kind === 9 ? 5 : 4)) px(g, tx - 1, ty - 1, 2, 2, T[i - 2]);
-    }
-    // the head: a dark-edged glowing plus (the orb a round one), a white-hot core, pulsing
-    const r = L.r, w = r * 2 + 1;
-    px(g, x - r - 1, y - r, w + 2, w, L.rim); px(g, x - r, y - r - 1, w, w + 2, L.rim);
-    px(g, x - r, y - r, w, w, L.glow);
-    px(g, x - (m.n % 4 < 2 ? 0 : 1), y - (m.n % 4 < 2 ? 0 : 1), 1 + (kind === 9 ? 1 : 0), 1 + (kind === 9 ? 1 : 0), L.hot);
-    if (kind === 8 && m.n % 3 === 0) px(g, x + ((m.n >> 2) % 2 ? 2 : -2), y - 2, 1, 1, T[0]);
+    if (m.trail.length > 11) m.trail.pop();
+    drawMissile(g, m, L);
   }, dur);
 }
 /** The server ended missile `id` at (x, y): 0 struck (a burst; `ring` the book's splash or a finisher's), 1 a wall, 2 spent. */
-function missileEnd(f, id, x, y, how, ring) {
+export function missileEnd(f, id, x, y, how, ring) {
   const m = missiles.get(id), L = MISSILE_LOOK[m.kind];
   missiles.delete(id);
   m.end = true;
   if (how === 2) { f.burst(x, y, 0.4, L.tail[1], 3, 0.6); return; }
-  f.burst(x, y, 0.4, L.glow, m.kind === 9 ? 10 : 6, 1.4);
-  f.burst(x, y, 0.4, "#ffffff", 3, 0.9);
-  f.ring(x, y, m.kind === 9 ? 12 : 8, L.tail[1], 200);
-  if (ring) f.ring(x, y, ring, "#c8a0ff", 220, true);
+  f.burst(x, y, 0.4, L.glow, m.kind === 9 ? 14 : 9, 1.8);
+  f.burst(x, y, 0.4, "#ffffff", 5, 1.1);
+  f.spark(x, y, "#ffffff", m.kind === 9 ? 1.4 : 1.1);
+  f.ring(x, y, m.kind === 9 ? 16 : 11, L.tail[1], 240);
+  // the flash itself shines over the night grade for a moment: stepped discs shrinking away
+  const t0 = now(), [hx, hy] = at(x, y, 9), R = m.kind === 9 ? 12 : 9;
+  const flash = (g) => {
+    const k = (now() - t0) / 260;
+    if (k >= 1) { S3.glows.delete(flash); return; }
+    const r = Math.round(R * (1 - k * 0.5));
+    g.globalCompositeOperation = "screen"; g.globalAlpha = 0.5; disc(g, hx, hy, r + 3, L.glow);
+    g.globalAlpha = 0.9; disc(g, hx, hy, r, L.glow); g.globalAlpha = 1; disc(g, hx, hy, r >> 1, "#ffffff");
+    g.globalCompositeOperation = "source-over";
+  };
+  S3.glows.add(flash);
+  if (ring) { f.ring(x, y, ring, "#ffffff", 260, true); f.ring(x, y, ring * 0.7, "#c8a0ff", 300, true, 40); }
   Sound.play("magic_hit", m.kind === 9 || ring > 0);
 }
 /** Bows drawn in the last moments, waiting for their arrows: { eid, x, y, t, at (release time), wt (tier) }. */
