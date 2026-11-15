@@ -154,6 +154,12 @@ function sewText(d) {
   const D = C.G.defs, k = Object.keys(D.keepSew || {}).find((k) => D.keepSew[k] && D.cos[D.keepSew[k]] === d);
   return k ? `이야기 기념품 [${D.items[k].name}] — 루루에게 재봉 맡기기` : "루루의 기념품 재봉";
 }
+/** A 장날 piece's source: the season whose stall sells it and its price (defs.fair.shop). */
+function fairText(d) {
+  const F = C.G.defs.fair, id = Object.keys(C.G.defs.cos).find((k) => C.G.defs.cos[k] === d);
+  const s = F ? F.shop.findIndex((rows) => rows.some((r) => r[0] === id)) : -1;
+  return s < 0 ? "버드나무 장날 장터" : `${F.season[s]} 장날 — 장꾼 다래에게 장날 토큰 ${F.shop[s].find((r) => r[0] === id)[1]}개`;
+}
 function srcText(d) {
   const ach = d.src === "ach" && C.G.defs.achievements.find((a) => a.id === d.ach);
   return {
@@ -161,7 +167,7 @@ function srcText(d) {
     token: `의상실에서 버드나무토큰 ${d.price.toLocaleString()}개`, rareBoss: "우두머리 토벌 시 매우 낮은 확률로 미보유 희귀 외형 한 점 획득",
     daily: "일일 과제 보상 상자", rift: "균열 침공 1위 (3위 안이면 가끔)",
     ach: ach ? `${ach.desc} (업적 「${ach.name}」)` : `업적 「${d.ach}」 달성`,
-    quest: "의뢰·퀘스트를 마치면 가끔", weekly: "주간 보스 도전 큰 보상에서 가끔", sew: sewText(d),
+    quest: "의뢰·퀘스트를 마치면 가끔", weekly: "주간 보스 도전 큰 보상에서 가끔", sew: sewText(d), fair: fairText(d),
   }[d.src] || "";
 }
 /** The catalogue in groups: each themed set (in the catalogue's order), then everything that is in no set. */

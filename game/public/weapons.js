@@ -931,7 +931,21 @@ const MOTIF = {
   w_bloomstaff: { name: "혼꽃", blade: ["#e8f4ff", "#a8c4ec", "#5a6aa8"], fit: M.bone, add: (h) => [C(h[1] + 1, (h[2] + h[3]) / 2, 2.2, "petal", { top: true }), C(h[1] + 1, (h[2] + h[3]) / 2, 0.9, "white", { top: true }), D(h[1] + 1, h[2] - 2, "ice"), D(h[1] + 1, h[3] + 1, "ice")] },
   clubclaw: { name: "갯가재 집게", blade: ["#ffc08a", "#ff6a2a", "#a8301e"], fit: ["#d84a2a", "#9a2a1e", "#5a1a1e"], add: (h) => [...along(h, 3, (s, i) => L(s, h[2], s, h[3] - 1, i % 2 ? "orange" : "foam")), P([[h[1] - 2.5, h[2] - 0.5], [h[1] + 0.5, (h[2] + h[3]) / 2], [h[1] - 2.5, h[3] + 0.5]], "orange")] },
 };
-const EXTRA = { petal: "#ff9ac0", ice: "#e8fbff", candy: "#e8485a", foam: "#f4ffff", sand: "#fff8dc", node: "#4a7a3a", bee: "#3a3040" };
+// 사계절 skins (P11, 장날 stall): each lays shapes along the blade, not just a colour
+const mid = (h) => (h[2] + h[3]) / 2;
+/** A five-pointed leaf (or star) of radius r round (s, t), its points alternating with notches. */
+const leaf = (s, t, r, m) => P(Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + (i * Math.PI) / 5, k = i % 2 ? r * 0.45 : r; return [s + Math.cos(a) * k, t + Math.sin(a) * k]; }), m, { top: true });
+Object.assign(MOTIF, {
+  // a flowering twig wound along the blade: a dark branch line, three blossoms with gold hearts
+  ssnSakura: { name: "벚꽃 가지", blade: ["#fff4f8", "#f8c4d6", "#c87a98"], fit: ["#8a5a4a", "#6a3e36", "#4a2a2e"], add: (h) => [L(h[0], mid(h) + 0.5, h[1] - 1, mid(h) - 0.5, "twig"), ...along(h, 3, (s, i) => [C(s, i % 2 ? h[3] - 0.5 : h[2] + 0.5, 1.5, "bloom", { top: true }), D(s - 0.5, (i % 2 ? h[3] - 0.5 : h[2] + 0.5) - 0.5, "spark")])] },
+  // white crests breaking along the upper edge, spray dots under them
+  ssnSea: { name: "파도", blade: ["#e8fcff", "#7ac8e8", "#2e78b8"], fit: ["#9ae8e0", "#3aa8a8", "#1e6a7a"], add: (h) => along(h, 3, (s) => [P([[s - 2, h[2] + 1], [s - 0.5, h[2] - 1.5], [s + 1.5, h[2] - 1], [s + 0.5, h[2] + 0.5], [s + 1, h[2] + 1.5]], "foam"), D(s - 1, mid(h), "white")]) },
+  // three maple leaves fallen on the blade, red and gold in turn
+  ssnMaple: { name: "단풍", blade: ["#ffe0a0", "#f0903a", "#b8402a"], fit: M.wood, add: (h) => along(h, 3, (s, i) => leaf(s, mid(h) - 0.5, 2, i % 2 ? "gold2" : "maple")) },
+  // icy blade with six-armed snowflakes: three crossing one-pixel lines each
+  ssnSnow: { name: "눈꽃", blade: ["#e8f6ff", "#8ab8e8", "#4a6ab0"], fit: M.bright, add: (h) => along(h, 2, (s) => { const t = mid(h) - 0.5; return [L(s - 2, t, s + 2, t, "white"), L(s - 1, t - 1.7, s + 1, t + 1.7, "white"), L(s - 1, t + 1.7, s + 1, t - 1.7, "white")]; }) },
+});
+const EXTRA = { petal: "#ff9ac0", ice: "#e8fbff", candy: "#e8485a", foam: "#f4ffff", sand: "#fff8dc", node: "#4a7a3a", bee: "#3a3040", twig: "#6a3e36", bloom: "#ff8ab4", maple: "#d8302a", gold2: "#f0c040" };
 // 백자 청화 skin: drawn whole per weapon kind by weapons_porcelain.js (sprite() / weaponIcon() hand over); this row only names it
 MOTIF.porcelain = PORCELAIN_MOTIF.porcelain;
 export const MOTIFS = Object.keys(MOTIF);

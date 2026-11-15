@@ -42,8 +42,9 @@ for (const id of ids) {
   const c = D.cos[id];
   assert.equal(D.cosN[c.n], id, "a code maps back to its id");
   assert.ok(c.name && c.desc && c.q >= 0 && c.q <= 4, id + " has a name, a description and a rarity");
-  assert.ok(["shop", "token", "chest", "boss", "rareBoss", "daily", "rift", "ach", "quest", "weekly", "sew"].includes(c.src), id + " comes from somewhere");
+  assert.ok(["shop", "token", "chest", "boss", "rareBoss", "daily", "rift", "ach", "quest", "weekly", "sew", "fair"].includes(c.src), id + " comes from somewhere");
   if (c.src === "sew") assert.ok(Object.values(D.keepSew).includes(id), id + " is sewn from a real keepsake");
+  if (c.src === "fair") assert.ok(D.fair.shop.some((rows) => rows.some((r) => r[0] === id)), id + " is sold at the 장날 stall");
   assert.ok(c.set === "" || D.cosSets[c.set], id + " is in a real set, or in none");
   if (c.src === "shop" || c.src === "token") assert.ok(c.price > 0, id + " has a price");
   if (c.src === "ach") assert.ok(D.achievements.some((a) => a.id === c.ach), id + " is earned by a real achievement");
@@ -414,20 +415,21 @@ for (const [kind, designs] of Object.entries(SIL)) {
   const o = W.join("E", "", "warrior", old).ch;
   assert.deepEqual(o.cosDye, {}); assert.equal(o.v, 26);
   assert.deepEqual(L.newChar("새옷", "warrior", []).cosDye, {});
-  // keepsake sewing: the table names every keepsake; one with no piece yet is refused, one with a piece is sewn once
+  // keepsake sewing: the table names every keepsake, each sews into its own piece (P11), once
   assert.deepEqual(Object.keys(D.keepSew).sort(), Object.keys(D.items).filter((id) => D.items[id].type === "keep").sort(), "every keepsake has a row");
-  for (const [k, id] of Object.entries(D.keepSew)) assert.ok(id === "" || D.cos[id], k + ": sews into a real piece or none yet");
+  for (const [k, id] of Object.entries(D.keepSew)) assert.ok(D.cos[id] && D.cos[id].src === "sew", k + ": sews into a real piece");
+  assert.equal(new Set(Object.values(D.keepSew)).size, Object.keys(D.keepSew).length, "one piece per keepsake");
   const sew = (k) => W.act({ t: "cos_sew", k });
   assert.equal(sew("kp_bell").error, "아직 간직하지 않은 기념품입니다");
   assert.equal(sew("hp_s").error, "재봉할 수 없는 기념품입니다");
   ch.keep.kp_bell = 1;
   const was = D.keepSew.kp_bell;
-  if (!was) assert.equal(sew("kp_bell").error, "루루가 아직 이 기념품의 옷본을 그리고 있어요");
-  D.keepSew.kp_bell = "hat_halo";   // (defs hands out the live table: stand in for a P11 piece)
-  assert.ok(sew("kp_bell").ok);
-  assert.ok(ch.cos.own.includes("hat_halo") && ch.keep.kp_bell, "sewn; the keepsake stays");
-  assert.equal(sew("kp_bell").error, "이미 지어 받은 외형입니다");
+  D.keepSew.kp_bell = "";   // (defs hands out the live table: a row with no piece yet is refused)
+  assert.equal(sew("kp_bell").error, "루루가 아직 이 기념품의 옷본을 그리고 있어요");
   D.keepSew.kp_bell = was;
+  assert.ok(sew("kp_bell").ok);
+  assert.ok(ch.cos.own.includes("back_cloud_bell") && ch.keep.kp_bell, "sewn into the 운해 종지기 등장식; the keepsake stays");
+  assert.equal(sew("kp_bell").error, "이미 지어 받은 외형입니다");
 }
 
 // ── P10 sets: 버드나무 마을, 협동 알바 왕, 낚시 기록가 — each piece's source pays it
@@ -478,6 +480,26 @@ for (const [kind, designs] of Object.entries(SIL)) {
   assert.ok(q.ch.cos.own.includes("top_fish_raincoat") && q.ch.cos.own.includes("back_fish_scroll"), "fbook pays the raincoat and the scroll");
   assert.equal(q.ch.cnt.chore, 0, "old sheets start with no chores counted");
   assert.equal(L.newChar("새내기", "warrior", []).cnt.chore, 0);
+}
+
+// ── P11: the four season sets on 장꾼 다래's stall, and the story keepsakes 루루 sews
+{
+  for (const [s, set] of ["spring", "summer", "autumn", "winter"].entries()) {
+    const of = ids.filter((id) => D.cos[id].set === set);
+    assert.deepEqual(of.map((id) => D.cos[id].slot), ["hat", "top", "back", "wskin"], set + ": hat, top, back, weapon skin");
+    assert.deepEqual(D.fair.shop[s].slice(1).map((r) => r[0]), of, set + ": the season's stall sells exactly these");
+    for (const r of D.fair.shop[s]) assert.equal(r[2], 1, r[0] + " is on sale");
+    for (const id of of) assert.ok(id === "hat_ssn_sea" || D.cos[id].slot === "wskin" || "b" in ART[id][2], id + " has a trim to dye");
+  }
+  const story = ids.filter((id) => D.cos[id].set === "story");
+  assert.deepEqual([...story].sort(), Object.values(D.keepSew).filter((id) => id !== "hat_willow_straw").sort(), "the story set is the sewn keepsakes");
+  const W = world("기념품");
+  const ch = W.S.players.A.ch;
+  W.step();
+  W.to("A", shopNpc.x, shopNpc.y + 1);
+  for (const k of Object.keys(D.keepSew)) { ch.keep[k] = 1; assert.ok(W.act({ t: "cos_sew", k }).ok, k + " sews"); }
+  assert.ok(story.every((id) => ch.cos.own.includes(id)), "all six story pieces sewn");
+  for (const id of ["hat_chronicler", "back_neon_sign", "face_rift_goggles"]) assert.ok(W.act({ t: "cos_eq", id }).ok, id + " worn");
 }
 
 console.log("wardrobe: ok —", ids.length, "cosmetics,", Object.keys(D.wkinds).length * 5, "weapon designs,", MOTIFS.length, "motifs");

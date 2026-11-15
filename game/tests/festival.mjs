@@ -140,7 +140,6 @@ const toasts = (p) => p.toast.splice(0).join(" | ");
   assert.equal(now[0], "hat_straw_blue", "가을 sells the straw hat for now");
   assert.match(act(w, "a", { t: "fair_buy", id: now[0] }).error, /장날 토큰이 부족합니다/);
   p.ch.fair.t = 50;
-  assert.match(act(w, "a", { t: "fair_buy", id: "hat_ssn_maple" }).error, /곧 들어옵니다/);
   assert.match(act(w, "a", { t: "fair_buy", id: "hat_santa" }).error, /이번 계절/, "겨울's piece is not on sale in 가을");
   assert.match(act(w, "a", { t: "fair_buy", id: "hat_beanie_red" }).error, /이번 계절/);
   place(w, "a", "willow_farmer");
@@ -150,11 +149,16 @@ const toasts = (p) => p.toast.splice(0).join(" | ");
   assert.equal(p.ch.fair.t, 50 - now[1]);
   assert.ok(p.ch.cos.own.includes(now[0]) && p.ch.cos.on.hat === now[0], "owned and worn");
   assert.match(act(w, "a", { t: "fair_buy", id: now[0] }).error, /이미 가지고/);
+  // the 사계절 pieces (P11) are on sale: 가을's maple wreath for 20, then the sweater is out of reach
+  assert.ok(act(w, "a", { t: "fair_buy", id: "hat_ssn_maple" }).ok);
+  assert.ok(p.ch.cos.on.hat === "hat_ssn_maple" && p.ch.fair.t === 50 - now[1] - 20, "bought and worn");
+  assert.match(act(w, "a", { t: "fair_buy", id: "top_ssn_maple" }).error, /장날 토큰이 부족합니다/);
   for (const rows of X.FAIR_SHOP) for (const [, price] of rows) assert.ok(price >= 20 && price <= 30, "prices 20–30");
   for (const rows of X.FAIR_SHOP) assert.ok(rows.slice(1).reduce((n, r) => n + r[1], 0) <= 13 * X.FAIR.cap, "a season's set within a season of Sundays");
   const D = L.defs();
   assert.equal(D.fair.shop[2][0][2], 1, "defs: the straw hat is on sale");
-  assert.deepEqual(D.fair.shop[2][1].slice(2), [0, "", "모자"], "defs: an undrawn piece, its slot named");
+  assert.deepEqual(D.fair.shop[2][1].slice(2), [1, "단풍잎 화관", "모자"], "defs: a 사계절 piece on sale, its slot named");
+  assert.ok(D.fair.shop.every((rows) => rows.every((r) => r[2] === 1)), "defs: every row of every season is on sale");
   assert.deepEqual(D.sky.season, ["봄", "여름", "가을", "겨울"]);
 }
 {

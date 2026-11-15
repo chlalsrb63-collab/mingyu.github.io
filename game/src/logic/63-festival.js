@@ -22,10 +22,9 @@ const fairOpen = (now) => (kstDay(now) + 4) % 7 === FAIR.day && (now + KST) % DA
 /** The board's festival rows (12-life-tables.js JB, `fair: true`). */
 const FAIR_JOBS = Object.keys(JB).filter((id) => JB[id].fair);
 /**
- * 장꾼 다래's stall, per season: [cosmetic id, tokens]; only the season now sells. The 사계절 pieces (P11: hat, top,
- * back, weapon skin of 벚꽃 · 한여름 바다 · 단풍 · 눈꽃) are not drawn yet: a row whose id is not in COSMETICS shows
- * "곧 들어옵니다" and cannot be bought — P11 adds these ids to COSMETICS (src "fair") and they open by themselves.
- * Until then each season sells one existing piece that fits it (first row). A season's four pieces cost 100: ≈ 13 Sundays × 8.
+ * 장꾼 다래's stall, per season: [cosmetic id, tokens]; only the season now sells. Rows 2–5 are the 사계절 pieces (P11:
+ * hat, top, back, weapon skin of 벚꽃 · 한여름 바다 · 단풍 · 눈꽃; COSMETICS src "fair"), the first an older piece that fits
+ * the season. A row whose id is not in COSMETICS would show "곧 들어옵니다" and not sell. A season's four cost 100: ≈ 13 Sundays × 8.
  */
 const FAIR_SET = ["sakura", "sea", "maple", "snow"];
 const FAIR_NOW = ["hat_wreath_white", "hat_wreath_sun", "hat_straw_blue", "hat_santa"];

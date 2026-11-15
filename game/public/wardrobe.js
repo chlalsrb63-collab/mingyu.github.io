@@ -128,8 +128,8 @@ function brush(g, A, scale) {
 }
 
 const HARD_HATS = new Set(["crown", "horncrown", "helm", "halo", "horns", "goggles", "miner", "surveycap", "shards"]);
-const HARD_BACKS = new Set(["surf", "gourd", "lantern", "hammer", "trophy", "tray", "cauldron", "tradeJar", "surveyTanks"]);
-const HARD_FACES = new Set(["crescentFrames", "amberFrames", "tradePearl", "surveyFilter", "glasses", "shades", "forge", "monocle", "snorkel"]);
+const HARD_BACKS = new Set(["surf", "gourd", "lantern", "hammer", "trophy", "tray", "cauldron", "tradeJar", "surveyTanks", "neonSign", "bellFrame"]);
+const HARD_FACES = new Set(["crescentFrames", "amberFrames", "tradePearl", "surveyFilter", "glasses", "shades", "forge", "monocle", "snorkel", "riftGoggles", "reedFloat"]);
 const FEATHER_BACKS = new Set(["angel", "bat", "fairy", "dragon"]);
 
 /** Shape and colour the half-pixel steps within a costume's logical pattern, on its native 64px grid. */
@@ -685,6 +685,102 @@ const HAT = {
       b.grid(x, A.top - 4, [".l.", "lls", "lss", ".s."], { l: p.r, s: sh(p.r, 0.38) }, A.back);
     },
   },
+  // 봄 장날: a twig across the head, three five-petal blossoms on it (petals the trim), the middle one in front;
+  // at 64px a lit petal, a shaded one and a stamen each. In front of the ears.
+  blossomBand: {
+    over(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1, tw = p.c, pk = p.b, back = sh(pk, 0.22), lt = li(pk, 0.55), dk = sh(pk, 0.4);
+      b.cr(T - 1, W, 1, tw);
+      const bloom = (x, y, col) => {
+        b.grid(x - 1, y - 1, [".p.", "pyp", ".p."], { p: col, y: "#f8d860" });
+        b.fp(x, y - 1, lt); b.fp(x + 1.5, y, dk); b.fp(x + 0.5, y + 1.5, dk); b.fp(x + 0.5, y + 0.5, "#e8904a");
+      };
+      bloom(A.x0 + 2, T - 2, back); bloom(A.x1 - 2, T - 2, back); bloom(b.c0, T - 3, pk);
+      b.fp(A.x0 + 4, T - 1.5, "#7ac05a"); b.fp(A.x1 - 4.5, T - 1.5, "#7ac05a");
+    },
+  },
+  // 여름 장날: an orange starfish clinging to the head (dye recolours it whole), a lit middle and dots at 64px
+  starfish: {
+    over(b, A, p) {
+      const T = A.top, x = A.side ? b.c0 - 3 : A.x1 - 6, lt = li(p.c, 0.5);
+      b.grid(x, T - 4, ["..c..", ".ccc.", "ccscc", ".ccc.", ".c.c."], { c: p.c, s: lt });
+      for (const [u, v] of [[2, 0.5], [0.5, 2], [3.5, 2], [1, 3.5], [3, 3.5]]) b.fp(x + u, T - 4 + v, lt);
+      b.fp(x + 1.5, T - 3, sh(p.c, 0.35)); b.fp(x + 3, T - 2.5, sh(p.c, 0.35));
+    },
+  },
+  // 가을 장날: a twig crown of maple leaves, the big middle leaf the trim, a red and a gold one beside; veins at 64px
+  mapleWreath: {
+    over(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1, tw = "#7a4a34";
+      b.cr(T - 1, W, 1, tw);
+      const small = (x, col) => { b.grid(x, T - 3, ["c.c", "ccc", ".s."], { c: col, s: tw }); b.fp(x + 1, T - 2.5, sh(col, 0.35)); };
+      small(A.x0 + 1, p.c); small(A.x1 - 3, "#e8b030");
+      const x = b.c0 - 2;
+      b.grid(x, T - 5, ["..c..", "c.c.c", "ccccc", ".ccc.", "..s.."], { c: p.b, s: tw });
+      for (let v = 0; v < 3; v += 0.5) b.fp(x + 2.5, T - 4.5 + v, sh(p.b, 0.35));
+      b.fp(x + 1, T - 3, li(p.b, 0.5)); b.fp(x + 3.5, T - 2.5, sh(p.b, 0.35));
+    },
+  },
+  // 겨울 장날: a knit hat, a row of snowflakes (the trim) round it, a white fur brim and pompom; it covers the ears (tall ones stand clear above).
+  // At 64px the knit ribs, each flake's six arms (a plus on the native grid) and fluffy tufts.
+  snowknit: {
+    ears: "behind",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1, fur = "#f4f6fc", fs = "#c8d0e4", rib = sh(p.c, 0.18);
+      b.cr(T - 1, W, 1, p.c); b.cr(T - 2, W - 2, 1, p.c); b.cr(T - 3, Math.max(2, W - 6), 1, p.c);
+      b.r(A.x1 - 2, T - 3, 2, 2, sh(p.c));
+      for (let y = T - 3; y < T; y++) for (let x = A.x0; x <= A.x1; x++) b.fp(x + 0.5, y, rib);
+      // a flake: one dot at 32px; at 64px a little x of five native pixels (a plus would read as a red cross)
+      for (let x = A.x0 + 2; x < A.x1 - 1; x += 3) {
+        b.px(x, T - 2, p.b);
+        for (const [u, v] of [[0.5, 0], [0, 0.5], [0.5, 0.5]]) b.fp(x + u, T - 2 + v, p.c);
+        for (const [u, v] of [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]) b.fp(x + u, T - 2 + v, p.b);
+      }
+      b.cr(T, W + 2, 1, fur);
+      for (let x = A.x0; x <= A.x1; x += 2) { b.px(x, T, fs); b.fp(x + 0.5, T + 0.5, fur); }
+      b.cr(T - 5, 2, 2, fur); b.px(b.c0, T - 4, fs);
+      b.fp(b.c0 - 1.5, T - 4.5, fur); b.fp(b.c0 + 1, T - 5.5, fur); b.fp(b.c0 + 1, T - 3.5, fs);
+    },
+  },
+  // 이야기 기념품 · 바람등호: a sky navigator's peaked cap, the crown wider than the brass band (the trim),
+  // a dark visor; the keepsake compass on the front (at 64px a cream face, a red needle). It covers the ears.
+  navcap: {
+    ears: "behind",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1, vis = "#2e2a3e";
+      b.cr(T - 3, W + 2, 1, li(p.c, 0.3)); b.cr(T - 2, W + 2, 1, p.c); b.r(A.x1 - 1, T - 3, 3, 2, sh(p.c, 0.3));
+      b.cr(T - 1, W, 1, p.b); b.r(A.x1 - 2, T - 1, 2, 1, sh(p.b, 0.3));
+      if (A.front) b.cr(T, W - 2, 1, vis);
+      if (A.side) b.r(A.x1 - 1, T, 4, 1, vis);
+      if (A.back) b.cr(T - 1, 2, 1, li(p.b, 0.4));
+    },
+    over(b, A, p) {
+      if (A.back) return;
+      const x = A.side ? A.x1 - 4 : b.c0 - 1, y = A.top - 3;
+      b.r(x, y, 2, 2, GOLD); b.px(x + 1, y + 1, sh(GOLD, 0.3));
+      b.fp(x + 0.5, y + 0.5, "#f4ecd8"); b.fp(x + 1, y + 0.5, "#e04a4a"); b.fp(x + 0.5, y + 1, "#f4ecd8"); b.fp(x + 1, y + 1, "#3a3440");
+    },
+  },
+  // 이야기 기념품 · 마지막 사관: a black 사모 (a low front, a round raised crown, a flat wing each side) with
+  // 갈피's grey quill (the trim) tucked in the band; its barbs at 64px. It covers the ears.
+  samo: {
+    ears: "behind",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1, dk = sh(p.c, 0.3), lt = li(p.c, 0.28);
+      b.cr(T - 1, W, 1, p.c); b.cr(T - 2, W - 2, 1, p.c); b.cr(T - 3, W - 4, 1, p.c); b.cr(T - 4, W - 6, 1, lt);
+      b.r(A.x1 - 3, T - 3, 2, 2, dk); b.cr(T, W + 2, 1, dk);
+      const wing = (x) => { b.r(x, T - 2, 3, 1, p.c); b.fp(x, T - 2, lt); b.fp(x + 0.5, T - 2, lt); b.fp(x + 1, T - 1.5, dk); b.fp(x + 1.5, T - 1.5, dk); };
+      if (A.side) { b.r(A.x0 - 1, T - 2, 2, 1, p.c); b.fp(A.x0 - 1, T - 2, lt); return; }
+      wing(A.x0 - 2); wing(A.x1);
+    },
+    over(b, A, p) {
+      const x = A.back || A.side ? A.x0 + 1 : A.x1 - 4, y = A.top - 7, q = p.b, ql = li(q, 0.5), qd = sh(q, 0.35);
+      b.grid(x, y, ["..qq", ".qqd", "qqd.", "s..."], { q, d: qd, s: sh(q, 0.55) }, A.back || A.side);
+      const fx = (u) => (A.back || A.side ? x + 3.5 - u : x + u);
+      for (const [u, v] of [[2, 0], [3, 0], [1, 1], [0, 2]]) b.fp(fx(u), y + v, ql);
+      for (const [u, v] of [[3.5, 1.5], [2.5, 2.5], [1.5, 2.5]]) b.fp(fx(u), y + v, qd);
+    },
+  },
   // shards of the rift circling over the head and the ears, drifting with the walk
   shards: {
     ink: "#3b2a66",
@@ -848,6 +944,44 @@ const TOP = {
     front: [".lbbblc.", ".lyccys.", ".dbssbd."],
     side: [".lcbbbc.", ".lccybs.", ".sdbbsd."],
     back: [".lbbbbc.", ".lcscls.", ".dcsssd."],
+  },
+  // 봄 장날: an open pink cardigan over a white tee, bud buttons and a ribbed hem in the trim, knitted petals
+  // (p); at 64px five-dot blossoms
+  blossomCardigan: {
+    pal: (p) => ({ p: "#fff2f6" }),
+    front: [".lcwwcs.", ".pbwwbs.", ".BBBBBB."], side: [".lcccbs.", ".lcpccs.", ".BBBBBB."], back: [".lcpccs.", ".cccccp.", ".BBBBBB."],
+    fine(b, A, pal, y0) {
+      const at = A.back ? [[15, y0], [18, y0 + 1]] : A.side ? [[15, y0 + 1]] : [[13, y0 + 1]];
+      for (const [x, y] of at) { b.fp(x - 0.5, y, pal.p); b.fp(x + 0.5, y, pal.p); b.fp(x, y - 0.5, pal.p); b.fp(x, y + 0.5, pal.p); b.fp(x, y, "#f8d860"); }
+      if (!A.back) for (let x = 12.5; x < 19.5; x += 1) b.fp(x, y0 + 2.5, pal.B);
+    },
+  },
+  // 여름 장날: a loud flowered summer shirt (the flowers are the trim), open at the neck, one gold button
+  alohaShirt: {
+    front: [".lb..bs.", ".cbcycb.", ".sccybs."], side: [".lcbccs.", ".bccbcs.", ".scbccs."], back: [".lcbccs.", ".ccbcbs.", ".sbccbs."],
+    fine(b, A, pal, y0) {
+      const at = A.back ? [[15, y0], [17, y0 + 1]] : A.side ? [[15, y0], [16, y0 + 1]] : [[14, y0], [18, y0 + 1]];
+      for (const [x, y] of at) { b.fp(x + 0.5, y + 0.5, "#fff0a0"); b.fp(x, y, li(pal.b, 0.45)); }
+    },
+  },
+  // 가을 장날: a mustard cable-knit sweater, two cables down the front, a maple-leaf patch (the trim), a ribbed hem;
+  // at 64px the cables twist (light and shade halves swapping each half row)
+  cableKnit: {
+    front: [".slccls.", ".slbcls.", ".dsdsds."], side: [".sclccs.", ".scbccs.", ".dsdsds."], back: [".slccls.", ".slccls.", ".dsdsds."],
+    fine(b, A, pal, y0) {
+      const cols = A.side ? [15] : [14, 17];
+      for (const x of cols) for (let y = y0; y < y0 + 2; y += 0.5) { b.fp(x + ((y * 2) & 1 ? 0.5 : 0), y, pal.s); }
+      if (!A.back) { const x = 15; b.fp(x, y0 + 1, li(pal.b, 0.4)); b.fp(x + 0.5, y0 + 1.5, sh(pal.b, 0.35)); }
+    },
+  },
+  // 겨울 장날: a thick winter coat, a cream fur collar and hem (l, so it still parts from white fur), wooden
+  // toggles (the trim); at 64px the fur's tufts along both edges
+  furCoat: {
+    pal: () => ({ l: "#f2ead8", L: "#d4c8b4" }),
+    front: [".llllll.", ".cbccbs.", ".lLlLlL.", "..sccs.."], side: [".sllllL.", ".sccbcs.", ".lLlLlL.", "...ccs.."], back: [".llllll.", ".ccsscs.", ".lLlLlL.", "..sccs.."],
+    fine(b, A, pal, y0) {
+      for (let x = 13; x < 19; x += 1) { b.fp(x + 0.5, y0 + 1, pal.l); b.fp(x, y0 + 2, pal.c); }
+    },
   },
 };
 /** The colours a top template reads. */
@@ -1162,6 +1296,79 @@ const BACK = {
     }
   },
 };
+/** 사계절 and 이야기 기념품 back pieces (P11). */
+Object.assign(BACK, {
+  // 봄 장날: a paper parasol open over one shoulder, its ribs and scalloped rim the trim; blossoms painted on (64px)
+  parasol: (b, A, p) => {
+    const sw = sway(A), lt = li(p.c, 0.45), dk = sh(p.c, 0.22), rib = p.b, stick = "#8a5a4a";
+    const cx = (A.front ? 8 : A.side ? 8 : 23) + sw, y = A.top - 4 + (A.f === 1 ? 1 : 0), tx = A.back ? 19 : 12;
+    b.px(cx, y - 1, stick);
+    b.r(cx - 2, y, 5, 1, lt); b.r(cx - 4, y + 1, 9, 1, p.c); b.r(cx - 5, y + 2, 11, 1, p.c);
+    for (const dx of [-4, -2, 0, 2, 4]) b.px(cx + dx, y + 3, rib);
+    b.px(cx - 2, y + 2, dk); b.px(cx + 2, y + 2, dk); b.px(cx, y + 1, dk);
+    for (const [u, v] of [[-3, 1.5], [1.5, 1], [3.5, 2]]) { b.fp(cx + u, y + v, WHITE); b.fp(cx + u + 0.5, y + v, "#f08aa8"); }
+    for (const dx of [-4.5, -2.5, -0.5, 1.5, 3.5]) b.fp(cx + dx + 0.5, y + 3.5, sh(rib, 0.3));
+    const n = A.bt - (y + 3);
+    for (let k = 1; k <= n; k++) b.px(Math.round(cx + ((tx - cx) * k) / n), y + 3 + k, stick);
+  },
+  // 여름 장날: a striped swim ring round the waist (stripes the trim): the far half here, behind the body; the near
+  // half crosses the belly (BACK_FRONT). From behind the whole band shows.
+  swimRing: (b, A, p) => {
+    const y = Math.min(A.bt + 1, A.foot - 2), st = (x, d) => { const c = (x >> 1) & 1 ? p.b : p.c; return d ? sh(c, 0.28) : c; };
+    if (A.back) {
+      for (let x = 11; x <= 20; x++) { b.px(x, y, st(x, 0)); b.px(x, y + 1, st(x, 1)); }
+      b.px(10, y, st(10, 1)); b.px(21, y, st(21, 1));
+      b.fp(12, y, WHITE); b.fp(12.5, y, WHITE);
+      return;
+    }
+    for (let x = 11; x <= 20; x++) b.px(x, y - 1, st(x, 1));
+    for (const x of [10, 11, 12, 19, 20, 21]) { b.px(x, y, st(x, 0)); b.px(x, y + 1, st(x, 1)); }
+  },
+  // 가을 장날: a big acorn pack peeking over one shoulder: the cupule (the trim) cross-hatched at 64px, a glossy nut
+  acornPack: (b, A, p) => {
+    const pal = { c: p.c, l: li(p.c, 0.45), s: sh(p.c, 0.3), b: p.b, B: sh(p.b, 0.32), k: "#5a3a2a" };
+    const rows = ["..k...", ".bbbb.", "bBbBbb", ".BBBB.", ".lccs.", ".lccs.", "..cs.."];
+    const x = A.back ? 18 : A.side ? 6 : 7, y = A.bt - 4 + (sway(A) ? 1 : 0);
+    b.grid(x, y, rows, pal, !A.back);
+    const fx = (u) => (A.back ? x + u : x + 5.5 - u);
+    for (const u of [1.5, 2.5, 3.5]) b.fp(fx(u), y + 1.5, pal.B);
+    b.fp(fx(1.5), y + 4, WHITE); b.fp(fx(1.5), y + 4.5, li(p.c, 0.7));
+  },
+  // 겨울 장날: a little snowman riding on the back, peeking over the shoulder, its scarf the trim
+  snowmanPack: (b, A, p) => {
+    const y = A.bt, snow = "#f4f8ff", pal = { w: snow, s: "#c8d4ec", k: "#3a3440", o: "#f08a3a", b: p.b, B: sh(p.b, 0.35) };
+    const head = [".www.", "wkwkw", "wwoow", ".sss.", "bbbbB"];
+    if (A.back) { b.r(17, y, 5, 3, snow); b.r(17, y + 2, 5, 1, pal.s); b.px(19, y + 1, pal.k); b.grid(20, y - 5, head, pal, true); }
+    else if (A.side) { b.r(8, y, 5, 3, snow); b.r(8, y + 2, 5, 1, pal.s); b.grid(6, y - 5, head, pal); }
+    else { b.grid(6, y - 5, head, pal); b.r(8, y, 4, 1, snow); }
+    const hx = A.back ? 20 : 6;
+    b.fp(hx + 1.5, y - 5, WHITE); b.fp(hx + 4, y - 1, sh(p.b, 0.5)); b.fp(hx + 4.5, y - 1, sh(p.b, 0.5));
+  },
+  // 이야기 기념품 · 마지막 불빛: a little shop sign raised over the head on two poles, a neon tube round it (the trim)
+  // and 「집」 glowing inside (drawn on the native grid at 64px)
+  neonSign: (b, A, p) => {
+    const sw = sway(A), y = Math.max(2, Math.min(A.top, A.earTop) - 8 + (A.f === 1 ? 1 : 0)), x = (A.side ? 8 : 12) + sw;
+    const pole = "#6a5a6a", glow = li(p.b, 0.75);
+    b.r(x + 1, y + 5, 1, Math.max(1, A.bt - y - 5), pole); b.r(x + 6, y + 5, 1, Math.max(1, A.bt - y - 5), pole);
+    b.grid(x, y, ["bbbbbbbb", "bkkkkkkb", "bkkkkkkb", "bkkkkkkb", "bbbbbbbb"], { b: p.b, k: p.c });
+    for (const [u, v] of [[2, 1], [3, 1], [5, 1], [3, 2], [5, 2], [2, 3], [3, 3]]) b.px(x + u, y + v, glow);
+    // 집: ㅈ beside ㅣ over ㅂ, one native pixel per stroke
+    const G = ["..........", ".gggg.g...", "..gg..g...", ".g..g.g...", ".g..g.....", ".gggg.....", ".gggg....."];
+    G.forEach((row, j) => { if (j) for (let i = 0; i < 12; i++) b.fp(x + 1 + i / 2, y + 0.5 + j / 2, row[i] === "g" ? glow : p.c); });
+    for (let i = 0; i < 16; i++) b.fp(x + i / 2, y, li(p.b, 0.4));
+  },
+  // 이야기 기념품 · 종과 별: a little temple bell hanging from a crook rising behind the shoulder, a red rope and
+  // tassel (the trim); at 64px its clapper, a rim glint and a wisp of cloud under it
+  bellFrame: (b, A, p) => {
+    const T = A.top, sw = sway(A), x = A.front ? 23 : A.side ? 9 : 8, out = A.front ? 1 : -1, wood = "#8a5a3a";
+    const top = T - 7, bx = (out > 0 ? x + 1 : x - 4) + sw;
+    b.r(x, top, 1, A.foot - top, wood);
+    b.r(out > 0 ? x + 1 : x - 2, top, 2, 1, wood);
+    b.grid(bx, top + 1, ["..b..", ".lcc.", ".lcs.", "lccss", "..b.."], { b: p.b, c: p.c, l: li(p.c, 0.45), s: sh(p.c, 0.3) });
+    b.fp(bx + 2, top + 5, sh(p.c, 0.5)); b.fp(bx + 0.5, top + 4, WHITE);
+    for (const u of [-1, -0.5, 4.5, 5]) b.fp(bx + u, top + 5.5, "#f4f8ff");
+  },
+});
 /** A strap from one shoulder to the other hip, for what is slung on the back. */
 const sling = (b, A, p) => {
   const y = A.bt, n = A.foot - y, st = p.s || sh(p.c, 0.35);
@@ -1196,6 +1403,16 @@ const BACK_FRONT = {
     b.r(x, y, 4, 1, p.c); b.px(x + 1, y, p.b);
   },
   batcape: (b, A, p) => BACK_FRONT.cape(b, A, p),
+  parasol: sling, bellFrame: sling,
+  acornPack: (b, A, p) => BACK_FRONT.pack(b, A, { c: "#6a4434" }),
+  snowmanPack: (b, A, p) => BACK_FRONT.pack(b, A, { c: "#8a9ab8" }),
+  neonSign: (b, A, p) => BACK_FRONT.pack(b, A, { c: "#6a5a6a" }),
+  // the swim ring's near half: one striped row low on the belly (the top stays seen), a shine and a shaded rim at 64px
+  swimRing: (b, A, p) => {
+    const y = Math.min(A.bt + 1, A.foot - 2), x0 = 13, x1 = 18;
+    for (let x = x0; x <= x1; x++) { const c = (x >> 1) & 1 ? p.b : p.c; b.px(x, y + 1, c); b.fp(x, y + 1.5, sh(c, 0.2)); b.fp(x + 0.5, y + 1.5, sh(c, 0.2)); }
+    b.fp(x0 + 1, y + 1, WHITE); b.fp(x0 + 1.5, y + 1, WHITE);
+  },
   pack: (b, A, p) => {
     const y = A.bt, st = sh(p.c, 0.35);
     if (A.side) { b.r(15, y, 1, A.foot - y, st); return; }
@@ -1277,6 +1494,35 @@ const FACE = {
       b.r(x - 3, y + 1, 2, 1, metal);
       b.r(x + 1, y + 1, 2, 1, metal);
       b.r(x - 1, y, 2, 1, li(p.c, 0.35));
+    },
+  },
+  // 이야기 기념품 · 갈대: the old fishing float as an earring by the cheek, red over a band of the trim
+  reedFloat: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const x = A.side ? A.cheekL + 1 : A.cheekR - 2, y = A.ny;
+      b.px(x + 1, y, rim(A, "#5a4a5a"));
+      b.r(x, y + 1, 2, 1, rim(A, p.c)); b.r(x, y + 2, 2, 1, rim(A, p.b));
+      b.fp(x + 1, y + 0.5, rim(A, "#5a4a5a")); b.fp(x, y + 1, li(p.c, 0.6)); b.fp(x + 1, y + 2.5, sh(p.b, 0.3));
+    },
+  },
+  // 이야기 기념품 · 균열을 적는 자: 보글's round brass research goggles, violet lenses (the trim) that the eyes
+  // show through, a glint in each, a strap round the head
+  riftGoggles: {
+    back: true,
+    draw(b, A, p) {
+      const e = A.eye, c = rim(A, p.c), st = rim(A, p.s);
+      if (A.back) { b.r(A.x0 + 1, e, A.x1 - A.x0 - 1, 1, st); b.px(A.x0 + 1, e, c); b.px(A.x1 - 1, e, c); return; }
+      const ring = (x) => {
+        b.r(x, e, 3, 2, p.b);
+        b.r(x, e - 1, 3, 1, c); b.r(x, e + 2, 3, 1, c); b.r(x - 1, e, 1, 2, c); b.r(x + 3, e, 1, 2, c);
+        b.fp(x + 2, e, li(p.b, 0.8)); b.fp(x + 2.5, e + 0.5, li(p.b, 0.5)); b.fp(x, e - 1, li(p.c, 0.5));
+      };
+      const L = A.lx - 1, R = A.rx - 1, h = A.halfAt(e);
+      ring(L); ring(R);
+      if (R - L > 4) b.r(L + 4, e, R - L - 4, 1, c);
+      b.r(16 - h, e, Math.max(0, L - 1 - (16 - h)), 1, st);
+      if (!A.side) b.r(R + 4, e, Math.max(0, 16 + h - (R + 4)), 1, st);
     },
   },
   glasses: {
@@ -1573,6 +1819,30 @@ export const ART = {
   hat_fish_souwester: ["hat", "souwester", { c: "#f0c838", b: "#3a5a8a" }],
   top_fish_raincoat: ["top", "raincoat", { c: "#f0c838", b: "#3a5a8a" }],
   back_fish_scroll: ["back", "fishScroll", { c: "#f4ecd8", b: "#8a5a3a" }],
+  // 사계절 (P11): 장꾼 다래's stall; the trim `b` is what a dye recolours (the starfish has none: it dyes whole)
+  hat_ssn_sakura: ["hat", "blossomBand", { c: "#8a5a4a", b: "#f8a8c4" }],
+  top_ssn_sakura: ["top", "blossomCardigan", { c: "#f8b8cc", b: "#d8587a" }],
+  back_ssn_sakura: ["back", "parasol", { c: "#f8d0dc", b: "#c8506e" }],
+  ws_ssn_sakura: ["wskin", "ssnSakura", {}],
+  hat_ssn_sea: ["hat", "starfish", { c: "#ff8a3a" }],
+  top_ssn_sea: ["top", "alohaShirt", { c: "#3a9ad0", b: "#ff6a8a" }],
+  back_ssn_sea: ["back", "swimRing", { c: "#f6f4fa", b: "#e8484a" }],
+  ws_ssn_sea: ["wskin", "ssnSea", {}],
+  hat_ssn_maple: ["hat", "mapleWreath", { c: "#c8342a", b: "#f08a2a" }],
+  top_ssn_maple: ["top", "cableKnit", { c: "#c8902e", b: "#c83a2a" }],
+  back_ssn_maple: ["back", "acornPack", { c: "#b8743a", b: "#8a7a5a" }],
+  ws_ssn_maple: ["wskin", "ssnMaple", {}],
+  hat_ssn_snow: ["hat", "snowknit", { c: "#4a6ac8", b: "#f4f6fc" }],
+  top_ssn_snow: ["top", "furCoat", { c: "#c8404a", b: "#8a5a3a" }],
+  back_ssn_snow: ["back", "snowmanPack", { c: "#f4f8ff", b: "#e04a4a" }],
+  ws_ssn_snow: ["wskin", "ssnSnow", {}],
+  // 이야기 기념품 (P11): 루루 sews the arcs' keepsakes
+  face_reed_float: ["face", "reedFloat", { c: "#e04a3a", b: "#f8e070" }],
+  back_neon_sign: ["back", "neonSign", { c: "#3a3450", b: "#ff5ab0" }],
+  hat_sky_navigator: ["hat", "navcap", { c: "#34406a", b: "#d8a840" }],
+  back_cloud_bell: ["back", "bellFrame", { c: "#c89040", b: "#d04a4a" }],
+  hat_chronicler: ["hat", "samo", { c: "#3e3a50", b: "#b8bcc8" }],
+  face_rift_goggles: ["face", "riftGoggles", { c: "#c8a048", b: "#a070e0", s: "#4a3a4a" }],
 };
 /** The cosmetic slots, in the order the wire sends them. */
 export const SLOTS = ["hat", "top", "back", "face", "wskin"];

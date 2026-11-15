@@ -14,7 +14,8 @@ const COS_SLOT_NAME = { hat: "모자", top: "상의", back: "등", face: "얼굴
  * id → [wire code, slot, name, rarity 0–4, source, price or achievement id, description].
  * Sources: shop (sold for `price` gold), token (Willow tokens), chest, boss, rareBoss, daily, rift, ach (earned with achievement `price`: the
  * Lv-50 life masters' outfits and the NPCs' 가족 gifts are these), quest (a chance on every quest hand-in) and weekly
- * (a chance with a boss challenge's weekly big reward) and sew (루루 sews a story keepsake, KEEP_SEW). An optional ninth
+ * (a chance with a boss challenge's weekly big reward), sew (루루 sews a story keepsake, KEEP_SEW) and fair (장꾼 다래's
+ * seasonal stall for 장날 토큰; 63-festival.js FAIR_SHOP holds the price). An optional ninth
  * field is the themed set (COS_SETS). One achievement may pay several pieces of one set (COS_ACH).
  * Codes are what the wire carries: never reuse or renumber one.
  */
@@ -174,10 +175,35 @@ const COSMETICS = Object.fromEntries([
   ["hat_fish_souwester", 138, "hat", "어부 방수모", 1, "ach", "fbig10", "뒤챙이 긴 노란 방수모. 빗물이 목으로 흐르지 않는다.", "fishlog"],
   ["top_fish_raincoat", 139, "top", "기록가 비옷", 2, "ach", "fbook", "솔기마다 박음질한 노란 비옷. 단추는 나무 찌.", "fishlog"],
   ["back_fish_scroll", 140, "back", "어탁 두루마리", 2, "ach", "fbook", "가장 큰 물고기를 먹으로 떠 낸 두루마리. 등에 비스듬히 멘다.", "fishlog"],
+  // 사계절 (P11): 장꾼 다래's stall sells each season's four for 장날 토큰 (63-festival.js FAIR_SHOP holds the ids and prices)
+  ["hat_ssn_sakura", 141, "hat", "벚꽃 머리띠", 2, "fair", 0, "꽃 핀 가지를 통째로 엮은 머리띠. 꽃잎이 겹겹이 포개졌다.", "spring"],
+  ["top_ssn_sakura", 142, "top", "벚꽃 카디건", 2, "fair", 0, "꽃잎 무늬를 짜 넣은 연분홍 카디건. 단추는 꽃봉오리.", "spring"],
+  ["back_ssn_sakura", 143, "back", "벚꽃 종이우산", 2, "fair", 0, "벚꽃을 그린 종이우산을 펼친 채 등에 꽂았다.", "spring"],
+  ["ws_ssn_sakura", 144, "wskin", "벚꽃 가지 무기 외형", 2, "fair", 0, "꽃 핀 가지가 날을 휘감는다. 휘두르면 꽃송이가 흔들린다.", "spring"],
+  ["hat_ssn_sea", 145, "hat", "불가사리 머리핀", 2, "fair", 0, "썰물 때 주운 주황 불가사리. 머리 위에서 꼼지락거리는 것 같다.", "summer"],
+  ["top_ssn_sea", 146, "top", "꽃무늬 여름 셔츠", 2, "fair", 0, "큼직한 남국 꽃을 찍은 반소매 셔츠. 단추 두 개는 풀어 둔다.", "summer"],
+  ["back_ssn_sea", 147, "back", "줄무늬 튜브", 2, "fair", 0, "빵빵하게 분 줄무늬 튜브. 언제든 바다로 뛰어들 수 있다.", "summer"],
+  ["ws_ssn_sea", 148, "wskin", "파도 무기 외형", 2, "fair", 0, "날을 따라 흰 물마루가 부서진다.", "summer"],
+  ["hat_ssn_maple", 149, "hat", "단풍잎 화관", 2, "fair", 0, "붉고 노란 단풍잎을 겹겹이 꽂은 가을 화관.", "autumn"],
+  ["top_ssn_maple", 150, "top", "꽈배기 스웨터", 2, "fair", 0, "굵은 꽈배기 무늬로 뜬 겨자색 스웨터. 가슴에 단풍잎 덧천.", "autumn"],
+  ["back_ssn_maple", 151, "back", "도토리 배낭", 2, "fair", 0, "커다란 도토리 모양 배낭. 뚜껑은 깍정이, 꼭지는 손잡이.", "autumn"],
+  ["ws_ssn_maple", 152, "wskin", "단풍 무기 외형", 2, "fair", 0, "날 위에 단풍잎 세 장이 내려앉았다.", "autumn"],
+  ["hat_ssn_snow", 153, "hat", "눈꽃 털모자", 2, "fair", 0, "눈꽃 무늬를 짜 넣은 털모자. 테두리와 방울은 폭신한 흰 털.", "winter"],
+  ["top_ssn_snow", 154, "top", "털깃 겨울 코트", 2, "fair", 0, "깃과 밑단에 흰 털을 두른 도톰한 코트. 나무 토글 단추.", "winter"],
+  ["back_ssn_snow", 155, "back", "눈사람 배낭", 2, "fair", 0, "목도리를 두른 꼬마 눈사람이 어깨 너머로 웃는다. 녹지 않는다.", "winter"],
+  ["ws_ssn_snow", 156, "wskin", "눈꽃 무기 외형", 2, "fair", 0, "얼음빛 날에 여섯 갈래 눈꽃이 피었다.", "winter"],
+  // 이야기 기념품 (P11): 루루 sews the A1–A6 keepsakes (KEEP_SEW; the A1 key is 버드나무 마을's 밀짚 두건)
+  ["face_reed_float", 157, "face", "빨간 찌 귀걸이", 2, "sew", 0, "갈대의 낡은 찌를 귓가에 달았다. 물가에 서면 저절로 까딱인다.", "story"],
+  ["back_neon_sign", 158, "back", "네온 간판 등 배낭", 2, "sew", 0, "마지막 불빛 등을 끼운 작은 간판. 등 뒤에서 「집」 한 글자가 깜빡인다.", "story"],
+  ["hat_sky_navigator", 159, "hat", "하늘 항해사 모자", 2, "sew", 0, "바람등호 선원의 챙모자. 이마에 놋쇠 나침반이 박혀 있다.", "story"],
+  ["back_cloud_bell", 160, "back", "운해 종지기 등장식", 2, "sew", 0, "등에 진 작은 종틀. 걸을 때마다 새끼 종이 구름 소리를 낸다.", "story"],
+  ["hat_chronicler", 161, "hat", "사관 모자", 2, "sew", 0, "날개 달린 검은 사모에 갈피의 회색 깃펜을 꽂았다.", "story"],
+  ["face_rift_goggles", 162, "face", "균열 연구원 고글", 2, "sew", 0, "균열 표본을 들여다보던 보글의 보라 렌즈 고글. 렌즈에 금빛이 번뜩인다.", "story"],
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" || src === "token" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
 const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근", coop: "협동 알바", willowpatrol: "버들 순찰대", coraltrade: "산호 항구 상단", brasssurvey: "황동 탐사대", moonarchive: "달빛 기록원", mapleramblers: "단풍길 탐험대",
-  willow: "버드나무 마을", coopking: "협동 알바 왕", fishlog: "낚시 기록가" };
+  willow: "버드나무 마을", coopking: "협동 알바 왕", fishlog: "낚시 기록가",
+  spring: "봄 장날 · 벚꽃", summer: "여름 장날 · 한여름 바다", autumn: "가을 장날 · 단풍", winter: "겨울 장날 · 눈꽃", story: "이야기 기념품" };
 const COS_IDS = Object.keys(COSMETICS);
 const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
 /** achievement id → the cosmetic ids it pays. */
@@ -204,9 +230,12 @@ function cosDyeClean(d, ch) {
 }
 /**
  * 기념품 재봉 (P9): 루루 sews a story keepsake into its outfit piece; the keepsake stays in ch.keep.
- * Hook: "" means its piece is not drawn yet (P11, 이야기 기념품 set) — put a COSMETICS id here once it is.
+ * "" would mean its piece is not drawn yet (validate refuses it); since P11 every keepsake has one.
  */
-const KEEP_SEW = { kp_reed_float: "", kp_willow_key: "hat_willow_straw", kp_neon_lamp: "", kp_compass: "", kp_bell: "", kp_quill: "", kp_shardjar: "" };
+const KEEP_SEW = {
+  kp_reed_float: "face_reed_float", kp_willow_key: "hat_willow_straw", kp_neon_lamp: "back_neon_sign", kp_compass: "hat_sky_navigator",
+  kp_bell: "back_cloud_bell", kp_quill: "hat_chronicler", kp_shardjar: "face_rift_goggles",
+};
 const cosEmpty = () => ({ own: [], on: {}, tokens: 0 });
 function cosClean(c, ch) {
   const src = isObj(c) ? c : {};
