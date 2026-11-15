@@ -480,10 +480,60 @@ const ICON = {
     ["l", D(U(R(8, 13, 16, 13), C(15.5, 13, 7.5)), U(R(11, 14, 9, 12), C(15.5, 14, 4.5)))],
     ["A", U(R(11, 14, 9, 12), C(15.5, 14, 4.5))], ["*", R(15, 13, 2, 9), R(12.5, 15, 7, 2)],
   ],
+  stomp: [ // 짓밟기: a boot coming down on a cracked shock ring
+    ["A", D(E(15.5, 25, 12, 3.2), E(15.5, 25, 9, 1.6))], ["A", L(3, 27, 6, 25, 1), L(26, 25, 29, 27, 1)],
+    ["m", R(11, 3, 8, 11)], ["l", P(9, 13, 20, 13, 24, 18, 25, 22, 8, 22, 8, 16)], ["d", R(8, 21, 17, 3)], ["a", R(11, 5, 8, 2)],
+    ["k", poly(1, 13, 25, 15, 27, 17, 25, 19, 27)],
+  ],
+  mortar: [ // 박격: an arrow on a high arc, a powder burst where it lands
+    ["L", A(13, 24, 11, 180, 295, 1, 2.2)], ["W", C(2.5, 22, 0.5)],
+    ...arrow(14, 8, 24, 14, 3),
+    ["A", star(23, 24, 5.5, 0.4)], ["S", C(17, 26, 1.8), C(28, 22, 1.4)], ["W", C(23, 24, 1.2)],
+  ],
+  dragonpierce: [ // 용아관통: a thick bone arrow, a flash where the bow kicked back
+    ["W", star(5, 16, 4.5, 0.25)], ["A", L(3, 9, 7, 11, 1), L(3, 23, 7, 21, 1)],
+    ["l", L(9, 16, 21, 16, 3.6)], ["l", C(9, 14.5, 1.7), C(9, 17.5, 1.7)], ["a", L(13, 16, 13, 16, 3.6), L(17, 16, 17, 16, 3.6)],
+    ["m", P(28, 16, 20, 10.5, 20, 21.5)], ["k", L(21, 16, 25, 16, 1)],
+  ],
+  rollshot: [ // 구르며 쏘기: a curled roll trail, an arrow leaving it
+    ["M", A(11, 20, 7.5, 100, 430, 1, 3.4)], ["L", A(11, 20, 3.6, 150, 440, 1, 2)], ["W", C(4, 27, 0.5), C(18, 27, 0.5)],
+    ...arrow(12, 13, 27, 6, 3.4),
+  ],
+  chainbolt: [ // 연쇄 번개: a zigzag bolt linking three dots
+    ["a", poly(2, 6, 24, 13, 17, 10, 14.5, 15.5, 7), poly(2, 15.5, 7, 20, 15, 18, 16.5, 26, 21)],
+    ["l", C(6, 24, 2.7), C(15.5, 7, 2.7), C(26, 21, 2.7)], ["*", C(5.5, 23.5, 1), C(15, 6.5, 1), C(25.5, 20.5, 1)],
+  ],
+  shoulder: [ // 어깨치기: a pauldron slamming into a wall
+    ["m", R(22, 5, 6, 22)], ["k", L(22, 11, 27, 11, 1), L(22, 18, 27, 18, 1), poly(1, 22, 13, 24, 15, 23, 17)],
+    ["L", L(2, 11, 6, 11, 1), L(1, 16, 5, 16, 1), L(2, 21, 6, 21, 1)],
+    ["m", R(6, 10, 6, 13)], ["l", I(C(11, 16.5, 9), R(11, 0, 21, 32))], ["k", A(11, 16.5, 5.5, -75, 75, 1)], ["a", C(15, 16.5, 1.3)],
+    ["W", rays(21, 16.5, 1.5, 4.5, [-70, -25, 25, 70], 1.2)],
+  ],
+  snare: [ // 올가미: a noose pulled tight round an arrow
+    ...arrow(4, 27, 26, 7, 3.4),
+    ["a", ring(13, 20, 5.5, 2)], ["l", C(18, 23.5, 2)], ["a", poly(1.8, 18, 25, 20, 28, 25, 26)],
+  ],
+  bladevortex: [ // 칼날 소용돌이: five knives chasing round a ring
+    ["A", A(15.5, 15.5, 5.5, 0, 280, 1, 2.4)],
+    ...[0, 1, 2, 3, 4].flatMap((i) => { const a = -90 + 72 * i, b = a + 50, r = 11; return sword(15.5 + cos(a) * r, 15.5 + sin(a) * r, 15.5 + cos(b) * r, 15.5 + sin(b) * r, 2.6, 2, 1.8); }),
+    ["W", C(15.5, 15.5, 0.8)],
+  ],
+  smoke: [ // 연막: a grey puff of smoke
+    ["L", L(3, 25, 8, 25, 1), L(24, 26, 29, 26, 1)],
+    ["m", U(C(9.5, 19, 5), C(16, 14, 7), C(22.5, 19, 5.5), R(9.5, 19, 13, 6))], ["l", U(C(14, 12.5, 3.8), C(9.5, 18, 2.4))],
+    ["k", A(17, 17.5, 3, 200, 430, 1)], ["S", C(6, 9, 1.8), C(26, 10, 1.4), C(24, 5, 1)],
+  ],
+  parry: [ // 받아치기: a flat blade meeting a blow in a spark
+    ["A", L(25, 4, 20, 8, 1.4, 0.6)],
+    ...sword(4, 24, 25, 16, 3.4, 4),
+    ["W", rays(18.5, 14, 3, 7.5, [-150, -110, -70, -30, 20], 1.2)], ["*", star(18.5, 14, 3.5, 0.25)],
+  ],
+  mountain: [ // 태산: a blade raised over a split peak
+    ["m", P(3, 28, 11, 18, 15, 13, 15, 28)], ["l", P(17, 28, 17, 15, 21, 19, 29, 28)], ["k", L(16, 15, 16, 28, 1)],
+    ["*", C(14, 15, 1), C(18.5, 17, 0.8)],
+    ...sword(15.5, 17, 15.5, 3, 3.6, 4),
+  ],
 };
-// placeholders: the new skills (skill-ideas.md §9) borrow an existing icon until they are drawn at 32×32
-for (const [id, from] of Object.entries({ stomp: "hammer_stamp", mortar: "rain", dragonpierce: "snipe", rollshot: "leapshot", chainbolt: "dragon",
-  shoulder: "rend", snare: "traps", bladevortex: "flurry", smoke: "shade", parry: "slash", mountain: "cleave" })) ICON[id] = ICON[from];
 
 // a few mastery passives have no prefix in the id but are passives all the same
 const BASE_PASSIVE = new Set(["inertia", "vitals", "tip", "reso", "brand", "hawk"]);
