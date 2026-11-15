@@ -1441,7 +1441,7 @@ const COOP_T = {
   xp: [0.08, 0.14, 0.20, 0.28], gold: [40, 60, 80, 110], gearQ: [0, 1, 1, 2], stone: [1, 2, 3, 5], life: [0.30, 0.45, 0.60, 0.80],
   tip: 10, tipLife: 0.1, helpTip: 15, helpLife: 0.25, rep: 5,
 };
-const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치" };
+const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", paddle: "젓개" };
 /** An empty row of the forge template's object layer (wall, 28 open tiles, the cut-down front wall). */
 const COOP_ROW = "=" + " ".repeat(28) + "_";
 /** The jobs: name, owner NPC and lobby, shift minutes, the two tools (rotation A B A B), par, combo window, life skill, template. */
@@ -1512,6 +1512,11 @@ const COOP = {
   forge: {
     name: "캉캉대장간 단조", npc: "kangkang", lobby: "kangkang_forge", mins: 5, tools: ["tongs", "hammer"], combo: 40000, skill: "craft",
     hint: "집게 담당은 철 상자 → 화덕(풀무질로 60~80도) → 달궈진 쇠를 모루에, 망치 담당은 박자에 맞춰 두드리고 담금질 → 납품구!",
+    // the forge engine's words (68-coop.js): order and grade names, messages; 보글's alch swaps them
+    skin: { orders: ["편자", "괭이날", "검날", "냄비"], grades: ["걸작", "상", "중", "하"], txt: {
+      reheat: "한 번 더 달궈야 해요 — 집게로 화덕에!", busy: "이 모루는 사용 중이에요 — 옆 모루로!", first: "들고 있는 것을 먼저 담금질·납품하세요",
+      cooled: "식었어요 — 집게로 다시 달구세요!", a: ["철 상자에서 쇠막대를 꺼내세요 (화덕 앞에서는 풀무질!)", "달궈진 쇠를 빈 모루에 올리세요", "화덕에 넣어 달구세요"],
+      b: ["모루 위 달궈진 쇠를 박자(고리)에 맞춰 두드리세요", "담금질 통에 식히세요", "납품구(동쪽)에 내세요"] } },
     // cut-offs tuned on walking bots like the others (tests/coop.mjs: 1–4 bots, every blow on the beat, score ≈ 971 · 2,380 ·
     // 2,968 · 5,119 delivering 8 · 14 · 17 · 25 pieces, just over S); a real party, off the beat and slower, lands on B–A
     par: 1000, parN: { 1: 1.07, 2: 2.62, 3: 3.27, 4: 5.6 },
@@ -1528,27 +1533,31 @@ const COOP = {
     },
   },
 };
+/** 보글연금공방 가마 (C.6 보글 skin): the forge's rules, numbers, map and stations under other names (약재 선반 · 가마 · 가마솥 · 병입대 · 납품 선반). */
+COOP.alch = { ...COOP.forge, name: "보글연금공방 가마", npc: "bogle", lobby: "bogle_lab", tools: ["fan", "paddle"], skill: "alch",
+  hint: "부채 담당은 약재 선반 → 가마(부채질로 60~80도) → 끓는 약재를 가마솥에, 젓개 담당은 박자에 맞춰 젓고 병입대 → 납품 선반!",
+  skin: { orders: ["빨간 물약", "파란 물약", "엘릭서", "묘약"], grades: ["명약", "상", "중", "하"], txt: {
+    reheat: "한 번 더 끓여야 해요 — 부채로 가마에!", busy: "이 가마솥은 사용 중이에요 — 옆 가마솥으로!", first: "들고 있는 것을 먼저 병에 담아 납품하세요",
+    cooled: "식었어요 — 부채로 다시 끓이세요!", a: ["약재 선반에서 약재를 꺼내세요 (가마 앞에서는 부채질!)", "끓는 약재를 빈 가마솥에 부으세요", "가마에 넣어 끓이세요"],
+    b: ["가마솥의 약재를 박자(고리)에 맞춰 저으세요", "병입대에서 병에 담으세요", "납품 선반(동쪽)에 내세요"] } },
+  tpl: { ...COOP.forge.tpl, name: "보글연금공방 (조제 중)", style: "lab", bgm: "brew" } };
 /**
- * 캉캉대장간 단조 (C.6, v1; the 보글 skin is not built). Orders (strikes `n`, points, heats): at most `open[n − 1]` at once,
+ * 캉캉대장간 단조 (C.6, v1; 보글's alch above is its skin). Orders (strikes `n`, points, heats): at most `open[n − 1]` at once,
  * a new one every `orderMs[n − 1]`, `deadMs` to deliver (−`latePen` and combo 0 when missed). A furnace's T loses `decay`/s,
  * a tongs act there pumps +`pump`; a bar in it heats +`heatIn`/s at T ≥ `lo`, +`heatLo`/s from 30, and scorches (quality
  * −`scorchQ`/s) above `scorch`; at 100 it is hot and stays hot `hotMs` out of the fire. On an anvil the beat is `beatMs`
  * (`feverBeat` in fever), the first `leadMs` after placing; a strike within `perfect` ms of a beat is +2, within `good` +1,
  * else −1, after the player's own offset (median of the last 5, ±`latMax`). Grade by quality q vs strikes N (`grades`:
- * [min q/N, ×pts, name]); pay pts × grade × (1 + `timeK`·deadline left) × mult, tongs `tongsK` / hammer `hammerK`.
+ * [min q/N, ×pts]; the names are the skin's); pay pts × grade × (1 + `timeK`·deadline left) × mult, tongs `tongsK` / hammer `hammerK`.
  * A piece no open order wants sells for ×`offK`.
  */
 const COOP_FORGE = {
-  orders: [
-    { name: "편자", n: 6, pts: 40, heats: 1 },
-    { name: "괭이날", n: 8, pts: 55, heats: 1 },
-    { name: "검날", n: 10, pts: 70, heats: 1 },
-    { name: "냄비", n: 8, pts: 55, heats: 2 },
-  ],
+  // 편자 · 괭이날 · 검날 · 냄비 (the names are the job's: COOP[k].skin.orders)
+  orders: [{ n: 6, pts: 40, heats: 1 }, { n: 8, pts: 55, heats: 1 }, { n: 10, pts: 70, heats: 1 }, { n: 8, pts: 55, heats: 2 }],
   open: [3, 3, 4, 4], orderMs: [30000, 20000, 14000, 11000], firstMs: 1000, deadMs: 100000, latePen: 20,
   T0: 60, decay: 4, pump: 9, pumpMs: 300, lo: 60, hi: 80, scorch: 90, heatIn: 12, heatLo: 4, scorchQ: 0.5, hotMs: 12000, reheat: 50, slots: 2,
   beatMs: 750, feverBeat: 600, leadMs: 1000, perfect: 160, good: 320, latMax: 150,
-  grades: [[1.6, 1.6, "걸작"], [1.0, 1.3, "상"], [0.4, 1.0, "중"], [-1e9, 0.5, "하"]], timeK: 0.3, tongsK: 0.45, hammerK: 0.55, offK: 0.25, syncMs: 1000,
+  grades: [[1.6, 1.6], [1.0, 1.3], [0.4, 1.0], [-1e9, 0.5]], timeK: 0.3, tongsK: 0.45, hammerK: 0.55, offK: 0.25, syncMs: 1000,
 };
 /**
  * 쥬쥬식당 서빙 (C.5, v1: no plates to wash, three dishes). By the party size n at the start: at most `seats[n − 1]` tables
@@ -14531,7 +14540,7 @@ function forgeStrike(S, dim, c, p, q, a) {
   else if (pc.heats < O.heats && pc.n >= Math.ceil((O.n * pc.heats) / O.heats)) {
     // a 냄비 needs a second heat halfway (heats = times it came out of the fire)
     pc.hot = 0; coopEv(S, dim, 64, a.x, a.y);
-    toast(p, "한 번 더 달궈야 해요 — 집게로 화덕에!");
+    toast(p, COOP[c.k].skin.txt.reheat);
   }
   c.ver++;
   return true;
@@ -14539,7 +14548,7 @@ function forgeStrike(S, dim, c, p, q, a) {
 /** The chute: a quenched piece for the most urgent open order of its kind (no order: ×offK). */
 function forgeDeliver(S, dim, c, p, q, h) {
   const F = COOP_FORGE, now = S.now, O = F.orders[h.r], o = c.ents.filter((e) => e.t === 8 && e.r === h.r).sort((a, b) => a.until - b.until)[0];
-  const G = F.grades.find(([m]) => h.q >= m * O.n), cred = {};
+  const gi = F.grades.findIndex(([m]) => h.q >= m * O.n), G = F.grades[gi], K = COOP[c.k].skin, name = K.orders[h.r], cred = {};
   for (const [part, k] of [[h.ct, F.tongsK], [h.ch, F.hammerK]]) {
     const w = Object.values(part).reduce((s, v) => s + v, 0) || 1;
     for (const pid of Object.keys(part)) cred[pid] = (cred[pid] || 0) + (k * part[pid]) / w;
@@ -14549,7 +14558,7 @@ function forgeDeliver(S, dim, c, p, q, h) {
   q.hold = []; c.ver++;
   const pts = coopGood(S, c, base, cred);
   coopEv(S, dim, 13, p.x, p.y, pts);
-  toast(p, o ? `[${G[2]}] ${O.name} 납품! +${pts}` : `주문에 없는 ${O.name} — 헐값에 넘겼어요 (+${pts})`);
+  toast(p, o ? `[${K.grades[gi]}] ${name} 납품! +${pts}` : `주문에 없는 ${name} — 헐값에 넘겼어요 (+${pts})`);
   return true;
 }
 
@@ -14811,14 +14820,14 @@ const COOP_JOB = {
       for (const o of c.ents.filter((e) => e.t === 8 && now >= e.until)) {
         c.ents.splice(c.ents.indexOf(o), 1); c.ver++; c.late++;
         coopFail(c, F.latePen); coopEv(S, dim, 61, 0, 0, o.r);
-        coopToastAll(S, dim, `[납기 초과] ${F.orders[o.r].name} 주문이 취소됐어요! 점수 -${F.latePen}`);
+        coopToastAll(S, dim, `[납기 초과] ${COOP[c.k].skin.orders[o.r]} 주문이 취소됐어요! 점수 -${F.latePen}`);
       }
       // furnace temperatures and heats drift every tick: resend them once a second (the client extrapolates the decay)
       if (now >= c.next.sync) { c.next.sync = now + F.syncMs; c.ver++; }
     },
     act(S, dim, c, p, q) {
-      const F = COOP_FORGE, now = S.now, h = q.hold[0], si = (key) => coopSt(c, p, key), J = COOP[c.k];
-      if (q.tool === "tongs") {
+      const F = COOP_FORGE, now = S.now, h = q.hold[0], si = (key) => coopSt(c, p, key), J = COOP[c.k], X = J.skin.txt;
+      if (q.tool === J.tools[0]) {   // tongs (alch: fan)
         const fi = si("furnace");
         if (fi >= 0) {
           const f = forgeEnt(c, 6, "fi", fi);
@@ -14841,7 +14850,7 @@ const COOP_JOB = {
         if (ai >= 0) {
           const a = forgeEnt(c, 7, "ai", ai);
           if (h && h.st === "bar" && h.hot > now) {
-            if (a.pc) return "이 모루는 사용 중이에요 — 옆 모루로!";
+            if (a.pc) return X.busy;
             if (h.r < 0) h.r = forgeKind(c);
             a.pc = h; q.hold = [];
             a.per = c.state === "fever" ? F.feverBeat : F.beatMs; a.beat0 = now + F.leadMs; a.lastK = -1;
@@ -14862,8 +14871,8 @@ const COOP_JOB = {
         if (ai >= 0) {
           const a = forgeEnt(c, 7, "ai", ai);
           if (a.pc && a.pc.st === "bar") {
-            if (h) return "들고 있는 것을 먼저 담금질·납품하세요";
-            if (!(a.pc.hot > now)) return "식었어요 — 집게로 다시 달구세요!";
+            if (h) return X.first;
+            if (!(a.pc.hot > now)) return X.cooled;
             return forgeStrike(S, dim, c, p, q, a);
           }
           if (a.pc && !h) { q.hold = [a.pc]; a.pc = null; c.ver++; coopEv(S, dim, 57, a.x, a.y); return true; }
@@ -14879,8 +14888,8 @@ const COOP_JOB = {
         toast(p, `${COOP_TOOLS[q.tool]}${pp(COOP_TOOLS[q.tool], "을를")} 들었습니다.`);
         return true;
       }
-      if (q.tool === "tongs") return !h ? "철 상자에서 쇠막대를 꺼내세요 (화덕 앞에서는 풀무질!)" : h.hot > now ? "달궈진 쇠를 빈 모루에 올리세요" : "화덕에 넣어 달구세요";
-      return !h ? "모루 위 달궈진 쇠를 박자(고리)에 맞춰 두드리세요" : h.st === "shaped" ? "담금질 통에 식히세요" : "납품구(동쪽)에 내세요";
+      if (q.tool === J.tools[0]) return X.a[!h ? 0 : h.hot > now ? 1 : 2];
+      return X.b[!h ? 0 : h.st === "shaped" ? 1 : 2];
     },
     /** The HUD's job summary: delivered, late. */
     sum: (c) => [c.done, c.late],
@@ -14888,6 +14897,8 @@ const COOP_JOB = {
     what: (q, now) => q.hold.map((h) => (h.r + 1) * 5 + (h.st === "quenched" ? 4 : h.st === "shaped" ? 3 : h.hot > now ? 2 : 1)),
   },
 };
+/** 보글연금공방 가마: the forge's engine as is; only COOP.alch's names, tools and skin differ. */
+COOP_JOB.alch = COOP_JOB.forge;
 
 // ── actions (validated in 70-validate.js, applied in 75-apply.js)
 
@@ -14958,12 +14969,13 @@ const coopRow = (now) => (e) => {
 };
 /** `self.coop`: the jobs done today (their day's pay taken). */
 const coopSelf = (p) => (p.ch.coopDay === dayOf(p.S.now) ? p.ch.coopDone : []);
-/** defs().coop: { jobs: { k: [name, minutes, tools, par, npc, lobby, hint, stations] }, kinds, cuts, parN, tools, binCap, near, dishes, cook (ms), trayCap, orders [name, strikes, pts, heats], forge [band lo, hi, scorch, decay/s], grades (piece grade names) }. */
+/** defs().coop: { jobs: { k: [name, minutes, tools, par, npc, lobby, hint, stations, skin {orders, grades} names or 0] }, kinds, cuts, parN, tools, binCap, near, dishes, cook (ms), trayCap, orders [forge name, strikes, pts, heats], forge [band lo, hi, scorch, decay/s], grades (forge piece grade names) }. */
 function coopDefs() {
-  return { jobs: Object.fromEntries(Object.keys(COOP).map((k) => [k, [COOP[k].name, COOP[k].mins, COOP[k].tools, COOP[k].par, COOP[k].npc, COOP[k].lobby, COOP[k].hint, COOP[k].st]])),
+  const J = (k) => COOP[k], skin = (k) => (J(k).skin ? { orders: J(k).skin.orders, grades: J(k).skin.grades } : 0);
+  return { jobs: Object.fromEntries(Object.keys(COOP).map((k) => [k, [J(k).name, J(k).mins, J(k).tools, J(k).par, J(k).npc, J(k).lobby, J(k).hint, J(k).st, skin(k)]])),
     kinds: COOP_KINDS, cuts: COOP_T.cuts, parN: COOP_T.parN, tools: COOP_TOOLS, binCap: COOP_APT.binCap, near: COOP_T.near,
     dishes: COOP_DINER.dishes.map((d) => d.name), cook: COOP_DINER.dishes.map((d) => d.cook), trayCap: COOP_DINER.trayCap,
-    orders: COOP_FORGE.orders.map((o) => [o.name, o.n, o.pts, o.heats]), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP_FORGE.grades.map((g) => g[2]) };
+    orders: COOP_FORGE.orders.map((o, i) => [COOP.forge.skin.orders[i], o.n, o.pts, o.heats]), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP.forge.skin.grades };
 }
 // ───────────────────────────── actions ─────────────────────────────
 
