@@ -25,6 +25,7 @@ import { wpWoke } from "./overlay.js";
 import { refreshUi } from "./hud.js";
 import { tutTry } from "./win_world.js";
 import { K } from "./keymap.js";
+import { resetHints } from "./hints.js";
 import * as Info from "./infocard.js";
 import { renderParty, renderGuild } from "./win_social.js";
 
@@ -584,6 +585,23 @@ export function setupWindows({ walkToDoor }) {
     toast("창을 처음 자리로 옮겼습니다");
   });
   addEventListener("resize", placeToasts);
+  // the settings in four tabs (화면 · 소리 · 조작 · 게임), the last one remembered; no 조작 on a touch screen
+  const setTab = (sec) => {
+    if (!["view", "sound", "keys", "game"].includes(sec) || (sec === "keys" && touch())) sec = "view";
+    for (const b of $$("#set-tabs button")) b.classList.toggle("on", b.dataset.sec === sec);
+    for (const n of $$("#w-settings .body > [data-sec]")) n.hidden = n.dataset.sec !== sec;
+    localStorage.setItem("lumentale:settab", sec);
+  };
+  for (const b of $$("#set-tabs button")) b.addEventListener("click", () => { setTab(b.dataset.sec); Sound.play("ui"); });
+  setTab(localStorage.getItem("lumentale:settab"));
+  // the 다시 묻지 않기 choices (ask) and the first-time cards (hints.js), back on
+  $("#btn-noask").addEventListener("click", () => {
+    const ks = Object.keys(localStorage).filter((k) => k.startsWith("lumentale:noask:"));
+    for (const k of ks) localStorage.removeItem(k);
+    toast(ks.length ? `꺼 두었던 확인 창 ${ks.length}가지를 다시 띄웁니다` : "꺼 둔 확인 창이 없습니다");
+    Sound.play("ui");
+  });
+  $("#btn-hints").addEventListener("click", () => { resetHints(); toast("처음 안내 카드를 다시 보여 드립니다"); Sound.play("ui"); });
   for (const b of $$("#chat-tabs button")) {
     b.addEventListener("click", () => {
       for (const o of $$("#chat-tabs button")) o.classList.toggle("on", o === b);

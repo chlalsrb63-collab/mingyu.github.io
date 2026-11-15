@@ -1503,6 +1503,15 @@ body[data-ts="l"] { --t9: 11px; --t10: 12px; --t11: 13px; --t12: 14px; }
 #keys-list .kr .btn.cap { background: var(--b-mid); color: #2a1806; }
 body.touch .set-keys { display: none !important; }
 #w-settings .set-row { flex-wrap: wrap; }
+/* 화면 · 소리 · 조작 · 게임 (windows.js setTab): the rows of the other tabs are hidden */
+#w-settings .body > [data-sec][hidden] { display: none !important; }
+#set-tabs { display: flex; gap: 2px; margin-bottom: 4px; }
+#set-tabs button { flex: 1 1 0; }
+/* a slider row stays one line in the side panel: the label, the slider filling what is left, the value */
+#w-settings .set-row:has(.vol) { flex-wrap: nowrap; }
+#w-settings .set-row:has(.vol) > span:first-child { flex: 0 0 auto; }
+#w-settings .set-row input.vol { width: auto; flex: 1 1 70px; min-width: 50px; }
+#w-settings .set-row .pct { width: auto; min-width: 26px; }
 
 /* UI cleanup (K window, 전직의 길, 아르센): the picked weapon opens in place, skills are one line, the job card has its own slot above the table */
 .wp-list .wp-skills { margin: 0 0 4px 10px; }
