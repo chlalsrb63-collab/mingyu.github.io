@@ -242,7 +242,7 @@ export function loadMap(m) {
         const [X, Y] = tI(x, y), st = { sp: pc2.img, dx: X + pc2.dx, dy: Y + pc2.dy, x: X, y: Y + 16, d: Y + 8, glow: null, glint: -1, art: true, tx: X, ty: Y };
         // a wall tall enough to hide someone can be cut down to a stump when they stand behind it
         if (ch !== "h" && "low" in pc2) st.cut = pc2;
-        if (ch === "h") { const hb = houseAt(x, y); if (hb) { artHouse.add(hb); slice(st, hb.x, hb.y, hb.w || 4, hb.h || 3); } }
+        if (ch === "h") { const hb = houseAt(x, y); if (hb) { artHouse.add(hb); st.depthBuilding = true; slice(st, hb.x, hb.y, hb.w || 4, hb.h || 3); } }
         // indoors: a fire, steam, a sleeping cat; lamps and windows light the room (iso_interior.js)
         if (pc2.anim) st.anim = pc2.anim;
         if (pc2.glow) { roomL.glows.push({ ...pc2.glow, X: X + pc2.glow.x, Y: Y + pc2.glow.y }); if (theme !== "interior") st.nightGlow = "#ffd890"; }
@@ -295,6 +295,7 @@ export function loadMap(m) {
     else if (Array.isArray(sp)) sp = sp[Math.floor(h * sp.length)];
     statics.push(stand({
       sp, glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" || ch === "9" ? "#ffd070" : ch === "0" || ch === "X" ? "#ff6a7a" : ch === "Y" && theme === "cave" ? "#5ae4d0" : ch === "/" ? "#9affc8" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
+      depthFoliage: ch === "T" || ch === "P" || ch === "B",
     }, x, y, ch === "T" || ch === "P" ? Math.round((hash(x, y, 8) - 0.5) * 6) : 0));
   }
   for (const st of halls.statics) statics.push(st);
@@ -350,6 +351,7 @@ export function loadMap(m) {
       }
       const city = b.v >= 4, hs = A.house[b.v % 8], [X, Y] = tI(b.x, b.y);
       const s = { sp: hs.cv, dx: X - hs.ax, dy: Y - hs.ay, x: tI(b.x + 2, b.y + 1.5)[0], y: tI(b.x + 4, b.y + 3)[1], glow: city ? NEON[b.v % 4] : null, big: true, neon: city ? NEON[b.v % 4] : null, ph: hash(b.x, b.y, 2) * 9, house: !city };
+      s.depthBuilding = true;
       slice(s, b.x, b.y, 4, 3);
       statics.push(s);
       if (!city) smokers.push({ x: s.x + 6, y: s.dy + 10 });

@@ -49,8 +49,12 @@ import { drawSkirt, drawGround, drawLayer, drawPulseParts, lazyLeft, lazyTall } 
 import { wpLit, lights, map, ground, theme, artGround, drawWater, pulseCv, pulseParts, falls, smokers, statics, npcs, OUTDOOR, emit, strings, critters, roomL, drawAmbient, camps } from "./scene_map.js";
 import { npcOut, npcService, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, seatOf, drawPerson, drawJam } from "./scene_people.js";
 import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, drawAimArrow, props, TRAIT_TINT, hooks, glows } from "./scene_fx.js";
+import { drawDepthGround, depthSprite } from "./scene_depth.js";
 
 // ───────────────────────────── the frame ─────────────────────────────
+
+let depthEffects = true;
+export function setDepthEffects(on) { depthEffects = !!on; }
 
 /** A waypoint's rune: lit and breathing once touched, dark until then. */
 function drawRune(st, dx, dy, t) {
@@ -196,6 +200,21 @@ export function render(focusX, focusY, dt, t, snap) {
   const ox = Math.round(cam.x + (Math.random() - 0.5) * shakeAmt + kick.x * kq), oy = Math.round(cam.y + (Math.random() - 0.5) * shakeAmt + kick.y * kq);
   setFxClock(t);
   const now = t;
+  const outdoor = OUTDOOR.has(theme) && !map.indoor && Sky.weather() !== -1, night = outdoor ? Sky.nightK() : 0;
+  const depth = depthEffects && !map.indoor && theme !== "interior";
+  const lightSources = outdoor || depth ? skyLights(t, ox, oy) : null;
+
+  // Cull scenery once. The same anchors cast onto the ground and sort the sprites above it.
+  const list = [];
+  const X0 = ox - 8, X1 = ox + vw + 8, Y0 = oy - 8, Y1 = oy + vh + 8;
+  const on = (X, Y, up = 80) => X > X0 - 48 && X < X1 + 48 && Y > Y0 && Y - up < Y1;
+  if (lazyLeft) lazyTall(X0, X1, Y0, Y1);
+  for (const st of statics) {
+    const sp = st.sp;
+    if (!sp || st.dx > X1 || st.dx + sp.width < X0 || st.dy > Y1 || st.dy + sp.height < Y0) continue;
+    if (st.slices) { for (const sl of st.slices) if (st.dx + sl.sx < X1 && st.dx + sl.sx + sl.w > X0) list.push({ y: sl.d, s: st, sl }); }
+    else list.push({ y: st.d, s: st });
+  }
 
   setWorldTransform();
   g.fillStyle = VOID[theme] || "#0b0d18";
@@ -209,6 +228,13 @@ export function render(focusX, focusY, dt, t, snap) {
     g.globalAlpha = 0.25 + beat * 0.6;
     if (pulseCv) drawLayer(pulseCv, map.h * 16 * K, 0, ox, oy); else drawPulseParts(ox, oy);
     g.globalAlpha = 1;
+  }
+  if (depth) {
+    setWorldTransform();
+    drawDepthGround(g, {
+      width: vw, height: vh, ox, oy, focusY: fY, theme, hour: Sky.hour(), night: outdoor ? night : DARK[theme] ? 0.8 : 0,
+      bounds: [tI(0, 0), tI(map.w, 0), tI(map.w, map.h), tI(0, map.h)], statics: list, sources: lightSources,
+    });
   }
   // gates and everything else that lies flat on the ground, drawn through the diamond matrix
   setWorldTransform(...FLAT, -ox, -oy);
@@ -233,17 +259,6 @@ export function render(focusX, focusY, dt, t, snap) {
   for (const s of smokers) if (s.x > ox - 20 && s.x < ox + vw + 20 && s.y > oy - 60 && s.y < oy + vh && Math.random() < 0.07) parts.push({ x: s.x + Math.random() * 4, y: s.y, vx: 5 + Math.random() * 5, vy: -13, life: 1.3 + Math.random(), color: "#eef0f6", g: -5, s: 3 });
 
   // everything that stands up, painted back to front by how far down the diagonal it stands
-  const list = [];
-  const X0 = ox - 8, X1 = ox + vw + 8, Y0 = oy - 8, Y1 = oy + vh + 8;
-  const on = (X, Y, up = 80) => X > X0 - 48 && X < X1 + 48 && Y > Y0 && Y - up < Y1;
-  if (lazyLeft) lazyTall(X0, X1, Y0, Y1);
-  for (const st of statics) {
-    const sp = st.sp;
-    if (!sp) continue;
-    if (st.dx > X1 || st.dx + sp.width < X0 || st.dy > Y1 || st.dy + sp.height < Y0) continue;
-    if (st.slices) { for (const sl of st.slices) if (st.dx + sl.sx < X1 && st.dx + sl.sx + sl.w > X0) list.push({ y: sl.d, s: st, sl }); }
-    else list.push({ y: st.d, s: st });
-  }
   const server = Sky.serverNow();
   for (const n of npcs) {
     if (!on(n.x, n.y)) continue;
@@ -288,6 +303,9 @@ export function render(focusX, focusY, dt, t, snap) {
       // anything else in front of you that covers you turns see-through
       const ax = sl ? dx + sl.sx : dx, aw = sl ? sl.w : sp.width;
       if (meDrawn && !st.cut && sp.height > 20 && ax < meX + 8 && ax + aw > meX - 8 && dy < meY - 4 && dy + sp.height > meY - 26 && !G.me.dead) { g.globalAlpha = 0.48; hidden = true; }
+      if (depth && g.globalAlpha === 1 && !st.cut && (st.depthFoliage || st.depthBuilding || st.house)) {
+        sp = depthSprite(g, sp, st, { y: st.d ?? o.y, focusY: fY, height: vh, theme, night });
+      }
       if (sl) g.drawImage(sp, sl.sx, 0, sl.w, sp.height, ax, dy, sl.w, sp.height);
       else g.drawImage(sp, dx, dy);
       g.globalAlpha = 1;
@@ -431,7 +449,6 @@ export function render(focusX, focusY, dt, t, snap) {
     g.globalAlpha = clamp(p.life * 3, 0, 1); g.fillStyle = p.color; g.fillRect(Math.round(p.x) - (sz >> 1), Math.round(p.y) - (sz >> 1), sz, sz);
   }
   g.globalAlpha = 1;
-  const outdoor = OUTDOOR.has(theme) && !map.indoor && Sky.weather() !== -1, night = outdoor ? Sky.nightK() : 0;
   DC.drawEmitters(g, emit, t, ox, oy, vw, vh, parts);
   DC.drawStrings(g, strings, t, ox, oy, vw, vh, night);
   setWorldTransform();
@@ -462,7 +479,7 @@ export function render(focusX, focusY, dt, t, snap) {
   if (theme === "interior") { IN.roomLight(g, roomL, t, dt, ox, oy, vw, vh, Sky.nightK()); cam.ox = ox; cam.oy = oy; return; }
   // outdoors the day turns: the whole view graded by the hour and the weather (one even multiply,
   // never darker at the edges), with lamps, windows, runes and fires cut into the night as pools
-  const L = outdoor ? Sky.grade(g, vw, vh, dt, t, skyLights(t, ox, oy), Sky.cloudPainter(ox, oy, t)) : null;
+  const L = outdoor ? Sky.grade(g, vw, vh, dt, t, lightSources, Sky.cloudPainter(ox, oy, t)) : null;
   if (L && L.night > 0.05) glowAfterDark(L.night, t, ox, oy);
   drawAmbient(dt, t, ox, oy);
   Sky.drawWeather(g, vw, vh, dt, t, ox, oy, outdoor, theme, outdoor ? camps.map((c) => ({ x: c.x - ox, y: c.y - oy })) : [], L);

@@ -51,6 +51,7 @@ mobKeys.forEach((k, i) => {
 });
 const cv = document.getElementById("c");
 S.init(cv);
+if (q.get("depth") === "0") S.setDepthEffects(false);
 const lab = document.createElement("canvas"); lab.width = innerWidth; lab.height = innerHeight; lab.style.cssText = "position:fixed;left:0;top:0;pointer-events:none"; document.body.appendChild(lab); const lc = lab.getContext("2d");
 const l0 = performance.now();
 S.loadMap(m);

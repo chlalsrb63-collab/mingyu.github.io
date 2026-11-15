@@ -145,6 +145,23 @@ function setCrt(on) {
   $("#btn-crt").textContent = on ? "켜짐" : "꺼짐";
   localStorage.setItem("lumentale:crt", on ? "1" : "0");
 }
+function initDepth() {
+  const button = $("#btn-depth");
+  let on = localStorage.getItem("lumentale:depth") !== "0";
+  function applyDepth() {
+    S3.setDepthEffects(on);
+    button.classList.toggle("off", !on);
+    button.textContent = on ? "켜짐" : "꺼짐";
+    button.setAttribute("aria-pressed", String(on));
+  }
+  applyDepth();
+  button.addEventListener("click", () => {
+    on = !on;
+    applyDepth();
+    localStorage.setItem("lumentale:depth", on ? "1" : "0");
+    Sound.play("ui");
+  });
+}
 /** The small arrow at your feet that shows where your blows and skills go; on unless turned off. */
 function setAimArrow(on) {
   G.aimArrow = on;
@@ -286,6 +303,7 @@ export function setupInput() {
   $("#btn-sound").addEventListener("click", toggleSound);
   setCrt(localStorage.getItem("lumentale:crt") !== "0");
   $("#btn-crt").addEventListener("click", () => { setCrt(!document.body.classList.contains("crt")); Sound.play("ui"); });
+  initDepth();
   setAimArrow(localStorage.getItem("lumentale:aim") !== "0");
   $("#btn-aim").addEventListener("click", () => { setAimArrow(!G.aimArrow); Sound.play("ui"); });
   Sound.load();
