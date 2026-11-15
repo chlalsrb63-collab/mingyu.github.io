@@ -177,6 +177,15 @@ export function stopGame() {
   tg.clearRect(0, 0, text.width, text.height);
 }
 
+/**
+ * The scene's copy of a map: on the 장날 map outside market hours its stalls stand closed (decor.js stallShut).
+ * Map data and collision stay as the server sent them; only the drawn prop changes.
+ */
+function sceneMap(m) {
+  G.stallsOpen = Sky.fairOn();
+  if (!G.defs?.fair || m.id !== G.defs.fair.map || G.stallsOpen) return m;
+  return { ...m, big: m.big.map((b) => (b.t === "prop" && b.k === "stall" ? { ...b, k: "stallShut" } : b)) };
+}
 function loadMap(m) {
   // through a house door (into or out of an interior): a warm fade and the door's latch and bell
   if (G.map && G.map.id !== m.id && (G.map.theme === "interior" || m.theme === "interior")) { doorFade(); Sound.play("door"); }
@@ -184,7 +193,7 @@ function loadMap(m) {
   G.path = null;
   G.comboWeapon = null;
   NpcLife.load(m, G.defs);
-  S3.loadMap(m);
+  S3.loadMap(sceneMap(m));
   Radar.loadMap(m);
   Gather.loadMap(m);                           // its gathering nodes stand up as scene props (gather.js)
   G.fb = null;
@@ -210,8 +219,9 @@ function whisperLine(c) {
 function onSnap(s) {
   const t = now();
   const me = G.me;
-  if (s.map) loadMap(s.map);
   if (s.dn) Sky.setSky(s.dn, !!s.map);
+  if (s.map) loadMap(s.map);
+  else if (s.dn && G.map && G.stallsOpen !== Sky.fairOn() && G.map.id === G.defs?.fair?.map) S3.loadMap(sceneMap(G.map));   // 장날 opens or closes here
   if (s.nl) NpcLife.onLegs(s.nl);
   if (s.nw) NpcLife.onWhere(s.nw);
   if (s.map || s.me[5]) { me.x = s.me[0]; me.y = s.me[1]; me.dir = s.me[6]; if (s.me[10] !== undefined) me.aimI = s.me[10]; }

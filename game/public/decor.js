@@ -257,6 +257,20 @@ export function sprites() {
     for (let x = 3; x < 43; x += 8) b.tri([[x, 2], [x + 4, 2], [x + 4 + (x - 23) * 0.12, 16], [x + (x - 23) * 0.12, 16]], stripe[1]);
     for (let x = 0; x < 46; x += 6) b.oval(x + 3, 16, 3, 2, stripe[(x / 6) % 2]);
   });
+  // ── 버드나무 장날 off-day (net.js swaps the market's stalls for this): the same frame, the awning rolled up on
+  // the beam and tied, the counter under a roped-down canvas; no goods, no lamp
+  const stallShut = prop(46, 50, (b) => {
+    const CV = ["#e4d8b8", "#c8b894", "#9a8a6a"], ROPE = "#6a5440";
+    for (const x of [3, 39]) { b.r(x, 10, 3, 40, WOOD); b.r(x + 2, 10, 1, 40, WOOD_D); }
+    b.r(1, 8, 44, 3, WOOD); b.r(1, 8, 44, 1, "#a87446"); b.r(1, 10, 44, 1, WOOD_D);
+    b.r(2, 4, 42, 4, "#c85048"); b.r(2, 4, 42, 1, "#e0706a"); b.r(2, 7, 42, 1, "#8a3434");
+    for (let x = 6; x < 42; x += 8) b.r(x, 4, 4, 4, "#f0e4c8");
+    for (const x of [8, 37]) b.r(x, 3, 1, 6, ROPE);
+    b.r(0, 30, 46, 14, WOOD_L); b.r(0, 42, 46, 2, WOOD_D);
+    b.r(1, 24, 44, 14, CV[0]); b.r(1, 24, 44, 2, "#f2e8cc"); b.r(1, 34, 44, 4, CV[1]); b.r(1, 37, 44, 1, CV[2]);
+    for (const x of [12, 33]) { b.r(x, 24, 1, 14, CV[2]); b.r(x + 1, 24, 1, 14, CV[1]); }
+    for (const x of [7, 23, 39]) { b.r(x, 23, 1, 16, ROPE); b.r(x - 1, 38, 3, 1, ROPE); }
+  });
   // ── town: a notice board for the day's tasks
   const notice = prop(36, 40, (b) => {
     for (const x of [3, 30]) { b.r(x, 8, 3, 32, WOOD); b.r(x + 2, 8, 1, 32, WOOD_D); }
@@ -396,7 +410,7 @@ export function sprites() {
     eave(b, 64, 8, 36, 16, G[0], G[1], G[2]);
     b.r(63, 0, 3, 8, G[2]); b.oval(64, 3, 3.4, 3, G[0]);
   });
-  SPR = { pagoda, goldhall, chapel, cottage, ktower, kgate, waypoint, RUNE, sign: [sign(-1), sign(0), sign(1)], tower, oak, shrine, lip, board, metro, crystals, nave, culvert, heart, stall: [0, 1, 2].map(stall), notice, statue };
+  SPR = { pagoda, goldhall, chapel, cottage, ktower, kgate, waypoint, RUNE, sign: [sign(-1), sign(0), sign(1)], tower, oak, shrine, lip, board, metro, crystals, nave, culvert, heart, stall: [0, 1, 2].map(stall), stallShut, notice, statue };
   return SPR;
 }
 
@@ -620,6 +634,7 @@ export function townProps() {
     }
   }));
   TP.stall = sprites().stall;
+  TP.stallShut = sprites().stallShut;
   return TP;
 }
 
