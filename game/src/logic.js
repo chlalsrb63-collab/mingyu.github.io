@@ -429,6 +429,29 @@ const SKILL = {
     desc: "대검전사의 기술 (직업 Lv.30) · 5초 동안 대검을 들고 회오리처럼 돌며 움직이고, 주변의 모든 적을 0.3초마다 벤다. 도는 동안 마나와 HP를 조금씩 쓰며, 마나가 모자라거나 다른 스킬을 쓰면 멈춘다." },
   musou: { kind: "j", job: "lancer", wk: "spear", need: 20, jl: 30, name: "무쌍난무", mp: 8, cd: 10000, ms: 3000, every: 200, r: 52, mult: 0.32, mpT: 0.04, fx: 147,
     desc: "창술사의 기술 (직업 Lv.30) · 3초 동안 창을 휘휘 돌리며 움직이고, 창 길이만큼 둘러싼 모든 적을 0.2초마다 찌른다. 도는 동안 마나를 조금씩 쓰며, 마나가 모자라거나 다른 스킬을 쓰면 멈춘다." },
+  // ── the first wave of new weapon skills (docs/design/skill-ideas.md §9, fx 148–159); after everything older so a fresh bar keeps its old skills
+  stomp: { kind: "a", wk: "hammer", need: 40, name: "땅울림 발구르기", mp: 2, hpPct: 0.015, autoHp: 0.35, cd: 4000, stomp: true, r: 52, mult: 0.5, air: 600, stg: 600, gauge: 0.1, fx: 148,
+    desc: "쿵! 발을 굴러 둘레 52 안의 적을 친다(공격력의 50%). 작은 괴물은 0.6초 통째로 튀어 오르고(공중), 정예는 경직되며, 보스는 무력화 게이지가 10% 깎인다. 준비 동작이 없다." },
+  mortar: { kind: "a", wk: "bow", need: 5, name: "곡사 폭약 화살", mp: 6, cd: 7000, at: 150, delay: 500, r: 40, mult: 0.7, marks: 2, fx: 149,
+    desc: "하늘로 쏜 화살이 0.5초 뒤 겨눈 자리(최대 150)에 떨어져 둘레 40의 괴물을 치고(공격력의 70%), 맞은 적마다 폭약 깃(표식)을 둘 꽂는다." },
+  dragonpierce: { kind: "a", wk: "bow", need: 45, name: "용뼈 관통 사격", mp: 14, cd: 20000, wind: 800, len: 200, half: 14, mult: 1.6, back: 20, eat: { mk: 0.25, brand: 0.5 }, fx: 150,
+    desc: "0.8초 몸을 낮춰 활을 한껏 당긴 뒤, 일직선 200의 적을 모두 꿰뚫는다(공격력의 160%). 반동에 20 밀려난다. 박힌 표식 1개당 +25%(최대 5), 낙인 +50% — 표식과 낙인은 터진다. 매의 시야가 있으면 언제나 최대 거리로 친다." },
+  rollshot: { kind: "a", wk: "bow", need: 40, name: "구르며 쏘기", mp: 4, cd: 3500, back: 40, len: 170, mult: 1.0, win: 350, ace: 2.2, dashCut: 2000, fx: 151,
+    desc: "뒤로 40 물러나며 화살 한 대를 쏜다. 구르기(Space)가 끝난 뒤 0.35초 안에 쏘면 회심의 화살 — 피해 ×2.2, 적을 꿰뚫고, 구르기 재사용 대기가 2초 줄어든다." },
+  chainbolt: { kind: "a", wk: "staff", need: 15, name: "연쇄 번개", mp: 10, cd: 3500, el: "l", mag: 1, at: 130, n: 5, jr: 60, mult: 0.5, rxK: 0.25, fx: 152,
+    desc: "겨눈 적(최대 130)에게 번개를 내리꽂고, 번개는 60 안의 다른 적으로 튀어 모두 다섯을 친다(각 공격력의 50%). 불붙거나 얼어붙은 적을 지나면 원소 반응이 한 번 터진다(위력 25%). 번개 원소." },
+  shoulder: { kind: "a", wk: "sword", need: 15, name: "어깨 돌파", mp: 5, hpPct: 0.02, autoHp: 0.35, cd: 9000, len: 90, half: 16, mult: 0.9, stun: 1000, knock: 14, fx: 153,
+    desc: "어깨로 밀고 90 앞으로 돌진해 길 위의 적을 끝까지 끌고 간다(공격력의 90%). 벽에 처박히거나 둘 이상이 한데 엉킨 적은 1초 기절하고 경직되며, 나머지는 밀려난다. 끌려간 적은 광역기에 더 아프다." },
+  snare: { kind: "a", wk: "bow", need: 30, name: "올무 화살", mp: 6, cd: 10000, at: 120, ms: 10000, max: 2, trig: 10, root: [2500, 1500, 500], pull: 30, mult: 0.5, fx: 154,
+    desc: "올무를 매단 화살을 땅(최대 120)에 박아 둔다(10초, 둘까지). 처음 밟은 괴물은 2.5초 묶이고(정예 1.5초, 보스 0.5초) 경직으로 친다. 30 안의 둘은 올무 쪽으로 끌려온다." },
+  bladevortex: { kind: "a", wk: "dagger", need: 40, name: "칼날 소용돌이", mp: 2, cd: 3500, max: 5, ms: 8000, r: 36, every: 400, per: 0.12, n: 5, spread: 14, len: 110, half: 10, fan: 0.6, fx: 155, fx2: 156,
+    desc: "부를 때마다 칼날 하나가 내 주위를 돈다(최대 5, 8초 — 부를 때마다 다시 8초). 0.4초마다 둘레 36의 적을 칼날 1개당 공격력의 12%로 벤다. 다섯 자루일 때 다시 부르면 칼날이 부채꼴로 흩어져(각 60%) 맞은 적마다 표식을 남기고 소용돌이가 끝난다." },
+  smoke: { kind: "a", wk: "dagger", need: 5, name: "연막탄", mp: 5, cd: 12000, util: true, noAuto: true, at: 90, r: 48, ms: 4000, every: 250, shot: 0.3, fx: 157,
+    desc: "겨눈 자리(최대 90)에 4초간 연막을 터뜨린다. 연기 속의 괴물(보스 제외)은 노리던 상대를 잊고 헤맨다 — 그런 적에게 암습은 반드시 치명타. 연기 속의 파티원은 화살·투사체 피해를 30% 덜 받는다." },
+  parry: { kind: "a", wk: "sword", need: 5, name: "칼등 받아치기", mp: 3, cd: 5000, util: true, noAuto: true, ms: 350, arc: 90, stg: 1200, r: 40, mult: 1.2, inert: 2, cdCut: 0.5, gauge: 0.25, whiff: 400, exposed: 0.2, fx: 158,
+    desc: "0.35초 동안 칼을 눕혀 앞을 막는다. 그 사이 앞에서 날아든 일격은 막아 내고, 친 괴물은 1.2초 휘청이며(보스는 무력화 게이지 25%) 앞 40의 적에게 반격한다(공격력의 120%). 관성 +2, 재사용 대기 절반. 헛막으면 0.4초 동안 받는 피해가 20% 늘어난다." },
+  mountain: { kind: "a", wk: "sword", need: 30, name: "산 가르기", mp: 8, hpPct: 0.03, autoHp: 0.35, cd: 16000, holdMs: 1800, tiers: [500, 1000, 1400], ks: [1.0, 1.6, 2.6, 4.2], holdSpd: 0.3, brace: 0.5, len: 60, half: 20, eat3: { stg: 0.4, air: 0.4 }, fx: 159,
+    desc: "누르고 있는 동안 대검을 끌어올려 힘을 모으고(걸음 30%), 놓거나 다시 누르면 앞 60을 넓게 가른다. 0.5초 ×1.6 · 1초 ×2.6 · 1.4초 ×4.2 — 1.8초를 넘기면 힘이 새어 ×2.6. 모으는 동안 처음 맞는 일격은 절반만 받고 한 단계 더 모인다. 관성 5는 첫 단계부터 시작한다. 3단계는 경직·공중 적에게 +40%." },
 };
 for (const [id, sk] of Object.entries(SKILL)) {
   sk.id = id;
@@ -7446,7 +7469,7 @@ function stats(p) {
     xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: Math.round(c.acd / rally),
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
-    spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.vitSpd > now ? 1 + SKILL.vitals.spd : 1) * (p.slowed > now ? SLOW : 1), spd0: c.spd0,
+    spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.vitSpd > now ? 1 + SKILL.vitals.spd : 1) * (p.slowed > now ? SLOW : 1) * (p.hold ? SKILL[p.hold.id].holdSpd : 1), spd0: c.spd0,
   };
 }
 
@@ -9737,6 +9760,19 @@ function hammerTick(S, p, now) {
   }
   rt.ev.push(["hm", p.eid, Math.round(x), Math.round(y), move.r, +!!primary, +critical, move.fx]);
 }
+
+/** 땅울림 발구르기 (no wind-up): the ground round the bearer jumps — the small go up, elites reel, a boss's gauge drops. */
+function hammerStomp(S, p, sk, k) {
+  const rt = S.maps[p.map], now = S.now;
+  rt.ev.push(["a", p.eid, sk.fx, Math.round(p.x), Math.round(p.y) - 6, p.dir, 2, sk.r]);
+  for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+    hurtMob(S, rt, o, p, sk.mult * k, false, { sk, cue: HIT_CUE.hammer });
+    if (o.dead) continue;
+    if (MOBS[o.k].boss) gaugeHit(S, rt, o, sk.gauge);
+    else if (o.el) { holdMob(S, o, sk.stg); o.stg = now + STG_MS; }
+    else launch(S, rt, o, sk.air);
+  }
+}
 // ───────────────────────────── weapon skills ─────────────────────────────
 // docs/design/jobs-and-stats.md C (tables in 03-skills.js). A skill belongs to a weapon: it is usable
 // while that weapon is in hand and its mastery has reached the skill's `need`; a job signature needs the
@@ -9847,6 +9883,63 @@ function comboK(S, rt, o, eat) {
 function lineFirst(rt, x, y, ux, uy, len, half, n) {
   const along = (o) => (o.x - x) * ux + (o.y - y) * uy;
   return mobsInLine(rt, x, y, ux, uy, len, half).sort((a, b) => along(a) - along(b)).slice(0, n);
+}
+
+/** Take a share `f` off a scripted boss's stagger gauge while it gathers its marked cast (56-boss-script.js). */
+function gaugeHit(S, rt, o, f) {
+  if (o.cast && !o.dead) bsDealt(S, rt, o, o.cast.need * f);
+}
+
+// ── E1 누르고 떼기 (skill-ideas.md §0): a held skill (sk.tiers) gathers in tiers until the key comes up ({t:"skr"}),
+// the same skill is pressed again, or it is held too long (it then lands a tier short: the over-charge).
+/** The tier a held charge has reached now: 0 … sk.tiers.length (past sk.holdMs, one short of the top). */
+function holdTier(p, now) {
+  const sk = SKILL[p.hold.id], held = now - p.hold.at;
+  if (held > sk.holdMs) return sk.tiers.length - 1;
+  let t = 0;
+  for (const at of sk.tiers) if (held >= at) t++;
+  return t;
+}
+/** Let a held charge go: it lands at the tier it reached. */
+function holdGo(S, p) {
+  const h = p.hold;
+  if (!h) return;
+  p.holdT = holdTier(p, S.now);
+  p.hold = null;
+  p.dirty = true;
+  skStrike(S, p, h.id, h.k, h.cost);
+}
+
+/**
+ * A monster's blow about to land on `p` (mobHit): E3 the parry window, then what is left of the blow —
+ * a whiffed parry's opening, the smoke against volleys, a held charge's braced shoulder. 0: nothing lands.
+ */
+function skGuard(S, rt, p, raw, mob, how) {
+  const now = S.now;
+  if (p.parry && mob && now < p.parry.until && (mob.x - p.x) * p.parry.u[0] + (mob.y - p.y) * p.parry.u[1] >= 0) { parryOk(S, rt, p, mob); return 0; }
+  let k = p.exposed > now ? 1 + SKILL.parry.exposed : 1;
+  if (how === "shot" && p.smokeAt > now) k *= 1 - SKILL.smoke.shot;
+  if (p.hold && !p.hold.braced && holdTier(p, now) >= 1) {
+    // 어깨 버티기: half the blow, no reeling, and the charge jumps a tier
+    const sk = SKILL[p.hold.id], t = holdTier(p, now);
+    if (t < sk.tiers.length) p.hold.at = now - sk.tiers[t];
+    p.hold.braced = true;
+    p.braceAt = now;
+    k *= sk.brace;
+  }
+  return raw * k;
+}
+/** 칼등 받아치기 caught a blow: the attacker reels, the blade answers in front, inertia and a shorter wait. */
+function parryOk(S, rt, p, mob) {
+  const sk = SKILL.parry, now = S.now, k = p.parry.k;
+  p.parry = null;
+  rt.ev.push(["a", p.eid, sk.fx, Math.round(p.x), Math.round(p.y) - 6, p.dir, 2, 1]);
+  if (MOBS[mob.k].boss) gaugeHit(S, rt, mob, sk.gauge);
+  else { holdMob(S, mob, sk.stg); mob.stg = now + STG_MS; }
+  for (const o of mobsWithin(rt, p.x, p.y, sk.r)) if (inArc(p, o, sk.arc)) hurtMob(S, rt, o, p, sk.mult * k, false, { sk });
+  if (pasOn(p, "inertia")) { p.inert = Math.min(SKILL.inertia.max, inertOf(p) + sk.inert); p.inertAt = now; }
+  if (p.cds.parry > now) p.cds.parry = now + Math.round((p.cds.parry - now) * sk.cdCut);
+  p.dirty = true;
 }
 
 /** Drag a monster toward (tx, ty), as far as the ground lets it. */
@@ -9981,6 +10074,13 @@ function propPulse(S, rt, m, p, o, now) {
       return false;
     }
     case "spin": {
+      // 칼날 소용돌이: free blades round the caster, each cutting every beat (no channel, nothing paid)
+      if (o.blades) {
+        o.x = p.x; o.y = p.y;
+        rt.ev.push(["a", p.eid, o.sk.fx, Math.round(p.x), Math.round(p.y) - 6, p.dir, 2, o.blades]);
+        for (const mob of mobsWithin(rt, p.x, p.y, o.r)) hit(mob, o.mult * o.blades);
+        return false;
+      }
       // 돌개바람 / 무쌍난무: follows the caster; each beat pays MP (and HP) first, then cuts everything around
       if (p.chan !== o.id) return true;
       // the beat's price is a share of the pools, so regeneration never makes it free
@@ -10063,10 +10163,32 @@ function propPulse(S, rt, m, p, o, now) {
       const mob = rt.mobs.find((q) => !q.dead && dist(q.x, q.y, o.x, o.y) - big(q) <= o.r);
       if (!mob) return false;
       rt.ev.push(["pe", o.id, 1, mob.id]);
+      if (o.snare) {
+        // 올무 화살: the first one is rooted (a fifth as long on a boss) and counts as staggered; two near it are hauled in
+        const sk = o.sk, root = sk.root[MOBS[mob.k].boss ? 2 : mob.el ? 1 : 0];
+        mob.stun = Math.max(mob.stun, now + root);
+        mob.stg = now + root;
+        hit(mob, o.mult);
+        for (const q of mobsWithin(rt, o.x, o.y, sk.pull).filter((q) => q !== mob).slice(0, 2)) if (pullTo(m, q, o.x, o.y)) q.drag = now + DRAG_MS;
+        return true;
+      }
       for (const q of mobsWithin(rt, o.x, o.y, o.r + 10)) if (!MOBS[q.k].boss && q.el !== 2) q.stun = Math.max(q.stun, now + o.root * (q.el ? 0.5 : 1));
       for (let j = 0; j < 3; j++) hit(mob, o.stab);
       for (let j = 0; j < 2; j++) hit(mob, o.shot);
       return true;
+    }
+    case "mortar": {
+      // the arrow comes down: a blast, and powder quills (marks) in all it caught
+      rt.ev.push(["a", p.eid, o.sk.fx, Math.round(o.x), Math.round(o.y) - 6, p.dir, 2, 2]);
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) { hit(mob, o.mult); addMarks(S, mob, o.sk.marks); }
+      return true;
+    }
+    case "smoke": {
+      // E5: a monster coming into the smoke forgets whom it was after and looks for no one while in it (a blow still
+      // wakes it: hurtMob gives it a target again); the party in it is hard to shoot
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) if (!MOBS[mob.k].boss) { if (!(mob.daze > now)) mob.tgt = null; mob.daze = now + o.every + 600; }
+      for (const q of allies(S, p)) if (dist(q.x, q.y, o.x, o.y) <= o.r) q.smokeAt = now + o.every + 150;
+      return false;
     }
     case "burst": {
       // the blood they carry bursts: fixed dark damage, no armour turns it; marks, bleeding and brands are spent
@@ -10178,6 +10300,9 @@ function weaponTick(S, p, now) {
   if (p.dance) danceStep(S, p, now);
   // a wound-up skill strikes when it is due (it was paid for when it began)
   if (p.charge && now >= p.charge.at) { const c = p.charge; p.charge = null; skStrike(S, p, c.id, c.k, c.cost, c.tgt); }
+  if (p.hold && now - p.hold.at > SKILL[p.hold.id].holdMs) holdGo(S, p);
+  // a parry that caught nothing leaves an opening
+  if (p.parry && now >= p.parry.until) { p.parry = null; p.exposed = now + SKILL.parry.whiff; }
   if (p.hide && now >= p.hide) p.hide = 0;
   if (p.inert && now - p.inertAt > SKILL.inertia.ms) { p.inert = 0; p.dirty = true; }
   if (p.weave && now >= p.weave.until) p.weave = null;
@@ -10185,13 +10310,13 @@ function weaponTick(S, p, now) {
 }
 /** Whatever a hand had going that does not survive a fall or a change of map. */
 function weaponReset(p, death) {
-  p.dance = null; p.hide = 0; p.inert = 0; p.weave = null; p.charge = null; p.chan = 0;
+  p.dance = null; p.hide = 0; p.inert = 0; p.weave = null; p.charge = null; p.chan = 0; p.hold = null; p.parry = null;
   p.hammer = null; p.hammerCracks = null;
   if (death) { p.reso = 0; p.sanctAt = 0; }
 }
-/** The bits other players see: 4 untouchable in the air, 16 dancing, 32 resonance full, 64 hidden. */
+/** The bits other players see: 4 untouchable in the air, 16 dancing, 32 resonance full, 64 hidden, 128 focused, 256 holding a charge (its tier × 512). */
 function flagsOf(p, now) {
-  return (p.ghost > now ? 4 : 0) | (p.dance ? 16 : 0) | ((p.reso | 0) >= SKILL.reso.n && inHand(p.ch) === "staff" ? 32 : 0) | (p.hide > now ? 64 : 0) | (pasFocus(p, pasSet(p), now) ? 128 : 0);
+  return (p.hold ? 256 | (holdTier(p, now) << 9) : 0) | (p.ghost > now ? 4 : 0) | (p.dance ? 16 : 0) | ((p.reso | 0) >= SKILL.reso.n && inHand(p.ch) === "staff" ? 32 : 0) | (p.hide > now ? 64 : 0) | (pasFocus(p, pasSet(p), now) ? 128 : 0);
 }
 const WEAVE_CODE = { f: 1, i: 2, l: 3 };
 /** The gauge's live number on every snapshot: inertia stacks, or resonance + 4 × the element held. */
@@ -10250,6 +10375,8 @@ function aimPoint(rt, m, p, n) {
 }
 
 function castSkill(S, p, id) {
+  // the held skill pressed again lets it go
+  if (p.hold) { if (p.hold.id === id) holdGo(S, p); return; }
   const sk = SKILL[id];
   const st = stats(p);
   const rt = S.maps[p.map];
@@ -10279,7 +10406,15 @@ function castSkill(S, p, id) {
   p.swordBeat = null;
   p.dirty = true;
   p.chan = 0;   // any skill cuts a channel
-  if (sk.wk === "hammer") { startHammer(S, p, sk, sk, k, hpSpent); return; }
+  if (sk.wk === "hammer" && !sk.stomp) { startHammer(S, p, sk, sk, k, hpSpent); return; }
+  if (sk.tiers) {
+    // held (E1): full inertia starts it a tier up, and is spent
+    const inert = pasOn(p, "inertia") && inertOf(p) >= SKILL.inertia.max;
+    if (inert) { p.inert = 0; ev(110, p.x, p.y - 6); }
+    p.hold = { id, at: now - (inert ? sk.tiers[0] : 0), k, cost, braced: false };
+    ev(sk.fx, p.x, p.y - 6, 0);
+    return;
+  }
   if (sk.wind) {
     // wound up: paid now, struck when weaponTick finds it due (a ground spell keeps the spot it was aimed at)
     const tgt = sk.at ? aimPoint(rt, m, p, sk.at) : null;
@@ -10596,6 +10731,125 @@ function skStrike(S, p, id, k, cost, tgt) {
       const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len));
       ev(sk.fx, ...ahead(far), far);
       for (const o of lineFirst(rt, p.x, p.y, aimX, aimY, far, sk.half, sk.n)) hit(o, sk.mult);
+      break;
+    }
+
+    // ── the first wave of new weapon skills (docs/design/skill-ideas.md §9, fx 148–159)
+    case "stomp": hammerStomp(S, p, sk, k); break;
+    case "mortar": {
+      // lobbed: it lands where it was aimed half a second later (the bow is free meanwhile)
+      const [x, y] = aimPoint(rt, m, p, sk.at);
+      ev(sk.fx, x, y - 6, 1);
+      prop({ kind: "mortar", x, y, r: sk.r, every: sk.delay, next: now + sk.delay, until: now + sk.delay + 200, mult: sk.mult * k });
+      break;
+    }
+    case "dragonpierce": {
+      // everyone along the line, marks and brands burst (sk.eat); the recoil shoves the archer back
+      const ox = p.x, oy = p.y, far = Math.max(16, reach(m, ox, oy, aimX, aimY, sk.len));
+      const hawk = pasOn(p, "hawk") ? 1 + SKILL.hawk.k : 1;
+      ev(sk.fx, ...ahead(far), far);
+      for (const o of mobsInLine(rt, ox, oy, aimX, aimY, far, sk.half)) hit(o, sk.mult * hawk);
+      const back = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
+      if (back) { p.x = ox - aimX * back; p.y = oy - aimY * back; p.fix = true; p.mvAt = now; }
+      break;
+    }
+    case "rollshot": {
+      // loosed just after a dash ends: the ace shot (harder, piercing) and the dash comes back sooner
+      const ace = p.dashAt > 0 && now >= p.dashAt && now - p.dashAt <= DASH.ms + sk.win;
+      const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
+      p.x = ox - aimX * far; p.y = oy - aimY * far; p.fix = true; p.mvAt = now;
+      rt.ev.push(["ln", 8, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
+      if (mob) face(p, mob);
+      ev(sk.fx, ...(mob ? [mob.x, mob.y] : ahead(80)), ace ? 2 : 1);
+      fireArrow(S, rt, p, mob, sk.mult * k * (ace ? sk.ace : 1), ace ? 99 : 0, 2, { len: sk.len });
+      if (ace) { p.dashAt -= sk.dashCut; toast(p, "회심!"); }
+      break;
+    }
+    case "chainbolt": {
+      // from one to the next nearest unstruck within jr; the first burning or frozen one it passes reacts, once
+      let cur = aimMob(rt, p, sk.at + 20, AIM_CONE);
+      if (!cur) { ev(19, p.x, p.y - 6); p.mp += cost; p.cds[id] = now + 600; break; }
+      face(p, cur);
+      ev(sk.fx, cur.x, cur.y - 6, sk.n);
+      const done = new Set();
+      let fx0 = p.x, fy0 = p.y - 6, reacted = false;
+      for (let j = 0; j < sk.n && cur; j++) {
+        done.add(cur);
+        const x = cur.x, y = cur.y, e = reacted ? "" : brnOf(S, cur) ? "f" : cur.frz > now ? "i" : "";
+        rt.ev.push(["ln", 4, Math.round(fx0), Math.round(fy0), Math.round(x), Math.round(y - 6)]);
+        hit(cur, sk.mult);
+        if (e) { reacted = true; react(S, rt, p, pairKey("l", e), x, y, k * sk.rxK); }
+        fx0 = x; fy0 = y - 6;
+        cur = rt.mobs.filter((q) => !q.dead && !q.dive && !done.has(q) && dist(q.x, q.y, x, y) <= sk.jr).sort((a, b) => dist(a.x, a.y, x, y) - dist(b.x, b.y, x, y) || a.id - b.id)[0];
+      }
+      break;
+    }
+    case "shoulder": {
+      // carried to the end of the charge; pinned against a wall, or two or more tangled together, they are stunned
+      const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, aimX, aimY, sk.len);
+      const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 14, sk.half);
+      const carry = line.filter((o) => !MOBS[o.k].boss && !MOBS[o.k].still && o.el !== 2);
+      p.x = ox + aimX * far; p.y = oy + aimY * far; p.fix = true; p.mvAt = now;
+      rt.ev.push(["ln", 3, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(sk.fx, p.x, p.y - 6, carry.length);
+      carry.forEach((o, j) => { if (pullTo(m, o, p.x + aimX * 14 - aimY * ((j % 3) - 1) * 8, p.y + aimY * 14 + aimX * ((j % 3) - 1) * 8)) o.drag = now + DRAG_MS; });
+      for (const o of line) {
+        if (carry.includes(o)) {
+          if (carry.length >= 2 || stepTo(m, o.x, o.y, aimX, aimY, 12) < 12) { o.stun = Math.max(o.stun, now + sk.stun * (o.el ? 0.5 : 1)); o.stg = now + STG_MS; }
+          else knock(m, o, aimX, aimY, sk.knock);
+        }
+        hit(o, sk.mult);
+      }
+      break;
+    }
+    case "snare": {
+      const [x, y] = aimPoint(rt, m, p, sk.at);
+      // at most `max` of one archer's snares in the ground: the oldest goes
+      const mine = (rt.props || []).filter((o) => o.pid === p.pid && o.snare);
+      if (mine.length >= sk.max) { rt.props.splice(rt.props.indexOf(mine[0]), 1); rt.ev.push(["pe", mine[0].id, 0]); }
+      ev(sk.fx, x, y - 6, 1);
+      prop({ kind: "trap", snare: 1, wire: 1, x, y, r: sk.trig, every: 100, next: now + 300, until: now + sk.ms, mult: sk.mult * k });
+      break;
+    }
+    case "bladevortex": {
+      // one more blade round you (and the vortex lasts afresh); cast at the full five, they fly out as a fan of knives
+      const o = (rt.props || []).find((q) => q.pid === p.pid && q.blades);
+      if (o && o.blades >= sk.max) {
+        rt.props.splice(rt.props.indexOf(o), 1);
+        const a0 = Math.atan2(aimY, aimX);
+        ev(sk.fx2, ...ahead(40), sk.n);
+        for (let j = 0; j < sk.n; j++) {
+          const a = a0 + ((j - (sk.n - 1) / 2) * sk.spread * Math.PI) / 180, ux = Math.cos(a), uy = Math.sin(a);
+          const len = Math.max(12, reach(m, p.x, p.y, ux, uy, sk.len));
+          rt.ev.push(["ln", 7, Math.round(p.x), Math.round(p.y), Math.round(p.x + ux * len), Math.round(p.y + uy * len)]);
+          for (const q of mobsInLine(rt, p.x, p.y, ux, uy, len, sk.half)) { hit(q, sk.fan); addMarks(S, q, 1); }
+        }
+        break;
+      }
+      if (o) { o.blades++; o.until = now + sk.ms; }
+      else prop({ kind: "spin", blades: 1, x: p.x, y: p.y, r: sk.r, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.per * k });
+      ev(sk.fx, p.x, p.y - 6, o ? o.blades : 1);
+      break;
+    }
+    case "smoke": {
+      const [x, y] = aimPoint(rt, m, p, sk.at);
+      ev(sk.fx, x, y - 6, sk.r);
+      prop({ kind: "smoke", x, y, r: sk.r, every: sk.every, next: now, until: now + sk.ms });
+      break;
+    }
+    case "parry": {
+      // E3: the window opens toward the aim; skGuard (mobHit) catches what comes in it
+      p.parry = { until: now + sk.ms, u: [aimX, aimY], k };
+      ev(sk.fx, p.x, p.y - 6, 0);
+      break;
+    }
+    case "mountain": {
+      // the held charge lets go (holdGo): its tier picks the power, the top tier spends stagger and air
+      const t = p.holdT | 0, far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len));
+      p.holdT = 0;
+      ev(sk.fx, ...ahead(far * 0.6), 1 + t);
+      for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, far, sk.half)) hit(o, sk.ks[t] * (t === sk.tiers.length ? comboK(S, rt, o, sk.eat3) : 1));
       break;
     }
 
@@ -17455,6 +17709,9 @@ export function validateAction(S, pid, a) {
       if (now < (p.stag || 0)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
+    case "skr":
+      // the key of a held skill came up (57-weapon-skills.js holdGo)
+      return p.hold ? OK : bad("skr");
     case "dash": {
       // Space (59-dash.js): refused in silence while it cools, while reeling, when down
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
@@ -17489,6 +17746,8 @@ export function validateAction(S, pid, a) {
       if (p.dance) return bad("무영난무 중입니다");
       if (p.hammer) return bad("해머를 내려찍는 중입니다");
       if (p.charge) return bad("기술을 모으는 중입니다");
+      // a held charge (E1): only the same skill again, which lets it go
+      if (p.hold) return a.id === p.hold.id ? OK : bad("기술을 모으는 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
       if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
       if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");
@@ -17771,6 +18030,7 @@ export function applyAction(S, pid, a) {
     }
     case "atk": if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); break;
     case "sk": if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.id); break;
+    case "skr": holdGo(S, p); break;
     case "dash": dashGo(S, p, m, a.a); break;
     case "use": {
       if (lifeUse(a.id)) { lifeUseApply(S, p, a); break; }
@@ -18464,10 +18724,13 @@ function mobHit(S, rt, p, raw, mob, how = "blow") {
   const src = mob && !mob.dead ? mob : null;
   // a rift's master hits softer than its wild kin (64-dim.js)
   if (mob && mob.ak) raw *= mob.ak;
+  // a parry, a braced charge, the smoke (57-weapon-skills.js skGuard)
+  raw = skGuard(S, rt, p, raw, src, how);
+  if (!raw) return;
   hurtPlayer(S, rt, p, raw, src);
   // a telegraphed trick ("mv", special) only makes a player reel who has not just reeled: no chain of them stun-locks
   const reel = how === "mv" ? !(p.stag > S.now - MV_GRACE) : how === "charge" || (how === "tele" && mob) || (src && (src.el >= 1 || MOBS[src.k].boss));
-  if (!p.dead && reel) staggerPlayer(S, rt, p, mob);
+  if (!p.dead && reel && p.braceAt !== S.now) staggerPlayer(S, rt, p, mob);
   if (!src || src.dead || !src.tr || !src.tr.length) return;
   const atk = MOBS[src.k].atk * ELITE[src.el].atk;
   if (!p.dead) {
@@ -18660,7 +18923,7 @@ function tickMob(S, m, rt, mob, dt, here) {
   if (tgt && (tgt.map !== m.id || tgt.dead || dist(mob.x, mob.y, mob.hx, mob.hy) > leash + 60 || dist(mob.x, mob.y, tgt.x, tgt.y) > leash)) {
     tgt = null; mob.tgt = null; mob.st = 2; mob.by = {};
   }
-  if (!tgt && d.aggro > 0 && mob.st !== 2) {
+  if (!tgt && d.aggro > 0 && mob.st !== 2 && !(mob.daze > now)) {
     // fog: monsters see a little less far
     let bd = d.aggro * (rt.wx === WX.fog ? WX_FOG_AGGRO : 1);
     for (const p of here) {

@@ -195,6 +195,9 @@ export function validateAction(S, pid, a) {
       if (now < (p.stag || 0)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
+    case "skr":
+      // the key of a held skill came up (57-weapon-skills.js holdGo)
+      return p.hold ? OK : bad("skr");
     case "dash": {
       // Space (59-dash.js): refused in silence while it cools, while reeling, when down
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
@@ -229,6 +232,8 @@ export function validateAction(S, pid, a) {
       if (p.dance) return bad("무영난무 중입니다");
       if (p.hammer) return bad("해머를 내려찍는 중입니다");
       if (p.charge) return bad("기술을 모으는 중입니다");
+      // a held charge (E1): only the same skill again, which lets it go
+      if (p.hold) return a.id === p.hold.id ? OK : bad("기술을 모으는 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
       if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
       if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");

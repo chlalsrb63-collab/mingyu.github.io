@@ -196,17 +196,19 @@ assert.ok(rt.drops.concat(ch.inv).some((d) => (d.g || d).set) || true);
 
 // ── every weapon's actives and its single job's signature can be cast without a hitch
 L.removePlayer(S, PID);
+const WAVE1 = { sword: 3, dagger: 2, spear: 0, staff: 1, book: 0, bow: 4 };   // skill-ideas.md §9 (mastery 45 learns them all)
 const JOB = { sword: "swordsman", dagger: "thief", spear: "lancer", staff: "wizard", book: "warlock", bow: "archer" };
 for (const wk of Object.keys(JOB)) {
-  const c = L.hero("스킬" + wk.slice(0, 3), { wk, lvl: 157, wm: { [wk]: 40 }, job: JOB[wk] });
+  const c = L.hero("스킬" + wk.slice(0, 3), { wk, lvl: 157, wm: { [wk]: 45 }, job: JOB[wk] });
   c.map = "meadow"; c.x = 20 * 16; c.y = 22 * 16 + 8;
   L.addPlayer(S, PID, c);
   const q = S.players[PID];
   step();
   const ids = D.skillOrder.filter((id) => D.skills[id].kind !== "p" && !D.skills[id].support
     && D.skills[id].wk === wk && !D.skills[id].jl && (!D.skills[id].job || D.skills[id].job === JOB[wk]));   // job Lv.30 spins: tests/combos.mjs
-  assert.equal(ids.length, 4, wk + ": two weapon actives, the combo active (mastery 25) and the signature");
+  assert.equal(ids.length, 4 + WAVE1[wk], wk + ": two weapon actives, the combo active (mastery 25), the signature and the new wave");
   for (const id of ids) {
+    q.ch.lo[q.ch.job] = { a: [id], p: [], x: "", y: "" };   // more actives than the five slots: each in turn
     const m = acorns[0]; m.dead = false; m.hp = 500; m.x = q.x + 20; m.y = q.y + 4;
     q.mp = 999; q.atkAt = 0; q.stag = 0;
     const r = act({ t: "sk", id, a: 0 });

@@ -137,7 +137,8 @@ export function probe(L, who, tier, secs = PROBE.secs, o = {}) {
     let kills = 0, taken = 0, deaths = 0, casts = 0;
     const ids = new Set(arena.map((m) => m.id));
     // the skills it tries, in order: weapon skills by id (J2: what auto-hunt puts on a fresh bar, in SKILL_ORDER), or the old six by index
-    const sks = D.skillOrder ? D.skillOrder.filter((id) => D.skills[id].kind !== "p").map((id) => ({ t: "sk", id })) : Array.from({ length: 6 }, (_, i) => ({ t: "sk", i }));
+    // (a guard or a cloud that deals no damage, `util`, is never cast by auto-hunt: it is left out here too)
+    const sks = D.skillOrder ? D.skillOrder.filter((id) => D.skills[id].kind !== "p" && !D.skills[id].util).map((id) => ({ t: "sk", id })) : Array.from({ length: 6 }, (_, i) => ({ t: "sk", i }));
     const act = (a) => { S.now = now; const v = L.validateAction(S, PID, a); if (v.ok) L.applyAction(S, PID, a); return v.ok; };
     const AIM_N = D.aim[0];
     const ticks = Math.round((secs * 1000) / 100);

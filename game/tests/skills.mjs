@@ -68,7 +68,7 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
 
 // ═════════ the tables
 {
-  assert.equal(D.skillOrder.length, 78, "43 actives (incl. the job Lv.30 spins) and 35 mastery passives");
+  assert.equal(D.skillOrder.length, 89, "54 actives (incl. the job Lv.30 spins and the 11 of the first new wave) and 35 mastery passives");
   assert.deepEqual(Object.keys(SK), D.skillOrder);
   for (const wk of D.wkOrder) {
     const perks = Object.values(SK).filter((sk) => sk.wk === wk && sk.kind === "p");
@@ -79,7 +79,7 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
     const s = SK[id];
     assert.equal(s.id, id);
     assert.ok(s.name && s.desc && s.desc.length > 20, id + " is named and described in Korean");
-    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 136) || (s.fx >= 140 && s.fx <= 147)), id + " costs, waits and has an fx code");
+    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 136) || (s.fx >= 140 && s.fx <= 159)), id + " costs, waits and has an fx code");
     if (s.kind === "j") { assert.equal(D.jobs[s.job].kind, "single"); assert.equal(D.jobs[s.job].wk[0], s.wk); assert.equal(s.need, 20); }
     if (s.kind === "h") { assert.equal(D.jobs[s.job].kind, "hybrid"); assert.equal(s.need, D.hybWm, id + " grows from mastery 15"); }
   }
@@ -95,8 +95,10 @@ const CASTS = D.skillOrder.filter((id) => SK[id].kind !== "p").flatMap((id) => (
 for (const [id, hand] of CASTS) {
   const s = SK[id];
   const wk = s.kind === "h" ? HYB[s.job][hand] : s.wk;
-  const W = world("시전" + id + hand, { wk, wm: { [wk]: 30, ...(s.kind === "h" ? { [HYB[s.job][1 - hand]]: 30 } : {}) }, job: s.job || undefined });
+  const W = world("시전" + id + hand, { wk, wm: { [wk]: Math.max(30, s.need), ...(s.kind === "h" ? { [HYB[s.job][1 - hand]]: 30 } : {}) }, job: s.job || undefined });
   const p = W.p;
+  // a weapon with more actives than the five slots: the one under test goes on the bar
+  if (s.kind === "a" && s.need !== 1 && s.need !== 10 && s.need !== 25 && !s.support) W.ch.lo[W.ch.job] = { a: [id], p: [], x: "", y: "" };
   if (s.support) p.hp = 10;
   if (s.jl) p.ch.jp.lv = s.jl;   // a job Lv.30 skill (돌개바람, 무쌍난무)
   // a crowd in front (the aim is east), spread a little: something is in reach of every skill
@@ -115,7 +117,8 @@ for (const [id, hand] of CASTS) {
   if (s.support) {
     assert.ok(vs.some(v => evts(v, "h").some(e => e[1] === p.eid && e[2] < 0)), id + " heals a solo caster");
     assert.ok(!ms.some((m) => hurt(m)), id + " deals no damage");
-  } else assert.ok(ms.some((m) => hurt(m)), id + " lands");
+  } else if (s.util) assert.ok(!ms.some((m) => hurt(m)), id + " (a guard or a cloud) deals no damage by itself");
+  else assert.ok(ms.some((m) => hurt(m)), id + " lands");
 }
 
 // ═════════ gating: the weapon in hand, its mastery, the job; cooldown and MP
@@ -464,7 +467,7 @@ for (const [id, hand] of CASTS) {
   const W = world("전선", { wk: "staff", wm: { staff: 20, book: 3 }, job: "wizard" });
   const s = W.self();
   assert.ok(!("skm" in s) && !("cds" in s) && !("lc" in s), "the old fields are gone");
-  assert.deepEqual(s.sk.map((x) => x[0]), ["slash", "ambush", "spiral", "fireball", "frostring", "reso", "staff_mind20", "soulbolt", "pierce", "meteor", "hammer_stamp"], "every skill learned, in order (every weapon's first, and other weapons' too)");
+  assert.deepEqual(s.sk.map((x) => x[0]), ["slash", "ambush", "spiral", "fireball", "frostring", "reso", "staff_mind20", "soulbolt", "pierce", "meteor", "hammer_stamp", "chainbolt"], "every skill learned, in order (every weapon's first, and other weapons' too)");
   for (const [id, mp, cd, use] of s.sk) {
     assert.ok(Number.isInteger(mp) && Number.isInteger(cd) && (use === 0 || use === 1), id);
     assert.equal(use, SK[id].wk === "staff" ? 1 : 0, id + " usable only with the staff in hand");

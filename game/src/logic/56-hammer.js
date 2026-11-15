@@ -71,3 +71,16 @@ function hammerTick(S, p, now) {
   }
   rt.ev.push(["hm", p.eid, Math.round(x), Math.round(y), move.r, +!!primary, +critical, move.fx]);
 }
+
+/** 땅울림 발구르기 (no wind-up): the ground round the bearer jumps — the small go up, elites reel, a boss's gauge drops. */
+function hammerStomp(S, p, sk, k) {
+  const rt = S.maps[p.map], now = S.now;
+  rt.ev.push(["a", p.eid, sk.fx, Math.round(p.x), Math.round(p.y) - 6, p.dir, 2, sk.r]);
+  for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+    hurtMob(S, rt, o, p, sk.mult * k, false, { sk, cue: HIT_CUE.hammer });
+    if (o.dead) continue;
+    if (MOBS[o.k].boss) gaugeHit(S, rt, o, sk.gauge);
+    else if (o.el) { holdMob(S, o, sk.stg); o.stg = now + STG_MS; }
+    else launch(S, rt, o, sk.air);
+  }
+}
