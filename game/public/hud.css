@@ -1579,7 +1579,8 @@ body[data-lay="full"] #panel .jt-grid .jt-node img.ji { margin: 0 auto; }
 #coop-hud .ch-b { display: flex; gap: 6px; justify-content: center; }
 #coop-hud.fever { color: #ffe080; box-shadow: 0 0 0 2px #c84a2a; }
 #coop-hud.messy .ch-l { color: #ff9a80; }
-#coop-card { left: calc(var(--vpw) / 2); transform: translateX(-50%); top: calc(var(--vph) - 230px); width: 300px; z-index: 6; padding: 6px 10px 8px;
+/* bottom edge above the combo gauge (#cg-box, vph - 130) and the F prompt, however long the card */
+#coop-card { left: calc(var(--vpw) / 2); transform: translate(-50%, -100%); top: calc(var(--vph) - 136px); width: min(380px, calc(var(--vpw) - 24px)); max-height: calc(var(--vph) - 150px); overflow-y: auto; z-index: 6; padding: 6px 10px 8px;
   font: var(--t12)/1.4 var(--pix); color: #f4ecd0; }
 #coop-card b { color: #ffe080; }
 #coop-card p { margin: 3px 0; }
@@ -1782,7 +1783,9 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr)
 
 /* ── UX pass 2026-11-15 (docs/design/ux-audit-2026-11-15.md) ── */
 /* notices and prompts draw over the windows (21–35, windows.js front), under the minigame (40) and the tooltip (80) */
-#toasts, #banner, #prompt, #dl, #cast, #invite, #sx-ask, #pmenu { z-index: 36; }
+#toasts, #banner, #prompt, #dl, #cast, #invite, #sx-ask { z-index: 36; }
+/* above the first-time tip (#hint, 36) that opens with it */
+#pmenu { z-index: 37; }
 /* the yes/no box (windows.js ask): over the windows, in the middle of the play view */
 #ask { left: calc(var(--vpw) / 2); top: calc(var(--vph) * .36); transform: translateX(-50%); z-index: 37; width: min(300px, calc(var(--vpw) - 24px)); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; font: var(--t12)/1.5 var(--pix); color: var(--cream); }
 #ask[hidden] { display: none; }
