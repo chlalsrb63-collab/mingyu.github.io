@@ -124,7 +124,7 @@ function sxApply(S, p, a) {
       const o = byEid(S, a.e);
       p.sxAt = now;
       o.req = { k: a.k, from: p.pid, at: now };
-      toast(p, `${o.ch.name}님에게 ${sxKind(a.k)}을(를) 신청했습니다`);
+      toast(p, `${o.ch.name}님에게 ${sxKind(a.k)}${pp(sxKind(a.k), "을를")} 신청했습니다`);
       return;
     }
     case "yes": case "no": {
@@ -136,7 +136,7 @@ function sxApply(S, p, a) {
       return;
     }
     case "x":
-      if (p.trade) sxEndTrade(S, p.trade, `${p.ch.name}님이 거래를 취소했습니다`);
+      if (p.trade) sxEndTrade(S, p.trade, `${p.ch.name}님이 거래를 취소했습니다`, p);
       else if (p.game) sxEndGame(S, p.game, `${p.ch.name}님이 미니게임을 나갔습니다`);
       else p.req = null;
       return;
@@ -168,12 +168,12 @@ function sxBegin(S, A, B, k) {
   MINIGAMES[k].start(S, g);
   A.game = B.game = g;
 }
-function sxEndTrade(S, tr, why) {
+function sxEndTrade(S, tr, why, by) {
   for (const pid of [tr.a, tr.b]) {
     const x = S.players[pid];
     if (!x || x.trade !== tr) continue;
     x.trade = null;
-    if (why) toast(x, why);
+    if (why) toast(x, x === by ? "거래를 취소했습니다" : why);   // the one who cancelled is not named to themselves
   }
 }
 function sxEndGame(S, g, why) {

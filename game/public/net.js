@@ -203,7 +203,7 @@ function loadMap(m) {
 
 /** A whisper line (63-social-weekly.js chatFor): w 1 = from `n`, w 2 = my own copy, sent to `n`; a click answers. */
 function whisperLine(c) {
-  const p = addChat(c.m, "whisper", c.w === 1 ? `[귓속말] ${c.n}` : `[귓속말 → ${c.n}]`);
+  const p = addChat(c.m, "whisper", c.w === 1 ? `[귓속말] ${c.n}` : `[귓속말 → ${c.n}]`, c.it);
   p.addEventListener("click", () => chatTo(`/w ${c.n} `));
   if (c.w === 1) { G.lastWhisper = c.n; Sound.play("ui"); chatHint(); }
 }

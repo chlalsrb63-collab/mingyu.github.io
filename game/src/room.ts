@@ -88,7 +88,7 @@ interface RankRow {
 }
 
 /** What one channel hands another: a whisper for a name, or a note and a fresh friend list for a pid. */
-type Push = { kind: "w"; to: string; from: string; m: string } | { kind: "fr"; pid: string; note: string };
+type Push = { kind: "w"; to: string; from: string; m: string; it?: unknown[] } | { kind: "fr"; pid: string; note: string };
 interface FriendReply {
   ok: boolean;
   error?: string;
@@ -348,7 +348,7 @@ export class Room extends DurableObject<Env> {
       return;
     }
     // A whisper for someone who is not in this channel goes through the vault to the channel they are in.
-    if (kind === "w" && isRecord(action) && !logic.pidOfName(world, action.to)) return this.whisperAway(world, pid, String(action.to), String(action.m));
+    if (kind === "w" && isRecord(action) && !logic.pidOfName(world, action.to)) return this.whisperAway(world, pid, String(action.to), String(action.m), action.it);
     logic.applyAction(world, pid, action);
     // A block also ends the friendship (and any request either way), which lives in the vault.
     if (kind === "blk" && isRecord(action) && action.a === "add") {
@@ -398,19 +398,21 @@ export class Room extends DurableObject<Env> {
   }
 
   /** A whisper to a name that is not in this channel: ask the vault where they are, hand it to that channel. */
-  private async whisperAway(world: World, pid: string, to: string, m: string): Promise<void> {
+  private async whisperAway(world: World, pid: string, to: string, m: string, links: unknown): Promise<void> {
     const offline = { t: "w", to, m };
+    // linked items: copies from the sender's bag now (validated with the action), carried to the other channel
+    const it = logic.whisperItems(world, pid, links);
     const res = (await this.callVault("where", { room: this.roomName, name: to })) as unknown as FriendReply;
     let sent = false;
     if (res.ok && res.room && res.room !== this.roomName && res.name) {
-      sent = await this.pushAway(res.room, { kind: "w", to: res.name, from: logic.nameOf(world, pid), m });
+      sent = await this.pushAway(res.room, { kind: "w", to: res.name, from: logic.nameOf(world, pid), m, it });
     }
     // The awaits let other frames in: the world may be a new one, the player gone, the rate limit spent.
     const now = this.world;
     if (!now) return;
     now.now = Date.now();
     if (!logic.validateAction(now, pid, offline).ok) return;
-    if (sent && res.name) logic.whisperOut(now, pid, res.name, m);
+    if (sent && res.name) logic.whisperOut(now, pid, res.name, m, it);
     else logic.applyAction(now, pid, offline);
   }
 
@@ -433,7 +435,7 @@ export class Room extends DurableObject<Env> {
     world.now = Date.now();
     if (push.kind === "w") {
       if (typeof push.to !== "string" || typeof push.from !== "string" || typeof push.m !== "string") return false;
-      return logic.whisperIn(world, push.to, push.from, push.m);
+      return logic.whisperIn(world, push.to, push.from, push.m, push.it);
     }
     if (push.kind !== "fr" || typeof push.pid !== "string") return false;
     for (const ws of this.ctx.getWebSockets()) {
