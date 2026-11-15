@@ -189,9 +189,10 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #st-pots .act img { width: 32px; height: 32px; margin: 0; }
 /* the side of the unit frame never gets narrower than the class gauge, so the gauge always shows whole */
 .st-side { flex: 1 1 124px; min-width: 124px; display: flex; flex-wrap: wrap; gap: 3px 4px; align-items: center; align-content: center; }
-#cg-box { flex: none; background: var(--scr); line-height: 0; cursor: help; border-width: 2px; border-image-width: 2px; }
+/* the weapon-passive gauge floats over the field, bottom-centre above the cast bar, like a combo meter (owner) */
+#cg-box { position: fixed; left: calc(var(--vpw) / 2); top: calc(var(--vph) - 130px); transform: translateX(-50%); z-index: 7; pointer-events: none; background: rgba(18, 15, 24, .82); line-height: 0; border-width: 2px; border-image-width: 2px; }
 #cg-box[hidden] { display: none; }
-#cgauge { width: 120px; height: 20px; image-rendering: pixelated; display: block; }
+#cgauge { width: 240px; height: 40px; image-rendering: pixelated; display: block; }
 #st-buffs { flex: 1 1 60px; display: flex; flex-wrap: wrap; gap: 2px; min-width: 0; max-height: 38px; overflow: hidden; }
 #st-buffs:empty { display: none; }
 #st-buffs span { display: inline-flex; align-items: center; gap: 2px; padding: 0 3px; height: 18px; font: var(--t10) var(--pix9); color: var(--b-hi); background: var(--scr); border: 2px solid var(--ink); }

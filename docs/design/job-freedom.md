@@ -17,7 +17,9 @@ Goal (owner): one character can eventually play every job. Builds on Codex's job
 
 7. **Active skill enhancement** (owner, 2026-11-15; separate task AFTER the job-freedom rules): each active skill can be
    enhanced up to **+10** with a dedicated **스킬강화 아이템**. Content for very hardcore players — rare material, steep
-   curve. Not built yet; success rates / failure rules / effect per step still to be proposed to the owner.
+   curve. Owner's rules: +1..+3 always succeed; from +4 on a chance to fail; a failure only consumes the material, the
+   level is kept (no drop, no break). Each step adds a small, flat ≈ 2–3 % over the base skill (so +10 ≈ +25 %).
+   Success rates per step still to propose (steep, e.g. 80 % at +4 down to ~10 % at +10).
 
 ## Open (decide while building, report to the owner)
 - Exact gold costs and scroll drop rates; whether the loadout is saved per job (recommended: yes).
