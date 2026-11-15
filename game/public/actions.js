@@ -43,6 +43,7 @@ export function castSkill(id) {
   const sk = G.defs.skills[id];
   if (!sk || sk.kind === "p") return false;
   const t = now();
+  if (carryNo()) return false;
   const why = QS.skillWhy(id);
   if (why) { if (!G.auto) { toast(why); Sound.play("no"); } return false; }
   const mpc = QS.skillMp(id);          // a full resonance makes a staff skill free
@@ -79,8 +80,15 @@ export function usePotion(kind) {
   act({ t: "use", id });
   G.potAt = t + 950;
 }
+/** Holding a parcel or a crate (me.carry): no attack or skill until it is handed over or the 알바 is dropped. */
+function carryNo() {
+  if (!G.me.carry) return false;
+  if (!G.auto && now() - (G.carryWarn || 0) > 1500) { G.carryWarn = now(); toast("배달 중에는 공격할 수 없어요 — 알바를 그만두면 상자를 내려놓아요"); Sound.play("no"); }
+  return true;
+}
 export function attack() {
   const t = now();
+  if (carryNo()) return;
   if (t - G.lastAtk < G.self.acd) return;
   // Predict the next beat using the same weapon and window as the server.
   const kind = G.self.wk, wk = G.defs.wkinds?.[kind];

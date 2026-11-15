@@ -803,6 +803,19 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   near(X.stats(p).spd0 / spd0, 0.856, 1e-9, "carrying at 배달 1: ×0.856");
   assert.deepEqual([1, 25, 50].map((lv) => Math.round(X.parcelSpd({ life: { deliver: { lv } } }) * 1000) / 1000), [0.856, 1, 1.15]);
   assert.equal(act({ t: "jb", a: "pick" }).error, "이미 꾸러미를 받았습니다");
+  // carrying (58-life.js carryOf): the box instead of the weapon on the wire — me[12], and [9] of the row others
+  // get — no attack or skill (dash is fine), and it is put down when the 알바 is dropped
+  {
+    const NO = "배달 중에는 공격할 수 없어요 — 알바를 그만두면 상자를 내려놓아요";
+    L.addPlayer(S, "b", L.newChar("구경꾼", []));
+    const b = S.players.b;
+    L.runtime(S, b.map).n--; b.map = p.map; L.runtime(S, p.map).n++; b.x = p.x + 20; b.y = p.y;
+    const me = L.viewFor(S, "a").me, seen = L.viewFor(S, "b").P.find((r) => r[0] === p.eid); L.endTick(S);
+    assert.deepEqual([me.length, me[12], seen.length, seen[8] >= 0, seen[9]], [13, 1, 10, true, 1]);
+    assert.equal(act({ t: "atk" }).error, NO);
+    assert.equal(act({ t: "sk", id: Object.keys(D.skills).find((k) => D.skills[k].kind !== "p") }).error, NO);
+    L.removePlayer(S, "b");
+  }
   // late: lost, no pay, no trust
   const g0 = ch.gold;
   to("town"); step();
@@ -810,6 +823,11 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   step();
   assert.equal(p.parcel, null); assert.equal(ch.jobBoard.active, null);
   assert.deepEqual([ch.gold, ch.rep.juju, ch.jobBoard.done.length], [g0, undefined, 0]);
+  assert.equal(L.viewFor(S, "a").me.length, 12, "a lost parcel: nothing held"); L.endTick(S);
+  take(); standBy(t.npc); assert.ok(act({ t: "jb", a: "pick" }).ok);
+  assert.ok(act({ t: "jb", a: "drop" }).ok);
+  assert.equal(L.viewFor(S, "a").me[12], undefined, "dropping the 알바 puts the box down"); L.endTick(S);
+  assert.notEqual(act({ t: "atk" }).error, "배달 중에는 공격할 수 없어요 — 알바를 그만두면 상자를 내려놓아요");
   assert.equal(X.stats(p).spd0, spd0, "speed back once the parcel is gone");
   // fallen: lost too
   take(); standBy(t.npc); assert.ok(act({ t: "jb", a: "pick" }).ok);
@@ -830,6 +848,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   assert.equal(ch.gold - g1, want);
   assert.deepEqual([ch.rep.juju, ch.rep.cafe_moka, ch.cnt.deliver, p.parcel], [Math.round(3 * dk), Math.round(dk), 1, null]);
   assert.deepEqual(ch.jobBoard.done, [id]);
+  assert.equal(L.viewFor(S, "a").me[12], undefined, "handed over: the weapon is back"); L.endTick(S);
 }
 
 // ── board v2: grades and 긴급 by day, hunts, scouting, trust-gated rows, night / rain extras, migrate
@@ -1028,6 +1047,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
     assert.ok(act({ t: "jb", a: "pick" }).ok);
     const a = ch.jobBoard.active;
     assert.equal(a.fill, sp.length);
+    assert.equal(L.viewFor(S, "a").me[12], 2, "the milk crate in both hands"); L.endTick(S);
     assert.ok(a.expAt > now + 20000 && a.expAt < now + 600000, "a clock: " + (a.expAt - now));
     assert.equal(act({ t: "jb", a: "pick" }).error, "이미 받았습니다");
     assert.ok(doAt(sp, 0).ok);
@@ -1040,6 +1060,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
     now = a.expAt + 1; S.now = now;
     X.lifeTick(S, p, now);
     assert.equal(ch.jobBoard.active, null, "the milk went warm");
+    assert.equal(L.viewFor(S, "a").me[12], undefined, "and the crate is gone"); L.endTick(S);
   }
   // 꽃밭 물주기: fill the can at the well (three waterings a fill), not anywhere else
   {

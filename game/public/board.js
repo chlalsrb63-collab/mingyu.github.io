@@ -8,7 +8,7 @@
  *   `jb {a:"pick"}` / `jb {a:"give"}` — the prompt names it (`promptFor`), and a talk window shows an 알바 card
  *   with the same button (`renderTalk`). Items are counted in the bag + 재료 주머니, as the server does.
  * - A parcel in hand (`active[1] === 1`): the `#dl` countdown bar (from `secsLeft`, counted down locally) and a
- *   parcel over the carrier's head (an S3 hook; others are known from `["dl", eid, c]` events only).
+ *   the box in the carrier's hands (the snapshot's carry code: scene_people.js + carry.js, for everyone).
  * - Trust: `self.rep = [[npcId, n]…]`, tiers `defs.life.rep`; `repBadge` (talk window, shop header),
  *   `renderLife` (the 생활 window's 알바 card and 신뢰 list). `trackRows` puts the job in the quest tracker.
  * Where an NPC lives is not in defs: `HOME` below (npc id → map id; map names come from defs.maps).
@@ -46,9 +46,8 @@ const KIND = { bring: ["가져오기", "#9be05a"], make: ["만들기", "#c8c8d8"
 const GRADE_BG = ["#9be05a", "#ffd36a", "#ff8a6a"];
 const WHEN = { night: "밤 한정", rain: "비 오는 날" };
 const GLYPH = ["fish", "fire", "life", "anvil", "drop", "bag"];
-const INK = "#2b2233";
 
-const st = { until: 0, full: 0, urgUntil: 0, ref: null, carriers: new Set(), hooked: false, sent: 0 };
+const st = { until: 0, full: 0, urgUntil: 0, ref: null, sent: 0 };
 window.__board = st;
 
 const D = () => G.defs && G.defs.life;
@@ -487,7 +486,6 @@ export function trackTarget(s) {
 export function tick(t) {
   const s = G.self;
   if (!s) return;
-  if (!st.hooked) { S3.hooks.push(drawParcels); st.hooked = true; }
   if (s.jb !== st.ref) {
     st.ref = s.jb;
     const a = active(s), secs = delivering(a) || onClock(a) ? a.secs : a && a.urg > 0 ? a.urg : 0;
@@ -506,33 +504,10 @@ export function tick(t) {
   box.classList.toggle("late", left < 10000);
   $("#dl-fill").style.width = `${clamp((left / (st.full || left)) * 100, 0, 100)}%`;
 }
-const carrying = (eid) => (eid === G.you ? !!(st.until > now() && delivering(active())) : st.carriers.has(eid));
-/** A parcel over the head of everyone known to carry one (S3 hook: world pixels in the iso frame). */
-function drawParcels(g, t) {
-  const who = [G.you, ...st.carriers];
-  for (const eid of who) {
-    if (!carrying(eid)) continue;
-    const e = entityPos(eid);
-    if (!e || e.dead) continue;
-    const [x, y] = S3.iso(e.x, e.y), bob = e.moving ? Math.round(Math.sin(t / 110)) : 0;
-    const x0 = Math.round(x - 6), y0 = Math.round(y - (e.h3 || 1.32) * 26 - 9 + bob);
-    const px = (a, b, w, h, c) => { g.fillStyle = c; g.fillRect(x0 + a, y0 + b, w, h); };
-    px(0, 0, 12, 10, INK);                 // outline
-    px(1, 1, 10, 8, "#d49a58");            // the box
-    px(1, 6, 10, 3, "#a86c34");            // its shadow side
-    px(1, 1, 10, 1, "#f0c088");            // the lit lid edge
-    px(5, 1, 2, 8, "#f4e6c0");             // the string
-    px(1, 4, 10, 1, "#f4e6c0");
-    px(4, -2, 4, 2, INK); px(5, -1, 2, 1, "#f4e6c0");   // the bow
-    if (eid === G.you && st.until - t < 10000 && Math.floor(t / 250) % 2) px(9, -3, 2, 2, "#ff6a5a");
-  }
-}
-
 /** `["dl", eid, c]`: 1 picked, 2 handed in, 0 lost. True when handled. */
 export function onEvent(e) {
   if (e[0] !== "dl") return false;
   const [, eid, c] = e, at = entityPos(eid), mine = eid === G.you;
-  if (c === 1) st.carriers.add(eid); else st.carriers.delete(eid);
   if (mine) {
     if (c === 1) { Sound.play("item"); floatText("꾸러미!", G.me.x, G.me.y, 1.8, "#f0c088"); }
     else if (c === 2) { Sound.play("quest"); floatText("알바 완료!", G.me.x, G.me.y, 1.9, "#ffe08a", true); st.until = 0; }

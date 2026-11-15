@@ -281,7 +281,7 @@ const JB = {
   jb_sc_mimi: { kind: "scout", npc: "merc_mimi", lv: 15, sk: "deliver", map: ["forest", "crypt", "abyss"], rush: 12, text: "접수원 미미가 급하게 정찰을 부탁해요! 다녀와서 바로 보고해 주세요." },
   jb_sc_sol: { kind: "scout", npc: "willow_bard", lv: 25, sk: "deliver", map: ["cave", "abyss", "maple"], text: "음유시인 솔이 새 노래의 무대를 찾아요. 어떤 곳인지 보고 와서 들려주세요." },
   jb_fish_somi: { kind: "fish", npc: "cafe_somi", lv: 1, sk: "fish", item: "fish_s", n: 4, text: "단골 손님 솜이네 고양이가 [송사리] 4마리를 목 빠지게 기다려요." },
-  jb_fish_rain: { kind: "fish", npc: "willow_fisher", lv: 5, sk: "fish", item: "fish_m", n: 3, when: "rain", text: "비 오는 날엔 물고기가 잘 문대요! 낚시꾼 갈대가 [무지개 송어] 3마리를 기다려요." },
+  jb_fish_rain: { kind: "fish", npc: "willow_fisher", lv: 10, sk: "fish", item: "fish_m", n: 3, when: "rain", text: "비 오는 날엔 물고기가 잘 문대요! 낚시꾼 갈대가 [무지개 송어] 3마리를 기다려요." },
   jb_fish_gold: { kind: "fish", npc: "juju", lv: 25, sk: "fish", item: "fish_l", n: 1, rep: 10, text: "쥬쥬가 단골에게만 슬쩍 부탁해요. 귀하디귀한 [황금 잉어] 한 마리!" },
   jb_wood_rain: { kind: "bring", npc: "dongdong", lv: 1, sk: "gather", item: "m_w1", n: 10, when: "rain", rush: 15, text: "비가 새요! 관리인 동동이 지붕 틈을 막을 [마른 가지] 10개가 급하대요." },
   jb_ore_tong: { kind: "bring", npc: "forge_tong", lv: 20, sk: "gather", item: "m_o3", n: 6, text: "견습 대장장이 통통이 캉캉 몰래 연습하려고 [네온 고철] 6개를 찾아요. 비밀이에요!" },
@@ -304,12 +304,12 @@ const JB = {
  * The village chores (H10). `spot`: what one act is done to (the toast); `src`: what to fetch before the acts —
  * "npc" from the giver (all the acts at once: the milk bottles, the dog's leash) or "water" (a well or the water's
  * edge, `carry` acts a fill); `timed`: the fetch starts a parcel-like clock and running out fails the job (never
- * 긴급). CHORE: act reach (px), the least ms between two acts, the reach of a water source (tiles), weeds within this many tiles of
+ * 긴급); `box`: the carry code (58-life.js carryOf) held in both hands while acts are carried. CHORE: act reach (px), the least ms between two acts, the reach of a water source (tiles), weeds within this many tiles of
  * the 제초 giver (the farmer's plot and backyard).
  */
 const CHORE_MAP = "willow";
 const CHORES = {
-  milk: { name: "우유 배달", spot: "우편함", src: "npc", timed: true, get: "우유병을 받았습니다" },
+  milk: { name: "우유 배달", spot: "우편함", src: "npc", timed: true, box: 2, get: "우유병을 받았습니다" },
   weed: { name: "제초", spot: "잡초" },
   flyer: { name: "전단지 붙이기", spot: "전단지" },
   litter: { name: "쓰레기 줍기", spot: "쓰레기" },

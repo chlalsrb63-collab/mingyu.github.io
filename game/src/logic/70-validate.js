@@ -189,6 +189,7 @@ export function validateAction(S, pid, a) {
       return OK;
     case "atk":
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
+      if (carryOf(p)) return bad(CARRY_NO);
       if (p.dance) return bad("무영난무 중입니다");
       if (p.hammer) return bad("해머를 내려찍는 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
@@ -220,6 +221,7 @@ export function validateAction(S, pid, a) {
       const sk = typeof a.id === "string" && Object.hasOwn(SKILL, a.id) ? SKILL[a.id] : null;
       if (!sk) return bad("없는 스킬");
       if (sk.kind === "p") return bad("저절로 발동하는 패시브 스킬입니다");
+      if (carryOf(p)) return bad(CARRY_NO);
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       const why = skWhy(ch, sk);
       if (why) return bad(why);

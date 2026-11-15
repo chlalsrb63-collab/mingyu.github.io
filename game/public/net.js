@@ -215,7 +215,7 @@ function onSnap(s) {
   if (s.nl) NpcLife.onLegs(s.nl);
   if (s.nw) NpcLife.onWhere(s.nw);
   if (s.map || s.me[5]) { me.x = s.me[0]; me.y = s.me[1]; me.dir = s.me[6]; if (s.me[10] !== undefined) me.aimI = s.me[10]; }
-  me.hp = s.me[2]; me.mp = s.me[3]; me.sit = !!s.me[7];
+  me.hp = s.me[2]; me.mp = s.me[3]; me.sit = !!s.me[7]; me.carry = s.me[12] | 0;   // [12]: what is held instead of the weapon (carry.js)
   // me[11]: ms left on the dash (Space) cooldown; a 0 just after pressing may predate the press reaching the server
   if (s.me[11] > 0) G.dashEnd = t + s.me[11]; else if (s.me[11] === 0 && t - (G.dashSent || 0) > 500) G.dashEnd = 0;
   const dead = !!s.me[4];
@@ -230,7 +230,7 @@ function onSnap(s) {
     if (isOpen("party")) renderParty();
     if (isOpen("guild")) renderGuild();
   }
-  sync(G.players, s.P, (e, r) => { e.tx = r[1]; e.ty = r[2]; e.dir = r[3]; e.dead = !!r[4]; e.hp = r[5]; e.mhp = r[6]; e.sit = !!r[7]; }, t);
+  sync(G.players, s.P, (e, r) => { e.tx = r[1]; e.ty = r[2]; e.dir = r[3]; e.dead = !!r[4]; e.hp = r[5]; e.mhp = r[6]; e.sit = !!r[7]; e.carry = r[9] | 0; }, t);
   sync(G.fires, s.F || [], (e, r) => { e.tx = r[1]; e.ty = r[2]; e.x = r[1]; e.y = r[2]; }, t);
   sync(G.mobs, s.M, (e, r) => { e.k = r[1]; e.tx = r[2]; e.ty = r[3]; e.dir = r[4]; e.hp = r[5]; e.hk = (s.HK && s.HK[r[0]]) || 1; e.el = r[6]; e.tr = r[7] || []; e.bph = r[10] | 0; e.bst = r[11] | 0; e.stg = r[12] | 0; }, t, G.gone);   // [10, 11]: a scripted boss's phase and state (mobart.js artKind), [12] its stagger gauge left % while it casts
   sync(G.drops, s.D, (e, r) => { e.it = r[1]; e.tx = r[2]; e.ty = r[3]; e.q = r[4]; }, t);
