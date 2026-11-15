@@ -4,6 +4,7 @@
 // walking and fighting for N ticks, exactly as room.ts drives a channel: tick, viewFor per player, endTick.
 //   node scripts/bench-tick.mjs [--ticks 3000]           ms per tick / viewFor (avg p95 max), bytes per snapshot, heap
 //   node scripts/bench-tick.mjs --golden [--ticks 1500]  one hash of every snapshot, the world and every sheet
+//   node scripts/bench-tick.mjs --spikes                 also the slowest ticks and who changed maps in them
 //   node --expose-gc --cpu-prof --cpu-prof-dir=shots scripts/bench-tick.mjs   a CPU profile
 // The bots are deterministic (their own LCG, the world's fixed clock), so two runs of the same rules
 // print the same golden hash: an optimisation that changes behaviour shows up as a different hash.
@@ -11,7 +12,7 @@ import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i < 0 ? d : process.argv[i + 1]; };
-const GOLDEN = process.argv.includes("--golden");
+const GOLDEN = process.argv.includes("--golden"), SPIKES = process.argv.includes("--spikes");
 const TICKS = +arg("ticks", GOLDEN ? 1500 : 3000);
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
   "\nexport const __t = { DIM_TOWN, COOP, mapOf, MOBS, SKILL, SKILL_ORDER, stats, atkRange, aimIdx, ITEMS };\n";
@@ -99,7 +100,7 @@ function drive(p) {
   act(p.pid, { t: "atk", a: aim });
 }
 
-const tickMs = [], viewMs = [], callMs = [];
+const tickMs = [], viewMs = [], callMs = [], moves = {};
 let bytes = 0, snaps = 0;
 const hash = createHash("sha256");
 globalThis.gc?.();
@@ -122,6 +123,7 @@ for (let i = 0; i < TICKS; i++) {
     if (GOLDEN) hash.update(pid + s);
   }
   viewMs.push(vsum);
+  if (SPIKES) for (const p of ps) { if (p.bot.was !== p.map) { if (p.bot.was) moves[i] = (moves[i] || "") + ` ${p.bot.was}→${p.map}`; p.bot.was = p.map; } }
   L.endTick(S);
 }
 globalThis.gc?.();
@@ -135,6 +137,8 @@ console.log(`${Object.keys(S.players).length} players, ${TICKS} ticks, dims ${Ob
 console.log(`tick ms        ${q(tickMs)}`);
 console.log(`viewFor ms/tick ${q(viewMs)}   per call ${q(callMs)}`);
 console.log(`snapshot bytes avg ${(bytes / snaps).toFixed(0)}   heap ${(heap0 / 1048576).toFixed(1)} → ${(heap1 / 1048576).toFixed(1)} MB${globalThis.gc ? "" : " (run with --expose-gc for a fair number)"}`);
+if (SPIKES) for (const i of tickMs.map((_, i) => i).sort((a, b) => tickMs[b] + viewMs[b] - tickMs[a] - viewMs[a]).slice(0, 8))
+  console.log(`  tick #${i}: ${tickMs[i].toFixed(1)} + view ${viewMs[i].toFixed(1)} ms${moves[i] || moves[i - 1] ? "  moves:" + (moves[i - 1] || "") + (moves[i] || "") : ""}`);
 if (GOLDEN) {
   for (const pid of Object.keys(S.players).sort()) hash.update(JSON.stringify(L.exportChar(S, pid)));
   // the world itself (an object met a second time, p.S or mob.slot.mob, is written as a mark)
