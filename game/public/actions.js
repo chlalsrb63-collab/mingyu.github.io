@@ -334,7 +334,9 @@ function talkShow() {
     $("#talk-text").after(more);
   }
   more.hidden = talk.lines.length < 2;
-  more.textContent = `[${K("talkNext")}] 다음 이야기 (${(talk.i % talk.lines.length) + 1}/${talk.lines.length})`;
+  // on the last line F closes (below), so this button no longer claims F: a click starts over
+  const last = talk.i % talk.lines.length === talk.lines.length - 1;
+  more.textContent = last ? `처음부터 (${talk.lines.length}/${talk.lines.length})` : `[${K("talkNext")}] 다음 이야기 (${(talk.i % talk.lines.length) + 1}/${talk.lines.length})`;
   let end = $("#talk-end");
   if (!end) {
     end = el("button", "btn small", "");
@@ -343,6 +345,5 @@ function talkShow() {
     more.after(end);
   }
   // on the last line F closes too (unless the window has a gold button for it to press)
-  const last = talk.i % talk.lines.length === talk.lines.length - 1;
   end.textContent = `[${last ? `${K("talkNext")}/` : ""}${K("talkEnd")}] 닫기`;
 }
