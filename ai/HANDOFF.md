@@ -84,6 +84,12 @@ Play server: `.claude/launch.json` "play-1530" (port 8830, persist `game/.wrangl
 final boss in the far hall; 15 min limit, ~10 min target; the 1–100 ladder is gone (sheet **v22** resets ladder records; `dim[14]` = floor).
 Bots 4 × Lv 17/32/44 × 4 draws: 11/12 clear, 8.6–11.3 min, avg 9.6 (one Lv 17 draw wiped on the boss). `docs/design/scale-and-rift.md` H.7.
 
+**Evening (owner):** rift floors 5.4–7.5× bigger, one procedural concept per floor (`DIM_FLOORS`: 무너진 지하 회랑 / 수정 동굴 / 핏빛 심연;
+gauge = fixed weight ≈ 26 kills of 70–110; 균열의 문 to the boss hall; bots 11/12 in 8.1–11.4 min). **Economy**: kill gold × `HUNT_GOLD` 0.4,
+`JB_PAY` ×4, co-op gold ×2.5 (economy review §6). **버드나무 마을** 70×56 with river/pond/plaza/market/dairy/fields, 6 new villagers, board kind
+`chore` (`59-chores.js`, `public/chores.js`: 우유 배달 · 제초 · 쓰레기 줍기 · 전단지 · 물주기 · 강아지 산책; `perDay` 4); facilities for Codex's
+`docs/design/willow-job-economy.md` (집하장, 공동 부엌, 수리대, 꽃밭, 연못) — coordinates in life-and-coop.md H10. Codex wires its 12 jobs next.
+
 **Next, in order:**
 1) Play-test the four co-op jobs (forge/alch bots hit every beat — real players score lower; retune cut-offs) and the bosses-2 raids.
 2) Co-op leftovers: diner burger + two-carrier orders and a clean-plate stack (plates/sink done, C row kind 9; the 3-player cut-off
