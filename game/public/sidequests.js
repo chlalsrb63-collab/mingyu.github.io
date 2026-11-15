@@ -222,6 +222,8 @@ export function renderKeeps(box, s) {
   for (const id of all) {
     const d = items[id], got = keep.includes(id);
     const row = el("div", "keep-row" + (got ? " ok" : ""));
+    const url = got && C.G.icons?.url[id];
+    if (url) { const img = el("img", "ic"); img.src = url; img.alt = ""; row.append(img); }
     row.append(el("b", "", got ? d.name : "???"), el("small", "", d.arc ? `「${d.arc}」` : ""), el("p", "col-lore", got ? d.desc : "아직 만나지 못한 이야기."));
     list.append(row);
   }
