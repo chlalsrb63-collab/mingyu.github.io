@@ -1474,3 +1474,26 @@ body[data-lay="full"] #panel .jt-grid .jt-node img.ji { margin: 0 auto; }
 .tr-row { display: flex; flex-direction: column; padding: 3px 5px; margin: 2px 0; background: #1c1726; border-left: 3px solid #3a3150; opacity: .5; font: var(--t12) var(--pix); }
 .tr-row.on { opacity: 1; border-left-color: #ffd84a; background: #2a2236; }
 .tr-row small { color: #c8b896; }
+/* ── 협동 아르바이트 (coop.js): the shift's line at the top, the lobby card, the report card ── */
+#coop-hud { left: calc(var(--vpw) / 2); transform: translateX(-50%); top: 8px; z-index: 6; padding: 4px 10px 5px; max-width: calc(var(--vpw) - 40px);
+  font: var(--t12)/1.35 var(--pix); color: #f4ecd0; text-align: center; }
+#coop-hud .ch-l { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#coop-hud .ch-g { height: 3px; margin: 3px 0; background: #2a2418; }
+#coop-hud .ch-g > i { display: block; height: 100%; width: 0; background: #e8c050; }
+#coop-hud .ch-b { display: flex; gap: 6px; justify-content: center; }
+#coop-hud.fever { color: #ffe080; box-shadow: 0 0 0 2px #c84a2a; }
+#coop-hud.messy .ch-l { color: #ff9a80; }
+#coop-card { left: calc(var(--vpw) / 2); transform: translateX(-50%); top: calc(var(--vph) - 230px); width: 300px; z-index: 6; padding: 6px 10px 8px;
+  font: var(--t12)/1.4 var(--pix); color: #f4ecd0; }
+#coop-card b { color: #ffe080; }
+#coop-card p { margin: 3px 0; }
+#coop-card .cc-day { color: #b8f07a; }
+#coop-res { left: calc(var(--vpw) / 2); top: calc(var(--vph) / 2); transform: translate(-50%, -50%); width: 260px; z-index: 9; padding: 8px 12px 10px;
+  font: var(--t12)/1.4 var(--pix); color: #f4ecd0; text-align: center; }
+#coop-res .cr-g { font: 700 40px/1 var(--pix); color: #c8c0a0; }
+#coop-res .cr-g.g4 { color: #ffd040; }
+#coop-res .cr-g.g3 { color: #b8f07a; }
+#coop-res table { width: 100%; margin: 4px 0; }
+#coop-res td { padding: 0 3px; }
+#coop-res td:last-child { color: #ff9a80; }
+#coop-res .cr-cut, #coop-res .cr-note { color: #a89c80; }

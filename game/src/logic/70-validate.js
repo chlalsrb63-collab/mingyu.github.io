@@ -446,6 +446,8 @@ export function validateAction(S, pid, a) {
     case "blk": case "w": case "wk": return socialValidate(S, p, a);
     // charms (66-charms.js): 주아나's quests, appraisal, the board
     case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": return charmValidate(S, p, a);
+    // 협동 아르바이트 (68-coop.js)
+    case "coop_start": case "coop_act": case "coop_leave": return coopValidate(S, p, a);
     default:
       return bad("알 수 없는 행동");
   }

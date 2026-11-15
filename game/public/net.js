@@ -22,6 +22,7 @@ import * as Dim from "./dimrift.js";
 import * as Gather from "./gather.js";
 import * as Radar from "./radar.js";
 import * as Housing from "./housing.js";
+import * as Coop from "./coop.js";
 import { G, el, $, resize, $$, tg, text, now, T } from "./state.js";
 import { JOB_ALIAS, onEvent, onGain } from "./events.js";
 import { countItem, usePotion, castSkill } from "./actions.js";
@@ -268,6 +269,7 @@ function onSnap(s) {
   Gather.onSnap(s);                            // `ng`: the nodes you have spent here (gather.js)
   Dim.onSnap(s);                               // 차원 균열: HUD, ready check, shrines and orbs (dimrift.js)
   Housing.onSnap(s);                           // a house of one's own: its bar, the ghost, the windows (housing.js)
+  Coop.onSnap(s);                              // 협동 아르바이트: cj C cr (coop.js)
   hudBars();
 }
 

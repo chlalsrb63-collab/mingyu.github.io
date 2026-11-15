@@ -64,6 +64,8 @@ function selfPayload(p) {
     life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch,
     // the block list, the enhancement pity gauge, the weekly book (63-social-weekly.js)
     ...socialSelf(p),
+    // 협동 아르바이트 paid today (68-coop.js)
+    coop: coopSelf(p),
   };
 }
 
@@ -145,6 +147,7 @@ export function viewFor(S, pid) {
   if (p.dirty) out.self = selfPayload(p);
   if (p.gain.length) out.gain = p.gain;
   dimView(S, p, out);
+  coopView(S, p, out);   // 협동 아르바이트: cj, C, cr (68-coop.js)
   // this map's gathering nodes the player has spent, when that changes (58-life.js)
   lifeSnap(S, p, out);
   npcLifeSnap(S, p, out);
@@ -251,6 +254,8 @@ export function defs() {
     life: lifeDefs(), npclife: npcLifeDefs(),
     // charms: shapes, options and caps, legendaries, the expansion order and prices, 주아나's quests (66-charms.js)
     charms: charmDefs(),
+    // 협동 아르바이트: the jobs, cut-offs, tools (68-coop.js)
+    coop: coopDefs(),
     // boss trophies: { list: { kind: { name, fx } }, cap, p, gold, story: { r, limit } } (67-trophies.js)
     trophies: trophyDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: worldMapDefs(),

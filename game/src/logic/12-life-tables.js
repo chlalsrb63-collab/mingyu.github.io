@@ -295,3 +295,41 @@ const LIFE_MASTER = ["명인 낚시꾼", "명인 요리사", "명인 채집꾼",
 const COOP_KINDS = ["apt", "diner", "forge", "alch"];
 /** The 재료 주머니 holds materials (ingots too), staples and flasks, up to this many of each. */
 const POUCH_MAX = 999;
+
+// ── 협동 아르바이트 (C1, 68-coop.js; docs/design/life-and-coop.md C, "As built — co-op v1")
+/**
+ * The shared engine's numbers. parN scales the cut-offs and the spawn tempo by the party size at the start
+ * (1 is this build's solo shift; the design's parties are 2–4). Rewards by grade C B A S (C.7).
+ */
+const COOP_T = {
+  briefMs: 8000, feverMs: 60000, endMs: 30000, emptyMs: 20000, max: 6, actMs: 250, near: 56, reach: 28, station: 26,
+  zzzMs: 45000, idleMs: 90000, lazy: 0.15, cuts: [0.30, 0.50, 0.70, 0.88], parN: { 1: 0.6, 2: 1, 3: 1.35, 4: 1.65 },
+  xp: [0.08, 0.14, 0.20, 0.28], gold: [40, 60, 80, 110], gearQ: [0, 1, 1, 2], stone: [1, 2, 3, 5], life: [0.30, 0.45, 0.60, 0.80],
+  tip: 10, tipLife: 0.1, helpTip: 15, helpLife: 0.25, rep: 5,
+};
+const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통" };
+/** The jobs: name, owner NPC and lobby, shift minutes, the two tools (rotation A B A B), par, combo window, life skill, template. */
+const COOP = {
+  apt: {
+    name: "동동아파트 청소", npc: "dongdong", lobby: "dongdong_apt", mins: 5, tools: ["broom", "bin"], par: 900, combo: 20000, skill: "deliver",
+    // stations (tiles; solid furniture, used from a neighbouring tile): 소각로 `<`, 재활용함 `w`, the tool rack `>`
+    st: { burn: [1, 13], recycle: [22, 13], rack: [12, 13] },
+    start: [[11, 12], [13, 12], [11, 13], [13, 13]],
+    // the four flats (spawn rooms, tile rects) above the corridor (y 12–13)
+    rooms: [[1, 2, 9, 5], [14, 2, 22, 5], [1, 7, 9, 10], [14, 7, 22, 10]],
+    tpl: {
+      name: "동동아파트 (근무 중)", theme: "interior", style: "lobby", bgm: "clean", safe: true, w: 24, h: 15, entry: [12, 12],
+      ground: ["ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "ffuuuuuuuffffffqqqqqqqff", "ffuuuuuuuffffffqqqqqqqff", "ffuuuuuuuffffffqqqqqqqff",
+        "ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "fflllllllffffffuuuuuuuff", "fflllllllffffffuuuuuuuff",
+        "ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "hhhhhhhhhhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhhhhhhhhhh"],
+      objects: ["=+====~===+==+===~====+=", "=pp   g  r    r  g   pp_", "=                      _", "=  o              o    _", "=                      _",
+        "=                      _", "=mmm  mmmm    mmmm  mmm_", "=s                    s_", "=                      _", "=   g              g   _",
+        "=                      _", "=jjj  jjjj    jjjj  jjj_", "=                      _", "=<          >         w_", "________________________"],
+    },
+  },
+};
+/** 동동아파트 청소 (C.4, without pests and dust in v1): piles, bundles, the two-person sofa, the mess meter. */
+const COOP_APT = {
+  pileMs: 7000, pileHp: 3, pileCap: [6, 2], spreadMs: 40000, binCap: 5, bundlePts: 10, recycleK: 1.5, holdK: 0.6,
+  sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaBundles: 3, complainMs: 10000, complainPen: 20, messCap: [10, 4],
+};
