@@ -39,7 +39,7 @@ const ITEMS = {
   scr_lvl: { name: "레벨 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 레벨과 능력치가 1로 돌아간다. 숙련, 장비, 골드, 직업 레벨은 남는다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다. 강화할 때마다 쓴다." },
   ske_stone: { name: "스킬 강화석", type: "mat", price: 0, desc: "마을이나 모닥불 곁에서 액티브 스킬을 강화한다 (+10까지, +3까지는 반드시 성공). 실패하면 이 돌만 사라진다." },
-  uncurse: { name: "저주 해제 주문서", type: "mat", price: 2500, desc: "대장장이에게 가져가면 강화에 실패해 저주받은 장비를 푼다. 풀린 장비의 다음 강화는 성공 확률이 10%p 오른다." },
+  uncurse: { name: "저주 해제 주문서", type: "mat", price: 1200, desc: "대장장이에게 가져가면 강화에 실패해 저주받은 장비를 푼다. 풀린 장비의 다음 강화는 성공 확률이 10%p 오른다." },
   recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 버드나무광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
   fish_s: { name: "송사리", type: "fish", cook: "food_s", price: 30, desc: "흔한 물고기. 모닥불에서 구울 수 있다." },
@@ -168,7 +168,8 @@ const ENH_RATE = [100, 100, 100, 80, 70, 55, 45, 35, 25, 15];
 const ENH_PCT = [0, 4, 8, 12, 14.5, 17, 19.5, 21.5, 23.5, 25.5, 27.5];
 const enhMul = (e) => 1 + ENH_PCT[e | 0] / 100;
 // weapon crit % per step; a lifted curse gives the next try this many %p
-const ENH_CRIT = 0.5, ENH_UNCURSE = 10;
+// UNCURSE_FEE: the smith's gold per gear tier on top of the scroll (economy review 2026-11-15 §3: tier 1 1.6k … tier 5 3.2k with the scroll)
+const ENH_CRIT = 0.5, ENH_UNCURSE = 10, UNCURSE_FEE = 400;
 
 // ── the cosy side: campfires, fishing, guilds
 /** Campfires that always burn, by map, in tiles. */

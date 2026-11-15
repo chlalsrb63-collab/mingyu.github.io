@@ -262,6 +262,7 @@ export function applyAction(S, pid, a) {
     case "uncurse": {
       const g = ch.eq[a.k];
       takeItem(ch, "uncurse", 1);
+      ch.gold -= UNCURSE_FEE * ITEMS[g.id].tier;
       g.cu = 2;
       toast(p, `${gearFull(g)}의 저주가 풀렸습니다 — 다음 강화는 성공 확률 +${ENH_UNCURSE}%p`);
       afterGear(S, p);

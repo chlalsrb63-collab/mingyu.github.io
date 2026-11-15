@@ -352,6 +352,7 @@ export function validateAction(S, pid, a) {
       if (!g || g.cu !== 1) return bad("저주받은 장비가 아닙니다");
       if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
       if (countItem(ch, "uncurse") < 1) return bad("저주 해제 주문서가 없습니다");
+      if (ch.gold < UNCURSE_FEE * ITEMS[g.id].tier) return bad(`저주 해제 수수료 ${(UNCURSE_FEE * ITEMS[g.id].tier).toLocaleString()}G가 부족합니다`);
       return OK;
     }
     case "sit": return OK;

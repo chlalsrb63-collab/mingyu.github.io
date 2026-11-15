@@ -407,7 +407,7 @@ const ITEMS = {
   scr_lvl: { name: "레벨 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 레벨과 능력치가 1로 돌아간다. 숙련, 장비, 골드, 직업 레벨은 남는다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다. 강화할 때마다 쓴다." },
   ske_stone: { name: "스킬 강화석", type: "mat", price: 0, desc: "마을이나 모닥불 곁에서 액티브 스킬을 강화한다 (+10까지, +3까지는 반드시 성공). 실패하면 이 돌만 사라진다." },
-  uncurse: { name: "저주 해제 주문서", type: "mat", price: 2500, desc: "대장장이에게 가져가면 강화에 실패해 저주받은 장비를 푼다. 풀린 장비의 다음 강화는 성공 확률이 10%p 오른다." },
+  uncurse: { name: "저주 해제 주문서", type: "mat", price: 1200, desc: "대장장이에게 가져가면 강화에 실패해 저주받은 장비를 푼다. 풀린 장비의 다음 강화는 성공 확률이 10%p 오른다." },
   recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 버드나무광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
   fish_s: { name: "송사리", type: "fish", cook: "food_s", price: 30, desc: "흔한 물고기. 모닥불에서 구울 수 있다." },
@@ -536,7 +536,8 @@ const ENH_RATE = [100, 100, 100, 80, 70, 55, 45, 35, 25, 15];
 const ENH_PCT = [0, 4, 8, 12, 14.5, 17, 19.5, 21.5, 23.5, 25.5, 27.5];
 const enhMul = (e) => 1 + ENH_PCT[e | 0] / 100;
 // weapon crit % per step; a lifted curse gives the next try this many %p
-const ENH_CRIT = 0.5, ENH_UNCURSE = 10;
+// UNCURSE_FEE: the smith's gold per gear tier on top of the scroll (economy review 2026-11-15 §3: tier 1 1.6k … tier 5 3.2k with the scroll)
+const ENH_CRIT = 0.5, ENH_UNCURSE = 10, UNCURSE_FEE = 400;
 
 // ── the cosy side: campfires, fishing, guilds
 /** Campfires that always burn, by map, in tiles. */
@@ -15045,6 +15046,7 @@ export function validateAction(S, pid, a) {
       if (!g || g.cu !== 1) return bad("저주받은 장비가 아닙니다");
       if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
       if (countItem(ch, "uncurse") < 1) return bad("저주 해제 주문서가 없습니다");
+      if (ch.gold < UNCURSE_FEE * ITEMS[g.id].tier) return bad(`저주 해제 수수료 ${(UNCURSE_FEE * ITEMS[g.id].tier).toLocaleString()}G가 부족합니다`);
       return OK;
     }
     case "sit": return OK;
@@ -15410,6 +15412,7 @@ export function applyAction(S, pid, a) {
     case "uncurse": {
       const g = ch.eq[a.k];
       takeItem(ch, "uncurse", 1);
+      ch.gold -= UNCURSE_FEE * ITEMS[g.id].tier;
       g.cu = 2;
       toast(p, `${gearFull(g)}의 저주가 풀렸습니다 — 다음 강화는 성공 확률 +${ENH_UNCURSE}%p`);
       afterGear(S, p);
@@ -16567,7 +16570,7 @@ export function defs() {
     jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.kind === "hybrid" ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {}, wm: j.kind === "none" ? 0 : jobWmOf(id), sig: JOB_SKILL[id] || "" };
   }
   return {
-    items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
+    items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
     jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest

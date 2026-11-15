@@ -104,7 +104,12 @@ assert.equal(act({ t: "enh", k: "ring1" }).ok, false);
   assert.equal(act({ t: "enh", k: "boots" }).ok, false, "cursed gear can't be enhanced");
   assert.equal(act({ t: "uncurse", k: "boots" }).ok, false, "needs the scroll");
   ch.inv.push({ id: "uncurse", n: 1 });
+  const fee = L.defs().uncurseFee * L.defs().items[ch.eq.boots.id].tier;
+  ch.gold = fee - 1;
+  assert.equal(act({ t: "uncurse", k: "boots" }).ok, false, "the smith's fee by gear tier");
+  ch.gold = fee;
   assert.ok(act({ t: "uncurse", k: "boots" }).ok);
+  assert.equal(ch.gold, 0, "fee paid"); ch.gold = 1e6;
   assert.equal(ch.eq.boots.cu, 2, "lifted: the next try gets +10 %p");
   assert.equal(act({ t: "uncurse", k: "boots" }).ok, false, "not cursed any more");
   // a blessed failure keeps the step and brings no curse
