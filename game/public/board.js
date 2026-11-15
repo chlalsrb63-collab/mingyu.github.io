@@ -188,7 +188,7 @@ export function render(s) {
     tag((D().jbGrade || { name: ["쉬움"] }).name[g], GRADE_BG[g]);
     tag((KIND[kind] || [kind])[0]);
     hd.append(nm, tags);
-    card.append(hd, el("p", "say", text));
+    card.append(hd, el("p", "say", t ? sayN(text, t.n, need) : text));
     // what this grade asks: more items / monsters, a further map, a tighter clock
     const ask = kind === "deliver" ? (g ? `제한 시간 ×${D().jbGrade.lim[g]}` : "")
       : kind === "scout" && t ? `목적지: ${mapName(t.map[Math.min(g, t.map.length - 1)])}`
@@ -346,6 +346,10 @@ addEventListener("keydown", (e) => {
   toggleWin("alba");
 });
 
+/** A job's text with its written count (the 쉬움 amount, `base`) swapped for this grade's `need` ("[들꽃잎] 6장" → 9장 on 보통). */
+function sayN(text, base, need) {
+  return need && base && need !== base ? text.replace(new RegExp("(^|[^0-9])" + base + "(?![0-9])"), (m, pre) => pre + need) : text;
+}
 /** The job in hand: what, where, progress, and 그만두기. `full` adds the drop button. */
 function jobCard(s, a, full) {
   const card = el("div", "dcard jb-card on");
@@ -353,7 +357,7 @@ function jobCard(s, a, full) {
   const nm = el("b", "");
   nm.append(iconImg(a.t.kind === "deliver" ? "bag" : GLYPH[D().keys.indexOf(a.t.sk)] || "bag", "#ffe08a"), document.createTextNode(" 맡은 알바"));
   hd.append(nm, el("span", "tag", (KIND[a.t.kind] || [a.t.kind])[0]));
-  card.append(hd, el("p", "say", a.t.text));
+  card.append(hd, el("p", "say", sayN(a.t.text, a.t.n, a.n)));
   const nx = nextStep(a), pr = progOf(s, a);
   // a chore's spots still to do have no NPC to name (the bar below says how many): no "에게 … ·" line
   if (nx.npc) card.append(el("small", "where", pr && a.t.kind === "scout" && !a.got ? `${pr[0]} → ${npcLabel(nx.npc)}에게 보고` : `${npcLabel(nx.npc)}에게 ${nx.verb} · ${placeOf(nx.npc)}`));
