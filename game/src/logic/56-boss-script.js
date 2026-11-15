@@ -9,14 +9,12 @@
 // Phases are listed from the top down (`at` falling); phase n+1 begins under phases[n−1].at and only ever goes up
 // until the fight is forgotten. A phase's pats/gap fall back to the script's own. `steps` follow every pattern of
 // that phase (queued like a pattern's own follow-ups: f "fan" {off} | "pool" | "charge" | "land" {x, y}); `cast: 1`
-// opens the phase with the marked cast. Pattern kinds: fan2 fan3 rings pools charge2 leapslam dive, and the shaped
-// ones donut cone mark adds (bosses-2 §8), written `[name, kind, { …BS_PAT[kind] overrides }]`.
+// opens the phase with the marked cast. Pattern kinds: charge fan fan2 fan3 rings pools charge2 leapslam dive blast jet punch,
+// and the shaped ones donut cone mark adds (bosses-2 §8), written `[name, kind, { …BS_PAT[kind] overrides }]`.
 // State `mob.bs` (bsNew; a challenge's boss shares it with `dim.chal`). Events `["bc", id, i]` pattern i, 9 cast, 8 broken,
 // 7 failed ("bc", not "dc": that is the tracker's lure); `["bt", shape, x, y, r, ms, …]` a shaped telegraph (bsShape).
-// No boss in MOBS has a script yet. bosses-2's F2 망치 갯가재, once its row exists, would read:
-//   script: { cast: "공동 펀치", pats: [["집게 펀치", "cone", { r: 60 }], ["소용돌이", "donut", { r0: 30, r: 90 }], ["조수 표식", "mark", { n: 2 }]],
-//     phases: [{ at: 0.5, pats: [["소용돌이", "donut", { ms: 1100 }], ["조수 표식", "mark", { n: 3 }]] }] }
-// and R2 꽃무덤 고래's heads a pattern ["먹장어 머리", "adds", { kind: "<its hagfish row>", n: 3, cap: 3 }].
+// Scripted rows: bloodhorn (mesa's lair boss) and clubshrimp (the coast's field boss), 10-tables.js — tests/bosses2.mjs.
+// R2 꽃무덤 고래's heads would be a pattern ["먹장어 머리", "adds", { kind: "<its hagfish row>", n: 3, cap: 3 }].
 
 /** The defaults every script may override. `reach`: how near a hero must stand to be in a field boss's fight. */
 const BOSS_SCRIPT = {
@@ -30,6 +28,11 @@ const BS_PAT = {
   cone: { ms: 1000, r: 56, half: 1.047, back: 0, k: 1.5 },
   mark: { ms: 3000, r: 36, n: 4, k: 1.6 },
   adds: { kind: "", n: 3, cap: 6, d: 40 },
+  // bosses-2's F1/F2 vocabulary: a ring on every hero (the party blast), a lane of `n` rings over `len` px with burn pools on
+  // every other one (혈루 사출), and a punch on `n` heroes: ring `r` after `ms`, then the bubble's ring `r2` `ms2` later (공동 펀치)
+  blast: { ms: 1300, r: 32, k: 1.3 },
+  jet: { ms: 900, r: 13, n: 5, len: 140, k: 1.6 },
+  punch: { ms: 900, r: 22, k: 1.4, ms2: 600, r2: 40, k2: 1, n: 1 },
 };
 const BS_DEFS = {};
 /** A mob's script with every number filled in, or null. A challenge's boss: DIM_CHAL's numbers, no vuln (as first tuned). */
@@ -116,7 +119,30 @@ function bsCast(S, rt, mob, tgt) {
   const i = c.pi++ % pats.length, o = { ...BS_PAT[pats[i][1]], ...pats[i][2] };
   let dur = 1500;
   switch (pats[i][1]) {
-    case "fan2":      // two volleys, the second through the gaps of the first
+    case "charge":    // the plain run at its target
+      bsCharge(S, rt, mob, tgt); dur = CHARGE_MS + 800; break;
+    case "fan":       // one volley of five
+      bsVolley(S, rt, mob, tgt, atk, 5, 0); dur = VOLLEY_MS + 300; break;
+    case "blast":     // a ring under every one of the party: everyone walks a body-length
+      for (const v of alive) bsRing(S, rt, mob, v.x, v.y, o.r, o.ms, atk * o.k);
+      dur = o.ms + 300; break;
+    case "jet": {     // a lane of rings toward its target, a burn pool left on every other one
+      const dd = Math.max(1, dist(mob.x, mob.y, tgt.x, tgt.y)), ux = (tgt.x - mob.x) / dd, uy = (tgt.y - mob.y) / dd;
+      for (let j = 1; j <= o.n; j++) {
+        const x = mob.x + (ux * o.len * j) / o.n, y = mob.y + (uy * o.len * j) / o.n;
+        bsRing(S, rt, mob, x, y, o.r, o.ms, atk * o.k);
+        if (j % 2) bsPool(S, rt, mob, { x, y }, atk);
+      }
+      mob.dir = ux < 0 ? 1 : 2; mob.stun = now + o.ms; dur = o.ms + 300; break;
+    }
+    case "punch":     // a punch where each of `n` heroes stands, the bubble collapsing wider on the same spot a moment later
+      for (let j = 0; j < Math.min(o.n, alive.length); j++) {
+        const v = j ? alive[(c.pi + j) % alive.length] : tgt, at = j * 700;
+        bsRing(S, rt, mob, v.x, v.y, o.r, o.ms + at, atk * o.k);
+        bsRing(S, rt, mob, v.x, v.y, o.r2, o.ms + o.ms2 + at, atk * o.k2);
+      }
+      mob.stun = now + o.ms; dur = o.ms + o.ms2 + 300; break;
+    case "fan2":     // two volleys, the second through the gaps of the first
       bsVolley(S, rt, mob, tgt, atk, 5, 0); q.push({ at: now + 900, f: "fan", off: 0.21 }); dur = 900 + VOLLEY_MS; break;
     case "fan3":      // three sweeping volleys and a puddle under the target
       bsVolley(S, rt, mob, tgt, atk, 5, 0); q.push({ at: now + 800, f: "fan", off: 0.28 }, { at: now + 1600, f: "fan", off: -0.28 }, { at: now + 400, f: "pool" });

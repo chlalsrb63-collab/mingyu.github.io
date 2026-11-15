@@ -73,6 +73,13 @@ for (const wk of Object.keys(WEAPON_NAMES)) {
     ITEMS[`w_${WK_ID[wk]}_${t}`] = { name: WEAPON_NAMES[wk][t - 1], type: "weapon", wk, tier: t, base, req: G_REQ[t - 1], price: G_PRICE[t - 1] };
   }
 }
+// bosses-2 §7: the two field bosses' own finds — a material each (for crafting to come) and a top-tier weapon (drops legendary)
+Object.assign(ITEMS, {
+  mat_bloodtear: { name: "피눈물 결정", type: "mat", price: 400, desc: "혈루 왕도마뱀이 흘린 붉은 결정. 아직 쓰임새를 아는 이가 없다." },
+  mat_clubclaw: { name: "망치 갯가재 집게", type: "mat", price: 380, desc: "물을 끓게 하던 갯가재의 집게. 아직 쓰임새를 아는 이가 없다." },
+  w_bloodcrown: { ...ITEMS.w_lancer_5, name: "혈루 왕관 창", uniq: 1 },
+  w_cavhammer: { ...ITEMS.w_h_5, name: "공동 망치", uniq: 1 },
+});
 for (const type of Object.keys(GEAR)) {
   const d = GEAR[type];
   for (let t = 1; t <= 5; t++) {
@@ -167,7 +174,7 @@ const BOUNTY_N = 25;
 /** A hunting ground's field boss stands at its fixed spot from the start and is back there this long after it falls (ms). */
 const FB_RESP = 600000;
 /** Each hunting ground's field boss, by map (its trophy: TROPHIES, 67-trophies.js). */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "clubshrimp", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -369,6 +376,29 @@ const MOBS = {
   spinescorp: { name: "전갈 등뼈", lv: 29, hp: 1400, atk: 96, def: 14, spd: 48, xp: 700, gold: [58, 104], aggro: 94, range: 19, cd: 1000, charge: 114 },
   ribvulture: { name: "독수리 갈비", lv: 30, hp: 1300, atk: 94, def: 10, spd: 44, xp: 760, gold: [60, 110], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
   crownpeacock: { name: "금관 공작", lv: 42, hp: 4200, atk: 124, def: 30, spd: 46, xp: 1900, gold: [104, 180], aggro: 92, range: 22, cd: 1300, fan: 150, charge: 120, pool: 28, poolKind: 1 },
+  // bosses-2 (docs/design/bosses-2.md §2–3, §6–7): 혈루 왕도마뱀 keeps its own lair in mesa (a boss row: its health is the design's
+  // field-boss figure 4,800 × 14, its atk 128 × 1.8), 망치 갯가재 is the coast's field boss (FIELD_BOSS: × 14 / × 1.8 at spawn).
+  // `script` drives their fights (56-boss-script.js); `drops` [item, chance, min, max] are their own finds (lootFor).
+  bloodhorn: { name: "혈루 왕도마뱀", lv: 41, hp: 67200, atk: 230, def: 32, spd: 34, xp: 32000, gold: [4200, 6400], aggro: 130, range: 30, cd: 1300, resp: 240000,
+    boss: true, gear: 1, charge: 140, pool: 26, poolKind: 1, drops: [["mat_bloodtear", 1, 1, 3], ["w_bloodcrown", 0.03]],
+    script: { cast: "혈루 대분출", castMs: 4000, stunMs: 4000, stag: 0.04, blast: 2.2, gap: 5000, enrage: 150000, reach: 220,
+      pats: [["혈루 사출", "jet"], ["뿔관 돌진", "charge"], ["결정 가시 산탄", "fan"], ["모래 잠행", "leapslam"], ["꼬리 휩쓸기", "cone", { back: 1 }], ["피의 비", "blast"]],
+      phases: [
+        { at: 0.6, cast: 1, pats: [["혈루 사출", "jet"], ["뿔관 연속 돌진", "charge2"], ["결정 가시 폭풍", "fan3"], ["모래 잠행", "leapslam"], ["꼬리 휩쓸기", "cone", { back: 1 }],
+          ["붉은 결정 성장", "adds", { kind: "bloodshard", n: 3, cap: 3, d: 48 }], ["피의 비", "blast"]] },
+        // 혈루 폭주: every pattern leaves a burn pool, the gap a quarter shorter
+        { at: 0.25, cast: 1, gap: 3750, steps: [{ f: "pool", dt: 400 }], pats: [["혈루 사출", "jet"], ["뿔관 연속 돌진", "charge2"], ["결정 가시 폭풍", "fan3"], ["모래 잠행", "leapslam"],
+          ["꼬리 휩쓸기", "cone", { back: 1 }], ["붉은 결정 성장", "adds", { kind: "bloodshard", n: 3, cap: 3, d: 48 }], ["피의 비", "blast"]] },
+      ] } },
+  // its phase-2 adds (shortcut: a blood-tinted scorpion stands in for the design's still crystals until they have art)
+  bloodshard: { name: "혈루 결정 전갈", sp: "spinescorp", tint: "blood", lv: 41, hp: 1000, atk: 110, def: 20, spd: 40, xp: 420, gold: [20, 40], aggro: 140, range: 19, cd: 1100, slam: 34 },
+  clubshrimp: { name: "망치 갯가재", lv: 39, hp: 4400, atk: 120, def: 30, spd: 42, xp: 1700, gold: [96, 166], aggro: 92, range: 22, cd: 1200, charge: 120, pool: 26, poolKind: 2,
+    drops: [["mat_clubclaw", 1, 1, 3], ["w_cavhammer", 0.03]],
+    script: { cast: "초공동 일격", castMs: 5000, stunMs: 5000, stag: 0.04, blast: 2.4, gap: 5000, enrage: 150000,
+      pats: [["공동 펀치", "punch"], ["연타 돌진", "charge"], ["물거품 산탄", "fan"], ["소용돌이", "donut"], ["거품 함정", "pools"], ["조수 표식", "mark", { n: 2 }], ["파도 강타", "blast"]],
+      // 갑각 균열: punches in pairs, the whirl faster, three marked
+      phases: [{ at: 0.5, pats: [["공동 연타", "punch", { n: 2 }], ["연타 돌진", "charge2"], ["물거품 산탄", "fan"], ["소용돌이", "donut", { ms: 1100 }], ["거품 함정", "pools"],
+        ["조수 표식", "mark", { n: 3 }], ["파도 강타", "blast"]] }] } },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],

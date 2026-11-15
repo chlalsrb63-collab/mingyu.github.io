@@ -246,7 +246,16 @@ Suggested split: T1 = 1 · T2 = 2+3 · T3 = 4 · T4 = 5 · T5 = F1+F2 data/art �
 - Wire `["bt", shape, x, y, r, ms, a, b]`: 0 donut (a = r0), 1 cone (a facing, b half-angle, mrad — the server tests the same rounded values),
   2 mark (a = hero eid). Client `skillfx.js bossTele`: red blinking fill, orange edge (white on your own mark), reach fills in, 4 countdown pips.
 - Adds: temp mobs (`add = boss id`, no elites) placed on a ring round the boss where `canStand`; they stay if the fight resets.
-- Not built: mark `share`, adds `shield`/`feed`, the four MOBS rows (no boss has a script yet: example rows commented in 56's header).
+- Not built: mark `share`, adds `shield`/`feed`, the R1/R2 MOBS rows.
+
+**As built — F1/F2 (T5 data)**, `10-tables.js` rows + `tests/bosses2.mjs`:
+- F2 `clubshrimp` (t39, row hp 4,400 → 61,600, atk 120, def 30) is `FIELD_BOSS.coast`; trophy 공동 갯가재 눈자루 (aspd 3, hp 2). coralturtle stays a coast mob.
+- F1 `bloodhorn` (t41) is a **boss row** in its mesa lair (a `belltower` court with `boss`, in place of the second goldhall): hp 67,200 raw,
+  atk 230 (= 128 × 1.8), resp 240 s; crownpeacock stays mesa's field boss, so no trophy / `cnt.fb` for F1. Adds `bloodshard` (1,000 hp, a blood scorpion: no crystal art yet).
+- New runner kinds for the old vocabulary: `charge` `fan` (one run / one volley), `blast` (ring on every hero), `jet` (lane of rings + burn pools), `punch` (ring, then the wider bubble; `n` heroes).
+- Phases as §2/§3 (F1 60 % / 25 % each opening with the cast, P3 gap 3,750 + a pool after every pattern; F2 50 %). Casts: F1 4 s / 4 % / stun 4 s, F2 5 s / 4 % / 5 s; soft enrage 150 s.
+- Drops: `MOBS[k].drops [item, chance, min, max]` read by `lootFor` (each looter): 피눈물 결정 / 망치 갯가재 집게 100 % 1–3; 3 % 혈루 왕관 창 / 공동 망치 (tier-5 spear/hammer rows, always legendary).
+- Left: first-kill titles (achievements, 60-content), F2 fail as a r110 ring (it hits everyone within `reach`), F1 fail pools, crystal art, field stagger bar (gauge not on the wire).
 
 ## 9. Open questions for the owner
 

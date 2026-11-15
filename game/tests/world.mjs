@@ -31,7 +31,7 @@ for (const q of D.quests) {
   lastLv = D.mobs[q.mob].tier;
 }
 // retired stand-ins stay as rows for old collections; the mesa / cloudtemple species wait for their maps
-const NOT_PLACED = new Set("catsplit_gold toadbrood_poison mothface_bile ribdeer_bile lambmaw_bone eyecrow_ash twingoat_gold bearmaw_gold crabskull_blood fishwalker_frost eelknot_frost squidrat_blood gatorhalf_steel spiderhand_bone owlstare_gold fishwalker_blood crabskull_frost moleworm_gold spinescorp ribvulture crownpeacock".split(" "));
+const NOT_PLACED = new Set("catsplit_gold toadbrood_poison mothface_bile ribdeer_bile lambmaw_bone eyecrow_ash twingoat_gold bearmaw_gold crabskull_blood fishwalker_frost eelknot_frost squidrat_blood gatorhalf_steel spiderhand_bone owlstare_gold fishwalker_blood crabskull_frost moleworm_gold spinescorp ribvulture crownpeacock bloodshard clubshrimp".split(" "));
 for (const k of Object.keys(D.mobs)) assert.ok(homes[k] || NOT_PLACED.has(k), "every monster is placed on some map: " + k);
 
 // ── walk the whole world: from each arrival point, every door of that map can be reached on foot,
@@ -190,7 +190,7 @@ JSON.stringify(L.removePlayer(S, PID));
     assert.ok(D.maps.find((q) => q.id === from).to.includes(to), `${from} lists ${to} as a way on`);
   }
   const want = { cloudtemple: { band: [30, 36], courts: ["summithall", "belltower", "pagoda", "pagoda"], boss: "belltower", falls: 2, rare: "ribdeer_frost", names: ["산문", "탑전 마당", "종루"] },
-    mesa: { band: [36, 42], courts: ["thronecourt", "goldhall", "goldhall", "lowertown"], boss: "thronecourt", falls: 3, rare: "serpentwing_bone", names: ["협곡 아랫마을", "황금 지붕 궁", "소나무 벼랑길"] } };
+    mesa: { band: [36, 42], courts: ["thronecourt", "goldhall", "belltower", "lowertown"], boss: "thronecourt", falls: 3, rare: "serpentwing_bone", names: ["협곡 아랫마을", "황금 지붕 궁", "소나무 벼랑길"] } };
   for (const id of Object.keys(want)) {
     const m = maps[id], W = m.w, w = want[id], meta = D.maps.find((q) => q.id === id);
     assert.deepEqual(meta.band, w.band.map((t) => 4 * t - 3), id + ": its band");

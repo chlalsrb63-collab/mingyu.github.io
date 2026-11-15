@@ -171,7 +171,7 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
   assert.deepEqual(S.players.migration.ch.wm.hammer, { lv: 1, xp: 0 });
   assert.equal(S.players.migration.ch.v, 19);
   assert.equal(D.wkOrder.at(-1), "hammer");
-  assert.equal(Object.values(D.items).filter(it => it.wk === "hammer").length, 5);
+  assert.equal(Object.values(D.items).filter(it => it.wk === "hammer" && !it.uniq).length, 5);
   assert.equal(Object.values(D.skills).filter(sk => sk.wk === "hammer" && sk.kind === "p").length, 5);
 }
 

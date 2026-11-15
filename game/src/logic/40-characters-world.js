@@ -487,6 +487,7 @@ function readyMob(S, mob) {
   mob.hp = mobMax(mob);
   mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null; mob.act = null; mob.mv = 0; mob.cn = 0;
   mob.wx = mob.x; mob.wy = mob.y;
+  bsEnd(mob);   // a scripted boss risen again forgets its last fight (56-boss-script.js)
   mob.castAt = S.now + 3000 + rnd(S) * 3000;
 }
 /** How far (tiles) a field boss keeps from the waypoint stone and signposts, and from players. */
