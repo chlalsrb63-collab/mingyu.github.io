@@ -19,6 +19,8 @@ import * as Housing from "./housing.js";
 import { G, T, dpr, tg, text } from "./state.js";
 import { entityPos } from "./net.js";
 import { mobMax, DUNGEONS, RANK_NAME } from "./events.js";
+/** Quest marks over NPCs (owner): the main chain in yellow, side quests in blue; "!" to take, "?" to hand in (a lighter tint). */
+const MAIN_MARK = "#ffd84a", MAIN_DONE = "#fff0a0", SIDE_MARK = "#5aaaff", SIDE_DONE = "#a8d8ff";
 
 // ───────────────────────────── render ─────────────────────────────
 // The world is drawn by the 3D scene; names, numbers and speech are drawn over
@@ -202,11 +204,11 @@ function renderText(t) {
     if (off(x, y)) continue;
     label(away ? `${n.name} 안내판` : n.name, x, y, away ? "#d5bd99" : "#f0d48a");
     const sqm = SideQ.mark(n, G.self);
-    if (sqm) label(sqm, x, y - 18 + Math.sin(t / 200) * 3, sqm === "!" ? "#ffd84a" : "#8cff8c", 18);
+    if (sqm) label(sqm, x, y - 18 + Math.sin(t / 200) * 3, sqm === "!" ? SIDE_MARK : SIDE_DONE, 18);
     if (n.role === "elder" && G.self) {
       const q = G.self.q, quest = G.defs.quests[q.i];
       const mark = !quest ? "" : q.st === 0 ? "!" : q.n >= quest.n ? "?" : "";
-      if (mark) label(mark, x, y - 18 + Math.sin(t / 200) * 3, mark === "!" ? "#ffd84a" : "#8cff8c", 18);
+      if (mark) label(mark, x, y - 18 + Math.sin(t / 200) * 3, mark === "!" ? MAIN_MARK : MAIN_DONE, 18);
     }
   }
   for (const n of NPC.list(server)) {
@@ -215,7 +217,7 @@ function renderText(t) {
     if (off(x, y)) continue;
     label(n.name, x, y, "#f0d48a");
     const mark = SideQ.mark(n, G.self);
-    if (mark) label(mark, x, y - 18 + Math.sin(t / 200) * 3, mark === "!" ? "#ffd84a" : "#8cff8c", 18);
+    if (mark) label(mark, x, y - 18 + Math.sin(t / 200) * 3, mark === "!" ? SIDE_MARK : SIDE_DONE, 18);
   }
   // Residents talking together and ambient conversations close enough to hear.
   for (const b of S3.townBubbles(t)) { const [x, y] = at(b.x, b.y, 1.8); bubble(b.b, x, y, t); }
