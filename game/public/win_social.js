@@ -9,7 +9,7 @@ import * as Info from "./infocard.js";
 import * as Emo from "./emoticons.js";
 import { el, clamp, $, G, T } from "./state.js";
 import { act } from "./net.js";
-import { isOpen, keepIn, chatTo } from "./windows.js";
+import { isOpen, keepIn, chatTo, ask } from "./windows.js";
 import { section, look } from "./hud.js";
 
 // ── party ──
@@ -141,7 +141,7 @@ function friendBox(box, s) {
     row.append(dot, classMark(job), tx);
     const w = smallBtn("귓속말", () => chatTo(`/w ${name} `));
     w.disabled = !room;
-    row.append(w, smallBtn("삭제", () => { if (confirm(`${name}님을 친구에서 지울까요?`)) act({ t: "fr", a: "del", name }); }));
+    row.append(w, smallBtn("삭제", () => { ask(`${name}님을 친구에서 지울까요?`, "삭제", () => act({ t: "fr", a: "del", name })); }));
     list.append(row);
   }
   for (const name of fr.o) {

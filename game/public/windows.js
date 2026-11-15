@@ -347,6 +347,47 @@ export function banner(str, small) {
   b.hidden = false;
 }
 
+/**
+ * The in-game yes/no box for a step that cannot be undone (selling a rare piece, salvaging, leaving a rift):
+ * [취소] left, the gold action right; Enter = yes, Esc = no. With `key`, a "다시 묻지 않기" box remembers the
+ * answer per kind (localStorage `lumentale:noask:<key>`), so a player who sells in bulk is asked once.
+ */
+const NOASK = (key) => `lumentale:noask:${key}`;
+let asking = null;
+export function ask(text, yes, onYes, key) {
+  if (key && localStorage.getItem(NOASK(key)) === "1") { onYes(); return; }
+  if (asking) asking(false);
+  const box = $("#ask");
+  $("#ask-text").textContent = text;
+  $("#ask-yes").textContent = yes;
+  $("#ask-yes").append(el("kbd", "", "Enter"));
+  $("#ask-skip").hidden = !key;
+  $("#ask-skip input").checked = false;
+  box.hidden = false;
+  Sound.play("open");
+  const done = (ok) => {
+    asking = null;
+    box.hidden = true;
+    removeEventListener("keydown", onKey, true);
+    $("#ask-yes").onclick = $("#ask-no").onclick = null;
+    if (!ok) { Sound.play("close"); return; }
+    if (key && $("#ask-skip input").checked) localStorage.setItem(NOASK(key), "1");
+    onYes();
+  };
+  // the box answers Enter and Esc before the game's own keys see them
+  const onKey = (e) => {
+    if (e.key === "Enter") done(true);
+    else if (e.key === "Escape") done(false);
+    else return;
+    e.preventDefault(); e.stopImmediatePropagation();
+  };
+  addEventListener("keydown", onKey, true);
+  $("#ask-yes").onclick = () => done(true);
+  $("#ask-no").onclick = () => done(false);
+  asking = done;
+  $("#ask-yes").focus();
+}
+
 // ── chat ──
 export const chatLog = $("#chat-log");
 export function addChat(m, cls, name) {

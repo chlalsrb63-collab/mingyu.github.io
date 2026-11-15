@@ -58,11 +58,13 @@
       <div id="emotes" class="frame" hidden></div>
       <div id="minigame" hidden></div>
       <div id="streak" hidden><b id="streak-n"></b><span id="streak-b"></span><i><i id="streak-bar"></i></i></div>
-      <div id="invite" class="frame" hidden><span id="invite-text"></span><button id="invite-yes" class="btn gold">수락</button><button id="invite-no" class="btn">거절</button></div>
+      <div id="invite" class="frame" hidden><span id="invite-text"></span><button id="invite-no" class="btn">거절</button><button id="invite-yes" class="btn gold">수락</button></div>
+      <!-- a yes/no for a step that cannot be undone (windows.js ask) -->
+      <div id="ask" class="frame" hidden role="alertdialog" aria-labelledby="ask-text"><p id="ask-text"></p><label id="ask-skip"><input type="checkbox" /> 다시 묻지 않기</label><div class="btns"><button id="ask-no" class="btn">취소 <kbd>Esc</kbd></button><button id="ask-yes" class="btn gold"></button></div></div>
       <!-- another player clicked: 파티 초대 · 거래 · 친구 · 귓속말 · 따라가기 · 미니게임 (pmenu.js); a request for me, 가위바위보 (sxwin.js) -->
       <div id="pmenu" class="frame" hidden></div>
       <div id="follow-ind" class="frame" hidden><span id="follow-name"></span><button id="follow-x" class="btn small">취소</button></div>
-      <div id="sx-ask" class="frame" hidden><span id="sx-ask-text"></span><button id="sx-yes" class="btn gold">수락</button><button id="sx-no" class="btn">거절</button></div>
+      <div id="sx-ask" class="frame" hidden><span id="sx-ask-text"></span><button id="sx-no" class="btn">거절</button><button id="sx-yes" class="btn gold">수락</button></div>
       <div id="rps" class="frame" hidden></div>
       <button id="prompt" class="frame" hidden></button>
       <div id="toasts"></div>

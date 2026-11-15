@@ -65,7 +65,7 @@ import * as SX from "./sxwin.js";
 import { update } from "./update.js";
 import { render } from "./overlay.js";
 import { floatText } from "./events.js";
-import { openWin, closeWin, isOpen, hoverTip, toast, closeAll, setupWindows } from "./windows.js";
+import { openWin, closeWin, isOpen, hoverTip, toast, closeAll, setupWindows, ask } from "./windows.js";
 import { itemSlot, setupItems } from "./items.js";
 import { draw, hudTick, setupHud } from "./hud.js";
 import { setupWinChar, openTree, openStats } from "./win_char.js";
@@ -81,7 +81,7 @@ addEventListener("resize", resize);
 S3.init(world);
 resize();
 Mini.mount($("#minigame"));
-Dim.init({ G, S3, Sound, act, openWin, closeWin, isOpen: (id) => isOpen(id) });
+Dim.init({ G, S3, Sound, act, openWin, closeWin, isOpen: (id) => isOpen(id), ask });
 Housing.init({ G, S3, Sound, act, el, iconImg, itemSlot: (e, o) => itemSlot(e, o), openWin, closeWin, isOpen: (id) => isOpen(id), draw: (id, k, fn) => draw(id, k, fn), hoverTip: (d, f) => hoverTip(d, f), toast: (m) => toast(m) });
 Life.init({ G, S3, Sound, el, iconImg, entityPos: (id) => entityPos(id), draw: (id, k, fn) => draw(id, k, fn), renderPouch: (b, s, o) => Gather.renderPouch(b, s, o), pouchKey: (s) => Gather.pouchKey(s), renderJobs: (b, s) => Board.renderLife(b, s) });
 // gathering nodes, the channel and its "반짝!", the 재료 주머니 (gather.js)
