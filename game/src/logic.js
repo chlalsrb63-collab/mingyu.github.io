@@ -261,10 +261,10 @@ const SK_GROW = 0.004;
 
 const SKILL = {
   // ── 대검 sword
-  slash: { kind: "a", wk: "sword", need: 1, name: "파워 슬래쉬", mp: 4, hpPct: 0.02, autoHp: 0.35, cd: 5000, mult: 1.9, r: 46, arc: 75, stag: [600, 360], knock: 14, fx: 80,
-    desc: "대검을 크게 휘둘러 앞쪽 부채꼴의 적을 모두 벤다. 맞은 적은 크게 휘청이며 밀려난다." },
-  rend: { kind: "a", wk: "sword", need: 10, name: "대지 가르기", mp: 7, hpPct: 0.03, autoHp: 0.35, cd: 9000, leap: 60, r: 38, mult: 1.7, len: 120, half: 14, wave: 1.2, fx: 81,
-    desc: "앞으로 뛰어올라 내려찍고(범위), 착지한 자리에서 일직선으로 땅을 가르는 충격파를 보낸다. 벽은 넘지 못한다." },
+  slash: { kind: "a", wk: "sword", need: 1, name: "파워 슬래쉬", mp: 3, hpPct: 0.02, autoHp: 0.35, cd: 3500, mult: 1.45, r: 46, arc: 75, stag: [600, 360], knock: 14, eat: { drag: 0.3 }, fx: 80,
+    desc: "대검을 크게 휘둘러 앞쪽 부채꼴의 적을 모두 벤다. 맞은 적은 휘청이며 밀려나 경직된다. 끌려온 적에게는 +30%." },
+  rend: { kind: "a", wk: "sword", need: 10, name: "대지 가르기", mp: 7, hpPct: 0.03, autoHp: 0.35, cd: 9000, leap: 60, r: 38, mult: 1.7, len: 120, half: 14, wave: 1.2, air: 700, fx: 81,
+    desc: "앞으로 뛰어올라 내려찍어(범위) 적을 0.7초 띄우고, 착지한 자리에서 일직선으로 땅을 가르는 충격파를 보내 경직시킨다. 벽은 넘지 못한다." },
   inertia: { kind: "p", wk: "sword", need: 10, name: "거검의 관성", max: 5, ms: 2500, reach: 0.06, critd: 0.06, fx: 110, borrow: ["atk", 4],
     desc: "대검으로 적을 맞힐 때마다 관성이 1 쌓인다(최대 5). 관성 1당 사거리 +6%, 치명타 피해 +8%. 2.5초 동안 맞히지 못하면 사라진다." },
   sword_steadfast20: { kind: "p", wk: "sword", need: 20, name: "반걸음 버티기", perk: ["poise", 8],
@@ -276,8 +276,8 @@ const SKILL = {
   sword_edge50: { kind: "p", wk: "sword", need: 50, name: "칼끝의 결단", perk: ["critd", 8],
     desc: "한 번 드러난 급소를 끝까지 벤다. 치명타 피해 배율이 8%p 증가한다." },
   // ── 단검 dagger
-  ambush: { kind: "a", wk: "dagger", need: 1, name: "암습", mp: 4, hpPct: 0.015, autoHp: 0.35, cd: 6000, len: 110, mult: 1.3, behind: 16, crit: 30, fx: 84,
-    desc: "겨눈 적의 등 뒤로 순간이동해 찌른다. 나를 노리지 않던 적에게는 반드시 치명타, 아니면 치명타 확률 +30%." },
+  ambush: { kind: "a", wk: "dagger", need: 1, name: "암습", mp: 4, hpPct: 0.015, autoHp: 0.35, cd: 6000, len: 110, mult: 1.3, behind: 16, crit: 30, eat: { air: 0.5 }, fx: 84,
+    desc: "겨눈 적의 등 뒤로 순간이동해 찌른다. 나를 노리지 않던 적에게는 반드시 치명타, 아니면 치명타 확률 +30%. 공중에 뜬 적에게는 추가타 +50%." },
   shade: { kind: "a", wk: "dagger", need: 10, name: "그림자 칼날", mp: 6, hpPct: 0.022, autoHp: 0.35, cd: 8000, n: 3, spread: 15, len: 120, half: 10, mult: 0.5, fx: 85,
     desc: "그림자 칼날 세 자루를 부채꼴로 던진다. 칼날은 적을 꿰뚫고, 맞은 적마다 표식을 하나씩 남긴다." },
   vitals: { kind: "p", wk: "dagger", need: 10, name: "급소 도려내기", max: 5, crit: 3, bleed: 0.08, ms: 4000, spd: 0.2, spdMs: 2000, fx: 111, borrow: ["crit", 3],
@@ -291,10 +291,10 @@ const SKILL = {
   dagger_fang50: { kind: "p", wk: "dagger", need: 50, name: "피를 머금은 날", perk: ["ls", 1.5],
     desc: "상처에서 빼낸 기운으로 숨을 고른다. 공격 적중 시 생명력 흡수 비율이 1.5%p 증가한다." },
   // ── 창 spear
-  spiral: { kind: "a", wk: "spear", need: 1, name: "나선 찌르기", mp: 4, hpPct: 0.018, autoHp: 0.35, cd: 5000, len: 110, half: 12, mult: 1.3, far: 0.72, fx: 87,
-    desc: "창을 비틀어 일직선을 모두 꿰뚫는다. 끝부분(28%)에 걸린 적은 창끝으로 맞는다." },
+  spiral: { kind: "a", wk: "spear", need: 1, name: "나선 찌르기", mp: 3, hpPct: 0.018, autoHp: 0.35, cd: 3500, len: 110, half: 12, mult: 1.1, far: 0.72, eat: { frz: 0.6 }, fx: 87,
+    desc: "창을 비틀어 일직선을 모두 꿰뚫는다. 끝부분(28%)에 걸린 적은 창끝으로 맞는다. 얼어붙은 적은 얼음째 부서진다(파쇄 +60%)." },
   comet: { kind: "a", wk: "spear", need: 10, name: "유성창", mp: 7, hpPct: 0.026, autoHp: 0.35, cd: 10000, len: 130, half: 20, mult: 0.9, stun: 500, fx: 88,
-    desc: "겨눈 쪽으로 130만큼 돌진한다. 길 위의 적을 끝까지 끌고 가 꿰뚫고 0.5초 기절시킨다." },
+    desc: "겨눈 쪽으로 130만큼 돌진한다. 길 위의 적을 끝까지 끌고 가 꿰뚫고 0.5초 기절시킨다. 끌려간 적은 모여 광역기에 더 아프다." },
   tip: { kind: "p", wk: "spear", need: 10, name: "창끝의 거리", at: 0.72, mult: 1.5, ign: 0.35, borrow: ["critd", 6],
     desc: "사거리의 72% 이상 떨어진 적을 맞히면 창끝 일격 — 피해 ×1.5, 방어력의 35%를 무시한다." },
   rally_banner: { kind: "a", wk: "spear", need: 15, name: "전열 구호기", mp: 12, cd: 16000, r: 76, ms: 6000, every: 1000, heal: 0.023, atkHeal: 0.06, haste: 0.10, creditMs: 10000, support: true, noAuto: true, fx: 135,
@@ -308,10 +308,10 @@ const SKILL = {
   spear_edge50: { kind: "p", wk: "spear", need: 50, name: "하나로 모인 힘", perk: ["critd", 8],
     desc: "두 발에서 올라온 힘을 창끝 한 점에 모은다. 치명타 피해 배율이 8%p 증가한다." },
   // ── 스태프 staff
-  fireball: { kind: "a", wk: "staff", need: 1, name: "파이어볼", mp: 9, cd: 4000, el: "f", mag: 1, r: 30, mult: 1.6, burn: 0.12, fx: 70,
-    desc: "불덩이를 던진다(범위). 떨어진 자리는 3초간 타오른다(0.5초마다 20%). 불 원소." },
-  frostring: { kind: "a", wk: "staff", need: 10, name: "서리 고리", mp: 13, cd: 8000, el: "i", mag: 1, r: 56, mult: 0.9, freeze: 1000, push: 18, fx: 71,
-    desc: "주변에 서리 고리를 퍼뜨려 적을 밀어내고 느리게 한다. 이미 느려진 적은 1초간 얼어붙는다. 얼음 원소." },
+  fireball: { kind: "a", wk: "staff", need: 1, name: "파이어볼", mp: 8, cd: 3500, el: "f", mag: 1, r: 30, mult: 1.4, burn: 0.1, fx: 70,
+    desc: "불덩이를 던진다(범위). 맞은 적에게 화상이 1 쌓이고(최대 3, 6초) 떨어진 자리는 3초간 타오른다. 불 원소." },
+  frostring: { kind: "a", wk: "staff", need: 10, name: "서리 고리", mp: 13, cd: 8000, el: "i", mag: 1, r: 56, mult: 0.9, freeze: 1000, push: 18, eat: { drag: 0.3 }, fx: 71,
+    desc: "주변에 서리 고리를 퍼뜨려 적을 밀어내고 느리게 한다. 이미 느려진 적은 1초간 빙결된다. 끌려온 적에게는 +30%. 얼음 원소." },
   reso: { kind: "p", wk: "staff", need: 10, name: "마력 공명", n: 3, k: 0.3, fx: 113, borrow: ["mp", 6],
     desc: "스태프 스킬을 세 번 쓰면 공명이 차오른다 — 다음 스태프 스킬은 MP 없이 쓰고 피해 +30%. 불·얼음·번개가 겹치면 원소 반응이 일어난다." },
   staff_mind20: { kind: "p", wk: "staff", need: 20, name: "깊은 마력 그릇", perk: ["mp", 8],
@@ -326,7 +326,7 @@ const SKILL = {
   soulbolt: { kind: "a", wk: "book", need: 1, name: "영혼 화살", mp: 8, cd: 3500, mag: 1, len: 150, arc: 30, spd: 350, mult: 2.0, heal: 0.06, fx: 91,
     desc: "겨눈 적을 쫓아가는 영혼의 화살을 쏜다. 맞히면 준 피해의 6%만큼 HP를 회복한다." },
   gravity: { kind: "a", wk: "book", need: 10, name: "중력 왜곡진", mp: 15, cd: 11000, mag: 1, at: 70, r: 60, ms: 4000, every: 500, pull: 6, mult: 0.4, fx: 92,
-    desc: "앞쪽에 4초간 중력의 소용돌이를 연다. 0.5초마다 안의 적을 가운데로 끌어당기며 피해를 준다." },
+    desc: "앞쪽에 4초간 중력의 소용돌이를 연다. 0.5초마다 안의 적을 가운데로 끌어당기며 피해를 준다. 끌려간 적은 모여 광역기에 더 아프다." },
   brand: { kind: "p", wk: "book", need: 10, name: "금서의 낙인", ms: 6000, k: 0.15, fx: 114, borrow: ["cdr", 3],
     desc: "마도서 스킬에 맞은 적에게 6초간 낙인을 새긴다. 낙인 찍힌 적은 누구에게서나 피해를 15% 더 받는다." },
   revive_binding: { kind: "a", wk: "book", need: 15, name: "되살림 제본", mp: 19, cd: 18000, r: 105, heal: 0.19, atkHeal: 0.30, creditMs: 10000, support: true, noAuto: true, fx: 136,
@@ -411,6 +411,19 @@ const SKILL = {
     desc: "창으로 열린 길을 따라 전진하고 끝에서 해머를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다." },
   oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, creditMs: 10000, fx: 134,
     desc: "주변을 내리치고 자신과 반경 88 안의 파티원에게 최대 HP 10% + 성기사 공격력의 30%를 회복시킨다. 회복한 파티원이 10초 안에 처치에 기여하면 성기사도 직업 경험치를 받는다." },
+  // ── the combo actives (docs/design/skill-combos.md, fx 140–145): mastery 25, after the signatures so a fresh bar keeps them
+  cleave: { kind: "a", wk: "sword", need: 25, name: "처형 내려베기", mp: 8, hpPct: 0.03, autoHp: 0.35, cd: 16000, wind: 500, len: 56, half: 18, n: 3, mult: 2.4, eat: { stg: 0.6, air: 0.5, frz: 0.6 }, fx: 140,
+    desc: "0.5초 동안 대검을 치켜들었다가 앞의 적 셋까지 내려벤다. 경직된 적 +60%, 공중에 뜬 적 +50%, 얼어붙은 적 +60% — 그 상태는 풀린다." },
+  rupture: { kind: "a", wk: "dagger", need: 25, name: "급소 터뜨리기", mp: 3, hpPct: 0.01, autoHp: 0.35, cd: 3500, len: 44, mult: 0.5, eat: { mk: 0.3, brand: 0.5 }, pop: 3, r: 32, splash: 0.4, fx: 141,
+    desc: "겨눈 적의 표식을 한꺼번에 터뜨린다 — 표식 1개당 +30%, 낙인이 있으면 +50%. 표식이 셋 이상이면 주변 적도 폭발에 휘말린다." },
+  hook: { kind: "a", wk: "spear", need: 25, name: "갈고리 창", mp: 5, hpPct: 0.02, autoHp: 0.35, cd: 7000, len: 120, half: 14, n: 3, to: 18, hold: 400, mult: 0.7, fx: 142,
+    desc: "창끝 갈고리를 일직선으로 던져 맞은 적 셋까지 눈앞으로 끌어당기고 경직시킨다. 끌려온 적은 광역기에 더 아프다." },
+  ignite: { kind: "a", wk: "staff", need: 25, name: "점화 폭발", mp: 14, cd: 14000, wind: 400, el: "f", mag: 1, at: 90, r: 40, mult: 1.3, eat: { brn: 0.35, frz: 0.8 }, fx: 143,
+    desc: "0.4초 주문을 모아 겨눈 자리를 터뜨린다. 화상 1당 +35%(화상은 사라진다), 얼어붙은 적은 열충격으로 +80%. 불 원소." },
+  drain: { kind: "a", wk: "book", need: 25, name: "영혼 착취", mp: 16, cd: 15000, mag: 1, len: 110, half: 12, n: 6, every: 400, mult: 0.35, fin: 0.8, heal: 0.15, eat: { brand: 1.0 }, fx: 144,
+    desc: "2.4초 동안 겨눈 쪽 적 둘에게 영혼의 줄기를 이어 0.4초마다 피해를 주고 그 15%를 회복한다. 마지막 줄기는 낙인을 터뜨려 +100%. 다른 기술을 쓰면 끊긴다." },
+  snipe: { kind: "a", wk: "bow", need: 25, name: "저격", mp: 12, cd: 18000, wind: 700, len: 220, half: 8, n: 2, mult: 1.8, eat: { stg: 0.5, air: 0.6, frz: 0.5 }, fx: 145,
+    desc: "0.7초 시위를 끝까지 당겨 아주 멀리 일직선으로 쏜다(앞의 둘까지). 경직된 적 +50%, 공중에 뜬 적 +60%, 얼어붙은 적 +50%." },
 };
 for (const [id, sk] of Object.entries(SKILL)) {
   sk.id = id;
@@ -9486,6 +9499,53 @@ function addMarks(S, mob, n) {
   mob.mk = Math.min(MARK_MAX, marksOf(S, mob) + n);
   mob.mkAt = S.now + MARK_MS;
 }
+// ── combo hooks (docs/design/skill-combos.md): states one skill leaves on a monster and another spends for a bonus.
+// They live on the monster (runtime only), so anyone's skill can cash them in.
+const STG_MS = 2500, DRAG_MS = 2000, BRN_MS = 6000, BRN_MAX = 3;
+const brnOf = (S, o) => (o.brnAt > S.now ? o.brn | 0 : 0);
+/** One more stack of 화상 (fire skills; 점화 폭발 spends them). */
+function addBrn(S, o) {
+  if (o.dead) return;
+  o.brn = Math.min(BRN_MAX, brnOf(S, o) + 1);
+  o.brnAt = S.now + BRN_MS;
+}
+/** Knock a monster off its feet for `ms`: airborne and helpless (bosses and champions stay put, elites half as long). */
+function launch(S, rt, o, ms) {
+  if (o.dead || MOBS[o.k].boss || MOBS[o.k].still || o.el === 2) return;
+  const t = S.now + ms * (o.el ? 0.5 : 1);
+  o.air = t;
+  o.stun = Math.max(o.stun, t);
+  rt.ev.push(["cb", o.id, 9]);
+}
+/** Each state: [the "cb" code the client shows, how much of it the monster carries now, spend it]. */
+const COMBO = {
+  stg: [1, (S, o) => !(o.air > S.now) && !(o.frz > S.now) && (o.stg > S.now || o.stun > S.now), (S, o) => { o.stg = 0; }],
+  frz: [2, (S, o) => o.frz > S.now, (S, o) => { o.frz = 0; o.stun = Math.min(o.stun, S.now); }],
+  air: [3, (S, o) => o.air > S.now, (S, o) => { o.air = 0; o.stun = Math.min(o.stun, S.now); }],
+  mk: [4, (S, o) => marksOf(S, o), (S, o) => { o.mk = 0; }],
+  brand: [5, (S, o) => o.brand > S.now, (S, o) => { o.brand = 0; }],
+  brn: [6, brnOf, (S, o) => { o.brn = 0; }],
+  drag: [7, (S, o) => o.drag > S.now, (S, o) => { o.drag = 0; }],
+};
+/** A consumer's hit (`eat` = {state: bonus per unit}): the multiplier it earns, the states spent. */
+function comboK(S, rt, o, eat) {
+  if (!eat || o.dead) return 1;
+  let k = 1;
+  for (const key in eat) {
+    const [code, has, spend] = COMBO[key], n = +has(S, o);
+    if (!n) continue;
+    k += eat[key] * n;
+    spend(S, o);
+    rt.ev.push(["cb", o.id, code]);
+  }
+  return k;
+}
+/** The first `n` monsters along a strip, nearest first. */
+function lineFirst(rt, x, y, ux, uy, len, half, n) {
+  const along = (o) => (o.x - x) * ux + (o.y - y) * uy;
+  return mobsInLine(rt, x, y, ux, uy, len, half).sort((a, b) => along(a) - along(b)).slice(0, n);
+}
+
 /** Drag a monster toward (tx, ty), as far as the ground lets it. */
 function pullTo(m, mob, tx, ty) {
   if (MOBS[mob.k].boss || MOBS[mob.k].still || mob.el === 2) return false;
@@ -9614,8 +9674,19 @@ function propPulse(S, rt, m, p, o, now) {
     }
     case "grav": {
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
-      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) { tug(m, mob, o.x, o.y, o.pull); hit(mob, o.mult); }
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) { tug(m, mob, o.x, o.y, o.pull); if (!MOBS[mob.k].boss) mob.drag = now + DRAG_MS; hit(mob, o.mult); }
       return false;
+    }
+    case "chan": {
+      // a held beam along the caster's aim; any other skill cuts it (p.chan changes). The last pulse spends brands.
+      if (p.chan !== o.id) return true;
+      const [ux, uy] = AIM_V[p.aim | 0], last = --o.left <= 0;
+      const far = Math.max(16, reach(m, p.x, p.y, ux, uy, o.len)), list = lineFirst(rt, p.x, p.y, ux, uy, far, o.half, 2), t = list[0];
+      rt.ev.push(["a", p.eid, o.sk.fx, Math.round(t ? t.x : p.x + ux * far), Math.round((t ? t.y : p.y + uy * far) - 6), p.dir, 2, last ? 2 : 1]);
+      const got = dealt(p, list, () => { for (const mob of list) hit(mob, last ? o.fin * comboK(S, rt, mob, o.sk.eat) : o.mult); });
+      if (got > 0) healP(rt, p, got * o.heal);
+      if (last) p.chan = 0;
+      return last;
     }
     case "phantom": {
       // the beast leaps on the nearest monster near it and bites
@@ -9660,7 +9731,7 @@ function propPulse(S, rt, m, p, o, now) {
       else { const a = rnd(S) * Math.PI * 2, r = Math.sqrt(rnd(S)) * o.r * 0.8; x = o.x + Math.cos(a) * r; y = o.y + Math.sin(a) * r; }
       rt.ev.push(["pp", o.id, Math.round(x), Math.round(y)]);
       const hitNow = mobsWithin(rt, x, y, o.hr);
-      for (const mob of hitNow) hit(mob, o.mult);
+      for (const mob of hitNow) { hit(mob, o.mult); addBrn(S, mob); }
       weave(S, rt, p, "f", x, y, o.k);
       const next = rt.mobs.filter((q) => !q.dead && !hitNow.includes(q) && dist(q.x, q.y, x, y) <= 70).sort((a, b) => dist(a.x, a.y, x, y) - dist(b.x, b.y, x, y))[0];
       if (next) {
@@ -9788,13 +9859,15 @@ function danceStep(S, p, now) {
 function weaponTick(S, p, now) {
   if (p.hammer || p.hammerCracks?.size) hammerTick(S, p, now);
   if (p.dance) danceStep(S, p, now);
+  // a wound-up skill strikes when it is due (it was paid for when it began)
+  if (p.charge && now >= p.charge.at) { const c = p.charge; p.charge = null; skStrike(S, p, c.id, c.k, c.cost, c.tgt); }
   if (p.hide && now >= p.hide) p.hide = 0;
   if (p.inert && now - p.inertAt > SKILL.inertia.ms) { p.inert = 0; p.dirty = true; }
   if (p.weave && now >= p.weave.until) p.weave = null;
 }
 /** Whatever a hand had going that does not survive a fall or a change of map. */
 function weaponReset(p, death) {
-  p.dance = null; p.hide = 0; p.inert = 0; p.weave = null;
+  p.dance = null; p.hide = 0; p.inert = 0; p.weave = null; p.charge = null; p.chan = 0;
   p.hammer = null; p.hammerCracks = null;
   if (death) { p.reso = 0; p.sanctAt = 0; }
 }
@@ -9885,9 +9958,24 @@ function castSkill(S, p, id) {
   p.atkAt = now;
   p.swordBeat = null;
   p.dirty = true;
+  p.chan = 0;   // any skill cuts a channel
   if (sk.wk === "hammer") { startHammer(S, p, sk, sk, k, hpSpent); return; }
+  if (sk.wind) {
+    // wound up: paid now, struck when weaponTick finds it due (a ground spell keeps the spot it was aimed at)
+    const tgt = sk.at ? aimPoint(rt, m, p, sk.at) : null;
+    p.charge = { id, at: now + sk.wind, k, cost, tgt };
+    ev(sk.fx, ...(tgt ? [tgt[0], tgt[1] - 6] : [p.x, p.y - 6]), 0);
+    return;
+  }
+  skStrike(S, p, id, k, cost);
+}
+/** What a skill does when it lands (at once, or when its wind-up is over). `k` its power, `cost` the MP paid. */
+function skStrike(S, p, id, k, cost, tgt) {
+  const sk = SKILL[id], st = stats(p), rt = S.maps[p.map], m = mapOfS(p.S, p.map), now = S.now;
+  const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
   const opt = { mag: sk.mag, sk };
-  const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult * k, !!(more && more.sure), more ? { ...opt, ...more } : opt);
+  // a consumer (sk.eat) spends the combo states on its first hit of each monster
+  const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult * k * comboK(S, rt, mob, sk.eat), !!(more && more.sure), more ? { ...opt, ...more } : opt);
   const [aimX, aimY] = AIM_V[p.aim | 0];
   const ahead = (n) => [p.x + aimX * n, p.y + aimY * n];
   const prop = (o) => addProp(S, rt, p, { sk, mag: sk.mag, k, ...o });
@@ -9937,7 +10025,7 @@ function castSkill(S, p, id) {
       ev(80, ...ahead(sk.r * 0.6), sk.r);
       for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
         if (!inArc(p, o, sk.arc)) continue;
-        if (!MOBS[o.k].boss && o.el !== 2) { const [ux, uy] = aimVec(p, o); knock(m, o, ux, uy, sk.knock * (o.el ? 0.5 : 1)); holdMob(S, o, o.el ? sk.stag[1] : sk.stag[0]); }
+        if (!MOBS[o.k].boss && o.el !== 2) { const [ux, uy] = aimVec(p, o); knock(m, o, ux, uy, sk.knock * (o.el ? 0.5 : 1)); holdMob(S, o, o.el ? sk.stag[1] : sk.stag[0]); o.stg = now + STG_MS; }
         hit(o, sk.mult);
       }
       break;
@@ -9951,13 +10039,13 @@ function castSkill(S, p, id) {
       p.fix = true; p.mvAt = now;
       rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(81, p.x, p.y - 6, sk.r);
-      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) hit(o, sk.mult);
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { hit(o, sk.mult); launch(S, rt, o, sk.air); }
       const wl = Math.max(18, reach(m, p.x, p.y, aimX, aimY, sk.len));
       ev(82, p.x + aimX * wl, p.y + aimY * wl - 6, wl);
       // (메아리 뿔참, 66-charms.js: the first monster in the wave's last 30% takes 18% of that hit again)
       const wave = mobsInLine(rt, p.x, p.y, aimX, aimY, wl, sk.half), echo = charmEchoPick(S, p, wave, aimX, aimY, wl);
       for (const o of wave) {
-        if (!MOBS[o.k].boss && o.el !== 2) holdMob(S, o, 300);
+        if (!MOBS[o.k].boss && o.el !== 2) { holdMob(S, o, 300); o.stg = now + STG_MS; }
         if (o === echo) charmEchoHit(S, rt, p, o, dealt(p, [o], () => hit(o, sk.wave)));
         else hit(o, sk.wave);
       }
@@ -10027,7 +10115,7 @@ function castSkill(S, p, id) {
       rt.ev.push(["ln", 3, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(88, p.x, p.y - 6);
       line.forEach((o, j) => {
-        pullTo(m, o, p.x + aimX * 14 - aimY * ((j % 3) - 1) * 10, p.y + aimY * 14 + aimX * ((j % 3) - 1) * 10);
+        if (pullTo(m, o, p.x + aimX * 14 - aimY * ((j % 3) - 1) * 10, p.y + aimY * 14 + aimX * ((j % 3) - 1) * 10)) o.drag = now + DRAG_MS;
         if (!MOBS[o.k].boss && o.el !== 2) o.stun = Math.max(o.stun, now + sk.stun);
         hit(o, sk.mult);
       });
@@ -10035,7 +10123,7 @@ function castSkill(S, p, id) {
     }
     case "dragon": {
       const [x, y] = aimPoint(rt, m, p, sk.at);
-      for (const o of mobsWithin(rt, x, y, sk.r)) tug(m, o, x, y, sk.pull);
+      for (const o of mobsWithin(rt, x, y, sk.r)) { tug(m, o, x, y, sk.pull); if (!MOBS[o.k].boss) o.drag = now + DRAG_MS; }
       ev(89, x, y - 6, sk.r);
       prop({ kind: "pillar", wire: 1, x, y, r: sk.r, every: sk.every, next: now + sk.every, until: now + sk.every * (sk.n + 1) + 50, left: sk.n, mult: sk.mult * k, fin: sk.fin * k, stun: sk.stun });
       break;
@@ -10047,7 +10135,7 @@ function castSkill(S, p, id) {
       if (mob) face(p, mob);
       const [tx, ty] = mob ? [mob.x, mob.y] : ahead(70);
       ev(70, tx, ty - 6);
-      for (const o of mobsWithin(rt, tx, ty, sk.r)) hit(o, sk.mult);
+      for (const o of mobsWithin(rt, tx, ty, sk.r)) { hit(o, sk.mult); addBrn(S, o); }
       rt.zones.push({ x: tx, y: ty, r: sk.r, next: now + 500, every: 500, left: 6, mult: sk.burn * k, pid: p.pid, kind: 10 });
       weave(S, rt, p, "f", tx, ty, k);
       break;
@@ -10056,7 +10144,7 @@ function castSkill(S, p, id) {
       ev(71, p.x, p.y - 6, sk.r);
       let first = null;
       for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
-        if (o.slow > now && !MOBS[o.k].boss) { o.stun = Math.max(o.stun, now + sk.freeze); rt.ev.push(["fz", o.id, sk.freeze]); }
+        if (o.slow > now && !MOBS[o.k].boss) { o.stun = Math.max(o.stun, now + sk.freeze); o.frz = o.stun; rt.ev.push(["fz", o.id, sk.freeze]); }
         o.slow = now + 3000;
         const [ux, uy] = aimVec(p, o);
         knock(m, o, ux, uy, sk.push);
@@ -10123,6 +10211,60 @@ function castSkill(S, p, id) {
       const [x, y] = aimPoint(rt, m, p, sk.at);
       ev(96, x, y - 6, sk.r);
       prop({ kind: "rain", wire: 1, x, y, r: sk.r, every: sk.every, next: now + 400, until: now + 400 + sk.ms, mult: sk.mult * k });
+      break;
+    }
+
+    // ── the combo actives (docs/design/skill-combos.md, fx 140–145)
+    case "cleave": {
+      // the blade brought down on what stands before you: the staggered, the launched and the frozen take it far harder
+      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len));
+      ev(sk.fx, ...ahead(far * 0.6), 1);
+      for (const o of lineFirst(rt, p.x, p.y, aimX, aimY, far, sk.half, sk.n)) hit(o, sk.mult);
+      break;
+    }
+    case "rupture": {
+      // the marks (and a brand) in one monster burst at once; three or more blow up round it
+      const mob = aimMob(rt, p, sk.len, AIM_CONE);
+      if (!mob) { ev(19, p.x, p.y - 6); p.mp += cost; p.cds[id] = now + 600; break; }
+      face(p, mob);
+      const n = marksOf(S, mob);
+      ev(sk.fx, mob.x, mob.y - 6, n);
+      hit(mob, sk.mult);
+      if (n >= sk.pop) for (const o of mobsWithin(rt, mob.x, mob.y, sk.r)) if (o !== mob) hurtMob(S, rt, o, p, sk.splash * k, false, opt);
+      break;
+    }
+    case "hook": {
+      // the hook goes out along the aim and drags the first few back to the spear's point, staggered
+      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len));
+      ev(sk.fx, ...ahead(far), far);
+      lineFirst(rt, p.x, p.y, aimX, aimY, far, sk.half, sk.n).forEach((o, j) => {
+        const side = ((j % 3) - 1) * 10;
+        if (pullTo(m, o, p.x + aimX * sk.to - aimY * side, p.y + aimY * sk.to + aimX * side)) o.drag = now + DRAG_MS;
+        if (!MOBS[o.k].boss && o.el !== 2) holdMob(S, o, sk.hold);
+        o.stg = now + STG_MS;
+        hit(o, sk.mult);
+      });
+      break;
+    }
+    case "ignite": {
+      // the spot it was aimed at goes up: every stack of 화상 and any ice there feeds it
+      const [x, y] = tgt || aimPoint(rt, m, p, sk.at);
+      ev(sk.fx, x, y - 6, sk.r);
+      for (const o of mobsWithin(rt, x, y, sk.r)) hit(o, sk.mult);
+      weave(S, rt, p, "f", x, y, k);
+      break;
+    }
+    case "drain": {
+      ev(sk.fx, ...ahead(40), 0);
+      p.chan = prop({ kind: "chan", x: p.x, y: p.y, len: sk.len, half: sk.half, left: sk.n, every: sk.every, next: now + sk.every,
+        until: now + sk.every * (sk.n + 1) + 50, mult: sk.mult * k, fin: sk.fin * k, heal: sk.heal * charmSkh(p, id) }).id;
+      break;
+    }
+    case "snipe": {
+      // one long shot, loosed when the draw is full: whatever is held still takes it hardest
+      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len));
+      ev(sk.fx, ...ahead(far), far);
+      for (const o of lineFirst(rt, p.x, p.y, aimX, aimY, far, sk.half, sk.n)) hit(o, sk.mult);
       break;
     }
 
@@ -10234,7 +10376,7 @@ function castSkill(S, p, id) {
         const tip = (o.x - p.x) * aimX + (o.y - p.y) * aimY >= far * sk.far;
         if (tip) {
           rt.ev.push(["tip", o.id]);
-          if (!MOBS[o.k].boss && o.el !== 2) { o.stun = Math.max(o.stun, now + sk.freeze * (o.el ? 0.5 : 1)); rt.ev.push(["fz", o.id, sk.freeze]); }
+          if (!MOBS[o.k].boss && o.el !== 2) { o.stun = Math.max(o.stun, now + sk.freeze * (o.el ? 0.5 : 1)); o.frz = o.stun; rt.ev.push(["fz", o.id, sk.freeze]); }
         }
         o.slow = Math.max(o.slow || 0, now + 3000);
         hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
@@ -16252,6 +16394,7 @@ export function validateAction(S, pid, a) {
       if (!loOf(ch).a.includes(a.id)) return bad("스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
       if (p.dance) return bad("무영난무 중입니다");
       if (p.hammer) return bad("해머를 내려찍는 중입니다");
+      if (p.charge) return bad("기술을 모으는 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
       if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
       if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");

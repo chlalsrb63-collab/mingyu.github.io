@@ -66,7 +66,7 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
 
 // ═════════ the tables
 {
-  assert.equal(D.skillOrder.length, 70, "35 actives and 35 mastery passives");
+  assert.equal(D.skillOrder.length, 76, "41 actives and 35 mastery passives");
   assert.deepEqual(Object.keys(SK), D.skillOrder);
   for (const wk of D.wkOrder) {
     const perks = Object.values(SK).filter((sk) => sk.wk === wk && sk.kind === "p");
@@ -77,7 +77,7 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
     const s = SK[id];
     assert.equal(s.id, id);
     assert.ok(s.name && s.desc && s.desc.length > 20, id + " is named and described in Korean");
-    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 136)), id + " costs, waits and has an fx code");
+    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 136) || (s.fx >= 140 && s.fx <= 145)), id + " costs, waits and has an fx code");
     if (s.kind === "j") { assert.equal(D.jobs[s.job].kind, "single"); assert.equal(D.jobs[s.job].wk[0], s.wk); assert.equal(s.need, 20); }
     if (s.kind === "h") { assert.equal(D.jobs[s.job].kind, "hybrid"); assert.equal(s.need, D.hybWm, id + " grows from mastery 15"); }
   }

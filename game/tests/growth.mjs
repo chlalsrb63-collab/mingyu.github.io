@@ -45,7 +45,7 @@ const count = (ch, id) => ch.inv.reduce((a, s) => a + (s.id === id ? s.n || 1 : 
 // (weapon skills: two attack skills and five passives per weapon; spear and book add party support)
 for (const wk of D.wkOrder) {
   const own = D.skillOrder.filter((id) => D.skills[id].wk === wk && "ap".includes(D.skills[id].kind));
-  const expected = [["a", 1], ["a", 10], ["p", 10], ...(["spear", "book"].includes(wk) ? [["a", 15]] : []), ...[20, 30, 40, 50].map((lv) => ["p", lv])];
+  const expected = [["a", 1], ["a", 10], ["p", 10], ...(["spear", "book"].includes(wk) ? [["a", 15]] : []), ...[20, 30, 40, 50].map((lv) => ["p", lv]), ...(wk === "hammer" ? [] : [["a", 25]])];   // the combo active sits after the passives (skill-combos.md)
   assert.deepEqual(own.map((id) => [D.skills[id].kind, D.skills[id].need]), expected, wk + "'s mastery unlocks");
 }
 assert.equal(D.whSlots, 60);

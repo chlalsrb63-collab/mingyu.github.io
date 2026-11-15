@@ -31,11 +31,11 @@ A consumer spends the state on its first hit of that monster (`comboK`), emits `
 | 무기 | short | mid | long / new | combo identity |
 | --- | --- | --- | --- | --- |
 | 대검 | 파워 슬래쉬: cone, instant, 3.5 s — 경직, 끌림 소모 | 대지 가르기: leap + line, 9 s — 띄우기 + 경직 | **처형 내려베기** (25): charge-up 0.5 s, 짧은 넓은 일직선, 16 s — 경직/공중/빙결 소모 | 세우고(경직) 띄우고(공중) 내려벤다 |
-| 단검 | **급소 터뜨리기** (25): melee single, 2.5 s — 표식 폭발, 낙인 소모 | 암습: blink behind, 6 s — 공중 소모 · 그림자 칼날: projectile fan, 8 s — 표식 | (무영난무 sig) | 표식 쌓고 터뜨리기 |
+| 단검 | **급소 터뜨리기** (25): melee single, 3.5 s — 표식 폭발, 낙인 소모 | 암습: blink behind, 6 s — 공중 소모 · 그림자 칼날: projectile fan, 8 s — 표식 | (무영난무 sig) | 표식 쌓고 터뜨리기 |
 | 창 | 나선 찌르기: line, 3.5 s — 빙결 파쇄 | **갈고리 창** (25): line pull, 7 s — 끌림 + 경직 · 유성창: dash-through, 10 s — 끌림 | 전열 구호기 (support) | 거리 조절: 끌어와 묶기 |
-| 스태프 | 파이어볼: projectile + ground burn, 3 s — 화상 | 서리 고리: circle self, 8 s — 빙결, 끌림 소모 | **점화 폭발** (25): ground-target, wind-up 0.4 s, 14 s — 화상/빙결 소모 | 원소 쌓기 → 터뜨리기 |
+| 스태프 | 파이어볼: projectile + ground burn, 3.5 s — 화상 | 서리 고리: circle self, 8 s — 빙결, 끌림 소모 | **점화 폭발** (25): ground-target, wind-up 0.4 s, 14 s — 화상/빙결 소모 | 원소 쌓기 → 터뜨리기 |
 | 마도서 | 영혼 화살: homing projectile, 3.5 s — 낙인 | 중력 왜곡진: ground-target vortex, 11 s — 끌림 | **영혼 착취** (25): channel 2.4 s beam, 15 s — 틱마다 흡혈, 마무리에 낙인 소모 | 묶고 빨아들이기 |
-| 활 | 관통 화살: line projectile, 3.5 s | 도약 사격: backstep + fan, 9 s | **저격** (25): charge-up 0.7 s, 아주 긴 일직선, 15 s — 경직/공중/빙결 소모 | 멀리서 고정된 표적 마무리 |
+| 활 | 관통 화살: line projectile, 4.5 s | 도약 사격: backstep + fan, 9 s | **저격** (25): charge-up 0.7 s, 아주 긴 일직선, 18 s — 경직/공중/빙결 소모 | 멀리서 고정된 표적 마무리 |
 | 해머 | 쐐기찍기 6 s (기절 → 경직) | 금맥 벌리기 10 s — 균열 소모 | 파성추 sig | 자기 균열 루프 + 경직 공급 (해머 엔진은 `56-hammer.js` 그대로) |
 
 New actives sit at the end of `SKILL` (need: mastery 25), so a fresh loadout (5 actives) keeps the
