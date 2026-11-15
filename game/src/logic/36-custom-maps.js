@@ -99,6 +99,9 @@ function fromEditor(d, id) {
     if (typeof k.to === "string") out.to = k.to;
     return out;
   });
+  // the farm's crop plots [x, y, crop 1..CROP.length] (58-life.js lifeNodes makes them nodes; the tiles must be open)
+  m.crops = (Array.isArray(d.crops) ? d.crops : []).filter((c) => Array.isArray(c) && xyOk(m, c[0], c[1]) && Number.isInteger(c[2]) && c[2] >= 1 && c[2] <= CROP.length)
+    .map((c) => [c[0], c[1], c[2]]);
   delete WP[id];
   /** [x, y] a stone, and optionally [.., ax, ay] the tile travellers arrive on beside it. */
   const stoneAt = ([x, y, ax, ay], i) => {

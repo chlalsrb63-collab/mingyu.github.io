@@ -13,11 +13,14 @@ function chorePool(job) {
   const ok = (x, y) => inMap(m, x, y) && !!m.reach[y * W + x];
   const side = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => ok(x + dx, y + dy));
   // litter keeps off the doorways and the waypoint, and every third paving tile is enough to choose from
-  const far = (x, y) => m.portals.every((d) => Math.abs(d.x - x) + Math.abs(d.y - y) > 4) && m.npcs.every((n) => n.x !== x || n.y !== y);
+  const far = (x, y) => m.portals.every((d) => Math.abs(d.x - x) + Math.abs(d.y - y) > 4) && m.npcs.every((n) => n.x !== x || n.y !== y)
+    && (m.crops || []).every((c) => c[0] !== x || c[1] !== y);
+  // weeds grow on the giver's plot and backyard (CHORE.weed tiles round them)
+  const at = m.npcs.find((n) => n.id === JB.jb_ch_weed.npc), byFarm = (x, y) => !at || Math.max(Math.abs(at.x - x), Math.abs(at.y - y)) <= CHORE.weed;
   if (job === "milk") { for (const b of m.big) if (b.t === "house" && ok(b.x + 1, b.y + 3)) out.push([b.x + 1, b.y + 3]); }
   else for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const g = m.g[y][x], o = m.o[y][x];
-    if (job === "weed" ? g === "t" && ok(x, y)
+    if (job === "weed" ? g === "t" && ok(x, y) && byFarm(x, y)
       : job === "litter" ? (g === "p" || g === "o") && ok(x, y) && far(x, y) && (x * 7 + y * 13) % 3 === 0
       : job === "water" ? g === "\"" && ok(x, y)
       : job === "flyer" ? (o === "L" || o === "v" || o === "G") && side(x, y)

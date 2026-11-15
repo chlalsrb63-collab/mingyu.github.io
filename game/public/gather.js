@@ -20,10 +20,12 @@ export function init(api) { A = api; window.__gather = st; }   // st exposed for
 const G = () => A.G;
 const ND = () => (G().defs && G().defs.life && G().defs.life.nodes) || { kinds: ["h", "o", "w"], names: ["약초", "광맥", "통나무"], cd: 300000, ch: 2400, range: 24, tap: 700 };
 const spot = (n) => [n[2] * T + 8, n[3] * T + 10];
-/** 채집 Lv needed for a grade (defs.life.grades = the grade unlock levels). */
-const needLv = (grade) => { const gr = G().defs.life && G().defs.life.grades; return (gr && gr[grade - 1]) || 1; };
+/** 채집 Lv a node needs: its grade's unlock level (defs.life.grades), a crop its own (defs.life.nodes.crop). */
+const needLv = (n) => { const L = G().defs.life, gr = n[0] === 3 ? L && L.nodes.crop : L && L.grades; return (gr && gr[n[1] - 1]) || 1; };
+/** A node's name in prompts: the kind, or the crop itself (감자). */
+const nodeName = (n) => (n[0] === 3 && (G().defs.items[`m_c${n[1]}`] || {}).name) || ND().names[n[0]];
 const myLv = () => { const s = G().self, L = G().defs.life; const i = L ? L.keys.indexOf("gather") : 2; return (s && s.life && s.life[i] && s.life[i][0]) || 1; };
-const VERB = ["채집", "채굴", "벌목"];
+const VERB = ["채집", "채굴", "벌목", "수확"];
 export const busy = () => !!(st.mine && now() < st.mine.end + 300);
 
 // ───────────────────────────── the map's nodes ─────────────────────────────
@@ -47,7 +49,7 @@ function drawNode(g, t, sx, sy, i) {
   if (!spent && i === st.near && !busy()) GA.drawReach(g, t, sx, sy);
   // the contact shadow, in the people's tone
   g.fillStyle = "rgba(20,24,50,.26)";
-  g.beginPath(); g.ellipse(sx, sy, spent ? 7 : 11, spent ? 3 : 4, 0, 0, 7); g.fill();
+  if (n[0] !== 3) { g.beginPath(); g.ellipse(sx, sy, spent ? 7 : 11, spent ? 3 : 4, 0, 0, 7); g.fill(); }   // (a crop's ridge is its own ground)
   g.drawImage(img, sx - GA.FOOT[0], sy - GA.FOOT[1]);
   const mine = st.mine && st.mine.i === i ? st.mine : null;
   if (mine && mine.tapAt && t < mine.tapEnd) GA.drawGlint(g, sx + 1, sy - 22, true);
@@ -98,7 +100,7 @@ export function onEvent(e) {
       st.pend = 0; st.goal = -1;
       G().path = null;
       st.mine = { i, k: kind, t0: t, end: t + ms, tapAt: 0, tapEnd: 0, tapped: false };
-      G().cast = { start: t, end: t + ms, name: `${ND().names[kind]} ${VERB[kind]}`, gat: true };
+      G().cast = { start: t, end: t + ms, name: `${st.nodes[i] ? nodeName(st.nodes[i]) : ND().names[kind]} ${VERB[kind]}`, gat: true };
       A.Sound.play("gat_start", kind);
     } else st.others.set(eid, { i, t0: t, end: t + ms });
     return true;
@@ -143,7 +145,7 @@ function start(i) {
   const t = now(), n = st.nodes[i];
   if (!n || busy() || t - st.pend < 600) return false;
   if (st.spent.has(i)) { A.toast("아직 다시 자라지 않았습니다"); return true; }
-  const need = needLv(n[1]);
+  const need = needLv(n);
   if (myLv() < need) { A.toast(`채집 레벨이 부족합니다 (Lv.${need} 필요)`); return true; }
   A.stopAuto();
   G().path = null;
@@ -185,10 +187,10 @@ export function onWorldDown(e) {
 export function label() {
   const i = st.near;
   if (i < 0) return "";
-  const n = st.nodes[i], name = ND().names[n[0]];
+  const n = st.nodes[i], name = nodeName(n);
   if (busy()) return "";                    // the channel bar and the "반짝!" prompt say it
   if (st.spent.has(i)) return `${name} (다시 자라는 중)`;
-  const need = needLv(n[1]);
+  const need = needLv(n);
   return myLv() < need ? `${name} (채집 Lv.${need} 필요)` : `${name} ${VERB[n[0]]}`;
 }
 
@@ -237,7 +239,7 @@ function showTap(on, hit) {
 
 /** Pouch goods in a steady order: herbs, ores, woods by grade, ingots, then the bought goods. */
 function pouchOrder(p) {
-  const rank = (id) => { const it = G().defs.items[id] || {}; const kind = { h: 0, o: 1, w: 2, i: 3 }[it.mk]; return (kind ?? 4) * 10 + (it.grade || 0); };
+  const rank = (id) => { const it = G().defs.items[id] || {}; const kind = { h: 0, o: 1, w: 2, c: 3, i: 4 }[it.mk]; return (kind ?? 4) * 10 + (it.grade || 0); };
   return Object.keys(p || {}).filter((id) => p[id] > 0 && G().defs.items[id]).sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1));
 }
 /** The pouch as a grid of slots with counts, folded under a heading (the fold is remembered). */

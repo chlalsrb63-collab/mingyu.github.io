@@ -212,7 +212,7 @@ function fishRun(map, lv, score) {
 // ── materials, the sheet's other life fields, the town's new roles
 {
   const mats = D.life.mats;
-  assert.equal(mats.length, 20, "15 materials + 5 ingots (L2)");
+  assert.equal(mats.length, 26, "15 materials + 5 ingots (L2) + 6 crops (H10 farm)");
   const sell = (id) => Math.floor(X.ITEMS[id].price * 0.4);
   assert.deepEqual([1, 2, 3, 4, 5].map((g) => sell("m_h" + g)), [6, 14, 30, 60, 110]);
   assert.ok(mats.every((id) => X.ITEMS[id].type === "lmat" && X.ITEMS[id].grade >= 1 && /[가-힣]/.test(X.ITEMS[id].name)));
@@ -251,7 +251,8 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   const fresh2 = L.atlas(true, ["meadow", "crypt"]).maps;
   for (const id of Object.keys(X.MAP_META)) {
     const m = X.mapOf(id), ns = X.lifeNodes(m);
-    if (X.MAP_META[id].safe) { assert.equal(ns.length, 0, id + ": no nodes in safe places"); continue; }
+    // safe places grow only what a map plants by hand (the farm's crops, kind 3)
+    if (X.MAP_META[id].safe) { assert.ok(ns.every((n) => n[0] === 3), id + ": no wild nodes in safe places"); continue; }
     let open = 0;
     for (let y = 2; y < m.h - 2; y++) for (let x = 2; x < m.w - 2; x++) if (m.reach[y * m.w + x]) open++;
     const want = Math.min(X.NODE.max, Math.max(X.NODE.min, Math.round(open / X.NODE.per)));
@@ -364,6 +365,85 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   const [g1, b1] = runs(1, 0, 3000);
   near(g1, 0.03, 0.015, "beginner"); near(b1, 0.04, 0.015, "bonus item");
   wipe(mat1); p.ng = {}; p.gat = null; clearEv();
+}
+
+// ── the farm (H10): 감자's plot in 버드나무 마을 — crop nodes on open tiles, levels, yields, each player's own
+// regrowth, the plot's weeds, the dishes, the board's crop rows
+{
+  fresh(); clearEv();
+  const m = X.mapOf("willow"), ns = X.lifeNodes(m), f = m.npcs.find((n) => n.id === "willow_farmer");
+  assert.ok(ns.length >= 20 && ns.every((n) => n[0] === 3), "willow grows crops only: " + ns.length);
+  assert.deepEqual([...new Set(ns.map((n) => n[1]))].sort(), [1, 2, 3, 4, 5, 6], "every crop is planted");
+  for (const [, c, x, y] of ns) {
+    assert.ok(m.reach[y * m.w + x], `crop ${c} at (${x},${y}) on a reachable tile`);
+    assert.ok(Math.abs(x - f.x) <= 12 && Math.abs(y - f.y) <= 12, "on the farmer's plot");
+  }
+  assert.deepEqual(X.mapPayload(m).nodes, ns, "the map payload carries them");
+  assert.deepEqual(D.life.nodes.crop, [1, 1, 5, 10, 15, 20]);
+  const sell = (id) => Math.floor(X.ITEMS[id].price * 0.4);
+  assert.deepEqual([1, 2, 3, 4, 5, 6].map((c) => [X.ITEMS["m_c" + c].name, sell("m_c" + c)]),
+    [["감자", 6], ["당근", 6], ["양배추", 6], ["무", 14], ["옥수수", 14], ["호박", 30]], "crops sell as the herb of their grade");
+  assert.ok(X.POUCH_MAX && X.addItem(ch, "m_c1", 1) && ch.pouch.m_c1 >= 1, "crops go in the 재료 주머니");
+  wipe("m_c1"); wipe("m_c2");
+  // a potato at Lv 1: the channel, one (two on a 대성공), experience of grade 1, spent for this player only
+  ch.life.gather = { lv: 1, xp: 0 };
+  p.ng = {};
+  const i = ns.findIndex((n) => n[1] === 1), n = ns[i];
+  standAt("willow", n[2], n[3] + 1);
+  assert.ok(act({ t: "gat", i }).ok, "dig a potato at Lv 1");
+  while (p.gat) tickLife(100);
+  const got = X.countItem(ch, "m_c1");
+  assert.ok(got === 1 || got === 2, "potatoes: " + got);
+  assert.ok(ch.life.gather.xp === 8 || ch.life.gather.xp === 12, "XP RXP[1]: " + ch.life.gather.xp);
+  assert.equal(act({ t: "gat", i }).error, "아직 다시 자라지 않았습니다");
+  L.addPlayer(S, "b", L.newChar("농부", []));
+  const pb = S.players.b;
+  L.runtime(S, pb.map).n--; pb.map = "willow"; L.runtime(S, "willow").n++;
+  pb.x = p.x; pb.y = p.y;
+  assert.ok(L.validateAction(S, "b", { t: "gat", i }).ok, "another player's crop is still there");
+  // the better crops need their level: 무 (Lv 10)
+  const j = ns.findIndex((q) => q[1] === 4), r4 = ns[j];
+  standAt("willow", r4[2], r4[3] + 1);
+  assert.equal(act({ t: "gat", i: j }).error, "채집 레벨이 부족합니다 (Lv.10 필요)");
+  ch.life.gather = { lv: 10, xp: 0 };
+  assert.ok(act({ t: "gat", i: j }).ok);
+  p.gat = null;
+  tickLife(X.NODE.cd);
+  standAt("willow", n[2], n[3] + 1);
+  assert.ok(act({ t: "gat", i }).ok, "regrown after the cooldown");
+  p.gat = null; p.ng = {};
+  // 제초: the weeds grow round the farmer (his plot's walkways and the backyard)
+  const weeds = X.chorePool("weed");
+  assert.ok(weeds.length >= 12 && weeds.every(([x, y]) => Math.max(Math.abs(x - f.x), Math.abs(y - f.y)) <= X.CHORE.weed), "weeds by the plot: " + weeds.length);
+  assert.ok(weeds.filter(([x, y]) => x > 25 && x < 34 && y > 41 && y < 52).length >= 8, "most of them on the plot");
+  assert.ok(X.chorePool("litter").every(([x, y]) => !ns.some((q) => q[2] === x && q[3] === y)), "no litter on the crop rows");
+  // the dishes, at the village kitchen (any stove; 감자구이 and 당근 수프 on a campfire too)
+  ch.life.cook = { lv: 20, xp: 0 };
+  standBy("willow_kitchen");
+  for (const [r, ins] of [["fd_potato", [["m_c1", 2]]], ["fd_carrot", [["m_c2", 2], ["staple", 1]]], ["fd_veg", [["m_c3", 1], ["m_c4", 1], ["staple", 1]]], ["fd_corn", [["m_c5", 1], ["m_c6", 1], ["staple", 1]]]]) {
+    assert.deepEqual(X.RECIPES[r].in, ins, r);
+    for (const [id, k] of ins) { wipe(id); give(id, k); }
+    wipe(r);
+    assert.ok(act({ t: "craft_open", r }).ok, r + ": open");
+    p.mk = null;
+    assert.ok(X.craftOnce(S, p, X.RECIPES[r], 100) >= 1 && X.countItem(ch, r) >= 1, r + ": cooked");
+    for (const [id] of ins) assert.equal(X.countItem(ch, id), 0, r + ": inputs used");
+    assert.equal(X.ITEMS[r].type, "food");
+  }
+  assert.equal(X.RECIPES.fd_potato.at, "fire"); assert.equal(X.RECIPES.fd_veg.at, "cook");
+  // the board's crop rows: bring the crops to the farmer / 쥬쥬, cook the 채소 볶음 for 쥬쥬
+  for (const [id, who] of [["jb_willow_potato", "willow_farmer"], ["jb_willow_radish", "willow_farmer"], ["jb_carrot", "juju"], ["jb_veg", "juju"]]) {
+    const t = X.JB[id], day = X.dayOf(now), g = X.jbRoll(ch, day, id).g, need = X.jbNeed(t, g);
+    assert.equal(t.npc, who, id);
+    assert.ok(t.kind === "make" ? X.RECIPES[t.item] : t.item.startsWith("m_c"), id + ": crops or a farm dish");
+    ch.jobBoard = { day, done: [], active: { id, npc: who, prog: 0, expAt: 0 } };
+    wipe(t.item); give(t.item, need);
+    standBy(who);
+    assert.ok(act({ t: "jb", a: "give" }).ok, id + ": handed in");
+    assert.equal(X.countItem(ch, t.item), 0); assert.deepEqual(ch.jobBoard.done, [id]);
+  }
+  ch.jobBoard = { day: X.dayOf(now), done: [], active: null };
+  L.removePlayer(S, "b");
 }
 
 // ── the pouch (B.10): materials, staples and flasks go there first, 999 each; bag first out; warehouse and selling
@@ -861,8 +941,8 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   // a fresh sheet carries the new counters; defs carry the L2 tables
   const nc = L.newChar("새싹", []);
   assert.deepEqual([nc.cnt.gat, nc.cnt.craft, nc.cnt.deliver], [0, 0, 0]);
-  assert.ok(D.life.jb.jb_dl_cafe.toName && D.life.rep.tier.length === 3 && D.life.pouch.ids.includes("staple") && D.life.nodes.kinds.join("") === "how");
-  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 91 && D.life.recipes.some((r) => r.id === "gr_w_h_5"));
+  assert.ok(D.life.jb.jb_dl_cafe.toName && D.life.rep.tier.length === 3 && D.life.pouch.ids.includes("staple") && D.life.nodes.kinds.join("") === "howc");
+  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 95 && D.life.recipes.some((r) => r.id === "gr_w_h_5"));
   // the town's hosts: 캉캉 crafts, 보글 brews, 쥬쥬's stove cooks, 포포 runs the board, 쥬쥬 and 보글's shelf sell the staples
   const role = (nid) => X.mapOf(X.NPC_MAP[nid]).npcs.find((n) => n.id === nid);
   assert.deepEqual(["kangkang", "bogle", "juju_stove", "popo"].map((nid) => role(nid).role), ["craft", "alch", "cook", "jobs"]);

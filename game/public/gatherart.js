@@ -212,8 +212,50 @@ function logSprite(grade, spent) {
   return outline(c, g, INK);
 }
 
-/** The baked sprite of a node: kind 0 herb · 1 ore · 2 log; `spent` = picked by you. */
+// ── crops (H10 farm): a tilled ridge running along the row (tile x: +16, +8 on screen, so neighbours join up) and
+// the plant on it, grown, or a sprout while it regrows for you. Crop c = 1 감자 · 2 당근 · 3 양배추 · 4 무 · 5 옥수수 · 6 호박.
+const SOIL = ["#a8784a", "#7e5230", "#56361e"];
+const LEAF = { d: "#2f6a3a", m: "#4f9a48", l: "#8fd060" };
+const CROP_ART = [
+  // 감자: a bushy potato plant in flower
+  [["...w.l..w...", "..wyw.l.wyw.", "...wlmmlmw..", "..lmmmmmmml.", ".lmmdmmmdmml", ".mmmmdmmmmmd", "..dmmmmmmdd.", "...ddmmddd.."],
+    { w: "#f6f0e0", y: "#f0c040" }],
+  // 당근: feathery tops over an orange shoulder
+  [["..l...l...l.", ".lml.lml.lml", "..m.l.m.l.m.", "...mm.m.mm..", "....mmmmm...", ".....mmm....", "....oOOo....", "....ooOo...."],
+    { O: "#ff9a40", o: "#c85a18" }],
+  // 양배추: a round pale head in its outer leaves
+  [["...llllll...", "..lLLLLLLl..", ".lLLmLLmLLl.", "lmLLLmmLLLml", "mmlLLLLLLlmm", ".mmmllllmmm.", "..dmmmmmmd..", "....dddd...."],
+    { L: "#d4f0a0" }],
+  // 무: broad leaves and the white top of the root
+  [["..m......m..", ".lml....lml.", ".lmml..lmml.", "..lmml.lml..", "...lmmlmm...", "....mmmm....", "....wWWw....", "....wWWw...."],
+    { W: "#fbfbf2", w: "#c8ccbc" }],
+  // 옥수수: a tall stalk, a tassel, a cob in its husk
+  [["......t.....", ".....tTt....", "......s.....", "......s.....", "..l...s.....", "...l..sYy...", "....l.sYYh..", ".....lsYYh..", "......sYy...", "......s..l..", "..l...s.l...", "...l..sl....", "....l.s.....", ".....ls.....", "......s....."],
+    { t: "#c8a050", T: "#f0d080", s: "#3f8a40", Y: "#ffe070", y: "#d0a020", h: "#8fd060" }],
+  // 호박: a ribbed pumpkin under its vine leaves
+  [["...l....l...", "..lml..lml..", ".lmmmlmmmml.", "..mm.ss.mm..", "...OOOoOOO..", "..OOOOoOOOo.", ".OoOOOoOOoOo", ".OoOOOoOOoOo", "..ooOOoOOoo.", "...oooooo..."],
+    { O: "#f8962a", o: "#b8561a", s: "#3f6a2a" }],
+];
+/** A ridge of turned soil across the tile, lit on top, one shadow tone below. */
+function ridge(g) {
+  for (let t = -10; t <= 10; t++) {
+    const x = FX + t, y = FY - 1 + Math.round(t / 2);
+    px(g, x, y - 2, 1, 1, SOIL[0]); px(g, x, y - 1, 1, 2, SOIL[1]); px(g, x, y + 1, 1, 1, SOIL[2]);
+  }
+  // clods and a dimple of darker earth
+  px(g, FX - 6, FY - 5, 1, 1, SOIL[2]); px(g, FX + 5, FY, 1, 1, SOIL[0]);
+}
+function cropSprite(c, spent) {
+  const [list, pal] = CROP_ART[Math.max(0, Math.min(CROP_ART.length - 1, (c | 0) - 1))], [cv, g] = sheet(W, H);
+  ridge(g);
+  if (spent) rows(g, ["l.l", ".m."], LEAF, FX - 1, FY - 5);
+  else rows(g, list, { ...LEAF, ...pal }, FX - 6, FY - 3 - list.length);
+  return outline(cv, g, INK);
+}
+
+/** The baked sprite of a node: kind 0 herb · 1 ore · 2 log · 3 crop (grade = the crop); `spent` = picked by you. */
 export function nodeSprite(kind, grade, spent) {
+  if (kind === 3) return once(`n3.${grade}.${spent ? 1 : 0}`, () => cropSprite(grade, spent));
   return once(`n${kind}.${gi(grade)}.${spent ? 1 : 0}`, () => kind === 0 ? (spent ? herbSpent(grade) : herbSprite(grade))
     : kind === 1 ? oreSprite(grade, spent) : logSprite(grade, spent));
 }
@@ -247,7 +289,7 @@ export function drawBar(g, x, y, k, col) {
   g.fillStyle = col; g.fillRect(x + 1, y + 1, Math.round(16 * Math.max(0, Math.min(1, k))), 2);
 }
 /** Each kind's colour (bars, chips flying off the work). */
-export const KIND_COL = ["#8fd060", "#d07a3a", "#c8a070"];
+export const KIND_COL = ["#8fd060", "#d07a3a", "#c8a070", "#a8784a"];
 
 // ───────────────────────────── item icons (16×16) ─────────────────────────────
 
@@ -290,7 +332,7 @@ const ING = [["#8a4a22", "#c06a32", "#f0a060", "#ffe0b0"], ["#4a4e5e", "#7a8090"
 export function matIcon(id, it) {
   if (id === "staple") return once("i.staple", () => icon(STAPLE, { L: "#f4e4c0", B: "#d8c098", b: "#a08860", t: "#b8503a" }));
   if (id === "flask") return once("i.flask", () => icon(FLASK, { k: "#a87a4a", K: "#7a5030", a: "#9ac8e0", A: "#e0f4ff", s: "#5a8aa8", e: "#c8e4f0" }));
-  if (!it || it.type !== "lmat") return null;
+  if (!it || it.type !== "lmat" || it.mk === "c") return null;   // crops: lifeicons.js
   const k = gi(it.grade);
   return once(`i.${id}`, () => {
     if (it.mk === "h") { const [list, pal] = HERB_ICON[k]; return icon(list, pal(HERB[k])); }

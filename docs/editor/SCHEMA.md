@@ -86,6 +86,9 @@ generated map round-trips tile for tile):
   4×3 block of `h` objects.
 - `marks`: `[{ "x", "y", "kind": "sign", "label": "↑ 버드나무광장", "to"?: mapId }]` — signpost texts
   for `G` objects (the waypoint mark is added by the game).
+- `crops`: `[[x, y, crop], …]` hand-planted crop plots (H10 farm; crop 1 감자 · 2 당근 · 3 양배추 · 4 무 ·
+  5 옥수수 · 6 호박, `CROP` in 12-life-tables.js) on open, walkable tiles: gathering nodes of kind 3 (작물), safe
+  maps included. Omitted: none.
 - NPC `lines` (≤ 12 strings, `{n}` = player name) are what the talk window shows, replacing the
   role's stock lines; role `elder` (main-quest giver) is allowed too.
 - **Interiors** (`"theme": "interior"`, art in `public/iso_interior.js`; examples

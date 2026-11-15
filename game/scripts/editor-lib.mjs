@@ -25,7 +25,7 @@ import { checkNpcLife } from "../editor/validate.js";
 export { DATA_DIR, ROOT };
 
 // (MAPS: every map built — the rules build the generated ones only on first use)
-const EXTRA = "\nexport const __editor = { get MAPS() { return allMaps(); }, MAP_META, FIRES, WP, FIELD_BOSS, MOBS, ITEMS, QUESTS, SOLID_G, THEMES, NPC_ROLES, BUILTIN_MAPS, NPC_MAP, DATA, COL_MOBS, npcLifeProblems, SIDE: typeof SIDE === 'undefined' ? [] : SIDE, mapPayload };\n";
+const EXTRA = "\nexport const __editor = { get MAPS() { return allMaps(); }, MAP_META, FIRES, WP, FIELD_BOSS, MOBS, ITEMS, QUESTS, SOLID_G, THEMES, CROP, NPC_ROLES, BUILTIN_MAPS, NPC_MAP, DATA, COL_MOBS, npcLifeProblems, SIDE: typeof SIDE === 'undefined' ? [] : SIDE, mapPayload };\n";
 const cache = new Map();
 
 /** The rules evaluated with a data set (default: data/**); cached by content. */
@@ -134,6 +134,7 @@ function toEditor(E, id) {
     boss: E.FIELD_BOSS[id] ? { k: E.FIELD_BOSS[id], x: wp ? wp.ax : m.entry[0], y: wp ? wp.ay : m.entry[1] } : null,
     big: m.big.map((b) => ({ ...b })),
     marks: (m.marks || []).filter((k) => k.kind === "sign").map((k) => (k.to ? { x: k.x, y: k.y, kind: "sign", label: k.label, to: k.to } : { x: k.x, y: k.y, kind: "sign", label: k.label })),
+    ...(m.crops && m.crops.length ? { crops: m.crops.map((c) => c.slice()) } : {}),
   };
 }
 
@@ -354,6 +355,11 @@ export async function checkData(dataDir = DATA_DIR) {
     (Array.isArray(d.fires) ? d.fires : []).forEach((fp, i) => {
       if (!Array.isArray(fp) || !inside(m, fp[0], fp[1])) { err(f, `fires[${i}]`, "모닥불 위치가 지도 밖입니다"); return; }
       if (!nearReach(m.reach, m.w, m.h, fp[0], fp[1])) warn(f, `fires[${i}]`, `모닥불 (${fp[0]},${fp[1]})에 걸어갈 수 없습니다`);
+    });
+    (Array.isArray(d.crops) ? d.crops : []).forEach((c, i) => {
+      if (!Array.isArray(c) || !inside(m, c[0], c[1])) { err(f, `crops[${i}]`, "작물 위치가 지도 밖입니다"); return; }
+      if (!Number.isInteger(c[2]) || c[2] < 1 || c[2] > G.CROP.length) err(f, `crops[${i}]`, `작물 번호는 1–${G.CROP.length}입니다`);
+      if (!m.open(c[0], c[1]) || !m.reach[c[1] * m.w + c[0]]) err(f, `crops[${i}]`, `작물 (${c[0]},${c[1]})에 걸어갈 수 없습니다`);
     });
     if (d.waypoint != null) {
       const [x, y] = Array.isArray(d.waypoint) ? d.waypoint : [];

@@ -183,15 +183,19 @@ function pouchTake(ch, id, n) {
 
 /** The material a node gives: its kind's letter and its grade (`m_h3`). */
 const nodeMat = (n) => `m_${NODE_KINDS[n[0]]}${n[1]}`;
+/** The gather level a node needs and the grade its experience goes by (a crop has its own, CROP). */
+const nodeLv = (n) => (n[0] === 3 ? CROP[n[1] - 1][1] : GRADE_LV[n[1] - 1]);
+const nodeG = (n) => (n[0] === 3 ? CROP[n[1] - 1][2] : n[1]);
 /**
  * A map's gathering nodes [kind 0..2 (herb ore wood), grade, tx, ty], placed once from the map's id and kept on
  * the map (the wire sends this list as `map.nodes`). Only hunting grounds have them: reachable tiles at least
  * NODE.gap apart and NODE.clear from doors, signs, waypoint stones, NPCs and fires; one per NODE.per open tiles
- * (clamped to NODE.min..max); hidden pockets weigh double; kinds by the theme's NODE_W.
+ * (clamped to NODE.min..max); hidden pockets weigh double; kinds by the theme's NODE_W. An editor map's hand-placed
+ * crops come first, safe or not ([3, crop, x, y]).
  */
 function lifeNodes(m) {
   if (m.nodes) return m.nodes;
-  m.nodes = [];
+  m.nodes = (m.crops || []).map(([x, y, c]) => [3, c, x, y]);
   if (m.safe || !m.reach || !Object.hasOwn(MAP_META, m.id)) return m.nodes;
   const W = m.w, H = m.h, g = gradeOfMap(m), wt = NODE_W[m.theme] || NODE_W.meadow, c = NODE.clear;
   const busy = new Uint8Array(W * H);
@@ -247,17 +251,17 @@ function gatDone(S, p) {
   const g = p.gat, ch = p.ch, now = S.now;
   p.gat = null;
   const n = lifeNodes(mapOfS(S, p.map))[g.i];
-  const L = ch.life.gather.lv, unlock = GRADE_LV[n[1] - 1], id = nodeMat(n);
+  const L = ch.life.gather.lv, unlock = nodeLv(n), id = nodeMat(n);
   const great = rnd(S) * 100 < lifeOdds(L, unlock, 50, g.extra)[1];
   const cnt = great && canAdd(ch, id, 2) ? 2 : 1;
   if (addItem(ch, id, cnt)) p.gain.push(["item", id, cnt, 0]);
   if (rnd(S) < NODE.bonus) {
-    // a herb's seed of the next grade, a stone in the vein, a bundle of kindling from the log
-    const b = n[0] === 0 ? `m_h${Math.min(5, n[1] + 1)}` : n[0] === 1 ? "stone" : "camp";
+    // a herb's seed of the next grade, a stone in the vein, a bundle of kindling from the log, the next crop's root
+    const b = n[0] === 0 ? `m_h${Math.min(5, n[1] + 1)}` : n[0] === 1 ? "stone" : n[0] === 3 ? `m_c${Math.min(CROP.length, n[1] + 1)}` : "camp";
     if (addItem(ch, b, 1)) { p.gain.push(["item", b, 1, 1]); toast(p, `덤으로 ${ITEMS[b].name}${pp(ITEMS[b].name, "을를")} 얻었습니다!`); }
   }
   if (great) toast(p, `대성공! ${ITEMS[id].name} ${cnt}개`);
-  gainLife(S, p, "gather", lifeXp(L, unlock, RXP[n[1] - 1] * (great ? 1.5 : 1)));
+  gainLife(S, p, "gather", lifeXp(L, unlock, RXP[nodeG(n) - 1] * (great ? 1.5 : 1)));
   ch.cnt.gat++;
   (p.ng || (p.ng = {}))[p.map] = p.ng[p.map] || {};
   p.ng[p.map][g.i] = now + NODE.cd;
@@ -611,7 +615,7 @@ function lifeValidate(S, p, a) {
       if (!n) return bad("채집할 수 있는 곳이 아닙니다");
       if (dist(p.x, p.y, n[2] * T + 8, n[3] * T + 10) > NODE.range) return bad("너무 멉니다");
       if (nodeReady(p, a.i) > now) return bad("아직 다시 자라지 않았습니다");
-      const need = GRADE_LV[n[1] - 1];
+      const need = nodeLv(n);
       if (ch.life.gather.lv < need) return bad(`채집 레벨이 부족합니다 (Lv.${need} 필요)`);
       if (now - p.hitAt < NODE.hit) return bad("싸우는 중에는 채집할 수 없습니다");
       if (!canAdd(ch, nodeMat(n), 2)) return bad("가방이 가득 찼습니다");
@@ -833,7 +837,7 @@ function lifeDefs() {
     mapGrade: Object.fromEntries(Object.keys(MAP_META).map((id) => [id, mapGradeOf(id)])),
     // L2: nodes (kind letters/names, cooldown, channel at Lv 1, reach, tap window), stations, batch rules, the
     // board's templates and pay, trust tiers and perks, the pouch
-    nodes: { kinds: NODE_KINDS, names: NODE_NAME, cd: NODE.cd, ch: NODE.ch, range: NODE.range, tap: NODE.tap },
+    nodes: { kinds: NODE_KINDS, names: NODE_NAME, crop: CROP.map((c) => c[1]), cd: NODE.cd, ch: NODE.ch, range: NODE.range, tap: NODE.tap },
     mg: MG, craft: CRAFT, bless: ENH_BLESS, gearCraft: { q: GEAR_CRAFT.q },
     jb: Object.fromEntries(Object.keys(JB).map((id) => [id, { ...JB[id], npcName: npcName(JB[id].npc), toName: JB[id].to ? npcName(JB[id].to) : "" }])),
     jbPay: JB_PAY, jbGrade: JB_GRADE, jbRush: JB_RUSH, chores: CHORES, chore: { map: CHORE_MAP, range: CHORE.range, src: CHORE.src },
