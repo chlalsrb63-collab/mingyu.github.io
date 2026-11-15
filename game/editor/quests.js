@@ -115,7 +115,10 @@ function form() {
     ...f2("경험치", intIn(q.reward.xp, 0, 10000000, (v) => { q.reward.xp = v || 0; })),
     ...f2("골드", intIn(q.reward.gold, 0, 10000000, (v) => { q.reward.gold = v || 0; })),
     ...f2("아이템", itemsEditor(q.reward.items, (l) => { q.reward.items = l; })),
-    ...f2("반복", el("label.chk", { title: "끝낸 뒤 다시 받을 수 있어요" }, el("input", { type: "checkbox", checked: !!q.repeat, onchange: (e) => { q.repeat = e.target.checked; change(); render(); } }), "여러 번 할 수 있는 퀘스트"))));
+    ...f2("반복", el("select", { title: "끝낸 뒤 다시 받을 수 있는지", onchange: (e) => { const v = e.target.value; q.repeat = v === "week" ? "week" : v === "1"; change(); render(); } },
+      el("option", { value: "", selected: !q.repeat }, "한 번만"),
+      el("option", { value: "1", selected: q.repeat === true }, "여러 번 (끝내면 바로)"),
+      el("option", { value: "week", selected: q.repeat === "week" }, "주간 (월요일 06:00 초기화)")))));
 }
 function help() {
   return el("div.card", null, el("b", null, "사이드 퀘스트 만드는 순서"), el("ol", null,
