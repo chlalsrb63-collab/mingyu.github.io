@@ -775,6 +775,7 @@ const MOTIF = {
   bamboo: { name: "대나무", blade: M.bamboo, fit: ["#c8a878", "#8a6a4a", "#5a4030"], add: (h) => [...along(h, 3, (s) => L(s, h[2], s, h[3] - 1, "node")), P([[h[1] - 3, h[2] + 0.5], [h[1], h[2] + 0.5], [h[1] - 1, h[2] - 2.5]], "green")] },
   shard: { name: "균열 파편", blade: ["#8a6ad0", "#4a2e8a", "#241650"], fit: M.void, add: (h) => along(h, 3, (s, i) => P([[s - 1.2, (h[2] + h[3]) / 2 + 1], [s + 0.2, (h[2] + h[3]) / 2 - 2 - (i % 2)], [s + 1.4, (h[2] + h[3]) / 2 + 1]], "energy")) },
   bee: { name: "꿀벌", blade: ["#fff4a8", "#f4c440", "#b8842a"], fit: M.black, add: (h) => along(h, 3, (s) => L(s, h[2], s, h[3] - 1, "bee")) },
+  clubclaw: { name: "갯가재 집게", blade: ["#ffc08a", "#ff6a2a", "#a8301e"], fit: ["#d84a2a", "#9a2a1e", "#5a1a1e"], add: (h) => [...along(h, 3, (s, i) => L(s, h[2], s, h[3] - 1, i % 2 ? "orange" : "foam")), P([[h[1] - 2.5, h[2] - 0.5], [h[1] + 0.5, (h[2] + h[3]) / 2], [h[1] - 2.5, h[3] + 0.5]], "orange")] },
 };
 const EXTRA = { petal: "#ff9ac0", ice: "#e8fbff", candy: "#e8485a", foam: "#f4ffff", sand: "#fff8dc", node: "#4a7a3a", bee: "#3a3040" };
 export const MOTIFS = Object.keys(MOTIF);
