@@ -444,8 +444,8 @@ const SKILL = {
     desc: "어깨로 밀고 90 앞으로 돌진해 길 위의 적을 끝까지 끌고 간다(공격력의 90%). 벽에 처박히거나 둘 이상이 한데 엉킨 적은 1초 기절하고 경직되며, 나머지는 밀려난다. 끌려간 적은 광역기에 더 아프다." },
   snare: { kind: "a", wk: "bow", need: 30, name: "올무 화살", mp: 6, cd: 10000, at: 120, ms: 10000, max: 2, trig: 10, root: [2500, 1500, 500], pull: 30, mult: 0.5, fx: 154,
     desc: "올무를 매단 화살을 땅(최대 120)에 박아 둔다(10초, 둘까지). 처음 밟은 괴물은 2.5초 묶이고(정예 1.5초, 보스 0.5초) 경직으로 친다. 30 안의 둘은 올무 쪽으로 끌려온다." },
-  bladevortex: { kind: "a", wk: "dagger", need: 40, name: "칼날 소용돌이", mp: 2, cd: 3500, max: 5, ms: 8000, r: 36, every: 400, per: 0.12, n: 5, spread: 14, len: 110, half: 10, fan: 0.6, fx: 155, fx2: 156,
-    desc: "부를 때마다 칼날 하나가 내 주위를 돈다(최대 5, 8초 — 부를 때마다 다시 8초). 0.4초마다 둘레 36의 적을 칼날 1개당 공격력의 12%로 벤다. 다섯 자루일 때 다시 부르면 칼날이 부채꼴로 흩어져(각 60%) 맞은 적마다 표식을 남기고 소용돌이가 끝난다." },
+  bladevortex: { kind: "a", wk: "dagger", need: 40, name: "칼날 소용돌이", mp: 2, cd: 3500, max: 5, ms: 8000, r: 36, every: 400, per: 0.12, cap: 3, n: 5, spread: 14, len: 110, half: 10, fan: 0.6, fx: 155, fx2: 156,
+    desc: "부를 때마다 칼날 하나가 내 주위를 돈다(최대 5, 8초 — 부를 때마다 다시 8초). 0.4초마다 둘레 36에서 가장 가까운 적 셋을 칼날 1개당 공격력의 12%로 벤다. 다섯 자루일 때 다시 부르면 칼날이 부채꼴로 흩어져(각 60%) 맞은 적마다 표식을 남기고 소용돌이가 끝난다." },
   smoke: { kind: "a", wk: "dagger", need: 5, name: "연막탄", mp: 5, cd: 12000, util: true, noAuto: true, at: 90, r: 48, ms: 4000, every: 250, shot: 0.3, fx: 157,
     desc: "겨눈 자리(최대 90)에 4초간 연막을 터뜨린다. 연기 속의 괴물(보스 제외)은 노리던 상대를 잊고 헤맨다 — 그런 적에게 암습은 반드시 치명타. 연기 속의 파티원은 화살·투사체 피해를 30% 덜 받는다." },
   parry: { kind: "a", wk: "sword", need: 5, name: "칼등 받아치기", mp: 3, cd: 5000, util: true, noAuto: true, ms: 350, arc: 90, stg: 1200, r: 40, mult: 1.2, inert: 2, cdCut: 0.5, gauge: 0.25, whiff: 400, exposed: 0.2, fx: 158,
@@ -10211,7 +10211,9 @@ function propPulse(S, rt, m, p, o, now) {
       if (o.blades) {
         o.x = p.x; o.y = p.y;
         rt.ev.push(["a", p.eid, o.sk.fx, Math.round(p.x), Math.round(p.y) - 6, p.dir, 2, o.blades]);
-        for (const mob of mobsWithin(rt, p.x, p.y, o.r)) hit(mob, o.mult * o.blades);
+        // only the nearest `cap` are cut: the 도적 stays a single-target job, not a pack clearer (balance-2026-11-15)
+        const near = mobsWithin(rt, p.x, p.y, o.r).sort((u, v) => dist(p.x, p.y, u.x, u.y) - dist(p.x, p.y, v.x, v.y));
+        for (const mob of near.slice(0, o.sk.cap || near.length)) hit(mob, o.mult * o.blades);
         return false;
       }
       // 돌개바람 / 무쌍난무: follows the caster; each beat pays MP (and HP) first, then cuts everything around

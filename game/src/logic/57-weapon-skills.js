@@ -303,7 +303,9 @@ function propPulse(S, rt, m, p, o, now) {
       if (o.blades) {
         o.x = p.x; o.y = p.y;
         rt.ev.push(["a", p.eid, o.sk.fx, Math.round(p.x), Math.round(p.y) - 6, p.dir, 2, o.blades]);
-        for (const mob of mobsWithin(rt, p.x, p.y, o.r)) hit(mob, o.mult * o.blades);
+        // only the nearest `cap` are cut: the 도적 stays a single-target job, not a pack clearer (balance-2026-11-15)
+        const near = mobsWithin(rt, p.x, p.y, o.r).sort((u, v) => dist(p.x, p.y, u.x, u.y) - dist(p.x, p.y, v.x, v.y));
+        for (const mob of near.slice(0, o.sk.cap || near.length)) hit(mob, o.mult * o.blades);
         return false;
       }
       // 돌개바람 / 무쌍난무: follows the caster; each beat pays MP (and HP) first, then cuts everything around
