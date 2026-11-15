@@ -36,7 +36,7 @@ function afflict(S, p, kind, atk) {
  * or any blow of an elite or a boss — shove the player back and make them reel (45-jobs.js).
  */
 function mobHit(S, rt, p, raw, mob, how = "blow") {
-  if (p.dead) return;
+  if (p.dead || dodged(S, rt, p)) return;
   if ((how === "blow" || how === "shot") && evadeBlow(S, rt, p)) return;
   const before = p.hp;
   const src = mob && !mob.dead ? mob : null;
@@ -423,7 +423,7 @@ export function tick(S, now) {
         const p = S.players[pid];
         if (p.map !== id || p.dead || dist(p.x, p.y, q.x, q.y) > q.r) continue;
         // overlapping puddles do not add up: one bite at a time
-        if (now < (p.poolAt || 0) + 600) continue;
+        if (now < (p.poolAt || 0) + 600 || dodged(S, rt, p)) continue;
         p.poolAt = now;
         p.blame = { by: q.kind === 1 ? "불길" : q.kind === 2 ? "얼음 웅덩이" : "독 웅덩이", lv: 0, el: 0 };
         hurtPlayer(S, rt, p, q.dmg);

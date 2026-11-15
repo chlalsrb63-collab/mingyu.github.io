@@ -8967,6 +8967,63 @@ function lifeDefs() {
     master: LIFE_MASTER,
   };
 }
+// ───────────────────────────── the dash (Space) ─────────────────────────────
+// A short dash the way you aim, for getting about and for slipping a monster's heavy blow. The server
+// moves you (the client only predicts it); for as long as it lasts, and a breath longer, nothing a monster
+// throws lands. Others see it as `["ds", eid, x0, y0, x1, y1]`; a blow slipped is `["dg", eid]` ("회피!").
+
+/** `px` far in `ms`, once every `cd`; `inv` more ms of safety after it ends; swept `step` px at a time. */
+const DASH = { px: 72, ms: 180, cd: 4000, inv: 60, step: 4 };
+const DASH_CD = DASH.cd;
+
+/** Would a walker standing here be taken through a gate, or the "내 집" door? A dash stops short of those. */
+function gateAt(p, m, x, y) {
+  for (const pt of m.portals) if (dist(x, y - 3, pt.x * T + 8, pt.y * T + 8) < 12) return true;
+  return p.map === HOUSE_TOWN.map && HOUSE_TOWN.door.some(([dx, dy]) => dist(x, y - 3, dx * T + 8, dy * T + 8) < 12);
+}
+/**
+ * Where a dash from the player's feet along (ux, uy) ends: swept a few px at a time with the walker's own
+ * collision, so it never passes a wall, water, a cliff or the map's edge; it slides along what it grazes
+ * (as walking does) and stops dead at what it meets head-on.
+ */
+function dashEnd(p, m, ux, uy) {
+  let x = p.x, y = p.y;
+  const free = (nx, ny) => canStand(m, nx, ny) && !gateAt(p, m, nx, ny);
+  const slant = Math.abs(ux) > 0.01 && Math.abs(uy) > 0.01;
+  for (let k = DASH.step; k <= DASH.px; k += DASH.step) {
+    const nx = x + ux * DASH.step, ny = y + uy * DASH.step;
+    if (free(nx, ny)) { x = nx; y = ny; }
+    else if (slant && free(nx, y)) x = nx;
+    else if (slant && free(x, ny)) y = ny;
+    else break;
+  }
+  return [x, y];
+}
+/** Why a dash is refused now, or "" — quiet codes, never a toast (the client keeps its own clock). */
+function dashWhy(S, p) {
+  if (p.dead || p.dance) return "dash";
+  if (S.now < (p.stag || 0)) return "stag";
+  return S.now < (p.dashAt || 0) + DASH_CD - 60 ? "dash" : "";
+}
+/** The dash itself: stands you up, drops the line, the gathering and a recall, and moves you. */
+function dashGo(S, p, m, a) {
+  const now = S.now, rt = S.maps[p.map];
+  if (validAim(a)) setAim(p, a);
+  rouse(S, p);
+  if (p.gat) gatStop(S, p, "채집이 끊겼습니다.");
+  const [ux, uy] = AIM_V[p.aim | 0], x0 = p.x, y0 = p.y;
+  const [x, y] = dashEnd(p, m, ux, uy);
+  p.x = x; p.y = y; p.mvAt = now;
+  p.dashAt = now;
+  p.dodge = now + DASH.ms + DASH.inv;
+  rt.ev.push(["ds", p.eid, Math.round(x0), Math.round(y0), Math.round(x), Math.round(y)]);
+}
+/** Mid-dash nothing a monster throws lands — a blow, a charge, a slam, a volley, a puddle: true, and "회피!". */
+function dodged(S, rt, p) {
+  if (S.now >= (p.dodge || 0)) return false;
+  if (p.dgAt !== S.now) { p.dgAt = S.now; rt.ev.push(["dg", p.eid]); }
+  return true;
+}
 // ───────────────────────────── content: the long game ─────────────────────────────
 // What keeps a character coming back, each after a live game that does it well:
 // waypoints (Diablo II), a return scroll (Baram, Lineage), daily tasks (Lost Ark),
@@ -9306,8 +9363,8 @@ const TUT = [
   { id: "equip", title: "무기 받기", hint: "수련관 카이에게 F로 말을 걸어 무기를 하나 받으세요. 받은 무기를 바로 손에 듭니다.", reward: { gold: 20 } },
   { id: "bag", title: "가방 열기", hint: "I를 눌러 가방을 열어 보세요.", reward: { gold: 20 } },
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
-  { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
-  { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
+  { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. X로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
+  { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 Z로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
   { id: "skill", title: "스킬 써 보기", hint: "든 무기의 첫 스킬은 숙련 1부터 단축칸 1번에 있습니다. 몬스터 곁에서 1을 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
   // appended (the index is persisted): spending experience on a stat point
   { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁이나 수련관 카이 앞에서 C 창 → 능력치를 한 칸 올려 보세요. 한 칸이 1레벨입니다.", reward: { gold: 50 } },
@@ -12280,6 +12337,12 @@ export function validateAction(S, pid, a) {
       if (now < (p.stag || 0)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
+    case "dash": {
+      // Space (59-dash.js): refused in silence while it cools, while reeling, when down
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
+      const why = dashWhy(S, p);
+      return why ? bad(why) : OK;
+    }
     case "warp": {
       // a big ground has several stones: `i` picks one (0, the first, when left out)
       const i = a.i === undefined ? 0 : a.i;
@@ -12556,6 +12619,7 @@ export function applyAction(S, pid, a) {
     }
     case "atk": if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); break;
     case "sk": if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.id); break;
+    case "dash": dashGo(S, p, m, a.a); break;
     case "use": {
       if (lifeUse(a.id)) { lifeUseApply(S, p, a); break; }
       const it = ITEMS[a.id];
@@ -13203,7 +13267,7 @@ function afflict(S, p, kind, atk) {
  * or any blow of an elite or a boss — shove the player back and make them reel (45-jobs.js).
  */
 function mobHit(S, rt, p, raw, mob, how = "blow") {
-  if (p.dead) return;
+  if (p.dead || dodged(S, rt, p)) return;
   if ((how === "blow" || how === "shot") && evadeBlow(S, rt, p)) return;
   const before = p.hp;
   const src = mob && !mob.dead ? mob : null;
@@ -13590,7 +13654,7 @@ export function tick(S, now) {
         const p = S.players[pid];
         if (p.map !== id || p.dead || dist(p.x, p.y, q.x, q.y) > q.r) continue;
         // overlapping puddles do not add up: one bite at a time
-        if (now < (p.poolAt || 0) + 600) continue;
+        if (now < (p.poolAt || 0) + 600 || dodged(S, rt, p)) continue;
         p.poolAt = now;
         p.blame = { by: q.kind === 1 ? "불길" : q.kind === 2 ? "얼음 웅덩이" : "독 웅덩이", lv: 0, el: 0 };
         hurtPlayer(S, rt, p, q.dmg);
@@ -13878,7 +13942,7 @@ export function defs() {
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
-    traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
+    traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], dash: [DASH.px, DASH.ms, DASH.cd, DASH.inv], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
     waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: stoneNames(id), minLv: MAP_META[id].minLv || undefined })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
