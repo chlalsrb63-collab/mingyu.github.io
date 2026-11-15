@@ -1775,4 +1775,4 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr)
 #loot { left: calc(var(--vpw) - 10px); top: calc(var(--vph) - 150px); height: 110px; transform: translateX(-100%); z-index: 6; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; gap: 1px; pointer-events: none; }
 #loot p { margin: 0; max-width: min(260px, calc(var(--vpw) * .4)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--t12)/1.35 var(--pix); text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; animation: loot 4s steps(20) forwards; }
 @keyframes loot { 0% { opacity: 0; transform: translateX(10px); } 6% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
-body[data-lay="port"] #loot, body[data-lay="land"] #loot { top: 64px; }
+body[data-lay="port"] #loot, body[data-lay="land"] #loot { top: 60px; height: 84px; }   /* under the menu button, clear of the touch quick slots */
