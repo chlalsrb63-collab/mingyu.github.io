@@ -13,8 +13,8 @@ const COS_SLOT_NAME = { hat: "모자", top: "상의", back: "등", face: "얼굴
 /**
  * id → [wire code, slot, name, rarity 0–4, source, price or achievement id, description].
  * Sources: shop (sold for `price` gold), chest, boss, daily, rift, ach (earned with achievement `price`: the
- * Lv-50 life masters' outfits and the NPCs' 가족 gifts are these), and quest / weekly, which name systems
- * still to come (nothing grants those yet). An optional ninth field is the themed set (COS_SETS).
+ * Lv-50 life masters' outfits and the NPCs' 가족 gifts are these), quest (a chance on every quest hand-in) and weekly
+ * (a chance with a boss challenge's weekly big reward). An optional ninth field is the themed set (COS_SETS).
  * Codes are what the wire carries: never reuse or renumber one.
  */
 const COSMETICS = Object.fromEntries([
@@ -128,6 +128,7 @@ const COSMETICS = Object.fromEntries([
   ["top_scarf", 99, "top", "빨간 목도리", 0, "shop", 900, "한쪽 끝이 길게 늘어진 목도리.", "cute"],
   ["back_plush", 100, "back", "곰 인형 배낭", 1, "shop", 3500, "어깨 너머로 빼꼼 내다보는 곰 인형.", "cute"],
   ["ws_bee", 101, "wskin", "꿀벌 무기 외형", 1, "daily", 0, "노랑과 검정 줄무늬.", "cute"],
+  ["back_batcape", 102, "back", "박쥐 망토", 3, "weekly", 0, "밤장막 박쥐군주의 날개를 본뜬 망토. 펄럭일 때마다 작은 박쥐가 숨는다.", "rift"],
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
 const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근" };
@@ -135,7 +136,7 @@ const COS_IDS = Object.keys(COSMETICS);
 const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
 const COS_ACH = Object.fromEntries(COS_IDS.filter((id) => COSMETICS[id].ach).map((id) => [COSMETICS[id].ach, id]));
 /** The chance a looted chest, or a downed field boss or guardian, holds a cosmetic. */
-const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_RIFT_TOP3 = 0.3;
+const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_RIFT_TOP3 = 0.3, COS_WEEKLY = 0.35, COS_QUEST = 0.12;
 const cosEmpty = () => ({ own: [], on: {} });
 function cosClean(c, ch) {
   const src = isObj(c) ? c : {};

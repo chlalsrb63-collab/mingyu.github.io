@@ -230,7 +230,7 @@ export function campfire() {
 // The chick walks, the bat and the wisp hover (the scene lifts them).
 
 const petCache = {};
-/** Two frames of a pet: `pet_chick`, `pet_bat` or `pet_wisp`. */
+/** Two frames of a pet: `pet_chick`, `pet_bat`, `pet_wisp` or `pet_hagfish`. */
 export function petSheet(kind) {
   if (petCache[kind]) return petCache[kind];
   const frames = [0, 1].map((f) => {
@@ -259,6 +259,17 @@ export function petSheet(kind) {
       r(14, 23, 1, 2, "#1e3a68"); r(18, 23, 1, 2, "#1e3a68");
       return finish(c, g, "#1e4a78", 1);
     }
+    if (kind === "pet_hagfish") {
+      // a little hagfish swimming in the air: an S-curved grey-violet body, a round sucker mouth, dot eyes, a frost-blue fin
+      const B = "#7a6a8a", L = "#a898b8", F = "#8ad0e8", w = f ? 1 : -1;
+      oval(11, 24 - w, 3, 2, B); oval(15, 23, 3.6, 2.6, B); oval(20, 22 + w, 3.4, 2.6, B);
+      tri([[6, 24 - w], [9, 22 - w], [9, 26 - w]], F);
+      oval(15, 24, 2.6, 1.2, L); oval(20, 23 + w, 2.4, 1.2, L);
+      oval(23, 21 + w, 2.2, 2.2, B);
+      r(24, 21 + w, 1, 1, "#e8a0b0"); r(25, 21 + w, 1, 1, "#5a2a3a");
+      r(21, 20 + w, 1, 1, INK);
+      return finish(c, g, "#2e2438", 1);
+    }
     // the chick: a round yellow body, a head with a tuft, a small wing, an orange beak and feet
     const Y = "#ffd84a", O = "#e8a838", up = f ? -1 : 0;
     oval(15, 24 + up, 5.5, 4.2, Y);
@@ -276,7 +287,7 @@ export function petSheet(kind) {
   return (petCache[kind] = frames);
 }
 /** Pets that fly hover this far above their shadow. */
-export const PET_HOVER = { pet_chick: 0, pet_bat: 9, pet_wisp: 7 };
+export const PET_HOVER = { pet_chick: 0, pet_bat: 9, pet_wisp: 7, pet_hagfish: 6 };
 
 const cache = new Map();
 /** `{ front, side, back }`, each a list of frames indexed by FRAME. Side frames face right. */

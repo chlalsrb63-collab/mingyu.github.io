@@ -372,6 +372,7 @@ export function applyAction(S, pid, a) {
         for (const [id, n] of quest.items) { addItem(ch, id, n); p.gain.push(["item", id, n, 0]); }
         ch.q = { i: ch.q.i + 1, n: 0, st: 0 };
         toast(p, `의뢰 완료: ${quest.title}`);
+        if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "의뢰 보상");
         gainXp(S, p, quest.xp);
       }
       p.dirty = true;

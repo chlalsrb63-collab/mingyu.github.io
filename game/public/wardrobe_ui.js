@@ -131,7 +131,7 @@ function srcText(d) {
     shop: `의상실에서 ${d.price.toLocaleString()}G`, chest: "보물 상자를 열면 가끔", boss: "사냥터 우두머리·던전 수문장이 가끔",
     daily: "일일 과제 보상 상자", rift: "균열 침공 1위 (3위 안이면 가끔)",
     ach: ach ? `${ach.desc} (업적 「${ach.name}」)` : `업적 「${d.ach}」 달성`,
-    quest: "의뢰 보상 — 곧 열립니다", weekly: "주간 도전 보상 — 곧 열립니다",
+    quest: "의뢰·퀘스트를 마치면 가끔", weekly: "주간 보스 도전 큰 보상에서 가끔",
   }[d.src] || "";
 }
 /** The catalogue in groups: each themed set (in the catalogue's order), then everything that is in no set. */

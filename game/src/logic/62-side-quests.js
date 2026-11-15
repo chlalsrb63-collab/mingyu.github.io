@@ -110,6 +110,7 @@ function sqApply(S, p, a) {
   if (q.reward.gold) { ch.gold += q.reward.gold; p.gain.push(["gold", q.reward.gold]); }
   for (const [id, n] of q.reward.items) if (addItem(ch, id, n)) p.gain.push(["item", id, n, 0]);
   toast(p, `퀘스트 완료: ${q.title}`);
+  if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "퀘스트 보상");
   if (q.reward.xp) gainXp(S, p, q.reward.xp);
 }
 /** What the quest windows show: [id, state, have, need] for every side quest. */

@@ -218,6 +218,8 @@ function renderText(t) {
     if (mob.hp < max) bar(x, y + 4, d.boss ? 90 : mob.el === 2 ? 70 : 42, mob.hp / max, mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#d8404c");
     // bosses and elites: the HP in numbers, a rift's party/level toughness included (hk, 64-dim.js — damage is divided by it)
     if (d.boss || mob.el) { const k = mob.hk || 1; label(`${Math.ceil(mob.hp * k).toLocaleString()} / ${Math.round(max * k).toLocaleString()}`, x, y + 14, "#f0e0e0", 10); }
+    // a scripted boss's marked cast: the stagger gauge the party must break before it lands (net.js stg)
+    if (mob.bst === 1 && mob.stg) { bar(x, y + 22, 90, mob.stg / 100, "#7ad4ff"); label(`무력화 ${mob.stg}%`, x, y + 32, "#bfeaff", 10); }
   }
   for (const d of G.drops.values()) {
     // the loot filter decides whose names are shown: everything, magic and up, or rare and up

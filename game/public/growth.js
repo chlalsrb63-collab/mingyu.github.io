@@ -110,7 +110,7 @@ export function icons(set) {
     uncurse: scroll("#c8a040", "#fff0b0"),         // 저주 해제 주문서: a gold seal
     ske_stone: scroll("#2a8ab8", "#a8f0ff"),       // 스킬 강화석 (shortcut: a scroll shape, a gem icon when the item gets art)
     sc_atk: scroll("#d84a3a", "#ff9a8a"), sc_def: scroll("#3a6ad8", "#9ab8ff"), sc_xp: scroll("#3aa84a", "#9ae8a0"),
-    feather: feather(), pet_chick: petIcon("pet_chick"), pet_bat: petIcon("pet_bat"), pet_wisp: petIcon("pet_wisp"),
+    feather: feather(), pet_chick: petIcon("pet_chick"), pet_bat: petIcon("pet_bat"), pet_wisp: petIcon("pet_wisp"), pet_hagfish: petIcon("pet_hagfish"),
   };
   for (const id of Object.keys(add)) {
     if (set.cv[id]) continue;

@@ -1021,6 +1021,7 @@ export const ART = {
   hat_wreath_white: ["hat", "wreath", { c: "#f8f8ff", b: "#ffd84a" }],
   top_scarf: ["top", "scarf", { c: "#e0404a", b: "#fff0d0" }],
   back_plush: ["back", "plush", { c: "#c89060", b: "#e0405a" }],
+  back_batcape: ["back", "cape", { c: "#4a1a2e" }],   // shortcut: the plain cape shape in 밤장막 crimson; a scalloped bat-wing hem would read better
   ws_bee: ["wskin", "bee", {}],
 };
 /** The cosmetic slots, in the order the wire sends them. */

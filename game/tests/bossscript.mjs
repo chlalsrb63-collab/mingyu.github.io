@@ -53,7 +53,7 @@ const dcs = () => evs.filter((e) => e[0] === "bc" && e[1] === mob.id).map((e) =>
 // it notices the hero and the fight begins; the wire row ends with phase 1, state 0
 step(3);
 assert.ok(mob.bs && mob.bs.engAt > 0, "the fight is on");
-assert.deepEqual(row().slice(8), [0, 0, 1, 0], "a scripted boss's row: marks, brand, phase, state");
+assert.deepEqual(row().slice(8), [0, 0, 1, 0, 0], "a scripted boss's row: marks, brand, phase, state, stagger gauge");
 // patterns in turn: the volley, then the dive — out of reach, not hit, not aimed at
 while (!mob.dive) { step(); assert.ok(now - mob.bs.engAt < 30000, "a dive comes"); }
 assert.deepEqual(dcs(), [0, 1], "fan2, then the dive");
@@ -69,6 +69,7 @@ assert.ok(Math.hypot(mob.x - spot[0], mob.y - spot[1]) < 2, "it came down on the
 while (!mob.cast) step();
 step();
 assert.equal(row()[11], 1, "casting on the wire");
+assert.equal(row()[12], 100, "the whole stagger gauge on the wire");
 assert.deepEqual(dcs().slice(-1), [9]);
 X.dealMob(S, rt, mob, p, Math.ceil(mob.cast.need), 0);
 assert.ok(!mob.cast && mob.stag > now && mob.stun >= now + B.stunMs - 1, "broken: stunned");

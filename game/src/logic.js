@@ -434,6 +434,7 @@ const ITEMS = {
   pet_chick: { name: "병아리 펫", type: "pet", radius: 56, price: 2500, desc: "사용하면 곁을 따라다니며 내 전리품을 반경 56 안에서 주워 온다. 다시 사용하면 돌려보낸다." },
   pet_bat: { name: "꼬마 박쥐 펫", type: "pet", radius: 76, price: 9000, desc: "사용하면 곁을 따라다니며 내 전리품을 반경 76 안에서 주워 온다. 다시 사용하면 돌려보낸다." },
   pet_wisp: { name: "도깨비불 펫", type: "pet", radius: 96, price: 24000, desc: "사용하면 곁을 따라다니며 내 전리품을 반경 96 안에서 주워 온다. 다시 사용하면 돌려보낸다." },
+  pet_hagfish: { name: "꼬마 먹장어 펫", type: "pet", radius: 104, price: 30000, desc: "꽃무덤 고래에게서 떨어져 나온 꼬마 먹장어. 곁을 따라다니며 내 전리품을 반경 104 안에서 주워 온다. 상점에서는 팔지 않는다." },
 };
 for (const wk of Object.keys(WEAPON_NAMES)) {
   for (let t = 1; t <= 5; t++) {
@@ -443,8 +444,8 @@ for (const wk of Object.keys(WEAPON_NAMES)) {
 }
 // bosses-2 §7: the two field bosses' own finds — a material each (for crafting to come) and a top-tier weapon (drops legendary)
 Object.assign(ITEMS, {
-  mat_bloodtear: { name: "피눈물 결정", type: "mat", price: 400, desc: "혈루 왕도마뱀이 흘린 붉은 결정. 아직 쓰임새를 아는 이가 없다." },
-  mat_clubclaw: { name: "망치 갯가재 집게", type: "mat", price: 380, desc: "물을 끓게 하던 갯가재의 집게. 아직 쓰임새를 아는 이가 없다." },
+  mat_bloodtear: { name: "피눈물 결정", type: "mat", price: 400, desc: "혈루 왕도마뱀이 흘린 붉은 결정. 캉캉대장간에서 강화석 두 개와 함께 축복 강화석으로 굳힐 수 있다." },
+  mat_clubclaw: { name: "망치 갯가재 집게", type: "mat", price: 380, desc: "물을 끓게 하던 갯가재의 집게. 캉캉대장간에서 강철 광석과 함께 홈 송곳으로 벼릴 수 있다." },
   w_bloodcrown: { ...ITEMS.w_lancer_5, name: "혈루 왕관 창", uniq: 1 },
   w_cavhammer: { ...ITEMS.w_h_5, name: "공동 망치", uniq: 1 },
 });
@@ -797,7 +798,7 @@ const MOBS = {
     fan: 150, pool: 30, poolKind: 0, drops: [["veil_h", 0.03], ["veil_a", 0.03], ["veil_r", 0.03], ["veil_n", 0.03], ["w_ribbook", 0.04]] },
   nightbat: { name: "밤장막 흡혈박쥐", sp: "batcluster", tint: "blood", lv: 25, hp: 500, atk: 40, def: 8, spd: 54, xp: 300, gold: [20, 40], aggro: 220, range: 18, cd: 1100, fly: true },
   bloomwhale: { name: "꽃무덤 고래", lv: 50, hp: 60000, atk: 165, def: 52, spd: 30, xp: 90000, gold: [6000, 9000], aggro: 170, range: 34, cd: 1500, boss: true, gear: 1,
-    fan: 160, pool: 34, poolKind: 2, drops: [["bloom_h", 0.025], ["bloom_a", 0.025], ["bloom_r", 0.025], ["bloom_n", 0.025], ["w_whalebow", 0.015], ["w_bloomstaff", 0.015]] },
+    fan: 160, pool: 34, poolKind: 2, drops: [["bloom_h", 0.025], ["bloom_a", 0.025], ["bloom_r", 0.025], ["bloom_n", 0.025], ["w_whalebow", 0.015], ["w_bloomstaff", 0.015], ["pet_hagfish", 0.02]] },
   hagfishhead: { name: "먹장어 머리", sp: "eelknot", tint: "frost", lv: 50, hp: 9000, atk: 150, def: 30, spd: 8, xp: 2000, gold: [60, 120], aggro: 300, range: 76, cd: 1500, shot: true },
   // its phase-2 adds (shortcut: a blood-tinted scorpion stands in for the design's still crystals until they have art)
   bloodshard: { name: "혈루 결정 전갈", sp: "spinescorp", tint: "blood", lv: 41, hp: 1000, atk: 110, def: 20, spd: 40, xp: 420, gold: [20, 40], aggro: 140, range: 19, cd: 1100, slam: 34 },
@@ -1294,6 +1295,9 @@ Object.assign(RECIPES, {
   stone_x2: recipeRow("craft", 10, "craft", [["m_o1", 7], ["m_w1", 2]], "stone", 2, 126, { rep: "kangkang" }),
   stone_b: recipeRow("craft", 20, "craft", [["stone", 3], ["m_o3", 2]], "stone_b", 1, 300),
   punch: recipeRow("craft", 30, "craft", [["m_o4", 3], ["m_w4", 2]], "punch", 1, 2000),
+  // the bosses-2 trophies: 피눈물 결정 (혈루 왕도마뱀) and 망치 갯가재 집게 make the two dear tools a cheaper way
+  stone_b_bt: recipeRow("craft", 20, "craft", [["stone", 2], ["mat_bloodtear", 1]], "stone_b", 1, 200),
+  punch_cc: recipeRow("craft", 25, "craft", [["mat_clubclaw", 2], ["m_o3", 2]], "punch", 1, 1300),
   whet: recipeRow("craft", 50, "craft", [["m_o5", 4], ["m_w5", 2], ["stone_b", 1]], "whet", 1, 5000),
 });
 const ING_FEE = [5, 10, 20, 40, 60];
@@ -11751,6 +11755,7 @@ function sqApply(S, p, a) {
   if (q.reward.gold) { ch.gold += q.reward.gold; p.gain.push(["gold", q.reward.gold]); }
   for (const [id, n] of q.reward.items) if (addItem(ch, id, n)) p.gain.push(["item", id, n, 0]);
   toast(p, `퀘스트 완료: ${q.title}`);
+  if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "퀘스트 보상");
   if (q.reward.xp) gainXp(S, p, q.reward.xp);
 }
 /** What the quest windows show: [id, state, have, need] for every side quest. */
@@ -12398,7 +12403,7 @@ function dimChest(S, dim, p) {
     payout(S, p, r);
     for (let i = 1; i < runes; i++) payout(S, p, { rune: true });
     for (let i = 1; i < gears; i++) payout(S, p, { gear: 1, gearQ: R.gearQ });
-    if (big) { charmChest(S, dim, p); if (!rotating) jfScroll(p, "lvl"); }
+    if (big) { charmChest(S, dim, p); if (!rotating) jfScroll(p, "lvl"); if (cosRoll(S, p, "weekly") < COS_WEEKLY) cosFrom(S, p, "weekly", "주간 보스 도전"); }
     giveX(S, p, big && !rotating ? "big" : carried ? "" : "small");
     msg = big ? "주간 보스 도전 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다."
       : expired ? "지난주 도전의 반복 보상을 받았습니다. 이번 주 보상은 새 보스에게서 받을 수 있습니다."
@@ -13250,8 +13255,8 @@ const COS_SLOT_NAME = { hat: "모자", top: "상의", back: "등", face: "얼굴
 /**
  * id → [wire code, slot, name, rarity 0–4, source, price or achievement id, description].
  * Sources: shop (sold for `price` gold), chest, boss, daily, rift, ach (earned with achievement `price`: the
- * Lv-50 life masters' outfits and the NPCs' 가족 gifts are these), and quest / weekly, which name systems
- * still to come (nothing grants those yet). An optional ninth field is the themed set (COS_SETS).
+ * Lv-50 life masters' outfits and the NPCs' 가족 gifts are these), quest (a chance on every quest hand-in) and weekly
+ * (a chance with a boss challenge's weekly big reward). An optional ninth field is the themed set (COS_SETS).
  * Codes are what the wire carries: never reuse or renumber one.
  */
 const COSMETICS = Object.fromEntries([
@@ -13365,6 +13370,7 @@ const COSMETICS = Object.fromEntries([
   ["top_scarf", 99, "top", "빨간 목도리", 0, "shop", 900, "한쪽 끝이 길게 늘어진 목도리.", "cute"],
   ["back_plush", 100, "back", "곰 인형 배낭", 1, "shop", 3500, "어깨 너머로 빼꼼 내다보는 곰 인형.", "cute"],
   ["ws_bee", 101, "wskin", "꿀벌 무기 외형", 1, "daily", 0, "노랑과 검정 줄무늬.", "cute"],
+  ["back_batcape", 102, "back", "박쥐 망토", 3, "weekly", 0, "밤장막 박쥐군주의 날개를 본뜬 망토. 펄럭일 때마다 작은 박쥐가 숨는다.", "rift"],
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
 const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근" };
@@ -13372,7 +13378,7 @@ const COS_IDS = Object.keys(COSMETICS);
 const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
 const COS_ACH = Object.fromEntries(COS_IDS.filter((id) => COSMETICS[id].ach).map((id) => [COSMETICS[id].ach, id]));
 /** The chance a looted chest, or a downed field boss or guardian, holds a cosmetic. */
-const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_RIFT_TOP3 = 0.3;
+const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_RIFT_TOP3 = 0.3, COS_WEEKLY = 0.35, COS_QUEST = 0.12;
 const cosEmpty = () => ({ own: [], on: {} });
 function cosClean(c, ch) {
   const src = isObj(c) ? c : {};
@@ -15514,6 +15520,7 @@ export function applyAction(S, pid, a) {
         for (const [id, n] of quest.items) { addItem(ch, id, n); p.gain.push(["item", id, n, 0]); }
         ch.q = { i: ch.q.i + 1, n: 0, st: 0 };
         toast(p, `의뢰 완료: ${quest.title}`);
+        if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "의뢰 보상");
         gainXp(S, p, quest.xp);
       }
       p.dirty = true;
@@ -16429,8 +16436,9 @@ export function viewFor(S, pid) {
     // then, only when there is one: the dagger's marks on it, and 1 when it bears a book's brand
     const mk = marksOf(S, mob), br = mob.brand > S.now ? 1 : 0;
     const row = [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || []];
-    // a scripted boss (56-boss-script.js) always carries both, then its phase and 0 · 1 marked cast · 2 dived out of reach
-    if (bsDef(mob)) row.push(mk || 0, br, mob.bs ? mob.bs.ph : 1, mob.dive ? 2 : mob.cast ? 1 : 0);
+    // a scripted boss (56-boss-script.js) always carries both, then its phase, 0 · 1 marked cast · 2 dived out of reach,
+    // and while it casts the stagger gauge still to break (%)
+    if (bsDef(mob)) row.push(mk || 0, br, mob.bs ? mob.bs.ph : 1, mob.dive ? 2 : mob.cast ? 1 : 0, mob.cast ? Math.ceil(100 * (1 - mob.cast.got / mob.cast.need)) : 0);
     else {
       if (mk || br) row.push(mk);
       if (br) row.push(1);

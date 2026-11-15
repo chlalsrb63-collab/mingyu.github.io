@@ -66,6 +66,7 @@ const ITEMS = {
   pet_chick: { name: "병아리 펫", type: "pet", radius: 56, price: 2500, desc: "사용하면 곁을 따라다니며 내 전리품을 반경 56 안에서 주워 온다. 다시 사용하면 돌려보낸다." },
   pet_bat: { name: "꼬마 박쥐 펫", type: "pet", radius: 76, price: 9000, desc: "사용하면 곁을 따라다니며 내 전리품을 반경 76 안에서 주워 온다. 다시 사용하면 돌려보낸다." },
   pet_wisp: { name: "도깨비불 펫", type: "pet", radius: 96, price: 24000, desc: "사용하면 곁을 따라다니며 내 전리품을 반경 96 안에서 주워 온다. 다시 사용하면 돌려보낸다." },
+  pet_hagfish: { name: "꼬마 먹장어 펫", type: "pet", radius: 104, price: 30000, desc: "꽃무덤 고래에게서 떨어져 나온 꼬마 먹장어. 곁을 따라다니며 내 전리품을 반경 104 안에서 주워 온다. 상점에서는 팔지 않는다." },
 };
 for (const wk of Object.keys(WEAPON_NAMES)) {
   for (let t = 1; t <= 5; t++) {
@@ -75,8 +76,8 @@ for (const wk of Object.keys(WEAPON_NAMES)) {
 }
 // bosses-2 §7: the two field bosses' own finds — a material each (for crafting to come) and a top-tier weapon (drops legendary)
 Object.assign(ITEMS, {
-  mat_bloodtear: { name: "피눈물 결정", type: "mat", price: 400, desc: "혈루 왕도마뱀이 흘린 붉은 결정. 아직 쓰임새를 아는 이가 없다." },
-  mat_clubclaw: { name: "망치 갯가재 집게", type: "mat", price: 380, desc: "물을 끓게 하던 갯가재의 집게. 아직 쓰임새를 아는 이가 없다." },
+  mat_bloodtear: { name: "피눈물 결정", type: "mat", price: 400, desc: "혈루 왕도마뱀이 흘린 붉은 결정. 캉캉대장간에서 강화석 두 개와 함께 축복 강화석으로 굳힐 수 있다." },
+  mat_clubclaw: { name: "망치 갯가재 집게", type: "mat", price: 380, desc: "물을 끓게 하던 갯가재의 집게. 캉캉대장간에서 강철 광석과 함께 홈 송곳으로 벼릴 수 있다." },
   w_bloodcrown: { ...ITEMS.w_lancer_5, name: "혈루 왕관 창", uniq: 1 },
   w_cavhammer: { ...ITEMS.w_h_5, name: "공동 망치", uniq: 1 },
 });
@@ -429,7 +430,7 @@ const MOBS = {
     fan: 150, pool: 30, poolKind: 0, drops: [["veil_h", 0.03], ["veil_a", 0.03], ["veil_r", 0.03], ["veil_n", 0.03], ["w_ribbook", 0.04]] },
   nightbat: { name: "밤장막 흡혈박쥐", sp: "batcluster", tint: "blood", lv: 25, hp: 500, atk: 40, def: 8, spd: 54, xp: 300, gold: [20, 40], aggro: 220, range: 18, cd: 1100, fly: true },
   bloomwhale: { name: "꽃무덤 고래", lv: 50, hp: 60000, atk: 165, def: 52, spd: 30, xp: 90000, gold: [6000, 9000], aggro: 170, range: 34, cd: 1500, boss: true, gear: 1,
-    fan: 160, pool: 34, poolKind: 2, drops: [["bloom_h", 0.025], ["bloom_a", 0.025], ["bloom_r", 0.025], ["bloom_n", 0.025], ["w_whalebow", 0.015], ["w_bloomstaff", 0.015]] },
+    fan: 160, pool: 34, poolKind: 2, drops: [["bloom_h", 0.025], ["bloom_a", 0.025], ["bloom_r", 0.025], ["bloom_n", 0.025], ["w_whalebow", 0.015], ["w_bloomstaff", 0.015], ["pet_hagfish", 0.02]] },
   hagfishhead: { name: "먹장어 머리", sp: "eelknot", tint: "frost", lv: 50, hp: 9000, atk: 150, def: 30, spd: 8, xp: 2000, gold: [60, 120], aggro: 300, range: 76, cd: 1500, shot: true },
   // its phase-2 adds (shortcut: a blood-tinted scorpion stands in for the design's still crystals until they have art)
   bloodshard: { name: "혈루 결정 전갈", sp: "spinescorp", tint: "blood", lv: 41, hp: 1000, atk: 110, def: 20, spd: 40, xp: 420, gold: [20, 40], aggro: 140, range: 19, cd: 1100, slam: 34 },
