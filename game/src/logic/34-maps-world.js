@@ -316,8 +316,9 @@ const GEN = {
   forest: { make: wilds, band: [8, 13], stones: 3, cfg: () => ({
     // maps-v2 (references 6 + 3): a mossy gorge — two levels of ledges, the stream in a cliff-sided cut crossed
     // by bridges and fords, tree clusters, and the forgotten temple's courtyard partway in
-    id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 152, h: 102, r: 8.2, warp: 10, wind: 0.6, loops: 0.18, merge: 0.18, cliff: 0.22, gap: 2,
-    tiers: 3, tierOpen: 0.12, ramp: 2, roadW: 3, gorge: { first: 16, every: 30 }, temple: {}, stoneFr: [0.36, 0.8], widen: "TPBRulYAe",
+    id: "forest", name: "속삭임 숲", theme: "forest", bgm: "forest", seed: 33053, w: 160, h: 116, r: 8.2, warp: 10, wind: 0.9, loops: 0.16, merge: 0.18, cliff: 0.22, gap: 2,
+    // (three crossings at any height: more of them, evenly spaced, make the ways across the gorge run straight)
+    tiers: 3, tierOpen: 0.12, ramp: 2, roadW: 3, gorge: { first: 16, every: Math.round(30 * 116 / 102) }, temple: {}, stoneFr: [0.36, 0.8], widen: "TPBRulYAe",
     ground: ":", edge: "P", treeCh: "P", treeCh2: "T", road: "p", shore: null, river: true, lakes: 2, lakeR: 4, vaults: 9, ruins: 5, tpm: 15.5, stair: "crypt",
     walls: [["trees", 0.5], ["bramble", 0.2], ["ruin", 0.12], ["rocks", 0.18]], gates: [["west", "w", 0.5], ["north", "n", 0.86], ["east", "e", 0.7]], exit: "north",
     mobs: ["splitboar", "splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"], pondMob: null, chest: "chest_forest",
