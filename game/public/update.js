@@ -16,6 +16,7 @@ import { moveVector, typing, keys, held, pathTo } from "./input.js";
 import { aimAtPoint, castSkill, usePotion, aimIdx, canStand, attack, nearestNpc, fireNear } from "./actions.js";
 import * as Gather from "./gather.js";
 import * as Board from "./board.js";
+import * as Chores from "./chores.js";
 import { toast, closeWin, isOpen, shown } from "./windows.js";
 import { refreshUi } from "./hud.js";
 
@@ -250,7 +251,9 @@ export function update(dt, t) {
 
   const near = me.dead ? null : nearestNpc();
   // with no NPC by you, a gathering node in reach names itself on the prompt (gather.js)
-  const gat = near ? "" : Gather.label();
+  // a village chore's spot in reach names itself first (chores.js), even beside a villager
+  const cho = Chores.label();
+  const gat = cho || (near ? "" : Gather.label());
   // the 알바 in hand names its step at the right NPC (board.js)
   const jb = near ? Board.promptFor(near) : "";
   if (near !== G.near || gat !== G.gatLabel || jb !== G.jbLabel) {
@@ -259,7 +262,7 @@ export function update(dt, t) {
     const p = $("#prompt");
     p.hidden = !near && !gat;
     p.classList.toggle("jb", !!jb);
-    if (near || gat) { p.textContent = ""; p.append(el("b", "", document.body.classList.contains("touch") ? "▶ " : Keymap.label("interact") + "  "), near ? jb || near.name : gat); }
+    if (near || gat) { p.textContent = ""; p.append(el("b", "", document.body.classList.contains("touch") ? "▶ " : Keymap.label("interact") + "  "), cho || (near ? jb || near.name : gat)); }
     if (moved && !near) { closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); closeWin("job"); closeWin("juana"); if (isOpen("warp")) delete shown.warp; }
     // the stat tab and the job card say what can be done where you stand
     if (moved && (isOpen("char") || isOpen("skill"))) refreshUi();

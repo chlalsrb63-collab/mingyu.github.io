@@ -7,113 +7,242 @@
   "bgm": "willow",
   "safe": true,
   "band": null,
-  "w": 40,
-  "h": 32,
+  "w": 70,
+  "h": 56,
   "ground": [
-    "tt,t...............pp...\"..,.....tt.....",
-    ".t..tt....,........pp.,....\".......tt...",
-    "ttttt.t............pp.,,...\"..,.,tt.tt..",
-    "ttttttt\".,...\",...\"pp....,.,.....tt.tt..",
-    ".ttt,...,....,.....pp............,ttt..t",
-    "ttt...t...........,pp............tttt...",
-    "..,,.,.\"...........pp....,........\"...\".",
-    "\",.....,..\".,......pp..,......,.......,.",
-    "....,,...,...\".....pp.....,........,.,..",
-    "....,...pppppppppppppppppppppppp........",
-    "........pp.........pp.......\".pp........",
-    ".,......pp.........pp.,,......pp........",
-    ".......,pp\".,.\".oooooooo.,...ssssss.....",
-    "....\"\"\",pp.,...oooooooooo,.sswwwwwwss,..",
-    "....\"\"\"\"pp..,,oooooooooooo.swwwwwwwws...",
-    ".,.\"\"\"\",pp\"...oooooooooooobbbbwwwwwws.,.",
-    "....\"\"\".pp....oooooooooooo.swwwwwwwws..,",
-    "....\"\"\".pp....oooooooooooo,sswwwwwwss...",
-    "......\",pp.....oooooooooo....ssssss.....",
-    ".....,..pp.\"....oooooooo......pp...,,...",
-    ".,.,.,\".pp\"......\",pp.........pp,,.....,",
-    "...,....pppppppppppppppppppppppp....,...",
-    "....,,..pp,..,,..,....,..\"....pp........",
-    "..........,.....,..............,..\".,...",
-    "...,.\",\".,,.,............,...\"\".........",
-    "......,.....\".......,........,,.........",
-    ".....,..,..,....,..............,..,..,..",
-    "..........,,..,....,......\".\"...........",
-    "..tt.t...............,..........,,..tt.t",
-    "t..tttt\".,.....,..\"...,...........t,tt,t",
-    ".ttt.t...............,.....,.....ttttttt",
-    "...t.tt.,.....\"..,.\"....\".......\"t,..t,t"
+    ".......,.,......,........,....,.,.pp.....,.....................,......",
+    ".,,...............................pp.......,...........,....,.........",
+    "...::.::::.::::.::.::....:..:,.:::pp.:.::.:,..::::.,::...:..::::::::..",
+    "..,.::rrrr.:.,,t,t:ttt,.....,,,...pp....:.......,:...........::...,...",
+    ",.::rrrrrrrr..tttttt,,,......,.,..pp.rrrrr......,,...........,....::.,",
+    "..:rrrrrrrrrr.tttt,,t,,.....,,,...pp.rrrrr.................,....,.....",
+    "...rrrrrrrrrr.,t,tt,t,t,.....,..,ppp,rrrrr........................::,,",
+    "...rrrrrrrrrr.........,.......,.,pp............rrrrrrrrrrr.,.........,",
+    "..:rrrrrrrrrr...,,,.........,,..ppp............rrrrrrrrrrr.,....,.,.,.",
+    ",...rrrrrrrr,..,......,.........ppppppppppppppprrrrrrrrrrr..,.ssss.:,.",
+    "...:..rrrr.,...................ppp.........,.,,.,...,........swwww:...",
+    "..:...,.rr.....................pp,........,.,...,..,...,.,..swwwwww:..",
+    "..:....,pr.....................pp..........,.,,......,,.,...swwwwww...",
+    "..:.....p,,....,.,....\"\"....\"\".pp........,.,.,,,.,..........,swwww:.,.",
+    ".,:.,..,ppppppppppppppppppppppppp....,...,,,.,..,,..,.,.......swww.:.,",
+    "..:..,,...p....................pp.,......,....,,,,.,,.,.,,....swww:...",
+    "..::,.....p...,........,.......pp...................,,pp,.....swww::..",
+    "......,...p,.,.................ppp....,.......,...,.,.pp,,....swww....",
+    "......,...p,.........,.,.......,pp...........,.,,.....pp,.,..,swww.:..",
+    ".....,....p..,,......,.....,....pp.......,.........,..pp......swwws.,.",
+    "..,.......p..............t,t....ppp..,.,,..........,..pp.......www::..",
+    ",.:,......p,.............,,,..,.,pp........,...,......pp...,..swwws...",
+    "..:,.....pp.......,......ttt.....ppp........rrrrrrrrrrpp....,..www....",
+    ".,::..ppp..,,....................oooo\"\"\"....rrrrrrrrrrp.....,.swww....",
+    "..:,pppppppppppppppppppppppppp,\"\"ooooooo\"\"..rrrrrrrrrr....,..swwwws:.,",
+    "....p.\"\"\"\",...\"\"\"\",......,...,\"ooooooooooo\".rrrrrrrrrr.....,.swwww::..",
+    "..:.p............,...........\"ooooooooooooo\"rrrrrrrrrr,,....swwwws.:..",
+    "..::p.....................,.,ooooooooooooooorrrrrrrrrr.....sswwwws.:..",
+    "..:.p......,.......,.....,,..\"ooooooooooooo\"rrrrrrrrrr....swwwwws.....",
+    "..:.p..,.,..,,...,...,........\"ooooooooooo\",rrrrrrrrrr...swwwwwws..:,.",
+    "...,pppppppppppppppppppppppppp.\"\"ooooooo\"\",.rrrrrr,...sswwwwwwws......",
+    "..:......,....,..........,...,...oooo\"\"\"....rrrrrrs.sswwwwwww.....:...",
+    ".,:.,..........,tttttttt...,....,..pp....,..sssss,wwwwwwwwww.......:..",
+    "..tt,tttt.,.....tttt,,t,.......,...ppsss...wwwwwwwwwwwwwwwss.,...,:...",
+    "..ttt,ttt.......,tt,tttt.......,.s.pbwwwwwwwwwwwwwbwwwwwss,,......,:..",
+    "..tt,,tt,...........,.....,ss.swwwwbbwwwwwwwwwwwwwbwsss.....,..,......",
+    ".,:,,ttt,....,.....,,....s.wwwwwwwwbbwwwwwwwws.sssps.......,.......:..",
+    "...:.,.........p.......,swwwwwwwwwbbbws.sssss,.,..p.,............,,:,.",
+    ",.,:...,.......p.....s.wwwwwwwwww.pp,..,..ttt,tt..p...................",
+    "...,.....s.sssspss.,swwwwwwwws,.s.pp.....,,,tt,t..p..............,,:..",
+    ".,:...,.swwwwwbbwws.swwwwwws......ppp.....tttttt..p......,...........,",
+    "..:...swwwwwwwbbwwwwswwwbss........pp.\"\"\"\".,....,.p.\"\"\"\"........,....,",
+    ",.:..swwwwwwwwbbwwwwwss,p.::::::::.pppppppppppppppppppppppppppppp,.:..",
+    "....swwwwwwwwwbbwwwwww,.p.:::t::::,pp.......,...p.,.............,.....",
+    "..:.swwwwwwwwwwwwwwwww.pp.::::t:::.pp...,.....,.p.................::..",
+    ".,..wwwwwwwwwwwwwwwwwwwsp.t::::::t.pp..,.,..,...p.,.............,..:..",
+    "..:.,wwwwwwwwwwwwwwwwws.pp:::t::t:ppp...........p.........\"\"\"\"........",
+    "...:swwwwwwwwwwwwwwwwws...::::::::.pp.......,,..ppppppppppppppppp.....",
+    ".....swwwwwwwwwwwwwww.....::::::::..,.,,........p.................:..,",
+    ",.....swwwwwwwwwwwww.....,::::t:::..........,,..p........,.........:..",
+    ".,:,...s.wwwwwwwwwss.....,t:::::::..............p..................:..",
+    ".........s.sss.sss...,....:::t:::t.............,p...,.....,....,.....,",
+    "......:..:::..:.::.......:.:...:.::,.......::...ppppppppppppppppp,::..",
+    ",.:..:.::::.,:::....:::::::.:::..,:.:.:.......:,::::.:.::.::.::::..:..",
+    "..,..............,..............,.....,.....,,...........,............",
+    "..,..,,................,.............................................."
   ],
   "objects": [
-    "TTPTTTTTTTTTTTTTTT    TPTTPPTTTTTTTTTTTP",
-    "TTTTTTTPTTTTTTPTPT    TTTTTTTPTPTTTTTTTT",
-    "TT                                    PT",
-    "TT         HH     L  L    HH          TT",
-    "TT    hhhh   hhhh           hhhh      TT",
-    "TT    hhhh   hhhh     G     hhhh      PT",
-    "TT    hhhh   hhhh           hhhh   u  TT",
-    "TT                                    TT",
-    "TT                                  B TT",
-    "PT B                                  TT",
-    "TT                                    TT",
-    "TT                                    TT",
-    "TT FFFFF       L        L             TT",
-    "TT F   F   B                 e    e   TT",
-    "TP F   F                              TT",
-    "PT F   F           T                  TT",
-    "TP F   F                           e  PP",
-    "PT F   F   B                     e    PT",
-    "TP FF FF                              TP",
-    "TT             L        L             TT",
-    "TT  u                                 TT",
-    "TP                                    TT",
-    "TT                                    TT",
-    "TT  hhhh                       hhhh   TP",
-    "TT  hhhh      hhhh      B      hhhh   PT",
-    "TT  hhhh      hhhh             hhhh   TP",
-    "PT          B hhhh        B         B PT",
-    "TT        u      E    u               TP",
-    "PT                                    TT",
-    "PT                                    PT",
-    "TPPTPTPTTTTTTTTPTTTTTPPTTPTTTPTTTTTTPTTP",
-    "TPTTPTTTTTTPTTTTTTTTTTTTTTTPTTTTTPTTTTPT"
+    "TTPPTTPTPPTTTTTTPTTPTTPTTPPTTTPTTP  TPPPTTPPTTTTTPPTPTPPPTTPTPPTPPTPPT",
+    "TTTTTPTTPTPPTTPTTTTPPTTPPTTTTTPPPT  TPTPPTPTTTTPTTPTPTTPPPTTPTTTPPTTTT",
+    "TT PT PRCP TPTTHPPHTPHHH T  T  PTP   T TT P   TTPP  PT   T  TTTTTPPTTT",
+    "TP  CC    CC      T                 G   T        Thhhhh      PP     TT",
+    "TTPC      R C                        ]  ]w hhhh   hhhhh           TPPP",
+    "PPP   aa                         L       w hhhh   hhhhh             PT",
+    "PPC   aa     R                        aa   hhhh   hhhhh           TPTT",
+    "TPC          C            T           T                 ww          TT",
+    "TTP R                                                    ]          PP",
+    "PT R        C                                                      PPT",
+    "PP PRC    RR hhhh  hhhh hhhh            FFFFFFFFFFFFF   FFF       T TT",
+    "TTP    C     hhhh  hhhh hhhh            F                 F        TTP",
+    "TPP          hhhh  hhhh hhhh  L         F  aa      B      F         TT",
+    "TTT        L                            F                 F       R TP",
+    "TTP                                     F      u          F        TPP",
+    "TTT                 L                   F T               FCCCR   CCTP",
+    "PTTT                                    FFFFFFFFFFFFFF  FFFRCRR   CRPP",
+    "PT          T              T                               CCC    CCTP",
+    "PPWWWWWWW   WWWWWWWWWWWWWWWWW      WWWWWWWWWWWWWWWWWW   WWWRCR    CRTT",
+    "TP                      H HH                               CCC    CCTT",
+    "PT   hhhh    hhhh  hhhh                  T                 RCR    CRTT",
+    "TTP  hhhh    hhhh  hhhh                                    CCC    CCPP",
+    "TTP  hhhh    hhhh  hhhh              G      ]  w     L     RCR    CRPP",
+    "PTPP        B     B              v      B    aa  aa                 TT",
+    "TTP                                                 E              PTT",
+    "PP        G                 L L           L L        ]            PTTP",
+    "TTT   hhhh   hhhh    hhhh           aa        kok    w             PPP",
+    "TPPT  hhhh   hhhh    hhhh           aa             aa              TPT",
+    "PTT   hhhh   hhhh    hhhh                    w                      TP",
+    "TPP     L               L     L           L                        PPP",
+    "TT                                          w: --                   PP",
+    "PTP       aa   HH H HHHH        B       B                         R PP",
+    "TTTH HHHH                T     ]&     aa             e             TTT",
+    "TP                                                                P TP",
+    "TP                                          e                    Y TTP",
+    "PT                  T                                        T      TP",
+    "TTT                           e                                 l  PPT",
+    "PP T     u  R                             HHHHRH                   PTT",
+    "PP PY                                   T           hhhh  hhhh      PP",
+    "TP Y                                 G              hhhh  hhhh     TPP",
+    "PTT                                                 hhhh  hhhhaa    TT",
+    "TTR     e          e     FFFFFFFFFF  L                  B           TP",
+    "PTT                      F        F                                TPP",
+    "TT   e                   F aa  aa F            L   hhhh  hhhh       PT",
+    "PTP                      Faaa  aa F  a             hhhh  hhhh     PTTP",
+    "TT                       F        F                hhhh  hhhh B    PTT",
+    "PTP                      F                    T         L           TP",
+    "TP P e               e L F             w                            TT",
+    "PT                       F aa  aa F    ]           hhhh   hhhh    P TP",
+    "TP                       F aa  aa F                hhhh   hhhh     TPP",
+    "TPT                  R   F        F       Y        hhhh   hhhh     TPP",
+    "PT l                    RF        F        Y                L       TT",
+    "TP    Y  TPP  P TPl   u  FFFFFFFFFF     l  TT                     PTPT",
+    "TPP  T TTTP  TTP    TPTPTTT PPP   T T P       T TPTT T TP TT TTTT  TPP",
+    "PPTPTPTTTTTPTTTTTTTPPTTTTTPTPPTTTPPTPTPTTTTPTTTTPTPTPPPTTTTTPPTTTPPPPT",
+    "PPTPTTTTTTPTTTTTPTTPPPPTTPTTPTTTPPTTPPTTTPTPPTPPTTTTTPPPPPTTPPTTTTTPPT"
   ],
-  "entry": [20, 4],
+  "entry": [34, 3],
   "spawns": [],
   "npcs": [
+    {
+      "id": "willow_board",
+      "name": "마을 알바 게시판",
+      "role": "jobs",
+      "x": 33,
+      "y": 23,
+      "look": [
+        0,
+        0,
+        0,
+        "#8a6a3a"
+      ],
+      "lines": [],
+      "thing": true
+    },
+    {
+      "id": "willow_depot",
+      "name": "마을 집하장",
+      "role": "talk",
+      "x": 37,
+      "y": 4,
+      "look": [
+        0,
+        0,
+        0,
+        "#8a6a3a"
+      ],
+      "lines": [
+        "버드나무광장으로 보낼 보급품을 모아 두는 곳이다.",
+        "상자마다 꼬리표가 붙어 있다: 생선, 주먹밥, 목재, 등불 병."
+      ],
+      "thing": true
+    },
+    {
+      "id": "willow_kitchen",
+      "name": "공동 부엌 화덕",
+      "role": "cook",
+      "x": 45,
+      "y": 30,
+      "look": [
+        0,
+        0,
+        0,
+        "#8a6a3a"
+      ],
+      "lines": [],
+      "thing": true
+    },
+    {
+      "id": "willow_repair",
+      "name": "버들의 수리대",
+      "role": "craft",
+      "x": 32,
+      "y": 32,
+      "look": [
+        0,
+        0,
+        0,
+        "#8a6a3a"
+      ],
+      "lines": [],
+      "thing": true
+    },
     {
       "id": "willow_elder",
       "name": "촌장 버들",
       "role": "quest",
-      "x": 18,
-      "y": 13,
-      "look": [5, 0, 0, "#5a8a4a"],
+      "x": 34,
+      "y": 31,
+      "look": [
+        5,
+        0,
+        0,
+        "#5a8a4a"
+      ],
       "lines": [
         "어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?",
-        "이 마을은 작아도 손이 모자라. 도와주면 섭섭지 않게 사례하지."
+        "이 마을은 작아도 손이 모자라. 광장 게시판에 마을 알바가 붙어 있으니 한번 보게나.",
+        "우유 배달, 제초, 전단지, 쓰레기 줍기, 꽃밭 물주기… 다들 자네 같은 일손을 기다리지."
       ]
     },
     {
       "id": "willow_fisher",
       "name": "낚시꾼 갈대",
       "role": "talk",
-      "x": 25,
-      "y": 16,
-      "look": [1, 0, 0, "#3a6a8a"],
+      "x": 15,
+      "y": 43,
+      "look": [
+        1,
+        0,
+        0,
+        "#3a6a8a"
+      ],
       "lines": [
         "쉿… 물고기가 놀라잖아.",
         "연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!",
         "구운 생선은 모닥불에서 요리하면 돼. 든든하지."
-      ]
+      ],
+      "pose": "fish"
     },
     {
       "id": "willow_florist",
       "name": "꽃집 아이 봄이",
       "role": "talk",
       "x": 9,
-      "y": 15,
-      "look": [3, 1, 0, "#d86a9a"],
+      "y": 24,
+      "look": [
+        3,
+        1,
+        0,
+        "#d86a9a"
+      ],
       "lines": [
-        "우리 꽃밭 예쁘지? 울타리 안은 밟으면 안 돼!",
+        "우리 꽃밭 예쁘지? 할머니랑 같이 가꿔!",
+        "우리 강아지 콩떡이 산책 좀 시켜 줄래? 나무 냄새 맡는 걸 제일 좋아해.",
         "버드나무광장 보급상 언니가 우리 꽃을 좋아해."
       ]
     },
@@ -121,26 +250,131 @@
       "id": "willow_bard",
       "name": "음유시인 솔",
       "role": "talk",
-      "x": 22,
-      "y": 25,
-      "look": [2, 3, 0, "#8a6a3a"],
+      "x": 23,
+      "y": 46,
+      "look": [
+        2,
+        3,
+        0,
+        "#8a6a3a"
+      ],
       "lines": [
         "♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪",
         "모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.",
         "북쪽 길로 가면 버드나무광장이야. 거기서 동쪽은 바람초원이고."
       ]
+    },
+    {
+      "id": "willow_dairy",
+      "name": "목장 주인 음메",
+      "role": "talk",
+      "x": 52,
+      "y": 8,
+      "look": [
+        2,
+        0,
+        1,
+        "#4a7aa8",
+        "#f4ecdc",
+        2
+      ],
+      "lines": [
+        "음메~ 우리 목장 우유는 아침에 짜서 아침에 배달해야 제맛이지!",
+        "우유 배달을 맡았으면 여기서 병을 받아 가. 집집마다 우편함에 하나씩 넣으면 돼.",
+        "꾸물대면 우유가 미지근해져! 시간 안에 돌아야 해."
+      ],
+      "pose": "carry"
+    },
+    {
+      "id": "willow_granny",
+      "name": "꽃집 할머니 수국",
+      "role": "talk",
+      "x": 17,
+      "y": 24,
+      "look": [
+        3,
+        0,
+        0,
+        "#9a6ab8",
+        "#e8e0d0",
+        0
+      ],
+      "lines": [
+        "봄이 할미란다. 꽃은 물을 먹고 자라지, 사람은 정을 먹고 자라고.",
+        "꽃밭에 물 주는 걸 도와주겠니? 물뿌리개는 우물이나 연못에서 채우면 된단다."
+      ],
+      "pose": "water"
+    },
+    {
+      "id": "willow_flyer",
+      "name": "전단지 아저씨 팔랑",
+      "role": "talk",
+      "x": 43,
+      "y": 27,
+      "look": [
+        1,
+        2,
+        0,
+        "#c8503a",
+        "#c89a5a",
+        1
+      ],
+      "lines": [
+        "장터 소식이요, 장터 소식! 전단지 붙일 사람 구해요!",
+        "가로등이랑 게시판, 표지판에 한 장씩 붙이면 돼. 바람에 날리지 않게 꾹꾹!"
+      ],
+      "pose": "wave"
+    },
+    {
+      "id": "willow_sweeper",
+      "name": "환경미화원 쓱싹",
+      "role": "talk",
+      "x": 40,
+      "y": 40,
+      "look": [
+        4,
+        1,
+        0,
+        "#e89a2a",
+        "#8a8a8a",
+        0
+      ],
+      "lines": [
+        "길에 떨어진 쓰레기 하나가 마을 인상을 망친다고!",
+        "쓰레기 줍기를 맡으면 길가에 떨어진 걸 주워 줘. 내 눈엔 다 보인다니까."
+      ],
+      "pose": "sweep"
+    },
+    {
+      "id": "willow_farmer",
+      "name": "텃밭 농부 감자",
+      "role": "talk",
+      "x": 36,
+      "y": 47,
+      "look": [
+        0,
+        0,
+        2,
+        "#6a8a3a",
+        "#b07a4a",
+        0
+      ],
+      "lines": [
+        "잡초는 뽑아도 뽑아도 또 나! 텃밭이랑 뒷마당 풀숲 좀 도와줘.",
+        "길게 자란 풀숲이 보이면 거기가 잡초 자리야. 뿌리까지 쏙!"
+      ]
     }
   ],
   "portals": [
     {
-      "x": 19,
+      "x": 34,
       "y": 1,
       "to": "town",
       "tx": 49,
       "ty": 71
     },
     {
-      "x": 20,
+      "x": 35,
       "y": 1,
       "to": "town",
       "tx": 50,
@@ -148,18 +382,271 @@
     }
   ],
   "fires": [
-    [19, 25]
+    [23, 44]
   ],
-  "waypoint": [22, 7],
+  "waypoint": [40, 27, 40, 28],
   "fishing": true,
   "boss": null,
+  "big": [
+    {
+      "t": "fountain",
+      "x": 36,
+      "y": 26
+    },
+    {
+      "t": "prop",
+      "k": "stall",
+      "x": 45,
+      "y": 23,
+      "w": 2,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "stall",
+      "x": 49,
+      "y": 23,
+      "w": 2,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "cart",
+      "x": 51,
+      "y": 27,
+      "w": 2,
+      "h": 1
+    },
+    {
+      "t": "house",
+      "x": 13,
+      "y": 10,
+      "v": 0
+    },
+    {
+      "t": "house",
+      "x": 19,
+      "y": 10,
+      "v": 2
+    },
+    {
+      "t": "house",
+      "x": 24,
+      "y": 10,
+      "v": 1
+    },
+    {
+      "t": "house",
+      "x": 5,
+      "y": 20,
+      "v": 3
+    },
+    {
+      "t": "house",
+      "x": 13,
+      "y": 20,
+      "v": 1
+    },
+    {
+      "t": "house",
+      "x": 19,
+      "y": 20,
+      "v": 0
+    },
+    {
+      "t": "house",
+      "x": 6,
+      "y": 26,
+      "v": 2
+    },
+    {
+      "t": "house",
+      "x": 13,
+      "y": 26,
+      "v": 3
+    },
+    {
+      "t": "house",
+      "x": 21,
+      "y": 26,
+      "v": 1
+    },
+    {
+      "t": "house",
+      "x": 52,
+      "y": 38,
+      "v": 0
+    },
+    {
+      "t": "house",
+      "x": 58,
+      "y": 38,
+      "v": 2
+    },
+    {
+      "t": "house",
+      "x": 51,
+      "y": 43,
+      "v": 3
+    },
+    {
+      "t": "house",
+      "x": 57,
+      "y": 43,
+      "v": 1
+    },
+    {
+      "t": "house",
+      "x": 51,
+      "y": 48,
+      "v": 2
+    },
+    {
+      "t": "house",
+      "x": 58,
+      "y": 48,
+      "v": 0
+    },
+    {
+      "t": "house",
+      "x": 43,
+      "y": 4,
+      "v": 3
+    },
+    {
+      "t": "bld",
+      "k": "barn",
+      "x": 50,
+      "y": 3,
+      "w": 5,
+      "h": 4,
+      "door": "s",
+      "dx": 2,
+      "name": "음메 목장 외양간",
+      "icon": "crate"
+    },
+    {
+      "t": "prop",
+      "k": "cart",
+      "x": 43,
+      "y": 12,
+      "w": 2,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "lookout",
+      "x": 6,
+      "y": 5,
+      "w": 2,
+      "h": 2
+    },
+    {
+      "t": "prop",
+      "k": "garden",
+      "x": 27,
+      "y": 43,
+      "w": 2,
+      "h": 2
+    },
+    {
+      "t": "prop",
+      "k": "garden",
+      "x": 31,
+      "y": 43,
+      "w": 2,
+      "h": 2
+    },
+    {
+      "t": "prop",
+      "k": "garden",
+      "x": 27,
+      "y": 48,
+      "w": 2,
+      "h": 2
+    },
+    {
+      "t": "prop",
+      "k": "garden",
+      "x": 31,
+      "y": 48,
+      "w": 2,
+      "h": 2
+    },
+    {
+      "t": "prop",
+      "k": "well",
+      "x": 37,
+      "y": 44,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "laundry",
+      "x": 62,
+      "y": 40,
+      "w": 2,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "laundry",
+      "x": 10,
+      "y": 31,
+      "w": 2,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "bench",
+      "x": 38,
+      "y": 32,
+      "w": 2,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "bench",
+      "x": 26,
+      "y": 44,
+      "w": 2,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "cart",
+      "x": 38,
+      "y": 6,
+      "w": 2,
+      "h": 1
+    }
+  ],
   "marks": [
     {
-      "x": 22,
-      "y": 5,
+      "x": 36,
+      "y": 3,
       "kind": "sign",
       "label": "↑ 버드나무광장",
       "to": "town"
+    },
+    {
+      "x": 37,
+      "y": 22,
+      "kind": "sign",
+      "label": "← 마을 길 · 목장 ↗ · 장터 →"
+    },
+    {
+      "x": 37,
+      "y": 39,
+      "kind": "sign",
+      "label": "← 연못 · 텃밭 · 남쪽 마을 →"
+    },
+    {
+      "x": 10,
+      "y": 25,
+      "kind": "sign",
+      "label": "봄이네 꽃밭"
     }
   ]
 }

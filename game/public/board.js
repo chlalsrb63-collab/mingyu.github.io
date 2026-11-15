@@ -34,8 +34,10 @@ const HOME = {
   guard: "town", story: "town", diner_reg1: "juju_diner", diner_reg2: "juju_diner", store_kong: "general_store",
   inn_toto: "starlight_inn", inn_lira: "starlight_inn", hall_pipi: "owl_library", cafe_lumi: "tales_cafe", cafe_somi: "tales_cafe",
   merc_mimi: "merc_office", willow_bard: "willow", forge_tong: "kangkang_forge",
+  // 버드나무 마을's chore givers (H10)
+  willow_dairy: "willow", willow_granny: "willow", willow_flyer: "willow", willow_sweeper: "willow", willow_farmer: "willow",
 };
-const KIND = { bring: ["가져오기", "#9be05a"], make: ["만들기", "#c8c8d8"], fish: ["낚시", "#8ad8ff"], deliver: ["배달", "#e2c486"], hunt: ["사냥", "#ff8a7a"], scout: ["정찰", "#b9a2ff"] };
+const KIND = { bring: ["가져오기", "#9be05a"], make: ["만들기", "#c8c8d8"], fish: ["낚시", "#8ad8ff"], deliver: ["배달", "#e2c486"], hunt: ["사냥", "#ff8a7a"], scout: ["정찰", "#b9a2ff"], chore: ["마을 알바", "#7ad8a0"] };
 /** Board v2 grade tags: 쉬움 · 보통 · 어려움 (names from defs.life.jbGrade). */
 const GRADE_BG = ["#9be05a", "#ffd36a", "#ff8a6a"];
 const WHEN = { night: "밤 한정", rain: "비 오는 날" };
@@ -47,12 +49,18 @@ window.__board = st;
 
 const D = () => G.defs && G.defs.life;
 const J = (id) => (D() && D().jb[id]) || null;
-/** The job in hand: { id, prog, n (graded need), secs (parcel), urg (긴급 secs, -1 missed), got (hunt kills / scout 0-1), t } or null. */
+/**
+ * The job in hand: { id, prog, n (graded need), secs (parcel, timed chore), urg (긴급 secs, -1 missed), got (hunt kills /
+ * scout 0-1 / chore acts), spots (a chore's [[x, y, done]…]), fill (acts carried), t } or null.
+ */
 export function active(s = G.self) {
   const a = s && s.jb && s.jb[3];
   if (!a || !J(a[0])) return null;
-  return { id: a[0], prog: a[1], n: a[2], secs: a[3], urg: a[4] || 0, got: a[5] || 0, t: J(a[0]) };
+  return { id: a[0], prog: a[1], n: a[2], secs: a[3], urg: a[4] || 0, got: a[5] || 0, spots: a[6] || null, fill: a[7] || 0, t: J(a[0]) };
 }
+const chOf = (a) => (a && a.t.kind === "chore" && D().chores[a.t.job]) || null;
+/** A timed chore on its clock (the milk): the countdown bar, like a parcel. */
+const onClock = (a) => !!(chOf(a) && chOf(a).timed && a.fill > 0 && a.secs > 0);
 const mobName = (k) => ((G.defs.mobs || {})[k] || { name: k }).name;
 const mapName = (id) => ((G.defs.maps || []).find((x) => x.id === id) || { name: id }).name;
 /** The offer row's grade for a job in hand (the grade lives in the day's offers). */
@@ -75,6 +83,7 @@ function nextStep(a) {
   if (a.t.kind === "deliver") return a.prog === 1 ? { npc: a.t.to, verb: "꾸러미 전하기" } : { npc: a.t.npc, verb: "꾸러미 받기" };
   if (a.t.kind === "hunt") return { npc: a.t.npc, verb: "토벌 보고하기" };
   if (a.t.kind === "scout") return { npc: a.t.npc, verb: "정찰 보고하기" };
+  if (a.t.kind === "chore") return a.got < a.n && chOf(a).src === "npc" && !a.fill ? { npc: a.t.npc, verb: `${chOf(a).name} 시작하기` } : { npc: a.t.npc, verb: "알바 보고하기" };
   return { npc: a.t.npc, verb: `${itemName(a.t.item)} 전하기` };
 }
 /** Hand-in progress of the job in hand: [label, have, need] (null for deliveries). */
@@ -82,6 +91,7 @@ function progOf(s, a) {
   if (a.t.kind === "deliver") return null;
   if (a.t.kind === "hunt") return [mobName(a.t.mob), a.got, a.n];
   if (a.t.kind === "scout") return [`${mapName(a.t.map[Math.min(gradeOf(s, a.id), a.t.map.length - 1)])} 다녀오기`, a.got, 1];
+  if (a.t.kind === "chore") return [chOf(a).name, a.got, a.n];
   return [itemName(a.t.item), have(s, a.t.item), a.n];
 }
 /** What F does beside NPC `n` for the job in hand: { a, label } or null. */
@@ -91,6 +101,7 @@ function ready(s, n) {
   const nx = nextStep(a);
   if (n.id !== nx.npc) return null;
   if (a.t.kind === "deliver") return a.prog === 1 ? { a: "give", label: "꾸러미 전하기" } : { a: "pick", label: "꾸러미 받기" };
+  if (a.t.kind === "chore" && a.got < a.n && chOf(a).src === "npc" && !a.fill) return { a: "pick", label: nx.verb };
   const pr = progOf(s, a);
   if (pr[1] < pr[2]) return null;
   return { a: "give", label: a.t.item ? `${itemName(a.t.item)} ×${a.n} 전하기` : nx.verb };
@@ -117,7 +128,7 @@ const nearPopo = () => !!(G.map && G.me && G.map.npcs.some((n) => n.role === "jo
 export function open() { if (!D() || !D().jb) return false; openWin("board"); return true; }
 export function key() {
   const s = G.self, a = active(s);
-  return [s.jb && [s.jb[0], s.jb[1], s.jb[2], s.jb[3] && [...s.jb[3].slice(0, 3), Math.sign(s.jb[3][4] || 0), s.jb[3][5]]], s.rep, nearPopo(), a && a.t.item ? have(s, a.t.item) : 0, G.map && G.map.id];
+  return [s.jb && [s.jb[0], s.jb[1], s.jb[2], s.jb[3] && [...s.jb[3].slice(0, 3), Math.sign(s.jb[3][4] || 0), s.jb[3][5], s.jb[3][7]]], s.rep, nearPopo(), a && a.t.item ? have(s, a.t.item) : 0, G.map && G.map.id];
 }
 export function render(s) {
   const box = $("#board-body");
@@ -148,7 +159,7 @@ export function render(s) {
     // what this grade asks: more items / monsters, a further map, a tighter clock
     const ask = kind === "deliver" ? (g ? `제한 시간 ×${D().jbGrade.lim[g]}` : "")
       : kind === "scout" && t ? `목적지: ${mapName(t.map[Math.min(g, t.map.length - 1)])}`
-      : kind === "hunt" && t ? `${mobName(t.mob)} ${need}마리` : t && t.item ? `${itemName(t.item)} ×${need}` : "";
+      : kind === "hunt" && t ? `${mobName(t.mob)} ${need}마리` : kind === "chore" && t ? `${D().chores[t.job].spot} ${need}곳 · 버드나무 마을` : t && t.item ? `${itemName(t.item)} ×${need}` : "";
     if (ask || rush) card.append(el("small", "where", [ask, rush ? `${rush}분 안에 끝내면 보수 ×${D().jbRush.bonus} (늦어도 기본 보수)` : ""].filter(Boolean).join(" · ")));
     const ft = el("div", "df");
     const pay = el("small", "pay");
@@ -160,7 +171,7 @@ export function render(s) {
     if (fin) card.append(el("small", "ok", "오늘 끝낸 알바입니다"));
     else if (mine) card.append(el("small", "ok", "맡은 알바입니다"));
     else {
-      const why = a ? "이미 맡은 알바가 있습니다" : done.length >= per ? `알바는 하루에 ${per}개까지입니다` : !near ? "포포 곁에서 맡을 수 있습니다" : "";
+      const why = a ? "이미 맡은 알바가 있습니다" : done.length >= per ? `알바는 하루에 ${per}개까지입니다` : !near ? "포포나 마을 알바 게시판 곁에서 맡을 수 있습니다" : "";
       const btns = el("div", "btns"), b = el("button", "btn gold", "맡기");
       b.disabled = !!why;
       if (why) b.title = why;
@@ -306,15 +317,15 @@ export function tick(t) {
   if (!st.hooked) { S3.hooks.push(drawParcels); st.hooked = true; }
   if (s.jb !== st.ref) {
     st.ref = s.jb;
-    const a = active(s), secs = delivering(a) ? a.secs : a && a.urg > 0 ? a.urg : 0;
+    const a = active(s), secs = delivering(a) || onClock(a) ? a.secs : a && a.urg > 0 ? a.urg : 0;
     if (secs > 0) { if (st.id !== a.id) st.full = 0; st.id = a.id; st.until = t + secs * 1000; st.full = Math.max(st.full, secs * 1000); }
     else { st.until = 0; st.full = 0; }
   }
   // the same bar counts down a parcel or a 긴급 job
   const box = $("#dl"), a = st.until > t && active(s);
-  if (!a || !(delivering(a) || a.urg > 0)) { if (box && !box.hidden) box.hidden = true; return; }
+  if (!a || !(delivering(a) || onClock(a) || a.urg > 0)) { if (box && !box.hidden) box.hidden = true; return; }
   const left = st.until - t, secs = Math.ceil(left / 1000);
-  const name = delivering(a) ? `배달 — ${npcLabel(a.t.to)}에게 · ${secs}초` : `긴급 알바 — ${npcLabel(a.t.npc)} · ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+  const name = delivering(a) ? `배달 — ${npcLabel(a.t.to)}에게 · ${secs}초` : onClock(a) ? `${chOf(a).name} — ${chOf(a).spot} ${a.fill}곳 · ${secs}초` : `긴급 알바 — ${npcLabel(a.t.npc)} · ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
   if (box.hidden) box.hidden = false;
   if ($("#dl-name").textContent !== name) $("#dl-name").textContent = name;
   box.classList.toggle("late", left < 10000);

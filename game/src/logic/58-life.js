@@ -144,11 +144,13 @@ function lifeSheetClean(ch) {
     ch.life = l;
   }
   const jb = isObj(ch.jobBoard) ? ch.jobBoard : {};
-  const done = Array.isArray(jb.done) ? [...new Set(jb.done.filter((id) => typeof id === "string" && Object.hasOwn(JB, id)))].slice(0, 3) : [];
+  const done = Array.isArray(jb.done) ? [...new Set(jb.done.filter((id) => typeof id === "string" && Object.hasOwn(JB, id)))].slice(0, JB_PAY.perDay) : [];
   const a = isObj(jb.active) ? jb.active : null;
   const active = a && typeof a.id === "string" && Object.hasOwn(JB, a.id) && typeof a.npc === "string" && Object.hasOwn(NPC_MAP, a.npc)
     // a parcel is never saved: a delivery loaded mid-way goes back to "pick it up"
-    ? (JB[a.id].kind === "deliver" ? { id: a.id, npc: a.npc, prog: 0, expAt: 0 } : { id: a.id, npc: a.npc, prog: Math.max(0, a.prog | 0), expAt: Math.max(0, num(a.expAt) ? Math.floor(a.expAt) : 0) })
+    ? (JB[a.id].kind === "deliver" ? { id: a.id, npc: a.npc, prog: 0, expAt: 0 }
+      // a chore keeps the spots done; what was carried (milk, the leash, water) is not saved, so its clock stops too
+      : JB[a.id].kind === "chore" ? choreClean(ch, Math.max(0, jb.day | 0), a) : { id: a.id, npc: a.npc, prog: Math.max(0, a.prog | 0), expAt: Math.max(0, num(a.expAt) ? Math.floor(a.expAt) : 0) })
     : null;
   ch.jobBoard = { day: Math.max(0, jb.day | 0), done, active };
   const rep = {};
@@ -382,7 +384,7 @@ const jbQual = (ch, t) => (t.kind === "hunt" ? ch.lvl : ch.life[t.sk].lv) >= t.l
  */
 function jbOffers(ch, day) {
   const box = { seed: strHash(`${ch.name}:${day}:jb`) | 0 };
-  const pool = Object.keys(JB).filter((id) => !JB[id].when && jbQual(ch, JB[id]));
+  const pool = Object.keys(JB).filter((id) => !JB[id].when && JB[id].kind !== "chore" && jbQual(ch, JB[id]));
   const out = [], kinds = new Set();
   while (out.length < JB_PAY.offers && pool.length) {
     const fresh = pool.filter((id) => !kinds.has(JB[id].kind)), from = fresh.length ? fresh : pool;
@@ -391,6 +393,9 @@ function jbOffers(ch, day) {
     out.push(id);
     kinds.add(JB[id].kind);
   }
+  // and JB_PAY.chores of 버드나무 마을's chores (H10), each a different one
+  const chores = Object.keys(JB).filter((id) => JB[id].kind === "chore" && jbQual(ch, JB[id]));
+  for (let i = 0; i < JB_PAY.chores && chores.length; i++) out.push(chores.splice(ri(box, 0, chores.length - 1), 1)[0]);
   return out;
 }
 /** The town's situation now: "night", "rain" (either, both or none). */
@@ -415,7 +420,7 @@ function jbRoll(ch, day, id) {
   const box = { seed: strHash(`${ch.name}:${day}:${id}:g`) | 0 }, t = JB[id], O = JB_GRADE.odds;
   let r = rnd(box) * O.reduce((a, b) => a + b, 0), g = 0;
   while (g < O.length - 1 && r >= O[g]) { r -= O[g]; g++; }
-  const urgent = t.kind !== "deliver" && (t.rush > 0 || ri(box, 1, JB_RUSH.odds) === 1);
+  const urgent = t.kind !== "deliver" && !(t.kind === "chore" && CHORES[t.job].timed) && (t.rush > 0 || ri(box, 1, JB_RUSH.odds) === 1);
   return { g, rush: urgent ? t.rush || JB_RUSH.min : 0 };
 }
 /** What the job needs by its grade: items or monsters (n × grade, rounded up), or 0 (deliveries, scouting). */
@@ -647,6 +652,8 @@ function lifeValidate(S, p, a) {
         return OK;
       }
       if (a.a === "drop") return act ? OK : bad("맡은 알바가 없습니다");
+      if (t && t.kind === "chore" && (a.a === "pick" || a.a === "do" || a.a === "give")) return choreValidate(S, p, a, act);
+      if (a.a === "do") return bad("맡은 마을 알바가 없습니다");
       if (a.a === "pick") {
         if (!t || t.kind !== "deliver") return bad("맡은 배달이 없습니다");
         if (act.prog !== 0) return bad("이미 꾸러미를 받았습니다");
@@ -712,13 +719,15 @@ function lifeApply(S, p, a) {
         const t = JB[a.id], { g, rush } = jbRoll(ch, jb.day, a.id);
         // a hunt keeps the kill count it starts from in `prog`; 긴급 keeps its deadline in `expAt`
         jb.active = { id: a.id, npc: t.npc, prog: t.kind === "hunt" ? ch.mk[t.mob] | 0 : 0, expAt: rush ? now + rush * 60000 : 0 };
+        if (t.kind === "chore") Object.assign(jb.active, { got: 0, fill: 0 });
         p.jbSeen = 0; p.jbLate = 0;
         toast(p, `[${JB_GRADE.name[g]}${rush ? ` · 긴급 ${rush}분` : ""}] 알바를 맡았습니다: ${t.text}`);
       } else if (a.a === "drop") {
         if (p.parcel) { p.parcel = null; p.stc = null; }
         jb.active = null;
         toast(p, "알바를 그만두었습니다.");
-      } else if (a.a === "pick") {
+      } else if (JB[jb.active.id].kind === "chore" && a.a !== "give") choreApply(S, p, a, jb.active);
+      else if (a.a === "pick") {
         const t = JB[jb.active.id], limit = jbLimit(jb.active.id, jbRoll(ch, jb.day, jb.active.id).g);
         p.parcel = { id: jb.active.id, from: t.npc, to: t.to, until: now + limit, limit };
         p.stc = null;
@@ -746,6 +755,7 @@ function lifeTick(S, p, now) {
     else if (!g.sent && now >= g.tapAt) { g.sent = true; S.maps[p.map].ev.push(["gt", p.eid, NODE.tap]); }
   }
   if (p.parcel && (p.dead || now > p.parcel.until)) jbFail(S, p);
+  choreTick(S, p, now);
   jbWatch(S, p, now);
   if (p.ng) for (const id of Object.keys(p.ng)) {
     const o = p.ng[id];
@@ -776,7 +786,7 @@ function jbWatch(S, p, now) {
       }
     }
   }
-  if (t && t.kind !== "deliver" && a.expAt && now > a.expAt && p.jbLate !== a.expAt) {
+  if (t && t.kind !== "deliver" && !(t.kind === "chore" && CHORES[t.job].timed) && a.expAt && now > a.expAt && p.jbLate !== a.expAt) {
     if (p.jbLate !== undefined) toast(p, "긴급 시간이 지났습니다. 지금 마쳐도 기본 보수는 받습니다.");
     p.jbLate = a.expAt;
     p.dirty = true;
@@ -789,15 +799,18 @@ function jbWatch(S, p, now) {
 
 /**
  * self.jb: [day, offers [[id, kind, npc name, text, gold, skill index, grade, need n, 긴급 minutes]…], done ids,
- * active ? [id, prog, need n, parcel secs left, 긴급 secs left (0 none, -1 missed), done so far (hunt kills, scout 0/1)] : 0].
+ * active ? [id, prog, need n, parcel secs left (a timed chore's too), 긴급 secs left (0 none, -1 missed), done so far (hunt kills,
+ * scout 0/1, chore acts), …a chore's spots [[x, y, done]…] and acts carried (59-chores.js choreView)] : 0].
  */
 function jbView(p) {
   const ch = p.ch, day = ch.jobBoard.day, offers = jbOffersOf(p.S, p), a = ch.jobBoard.active, now = p.S.now;
-  const ar = a && jbRoll(ch, day, a.id), at = a && JB[a.id];
+  const ar = a && jbRoll(ch, day, a.id), at = a && JB[a.id], timed = at && at.kind === "chore" && CHORES[at.job].timed && a.fill > 0;
   return [day, offers.map((id) => { const t = JB[id], r = jbRoll(ch, day, id); return [id, t.kind, npcName(t.npc), t.text, jbGold(ch, t, r.g), LIFE.indexOf(t.sk), r.g, jbNeed(t, r.g), r.rush]; }),
-    ch.jobBoard.done.slice(), a ? [a.id, a.prog, jbNeed(at, ar.g), p.parcel ? Math.max(0, Math.ceil((p.parcel.until - now) / 1000)) : 0,
-      a.expAt && at.kind !== "deliver" ? (now <= a.expAt ? Math.max(1, Math.ceil((a.expAt - now) / 1000)) : -1) : 0,
-      at.kind === "hunt" ? Math.min(jbNeed(at, ar.g), jbKills(ch, a)) : at.kind === "scout" ? Math.min(1, a.prog) : 0] : 0];
+    ch.jobBoard.done.slice(), a ? [a.id, a.prog, jbNeed(at, ar.g),
+      p.parcel ? Math.max(0, Math.ceil((p.parcel.until - now) / 1000)) : timed ? Math.max(0, Math.ceil((a.expAt - now) / 1000)) : 0,
+      a.expAt && at.kind !== "deliver" && !timed ? (now <= a.expAt ? Math.max(1, Math.ceil((a.expAt - now) / 1000)) : -1) : 0,
+      at.kind === "hunt" ? Math.min(jbNeed(at, ar.g), jbKills(ch, a)) : at.kind === "scout" ? Math.min(1, a.prog) : at.kind === "chore" ? a.prog : 0,
+      ...choreView(ch, a)] : 0];
 }
 /** self.rep: [[npcId, trust]…] (only NPCs above 0). */
 const repView = (ch) => Object.keys(ch.rep).map((id) => [id, ch.rep[id]]);
@@ -823,7 +836,7 @@ function lifeDefs() {
     nodes: { kinds: NODE_KINDS, names: NODE_NAME, cd: NODE.cd, ch: NODE.ch, range: NODE.range, tap: NODE.tap },
     mg: MG, craft: CRAFT, bless: ENH_BLESS, gearCraft: { q: GEAR_CRAFT.q },
     jb: Object.fromEntries(Object.keys(JB).map((id) => [id, { ...JB[id], npcName: npcName(JB[id].npc), toName: JB[id].to ? npcName(JB[id].to) : "" }])),
-    jbPay: JB_PAY, jbGrade: JB_GRADE, jbRush: JB_RUSH,
+    jbPay: JB_PAY, jbGrade: JB_GRADE, jbRush: JB_RUSH, chores: CHORES, chore: { map: CHORE_MAP, range: CHORE.range, src: CHORE.src },
     rep: { tier: REP_TIER, name: REP_NAME, disc: REP_DISC, tip: REP_TIP, perk: REP_PERK },
     pouch: { max: POUCH_MAX, ids: Object.keys(ITEMS).filter(pouchOk) },
     master: LIFE_MASTER,
