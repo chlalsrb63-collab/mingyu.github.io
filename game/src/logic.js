@@ -7097,6 +7097,11 @@ function canFly(m, x, y) {
 }
 
 const doorName = (m) => (m.minLv ? `${m.name} · Lv.${m.minLv} 전용` : m.band ? `${m.name} Lv.${shownLv(m.band[0])}–${shownLv(m.band[1])}` : m.name);
+/** One [kind, tx, ty] per spawn area (its centre), chests left out; kinds with many areas keep each. */
+function spawnHints(m) {
+  return (m.spawns || []).filter((sp) => MOBS[sp.k] && !MOBS[sp.k].chest && sp.r)
+    .map((sp) => [sp.k, Math.round((sp.r[0] + sp.r[2]) / 2), Math.round((sp.r[1] + sp.r[3]) / 2)]);
+}
 function mapPayload(m) {
   // (a house's turns and floor, the town's "내 집" door: 64-housing.js homeWire)
   return homeWire(m, {
@@ -7113,6 +7118,8 @@ function mapPayload(m) {
     zq: m.zq || null,
     // gathering nodes [kind 0 herb · 1 ore · 2 wood, grade 1–5, tx, ty] (life skills, 58-life.js lifeNodes)
     nodes: lifeNodes(m),
+    // where each monster kind lives, [kind, tx, ty] spawn-area centres (tiles): the tracker walks there when none is in sight
+    sp: spawnHints(m),
     // the art of the reworked maps (maps-v2 C), only on maps that have it: map art, no rules
     ...artWire(m),
   });

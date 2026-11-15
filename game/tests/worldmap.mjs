@@ -49,6 +49,12 @@ for (const id of ["town", "willow", "meadow"]) {
   const expected = D.maps.find(d => d.id === id).to.filter(to => chart.nodes.get(to)?.d.kind === "in");
   assert.deepEqual(buildings.map(b => b.id).sort(), expected.sort(), id);
   for (const b of buildings) assert.ok(b.tiles.every(([x, y]) => map.portals.some(q => q.door && q.x === x && q.y === y)), b.id);
+  // the tracker's spawn hints: every hunted kind of a hunting ground has an area centre inside the map, no chests
+  if (id === "meadow") {
+    assert.ok(map.sp.length > 0);
+    for (const [k, x, y] of map.sp) assert.ok(D.mobs[k] && !D.mobs[k].chest && x >= 0 && y >= 0 && x < map.w && y < map.h, `${k} ${x},${y}`);
+    for (const k of D.maps.find(d => d.id === id).mobs.filter(k => !D.mobs[k].boss && !D.mobs[k].chest)) assert.ok(map.sp.some(([s]) => s === k), `meadow hint for ${k}`);
+  } else assert.ok(Array.isArray(map.sp));
 }
 const portalMaps = [
   { id: "village", kind: "town", to: ["hall"], doors: [[1, 2, "hall"]] },

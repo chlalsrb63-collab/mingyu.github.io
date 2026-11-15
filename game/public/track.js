@@ -72,7 +72,14 @@ function goalPoint(t) {
     const seen = [...G.mobs.values()].filter((e) => e.k === t.id && e.hp > 0).map((e) => [e.x, e.y]);
     if (G.defs.mobs[t.id]?.boss && G.fb) seen.push(...G.fb);
     for (const [x, y] of seen) { const d = dist(G.me.x, G.me.y, x, y); if (d < bd) { bd = d; best = { x, y }; } }
-    return best && { ...best, r: 6 * T, moving: true };
+    if (best) return { ...best, r: 6 * T, moving: true };
+    // none in sight: walk to the nearest area it spawns in (map.sp, tiles); once there, the pack comes into view
+    for (const [k, tx, ty] of m.sp || []) {
+      if (k !== t.id) continue;
+      const x = tx * T + 8, y = ty * T + 8, d = dist(G.me.x, G.me.y, x, y);
+      if (d < bd) { bd = d; best = { x, y }; }
+    }
+    return best && { ...best, r: 4 * T, moving: true };
   }
   if (t.k === "fire") {
     let best = null, bd = Infinity;
