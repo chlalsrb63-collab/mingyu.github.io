@@ -25,6 +25,7 @@ import { G, $, clamp, VP, el } from "./state.js";
 import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
+import * as Chores from "./chores.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
 import * as Trophies from "./trophies.js";
@@ -304,6 +305,7 @@ export function hudTick(t) {
   skyTick(t);
   castBar(t);
   Board.tick(t);                                    // a parcel's countdown (board.js)
+  Chores.tick();                                    // the village chore's spots (chores.js)
   if (isOpen("daily")) tickDaily(t);
   const s = G.self;
   if (!s) return;
