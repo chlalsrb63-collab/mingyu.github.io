@@ -15,6 +15,10 @@ Goal (owner): one character can eventually play every job. Builds on Codex's job
 6. **Lv.150+**: a separate quest from the 전직 교관 unlocks **1 off-job passive** slot (a passive of another job the
    character has unlocked/played).
 
+7. **Active skill enhancement** (owner, 2026-11-15; separate task AFTER the job-freedom rules): each active skill can be
+   enhanced up to **+10** with a dedicated **스킬강화 아이템**. Content for very hardcore players — rare material, steep
+   curve. Not built yet; success rates / failure rules / effect per step still to be proposed to the owner.
+
 ## Open (decide while building, report to the owner)
 - Exact gold costs and scroll drop rates; whether the loadout is saved per job (recommended: yes).
 - Per-job special gauge (HUD slot exists, `JOB_GAUGES` in `hud.js`): what fills/spends it — owner or Codex designs.
