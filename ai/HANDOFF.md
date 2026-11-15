@@ -5,6 +5,49 @@ Development is **local first**: work and test on the PC; the owner decides when 
 Read this, `AGENTS.md` (loaded), `ai/BRIEF.md`, `docs/design/README.md`, `docs/systems/README.md`; then continue.
 Reply to the owner in Korean; they want reports **with screenshots** ("다 끝나면 화면과 함께 알려줘").
 
+## 0. Token budget — owner's order: "토큰 소모량을 줄이도록 해" (2026-11-15)
+
+The previous integrator session hit the 5-hour limit twice: its own context grew to 750k tokens and every
+agent notification re-read it, while 6–7 agents of 120k–400k tokens each ran at once. Rules from now on:
+1. **Keep the integrator session short.** When its context passes ~250k tokens, update this file and continue in a
+   fresh session. Don't re-read big files or screenshots you already summarised.
+2. **At most 2–3 agents at a time**, each scoped to ≤ ~100k tokens (≤ ~80 tool calls). Split bigger work.
+3. **Never run two agents on the same files** (map generators `30/32/34`, `10-tables.js`, HUD `hud.*`/`windows.js`,
+   `70/75/90`): sequence them. Conflicts cost a whole rebase agent.
+4. **Model by job** (`ai/BRIEF.md`): art, data rows, docs, reviews, mechanical ports → `model: "sonnet"` (pure
+   text/data → `"haiku"`); rule cores, integration, design → default. Small well-specified items → Codex via `ai/TASKS.md`.
+5. Agents: reuse the main checkout's `node_modules` via a junction instead of `npm install`; relevant tests while
+   working, the full suite once at the end; ≤ 3 screenshots; reports ≤ 15 lines.
+6. Unused MCP servers/plugins (Unity, Summer Engine, Higgsfield, Notion, PixelLab, Blender…) add ~25k tokens to
+   every call — the owner may turn them off for this folder.
+
+## 0.1 State at the handoff (2026-11-15, `main` 0a49f58, 35 rule suites)
+
+Merged today (see `ai/LOG.md`): unified Claude+Codex `main` (incl. Codex NPC routines, hunting routes, frost keep),
+title subtitle, side panel (one window at a time), gear-slot silhouettes, L2 life client (gathering, stations,
+알바 board, delivery, trust), charms C1+C2 (주아나), maps v2: meadow/forest/cave/crypt/sewer/abyss reworked and
+widened for 4-player parties, new jungle/coast/oasis/dunesea with art, onboarding fixes, starter weapon at
+creation, solid arrowhead aim mark, job emblems + icon-first HUD with click detail cards (`infocard.js`).
+**Not yet done after that last merge:** run the full tests on `main`, then send the owner the UI screenshots he asked
+for (HUD, stat chips + detail card, job emblems, job tree, party, creation picker, arrow, phone portrait).
+
+**Paused branches** (stopped by the usage limit; worktrees under `.claude/worktrees/`; unfinished work saved as a
+`WIP` commit — resume each in its own small agent, finish, test, merge; one at a time where files overlap):
+| branch | what | state |
+| --- | --- | --- |
+| `claude/maps-b2-1` | new maps `mesa` 붉은바위 황금궁 + `cloudtemple` 운해 사원 (`docs/design/maps-batch2.md` batch 1) | 3 commits, unverified |
+| `claude/dash` | Space = dash (4 s cd, ~72 px, i-frames), X = basic attack | WIP |
+| `claude/rift-tiers` | 균열 단수 ladder + weekly 4-player boss with stagger gauge | WIP (rules mostly, tests in progress) |
+| `claude/social-weekly` | friends/whisper/block, 주간 수첩, enhancement pity, key rebinding/text size | 1 commit |
+| `claude/new-monsters` | real species for coast/desert/jungle (+ mesa/cloudtemple) replacing tinted variants | WIP |
+| `claude/cosmetics-2` | 30+ outfits incl. life-mastery and 가족-trust rewards | 1 commit + WIP |
+
+**Owner's priorities:** content + HUD + user-friendly UI/UX first. The 경매장 (auction house) is **on hold**. After the
+paused work: life → combat links and co-op part-time jobs (C1–C3), skill design/effects cleanup, more quests,
+then the remaining batch-2 maps. Codex is designing the 7th weapon **해머 / 파괴자** (`codex/rift-beasts`,
+`ai/prompts/hammer-destroyer.md`); our UI is already data-driven for a 7th weapon. Level balancing waits until more
+maps exist (`docs/design/level-bands.md`).
+
 ## 1. One project, one line — how Claude and Codex work together (owner's decision, 2026-11-15)
 
 - **The integration branch is the local `main`.** Every worktree on this PC (desktop folder, `.work/codex`,
