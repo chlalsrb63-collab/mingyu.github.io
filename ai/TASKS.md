@@ -16,7 +16,6 @@
 | Codex | 레퍼런스 기반 낚시·요리·연금·대장 아이콘 | `codex/item-reference-art` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | 초반 캐릭터 Lv.30 ↔ 무기 숙련도 Lv.20 도달 구간 검증 및 조정 | `codex/early-mastery` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | 레벨대별 사냥 동선과 Lv.200 전용 사냥터 | `codex/hunt-routes` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
-| Codex | N1 NPC 일과 서버 규칙 (`docs/design/npc-life.md` B–D, K) | `codex/npc-life` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Claude | 맵 그림 1단계 (수정굴·벽돌 회랑·폭포 고원 타일, `docs/design/maps-v2.md` 표 C) | `claude/maps-art-1` · 에이전트 워크트리 | 2026-11-15 |
 
 ## 이식 — `codex/combat-effects`(`c62b345`, 옛 v11 규칙 위)에서 지금 `main`(v12)으로 옮길 것
@@ -47,6 +46,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 - [x] 일일 과제 모닥불 요리 1회와 파티로 몬스터 10마리. [과제 인계](reports/codex-daily-party-hunt.md)
 - [x] 필드 파티 경험치 16칸 근거리 공유와 1~4인 사냥 비교. [밸런스 인계](reports/codex-field-party-xp.md)
 - [x] 광장 주민 17명 일과를 마을·지도·대화에 연결. [주민 일과 인계](reports/codex-npc-life-client.md)
+- [x] 광장 장식 주민과 포포·모카를 포함한 34명 일과, 협동 보상 쟁반·가마솥 착용 개선. [광장 인계](reports/codex-plaza-routines.md)
 - [x] 가방에서 요구 레벨을 충족한 장비로 빈 슬롯을 채울 수 있으면 ▲와 부위를 표시. 실제 서버에서 갑옷을 벗긴 뒤 `#w-inv`로 확인.
 - [ ] `docs/FILEMAP.md` 파일 지도와 실제 파일을 대조해 틀린 줄·빠진 파일을 고치기 (줄 수 `[N]` 갱신 포함, 문서만 수정)
 

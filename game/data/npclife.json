@@ -92,7 +92,8 @@
         [74, 53, "s"],
         [74, 54, "s"],
         [76, 53, "s"],
-        [75, 51, "s"]
+        [75, 51, "s"],
+        [71, 52, "n"]
       ]
     },
     "pond": {
@@ -595,6 +596,54 @@
       "spots": [
         [5, 5, "s"]
       ]
+    },
+    "wall_pair": {
+      "map": "town",
+      "name": "북쪽 목책 초소",
+      "spots": [
+        [65, 12, "w"],
+        [64, 12, "e"]
+      ]
+    },
+    "fountain_play": {
+      "map": "town",
+      "name": "분수 남쪽 놀이자리",
+      "spots": [
+        [48, 42, "e"],
+        [49, 43, "w"]
+      ]
+    },
+    "terrace_prep": {
+      "map": "town",
+      "name": "쥬쥬식당 야외 조리대",
+      "spots": [
+        [74, 53, "w"],
+        [76, 53, "w"],
+        [75, 51, "w"]
+      ]
+    },
+    "market_peddler": {
+      "map": "town",
+      "name": "장터 안쪽 좌판",
+      "spots": [
+        [63, 39, "e"],
+        [64, 40, "n"]
+      ]
+    },
+    "fire_bard": {
+      "map": "town",
+      "name": "모닥불 노랫자리",
+      "spots": [
+        [60, 44, "w"],
+        [61, 46, "w"]
+      ]
+    },
+    "fountain_rest": {
+      "map": "town",
+      "name": "분수 옆 쉼터",
+      "spots": [
+        [55, 42, "w"]
+      ]
     }
   },
   "cast": {
@@ -1045,6 +1094,313 @@
         "off": ["목책 너머에서 들은 울음이 하나 있어. 열람실에서 누구 소리인지 찾아보려고."],
         "with": ["아르센은 날짜를 적고 나는 발자국을 그려. 종이를 뒤집으면 밤이 하나 남아."]
       }
+    },
+    "r_dotori": {
+      "name": "도토리",
+      "hero": [12, 2, 11, 10, 2, 7, 1, 14, 8, 2, 0],
+      "kid": 1,
+      "traits": ["장난", "용기"],
+      "home": "cot5",
+      "plan": [
+        { "h": 4, "at": "cot5", "act": "sleep" },
+        { "h": 8, "at": "pond", "act": "play", "pose": "wave" },
+        { "h": 11, "at": "r_fountain", "act": "play" },
+        { "h": 17, "at": "fountain_play", "act": "play", "with": "r_kongal" },
+        { "h": 20, "at": "diner_t4", "act": "eat" },
+        { "h": 22, "at": "cot5", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["술래잡기 할래? 나 엄청 빠르다!"],
+        "night": ["가방에 든 조약돌도 잘 시간이래!"]
+      }
+    },
+    "r_kongal": {
+      "name": "콩알",
+      "hero": [7, 3, 11, 20, 0, 7, 5, 6, 2, 1, 0],
+      "kid": 1,
+      "traits": ["장난", "웃음"],
+      "home": "apt_up",
+      "plan": [
+        { "h": 4, "at": "apt_up", "act": "sleep" },
+        { "h": 8, "at": "pond", "act": "play" },
+        { "h": 11, "at": "r_fountain", "act": "play", "lag": 3 },
+        { "h": 17, "at": "fountain_play", "act": "play", "with": "r_dotori" },
+        { "h": 21, "at": "apt_up", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["도토리 잡았다! …아니 놓쳤다!"],
+        "night": ["오늘은 내가 술래였어. 내일도 할래!"]
+      }
+    },
+    "r_bodeul": {
+      "name": "보들 할머니",
+      "hero": [9, 4, 2, 3, 4, 0, 9, 9, 5, 2, 0],
+      "traits": ["온화", "뜨개질"],
+      "home": "cot3",
+      "plan": [
+        { "h": 4, "at": "cot3", "act": "sleep" },
+        { "h": 8, "at": "bench", "act": "tend", "pose": "knit" },
+        { "h": 17, "at": "garden", "act": "read", "with": "r_yeoreum" },
+        { "h": 21, "at": "cot3", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["털실이 남으면 목도리 떠 줄게."],
+        "night": ["조용해지니까 뜨개 바늘 소리도 잘 들리는구나."]
+      }
+    },
+    "r_neogul": {
+      "name": "너굴 아저씨",
+      "hero": [2, 13, 0, 14, 3, 5, 8, 11, 9, 9, 4],
+      "cos": ["back_pack"],
+      "traits": ["흥정", "허풍"],
+      "home": "inn_up",
+      "plan": [
+        { "h": 4, "at": "inn_up", "act": "sleep" },
+        { "h": 6, "at": "egate", "act": "shop", "pose": "carry" },
+        { "h": 8.5, "at": "market_peddler", "act": "work", "pose": "wave" },
+        { "h": 18, "at": "terrace", "act": "drink", "pose": "sip" },
+        { "h": 20, "at": "diner_t1", "act": "eat" },
+        { "h": 23, "at": "inn_up", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["숲 너머 소식? 한 냥만 주면… 농담이야!"],
+        "work": ["장터에선 소식도 제철이야!"]
+      }
+    },
+    "r_gaegul": {
+      "name": "개굴",
+      "hero": [11, 6, 13, 19, 3, 7, 5, 7, 1, 2, 0],
+      "cos": ["hat_straw"],
+      "traits": ["낚시", "인내"],
+      "home": "apt_up",
+      "plan": [
+        { "h": 4, "at": "apt_up", "act": "sleep" },
+        { "h": 6, "at": "pond", "act": "fish", "pose": "fish" },
+        { "h": 17, "at": "pondfire", "act": "drink", "pose": "sip" },
+        { "h": 20, "at": "diner_t5", "act": "eat" },
+        { "h": 23, "at": "apt_up", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["비 오는 날엔 큰 놈이 문다니까."],
+        "rain": ["물결이 사라지는 데에 찌를 던져 봐."]
+      }
+    },
+    "r_saessak": {
+      "name": "새싹",
+      "hero": [8, 9, 3, 11, 0, 4, 4, 12, 2, 2, 1],
+      "cos": ["hat_wreath_sun"],
+      "traits": ["다정", "꽃"],
+      "home": "apt_up",
+      "plan": [
+        { "h": 4, "at": "apt_up", "act": "sleep" },
+        { "h": 6, "at": "flowers", "act": "tend", "pose": "water", "with": "cafe_moka" },
+        { "h": 8, "at": "flowers", "act": "tend", "pose": "water" },
+        { "h": 17, "at": "flowers", "act": "rest" },
+        { "h": 21, "at": "apt_up", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["꽃이 피면 어둠도 조금 물러나는 것 같아요."],
+        "work": ["시든 꽃은 뿌리부터 살펴야 해요."]
+      }
+    },
+    "r_daenamu": {
+      "name": "대나무",
+      "hero": [2, 12, 7, 0, 3, 12, 7, 13, 2, 9, 0],
+      "traits": ["묵묵함", "손재주"],
+      "home": "apt_up",
+      "plan": [
+        { "h": 4, "at": "apt_up", "act": "sleep" },
+        { "h": 8, "at": "wall", "act": "work", "pose": "hammer" },
+        { "h": 17, "at": "fountain_rest", "act": "rest" },
+        { "h": 20, "at": "inn_hearth", "act": "rest" },
+        { "h": 23, "at": "apt_up", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["울타리 한 칸이면 모두가 한 밤 더 편히 자."],
+        "work": ["비틀린 못은 뽑아. 그 자리에 또 박지 말고."]
+      }
+    },
+    "r_meongdae": {
+      "name": "멍멍 대장",
+      "hero": [3, 8, 3, 11, 2, 7, 2, 2, 6, 1, 0],
+      "cos": ["hat_helm"],
+      "traits": ["용기", "허세"],
+      "home": "merc_bench",
+      "plan": [
+        { "h": 4, "at": "merc_bench", "act": "sleep" },
+        { "h": 6, "at": "wall", "act": "watch" },
+        { "h": 11, "at": "r_watch", "act": "watch" },
+        { "h": 17, "at": "wall", "act": "watch" },
+        { "h": 20, "at": "r_night", "act": "watch", "days": [0, 2] },
+        { "h": 20, "at": "wall_pair", "act": "watch", "with": "r_kkamang", "days": [1, 3] },
+        { "h": 24, "at": "merc_bench", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["북쪽 숲은 내가 지킨다! …무서운 건 아니고."],
+        "night": ["교대다! 그래, 아까 그 소리는 바람이었어."]
+      }
+    },
+    "r_kkamang": {
+      "name": "까망",
+      "hero": [0, 13, 1, 15, 0, 7, 9, 1, 3, 1, 4],
+      "traits": ["과묵", "밤눈"],
+      "home": "merc_bench",
+      "plan": [
+        { "h": 4, "at": "merc_bench", "act": "sleep" },
+        { "h": 6, "at": "wall", "act": "watch" },
+        { "h": 8, "at": "wall", "act": "sleep", "pose": "doze" },
+        { "h": 17, "at": "wall", "act": "watch" },
+        { "h": 20, "at": "wall_pair", "act": "watch", "with": "r_meongdae", "days": [1, 3] },
+        { "h": 25, "at": "merc_bench", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["밤엔 눈이 더 잘 보여. 어둠도 잘 보이지."],
+        "night": ["숲이 조용한 날엔 작은 소리부터 들어."]
+      }
+    },
+    "r_yeoreum": {
+      "name": "여름",
+      "hero": [3, 1, 6, 10, 2, 3, 6, 5, 4, 1, 4],
+      "cos": ["face_glasses"],
+      "traits": ["호기심", "독서"],
+      "home": "apt_up",
+      "plan": [
+        { "h": 4, "at": "apt_up", "act": "sleep" },
+        { "h": 8, "at": "garden", "act": "read", "pose": "read" },
+        { "h": 11, "at": "steps", "act": "work", "pose": "write" },
+        { "h": 15, "at": "garden", "act": "read", "pose": "read" },
+        { "h": 17, "at": "garden", "act": "read", "pose": "read", "with": "r_bodeul" },
+        { "h": 20, "at": "lib_table", "act": "read", "pose": "read", "days": [0, 2] },
+        { "h": 23, "at": "apt_up", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["도서관 3층에는 아무도 안 가 봤대. 3층이 없거든."],
+        "work": ["남쪽 길에서 본 새를 다섯 종째 적었어요."]
+      }
+    },
+    "r_jjik": {
+      "name": "찍찍",
+      "hero": [5, 2, 9, 8, 0, 0, 3, 10, 7, 10, 0],
+      "traits": ["성실", "졸음"],
+      "home": "forge_back",
+      "plan": [
+        { "h": 4, "at": "forge_back", "act": "sleep" },
+        { "h": 6, "at": "forgeyard", "act": "work", "pose": "carry" },
+        { "h": 8, "at": "r_errand", "act": "walk", "pose": "carry" },
+        { "h": 11, "at": "forgeyard", "act": "work", "pose": "hammer" },
+        { "h": 12, "at": "forgeyard", "act": "eat", "with": "forge_tong" },
+        { "h": 14.5, "at": "forgeyard", "act": "work", "pose": "hammer" },
+        { "h": 17, "at": "terrace", "act": "drink", "pose": "sip" },
+        { "h": 21, "at": "forge_back", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["볼칸 아저씨 망치 소리 들으면 잠이 와요."],
+        "work": ["못 세 봉지랑 숯 한 자루. 이젠 안 까먹어요!"]
+      }
+    },
+    "r_ggul": {
+      "name": "꿀단지",
+      "hero": [2, 3, 7, 9, 2, 0, 0, 4, 2, 2, 0],
+      "cos": ["hat_chef"],
+      "traits": ["씩씩함", "요리"],
+      "home": "diner_back",
+      "plan": [
+        { "h": 4, "at": "diner_back", "act": "sleep" },
+        { "h": 6, "at": "market", "act": "shop", "pose": "carry" },
+        { "h": 8, "at": "terrace_prep", "act": "work", "pose": "stir" },
+        { "h": 11, "at": "terrace_prep", "act": "tend", "pose": "sweep" },
+        { "h": 14, "at": "terrace", "act": "tend", "pose": "stir", "rain": "diner_hearth", "with": "juju" },
+        { "h": 16.5, "at": "terrace_prep", "act": "work", "pose": "stir" },
+        { "h": 21, "at": "diner_back", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["오늘 국물은 엄마 손맛이야. 우리 엄마 손맛!"],
+        "work": ["가장자리에 거품이 올라오면 불을 줄여요!"]
+      }
+    },
+    "r_riri": {
+      "name": "리리",
+      "hero": [1, 2, 1, 0, 0, 0, 4, 3, 5, 0, 6],
+      "cos": ["hat_bow_pink"],
+      "traits": ["꼼꼼함", "날씨"],
+      "home": "apt_up",
+      "plan": [
+        { "h": 4, "at": "apt_up", "act": "sleep" },
+        { "h": 6, "at": "laundry", "act": "work", "pose": "carry" },
+        { "h": 8, "at": "laundry", "act": "tend", "pose": "water" },
+        { "h": 11, "at": "laundry", "act": "tend", "pose": "knit" },
+        { "h": 17, "at": "laundry", "act": "tend", "pose": "carry" },
+        { "h": 21, "at": "apt_up", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["빨래가 바람에 춤추면 비가 안 온대요."],
+        "rain": ["오늘은 빨래를 들여놨어요. 바람 냄새가 달랐거든요."]
+      }
+    },
+    "r_noeul": {
+      "name": "노을",
+      "hero": [8, 4, 3, 12, 0, 4, 8, 12, 2, 2, 1],
+      "cos": ["hat_beret"],
+      "traits": ["흥", "노래"],
+      "home": "apt_up",
+      "plan": [
+        { "h": 4, "at": "apt_up", "act": "sleep" },
+        { "h": 11, "at": "fire_bard", "act": "rest" },
+        { "h": 17, "at": "fire_bard", "act": "perform", "pose": "wave" },
+        { "h": 20, "at": "diner_stage", "act": "perform", "pose": "wave", "days": [0, 2, 3] },
+        { "h": 25, "at": "apt_up", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["모닥불엔 노래가 어울리지. 들어 볼래?"],
+        "night": ["마지막 곡이야. 오늘 기억하고 싶은 게 있으면 생각해 봐."]
+      }
+    },
+    "r_bawi2": {
+      "name": "반들",
+      "hero": [4, 0, 3, 5, 0, 0, 7, 0, 0, 0, 0],
+      "cos": ["hat_cap_red"],
+      "traits": ["말동무", "길잡이"],
+      "home": "apt_up",
+      "plan": [
+        { "h": 4, "at": "apt_up", "act": "sleep" },
+        { "h": 6, "at": "bridge", "act": "chat", "pose": "wave" },
+        { "h": 17, "at": "bridge", "act": "rest" },
+        { "h": 21, "at": "apt_up", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["다리 건너면 살림 마을이에요. 발밑 조심!"],
+        "work": ["다리 전에 왼쪽으로 가면 빨랫줄이 나와요."]
+      }
+    },
+    "popo": {
+      "traits": ["수완", "속정"],
+      "home": "apt_up",
+      "plan": [
+        { "h": 4, "at": "apt_up", "act": "sleep" },
+        { "h": 8, "at": "post", "act": "work" },
+        { "h": 14, "at": "market_peddler", "act": "chat", "rain": "hall_seats", "days": [0, 2] },
+        { "h": 16, "at": "post", "act": "work" },
+        { "h": 20, "at": "diner_bar", "act": "drink", "pose": "sip" },
+        { "h": 23, "at": "apt_up", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["일자리? 지금은 내 잔부터 채우고!"],
+        "work": ["일거리 셋은 벌써 골라뒀어요. 마음에 드는 걸 가져가요."]
+      }
+    },
+    "cafe_moka": {
+      "traits": ["차분함", "완벽주의"],
+      "home": "apt_up",
+      "plan": [
+        { "h": 4, "at": "apt_up", "act": "sleep" },
+        { "h": 6, "at": "flowers", "act": "tend", "pose": "water", "with": "r_saessak" },
+        { "h": 8, "at": "post", "act": "work" },
+        { "h": 21, "at": "apt_up", "act": "sleep" }
+      ],
+      "lines": {
+        "off": ["허브는 새벽 이슬 맞은 게 향이 좋아요."],
+        "work": ["오늘 첫 주전자는 연하게 우렸어요. 천천히 드세요."]
+      }
     }
   },
   "rel": [
@@ -1089,6 +1445,54 @@
       "kind": "friend",
       "story": "열람석에서 새로 배운 자세와 새로 본 괴수를 각자의 책에 남긴다.",
       "chat": ["a: 어젯밤 울음은 목책 안에서 났다고 했지요?", "b: 바깥이었어. 발자국이 안쪽을 보고 있었을 뿐이지.", "a: 그럼 내일 순찰 쪽지에는 몸을 돌린 자리부터 표시하겠습니다."]
+    },
+    {
+      "a": "r_dotori",
+      "b": "r_kongal",
+      "kind": "friend",
+      "chat": ["a: 분수 세 바퀴가 한 판이야!", "b: 그럼 이번엔 내가 먼저 뛸래!"]
+    },
+    {
+      "a": "r_meongdae",
+      "b": "r_kkamang",
+      "kind": "friend",
+      "chat": ["a: 저 소리 들었나? 내가 먼저 들었다!", "b: 대장, 네 꼬리가 울타리에 닿았어."]
+    },
+    {
+      "a": "r_saessak",
+      "b": "cafe_moka",
+      "kind": "friend",
+      "chat": ["a: 향이 제일 좋은 잎은 아래쪽이에요.", "b: 그럼 잎 두 장만 따서 차를 내 볼게요."]
+    },
+    {
+      "a": "juju",
+      "b": "r_ggul",
+      "kind": "family",
+      "chat": ["a: 냄비를 저으면 손잡이부터 잡으렴.", "b: 알아! 엄마가 먹을 한 그릇도 남겨 뒀어."]
+    },
+    {
+      "a": "r_neogul",
+      "b": "juju",
+      "kind": "family",
+      "chat": ["a: 장터 길에 감자가 한 수레 들어왔어.", "b: 오빠, 이번엔 감자 말고 당근을 부탁했잖아."]
+    },
+    {
+      "a": "forge_tong",
+      "b": "r_jjik",
+      "kind": "family",
+      "chat": ["a: 장갑은 둘 다 챙겼지?", "b: 응, 하나는 형 거야."]
+    },
+    {
+      "a": "r_daenamu",
+      "b": "smith",
+      "kind": "mentor",
+      "chat": ["a: 목책을 보강할 건데 못이 모자라네.", "b: 담금질한 걸 가져가게. 겨울에도 버틸 걸세."]
+    },
+    {
+      "a": "r_bodeul",
+      "b": "r_yeoreum",
+      "kind": "friend",
+      "chat": ["a: 글씨가 작으면 나무 그림을 먼저 보여 주렴.", "b: 이 책에는 지도도 있어요. 다음 장에요!"]
     }
   ]
 }
