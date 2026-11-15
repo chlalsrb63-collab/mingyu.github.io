@@ -151,9 +151,9 @@ export function summary(char) {
   return { name: String(char.name), cls: String(char.cls), lvl: Number(char.lvl) || 1, look };
 }
 
-/** A ranking row: name, job (under `cls`), level, total experience spent on points (the tie-break), `v: 2`. */
+/** A ranking row: name, job (under `cls`), level, total experience spent on points (the tie-break), `v: 2`, `dt` the best 균열 단수. */
 export function rankRow(char) {
-  return { name: String(char.name), cls: String(char.job || JOB_ALIAS[char.cls] || "adventurer"), lvl: Number(char.lvl) || 1, xp: Number(char.xpt) || 0, v: 2 };
+  return { name: String(char.name), cls: String(char.job || JOB_ALIAS[char.cls] || "adventurer"), lvl: Number(char.lvl) || 1, xp: Number(char.xpt) || 0, v: 2, dt: Number(char.dim && char.dim.best) || 0 };
 }
 
 /** A summary or rank row from before jobs (no `v`) read on the new scale: level 4L−3, the class's job. */

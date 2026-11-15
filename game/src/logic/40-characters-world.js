@@ -48,7 +48,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 14, name, job: "adventurer",
+    v: 15, name, job: "adventurer",
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -61,7 +61,7 @@ export function newChar(name, look, wk) {
     // waypoint stones woken, per map a bitmask of its stones (bit 0 = its first stone)
     wp: { town: 1 }, seen: ["town"], ach: [], title: "", cnt: Object.fromEntries(CNT_KEYS.map((k) => [k, 0])), daily: null, tut: { i: 0, n: 0 },
     // 차원 균열 clears today (Phase 2: the daily count), by the day number they were made on
-    dim: { day: 0, n: 0 },
+    dim: dimClean(null),
     wh:{ items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     // the first skill of the weapon in hand is on the bar from the start (filled below)
     qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
@@ -174,7 +174,8 @@ function migrate(ch) {
   // side quests from the world map editor (v8): what is under way and what is done
   ch.sq = sqClean(ch.sq);
   // the 차원 균열 daily count (v9)
-  ch.dim = isObj(ch.dim) ? { day: Math.max(0, ch.dim.day | 0), n: clamp(ch.dim.n | 0, 0, 999) } : { day: 0, n: 0 };
+  // (v14: the unlocked 균열 단수, the best tier and its time, the week's brackets and boss flags — 64-dim.js dimClean)
+  ch.dim = dimClean(ch.dim);
   // ── bag expansion and housing (v10): the bag 40..100 (old bags were 30), the house cleaned ──
   bagClean(ch);
   ch.house = houseClean(ch.house, fix);
@@ -188,7 +189,8 @@ function migrate(ch) {
   charmsClean(ch);
   // social, the weekly book, enhancement pity (v14): block list, gauge, the week's baselines, the day's rest bonus (63-social-weekly.js)
   socialSheetClean(ch, dl);
-  ch.v = Math.max(ch.v | 0, 14);
+  // rift tiers and the weekly boss challenge (v15): the 균열 record was cleaned above (dimClean, 64-dim.js)
+  ch.v = Math.max(ch.v | 0, 15);
   return ch;
 }
 

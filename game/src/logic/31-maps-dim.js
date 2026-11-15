@@ -288,3 +288,75 @@ function dimBuild(cfg, seed) {
   finalize(m);
   return m;
 }
+
+// ───────────────────────────── 균열 단수 and 주간 보스 도전 (docs/design/scale-and-rift.md H.6) ─────────────────────────────
+
+/**
+ * 균열 단수: an endless ladder on the party rift. Tier 1 is the rift as it always was; each tier above multiplies
+ * monster health by `hp` and their blows by `atk` (compounding), makes one more pack leader an elite every `eliteEvery`
+ * tiers (at most `eliteMax`), gives elites a second trait from `trait2` and the master a third from `trait3`.
+ * The chest grows gently (`gold`/`xp` per tier up to `goldMax`/`xpMax` times, a stone more every `stoneEvery` tiers,
+ * rune chance + `rune` per tier) — only for the day's full-reward clears (DIM.dailyFull).
+ * Carry guard: a member more than `carryLv` world tiers under the party's best, or who dealt under `carryShare` of an
+ * even share of the damage, gets `carryK` of the gold and experience and no unlock, record or weekly bonus.
+ * `weekly`: the first clear of each bracket of `every` tiers in a week (Monday 06:00 KST) pays `gold` × rift level and `stone`.
+ */
+const DIM_TIER = {
+  max: 100, hp: 1.08, atk: 1.05, eliteEvery: 3, eliteMax: 6, trait2: 10, trait3: 20,
+  gold: 0.06, goldMax: 3, xp: 0.04, xpMax: 2, stoneEvery: 5, stoneMax: 4, rune: 0.02,
+  carryLv: 6, carryShare: 0.2, carryK: 0.4,
+  weekly: { every: 5, max: 20, gold: 120, stone: 3 },
+};
+/** What tier `n` does to a rift: `{ hp, atk, elites, traits, boss }` — every one non-decreasing in n. */
+function dimTierK(n) {
+  const t = clamp(n | 0, 1, DIM_TIER.max) - 1;
+  return {
+    hp: Math.pow(DIM_TIER.hp, t), atk: Math.pow(DIM_TIER.atk, t), elites: Math.min(DIM_TIER.eliteMax, Math.floor(t / DIM_TIER.eliteEvery)),
+    traits: t + 1 >= DIM_TIER.trait2 ? 2 : 1, boss: t + 1 >= DIM_TIER.trait3 ? 3 : 2,
+  };
+}
+
+/**
+ * 주간 보스 도전: a four-player arena for the two big bosses. Each has three telegraphed patterns made of the old
+ * moves (`pats`: [name, kind]), a marked cast every `every`-th turn that the party breaks by dealing `stag` of the
+ * boss's health while it lasts (`castMs`; broken: stunned `stunMs`; not broken: a blast of `blast` × attack and one
+ * more `fury`), and a soft enrage (`enrage` ms into a fight, then + `enrageK` damage every `enrageStep`).
+ * A wipe resets the boss and the party tries again until `limit`. `big` once a week per boss, `small` after.
+ * Toughness: `hp` × DIM.hpN (party size) × (1 + `lvK` per world tier the party's best outranks the boss), blows
+ * × (1 + `atkLv` per such tier) — measured with the bot party in tests/dimrift.mjs.
+ */
+const DIM_CHAL = {
+  w: 32, h: 22, limit: 600000, reviveMs: 4000, gap: 5200, every: 4, castMs: 6000, stunMs: 5000, stag: 0.03, blast: 2.4, fury: 0.15,
+  enrage: 240000, enrageStep: 10000, enrageK: 0.12, hp: 14, lvK: 0.1, atkLv: 0.05, minGap: 3,
+  big: { gold: 400, xp: 0.25, stone: 8, rune: 2, gear: 2, gearQ: 3 }, small: { gold: 40, xp: 0.02, stone: 1 },
+  bosses: {
+    boss: { theme: "crypt", cast: "차원 붕괴", pats: [["균열 탄막", "fan2"], ["붕괴의 고리", "rings"], ["균열 웅덩이", "pools"]] },
+    abyssboss: { theme: "abyss", cast: "심연의 포효", pats: [["연쇄 돌진", "charge2"], ["도약 강타", "leapslam"], ["촉수 탄막", "fan3"]] },
+  },
+};
+const CHAL_KEYS = Object.keys(DIM_CHAL.bosses);
+/** The level a hero needs for a boss challenge: `minGap` world tiers under the boss's own. */
+const chalMinLv = (k) => shownLv(MOBS[k].lv - DIM_CHAL.minGap);
+
+/** A boss challenge's arena: one oval hall, the party at its west end, the boss in the middle. Pure. */
+function dimArena(cfg) {
+  const W = DIM_CHAL.w, H = DIM_CHAL.h, k = cfg.k, B = DIM_CHAL.bosses[k], theme = B.theme;
+  const m = blank(cfg.id || "dim:0", `보스 도전: ${MOBS[k].name}`, W, H, "W");
+  m.theme = theme; m.bgm = "dim"; m.band = null; m.marks = [];
+  const cx = W >> 1, cy = H >> 1, rx = cx - 3, ry = cy - 3;
+  let area = 0;
+  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+    if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1) continue;
+    m.g[y][x] = fbm(x, y, cfg.seed | 0, 5) > 0.6 ? "d" : "c"; area++;
+  }
+  const start = [cx - rx + 3, cy], door = [cx - rx + 1, cy - 1];
+  m.g[door[1]][door[0]] = "c";
+  m.entry = start;
+  // no door that works: a boss that never leashes would drag the fight onto it — the HUD's [떠나기] (dim_leave) is the way out
+  m.dim = {
+    rooms: [{ x0: cx - rx, y0: cy - ry, x1: cx + rx, y1: cy + ry, cx, cy, kind: "boss", shape: "plain", area }],
+    start, boss: [cx, cy], bossRoom: 0, startRoom: 0, door, dead: [], spawns: [], pool: [], bossK: k, path: rx - 2, elites: 0, cap: 1, links: [],
+  };
+  finalize(m);
+  return m;
+}

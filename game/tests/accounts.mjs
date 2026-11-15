@@ -198,7 +198,8 @@ assert.deepEqual(Object.keys(acc.summaryPuts([{ pid: "bunny@s2", char: s2char }]
 // ── jobs: summaries and rank rows carry the job under `cls` and say `v: 2`; rows from before are read on the new scale
 assert.deepEqual(A.summary(s2char), { name: "옛토끼", cls: "adventurer", lvl: 2, look: s2char.look, v: 2 });
 const hero = L.hero("영웅", { wk: "spear", lvl: 77, job: "lancer" });
-assert.deepEqual(A.rankRow(hero), { name: "영웅", cls: "lancer", lvl: 77, xp: hero.xpt, v: 2 });
+assert.deepEqual(A.rankRow(hero), { name: "영웅", cls: "lancer", lvl: 77, xp: hero.xpt, v: 2, dt: 0 });
+assert.equal(A.rankRow({ ...hero, dim: { best: 7 } }).dt, 7, "the ranking carries the best 균열 단수");
 assert.ok(hero.xpt > 0, "ranked ties break on the experience spent");
 assert.deepEqual(A.fromOldRow({ name: "옛", cls: "mage", lvl: 20, xp: 999 }), { name: "옛", cls: "wizard", lvl: 77, xp: 0, v: 2 });
 assert.deepEqual(A.fromOldRow({ name: "옛", cls: "warrior", lvl: 50, xp: 1 }).lvl, 197);

@@ -45,7 +45,7 @@ export function validateAction(S, pid, a) {
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");
       if (a.here && countItem(ch, "feather") < 1) return bad("부활 깃털이 없습니다");
-      if (!a.here && dimReviveWait(S, p) > 0) return bad(`${dimReviveWait(S, p)}초 뒤에 시작 지점에서 일어날 수 있습니다`);
+      if (!a.here && dimReviveWait(S, p) > 0) return bad(dimReviveWait(S, p) >= 99 ? "전투가 끝나야 일어날 수 있습니다 (전멸하면 다시 도전합니다)" : `${dimReviveWait(S, p)}초 뒤에 시작 지점에서 일어날 수 있습니다`);
       return OK;
     case "opt": {
       // settings kept with the character: loot filter, auto-potion thresholds (percent)

@@ -15,9 +15,11 @@ export interface RankRow {
   lvl: number;
   xp: number;
   v?: number;
+  /** best 균열 단수 cleared (0: none) */
+  dt?: number;
 }
 export const JOB_ALIAS: Record<string, string>;
-export function rankRow(char: { name: unknown; job?: unknown; cls?: unknown; lvl?: unknown; xpt?: unknown }): RankRow;
+export function rankRow(char: { name: unknown; job?: unknown; cls?: unknown; lvl?: unknown; xpt?: unknown; dim?: unknown }): RankRow;
 export function fromOldRow<T>(row: T): T;
 export interface ServerList {
   servers: Array<{ id: string; name: string; channels: Array<{ id: string; name: string; n?: number }> }>;

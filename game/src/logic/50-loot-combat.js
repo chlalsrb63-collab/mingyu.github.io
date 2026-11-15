@@ -233,6 +233,7 @@ function dealMob(S, rt, mob, p, dmg, crit) {
   if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
   mob.hp -= dmg;
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
+  if (mob.dim) dimDealt(S, rt, mob, p, dmg);   // the carry guard's damage share, a boss's stagger gauge (64-dim.js)
   if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
   if (!mob.tgt) mob.tgt = p.pid;
   rt.ev.push(["h", mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0]);

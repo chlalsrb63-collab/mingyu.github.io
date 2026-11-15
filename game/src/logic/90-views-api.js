@@ -48,6 +48,8 @@ function selfPayload(p) {
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.job, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
     // the bag's size (46-bag.js) and the house (64-housing.js homeSelf)
     bagCap: bagCap(ch), house: homeSelf(p),
+    // 균열 단수 and the weekly boss flags (64-dim.js dimSelf)
+    dimr: dimSelf(p),
     // charms (66-charms.js): the board, what waits at 주아나, her quest; a sealed charm's seal never leaves the server
     charms: charmSelf(p),
     // life skills (58-life.js): [lv, xp, need] per skill in LIFE order; L2: the 알바 board, trust, the 재료 주머니
