@@ -27,11 +27,13 @@ import { mapChart, buildingDoors, shortestRoute, questMaps, nextGate, chartBase,
 const T = 16;
 const INK = "#120e18";
 const $ = (s) => document.querySelector(s);
-/** Radar zoom levels: how many tiles from me to the rim of the radar's ground circle. */
-export const ZOOMS = [16, 22, 28, 36, 48];
-const ZKEY = "lumentale:radar-zoom";
+/** Radar zoom levels, closest first, as the % the bar shows (100 % = 28 tiles from me to the rim, the old default) and
+ *  the tiles to the rim at that %. The default is 150 % (owner, 2026-11-15: a closer minimap by default). */
+const ZOOM_PCT = [200, 150, 120, 100, 75, 50];
+export const ZOOMS = ZOOM_PCT.map((p) => Math.round(2800 / p));
+const ZKEY = "lumentale:radar-zoom2";   // (new key: the old one held an index into the old 5-step list)
 let zi = (() => {
-  try { const v = localStorage.getItem(ZKEY); const n = v === null ? NaN : Number(v); return Number.isInteger(n) && n >= 0 && n < ZOOMS.length ? n : 2; } catch { return 2; }
+  try { const v = localStorage.getItem(ZKEY); const n = v === null ? NaN : Number(v); return Number.isInteger(n) && n >= 0 && n < ZOOMS.length ? n : 1; } catch { return 1; }
 })();
 
 let D = null;   // what the client lends (init)
@@ -380,6 +382,7 @@ function setZoom(i) {
   $("#mini-zi").disabled = zi === 0;
   $("#mini-zo").disabled = zi === ZOOMS.length - 1;
   $("#mini-cv").title = `지도 열기 (M) · 반경 ${ZOOMS[zi]}칸`;
+  $("#mini-pct").textContent = `${ZOOM_PCT[zi]}%`;
 }
 
 // ───────────────────────────── the map window ─────────────────────────────
