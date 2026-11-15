@@ -326,6 +326,9 @@ Consumables with roles, village produce, fish, crafted furniture. No combat stat
   찌 (fish), 국자 (cook), 가위 (gather), 망치 (craft), 약병 (alch), 편지 (deliver) — with 64px parts, and a stain on the
   fur at 64px only (spray, flour, grass, soot, potion, ink). Tests: wardrobe.mjs "견습 장인" block (an old sheet holding the
   achievement catches up through cosClean).
+- **As built (2026-11-16, the 명인 redraw):** all six have a trim `b` for the dye (basket: a leather band; satchel: a
+  red courier flap, its own `courier` template so 책가방 keeps `satchel`) and 64px embroidery: a shared `masterBadge`
+  (gold over trim), the fisher's crown fish, hem piping, rivets, vial glints, basket weave, the letter's seal.
 
 ### P11 — 외형 세트 2: 이야기와 계절 (after 64×64; art) · size M–L
 | set | earned by | what 64×64 adds |
@@ -379,8 +382,9 @@ Consumables with roles, village produce, fish, crafted furniture. No combat stat
   20 tokens) and lists the four P11 pieces as **disabled "곧 들어옵니다"** rows under fixed ids `hat_/top_/back_/ws_ssn_<sakura
   |sea|maple|snow>` (20/30/25/25 = 100 ≈ 13 Sundays × 8): P11 adds those ids to COSMETICS and they go on sale untouched.
   Action `fair_buy {id}` (this season's rows only, beside 다래). Client: the 장날 card on top of the 알바 board (F at 다래 opens
-  it; board.js, not actions.js). Not done: a stall-only-on-Sunday look (the stalls stand all week), a contest prize beyond
-  the steps. Tests: `tests/festival.mjs`.
+  it; board.js, not actions.js). Not done: a contest prize beyond the steps. Tests: `tests/festival.mjs`.
+  Off-hours the willow stalls draw closed (net.js `sceneMap` swaps them for decor.js `stallShut` by `dn[3]`; map
+  data and collision unchanged); 다래 stays all week for her token shop.
 
 **Sizes:** S ≈ 30–50 k tokens, M ≈ 60–100 k, L > 100 k (split L by set). Build order: P1 → P2 ∥ P7 → P3 → P4 ∥ P8 →
 P5 → P6, then after the 64×64 hero: P9 → P10 ∥ P12 → P11.

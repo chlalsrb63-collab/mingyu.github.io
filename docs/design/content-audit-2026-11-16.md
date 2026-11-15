@@ -95,9 +95,8 @@ gold = 30 × Lv (last step × 2), keepsakes and titles for arc ends. 알바 stay
   `sq_yeoul_tower` (163, talk to the pagoda hook), `sq_yeoul_oil` (168, make 맑은 등기름, a quest-only 연금 Lv.30
   recipe at 보글), `sq_yeoul_lamp` (174, the named elite 매화 손가락 거미 on inklake, the only fight), and
   `sq_yeoul_end` (180, a choice: hang the lamp on the tower or on 여울's bow). The titles are 「외딴 탑의 등불지기」 and
-  「먹물 위의 길손」. Rewards are on the scale. **No keepsake:** every keepsake needs a sewn wardrobe piece
-  (`KEEP_SEW`, `65-cosmetics.js`, and its art). Those files were off limits for this pass, so the keepsake is a
-  follow-up for the wardrobe owner. Placement, both answers and the levels are checked in `tests/sidequests.mjs`
+  「먹물 위의 길손」. Rewards are on the scale. **Keepsake (follow-up):** either answer gives 할머니의 삿갓
+  (`kp_satgat`), which 루루 sews into 먹물 삿갓 (`hat_ink_satgat`, code 182, set `story`, wardrobe.js `satgat`). Placement, both answers and the levels are checked in `tests/sidequests.mjs`
   (the doc's `content.mjs` case lives there, next to the other arcs). The ink itself is not explained or cured.
 
 ### Q2 — Bridge Lv.85–99: 토룩 and 울로, 「거꾸로 흐르는 물」 · size S · data only
