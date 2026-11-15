@@ -945,7 +945,20 @@ Object.assign(MOTIF, {
   // icy blade with six-armed snowflakes: three crossing one-pixel lines each
   ssnSnow: { name: "눈꽃", blade: ["#e8f6ff", "#8ab8e8", "#4a6ab0"], fit: M.bright, add: (h) => along(h, 2, (s) => { const t = mid(h) - 0.5; return [L(s - 2, t, s + 2, t, "white"), L(s - 1, t - 1.7, s + 1, t + 1.7, "white"), L(s - 1, t + 1.7, s + 1, t - 1.7, "white")]; }) },
 });
-const EXTRA = { petal: "#ff9ac0", ice: "#e8fbff", candy: "#e8485a", foam: "#f4ffff", sand: "#fff8dc", node: "#4a7a3a", bee: "#3a3040", twig: "#6a3e36", bloom: "#ff8ab4", maple: "#d8302a", gold2: "#f0c040" };
+// wskin +5 (P11; 단풍 is ssnMaple above): wraps along the blade and charms hung under its edge
+Object.assign(MOTIF, {
+  // a willow withe wound along the blade, narrow leaves drooping from it
+  willowTwig: { name: "버들 가지", blade: ["#f4fae4", "#b4d88a", "#5e8a4a"], fit: M.wood, add: (h) => [L(h[0], h[3] - 1, h[1] - 1, h[2] + 0.5, "twig"), ...along(h, 4, (s, i) => P([[s - 0.6, h[3] - 0.5], [s + 0.6, h[3] - 0.5], [s + (i % 2 ? 0.8 : -0.8), h[3] + 2.2]], "willow"))] },
+  // a red paper lantern on a cord under the tip, gold caps, a warm glow on the blade
+  lantern: { name: "등불", blade: ["#fff6d0", "#f4c060", "#b0702e"], fit: M.black, add: (h) => { const s = h[1] - 3; return [L(s, h[3] - 0.5, s, h[3] + 1, "ink"), R(s - 1.6, s + 1.6, h[3] + 1, h[3] + 4.5, "lantern"), L(s - 1, h[3] + 1, s + 1, h[3] + 1, "gold2"), L(s - 1, h[3] + 4, s + 1, h[3] + 4, "gold2"), D(s, h[3] + 2.5, "glow2"), D(h[0] + 2, mid(h) - 0.5, "glow2")]; } },
+  // a bronze temple bell on a rope, the rope wound twice round the blade
+  templeBell: { name: "사원 종", blade: ["#f8e4b0", "#cc9c50", "#7c5a2c"], fit: M.wood, add: (h) => { const s = h[1] - 4; return [...along(h, 2, (t) => L(t - 1, h[2], t + 1, h[3] - 1, "rope")), L(s, h[3] - 0.5, s, h[3] + 0.8, "rope"), P([[s - 1, h[3] + 0.5], [s + 1, h[3] + 0.5], [s + 2.2, h[3] + 3.6], [s - 2.2, h[3] + 3.6]], "bronze"), D(s, h[3] + 3.6, "ink")]; } },
+  // a whale's rib bones along a bone blade, a blue fluke at the tip
+  whalebone: { name: "고래뼈", blade: M.bone, fit: ["#8ab4d8", "#4a78a8", "#2e4a7a"], add: (h) => [...along(h, 4, (s) => L(s, h[2] + 0.5, s + 1, h[3] - 1, "rib")), P([[h[1] - 2, mid(h) - 0.5], [h[1] + 1, h[2] - 2], [h[1] + 0.5, mid(h) - 0.5], [h[1] + 1, h[3] + 1.5]], "whale")] },
+  // a pastel blade studded with candy stars in three colours
+  starCandy: { name: "별사탕", blade: ["#fffafc", "#ffd4ea", "#d894c4"], add: (h) => along(h, 3, (s, i) => leaf(s, mid(h) - 0.5, 1.7, ["candyY", "candyB", "candyP"][i % 3])) },
+});
+const EXTRA = { willow: "#6ab84a", lantern: "#e0403a", glow2: "#fff4a0", rope: "#c8a060", bronze: "#b8843a", rib: "#b0a08e", whale: "#4a78b8", candyY: "#f8d850", candyB: "#7ac8f0", candyP: "#f07ab0", petal: "#ff9ac0", ice: "#e8fbff", candy: "#e8485a", foam: "#f4ffff", sand: "#fff8dc", node: "#4a7a3a", bee: "#3a3040", twig: "#6a3e36", bloom: "#ff8ab4", maple: "#d8302a", gold2: "#f0c040" };
 // 백자 청화 skin: drawn whole per weapon kind by weapons_porcelain.js (sprite() / weaponIcon() hand over); this row only names it
 MOTIF.porcelain = PORCELAIN_MOTIF.porcelain;
 export const MOTIFS = Object.keys(MOTIF);

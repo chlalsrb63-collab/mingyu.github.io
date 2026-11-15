@@ -129,7 +129,7 @@ function brush(g, A, scale) {
 
 const HARD_HATS = new Set(["crown", "horncrown", "helm", "halo", "horns", "goggles", "miner", "surveycap", "shards"]);
 const HARD_BACKS = new Set(["surf", "gourd", "lantern", "hammer", "trophy", "tray", "cauldron", "tradeJar", "surveyTanks", "neonSign", "bellFrame"]);
-const HARD_FACES = new Set(["crescentFrames", "amberFrames", "tradePearl", "surveyFilter", "glasses", "shades", "forge", "monocle", "snorkel", "riftGoggles", "reedFloat"]);
+const HARD_FACES = new Set(["browGoggles", "crescentFrames", "amberFrames", "tradePearl", "surveyFilter", "glasses", "shades", "forge", "monocle", "snorkel", "riftGoggles", "reedFloat"]);
 const FEATHER_BACKS = new Set(["angel", "bat", "fairy", "dragon"]);
 
 /** Shape and colour the half-pixel steps within a costume's logical pattern, on its native 64px grid. */
@@ -949,7 +949,8 @@ const TOP = {
   // (p); at 64px five-dot blossoms
   blossomCardigan: {
     pal: (p) => ({ p: "#fff2f6" }),
-    front: [".lcwwcs.", ".pbwwbs.", ".BBBBBB."], side: [".lcccbs.", ".lcpccs.", ".BBBBBB."], back: [".lcpccs.", ".cccccp.", ".BBBBBB."],
+    // deep outer columns so the pale pink still parts from white fur at 1×
+    front: [".dcwwcd.", ".dbwwbd.", ".BBBBBB."], side: [".dcccbd.", ".dcpccd.", ".BBBBBB."], back: [".dcpccd.", ".dccccd.", ".BBBBBB."],
     fine(b, A, pal, y0) {
       const at = A.back ? [[15, y0], [18, y0 + 1]] : A.side ? [[15, y0 + 1]] : [[13, y0 + 1]];
       for (const [x, y] of at) { b.fp(x - 0.5, y, pal.p); b.fp(x + 0.5, y, pal.p); b.fp(x, y - 0.5, pal.p); b.fp(x, y + 0.5, pal.p); b.fp(x, y, "#f8d860"); }
@@ -967,11 +968,26 @@ const TOP = {
   // 가을 장날: a mustard cable-knit sweater, two cables down the front, a maple-leaf patch (the trim), a ribbed hem;
   // at 64px the cables twist (light and shade halves swapping each half row)
   cableKnit: {
-    front: [".slccls.", ".slbcls.", ".dsdsds."], side: [".sclccs.", ".scbccs.", ".dsdsds."], back: [".slccls.", ".slccls.", ".dsdsds."],
+    // deep outer columns: mustard alone melts into a shiba's tan
+    front: [".dlccld.", ".dlbcld.", ".dsdsds."], side: [".dclccd.", ".dcbccd.", ".dsdsds."], back: [".dlccld.", ".dlccld.", ".dsdsds."],
     fine(b, A, pal, y0) {
       const cols = A.side ? [15] : [14, 17];
       for (const x of cols) for (let y = y0; y < y0 + 2; y += 0.5) { b.fp(x + ((y * 2) & 1 ? 0.5 : 0), y, pal.s); }
       if (!A.back) { const x = 15; b.fp(x, y0 + 1, li(pal.b, 0.4)); b.fp(x + 0.5, y0 + 1.5, sh(pal.b, 0.35)); }
+    },
+  },
+  // 견습 장인 (P10): one strap across the chest, a tool belt with a short canvas flap, the skill's tool hung on the
+  // hip where it breaks the silhouette (so the outline reads it): 망치 국자 가위 찌 약병 편지; at 64px the work's
+  // smudges on the fur (soot, flour, grass, spray, potion, ink) and the tool's small parts
+  toolBelt: {
+    pal: (p) => ({ t: p.t, g: "#d4d8e4", G: "#868aa0", h: "#8a5a3a", e: "#5ad07a", E: "#2e9a5a" }),
+    front: ["..b.....", "...b....", ".bbbybb.", "..cccc.."], side: ["....b...", "....b...", ".bbbbyb.", "...cc..."], back: ["......b.", ".....b..", ".bbbbbb.", "..cccc.."],
+    fine(b, A, pal, y0) {
+      const T = APPRENTICE[pal.t], f = A.foot, x = A.front ? 18 : 12;
+      b.grid(x, f - 2, T.rows, pal, !A.front);
+      if (T.fine) T.fine(b, x, f - 2, pal, !A.front);
+      if (A.back) return;
+      for (const [dx, dy] of A.side ? [[16, 0.5], [17.5, 1]] : [[14.5, 0.5], [16.5, 0], [17, 1]]) b.fp(dx, y0 + dy, T.smudge);
     },
   },
   // 겨울 장날: a thick winter coat, a cream fur collar and hem (l, so it still parts from white fur), wooden
@@ -983,6 +999,18 @@ const TOP = {
       for (let x = 13; x < 19; x += 1) { b.fp(x + 0.5, y0 + 1, pal.l); b.fp(x, y0 + 2, pal.c); }
     },
   },
+};
+/**
+ * 견습 장인's tools, two columns by three rows from the hip down (g/G metal, h wood, e/E potion, r red, w white),
+ * `fine` adds 64px parts at (x + dx, y + dy), mirrored with the grid; `smudge` is the work's stain on the fur.
+ */
+const APPRENTICE = {
+  hammer: { rows: ["gG", "h.", "h."], smudge: "#4a4652", fine: (b, x, y, p, fl) => { b.fp(x + (fl ? 0 : 1.5), y + 0.5, p.G); } },
+  ladle: { rows: ["g.", "g.", "gG"], smudge: "#fffaf0", fine: (b, x, y, p, fl) => { b.fp(x + (fl ? 1.5 : 0), y, p.g); b.fp(x + 0.5, y + 2.5, p.G); } },
+  shears: { rows: ["rr", "gg", "g."], smudge: "#6aa84a", fine: (b, x, y, p, fl) => { b.fp(x + 0.5, y + 0.5, WHITE); b.fp(x + (fl ? 0.5 : 1), y + 2, p.g); } },
+  float: { rows: ["r.", "r.", "w."], smudge: "#8ad0f4", fine: (b, x, y, p, fl) => { b.fp(x + (fl ? 1.5 : 0), y + 0.5, WHITE); b.fp(x + (fl ? 1 : 0.5), y + 3, p.G); } },
+  flask: { rows: ["h.", "ee", "eE"], smudge: "#8ae07a", fine: (b, x, y, p, fl) => { b.fp(x + (fl ? 1 : 0.5), y + 1, WHITE); } },
+  letter: { rows: ["ww", "wr"], smudge: "#3a3a6a", fine: (b, x, y, p, fl) => { b.fp(x + 0.5, y + 0.5, "#c8c4d4"); b.fp(x + 1, y, "#c8c4d4"); } },
 };
 /** The colours a top template reads. */
 const topPal = (t, p) => ({ c: p.c, s: sh(p.c), d: sh(p.c, 0.45), l: li(p.c, 0.3), b: p.b || p.c, B: sh(p.b || p.c), w: WHITE, y: GOLD, r: "#e04a4a", k: INK, ...(t.pal ? t.pal(p) : {}) });
@@ -1640,6 +1668,86 @@ const FACE = {
       for (const x of A.side ? [A.cheekR - 3] : [A.cheekL, A.cheekR - 2]) { b.r(x, y, 3, 1, c); b.fp(x + 0.5, y, li(p.c, 0.6)); b.fp(x + 2, y + 0.5, sh(p.c, 0.2)); }
     },
   },
+  // ── face +8 (P11): small marks a 32px face could not hold, sharpened by native pixels at 64px
+  // 주근깨: two dots on each cheek, a third between them at 64px
+  freckles: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const y = A.ny, c = rim(A, p.c);
+      for (const x of A.side ? [A.cheekR - 3] : [A.cheekL, A.cheekR - 2]) { b.px(x, y, c); b.px(x + 2, y, c); b.fp(x + 1, y + 1, c); b.fp(x + 1.5, y - 0.5, c); }
+    },
+  },
+  // 반창고 별: a yellow plaster cut as a star, a pink pad in the middle, two legs at 64px
+  starBandage: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const x = Math.min(A.rx + 1, A.cheekR - 3), y = A.ny - 1, c = rim(A, p.c);
+      b.grid(x, y, [".c.", "cbc", ".c."], { c, b: p.b });
+      b.fp(x, y + 2.5, c); b.fp(x + 2.5, y + 2.5, c); b.fp(x + 1, y + 1, li(p.b, 0.5));
+    },
+  },
+  // 꽃 귀걸이: a hook by the cheek and a five-petal flower under it (a plus at 32px)
+  flowerEarring: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const x = A.side ? A.cheekL : A.cheekR - 3, y = A.ny;
+      b.px(x + 1, y, rim(A, GOLD));
+      b.grid(x, y + 1, [".b.", "bcb", ".b."], { b: rim(A, p.b), c: p.c });
+      b.fp(x, y + 1, li(p.b, 0.4)); b.fp(x + 2.5, y + 1, li(p.b, 0.4));
+    },
+  },
+  // 눈꽃 볼 화장: a blue snowflake painted on each cheek, an X at 32px that gains its cross arms at 64px
+  snowBlush: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const y = A.ny, s = rim(A, p.b), c = rim(A, p.c);
+      for (const x of A.side ? [A.cheekR - 3] : [A.cheekL, A.cheekR - 2]) {
+        b.grid(x, y, ["b.b", ".c.", "b.b"], { b: s, c });
+        b.fp(x + 1.25, y, s); b.fp(x + 1.25, y + 2.5, s); b.fp(x, y + 1.25, s); b.fp(x + 2.5, y + 1.25, s);
+      }
+    },
+  },
+  // 장인 고글 이마걸이: brass work goggles pushed up on the brow (the eyes stay bare), amber lenses, a strap
+  browGoggles: {
+    back: true,
+    draw(b, A, p) {
+      const y = Math.max(A.top + 1, A.eye - 3), st = rim(A, p.s);
+      if (A.back) { b.r(A.x0, y + 1, A.x1 - A.x0 + 1, 1, st); return; }
+      const fr = rim(A, p.c), h = A.halfAt(y + 1);
+      b.r(16 - h, y + 1, 2 * h, 1, st);
+      for (const x of A.side ? [A.rx - 1] : [A.lx - 1, A.rx - 1]) {
+        b.r(x, y, 3, 2, fr); b.px(x + 1, y, p.b); b.fp(x + 1, y, li(p.b, 0.7)); b.fp(x + 0.5, y + 1.5, sh(p.c, 0.35));
+      }
+    },
+  },
+  // 밀가루 코끝: flour on the bridge of the nose and a dab on one cheek, sprinkles at 64px
+  flourNose: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const y = A.ny, x = A.nx, c = rim(A, p.c);
+      b.r(x - 1, y - 1, 2, 1, c);
+      b.px(A.side ? A.cheekR - 2 : A.cheekL + 1, y + 1, c);
+      b.fp(x - 1.5, y - 1.5, c); b.fp(x + 1, y - 1.5, c); b.fp(x + 1.5, y - 0.5, c);
+    },
+  },
+  // 풀잎 피리: a grass blade at the corner of the mouth, pointing out and down; its midrib at 64px
+  grassWhistle: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const y = A.ny + 1, x = A.nx, d = A.side ? -1 : 1, c = rim(A, p.c), s = rim(A, p.b);
+      b.px(x + d, y, s); b.px(x + 2 * d, y, c); b.px(x + 3 * d, y + 1, c);
+      b.fp(x + 2 * d + 0.5, y + 0.5, li(p.c, 0.5));
+    },
+  },
+  // 참 잘했어요 도장: a red stamped ring on one cheek, the tick inside at 64px
+  goodStamp: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const x = A.side ? A.cheekL : A.cheekR - 3, y = A.ny, c = rim(A, p.c);
+      b.grid(x, y, ["cc.", "c.c", ".cc"], { c });
+      b.fp(x + 1, y + 1, c); b.fp(x + 1.5, y + 1.5, c);
+    },
+  },
   // a fox mask over the eyes and the nose: slit eyes, red brows, whiskers and a mark on the brow
   fox: {
     covers: true, back: true,
@@ -1821,7 +1929,7 @@ export const ART = {
   back_fish_scroll: ["back", "fishScroll", { c: "#f4ecd8", b: "#8a5a3a" }],
   // 사계절 (P11): 장꾼 다래's stall; the trim `b` is what a dye recolours (the starfish has none: it dyes whole)
   hat_ssn_sakura: ["hat", "blossomBand", { c: "#8a5a4a", b: "#f8a8c4" }],
-  top_ssn_sakura: ["top", "blossomCardigan", { c: "#f8b8cc", b: "#d8587a" }],
+  top_ssn_sakura: ["top", "blossomCardigan", { c: "#f09ab8", b: "#d8587a" }],
   back_ssn_sakura: ["back", "parasol", { c: "#f8d0dc", b: "#c8506e" }],
   ws_ssn_sakura: ["wskin", "ssnSakura", {}],
   hat_ssn_sea: ["hat", "starfish", { c: "#ff8a3a" }],
@@ -1843,6 +1951,28 @@ export const ART = {
   back_cloud_bell: ["back", "bellFrame", { c: "#c89040", b: "#d04a4a" }],
   hat_chronicler: ["hat", "samo", { c: "#3e3a50", b: "#b8bcc8" }],
   face_rift_goggles: ["face", "riftGoggles", { c: "#c8a048", b: "#a070e0", s: "#4a3a4a" }],
+  // 견습 장인 (P10): canvas flap `c`, belt `b` (the dye), tool `t` (APPRENTICE)
+  top_appr_fish: ["top", "toolBelt", { c: "#5a7aa8", b: "#6a4a3a", t: "float" }],
+  top_appr_cook: ["top", "toolBelt", { c: "#f0ece0", b: "#c84a4a", t: "ladle" }],
+  top_appr_gather: ["top", "toolBelt", { c: "#7a9a4a", b: "#8a5a3a", t: "shears" }],
+  top_appr_craft: ["top", "toolBelt", { c: "#6a5a52", b: "#a8743a", t: "hammer" }],
+  top_appr_alch: ["top", "toolBelt", { c: "#7a5aa8", b: "#5a4a3a", t: "flask" }],
+  top_appr_deliver: ["top", "toolBelt", { c: "#3a4a7a", b: "#b8743a", t: "letter" }],
+  // face +8 (P11)
+  face_freckles: ["face", "freckles", { c: "#b0684a" }],
+  face_star_bandage: ["face", "starBandage", { c: "#f4d080", b: "#f08aa0" }],
+  face_flower_earring: ["face", "flowerEarring", { c: "#f8d860", b: "#f07aa8" }],
+  face_snow_blush: ["face", "snowBlush", { c: "#f4f8ff", b: "#5a9ae0" }],
+  face_craft_goggles: ["face", "browGoggles", { c: "#c8a048", b: "#e8903a", s: "#5a4040" }],
+  face_flour_nose: ["face", "flourNose", { c: "#fffaf0" }],
+  face_grass_whistle: ["face", "grassWhistle", { c: "#6ab84a", b: "#3a8a3a" }],
+  face_good_stamp: ["face", "goodStamp", { c: "#e04a4a" }],
+  // wskin +5 (P11): weapons.js motifs
+  ws_willow_twig: ["wskin", "willowTwig", {}],
+  ws_lantern: ["wskin", "lantern", {}],
+  ws_temple_bell: ["wskin", "templeBell", {}],
+  ws_whalebone: ["wskin", "whalebone", {}],
+  ws_star_candy: ["wskin", "starCandy", {}],
 };
 /** The cosmetic slots, in the order the wire sends them. */
 export const SLOTS = ["hat", "top", "back", "face", "wskin"];
