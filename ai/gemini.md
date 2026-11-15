@@ -7,7 +7,9 @@ in your own git worktree (`.work/gemini`, branch `gemini/work`).
 ## Every session
 
 1. `git status` must be clean. Then `git rebase main` to see the latest code.
-2. Pick ONE task, in this order:
+2. For a direct Antigravity handoff, use the first unchecked task in the **GEMINI** section of
+   `ai/TASKS.md`. If there is no such task, or it is already claimed or reported, report the
+   status and stop. For a batch-script session, pick ONE task in this order:
    a. the first unchecked `- [ ]` line in the **GEMINI** section of `ai/TASKS.current.md`
       (a fresh copy of the owner's board) that has no report yet in `ai/reports/`;
    b. otherwise (AUTO MODE) the first unchecked line in the **GEMINI 백로그** of `ai/ROADMAP.md`
