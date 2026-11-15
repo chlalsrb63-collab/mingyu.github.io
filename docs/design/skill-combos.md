@@ -60,3 +60,11 @@ signatures; the player swaps them in at town or a campfire.
 - Pull reuses `pullTo`/`tug`, and now marks `drag`.
 - New "a" fx codes 140–145 (cleave, rupture, hook, ignite, drain, snipe) and the `cb` event are drawn in
   `public/skillfx_combo.js` (hooked from `skillfx.js skillEvent` with two lines). No existing event changes.
+
+## 7. 연출 계약 — what Gemini draws (`public/skillfx_combo.js`, placeholders today)
+- `["cb", mobId, code]` a state spent: 1 경직 strike (gold) · 2 파쇄 ice shatter (pale blue) · 3 추가타 (white-gold) ·
+  4 표식 폭발 (pink) · 5 낙인 폭발 (violet) · 6 점화 flame burst (orange) · 7 결집 (teal) · 9 launched: the monster hops/floats ~0.7 s.
+- `["a", eid, 140–145, x, y, dir, 2, extra]`: extra 0 = wind-up/start (charge glow on the caster; 143 also a warning ring on the target).
+  140 처형 downward chop + shake · 141 급소 burst (extra = marks spent) · 142 hook thrown and pulled back · 143 점화 explosion
+  (extra = radius 40) · 144 drain beam target→caster (extra 1 beat, 2 finisher burst) · 145 저격 long fast shot.
+- Keep the event shapes; draw only. Hammer stun counts as 경직 (no new event).
