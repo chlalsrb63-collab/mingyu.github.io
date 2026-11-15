@@ -237,3 +237,13 @@ Next: P10 outfit set 1 (64px art) → fills `KEEP_SEW`; P12 장날 after P10.
   장꾼 다래 (willow 53,23) sells a season piece for 20; P11 season ids `hat_/top_/back_/ws_ssn_<sakura|sea|maple|snow>` are
   listed disabled ("곧 들어옵니다") until P11 adds them to COSMETICS.
 Next: P11 (season set art + story keepsake pieces → fills the rest of KEEP_SEW); stalls only on Sundays (art).
+
+## 0.6 Round 4 (2026-11-16) — main green 60/60
+- **P11** (codes 141–162): four season sets (hat/top/back/wskin, sold by 장꾼 다래 for tokens) and the story keepsake
+  pieces; `KEEP_SEW` filled. **Cosmetics remainder** (163–181): 견습 장인 ×6 (`life30_<skill>`), face +8 (4 shop, 4
+  achievements), wskin +5 (버들 가지, 등불, 사원 종, 고래뼈, 별사탕). Not done: 명인 redraw.
+- **content-audit-2026-11-16.md** (Lv.40–200): Q1 잉크 호수 「나루터의 먹물」 (사공 여울, 158–180, choice ending),
+  Q2 「거꾸로 흐르는 물」 (토룩/울로, 86–98), Q5 바스's arc as a story (+ `sq_bas_frost` 195) are built.
+  **Owner decisions pending:** Q3 (late main-chain kill counts 24/28/32 + beats), Q4 (party-only side goals),
+  Q6 (weekly field-boss 기록, reset cadence), Q7 (what a Lv.200 player repeats). Q5's old rewards are above scale.
+- Open: Q1 has no keepsake (needs a wardrobe piece); 장날 stalls stand all week; bench-tick 43 players ≈ 1 ms/tick.
