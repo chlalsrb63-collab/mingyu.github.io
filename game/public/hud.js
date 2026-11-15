@@ -77,8 +77,10 @@ export function hudBars() {
   $("#st-hp").style.width = hp;
   $("#st-hp-trail").style.width = hp;
   $("#st-mp").style.width = `${clamp((me.mp / s.mmp) * 100, 0, 100)}%`;
-  $("#st-hpt").textContent = `${me.hp}/${s.mhp}`;
-  $("#st-mpt").textContent = `${me.mp}/${s.mmp}`;
+  const hpt = `${me.hp}/${s.mhp}`, mpt = `${me.mp}/${s.mmp}`, a = $("#st-hpt"), b = $("#st-mpt");
+  // (a same-value textContent still replaces the text node: 10x a second for nothing)
+  if (a.textContent !== hpt) a.textContent = hpt;
+  if (b.textContent !== mpt) b.textContent = mpt;
 }
 /** The purse under the bars: the coin and the sum, with a short +N / -N that floats off when it changes. */
 let hudGold = null;
