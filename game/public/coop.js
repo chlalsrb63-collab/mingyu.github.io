@@ -2,6 +2,8 @@
  * 협동 아르바이트 in the browser (동동아파트 청소, 쥬쥬식당 서빙, 캉캉대장간 단조, 보글연금공방 가마 = the forge's skin; logic 68-coop.js,
  * docs/design/life-and-coop.md C). The server decides everything; this draws and asks.
  * - Lobby: by the job's owner (관리인 동동, 쥬쥬, 캉캉, 보글) a card offers [근무 시작] → `coop_start {k}` (the party comes along).
+ * - 올빼미 도서관 (lib): C rows 13 returner · 14 a book on the 반납대 · 15 a wrong book; genre signs over the shelves, books in hand
+ *   from the team row's `what` (genre·16 + title), a second HUD line (desk, queue, the books in hand); events 90–97.
  * - 동동아파트 v3: `cd` the dirt (a full string, then deltas) on a cached canvas drawn flat on the floor (onDirt); the HUD reads
  *   "청소율 n%" and "쓰레기통 n/10" (your team row's `what` = the bin's 칸), the dumpster gets a sign.
  * - Inside: `cj` drives the HUD line (time, score ×mult, grade and the next cut-off, the job's sum), `C` the piles /
@@ -139,9 +141,10 @@ function setEnts(rows) {
     if (t === 7 && row[4] === 1) st.beat[id] = [st.entsAt + row[7], row[8]];
     st.keys.push(key);
     if (t === 8) { A.S3.props.set(key, { x, y, until: Infinity, cust: row, draw(g, tt, sx, sy) { drawCustomer(g, tt, Math.round(sx), Math.round(sy), row); } }); continue; }
-    A.S3.props.set(key, { x, y, until: Infinity, draw(g, tt, sx, sy) { t === 11 ? drawKiln(g, tt, Math.round(sx), Math.round(sy), row) : t === 12 ? drawPot(g, tt, Math.round(sx), Math.round(sy), row) : t === 10 ? drawShelved(g, tt, Math.round(sx), Math.round(sy), row) : t >= 6 && t < 9 ? drawForge(g, tt, Math.round(sx), Math.round(sy), row) : t >= 3 ? drawDiner(g, tt, Math.round(sx), Math.round(sy), row) : drawEnt(g, tt, Math.round(sx), Math.round(sy), t, hp, id); } });
+    A.S3.props.set(key, { x, y, until: Infinity, draw(g, tt, sx, sy) { t >= 13 ? drawLib(g, tt, Math.round(sx), Math.round(sy), row) : t === 11 ? drawKiln(g, tt, Math.round(sx), Math.round(sy), row) : t === 12 ? drawPot(g, tt, Math.round(sx), Math.round(sy), row) : t === 10 ? drawShelved(g, tt, Math.round(sx), Math.round(sy), row) : t >= 6 && t < 9 ? drawForge(g, tt, Math.round(sx), Math.round(sy), row) : t >= 3 ? drawDiner(g, tt, Math.round(sx), Math.round(sy), row) : drawEnt(g, tt, Math.round(sx), Math.round(sy), t, hp, id); } });
   }
   if (jobOf() === "diner" || jobOf() === "apt" || smithy(jobOf())) setStations(jobOf());
+  if (jobOf() === "lib") libSigns();
   // a tool over each worker's head (a prop that follows them)
   for (const [eid] of st.team) {
     const key = "ct" + eid;
@@ -184,6 +187,46 @@ function drawEnt(g, t, sx, sy, kind, hp, id) {
     // the "two hands" hint: two little arrows bobbing
     if (Math.floor(t / 400) % 2) { px(g, sx - 16, sy - 20, 3, 3, "#fff2a0"); px(g, sx + 13, sy - 20, 3, 3, "#fff2a0"); }
   }
+}
+// ───────────────────────────── 올빼미 도서관 (lib): returners, books on the 반납대, wrong books, shelf signs ─────────────────────────────
+
+const LB = () => D().lib || { genres: [], cols: [], titles: [], deskCap: 8, carry: 3, shelves: [] };
+const libCol = (g) => LB().cols[g] || "#8a8a9a";
+const libName = (code) => { const g = code >> 4, ti = code & 15; return `『${(LB().titles[g] || [])[ti] || "?"}』(${LB().genres[g] || "?"})`; };
+/** A book lying flat (or a stack of n), in its genre's colour with a pale page edge and a dark spine. */
+function drawBook(g, x, y, gi, n = 1) {
+  for (let i = 0; i < n; i++) { const yy = y - i * 3; px(g, x - 5, yy - 3, 10, 4, "#1a1420"); px(g, x - 4, yy - 3, 8, 2, libCol(gi)); px(g, x - 4, yy - 1, 8, 1, "#e8e0c8"); px(g, x - 5, yy - 3, 1, 4, "#1a1420"); }
+}
+/** t 13 a returner (a villager hugging their books, a patience bar) · 14 a book on the 반납대 · 15 a wrong book sticking out of a shelf. */
+function drawLib(g, t, sx, sy, row) {
+  const k = row[1];
+  if (k === 14) { drawBook(g, sx, sy - 18, row[4]); return; }
+  if (k === 15) {
+    px(g, sx - 2, sy - 34, 5, 12, "#1a1420"); px(g, sx - 1, sy - 33, 3, 10, libCol(row[5]));
+    if (Math.floor(t / 300) % 2) { px(g, sx - 1, sy - 48, 3, 8, "#ff4040"); px(g, sx - 1, sy - 38, 3, 2, "#ff4040"); }
+    return;
+  }
+  // a returner: body colour by id, dot eyes, the books in their arms, patience left as a bar
+  const body = ["#c87a4a", "#7a9ac8", "#a8c87a", "#c8a0d8", "#e0b060"][row[0] % 5];
+  g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(sx, sy, 7, 3, 0, 0, 7); g.fill();
+  px(g, sx - 5, sy - 15, 10, 15, "#1a1420"); px(g, sx - 4, sy - 14, 8, 13, body); px(g, sx - 4, sy - 5, 8, 4, "#3a3040");
+  px(g, sx - 5, sy - 24, 10, 10, "#1a1420"); px(g, sx - 4, sy - 23, 8, 8, "#f0d8b8"); px(g, sx - 2, sy - 20, 1, 2, "#1a1420"); px(g, sx + 1, sy - 20, 1, 2, "#1a1420");
+  if (row[7] >= 0) drawBook(g, sx, sy - 8, row[7], Math.min(3, row[4]));
+  const left = Math.max(0, dsLeft(row[5])) / (row[6] * 100), bw = 14;
+  px(g, sx - bw / 2 - 1, sy - 30, bw + 2, 4, "#1a1420"); px(g, sx - bw / 2, sy - 29, Math.round(bw * left), 2, left > 0.5 ? "#8fd060" : left > 0.25 ? "#f0c040" : "#e05040");
+}
+/** A sign over each genre shelf in its colour, and one over the 반납대. */
+function libSigns() {
+  const sign = (key, wx, wy, text, col) => {
+    st.keys.push(key);
+    A.S3.props.set(key, { x: wx, y: wy, until: Infinity, draw(g, tt, sx, sy) {
+      g.font = "8px Galmuri11, monospace"; const w = Math.ceil(g.measureText(text).width) + 6, x = Math.round(sx - w / 2), y = Math.round(sy) - 46;
+      px(g, x - 1, y - 1, w + 2, 12, "#1a1420"); px(g, x, y, w, 10, col); px(g, x, y + 9, w, 1, "rgba(0,0,0,.35)");
+      g.textAlign = "center"; g.fillStyle = "#1a1420"; g.fillText(text, Math.round(sx), y + 8); g.textAlign = "left";
+    } });
+  };
+  LB().shelves.forEach(([x, y], i) => sign("cslib" + i, (x + 3) * T, y * T + 10, LB().genres[i], libCol(i)));
+  sign("cslibdesk", 32 * T, 32 * T + 10, "반납대", "#e8d8b0");
 }
 /** 쥬쥬식당 icons, about 8×7: 0 채소 · 1 생선 · 2 고기 (raw), 8 도마 · 9 쓰레기통; 20 동동아파트's dumpster sign. */
 function drawIcon(g, x, y, code) {
@@ -483,7 +526,10 @@ function drawTool(g, t, sx, sy, eid) {
   const row = st.team.find((r) => r[0] === eid);
   if (!row) return;
   const x = sx + 12, y = sy - 22;   // the prop follows its worker (tick): the tool beside their head
-  if (jobOf() === "diner") {
+  if (jobOf() === "lib") {
+    if (row[1] === 0) { px(g, x - 2, y - 6, 5, 4, "#1a1420"); px(g, x - 1, y - 5, 3, 2, "#c8a060"); px(g, x - 4, y - 2, 9, 4, "#1a1420"); px(g, x - 3, y - 1, 7, 2, "#c84a4a"); }   // 반납 도장
+    else (row[4] || []).forEach((code, i) => drawBook(g, x, y + 2 - i * 4, code >> 4));
+  } else if (jobOf() === "diner") {
     if (row[1] === 0) { px(g, x - 4, y, 7, 3, "#1a1a1e"); px(g, x - 3, y, 5, 2, "#4a4a58"); px(g, x + 3, y + 1, 4, 1, "#6a4a2a"); }   // pan
     else { px(g, x - 6, y + 2, 13, 2, "#3a2a1a"); px(g, x - 5, y + 2, 11, 1, "#b08a5a"); }                                       // tray
     (row[4] || []).forEach((code, i) => drawHeld(g, x - (row[1] ? 3 - i * 7 : 0), y - (row[1] ? 1 : 4), code));
@@ -539,8 +585,8 @@ function frame() {
   const apt = k === "apt";
   const txt = `${job[0]} · ${phase} ${state === 0 ? `${s}초 뒤 시작` : mmss(s)} | ${apt ? `청소율 ${pct(score)}` : `점수 ${score}${mult > 10 ? ` ×${(mult / 10).toFixed(1)}` : ""}${combo > 1 ? ` (콤보 ${combo})` : ""}`}` +
     ` | 등급 ${GRADE[grade]}${next ? ` (다음 ${apt ? pct(next) : next})` : ""}${smithy(k) ? ` | 판매 ${mess} · 화난 손님 ${cap}` : k === "diner" ? ` | 서빙 ${mess} · 화난 손님 ${cap}` : ""}` +
-    `${me ? ` | ${tools[me[1]] || ""}${me[1] === 1 && !smithy(k) ? ` ${apt ? me[4] : me[2]}/${k === "diner" ? D().trayCap : D().binCap}` : ""}` : ""}` +
-    (smithy(k) ? `\n손님 ${forgeOrders()}` : "") + (k === "alch" ? brewHud(me) : st.lane ? "  ♪ 음표에 맞춰 Space · 화살표 음표는 방향키" : "");   // the forge's and kiln's open orders on a line of their own (the top line ran out of room)
+    `${me ? ` | ${tools[me[1]] || ""}${me[1] === 1 && !smithy(k) ? ` ${apt ? me[4] : me[2]}/${k === "diner" ? D().trayCap : k === "lib" ? LB().carry : D().binCap}` : ""}` : ""}` +
+    (smithy(k) ? `\n손님 ${forgeOrders()}` : "") + (k === "lib" ? libHud(me) : "") + (k === "alch" ? brewHud(me) : st.lane ? "  ♪ 음표에 맞춰 Space · 화살표 음표는 방향키" : "");   // the forge's and kiln's open orders on a line of their own (the top line ran out of room)
   const l = b.querySelector(".ch-l");
   if (l.textContent !== txt) l.textContent = txt;
   b.classList.toggle("fever", state === 2);
@@ -548,6 +594,12 @@ function frame() {
   const bar = b.querySelector(".ch-g > i"), top = next || score || 1, w = `${Math.min(100, Math.round((100 * score) / top))}%`;
   if (bar.style.width !== w) bar.style.width = w;
   b.querySelector(".ch-work").disabled = !(state === 1 || state === 2);
+}
+/** The library's second HUD line: the 반납대 and the queue, the next book on the desk, the books in your hands. */
+function libHud(me) {
+  const desk = st.ents.filter((r) => r[1] === 14).sort((a, b) => a[0] - b[0]), line = st.ents.filter((r) => r[1] === 13).length, held = (me && me[1] === 1 && me[4]) || [];
+  const [, , , , , , , , shelved, angry] = st.cj;
+  return `\n반납대 ${desk.length}/${LB().deskCap} · 줄 ${line}명 · 꽂은 책 ${shelved} · 화난 손님 ${angry}` + (held.length ? ` | 들고 있는 책: ${held.map(libName).join(", ")}` : desk.length ? ` | 다음 책: ${libName(desk[0][4] * 16 + desk[0][5])}` : "");
 }
 /** apt's 청소율 (‰ on the wire) as a percentage, "60.4%". */
 const pct = (v) => `${(v / 10).toFixed(1)}%`;
@@ -557,8 +609,9 @@ function forgeOrders() {
   const col = (m) => (m === undefined ? "" : ((D().metals || [])[m] || ["", ""])[1] + " ");
   return rows.length ? rows.map(([k, s, m]) => `${col(m)}${(names[k] || ["?"])[0]} ${mmss(s)}`).join(" · ") : "없음";
 }
-const SKILL = { apt: "배달", diner: "요리", forge: "제작", alch: "연금" };
+const SKILL = { apt: "배달", diner: "요리", forge: "제작", alch: "연금", lib: "배달" };
 const CARD_TIP = { apt: " 쓰레기통은 10칸이 차면 꽉 차요 — 중간중간 뒷마당 버리는 곳에서 비우세요. 청소율(%)이 등급이에요. 낡은 소파는 두 명이 함께 들어요.", diner: " 손님이 기다리다 지치면 화내며 떠나요!", forge: " 음표가 선에 닿을 때 두드리세요! 물건마다 리듬이 달라요 — 갑옷은 둘이 번갈아.",
+  lib: " 책마다 제목과 장르가 적혀 있어요 — 장르 색 표지판의 책장에 꽂으세요. 잘못 꽂으면 감점, 빼서 다시 꽂아야 해요!",
   alch: " 풀무는 다 함께! 같은 음표를 같이 치면 합동 풀무. 온도계의 띠를 지키고, 넘치면 부채로 F 연타!" };
 /** The pay share by grade, "C 100% · B 105% · A 110% · S 120%". */
 const gradePct = () => (D().gradeK || [1, 1.05, 1.1, 1.2]).map((k, i) => `${"CBAS"[i]} ${Math.round(k * 100)}%`).join(" · ");
@@ -612,7 +665,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 const SND = { 4: "swing", 5: "coin", 6: "pop", 14: "quest", 15: "fail", 18: "warn", 19: "hit", 20: "pop", 22: "coin", 23: "ui",
   30: "pop", 31: "hit", 32: "fail", 33: "warn", 34: "swing", 35: "pop", 36: "ui", 37: "ui", 38: "coin", 39: "pop", 40: "ui", 41: "swing", 42: "coin", 43: "pop",
   9: "hit", 10: "hit", 11: "fail", 12: "pop", 13: "coin", 17: "swing", 50: "ui", 51: "pop", 53: "craft_ok", 54: "pop", 55: "hit", 56: "ui", 57: "pop", 58: "craft_ok",
-  61: "fail", 62: "ui", 64: "warn", 65: "ui", 66: "pop" };
+  61: "fail", 62: "ui", 64: "warn", 65: "ui", 66: "pop", 90: "ui", 91: "fail", 92: "book_thunk", 93: "desk_bell", 94: "book_thunk", 95: "wrong_buzz", 96: "pop", 97: "pop" };
 const COL = { 4: "#c8a070", 5: "#ff9a40", 6: "#8fd060", 18: "#7a5a3a", 19: "#e8d070", 20: "#6a8a6a", 22: "#60c0ff",
   32: "#e05040", 33: "#4a4a50", 34: "#8fd060", 38: "#ffd860", 41: "#a8d8ff", 42: "#e8f4ff", 12: "#a8d8ff", 13: "#ffd860", 17: "#ff9a40", 53: "#fff0a0", 58: "#ffb040" };
 /** cj and cb events; true when the event was ours. */
