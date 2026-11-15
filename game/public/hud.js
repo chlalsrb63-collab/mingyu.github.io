@@ -257,7 +257,7 @@ export function refreshUi() {
   draw("daily", () => [s.daily && s.daily.day, s.daily && s.daily.tasks, s.daily && s.daily.bonus, s.inv.length], renderDaily);
   draw("week", () => [s.week && s.week.v, s.week && s.week.got, s.week && s.week.rest, s.week && Math.floor(s.week.reset / 3600000)], renderWeek);
   draw("achieve", () => [s.ach, s.title, s.pts, G.achTab], renderAchieve);
-  draw("collect", () => [s.mk, s.col, G.colTab], renderCollect);
+  draw("collect", () => [s.mk, s.col, G.colTab, G.colView, s.keep], renderCollect);
   Wardrobe.refresh(s);
   Housing.refresh(s);
   Life.refresh(s);

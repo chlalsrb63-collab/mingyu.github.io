@@ -568,6 +568,18 @@ body.touch kbd { display: none; }
 #w-talk .sq-card.st3 { border-color: #4a8a4a; }
 #w-talk .sq-card .say { margin: 4px 0; }
 #w-talk .sq-card .btns { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+#w-talk .sq-choice { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+#w-talk .sq-choice .btn { text-align: left; }
+.sq-qitem { margin: 2px 0; color: #e6c36a; }
+.sq-time { margin: 2px 0; color: #ff9a6a; }
+.sq-steps { margin: 2px 0 6px 18px; padding: 0; }
+.sq-steps li { color: #8c8496; }
+.sq-steps li.past { color: #7fb87f; }
+.sq-steps li.now { color: #ffe08a; }
+.keep-list { display: flex; flex-direction: column; gap: 6px; }
+.keep-row { padding: 6px; border: 2px solid #2c2537; background: #1c1824; color: #8c8496; }
+.keep-row.ok { border-color: #8a6a3a; color: inherit; }
+.keep-row small { margin-left: 6px; color: #c9a86a; }
 
 
 

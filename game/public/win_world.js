@@ -16,6 +16,7 @@ import { statText } from "./items.js";
 import { refreshUi, setOnce, section } from "./hud.js";
 import { K } from "./keymap.js";
 import * as Track from "./track.js";
+import * as SideQ from "./sidequests.js";
 
 // ── waypoints ──
 const bandText = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
@@ -224,6 +225,15 @@ function mobThumb(k, lit) {
 export function renderCollect(s) {
   const box = $("#collect-body");
   box.textContent = "";
+  // two shelves: the monsters, and the keepsakes (기념품) stories gave (sidequests.js)
+  const tabs = el("div", "tabs");
+  for (const [k, name] of [["mob", "몬스터"], ["keep", `기념품 ${(s.keep || []).length}`]]) {
+    const b = el("button", (G.colView || "mob") === k ? "on" : "", name);
+    b.addEventListener("click", () => { G.colView = k; Sound.play("tab"); refreshUi(); });
+    tabs.append(b);
+  }
+  box.append(tabs);
+  if (G.colView === "keep") { SideQ.renderKeeps(box, s); return; }
   const col = G.defs.collection || {}, need = G.defs.colNeed || 30, maps = Object.fromEntries((G.defs.maps || []).map((m) => [m.id, m]));
   const regions = Object.keys(col);
   if (!G.colTab || !col[G.colTab]) G.colTab = regions[0];

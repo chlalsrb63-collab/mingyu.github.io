@@ -198,9 +198,12 @@ function mainTarget(s) {
 function sideTarget(s, id) {
   const q = (G.defs.side || []).find((o) => o.id === id), v = s.sq && s.sq.find((r) => r[0] === id);
   if (!q || !v || v[1] === 0 || v[1] === 4) return null;
-  if (v[1] !== 2) return npc(q.giver, q.giverName);
+  if (v[1] !== 2) return npc(q.turnIn || q.giver, q.turnInName || q.giverName);   // ready: whoever takes it (a delivery's recipient)
   const g = q.goal;
   if (g.type === "talk") return npc(g.npc, q.target);
+  if (g.type === "deliver") return npc(q.giver, q.giverName);                       // the parcel went missing: its giver hands out another
+  if (g.type === "make") return q.station === "fire" ? { k: "fire" } : npc(q.station || q.giver);   // the recipe's station
+  if (g.type === "elite" && g.mob && (!g.map || G.map?.id === g.map)) return { k: "mob", id: g.mob };
   if (q.targetMap) return { k: "map", id: q.targetMap };
   if (g.type === "kill") return { k: "mob", id: g.mob };
   if (g.type === "visit") return { k: "map", id: g.map };
