@@ -6,6 +6,7 @@
 
 import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
+import * as PostFX from "./postfx.js";
 import * as Mini from "./minigames.js";
 import * as QS from "./quickslots.js";
 import * as Housing from "./housing.js";
@@ -303,6 +304,7 @@ export function setupInput() {
   setCrt(localStorage.getItem("lumentale:crt") !== "0");
   $("#btn-crt").addEventListener("click", () => { setCrt(!document.body.classList.contains("crt")); Sound.play("ui"); });
   initDepth();
+  PostFX.bindSetting($("#opt-gfx"), () => Sound.play("ui"));
   setAimArrow(localStorage.getItem("lumentale:aim") !== "0");
   $("#btn-aim").addEventListener("click", () => { setAimArrow(!G.aimArrow); Sound.play("ui"); });
   Sound.load();
