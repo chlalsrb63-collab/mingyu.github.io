@@ -15,7 +15,7 @@ const CB = {
   1: ["경직 강타!", "#ffd86a"], 2: ["파쇄!", "#bfe8ff"], 3: ["추가타!", "#fff2a8"], 4: ["표식 폭발!", "#ff7ad0"],
   5: ["낙인 폭발!", "#c890ff"], 6: ["점화!", "#ff9a3a"], 7: ["결집!", "#9fe0c0"], 9: ["띄우기", "#e8f0ff"],
 };
-const COL = { 140: "#ffe0a0", 141: "#ff7ad0", 142: "#c8fff0", 143: "#ff8a3a", 144: "#b08aff", 145: "#e8fff0" };
+const COL = { 140: "#ffe0a0", 141: "#ff7ad0", 142: "#c8fff0", 143: "#ff8a3a", 144: "#b08aff", 145: "#e8fff0", 146: "#e8f0ff", 147: "#9fe8ff" };
 
 /** True when the event was one of ours (drawn). */
 export function comboEvent(e, ctx) {
@@ -47,6 +47,8 @@ export function comboEvent(e, ctx) {
     case 143: f.ring(tx, ty, extra, col, 360, true); f.burst(tx, ty, 0.4, col, 26, 2.6); S3.big().shake(4); Sound.play("boom"); break;
     case 144: f.proj(tx, ty, 0.6, src.x, src.y, 0.8, col, 0.04, extra === 2 ? 30 : 50); if (extra === 2) f.burst(tx, ty, 0.6, col, 16, 2); break;
     case 145: f.proj(src.x, src.y, 0.75, tx, ty, 0.5, col, 0.03, 20); Sound.play("shoot"); break;
+    // 돌개바람 / 무쌍난무: a spinning ring at the caster every beat (placeholder — Gemini draws the real one)
+    case 146: case 147: f.ring(src.x, src.y, kind === 146 ? 46 : 52, col, 220, extra === 2); f.burst(src.x, src.y, 0.3, col, 6, 1.6); Sound.play("swing"); break;
   }
   return true;
 }

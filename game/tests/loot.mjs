@@ -204,7 +204,7 @@ for (const wk of Object.keys(JOB)) {
   const q = S.players[PID];
   step();
   const ids = D.skillOrder.filter((id) => D.skills[id].kind !== "p" && !D.skills[id].support
-    && D.skills[id].wk === wk && (!D.skills[id].job || D.skills[id].job === JOB[wk]));
+    && D.skills[id].wk === wk && !D.skills[id].jl && (!D.skills[id].job || D.skills[id].job === JOB[wk]));   // job Lv.30 spins: tests/combos.mjs
   assert.equal(ids.length, 4, wk + ": two weapon actives, the combo active (mastery 25) and the signature");
   for (const id of ids) {
     const m = acorns[0]; m.dead = false; m.hp = 500; m.x = q.x + 20; m.y = q.y + 4;

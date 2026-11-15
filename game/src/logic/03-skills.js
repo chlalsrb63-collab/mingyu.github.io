@@ -182,16 +182,22 @@ const SKILL = {
     desc: "2.4초 동안 겨눈 쪽 적 둘에게 영혼의 줄기를 이어 0.4초마다 피해를 주고 그 15%를 회복한다. 마지막 줄기는 낙인을 터뜨려 +100%. 다른 기술을 쓰면 끊긴다." },
   snipe: { kind: "a", wk: "bow", need: 25, name: "저격", mp: 12, cd: 18000, wind: 700, len: 220, half: 8, n: 2, mult: 1.8, eat: { stg: 0.5, air: 0.6, frz: 0.5 }, fx: 145,
     desc: "0.7초 시위를 끝까지 당겨 아주 멀리 일직선으로 쏜다(앞의 둘까지). 경직된 적 +50%, 공중에 뜬 적 +60%, 얼어붙은 적 +50%." },
+  // ── job Lv.30 spins (owner, 2026-11-15): held whirls that follow the caster and pay their cost every beat (`spin` prop, 57)
+  whirl: { kind: "j", job: "swordsman", wk: "sword", need: 20, jl: 30, name: "돌개바람", mp: 6, hpPct: 0.02, autoHp: 0.35, cd: 12000, ms: 5000, every: 300, r: 46, mult: 0.33, mpT: 0.03, hpT: 0.0047, fx: 146,
+    desc: "대검전사의 기술 (직업 Lv.30) · 5초 동안 대검을 들고 회오리처럼 돌며 움직이고, 주변의 모든 적을 0.3초마다 벤다. 도는 동안 마나와 HP를 조금씩 쓰며, 마나가 모자라거나 다른 스킬을 쓰면 멈춘다." },
+  musou: { kind: "j", job: "lancer", wk: "spear", need: 20, jl: 30, name: "무쌍난무", mp: 8, cd: 10000, ms: 3000, every: 200, r: 52, mult: 0.32, mpT: 0.04, fx: 147,
+    desc: "창술사의 기술 (직업 Lv.30) · 3초 동안 창을 휘휘 돌리며 움직이고, 창 길이만큼 둘러싼 모든 적을 0.2초마다 찌른다. 도는 동안 마나를 조금씩 쓰며, 마나가 모자라거나 다른 스킬을 쓰면 멈춘다." },
 };
 for (const [id, sk] of Object.entries(SKILL)) {
   sk.id = id;
-  if (sk.job) sk.jobNeed = JOB_PROGRESS.signature;
+  // a job skill comes at the signature level unless the row names its own (`jl`)
+  if (sk.job) sk.jobNeed = sk.jl || JOB_PROGRESS.signature;
 }
 /** The order skills are listed in (per weapon: L1, L10 active, L10 passive; then single, then hybrid signatures — the first six, then the nine of the expansion). */
 const SKILL_ORDER = Object.keys(SKILL);
 /** The skills each weapon kind brings, in order. */
 const WK_SKILLS = Object.fromEntries(WK_ORDER.map((k) => [k, SKILL_ORDER.filter((id) => SKILL[id].wk === k && (SKILL[id].kind === "a" || SKILL[id].kind === "p"))]));
 /** A job's signature skill. */
-const JOB_SKILL = Object.fromEntries(SKILL_ORDER.filter((id) => SKILL[id].job).map((id) => [SKILL[id].job, id]));
+const JOB_SKILL = Object.fromEntries(SKILL_ORDER.filter((id) => SKILL[id].job && !SKILL[id].jl).map((id) => [SKILL[id].job, id]));
 /** The weapon passive of each kind. */
 const WK_PASSIVE = Object.fromEntries(WK_ORDER.map(wk => [wk, WK_SKILLS[wk].find(id => SKILL[id].kind === "p")]));

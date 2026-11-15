@@ -70,9 +70,10 @@ function gainJob(S, p, n) {
   S.maps[p.map].ev.push(["jl", p.eid, jp.lv]);
   toast(p, `[${JOBS[ch.job].name}] 직업 Lv.${jp.lv}`);
   const signature = JOB_SKILL[ch.job];
-  if (signature && previous < SKILL[signature].jobNeed && skLearned(ch, SKILL[signature])) {
-    loAdd(ch, [signature]);
-    toast(p, `새 전직 스킬 ${skLearnNew(p, [signature]).join("")}`);
+  const fresh = SKILL_ORDER.filter((id) => SKILL[id].job === ch.job && previous < SKILL[id].jobNeed && skLearned(ch, SKILL[id]));
+  if (fresh.length) {
+    loAdd(ch, fresh);
+    toast(p, `새 전직 스킬 ${skLearnNew(p, fresh).join("")}`);
   }
   const rank = jobSkillRank(jp.lv);
   if (signature && rank > 0 && rank > jobSkillRank(previous)) toast(p, `[${SKILL[signature].name}] 강화 ${rank + 1}단계 달성`);

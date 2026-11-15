@@ -66,7 +66,7 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
 
 // ═════════ the tables
 {
-  assert.equal(D.skillOrder.length, 76, "41 actives and 35 mastery passives");
+  assert.equal(D.skillOrder.length, 78, "43 actives (incl. the job Lv.30 spins) and 35 mastery passives");
   assert.deepEqual(Object.keys(SK), D.skillOrder);
   for (const wk of D.wkOrder) {
     const perks = Object.values(SK).filter((sk) => sk.wk === wk && sk.kind === "p");
@@ -77,11 +77,11 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
     const s = SK[id];
     assert.equal(s.id, id);
     assert.ok(s.name && s.desc && s.desc.length > 20, id + " is named and described in Korean");
-    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 136) || (s.fx >= 140 && s.fx <= 145)), id + " costs, waits and has an fx code");
+    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 136) || (s.fx >= 140 && s.fx <= 147)), id + " costs, waits and has an fx code");
     if (s.kind === "j") { assert.equal(D.jobs[s.job].kind, "single"); assert.equal(D.jobs[s.job].wk[0], s.wk); assert.equal(s.need, 20); }
     if (s.kind === "h") { assert.equal(D.jobs[s.job].kind, "hybrid"); assert.equal(s.need, D.hybWm, id + " grows from mastery 15"); }
   }
-  for (const j of Object.keys(D.jobs)) if (D.jobs[j].kind !== "none") assert.equal(D.skillOrder.filter((id) => SK[id].job === j).length, 1, j + " has one signature");
+  for (const j of Object.keys(D.jobs)) if (D.jobs[j].kind !== "none") assert.equal(D.skillOrder.filter((id) => SK[id].job === j && !SK[id].jl).length, 1, j + " has one signature");
   const codes = D.skillOrder.filter((id) => SK[id].kind !== "p").map((id) => SK[id].fx);
   assert.equal(new Set(codes).size, codes.length, "one fx code each");
 }
@@ -96,6 +96,7 @@ for (const [id, hand] of CASTS) {
   const W = world("시전" + id + hand, { wk, wm: { [wk]: 30, ...(s.kind === "h" ? { [HYB[s.job][1 - hand]]: 30 } : {}) }, job: s.job || undefined });
   const p = W.p;
   if (s.support) p.hp = 10;
+  if (s.jl) p.ch.jp.lv = s.jl;   // a job Lv.30 skill (돌개바람, 무쌍난무)
   // a crowd in front (the aim is east), spread a little: something is in reach of every skill
   const ms = W.mobs([[24, 0], [40, 6], [56, -6], [72, 0], [90, 4], [110, -4]]);
   // the tracker's traps need something to walk into them: one stands on a trap's ring

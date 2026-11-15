@@ -241,6 +241,20 @@ function propPulse(S, rt, m, p, o, now) {
       for (const mob of mobsWithin(rt, o.x, o.y, o.r)) { tug(m, mob, o.x, o.y, o.pull); if (!MOBS[mob.k].boss) mob.drag = now + DRAG_MS; hit(mob, o.mult); }
       return false;
     }
+    case "spin": {
+      // 돌개바람 / 무쌍난무: follows the caster; each beat pays MP (and HP) first, then cuts everything around
+      if (p.chan !== o.id) return true;
+      // the beat's price is a share of the pools, so regeneration never makes it free
+      const st = stats(p), mpT = Math.ceil(st.mmp * o.mpT), hpT = o.hpT ? Math.ceil(st.mhp * o.hpT) : 0;
+      if (p.mp < mpT || (hpT && p.hp <= hpT)) { p.chan = 0; toast(p, p.mp < mpT ? "마나가 모자라 회전이 멈췄습니다" : "HP가 모자라 회전이 멈췄습니다"); return true; }
+      p.mp -= mpT; if (hpT) p.hp -= hpT;
+      o.x = p.x; o.y = p.y;
+      const last = --o.left <= 0, list = mobsWithin(rt, p.x, p.y, o.r);
+      rt.ev.push(["a", p.eid, o.sk.fx, Math.round(p.x), Math.round(p.y) - 6, p.dir, 2, last ? 2 : 1]);
+      dealt(p, list, () => { for (const mob of list) hit(mob, o.mult); });
+      if (last) p.chan = 0;
+      return last;
+    }
     case "chan": {
       // a held beam along the caster's aim; any other skill cuts it (p.chan changes). The last pulse spends brands.
       if (p.chan !== o.id) return true;
@@ -829,6 +843,13 @@ function skStrike(S, p, id, k, cost, tgt) {
       ev(sk.fx, ...ahead(40), 0);
       p.chan = prop({ kind: "chan", x: p.x, y: p.y, len: sk.len, half: sk.half, left: sk.n, every: sk.every, next: now + sk.every,
         until: now + sk.every * (sk.n + 1) + 50, mult: sk.mult * k, fin: sk.fin * k, heal: sk.heal * charmSkh(p, id) }).id;
+      break;
+    }
+    case "whirl": case "musou": {
+      ev(sk.fx, p.x, p.y - 6, 0);
+      const n = Math.round(sk.ms / sk.every);
+      p.chan = prop({ kind: "spin", x: p.x, y: p.y, r: sk.r, left: n, every: sk.every, next: now + sk.every,
+        until: now + sk.every * (n + 1) + 50, mult: sk.mult * k, mpT: sk.mpT, hpT: sk.hpT || 0 }).id;
       break;
     }
     case "snipe": {

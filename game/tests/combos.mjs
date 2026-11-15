@@ -205,4 +205,34 @@ for (const [wk, id, key] of HOOKS) {
     assert.ok(J.act({ t: "sk", id, a: 0 }).ok, `${wk}: ${id} is on a fresh bar`);
   }
 }
+// ═════════ 돌개바람 / 무쌍난무 (owner): job Lv.30 spins that follow the caster and pay MP (and HP) every beat
+for (const [id, job, wk, beats, hpCost] of [["whirl", "swordsman", "sword", 17, true], ["musou", "lancer", "spear", 15, false]]) {
+  assert.equal(SK[id].kind, "j"); assert.equal(D.jobs[job].sig !== id, true, id + " is not the job's signature");
+  const W = heroOf(wk, "회전" + id), ch = W.p.ch;
+  ch.job = job; ch.jp = { lv: 29, xp: 0 }; ch.jobs = { [job]: ch.jp }; ch.lo = { [job]: { a: [id, "slash", "spiral"].filter((k) => SK[k].wk === wk || k === id), p: [], x: "" } };
+  W.ready();
+  assert.equal(W.act({ t: "sk", id, a: 0 }).ok, false, id + " needs job Lv.30");
+  ch.jp.lv = 30;
+  const ms = W.mobs([[20, 0], [-20, 0], [0, 18]]);
+  const mp0 = (W.p.mp = 300), hp0 = W.p.hp;
+  assert.ok(W.act({ t: "sk", id, a: 0 }).ok, id + " at job Lv.30");
+  const vs = run(W, Math.ceil(SK[id].ms / 100) + 6);
+  const ticks = vs.flatMap((v) => (v.ev || []).filter((e) => e[0] === "a" && e[2] === SK[id].fx && e[7] > 0));
+  assert.equal(ticks.length, beats, id + " beats");
+  for (const m of ms) assert.ok(m.hp < 50000, id + " cuts every side");
+  assert.ok(W.p.mp < Math.min(mp0, 212) - SK[id].mp, id + " pays MP every beat (a share of the pool, more than regeneration)");
+  assert.equal(W.p.hp < hp0, hpCost, id + (hpCost ? " pays HP" : " costs no HP"));
+  assert.equal(W.p.chan, 0, "the spin ends");
+  // out of mana: it stops early
+  W.ready(); W.p.cds = {}; W.mobs([[20, 0]]);
+  assert.ok(W.act({ t: "sk", id, a: 0 }).ok);
+  W.p.mp = 0;
+  const short = run(W, Math.ceil(SK[id].ms / 100) + 6).flatMap((v) => (v.ev || []).filter((e) => e[0] === "a" && e[2] === SK[id].fx && e[7] > 0));
+  assert.ok(short.length <= 1 && W.p.chan === 0, id + " stops when the mana runs out");
+  // another skill cuts it
+  W.ready(); W.p.cds = {}; W.mobs([[20, 0]]);
+  assert.ok(W.act({ t: "sk", id, a: 0 }).ok); run(W, 5);
+  assert.ok(W.act({ t: "sk", id: wk === "sword" ? "slash" : "spiral", a: 0 }).ok);
+  assert.equal(W.p.chan, 0, id + " is cut by another skill");
+}
 console.log("combos ok — every hook applies, spends for a bonus and runs out; wind-up, channel and the bar hold");
