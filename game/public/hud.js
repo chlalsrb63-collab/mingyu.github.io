@@ -145,7 +145,7 @@ function hotbar(s) {
   // the attack button carries the weapon in hand
   const wpn = s.eq.weapon;
   setSrc($("#b-atk img"), wpn ? G.icons.url[wpn.id] : iconUrl("sword"));
-  $("#b-atk").title = `공격 (Space) — ${G.defs.wkinds[s.wk]?.name || ""} · 세 번째 타격은 마무리 일격`;
+  $("#b-atk").title = `공격 (X) — ${G.defs.wkinds[s.wk]?.name || ""} · 세 번째 타격은 마무리 일격`;
 }
 function tracker(s) {
   const quest = G.defs.quests[s.q.i], mobs = G.defs.mobs;
@@ -257,6 +257,18 @@ function skyTick(t) {
   $("#sky-t").textContent = text;
   Sky.drawIcon($("#sky-ic"), h);
 }
+/** The dash slot (Space): its cooldown swept and counted down like a skill's (me[11] → G.dashEnd, net.js). */
+function dashTick(t) {
+  const b = $("#b-dash");
+  if (!b) return;
+  const full = (G.defs.dash && G.defs.dash[2]) || 4000, left = (G.dashEnd || 0) - t;
+  const cd = left > 0 ? Math.min(1, left / full).toFixed(3) : "0";
+  if (b.dataset.cd !== cd) { b.dataset.cd = cd; b.style.setProperty("--cd", cd); }
+  const txt = left > 0 ? (left / 1000).toFixed(1) : "";
+  const cdt = b.querySelector(".cdt");
+  if (cdt.textContent !== txt) cdt.textContent = txt;
+}
+
 export function hudTick(t) {
   eventWidget(t);
   skyTick(t);
@@ -268,6 +280,7 @@ export function hudTick(t) {
   // the weapon gauge (weapongauge.js); a fault there must never stop the frame
   try { drawWeaponGauge(cgauge, s, G.defs, t); } catch (err) { if (!hudTick.warned) { hudTick.warned = true; console.warn("weapon gauge:", err); } }
   QS.tick(t);
+  dashTick(t);
   if (tip.from && (!tip.from.isConnected || tip.from.closest("[hidden]"))) hideTip();
   Info.tick();
   if (isOpen("char")) drawPortrait(t);

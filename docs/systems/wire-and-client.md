@@ -22,7 +22,7 @@ snapshot (`viewFor`), `defs()`, and the plain-ES-module client (`client.js`, win
 ## Snapshot (`type:"snap"`) — positional arrays, append new fields at the END
 | field | content |
 | --- | --- |
-| `me` | `[x, y, hp, mp, dead, fix, dir, sit, flags, crValue, aim]` — `fix=1` ⇒ client must take server x,y |
+| `me` | `[x, y, hp, mp, dead, fix, dir, sit, flags, crValue, aim, dashLeft]` — `fix=1` ⇒ client must take server x,y; `dashLeft` ms until the next dash (59-dash.js) |
 | `P` | other players near (±`VIEW_X/Y`=280 px): `[eid,x,y,dir,dead,hp,mhp,sit,flags]` |
 | `M` | mobs near: `[id,k,x,y,dir,hp,el,traits[,marks]]` |
 | `D` | drops visible to you (own or past `freeAt`): `[id,it,x,y,q]` · `F` fires `[id,x,y]` · `fb` field-boss/event-lord positions for the radar `[[x,y]]` (map-wide) |

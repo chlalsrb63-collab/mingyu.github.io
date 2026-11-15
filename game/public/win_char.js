@@ -204,7 +204,7 @@ function skillRows(box, s, k) {
     const basic = el("div", "skill basic");
     const bi = el("img", "ic"); bi.alt = ""; bi.src = G.icons.url[s.eq.weapon.id] || iconUrl("sword");
     const bh = el("div", "hd");
-    bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), el("kbd", "", "Space"), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
+    bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), el("kbd", "", "X"), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
     basic.append(bi, bh, el("p", "", "가장 가까운 적을 겨냥합니다. 이어 치면 세 번째 타격이 마무리 일격이 됩니다."));
     box.append(basic);
   }

@@ -89,7 +89,7 @@ export function update(dt, t) {
   const me = G.me, s = G.self;
   if (!G.map || !s) return;
   let [mx, my] = me.dead ? [0, 0] : moveVector();
-  let wantAtk = !me.dead && !typing() && !Mini.active() && (keys.has(" ") || held.atk);
+  let wantAtk = !me.dead && !typing() && !Mini.active() && (keys.has("x") || keys.has("ㅌ") || held.atk);
 
   // auto-hunt: walk at the nearest monster, hit it, drink when low
   // a route taken to get round a wall ends as soon as its monster is within reach

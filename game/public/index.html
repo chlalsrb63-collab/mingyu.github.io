@@ -59,7 +59,7 @@
       <button id="prompt" class="frame" hidden></button>
       <div id="toasts"></div>
       <div id="banner" hidden></div>
-      <div id="jam" hidden><button data-jam="0" title="연주 (B)">연주 <kbd>B</kbd></button><button data-jam="1" title="건배 (Z)">건배 <kbd>Z</kbd></button></div>
+      <div id="jam" hidden><button data-jam="0" title="연주 (B)">연주 <kbd>B</kbd></button><button data-jam="1" title="건배 (Shift+B)">건배 <kbd>S+B</kbd></button></div>
       <div id="joy"><div id="joy-knob"></div></div>
       <button id="b-drawer" title="가방 · 지도 · 메뉴"><i></i><span>메뉴</span></button>
 
@@ -103,7 +103,7 @@
           <button data-win="rank" title="랭킹 (N)"><span>랭킹</span><kbd>N</kbd></button>
           <button data-win="map" title="지도 (M)"><span>지도</span><kbd>M</kbd></button>
           <button id="b-emo" title="감정표현 (T)"><span>감정</span><kbd>T</kbd></button>
-          <button id="b-sit" title="앉기 (X)"><span>앉기</span><kbd>X</kbd></button>
+          <button id="b-sit" title="앉기 (Z)"><span>앉기</span><kbd>Z</kbd></button>
           <button data-win="help" title="도움말 (H)"><span>도움말</span><kbd>H</kbd></button>
           <button data-win="settings" title="설정 (O)"><span>설정</span><kbd>O</kbd></button>
         </div>
@@ -147,7 +147,8 @@
             <i class="sep"></i>
             <div id="qslots"></div>
             <i class="sep"></i>
-            <button class="act atk" id="b-atk" title="공격 (Space)"><img alt="" /><span class="nm">공격</span><kbd>Space</kbd></button>
+            <button class="act dash" id="b-dash" title="대시 (Space) — 바라보는 쪽으로 짧게 돌진, 도중엔 몬스터의 공격을 피함 · 4초"><i class="gl">»</i><i class="cd"></i><em class="cdt"></em><span class="nm">대시</span><kbd>Spc</kbd></button>
+            <button class="act atk" id="b-atk" title="공격 (X)"><img alt="" /><span class="nm">공격</span><kbd>X</kbd></button>
             <button class="act auto" id="b-auto" title="자동사냥 (R)"><span class="nm">자동</span><kbd>R</kbd></button>
           </div>
 
@@ -358,14 +359,14 @@
         <header><span class="t">도움말</span><kbd>H</kbd><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body help">
           <p><b>이동</b> 방향키 / WASD (여덟 방향) · 땅을 클릭(터치)하면 그곳까지 알아서 걸어갑니다. 모바일은 왼쪽 조이스틱.</p>
-          <p><b>전투</b> Space 공격 (발밑의 작은 반달 조준 표시가 향한 쪽으로 나가며, 그 앞의 가까운 적을 겨냥 · 뒤의 적은 맞지 않음 · 세 번째 타격이 마무리 일격) · Shift+방향키 제자리에서 방향만 돌리기 · 몬스터 클릭 그쪽을 겨냥해 공격 · 1–9 단축칸 (스킬 창 K나 가방에서 스킬·물약·음식·주문서를 끌어다 놓기, 칸끼리 끌어 바꾸기, 우클릭으로 비우기) · Q / E 물약 · R 자동사냥 (단축칸의 스킬을 순서대로 씀)</p>
+          <p><b>전투</b> X 공격 (발밑의 작은 반달 조준 표시가 향한 쪽으로 나가며, 그 앞의 가까운 적을 겨냥 · 뒤의 적은 맞지 않음 · 세 번째 타격이 마무리 일격) · Space 대시 (보는 쪽으로 짧게 돌진, 벽은 못 지나감 · 도중엔 몬스터의 공격을 피함 · 4초마다) · Shift+방향키 제자리에서 방향만 돌리기 · 몬스터 클릭 그쪽을 겨냥해 공격 · 1–9 단축칸 (스킬 창 K나 가방에서 스킬·물약·음식·주문서를 끌어다 놓기, 칸끼리 끌어 바꾸기, 우클릭으로 비우기) · Q / E 물약 · R 자동사냥 (단축칸의 스킬을 순서대로 씀)</p>
           <p><b>창</b> I 가방 · C 캐릭터 · K 스킬 · L 의뢰 · U 일일 의뢰 · Y 업적·칭호 · J 몬스터 도감 · Shift+L 생활 기술 · P 파티 · G 길드 · N 랭킹 · M 지도 · O 설정 · H 도움말 · Shift+M 소리 켜기/끄기 · Esc 맨 위 창 닫기</p>
           <p><b>이동의 돌</b> 맵마다 하나씩 있는 돌비석에 다가가면 깨어납니다. 깨운 돌끼리는 F로 말을 걸어 순간이동할 수 있습니다. <b>귀환 주문서</b>는 2초 동안 읽으면 광장으로 돌아갑니다(움직이거나 맞으면 취소).</p>
           <p><b>매일</b> 아침 6시에 일일 의뢰 세 개가 새로 주어지고, 모두 끝내면 보너스 상자를 받습니다. 매시 정각과 30분에는 한 사냥터에 <b>균열 침공</b>이 열립니다(오른쪽 위에 남은 시간).</p>
           <p><b>수집</b> 같은 몬스터를 30마리 잡으면 도감에 등록되고, 한 지역을 모두 채우면 영구 보너스. 업적을 이루면 칭호를 달 수 있습니다.</p>
-          <p><b>대화</b> F 말 걸기 · Enter 채팅 (/p 메시지는 파티, /g 메시지는 길드 채팅 · 채팅창의 파티·길드 탭에서는 그 채널로) · T 감정표현 · X 앉기</p>
+          <p><b>대화</b> F 말 걸기 · Enter 채팅 (/p 메시지는 파티, /g 메시지는 길드 채팅 · 채팅창의 파티·길드 탭에서는 그 채널로) · T 감정표현 · Z 앉기 (앉아서 B 연주 · Shift+B 건배)</p>
           <p><b>사냥</b> 쉬지 않고 잡으면 <b>연속 처치</b>로 경험치가 최대 +50%. 사냥터에서 60마리를 잡으면 <b>우두머리</b>가 나타납니다. 정예는 이름 위 아이콘으로 특성을 보여 줍니다.</p>
-          <p><b>쉬어 가기</b> 모닥불 곁에서 X로 앉으면 빠르게 회복하고, 잠시 쉬면 경험치 보너스(온기)를 얻습니다. 물가에서 F로 낚시, 입질이 오면 다시 F — 물결이 찌에 닿는 박자에 맞춰 누를수록 좋은 물고기가 나옵니다. 잡은 물고기는 모닥불 곁에서 <b>굽기</b>.</p>
+          <p><b>쉬어 가기</b> 모닥불 곁에서 Z로 앉으면 빠르게 회복하고, 잠시 쉬면 경험치 보너스(온기)를 얻습니다. 물가에서 F로 낚시, 입질이 오면 다시 F — 물결이 찌에 닿는 박자에 맞춰 누를수록 좋은 물고기가 나옵니다. 잡은 물고기는 모닥불 곁에서 <b>굽기</b>.</p>
           <p><b>장비</b> 무기 · 투구 · 갑옷 · 장갑 · 신발 · 반지 2 · 목걸이. 일반 · <span style="color:#6a9cff">마법</span> · <span style="color:#f0d050">희귀</span> · <span style="color:#ff8a30">전설</span> · <span style="color:#5fd47a">세트</span>. 홈이 있는 장비에 <b>룬</b>을 순서대로 끼우면 <b>룬어</b>가 완성됩니다.</p>
           <p><b>성장</b> 수련관에게 경험치를 바치면 능력치가 영구히 오릅니다. 한계가 없습니다. 스킬도 수련관에게서 골드와 경험치로 1→10레벨까지 올립니다 (레벨마다 위력 +8%, 5·10레벨에 재사용 대기 감소).</p>
           <p><b>편의</b> 광장 서쪽의 <b>창고지기</b>에게 물건 60칸과 골드를 맡길 수 있습니다. 보급상의 <b>펫</b>은 곁을 따라다니며 내 전리품을 주워 오고, <b>주문서</b>는 10분간 공격·방어·경험치를 올려 줍니다. <b>부활 깃털</b>이 있으면 쓰러진 자리에서 경험치 손실 없이 일어납니다. 설정(O)에서 아이템 필터와 자동 물약을 정할 수 있습니다.</p>

@@ -13,7 +13,7 @@ import * as Gather from "./gather.js";
 import * as Charms from "./charms.js";
 import { G, $, dist, T, clamp, world, now, resize } from "./state.js";
 import { act } from "./net.js";
-import { usePotion, interact, stoneNear, aimAtPoint, attack } from "./actions.js";
+import { usePotion, interact, stoneNear, aimAtPoint, attack, dash } from "./actions.js";
 import { autoSt } from "./update.js";
 import { toggleWin, closeTop, openWin, toast } from "./windows.js";
 import { openEmotes } from "./win_social.js";
@@ -169,9 +169,10 @@ export function setupInput() {
       case "q": case "ㅂ": usePotion("hp"); break;
       case "e": case "ㄷ": usePotion("mp"); break;
       case "f": case "ㄹ": interact(); break;
-      case "x": case "ㅌ": act({ t: "sit" }); break;
-      case "b": case "ㅠ": if (G.me.sit) act({ t: "jam", k: 0 }); break;
-      case "z": case "ㅋ": if (G.me.sit) act({ t: "jam", k: 1 }); break;
+      // X (held) is the basic attack (update.js), Space the dash, Z sits down / stands up
+      case " ": dash(); break;
+      case "z": case "ㅋ": act({ t: "sit" }); break;
+      case "b": case "ㅠ": if (G.me.sit) act({ t: "jam", k: e.shiftKey ? 1 : 0 }); break;   // B 연주 · Shift+B 건배
       case "g": case "ㅎ": toggleWin("guild"); break;
       case "t": case "ㅅ": openEmotes("emote"); break;
       case "i": case "ㅑ": toggleWin("inv"); break;
@@ -226,6 +227,7 @@ export function setupInput() {
   addEventListener("touchstart", () => { document.body.classList.add("touch"); Sound.unlock(); resize(); }, { once: true, passive: true });
   addEventListener("pointerdown", () => Sound.unlock(), { once: true });
   press($("#b-atk"), () => { held.atk = true; }, () => { held.atk = false; });
+  press($("#b-dash"), () => dash());
   press($("#b-hp"), () => usePotion("hp"));
   press($("#b-mp"), () => usePotion("mp"));
   press($("#b-auto"), () => toggleAuto());

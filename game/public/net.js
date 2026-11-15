@@ -206,6 +206,8 @@ function onSnap(s) {
   if (s.dn) Sky.setSky(s.dn, !!s.map);
   if (s.map || s.me[5]) { me.x = s.me[0]; me.y = s.me[1]; me.dir = s.me[6]; if (s.me[10] !== undefined) me.aimI = s.me[10]; }
   me.hp = s.me[2]; me.mp = s.me[3]; me.sit = !!s.me[7];
+  // me[11]: ms left on the dash (Space) cooldown; a 0 just after pressing may predate the press reaching the server
+  if (s.me[11] > 0) G.dashEnd = t + s.me[11]; else if (s.me[11] === 0 && t - (G.dashSent || 0) > 500) G.dashEnd = 0;
   const dead = !!s.me[4];
   if (dead !== me.dead) { me.dead = dead; $("#dead").hidden = !dead; Sound.play(dead ? "death" : "revive"); if (dead) G.auto = false; }
 
