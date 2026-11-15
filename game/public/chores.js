@@ -44,7 +44,7 @@ function step() {
   const m = mine();
   if (!m || !G.me || G.me.dead || m.a.got >= m.a.n) return null;
   const i = nearSpot(m);
-  if (i >= 0) return { a: "do", i, label: `${m.c.name} — ${VERB[m.job]}` };
+  if (i >= 0) return { a: "do", i, label: `${VERB[m.job]} (${m.a.got}/${m.a.n})` };
   if (m.c.src === "water" && m.a.fill < m.c.carry && waterHere()) return { a: "pick", label: `${m.c.name} — 물뿌리개 채우기` };
   return null;
 }
