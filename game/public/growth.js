@@ -135,6 +135,50 @@ function clubclaw() {
   outline(c, g);
   return c;
 }
+/** Row-art icon: '.' is clear, every other char looks up its colour in `pal`. */
+function rowsIcon(rows, pal) {
+  const [c, g] = canvas16();
+  rows.forEach((row, y) => [...row].forEach((ch, x) => { if (pal[ch]) { g.fillStyle = pal[ch]; g.fillRect(x, y, 1, 1); } }));
+  outline(c, g);
+  return c;
+}
+// 밤장막 (bat: violet with crimson) and 꽃무덤 (whale bone with soul-flower pink and blue) set pieces, one kind each.
+const VEIL = { v: "#7a46b8", V: "#4a2a78", l: "#b890f0", r: "#d02a48", k: "#1a1022", w: "#f0e8f0" };
+const BLOOM = { b: "#f0eadc", B: "#b8b0a0", d: "#8a8272", p: "#f0a0c0", P: "#c8648c", u: "#8ac8f0", U: "#4a88c0", w: "#ffffff" };
+const SET_ART = {
+  veil_h: [[
+    "................", "..vv........vv..", "..vVv......vVv..", "..vvvv....vvvv..", "..vvvvvvvvvvvv..", ".vvlvvvvvvvvVvv.", ".vvlvvvvvvvvVvv.", ".vvkkkvvvvkkkVv.",
+    ".vvkkrvvvvrkkVv.", ".vVvkkvvvvkkvVv.", "..VvvvvrrvvvvV..", "..VVvvvrrvvvVV..", "...VVvvvvvvVV...", "....VVVVVVVV....", "................", "................",
+  ], VEIL],
+  veil_a: [[
+    "................", "....vv....vv....", "...vvvvvvvvvv...", "..vlvvrrrrvvVv..", "..vlvvvrrvvvVv..", "..vvvvvvvvvvVv..", ".vvvvvvvvvvvVVv.", ".vvlvvvvvvvvVVv.",
+    ".vvvvvvvvvvvVVv.", ".vvvvvvvvvvvVVv.", ".vvvvvvvvvvvVVv.", ".vVvvVvvvvVvvVv.", ".vV.Vv.VVvV.Vv..", "................", "................", "................",
+  ], VEIL],
+  veil_r: [[
+    "................", "................", "................", "......ww........", ".....wwwr.......", ".....wwrr.......", "......wr........", "....vvvvvv......",
+    "...vlvvvvVv.....", "..vlv....vVv....", "..vv......VV....", "..vv......VV....", "..vVv....vVV....", "...vVVvvVVV.....", "....VVVVVV......", "................",
+  ], VEIL],
+  veil_n: [[
+    "................", "..V..........V..", "...V........V...", "....V......V....", ".....V....V.....", "......V..V......", ".......VV.......", ".....vvvvvv.....",
+    "....vlvvrrvv....", "....vvvrrrVv....", "....vvvrrvVv....", ".....vvrrVV.....", "......vvVV......", ".......VV.......", "................", "................",
+  ], VEIL],
+  bloom_h: [[
+    "................", ".......pp.......", "......pPup......", ".......pp.......", "....bbbbbbbb....", "...bwbbbbbbbB...", "..bwbbbbbbbbbB..", "..bbbbbbbbbbbB..",
+    "..bbdddbbdddbB..", "..bbddddbddddB..", "..bbbdddbdddbB..", "..bbbbbbbbbbbB..", "..BbbbbbbbbbBB..", "...BBbbbbbBBB...", "................", "................",
+  ], BLOOM],
+  bloom_a: [[
+    "................", "...bbbb..bbbb...", "..bwbbbbbbbbbB..", "..bbbbddddbbbB..", "..bbbbbddbbbbB..", "..bdddddddddbB..", "..bbbbbddbbbbB..", "..bdddddddddbB..",
+    "..bbbbbddbbbbB..", "..bbddddddddbB..", "..BbbbbddbbbBB..", "...BBbbddbbBB...", ".....BBBBBB.....", "................", "................", "................",
+  ], BLOOM],
+  bloom_r: [[
+    "................", "................", ".....pp.........", "....pPuPp.......", ".....pup........", "......pp........", "....bbbbbb......", "...bwbbbbBb.....",
+    "..bwb....bBb....", "..bb......BB....", "..bb......BB....", "..bBb....bBB....", "...bBBbbBBB.....", "....BBBBBB......", "................", "................",
+  ], BLOOM],
+  bloom_n: [[
+    "................", "..d..........d..", "...d........d...", "....d......d....", ".....d....d.....", "......d..d......", "....pppppppp....", "...ppwuuUPPPp...",
+    "...ppuuuUUPp....", "....pPuuUUPp....", ".....pPuUPp.....", "......pPUPp.....", ".......pPp......", "........p.......", "................", "................",
+  ], BLOOM],
+};
 /** A pet's icon: its resting frame, cut to the middle of its sheet. */
 function petIcon(kind) {
   const [c, g] = canvas16();
@@ -155,6 +199,8 @@ export function icons(set) {
     ske_stone: gem("#2ab0d8", "#a8f0ff", "#1a6a90", "#14506e"),   // 스킬 강화석: a cyan cut gem
     mat_bloodtear: teardrop(), mat_clubclaw: clubclaw(),
     sc_atk: scroll("#d84a3a", "#ff9a8a"), sc_def: scroll("#3a6ad8", "#9ab8ff"), sc_xp: scroll("#3aa84a", "#9ae8a0"),
+    scr_job: scroll("#2aa89a", "#a0f0e0"), scr_lvl: scroll("#c02a30", "#ffd060"),   // 전직 / 레벨 초기화 주문서: a teal and a red-gold seal
+    ...Object.fromEntries(Object.entries(SET_ART).map(([id, [rows, pal]]) => [id, rowsIcon(rows, pal)])),
     feather: feather(), pet_chick: petIcon("pet_chick"), pet_bat: petIcon("pet_bat"), pet_wisp: petIcon("pet_wisp"), pet_hagfish: petIcon("pet_hagfish"),
   };
   for (const id of Object.keys(add)) {
