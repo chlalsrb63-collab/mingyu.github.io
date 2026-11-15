@@ -168,7 +168,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `swing.js` [233] | Fixed-size weapon poses: alternating greatsword sweeps, repeating overhead hammer strike (`hammerPose`), and bow draw/release (`bowPose`). `WIND IMPACT SNAP` control anticipation and snap. |
 | `skillfx.js` [1420] | Dispatches server skill codes via `skillEvent`, props (`pr/pp/pe`), missiles/projectiles (`ar/ae`), marks and lines. Renders support recovery and rally pennants, hammer impact, and boss telegraphs and turns (`bt`/`bc`). Uses the effects clock for `later`. |
 | `skillfx_combo.js` [57] | The combo skills' look (docs/design/skill-combos.md): the `cb` event (a combo state spent, 9 = launched) and the combo actives' `a` codes 140–145. Hooked from `skillfx.js skillEvent` first. |
-| `jobpal.js` [60] (defs.jobPal/skillJob → cached palettes for skill icons and effects) · `skillicons.js` [883] (one glyph per `SKILL` id, framed in its job palette) · `uiicons.js` [140] (+ town signs `bowl cup bed house flask crate`; stats `fist eye clover`, `bow`, `hammer`, `lock`) · `emoticons.js` [164] | 16×16 skill glyphs, 12×12 UI glyphs (`MENU_ICON TRAIT`), chat emoticons |
+| `jobpal.js` [60] (defs.jobPal/skillJob → cached palettes for skill icons and effects) · `skillicons.js` [605] (one 32×32 picture per `SKILL` id from shape parts, shaded and framed in its job palette) · `uiicons.js` [140] (+ town signs `bowl cup bed house flask crate`; stats `fist eye clover`, `bow`, `hammer`, `lock`) · `emoticons.js` [164] | 32×32 skill icons, 12×12 UI glyphs (`MENU_ICON TRAIT`), chat emoticons |
 | `weapongauge.js` [166] | weapon-passive gauge in the status panel (`self.cr`: inertia mark tip reso brand hawk, a hybrid's other as `o`) |
 | `mastery.js` [148] | weapon-mastery strip in the dock (weapon in hand, "숙련 Lv.N", bar; hybrids show both, the back one with the swap-key cap) and its hover card (seven weapons, job, next unlock); a click opens 전직의 길; reads `self.wm/wk/wk2/job`, Lv.1 until the server sends `wm`; exports `kindIcon kindName masteryOf jobOf` |
 | `jobicons.js` [169] | Job emblems built from weapon palettes and pixel masks. `jobIcon jobIconUrl jobImg jobId jobMotif colorsOf mask badRows`; falls back to the adventurer's emblem for unknown IDs. `_jobs.html` and `tests/jobicons.mjs` verify the art. |
@@ -197,7 +197,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `_mobs.html` [121] · `_sheet.html` [88] · `_species.html` [95] · `_wardrobe.html` · `_title.html` [12] | Monster, sprite sheet, species, cosmetics/weapon silhouettes, and title previews. `_wardrobe.html?m=skin&skin=shard` shows a single weapon skin on all seven families, including native-size icons and a drawn bow. |
 | `_feel.html` [110] · `_swing.html` [76] · `_bow.html` [148] | Combat effects (e.g. `rows=sk80,sk89:64,pr:grav`), swings and bow poses/projectiles. |
 | `_feel.html` [122] · `_swing.html` [76] · `_bow.html` [148] | Combat effects (e.g. `rows=sk80,sk89:64,pr:grav`), swings and bow poses/projectiles. |
-| `_icons.html` [24] · `_uicons.html` [19] · `_jobs.html` [40] · `_emo.html` [18] · `_charm.html` [48] | Item/UI glyphs, job emblems, chat emotes, and charm layouts. |
+| `_icons.html` [29] · `_uicons.html` [19] · `_jobs.html` [40] · `_emo.html` [18] · `_charm.html` [48] | Item/UI glyphs, job emblems, chat emotes, and charm layouts. |
 | `_house.html` [41] · `_gather.html` [27] | Furniture and gathering previews, including rotations and material icons. |
 
 ### Tests — `game/tests/`
@@ -226,6 +226,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `editor-server.mjs` [493] | Map editor on 127.0.0.1:5190. Recycles its rules child, backs up `data/`, and starts playtests. `EDITOR_DATA` selects an alternate data directory. |
 | `dump-maps.mjs` [23] | Builds ignored `public/_maps.json` for the browser previews. |
 | `shot.mjs` [181] | Playwright preview/live captures. `--serve` serves previews, `--hour` pins the visual clock, and `--el` crops to a selector. |
+| `icon-sheet.mjs` [26] | The skill icon sheet (`_icons.html`) in its jobs' colours: serves `/_defs.json` from `logic.defs()`, saves a PNG (`--out`, `--ids`). |
 | `bake-check.mjs` [36] | Compares chunked and whole ground bakes and measures time and canvas memory. |
 | `balance-probe.mjs` [211] | Runs template characters against their level band and prints kills/min, damage and deaths, including hybrid weapon comparisons. |
 | `skill-probe.mjs` [120] | Every job against pinned dummies at a tier: single-target and pack damage/s, 5 s burst, heal, MP use, boss seconds (skills-v2.md measurements). |

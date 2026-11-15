@@ -223,3 +223,13 @@ are crowd tools with low single damage — intended. No active is now worth less
 - New: `ps` 140–154 procs (flash + Korean word for one's own), `ln` 10 brand hop, flag 128 star (정신 집중), sanctuary in
   암흑기사 colours; `skillfx_combo.js` actives in palette, distinct `cb` payoffs (파쇄, 추가타, 점화, 결집). Hammer code untouched.
 - Left: bow arrow looks (`ARROW_LOOK`), book/staff missiles and the support pennant/folio keep their fixed colours.
+
+### 32×32 icons as built (`public/skillicons.js`)
+- Every icon is drawn natively at 32×32 from shape parts (strokes, arcs, discs, polygons rasterised at pixel centres): solid parts
+  get a 3-step ramp in the job palette lit from the upper left plus one glint, one dark outline round them all; flat parts (slash
+  arcs, speed lines, bursts) are one colour and unlined. Backing: the job's dark in three bands, lighter at the top, an accent glow
+  behind the motif and a faint halo round the outline; rim: a 2-px bevel (light top-left, dark bottom-right).
+- Kept: the job palettes, square actives / round passives / accent-cornered signatures / split hybrid rims, combo pips (now 7×5;
+  top-right = puts the state on, bottom-right = spends it) and each skill's motif from §3/§4.
+- Shown at 1× (32 px): hotbar, skill window rows, weapon-row chips (own line under the name), 전직의 길 signature, loadout.
+- Preview: `node scripts/icon-sheet.mjs --out shots/icons.png` (job colours from `logic.defs()`); `tests/skills.mjs` checks every icon draws.

@@ -1,11 +1,16 @@
 <!doctype html><meta charset="utf-8"><link rel="icon" href="data:,"><body style="margin:0;background:#15161c"><canvas id="c"></canvas><pre id="o" style="color:#f88"></pre>
 <script type="module">
 import * as I from "./skillicons.js";
+import { setJobDefs } from "./jobpal.js";
+// The job palettes come from the rules: when the server also serves `/_defs.json` (logic.defs(); scripts/icon-sheet.mjs
+// does), every icon draws in its job's colours as in game; without it they all draw in 모험가's colours.
+try { const r = await fetch("_defs.json"); if (r.ok) setJobDefs(await r.json()); } catch { /* fallback colours */ }
 const cv = document.getElementById("c"), g = cv.getContext("2d");
 const selection = new URLSearchParams(location.search).get("ids");
 const requested = selection === null ? I.ALL : [...new Set(selection.split(",").map(id => id.trim()).filter(Boolean))];
 const ids = requested.filter(id => I.ALL.includes(id)), unknown = requested.filter(id => !I.ALL.includes(id));
-const W = 132, H = 124;
+// each cell: the icon at 96, 64 and 32 px (integer scales of 16 or 32)
+const W = 180, H = 124;
 const cols = Math.max(1, Math.min(8, Math.floor(innerWidth / W), ids.length));
 cv.width = cols * W; cv.height = Math.max(1, Math.ceil(ids.length / cols)) * H;
 g.imageSmoothingEnabled = false;
@@ -13,11 +18,11 @@ g.fillStyle = "#15161c"; g.fillRect(0, 0, cv.width, cv.height);
 g.font = "11px monospace"; g.textAlign = "center";
 ids.forEach((id, i) => {
   const x = (i % cols) * W, y = Math.floor(i / cols) * H, icon = I.skillIcon(id);
-  g.fillStyle = "#23252e"; g.fillRect(x + 4, y + 4, W - 8, H - 8);
-  g.drawImage(icon, x + 10, y + 10, 80, 80);
-  g.drawImage(icon, x + 93, y + 20, 32, 32);
-  g.drawImage(icon, x + 101, y + 62, 16, 16);
-  g.fillStyle = "#e6e0d0"; g.fillText(id, x + W / 2, y + 110);
+  g.fillStyle = "#23252e"; g.fillRect(x + 2, y + 2, W - 4, H - 4);
+  g.drawImage(icon, x + 6, y + 6, 96, 96);
+  g.drawImage(icon, x + 110, y + 6, 64, 64);
+  g.drawImage(icon, x + 126, y + 72, 32, 32);
+  g.fillStyle = "#e6e0d0"; g.fillText(id, x + W / 2, y + 116);
 });
 document.getElementById("o").textContent = [...unknown.map(id => `없는 아이콘 ${id}`), ...I.badRows()].join("\n");
 document.title = "ready";
