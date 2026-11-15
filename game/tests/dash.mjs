@@ -69,7 +69,7 @@ const dirOf = (i) => [Math.cos((i / AIM_N) * 2 * Math.PI), Math.sin((i / AIM_N) 
     assert.ok(Math.abs(Math.hypot(p.x - hx, p.y - hy) - PX) < 0.01, `facing ${k}: ${PX} px (got ${Math.hypot(p.x - hx, p.y - hy)})`);
     assert.ok(Math.abs(p.x - (hx + ux * PX)) < 0.01 && Math.abs(p.y - (hy + uy * PX)) < 0.01, `facing ${k}: along the aim`);
     assert.equal(p.aim, a, "the aim sent with it is the aim taken");
-    assert.ok(!p.fix, "the client predicts it: no position fix");
+    assert.ok(p.fix, "the client does not predict it: the server end point goes out as a position fix");
     const ds = W.evs("ds");
     assert.equal(ds.length, 1, "one trail event");
     assert.deepEqual(ds[0].slice(2), [hx, hy, Math.round(p.x), Math.round(p.y)], "from where to where");
@@ -108,6 +108,15 @@ const dirOf = (i) => [Math.cos((i / AIM_N) * 2 * Math.PI), Math.sin((i / AIM_N) 
   W2.wait(1900); assert.equal(W2.act({ t: "dash", a: AIM_N / 2 }).ok, false);
   W2.wait(100); assert.ok(W2.act({ t: "dash", a: AIM_N / 2 }).ok);
   assert.ok(Math.abs(W2.p.x - hx) < 0.01, "there and back");
+  // the snapshot: the position is corrected (me[5]) and the cooldown rides last in `me` (me[11], ms left)
+  let v = W2.step(0);
+  assert.equal(v.me[5], 1, "the server's end point is pushed to the client");
+  assert.equal(v.me[11], CD, "the full cooldown right after");
+  v = W2.step(1500);
+  assert.equal(v.me[5], 0);
+  assert.equal(v.me[11], CD - 1500);
+  v = W2.step(CD);
+  assert.equal(v.me[11], 0, "0 when ready");
   assert.equal(W2.p.toast.filter((s) => /대시|회피|dash/.test(String(s))).length, 0, "no toast for a refused dash");
 }
 
@@ -296,7 +305,7 @@ for (const mapId of ["meadow", "crypt", "town"]) {
   W.at(hx, hy);
   assert.ok(W.act({ t: "dash", a: 0 }).ok);
   const ex = W.p.x;
-  W.wait(200);
+  W.step(200); // the snapshot carrying the fix has gone out
   assert.ok(W.act({ t: "mv", x: ex + 6, y: hy, d: 2, a: 0 }).ok);
   assert.ok(!W.p.fix && Math.abs(W.p.x - (ex + 6)) < 0.01, "walking on from the end is not a correction");
   // a walk from where the dash began (a client that never dashed) is put right

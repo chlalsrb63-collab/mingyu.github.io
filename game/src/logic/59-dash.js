@@ -1,7 +1,7 @@
 // ───────────────────────────── the dash (Space) ─────────────────────────────
-// A short dash the way you aim, for getting about and for slipping a monster's heavy blow. The server
-// moves you (the client only predicts it); for as long as it lasts, and a breath longer, nothing a monster
-// throws lands. Others see it as `["ds", eid, x0, y0, x1, y1]`; a blow slipped is `["dg", eid]` ("회피!").
+// A short dash the way you aim, for getting about and for slipping a monster's heavy blow. The server moves
+// you and sends the end point as a position fix (the client only draws the trail); for as long as it lasts, and
+// a breath longer, nothing a monster throws lands. Others see it as `["ds", eid, x0, y0, x1, y1]`; a blow slipped is `["dg", eid]` ("회피!").
 
 /** `px` far in `ms`, once every `cd`; `inv` more ms of safety after it ends; swept `step` px at a time. */
 const DASH = { px: 72, ms: 180, cd: 4000, inv: 60, step: 4 };
@@ -44,7 +44,7 @@ function dashGo(S, p, m, a) {
   if (p.gat) gatStop(S, p, "채집이 끊겼습니다.");
   const [ux, uy] = AIM_V[p.aim | 0], x0 = p.x, y0 = p.y;
   const [x, y] = dashEnd(p, m, ux, uy);
-  p.x = x; p.y = y; p.mvAt = now;
+  p.x = x; p.y = y; p.mvAt = now; p.fix = true;
   p.dashAt = now;
   p.dodge = now + DASH.ms + DASH.inv;
   rt.ev.push(["ds", p.eid, Math.round(x0), Math.round(y0), Math.round(x), Math.round(y)]);
@@ -54,4 +54,8 @@ function dodged(S, rt, p) {
   if (S.now >= (p.dodge || 0)) return false;
   if (p.dgAt !== S.now) { p.dgAt = S.now; rt.ev.push(["dg", p.eid]); }
   return true;
+}
+/** Ms until the next dash may go (the last `me` field, rounded to 100 ms): 0 when ready. */
+function dashLeft(S, p) {
+  return p.dashAt ? Math.max(0, Math.ceil((p.dashAt + DASH_CD - S.now) / 100) * 100) : 0;
 }
