@@ -9384,12 +9384,13 @@ function skWhy(ch, sk) {
  * Is weapon passive `id` working now? Its weapon is in hand with the mastery for it; a hybrid keeps
  * both of its weapons' passives on whichever of the two it holds.
  */
-function pasNative(ch, id, load = loOf(ch), hand = inHand(ch)) {
+function pasNative(ch, id, load, hand = inHand(ch)) {
   const sk = SKILL[id];
-  if (!hand || ch.wm[sk.wk].lv < sk.need || !load.p.includes(id)) return false;
-  if (hand === sk.wk) return true;
+  if (!hand || ch.wm[sk.wk].lv < sk.need) return false;
   const j = JOBS[ch.job];
-  return !!j && j.kind === "hybrid" && j.wk.includes(sk.wk) && j.wk.includes(hand);
+  if (hand !== sk.wk && !(j && j.kind === "hybrid" && j.wk.includes(sk.wk) && j.wk.includes(hand))) return false;
+  // the loadout last: building one is the dear part (pasOn runs on every snapshot)
+  return (load || loOf(ch)).p.includes(id);
 }
 const pasOn = (p, id) => pasNative(p.ch, id);
 /** Skill power from mastery past the skill's need (a hybrid signature: the lower of its two weapons). */
@@ -17011,7 +17012,8 @@ function dash(S, m, rt, mob, atk) {
   mob.atkAt = Math.max(mob.atkAt, S.now + 600);
 }
 
-function tickMob(S, m, rt, mob, dt) {
+/** `here`: the players standing on this map when its turn began (in S.players order; each is checked again). */
+function tickMob(S, m, rt, mob, dt, here) {
   const d = MOBS[mob.k];
   const now = S.now;
   if (mob.dead) {
@@ -17059,8 +17061,7 @@ function tickMob(S, m, rt, mob, dt) {
   if (!tgt && d.aggro > 0 && mob.st !== 2) {
     // fog: monsters see a little less far
     let bd = d.aggro * (rt.wx === WX.fog ? WX_FOG_AGGRO : 1);
-    for (const pid of Object.keys(S.players)) {
-      const p = S.players[pid];
+    for (const p of here) {
       if (p.map !== m.id || p.dead || (p.foes || 0) >= AGGRO_CAP || p.hide > now) continue;
       const dd = dist(mob.x, mob.y, p.x, p.y);
       if (dd < bd) { bd = dd; tgt = p; }
@@ -17086,8 +17087,7 @@ function tickMob(S, m, rt, mob, dt) {
       if (!used && big) {
         mob.castAt = now + 6500;
         // one blast on every player in the fight: stand still and the whole party pays
-        for (const pid of Object.keys(S.players)) {
-          const o = S.players[pid];
+        for (const o of here) {
           if (o.map !== m.id || o.dead || dist(mob.x, mob.y, o.x, o.y) > 220) continue;
           const r = d.boss ? 40 : 32;
           rt.tele.push({ x: o.x, y: o.y, r, at: now + 1300, dmg: atk * (d.boss ? 1.7 : 1.3), by: mob });
@@ -17264,9 +17264,10 @@ export function tick(S, now) {
     const m = mapOfS(S, id);
     cellPass(S, m, rt, pids);
     // how many monsters are already after each player here
-    for (const pid of pids) if (S.players[pid].map === id) S.players[pid].foes = 0;
+    const here = [];
+    for (const pid of pids) if (S.players[pid].map === id) { S.players[pid].foes = 0; here.push(S.players[pid]); }
     for (const mob of rt.mobs) { const o = !mob.dead && mob.tgt ? S.players[mob.tgt] : null; if (o && o.map === id) o.foes++; }
-    for (const mob of rt.mobs) tickMob(S, m, rt, mob, dt);
+    for (const mob of rt.mobs) tickMob(S, m, rt, mob, dt, here);
     shotTick(S, rt, dt);
     for (let i = rt.mobs.length - 1; i >= 0; i--) if ((rt.mobs[i].temp || rt.mobs[i].cellGone) && rt.mobs[i].dead) rt.mobs.splice(i, 1);
     for (let i = rt.zones.length - 1; i >= 0; i--) {
