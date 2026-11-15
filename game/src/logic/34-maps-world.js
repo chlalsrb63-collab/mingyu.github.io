@@ -390,7 +390,7 @@ const GEN = {
     sea: { side: "w", at: 17, amp: 5, surf: 2, shallow: 0, beach: 4, sand: "r", rock: "Ω", rockP: 0.2, reef: 0 },
     ground: ":", edge: "T", treeCh: "T", treeCh2: "Ψ", road: "a", trail: "p", shore: "s", river: false, lakes: 4, lakeR: 5, vaults: 9, ruins: 4, tpm: 15.5,
     walls: [["trees", 0.6], ["bramble", 0.15], ["ruin", 0.1], ["rocks", 0.15]], rocks: ["Ω", "R"], gates: [["north", "n", 0.72], ["south", "s", 0.34]], exit: "south",
-    mobs: ["catsplit_gold", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile"], pondMob: null, chest: "chest_jungle",
+    mobs: ["vinemonkey", "dartbrood", "hydrasnake_poison", "orchidmantis", "loggator"], pondMob: null, chest: "chest_jungle",
     vaultKinds: ["shrine", "ring", "circle", "cache", "menhir", "cove"], biomes: { plain: "glade" }, featureP: 0.6, features: ["pond", "boulders", "ring", "logs", "stones", "cairn", "bigtree"],
     // wet hollows are swamp; elsewhere deep jungle, with palm groves and glades
     biome: (e, mo, r) => (mo > 0.62 ? "swamp" : r < 0.2 ? "glade" : r < 0.45 ? "palm" : "deep"),
@@ -407,7 +407,7 @@ const GEN = {
     tiers: 3, tierOpen: 0.55, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ", green: { r: 3, palm: 0.2 },
     ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 6, lakeR: 7, vaults: 9, ruins: 4, tpm: 15.5,
     walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north", doors: [["south", "s", 0.2143]],
-    mobs: ["foxtwine_gold", "hydrasnake_gold", "lambmaw_bone", "eyecrow_ash", "twingoat_gold", "bearmaw_gold"], pondMob: "eyecrow_ash", chest: "chest_oasis",
+    mobs: ["foxtwine_gold", "hydrasnake_gold", "spinescorp_gold", "ribvulture_bone", "cactushog", "mummycamel"], pondMob: "ribvulture_bone", chest: "chest_oasis",
     campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "hamlet"], biomes: { plain: "flat" }, featureP: 0.65, features: ["pond", "boulders", "cairn", "stones", "dead"],
     // by level: scrub and flats below, rippled dunes on the middle shelves, bare stony ridges on top
     biome: (e, mo, r, t) => (t === 2 ? "ridge" : t === 1 ? (r < 0.55 ? "dune" : "flat") : mo > 0.55 ? "scrub" : "flat"),
@@ -425,7 +425,7 @@ const GEN = {
     sea: { side: "s", at: 42, amp: 6, surf: 2, shallow: 26, beach: 7, sand: "S", bar: "S", reef: 0.16 },
     ground: "S", edge: "T", treeCh: "Ψ", treeCh2: "T", road: "p", shore: "S", river: false, lakes: 2, lakeR: 4, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["palms", 0.45], ["rocks", 0.35], ["trees", 0.2]], rocks: ["Ω", "R"], gates: [["north", "n", 0.16], ["east", "e", 0.5]], exit: "east", doors: [["west", "w", 0.375]],
-    mobs: ["crabskull_blood", "fishwalker_frost", "eelknot_frost", "squidrat_blood", "leechmaw_bone", "gatorhalf_steel"], pondMob: null, chest: "chest_coast",
+    mobs: ["hermitskull", "barnacleseal", "brainjelly", "eyegull", "leechmaw_bone", "coralturtle"], pondMob: null, chest: "chest_coast",
     vaultKinds: ["palmring", "tidepool", "cove", "cache", "menhir", "lookout"], biomes: { plain: "beach" }, featureP: 0.6, features: ["boulders", "logs", "cairn", "stones", "pond"],
     // the upper level is dune and palm grove (the jungle's edge), the lower the open beach
     biome: (e, mo, r, t) => (t === 1 ? (r < 0.5 ? "dune" : "grove") : mo > 0.6 ? "grove" : "beach"),
@@ -443,7 +443,7 @@ const GEN = {
     const onWadi = (x, y) => y > 6 && y < 150 && Math.abs(x - wadiX(y)) < 4.6;
     const salt = (x, y) => x > 206 + 8 * Math.sin(y / 9) && y < 60 + 6 * Math.sin(x / 11);
     const belt = (x, y) => y + 9 * Math.sin(x / 31 + 0.7) > 94;          // south of this line the low desert (the oasis belt)
-    const DUNE = ["ratking_gold", "spiderhand_bone", "owlstare_gold"], BELT = ["spiderhand_bone", "bonehound_gold", "owlstare_gold", "moleworm_gold"], SEA = ["fishwalker_blood", "crabskull_frost"];
+    const DUNE = ["ratking_gold", "spinescorp_bone", "ribvulture_gold"], BELT = ["spinescorp_bone", "bonehound_gold", "ribvulture_gold", "sandmaw"], SEA = ["barnacleseal_blood", "hermitskull_frost"];
     return {
       id: "dunesea", name: "모래바다", theme: "desert", bgm: "field", seed: 73129, w: 288, h: 192, r: 10.6, warp: 9, wind: 0.6, loops: 0.12, merge: 0.3, cliff: 0.16, gap: 2,
       tiers: 4, ramp: 3, rampP: 0.14, roadW: 3, stoneFr: [0.42, 0.78], widen: "TPBRulYAeΨΩΦ", green: { r: 4, palm: 0.2 },
@@ -452,7 +452,7 @@ const GEN = {
       temple: { at: [0.13, 0.6], buried: "z", arena: true, keeper: "bonehound_gold" }, stonesAt: [[0.33, 0.73]], via: [[0.5, 0.58], [0.62, 0.72]],
       ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 0, lakeR: 6, vaults: 12, ruins: 6, tpm: 15.5,
       walls: [["rocks", 0.55], ["ruin", 0.15], ["palms", 0.3]], rocks: ["R", "A"], gates: [["north", "n", 0.3], ["east", "e", 0.64]], exit: "east",
-      mobs: ["ratking_gold", "spiderhand_bone", "bonehound_gold", "owlstare_gold", "fishwalker_blood", "crabskull_frost", "moleworm_gold"], pondMob: null, chest: "chest_dunesea",
+      mobs: ["ratking_gold", "spinescorp_bone", "bonehound_gold", "ribvulture_gold", "barnacleseal_blood", "hermitskull_frost", "sandmaw"], pondMob: null, chest: "chest_dunesea",
       campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "cove"], biomes: { plain: "flat" }, featureP: 0.6, features: ["boulders", "cairn", "stones", "dead", "boulders", "dead"],
       // levels by place: the shore and the sea lowest, the oasis belt a step up, the dunes above in long ridges by turns
       tierOf: (r) => (r.sd > -10 ? 0 : salt(r.px, r.py) ? 2 : belt(r.px, r.py) ? (r.e > 0.64 ? 2 : 1) : 2 + ((Math.floor((r.py + r.px * 0.22 + 7 * Math.sin(r.px / 17)) / 24) & 1) ^ (r.e > 0.62 ? 1 : 0))),

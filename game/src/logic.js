@@ -503,7 +503,7 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "ribdeer_bile", oasis: "bearmaw_gold", coast: "gatorhalf_steel", dunesea: "moleworm_gold" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -654,6 +654,39 @@ const MOBS = {
   rimehare: { name: "서리창 쌍두토끼", lv: 50, hp: 4600, atk: 142, def: 30, spd: 52, xp: 3400, gold: [132, 204], aggro: 80, range: 18, cd: 1350, leap: 92 },
   frostmoth: { name: "갈라진 유리날개", lv: 50, hp: 4500, atk: 149, def: 33, spd: 37, xp: 3900, gold: [142, 218], aggro: 92, range: 32, cd: 1900, fly: true, fan: 96 },
   crownstag: { name: "성에왕 유리뿔", lv: 50, hp: 520000, atk: 205, def: 50, spd: 34, xp: 74000, gold: [5200, 7600], aggro: 124, range: 30, cd: 1500, resp: 300000, boss: true, gear: 1, charge: 148, slam: 48, fan: 144, pool: 34, poolKind: 2 },
+  // ── new species (public/mobart_e.js). Each took the row of the tinted stand-in it replaced, so the grounds weigh what
+  //    they did; the stand-ins' rows stay above for old collections (the ones no longer met: catsplit_gold, toadbrood_poison,
+  //    mothface_bile, ribdeer_bile; lambmaw_bone, eyecrow_ash, twingoat_gold, bearmaw_gold; crabskull_blood, fishwalker_frost,
+  //    eelknot_frost, squidrat_blood, gatorhalf_steel; spiderhand_bone, owlstare_gold, moleworm_gold, fishwalker_blood, crabskull_frost).
+  // 정글 해안도로
+  vinemonkey: { name: "덩굴 원숭이", lv: 20, hp: 600, atk: 64, def: 6, spd: 56, xp: 290, gold: [32, 62], aggro: 94, range: 18, cd: 1000, leap: 100 },
+  dartbrood: { name: "독개구리 떼", lv: 21, hp: 760, atk: 68, def: 14, spd: 30, xp: 330, gold: [36, 70], aggro: 86, range: 20, cd: 1500, pool: 26 },
+  orchidmantis: { name: "난초 사마귀", lv: 24, hp: 880, atk: 82, def: 8, spd: 44, xp: 450, gold: [44, 84], aggro: 96, range: 72, cd: 1400, shot: true, pool: 22 },
+  loggator: { name: "악어 통나무", lv: 26, hp: 1500, atk: 92, def: 22, spd: 30, xp: 540, gold: [50, 94], aggro: 80, range: 20, cd: 1400, slam: 38, charge: 110 },
+  // 산호 해안
+  hermitskull: { name: "집게 소라게 떼", lv: 26, hp: 1370, atk: 92, def: 24, spd: 34, xp: 540, gold: [48, 88], aggro: 84, range: 20, cd: 1400, charge: 118 },
+  barnacleseal: { name: "따개비 물개", lv: 27, hp: 1580, atk: 95, def: 22, spd: 32, xp: 590, gold: [52, 92], aggro: 80, range: 22, cd: 1500, slam: 38 },
+  brainjelly: { name: "해파리 뇌", lv: 28, hp: 1320, atk: 99, def: 16, spd: 40, xp: 660, gold: [56, 100], aggro: 98, range: 76, cd: 1800, volley: true },
+  eyegull: { name: "갈매기 눈알", lv: 29, hp: 1500, atk: 101, def: 18, spd: 56, xp: 715, gold: [59, 105], aggro: 96, range: 18, cd: 1000, fly: true, pool: 24, poolKind: 2 },
+  coralturtle: { name: "산호 뿔 거북", lv: 32, hp: 2100, atk: 106, def: 30, spd: 30, xp: 880, gold: [69, 119], aggro: 82, range: 21, cd: 1500, slam: 42, charge: 112 },
+  // 모래바람 오아시스
+  spinescorp_gold: { name: "모래 전갈 등뼈", sp: "spinescorp", tint: "gold", lv: 30, hp: 1500, atk: 100, def: 16, spd: 40, xp: 790, gold: [64, 114], aggro: 90, range: 19, cd: 1200, charge: 112 },
+  ribvulture_bone: { name: "백골 독수리 갈비", sp: "ribvulture", tint: "bone", lv: 31, hp: 1400, atk: 98, def: 12, spd: 46, xp: 850, gold: [66, 118], aggro: 98, range: 18, cd: 1100, fly: true },
+  cactushog: { name: "선인장 고슴도치", lv: 33, hp: 2000, atk: 100, def: 24, spd: 44, xp: 980, gold: [74, 130], aggro: 90, range: 20, cd: 1100, charge: 110 },
+  mummycamel: { name: "미라 낙타", lv: 34, hp: 2600, atk: 104, def: 28, spd: 28, xp: 1060, gold: [78, 136], aggro: 80, range: 21, cd: 1500, slam: 40, charge: 110 },
+  // 모래바다
+  spinescorp_bone: { name: "백골 전갈 등뼈", sp: "spinescorp", tint: "bone", lv: 32, hp: 1950, atk: 102, def: 16, spd: 56, xp: 910, gold: [70, 124], aggro: 94, range: 18, cd: 1000, charge: 112 },
+  ribvulture_gold: { name: "모래 독수리 갈비", sp: "ribvulture", tint: "gold", lv: 34, hp: 1900, atk: 108, def: 16, spd: 42, xp: 1050, gold: [78, 136], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
+  barnacleseal_blood: { name: "붉은 따개비 물개", sp: "barnacleseal", tint: "blood", lv: 35, hp: 2500, atk: 106, def: 24, spd: 32, xp: 1120, gold: [80, 140], aggro: 80, range: 22, cd: 1500, slam: 38 },
+  hermitskull_frost: { name: "푸른 집게 소라게 떼", sp: "hermitskull", tint: "frost", lv: 36, hp: 2600, atk: 108, def: 30, spd: 34, xp: 1220, gold: [86, 150], aggro: 84, range: 20, cd: 1400, charge: 118 },
+  sandmaw: { name: "모래 지렁이 아가리", lv: 37, hp: 2800, atk: 112, def: 22, spd: 44, xp: 1300, gold: [90, 158], aggro: 90, range: 19, cd: 1200, leap: 100, slam: 40 },
+  // 붉은 협곡 (mesa) and 구름 사원 (cloudtemple) — not met yet: their maps take these when they open (docs/design/maps-batch2.md)
+  beadmonkey: { name: "염주 원숭이", lv: 30, hp: 1500, atk: 100, def: 14, spd: 60, xp: 790, gold: [64, 114], aggro: 98, range: 18, cd: 900, leap: 96 },
+  wingcrane: { name: "겹날개 두루미", lv: 32, hp: 1700, atk: 104, def: 14, spd: 44, xp: 910, gold: [70, 124], aggro: 98, range: 74, cd: 1700, fly: true, volley: true },
+  mistiger: { name: "운해의 범", lv: 36, hp: 30000, atk: 160, def: 34, spd: 40, xp: 14000, gold: [2000, 3200], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1, charge: 150, leap: 120, fan: 150 },
+  spinescorp: { name: "전갈 등뼈", lv: 36, hp: 2600, atk: 108, def: 24, spd: 52, xp: 1220, gold: [86, 150], aggro: 94, range: 19, cd: 1000, charge: 114 },
+  ribvulture: { name: "독수리 갈비", lv: 38, hp: 2500, atk: 116, def: 18, spd: 42, xp: 1400, gold: [94, 164], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
+  crownpeacock: { name: "금관 공작", lv: 42, hp: 4200, atk: 124, def: 30, spd: 46, xp: 1900, gold: [104, 180], aggro: 92, range: 22, cd: 1300, fan: 150, charge: 120, pool: 28, poolKind: 1 },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
@@ -4739,7 +4772,7 @@ const GEN = {
     sea: { side: "w", at: 17, amp: 5, surf: 2, shallow: 0, beach: 4, sand: "r", rock: "Ω", rockP: 0.2, reef: 0 },
     ground: ":", edge: "T", treeCh: "T", treeCh2: "Ψ", road: "a", trail: "p", shore: "s", river: false, lakes: 4, lakeR: 5, vaults: 9, ruins: 4, tpm: 15.5,
     walls: [["trees", 0.6], ["bramble", 0.15], ["ruin", 0.1], ["rocks", 0.15]], rocks: ["Ω", "R"], gates: [["north", "n", 0.72], ["south", "s", 0.34]], exit: "south",
-    mobs: ["catsplit_gold", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile"], pondMob: null, chest: "chest_jungle",
+    mobs: ["vinemonkey", "dartbrood", "hydrasnake_poison", "orchidmantis", "loggator"], pondMob: null, chest: "chest_jungle",
     vaultKinds: ["shrine", "ring", "circle", "cache", "menhir", "cove"], biomes: { plain: "glade" }, featureP: 0.6, features: ["pond", "boulders", "ring", "logs", "stones", "cairn", "bigtree"],
     // wet hollows are swamp; elsewhere deep jungle, with palm groves and glades
     biome: (e, mo, r) => (mo > 0.62 ? "swamp" : r < 0.2 ? "glade" : r < 0.45 ? "palm" : "deep"),
@@ -4756,7 +4789,7 @@ const GEN = {
     tiers: 3, tierOpen: 0.55, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ", green: { r: 3, palm: 0.2 },
     ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 6, lakeR: 7, vaults: 9, ruins: 4, tpm: 15.5,
     walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north", doors: [["south", "s", 0.2143]],
-    mobs: ["foxtwine_gold", "hydrasnake_gold", "lambmaw_bone", "eyecrow_ash", "twingoat_gold", "bearmaw_gold"], pondMob: "eyecrow_ash", chest: "chest_oasis",
+    mobs: ["foxtwine_gold", "hydrasnake_gold", "spinescorp_gold", "ribvulture_bone", "cactushog", "mummycamel"], pondMob: "ribvulture_bone", chest: "chest_oasis",
     campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "hamlet"], biomes: { plain: "flat" }, featureP: 0.65, features: ["pond", "boulders", "cairn", "stones", "dead"],
     // by level: scrub and flats below, rippled dunes on the middle shelves, bare stony ridges on top
     biome: (e, mo, r, t) => (t === 2 ? "ridge" : t === 1 ? (r < 0.55 ? "dune" : "flat") : mo > 0.55 ? "scrub" : "flat"),
@@ -4774,7 +4807,7 @@ const GEN = {
     sea: { side: "s", at: 42, amp: 6, surf: 2, shallow: 26, beach: 7, sand: "S", bar: "S", reef: 0.16 },
     ground: "S", edge: "T", treeCh: "Ψ", treeCh2: "T", road: "p", shore: "S", river: false, lakes: 2, lakeR: 4, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["palms", 0.45], ["rocks", 0.35], ["trees", 0.2]], rocks: ["Ω", "R"], gates: [["north", "n", 0.16], ["east", "e", 0.5]], exit: "east", doors: [["west", "w", 0.375]],
-    mobs: ["crabskull_blood", "fishwalker_frost", "eelknot_frost", "squidrat_blood", "leechmaw_bone", "gatorhalf_steel"], pondMob: null, chest: "chest_coast",
+    mobs: ["hermitskull", "barnacleseal", "brainjelly", "eyegull", "leechmaw_bone", "coralturtle"], pondMob: null, chest: "chest_coast",
     vaultKinds: ["palmring", "tidepool", "cove", "cache", "menhir", "lookout"], biomes: { plain: "beach" }, featureP: 0.6, features: ["boulders", "logs", "cairn", "stones", "pond"],
     // the upper level is dune and palm grove (the jungle's edge), the lower the open beach
     biome: (e, mo, r, t) => (t === 1 ? (r < 0.5 ? "dune" : "grove") : mo > 0.6 ? "grove" : "beach"),
@@ -4792,7 +4825,7 @@ const GEN = {
     const onWadi = (x, y) => y > 6 && y < 150 && Math.abs(x - wadiX(y)) < 4.6;
     const salt = (x, y) => x > 206 + 8 * Math.sin(y / 9) && y < 60 + 6 * Math.sin(x / 11);
     const belt = (x, y) => y + 9 * Math.sin(x / 31 + 0.7) > 94;          // south of this line the low desert (the oasis belt)
-    const DUNE = ["ratking_gold", "spiderhand_bone", "owlstare_gold"], BELT = ["spiderhand_bone", "bonehound_gold", "owlstare_gold", "moleworm_gold"], SEA = ["fishwalker_blood", "crabskull_frost"];
+    const DUNE = ["ratking_gold", "spinescorp_bone", "ribvulture_gold"], BELT = ["spinescorp_bone", "bonehound_gold", "ribvulture_gold", "sandmaw"], SEA = ["barnacleseal_blood", "hermitskull_frost"];
     return {
       id: "dunesea", name: "모래바다", theme: "desert", bgm: "field", seed: 73129, w: 288, h: 192, r: 10.6, warp: 9, wind: 0.6, loops: 0.12, merge: 0.3, cliff: 0.16, gap: 2,
       tiers: 4, ramp: 3, rampP: 0.14, roadW: 3, stoneFr: [0.42, 0.78], widen: "TPBRulYAeΨΩΦ", green: { r: 4, palm: 0.2 },
@@ -4801,7 +4834,7 @@ const GEN = {
       temple: { at: [0.13, 0.6], buried: "z", arena: true, keeper: "bonehound_gold" }, stonesAt: [[0.33, 0.73]], via: [[0.5, 0.58], [0.62, 0.72]],
       ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 0, lakeR: 6, vaults: 12, ruins: 6, tpm: 15.5,
       walls: [["rocks", 0.55], ["ruin", 0.15], ["palms", 0.3]], rocks: ["R", "A"], gates: [["north", "n", 0.3], ["east", "e", 0.64]], exit: "east",
-      mobs: ["ratking_gold", "spiderhand_bone", "bonehound_gold", "owlstare_gold", "fishwalker_blood", "crabskull_frost", "moleworm_gold"], pondMob: null, chest: "chest_dunesea",
+      mobs: ["ratking_gold", "spinescorp_bone", "bonehound_gold", "ribvulture_gold", "barnacleseal_blood", "hermitskull_frost", "sandmaw"], pondMob: null, chest: "chest_dunesea",
       campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "cove"], biomes: { plain: "flat" }, featureP: 0.6, features: ["boulders", "cairn", "stones", "dead", "boulders", "dead"],
       // levels by place: the shore and the sea lowest, the oasis belt a step up, the dunes above in long ridges by turns
       tierOf: (r) => (r.sd > -10 ? 0 : salt(r.px, r.py) ? 2 : belt(r.px, r.py) ? (r.e > 0.64 ? 2 : 1) : 2 + ((Math.floor((r.py + r.px * 0.22 + 7 * Math.sin(r.px / 17)) / 24) & 1) ^ (r.e > 0.62 ? 1 : 0))),
