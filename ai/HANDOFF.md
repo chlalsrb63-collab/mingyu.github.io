@@ -67,15 +67,17 @@ recipes (피눈물 결정 → 축복 강화석, 갯가재 집게 → 홈 송곳)
 (wardrobe "곧 열립니다" gone), **server-first notice** (vault op `first`, key `first:<server>:<boss>`), field-boss **stagger gauge** on the
 wire (`M` row [12]) + bar, **damage ranking** toast after a boss/guardian (`dmgBoard`) + 업적 선봉장 (`cnt.mvp`), 바위 side-quest chain for the
 new bosses (data/quests.json), uncurse = scroll 1,200 G + 400 G × gear tier, story-arena HUD (`sty` wire: time left + [떠나기]),
-char window fits 960×600, 앉기 tooltip names the campfire. **Co-op 3–4**: 캉캉대장간 단조 (forge, `life-and-coop.md` H8) and the 보글 가마 skin
-(H9, if merged — see git log). **Art**: own sprites for the bosses-2 adds (`mobart_bosses2_adds.js`) and for 숫양 / 검은 왕관 뿌리짐승 / 눈먼
+char window fits 960×600, 앉기 tooltip names the campfire. **Co-op 3–4**: 캉캉대장간 단조 (forge, `life-and-coop.md` H8) and 보글연금공방
+가마 (alch = forge skin, H9; names in `COOP[k].skin`), own synthesized cues (audio.js), S-grade cosmetics 105–108 + achievements
+`coopS_<k>` / `coop20` (`cnt.coop*`). Bosses-2 legendaries have their own looks (weapons.js MOTIF by item id, `UNIQ_SIL`; `who` sends a
+unique weapon's id as its look). **Art**: own sprites for the bosses-2 adds (`mobart_bosses2_adds.js`) and for 숫양 / 검은 왕관 뿌리짐승 / 눈먼
 문지기 올빼미 / 왕릉 파수꾼 (`mobart_named.js`); icons for 스킬 강화석, the two trophies, reset scrolls and the 8 raid set pieces (every item
 now has a bag icon); 혈루 뿔 왕관 + 갯가재 집게 weapon skin (boss pool); bat-wing hem for 박쥐 망토. Codex `daily-party-hunt` merged.
 
 **Next, in order:**
 1) Play-test the four co-op jobs (forge/alch bots hit every beat — real players score lower; retune cut-offs) and the bosses-2 raids.
-2) Co-op leftovers: diner plates/washing, burger, two-carrier orders; forge sounds (mapped to existing ones), scorch fx; tool sprites;
-   ready check + `coop_join`; S cosmetics/achievements for co-op.
+2) Co-op leftovers: diner burger + two-carrier orders and a clean-plate stack (plates/sink done, C row kind 9; the 3-player cut-off
+   fell to parN 1.38 because one tray clears plates — check in play); forge scorch fx; editor templates; ready check + `coop_join`.
 3) Server-first notice reaches only the channel where it happened (the other channel of that server doesn't hear it).
 4) 55 monsters are regional tints of another sprite (deliberate variants); the four that were different creatures now have art.
 5) Town polish (§3): benches to sit on (seats would sit on a solid prop — needs care), spirit-tree canopy over the fountain.
