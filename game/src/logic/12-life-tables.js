@@ -307,29 +307,94 @@ const COOP_T = {
   xp: [0.08, 0.14, 0.20, 0.28], gold: [40, 60, 80, 110], gearQ: [0, 1, 1, 2], stone: [1, 2, 3, 5], life: [0.30, 0.45, 0.60, 0.80],
   tip: 10, tipLife: 0.1, helpTip: 15, helpLife: 0.25, rep: 5,
 };
-const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통" };
+const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반" };
 /** The jobs: name, owner NPC and lobby, shift minutes, the two tools (rotation A B A B), par, combo window, life skill, template. */
 const COOP = {
   apt: {
-    name: "동동아파트 청소", npc: "dongdong", lobby: "dongdong_apt", mins: 5, tools: ["broom", "bin"], par: 900, combo: 20000, skill: "deliver",
-    // stations (tiles; solid furniture, used from a neighbouring tile): 소각로 `<`, 재활용함 `w`, the tool rack `>`
-    st: { burn: [1, 13], recycle: [22, 13], rack: [12, 13] },
-    start: [[11, 12], [13, 12], [11, 13], [13, 13]],
-    // the four flats (spawn rooms, tile rects) above the corridor (y 12–13)
-    rooms: [[1, 2, 9, 5], [14, 2, 22, 5], [1, 7, 9, 10], [14, 7, 22, 10]],
+    name: "동동아파트 청소", npc: "dongdong", lobby: "dongdong_apt", mins: 5, tools: ["broom", "bin"], combo: 20000, skill: "deliver",
+    // cut-offs: par · parN[n] · cuts, tuned on walking bots at player speed (tests/coop.mjs: 1–4 bots score ≈ 265 · 1,960 ·
+    // 3,850 · 4,410, just over S); a real party, slower to decide, lands on B–A. Alone it is slow: one worker swaps tools.
+    par: 1000, parN: { 1: 0.28, 2: 2.0, 3: 3.8, 4: 4.5 },
+    hint: "빗자루로 쓸고, 쓰레기통으로 모아 소각로(서쪽 끝)·재활용함(동쪽 끝)에 버리세요.",
+    // stations (tiles; solid furniture, used from a neighbouring tile): 소각로 `<` at the corridor's west end, 재활용함 `w`
+    // at its east end (44 tiles apart, so the bins really walk), the tool rack `>` in the middle
+    st: { burn: [1, 9], recycle: [43, 9], rack: [22, 9] },
+    start: [[21, 8], [23, 8], [21, 10], [23, 10]],
+    // eight flats (spawn rooms, tile rects): four north of the corridor (y 8–10), four south, a 2-tile door each
+    rooms: [[1, 1, 10, 6], [12, 1, 21, 6], [23, 1, 32, 6], [34, 1, 43, 6], [1, 12, 10, 17], [12, 12, 21, 17], [23, 12, 32, 17], [34, 12, 43, 17]],
     tpl: {
-      name: "동동아파트 (근무 중)", theme: "interior", style: "lobby", bgm: "clean", safe: true, w: 24, h: 15, entry: [12, 12],
-      ground: ["ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "ffuuuuuuuffffffqqqqqqqff", "ffuuuuuuuffffffqqqqqqqff", "ffuuuuuuuffffffqqqqqqqff",
-        "ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "fflllllllffffffuuuuuuuff", "fflllllllffffffuuuuuuuff",
-        "ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "hhhhhhhhhhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhhhhhhhhhh"],
-      objects: ["=+====~===+==+===~====+=", "=pp   g  r    r  g   pp_", "=                      _", "=  o              o    _", "=                      _",
-        "=                      _", "=mmm  mmmm    mmmm  mmm_", "=s                    s_", "=                      _", "=   g              g   _",
-        "=                      _", "=jjj  jjjj    jjjj  jjj_", "=                      _", "=<          >         w_", "________________________"],
+      name: "동동아파트 (근무 중)", theme: "interior", style: "lobby", bgm: "clean", safe: true, w: 45, h: 19, entry: [22, 8],
+      ground: ["fffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff",
+        "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff",
+        "fffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffff", "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf",
+        "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf", "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf", "fffffffffffffffffffffffffffffffffffffffffffff",
+        "fffffffffffffffffffffffffffffffffffffffffffff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff",
+        "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "fffffffffffffffffffffffffffffffffffffffffffff",
+        "fffffffffffffffffffffffffffffffffffffffffffff"],
+      objects: ["===+==~===+==~===+==~===+==~===+==~===+==~===", "=pp      r b r      ppbpp      r b r      pp_", "=          b          b          b          _",
+        "=    o     b     o    b    o     b     o    _", "=          b          b          b          _", "=      s   b   s      b      s   b   s      _",
+        "=         gbg         b         gbg         _", "=mmmm  mmmmmmmmm  mmmmmmmmm  mmmmmmmmm  mmmm_", "=                                           _",
+        "=<                    >                    w_", "=                                           _", "=mmmm  mmmmmmmmm  mmmmmmmmm  mmmmmmmmm  mmmm_",
+        "=g         b         gbg         b         g_", "=   s      b      s   b   s      b      s   _", "=          b          b          b          _",
+        "=     o    b    o     b     o    b    o     _", "=          b          b          b          _", "= r      ppbpp      r b r      ppbpp      r _",
+        "_____________________________________________"],
+    },
+  },
+  diner: {
+    name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan", "tray"], combo: 25000, skill: "cook",
+    hint: "프라이팬 담당은 상자에서 재료를 꺼내 도마·화덕을 거쳐 패스대에, 쟁반 담당은 패스대의 요리를 주문한 테이블로!",
+    // cut-offs tuned on walking bots like the apartment's (tests/coop.mjs: 1–4 bots score ≈ 464 · 992 · 2,390 · 2,965 serving
+    // 12 · 20 · 33 · 42 orders, just over S); a real party lands on B–A. Two cooks (3–4 players) is where the score jumps.
+    par: 1000, parN: { 1: 0.48, 2: 1.0, 3: 2.4, 4: 3.0 },
+    // stations (tiles; solid furniture, used from a neighbouring tile): stoves `:` and boards `-` on the kitchen's back
+    // wall, crates (채소 `]` · 생선 `w` · 고기 `]`), the trash `w`; the pass is four counter tiles, the rack sits in the counter
+    st: { stove: [[6, 1], [9, 1], [12, 1]], board: [[17, 1], [20, 1]], veg: [25, 1], fish: [28, 1], meat: [31, 1], trash: [37, 1],
+      pass: [[18, 7], [19, 7], [24, 7], [25, 7]], rack: [21, 7] },
+    // twelve tables in the hall (3 rows × 4), 4 to 16 tiles from the pass
+    tables: [[6, 11], [16, 11], [26, 11], [36, 11], [6, 15], [16, 15], [26, 15], [36, 15], [6, 19], [16, 19], [26, 19], [36, 19]],
+    start: [[20, 4], [20, 9], [23, 4], [23, 9]],
+    tpl: {
+      name: "쥬쥬식당 (영업 중)", theme: "interior", style: "tavern", bgm: "juju", safe: true, w: 44, h: 24, entry: [21, 9],
+      ground: ["llllllllllllllllllllllllllllllllllllllllllll", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl",
+        "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl",
+        "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll",
+        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll",
+        "llllllllllllllllllllllllllllllllllllllllllll", "lyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyl", "llllllllllllllllllllllllllllllllllllllllllll",
+        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "lyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyl",
+        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll",
+        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll"],
+      objects: ["+===^===+===^===+===^===+===^===+===^===+===", "= r   :  :  :    -  -    ]  w  ]     w  r  _", "=                                          _",
+        "=                                          _", "=                                          _", "=                                          _",
+        "=                                          _", "=mmmmmmmmm  mmmmmmmmm>jmmmmmmmmm  mmmmmmmmm_", "=g                                        g_",
+        "=                                          _", "=                                          _", "=    kok       kok       kok       kok     _",
+        "=                                          _", "=                                          _", "=                                          _",
+        "=    kok       kok       kok       kok     _", "=                                          _", "=                                          _",
+        "=                                          _", "=    kok       kok       kok       kok     _", "=                                          _",
+        "=                                          _", "=g         s         #         s          g_", "____________________________________________"],
     },
   },
 };
-/** 동동아파트 청소 (C.4, without pests and dust in v1): piles, bundles, the two-person sofa, the mess meter. */
+/**
+ * 쥬쥬식당 서빙 (C.5, v1: no plates to wash, three dishes). By the party size n at the start: at most `seats[n − 1]` tables
+ * order at once, a new order every `orderMs[n − 1]` (n of them at the open), patience `patience[n − 1]` (×feverK in fever).
+ * A dish: from its crate, `chop` acts at a board, then `cook` ms on a stove (burnt `burnMs` after it is done), plated
+ * at the pass; a tray carries 2 to the table that ordered it. Pay `pts × (1 + 0.5·patience left)`, cook 50 % / server 50 %.
+ */
+const COOP_DINER = {
+  dishes: [
+    { name: "채소 샐러드", crate: "veg", chop: 4, cook: 0, pts: 20, at: 0 },
+    { name: "생선구이", crate: "fish", chop: 0, cook: 6000, pts: 30, at: 0 },
+    { name: "고기 스튜", crate: "meat", chop: 4, cook: 8000, pts: 45, at: 90000 },
+  ],
+  seats: [3, 4, 6, 8], orderMs: [16000, 12000, 8000, 6500], patience: [90000, 75000, 70000, 65000], feverK: 0.8, firstMs: 3000,
+  burnMs: 8000, burnPen: 5, angryPen: 15, eatMs: 6000, trayCap: 2, passCap: 6, serveK: 0.5, cookK: 0.5,
+};
+/**
+ * 동동아파트 청소 (C.4, without pests and dust in v1): piles, bundles, the two-person sofa, the mess meter. By the party
+ * size n at the start: an opening spread of `open[0] + open[1]·n` piles over the flats, a new pile every `pileMs[n − 1]`,
+ * at most `pileCap[0] + pileCap[1]·n` piles at once, the mess cap `messCap[0] + messCap[1]·n`.
+ */
 const COOP_APT = {
-  pileMs: 7000, pileHp: 3, pileCap: [6, 2], spreadMs: 40000, binCap: 5, bundlePts: 10, recycleK: 1.5, holdK: 0.6,
-  sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaBundles: 3, complainMs: 10000, complainPen: 20, messCap: [10, 4],
+  open: [3, 3], pileMs: [9000, 5000, 3600, 2800], pileHp: 3, pileCap: [8, 6], spreadMs: 40000, binCap: 5, bundlePts: 10, recycleK: 1.5, holdK: 0.6,
+  sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaBundles: 3, complainMs: 10000, complainPen: 20, messCap: [16, 8],
 };

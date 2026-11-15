@@ -1,11 +1,13 @@
 /**
- * 협동 아르바이트 in the browser (v1: 동동아파트 청소; logic 68-coop.js, docs/design/life-and-coop.md C). The server
- * decides everything; this draws and asks.
- * - Lobby: by the job's owner (관리인 동동) a card offers [근무 시작] → `coop_start {k}` (the party comes along).
- * - Inside: `cj` drives the HUD line (time, score ×mult, grade and the next cut-off, mess), `C` the piles / bundles /
- *   sofa (scene props), `cr` the report card. Space / F (or the [청소] button) send `coop_act`; [그만두기] `coop_leave`.
+ * 협동 아르바이트 in the browser (동동아파트 청소, 쥬쥬식당 서빙; logic 68-coop.js, docs/design/life-and-coop.md C). The
+ * server decides everything; this draws and asks.
+ * - Lobby: by the job's owner (관리인 동동, 쥬쥬) a card offers [근무 시작] → `coop_start {k}` (the party comes along).
+ * - Inside: `cj` drives the HUD line (time, score ×mult, grade and the next cut-off, the job's sum), `C` the piles /
+ *   bundles / sofa or the orders / pots / plated dishes (scene props), `cr` the report card. Space / F (or the [일하기]
+ *   button) send `coop_act`; [그만두기] `coop_leave`.
  * - Events `["cj", code, x, y, a]`: 4 sweep · 5 burn · 6 bin pick · 14 fever · 15 complaint · 18 spread · 19 lift ·
- *   20 tied · 21 the end · 22 recycle · 23 tool swap.
+ *   20 tied · 21 the end · 22 recycle · 23 tool swap · diner 30 off the stove · 31 on the stove · 32 angry · 33 burnt ·
+ *   34 chop · 35 plated · 36 trash · 37 from a crate · 38 served · 39 onto the tray · 40 a new order.
  */
 const T = 16;
 const now = () => performance.now();
@@ -44,16 +46,29 @@ export function onSnap(s) {
   if (ents) setEnts(ents);
   if (s.cr) showReport(s.cr);
 }
+const jobOf = () => (st.cj ? D().kinds[st.cj[0]] : null);
+/** The diner's fixed stations (crates, boards, trash) get a little icon each, once per shift. */
+function setStations() {
+  const j = D().jobs.diner, sts = j && j[7];
+  if (!sts) return;
+  const icons = [["veg", 0], ["fish", 1], ["meat", 2], ["trash", 9], ...(sts.board || []).map((t, i) => ["board" + i, 8, t])];
+  for (const [k, code, t] of icons) {
+    const [tx, ty] = t || sts[k], key = "cs" + k;
+    st.keys.push(key);
+    A.S3.props.set(key, { x: tx * T + 8, y: ty * T + 10, until: Infinity, draw(g, tt, sx, sy) { drawIcon(g, Math.round(sx), Math.round(sy) - 22, code); } });
+  }
+}
 /** The entities as scene props (the old ones go). */
 function setEnts(rows) {
   for (const k of st.keys) A.S3.props.delete(k);
   st.keys = [];
-  st.ents = rows;
-  for (const [id, t, x, y, hp] of rows) {
-    const key = "cp" + id;
+  st.ents = rows; st.entsAt = now();
+  for (const row of rows) {
+    const [id, t, x, y, hp] = row, key = "cp" + id;
     st.keys.push(key);
-    A.S3.props.set(key, { x, y, until: Infinity, draw(g, tt, sx, sy) { drawEnt(g, tt, Math.round(sx), Math.round(sy), t, hp, id); } });
+    A.S3.props.set(key, { x, y, until: Infinity, draw(g, tt, sx, sy) { t >= 3 ? drawDiner(g, tt, Math.round(sx), Math.round(sy), row) : drawEnt(g, tt, Math.round(sx), Math.round(sy), t, hp, id); } });
   }
+  if (jobOf() === "diner") setStations();
   // a tool over each worker's head (a prop that follows them)
   for (const [eid] of st.team) {
     const key = "ct" + eid;
@@ -96,11 +111,57 @@ function drawEnt(g, t, sx, sy, kind, hp, id) {
     if (Math.floor(t / 400) % 2) { px(g, sx - 16, sy - 20, 3, 3, "#fff2a0"); px(g, sx + 13, sy - 20, 3, 3, "#fff2a0"); }
   }
 }
+/** 쥬쥬식당 icons, about 8×7: 0 채소 · 1 생선 · 2 고기 (raw), 8 도마 · 9 쓰레기통. */
+function drawIcon(g, x, y, code) {
+  if (code === 0) { px(g, x - 3, y - 2, 7, 5, "#1e3a1a"); px(g, x - 2, y - 1, 5, 3, "#5ab04a"); px(g, x, y - 4, 1, 2, "#3a7a2a"); }
+  else if (code === 1) { px(g, x - 4, y - 2, 8, 4, "#1e2a3a"); px(g, x - 3, y - 1, 5, 2, "#8ab0c8"); px(g, x + 2, y - 2, 2, 4, "#5a7a98"); px(g, x - 2, y - 1, 1, 1, "#1e2a3a"); }
+  else if (code === 2) { px(g, x - 3, y - 2, 7, 5, "#3a1a1a"); px(g, x - 2, y - 1, 5, 3, "#d86a6a"); px(g, x - 1, y, 2, 1, "#f0c0b0"); }
+  else if (code === 8) { px(g, x - 4, y - 1, 8, 3, "#5a3a1a"); px(g, x - 3, y - 1, 6, 1, "#b08a5a"); px(g, x + 1, y - 4, 1, 3, "#c8d0d8"); }
+  else if (code === 9) { px(g, x - 3, y - 3, 7, 7, "#1a1e28"); px(g, x - 2, y - 2, 5, 5, "#6a7a8a"); px(g, x - 3, y - 4, 7, 1, "#9aaaba"); }
+}
+/** A ready dish on its plate: 0 채소 샐러드 · 1 생선구이 · 2 고기 스튜. */
+function drawDish(g, x, y, r) {
+  px(g, x - 5, y, 10, 2, "#2a2a30"); px(g, x - 4, y, 8, 1, "#f0f0f0");
+  if (r === 0) { px(g, x - 3, y - 3, 6, 3, "#2a4a1a"); px(g, x - 2, y - 3, 4, 2, "#6ac05a"); px(g, x - 1, y - 3, 1, 1, "#e05040"); }
+  else if (r === 1) { px(g, x - 4, y - 2, 8, 2, "#3a2a1a"); px(g, x - 3, y - 2, 5, 1, "#c89050"); px(g, x + 2, y - 3, 2, 3, "#a07040"); }
+  else { px(g, x - 4, y - 4, 8, 4, "#3a1a10"); px(g, x - 3, y - 3, 6, 2, "#a0502a"); px(g, x - 1, y - 6, 1, 2, "#e8e0d0"); }
+}
+/** What a worker holds (dish · 3 + stage): ready dishes on a plate, the rest as the raw ingredient (chopped: a knife mark). */
+function drawHeld(g, x, y, code) {
+  const r = Math.floor(code / 3), stage = code % 3;
+  if (!stage) drawDish(g, x, y, r);
+  else { drawIcon(g, x, y, r); if (stage === 2) px(g, x - 3, y - 4, 1, 1, "#ffffff"); }
+}
+const dsLeft = (ds) => ds * 100 - (now() - (st.entsAt || 0));
+function drawDiner(g, t, sx, sy, row) {
+  const [, kind, , , r, a, b] = row;
+  if (kind === 3) {
+    // an order: a speech bubble with the dish, a patience bar going green → yellow → red
+    const left = dsLeft(a), f = Math.max(0, Math.min(1, left / (b * 100))), y = sy - 30;
+    px(g, sx - 9, y - 9, 18, 14, "#2a2a30"); px(g, sx - 8, y - 8, 16, 12, "#fff8e8"); px(g, sx - 1, y + 5, 3, 2, "#2a2a30");
+    drawDish(g, sx, y - 1, r);
+    px(g, sx - 8, y + 8, 16, 3, "#2a2a30");
+    px(g, sx - 7, y + 9, Math.max(1, Math.round(14 * f)), 1, f > 0.5 ? "#6ad050" : f > 0.25 ? "#e8c040" : "#e05040");
+    if (f <= 0.25 && Math.floor(t / 250) % 2) px(g, sx + 9, y - 9, 2, 5, "#e05040");
+  } else if (kind === 4) {
+    // a pot on the stove: a progress bar, then the dish blinking, red when it is about to burn
+    const toDone = dsLeft(a), toBurn = dsLeft(b), y = sy - 22;
+    px(g, sx - 5, y - 4, 10, 6, "#1a1a1e"); px(g, sx - 4, y - 3, 8, 4, "#5a5a68");
+    if (toDone > 0) { px(g, sx - 6, y + 4, 12, 3, "#2a2a30"); px(g, sx - 5, y + 5, Math.max(1, Math.round(10 * (1 - toDone / ((D().cook || [])[r] || 6000)))), 1, "#ff9a40"); }
+    else if (Math.floor(t / (toBurn < 3000 ? 150 : 400)) % 2) drawDish(g, sx, y - 6, r);
+    if (toDone <= 0 && toBurn < 3000) { px(g, sx - 1, y - 12, 3, 3, "#e05040"); }
+    if (Math.floor(t / 300) % 2) px(g, sx - 2 + (Math.floor(t / 600) % 3), y - 7, 1, 2, "#c8c8d0");   // steam
+  } else drawDish(g, sx, sy - 14, r);   // plated, on the pass
+}
 function drawTool(g, t, sx, sy, eid) {
   const row = st.team.find((r) => r[0] === eid);
   if (!row) return;
   const x = sx + 12, y = sy - 22;   // the prop follows its worker (tick): the tool beside their head
-  if (row[1] === 0) {   // broom
+  if (jobOf() === "diner") {
+    if (row[1] === 0) { px(g, x - 4, y, 7, 3, "#1a1a1e"); px(g, x - 3, y, 5, 2, "#4a4a58"); px(g, x + 3, y + 1, 4, 1, "#6a4a2a"); }   // pan
+    else { px(g, x - 6, y + 2, 13, 2, "#3a2a1a"); px(g, x - 5, y + 2, 11, 1, "#b08a5a"); }                                       // tray
+    (row[4] || []).forEach((code, i) => drawHeld(g, x - (row[1] ? 3 - i * 7 : 0), y - (row[1] ? 1 : 4), code));
+  } else if (row[1] === 0) {   // broom
     px(g, x - 1, y - 8, 2, 9, "#2a1e16"); px(g, x, y - 7, 1, 7, "#b08a5a");
     px(g, x - 3, y, 7, 4, "#2a1e16"); px(g, x - 2, y + 1, 5, 2, "#e0c060");
   } else {              // bin, with its load in pips
@@ -122,7 +183,7 @@ function renderHud() {
   const b = st.hud || (st.hud = box("coop-hud", "frame"));
   if (!st.cj) { b.hidden = true; return; }
   if (!b.firstChild) {
-    b.innerHTML = `<div class="ch-l"></div><div class="ch-g"><i></i></div><div class="ch-b"><button class="btn gold ch-work">청소 (Space)</button><button class="btn ch-quit">그만두기</button></div>`;
+    b.innerHTML = `<div class="ch-l"></div><div class="ch-g"><i></i></div><div class="ch-b"><button class="btn gold ch-work">일하기 (Space)</button><button class="btn ch-quit">그만두기</button></div>`;
     b.querySelector(".ch-work").addEventListener("pointerdown", (ev) => { ev.preventDefault(); ev.stopPropagation(); work(); });
     b.querySelector(".ch-quit").addEventListener("click", () => A.act({ t: "coop_leave" }));
   }
@@ -139,11 +200,11 @@ function frame() {
   const me = st.team.find((r) => r[0] === G().you), tools = (job[2] || []).map((t) => D().tools[t] || t);
   const phase = ["준비", "근무", "피버!", "끝"][state];
   const txt = `${job[0]} · ${phase} ${state === 0 ? `${s}초 뒤 시작` : mmss(s)} | 점수 ${score}${mult > 10 ? ` ×${(mult / 10).toFixed(1)}` : ""}${combo > 1 ? ` (콤보 ${combo})` : ""}` +
-    ` | 등급 ${GRADE[grade]}${next ? ` (다음 ${next})` : ""} | 지저분함 ${mess}/${cap}${me ? ` | ${tools[me[1]] || ""}${me[1] === 1 ? ` ${me[2]}/${D().binCap}` : ""}` : ""}`;
+    ` | 등급 ${GRADE[grade]}${next ? ` (다음 ${next})` : ""} | ${k === "diner" ? `서빙 ${mess} · 화난 손님 ${cap}` : `지저분함 ${mess}/${cap}`}${me ? ` | ${tools[me[1]] || ""}${me[1] === 1 ? ` ${me[2]}/${k === "diner" ? D().trayCap : D().binCap}` : ""}` : ""}`;
   const l = b.querySelector(".ch-l");
   if (l.textContent !== txt) l.textContent = txt;
   b.classList.toggle("fever", state === 2);
-  b.classList.toggle("messy", mess > cap);
+  b.classList.toggle("messy", k !== "diner" && mess > cap);
   const bar = b.querySelector(".ch-g > i"), top = next || score || 1, w = `${Math.min(100, Math.round((100 * score) / top))}%`;
   if (bar.style.width !== w) bar.style.width = w;
   b.querySelector(".ch-work").disabled = !(state === 1 || state === 2);
@@ -163,8 +224,8 @@ function renderCard() {
   if (!k) { b.hidden = true; return; }
   const j = D().jobs[k];
   b.innerHTML = `<b>협동 아르바이트 · ${j[0]}</b><p>${n.name}: "일손이 필요해요! 1~4명, ${j[1]}분 근무예요."</p>` +
-    `<p>빗자루로 쓸어 묶고, 쓰레기통으로 모아 소각로나 재활용함(×1.5)에! 낡은 소파는 두 명이 함께 들어요.</p>` +
-    `<p class="cc-day">${done ? "✓ 오늘 보수를 받았어요 (다시 하면 도와준 수고비만)" : "오늘의 보수: 등급 C 이상이면 골드·강화석·장비·배달 경험치"}</p>` +
+    `<p>${esc(j[6] || "")}${k === "apt" ? " 낡은 소파는 두 명이 함께 들어요." : " 손님이 기다리다 지치면 화내며 떠나요!"}</p>` +
+    `<p class="cc-day">${done ? "✓ 오늘 보수를 받았어요 (다시 하면 도와준 수고비만)" : `오늘의 보수: 등급 C 이상이면 골드·강화석·장비·${k === "diner" ? "요리" : "배달"} 경험치`}</p>` +
     `<button class="btn gold">${party > 1 ? "파티와 근무 시작 (파티장)" : "근무 시작"}</button>`;
   b.querySelector("button").addEventListener("click", () => A.act({ t: "coop_start", k }));
   b.hidden = false;
@@ -172,7 +233,7 @@ function renderCard() {
 function showReport(cr) {
   const [grade, score, best, rows, cuts] = cr;
   const b = st.res || (st.res = box("coop-res", "frame"));
-  const tools = ["빗자루", "쓰레기통"];
+  const tools = ((D().jobs[jobOf()] || [])[2] || ["broom", "bin"]).map((t) => D().tools[t] || t);
   b.innerHTML = `<div class="cr-g g${grade}">${GRADE[grade]}</div><b>${grade ? "근무 완료!" : "근무 평가 미달"}</b>` +
     `<p>점수 ${score} · 이 채널 최고 ${best}</p><p class="cr-cut">C ${cuts[0]} · B ${cuts[1]} · A ${cuts[2]} · S ${cuts[3]}</p>` +
     `<table>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${tools[r[2]] || ""}</td><td>${r[1]}점</td><td>${r[3] ? "" : "보상 없음"}</td></tr>`).join("")}</table>` +
@@ -185,14 +246,16 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 
 // ───────────────────────────── events, each frame ─────────────────────────────
 
-const SND = { 4: "swing", 5: "coin", 6: "pop", 14: "quest", 15: "fail", 18: "warn", 19: "hit", 20: "pop", 22: "coin", 23: "ui" };
-const COL = { 4: "#c8a070", 5: "#ff9a40", 6: "#8fd060", 18: "#7a5a3a", 19: "#e8d070", 20: "#6a8a6a", 22: "#60c0ff" };
+const SND = { 4: "swing", 5: "coin", 6: "pop", 14: "quest", 15: "fail", 18: "warn", 19: "hit", 20: "pop", 22: "coin", 23: "ui",
+  30: "pop", 31: "hit", 32: "fail", 33: "warn", 34: "swing", 35: "pop", 36: "ui", 37: "ui", 38: "coin", 39: "pop", 40: "ui" };
+const COL = { 4: "#c8a070", 5: "#ff9a40", 6: "#8fd060", 18: "#7a5a3a", 19: "#e8d070", 20: "#6a8a6a", 22: "#60c0ff",
+  32: "#e05040", 33: "#4a4a50", 34: "#8fd060", 38: "#ffd860" };
 /** cj events; true when the event was ours. */
 export function onEvent(e) {
   if (e[0] !== "cj") return false;
   const [, code, x, y] = e;
   if (SND[code]) A.Sound.play(SND[code]);
-  if (COL[code] && (x || y)) A.S3.fx.burst(x, y, 0.3, COL[code], code === 5 || code === 22 ? 10 : 4, 0.8);
+  if (COL[code] && (x || y)) A.S3.fx.burst(x, y, 0.3, COL[code], code === 5 || code === 22 || code === 38 ? 10 : 4, 0.8);
   return true;
 }
 export function tick() {
