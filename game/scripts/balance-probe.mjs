@@ -77,7 +77,7 @@ export function probe(L, who, tier, secs = PROBE.secs, o = {}) {
   let now = 1_000_000;
   S.now = now;
   const PID = "pid-probe";
-  const tg = tierFor(tier);
+  const tg = o.gt || tierFor(tier);              // o.gt: dress the hero in another gear tier (tier 5 vs 6 at Lv.181+)
   const fresh = !!L.hero;
   const wk = fresh ? who : null;
   const ch = fresh ? L.hero("탐침", { wk, lvl: Math.min(197, 4 * tier - 3), migrate: true, ...(o.job ? hybridHero(D, o.job, wk, tier) : {}) }) : L.newChar("탐침", who, []);
