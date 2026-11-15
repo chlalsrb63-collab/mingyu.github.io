@@ -68,7 +68,7 @@ export function usePotion(kind) {
   const s = G.self, t = now();
   if (!s || G.me.dead || t < G.potAt) return;
   const missing = kind === "hp" ? s.mhp - G.me.hp : s.mmp - G.me.mp;
-  if (missing <= 0) return;
+  if (missing <= 0) { if (!G.auto) toast(kind === "hp" ? "HP가 가득 차 있습니다" : "MP가 가득 차 있습니다"); return; }   // a key press always answers
   // the smallest potion that covers most of what is missing (small, big, concentrated)
   const id = Growth.pickPotion(kind, missing);
   if (!id) {

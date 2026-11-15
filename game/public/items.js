@@ -107,12 +107,41 @@ export function itemTip(entry, host, o = {}) {
   if (o.price) host.append(el("div", "gold-line", o.price));
   if (o.hint) host.append(el("div", "hint", o.hint));
   if (!o.worn && isGear(entry.id)) {
+    // against what it would replace: the change in every number, ▲ gained / ▼ lost (shape and sign, not colour alone)
+    const mine = statsOf(entry);
     for (const k of slotsFor(d.type)) {
-      if (!s.eq[k]) continue;
-      host.append(el("div", "cmp", `착용 중 — ${SLOT_NAME[k]}`));
-      describe(s.eq[k], host);
+      const w = s.eq[k];
+      if (!w) continue;
+      const head = el("div", "cmp", `착용 중(${SLOT_NAME[k]})과 비교 · `);
+      const wn = el("b", "", itemName(w));
+      wn.style.color = Art.RARITY_COL[w.q || 0];
+      head.append(wn);
+      host.append(head);
+      const was = statsOf(w);
+      let any = false;
+      for (const key of Object.keys(G.defs.affix)) {
+        const dv = (mine[key] || 0) - (was[key] || 0);
+        if (!dv) continue;
+        any = true;
+        const label = G.defs.affix[key][0], pct = label.includes("%") ? "%" : "";
+        host.append(el("div", dv > 0 ? "dl up" : "dl dn", `${dv > 0 ? "▲" : "▼"} ${label.replace(" %", "")} ${dv > 0 ? "+" : "−"}${Math.abs(dv)}${pct}`));
+      }
+      if (!any) host.append(el("div", "dl", "능력치 차이 없음"));
+      if (w.lg && w.lg !== entry.lg) host.append(el("div", "dl dn", `◆ 잃는 힘: ${G.defs.legend[w.lg][1]}`));
+      if (w.set && w.set !== entry.set && setWorn(w.set) > 1) host.append(el("div", "dl dn", `${G.defs.sets[w.set].name} 세트가 ${setWorn(w.set) - 1}개로 줄어듭니다`));
     }
   }
+}
+/** Every number a piece gives: base (with its enhancement), affixes, runes and a runeword. */
+function statsOf(entry) {
+  const it = G.defs.items[entry.id], e = entry.enh || 0, out = {};
+  const add = (k, v) => { out[k] = (out[k] || 0) + v; };
+  for (const k of Object.keys(it.base || {})) add(k, k === "spd" || k === "crit" ? it.base[k] : Math.round(it.base[k] * (1 + (G.defs.enhPct ? G.defs.enhPct[e] : 10 * e) / 100)));
+  for (const [k, v] of entry.af || []) add(k, v);
+  for (const r of entry.ru || []) if (r) add(G.defs.runes[r][1], G.defs.runes[r][2]);
+  const rw = runewordOf(entry);
+  if (rw) for (const [k, v] of rw.add) add(k, v);
+  return out;
 }
 export function itemSlot(entry, o = {}) {
   const d = el("div", "slot");
@@ -167,6 +196,7 @@ export function setupItems() {
   $("#inv-sort").addEventListener("click", () => {
     if (!G.self || G.self.inv.length < 2) return;
     act({ t: "sort" });
+    if (G.invNew) G.invNew.clear();
     G.sel = -1;
     hideTip();
     Sound.play("ui");

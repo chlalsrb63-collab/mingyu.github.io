@@ -235,7 +235,7 @@ export function bindUi() {
   $("#dim-join").addEventListener("click", () => { A.act({ t: "dim_join" }); A.Sound.play("ui"); });
   $("#dim-leave").addEventListener("click", () => {
     const ask = st.sty && !st.dim ? "도전을 그만두고 원래 자리로 돌아갈까요? (그 자리로 다시 다가가면 재도전할 수 있습니다)" : "차원 균열을 떠나 마을로 돌아갈까요? (나중에 오벨리스크에서 다시 합류할 수 있습니다)";
-    if (confirm(ask)) A.act({ t: "dim_leave" });
+    A.ask(ask, "떠나기", () => A.act({ t: "dim_leave" }));
   });
 }
 /** Seconds left on the ready check, ticking between snapshots. */

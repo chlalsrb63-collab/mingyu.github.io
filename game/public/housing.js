@@ -254,7 +254,7 @@ export function bagBar(s, box) {
   box.append(el("span", "cap", `가방 ${cap} / ${max}칸`));
   if (cap >= max) { box.append(el("span", "max", "최대 크기")); return; }
   const b = el("button", "btn small gold", "");
-  b.append(`+${G().defs.bag.step}칸 가방 확장 (`, iconImg("coin", "#2a1806"), `${gstr(cost)} G)`);
+  b.append(`+${G().defs.bag.step}칸 확장 `, iconImg("coin", "#2a1806"), `${gstr(cost)}G`);
   b.disabled = s.gold < cost;
   b.title = s.gold < cost ? `골드가 부족합니다 (${gstr(cost)}G 필요)` : `가방을 ${cap + G().defs.bag.step}칸으로 늘립니다`;
   b.addEventListener("click", () => { A.act({ t: "bag_expand" }); A.Sound.play("coin"); });

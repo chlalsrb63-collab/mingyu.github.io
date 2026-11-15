@@ -19,13 +19,24 @@ import { G, $, el, now, $$ } from "./state.js";
 import * as Gather from "./gather.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
-import { isOpen, touch, hideTip, closeDrawer, openWin, hoverTip } from "./windows.js";
+import { isOpen, touch, hideTip, closeDrawer, openWin, hoverTip, ask } from "./windows.js";
 import { invOrder, itemSlot, QS_USE, useSlot, isGear, emptyEquipSlot, sellPrice, itemTip, itemName, SLOT_NAME, SLOT_GLYPH, setWorn, statText } from "./items.js";
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
 
 // ── the bag ──
+/** A bag entry's identity without its stack count (a bigger stack of potions is not a new item). */
+const invSig = (e) => JSON.stringify(e, (k, v) => (k === "n" ? undefined : v));
+/** Every sheet (refreshUi): entries not in the bag before go in `G.invNew`; the first sheet only learns the bag. */
+export function trackNew(s) {
+  if (s.inv === trackNew.inv) return;
+  trackNew.inv = s.inv;
+  const now = s.inv.map(invSig);
+  if (G.invKnown) for (const k of now) if (!G.invKnown.has(k)) G.invNew.add(k);
+  G.invKnown = new Set(now);
+  G.invNew = new Set(now.filter((k) => G.invNew && G.invNew.has(k)));
+}
 export function renderInv(s) {
   const it = G.defs.items;
   $("#inv-gold").textContent = "";
@@ -73,6 +84,13 @@ export function renderInv(s) {
     // a usable thing can be dragged onto the quick slots; the slot it sits in shows in the corner
     if (usable) { QS.dragSource(node, ["i", entry.id]); if (at) node.append(el("span", "qk", at)); }
     if (free) node.append(el("span", "qk equip-ready", "▲"));
+    // 새로 얻음: glows with a 새 tag until hovered (or tapped), sorted, or the bag is closed
+    const k = invSig(entry);
+    if (G.invNew && G.invNew.has(k)) {
+      node.classList.add("new");
+      node.append(el("span", "nw", "새"));
+      node.addEventListener("pointerenter", () => { G.invNew.delete(k); node.classList.remove("new"); node.querySelector(".nw")?.remove(); }, { once: true });
+    }
     grid.append(node);
   }
   Housing.bagBar(s, $("#inv-grow"));
@@ -108,8 +126,12 @@ export function renderInv(s) {
       for (const k of ["ring1", "ring2"]) add(`${SLOT_NAME[k]}에 장착`, () => { act({ t: "eq", s: G.sel, k }); G.sel = -1; }, off, true);
     } else add("장착", () => { act({ t: "eq", s: G.sel }); G.sel = -1; }, off, true);
     // anyone carries a second weapon (Tab swaps; a hybrid's must be one of its pair — the server says so)
-    if (d.type === "weapon") add("Ⅱ에 장착", () => { act({ t: "eq", s: G.sel, k: "weapon2" }); G.sel = -1; }, off, true);
-    if (isOpen("smith")) add("분해", () => { act({ t: "salv", s: G.sel }); G.sel = -1; Sound.play("salvage"); });
+    if (d.type === "weapon") add("Ⅱ에 장착", () => { act({ t: "eq", s: G.sel, k: "weapon2" }); G.sel = -1; }, off);
+    if (isOpen("smith")) add("분해", () => {
+      const i = G.sel, go = () => { act({ t: "salv", s: i }); G.sel = -1; Sound.play("salvage"); };
+      if (precious(entry)) ask(`분해하면 되돌릴 수 없습니다.\n「${itemName(entry)}」`, "분해", go, "salv");
+      else go();
+    });
   }
   if (d.type === "rune") {
     let any = false;
@@ -125,11 +147,25 @@ export function renderInv(s) {
   }
   if (isOpen("shop")) {
     const each = sellPrice(entry);
-    add(`판매 ${each.toLocaleString()}G`, () => act({ t: "sell", s: G.sel, n: 1 }));
-    if (entry.n > 1) add(`전부 판매 ${(each * entry.n).toLocaleString()}G`, () => act({ t: "sell", s: G.sel, n: entry.n }));
+    add(`판매 ${each.toLocaleString()}G`, () => {
+      const i = G.sel, go = () => act({ t: "sell", s: i, n: 1 });
+      if (precious(entry)) ask(`판매할까요? 상점에 판 장비는 되찾을 수 없습니다.\n「${itemName(entry)}」 · ${each.toLocaleString()}G`, "판매", go, "sell");
+      else go();
+    });
+    if (entry.n > 1) {
+      // how many: a box with −/+/최대 and the total, all of the stack to start with
+      add("여러 개 판매…", () => {
+        const i = G.sel;
+        ask(`몇 개 판매할까요? (가진 수 ${entry.n}개)\n「${itemName(entry)}」 개당 ${each.toLocaleString()}G`, "판매", (n) => act({ t: "sell", s: i, n }), "", { max: entry.n, note: (n) => `${(each * n).toLocaleString()}G` });
+      });
+      add(`전부 판매 ${(each * entry.n).toLocaleString()}G`, () => act({ t: "sell", s: G.sel, n: entry.n }));
+    }
   }
   if (btns.children.length) det.append(btns);
 }
+
+/** Gear worth a second thought before it is sold or salvaged: rare and up, enhanced, or carrying runes. */
+const precious = (entry) => isGear(entry.id) && ((entry.q || 0) >= 2 || (entry.enh || 0) > 0 || (entry.ru || []).some(Boolean));
 
 // ── the character sheet ──
 /** The sheet: groups of [infocard key, value]. Each is a glyph and its number; the name is the tooltip, a click opens the card. */

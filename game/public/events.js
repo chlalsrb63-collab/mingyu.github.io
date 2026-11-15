@@ -22,7 +22,7 @@ import * as Board from "./board.js";
 import * as Chores from "./chores.js";
 import * as Coop from "./coop.js";
 import * as Charms from "./charms.js";
-import { G, dist, T, now } from "./state.js";
+import { G, dist, T, now, $, el } from "./state.js";
 import { entityPos } from "./net.js";
 import { addChat, banner, chatLog } from "./windows.js";
 import { fadeIn } from "./win_world.js";
@@ -126,6 +126,7 @@ export function onEvent(e, t) {
           tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]);
           // was this my own blow landing? then it gets the full treatment: a held frame, a kick, a burst
           const mine = t - G.lastAtk < 420;
+          if ((mine || t - G.lastSkill < 700) && G.mobs.has(id)) { G.tgt = id; G.tgtT = t; }   // the target frame follows my last blow (hud.js)
           fin = mine && !grazing && (G.me.atkN === 2 || (G.self?.wk === "sword" && G.me.atkN === 1));
           const heavy = critical || fin;
           tgt.hurtP = heavy ? 1.6 : 1;
@@ -287,10 +288,32 @@ export function onEvent(e, t) {
   }
 }
 
+/** The loot feed at the play view's lower right: one line per kind, repeats add up (`들꽃잎 ×3`), each fades after 4 s. */
+const feed = new Map();
+/** Rarity as a shape too, not colour alone: 마법 ◇ · 희귀 ◆ · 전설 ★ · 세트 ◈. */
+const RARITY_MARK = ["", "◇ ", "◆ ", "★ ", "◈ "];
+function lootLine(key, text, col, n) {
+  const box = $("#loot");
+  if (!box) return;
+  let f = feed.get(key);
+  if (f && f.p.isConnected) f.n += n;
+  else {
+    f = { p: el("p"), n };
+    feed.set(key, f);
+    box.append(f.p);
+    while (box.children.length > 5) box.firstChild.remove();
+  }
+  f.p.textContent = text(f.n);
+  f.p.style.color = col;
+  f.p.style.animation = "none"; void f.p.offsetWidth; f.p.style.animation = "";
+  clearTimeout(f.tm);
+  f.tm = setTimeout(() => { f.p.remove(); feed.delete(key); }, 4000);
+}
 export function onGain([kind, a, b, q]) {
   const me = G.me, h = heightOf(me);
   if (kind === "xp") floatText(`+${a} EXP`, me.x, me.y, h + 0.55, "#fff08a");
   else if (kind === "gold") {
+    lootLine("gold", (n) => `골드 +${n.toLocaleString()}`, "#ffd84a", a);
     // coins picked up one after another add up on one line instead of flooding the log
     const t = now(), gl = G.goldLine;
     if (gl && gl.p === chatLog.lastElementChild && t - gl.t < 5000) { gl.n += a; gl.t = t; gl.p.textContent = `골드 +${gl.n.toLocaleString()}`; }
@@ -303,9 +326,10 @@ export function onGain([kind, a, b, q]) {
     if (d && (d.type === "lmat" || a === "staple" || a === "flask")) floatText(`+${d.name}${b > 1 ? ` ×${b}` : ""}`, me.x, me.y, h + 0.55, "#b8f07a");
     const p = addChat(`획득: ${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${b > 1 ? ` ×${b}` : ""}`, "loot");
     if (q) p.style.color = Art.RARITY_COL[q];
+    lootLine(`i:${a}:${q | 0}`, (n) => `${RARITY_MARK[q | 0]}${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${n > 1 ? ` ×${n}` : ""}`, q ? Art.RARITY_COL[q] : "#f0e6d0", b || 1);
     Sound.play("loot", q | 0);
     if (q >= 3) banner(q === 4 ? "세트 획득!" : "전설 획득!", true);
-  } else if (kind === "cos") { const d = G.defs.cos[a]; const p = addChat(`외형 획득: ${d ? d.name : a}`, "loot"); if (d) p.style.color = Art.RARITY_COL[d.q]; Sound.play("loot", d ? d.q : 1);
+  } else if (kind === "cos") { const d = G.defs.cos[a]; const p = addChat(`외형 획득: ${d ? d.name : a}`, "loot"); if (d) p.style.color = Art.RARITY_COL[d.q]; lootLine(`c:${a}`, () => `외형 · ${d ? d.name : a}`, d ? Art.RARITY_COL[d.q] : "#f0e6d0", 1); Sound.play("loot", d ? d.q : 1);
   } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y, h + 0.9, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a} 달성!`, "sys"); }
 }
 

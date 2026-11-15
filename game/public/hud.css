@@ -104,7 +104,9 @@ body:not([data-lay="full"]) #w-inv.docked > header .x { display: none; }
 #inv-grid .slot { width: var(--slot); height: var(--slot); }
 #inv-grid .slot img { left: 3px; top: 3px; }
 #inv-detail { margin-top: 4px; padding: 5px 7px; font-size: var(--t12); }
-#inv-detail .btns { margin-top: 4px; gap: 3px; }
+#inv-detail .btns { margin-top: 4px; gap: 3px; display: flex; flex-wrap: wrap; justify-content: flex-end; }
+/* the primary (gold) action at the right end, the rest (sell, salvage) away from it */
+#inv-detail .btns .gold { order: 1; }
 #inv-detail .nm { font-size: var(--t12); }
 
 /* the menu: a grid of plain glyph buttons */
@@ -862,7 +864,7 @@ body[data-lay="land"] #inv-grid { max-height: calc(6 * 42px); overflow-y: auto; 
 #inv-grow { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 4px; }
 #inv-grow .cap { font: var(--t10) var(--pix9); color: var(--tx2, #c8b896); white-space: nowrap; }
 #inv-grow .max { font: var(--t10) var(--pix9); color: var(--tx-ok, #9af0ae); }
-#inv-grow .btn { display: inline-flex; align-items: center; gap: 2px; font-size: var(--t11) !important; padding: 2px 6px !important; }
+#inv-grow .btn { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; font-size: var(--t11) !important; padding: 2px 6px !important; }
 #inv-grow .btn img { vertical-align: middle; }
 #house-hud { left: 50%; transform: translateX(-50%); top: 8px; z-index: 6 !important; display: flex; align-items: center; gap: 6px; padding: 4px 8px; color: var(--tx-gold, #f4e4b0); max-width: calc(var(--vpw) - 16px); }
 #house-hud b { font: 700 var(--t12)/1.3 var(--pix); color: var(--tx-hd, var(--b-hi)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 4px; }
@@ -1724,3 +1726,53 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#menu but
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"])[data-lay="full"] #status .meter b { text-shadow: none; }
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"])[data-lay="full"] #st-gold { color: var(--tx-hd); text-shadow: none; }
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr) .wt { color: color-mix(in srgb, var(--wm-lo), var(--ink) 30%); text-shadow: none; }
+
+/* ── UX pass 2026-11-15 (docs/design/ux-audit-2026-11-15.md) ── */
+/* notices and prompts draw over the windows (21–35, windows.js front), under the minigame (40) and the tooltip (80) */
+#toasts, #banner, #prompt, #dl, #cast, #invite, #sx-ask, #pmenu { z-index: 36; }
+/* the yes/no box (windows.js ask): over the windows, in the middle of the play view */
+#ask { left: calc(var(--vpw) / 2); top: calc(var(--vph) * .36); transform: translateX(-50%); z-index: 37; width: min(300px, calc(var(--vpw) - 24px)); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; font: var(--t12)/1.5 var(--pix); color: var(--cream); }
+#ask[hidden] { display: none; }
+#ask p { margin: 0; white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere; }
+#ask label { display: flex; align-items: center; gap: 6px; font: var(--t10) var(--pix9); color: var(--tx2, #c8b896); cursor: pointer; }
+#ask label[hidden] { display: none; }
+#ask .btns { display: flex; justify-content: flex-end; gap: 8px; }
+#ask .btn { min-height: 28px; padding: 3px 10px; }
+#ask-qty { display: flex; align-items: center; gap: 4px; }
+#ask-qty[hidden] { display: none; }
+#ask-qty .btn { min-width: 28px; min-height: 28px; padding: 0 6px; }
+#ask-qty input { width: 64px; height: 26px; box-sizing: border-box; padding: 0 6px; text-align: right; font: var(--t12) var(--pix); color: var(--cream); background: var(--scr, #0c0a10); border: 2px solid var(--ink); border-radius: 0; }
+#ask-qty input { appearance: textfield; -moz-appearance: textfield; }
+#ask-qty input::-webkit-inner-spin-button, #ask-qty input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+#ask-qty .note { margin-left: auto; font: var(--t12) var(--pix); color: var(--tx-gold, #ffe08a); white-space: nowrap; }
+#ask .btn kbd, #inv-detail .btns kbd { margin-left: 5px; font: var(--t10) var(--pix9); opacity: .7; }
+/* the gear tooltip's comparison with the worn piece (items.js itemTip) */
+#tip .cmp { margin-top: 5px; padding-top: 4px; color: var(--tx2, #c8b896); }
+#tip .cmp b { font-weight: 400; }
+#tip .dl { font: var(--t10)/1.4 var(--pix9); color: var(--tx3, #8a8296); }
+#tip .dl.up { color: var(--tx-ok, #9af0ae); }
+#tip .dl.dn { color: var(--tx-bad, #ffb4a0); }
+/* the target frame under the party frames (hud.js targetFrame): name, an HP bar with its %, the traits by name */
+#tgt { padding: 4px 8px 5px; font: var(--t12)/1.35 var(--pix); color: var(--cream); pointer-events: auto; }
+#tgt[hidden] { display: none; }
+#tgt .tn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tgt .tb { position: relative; height: 10px; margin-top: 3px; background: #000; border: 2px solid var(--ink); }
+#tgt .tb i { position: absolute; left: 0; top: 0; bottom: 0; background: #d8404c; transition: width .15s linear; }
+#tgt .tb b { position: absolute; right: 3px; top: -3px; font: var(--t10)/14px var(--pix9); font-weight: 400; color: #fff; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
+#tgt .tt { display: flex; flex-wrap: wrap; gap: 2px 6px; margin-top: 3px; font: var(--t10) var(--pix9); color: var(--tx2, #c8b896); }
+#tgt .tt[hidden] { display: none; }
+#tgt .tt span { display: inline-flex; align-items: center; gap: 2px; cursor: help; }
+#tgt .tt img { width: 12px; height: 12px; image-rendering: pixelated; }
+/* potion buttons: amber count when 2 or fewer, red and greyed when none (hud.js hotbar) */
+.act.pot.low .n { color: #ffbe4a; }
+.act.pot.none .n { color: #ff7a6a; }
+.act.pot.none img { filter: grayscale(1) brightness(.7); }
+/* 새로 얻음 in the bag (win_char.js trackNew): a gold rim that breathes and a 새 tag on the top edge */
+.slot.new { border-color: var(--tx-gold, #ffe08a); animation: slot-new 1.6s steps(4) infinite alternate; }
+@keyframes slot-new { from { box-shadow: inset 0 0 0 2px rgba(255, 224, 138, .15); } to { box-shadow: inset 0 0 0 2px rgba(255, 224, 138, .7); } }
+.slot .nw { position: absolute; left: 50%; top: 0; transform: translateX(-50%); padding: 0 2px; font: var(--t10)/11px var(--pix9); color: #2a1806; background: var(--tx-gold, #ffe08a); border: 1px solid var(--ink); pointer-events: none; z-index: 1; }
+/* the loot feed (events.js lootLine): the play view's lower right, newest at the bottom, over the scene only */
+#loot { left: calc(var(--vpw) - 10px); top: calc(var(--vph) - 162px); height: 110px; transform: translateX(-100%); z-index: 6; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; gap: 1px; pointer-events: none; }
+#loot p { margin: 0; max-width: min(260px, calc(var(--vpw) * .4)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--t12)/1.35 var(--pix); text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; animation: loot 4s steps(20) forwards; }
+@keyframes loot { 0% { opacity: 0; transform: translateX(10px); } 6% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
+body[data-lay="port"] #loot, body[data-lay="land"] #loot { top: 60px; height: 84px; }   /* under the menu button, clear of the touch quick slots */

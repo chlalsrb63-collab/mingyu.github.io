@@ -6,7 +6,8 @@
  */
 
 import { Sound } from "./audio.js";
-import { iconImg, iconUrl, BUFF_ICON } from "./uiicons.js";
+import { iconImg, iconUrl, BUFF_ICON, TRAIT } from "./uiicons.js";
+import { mobMax, RANK_NAME, DUNGEONS } from "./events.js";
 import * as SP from "./sprites.js";
 import * as Growth from "./growth.js";
 import * as Wardrobe from "./wardrobe_ui.js";
@@ -32,8 +33,8 @@ import * as Trophies from "./trophies.js";
 import * as Track from "./track.js";
 import * as Info from "./infocard.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
-import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn } from "./windows.js";
-import { openTree, openStats, renderInv, renderChar, renderSkills } from "./win_char.js";
+import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn, addChat, toast } from "./windows.js";
+import { openTree, openStats, renderInv, renderChar, renderSkills, trackNew } from "./win_char.js";
 import { renderWarp, renderDaily, renderWeek, renderAchieve, renderCollect, tutCard, eventWidget, castBar, tickDaily } from "./win_world.js";
 import { renderShop, renderSmith, renderQuest } from "./win_shop.js";
 import { K } from "./keymap.js";
@@ -162,7 +163,14 @@ function hotbar(s) {
     const [n, show] = Growth.potionCount(kind);
     setSrc($(`${btn} img`), G.icons.url[show]);
     $(`${btn} .n`).textContent = n;
-    $(btn).style.opacity = n ? 1 : 0.45;
+    // running low (2 or fewer) turns the count amber, none turns it red; crossing either says so once
+    const b = $(btn), name = kind === "hp" ? "HP 물약" : "MP 물약", was = (hotbar.had ||= {})[kind];
+    b.classList.toggle("low", n > 0 && n <= 2);
+    b.classList.toggle("none", !n);
+    b.title = n ? `${name} (${K(kind)}) — ${n}개${n <= 2 ? " · 얼마 남지 않았습니다" : ""}` : `${name}이 없습니다 — 잡화점에서 살 수 있습니다`;
+    if (was !== undefined && was > 2 && n > 0 && n <= 2) addChat(`${name}이 ${n}개 남았습니다.`, "sys");
+    if (was > 0 && !n) toast(`${name}이 떨어졌습니다 — 잡화점에서 살 수 있습니다`);
+    hotbar.had[kind] = n;
   }
   QS.render();                                      // the quick slots 1–9 (quickslots.js)
   // the attack button carries the weapon in hand
@@ -234,6 +242,7 @@ export function refreshUi() {
   hotbar(s);
   tracker(s);
   const near = G.near && G.near.role;
+  trackNew(s);                                  // 새로 얻은 bag items (win_char.js)
   Charms.sync(s);                               // what the server confirmed: a charm set down, a seal broken (charms.js)
   draw("inv", () => [Charms.bagKey(s), s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs, s.bagCap, Gather.pouchKey(s)], renderInv);
   // the C window: 장비 or 능력치 (points can be bought by a campfire or at 수련관 카이)
@@ -322,6 +331,7 @@ export function hudTick(t) {
   if (cgBox.hidden !== !s.cr) cgBox.hidden = !s.cr;
   QS.tick(t);
   dashTick(t);
+  targetFrame(t);
   if (tip.from && (!tip.from.isConnected || tip.from.closest("[hidden]"))) hideTip();
   Info.tick();
   if (isOpen("char")) drawPortrait(t);
@@ -358,6 +368,38 @@ export function hudTick(t) {
       buffs.append(sp);
     }
   }
+}
+
+/** The target frame: the monster I last struck, for 8 s after the blow or until it falls. Traits name what they do. */
+function targetFrame(t) {
+  const box = $("#tgt"), m = G.tgt && G.mobs.get(G.tgt);
+  const live = !!m && t - G.tgtT < 8000;
+  if (box.hidden === live) box.hidden = !live;
+  if (!live) return;
+  const d = G.defs.mobs[m.k], max = mobMax(m), tr = m.tr || [], traits = G.defs.traits || {};
+  const key = `${G.tgt}|${m.el}|${tr.join()}`;
+  if (box.dataset.k !== key) {
+    box.dataset.k = key;
+    const rank = m.el === 2 && DUNGEONS.has(G.map.id) ? "수문장 " : RANK_NAME[m.el | 0];
+    const nm = box.querySelector(".tn");
+    nm.textContent = `Lv.${d.lv} ${rank}${d.name}`;
+    nm.style.color = d.boss ? "#ff9ae0" : m.el === 2 ? "#ff8a4a" : m.el ? "#ffbe3c" : "";
+    const tt = box.querySelector(".tt");
+    tt.textContent = "";
+    for (const k of tr) {
+      const tk = TRAIT[k], info = traits[k];
+      if (!info) continue;
+      const chip = el("span", "", info[0]);
+      if (tk) chip.prepend(iconImg(tk[0], tk[1]));
+      chip.title = info[1];
+      tt.append(chip);
+    }
+    tt.hidden = !tt.children.length;
+  }
+  const pct = clamp(m.hp / max, 0, 1);
+  box.querySelector(".tb i").style.width = `${(pct * 100).toFixed(1)}%`;
+  const txt = `${Math.ceil(pct * 100)}%`, b = box.querySelector(".tb b");
+  if (b.textContent !== txt) b.textContent = txt;
 }
 
 /** A buff's card with the time left as the chip showed it (the chip is rebuilt as the time runs, the card is not). */

@@ -230,6 +230,13 @@ function front(id) {
   if (paned(id)) return;
   const w = winEl(id);
   if (+w.style.zIndex !== zTop) w.style.zIndex = ++zTop;
+  // windows live in z 21–35: past that, re-stack them in their order, so they never climb over the
+  // HUD cues (36), the minigame (40), the drag ghost (60) or the tooltip (80)
+  if (zTop > 34) {
+    const open = WIN.filter((o) => !paned(o) && winEl(o).style.zIndex).sort((a, b) => winEl(a).style.zIndex - winEl(b).style.zIndex);
+    zTop = 20;
+    for (const o of open) winEl(o).style.zIndex = ++zTop;
+  }
   for (const o of WIN) if (!paned(o)) winEl(o).classList.toggle("top", o === id);
 }
 function syncMenu() { for (const b of $$("#menu button[data-win]")) b.classList.toggle("on", b.dataset.win === "inv" && compact() ? drawerOpen() : isOpen(b.dataset.win)); }
@@ -264,6 +271,7 @@ export function openWin(id) {
 /** Hooks a module sets for its own window being closed (the trade window cancels the trade: sxwin.js). */
 export const onClose = {};
 export function closeWin(id) {
+  if (id === "inv" && G.invNew) G.invNew.clear();   // the 새 tags last until the bag is put away
   if (id === "inv" && compact()) {
     if (tip.from && winEl("inv").contains(tip.from)) hideTip();
     if (G.sel >= 0) { G.sel = -1; refreshUi(); }
@@ -322,11 +330,21 @@ export function placeToasts() {
 }
 export function toast(m) {
   const box = $("#toasts");
+  // the same notice again while it shows (a key mashed, a wall walked into): one line counts up instead of a stack
+  const same = [...box.children].find((o) => o.dataset.m === m);
+  if (same) {
+    same.dataset.n = +same.dataset.n + 1;
+    same.textContent = `${m} ×${same.dataset.n}`;
+    same.style.animation = "none"; void same.offsetWidth; same.style.animation = "";
+    clearTimeout(same.tm); same.tm = setTimeout(() => same.remove(), 3300);
+    return;
+  }
   const p = el("p", "", m);
+  p.dataset.m = m; p.dataset.n = 1;
   if (!box.children.length) placeToasts();
   box.append(p);
   while (box.children.length > 4) box.firstChild.remove();
-  setTimeout(() => p.remove(), 3300);
+  p.tm = setTimeout(() => p.remove(), 3300);
   // party and guild news also goes in the log, under its own tab
   if (/파티/.test(m)) addChat(m, "sys party");
   else if (/길드/.test(m)) addChat(m, "sys guild");
@@ -340,11 +358,63 @@ export function banner(str, small) {
   b.hidden = false;
 }
 
+/**
+ * The in-game yes/no box for a step that cannot be undone (selling a rare piece, salvaging, leaving a rift):
+ * [취소] left, the gold action right; Enter = yes, Esc = no. With `key`, a "다시 묻지 않기" box remembers the
+ * answer per kind (localStorage `lumentale:noask:<key>`), so a player who sells in bulk is asked once.
+ */
+const NOASK = (key) => `lumentale:noask:${key}`;
+let asking = null;
+export function ask(text, yes, onYes, key, qty) {
+  if (key && !qty && localStorage.getItem(NOASK(key)) === "1") { onYes(); return; }
+  if (asking) asking(false);
+  const box = $("#ask"), num = $("#ask-qty input"), note = $("#ask-qty .note");
+  $("#ask-text").textContent = text;
+  $("#ask-yes").textContent = yes;
+  $("#ask-yes").append(el("kbd", "", "Enter"));
+  $("#ask-skip").hidden = !key || !!qty;
+  $("#ask-skip input").checked = false;
+  // with `qty` ({ max, n, note(n) }): how many, typed or stepped, the note (a total price) kept up to date
+  $("#ask-qty").hidden = !qty;
+  const count = () => clamp(Math.floor(+num.value) || 1, 1, qty.max);
+  const show = () => { note.textContent = qty.note ? qty.note(count()) : ""; };
+  if (qty) {
+    num.max = qty.max; num.value = qty.n || qty.max;
+    num.oninput = show;
+    for (const b of $$("#ask-qty button")) b.onclick = () => { num.value = b.dataset.d === "max" ? qty.max : clamp(count() + +b.dataset.d, 1, qty.max); show(); };
+    show();
+  }
+  box.hidden = false;
+  Sound.play("open");
+  const done = (ok) => {
+    asking = null;
+    box.hidden = true;
+    removeEventListener("keydown", onKey, true);
+    $("#ask-yes").onclick = $("#ask-no").onclick = null;
+    if (!ok) { Sound.play("close"); return; }
+    if (key && !qty && $("#ask-skip input").checked) localStorage.setItem(NOASK(key), "1");
+    onYes(qty ? count() : undefined);
+  };
+  // the box answers Enter and Esc before the game's own keys see them (digits reach the number box: it has the focus)
+  const onKey = (e) => {
+    if (e.key === "Enter") done(true);
+    else if (e.key === "Escape") done(false);
+    else return;
+    e.preventDefault(); e.stopImmediatePropagation();
+  };
+  addEventListener("keydown", onKey, true);
+  $("#ask-yes").onclick = () => done(true);
+  $("#ask-no").onclick = () => done(false);
+  asking = done;
+  if (qty) { num.focus(); num.select(); } else $("#ask-yes").focus();
+}
+
 // ── chat ──
 export const chatLog = $("#chat-log");
 export function addChat(m, cls, name) {
   const stick = chatLog.scrollTop + chatLog.clientHeight >= chatLog.scrollHeight - 12;
   const p = el("p", cls || "");
+  p.title = new Date().toTimeString().slice(0, 5);   // hover a line: when it was said
   if (name) {
     const who = el("span", "who", `${name}: `);
     // the speaker's job, when they stand in this place (chat carries a name only)
@@ -480,8 +550,19 @@ export function setupWindows({ walkToDoor }) {
     const m = input.value.trim();
     const a = m && chatAction(m);
     if (a) act(a);
+    if (m && sent[sent.length - 1] !== m) { sent.push(m); if (sent.length > 20) sent.shift(); }
+    back = sent.length;
     input.value = "";
     input.blur();
+  });
+  // ↑ / ↓ in the chat box: the last 20 lines sent (a /w 이름 or a long party call, again)
+  const sent = [];
+  let back = 0;
+  $("#chat-in").addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    back = clamp(back + (e.key === "ArrowUp" ? -1 : 1), 0, sent.length);
+    e.target.value = sent[back] || "";
   });
   chatLog.addEventListener("click", () => {
     if (!touch()) return;
