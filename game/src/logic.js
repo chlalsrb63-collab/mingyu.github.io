@@ -194,7 +194,7 @@ const JOBS = {
   trickster: { name: "환술사", kind: "hybrid", wk: ["dagger", "staff"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wis: 0.3 }, cost: HYB_COST },
   spellspear: { name: "마창사", kind: "hybrid", wk: ["spear", "staff"], scale: { str: 0.8, int: 0.8, wis: 0.6 }, cost: HYB_COST },
   runesage: { name: "룬술사", kind: "hybrid", wk: ["staff", "book"], scale: { int: 0.8, wis: 0.3, wil: 0.3 }, cost: HYB_COST },
-  runearcher: { name: "각인궁사", kind: "hybrid", wk: ["book", "bow"], scale: { int: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: HYB_COST },
+  runearcher: { name: "각인궁사", kind: "hybrid", wk: ["book", "bow"], scale: { int: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, hand: { bow: { dex: 0.95 } }, cost: HYB_COST },
   mercenary: { name: "머서너리", kind: "hybrid", wk: ["hammer", "spear"], scale: { str: 0.9, wil: 0.5, wis: 0.4 }, cost: HYB_COST },
   paladin: { name: "성기사", kind: "hybrid", wk: ["hammer", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: HYB_COST },
 };
@@ -6735,7 +6735,8 @@ const freshSt = () => Object.fromEntries(ST_ORDER.map((k) => [k, ST_BASE]));
 /** How the weapon kind `wk` scales for this character: { stat: coefficient } (job and hybrid adjusted). */
 function scaleOf(ch, wk) {
   const job = JOBS[ch.job];
-  if (job && job.kind === "hybrid" && job.wk.includes(wk)) return { ...job.scale };
+  // a hybrid scales both hands alike; `hand` lifts one side (runearcher's bow, owner 2026-11-15)
+  if (job && job.kind === "hybrid" && job.wk.includes(wk)) return { ...job.scale, ...(job.hand && job.hand[wk]) };
   const out = {}, g = SCALE[wk] || {};
   for (const k of Object.keys(g)) out[k] = GRADE[g[k]] + (job && job.kind === "single" && job.wk[0] === wk ? JOB_PLUS : 0);
   return out;

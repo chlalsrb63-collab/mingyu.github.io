@@ -44,8 +44,8 @@ if (!L.hero) {
   const D = L.defs(), bad = [], only = process.argv.slice(2).filter((a) => !a.startsWith("-"));
   const hammerBase = new Map();
   const HI = (wk) => (wk === "bow" ? 1.1 : 1.25);
-  // each hand's floor: ×0.7, eased to ×0.62 when the owner lengthened hitstun (2026-11-15: runearcher's bow at T25 fell to ×0.64)
-  const HAND_MIN = 0.62;
+  // each hand's floor (the owner kept ×0.7 when hitstun grew and lifted runearcher's bow instead, 2026-11-15)
+  const HAND_MIN = 0.7;
   function baseOf(wk, t) {
     if (wk === "hammer") {
       if (!hammerBase.has(t)) hammerBase.set(t, probe(L, wk, t).kpm);

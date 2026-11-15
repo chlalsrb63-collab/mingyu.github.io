@@ -27,7 +27,8 @@ const freshSt = () => Object.fromEntries(ST_ORDER.map((k) => [k, ST_BASE]));
 /** How the weapon kind `wk` scales for this character: { stat: coefficient } (job and hybrid adjusted). */
 function scaleOf(ch, wk) {
   const job = JOBS[ch.job];
-  if (job && job.kind === "hybrid" && job.wk.includes(wk)) return { ...job.scale };
+  // a hybrid scales both hands alike; `hand` lifts one side (runearcher's bow, owner 2026-11-15)
+  if (job && job.kind === "hybrid" && job.wk.includes(wk)) return { ...job.scale, ...(job.hand && job.hand[wk]) };
   const out = {}, g = SCALE[wk] || {};
   for (const k of Object.keys(g)) out[k] = GRADE[g[k]] + (job && job.kind === "single" && job.wk[0] === wk ? JOB_PLUS : 0);
   return out;
