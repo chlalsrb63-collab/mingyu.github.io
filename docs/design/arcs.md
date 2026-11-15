@@ -87,5 +87,7 @@ window (the 주요 의뢰 group label and the step's page, `win_shop.js`).
 (twingoat_blood × 12), 금관을 쓴 깃 (crownpeacock, the mesa's field boss, solo story fight) after 심연의 어미. XP 1.2–1.3 levels
 (kill) and 1.7 (boss) like the neighbours; beats pay 15 % of a level, 30 × Lv gold (§3). Not added: the coast's field boss
 망치 갯가재 (Lv 153, above the band). Sheet v24: `questV24` maps an older index past the four rows (the v17/v20 maps skip them
-too); `tests/chapters.mjs`. Open lore stays open: no beat says who or what woke the spell. Not done: audit's rewrite of six
-bland main texts.
+too); `tests/chapters.mjs`. Open lore stays open: no beat says who or what woke the spell. Bland main texts rewritten so 엘더윈 speaks
+(text only; goals, counts, rewards kept): the audit's six (old 0-based 12 15 18 21 26 36 → now rows 13 16 19 22 29 41:
+비둘기 떼살, 다리 달린 생선, 뱀장어 매듭, 눈먼 두더지 boss, 손갈기 사자, 눈먼 문지기 올빼미) plus rows 7 11 14 28 (세 머리 뱀,
+박쥐 덩어리, 갈라진 고양이, 반쪽 말) — each ties to the 피난길, the 함락 night, the square's fears or the frozen 왕도.
