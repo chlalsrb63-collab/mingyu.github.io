@@ -12,6 +12,7 @@ CC-BY 계열은 게임 안에도 크레딧을 보여야 합니다 ("게임 안 �
 | Pretendard | Kil Hyung-jin (orioncactus) | https://github.com/orioncactus/pretendard | SIL OFL 1.1 | — | 본문 글꼴, CDN으로 불러옴 (`public/index.html`) | 필요 없음 (OFL) |
 | 쥬쥬식당 협동 알바 아이콘 시안 6종 (`generated/coop-diner`: `pan`, `tray`, `salad`, `grilled_fish`, `stew`, `dirty_plate`) | Gemini (`import-art.mjs` 정규화) | `asset/generated/coop-diner/*.prompt.md` | AI-generated (Gemini, prompt file) | 2026-11-15 | `asset/generated/coop-diner/` 시안 보관 (미설치, 주인 승인 대기) | 필요 없음 |
 | 보스 세트 장비 아이콘 시안 8종 (`generated/gear-sets`: `veil_h`, `veil_a`, `veil_r`, `veil_n`, `bloom_h`, `bloom_a`, `bloom_r`, `bloom_n`) | Gemini (`import-art.mjs` 정규화) | `asset/generated/gear-sets/*.prompt.md` | AI-generated (Gemini, prompt file) | 2026-11-15 | `asset/generated/gear-sets/` 시안 보관 (미설치, 주인 승인 대기) | 필요 없음 |
+| 작은꼬리 64×64 외형 장비 2세트 레이어 및 16×16 아이콘 시안 16종 (`generated/cosmetics-64`: `ferry` 4종, `snow` 4종) | Gemini (64×64 네이티브 레이어 + `import-art.mjs` 아이콘 정규화) | `asset/generated/cosmetics-64/*.prompt.md` | AI-generated (Gemini, prompt file) | 2026-11-15 | `asset/generated/cosmetics-64/` 시안 보관 (미설치, 64×64 렌더러 병합 후 적용 대기) | 필요 없음 |
 <!-- 예시 (지우고 쓰세요):
 | Tiny Dungeon | Kenney | https://kenney.nl/assets/tiny-dungeon | CC0 | 2026-11-20 | incoming/ 보관만 | 필요 없음 |
 | 검 1–5단계 시안 (weapons/sword: sword_t1…sword_t5) | ChatGPT 이미지 생성 → import-art.mjs 정리 → 주인 승인 | ai/prompts/weapon-assets.md 프롬프트 B | AI-generated (OpenAI 약관) | 2026-11-20 | weapon.sword.t1–t5 | 필요 없음 |
