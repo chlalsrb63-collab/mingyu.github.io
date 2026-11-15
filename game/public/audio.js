@@ -229,7 +229,9 @@ export const Sound = {
         const r = await fetch(new URL(entry.src, import.meta.url), { signal: request.controller.signal });
         if (r.status === 204 || (r.status === 404 && entry.loose)) continue;
         if (!r.ok) throw new Error("Music recording unavailable");
-        const buffer = await c.decodeAudioData(await r.arrayBuffer());
+        const data = await r.arrayBuffer();
+        if (this.recordingRequest !== request) return;
+        const buffer = await c.decodeAudioData(data);
         if (this.recordingRequest !== request) return;
         const start = entry.start ?? 0, end = entry.end ?? buffer.duration;
         if (!(buffer.duration <= 210 && start >= 0 && end - start >= 1 && end <= buffer.duration + 0.02)) throw new Error("Invalid music duration or loop range");

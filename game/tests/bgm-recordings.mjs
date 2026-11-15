@@ -75,4 +75,21 @@ try {
   assert.equal(live().style, "classic");
 } finally { Math.random = realRandom; }
 
-console.log("recorded BGM: four rift terrains, indoor files, stable variant choices, missing clips and synth fallback");
+const originalFetch = globalThis.fetch, decode = Sound.ctx.decodeAudioData;
+let deliver, cancelledDecodes = 0;
+try {
+  globalThis.fetch = async () => ({ ok: true, status: 200, arrayBuffer: () => new Promise(resolve => { deliver = resolve; }) });
+  Sound.ctx.decodeAudioData = async () => { cancelledDecodes++; return { duration: 120 }; };
+  const pending = Sound.queueRecording("town", [], bgmLocal.town, []);
+  await nextTurn();
+  assert.equal(typeof deliver, "function");
+  await Sound.queueRecording(null, [], [], []);
+  deliver(new ArrayBuffer(8));
+  await pending;
+  assert.equal(cancelledDecodes, 0, "a recording that arrives after a map switch is skipped before decoding");
+} finally {
+  globalThis.fetch = originalFetch;
+  Sound.ctx.decodeAudioData = decode;
+}
+
+console.log("recorded BGM: rift terrains, indoors, stable variants, missing clips, and cancelled downloads");
