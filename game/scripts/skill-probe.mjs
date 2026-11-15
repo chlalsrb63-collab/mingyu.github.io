@@ -33,7 +33,7 @@ function run(L, job, wk, tier, n, kind, secs) {
   const D = L.defs(), S = L.setup(), PID = "pid-skill";
   let now = 1_000_000;
   S.now = now;
-  const j = D.jobs[job], tg = tierFor(4 * tier - 3), m = Math.max(j.kind === "hybrid" ? 15 : 20, tier);
+  const j = D.jobs[job], tg = tierFor(tier), m =Math.max(j.kind === "hybrid" ? 15 : 20, tier);
   const o = { wk, lvl: Math.min(197, 4 * tier - 3), wm: Object.fromEntries(j.wk.map((k) => [k, m])), job };
   if (j.kind === "hybrid") {
     o.wk2 = j.wk.find((k) => k !== wk);
