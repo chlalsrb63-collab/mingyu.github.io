@@ -304,12 +304,12 @@ const JB = {
  * The village chores (H10). `spot`: what one act is done to (the toast); `src`: what to fetch before the acts —
  * "npc" from the giver (all the acts at once: the milk bottles, the dog's leash) or "water" (a well or the water's
  * edge, `carry` acts a fill); `timed`: the fetch starts a parcel-like clock and running out fails the job (never
- * 긴급). CHORE: act reach (px), the least ms between two acts, the reach of a water source (tiles), weeds within this many tiles of
+ * 긴급); `box`: the carry code (58-life.js carryOf) held in both hands while acts are carried. CHORE: act reach (px), the least ms between two acts, the reach of a water source (tiles), weeds within this many tiles of
  * the 제초 giver (the farmer's plot and backyard).
  */
 const CHORE_MAP = "willow";
 const CHORES = {
-  milk: { name: "우유 배달", spot: "우편함", src: "npc", timed: true, get: "우유병을 받았습니다" },
+  milk: { name: "우유 배달", spot: "우편함", src: "npc", timed: true, box: 2, get: "우유병을 받았습니다" },
   weed: { name: "제초", spot: "잡초" },
   flyer: { name: "전단지 붙이기", spot: "전단지" },
   litter: { name: "쓰레기 줍기", spot: "쓰레기" },

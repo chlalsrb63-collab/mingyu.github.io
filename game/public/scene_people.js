@@ -10,6 +10,7 @@ import * as Sw from "./swing.js";
 import * as DC from "./decor.js";
 import * as Sky from "./sky.js";
 import * as Camp from "./camp.js";
+import * as Carry from "./carry.js";
 import { sAng, DXW, DYW, g, DEG, clamp, P, sheet, G, iso } from "./scene_view.js";
 import { UG } from "./scene_ground.js";
 import { map, theme, OUTDOOR, camps } from "./scene_map.js";
@@ -141,6 +142,13 @@ export function drawPerson(s, e, t, dt, x, y) {
     } else g.drawImage(img, -SP.FOOT[0], -SP.FOOT[1], SP.SIZE, SP.SIZE);
     g.restore();
   };
+  // a parcel or a milk crate in both hands (carry.js, the server's carry code): the weapon is put away meanwhile
+  if (e.carry && !e.dead) {
+    const box = Carry.sprite(e.carry), dip = (frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0) - hop;
+    const carried = () => { if (box) g.drawImage(box, Math.round(x - Carry.W / 2 + sg), Math.round(y - 15 + dip), Carry.W, Carry.H); };
+    if (back) { carried(); body(); } else { body(); carried(); }
+    return;
+  }
   if (!s.weapon || e.dead || (fl & 2)) return body();    // (the greatsword is off stuck in the ground)
   const bob = (frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0) - hop;
   const glow = RARITY[s.gear.wq | 0] || (s.gear.we >= 7 ? "#ffffff" : null);

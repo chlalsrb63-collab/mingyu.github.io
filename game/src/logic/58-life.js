@@ -481,6 +481,17 @@ function jbRoute(id) {
 const jbLimit = (id, g = 0) => Math.round(((jbRoute(id) * T) / (BASE_SPD * JB_PAY.limit[0])) * JB_PAY.limit[1] * JB_GRADE.lim[g] * 1000 + JB_PAY.limit[2]);
 /** Walking speed while carrying a parcel (deriveStats reads it): ×0.85 at 배달 1, ×1.0 at 25, ×1.15 at 50. */
 const parcelSpd = (ch) => JB_PAY.spd[0] + JB_PAY.spd[1] * ch.life.deliver.lv;
+/**
+ * What the hero holds in both hands instead of the weapon (the wire's carry code, public/carry.js draws it):
+ * 0 nothing · 1 a delivery's parcel · 2 a chore's crate (CHORES `box`) while its acts are carried. Derived, so
+ * handing it over, failing or dropping the 알바 puts it down. Attacks and skills wait while it is held (70).
+ */
+function carryOf(p) {
+  if (p.parcel) return 1;
+  const a = p.ch.jobBoard.active, t = a && JB[a.id];
+  return t && t.kind === "chore" && CHORES[t.job].box && a.fill > 0 ? CHORES[t.job].box : 0;
+}
+const CARRY_NO = "배달 중에는 공격할 수 없어요 — 알바를 그만두면 상자를 내려놓아요";
 /** The level a job pays by: its skill's (a hunt: the character's tier, 1–50). */
 const jbL = (ch, t) => (t.kind === "hunt" ? clamp(Math.floor(toTier(ch.lvl)), 1, LIFE_MAX) : ch.life[t.sk].lv);
 /** A job's gold before any tip or 긴급 bonus (deliveries: B.8, others: B.9) × its grade, +10 % from a 단골's own NPC. */

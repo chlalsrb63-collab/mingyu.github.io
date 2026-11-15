@@ -1605,12 +1605,12 @@ const JB = {
  * The village chores (H10). `spot`: what one act is done to (the toast); `src`: what to fetch before the acts —
  * "npc" from the giver (all the acts at once: the milk bottles, the dog's leash) or "water" (a well or the water's
  * edge, `carry` acts a fill); `timed`: the fetch starts a parcel-like clock and running out fails the job (never
- * 긴급). CHORE: act reach (px), the least ms between two acts, the reach of a water source (tiles), weeds within this many tiles of
+ * 긴급); `box`: the carry code (58-life.js carryOf) held in both hands while acts are carried. CHORE: act reach (px), the least ms between two acts, the reach of a water source (tiles), weeds within this many tiles of
  * the 제초 giver (the farmer's plot and backyard).
  */
 const CHORE_MAP = "willow";
 const CHORES = {
-  milk: { name: "우유 배달", spot: "우편함", src: "npc", timed: true, get: "우유병을 받았습니다" },
+  milk: { name: "우유 배달", spot: "우편함", src: "npc", timed: true, box: 2, get: "우유병을 받았습니다" },
   weed: { name: "제초", spot: "잡초" },
   flyer: { name: "전단지 붙이기", spot: "전단지" },
   litter: { name: "쓰레기 줍기", spot: "쓰레기" },
@@ -11217,6 +11217,17 @@ function jbRoute(id) {
 const jbLimit = (id, g = 0) => Math.round(((jbRoute(id) * T) / (BASE_SPD * JB_PAY.limit[0])) * JB_PAY.limit[1] * JB_GRADE.lim[g] * 1000 + JB_PAY.limit[2]);
 /** Walking speed while carrying a parcel (deriveStats reads it): ×0.85 at 배달 1, ×1.0 at 25, ×1.15 at 50. */
 const parcelSpd = (ch) => JB_PAY.spd[0] + JB_PAY.spd[1] * ch.life.deliver.lv;
+/**
+ * What the hero holds in both hands instead of the weapon (the wire's carry code, public/carry.js draws it):
+ * 0 nothing · 1 a delivery's parcel · 2 a chore's crate (CHORES `box`) while its acts are carried. Derived, so
+ * handing it over, failing or dropping the 알바 puts it down. Attacks and skills wait while it is held (70).
+ */
+function carryOf(p) {
+  if (p.parcel) return 1;
+  const a = p.ch.jobBoard.active, t = a && JB[a.id];
+  return t && t.kind === "chore" && CHORES[t.job].box && a.fill > 0 ? CHORES[t.job].box : 0;
+}
+const CARRY_NO = "배달 중에는 공격할 수 없어요 — 알바를 그만두면 상자를 내려놓아요";
 /** The level a job pays by: its skill's (a hunt: the character's tier, 1–50). */
 const jbL = (ch, t) => (t.kind === "hunt" ? clamp(Math.floor(toTier(ch.lvl)), 1, LIFE_MAX) : ch.life[t.sk].lv);
 /** A job's gold before any tip or 긴급 bonus (deliveries: B.8, others: B.9) × its grade, +10 % from a 단골's own NPC. */
@@ -17438,6 +17449,7 @@ export function validateAction(S, pid, a) {
       return OK;
     case "atk":
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
+      if (carryOf(p)) return bad(CARRY_NO);
       if (p.dance) return bad("무영난무 중입니다");
       if (p.hammer) return bad("해머를 내려찍는 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
@@ -17469,6 +17481,7 @@ export function validateAction(S, pid, a) {
       const sk = typeof a.id === "string" && Object.hasOwn(SKILL, a.id) ? SKILL[a.id] : null;
       if (!sk) return bad("없는 스킬");
       if (sk.kind === "p") return bad("저절로 발동하는 패시브 스킬입니다");
+      if (carryOf(p)) return bad(CARRY_NO);
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       const why = skWhy(ch, sk);
       if (why) return bad(why);
@@ -19082,10 +19095,15 @@ export function viewFor(S, pid) {
     me: [Math.round(p.x), Math.round(p.y), Math.round(p.hp), Math.round(p.mp), p.dead ? 1 : 0, p.fix ? 1 : 0, p.dir, p.sit ? 1 : 0, flagsOf(p, S.now), crValue(p, S.now), p.aim | 0, dashLeft(S, p)],
     P: [], M: [], D: [], F: [],
   };
+  // me[12] / a P row's [9]: the carry code (58-life.js carryOf), only while something is held
+  const held = carryOf(p);
+  if (held) out.me.push(held);
   for (const oid of Object.keys(S.players)) {
     const o = S.players[oid];
     if (o === p || o.map !== p.map || !near(o)) continue;
-    out.P.push([o.eid, Math.round(o.x), Math.round(o.y), o.dir, o.dead ? 1 : 0, Math.round(o.hp), stats(o).mhp, o.sit ? 1 : 0, flagsOf(o, S.now)]);
+    const row = [o.eid, Math.round(o.x), Math.round(o.y), o.dir, o.dead ? 1 : 0, Math.round(o.hp), stats(o).mhp, o.sit ? 1 : 0, flagsOf(o, S.now)], c = carryOf(o);
+    if (c) row.push(c);
+    out.P.push(row);
   }
   for (const mob of rt.mobs) {
     // a field boss (or the rift invasion's lord) is shown on the radar wherever it stands on the map
