@@ -19,10 +19,10 @@ const SK_GROW = 0.004;
 
 const SKILL = {
   // ── 대검 sword
-  slash: { kind: "a", wk: "sword", need: 1, name: "파워 슬래쉬", mp: 4, hpPct: 0.02, autoHp: 0.35, cd: 5000, mult: 1.9, r: 46, arc: 75, stag: [600, 360], knock: 14, fx: 80,
-    desc: "대검을 크게 휘둘러 앞쪽 부채꼴의 적을 모두 벤다. 맞은 적은 크게 휘청이며 밀려난다." },
-  rend: { kind: "a", wk: "sword", need: 10, name: "대지 가르기", mp: 7, hpPct: 0.03, autoHp: 0.35, cd: 9000, leap: 60, r: 38, mult: 1.7, len: 120, half: 14, wave: 1.2, fx: 81,
-    desc: "앞으로 뛰어올라 내려찍고(범위), 착지한 자리에서 일직선으로 땅을 가르는 충격파를 보낸다. 벽은 넘지 못한다." },
+  slash: { kind: "a", wk: "sword", need: 1, name: "파워 슬래쉬", mp: 3, hpPct: 0.02, autoHp: 0.35, cd: 3500, mult: 1.45, r: 46, arc: 75, stag: [600, 360], knock: 14, eat: { drag: 0.3 }, fx: 80,
+    desc: "대검을 크게 휘둘러 앞쪽 부채꼴의 적을 모두 벤다. 맞은 적은 휘청이며 밀려나 경직된다. 끌려온 적에게는 +30%." },
+  rend: { kind: "a", wk: "sword", need: 10, name: "대지 가르기", mp: 7, hpPct: 0.03, autoHp: 0.35, cd: 9000, leap: 60, r: 38, mult: 1.7, len: 120, half: 14, wave: 1.2, air: 700, fx: 81,
+    desc: "앞으로 뛰어올라 내려찍어(범위) 적을 0.7초 띄우고, 착지한 자리에서 일직선으로 땅을 가르는 충격파를 보내 경직시킨다. 벽은 넘지 못한다." },
   inertia: { kind: "p", wk: "sword", need: 10, name: "거검의 관성", max: 5, ms: 2500, reach: 0.06, critd: 0.06, fx: 110, borrow: ["atk", 4],
     desc: "대검으로 적을 맞힐 때마다 관성이 1 쌓인다(최대 5). 관성 1당 사거리 +6%, 치명타 피해 +8%. 2.5초 동안 맞히지 못하면 사라진다." },
   sword_steadfast20: { kind: "p", wk: "sword", need: 20, name: "반걸음 버티기", perk: ["poise", 8],
@@ -34,8 +34,8 @@ const SKILL = {
   sword_edge50: { kind: "p", wk: "sword", need: 50, name: "칼끝의 결단", perk: ["critd", 8],
     desc: "한 번 드러난 급소를 끝까지 벤다. 치명타 피해 배율이 8%p 증가한다." },
   // ── 단검 dagger
-  ambush: { kind: "a", wk: "dagger", need: 1, name: "암습", mp: 4, hpPct: 0.015, autoHp: 0.35, cd: 6000, len: 110, mult: 1.3, behind: 16, crit: 30, fx: 84,
-    desc: "겨눈 적의 등 뒤로 순간이동해 찌른다. 나를 노리지 않던 적에게는 반드시 치명타, 아니면 치명타 확률 +30%." },
+  ambush: { kind: "a", wk: "dagger", need: 1, name: "암습", mp: 4, hpPct: 0.015, autoHp: 0.35, cd: 6000, len: 110, mult: 1.3, behind: 16, crit: 30, eat: { air: 0.5 }, fx: 84,
+    desc: "겨눈 적의 등 뒤로 순간이동해 찌른다. 나를 노리지 않던 적에게는 반드시 치명타, 아니면 치명타 확률 +30%. 공중에 뜬 적에게는 추가타 +50%." },
   shade: { kind: "a", wk: "dagger", need: 10, name: "그림자 칼날", mp: 6, hpPct: 0.022, autoHp: 0.35, cd: 8000, n: 3, spread: 15, len: 120, half: 10, mult: 0.5, fx: 85,
     desc: "그림자 칼날 세 자루를 부채꼴로 던진다. 칼날은 적을 꿰뚫고, 맞은 적마다 표식을 하나씩 남긴다." },
   vitals: { kind: "p", wk: "dagger", need: 10, name: "급소 도려내기", max: 5, crit: 3, bleed: 0.08, ms: 4000, spd: 0.2, spdMs: 2000, fx: 111, borrow: ["crit", 3],
@@ -49,10 +49,10 @@ const SKILL = {
   dagger_fang50: { kind: "p", wk: "dagger", need: 50, name: "피를 머금은 날", perk: ["ls", 1.5],
     desc: "상처에서 빼낸 기운으로 숨을 고른다. 공격 적중 시 생명력 흡수 비율이 1.5%p 증가한다." },
   // ── 창 spear
-  spiral: { kind: "a", wk: "spear", need: 1, name: "나선 찌르기", mp: 4, hpPct: 0.018, autoHp: 0.35, cd: 5000, len: 110, half: 12, mult: 1.3, far: 0.72, fx: 87,
-    desc: "창을 비틀어 일직선을 모두 꿰뚫는다. 끝부분(28%)에 걸린 적은 창끝으로 맞는다." },
+  spiral: { kind: "a", wk: "spear", need: 1, name: "나선 찌르기", mp: 3, hpPct: 0.018, autoHp: 0.35, cd: 3500, len: 110, half: 12, mult: 1.1, far: 0.72, eat: { frz: 0.6 }, fx: 87,
+    desc: "창을 비틀어 일직선을 모두 꿰뚫는다. 끝부분(28%)에 걸린 적은 창끝으로 맞는다. 얼어붙은 적은 얼음째 부서진다(파쇄 +60%)." },
   comet: { kind: "a", wk: "spear", need: 10, name: "유성창", mp: 7, hpPct: 0.026, autoHp: 0.35, cd: 10000, len: 130, half: 20, mult: 0.9, stun: 500, fx: 88,
-    desc: "겨눈 쪽으로 130만큼 돌진한다. 길 위의 적을 끝까지 끌고 가 꿰뚫고 0.5초 기절시킨다." },
+    desc: "겨눈 쪽으로 130만큼 돌진한다. 길 위의 적을 끝까지 끌고 가 꿰뚫고 0.5초 기절시킨다. 끌려간 적은 모여 광역기에 더 아프다." },
   tip: { kind: "p", wk: "spear", need: 10, name: "창끝의 거리", at: 0.72, mult: 1.5, ign: 0.35, borrow: ["critd", 6],
     desc: "사거리의 72% 이상 떨어진 적을 맞히면 창끝 일격 — 피해 ×1.5, 방어력의 35%를 무시한다." },
   rally_banner: { kind: "a", wk: "spear", need: 15, name: "전열 구호기", mp: 12, cd: 16000, r: 76, ms: 6000, every: 1000, heal: 0.023, atkHeal: 0.06, haste: 0.10, creditMs: 10000, support: true, noAuto: true, fx: 135,
@@ -66,10 +66,10 @@ const SKILL = {
   spear_edge50: { kind: "p", wk: "spear", need: 50, name: "하나로 모인 힘", perk: ["critd", 8],
     desc: "두 발에서 올라온 힘을 창끝 한 점에 모은다. 치명타 피해 배율이 8%p 증가한다." },
   // ── 스태프 staff
-  fireball: { kind: "a", wk: "staff", need: 1, name: "파이어볼", mp: 9, cd: 4000, el: "f", mag: 1, r: 30, mult: 1.6, burn: 0.12, fx: 70,
-    desc: "불덩이를 던진다(범위). 떨어진 자리는 3초간 타오른다(0.5초마다 20%). 불 원소." },
-  frostring: { kind: "a", wk: "staff", need: 10, name: "서리 고리", mp: 13, cd: 8000, el: "i", mag: 1, r: 56, mult: 0.9, freeze: 1000, push: 18, fx: 71,
-    desc: "주변에 서리 고리를 퍼뜨려 적을 밀어내고 느리게 한다. 이미 느려진 적은 1초간 얼어붙는다. 얼음 원소." },
+  fireball: { kind: "a", wk: "staff", need: 1, name: "파이어볼", mp: 8, cd: 3500, el: "f", mag: 1, r: 30, mult: 1.4, burn: 0.1, fx: 70,
+    desc: "불덩이를 던진다(범위). 맞은 적에게 화상이 1 쌓이고(최대 3, 6초) 떨어진 자리는 3초간 타오른다. 불 원소." },
+  frostring: { kind: "a", wk: "staff", need: 10, name: "서리 고리", mp: 13, cd: 8000, el: "i", mag: 1, r: 56, mult: 0.9, freeze: 1000, push: 18, eat: { drag: 0.3 }, fx: 71,
+    desc: "주변에 서리 고리를 퍼뜨려 적을 밀어내고 느리게 한다. 이미 느려진 적은 1초간 빙결된다. 끌려온 적에게는 +30%. 얼음 원소." },
   reso: { kind: "p", wk: "staff", need: 10, name: "마력 공명", n: 3, k: 0.3, fx: 113, borrow: ["mp", 6],
     desc: "스태프 스킬을 세 번 쓰면 공명이 차오른다 — 다음 스태프 스킬은 MP 없이 쓰고 피해 +30%. 불·얼음·번개가 겹치면 원소 반응이 일어난다." },
   staff_mind20: { kind: "p", wk: "staff", need: 20, name: "깊은 마력 그릇", perk: ["mp", 8],
@@ -84,7 +84,7 @@ const SKILL = {
   soulbolt: { kind: "a", wk: "book", need: 1, name: "영혼 화살", mp: 8, cd: 3500, mag: 1, len: 150, arc: 30, spd: 350, mult: 2.0, heal: 0.06, fx: 91,
     desc: "겨눈 적을 쫓아가는 영혼의 화살을 쏜다. 맞히면 준 피해의 6%만큼 HP를 회복한다." },
   gravity: { kind: "a", wk: "book", need: 10, name: "중력 왜곡진", mp: 15, cd: 11000, mag: 1, at: 70, r: 60, ms: 4000, every: 500, pull: 6, mult: 0.4, fx: 92,
-    desc: "앞쪽에 4초간 중력의 소용돌이를 연다. 0.5초마다 안의 적을 가운데로 끌어당기며 피해를 준다." },
+    desc: "앞쪽에 4초간 중력의 소용돌이를 연다. 0.5초마다 안의 적을 가운데로 끌어당기며 피해를 준다. 끌려간 적은 모여 광역기에 더 아프다." },
   brand: { kind: "p", wk: "book", need: 10, name: "금서의 낙인", ms: 6000, k: 0.15, fx: 114, borrow: ["cdr", 3],
     desc: "마도서 스킬에 맞은 적에게 6초간 낙인을 새긴다. 낙인 찍힌 적은 누구에게서나 피해를 15% 더 받는다." },
   revive_binding: { kind: "a", wk: "book", need: 15, name: "되살림 제본", mp: 19, cd: 18000, r: 105, heal: 0.19, atkHeal: 0.30, creditMs: 10000, support: true, noAuto: true, fx: 136,
@@ -169,6 +169,19 @@ const SKILL = {
     desc: "창으로 열린 길을 따라 전진하고 끝에서 해머를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다." },
   oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, creditMs: 10000, fx: 134,
     desc: "주변을 내리치고 자신과 반경 88 안의 파티원에게 최대 HP 10% + 성기사 공격력의 30%를 회복시킨다. 회복한 파티원이 10초 안에 처치에 기여하면 성기사도 직업 경험치를 받는다." },
+  // ── the combo actives (docs/design/skill-combos.md, fx 140–145): mastery 25, after the signatures so a fresh bar keeps them
+  cleave: { kind: "a", wk: "sword", need: 25, name: "처형 내려베기", mp: 8, hpPct: 0.03, autoHp: 0.35, cd: 16000, wind: 500, len: 56, half: 18, n: 3, mult: 2.4, eat: { stg: 0.6, air: 0.5, frz: 0.6 }, fx: 140,
+    desc: "0.5초 동안 대검을 치켜들었다가 앞의 적 셋까지 내려벤다. 경직된 적 +60%, 공중에 뜬 적 +50%, 얼어붙은 적 +60% — 그 상태는 풀린다." },
+  rupture: { kind: "a", wk: "dagger", need: 25, name: "급소 터뜨리기", mp: 3, hpPct: 0.01, autoHp: 0.35, cd: 3500, len: 44, mult: 0.5, eat: { mk: 0.3, brand: 0.5 }, pop: 3, r: 32, splash: 0.4, fx: 141,
+    desc: "겨눈 적의 표식을 한꺼번에 터뜨린다 — 표식 1개당 +30%, 낙인이 있으면 +50%. 표식이 셋 이상이면 주변 적도 폭발에 휘말린다." },
+  hook: { kind: "a", wk: "spear", need: 25, name: "갈고리 창", mp: 5, hpPct: 0.02, autoHp: 0.35, cd: 7000, len: 120, half: 14, n: 3, to: 18, hold: 400, mult: 0.7, fx: 142,
+    desc: "창끝 갈고리를 일직선으로 던져 맞은 적 셋까지 눈앞으로 끌어당기고 경직시킨다. 끌려온 적은 광역기에 더 아프다." },
+  ignite: { kind: "a", wk: "staff", need: 25, name: "점화 폭발", mp: 14, cd: 14000, wind: 400, el: "f", mag: 1, at: 90, r: 40, mult: 1.3, eat: { brn: 0.35, frz: 0.8 }, fx: 143,
+    desc: "0.4초 주문을 모아 겨눈 자리를 터뜨린다. 화상 1당 +35%(화상은 사라진다), 얼어붙은 적은 열충격으로 +80%. 불 원소." },
+  drain: { kind: "a", wk: "book", need: 25, name: "영혼 착취", mp: 16, cd: 15000, mag: 1, len: 110, half: 12, n: 6, every: 400, mult: 0.35, fin: 0.8, heal: 0.15, eat: { brand: 1.0 }, fx: 144,
+    desc: "2.4초 동안 겨눈 쪽 적 둘에게 영혼의 줄기를 이어 0.4초마다 피해를 주고 그 15%를 회복한다. 마지막 줄기는 낙인을 터뜨려 +100%. 다른 기술을 쓰면 끊긴다." },
+  snipe: { kind: "a", wk: "bow", need: 25, name: "저격", mp: 12, cd: 18000, wind: 700, len: 220, half: 8, n: 2, mult: 1.8, eat: { stg: 0.5, air: 0.6, frz: 0.5 }, fx: 145,
+    desc: "0.7초 시위를 끝까지 당겨 아주 멀리 일직선으로 쏜다(앞의 둘까지). 경직된 적 +50%, 공중에 뜬 적 +60%, 얼어붙은 적 +50%." },
 };
 for (const [id, sk] of Object.entries(SKILL)) {
   sk.id = id;
