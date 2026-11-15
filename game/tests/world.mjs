@@ -156,7 +156,8 @@ JSON.stringify(L.removePlayer(S, PID));
     assert.ok(maps[from].portals.some((p) => p.to === to), `${from} has a door to ${to}`);
     assert.ok(D.maps.find((q) => q.id === from).to.includes(to), `${from} lists ${to} as a way on`);
   }
-  for (const id of Object.keys(maps)) if (id !== "dunesea") assert.ok(maps[id].w * maps[id].h < W * m.h / 2.4, `dunesea is far bigger than ${id}`);
+  // (the old kingdom grew to 196 × 136 in the level-design pass: the dune sea is still twice any other ground)
+  for (const id of Object.keys(maps)) if (id !== "dunesea") assert.ok(maps[id].w * maps[id].h < W * m.h / 2, `dunesea is far bigger than ${id}`);
   assert.equal(m.stones.length, 5, "five waypoint stones");
   assert.deepEqual(D.waypoints.find((w) => w.id === "dunesea").names, ["입구", "중턱", "안쪽", "오아시스 마을", "흰 모래 해변"]);
   assert.equal(fires.dunesea.length, 3, "the caravan's camp, the village fire and the plaza's");
