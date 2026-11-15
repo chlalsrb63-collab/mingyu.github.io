@@ -167,6 +167,11 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #status .meter b { font: var(--t10)/8px var(--pix9); font-weight: normal; color: var(--cream); text-align: right; white-space: nowrap; text-shadow: 1px 1px 0 #000; }
 #status .bar { position: relative; height: 8px; margin: 0; background: #000; border: 1px solid var(--ink); box-shadow: none; border-radius: 0; }
 #status .bar.hp i:not(.trail) { background: linear-gradient(var(--hp-hi) 0 1px, var(--hp) 1px 4px, var(--hp-lo) 4px); }
+#status .meter.jb[hidden] { display: none; }
+#status .meter.jb em { font: 700 var(--t10)/8px var(--pix); color: #8fe39a; }
+#status .bar.jb i { background: linear-gradient(#b6f5bd 0 1px, #4fb86a 1px 4px, #2c7a45 4px); }
+#status .meter.jb.pop { animation: jb-pop .9s steps(6); }
+@keyframes jb-pop { 0%, 40%, 80% { filter: brightness(2.2); } 20%, 60%, 100% { filter: none; } }
 #status .bar.mp i { background: linear-gradient(var(--mp-hi) 0 1px, var(--mp) 1px 4px, var(--mp-lo) 4px); }
 #st-gold { position: relative; display: flex; align-items: center; gap: 4px; height: 12px; font: 700 var(--t12)/12px var(--pix); color: var(--b-hi); white-space: nowrap; text-shadow: 1px 1px 0 #000; }
 #st-gold-n { display: inline-flex; align-items: center; gap: 4px; }
