@@ -72,6 +72,7 @@ export const K: {
   name(server: string, name: string): string;
   guild(server: string, name: string): string;
   rank(server: string): string;
+  first(server: string, k: string): string;
   failId(id: string): string;
   failIp(bucket: string): string;
   signupIp(bucket: string): string;

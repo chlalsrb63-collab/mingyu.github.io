@@ -39,6 +39,10 @@ export function removePlayer(state: World, playerId: string): Char | null;
 export function exportChar(state: World, playerId: string): Char | null;
 /** Players whose progress asked to be saved soon (quest, enhancement, level…); clears the flags. */
 export function takeSaves(state: World): string[];
+/** First kills of the bosses-2 bosses since the last call: [character name, boss kind] (60-content.js). */
+export function takeFirsts(state: World): Array<[string, string]>;
+/** Announce a server-first kill the vault confirmed. */
+export function firstNotice(state: World, name: string, kind: string): boolean;
 export function defs(): unknown;
 /** The starting weapons for the creation page: [kind, name, weapon name, first skill name, range] each. */
 export function starters(): [string, string, string, string, number][];

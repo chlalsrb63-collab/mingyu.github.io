@@ -101,7 +101,7 @@ interface FriendReply {
 }
 
 type VaultReply =
-  | { ok: true; char?: Char | null; list?: RankRow[]; id?: string }
+  | { ok: true; char?: Char | null; list?: RankRow[]; id?: string; first?: boolean }
   | { ok: false; error: string; expired?: boolean };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -493,6 +493,10 @@ export class Room extends DurableObject<Env> {
         return;
       }
       logic.tick(world, now);
+      // a bosses-2 boss down for the first time on this character: ask the vault whether it is the server's first
+      for (const [name, k] of logic.takeFirsts(world)) {
+        this.ctx.waitUntil(this.callVault("first", { room: this.roomName, k, name }).then((res) => { if (res.ok && res.first) logic.firstNotice(world, name, k); }));
+      }
       for (const [ws, pid] of live) {
         const view = logic.viewFor(world, pid);
         if (view) this.send(ws, view);
@@ -645,6 +649,14 @@ export class Room extends DurableObject<Env> {
       puts[rankKey] = [...rank.values()].sort((a, b) => b.lvl - a.lvl || b.xp - a.xp).slice(0, RANK_SIZE);
       await store.put(puts);
       return reply({ ok: true });
+    }
+
+    // the server's first kill of a boss kind: claimed once (storage calls hold other events off, so two can't both win)
+    if (op === "first") {
+      const k = String(body.k ?? ""), key = K.first(server, k);
+      if (!/^[a-z_]{1,24}$/.test(k) || (await store.get(key))) return reply({ ok: true, first: false });
+      await store.put(key, { name: String(body.name ?? "").slice(0, 16), t: now });
+      return reply({ ok: true, first: true });
     }
 
     if (op === "rank") {

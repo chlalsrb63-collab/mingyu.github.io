@@ -22,6 +22,7 @@
  *   g:<guild>         s1 guild-name claim                  (the old global index)
  *   g:s2:<guild>      s2 guild-name claim
  *   rank / rank:s2    top-20 ranking of s1 / s2
+ *   first:<server>:<boss>  the server's first kill of a bosses-2 boss {name, t} (written once; added 2026-11-15)
  *   f:i:<id>          failed-login counter for an id
  *   f:p:<ip bucket>   failed-login counter for an address
  *   f:s:<ip bucket>   sign-up counter for an address
@@ -120,6 +121,8 @@ export const K = {
   name: (server, name) => (server === "s1" ? `n:${String(name).toLowerCase()}` : `n:${server}:${String(name).toLowerCase()}`),
   guild: (server, name) => (server === "s1" ? `g:${String(name).toLowerCase()}` : `g:${server}:${String(name).toLowerCase()}`),
   rank: (server) => (server === "s1" ? "rank" : `rank:${server}`),
+  /** the server's first kill of a boss kind (bosses-2): {name, t}, written once */
+  first: (server, k) => `first:${server}:${k}`,
   failId: (id) => `f:i:${id}`,
   failIp: (bucket) => `f:p:${bucket}`,
   signupIp: (bucket) => `f:s:${bucket}`,

@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { MOBS, ITEMS, FIELD_BOSS, TROPHIES, ELITE, mobMax, dealMob, killMob, bsHit, SETS, DIM_CHAL, CHAL_KEYS, DIM_TOWN, T, SKILL, SKILL_ORDER, stats, atkRange, aimIdx, tierFor, rollGear, GEAR, WK_ID };\n";
+  "\nexport const __t = { MOBS, ITEMS, FIELD_BOSS, TROPHIES, ELITE, mobMax, dealMob, killMob, bsHit, SETS, DIM_CHAL, CHAL_KEYS, DIM_TOWN, T, SKILL, SKILL_ORDER, stats, atkRange, aimIdx, tierFor, rollGear, GEAR, WK_ID, checkAch };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t;
 
@@ -299,4 +299,9 @@ for (const [k, t] of [["cloakbat", 25], ["bloomwhale", 50]]) {
   assert.ok(win.state === "clear" && win.min >= 2.5, `${k}: four geared heroes win, not in a blink (${win.min.toFixed(1)} min)`);
   assert.ok(lose.state !== "clear", `${k}: two bare heroes lose`);
 }
+// server-first kills: a first personal kill queues [name, kind] once for room.ts; the confirmed notice reaches the chat
+{ const p = S.players.p1; L.takeFirsts(S); p.ch.mk.cloakbat = Math.max(1, p.ch.mk.cloakbat | 0); p.ch.ach = p.ch.ach.filter((a) => a !== "cloakbat"); X.checkAch(S, p);
+  assert.deepEqual(L.takeFirsts(S), [[p.ch.name, "cloakbat"]], "queued once"); X.checkAch(S, p); assert.deepEqual(L.takeFirsts(S), [], "not again");
+  const n = S.chat.length; assert.ok(L.firstNotice(S, p.ch.name, "cloakbat") && S.chat.length === n + 1 && /서버 최초/.test(S.chat[n].m), "announced");
+  assert.equal(L.firstNotice(S, "x", "slime"), false, "only the listed bosses"); }
 console.log("bosses2: 밤장막 박쥐군주 and 꽃무덤 고래 (weekly raids) — phases, shapes, shared mark, feeding bats, shielding heads, enrage, rewards, bot win/lose ok");

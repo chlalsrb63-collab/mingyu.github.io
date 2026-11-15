@@ -199,6 +199,21 @@ function stars(ch) {
   for (const k of Object.keys(ch.mk)) n += masteryRank(ch, k);
   return n;
 }
+/** bosses-2 kills whose first on each server is remembered (room.ts → vault "first") and announced (firstNotice). */
+const SERVER_FIRST = ["clubshrimp", "bloodhorn", "cloakbat", "bloomwhale"];
+/** room.ts: the first kills to claim since the last call — [character name, boss kind]. */
+export function takeFirsts(S) {
+  const out = S.firsts || [];
+  S.firsts = [];
+  return out;
+}
+/** room.ts: the vault says it was this server's first — everyone in this channel hears it. */
+export function firstNotice(S, name, k) {
+  if (!SERVER_FIRST.includes(k)) return false;
+  const boss = MOBS[k].name;
+  sys(S, `[서버 최초] ${String(name).slice(0, 16)}님이 이 서버에서 처음으로 ${boss}${pp(boss, "을를")} 쓰러뜨렸습니다!`);
+  return true;
+}
 function checkAch(S, p) {
   const ch = p.ch;
   for (const a of ACH) {
@@ -208,6 +223,7 @@ function checkAch(S, p) {
     S.maps[p.map].ev.push(["ac", p.eid, a.id]);
     if (COS_ACH[a.id]) giveCos(S, p, COS_ACH[a.id], `업적 [${a.name}]`);
     if (a.pts >= 30) sys(S, `${ch.name}님이 업적 [${a.name}]${pp(a.name, "을를")} 달성했습니다!`);
+    if (SERVER_FIRST.includes(a.id)) (S.firsts || (S.firsts = [])).push([ch.name, a.id]);
     p.dirty = true;
   }
 }
