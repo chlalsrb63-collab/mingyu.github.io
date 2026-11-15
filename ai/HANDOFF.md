@@ -32,7 +32,7 @@ agent notification re-read it, and 6–7 agents of 120k–400k tokens each ran a
 7. Unused MCP servers/plugins (Unity, Summer Engine, Higgsfield, Notion, PixelLab, Blender, fullstory…) add ~25k tokens
    to every call — the owner may turn them off for this folder. Ponytail (lazy-senior-dev rules) is installed.
 
-## 0.1 State (2026-11-15 15:30 play build, tag `play-2026-11-15-1530` — `main` sheet v20, rules suite all green, nothing pushed)
+## 0.1 State (2026-11-15 17:00 play build, tag `play-2026-11-15-1700` — `main` sheet v20, rules suite all green, nothing pushed)
 
 Done this session (contracts + as-built in `docs/design/job-freedom.md` §7–9): **gear enhancement rebalance** (safe to
 +3, +27.5 % at +10, crit 0.5/step, failure = one step down + 저주받은 `g.cu`, 저주 해제 주문서 `uncurse` in the shop 2,500G,
@@ -62,16 +62,24 @@ Codex rotating regional bosses (`chalOfWeek`, `rotationBig`); wire `dimr` [6 old
 on bars incl. rift toughness (snapshot `HK`). Rift party scaling `DIM.hpN` [0.3,0.6,0.8,1] already existed (owner asked).
 Other session: dash 72→36 px (f8b955a).
 
+**15:30 → 17:00 (integrator, owner away: "컨텐츠 개선과 에셋 디자인"):** bosses-2 follow-ups (`docs/design/bosses-2.md` §10): trophy
+recipes (피눈물 결정 → 축복 강화석, 갯가재 집게 → 홈 송곳), 박쥐 망토 + 먹장어 pet (2 % from 꽃무덤 고래), quest/weekly cosmetics now drop
+(wardrobe "곧 열립니다" gone), **server-first notice** (vault op `first`, key `first:<server>:<boss>`), field-boss **stagger gauge** on the
+wire (`M` row [12]) + bar, **damage ranking** toast after a boss/guardian (`dmgBoard`) + 업적 선봉장 (`cnt.mvp`), 바위 side-quest chain for the
+new bosses (data/quests.json), uncurse = scroll 1,200 G + 400 G × gear tier, story-arena HUD (`sty` wire: time left + [떠나기]),
+char window fits 960×600, 앉기 tooltip names the campfire. **Co-op 3–4**: 캉캉대장간 단조 (forge, `life-and-coop.md` H8) and the 보글 가마 skin
+(H9, if merged — see git log). **Art**: own sprites for the bosses-2 adds (`mobart_bosses2_adds.js`) and for 숫양 / 검은 왕관 뿌리짐승 / 눈먼
+문지기 올빼미 / 왕릉 파수꾼 (`mobart_named.js`); icons for 스킬 강화석, the two trophies, reset scrolls and the 8 raid set pieces (every item
+now has a bag icon); 혈루 뿔 왕관 + 갯가재 집게 weapon skin (boss pool); bat-wing hem for 박쥐 망토. Codex `daily-party-hunt` merged.
+
 **Next, in order:**
-1) Play-test the co-op jobs and the four new bosses live and retune (R1 is fury-sensitive); first-kill server notice for R2; add art for
-   bloodshard/nightbat/hagfishhead; 박쥐 망토 cosmetic, 먹장어 pet; uses for 피눈물 결정 / 갯가재 집게.
-2) Cosmetic sources "곧 열립니다" (wardrobe_ui.js) → rift/weekly/quests. Field-boss stagger bar (gauge not on the wire).
-3) Co-op jobs 2–4 (diner, forge/alch) on the co-op engine; economy check of the 알바 board ceiling (~4,000 G/day at life 50).
-4) Economy review leftovers: uncurse price by gear tier (1,200 G + 400 × tier fee), stone_b recipe if blessing supply > 2/week.
-5) Small: 앉기 label could say 모닥불; char window right column clipped at 960×600; trophies story-arena [떠나기]/countdown.
-Known: rift tier 5+ needs balance; `party` test flakes under load; job reset gold costs placeholders. Codex commits to
-`main` directly at times; old `codex/combat-effects`, `rift-beasts`, `world-map` branches hold commits not on main
-(superseded by later merges — check before reviving).
+1) Play-test the four co-op jobs (forge/alch bots hit every beat — real players score lower; retune cut-offs) and the bosses-2 raids.
+2) Co-op leftovers: diner plates/washing, burger, two-carrier orders; forge sounds (mapped to existing ones), scorch fx; tool sprites;
+   ready check + `coop_join`; S cosmetics/achievements for co-op.
+3) Server-first notice reaches only the channel where it happened (the other channel of that server doesn't hear it).
+4) 55 monsters are regional tints of another sprite (deliberate variants); the four that were different creatures now have art.
+5) Town polish (§3): benches to sit on (seats would sit on a solid prop — needs care), spirit-tree canopy over the fountain.
+Known: rift tier 5+ needs balance; `maps` test's build-time assert flakes under load (passes alone); job reset costs as reviewed.
 **Agent worktrees from `isolation: "worktree"` start at origin/main (stale) — first step of every brief: `git rebase main`.**
 Typed agents (`ui-programmer` etc.) stop at 20 turns — use `general-purpose` for anything bigger. Only the owner adds jobs.
 
