@@ -603,8 +603,15 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
     qs[g.q]++;
   }
   assert.ok(qs[1] > 0 && qs[2] > 0, "both rarities: " + qs);
-  assert.equal(Object.keys(X.RECIPES).filter((id) => X.RECIPES[id].gear).length, 52, "seven weapon kinds + six pieces × four tiers");
-  assert.deepEqual([...new Set(Object.values(X.RECIPES).filter((r) => r.gear).map((r) => r.lv))], [12, 22, 32, 42]);
+  assert.equal(Object.keys(X.RECIPES).filter((id) => X.RECIPES[id].gear).length, 65, "seven weapon kinds + six pieces × five tiers");
+  assert.deepEqual([...new Set(Object.values(X.RECIPES).filter((r) => r.gear).map((r) => r.lv))], [12, 22, 32, 42, 50]);
+  // tier 6 (운철, Lv.181): every piece kind exists, out-stats tier 5, and is crafted from grade-5 materials at twice the count
+  for (const pre of ["w_warrior", "w_rogue", "w_lancer", "w_mage", "w_book", "w_bow", "w_h", "h", "a", "g", "b", "r", "n"]) {
+    const a5 = X.ITEMS[`${pre}_5`], a6 = X.ITEMS[`${pre}_6`];
+    assert.ok(a6 && a6.tier === 6 && a6.req === 181 && a6.price > a5.price, pre);
+    for (const k of Object.keys(a5.base)) assert.ok(a6.base[k] > a5.base[k], `${pre}_6 ${k}`);
+    assert.deepEqual(X.RECIPES[`gr_${pre}_6`].in, [["ing_5", 8], ["m_w5", 4]], pre);
+  }
 }
 
 // ── 축복 강화석: +10 %p and a failure never drops a step; the punch's cap; the whetstone; elixirs
@@ -961,7 +968,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   const nc = L.newChar("새싹", []);
   assert.deepEqual([nc.cnt.gat, nc.cnt.craft, nc.cnt.deliver], [0, 0, 0]);
   assert.ok(D.life.jb.jb_dl_cafe.toName && D.life.rep.tier.length === 3 && D.life.pouch.ids.includes("staple") && D.life.nodes.kinds.join("") === "howc");
-  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 95 && D.life.recipes.some((r) => r.id === "gr_w_h_5"));
+  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 108 && D.life.recipes.some((r) => r.id === "gr_w_h_6"));
   // the town's hosts: 캉캉 crafts, 보글 brews, 쥬쥬's stove cooks, 포포 runs the board, 쥬쥬 and 보글's shelf sell the staples
   const role = (nid) => X.mapOf(X.NPC_MAP[nid]).npcs.find((n) => n.id === nid);
   assert.deepEqual(["kangkang", "bogle", "juju_stove", "popo"].map((nid) => role(nid).role), ["craft", "alch", "cook", "jobs"]);

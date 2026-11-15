@@ -11,11 +11,11 @@ const txt = (s, x, y, col = "#ddd") => { g.fillStyle = col; g.font = "12px sans-
 const KINDS = Object.keys(WP.DESIGNS);
 if (mode === "weapons") {
   const z = 4, CW = 52 * z + 8, RH = 32 * z + 4;
-  cv.width = 5 * CW + 120; cv.height = KINDS.length * RH + 470;
+  cv.width = 6 * CW + 120; cv.height = KINDS.length * RH + 470;
   g.imageSmoothingEnabled = false;
   g.fillStyle = "#3c5a3a"; g.fillRect(0, 0, cv.width, cv.height);
   KINDS.forEach((k, r) => {
-    for (let t = 1; t <= 5; t++) {
+    for (let t = 1; t <= 6; t++) {
       const s = WP.weaponSprite(k, { wt: t });
       g.drawImage(s, 100 + (t - 1) * CW, r * RH, s.width * z, s.height * z);
       const ic = WP.weaponIcon(k, t);

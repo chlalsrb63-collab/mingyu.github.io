@@ -499,30 +499,30 @@ const SKILL_JOB = Object.fromEntries(SKILL_ORDER.map((id) => {
   const sk = SKILL[id];
   return [id, sk.job || Object.keys(JOBS).find((j) => JOBS[j].kind === "single" && JOBS[j].wk[0] === sk.wk)];
 }));
-// ── gear: seven kinds of piece, five tiers each
+// ── gear: seven kinds of piece, six tiers each (tier 6, 운철 meteor iron, from Lv.181: balance-2026-11-15 §8)
 const WEAPON_NAMES = {
-  sword: ["녹슨 대검", "강철 양손검", "기사단 클레이모어", "고주파 대검", "차원 절단기"],
-  dagger: ["낡은 단검", "암살자의 비수", "쌍독니", "카본 나이프", "균열의 송곳니"],
-  spear: ["대나무 창", "강철 장창", "기사단 할버드", "플라즈마 랜스", "차원 관통창"],
-  staff: ["견습 지팡이", "룬 지팡이", "현자의 지팡이", "플라즈마 로드", "공허의 홀"],
-  book: ["낡은 주문서", "룬 마도서", "현자의 법전", "홀로그램 코덱스", "공허의 서"],
-  bow: ["나무 짧은활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위"],
-  hammer: ["말뚝박이 망치", "강철 노두 망치", "성문지기의 중추", "충격 코일 해머", "균열봉합 추"],
+  sword: ["녹슨 대검", "강철 양손검", "기사단 클레이모어", "고주파 대검", "차원 절단기", "운철 참마도"],
+  dagger: ["낡은 단검", "암살자의 비수", "쌍독니", "카본 나이프", "균열의 송곳니", "운철 비수"],
+  spear: ["대나무 창", "강철 장창", "기사단 할버드", "플라즈마 랜스", "차원 관통창", "운철 천공창"],
+  staff: ["견습 지팡이", "룬 지팡이", "현자의 지팡이", "플라즈마 로드", "공허의 홀", "성운의 홀"],
+  book: ["낡은 주문서", "룬 마도서", "현자의 법전", "홀로그램 코덱스", "공허의 서", "성운의 서"],
+  bow: ["나무 짧은활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위", "유성 장궁"],
+  hammer: ["말뚝박이 망치", "강철 노두 망치", "성문지기의 중추", "충격 코일 해머", "균열봉합 추", "운철 대망치"],
 };
 /** The word each weapon kind uses in its item ids (persisted: the old class names stay). Anyone may wield anything. */
 const WK_ID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow", hammer: "h" };
-const W_ATK = [6, 14, 26, 42, 64];
+const W_ATK = [6, 14, 26, 42, 64, 90];
 /** The level each tier of gear asks for, on the 1–200 player scale (= 4·old − 3). */
-const G_REQ = [1, 29, 61, 101, 149];
-const G_PRICE = [80, 600, 2200, 7000, 20000];
+const G_REQ = [1, 29, 61, 101, 149, 181];
+const G_PRICE = [80, 600, 2200, 7000, 20000, 50000];
 /** Everything worn: id prefix, names by tier, and the stats a plain piece carries. */
 const GEAR = {
-  helm: { pre: "h", cost: 0.7, names: ["천 두건", "가죽 모자", "강철 투구", "전술 헬멧", "차원 왕관"], st: { def: [1, 3, 6, 10, 15], hp: [0, 15, 35, 65, 110] } },
-  armor: { pre: "a", cost: 1, names: ["여행자 옷", "가죽 갑옷", "사슬 갑옷", "전술 방탄복", "차원 외골격"], st: { def: [2, 6, 11, 18, 28], hp: [0, 30, 70, 130, 220] } },
-  gloves: { pre: "g", cost: 0.6, names: ["헝겊 장갑", "가죽 장갑", "사슬 장갑", "강화 건틀릿", "차원 손아귀"], st: { atk: [1, 3, 6, 10, 16] } },
-  boots: { pre: "b", cost: 0.6, names: ["짚신", "가죽 장화", "강철 각반", "부스터 부츠", "차원 보행기"], st: { def: [1, 2, 4, 7, 11], spd: [2, 3, 4, 6, 8] } },
-  ring: { pre: "r", cost: 0.8, names: ["구리 반지", "은 반지", "금 반지", "네온 링", "차원 인장"], st: { atk: [1, 2, 4, 7, 11], crit: [1, 1, 2, 3, 4] } },
-  amulet: { pre: "n", cost: 0.8, names: ["나무 목걸이", "은 목걸이", "수호 부적", "홀로 펜던트", "균열의 심장"], st: { hp: [10, 30, 60, 110, 180], mp: [5, 15, 30, 55, 90] } },
+  helm: { pre: "h", cost: 0.7, names: ["천 두건", "가죽 모자", "강철 투구", "전술 헬멧", "차원 왕관", "운철 투구"], st: { def: [1, 3, 6, 10, 15, 21], hp: [0, 15, 35, 65, 110, 170] } },
+  armor: { pre: "a", cost: 1, names: ["여행자 옷", "가죽 갑옷", "사슬 갑옷", "전술 방탄복", "차원 외골격", "운철 판금갑"], st: { def: [2, 6, 11, 18, 28, 40], hp: [0, 30, 70, 130, 220, 340] } },
+  gloves: { pre: "g", cost: 0.6, names: ["헝겊 장갑", "가죽 장갑", "사슬 장갑", "강화 건틀릿", "차원 손아귀", "운철 건틀릿"], st: { atk: [1, 3, 6, 10, 16, 23] } },
+  boots: { pre: "b", cost: 0.6, names: ["짚신", "가죽 장화", "강철 각반", "부스터 부츠", "차원 보행기", "운철 전투화"], st: { def: [1, 2, 4, 7, 11, 16], spd: [2, 3, 4, 6, 8, 10] } },
+  ring: { pre: "r", cost: 0.8, names: ["구리 반지", "은 반지", "금 반지", "네온 링", "차원 인장", "유성 반지"], st: { atk: [1, 2, 4, 7, 11, 16], crit: [1, 1, 2, 3, 4, 5] } },
+  amulet: { pre: "n", cost: 0.8, names: ["나무 목걸이", "은 목걸이", "수호 부적", "홀로 펜던트", "균열의 심장", "성운의 심장"], st: { hp: [10, 30, 60, 110, 180, 270], mp: [5, 15, 30, 55, 90, 135] } },
 };
 
 const ITEMS = {
@@ -584,8 +584,8 @@ const ITEMS = {
   kp_neon_lamp: { name: "마지막 불빛 등", type: "keep", price: 0, arc: "마지막 불빛", desc: "도톨이 함락된 거리에서 끝까지 켜 두던 간판등의 작은 쌍둥이. 켜면 길 잃은 이가 집 쪽을 본다." },
 };
 for (const wk of Object.keys(WEAPON_NAMES)) {
-  for (let t = 1; t <= 5; t++) {
-    const base = wk === "book" ? { atk: Math.round(W_ATK[t - 1] * 0.85), mp: [15, 35, 60, 100, 150][t - 1] } : { atk: W_ATK[t - 1] };
+  for (let t = 1; t <= G_REQ.length; t++) {
+    const base = wk === "book" ? { atk: Math.round(W_ATK[t - 1] * 0.85), mp: [15, 35, 60, 100, 150, 210][t - 1] } : { atk: W_ATK[t - 1] };
     ITEMS[`w_${WK_ID[wk]}_${t}`] = { name: WEAPON_NAMES[wk][t - 1], type: "weapon", wk, tier: t, base, req: G_REQ[t - 1], price: G_PRICE[t - 1] };
   }
   // Plain patrol stock for the airship. Crafted and dropped weapons keep the full tier stats.
@@ -619,7 +619,7 @@ Object.assign(ITEMS, {
 });
 for (const type of Object.keys(GEAR)) {
   const d = GEAR[type];
-  for (let t = 1; t <= 5; t++) {
+  for (let t = 1; t <= G_REQ.length; t++) {
     const base = {};
     for (const s of Object.keys(d.st)) if (d.st[s][t - 1]) base[s] = d.st[s][t - 1];
     ITEMS[`${d.pre}_${t}`] = { name: d.names[t - 1], type, tier: t, base, req: G_REQ[t - 1], price: Math.round(G_PRICE[t - 1] * d.cost) };
@@ -669,7 +669,7 @@ const LEGEND = {
 const SETS = {
   pioneer: { name: "개척자", tiers: [1, 2], types: ["helm", "armor", "gloves", "boots"], bonus: [[2, [["hp", 60]]], [4, [["spd", 10], ["xp", 12]]]] },
   runner: { name: "네온 러너", tiers: [3, 4], types: ["gloves", "boots", "ring", "amulet"], bonus: [[2, [["crit", 6]]], [4, [["atkp", 15], ["spd", 8]]]] },
-  rift: { name: "균열 추적자", tiers: [4, 5], types: ["weapon", "helm", "armor", "ring", "amulet"], bonus: [[2, [["mf", 25]]], [3, [["atkp", 12]]], [5, [["ls", 4], ["critd", 40]]]] },
+  rift: { name: "균열 추적자", tiers: [4, 5, 6], types: ["weapon", "helm", "armor", "ring", "amulet"], bonus: [[2, [["mf", 25]]], [3, [["atkp", 12]]], [5, [["ls", 4], ["critd", 40]]]] },
   // the weekly raids' sets (bosses-2 §7): no tiers, so no ordinary piece rolls into them — only their own rows (ITEMS `set`)
   nightveil: { name: "밤장막", tiers: [], types: ["helm", "armor", "ring", "amulet"], bonus: [[2, [["ls", 3]]], [4, [["atkp", 12], ["crit", 5]]]] },
   bloomgrave: { name: "꽃무덤", tiers: [], types: ["helm", "armor", "ring", "amulet"], bonus: [[2, [["hp", 150]]], [4, [["atkp", 15], ["critd", 35]]]] },
@@ -1523,15 +1523,18 @@ Object.assign(RECIPES, {
 const ING_FEE = [5, 10, 20, 40, 60];
 for (let g = 1; g <= 5; g++) RECIPES[`ing_${g}`] = recipeRow("craft", GRADE_LV[g - 1], "craft", [[`m_o${g}`, 3]], `ing_${g}`, 1, ING_FEE[g - 1]);
 /**
- * Gear (B.6): tier t (2–5) at Lv 12/22/32/42 — four ingots and two planks of grade t, a fee of 30 % of the shop
+ * Gear (B.6): tier t (2–5) at Lv 12/22/32/42 (tier 6: Lv 50, grade-5 materials ×2) — four ingots and two planks of grade t, a fee of 30 % of the shop
  * price; rarity q[0]..q[1] (마법..희귀; a 대성공 raises it one step, never 전설/세트), affixes rolled at item level
  * ilvl[t−1]. No batch mode. 48 recipes: six weapon kinds + six other pieces × four tiers.
  */
-const GEAR_CRAFT = { lv: [12, 22, 32, 42], ing: 4, wood: 2, fee: 0.3, q: [1, 2], ilvl: [4, 12, 21, 32, 44], ms: 6000 };
-for (let t = 2; t <= 5; t++) {
+const GEAR_CRAFT = { lv: [12, 22, 32, 42, 50], ing: 4, wood: 2, fee: 0.3, q: [1, 2], ilvl: [4, 12, 21, 32, 44, 49], ms: 6000 };
+// Tier 6 (운철, Lv.181) has no ingot of its own: grade-5 materials at twice the count (`mat`), at 캉캉 craft Lv.50.
+const GEAR6 = { mat: 5, k: 2 };
+for (let t = 2; t <= 6; t++) {
   const ids = [...WK_ORDER.map((wk) => `w_${WK_ID[wk]}_${t}`), ...["helm", "armor", "gloves", "boots", "ring", "amulet"].map((ty) => `${GEAR[ty].pre}_${t}`)];
+  const g = t === 6 ? GEAR6.mat : t, k = t === 6 ? GEAR6.k : 1;
   for (const id of ids) {
-    RECIPES[`gr_${id}`] = recipeRow("craft", GEAR_CRAFT.lv[t - 2], "craft", [[`ing_${t}`, GEAR_CRAFT.ing], [`m_w${t}`, GEAR_CRAFT.wood]], id, 1,
+    RECIPES[`gr_${id}`] = recipeRow("craft", GEAR_CRAFT.lv[t - 2], "craft", [[`ing_${g}`, GEAR_CRAFT.ing * k], [`m_w${g}`, GEAR_CRAFT.wood * k]], id, 1,
       Math.round(ITEMS[id].price * GEAR_CRAFT.fee), { gear: 1, ms: GEAR_CRAFT.ms });
   }
 }
@@ -8883,7 +8886,7 @@ function rollRarity(S, rank, mf) {
   return r < top + rare ? 2 : r < top + rare + magic ? 1 : 0;
 }
 function tierFor(lv) {
-  return lv < 8 ? 1 : lv < 16 ? 2 : lv < 26 ? 3 : lv < 38 ? 4 : 5;
+  return lv < 8 ? 1 : lv < 16 ? 2 : lv < 26 ? 3 : lv < 38 ? 4 : lv < 46 ? 5 : 6;
 }
 /** Which kind of piece drops: weapons most often, jewellery least. */
 const DROP_TYPES = [["weapon", 24], ["helm", 13], ["armor", 15], ["gloves", 13], ["boots", 13], ["ring", 13], ["amulet", 9]];
@@ -8903,7 +8906,7 @@ function lootFor(S, rt, mob, p) {
   for (let i = 0; i < tries; i++) {
     if (rnd(S) >= (rank === 2 || d.chest ? 1 : rank === 1 ? 0.35 : d.gear) * (1 + st.mf / 100)) continue;
     let tier = tierFor(d.lv);
-    if (rank && rnd(S) < 0.25) tier = Math.min(5, tier + 1);
+    if (rank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
     for (const [t, w] of DROP_TYPES) { if (roll < w) { type = t; break; } roll -= w; }
     let id;

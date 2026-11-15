@@ -62,12 +62,15 @@ const M = {
   page: ["#fffaee", "#f2e6cc", "#c8b494"],
   oldpage: ["#f4e6c0", "#dcc89a", "#a89070"],
   holo: ["#e0ffff", "#8ae8f4", "#3aa0c0"],
+  // tier 6 운철 (meteor iron): night-blue metal, starlight-gold fittings, star flecks
+  meteor: ["#b8c6f0", "#5a6aa8", "#2c3260"], starfire: ["#fff8d8", "#ffd27a", "#c8844a"],
   // flat accents
   wrap: "#3a2630", gild: "#f0cc60", spot: "#b0603a", fuller: "#8e96ae", glow: "#7af4ff", core: "#e8ffff",
   energy: "#e8a8ff", spark: "#fff4a0", venom: "#8ae84a", ruby: "#ff5a6a", sapph: "#5ab8ff", emer: "#5ae0a0",
   amethyst: "#c87aff", white: "#ffffff", ink: "#3a3044", line: "#b8a890", rune: "#5ab8ff", orange: "#ff9a3a",
   // bows: a gut string, an arrow's shaft, a longbow's pale belly, a compound's cable
   gut: "#f2e6c8", shaft: "#e8cc94", belly: "#d8a86c", cable: "#4a4c5e",
+  star: "#fff6c8",
 };
 
 // ───────────────────────────── shapes ─────────────────────────────
@@ -139,6 +142,16 @@ const SWORD = [
       P([[34, -3], [37, -5], [36, -2]], "crystal"), P([[35, 3], [38, 4], [35, 5]], "crystal"),
     ], head: [8, 33, -5, 5], blade: ["void"],
   }),
+  // 6 운철 참마도 — a broad night-blue blade of meteor iron, a starlight edge, star flecks, a gold sun guard
+  () => ({
+    sh: [
+      R(-6, -3, -1, 2, "meteor"), C(-6, 0.5, 1.4, "starfire"),
+      R(-3, 5, -1, 2, "black"), R(-1, 0, -1, 2, "gild"), R(2, 3, -1, 2, "gild"),
+      R(5, 8, -4, 5, "starfire"), D(6, 0, "star"),
+      P([[8, -2], [26, -4], [32, -2], [33, 0], [30, 3], [8, 4]], "meteor"),
+      L(9, 3, 29, 2, "star"), D(14, 0, "star"), D(20, 1, "star"), D(25, -1, "white"),
+    ], head: [8, 33, -4, 4], blade: ["meteor"],
+  }),
 ];
 
 const DAGGER = [
@@ -188,6 +201,15 @@ const DAGGER = [
       L(5, 0, 9, 0, "white"), L(9, 0, 12, 1, "white"),
       P([[19, -3], [21, -4], [21, -2]], "crystal"),
     ], head: [4, 18, -3, 3], blade: ["crystal"],
+  }),
+  // 6 운철 비수 — a straight meteor-iron dirk, a gilt cross, a line of starlight down the blade
+  () => ({
+    sh: [
+      R(-4, 2, -1, 2, "black"), D(-2, 0, "star"), D(0, 0, "star"),
+      P([[2, -3], [4, -3], [4, 4], [2, 4]], "starfire"),
+      P([[4, -2], [16, -2], [20, 0], [20, 1], [16, 3], [4, 3]], "meteor"),
+      L(5, 0, 17, 0, "star"), D(8, -1, "white"), D(13, 2, "white"),
+    ], head: [4, 20, -2, 3], blade: ["meteor"],
   }),
 ];
 
@@ -242,6 +264,16 @@ const SPEAR = [
       C(41, -5, 1.2, "crystal"), C(41, 6, 1.2, "crystal"),
     ], head: [30, 45, -6, 7], blade: ["crystal"],
   }),
+  // 6 운철 천공창 — a meteor-iron shaft studded with stars, gold crescent wings, a long night-blue point
+  (icon) => ({
+    sh: [
+      R(-5, 30, 0, icon ? 2 : 1, "meteor"), D(4, 0, "star"), D(14, 0, "star"), D(24, 0, "star"),
+      R(28, 31, -2, 3, "starfire"),
+      P([[30, -1], [32, -5], [35, -6], [33, -2]], "starfire"), P([[30, 2], [32, 6], [35, 7], [33, 3]], "starfire"),
+      P([[31, -2], [44, 0], [46, 0.5], [44, 1], [31, 3]], "meteor"),
+      L(32, 0, 43, 0, "star"),
+    ], head: [30, 46, -6, 7], blade: ["meteor"],
+  }),
 ];
 
 const STAFF = [
@@ -287,6 +319,15 @@ const STAFF = [
       C(21.5, 0.5, 2.6, "violet"), D(21, -1, "energy"),
       P([[26, -4], [28, -5], [27, -3]], "crystal"), P([[27, 4], [29, 5], [27, 6]], "crystal"), R(26, 27, 0, 1, "crystal"),
     ], head: [16, 29, -6, 7], blade: ["violet"],
+  }),
+  // 6 성운의 홀 — a meteor-iron ring around a small golden star, three stars in orbit
+  (icon) => ({
+    sh: [
+      R(-4, 17, 0, icon ? 2 : 1, "meteor"), R(-4, -2, -1, 2, "starfire"), D(6, 0, "star"),
+      R(16, 18, -1, 2, "starfire"),
+      C(21.5, 0.5, 4.2, "meteor"), C(21.5, 0.5, 3, null), C(21.5, 0.5, 1.8, "starfire"), D(21, 0, "white"),
+      D(26, -4, "star"), D(17, -4, "star"), D(26, 5, "star"),
+    ], head: [16, 26, -4, 5], blade: ["starfire"],
   }),
 ];
 
@@ -338,6 +379,16 @@ const BOOK = [
       C(-4, 0.5, 2, "energy"), R(-5, -3, 0, 1, "ink", { top: true }), C(4, 0.5, 2, "energy"), R(3, 5, 0, 1, "ink", { top: true }),
       P([[-3, -8], [-2, -10], [-1, -8]], "crystal"), P([[2, -9], [3, -11], [4, -9]], "crystal"),
     ], head: [-9, 9, -3, 7], blade: ["void"],
+  }),
+  // 6 성운의 서 — a night-blue cover with gold corners, a constellation drawn across its pages
+  () => ({
+    sh: [
+      R(-9, 9, -3, 7, "meteor"), R(-9, -7, -3, -1, "starfire"), R(7, 9, -3, -1, "starfire"), R(-9, -7, 5, 7, "starfire"), R(7, 9, 5, 7, "starfire"),
+      R(-7, -1, -4, 5, "page"), R(1, 7, -4, 5, "page"), R(-1, 1, -4, 7, "starfire"),
+      L(-6, -2, -4, 0, "rune"), L(-4, 0, -2, 2, "rune"), D(-6, -2, "sapph"), D(-4, 0, "sapph"), D(-2, 2, "sapph"),
+      C(4, 0.5, 1.6, "starfire"), D(4, 0, "white"),
+      D(0, -9, "star"), D(-3, -8, "star"), D(3, -10, "star"),
+    ], head: [-9, 9, -3, 7], blade: ["meteor"],
   }),
 ];
 
@@ -436,6 +487,14 @@ const BOW = [
       ...[-1, 1].map((sg) => P([[c(sg * T) - 0.6, sg * (T + 1.6)], [c(sg * T) + 1.6, sg * (T + 1.2)], [c(sg * T) + 0.4, sg * (T + 3.4)]], "crystal")),
     ],
   })),
+  // 6 유성 장궁 — a meteor-iron recurve, a gold riser with a white star, gold suns at the tips, a starlight string
+  bow({ T: 12, tip: 3.4, g: 3.5, w0: 2.6, w1: 1.6, rc: 1.4, mat: "meteor", str: "star", fl: "starfire" }, (c, T, tip, k) => ({
+    sh: [
+      P([[RISER - 1.4 * k, -4], [RISER + 1.6 * k, -4], [RISER + 2.2 * k, 0], [RISER + 1.6 * k, 4], [RISER - 1.4 * k, 4]], "starfire"),
+      D(RISER, 0, "white"), D(c(6), -6, "star"), D(c(6), 6, "star"),
+      ...[-1, 1].map((sg) => C(c(sg * T), sg * T, 1.3 * k, "starfire")),
+    ],
+  })),
 ];
 
 // Short wrapped hafts leave room for a broad striking face.
@@ -482,6 +541,13 @@ const HAMMER = [
     P([[11,-5],[15,-5],[19,-2],[20,1],[17,5],[11,6],[10,3],[10,-2]], "void"),
     L(14,-8,18,-9,"energy"), L(16,8,19,5,"energy"), D(16,0,"core"),
   ], "black", "void"),
+  // 6 운철 대망치 — a fallen star: a lumpy meteor-iron head, cracks of starlight, a gold collar.
+  hammerHead([11, 22, -6, 7], ["meteor"], [
+    P([[11,-7],[14,-10],[19,-10],[23,-6],[23,6],[19,10],[14,10],[11,7],[10,3],[10,-3]], "meteor"),
+    R(11,13,-8,8,"starfire"),
+    L(15,-7,18,-3,"star"), L(18,-3,16,1,"star"), L(19,3,21,7,"star"),
+    D(20,-6,"white"), D(15,5,"white"),
+  ], "black", "starfire"),
 ];
 
 export const DESIGNS = { sword: SWORD, dagger: DAGGER, spear: SPEAR, staff: STAFF, book: BOOK, bow: BOW, hammer: HAMMER };
@@ -1074,7 +1140,7 @@ export function bowSprite(gear = {}, pull = 0, arrow = false) {
   return sprite("bow", gear, { pull: q / 8, arrow: !!arrow, q });
 }
 function sprite(kind, gear, o) {
-  const wt = Math.max(1, Math.min(5, gear.wt | 0 || 1)), wq = Math.max(0, Math.min(4, gear.wq | 0)), we = gear.we | 0;
+  const wt = Math.max(1, Math.min(6, gear.wt | 0 || 1)), wq = Math.max(0, Math.min(4, gear.wq | 0)), we = gear.we | 0;
   const motif = MOTIF[gear.ws] ? gear.ws : MOTIF[gear.wl] ? gear.wl : "";
   const key = `${kind}:${wt}:${wq}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}:${motif}${o ? `:${o.q}:${o.arrow ? 1 : 0}` : ""}`;
   let c = cache.get(key);

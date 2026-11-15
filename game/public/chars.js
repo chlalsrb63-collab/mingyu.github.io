@@ -63,7 +63,7 @@ const OUTFIT = {
   ranger: [["#6a8a52", "#f2e6c4", "#d0ae64"], ["#96744a", "#f6ecd0", "#d0ae64"], ["#5074a8", "#eef2f8", "#f0d070"], ["#343844", "#d0d4dc", "#ffb44a"], ["#24828e", "#e2fcff", "#f2ffff", "#8ff4ff"]],
   mage: [["#7a68d8", "#f4ecff", "#f6d878"], ["#b4549a", "#ffeaf6", "#f6d878"], ["#4274cc", "#eaf6ff", "#f6d878"], ["#34305a", "#c0b0ff", "#d0b0ff"], ["#22949e", "#eaffff", "#f2ffff", "#8ff4ff"]],
 };
-const METAL = ["#b8bcc6", "#b8bcc6", "#dfe4ee", "#a8c8f4", "#7fe4ee", "#e49af8"];
+const METAL = ["#b8bcc6", "#b8bcc6", "#dfe4ee", "#a8c8f4", "#7fe4ee", "#e49af8", "#8a9ae0"];
 
 // ───────────────────────────── drawing helpers ─────────────────────────────
 
@@ -447,7 +447,7 @@ export function playerLook(cls, look, gear = {}) {
   const at = Math.max(1, Math.min(5, gear.at | 0 || 1));
   const [m0, s0, trim, glw] = OUTFIT[cls][at - 1];
   const main = soft(m0, 0.22), sub = soft(s0, 0.12);
-  const o = { ...base(look), cls, at, main, sub, trim, glow: glw || null, wt: Math.max(1, Math.min(5, gear.wt | 0 || 1)), wq: gear.wq | 0, we: gear.we | 0, acc: gear.acc | 0 };
+  const o = { ...base(look), cls, at, main, sub, trim, glow: glw || null, wt: Math.max(1, Math.min(6, gear.wt | 0 || 1)), wq: gear.wq | 0, we: gear.we | 0, acc: gear.acc | 0 };
   o.eye = ["#4a78c8", "#3f9a6a", "#b8683a", "#8a5ac8"][(o.hair + o.skin) % 4];
   if (cls === "warrior") Object.assign(o, { cape: at >= 4 ? dk(trim, 0.8) : dk(main, 0.86), accent: "#e04a4a", pants: "#5a5670", boot: sub, glove: sub });
   else if (cls === "rogue") Object.assign(o, { accent: sub, pants: dk(main, 0.86), boot: "#4a4458", glove: "#4a4458" });

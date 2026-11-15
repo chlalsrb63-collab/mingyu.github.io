@@ -16,7 +16,7 @@ import { PROBE, ARENA } from "./balance-probe.mjs";
 const T = 16, LOG = [];
 const WID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow", hammer: "h" };
 const BOSS = { 13: "wickregent", 25: "knellkeeper", 40: "abyssboss" };
-const tierFor = (lv) => (lv < 8 ? 1 : lv < 16 ? 2 : lv < 26 ? 3 : lv < 38 ? 4 : 5);
+const tierFor = (lv) => (lv < 8 ? 1 : lv < 16 ? 2 : lv < 26 ? 3 : lv < 38 ? 4 : lv < 46 ? 5 : 6);
 const plain = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
 const BUILD = {
   sword: { str: 0.45, wil: 0.35, dex: 0.05, wis: 0.05, luk: 0.1 },

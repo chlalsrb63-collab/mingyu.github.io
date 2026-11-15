@@ -420,7 +420,8 @@ export { charSprite, drawFigure, setStyle, playerLook, npcLook, HAIR, SKIN, STYL
 
 /** Rarity colours: common · magic · rare · legendary. */
 export const RARITY_COL = ["#d8d4c8", "#6a9cff", "#f0d050", "#ff8a30", "#5fd47a"];
-const METAL = [null, ["#a8acb4", "#74787f"], ["#c8ccd4", "#8e94a0"], ["#9ab8e0", "#5a78b0"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"]];
+// tier 6 운철 (meteor iron): night-blue metal; its accents are starlight gold
+const METAL = [null, ["#a8acb4", "#74787f"], ["#c8ccd4", "#8e94a0"], ["#9ab8e0", "#5a78b0"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"], ["#8a9ae0", "#3a4680"]];
 const RUNE_COL = { ign: "#ff6a3a", aeg: "#8aa0c0", vit: "#e84a5a", men: "#4a8aff", cel: "#7ae8a0", acu: "#ffd84a", san: "#c03048", lum: "#fff0a0", fos: "#b07aff" };
 
 function potion(liquid, light, big) {
@@ -517,7 +518,7 @@ function weaponIcon(cls, tier) {
     for (let i = 0; i < 4; i++) { px(g, 11 + i, 4 - i, m); px(g, 12 + i, 4 - i, md); px(g, 10 + i, 4 - i, m); }
     px(g, 10, 5, m); px(g, 12, 5, md); px(g, 11, 6, "#b08a38"); px(g, 10, 6, "#b08a38");
   } else if (cls === "book") {
-    const cover = ["#8a4a3a", "#3a5a9a", "#5a3a8a", "#2a7a8a", "#8a3a9a"][tier - 1];
+    const cover = ["#8a4a3a", "#3a5a9a", "#5a3a8a", "#2a7a8a", "#8a3a9a", "#2a3470"][tier - 1];
     g.fillStyle = cover; g.fillRect(3, 3, 10, 11);
     g.fillStyle = "#f4ecd8"; g.fillRect(5, 4, 8, 9);
     g.fillStyle = cover; g.fillRect(3, 3, 2, 11);
@@ -575,6 +576,13 @@ const HELM_ART = [
     ".ll..lms.lm...", ".lmm.lmslms...", ".lmmslmllms...", "..lmslassms...",
     "..lmsaaasmsl..", "..lmmlasmmls..", "...lllllllls..", "...lmmmmsms...",
     "....sdddds....",
+  ] },
+  // Meteor-iron great helm (운철): a closed night-blue dome, a visor slit, a starlight-gold crest and band.
+  { palette: { l: "#b8c6f0", m: "#6a78b8", s: "#3a4680", d: "#242a52", a: "#ffe08a" }, rows: [
+    "......a.......", ".....aaa......", "......a.......", "....lllll.....",
+    "...llmmmms....", "..lmmmammss...", "..lmmmammss...", "..lmddddddss..",
+    "..lmmsmsmsss..", "..lmmmmmmsss..", "..aaaaaaaaaa..", "...lmmmmmss...",
+    "....ssddss....",
   ] },
 ];
 function paintedGear({ rows, palette }) {
@@ -668,29 +676,29 @@ function bootsIcon(tier) {
 function ringIcon(tier) {
   if (RING_ART[tier]) return paintedGear(RING_ART[tier]);
   const [c, g] = canvas(16, 16);
-  const [m, md] = [["#c88a50", "#8e5a2c"], ["#c8ccd4", "#8e94a0"], ["#f0c840", "#b08a20"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"]][tier - 1];
+  const [m, md] = [["#c88a50", "#8e5a2c"], ["#c8ccd4", "#8e94a0"], ["#f0c840", "#b08a20"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"], ["#8a9ae0", "#3a4680"]][tier - 1];
   disc(g, 8, 10, 4.5, 4.5, m);
   g.fillStyle = md; g.fillRect(9, 12, 3, 2); g.fillRect(12, 9, 1, 3);
   g.clearRect(6, 8, 4, 4);
-  g.fillStyle = ["#e84a5a", "#6a9cff", "#e84a5a", "#ffffff", "#ffd84a"][tier - 1]; g.fillRect(7, 3, 2, 3); g.fillRect(6, 4, 4, 1);
+  g.fillStyle = ["#e84a5a", "#6a9cff", "#e84a5a", "#ffffff", "#ffd84a", "#ffe08a"][tier - 1]; g.fillRect(7, 3, 2, 3); g.fillRect(6, 4, 4, 1);
   outline(c, g, "#111118");
   return c;
 }
 function amuletIcon(tier) {
   if (AMULET_ART[tier]) return paintedGear(AMULET_ART[tier]);
   const [c, g] = canvas(16, 16);
-  const [m, md] = [["#8a6238", "#5e4022"], ["#c8ccd4", "#8e94a0"], ["#f0c840", "#b08a20"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"]][tier - 1];
+  const [m, md] = [["#8a6238", "#5e4022"], ["#c8ccd4", "#8e94a0"], ["#f0c840", "#b08a20"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"], ["#8a9ae0", "#3a4680"]][tier - 1];
   // a cord in a V, a pendant where it meets
   for (let i = 0; i < 6; i++) { px(g, 3 + i, 2 + i, md); px(g, 12 - i, 2 + i, md); }
   disc(g, 8, 10.5, 3, 3.2, m);
-  disc(g, 7.6, 10.2, 1.6, 1.8, ["#7ad08a", "#6a9cff", "#e84a5a", "#ffffff", "#ffd84a"][tier - 1]);
+  disc(g, 7.6, 10.2, 1.6, 1.8, ["#7ad08a", "#6a9cff", "#e84a5a", "#ffffff", "#ffd84a", "#ffe08a"][tier - 1]);
   outline(c, g, "#111118");
   return c;
 }
 function armorIcon(tier) {
   if (ARMOR_ART[tier]) return paintedGear(ARMOR_ART[tier]);
   const [c, g] = canvas(16, 16);
-  const cols = [null, ["#b8ac90", "#8e8468"], ["#7a5530", "#573a1e"], ["#7c8698", "#565e70"], ["#33373f", "#1f2228"], ["#3ab0c0", "#1f7888"]][tier];
+  const cols = [null, ["#b8ac90", "#8e8468"], ["#7a5530", "#573a1e"], ["#7c8698", "#565e70"], ["#33373f", "#1f2228"], ["#3ab0c0", "#1f7888"], ["#5a6aa8", "#2c3260"]][tier];
   g.fillStyle = cols[0]; g.fillRect(4, 4, 8, 10); g.fillRect(2, 4, 12, 4);
   g.fillStyle = cols[1]; g.fillRect(8, 4, 4, 10); g.fillRect(12, 4, 2, 4); g.fillRect(4, 12, 8, 2);
   g.clearRect(6, 4, 4, 2);
