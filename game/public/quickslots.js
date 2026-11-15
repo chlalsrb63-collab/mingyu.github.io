@@ -17,6 +17,7 @@
  */
 import { Sound } from "./audio.js";
 import { skillIconUrl } from "./skillicons.js";
+import { K } from "./keymap.js";
 
 export const N = 9;
 /** What client.js lends us. */
@@ -39,7 +40,7 @@ export function init(ctx) {
     b.className = "act qs empty";
     b.id = `q${i}`;
     b.dataset.i = String(i);
-    b.innerHTML = `<img class="ic" alt="" /><i class="cd"></i><em class="cdt"></em><small class="mp"></small><span class="n"></span><kbd>${i + 1}</kbd>`;
+    b.innerHTML = `<img class="ic" alt="" /><i class="cd"></i><em class="cdt"></em><small class="mp"></small><span class="n"></span><kbd data-key="slot${i + 1}">${K("slot" + (i + 1))}</kbd>`;
     box.append(b);
     btns.push(b);
     hook(b, i);
@@ -47,7 +48,7 @@ export function init(ctx) {
   const hint = document.createElement("div");
   hint.id = "qs-hint";
   hint.hidden = true;
-  hint.textContent = "스킬(K)·아이템(가방)을 끌어다 놓으세요";
+  hint.textContent = `스킬(${K('skill')})·아이템(가방)을 끌어다 놓으세요`;
   $("#actions").append(hint);
   addEventListener("click", (e) => { if (swallowClick && performance.now() - swallowClick < 400) { e.stopPropagation(); e.preventDefault(); } swallowClick = 0; }, true);
   addEventListener("keydown", (e) => { if (e.key === "Escape" && picked) { setPicked(null); } }, true);
@@ -81,7 +82,7 @@ export const skillMp = (id) => { const r = row(id); return r ? r[1] : (C.G.defs.
 const same = (a, b) => !!a && !!b && a[0] === b[0] && a[1] === b[1];
 /** Where (if anywhere) a skill or item sits: "1", "1·4" … */
 export function keysOf(v) {
-  return slots().map((s, i) => (same(s, v) ? i + 1 : 0)).filter(Boolean).join("·");
+  return slots().map((s, i) => (same(s, v) ? K("slot" + (i + 1)) : "")).filter(Boolean).join("·");
 }
 
 // ── changing the slots ──
@@ -128,7 +129,7 @@ function emptyHint() {
   const t = performance.now();
   if (t - emptyAt < 4000) return;
   emptyAt = t;
-  C.toast("빈 단축칸입니다 — 스킬 창(K)이나 가방에서 끌어다 놓으세요");
+  C.toast(`빈 단축칸입니다 — 스킬 창(${K('skill')})이나 가방에서 끌어다 놓으세요`);
 }
 function useItem(id) {
   const G = C.G, it = G.defs.items[id], t = performance.now();
@@ -162,7 +163,7 @@ export function render() {
     b.classList.toggle("empty", !v);
     b.classList.toggle("sk", kind === "s");
     b.classList.toggle("it", kind === "i");
-    let ult = false, locked = false, none = false, mp = "", n = "", title = `${i + 1}번 단축칸 — 비어 있음\n스킬 창(K)이나 가방에서 끌어다 놓으세요`;
+    let ult = false, locked = false, none = false, mp = "", n = "", title = `${i + 1}번 단축칸 — 비어 있음\n스킬 창(${K("skill")})이나 가방에서 끌어다 놓으세요`;
     if (kind === "s") {
       const sk = list[v[1]];
       if (sk) {
@@ -173,7 +174,7 @@ export function render() {
         mp = String(skillMp(sk.id));
         // a dim slot names what it waits for: the weapon (or the job) it needs, or the mastery
         b.dataset.lv = !row(sk.id) && !sk.job ? `숙련${sk.need}` : sk.job && C.G.self.job !== sk.job ? "전직" : wkn[sk.wk || (C.G.defs.jobs[sk.job] || { wk: [""] }).wk[0]] || "";
-        title = `${sk.name} (${i + 1}) — MP ${sk.mp} · ${sk.cd / 1000}초${why ? ` · ${why}` : ""}\n${sk.desc}`;
+        title = `${sk.name} (${K("slot" + (i + 1))}) — MP ${sk.mp} · ${sk.cd / 1000}초${why ? ` · ${why}` : ""}\n${sk.desc}`;
       }
     } else if (kind === "i") {
       const it = G.defs.items[v[1]];
@@ -181,7 +182,7 @@ export function render() {
       const c = C.countItem(v[1]);
       none = c < 1;
       n = String(c);
-      title = `${it.name} (${i + 1}) — ${c}개\n${it.desc || ""}`;
+      title = `${it.name} (${K("slot" + (i + 1))}) — ${c}개\n${it.desc || ""}`;
     }
     if (!v) img.removeAttribute("src"), (img.dataset.src = "");
     img.hidden = !v;
@@ -202,17 +203,17 @@ export function render() {
       const sk = list[id];
       if (render.have.has(id) || !sk || sk.kind === "p") continue;
       const k = keysOf(["s", id]);
-      C.addChat(k ? `새 스킬 [${sk.name}] — 단축칸 ${k} 키로 씁니다.` : `새 스킬 [${sk.name}] — 단축칸이 가득 찼습니다. 스킬 창(K)에서 빈 칸으로 끌어다 놓으세요.`, "sys");
+      C.addChat(k ? `새 스킬 [${sk.name}] — 단축칸 ${k} 키로 씁니다.` : `새 스킬 [${sk.name}] — 단축칸이 가득 찼습니다. 스킬 창(${K("skill")})에서 빈 칸으로 끌어다 놓으세요.`, "sys");
     }
   }
   render.have = have; render.who = s.name;
   // a gentle pointer at the empty bar until something is put in it
   const hint = $("#qs-hint");
-  if (hint) { hint.hidden = any; hint.textContent = C.touch() ? "스킬(K)·가방의 [단축칸] → 칸 누르기" : "스킬(K)·아이템(가방)을 끌어다 놓으세요"; }
+  if (hint) { hint.hidden = any; hint.textContent = C.touch() ? `스킬(${K('skill')})·가방의 [단축칸] → 칸 누르기` : `스킬(${K('skill')})·아이템(가방)을 끌어다 놓으세요`; }
   // (only once there is a skill to put there: a new Lv.1 has enough to read)
   if (!any && !render.told && have.size) {
     render.told = true;
-    C.addChat("단축칸 1~9는 비어 있습니다. 스킬 창(K)의 스킬이나 가방의 물약·음식·주문서를 아래 단축칸에 끌어다 놓으면 그 숫자 키로 씁니다. (터치: 스킬·아이템의 [단축칸] 버튼 → 칸 누르기)", "sys");
+    C.addChat(`단축칸 1~9는 비어 있습니다. 스킬 창(${K('skill')})의 스킬이나 가방의 물약·음식·주문서를 아래 단축칸에 끌어다 놓으면 그 숫자 키로 씁니다. (터치: 스킬·아이템의 [단축칸] 버튼 → 칸 누르기)`, "sys");
   }
 }
 

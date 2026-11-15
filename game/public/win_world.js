@@ -14,6 +14,7 @@ import { wpWoke } from "./overlay.js";
 import { placeToasts, touch, banner, openWin, toast } from "./windows.js";
 import { statText } from "./items.js";
 import { refreshUi, setOnce, section } from "./hud.js";
+import { K } from "./keymap.js";
 
 // ── waypoints ──
 const bandText = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
@@ -21,7 +22,7 @@ export function renderWarp(s) {
   const box = $("#warp-body");
   box.textContent = "";
   const here = G.map && G.map.id, can = stoneNear() || (G.near && G.near.role === "warp");
-  box.append(el("p", "say", can ? "깨운 이동의 돌끼리는 한순간에 오갈 수 있다네. 어디로 가겠나?" : "이동의 돌 곁에서만 다른 돌로 건너갈 수 있습니다. 돌에 다가가 F를 누르세요."));
+  box.append(el("p", "say", can ? "깨운 이동의 돌끼리는 한순간에 오갈 수 있다네. 어디로 가겠나?" : "이동의 돌 곁에서만 다른 돌로 건너갈 수 있습니다. 돌에 다가가 " + K("interact") + "를 누르세요."));
   const list = el("div", "list");
   // a big hunting ground has several stones (self.wp: { mapId: bitmask }, bit i = stone i); the one I stand by is "here"
   const stones = ((G.map && G.map.marks) || []).filter((k) => k.kind === "waypoint");

@@ -12,6 +12,7 @@
  *   map.home / map.fd / map.hf on a house's map; defs.house, defs.bag, defs.inv, defs.invMax.
  */
 import { roomPiece } from "./iso_interior.js";
+import { K } from "./keymap.js";
 
 const $ = (s) => document.querySelector(s);
 const T = 16;
@@ -77,7 +78,7 @@ function hud() {
   const btn = (label, fn, cls = "btn small") => { const b = el("button", cls, label); b.addEventListener("click", () => { fn(); A.Sound.play("ui"); }); box.append(b); };
   if (atHome()) {
     btn("집 꾸미기", () => (A.isOpen("deco") ? A.closeWin("deco") : A.openWin("deco")), "btn small gold");
-    btn("보관함", () => { if (!storeNear()) { A.toast("보관함 곁에서 열 수 있습니다. 보관함 옆으로 가 F를 누르세요."); return; } openStore(); });
+    btn("보관함", () => { if (!storeNear()) { A.toast("보관함 곁에서 열 수 있습니다. 보관함 옆으로 가 "+K("interact")+"를 누르세요."); return; } openStore(); });
   }
   btn("나가기", () => A.act({ t: "house_leave" }));
 }
@@ -115,7 +116,7 @@ export function tick() {
   const p = $("#prompt");
   if (st.prompt && !G().near) p.hidden = true;
   st.prompt = want;
-  if (want) { p.textContent = ""; p.append(A.el("b", "", document.body.classList.contains("touch") ? "▶ " : "F  "), want); p.hidden = false; }
+  if (want) { p.textContent = ""; p.append(A.el("b", "", document.body.classList.contains("touch") ? "▶ " : K("interact") + "  "), want); p.hidden = false; }
 }
 
 // ───────────────────────────── decorating: the hovered tile and the ghost ─────────────────────────────
@@ -336,7 +337,7 @@ function renderDeco(s) {
   if (st.sel) {
     const d = fdef(st.sel);
     hand.append(el("span", "", `손에 든 가구: ${itemName(st.sel)}${d.floor || d.wall ? "" : ` · 방향 ${DIRS[st.dir]}`}`));
-    if (!d.floor && !d.wall) { const b = el("button", "btn small", "돌리기 (R)"); b.addEventListener("click", turn); hand.append(b); }
+    if (!d.floor && !d.wall) { const b = el("button", "btn small", `돌리기 (${K("auto")})`); b.addEventListener("click", turn); hand.append(b); }
     const c = el("button", "btn small", "내려놓기 (Esc)"); c.addEventListener("click", () => onKey("Escape")); hand.append(c);
     hand.append(el("p", "hint", d.wall ? "뒷벽에 붙은 칸을 클릭해 놓으세요." : "놓을 바닥 칸을 클릭하세요 (휴대폰: 한 번 눌러 보고, 한 번 더 눌러 놓기)."));
     hand.append(el("p", "why", ""));

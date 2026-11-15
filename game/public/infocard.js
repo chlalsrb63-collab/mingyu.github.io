@@ -15,6 +15,7 @@
 import { G, el, clamp } from "./state.js";
 import { Sound } from "./audio.js";
 import { iconImg } from "./uiicons.js";
+import { K } from "./keymap.js";
 import { jobImg, jobId, jobMotif } from "./jobicons.js";
 
 const hooks = { openTree: null, openStats: null, openWin: null };
@@ -149,7 +150,7 @@ export function jobCard(id) {
   return {
     icon: jobImg(key), title: job.name, tag: KIND[job.kind] || "", text, rows,
     how: "전직관 아르센 앞에서 한 번만 할 수 있고 되돌릴 수 없습니다.", howLabel: "전직",
-    btn: hooks.openTree && G.self ? ["전직의 길 보기 (K)", () => hooks.openTree()] : null,
+    btn: hooks.openTree && G.self ? [`전직의 길 보기 (${K("skill")})`, () => hooks.openTree()] : null,
   };
 }
 /** A job's emblem that explains itself: the name on hover, the job's card on a click. `mono` for a dim one. */
@@ -193,7 +194,7 @@ export function statCard(key, value) {
       icon: iconImg(glyph, ink), title: six[1], tag: "능력치", text: [`${six[2]}.`],
       rows: [["지금", v], ["반영", v >= 60 ? "60부터는 1/4만" : v >= 40 ? "40부터는 절반만" : "40까지는 모두"]],
       how: "레벨 1 = 능력치 1포인트. 모닥불 곁이나 수련관 카이 앞에서 경험치로 올립니다.",
-      btn: hooks.openStats ? ["능력치 열기 (C)", () => hooks.openStats()] : null,
+      btn: hooks.openStats ? [`능력치 열기 (${K("char")})`, () => hooks.openStats()] : null,
     };
   }
   const [glyph, name, what, how] = STAT_INFO[key];
@@ -219,14 +220,14 @@ export function barCard(kind) {
     icon: iconImg(hp ? "heart" : "drop", hp ? "#ff7a7a" : "#7ab4ff"), title: hp ? "HP (체력)" : "MP (마력)", tag: hp ? "0이 되면 쓰러집니다" : "스킬을 쓰는 힘",
     text: [hp ? "쓰러지면 쓰지 않고 모아 둔 경험치를 조금 잃습니다." : "스킬마다 드는 MP가 다릅니다. 가만히 있어도 조금씩 차오릅니다."],
     rows: s && me ? [["지금", `${hp ? me.hp : me.mp} / ${hp ? s.mhp : s.mmp}`]] : [],
-    how: hp ? "HP 물약(Q), 음식, 모닥불 곁에 앉기(Z)로 채웁니다. 최대치는 의지와 장비로 오릅니다." : "MP 물약(E), 음식, 앉아 쉬기(Z)로 채웁니다. 최대치는 지혜와 지능으로 오릅니다.",
+    how: hp ? `HP 물약(${K("hp")}), 음식, 모닥불 곁에 앉기(${K("sit")})로 채웁니다. 최대치는 의지와 장비로 오릅니다.` : `MP 물약(${K("mp")}), 음식, 앉아 쉬기(${K("sit")})로 채웁니다. 최대치는 지혜와 지능으로 오릅니다.`,
     howLabel: "채우는 법",
   };
 }
 
 // ── buffs (the order of `self.buffs`, hud.js names them) ──
 const BUFF_HOW = [
-  "스킬이나 음식, 물약이 걸어 줍니다.", "스킬이나 음식, 물약이 걸어 줍니다.", "모닥불 곁에 앉아 쉬면(Z) 쌓입니다. 불을 떠나도 한동안 남습니다.", "음식을 먹으면 걸립니다. 한 번에 한 가지 음식만 듭니다.",
+  "스킬이나 음식, 물약이 걸어 줍니다.", "스킬이나 음식, 물약이 걸어 줍니다.", `모닥불 곁에 앉아 쉬면(${K("sit")}) 쌓입니다. 불을 떠나도 한동안 남습니다.`, "음식을 먹으면 걸립니다. 한 번에 한 가지 음식만 듭니다.",
   "몬스터의 얼음 공격에 맞으면 걸립니다. 시간이 지나면 풀립니다.", "불 공격이나 불 장판에 닿으면 걸립니다. 시간이 지나면 풀립니다.", "독 공격이나 독 웅덩이에 닿으면 걸립니다. 시간이 지나면 풀립니다.",
   "공격의 주문서를 읽으면 걸립니다.", "방어의 주문서를 읽으면 걸립니다.", "경험의 주문서를 읽으면 걸립니다.", "바람의 사당에 닿으면 걸립니다.", "내 집 침대에서 쉬면 걸립니다.",
 ];
@@ -238,15 +239,15 @@ export function buffCard(i, name, left, icon) {
 // ── quest kinds in the tracker ──
 /** kind → [glyph, ink, name, what, how] */
 export const QUEST_KIND = {
-  main: ["crown", "#ffd27a", "주요 의뢰", "관리자 엘더윈이 맡기는 이야기의 줄기입니다. 하나를 마치면 다음 사냥터와 보상이 열립니다.", "엘더윈에게 받아(F) 목표를 채우고 돌아가 보고합니다."],
+  main: ["crown", "#ffd27a", "주요 의뢰", "관리자 엘더윈이 맡기는 이야기의 줄기입니다. 하나를 마치면 다음 사냥터와 보상이 열립니다.", `엘더윈에게 받아(${K("interact")}) 목표를 채우고 돌아가 보고합니다.`],
   repeat: ["auto", "#9ad8ff", "반복 의뢰", "같은 몬스터를 정해진 수만큼 토벌하는, 몇 번이든 다시 받을 수 있는 의뢰입니다.", "엘더윈에게 받고, 다 잡으면 돌아가 보고합니다."],
-  daily: ["cal", "#9af0ae", "일일 의뢰", "날마다 아침 6시에 바뀌는 세 가지 과제입니다.", "채운 과제는 일일 창(U)에서 보상을 받습니다."],
-  job: ["note", "#e2c486", "알바", "게시판지기 포포가 내거는 마을 일거리입니다. 배달은 시간 안에 닿아야 합니다. 마치면 골드와 주민의 신뢰를 얻습니다.", "포포 앞 게시판에서 맡고(F), 일이 가리키는 주민에게 가져갑니다."],
-  side: ["talk", "#c8a0ff", "곁가지 의뢰", "마을 주민이 부탁하는 작은 일입니다.", "머리 위에 ! 가 뜬 주민에게 말을 걸어(F) 받습니다."],
+  daily: ["cal", "#9af0ae", "일일 의뢰", "날마다 아침 6시에 바뀌는 세 가지 과제입니다.", `채운 과제는 일일 창(${K("daily")})에서 보상을 받습니다.`],
+  job: ["note", "#e2c486", "알바", "게시판지기 포포가 내거는 마을 일거리입니다. 배달은 시간 안에 닿아야 합니다. 마치면 골드와 주민의 신뢰를 얻습니다.", `포포 앞 게시판에서 맡고(${K("interact")}), 일이 가리키는 주민에게 가져갑니다.`],
+  side: ["talk", "#c8a0ff", "곁가지 의뢰", "마을 주민이 부탁하는 작은 일입니다.", `머리 위에 ! 가 뜬 주민에게 말을 걸어(${K("interact")}) 받습니다.`],
 };
 export function questCard(kind) {
   const [glyph, ink, name, what, how] = QUEST_KIND[kind];
-  return { icon: iconImg(glyph, ink), title: name, tag: "의뢰의 종류", text: [what], how, howLabel: "하는 법", btn: hooks.openWin ? [kind === "daily" ? "일일 창 열기 (U)" : kind === "job" ? "알바 게시판 보기" : "의뢰 창 열기 (L)", () => hooks.openWin(kind === "daily" ? "daily" : kind === "job" ? "board" : "quest")] : null };
+  return { icon: iconImg(glyph, ink), title: name, tag: "의뢰의 종류", text: [what], how, howLabel: "하는 법", btn: hooks.openWin ? [kind === "daily" ? `일일 창 열기 (${K("daily")})` : kind === "job" ? "알바 게시판 보기" : `의뢰 창 열기 (${K("quest")})`, () => hooks.openWin(kind === "daily" ? "daily" : kind === "job" ? "board" : "quest")] : null };
 }
 /** The tracker's kind mark: a glyph in place of the word, explaining itself. */
 export function questMark(kind) {
