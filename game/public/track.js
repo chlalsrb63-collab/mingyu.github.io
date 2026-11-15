@@ -121,7 +121,7 @@ export function start(get, label) {
 function arrive(t, p) {
   const name = targetName(t);
   if (p) G.mark = { at: now(), pos: [p.x, p.y] };
-  stop(t.k === "mob" && !p ? `도착했습니다 · ${mapName(G.map.id)} — 이곳에서 ${name}을(를) 찾으세요` : `도착했습니다 · ${name}`);
+  stop(t.k === "mob" && !p ? `도착했습니다 · ${mapName(G.map.id)} — 이곳에서 ${name}${(name.charCodeAt(name.length - 1) - 0xac00) % 28 > 0 ? "을" : "를"} 찾으세요` : `도착했습니다 · ${name}`);
 }
 function go(path) {
   G.path = path;

@@ -144,7 +144,7 @@ function useItem(id) {
   const G = C.G, it = G.defs.items[id], t = performance.now();
   if (!it || !G.self || G.me.dead) return;
   const i = G.self.inv.findIndex((s) => s.id === id);
-  if (i < 0) { C.toast(`${it.name}이(가) 가방에 없습니다`); Sound.play("no"); return; }
+  if (i < 0) { C.toast(`${it.name}${PP(it.name, "이", "가")} 가방에 없습니다`); Sound.play("no"); return; }
   if (it.type === "pot") {
     if (t < G.potAt) return;
     G.potAt = t + 950;
