@@ -184,7 +184,7 @@ export function setupInput() {
       case "p": case "ㅔ": toggleWin("party"); break;
       case "k": case "ㅏ": toggleWin("skill"); break;
       case "n": case "ㅜ": toggleWin("rank"); break;
-      case "u": case "ㅕ": toggleWin("daily"); break;
+      case "u": case "ㅕ": toggleWin(e.shiftKey ? "week" : "daily"); break;   // Shift+U: 주간 수첩
       case "y": case "ㅛ": toggleWin("achieve"); break;
       case "j": case "ㅓ": toggleWin("collect"); break;
       case "h": case "ㅗ": toggleWin("help"); break;

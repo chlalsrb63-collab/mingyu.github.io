@@ -74,6 +74,8 @@ export function renderSmith(s) {
     else {
       const c = s.enh[k];
       tx.append(el("small", "", `${SLOT_NAME[k]} · 성공률 ${G.defs.enh[g.enh]}% · ${c.gold.toLocaleString()}G · 강화석 ${c.stone}개 (보유 ${stones})`));
+      const pv = pityLine(s, g);
+      if (pv) tx.append(pv);
       const b = el("button", "", "강화");
       b.disabled = s.gold < c.gold || stones < c.stone;
       b.addEventListener("click", () => act({ t: "enh", k }));
@@ -84,6 +86,16 @@ export function renderSmith(s) {
   }
   if (!any) list.append(el("div", "ds", "강화할 수 있는 장비를 착용하고 있지 않습니다."));
   void it;
+}
+/**
+ * The pity gauge of the step this piece is on (63-social-weekly.js PITY): from +5 each failure adds the
+ * gear's tier, and `need × tier` makes the next try at that step certain. Null below +5.
+ */
+function pityLine(s, g) {
+  const P = G.defs.social && G.defs.social.pity, i = g.enh - (P ? P.from : 99);
+  if (!P || i < 0 || i >= P.need.length || !s.pity) return null;
+  const tier = (G.defs.items[g.id] && G.defs.items[g.id].tier) || 1, need = P.need[i] * tier, have = Math.min(s.pity[i] | 0, need);
+  return el("small", "pity", have >= need ? `강화 보정 가득 · +${g.enh + 1} 강화는 반드시 성공` : `강화 보정 ${have} / ${need} · 실패할 때마다 +${tier}, 가득 차면 다음 강화 성공 보장`);
 }
 // ── quests: a log on the left, the chosen entry on the right ──
 export function renderQuest(s) {

@@ -13,7 +13,7 @@ import { stoneNear } from "./actions.js";
 import { wpWoke } from "./overlay.js";
 import { placeToasts, touch, banner, openWin, toast } from "./windows.js";
 import { statText } from "./items.js";
-import { refreshUi, setOnce } from "./hud.js";
+import { refreshUi, setOnce, section } from "./hud.js";
 
 // ── waypoints ──
 const bandText = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
@@ -89,6 +89,49 @@ export function renderDaily(s) {
 export function tickDaily(t) {
   const c = $("#daily-clock");
   if (c && G.dailyReset) { const v = `초기화까지 ${clock(G.dailyReset - t)}`; if (c.textContent !== v) c.textContent = v; }
+}
+
+// ── 주간 수첩 (the weekly book, 63-social-weekly.js: self.week, defs.social.week) ──
+const weekText = (r) => [rewardText(r), r.rune ? "룬" : "", r.bless ? `축복 강화석 ${r.bless}` : "", r.cos ? "외형 하나" : ""].filter(Boolean).join(" · ");
+const days = (ms) => { const h = Math.max(0, Math.floor(ms / 3600000)); return h >= 24 ? `${Math.floor(h / 24)}일 ${h % 24}시간` : `${h}시간`; };
+export function renderWeek(s) {
+  const box = $("#week-body");
+  box.textContent = "";
+  const wk = s.week, def = G.defs.social && G.defs.social.week;
+  if (!wk || !def) { box.append(el("p", "hint", "불러오는 중…")); return; }
+  const top = el("div", "daily-top");
+  top.append(iconImg("clock", "#e2c486"), el("span", "", `이번 주 ${wk.done} / ${def.boxes.length}칸 · ${def.need}칸이면 완성`), el("b", "", `초기화까지 ${days(wk.reset)}`));
+  box.append(top);
+  const grid = el("div", "week-boxes");
+  def.boxes.forEach(([, text, need], i) => {
+    const n = Math.min(wk.v[i] | 0, need), done = n >= need;
+    const card = el("div", "dcard" + (done ? " done" : ""));
+    const hd = el("div", "dh");
+    hd.append(el("b", "", text), el("span", "", done ? "✓" : `${n} / ${need}`));
+    const bar = el("div", "bar"), f = el("i"); f.style.width = `${clamp((n / need) * 100, 0, 100)}%`; bar.append(f);
+    card.append(hd, bar);
+    grid.append(card);
+  });
+  box.append(grid);
+  box.append(section("수첩 보상", "scroll"));
+  def.tiers.forEach((need, i) => {
+    const got = !!wk.got[i], ready = wk.done >= need;
+    const card = el("div", "dcard bonus" + (got ? " claimed" : ready ? " done" : ""));
+    const hd = el("div", "dh"); hd.append(el("b", "", `${need}칸 보상`), el("span", "", got ? "받음" : ready ? "받을 수 있음" : `${need - wk.done}칸 남음`));
+    const ft = el("div", "df"); ft.append(el("small", "", weekText(wk.rw[i] || {})));
+    const b = el("button", ready && !got ? "btn gold small" : "btn small", got ? "받음" : "받기");
+    b.disabled = got || !ready;
+    b.addEventListener("click", () => { act({ t: "wk", i }); Sound.play("daily"); });
+    ft.append(b);
+    card.append(hd, ft);
+    box.append(card);
+  });
+  const rest = clamp(wk.rest | 0, 0, def.restMax);
+  box.append(section("쉬고 온 보너스", "fire"));
+  box.append(el("p", rest ? "hint gold" : "hint", rest
+    ? `오늘의 일일 의뢰 골드 · 경험치 +${rest * def.restPct}% (쉰 날 ${rest}일)`
+    : `과제를 하나도 받지 않은 날마다 다음 날 일일 의뢰 보상이 +${def.restPct}%씩 늘어납니다 (최대 ${def.restMax}일).`));
+  box.append(el("p", "hint", "매주 월요일 아침 6시에 새 수첩이 열립니다. 12칸 가운데 아무거나 7칸만 채우면 됩니다."));
 }
 
 // ── achievements and titles ──

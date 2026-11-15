@@ -29,7 +29,7 @@ import * as Info from "./infocard.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
 import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn } from "./windows.js";
 import { openTree, openStats, renderInv, renderChar, renderSkills } from "./win_char.js";
-import { renderWarp, renderDaily, renderAchieve, renderCollect, tutCard, eventWidget, castBar, tickDaily } from "./win_world.js";
+import { renderWarp, renderDaily, renderWeek, renderAchieve, renderCollect, tutCard, eventWidget, castBar, tickDaily } from "./win_world.js";
 import { renderShop, renderSmith, renderQuest } from "./win_shop.js";
 
 // ── the unit frame and the bars ──
@@ -212,7 +212,7 @@ export function refreshUi() {
   // K: 무기 · 스킬 or 전직의 길
   draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey()], renderSkills);
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near, s.rep], renderShop);
-  draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone")], renderSmith);
+  draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone"), s.pity], renderSmith);
   draw("train", () => [s.xp, s.xpt, s.nx, s.rs, s.sw, s.lvl, s.inv.length, near, StatWin.trainerKey()], (s) => StatWin.renderTrainer($("#train-body"), s, { atTrainer: near === "train" }));
   draw("job", () => [s.job, s.wm, s.gold, near, JobTree.key()], (s) => JobTree.renderJobNpc($("#job-body"), s, { atJob: near === "job" }));
   draw("bank", () => [s.inv, s.wh, s.gold], Growth.renderBank);
@@ -220,6 +220,7 @@ export function refreshUi() {
   draw("talk", () => [s.sq, s.lvl, talk.npc && talk.npc.id, Board.talkKey(s)], () => { SideQ.renderTalk($("#talk-sq"), talk.npc, s, (line) => { $("#talk-text").textContent = line; }); Board.renderTalk(talk.npc, s); });
   draw("warp", () => [s.wp, s.lvl, G.map && G.map.id, stoneNear(), near, G.warpPick], renderWarp);
   draw("daily", () => [s.daily && s.daily.day, s.daily && s.daily.tasks, s.daily && s.daily.bonus, s.inv.length], renderDaily);
+  draw("week", () => [s.week && s.week.v, s.week && s.week.got, s.week && s.week.rest, s.week && Math.floor(s.week.reset / 3600000)], renderWeek);
   draw("achieve", () => [s.ach, s.title, s.pts, G.achTab], renderAchieve);
   draw("collect", () => [s.mk, s.col, G.colTab], renderCollect);
   Wardrobe.refresh(s);

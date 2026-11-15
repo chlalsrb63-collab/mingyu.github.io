@@ -1,6 +1,6 @@
 /**
  * Social windows (split from client.js): the party frames over the world `renderPartyHud`, party
- * `renderParty` and invites, guild `renderGuild`, emoticons `openEmotes`, rankings `renderRank`.
+ * `renderParty` and invites (with the friend list and the block list: `friendBox`), guild `renderGuild`, emoticons `openEmotes`, rankings `renderRank`.
  */
 
 import { Sound } from "./audio.js";
@@ -9,7 +9,7 @@ import * as Info from "./infocard.js";
 import * as Emo from "./emoticons.js";
 import { el, clamp, $, G } from "./state.js";
 import { act } from "./net.js";
-import { isOpen, keepIn } from "./windows.js";
+import { isOpen, keepIn, chatTo } from "./windows.js";
 import { section, look } from "./hud.js";
 
 // ── party ──
@@ -42,6 +42,9 @@ function memberRow(eid, name, cls, sub, lead, bar) {
 }
 export function renderParty() {
   const box = $("#party-body");
+  // a name half typed into the friend box survives the redraw
+  const typing = box.querySelector(".friend-add input");
+  keep = typing ? [typing.value, document.activeElement === typing] : ["", false];
   box.textContent = "";
   if (!G.defs || !G.self) return;
   const s = G.self, mine = G.party.length > 0;
@@ -74,6 +77,7 @@ export function renderParty() {
   }
   if (!near) list.append(el("div", "ds", "같은 지역에 초대할 수 있는 모험가가 없습니다."));
   box.append(list);
+  friendBox(box, s);
   if (mine || look()?.party) {
     const btns = el("div", "btns");
     const b = el("button", "btn", "파티 탈퇴");
@@ -82,6 +86,73 @@ export function renderParty() {
     box.append(btns);
   }
   if (isOpen("party")) keepIn("party");
+}
+let keep = ["", false];
+/** "s1-ch2" → "2채널" (a friend's channel; "" = offline). */
+const chName = (room) => { const m = /ch(\d+)$/.exec(room || ""); return m ? `${m[1]}채널` : room; };
+function smallBtn(text, fn, cls = "") {
+  const b = el("button", cls, text);
+  b.addEventListener("click", () => { fn(); Sound.play("ui"); });
+  return b;
+}
+/**
+ * 친구 (the vault's list, `G.friends` from the room's "fr" message) and 차단 (the sheet's `blk`): rows with
+ * an online mark, 귓속말 (fills the chat box), 삭제; requests either way; a name box to ask someone.
+ */
+function friendBox(box, s) {
+  const fr = G.friends || { f: [], i: [], o: [] }, max = (G.defs.social && G.defs.social.friendMax) || 50;
+  box.append(section(`친구 ${fr.f.length} / ${max}`, "person"));
+  const list = el("div", "list friends");
+  for (const name of fr.i) {
+    const row = el("div", "it");
+    const tx = el("div", "tx", name); tx.append(el("small", "", "친구 신청이 왔습니다"));
+    row.append(tx, smallBtn("수락", () => act({ t: "fr", a: "ok", name })), smallBtn("거절", () => act({ t: "fr", a: "no", name })));
+    list.append(row);
+  }
+  const rows = [...fr.f].sort((a, b) => (b[3] ? 1 : 0) - (a[3] ? 1 : 0) || a[0].localeCompare(b[0]));
+  for (const [name, lvl, job, room] of rows) {
+    const row = el("div", "it" + (room ? "" : " off"));
+    const dot = el("span", "online" + (room ? " on" : ""), room ? "●" : "○");
+    dot.title = room ? "접속 중" : "접속 안 함";
+    const tx = el("div", "tx", name);
+    tx.append(el("small", "", `Lv.${lvl}${room ? ` · ${chName(room)}` : " · 접속 안 함"}`));
+    row.append(dot, classMark(job), tx);
+    const w = smallBtn("귓속말", () => chatTo(`/w ${name} `));
+    w.disabled = !room;
+    row.append(w, smallBtn("삭제", () => { if (confirm(`${name}님을 친구에서 지울까요?`)) act({ t: "fr", a: "del", name }); }));
+    list.append(row);
+  }
+  for (const name of fr.o) {
+    const row = el("div", "it off");
+    const tx = el("div", "tx", name); tx.append(el("small", "", "신청을 보냈습니다 · 답을 기다리는 중"));
+    row.append(tx, smallBtn("취소", () => act({ t: "fr", a: "del", name })));
+    list.append(row);
+  }
+  if (!fr.f.length && !fr.i.length && !fr.o.length) list.append(el("div", "ds", "아직 친구가 없습니다. 이름을 넣어 친구 신청을 보내 보세요."));
+  box.append(list);
+  const add = el("form", "friend-add"), inp = el("input");
+  inp.placeholder = "이름"; inp.maxLength = 12; inp.value = keep[0];
+  add.append(inp, el("button", "btn small", "신청"));
+  if (keep[1]) setTimeout(() => inp.focus(), 0);
+  add.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = inp.value.trim();
+    if (name) { act({ t: "fr", a: "add", name }); Sound.play("ui"); }
+    inp.value = "";
+  });
+  box.append(add);
+  const blk = s.blk || [];
+  if (blk.length) {
+    box.append(section(`차단 ${blk.length}`, "lock"));
+    const bl = el("div", "list");
+    for (const name of blk) {
+      const row = el("div", "it off");
+      row.append(el("div", "tx", name), smallBtn("차단 해제", () => act({ t: "blk", a: "del", name })));
+      bl.append(row);
+    }
+    box.append(bl);
+  }
+  box.append(el("p", "hint", "/w 이름 메시지 귓속말 · /r 답장 · /차단 이름 · /차단해제 이름 · 차단한 사람의 채팅 · 귓속말 · 초대는 오지 않습니다."));
 }
 export function renderInvite() {
   const box = $("#invite");
@@ -135,6 +206,7 @@ export function renderGuild() {
   }
   if (!near) list.append(el("div", "ds", "같은 지역에 초대할 수 있는 모험가가 없습니다."));
   box.append(list);
+  friendBox(box, s);
   const btns = el("div", "btns");
   const b = el("button", "btn", "길드 탈퇴");
   b.addEventListener("click", () => act({ t: "gleave" }));

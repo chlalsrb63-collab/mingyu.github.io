@@ -25,6 +25,9 @@
  *   f:i:<id>          failed-login counter for an id
  *   f:p:<ip bucket>   failed-login counter for an address
  *   f:s:<ip bucket>   sign-up counter for an address
+ *   fr:<pid>          friends of a character {f, i, o}: friends, requests received, requests sent,
+ *                     each {pid: name} — written only by social.js (added with 친구; a missing key is
+ *                     an empty list, no older key changed; "fr:" is not one of the "f:<x>:" counters)
  *
  * ── MIGRATION NOTE ──────────────────────────────────────────────────────
  * Before accounts, characters lived at c:<random anonymous pid> (base36, never

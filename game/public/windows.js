@@ -32,7 +32,7 @@ import { renderParty, renderGuild } from "./win_social.js";
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 export const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board", "charm", "juana"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board", "charm", "juana", "week"];
 export const winEl = (id) => $(`#w-${id}`);
 /** On a phone the bag lives in the drawer, so it always counts as open; on a desktop it opens in the side panel. */
 export const isOpen = (id) => (id === "inv" && compact()) || !winEl(id).hidden;
@@ -46,7 +46,7 @@ const compact = () => VP.lay !== "full";
  * the stations and the house chest put the bag in the panel when they open (selling needs it)
  * and take it away again when they close, if they were what brought it.
  */
-export const PANEL = ["inv", "char", "skill", "quest", "party", "guild", "life", "daily", "achieve", "collect", "rank", "settings", "help", "charm"];
+export const PANEL = ["inv", "char", "skill", "quest", "party", "guild", "life", "daily", "week", "achieve", "collect", "rank", "settings", "help", "charm"];
 const BAG_WITH = ["shop", "smith", "craft", "hstore"];
 const panelBox = $("#panel"), winBox = $("#windows");
 let panelId = null, autoBag = false, wasDocked = null;
@@ -128,7 +128,7 @@ function homeOf(id, w, h) {
   switch (id) {
     case "char": case "shop": case "smith": case "train": case "job": case "bank": case "house": case "hstore": case "juana": return [right, top];
     case "deco": return [x0 + 4, top + 32];
-    case "skill": case "party": case "guild": case "rank": case "daily": case "achieve": case "collect": case "life": return [x0 + 4, top + 32];
+    case "skill": case "party": case "guild": case "rank": case "daily": case "week": case "achieve": case "collect": case "life": return [x0 + 4, top + 32];
     case "talk": return [mid, y1 - h - 52];
     default: return [mid, Math.max(top, (y0 + y1 - h) / 2 - 30)];
   }
@@ -356,9 +356,34 @@ export function addChat(m, cls, name) {
   if (stick) chatLog.scrollTop = chatLog.scrollHeight;
   return p;
 }
-const CHAT_HINT = { all: "Enter 로 채팅 · /p 파티 · /g 길드", party: "Enter 로 파티 채팅", guild: "Enter 로 길드 채팅", sys: "Enter 로 채팅" };
-/** Which channel a line goes to: /p or /g in front, else the open tab (파티 · 길드), else everyone nearby. */
-function chatAction(m) {
+const CHAT_HINT = { all: "Enter 로 채팅 · /p 파티 · /g 길드 · /w 이름 귓속말", party: "Enter 로 파티 채팅", guild: "Enter 로 길드 채팅", sys: "Enter 로 채팅" };
+/** Put a line in the chat box ready to finish (the friend list's 귓속말 button, a click on a whisper). */
+export function chatTo(prefix) {
+  const input = $("#chat-in");
+  input.value = prefix;
+  input.focus();
+}
+/**
+ * Which channel a line goes to: /p or /g in front, else the open tab (파티 · 길드), else everyone nearby.
+ * Social commands: /w 이름 메시지 (귓속말; /r 메시지 answers the last one), /차단 이름, /차단해제 이름, /친구 이름.
+ * Null when the line is a command that needs nothing sent (a hint went to the chat instead).
+ */
+export function chatAction(m) {
+  const w = /^\/(w|귓|귓속말|ㅈ)\s+(\S+)\s+(.+)/.exec(m), r = /^\/(r|답|ㄱ)\s+(.+)/.exec(m);
+  if (w) return { t: "w", to: w[2], m: w[3] };
+  if (r) {
+    if (G.lastWhisper) return { t: "w", to: G.lastWhisper, m: r[2] };
+    addChat("답할 귓속말이 없습니다.", "sys");
+    return null;
+  }
+  const bk = /^\/(차단해제|차단|unblock|block)\s+(\S+)/.exec(m);
+  if (bk) return { t: "blk", a: /해제|un/.test(bk[1]) ? "del" : "add", name: bk[2] };
+  const fr = /^\/(친구|friend)\s+(\S+)/.exec(m);
+  if (fr) return { t: "fr", a: "add", name: fr[2] };
+  if (/^\/(w|귓|귓속말|ㅈ|차단|차단해제|친구)(\s|$)/.test(m)) {
+    addChat("사용법: /w 이름 메시지 · /r 메시지 · /차단 이름 · /차단해제 이름 · /친구 이름", "sys");
+    return null;
+  }
   const g = /^\/(g|길드|ㅎ)\s+(.+)/.exec(m), pt = /^\/(p|파티|ㅔ)\s+(.+)/.exec(m);
   if (g) return { t: "gchat", m: g[2] };
   if (pt) return { t: "pchat", m: pt[2] };
@@ -446,14 +471,16 @@ export function setupWindows() {
     e.preventDefault();
     const input = $("#chat-in");
     const m = input.value.trim();
-    if (m) act(chatAction(m));
+    const a = m && chatAction(m);
+    if (a) act(a);
     input.value = "";
     input.blur();
   });
   chatLog.addEventListener("click", () => {
     if (!touch()) return;
     const m = prompt(chatLog.dataset.tab === "guild" ? "길드 채팅" : chatLog.dataset.tab === "party" ? "파티 채팅" : "채팅");
-    if (m && m.trim()) act(chatAction(m.trim().slice(0, 80)));
+    const a = m && m.trim() && chatAction(m.trim().slice(0, 80));
+    if (a) act(a);
   });
 }
 setLayoutHook(dockPanel);

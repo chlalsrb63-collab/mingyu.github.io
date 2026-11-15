@@ -75,26 +75,33 @@ function rollDaily(ch, day) {
 }
 function ensureDaily(S, p) {
   const ch = p.ch, day = dayOf(S.now);
+  // the weekly book rides the same once-a-second check (63-social-weekly.js)
+  weekTick(S, p);
   if (ch.daily && ch.daily.day === day) return;
-  const had = !!ch.daily;
+  const prev = ch.daily;
   ch.daily = rollDaily(ch, day);
+  // days gone by with nothing claimed come back as a bonus on today's rewards (63: restCarry)
+  ch.daily.rest = restCarry(prev, day);
   p.dirty = true;
-  if (had) toast(p, "일일 과제가 새로 갱신되었습니다.");
+  if (prev) toast(p, ch.daily.rest ? `일일 과제가 새로 갱신되었습니다. 쉬고 온 보너스: 오늘 과제 보상 +${ch.daily.rest * WEEK.restPct}%` : "일일 과제가 새로 갱신되었습니다.");
 }
 const dailyText = (t) => DAILY_TEXT[t.kind].replace("{mob}", t.k ? MOBS[t.k].name : "").replace("{need}", t.need);
 /** Rewards are paid on the world's scale: the tier a level maps to (the same as before levels went to 200). */
 const rewardTier = (ch) => Math.min(toTier(ch.lvl), TIER_MAX - 1);
 function dailyReward(ch, t) {
   const tr = rewardTier(ch);
-  return { gold: Math.round(60 + 25 * tr), xp: Math.round(tierXp(tr) * 0.12), stone: t.kind === "kill" || t.kind === "elite" || t.kind === "chest" ? 1 : 0 };
+  const k = restK(ch);
+  return { gold: Math.round((60 + 25 * tr) * k), xp: Math.round(tierXp(tr) * 0.12 * k), stone: t.kind === "kill" || t.kind === "elite" || t.kind === "chest" ? 1 : 0 };
 }
 function dailyBonus(ch) {
   const tr = rewardTier(ch);
-  return { gold: Math.round(150 + 40 * tr), xp: Math.round(tierXp(tr) * 0.25), stone: 3, gear: 1 };
+  const k = restK(ch);
+  return { gold: Math.round((150 + 40 * tr) * k), xp: Math.round(tierXp(tr) * 0.25 * k), stone: 3, gear: 1 };
 }
 /** Count one more of `kind` (and, for hunting, of monster `k`) toward today's tasks. */
 function dailyProg(S, p, kind, k) {
   ensureDaily(S, p);
+  weekProg(S, p, kind, k);
   for (const t of p.ch.daily.tasks) {
     if (t.kind !== kind || (kind === "kill" && t.k !== k) || t.n >= t.need) continue;
     t.n++;

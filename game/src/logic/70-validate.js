@@ -72,6 +72,7 @@ export function validateAction(S, pid, a) {
       if (party && party.m.length >= PARTY_MAX) return bad("파티가 가득 찼습니다");
       if (o.party) return bad("이미 다른 파티에 속해 있습니다");
       if (o.pinv && now - o.pinv.at < 15000) return bad("상대가 다른 초대에 응답 중입니다");
+      if (blocked(o.ch, ch.name)) return bad("초대를 보낼 수 없는 상대입니다");
       return OK;
     }
     case "pacc": {
@@ -96,6 +97,7 @@ export function validateAction(S, pid, a) {
       if (!o || o === p) return bad("대상을 찾을 수 없습니다");
       if (o.ch.guild) return bad("이미 길드에 속해 있습니다");
       if (o.ginv && now - o.ginv.at < 15000) return bad("상대가 다른 초대에 응답 중입니다");
+      if (blocked(o.ch, ch.name)) return bad("초대를 보낼 수 없는 상대입니다");
       return OK;
     }
     case "gacc":
@@ -420,6 +422,8 @@ export function validateAction(S, pid, a) {
     }
     // life skills L2 (58-life.js): gathering, the stations, the 알바 board
     case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": return lifeValidate(S, p, a);
+    // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
+    case "blk": case "w": case "wk": return socialValidate(S, p, a);
     // charms (66-charms.js): 주아나's quests, appraisal, the board
     case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": return charmValidate(S, p, a);
     default:

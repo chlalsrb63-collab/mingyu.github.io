@@ -234,7 +234,8 @@ export function applyAction(S, pid, a) {
       // a 축복 강화석 (b: 1): +ENH_BLESS %p, and a failure keeps the step
       const bless = a.b === 1;
       if (bless) takeItem(ch, "stone_b", 1);
-      const win = rnd(S) * 100 < ENH_RATE[g.enh] + (bless ? ENH_BLESS : 0);
+      // the roll, with the pity gauge (63-social-weekly.js enhWin: failures from +5 fill it, a full gauge is a sure try)
+      const win = enhWin(S, ch, g, bless);
       if (win) {
         g.enh++;
         toast(p, `${gearFull(g)} 강화 성공!`);
@@ -598,6 +599,8 @@ export function applyAction(S, pid, a) {
     }
     // life skills L2 (58-life.js): gathering, the stations, the 알바 board
     case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": lifeApply(S, p, a); break;
+    // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
+    case "blk": case "w": case "wk": socialApply(S, p, a); break;
     case "wsw": {
       // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops
       [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];

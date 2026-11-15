@@ -26,7 +26,7 @@ import { G, el, $, resize, $$, tg, text, now, T } from "./state.js";
 import { JOB_ALIAS, onEvent, onGain } from "./events.js";
 import { countItem, usePotion, castSkill } from "./actions.js";
 import { snd } from "./update.js";
-import { addChat, hoverTip, toast, showTip, hideTip, touch, closeWin, banner, isOpen } from "./windows.js";
+import { addChat, chatTo, hoverTip, toast, showTip, hideTip, touch, closeWin, banner, isOpen } from "./windows.js";
 import { itemSlot, isGear, sellPrice, useSlot } from "./items.js";
 import { section, refreshUi, resetPurse, hudBars } from "./hud.js";
 import { openStats, openTree } from "./win_char.js";
@@ -125,6 +125,8 @@ function onMessage(msg) {
       if (Lobby.welcome(msg) === "switch" && G.playing) {
         addChat(`${channelName()}(으)로 이동했습니다.`, "sys");
       }
+      // the friend list is not in the snapshot: ask for it once per channel
+      act({ t: "fr", a: "list" });
       if (!G.playing) {
         G.playing = true;
         resize();
@@ -134,6 +136,12 @@ function onMessage(msg) {
       break;
     case "snap": onSnap(msg); break;
     case "rank": renderRank(msg.list); break;
+    // the friend list (the vault's, relayed by the room: room.ts friends): f rows, i asked me, o I asked
+    case "fr":
+      G.friends = { f: msg.f || [], i: msg.i || [], o: msg.o || [] };
+      if (msg.msg) toast(msg.msg);
+      if (isOpen("party")) renderParty();
+      break;
     case "error":
       if (msg.fatal) {
         disconnect();
@@ -185,6 +193,12 @@ function loadMap(m) {
   closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); closeWin("job");
 }
 
+/** A whisper line (63-social-weekly.js chatFor): w 1 = from `n`, w 2 = my own copy, sent to `n`; a click answers. */
+function whisperLine(c) {
+  const p = addChat(c.m, "whisper", c.w === 1 ? `[귓속말] ${c.n}` : `[귓속말 → ${c.n}]`);
+  p.addEventListener("click", () => chatTo(`/w ${c.n} `));
+  if (c.w === 1) { G.lastWhisper = c.n; Sound.play("ui"); }
+}
 function onSnap(s) {
   const t = now();
   const me = G.me;
@@ -211,6 +225,9 @@ function onSnap(s) {
   SkillFx.onSnap(s, G, t);
 
   if (s.self) {
+    // the block list sits in the party window (win_social.js friendBox)
+    const bk = JSON.stringify(s.self.blk || []);
+    if (bk !== G.blkKey) { G.blkKey = bk; if (isOpen("party")) setTimeout(renderParty, 0); }
     G.self = s.self;
     // jobs: `cls` names the job (the class names below read defs.classes, rebuilt from defs.jobs); `skLv` the
     // mastery of the weapon in hand; weapon skills (J2): `sk` = [[id, MP now, cooldown left ms, usable 1/0]…]
@@ -235,7 +252,7 @@ function onSnap(s) {
   for (const [id, m] of G.gone) if (t - m.goneT > 1500) G.gone.delete(id);
   // a rift on another map (c.ev) is news for the 시스템 tab only, not the 전체 log
   const far = (c) => c.ev && G.map && c.ev !== G.map.id;
-  if (s.chat) for (const c of s.chat) c.sys ? addChat(c.m, far(c) ? "sys far" : "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`) : c.pt ? addChat(c.m, "party", `[파티] ${c.n}`) : addChat(c.m, "", c.n);
+  if (s.chat) for (const c of s.chat) c.w ? whisperLine(c) : c.sys ? addChat(c.m, far(c) ? "sys far" : "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`) : c.pt ? addChat(c.m, "party", `[파티] ${c.n}`) : addChat(c.m, "", c.n);
   // a field boss called out, or a wave of the rift breaking in
   if (s.chat) for (const c of s.chat) if (c.sys && !far(c) && /나타났습니다/.test(c.m)) Sound.play(/균열/.test(c.m) ? "elite" : "announce");
   if (s.gain) for (const gn of s.gain) onGain(gn);
