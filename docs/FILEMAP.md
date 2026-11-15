@@ -115,6 +115,7 @@ banner or function it names. **When you add, move or split a file, update its ro
 | `looks.js` [244] | look editor (creation tabs) and the town mirror |
 | `mobart.js` [588] + `mobart_kit.js` [139] + `mobart_a/b/c/d.js` [376/309/561/268] | monsters as 3D-primitive models rasterised to pixels; `BEASTS_A` meadow/forest, `_B` crypt/city, `_C` sewer/cave/abyss/bosses/chest, `_D` 단풍 왕도 (blighted beasts and plants); `has draw icon KINDS` |
 | `mobart_rift_beasts.js` | Pixel models of six local variations from the meadow through the crystal cave |
+| `mobart_rift_bosses.js` | Pixel models of the six bosses in the weekly arena rotation |
 | `weapons.js` [985] | weapon art per kind × tier (sword dagger spear staff book bow), legendary/set looks, skins, glow: `DESIGNS SIL MOTIF_SIL weaponSprite weaponIcon`, `bowSprite(gear, pull, arrow)` (a bow at every pull of its string; motifs bent along the limb); an installed image (`assetKey`: manifest `weapon.<kind>.t<n>`/`.lg.`/`.set.`/`.skin.`, `icon.weapon.…`) replaces a look, rarity ink + glow still applied |
 | `wardrobe.js` [807] · `wardrobe_ui.js` [283] | cosmetic layers drawn over heroes (`ART SLOTS dress anchors`; designs `HAT TOP BACK FACE`, rules in the header); costume shop + 외형 tab |
 | `swing.js` [187] | fixed-size weapon strokes for attacks/casts; the tempo `WIND IMPACT SNAP` (15% wind-up, snap, blow at 0.2) with out-expo/out-back easing; the bow's shot `bowPose` (pull, arrow, release at IMPACT, `bowup` skyward cast) |

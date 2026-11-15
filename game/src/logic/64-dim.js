@@ -24,7 +24,7 @@ function dimClean(d) {
   const o = isObj(d) ? d : {}, best = clamp(o.best | 0, 0, DIM_TIER.max);
   return {
     day: Math.max(0, o.day | 0), n: clamp(o.n | 0, 0, 999), t: clamp(o.t | 0, 1, Math.min(DIM_TIER.max, best + 1)), best, ms: best ? clamp(o.ms | 0, 0, DIM.limit) : 0,
-    wk: Math.max(0, o.wk | 0), wb: clamp(o.wb | 0, 0, DIM_TIER.weekly.max), bw: clamp(o.bw | 0, 0, (1 << CHAL_KEYS.length) - 1),
+    wk: Math.max(0, o.wk | 0), wb: clamp(o.wb | 0, 0, DIM_TIER.weekly.max), bw: clamp(o.bw | 0, 0, CHAL_REWARD_MASK),
   };
 }
 /** The record brought to today and to this week (a new day clears the count; a new week the brackets and boss flags). */
@@ -45,6 +45,8 @@ function dimBar(o, ask) {
 }
 /** What is being opened, in words. */
 const dimWhat = (ask) => (ask.boss ? `보스 도전 [${MOBS[ask.boss].name}]` : ask.tier > 1 ? `차원 균열 ${ask.tier}단` : "차원 균열");
+const chalOpen = (k, now) => !DIM_CHAL.bosses[k].rotation || k === chalOfWeek(now);
+const CHAL_ROTATED = "이번 주 보스가 바뀌었습니다. 균열지기에게서 다시 선택하세요.";
 
 const inDim = (p) => typeof p.map === "string" && p.map.startsWith("dim:");
 const dimAt = (S, id) => (S.dims && Object.hasOwn(S.dims, id) ? S.dims[id] : null);
@@ -95,6 +97,7 @@ function rcEnd(S, party, why) {
 /** A ready check's every tick: the party as it is now, answers in, time up — then go in, or not. */
 function rcCheck(S, party) {
   const rc = party.rc;
+  if (rc.boss && !chalOpen(rc.boss, S.now)) { rcEnd(S, party, CHAL_ROTATED); return; }
   for (const pid of Object.keys(rc.resp)) if (!party.m.includes(pid) || !S.players[pid]) delete rc.resp[pid];
   // the leader gone, or no longer leading: nothing happens
   if (party.m[0] !== rc.leader || !S.players[rc.leader]) { rcEnd(S, party, "파티장이 자리를 비워 차원 균열 준비가 취소되었습니다."); return; }
@@ -125,6 +128,7 @@ function dimStart(S, ps, partyId, ask) {
   if (open >= DIM.max) { for (const o of ps) toast(o, `차원 균열이 모두 사용 중입니다 (${open}/${DIM.max}).`); return null; }
   // a boss challenge (no tier), or a rift at the asked tier — never above what everyone going in has unlocked
   const boss = ask && ask.boss && Object.hasOwn(DIM_CHAL.bosses, ask.boss) ? ask.boss : "";
+  if (boss && !chalOpen(boss, S.now)) { for (const o of ps) toast(o, CHAL_ROTATED); return null; }
   const tier = boss ? 0 : clamp(Math.min((ask && ask.tier) | 0 || 1, dimTierCap(ps)), 1, DIM_TIER.max);
   const tk = dimTierK(tier || 1);
   const lv = boss ? Math.max(MOBS[boss].lv, dimLvOf(ps)) : dimLvOf(ps);
@@ -342,16 +346,21 @@ function dimChest(S, dim, p) {
   const d = dimRec(ch, S.now), carried = !!(dim.carry && dim.carry[p.pid]);
   let fl = ((dim.res && dim.res[p.pid]) || 0) | (carried ? 4 : 0), wkN = 0, r, msg;
   if (dim.chal) {
-    // a boss challenge: the big reward once a week per boss, a small one after (and for someone carried, who keeps the week's)
-    const bit = 1 << CHAL_KEYS.indexOf(dim.chal.k), big = !carried && !(d.bw & bit), R = big ? DIM_CHAL.bosses[dim.chal.k].big || DIM_CHAL.big : DIM_CHAL.small;
+    // Fixed bosses pay once a week each. Rotating bosses share their reward for the week of entry.
+    const config = DIM_CHAL.bosses[dim.chal.k], rotating = config.rotation, bit = chalRewardBit(dim.chal.k);
+    const expired = rotating && weekOf(dim.opened) !== weekOf(S.now);
+    const big = !carried && !expired && !(d.bw & bit);
+    const R = big ? (rotating ? DIM_CHAL.rotationBig : config.big || DIM_CHAL.big) : DIM_CHAL.small;
     if (big) { d.bw |= bit; fl |= 8; }
     r = { gold: R.gold * lv, xp: Math.round(R.xp * xpNeed(lv)), stone: R.stone, rune: !!R.rune, gear: R.gear ? 1 : 0, gearQ: R.gearQ };
     payout(S, p, r);
     for (let i = 1; i < (R.rune | 0); i++) payout(S, p, { rune: true });
     for (let i = 1; i < (R.gear | 0); i++) payout(S, p, { gear: 1, gearQ: R.gearQ });
-    if (big) { charmChest(S, dim, p); jfScroll(p, "lvl"); }
-    giveX(S, p, big ? "big" : carried ? "" : "small");
-    msg = big ? "주간 보스 도전 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다." : "보스 도전 반복 보상을 받았습니다. 큰 보상은 월요일 06:00에 다시 열립니다.";
+    if (big) { charmChest(S, dim, p); if (!rotating) jfScroll(p, "lvl"); }
+    giveX(S, p, big && !rotating ? "big" : carried ? "" : "small");
+    msg = big ? "주간 보스 도전 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다."
+      : expired ? "지난주 도전의 반복 보상을 받았습니다. 이번 주 보상은 새 보스에게서 받을 수 있습니다."
+      : "보스 도전 반복 보상을 받았습니다. 큰 보상은 월요일 06:00에 다시 열립니다.";
   } else {
     d.n++;
     const full = d.n <= DIM.dailyFull, W = DIM_TIER.weekly;
@@ -580,6 +589,7 @@ function dimValidate(S, p, a) {
       // a boss challenge (the leader's own level), or a tier nobody of the party in town is short of
       if (a.boss !== undefined) {
         if (typeof a.boss !== "string" || !Object.hasOwn(DIM_CHAL.bosses, a.boss)) return bad("알 수 없는 보스 도전입니다");
+        if (!chalOpen(a.boss, S.now)) return bad(CHAL_ROTATED);
         const bar = dimBar(p, dimAsk(a));
         if (bar) return bad(bar);
       } else if (a.tier !== undefined) {
@@ -689,7 +699,7 @@ function chalView(S, dim) {
 /** `self.dimr`: [unlocked tier, best tier, its clear seconds, full-reward clears left today, weekly brackets taken, weekly boss flags]. */
 function dimSelf(p) {
   const d = p.ch.dim, now = p.S.now, wk = d.wk === weekOf(now);
-  return [d.t, d.best, Math.round(d.ms / 1000), Math.max(0, DIM.dailyFull - (d.day === dayOf(now) ? d.n : 0)), wk ? d.wb : 0, wk ? d.bw : 0];
+  return [d.t, d.best, Math.round(d.ms / 1000), Math.max(0, DIM.dailyFull - (d.day === dayOf(now) ? d.n : 0)), wk ? d.wb : 0, wk ? d.bw : 0, CHAL_KEYS.indexOf(chalOfWeek(now))];
 }
 /** The tables the browser needs for rifts (defs().dim). */
 function dimDefs() {
@@ -698,6 +708,6 @@ function dimDefs() {
     rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near,
     // the ladder and the boss challenge: [key, name, level needed, the marked cast, pattern names]
     tier: { max: DIM_TIER.max, hp: DIM_TIER.hp, atk: DIM_TIER.atk, every: DIM_TIER.weekly.every, daily: DIM.dailyFull },
-    chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0])]) },
+    chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0]) },
   };
 }

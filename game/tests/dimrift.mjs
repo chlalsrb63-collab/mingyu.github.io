@@ -607,7 +607,8 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   const old = L.newChar("옛단수", []); old.v = 13; old.dim = { day: 20000, n: 2 };
   L.addPlayer(S, "o13", old);
   assert.deepEqual(S.players.o13.ch.dim, { ...fresh, day: 20000, n: 2 }, "a v13 sheet keeps its count and starts the ladder at 1"); assert.equal(S.players.o13.ch.v, 20);
-  assert.deepEqual(X.dimClean({ t: 50, best: 3, ms: 9e9, wb: 99, bw: 99, wk: -3 }), { ...fresh, t: 4, best: 3, ms: D.limit, wb: TR.weekly.max, bw: (1 << X.CHAL_KEYS.length) - 1 }, "never more unlocked than one past the best");
+  const rewardMask = D.chal.bosses.reduce((mask, boss) => mask | boss[5], 0);
+  assert.deepEqual(X.dimClean({ t: 50, best: 3, ms: 9e9, wb: 99, bw: 99, wk: -3 }), { ...fresh, t: 4, best: 3, ms: D.limit, wb: TR.weekly.max, bw: rewardMask }, "unlocks and weekly reward bits are clamped");
   assert.deepEqual(X.dimClean({ t: "x", best: 5000, ms: 1234 }), { ...fresh, t: 1, best: TR.max, ms: 1234 });
   assert.deepEqual(X.dimClean({ ms: 5000 }), fresh, "no time without a clear"); assert.deepEqual(X.dimClean("junk"), fresh);
 }
@@ -645,7 +646,7 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   assert.equal(res.t2[6], 1); assert.equal(res.t2[4], X.dimReward(dim.lv, 3, true, false).gold + TR.weekly.gold * dim.lv, "the chest and one bracket");
   assert.deepEqual([a.ch.dim.wb, b.ch.dim.wb, b.ch.dim.n], [1, 1, 1]);
   step(S);
-  assert.deepEqual(last("t2", "self").dimr, [4, 3, Math.round(b.ch.dim.ms / 1000), D.dailyFull - 1, 1, 0], "the sheet's record on the wire");
+  assert.deepEqual(last("t2", "self").dimr.slice(0, 6), [4, 3, Math.round(b.ch.dim.ms / 1000), D.dailyFull - 1, 1, 0], "the existing six rift record fields keep their positions");
   leave(S, ["t1", "t2"]);
   // the same tier again, quicker: a better time; no second weekly bonus
   assert.ok(act(S, "t1", { t: "dim_open", tier: 3 }).ok); act(S, "t2", { t: "dim_ready", id: S.parties[a.party].rc.id, ok: 1 });
