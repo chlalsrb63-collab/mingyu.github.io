@@ -22,7 +22,7 @@ const states = (s) => {
 
 export function goalText(q) {
   const g = q.goal;
-  return g.type === "kill" ? `${q.target} ${g.n}마리 처치` : g.type === "collect" ? `${q.target} ${g.n}개 모아 오기`
+  return g.type === "kill" || g.type === "elite" || g.type === "fb" ? `${q.target} ${g.n}마리 처치` : g.type === "collect" ? `${q.target} ${g.n}개 모아 오기`
     : g.type === "talk" ? `${q.target}에게 말 걸기` : `[${q.target}]에 가 보기`;
 }
 function rewardText(q) {

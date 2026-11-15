@@ -171,7 +171,7 @@ export async function defsForEditor(dataDir = DATA_DIR) {
   return {
     mobs, items, roles: E.NPC_ROLES.slice(), themes: E.THEMES.slice(), bgm: BGM_KEYS,
     maps: Object.keys(E.MAPS).map((id) => ({ id, name: E.MAPS[id].name, builtin: E.BUILTIN_MAPS.includes(id), w: E.MAPS[id].w, h: E.MAPS[id].h })),
-    npcs, quests: E.QUESTS.map((q) => ({ mob: q.mob, n: q.n, title: q.title })), goals: ["kill", "collect", "talk", "visit"],
+    npcs, quests: E.QUESTS.map((q) => ({ mob: q.mob, n: q.n, title: q.title })), goals: ["kill", "collect", "talk", "visit", "elite", "fb"],
   };
 }
 
@@ -443,7 +443,8 @@ export async function checkData(dataDir = DATA_DIR) {
     else if (g.type === "collect") { if (!item(g.item)) err(qf, `${p}.goal.item`, `알 수 없는 아이템 "${g.item}"`); if (!isInt(g.n) || g.n < 1) err(qf, `${p}.goal.n`, "n은 1 이상이어야 합니다"); }
     else if (g.type === "talk") { if (!npcIds.has(g.npc)) err(qf, `${p}.goal.npc`, `알 수 없는 NPC "${g.npc}"`); }
     else if (g.type === "visit") { if (!real(g.map) && !mapIds.has(g.map)) err(qf, `${p}.goal.map`, `알 수 없는 지도 "${g.map}"`); }
-    else err(qf, `${p}.goal.type`, `알 수 없는 목표 종류 "${g.type}" (kill, collect, talk, visit)`);
+    else if (g.type === "elite" || g.type === "fb") { if (g.map != null && !real(g.map) && !mapIds.has(g.map)) err(qf, `${p}.goal.map`, `알 수 없는 지도 "${g.map}"`); if (!isInt(g.n) || g.n < 1) err(qf, `${p}.goal.n`, "n은 1 이상이어야 합니다"); }
+    else err(qf, `${p}.goal.type`, `알 수 없는 목표 종류 "${g.type}" (kill, collect, talk, visit, elite, fb)`);
     const req = isObj(q.req) ? q.req : {};
     if (req.lv !== undefined && req.lv !== null && (!isInt(req.lv) || req.lv < 1)) err(qf, `${p}.req.lv`, "req.lv는 1 이상의 정수여야 합니다");
     if (req.quest != null && !sids.has(req.quest)) err(qf, `${p}.req.quest`, `선행 퀘스트 "${req.quest}"가 없습니다`);

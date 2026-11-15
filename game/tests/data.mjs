@@ -4,7 +4,7 @@
 // bad data is refused in Korean, old sheets gain the side-quest record, and the playtest
 // spot lands on open ground: node tests/data.mjs
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import * as L from "../src/logic.js";
@@ -57,13 +57,15 @@ function world(Lx, name = "모험가") {
     npc(id) { for (const mid of Object.keys(Lx.atlas().maps)) { const n = Lx.atlas().maps[mid].npcs.find((o) => o.id === id); if (n) return { map: mid, n }; } return null; },
     /** Stand right below an NPC. */
     meet(id) { const { map, n } = W.npc(id); W.to(map, n.x, n.y + 1); W.p.y -= 4; },
-    kill(k) {
+    /** Fell one `k` here (`el` 1 = as an elite, 2 = as this map's field boss). */
+    kill(k, el = 0) {
       const p = W.p, rt = Lx.runtime(S, p.map);
       const find = () => rt.mobs.find((x) => x.k === k && !x.dead && !x.evt) || rt.mobs.find((x) => x.k === k && !x.evt);
       if (!find()) W.step(); // the cells around wake and fill
       const m = find();
       assert.ok(m, `a ${k} lives in ${p.map}`);
-      m.dead = false; m.el = 0; m.tr = []; m.hp = 1; m.x = p.x + 12; m.y = p.y; m.by = {};
+      m.dead = false; m.el = el; m.tr = [];
+      if (el) m.temp = el === 2; m.hp = 1; m.x = p.x + 12; m.y = p.y; m.by = {};
       for (const o of rt.mobs) if (o !== m && !o.dead && Math.hypot(o.x - p.x, o.y - p.y) < 90) { o.x += 4000; o.hx = o.x; }
       p.atkAt = 0; p.dir = 2; p.aim = 0; p.hp = 1e6;
       assert.ok(W.act({ t: "atk" }).ok);
@@ -270,6 +272,54 @@ const cloneData = () => JSON.parse(JSON.stringify(EMPTY_DATA()));
   assert.ok(!("sq_hare" in W.p.ch.sq.on), "dropped");
   // the quest NPC carries its lines and role to the client
   assert.equal(X.atlas().maps.town.npcs.find((n) => n.id === "town_cook").role, "quest");
+}
+
+// ── the elite and field-boss goals: only that rank counts, and only on the named map when there is one
+{
+  const data = cloneData();
+  data.npcs = [{ map: "town", id: "town_cook", name: "요리사 미미", role: "quest", x: 21, y: 24, look: [0, 0, 0, "#c88a3a"], lines: ["배고프지?"] }];
+  data.quests.side = [
+    { id: "sq_elite", giver: "town_cook", title: "초원의 정예", text: "정예 둘.", goal: { type: "elite", map: "meadow", n: 2 }, reward: { gold: 3 } },
+    { id: "sq_elite_far", giver: "town_cook", title: "숲의 정예", text: "숲에서.", goal: { type: "elite", map: "forest", n: 1 }, reward: { gold: 3 } },
+    { id: "sq_fb", giver: "town_cook", title: "우두머리", text: "어디서든 하나.", goal: { type: "fb", n: 1 }, reward: { gold: 9 } },
+    { id: "sq_fb_nowhere", giver: "town_cook", title: "없는 곳", text: "없는 맵.", goal: { type: "fb", map: "nowhere", n: 1 }, reward: { gold: 1 } },
+  ];
+  const X = (await loadLogic({ data })).L;
+  const D = X.defs();
+  assert.ok(!D.side.some((q) => q.id === "sq_fb_nowhere"), "a goal on a map that does not exist is left out");
+  assert.equal(D.side.find((q) => q.id === "sq_elite").target, "바람초원 정예 몬스터");
+  assert.equal(D.side.find((q) => q.id === "sq_elite").targetMap, "meadow");
+  assert.equal(D.side.find((q) => q.id === "sq_fb").target, "우두머리");
+  const W = world(X, "정예사냥꾼");
+  W.meet("town_cook");
+  for (const id of ["sq_elite", "sq_elite_far", "sq_fb"]) assert.ok(W.act({ t: "sq", a: "take", id }).ok, id);
+  W.to("meadow", ...L.atlas().maps.meadow.entry);
+  W.kill("twinhare");
+  assert.equal(W.p.ch.sq.on.sq_elite, 0, "a plain monster is not an elite");
+  W.kill("twinhare", 1);
+  W.kill("gutfrog", 1);
+  const s = W.self();
+  assert.deepEqual(sqOf(s, "sq_elite"), { st: 3, n: 2, need: 2 }, "two meadow elites");
+  assert.equal(W.p.ch.sq.on.sq_elite_far, 0, "the forest quest waits for the forest");
+  assert.equal(W.p.ch.sq.on.sq_fb, 0, "an elite is not a field boss");
+  W.kill("lambmaw", 2);
+  assert.equal(W.p.ch.sq.on.sq_fb, 1, "the field boss counts anywhere");
+  assert.ok(W.toasts.some((t) => /\[초원의 정예\] 1\/2/.test(t)), "the count is told");
+  W.meet("town_cook");
+  assert.ok(W.act({ t: "sq", a: "done", id: "sq_elite" }).ok);
+  assert.ok(W.act({ t: "sq", a: "done", id: "sq_fb" }).ok);
+  assert.ok(!W.act({ t: "sq", a: "done", id: "sq_elite_far" }).ok);
+}
+// ── the shipped side quests: every one survives cleaning, chains come after their first step, every goal kind is used
+{
+  const side = L.defs().side, raw = JSON.parse(readFileSync(new URL("../data/quests.json", import.meta.url), "utf8")).side;
+  assert.equal(side.length, raw.length, "no shipped side quest is dropped by the rules");
+  const by = Object.fromEntries(side.map((q) => [q.id, q]));
+  for (const q of side) {
+    assert.match(q.title + q.text, hangul, q.id);
+    if (q.req.quest) assert.ok(by[q.req.quest].req.lv <= q.req.lv, `${q.id} comes after ${q.req.quest}`);
+  }
+  for (const t of ["kill", "collect", "talk", "visit", "elite", "fb"]) assert.ok(side.some((q) => q.goal.type === t), `some quest asks for ${t}`);
 }
 
 // ── round trip: a generated map exported for the editor and loaded back as a replacement is the same map

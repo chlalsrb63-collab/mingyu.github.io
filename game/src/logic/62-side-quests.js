@@ -1,19 +1,21 @@
 // ───────────────────────────── side quests (world map editor) ─────────────────────────────
 // data/quests.json "side": errands NPCs hand out beside the main chain. A goal is to kill
 // (kills of the kind count, like the main quest's), to collect (items in the bag, taken on
-// hand-in), to talk to an NPC or to visit a map. Progress lives on the sheet as
+// hand-in), to talk to an NPC, to visit a map, or to fell elites ("elite") or field bosses ("fb"),
+// anywhere or on one map (goal.map). Progress lives on the sheet as
 // ch.sq = { on: { id: n }, done: { id: times } } (sheet v8).
 
 const SQ_MAX = 10;
-const SQ_GOALS = ["kill", "collect", "talk", "visit"];
+const SQ_GOALS = ["kill", "collect", "talk", "visit", "elite", "fb"];
+const SQ_COUNTED = ["kill", "collect", "elite", "fb"];
 /** The side quests, cleaned: anything naming what does not exist is left out. */
 const SIDE = DATA.quests.side.filter((q) => typeof q.id === "string" && /^[a-z][a-z0-9_]{2,31}$/.test(q.id) && typeof q.giver === "string" && q.goal && SQ_GOALS.includes(q.goal.type)).map((q) => {
   const g = q.goal, req = q.req && typeof q.req === "object" ? q.req : {}, rw = q.reward && typeof q.reward === "object" ? q.reward : {};
-  const goal = { type: g.type, n: g.type === "kill" || g.type === "collect" ? clamp(g.n | 0, 1, 999) : 1 };
+  const goal = { type: g.type, n: SQ_COUNTED.includes(g.type) ? clamp(g.n | 0, 1, 999) : 1 };
   if (g.type === "kill") goal.mob = g.mob;
   if (g.type === "collect") goal.item = g.item;
   if (g.type === "talk") goal.npc = g.npc;
-  if (g.type === "visit") goal.map = g.map;
+  if (g.type === "visit" || ((g.type === "elite" || g.type === "fb") && typeof g.map === "string")) goal.map = g.map;
   return {
     id: q.id, giver: q.giver, title: txt(q.title, 40) || q.id, text: txt(q.text, 400), done: txt(q.done, 400),
     goal, req: { lv: clamp(req.lv | 0, 0, MAXLV), quest: typeof req.quest === "string" ? req.quest : null, ...(req.main === true ? { main: true } : {}) },
@@ -21,7 +23,7 @@ const SIDE = DATA.quests.side.filter((q) => typeof q.id === "string" && /^[a-z][
     repeat: !!q.repeat, ...(q.mainChapter ? { mainChapter: true } : {}),
   };
 }).filter((q, i, all) => all.findIndex((o) => o.id === q.id) === i && NPC_MAP[q.giver] && (
-  q.goal.type === "kill" ? Object.hasOwn(MOBS, q.goal.mob) : q.goal.type === "collect" ? Object.hasOwn(ITEMS, q.goal.item) : q.goal.type === "talk" ? !!NPC_MAP[q.goal.npc] : Object.hasOwn(MAP_META, q.goal.map)));
+  q.goal.type === "kill" ? Object.hasOwn(MOBS, q.goal.mob) : q.goal.type === "collect" ? Object.hasOwn(ITEMS, q.goal.item) : q.goal.type === "talk" ? !!NPC_MAP[q.goal.npc] : q.goal.type === "visit" || q.goal.map ? Object.hasOwn(MAP_META, q.goal.map) : true));
 const SQ_BY = {};
 for (const q of SIDE) SQ_BY[q.id] = q;
 for (const q of SIDE) if (q.req.quest && !SQ_BY[q.req.quest]) q.req.quest = null;
@@ -62,7 +64,7 @@ function sqProgress(S, p, type, match, n = 1) {
     ch.sq.on[id] = Math.min(q.goal.n, was + n);
     p.dirty = true;
     if (ch.sq.on[id] >= q.goal.n) toast(p, `[${q.title}] 달성! ${npcName(q.giver)}에게 돌아가세요.`);
-    else if (type === "kill") toast(p, `[${q.title}] ${ch.sq.on[id]}/${q.goal.n}`);
+    else if (type === "kill" || type === "elite" || type === "fb") toast(p, `[${q.title}] ${ch.sq.on[id]}/${q.goal.n}`);
   }
 }
 /** A picked-up item that a collect quest wants says so. */
