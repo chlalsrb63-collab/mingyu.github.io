@@ -38,6 +38,8 @@ function XP_K(lv) {
 }
 /** Deeper monsters drop less gold for their level: the bands last longer, and the purse should not run away. */
 const goldK = (lv) => 1 - 0.7 * clamp((lv - 8) / 28, 0, 1);
+/** Hunting's share of a kill's gold (owner, 2026-11-15: 알바 should be where gold is earned; hunting pays in loot and XP). */
+const HUNT_GOLD = 0.4;
 /**
  * The experience the world pays and charges at tier `t` (a real number: a player's level maps to
  * `toTier(lvl) = (lvl + 3) / 4`). Once the experience to the next of the old 50 levels; now the yardstick

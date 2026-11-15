@@ -659,7 +659,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   give("m_h1", 1);
   const g0 = ch.gold;
   assert.ok(act({ t: "jb", a: "give" }).ok);
-  assert.equal(ch.gold - g0, Math.round(Math.round((30 + 6 * 1) * hk) * (hr.rush ? 1.5 : 1)), "gold (30 + 6·L) × grade (× 1.5 긴급 in time)");
+  assert.equal(ch.gold - g0, Math.round(Math.round((120 + 24 * 1) * hk) * (hr.rush ? 1.5 : 1)), "gold (120 + 24·L) × grade (× 1.5 긴급 in time)");
   assert.equal(ch.life.gather.xp, Math.round(X.lifeNeed(1) * 0.25 * hk), "life XP a quarter level × grade");
   assert.equal(X.countItem(ch, "m_h1"), 0, "items handed over");
   assert.equal(ch.rep.bogle, Math.round(2 * hk), "trust +2 × grade");
@@ -739,12 +739,12 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   const saved = JSON.parse(JSON.stringify(L.exportChar(S, "a")));
   X.lifeSheetClean(saved);
   assert.deepEqual(saved.jobBoard.active, { id, npc: t.npc, prog: 0, expAt: 0 });
-  // delivered in time: 20 + 4·L and a tip by the time left, trust +3 / +1, counted
+  // delivered in time: 80 + 16·L and a tip by the time left, trust +3 / +1, counted
   standBy(t.to);
   now += 1000;
   const g1 = ch.gold;
   assert.ok(act({ t: "jb", a: "give" }).ok);
-  const base = Math.round((20 + 4 * 1) * dk), want = base + Math.round(base * 0.5 * (lim - 1000) / lim);
+  const base = Math.round((80 + 16 * 1) * dk), want = base + Math.round(base * 0.5 * (lim - 1000) / lim);
   assert.equal(ch.gold - g1, want);
   assert.deepEqual([ch.rep.juju, ch.rep.cafe_moka, ch.cnt.deliver, p.parcel], [Math.round(3 * dk), Math.round(dk), 1, null]);
   assert.deepEqual(ch.jobBoard.done, [id]);

@@ -181,7 +181,7 @@ function lootFor(S, rt, mob, p) {
   const out = [];
   const share = allies(S, p).length;
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * (1 + st.gold / 100) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1);
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + st.gold / 100) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
   const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
   for (let i = 0; i < tries; i++) {

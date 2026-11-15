@@ -80,3 +80,10 @@ Job reset 1,000 + 50 x Lv; level reset 5,000 + 100 x Lv; both also need a scroll
 ## Not checked
 Real kills/hour and party gold share, `m_o3` drop rate (blessing supply), how often the weekly big boss can be fought (assumed 1/week),
 gold sinks outside enhancement, and income at Lv100+. Pity figures use a mean-field approximation, not a simulation: if the owner wants a hard number, run a seeded Monte Carlo on `enhWin` in a test.
+
+## 6. Owner's order (2026-11-15 evening): 알바 is where gold is earned
+- Kill gold × `HUNT_GOLD` 0.4 (20-helpers-mapkit.js; every kill and chest-monster gold drop, field, dungeon and rift alike): hunting
+  ~14–22k/h → kill gold ~40 % of before (loot sells unchanged). Rift final chest and dailies unchanged.
+- 알바 board `JB_PAY` ×4: gold 120 + 24·L, deliveries 80 + 16·L (× grade 1 / 1.6 / 2.5, × 1.5 긴급). L25: 720 / 1,152 / 1,800 a job.
+- Co-op `COOP_T.gold` ×2.5: C–S 100 / 150 / 200 / 275 × tier (Lv40 S 2,750 a shift, once a day per job), tips 25 / 38.
+- A day of 알바 at life L25, Lv40 (3 board jobs + 4 shifts at A–S) ≈ 3.5k + 9k ≈ 12–13k G ≈ more than an hour of hunting gold now.

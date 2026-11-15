@@ -1461,7 +1461,8 @@ const JB_RUSH = { odds: 4, min: 15, bonus: 1.5 };
  * A parcel's time limit is path·T / (BASE_SPD·limit[0]) × limit[1] + limit[2] ms (a door counts `door` tiles);
  * carrying it you move at spd[0] + spd[1]·L (0.85 at 1, 1.0 at 25, 1.15 at 50).
  */
-const JB_PAY = { gold: [30, 6], dGold: [20, 4], tip: 0.5, xp: 0.25, rep: 2, repTo: 3, repFrom: 1, perDay: 3, offers: 4, limit: [0.85, 1.8, 20000], spd: [0.85, 0.006], door: 2 };
+const JB_PAY = { gold: [120, 24], dGold: [80, 16],   // ×4 on 2026-11-15: 알바 is a main gold source (hunting gold × HUNT_GOLD)
+  tip: 0.5, xp: 0.25, rep: 2, repTo: 3, repFrom: 1, perDay: 3, offers: 4, limit: [0.85, 1.8, 20000], spd: [0.85, 0.006], door: 2 };
 /** A delivery's path in tiles, worked out on first use by `jbRoute` (58-life.js) and kept here. */
 const JB_ROUTES = {};
 /**
@@ -1494,8 +1495,9 @@ const POUCH_MAX = 999;
 const COOP_T = {
   briefMs: 8000, feverMs: 60000, endMs: 30000, emptyMs: 20000, max: 6, actMs: 250, near: 56, reach: 28, station: 26,
   zzzMs: 45000, idleMs: 90000, lazy: 0.15, cuts: [0.30, 0.50, 0.70, 0.88], parN: { 1: 0.6, 2: 1, 3: 1.35, 4: 1.65 },
-  xp: [0.08, 0.14, 0.20, 0.28], gold: [40, 60, 80, 110], gearQ: [0, 1, 1, 2], stone: [1, 2, 3, 5], life: [0.30, 0.45, 0.60, 0.80],
-  tip: 10, tipLife: 0.1, helpTip: 15, helpLife: 0.25, rep: 5,
+  // gold ×2.5 and tips with it on 2026-11-15 (알바 as a main gold source)
+  xp: [0.08, 0.14, 0.20, 0.28], gold: [100, 150, 200, 275], gearQ: [0, 1, 1, 2], stone: [1, 2, 3, 5], life: [0.30, 0.45, 0.60, 0.80],
+  tip: 25, tipLife: 0.1, helpTip: 38, helpLife: 0.25, rep: 5,
 };
 const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", paddle: "젓개" };
 /** An empty row of the forge template's object layer (wall, 28 open tiles, the cut-down front wall). */
@@ -1682,6 +1684,8 @@ function XP_K(lv) {
 }
 /** Deeper monsters drop less gold for their level: the bands last longer, and the purse should not run away. */
 const goldK = (lv) => 1 - 0.7 * clamp((lv - 8) / 28, 0, 1);
+/** Hunting's share of a kill's gold (owner, 2026-11-15: 알바 should be where gold is earned; hunting pays in loot and XP). */
+const HUNT_GOLD = 0.4;
 /**
  * The experience the world pays and charges at tier `t` (a real number: a player's level maps to
  * `toTier(lvl) = (lvl + 3) / 4`). Once the experience to the next of the old 50 levels; now the yardstick
@@ -8206,7 +8210,7 @@ function lootFor(S, rt, mob, p) {
   const out = [];
   const share = allies(S, p).length;
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * (1 + st.gold / 100) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1);
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + st.gold / 100) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
   const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
   for (let i = 0; i < tries; i++) {
