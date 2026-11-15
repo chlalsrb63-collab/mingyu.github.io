@@ -22,7 +22,8 @@ import * as NPC from "./npclife.js";
 import * as Sky from "./sky.js";
 import { G, T, now, dist, $, el } from "./state.js";
 import { act } from "./net.js";
-import { toast, openWin, addChat, shown } from "./windows.js";
+import { toast, openWin, closeWin, addChat, shown } from "./windows.js";
+import { K } from "./keymap.js";
 import { tutTry } from "./win_world.js";
 
 // ───────────────────────────── player actions ─────────────────────────────
@@ -263,9 +264,20 @@ function serviceNotice(n) {
   return `${at}. ${service}`;
 }
 /** The talk window: the NPC's greeting, then more on "다음 이야기", round and round. */
-export const talk = { npc: null, lines: [], i: 0 };
+export const talk = { npc: null, lines: [], i: 0, at: 0 };
+/**
+ * The dialogue keys while the talk window is open (input.js): "talkNext" shows the next line, and on the last
+ * one presses the window's gold button (accept / hand in, as a click would) or closes it; "talkEnd" closes it.
+ */
+export function talkKey(a) {
+  if (a === "talkEnd") { closeWin("talk"); Sound.play("ui"); return; }
+  if (now() - talk.at < 250) return;          // the F that opened the window must not skip its first line
+  if (talk.i % talk.lines.length < talk.lines.length - 1) { talk.i++; talkShow(); Sound.play("blip"); return; }
+  const go = $("#w-talk").querySelector(".talk-sq .btn.gold:not(:disabled), .talk-jb .btn.gold:not(:disabled)");
+  if (go) go.click(); else { closeWin("talk"); Sound.play("ui"); }
+}
 function talkTo(n) {
-  talk.npc = n; talk.i = 0;
+  talk.npc = n; talk.i = 0; talk.at = now();
   const person = NPC.cast(n.id);
   const at = NPC.at(n.id);
   const spot = NPC.locations().find((p) => p.id === n.id);
@@ -312,5 +324,15 @@ function talkShow() {
     $("#talk-text").after(more);
   }
   more.hidden = talk.lines.length < 2;
-  more.textContent = `다음 이야기 (${(talk.i % talk.lines.length) + 1}/${talk.lines.length})`;
+  more.textContent = `[${K("talkNext")}] 다음 이야기 (${(talk.i % talk.lines.length) + 1}/${talk.lines.length})`;
+  let end = $("#talk-end");
+  if (!end) {
+    end = el("button", "btn small", "");
+    end.id = "talk-end";
+    end.addEventListener("click", () => talkKey("talkEnd"));
+    more.after(end);
+  }
+  // on the last line F closes too (unless the window has a gold button for it to press)
+  const last = talk.i % talk.lines.length === talk.lines.length - 1;
+  end.textContent = `[${last ? `${K("talkNext")}/` : ""}${K("talkEnd")}] 닫기`;
 }

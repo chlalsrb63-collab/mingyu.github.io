@@ -20,13 +20,19 @@ const A = [
   ["map", "지도", "KeyM", "창"], ["settings", "설정", "KeyO", "창"], ["help", "도움말", "KeyH", "창"],
   ["sit", "앉기 · 일어서기 (사냥터: 모닥불)", "KeyZ", "기타"], ["emote", "감정표현", "KeyT", "기타"], ["jamB", "연주 (앉은 채)", "KeyB", "기타"], ["jamZ", "건배 (앉은 채)", "Shift+KeyB", "기타"],
   ["sound", "소리 켜기/끄기", "Shift+KeyM", "기타"], ["crt", "CRT 효과", "KeyV", "기타"], ["chat", "채팅 입력", "Enter", "기타"],
+  ["track", "추적 (목표로 자동 이동)", "Shift+KeyG", "기타"],
+  // only while a talk window is open: their keys may be the same as the game's (F, C) — see TALK
+  ["talkNext", "대화 다음 · 확인", "KeyF", "대화"], ["talkEnd", "대화 끝내기", "KeyC", "대화"],
 ];
+/** Actions that only count while a dialogue is open: their own namespace, so they can share keys with the game's. */
+const TALK = new Set(["talkNext", "talkEnd"]);
+const space = (id) => (TALK.has(id) ? 1 : 0);
 const DEF = Object.fromEntries(A.map(([id, , d]) => [id, d]));
 const NAME = Object.fromEntries(A.map(([id, n]) => [id, n]));
 const LS = "lumentale:keys", LS_TS = "lumentale:ts";
 let bind = { ...DEF };
-const rev = () => Object.fromEntries(Object.entries(bind).map(([id, c]) => [c, id]));
-let byCode = rev();
+const rev = (t = 0) => Object.fromEntries(Object.entries(bind).filter(([id]) => space(id) === t).map(([id, c]) => [c, id]));
+let byCode = rev(), byTalk = rev(1);
 
 const SPECIAL = { Space: "Space", Enter: "Enter", Tab: "Tab", Backquote: "`", Minus: "-", Equal: "=", BracketLeft: "[", BracketRight: "]", Backslash: "\\", Semicolon: ";", Quote: "'", Comma: ",", Period: ".", Slash: "/", Backspace: "Bksp", Delete: "Del", Insert: "Ins", Home: "Home", End: "End", PageUp: "PgUp", PageDown: "PgDn" };
 /** A key's face text: "KeyI" → "I", "Shift+KeyL" → "Shift+L" (short: "S+L"). */
@@ -46,6 +52,8 @@ export function actionOf(e) {
 }
 /** Is action `id` bound to this event's key? */
 export const is = (e, id) => actionOf(e) === id;
+/** The dialogue action a keydown stands for ("talkNext" / "talkEnd"), or "". */
+export const talkActionOf = (e) => (e.shiftKey && byTalk["Shift+" + e.code]) || byTalk[e.code] || "";
 /** Is the key of action `id` held (the arrows always walk too)? `keys` holds e.code values. */
 export function held(keys, id) {
   const c = bind[id];
@@ -62,10 +70,10 @@ function load() {
     const o = JSON.parse(localStorage.getItem(LS) || "{}"), b = { ...DEF }, used = new Set();
     for (const id in o) if (id in DEF && typeof o[id] === "string" && /^(Shift\+)?[A-Za-z0-9]{1,16}$/.test(o[id]) && !MODS.test(o[id].replace("Shift+", ""))) b[id] = o[id];
     // a damaged or hand-edited list must not bind one key twice: later actions fall back to their default
-    for (const [id] of A) { if (used.has(b[id])) b[id] = DEF[id]; used.add(b[id]); }
+    for (const [id] of A) { const k = space(id) + ":" + b[id]; if (used.has(k)) b[id] = DEF[id]; used.add(space(id) + ":" + b[id]); }
     bind = b;
   } catch { bind = { ...DEF }; }
-  byCode = rev();
+  byCode = rev(); byTalk = rev(1);
 }
 
 /** Refresh every `data-key` hint: a <kbd>/<b>/<span> shows the key, and the title of its button swaps "(X)". */
@@ -84,12 +92,12 @@ export function apply(root = document) {
 let cap = null;   // the row being rebound
 function endCap() { if (!cap) return; cap.classList.remove("cap"); cap = null; apply(); }
 function assign(id, code) {
-  const old = bind[id], other = byCode[code];
+  const old = bind[id], other = (TALK.has(id) ? byTalk : byCode)[code];
   if (other === id) return;
   bind[id] = code;
   if (other) { bind[other] = old; toast(`[${face(code)}] 키가 [${NAME[other]}]에서 [${NAME[id]}]로 옮겨져, 두 동작의 키를 맞바꿨습니다`); }
   else toast(`[${NAME[id]}] 키를 [${face(code)}]로 바꿨습니다`);
-  byCode = rev(); save(); Sound.play("ui");
+  byCode = rev(); byTalk = rev(1); save(); Sound.play("ui");
 }
 
 /** Build the 단축키 list and the 글자 크기 buttons in the settings window (index.html #keys-list, #opt-ts). */
@@ -120,7 +128,7 @@ export function setupKeymap(api) {
       b.addEventListener("click", () => { const was = cap === b; endCap(); if (was) return; cap = b; b.classList.add("cap"); b.textContent = "키를 누르세요"; b.blur(); });
       row.append(b); list.append(row);
     }
-    $("#btn-keys-reset").addEventListener("click", () => { endCap(); bind = { ...DEF }; byCode = rev(); save(); apply(); toast("단축키를 기본값으로 되돌렸습니다"); Sound.play("ui"); });
+    $("#btn-keys-reset").addEventListener("click", () => { endCap(); bind = { ...DEF }; byCode = rev(); byTalk = rev(1); save(); apply(); toast("단축키를 기본값으로 되돌렸습니다"); Sound.play("ui"); });
   }
   apply();
   const ts = (v) => {
