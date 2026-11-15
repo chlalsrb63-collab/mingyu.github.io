@@ -125,35 +125,329 @@ function shadowDart(ax, ay, bx, by) {
 function ambushCuts(wx, wy, ang) {
   const [x, y] = at(wx, wy, 12);
   const heading = S3.sAng(Math.cos(ang), Math.sin(ang));
+  S3.fx.flash(wx, wy, 9, 0, 0.14);
+  shards(wx, wy, 18, 5, 14, "#6d3b9c", "#f3d8ff", 210);
   S3.fxCustom((g, k) => {
-    for (const [offset, span, color] of [[-0.63, 13, "#e8c0ff"], [0.63, 9, "#a070cc"]]) {
+    for (const [offset, span, edge, core] of [[-0.68, 19, "#9d5ce0", "#f8e6ff"], [0.64, 15, "#c44b8c", "#ffd6ef"]]) {
       const a = heading + offset, ux = Math.cos(a), uy = Math.sin(a);
-      const start = span * (k * 1.35 - 0.65), end = span * (0.7 + k * 0.18);
-      pixelLine(g, x + ux * start, y + uy * start, x + ux * end, y + uy * end, color, k < 0.44 ? 3 : 1);
-      if (k < 0.29) pixelLine(g, x + ux * start, y + uy * start, x + ux * end, y + uy * end, "#fff0ff");
+      const start = span * (k * 1.25 - 0.72), end = span * (0.78 + k * 0.22);
+      const ax = x + ux * start, ay = y + uy * start, bx = x + ux * end, by = y + uy * end;
+      pixelLine(g, ax, ay, bx, by, INK, k < 0.55 ? 5 : 3);
+      pixelLine(g, ax, ay, bx, by, edge, k < 0.5 ? 3 : 2);
+      if (k < 0.42) pixelLine(g, ax, ay, bx, by, core, 1);
     }
-  }, 140);
+    if (k < 0.48) {
+      const r = Math.max(2, Math.round(6 * (1 - k)));
+      px(g, x - r - 1, y - 1, r * 2 + 3, 3, INK);
+      px(g, x - 1, y - r - 1, 3, r * 2 + 3, INK);
+      px(g, x - r, y, r * 2 + 1, 1, "#ff6a9a");
+      px(g, x, y - r, 1, r * 2 + 1, "#ff6a9a");
+      px(g, x - 1, y - 1, 3, 3, "#ffffff");
+    }
+  }, 190);
 }
 
-/** The spear's straight reach and two moving twists, bounded by the transmitted endpoint. */
+/** A shadow clone silhouette left behind where a rogue blinked or danced from. */
+function shadowAfterimage(wx, wy, ms = 240) {
+  const [sx, sy] = at(wx, wy);
+  S3.fxCustom((g, k) => {
+    const lift = Math.round(k * 5);
+    g.globalAlpha = Math.max(0, (1 - k) * 0.85);
+    px(g, sx - 5, sy - 14 - lift, 10, 13, INK);
+    px(g, sx - 4, sy - 13 - lift, 8, 11, "#2a1b42");
+    px(g, sx - 3, sy - 12 - lift, 6, 4, "#5c3b88");
+    px(g, sx - 2, sy - 11 - lift, 2, 1, "#e8c8ff");
+    px(g, sx + 1, sy - 11 - lift, 2, 1, "#e8c8ff");
+    g.globalAlpha = 1;
+  }, ms);
+}
+
+/** 무영난무's single strike: a bold dark-outlined violet X-gash and bursting shadow petals. */
+function flurrySlash(wx, wy, ang) {
+  const [x, y] = at(wx, wy, 12);
+  const heading = S3.sAng(Math.cos(ang), Math.sin(ang));
+  S3.fx.flash(wx, wy, 8, 0, 0.12);
+  shards(wx, wy, 20, 4, 13, "#5a328a", "#f0d4ff", 190);
+  S3.fxCustom((g, k) => {
+    for (const [offset, span, shade, light] of [[-0.78, 22, "#7c42c4", "#f5dfff"], [0.78, 20, "#a844a0", "#ffe0f7"]]) {
+      const a = heading + offset, ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
+      const s0 = -span * (0.85 - k * 0.4), s1 = span * (0.65 + k * 0.35);
+      for (let q = Math.floor(s0); q <= Math.ceil(s1); q += 2) {
+        const u = (q - s0) / Math.max(1, s1 - s0), w = Math.max(1, Math.round(Math.sin(u * Math.PI) * 3 * (1 - k * 0.5)));
+        const px0 = x + ux * q, py0 = y + uy * q;
+        pixelLine(g, px0 - nx * (w + 1), py0 - ny * (w + 1), px0 + nx * (w + 1), py0 + ny * (w + 1), INK, 2);
+        pixelLine(g, px0 - nx * w, py0 - ny * w, px0 + nx * w, py0 + ny * w, k < 0.4 && Math.abs(u - 0.5) < 0.28 ? light : shade, 2);
+      }
+    }
+    if (k < 0.45) {
+      px(g, x - 5, y - 1, 11, 3, INK); px(g, x - 1, y - 5, 3, 11, INK);
+      px(g, x - 4, y, 9, 1, "#f5dfff"); px(g, x, y - 4, 1, 9, "#f5dfff");
+      px(g, x - 1, y - 1, 3, 3, "#ffffff");
+    }
+  }, 185);
+}
+
+/** The spear's straight reach, two moving twists, and a highlighted sweet-spot tip zone (72%–100%). */
 function spiralThrust(ax, ay, bx, by) {
   const [sx, sy] = at(ax, ay, 13), [ex, ey] = at(bx, by, 13);
   const dx = ex - sx, dy = ey - sy, length = Math.hypot(dx, dy);
   if (length < 2) return;
-  const nx = -dy / length, ny = dx / length;
+  const ux = dx / length, uy = dy / length, nx = -uy, ny = ux;
+  const tipWx = ax + (bx - ax) * 0.86, tipWy = ay + (by - ay) * 0.86;
+  S3.fx.flash(bx, by, 7, 0, 0.14);
+  shards(tipWx, tipWy, 14, 4, 12, "#2f756e", "#dcfff0", 200);
   S3.fxCustom((g, k) => {
-    const from = k ** 1.8, to = Math.min(1, 0.76 + k * 4);
-    if (k < 0.47) {
+    const from = k ** 1.7, to = Math.min(1, 0.78 + k * 4);
+    if (k < 0.56) {
+      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, INK, 6);
       pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, "#356c72", 4);
-      pixelLine(g, sx + dx * from, sy + dy * from + 1, sx + dx * to, sy + dy * to + 1, "#e5fff0", 2);
+      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, "#e5fff0", 2);
     }
     for (let i = Math.ceil(length * from); i < length * to; i += 2) {
-      const u = i / length, spread = 7 * Math.sin(Math.PI * u) * (1 - k * 0.6);
-      const twist = Math.sin(u * Math.PI * 5 - k * 5) * spread;
-      px(g, sx + dx * u + nx * twist, sy + dy * u + ny * twist, 2, 2, k < 0.52 ? "#b3f0d5" : "#5dc8b1");
-      if (k < 0.64) px(g, sx + dx * u - nx * twist, sy + dy * u - ny * twist, 2, 2, "#4b9d99");
+      const u = i / length, inTip = u >= 0.72;
+      const spread = (inTip ? 9 : 7) * Math.sin(Math.PI * u) * (1 - k * 0.55);
+      const twist = Math.sin(u * Math.PI * 5.5 - k * 6) * spread;
+      const c1 = inTip ? "#fff6b8" : k < 0.52 ? "#b3f0d5" : "#5dc8b1";
+      const c2 = inTip ? "#7ef5d8" : "#4b9d99";
+      px(g, sx + dx * u + nx * twist - 1, sy + dy * u + ny * twist - 1, 4, 4, INK);
+      px(g, sx + dx * u + nx * twist, sy + dy * u + ny * twist, 2, 2, c1);
+      if (k < 0.68) {
+        px(g, sx + dx * u - nx * twist - 1, sy + dy * u - ny * twist - 1, 4, 4, INK);
+        px(g, sx + dx * u - nx * twist, sy + dy * u - ny * twist, 2, 2, c2);
+      }
     }
-  }, 215);
+    // Sweet-spot collar at 72% reach + barbed pixel spearhead along 72%–100%
+    if (to >= 0.72 && k < 0.68) {
+      const cx = sx + dx * 0.72, cy = sy + dy * 0.72, collar = Math.round(7 * (1 - k * 0.5));
+      pixelLine(g, cx - nx * collar, cy - ny * collar, cx + nx * collar, cy + ny * collar, INK, 4);
+      pixelLine(g, cx - nx * collar, cy - ny * collar, cx + nx * collar, cy + ny * collar, "#fff2a8", 2);
+      const hx = sx + dx * to, hy = sy + dy * to, headLen = Math.min(18, length * 0.26);
+      for (let q = 0; q <= headLen; q += 2) {
+        const w = Math.max(1, Math.round((1 - q / headLen) * 5 * (1 - k * 0.4)));
+        const px0 = hx - ux * q, py0 = hy - uy * q;
+        pixelLine(g, px0 - nx * (w + 1), py0 - ny * (w + 1), px0 + nx * (w + 1), py0 + ny * (w + 1), INK, 2);
+        pixelLine(g, px0 - nx * w, py0 - ny * w, px0 + nx * w, py0 + ny * w, q < 6 ? "#ffffff" : "#b8ffe8", 2);
+      }
+    }
+  }, 235);
+}
+
+/** 유성창 (comet): wide drag corridor (`half = 20`) + blazing spear comet + landing stun crater. */
+function cometCharge(ax, ay, bx, by, half = 20) {
+  const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy) || 1;
+  const ux = dx / d, uy = dy / d, nx = -uy, ny = ux;
+  // Ground corridor rails showing exact `half = 20` drag width
+  S3.fxCustom((g, k) => {
+    const steps = Math.max(4, Math.ceil(d / 8));
+    for (let i = 0; i <= steps; i++) {
+      const u = i / steps;
+      if (u < k * 0.5 || u > Math.min(1, 0.35 + k * 2.2)) continue;
+      for (const side of [-1, 1]) {
+        const wx = (ax + dx * u + nx * side * half) * P, wy = (ay + dy * u + ny * side * half) * P;
+        px(g, wx - 2, wy - 2, 6, 6, INK);
+        px(g, wx - 1, wy - 1, 4, 4, k < 0.45 ? "#fff2b2" : "#56bfa8");
+        // Inward chevron teeth showing enemy pull toward center line
+        if (i % 2 === 0 && k < 0.65) {
+          const ix = (ax + dx * Math.min(1, u + 0.08) + nx * side * half * 0.48) * P;
+          const iy = (ay + dy * Math.min(1, u + 0.08) + ny * side * half * 0.48) * P;
+          pixelLine(g, wx, wy, ix, iy, "#9ef5dc", 3);
+        }
+      }
+    }
+  }, 310, true);
+  // Air comet spear head and wake
+  const [sx, sy] = at(ax, ay, 13), [ex, ey] = at(bx, by, 13);
+  const sdx = ex - sx, sdy = ey - sy, slen = Math.hypot(sdx, sdy) || 1;
+  const sux = sdx / slen, suy = sdy / slen, snx = -suy, sny = sux;
+  S3.fxCustom((g, k) => {
+    const u = Math.min(1, 0.3 + k * 2.5), hx = sx + sdx * u, hy = sy + sdy * u;
+    const tail = Math.min(slen * u, 48 * (1 - k * 0.65));
+    for (let q = 0; q < tail; q += 2) {
+      const w = Math.max(1, Math.round((1 - q / Math.max(1, tail)) * 7 * (1 - k * 0.4)));
+      const px0 = hx - sux * q, py0 = hy - suy * q;
+      pixelLine(g, px0 - snx * (w + 1), py0 - sny * (w + 1), px0 + snx * (w + 1), py0 + sny * (w + 1), INK, 2);
+      pixelLine(g, px0 - snx * w, py0 - sny * w, px0 + snx * w, py0 + sny * w, q < 10 ? "#fff6c8" : q < 24 ? "#7ce8cc" : "#2f7870", 2);
+    }
+    if (k < 0.72) {
+      // Stun star burst at landing endpoint
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 4 + k * 1.2, r = (10 + (i % 2) * 5) * (1 - k * 0.4);
+        pixelLine(g, ex - Math.cos(a) * r, ey - Math.sin(a) * r * 0.75, ex + Math.cos(a) * r, ey + Math.sin(a) * r * 0.75, INK, 4);
+        pixelLine(g, ex - Math.cos(a) * r, ey - Math.sin(a) * r * 0.75, ex + Math.cos(a) * r, ey + Math.sin(a) * r * 0.75, i % 2 ? "#7ce8cc" : "#fff4bd", 2);
+      }
+    }
+  }, 280);
+  S3.fx.flash(bx, by, 11, 0, 0.2);
+  S3.fx.wave(bx, by, half, "#9ef5dc", 290);
+  rim(bx, by, half, "#2f7870", "#fff2b8", 340, 0.34);
+  shards(bx, by, half * 0.9, 8, 22, "#357a72", "#fff4bd", 300);
+}
+
+/** 대지 가르기 (rend): landing slam (`r = 38`) + forward earth-splitting corridor (`len = 120, half = 14`). */
+function rendSlam(wx, wy, r) {
+  S3.fx.flash(wx, wy, 12, 0, 0.18);
+  S3.fx.wave(wx, wy, r, "#f5d376", 300);
+  rim(wx, wy, r, "#7a5b34", "#ffe680", 390, 0.35);
+  shards(wx, wy, r * 0.86, 9, 24, "#6e4f2c", "#ffe27a", 340);
+  S3.fxCustom((g, k) => {
+    const reach = r * Math.min(1, 0.35 + k * 2.4);
+    for (let i = 0; i < 6; i++) {
+      const a = i * 1.047 + (i % 2 ? 0.18 : -0.14), ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
+      for (let d = 4; d <= reach; d += 3) {
+        const jag = ((d + i * 5) % 6 - 3) * 0.7;
+        const gx = (wx + ux * d + nx * jag) * P, gy = (wy + uy * d + ny * jag) * P;
+        px(g, gx - 2, gy - 2, 6, 6, INK);
+        px(g, gx - 1, gy - 1, 4, 4, k < 0.45 && d < reach * 0.7 ? "#ffe680" : "#b88c52");
+      }
+    }
+  }, 420, true);
+}
+
+function rendWave(ax, ay, bx, by, half = 14) {
+  const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+  // Ground fault corridor matching exact `len` and `half = 14`
+  S3.fxCustom((g, k) => {
+    const front = Math.min(1, 0.18 + k * 1.75), steps = Math.max(6, Math.ceil(len / 6));
+    for (let i = 0; i <= steps; i++) {
+      const u = i / steps;
+      if (u > front) break;
+      const age = k - u * 0.45;
+      if (age > 0.72) continue;
+      const jag = ((i * 7) % 5 - 2) * 1.4;
+      const cx = (ax + dx * u + nx * jag) * P, cy = (ay + dy * u + ny * jag) * P;
+      px(g, cx - 3, cy - 3, 7, 7, INK);
+      px(g, cx - 2, cy - 2, 5, 5, age < 0.25 ? "#fff099" : "#d4a259");
+      for (const side of [-1, 1]) {
+        const rx = (ax + dx * u + nx * side * half) * P, ry = (ay + dy * u + ny * side * half) * P;
+        px(g, rx - 2, ry - 2, 5, 5, INK);
+        px(g, rx - 1, ry - 1, 3, 3, age < 0.22 ? "#ffe27a" : "#8c683a");
+      }
+    }
+  }, 430, true);
+  // Erupting pixel rock teeth and golden shockwave crest racing down the corridor
+  S3.fxCustom((g, k) => {
+    const front = Math.min(1, 0.18 + k * 1.75), rocks = 9;
+    for (let i = 1; i <= rocks; i++) {
+      const u = i / rocks;
+      if (u > front) break;
+      const localK = Math.max(0, (k - u * 0.42) / 0.58);
+      if (localK >= 1) continue;
+      const side = (i % 3 - 1) * half * 0.55;
+      const [sx, sy] = at(ax + dx * u + nx * side, ay + dy * u + ny * side);
+      const h = Math.max(3, Math.round(Math.sin(Math.min(1, localK * 1.3) * Math.PI) * (16 + (i % 3) * 4)));
+      const w = 3 + (i % 2);
+      for (let j = 0; j < h; j++) {
+        const hw = Math.max(1, Math.round(w * (1 - j / (h + 2))));
+        px(g, sx - hw - 1, sy - j - 1, hw * 2 + 3, 2, INK);
+        px(g, sx - hw, sy - j - 1, hw * 2 + 1, 1, j > h - 4 ? "#ffe888" : "#b88e56");
+        if (hw > 1) px(g, sx - hw, sy - j - 1, hw, 1, "#7a5b34");
+      }
+    }
+  }, 390);
+  along(ax, ay, bx, by, 18).forEach(([x, y], i) => later(i * 32, () => {
+    S3.fx.burst(x, y, 0.08, "#b89058", 5, 1.5);
+  }));
+}
+
+/** 단죄의 일격 (verdict): full 360° pixel great-blade whirlwind covering `r = 70`. */
+function verdictSpin(wx, wy, ang, r = 70) {
+  S3.fx.flash(wx, wy, 14, 0, 0.2);
+  S3.fx.wave(wx, wy, r, "#ff6a3a", 340);
+  rim(wx, wy, r, "#9e2424", "#ffe680", 430, 0.3);
+  rim(wx, wy, r * 0.62, "#b83228", "#ff9a52", 340, 0.25);
+  shards(wx, wy, r * 0.88, 12, 26, "#a82828", "#ffd84a", 370);
+  S3.fxCustom((g, k) => {
+    const spin = ang + k * Math.PI * 2.4;
+    for (const [bandR, thick0, colEdge, colMid, colHot] of [
+      [r * 0.94, 12, "#8f1d1d", "#ff5a3a", "#ffe878"],
+      [r * 0.58, 8, "#6e1828", "#d83a2a", "#ffd060"],
+    ]) {
+      for (let step = 0; step < 56; step++) {
+        const u = step / 56;
+        if (u > Math.min(1, 0.38 + k * 1.4)) continue;
+        const a = spin - u * Math.PI * 1.85, ca = Math.cos(a), sa = Math.sin(a);
+        const thick = Math.max(1, (1 - u * 0.75) * thick0 * (1 - k * 0.45));
+        const [ax, ay] = at(wx + ca * (bandR - thick), wy + sa * (bandR - thick), 11);
+        const [bx, by] = at(wx + ca * bandR, wy + sa * bandR, 11);
+        pixelLine(g, ax, ay, bx, by, INK, 4);
+        pixelLine(g, ax, ay, bx, by, u < 0.22 ? colHot : u < 0.6 ? colMid : colEdge, 2);
+        if (u < 0.16 && k < 0.55) px(g, bx - 1, by - 1, 3, 3, "#ffffff");
+      }
+    }
+    // 8 radial execution sword spikes on the outer perimeter
+    if (k < 0.65) {
+      for (let i = 0; i < 8; i++) {
+        const a = ang + i * (Math.PI / 4), ca = Math.cos(a), sa = Math.sin(a);
+        const [p0x, p0y] = at(wx + ca * r * 0.68, wy + sa * r * 0.68, 11);
+        const [p1x, p1y] = at(wx + ca * r * 1.02, wy + sa * r * 1.02, 11);
+        pixelLine(g, p0x, p0y, p1x, p1y, INK, 4);
+        pixelLine(g, p0x, p0y, p1x, p1y, i % 2 ? "#ffd84a" : "#ff5a3a", 2);
+      }
+    }
+  }, 330);
+}
+
+/** 십자 난도 (crosscut): wide `r = 64, arc = 100°` sword crescent + crossing violet dagger arc. */
+function crossCutFx(wx, wy, ang, r = 64) {
+  const halfArc = (50 * Math.PI) / 180; // 100° total cone
+  const fx = wx + Math.cos(ang) * r * 0.62, fy = wy + Math.sin(ang) * r * 0.62;
+  S3.fx.flash(fx, fy, 11, 0, 0.16);
+  shards(fx, fy, r * 0.48, 8, 18, "#5868a8", "#f0d8ff", 280);
+  S3.fxCustom((g, k) => {
+    // Great blade sweeping crescent (-halfArc → +halfArc)
+    for (let s = -22; s <= 22; s++) {
+      const u = s / 22, a = ang + u * halfArc;
+      const reach = r * (0.86 + 0.12 * Math.cos(u * 1.4));
+      const thick = Math.max(1, (1 - Math.abs(u) * 0.72) * 11 * (1 - k * 0.55));
+      const [ax, ay] = at(wx + Math.cos(a) * (reach - thick), wy + Math.sin(a) * (reach - thick), 11);
+      const [bx, by] = at(wx + Math.cos(a) * reach, wy + Math.sin(a) * reach, 11);
+      pixelLine(g, ax, ay, bx, by, INK, 4);
+      pixelLine(g, ax, ay, bx, by, k < 0.42 ? "#bfd8ff" : "#648bc9", 2);
+      px(g, bx - 1, by - 1, 2, 2, k < 0.35 ? "#ffffff" : "#d8ecff");
+    }
+    // Crossing violet dagger slash forming an X across the cone
+    const [cx, cy] = at(fx, fy, 12), sa = S3.sAng(Math.cos(ang), Math.sin(ang));
+    for (const [off, span, col, core] of [[-0.62, r * 0.68, "#7c9cff", "#ffffff"], [0.62, r * 0.64, "#b86cff", "#f6e0ff"]]) {
+      const a = sa + off, ux = Math.cos(a), uy = Math.sin(a);
+      const ax = cx - ux * span * 0.85, ay = cy - uy * span * 0.85;
+      const bx = cx + ux * span * 0.85, by = cy + uy * span * 0.85;
+      pixelLine(g, ax, ay, bx, by, INK, k < 0.5 ? 5 : 3);
+      pixelLine(g, ax, ay, bx, by, col, k < 0.5 ? 3 : 2);
+      if (k < 0.38) pixelLine(g, ax, ay, bx, by, core, 1);
+    }
+  }, 240);
+}
+
+/** 심연의 강림 (dive): high-altitude abyssal spear pillar + `r = 110` crater rim & shards. */
+function abyssDive(wx, wy, r = 110) {
+  const [sx, sy] = at(wx, wy);
+  S3.fx.flash(wx, wy, 15, 0, 0.22);
+  S3.fx.wave(wx, wy, r, "#c87aff", 380);
+  rim(wx, wy, r, "#5a2882", "#ffb0d8", 460, 0.3);
+  rim(wx, wy, 70, "#9e2448", "#ff6a9a", 410, 0.24);
+  shards(wx, wy, r * 0.82, 12, 28, "#4c2070", "#ff8ab8", 390);
+  // Descending abyssal dragon-spear pillar + 8 radial ground fissures
+  S3.fxCustom((g, k) => {
+    if (k < 0.65) {
+      const h = Math.round(115 * (1 - k * 0.45)), w = Math.max(2, Math.round(11 * (1 - k * 1.2)));
+      for (let j = 0; j < h; j += 3) {
+        const hw = Math.max(1, Math.round(w * (1 - j / (h + 20))));
+        px(g, sx - hw - 1, sy - j - 2, hw * 2 + 3, 4, INK);
+        px(g, sx - hw, sy - j - 2, hw * 2 + 1, 3, j < 28 ? "#ff6a9a" : "#7a3ec8");
+        if (k < 0.38) px(g, sx - Math.max(1, hw >> 1), sy - j - 2, Math.max(2, hw), 3, "#ffffff");
+      }
+    }
+    // Spears of dark crystal ringing the impact center
+    for (const [dx, cw, ch] of [[-18, 3, 24], [18, 3, 24], [-9, 4, 32], [9, 4, 32], [0, 5, 42]]) {
+      const H = Math.max(2, Math.round(ch * Math.sin(Math.min(1, k * 1.35) * Math.PI)));
+      for (let j = 0; j < H; j += 2) {
+        const hw = Math.max(1, Math.round(cw * (1 - j / H)));
+        px(g, sx + dx - hw - 1, sy - j - 1, hw * 2 + 3, 2, INK);
+        px(g, sx + dx - hw, sy - j - 1, hw * 2 + 1, 2, j > H - 5 ? "#ffb8e0" : "#5a2882");
+      }
+    }
+  }, 380);
 }
 
 /** Segmented light at the exact world radius, on the ground behind actors and danger markers. */
@@ -446,7 +740,18 @@ function placeProp(G, B, f, id, kind, x, y, r, ms, eid) {
       groundRing(x, y, r, ms, "#c8324a", 0.18);
       S3.fxCustom((g, k) => {
         const t = k * ms;
-        for (let i = 0; i < 8; i++) { const ph = ((t / 700 + i / 8) % 1), a = i * 0.8, [sx, sy] = at(x + Math.cos(a) * r * 0.7 * (1 - ph), y + Math.sin(a) * r * 0.7 * (1 - ph), 4 + ph * 16); g.globalAlpha = 1 - ph; px(g, sx, sy, 2, 2, "#ff6a8a"); }
+        for (let i = 0; i < 12; i++) {
+          const a = i * (Math.PI / 6) + t / 1800, [rx, ry] = at(x + Math.cos(a) * r * 0.92, y + Math.sin(a) * r * 0.92);
+          px(g, rx - 2, ry - 2, 4, 4, INK);
+          px(g, rx - 1, ry - 1, 2, 2, i % 2 ? "#ff6a9a" : "#8a3ec8");
+        }
+        for (let i = 0; i < 10; i++) {
+          const ph = ((t / 650 + i / 10) % 1), a = i * 0.628;
+          const [sx, sy] = at(x + Math.cos(a) * r * 0.76 * (1 - ph * 0.45), y + Math.sin(a) * r * 0.76 * (1 - ph * 0.45), 4 + ph * 20);
+          g.globalAlpha = 1 - ph;
+          px(g, sx - 1, sy - 1, 4, 5, INK);
+          px(g, sx, sy, 2, 3, i % 2 ? "#ff6a8a" : "#c87aff");
+        }
         g.globalAlpha = 1;
       }, ms);
       break;
@@ -1273,13 +1578,19 @@ export function skillEvent(e, ctx) {
         S3.fx.proj(ax, ay, 0.7, bx, by, 0.5, "#fff6b0", 0.07, 70);
         f.beam(ax, ay, bx, by, "#bfe8ff", 0.6); f.bolt(ax, ay, bx, by, "#fff27a", 240);
       } else if (kind === 3) {
-        streakWake(ax, ay, bx, by, "#559c8a", "#fff1c3", 8);
-        S3.fx.burst(ax, ay, 0.1, "#b8a878", 6, 1.4);
+        streakWake(ax, ay, bx, by, "#559c8a", "#fff1c3", 10);
+        S3.fx.burst(ax, ay, 0.1, "#b8a878", 8, 1.6);
       } else if (kind === 4) { f.bolt(ax, ay + 8, bx, by + 8, "#fff27a", 260); f.spark(bx, by + 6, "#fff6b0", 1.3); Sound.play("bolt"); }
-      else if (kind === 5) { f.beam(ax, ay - 8, bx, by - 8, "#7a4ac8", 0.5); f.burst(ax, ay, 0.6, "#3a2a58", 8, 1.2); Sound.play("dance"); }
+      else if (kind === 5) {
+        shadowAfterimage(ax, ay, 240);
+        streakWake(ax, ay, bx, by, "#4a2a78", "#e8c8ff", 7);
+        f.burst(ax, ay, 0.6, "#3a2a58", 8, 1.3);
+        Sound.play("dance");
+      }
       else if (kind === 6) {
-        streakWake(ax, ay, bx, by, "#72528e", "#cb9cfa", 5);
-        S3.fx.burst(ax, ay, 0.45, "#795891", 6, 1.2);
+        shadowAfterimage(ax, ay, 220);
+        streakWake(ax, ay, bx, by, "#72528e", "#cb9cfa", 7);
+        S3.fx.burst(ax, ay, 0.45, "#795891", 7, 1.3);
       }
       else if (kind === 7) {
         // 원소 비수 sends three blades coloured fire, ice and lightning after its cast.
@@ -1301,16 +1612,19 @@ export function skillEvent(e, ctx) {
         later(ms, () => { S3.fx.ring(bx, by, 10, col, 240); S3.fx.burst(bx, by, 0.4, col, 6, 1.6); });
       } else if (kind === 8) { f.beam(ax, ay - 4, bx, by - 4, "#d8c8a0", 0.3); f.burst(ax, ay, 0.1, "#b8a878", 12, 1.6); }
       else if (kind === 9) {
-        // up and over: a dotted arc and the dust where they left
+        // up and over: an inked pixel leap arc and launch dust
         S3.fxCustom((g, k) => {
-          for (let i = 0; i <= 12; i++) {
-            const u = i / 12;
-            if (u > k * 1.6) break;
-            const [x, y] = at(ax + (bx - ax) * u, ay + (by - ay) * u, 10 + Math.sin(u * Math.PI) * 36);
-            g.globalAlpha = 1 - k; px(g, x - 1, y - 1, 2, 2, "#f0e8d0");
+          for (let i = 0; i <= 14; i++) {
+            const u = i / 14;
+            if (u > k * 1.65) break;
+            const [x, y] = at(ax + (bx - ax) * u, ay + (by - ay) * u, 10 + Math.sin(u * Math.PI) * 38);
+            g.globalAlpha = Math.max(0, 1 - k * 1.05);
+            px(g, x - 2, y - 2, 4, 4, INK);
+            px(g, x - 1, y - 1, 2, 2, i > 9 ? "#ffe888" : "#f0e8d0");
           }
+          g.globalAlpha = 1;
         }, 420);
-        f.burst(ax, ay, 0.1, "#b8a878", 8, 1.4);
+        f.burst(ax, ay, 0.1, "#b8a878", 10, 1.6);
       }
       return true;
     }
@@ -1558,15 +1872,22 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       B.shake(6); play("power_slash");
       break;
     }
-    case 81: f.ring(tx, ty, extra || 38, "#e0c890", 360, true); f.crack(tx, ty, (extra || 38) * 0.7, "#ffd84a", 600); f.burst(tx, ty, 0.1, "#b8a878", 22, 2.6); B.shake(8); play("slam"); break;
+    case 81: {
+      rendSlam(tx, ty, extra || 38);
+      B.shake(8); play("slam");
+      break;
+    }
     case 82: {
-      // the split running on ahead: bursts of earth one after another
-      along(src.x, src.y, tx, ty, 14).forEach(([x, y], i) => { f.ring(x, y, 10, "#e0c890", 220, true, i * 35); setTimeout(() => f.burst(x, y, 0.05, "#a89068", 6, 1.8), i * 35); });
+      // the split running on ahead: full-width earth corridor (half = 14, len = 120) from the landing point
+      const l = lineOf(9), wl = extra || 120;
+      const ax = l && Math.hypot(tx - l.bx, ty - l.by) > 8 ? l.bx : Math.hypot(tx - src.x, ty - src.y) > wl + 15 ? tx - Math.cos(ang) * wl : src.x;
+      const ay = l && Math.hypot(tx - l.bx, ty - l.by) > 8 ? l.by : Math.hypot(tx - src.x, ty - src.y) > wl + 15 ? ty - Math.sin(ang) * wl : src.y;
+      rendWave(ax, ay, tx, ty, G.defs?.skills?.rend?.half || 14);
       play("quake");
       break;
     }
     case 83: {
-      f.storm(src.x, src.y, extra || 70, "#ffd84a", 360, 6); f.slash(src.x, src.y, ang, "#ff5a3a", 2); f.slash(src.x, src.y, ang + Math.PI, "#ff5a3a", 2, true);
+      verdictSpin(src.x, src.y, ang, extra || 70);
       B.shake(12); play("verdict");
       if (mine) text(G, "단죄의 일격!", src.x, src.y, 2.3, "#ffb04a", true);
       break;
@@ -1586,8 +1907,20 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       play("shade"); break;
     }
     case 86:
-      if (extra === 1) { f.slash(tx, ty, ang + 0.8, "#c070ff", 1.1); f.slash(tx, ty, ang - 0.8, "#c070ff", 1.1, true); f.spark(tx, ty, "#f0d0ff", 1.5); B.shake(3); play("crit"); }
-      else { f.burst(src.x, src.y, 0.6, "#2a2040", 30, 1.8); f.storm(src.x, src.y, 24, "#a070e0", 300, 3); play("dance"); if (mine) text(G, "무영난무!", src.x, src.y, 2.2, "#d8b0ff", true); }
+      if (extra === 1) {
+        flurrySlash(tx, ty, ang);
+        B.shake(3.5); play("crit");
+      } else {
+        const r = G.defs?.skills?.flurry?.r || 90;
+        rim(src.x, src.y, r, "#4a2c78", "#d8a8ff", 420, 0.2);
+        for (let i = 0; i < 4; i++) {
+          const a = i * (Math.PI / 2) + 0.4;
+          shadowAfterimage(src.x + Math.cos(a) * 18, src.y + Math.sin(a) * 18, 280);
+        }
+        f.burst(src.x, src.y, 0.6, "#2a2040", 28, 1.8);
+        play("dance");
+        if (mine) text(G, "무영난무!", src.x, src.y, 2.2, "#d8b0ff", true);
+      }
       break;
     // ── 창
     case 87: {
@@ -1598,12 +1931,12 @@ function cast(kind, src, eid, tx, ty, extra, G) {
     }
     case 88: {
       const line = lineOf(3);
-      const a = line && Math.hypot(line.bx - tx, line.by - ty) < 2
+      const a = line && Math.hypot(line.bx - tx, line.by - ty) < 6
         ? Math.atan2(line.by - line.ay, line.bx - line.ax) : ang;
-      S3.fx.arrowHit(tx, ty, a, "#ffe5a8", true, 11);
-      S3.fx.flash(tx, ty, 6, 0, 0.47);
-      S3.fx.burst(tx, ty, 0.2, "#83c4aa", 7, 1.9);
-      if (near) B.shake(5, a);
+      const ax = line ? line.ax : tx - Math.cos(a) * 96;
+      const ay = line ? line.ay : ty - Math.sin(a) * 96;
+      cometCharge(ax, ay, tx, ty, G.defs?.skills?.comet?.half || 20);
+      if (near) B.shake(6, a);
       play("hundred");
       break;
     }
@@ -1650,20 +1983,28 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       break;
     }
     case 98: f.burst(tx, ty, 0.6, "#2a2040", 30, 1.6); f.ring(tx, ty, 45, "#8a5ad8", 400); play("decoy"); break;
-    case 99: f.fall(tx, ty, "#c8a0ff", 260); B.shake(10); play("dive"); if (mine) text(G, "심연의 강림!", src.x, src.y, 2.3, "#e0c8ff", true); break;
+    case 99: {
+      abyssDive(tx, ty, extra || 110);
+      B.shake(10); play("dive");
+      if (mine) text(G, "심연의 강림!", src.x, src.y, 2.3, "#e0c8ff", true);
+      break;
+    }
     case 100: f.ring(src.x, src.y, extra || 100, "#c8324a", 400); f.sparkle(src.x, src.y, 0.8, "#ff3a5a", 16); play("blood_bind"); break;
     case 101: f.zap(tx, ty, "#fff27a", 300); f.ring(tx, ty, 40, "#bfe8ff", 360, true); B.shake(9); play("thunder"); if (mine) text(G, "천뢰!", src.x, src.y, 2.2, "#fff27a", true); break;
     // ── the hybrid expansion (docs/design/jobs-and-stats.md H.4)
     case 120: {
       // 십자 난도: the great blade's crescent across everything ahead, then a dagger's X on each one it swept
       const r = extra || 64;
-      f.slash(src.x, src.y, ang, "#e8f0ff", 2.1); f.slash(src.x, src.y, ang, "#9fb8ff", 1.6, true);
-      for (let i = -2; i <= 2; i++) { const a = ang + i * 0.36; f.spark(src.x + Math.cos(a) * r * 0.86, src.y + Math.sin(a) * r * 0.86, "#ffffff", 0.7); }
+      crossCutFx(src.x, src.y, ang, r);
       B.shake(9); play("cross_cut");
       const swept = [...G.mobs.values()].filter((m) => !m.dead && Math.hypot(m.x - src.x, m.y - src.y) <= r + 8 && Math.cos(Math.atan2(m.y - src.y, m.x - src.x) - ang) > 0.5).slice(0, 8);
       later(170, () => {
-        for (const m of swept) { f.slash(m.x, m.y, ang + 0.8, "#c890ff", 0.6); f.slash(m.x, m.y, ang - 0.8, "#f0d0ff", 0.6, true); S3.fx.spark(m.x, m.y, "#f0d0ff", 1.2); }
-        if (swept.length) B.shake(4);
+        if (swept.length) {
+          for (const m of swept) flurrySlash(m.x, m.y, ang);
+          B.shake(4);
+        } else {
+          flurrySlash(src.x + Math.cos(ang) * r * 0.58, src.y + Math.sin(ang) * r * 0.58, ang);
+        }
       });
       if (mine) text(G, "십자 난도!", src.x, src.y, 2.2, "#d8c8ff", true);
       break;
