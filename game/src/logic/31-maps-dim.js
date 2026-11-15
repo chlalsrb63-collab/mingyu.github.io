@@ -330,6 +330,10 @@ const DIM_CHAL = {
   w: 32, h: 22, limit: 600000, reviveMs: 4000, gap: 5200, every: 4, castMs: 6000, stunMs: 5000, stag: 0.03, blast: 2.4, fury: 0.15,
   enrage: 240000, enrageStep: 10000, enrageK: 0.12, hp: 14, lvK: 0.1, atkLv: 0.05, minGap: 3,
   big: { gold: 400, xp: 0.25, stone: 8, rune: 2, gear: 2, gearQ: 3 }, small: { gold: 40, xp: 0.02, stone: 1 },
+  // 난이도: hero levels above each boss's own (a step must be `stepMin` world tiers past the last one); a hero may go in from
+  // `stepGap` levels under a step. Gold and experience follow the step's level; each step past the boss's own adds `stepR` × step.
+  steps: [125, 150, 175, 200], stepMin: 3, stepGap: 10, stepR: { stone: 2, rune: 0.5, gear: 0.34 },
+  stepNames: ["보통", "어려움", "지옥", "악몽", "심연"],
   bosses: {
     boss: { theme: "crypt", cast: "차원 붕괴", pats: [["균열 탄막", "fan2"], ["붕괴의 고리", "rings"], ["균열 웅덩이", "pools"]] },
     abyssboss: { theme: "abyss", cast: "심연의 포효", pats: [["연쇄 돌진", "charge2"], ["도약 강타", "leapslam"], ["촉수 탄막", "fan3"]] },
@@ -364,7 +368,16 @@ const DIM_CHAL = {
 };
 const CHAL_KEYS = Object.keys(DIM_CHAL.bosses);
 /** The level a hero needs for a boss challenge: `minGap` world tiers under the boss's own. */
-const chalMinLv = (k) => shownLv(MOBS[k].lv - DIM_CHAL.minGap);
+const chalMinLv = (k, s = 0) => (s > 0 ? chalSteps(k)[s][1] - DIM_CHAL.stepGap : shownLv(MOBS[k].lv - DIM_CHAL.minGap));
+/** A boss's difficulty ladder: [world tier, hero level shown] — its own level first, then each step far enough above it. */
+function chalSteps(k) {
+  const out = [[MOBS[k].lv, shownLv(MOBS[k].lv)]];
+  for (const L of DIM_CHAL.steps) {
+    const t = Math.min(TIER_MAX, Math.round(toTier(L)));
+    if (t >= out[out.length - 1][0] + DIM_CHAL.stepMin) out.push([t, L]);
+  }
+  return out;
+}
 
 /** A boss challenge's arena: one oval hall, the party at its west end, the boss in the middle. Pure. */
 function dimArena(cfg) {

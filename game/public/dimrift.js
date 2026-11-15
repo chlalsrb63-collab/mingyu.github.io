@@ -27,6 +27,8 @@ const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStar
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 /** defs().dim.chal.bosses row `i`: [key, name, level needed, the marked cast, pattern names]. */
 const chalDef = (i) => ((D().chal || {}).bosses || [])[i];
+/** A challenge's difficulty in words: "어려움 Lv.150" (`s` the step index of boss `i`). */
+const stepWord = (i, s) => { const c = D().chal || {}, st = ((chalDef(i) || [])[5] || [])[s | 0]; return st ? `${(c.stepNames || [])[s | 0] || ""} Lv.${st[0]}` : ""; };
 /** The tier this hero has unlocked (self.dimr), and the one picked in the keeper's window (the highest, until changed). */
 const unlocked = () => Math.max(1, ((A.G.self && A.G.self.dimr) || [1])[0] | 0);
 const pickedTier = () => Math.max(1, Math.min(unlocked(), st.tier || unlocked()));
@@ -136,7 +138,7 @@ function renderHud() {
   const name = D().themes[d[10]] || "차원 균열";
   const label = ["", "균열의 주인 출현!", "정화 완료 — 귀환의 문까지", "균열이 닫힙니다…"][d[2]];
   // (the wire carries the rift's world tier; players see levels as 4·tier − 3, like monsters and doors)
-  const chal = d[15], bossName = chal && chalDef(chal[0]) ? chalDef(chal[0])[1] : "";
+  const chal = d[15], bossName = chal && chalDef(chal[0]) ? `${chalDef(chal[0])[1]} · ${stepWord(chal[0], chal[7])}` : "";
   $("#dim-title").textContent = chal ? `보스 도전 · ${bossName}` : `차원 균열 Lv.${4 * d[4] - 3}${d[14] > 1 ? ` · ${d[14]}단` : ""} · ${name}`;
   $("#dim-time").textContent = d[2] === 2 ? `문 ${mmss(secs)}` : d[2] === 3 ? `${secs}초` : mmss(secs);
   $("#dim-time").classList.toggle("low", d[2] <= 1 && secs <= 180);
@@ -183,7 +185,7 @@ function renderRc() {
   const left = Math.max(0, rc[1] - Math.floor((now() - st.rcAt) / 1000));
   const me = rc[2].find((r) => r[0] === A.G.you);
   const WORD = ["대기 중", "수락", "거절", "마을 밖"];
-  $("#rc-lv").textContent = rc[6] ? `보스 도전 · ${(chalDef(rc[6] - 1) || [])[1] || "?"} · 최대 ${D().party}명`
+  $("#rc-lv").textContent = rc[6] ? `보스 도전 · ${(chalDef(rc[6] - 1) || [])[1] || "?"} · ${stepWord(rc[6] - 1, rc[7])} · 최대 ${D().party}명`
     : `차원 균열 Lv.${4 * rc[3] - 3}${rc[5] > 1 ? ` · ${rc[5]}단` : ""} · 최대 ${D().party}명`;
   $("#rc-time").textContent = `${left}초`;
   $("#rc-fill").style.width = `${(100 * left) / Math.max(1, D().rcMs / 1000)}%`;
@@ -203,7 +205,7 @@ export function bindUi() {
   $("#dim-pick").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-a]");
     if (!b) return;
-    if (b.dataset.a === "boss") A.act({ t: "dim_open", boss: b.dataset.k });
+    if (b.dataset.a === "boss") A.act({ t: "dim_open", boss: b.dataset.k, step: +b.dataset.s || 0 });
     else { st.tier = Math.max(1, Math.min(unlocked(), pickedTier() + (b.dataset.a === "up" ? 1 : -1))); renderKeeper(); }
     A.Sound.play("ui");
   });
@@ -227,14 +229,17 @@ function renderKeeper() {
   const r = (s && s.dimr) || [1, 0, 0, 0, 0, 0], tier = pickedTier(), ch = d.chal || { bosses: [] }, lvl = (s && s.lvl) || 0;
   const pick = dj ? "" : `<div class="dim-tier"><button class="btn small" data-a="down"${tier <= 1 ? " disabled" : ""}>◀</button><b>${tier}단</b><button class="btn small" data-a="up"${tier >= r[0] ? " disabled" : ""}>▶</button></div>` +
     `<div class="dim-rec">해금 ${r[0]}단 · 최고 ${r[1] ? `${r[1]}단 (${mmss(r[2])})` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음${r[4] ? ` · 주간 보너스 ${r[4] * ((d.tier && d.tier.every) || 5)}단까지 받음` : ""}</div>` +
-    ch.bosses.map(([k, name, need, cast], i) => `<div class="dim-chal"><span>주간 보스 도전 · <b>${esc(name)}</b> <em>Lv.${need}+ · ${r[5] & (1 << i) ? "이번 주 큰 보상 받음" : "큰 보상 남음"}</em></span>` +
-      `<button class="btn small" data-a="boss" data-k="${esc(k)}"${!lead || (lvl && lvl < need) ? " disabled" : ""} title="[${esc(cast)}]을(를) 무력화하세요 · 전멸해도 다시 도전">도전</button></div>`).join("");
+    ch.bosses.map(([k, name, need, cast, , steps], i) => `<div class="dim-chal"><span>주간 보스 도전 · <b>${esc(name)}</b> <em>${r[5] & (1 << i) ? "이번 주 큰 보상 받음" : "큰 보상 남음"}${r[6] && r[6][i] ? ` · 최고 ${esc((ch.stepNames || [])[r[6][i] - 1] || "")}` : ""}</em></span>` +
+      // one button a difficulty step: its level, what it adds; greyed under the step's level (the server checks every member)
+      (steps || [[0, need]]).map(([L, min], s) => `<button class="btn small" data-a="boss" data-k="${esc(k)}" data-s="${s}"${!lead || (lvl && lvl < min) ? " disabled" : ""} ` +
+        `title="Lv.${min}부터 · 골드·경험치 Lv.${L} 기준${s && ch.stepR ? ` · 큰 보상 강화석 +${Math.floor(ch.stepR.stone * s)}${Math.floor(ch.stepR.rune * s) ? ` · 룬 +${Math.floor(ch.stepR.rune * s)}` : ""}${Math.floor(ch.stepR.gear * s) ? ` · 장비 +${Math.floor(ch.stepR.gear * s)}` : ""}` : ""} · [${esc(cast)}]을(를) 무력화하세요">${esc((ch.stepNames || [])[s] || "도전")} ${L ? `Lv.${L}` : ""}</button>`).join("") + `</div>`).join("") +
+    (ch.stepR ? `<div class="dim-step">난이도가 오를수록 보스가 강해지고 골드·경험치는 그 레벨 기준 · 큰 보상에 단계마다 강화석 +${ch.stepR.stone}</div>` : "");
   if ($("#dim-pick").dataset.k !== pick) { $("#dim-pick").innerHTML = pick; $("#dim-pick").dataset.k = pick; }
   $("#dim-open").hidden = !!dj;
   $("#dim-open").disabled = !lead;
   $("#dim-open").textContent = party.length ? (lead ? "균열 열기 (파티 입장 준비)" : "파티장만 열 수 있습니다") : "혼자 균열 열기";
   $("#dim-join").hidden = !dj;
-  if (dj) $("#dim-join").textContent = dj[5] ? `합류하기 — 보스 도전 · ${(chalDef(dj[5] - 1) || [])[1] || "?"} · ${dj[1]}명 · ${mmss(dj[0])}`
+  if (dj) $("#dim-join").textContent = dj[5] ? `합류하기 — 보스 도전 · ${(chalDef(dj[5] - 1) || [])[1] || "?"} · ${stepWord(dj[5] - 1, dj[6])} · ${dj[1]}명 · ${mmss(dj[0])}`
     : `합류하기 — Lv.${4 * dj[3] - 3}${dj[4] > 1 ? ` · ${dj[4]}단` : ""} · ${dj[1]}명 · ${(dj[2] / 10).toFixed(0)}% · ${mmss(dj[0])}`;
 }
 
