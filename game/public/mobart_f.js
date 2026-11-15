@@ -5,6 +5,7 @@
  * from the mob's phase (`m.ph >= 2`); frames are cached per kind so a flag in the pose would not do.
  */
 import { mat, C, bez, gait, bob, lunge, both, surf } from "./mobart_kit.js";
+import { BOSSES2_ADD_ART } from "./mobart_bosses2_adds.js";
 
 const HIDE = mat("#1a1012"), HIDED = mat("#120a0c"), MASK = mat("#e8dfcf", { role: "keep" }), MASKD = mat("#a89c8a");
 const SEAM = mat("#ff3b3b", { role: "glow" }), SEAMC = mat("#ffb0a0", { role: "glow" }), SHARD = mat("#ff6a5a", { role: "glow" });
@@ -351,5 +352,6 @@ export const BEASTS_F = {
   clubshrimp: clubshrimp(false), clubshrimp_p2: clubshrimp(true),
   cloakbat: cloakbat(1), cloakbat_p2: cloakbat(2), cloakbat_ch: cloakbat(3),
   bloomwhale: bloomwhale(1), bloomwhale_p2: bloomwhale(2), bloomwhale_ch: bloomwhale(3), bloomwhale_dive: bloomwhale(4),
+  ...BOSSES2_ADD_ART,
   airship_gale: airshipGale, airship_lookout: airshipLookout,
 };
