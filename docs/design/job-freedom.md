@@ -12,8 +12,8 @@ Goal (owner): one character can eventually play every job. Builds on Codex's job
    the 전직 교관 (job NPC). Scroll sources: rift/weekly boss rewards (to be placed with the gear task).
 5. **Skill loadout**: at most **5 active skills** and **4 job passive skills** in use. Changed only in a safe place
    (town or beside a campfire), from the skill window.
-6. **Lv.150+**: a separate quest from the 전직 교관 unlocks **1 off-job passive** slot (a passive of another job the
-   character has unlocked/played).
+6. **After the first job**: two cross-weapon passive slots use learned masteries outside the job's weapon set.
+   They grant half of the transferable bonus. The Lv.150 quest improves this to 60%.
 
 7. **Active skill enhancement** (owner, 2026-11-15; separate task AFTER the job-freedom rules): each active skill can be
    enhanced up to **+10** with a dedicated **스킬강화 아이템**. Content for very hardcore players — rare material, steep
@@ -59,12 +59,15 @@ Goal (owner): one character can eventually play every job. Builds on Codex's job
   (town) or beside a campfire. Unset = the first learned, the hand's (or hybrid pair's) skills first — no one-weapon or
   hybrid kit has more than 5 actives. Skills learned after a set fill free slots. Casting an active not in `a` →
   "스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다"; passives not in `p` do nothing.
-- **Off-job slot**: side quest `sq_job_free` (giver `town_job_arsen`, Lv.150, kill 30 `stumpmaw`) opens it; `x` = a learned
-  passive of a weapon of another job in `ch.jobs`; it works with any weapon in hand (hooks that test the weapon still do).
-- **Wire**: `self.jobs = [[job, lv, xp]…]`; `self.lo = [actives, passives, off-job id, set 1/0, off slot open 1/0]`;
-  `self.sk` row[3] is 0 for actives out of the loadout; a passive row's flag follows the loadout.
-  `defs.jf = { lo: [5, 4], scroll: {job, lvl}, cost: {job: [base, perLv], lvl: [base, perLv]}, quest }`.
-- Client to do: loadout editor in the skill window, the two reset buttons at the 전직관, the off-slot picker.
+- **Cross-weapon slots (v21)**: `lo[job].x` is preserved; `y` is the second slot and defaults to empty on old sheets.
+  A passive cannot be equipped twice, and the hybrid's two native weapon kinds are ineligible for cross-weapon slots.
+  New actives keep the on-hand rule. Each weapon learns five passives at Lv.10/20/30/40/50, with four native slots.
+- **Transferable perks**: wear a weapon to receive `skill.borrow || skill.perk` at 50%, or 60% after
+  `sq_job_free` (Lv.150, give the results of hunting 30 `stumpmaw` to 아르센). Original weapon-mechanic procs require
+  the native slots. Cross-weapon selection depends on mastery, independent of progress in another job.
+- **Wire**: `self.jobs = [[job, lv, xp]…]`; `self.lo = [actives, passives, x, explicit, open, y, percent]`.
+  `t:"lo"` accepts optional `y`; leaving the field out preserves the second slot for an older client.
+  `self.sk` row[3] reports whether the skill is active. `defs.jf.borrow` publishes the two percentages.
 
 ## As built — gear enhancement (§8; sheet v19)
 - `ENH_RATE` 100 100 100 80 70 55 45 35 25 15; `ENH_PCT` [0,4,8,12,14.5,17,19.5,21.5,23.5,25.5,27.5] via `enhMul` (40 stats,

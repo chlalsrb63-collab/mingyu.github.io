@@ -48,7 +48,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 20, name, job: "adventurer", jp: null,
+    v: 21, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -205,7 +205,7 @@ function migrate(ch) {
   // skill enhancement (v19): { [active skill id]: 1..10 } (48-skill-enh.js)
   skeClean(ch);
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
-  ch.v = Math.max(ch.v | 0, 20);
+  ch.v = Math.max(ch.v | 0, 21);
   return ch;
 }
 

@@ -42,11 +42,10 @@ const gear = (id, q = 0, enh = 0) => ({ id, q, enh, af: [], sk: 0, ru: [] });
 const count = (ch, id) => ch.inv.reduce((a, s) => a + (s.id === id ? s.n || 1 : 0), 0);
 
 // ── definitions
-// (weapon skills: each weapon brings an active at mastery 1, another and a passive at 10; tests/skills.mjs has the rest)
+// (weapon skills: two actives and five mastery passives per weapon; tests/skills.mjs has the rest)
 for (const wk of D.wkOrder) {
   const own = D.skillOrder.filter((id) => D.skills[id].wk === wk && "ap".includes(D.skills[id].kind));
-  const expected = [["a", 1], ["a", 10], ["p", 10]];
-  if (wk === "hammer") expected.push(["p", 20], ["p", 30], ["p", 40], ["p", 50]);
+  const expected = [["a", 1], ["a", 10], ...[10, 20, 30, 40, 50].map((lv) => ["p", lv])];
   assert.deepEqual(own.map((id) => [D.skills[id].kind, D.skills[id].need]), expected, wk + "'s mastery unlocks");
 }
 assert.equal(D.whSlots, 60);
@@ -144,6 +143,7 @@ assert.ok(D.tutorial.length >= 1);
   assert.ok(a.cd > b.cd && b.cd > c.cd, `cooldowns shorten: ${a.cd}, ${b.cd}, ${c.cd}`);
   // mastery: +1% a level on the weapon's own attack
   const W = world("숙련", "warrior", 1);
+  assert.ok(W.act({ t: "lo", a: ["slash"], p: [] }).ok, "measure weapon mastery without equipped passive bonuses");
   const s1 = W.self().atk;
   W.ch.eq.weapon = gear("w_warrior_5"); W.p.stc = null;
   const lo = W.self().atk;
@@ -442,7 +442,7 @@ for (const cls of Object.keys(WK)) {
   old.pet = "pet_wisp";                                      // claims a pet it does not own
   L.addPlayer(S, "pid-old", old);
   const ch = S.players["pid-old"].ch;
-  assert.equal(ch.v, 20);
+  assert.equal(ch.v, 21);
   assert.ok(!("skl" in ch) && !("tr" in ch) && !("cls" in ch));
   assert.equal(ch.lvl, 45); assert.equal(ch.wm.staff.lv, 12); assert.equal(ch.job, "adventurer");
   assert.deepEqual(ch.wh, { items: [], gold: 0 });

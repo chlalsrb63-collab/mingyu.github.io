@@ -91,6 +91,7 @@ function deriveStats(p) {
   const cm = charmSum(ch);
   // boss trophies (67-trophies.js): fixed % on gold, experience, speed, attack speed, magic find, HP, crit
   const tf = trophySum(ch);
+  const perk = loPerks(ch), plus = (n) => 1 + n / 100;
   for (const k of ST_ORDER) E[k] = eff(ch.st[k]) + cm.st[k];
   const wAtk = w ? (ITEMS[w.id].base.atk || 0) * enhMul(w.enh) : 0;
   const sc = scaleOf(ch, wk);
@@ -99,28 +100,29 @@ function deriveStats(p) {
   const wm = w ? ch.wm[wk].lv : 0;
   const jl = Math.max(0, (ch.jp?.lv || 0) - 1);
   const luk = E.luk, dex = E.dex, wil = E.wil, wis = E.wis;
+  const attackSpeed = Math.min(0.6, Math.min(SFX.aspd[1], SFX.aspd[0] * dex) + perk.aspd / 100);
   p.stc = {
-    mhp: Math.round((SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp) * (1 + JOB_PROGRESS.hp * jl) * (1 + tf.hp / 100)),
-    mmp: Math.round((SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp) * (1 + JOB_PROGRESS.mp * jl)),
-    atk0: ((core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk) * (1 + JOB_PROGRESS.atk * jl),
+    mhp: Math.round((SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp) * (1 + JOB_PROGRESS.hp * jl) * (1 + tf.hp / 100) * plus(perk.hp)),
+    mmp: Math.round((SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp) * (1 + JOB_PROGRESS.mp * jl) * plus(perk.mp)),
+    atk0: ((core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk) * (1 + JOB_PROGRESS.atk * jl) * plus(perk.atk),
     core, cm,
-    def: Math.round((Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def)) * (1 + JOB_PROGRESS.def * jl)),
-    crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh * ENH_CRIT : 0) + b.crit + tf.crit),
-    critd: SFX.critd[0] + SFX.critd[1] * luk + b.critd / 100,
+    def: Math.round((Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def)) * (1 + JOB_PROGRESS.def * jl) * plus(perk.def)),
+    crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh * ENH_CRIT : 0) + b.crit + tf.crit + perk.crit),
+    critd: SFX.critd[0] + SFX.critd[1] * luk + (b.critd + perk.critd) / 100,
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
-    ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + (Math.min(40, b.spd) + tf.move) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
+    ls: Math.min(15, b.ls + perk.ls), spd0: BASE_SPD * (1 + (Math.min(40, b.spd) + tf.move + perk.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
     mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk) + tf.drop,
     lg: b.lg, arm, wk, mag: arm.mag ? 1 : 0,
-    acd: Math.round(arm.cd * (1 - Math.min(SFX.aspd[1], SFX.aspd[0] * dex)) * (b.lg.haste ? 0.85 : 1) * (1 - tf.aspd / 100)),
-    aspd: Math.min(SFX.aspd[1], SFX.aspd[0] * dex),
+    acd: Math.round(arm.cd * (1 - attackSpeed) * (b.lg.haste ? 0.85 : 1) * (1 - tf.aspd / 100)),
+    aspd: attackSpeed,
     eva: Math.min(SFX.eva[1], SFX.eva[0] * dex),
     sneak: SFX.sneak * dex,
-    cdr: Math.min(SFX.cdr[1], SFX.cdr[0] * wis),
+    cdr: Math.min(0.45, Math.min(SFX.cdr[1], SFX.cdr[0] * wis) + perk.cdr / 100),
     mpReg: SFX.mpReg * wis,
     burst: SFX.burst * E.int,
     proc: 1 + SFX.proc * luk,
     kbr: Math.min(SFX.kbr[1], SFX.kbr[0] * E.str),
-    poise: Math.min(SFX.poise[1], SFX.poise[0] * wil),
+    poise: Math.min(0.85, Math.min(SFX.poise[1], SFX.poise[0] * wil) + perk.poise / 100),
     res: Math.min(SFX.res[1], SFX.res[0] * wil),
   };
   return p.stc;

@@ -28,16 +28,14 @@ function skWhy(ch, sk) {
  * Is weapon passive `id` working now? Its weapon is in hand with the mastery for it; a hybrid keeps
  * both of its weapons' passives on whichever of the two it holds.
  */
-function pasOn(p, id) {
-  const sk = SKILL[id], ch = p.ch, hand = inHand(ch);
-  if (!hand || ch.wm[sk.wk].lv < sk.need) return false;
-  // only passives in the loadout work (47-job-freedom.js); the off-job slot's with any weapon in hand
-  if (loOff(ch, id)) return true;
-  if (!loOf(ch).p.includes(id)) return false;
+function pasNative(ch, id, load = loOf(ch), hand = inHand(ch)) {
+  const sk = SKILL[id];
+  if (!hand || ch.wm[sk.wk].lv < sk.need || !load.p.includes(id)) return false;
   if (hand === sk.wk) return true;
   const j = JOBS[ch.job];
   return !!j && j.kind === "hybrid" && j.wk.includes(sk.wk) && j.wk.includes(hand);
 }
+const pasOn = (p, id) => pasNative(p.ch, id);
 /** Skill power from mastery past the skill's need (a hybrid signature: the lower of its two weapons). */
 function skGrow(ch, sk) {
   const m = Math.min(...skWks(sk).map((k) => ch.wm[k].lv));
@@ -378,11 +376,11 @@ function crView(p, now) {
 }
 /** The skill list: [id, MP, cooldown left ms, usable, HP if relevant, full cooldown ms for signatures]. */
 function skWire(p, now) {
-  const lo = loOf(p.ch);
-  return skillsFor(p.ch).map((id) => {
+  const ch = p.ch, lo = loOf(ch), hand = inHand(ch);
+  return skillsFor(ch).map((id) => {
     const sk = SKILL[id];
-    if (sk.kind === "p") return [id, 0, 0, pasOn(p, id) ? 1 : 0];
-    const row = [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(p.ch, sk) || !lo.a.includes(id) ? 0 : 1];
+    if (sk.kind === "p") return [id, 0, 0, pasNative(ch, id, lo, hand) || loOff(ch, id, lo) ? 1 : 0];
+    const row = [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(ch, sk) || !lo.a.includes(id) ? 0 : 1];
     if (sk.hpPct || sk.job) row.push(sk.hpPct ? hammerHpCost(p, sk) : 0);
     if (sk.job) row.push(skCooldown(p, sk));
     return row;

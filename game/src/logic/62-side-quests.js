@@ -107,6 +107,7 @@ function sqApply(S, p, a) {
   if (q.goal.type === "collect") takeItem(ch, q.goal.item, q.goal.n);
   delete ch.sq.on[q.id];
   ch.sq.done[q.id] = (ch.sq.done[q.id] | 0) + 1;
+  if (q.id === JF_QUEST) afterGear(S, p);
   if (q.reward.gold) { ch.gold += q.reward.gold; p.gain.push(["gold", q.reward.gold]); }
   for (const [id, n] of q.reward.items) if (addItem(ch, id, n)) p.gain.push(["item", id, n, 0]);
   toast(p, `퀘스트 완료: ${q.title}`);

@@ -176,7 +176,7 @@ assert.deepEqual(a.ch.tro, ["lambmaw"]); assert.equal(a.ch.gold, g1 + X.TROPHY_G
   Object.assign(old, { v: 16, q: { i: 4, n: 3, st: 1 } });
   delete old.tro;
   X.migrate(old);
-  assert.equal(old.v, 20);
+  assert.equal(old.v, 21);
   assert.equal(X.QUESTS[old.q.i], plain[4], "the same errand as before");
   assert.deepEqual([old.q.n, old.q.st], [3, 1]);
   assert.deepEqual(old.tro, []);

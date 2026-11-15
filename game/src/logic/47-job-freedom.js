@@ -1,19 +1,21 @@
 // ───────────────────────────── 직업 자유: job reset, level reset, skill loadout ─────────────────────────────
 // docs/design/job-freedom.md (owner decisions). Every job's progress stays on the sheet (ch.jobs; ch.jp is the
 // current job's record, the same object), the 전직 교관 resets the job (back to 모험가) or the level (stats back
-// to 1), each for a scroll and gold. The loadout (ch.lo[job] = { a, p, x }) holds the skills in use: at most
+// to 1), each for a scroll and gold. The loadout (ch.lo[job] = { a, p, x, y }) holds the skills in use: at most
 // LO_MAX.a actives and LO_MAX.p passives, changed in town or beside a campfire; a job without one set uses its
-// first learned skills (the quick bar's first). The 전직 교관's Lv.150 quest opens one off-job passive slot (x).
+// first learned skills (the quick bar's first). A job opens two off-weapon passives; the Lv.150 quest improves them.
 
 const LO_MAX = { a: 5, p: 4 };
-/** The side quest (data/quests.json) whose hand-in opens the off-job passive slot. */
+/** The side quest (data/quests.json) that improves borrowed effects. */
 const JF_QUEST = "sq_job_free";
+const LO_BORROW = [50, 60];
 const JF_SCROLL = { job: "scr_job", lvl: "scr_lvl" };
 /** Gold for a reset: base + per character level. */
 // economy review 2026-11-15: the level reset's slope 100 → 250 (it was under an hour of gold at every level)
 const JF_COST = { job: [1000, 50], lvl: [5000, 250] };
 const jfGold = (ch, k) => JF_COST[k][0] + JF_COST[k][1] * ch.lvl;
-const loOpen = (ch) => !!ch.sq.done[JF_QUEST];
+const loOpen = (ch) => ch.job !== "adventurer";
+const loPower = (ch) => LO_BORROW[ch.sq.done[JF_QUEST] ? 1 : 0];
 const jfSafe = (S, p) => !!(MAP_META[p.map] && MAP_META[p.map].safe) || fireNear(S.maps[p.map], p);
 
 /** A job-progress record, clamped. */
@@ -30,8 +32,12 @@ function jfClean(ch) {
     const r = lo[j];
     if (!isObj(r)) continue;
     const ids = (v, pas, n) => (Array.isArray(v) ? [...new Set(v.filter((id) => typeof id === "string" && Object.hasOwn(SKILL, id) && (SKILL[id].kind === "p") === pas))].slice(0, n) : []);
-    const x = typeof r.x === "string" && Object.hasOwn(SKILL, r.x) && SKILL[r.x].kind === "p" ? r.x : "";
-    ch.lo[j] = { a: ids(r.a, false, LO_MAX.a), p: ids(r.p, true, LO_MAX.p), x };
+    const p = ids(r.p, true, LO_MAX.p);
+    const valid = (id) => ids([id], true, 1).length && !p.includes(id)
+      && !JOBS[j].wk.includes(SKILL[id].wk) && skLearned(ch, SKILL[id]);
+    const x = valid(r.x) ? r.x : "";
+    const y = valid(r.y) && r.y !== x ? r.y : "";
+    ch.lo[j] = { a: ids(r.a, false, LO_MAX.a), p, x, y };
   }
   // the current job's record is ch.jp itself (a v17 sheet's jp moves in here)
   if (ch.jp) ch.jobs[ch.job] = ch.jp;
@@ -46,15 +52,32 @@ function loOf(ch) {
   const pair = JOBS[ch.job].kind === "hybrid" ? JOBS[ch.job].wk : [inHand(ch)];
   const now = (id) => skWks(SKILL[id]).some((k) => pair.includes(k));
   const learned = skillsFor(ch), order = [...learned.filter(now), ...learned.filter((id) => !now(id))];
-  return { a: order.filter((id) => SKILL[id].kind !== "p").slice(0, LO_MAX.a), p: order.filter((id) => SKILL[id].kind === "p").slice(0, LO_MAX.p), x: "" };
+  return { a: order.filter((id) => SKILL[id].kind !== "p").slice(0, LO_MAX.a), p: order.filter((id) => SKILL[id].kind === "p").slice(0, LO_MAX.p), x: "", y: "" };
 }
-/** May passive `id` sit in the off-job slot: learned, of a weapon of another job this hero has job levels in. */
+/** A passive in the cross-weapon slots must come from mastery outside the current job's weapon pair. */
 function loOffOk(ch, id) {
-  const sk = Object.hasOwn(SKILL, id) ? SKILL[id] : null;
-  return !!sk && sk.kind === "p" && ch.wm[sk.wk].lv >= sk.need && Object.keys(ch.jobs).some((j) => j !== ch.job && JOBS[j].wk.includes(sk.wk));
+  const sk = typeof id === "string" && Object.hasOwn(SKILL, id) ? SKILL[id] : null;
+  return loOpen(ch) && !!sk && sk.kind === "p" && !JOBS[ch.job].wk.includes(sk.wk) && skLearned(ch, sk);
 }
-/** Is passive `id` in the off-job slot (which works whatever weapon is in hand)? */
-const loOff = (ch, id) => loOpen(ch) && loOf(ch).x === id && loOffOk(ch, id);
+const loOff = (ch, id, lo = loOf(ch)) => !!inHand(ch) && (lo.x === id || lo.y === id) && !lo.p.includes(id) && loOffOk(ch, id);
+
+/** Sheet bonuses from the active native perks plus the transferable portion of the borrowed perks. */
+function loPerks(ch) {
+  const b = { atk: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, spd: 0, ls: 0, aspd: 0, cdr: 0, poise: 0 };
+  const hand = inHand(ch);
+  if (!hand) return b;
+  const load = loOf(ch);
+  for (const id of load.p) {
+    const perk = SKILL[id].perk;
+    if (perk && pasNative(ch, id, load, hand)) b[perk[0]] += perk[1];
+  }
+  for (const id of [load.x, load.y]) {
+    if (!id || !loOff(ch, id, load)) continue;
+    const perk = SKILL[id].borrow || SKILL[id].perk;
+    if (perk) b[perk[0]] += perk[1] * loPower(ch) / 100;
+  }
+  return b;
+}
 /** New skills learned after a loadout was set: into its free slots. */
 function loAdd(ch, ids) {
   const lo = ch.lo[ch.job];
@@ -74,10 +97,11 @@ function jfValidate(S, p, a) {
     if (!all.every((id) => typeof id === "string" && Object.hasOwn(SKILL, id)) || new Set(all).size !== all.length) return bad("잘못된 스킬입니다");
     if (!a.a.every((id) => SKILL[id].kind !== "p") || !a.p.every((id) => SKILL[id].kind === "p")) return bad("액티브와 패시브 칸이 맞지 않습니다");
     if (!all.every((id) => skLearned(ch, SKILL[id]))) return bad("배우지 않은 스킬입니다");
-    const x = a.x === undefined ? "" : a.x;
-    if (x !== "") {
-      if (!loOpen(ch)) return bad("다른 직업 패시브 칸이 아직 열리지 않았습니다");
-      if (typeof x !== "string" || a.p.includes(x) || !loOffOk(ch, x)) return bad("다른 직업 칸에는 직업 Lv.1 이상인 다른 직업의 배운 패시브만 넣을 수 있습니다");
+    const borrowed = [a.x ?? "", a.y === undefined ? loOf(ch).y : a.y].filter((id) => id !== "");
+    if (borrowed.length) {
+      if (!loOpen(ch)) return bad("전직하면 교차 패시브 칸이 열립니다");
+      if (new Set([...a.p, ...borrowed]).size !== a.p.length + borrowed.length) return bad("같은 패시브를 두 번 넣을 수 없습니다");
+      if (!borrowed.every((id) => loOffOk(ch, id))) return bad("교차 칸에는 현재 직업의 무기군 외에서 배운 패시브만 넣을 수 있습니다");
     }
     return OK;
   }
@@ -97,8 +121,9 @@ function jfApply(S, p, a) {
   const ch = p.ch;
   p.dirty = true;
   if (a.t === "lo") {
-    ch.lo[ch.job] = { a: a.a.slice(), p: a.p.slice(), x: a.x || "" };
-    p.stc = null;
+    ch.lo[ch.job] = { a: a.a.slice(), p: a.p.slice(), x: a.x ?? "", y: a.y === undefined ? loOf(ch).y : a.y };
+    afterGear(S, p);
+    saveSoon(p);
     toast(p, "스킬 칸을 바꿨습니다.");
     return;
   }

@@ -1,5 +1,5 @@
 // Headless test of 직업 자유 (docs/design/job-freedom.md): hybrids past mastery 15, job reset with per-job
-// progress, level reset, the 5 + 4 skill loadout (town or campfire only), the Lv.150 off-job passive slot,
+// progress, level reset, the 5 + 4 skill loadout (town or campfire only), two cross-weapon passives,
 // and a v17 sheet's migration.   node tests/jobfreedom.mjs
 import assert from "node:assert/strict";
 import * as L from "../src/logic.js";
@@ -127,29 +127,53 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   W.p.mp = 9999;
   assert.equal(W.act({ t: "sk", id: "rend", a: 0 }).error, "스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
   assert.notEqual(W.act({ t: "sk", id: "slash", a: 0 }).error, "스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
-  assert.deepEqual(ch.lo.spellblade, { a: ["slash"], p: ["reso"], x: "" }, "saved for this job");
+  assert.deepEqual(ch.lo.spellblade, { a: ["slash"], p: ["reso"], x: "", y: "" }, "saved for this job");
 }
 
-// ── 6. Lv.150: the 전직관's quest opens one off-job passive (a job walked before)
+// ── 6. A job opens both cross-weapon slots; mastery is the only requirement for another weapon.
 {
-  const W = world({ wk: "dagger", lvl: 150, wm: { dagger: 20, sword: 20, bow: 10 }, job: "thief" });
+  const W = world({ wk: "dagger", wk2: "sword", lvl: 150, wm: { dagger: 20, sword: 20, bow: 10 }, job: "thief" });
   const ch = W.ch;
-  ch.jp = { lv: 3, xp: 0 }; ch.jobs = { thief: ch.jp, swordsman: { lv: 1, xp: 0 } };
   W.npc("job");
-  assert.equal(W.act({ t: "lo", a: [], p: ["vitals"], x: "inertia" }).error, "다른 직업 패시브 칸이 아직 열리지 않았습니다");
-  assert.equal(W.self().lo[4], 0);
+  const load = { t: "lo", a: [], p: ["vitals"] };
+  assert.ok(W.act(load).ok);
+  const baseline = W.p.stc.atk0, speed = W.p.stc.spd0;
+  assert.deepEqual(W.self().lo.slice(4), [1, "", 50], "first job opens the slots at 50%");
+  assert.match(W.act({ ...load, x: "vitals" }).error, /두 번/);
+  assert.match(W.act({ ...load, p: [], x: "vitals" }).error, /현재 직업의 무기군 외/);
+  assert.match(W.act({ ...load, x: "inertia", y: "inertia" }).error, /두 번/);
+  assert.match(W.act({ ...load, y: "bow_quill50" }).error, /배운 패시브/);
+  assert.ok(W.act({ ...load, p: ["vitals", "dagger_shade20"], x: "inertia", y: "hawk" }).ok);
+  assert.ok(Math.abs(W.p.stc.atk0 / baseline - 1.04) < 1e-9, "two attack perks at half their 4% values");
+  assert.ok(Math.abs(W.p.stc.spd0 / speed - 1.05) < 1e-9, "native dagger passive adds its full bonus");
+  const v = W.self();
+  assert.deepEqual([v.lo[2], v.lo[5]], ["inertia", "hawk"]);
+  for (const id of ["inertia", "hawk", "vitals", "dagger_shade20"]) assert.equal(v.sk.find((r) => r[0] === id)[3], 1);
+  assert.ok(W.act({ ...load, x: "inertia" }).ok, "legacy loadout action with no y remains valid");
+  assert.equal(W.self().lo[5], "hawk", "legacy action preserves the second slot");
+  assert.ok(W.act({ t: "wsw" }).ok, "gear swap");
+  const s = W.self();
+  assert.equal(s.sk.find((r) => r[0] === "inertia")[3], 1, "off-job passive survives the swap");
+  assert.equal(s.sk.find((r) => r[0] === "vitals")[3], 0, "the native dagger passive stops");
+  W.step(1000);
+  assert.ok(W.act({ t: "wsw" }).ok);
+
   assert.ok(W.act({ t: "sq", a: "take", id: D.jf.quest }).ok, "taken at the 전직관");
   ch.sq.on[D.jf.quest] = 30;
   assert.ok(W.act({ t: "sq", a: "done", id: D.jf.quest }).ok, "handed in");
-  assert.equal(W.self().lo[4], 1, "slot open");
-  assert.match(W.act({ t: "lo", a: [], p: ["vitals"], x: "hawk" }).error, /다른 직업 칸에는/, "the bow is no job this hero walked");
-  assert.match(W.act({ t: "lo", a: [], p: ["vitals"], x: "vitals" }).error, /다른 직업 칸에는/, "the own job's passive is not off-job");
-  assert.ok(W.act({ t: "lo", a: [], p: ["vitals"], x: "inertia" }).ok, "a 대검전사 passive on a 도적");
-  const v = W.self();
-  assert.equal(v.lo[2], "inertia");
-  assert.equal(v.sk.find((r) => r[0] === "inertia")[3], 1, "works with the dagger in hand");
+  assert.equal(W.self().lo[6], 60, "the quest improves both borrowed bonuses");
+  assert.ok(Math.abs(W.p.stc.atk0 / baseline - 1.048) < 1e-9, "the quest invalidates the cached stats immediately");
+  const old = JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID)));
+  old.v = 20; delete old.lo.thief.y;
+  const migrated = world({ ch: old });
+  assert.deepEqual(migrated.ch.lo.thief, { a: [], p: ["vitals"], x: "inertia", y: "" });
+  assert.equal(migrated.self().lo[6], 60, "earned legacy quest credit is retained");
+  assert.ok(W.act({ ...load, x: "", y: "hawk" }).ok);
+  const saved = world({ ch: JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID))) });
+  assert.deepEqual([saved.self().lo[2], saved.self().lo[5]], ["", "hawk"], "slot placement survives reconnect");
   const W2 = world({ wk: "dagger", lvl: 140 });
   W2.npc("job");
+  assert.equal(W2.act({ t: "lo", a: [], p: [], y: "hawk" }).error, "전직하면 교차 패시브 칸이 열립니다");
   assert.equal(W2.act({ t: "sq", a: "take", id: D.jf.quest }).error, "레벨 150 이상이어야 합니다");
 }
 
@@ -159,7 +183,7 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   const old = JSON.parse(JSON.stringify(L.exportChar(W0.S, W0.PID)));
   delete old.jobs; delete old.lo; old.v = 17; old.jp = { lv: 9, xp: 3 };
   const W = world({ ch: old });
-  assert.equal(W.ch.v, 20);
+  assert.equal(W.ch.v, 21);
   assert.deepEqual(W.ch.jobs, { swordsman: { lv: 9, xp: 3 } }); assert.equal(W.ch.jobs.swordsman, W.ch.jp);
   assert.deepEqual(W.ch.lo, {});
   assert.deepEqual(L.newChar("새판", []).jobs, {});

@@ -66,10 +66,13 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
 
 // ═════════ the tables
 {
-  assert.equal(D.skillOrder.length, 44, "retained weapon and job skills plus two hammer hybrids");
+  assert.equal(D.skillOrder.length, 68, "33 actives and 35 mastery passives");
   assert.deepEqual(Object.keys(SK), D.skillOrder);
-  const kinds = D.skillOrder.filter(id => SK[id].wk !== "hammer" && !["mercenary", "paladin"].includes(SK[id].job)).map((id) => SK[id].kind).join("");
-  assert.equal(kinds, "aap".repeat(6) + "j".repeat(6) + "h".repeat(10));
+  for (const wk of D.wkOrder) {
+    const perks = Object.values(SK).filter((sk) => sk.wk === wk && sk.kind === "p");
+    assert.deepEqual(perks.map((sk) => sk.need).sort((a, b) => a - b), [10, 20, 30, 40, 50], wk + " mastery milestones");
+    for (const sk of perks) assert.ok(sk.perk || sk.borrow, sk.id + " transfers a real effect");
+  }
   for (const id of D.skillOrder) {
     const s = SK[id];
     assert.equal(s.id, id);
@@ -454,7 +457,7 @@ for (const [id, hand] of CASTS) {
   const W = world("전선", { wk: "staff", wm: { staff: 20, book: 3 }, job: "wizard" });
   const s = W.self();
   assert.ok(!("skm" in s) && !("cds" in s) && !("lc" in s), "the old fields are gone");
-  assert.deepEqual(s.sk.map((x) => x[0]), ["slash", "ambush", "spiral", "fireball", "frostring", "reso", "soulbolt", "pierce", "meteor", "hammer_stamp"], "every skill learned, in order (every weapon's first, and other weapons' too)");
+  assert.deepEqual(s.sk.map((x) => x[0]), ["slash", "ambush", "spiral", "fireball", "frostring", "reso", "staff_mind20", "soulbolt", "pierce", "meteor", "hammer_stamp"], "every skill learned, in order (every weapon's first, and other weapons' too)");
   for (const [id, mp, cd, use] of s.sk) {
     assert.ok(Number.isInteger(mp) && Number.isInteger(cd) && (use === 0 || use === 1), id);
     assert.equal(use, SK[id].wk === "staff" ? 1 : 0, id + " usable only with the staff in hand");

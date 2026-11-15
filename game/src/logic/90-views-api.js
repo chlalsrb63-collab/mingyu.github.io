@@ -24,7 +24,7 @@ function selfPayload(p) {
     jobs: Object.keys(ch.jobs).map((j) => [j, ch.jobs[j].lv, ch.jobs[j].xp]),
     // skill enhancement { [id]: +n } (48-skill-enh.js)
     ske: ch.ske,
-    lo: (() => { const lo = loOf(ch); return [lo.a, lo.p, lo.x, ch.lo[ch.job] ? 1 : 0, loOpen(ch) ? 1 : 0]; })(),
+    lo: (() => { const lo = loOf(ch); return [lo.a, lo.p, lo.x, ch.lo[ch.job] ? 1 : 0, loOpen(ch) ? 1 : 0, lo.y, loPower(ch)]; })(),
     gold: ch.gold,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
@@ -231,7 +231,7 @@ export function defs() {
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
     ske: { rate: SKE_RATE, pct: SKE_PCT, max: SKE_MAX, item: SKE_ITEM },
-    jf: { lo: [LO_MAX.a, LO_MAX.p], scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST },
+    jf: { lo: [LO_MAX.a, LO_MAX.p], borrow: LO_BORROW, scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST },
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
