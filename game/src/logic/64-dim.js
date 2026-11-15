@@ -498,6 +498,8 @@ function dimTick(S, now) {
     // orbs fly to whoever comes near; shrines answer a step on them
     for (let i = dim.orbs.length - 1; i >= 0; i--) {
       const b = dim.orbs[i];
+      // a full gauge (dimFull) may take the party down a floor and empty the list mid-loop
+      if (!b) continue;
       if (now >= b.until) { dim.orbs.splice(i, 1); continue; }
       const o = alive.find((q) => dist(q.x, q.y, b.x, b.y) <= DIM.orbR);
       if (!o) continue;
@@ -507,6 +509,7 @@ function dimTick(S, now) {
     }
     for (let i = dim.pylons.length - 1; i >= 0; i--) {
       const s = dim.pylons[i];
+      if (!s) continue;
       if (now >= s.until) { dim.pylons.splice(i, 1); continue; }
       const o = alive.find((q) => dist(q.x, q.y, s.x, s.y) <= DIM.shrineR);
       if (!o) continue;

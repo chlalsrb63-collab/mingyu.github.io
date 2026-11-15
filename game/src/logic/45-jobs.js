@@ -114,7 +114,7 @@ function deriveStats(p) {
     crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh * ENH_CRIT : 0) + b.crit + tf.crit + perk.crit),
     critd: SFX.critd[0] + SFX.critd[1] * luk + (b.critd + perk.critd) / 100,
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
-    ls: Math.min(15, b.ls + perk.ls), spd0: BASE_SPD * (1 + (Math.min(40, b.spd) + tf.move + perk.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
+    ls: Math.min(15, b.ls + perk.ls), spd0: BASE_SPD * HERO_SPD_K * (1 + (Math.min(40, b.spd) + tf.move + perk.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
     mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk) + tf.drop,
     lg: b.lg, arm, wk, mag: arm.mag ? 1 : 0,
     acd: Math.round(arm.cd * (1 - attackSpeed) * (b.lg.haste ? 0.85 : 1) * (1 - tf.aspd / 100)),

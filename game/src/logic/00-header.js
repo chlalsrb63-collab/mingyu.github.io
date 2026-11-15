@@ -38,6 +38,8 @@ const SORT_KIND = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet
 const VIEW_X = 280;
 const VIEW_Y = 280;
 const BASE_SPD = 48;
+// heroes walk this much faster than the base (owner, 2026-11-15: +15 %); NPC walks and parcel timers stay on BASE_SPD
+const HERO_SPD_K = 1.15;
 const PARTY_MAX = 4;
 const PARTY_RANGE = 340;
 const FIELD_PARTY_RANGE = 16 * T;

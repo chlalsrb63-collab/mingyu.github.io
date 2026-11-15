@@ -40,6 +40,8 @@ const SORT_KIND = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet
 const VIEW_X = 280;
 const VIEW_Y = 280;
 const BASE_SPD = 48;
+// heroes walk this much faster than the base (owner, 2026-11-15: +15 %); NPC walks and parcel timers stay on BASE_SPD
+const HERO_SPD_K = 1.15;
 const PARTY_MAX = 4;
 const PARTY_RANGE = 340;
 const FIELD_PARTY_RANGE = 16 * T;
@@ -7671,7 +7673,7 @@ function deriveStats(p) {
     crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh * ENH_CRIT : 0) + b.crit + tf.crit + perk.crit),
     critd: SFX.critd[0] + SFX.critd[1] * luk + (b.critd + perk.critd) / 100,
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
-    ls: Math.min(15, b.ls + perk.ls), spd0: BASE_SPD * (1 + (Math.min(40, b.spd) + tf.move + perk.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
+    ls: Math.min(15, b.ls + perk.ls), spd0: BASE_SPD * HERO_SPD_K * (1 + (Math.min(40, b.spd) + tf.move + perk.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
     mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk) + tf.drop,
     lg: b.lg, arm, wk, mag: arm.mag ? 1 : 0,
     acd: Math.round(arm.cd * (1 - attackSpeed) * (b.lg.haste ? 0.85 : 1) * (1 - tf.aspd / 100)),
@@ -13200,6 +13202,8 @@ function dimTick(S, now) {
     // orbs fly to whoever comes near; shrines answer a step on them
     for (let i = dim.orbs.length - 1; i >= 0; i--) {
       const b = dim.orbs[i];
+      // a full gauge (dimFull) may take the party down a floor and empty the list mid-loop
+      if (!b) continue;
       if (now >= b.until) { dim.orbs.splice(i, 1); continue; }
       const o = alive.find((q) => dist(q.x, q.y, b.x, b.y) <= DIM.orbR);
       if (!o) continue;
@@ -13209,6 +13213,7 @@ function dimTick(S, now) {
     }
     for (let i = dim.pylons.length - 1; i >= 0; i--) {
       const s = dim.pylons[i];
+      if (!s) continue;
       if (now >= s.until) { dim.pylons.splice(i, 1); continue; }
       const o = alive.find((q) => dist(q.x, q.y, s.x, s.y) <= DIM.shrineR);
       if (!o) continue;

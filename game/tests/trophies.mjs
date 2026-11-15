@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { TROPHIES, TROPHY_CAP, TROPHY_GOLD, STORY, QUESTS, FIELD_BOSS, FB_RESP, MOBS, ITEMS, ELITE, changeMap, dealMob, mobMax, stats, deriveStats, aimIdx, migrate, grantTrophy, fbTrophy, fbHome, rollGear, tierFor, GEAR, WK_ID, mapOfS, shownLv, BASE_SPD };\n";
+  "\nexport const __t = { TROPHIES, TROPHY_CAP, TROPHY_GOLD, STORY, QUESTS, FIELD_BOSS, FB_RESP, MOBS, ITEMS, ELITE, changeMap, dealMob, mobMax, stats, deriveStats, aimIdx, migrate, grantTrophy, fbTrophy, fbHome, rollGear, tierFor, GEAR, WK_ID, mapOfS, shownLv, BASE_SPD, HERO_SPD_K };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16;
 
@@ -61,7 +61,7 @@ assert.ok(boss && boss.k === "lambmaw" && boss.x === hx && boss.y === hy, "then 
   p.ch.tro = ["lambmaw", "ribdeer", "crabskull", "doghead", "toadbrood"]; p.stc = null;
   const s1 = X.deriveStats(p);
   assert.equal(s1.xp, s0.xp + 2); assert.equal(s1.gold, s0.gold + 3);
-  assert.ok(Math.abs(s1.spd0 - s0.spd0 - X.BASE_SPD * 0.02) < 1e-9, "move +2% (of the base speed)");
+  assert.ok(Math.abs(s1.spd0 - s0.spd0 - X.BASE_SPD * X.HERO_SPD_K * 0.02) < 1e-9, "move +2% (of the base speed)");
   assert.ok(s1.acd <= Math.round(s0.acd * 0.98) + 1 && s1.acd < s0.acd, "attack speed +2%");
   assert.ok(Math.abs(s1.mhp - Math.round(s0.mhp * 1.02)) <= 1, "HP +2%");
   p.ch.tro = Object.keys(X.TROPHIES); p.stc = null;
