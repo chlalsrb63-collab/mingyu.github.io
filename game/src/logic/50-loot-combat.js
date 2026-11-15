@@ -394,9 +394,9 @@ function killMob(S, rt, mob) {
     }
     const q = ch.q;
     const quest = QUESTS[q.i];
-    if (q.st === 1 && quest && quest.mob === mob.k && q.n < quest.n) {
+    if (q.st === 1 && quest && quest.mob === mob.k && q.n < quest.n && (!quest.fb || el === 2)) {
       q.n++;
-      if (q.n >= quest.n) toast(p, `의뢰 [${quest.title}] 달성! 관리자에게 돌아가세요.`);
+      if (q.n >= quest.n && !mob.story) toast(p, `의뢰 [${quest.title}] 달성! 관리자에게 돌아가세요.`);
     }
     const bq = ch.bq;
     if (bq && bq.k === mob.k && bq.n < bq.need) {
@@ -420,19 +420,16 @@ function killMob(S, rt, mob) {
   if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   if (el === 2) {
     if (mob.evt) { if (S.evt) S.evt.bossDead = true; }
-    else if (mob.temp) rt.fb = 0;
-    if (top) sys(S, `${top.ch.name}님의 일행이 ${mapOfS(S, rt.id).name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
+    else if (mob.story) storyClear(S, rt, mob);
+    // a field boss is back at its spot FB_RESP after it falls; now and then it leaves its trophy (67-trophies.js)
+    else if (mob.temp) { rt.fb = 0; rt.fbAt = S.now + FB_RESP; fbTrophy(S, looters, mob.k); }
+    if (top && !mob.story) sys(S, `${top.ch.name}님의 일행이 ${mapOfS(S, rt.id).name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   }
   // some monsters go off where they fall, and so does any elite with the trait
   if (d.burst || has(mob, "burst")) {
     const r = d.burst || 34;
     rt.tele.push({ x: mob.x, y: mob.y, r, at: S.now + 900, dmg: d.atk * ELITE[el].atk * 1.3 });
     rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), r, 900]);
-  }
-  // enough kills in one hunting ground call out its field boss
-  if (!d.boss && !d.chest && !mob.evt && el < 2 && FIELD_BOSS[rt.id] && looters.size) {
-    rt.kc++;
-    if (rt.kc >= FB_KILLS && !rt.fb) spawnFieldBoss(S, rt, mob.x, mob.y);
   }
   // inside a 차원 균열: the gauge, orbs and shrines, the master (64-dim.js)
   if (mob.dim) dimKill(S, rt, mob, looters);

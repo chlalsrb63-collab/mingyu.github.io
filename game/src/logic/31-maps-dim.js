@@ -341,8 +341,9 @@ const chalMinLv = (k) => shownLv(MOBS[k].lv - DIM_CHAL.minGap);
 
 /** A boss challenge's arena: one oval hall, the party at its west end, the boss in the middle. Pure. */
 function dimArena(cfg) {
-  const W = DIM_CHAL.w, H = DIM_CHAL.h, k = cfg.k, B = DIM_CHAL.bosses[k], theme = B.theme;
-  const m = blank(cfg.id || "dim:0", `보스 도전: ${MOBS[k].name}`, W, H, "W");
+  // (also a story fight's arena, 67-trophies.js: any boss kind, the ground's theme and its own name)
+  const W = DIM_CHAL.w, H = DIM_CHAL.h, k = cfg.k, theme = cfg.theme || DIM_CHAL.bosses[k].theme;
+  const m = blank(cfg.id || "dim:0", cfg.name || `보스 도전: ${MOBS[k].name}`, W, H, "W");
   m.theme = theme; m.bgm = "dim"; m.band = null; m.marks = [];
   const cx = W >> 1, cy = H >> 1, rx = cx - 3, ry = cy - 3;
   let area = 0;

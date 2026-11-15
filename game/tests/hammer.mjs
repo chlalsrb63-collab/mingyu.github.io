@@ -146,7 +146,7 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
   const old = L.newChar("옛망치", []); old.v = 13; delete old.wm.hammer;
   L.addPlayer(S, "migration", old);
   assert.deepEqual(S.players.migration.ch.wm.hammer, { lv: 1, xp: 0 });
-  assert.equal(S.players.migration.ch.v, 16);
+  assert.equal(S.players.migration.ch.v, 17);
   assert.equal(D.wkOrder.at(-1), "hammer");
   assert.equal(Object.values(D.items).filter(it => it.wk === "hammer").length, 5);
   assert.equal(Object.values(D.skills).filter(sk => sk.wk === "hammer" && sk.kind === "p").length, 5);
@@ -290,7 +290,7 @@ for (const duo of [false, true]) {
   rift.dim.t = 8; rift.dim.best = 7;
   L.addPlayer(S, "rift15", rift);
   const merged = L.exportChar(S, "rift15");
-  assert.equal(merged.v, 16);
+  assert.equal(merged.v, 17);
   assert.deepEqual(merged.jp, { lv: 5, xp: 0 });
   assert.equal(merged.dim.t, 8);
   assert.equal(merged.dim.best, 7);
@@ -303,7 +303,7 @@ for (const duo of [false, true]) {
   delete profession.dim;
   L.addPlayer(S, "job15", profession);
   const upgraded = L.exportChar(S, "job15");
-  assert.equal(upgraded.v, 16);
+  assert.equal(upgraded.v, 17);
   assert.deepEqual(upgraded.jp, { lv: 35, xp: 11 });
   assert.equal(upgraded.dim.t, 1);
   L.removePlayer(S, "job15");

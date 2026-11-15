@@ -79,7 +79,8 @@ for (let i = 0; i < 3000 && kills < 3; i++) {
       const gd = Math.hypot(gx - v.me[0], gy - v.me[1]) || 1, k = Math.min(6, gd);
       act({ t: "mv", x: v.me[0] + ((gx - v.me[0]) / gd) * k, y: v.me[1] + ((gy - v.me[1]) / gd) * k });
     }
-    else act({ t: "atk" });
+    // (aimed at it: a field boss standing in the ground shifts where things are, so the bot cannot trust its facing)
+    else { const N = L.defs().aim[0]; act({ t: "atk", a: ((Math.round((Math.atan2(my - v.me[1], mx - v.me[0]) / (2 * Math.PI)) * N) % N) + N) % N }); }
   } else {
     // nothing in sight: on along the ground's paths toward its far gate, out of the quiet ground by the entrance
     const [sx, sy] = tileOf(v.me[0], v.me[1]), [tx, ty] = MM.gates.east.a[0];

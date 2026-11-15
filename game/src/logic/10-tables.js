@@ -154,9 +154,9 @@ const STREAK_MS = 8000, STREAK_MAX = 25;
 const MASTERY = [30, 100, 300, 1000, 3000];
 /** A repeatable bounty asks for this many of one monster, and renews itself when paid out. */
 const BOUNTY_N = 25;
-/** After this many kills in a hunting ground, its field boss appears. */
-const FB_KILLS = 60;
-/** The monster a hunting ground's kills call out, by map. */
+/** A hunting ground's field boss stands at its fixed spot from the start and is back there this long after it falls (ms). */
+const FB_RESP = 600000;
+/** Each hunting ground's field boss, by map (its trophy: TROPHIES, 67-trophies.js). */
 const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock" };
 
 /**
@@ -385,31 +385,39 @@ const GUARD_RESP = 180000;
  */
 const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA.quests.main.map((q) => ({
   mob: String(q.mob), n: Math.max(1, q.n | 0), title: String(q.title || ""), text: String(q.text || ""), xp: Math.max(0, q.xp | 0), gold: Math.max(0, q.gold | 0),
-  items: (Array.isArray(q.items) ? q.items : []).filter((it) => Array.isArray(it) && typeof it[0] === "string" && Object.hasOwn(ITEMS, it[0])).map(([id, n]) => [id, Math.max(1, n | 0)]),
+  fb: q.fb ? 1 : 0, items: (Array.isArray(q.items) ? q.items : []).filter((it) => Array.isArray(it) && typeof it[0] === "string" && Object.hasOwn(ITEMS, it[0])).map(([id, n]) => [id, Math.max(1, n | 0)]),
 })).filter((q) => Object.hasOwn(MOBS, q.mob)) : [
   { mob: "twinhare", n: 5, title: "초원의 쌍두 토끼", text: "차원이 겹친 뒤로 초원의 짐승들이 뒤틀려 돌아왔다네. 머리 둘 달린 토끼 5마리만 정리해 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
   { mob: "gutfrog", n: 6, title: "뒤집힌 개구리", text: "속이 밖으로 나온 개구리가 길목에서 뛰어든다네. 창자 개구리 6마리를 잡아 주게.", xp: 220, gold: 120, items: [["mp_s", 5]] },
   { mob: "eyecrow", n: 8, title: "지켜보는 것들", text: "연못 위를 도는 눈알 까마귀 8마리를 떨어뜨려 주게. 먼저 덤비진 않지만, 보고 있는 게 영 꺼림칙해.", xp: 520, gold: 200, items: [["stone", 2]] },
   { mob: "lambmaw", n: 8, title: "뒤집힌 것", text: "초원 가장 깊은 곳에 안팎이 뒤집힌 양이 돌아다닌다네. 8마리를 잡아 주게. 고개를 숙이면 곧장 달려드니, 그 줄에서 비켜서게.", xp: 800, gold: 300, items: [["hp_s", 8]] },
+  { mob: "lambmaw", n: 1, fb: 1, title: "초원의 우두머리", text: "초원 깊은 곳에 유난히 큰 뒤집힌 양이 버티고 섰다네. 그 녀석이 선 자리로 가 보게. 혼자서 맞서야 할 걸세.", xp: 900, gold: 320, items: [] },
   { mob: "splitboar", n: 10, title: "숲의 반쪽", text: "속삭임 숲에는 몸이 반만 남은 멧돼지가 돌아다닌다네. 10마리를 사냥해 주게. 멀리서도 뛰어드니 동료를 구해 보게.", xp: 1300, gold: 450, items: [["hp_m", 5], ["ru_vit", 1]] },
   { mob: "hydrasnake", n: 10, title: "세 갈래 혀", text: "숲 깊은 곳의 세 머리 뱀 10마리를 베어 주게. 독을 뱉으니 서 있지 말고 움직이게.", xp: 2200, gold: 600, items: [["stone", 3]] },
+  { mob: "ribdeer", n: 1, fb: 1, title: "갈비뼈의 주인", text: "속삭임 숲의 갈비뼈 사슴 우두머리가 길을 막고 있다네. 놈이 선 자리로 가서 홀로 쓰러뜨려 주게.", xp: 2400, gold: 650, items: [] },
   { mob: "ratking", n: 12, title: "무덤 아래", text: "숲의 막다른 폐허에 지하묘지로 내려가는 계단이 있다네. 꼬리가 엉킨 쥐 왕 12마리를 정리해 주게.", xp: 3000, gold: 750, items: [["hp_m", 5]] },
   { mob: "toadbrood", n: 10, title: "등에 밴 것", text: "지하묘지의 알 밴 두꺼비 10마리를 잡아 주게. 뱉어 놓은 웅덩이는 한참 남으니, 밟고 서 있지 말게.", xp: 3500, gold: 820, items: [["mp_m", 4]] },
   { mob: "batcluster", n: 10, title: "터지는 것", text: "지하묘지 깊은 곳의 박쥐 덩어리 10마리를 터뜨려 주게. 죽으면서 터지니, 쓰러뜨리고 물러서게.", xp: 4000, gold: 900, items: [["ru_ign", 1]] },
+  { mob: "toadbrood", n: 1, fb: 1, title: "알을 품은 어미", text: "지하묘지 깊은 곳에 알을 잔뜩 밴 두꺼비 우두머리가 있네. 그 자리에 서면 놈이 자네만 노릴 걸세.", xp: 4300, gold: 950, items: [] },
   { mob: "pigeonmass", n: 10, title: "다른 세계의 하늘", text: "지하묘지 깊은 회랑 끝에서 네온 시티 변두리로 들어갈 수 있네. 한 덩어리로 뭉친 비둘기 떼살 10마리를 잡아 주게.", xp: 4600, gold: 1000, items: [["mp_m", 5]] },
   { mob: "catsplit", n: 12, title: "뒷골목의 울음", text: "네온 시티 골목의 갈라진 고양이 12마리를 잡아 주게. 소리 없이 뛰어든다네.", xp: 6500, gold: 1300, items: [["stone", 4]] },
+  { mob: "doghead", n: 1, fb: 1, title: "세 머리의 왕", text: "네온 시티 골목을 세 머리 들개 우두머리가 휘젓고 다닌다네. 생선 떼를 치러 가기 전에, 놈의 자리로 가서 혼자 상대해 주게.", xp: 10000, gold: 1900, items: [] },
   { mob: "fishwalker", n: 10, title: "뭍에 오른 것", text: "다리 달린 생선 10마리를 쓰러뜨려 주게. 단단하니 파티가 필요할 걸세.", xp: 9500, gold: 1800, items: [["stone", 5]] },
   { mob: "leechmaw", n: 12, title: "도시의 밑바닥", text: "네온 시티 뒷마당에 하수도로 내려가는 구멍이 있다네. 거머리 아가리 12마리를 떼어 내 주게.", xp: 12000, gold: 2200, items: [["hp_m", 8]] },
   { mob: "crabskull", n: 10, title: "남의 머리", text: "하수도에는 남의 두개골을 뒤집어쓴 게가 있다네. 두개골 게 10마리를 부숴 주게. 단단하고, 돌진이 매섭네.", xp: 13500, gold: 2400, items: [["stone", 4]] },
   { mob: "eelknot", n: 10, title: "매듭", text: "하수도 끝의 뱀장어 매듭 10마리를 풀어 주게. 멀리서 전기를 쏜다네.", xp: 15000, gold: 2600, items: [["ru_acu", 1]] },
+  { mob: "crabskull", n: 1, fb: 1, title: "하수도의 투구", text: "하수도 끝에 남의 두개골을 겹겹이 쓴 게 우두머리가 있네. 놈이 버틴 자리에서 홀로 깨부숴 주게.", xp: 16000, gold: 2700, items: [] },
   { mob: "bearmaw", n: 8, title: "배에 난 입", text: "하수도 끝 회랑의 물길을 따라가면 수정 동굴이 나와. 아가리 곰 8마리를 쓰러뜨려 주게. 땅을 내리칠 땐 물러서게.", xp: 19000, gold: 3200, items: [["ru_san", 1], ["stone", 5]] },
+  { mob: "moleworm", n: 1, fb: 1, title: "땅속의 장님", text: "수정 동굴 깊은 곳의 눈먼 두더지 우두머리가 땅을 뒤집고 있다네. 놈의 자리로 가서 혼자 끝내 주게.", xp: 24000, gold: 3400, items: [] },
   { mob: "boss", n: 1, title: "균열의 군주", text: "모든 세계를 뒤섞은 장본인, 균열의 군주 크리온을 쓰러뜨려 주게. 반드시 파티를 꾸려서 가게.", xp: 45000, gold: 8000, items: [["stone", 10], ["ru_lum", 1]] },
   { mob: "horsehalf", n: 12, title: "군주의 뒤편", text: "군주가 쓰러진 자리 뒤에 더 깊은 균열이 열렸네. 피의 심연의 반쪽 말 12마리를 쓰러뜨려 주게.", xp: 30000, gold: 5000, items: [["hp_m", 10], ["ru_fos", 1]] },
   { mob: "lionhand", n: 10, title: "손으로 된 갈기", text: "심연 깊은 곳의 손갈기 사자 10마리를 쓰러뜨려 주게. 땅을 치고, 멀리서는 무언가를 던진다네.", xp: 38000, gold: 6000, items: [["stone", 8]] },
+  { mob: "lionhand", n: 1, fb: 1, title: "갈기의 손아귀", text: "심연 깊은 곳에 손으로 된 갈기를 두른 사자 우두머리가 있네. 놈이 선 자리에서 홀로 맞서 주게.", xp: 42000, gold: 5000, items: [] },
   { mob: "abyssboss", n: 1, title: "심연의 어미", text: "뒤틀린 것들은 전부 한곳에서 태어났네. 심연의 어미를 쓰러뜨려, 이 일을 끝내 주게.", xp: 120000, gold: 20000, items: [["stone", 20], ["ru_lum", 2]] },
   { mob: "blightsquirrel", n: 12, title: "단풍 아래의 병", text: "어미는 쓰러졌지만, 그 병은 뿌리를 타고 지상으로 번졌다네. 속삭임 숲 동쪽, 단풍에 묻힌 옛 왕도로 가서 한 꼬리 다람쥐떼 12마리를 정리해 주게.", xp: 40000, gold: 6500, items: [["hp_m", 10]] },
   { mob: "shroomboar", n: 12, title: "포자 무덤", text: "왕도의 멧돼지들은 등에 버섯을 키운다네. 버섯등 멧돼지 12마리를 잡아 주게. 뱉어 낸 포자 웅덩이는 독이니 밟지 말게.", xp: 46000, gold: 7200, items: [["stone", 8], ["mp_m", 6]] },
   { mob: "rotstag", n: 4, title: "썩은 왕관", text: "무너진 예배당엔 왕관을 쓴 사슴이 산다네. 옛 왕의 사냥감이었다지. 썩은 관 사슴왕 4마리를 쓰러뜨려, 왕도의 병을 끊어 주게.", xp: 60000, gold: 9000, items: [["stone", 12], ["ru_lum", 1]] },
+  { mob: "rotstag", n: 1, fb: 1, title: "썩은 왕관의 주인", text: "무너진 예배당 앞에 가장 큰 썩은 관 사슴왕이 버티고 있다네. 놈의 자리로 가서 홀로 왕관을 꺾어 주게.", xp: 60000, gold: 7000, items: [] },
   { mob: "bogcrown", n: 24, title: "서리에 물든 뿌리", text: "단풍 왕도 안쪽부터 땅이 얼고 있네. 검은 왕관 뿌리짐승 24마리를 베어 오래된 왕릉으로 가는 길을 트게.", xp: 52000, gold: 9500, items: [["stone", 12]] },
   { mob: "hollowowl", n: 28, title: "소리로 지키는 길", text: "왕도 깊은 폐허의 올빼미는 발자국 소리를 듣고 날아오르네. 눈먼 문지기 올빼미 28마리를 쓰러뜨려 사냥길을 열게.", xp: 61000, gold: 11000, items: [["hp_m", 15], ["mp_m", 10]] },
   { mob: "rootwarden", n: 32, title: "얼어붙은 왕의 문", text: "단풍 왕도 남동쪽에서 얼어붙은 왕릉 파수꾼 32마리를 쓰러뜨려 주게. 성에왕의 성채는 Lv.200부터 들어갈 수 있네.", xp: 74000, gold: 15000, items: [["stone", 16], ["ru_fos", 2]] },

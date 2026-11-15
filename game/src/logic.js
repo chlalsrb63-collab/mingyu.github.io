@@ -522,9 +522,9 @@ const STREAK_MS = 8000, STREAK_MAX = 25;
 const MASTERY = [30, 100, 300, 1000, 3000];
 /** A repeatable bounty asks for this many of one monster, and renews itself when paid out. */
 const BOUNTY_N = 25;
-/** After this many kills in a hunting ground, its field boss appears. */
-const FB_KILLS = 60;
-/** The monster a hunting ground's kills call out, by map. */
+/** A hunting ground's field boss stands at its fixed spot from the start and is back there this long after it falls (ms). */
+const FB_RESP = 600000;
+/** Each hunting ground's field boss, by map (its trophy: TROPHIES, 67-trophies.js). */
 const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock" };
 
 /**
@@ -753,31 +753,39 @@ const GUARD_RESP = 180000;
  */
 const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA.quests.main.map((q) => ({
   mob: String(q.mob), n: Math.max(1, q.n | 0), title: String(q.title || ""), text: String(q.text || ""), xp: Math.max(0, q.xp | 0), gold: Math.max(0, q.gold | 0),
-  items: (Array.isArray(q.items) ? q.items : []).filter((it) => Array.isArray(it) && typeof it[0] === "string" && Object.hasOwn(ITEMS, it[0])).map(([id, n]) => [id, Math.max(1, n | 0)]),
+  fb: q.fb ? 1 : 0, items: (Array.isArray(q.items) ? q.items : []).filter((it) => Array.isArray(it) && typeof it[0] === "string" && Object.hasOwn(ITEMS, it[0])).map(([id, n]) => [id, Math.max(1, n | 0)]),
 })).filter((q) => Object.hasOwn(MOBS, q.mob)) : [
   { mob: "twinhare", n: 5, title: "초원의 쌍두 토끼", text: "차원이 겹친 뒤로 초원의 짐승들이 뒤틀려 돌아왔다네. 머리 둘 달린 토끼 5마리만 정리해 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
   { mob: "gutfrog", n: 6, title: "뒤집힌 개구리", text: "속이 밖으로 나온 개구리가 길목에서 뛰어든다네. 창자 개구리 6마리를 잡아 주게.", xp: 220, gold: 120, items: [["mp_s", 5]] },
   { mob: "eyecrow", n: 8, title: "지켜보는 것들", text: "연못 위를 도는 눈알 까마귀 8마리를 떨어뜨려 주게. 먼저 덤비진 않지만, 보고 있는 게 영 꺼림칙해.", xp: 520, gold: 200, items: [["stone", 2]] },
   { mob: "lambmaw", n: 8, title: "뒤집힌 것", text: "초원 가장 깊은 곳에 안팎이 뒤집힌 양이 돌아다닌다네. 8마리를 잡아 주게. 고개를 숙이면 곧장 달려드니, 그 줄에서 비켜서게.", xp: 800, gold: 300, items: [["hp_s", 8]] },
+  { mob: "lambmaw", n: 1, fb: 1, title: "초원의 우두머리", text: "초원 깊은 곳에 유난히 큰 뒤집힌 양이 버티고 섰다네. 그 녀석이 선 자리로 가 보게. 혼자서 맞서야 할 걸세.", xp: 900, gold: 320, items: [] },
   { mob: "splitboar", n: 10, title: "숲의 반쪽", text: "속삭임 숲에는 몸이 반만 남은 멧돼지가 돌아다닌다네. 10마리를 사냥해 주게. 멀리서도 뛰어드니 동료를 구해 보게.", xp: 1300, gold: 450, items: [["hp_m", 5], ["ru_vit", 1]] },
   { mob: "hydrasnake", n: 10, title: "세 갈래 혀", text: "숲 깊은 곳의 세 머리 뱀 10마리를 베어 주게. 독을 뱉으니 서 있지 말고 움직이게.", xp: 2200, gold: 600, items: [["stone", 3]] },
+  { mob: "ribdeer", n: 1, fb: 1, title: "갈비뼈의 주인", text: "속삭임 숲의 갈비뼈 사슴 우두머리가 길을 막고 있다네. 놈이 선 자리로 가서 홀로 쓰러뜨려 주게.", xp: 2400, gold: 650, items: [] },
   { mob: "ratking", n: 12, title: "무덤 아래", text: "숲의 막다른 폐허에 지하묘지로 내려가는 계단이 있다네. 꼬리가 엉킨 쥐 왕 12마리를 정리해 주게.", xp: 3000, gold: 750, items: [["hp_m", 5]] },
   { mob: "toadbrood", n: 10, title: "등에 밴 것", text: "지하묘지의 알 밴 두꺼비 10마리를 잡아 주게. 뱉어 놓은 웅덩이는 한참 남으니, 밟고 서 있지 말게.", xp: 3500, gold: 820, items: [["mp_m", 4]] },
   { mob: "batcluster", n: 10, title: "터지는 것", text: "지하묘지 깊은 곳의 박쥐 덩어리 10마리를 터뜨려 주게. 죽으면서 터지니, 쓰러뜨리고 물러서게.", xp: 4000, gold: 900, items: [["ru_ign", 1]] },
+  { mob: "toadbrood", n: 1, fb: 1, title: "알을 품은 어미", text: "지하묘지 깊은 곳에 알을 잔뜩 밴 두꺼비 우두머리가 있네. 그 자리에 서면 놈이 자네만 노릴 걸세.", xp: 4300, gold: 950, items: [] },
   { mob: "pigeonmass", n: 10, title: "다른 세계의 하늘", text: "지하묘지 깊은 회랑 끝에서 네온 시티 변두리로 들어갈 수 있네. 한 덩어리로 뭉친 비둘기 떼살 10마리를 잡아 주게.", xp: 4600, gold: 1000, items: [["mp_m", 5]] },
   { mob: "catsplit", n: 12, title: "뒷골목의 울음", text: "네온 시티 골목의 갈라진 고양이 12마리를 잡아 주게. 소리 없이 뛰어든다네.", xp: 6500, gold: 1300, items: [["stone", 4]] },
+  { mob: "doghead", n: 1, fb: 1, title: "세 머리의 왕", text: "네온 시티 골목을 세 머리 들개 우두머리가 휘젓고 다닌다네. 생선 떼를 치러 가기 전에, 놈의 자리로 가서 혼자 상대해 주게.", xp: 10000, gold: 1900, items: [] },
   { mob: "fishwalker", n: 10, title: "뭍에 오른 것", text: "다리 달린 생선 10마리를 쓰러뜨려 주게. 단단하니 파티가 필요할 걸세.", xp: 9500, gold: 1800, items: [["stone", 5]] },
   { mob: "leechmaw", n: 12, title: "도시의 밑바닥", text: "네온 시티 뒷마당에 하수도로 내려가는 구멍이 있다네. 거머리 아가리 12마리를 떼어 내 주게.", xp: 12000, gold: 2200, items: [["hp_m", 8]] },
   { mob: "crabskull", n: 10, title: "남의 머리", text: "하수도에는 남의 두개골을 뒤집어쓴 게가 있다네. 두개골 게 10마리를 부숴 주게. 단단하고, 돌진이 매섭네.", xp: 13500, gold: 2400, items: [["stone", 4]] },
   { mob: "eelknot", n: 10, title: "매듭", text: "하수도 끝의 뱀장어 매듭 10마리를 풀어 주게. 멀리서 전기를 쏜다네.", xp: 15000, gold: 2600, items: [["ru_acu", 1]] },
+  { mob: "crabskull", n: 1, fb: 1, title: "하수도의 투구", text: "하수도 끝에 남의 두개골을 겹겹이 쓴 게 우두머리가 있네. 놈이 버틴 자리에서 홀로 깨부숴 주게.", xp: 16000, gold: 2700, items: [] },
   { mob: "bearmaw", n: 8, title: "배에 난 입", text: "하수도 끝 회랑의 물길을 따라가면 수정 동굴이 나와. 아가리 곰 8마리를 쓰러뜨려 주게. 땅을 내리칠 땐 물러서게.", xp: 19000, gold: 3200, items: [["ru_san", 1], ["stone", 5]] },
+  { mob: "moleworm", n: 1, fb: 1, title: "땅속의 장님", text: "수정 동굴 깊은 곳의 눈먼 두더지 우두머리가 땅을 뒤집고 있다네. 놈의 자리로 가서 혼자 끝내 주게.", xp: 24000, gold: 3400, items: [] },
   { mob: "boss", n: 1, title: "균열의 군주", text: "모든 세계를 뒤섞은 장본인, 균열의 군주 크리온을 쓰러뜨려 주게. 반드시 파티를 꾸려서 가게.", xp: 45000, gold: 8000, items: [["stone", 10], ["ru_lum", 1]] },
   { mob: "horsehalf", n: 12, title: "군주의 뒤편", text: "군주가 쓰러진 자리 뒤에 더 깊은 균열이 열렸네. 피의 심연의 반쪽 말 12마리를 쓰러뜨려 주게.", xp: 30000, gold: 5000, items: [["hp_m", 10], ["ru_fos", 1]] },
   { mob: "lionhand", n: 10, title: "손으로 된 갈기", text: "심연 깊은 곳의 손갈기 사자 10마리를 쓰러뜨려 주게. 땅을 치고, 멀리서는 무언가를 던진다네.", xp: 38000, gold: 6000, items: [["stone", 8]] },
+  { mob: "lionhand", n: 1, fb: 1, title: "갈기의 손아귀", text: "심연 깊은 곳에 손으로 된 갈기를 두른 사자 우두머리가 있네. 놈이 선 자리에서 홀로 맞서 주게.", xp: 42000, gold: 5000, items: [] },
   { mob: "abyssboss", n: 1, title: "심연의 어미", text: "뒤틀린 것들은 전부 한곳에서 태어났네. 심연의 어미를 쓰러뜨려, 이 일을 끝내 주게.", xp: 120000, gold: 20000, items: [["stone", 20], ["ru_lum", 2]] },
   { mob: "blightsquirrel", n: 12, title: "단풍 아래의 병", text: "어미는 쓰러졌지만, 그 병은 뿌리를 타고 지상으로 번졌다네. 속삭임 숲 동쪽, 단풍에 묻힌 옛 왕도로 가서 한 꼬리 다람쥐떼 12마리를 정리해 주게.", xp: 40000, gold: 6500, items: [["hp_m", 10]] },
   { mob: "shroomboar", n: 12, title: "포자 무덤", text: "왕도의 멧돼지들은 등에 버섯을 키운다네. 버섯등 멧돼지 12마리를 잡아 주게. 뱉어 낸 포자 웅덩이는 독이니 밟지 말게.", xp: 46000, gold: 7200, items: [["stone", 8], ["mp_m", 6]] },
   { mob: "rotstag", n: 4, title: "썩은 왕관", text: "무너진 예배당엔 왕관을 쓴 사슴이 산다네. 옛 왕의 사냥감이었다지. 썩은 관 사슴왕 4마리를 쓰러뜨려, 왕도의 병을 끊어 주게.", xp: 60000, gold: 9000, items: [["stone", 12], ["ru_lum", 1]] },
+  { mob: "rotstag", n: 1, fb: 1, title: "썩은 왕관의 주인", text: "무너진 예배당 앞에 가장 큰 썩은 관 사슴왕이 버티고 있다네. 놈의 자리로 가서 홀로 왕관을 꺾어 주게.", xp: 60000, gold: 7000, items: [] },
   { mob: "bogcrown", n: 24, title: "서리에 물든 뿌리", text: "단풍 왕도 안쪽부터 땅이 얼고 있네. 검은 왕관 뿌리짐승 24마리를 베어 오래된 왕릉으로 가는 길을 트게.", xp: 52000, gold: 9500, items: [["stone", 12]] },
   { mob: "hollowowl", n: 28, title: "소리로 지키는 길", text: "왕도 깊은 폐허의 올빼미는 발자국 소리를 듣고 날아오르네. 눈먼 문지기 올빼미 28마리를 쓰러뜨려 사냥길을 열게.", xp: 61000, gold: 11000, items: [["hp_m", 15], ["mp_m", 10]] },
   { mob: "rootwarden", n: 32, title: "얼어붙은 왕의 문", text: "단풍 왕도 남동쪽에서 얼어붙은 왕릉 파수꾼 32마리를 쓰러뜨려 주게. 성에왕의 성채는 Lv.200부터 들어갈 수 있네.", xp: 74000, gold: 15000, items: [["stone", 16], ["ru_fos", 2]] },
@@ -3326,8 +3334,9 @@ const chalMinLv = (k) => shownLv(MOBS[k].lv - DIM_CHAL.minGap);
 
 /** A boss challenge's arena: one oval hall, the party at its west end, the boss in the middle. Pure. */
 function dimArena(cfg) {
-  const W = DIM_CHAL.w, H = DIM_CHAL.h, k = cfg.k, B = DIM_CHAL.bosses[k], theme = B.theme;
-  const m = blank(cfg.id || "dim:0", `보스 도전: ${MOBS[k].name}`, W, H, "W");
+  // (also a story fight's arena, 67-trophies.js: any boss kind, the ground's theme and its own name)
+  const W = DIM_CHAL.w, H = DIM_CHAL.h, k = cfg.k, theme = cfg.theme || DIM_CHAL.bosses[k].theme;
+  const m = blank(cfg.id || "dim:0", cfg.name || `보스 도전: ${MOBS[k].name}`, W, H, "W");
   m.theme = theme; m.bgm = "dim"; m.band = null; m.marks = [];
   const cx = W >> 1, cy = H >> 1, rx = cx - 3, ry = cy - 3;
   let area = 0;
@@ -6063,7 +6072,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 16, name, job: "adventurer", jp: null,
+    v: 17, name, job: "adventurer", jp: null,
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -6086,6 +6095,8 @@ export function newChar(name, look, wk) {
     ...lifeFresh(),
     // charms (v13, 66-charms.js): the board, 주아나's quests, what waits with her
     charms: charmsEmpty(),
+    // 보스전리품 (v17): the field-boss kinds whose trophy this hero holds, in the order won (67-trophies.js)
+    tro: [],
     // social and the weekly book (v14, 63-social-weekly.js): blk (blocked names), pity (enhancement gauge), wk
     ...socialFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
@@ -6134,6 +6145,8 @@ function migrate(ch) {
   }
   ch.eq = eq;
   if (!isObj(ch.q)) ch.q = { i: 0, n: 0, st: 0 };
+  // (v17) boss quests went into the main chain: an older index points at the same errand as before
+  if ((ch.v | 0) < 17) ch.q.i = questV17(ch.q.i | 0);
   ch.q = { i: clamp(ch.q.i | 0, 0, QUESTS.length), n: Math.max(0, ch.q.n | 0), st: ch.q.st === 1 ? 1 : 0 };
   ch.bq = isObj(ch.bq) && MOBS[ch.bq.k] ? { k: ch.bq.k, n: ch.bq.n | 0, need: BOUNTY_N } : null;
   ch.bn = ch.bn | 0;
@@ -6206,7 +6219,9 @@ function migrate(ch) {
   socialSheetClean(ch, dl);
   // rift tiers and the weekly boss challenge (v15): the 균열 record was cleaned above (dimClean, 64-dim.js)
   // The integrated sheet (v16) holds rift and profession records. cleanJobs also adds hammer mastery.
-  ch.v = Math.max(ch.v | 0, 16);
+  // boss trophies (v17): known kinds only, each once (67-trophies.js)
+  ch.tro = Array.isArray(ch.tro) ? [...new Set(ch.tro.filter((k) => typeof k === "string" && Object.hasOwn(TROPHIES, k)))] : [];
+  ch.v = Math.max(ch.v | 0, 17);
   return ch;
 }
 
@@ -6411,7 +6426,7 @@ export function runtime(S, id) {
   if (!m) return null;
   if (!m.cells) buildCells(m);
   const C = m.cells, nc = C.cw * C.ch;
-  const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0,
+  const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, fb: 0, fbAt: 0,
     // the cells (80-simulation.js cellPass): awake or not, the monsters each should hold (slots), its last kill, when to look again
     cells: new Uint8Array(nc), slots: [], lastKill: new Array(nc).fill(-1e9), cellAt: 0 };
   for (const [fx, fy] of FIRES[id] || []) {
@@ -6519,24 +6534,40 @@ function bossSpot(S, m, ax, ay, clear = FB_CLEAR, away = FB_AWAY) {
   return best || [ax, ay];
 }
 /**
- * A hunting ground's field boss walks in near the kill that summoned it (or at the map's own
- * boss spot, if its designer gave one), but clear of the waypoint stone, the signposts and the
- * hunters themselves, standing still for a moment inside a warning ring where it lands.
+ * A hunting ground's field boss's own spot, the same every boot: the designer's (m.bossAt) or, failing that, the
+ * deepest tile from the way in — either way moved clear of the waypoint stone and the signposts (never of hunters). Tiles.
  */
-function spawnFieldBoss(S, rt, x, y) {
+function fbHome(S, rt) {
+  if (rt.fbHome) return rt.fbHome;
+  const m = mapOfS(S, rt.id);
+  let at = m.bossAt;
+  if (!at) {
+    // the deepest reachable tile from the way in: where the ground's worst would keep, far from those just arriving
+    const W = m.w, e = m.entry || [W >> 1, m.h >> 1], d = new Int32Array(W * m.h).fill(-1), q = [e[1] * W + e[0]];
+    d[q[0]] = 0; at = e;
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h];
+      at = [i % W, (i - (i % W)) / W];
+      for (const n of [i + 1, i - 1, i + W, i - W]) if (n >= 0 && n < d.length && d[n] < 0 && m.reach[n]) { d[n] = d[i] + 1; q.push(n); }
+    }
+  }
+  return (rt.fbHome = bossSpot({ players: {} }, m, clamp(at[0], 0, m.w - 1), clamp(at[1], 0, m.h - 1), FB_CLEAR, 0));
+}
+/** A hunting ground's field boss takes its spot (fbHome), standing still for a moment inside a warning ring. */
+function spawnFieldBoss(S, rt) {
   const m = mapOfS(S, rt.id);
   const mob = newMob(S, FIELD_BOSS[rt.id], [0, 0, 0, 0]);
   mob.el = 2; mob.temp = true;
-  mob.tr = rollTraits(S, 2);
-  const at = m.bossAt || [Math.floor(x / T), Math.floor(y / T)];
-  const [tx, ty] = bossSpot(S, m, clamp(at[0], 0, m.w - 1), clamp(at[1], 0, m.h - 1));
+  // its traits from the ground's own draw, so a boss walking in leaves the world's other draws as they were
+  if (!rt.fbRng) { let h = S.seed | 0; for (const c of rt.id) h = Math.imul(h ^ c.charCodeAt(0), 16777619); rt.fbRng = { seed: h }; }
+  mob.tr = rollTraits(rt.fbRng, 2);
+  const [tx, ty] = fbHome(S, rt);
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   mob.hp = mobMax(mob);
   mob.castAt = S.now + 4000;
   mob.stun = S.now + FB_WARN;
   rt.mobs.push(mob);
   rt.fb = mob.id;
-  rt.kc = 0;
   rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), 40, FB_WARN]);
   rt.ev.push(["r", mob.id]);
   sys(S, `${m.name}에 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
@@ -6747,6 +6778,8 @@ function deriveStats(p) {
   const E = {};
   // the charm board (66-charms.js): stats on top of the soft-capped ones (combat only), HP, MP, attack after gear
   const cm = charmSum(ch);
+  // boss trophies (67-trophies.js): fixed % on gold, experience, speed, attack speed, magic find, HP, crit
+  const tf = trophySum(ch);
   for (const k of ST_ORDER) E[k] = eff(ch.st[k]) + cm.st[k];
   const wAtk = w ? (ITEMS[w.id].base.atk || 0) * (1 + 0.1 * w.enh) : 0;
   const sc = scaleOf(ch, wk);
@@ -6756,18 +6789,18 @@ function deriveStats(p) {
   const jl = Math.max(0, (ch.jp?.lv || 0) - 1);
   const luk = E.luk, dex = E.dex, wil = E.wil, wis = E.wis;
   p.stc = {
-    mhp: Math.round((SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp) * (1 + JOB_PROGRESS.hp * jl)),
+    mhp: Math.round((SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp) * (1 + JOB_PROGRESS.hp * jl) * (1 + tf.hp / 100)),
     mmp: Math.round((SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp) * (1 + JOB_PROGRESS.mp * jl)),
     atk0: ((core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk) * (1 + JOB_PROGRESS.atk * jl),
     core, cm,
     def: Math.round((Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def)) * (1 + JOB_PROGRESS.def * jl)),
-    crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh : 0) + b.crit),
+    crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh : 0) + b.crit + tf.crit),
     critd: SFX.critd[0] + SFX.critd[1] * luk + b.critd / 100,
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
-    ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + Math.min(40, b.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp, gold: b.gold,
-    mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk),
+    ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + (Math.min(40, b.spd) + tf.move) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
+    mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk) + tf.drop,
     lg: b.lg, arm, wk, mag: arm.mag ? 1 : 0,
-    acd: Math.round(arm.cd * (1 - Math.min(SFX.aspd[1], SFX.aspd[0] * dex)) * (b.lg.haste ? 0.85 : 1)),
+    acd: Math.round(arm.cd * (1 - Math.min(SFX.aspd[1], SFX.aspd[0] * dex)) * (b.lg.haste ? 0.85 : 1) * (1 - tf.aspd / 100)),
     aspd: Math.min(SFX.aspd[1], SFX.aspd[0] * dex),
     eva: Math.min(SFX.eva[1], SFX.eva[0] * dex),
     sneak: SFX.sneak * dex,
@@ -7572,9 +7605,9 @@ function killMob(S, rt, mob) {
     }
     const q = ch.q;
     const quest = QUESTS[q.i];
-    if (q.st === 1 && quest && quest.mob === mob.k && q.n < quest.n) {
+    if (q.st === 1 && quest && quest.mob === mob.k && q.n < quest.n && (!quest.fb || el === 2)) {
       q.n++;
-      if (q.n >= quest.n) toast(p, `의뢰 [${quest.title}] 달성! 관리자에게 돌아가세요.`);
+      if (q.n >= quest.n && !mob.story) toast(p, `의뢰 [${quest.title}] 달성! 관리자에게 돌아가세요.`);
     }
     const bq = ch.bq;
     if (bq && bq.k === mob.k && bq.n < bq.need) {
@@ -7598,19 +7631,16 @@ function killMob(S, rt, mob) {
   if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   if (el === 2) {
     if (mob.evt) { if (S.evt) S.evt.bossDead = true; }
-    else if (mob.temp) rt.fb = 0;
-    if (top) sys(S, `${top.ch.name}님의 일행이 ${mapOfS(S, rt.id).name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
+    else if (mob.story) storyClear(S, rt, mob);
+    // a field boss is back at its spot FB_RESP after it falls; now and then it leaves its trophy (67-trophies.js)
+    else if (mob.temp) { rt.fb = 0; rt.fbAt = S.now + FB_RESP; fbTrophy(S, looters, mob.k); }
+    if (top && !mob.story) sys(S, `${top.ch.name}님의 일행이 ${mapOfS(S, rt.id).name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   }
   // some monsters go off where they fall, and so does any elite with the trait
   if (d.burst || has(mob, "burst")) {
     const r = d.burst || 34;
     rt.tele.push({ x: mob.x, y: mob.y, r, at: S.now + 900, dmg: d.atk * ELITE[el].atk * 1.3 });
     rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), r, 900]);
-  }
-  // enough kills in one hunting ground call out its field boss
-  if (!d.boss && !d.chest && !mob.evt && el < 2 && FIELD_BOSS[rt.id] && looters.size) {
-    rt.kc++;
-    if (rt.kc >= FB_KILLS && !rt.fb) spawnFieldBoss(S, rt, mob.x, mob.y);
   }
   // inside a 차원 균열: the gauge, orbs and shrines, the master (64-dim.js)
   if (mob.dim) dimKill(S, rt, mob, looters);
@@ -11532,6 +11562,7 @@ function dimTick(S, now) {
 function dimRespawn(S, p) {
   const dim = dimAt(S, p.map);
   if (!dim) return false;
+  if (dim.story) { storyHome(S, p, "쓰러졌습니다… 다시 그 자리로 다가가면 재도전할 수 있습니다."); return true; }
   const [x, y] = dimSpot(dim.map, ri(S, 0, 8));
   p.dead = false; p.dimDeadAt = 0;
   const st = stats(p);
@@ -11689,7 +11720,9 @@ function dimApply(S, p, a) {
       rcCheck(S, party);
       break;
     case "dim_cancel": rcEnd(S, party, "파티장이 차원 균열 입장을 취소했습니다."); break;
-    case "dim_leave": toast(p, "차원 균열을 떠나 버드나무광장으로 돌아왔습니다."); dimHome(S, p); break;
+    case "dim_leave":
+      if (dimAt(S, p.map).story) { storyHome(S, p, "도전을 그만두고 돌아왔습니다. 다시 그 자리로 다가가면 재도전할 수 있습니다."); break; }
+      toast(p, "차원 균열을 떠나 버드나무광장으로 돌아왔습니다."); dimHome(S, p); break;
     case "dim_join": {
       const dim = dimJoinable(S, p);
       const [x, y] = dimSpot(dim.map, dimInside(S, dim.id).length);
@@ -13025,6 +13058,168 @@ function charmDefs() {
     quests: CHARM_QUESTS.map(({ id, lv, n, title, text, reward }) => ({ id, lv, n, title, text, reward })), say: CHARM_SAY, npc: "town_charm_juana", role: "charm",
   };
 }
+// ───────────────────────────── 보스전리품 (boss trophies) and the solo story fight ─────────────────────────────
+// docs/design/boss-trophies.md. Every hunting ground's field boss (FIELD_BOSS) stands at its spot (fbHome) and is back
+// FB_RESP after it falls. Each kind has one trophy with a fixed effect; every trophy held works at once (no slots),
+// the sums capped by TROPHY_CAP. A trophy is won for sure by clearing the boss's story fight — the main chain's
+// "defeat <boss>" quest (QUESTS `fb: 1`) pulls its holder, alone, into a private arena (a "dim:" instance, not a rift:
+// no `prog`, so dimTick leaves it alone) with a weaker copy of the boss — or at TROPHY_P by a share of the real kill.
+// A trophy already held pays TROPHY_GOLD × the boss's level instead.
+// Sheet (v17): ch.tro = [kind…]. Wire: self.tro (with `dirty`), defs.trophies { list, cap, p, gold, story }.
+
+/** Effects in whole percent: gold, xp, move (speed), aspd (attack speed), drop (magic find), hp (max HP), crit (chance, points). */
+const TROPHIES = {
+  lambmaw: { name: "뒤집힌 양털", fx: { xp: 2 } },
+  ribdeer: { name: "갈비뼈 사슴뿔", fx: { move: 2 } },
+  toadbrood: { name: "두꺼비 알주머니", fx: { hp: 2 } },
+  doghead: { name: "세 머리 들개 송곳니", fx: { aspd: 2 } },
+  crabskull: { name: "두개골 게딱지", fx: { gold: 3 } },
+  moleworm: { name: "눈먼 두더지 발톱", fx: { drop: 3 } },
+  loggator: { name: "악어 통나무 비늘", fx: { hp: 3 } },
+  coralturtle: { name: "산호 뿔 조각", fx: { move: 3 } },
+  mummycamel: { name: "미라 낙타 붕대", fx: { gold: 4 } },
+  lionhand: { name: "손갈기 사자 갈기", fx: { xp: 4 } },
+  bearmaw_ash: { name: "종지기 곰의 종", fx: { aspd: 4 } },
+  sandmaw: { name: "모래 아가리 이빨", fx: { drop: 4 } },
+  crownpeacock: { name: "금관 공작 깃", fx: { crit: 2, gold: 2 } },
+  rotstag: { name: "썩은 사슴왕의 관", fx: { xp: 3, crit: 3 } },
+};
+const TROPHY_CAP = { gold: 8, xp: 8, move: 5, aspd: 5, drop: 6, hp: 5, crit: 4 };
+const TROPHY_P = 0.05, TROPHY_GOLD = 40;
+/**
+ * The story fight: the copy takes `hp` of a field boss's damage-scaled health (mob.hk: blows count 1/hp more) and
+ * hits `atk` as hard (mob.ak); no traits. `r` tiles from the boss's spot pull the quest holder in; `limit` ms to win;
+ * `endMs` after the win (loot to pick up) or a fall before the hero is back where they stepped in.
+ * Measured with a solo bot at the quest's level in tests/trophies.mjs.
+ */
+const STORY = { hp: 0.5, atk: 0.6, r: 4, limit: 600000, endMs: 6000, failMs: 1500 };
+
+/** The sums of every trophy held, each capped (deriveStats). */
+function trophySum(ch) {
+  const out = { gold: 0, xp: 0, move: 0, aspd: 0, drop: 0, hp: 0, crit: 0 };
+  for (const k of ch.tro || []) for (const [e, v] of Object.entries(TROPHIES[k].fx)) out[e] += v;
+  for (const e of Object.keys(out)) out[e] = Math.min(TROPHY_CAP[e], out[e]);
+  return out;
+}
+/** `p` wins kind `k`'s trophy — or, holding it already, its worth in gold. */
+function grantTrophy(S, p, k) {
+  const ch = p.ch, T0 = TROPHIES[k];
+  if (!T0) return;
+  if (ch.tro.includes(k)) {
+    const g = TROPHY_GOLD * MOBS[k].lv;
+    ch.gold += g; p.gain.push(["gold", g]);
+    toast(p, `이미 가진 보스전리품 [${T0.name}]${pp(T0.name, "은는")} ${g}G로 바뀌었습니다.`);
+  } else {
+    ch.tro.push(k);
+    p.stc = null;
+    const fx = Object.entries(T0.fx).map(([e, v]) => `${TROPHY_FX[e]} +${v}%`).join(", ");
+    toast(p, `보스전리품 [${T0.name}] 획득! ${fx}`);
+    sys(S, `${ch.name}님이 보스전리품 [${T0.name}]${pp(T0.name, "을를")} 얻었습니다!`);
+  }
+  p.dirty = true;
+  saveSoon(p);
+}
+const TROPHY_FX = { gold: "골드", xp: "경험치", move: "이동 속도", aspd: "공격 속도", drop: "아이템 발견", hp: "최대 HP", crit: "치명타" };
+/** A real field boss down: each sharer without its trophy may find it (TROPHY_P). */
+function fbTrophy(S, looters, k) {
+  if (!TROPHIES[k]) return;
+  for (const p of looters) if (!p.ch.tro.includes(k) && rnd(S) < TROPHY_P) grantTrophy(S, p, k);
+}
+
+// ── a hunting ground's field boss: at its spot, back after FB_RESP; its quest's holder stepping near goes in alone
+
+/** The main quest's boss in hand (accepted, not yet beaten), or "". */
+function storyQuest(ch) {
+  const q = ch.q, Q = QUESTS[q.i];
+  return q.st === 1 && Q && Q.fb && q.n < Q.n ? Q.mob : "";
+}
+/** Each tick of a hunting ground someone stands in (80-simulation.js). */
+function fbTick(S, rt, now) {
+  const k = FIELD_BOSS[rt.id];
+  if (!k) return;
+  if (!rt.fb && now >= rt.fbAt) spawnFieldBoss(S, rt);
+  const [hx, hy] = fbHome(S, rt), x = hx * T + 8, y = hy * T + 10;
+  for (const pid of Object.keys(S.players)) {
+    const p = S.players[pid];
+    if (p.map !== rt.id || p.dead) continue;
+    // back from a try: step out of the ring first, then in again to retry
+    if (dist(p.x, p.y, x, y) > STORY.r * T) { p.storyBack = 0; continue; }
+    if (!p.storyBack && storyQuest(p.ch) === k) storyStart(S, p, rt);
+  }
+}
+/** `p` alone into a fresh arena with the weaker copy of the ground's boss. */
+function storyStart(S, p, rt) {
+  p.storyBack = 1;
+  if (Object.keys(S.dims).length >= DIM.max) { toast(p, "지금은 도전할 자리가 없습니다. 잠시 뒤 다시 다가가세요."); return; }
+  const k = FIELD_BOSS[rt.id], src = mapOfS(S, rt.id);
+  S.dimN = (S.dimN | 0) + 1;
+  const id = "dim:" + S.dimN, seed = Math.imul(S.seed ^ S.nextId++, 2654435761) | 0;
+  const map = dimArena({ id, seed, k, theme: src.theme || "meadow", name: `${MOBS[k].name}의 자리` });
+  const dim = registerDim(S, { id, map, seed, lv: MOBS[k].lv, theme: map.theme, expire: S.now + STORY.limit });
+  dim.story = { pid: p.pid, k, from: [rt.id, p.x, p.y], endAt: 0, won: 0, deadAt: 0 };
+  const [tx, ty] = map.dim.boss, mob = newMob(S, k, [tx, ty, tx, ty]);
+  mob.el = 2; mob.temp = true; mob.story = 1; mob.tr = [];
+  mob.hk = STORY.hp; mob.ak = STORY.atk;
+  mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
+  mob.hp = mobMax(mob);
+  mob.castAt = S.now + 4000; mob.stun = S.now + FB_WARN;
+  dim.rt.mobs.push(mob);
+  dim.boss = mob.id;
+  const [sx, sy] = tilePx(map.dim.start);
+  changeMap(S, p, id, sx, sy);
+  dim.rt.ev.push(["dm", "open", sx, sy]);
+  toast(p, `[홀로 도전] ${MOBS[k].name} — ${STORY.limit / 60000}분 안에 쓰러뜨리세요. 쓰러지거나 [떠나기]로 나가도 다시 도전할 수 있습니다.`);
+  p.dirty = true;
+}
+/** The copy down: the trophy, the quest done (its reward paid here), home in STORY.endMs. */
+function storyClear(S, rt, mob) {
+  const dim = dimAt(S, rt.id), st = dim && dim.story, p = st && S.players[st.pid];
+  if (!st || st.won) return;
+  st.won = 1; st.endAt = S.now + STORY.endMs;
+  if (!p || p.map !== rt.id) return;
+  const ch = p.ch, Q = QUESTS[ch.q.i];
+  grantTrophy(S, p, mob.k);
+  if (Q && Q.fb && Q.mob === mob.k && ch.q.st === 1) {
+    ch.gold += Q.gold; p.gain.push(["gold", Q.gold]);
+    for (const [id, n] of Q.items) { addItem(ch, id, n); p.gain.push(["item", id, n, 0]); }
+    ch.q = { i: ch.q.i + 1, n: 0, st: 0 };
+    toast(p, `의뢰 완료: ${Q.title}`);
+    gainXp(S, p, Q.xp);
+  }
+  toast(p, `${MOBS[mob.k].name}${pp(MOBS[mob.k].name, "을를")} 쓰러뜨렸습니다! 잠시 뒤 원래 자리로 돌아갑니다.`);
+  p.dirty = true;
+}
+/** Out of the arena, on their feet, where they stepped in (a fall there costs nothing); the arena closes. */
+function storyHome(S, p, why) {
+  const dim = dimAt(S, p.map), st = dim && dim.story;
+  if (!st) return;
+  const [map, x, y] = st.from;
+  if (p.dead) { p.dead = false; const s = stats(p); p.hp = Math.round(s.mhp * 0.5); p.mp = Math.max(p.mp, Math.round(s.mmp * 0.5)); }
+  p.storyBack = 1;
+  changeMap(S, p, map, x, y);
+  if (why) toast(p, why);
+  p.dirty = true;
+  closeDim(S, dim.id);
+}
+/** Every tick: each story arena — its hero gone, fallen, out of time, or done. */
+function storyTick(S, now) {
+  for (const id of Object.keys(S.dims)) {
+    const dim = S.dims[id], st = dim.story;
+    if (!st) continue;
+    const p = S.players[st.pid];
+    if (!p || p.map !== id) { closeDim(S, id); continue; }
+    if (st.won) { if (now >= st.endAt) storyHome(S, p, "원래 자리로 돌아왔습니다."); continue; }
+    if (p.dead) { if (!st.deadAt) st.deadAt = now; else if (now - st.deadAt >= STORY.failMs) storyHome(S, p, "쓰러졌습니다… 다시 그 자리로 다가가면 재도전할 수 있습니다."); continue; }
+    if (now >= dim.expire) storyHome(S, p, "시간이 다 되었습니다. 다시 그 자리로 다가가면 재도전할 수 있습니다.");
+  }
+}
+/** defs().trophies: the table, the caps, the field chance, the duplicate's gold per boss level, the story's numbers. */
+/** (migrate, sheets before v17) an old main-chain index → the same errand's index now (the boss quests went in between). */
+function questV17(i) {
+  const old = QUESTS.map((q, j) => (q.fb ? -1 : j)).filter((j) => j >= 0);
+  return i < old.length ? old[i] : QUESTS.length;
+}
+const trophyDefs = () => ({ list: TROPHIES, cap: TROPHY_CAP, p: TROPHY_P, gold: TROPHY_GOLD, story: { r: STORY.r, limit: STORY.limit } });
 // ───────────────────────────── actions ─────────────────────────────
 
 function npcNear(p, role) {
@@ -14488,11 +14683,13 @@ export function tick(S, now) {
   worldEvent(S, now);
   skyTick(S, now);
   dimTick(S, now);
+  storyTick(S, now);
   homeTick(S, now);
   const pids = Object.keys(S.players);
   for (const id of liveMapIds(S)) {
     const rt = S.maps[id];
     if (rt.n <= 0) continue;
+    fbTick(S, rt, now);   // the field boss back at its spot, its quest's holder taken to the story fight (67-trophies.js)
     npcLifeTick(rt, now);
     const m = mapOfS(S, id);
     cellPass(S, m, rt, pids);
@@ -14693,6 +14890,8 @@ function selfPayload(p) {
     dimr: dimSelf(p),
     // charms (66-charms.js): the board, what waits at 주아나, her quest; a sealed charm's seal never leaves the server
     charms: charmSelf(p),
+    // boss trophies held (67-trophies.js): field-boss kinds, in the order won
+    tro: p.ch.tro,
     // life skills (58-life.js): [lv, xp, need] per skill in LIFE order; L2: the 알바 board, trust, the 재료 주머니
     life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch,
     // the block list, the enhancement pity gauge, the weekly book (63-social-weekly.js)
@@ -14859,7 +15058,7 @@ export function defs() {
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
-    slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
+    slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbResp: FB_RESP,
     traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], dash: [DASH.px, DASH.ms, DASH.cd, DASH.inv], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
     waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: stoneNames(id), minLv: MAP_META[id].minLv || undefined })),
@@ -14880,6 +15079,8 @@ export function defs() {
     life: lifeDefs(), npclife: npcLifeDefs(),
     // charms: shapes, options and caps, legendaries, the expansion order and prices, 주아나's quests (66-charms.js)
     charms: charmDefs(),
+    // boss trophies: { list: { kind: { name, fx } }, cap, p, gold, story: { r, limit } } (67-trophies.js)
+    trophies: trophyDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: worldMapDefs(),
   };
 }

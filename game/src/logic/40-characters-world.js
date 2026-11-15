@@ -48,7 +48,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 16, name, job: "adventurer", jp: null,
+    v: 17, name, job: "adventurer", jp: null,
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -71,6 +71,8 @@ export function newChar(name, look, wk) {
     ...lifeFresh(),
     // charms (v13, 66-charms.js): the board, 주아나's quests, what waits with her
     charms: charmsEmpty(),
+    // 보스전리품 (v17): the field-boss kinds whose trophy this hero holds, in the order won (67-trophies.js)
+    tro: [],
     // social and the weekly book (v14, 63-social-weekly.js): blk (blocked names), pity (enhancement gauge), wk
     ...socialFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
@@ -119,6 +121,8 @@ function migrate(ch) {
   }
   ch.eq = eq;
   if (!isObj(ch.q)) ch.q = { i: 0, n: 0, st: 0 };
+  // (v17) boss quests went into the main chain: an older index points at the same errand as before
+  if ((ch.v | 0) < 17) ch.q.i = questV17(ch.q.i | 0);
   ch.q = { i: clamp(ch.q.i | 0, 0, QUESTS.length), n: Math.max(0, ch.q.n | 0), st: ch.q.st === 1 ? 1 : 0 };
   ch.bq = isObj(ch.bq) && MOBS[ch.bq.k] ? { k: ch.bq.k, n: ch.bq.n | 0, need: BOUNTY_N } : null;
   ch.bn = ch.bn | 0;
@@ -191,7 +195,9 @@ function migrate(ch) {
   socialSheetClean(ch, dl);
   // rift tiers and the weekly boss challenge (v15): the 균열 record was cleaned above (dimClean, 64-dim.js)
   // The integrated sheet (v16) holds rift and profession records. cleanJobs also adds hammer mastery.
-  ch.v = Math.max(ch.v | 0, 16);
+  // boss trophies (v17): known kinds only, each once (67-trophies.js)
+  ch.tro = Array.isArray(ch.tro) ? [...new Set(ch.tro.filter((k) => typeof k === "string" && Object.hasOwn(TROPHIES, k)))] : [];
+  ch.v = Math.max(ch.v | 0, 17);
   return ch;
 }
 
@@ -396,7 +402,7 @@ export function runtime(S, id) {
   if (!m) return null;
   if (!m.cells) buildCells(m);
   const C = m.cells, nc = C.cw * C.ch;
-  const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, kc: 0, fb: 0,
+  const rt = { id, mobs: [], drops: [], ev: [], tele: [], zones: [], pools: [], fires: [], props: [], decoys: [], who: false, n: 0, fb: 0, fbAt: 0,
     // the cells (80-simulation.js cellPass): awake or not, the monsters each should hold (slots), its last kill, when to look again
     cells: new Uint8Array(nc), slots: [], lastKill: new Array(nc).fill(-1e9), cellAt: 0 };
   for (const [fx, fy] of FIRES[id] || []) {
@@ -504,24 +510,40 @@ function bossSpot(S, m, ax, ay, clear = FB_CLEAR, away = FB_AWAY) {
   return best || [ax, ay];
 }
 /**
- * A hunting ground's field boss walks in near the kill that summoned it (or at the map's own
- * boss spot, if its designer gave one), but clear of the waypoint stone, the signposts and the
- * hunters themselves, standing still for a moment inside a warning ring where it lands.
+ * A hunting ground's field boss's own spot, the same every boot: the designer's (m.bossAt) or, failing that, the
+ * deepest tile from the way in — either way moved clear of the waypoint stone and the signposts (never of hunters). Tiles.
  */
-function spawnFieldBoss(S, rt, x, y) {
+function fbHome(S, rt) {
+  if (rt.fbHome) return rt.fbHome;
+  const m = mapOfS(S, rt.id);
+  let at = m.bossAt;
+  if (!at) {
+    // the deepest reachable tile from the way in: where the ground's worst would keep, far from those just arriving
+    const W = m.w, e = m.entry || [W >> 1, m.h >> 1], d = new Int32Array(W * m.h).fill(-1), q = [e[1] * W + e[0]];
+    d[q[0]] = 0; at = e;
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h];
+      at = [i % W, (i - (i % W)) / W];
+      for (const n of [i + 1, i - 1, i + W, i - W]) if (n >= 0 && n < d.length && d[n] < 0 && m.reach[n]) { d[n] = d[i] + 1; q.push(n); }
+    }
+  }
+  return (rt.fbHome = bossSpot({ players: {} }, m, clamp(at[0], 0, m.w - 1), clamp(at[1], 0, m.h - 1), FB_CLEAR, 0));
+}
+/** A hunting ground's field boss takes its spot (fbHome), standing still for a moment inside a warning ring. */
+function spawnFieldBoss(S, rt) {
   const m = mapOfS(S, rt.id);
   const mob = newMob(S, FIELD_BOSS[rt.id], [0, 0, 0, 0]);
   mob.el = 2; mob.temp = true;
-  mob.tr = rollTraits(S, 2);
-  const at = m.bossAt || [Math.floor(x / T), Math.floor(y / T)];
-  const [tx, ty] = bossSpot(S, m, clamp(at[0], 0, m.w - 1), clamp(at[1], 0, m.h - 1));
+  // its traits from the ground's own draw, so a boss walking in leaves the world's other draws as they were
+  if (!rt.fbRng) { let h = S.seed | 0; for (const c of rt.id) h = Math.imul(h ^ c.charCodeAt(0), 16777619); rt.fbRng = { seed: h }; }
+  mob.tr = rollTraits(rt.fbRng, 2);
+  const [tx, ty] = fbHome(S, rt);
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   mob.hp = mobMax(mob);
   mob.castAt = S.now + 4000;
   mob.stun = S.now + FB_WARN;
   rt.mobs.push(mob);
   rt.fb = mob.id;
-  rt.kc = 0;
   rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), 40, FB_WARN]);
   rt.ev.push(["r", mob.id]);
   sys(S, `${m.name}에 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
