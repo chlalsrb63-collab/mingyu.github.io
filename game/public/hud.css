@@ -135,6 +135,7 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #chat-log .err { color: #ff9a9a; }
 #chat-log .guild { color: #9af0ae; }
 #chat-log .party { color: #9ad8ff; }
+#chat-log .whisper { color: #f2b0e4; cursor: pointer; } #chat-log p.whisper .who { color: #e888d4; }
 #chat-log .who { color: #9ac0e8; }
 #chat-log img.emo { width: 16px; height: 16px; image-rendering: pixelated; vertical-align: -3px; margin: 0 1px; }
 #chat-log[data-tab="all"] p.far, #chat-log[data-tab="party"] p:not(.party), #chat-log[data-tab="guild"] p:not(.guild), #chat-log[data-tab="sys"] p:not(.sys):not(.loot):not(.err) { display: none; }
@@ -1342,3 +1343,15 @@ body[data-lay="full"] #menu button img.gi { width: 24px; height: 24px; }
 body[data-lay="full"] #menu button { height: 32px; }
 #menu button { min-width: 0; overflow: hidden; }
 @media (max-width: 1100px) { body[data-lay="full"] #menu { grid-template-columns: repeat(6, 1fr); } }
+
+/* friends and blocks in the party window (win_social.js friendBox), the weekly book (win_world.js renderWeek) */
+.window .list.friends .online { flex: none; width: 10px; font-size: 10px; color: #6c6478; }
+.window .list.friends .online.on { color: #8fe07a; }
+.window .list .it.off { opacity: .72; }
+.window .friend-add { display: flex; gap: 4px; margin: 4px 0 2px; }
+.window .friend-add input { flex: 1 1 auto; min-width: 0; font: 12px/1.2 var(--pix); }
+.window .week-boxes { display: grid; grid-template-columns: 1fr; gap: 2px; }
+.window .week-boxes .dcard { padding: 3px 6px; }
+.window .week-boxes .dcard .dh b { font-size: 11px; }
+.window .hint.gold { color: #f0d080; }
+.window .pity { color: #e2c486; }

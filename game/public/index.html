@@ -95,6 +95,7 @@
           <button data-win="party" title="파티 (P)"><span>파티</span><kbd>P</kbd></button>
           <button data-win="guild" title="길드 (G)"><span>길드</span><kbd>G</kbd></button>
           <button data-win="daily" title="일일 의뢰 (U)"><span>일일</span><kbd>U</kbd></button>
+          <button data-win="week" title="주간 수첩 (Shift+U)"><span>주간</span><kbd>S+U</kbd></button>
           <button data-win="achieve" title="업적 · 칭호 (Y)"><span>업적</span><kbd>Y</kbd></button>
           <button data-win="collect" title="몬스터 도감 (J)"><span>도감</span><kbd>J</kbd></button>
           <button data-win="life" title="생활 기술 (Shift+L)"><span>생활</span><kbd>S+L</kbd></button>
@@ -271,6 +272,11 @@
       <section class="window" id="w-daily" hidden>
         <header><span class="t">일일 의뢰</span><kbd>U</kbd><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body"><div id="daily-body"></div></div>
+      </section>
+
+      <section class="window" id="w-week" hidden>
+        <header><span class="t">주간 수첩</span><kbd>S+U</kbd><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body"><div id="week-body"></div></div>
       </section>
 
       <section class="window" id="w-bank" hidden>
