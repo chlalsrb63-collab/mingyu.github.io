@@ -46,7 +46,9 @@ export function tone(a, b, t) {
   return `#${ch(16)}${ch(8)}${ch(0)}`;
 }
 
+export const FIGURE_DENSITY = SP.PERSON_SIZE / SP.SIZE;
 export let cv, g, Z = 2, vw = 320, vh = 200;
+let worldDensity = 1;
 export const cam = { x: 0, y: 0 };
 export let G = null;
 export const PARTS = SP.PARTS;
@@ -55,6 +57,11 @@ export function playerLook(cls, look, gear = {}) { return { cls, look, gear }; }
 export function init(canvas) { cv = canvas; g = cv.getContext("2d"); resize(); }
 /** Draw on another canvas for a moment (`drawFigure`); put the old one back after. */
 export function setCtx(ctx) { g = ctx; }
+/** Apply a logical projection to the world canvas at its current backing density. */
+export function setWorldTransform(a = 1, b = 0, c = 0, d = 1, x = 0, y = 0) {
+  const p = worldDensity;
+  g.setTransform(a * p, b * p, c * p, d * p, x * p, y * p);
+}
 /** Fit the world to a W×H screen rect (the HUD passes the play viewport; default the whole window). */
 export function resize(W = innerWidth, H = innerHeight, zoom = 0) {
   if (!cv) return;
@@ -63,7 +70,9 @@ export function resize(W = innerWidth, H = innerHeight, zoom = 0) {
   if (W < 560) Z = Math.max(2, Math.round(W / 220));
   if (zoom) Z = zoom;                    // preview pages ask for a fixed zoom (1 = the whole map at world size)
   vw = Math.ceil(W / Z); vh = Math.ceil(H / Z);
-  cv.width = vw; cv.height = vh;
+  // Keep camera, tile and pointer coordinates logical. Use the denser backing only where visible.
+  worldDensity = Z * devicePixelRatio >= FIGURE_DENSITY ? FIGURE_DENSITY : 1;
+  cv.width = vw * worldDensity; cv.height = vh * worldDensity;
   cv.style.width = vw * Z + "px"; cv.style.height = vh * Z + "px";
   g.imageSmoothingEnabled = false;
 }

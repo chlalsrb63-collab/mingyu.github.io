@@ -34,7 +34,7 @@ try {
     g.fillStyle = "#5a7a4a"; g.fillRect(0, 0, cv.width, cv.height);
     [[plain, "front"], [ju, "front"], [plain, "side"], [ju, "side"]].forEach(([sh, v], i) => {
       const ox = i * (32 * Z + 20) + 16, oy = 14;
-      g.drawImage(sh[v][0], 0, R0, 32, RN, ox, oy, 32 * Z, RN * Z);
+      SP.drawPersonCrop(g, sh[v][0], 0, R0, 32, RN, ox, oy, 32 * Z, RN * Z);
       g.fillStyle = "rgba(0,0,0,.25)";
       for (let k = 0; k <= 32; k++) g.fillRect(ox + k * Z, oy, 1, RN * Z);
       for (let k = 0; k <= RN; k++) g.fillRect(ox, oy + k * Z, 32 * Z, 1);

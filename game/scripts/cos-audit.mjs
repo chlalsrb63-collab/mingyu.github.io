@@ -8,7 +8,7 @@
 //   node scripts/cos-audit.mjs --item hat_wizard     one item: 15 species × 3 views × 6 frames
 //   node scripts/cos-audit.mjs --items a,b --sp 7    some items on one species, every view and frame
 //   node scripts/cos-audit.mjs --giant hat_crown     the warrior's giant form (1.6×) as the game scales it
-//   --out <dir> (default shots_cos) · --tag <prefix> · --z <zoom, 3>
+//   --out <dir> (default shots_cos) · --tag <prefix> · --z <logical zoom, 4>
 //
 // Rows/columns are numbered with a tiny pixel font; the console prints the legend.
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -25,7 +25,7 @@ const opt = args();
 const OUT = join(GAME, String(opt.out || "shots_cos"));
 mkdirSync(OUT, { recursive: true });
 const TAG = opt.tag ? String(opt.tag) + "-" : "";
-const Z = Number(opt.z || 3);
+const Z = Number(opt.z || 4);
 const VIEWS = ["front", "side", "back"];
 const FURS = { white: 0, dark: 15, orange: 10, brown: 12 };
 
@@ -44,14 +44,18 @@ function num(c, n, x, y, s = 2, col = "#ffffff") {
   const g = c.getContext("2d"); g.fillStyle = col;
   String(n).split("").forEach((ch, k) => { const p = DIG[ch]; if (!p) return; for (let i = 0; i < 15; i++) if (p[i] === "1") g.fillRect(x + k * 4 * s + (i % 3) * s, y + Math.floor(i / 3) * s, s, s); });
 }
-/** Paste a 32×32 frame, cropped to its middle `crop` pixels, at zoom Z; `flip` mirrors (the side view walking left). */
+/** Paste in logical coordinates while sampling the actual native pixels. */
 function paste(c, fr, x, y, crop = 26, flip = false, z = Z) {
-  const g = c.getContext("2d"), o = (32 - crop) >> 1, oy = opt.cy !== undefined ? Number(opt.cy) : 32 - crop - 1;
-  const d = fr.getContext("2d").getImageData(0, 0, 32, 32).data;
-  for (let v = 0; v < crop; v++) for (let u = 0; u < crop; u++) {
-    const sx = flip ? 31 - (o + u) : o + u, i = ((oy + v) * 32 + sx) * 4;
+  const g = c.getContext("2d"), o = (SP.SIZE - crop) >> 1;
+  const oy = opt.cy !== undefined ? Number(opt.cy) : SP.SIZE - crop - 1;
+  const d = fr.getContext("2d").getImageData(0, 0, fr.width, fr.height).data;
+  const density = fr.width / SP.SIZE;
+  for (let v = 0; v < crop * z; v++) for (let u = 0; u < crop * z; u++) {
+    const px = o * density + Math.floor(u * density / z);
+    const sx = flip ? fr.width - 1 - px : px;
+    const i = ((oy * density + Math.floor(v * density / z)) * fr.width + sx) * 4;
     if (!d[i + 3]) continue;
-    g.fillStyle = `rgb(${d[i]},${d[i + 1]},${d[i + 2]})`; g.fillRect(x + u * z, y + v * z, z, z);
+    g.fillStyle = `rgb(${d[i]},${d[i + 1]},${d[i + 2]})`; g.fillRect(x + u, y + v, 1, 1);
   }
 }
 function save(c, name) {
@@ -89,14 +93,14 @@ function itemSheet(cos, name, fur = 0, sps = [...Array(NSP).keys()], each = fals
 }
 /** The giant form as scene2d draws it: the frame scaled 1.6× with smoothing off (nearest neighbour). */
 function giantSheet(cos, name) {
-  const gz = 1.6, N = Math.round(32 * gz), z = 2, W = N * z + 4;
+  const gz = 1.6, N = Math.round(SP.PERSON_SIZE * gz), W = N + 4;
   const sps = [0, 3, 7, 8, 12, 13];
   const c = page(sps.length * 3 * W + 8, 2 * W + 8);
   sps.forEach((s, i) => VIEWS.forEach((v, vi) => [0, 2].forEach((f, fi) => {
     const fr = frameOf(lookFor(s), cos, v, f), big = new PixCanvas(N, N);
     big.getContext("2d").drawImage(fr, 0, 0, N, N);
     const g = c.getContext("2d"), d = big._data;
-    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const k = (y * N + x) * 4; if (!d[k + 3]) continue; g.fillStyle = `rgb(${d[k]},${d[k + 1]},${d[k + 2]})`; g.fillRect(4 + (i * 3 + vi) * W + x * z, 4 + fi * W + y * z, z, z); }
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const k = (y * N + x) * 4; if (!d[k + 3]) continue; g.fillStyle = `rgb(${d[k]},${d[k + 1]},${d[k + 2]})`; g.fillRect(4 + (i * 3 + vi) * W + x, 4 + fi * W + y, 1, 1); }
   })));
   save(c, name);
 }

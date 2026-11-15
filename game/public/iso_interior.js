@@ -1530,7 +1530,6 @@ export function roomLight(g, L, t, dt, ox, oy, vw, vh, night = 0) {
   }
   lg.fillStyle = `rgba(0,0,0,${0.8 * (1 - night)})`;
   for (const w of L.wins) { lg.beginPath(); lg.moveTo(w[0] - ox, w[1] - oy); for (let i = 2; i < 8; i += 2) lg.lineTo(w[i] - ox, w[i + 1] - oy); lg.closePath(); lg.fill(); }
-  g.setTransform(1, 0, 0, 1, 0, 0);
   g.drawImage(lightCv, 0, 0);
   // warm pools and sunlight, added
   g.globalCompositeOperation = "lighter";

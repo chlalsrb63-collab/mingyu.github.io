@@ -52,11 +52,11 @@ const t3 = performance.now();
 const sheet = SP.personSheet(SP.playerLook("warrior", [0, 0, 0, 2, 0, 0, 1]));
 for (const n of m.npcs || []) {
   const [X, Y] = top(n.x + 0.5, n.y + 0.5);
-  items.push({ d: n.x + n.y + 1, k: 1, draw: () => g.drawImage(sheet.front[0], X - SP.FOOT[0], Y + 8 - SP.FOOT[1]) });
+  items.push({ d: n.x + n.y + 1, k: 1, draw: () => g.drawImage(sheet.front[0], X - SP.FOOT[0], Y + 8 - SP.FOOT[1], SP.SIZE, SP.SIZE) });
 }
 for (const p of (m.portals || []).slice(0, 4)) {
   const [X, Y] = top(p.x + 0.5, p.y + 0.5);
-  items.push({ d: p.x + p.y + 1, k: 1, draw: () => g.drawImage(sheet.front[0], X - SP.FOOT[0], Y + 8 - SP.FOOT[1]) });
+  items.push({ d: p.x + p.y + 1, k: 1, draw: () => g.drawImage(sheet.front[0], X - SP.FOOT[0], Y + 8 - SP.FOOT[1], SP.SIZE, SP.SIZE) });
 }
 items.sort((a, b) => a.d - b.d || a.k - b.k);
 for (const it of items) it.draw();

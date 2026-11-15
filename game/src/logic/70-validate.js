@@ -143,9 +143,10 @@ export function validateAction(S, pid, a) {
       return ch.cos.on[a.s] ? OK : bad("입은 외형이 없습니다");
     case "cos_buy": {
       const c = typeof a.id === "string" && Object.hasOwn(COSMETICS, a.id) ? COSMETICS[a.id] : null;
-      if (!c || c.src !== "shop") return bad("팔지 않는 외형입니다");
+      if (!c || (c.src !== "shop" && c.src !== "token")) return bad("팔지 않는 외형입니다");
       if (!npcNear(p, "costume")) return bad("의상실 주인이 너무 멉니다");
       if (ch.cos.own.includes(a.id)) return bad("이미 가지고 있습니다");
+      if (c.src === "token") return ch.cos.tokens < c.price ? bad("버드나무토큰이 부족합니다") : OK;
       return ch.gold < c.price ? bad("골드가 부족합니다") : OK;
     }
     case "title":

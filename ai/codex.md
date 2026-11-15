@@ -19,6 +19,9 @@ worktree (`.work/codex`, branch `codex/work`), so you never collide with Gemini 
       before handing off one task. `GEMINI=off` controls the batch launcher, so leave the
       Antigravity queue to `.work/gemini` unless the owner assigns a task to Codex directly.
    Read the quality bar at the top of `ai/ROADMAP.md`; it is your definition of done.
+   Owner's default for AUTO MODE without a direct task: rotate through coherent batches of wearable
+   outfits, weapon sprites and equipment icons. Wearables use the existing wardrobe and acquisition
+   routes and must fit multiple species. Check held weapons in the world and icons at game size.
 3. Plan in 3–6 bullet points, then implement. Use AGENTS.md §3 + docs/FILEMAP.md (file map) and docs/RECIPES.md (recipes) to open
    only the files you need; grep instead of reading big files whole.
 4. Prove it: `cd game && npm run test:rules` must pass (add or extend a test for any rule change).

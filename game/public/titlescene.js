@@ -4,7 +4,7 @@
  * swinging now and then), hell-beasts watching from the dark between the far
  * trees, falling leaves and fireflies; and the pixel logo for 테일즈테일즈.
  *
- * Everything is drawn at 1× on a small canvas (`P` screen pixels per art pixel)
+ * The scenery uses logical art pixels (`P` screen pixels each) on a 2× figure backing.
  * and blown up with hard edges. Light comes from the upper left; shadows lean
  * toward violet. The figures are drawn by scene2d.js (`figure` / `drawFigure`)
  * so they move exactly as they do in the world.
@@ -64,7 +64,7 @@ export function resize() {
   const W = innerWidth, H = innerHeight;
   P = Math.max(2, Math.round(Math.min(H / 220, W / 140)));
   iw = Math.ceil(W / P); ih = Math.ceil(H / P);
-  cv.width = iw; cv.height = ih;
+  cv.width = iw * S3.FIGURE_DENSITY; cv.height = ih * S3.FIGURE_DENSITY;
   cv.style.width = iw * P + "px"; cv.style.height = ih * P + "px";
   g.imageSmoothingEnabled = false;
   build();
@@ -354,7 +354,7 @@ export function render(t, dt) {
   dt = Math.max(0, Math.min(0.05, dt || 0));
   if (!cv || !built) return;
   const scroll = t / 1000 * 16;
-  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.setTransform(S3.FIGURE_DENSITY, 0, 0, S3.FIGURE_DENSITY, 0, 0);
   g.imageSmoothingEnabled = false;
   sky(t);
   hills(scroll);
@@ -562,14 +562,14 @@ export function subtitle(S = 4) {
 
 /**
  * The creation page's preview: a clearing in the same forest, the figure on a
- * patch of path in the middle. `c` is a canvas already sized to the box at 1×
- * (one art pixel per canvas pixel); `fig`/`e` as for scene2d.drawFigure.
+ * patch of path in the middle. `c` has a 2× backing; `fig`/`e` as for scene2d.drawFigure.
  */
 export function stage(c, fig, e, t, dt) {
   const keep = [g, iw, ih];
-  g = c.getContext("2d"); iw = c.width; ih = c.height;
+  const d = S3.FIGURE_DENSITY;
+  g = c.getContext("2d"); iw = c.width / d; ih = c.height / d;
   try {
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.setTransform(d, 0, 0, d, 0, 0);
     g.imageSmoothingEnabled = false;
     const gy = R(ih * 0.62);
     // sky, a line of far pines, the meadow

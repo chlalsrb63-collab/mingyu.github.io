@@ -1,5 +1,5 @@
 /**
- * Pixel sprites: people, monsters and weapons, each on a 32×32 sheet.
+ * Pixel sprites: people use 64×64 frames in the same 32×32 logical space as their old art.
  *
  * The adventurers are small animals carrying weapons as big as they are. Their
  * ears, eyes, nose, colour, blush, markings and tunic are chosen at creation. The style is as simple as it can be: a big face on a tiny
@@ -12,19 +12,26 @@
  * frames each: 0 standing, 1 and 2 the two steps of a walk.
  */
 
-/** Every sheet is 32×32. Weapons and monsters are drawn at twice that and halved. */
 import * as WPN from "./weapons.js";
 import * as WR from "./wardrobe.js";
 import * as SPC from "./species.js";
 import * as MobArt from "./mobart.js";
+import { refinePerson } from "./person_pixels.js";
 WR.useSpecies(SPC);
 
 export const SIZE = 32;
 const S = 32, BIG = 64;
+export const PERSON_SIZE = 64;
 /** Where the feet touch the ground, and the grip a weapon pivots on. */
 export const FOOT = [16, 29];
 export const GRIP = [5, 16];
 const INK = "#2b2233";
+
+/** Source and destination rectangles are expressed in logical (32×32) coordinates. */
+export function drawPersonCrop(g, frame, sx, sy, sw, sh, dx, dy, dw = sw, dh = sh) {
+  const density = frame.width / SIZE;
+  g.drawImage(frame, sx * density, sy * density, sw * density, sh * density, dx, dy, dw, dh);
+}
 
 function mix(hex, f) {
   const n = parseInt(hex.slice(1), 16);
@@ -290,16 +297,23 @@ export function petSheet(kind) {
 export const PET_HOVER = { pet_chick: 0, pet_bat: 9, pet_wisp: 7, pet_hagfish: 6 };
 
 const cache = new Map();
+const PERSON_CACHE_LIMIT = 128;
 /** `{ front, side, back }`, each a list of frames indexed by FRAME. Side frames face right. */
-export function personSheet(o) {
-  const key = JSON.stringify(o);
+export function personSheet(o, density = o.bone || o.mask ? 1 : PERSON_SIZE / S) {
+  const key = JSON.stringify([density, o]);
   let s = cache.get(key);
-  if (!s) {
+  if (s) cache.delete(key);
+  else {
     // worn cosmetics (wardrobe.js) are layered over each plain frame
-    const frames = (view) => [0, 1, 2, 3, 4, 5].map((f) => WR.dress(person(o, view, f), o, view, f));
+    const frames = (view) => [0, 1, 2, 3, 4, 5].map((f) => {
+      const base = person(o, view, f);
+      const native = density === 1 ? null : refinePerson(base, o, view, f);
+      return WR.dress(base, o, view, f, native);
+    });
     s = { front: frames("front"), side: frames("side"), back: frames("back") };
-    cache.set(key, s);
   }
+  cache.set(key, s);
+  if (cache.size > PERSON_CACHE_LIMIT) cache.delete(cache.keys().next().value);
   return s;
 }
 /** `look` is the list of choices, one per entry of PARTS. The class shows only in the weapon. */
@@ -342,19 +356,30 @@ let juana = null;
 export function juanaSheet() {
   if (juana) return juana;
   const base = personSheet(SPC.lookOf(JUANA_LOOK));
+  const scale = PERSON_SIZE / S;
   const APRON = "#8a4ab0", APRON_D = "#5e3080", BIB = "#e8d8f4", POUCH = "#f4d49a", POUCH_D = "#d8a860", BRASS = "#e8c060", BRASS_D = "#a87a2c", GLASS = "#bfeaff";
   const dress = (view) => base[view].map((src, f) => {
-    const [c, g] = sheet(S);
+    const [c, g] = sheet(PERSON_SIZE);
     g.drawImage(src, 0, 0);
     const H = f === FRAME.breathe ? 1 : f === FRAME.stretch ? -1 : 0;
     // her parts go over the inked figure; only the pixels they add get a new outline (no second ink round the rest)
     const added = [];
-    const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) added.push([x + i, y + j]); };
+    const r = (x, y, w, h, col) => {
+      const px = x * scale, py = y * scale, pw = w * scale, ph = h * scale;
+      if (ph <= 0 || pw <= 0) return;
+      g.fillStyle = col;
+      g.fillRect(px, py, pw, ph);
+      for (let j = 0; j < ph; j++) for (let i = 0; i < pw; i++) added.push([px + i, py + j]);
+    };
     // the apron: the tiny body in purple down to a darker hem, a pale bib under the chin (a bow at her back)
     const bt = 24 + H;
     r(13, bt, 6, 26 - bt, APRON); r(13, 26, 6, 1, APRON_D);
     if (view === "back") { r(15, 24, 2, 1, BIB); r(14, 25, 1, 1, BIB); r(17, 25, 1, 1, BIB); }
-    else r(view === "side" ? 17 : 15, 24, 2, 1, BIB);
+    else {
+      const bx = view === "side" ? 17 : 15;
+      r(bx, 24, 2, 1, BIB); r(bx + 0.5, 25, 1, 0.5, "#bfa2d8");
+      r(13.5, 26, 0.5, 1, "#a065bf");
+    }
     // cheek pouches: the cheeks swell a pixel past the head and sag a row below it
     const hy = 20 + H;
     if (view === "front") {
@@ -368,8 +393,12 @@ export function juanaSheet() {
       const mx = 20, my = 24 + (f === FRAME.breathe ? 1 : 0);
       r(mx, my, 3, 3, BRASS); r(mx + 1, my + 1, 1, 1, GLASS); r(mx + 2, my + 2, 1, 1, BRASS_D); r(mx, my, 1, 1, "#fff0b0");
       r(mx - 1, my + 3, 1, 1, BRASS_D);
+      r(mx + 0.5, my + 0.5, 2, 0.5, "#fff0b0");
+      r(mx + 1, my + 1, 0.5, 0.5, "#effaff");
+      r(mx - 0.5, my + 2.5, 1, 0.5, BRASS_D);
     }
-    const d = g.getImageData(0, 0, S, S).data, clear = (x, y) => x >= 0 && y >= 0 && x < S && y < S && d[(y * S + x) * 4 + 3] === 0;
+    const d = g.getImageData(0, 0, PERSON_SIZE, PERSON_SIZE).data;
+    const clear = (x, y) => x >= 0 && y >= 0 && x < PERSON_SIZE && y < PERSON_SIZE && d[(y * PERSON_SIZE + x) * 4 + 3] === 0;
     g.fillStyle = INK;
     for (const [x, y] of added) for (const [i, j] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (clear(x + i, y + j)) g.fillRect(x + i, y + j, 1, 1);
     return c;

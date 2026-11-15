@@ -42,9 +42,9 @@ for (const id of ids) {
   const c = D.cos[id];
   assert.equal(D.cosN[c.n], id, "a code maps back to its id");
   assert.ok(c.name && c.desc && c.q >= 0 && c.q <= 4, id + " has a name, a description and a rarity");
-  assert.ok(["shop", "chest", "boss", "daily", "rift", "ach", "quest", "weekly"].includes(c.src), id + " comes from somewhere");
+  assert.ok(["shop", "token", "chest", "boss", "rareBoss", "daily", "rift", "ach", "quest", "weekly"].includes(c.src), id + " comes from somewhere");
   assert.ok(c.set === "" || D.cosSets[c.set], id + " is in a real set, or in none");
-  if (c.src === "shop") assert.ok(c.price > 0, id + " has a price");
+  if (c.src === "shop" || c.src === "token") assert.ok(c.price > 0, id + " has a price");
   if (c.src === "ach") assert.ok(D.achievements.some((a) => a.id === c.ach), id + " is earned by a real achievement");
   // and the browser can draw it
   assert.ok(ART[id], id + " has art in wardrobe.js");
@@ -130,10 +130,10 @@ for (const [kind, designs] of Object.entries(SIL)) {
 {
   const W = world();
   const p = W.S.players.A;
-  assert.deepEqual(p.ch.cos, { own: [], on: {} });
+  assert.deepEqual(p.ch.cos, { own: [], on: {}, tokens: 0 });
   assert.ok(p.ch.v >= 7);
   const s = W.step().self;
-  assert.deepEqual(s.cos, { own: [], on: {} }, "the wardrobe is in the player's own payload");
+  assert.deepEqual(s.cos, { own: [], on: {}, tokens: 0 }, "the wardrobe is in the player's own payload");
 }
 
 // ── buying, wearing, taking off
@@ -208,7 +208,7 @@ for (const [kind, designs] of Object.entries(SIL)) {
   assert.deepEqual(p4.ch.cos.own, ["hat_wizard", "top_suit"]);
   assert.deepEqual(p4.ch.cos.on, { top: "top_suit" });
   const p5 = W.join("D", "", "warrior", { ...JSON.parse(JSON.stringify(saved)), cos: "garbage" });
-  assert.deepEqual(p5.ch.cos, { own: [], on: {} });
+  assert.deepEqual(p5.ch.cos, { own: [], on: {}, tokens: 0 });
 }
 
 // ── the wire: everyone on the map sees the outfit
@@ -269,7 +269,7 @@ for (const [kind, designs] of Object.entries(SIL)) {
 // ── life masters and trusted NPCs: the outfit comes with the title, and old sheets catch up
 {
   // the rules' own helpers, from a second copy of logic.js that exports them (the world is plain data: both copies read it alike)
-  const X = (await import("data:text/javascript;base64," + Buffer.from(readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") + "\nexport const __t = { gainLife, addRep, cosFrom };\n").toString("base64"))).__t;
+  const X = (await import("data:text/javascript;base64," + Buffer.from(readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") + "\nexport const __t = { gainLife, addRep, cosFrom, cosBossRare, gainWillowToken };\n").toString("base64"))).__t;
   const W = world("명인");
   const p = W.S.players.A, ch = p.ch;
   W.step();
@@ -300,6 +300,46 @@ for (const [kind, designs] of Object.entries(SIL)) {
   assert.ok(ids.filter((id) => ["quest", "weekly"].includes(D.cos[id].src)).every((id) => ch.cos.own.includes(id)), "a later system can hand its own out with cosFrom");
   assert.equal(ch.cos.own.filter((id) => D.cos[id].src === "shop").length, 0, "nothing sold was given away");
   assert.ok(before >= 2);
+
+  const wallet = world("버들단골"), buyer = wallet.S.players.A;
+  const item = "hat_moon_archive", price = D.cos[item].price, buy = { t: "cos_buy", id: item };
+  const rare = ids.filter((id) => D.cos[id].src === "rareBoss");
+  buyer.ch.gold = 100000;
+  assert.equal(X.gainWillowToken(buyer, price - 1), price - 1);
+  assert.match(wallet.act(buy).error, /의상실/);
+  wallet.to("A", shopNpc.x, shopNpc.y + 1);
+  assert.match(wallet.act(buy).error, /버드나무토큰/, "gold cannot cover a token purchase");
+  assert.equal(X.gainWillowToken(buyer, 3), 3);
+  assert.ok(wallet.act(buy).ok);
+  assert.equal(buyer.ch.cos.tokens, 2);
+  assert.equal(buyer.ch.gold, 100000);
+  assert.equal(buyer.ch.cos.on.hat, item);
+  assert.match(wallet.act(buy).error, /이미/, "duplicate purchases cannot spend tokens");
+  assert.equal(buyer.ch.cos.tokens, 2);
+  for (const id of rare) assert.match(wallet.act({ t: "cos_buy", id }).error, /팔지 않는/);
+
+  const saved = JSON.parse(JSON.stringify(L.exportChar(wallet.S, "A")));
+  assert.equal(wallet.join("B", "", "warrior", saved).ch.cos.tokens, 2, "tokens survive reload");
+  saved.cos.tokens = 10000.75;
+  const capped = wallet.join("C", "", "warrior", saved);
+  assert.equal(capped.ch.cos.tokens, 9999, "invalid oversize balances are clamped");
+  assert.equal(X.gainWillowToken(capped, 1), 0);
+  saved.cos.tokens = -4;
+  assert.equal(wallet.join("D", "", "warrior", saved).ch.cos.tokens, 0, "negative balances are reset");
+
+  let rolls = 0;
+  while (rolls < 5000 && rare.some((id) => !buyer.ch.cos.own.includes(id))) {
+    wallet.S.now = BASE + 41 * rolls++;
+    const n = wallet.S.cosN || 0, owned = buyer.ch.cos.own.length;
+    const got = X.cosBossRare(wallet.S, buyer, "우두머리");
+    assert.equal(wallet.S.cosN, n + 1, "only one random roll for the rare pool");
+    assert.equal(buyer.ch.cos.own.length, owned + (got ? 1 : 0));
+  }
+  assert.ok(rare.every((id) => buyer.ch.cos.own.includes(id)), "both boss cosmetics can drop");
+  assert.ok(rolls > 2, "rare cosmetics are not guaranteed");
+  const n = wallet.S.cosN;
+  assert.equal(X.cosBossRare(wallet.S, buyer, "우두머리"), false);
+  assert.equal(wallet.S.cosN, n, "a complete collection does not roll again");
 }
 
 console.log("wardrobe: ok —", ids.length, "cosmetics,", Object.keys(D.wkinds).length * 5, "weapon designs,", MOTIFS.length, "motifs");

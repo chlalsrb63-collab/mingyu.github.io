@@ -160,7 +160,6 @@ export function grade(g, vw, vh, dt, t, lights, clouds) {
     lx.globalAlpha = 1;
   }
   g.save();
-  g.setTransform(1, 0, 0, 1, 0, 0);
   // night drains a little colour before the light is laid on; the pools bring it back warm
   if (n > 0.02) { g.globalCompositeOperation = "saturation"; g.globalAlpha = 0.32 * n; g.fillStyle = "#808080"; g.fillRect(0, 0, vw, vh); g.globalAlpha = 1; }
   g.globalCompositeOperation = "multiply";
@@ -227,7 +226,6 @@ export function drawWeather(g, vw, vh, dt, t, ox, oy, outdoor, theme, camps, L) 
   if (!outdoor) { rain.length = snow.length = leaves.length = flies.length = 0; return; }
   const n = L ? L.night : nightK(), dim = L ? Math.max(0.35, (L.mul[0] + L.mul[1] + L.mul[2]) / 765) : 1;
   g.save();
-  g.setTransform(1, 0, 0, 1, 0, 0);
   // ── rain: short slanted streaks, and splashes where they land
   const wantRain = Math.round(260 * wk[2]);
   while (rain.length < wantRain) rain.push({ x: R() * (vw + 60), y: R() * vh - vh, v: 260 + R() * 80, len: 5 + Math.floor(R() * 4), end: vh * (0.2 + R() * 0.85) });

@@ -12,7 +12,7 @@ const COS_SLOTS = ["hat", "top", "back", "face", "wskin"];
 const COS_SLOT_NAME = { hat: "모자", top: "상의", back: "등", face: "얼굴", wskin: "무기 외형" };
 /**
  * id → [wire code, slot, name, rarity 0–4, source, price or achievement id, description].
- * Sources: shop (sold for `price` gold), chest, boss, daily, rift, ach (earned with achievement `price`: the
+ * Sources: shop (sold for `price` gold), token (Willow tokens), chest, boss, rareBoss, daily, rift, ach (earned with achievement `price`: the
  * Lv-50 life masters' outfits and the NPCs' 가족 gifts are these), quest (a chance on every quest hand-in) and weekly
  * (a chance with a boss challenge's weekly big reward). An optional ninth field is the themed set (COS_SETS).
  * Codes are what the wire carries: never reuse or renumber one.
@@ -136,15 +136,38 @@ const COSMETICS = Object.fromEntries([
   ["back_tray", 106, "back", "쥬쥬 서빙 쟁반", 2, "ach", "coopS_diner", "뚜껑 덮인 은쟁반. 무엇이 들었는지는 쥬쥬만 안다.", "coop"],
   ["face_forge", 107, "face", "캉캉 단조 보안경", 2, "ach", "coopS_forge", "불똥이 튀어도 끄떡없는 검은 보안경.", "coop"],
   ["back_cauldron", 108, "back", "보글 꼬마 가마솥", 2, "ach", "coopS_alch", "등에 멘 꼬마 가마솥. 초록 거품이 보글보글.", "coop"],
-].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
+  // Willow patrol, coastal traders and brass survey crew
+  ["hat_willow_patrol", 109, "hat", "버들잎 순찰모", 0, "shop", 1400, "가지 사이를 지날 때 귀가 걸리지 않도록 챙을 짧게 댔다.", "willowpatrol"],
+  ["top_willow_patrol", 110, "top", "버들 순찰 조끼", 1, "shop", 2100, "등에는 버들잎을 수놓고 앞에는 호루라기를 매달았다.", "willowpatrol"],
+  ["back_willow_mapcase", 111, "back", "버들길 지도통", 1, "ach", "wp3", "이동의 돌 셋을 깨운 순찰대원이 갈림길 지도를 넣어 다니는 통.", "willowpatrol"],
+  ["face_willow_leaf", 112, "face", "버들잎 뺨 매듭", 0, "shop", 650, "순찰 짝이 멀리서도 알아보도록 볼 옆에 달아 둔 잎 매듭.", "willowpatrol"],
+  ["hat_coral_merchant", 113, "hat", "물결챙 항구 모자", 1, "shop", 1800, "물보라를 흘려보내는 비스듬한 챙과 산호빛 매듭.", "coraltrade"],
+  ["top_coral_merchant", 114, "top", "산호 상단 교역복", 1, "shop", 2600, "아이보리 천 위에 파도빛 옷깃과 산호빛 허리띠를 댔다.", "coraltrade"],
+  ["back_coral_jar", 115, "back", "해무 도자기 망태", 2, "ach", "deliver20", "배달 스무 번을 마친 상단원의 등에 묶어 주는 유약 항아리.", "coraltrade"],
+  ["face_coral_pearl", 116, "face", "물빛 진주 귀장식", 0, "shop", 800, "청록 고리에 매달려 파도빛을 머금은 조개 진주.", "coraltrade"],
+  ["hat_brass_survey", 117, "hat", "황동 탐사 비행모", 1, "shop", 2200, "정찰 비공정의 탐사대가 쓰는 귀덮개 모자. 앞에 황동 계기가 달려 있다.", "brasssurvey"],
+  ["top_brass_survey", 118, "top", "황동 탐사 외투", 1, "shop", 3000, "갑판 바람을 막는 남색 외투와 이중 황동 잠금쇠.", "brasssurvey"],
+  ["back_brass_tanks", 119, "back", "쌍식 황동 압력통", 2, "ach", "dim1", "차원 균열 첫 정화를 마친 탐사대원에게 지급하는 쌍통형 장비.", "brasssurvey"],
+  ["face_brass_filter", 120, "face", "황동 방진 호흡기", 0, "shop", 1100, "포자와 분진을 막는 작은 여과통 두 개와 가죽 끈.", "brasssurvey"],
+  ["hat_moon_archive", 121, "hat", "달빛 기록원 각모", 1, "token", 14, "쪽빛 각모 위로 책갈피처럼 짧은 깃촉이 솟았다.", "moonarchive"],
+  ["top_moon_archive", 122, "top", "달빛 기록원 서고복", 1, "token", 18, "서고를 지나는 기록원의 겹옷. 앞깃을 은실로 여몄다.", "moonarchive"],
+  ["back_moon_cape", 123, "back", "초승달 갈래 망토", 3, "rareBoss", 0, "밤하늘빛 직물에 초승달을 수놓고 밑단을 두 갈래로 갈랐다.", "moonarchive"],
+  ["face_moon_glasses", 124, "face", "은반달 반무테 안경", 0, "shop", 1100, "가느다란 은테가 눈 아래에서 반달 모양을 그린다.", "moonarchive"],
+  ["hat_maple_ramblers", 125, "hat", "단풍깃 챙모자", 0, "shop", 1500, "비탈에 오를 때 쓰는 짧은 챙모자. 옆에 단풍깃을 꽂았다.", "mapleramblers"],
+  ["top_maple_ramblers", 126, "top", "단풍길 행장 조끼", 1, "token", 16, "바람이 드는 틈을 막아 주는 높은 깃과 깊은 주머니.", "mapleramblers"],
+  ["back_maple_cape", 127, "back", "단풍바람 어깨 망토", 3, "rareBoss", 0, "한쪽 어깨에 둘러 잠그고 뒤쪽 잎 모양 밑단을 길게 내렸다.", "mapleramblers"],
+  ["face_maple_glasses", 128, "face", "호박색 사각테 안경", 1, "token", 12, "호박색 두꺼운 테와 솔빛 연결쇠. 산길 지도를 펼칠 때 쓴다.", "mapleramblers"],
+].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" || src === "token" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
-const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근", coop: "협동 알바" };
+const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근", coop: "협동 알바", willowpatrol: "버들 순찰대", coraltrade: "산호 항구 상단", brasssurvey: "황동 탐사대", moonarchive: "달빛 기록원", mapleramblers: "단풍길 탐험대" };
 const COS_IDS = Object.keys(COSMETICS);
 const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
 const COS_ACH = Object.fromEntries(COS_IDS.filter((id) => COSMETICS[id].ach).map((id) => [COSMETICS[id].ach, id]));
 /** The chance a looted chest, or a downed field boss or guardian, holds a cosmetic. */
 const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_RIFT_TOP3 = 0.3, COS_WEEKLY = 0.35, COS_QUEST = 0.12;
-const cosEmpty = () => ({ own: [], on: {} });
+const COS_RARE_BOSS = 0.005, COS_TOKEN_MAX = 9999;
+const COS_RARE_BOSS_IDS = COS_IDS.filter((id) => COSMETICS[id].src === "rareBoss");
+const cosEmpty = () => ({ own: [], on: {}, tokens: 0 });
 function cosClean(c, ch) {
   const src = isObj(c) ? c : {};
   const own = [...new Set((Array.isArray(src.own) ? src.own : []).filter((id) => typeof id === "string" && Object.hasOwn(COSMETICS, id)))];
@@ -153,7 +176,15 @@ function cosClean(c, ch) {
   const on = {};
   const was = isObj(src.on) ? src.on : {};
   for (const s of COS_SLOTS) if (typeof was[s] === "string" && own.includes(was[s]) && COSMETICS[was[s]].slot === s) on[s] = was[s];
-  return { own, on };
+  const tokens = Number.isFinite(src.tokens) ? clamp(Math.trunc(src.tokens), 0, COS_TOKEN_MAX) : 0;
+  return { own, on, tokens };
+}
+/** Add to the character's costume currency balance and return the number actually received. */
+function gainWillowToken(p, n) {
+  if (!Number.isSafeInteger(n) || n <= 0) return 0;
+  const cos = p.ch.cos, gain = Math.min(n, COS_TOKEN_MAX - cos.tokens);
+  if (gain > 0) { cos.tokens += gain; p.dirty = true; }
+  return gain;
 }
 /** What others see: the worn codes in slot order, trailing empties dropped ([] for none). */
 function cosWire(ch) {
@@ -183,5 +214,13 @@ function cosFrom(S, p, src, why) {
   const left = COS_IDS.filter((id) => COSMETICS[id].src === src && !p.ch.cos.own.includes(id));
   if (!left.length) return false;
   return giveCos(S, p, left[Math.floor(cosRoll(S, p, src) * left.length)], why);
+}
+/** One roll per eligible boss reward. Its winning interval is divided among the unowned items. */
+function cosBossRare(S, p, why) {
+  const left = COS_RARE_BOSS_IDS.filter((id) => !p.ch.cos.own.includes(id));
+  if (!left.length) return false;
+  const roll = cosRoll(S, p, "rareBoss");
+  if (roll >= COS_RARE_BOSS) return false;
+  return giveCos(S, p, left[Math.floor(roll / COS_RARE_BOSS * left.length)], why);
 }
 

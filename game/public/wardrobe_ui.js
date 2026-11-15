@@ -129,6 +129,7 @@ function srcText(d) {
   const ach = d.src === "ach" && C.G.defs.achievements.find((a) => a.id === d.ach);
   return {
     shop: `의상실에서 ${d.price.toLocaleString()}G`, chest: "보물 상자를 열면 가끔", boss: "사냥터 우두머리·던전 수문장이 가끔",
+    token: `의상실에서 버드나무토큰 ${d.price.toLocaleString()}개`, rareBoss: "우두머리 토벌 시 매우 낮은 확률로 미보유 희귀 외형 한 점 획득",
     daily: "일일 과제 보상 상자", rift: "균열 침공 1위 (3위 안이면 가끔)",
     ach: ach ? `${ach.desc} (업적 「${ach.name}」)` : `업적 「${d.ach}」 달성`,
     quest: "의뢰·퀘스트를 마치면 가끔", weekly: "주간 보스 도전 큰 보상에서 가끔",
@@ -182,7 +183,7 @@ function drawPreview(cv, t) {
   const F = SP.FRAME, fr = [F.stepA, F.stretch, F.stepB, F.stretch][Math.floor(t / 180) % 4];
   g.save();
   if (spin % 4 === 3) { g.translate(150, 0); g.scale(-1, 1); }
-  g.drawImage(sheet[v][fr], 4, 4, 24, 26, 15, 0, 120, 130);
+  SP.drawPersonCrop(g, sheet[v][fr], 4, 4, 24, 26, 15, 0, 120, 130);
   g.restore();
   // the weapon in hand, as it is slung, with its skin
   const wk = SP.weaponKind(w.cls, gear), ws = SP.weaponSprite(wk, gear);
@@ -216,10 +217,11 @@ function slotBar(host, cur, set) {
 }
 function renderShop(s) {
   const D = C.G.defs, list = $("#wr-shop-list");
+  const tokens = s.cos.tokens || 0;
   slotBar($("#wr-shop-slots"), shopSlot, (k) => { shopSlot = k; });
-  $("#wr-shop-hint").textContent = `가진 골드 ${s.gold.toLocaleString()}G · 상점에 없는 외형은 보물 상자, 우두머리, 일일 과제, 균열 침공, 업적(생활 명인 · 가족이 된 이웃의 선물)에서 얻습니다.`;
+  $("#wr-shop-hint").textContent = `보유 골드 ${s.gold.toLocaleString()}G · 버드나무토큰 ${tokens.toLocaleString()}개. 토큰은 게시판 알바와 협동 근무로 얻습니다.`;
   list.textContent = "";
-  for (const g of groups(Object.keys(D.cos).filter((id) => D.cos[id].src === "shop" && (shopSlot === "all" || D.cos[id].slot === shopSlot)))) {
+  for (const g of groups(Object.keys(D.cos).filter((id) => ["shop", "token"].includes(D.cos[id].src) && (shopSlot === "all" || D.cos[id].slot === shopSlot)))) {
    list.append(setHead(g, s));
    for (const id of g.ids) {
     const d = D.cos[id];
@@ -237,8 +239,9 @@ function renderShop(s) {
       b.addEventListener("click", (e) => { e.stopPropagation(); C.act({ t: "cos_eq", id }); Sound.play("ui"); });
       row.append(b);
     } else {
-      const b = C.el("button", "", `${d.price.toLocaleString()}G`);
-      b.disabled = s.gold < d.price;
+      const byToken = d.src === "token";
+      const b = C.el("button", "", `${d.price.toLocaleString()}${byToken ? " 토큰" : "G"}`);
+      b.disabled = (byToken ? tokens : s.gold) < d.price;
       b.addEventListener("click", (e) => { e.stopPropagation(); C.act({ t: "cos_buy", id }); Sound.play("coin"); tried = null; });
       row.append(b);
     }
@@ -265,7 +268,7 @@ function renderTab(s) {
   slotBar($("#wr-tab-slots"), tabSlot, (k) => { tabSlot = k; });
   const ids = Object.keys(D.cos).filter((id) => tabSlot === "all" || D.cos[id].slot === tabSlot);
   const have = ids.filter((id) => s.cos.own.includes(id));
-  $("#wr-count").textContent = `모은 외형 ${have.length} / ${ids.length}`;
+  $("#wr-count").textContent = `모은 외형 ${have.length} / ${ids.length} · 버드나무토큰 ${(s.cos.tokens || 0).toLocaleString()}개`;
   const grid = $("#wr-grid");
   grid.textContent = "";
   // set by set; inside each, owned first, then the rest by rarity: a collection to fill

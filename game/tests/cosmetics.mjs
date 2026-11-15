@@ -17,6 +17,7 @@ installCanvas();
 const SP = await import("../public/sprites.js");
 const SPC = await import("../public/species.js");
 const WR = await import("../public/wardrobe.js");
+const L = await import("../src/logic.js");
 
 const t0 = Date.now();
 const SZ = 32, VIEWS = ["front", "side", "back"], FRAMES = [0, 1, 2, 3, 4, 5];
@@ -36,6 +37,49 @@ for (const id of ids) {
   }
 }
 
+// Every new outfit combines boutique pieces with an achievement or rare boss reward.
+const D = L.defs();
+const collections = [
+  ["willowpatrol", ["shop", "shop", "ach", "shop"], "wp3"],
+  ["coraltrade", ["shop", "shop", "ach", "shop"], "deliver20"],
+  ["brasssurvey", ["shop", "shop", "ach", "shop"], "dim1"],
+  ["moonarchive", ["token", "token", "rareBoss", "shop"]],
+  ["mapleramblers", ["shop", "token", "rareBoss", "token"]],
+];
+for (const [set, sources, ach] of collections) {
+  const pieces = Object.entries(D.cos).filter(([, c]) => c.set === set);
+  assert.deepEqual(pieces.map(([, c]) => c.slot), ["hat", "top", "back", "face"], `${set}: all four outfit slots`);
+  assert.deepEqual(pieces.map(([, c]) => c.src), sources, `${set}: acquisition sources`);
+  const [prize, reward] = pieces[2];
+  assert.equal(reward.ach, ach || "");
+  assert.ok(pieces.every(([id, c]) => WR.ART[id]?.[0] === c.slot && D.cosN[c.n] === id), `${set}: every wire code resolves to an asset`);
+
+  const S = L.setup();
+  const ch = L.newChar("외형검수", [], "sword");
+  ch.gold = 10000;
+  ch.cos.tokens = 40;
+  if (ach) ch.ach.push(ach);
+  else ch.cos.own.push(prize);  // equip the boss drop after it is in the collection
+  assert.ok(L.devPlace(ch, "boutique", 11, 4), "stand by the boutique's tailor");
+  L.addPlayer(S, "review", ch);
+  const p = S.players.review;
+  if (ach) assert.ok(p.ch.cos.own.includes(prize), `${set}: an existing achievement still awards the new item`);
+  for (const [id, c] of pieces) {
+    const a = { t: c.src === "shop" || c.src === "token" ? "cos_buy" : "cos_eq", id };
+    assert.ok(L.validateAction(S, p.pid, a).ok, `${id}: can ${a.t} through the rules`);
+    L.applyAction(S, p.pid, a);
+  }
+  const total = (src) => pieces.filter(([, c]) => c.src === src).reduce((sum, [, c]) => sum + c.price, 0);
+  assert.equal(p.ch.gold, 10000 - total("shop"), `${set}: gold prices were charged`);
+  assert.equal(p.ch.cos.tokens, 40 - total("token"), `${set}: token prices were charged`);
+  const worn = Object.fromEntries(pieces.map(([id, c]) => [c.slot, id]));
+  assert.deepEqual(p.ch.cos.on, worn, `${set}: all pieces are worn together`);
+  const loaded = L.setup();
+  L.addPlayer(loaded, "reload", L.exportChar(S, p.pid));
+  assert.deepEqual(loaded.players.reload.ch.cos.on, worn, `${set}: equipped pieces persist after reload`);
+  assert.deepEqual(L.viewFor(S, p.pid).self.cos.on, worn, `${set}: equipped IDs reach the client`);
+}
+
 const INKS = new Set(["#2b2233", ...Object.values(HAT).map((h) => h.ink).filter(Boolean)]);
 const hexAt = (d, i) => "#" + [d[i], d[i + 1], d[i + 2]].map((v) => v.toString(16).padStart(2, "0")).join("");
 const fails = new Map();
@@ -53,7 +97,7 @@ for (const [n, lk] of SPC.PRESETS.filter((_, i) => i % 3 === 0)) looks.push([n, 
 let frames = 0;
 for (const [name, lk] of looks) {
   const o = SP.playerLook("warrior", lk, {});
-  const plain = SP.personSheet(o);
+  const plain = SP.personSheet(o, 1);
   for (const id of ids) {
     const slot = WR.ART[id][0], ow = { ...o, cos: [id] }, seen = WR.seenFrom(id);
     for (const view of VIEWS) {

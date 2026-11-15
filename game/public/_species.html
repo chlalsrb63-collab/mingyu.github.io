@@ -6,7 +6,7 @@ import * as SPC from "./species.js";
 const q = new URLSearchParams(location.search), mode = q.get("m") || "species", z = +(q.get("z") || 4);
 const cv = document.getElementById("c"), g = cv.getContext("2d");
 const views = ["front", "side", "back"];
-const fig = (look, view, f, x, y, s = z) => { const fr = SP.personSheet(SP.playerLook("warrior", look))[view][f]; g.drawImage(fr, 6, 8, 20, 22, x, y, 20 * s, 22 * s); };
+const fig = (look, view, f, x, y, s = z) => { const fr = SP.personSheet(SP.playerLook("warrior", look))[view][f]; SP.drawPersonCrop(g, fr, 6, 8, 20, 22, x, y, 20 * s, 22 * s); };
 const label = (t, x, y) => { g.fillStyle = "#fff"; g.font = "12px sans-serif"; g.fillText(t, x, y); };
 g.imageSmoothingEnabled = false;
 if (mode === "species") {
@@ -75,14 +75,14 @@ if (mode === "species") {
   const looks = [];
   for (let i = 0; i < 7; i++) for (let v = 0; v < N[i]; v++) { const l = [0, 0, 0, 0, 0, 0, 0]; l[i] = v; looks.push(l); }
   for (let k = 0; k < 600; k++) looks.push(N.map((m) => Math.floor(rnd() * m)));
-  const px = (c) => c.getContext("2d").getImageData(0, 0, 32, 32).data;
+  const px = (c) => c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
   const first = [];
   for (const lk of looks) {
     const a = SP.personSheet(old(lk)), b = SP.personSheet(SP.playerLook("mage", lk));
     for (const v of views) for (let f = 0; f < 6; f++) {
       n++;
       const pa = px(a[v][f]), pb = px(b[v][f]);
-      let same = true;
+      let same = pa.length === pb.length;
       for (let i = 0; i < pa.length; i++) if (pa[i] !== pb[i]) { same = false; break; }
       if (!same) { bad++; if (first.length < 8) first.push([lk.join(","), v, f]); }
     }

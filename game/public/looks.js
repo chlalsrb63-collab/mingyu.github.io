@@ -61,10 +61,13 @@ export function thumb(look, view = "front", whole = false) {
   if (c) return copy(c);
   c = el("canvas");
   const fr = SP.personSheet(SP.playerLook("warrior", look))[view][0];
+  const d = fr.width / SP.SIZE;
+  c.width = (whole ? 27 : 20) * d;
+  c.height = 17 * d;
   const g = c.getContext("2d");
   g.imageSmoothingEnabled = false;
-  if (whole) { c.width = 27; c.height = 17; g.drawImage(fr, 3, 12, 27, 17, 0, 0, 27, 17); }
-  else { c.width = 20; c.height = 17; g.drawImage(fr, 6, 9, 20, 17, 0, 0, 20, 17); }
+  if (whole) SP.drawPersonCrop(g, fr, 3, 12, 27, 17, 0, 0, c.width, c.height);
+  else SP.drawPersonCrop(g, fr, 6, 9, 20, 17, 0, 0, c.width, c.height);
   thumbCache.set(key, c);
   if (thumbCache.size > 600) thumbCache.delete(thumbCache.keys().next().value);
   return copy(c);
@@ -237,7 +240,7 @@ function open(ctx) {
     g.fillStyle = "rgba(20,24,50,.25)"; g.beginPath(); g.ellipse(24, 54, 12, 3, 0, 0, 7); g.fill();
     g.save();
     if (k === 3) { g.translate(48, 0); g.scale(-1, 1); }
-    g.drawImage(sheet, 4, 2, 24, 28, 0, 0, 48, 56);
+    SP.drawPersonCrop(g, sheet, 4, 2, 24, 28, 0, 0, 48, 56);
     g.restore();
     mirrorRaf = requestAnimationFrame(tick);
   };

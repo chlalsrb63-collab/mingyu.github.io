@@ -293,6 +293,7 @@ const act0 = (w, pid) => act(w, pid, { t: "coop_act" });
   assert.deepEqual(a.ch.coopDone, ["apt"]); assert.equal(a.ch.coopDay, X.dayOf(w.now));
   assert.ok(a.ch.inv.some((s) => s.id === "stone"), "강화석");
   assert.ok(a.ch.gold >= X.COOP_T.gold[g - 1], "the day's pay");
+  assert.equal(a.ch.cos.tokens, 2, "the first qualified shift earns two Willow tokens");
   assert.equal(a.ch.rep.dongdong || 0, Object.hasOwn(X.NPC_MAP, "dongdong") ? X.COOP_T.rep : 0, "trust with 동동");
   assert.ok(a.ch.life.deliver.xp > 0 || a.ch.life.deliver.lv > 1, "life XP (배달)");
   assert.deepEqual(L.viewFor(S, "c0").self?.coop ?? a.ch.coopDone, ["apt"]);
@@ -303,6 +304,7 @@ const act0 = (w, pid) => act(w, pid, { t: "coop_act" });
   assert.ok(act(w, "c0", { t: "coop_start", k: "apt" }).ok);
   botShift(w);
   assert.equal(a.ch.gold - gold, X.COOP_T.helpTip * 1, "helper tip 15·T");
+  assert.equal(a.ch.cos.tokens, 2, "helping on a repeat does not earn more tokens");
   assert.equal(a.ch.inv.filter((s) => s.id === "stone").reduce((n, s) => n + s.n, 0), stones, "no second pay");
   // the next day pays again
   step(w, X.COOP_T.endMs + 200);
@@ -313,6 +315,7 @@ const act0 = (w, pid) => act(w, pid, { t: "coop_act" });
   log("day 2", JSON.stringify(r3), c3 && c3.score, c3 && Object.values(c3.pl).map((q) => [q.pts, q.ok]));
   assert.equal(a.ch.coopDay, X.dayOf(w.now)); assert.deepEqual(a.ch.coopDone, ["apt"]);
   assert.ok(a.ch.inv.filter((s) => s.id === "stone").reduce((n, s) => n + s.n, 0) > stones, "a new day's pay");
+  assert.equal(a.ch.cos.tokens, 4, "the next day's qualified shift rewards tokens again");
 }
 
 // ── walking bots at player speed, 1–4 workers: the opening mess and the spawn rate grow with the party; the cut-offs

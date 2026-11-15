@@ -1084,7 +1084,7 @@ function lure(id, eid, x, y, ms) {
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(sx, sy, 5, 2, 0, 0, 7); g.fill();
       if (!fr) return;
       g.globalAlpha = 0.55 + 0.25 * Math.sin(t / 70);
-      g.drawImage(tinted(fr.img, "#3a2a58"), Math.round(sx - SP.FOOT[0]), Math.round(sy - SP.FOOT[1] + Math.sin(t / 220)));
+      g.drawImage(tinted(fr.img, "#3a2a58"), Math.round(sx - SP.FOOT[0]), Math.round(sy - SP.FOOT[1] + Math.sin(t / 220)), SP.SIZE, SP.SIZE);
       g.globalAlpha = 1;
     },
   });

@@ -44,7 +44,7 @@ import * as DimArt from "./dimart.js";
 import { icon as uiIcon } from "./uiicons.js";
 import * as TF from "./townfolk.js";
 import * as NPC from "./npclife.js";
-import { g, vw, vh, G, iso, tI, K, clamp, cam, FLAT, T, playerLook, sAng, P, sheet } from "./scene_view.js";
+import { g, vw, vh, G, iso, tI, K, clamp, cam, FLAT, T, playerLook, sAng, P, sheet, setWorldTransform } from "./scene_view.js";
 import { drawSkirt, drawGround, drawLayer, drawPulseParts, lazyLeft, lazyTall } from "./scene_ground.js";
 import { wpLit, lights, map, ground, theme, artGround, drawWater, pulseCv, pulseParts, falls, smokers, statics, npcs, OUTDOOR, emit, strings, critters, roomL, drawAmbient, camps } from "./scene_map.js";
 import { npcOut, npcService, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, seatOf, drawPerson, drawJam } from "./scene_people.js";
@@ -105,7 +105,7 @@ function skyLights(t, ox, oy) {
 /** What shines by its own light at night is laid on again over the grade: the spirit tree's crown, the flames. */
 function glowAfterDark(n, t, ox, oy) {
   g.save();
-  g.setTransform(1, 0, 0, 1, -ox, -oy);
+  setWorldTransform(1, 0, 0, 1, -ox, -oy);
   g.globalCompositeOperation = "screen";
   for (const st of lights) {
     if (!st.spirit || st.dx - ox > vw || st.dx + st.sp.width - ox < 0) continue;
@@ -197,7 +197,7 @@ export function render(focusX, focusY, dt, t, snap) {
   setFxClock(t);
   const now = t;
 
-  g.setTransform(1, 0, 0, 1, 0, 0);
+  setWorldTransform();
   g.fillStyle = VOID[theme] || "#0b0d18";
   g.fillRect(0, 0, vw, vh);
   g.translate(-ox, -oy);
@@ -211,7 +211,7 @@ export function render(focusX, focusY, dt, t, snap) {
     g.globalAlpha = 1;
   }
   // gates and everything else that lies flat on the ground, drawn through the diamond matrix
-  g.setTransform(FLAT[0], FLAT[1], FLAT[2], FLAT[3], -ox, -oy);
+  setWorldTransform(...FLAT, -ox, -oy);
   for (const p of map.portals) {
     const px = p.x * T + 16, py = p.y * T + 16;
     if (p.door) {
@@ -226,7 +226,7 @@ export function render(focusX, focusY, dt, t, snap) {
   }
   g.lineWidth = 1;
   drawFx(now, true);
-  g.setTransform(1, 0, 0, 1, -ox, -oy);
+  setWorldTransform(1, 0, 0, 1, -ox, -oy);
   drawAimArrow(t, dt, false);
   for (const p of map.portals) if (!p.door && Math.random() < 0.2) { const [px, py] = tI(p.x + 0.5, p.y + 0.5); parts.push({ x: px + Math.random() * 24 - 12, y: py + Math.random() * 8 - 4, vx: 0, vy: -40, life: 0.6, color: "#d6b8ff", g: 0 }); }
   DC.drawFalls(g, falls, t, ox, oy, vw, vh);
@@ -319,15 +319,15 @@ export function render(focusX, focusY, dt, t, snap) {
       }
       g.globalAlpha = r.fade ?? 1;
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(X, Y, 6, 3, 0, 0, 7); g.fill();
-      if (r.dir === "left") { g.save(); g.translate(X, 0); g.scale(-1, 1); g.drawImage(fr, -SP.FOOT[0], Y - SP.FOOT[1]); g.restore(); }
-      else g.drawImage(fr, X - SP.FOOT[0], Y - SP.FOOT[1]);
+      if (r.dir === "left") { g.save(); g.translate(X, 0); g.scale(-1, 1); g.drawImage(fr, -SP.FOOT[0], Y - SP.FOOT[1], SP.SIZE, SP.SIZE); g.restore(); }
+      else g.drawImage(fr, X - SP.FOOT[0], Y - SP.FOOT[1], SP.SIZE, SP.SIZE);
       if (r.pose) IN.drawPose(g, r.pose, X, Y, t, parts, r.seed);
       g.globalAlpha = 1;
     } else if (o.n) {
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 6, 3, 0, 0, 7); g.fill();
       const pose = o.n.n.pose, nt = t + o.n.x * 37;
       const nf = pose === "doze" || nt % 3900 < 140 ? SP.FRAME.blink : Math.floor(nt / (pose === "doze" ? 1400 : 620)) % 2 ? SP.FRAME.breathe : SP.FRAME.stand;
-      g.drawImage(o.n.sheet.front[nf], Math.round(o.n.x - SP.FOOT[0]), Math.round(o.n.y - SP.FOOT[1]));
+      g.drawImage(o.n.sheet.front[nf], Math.round(o.n.x - SP.FOOT[0]), Math.round(o.n.y - SP.FOOT[1]), SP.SIZE, SP.SIZE);
       if (pose) IN.drawPose(g, pose, o.n.x, o.n.y, t, parts, o.n.n.x * 7 + o.n.n.y);
     } else if (o.f && theme === "interior") {
       // indoors the fire burns in the fireplace (iso_interior.js), not on the floor
@@ -411,11 +411,11 @@ export function render(focusX, focusY, dt, t, snap) {
   if (hidden && ghost.s && ghost.s.img) {
     const s = ghost.s;
     g.save(); g.globalAlpha = 0.42; g.translate(Math.round(meX), Math.round(meY)); g.scale(s.face * ghost.gz, ghost.gz);
-    g.drawImage(s.img, -SP.FOOT[0], -SP.FOOT[1]);
+    g.drawImage(s.img, -SP.FOOT[0], -SP.FOOT[1], SP.SIZE, SP.SIZE);
     g.restore();
   }
   for (const [id, s] of ents) if (!s.seen) ents.delete(id);
-  g.setTransform(1, 0, 0, 1, -ox, -oy);
+  setWorldTransform(1, 0, 0, 1, -ox, -oy);
   drawAimArrow(t, dt, true);
   for (const h of hooks) { g.save(); h(g, t, P); g.restore(); }
 
@@ -434,7 +434,7 @@ export function render(focusX, focusY, dt, t, snap) {
   const outdoor = OUTDOOR.has(theme) && !map.indoor && Sky.weather() !== -1, night = outdoor ? Sky.nightK() : 0;
   DC.drawEmitters(g, emit, t, ox, oy, vw, vh, parts);
   DC.drawStrings(g, strings, t, ox, oy, vw, vh, night);
-  g.setTransform(1, 0, 0, 1, 0, 0);
+  setWorldTransform();
   DC.drawCritters(g, critters, dt, t, ox, oy, vw, vh, theme);
 
   // darkness, with pools of light cut out of it: the same everywhere on screen, never darker at the edges
@@ -456,10 +456,8 @@ export function render(focusX, focusY, dt, t, snap) {
       else if (o.m && SP.MOB_GLOW[G.defs.mobs[o.m.k].sp]) hole(o.X, o.Y - 14, o.m.el === 2 ? 90 : 48, 0.75);
     }
     for (const p of map.portals) { const [px, py] = tI(p.x + 0.5, p.y + 0.5); hole(px, py, 80, 0.8); }
-    g.setTransform(1, 0, 0, 1, 0, 0);
     g.drawImage(lightCv, 0, 0);
   }
-  g.setTransform(1, 0, 0, 1, 0, 0);
   // indoors: warm lamplight and the fire, sunlight through the windows by day (iso_interior.js)
   if (theme === "interior") { IN.roomLight(g, roomL, t, dt, ox, oy, vw, vh, Sky.nightK()); cam.ox = ox; cam.oy = oy; return; }
   // outdoors the day turns: the whole view graded by the hour and the weather (one even multiply,
@@ -473,7 +471,7 @@ export function render(focusX, focusY, dt, t, snap) {
 /** The local player's last drawn look, for the ghost shown through walls. */
 const ghost = { s: null, gz: 1 };
 
-export { iso, sAng, PARTS, playerLook, init, resize, sync, project, pick } from "./scene_view.js";
+export { iso, sAng, PARTS, playerLook, init, resize, sync, project, pick, FIGURE_DENSITY } from "./scene_view.js";
 export { loadMap, labels } from "./scene_map.js";
 export { tintWhite, petFetch, npcOut, npcService } from "./scene_people.js";
 export { props, hooks, personFrame, FOOT, fxCustom, glows, qiBurst, arrowSprite, fx, big, shake } from "./scene_fx.js";

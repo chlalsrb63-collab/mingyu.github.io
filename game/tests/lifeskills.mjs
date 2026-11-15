@@ -1111,12 +1111,14 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
     return X.jbNeed(X.JB[id], g) * price;
   };
   const complete = (id, started, materialG = 0) => {
-    const before = ch.gold;
+    const before = ch.gold, tokens = ch.cos.tokens;
     assert.ok(v(id).ok, id);
     const gold = ch.gold - before;
     assert.ok(gold > materialG, `${id}: ${gold}G exceeds ${materialG}G input cost`);
     assert.equal(ch.jobBoard.done.at(-1), id);
+    assert.equal(ch.cos.tokens, tokens + 1, "a paid personal job awards one Willow token");
     assert.equal(v(id).ok, false, "a second hand-in cannot pay");
+    assert.equal(ch.cos.tokens, tokens + 1, "the same job cannot pay a second token");
     if (VERBOSE) console.log("Willow", id, `${((now - started) / 1000).toFixed(1)}s`, `pay=${gold}`, `cost=${materialG}`, `net=${gold - materialG}`);
   };
 

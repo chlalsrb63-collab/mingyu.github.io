@@ -68,7 +68,8 @@ export function anchors(base, o, view, f) {
   const bob = SPC && SPC.HEAD_BOB ? SPC.HEAD_BOB[f] | 0 : f === 1 ? 1 : f === 3 ? -1 : 0;
   const ha = SPC && SPC.headAnchor ? SPC.headAnchor(o || {}) : FALLBACK_HEAD;
   const fa = SPC && SPC.faceAnchor ? SPC.faceAnchor(o || {}, view) : { lx: view === "side" ? 14 : 12, rx: view === "side" ? 19 : 18, ey: 20, nx: view === "side" ? 17 : 15, ny: 22, cheekL: 10, cheekR: 21 };
-  const d = base.getContext("2d").getImageData(0, 0, SZ, SZ).data;
+  const size = base.width, scale = size / SZ;
+  const d = base.getContext("2d").getImageData(0, 0, size, size).data;
   const side = view === "side", back = view === "back";
   const rows = ha.rows || FALLBACK_HEAD.rows, top = ha.top + bob;
   const halfAt = (y) => rows[Math.max(0, Math.min(rows.length - 1, y - top))];
@@ -78,7 +79,11 @@ export function anchors(base, o, view, f) {
     eye: fa.ey + bob, lx: fa.lx, rx: fa.rx, nx: fa.nx, ny: fa.ny + bob, cheekL: fa.cheekL, cheekR: fa.cheekR,
     bt: 24 + bob, foot: 27, H: bob, f, side, back, front: !side && !back, view,
     fur: (o && o.fur) || "#fbfbff",
-    under: (x, y) => { if (x < 0 || y < 0 || x >= SZ || y >= SZ) return null; const i = (y * SZ + x) * 4; return d[i + 3] ? [d[i], d[i + 1], d[i + 2]] : null; },
+    under: (x, y) => {
+      if (x < 0 || y < 0 || x >= SZ || y >= SZ) return null;
+      const i = (Math.floor(y * scale) * size + Math.floor(x * scale)) * 4;
+      return d[i + 3] ? [d[i], d[i + 1], d[i + 2]] : null;
+    },
   };
   /** The mean brightness of the plain frame over a box (what a rim sits on). */
   A.lumBox = (x0, y0, x1, y1) => {
@@ -91,25 +96,25 @@ export function anchors(base, o, view, f) {
 }
 
 // ───────────────────────────── painting ─────────────────────────────
-function canvas() {
+function canvas(size = SZ) {
   const c = document.createElement("canvas");
-  c.width = c.height = SZ;
+  c.width = c.height = size;
   const g = c.getContext("2d");
   g.imageSmoothingEnabled = false;
   return [c, g];
 }
 /** A painter for one layer, measured from the frame's anchors. */
-function brush(g, A) {
+function brush(g, A, scale) {
   /** A rect; `col` may be a function (x, y) → colour, for pieces that adapt to what lies under each pixel. */
   const r = (x, y, w, h, col) => {
     if (w <= 0 || h <= 0 || !col) return;
-    x = Math.round(x); y = Math.round(y); w = Math.round(w); h = Math.round(h);
-    if (typeof col === "function") { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { g.fillStyle = col(x + i, y + j); g.fillRect(x + i, y + j, 1, 1); } return; }
+    x = Math.round(x * scale); y = Math.round(y * scale); w = Math.round(w * scale); h = Math.round(h * scale);
+    if (typeof col === "function") { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { g.fillStyle = col((x + i) / scale, (y + j) / scale); g.fillRect(x + i, y + j, 1, 1); } return; }
     g.fillStyle = col; g.fillRect(x, y, w, h);
   };
   const c0 = Math.floor(A.cx + 0.5);
   /** A rect centred on the head. */
-  const cr = (y, w, h, col, dx = 0) => r(Math.round(A.cx + 0.5 - w / 2 + dx), y, w, h, col);
+  const cr = (y, w, h, col, dx = 0) => r(A.cx + 0.5 - w / 2 + dx, y, w, h, col);
   /** The same rect on both sides of the head's centre, `off` pixels out. */
   const sym = (off, y, w, h, col, colR = col) => { r(c0 + off, y, w, h, colR); r(c0 - off - w, y, w, h, col); };
   const px = (x, y, col) => r(x, y, 1, 1, col);
@@ -119,6 +124,70 @@ function brush(g, A) {
   });
   return { r, cr, sym, px, grid, c0, g };
 }
+
+const HARD_HATS = new Set(["crown", "horncrown", "helm", "halo", "horns", "goggles", "miner", "surveycap", "shards"]);
+const HARD_BACKS = new Set(["surf", "gourd", "lantern", "hammer", "trophy", "tray", "cauldron", "tradeJar", "surveyTanks"]);
+const HARD_FACES = new Set(["crescentFrames", "amberFrames", "tradePearl", "surveyFilter", "glasses", "shades", "forge", "monocle", "snorkel"]);
+const FEATHER_BACKS = new Set(["angel", "bat", "fairy", "dragon"]);
+
+/** Shape and colour the half-pixel steps within a costume's logical pattern, on its native 64px grid. */
+function finishNative(d, size, A, part, design) {
+  const source = d.slice(), seamTone = new Map();
+  const at = (x, y) => (y * size + x) * 4;
+  const solid = (x, y) => x >= 0 && y >= 0 && x < size && y < size && source[at(x, y) + 3] > 0;
+  let loX = size, loY = size, hiX = 0, hiY = 0;
+  for (let y = 1; y < size - 1; y++) for (let x = 1; x < size - 1; x++) {
+    if (!solid(x, y)) continue;
+    loX = Math.min(loX, x); loY = Math.min(loY, y); hiX = Math.max(hiX, x); hiY = Math.max(hiY, y);
+    const dx = x % 2 ? 1 : -1, dy = y % 2 ? 1 : -1;
+    // Bevel a supported corner, leaving thin details such as feathers, straps and spectacles whole.
+    if (part !== "face" && !solid(x + dx, y) && !solid(x, y + dy) && solid(x - 2 * dx, y) && solid(x, y - 2 * dy)) d[at(x, y) + 3] = 0;
+  }
+  if (hiX < loX) return;
+  const width = hiX - loX + 1, height = hiY - loY + 1;
+  const shadeSpan = (x, y, n, tone, slope = 0) => {
+    for (let j = 0; j < n; j++) {
+      const u = x + j, v = y + Math.floor(j * slope);
+      if (!solid(u, v)) continue;
+      const i = at(u, v);
+      if (!d[i + 3]) continue;
+      const c = toHex(source[i], source[i + 1], source[i + 2]);
+      if (c === INK) continue;
+      const key = `${c}:${tone}`;
+      if (!seamTone.has(key)) seamTone.set(key, hex(tone < 0 ? sh(c, -tone) : li(c, tone)));
+      d.set(seamTone.get(key), i);
+    }
+  };
+  const span = (from, y, end, tone, slope) => shadeSpan(loX + Math.round(width * from), y, Math.max(1, Math.round(width * end)), tone, slope);
+  if (part === "hat") {
+    const hard = HARD_HATS.has(design);
+    span(0.16, loY + 1, hard ? 0.38 : 0.5, hard ? 0.67 : 0.27, 0.18);
+    if (height > 3) span(A.side ? 0.42 : 0.12, hiY - 1, 0.55, -0.21, A.side ? -0.16 : 0);
+    if (hard) span(0.52, loY + Math.floor(height / 2), 0.12, 0.55);
+  } else if (part === "top") {
+    // Shoulder piping follows the cut of the top. A lower crease helps separate it from the paws.
+    span(0.1, loY + 1, 0.43, design === "armor" ? 0.58 : 0.3, 0.14);
+    if (height > 3) span(A.side ? 0.21 : 0.43, hiY - 1, 0.45, -0.29, -0.16);
+  } else if (part === "back") {
+    if (FEATHER_BACKS.has(design)) {
+      span(0.09, loY + 2, 0.26, 0.43, 0.35);
+      span(0.63, loY + 3, 0.23, -0.34, -0.4);
+    } else if (HARD_BACKS.has(design)) {
+      span(0.12, loY + Math.floor(height / 3), 0.32, 0.58, 0.14);
+      span(0.62, hiY - 1, 0.26, -0.32);
+    } else {
+      span(0.16, loY + 2, 0.28, 0.3, -0.18);
+      span(0.38, hiY - 2, 0.46, -0.32, 0.2);
+    }
+  } else if (HARD_FACES.has(design) && !A.back) {
+    // Tiny specular marks on a lens or metal rim. Eye pixels are restored after the layer.
+    span(0.17, loY, 0.15, 0.61);
+    span(0.62, loY, 0.15, 0.46);
+  } else {
+    span(0.22, loY, 0.4, 0.3);
+    if (height > 3) span(0.47, hiY, 0.3, -0.28);
+  }
+}
 /**
  * Lay one layer onto `g`: paint it with `fn(b, A, pal)`, keep only the pixels `opt.keep(x, y)`
  * allows, darken edges that would melt into what they touch (`opt.sep`, on by default), then ink.
@@ -127,19 +196,21 @@ function brush(g, A) {
  */
 function layer(g, fn, A, pal, opt = {}) {
   if (!fn) return;
-  const [c, lg] = canvas();
-  fn(brush(lg, A), A, pal);
-  const img = lg.getImageData(0, 0, SZ, SZ), d = img.data;
-  const ud = g.getImageData(0, 0, SZ, SZ).data;
-  if (opt.keep) for (let y = 0; y < SZ; y++) for (let x = 0; x < SZ; x++) { const i = (y * SZ + x) * 4; if (d[i + 3] && !opt.keep(x, y)) d[i + 3] = 0; }
+  const size = g.canvas.width, scale = size / SZ;
+  const [c, lg] = canvas(size);
+  fn(brush(lg, A, scale), A, pal);
+  const img = lg.getImageData(0, 0, size, size), d = img.data;
+  const ud = g.getImageData(0, 0, size, size).data;
+  if (scale === 2 && opt.part) finishNative(d, size, A, opt.part, opt.design);
+  if (opt.keep) for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) { const i = (y * size + x) * 4; if (d[i + 3] && !opt.keep(x, y)) d[i + 3] = 0; }
   if (opt.sep !== false) {
     const dark = [], only = opt.sepOnly ? new Set(opt.sepOnly.map((c) => c.toLowerCase())) : null;
-    for (let y = 0; y < SZ; y++) for (let x = 0; x < SZ; x++) {
-      const i = (y * SZ + x) * 4;
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 4;
       if (!d[i + 3] || (only && !only.has(toHex(d[i], d[i + 1], d[i + 2])))) continue;
       for (const [u, v] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
-        if (u < 0 || v < 0 || u >= SZ || v >= SZ) continue;
-        const k = (v * SZ + u) * 4;
+        if (u < 0 || v < 0 || u >= size || v >= size) continue;
+        const k = (v * size + u) * 4;
         if (d[k + 3] || !ud[k + 3] || isInkAt(ud, k)) continue;
         if (near(d[i], d[i + 1], d[i + 2], ud[k], ud[k + 1], ud[k + 2])) { dark.push(i); break; }
       }
@@ -149,14 +220,14 @@ function layer(g, fn, A, pal, opt = {}) {
   lg.putImageData(img, 0, 0);
   const mode = opt.ink || "all";
   if (mode !== "none") {
-    const solid = (x, y) => x >= 0 && y >= 0 && x < SZ && y < SZ && d[(y * SZ + x) * 4 + 3] > 0;
+    const solid = (x, y) => x >= 0 && y >= 0 && x < size && y < size && d[(y * size + x) * 4 + 3] > 0;
     lg.fillStyle = opt.col || INK;
-    for (let y = 0; y < SZ; y++) for (let x = 0; x < SZ; x++) {
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
       if (solid(x, y)) continue;
       if (!(solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1))) continue;
-      const k = (y * SZ + x) * 4;
+      const k = (y * size + x) * 4;
       if (mode === "out" && ud[k + 3]) continue;
-      if (mode === "hat" && ud[k + 3] && y >= A.top && !isInkAt(ud, k)) continue;
+      if (mode === "hat" && ud[k + 3] && y >= A.top * scale && !isInkAt(ud, k)) continue;
       if (opt.keep && !opt.keep(x, y)) continue;
       lg.fillRect(x, y, 1, 1);
     }
@@ -171,12 +242,13 @@ function layer(g, fn, A, pal, opt = {}) {
 function ears(g, base, A, bumpsOnly) {
   if (bumpsOnly && !A.bumps) return;
   if ((A.ear === "none" || A.ear === "side") && !A.bumps) return;
-  const [c, eg] = canvas();
-  const d = base.getContext("2d").getImageData(0, 0, SZ, SZ).data, out = eg.createImageData(SZ, SZ), o = out.data;
-  for (let y = 0; y < A.top; y++) for (let x = 0; x < SZ; x++) {
-    const i = (y * SZ + x) * 4;
+  const size = base.width, scale = size / SZ;
+  const [c, eg] = canvas(size);
+  const d = base.getContext("2d").getImageData(0, 0, size, size).data, out = eg.createImageData(size, size), o = out.data;
+  for (let y = 0; y < A.top * scale; y++) for (let x = 0; x < size; x++) {
+    const i = (y * size + x) * 4;
     if (!d[i + 3]) continue;
-    if (y === A.top - 1 && isInkAt(d, i)) continue;
+    if (y >= (A.top - 1) * scale && isInkAt(d, i)) continue;
     o[i] = d[i]; o[i + 1] = d[i + 1]; o[i + 2] = d[i + 2]; o[i + 3] = 255;
   }
   eg.putImageData(out, 0, 0);
@@ -195,11 +267,12 @@ export function isEyePix(r, g, b) {
 }
 /** Put back every eye pixel of the plain frame inside the head (nothing worn on the head may hide the eyes). */
 function guardEyes(g, base, A) {
-  const d = base.getContext("2d").getImageData(0, 0, SZ, SZ).data;
-  for (const [x0, y0, x1, y1] of eyeBoxes(A)) for (let y = y0; y <= y1; y++) {
-    const h = A.halfAt(y);
-    for (let x = Math.max(x0, 16 - h); x <= Math.min(x1, 15 + h); x++) {
-      const i = (y * SZ + x) * 4;
+  const size = base.width, scale = size / SZ;
+  const d = base.getContext("2d").getImageData(0, 0, size, size).data;
+  for (const [x0, y0, x1, y1] of eyeBoxes(A)) for (let y = y0 * scale; y < (y1 + 1) * scale; y++) {
+    const h = A.halfAt(Math.floor(y / scale));
+    for (let x = Math.max(x0, 16 - h) * scale; x < Math.min(x1 + 1, 16 + h) * scale; x++) {
+      const i = (y * size + x) * 4;
       if (!d[i + 3] || !isEyePix(d[i], d[i + 1], d[i + 2])) continue;
       g.fillStyle = toHex(d[i], d[i + 1], d[i + 2]); g.fillRect(x, y, 1, 1);
     }
@@ -478,6 +551,80 @@ const HAT = {
       else if (A.side) { b.px(A.x0 - 1, T - 1, p.c); b.px(A.x0 - 2, T, p.c); b.px(A.x0 - 2, T + 1, dk); }
     },
   },
+  // a short leaf-brimmed patrol cap, a folded tidal brim, and an aviator helmet
+  willowcap: {
+    ears: "through",
+    draw(b, A, p) {
+      const y = A.top, w = A.x1 - A.x0 + 1;
+      b.cr(y - 2, w - 4, 1, li(p.c));
+      b.cr(y - 1, w - 2, 2, p.c);
+      b.cr(y + 1, w, 1, sh(p.c, 0.4), A.side ? 1 : 0);
+    },
+    over(b, A, p) {
+      if (A.back) return;
+      const x = A.side ? b.c0 + 1 : b.c0 - 1;
+      b.grid(x, A.top - 2, ["..ll", ".lls", "cs.."], { l: p.b, s: sh(p.b, 0.4), c: p.c });
+    },
+  },
+  tidebrim: {
+    ears: "through",
+    draw(b, A, p) {
+      const y = A.top, w = A.x1 - A.x0 + 1;
+      b.cr(y - 3, w - 6, 1, li(p.c));
+      b.cr(y - 2, w - 4, 2, p.c);
+      b.cr(y, w, 1, p.b);
+    },
+    over(b, A, p) {
+      const y = A.top, w = A.x1 - A.x0 + 1, x = A.side ? A.x1 - 2 : A.x0;
+      b.cr(y, w + 1, 1, sh(p.b, 0.4), A.side ? 1 : 0);
+      b.r(x, y - 1, 3, 1, A.back ? p.b : p.r);
+      b.r(A.x0 - (A.side ? 0 : 1), y + 1, Math.floor(w / 2), 1, p.b);
+    },
+  },
+  surveycap: {
+    ears: "behind",
+    draw(b, A, p) {
+      const y = A.top, w = A.x1 - A.x0 + 1;
+      b.cr(y - 4, w - 6, 1, li(p.c, 0.45));
+      b.cr(y - 3, w - 4, 1, p.c);
+      b.cr(y - 2, w, 3, p.c);
+      b.cr(y + 1, w - 2, 1, sh(p.c, 0.46));
+      b.r(A.x0, y, 2, Math.min(3, A.ny - y), sh(p.c, 0.4));
+      if (!A.side) b.r(A.x1 - 1, y, 2, Math.min(3, A.ny - y), sh(p.c, 0.4));
+      const x = A.side ? b.c0 + 1 : b.c0 - 2;
+      b.r(x, y - 2, 4, 2, p.b);
+      b.r(x + 1, y - 1, 2, 1, A.back ? sh(p.b) : p.g);
+    },
+  },
+  archiveCap: {
+    ears: "through",
+    draw(b, A, p) {
+      const y = A.top, w = A.x1 - A.x0 + 1;
+      b.cr(y - 3, w - 4, 1, li(p.c));
+      b.cr(y - 2, w - 2, 2, p.c);
+      b.cr(y, w + 2, 1, p.b);
+      b.cr(y + 1, w, 1, sh(p.c, 0.4));
+    },
+    over(b, A, p) {
+      const x = A.side ? b.c0 - 3 : A.x1 - 3;
+      b.grid(x, A.top - 6, [".ll", "lls", "ls.", "s.."], { l: p.b, s: sh(p.b, 0.4) }, A.back);
+    },
+  },
+  ramblerHat: {
+    ears: "behind",
+    draw(b, A, p) {
+      const y = A.top, w = A.x1 - A.x0 + 1;
+      b.cr(y - 4, w - 6, 1, li(p.c, 0.45), -1);
+      b.cr(y - 3, w - 4, 2, p.c, -1);
+      b.cr(y - 1, w - 2, 1, p.b);
+      b.cr(y, w + 4, 1, sh(p.c, 0.35), A.side ? 1 : 0);
+      b.cr(y + 1, w + 2, 1, p.c, A.side ? 1 : 0);
+    },
+    over(b, A, p) {
+      const x = A.side ? A.x0 + 1 : b.c0 + 1;
+      b.grid(x, A.top - 4, [".l.", "lls", "lss", ".s."], { l: p.r, s: sh(p.r, 0.38) }, A.back);
+    },
+  },
   // shards of the rift circling over the head and the ears, drifting with the walk
   shards: {
     ink: "#3b2a66",
@@ -583,6 +730,32 @@ const TOP = {
   // a scarf wound round the neck, one end hanging with a fringe
   scarf: {
     front: ["cccccccc", ".....cs.", ".....b.."], side: [".cccccc.", "cs......", "b......."], back: ["cccccccc", ".cs.....", ".b......"],
+  },
+  patrolVest: {
+    front: [".lbcccs.", ".scbccs.", ".dcybcd."],
+    side: [".lscccs.", ".scybcs.", ".ddcbcd."],
+    back: [".lcsscs.", ".scllcs.", ".dclccd."],
+  },
+  traderCoat: {
+    pal: (p) => ({ r: p.r }),
+    front: [".cbccbc.", ".lsbbsc.", ".srrrss.", "..sccs.."],
+    side: [".bbccbc.", ".bccbcs.", ".srrrss.", "...ccs.."],
+    back: [".cbccbc.", ".cbbbbc.", ".srrrss.", "..sccs.."],
+  },
+  surveyCoat: {
+    front: [".lbbbbc.", ".cycysc.", ".cycysd.", "..d..d.."],
+    side: [".lcccbb.", ".sccycs.", ".dccycd.", "..d..d.."],
+    back: [".lbbbbc.", ".lcbcls.", ".dcbcsd.", "..d..d.."],
+  },
+  archiveRobe: {
+    front: [".wbcbwc.", ".scbcls.", ".dcsbcd.", "..sssc.."],
+    side: [".lccwbw.", ".sccbcs.", ".dccbcd.", "...ssc.."],
+    back: [".cwwwwc.", ".scllcs.", ".dcsscd.", "..sccs.."],
+  },
+  ramblerVest: {
+    front: [".lbbblc.", ".lyccys.", ".dbssbd."],
+    side: [".lcbbbc.", ".lccybs.", ".sdbbsd."],
+    back: [".lbbbbc.", ".lcscls.", ".dcsssd."],
   },
 };
 /** The colours a top template reads. */
@@ -807,6 +980,51 @@ const BACK = {
     if (!A.back) b.px(edge, y - 1 - rise, foam);
     b.px(edge, y + (A.back && rise ? 1 : 0), brew);
   },
+  mapcase: (b, A, p) => {
+    const pal = { c: p.c, s: sh(p.c, 0.35), l: li(p.c), b: p.b, w: "#f2deaa" };
+    if (A.back) {
+      b.grid(b.c0 - 5 + sway(A), A.bt, ["..ww.....", ".wblc....", "..blccc..", "...lccbs.", ".....sbs."], pal);
+    } else {
+      b.grid(A.x0 - (A.side ? 5 : 4), A.bt - 4, [".ww....", "wlbc...", ".lbc...", "..lbc..", "...lbc.", "....cs."], pal);
+    }
+  },
+  tradeJar: (b, A, p) => {
+    const y = A.bt - (A.back ? 0 : 2);
+    const x = A.back ? b.c0 - 4 + sway(A) : A.side ? A.x0 - 5 : A.x1 - 2;
+    const pal = { c: p.c, d: sh(p.c, 0.35), l: li(p.c, 0.45), b: p.b, r: p.r };
+    b.grid(x, y, ["..rrrr..", "..lbcd..", ".lbbbdc.", "lcbbbcdc", ".lccccd.", "..dddd.."].slice(0, A.back ? 5 : 6), pal);
+  },
+  surveyTanks: (b, A, p) => {
+    const pal = { c: p.c, s: sh(p.c, 0.4), l: li(p.c, 0.35), b: p.b, g: p.g };
+    if (A.back) {
+      b.grid(b.c0 - 4 + sway(A), A.bt, [".bb..bb.", "lccsslcs", "lccgglcs", "lcbsslcs", ".ss..ss."], pal);
+    } else {
+      const x = A.side ? A.x0 - 6 : A.x1 - 1;
+      b.grid(x, A.bt - 4, [".bb.", "lccs", "lggs", "lccs", "lcbs", ".ss."], pal);
+    }
+  },
+  moonCape: (b, A, p) => {
+    const pal = { c: p.c, s: sh(p.c, 0.5), l: li(p.c, 0.22), g: p.b };
+    const sw = sway(A), y = A.bt;
+    if (A.back) {
+      b.grid(b.c0 - 6 + sw, y, ["..llccccsl..", ".lccgccccss.", ".lcgggcccsc.", "..lcccsscs..", "...ss..ss..."], pal);
+    } else if (A.side) {
+      b.grid(b.c0 - 9 + sw, y, ["...lcccc", "..lccss.", ".lcsss..", "..s.s..."], pal);
+    } else {
+      b.grid(b.c0 - 6 + sw, y, ["..lccccssl..", ".lcccccsssc.", ".lssssssssc.", "..ss....ss.."], pal);
+    }
+  },
+  leafCape: (b, A, p) => {
+    const pal = { c: p.c, s: sh(p.c, 0.45), l: li(p.c, 0.32), v: p.b };
+    const sw = sway(A), y = A.bt;
+    if (A.back) {
+      b.grid(b.c0 - 6 + sw, y, ["..lllccc....", ".lccvccscss.", "..lccvcscss.", "...lccvsss..", ".....lss...."], pal);
+    } else if (A.side) {
+      b.grid(b.c0 - 9 + sw, y, ["...llcc.", "..lcccc.", ".lcvcs..", "..css...", "...s...."], pal);
+    } else {
+      b.grid(b.c0 - 6 + sw, y, ["...llccc....", "..lcccssssc.", "...lcscssss.", ".....csss..."], pal);
+    }
+  },
 };
 /** A strap from one shoulder to the other hip, for what is slung on the back. */
 const sling = (b, A, p) => {
@@ -817,12 +1035,19 @@ const sling = (b, A, p) => {
 /** What a back piece shows in front of the body (a cape's collar and clasp, a pack's straps), front and side views. */
 const BACK_FRONT = {
   surf: sling, gourd: sling, lantern: sling, satchel: sling, hammer: sling, trophy: sling,
+  mapcase: sling, tradeJar: sling,
+  surveyTanks: (b, A, p) => BACK_FRONT.pack(b, A, { c: p.b }),
   basket: (b, A, p) => BACK_FRONT.pack(b, A, p), plush: (b, A, p) => BACK_FRONT.pack(b, A, p),
   cauldron: (b, A, p) => BACK_FRONT.pack(b, A, { c: "#6a4434" }),
   cape: (b, A, p) => {
     const y = A.bt;
     if (A.side) { b.r(14, y, 4, 1, p.c); b.px(17, y, GOLD); return; }
     b.r(13, y, 6, 1, p.c); b.px(13, y, sh(p.c)); b.px(18, y, sh(p.c)); b.cr(y, 2, 1, GOLD);
+  },
+  moonCape: (b, A, p) => BACK_FRONT.cape(b, A, p),
+  leafCape: (b, A, p) => {
+    const x = b.c0 - (A.side ? 1 : 3), y = A.bt;
+    b.r(x, y, 4, 1, p.c); b.px(x + 1, y, p.b);
   },
   batcape: (b, A, p) => BACK_FRONT.cape(b, A, p),
   pack: (b, A, p) => {
@@ -852,6 +1077,62 @@ function rim(A, c) {
   };
 }
 const FACE = {
+  crescentFrames: {
+    back: true,
+    draw(b, A, p) {
+      const e = A.eye, c = rim(A, p.c), s = rim(A, p.b);
+      if (A.back) { b.px(A.x0, e, s); b.px(A.x1, e, s); return; }
+      for (const x of [A.lx, A.rx]) {
+        b.r(x - 2, e, 1, 2, s); b.r(x + 2, e, 1, 2, s);
+        b.r(x - 1, e + 2, 3, 1, c);
+      }
+      b.r(A.lx + 2, e, A.rx - A.lx - 3, 1, c);
+      if (A.side) b.r(16 - A.halfAt(e), e, A.lx - 1 - (16 - A.halfAt(e)), 1, s);
+    },
+  },
+  amberFrames: {
+    back: true,
+    draw(b, A, p) {
+      const e = A.eye, c = rim(A, p.c), s = rim(A, p.b);
+      if (A.back) { b.px(A.x0 + 1, e, s); b.px(A.x1 - 1, e, s); return; }
+      for (const x of [A.lx, A.rx]) {
+        b.r(x - 2, e - 1, 5, 1, c); b.r(x - 2, e, 1, 2, c); b.r(x + 2, e, 1, 2, c);
+        b.r(x - 2, e + 2, 5, 1, s);
+      }
+      b.r(A.lx + 2, e - 1, A.rx - A.lx - 3, 1, s);
+      if (A.side) b.r(16 - A.halfAt(e - 1), e - 1, A.lx - 1 - (16 - A.halfAt(e - 1)), 1, s);
+    },
+  },
+  patrolLeaf: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const x = A.side ? A.cheekL + 1 : A.cheekR - 3;
+      const y = A.ny;
+      b.grid(x, y, [".lc", "scl"], { l: rim(A, p.b), c: rim(A, p.c), s: rim(A, sh(p.c, 0.5)) });
+    },
+  },
+  tradePearl: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const x = A.side ? A.cheekL + 1 : A.cheekR - 2;
+      b.r(x, A.ny, 2, 2, rim(A, p.b));
+      b.px(x, A.ny + 1, rim(A, p.c));
+      b.px(x + 1, A.ny + 2, rim(A, li(p.c, 0.6)));
+    },
+  },
+  surveyFilter: {
+    back: true,
+    draw(b, A, p) {
+      const y = A.ny, x = A.nx;
+      const bnd = rim(A, p.s), metal = rim(A, p.b);
+      if (A.back) { b.cr(y, 8, 1, bnd); return; }
+      b.r(x - 4, y, 8, 1, bnd);
+      b.r(x - 2, y, 4, 2, p.c);
+      b.r(x - 3, y + 1, 2, 1, metal);
+      b.r(x + 1, y + 1, 2, 1, metal);
+      b.r(x - 1, y, 2, 1, li(p.c, 0.35));
+    },
+  },
   glasses: {
     back: true,
     draw(b, A, p) {
@@ -1104,6 +1385,27 @@ export const ART = {
   back_tray: ["back", "tray", { c: "#d8dce8", b: "#a8acb8" }],
   face_forge: ["face", "forge", { c: "#3a4a40", b: "#c89a40", s: "#4a3a34" }],
   back_cauldron: ["back", "cauldron", { c: "#4a4a58", b: "#7ae07a" }],
+  // Willow patrol, coral traders and the brass survey crew
+  hat_willow_patrol: ["hat", "willowcap", { c: "#5b734b", b: "#b5c975" }],
+  top_willow_patrol: ["top", "patrolVest", { c: "#62794d", b: "#c99755" }],
+  back_willow_mapcase: ["back", "mapcase", { c: "#8d6344", b: "#a2ad62", s: "#5c4135" }],
+  face_willow_leaf: ["face", "patrolLeaf", { c: "#527741", b: "#b6c973" }],
+  hat_coral_merchant: ["hat", "tidebrim", { c: "#eee0b9", b: "#3c928f", r: "#df8669" }],
+  top_coral_merchant: ["top", "traderCoat", { c: "#e1d4af", b: "#3c928f", r: "#d57762" }],
+  back_coral_jar: ["back", "tradeJar", { c: "#d9e0c7", b: "#3c928f", r: "#dc8569", s: "#765458" }],
+  face_coral_pearl: ["face", "tradePearl", { c: "#f0e5c5", b: "#4a9690" }],
+  hat_brass_survey: ["hat", "surveycap", { c: "#946348", b: "#dab06b", g: "#b9d2c3" }],
+  top_brass_survey: ["top", "surveyCoat", { c: "#555c73", b: "#be9259" }],
+  back_brass_tanks: ["back", "surveyTanks", { c: "#bb884e", b: "#5f5a68", g: "#b9d2c3" }],
+  face_brass_filter: ["face", "surveyFilter", { c: "#705448", b: "#d9af62", s: "#544751" }],
+  hat_moon_archive: ["hat", "archiveCap", { c: "#41516e", b: "#c9cfdb" }],
+  top_moon_archive: ["top", "archiveRobe", { c: "#4d587b", b: "#b9c2d5" }],
+  back_moon_cape: ["back", "moonCape", { c: "#465377", b: "#f4d99c" }],
+  face_moon_glasses: ["face", "crescentFrames", { c: "#c3c5d2", b: "#56637d" }],
+  hat_maple_ramblers: ["hat", "ramblerHat", { c: "#966a48", b: "#513a52", r: "#e69242" }],
+  top_maple_ramblers: ["top", "ramblerVest", { c: "#a35e47", b: "#e1b976" }],
+  back_maple_cape: ["back", "leafCape", { c: "#bc6944", b: "#e4bc75" }],
+  face_maple_glasses: ["face", "amberFrames", { c: "#b67e49", b: "#426a65" }],
 };
 /** The cosmetic slots, in the order the wire sends them. */
 export const SLOTS = ["hat", "top", "back", "face", "wskin"];
@@ -1121,39 +1423,43 @@ export const coversEyes = (id) => !!(ART[id] && ART[id][0] === "face" && FACE[AR
 
 /**
  * Dress one frame: `base` is the plain frame from sprites.js, `o.cos` a list of
- * cosmetic ids. Returns a new canvas, or `base` itself when nothing is worn.
+ * cosmetic ids. `highBase`, when given, is the native 64px body with the same anchors.
+ * Returns the composited canvas, or the chosen body itself when nothing is worn.
  */
-export function dress(base, o, view, f) {
+export function dress(base, o, view, f, highBase = null) {
+  const artBase = highBase || base, size = artBase.width, scale = size / SZ;
   const list = (o && o.cos ? o.cos : []).map((id) => ART[id]).filter((a) => a && a[0] !== "wskin");
-  if (!list.length) return base;
-  const A = anchors(base, o, view, f);
+  if (!list.length) return artBase;
+  const A = anchors(artBase, o, view, f);
   const of = (slot) => list.find((a) => a[0] === slot);
-  const [c, g] = canvas();
+  const [c, g] = canvas(size);
   const bk = of("back"), tp = of("top"), fc = of("face"), ht = of("hat");
   const bkFn = bk && BACK[bk[1]];
-  const bd = base.getContext("2d").getImageData(0, 0, SZ, SZ).data;
+  const bd = artBase.getContext("2d").getImageData(0, 0, size, size).data;
+  const pixel = (x, y) => (y * size + x) * 4;
+  const coat = (item, fn, opt) => layer(g, fn, A, item[2], { part: item[0], design: item[1], ...opt });
   // 1. a back piece hangs behind the body (front, side)
-  if (bkFn && !A.back) layer(g, bkFn, A, bk[2], { sep: false });
-  g.drawImage(base, 0, 0);
+  if (bkFn && !A.back) coat(bk, bkFn, { sep: false });
+  g.drawImage(artBase, 0, 0);
   // 2. the top, inked only where it sticks out
-  if (tp && TOP[tp[1]]) { const tl = topPal(TOP[tp[1]], tp[2]); layer(g, wearTop(TOP[tp[1]]), A, tp[2], { ink: "out", sepOnly: [tl.c, tl.l] }); }
+  if (tp && TOP[tp[1]]) { const tl = topPal(TOP[tp[1]], tp[2]); coat(tp, wearTop(TOP[tp[1]]), { ink: "out", sepOnly: [tl.c, tl.l] }); }
   // 3. from behind, the back piece covers the body but stays under the head
-  if (bkFn && A.back) layer(g, bkFn, A, bk[2], { keep: (x, y) => y >= A.bt || !bd[(y * SZ + x) * 4 + 3] });
+  if (bkFn && A.back) coat(bk, bkFn, { keep: (x, y) => y >= A.bt * scale || !bd[pixel(x, y) + 3] });
   // 4. a cape's clasp, a pack's straps in front of the body
   if (bk && !A.back && BACK_FRONT[bk[1]]) layer(g, BACK_FRONT[bk[1]], A, bk[2], { ink: "none" });
   // 5. the hat: crown, ears, brim
   if (ht && HAT[ht[1]]) {
     const h = HAT[ht[1]];
-    layer(g, h.draw, A, ht[2], { ink: "hat", col: h.ink });
-    if (h.draw && h.bumps !== false) ears(g, base, A, h.ears !== "through");
-    layer(g, h.over, A, ht[2], { ink: "hat", col: h.ink });
+    coat(ht, h.draw, { ink: "hat", col: h.ink });
+    if (h.draw && h.bumps !== false) ears(g, artBase, A, h.ears !== "through");
+    coat(ht, h.over, { ink: "hat", col: h.ink });
   }
   // 6. the eyes stay visible, 7. then the face piece (on the head only)
-  if (!A.back) guardEyes(g, base, A);
+  if (!A.back) guardEyes(g, artBase, A);
   if (fc && FACE[fc[1]]) {
-    layer(g, FACE[fc[1]].draw, A, fc[2], { ink: "none", keep: (x, y) => bd[(y * SZ + x) * 4 + 3] > 0 && !isInkAt(bd, (y * SZ + x) * 4) });
+    coat(fc, FACE[fc[1]].draw, { ink: "none", keep: (x, y) => bd[pixel(x, y) + 3] > 0 && !isInkAt(bd, pixel(x, y)) });
     // glasses ring the eyes, they never hide them (big round eyes peek over the rim)
-    if (!FACE[fc[1]].covers && !A.back) guardEyes(g, base, A);
+    if (!FACE[fc[1]].covers && !A.back) guardEyes(g, artBase, A);
   }
   return c;
 }
@@ -1176,11 +1482,12 @@ export function cosIcon(id, sheetOf, lookOf) {
     const main = a[2].c || "#ffffff";
     const o = { ...lookOf(), cos: [id] };
     if (lum(main) > 0.72) o.fur = "#b98b68";
-    const sh2 = sheetOf(o), fr = sh2.front[0];
-    if (a[0] === "hat") g.drawImage(fr, 8, 6, 16, 16, 0, 0, 16, 16);
-    else if (a[0] === "face") g.drawImage(fr, 8, 13, 16, 16, 0, 0, 16, 16);
-    else if (a[0] === "top") g.drawImage(fr, 12, 20, 8, 8, 0, 0, 16, 16);
-    else g.drawImage(sh2.back[0], 8, 14, 16, 16, 0, 0, 16, 16);
+    const sh2 = sheetOf(o), fr = sh2.front[0], scale = fr.width / SZ;
+    const crop = (frame, x, y, size) => g.drawImage(frame, x * scale, y * scale, size * scale, size * scale, 0, 0, 16, 16);
+    if (a[0] === "hat") crop(fr, 8, 6, 16);
+    else if (a[0] === "face") crop(fr, 8, 13, 16);
+    else if (a[0] === "top") crop(fr, 12, 20, 8);
+    else crop(sh2.back[0], 8, 14, 16);
   }
   icons.set(id, c);
   return c;

@@ -51,7 +51,7 @@ function drawFace() {
   const g = $("#st-face").getContext("2d");
   g.clearRect(0, 0, 40, 40);
   g.imageSmoothingEnabled = false;
-  g.drawImage(fr, 6, 8, 20, 20, 0, 0, 40, 40);
+  SP.drawPersonCrop(g, fr, 6, 8, 20, 20, 0, 0, 40, 40);
 }
 /** The paper-doll's figure: the player's own sprite, large, breathing and now and then blinking. */
 let dollAt = 0, dollFrame = -1;
@@ -69,7 +69,7 @@ export function drawPortrait(t) {
   g.fillStyle = "rgba(0,0,0,.4)";
   g.beginPath(); g.ellipse(66, 147, 30, 6, 0, 0, Math.PI * 2); g.fill();
   const fr = SP.personSheet(SP.playerLook(s.cls, w.look, w.gear)).front[f];
-  g.drawImage(fr, 4, 2, 24, 28, 6, 10, 120, 140);
+  SP.drawPersonCrop(g, fr, 4, 2, 24, 28, 6, 10, 120, 140);
 }
 export function hudBars() {
   const s = G.self, me = G.me;

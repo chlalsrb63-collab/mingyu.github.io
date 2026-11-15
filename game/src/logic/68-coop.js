@@ -114,12 +114,13 @@ function coopPay(S, p, c, g) {
   } else {
     ch.coopDone.push(c.k);
     gold(R.gold[g - 1] * Tt);
+    const tokens = gainWillowToken(p, 2);
     if (addItem(ch, "stone", R.stone[g - 1])) p.gain.push(["item", "stone", R.stone[g - 1], 0]);
     rewardGear(S, p, Tt, R.gearQ[g - 1]);
     gainXp(S, p, Math.round(tierXp(Tt) * R.xp[g - 1]));
     gainLife(S, p, J.skill, life);
     addRep(S, p, J.npc, R.rep);
-    toast(p, `[${J.name}] ${"CBAS"[g - 1]} 등급! 오늘의 보수를 받았습니다.`);
+    toast(p, `[${J.name}] ${"CBAS"[g - 1]} 등급! 오늘의 보수를 받았습니다.${tokens ? ` 버드나무토큰 +${tokens}` : ""}`);
   }
   p.dirty = true;
 }

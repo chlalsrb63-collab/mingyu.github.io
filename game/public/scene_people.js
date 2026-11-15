@@ -135,8 +135,10 @@ export function drawPerson(s, e, t, dt, x, y) {
     g.scale(sg * (1 + sq * 0.9), tuck * (1 - sq));
     // leaning one pixel into the walk: the upper body drawn a pixel ahead of the legs
     const ln = life ? life.lean * sg : 0, cut = SP.FOOT[1] - 6;
-    if (ln) { g.drawImage(img, 0, 0, img.width, cut, -SP.FOOT[0] + ln, -SP.FOOT[1], img.width, cut); g.drawImage(img, 0, cut, img.width, img.height - cut, -SP.FOOT[0], -SP.FOOT[1] + cut, img.width, img.height - cut); }
-    else g.drawImage(img, -SP.FOOT[0], -SP.FOOT[1]);
+    if (ln) {
+      SP.drawPersonCrop(g, img, 0, 0, SP.SIZE, cut, -SP.FOOT[0] + ln, -SP.FOOT[1]);
+      SP.drawPersonCrop(g, img, 0, cut, SP.SIZE, SP.SIZE - cut, -SP.FOOT[0], -SP.FOOT[1] + cut);
+    } else g.drawImage(img, -SP.FOOT[0], -SP.FOOT[1], SP.SIZE, SP.SIZE);
     g.restore();
   };
   if (!s.weapon || e.dead || (fl & 2)) return body();    // (the greatsword is off stuck in the ground)
@@ -343,7 +345,7 @@ function drawTrail(s, t) {
     g.save();
     g.globalAlpha = 0.28 * (1 - (t - a.t0) / 180);
     g.translate(a.x, a.y); g.scale(a.face, 1);
-    g.drawImage(tintWhite(a.img, "#bfe0ff"), -SP.FOOT[0], -SP.FOOT[1]);
+    g.drawImage(tintWhite(a.img, "#bfe0ff"), -SP.FOOT[0], -SP.FOOT[1], SP.SIZE, SP.SIZE);
     g.restore();
   }
 }

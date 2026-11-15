@@ -295,10 +295,13 @@ function renderServers(svs, loading) {
 /** A small picture of a character: the standing frame, head and body. */
 function portrait(cls, look) {
   const c = el("canvas", "sv-face");
-  c.width = 22; c.height = 22;
+  c.width = c.height = 22 * S3.FIGURE_DENSITY;
   const g = c.getContext("2d");
   g.imageSmoothingEnabled = false;
-  try { g.drawImage(SP.personSheet(SP.playerLook(cls, look || [], {})).front[SP.FRAME.stand], 5, 8, 22, 22, 0, 0, 22, 22); } catch { /* an old look */ }
+  try {
+    const frame = SP.personSheet(SP.playerLook(cls, look || [], {})).front[SP.FRAME.stand];
+    SP.drawPersonCrop(g, frame, 5, 8, 22, 22, 0, 0, c.width, c.height);
+  } catch { /* an old look */ }
   return c;
 }
 /** Connect to a channel: to play, or to make a character there first. */
@@ -611,8 +614,9 @@ function sizeStage() {
   const r = box.getBoundingClientRect();
   if (!r.width || !r.height) return;
   stageZ = Math.max(2, Math.min(6, Math.floor(Math.min(r.width / 86, r.height / 62))));
-  cv.width = Math.ceil(r.width / stageZ); cv.height = Math.ceil(r.height / stageZ);
-  cv.style.width = cv.width * stageZ + "px"; cv.style.height = cv.height * stageZ + "px";
+  const w = Math.ceil(r.width / stageZ), h = Math.ceil(r.height / stageZ);
+  cv.width = w * S3.FIGURE_DENSITY; cv.height = h * S3.FIGURE_DENSITY;
+  cv.style.width = w * stageZ + "px"; cv.style.height = h * stageZ + "px";
 }
 /** What the figure is doing at time t. */
 function pose(t) {

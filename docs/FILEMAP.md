@@ -142,7 +142,8 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `radar.js` | the radar (player-centred minimap, zoom, glyphs, party discs and tracked residents) and the map window `#w-map` (M; regional zoom/pan and building-to-door walking, world atlas from `defs.maps[].to`, resident directory); `init(deps) loadMap draw drawWin opened` |
 | `worldmap.js` · `worldmap_art.js` [349] · `worldmap_land.js` | outdoor atlas terrain and pins, indoor location anchors, building door resolution and routes from `defs().maps`, fast travel to eligible waypoint stones |
 | `chars.js` [471] | legacy smooth illustrated figures (re-exported by art.js; heroes now come from sprites.js) |
-| `sprites.js` [1334] | 32×32 sheets: heroes `personSheet/playerLook`, NPCs, pets, weapons `weaponSprite`, `monsterSheet`, tints |
+| `sprites.js` | heroes `personSheet/playerLook` and NPCs on 64×64 native frames in 32×32 logical space; `drawPersonCrop` maps logical crops, shared foot and grip anchors; pets, weapons, monsters and tints |
+| `person_pixels.js` | native player/NPC contour and face detail, with ear, coat, tail and fur shading on the half-pixel grid |
 | `species.js` [403] | hero species and face parts: `SPECIES PARTS TABS PRESETS cleanLook withSpecies` (limits mirror logic `LOOK_MAX`); fit data for worn things: `EARS headAnchor faceAnchor EYE_PIX HEAD_BOB` |
 | `looks.js` [245] | look editor (creation tabs) and the town mirror |
 | `mobart.js` [618] · `mobart_kit.js` [139] | Monster model registry (`has draw icon KINDS`) and primitives shared by art packs. |
@@ -154,7 +155,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `mobart_bosses2_adds.js` [208] | Own pixel models of the bosses-2 adds: 혈루 결정 전갈 (bloodshard), 밤장막 흡혈박쥐 (nightbat), 먹장어 머리 (hagfishhead) |
 | `mobart_named.js` [160] | Own pixel models of four named beasts that once borrowed a tinted sprite: 금 간 뿔 숫양 (meadowram), 검은 왕관 뿌리짐승 (bogcrown), 눈먼 문지기 올빼미 (hollowowl), 얼어붙은 왕릉 파수꾼 (rootwarden) |
 | `weapons.js` [1072] | Seven weapon families (sword, dagger, spear, staff, book, bow, hammer), tier/legendary/set/skin art. `DESIGNS SIL MOTIF_SIL weaponSprite weaponIcon bowSprite`; installed manifest keys can replace code-drawn looks. |
-| `wardrobe.js` [1192] · `wardrobe_ui.js` [312] | cosmetic layers drawn over heroes (`ART SLOTS dress anchors`; designs `HAT TOP BACK FACE`, rules in the header); costume shop + 외형 tab |
+| `wardrobe.js` · `wardrobe_ui.js` | native cosmetic layers in logical positions (`ART SLOTS dress anchors`; designs `HAT TOP BACK FACE`, rules in the header); 16×16 icons, costume shop + 외형 tab |
 | `swing.js` [207] | Fixed-size weapon poses: alternating greatsword sweeps, repeating overhead hammer strike (`hammerPose`), and bow draw/release (`bowPose`). `WIND IMPACT SNAP` control anticipation and snap. |
 | `skillfx.js` [1321] | Dispatches server skill codes via `skillEvent`, props (`pr/pp/pe`), missiles/projectiles (`ar/ae`), marks and lines. Renders support recovery and rally pennants, hammer impact, and boss telegraphs and turns (`bt`/`bc`). Uses the effects clock for `later`. |
 | `swing.js` [233] | Fixed-size weapon poses: alternating greatsword sweeps, repeating overhead hammer strike (`hammerPose`), and bow draw/release (`bowPose`). `WIND IMPACT SNAP` control anticipation and snap. |
@@ -270,3 +271,6 @@ Plain ES modules served by the editor server. See the [editor guide](editor/READ
 (asset review + Codex/ChatGPT weapon prompts) · `.claude/agents/` 22 specialist roles adapted from the MIT "Claude Code Game Studios" template (game/systems/economy/level designer, narrative, writer, art director, technical artist, sound, UX, gameplay/network programmer, QA, performance, live-ops, security, producer…); Claude uses them as subagents, and Codex/Gemini may read one as a role guide (e.g. Gemini doing balance → `economy-designer.md`) · six more from the MIT "The Agency" collection, prefixed `agency-` (whimsy-injector, ui-designer, reality-checker, game-audio-engineer, narrative-designer, accessibility-auditor) · `.claude/skills/pixel-art/` pixel-art
 rules (any AI may read `rules/*.md`) · `.github/workflows/deploy-game.yml` CI (split check, tests,
 deploy) · root `index.html`/`profile.jpg` = the owner's unrelated GitHub Pages profile.
+
+`ai/prompts/gemini-skillfx-equipment.md` is the Antigravity brief for melee effects and themed equipment icon drafts.
+`ai/prompts/gemini-cosmetics-64.md` is the two-set native wardrobe brief. `ai/prompts/gemini-equipment-rotation.md` is the repeatable wardrobe and equipment-icon brief.

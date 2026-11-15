@@ -428,9 +428,10 @@ export const juanaKey = () => { const s = G.self; return [s.charms, invKey(s), s
 let face = null;
 function portrait() {
   if (!face) {
-    face = document.createElement("canvas"); face.width = face.height = 16;
+    const frame = SP.juanaSheet().front[0];
+    face = document.createElement("canvas"); face.width = face.height = 16 * frame.width / SP.SIZE;
     const g = face.getContext("2d"); g.imageSmoothingEnabled = false;
-    g.drawImage(SP.juanaSheet().front[0], 8, 13, 16, 16, 0, 0, 16, 16);
+    SP.drawPersonCrop(g, frame, 8, 13, 16, 16, 0, 0, face.width, face.height);
   }
   const img = el("img", "cm-face"); img.src = face.toDataURL(); img.alt = "주아나";
   return img;

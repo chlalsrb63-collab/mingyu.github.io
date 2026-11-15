@@ -4,6 +4,12 @@
 ② 기준 데이터가 어디 있는지, ③ 미리보기·테스트 방법, ④ Codex에게 붙여 넣을 프롬프트(한국어 + 영어 본문)입니다.
 무기 외형(무기 스킨)은 `ai/prompts/weapon-assets.md`.
 
+착용 프레임은 **64×64 도트**, 기존 앵커와 화면상의 크기는 **32×32 논리 단위**다.
+`brush.r()`과 `brush.cr()`은 0.5 간격을 받을 수 있다. 0.5는 실제 도트 한 칸이다.
+큰 형태를 기존 논리 단위로 잡고, 옷깃·솔기·테처럼 필요한 부분을 반 픽셀 단위로 다듬는다.
+`dress(base32, o, view, f, highBase)`에 네이티브 몸체를 전달하면 64×64로 합성한다.
+가방 아이콘은 여전히 16×16이다.
+
 ---
 
 ## 1. 규칙 (tests/cosmetics.mjs가 모든 아이템 × 종족 × 방향 × 프레임을 검사)
@@ -45,10 +51,11 @@ node scripts/cos-audit.mjs --each --items top_robe,top_suit --sp 0,13 --z 7 --cr
 node scripts/cos-audit.mjs --item hat_crown                 # 한 아이템: 15종족 × 3방향 × 6프레임
 node scripts/cos-audit.mjs --giant hat_wizard,top_robe      # 전사 거인화(1.6배)
 node tests/cosmetics.mjs                                    # 가드 테스트 (~4초)
+node tests/person64.mjs                                     # 네이티브 캐릭터·NPC·착용 검사
 npm run test:rules                                          # 전부
 ```
 브라우저 없이 node로 그립니다(`scripts/pixcanvas.mjs`). 그림은 **반드시 PNG를 열어 눈으로 확인**한 뒤 커밋.
-`public/`을 바꿨으면 `public/index.html`의 `?v=` 4곳을 올릴 것.
+캐시 태그는 배포 시 `npm run stamp`에서 관리한다.
 
 ---
 
@@ -62,7 +69,7 @@ AGENTS.md 와 ai/prompts/cosmetic-assets.md 를 읽어. 외형 아이템 <종류
 2) game/public/wardrobe.js 에 디자인(HAT/TOP/BACK/FACE)과 ART 한 줄
 3) node scripts/cos-audit.mjs --item <id> 와 --slot <칸> 시트를 열어 15종족 × 앞·옆·뒤 × 걸음 프레임을 직접 확인하고,
    이상한 곳(떠 있음, 눈 가림, 귀와 겹침, 외곽선 끊김, 털과 같은 색, 뒤·옆 그림 없음)을 고쳐
-4) npm run test:rules 통과, index.html ?v= 올리기, 보고서 ai/reports/codex-*.md (시트 경로 포함), 커밋.
+4) npm run test:rules 통과, 보고서 ai/reports/codex-*.md (시트 경로 포함), 커밋.
 ```
 
 **English (prompt body)**
@@ -76,6 +83,6 @@ wingPair(); face rims use rim(A, c) so they read on dark masks; never cover the 
 description, source) and `npm run build:logic`; 2) the design and an ART entry in game/public/wardrobe.js;
 3) render `node scripts/cos-audit.mjs --item <id>` and `--slot <slot>` (game/shots_cos/), open the PNGs and check all
 15 species in front/side/back over the walk frames — floating, covered eyes, ear clashes, broken outline, fur-coloured
-parts, missing side/back art — and fix; 4) `npm run test:rules` (tests/cosmetics.mjs is the guard), bump `?v=` in
-public/index.html, write ai/reports/codex-*.md with the sheet paths, commit. Never delete or renumber an existing id.
+parts, missing side/back art — and fix; 4) `npm run test:rules` (tests/cosmetics.mjs and tests/person64.mjs check fit and native frames),
+write ai/reports/codex-*.md with the sheet paths, commit. Keep every existing id and wire code.
 ```

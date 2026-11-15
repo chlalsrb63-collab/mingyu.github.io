@@ -520,7 +520,8 @@ export function applyAction(S, pid, a) {
       break;
     case "cos_buy": {
       const c = COSMETICS[a.id];
-      ch.gold -= c.price;
+      if (c.src === "token") ch.cos.tokens -= c.price;
+      else ch.gold -= c.price;
       ch.cos.own.push(a.id);
       // bought to be worn: put it on straight away
       ch.cos.on[c.slot] = a.id;

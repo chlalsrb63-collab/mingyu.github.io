@@ -110,8 +110,8 @@ if (mode === "cos") {
       const o = { ...SP.playerLook("warrior", lk, { cos: [id] }) };
       const fr = SP.personSheet(o)[views[j]][frames[j]];
       g.save();
-      if (views[j] === "side" && j % 2) { g.translate(x + j * F + F, 0); g.scale(-1, 1); g.drawImage(fr, 5, 8, 22, 22, 0, y + 16, F, F); }
-      else g.drawImage(fr, 5, 8, 22, 22, x + j * F, y + 16, F, F);
+      if (views[j] === "side" && j % 2) { g.translate(x + j * F + F, 0); g.scale(-1, 1); SP.drawPersonCrop(g, fr, 5, 8, 22, 22, 0, y + 16, F, F); }
+      else SP.drawPersonCrop(g, fr, 5, 8, 22, 22, x + j * F, y + 16, F, F);
       g.restore();
     });
   });
@@ -128,7 +128,7 @@ if (mode === "walk") {
   g.fillStyle = "#6a9a5a"; g.fillRect(0, 0, cv.width, cv.height);
   ["front", "side", "back"].forEach((v, r) => [0, 1, 2, 3, 4, 5].forEach((f) => {
     const fr = SP.personSheet(SP.playerLook("warrior", lk, { cos: ids }))[v][f];
-    g.drawImage(fr, 4, 6, 24, 24, 10 + f * F, 10 + r * F, F, F);
+    SP.drawPersonCrop(g, fr, 4, 6, 24, 24, 10 + f * F, 10 + r * F, F, F);
   }));
 }
 if (mode === "all") {
@@ -141,7 +141,7 @@ if (mode === "all") {
   g.fillStyle = "#6a9a5a"; g.fillRect(0, 0, cv.width, cv.height);
   let r = 0;
   for (const id of ids) for (const v of V) {
-    P.forEach(([n, lk], i) => { const fr = SP.personSheet(SP.playerLook("warrior", lk, { cos: [id] }))[v][0]; g.drawImage(fr, 5, 5, 22, 22, 5 + i * F, 5 + r * (F + 4), F, F); });
+    P.forEach(([n, lk], i) => { const fr = SP.personSheet(SP.playerLook("warrior", lk, { cos: [id] }))[v][0]; SP.drawPersonCrop(g, fr, 5, 5, 22, 22, 5 + i * F, 5 + r * (F + 4), F, F); });
     r++;
   }
 }

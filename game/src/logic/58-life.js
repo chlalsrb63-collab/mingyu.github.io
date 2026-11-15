@@ -527,11 +527,12 @@ function jbPay(S, p) {
   }
   ch.gold += gold;
   p.gain.push(["gold", gold]);
+  const tokens = gainWillowToken(p, 1);
   gainLife(S, p, t.sk, Math.round(lifeNeed(ch.life[t.sk].lv) * JB_PAY.xp * k));
   ch.jobBoard.done.push(a.id);
   ch.jobBoard.active = null;
   S.maps[p.map].ev.push(["dl", p.eid, 2]);
-  toast(p, `알바 완료${fast ? " — 긴급 성공!" : ""} ${gold}G (${ch.jobBoard.done.length}/${JB_PAY.perDay})`);
+  toast(p, `알바 완료${fast ? " — 긴급 성공!" : ""} ${gold}G${tokens ? ` · 버드나무토큰 +${tokens}` : ""} (${ch.jobBoard.done.length}/${JB_PAY.perDay})`);
   checkAch(S, p);
   p.dirty = true;
 }
