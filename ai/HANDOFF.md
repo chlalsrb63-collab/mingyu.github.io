@@ -74,6 +74,9 @@ unique weapon's id as its look). **Art**: own sprites for the bosses-2 adds (`mo
 문지기 올빼미 / 왕릉 파수꾼 (`mobart_named.js`); icons for 스킬 강화석, the two trophies, reset scrolls and the 8 raid set pieces (every item
 now has a bag icon); 혈루 뿔 왕관 + 갯가재 집게 weapon skin (boss pool); bat-wing hem for 박쥐 망토. Codex `daily-party-hunt` merged.
 
+Play server: `.claude/launch.json` "play-1530" (port 8830, persist `game/.wrangler/play`) restarted 16:20 on this build;
+`public/index.html` carries a local `npm run stamp` cache tag (not committed, as the rules say).
+
 **Next, in order:**
 1) Play-test the four co-op jobs (forge/alch bots hit every beat — real players score lower; retune cut-offs) and the bosses-2 raids.
 2) Co-op leftovers: diner burger + two-carrier orders and a clean-plate stack (plates/sink done, C row kind 9; the 3-player cut-off
