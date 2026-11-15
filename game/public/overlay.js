@@ -12,6 +12,7 @@ import { jobIcon } from "./jobicons.js";
 import * as Emo from "./emoticons.js";
 import * as Growth from "./growth.js";
 import * as SideQ from "./sidequests.js";
+import * as Board from "./board.js";
 import * as Sky from "./sky.js";
 import * as NPC from "./npclife.js";
 import * as Dim from "./dimrift.js";
@@ -20,7 +21,7 @@ import { G, T, dpr, tg, text } from "./state.js";
 import { entityPos } from "./net.js";
 import { mobMax, DUNGEONS, RANK_NAME } from "./events.js";
 /** Quest marks over NPCs (owner): the main chain in yellow, side quests in blue; "!" to take, "?" to hand in (a lighter tint). */
-const MAIN_MARK = "#ffd84a", MAIN_DONE = "#fff0a0", SIDE_MARK = "#5aaaff", SIDE_DONE = "#a8d8ff";
+const MAIN_MARK = "#ffd84a", MAIN_DONE = "#fff0a0", SIDE_MARK = "#5aaaff", SIDE_DONE = "#a8d8ff", JOB_MARK = "#5ee07a", JOB_DONE = "#b4f5c0";   // 알바 in green
 
 // ───────────────────────────── render ─────────────────────────────
 // The world is drawn by the 3D scene; names, numbers and speech are drawn over
@@ -197,7 +198,11 @@ function renderText(t) {
   }
   const server = Sky.serverNow();
   for (const n of m.npcs) {
-    if (n.thing) continue;   // a thing's name shows on the F prompt only (town.md E)
+    if (n.thing) {   // a thing's name shows on the F prompt only (town.md E); a 알바 board still wears its green mark
+      const jm = Board.markFor(n);
+      if (jm) { const [x, y] = at(n.x * T + 8, n.y * T + 12, 2.6); if (!off(x, y)) label(jm, x, y + Math.sin(t / 200) * 3, jm === "!" ? JOB_MARK : JOB_DONE, 18); }
+      continue;
+    }
     const actor = NPC.cast(n.id), away = actor && !NPC.at(n.id, server)?.onPost;
     if (actor ? away && !S3.npcService(n) : !S3.npcOut(n)) continue;
     const [x, y] = at(n.x * T + 8, n.y * T + 12, 1.55);
@@ -205,6 +210,7 @@ function renderText(t) {
     label(away ? `${n.name} 안내판` : n.name, x, y, away ? "#d5bd99" : "#f0d48a");
     const sqm = SideQ.mark(n, G.self);
     if (sqm) label(sqm, x, y - 18 + Math.sin(t / 200) * 3, sqm === "!" ? SIDE_MARK : SIDE_DONE, 18);
+    else { const jm = Board.markFor(n); if (jm) label(jm, x, y - 18 + Math.sin(t / 200) * 3, jm === "!" ? JOB_MARK : JOB_DONE, 18); }
     if (n.role === "elder" && G.self) {
       const q = G.self.q, quest = G.defs.quests[q.i];
       const mark = !quest ? "" : q.st === 0 ? "!" : q.n >= quest.n ? "?" : "";
@@ -217,7 +223,9 @@ function renderText(t) {
     if (off(x, y)) continue;
     label(n.name, x, y, "#f0d48a");
     const mark = SideQ.mark(n, G.self);
+    const jm = !mark && Board.markFor(n);
     if (mark) label(mark, x, y - 18 + Math.sin(t / 200) * 3, mark === "!" ? SIDE_MARK : SIDE_DONE, 18);
+    else if (jm) label(jm, x, y - 18 + Math.sin(t / 200) * 3, jm === "!" ? JOB_MARK : JOB_DONE, 18);
   }
   // Residents talking together and ambient conversations close enough to hear.
   for (const b of S3.townBubbles(t)) { const [x, y] = at(b.x, b.y, 1.8); bubble(b.b, x, y, t); }

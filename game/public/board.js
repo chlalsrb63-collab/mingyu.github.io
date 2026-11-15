@@ -108,6 +108,14 @@ function ready(s, n) {
   if (pr[1] < pr[2]) return null;
   return { a: "give", label: a.t.item ? `${itemName(a.t.item)} ×${a.n} 전하기` : nx.verb };
 }
+/** The 알바 mark over NPC `n` (overlay.js, green): "?" when F there does the job's next step, "!" over a 알바 board
+ *  (role jobs) while today's offers are still open and no job is in hand, else "". */
+export function markFor(n, s = G.self) {
+  if (!s || !s.jb || !D() || !n) return "";
+  if (ready(s, n)) return "?";
+  const [, offers, done] = s.jb;
+  return n.role === "jobs" && !active(s) && done.length < D().jbPay.perDay && offers.some((o) => !done.includes(o[0])) ? "!" : "";
+}
 /** The F prompt's text at NPC `n` when it would do a job step, else "". */
 export function promptFor(n) {
   const r = G.self && ready(G.self, n);
