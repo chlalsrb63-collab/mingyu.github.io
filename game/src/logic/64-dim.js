@@ -141,8 +141,8 @@ function dimStart(S, ps, partyId, ask) {
   S.dimN = (S.dimN | 0) + 1;
   const id = "dim:" + S.dimN;
   const seed = (Math.imul(S.seed ^ S.nextId++, 2654435761) ^ Math.imul(partyId + 1, 40503) ^ Math.floor(S.now / 1024)) | 0;
-  const theme = boss ? DIM_CHAL.bosses[boss].theme : dimTheme(seed >>> 0, lv);
-  const map = boss ? dimArena({ id, seed, k: boss }) : dimension({ id, seed, theme, lv });
+  const theme = boss ? DIM_CHAL.bosses[boss].theme : dimTheme(seed >>> 0, 1);
+  const map = boss ? dimArena({ id, seed, k: boss }) : dimension({ id, seed, theme, lv, floor: 1 });
   const dim = registerDim(S, { id, map, party: partyId, seed, lv, theme, expire: S.now + (boss ? DIM_CHAL.limit : DIM.limit) });
   Object.assign(dim, { n: ps.length, members: {}, hit: {}, warned: false, kills: 0, opened: S.now });
   // the run: the best hero going in (the carry guard), damage dealt, who was carried, each one's result flags
@@ -156,7 +156,7 @@ function dimStart(S, ps, partyId, ask) {
     changeMap(S, o, id, x, y);
     dim.members[o.pid] = S.now;
     toast(o, boss ? `[보스 도전 · ${DIM_CHAL.stepNames[step]} Lv.${chalSteps(boss)[step][1]}] ${MOBS[boss].name} — ${DIM_CHAL.limit / 60000}분 안에 쓰러뜨리세요. 전멸해도 다시 도전할 수 있습니다.`
-      : `[${DIM_THEMES[theme].name}] 차원 균열 Lv.${shownLv(lv)} 1/${DIM.floors}단에 들어왔습니다. ${DIM.limit / 60000}분 안에 ${DIM.floors}단 끝의 최종 보스를 쓰러뜨리세요!`);
+      : `[1단 · ${DIM_FLOORS[0].name}] 차원 균열 Lv.${shownLv(lv)} 1/${DIM.floors}단에 들어왔습니다. ${DIM.limit / 60000}분 안에 ${DIM.floors}단 끝의 최종 보스를 쓰러뜨리세요!`);
     o.dirty = true;
   });
   dim.rt.ev.push(["dm", "open", ...tilePx(map.dim.start)]);
@@ -169,9 +169,8 @@ function dimFloor(S, dim, floor) {
   // the floor makes the leaders of its last `tk.elites` packs elites
   const packs = map.dim.spawns.filter((sp) => !sp.el && !sp.chest);
   const lead = new Set(packs.slice(packs.length - Math.min(packs.length, tk.elites)));
-  // a layout with few monsters fills the gauge faster, so a full clear always gives about DIM.full (no floor can stall short of 100%)
-  const normalN = packs.reduce((n, sp) => n + sp.n, 0) - lead.size;
-  dim.gK = floor ? Math.max(1, DIM.full / (normalN * DIM.normal + (map.dim.elites + lead.size) * (DIM.elite + DIM.orb))) : 1;
+  // the gauge weighs each kill the same on every floor (DIM.gK): 100% is about the old small floor's kills, never a clear of the big one
+  dim.gK = floor ? DIM.gK : 1;
   for (const sp of map.dim.spawns) {
     for (let i = 0; i < sp.n; i++) {
       const mob = newMob(S, sp.k, [sp.at[0], sp.at[1], sp.at[0], sp.at[1]], { el: sp.el || (i === 0 && lead.has(sp) ? 1 : 0), elite: 0 });
@@ -194,8 +193,9 @@ function dimDescend(S, dim) {
   for (const o of inside) if (dim.hit[o.pid] && !dimCarried(dim, o) && o.ch.dim.best < dim.floor) { o.ch.dim.best = dim.floor; o.dirty = true; }
   S.dimN = (S.dimN | 0) + 1;
   const id = "dim:" + S.dimN, seed = (Math.imul(dim.seed ^ Math.imul(floor, 0x5bd1e995), 2654435761) ^ floor) | 0;
-  const map = dimension({ id, seed, theme: dim.theme, lv: dim.lv });
-  const next = registerDim(S, { id, map, party: dim.party, seed, lv: dim.lv, theme: dim.theme, expire: dim.expire });
+  // each floor its own concept and look (31-maps-dim.js DIM_FLOORS)
+  const theme = dimTheme(seed >>> 0, floor), map = dimension({ id, seed, theme, lv: dim.lv, floor });
+  const next = registerDim(S, { id, map, party: dim.party, seed, lv: dim.lv, theme, expire: dim.expire });
   for (const k of ["members", "hit", "warned", "kills", "opened", "top", "dmg", "carry", "res", "chal"]) next[k] = dim[k];
   next.n = Math.max(1, inside.length);
   dimFloor(S, next, floor);
@@ -205,8 +205,8 @@ function dimDescend(S, dim) {
     const [x, y] = dimSpot(map, i);
     changeMap(S, o, id, x, y);
     next.members[o.pid] = S.now;
-    toast(o, floor < DIM.floors ? `균열 ${floor}/${DIM.floors}단으로 내려왔습니다. 더 깊은 곳의 몬스터는 더 강합니다!`
-      : `마지막 ${floor}단입니다! 균열을 채우면 가장 먼 방에서 최종 보스가 깨어납니다.`);
+    toast(o, floor < DIM.floors ? `[${floor}단 · ${DIM_FLOORS[floor - 1].name}] 균열 ${floor}/${DIM.floors}단으로 내려왔습니다. 더 깊은 곳의 몬스터는 더 강합니다!`
+      : `[${floor}단 · ${DIM_FLOORS[floor - 1].name}] 마지막 ${floor}단입니다! 균열을 채우면 가장 먼 방에서 최종 보스가 깨어납니다.`);
     o.dirty = true;
   });
   closeDim(S, dim.id);
@@ -289,7 +289,12 @@ function dimBoss(S, dim) {
   rt.mobs.push(mob);
   dim.boss = mob.id;
   rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), 40, FB_WARN], ["r", mob.id], ["dm", "boss", Math.round(mob.x), Math.round(mob.y)]);
-  for (const o of dimInside(S, dim.id)) toast(o, `균열이 가득 찼습니다! 최종 보스 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 가장 먼 방에서 깨어났습니다!`);
+  // the floor is wide: a party more than `hallR` steps from the hall gets 균열의 문 beside it, a step to the hall's threshold (dim.ck)
+  const folk = dimInside(S, dim.id).filter((o) => !o.dead);
+  const fx = folk.length ? Math.floor(folk.reduce((s, o) => s + o.x, 0) / folk.length / T) : m.dim.start[0], fy = folk.length ? Math.floor(folk.reduce((s, o) => s + o.y, 0) / folk.length / T) : m.dim.start[1];
+  const pt = toHall[fy * W + fx] > DIM.hallR ? freeTile(m, fx + 3, fy) || freeTile(m, fx, fy) : null;
+  if (pt) { dim.portal = { x: pt[0] * T + 8, y: pt[1] * T + 10 }; rt.ev.push(["dp", dim.portal.x, dim.portal.y]); }
+  for (const o of dimInside(S, dim.id)) toast(o, `균열이 가득 찼습니다! 최종 보스 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 가장 먼 방에서 깨어났습니다!${pt ? " 곁에 열린 균열의 문으로 보스의 방 앞까지 갈 수 있습니다." : ""}`);
 }
 /** The master is down: a chest for each member who fought, and a way home for 90 s. */
 function dimClear(S, dim, mob) {
@@ -484,6 +489,12 @@ function dimTick(S, now) {
     // the way down: once everyone standing stepped in (not in its first 1.5 s: let them see it), or its countdown ran out (nobody stalls the party)
     if (dim.state === "down" && (now >= dim.endAt || (now >= dim.endAt - DIM.downMs + 1500 && alive.length && alive.every((o) => dist(o.x, o.y, dim.portal.x, dim.portal.y) <= DIM.downR)))) { dimDescend(S, dim); continue; }
     if (dim.chal && dim.state === "boss") chalTick(S, dim, inside, alive);
+    // 균열의 문 (the last floor's 100%): a step on it, and you stand at the final boss's threshold
+    if (!dim.chal && dim.state === "boss" && dim.portal) for (const o of alive) {
+      if (dist(o.x, o.y, dim.portal.x, dim.portal.y) > DIM.downR) continue;
+      [o.x, o.y] = tilePx(dim.ck); o.fix = true;
+      dim.rt.ev.push(["dm", "open", o.x, o.y]);
+    }
     // orbs fly to whoever comes near; shrines answer a step on them
     for (let i = dim.orbs.length - 1; i >= 0; i--) {
       const b = dim.orbs[i];
@@ -519,7 +530,10 @@ function dimRespawn(S, p) {
   const dim = dimAt(S, p.map);
   if (!dim) return false;
   if (dim.story) { storyHome(S, p, "쓰러졌습니다… 다시 그 자리로 다가가면 재도전할 수 있습니다."); return true; }
-  const ck = dim.state === "boss" && dim.ck, [x, y] = ck ? tilePx(ck) : dimSpot(dim.map, ri(S, 0, 8));
+  // (the floors are wide: while the gauge fills, the fallen get up beside a standing member, not back at the way in)
+  const ck = dim.state === "boss" && dim.ck, ally = !ck && !dim.chal && dimInside(S, dim.id).find((o) => o !== p && !o.dead);
+  const at = ally && freeTile(dim.map, Math.floor(ally.x / T), Math.floor(ally.y / T));
+  const [x, y] = ck ? tilePx(ck) : at ? tilePx(at) : dimSpot(dim.map, ri(S, 0, 8));
   p.dead = false; p.dimDeadAt = 0;
   const st = stats(p);
   p.hp = st.mhp; p.mp = st.mmp;
@@ -527,7 +541,7 @@ function dimRespawn(S, p) {
   p.ghost = S.now + 2500;
   dim.rt.ev.push(["u", p.eid, 2]);
   p.dirty = true;
-  toast(p, `${ck ? "최종 보스의 방 앞에서" : "시작 지점에서"} 다시 일어났습니다. (차원 균열 안에서는 경험치를 잃지 않습니다)`);
+  toast(p, `${ck ? "최종 보스의 방 앞에서" : at ? "동료 곁에서" : "시작 지점에서"} 다시 일어났습니다. (차원 균열 안에서는 경험치를 잃지 않습니다)`);
   return true;
 }
 /** Seconds `p` must still wait to get up in an instance (0: may). */
@@ -759,7 +773,7 @@ function dimDefs() {
     themes: Object.fromEntries(Object.keys(DIM_THEMES).map((k) => [k, DIM_THEMES[k].name])), pylons: DIM.pylons, limit: DIM.limit, party: DIM.party, max: DIM.max,
     rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near,
     // the 3-floor raid and the boss challenge: [key, name, level needed, the marked cast, pattern names, steps [[level shown, level needed]…], weekly reward bit, rotating 0/1]
-    raid: { floors: DIM.floors, daily: DIM.dailyFull, downMs: DIM.downMs },
+    raid: { floors: DIM.floors, daily: DIM.dailyFull, downMs: DIM.downMs, names: DIM_FLOORS.map((c) => c.name) },
     chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0]), stepNames: DIM_CHAL.stepNames,
       stepR: DIM_CHAL.stepR },
   };
