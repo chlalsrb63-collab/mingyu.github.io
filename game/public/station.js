@@ -30,8 +30,8 @@ const KIND = {
   cook: { t: "쥬쥬의 화덕 — 요리", g: "fire", c: "#ffb04a", at: ["cook", "fire"], mg: "화덕" },
   fire: { t: "모닥불 — 요리", g: "fire", c: "#ffb04a", at: ["fire"], mg: "모닥불" },
 };
-/** st.kind the open station · sel the picked recipe id · n the batch count · pend a craft_open waiting for `mk`. */
-const st = { kind: "", sel: "", n: 1, pend: null, run: null };
+/** st.kind the open station · name the named fixture · sel the picked recipe · n the batch count. */
+const st = { kind: "", name: "", sel: "", n: 1, pend: null, run: null };
 window.__station = st;
 
 const D = () => G.defs.life;
@@ -93,12 +93,14 @@ function atStation() {
 }
 
 /** Open the window for a station kind (`craft` `alch` `cook` `fire`). */
-export function open(kind) {
+export function open(kind, name = "") {
   if (!KIND[kind] || !D() || !D().recipes) return false;
   if (st.kind !== kind) { st.sel = ""; st.n = 1; $("#craft-body").textContent = ""; }
   st.kind = kind;
+  st.name = name;
+  const sk = kind === "fire" ? "cook" : kind;
   const w = $("#w-craft");
-  w.querySelector("header .t").textContent = KIND[kind].t;
+  w.querySelector("header .t").textContent = name ? `${name} — ${D().names[D().keys.indexOf(sk)]}` : KIND[kind].t;
   openWin("craft");
   return true;
 }
@@ -230,7 +232,7 @@ function play(r) {
   // the mini-game sits under the windows (#minigame in #hud): the station window steps aside while it runs
   const back = isOpen("craft");
   closeWin("craft"); closeWin("talk");
-  const reopen = () => { st.run = null; if (back && atStation()) open(st.kind); };
+  const reopen = () => { st.run = null; if (back && atStation()) open(st.kind, st.name); };
   const send = (score) => {
     if (score === null || score === undefined) { toast("제작을 그만두었습니다"); reopen(); return; }
     const wait = Math.max(0, t0 + need - performance.now());

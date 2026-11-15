@@ -384,7 +384,7 @@ const jbQual = (ch, t) => (t.kind === "hunt" ? ch.lvl : ch.life[t.sk].lv) >= t.l
  */
 function jbOffers(ch, day) {
   const box = { seed: strHash(`${ch.name}:${day}:jb`) | 0 };
-  const pool = Object.keys(JB).filter((id) => !JB[id].when && JB[id].kind !== "chore" && jbQual(ch, JB[id]));
+  const pool = Object.keys(JB).filter((id) => !Object.hasOwn(JB_WILLOW, id) && !JB[id].when && JB[id].kind !== "chore" && jbQual(ch, JB[id]));
   const out = [], kinds = new Set();
   while (out.length < JB_PAY.offers && pool.length) {
     const fresh = pool.filter((id) => !kinds.has(JB[id].kind)), from = fresh.length ? fresh : pool;
@@ -400,12 +400,12 @@ function jbOffers(ch, day) {
 }
 /** The town's situation now: "night", "rain" (either, both or none). */
 const jbSit = (now) => [isNight(now) ? "night" : "", weatherAt(START.map, now) === WX.rain ? "rain" : ""].filter(Boolean);
-/** The offers this player sees today (drawn once a day per session: a level gained at noon does not reshuffle them), plus one extra per situation that holds now. */
+/** Today's fixed draw, Willow's standing contracts at their required levels, and current situational offers. */
 function jbOffersOf(S, p) {
   jbEnsure(S, p);
   const ch = p.ch, day = ch.jobBoard.day;
   if (!p.jbOff || p.jbOff.day !== day) p.jbOff = { day, ids: jbOffers(ch, day) };
-  const extra = [];
+  const extra = Object.keys(JB_WILLOW).filter((id) => jbQual(ch, JB_WILLOW[id]));
   for (const w of jbSit(S.now)) {
     const c = Object.keys(JB).filter((id) => JB[id].when === w && jbQual(ch, JB[id]));
     if (c.length) extra.push(c[(strHash(`${ch.name}:${day}:${w}`) >>> 0) % c.length]);

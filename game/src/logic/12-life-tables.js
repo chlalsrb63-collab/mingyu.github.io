@@ -199,7 +199,14 @@ const CRAFT = { batch: 10, batchS: 70, batchD: 20, failXp: 0.5 };
  * before it is offered; `when` "night" | "rain" = an extra offer only while it is night / raining in the town;
  * `rush` = always 긴급 with that many minutes. `npc`/`to` are static NPC ids (town, its interiors, 버드나무 마을).
  */
+const JB_WILLOW = {
+  jb_willow_wood: { kind: "bring", npc: "willow_repair", lv: 1, sk: "gather", item: "m_w1", n: 6, text: "젖은 마룻널 말리기 · 바닥을 말릴 아궁이의 땔감으로 [마른 가지]를 버들의 수리대에 가져다주세요." },
+  jb_willow_fish: { kind: "fish", npc: "willow_kitchen", lv: 1, sk: "fish", item: "fish_s", n: 5, text: "갈대의 아침 바구니 · 연못에서 잡은 [송사리]를 공동 부엌 화덕으로 가져다주세요. 아침 구이에 쓴대요." },
+  jb_willow_rice: { kind: "make", npc: "willow_elder", lv: 5, sk: "cook", item: "fd_rice", n: 3, text: "등교길 주먹밥 · 공동 부엌에서 지은 [들꽃 주먹밥]을 촌장 버들에게 가져다주세요. 아이들 아침밥이래요." },
+  jb_willow_notice: { kind: "deliver", npc: "willow_bard", to: "willow_florist", lv: 1, sk: "deliver", text: "솔의 공연 통지 · 음유시인 솔의 공연 안내문을 받아 꽃집 아이 봄이에게 전해 주세요." },
+};
 const JB = {
+  ...JB_WILLOW,
   jb_herb1: { kind: "bring", npc: "bogle", lv: 1, sk: "gather", item: "m_h1", n: 6, text: "보글이 [들꽃잎] 6장이 필요하대요. 물약에 넣는대요." },
   jb_wood1: { kind: "bring", npc: "inn_maru", lv: 1, sk: "gather", item: "m_w1", n: 8, text: "여관 주인 마루가 아궁이에 넣을 [마른 가지] 8개를 구해요." },
   jb_ore1: { kind: "bring", npc: "kangkang", lv: 1, sk: "gather", item: "m_o1", n: 6, text: "캉캉이 [구리 원석] 6개를 기다려요. 화덕이 배고프대요!" },

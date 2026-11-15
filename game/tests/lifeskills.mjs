@@ -10,7 +10,7 @@ const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
   "\nexport const __t = { gainLife, lifeOdds, lifeTime, lifeGrade, lifeXp, gradeOfMap, fishLand, fishWait, cookDish, cookBurnt, lifeSheetClean, RECIPES, FISH_G, RXP, GRADE_LV, NPC_ROLES, NPC_MAP, ITEMS," +
   // L2
   " lifeNodes, mapOf, mapPayload, MAP_META, FIRES, NODE, nodeMat, lifeTick, gatDone, craftOnce, JB, JB_PAY, jbOffers, jbOffersOf, jbRoll, jbNeed, jbQual, jbSit, jbGold, JB_GRADE, JB_RUSH, isNight, MOBS, jbRoute, jbLimit, parcelSpd, addRep, REP_TIER, REP_PERK," +
-  " CRAFT, GEAR_CRAFT, SHOP, sellPrice, POUCH_MAX, addItem, takeItem, countItem, canAdd, stats, dayOf, lifeNeed, ENH_RATE, ENH_BLESS, AFFIX, rollGear, CNT_KEYS, ACH, DAILY_OTHER, LIFE_MASTER, exportChar, CHORES, CHORE, chorePool, choreSpots };\n";
+  " CRAFT, GEAR_CRAFT, SHOP, sellPrice, POUCH_MAX, addItem, takeItem, countItem, canAdd, stats, dayOf, lifeNeed, ENH_RATE, ENH_BLESS, AFFIX, rollGear, CNT_KEYS, ACH, DAILY_OTHER, LIFE_MASTER, exportChar, CHORES, CHORE, chorePool, choreSpots, walk, canStand, waterNear };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs(), T = 16;
 const VERBOSE = process.argv.includes("-v");
@@ -990,4 +990,133 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   assert.deepEqual(junk.jobBoard.active, { id: "jb_ch_dog", npc: "willow_florist", prog: dn, expAt: 0, got: (1 << dn) - 1, fill: 0 }, "only real spots count");
   ch.jobBoard = { day, done: [], active: null };
 }
+// ── Willow contracts: a shared quota, authored routes, items, the kitchen and delivery tip
+{
+  fresh();
+  ch.rep = {};
+  for (const [skill, lv] of Object.entries({ gather: 1, fish: 1, cook: 1, deliver: 1 })) ch.life[skill] = { lv, xp: 0 };
+  const ids = ["jb_willow_wood", "jb_willow_fish", "jb_willow_rice", "jb_willow_notice"];
+  const [wood, fish, rice, notice] = ids;
+  const board = "willow_board";
+  const m = X.mapOf("willow");
+  const offers = () => X.jbOffersOf(S, p).filter((id) => ids.includes(id));
+  standBy(board);
+  ch.jobBoard = { day: X.dayOf(now), done: [], active: null };
+  p.jbOff = null;
+  assert.deepEqual(offers(), [wood, fish, notice], "starter Willow orders are visible at the board");
+  assert.equal(act({ t: "jb", a: "take", id: rice }).ok, false, "rice requires cooking Lv.5");
+  ch.life.cook.lv = 5;
+  assert.deepEqual(offers(), ids, "newly qualified orders appear without rerolling the day's board");
+
+  const point = (i) => [(i % m.w) * T + 8, Math.floor(i / m.w) * T + 10];
+  const go = (goal) => {
+    const start = Math.floor(p.y / T) * m.w + Math.floor(p.x / T);
+    const path = X.walk(m.w, m.h, start, (i) => goal(...point(i)), (i) => X.canStand(m, ...point(i)) ? 1 : Infinity);
+    assert.ok(path, "the stop is reachable in Willow");
+    for (const i of path.slice(1)) {
+      const [x, y] = point(i);
+      now += Math.ceil(T * 1000 / X.stats(p).spd);
+      assert.ok(act({ t: "mv", x, y }).ok);
+      assert.deepEqual([p.map, p.x, p.y], [m.id, x, y], "the server accepts each walking step");
+    }
+  };
+  const visit = (id) => {
+    const { x, y } = m.npcs.find((n) => n.id === id);
+    go((px, py) => Math.max(Math.abs(Math.floor(px / T) - x), Math.abs(Math.floor(py / T) - y)) <= 1);
+  };
+  const take = (id) => assert.ok(act({ t: "jb", a: "take", id }).ok, id);
+  const v = (id, a = "give") => act({ t: "jb", a, ...(a === "take" ? { id } : {}) });
+  const costs = (id, price) => {
+    const g = X.jbRoll(ch, ch.jobBoard.day, id).g;
+    return X.jbNeed(X.JB[id], g) * price;
+  };
+  const complete = (id, started, materialG = 0) => {
+    const before = ch.gold;
+    assert.ok(v(id).ok, id);
+    const gold = ch.gold - before;
+    assert.ok(gold > materialG, `${id}: ${gold}G exceeds ${materialG}G input cost`);
+    assert.equal(ch.jobBoard.done.at(-1), id);
+    assert.equal(v(id).ok, false, "a second hand-in cannot pay");
+    if (VERBOSE) console.log("Willow", id, `${((now - started) / 1000).toFixed(1)}s`, `pay=${gold}`, `cost=${materialG}`, `net=${gold - materialG}`);
+  };
+
+  for (const id of ["m_w1", "fish_s", "m_h1", "staple", "fd_rice"]) wipe(id);
+  let started = now;
+  take(wood);
+  assert.equal(v(wood).ok, false, "wood cannot be turned in at the board");
+  visit("willow_repair");
+  assert.equal(v(wood).ok, false, "stock is checked at the repair bench");
+  const woodCost = costs(wood, X.sellPrice({ id: "m_w1" }));
+  give("m_w1", costs(wood, 1));
+  complete(wood, started, woodCost);
+  assert.equal(X.countItem(ch, "m_w1"), 0);
+
+  visit(board);
+  started = now;
+  take(fish);
+  const bank = (x, y) => X.waterNear(m, { x, y });
+  visit("willow_fisher");
+  go(bank);
+  const fishCost = costs(fish, X.sellPrice({ id: "fish_s" }));
+  const fishNeed = costs(fish, 1);
+  for (let attempts = 0; X.countItem(ch, "fish_s") < fishNeed && attempts < fishNeed * 2; attempts++) {
+    assert.ok(act({ t: "fish" }).ok);
+    now = Math.ceil(p.fish.at);
+    L.tick(S, now);
+    assert.ok(act({ t: "hook" }).ok);
+    now += 2500;
+    assert.ok(act({ t: "reel", s: 100 }).ok);
+  }
+  const surplus = X.countItem(ch, "fish_s") - fishNeed;
+  assert.ok(surplus >= 0, "the village pond supplies the requested small fish");
+  visit("willow_kitchen");
+  complete(fish, started, fishCost);
+  assert.equal(X.countItem(ch, "fish_s"), surplus);
+
+  visit(board);
+  started = now;
+  take(rice);
+  visit("willow_kitchen");
+  const recipe = X.RECIPES.fd_rice, riceNeed = costs(rice, 1);
+  const componentCost = recipe.in.reduce((sum, [id, n]) => sum + n * (id === "staple" ? X.ITEMS[id].price : X.sellPrice({ id })), 0);
+  let riceCost = 0;
+  const puzzleTime = 12000; // solve and fill the 32 s pan; the result animation is another 700 ms
+  const puzzleScore = Math.round(70 + 30 * (1 - puzzleTime / 32000));
+  for (let attempts = 0; X.countItem(ch, "fd_rice") < riceNeed && attempts < riceNeed * 3; attempts++) {
+    for (const [id, n] of recipe.in) give(id, n);
+    assert.ok(act({ t: "craft_open", r: "fd_rice" }).ok, "the recipe works at the village kitchen");
+    now += Math.max(puzzleTime + 700, Math.ceil(recipe.ms * X.lifeTime(ch.life.cook.lv)));
+    const before = ch.gold;
+    assert.ok(act({ t: "craft", r: "fd_rice", s: puzzleScore }).ok);
+    riceCost += componentCost + before - ch.gold;
+    for (const [id] of recipe.in) {
+      const unit = id === "staple" ? X.ITEMS[id].price : X.sellPrice({ id });
+      riceCost -= X.countItem(ch, id) * unit;
+      wipe(id);
+    }
+  }
+  const riceSurplus = X.countItem(ch, "fd_rice") - riceNeed;
+  assert.ok(riceSurplus >= 0);
+  visit("willow_elder");
+  complete(rice, started, riceCost);
+  assert.equal(X.countItem(ch, "fd_rice"), riceSurplus);
+
+  visit(board);
+  started = now;
+  take(notice);
+  visit("willow_bard");
+  assert.ok(v(notice, "pick").ok);
+  const saved = JSON.parse(JSON.stringify(L.exportChar(S, "a")));
+  X.lifeSheetClean(saved);
+  assert.deepEqual(saved.jobBoard.active, { id: notice, npc: "willow_bard", prog: 0, expAt: 0 });
+  visit("willow_florist");
+  assert.ok(now < p.parcel.until, "the accepted village route fits the parcel timer");
+  complete(notice, started);
+  assert.equal(p.parcel, null);
+  assert.deepEqual(ch.jobBoard.done, ids);
+  visit(board);
+  const other = X.jbOffersOf(S, p).find((id) => !ids.includes(id));
+  assert.equal(v(other, "take").error, "알바는 하루에 4개까지입니다", "legacy orders share the Willow quota");
+}
+
 console.log("lifeskills ok — curve 50…24,050, grades", Object.values(D.life.mapGrade).join(""), "recipes", D.life.recipes.length, "materials", D.life.mats.length);

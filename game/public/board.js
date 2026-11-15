@@ -34,6 +34,7 @@ const HOME = {
   guard: "town", story: "town", diner_reg1: "juju_diner", diner_reg2: "juju_diner", store_kong: "general_store",
   inn_toto: "starlight_inn", inn_lira: "starlight_inn", hall_pipi: "owl_library", cafe_lumi: "tales_cafe", cafe_somi: "tales_cafe",
   merc_mimi: "merc_office", willow_bard: "willow", forge_tong: "kangkang_forge",
+  willow_repair: "willow", willow_kitchen: "willow",
   // 버드나무 마을's chore givers (H10)
   willow_dairy: "willow", willow_granny: "willow", willow_flyer: "willow", willow_sweeper: "willow", willow_farmer: "willow",
 };
@@ -141,7 +142,9 @@ export function render(s) {
   if (a) box.append(jobCard(s, a, true));
   box.append(el("div", "section", "오늘의 의뢰"));
   if (!offers.length) box.append(el("p", "hint", "오늘은 맡을 수 있는 알바가 없습니다. 생활 기술을 키우면 일이 늘어납니다."));
-  for (const o of offers) {
+  const inWillow = ([id]) => HOME[J(id)?.npc] === "willow";
+  const listed = G.map?.id === "willow" ? [...offers].sort((x, y) => Number(inWillow(y)) - Number(inWillow(x))) : offers;
+  for (const o of listed) {
     const [id, kind, who, text, gold, si, g = 0, need = 0, rush = 0] = o, t = J(id), fin = done.includes(id), mine = a && a.id === id;
     const card = el("div", "dcard jb-card" + (fin ? " done" : mine ? " on" : ""));
     const hd = el("div", "dh");
