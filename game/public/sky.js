@@ -17,17 +17,18 @@
 let DAY_MS = 48 * 60000;
 let PHASES = [["새벽", 4.5], ["아침", 7], ["낮", 11], ["노을", 17], ["밤", 19.5]];
 let WEATHER = ["맑음", "흐림", "비", "안개", "바람", "눈"];
-let offset = 0, wxNow = 0;
+let SEASONS = ["봄", "여름", "가을", "겨울"];
+let offset = 0, wxNow = 0, seasonNow = -1, fairNow = false;
 export const WX = { clear: 0, cloud: 1, rain: 2, fog: 3, wind: 4, snow: 5 };
 
 export function configure(sky) {
   if (!sky) return;
-  DAY_MS = sky.dayMs || DAY_MS; PHASES = sky.phases || PHASES; WEATHER = sky.weather || WEATHER;
+  DAY_MS = sky.dayMs || DAY_MS; PHASES = sky.phases || PHASES; WEATHER = sky.weather || WEATHER; SEASONS = sky.season || SEASONS;
 }
-/** The server clock in seconds, from a snapshot's `dn`; and the weather on this map (-1 indoors). */
+/** The server clock in seconds, from a snapshot's `dn`; the weather on this map (-1 indoors), the season, 장날 open. */
 export function setSky(dn, arrived = false) {
   if (!dn) return;
-  wxNow = dn[0];
+  wxNow = dn[0]; seasonNow = dn[2] ?? -1; fairNow = dn[3] === 1;
   // arriving on a map, its weather is simply there; a change while you stand in it eases in
   if (arrived) snapNext = true;
   offset = dn[1] * 1000 - Date.now();
@@ -43,6 +44,10 @@ export function phase(h = hour()) {
 }
 export function weather() { return typeof globalThis.__skyWx === "number" ? globalThis.__skyWx : wxNow; }
 export const weatherName = (w = weather()) => WEATHER[w] || "";
+/** The season's name (봄 여름 가을 겨울, the server's 63-festival.js), "" before the first `dn`. */
+export const seasonName = () => SEASONS[seasonNow] || "";
+/** Is 버드나무 장날 on (Sunday 10–22 KST)? */
+export const fairOn = () => fairNow;
 export const phaseName = (h = hour()) => PHASES[phase(h)][0];
 /** "노을 18:40": the phase and the hour, to ten minutes. */
 export function clockText(h = hour()) {

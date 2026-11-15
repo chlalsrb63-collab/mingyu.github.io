@@ -26,6 +26,7 @@ import { floatText } from "./events.js";
 import * as Track from "./track.js";
 import * as Keymap from "./keymap.js";
 import * as Mini from "./minigames.js";
+import * as Sky from "./sky.js";
 
 /** The map each 알바 NPC stands on (static NPCs of the town, its interiors and 버드나무 마을). */
 const HOME = {
@@ -40,6 +41,8 @@ const HOME = {
   willow_repair: "willow", willow_kitchen: "willow",
   // 버드나무 마을's chore givers (H10)
   willow_dairy: "willow", willow_granny: "willow", willow_flyer: "willow", willow_sweeper: "willow", willow_farmer: "willow",
+  // 버드나무 장날 (P12): 장꾼 다래 by the market stalls
+  willow_fair: "willow",
 };
 const KIND = { bring: ["가져오기", "#9be05a"], make: ["만들기", "#c8c8d8"], fish: ["낚시", "#8ad8ff"], deliver: ["배달", "#e2c486"], hunt: ["사냥", "#ff8a7a"], scout: ["정찰", "#b9a2ff"], chore: ["마을 알바", "#7ad8a0"] };
 /** Board v2 grade tags: 쉬움 · 보통 · 어려움 (names from defs.life.jbGrade). */
@@ -71,6 +74,8 @@ const gradeOf = (s, id) => { const o = s.jb && s.jb[1].find((r) => r[0] === id);
 const delivering = (a) => a && a.t.kind === "deliver" && a.prog === 1;
 export const repOf = (s, id) => { const r = s && s.rep; if (!r) return 0; if (Array.isArray(r)) { const e = r.find((x) => x[0] === id); return e ? e[1] : 0; } return r[id] || 0; };
 /** Trust tier 0 (none) … 3 (가족). */
+/** Jobs done today that count toward perDay (장날 rows do not, 63-festival.js). */
+const doneN = (done) => done.filter((id) => !J(id)?.fair).length;
 const tierOf = (n) => D().rep.tier.filter((x) => n >= x).length;
 const have = (s, id) => countItem(id) + ((s.pouch || {})[id] || 0);
 const itemName = (id) => (G.defs.items[id] || { name: id }).name;
@@ -119,7 +124,7 @@ export function markFor(n, s = G.self) {
   if (!s || !s.jb || !D() || !n) return "";
   if (ready(s, n)) return "?";
   const [, offers, done] = s.jb;
-  return n.role === "jobs" && !active(s) && done.length < D().jbPay.perDay && offers.some((o) => !done.includes(o[0])) ? "!" : "";
+  return n.role === "jobs" && !active(s) && offers.some((o) => !done.includes(o[0]) && (J(o[0])?.fair || doneN(done) < D().jbPay.perDay)) ? "!" : "";
 }
 /** The F prompt's text at NPC `n` when it would do a job step, else "". */
 export function promptFor(n) {
@@ -129,6 +134,8 @@ export function promptFor(n) {
 /** F beside an NPC: the job step if there is one (true), else nothing (false: the NPC's usual window). */
 export function interact(n) {
   const r = G.self && ready(G.self, n);
+  // 장꾼 다래 (role `fair`): her stall is the 장날 card on top of this window
+  if (!r && n.role === "fair") { Sound.play("ui"); return open(); }
   if (!r) return false;
   if (now() - st.sent < 900) return true;
   st.sent = now();
@@ -145,16 +152,17 @@ const partyLead = () => G.party?.[0]?.[0] === G.you;
 export function open() { if (!D() || !D().jb) return false; openWin("board"); return true; }
 export function key() {
   const s = G.self, a = active(s);
-  return [s.jb && [s.jb[0], s.jb[1], s.jb[2], s.jb[3] && [...s.jb[3].slice(0, 3), Math.sign(s.jb[3][4] || 0), s.jb[3][5], s.jb[3][7]]], s.rep, nearPopo(), a && a.t.item ? have(s, a.t.item) : 0, G.map && G.map.id, hallCrew(), partyLead(), s.coop];
+  return [s.fair, Sky.fairOn(), Sky.seasonName(), nearFair(), s.cos && s.cos.own.length, s.jb && [s.jb[0], s.jb[1], s.jb[2], s.jb[3] && [...s.jb[3].slice(0, 3), Math.sign(s.jb[3][4] || 0), s.jb[3][5], s.jb[3][7]]], s.rep, nearPopo(), a && a.t.item ? have(s, a.t.item) : 0, G.map && G.map.id, hallCrew(), partyLead(), s.coop];
 }
 export function render(s) {
   const box = $("#board-body");
   box.textContent = "";
   if (!s.jb || !D()) { box.append(el("p", "hint", "불러오는 중…")); return; }
-  const [, offers, done] = s.jb, per = D().jbPay.perDay, a = active(s), near = nearPopo();
+  const [, offers, done] = s.jb, per = D().jbPay.perDay, a = active(s), near = nearPopo(), nDone = doneN(done);
   const top = el("div", "daily-top");
-  top.append(iconImg("note", "#e2c486"), el("span", "", `오늘의 알바 ${done.length}/${per}`), Info.coin(s.gold, "purse"));
+  top.append(iconImg("note", "#e2c486"), el("span", "", `오늘의 알바 ${nDone}/${per}`), Info.coin(s.gold, "purse"));
   box.append(top);
+  if (G.defs.fair && (Sky.fairOn() || G.map?.id === G.defs.fair.map)) fairCard(box, s);
   const pipe = G.defs.coop?.jobs?.pipe, atPipe = pipe && near && pipe[5] === G.map?.id;
   if (atPipe) {
     const card = el("div", "dcard jb-card cp-offer"), buttons = el("div", "btns");
@@ -183,6 +191,7 @@ export function render(s) {
     const tags = el("span", "");
     const tag = (txt, bg) => { const x = el("span", "tag", txt); if (bg) x.style.background = bg; x.style.marginLeft = "3px"; tags.append(x); };
     if (t && t.when) tag(WHEN[t.when], "#8aa8ff");
+    if (t && t.fair) tag("장날", "#ffb04a");
     if (t && t.rep) tag(`${D().rep.name[D().rep.tier.indexOf(t.rep)] || "단골"} 전용`, "#e6a0d8");
     if (rush) tag(`긴급 ${rush}분`, "#ff6a5a");
     tag((D().jbGrade || { name: ["쉬움"] }).name[g], GRADE_BG[g]);
@@ -196,7 +205,8 @@ export function render(s) {
     if (ask || rush) card.append(el("small", "where", [ask, rush ? `${rush}분 안에 끝내면 보수 ×${D().jbRush.bonus} (늦어도 기본 보수)` : ""].filter(Boolean).join(" · ")));
     const ft = el("div", "df");
     const pay = el("small", "pay");
-    pay.append(Info.coin(gold), kind === "deliver" ? ` + 팁 최대 ${Math.round(D().jbPay.tip * 100)}%` : rush ? ` (긴급 ${Math.round(gold * D().jbRush.bonus)})` : "", g ? ` · 보상 ×${D().jbGrade.pay[g]}` : "");
+    if (t && t.fair) pay.append(`장날 토큰 ${G.defs.fair.job[g]}개`);
+    else pay.append(Info.coin(gold), kind === "deliver" ? ` + 팁 최대 ${Math.round(D().jbPay.tip * 100)}%` : rush ? ` (긴급 ${Math.round(gold * D().jbRush.bonus)})` : "", g ? ` · 보상 ×${D().jbGrade.pay[g]}` : "");
     const lvName = kind === "hunt" ? "레벨" : D().names[si];
     const lvl = t ? el("small", "", `${lvName} Lv.${t.lv}+ · ${kind === "deliver" ? `${placeOf(t.npc)} → ${placeOf(t.to)}` : placeOf(t.npc)}`) : el("small", "");
     ft.append(pay, lvl);
@@ -204,7 +214,7 @@ export function render(s) {
     if (fin) card.append(el("small", "ok", "오늘 끝낸 알바입니다"));
     else if (mine) card.append(el("small", "ok", "맡은 알바입니다"));
     else {
-      const why = a ? "이미 맡은 알바가 있습니다" : done.length >= per ? `알바는 하루에 ${per}개까지입니다` : !near ? "포포나 마을 알바 게시판 곁에서 맡을 수 있습니다" : "";
+      const why = a ? "이미 맡은 알바가 있습니다" : !(t && t.fair) && nDone >= per ? `알바는 하루에 ${per}개까지입니다` : !near ? "포포나 마을 알바 게시판 곁에서 맡을 수 있습니다" : "";
       const btns = el("div", "btns"), b = el("button", "btn gold", "수락");
       b.disabled = !!why;
       if (why) b.title = why;
@@ -238,6 +248,36 @@ export function render(s) {
   }
   box.append(el("p", "hint", `하루에 ${per}개까지 · 매일 아침 6시에 새 의뢰 · 끝낸 알바마다 그 주민의 신뢰가 쌓입니다 (${D().rep.name[0]}: 가게 5% 할인, 보수 +10%).`));
 }
+// ───────────────────────────── 버드나무 장날 (P12, 63-festival.js) ─────────────────────────────
+
+const nearFair = () => !!(G.map && G.me && G.map.npcs.some((n) => n.role === "fair" && dist(G.me.x, G.me.y, n.x * T + 8, n.y * T + 12) < 52));
+/** The market card: hours, the token purse (today's cap), the cooking contest, and 장꾼 다래's stall for this season. */
+function fairCard(box, s) {
+  const F = G.defs.fair, [tok = 0, today = 0, pan = 0, top = 0, who = ""] = s.fair || [], open = Sky.fairOn(), near = nearFair();
+  const card = el("div", "dcard jb-card" + (open ? " on" : ""));
+  const hd = el("div", "dh"), tags = el("span", ""), tg = el("span", "tag", open ? "열림" : "일요일");
+  tg.style.background = open ? "#ffb04a" : "#8a8a9a";
+  tags.append(tg);
+  hd.append(el("b", "", "버드나무 장날"), tags);
+  card.append(hd, el("p", "say", `매주 일요일 ${F.open}:00–${F.close}:00 · 장날 알바와 요리 대회로 장날 토큰을 모아 이 계절의 옷과 바꿔요.`));
+  card.append(el("small", "where", `장날 토큰 ${tok}개 · 오늘 ${today}/${F.cap}`));
+  card.append(el("small", "where", `요리 대회 (공동 부엌·모닥불) — 내 최고 ${pan}점 · 오늘 1등 ${top ? `${top}점 ${who}` : "아직 없음"} · ${F.pan.map(([at, k]) => `${at}점 +${k}`).join(", ")}`));
+  const si = F.season.indexOf(Sky.seasonName()), rows = si >= 0 ? F.shop[si] : [];
+  if (rows.length) card.append(el("div", "section", `장꾼 다래의 ${F.season[si]} 좌판`));
+  for (const [id, price, onSale, name, slot] of rows) {
+    const row = el("div", "trk-row"), own = s.cos && s.cos.own.includes(id);
+    row.append(el("small", "", onSale ? `${name} (${slot}) · 토큰 ${price}` : `사계절 ${slot} · 토큰 ${price} · 곧 들어옵니다`));
+    const why = !onSale ? "곧 들어옵니다" : own ? "이미 가지고 있습니다" : !near ? "장꾼 다래 곁에서 살 수 있습니다" : tok < price ? "장날 토큰이 부족합니다" : "";
+    const b = el("button", "btn gold small", !onSale ? "준비 중" : own ? "보유" : "사기");
+    b.type = "button"; b.disabled = !!why;
+    if (why) b.title = why;
+    b.addEventListener("click", () => { act({ t: "fair_buy", id }); Sound.play("ui"); });
+    row.append(b);
+    card.append(row);
+  }
+  box.append(card);
+}
+
 // ───────────────────────────── the 알바 window (Shift+J) ─────────────────────────────
 
 /** 1:05 or, past an hour, 9:01:05. */
