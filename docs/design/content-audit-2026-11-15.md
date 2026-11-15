@@ -336,6 +336,23 @@ Consumables with roles, village produce, fish, crafted furniture. No combat stat
   a piece 20–30 → one season set ≈ a season of Sundays.
 - **Touches:** `60-content.js` or new `63-festival.js`, `12-life-tables.js`, `90` (defs), client banner. **Tests:** season
   boundaries, token cap per day. **Art:** stall props in the village (code-drawn).
+- **As built (2026-11-16):** `63-festival.js`. **Season** = (KST calendar day − 20513 [2026-03-01]) ÷ 91 mod 4 → 봄 여름 가을
+  겨울 (a 364-day game year: 2026-11-16 is 가을, 겨울 from 11-29, 봄 again 2027-02-28). Wire: `dn` is now [wx, clock s,
+  season, 장날 0/1], re-sent when the market opens or closes; `defs.sky.season`; the sky widget reads `낮 14:00 · 맑음 · 가을
+  · 장날`. **장날** Sunday 10:00–22:00 KST (`fairOpen`); a toast as it opens (and on joining while open) and as it closes
+  (`fairWatch` in lifeTick). **Festival rows** (JB `fair: true`, Lv 1): 장날 채소 좌판 (감자 → 장꾼 다래), 장터 생선 꼬치 (송사리 →
+  공동 부엌), 장날 개시 떡 (배달 다래 → 촌장 버들), 장터 뒷정리 (litter chore) — offered only while open, never 긴급, outside
+  perDay, pay `FAIR.job` 1/2/2 tokens by grade, no gold and no Willow token. **Contest**: any played `pan` mini-game (campfire
+  fish or station cooking, never a batch) in the village while open: the day's best per sheet; 60 → +1, 90 → +1 token once a
+  day; the channel's best (`S.fairTop`, memory only) is announced to the village. **Tokens** `ch.fair {t, d, n, pan}` (sheet
+  v26, `fairClean`), cap 8 a board day (max 6–8 from jobs, 2 from the contest), purse ≤ 999; `self.fair` [purse, today, my
+  pan, day's best, cook]. **Stall** 장꾼 다래 (NPC `willow_fair`, role `fair`, by a third stall prop at 53,23): `FAIR_SHOP`
+  per season — sells, for now, one existing piece that fits (봄 데이지 화관, 여름 해바라기 화관, 가을 파란 리본 밀짚모자, 겨울 산타 모자;
+  20 tokens) and lists the four P11 pieces as **disabled "곧 들어옵니다"** rows under fixed ids `hat_/top_/back_/ws_ssn_<sakura
+  |sea|maple|snow>` (20/30/25/25 = 100 ≈ 13 Sundays × 8): P11 adds those ids to COSMETICS and they go on sale untouched.
+  Action `fair_buy {id}` (this season's rows only, beside 다래). Client: the 장날 card on top of the 알바 board (F at 다래 opens
+  it; board.js, not actions.js). Not done: a stall-only-on-Sunday look (the stalls stand all week), a contest prize beyond
+  the steps. Tests: `tests/festival.mjs`.
 
 **Sizes:** S ≈ 30–50 k tokens, M ≈ 60–100 k, L > 100 k (split L by set). Build order: P1 → P2 ∥ P7 → P3 → P4 ∥ P8 →
 P5 → P6, then after the 64×64 hero: P9 → P10 ∥ P12 → P11.
