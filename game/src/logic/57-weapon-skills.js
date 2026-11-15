@@ -674,19 +674,6 @@ function castSkill(S, p, id) {
       prop({ kind: "burst", wire: 1, x: p.x, y: p.y, r: sk.r, ids: list.map((o) => o.id), every: 1000, next: now + sk.root, until: now + sk.root + 500, base: sk.base, bleed: sk.bleed, mark: sk.mark, brandK: sk.brand });
       break;
     }
-    case "thunder": {
-      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len));
-      const ex = p.x + aimX * far, ey = p.y + aimY * far;
-      rt.ev.push(["ln", 2, Math.round(p.x), Math.round(p.y), Math.round(ex), Math.round(ey)]);
-      ev(101, ex, ey - 6, far);
-      mobsInLine(rt, p.x, p.y, aimX, aimY, far + 6, sk.half).forEach((o, j) => {
-        pullTo(m, o, ex - aimX * 10 - aimY * ((j % 3) - 1) * 10, ey - aimY * 10 + aimX * ((j % 3) - 1) * 10);
-        hit(o, sk.mult);
-      });
-      weave(S, rt, p, "l", ex, ey, k);
-      prop({ kind: "storm", wire: 1, x: ex, y: ey, r: sk.r, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.storm * k });
-      break;
-    }
     case "sanctuary": {
       ev(102, p.x, p.y - 6, sk.r);
       prop({ kind: "sanct", wire: 1, x: p.x, y: p.y, r: sk.r, every: sk.every, next: now + 100, until: now + sk.ms, mult: sk.mult * k });
@@ -706,65 +693,6 @@ function castSkill(S, p, id) {
         hit(o, sk.stab + sk.per * n, o.tgt !== p.pid ? { sure: true } : { crit: sk.crit });
       }
       if (pasOn(p, "inertia")) { p.inert = SKILL.inertia.max; p.inertAt = now; ev(110, p.x, p.y - 6); }
-      break;
-    }
-    case "breach": {
-      // the spear leads the charge and carries what it meets; the great blade comes down where it stops
-      const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, aimX, aimY, sk.len);
-      const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 14, sk.half);
-      p.x = ox + aimX * far; p.y = oy + aimY * far;
-      p.fix = true; p.mvAt = now;
-      p.ghost = Math.max(p.ghost || 0, now + 300);
-      rt.ev.push(["ln", 3, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
-      line.forEach((o, j) => {
-        pullTo(m, o, p.x + aimX * 14 - aimY * ((j % 3) - 1) * 10, p.y + aimY * 14 + aimX * ((j % 3) - 1) * 10);
-        if (!MOBS[o.k].boss && o.el !== 2) o.stun = Math.max(o.stun, now + sk.stun);
-        hit(o, sk.path);
-      });
-      ev(121, p.x, p.y - 6, sk.r);
-      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 9]);
-      const tipOn = pasOn(p, "tip");
-      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
-        // the rim of the blow is where the spear's reach ends: those out there take the tip
-        const tip = tipOn && dist(p.x, p.y, o.x, o.y) >= sk.r * sk.far;
-        if (tip) rt.ev.push(["tip", o.id]);
-        const [vx, vy] = aimVec(p, o);
-        knock(m, o, vx, vy, sk.knock * (o.el ? 0.5 : 1));
-        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
-      }
-      break;
-    }
-    case "qiarrow": {
-      // a sword's edge loosed on an arrow: through all in its line, harder the further, fed by the inertia held
-      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len)), inert = inertOf(p);
-      if (inert) { p.inert = 0; p.dirty = true; }
-      const ex = p.x + aimX * far, ey = p.y + aimY * far, fed = 1 + sk.per * inert;
-      ev(122, ex, ey - 6, far);
-      for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, far + 6, sk.half)) {
-        const d = dist(p.x, p.y, o.x, o.y);
-        hit(o, sk.mult * fed * (1 + sk.far * clamp((d - sk.d0) / sk.span, 0, 1)));
-      }
-      // where it ends, the crescent of the stroke bursts
-      rt.ev.push(["bw", Math.round(ex), Math.round(ey), sk.r, 2]);
-      for (const o of mobsWithin(rt, ex, ey, sk.r)) hit(o, sk.blast * fed);
-      break;
-    }
-    case "shadowpierce": {
-      // a shadow runs the spear through everything on the way; the far end of the run is the tip
-      const ox = p.x, oy = p.y, far = Math.max(12, stepTo(m, ox, oy, aimX, aimY, sk.len));
-      const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 10, sk.half);
-      p.x = ox + aimX * far; p.y = oy + aimY * far;
-      p.fix = true; p.mvAt = now;
-      p.ghost = Math.max(p.ghost || 0, now + sk.ghost);
-      rt.ev.push(["ln", 6, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
-      ev(123, p.x, p.y - 6, far);
-      const tipOn = pasOn(p, "tip");
-      for (const o of line) {
-        const n = marksOf(S, o), tip = tipOn && (o.x - ox) * aimX + (o.y - oy) * aimY >= far * sk.far;
-        if (tip) rt.ev.push(["tip", o.id]);
-        hit(o, (sk.mult + sk.per * n) * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
-        addMarks(S, o, sk.marks);
-      }
       break;
     }
     case "elemfan": {
@@ -809,18 +737,6 @@ function castSkill(S, p, id) {
       const [x, y] = aimPoint(rt, m, p, sk.at);
       ev(126, x, y - 6, sk.r);
       prop({ kind: "rune", wire: 1, x, y, r: sk.r, every: sk.every, next: now + 200, until: now + sk.ms, mult: sk.mult * k, rxK: sk.rxK, i: 0 });
-      break;
-    }
-    case "tristar": {
-      // fire, ice and lightning loosed together: each leaves its element where it first strikes
-      const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
-      if (mob) face(p, mob);
-      const [vx, vy] = aimVec(p, mob), a0 = Math.atan2(vy, vx);
-      ev(127, ...(mob ? [mob.x, mob.y] : ahead(80)));
-      ["f", "i", "l"].forEach((e, j) => {
-        const a = a0 + ((j - 1) * sk.spread * Math.PI) / 180;
-        fireArrow(S, rt, p, null, sk.mult * k, 99, 4 + j, { spd: sk.spd, len: sk.len, r: sk.r, ux: Math.cos(a), uy: Math.sin(a), opt, el: e, k });
-      });
       break;
     }
     case "inkshot": {

@@ -228,7 +228,7 @@ export function renderTree(box, s, { atJob }) {
   // the root: where this character stands
   const root = el("div", "jt-root" + (adv ? " cur" : ""));
   root.append(Info.jobMark(s.job), el("b", "", adv ? "모험가" : `모험가 ▸ ${jobs[s.job].name}`));
-  root.append(el("small", "", adv ? "두 무기가 만나는 칸이 그 두 무기의 직업입니다. 전직은 한 번뿐입니다." : `지금 [${jobs[s.job].name}] — 전직은 되돌릴 수 없습니다`));
+  root.append(el("small", "", adv ? "아이콘이 있는 조합에서 전직할 수 있습니다. 전직은 한 번뿐입니다." : `지금 [${jobs[s.job].name}] — 전직은 되돌릴 수 없습니다`));
   box.append(root);
 
   // the picked job: by default the current one, else the first open one, else the hand's single job
@@ -236,9 +236,7 @@ export function renderTree(box, s, { atJob }) {
   if (!jobs[jsel] || jobs[jsel].kind === "none") jsel = !adv ? s.job : open[0] || singleOf(d.wkOrder.includes(s.wk) ? s.wk : "sword");
 
   const grid = el("div", "jt-grid");
-  // one column and one row per weapon of the rules (six today), never a fixed count
-  grid.style.gridTemplateColumns = `30px repeat(${d.wkOrder.length}, minmax(0, 1fr))`;
-  grid.style.gridTemplateRows = `34px repeat(${d.wkOrder.length}, 38px)`;
+  grid.style.setProperty("--weapon-count", String(d.wkOrder.length));
   const hand = s.eq.weapon ? s.wk : "";
   const cell = (j, row, col) => {
     const job = jobs[j], st = jobState(s, j), need = needOf(j), lvs = job.wk.map((k) => wmOf(s, k)[0]);

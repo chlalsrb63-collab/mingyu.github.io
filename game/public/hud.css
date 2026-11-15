@@ -1020,7 +1020,7 @@ body.touch #wm .wm-tab { display: none; }
 
 /* 전직의 길 as a weapon table (H2): six weapons across and down, a job where two meet — the diagonal is
    the six single jobs (mastery 20), under it the fifteen two-weapon jobs (15 and 15) */
-.jt-grid { display: grid; grid-template-columns: 30px repeat(6, minmax(0, 1fr)); grid-template-rows: 34px repeat(6, 38px); gap: 2px; flex: 1 1 auto; width: 100%; max-width: 402px; box-sizing: border-box; }
+.jt-grid { display: grid; grid-template-columns: 30px repeat(var(--weapon-count, 6), minmax(0, 1fr)); grid-template-rows: 34px repeat(var(--weapon-count, 6), 38px); gap: 2px; flex: 1 1 auto; width: 100%; max-width: 402px; box-sizing: border-box; }
 .jt-grid .jt-node.long b { letter-spacing: -2px; }
 .jt-grid > * { min-width: 0; box-sizing: border-box; }
 .window .jt-grid .jt-node { position: relative; }

@@ -163,8 +163,7 @@ const SCALE = {
 const JOB_PLUS = 0.1;
 /**
  * The jobs. `single`: one weapon, mastery 20 (JOB_WM), 1,000 G. `hybrid`: stay a 모험가 until both weapons
- * of the pair reach 15 (HYB_WM), 5,000 G; `scale` replaces the table for both weapons. One hybrid for each
- * of the 15 pairs. Scale budget: two weapons with different main stats → 0.8 + 0.8 and the two second stats
+ * of the pair reach 15 (HYB_WM), 5,000 G; `scale` replaces the table for both weapons. Only the listed pairs can advance. Scale budget: two weapons with different main stats → 0.8 + 0.8 and the two second stats
  * 0.3 each (≈ 2.2); a shared main or second stat folds into fewer, bigger coefficients (≈ 1.6–2.2).
  * Ids are frozen (persisted).
  */
@@ -181,17 +180,12 @@ const JOBS = {
   tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.8, luk: 0.8 }, cost: HYB_COST },
   dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: HYB_COST },
   hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wil: 0.3 }, cost: HYB_COST },
-  stormrider: { name: "폭풍기수", kind: "hybrid", wk: ["spear", "bow"], scale: { str: 0.8, dex: 0.8, wis: 0.3, luk: 0.3 }, cost: HYB_COST },
   darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.8, str: 0.8, int: 0.3 }, cost: HYB_COST },
-  // the hybrid expansion: the other nine pairs (docs/design/jobs-and-stats.md "Hybrid expansion")
+  // Additional hybrid pairings (docs/design/jobs-and-stats.md).
   bladedancer: { name: "검무사", kind: "hybrid", wk: ["sword", "dagger"], scale: { str: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: HYB_COST },
-  breaker: { name: "파진사", kind: "hybrid", wk: ["sword", "spear"], scale: { str: 0.9, wil: 0.5, wis: 0.4 }, cost: HYB_COST },
-  arcblade: { name: "검궁사", kind: "hybrid", wk: ["sword", "bow"], scale: { str: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: HYB_COST },
-  shadowlance: { name: "섬창사", kind: "hybrid", wk: ["dagger", "spear"], scale: { dex: 0.8, str: 0.8, luk: 0.3, wis: 0.3 }, cost: HYB_COST },
   trickster: { name: "환술사", kind: "hybrid", wk: ["dagger", "staff"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wis: 0.3 }, cost: HYB_COST },
   spellspear: { name: "마창사", kind: "hybrid", wk: ["spear", "staff"], scale: { str: 0.8, int: 0.8, wis: 0.6 }, cost: HYB_COST },
   runesage: { name: "룬술사", kind: "hybrid", wk: ["staff", "book"], scale: { int: 0.8, wis: 0.3, wil: 0.3 }, cost: HYB_COST },
-  spellarcher: { name: "마궁사", kind: "hybrid", wk: ["staff", "bow"], scale: { int: 0.8, dex: 0.8, wis: 0.3, luk: 0.3 }, cost: HYB_COST },
   runearcher: { name: "각인궁사", kind: "hybrid", wk: ["book", "bow"], scale: { int: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: HYB_COST },
 };
 
@@ -316,27 +310,17 @@ const SKILL = {
     desc: "용기사의 기술 · 하늘로 솟구쳐(0.8초 무적) 앞쪽에 내리꽂는다(넓은 범위). 착지한 자리에 4초간 흡혈의 장이 남아 피해의 30%를 회복한다." },
   bloodburst: { kind: "h", job: "hexblade", need: 15, name: "혈흔 폭발", mp: 36, cd: 30000, r: 100, root: 1200, base: 0.6, bleed: 0.5, mark: 0.4, brand: 0.6, fx: 100,
     desc: "주술암살자의 기술 · 주변의 적을 1.2초간 묶은 뒤 피를 터뜨린다 — 방어를 무시하는 고정 피해(공격력의 60% + 출혈 50% + 표식 1개당 40% + 낙인 60%). 표식·출혈·낙인은 사라진다." },
-  thunder: { kind: "h", job: "stormrider", need: 15, name: "천뢰의 투창", mp: 38, cd: 32000, len: 200, half: 12, mult: 1.7, el: "l", r: 60, ms: 3000, every: 400, storm: 0.25, fx: 101,
-    desc: "폭풍기수의 기술 · 번개 투창이 일직선을 꿰뚫고 맞은 적을 끝까지 끌고 간다. 꽂힌 자리에 3초간 자기 폭풍이 몰아친다." },
   sanctuary: { kind: "h", job: "darkknight", need: 15, name: "불멸의 성역", mp: 20, hpCost: 0.2, cd: 45000, r: 90, ms: 8000, every: 1000, guard: 0.25, mult: 0.2, autoHp: 0.6, fx: 102,
     desc: "암흑기사의 기술 · 현재 HP의 20%를 바쳐 8초간 피의 성역을 편다. 안의 파티원은 받는 피해 -25%, 안의 적은 매초 피해를 입고 그 절반이 가장 다친 파티원을 치유한다." },
   // the hybrid expansion (docs/design/jobs-and-stats.md "Hybrid expansion"): fx 120–128
   crosscut: { kind: "h", job: "bladedancer", need: 15, name: "십자 난도", mp: 36, cd: 32000, r: 64, arc: 100, mult: 1.0, marks: 2, stab: 0.5, per: 0.2, crit: 30, fx: 120,
     desc: "검무사의 기술 · 대검으로 앞을 크게 휩쓸어 표식 둘을 새기고, 곧바로 휩쓸린 적마다 단검으로 파고들어 찌른다(표식 1개당 +20%, 나를 노리지 않던 적에게는 반드시 치명타). 관성이 가득 찬다." },
-  breach: { kind: "h", job: "breaker", need: 15, name: "파진돌격", mp: 38, cd: 32000, len: 120, half: 20, path: 0.6, stun: 400, r: 56, mult: 1.4, knock: 18, far: 0.72, fx: 121,
-    desc: "파진사의 기술 · 창을 앞세워 겨눈 쪽으로 돌진해 길 위의 적을 끝까지 끌고 가고, 멈춘 자리에서 대검으로 내리찍는다(범위, 밀쳐냄). 내리찍기의 가장자리에 걸린 적은 창끝으로 맞는다." },
-  qiarrow: { kind: "h", job: "arcblade", need: 15, name: "검기 화살", mp: 38, cd: 32000, len: 200, half: 14, mult: 1.6, far: 0.25, d0: 40, span: 150, per: 0.1, r: 44, blast: 1.0, fx: 122,
-    desc: "검궁사의 기술 · 대검의 검기를 화살에 실어 쏜다. 일직선을 모두 꿰뚫고 멀리 갈수록 세며(최대 +25%), 쌓인 관성 1개당 +10%(모두 쓴다). 끝에서 초승달 검기가 터진다." },
-  shadowpierce: { kind: "h", job: "shadowlance", need: 15, name: "그림자 관통", mp: 34, cd: 28000, len: 130, half: 18, mult: 1.4, per: 0.2, marks: 2, far: 0.72, ghost: 400, fx: 123,
-    desc: "섬창사의 기술 · 그림자가 되어 겨눈 쪽으로 꿰뚫고 지나간다(잠깐 무적). 지나친 적은 표식 1개당 +20%로 찔리고 표식 둘이 새겨진다. 길 끝(28%)에 있던 적은 창끝으로 맞는다." },
   elemfan: { kind: "h", job: "trickster", need: 15, name: "원소 비수", mp: 36, cd: 30000, len: 140, half: 12, spread: 18, mult: 0.9, rx: 3, slow: 2000, mag: 1, fx: 124,
     desc: "환술사의 기술 · 불·얼음·번개를 하나씩 두른 비수 셋을 부채꼴로 던진다. 꿰뚫린 적마다 표식이 남고, 두 원소에 맞은 적에게서 원소 반응이 터진다(한 번에 셋까지). 얼음 비수는 느리게 한다." },
   frostspire: { kind: "h", job: "spellspear", need: 15, name: "빙결창", mp: 36, cd: 30000, len: 150, half: 14, mult: 1.4, far: 0.72, freeze: 1000, r: 44, burst: 1.0, el: "i", fx: 125,
     desc: "마창사의 기술 · 얼음을 두른 창을 일직선으로 내지른다. 맞은 적은 느려지고, 창끝(끝 28%)에 걸린 적은 1초간 얼어붙는다. 창끝이 닿은 자리에서 얼음 기둥이 솟아 주변을 친다. 얼음 원소." },
   runecircle: { kind: "h", job: "runesage", need: 15, name: "메아리 법진", mp: 46, cd: 45000, at: 80, r: 64, ms: 5000, every: 1000, mult: 0.2, rxK: 0.5, mag: 1, fx: 126,
     desc: "룬술사의 기술 · 앞쪽에 5초간 룬 법진을 새긴다. 1초마다 안의 적을 치고 낙인을 새기며, 불·얼음·번개가 번갈아 깃들어 두 박동마다 법진 안에서 원소 반응이 메아리친다." },
-  tristar: { kind: "h", job: "spellarcher", need: 15, name: "삼원소 화살", mp: 36, cd: 30000, n: 3, spread: 8, spd: 520, len: 190, r: 10, mult: 1.1, mag: 1, fx: 127,
-    desc: "마궁사의 기술 · 불·얼음·번개 화살 셋을 한꺼번에 쏜다. 화살은 일직선을 꿰뚫고, 처음 맞힌 자리에 원소를 남겨 서로 원소 반응을 일으킨다." },
   inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.8, per: 2, brandK: 0.4, mag: 1, fx: 128,
     desc: "각인궁사의 기술 · 룬 먹물을 먹인 화살 다섯 대를 부채꼴로 쏜다. 꿰뚫린 적마다 낙인이 새겨지고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 한 적은 최대 두 대까지 맞는다." },
   hammer_stamp: { kind: "a", wk: "hammer", need: 1, name: "쐐기찍기", mp: 3, hpPct: 0.03, autoHp: 0.35, cd: 6000, center: 16, r: 16, wind: 200, mult: 2.55, splashMult: 1, stun: 180, fx: 130,
@@ -8173,19 +8157,6 @@ function castSkill(S, p, id) {
       prop({ kind: "burst", wire: 1, x: p.x, y: p.y, r: sk.r, ids: list.map((o) => o.id), every: 1000, next: now + sk.root, until: now + sk.root + 500, base: sk.base, bleed: sk.bleed, mark: sk.mark, brandK: sk.brand });
       break;
     }
-    case "thunder": {
-      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len));
-      const ex = p.x + aimX * far, ey = p.y + aimY * far;
-      rt.ev.push(["ln", 2, Math.round(p.x), Math.round(p.y), Math.round(ex), Math.round(ey)]);
-      ev(101, ex, ey - 6, far);
-      mobsInLine(rt, p.x, p.y, aimX, aimY, far + 6, sk.half).forEach((o, j) => {
-        pullTo(m, o, ex - aimX * 10 - aimY * ((j % 3) - 1) * 10, ey - aimY * 10 + aimX * ((j % 3) - 1) * 10);
-        hit(o, sk.mult);
-      });
-      weave(S, rt, p, "l", ex, ey, k);
-      prop({ kind: "storm", wire: 1, x: ex, y: ey, r: sk.r, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.storm * k });
-      break;
-    }
     case "sanctuary": {
       ev(102, p.x, p.y - 6, sk.r);
       prop({ kind: "sanct", wire: 1, x: p.x, y: p.y, r: sk.r, every: sk.every, next: now + 100, until: now + sk.ms, mult: sk.mult * k });
@@ -8205,65 +8176,6 @@ function castSkill(S, p, id) {
         hit(o, sk.stab + sk.per * n, o.tgt !== p.pid ? { sure: true } : { crit: sk.crit });
       }
       if (pasOn(p, "inertia")) { p.inert = SKILL.inertia.max; p.inertAt = now; ev(110, p.x, p.y - 6); }
-      break;
-    }
-    case "breach": {
-      // the spear leads the charge and carries what it meets; the great blade comes down where it stops
-      const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, aimX, aimY, sk.len);
-      const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 14, sk.half);
-      p.x = ox + aimX * far; p.y = oy + aimY * far;
-      p.fix = true; p.mvAt = now;
-      p.ghost = Math.max(p.ghost || 0, now + 300);
-      rt.ev.push(["ln", 3, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
-      line.forEach((o, j) => {
-        pullTo(m, o, p.x + aimX * 14 - aimY * ((j % 3) - 1) * 10, p.y + aimY * 14 + aimX * ((j % 3) - 1) * 10);
-        if (!MOBS[o.k].boss && o.el !== 2) o.stun = Math.max(o.stun, now + sk.stun);
-        hit(o, sk.path);
-      });
-      ev(121, p.x, p.y - 6, sk.r);
-      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 9]);
-      const tipOn = pasOn(p, "tip");
-      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
-        // the rim of the blow is where the spear's reach ends: those out there take the tip
-        const tip = tipOn && dist(p.x, p.y, o.x, o.y) >= sk.r * sk.far;
-        if (tip) rt.ev.push(["tip", o.id]);
-        const [vx, vy] = aimVec(p, o);
-        knock(m, o, vx, vy, sk.knock * (o.el ? 0.5 : 1));
-        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
-      }
-      break;
-    }
-    case "qiarrow": {
-      // a sword's edge loosed on an arrow: through all in its line, harder the further, fed by the inertia held
-      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len)), inert = inertOf(p);
-      if (inert) { p.inert = 0; p.dirty = true; }
-      const ex = p.x + aimX * far, ey = p.y + aimY * far, fed = 1 + sk.per * inert;
-      ev(122, ex, ey - 6, far);
-      for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, far + 6, sk.half)) {
-        const d = dist(p.x, p.y, o.x, o.y);
-        hit(o, sk.mult * fed * (1 + sk.far * clamp((d - sk.d0) / sk.span, 0, 1)));
-      }
-      // where it ends, the crescent of the stroke bursts
-      rt.ev.push(["bw", Math.round(ex), Math.round(ey), sk.r, 2]);
-      for (const o of mobsWithin(rt, ex, ey, sk.r)) hit(o, sk.blast * fed);
-      break;
-    }
-    case "shadowpierce": {
-      // a shadow runs the spear through everything on the way; the far end of the run is the tip
-      const ox = p.x, oy = p.y, far = Math.max(12, stepTo(m, ox, oy, aimX, aimY, sk.len));
-      const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 10, sk.half);
-      p.x = ox + aimX * far; p.y = oy + aimY * far;
-      p.fix = true; p.mvAt = now;
-      p.ghost = Math.max(p.ghost || 0, now + sk.ghost);
-      rt.ev.push(["ln", 6, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
-      ev(123, p.x, p.y - 6, far);
-      const tipOn = pasOn(p, "tip");
-      for (const o of line) {
-        const n = marksOf(S, o), tip = tipOn && (o.x - ox) * aimX + (o.y - oy) * aimY >= far * sk.far;
-        if (tip) rt.ev.push(["tip", o.id]);
-        hit(o, (sk.mult + sk.per * n) * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
-        addMarks(S, o, sk.marks);
-      }
       break;
     }
     case "elemfan": {
@@ -8308,18 +8220,6 @@ function castSkill(S, p, id) {
       const [x, y] = aimPoint(rt, m, p, sk.at);
       ev(126, x, y - 6, sk.r);
       prop({ kind: "rune", wire: 1, x, y, r: sk.r, every: sk.every, next: now + 200, until: now + sk.ms, mult: sk.mult * k, rxK: sk.rxK, i: 0 });
-      break;
-    }
-    case "tristar": {
-      // fire, ice and lightning loosed together: each leaves its element where it first strikes
-      const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
-      if (mob) face(p, mob);
-      const [vx, vy] = aimVec(p, mob), a0 = Math.atan2(vy, vx);
-      ev(127, ...(mob ? [mob.x, mob.y] : ahead(80)));
-      ["f", "i", "l"].forEach((e, j) => {
-        const a = a0 + ((j - 1) * sk.spread * Math.PI) / 180;
-        fireArrow(S, rt, p, null, sk.mult * k, 99, 4 + j, { spd: sk.spd, len: sk.len, r: sk.r, ux: Math.cos(a), uy: Math.sin(a), opt, el: e, k });
-      });
       break;
     }
     case "inkshot": {

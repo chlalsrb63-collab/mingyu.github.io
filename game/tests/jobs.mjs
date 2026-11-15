@@ -94,16 +94,13 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   const singles = Object.keys(D.jobs).filter((j) => D.jobs[j].kind === "single");
   const hybrids = Object.keys(D.jobs).filter((j) => D.jobs[j].kind === "hybrid");
   assert.deepEqual(singles, ["swordsman", "thief", "lancer", "wizard", "warlock", "archer", "destroyer"]);
-  assert.deepEqual(hybrids, ["spellblade", "tracker", "dragoon", "hexblade", "stormrider", "darkknight",
-    "bladedancer", "breaker", "arcblade", "shadowlance", "trickster", "spellspear", "runesage", "spellarcher", "runearcher"]);
+  assert.deepEqual(hybrids, ["spellblade", "tracker", "dragoon", "hexblade", "darkknight",
+    "bladedancer", "trickster", "spellspear", "runesage", "runearcher"]);
   assert.deepEqual(singles.map((j) => D.jobs[j].wk[0]), D.wkOrder, "one single job per weapon");
-  // every one of the 15 pairs of weapons has exactly one hybrid
+  // Each supported pair is unique. The five retired combinations have no job.
   const pairs = hybrids.map((j) => D.jobs[j].wk.slice().sort().join("+"));
-  const want = [];
-  const hybridKinds = D.wkOrder.filter(k => k !== "hammer");
-  hybridKinds.forEach((a, i) => hybridKinds.slice(i + 1).forEach((b) => want.push([a, b].sort().join("+"))));
-  assert.equal(want.length, 15);
-  assert.deepEqual(pairs.slice().sort(), want.sort(), "one hybrid for each pair");
+  assert.equal(new Set(pairs).size, 10);
+  for (const pair of ["spear+sword", "dagger+spear", "bow+sword", "bow+spear", "bow+staff"]) assert.ok(!pairs.includes(pair), pair);
   for (const j of hybrids) {
     const [a, b] = D.jobs[j].wk;
     assert.ok(a !== b && D.wkOrder.includes(a) && D.wkOrder.includes(b), j + " pairs two different weapons");
@@ -366,7 +363,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   ready(W); m2.hp = 50000; W.act({ t: "atk", a: 0 }); v = W.step();
   assert.equal(ch.wm.sword.lv, 15);
   const t15 = (v.toast || []).find((t) => t.includes("두 갈래 길"));
-  assert.ok(t15 && t15.includes("[마검사]") && t15.includes("[검궁사]") && !t15.includes("[검무사]"), "at 15 the open hybrids are named: " + t15);
+  assert.ok(t15 && t15.includes("[마검사]") && !t15.includes("[검궁사]") && !t15.includes("[검무사]"), "at 15 only eligible pairings are named: " + t15);
   // monsters far below you teach nothing; a skill teaches 2
   const W2 = world({ wk: "sword", lvl: 157, wm: { sword: 12 } });
   const mobs2 = arena(W2);
@@ -518,7 +515,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 
 // ═════════ saved hybrids load as they were (no sheet change: a job is an id) ═════════
 {
-  for (const [job, wk, wk2, lv] of [["tracker", "dagger", "bow", 20], ["breaker", "spear", "sword", 15], ["runearcher", "bow", "book", 31]]) {
+  for (const [job, wk, wk2, lv] of [["tracker", "dagger", "bow", 20], ["spellspear", "spear", "staff", 15], ["runearcher", "bow", "book", 31]]) {
     const W = world({ wk, wk2, wm: { [wk]: lv, [wk2]: lv }, job });
     const saved = JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID)));
     const W2 = world({ ch: saved });
@@ -526,6 +523,22 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
     assert.equal(W2.ch.eq.weapon2 && W2.ch.eq.weapon2.id, W.ch.eq.weapon2.id, "with its second weapon");
     const s = W2.self();
     assert.ok(s.sk.some((x) => x[0] === D.jobs[job].sig && x[3] === 1), job + "'s signature is on the wire, usable");
+  }
+}
+
+{
+  const retired = { stormrider: "thunder", breaker: "breach", arcblade: "qiarrow", shadowlance: "shadowpierce", spellarcher: "tristar" };
+  for (const [job, skill] of Object.entries(retired)) {
+    const ch = L.hero("복구", { wk: "spear", wk2: "bow", wm: { spear: 24, bow: 26 } });
+    ch.job = job; ch.qs[3] = ["s", skill];
+    const W = world({ ch });
+    assert.equal(W.ch.job, "adventurer");
+    assert.deepEqual([W.ch.wm.spear.lv, W.ch.wm.bow.lv], [24, 26]);
+    assert.equal(W.ch.eq.weapon2.id, "w_bow_1");
+    assert.equal(W.ch.qs[3], null);
+    W.npc("job");
+    assert.equal(W.act({ t: "job_change", j: job }).error, "없는 직업입니다");
+    assert.match(W.act({ t: "sk", id: skill }).error, /^없는 스킬/);
   }
 }
 

@@ -419,7 +419,7 @@ async function leave(logout) {
 // ───────────────────────────── character creation ─────────────────────────────
 
 /** Job names for the server list (the lobby has no defs yet); summaries from before jobs name an old class. */
-const JOB_NAME = { adventurer: "모험가", swordsman: "대검전사", thief: "도적", lancer: "창술사", wizard: "마법사", warlock: "마도사", archer: "궁수", destroyer: "파괴자", spellblade: "마검사", tracker: "추적자", dragoon: "용기사", hexblade: "주술암살자", stormrider: "폭풍기수", darkknight: "암흑기사" };
+const JOB_NAME = { adventurer: "모험가", swordsman: "대검전사", thief: "도적", lancer: "창술사", wizard: "마법사", warlock: "마도사", archer: "궁수", destroyer: "파괴자", spellblade: "마검사", tracker: "추적자", dragoon: "용기사", hexblade: "주술암살자", darkknight: "암흑기사" };
 const OLD_JOB = { warrior: "swordsman", rogue: "thief", lancer: "lancer", mage: "wizard", ranger: "lancer", archer: "lancer" };
 /** A summary as the 1–200 scale reads it: one written before jobs (no `v`) is level 4L−3 of its class's job. */
 const jobRow = (ch) => (ch.v ? ch : { ...ch, cls: OLD_JOB[ch.cls] || "adventurer", lvl: Math.min(197, 4 * (ch.lvl | 0 || 1) - 3) });
