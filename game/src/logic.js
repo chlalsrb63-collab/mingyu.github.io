@@ -1693,6 +1693,28 @@ const COOP_HALL = (() => {
   for (let x = 34; x <= 41; x++) put("-", x, 36);
   return o.map((r) => r.join(""));
 })();
+/**
+ * 쥬쥬식당's hall (diner v2; owner, 2026-11-15: "훨씬 크게 … 손님이 계속 몰려오게"): 64×36 (was 44×24), built in code. The kitchen
+ * along the north wall (four stoves `:`, three boards `-`, the crates 채소 `]` · 생선 `w` · 고기 `]`, the trash `w`, the sink `r`),
+ * the counter at y 7 with an 8-tile pass round the rack and two gaps, and a hall of 20 tables (4 rows × 5, 4–28 tiles from the pass).
+ */
+const DIN = { W: 64, H: 36, stove: [[6, 1], [10, 1], [14, 1], [18, 1]], board: [[24, 1], [27, 1], [30, 1]], veg: [36, 1], fish: [39, 1], meat: [42, 1],
+  trash: [48, 1], sink: [52, 1], pass: [[27, 7], [28, 7], [29, 7], [30, 7], [32, 7], [33, 7], [34, 7], [35, 7]], rack: [31, 7], gaps: [12, 50],
+  tables: [12, 18, 24, 30].flatMap((y) => [7, 19, 31, 43, 55].map((x) => [x, y])) };
+const DIN_MAP = (() => {
+  const { W, H } = DIN, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
+  const g = Array.from({ length: H }, (_, y) => (y >= 1 && y <= 6 ? "l" + "x".repeat(W - 2) + "l" : y === 15 || y === 21 || y === 27 ? "l" + "y".repeat(W - 2) + "l" : "l".repeat(W)));
+  const put = (ch, x, y) => { o[y][x] = ch; };
+  for (let x = 1; x < W - 1; x++) put("m", x, 7);
+  for (const x of DIN.gaps) { put(" ", x, 7); put(" ", x + 1, 7); }
+  put(">", ...DIN.rack); put("r", 2, 1); put("r", 60, 1);
+  for (const t of DIN.stove) put(":", ...t);
+  for (const t of DIN.board) put("-", ...t);
+  put("]", ...DIN.veg); put("w", ...DIN.fish); put("]", ...DIN.meat); put("w", ...DIN.trash); put("r", ...DIN.sink);
+  for (const [x, y] of DIN.tables) { put("k", x - 1, y); put("o", x, y); put("k", x + 1, y); }
+  put("g", 1, 8); put("g", W - 2, 8); put("g", 1, H - 2); put("g", W - 2, H - 2); put("s", 20, H - 2); put("s", 42, H - 2); put("#", 31, H - 2);
+  return { ground: g, objects: o.map((r) => r.join("")) };
+})();
 /** The jobs: name, owner NPC and lobby, shift minutes, the two tools (rotation A B A B), par, combo window, life skill, template. */
 const COOP = {
   apt: {
@@ -1727,37 +1749,15 @@ const COOP = {
   },
   diner: {
     name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan", "tray"], combo: 25000, skill: "cook",
-    hint: "프라이팬 담당은 상자에서 재료를 꺼내 도마·화덕을 거쳐 패스대에, 쟁반 담당은 패스대의 요리를 주문한 테이블로!",
-    // cut-offs tuned on walking bots like the apartment's (tests/coop.mjs: 2–4 bots, clearing and washing plates, score ≈
-    // 997 · 1,356 · 2,295 with orders flooding in (hard), just over S; slower bots (every 600 ms) 807 · 1,204, A; at 4 the kitchen bounds both. A lone tray (3 players)
-    // is the bottleneck now that it also carries the plates; two trays (4) is where the score jumps.
-    par: 1000, parN: { 2: 1.06, 3: 1.44, 4: 2.44 },
-    // stations (tiles; solid furniture, used from a neighbouring tile): stoves `:` and boards `-` on the kitchen's back
-    // wall, crates (채소 `]` · 생선 `w` · 고기 `]`), the trash `w`, the sink (the `r` east of the trash); the pass is four counter tiles, the rack sits in the counter
-    st: { stove: [[6, 1], [9, 1], [12, 1]], board: [[17, 1], [20, 1]], veg: [25, 1], fish: [28, 1], meat: [31, 1], trash: [37, 1], sink: [40, 1],
-      pass: [[18, 7], [19, 7], [24, 7], [25, 7]], rack: [21, 7] },
-    // twelve tables in the hall (3 rows × 4), 4 to 16 tiles from the pass
-    tables: [[6, 11], [16, 11], [26, 11], [36, 11], [6, 15], [16, 15], [26, 15], [36, 15], [6, 19], [16, 19], [26, 19], [36, 19]],
-    start: [[20, 4], [20, 9], [23, 4], [23, 9]],
-    tpl: {
-      name: "쥬쥬식당 (영업 중)", theme: "interior", style: "tavern", bgm: "juju", safe: true, w: 44, h: 24, entry: [21, 9],
-      ground: ["llllllllllllllllllllllllllllllllllllllllllll", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl",
-        "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl",
-        "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll",
-        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll",
-        "llllllllllllllllllllllllllllllllllllllllllll", "lyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyl", "llllllllllllllllllllllllllllllllllllllllllll",
-        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "lyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyl",
-        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll",
-        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll"],
-      objects: ["+===^===+===^===+===^===+===^===+===^===+===", "= r   :  :  :    -  -    ]  w  ]     w  r  _", "=                                          _",
-        "=                                          _", "=                                          _", "=                                          _",
-        "=                                          _", "=mmmmmmmmm  mmmmmmmmm>jmmmmmmmmm  mmmmmmmmm_", "=g                                        g_",
-        "=                                          _", "=                                          _", "=    kok       kok       kok       kok     _",
-        "=                                          _", "=                                          _", "=                                          _",
-        "=    kok       kok       kok       kok     _", "=                                          _", "=                                          _",
-        "=                                          _", "=    kok       kok       kok       kok     _", "=                                          _",
-        "=                                          _", "=g         s         #         s          g_", "____________________________________________"],
-    },
+    hint: "프라이팬 담당은 상자에서 재료를 꺼내 도마·화덕을 거쳐 패스대에, 쟁반 담당은 패스대의 요리를 주문한 테이블로! 손님이 계속 몰려와요.",
+    // cut-offs tuned on walking bots in the 64×36 hall (tests/coop.mjs: clearing and washing plates; owner 2026-11-15: hard, customers flood in):
+    // quick bots (an act every 300 ms) 391 · 804 · 1,467, just over S; realistic ones (every 600 ms, walking at 90 %) 414 · 719 · 985 (S · A · B)
+    par: 1000, parN: { 2: 0.43, 3: 0.89, 4: 1.62 },
+    // stations (tiles; solid furniture on the kitchen's back wall, used from the tile below; the pass and the rack on the counter at y 7)
+    st: { stove: DIN.stove, board: DIN.board, veg: DIN.veg, fish: DIN.fish, meat: DIN.meat, trash: DIN.trash, sink: DIN.sink, pass: DIN.pass, rack: DIN.rack },
+    tables: DIN.tables,
+    start: [[29, 4], [33, 4], [29, 9], [33, 9]],
+    tpl: { name: "쥬쥬식당 (영업 중)", theme: "interior", style: "tavern", bgm: "juju", safe: true, w: DIN.W, h: DIN.H, entry: [31, 9], ground: DIN_MAP.ground, objects: DIN_MAP.objects },
   },
   forge: {
     name: "캉캉대장간 단조", npc: "kangkang", lobby: "kangkang_forge", mins: 5, tools: ["tongs", "hammer"], combo: 40000, skill: "craft",
@@ -1921,7 +1921,7 @@ const COOP_DINER = {
     { name: "생선구이", crate: "fish", chop: 0, cook: 6000, pts: 30, at: 0 },
     { name: "고기 스튜", crate: "meat", chop: 4, cook: 8000, pts: 45, at: 90000 },
   ],
-  seats: { 2: 6, 3: 8, 4: 10 }, orderMs: { 2: 8000, 3: 6000, 4: 4800 }, patience: { 2: 50000, 3: 45000, 4: 42000 }, feverK: 0.8, firstMs: 3000,
+  seats: { 2: 6, 3: 8, 4: 10 }, orderMs: { 2: 8000, 3: 6000, 4: 4800 }, patience: { 2: 80000, 3: 75000, 4: 70000 }, feverK: 0.8, firstMs: 3000,
   burnMs: 8000, burnPen: 5, angryPen: 15, eatMs: 6000, washN: 3, washPts: 5, trayCap: 2, passCap: 6, serveK: 0.5, cookK: 0.5,
 };
 /**
