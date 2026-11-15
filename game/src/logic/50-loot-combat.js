@@ -369,7 +369,9 @@ function killMob(S, rt, mob) {
   rt.ev.push(["k", mob.id]);
   // the hands that struck it learn from it
   wmKill(S, rt, mob);
-  // everyone who hit it, plus their party members standing nearby, shares the kill
+  // In the field, a party member needs to be near a hitter and the fallen monster.
+  const field = !d.chest && !S.dims[rt.id];
+  const range = field ? FIELD_PARTY_RANGE : PARTY_RANGE;
   const looters = new Set();
   let top = null, topDmg = 0;
   const hitters = mob.by;
@@ -377,7 +379,9 @@ function killMob(S, rt, mob) {
     const p = S.players[pid];
     if (!p || p.map !== rt.id) continue;
     if (hitters[pid] > topDmg) { top = p; topDmg = hitters[pid]; }
-    for (const o of allies(S, p)) if (!o.dead) looters.add(o);
+    for (const o of allies(S, p, range)) {
+      if (!o.dead && (!field || o === p || dist(o.x, o.y, mob.x, mob.y) <= range)) looters.add(o);
+    }
   }
   mob.by = {};
   const xp = d.xp * ELITE[el].xp;
@@ -385,7 +389,7 @@ function killMob(S, rt, mob) {
     const ch = p.ch;
     // a chest is opened, not hunted: it pays out its loot and nothing else
     if (d.chest) { p.dirty = true; lootFor(S, rt, mob, p); dailyProg(S, p, "chest"); if (cosRoll(S, p, "chest") < COS_CHEST) cosFrom(S, p, "chest", "보물 상자"); continue; }
-    const nearby = allies(S, p);
+    const nearby = allies(S, p, range).filter((o) => !field || looters.has(o));
     const n = Math.min(PARTY_MAX, nearby.length);
     // a kill soon after the last one keeps the streak alive
     p.streak = S.now - p.streakAt < STREAK_MS ? p.streak + 1 : 1;

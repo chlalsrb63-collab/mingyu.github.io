@@ -657,8 +657,8 @@ function members(S, p) {
   return party.m.map((pid) => S.players[pid]).filter(Boolean);
 }
 /** Party members close enough to share in what `p` does (always includes `p`). */
-function allies(S, p) {
-  return members(S, p).filter((o) => o === p || (o.map === p.map && !o.dead && dist(o.x, o.y, p.x, p.y) <= PARTY_RANGE));
+function allies(S, p, range = PARTY_RANGE) {
+  return members(S, p).filter((o) => o === p || (o.map === p.map && !o.dead && dist(o.x, o.y, p.x, p.y) <= range));
 }
 function leaveParty(S, p) {
   const party = S.parties[p.party];

@@ -53,7 +53,12 @@ export function renderParty() {
     G.party.forEach(([eid, name, cls, lvl, hp, mhp, where], i) => {
       box.append(memberRow(eid, name, cls, `Lv.${lvl}${where ? ` · ${where}` : ""}`, i === 0, hpBar(hp, mhp)));
     });
-    box.append(el("p", "hint", "★ 파티를 처음 만든 사람 · 함께 잡으면 모두가 경험치와 전리품을 얻고, 인원이 많을수록 총 경험치가 늘어납니다."));
+    const hunt = G.defs.fieldParty;
+    if (hunt) {
+      const shares = hunt.share.map((fraction, i) => `${i + 1}인 ${Math.round(fraction * 100)}%`).join(" · ");
+      box.append(el("p", "hint", `필드 사냥은 공격한 파티원과 처치 지점에서 각각 ${hunt.tiles}칸 이내인 생존 파티원과 공유합니다.`));
+      box.append(el("p", "hint", `한 마리당 1인 기본 경험치 ${shares}`));
+    }
   } else {
     box.append(memberRow(G.you, s.name, s.cls, `Lv.${s.lvl}`, false, hpBar(G.me.hp, s.mhp)));
     box.append(el("p", "hint", "주변의 모험가를 초대해 보세요. 강한 적과 정예 몬스터는 파티로 잡는 것이 훨씬 빠릅니다."));

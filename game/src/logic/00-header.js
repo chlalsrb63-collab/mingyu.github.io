@@ -40,6 +40,7 @@ const VIEW_Y = 280;
 const BASE_SPD = 48;
 const PARTY_MAX = 4;
 const PARTY_RANGE = 340;
+const FIELD_PARTY_RANGE = 16 * T;
 /** Share of a kill's experience each member gets, by how many are in range. */
 const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 

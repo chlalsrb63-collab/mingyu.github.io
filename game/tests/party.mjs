@@ -46,6 +46,42 @@ assert.equal(pb.ch.xp, Math.round(36 * 0.8), "the nearby member gets the regular
 assert.equal(pa.ch.xp, Math.round(36 * 0.8 * 1.6), "the early hunter earns the bonus on the party share");
 assert.ok(rt.drops.some((d) => d.own === A) && rt.drops.some((d) => d.own === B), "each member rolls their own loot");
 
+// ── field XP sharing uses the actual kill group, not everyone on the map
+{
+  const defs = L.defs();
+  assert.equal(defs.partyMax, 4);
+  assert.deepEqual(defs.fieldParty.share, [1, 0.8, 0.7, 0.65]);
+  const range = defs.fieldParty.tiles * 16;
+  const [c, d, e] = ["다", "라", "마"].map((name) => {
+    const pid = "pid-" + name;
+    L.addPlayer(S, pid, L.hero(name, { wk: "dagger" }));
+    return S.players[pid];
+  });
+  for (const p of [c, d]) assert.ok(act(A, { t: "pinv", e: p.eid }).ok && act(p.pid, { t: "pacc" }).ok);
+  assert.equal(act(A, { t: "pinv", e: e.eid }).error, "파티가 가득 찼습니다");
+  const participants = [pa, pb, c, d];
+  function killFrom(offsets) {
+    const gains = participants.map((p, i) => {
+      p.x = pa.x + offsets[i]; p.y = pa.y;
+      p.streakAt = -Infinity; p.atkAt = 0;
+      return p.ch.xp;
+    });
+    Object.assign(mob, { hp: 1, dead: false, by: {}, x: pa.x + 10, y: pa.y });
+    now += 1000;
+    assert.ok(act(A, { t: "atk", a: 0 }).ok && mob.dead);
+    return participants.map((p, i) => p.ch.xp - gains[i]);
+  }
+  assert.deepEqual(killFrom([0, range + 1, -(range - 9), range + 2]), [58, 0, 0, 0],
+    "missing either boundary gives no XP and leaves the hunter at the solo rate");
+  assert.deepEqual(killFrom([0, range, -(range - 9), range + 1]), [46, 29, 0, 0],
+    "the exact attacker boundary shares with a member also inside the fallen monster's range");
+  assert.deepEqual(killFrom([0, 20, 26, range + 1]), [40, 25, 25, 0], "three nearby looters share at 70%");
+  assert.deepEqual(killFrom([0, 20, 26, 32]), [37, 23, 23, 23], "four nearby looters share at 65%");
+  d.dead = true;
+  assert.deepEqual(killFrom([0, 20, 26, 32]), [40, 25, 25, 0], "downed players do not dilute the live group's XP");
+  assert.ok(act(c.pid, { t: "pleave" }).ok && act(d.pid, { t: "pleave" }).ok);
+}
+
 // ── stat points: bought with experience, at a campfire or by the trainer
 assert.equal(act(A, { t: "train", a: [1, 0, 0, 0, 0, 0] }).ok, false);
 pa.ch.xp = 5000;

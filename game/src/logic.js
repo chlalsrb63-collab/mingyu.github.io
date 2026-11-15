@@ -42,6 +42,7 @@ const VIEW_Y = 280;
 const BASE_SPD = 48;
 const PARTY_MAX = 4;
 const PARTY_RANGE = 340;
+const FIELD_PARTY_RANGE = 16 * T;
 /** Share of a kill's experience each member gets, by how many are in range. */
 const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 
@@ -7155,8 +7156,8 @@ function members(S, p) {
   return party.m.map((pid) => S.players[pid]).filter(Boolean);
 }
 /** Party members close enough to share in what `p` does (always includes `p`). */
-function allies(S, p) {
-  return members(S, p).filter((o) => o === p || (o.map === p.map && !o.dead && dist(o.x, o.y, p.x, p.y) <= PARTY_RANGE));
+function allies(S, p, range = PARTY_RANGE) {
+  return members(S, p).filter((o) => o === p || (o.map === p.map && !o.dead && dist(o.x, o.y, p.x, p.y) <= range));
 }
 function leaveParty(S, p) {
   const party = S.parties[p.party];
@@ -8246,7 +8247,9 @@ function killMob(S, rt, mob) {
   rt.ev.push(["k", mob.id]);
   // the hands that struck it learn from it
   wmKill(S, rt, mob);
-  // everyone who hit it, plus their party members standing nearby, shares the kill
+  // In the field, a party member needs to be near a hitter and the fallen monster.
+  const field = !d.chest && !S.dims[rt.id];
+  const range = field ? FIELD_PARTY_RANGE : PARTY_RANGE;
   const looters = new Set();
   let top = null, topDmg = 0;
   const hitters = mob.by;
@@ -8254,7 +8257,9 @@ function killMob(S, rt, mob) {
     const p = S.players[pid];
     if (!p || p.map !== rt.id) continue;
     if (hitters[pid] > topDmg) { top = p; topDmg = hitters[pid]; }
-    for (const o of allies(S, p)) if (!o.dead) looters.add(o);
+    for (const o of allies(S, p, range)) {
+      if (!o.dead && (!field || o === p || dist(o.x, o.y, mob.x, mob.y) <= range)) looters.add(o);
+    }
   }
   mob.by = {};
   const xp = d.xp * ELITE[el].xp;
@@ -8262,7 +8267,7 @@ function killMob(S, rt, mob) {
     const ch = p.ch;
     // a chest is opened, not hunted: it pays out its loot and nothing else
     if (d.chest) { p.dirty = true; lootFor(S, rt, mob, p); dailyProg(S, p, "chest"); if (cosRoll(S, p, "chest") < COS_CHEST) cosFrom(S, p, "chest", "보물 상자"); continue; }
-    const nearby = allies(S, p);
+    const nearby = allies(S, p, range).filter((o) => !field || looters.has(o));
     const n = Math.min(PARTY_MAX, nearby.length);
     // a kill soon after the last one keeps the streak alive
     p.streak = S.now - p.streakAt < STREAK_MS ? p.streak + 1 : 1;
@@ -16626,6 +16631,7 @@ export function defs() {
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
+    fieldParty: { tiles: FIELD_PARTY_RANGE / T, share: PARTY_SHARE },
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbResp: FB_RESP,
     traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], dash: [DASH.px, DASH.ms, DASH.cd, DASH.inv], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
