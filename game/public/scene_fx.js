@@ -153,11 +153,11 @@ function drawQi(f, k) {
 // where it strikes (fx.arrowHit), one left quivering in a wall, and the snap of the string at the
 // release (bowSnap, from drawPerson). Every sprite is built pixel by pixel in 64 directions, inked.
 const ARROW_STEPS = 64, arrowSprites = new Map(), arrows = new Map();
-/** By bow tier (1–5): the trail's dots and the fletching (T4 cyan, T5 violet; else red). */
-const ARROW_TRAIL = [null, "#fff4dc", "#fff4dc", "#fff4dc", "#7af4ff", "#d8a8ff"];
-const ARROW_FLETCH = [null, "#e04a3c", "#e04a3c", "#e04a3c", "#3ab8d0", "#a05ae0"];
+/** By bow tier (1–6): the trail's dots and the fletching (T4 cyan, T5 violet, T6 운철 night-blue with starlight gold; else red). */
+const ARROW_TRAIL = [null, "#fff4dc", "#fff4dc", "#fff4dc", "#7af4ff", "#d8a8ff", "#ffe9a8"];
+const ARROW_FLETCH = [null, "#e04a3c", "#e04a3c", "#e04a3c", "#3ab8d0", "#a05ae0", "#2a3a8a"];
 /** The piercing shot's ink: a white-hot arrow outlined in gold (T4 cyan, T5 violet). */
-const ARROW_HOT = [null, "#ffc23a", "#ffc23a", "#ffc23a", "#3ad0f0", "#b46aff"];
+const ARROW_HOT = [null, "#ffc23a", "#ffc23a", "#ffc23a", "#3ad0f0", "#b46aff", "#ffd86a"];
 /** How long a ground direction looks on screen at screen angle `a`, relative to one straight across. */
 const isoLen = (a) => 1 / Math.sqrt(2 * Math.sin(a) ** 2 + Math.cos(a) ** 2 / 2) / Math.SQRT2;
 /**
@@ -323,7 +323,7 @@ export const fx = {
     const v = far / Math.max(flight * 0.5, flight - delay);   // units per ms, caught up
     const now = fxNow();
     for (const [id, a] of arrows) if (a.gone && now - a.goneAt > 1500) arrows.delete(id);
-    const f = { k: "arrow", wx: ax, wy: ay, ux: (bx - ax) / far, uy: (by - ay) / far, len: far, full: far, v, h: o.h ?? 9, tier: Math.max(1, Math.min(5, o.tier | 0 || 1)), pierce: !!o.pierce, end: o.end || "fade", delay, dur: far / v };
+    const f = { k: "arrow", wx: ax, wy: ay, ux: (bx - ax) / far, uy: (by - ay) / far, len: far, full: far, v, h: o.h ?? 9, tier: Math.max(1, Math.min(6, o.tier | 0 || 1)), pierce: !!o.pierce, end: o.end || "fade", delay, dur: far / v };
     f.done = () => { arrowLanded(f); if (o.done) o.done(); };
     if (o.id !== undefined) arrows.set(o.id, f);
     this.add(f);

@@ -2312,7 +2312,7 @@ const fan = { n: 0, at: 0 };
 const ARROW_RANGE = { 2: 180, 3: 150, 4: 190, 5: 190, 6: 190, 7: 170 };
 /**
  * The dressed arrows (docs/design/jobs-and-stats.md H.4): kind 2 관통 화살, 3 도약 사격, 4 fire, 5 ice, 6 lightning, 7 rune ink.
- * `tier` picks the ink of the white-hot arrow underneath (scene2d ARROW_HOT: 1 gold, 4 cyan, 5 violet);
+ * `tier` picks the ink of the white-hot arrow underneath (scene_fx ARROW_HOT: 1 gold, 4 cyan, 5 violet, 6 starlight gold);
  * `tail` is what streams behind it, nearest first; `shaft` repaints the arrow itself (the ink arrow is black).
  */
 const ARROW_LOOK = {
