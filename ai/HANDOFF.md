@@ -32,30 +32,30 @@ agent notification re-read it, and 6–7 agents of 120k–400k tokens each ran a
 7. Unused MCP servers/plugins (Unity, Summer Engine, Higgsfield, Notion, PixelLab, Blender, fullstory…) add ~25k tokens
    to every call — the owner may turn them off for this folder. Ponytail (lazy-senior-dev rules) is installed.
 
-## 0.1 State (2026-11-15, end of the second integrator session — `main` full suite 37/37, nothing pushed)
+## 0.1 State (2026-11-15, third integrator session — `main` sheet v17, rules suite green, nothing pushed)
 
-Merged today: `new-monsters` (18 real species), `social-weekly` (friends/whisper/block, 주간 수첩 Shift+U, enhancement
-pity; sheet v14), `cosmetics-2` (41 pieces), `maps-b2-1` (mesa 붉은바위 황금궁 Lv.36–42 via oasis east, cloudtemple
-운해 사원 Lv.30–36 via cave shaft; their species placed), `dash` (Space = dash 72 px / 4 s / i-frames, X = attack, Z =
-sit, Shift+B = 건배; `me[11]` = dash cooldown), `magic-missile` + `missile-glow` (staff/book basic attacks are homing
-shots kinds 8/9 that deal the blow on impact; glow survives the night grade; preview `_bow.html?m=missile`),
-`keys-textsize` (`keymap.js`: 46 rebindable actions stored as `e.code`, hints via `K(id)`/`data-key`; 작게/보통/크게).
-Designed (not built): `docs/design/bosses-2.md` — 2 field bosses + 2 weekly raids; the owner's decisions are at its top
-(raids at tier 25 ≈ Lv.100 and tier 50; lizard lair in mesa; mantis shrimp on the coast).
+Merged this session: `rift-tiers` (tiers 1–100, weekly 4-player boss + stagger; scale-and-rift §H.6) · boss art for
+bloodhorn/clubshrimp/cloakbat/bloomwhale (`mobart_f.js`, phase keys `_p2/_ch/_dive`) · **boss-script runner**
+(`56-boss-script.js`, `MOBS[k].script`; mob row ends `phase,state`; bosses-2 §8) · `codex/hammer` (merged by Codex,
+v16) · **boss trophies + solo story fights** (`67-trophies.js`, sheet v17, `docs/design/boss-trophies.md`: field bosses
+stand at a fixed spot, 10-min respawn; 14 trophies all active; 8 main-quest boss steps) · HUD: job-level row under the
+weapon mastery, equal HP/MP bars (99999), weapon-passive gauge floats bottom-centre (owner dropped the job gauge).
+UX audit of the skill/job UI: `ux-audit.md` in the session notes folder (3 proposals sent to the owner, no answer yet).
 
-**Next, in order:** 1) `claude/rift-tiers` (WIP, worktree `agent-ad45f810f36043d75`, 83+ commits behind: rebase on main
-first; touches 31/40/50/64/70/80/90 + accounts) — its weekly 4-player boss + stagger gauge is the base for the raids.
-2) bosses-2 in the 7 small tasks of its §8 (boss-script runner first, then donut/cone/mark/adds, data, 4 art tasks).
-3) Owner priorities below. Small leftovers: infocard tooltips and lobby text pick up rebinding only after reload; chat
-placeholder literal; friends/whisper untested with two real players; dash trail faint; the preview pages log a 404.
+**Running / next, in order:** 1) `claude/job-freedom` (agent; contract `docs/design/job-freedom.md`: no 15-cap on
+hybrids, job/level reset with scrolls + gold, per-job progress kept, loadout 5 active + 4 passive in town/campfire,
+Lv.150 off-job passive quest; sheet v18). 2) **모닥불 피우기**: the 앉기 button lights a temporary campfire in the field when
+out of combat with no monster near (all campfire actions work there). 3) Client: trophy window (like the charm board),
+quest tracker lines, skill loadout UI + the audit fixes the owner picks. 4) **Skill enhancement +10** (owner's rules in
+job-freedom.md §7: +1..+3 safe, then chance, failure eats the material only, ≈2–3 %/step). 5) Gear + cosmetics content
+(hook the "곧 열립니다" cosmetic sources to rift tiers/weekly boss/quests; boss drops bosses-2 §7; hammer gear/skins).
+6) bosses-2 patterns donut/cone/mark/adds + the four data rows/arenas; then screenshots of each boss to the owner.
+Known: field bosses have no stagger bar yet; boss `dc` events share a code with the tracker decoy in `skillfx.js`;
+rift tier 5+ needs balance (test runs tiers 1,3); `party` test flakes under load (passes alone).
 **Agent worktrees from `isolation: "worktree"` start at origin/main (stale) — first step of every brief: `git rebase main`.**
-Only the owner adds jobs (Codex deleted several and builds the hammer jobs).
+Only the owner adds jobs.
 
-**Owner's priorities:** content + HUD + user-friendly UI/UX first. The 경매장 (auction house) is **on hold**. After the
-paused work: life → combat links and co-op part-time jobs (`life-and-coop.md` C1–C3), skill
-design/effects cleanup, more quests, then the remaining batch-2 maps. Codex is designing the 7th weapon **해머 / 파괴자**
-(`ai/prompts/hammer-destroyer.md`); our UI is already data-driven for it. Level balancing waits until more maps exist
-(`docs/design/level-bands.md`).
+**Owner's priorities:** content + HUD + user-friendly UI/UX first. The 경매장 (auction house) is **on hold**.
 
 ## 1. One project, one line — how Claude and Codex work together (owner's decision, 2026-11-15)
 
