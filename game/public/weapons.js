@@ -758,6 +758,9 @@ const MOTIF = {
   rift: { name: "균열 추적자", blade: M.void, add: (h) => [L(h[0] + 1, (h[2] + h[3]) / 2 - 0.5, h[1] - 2, (h[2] + h[3]) / 2 - 0.5, "energy"), D(h[1] + 2, h[2] - 1, "energy")] },
   pioneer: { name: "개척자", blade: M.steel, fit: M.leather, add: () => [] },
   runner: { name: "네온 러너", blade: M.carbon, add: (h) => [L(h[0], h[3] - 1, h[1] - 1, h[3] - 1, "glow")] },
+  // the bosses-2 raid sets (no weapon piece yet: here so every set has a look)
+  nightveil: { name: "밤장막", blade: M.void, add: (h) => [L(h[0], h[3] - 1, h[1] - 1, h[3] - 1, "glow")] },
+  bloomgrave: { name: "꽃무덤", blade: M.steel, add: (h) => [D(h[1] + 2, h[2] - 1, "energy")] },
   // weapon skins
   sakura: { name: "벚꽃", blade: ["#fff0f6", "#f4b4cc", "#c06a90"], fit: ["#8a5a4a", "#6a3e36", "#4a2a2e"], add: (h) => along(h, 3, (s, i) => C(s, i % 2 ? h[3] : h[2], 1.2, "petal", { top: true })) },
   frost: { name: "서리", blade: ["#f4fcff", "#b8e4f8", "#6aa0d0"], add: (h) => along(h, 3, (s) => P([[s - 1, h[2] + 0.5], [s + 1, h[2] + 0.5], [s, h[2] - 2]], "ice")) },
@@ -907,7 +910,7 @@ function paint(d, W, H, xf, inv, glow, inks) {
 const GLOW7 = "#fff2a8", GLOW10 = "#ffd84a";
 
 // ───────────────────────────── external images ─────────────────────────────
-const SET_MOTIFS = new Set(["rift", "pioneer", "runner"]);
+const SET_MOTIFS = new Set(["rift", "pioneer", "runner", "nightveil", "bloomgrave"]);
 /** The manifest key of a look: a skin wins over a legendary/set power, which wins over the tier. */
 export function assetKey(kind, tier, o = {}) {
   if (MOTIF[o.ws]) return `${kind}.skin.${o.ws}`;

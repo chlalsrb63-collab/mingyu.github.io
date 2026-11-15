@@ -652,6 +652,7 @@ export function skillEvent(e, ctx) {
       const m = entityPos(e[1]);
       if (m && e[2] === 8) { f.burst(m.x, m.y, 0.8, "#ffe08a", 30, 2.6); B.shake(6); Sound.play("slam"); }
       else if (m && e[2] === 7) { f.ring(m.x, m.y, 90, "#ff3a2a", 420, true); B.shake(8); Sound.play("boom"); }
+      else if (m && e[2] === 6) f.burst(m.x, m.y, 0.6, "#ff4fd8", 18, 2);   // an add flew into it and healed it
       return true;
     }
     case "dx": S3.props.delete("dc" + e[1]); f.ring(e[2], e[3], e[4], "#8a5ad8", 320, true); f.burst(e[2], e[3], 0.6, "#c890ff", 30, 3); B.shake(4); Sound.play("decoy_pop"); return true;

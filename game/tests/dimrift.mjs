@@ -607,7 +607,7 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   const old = L.newChar("옛단수", []); old.v = 13; old.dim = { day: 20000, n: 2 };
   L.addPlayer(S, "o13", old);
   assert.deepEqual(S.players.o13.ch.dim, { ...fresh, day: 20000, n: 2 }, "a v13 sheet keeps its count and starts the ladder at 1"); assert.equal(S.players.o13.ch.v, 20);
-  assert.deepEqual(X.dimClean({ t: 50, best: 3, ms: 9e9, wb: 99, bw: 99, wk: -3 }), { ...fresh, t: 4, best: 3, ms: D.limit, wb: TR.weekly.max, bw: 3 }, "never more unlocked than one past the best");
+  assert.deepEqual(X.dimClean({ t: 50, best: 3, ms: 9e9, wb: 99, bw: 99, wk: -3 }), { ...fresh, t: 4, best: 3, ms: D.limit, wb: TR.weekly.max, bw: (1 << X.CHAL_KEYS.length) - 1 }, "never more unlocked than one past the best");
   assert.deepEqual(X.dimClean({ t: "x", best: 5000, ms: 1234 }), { ...fresh, t: 1, best: TR.max, ms: 1234 });
   assert.deepEqual(X.dimClean({ ms: 5000 }), fresh, "no time without a clear"); assert.deepEqual(X.dimClean("junk"), fresh);
 }
@@ -724,14 +724,14 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
 {
   for (const k of X.CHAL_KEYS) {
     const m = X.dimArena({ id: "dim:7", seed: 99, k }), again = X.dimArena({ id: "dim:7", seed: 99, k });
-    assert.deepEqual([m.g, m.o], [again.g, again.o]); assert.equal(m.w, CH.w); assert.equal(m.dim.bossK, k);
+    assert.deepEqual([m.g, m.o], [again.g, again.o]); assert.equal(m.w, CH.bosses[k].w || CH.w); assert.equal(m.dim.bossK, k);
     for (const [x, y] of [m.dim.start, m.dim.boss, m.dim.door]) assert.ok(m.reach[y * m.w + x], k + ": start, boss and door on open ground");
     let open = 0;
     for (let i = 0; i < m.w * m.h; i++) if (m.reach[i]) open++;
     assert.ok(open > 200, "an arena to move in: " + open);
     // nowhere in it is farther from the boss's place than it would follow (no leashing it home)
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.reach[y * m.w + x]) assert.ok(Math.hypot(x - m.dim.boss[0], y - m.dim.boss[1]) * T < 2.4 * X.MOBS[k].aggro);
-    assert.equal(CH.bosses[k].pats.length, 3, "three patterns");
+    if (!CH.bosses[k].phases) assert.equal(CH.bosses[k].pats.length, 3, "three patterns");
   }
   const S = world(); at(S, MONDAY - 2 * 86400000);
   const lo = hero(S, "b0", "아직", "warrior", 20), a = hero(S, "b1", "도전일", "warrior", 40, true), b = hero(S, "b2", "도전이", "mage", 40, true);

@@ -257,6 +257,18 @@ Suggested split: T1 = 1 · T2 = 2+3 · T3 = 4 · T4 = 5 · T5 = F1+F2 data/art �
 - Drops: `MOBS[k].drops [item, chance, min, max]` read by `lootFor` (each looter): 피눈물 결정 / 망치 갯가재 집게 100 % 1–3; 3 % 혈루 왕관 창 / 공동 망치 (tier-5 spear/hammer rows, always legendary).
 - Left: first-kill titles (achievements, 60-content), F2 fail as a r110 ring (it hits everyone within `reach`), F1 fail pools, crystal art, field stagger bar (gauge not on the wire).
 
+**As built — R1/R2 (T6–T7 data + mark share, adds shield/feed)**, `DIM_CHAL.bosses` (31) + `10-tables.js` rows, `tests/bosses2.mjs`:
+- Weekly challenge keys now `boss abyssboss cloakbat bloomwhale` (week bits 1 2 4 8; new ones appended so old `bw` stays). A boss entry
+  is a whole script (phases, any BOSS_SCRIPT key), plus `big` (its own weekly reward) and `w`/`h` (arena; whale 40×28).
+- R1 `cloakbat` t25 (owner): row hp 21,000 (×14 → 294,000 for 4), atk 120, def 22; cast 6 s / 3 % / stun 5 s, vuln 30 %, soft 300 s, hard 420 s k3/3 s.
+  Phases 70 % (shared mark k5, pools, `nightbat` adds every 3rd turn that heal it 2 % if alive after 20 s) and 35 % (8 rim pools, front+back cones, gap 3,900, fail k4).
+- R2 `bloomwhale` t50: row hp 60,000 (→ 840,000), atk 165, def 52; dive k6, donut r30–110 + rings, tail cone; cast 7 s / stun 6 s / fail k6, soft 360 s, hard 480 s k10/4 s.
+  Phases 65 % and 45 % (cast, then 3 `hagfishhead` shield adds: −50 %, spread marks, pools), 30 % (shared mark, dive ×2), 10 % (cast).
+- Runner additions: mark `share`, adds `shield`/`feed`/`heal`, cone `both`, donut `rings`, phase `blast`/`rim`, `diveK`; a phase starts its list from the top; boss turn `bc` 6 = fed.
+- Rewards: own `big` (R1 gear 3, R2 ×1.5 + gear 4); `drops`: sets 밤장막 (t4) / 꽃무덤 (t5) 4 pieces each (`ITEMS[id].set`, never rolled elsewhere), 흉곽 등불 4 %, 고래뼈 활 / 혼꽃 지팡이 1.5 % each.
+- Bots (4, geared, at tier): R1 ≈ 3.4 min, R2 ≈ 5 min, one try; 2 bare bots fail. Lower numbers than §6 (bots break casts or spiral on fury).
+- Left: titles + server-first notice (achievements, 60-content), 박쥐 망토 cosmetic, 먹장어 pet, own add art (tinted batcluster / eelknot), share-mark look on the client.
+
 ## 9. Open questions for the owner
 
 1. Levels: tiers 45/50 for the raids (shown Lv.177 / 197–200) — or did you mean player Lv.45/100 (tiers 12/25),
