@@ -430,6 +430,7 @@ function killMob(S, rt, mob) {
       if (bq.n >= bq.need) toast(p, `반복 의뢰 [${d.name} ${bq.need}마리] 달성! 관리자에게 보고하세요.`);
     }
     sqProgress(S, p, "kill", (g) => g.mob === mob.k);
+    if (el === 1 || (el === 2 && mob.temp && !mob.evt && !mob.story && !mob.dim)) sqProgress(S, p, el === 1 ? "elite" : "fb", (g) => !g.map || g.map === rt.id);
     if (el === 1) ch.cnt.elite++;
     else if (el === 2) { if (mob.evt) ch.cnt.evb++; else if (mob.temp) ch.cnt.fb++; else ch.cnt.guard++; }
     if (n >= 2) ch.cnt.party++;

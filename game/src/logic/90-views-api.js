@@ -256,8 +256,9 @@ export function defs() {
     // every NPC id → the map it stands on (the client's 추적 walks there; track.js)
     npcMap: { ...NPC_MAP },
     side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAP_META[NPC_MAP[q.giver]].name,
-      giverMapId: NPC_MAP[q.giver], targetMap: q.id === AIRSHIP_QUEST ? AIRSHIP_MAP : q.goal.type === "talk" ? NPC_MAP[q.goal.npc] : q.goal.type === "visit" ? q.goal.map : null,
-      target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
+      giverMapId: NPC_MAP[q.giver], targetMap: q.id === AIRSHIP_QUEST ? AIRSHIP_MAP : q.goal.type === "talk" ? NPC_MAP[q.goal.npc] : q.goal.type === "visit" || q.goal.map ? q.goal.map || null : null,
+      target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc)
+        : q.goal.type === "elite" || q.goal.type === "fb" ? `${q.goal.map ? MAP_META[q.goal.map].name + " " : ""}${q.goal.type === "elite" ? "정예 몬스터" : "우두머리"}` : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
     // life skills: names, curve, grades, the bonus formula, fish, recipes, each map's grade (58-life.js)
