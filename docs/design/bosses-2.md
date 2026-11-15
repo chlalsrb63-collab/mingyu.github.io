@@ -9,6 +9,14 @@ Contents: 0 Ground rules · 1 Shared numbers · 2 F1 혈루 왕도마뱀 (mesa) 
 4 R1 밤장막 박쥐군주 (weekly, tier 45) · 5 R2 꽃무덤 고래 (weekly, tier 50) · 6 Balance table · 7 Rewards ·
 8 NEW engine needs (task split) · 9 Open questions
 
+**Owner decisions (2026-11-15) — these override the sections below:**
+- Raid levels: **mid-game + end-game.** R1 밤장막 박쥐군주 moves to **tier 25 (shown ≈ Lv.100)** — rescale its HP/atk/def
+  from §4/§6 to the tier-25 boss rows; R2 꽃무덤 고래 stays **tier 50 (Lv.197–200)**.
+- F1 혈루 왕도마뱀 gets **its own lair in mesa**; `crownpeacock` stays mesa's field boss. F2 망치 갯가재 goes to the **coast**
+  (replaces the under-levelled coralturtle as field boss; coralturtle stays a normal elite/boss row).
+- Raids join the **weekly rift boss rotation** after `claude/rift-tiers` is merged (its stagger gauge is the base).
+- Only the owner adds jobs; bosses must not add job-specific mechanics beyond the existing weapons (incl. Codex's hammer).
+
 ---
 
 ## 0. Ground rules
