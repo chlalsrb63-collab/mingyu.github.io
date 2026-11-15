@@ -260,6 +260,16 @@ const HAT = {
       b.r(Math.round(A.cx + 1.5), T - 2, 2, 1, sh(p.c));
     },
   },
+  // a dark-red band with three curved horns and a blood-red gem
+  horncrown: {
+    over(b, A, p) {
+      const T = A.top;
+      b.cr(T - 1, 6, 1, sh(p.c)); b.cr(T - 2, 6, 1, p.c);
+      b.sym(2, T - 3, 1, 2, p.c); b.sym(3, T - 4, 1, 1, li(p.c));
+      b.sym(1, T - 4, 1, 2, p.c);
+      if (!A.back) { b.cr(T - 2, 2, 1, p.g); b.cr(T - 3, 1, 1, p.g); b.cr(T - 4, 1, 2, li(p.c), 0); }
+    },
+  },
   // a wreath of flowers lying across the head
   wreath: {
     over(b, A, p) {
@@ -930,6 +940,7 @@ export const ART = {
   hat_wizard: ["hat", "wizard", { c: "#6a4ab0", b: "#f0cc60", s: "#fff0a0" }],
   hat_wizard_night: ["hat", "wizard", { c: "#2e3a6a", b: "#9ab4ff", s: "#e8f4ff" }],
   hat_crown: ["hat", "crown", { c: "#f0c040", g: "#e0405a" }],
+  hat_bloodcrown: ["hat", "horncrown", { c: "#8a1e2a", g: "#ff3a4a" }],
   hat_crown_silver: ["hat", "crown", { c: "#d4dae6", g: "#5ab8ff" }],
   hat_wreath_pink: ["hat", "wreath", { c: "#ff9ac0", b: "#fff0a0" }],
   hat_wreath_sun: ["hat", "wreath", { c: "#ffd84a", b: "#e8742a" }],
@@ -1037,6 +1048,7 @@ export const ART = {
   back_plush: ["back", "plush", { c: "#c89060", b: "#e0405a" }],
   back_batcape: ["back", "batcape", { c: "#4a1a2e" }],   // 밤장막 crimson, bat-wing hem
   ws_bee: ["wskin", "bee", {}],
+  ws_clubclaw: ["wskin", "clubclaw", {}],
 };
 /** The cosmetic slots, in the order the wire sends them. */
 export const SLOTS = ["hat", "top", "back", "face", "wskin"];

@@ -129,6 +129,8 @@ const COSMETICS = Object.fromEntries([
   ["back_plush", 100, "back", "곰 인형 배낭", 1, "shop", 3500, "어깨 너머로 빼꼼 내다보는 곰 인형.", "cute"],
   ["ws_bee", 101, "wskin", "꿀벌 무기 외형", 1, "daily", 0, "노랑과 검정 줄무늬.", "cute"],
   ["back_batcape", 102, "back", "박쥐 망토", 3, "weekly", 0, "밤장막 박쥐군주의 날개를 본뜬 망토. 펄럭일 때마다 작은 박쥐가 숨는다.", "rift"],
+  ["hat_bloodcrown", 103, "hat", "혈루 뿔 왕관", 3, "boss", 0, "혈루 왕도마뱀의 뿔을 깎아 만든 붉은 왕관. 아직 미지근하다."],
+  ["ws_clubclaw", 104, "wskin", "갯가재 집게 무기 외형", 2, "boss", 0, "망치 갯가재의 집게를 씌운 무기. 휘두를 때마다 물이 튄다."],
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
 const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근" };
