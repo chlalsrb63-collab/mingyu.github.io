@@ -781,6 +781,27 @@ const HAT = {
       for (const [u, v] of [[3.5, 1.5], [2.5, 2.5], [1.5, 2.5]]) b.fp(fx(u), y + v, qd);
     },
   },
+  // 이야기 기념품 · 나루터의 먹물: 여울 할머니's 삿갓, a wide shallow cone of woven reed, the rim soaked in ink
+  // (the trim, what a dye recolours) and a gold bead, the lamp-oil drop, on a cord at one tip; the weave and the ink
+  // creeping up from the rim at 64px. The same cone from every side; it covers the ears.
+  satgat: {
+    ears: "behind",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1, dk = sh(p.c, 0.3), lt = li(p.c, 0.3);
+      const L = (w) => Math.round(A.cx + 0.5 - w / 2);   // the left end of a row `w` wide, as cr lays it
+      b.cr(T - 4, 2, 1, dk);
+      b.cr(T - 3, 6, 1, p.c); b.r(L(6), T - 3, 2, 1, lt);
+      b.cr(T - 2, W, 1, p.c); b.r(L(W) + 1, T - 2, 3, 1, lt); b.r(L(W) + W - 3, T - 2, 3, 1, dk);
+      b.cr(T - 1, W + 4, 1, p.c); b.r(L(W + 4) + W, T - 1, 4, 1, dk);
+      b.cr(T, W + 8, 1, p.b); b.r(L(W + 8) + 1, T, 3, 1, li(p.b, 0.3)); b.r(L(W + 8) + W + 5, T, 3, 1, sh(p.b, 0.35));
+      // the weave: native over-under across the cone; the ink seeping a half pixel up into the reed
+      for (let x = L(W) + 1; x < L(W) + W - 1; x++) b.fp(x + ((x + T) & 1) * 0.5, T - 1.5, dk);
+      for (let x = L(W + 4); x < L(W + 4) + W + 4; x += 2) b.fp(x + 0.5, T - 0.5, sh(p.b, 0.1));
+      // the cord and its bead hang from the brim's tip (the far tip from behind)
+      const tx = A.back ? L(W + 8) : L(W + 8) + W + 7;
+      b.px(tx, T + 1, sh(p.b, 0.2)); b.px(tx, T + 2, GOLD); b.fp(tx, T + 2, "#fff6c0"); b.fp(tx + 0.5, T + 2.5, sh(GOLD, 0.3));
+    },
+  },
   // shards of the rift circling over the head and the ears, drifting with the walk
   shards: {
     ink: "#3b2a66",
@@ -1951,6 +1972,7 @@ export const ART = {
   back_cloud_bell: ["back", "bellFrame", { c: "#c89040", b: "#d04a4a" }],
   hat_chronicler: ["hat", "samo", { c: "#3e3a50", b: "#b8bcc8" }],
   face_rift_goggles: ["face", "riftGoggles", { c: "#c8a048", b: "#a070e0", s: "#4a3a4a" }],
+  hat_ink_satgat: ["hat", "satgat", { c: "#bcac80", b: "#3c4c7c" }],
   // 견습 장인 (P10): canvas flap `c`, belt `b` (the dye), tool `t` (APPRENTICE)
   top_appr_fish: ["top", "toolBelt", { c: "#5a7aa8", b: "#6a4a3a", t: "float" }],
   top_appr_cook: ["top", "toolBelt", { c: "#f0ece0", b: "#c84a4a", t: "ladle" }],

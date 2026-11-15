@@ -532,6 +532,7 @@ for (const pick of [0, 1]) {
   take(W, "sq_yeoul_end");
   done(W, "sq_yeoul_end", null, pick);
   assert.ok(W.ch.ach.includes(`t_sq_yeoul_end_${pick}`) && !W.ch.ach.includes(`t_sq_yeoul_end_${1 - pick}`), "this answer's title only");
+  assert.ok(W.ch.keep.kp_satgat, "either answer: 할머니의 삿갓 (루루 sews it into the 먹물 삿갓)");
 }
 // every new quest item is asked for by some quest (no orphans)
 for (const id of ["q_upwater", "q_silt", "q_wedge", "q_thornsong", "q_mapcharm", "q_lampoil"]) assert.ok(D.side.some((q) => q.goal.item === id), `${id} is used`);

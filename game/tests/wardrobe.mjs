@@ -498,8 +498,8 @@ for (const [kind, designs] of Object.entries(SIL)) {
   W.step();
   W.to("A", shopNpc.x, shopNpc.y + 1);
   for (const k of Object.keys(D.keepSew)) { ch.keep[k] = 1; assert.ok(W.act({ t: "cos_sew", k }).ok, k + " sews"); }
-  assert.ok(story.every((id) => ch.cos.own.includes(id)), "all six story pieces sewn");
-  for (const id of ["hat_chronicler", "back_neon_sign", "face_rift_goggles"]) assert.ok(W.act({ t: "cos_eq", id }).ok, id + " worn");
+  assert.ok(story.every((id) => ch.cos.own.includes(id)), "every story piece sewn");
+  for (const id of ["hat_chronicler", "back_neon_sign", "face_rift_goggles", "hat_ink_satgat"]) assert.ok(W.act({ t: "cos_eq", id }).ok, id + " worn");
 }
 
 // ── P10 견습 장인 (a tool belt per life skill at 30) and P11 face +8, wskin +5

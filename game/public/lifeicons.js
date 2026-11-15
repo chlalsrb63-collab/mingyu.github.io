@@ -1071,6 +1071,24 @@ export const LIFE_ICONS = {
       "............",
     ],
   },
+  // Grandmother's sedge hat: a wide reed cone, an ink-soaked rim, a gold bead on its cord.
+  kp_satgat: {
+    palette: { h: "#e4d8b0", m: "#bcac80", d: "#7a6a48", a: "#3c4c7c", b: "#f0cc60" },
+    rows: [
+      "............",
+      "............",
+      ".....dd.....",
+      "....hmmd....",
+      "...hhmmmd...",
+      "..hhmmmmmd..",
+      ".hmmmmmmmmd.",
+      "aaaaaaaaaaaa",
+      "...........a",
+      "...........b",
+      "............",
+      "............",
+    ],
+  },
 
   // ── P8 life items (content audit 2026-11-15): produce, life-buff foods, the cure, local fish, crafted furniture
   // Milk bottle: blue cap and label on white milk.

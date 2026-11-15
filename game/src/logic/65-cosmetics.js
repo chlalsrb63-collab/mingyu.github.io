@@ -221,6 +221,8 @@ const COSMETICS = Object.fromEntries([
   ["ws_temple_bell", 179, "wskin", "사원 종 무기 외형", 2, "quest", 0, "새끼줄을 감고 놋쇠 종을 달았다. 휘두르면 댕 소리가 난다."],
   ["ws_whalebone", 180, "wskin", "고래뼈 무기 외형", 3, "boss", 0, "고래의 갈비뼈로 깎은 날. 끝에는 푸른 꼬리지느러미."],
   ["ws_star_candy", 181, "wskin", "별사탕 무기 외형", 1, "daily", 0, "알록달록 별사탕이 날에 콕콕 박혔다."],
+  // 이야기 기념품 (Q1 follow-up): 여울's grandmother's 삿갓 from 「나루터의 먹물」
+  ["hat_ink_satgat", 182, "hat", "먹물 삿갓", 2, "sew", 0, "여울 할머니의 갈대 삿갓. 챙 끝에 밴 먹물이 등불 아래서는 금빛으로 비친다.", "story"],
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" || src === "token" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
 const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근", coop: "협동 알바", willowpatrol: "버들 순찰대", coraltrade: "산호 항구 상단", brasssurvey: "황동 탐사대", moonarchive: "달빛 기록원", mapleramblers: "단풍길 탐험대",
@@ -256,7 +258,7 @@ function cosDyeClean(d, ch) {
  */
 const KEEP_SEW = {
   kp_reed_float: "face_reed_float", kp_willow_key: "hat_willow_straw", kp_neon_lamp: "back_neon_sign", kp_compass: "hat_sky_navigator",
-  kp_bell: "back_cloud_bell", kp_quill: "hat_chronicler", kp_shardjar: "face_rift_goggles",
+  kp_bell: "back_cloud_bell", kp_quill: "hat_chronicler", kp_shardjar: "face_rift_goggles", kp_satgat: "hat_ink_satgat",
 };
 const cosEmpty = () => ({ own: [], on: {}, tokens: 0 });
 function cosClean(c, ch) {

@@ -104,6 +104,7 @@ const ITEMS = {
   kp_bell: { name: "작은 사원 종", type: "keep", price: 0, arc: "종과 별", desc: "되찾은 종과 같은 쇠로 은하가 부어 만든 새끼 종. 흔들면 구름이 잠깐 비켜선다." },
   kp_quill: { name: "사관의 깃펜", type: "keep", price: 0, arc: "마지막 사관", desc: "갈피가 마지막 줄을 적은 회색 깃펜. 잉크 없이도 종이에 닿으면 희미한 등불 빛이 남는다." },
   kp_shardjar: { name: "균열 표본병", type: "keep", price: 0, arc: "균열을 적는 자", desc: "보글이 균열 조각을 녹여 담은 작은 병. 기울이면 안쪽 금이 글자처럼 줄을 맞춘다." },
+  kp_satgat: { name: "할머니의 삿갓", type: "keep", price: 0, arc: "나루터의 먹물", desc: "여울의 할머니가 노를 저을 때 쓰던 삿갓. 챙 끝에 먹물이 배었는데, 등불 아래서는 금빛으로 비친다." },
 };
 for (const wk of Object.keys(WEAPON_NAMES)) {
   for (let t = 1; t <= G_REQ.length; t++) {
