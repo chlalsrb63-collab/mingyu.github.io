@@ -31,7 +31,21 @@ export const PROBE = {
  * The arena (new rules): a square of open grass `r + pad` tiles each way round tile (x, y) of the meadow, walled
  * beyond. The hero holds the middle (`r` sets the ring the monsters come from, as the old open-square search did).
  */
-export const ARENA = { x: 40, y: 40, r: 6, pad: 14 };
+export const ARENA = { x: 40, y: 40, r: 6, pad: 14, seed: 1596052136 };
+/** The kinds the arena tests' monsters take, in order (the first the 152×102 meadow woke, where their numbers were set). */
+export const ARENA_KINDS = ["lambmaw", "lambmaw", "gutfrog", "gutfrog", "gutfrog", "gutfrog", "twinhare", "gutfrog"];
+const laid = new WeakSet();
+/**
+ * The arena for the tests that measure hits (skills3, hammer): ARENA laid over built map `m` for the rest of the
+ * process, its cells in world `S` spawning nothing more, the rolls started at ARENA.seed. Returns the middle tile.
+ */
+export function arena(L, S, m) {
+  if (!laid.has(m)) { flatArena(m, ARENA); laid.add(m); }
+  const rt = L.runtime(S, m.id);
+  rt.base = rt.base.map(() => 0); rt.fires = [];
+  S.seed = ARENA.seed;
+  return [ARENA.x, ARENA.y];
+}
 /** Lay the arena over map `m` (its ground, objects, solid and reach); returns the function that puts the map back. */
 function flatArena(m, A) {
   const keep = { g: m.g, o: m.o, solid: m.solid, reach: m.reach };
@@ -103,6 +117,7 @@ export function probe(L, who, tier, secs = PROBE.secs, o = {}) {
     spot = [ARENA.x, ARENA.y, ARENA.r];
     restore = flatArena(mp, ARENA);
     rt.fires = [];
+    S.seed = ARENA.seed;                         // the rolls start where they did on the 152×102 meadow, however many monsters it now makes
   } else {
     // the old rules: the first open square of the meadow, exactly as BASE was measured
     const clear = (x, y) => mp.o[y] && mp.o[y][x] === " " && !"wW".includes(mp.g[y][x]);

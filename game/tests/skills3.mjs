@@ -3,13 +3,14 @@
 // the carry's crowd stun, orbiting blades, chain lightning, the snare's root as stagger, the launching stomp.   node tests/skills3.mjs
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { arena, ARENA, ARENA_KINDS } from "../scripts/balance-probe.mjs";
 
-const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") + "\nexport const __t = { mobHit, skGuard, MOBS, DASH };\n";
+const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") + "\nexport const __t = { mobHit, skGuard, MOBS, DASH, mapOf };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs(), SK = D.skills, T = 16;
 const WAVE = { stomp: "hammer", mortar: "bow", dragonpierce: "bow", rollshot: "bow", chainbolt: "staff", shoulder: "sword", snare: "bow", bladevortex: "dagger", smoke: "dagger", parry: "sword", mountain: "sword" };
 
-/** A hero alone on open meadow ground (as tests/combos.mjs), the aim east, the skill under test on the bar. */
+/** A hero alone in the test arena laid over the meadow (balance-probe.mjs arena), the aim east, the skill under test on the bar. */
 function world(name, wk, wm = 45) {
   const S = L.setup();
   let now = 1_000_000;
@@ -25,15 +26,8 @@ function world(name, wk, wm = 45) {
   };
   const p = W.p;
   L.runtime(S, p.map).n--; p.map = "meadow"; L.runtime(S, "meadow").n++; p.sendMap = true;
-  const mp = W.step().map;
-  const clear = (x, y) => mp.o[y] && mp.o[y][x] === " " && !"wW".includes(mp.g[y][x]);
-  let spot = null;
-  for (let y = 4; y < mp.h - 4 && !spot; y++) for (let x = 8; x < mp.w - 17 && !spot; x++) {
-    let ok = true;
-    for (let dy = -2; dy <= 2 && ok; dy++) for (let dx = -6; dx <= 16 && ok; dx++) if (!clear(x + dx, y + dy)) ok = false;
-    if (ok) spot = [x, y];
-  }
-  assert.ok(spot, "open ground");
+  W.step();
+  const spot = arena(L, S, X.mapOf("meadow"));
   const home = [spot[0] * T + 8, spot[1] * T + 10];
   W.ready = () => {
     Object.assign(p, { x: home[0], y: home[1], mvAt: now, fix: false, dir: 2, aim: 0, mp: 9999, hp: 1e6, atkAt: 0, stag: 0, combo: 0, dance: null, ghost: 0, cds: {}, charge: null, chan: 0, reso: 0, weave: null, inert: 0, hold: null, parry: null, exposed: 0, smokeAt: 0, dashAt: 0, dodge: 0 });
@@ -42,7 +36,7 @@ function world(name, wk, wm = 45) {
   };
   W.mobs = (offs) => {
     const pool = W.rt.mobs.filter((q) => !D.mobs[q.k].chest && !D.mobs[q.k].boss && !D.mobs[q.k].fly && !D.mobs[q.k].still);
-    return offs.map(([dx, dy], j) => Object.assign(pool[j], { slot: null, dead: false, el: 0, tr: [], hp: 50000, x: p.x + dx, y: p.y + dy, hx: p.x + dx, hy: p.y + dy, wx: p.x + dx, wy: p.y + dy, by: {}, stun: 0, slow: 0, mk: 0, mkAt: 0, dec: null, vuln: 0, brand: 0, dot: null, tgt: null, st: 0, act: null, castAt: now + 1e12, atkAt: now + 1e12, mvAt: now + 1e12, hw: 0, hu: 0, stg: 0, frz: 0, air: 0, brn: 0, brnAt: 0, drag: 0, daze: 0, cast: null }));
+    return offs.map(([dx, dy], j) => Object.assign(pool[j], { k: ARENA_KINDS[j % ARENA_KINDS.length], slot: null, dead: false, el: 0, tr: [], hp: 50000, x: p.x + dx, y: p.y + dy, hx: p.x + dx, hy: p.y + dy, wx: p.x + dx, wy: p.y + dy, by: {}, stun: 0, slow: 0, mk: 0, mkAt: 0, dec: null, vuln: 0, brand: 0, dot: null, tgt: null, st: 0, act: null, castAt: now + 1e12, atkAt: now + 1e12, mvAt: now + 1e12, hw: 0, hu: 0, stg: 0, frz: 0, air: 0, brn: 0, brnAt: 0, drag: 0, daze: 0, cast: null }));
   };
   /** Only these skills on the bar (and the weapon's first passive, inertia for the sword). */
   W.bar = (...ids) => { p.ch.lo[p.ch.job] = { a: ids, p: wk === "sword" ? ["inertia"] : [], x: "", y: "" }; };
@@ -101,7 +95,7 @@ for (const id of ["dragonpierce", "mountain"]) assert.ok(SK[id].cd >= 14000, id 
   const W = world("용뼈", "bow"); W.bar("dragonpierce");
   let plain = 0, primed = 0;
   for (const on of [false, true]) for (let i = 0; i < 6; i++) {
-    W.ready();
+    W.ready(); W.S.seed = ARENA.seed + i;           // the plain and the primed shot of each pair roll the same
     const ms = W.mobs([[30, 0], [80, 0], [150, 0]]);
     if (on) for (const m of ms) { m.mk = 2; m.mkAt = W.now + 10000; }
     const x0 = W.p.x;
