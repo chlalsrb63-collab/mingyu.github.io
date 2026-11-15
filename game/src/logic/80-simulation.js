@@ -191,6 +191,8 @@ function tickMob(S, m, rt, mob, dt) {
   }
   if (tgt) {
     const dd = dist(mob.x, mob.y, tgt.x, tgt.y);
+    // a boss challenge's boss follows its own script (64-dim.js chalCast)
+    if (now >= mob.castAt && mob.chal) { chalCast(S, rt, mob, tgt); return; }
     if (now >= mob.castAt) {
       const big = d.boss || mob.el === 2;
       // each kind has its own tricks: it tries them in turn and uses the first that suits the moment.

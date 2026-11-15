@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, xpNeed, stats, atkRange, aimIdx, EVT_MAPS, worldEvent, ITEMS, SOLID_G, MAXLV };\n";
+  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, xpNeed, stats, atkRange, aimIdx, EVT_MAPS, worldEvent, ITEMS, SOLID_G, MAXLV, DIM_TIER, DIM_CHAL, CHAL_KEYS, dimTierK, dimReward, weekOf, dayOf, dimArena, chalMinLv, dimClean, dealMob, mobMax, dimHk };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, D = X.DIM;
 // tuning runs: HPB=… BOSSHP=… NOCLEAR=1 node tests/dimrift.mjs -v
@@ -396,10 +396,10 @@ const dimIds = (S) => Object.keys(S.dims);
   // a character saved inside wakes in town; the old sheet (v8) gains a rift record
   const old = L.newChar("옛날", "mage", []); delete old.dim; old.v = 8;
   L.addPlayer(S, "old", old);
-  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0 }); assert.equal(S.players.old.ch.v, 14);
+  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0 }); assert.equal(S.players.old.ch.v, 15);
   const odd = L.newChar("이상", "mage", []); odd.dim = { day: "x", n: -5 };
   L.addPlayer(S, "odd", odd);
-  assert.deepEqual(S.players.odd.ch.dim, { day: 0, n: 0 });
+  assert.deepEqual(S.players.odd.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0 });
 }
 
 // ───────────── 5. the invasion never picks an instance
@@ -415,7 +415,7 @@ const dimIds = (S) => Object.keys(S.dims);
 for (const [k, v] of X_DIM_SET) D[k] = v;
 // ───────────── 6 & 7. a bot party clears rifts; the wire stays small
 /** Bots that hunt the nearest monster along the floor, pick up orbs and shrines, drink when low and get up when down. */
-function runParty(lv, classes, seedSalt, shift = 0) {
+function runParty(lv, classes, seedSalt, shift = 0, opt = {}) {
   const S = world();
   S.seed += seedSalt;
   // (a rift's seed reads S.nextId: `shift` stands for a world with a few more things in it, another draw)
@@ -423,7 +423,9 @@ function runParty(lv, classes, seedSalt, shift = 0) {
   const pids = classes.map((c, i) => "bot" + i);
   const ps = classes.map((c, i) => hero(S, pids[i], "봇" + i, c, lv, true));
   if (ps.length > 1) party(S, pids);
-  assert.ok(act(S, pids[0], { t: "dim_open" }).ok);
+  // (a tier to climb: everyone has it unlocked; a boss challenge)
+  if (opt.tier) for (const p of ps) { p.ch.dim.t = opt.tier; p.ch.dim.best = opt.tier - 1; }
+  assert.ok(act(S, pids[0], { t: "dim_open", ...(opt.tier ? { tier: opt.tier } : {}), ...(opt.boss ? { boss: opt.boss } : {}) }).ok);
   if (ps.length > 1) { const rc = S.parties[ps[0].party].rc; for (const pid of pids.slice(1)) act(S, pid, { t: "dim_ready", id: rc.id, ok: 1 }); }
   const dim = S.dims[ps[0].map], m = dim.map, rt = dim.rt, W = m.w;
   const t0 = now;
@@ -508,7 +510,8 @@ function runParty(lv, classes, seedSalt, shift = 0) {
     if (dim.state === "fail") break;
   }
   const got = ps.filter((p) => dim.got[p.pid]).length;
-  return { lv, theme: dim.theme, n: ps.length, state: dim.state, boss: bossAt ? (bossAt - t0) / 60000 : null, clear: clearAt ? (clearAt - t0) / 60000 : null, got, wire: bytes / snaps, kills: dim.kills, elites: dim.elites, deaths, prog: dim.prog, bossHp: (rt.mobs.find((q) => q.id === dim.boss) || {}).hp };
+  if (opt.out) Object.assign(opt.out, { ps, dim });
+  return { tier: dim.tier, tries: dim.chal ? dim.chal.tries : 0, fury: dim.chal ? dim.chal.fury : 0, lv, theme: dim.theme, n: ps.length, state: dim.state, boss: bossAt ? (bossAt - t0) / 60000 : null, clear: clearAt ? (clearAt - t0) / 60000 : null, got, wire: bytes / snaps, kills: dim.kills, elites: dim.elites, deaths, prog: dim.prog, bossHp: (rt.mobs.find((q) => q.id === dim.boss) || {}).hp };
 }
 {
   const runs = [];
@@ -534,5 +537,350 @@ function runParty(lv, classes, seedSalt, shift = 0) {
   const solo = runParty(22, ["warrior"], 7);
   assert.ok(solo.boss !== null && solo.boss < 12, "alone, the master is reached in time");
   log(`solo Lv.22: ${solo.state}, ${solo.deaths} deaths, gauge ${solo.prog.toFixed(0)}, master at ${solo.boss && solo.boss.toFixed(1)} min, clear ${solo.clear && solo.clear.toFixed(1)} min`);
+}
+
+// ───────────── 8. 균열 단수: scaling, unlock rules, the carry guard, the week, old sheets
+const TR = X.DIM_TIER, CH = X.DIM_CHAL;
+/** Monday 2026-11-16 06:00 KST: a week turns over here. */
+const MONDAY = Date.UTC(2026, 10, 15, 21, 0, 0);
+const at = (S, t) => { now = t; S.now = t; S.last = t; };
+/** The rift cleared at once: the gauge filled, the master killed with `shares` of the damage, everyone at the chest. */
+function quickClear(S, dim, shares) {
+  const rt = dim.rt, pids = Object.keys(shares), by = Object.fromEntries(pids.map((pid) => [pid, 1]));
+  const kill = (mob) => { mob.by = { ...by }; X.killMob(S, rt, mob); };
+  step(S);
+  if (dim.state === "run") { dim.prog = 99.5; kill(rt.mobs.find((m) => !m.dead && !m.el && !X.MOBS[m.k].chest)); }
+  assert.equal(dim.state, "boss");
+  const boss = rt.mobs.find((m) => m.id === dim.boss);
+  for (const pid of pids) { const o = S.players[pid]; o.x = boss.x; o.y = boss.y; o.dead = false; o.hp = X.stats(o).mhp; }
+  dim.dmg = { ...shares };
+  kill(boss);
+  assert.equal(dim.state, "clear");
+  step(S);
+  for (const pid of pids) assert.equal(dim.got[pid], 1, pid + " opened the chest");
+  return Object.fromEntries(pids.map((pid) => [pid, last(pid, "dr")]));
+}
+const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: "dim_leave" }).ok); for (let i = 0; i < 205; i++) step(S); };
+{
+  // every tier is at least as hard as the one below, and strictly tougher and harder-hitting
+  let prev = X.dimTierK(1);
+  assert.deepEqual(prev, { hp: 1, atk: 1, elites: 0, traits: 1, boss: 2 }, "tier 1 is the rift as it was");
+  for (let n = 2; n <= TR.max; n++) {
+    const k = X.dimTierK(n);
+    for (const f of ["elites", "traits", "boss"]) assert.ok(k[f] >= prev[f], `tier ${n}: ${f}`);
+    assert.ok(k.hp > prev.hp && k.atk > prev.atk, `tier ${n} is tougher`);
+    prev = k;
+  }
+  assert.deepEqual(X.dimTierK(TR.max + 50), X.dimTierK(TR.max), "the ladder ends at its top");
+  assert.ok(X.dimTierK(TR.max).elites === TR.eliteMax && X.dimTierK(TR.trait2).traits === 2 && X.dimTierK(TR.trait3).boss === 3);
+  // the chest grows gently and never past its caps; nothing extra past the day's full clears; a carry gets a part
+  const base = X.dimReward(30, 1, true, false);
+  assert.deepEqual(base, { gold: D.reward.gold * 30, stone: D.reward.stone, rune: D.reward.rune, gear: 1, gearQ: D.reward.gearQ, xp: Math.round(D.reward.xp * X.xpNeed(30)) }, "tier 1 pays what a rift paid");
+  let pr = base;
+  for (let n = 2; n <= TR.max; n++) {
+    const r = X.dimReward(30, n, true, false);
+    for (const f of ["gold", "xp", "stone", "rune"]) assert.ok(r[f] >= pr[f], `tier ${n}: ${f} never shrinks`);
+    assert.ok(r.gold <= base.gold * TR.goldMax + 1 && r.xp <= base.xp * TR.xpMax + 1 && r.stone <= base.stone + TR.stoneMax && r.rune <= 1, `tier ${n}: capped`);
+    assert.ok(r.gold / pr.gold <= 1.07, "gently");
+    pr = r;
+  }
+  assert.ok(pr.gold === base.gold * TR.goldMax && pr.xp > base.xp * 1.9, "the caps are reached");
+  assert.deepEqual(X.dimReward(30, 40, false, false), X.dimReward(30, 1, false, false), "past the day's full clears a tier adds nothing");
+  assert.equal(X.dimReward(30, 1, false, false).xp, Math.round(D.reward.xp * X.xpNeed(30) * 0.5));
+  const cr = X.dimReward(30, 40, true, true);
+  assert.ok(cr.gold === Math.round(base.gold * TR.carryK) && cr.xp === Math.round(D.reward.xp * X.xpNeed(30) * TR.carryK) && cr.gear === 0 && cr.stone === base.stone, "a carry: a part of tier 1's chest");
+  // the week turns over on Monday 06:00 KST, with the day
+  assert.equal(X.weekOf(MONDAY - 1) + 1, X.weekOf(MONDAY)); assert.equal(X.weekOf(MONDAY), X.weekOf(MONDAY + 7 * 86400000 - 1)); assert.equal(X.weekOf(MONDAY) + 1, X.weekOf(MONDAY + 7 * 86400000));
+  assert.equal(X.dayOf(MONDAY - 1) + 1, X.dayOf(MONDAY));
+  for (let d = 1; d < 7; d++) assert.equal(X.weekOf(MONDAY + d * 86400000), X.weekOf(MONDAY), "one week, seven days");
+  // old sheets (v13: a daily count only) and odd ones
+  const fresh = { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0 };
+  assert.deepEqual(L.newChar("새단수", []).dim, fresh); assert.equal(L.newChar("새단수", []).v, 15);
+  const S = world();
+  const old = L.newChar("옛단수", []); old.v = 13; old.dim = { day: 20000, n: 2 };
+  L.addPlayer(S, "o13", old);
+  assert.deepEqual(S.players.o13.ch.dim, { ...fresh, day: 20000, n: 2 }, "a v13 sheet keeps its count and starts the ladder at 1"); assert.equal(S.players.o13.ch.v, 15);
+  assert.deepEqual(X.dimClean({ t: 50, best: 3, ms: 9e9, wb: 99, bw: 99, wk: -3 }), { ...fresh, t: 4, best: 3, ms: D.limit, wb: TR.weekly.max, bw: 3 }, "never more unlocked than one past the best");
+  assert.deepEqual(X.dimClean({ t: "x", best: 5000, ms: 1234 }), { ...fresh, t: 1, best: TR.max, ms: 1234 });
+  assert.deepEqual(X.dimClean({ ms: 5000 }), fresh, "no time without a clear"); assert.deepEqual(X.dimClean("junk"), fresh);
+}
+{
+  // unlock rules: tier 2 is closed at first; a party goes in at the lowest member's tier or below
+  const S = world(); at(S, MONDAY - 3 * 86400000);
+  const a = hero(S, "t1", "단수일", "warrior", 30), b = hero(S, "t2", "단수이", "mage", 30);
+  assert.ok(!act(S, "t1", { t: "dim_open", tier: 2 }).ok, "tier 2 is locked on a new sheet");
+  for (const bad of [0, -1, 1.5, "3", TR.max + 1, null]) assert.ok(!act(S, "t1", { t: "dim_open", tier: bad }).ok, "tier " + bad);
+  a.ch.dim.t = 5; a.ch.dim.best = 4; a.ch.dim.ms = 400000;
+  party(S, ["t1", "t2"]);
+  const no = act(S, "t1", { t: "dim_open", tier: 3 });
+  assert.ok(!no.ok && /파티 최고 1단/.test(no.error), "the lowest member's tier holds the party: " + no.error);
+  b.ch.dim.t = 3; b.ch.dim.best = 2;
+  assert.ok(!act(S, "t1", { t: "dim_open", tier: 4 }).ok);
+  assert.ok(act(S, "t1", { t: "dim_open", tier: 3 }).ok);
+  const rc = S.parties[a.party].rc;
+  step(S);
+  assert.deepEqual(last("t2", "rc").slice(5), [3, 0], "the ready check says the tier");
+  assert.ok(act(S, "t2", { t: "dim_ready", id: rc.id, ok: 1 }).ok);
+  const dim = S.dims[a.map], k3 = X.dimTierK(3);
+  assert.equal(dim.tier, 3); assert.equal(b.map, dim.id);
+  for (const mob of dim.rt.mobs) if (!X.MOBS[mob.k].chest) {
+    assert.ok(Math.abs(mob.ak - k3.atk) < 1e-9, "blows × the tier");
+    assert.ok(Math.abs(mob.hk - X.dimHk(2, dim.lv, X.MOBS[mob.k].lv) * k3.hp) < 1e-9, "health × the tier");
+  }
+  step(S);
+  assert.equal(last("t1", "dim")[14], 3); assert.equal(last("t1", "dim")[15], 0);
+  // a real clear: the one who stood at tier 3 gets tier 4 and a record; the one already past it keeps theirs
+  const res = quickClear(S, dim, { t1: 600, t2: 400 });
+  assert.deepEqual([b.ch.dim.t, b.ch.dim.best], [4, 3]); assert.ok(b.ch.dim.ms > 0 && b.ch.dim.ms < 60000);
+  assert.deepEqual([a.ch.dim.t, a.ch.dim.best, a.ch.dim.ms], [5, 4, 400000], "a lower tier never lowers a record");
+  assert.equal(res.t2[0], 0); assert.equal(res.t2[1], 3); assert.equal(res.t2[3], 1 | 2 | 8, "record, next tier, weekly: " + res.t2);
+  assert.equal(res.t1[3], 8, "only the weekly bonus for the veteran");
+  assert.equal(res.t2[6], 1); assert.equal(res.t2[4], X.dimReward(dim.lv, 3, true, false).gold + TR.weekly.gold * dim.lv, "the chest and one bracket");
+  assert.deepEqual([a.ch.dim.wb, b.ch.dim.wb, b.ch.dim.n], [1, 1, 1]);
+  step(S);
+  assert.deepEqual(last("t2", "self").dimr, [4, 3, Math.round(b.ch.dim.ms / 1000), D.dailyFull - 1, 1, 0], "the sheet's record on the wire");
+  leave(S, ["t1", "t2"]);
+  // the same tier again, quicker: a better time; no second weekly bonus
+  assert.ok(act(S, "t1", { t: "dim_open", tier: 3 }).ok); act(S, "t2", { t: "dim_ready", id: S.parties[a.party].rc.id, ok: 1 });
+  const dim2 = S.dims[a.map]; b.ch.dim.ms = 500000;
+  const res2 = quickClear(S, dim2, { t1: 500, t2: 500 });
+  assert.equal(res2.t2[3], 1, "a quicker clear of the best tier is a record; nothing else"); assert.ok(b.ch.dim.ms < 60000); assert.equal(b.ch.dim.t, 4);
+  assert.equal(res2.t2[6], 0); assert.equal(res2.t2[4], X.dimReward(dim2.lv, 3, true, false).gold);
+  leave(S, ["t1", "t2"]);
+  // a member who somehow stands below the tier inside gets no next tier
+  assert.ok(act(S, "t1", { t: "dim_open", tier: 4 }).ok); act(S, "t2", { t: "dim_ready", id: S.parties[a.party].rc.id, ok: 1 });
+  const dim3 = S.dims[a.map]; assert.equal(dim3.tier, 4); b.ch.dim.t = 2;
+  quickClear(S, dim3, { t1: 500, t2: 500 });
+  assert.equal(b.ch.dim.t, 2, "the next tier opens only for whoever stood at this one"); assert.equal(a.ch.dim.t, 5);
+  leave(S, ["t1", "t2"]);
+  // out of time: nothing unlocked, nothing recorded
+  b.ch.dim.t = 4; b.ch.dim.best = 3;
+  assert.ok(act(S, "t1", { t: "dim_open", tier: 4 }).ok); act(S, "t2", { t: "dim_ready", id: S.parties[a.party].rc.id, ok: 1 });
+  const dim4 = S.dims[a.map]; dim4.expire = now + 50; step(S); step(S);
+  assert.equal(dim4.state, "fail"); for (let i = 0; i < 90; i++) step(S);
+  assert.deepEqual([b.ch.dim.t, b.ch.dim.best, a.ch.dim.t, a.ch.dim.best], [4, 3, 5, 4], "a failed rift opens nothing");
+  // joining later needs the tier too
+  for (let i = 0; i < 205; i++) step(S);
+  assert.ok(act(S, "t1", { t: "dim_open", tier: 4 }).ok); act(S, "t2", { t: "dim_ready", id: S.parties[a.party].rc.id, ok: 0 });
+  assert.ok(a.map.startsWith("dim:") && b.map === "town"); b.ch.dim.t = 3;
+  const nj = act(S, "t2", { t: "dim_join" });
+  assert.ok(!nj.ok && /4단/.test(nj.error), "no walking into a tier you have not unlocked: " + nj.error);
+  step(S); assert.deepEqual(last("t2", "dj").slice(4), [4, 0]);
+  b.ch.dim.t = 4; assert.ok(act(S, "t2", { t: "dim_join" }).ok);
+}
+{
+  // the carry guard: by damage share (under 20% of an even share), and by level (more than 6 world tiers under the best)
+  const S = world(); at(S, MONDAY - 3 * 86400000);
+  const a = hero(S, "c1", "끌어줌", "warrior", 30), b = hero(S, "c2", "묻어감", "mage", 30), c = hero(S, "c3", "꼬마", "rogue", 12);
+  for (const p of [a, b, c]) { p.ch.dim.t = 2; p.ch.dim.best = 1; }
+  party(S, ["c1", "c2", "c3"]);
+  assert.ok(act(S, "c1", { t: "dim_open", tier: 2 }).ok);
+  for (const pid of ["c2", "c3"]) act(S, pid, { t: "dim_ready", id: S.parties[a.party].rc.id, ok: 1 });
+  const dim = S.dims[a.map], g = [a, b, c].map((p) => p.ch.gold), inv = [a, b, c].map((p) => p.ch.inv.length);
+  assert.equal(dim.lv, 30);
+  // c2 dealt 5% (an even share is 33%; the line is 6.7%); c3 dealt a third but is 18 world tiers under the best
+  const res = quickClear(S, dim, { c1: 620, c2: 50, c3: 330 });
+  assert.equal(res.c1[3] & 4, 0); assert.equal(res.c2[3], 4, "carried by damage"); assert.equal(res.c3[3], 4, "carried by level");
+  assert.deepEqual([a.ch.dim.t, a.ch.dim.best, a.ch.dim.wb], [3, 2, 1]);
+  for (const p of [b, c]) assert.deepEqual([p.ch.dim.t, p.ch.dim.best, p.ch.dim.wb], [2, 1, 0], "no unlock, no record, no weekly bonus for a carry");
+  const full = X.dimReward(30, 2, true, false).gold + TR.weekly.gold * 30, part = Math.round(D.reward.gold * 30 * TR.carryK);
+  assert.deepEqual([res.c1[4], res.c2[4], res.c3[4]], [full, part, part], "a carry is paid a part"); void g;
+  assert.ok(a.ch.inv.length > inv[0] && part < full * 0.3);
+  assert.equal(b.ch.dim.n, 1, "the chest still counts for the day");
+  // just over the line is no carry; alone, nobody is
+  leave(S, ["c1", "c2", "c3"]);
+  act(S, "c3", { t: "pleave" });
+  assert.ok(act(S, "c1", { t: "dim_open", tier: 2 }).ok); act(S, "c2", { t: "dim_ready", id: S.parties[a.party].rc.id, ok: 1 });
+  const r2 = quickClear(S, S.dims[a.map], { c1: 880, c2: 120 });
+  assert.equal(r2.c2[3] & 4, 0, "12% of the damage in a party of two is over the line (10%)"); assert.deepEqual([b.ch.dim.t, b.ch.dim.best], [3, 2]);
+}
+{
+  // the week: the first clear of each bracket of five tiers pays once; Monday 06:00 KST opens them again; the day's count stays
+  const S = world(); at(S, MONDAY - 3600000);
+  const p = hero(S, "w1", "주간", "warrior", 30);
+  p.ch.dim.t = 7; p.ch.dim.best = 6;
+  const run = (tier) => { assert.ok(act(S, "w1", { t: "dim_open", tier }).ok); const r = quickClear(S, S.dims[p.map], { w1: 1 }); leave(S, ["w1"]); return r.w1; };
+  const r1 = run(6);
+  assert.equal(r1[6], 2, "tier 6: the brackets 1–5 and 6–10 at once"); assert.equal(p.ch.dim.wb, 2);
+  assert.equal(r1[4], X.dimReward(30, 6, true, false).gold + 2 * TR.weekly.gold * 30);
+  assert.equal(run(7)[6], 0, "the same bracket again: nothing"); assert.equal(run(2)[6], 0, "a lower bracket: nothing");
+  assert.equal(p.ch.dim.n, 3);
+  const r4 = run(7);
+  assert.equal(r4[4], D.reward.gold * 30, "the fourth chest of the day: no tier extra"); assert.equal(r4[5], Math.round(D.reward.xp * X.xpNeed(30) / 2), "and half the experience");
+  assert.ok(now < MONDAY, "still Sunday night"); at(S, MONDAY + 1000);
+  const r5 = run(1);
+  assert.equal(r5[6], 1, "Monday 06:00: the brackets are open again"); assert.deepEqual([p.ch.dim.wb, p.ch.dim.n, p.ch.dim.wk], [1, 1, X.weekOf(now)]);
+  assert.deepEqual([p.ch.dim.t, p.ch.dim.best], [8, 7], "the ladder itself is kept");
+}
+
+// ───────────── 9. 주간 보스 도전: the arena, entry, patterns, the stagger gauge, enrage, wipes, the weekly reward
+{
+  for (const k of X.CHAL_KEYS) {
+    const m = X.dimArena({ id: "dim:7", seed: 99, k }), again = X.dimArena({ id: "dim:7", seed: 99, k });
+    assert.deepEqual([m.g, m.o], [again.g, again.o]); assert.equal(m.w, CH.w); assert.equal(m.dim.bossK, k);
+    for (const [x, y] of [m.dim.start, m.dim.boss, m.dim.door]) assert.ok(m.reach[y * m.w + x], k + ": start, boss and door on open ground");
+    let open = 0;
+    for (let i = 0; i < m.w * m.h; i++) if (m.reach[i]) open++;
+    assert.ok(open > 200, "an arena to move in: " + open);
+    // nowhere in it is farther from the boss's place than it would follow (no leashing it home)
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.reach[y * m.w + x]) assert.ok(Math.hypot(x - m.dim.boss[0], y - m.dim.boss[1]) * T < 2.4 * X.MOBS[k].aggro);
+    assert.equal(CH.bosses[k].pats.length, 3, "three patterns");
+  }
+  const S = world(); at(S, MONDAY - 2 * 86400000);
+  const lo = hero(S, "b0", "아직", "warrior", 20), a = hero(S, "b1", "도전일", "warrior", 40, true), b = hero(S, "b2", "도전이", "mage", 40, true);
+  assert.ok(lo.ch.lvl < X.chalMinLv("boss") && a.ch.lvl >= X.chalMinLv("abyssboss"));
+  const low = act(S, "b0", { t: "dim_open", boss: "boss" });
+  assert.ok(!low.ok && low.error.includes("Lv." + X.chalMinLv("boss")), low.error);
+  for (const bad of ["nope", 3, null, "toString"]) assert.ok(!act(S, "b1", { t: "dim_open", boss: bad }).ok);
+  party(S, ["b1", "b2", "b0"]);
+  assert.ok(act(S, "b1", { t: "dim_open", boss: "boss" }).ok);
+  const rc = S.parties[a.party].rc;
+  assert.equal(rc.resp.b0, 3, "a member under the level is not asked");
+  step(S); assert.deepEqual(last("b2", "rc").slice(5), [0, 1]);
+  act(S, "b2", { t: "dim_ready", id: rc.id, ok: 1 });
+  const dim = S.dims[a.map], rt = dim.rt, c = dim.chal, boss = rt.mobs.find((m) => m.id === dim.boss);
+  assert.ok(dim && c && boss && dim.state === "boss" && dim.tier === 0 && rt.mobs.length === 1, "an arena with the boss alone");
+  assert.ok(!act(S, "b0", { t: "dim_join" }).ok, "nor may they join later");
+  assert.equal(dim.expire - now, CH.limit);
+  step(S);
+  assert.deepEqual(last("b1", "dim").slice(14), [0, [0, 0, 0, 0, 0, 1, 0]], "the challenge on the wire");
+  // nothing happens until someone comes near; then the three patterns in turn, the marked cast every fourth
+  for (let i = 0; i < 50; i++) step(S);
+  assert.equal(c.engAt, 0); assert.equal(boss.hp, X.mobMax(boss));
+  const tough = () => { for (const p of [a, b]) { p.dead = false; p.hp = X.stats(p).mhp; } };
+  const evs = [];
+  const watch = (n) => { for (let i = 0; i < n; i++) { tough(); step(S); for (const e of views.b1[views.b1.length - 1].ev || []) evs.push(e); } };
+  a.x = boss.x - 60; a.y = boss.y; b.x = boss.x + 90; b.y = boss.y + 30;
+  watch(40);
+  assert.ok(c.engAt > 0, "the fight is on");
+  while (!boss.cast) { watch(1); assert.ok(evs.length < 5000 && now - c.engAt < 60000, "a marked cast comes"); }
+  const dc = evs.filter((e) => e[0] === "dc").map((e) => e[2]);
+  assert.deepEqual(dc, [0, 1, 2, 9], "three patterns, then the marked cast: " + dc);
+  for (const kind of ["v", "t", "g"]) assert.ok(evs.some((e) => e[0] === kind), "telegraph " + kind + " shown");
+  // the stagger gauge: damage during the cast empties it; emptied in time, the cast breaks and the boss is stunned
+  watch(1);
+  let cv = last("b1", "dim")[15];
+  assert.ok(cv[1] === 1 && cv[2] === 100 && cv[3] > 0 && cv[3] <= CH.castMs / 500, "casting, the gauge full: " + cv);
+  const need = boss.cast.need, hp0 = boss.hp;
+  assert.ok(Math.abs(need - CH.stag * X.mobMax(boss)) < 1);
+  X.dealMob(S, rt, boss, a, need * 0.5 * boss.hk, 0);
+  watch(1); cv = last("b1", "dim")[15];
+  assert.ok(boss.cast && cv[2] <= 51 && cv[2] >= 45, "half the gauge left: " + cv);
+  const hpA = a.hp, hpB = b.hp;
+  X.dealMob(S, rt, boss, b, need * 0.55 * boss.hk, 0);
+  assert.ok(!boss.cast && boss.stun >= now + CH.stunMs - 1, "broken: stunned");
+  assert.ok(hp0 - boss.hp >= need, "the gauge is real damage");
+  watch(1); cv = last("b1", "dim")[15];
+  assert.equal(cv[1], 2, "staggered on the wire"); assert.ok(evs.some((e) => e[0] === "dc" && e[2] === 8));
+  const stunnedAt = [boss.x, boss.y];
+  for (let i = 0; i < CH.stunMs / 100 - 3; i++) { step(S); assert.deepEqual([boss.x, boss.y], stunnedAt, "it stands stunned"); }
+  assert.equal(c.fury, 0); void hpA; void hpB;
+  // not broken: everyone standing pays, and it comes back angrier
+  evs.length = 0;
+  while (!boss.cast) watch(1);
+  for (let i = 0; i < CH.castMs / 100 - 2; i++) { tough(); step(S); }
+  assert.ok(boss.cast, "still casting"); tough();
+  const h = [a.hp, b.hp];
+  step(S); step(S);
+  assert.ok(!boss.cast && c.fury === 1, "the cast went off");
+  assert.ok(a.hp < h[0] && b.hp < h[1], "everyone pays");
+  assert.ok(Math.abs(boss.ak - c.ak * (1 + CH.fury)) < 1e-9, "angrier");
+  // the soft enrage: past its time the blows grow step by step
+  c.engAt = now - CH.enrage - 2 * CH.enrageStep - 50; tough(); step(S);
+  assert.equal(c.rage, 3); assert.ok(Math.abs(boss.ak - c.ak * (1 + CH.fury) * (1 + 3 * CH.enrageK)) < 1e-9);
+  step(S); assert.equal(last("b1", "dim")[15][4], 3);
+  // the fallen wait for the fight to end; a wipe resets the boss and everyone may try again
+  boss.hp = Math.round(X.mobMax(boss) / 2);
+  a.dead = true; a.hp = 0; b.hp = X.stats(b).mhp; step(S);
+  const wait = act(S, "b1", { t: "respawn" });
+  assert.ok(!wait.ok && /전투가 끝나야/.test(wait.error), "no getting up mid-fight: " + wait.error);
+  assert.equal(boss.tgt, "b2", "it turns on whoever still stands");
+  b.dead = true; b.hp = 0; step(S);
+  assert.equal(c.tries, 2); assert.equal(boss.hp, X.mobMax(boss)); assert.deepEqual([c.engAt, c.fury, c.rage, c.n], [0, 0, 0, 0], "a wipe: the boss whole again, its fury forgotten");
+  assert.ok(Math.abs(boss.ak - c.ak) < 1e-9); assert.equal(dim.state, "boss", "and the challenge goes on");
+  assert.ok(!act(S, "b1", { t: "respawn" }).ok, "the party gets up together, not one by one");
+  for (let i = 0; i < CH.reviveMs / 100 + 1; i++) { assert.equal(c.engAt, 0, "the boss sleeps while they wait"); step(S); }
+  assert.ok(!a.dead && !b.dead && a.map === dim.id && b.map === dim.id, "up again, both, in the arena");
+  step(S); assert.equal(last("b1", "dim")[15][5], 2);
+  // the kill: the big reward once a week, then the small one; a carry gets the small one and keeps the week's
+  const g = [a.ch.gold, b.ch.gold];
+  boss.by = { b1: 1, b2: 1 }; a.x = b.x = boss.x; a.y = b.y = boss.y; dim.dmg = { b1: 990, b2: 10 };
+  X.killMob(S, rt, boss);
+  assert.equal(dim.state, "clear"); step(S);
+  assert.deepEqual([a.ch.dim.bw, b.ch.dim.bw], [1, 0]);
+  assert.equal(last("b1", "dr")[4], CH.big.gold * dim.lv); assert.equal(last("b2", "dr")[4], CH.small.gold * dim.lv); assert.ok(a.ch.gold - g[0] > b.ch.gold - g[1]);
+  assert.deepEqual(last("b1", "dr").slice(0, 2).concat(last("b1", "dr")[3]), [1, 0, 8]); assert.equal(last("b2", "dr")[3], 4);
+  assert.deepEqual([a.ch.dim.t, a.ch.dim.best, a.ch.dim.n], [1, 0, 0], "a boss is no rift: no tier, no daily count");
+  leave(S, ["b1", "b2"]);
+  act(S, "b2", { t: "pleave" }); act(S, "b0", { t: "pleave" });
+  const again = (k) => {
+    assert.ok(act(S, "b1", { t: "dim_open", boss: k }).ok);
+    const d2 = S.dims[a.map], m2 = d2.rt.mobs.find((m) => m.id === d2.boss);
+    step(S); m2.by = { b1: 1 }; a.x = m2.x; a.y = m2.y; X.killMob(S, d2.rt, m2); step(S);
+    const gold = last("b1", "dr")[4];
+    leave(S, ["b1"]);
+    return gold;
+  };
+  const lv40 = 40;
+  assert.equal(again("boss"), CH.small.gold * lv40, "the same boss again this week: the small reward");
+  assert.equal(again("abyssboss"), CH.big.gold * lv40, "the other boss has its own lock"); assert.equal(a.ch.dim.bw, 3);
+  a.dirty = true; step(S); assert.equal(last("b1", "self").dimr[5], 3);
+  at(S, MONDAY + 5000);
+  assert.equal(again("boss"), CH.big.gold * lv40, "Monday 06:00 KST: the big reward again"); assert.equal(a.ch.dim.bw, 1);
+  // out of time, it fails like a rift
+  assert.ok(act(S, "b1", { t: "dim_open", boss: "abyssboss" }).ok);
+  const d3 = S.dims[a.map]; d3.expire = now + 50; step(S); step(S);
+  assert.equal(d3.state, "fail"); assert.equal(a.ch.dim.bw, 1);
+}
+{
+  // the other boss runs its own three patterns (a charge line, a landing ring, volleys)
+  const S = world();
+  const a = hero(S, "m1", "어미일", "lancer", 44, true);
+  assert.ok(act(S, "m1", { t: "dim_open", boss: "abyssboss" }).ok);
+  const dim = S.dims[a.map], boss = dim.rt.mobs.find((m) => m.id === dim.boss), evs = [];
+  a.x = boss.x - 70; a.y = boss.y;
+  for (let i = 0; i < 600 && !boss.cast; i++) { a.dead = false; a.hp = X.stats(a).mhp; step(S); for (const e of views.m1[views.m1.length - 1].ev || []) evs.push(e); }
+  assert.deepEqual(evs.filter((e) => e[0] === "dc").map((e) => e[2]), [0, 1, 2, 9]);
+  for (const kind of ["c", "t", "v", "g"]) assert.ok(evs.some((e) => e[0] === kind), "telegraph " + kind + " shown");
+  assert.ok(evs.filter((e) => e[0] === "c").length >= 2, "two charges in a row");
+}
+
+// ───────────── 10. bots on the ladder and at the bosses
+{
+  const four = ["lancer", "mage", "warrior", "rogue"];
+  // each tier on three draws (like the levels above: one lucky or unlucky master must not decide it); TIERS=…, SHIFTS=… for tuning
+  const tiers = (process.env.TIERS || "1,3,5").split(",").map(Number), shifts = (process.env.SHIFTS || "0,1,2").split(",").map(Number);
+  const avg = {};
+  for (const tier of tiers) {
+    const done = [];
+    for (const sh of shifts) {
+      const out = {}, r = runParty(32, four, 3, sh, { tier, out });
+      log(`4 bots Lv.32 tier ${tier} draw ${sh}: master at ${r.boss && r.boss.toFixed(1)} min, clear at ${r.clear && r.clear.toFixed(1)} min, ${r.elites} elites, ${r.deaths} deaths, end ${r.state}`);
+      assert.equal(r.tier, tier);
+      if (r.clear === null) continue;
+      done.push(r.clear);
+      for (const p of out.ps) assert.deepEqual([p.ch.dim.t, p.ch.dim.best], [tier + 1, tier], `tier ${tier}: every bot fought, every bot gets the next tier`);
+    }
+    avg[tier] = done.reduce((s, x) => s + x, 0) / Math.max(1, done.length);
+    log(`  tier ${tier}: ${done.length}/${shifts.length} cleared, average ${avg[tier].toFixed(1)} min`);
+    if (!process.env.NOCLEAR) {
+      assert.ok(done.length >= Math.ceil((2 * shifts.length) / 3), `tier ${tier}: most draws cleared (${done.length}/${shifts.length})`);
+      for (const c of done) assert.ok(c >= 4 && c <= 14.5, `tier ${tier}: cleared inside the limit, took ${c.toFixed(2)}`);
+    }
+  }
+  if (!process.env.NOCLEAR && avg[1] && avg[5]) assert.ok(avg[5] > avg[1], "tier 5 takes longer than tier 1");
+  const out = {}, far = runParty(32, four, 3, 0, { tier: 60, out });
+  log(`4 bots Lv.32 tier 60: ${far.state}, gauge ${far.prog.toFixed(0)}, ${far.deaths} deaths`);
+  assert.equal(far.state, "fail", "an absurd tier is not cleared"); assert.equal(far.clear, null);
+  for (const p of out.ps) assert.deepEqual([p.ch.dim.t, p.ch.dim.best], [60, 59], "and opens nothing");
+  for (const [k, lv] of [["boss", 32], ["abyssboss", 40]]) {
+    const o2 = {}, r = runParty(lv, four, 5, 0, { boss: k, out: o2 });
+    log(`4 bots Lv.${lv} vs ${k}: ${r.state} at ${r.clear && r.clear.toFixed(1)} min, ${r.tries} tries, ${r.deaths} deaths, fury ${r.fury}, wire ${r.wire.toFixed(0)} B/snap`);
+    if (!process.env.NOCLEAR) {
+      assert.ok(r.clear !== null && r.clear >= 1.5 && r.clear <= CH.limit / 60000, `${k}: beaten inside the limit, took ${r.clear && r.clear.toFixed(2)}`);
+      assert.equal(r.got, 4); for (const p of o2.ps) assert.equal(p.ch.dim.bw, 1 << X.CHAL_KEYS.indexOf(k), "the week's big reward taken");
+    }
+    assert.ok(r.wire <= 140, `the dim block averages ${r.wire.toFixed(0)} B a snapshot`);
+  }
 }
 console.log("dimrift ok");
