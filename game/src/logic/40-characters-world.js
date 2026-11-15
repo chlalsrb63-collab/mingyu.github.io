@@ -48,7 +48,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 24, name, job: "adventurer", jp: null,
+    v: 25, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -66,7 +66,7 @@ export function newChar(name, look, wk) {
     dim: dimClean(null),
     wh:{ items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     // the first skill of the weapon in hand is on the bar from the start (filled below)
-    qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(), keep: {},
+    qs: QS_EMPTY(), cos: cosEmpty(), cosDye: {}, sq: sqEmpty(), keep: {},
     // the bag's size and a house of one's own (v10: 46-bag.js, 64-housing.js)
     bagCap: INV_BASE, house: homeEmpty(),
     // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
@@ -182,6 +182,8 @@ function migrate(ch) {
   if (oldKit || fourClass) for (const id of qsStarter(ch)) qsLearn(ch, id);
   // the wardrobe (v7): owned cosmetics and the one worn in each slot
   ch.cos = cosClean(ch.cos, ch);
+  // 염색 (v25, P9): { id: dye 1–6 } for owned pieces only (65-cosmetics.js cosDyeClean)
+  ch.cosDye = cosDyeClean(ch.cosDye, ch);
   // side quests from the world map editor (v8): what is under way and what is done
   ch.sq = sqClean(ch.sq);
   // keepsakes (v23): 기념품 from quests, kept forever
@@ -213,7 +215,7 @@ function migrate(ch) {
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
   // quest items (v23): a delivery under way has its parcel, nothing else carries one (62-side-quests.js; after the bag is cleaned)
   sqItemsFix(ch);
-  ch.v = Math.max(ch.v | 0, 24);
+  ch.v = Math.max(ch.v | 0, 25);
   return ch;
 }
 
@@ -349,7 +351,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "cos_dye", "cos_sew", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {

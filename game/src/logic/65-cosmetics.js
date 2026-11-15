@@ -170,6 +170,26 @@ const COS_ACH = Object.fromEntries(COS_IDS.filter((id) => COSMETICS[id].ach).map
 const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_RIFT_TOP3 = 0.3, COS_WEEKLY = 0.35, COS_QUEST = 0.12;
 const COS_RARE_BOSS = 0.005, COS_TOKEN_MAX = 9999;
 const COS_RARE_BOSS_IDS = COS_IDS.filter((id) => COSMETICS[id].src === "rareBoss");
+
+// ── 염색 (P9): six dyes brewed by 연금 (12-life-tables.js). 루루 recolours one owned piece's trim with one dye;
+// back to the original is free. `ch.cosDye` { id: 1–6 } (the dye's place in COS_DYES + 1); 0, the original, is not stored.
+const COS_DYES = ["dye_pink", "dye_green", "dye_teal", "dye_violet", "dye_orange", "dye_black"];
+/** On the wire a dyed piece's code is `n + COS_DYE_K × dye` (codes stay below it), so undyed codes are unchanged. */
+const COS_DYE_K = 1000;
+const cosDyeable = (id) => Object.hasOwn(COSMETICS, id) && COSMETICS[id].slot !== "wskin";
+function cosDyeClean(d, ch) {
+  const out = {};
+  if (isObj(d)) for (const id of Object.keys(d)) {
+    const n = Math.trunc(Number(d[id]));
+    if (n >= 1 && n <= COS_DYES.length && cosDyeable(id) && ch.cos.own.includes(id)) out[id] = n;
+  }
+  return out;
+}
+/**
+ * 기념품 재봉 (P9): 루루 sews a story keepsake into its outfit piece; the keepsake stays in ch.keep.
+ * Hook: "" means its piece is not drawn yet (P11, 이야기 기념품 set) — put a COSMETICS id here once it is.
+ */
+const KEEP_SEW = { kp_reed_float: "", kp_willow_key: "", kp_neon_lamp: "", kp_compass: "", kp_bell: "", kp_quill: "", kp_shardjar: "" };
 const cosEmpty = () => ({ own: [], on: {}, tokens: 0 });
 function cosClean(c, ch) {
   const src = isObj(c) ? c : {};
@@ -189,10 +209,10 @@ function gainWillowToken(p, n) {
   if (gain > 0) { cos.tokens += gain; p.dirty = true; }
   return gain;
 }
-/** What others see: the worn codes in slot order, trailing empties dropped ([] for none). */
+/** What others see: the worn codes in slot order (a dyed piece's code carries its dye, COS_DYE_K), trailing empties dropped ([] for none). */
 function cosWire(ch) {
-  const on = ch.cos ? ch.cos.on : {};
-  const out = COS_SLOTS.map((s) => (on[s] ? COSMETICS[on[s]].n : 0));
+  const on = ch.cos ? ch.cos.on : {}, dye = ch.cosDye || {};
+  const out = COS_SLOTS.map((s) => (on[s] ? COSMETICS[on[s]].n + COS_DYE_K * (dye[on[s]] || 0) : 0));
   while (out.length && !out[out.length - 1]) out.pop();
   return out;
 }

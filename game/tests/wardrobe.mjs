@@ -344,4 +344,80 @@ for (const [kind, designs] of Object.entries(SIL)) {
   assert.equal(wallet.S.cosN, n, "a complete collection does not roll again");
 }
 
+// ── 염색 and 기념품 재봉 at 루루's (P9)
+{
+  assert.equal(D.cosDyes.length, 6, "six dyes");
+  for (const [i, id] of D.cosDyes.entries()) {
+    const r = D.life.recipes.find((x) => x.out[0] === id);
+    assert.ok(D.items[id] && r && r.sk === "alch" && r.lv >= 5 && r.lv <= 40, id + ": an alchemy recipe at L5–40");
+    assert.ok(r.in.some(([m]) => m.startsWith("m_h")), id + ": made from herbs");
+    assert.ok(i === 0 || D.items[id].name !== D.items[D.cosDyes[i - 1]].name);
+  }
+  assert.ok(ids.every((id) => D.cos[id].n < D.cosDyeK), "every wire code stays below the dye step");
+  const W = world("염색가");
+  const p = W.S.players.A, ch = p.ch;
+  ch.cos.own.push("hat_beanie_red", "ws_star");
+  ch.cos.on.hat = "hat_beanie_red";
+  const dye = (id, d) => W.act({ t: "cos_dye", id, d });
+  assert.equal(dye("hat_beanie_red", 1).error, "의상실 주인이 너무 멉니다");
+  W.to("A", shopNpc.x, shopNpc.y + 1);
+  assert.equal(dye("hat_beanie_red", 1).error, "[들꽃 분홍 염료]가 없습니다", "a dye is needed");
+  assert.equal(dye("hat_beanie_red", 7).error, "없는 염료입니다");
+  assert.equal(dye("hat_beanie_red", 1.5).error, "없는 염료입니다");
+  assert.equal(dye("hat_beanie_red", -1).error, "없는 염료입니다");
+  assert.equal(dye("hat_beanie_red", "1").error, "없는 염료입니다");
+  assert.equal(dye("ws_star", 1).error, "무기 외형은 염색할 수 없습니다");
+  assert.equal(dye("hat_crown", 1).error, "아직 얻지 않은 외형입니다");
+  assert.equal(dye("nope", 1).error, "없는 외형입니다");
+  assert.equal(dye("hat_beanie_red", 0).error, "이미 원래 색입니다");
+  ch.inv.push({ id: "dye_pink", n: 2 });
+  const pinks = () => ch.inv.filter((s) => s.id === "dye_pink").reduce((n, s) => n + s.n, 0);
+  W.step();
+  assert.ok(dye("hat_beanie_red", 1).ok);
+  assert.equal(pinks(), 1, "one dye used");
+  assert.deepEqual(ch.cosDye, { hat_beanie_red: 1 });
+  let v = W.step();
+  assert.deepEqual(v.self.cosDye, { hat_beanie_red: 1 }, "self carries the dyes when they change");
+  assert.equal(W.step().self, undefined, "and not again until something changes");
+  assert.equal(dye("hat_beanie_red", 1).error, "이미 그 색으로 물들였습니다");
+  // others see the dye in the worn code
+  const b = W.join("B", "구경꾼");
+  W.to("B", shopNpc.x + 1, shopNpc.y + 1);
+  v = W.step("B");
+  assert.equal(v.who.find((r) => r[0] === p.eid)[14][0], D.cos.hat_beanie_red.n + D.cosDyeK, "a dyed code carries its dye");
+  assert.ok(b);
+  // back to the original: free
+  assert.ok(dye("hat_beanie_red", 0).ok);
+  assert.equal(pinks(), 1, "resetting is free");
+  assert.deepEqual(ch.cosDye, {});
+  v = W.step("B");
+  assert.equal(v.who.find((r) => r[0] === p.eid)[14][0], D.cos.hat_beanie_red.n, "undyed codes are as before");
+  // saved and loaded; junk cleaned
+  assert.ok(dye("hat_beanie_red", 1).ok);
+  const saved = JSON.parse(JSON.stringify(L.exportChar(W.S, "A")));
+  assert.deepEqual(W.join("C", "", "warrior", saved).ch.cosDye, { hat_beanie_red: 1 }, "dyes survive reload");
+  saved.cosDye = { hat_beanie_red: 9, ws_star: 2, hat_crown: 3, nope: 1, hat_beanie_navy: "x" };
+  assert.deepEqual(W.join("D", "", "warrior", saved).ch.cosDye, {}, "out of range, weapon skins, unowned and unknown pieces dropped");
+  // an old sheet (v24) has no cosDye
+  const old = JSON.parse(JSON.stringify(saved));
+  delete old.cosDye; old.v = 24;
+  const o = W.join("E", "", "warrior", old).ch;
+  assert.deepEqual(o.cosDye, {}); assert.equal(o.v, 25);
+  assert.deepEqual(L.newChar("새옷", "warrior", []).cosDye, {});
+  // keepsake sewing: the table names every keepsake; one with no piece yet is refused, one with a piece is sewn once
+  assert.deepEqual(Object.keys(D.keepSew).sort(), Object.keys(D.items).filter((id) => D.items[id].type === "keep").sort(), "every keepsake has a row");
+  for (const [k, id] of Object.entries(D.keepSew)) assert.ok(id === "" || D.cos[id], k + ": sews into a real piece or none yet");
+  const sew = (k) => W.act({ t: "cos_sew", k });
+  assert.equal(sew("kp_bell").error, "아직 간직하지 않은 기념품입니다");
+  assert.equal(sew("hp_s").error, "재봉할 수 없는 기념품입니다");
+  ch.keep.kp_bell = 1;
+  const was = D.keepSew.kp_bell;
+  if (!was) assert.equal(sew("kp_bell").error, "루루가 아직 이 기념품의 옷본을 그리고 있어요");
+  D.keepSew.kp_bell = "hat_halo";   // (defs hands out the live table: stand in for a P11 piece)
+  assert.ok(sew("kp_bell").ok);
+  assert.ok(ch.cos.own.includes("hat_halo") && ch.keep.kp_bell, "sewn; the keepsake stays");
+  assert.equal(sew("kp_bell").error, "이미 지어 받은 외형입니다");
+  D.keepSew.kp_bell = was;
+}
+
 console.log("wardrobe: ok —", ids.length, "cosmetics,", Object.keys(D.wkinds).length * 5, "weapon designs,", MOTIFS.length, "motifs");

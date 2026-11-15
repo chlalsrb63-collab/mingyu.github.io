@@ -1624,6 +1624,21 @@ Object.assign(RECIPES, {
   fd_honeybread: recipeRow("cook", 35, "cook", [["pr_honey", 1], ["m_h4", 1], ["m_c5", 1], ["staple", 2]], "fd_honeybread", 1, 0),
   al_cure: recipeRow("alch", 8, "alch", [["m_h1", 2], ["m_h2", 1], ["flask", 2]], "al_cure", 2, 10),
   al_candle: recipeRow("alch", 22, "alch", [["m_h3", 1], ["m_w2", 1], ["pr_honey", 1]], "al_candle", 1, 30),
+  // 염료 (P9): the herbs' sink — 루루 dyes one worn piece's trim with one (65-cosmetics.js COS_DYES)
+  dye_pink: recipeRow("alch", 5, "alch", [["m_h1", 3], ["flask", 1]], "dye_pink", 2, 20),
+  dye_green: recipeRow("alch", 10, "alch", [["m_h2", 3], ["flask", 1]], "dye_green", 2, 30),
+  dye_black: recipeRow("alch", 15, "alch", [["m_w1", 4], ["m_h1", 1], ["flask", 1]], "dye_black", 2, 36),
+  dye_teal: recipeRow("alch", 20, "alch", [["m_h3", 3], ["flask", 1]], "dye_teal", 2, 50),
+  dye_violet: recipeRow("alch", 30, "alch", [["m_h4", 2], ["flask", 1]], "dye_violet", 2, 70),
+  dye_orange: recipeRow("alch", 40, "alch", [["m_h5", 2], ["flask", 1]], "dye_orange", 2, 90),
+});
+Object.assign(ITEMS, {
+  dye_pink: { name: "들꽃 분홍 염료", type: "mat", price: 36, desc: "들꽃잎을 우린 분홍 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
+  dye_green: { name: "이끼 초록 염료", type: "mat", price: 70, desc: "이끼버섯을 고아 낸 초록 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
+  dye_black: { name: "숯 검정 염료", type: "mat", price: 58, desc: "마른 가지를 태운 숯가루를 갠 검정 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
+  dye_teal: { name: "형광 청록 염료", type: "mat", price: 140, desc: "형광 덩굴즙으로 만든 은은히 빛나는 청록 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
+  dye_violet: { name: "수정 보라 염료", type: "mat", price: 190, desc: "수정꽃 꽃잎을 녹인 보라 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
+  dye_orange: { name: "단풍 주홍 염료", type: "mat", price: 325, desc: "붉은 단풍잎을 졸인 주홍 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
 });
 /**
  * Fish of one water (P8): on its map a catch of that grade's fish is this one instead FISH_LOCAL of the time (never
@@ -7535,7 +7550,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 24, name, job: "adventurer", jp: null,
+    v: 25, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -7553,7 +7568,7 @@ export function newChar(name, look, wk) {
     dim: dimClean(null),
     wh:{ items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     // the first skill of the weapon in hand is on the bar from the start (filled below)
-    qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(), keep: {},
+    qs: QS_EMPTY(), cos: cosEmpty(), cosDye: {}, sq: sqEmpty(), keep: {},
     // the bag's size and a house of one's own (v10: 46-bag.js, 64-housing.js)
     bagCap: INV_BASE, house: homeEmpty(),
     // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
@@ -7669,6 +7684,8 @@ function migrate(ch) {
   if (oldKit || fourClass) for (const id of qsStarter(ch)) qsLearn(ch, id);
   // the wardrobe (v7): owned cosmetics and the one worn in each slot
   ch.cos = cosClean(ch.cos, ch);
+  // 염색 (v25, P9): { id: dye 1–6 } for owned pieces only (65-cosmetics.js cosDyeClean)
+  ch.cosDye = cosDyeClean(ch.cosDye, ch);
   // side quests from the world map editor (v8): what is under way and what is done
   ch.sq = sqClean(ch.sq);
   // keepsakes (v23): 기념품 from quests, kept forever
@@ -7700,7 +7717,7 @@ function migrate(ch) {
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
   // quest items (v23): a delivery under way has its parcel, nothing else carries one (62-side-quests.js; after the bag is cleaned)
   sqItemsFix(ch);
-  ch.v = Math.max(ch.v | 0, 24);
+  ch.v = Math.max(ch.v | 0, 25);
   return ch;
 }
 
@@ -7836,7 +7853,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "cos_dye", "cos_sew", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {
@@ -15509,6 +15526,26 @@ const COS_ACH = Object.fromEntries(COS_IDS.filter((id) => COSMETICS[id].ach).map
 const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_RIFT_TOP3 = 0.3, COS_WEEKLY = 0.35, COS_QUEST = 0.12;
 const COS_RARE_BOSS = 0.005, COS_TOKEN_MAX = 9999;
 const COS_RARE_BOSS_IDS = COS_IDS.filter((id) => COSMETICS[id].src === "rareBoss");
+
+// ── 염색 (P9): six dyes brewed by 연금 (12-life-tables.js). 루루 recolours one owned piece's trim with one dye;
+// back to the original is free. `ch.cosDye` { id: 1–6 } (the dye's place in COS_DYES + 1); 0, the original, is not stored.
+const COS_DYES = ["dye_pink", "dye_green", "dye_teal", "dye_violet", "dye_orange", "dye_black"];
+/** On the wire a dyed piece's code is `n + COS_DYE_K × dye` (codes stay below it), so undyed codes are unchanged. */
+const COS_DYE_K = 1000;
+const cosDyeable = (id) => Object.hasOwn(COSMETICS, id) && COSMETICS[id].slot !== "wskin";
+function cosDyeClean(d, ch) {
+  const out = {};
+  if (isObj(d)) for (const id of Object.keys(d)) {
+    const n = Math.trunc(Number(d[id]));
+    if (n >= 1 && n <= COS_DYES.length && cosDyeable(id) && ch.cos.own.includes(id)) out[id] = n;
+  }
+  return out;
+}
+/**
+ * 기념품 재봉 (P9): 루루 sews a story keepsake into its outfit piece; the keepsake stays in ch.keep.
+ * Hook: "" means its piece is not drawn yet (P11, 이야기 기념품 set) — put a COSMETICS id here once it is.
+ */
+const KEEP_SEW = { kp_reed_float: "", kp_willow_key: "", kp_neon_lamp: "", kp_compass: "", kp_bell: "", kp_quill: "", kp_shardjar: "" };
 const cosEmpty = () => ({ own: [], on: {}, tokens: 0 });
 function cosClean(c, ch) {
   const src = isObj(c) ? c : {};
@@ -15528,10 +15565,10 @@ function gainWillowToken(p, n) {
   if (gain > 0) { cos.tokens += gain; p.dirty = true; }
   return gain;
 }
-/** What others see: the worn codes in slot order, trailing empties dropped ([] for none). */
+/** What others see: the worn codes in slot order (a dyed piece's code carries its dye, COS_DYE_K), trailing empties dropped ([] for none). */
 function cosWire(ch) {
-  const on = ch.cos ? ch.cos.on : {};
-  const out = COS_SLOTS.map((s) => (on[s] ? COSMETICS[on[s]].n : 0));
+  const on = ch.cos ? ch.cos.on : {}, dye = ch.cosDye || {};
+  const out = COS_SLOTS.map((s) => (on[s] ? COSMETICS[on[s]].n + COS_DYE_K * (dye[on[s]] || 0) : 0));
   while (out.length && !out[out.length - 1]) out.pop();
   return out;
 }
@@ -18293,6 +18330,25 @@ export function validateAction(S, pid, a) {
       if (c.src === "token") return ch.cos.tokens < c.price ? bad("버드나무토큰이 부족합니다") : OK;
       return ch.gold < c.price ? bad("골드가 부족합니다") : OK;
     }
+    // 염색 at 루루's (P9): `d` 1–6 uses one dye of COS_DYES[d - 1]; 0 puts the original colours back for free
+    case "cos_dye": {
+      if (typeof a.id !== "string" || !Object.hasOwn(COSMETICS, a.id)) return bad("없는 외형입니다");
+      if (!ch.cos.own.includes(a.id)) return bad("아직 얻지 않은 외형입니다");
+      if (!cosDyeable(a.id)) return bad("무기 외형은 염색할 수 없습니다");
+      if (!Number.isInteger(a.d) || a.d < 0 || a.d > COS_DYES.length) return bad("없는 염료입니다");
+      if (!npcNear(p, "costume")) return bad("의상실 주인이 너무 멉니다");
+      if ((ch.cosDye[a.id] || 0) === a.d) return bad(a.d ? "이미 그 색으로 물들였습니다" : "이미 원래 색입니다");
+      const dye = a.d ? ITEMS[COS_DYES[a.d - 1]] : null;
+      return dye && countItem(ch, COS_DYES[a.d - 1]) < 1 ? bad(`[${dye.name}]${pp(dye.name, "이가")} 없습니다`) : OK;
+    }
+    // 기념품 재봉 (P9): a story keepsake becomes its outfit piece; the keepsake is kept
+    case "cos_sew": {
+      if (typeof a.k !== "string" || !Object.hasOwn(KEEP_SEW, a.k)) return bad("재봉할 수 없는 기념품입니다");
+      if (!ch.keep[a.k]) return bad("아직 간직하지 않은 기념품입니다");
+      if (!KEEP_SEW[a.k]) return bad("루루가 아직 이 기념품의 옷본을 그리고 있어요");
+      if (!npcNear(p, "costume")) return bad("의상실 주인이 너무 멉니다");
+      return ch.cos.own.includes(KEEP_SEW[a.k]) ? bad("이미 지어 받은 외형입니다") : OK;
+    }
     case "title":
       if (a.id === "" || a.id === undefined || a.id === null) return OK;
       if (typeof a.id !== "string" || !ACH_BY[a.id] || !ACH_BY[a.id].title) return bad("없는 칭호입니다");
@@ -19166,6 +19222,18 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
+    case "cos_dye": {
+      const c = COSMETICS[a.id];
+      if (a.d) { takeItem(ch, COS_DYES[a.d - 1], 1); ch.cosDye[a.id] = a.d; }
+      else delete ch.cosDye[a.id];
+      if (ch.cos.on[c.slot] === a.id) S.maps[p.map].who = true;
+      toast(p, a.d ? `[${c.name}]${pp(c.name, "을를")} ${ITEMS[COS_DYES[a.d - 1]].name}${pp(ITEMS[COS_DYES[a.d - 1]].name, "으로")} 물들였습니다.` : `[${c.name}]${pp(c.name, "을를")} 원래 색으로 되돌렸습니다.`);
+      p.dirty = true;
+      break;
+    }
+    case "cos_sew":
+      giveCos(S, p, KEEP_SEW[a.k], `루루가 [${ITEMS[a.k].name}]${pp(ITEMS[a.k].name, "으로")} 지어 주었습니다`);
+      break;
     case "daily": {
       const dl = ch.daily;
       if (a.i === "party" || a.i === "solo") {
@@ -19957,7 +20025,7 @@ function selfPayload(p) {
       Math.max(0, (p.wind || 0) - now),
       // then 안락한 휴식 (a bed or a hearth at home, 64-housing.js)
       Math.max(0, ch.house.cozy - now)],
-    wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, sq: sqView(ch), keep: Object.keys(ch.keep),
+    wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, cosDye: ch.cosDye, sq: sqView(ch), keep: Object.keys(ch.keep),
     dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather"), by: p.blame ? p.blame.by : null, lv: p.blame ? p.blame.lv : 0, el: p.blame ? p.blame.el : 0 } : null,
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     // waypoint stones woken: { mapId: bitmask } (bit 0 = the map's first stone)
@@ -20178,6 +20246,8 @@ export function defs() {
     waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: stoneNames(id), minLv: MAP_META[id].minLv || undefined })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
     cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N, cosSets: COS_SETS,
+    // 염색 (P9): the dye items in self.cosDye order (1 = cosDyes[0]); a worn code ≥ cosDyeK carries a dye; keepsake → outfit piece ("" not yet)
+    cosDyes: COS_DYES, cosDyeK: COS_DYE_K, keepSew: KEEP_SEW,
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
     collection: Object.fromEntries(REGIONS.map((id) => [id, { mobs: COL_MOBS[id], bonus: REGION_BONUS[id] }])), colNeed: MASTERY[0],
     event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },

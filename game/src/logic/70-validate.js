@@ -152,6 +152,25 @@ export function validateAction(S, pid, a) {
       if (c.src === "token") return ch.cos.tokens < c.price ? bad("버드나무토큰이 부족합니다") : OK;
       return ch.gold < c.price ? bad("골드가 부족합니다") : OK;
     }
+    // 염색 at 루루's (P9): `d` 1–6 uses one dye of COS_DYES[d - 1]; 0 puts the original colours back for free
+    case "cos_dye": {
+      if (typeof a.id !== "string" || !Object.hasOwn(COSMETICS, a.id)) return bad("없는 외형입니다");
+      if (!ch.cos.own.includes(a.id)) return bad("아직 얻지 않은 외형입니다");
+      if (!cosDyeable(a.id)) return bad("무기 외형은 염색할 수 없습니다");
+      if (!Number.isInteger(a.d) || a.d < 0 || a.d > COS_DYES.length) return bad("없는 염료입니다");
+      if (!npcNear(p, "costume")) return bad("의상실 주인이 너무 멉니다");
+      if ((ch.cosDye[a.id] || 0) === a.d) return bad(a.d ? "이미 그 색으로 물들였습니다" : "이미 원래 색입니다");
+      const dye = a.d ? ITEMS[COS_DYES[a.d - 1]] : null;
+      return dye && countItem(ch, COS_DYES[a.d - 1]) < 1 ? bad(`[${dye.name}]${pp(dye.name, "이가")} 없습니다`) : OK;
+    }
+    // 기념품 재봉 (P9): a story keepsake becomes its outfit piece; the keepsake is kept
+    case "cos_sew": {
+      if (typeof a.k !== "string" || !Object.hasOwn(KEEP_SEW, a.k)) return bad("재봉할 수 없는 기념품입니다");
+      if (!ch.keep[a.k]) return bad("아직 간직하지 않은 기념품입니다");
+      if (!KEEP_SEW[a.k]) return bad("루루가 아직 이 기념품의 옷본을 그리고 있어요");
+      if (!npcNear(p, "costume")) return bad("의상실 주인이 너무 멉니다");
+      return ch.cos.own.includes(KEEP_SEW[a.k]) ? bad("이미 지어 받은 외형입니다") : OK;
+    }
     case "title":
       if (a.id === "" || a.id === undefined || a.id === null) return OK;
       if (typeof a.id !== "string" || !ACH_BY[a.id] || !ACH_BY[a.id].title) return bad("없는 칭호입니다");
