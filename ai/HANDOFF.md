@@ -5,6 +5,8 @@ Development is **local first**: work and test on the PC; the owner decides when 
 Read this, `AGENTS.md` (loaded), `ai/BRIEF.md`, `docs/design/README.md`, `docs/systems/README.md`; then continue.
 Reply to the owner in Korean; they want reports **with screenshots** ("다 끝나면 화면과 함께 알려줘").
 
+Claude · Gemini · Codex: 새 의뢰와 지역 서사를 쓰기 전에 [루넬샤 이야기](../docs/design/lunelsha-story.md)를 읽는다. 작은꼬리들(Tinytales)은 자칭이며, 조상들의 기록은 마지막 고대비석에서 공개한다.
+
 ## 현재 인계 · 직업 성장, 해머, 월드맵, 로컬 BGM
 
 - 17:00 로컬 `main`의 게임 변경 기준은 `ccbd26c`다. 파티 공유 거리, 창·마도서 회복, 교차 패시브 2칸, 주민 일과 34명, 되새김 인장, 협동 근무 4곳이 함께 적용됐다. [현황과 검수](reports/codex-local-status-2026-11-15.md)

@@ -5,6 +5,7 @@ Read only the doc for your task, and in it only your phase's sections (`grep -n 
 
 | doc | status | read when |
 | --- | --- | --- |
+| [`lunelsha-story.md`](lunelsha-story.md) | **live** — 루넬샤 세계관과 주요 의뢰의 공개 순서 | 초반 피난 서사, 바람등호 관측 기록, 성채에서 밝혀지는 과거 |
 | [`town.md`](town.md) | **live** — T-A exterior + T-B interiors building | working on the town, its buildings, interiors, residents |
 | [`jobs-and-stats.md`](jobs-and-stats.md) | built — J1, J2, J3 ("… as built" in F.4); open: bow art polish, `_icons`/`_swing` previews | stats, levels, weapon mastery, jobs, weapon skills, the bow |
 | [`life-and-coop.md`](life-and-coop.md) | **live** — L1 built ("L1 as built", sheet v12); L2 rules built ("L2 rules as built": wire + actions for the client), L2 client ∥ C1 next, then C2 → C3; town coords now in `town.md` | life skills, part-time jobs, co-op instances |
