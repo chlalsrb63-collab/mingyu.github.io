@@ -6,7 +6,10 @@ in your own git worktree (`.work/gemini`, branch `gemini/work`).
 
 ## Every session
 
-1. `git status` must be clean. Then `git rebase main` to see the latest code.
+1. `git status` must be clean. **Don't rebase or merge** — Claude merges your commits into main and then moves `gemini/work`
+   to main for you. If a rebase/merge is in progress or the status isn't clean, stop and say so (don't try to fix git).
+   Speed (owner, 2026-11-15): one task per run, read only the files the task names (grep, don't read big files whole),
+   at most 2 simple screenshots (`--page mobs` / `--page scene`, no long --eval scripts), no full test suite.
 2. Pick ONE task, in this order:
    a. the first unchecked `- [ ]` line in the **GEMINI** section of `ai/TASKS.current.md`
       (a fresh copy of the owner's board) that has no report yet in `ai/reports/`;
