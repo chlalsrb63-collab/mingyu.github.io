@@ -83,9 +83,9 @@ const COOKING = { burnt: [35, 0.4, 10], two: 85 };
 // ───── L2: gathering, the stations, the 알바 board, trust (life-and-coop.md B.4, B.6–B.10)
 
 // ── gathering nodes (B.4): fixed per map from its id, never depleted; each player waits out their own cooldown
-/** Node kinds in wire order (node[0]) → the material letter of LMAT. */
-const NODE_KINDS = ["h", "o", "w"];
-const NODE_NAME = ["약초", "광맥", "통나무"];
+/** Node kinds in wire order (node[0]) → the material letter of LMAT (3 = a crop of CROP, placed by hand). */
+const NODE_KINDS = ["h", "o", "w", "c"];
+const NODE_NAME = ["약초", "광맥", "통나무", "작물"];
 /**
  * cd: a node's cooldown per player (ms) · ch: the channel at Lv 1 before the time factor (ms) · range: px from the
  * node · tap: the "반짝!" window (ms) + lag allowance · tapAt: where in the channel it comes (share) · tapBonus %p
@@ -99,6 +99,16 @@ const NODE_W = {
   meadow: [0.5, 0.2, 0.3], forest: [0.4, 0.15, 0.45], crypt: [0.3, 0.5, 0.2], city: [0.2, 0.55, 0.25], sewer: [0.2, 0.55, 0.25],
   cave: [0.3, 0.6, 0.1], abyss: [0.3, 0.6, 0.1], autumn: [0.4, 0.15, 0.45],
 };
+/**
+ * Crops (H10 farm): an editor map's `crops` [[x, y, crop 1..6]…] become nodes [3, crop, x, y] (lifeNodes), even in a
+ * safe village; the same channel, tap and per-player cooldown ("they regrow") as every node. Each crop: its name,
+ * the gather level it needs, its grade (experience, and the sell price of that grade's herb). Item `m_c<crop>`.
+ */
+const CROP = [["감자", 1, 1], ["당근", 1, 1], ["양배추", 5, 1], ["무", 10, 2], ["옥수수", 15, 2], ["호박", 20, 3]];
+CROP.forEach(([name, lv, g], i) => {
+  ITEMS[`m_c${i + 1}`] = { name, type: "lmat", grade: g, mk: "c", price: Math.round(LMAT_SELL[g - 1] / 0.4),
+    desc: `${GRADE_NAME[g - 1]} 작물 (채집 Lv.${lv}). 텃밭에서 거둔다. 요리 재료로 쓰인다.` };
+});
 
 // ── new goods (B.6). Staples and flasks are bought (쥬쥬, 보글's shelf) and live in the pouch with the materials.
 /** Ingots: three ores of a grade at 캉캉's furnace; they sell for exactly the three ores (a smelt never pays). */
@@ -114,6 +124,11 @@ Object.assign(ITEMS, {
   fd_skewer: { name: "버섯 꼬치", type: "food", heal: 320, buff: { xp: 5, atk: 4, min: 15 }, price: 78, desc: "HP 320 회복. 15분간 경험치 +5%, 공격력 +4%." },
   fd_stew: { name: "메기 매운탕", type: "food", heal: 600, mana: 120, buff: { xp: 8, atk: 0, min: 15 }, price: 300, desc: "HP 600, MP 120 회복. 15분간 경험치 +8%." },
   fd_steam: { name: "장님고기 찜", type: "food", heal: 1100, buff: { xp: 10, atk: 4, min: 20 }, price: 560, desc: "HP 1100 회복. 20분간 경험치 +10%, 공격력 +4%." },
+  // the farm's dishes (H10): the plot's crops, at a campfire or a stove
+  fd_potato: { name: "감자구이", type: "food", heal: 100, buff: { xp: 3, atk: 1, min: 10 }, price: 28, desc: "HP 100 회복. 10분간 경험치 +3%, 공격력 +1%." },
+  fd_carrot: { name: "당근 수프", type: "food", heal: 140, mana: 60, buff: { xp: 4, atk: 1, min: 10 }, price: 38, desc: "HP 140, MP 60 회복. 10분간 경험치 +4%, 공격력 +1%." },
+  fd_veg: { name: "채소 볶음", type: "food", heal: 260, buff: { xp: 5, atk: 3, min: 15 }, price: 58, desc: "HP 260 회복. 15분간 경험치 +5%, 공격력 +3%." },
+  fd_corn: { name: "옥수수 호박죽", type: "food", heal: 500, mana: 150, buff: { xp: 7, atk: 3, min: 15 }, price: 115, desc: "HP 500, MP 150 회복. 15분간 경험치 +7%, 공격력 +3%." },
   fd_feast: { name: "쥬쥬 특선 정식", type: "food", heal: 99999, mana: 99999, buff: { xp: 15, atk: 8, min: 30 }, price: 1500, desc: "HP와 MP를 모두 회복. 30분간 경험치 +15%, 공격력 +8%." },
   // elixirs work like the scrolls (the same buff, the same strength) but last longer; `el` routes them through
   // the life `use` path (58-life.js lifeUseApply)
@@ -146,6 +161,10 @@ Object.assign(RECIPES, {
   fd_feast: recipeRow("cook", 50, "cook", [["fish_l", 1], ["m_h5", 2], ["m_h4", 1], ["staple", 2]], "fd_feast", 1, 0),
   cafe_pie: recipeRow("cook", 10, "cook", [["m_h1", 3], ["m_h2", 1], ["staple", 1]], "cafe_pie", 1, 72, { rep: "cafe_moka" }),
   inn_stew: recipeRow("cook", 15, "cook", [["fish_m", 1], ["m_h2", 1], ["staple", 2]], "inn_stew", 1, 8, { rep: "inn_maru" }),
+  fd_potato: recipeRow("cook", 1, "fire", [["m_c1", 2]], "fd_potato", 1, 0),
+  fd_carrot: recipeRow("cook", 3, "fire", [["m_c2", 2], ["staple", 1]], "fd_carrot", 1, 0),
+  fd_veg: recipeRow("cook", 10, "cook", [["m_c3", 1], ["m_c4", 1], ["staple", 1]], "fd_veg", 1, 0),
+  fd_corn: recipeRow("cook", 20, "cook", [["m_c5", 1], ["m_c6", 1], ["staple", 1]], "fd_corn", 1, 0),
   // 연금: potions in threes, elixirs, feathers, runes
   hp_s: recipeRow("alch", 1, "alch", [["m_h1", 2], ["flask", 3]], "hp_s", 3, 18),
   mp_s: recipeRow("alch", 1, "alch", [["m_h1", 2], ["flask", 3]], "mp_s", 3, 27),
@@ -203,6 +222,8 @@ const JB_WILLOW = {
   jb_willow_wood: { kind: "bring", npc: "willow_repair", lv: 1, sk: "gather", item: "m_w1", n: 6, text: "젖은 마룻널 말리기 · 바닥을 말릴 아궁이의 땔감으로 [마른 가지]를 버들의 수리대에 가져다주세요." },
   jb_willow_fish: { kind: "fish", npc: "willow_kitchen", lv: 1, sk: "fish", item: "fish_s", n: 5, text: "갈대의 아침 바구니 · 연못에서 잡은 [송사리]를 공동 부엌 화덕으로 가져다주세요. 아침 구이에 쓴대요." },
   jb_willow_rice: { kind: "make", npc: "willow_elder", lv: 5, sk: "cook", item: "fd_rice", n: 3, text: "등교길 주먹밥 · 공동 부엌에서 지은 [들꽃 주먹밥]을 촌장 버들에게 가져다주세요. 아이들 아침밥이래요." },
+  jb_willow_potato: { kind: "bring", npc: "willow_farmer", lv: 1, sk: "gather", item: "m_c1", n: 6, text: "수확 돕기 · 텃밭 농부 감자의 밭고랑에서 [감자]를 캐서 가져다주세요. 올해 감자는 알이 굵대요!" },
+  jb_willow_radish: { kind: "bring", npc: "willow_farmer", lv: 10, sk: "gather", item: "m_c4", n: 4, text: "김장 준비 · 텃밭 농부 감자가 [무] 4뿌리를 뽑아 달래요. 허리가 아프대요." },
   jb_willow_notice: { kind: "deliver", npc: "willow_bard", to: "willow_florist", lv: 1, sk: "deliver", text: "솔의 공연 통지 · 음유시인 솔의 공연 안내문을 받아 꽃집 아이 봄이에게 전해 주세요." },
 };
 const JB = {
@@ -220,6 +241,8 @@ const JB = {
   jb_ore5: { kind: "bring", npc: "kangkang", lv: 40, sk: "gather", item: "m_o5", n: 4, text: "캉캉이 일생일대의 작품에 쓸 [왕도 은괴석] 4개를 기다려요." },
   jb_rice: { kind: "make", npc: "inn_maru", lv: 5, sk: "cook", item: "fd_rice", n: 3, text: "여관 주인 마루가 손님 도시락으로 [들꽃 주먹밥] 3개를 주문했어요." },
   jb_skewer: { kind: "make", npc: "diner_piri", lv: 15, sk: "cook", item: "fd_skewer", n: 2, text: "떠돌이 악사 피리가 공연 전에 먹을 [버섯 꼬치] 2개를 원해요." },
+  jb_carrot: { kind: "bring", npc: "juju", lv: 1, sk: "gather", item: "m_c2", n: 5, text: "쥬쥬가 버드나무 마을 텃밭의 [당근] 5뿌리를 찾아요. 수프에 넣는대요." },
+  jb_veg: { kind: "make", npc: "juju", lv: 10, sk: "cook", item: "fd_veg", n: 2, text: "쥬쥬가 점심 특선으로 [채소 볶음] 2접시를 주문했어요. 텃밭에서 갓 딴 채소로!" },
   jb_stew: { kind: "make", npc: "inn_maru", lv: 20, sk: "cook", item: "fd_stew", n: 3, text: "여관 주인 마루가 [메기 매운탕] 3그릇을 주문했어요." },
   jb_ing1: { kind: "make", npc: "smith", lv: 1, sk: "craft", item: "ing_1", n: 3, text: "대장장이 볼칸이 연습용 [구리 주괴] 3개를 부탁했어요." },
   jb_ing2: { kind: "make", npc: "forge_musoe", lv: 10, sk: "craft", item: "ing_2", n: 3, text: "갑옷장이 무쇠가 [강철 주괴] 3개를 기다려요." },
@@ -279,7 +302,8 @@ const JB = {
  * The village chores (H10). `spot`: what one act is done to (the toast); `src`: what to fetch before the acts —
  * "npc" from the giver (all the acts at once: the milk bottles, the dog's leash) or "water" (a well or the water's
  * edge, `carry` acts a fill); `timed`: the fetch starts a parcel-like clock and running out fails the job (never
- * 긴급). CHORE: act reach (px), the least ms between two acts, the reach of a water source (tiles).
+ * 긴급). CHORE: act reach (px), the least ms between two acts, the reach of a water source (tiles), weeds within this many tiles of
+ * the 제초 giver (the farmer's plot and backyard).
  */
 const CHORE_MAP = "willow";
 const CHORES = {
@@ -290,7 +314,7 @@ const CHORES = {
   water: { name: "꽃밭 물주기", spot: "꽃밭", src: "water", carry: 3, get: "물뿌리개를 가득 채웠습니다" },
   dog: { name: "강아지 산책", spot: "나무", src: "npc", get: "콩떡이의 목줄을 잡았습니다" },
 };
-const CHORE = { range: 28, gap: 500, src: 1 };
+const CHORE = { range: 28, gap: 500, src: 1, weed: 12 };
 /**
  * Board v2 grades, rolled per offer from (name, day, id): 0 쉬움 · 1 보통 · 2 어려움 by weight `odds`. Items and
  * monsters × n (rounded up), a parcel's time × lim, scouting goes to map[grade]; gold, life XP and trust × pay.
