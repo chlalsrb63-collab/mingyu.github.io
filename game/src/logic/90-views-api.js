@@ -102,6 +102,8 @@ export function viewFor(S, pid) {
       if (br) row.push(1);
     }
     out.M.push(row);
+    // a rift's toughness (64-dim.js hk: party size, level, tier) — only where it isn't 1, so the bar can show the real HP
+    if (mob.hk && mob.hk !== 1) (out.HK || (out.HK = {}))[mob.id] = Math.round(mob.hk * 1000) / 1000;
   }
   for (const dr of rt.drops) {
     if (near(dr) && (dr.own === pid || S.now >= dr.freeAt)) out.D.push([dr.id, dr.it, Math.round(dr.x), Math.round(dr.y), dr.q]);

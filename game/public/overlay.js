@@ -216,6 +216,8 @@ function renderText(t) {
     }
     label(`Lv.${d.lv} ${mob.el === 2 && DUNGEONS.has(G.map.id) ? "수문장 " : RANK_NAME[mob.el | 0]}${tn}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#ece0e0");
     if (mob.hp < max) bar(x, y + 4, d.boss ? 90 : mob.el === 2 ? 70 : 42, mob.hp / max, mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#d8404c");
+    // bosses and elites: the HP in numbers, a rift's party/level toughness included (hk, 64-dim.js — damage is divided by it)
+    if (d.boss || mob.el) { const k = mob.hk || 1; label(`${Math.ceil(mob.hp * k).toLocaleString()} / ${Math.round(max * k).toLocaleString()}`, x, y + 14, "#f0e0e0", 10); }
   }
   for (const d of G.drops.values()) {
     // the loot filter decides whose names are shown: everything, magic and up, or rare and up
