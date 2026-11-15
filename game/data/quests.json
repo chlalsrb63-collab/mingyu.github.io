@@ -177,6 +177,116 @@
       "req": { "lv": 150, "quest": null },
       "reward": { "xp": 0, "gold": 0, "items": [] },
       "repeat": false
+    },
+    {
+      "id": "sq_lantern_fence",
+      "giver": "trail_fence",
+      "title": "울타리에 걸린 두 방향",
+      "text": "울타리 아래서 꺼진 심지를 주웠는데 쌍두 토끼가 심지 양끝만 따라다녀. 바람초원에서 네 마리를 물리치는 동안 두 머리가 어느 쪽을 보는지 살펴 줘.",
+      "done": "한쪽은 마을 쪽을, 다른 쪽은 숲으로 들어가는 배관을 보는구나.",
+      "goal": { "type": "kill", "mob": "twinhare", "n": 4 },
+      "req": { "lv": 1, "quest": null },
+      "reward": { "xp": 70, "gold": 50, "items": [["stone", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_lantern_sap",
+      "giver": "trail_sap",
+      "title": "수액 속에 묻힌 계단",
+      "text": "속삭임 숲에서 꼬인 여우가 나올 때마다 검은 수액이 바위 위로 솟아. 다섯 마리를 물리쳐 주면 수액 아래 묻힌 길을 확인할 수 있겠어.",
+      "done": "수액이 잦아드니 돌계단이 보이네. 계단에 새겨진 무늬를 탁본쟁이 오로에게 알려 줄게.",
+      "goal": { "type": "kill", "mob": "foxtwine", "n": 5 },
+      "req": { "lv": 41, "quest": null },
+      "reward": { "xp": 3000, "gold": 350, "items": [["stone", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_lantern_crown",
+      "giver": "trail_crown",
+      "title": "관 위의 가벼운 이름",
+      "text": "별의 지하묘지 바닥에 왕의 장부 한 쪽이 새겨져 있어. 글씨를 덮고 있는 박쥐 덩어리 다섯 무리를 걷어 내 주겠어? 쓰러질 때 터지는 파편은 멀리서 피하고.",
+      "done": "왕이 적은 이름은 하나였는데 묘실마다 등불을 맡긴 집이 새겨져 있구나. 장부 아래엔 네온 시티의 인장도 있어.",
+      "goal": { "type": "kill", "mob": "batcluster", "n": 5 },
+      "req": { "lv": 53, "quest": null },
+      "reward": { "xp": 8000, "gold": 700, "items": [["stone", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_lantern_clock",
+      "giver": "trail_clock",
+      "title": "셋째 머리가 울기 전",
+      "text": "네온 시티의 종탑 길을 세 머리 들개가 지키고 있어. 몸을 낮추면 돌진하니 옆으로 비켜. 여섯 마리를 쫓아 주면 종이 몇 번 울리는지 셀 수 있을 거야.",
+      "done": "이제 첫 종과 둘째 종 사이가 들리네. 둘째 종이 울리기 직전에 급수실 아래가 덜컹거려.",
+      "goal": { "type": "kill", "mob": "doghead", "n": 6 },
+      "req": { "lv": 57, "quest": null },
+      "reward": { "xp": 9000, "gold": 800, "items": [["stone", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_lantern_drain",
+      "giver": "trail_drain",
+      "title": "물결에 맞춘 숨",
+      "text": "하수도의 배수문을 뱀장어 매듭이 휘감고 있어. 다섯 무리만 풀어 줘. 놈들이 고개를 들면 물 위로 번지는 전기부터 피해.",
+      "done": "문 아래 물이 빠졌어. 물은 흘러내리는데 불빛만 수정 동굴을 향해 거꾸로 오르는군.",
+      "goal": { "type": "kill", "mob": "eelknot", "n": 5 },
+      "req": { "lv": 93, "quest": null },
+      "reward": { "xp": 24000, "gold": 2200, "items": [["stone", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_lantern_echo",
+      "giver": "trail_echo",
+      "title": "여기 없어야 하는 목소리",
+      "text": "수정 동굴에서 목 꺾인 올빼미가 소리를 흉내 내. 다섯 마리를 물리치고 수정에 남은 마지막 목소리가 무엇인지 들어 봐.",
+      "done": "‘등불 들고 돌아와.’ 어릴 적 나를 부르던 목소리야. 그 집 불이 심연 어귀에서 깜빡이고 있어.",
+      "goal": { "type": "kill", "mob": "owlstare", "n": 5 },
+      "req": { "lv": 105, "quest": null },
+      "reward": { "xp": 40000, "gold": 3400, "items": [["stone", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_lantern_abyss",
+      "giver": "trail_abyss",
+      "title": "내일이 없는 점괘",
+      "text": "피의 심연의 눈 달린 암퇘지는 마을 불이 꺼지던 날만 계속 읊어. 다섯 마리를 물리쳐 줘. 바닥에 검은 웅덩이가 번지면 한 발 더 물러나고.",
+      "done": "옛 날짜는 지웠어. 새 날짜를 적을 칸을 남겨 뒀으니 이 쪽지를 광장의 모리에게 전해 줘.",
+      "goal": { "type": "kill", "mob": "sowseer", "n": 5 },
+      "req": { "lv": 137, "quest": null },
+      "reward": { "xp": 90000, "gold": 4200, "items": [["stone", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_lantern_lease",
+      "giver": "lamplighter_mori",
+      "title": "빌려 준 불의 첫날",
+      "text": "버드나무 마을의 촌장 버들이 등불이 꺼지기 직전 불꽃이 기울던 쪽을 기억한대. 어느 쪽이었는지 묻고 와 줘.",
+      "done": "버드나무광장 쪽이었다고? 광장에서 빌려 준 불인데 이쪽 장부엔 한 줄도 없어. 우선 마을까지 다녀오느라 애썼으니 빵부터 받아.",
+      "goal": { "type": "talk", "npc": "willow_elder" },
+      "req": { "lv": 1, "quest": "sq_willow_letter" },
+      "reward": { "xp": 120, "gold": 85, "items": [["inn_bread", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_lantern_splice",
+      "giver": "lamplighter_mori",
+      "title": "정오에 두 번 울린 이유",
+      "text": "네온 시티의 장부엔 등불을 배달했다고 적혀 있어. 종지기 치치에게 두 번째 종과 장부에 적힌 밸브 번호를 대조해 달라고 해 줘.",
+      "done": "정오에 한 번, 지하묘지로 통하는 밸브를 열 때 한 번. 장부에 있던 집들은 불을 받은 집이 아니라 불을 빼앗긴 집이었어.",
+      "goal": { "type": "talk", "npc": "trail_clock" },
+      "req": { "lv": 57, "quest": "sq_lantern_clock" },
+      "reward": { "xp": 8000, "gold": 900, "items": [["mp_m", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_lantern_return",
+      "giver": "lamplighter_mori",
+      "title": "다시 켜는 날짜",
+      "text": "유리가 점괘 마지막 칸을 비워 뒀구나. 심연의 어미를 쓰러뜨려 묶인 불을 놓아주고, 그 자리에 오늘 날짜를 적어 줘.",
+      "done": "오늘은 유리가 사라진 날이 아니라 돌아온 날로 남겠네. 버드나무에도 불이 켜지는지 함께 보자.",
+      "goal": { "type": "kill", "mob": "abyssboss", "n": 1 },
+      "req": { "lv": 149, "quest": "sq_lantern_abyss" },
+      "reward": { "xp": 120000, "gold": 6000, "items": [["stone", 4], ["sc_def", 1]] },
+      "repeat": false
     }
   ]
 }

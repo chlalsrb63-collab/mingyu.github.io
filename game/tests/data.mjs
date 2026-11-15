@@ -103,7 +103,7 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   const D = L.defs();
   assert.ok(D.waypoints.some((w) => w.id === "willow") && D.maps.some((x) => x.id === "willow"));
   assert.ok(!D.event.maps.includes("willow") && !D.collection.willow, "no rift or collection in a safe village");
-  assert.equal(D.side.length, 16, "the sample village's two side quests, the mercenary captain's three, the ten from the new town hosts and the 전직관's Lv.150 one");
+  assert.ok(D.side.some((q) => q.id === "sq_willow_letter") && D.side.some((q) => q.id === "sq_willow_frogs"), "the sample village keeps both errands");
 
   // walk it: down the town's south road into the village, and back out through its north door
   const W = world(L, "나그네");
@@ -126,6 +126,10 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   let s = W.self();
   assert.equal(sqOf(s, "sq_willow_letter").st, 1, "the letter can be taken");
   assert.equal(sqOf(s, "sq_willow_frogs").st, 0, "the frogs wait for the letter and level 5");
+  const lease = "sq_lantern_lease";
+  W.meet("lamplighter_mori");
+  assert.equal(sqOf(s, lease).st, 0, "Mori waits for the completed letter");
+  assert.match(W.act({ t: "sq", a: "take", id: lease }).error, /먼저/);
   W.to("town", ...L.atlas().maps.town.entry);
   assert.match(W.act({ t: "sq", a: "take", id: "sq_willow_letter" }).error, hangul, "only beside the giver (in Korean)");
   W.meet("willow_elder");
@@ -145,6 +149,18 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   assert.ok(W.p.ch.xp > xp || W.p.ch.lvl > 1, "experience paid");
   s = W.self();
   assert.equal(sqOf(s, "sq_willow_letter").st, 4, "done for good");
+  assert.equal(sqOf(s, lease).st, 1, "the letter unlocks Mori's errand");
+  W.meet("lamplighter_mori");
+  assert.ok(W.act({ t: "sq", a: "take", id: lease }).ok);
+  assert.ok(!W.act({ t: "sq", a: "talk", npc: "willow_elder" }).ok, "Mori and the elder are in different maps");
+  W.meet("willow_elder");
+  assert.ok(W.act({ t: "sq", a: "talk", npc: "willow_elder" }).ok);
+  assert.deepEqual(sqOf(W.self(), lease), { st: 3, n: 1, need: 1 });
+  W.meet("lamplighter_mori");
+  assert.ok(W.act({ t: "sq", a: "done", id: lease }).ok);
+  assert.equal(W.p.ch.inv.find((item) => item.id === "inn_bread")?.n, 2);
+  assert.equal(sqOf(W.self(), lease).st, 4);
+  W.meet("willow_elder");
   if (W.p.ch.lvl < 5) W.p.ch.lvl = 5;   // levels went 1–200 with jobs: the old Lv.2 is 5
   s = W.self();
   assert.equal(sqOf(s, "sq_willow_frogs").st, 1, "the hunt opens");
@@ -157,6 +173,49 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   assert.ok(W.act({ t: "sq", a: "done", id: "sq_willow_frogs" }).ok);
   assert.equal(W.p.ch.sq.done.sq_willow_frogs, 1);
   assert.deepEqual(W.p.ch.sq.on, {});
+}
+
+// ── the lantern trail: field NPCs are reachable and their quarry spawns in the right regions
+{
+  const { maps } = L.atlas(), D = L.defs();
+  const quests = D.side.filter((q) => q.id.startsWith("sq_lantern_"));
+  const workedMaps = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss"];
+  assert.equal(quests.length, 10);
+  assert.deepEqual(quests.filter((q) => q.giver === "lamplighter_mori").map((q) => [q.id, q.req.quest]), [
+    ["sq_lantern_lease", "sq_willow_letter"], ["sq_lantern_splice", "sq_lantern_clock"], ["sq_lantern_return", "sq_lantern_abyss"],
+  ]);
+  for (const id of workedMaps) {
+    const m = maps[id], npc = m.npcs.find((n) => n.id.startsWith("trail_"));
+    assert.equal(npc?.role, "quest", `${id} has a lantern quest giver`);
+    assert.ok(!blocked(m, npc.x, npc.y) && m.reach[npc.y * m.w + npc.x], `${npc.id} is on reachable ground`);
+    const q = quests.find((q) => q.giver === npc.id);
+    assert.equal(q?.goal.type, "kill");
+    assert.ok(m.spawns.some((spawn) => spawn.k === q.goal.mob), `${q.goal.mob} spawns in ${id}`);
+    const { band } = D.maps.find((x) => x.id === id);
+    assert.ok(q.req.lv >= band[0] && q.req.lv <= band[1]);
+  }
+  const W = world(L, "등불지기");
+  const hunt = "sq_lantern_fence";
+  W.meet("trail_fence");
+  assert.ok(W.act({ t: "sq", a: "take", id: hunt }).ok);
+  W.to("meadow", ...maps.meadow.entry);
+  W.kill("gutfrog");
+  assert.deepEqual(sqOf(W.self(), hunt), { st: 2, n: 0, need: 4 }, "other monsters do not count");
+  W.kill("twinhare");
+  assert.deepEqual(sqOf(W.self(), hunt), { st: 2, n: 1, need: 4 });
+  for (let i = 0; i < 3; i++) W.kill("twinhare");
+  assert.deepEqual(sqOf(W.self(), hunt), { st: 3, n: 4, need: 4 });
+  W.meet("trail_fence");
+  const gold = W.p.ch.gold;
+  assert.ok(W.act({ t: "sq", a: "done", id: hunt }).ok);
+  assert.equal(W.p.ch.gold, gold + 50);
+  assert.equal(sqOf(W.self(), hunt).st, 4);
+  assert.ok(!W.act({ t: "sq", a: "done", id: hunt }).ok, "the reward cannot be collected twice");
+  W.meet("trail_sap");
+  W.p.ch.lvl = 40;
+  assert.match(W.act({ t: "sq", a: "take", id: "sq_lantern_sap" }).error, /레벨 41/);
+  W.p.ch.lvl = 41;
+  assert.ok(W.act({ t: "sq", a: "take", id: "sq_lantern_sap" }).ok);
 }
 
 // ── every kind of goal, repeatable quests, dropping one, and the main chain replaced — with other data
