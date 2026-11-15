@@ -618,6 +618,9 @@ const IMPORTANT = new Set(["verdict", "steam", "overload", "supercon", "dragon_f
 const SFX = {
   // ── weapons ──
   swing() { this.noise(0.1, 0.22, 1800, "bandpass", 0, 600); },
+  // the dash (Space): a rush of air rising, a scuff of the feet; a blow slipped: a quick bright flick
+  dash() { const p = this.vary(); this.noise(0.18, 0.2, 700 * p, "bandpass", 0, 3400 * p); this.tone("triangle", 220 * p, 480 * p, 0.1, 0.04); this.noise(0.05, 0.1, 500, "lowpass", 0.12); },
+  dodge() { this.tone("sine", 1400, 2200, 0.08, 0.05); this.noise(0.06, 0.08, 4200, "highpass"); },
   // swings: a quick whoosh (shorter now the strokes snap) on a small pitch-drop and a soft thud
   swing_sword(fin) { const p = this.vary(); this.noise(fin ? 0.18 : 0.13, fin ? 0.32 : 0.24, 500 * p, "bandpass", 0, 2600 * p); this.tone("triangle", 150 * p, 70 * p, 0.11, 0.08); this.tone(0.5, 420 * p, 140 * p, 0.04, 0.04); },
   swing_dagger() { const p = this.vary(); this.noise(0.05, 0.2, 2800 * p, "bandpass", 0, 5600 * p); this.tone(0.5, 900 * p, 300 * p, 0.03, 0.03); },

@@ -276,6 +276,12 @@ body.qs-drag, body.qs-drag * { cursor: grabbing !important; }
 @media (min-width: 1760px) { body[data-lay="full"] #actions { --act: 46px; } body[data-lay="full"] #actions .act.atk { width: 54px; height: 54px; } body[data-lay="full"] #actions .act img { margin-top: 5px; } body[data-lay="full"] #actions .act.atk img { margin-top: 9px; } body[data-lay="full"] .st-main { flex-basis: 188px; } }
 #actions .act.auto img.gi { margin-top: 3px; }
 .act.atk .nm { color: #ffd2c4; }
+/* the dash (Space): a wind-swept boot, its 4 s cooldown swept like a skill's (hud.js dashTick) */
+.act.dash { background: #1c2a3a; box-shadow: inset 2px 2px 0 #0a121a, inset -2px -2px 0 #2e4c66; }
+.act.dash .nm { color: #c4e4ff; }
+.act.dash .gl { display: block; margin: 4px auto 0; font: 16px/1 var(--pix); color: #9ad0ff; text-shadow: 1px 1px 0 #000; font-style: normal; pointer-events: none; }
+.act.dash .cd { position: absolute; inset: 0; pointer-events: none; background: conic-gradient(rgba(6, 4, 10, .8) calc(var(--cd, 0) * 360deg), transparent 0); }
+.act.dash .cdt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 12px/1 var(--pix); font-style: normal; color: #fff; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; pointer-events: none; }
 .act.auto img.gi { width: 24px; height: 24px; margin: 8px auto 0; display: block; }
 .act.auto.on { border-color: #4ac06a; animation: pulse 1.2s steps(2) infinite; }
 .act.auto.on .nm { color: #9af0ae; }
@@ -426,13 +432,14 @@ body[data-lay="port"] #joy { left: 18px; bottom: calc(16px + var(--safe-b)); z-i
 body[data-lay="port"] #actions {
   position: fixed; right: 10px; bottom: calc(10px + var(--safe-b)); z-index: 6; --act: 44px;
   display: grid; gap: 4px; grid-template-columns: repeat(3, 44px) 64px; grid-template-rows: repeat(4, 44px);
-  grid-template-areas: "q6 q7 q8 ." "q3 q4 q5 ." "q0 q1 q2 at" "hp mp au at"; justify-items: center; align-items: center;
+  grid-template-areas: "q6 q7 q8 ." "q3 q4 q5 dt" "q0 q1 q2 at" "hp mp au at"; justify-items: center; align-items: center;
 }
 body[data-lay="port"] #actions .sep, body[data-lay="land"] #actions .sep { display: none; }
 body[data-lay="port"] #actions .act, body[data-lay="land"] #actions .act { width: 44px; height: 44px; }
 body[data-lay="port"] #actions .act.atk, body[data-lay="land"] #actions .act.atk { width: 64px; height: 64px; grid-area: at; }
 body[data-lay="port"] #actions .act.atk img, body[data-lay="land"] #actions .act.atk img { width: 40px; height: 40px; margin-top: 8px; }
 body[data-lay="port"] #qs-hint, body[data-lay="land"] #qs-hint { top: -16px; left: 0; transform: none; animation: none; }
+#b-dash { grid-area: dt; }
 #b-hp { grid-area: hp; } #b-mp { grid-area: mp; } #b-auto { grid-area: au; }
 #q0 { grid-area: q0; } #q1 { grid-area: q1; } #q2 { grid-area: q2; } #q3 { grid-area: q3; } #q4 { grid-area: q4; } #q5 { grid-area: q5; } #q6 { grid-area: q6; } #q7 { grid-area: q7; } #q8 { grid-area: q8; }
 body[data-lay="port"] #emotes, body[data-lay="land"] #emotes { right: auto; left: 50%; transform: translateX(-50%); top: 56px; bottom: auto; }
@@ -462,7 +469,7 @@ body[data-lay="land"] #joy { left: 18px; bottom: calc(18px + var(--safe-b)); }
 body[data-lay="land"] #actions {
   position: fixed; right: 10px; bottom: calc(14px + var(--safe-b)); z-index: 6; --act: 44px;
   display: grid; gap: 4px; grid-template-columns: repeat(3, 44px) 64px; grid-template-rows: repeat(4, 44px);
-  grid-template-areas: "q6 q7 q8 ." "q3 q4 q5 ." "q0 q1 q2 at" "hp mp au at"; justify-items: center; align-items: center;
+  grid-template-areas: "q6 q7 q8 ." "q3 q4 q5 dt" "q0 q1 q2 at" "hp mp au at"; justify-items: center; align-items: center;
 }
 body[data-lay="land"] #b-drawer { right: 6px; top: 6px; }
 body[data-lay="land"] #tut { left: 240px; transform: none; top: 6px; width: min(300px, calc(100vw - 300px)); min-width: 0; }

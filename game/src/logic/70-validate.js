@@ -183,6 +183,12 @@ export function validateAction(S, pid, a) {
       if (now < (p.stag || 0)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
+    case "dash": {
+      // Space (59-dash.js): refused in silence while it cools, while reeling, when down
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
+      const why = dashWhy(S, p);
+      return why ? bad(why) : OK;
+    }
     case "warp": {
       // a big ground has several stones: `i` picks one (0, the first, when left out)
       const i = a.i === undefined ? 0 : a.i;

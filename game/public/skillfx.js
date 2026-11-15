@@ -514,9 +514,38 @@ export function skillEvent(e, ctx) {
       }
       return true;
     }
+    case "ds": {
+      // the dash (59-dash.js, Space): ghosts of the body left down the run, wind streaks, dust kicked up at both
+      // ends; the hero itself is put at the far end by the snapshot's position fix (never predicted here)
+      const [, eid, x0, y0, x1, y1] = e, mine = eid === G.you;
+      if (!mine && dist2(G.me, x1, y1) > 360 * 360) return true;
+      const [sx0, sy0] = at(x0, y0), [sx1, sy1] = at(x1, y1), sl = Math.hypot(sx1 - sx0, sy1 - sy0) || 1, ux = (sx1 - sx0) / sl, uy = (sy1 - sy0) / sl;
+      S3.fxCustom((g, k) => {
+        for (let i = 1; i <= 3; i++) {
+          const q = i / 4, gx = sx0 + (sx1 - sx0) * q, gy = sy0 + (sy1 - sy0) * q;
+          g.globalAlpha = Math.max(0, (0.2 + q * 0.35) * (1 - k * (1.6 - q)));
+          px(g, gx - 4, gy - 13, 8, 12, INK); px(g, gx - 3, gy - 12, 6, 10, "#9ad0ff"); px(g, gx - 3, gy - 12, 6, 2, "#e8f6ff");
+        }
+        g.globalAlpha = Math.max(0, 1 - k * 1.5);
+        const L = Math.min(sl, 34) * (1 - k * 0.6);
+        for (const o of [-5, 0, 5]) for (let q = 0; q < L; q++) if (q % 7 < 4) px(g, sx1 - ux * (q + 7) - uy * o, sy1 - 6 - uy * (q + 7) + ux * o * 0.5, 1, 1, o ? "#9ad0ff" : "#ffffff");
+        g.globalAlpha = 1;
+      }, 340);
+      f.burst(x0, y0, 0, "#c8b898", 7, 0.8); f.burst(x1, y1, 0, "#c8b898", 4, 0.6);
+      Sound.play("dash");
+      return true;
+    }
+    case "dg": {
+      // a monster's blow slipped mid-dash
+      const src = entityPos(e[1]);
+      if (src) text(G, "회피!", src.x, src.y, 2, "#9ad0ff", e[1] === G.you);
+      if (e[1] === G.you) Sound.play("dodge");
+      return true;
+    }
   }
   return false;
 }
+const dist2 = (a, x, y) => (a.x - x) ** 2 + (a.y - y) ** 2;
 
 // ── the bow's shot: client.js attackFx calls bowFire for fx code 6 (the "a" event of a bow's basic
 // attack); the bow skills call it too. The arrow itself comes on its own ("ar", above): it is held on
