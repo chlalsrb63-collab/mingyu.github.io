@@ -72,3 +72,8 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 - [ ] [VFX] 보상 연출: 바닥 드롭 등급별 빛기둥(매직·레어·전설·세트), 장비 강화 성공·실패·저주, 스킬 강화 성공, 레벨업, 업적 달성
 - [ ] [VFX] 옛 보스와 필드 보스(크리온·심연의 어미, 각 사냥터 필드 보스)의 공격 이펙트 점검 후 약한 것부터 다시 그리기 — `docs/fx-audit.md`에 보스 섹션 추가 후 작업
 - [ ] [SFX] 몬스터 공격음을 생김새 무리별로(물기·할퀴기·침·포효), 정예·보스는 더 무겁게. 기존 믹스보다 크지 않게, 보고서에 새 소리 이름 목록
+- [ ] [ART] 보스 세트 장비 아이콘 8개 (16×16, 지금은 일반 5단계 그림을 같이 씀): 밤장막 세트 `veil_h` 박쥐 가면 · `veil_a` 장막 망토 · `veil_r` 송곳니 반지 · `veil_n` 흉곽 부적 (검보라·뼈·자홍 심장), 꽃무덤 세트 `bloom_h` 고래뼈 투구 · `bloom_a` 갈비 흉갑 · `bloom_r` 혼꽃 반지 · `bloom_n` 결정 심장 (청록 수정·백골·꽃잎). 파일 이름 = 아이템 id (`asset/generated/gear-sets/veil_h.png` …), 프롬프트 파일, `asset/CREDITS.md` 한 줄, `import-art.mjs`로 16×16 정리까지. 설치는 하지 말 것
+- [ ] [ART] 보스 전설 무기 5종의 가방 아이콘(16×16)과 손에 드는 월드 스프라이트(크기·방향은 `asset/README.md` 2번 표): `w_bloodcrown` 혈루 왕관 창, `w_cavhammer` 공동 망치, `w_ribbook` 흉곽 등불(책), `w_whalebow` 고래뼈 활, `w_bloomstaff` 혼꽃 지팡이 → `asset/generated/boss-legendaries/`. 설치는 하지 말 것
+- [ ] [ART] 보스 재료 아이콘 2개: `mat_bloodtear` 피눈물 결정, `mat_clubclaw` 망치 갯가재 집게 → `asset/generated/boss-mats/`
+- [ ] [ART] 일반 장비 리디자인 시안 1: 투구·갑옷·장갑 각 1~5단계(15개, 단계가 오를수록 재질이 가죽→철→강철→문양→전설 느낌으로) → `asset/generated/gear-t/`, 파일 이름 `h_1.png`…`g_5.png`. 지금 코드 그림(`game/public/art.js` `helmIcon` 등)과 갤러리에서 나란히 비교할 수 있게
+- [ ] [ART] 일반 장비 리디자인 시안 2: 신발·반지·목걸이 각 1~5단계(15개, `b_1`…, `r_1`…, `n_1`…) 같은 방식
