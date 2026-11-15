@@ -811,7 +811,7 @@ const COOP_LIB_MAP = (() => {
   return { ground: g.map((r) => r.join("")), objects: o.map((r) => r.join("")) };
 })();
 COOP.lib = {
-  name: "올빼미 도서관 책 분류", npc: "lib_borum", lobby: "owl_library", mins: 5, tools: ["desk", "sort"], combo: 20000, skill: "deliver",
+  name: "부엉이 도서관 책 분류", npc: "lib_borum", lobby: "owl_library", mins: 5, tools: ["desk", "sort"], combo: 20000, skill: "deliver",
   // cut-offs tuned on walking bots (tests/coop.mjs, hard): quick and accurate (an act every 300 ms) 1,181 · 2,338 · 3,145, just over
   // S (1,126 · 2,226 · 2,992); realistic (every 400 ms, walking at 90 %, 8 % wrong shelves) 817 · 1,508 · 2,187, B
   par: 1000, parN: { 2: 1.28, 3: 2.53, 4: 3.4 },
@@ -819,7 +819,7 @@ COOP.lib = {
   // stations (tiles): the 반납대's ten tiles, the 48 shelf tiles (shelf i = tiles 6i … 6i+5), the rack
   st: { desk: Array.from({ length: 10 }, (_, i) => [LIBH.desk[0] + i, LIBH.desk[2]]), shelf: LIBH.shelves.flatMap(([x, y]) => [0, 1, 2, 3, 4, 5].map((i) => [x + i, y])), rack: LIBH.rack, door: LIBH.door },
   start: [[29, 30], [33, 30], [27, 29], [35, 29]],
-  tpl: { name: "올빼미 도서관 · 대형 서고 (작업 중)", theme: "interior", style: "library", bgm: "cafe", safe: true, w: LIBH.W, h: LIBH.H, entry: [31, 30], ground: COOP_LIB_MAP.ground, objects: COOP_LIB_MAP.objects },
+  tpl: { name: "부엉이 도서관 · 대형 서고 (작업 중)", theme: "interior", style: "library", bgm: "cafe", safe: true, w: LIBH.W, h: LIBH.H, entry: [31, 30], ground: COOP_LIB_MAP.ground, objects: COOP_LIB_MAP.objects },
 };
 /**
  * The library's numbers. Returners arrive every `arriveMs[n]` (÷feverK in fever: the crowd), each with `books` [min, max] books, and

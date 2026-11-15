@@ -59,7 +59,7 @@ function coopStart(S, p, k) {
     c.pl[o.pid] = { name: o.ch.name, tool: J.tools[i % 2], hold: [], pts: 0, idleAt: t0, x, y, actAt: 0, hintAt: 0, ok: false };
     changeMap(S, o, id, x, y);
     o.spdBuff = Math.max(o.spdBuff || 0, endAt);
-    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint}${k === "pipe" ? "" : " (공격 키 / F)"}`);
+    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint}${k === "pipe" ? "" : " (Space / F)"}`);
     o.dirty = true;
   });
   COOP_JOB[k].init(S, dim, c);

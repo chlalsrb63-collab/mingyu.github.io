@@ -1344,7 +1344,7 @@ const books = (c, t) => c.ents.filter((e) => e.t === t);
   assert.match(act(lworld(1), "c0", { t: "coop_start", k: "lib" }).error, /2명 이상 파티로만/, "party-only");
   assert.ok(act(w, "c0", { t: "coop_start", k: "lib" }).ok);
   const dim = shiftOf(w), m = dim.map, c = dim.coop;
-  assert.deepEqual([m.w, m.h, m.theme, m.safe, m.name], [64, 44, "interior", true, "올빼미 도서관 · 대형 서고 (작업 중)"]);
+  assert.deepEqual([m.w, m.h, m.theme, m.safe, m.name], [64, 44, "interior", true, "부엉이 도서관 · 대형 서고 (작업 중)"]);
   assert.deepEqual(w.pids.map((pid) => c.pl[pid].tool), ["desk", "sort"]);
   for (const [x, y] of [...JL.st.desk, ...JL.st.shelf, JL.st.rack]) assert.ok(m.solid[y * m.w + x], `${x},${y} is furniture`);
   const Wk = walker(dim);

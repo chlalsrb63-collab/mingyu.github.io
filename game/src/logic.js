@@ -2182,7 +2182,7 @@ const COOP_LIB_MAP = (() => {
   return { ground: g.map((r) => r.join("")), objects: o.map((r) => r.join("")) };
 })();
 COOP.lib = {
-  name: "올빼미 도서관 책 분류", npc: "lib_borum", lobby: "owl_library", mins: 5, tools: ["desk", "sort"], combo: 20000, skill: "deliver",
+  name: "부엉이 도서관 책 분류", npc: "lib_borum", lobby: "owl_library", mins: 5, tools: ["desk", "sort"], combo: 20000, skill: "deliver",
   // cut-offs tuned on walking bots (tests/coop.mjs, hard): quick and accurate (an act every 300 ms) 1,181 · 2,338 · 3,145, just over
   // S (1,126 · 2,226 · 2,992); realistic (every 400 ms, walking at 90 %, 8 % wrong shelves) 817 · 1,508 · 2,187, B
   par: 1000, parN: { 2: 1.28, 3: 2.53, 4: 3.4 },
@@ -2190,7 +2190,7 @@ COOP.lib = {
   // stations (tiles): the 반납대's ten tiles, the 48 shelf tiles (shelf i = tiles 6i … 6i+5), the rack
   st: { desk: Array.from({ length: 10 }, (_, i) => [LIBH.desk[0] + i, LIBH.desk[2]]), shelf: LIBH.shelves.flatMap(([x, y]) => [0, 1, 2, 3, 4, 5].map((i) => [x + i, y])), rack: LIBH.rack, door: LIBH.door },
   start: [[29, 30], [33, 30], [27, 29], [35, 29]],
-  tpl: { name: "올빼미 도서관 · 대형 서고 (작업 중)", theme: "interior", style: "library", bgm: "cafe", safe: true, w: LIBH.W, h: LIBH.H, entry: [31, 30], ground: COOP_LIB_MAP.ground, objects: COOP_LIB_MAP.objects },
+  tpl: { name: "부엉이 도서관 · 대형 서고 (작업 중)", theme: "interior", style: "library", bgm: "cafe", safe: true, w: LIBH.W, h: LIBH.H, entry: [31, 30], ground: COOP_LIB_MAP.ground, objects: COOP_LIB_MAP.objects },
 };
 /**
  * The library's numbers. Returners arrive every `arriveMs[n]` (÷feverK in fever: the crowd), each with `books` [min, max] books, and
@@ -12653,7 +12653,7 @@ const ACH = [
   ["coopS_diner", "생활", "서빙의 달인", "쥬쥬식당 서빙 S 등급", 20, (c) => c.cnt.coopS_diner >= 1, "서빙의 달인"],
   ["coopS_forge", "생활", "단조의 달인", "캉캉대장간 단조 S 등급", 20, (c) => c.cnt.coopS_forge >= 1, "단조의 달인"],
   ["coopS_alch", "생활", "가마의 달인", "보글연금공방 가마 S 등급", 20, (c) => c.cnt.coopS_alch >= 1, "가마의 달인"],
-  ["coopS_lib", "생활", "서고의 달인", "올빼미 도서관 책 분류 S 등급", 20, (c) => c.cnt.coopS_lib >= 1, "서고의 달인"],
+  ["coopS_lib", "생활", "서고의 달인", "부엉이 도서관 책 분류 S 등급", 20, (c) => c.cnt.coopS_lib >= 1, "서고의 달인"],
   ["coop20", "생활", "단골 알바생", "협동 알바 20번 완수", 30, (c) => c.cnt.coop >= 20, "단골 알바생"],
   ...LIFE.map((k, i) => [`life50_${k}`, "생활", LIFE_MASTER[i], `${LIFE_NAME[i]} Lv.50 달성`, 30, (c) => !!c.life && c.life[k].lv >= LIFE_MAX, LIFE_MASTER[i]]),
   ["gat100", "생활", "부지런한 채집꾼", "채집 100번", 5, (c) => c.cnt.gat >= 100],
@@ -16541,7 +16541,7 @@ function coopStart(S, p, k) {
     c.pl[o.pid] = { name: o.ch.name, tool: J.tools[i % 2], hold: [], pts: 0, idleAt: t0, x, y, actAt: 0, hintAt: 0, ok: false };
     changeMap(S, o, id, x, y);
     o.spdBuff = Math.max(o.spdBuff || 0, endAt);
-    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint}${k === "pipe" ? "" : " (공격 키 / F)"}`);
+    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint}${k === "pipe" ? "" : " (Space / F)"}`);
     o.dirty = true;
   });
   COOP_JOB[k].init(S, dim, c);
