@@ -754,7 +754,7 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   watch(40);
   assert.ok(c.engAt > 0, "the fight is on");
   while (!boss.cast) { watch(1); assert.ok(evs.length < 5000 && now - c.engAt < 60000, "a marked cast comes"); }
-  const dc = evs.filter((e) => e[0] === "dc").map((e) => e[2]);
+  const dc = evs.filter((e) => e[0] === "bc").map((e) => e[2]);
   assert.deepEqual(dc, [0, 1, 2, 9], "three patterns, then the marked cast: " + dc);
   for (const kind of ["v", "t", "g"]) assert.ok(evs.some((e) => e[0] === kind), "telegraph " + kind + " shown");
   // the stagger gauge: damage during the cast empties it; emptied in time, the cast breaks and the boss is stunned
@@ -771,7 +771,7 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   assert.ok(!boss.cast && boss.stun >= now + CH.stunMs - 1, "broken: stunned");
   assert.ok(hp0 - boss.hp >= need, "the gauge is real damage");
   watch(1); cv = last("b1", "dim")[15];
-  assert.equal(cv[1], 2, "staggered on the wire"); assert.ok(evs.some((e) => e[0] === "dc" && e[2] === 8));
+  assert.equal(cv[1], 2, "staggered on the wire"); assert.ok(evs.some((e) => e[0] === "bc" && e[2] === 8));
   const stunnedAt = [boss.x, boss.y];
   for (let i = 0; i < CH.stunMs / 100 - 3; i++) { step(S); assert.deepEqual([boss.x, boss.y], stunnedAt, "it stands stunned"); }
   assert.equal(c.fury, 0); void hpA; void hpB;
@@ -840,7 +840,7 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   const dim = S.dims[a.map], boss = dim.rt.mobs.find((m) => m.id === dim.boss), evs = [];
   a.x = boss.x - 70; a.y = boss.y;
   for (let i = 0; i < 600 && !boss.cast; i++) { a.dead = false; a.hp = X.stats(a).mhp; step(S); for (const e of views.m1[views.m1.length - 1].ev || []) evs.push(e); }
-  assert.deepEqual(evs.filter((e) => e[0] === "dc").map((e) => e[2]), [0, 1, 2, 9]);
+  assert.deepEqual(evs.filter((e) => e[0] === "bc").map((e) => e[2]), [0, 1, 2, 9]);
   for (const kind of ["c", "t", "v", "g"]) assert.ok(evs.some((e) => e[0] === kind), "telegraph " + kind + " shown");
   assert.ok(evs.filter((e) => e[0] === "c").length >= 2, "two charges in a row");
 }

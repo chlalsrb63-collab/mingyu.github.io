@@ -235,8 +235,18 @@ Suggested split: T1 = 1 · T2 = 2+3 · T3 = 4 · T4 = 5 · T5 = F1+F2 data/art �
 - Stagger anywhere: `dealMob` → `bsDealt` while `mob.cast`; broken → `mob.stag` stun, `vuln` (+30 %) more damage taken while `mob.stag > now`.
 - Wire: a scripted mob's `M` row always ends `…, marks, brand, phase, state` (`r[10]` phase from 1, `r[11]` 0 · 1 casting · 2 dived);
   `net.js` → `e.bph e.bst`; `mobart.js artKind` draws `k_dive` / `k_ch` / `k_p2` when that model exists; auto-hunt and pre-aim skip dived.
-- Not done: the stagger gauge bar for field bosses (the rift HUD's `#dim-stag` lives in the rift box; a field HUD bar is its own small task);
-  boss `["dc", …]` events share the code with the tracker's decoy in `skillfx.js` (pre-existing clash, the client draws a lure for them).
+- Not done: the stagger gauge bar for field bosses (the rift HUD's `#dim-stag` lives in the rift box; a field HUD bar is its own small task).
+  Boss turn events are now `["bc", id, i]` (was `dc`, the tracker lure's code); the client flashes 8 broken / 7 went off.
+
+**Patterns — as built (T2–T4 core)**, same file and test:
+- `pats` rows take options: `[name, kind, {…}]` over `BS_PAT` defaults — `donut {ms 1400, r0 30, r 90, k 2}`, `cone {ms 1000, r 56, half 1.047 rad,
+  back 0, k 1.5}` (aimed at the target, `back` flips it), `mark {ms 3000, r 36, n 4, k 1.6}` (spread), `adds {kind, n 3, cap 6, d 40}`.
+- Shaped hits ride `mob.bs.q` as `{f: "hit", h}` and land in `bsTick` → `bsHit`: everyone on the map inside `bsInside(h)` at landing
+  (`r0 ≤ d ≤ r`, cone by dot product), dash i-frames save; a mark lands on its hero's position at that moment. Boss stands still for donut/cone.
+- Wire `["bt", shape, x, y, r, ms, a, b]`: 0 donut (a = r0), 1 cone (a facing, b half-angle, mrad — the server tests the same rounded values),
+  2 mark (a = hero eid). Client `skillfx.js bossTele`: red blinking fill, orange edge (white on your own mark), reach fills in, 4 countdown pips.
+- Adds: temp mobs (`add = boss id`, no elites) placed on a ring round the boss where `canStand`; they stay if the fight resets.
+- Not built: mark `share`, adds `shield`/`feed`, the four MOBS rows (no boss has a script yet: example rows commented in 56's header).
 
 ## 9. Open questions for the owner
 

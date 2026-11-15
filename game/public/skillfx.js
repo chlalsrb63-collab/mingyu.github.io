@@ -504,6 +504,37 @@ export function hammerImpact(x, y, r, hit, crit, kind) {
   }, final ? 410 : 260);
 }
 
+// ───────────────────────────── a boss's shaped telegraphs ─────────────────────────────
+/** The ground a shaped telegraph covers, a path in flat world pixels: shape 0 donut (safe inside R0), 1 cone (facing A,
+ *  half-angle H), 2 mark (a circle). The very shape the server tests (56-boss-script.js bsInside). */
+function telePath(g, s, x, y, R, R0, A, H) {
+  g.beginPath();
+  if (s === 1) { g.moveTo(x, y); g.arc(x, y, R, A - H, A + H); g.closePath(); return; }
+  g.arc(x, y, R, 0, 7);
+  if (s === 0) { g.moveTo(x + R0, y); g.arc(x, y, R0, 0, 7, true); }
+}
+/** ["bt", shape, x, y, r, ms, a, b]: red ground blinking, an orange edge, the reach filling in as the moment nears (a mark
+ *  rides on its hero, eid `a`, with four countdown pips; white-edged on yourself), then the blow flashes where it lands. */
+function bossTele(e, entityPos, G) {
+  const [, s, x0, y0, r, ms, a = 0, b = 0] = e;
+  const R = r * P, R0 = s === 0 ? a * P : 0, A = s === 1 ? a / 1000 : 0, H = b / 1000, mine = s === 2 && a === G.you;
+  const where = () => { const o = s === 2 && entityPos(a); return o ? [o.x * P, o.y * P] : [x0 * P, y0 * P]; };
+  Sound.play("warn");
+  S3.fx.add({ k: "custom", flat: true, dur: ms, draw: (g, k) => {
+    const [x, y] = where();
+    g.fillStyle = "#ff2a1a"; g.globalAlpha = Math.floor(now() / 140) % 2 ? 0.38 : 0.26;
+    telePath(g, s, x, y, R, R0, A, H); g.fill("evenodd");
+    g.globalAlpha = 0.5; telePath(g, s, x, y, R0 + (R - R0) * k, R0, A, H); g.fill("evenodd");
+    g.globalAlpha = 0.95; g.strokeStyle = mine ? "#ffffff" : "#ffb04a"; g.lineWidth = 3;
+    telePath(g, s, x, y, R, R0, A, H); g.stroke();
+    if (s === 2) for (let i = 0; i < Math.ceil((1 - k) * 4); i++) { const t = (i * Math.PI) / 2, u = x + Math.cos(t) * R, v = y + Math.sin(t) * R; px(g, u - 7, v - 7, 14, 14, INK); px(g, u - 5, v - 5, 10, 10, "#ffe08a"); }
+  }, done: () => {
+    const [x, y] = where();
+    S3.fx.add({ k: "custom", flat: true, dur: 240, draw: (g, k) => { g.globalAlpha = 0.7 * (1 - k); g.fillStyle = "#ffe08a"; telePath(g, s, x, y, R, R0, A, H); g.fill("evenodd"); } });
+    S3.shake(4); Sound.play("slam");
+  } });
+}
+
 export function skillEvent(e, ctx) {
   const { G, entityPos } = ctx;
   // the skills' effects go through the scaled-up set (scene2d big): denser, bigger, a core flash, shockwaves
@@ -614,6 +645,14 @@ export function skillEvent(e, ctx) {
       return true;
     }
     case "dc": lure(e[1], e[2], e[3], e[4], e[5]); f.burst(e[3], e[4], 0.6, "#3a2a58", 30, 1.4); return true;
+    case "bt": bossTele(e, entityPos, G); return true;
+    case "bc": {
+      // a scripted boss's turn (56-boss-script.js): 8 its marked cast broken, 7 the cast (or the hard enrage) went off
+      const m = entityPos(e[1]);
+      if (m && e[2] === 8) { f.burst(m.x, m.y, 0.8, "#ffe08a", 30, 2.6); B.shake(6); Sound.play("slam"); }
+      else if (m && e[2] === 7) { f.ring(m.x, m.y, 90, "#ff3a2a", 420, true); B.shake(8); Sound.play("boom"); }
+      return true;
+    }
     case "dx": S3.props.delete("dc" + e[1]); f.ring(e[2], e[3], e[4], "#8a5ad8", 320, true); f.burst(e[2], e[3], 0.6, "#c890ff", 30, 3); B.shake(4); Sound.play("decoy_pop"); return true;
     case "fz": { sign(e[1], "fz", t + e[2]); const m = G.mobs.get(e[1]); if (m) { text(G, "빙결", m.x, m.y, (m.h3 || 1.3) + 0.4, "#bfe8ff"); f.sparkle(m.x, m.y, 0.6, "#e8f8ff", 10); } return true; }
     case "vu": sign(e[1], "vu", t + e[2]); return true;
