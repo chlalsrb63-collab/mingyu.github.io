@@ -146,7 +146,7 @@ export function jobCard(id) {
   const text = jobId(key) === key ? [jobMotif(key) + "."] : [];
   if (job.kind === "none") text.push(`어떤 무기든 들 수 있습니다. 한 무기의 숙련이 ${d.jobWm}이 되면 그 무기의 직업, 두 무기가 ${d.hybWm || d.jobWm}씩이면 두 갈래 직업으로 전직할 수 있습니다.`);
   else if (job.kind === "single") text.push(`${wkName[job.wk[0]]} 하나에 모든 것을 건 직업입니다. 그 무기의 공격력 계수가 더 오르고 고유 기술을 배웁니다.`);
-  else text.push(`${job.wk.map((k) => wkName[k]).join("와(과) ")}, 두 무기를 Tab으로 바꿔 가며 싸우는 직업입니다.`);
+  else text.push(`${job.wk.map((k) => wkName[k]).join("와(과) ")}, 두 무기를 ${K("swap")}으로 바꿔 가며 싸우는 직업입니다.`);
   return {
     icon: jobImg(key), title: job.name, tag: KIND[job.kind] || "", text, rows,
     how: "전직관 아르센 앞에서 한 번만 할 수 있고 되돌릴 수 없습니다.", howLabel: "전직",

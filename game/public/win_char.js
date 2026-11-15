@@ -19,7 +19,7 @@ import { G, $, el, now, $$ } from "./state.js";
 import * as Gather from "./gather.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
-import { isOpen, touch, hideTip, closeDrawer, openWin } from "./windows.js";
+import { isOpen, touch, hideTip, closeDrawer, openWin, hoverTip } from "./windows.js";
 import { invOrder, itemSlot, QS_USE, useSlot, isGear, sellPrice, itemTip, itemName, SLOT_NAME, SLOT_GLYPH, setWorn, statText } from "./items.js";
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
 import * as Charms from "./charms.js";
@@ -61,7 +61,7 @@ export function renderInv(s) {
       selected: i === G.sel,
       onClick: () => { G.sel = G.sel === i ? -1 : i; Sound.play("ui"); refreshUi(); },
       onUse: () => useSlot(i),
-      hint: Charms.isCharm(entry) ? "참 탭에서 살펴보고, 참 보드(Shift+C)에 놓으면 효과를 냅니다" : isOpen("shop") ? "클릭해서 고른 뒤 아래 버튼으로 판매" : isOpen("smith") && isGear(entry.id) ? "클릭해서 고른 뒤 아래 버튼으로 분해" : usable ? `아래 단축칸(1~9)에 끌어다 놓을 수 있습니다${at ? ` · 지금 ${at}번` : ""}` : "",
+      hint: Charms.isCharm(entry) ? `참 탭에서 살펴보고, 참 보드(${K("charm")})에 놓으면 효과를 냅니다` : isOpen("shop") ? "클릭해서 고른 뒤 아래 버튼으로 판매" : isOpen("smith") && isGear(entry.id) ? "클릭해서 고른 뒤 아래 버튼으로 분해" : usable ? `아래 단축칸(1~9)에 끌어다 놓을 수 있습니다${at ? ` · 지금 ${at}번` : ""}` : "",
       price: isOpen("shop") && !Charms.isCharm(entry) ? `판매가 ${(sellPrice(entry) * (entry.n || 1)).toLocaleString()}G${entry.n > 1 ? ` (개당 ${sellPrice(entry)}G)` : ""}` : "",
     });
     // a usable thing can be dragged onto the quick slots; the slot it sits in shows in the corner
@@ -211,6 +211,7 @@ function skillRows(box, s, k) {
       sword: "대검을 좌우로 번갈아 휘둘러 두 번 이어 벱니다.",
     }[s.wk] || "가장 가까운 적을 겨냥합니다. 이어 치면 세 번째 타격이 마무리 일격이 됩니다.";
     basic.append(bi, bh, el("p", "", description));
+    hoverTip(basic, (n) => { n.append(el("div", "nm", `기본 공격 · ${wk.name || "공격"}`), el("div", "", description)); });
     box.append(basic);
   }
   // the single job of this weapon, and a two-weapon job that carries it once it is yours
@@ -233,20 +234,25 @@ function skillRows(box, s, k) {
     else hd.append(el("small", "mp", `MP ${w?.[1] ?? sk.mp}${w?.[4] ? ` · HP ${w[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : ""}`), el("small", "", `재사용 ${(w?.[5] ?? sk.cd) / 1000}초`));
     const detail = [rank?.current, why].filter(Boolean).join(" · ");
     hd.append(el("small", "", detail || (sk.job ? "전직 기술" : `숙련 ${sk.need} 습득`)));
+    // one line here (css ellipsis); the whole text is the hover card
     const desc = el("p", "", sk.desc);
-    if (rank?.current && rank.next) desc.append(el("br"), el("small", "", `다음 · ${rank.next}`));
     row.append(ic, hd, desc);
+    hoverTip(row, (n) => {
+      n.append(el("div", "nm", sk.name), el("div", "", sk.desc));
+      if (rank?.current && rank.next) n.append(el("small", "", `다음 · ${rank.next}`));
+      if (why) n.append(el("div", "hint", why));
+    });
     if (!pas) {
       // drag the icon (or the whole row) onto the quick slots; or tap the button, then a slot
       const put = el("button", "btn small qs-put", "단축칸");
-      put.title = "누른 뒤 아래 단축칸(1~9)을 누르면 거기에 놓입니다";
+      put.title = `누른 뒤 아래 단축칸(${K("slot1")}~${K("slot9")})을 누르면 거기에 놓입니다`;
+      if (!w) { put.disabled = true; put.title = why; }   // not learned yet: nothing to put on a slot
       put.addEventListener("click", () => QS.pick(["s", id]));
       row.append(put);
       QS.dragSource(row, ["s", id]);
     }
     box.append(row);
   }
-  box.append(el("p", "hint", "스킬을 끌어다 아래 단축칸(1~9)에 놓으면 그 숫자 키로 씁니다(우클릭·바깥에 놓으면 비움). 들고 있지 않은 무기의 스킬은 흐리게 보입니다. 자동사냥은 단축칸의 스킬을 칸 순서대로 씁니다."));
 }
 // the C window's tab row is the wardrobe's (장비 · 외형, wardrobe_ui.js shows and hides its parts); 능력치 joins it
 const charTabs = $("#w-char .wr-tabs"), charTabBtn = el("button", "", "능력치");
