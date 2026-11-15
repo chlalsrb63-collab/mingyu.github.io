@@ -48,6 +48,18 @@ Moved out of `AGENTS.md`; read the one recipe your task needs.
    `act({t:…})` + validate/apply cases.
 4. `shot.mjs --live --keys <key>`.
 
+**HUD colours and themes** (설정 → HUD 색상, `keymap.js hudTheme`, saved per browser in `lumentale:hud`)
+- Themes: `brass` 기본 황동 (default) · `linen` 베이지 리넨 · `sand` 모래 크림 · `olive` 올리브 차 (light, ink-brown text) ·
+  `mocha` 밤 모카 (dark warm brown, beige text) · `contrast` 고대비. Blocks at the end of `hud.css` ("HUD colour themes"),
+  scoped to `#hud #tip #windows #dead #info #mirror`, so the title screen keeps the brass look.
+- In new HUD CSS write colours as roles with the brass value as fallback: `var(--tx2, #a898b8)`. Roles: `--face` panel ·
+  `--scr` sunken screen · `--frame-bg` small framed boxes · `--ink` outlines · `--b-hi/-mid/-lo/-sh` brass ·
+  `--sf0…--sf5` surfaces, deepest shadow → button highlight (`--sf4` button, `--sf4h` hover) · `--rim` inner brass rim ·
+  `--cream --tx --tx2 --tx3` body → muted text · `--tx-hd --tx-hd2` titles · `--tx-gold -ok -bad -info -pink` accents.
+- Never theme rarity (`RARITY_COL`, `.slot.q*`), quest marks, job/mastery (`--wm*`) or HP/MP colours; text drawn over
+  the world keeps its black outline. `frames.js` redraws the 9-slices from the theme (`--frt-*`).
+- Light themes need body text ≥ 4.5:1 on `--face`, `--scr` and `--sf4`: check a new theme's ratios before adding it.
+
 **Add content with the editor data files** (`game/data/`, format in `docs/editor/SCHEMA.md`)
 0. Normally the owner does this in the editor (`npm run editor`). Changing the editor: drive it with
    Playwright against a copy (`EDITOR_DATA=<scratch copy of data> npm run editor`), never the real data.
