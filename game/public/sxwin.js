@@ -31,7 +31,7 @@ function render() {
   // a request for me
   const ask = $("#sx-ask");
   ask.hidden = !v.q;
-  if (v.q) $("#sx-ask-text").textContent = `${v.q[0]}님이 ${v.q[2]}을(를) 신청했습니다.`;
+  if (v.q) { const c = v.q[2].charCodeAt(v.q[2].length - 1) - 0xac00; $("#sx-ask-text").textContent = `${v.q[0]}님이 ${v.q[2]}${c >= 0 && c <= 11171 && c % 28 ? "을" : "를"} 신청했습니다.`; }
   // the trade
   if (v.t) { if (!isOpen("trade")) openWin("trade"); renderTrade(); }
   else if (isOpen("trade")) { shut = true; closeWin("trade"); shut = false; }

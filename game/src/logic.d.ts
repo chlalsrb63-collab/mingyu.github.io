@@ -78,8 +78,10 @@ export function nameOf(state: World, playerId: string): string;
 /** Has the player blocked that name? */
 export function blockedBy(state: World, playerId: string, name: unknown): boolean;
 /** A whisper arriving for `toName`: false when they are not here; true when delivered or dropped by their block list. */
-export function whisperIn(state: World, toName: string, fromName: string, text: string): boolean;
+export function whisperIn(state: World, toName: string, fromName: string, text: string, items?: unknown): boolean;
 /** The sender's own copy of a whisper that was handed to another channel. */
-export function whisperOut(state: World, playerId: string, toName: string, text: string): boolean;
+export function whisperOut(state: World, playerId: string, toName: string, text: string, items?: unknown): boolean;
+/** Copies of the bag entries a whisper links (`it` = [[slot, id]…]); [] when none or not in the bag. */
+export function whisperItems(state: World, playerId: string, it: unknown): unknown[];
 /** A toast for one player from outside the rules; false when they are not here. */
 export function noteTo(state: World, playerId: string, text: string): boolean;

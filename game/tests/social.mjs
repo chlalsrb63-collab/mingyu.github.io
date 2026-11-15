@@ -119,6 +119,18 @@ const say = (k, a) => { now += 800; return act(k, a); };
   for (const it of [[[0, "nope"]], [[99, e0.id]], [[0, e0.id], [0, e0.id], [0, e0.id]], "0", [[0.5, e0.id]]])
     assert.equal(say("b", { t: "chat", m: "x", it }).error, "링크한 물건이 가방에 없습니다", JSON.stringify(it));
   assert.ok(say("b", { t: "pchat", m: "파티 [물약]", it: [[0, e0.id]] }).error !== "링크한 물건이 가방에 없습니다");
+  // whispers link the same way: both copies carry the item, a stale link is refused
+  round();
+  assert.ok(say("b", { t: "w", to: "다온", m: "[작은 HP 물약] 줄까?", it: [[0, e0.id]] }).ok);
+  r = round();
+  assert.deepEqual(r.c, [{ n: "나래", m: "[작은 HP 물약] 줄까?", w: 1, it: [{ ...e0 }] }]);
+  assert.deepEqual(r.b, [{ n: "다온", m: "[작은 HP 물약] 줄까?", w: 2, it: [{ ...e0 }] }]);
+  assert.equal(say("b", { t: "w", to: "다온", m: "x", it: [[99, e0.id]] }).error, "링크한 물건이 가방에 없습니다");
+  // across channels the room copies them with whisperItems; whisperIn keeps only known items, two at most
+  assert.deepEqual(L.whisperItems(S, "b@s1", [[0, e0.id]]), [{ ...e0 }]);
+  assert.deepEqual(L.whisperItems(S, "b@s1", [[0, "nope"]]), []);
+  assert.equal(L.whisperIn(S, "다온", "먼곳", "봐", [{ ...e0 }, { id: "no_such_item" }, "x", { ...e0 }, { ...e0 }]), true);
+  assert.deepEqual(round().c, [{ n: "먼곳", m: "봐", w: 1, it: [{ ...e0 }] }], "the first two, unknown ones dropped");
   // the cap
   P("a").ch.blk = Array.from({ length: X.BLOCK_MAX }, (_, i) => `이름${i}`);
   assert.equal(say("a", { t: "blk", a: "add", name: "하나더" }).error, `차단은 ${X.BLOCK_MAX}명까지 할 수 있습니다`);

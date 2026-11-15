@@ -37,6 +37,7 @@ const sx = (k) => L.viewFor(S, `${k}@s1`).sx;
   P("b").x -= 6 * X.T;
   ok("a", { t: "sx", a: "ask", k: "trade", e: P("b").eid });
   assert.deepEqual(sx("b").q, ["가람", "trade", "거래"]);
+  assert.ok(P("a").toast.some((m) => m.endsWith("거래를 신청했습니다")), "the particle follows the word");
   // rate limit, and the target is waiting on one request already
   assert.match(err("a", { t: "sx", a: "ask", k: "rps", e: P("c").eid }), /잠시 후/);
   later();
@@ -158,7 +159,8 @@ const slotOf = (k, id) => P(k).ch.inv.findIndex((s) => s.id === id);
   assert.match(err("a", { t: "sx", a: "go" }), /가방에 없습니다/);
   ok("a", { t: "sx", a: "x" });
   assert.equal(P("b").trade, null);
-  assert.ok(P("b").toast.some((m) => /취소/.test(m)));
+  assert.ok(P("b").toast.some((m) => /님이 거래를 취소/.test(m)));
+  assert.ok(P("a").toast.includes("거래를 취소했습니다"), "the canceller is not named to themselves");
   log("trade dupe attempts ok");
 }
 

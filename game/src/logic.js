@@ -13811,16 +13811,27 @@ function chatFor(S, p, pid) {
     if (c.pt && c.pt !== p.party) continue;
     if (c.to !== undefined && c.to !== pid) continue;
     if (c.n && !c.sys && c.w !== 2 && p.ch.blk.length && blocked(p.ch, c.n)) continue;
-    out.push(c.to !== undefined ? (c.sys ? { sys: 1, m: c.m } : { n: c.n, m: c.m, w: c.w }) : c);
+    out.push(c.to !== undefined ? (c.sys ? { sys: 1, m: c.m } : { n: c.n, m: c.m, w: c.w, ...(c.it ? { it: c.it } : {}) }) : c);
   }
   return out;
 }
-/** The sender's own copy of a whisper (`w: 2`, `n` = who it went to). */
-export function whisperOut(S, pid, toName, text) {
+/** Copies of the bag entries a whisper links (`it` as chatLinks takes it; [] when none or not in the bag). */
+export function whisperItems(S, pid, it) {
+  const p = S.players[pid];
+  return ((p && chatLinks(p.ch, it)) || []).map((e) => JSON.parse(JSON.stringify(e)));
+}
+/** Linked items on a whisper line, as `{it}` to spread in: at most CHAT_LINKS known items (they may come from another channel). */
+function whisperIt(items) {
+  if (!Array.isArray(items)) return {};
+  const it = items.slice(0, CHAT_LINKS).filter((e) => e && typeof e === "object" && typeof e.id === "string" && ITEMS[e.id]);
+  return it.length ? { it: JSON.parse(JSON.stringify(it)) } : {};
+}
+/** The sender's own copy of a whisper (`w: 2`, `n` = who it went to; `items`: whisperItems). */
+export function whisperOut(S, pid, toName, text, items) {
   const p = S.players[pid];
   if (!p) return false;
   p.chatAt = S.now;
-  S.chat.push({ n: String(toName), m: String(text).trim().slice(0, WHISPER_LEN), w: 2, to: pid });
+  S.chat.push({ n: String(toName), m: String(text).trim().slice(0, WHISPER_LEN), w: 2, to: pid, ...whisperIt(items) });
   return true;
 }
 /**
@@ -13828,10 +13839,10 @@ export function whisperOut(S, pid, toName, text) {
  * name is here; true when it was delivered OR quietly dropped by the reader's block list — the sender
  * is never told which.
  */
-export function whisperIn(S, toName, fromName, text) {
+export function whisperIn(S, toName, fromName, text, items) {
   const o = playerByName(S, toName);
   if (!o) return false;
-  if (!blocked(o.ch, fromName)) S.chat.push({ n: String(fromName), m: String(text).trim().slice(0, WHISPER_LEN), w: 1, to: o.pid });
+  if (!blocked(o.ch, fromName)) S.chat.push({ n: String(fromName), m: String(text).trim().slice(0, WHISPER_LEN), w: 1, to: o.pid, ...whisperIt(items) });
   return true;
 }
 /** The pid of the player of that name in this world, or null (the room finds a socket with it). */
@@ -14005,6 +14016,7 @@ function socialValidate(S, p, a) {
       if (lowName(a.to) === lowName(ch.name)) return bad("자신에게는 귓속말을 보낼 수 없습니다");
       if (blocked(ch, a.to)) return bad("차단한 상대입니다. 차단을 풀고 보내 주세요");
       if (S.now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
+      if (!chatLinks(ch, a.it)) return bad("링크한 물건이 가방에 없습니다");
       return OK;
     }
     case "wk": {
@@ -14036,11 +14048,13 @@ function socialApply(S, p, a) {
       p.dirty = true;
       break;
     }
-    case "w":
+    case "w": {
       // one room: the reader is here or nowhere (the room relays to the other channel before it asks this)
-      if (whisperIn(S, a.to, ch.name, a.m)) whisperOut(S, p.pid, playerByName(S, a.to).ch.name, a.m);
+      const it = whisperItems(S, p.pid, a.it);
+      if (whisperIn(S, a.to, ch.name, a.m, it)) whisperOut(S, p.pid, playerByName(S, a.to).ch.name, a.m, it);
       else toast(p, `${a.to}님은 접속 중이 아닙니다.`);
       break;
+    }
     case "wk": {
       const r = weekReward(ch, a.i);
       ch.wk.got[a.i] = 1;
@@ -17943,7 +17957,7 @@ function sxApply(S, p, a) {
       const o = byEid(S, a.e);
       p.sxAt = now;
       o.req = { k: a.k, from: p.pid, at: now };
-      toast(p, `${o.ch.name}님에게 ${sxKind(a.k)}을(를) 신청했습니다`);
+      toast(p, `${o.ch.name}님에게 ${sxKind(a.k)}${pp(sxKind(a.k), "을를")} 신청했습니다`);
       return;
     }
     case "yes": case "no": {
@@ -17955,7 +17969,7 @@ function sxApply(S, p, a) {
       return;
     }
     case "x":
-      if (p.trade) sxEndTrade(S, p.trade, `${p.ch.name}님이 거래를 취소했습니다`);
+      if (p.trade) sxEndTrade(S, p.trade, `${p.ch.name}님이 거래를 취소했습니다`, p);
       else if (p.game) sxEndGame(S, p.game, `${p.ch.name}님이 미니게임을 나갔습니다`);
       else p.req = null;
       return;
@@ -17987,12 +18001,12 @@ function sxBegin(S, A, B, k) {
   MINIGAMES[k].start(S, g);
   A.game = B.game = g;
 }
-function sxEndTrade(S, tr, why) {
+function sxEndTrade(S, tr, why, by) {
   for (const pid of [tr.a, tr.b]) {
     const x = S.players[pid];
     if (!x || x.trade !== tr) continue;
     x.trade = null;
-    if (why) toast(x, why);
+    if (why) toast(x, x === by ? "거래를 취소했습니다" : why);   // the one who cancelled is not named to themselves
   }
 }
 function sxEndGame(S, g, why) {

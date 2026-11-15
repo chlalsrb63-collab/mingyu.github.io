@@ -129,6 +129,9 @@ body:not([data-lay="full"]) #w-inv.docked > header .x { display: none; }
 #chat-fold { display: none; margin-left: auto; width: 26px; }
 #chat-fold::before { content: "▾"; color: var(--cream); }
 body.chat-folded #chat-fold::before { content: "▴"; }
+#chat-time { margin-left: auto; }
+#chat-time + #chat-fold { margin-left: 0; }
+#chat-log.times p::before { content: attr(data-t) " "; color: var(--tx3, #9a90a8); }
 #chat-log { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 2px 6px; font: var(--t12)/1.34 var(--pix); scrollbar-width: thin; scrollbar-color: var(--b-lo) transparent; }
 #chat-log p { margin: 0; word-break: break-all; color: var(--tx, #ece4d0); }
 #chat-log p.npc { color: var(--tx2, #e8dcb0); } #chat-log p.npc .who { color: var(--tx-gold, #e2c486); } #chat-log p.party .who { color: var(--tx-info, #8fd0ff); }
