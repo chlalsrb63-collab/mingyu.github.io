@@ -332,7 +332,7 @@ The §9 list is in (`03-skills.js` rows after `musou`, cases in `57-weapon-skill
 | chainbolt | 연쇄 번개 | staff 15 | **3.5 s** | ≤130, 5 hits, jumps ≤60, **×0.5, MP 10, one reaction at ×0.25** (the staff sits at its band's top) | 152 |
 | shoulder | 어깨 돌파 | sword 15 | 9 s | dash 90 carrying the line; ≥2 carried or pinned (cannot move 12) → stun 1 s + stg; else knock 14 | 153 |
 | snare | 올무 화살 | bow 30 | 10 s | `trap` prop with `snare`, max 2; root 2.5/1.5/0.5 s as stg, **×0.5 hit**, two within 30 pulled (drag) | 154 |
-| bladevortex | 칼날 소용돌이 | dagger 40 | **3.5 s** | blades on the `spin` prop (`o.blades`, no channel): max 5, **8 s**, r36, ×0.12/blade every 0.4 s; cast at 5 → 5-knife fan ×0.6 +1 mark (fx 156) | 155/156 |
+| bladevortex | 칼날 소용돌이 | dagger 40 | **3.5 s** | blades on the `spin` prop (`o.blades`, no channel): max 5, **8 s**, r36, ×0.12/blade every 0.4 s on the **3 nearest** (`cap`, balance-2026-11-15); cast at 5 → 5-knife fan ×0.6 +1 mark (fx 156) | 155/156 |
 | smoke | 연막탄 | dagger 5 | 12 s | ≤90, r48, 4 s; a mob entering drops its target, `mob.daze` blocks re-aggro (**a hit still wakes it**); party inside −30% from "shot" | 157 |
 | parry | 칼등 받아치기 | sword 5 | 5 s | 0.35 s, front half-plane; caught → no damage, attacker stun 1.2 s (elite half) + stg, counter r40 ×1.2, +2 관성, cd ×0.5; in a marked cast −25% gauge; whiff → 0.4 s +20% taken | 158 |
 | mountain | 산 가르기 | sword 30 | 16 s | hold ×1.0/1.6/2.6/4.2 at 0/0.5/1.0/1.4 s, past 1.8 s auto-release at tier 2; walk 30%; first blow at tier ≥1 halved, no reel, +1 tier; 관성 5 starts at tier 1; tier 3 eats stg/air +40% | 159 |
