@@ -310,7 +310,9 @@ const COOP_T = {
   xp: [0.08, 0.14, 0.20, 0.28], gold: [40, 60, 80, 110], gearQ: [0, 1, 1, 2], stone: [1, 2, 3, 5], life: [0.30, 0.45, 0.60, 0.80],
   tip: 10, tipLife: 0.1, helpTip: 15, helpLife: 0.25, rep: 5,
 };
-const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반" };
+const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치" };
+/** An empty row of the forge template's object layer (wall, 28 open tiles, the cut-down front wall). */
+const COOP_ROW = "=" + " ".repeat(28) + "_";
 /** The jobs: name, owner NPC and lobby, shift minutes, the two tools (rotation A B A B), par, combo window, life skill, template. */
 const COOP = {
   apt: {
@@ -376,6 +378,46 @@ const COOP = {
         "=                                          _", "=g         s         #         s          g_", "____________________________________________"],
     },
   },
+  forge: {
+    name: "캉캉대장간 단조", npc: "kangkang", lobby: "kangkang_forge", mins: 5, tools: ["tongs", "hammer"], combo: 40000, skill: "craft",
+    hint: "집게 담당은 철 상자 → 화덕(풀무질로 60~80도) → 달궈진 쇠를 모루에, 망치 담당은 박자에 맞춰 두드리고 담금질 → 납품구!",
+    // cut-offs tuned on walking bots like the others (tests/coop.mjs: 1–4 bots, every blow on the beat, score ≈ 971 · 2,380 ·
+    // 2,968 · 5,119 delivering 8 · 14 · 17 · 25 pieces, just over S); a real party, off the beat and slower, lands on B–A
+    par: 1000, parN: { 1: 1.07, 2: 2.62, 3: 3.27, 4: 5.6 },
+    // stations (tiles; solid furniture, used from a neighbouring tile): the iron crate `]`, furnaces `<` and anvils `&` in two
+    // rows, quench barrels `w` and the chute (a counter `m`) to the east, the rack `>` by the west wall
+    st: { crate: [2, 1], furnace: [[7, 1], [13, 1]], anvil: [[7, 7], [13, 7], [19, 7]], quench: [[24, 3], [24, 11]], chute: [27, 7], rack: [2, 7] },
+    start: [[5, 4], [9, 4], [11, 4], [15, 4]],
+    tpl: {
+      name: "캉캉대장간 (작업 중)", theme: "interior", style: "forge", bgm: "forge", safe: true, w: 30, h: 16, entry: [14, 10],
+      ground: Array.from({ length: 16 }, () => "x".repeat(30)),
+      objects: ["+===^===+===^===+===^===+=====", "= ]]   <     <" + " ".repeat(13) + "* _", COOP_ROW, "=" + " ".repeat(23) + "w    _", "=*" + " ".repeat(27) + "_",
+        COOP_ROW, COOP_ROW, "= >    &     &     &       m _", COOP_ROW, COOP_ROW, COOP_ROW, "=" + " ".repeat(23) + "w    _", COOP_ROW,
+        "=g" + " ".repeat(25) + "] _", COOP_ROW, "_".repeat(30)],
+    },
+  },
+};
+/**
+ * 캉캉대장간 단조 (C.6, v1; the 보글 skin is not built). Orders (strikes `n`, points, heats): at most `open[n − 1]` at once,
+ * a new one every `orderMs[n − 1]`, `deadMs` to deliver (−`latePen` and combo 0 when missed). A furnace's T loses `decay`/s,
+ * a tongs act there pumps +`pump`; a bar in it heats +`heatIn`/s at T ≥ `lo`, +`heatLo`/s from 30, and scorches (quality
+ * −`scorchQ`/s) above `scorch`; at 100 it is hot and stays hot `hotMs` out of the fire. On an anvil the beat is `beatMs`
+ * (`feverBeat` in fever), the first `leadMs` after placing; a strike within `perfect` ms of a beat is +2, within `good` +1,
+ * else −1, after the player's own offset (median of the last 5, ±`latMax`). Grade by quality q vs strikes N (`grades`:
+ * [min q/N, ×pts, name]); pay pts × grade × (1 + `timeK`·deadline left) × mult, tongs `tongsK` / hammer `hammerK`.
+ * A piece no open order wants sells for ×`offK`.
+ */
+const COOP_FORGE = {
+  orders: [
+    { name: "편자", n: 6, pts: 40, heats: 1 },
+    { name: "괭이날", n: 8, pts: 55, heats: 1 },
+    { name: "검날", n: 10, pts: 70, heats: 1 },
+    { name: "냄비", n: 8, pts: 55, heats: 2 },
+  ],
+  open: [3, 3, 4, 4], orderMs: [30000, 20000, 14000, 11000], firstMs: 1000, deadMs: 100000, latePen: 20,
+  T0: 60, decay: 4, pump: 9, pumpMs: 300, lo: 60, hi: 80, scorch: 90, heatIn: 12, heatLo: 4, scorchQ: 0.5, hotMs: 12000, reheat: 50, slots: 2,
+  beatMs: 750, feverBeat: 600, leadMs: 1000, perfect: 160, good: 320, latMax: 150,
+  grades: [[1.6, 1.6, "걸작"], [1.0, 1.3, "상"], [0.4, 1.0, "중"], [-1e9, 0.5, "하"]], timeK: 0.3, tongsK: 0.45, hammerK: 0.55, offK: 0.25, syncMs: 1000,
 };
 /**
  * 쥬쥬식당 서빙 (C.5, v1: no plates to wash, three dishes). By the party size n at the start: at most `seats[n − 1]` tables
