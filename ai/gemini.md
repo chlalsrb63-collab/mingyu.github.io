@@ -10,7 +10,9 @@ in your own git worktree (`.work/gemini`, branch `gemini/work`).
    to main for you. If a rebase/merge is in progress or the status isn't clean, stop and say so (don't try to fix git).
    Speed (owner, 2026-11-15): one task per run, read only the files the task names (grep, don't read big files whole),
    at most 2 simple screenshots (`--page mobs` / `--page scene`, no long --eval scripts), no full test suite.
-2. Pick ONE task, in this order:
+2. For a direct Antigravity handoff, use the first unchecked task in the **GEMINI** section of
+   `ai/TASKS.md`. If there is no such task, or it is already claimed or reported, report the
+   status and stop. For a batch-script session, pick ONE task in this order:
    a. the first unchecked `- [ ]` line in the **GEMINI** section of `ai/TASKS.current.md`
       (a fresh copy of the owner's board) that has no report yet in `ai/reports/`;
    b. otherwise (AUTO MODE) the first unchecked line in the **GEMINI 백로그** of `ai/ROADMAP.md`
