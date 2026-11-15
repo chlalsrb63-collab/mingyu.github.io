@@ -481,6 +481,9 @@ const ICON = {
     ["A", U(R(11, 14, 9, 12), C(15.5, 14, 4.5))], ["*", R(15, 13, 2, 9), R(12.5, 15, 7, 2)],
   ],
 };
+// placeholders: the new skills (skill-ideas.md §9) borrow an existing icon until they are drawn at 32×32
+for (const [id, from] of Object.entries({ stomp: "hammer_stamp", mortar: "rain", dragonpierce: "snipe", rollshot: "leapshot", chainbolt: "dragon",
+  shoulder: "rend", snare: "traps", bladevortex: "flurry", smoke: "shade", parry: "slash", mountain: "cleave" })) ICON[id] = ICON[from];
 
 // a few mastery passives have no prefix in the id but are passives all the same
 const BASE_PASSIVE = new Set(["inertia", "vitals", "tip", "reso", "brand", "hawk"]);
