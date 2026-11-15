@@ -6,6 +6,7 @@
  */
 
 import * as Art from "./art.js";
+import { API } from "./account.js";
 import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
 import { iconImg, CLASS_ICON } from "./uiicons.js";
@@ -40,12 +41,8 @@ import { renderRank, renderParty, renderGuild, renderPartyHud, renderInvite, par
 
 // ───────────────────────────── connection ─────────────────────────────
 
-/** Played from anywhere else (e.g. a static mirror), the game still talks to its live server. */
-const LIVE_HOST = "lumentale-online.higgsfield.app";
-const local = ["localhost", "127.0.0.1"].includes(location.hostname);
-// (our own Cloudflare deploy on *.workers.dev serves itself too — keep in step with account.js)
-const HOST = local || location.hostname.endsWith("higgsfield.app") || location.hostname.endsWith(".workers.dev") ? location.host : LIVE_HOST;
-const PROTO = location.protocol === "http:" && local ? "ws:" : "wss:";
+// Use the same server that issued the account session, including on a home LAN.
+const WS_BASE = API || location.origin;
 
 /**
  * The channel: one of the two of a server ("s1-ch2"), chosen in the lobby
@@ -67,7 +64,9 @@ export function connect(ch = channel, delay = 0) {
   open();
 }
 function open() {
-  const sock = (ws = new WebSocket(`${PROTO}//${HOST}/ws/${channel}`));
+  const url = new URL(`/ws/${channel}`, WS_BASE);
+  url.protocol = url.protocol === "http:" ? "ws:" : "wss:";
+  const sock = (ws = new WebSocket(url));
   sock.addEventListener("open", () => {
     retry = 0;
     sock.send(JSON.stringify(Lobby.joinMsg()));

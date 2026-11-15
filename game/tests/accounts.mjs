@@ -25,6 +25,24 @@ const acc = new A.Accounts(store, webcrypto);
 let now = 1_800_000_000_000;
 const IP = "203.0.113.7";
 
+// Browser accounts use the page's server when opened from a LAN address.
+{
+  const cases = [
+    ["http://127.0.0.1:8787", ""], ["http://192.168.31.58:8830", ""],
+    ["http://10.0.0.23:8830", ""], ["http://172.31.4.6:8830", ""],
+    ["https://game.example.workers.dev", ""],
+    ["https://mirror.example", "https://lumentale-online.higgsfield.app"],
+    ["http://172.32.4.6:8830", "https://lumentale-online.higgsfield.app"],
+  ];
+  try {
+    for (const [i, [origin, expected]] of cases.entries()) {
+      globalThis.location = new URL(origin);
+      const client = await import(`../public/account.js?route=${i}`);
+      assert.equal(client.API, expected, origin);
+    }
+  } finally { delete globalThis.location; }
+}
+
 // ── validation helpers
 assert.equal(A.normId("  Bunny_01 "), "bunny_01");
 for (const bad of ["abc", "a".repeat(17), "토끼토끼", "has space", "dash-ed", "", 12345, null]) assert.equal(A.normId(bad), null, `id ${bad}`);

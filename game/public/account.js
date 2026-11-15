@@ -31,14 +31,20 @@ export const SERVERS = [
 
 /**
  * Where the API lives: this origin when the page is served by the game server
- * itself (or locally), else the live server — the same rule client.js uses for
- * the WebSocket, so a static mirror still signs in. The API allows any origin.
+ * itself (including a home LAN), else the live server. net.js shares this
+ * decision for the WebSocket, so the session stays on the same server.
  */
 const LIVE_HOST = "lumentale-online.higgsfield.app";
-const LOCAL = typeof location !== "undefined" && ["localhost", "127.0.0.1"].includes(location.hostname);
+function localHost(host) {
+  if (host === "localhost" || host === "[::1]") return true;
+  const parts = /^(\d+)\.(\d+)\.\d+\.\d+$/.exec(host);
+  if (!parts) return false;
+  const first = Number(parts[1]), second = Number(parts[2]);
+  return first === 127 || first === 10 || (first === 172 && second >= 16 && second <= 31) || (first === 192 && second === 168);
+}
 /** Hosts that serve the game itself: Higgsfield, and our own Cloudflare deploy (wrangler.deploy.jsonc). */
-const SELF_SERVED = (h) => h.endsWith("higgsfield.app") || h.endsWith(".workers.dev");
-export const API = typeof location === "undefined" || LOCAL || SELF_SERVED(location.hostname) ? "" : `https://${LIVE_HOST}`;
+const SELF_SERVED = (h) => h.endsWith(".higgsfield.app") || h.endsWith(".workers.dev");
+export const API = typeof location === "undefined" || localHost(location.hostname) || SELF_SERVED(location.hostname) ? "" : `https://${LIVE_HOST}`;
 
 async function post(path, body) {
   try {
