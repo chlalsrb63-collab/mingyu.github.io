@@ -15,6 +15,7 @@ import * as QS from "./quickslots.js";
 import * as SideQ from "./sidequests.js";
 import { drawWeaponGauge } from "./weapongauge.js";
 import * as Mastery from "./mastery.js";
+import { jobIconUrl } from "./jobicons.js";
 import * as StatWin from "./statwin.js";
 import * as JobTree from "./jobtree.js";
 import * as Sky from "./sky.js";
@@ -75,6 +76,7 @@ export function hudBars() {
   $("#st-mp").style.width = `${clamp((me.mp / s.mmp) * 100, 0, 100)}%`;
   $("#st-hpt").textContent = `${me.hp}/${s.mhp}`;
   $("#st-mpt").textContent = `${me.mp}/${s.mmp}`;
+  hudGauge(...(me.gg || [0, 0]));
 }
 /** The purse under the bars: the coin and the sum, with a short +N / -N that floats off when it changes. */
 let hudGold = null;
@@ -118,18 +120,38 @@ function hudFrame(s) {
   $("#exp").classList.toggle("ready", !maxed && s.xp >= need);
   hudBars();
 }
-/** Job level + job-XP bar under the mana bar (hidden for 모험가); a level gained (jp[0] rises) pulses it. */
+/** Job level row under the weapon-mastery strip: emblem, "<job> Lv.N", job-XP bar. 모험가 (jp null) shows it dimmed as "전직 전". A level gained (jp[0] rises) pulses it. */
 let jobLv = 0;
 function hudJobBar(s) {
-  const jb = $("#st-jb"), jp = s.jp;
-  jb.hidden = !jp;
-  if (!jp) { jobLv = 0; return; }
+  const jr = $("#jr"), jp = s.jp, name = Mastery.jobOf(s, G.defs).name;
+  setOnce($("#jr-ic"), s.job || "", (n) => { n.src = jobIconUrl(s.job || "adventurer"); });
+  jr.classList.toggle("off", !jp);
+  if (!jp) { jobLv = 0; $("#jr-t").textContent = `${name} 전직 전`; $("#jr-fill").style.width = "0"; jr.title = "직업 레벨은 전직한 뒤부터 오릅니다"; return; }
   const [lv, xp, need] = jp;
-  $("#st-jb-fill").style.width = need > 0 ? `${Math.min(100, (xp / need) * 100)}%` : "100%";
-  $("#st-jb-t").textContent = `Lv.${lv}`;
-  jb.title = `직업 Lv.${lv} · ${need > 0 ? `${xp.toLocaleString()} / ${need.toLocaleString()}` : "최대"}`;
-  if (jobLv && lv > jobLv) { jb.classList.remove("pop"); void jb.offsetWidth; jb.classList.add("pop"); }
+  $("#jr-fill").style.width = need > 0 ? `${Math.min(100, (xp / need) * 100)}%` : "100%";
+  $("#jr-t").textContent = `${name} Lv.${lv}`;
+  jr.title = `직업 Lv.${lv} · ${need > 0 ? `${xp.toLocaleString()} / ${need.toLocaleString()}` : "최대"}`;
+  if (jobLv && lv > jobLv) { jr.classList.remove("pop"); void jr.offsetWidth; jr.classList.add("pop"); }
   jobLv = lv;
+}
+/** Job special gauge (특수게이지) under the mana bar: the gauge each job spends. No rules yet: the server will append
+ *  `[cur, max]` as me[12], me[13] at the END of the `me` snapshot array (net.js turns it into G.me.gg = [cur, max]);
+ *  until then (or for a job not listed) the row stays hidden. name <= 2 Korean chars (label column). */
+const GA = { swordsman: ["분노", "#ff8a3a"], thief: ["집중", "#c9a0ff"], lancer: ["기세", "#ff7ab8"], wizard: ["마력", "#35d6c4"], warlock: ["저주", "#a35cf0"], archer: ["조준", "#e8e05a"], hammer: ["투지", "#ffa0a0"] };
+export const JOB_GAUGES = {
+  ...GA, mercenary: GA.hammer, paladin: ["신앙", "#9ad0ff"], destroyer: ["파괴", "#ff6a3a"],
+  spellblade: GA.wizard, tracker: GA.archer, dragoon: GA.lancer, hexblade: GA.warlock, darkknight: GA.swordsman,
+  bladedancer: GA.swordsman, trickster: GA.thief, spellspear: GA.lancer, runesage: GA.wizard, runearcher: GA.archer,
+};
+export function hudGauge(cur, max) {
+  const gg = $("#st-gg"), def = JOB_GAUGES[G.self && G.self.job];
+  gg.hidden = !def || !(max > 0);
+  if (gg.hidden) return;
+  gg.style.setProperty("--gg", def[1]);
+  $("#st-gg-n").textContent = def[0];
+  $("#st-gg-fill").style.width = `${clamp((cur / max) * 100, 0, 100)}%`;
+  $("#st-gg-t").textContent = `${Math.floor(cur)}/${max}`;
+  gg.title = `${def[0]} ${Math.floor(cur)} / ${max}`;
 }
 /** The weapon-mastery strip beside the bars (mastery.js); a level gained flashes it and chimes. */
 function hudMastery(s) {
