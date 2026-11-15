@@ -45,7 +45,7 @@ S.now = now;
     L.tick(S, (now += 100));
     const rt = L.runtime(S, id);
     // only the cells near the scout wake: never more than the cap, and never in the plaza by the way in
-    assert.ok(rt.mobs.length >= Math.min(40, crowd * 0.3) && rt.mobs.length <= 230, `${id}: ${rt.mobs.length} of ${crowd} monsters about the entrance`);
+    { const n = rt.mobs.filter((o) => o.id !== rt.fb).length; assert.ok(n >= Math.min(40, crowd * 0.3) && n <= 230, `${id}: ${n} (and its field boss) of ${crowd} monsters about the entrance`); }
     if (m.zone) for (const mob of rt.mobs) if (mob.slot) assert.notEqual(m.zone[Math.floor(mob.y / 16) * m.w + Math.floor(mob.x / 16)], 0, `${id}: a ${mob.k} in the safe plaza`);
     for (const mob of rt.mobs) {
       assert.equal(mob.tr.length, mob.el, `${id}: a rank-${mob.el} ${mob.k} carries ${mob.el} trait(s)`);

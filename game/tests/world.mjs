@@ -100,7 +100,7 @@ for (const id of ["crypt", "sewer", "abyss"]) {
   assert.equal(ord.filter((sp) => qd(sp) < far * 0.04).length, 0, `${id}: nobody lives right by the door`);
   const nearE = rate((sp) => qd(sp) < far * 0.3), deepE = rate((sp) => qd(sp) > far * 0.6);
   assert.ok(deepE > nearE * 2, `${id}: the depths breed elites far more often than the way in (${nearE.toFixed(2)} near, ${deepE.toFixed(2)} deep)`);
-  assert.ok(rt.mobs.length <= 230, `${id}: ${rt.mobs.length} monsters`);
+  assert.ok(rt.mobs.filter((o) => o.id !== rt.fb).length <= 230, `${id}: ${rt.mobs.length} monsters (with its field boss)`);
   assert.ok(rt.fires.length >= 1, id + " has a camp");
   const fire = rt.fires[0], fd = dist[Math.floor(fire.y / 16) * m.w + Math.floor(fire.x / 16)];
   assert.ok(fd > far * 0.2 && fd < far * 0.85, `${id}: the camp is partway in (${fd} of ${far})`);

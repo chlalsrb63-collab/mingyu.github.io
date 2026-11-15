@@ -430,6 +430,7 @@ function dimTick(S, now) {
 function dimRespawn(S, p) {
   const dim = dimAt(S, p.map);
   if (!dim) return false;
+  if (dim.story) { storyHome(S, p, "쓰러졌습니다… 다시 그 자리로 다가가면 재도전할 수 있습니다."); return true; }
   const [x, y] = dimSpot(dim.map, ri(S, 0, 8));
   p.dead = false; p.dimDeadAt = 0;
   const st = stats(p);
@@ -587,7 +588,9 @@ function dimApply(S, p, a) {
       rcCheck(S, party);
       break;
     case "dim_cancel": rcEnd(S, party, "파티장이 차원 균열 입장을 취소했습니다."); break;
-    case "dim_leave": toast(p, "차원 균열을 떠나 버드나무광장으로 돌아왔습니다."); dimHome(S, p); break;
+    case "dim_leave":
+      if (dimAt(S, p.map).story) { storyHome(S, p, "도전을 그만두고 돌아왔습니다. 다시 그 자리로 다가가면 재도전할 수 있습니다."); break; }
+      toast(p, "차원 균열을 떠나 버드나무광장으로 돌아왔습니다."); dimHome(S, p); break;
     case "dim_join": {
       const dim = dimJoinable(S, p);
       const [x, y] = dimSpot(dim.map, dimInside(S, dim.id).length);

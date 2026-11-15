@@ -376,11 +376,13 @@ export function tick(S, now) {
   worldEvent(S, now);
   skyTick(S, now);
   dimTick(S, now);
+  storyTick(S, now);
   homeTick(S, now);
   const pids = Object.keys(S.players);
   for (const id of liveMapIds(S)) {
     const rt = S.maps[id];
     if (rt.n <= 0) continue;
+    fbTick(S, rt, now);   // the field boss back at its spot, its quest's holder taken to the story fight (67-trophies.js)
     npcLifeTick(rt, now);
     const m = mapOfS(S, id);
     cellPass(S, m, rt, pids);

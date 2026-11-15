@@ -127,42 +127,26 @@ for (let i = 0; (!rt.fb || (ch.mk.twinhare || 0) < 30) && i < 500; i++) {
   if (m.dead) killed++;
   step(30); p.hp = 99999;
 }
-assert.ok(rt.fb, "kills call out the field boss, counted " + rt.kc);
+assert.ok(rt.fb, "the field boss stands on the meadow from the start");
 assert.ok(p.streak >= 20, "kills in quick succession build a streak, got " + p.streak);
 assert.ok((ch.mk.twinhare || 0) >= 30, "kills are counted per monster");
 const boss = rt.mobs.find((m) => m.el === 2);
-assert.ok(boss && boss.k === "lambmaw" && rt.fb === boss.id, "the field boss arrives");
+assert.ok(boss && boss.k === "lambmaw" && rt.fb === boss.id, "the field boss is there");
 // the radar shows where it stands wherever that is on the map (snapshot `fb`: [[x, y]…])
 assert.deepEqual(L.viewFor(S, PID).fb, [[Math.round(boss.x), Math.round(boss.y)]], "the snapshot carries the field boss's place");
 {
-  // …clear of the waypoint stone and signposts, well away from the hunter, after a warning ring
-  const A = L.atlas(), mm = A.maps.meadow, tile = (o) => [(o.x - 8) / 16, (o.y - 10) / 16];
+  // …at the ground's own fixed spot, clear of the waypoint stone and signposts (tests/trophies.mjs: back there after it falls)
+  const A = L.atlas(), mm = A.maps.meadow, tile = (o) => [(o.hx - 8) / 16, (o.hy - 10) / 16];
   const [bx, by] = tile(boss);
+  assert.deepEqual([bx, by], rt.fbHome, "its home is the fixed spot");
   assert.ok(mm.reach[by * mm.w + bx], "on a reachable tile");
   for (const k of mm.marks.filter((k) => k.kind === "waypoint" || k.kind === "sign")) assert.ok(Math.hypot(k.x - bx, k.y - by) >= 3, `≥3 tiles from the ${k.kind} at ${k.x},${k.y}`);
-  assert.ok(Math.hypot(p.x / 16 - 0.5 - bx, p.y / 16 - 0.5 - by) >= 6, "≥6 tiles from the nearest player");
-  assert.ok(boss.stun > S.now - 3000, "it holds still while its arrival is telegraphed");
-  // call it again from a kill right beside the stone with the hunter standing there: the worst case
-  const W = A.waypoints.meadow, kx = W.ax * 16 + 8, ky = W.ay * 16 + 10;
-  const fb = rt.fb; rt.fb = 0; rt.kc = 1e9;
-  p.x = kx; p.y = ky;
-  const before = rt.mobs.slice();
-  const prey = acorns[0]; revive(prey); prey.el = 0; prey.hp = 1; prey.x = kx + 12; prey.y = ky; p.atkAt = 0; p.aim = 0;
-  assert.ok(act({ t: "atk" }).ok);
-  const b2 = rt.mobs.find((m) => !before.includes(m) && m.el === 2);
-  assert.ok(b2, "a second call-out from beside the stone");
-  const [cx, cy] = tile(b2);
-  assert.ok(Math.hypot(W.x - cx, W.y - cy) >= 3, "not on the stone");
-  assert.ok(Math.hypot(p.x / 16 - 0.5 - cx, p.y / 16 - 0.5 - cy) >= 6, "not on the hunter beside it");
-  assert.ok(rt.ev.some((e) => e[0] === "t" && e[1] === b2.x && e[2] === b2.y), "a warning ring where it lands");
-  // back to the story: the first boss is the one the rest of this test fights
-  rt.mobs.splice(rt.mobs.indexOf(b2), 1); rt.fb = fb; rt.kc = 0;
 }
 assert.equal(boss.hp, Math.round(D.mobs.lambmaw.hp * D.eliteHp[2]));
 boss.hp = 1; boss.x = p.x + 12; boss.y = p.y; p.atkAt = 0;
 act({ t: "atk", a: 0 });
 step(30);
-assert.ok(!rt.mobs.includes(boss) && rt.fb === 0, "and is gone for good once it falls");
+assert.ok(!rt.mobs.includes(boss) && rt.fb === 0 && rt.fbAt > S.now + 500000, "and is gone until it comes back ten minutes later");
 assert.ok(rt.drops.some((d) => d.g) || ch.inv.some((x) => x.q !== undefined), "leaving gear behind");
 const types = new Set();
 for (let i = 0; i < 3000; i++) { const m = acorns[i % acorns.length]; revive(m); m.el = 1; m.hp = 1; m.x = p.x + 12; m.y = p.y; p.atkAt = 0; act({ t: "atk", a: 0 }); step(20); p.hp = 99999; }
