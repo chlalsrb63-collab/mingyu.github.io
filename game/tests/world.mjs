@@ -31,7 +31,7 @@ for (const q of D.quests) {
   lastLv = D.mobs[q.mob].tier;
 }
 // Retired stand-ins stay for old collections, and summoned adds live in their encounter.
-const NOT_PLACED = new Set("nightbat hagfishhead catsplit_gold toadbrood_poison mothface_bile ribdeer_bile lambmaw_bone eyecrow_ash twingoat_gold bearmaw_gold crabskull_blood fishwalker_frost eelknot_frost squidrat_blood gatorhalf_steel spiderhand_bone owlstare_gold fishwalker_blood crabskull_frost moleworm_gold spinescorp ribvulture crownpeacock bloodshard clubshrimp".split(" "));
+const NOT_PLACED = new Set("serpentwing_ash nightbat hagfishhead catsplit_gold toadbrood_poison mothface_bile ribdeer_bile lambmaw_bone eyecrow_ash twingoat_gold bearmaw_gold crabskull_blood fishwalker_frost eelknot_frost squidrat_blood gatorhalf_steel spiderhand_bone owlstare_gold fishwalker_blood crabskull_frost moleworm_gold spinescorp ribvulture crownpeacock bloodshard clubshrimp".split(" "));
 const arenaBosses = new Set(D.dim.chal.bosses.map(([k]) => k));
 for (const k of Object.keys(D.mobs)) assert.ok(homes[k] || arenaBosses.has(k) || NOT_PLACED.has(k) || D.mobs[k].questOnly, "every monster has a home or encounter: " + k);
 for (const k of arenaBosses) assert.ok(D.mobs[k]?.boss, `${k} is a declared boss`);
@@ -82,7 +82,7 @@ while (todo.length) {
   }
 }
 assert.deepEqual(Object.keys(seen).sort(), D.maps.map((m) => m.id).sort(), "every map can be reached from town");
-for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
+for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa", "inklake"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
 
 // ── the dungeons: harder the deeper you go, a camp on the way, a guardian at the end
 for (const id of ["crypt", "sewer", "abyss"]) {
@@ -189,12 +189,14 @@ JSON.stringify(L.removePlayer(S, PID));
 // mesa ledge, oasis east ↔ mesa west), courts laid by place, the field bosses' grounds, the summit arena, the rare kinds
 {
   const { maps } = L.atlas();
-  for (const [a, b] of [["cave", "cloudtemple"], ["cloudtemple", "mesa"], ["oasis", "mesa"]]) for (const [from, to] of [[a, b], [b, a]]) {
+  for (const [a, b] of [["cave", "cloudtemple"], ["cloudtemple", "mesa"], ["oasis", "mesa"], ["mesa", "inklake"], ["inklake", "maple"]]) for (const [from, to] of [[a, b], [b, a]]) {
     assert.ok(maps[from].portals.some((p) => p.to === to), `${from} has a door to ${to}`);
     assert.ok(D.maps.find((q) => q.id === from).to.includes(to), `${from} lists ${to} as a way on`);
   }
   const want = { cloudtemple: { band: [30, 36], courts: ["summithall", "belltower", "pagoda", "pagoda"], boss: "belltower", falls: 2, rare: "ribdeer_frost", names: ["산문", "탑전 마당", "종루"] },
-    mesa: { band: [36, 42], courts: ["thronecourt", "goldhall", "belltower", "lowertown"], boss: "thronecourt", falls: 3, rare: "serpentwing_bone", names: ["협곡 아랫마을", "황금 지붕 궁", "소나무 벼랑길"] } };
+    mesa: { band: [36, 42], courts: ["thronecourt", "goldhall", "belltower", "lowertown"], boss: "thronecourt", falls: 3, rare: "serpentwing_bone", names: ["협곡 아랫마을", "황금 지붕 궁", "소나무 벼랑길"] },
+    // batch 2: the ink lake — a pagoda court on the plum banks (the rare fox keeps it) and the lone pagoda isle (field boss)
+    inklake: { band: [40, 46], courts: ["belltower", "pagoda"], boss: "belltower", falls: 0, halls: 2, rare: "foxtwine_frost", names: ["나루터", "붉은 매화 둔덕", "외딴 탑 섬"] } };
   for (const id of Object.keys(want)) {
     const m = maps[id], W = m.w, w = want[id], meta = D.maps.find((q) => q.id === id);
     assert.deepEqual(meta.band, w.band.map((t) => 4 * t - 3), id + ": its band");
@@ -210,7 +212,7 @@ JSON.stringify(L.removePlayer(S, PID));
       for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) assert.equal(m.o[y + j][x + i], "Π", `${id}: a whole footprint at ${x},${y}`);
       assert.ok([0, 1, 2, 3].filter((i) => m.reach[(y + 2) * W + x + i]).length >= 3, `${id}: open ground before the hall at ${x},${y}`);
     }
-    assert.equal(halls, 4, id + ": four halls");
+    assert.equal(halls, w.halls || 4, id + ": every hall stands");
     for (const k of new Set(m.spawns.map((sp) => sp.k))) assert.ok(D.mobs[k].chest || (D.mobs[k].tier >= w.band[0] && D.mobs[k].tier <= w.band[1]), `${id}: ${k} fits the band`);
     assert.ok(m.spawns.some((sp) => sp.k === w.rare), id + ": the rare kind keeps a chest");
   }

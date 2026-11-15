@@ -152,6 +152,9 @@ function zoneSpawns(m, cfg) {
   const pick = (zone, dd, h, x, y) => {
     const ros = cfg.rosterAt ? sorted(cfg.rosterAt(x, y)) : all;
     const n = ros.length, normTop = Math.max(1, Math.ceil(n * 0.85)), eliteLo = Math.min(n - 1, Math.floor(n * 0.5));
+    // (a pen — cfg.pen [kind, from]: the elite ground past `from` of the way from the elite line to the far end holds that
+    // kind's herd; the meadow's rams, so a wider meadow keeps them deep and many)
+    if (zone === Z_ELITE && cfg.pen && (dd - eliteD) / Math.max(1, D - eliteD) >= cfg.pen[1]) return cfg.pen[0];
     // (a habitat's kinds are few and all its own: any of them anywhere in it, the stronger half on elite ground)
     if (cfg.rosterAt) return zone === Z_ELITE ? ros[Math.min(n - 1, eliteLo + Math.floor(h * (n - eliteLo)))] : ros[Math.min(normTop - 1, Math.floor(h * normTop))];
     if (zone === Z_ELITE) return ros[clamp(eliteLo + Math.floor(clamp((dd - eliteD) / Math.max(1, D - eliteD), 0, 0.999) * (n - eliteLo) + (h - 0.5) * 1.2), eliteLo, n - 1)];
@@ -199,6 +202,18 @@ function zoneSpawns(m, cfg) {
     const gx = at % W, gy = (at - gx) / W;
     pk.guard = [gx, gy];
     out.push({ k: kind, n: 1, r: [gx, gy, gx, gy], el: 1, zone: Z_HIDDEN });
+  }
+  // a guardian or a chest the generator stood inside the quiet ground round a door (a catacomb's guard room by the way
+  // out grows into the arrival's plaza on a wider map) steps to the nearest hunting ground instead
+  for (const sp of out) {
+    if (!(sp.el || MOBS[sp.k].chest) || zoneAt(sp.r) !== Z_SAFE) continue;
+    const s = Math.floor((sp.r[1] + sp.r[3]) / 2) * W + Math.floor((sp.r[0] + sp.r[2]) / 2), seen = new Uint8Array(W * H), q = [s];
+    seen[s] = 1;
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h];
+      if (d[i] >= 0 && z[i] !== Z_SAFE && z[i] !== Z_HIDDEN) { const x = i % W, y = (i - x) / W; sp.r = [x, y, x, y]; break; }
+      for (const n of [i + 1, i - 1, i + W, i - W]) if (n >= 0 && n < W * H && !seen[n] && d[n] >= 0) { seen[n] = 1; q.push(n); }
+    }
   }
   m.spawns = out;
   // every kind the ground is meant to hold lives somewhere in it

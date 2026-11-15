@@ -25,6 +25,8 @@ const TROPHIES = {
   rotstag: { name: "썩은 사슴왕의 관", fx: { xp: 3, crit: 3 } },
   // the coast's field boss since bosses-2 (coralturtle's trophy stays: sheets may hold it)
   clubshrimp: { name: "공동 갯가재 눈자루", fx: { aspd: 3, hp: 2 } },
+  // the ink lake's field boss (maps-batch2 §6)
+  serpentwing_ash: { name: "먹빛 구렁이 비늘", fx: { move: 2, drop: 2 } },
 };
 const TROPHY_CAP = { gold: 8, xp: 8, move: 5, aspd: 5, drop: 6, hp: 5, crit: 4 };
 const TROPHY_P = 0.05, TROPHY_GOLD = 40;

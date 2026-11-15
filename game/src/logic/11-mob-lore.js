@@ -104,6 +104,16 @@ const MOB_LORE = {
   hermitskull_frost: "낮에도 녹지 않는 푸른 소라에 밤의 찬 공기를 모아 둔다.",
   sandmaw: "모래에 동그란 구멍이 생기면 아래에서 아가리가 오므라든다.",
 
+  // 먹빛 호수
+  leechmaw_ash: "물빛에 먹이 번지면 그 아래에 아가리가 벌어져 있다.",
+  fishwalker_ash: "얕은 여울을 걸어 다니며 지나간 자리에 먹 줄기를 남긴다.",
+  wingcrane_ash: "붉은 정수리만 남기고 온몸이 먹으로 그린 듯 번져 있다.",
+  mothface_ash: "날개의 얼굴이 물에 비칠 때만 눈을 뜬다.",
+  spiderhand_blood: "배에 핀 매화 가지를 흔들어 꽃잎을 떨구고, 그 꽃잎을 밟은 것을 덮친다.",
+  gravrose_blood: "호수에 떨어진 붉은 꽃잎이 모두 이 나무로 돌아간다고들 한다.",
+  foxtwine_frost: "매화 그늘에서만 보인다. 꼬리 매듭이 풀릴 때 서리가 핀다.",
+  serpentwing_ash: "한 획으로 그린 듯한 몸이 여울에서 솟을 때, 눈자리에 연분홍 해가 뜬다.",
+
   // Cloud temple and mesa
   beadmonkey: "염주알을 하나씩 굴리며 닫힌 절문이 열릴 때를 센다.",
   splitboar_ash: "몸의 틈에 향재가 쌓일수록 발굽 소리는 잦아든다.",
@@ -176,6 +186,7 @@ const MOB_LORE = {
   chest_dunesea: "모래 밑에서 오래 굴러 장식 한쪽만 반들반들하다.",
   chest_cloudtemple: "잠금쇠에 끼인 염주알 하나가 맑게 울린다.",
   chest_mesa: "열을 먹은 금박이 갈라져 가느다란 벼랑 무늬를 이룬다.",
+  chest_inklake: "뚜껑에 번진 먹물 자국이 볼 때마다 다른 산 모양이다.",
   bloodhorn: "뿔관 아래 눈가에서 붉은 즙을 쏘아 낸다. 그 즙이 굳은 자리마다 결정이 자란다.",
   bloodshard: "왕도마뱀의 피눈물이 굳어 기어 나온 것. 꼬리 끝이 아직 따뜻하다.",
   clubshrimp: "주먹을 내지르면 물이 먼저 터진다. 그 소리에 해안의 게들이 모래 속으로 숨는다.",

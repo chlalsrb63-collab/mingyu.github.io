@@ -76,9 +76,9 @@ const count = (id) => ch.inv.filter((s) => s.id === id).reduce((n, s) => n + s.n
 
 // ── grades of the world (B.3): meadow 1 · forest, crypt 2 · city, sewer 3 · cave, abyss 4 · 단풍 왕도 5
 {
-  const want = { town: 1, willow: 1, meadow: 1, forest: 2, crypt: 2, city: 3, sewer: 3, cave: 4, abyss: 4, maple: 5, jungle: 3, oasis: 4, coast: 4, dunesea: 4, cloudtemple: 4, mesa: 5 };   // P7: mesa is the grade-5 door (GRADE_MAP)
+  const want = { town: 1, willow: 1, meadow: 1, forest: 2, crypt: 2, city: 3, sewer: 3, cave: 4, abyss: 4, maple: 5, jungle: 3, oasis: 4, coast: 4, dunesea: 4, cloudtemple: 4, mesa: 5, inklake: 5 };   // P7: mesa and the ink lake are grade-5 doors (GRADE_MAP)
   for (const [id, g] of Object.entries(want)) if (D.life.mapGrade[id] !== undefined) assert.equal(D.life.mapGrade[id], g, id);
-  for (const id of ["meadow", "forest", "city", "cave", "maple", "jungle", "oasis", "coast", "dunesea", "cloudtemple", "mesa"]) assert.equal(D.life.mapGrade[id], want[id], id);
+  for (const id of ["meadow", "forest", "city", "cave", "maple", "jungle", "oasis", "coast", "dunesea", "cloudtemple", "mesa", "inklake"]) assert.equal(D.life.mapGrade[id], want[id], id);
   assert.equal(X.gradeOfMap({ grade: 4, band: [1, 3] }), 4, "an editor map's own grade wins");
   assert.equal(X.gradeOfMap({ band: [24, 30] }), 4);
   assert.equal(X.gradeOfMap({}), 1);
@@ -272,9 +272,9 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
     if (fresh2[id]) assert.deepEqual(X.lifeNodes(fresh2[id]), ns, id + ": the same nodes on a fresh build (deterministic)");
     if (VERBOSE) console.log(id.padEnd(8), "open", open, "nodes", ns.length, "kinds", [0, 1, 2].map((k) => ns.filter((n) => n[0] === k).length).join("/"));
   }
-  // the 4× grounds are capped: the biggest gets NODE.max, the crypt (≈ 4,800 open) about a third of the meadow's ground
+  // the 4× grounds are capped: the biggest gets NODE.max, a small ground (the frost keep, ≈ 2,500 open) far fewer
   assert.equal(X.lifeNodes(X.mapOf("meadow")).length, X.NODE.max);
-  assert.ok(X.lifeNodes(X.mapOf("crypt")).length < X.NODE.max);
+  assert.ok(X.lifeNodes(X.mapOf("frostkeep")).length < X.NODE.max);
   assert.deepEqual(X.mapPayload(X.mapOf("meadow")).nodes, X.lifeNodes(X.mapOf("meadow")), "the map payload carries them");
   if (VERBOSE) console.log("nodes checked in", Date.now() - t0, "ms");
 }

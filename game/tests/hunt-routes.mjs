@@ -6,8 +6,9 @@ const D = defs();
 const { maps, fires } = atlas();
 const route = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "frostkeep"];
 const coastal = ["city", "jungle", "coast", "oasis"];
+const lake = ["mesa", "inklake", "maple"];
 const legs = (ids) => ids.slice(1).map((id, i) => [maps[ids[i]], maps[id]]);
-for (const [a, b] of [...legs(route), ...legs(coastal)]) {
+for (const [a, b] of [...legs(route), ...legs(coastal), ...legs(lake)]) {
   const doors = a.portals.filter((p) => p.to === b.id);
   assert.equal(doors.length, 2, `${a.id} to ${b.id} has a paired threshold`);
   for (const p of doors) {
@@ -71,7 +72,10 @@ for (let lv = 153; lv <= 197; lv += 4) assert.ok(Object.keys(D.mobs).some((k) =>
 assert.ok(mapleKinds.has("shroomboar_frost") && mapleKinds.has("crowscare_frost"), "the frost kinds live in the old kingdom");
 increasing(maps.maple, ["gravrose", "shroomboar_frost", "bogcrown", "crowscare_frost", "rootwarden"]);
 assert.equal(maps.maple.stones.length, 5, "the old kingdom has five stones");
-for (const id of ["jungle", "coast", "dunesea", "cloudtemple", "mesa"]) {
+// 먹빛 호수 (maps-batch2 §6): the second top-band ground, quiet and harder going north to the pagoda isle
+increasing(maps.inklake, ["leechmaw_ash", "fishwalker_ash", "spiderhand_blood", "gravrose_blood"]);
+assert.ok(maps.inklake.spawns.some((sp) => sp.k === "foxtwine_frost"), "the ink lake's rare fox keeps its pagoda court");
+for (const id of ["jungle", "coast", "dunesea", "cloudtemple", "mesa", "inklake"]) {
   const m = maps[id], n = m.npcs.find((o) => o.id === "camp_" + id);
   assert.ok(n && m.reach[n.y * m.w + n.x], `${id}: a keeper stands at the camp`);
   assert.ok(n.role === "shop" && n.goods.length && n.goods.every((g) => D.items[g] && D.items[g].price > 0), `${id}: the keeper sells field goods`);
