@@ -48,7 +48,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 25, name, job: "adventurer", jp: null,
+    v: 26, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -75,6 +75,8 @@ export function newChar(name, look, wk) {
     charms: charmsEmpty(),
     // 보스전리품 (v17): the field-boss kinds whose trophy this hero holds, in the order won (67-trophies.js)
     tro: [],
+    // 버드나무 장날 (v26, 63-festival.js): the 장날 토큰 purse and today's tokens and best pan score
+    fair: fairFresh(),
     // social and the weekly book (v14, 63-social-weekly.js): blk (blocked names), pity (enhancement gauge), wk
     ...socialFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
@@ -215,7 +217,9 @@ function migrate(ch) {
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
   // quest items (v23): a delivery under way has its parcel, nothing else carries one (62-side-quests.js; after the bag is cleaned)
   sqItemsFix(ch);
-  ch.v = Math.max(ch.v | 0, 25);
+  // 버드나무 장날 (v26): the token purse and today's counters, clamped; an older sheet starts empty (63-festival.js)
+  ch.fair = fairClean(ch.fair);
+  ch.v = Math.max(ch.v | 0, 26);
   return ch;
 }
 

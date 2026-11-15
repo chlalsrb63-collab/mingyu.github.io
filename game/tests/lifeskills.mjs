@@ -988,7 +988,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   ch.jobBoard = { day, done: [], active: null };
   assert.ok(wm.w * wm.h >= 2.5 * 40 * 32, "the village grew: " + wm.w + "×" + wm.h);
   const walk = (x, y) => !!wm.reach[y * W + x], beside = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => walk(x + dx, y + dy));
-  const ids = Object.keys(X.JB).filter((id) => X.JB[id].kind === "chore");
+  const ids = Object.keys(X.JB).filter((id) => X.JB[id].kind === "chore" && !X.JB[id].fair);   // (the 장날 row 장터 뒷정리 reuses litter: festival.mjs)
   assert.deepEqual(ids.map((id) => X.JB[id].job).sort(), ["dog", "flyer", "litter", "milk", "water", "weed"]);
   for (const id of ids) {
     const t = X.JB[id], pool = X.chorePool(t.job);

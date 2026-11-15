@@ -330,6 +330,7 @@ export function applyAction(S, pid, a) {
       p.gain.push(["item", out, n, 0]);
       toast(p, burnt ? "태워 버렸습니다…" : n > 1 ? `${great ? "대성공" : "완벽한 요리"}! ${ITEMS[out].name} ${n}개` : `${ITEMS[out].name} 완성`);
       if (!burnt) { ch.cnt.cook++; dailyProg(S, p, "cook", r.at); checkAch(S, p); }
+      fairPan(S, p, score);   // 장날 요리 대회 (63-festival.js)
       S.maps[p.map].ev.push(["u", p.eid, 0]);
       p.dirty = true;
       break;
@@ -670,6 +671,7 @@ export function applyAction(S, pid, a) {
     case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": charmApply(S, p, a); break;
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": coopApply(S, p, a); break;
+    case "fair_buy": fairApply(S, p, a); break;
     // player to player: requests, trade, mini-games (69-social-play.js)
     case "sx": sxApply(S, p, a); break;
   }

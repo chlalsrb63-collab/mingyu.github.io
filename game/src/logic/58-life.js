@@ -188,7 +188,7 @@ function lifeSheetClean(ch) {
     ch.life = l;
   }
   const jb = isObj(ch.jobBoard) ? ch.jobBoard : {};
-  const done = Array.isArray(jb.done) ? [...new Set(jb.done.filter((id) => typeof id === "string" && Object.hasOwn(JB, id)))].slice(0, JB_PAY.perDay) : [];
+  const done = Array.isArray(jb.done) ? [...new Set(jb.done.filter((id) => typeof id === "string" && Object.hasOwn(JB, id)))].slice(0, JB_PAY.perDay + FAIR_JOBS.length) : [];
   const a = isObj(jb.active) ? jb.active : null;
   const active = a && typeof a.id === "string" && Object.hasOwn(JB, a.id) && typeof a.npc === "string" && Object.hasOwn(NPC_MAP, a.npc)
     // a parcel is never saved: a delivery loaded mid-way goes back to "pick it up"
@@ -436,13 +436,15 @@ function jbEnsure(S, p) {
 /** Does a sheet qualify for template `t`: its level (hunts: the character's), for a trust row the NPC's trust, for a story row the quest answer. */
 const jbQual = (ch, t) => (t.kind === "hunt" ? ch.lvl : ch.life[t.sk].lv) >= t.lv && !(t.rep > repOf(ch, t.npc))
   && (!t.flag || (!!ch.sq.done[t.flag[0]] && (ch.sq.flags[t.flag[0]] | 0) === t.flag[1]));
+/** Jobs done today that count toward JB_PAY.perDay (장날 rows do not). */
+const jbDoneN = (jb) => jb.done.filter((id) => !JB[id].fair).length;
 /**
  * Today's offers for a sheet: up to JB_PAY.offers templates it qualifies for (not the night / rain extras), seeded
  * by name and day; each draw prefers a kind not drawn yet, so a day is a mix.
  */
 function jbOffers(ch, day) {
   const box = { seed: strHash(`${ch.name}:${day}:jb`) | 0 };
-  const pool = Object.keys(JB).filter((id) => !Object.hasOwn(JB_WILLOW, id) && !JB[id].when && JB[id].kind !== "chore" && jbQual(ch, JB[id]));
+  const pool = Object.keys(JB).filter((id) => !Object.hasOwn(JB_WILLOW, id) && !JB[id].when && !JB[id].fair && JB[id].kind !== "chore" && jbQual(ch, JB[id]));
   const out = [], kinds = new Set();
   while (out.length < JB_PAY.offers && pool.length) {
     const fresh = pool.filter((id) => !kinds.has(JB[id].kind)), from = fresh.length ? fresh : pool;
@@ -452,7 +454,7 @@ function jbOffers(ch, day) {
     kinds.add(JB[id].kind);
   }
   // and JB_PAY.chores of 버드나무 마을's chores (H10), each a different one
-  const chores = Object.keys(JB).filter((id) => JB[id].kind === "chore" && jbQual(ch, JB[id]));
+  const chores = Object.keys(JB).filter((id) => JB[id].kind === "chore" && !JB[id].fair && jbQual(ch, JB[id]));
   for (let i = 0; i < JB_PAY.chores && chores.length; i++) out.push(chores.splice(ri(box, 0, chores.length - 1), 1)[0]);
   return out;
 }
@@ -468,9 +470,11 @@ function jbOffersOf(S, p) {
     const c = Object.keys(JB).filter((id) => JB[id].when === w && jbQual(ch, JB[id]));
     if (c.length) extra.push(c[(strHash(`${ch.name}:${day}:${w}`) >>> 0) % c.length]);
   }
-  // a taken situational job stays on the board after the night or the rain ends
+  // 장날 (63-festival.js): the four festival rows while the market is open
+  if (fairOpen(S.now)) for (const id of FAIR_JOBS) if (jbQual(ch, JB[id])) extra.push(id);
+  // a taken situational (or festival) job stays on the board after the night, the rain or the market ends
   const a = ch.jobBoard.active;
-  if (a && JB[a.id].when && !extra.includes(a.id)) extra.push(a.id);
+  if (a && (JB[a.id].when || JB[a.id].fair) && !extra.includes(a.id)) extra.push(a.id);
   return p.jbOff.ids.concat(extra.filter((id) => !p.jbOff.ids.includes(id)));
 }
 /** An offer's grade (0 쉬움 · 1 보통 · 2 어려움) and 긴급 minutes (0 = none), fixed by name, day and template. */
@@ -478,7 +482,7 @@ function jbRoll(ch, day, id) {
   const box = { seed: strHash(`${ch.name}:${day}:${id}:g`) | 0 }, t = JB[id], O = JB_GRADE.odds;
   let r = rnd(box) * O.reduce((a, b) => a + b, 0), g = 0;
   while (g < O.length - 1 && r >= O[g]) { r -= O[g]; g++; }
-  const urgent = t.kind !== "deliver" && !(t.kind === "chore" && CHORES[t.job].timed) && (t.rush > 0 || ri(box, 1, JB_RUSH.odds) === 1);
+  const urgent = !t.fair && t.kind !== "deliver" && !(t.kind === "chore" && CHORES[t.job].timed) && (t.rush > 0 || ri(box, 1, JB_RUSH.odds) === 1);
   return { g, rush: urgent ? t.rush || JB_RUSH.min : 0 };
 }
 /** What the job needs by its grade: items or monsters (n × grade, rounded up), or 0 (deliveries, scouting). */
@@ -546,6 +550,7 @@ const CARRY_NO = "배달 중에는 공격할 수 없어요 — 알바를 그만�
 const jbL = (ch, t) => (t.kind === "hunt" ? clamp(Math.floor(toTier(ch.lvl)), 1, LIFE_MAX) : ch.life[t.sk].lv);
 /** A job's gold before any tip or 긴급 bonus (deliveries: B.8, others: B.9) × its grade, +10 % from a 단골's own NPC. */
 function jbGold(ch, t, g = 0) {
+  if (t.fair) return 0;   // 장날 rows pay tokens (jbPay)
   const L = jbL(ch, t), base = t.kind === "deliver" ? JB_PAY.dGold[0] + JB_PAY.dGold[1] * L : JB_PAY.gold[0] + JB_PAY.gold[1] * L;
   return Math.round(base * JB_GRADE.pay[g] * (repOf(ch, t.npc) >= REP_TIER[0] ? REP_TIP : 1));
 }
@@ -595,13 +600,14 @@ function jbPay(S, p) {
     addRep(S, p, t.npc, Math.round(JB_PAY.rep * k));
   }
   ch.gold += gold;
-  p.gain.push(["gold", gold]);
-  const tokens = gainWillowToken(p, 1);
+  if (gold) p.gain.push(["gold", gold]);
+  const tokens = t.fair ? 0 : gainWillowToken(p, 1), ft = t.fair ? fairGain(S, p, FAIR.job[g]) : 0;
   gainLife(S, p, t.sk, Math.round(lifeNeed(ch.life[t.sk].lv) * JB_PAY.xp * k));
   ch.jobBoard.done.push(a.id);
   ch.jobBoard.active = null;
   S.maps[p.map].ev.push(["dl", p.eid, 2]);
-  toast(p, `알바 완료${fast ? " — 긴급 성공!" : ""} ${gold}G${tokens ? ` · 버드나무토큰 +${tokens}` : ""} (${ch.jobBoard.done.length}/${JB_PAY.perDay})`);
+  toast(p, t.fair ? `장날 알바 완료 · 장날 토큰 +${ft}${ft < FAIR.job[g] ? ` (오늘은 ${FAIR.cap}개까지)` : ""}`
+    : `알바 완료${fast ? " — 긴급 성공!" : ""} ${gold}G${tokens ? ` · 버드나무토큰 +${tokens}` : ""} (${jbDoneN(ch.jobBoard)}/${JB_PAY.perDay})`);
   checkAch(S, p);
   p.dirty = true;
 }
@@ -722,7 +728,7 @@ function lifeValidate(S, p, a) {
         if (typeof a.id !== "string" || !jbOffersOf(S, p).includes(a.id)) return bad("오늘의 알바가 아닙니다");
         if (jb.done.includes(a.id)) return bad("오늘 이미 끝낸 알바입니다");
         if (act) return bad("이미 맡은 알바가 있습니다");
-        if (jb.done.length >= JB_PAY.perDay) return bad(`알바는 하루에 ${JB_PAY.perDay}개까지입니다`);
+        if (!JB[a.id].fair && jbDoneN(jb) >= JB_PAY.perDay) return bad(`알바는 하루에 ${JB_PAY.perDay}개까지입니다`);
         return OK;
       }
       if (a.a === "drop") return act ? OK : bad("맡은 알바가 없습니다");
@@ -783,6 +789,7 @@ function lifeApply(S, p, a) {
       toast(p, k > 1 ? `일괄 제작: ${name} — 성공 ${made}/${k}${great ? `, 대성공 ${great}` : ""}`
         : best === 2 ? `대성공! ${name}` : best === 1 ? `${name} 완성` : r.any ? "태워 버렸습니다…" : "제작 실패… 재료의 절반을 건졌습니다.");
       S.maps[p.map].ev.push(["mo", p.eid, a.r, best]);
+      if (!batch && r.mg === "pan") fairPan(S, p, s);   // 장날 요리 대회 (63-festival.js)
       checkAch(S, p);
       p.dirty = true;
       break;
@@ -831,6 +838,7 @@ function lifeTick(S, p, now) {
   if (p.parcel && (p.dead || now > p.parcel.until)) jbFail(S, p);
   choreTick(S, p, now);
   jbWatch(S, p, now);
+  fairWatch(S, p, now);
   if (p.ng) for (const id of Object.keys(p.ng)) {
     const o = p.ng[id];
     for (const i of Object.keys(o)) if (o[i] <= now) delete o[i];

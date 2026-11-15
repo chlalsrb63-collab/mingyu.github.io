@@ -328,7 +328,7 @@ function skyTick(t) {
   const jam = $("#jam");
   if (jam.hidden === !!G.me.sit) jam.hidden = !G.me.sit;
   if (!out) return;
-  const h = Sky.hour(), text = `${Sky.clockText(h)} · ${Sky.weatherName()}`;
+  const h = Sky.hour(), text = [Sky.clockText(h), Sky.weatherName(), Sky.seasonName(), Sky.fairOn() ? "장날" : ""].filter(Boolean).join(" · ");
   if (text === skyHud.key) return;
   skyHud.key = text;
   $("#sky-t").textContent = text;

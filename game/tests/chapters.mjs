@@ -139,7 +139,7 @@ for (const [i, id] of beats) {
     const W = world(ch);
     assert.equal(W.ch.q.i, k < old.length ? old[k] : Q.length, `old step ${k}`);
     if (k < old.length) assert.equal(Q[W.ch.q.i].title, [...Q].filter((q) => !q.v24)[k].title);
-    assert.deepEqual([W.ch.q.n, W.ch.q.st, W.ch.v], [3, 1, 25], "progress kept");
+    assert.deepEqual([W.ch.q.n, W.ch.q.st, W.ch.v], [3, 1, 26], "progress kept");
   }
   const fresh = world({ ...L.newChar("새장", []), q: { i: 24, n: 2, st: 1 } });
   assert.equal(fresh.ch.q.i, 24, "a v24 sheet keeps its index");

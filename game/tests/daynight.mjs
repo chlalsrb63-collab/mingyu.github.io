@@ -65,7 +65,7 @@ for (const id of outdoorMaps) assert.equal(L.runtime(S1, id).wx, L.runtime(S2, i
   L.tick(S, now);
   const va = view("p-a"), vb = view("p-b");
   L.endTick(S);
-  assert.ok(Array.isArray(va.dn) && va.dn.length === 2, "the sky comes with the map");
+  assert.ok(Array.isArray(va.dn) && va.dn.length === 4, "the sky comes with the map (weather, clock, season, 장날)");
   assert.deepEqual(va.dn, vb.dn, "both players see the same sky");
   assert.equal(va.dn[0], L.skyAt("town", now).wx);
   assert.equal(va.dn[1], Math.floor(now / 1000), "with the server clock in seconds");
