@@ -10,6 +10,14 @@ const { built: builtAtLoad, meta } = (({ built, meta }) => ({ built: built.slice
 
 const { maps, fires, waypoints } = L.atlas();
 const D = L.defs();
+const regionalBeasts = { meadow: "wickhare", forest: "burrlynx", crypt: "bellnewt", city: "spoolsnipe", sewer: "sluiceeel", cave: "prismmole" };
+for (const [id, k] of Object.entries(regionalBeasts)) {
+  assert.ok(D.maps.find(m => m.id === id).mobs.includes(k), `${id} advertises ${k}`);
+  assert.equal(D.mobs[k].optional, 1, `${k} is an optional collection entry`);
+  const groups = maps[id].cells.spawns.flat().filter(s => s.k === k);
+  const count = groups.reduce((n, s) => n + s.n, 0);
+  assert.ok(count >= 6 && count <= 18, `${k} is distributed in small reachable groups: ${count}`);
+}
 const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "cloudtemple", "mesa"];
 const blocked = (m, x, y) => x < 0 || y < 0 || x >= m.w || y >= m.h || m.o[y][x] !== " " || "wW".includes(m.g[y][x]);
 const flood = (m, sx, sy) => {

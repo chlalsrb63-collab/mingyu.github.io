@@ -232,6 +232,13 @@ const AGGRO_CAP = 3;
  * the same beast, grown worse. Listed in the order a character meets them.
  */
 const MOBS = {
+  // Additional beasts share established hunting sites on their home maps.
+  wickhare: { name: "밀랍귀 토끼", lv: 4, hp: 69, atk: 10, def: 1, spd: 30, xp: 23, gold: [5, 11], aggro: 0, range: 17, cd: 1500, pool: 16, poolKind: 1, bonusOptional: true },
+  burrlynx: { name: "가시깍지 삵", lv: 9, hp: 186, atk: 24, def: 3, spd: 48, xp: 73, gold: [11, 24], aggro: 78, range: 17, cd: 1200, leap: 86, bonusOptional: true },
+  bellnewt: { name: "뼈종 도롱뇽", lv: 14, hp: 322, atk: 38, def: 6, spd: 31, xp: 146, gold: [18, 37], aggro: 78, range: 18, cd: 1500, slam: 28, bonusOptional: true },
+  spoolsnipe: { name: "실패부리 도요", lv: 16, hp: 368, atk: 44, def: 5, spd: 42, xp: 172, gold: [20, 42], aggro: 80, range: 52, cd: 1800, shot: true, fan: 92, bonusOptional: true },
+  sluiceeel: { name: "쇠살 장어", lv: 24, hp: 945, atk: 77, def: 15, spd: 36, xp: 440, gold: [42, 80], aggro: 76, range: 20, cd: 1600, pool: 22, bonusOptional: true },
+  prismmole: { name: "겹렌즈 두더지", lv: 27, hp: 1310, atk: 93, def: 18, spd: 34, xp: 600, gold: [54, 98], aggro: 84, range: 21, cd: 1500, fan: 100, slam: 32, bonusOptional: true },
   // 바람초원
   twinhare: { name: "쌍두 토끼", lv: 1, hp: 28, atk: 5, def: 0, spd: 26, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300 },
   gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80 },

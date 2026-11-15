@@ -215,7 +215,7 @@ const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def"
 for (const id of Object.keys(COL_MOBS)) if (!REGION_BONUS[id]) REGION_BONUS[id] = [];
 for (const id of Object.keys(REGION_BONUS)) if (!COL_MOBS[id]) delete REGION_BONUS[id];
 const REGIONS = Object.keys(REGION_BONUS);
-const regionDone = (ch, id) => COL_MOBS[id].every((k) => (ch.mk[k] || 0) >= MASTERY[0]);
+const regionDone = (ch, id) => COL_MOBS[id].every((k) => MOBS[k].bonusOptional || (ch.mk[k] || 0) >= MASTERY[0]);
 function registered(S, p, k) {
   const ch = p.ch;
   toast(p, `몬스터 도감 등록: ${MOBS[k].name}`);
@@ -273,7 +273,7 @@ const evtStone = (id) => ((MAP_META[id] && MAP_META[id].wpn) >= 2 ? 1 : 0);
 const evtSpot = (id) => { const w = stonesOf(mapOf(id))[evtStone(id)] || wpOf(id); return [w.ax, w.ay]; };
 function spawnWave(S, e) {
   const m = mapOf(e.map), rt = runtime(S, e.map), [cx, cy] = evtSpot(e.map);
-  const kinds = COL_MOBS[e.map].slice().sort((a, b) => MOBS[b].lv - MOBS[a].lv).slice(0, 2);
+  const kinds = COL_MOBS[e.map].filter(k => !MOBS[k].bonusOptional).sort((a, b) => MOBS[b].lv - MOBS[a].lv).slice(0, 2);
   const n = clamp(5 + 2 * rt.n, 5, 14);
   for (let i = 0; i < n; i++) {
     const mob = newMob(S, kinds[i % kinds.length], [Math.max(2, cx - 6), Math.max(2, cy - 6), Math.min(m.w - 3, cx + 6), Math.min(m.h - 3, cy + 6)]);

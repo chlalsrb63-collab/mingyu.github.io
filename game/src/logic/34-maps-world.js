@@ -280,6 +280,10 @@ function buildTown() {
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
 const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa"];
+const REGIONAL_BEASTS = {
+  meadow: ["wickhare", "gutfrog"], forest: ["burrlynx", "ribdeer"], crypt: ["bellnewt", "bonehound"],
+  city: ["spoolsnipe", "doghead"], sewer: ["sluiceeel", "gatorhalf"], cave: ["prismmole", "bearmaw"],
+};
 /**
  * Every generated hunting ground: `make` the generator, `band` the level a character should
  * be to walk in (shown on every door that leads there), `stones` how many waypoint stones stand
@@ -607,7 +611,7 @@ function hermitAt(maple) {
 /** Every monster kind a generated map places, read from its settings alone (the map tests check it against the built map). */
 function genKinds(id) {
   const g = GEN[id], c = g.cfg();
-  const ks = [...c.mobs, c.pondMob, c.guard, c.lair && c.lair.guard, c.lair && c.lair.pack, ...Object.values(c.vaultMobs || {}), c.boss, ...(g.kinds || []), c.chest];
+  const ks = [...c.mobs, c.pondMob, c.guard, c.lair && c.lair.guard, c.lair && c.lair.pack, ...Object.values(c.vaultMobs || {}), c.boss, ...(g.kinds || []), c.chest, REGIONAL_BEASTS[id]?.[0]];
   return [...new Set(ks.filter((k) => k && Object.hasOwn(MOBS, k)))];
 }
 /**
@@ -655,6 +659,15 @@ function genMap(id) {
   // zones by how far in, then who lives in each (33-maps-zones.js)
   zoneMap(m);
   zoneSpawns(m, cfg);
+  if (REGIONAL_BEASTS[id]) {
+    const [kind, host] = REGIONAL_BEASTS[id];
+    const packs = m.spawns.filter(sp => sp.k === host && !sp.el && sp.n > 0);
+    const count = Math.min(6, packs.length);
+    for (let i = 0; i < count; i++) {
+      const sp = packs[Math.floor((i + 0.5) * packs.length / count)];
+      m.spawns.push({ ...sp, k: kind, n: Math.min(3, sp.n) });
+    }
+  }
   m.stonesWant = g.stones || 1;
   const lo = m.band[0];
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
