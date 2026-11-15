@@ -42,9 +42,9 @@ no live monster within 160 px → 2-minute fire, `fieldFire` in 62) · **client*
 reset buttons, 보스 전리품 window (`trophies.js`, Shift+T), job-reset wording · **skill enhancement +10** (`48-skill-enh.js`,
 `ske_stone`, rates 100×3 80 65 50 35 25 15 10 — proposed, UI under the 스킬 칸 tab).
 **타격감** (owner, mid-session): per-weapon layered impact sounds (`audio.js` `IMPACT`), own big-hit hit-stop 45→60 ms,
-plain-hit shake 2.5→1.5 so crits stand out. Server hitstun already existed (140/210 ms, elites ×0.65, bosses immune, cap
-340 ms per 2.4 s; `tests/feel.mjs`); a longer one broke `balance.mjs`/`dimrift.mjs` bot sims — owner to decide. Sounds not
-heard by a human yet.
+plain-hit shake 2.5→1.5 so crits stand out. Server hitstun lengthened on the owner's order ("경직 더 길게"):
+140/200 → 220/320 ms, elites ×0.65, bosses immune, budget 340 → 520 ms per 2.4 s (`STAGGER`/`HOLD` in 50). Test expectations moved:
+`dimrift.mjs` judges a clear rate over 5 draws (≥ 90 % in 3.5–10.5 min), `balance.mjs` hybrid hand floor ×0.62. Sounds not heard by a human yet.
 
 **Next, in order:**
 1) Gear + cosmetics content: sources for `ske_stone` (none yet!), `uncurse` and reset scrolls from rift/weekly boss
