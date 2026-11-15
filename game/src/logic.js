@@ -145,6 +145,12 @@ const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스�
 const JOB_WM = 20, HYB_WM = 15;
 const JOB_COST = 1000, HYB_COST = 5000;
 const JOB_PROGRESS = { cap: 50, signature: 5, hp: 0.003, mp: 0.002, atk: 0.0024, def: 0.002 };
+const JOB_SKILL_RANKS = [
+  { lv: JOB_PROGRESS.signature, mp: 0, cd: 0 },
+  { lv: 20, mp: 10, cd: 0 },
+  { lv: 35, mp: 10, cd: 8 },
+  { lv: JOB_PROGRESS.cap, mp: 20, cd: 12 },
+];
 // Eligible PvE kills boost character XP through 30, then taper to the regular reward at 40.
 const HUNT_EARLY = { full: 30, end: 40, ahead: 3, extra: 0.6 };
 
@@ -344,8 +350,8 @@ const SKILL = {
     desc: "해머 기술로 내 균열 두 개를 실제로 터뜨리면 정타 피해가 추가로 8% 늘어난다." },
   ironsiege: { kind: "h", job: "mercenary", need: HYB_WM, name: "철쇄 돌진", mp: 24, cd: 28000, len: 48, half: 11, r: 23, mult: 2.45, sweep: 1.05, fx: 133,
     desc: "창으로 열린 길을 따라 전진하고 끝에서 해머를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다." },
-  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, fx: 134,
-    desc: "성문을 지키는 망치로 주변을 내리친다. 자신과 반경 88 안의 파티원 각각에게 최대 HP 10%에 성기사 공격력의 30%를 더해 회복시킨다." },
+  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, creditMs: 10000, fx: 134,
+    desc: "주변을 내리치고 자신과 반경 88 안의 파티원에게 최대 HP 10% + 성기사 공격력의 30%를 회복시킨다. 회복한 파티원이 10초 안에 처치에 기여하면 성기사도 직업 경험치를 받는다." },
 };
 for (const [id, sk] of Object.entries(SKILL)) {
   sk.id = id;
@@ -6389,6 +6395,7 @@ const jobWmOf = (j) => (JOBS[j] && JOBS[j].kind === "hybrid" ? HYB_WM : JOB_WM);
 const isHybrid = (ch) => !!JOBS[ch.job] && JOBS[ch.job].kind === "hybrid";
 
 const jobNeed = lv => 24 + 12 * lv + 2 * lv * lv;
+const jobSkillRank = lv => JOB_SKILL_RANKS.findLastIndex(rank => lv >= rank.lv);
 function gainJob(S, p, n) {
   const ch = p.ch, jp = ch.jp;
   if (!jp || jp.lv >= JOB_PROGRESS.cap) return;
@@ -6409,6 +6416,8 @@ function gainJob(S, p, n) {
   if (signature && previous < SKILL[signature].jobNeed && skLearned(ch, SKILL[signature])) {
     toast(p, `새 전직 스킬 ${skLearnNew(p, [signature]).join("")}`);
   }
+  const rank = jobSkillRank(jp.lv);
+  if (signature && rank > 0 && rank > jobSkillRank(previous)) toast(p, `[${SKILL[signature].name}] 강화 ${rank + 1}단계 달성`);
 }
 
 /**
@@ -6509,19 +6518,27 @@ function newAct(p, skill) {
   p.actN = (p.actN | 0) + 1;
   p.actGain = skill ? WM_GAIN.skill : WM_GAIN.hit;
 }
-/** A kill: everyone who struck it (not idle party members) gets mastery by its tier and rank. */
+/** A kill gives weapon mastery to attackers and job experience to attackers and active Paladin support. */
 function wmKill(S, rt, mob) {
   const d = MOBS[mob.k];
   if (d.chest || d.still) return;
   const rank = WM_GAIN.kill[mob.el | 0];
   const n = (1 + Math.floor(d.lv / 2)) * rank * (d.boss ? WM_GAIN.boss : 1);
   const bonus = Math.round(Math.min(d.xp, WM_GAIN.earlyXpMax) * WM_GAIN.earlyKill * rank);
+  const jobCredit = new Set();
   for (const pid of Object.keys(mob.by)) {
     const p = S.players[pid];
-    if (!p || p.map !== rt.id || p.dead || !wmEligible(p, d)) continue;
-    gainWm(S, p, n, bonus);
-    gainJob(S, p, n * 2);
+    if (!p || p.map !== rt.id || p.dead) continue;
+    if (wmEligible(p, d)) { gainWm(S, p, n, bonus); jobCredit.add(p); }
+    if (!p.party) continue;
+    for (const healer of allies(S, p)) {
+      const support = healer.oathSupport;
+      if (support?.until > S.now && support.party === p.party && support.map === rt.id && support.healed.includes(pid) && wmEligible(healer, d)) {
+        jobCredit.add(healer);
+      }
+    }
   }
+  for (const p of jobCredit) gainJob(S, p, n * 2);
 }
 
 // ── accuracy, evasion, stagger
@@ -7571,8 +7588,10 @@ function skGrow(ch, sk) {
 }
 /** Resonance full: the next staff skill is free and hits harder. */
 const resoReady = (p, sk) => skOf(sk, "staff") && (p.reso | 0) >= SKILL.reso.n && pasOn(p, "reso");
+const skJobBonus = (p, sk) => sk.job === p.ch.job ? JOB_SKILL_RANKS[jobSkillRank(p.ch.jp?.lv || 0)] : null;
 /** What a skill costs right now. */
-const skMp = (p, sk) => (resoReady(p, sk) ? 0 : sk.mp);
+const skMp = (p, sk) => resoReady(p, sk) ? 0 : Math.ceil(sk.mp * (100 - (skJobBonus(p, sk)?.mp || 0)) / 100);
+const skCooldown = (p, sk) => Math.round(sk.cd * (1 - stats(p).cdr) * (100 - (skJobBonus(p, sk)?.cd || 0)) / 100);
 /** Inertia stacks still held (they fall away 2.5 s after the last sword hit). */
 const inertOf = (p) => (p.inert && p.S.now - p.inertAt <= SKILL.inertia.ms ? p.inert : 0);
 
@@ -7652,11 +7671,12 @@ function dealt(p, mobs, fn) {
 }
 /** Give `p` back `n` HP (a heal number over them). */
 function healP(rt, p, n) {
-  if (p.dead) return;
+  if (p.dead) return 0;
   const amt = Math.min(stats(p).mhp - p.hp, Math.round(n));
-  if (amt < 1) return;
+  if (amt < 1) return 0;
   p.hp += amt;
   rt.ev.push(["h", p.eid, -amt, 0, 1]);
+  return amt;
 }
 
 /** Lingering skill things in a map: lures, vortices, beasts, storms, traps, a sanctuary. */
@@ -7896,13 +7916,14 @@ function crView(p, now) {
   const o = crOf(p, j.wk.find((k) => k !== hand), now);
   return o ? { ...cr, o } : cr;
 }
-/** The wire's skill list: [id, MP it costs now, cooldown left ms, usable with what is in hand (1/0)]. */
+/** The skill list: [id, MP, cooldown left ms, usable, HP if relevant, full cooldown ms for signatures]. */
 function skWire(p, now) {
   return skillsFor(p.ch).map((id) => {
     const sk = SKILL[id];
     if (sk.kind === "p") return [id, 0, 0, pasOn(p, id) ? 1 : 0];
     const row = [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(p.ch, sk) ? 0 : 1];
-    if (sk.hpPct) row.push(hammerHpCost(p, sk));
+    if (sk.hpPct || sk.job) row.push(sk.hpPct ? hammerHpCost(p, sk) : 0);
+    if (sk.job) row.push(skCooldown(p, sk));
     return row;
   });
 }
@@ -7941,7 +7962,7 @@ function castSkill(S, p, id) {
   if (hpSpent) { p.hp -= hpSpent; rt.ev.push(["h", p.eid, hpSpent, 0, 1, 1]); }
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1]); } }
   // WIS shortens every wait; an echo (legendary) may give it straight back
-  p.cds[id] = now + Math.round(sk.cd * (1 - st.cdr));
+  p.cds[id] = now + skCooldown(p, sk);
   if (st.lg.echo && rnd(S) < 0.2 * st.proc) { p.cds[id] = now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
   p.atkAt = now;
   p.swordBeat = null;
@@ -7973,9 +7994,12 @@ function castSkill(S, p, id) {
         const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
         if (!d || hammerLine(m, p.x, p.y, dx / d, dy / d, d) >= d) hit(o, sk.mult, { mag: 1 });
       }
+      const healed = [];
       for (const ally of members(S, p)) if (ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= sk.healR) {
-        healP(rt, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal);
+        const restored = healP(rt, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal);
+        if (restored && ally !== p) healed.push(ally.pid);
       }
+      if (healed.length) p.oathSupport = { until: now + sk.creditMs, party: p.party, map: p.map, healed };
       break;
     }
     // ── 대검
@@ -13944,7 +13968,7 @@ export function defs() {
   }
   return {
     items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
-    jobs, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
+    jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)

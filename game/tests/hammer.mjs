@@ -221,6 +221,7 @@ for (const duo of [false, true]) {
   assert.ok(dmg(overlap, merc) > 0);
   assert.equal(rt.ev.filter(e => e[0] === "h" && e[1] === overlap.id).length, 1);
   overlap.dead = true;
+  overlap.respAt = Infinity;
   const base = H.stats(merc);
   H.gainJob(S, merc, 1e7);
   assert.deepEqual(merc.ch.jp, { lv: 50, xp: 0 });
@@ -251,6 +252,29 @@ for (const duo of [false, true]) {
   for (const o of [paladin, merc, nearby]) assert.equal(o.hp, 5 + heal(o));
   assert.equal(far.hp, 5, "a distant party member is outside the healing radius");
   assert.equal(p.hp, 5, "an outsider is never healed");
+  const stay = { x: ox, y: oy };
+  function creditedKill(attacker, engaged = false) {
+    Object.assign(attacker, stay);
+    ready(attacker);
+    const beast = m(attacker === far ? 23 : 16, 0, "gutfrog");
+    beast.hp = 1;
+    beast.temp = true;
+    if (engaged) beast.by[paladin.pid] = 1;
+    assert.ok(actions(attacker, atk).ok);
+    advance(200);
+    assert.ok(beast.dead);
+  }
+  const jp = paladin.ch.jp.xp, wm = paladin.ch.wm.hammer.xp;
+  creditedKill(far);
+  assert.equal(paladin.ch.jp.xp, jp, "only a teammate who received effective healing can grant support credit");
+  creditedKill(merc);
+  assert.equal(paladin.ch.jp.xp, jp + 4, "healing participation earns job XP");
+  assert.equal(paladin.ch.wm.hammer.xp, wm, "healing does not train weapon mastery");
+  creditedKill(merc, true);
+  assert.equal(paladin.ch.jp.xp, jp + 8, "direct damage and support give only one award for the same kill");
+  advance(oath.creditMs);
+  creditedKill(merc);
+  assert.equal(paladin.ch.jp.xp, jp + 8, "support XP eligibility expires");
   for (const o of [merc, nearby, far, paladin]) L.removePlayer(S, o.pid);
 
   const old = L.newChar("옛전직", [], "hammer");

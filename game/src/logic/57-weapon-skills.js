@@ -43,8 +43,10 @@ function skGrow(ch, sk) {
 }
 /** Resonance full: the next staff skill is free and hits harder. */
 const resoReady = (p, sk) => skOf(sk, "staff") && (p.reso | 0) >= SKILL.reso.n && pasOn(p, "reso");
+const skJobBonus = (p, sk) => sk.job === p.ch.job ? JOB_SKILL_RANKS[jobSkillRank(p.ch.jp?.lv || 0)] : null;
 /** What a skill costs right now. */
-const skMp = (p, sk) => (resoReady(p, sk) ? 0 : sk.mp);
+const skMp = (p, sk) => resoReady(p, sk) ? 0 : Math.ceil(sk.mp * (100 - (skJobBonus(p, sk)?.mp || 0)) / 100);
+const skCooldown = (p, sk) => Math.round(sk.cd * (1 - stats(p).cdr) * (100 - (skJobBonus(p, sk)?.cd || 0)) / 100);
 /** Inertia stacks still held (they fall away 2.5 s after the last sword hit). */
 const inertOf = (p) => (p.inert && p.S.now - p.inertAt <= SKILL.inertia.ms ? p.inert : 0);
 
@@ -124,11 +126,12 @@ function dealt(p, mobs, fn) {
 }
 /** Give `p` back `n` HP (a heal number over them). */
 function healP(rt, p, n) {
-  if (p.dead) return;
+  if (p.dead) return 0;
   const amt = Math.min(stats(p).mhp - p.hp, Math.round(n));
-  if (amt < 1) return;
+  if (amt < 1) return 0;
   p.hp += amt;
   rt.ev.push(["h", p.eid, -amt, 0, 1]);
+  return amt;
 }
 
 /** Lingering skill things in a map: lures, vortices, beasts, storms, traps, a sanctuary. */
@@ -368,13 +371,14 @@ function crView(p, now) {
   const o = crOf(p, j.wk.find((k) => k !== hand), now);
   return o ? { ...cr, o } : cr;
 }
-/** The wire's skill list: [id, MP it costs now, cooldown left ms, usable with what is in hand (1/0)]. */
+/** The skill list: [id, MP, cooldown left ms, usable, HP if relevant, full cooldown ms for signatures]. */
 function skWire(p, now) {
   return skillsFor(p.ch).map((id) => {
     const sk = SKILL[id];
     if (sk.kind === "p") return [id, 0, 0, pasOn(p, id) ? 1 : 0];
     const row = [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(p.ch, sk) ? 0 : 1];
-    if (sk.hpPct) row.push(hammerHpCost(p, sk));
+    if (sk.hpPct || sk.job) row.push(sk.hpPct ? hammerHpCost(p, sk) : 0);
+    if (sk.job) row.push(skCooldown(p, sk));
     return row;
   });
 }
@@ -413,7 +417,7 @@ function castSkill(S, p, id) {
   if (hpSpent) { p.hp -= hpSpent; rt.ev.push(["h", p.eid, hpSpent, 0, 1, 1]); }
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1]); } }
   // WIS shortens every wait; an echo (legendary) may give it straight back
-  p.cds[id] = now + Math.round(sk.cd * (1 - st.cdr));
+  p.cds[id] = now + skCooldown(p, sk);
   if (st.lg.echo && rnd(S) < 0.2 * st.proc) { p.cds[id] = now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
   p.atkAt = now;
   p.swordBeat = null;
@@ -445,9 +449,12 @@ function castSkill(S, p, id) {
         const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
         if (!d || hammerLine(m, p.x, p.y, dx / d, dy / d, d) >= d) hit(o, sk.mult, { mag: 1 });
       }
+      const healed = [];
       for (const ally of members(S, p)) if (ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= sk.healR) {
-        healP(rt, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal);
+        const restored = healP(rt, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal);
+        if (restored && ally !== p) healed.push(ally.pid);
       }
+      if (healed.length) p.oathSupport = { until: now + sk.creditMs, party: p.party, map: p.map, healed };
       break;
     }
     // ── 대검

@@ -51,6 +51,7 @@ const jobWmOf = (j) => (JOBS[j] && JOBS[j].kind === "hybrid" ? HYB_WM : JOB_WM);
 const isHybrid = (ch) => !!JOBS[ch.job] && JOBS[ch.job].kind === "hybrid";
 
 const jobNeed = lv => 24 + 12 * lv + 2 * lv * lv;
+const jobSkillRank = lv => JOB_SKILL_RANKS.findLastIndex(rank => lv >= rank.lv);
 function gainJob(S, p, n) {
   const ch = p.ch, jp = ch.jp;
   if (!jp || jp.lv >= JOB_PROGRESS.cap) return;
@@ -71,6 +72,8 @@ function gainJob(S, p, n) {
   if (signature && previous < SKILL[signature].jobNeed && skLearned(ch, SKILL[signature])) {
     toast(p, `새 전직 스킬 ${skLearnNew(p, [signature]).join("")}`);
   }
+  const rank = jobSkillRank(jp.lv);
+  if (signature && rank > 0 && rank > jobSkillRank(previous)) toast(p, `[${SKILL[signature].name}] 강화 ${rank + 1}단계 달성`);
 }
 
 /**
@@ -171,19 +174,27 @@ function newAct(p, skill) {
   p.actN = (p.actN | 0) + 1;
   p.actGain = skill ? WM_GAIN.skill : WM_GAIN.hit;
 }
-/** A kill: everyone who struck it (not idle party members) gets mastery by its tier and rank. */
+/** A kill gives weapon mastery to attackers and job experience to attackers and active Paladin support. */
 function wmKill(S, rt, mob) {
   const d = MOBS[mob.k];
   if (d.chest || d.still) return;
   const rank = WM_GAIN.kill[mob.el | 0];
   const n = (1 + Math.floor(d.lv / 2)) * rank * (d.boss ? WM_GAIN.boss : 1);
   const bonus = Math.round(Math.min(d.xp, WM_GAIN.earlyXpMax) * WM_GAIN.earlyKill * rank);
+  const jobCredit = new Set();
   for (const pid of Object.keys(mob.by)) {
     const p = S.players[pid];
-    if (!p || p.map !== rt.id || p.dead || !wmEligible(p, d)) continue;
-    gainWm(S, p, n, bonus);
-    gainJob(S, p, n * 2);
+    if (!p || p.map !== rt.id || p.dead) continue;
+    if (wmEligible(p, d)) { gainWm(S, p, n, bonus); jobCredit.add(p); }
+    if (!p.party) continue;
+    for (const healer of allies(S, p)) {
+      const support = healer.oathSupport;
+      if (support?.until > S.now && support.party === p.party && support.map === rt.id && support.healed.includes(pid) && wmEligible(healer, d)) {
+        jobCredit.add(healer);
+      }
+    }
   }
+  for (const p of jobCredit) gainJob(S, p, n * 2);
 }
 
 // ── accuracy, evasion, stagger

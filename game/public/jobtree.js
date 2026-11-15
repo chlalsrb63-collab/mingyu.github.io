@@ -41,6 +41,19 @@ const singleOf = (k) => Object.keys(D().jobs).find((j) => D().jobs[j].kind === "
 export const needOf = (j) => { const d = D(), job = d.jobs[j]; return job.wm || (job.kind === "hybrid" && d.hybWm) || d.jobWm; };
 /** A job's signature skill id. */
 const sigOf = (j) => D().skillOrder.find((id) => D().skills[id].job === j);
+/** Labels for the signature rank already reached and the next job-level milestone. */
+export function signatureProgress(defs, level) {
+  const ranks = defs.jobSkillRanks;
+  if (!ranks?.length) return null;
+  const rank = ranks.filter(({ lv }) => (level || 0) >= lv).length;
+  const current = ranks[rank - 1], next = ranks[rank];
+  const bonus = ({ mp, cd }) => [mp && `MP −${mp}%`, cd && `재사용 시간 −${cd}%`].filter(Boolean).join(" · ");
+  return {
+    current: current ? [`전용기 ${rank}단계`, bonus(current)].filter(Boolean).join(" · ") : "",
+    next: next ? `직업 Lv.${next.lv} · ${rank ? `${rank + 1}단계 · ${bonus(next)}` : "전용기 습득"}` : "",
+    roadmap: ranks.map((r, i) => `Lv.${r.lv} ${i ? bonus(r) : "습득"}`).join(" / "),
+  };
+}
 /**
  * Where `s` stands with job `j`: "cur" (it is the job), "ok" (may take it now), "half" (a two-weapon
  * job with one weapon ready), "no" (not yet), "shut" (another job taken: jobs are for good).
@@ -107,9 +120,20 @@ function jobCard(s, j, atJob) {
   card.append(needLines(s, j));
   if (sig) {
     const sk = d.skills[sig], r = el("div", "jt-sig");
+    const rank = signatureProgress(d, st === "cur" ? s.jp?.[0] : 0);
+    const wire = st === "cur" ? s.sk?.find(([id]) => id === sig) : null;
     const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(sig);
     const tx = el("div", "tx");
-    tx.append(el("b", "", sk.name), el("small", "", ` 직업 Lv.${sk.jobNeed} · MP ${sk.mp} · 재사용 ${sk.cd / 1000}초`), el("p", "", sk.desc));
+    const hp = wire?.[4] ? ` · HP ${wire[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : "";
+    const cost = `MP ${wire?.[1] ?? sk.mp}${hp} · 재사용 ${(wire?.[5] ?? sk.cd) / 1000}초`;
+    const unlock = sk.jobNeed ? `직업 Lv.${sk.jobNeed}` : "전직 시 습득";
+    tx.append(el("b", "", sk.name), el("small", "", ` ${rank ? cost : `${unlock} · ${cost}`}`), el("p", "", sk.desc));
+    if (rank) {
+      const text = [rank.current, rank.next && `${rank.current ? "다음 · " : ""}${rank.next}`].filter(Boolean).join(" / ");
+      const progress = el("p", "", text);
+      progress.title = rank.roadmap;
+      tx.append(progress);
+    }
     r.append(ic, tx);
     card.append(r);
   }
@@ -229,7 +253,11 @@ export function renderTree(box, s, { atJob }) {
   const root = el("div", "jt-root" + (adv ? " cur" : ""));
   root.append(Info.jobMark(s.job), el("b", "", adv ? "모험가" : `모험가 ▸ ${jobs[s.job].name}`));
   root.append(el("small", "", adv ? "아이콘이 있는 조합에서 전직할 수 있습니다. 전직은 한 번뿐입니다." : `지금 [${jobs[s.job].name}] — 전직은 되돌릴 수 없습니다`));
-  if (s.jp) root.append(jobProgress(s.jp));
+  if (s.jp) {
+    root.append(jobProgress(s.jp));
+    const next = signatureProgress(d, s.jp[0])?.next;
+    if (next) root.append(el("small", "", `다음 보상 · ${next}`));
+  }
   box.append(root);
 
   // the picked job: by default the current one, else the first open one, else the hand's single job

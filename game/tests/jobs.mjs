@@ -458,6 +458,33 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.deepEqual(W.ch.wm.sword, { lv: 1, xp: 0 }, "quest turn-ins do not teach weapon mastery");
 }
 
+// ═════════ profession signature ranks ═════════
+{
+  const W = world({ wk: "book", lvl: 45, job: "paladin", wm: { hammer: 20, book: 20 } });
+  const id = "oathward", sk = D.skills[id], act = { t: "sk", id, a: 0 };
+  assert.deepEqual(D.jobSkillRanks.map(r => r.lv), [5, 20, 35, 50]);
+  W.ch.jp = { lv: 4, xp: 0 };
+  assert.match(W.act(act).error, /직업 Lv\.5/);
+  for (const [lv, mpCut, cdCut] of [[5, 0, 0], [19, 0, 0], [20, 10, 0], [34, 10, 0], [35, 10, 8], [49, 10, 8], [50, 20, 12]]) {
+    W.ch.jp = { lv, xp: 0 };
+    W.p.stc = null;
+    W.p.cds = {};
+    ready(W);
+    const rows = W.self().sk, row = rows.find(r => r[0] === id);
+    const mp = Math.ceil(sk.mp * (100 - mpCut) / 100);
+    const cd = Math.round(sk.cd * (1 - W.p.stc.cdr) * (100 - cdCut) / 100);
+    assert.deepEqual(row, [id, mp, 0, 1, 0, cd], `job level ${lv} effective cost and cooldown`);
+    assert.deepEqual(rows.find(r => r[0] === "soulbolt"), ["soulbolt", D.skills.soulbolt.mp, 0, 1]);
+    W.p.mp = mp - 1;
+    assert.equal(W.act(act).error, "MP가 부족합니다");
+    W.p.mp = mp;
+    assert.ok(W.act(act).ok);
+    assert.equal(W.p.mp, 0);
+    assert.equal(W.p.cds[id], W.now + cd);
+    assert.match(W.act(act).error, /재사용 대기/);
+  }
+}
+
 // ═════════ jobs (C.3, C.4) ═════════
 {
   const W = world({ wk: "sword", wm: { sword: 19, staff: 20 } });

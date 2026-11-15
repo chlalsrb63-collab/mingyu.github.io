@@ -218,6 +218,7 @@ function skillRows(box, s, k) {
   });
   for (const id of ids) {
     const sk = SK[id], w = G.skw && G.skw.get(id), pas = sk.kind === "p";
+    const rank = sk.job === s.job ? JobTree.signatureProgress(G.defs, s.jp?.[0]) : null;
     const why = pas ? (w ? (w[3] ? "" : "이 무기를 들면 켜집니다") : `숙련 ${sk.need}에 배웁니다`) : sk.job && s.job !== sk.job ? `[${jobs[sk.job].name}] 전직 기술` : QS.skillWhy(id);
     const row = el("div", "skill" + (why ? " locked" : "") + (sk.job ? " ult" : ""));
     const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(id);
@@ -225,9 +226,12 @@ function skillRows(box, s, k) {
     const at = pas ? "" : QS.keysOf(["s", id]);
     hd.append(el("b", "", sk.name), at ? el("kbd", "", at) : "");
     if (pas) hd.append(el("small", "", "패시브"));
-    else hd.append(el("small", "mp", `MP ${w ? w[1] : sk.mp}${w?.[4] ? ` · HP ${w[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : ""}`), el("small", "", `재사용 ${sk.cd / 1000}초`));
-    hd.append(el("small", "", why || (sk.job ? "전직 기술" : `숙련 ${sk.need} 습득`)));
-    row.append(ic, hd, el("p", "", sk.desc));
+    else hd.append(el("small", "mp", `MP ${w?.[1] ?? sk.mp}${w?.[4] ? ` · HP ${w[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : ""}`), el("small", "", `재사용 ${(w?.[5] ?? sk.cd) / 1000}초`));
+    const detail = [rank?.current, why].filter(Boolean).join(" · ");
+    hd.append(el("small", "", detail || (sk.job ? "전직 기술" : `숙련 ${sk.need} 습득`)));
+    const desc = el("p", "", sk.desc);
+    if (rank?.current && rank.next) desc.append(el("br"), el("small", "", `다음 · ${rank.next}`));
+    row.append(ic, hd, desc);
     if (!pas) {
       // drag the icon (or the whole row) onto the quick slots; or tap the button, then a slot
       const put = el("button", "btn small qs-put", "단축칸");

@@ -113,8 +113,8 @@ const SKILL = {
     desc: "해머 기술로 내 균열 두 개를 실제로 터뜨리면 정타 피해가 추가로 8% 늘어난다." },
   ironsiege: { kind: "h", job: "mercenary", need: HYB_WM, name: "철쇄 돌진", mp: 24, cd: 28000, len: 48, half: 11, r: 23, mult: 2.45, sweep: 1.05, fx: 133,
     desc: "창으로 열린 길을 따라 전진하고 끝에서 해머를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다." },
-  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, fx: 134,
-    desc: "성문을 지키는 망치로 주변을 내리친다. 자신과 반경 88 안의 파티원 각각에게 최대 HP 10%에 성기사 공격력의 30%를 더해 회복시킨다." },
+  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, creditMs: 10000, fx: 134,
+    desc: "주변을 내리치고 자신과 반경 88 안의 파티원에게 최대 HP 10% + 성기사 공격력의 30%를 회복시킨다. 회복한 파티원이 10초 안에 처치에 기여하면 성기사도 직업 경험치를 받는다." },
 };
 for (const [id, sk] of Object.entries(SKILL)) {
   sk.id = id;
