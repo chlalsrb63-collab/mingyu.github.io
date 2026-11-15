@@ -1,0 +1,34 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "game-local",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "game",
+        "run",
+        "dev:local"
+      ],
+      "port": 8787
+    },
+    {
+      "name": "game-shots",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--prefix",
+        "game",
+        "wrangler",
+        "dev",
+        "-c",
+        "game/wrangler.local.jsonc",
+        "--port",
+        "8823",
+        "--persist-to",
+        "game/.wrangler/shots"
+      ],
+      "port": 8823,
+      "autoPort": false
+    }
+  ]
+}
