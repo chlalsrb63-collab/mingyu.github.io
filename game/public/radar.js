@@ -11,15 +11,16 @@
  * dots for monsters and passers-by; party members as numbered discs (pinned to the rim with an
  * arrow toward them when out of range); me as a gold-and-white arrow along my aim, with a pulse.
  *
- * The map window has two tabs: the whole current map (fit to the window; wheel or ± to zoom, drag
+ * The map window has a regional map (fit to the window; wheel or ± to zoom, drag
  * to pan; party members live with names, gates with where they lead, stones clickable to warp
  * when the warp rules allow) and the world route map, every region from defs.maps joined by its
- * doors (defs.maps[].to), so maps made in the editor appear on it by themselves.
+ * doors (defs.maps[].to), plus a resident directory from the server's NPC schedules.
  *
  * The client lends what it owns through init(): G, act, openWin/toggleWin/isOpen, wpWoke, npcOut,
  * miniDots (차원 균열 marks), canWarp, channel info.
  */
 import * as Art from "./art.js";
+import * as NPC from "./npclife.js";
 import { icon } from "./uiicons.js";
 import { mapChart, shortestRoute, questMaps, nextGate, chartBase, paintChart, mapDetail } from "./worldmap.js";
 
@@ -51,7 +52,7 @@ const roleOf = (n) => ROLE[n.role] || ROLE.talk;
 const PARTY_COL = ["#4ad0ff", "#3fe08c", "#8ac4ff", "#9af0c8"];
 /** Roofs on the radar and the map window, a shade under the buildings' own (iso_tall.js BSTYLE). */
 const ROOF = { hall: "#4e7a40", library: "#4a5a86", dojo: "#8e4a2a", store: "#a8643a", smithy: "#444c5c", merc: "#4a3a30", lab: "#3e8474", diner: "#a83c34", cafe: "#348686", inn: "#3456a0", boutique: "#c06a8c", pet: "#5a9040", apt: "#7a5034", home: "#b85444", barn: "#6a3a2e" };
-const COL = { gate: "#d890ff", door: "#e0a868", stone: "#8ad8ff", stoneOff: "#7a7468", fire: "#ff9a3a", obelisk: "#c890ff", wind: "#5ae4a0", boss: "#ff4a4a", me: "#ffd84a" };
+const COL = { gate: "#d890ff", door: "#e0a868", stone: "#8ad8ff", stoneOff: "#7a7468", fire: "#ff9a3a", obelisk: "#c890ff", wind: "#5ae4a0", boss: "#ff4a4a", me: "#ffd84a", resident: "#f0c7ef", track: "#ffbfe6" };
 
 const sprites = {};
 /** A 12×12 glyph in `col` with a one-pixel dark outline all round (14×14). */
@@ -214,6 +215,8 @@ let xyText = "", infoText = "";
 /** Draw the radar: every frame, my tile at the centre. */
 export function draw(t) {
   if (!M || !D || !D.G.map) return;
+  const resident = residentTarget();
+  if (resident) refreshResidents();
   const cv = $("#mini-cv"), box = cv.parentElement;
   // in the phone drawer the radar is only drawn while the drawer is out
   if (document.body.dataset.lay !== "full" && !document.body.classList.contains("drawer")) return;
@@ -261,11 +264,16 @@ export function draw(t) {
   for (const c of m.camps || []) { const [x, y] = P(c.x, c.y); if (inView(x, y)) blit(g, spr("fire", COL.fire), x, y); }
   for (const [sx, sy] of M.shrines) { const [x, y] = Pt(sx, sy); if (inView(x, y)) blit(g, spr("wind", COL.wind), x, y - 2); }
   for (const n of m.npcs || []) {
-    if (n.thing || !D.npcOut(n) || (n.role === "dim" && M.obelisk)) continue;
+    if (n.thing || (NPC.cast(n.id) ? !servicePost(n) : !D.npcOut(n)) || (n.role === "dim" && M.obelisk)) continue;
     const [x, y] = Pt(n.x, n.y);
     if (!inView(x, y)) continue;
     const [gl, col] = roleOf(n);
     if (n.role === "talk") dotAt(g, x, y, "#ffe08a", 3); else blit(g, spr(gl, col), x, y - 3);
+  }
+  for (const n of NPC.list()) {
+    if (n.onPost && n.post && servicePost(n.post)) continue;
+    const [x, y] = P(n.x, n.y);
+    if (inView(x, y)) dotAt(g, x, y, COL.resident, 3);
   }
   if (M.obelisk) { const [x, y] = Pt(...M.obelisk); if (inView(x, y)) blit(g, spr("rift", COL.obelisk), x, y - 3); }
   for (const st of M.stones) {
@@ -296,7 +304,11 @@ export function draw(t) {
   };
   if (G.fb) for (const [bx, by] of G.fb) { const [x, y] = P(bx, by); if (Math.floor(t / 350) % 3) pin(x, y, COL.boss, spr("skull", COL.boss)); }
   for (const q of party) { const [x, y] = P(q.x, q.y); pin(x, y, q.col, disc(q.col, q.n)); }
-  if (world.selected) {
+  const tracked = residentPoint(resident);
+  if (tracked) {
+    const [x, y] = P(tracked.x, tracked.y);
+    if (Math.floor(t / 280) % 3) pin(x, y, COL.track, spr("talk", COL.track));
+  } else if (world.selected) {
     const chart = currentChart(), route = guidePath(chart);
     if (route.length > 1) {
       const gate = nextGate(M.portals, chart.nodes.get(route[1]).d, mx, my);
@@ -340,10 +352,100 @@ function setZoom(i) {
 
 const view = { tab: "here", z: 1, cx: 0, cy: 0, reset: true, dirty: true, at: 0, hits: [], hover: null, drag: null, u: 1, ox: 0, oy: 0 };
 const bandOf = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
+const residentsPanel = { filter: "all", rows: null, display: "", map: null, route: null };
+const servicePost = (n) => n.role && n.role !== "talk" && n.role !== "quest";
+
+function residentTarget() {
+  const picked = NPC.tracked();
+  if (picked) return picked;
+  const { defs, self } = D.G;
+  const main = self?.q, quest = main && defs.quests?.[main.i];
+  const elder = defs.questTurnIn?.npc;
+  if (quest && main.st === 1 && main.n >= quest.n && NPC.cast(elder)) return elder;
+  for (const [id, stage] of self?.sq || []) {
+    const q = defs.side?.find((s) => s.id === id);
+    const npc = stage === 3 ? q?.giver : stage === 2 && q?.goal.type === "talk" ? q.goal.npc : null;
+    if (npc && NPC.cast(npc)) return npc;
+  }
+  return null;
+}
+
+function refreshResidents() {
+  if (!NPC.needsWhere()) return;
+  NPC.markWhereAsked();
+  D.act({ t: "nw" });
+}
+
+function residentPoint(id) {
+  if (!id) return null;
+  const body = NPC.at(id);
+  if (body) return body;
+  const target = NPC.locations().find((n) => n.id === id)?.map;
+  const me = D.G.me, here = M.m.id, level = D.G.self?.lvl || 1;
+  if (!target || target === here) return null;
+  const chart = currentChart(), key = `${here}:${target}:${level}`;
+  if (residentsPanel.route?.key !== key || residentsPanel.route.chart !== chart) {
+    const route = shortestRoute(chart.graph, here, target, (id) => level >= (chart.nodes.get(id).d.minLv || 1));
+    residentsPanel.route = { key, chart, next: chart.nodes.get(route[1])?.d };
+  }
+  const next = residentsPanel.route.next;
+  if (!next) return null;
+  const gate = nextGate(M.portals, next, me.x / T, me.y / T);
+  return gate ? { x: gate.x * T + 8, y: gate.y * T + 8, gate: true } : null;
+}
+
+function drawResidents() {
+  refreshResidents();
+  const rows = NPC.locations(), picked = NPC.tracked(), mode = residentsPanel.filter, here = M?.m.id;
+  const display = `${mode}:${picked || ""}`;
+  if (rows === residentsPanel.rows && display === residentsPanel.display && here === residentsPanel.map) return;
+  Object.assign(residentsPanel, { rows, display, map: here });
+  const box = $("#map-resident-list"), oldScroll = box.scrollTop;
+  box.replaceChildren();
+  const el = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
+  if (!rows.length) { box.append(el("p", "주민 위치를 불러오는 중…")); return; }
+  const { defs } = D.G, isQuest = new Set((defs.side || []).map((q) => q.giver));
+  if (defs.questTurnIn?.npc) isQuest.add(defs.questTurnIn.npc);
+  const groups = new Map();
+  for (const n of rows) {
+    if (mode === "service" && !servicePost(n)) continue;
+    if (mode === "quest" && n.role !== "quest" && !isQuest.has(n.id)) continue;
+    if (mode === "resident" && servicePost(n)) continue;
+    if (!groups.has(n.map)) groups.set(n.map, []);
+    groups.get(n.map).push(n);
+  }
+  const names = new Map((defs.maps || []).map((d) => [d.id, d.name]));
+  for (const [map, residents] of [...groups].sort(([a], [b]) => Number(b === here) - Number(a === here))) {
+    box.append(el("h4", names.get(map) || "이동 중"));
+    for (const n of residents) {
+      const row = el("div", "");
+      row.className = "res-row";
+      const text = el("div", ""), act = NPC.actName(n.act);
+      const next = n.nextPlace && n.nextPlace !== n.place ? ` · 다음 ${n.nextPlace}` : "";
+      text.append(el("b", n.name), el("small", [n.place && n.place !== names.get(map) ? n.place : null, act].filter(Boolean).join(" · ") + next));
+      const go = el("button", picked === n.id ? "추적 해제" : "추적");
+      go.className = `btn small${picked === n.id ? " gold" : ""}`;
+      go.setAttribute("aria-label", `${n.name} ${go.textContent}`);
+      go.setAttribute("aria-pressed", String(picked === n.id));
+      go.addEventListener("click", () => {
+        NPC.track(NPC.tracked() === n.id ? null : n.id);
+        drawResidents();
+        box.querySelector(`button[data-npc="${CSS.escape(n.id)}"]`)?.focus({ preventScroll: true });
+        D.play("ui");
+      });
+      go.dataset.npc = n.id;
+      row.append(text, go);
+      box.append(row);
+    }
+  }
+  if (!groups.size) box.append(el("p", "이 분류에 표시할 주민이 없습니다."));
+  box.scrollTop = oldScroll;
+}
 
 /** The map window, drawn while it is open (15 times a second: the blink, the party). */
 export function drawWin(t) {
   if (!M || !D || !D.isOpen("map")) return;
+  if (view.tab === "residents") { drawResidents(); return; }
   if (!view.dirty && t - view.at < 66) return;
   view.at = t; view.dirty = false;
   const cv = $("#map-cv"), box = cv.parentElement;
@@ -407,11 +509,26 @@ function drawHere(g, W, H, t) {
   for (const [sx, sy] of M.shrines) { const [x, y] = Pt(sx, sy); blit(g, spr("wind", COL.wind), x, y - 2); hit(x, y, 8, "질주의 바람 — 바람 신단"); }
   if (M.obelisk) { const [x, y] = Pt(...M.obelisk); blit(g, spr("rift", COL.obelisk), x, y - 3); tag("차원의 오벨리스크", x, y - 15, "#e0c8ff", 10, 4); hit(x, y, 9, "차원의 오벨리스크 — 균열 지기에게 말을 걸어 차원 균열을 엽니다"); }
   for (const n of m.npcs || []) {
-    if (n.thing || !D.npcOut(n)) continue;
+    if (n.thing || (NPC.cast(n.id) ? !servicePost(n) : !D.npcOut(n))) continue;
     const [x, y] = Pt(n.x, n.y), [gl, col, what] = roleOf(n);
     blit(g, spr(gl, col), x, y - 3);
     if (names && n.role !== "talk") tag(n.name, x, y + 11, "#f4ecd0", 10);
-    hit(x, y, 8, `${n.name} · ${what}`);
+    hit(x, y, 8, `${n.name} · ${what}${NPC.cast(n.id) && !NPC.at(n.id)?.onPost ? " · 업무 자리" : ""}`);
+  }
+  const track = residentTarget();
+  for (const n of NPC.list()) {
+    const pinned = n.id === track;
+    if (!pinned && n.onPost && n.post && servicePost(n.post)) continue;
+    const [x, y] = P(n.x, n.y);
+    dotAt(g, x, y, pinned ? COL.track : COL.resident, pinned ? 5 : 3);
+    if (pinned || names) tag(n.name, x, y - 13, COL.track, 10, pinned ? 1 : 5);
+    hit(x, y, 7, `${n.name} · ${NPC.actName(n.act)}`, () => { NPC.track(NPC.tracked() === n.id ? null : n.id); D.play("ui"); });
+  }
+  const guidance = residentPoint(track);
+  if (guidance?.gate) {
+    const [x, y] = P(guidance.x, guidance.y);
+    blit(g, spr("talk", COL.track), x, y);
+    tag(`${NPC.cast(track).name}에게 가는 문`, x, y - 16, COL.track, 10, 1);
   }
   for (const mob of G.mobs.values()) {
     const d = (G.defs.mobs || {})[mob.k] || {}, [x, y] = P(mob.x, mob.y);
@@ -573,6 +690,9 @@ function setTab(tab) {
   $("#w-map").classList.toggle("map-has-detail", tab === "world" && !!world.selected);
   $("#map-region-bar").hidden = tab !== "world";
   $("#map-detail").hidden = tab !== "world" || !world.selected;
+  $("#map-zoom").hidden = $("#map-box").hidden = $("#map-info").hidden = $("#map-legend").hidden = tab === "residents";
+  $("#map-residents").hidden = tab !== "residents";
+  if (tab === "residents") drawResidents();
   if (tab === "world") currentChart();
   legend();
 }
@@ -595,6 +715,9 @@ function legend() {
 
 /** The window was opened: start where I stand. */
 export function opened() {
+  const residents = !!D?.G?.defs?.npclife?.cast?.length;
+  $("#map-residents-tab").hidden = !residents;
+  if (!residents && view.tab === "residents") setTab("here");
   if (view.z > 1 && M) { view.cx = D.G.me.x / T; view.cy = D.G.me.y / T; clampView(); }
   view.dirty = true;
   legend();
@@ -610,6 +733,14 @@ export function init(deps) {
   $("#mini-map").addEventListener("click", () => D.toggleWin("map"));
   $("#mini-cv").addEventListener("click", () => D.toggleWin("map"));
   for (const b of document.querySelectorAll("#map-tabs button[data-tab]")) b.addEventListener("click", () => { setTab(b.dataset.tab); D.play("ui"); });
+  for (const b of document.querySelectorAll(".res-filters button")) b.addEventListener("click", () => {
+    residentsPanel.filter = b.dataset.filter;
+    for (const chip of b.parentElement.children) {
+      chip.classList.toggle("gold", chip === b);
+      chip.setAttribute("aria-pressed", String(chip === b));
+    }
+    drawResidents();
+  });
   const cv = $("#map-cv");
   const local = (e) => { const r = cv.getBoundingClientRect(); return [((e.clientX - r.left) * cv.width) / r.width, ((e.clientY - r.top) * cv.height) / r.height]; };
   $("#map-zi").addEventListener("click", () => { zoomAt(1.5, cv.width / 2, cv.height / 2); });

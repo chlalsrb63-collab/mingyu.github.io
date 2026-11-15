@@ -188,6 +188,6 @@ export function drawables(now = Date.now()) {
 /** Speech bubbles showing now. */
 export function bubbles(now = Date.now()) {
   const out = [];
-  for (const r of RESIDENTS) { const s = state.get(r.id); if (s && s.b && s.at && now < s.b.until) out.push({ x: s.at.x, y: s.at.y, b: s.b }); }
+  for (const r of RESIDENTS) { const s = state.get(r.id); if (s && s.b && s.at && now < s.b.until) out.push({ id: r.id, x: s.at.x, y: s.at.y, b: s.b }); }
   return out;
 }

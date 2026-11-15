@@ -17,6 +17,8 @@ import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
 import * as Charms from "./charms.js";
+import * as NPC from "./npclife.js";
+import * as Sky from "./sky.js";
 import { G, T, now, dist, $, el } from "./state.js";
 import { act } from "./net.js";
 import { toast, openWin, addChat, shown } from "./windows.js";
@@ -130,14 +132,26 @@ function preAim(arcDeg) {
   else me.aim = [me.x + ax * 30, me.y + ay * 30 + 6];
 }
 
+const visiting = new Map();
 export function nearestNpc() {
   let best = null, bd = 40;
+  const server = Sky.serverNow();
   for (const n of G.map.npcs) {
-    if (!S3.npcOut(n)) continue;
+    const actor = NPC.cast(n.id);
+    if (actor ? !S3.npcService(n) && !NPC.at(n.id, server)?.onPost : !S3.npcOut(n)) continue;
     // a keeper behind a counter (the cafe, the inn) is served across it: a little further, still in the server's reach (56)
     // so is a life station (쥬쥬의 화덕 sits right beside 쥬쥬's counter: step to its side to reach it)
     const d = dist(G.me.x, G.me.y, n.x * T + 8, n.y * T + 12) - (n.goods || STATION_ROLE.has(n.role) ? 14 : 0);
     if (d < bd) { bd = d; best = n; }
+  }
+  for (const body of NPC.list(server)) {
+    if (body.onPost || body.fade < 0.5) continue;
+    const d = dist(G.me.x, G.me.y, body.x, body.y);
+    if (d >= bd) continue;
+    if (!visiting.has(body.id)) visiting.set(body.id, { id: body.id, role: "talk", offDuty: true });
+    const n = visiting.get(body.id);
+    Object.assign(n, { name: body.name, originRole: body.role, x: (body.x - 8) / T, y: (body.y - 12) / T });
+    bd = d; best = n;
   }
   for (const m of G.map.marks || []) {
     if (m.kind !== "waypoint") continue;
@@ -147,6 +161,11 @@ export function nearestNpc() {
   return best;
 }
 const STATION_ROLE = new Set(["craft", "alch", "cook"]);
+const SERVICE_WINDOWS = {
+  shop: "shop", smith: "smith", elder: "quest", stone: "warp", warp: "warp", daily: "daily",
+  collector: "collect", achieve: "achieve", train: "train", job: "job", bank: "bank", costume: "costume",
+  dim: "dim", house: "house", craft: "craft", alch: "craft", cook: "craft", charm: "juana", jobs: "board",
+};
 /** The waypoint stone, as something the player can talk to. */
 const STONE = { role: "stone", name: "이동의 돌" };
 export const stoneNear = () => (G.map.marks || []).some((m) => m.kind === "waypoint" && dist(G.me.x, G.me.y, m.x * T + 8, m.y * T + 8) < 40);
@@ -192,36 +211,89 @@ export function interact() {
   if (Board.interact(n)) return;                   // the 알바 in hand: pick up / hand in here (board.js)
   Sound.play("ui");
   SideQ.onTalk(n, G.self);
-  if (n.role === "shop") { openWin("shop"); openWin("inv"); }
-  else if (n.role === "smith") { openWin("smith"); openWin("inv"); }
-  else if (n.role === "elder") { openWin("quest"); tutTry("talk"); }
-  else if (n.role === "stone" || n.role === "warp") openWin("warp");
-  else if (n.role === "daily") openWin("daily");
-  else if (n.role === "collector") openWin("collect");
-  else if (n.role === "achieve") openWin("achieve");
-  else if (n.role === "train") openWin("train");          // 수련관 카이: the starter weapon, levels, 망각의 의식
-  else if (n.role === "job") openWin("job");              // 전직관 아르센: the jobs
-  else if (n.role === "bank") openWin("bank");
-  else if (n.role === "costume") openWin("costume");
+  const panel = SERVICE_WINDOWS[n.role];
+  if (!panel) { talkTo(n); return; }
+  if (n.role === "shop" || n.role === "smith") { openWin(panel); openWin("inv"); }
+  else if (n.role === "elder") { openWin(panel); tutTry("talk"); }
   else if (n.role === "dim") Dim.openKeeper();
   else if (n.role === "house") { Housing.openAgent(); openWin("inv"); }
-  else if (n.role === "craft" || n.role === "alch" || n.role === "cook") Station.open(n.role);   // 캉캉 · 보글 · 쥬쥬의 화덕
-  else if (n.role === "charm") Charms.openJuana();        // 참감정사 주아나: quest, appraisal, expansion (charms.js)
-  else if (n.role === "jobs") Board.open();               // 알바 중개인 포포: the board
-  else { talkTo(n); return; }
-  if (SideQ.gives(n)) talkTo(n);
+  else if (STATION_ROLE.has(n.role)) Station.open(n.role);
+  else if (n.role === "charm") Charms.openJuana();
+  else if (n.role === "jobs") Board.open();
+  else openWin(panel);
+  setServiceTalk(panel, n);
   // the townsfolk have a word to say as they serve you (npctalk.js)
-  const line = n.role !== "stone" && NpcTalk.lineFor(n, talkSheet());
+  const away = NPC.cast(n.id) && !NPC.at(n.id)?.onPost;
+  const line = away ? serviceNotice(n) : n.role !== "stone" && NpcTalk.lineFor(n, talkSheet());
   if (line) addChat(line, "npc", n.name);
+}
+/** The service window still opens at a post. Its story button uses the same quest cards as a conversation. */
+function setServiceTalk(panel, n) {
+  const header = $(`#w-${panel} > header`);
+  if (!header) return;
+  let chip = header.querySelector(".service-talk");
+  if (!n.id || n.thing) { if (chip) chip.hidden = true; return; }
+  if (!chip) {
+    chip = el("button", "btn small service-talk", "");
+    chip.addEventListener("pointerdown", (e) => e.stopPropagation());
+    header.insertBefore(chip, header.querySelector(".x"));
+  }
+  const mark = SideQ.mark(n, G.self);
+  chip.hidden = false;
+  chip.textContent = mark ? `이야기 ${mark}` : "이야기";
+  chip.title = NPC.cast(n.id) && !NPC.at(n.id)?.onPost ? serviceNotice(n) : `${n.name}의 이야기`;
+  chip.onclick = () => {
+    const post = G.map?.npcs.find((q) => q.id === n.id);
+    if (G.me.dead || !post || dist(G.me.x, G.me.y, post.x * T + 8, post.y * T + 12) >= 56) { toast("안내판 가까이에서 이야기를 확인할 수 있습니다."); return; }
+    SideQ.onTalk(post, G.self);
+    talkTo(post);
+  };
+}
+function serviceNotice(n) {
+  const person = NPC.cast(n.id);
+  const place = NPC.locations().find((p) => p.id === n.id);
+  const present = NPC.at(n.id);
+  const at = place?.place ? `${place.place}에서 ${NPC.actName(place.act)}` : present ? NPC.actName(present.act) : "자리 비움";
+  const cover = person?.cover && NPC.cast(person.cover);
+  const service = cover ? `${cover.name}에게 맡기거나 안내판을 이용하세요.` : "안내판에서 업무를 이용할 수 있습니다.";
+  return `${at}. ${service}`;
 }
 /** The talk window: the NPC's greeting, then more on "다음 이야기", round and round. */
 export const talk = { npc: null, lines: [], i: 0 };
 function talkTo(n) {
-  talk.npc = n; talk.lines = NpcTalk.allLines(n, talkSheet()); talk.i = 0;
+  talk.npc = n; talk.i = 0;
+  const person = NPC.cast(n.id);
+  const at = NPC.at(n.id);
+  const spot = NPC.locations().find((p) => p.id === n.id);
+  const actName = at?.act ?? spot?.act;
+  const lines = NPC.lines(n.id);
+  const special = lines && (at?.with && lines.with || Sky.weather() === Sky.WX.rain && lines.rain
+    || Sky.nightK() > 0.5 && lines.night || lines[actName] || (!at?.onPost && lines.off));
+  talk.lines = special?.length ? special : NpcTalk.allLines(n.originRole ? { ...n, role: n.originRole } : n, talkSheet());
   if (!talk.lines.length) talk.lines = ["…"];
   $("#talk-name").textContent = n.name;
+  refreshNpcTalk();
+  if (person && NPC.needsWhere()) { NPC.markWhereAsked(); act({ t: "nw" }); }
   talkShow();
   openWin("talk");
+}
+export function refreshNpcTalk() {
+  const n = talk.npc;
+  if (!n || !G.map) return;
+  const person = NPC.cast(n.id), at = NPC.at(n.id), spot = NPC.locations().find((p) => p.id === n.id);
+  const actName = at?.act ?? spot?.act;
+  let where = $("#talk-where");
+  if (!where) {
+    where = el("p", "hint", "");
+    where.id = "talk-where";
+    $("#talk-text").before(where);
+  }
+  const actText = actName ? NPC.actName(actName) : "";
+  where.hidden = !person || !actText;
+  const place = at ? (spot?.map === G.map.id ? spot.place : G.map.name) : spot?.place;
+  const friend = G.defs.life?.rep?.tier?.[1];
+  const trust = G.self?.rep?.[n.id] || 0;
+  where.textContent = actText ? `지금 ${actText}${place ? " · " + place : ""}${friend && trust >= friend && spot?.nextPlace ? " · 다음 " + spot.nextPlace : ""}` : "";
 }
 function talkShow() {
   $("#talk-text").textContent = talk.lines[talk.i % talk.lines.length];

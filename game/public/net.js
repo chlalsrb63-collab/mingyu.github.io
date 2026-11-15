@@ -18,6 +18,7 @@ import * as StatWin from "./statwin.js";
 import * as JobTree from "./jobtree.js";
 import * as Lobby from "./lobby.js";
 import * as Sky from "./sky.js";
+import * as NpcLife from "./npclife.js";
 import * as Dim from "./dimrift.js";
 import * as Gather from "./gather.js";
 import * as Radar from "./radar.js";
@@ -164,6 +165,7 @@ export const channelName = () => Lobby.label(channel);
 export function stopGame() {
   G.playing = false;
   G.auto = false;
+  NpcLife.load(null, null);
   resetPurse(); // the next character's purse starts without a +N
   $("#hud").hidden = true; $("#dead").hidden = true; G.me.dead = false; $("#tip").hidden = true;
   for (const w of $$("#windows .window, #panel .window")) if (!w.hidden) closeWin(w.id.slice(2));
@@ -177,6 +179,7 @@ function loadMap(m) {
   G.map = m;
   G.path = null;
   G.comboWeapon = null;
+  NpcLife.load(m, G.defs);
   S3.loadMap(m);
   Radar.loadMap(m);
   Gather.loadMap(m);                           // its gathering nodes stand up as scene props (gather.js)
@@ -205,6 +208,8 @@ function onSnap(s) {
   const me = G.me;
   if (s.map) loadMap(s.map);
   if (s.dn) Sky.setSky(s.dn, !!s.map);
+  if (s.nl) NpcLife.onLegs(s.nl);
+  if (s.nw) NpcLife.onWhere(s.nw);
   if (s.map || s.me[5]) { me.x = s.me[0]; me.y = s.me[1]; me.dir = s.me[6]; if (s.me[10] !== undefined) me.aimI = s.me[10]; }
   me.hp = s.me[2]; me.mp = s.me[3]; me.sit = !!s.me[7];
   // me[11]: ms left on the dash (Space) cooldown; a 0 just after pressing may predate the press reaching the server
@@ -289,7 +294,13 @@ function sync(map, rows, apply, t, gone) {
 
 export function entityPos(id) {
   if (id === G.you) return G.me;
-  if (typeof id === "string" && id.startsWith("npc:")) { const n = G.map && G.map.npcs.find((q) => "npc:" + q.id === id); return n ? { x: n.x * T + 8, y: n.y * T + 12, h3: 1.32 } : null; }
+  if (typeof id === "string" && id.startsWith("npc:")) {
+    const key = id.slice(4), body = NpcLife.at(key);
+    if (body) return { x: body.x, y: body.y, h3: 1.32 };
+    if (NpcLife.cast(key)) return null;
+    const post = G.map?.npcs.find((n) => n.id === key);
+    return post ? { x: post.x * T + 8, y: post.y * T + 12, h3: 1.32 } : null;
+  }
   return G.players.get(id) || G.mobs.get(id) || G.gone.get(id) || null;
 }
 

@@ -8,7 +8,8 @@
 
 import * as SP from "./sprites.js";
 import { map } from "./scene_map.js";
-import { npcOut } from "./scene_people.js";
+import { npcOut, npcService } from "./scene_people.js";
+import * as NPC from "./npclife.js";
 
 export const T = 32, P = 2;
 /** Iso pixels per server unit along the screen's x; y is half that. Height lifts by 26 px per unit `h`. */
@@ -134,7 +135,8 @@ export function pick(clientX, clientY) {
   const test = (wx, wy, w, h) => { const [x, y] = iso(wx, wy); if (X > x - w / 2 && X < x + w / 2 && Y > y - h && Y < y + 4 && y > bd) { bd = y; best = [wx, wy]; } };
   if (G && map && G.defs) {
     for (const m of G.mobs.values()) { const d = G.defs.mobs[m.k], z = ((SP.MOB_SIZE[d && d.sp] || [1])[0] * (m.el === 2 ? 2 : 1)) * SP.SIZE; test(m.x, m.y, z * 0.6, z * 0.75); }
-    for (const n of map.npcs) if (npcOut(n)) test(n.x * 16 + 8, n.y * 16 + 12, 18, 28);
+    for (const n of map.npcs) if (NPC.cast(n.id) ? npcService(n) : npcOut(n)) test(n.x * 16 + 8, n.y * 16 + 12, 18, 28);
+    for (const n of NPC.list()) if (n.fade >= 0.5) test(n.x, n.y, 18, 28);
     for (const k of map.marks || []) if (k.kind === "waypoint") test(k.x * 16 + 8, k.y * 16 + 8, 18, 44);
   }
   if (best) return best;

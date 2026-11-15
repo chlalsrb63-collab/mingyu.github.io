@@ -43,10 +43,11 @@ import * as IN from "./iso_interior.js";
 import * as DimArt from "./dimart.js";
 import { icon as uiIcon } from "./uiicons.js";
 import * as TF from "./townfolk.js";
+import * as NPC from "./npclife.js";
 import { g, vw, vh, G, iso, tI, K, clamp, cam, FLAT, T, playerLook, sAng, P, sheet } from "./scene_view.js";
 import { drawSkirt, drawGround, drawLayer, drawPulseParts, lazyLeft, lazyTall } from "./scene_ground.js";
 import { wpLit, lights, map, ground, theme, artGround, drawWater, pulseCv, pulseParts, falls, smokers, statics, npcs, OUTDOOR, emit, strings, critters, roomL, drawAmbient, camps } from "./scene_map.js";
-import { npcOut, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, seatOf, drawPerson, drawJam } from "./scene_people.js";
+import { npcOut, npcService, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, seatOf, drawPerson, drawJam } from "./scene_people.js";
 import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, drawAimArrow, props, TRAIT_TINT, hooks, glows } from "./scene_fx.js";
 
 // ───────────────────────────── the frame ─────────────────────────────
@@ -130,7 +131,44 @@ const VOID = { interior: "#120c0a", cave: "#05060e", crypt: "#060508", sewer: "#
 let lightCv = null, lg = null;
 // the townsfolk read the sky clock and wear heroes' looks; their bubbles are lettered by the page (client.js)
 TF.init({ hour: () => Sky.hour(), dayMs: () => (G && G.defs && G.defs.sky && G.defs.sky.dayMs) || 48 * 60000, sheet: (look, cos) => SP.personSheet(SP.playerLook(null, look, cos ? { cos } : {})) });
-export const townBubbles = (t) => TF.bubbles(t);
+export function townBubbles(t) {
+  const bubbles = [];
+  const server = Sky.serverNow(), turn = Math.floor(server / 5000), t0 = t - server % 5000;
+  for (const { a, b, kind, chat } of NPC.relationships()) {
+    const first = NPC.at(a, server), second = NPC.at(b, server);
+    if (!first || !second || first.moving || second.moving || Math.hypot(first.x - second.x, first.y - second.y) > 33) continue;
+    if (!chat.length && kind !== "crush") continue;
+    const line = kind === "crush" ? "…" : chat[turn % chat.length];
+    const speaker = line.startsWith("b:") ? second : first;
+    if (Math.hypot(speaker.x - G.me.x, speaker.y - G.me.y) > 9 * 16 || t >= t0 + 4400) continue;
+    bubbles.push({ x: speaker.x, y: speaker.y, b: { text: line.replace(/^[ab]:\s*/, ""), t0, until: t0 + 4400 } });
+    if (bubbles.length >= 3) return bubbles;
+  }
+  return bubbles.concat(TF.bubbles(t).filter((b) => !NPC.cast(b.id)).slice(0, 3 - bubbles.length));
+}
+
+const NPC_DIR = ["front", "left", "right", "back"];
+const NPC_STEP = [SP.FRAME.stepA, SP.FRAME.stretch, SP.FRAME.stepB, SP.FRAME.stretch];
+const NPC_WORK_POSE = { smith: "hammer", craft: "hammer", cook: "stir", alch: "stir" };
+
+/** A scheduled resident shares the same frames, feet and idle props as the town's static cast. */
+function residentFrame(r, t, animate) {
+  const dir = NPC_DIR[r.dir] || "front", role = r.post?.role || r.role;
+  const s = state("res:" + r.id, r.id, () => {
+    if (r.resident) return { sheet: SP.personSheet(SP.playerLook(null, r.look, { cos: r.cos })) };
+    if (r.cos?.length && Array.isArray(r.look) && r.look.length >= 8 && r.id !== "town_charm_juana") {
+      return { sheet: SP.personSheet(SP.playerLook(null, r.look, { cos: r.cos })) };
+    }
+    return { sheet: SP.npcSheet({ id: r.id, look: r.look, role }) };
+  });
+  const nt = t + r.index * 257;
+  const pose = r.pose || (!r.moving && r.act === "work" && NPC_WORK_POSE[role]);
+  const frame = !animate ? SP.FRAME.stand
+    : r.moving ? NPC_STEP[Math.floor(nt / 100) % NPC_STEP.length]
+    : pose === "doze" || nt % 3900 < 140 ? SP.FRAME.blink
+    : Math.floor(nt / 620) % 2 ? SP.FRAME.breathe : SP.FRAME.stand;
+  return { sheet: s.sheet, dir, pose: animate && pose, frame, seed: r.index, fade: r.fade };
+}
 /** Milliseconds from the start of a stroke to the moment its blade crosses the target. */
 export function impactMs(wk, beat) {
   if (wk === "hammer") return Sw.HAMMER_IMPACT;
@@ -202,7 +240,13 @@ export function render(focusX, focusY, dt, t, snap) {
     if (st.slices) { for (const sl of st.slices) if (st.dx + sl.sx < X1 && st.dx + sl.sx + sl.w > X0) list.push({ y: sl.d, s: st, sl }); }
     else list.push({ y: st.d, s: st });
   }
-  for (const n of npcs) if (on(n.x, n.y) && npcOut(n.n)) list.push({ y: n.y, X: n.x, Y: n.y, n });
+  const server = Sky.serverNow();
+  for (const n of npcs) {
+    if (!on(n.x, n.y)) continue;
+    if (NPC.cast(n.n.id)) {
+      if (npcService(n.n) && !NPC.at(n.n.id, server)?.onPost) list.push({ y: n.y, X: n.x, Y: n.y, sign: DC.postSign(n.n.role) });
+    } else if (npcOut(n.n)) list.push({ y: n.y, X: n.x, Y: n.y, n });
+  }
   const add = (wx, wy, o, dy = 0) => { const [X, Y] = iso(wx, wy); if (!on(X, Y, 140)) return; o.X = X; o.Y = Y; o.y = Y + dy; list.push(o); };
   for (const d of G.drops.values()) add(d.x, d.y, { d }, -1);
   if (G.fires) for (const f of G.fires.values()) add(f.x, f.y, { f });
@@ -211,9 +255,12 @@ export function render(focusX, focusY, dt, t, snap) {
   for (const [eid, p] of G.players) add(p.x, p.y, { p, eid });
   add(G.me.x, G.me.y, { p: G.me, eid: G.you, me: true }, 0.01);
   for (const pt of petsNow(dt, t)) add(pt.x, pt.y, { pet: pt }, -1);
-  // the townsfolk going about their day (townfolk.js: the sky clock places them, nothing on the wire)
+  // Ambient residents remain until they have server plans of their own.
   TF.update(dt, G.me, t);
-  for (const r of TF.drawables(t)) add(r.x, r.y, { r });
+  for (const r of TF.drawables(t)) if (!NPC.cast(r.id)) add(r.x, r.y, { r });
+  const residents = NPC.list(server);
+  if (residents.length > 24) residents.sort((a, b) => Math.hypot(a.x - focusX, a.y - focusY) - Math.hypot(b.x - focusX, b.y - focusY));
+  residents.forEach((r, i) => add(r.x, r.y, { resident: r, animate: i < 24 }));
   for (const [id, pr] of props) { if (t >= pr.until) props.delete(id); else add(pr.x, pr.y, { pr }, -(pr.lift || 0)); }
   list.sort((a, b) => a.y - b.y);
   for (const s of ents.values()) s.seen = false;
@@ -254,14 +301,24 @@ export function render(focusX, focusY, dt, t, snap) {
         if (st.land === "crystals" && Math.random() < 0.04) parts.push({ x: dx + 10 + Math.random() * (sp.width - 20), y: dy + 20 + Math.random() * 60, vx: 0, vy: -8, life: 1.2, color: "#cffaff", g: 0, s: 1 });
       }
       if (st.water && Math.random() < 0.45) parts.push({ x: st.x - 9 + Math.random() * 18, y: st.y - 50, vx: (Math.random() - 0.5) * 34, vy: -24 - Math.random() * 20, life: 0.55, color: "#dff4ff", g: 170, s: 2 });
-    } else if (o.r) {
+    } else if (o.sign) {
+      g.drawImage(o.sign, Math.round(o.X - o.sign.width / 2), Math.round(o.Y + 2 - o.sign.height));
+    } else if (o.r || o.resident) {
       // a resident: a hero's figure walking or at their task (iso_interior.js poses)
-      const r = o.r, X = Math.round(o.X), Y = Math.round(o.Y), side = r.dir === "left" || r.dir === "right";
+      const r = o.r || residentFrame(o.resident, t, o.animate), X = Math.round(o.X), Y = Math.round(o.Y), side = r.dir === "left" || r.dir === "right";
       const fr = (side ? r.sheet.side : r.sheet[r.dir] || r.sheet.front)[r.pose === "doze" ? SP.FRAME.blink : r.frame];
+      if (r.fade < 1) {
+        g.fillStyle = "#ffd8a0";
+        g.globalAlpha = (1 - r.fade) * 0.62;
+        g.fillRect(X - 7, Y - 2, 14, 2);
+        g.fillRect(X - 4, Y - 3, 8, 1);
+      }
+      g.globalAlpha = r.fade ?? 1;
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(X, Y, 6, 3, 0, 0, 7); g.fill();
       if (r.dir === "left") { g.save(); g.translate(X, 0); g.scale(-1, 1); g.drawImage(fr, -SP.FOOT[0], Y - SP.FOOT[1]); g.restore(); }
       else g.drawImage(fr, X - SP.FOOT[0], Y - SP.FOOT[1]);
       if (r.pose) IN.drawPose(g, r.pose, X, Y, t, parts, r.seed);
+      g.globalAlpha = 1;
     } else if (o.n) {
       g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(o.n.x, o.n.y, 6, 3, 0, 0, 7); g.fill();
       const pose = o.n.n.pose, nt = t + o.n.x * 37;
@@ -414,7 +471,7 @@ const ghost = { s: null, gz: 1 };
 
 export { iso, sAng, PARTS, playerLook, init, resize, sync, project, pick } from "./scene_view.js";
 export { loadMap, labels } from "./scene_map.js";
-export { tintWhite, petFetch, npcOut } from "./scene_people.js";
+export { tintWhite, petFetch, npcOut, npcService } from "./scene_people.js";
 export { props, hooks, personFrame, FOOT, fxCustom, glows, qiBurst, arrowSprite, fx, big, shake } from "./scene_fx.js";
 export { pulseBoth, groundInfo } from "./scene_ground.js";
 export { figure, drawFigure } from "./scene_stage.js";

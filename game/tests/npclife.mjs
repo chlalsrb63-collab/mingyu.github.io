@@ -5,7 +5,10 @@ import { readData } from "../scripts/build-logic.mjs";
 
 const defs = L.defs(), H = defs.sky.dayMs / 24, DAY = H * 24;
 const at = (h, day = 0) => day * DAY + h * H;
-const cast = ["smith", "bank", "juju", "forge_tong", "r_peng", "story", "town_charm_juana"];
+const cast = [
+  "smith", "bank", "juju", "forge_tong", "r_peng", "story", "town_charm_juana",
+  "elder", "hall_bori", "daily", "warp", "shop", "costume", "train", "town_job_arsen", "dimkeeper", "collector",
+];
 assert.deepEqual(L.lifeCheck(), []);
 assert.deepEqual(defs.npclife.cast.map((row) => row[0]), cast);
 assert.ok(JSON.stringify(defs.npclife).length < 24_000);
@@ -18,6 +21,21 @@ assert.equal(L.npcAt("smith", at(25)).hidden, true);
 assert.equal(L.npcAt("smith", at(21, 3)).place, "diner_bar");
 assert.ok(L.npcsOn("juju_diner", at(21)).includes("smith"));
 assert.equal(L.npcPlan("smith", at(21)).next.place, "forge_back");
+
+for (const [first, second, map, place, h, day] of [
+  ["elder", "hall_bori", "tales_cafe", "cafe_t3", 14, 1],
+  ["shop", "costume", "tales_cafe", "cafe_t1", 21, 2],
+  ["train", "town_job_arsen", "juju_diner", "diner_t2", 21, 0],
+  ["town_job_arsen", "collector", "owl_library", "lib_table", 21, 3],
+]) {
+  const a = L.npcAt(first, at(h, day)), b = L.npcAt(second, at(h, day));
+  assert.deepEqual([a.map, a.place, a.with, a.moving], [map, place, second, false]);
+  assert.deepEqual([b.map, b.place, b.with, b.moving], [map, place, first, false]);
+  const distance = Math.abs(a.tx - b.tx) + Math.abs(a.ty - b.ty);
+  assert.ok(distance > 0 && distance <= 2, `${first} and ${second} occupy neighbouring seats`);
+}
+assert.equal(L.npcAt("elder", at(14, 0)).onPost, true, "tea only happens on the paired days");
+assert.equal(L.npcAt("train", at(21, 1)).map, "starlight_inn", "Kai eats at the inn on alternate days");
 
 const world = L.setup(), other = L.setup();
 L.addPlayer(world, "A", L.newChar("다람이"));
@@ -49,6 +67,21 @@ for (const h of [5, 8, 12, 16, 20, 23, 26]) {
   put("town", n.x * T + 8, n.y * T + 12);
   assert.ok(talk("smith"), "the service post remains reachable");
   assert.equal(L.validateAction(world, "A", { t: "enh", s: 0 }).error === "대장장이가 너무 멉니다", false);
+}
+for (const id of ["elder", "shop", "costume", "train", "town_job_arsen", "collector"]) {
+  world.now = at(21);
+  const post = maps.town.npcs.find((n) => n.id === id);
+  put("town", post.x * T + 8, post.y * T + 12);
+  assert.equal(L.npcAt(id, world.now).onPost, false, `${id} is off its service post in the evening`);
+  assert.ok(talk(id), `${id}'s original service post is still reachable`);
+}
+for (const id of ["daily", "warp", "dimkeeper"]) {
+  const post = maps.town.npcs.find((n) => n.id === id);
+  for (const h of [6, 10, 19.8, 21, 25]) {
+    const body = L.npcAt(id, at(h));
+    assert.equal(body.map, "town");
+    assert.ok(Math.hypot(body.tx - post.x, body.ty - post.y) <= 8, `${id} stays near its post at ${h}h`);
+  }
 }
 world.now = at(21);
 const smith = L.npcAt("smith", world.now);

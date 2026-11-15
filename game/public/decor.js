@@ -9,6 +9,8 @@
  * are handed back so the scene stops drawing what used to stand there.
  */
 
+import { icon as uiIcon } from "./uiicons.js";
+
 const T = 32;
 const INK = "#2b2233";
 
@@ -614,6 +616,31 @@ export function signPlank(glyph) {
     b.r(1, 5, 18, 16, "#d8b078"); b.r(1, 5, 18, 2, "#f0d098"); b.r(1, 19, 18, 2, "#a87a44"); b.r(17, 7, 2, 12, "#b8864e");
     if (glyph) x.drawImage(glyph, 4, 7);
   });
+}
+
+const POST_ICONS = {
+  shop: "coin", smith: "anvil", train: "swords", bank: "crate", warp: "stone",
+  daily: "cal", collector: "paw", achieve: "trophy", costume: "shirt", elder: "scroll",
+  dim: "rift", house: "house", job: "banner", cook: "bowl", craft: "hammer", alch: "flask",
+  jobs: "book", charm: "gem",
+};
+const postSigns = new Map();
+/** A service marker at a resident's usual post while they are away. */
+export function postSign(role) {
+  let sign = postSigns.get(role);
+  if (!sign) {
+    sign = prop(18, 24, (b, x) => {
+      b.r(3, 0, 12, 2, "#8c603c");
+      b.r(4, 2, 1, 3, INK); b.r(13, 2, 1, 3, INK);
+      b.r(0, 5, 18, 14, "#957043");
+      b.r(1, 5, 16, 1, "#ddbc7d");
+      b.r(1, 7, 16, 10, "#3b2b31");
+      b.r(8, 19, 2, 5, "#65412c");
+      x.drawImage(uiIcon(POST_ICONS[role] || "talk", "#f0dca4"), 3, 6);
+    });
+    postSigns.set(role, sign);
+  }
+  return sign;
 }
 
 // ───────────────────────────── the town's market ─────────────────────────────

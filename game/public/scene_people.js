@@ -405,6 +405,8 @@ export function drawPet(pt, t) {
 
 /** Townsfolk who come out only at night (the storyteller) are about only after dark. */
 export const npcOut = (n) => !n.night || (map && OUTDOOR.has(theme) && Sky.nightK() > 0.5);
+/** The service still works at the post when its keeper is elsewhere. */
+export const npcService = (n) => n.role !== "talk" && n.role !== "quest";
 /** A song on the lute (strummed, notes rising) or a cup raised to the fire, over a seated figure. */
 export function drawJam(j, s, t, x, y) {
   const k = (t - j.t0) / 2600, face = s.face || 1;

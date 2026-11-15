@@ -27,6 +27,7 @@ accounts
 data
 daynight
 npclife
+npclife-client
 interiors
 town
 dimrift

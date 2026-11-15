@@ -419,7 +419,7 @@ export function npcReach(p, id) {
 function npcLifeDefs() {
   return {
     cast: [...npcCast.values()].map((a) => [a.id, a.name, a.npc?.look || a.hero, a.cos || [], a.postMap, a.traits || [],
-      a.npc?.pose || null, a.home || null, a.cover || null, a.away || null, a.kid ? 1 : 0]),
+      a.npc?.pose || null, a.home || null, a.cover || null, a.away || null, a.kid ? 1 : 0, a.npc?.role || null]),
     places: [...[...npcPlaces.values()].map((p) => [p.id, p.map, p.name]), ...[...npcTransit.keys()].map((id) => ["map:" + id, id, MAP_META[id].name])],
     acts: NPC_ACTS, cycle: NPC_CYCLE,
     rel: npcRels.map((r) => [r.a.i, r.b.i, r.kind]),
