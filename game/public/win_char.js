@@ -99,9 +99,8 @@ export function renderInv(s) {
     if (d.type === "ring" && s.eq.ring1 && s.eq.ring2) {
       for (const k of ["ring1", "ring2"]) add(`${SLOT_NAME[k]}에 장착`, () => { act({ t: "eq", s: G.sel, k }); G.sel = -1; }, off, true);
     } else add("장착", () => { act({ t: "eq", s: G.sel }); G.sel = -1; }, off, true);
-    // a hybrid job carries a second weapon of its pair (Tab swaps)
-    const job = G.defs.jobs[s.job];
-    if (d.type === "weapon" && job && job.kind === "hybrid" && job.wk.includes(d.wk)) add("보조 무기로", () => { act({ t: "eq", s: G.sel, k: "weapon2" }); G.sel = -1; }, off, true);
+    // anyone carries a second weapon (Tab swaps; a hybrid's must be one of its pair — the server says so)
+    if (d.type === "weapon") add("보조 무기로", () => { act({ t: "eq", s: G.sel, k: "weapon2" }); G.sel = -1; }, off, true);
     if (isOpen("smith")) add("분해", () => { act({ t: "salv", s: G.sel }); G.sel = -1; Sound.play("salvage"); });
   }
   if (d.type === "rune") {
@@ -159,12 +158,22 @@ export function renderDoll(s) {
     if (!g) {
       // an empty slot: the silhouette of what goes there and a tiny caption with the slot's name
       const ph = el("span", "ph"); ph.append(iconImg(SLOT_GLYPH[k]));
-      slot.append(ph, el("span", "cap", k === "weapon2" ? "보조" : SLOT_NAME[k]));
+      slot.append(ph, el("span", "cap", k === "weapon2" ? "Ⅱ 보조" : SLOT_NAME[k]));
       slot.title = `${SLOT_NAME[k]} — 비어 있음`;
     }
-    if (k === "weapon2") slot.hidden = !g && !(G.defs.jobs[s.job] && G.defs.jobs[s.job].kind === "hybrid");
     host.replaceWith(slot);
   }
+  // Ⅰ / Ⅱ above the weapon (§9): Ⅰ is the one in hand (lit), Ⅱ swaps it with the second weapon
+  let wsw = $("#eq-wsw");
+  if (!wsw) { wsw = el("div", ""); wsw.id = "eq-wsw"; wsw.style.cssText = "display:flex;gap:2px;justify-content:center"; }
+  wsw.textContent = "";
+  const one = el("button", "btn small gold", "Ⅰ"), two = el("button", "btn small", "Ⅱ");
+  one.title = "Ⅰ 손에 든 무기";
+  two.title = `Ⅱ 보조 무기와 바꿔 듭니다 (${K("swap")})`;
+  two.disabled = !s.eq.weapon2;
+  two.onclick = () => { act({ t: "wsw" }); Sound.play("ui"); };
+  wsw.append(one, two);
+  $("#eq-weapon").before(wsw);
   resetDoll();
   drawPortrait(now());
 }

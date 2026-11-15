@@ -4,7 +4,7 @@ const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
-/** Where gear is worn. Two rings; everything else one of a kind. `weapon2` is a hybrid's second weapon (Tab swaps; adds no stats). */
+/** Where gear is worn. Two rings; everything else one of a kind. `weapon2` is anyone's second weapon (Tab swaps; adds no stats; learns a mastery share, §9). */
 const SLOTS = ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet", "weapon2"];
 const GEAR_TYPES = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet"];
 const isGear = (id) => GEAR_TYPES.includes(ITEMS[id].type);

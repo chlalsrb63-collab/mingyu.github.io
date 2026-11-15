@@ -17,7 +17,7 @@ function selfPayload(p) {
     // what the next point in each costs (0 at a cap), resets left, the starter pick taken, mastery
     // [lv, xp, need] per kind (WK_ORDER), the kinds in hand and on the back
     name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, st: ch.st, nx: nextCosts(ch), rs: ch.rs, sw: ch.sw,
-    wm: WK_ORDER.map((k) => [ch.wm[k].lv, ch.wm[k].xp, ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
+    wm: WK_ORDER.map((k) => [ch.wm[k].lv, Math.floor(ch.wm[k].xp),ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
     jp: ch.jp ? [ch.jp.lv, ch.jp.xp, ch.jp.lv >= JOB_PROGRESS.cap ? 0 : jobNeed(ch.jp.lv)] : null,
     wk2: ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "",
     // 직업 자유 (47-job-freedom.js): [[job, lv, xp]] every job walked; the loadout [actives, passives, off-job passive, set 1/0, off slot open 1/0]

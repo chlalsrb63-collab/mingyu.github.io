@@ -606,7 +606,7 @@ export function applyAction(S, pid, a) {
       afterGear(S, p);
       S.maps[p.map].ev.push(["jc", p.eid]);
       sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
-      toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸이 열렸습니다 — Tab으로 두 무기를 바꿔 듭니다.` : `[${job.name}] 전직!`);
+      toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸에 두 무기 중 하나를 들고 Tab으로 바꿔 듭니다.` : `[${job.name}] 전직!`);
       // the job's signature skill onto the bar
       const signature = SKILL[JOB_SKILL[a.j]];
       if (back) toast(p, `[${job.name}] 직업 Lv.${back.lv}부터 이어서 걷습니다.`);
@@ -621,10 +621,12 @@ export function applyAction(S, pid, a) {
     case "job_reset": case "lv_reset": case "lo": jfApply(S, p, a); break;
     case "ske": skeApply(S, p, a); break;
     case "wsw": {
-      // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops
+      // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops. Anyone else: as a re-equip.
+      const was = inHand(ch);
       [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];
       p.wswAt = S.now + WSW_MS;
       p.dance = null;
+      if (!isHybrid(ch) && inHand(ch) !== was) handChanged(p);
       afterGear(S, p);
       S.maps[p.map].ev.push(["ws", p.eid]);
       break;

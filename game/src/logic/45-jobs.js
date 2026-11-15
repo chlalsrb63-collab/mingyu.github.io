@@ -127,11 +127,23 @@ function deriveStats(p) {
 
 // ── weapon mastery
 
-/** Mastery experience for the weapon in hand; levels it up (events, toasts, the skills it opens go on the bar). */
+/** Share of the hand's mastery the second weapon learns (§9); the same kind twice gets only `same` extra instead. */
+const WM_SWAP = { other: 0.3, same: 0.1 };
+/**
+ * Mastery for the weapon in hand plus a share for the second weapon (§9: everyone, hybrids included — they had
+ * no pair share before, so nothing counts twice). A share may be fractional; migrate and the view floor it.
+ */
 function gainWm(S, p, n, bonus) {
   const ch = p.ch, wk = inHand(ch);
   if (!wk || !(n > 0)) return;
-  const r = ch.wm[wk];
+  const wk2 = ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "";
+  if (wk2 === wk) return wmAdd(S, p, wk, n * (1 + WM_SWAP.same), bonus * (1 + WM_SWAP.same));
+  wmAdd(S, p, wk, n, bonus);
+  if (wk2) wmAdd(S, p, wk2, n * WM_SWAP.other, bonus * WM_SWAP.other);
+}
+/** One kind's mastery: levels it up (events, toasts, the skills it opens go on the bar). */
+function wmAdd(S, p, wk, n, bonus) {
+  const ch = p.ch, r = ch.wm[wk];
   if (r.lv >= WM_MAX) return;
   const gain = n + (r.lv < JOB_WM ? bonus : 0);
   r.xp += gain;

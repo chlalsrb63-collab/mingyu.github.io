@@ -49,9 +49,11 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   ch.jp.lv = 12; ch.jp.xp = 7;
   assert.match(W.act({ t: "job_reset" }).error, /전직 초기화 주문서/, "the scroll is needed");
   give(ch, "scr_job");
+  ch.eq.weapon2 = { id: "w_rogue_1", q: 0, enh: 0, af: [], sk: 0, ru: [] };
   const g = ch.gold, cost = D.jf.cost.job[0] + D.jf.cost.job[1] * ch.lvl;
   assert.ok(W.act({ t: "job_reset" }).ok);
   assert.equal(ch.job, "adventurer"); assert.equal(ch.jp, null);
+  assert.equal(ch.eq.weapon2.id, "w_rogue_1", "§9: the second weapon stays on");
   assert.equal(ch.gold, g - cost, "gold scales with the level"); assert.equal(has(ch, "scr_job"), 0, "scroll used");
   assert.deepEqual(ch.jobs.swordsman, { lv: 12, xp: 7 }, "job level kept");
   assert.equal(W.act({ t: "job_reset" }).error, "모험가는 초기화할 직업이 없습니다");

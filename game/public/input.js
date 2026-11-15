@@ -182,8 +182,8 @@ export function setupInput() {
       case "guild": toggleWin("guild"); break;
       case "emote": openEmotes("emote"); break;
       case "inv": toggleWin("inv"); break;
-      // a hybrid job swaps its two weapons
-      case "swap": { const j = G.self && G.defs.jobs[G.self.job]; if (j && j.kind === "hybrid") { act({ t: "wsw" }); Sound.play("ui"); } break; }
+      // anyone with a second weapon swaps the two (job-freedom §9)
+      case "swap": if (G.self && G.self.eq.weapon2) { act({ t: "wsw" }); Sound.play("ui"); } break;
       case "char": toggleWin("char"); break;
       case "charm": toggleWin("charm"); break;   // the 참 보드
       case "trophy": toggleWin("trophy"); break;   // the 보스 전리품 (trophies.js)

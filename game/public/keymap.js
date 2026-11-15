@@ -12,7 +12,7 @@ import { $ } from "./state.js";
 const A = [
   ["up", "위로 이동", "KeyW", "이동"], ["down", "아래로 이동", "KeyS", "이동"], ["left", "왼쪽으로 이동", "KeyA", "이동"], ["right", "오른쪽으로 이동", "KeyD", "이동"],
   ["attack", "공격 (누르고 있기)", "KeyX", "전투"], ["dash", "대시", "Space", "전투"], ["auto", "자동사냥", "KeyR", "전투"], ["hp", "HP 물약", "KeyQ", "전투"], ["mp", "MP 물약", "KeyE", "전투"],
-  ["swap", "무기 바꾸기 (복합 직업)", "Tab", "전투"], ["interact", "말 걸기 · 상호작용", "KeyF", "전투"],
+  ["swap", "무기 바꾸기 (Ⅰ/Ⅱ)", "Tab", "전투"], ["interact", "말 걸기 · 상호작용", "KeyF", "전투"],
   ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => ["slot" + n, `단축칸 ${n}`, "Digit" + n, "단축칸"]),
   ["inv", "가방", "KeyI", "창"], ["char", "캐릭터", "KeyC", "창"], ["skill", "스킬", "KeyK", "창"], ["quest", "의뢰", "KeyL", "창"],
   ["daily", "일일 의뢰", "KeyU", "창"], ["achieve", "업적 · 칭호", "KeyY", "창"], ["collect", "몬스터 도감", "KeyJ", "창"],

@@ -391,6 +391,31 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(s.wk, "sword");
 }
 
+// ═════════ two main weapons for everyone (job-freedom §9): the second weapon learns 30 %, the same kind +10 % ═════════
+{
+  const W = world({ wk: "sword", lvl: 1 }), ch = W.ch, mobs = arena(W);
+  const gear = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
+  const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} vs ${b}`);
+  ch.inv.push(gear("w_bow_1"));
+  assert.ok(W.act({ t: "eq", s: ch.inv.length - 1, k: "weapon2" }).ok, "a 모험가 holds a bow on the back");
+  mobs([[16, 0]]);
+  ready(W); assert.ok(W.act({ t: "atk", a: 0 }).ok);
+  assert.equal(ch.wm.sword.xp, 5, "the hand learns in full");
+  near(ch.wm.bow.xp, 1.5, "the bow on the back learns 30 % (early bonus included)");
+  assert.equal(W.self().wm[D.wkOrder.indexOf("bow")][1], 1, "the wire shows whole points");
+  // the same kind twice: +10 % to that kind, no 30 % share
+  ch.wm.sword = { lv: 1, xp: 0 }; ch.wm.bow = { lv: 1, xp: 0 };
+  ch.inv.push(gear("w_warrior_1"));
+  assert.ok(W.act({ t: "eq", s: ch.inv.length - 1, k: "weapon2" }).ok);
+  assert.equal(ch.inv.at(-1).id, "w_bow_1", "the bow went back to the bag");
+  ready(W); W.act({ t: "atk", a: 0 });
+  near(ch.wm.sword.xp, 5.5, "two swords: +10 %");
+  assert.equal(ch.wm.bow.xp, 0);
+  // a save floors the share; the sheet shape is unchanged
+  const W2 = world({ ch: JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID))) });
+  assert.equal(W2.ch.wm.sword.xp, 5); assert.equal(W2.ch.eq.weapon2.id, "w_warrior_1");
+}
+
 // ═════════ grazes, evasion, stagger (B.4, B.6) ═════════
 {
   // a fresh weapon on a monster five tiers up grazes about 25 % − mastery; mastery 25 never
@@ -533,11 +558,14 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   for (let i = 0; i < 9; i++) W.step();
   assert.ok(W.act({ t: "wsw" }).ok);
   assert.equal(W.self().atk, atkSword, "the second weapon adds nothing while on the back");
-  // a single job may not hold a second weapon, nor swap
+  // §9: a single job holds any second weapon too, and swaps it like a re-equip
   const W2 = world({ wk: "dagger", job: "thief" });
-  W2.ch.inv.push({ id: "w_bow_1", q: 0, enh: 0, af: [], sk: 0, ru: [] });
-  assert.equal(W2.act({ t: "eq", s: W2.ch.inv.length - 1, k: "weapon2" }).error, "두 무기를 쓰는 직업만 보조 무기를 들 수 있습니다");
-  assert.equal(W2.act({ t: "wsw" }).error, "두 무기를 쓰는 직업만 무기를 바꿔 들 수 있습니다");
+  W2.ch.inv.push({ id: "w_bow_1", q: 0, enh: 0, af: [], sk: 0, ru: [] }, { id: "h_1", q: 0, enh: 0, af: [], sk: 0, ru: [] });
+  assert.equal(W2.act({ t: "eq", s: W2.ch.inv.length - 1, k: "weapon2" }).error, "무기만 보조 무기로 들 수 있습니다");
+  assert.ok(W2.act({ t: "eq", s: W2.ch.inv.findIndex((s) => s.id === "w_bow_1"), k: "weapon2" }).ok);
+  assert.ok(W2.act({ t: "wsw" }).ok);
+  assert.equal(W2.ch.eq.weapon.id, "w_bow_1"); assert.equal(W2.ch.eq.weapon2.id, "w_rogue_1");
+  assert.equal(W2.step().self.wk2, "dagger");
   // a single job: one weapon at 20; the job adds to that weapon
   const W3 = world({ wk: "bow", wm: { bow: 20 } });
   W3.ch.gold = D.jobs.archer.cost;
