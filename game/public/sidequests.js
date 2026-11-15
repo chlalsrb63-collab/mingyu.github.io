@@ -127,7 +127,7 @@ export function renderTalk(box, npc, s, say) {
   for (const q of mine) {
     const v = st.get(q.id);
     if (!v) continue;
-    if (v.st === 0 && q.req.flag) continue;   // a branch stays a surprise until its answer is given
+    if (v.st === 0 && (q.req.flag || q.repeat === "week")) continue;   // a branch (or a weekly's later stage) stays a surprise until it opens
     if (v.st === 0) {
       const pre = byId(q.req.quest || (q.req.flag && q.req.flag[0]));
       box.append(el("p", "ds", `잠김 · ${q.title} — ${s.lvl < q.req.lv ? `레벨 ${q.req.lv} 이상` : q.req.main ? "앞선 주요 의뢰 완료 후" : `[${pre ? pre.title : "?"}] 완료 후`}`));
@@ -136,8 +136,8 @@ export function renderTalk(box, npc, s, say) {
     shown++;
     const here = turnIn(q) === npc.id, away = !here && v.st >= 2;   // handed in somewhere else
     const card = el("div", `sq-card st${v.st}`);
-    card.append(el("div", "q-title", `${q.title}${q.repeat ? " (반복)" : ""}`));
-    if (v.st === 4) { card.append(el("p", "ds", "완료한 퀘스트입니다.")); box.append(card); continue; }
+    card.append(el("div", "q-title", `${q.title}${q.repeat === "week" ? " (주간)" : q.repeat ? " (반복)" : ""}`));
+    if (v.st === 4) { card.append(el("p", "ds", q.repeat === "week" ? "이번 주에 마친 의뢰입니다. 월요일 아침 6시에 다시 받을 수 있습니다." : "완료한 퀘스트입니다.")); box.append(card); continue; }
     card.append(el("p", "say", here && v.st === 3 && q.giver !== npc.id ? `${q.giverName}의 부탁으로 왔다.` : q.text));
     if (v.st === 1) card.append(el("div", "q-goal", `목표: ${goalText(q)}`));
     else card.append(goalRow(q, v));

@@ -291,7 +291,7 @@ export function checkQuests(f, ctx) {
     const rw = q.reward || {};
     if ((rw.xp != null && (!isInt(rw.xp) || rw.xp < 0)) || (rw.gold != null && (!isInt(rw.gold) || rw.gold < 0))) add(p, `${who}: 보상 경험치·골드는 0 이상의 정수예요.`);
     itemsOk(rw.items, p, who);
-    if (typeof q.repeat !== "boolean") add(p, `${who}: 반복 여부는 예/아니오로 정해 주세요.`);
+    if (typeof q.repeat !== "boolean" && q.repeat !== "week") add(p, `${who}: 반복 여부는 예/아니오(또는 "week" 주간)로 정해 주세요.`);
   });
   return P;
 }

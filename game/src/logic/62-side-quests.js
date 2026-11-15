@@ -10,7 +10,10 @@
 // quest can wait for it (req.flag = [questId, pick]). Rewards may give a keepsake (기념품, ITEMS
 // type "keep", kept forever in ch.keep) and a title (an achievement made here, category 이야기).
 // Steps of a story are quests chained by req.quest. Progress lives on the sheet as
-// ch.sq = { on: { id: n }, done: { id: times }, flags: { id: pick }, t: { id: deadline } } (sheet v23).
+// ch.sq = { on: { id: n }, done: { id: times }, flags: { id: pick }, t: { id: time } } (sheet v23); t = a delivery's deadline,
+// or when a weekly quest opens again. `repeat: true` may be taken again at once; `repeat: "week"` (Q6, the late field-boss
+// 기록) once a week per giver, until the weekly book's turn (63-social-weekly.js nextWeek, Monday 06:00 KST). req.until = a quest whose hand-in retires
+// this one (a giver's weekly text follows their arc: one row per stage, each until the next stage opens).
 
 const SQ_MAX = 10;
 const SQ_GOALS = ["kill", "collect", "talk", "visit", "elite", "fb", "make", "deliver", "choice"];
@@ -46,9 +49,9 @@ const SIDE = DATA.quests.side.filter((q) => typeof q.id === "string" && SQ_ID.te
   const flag = Array.isArray(req.flag) && typeof req.flag[0] === "string" && Number.isInteger(req.flag[1]) ? [req.flag[0], clamp(req.flag[1], 0, 2)] : null;
   return {
     id: q.id, giver: q.giver, title: txt(q.title, 40) || q.id, text: txt(q.text, 400), done: txt(q.done, 400), ...(txt(q.hint, 80) ? { hint: txt(q.hint, 80) } : {}),
-    goal, req: { lv: clamp(req.lv | 0, 0, MAXLV), quest: typeof req.quest === "string" ? req.quest : null, ...(req.main === true ? { main: true } : {}), ...(flag ? { flag } : {}) },
+    goal, req: { lv: clamp(req.lv | 0, 0, MAXLV), quest: typeof req.quest === "string" ? req.quest : null, ...(req.main === true ? { main: true } : {}), ...(flag ? { flag } : {}), ...(typeof req.until === "string" ? { until: req.until } : {}) },
     reward: sqReward(q.reward), ...(choice.length >= 2 ? { choice } : {}),
-    repeat: !!q.repeat, ...(q.mainChapter ? { mainChapter: true } : {}),
+    repeat: q.repeat === "week" ? "week" : !!q.repeat, ...(q.mainChapter ? { mainChapter: true } : {}),
   };
 }).filter((q, i, all) => all.findIndex((o) => o.id === q.id) === i && NPC_MAP[q.giver] && (!q.goal.mob || Object.hasOwn(MOBS, q.goal.mob)) && (
   q.goal.type === "kill" ? true : q.goal.type === "collect" ? Object.hasOwn(ITEMS, q.goal.item) : q.goal.type === "talk" ? !!NPC_MAP[q.goal.npc]
@@ -59,6 +62,7 @@ for (const q of SIDE) SQ_BY[q.id] = q;
 for (const q of SIDE) {
   if (q.req.quest && !SQ_BY[q.req.quest]) q.req.quest = null;
   if (q.req.flag && !SQ_BY[q.req.flag[0]]?.choice) delete q.req.flag;
+  if (q.req.until && !SQ_BY[q.req.until]) delete q.req.until;
 }
 // main-chain chapters (P6): a QUESTS row's `sq` is its story beat, a mainChapter quest that opens once the chain reaches
 // that row and must be done before the row can be accepted (70-validate.js); a row naming none, or a missing one, has no beat
@@ -95,6 +99,7 @@ function sqClean(v) {
   }
   if (isObj(v.done)) for (const id of Object.keys(v.done).slice(0, 400)) if (SQ_ID.test(id) && (v.done[id] | 0) > 0) out.done[id] = Math.min(9999, v.done[id] | 0);
   if (isObj(v.flags)) for (const id of Object.keys(v.flags)) if (SQ_BY[id]?.choice && out.done[id]) out.flags[id] = clamp(v.flags[id] | 0, 0, SQ_BY[id].choice.length - 1);
+  if (isObj(v.t)) for (const id of Object.keys(v.t)) if (SQ_BY[id]?.repeat === "week" && !Object.hasOwn(out.on, id) && out.done[id] && Number.isSafeInteger(v.t[id])) out.t[id] = v.t[id];
   return out;
 }
 /** Keepsakes (기념품) on a sheet: { id: 1 } for known ones (v23). */
@@ -115,14 +120,16 @@ function sqItemsFix(ch) {
 }
 /** How far along an active quest is (collect and deliver count what is in the bag right now). */
 const sqHave = (ch, q) => (q.goal.type === "collect" || q.goal.type === "deliver" ? Math.min(q.goal.n, countItem(ch, q.goal.item)) : Math.min(q.goal.n, ch.sq.on[q.id] | 0));
-/** 0 locked · 1 can take · 2 under way · 3 ready to hand in · 4 finished for good · -1 another branch was chosen. */
-function sqState(ch, q) {
+/** A weekly quest of this giver was handed in this week (one a week per giver, whichever stage of the arc it was). */
+const sqWeekDone = (ch, q, now) => Object.keys(ch.sq.t).some((id) => now < ch.sq.t[id] && SQ_BY[id].repeat === "week" && SQ_BY[id].giver === q.giver);
+/** 0 locked · 1 can take · 2 under way · 3 ready to hand in · 4 finished (for good, or this week) · -1 another branch was chosen or the story moved on. */
+function sqState(ch, q, now) {
   if (Object.hasOwn(ch.sq.on, q.id)) return sqHave(ch, q) >= q.goal.n ? 3 : 2;
   if (ch.sq.done[q.id] && !q.repeat) return 4;
   const f = q.req.flag;
-  if (f && ch.sq.done[f[0]] && (ch.sq.flags[f[0]] | 0) !== f[1]) return -1;
+  if ((f && ch.sq.done[f[0]] && (ch.sq.flags[f[0]] | 0) !== f[1]) || (q.req.until && ch.sq.done[q.req.until])) return -1;
   if (ch.lvl < q.req.lv || (q.req.main && ch.q.i < QUESTS.length) || (Object.hasOwn(SQ_MAIN, q.id) && ch.q.i < SQ_MAIN[q.id]) || (q.req.quest && !ch.sq.done[q.req.quest]) || (f && !ch.sq.done[f[0]])) return 0;
-  return 1;
+  return q.repeat === "week" && sqWeekDone(ch, q, now) ? 4 : 1;
 }
 const npcName = (id) => (Object.hasOwn(NPC_NAME, id) ? NPC_NAME[id] : id);
 /** Credit `n` toward every active quest of this type that `match` accepts. */
@@ -175,11 +182,11 @@ function sqValidate(S, p, a) {
   if (!q) return bad("없는 퀘스트입니다");
   const who = a.a === "done" ? sqTurnIn(q) : q.giver;
   if (!npcReach(p, who)) return bad(`${npcName(who)}에게 가까이 가야 합니다`);
-  const st = sqState(ch, q);
+  const st = sqState(ch, q, S.now);
   if (a.a === "take") {
     if (q.mainChapter && p.dead) return bad("쓰러진 채로는 주요 의뢰를 받을 수 없습니다");
     if (st === 2 || st === 3) return bad("이미 진행 중입니다");
-    if (st === 4) return bad("이미 마친 퀘스트입니다");
+    if (st === 4) return bad(q.repeat === "week" ? "이번 주에는 이미 마쳤습니다. 월요일 아침 6시에 다시 받을 수 있습니다" : "이미 마친 퀘스트입니다");
     if (st === -1) return bad("다른 길을 골랐습니다");
     if (ch.lvl < q.req.lv) return bad(`레벨 ${q.req.lv} 이상이어야 합니다`);
     if (q.req.main && ch.q.i < QUESTS.length) return bad("앞선 주요 의뢰를 모두 마쳐야 합니다");
@@ -214,6 +221,7 @@ function sqApply(S, p, a) {
   const q = SQ_BY[a.id];
   if (a.a === "take") {
     ch.sq.on[q.id] = (q.req.main && q.goal.type === "talk" && q.goal.npc === q.giver) || q.goal.type === "choice" ? 1 : 0;
+    delete ch.sq.t[q.id];   // a weekly's reopening time is spent
     toast(p, `퀘스트 수락: ${q.title}`);
     if (q.goal.type === "deliver") {
       addItem(ch, q.goal.item, q.goal.n);
@@ -228,6 +236,7 @@ function sqApply(S, p, a) {
   else if (q.goal.type === "make" && isQuestItem(q.goal.item)) takeItem(ch, q.goal.item, countItem(ch, q.goal.item));   // a made quest item goes to whoever asked
   delete ch.sq.on[q.id]; delete ch.sq.t[q.id];
   ch.sq.done[q.id] = (ch.sq.done[q.id] | 0) + 1;
+  if (q.repeat === "week") ch.sq.t[q.id] = nextWeek(S.now);
   if (q.choice) ch.sq.flags[q.id] = a.pick;
   const rw = sqPay(q, a.pick);
   if (q.id === JF_QUEST) afterGear(S, p);
@@ -240,7 +249,7 @@ function sqApply(S, p, a) {
   if (rw.xp) gainXp(S, p, rw.xp);
 }
 /** What the quest windows show: [id, state, have, need, deadline?] for every side quest (a closed branch is left out). */
-const sqView = (ch) => SIDE.map((q) => {
-  const st = sqState(ch, q), on = Object.hasOwn(ch.sq.on, q.id);
+const sqView = (ch, now) => SIDE.map((q) => {
+  const st = sqState(ch, q, now), on = Object.hasOwn(ch.sq.on, q.id);
   return st < 0 ? null : on && ch.sq.t[q.id] ? [q.id, st, sqHave(ch, q), q.goal.n, ch.sq.t[q.id]] : [q.id, st, on ? sqHave(ch, q) : 0, q.goal.n];
 }).filter(Boolean);

@@ -52,7 +52,7 @@ function render() {
   const ul = $("#sq-list");
   ul.textContent = "";
   Q.f.side.forEach((q, i) => ul.append(el("li" + (i === Q.sel ? ".on" : ""), { onclick: () => { Q.sel = i; render(); } },
-    el("span", null, q.title || "(제목 없음)"), q.repeat ? el("span.tag", null, "반복") : null, el("span.id", null, q.id))));
+    el("span", null, q.title || "(제목 없음)"), q.repeat ? el("span.tag", null, q.repeat === "week" ? "주간" : "반복") : null, el("span.id", null, q.id))));
   if (!Q.f.side.length) ul.append(el("li.okline", null, "아직 사이드 퀘스트가 없어요"));
   for (const r of document.querySelectorAll("input[name=mainmode]")) r.checked = (r.value === "custom") === Array.isArray(Q.f.main);
   $("#main-edit").disabled = !Array.isArray(Q.f.main);

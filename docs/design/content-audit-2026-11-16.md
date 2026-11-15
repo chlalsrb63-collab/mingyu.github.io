@@ -144,6 +144,19 @@ gold = 30 × Lv (last step × 2), keepsakes and titles for arc ends. 알바 stay
   `63-social-weekly.js`.
 - Files: `62-side-quests.js`, `quests.json`. Test: `content.mjs` (it cannot be retaken before the reset, and an old
   sheet still migrates).
+- **As built (owner: weekly):** `repeat: "week"` in the side engine, at most one a week **per giver**, open again at the
+  weekly book's turn (Monday 06:00 KST, `63-social-weekly.js nextWeek`). The record reuses `ch.sq.t` (it already held
+  delivery deadlines): `t[id]` = when the quest opens again, set on hand-in, cleared on take; `sqClean` keeps it only for
+  a done weekly that is not under way, so there is no new field and no `v` bump. The text follows the arc with one row
+  per stage: a new `req.until` (a quest whose hand-in retires the row) plus the existing `req.quest`/`req.flag`; the
+  quest window hides a weekly stage until it opens. Rows (goal `fb` on the giver's own ground, XP 15 % of `lvt[Lv]`,
+  **0 gold**, 강화석 ×2): 노랑 / 금관 공작 (mesa) `sq_norang_week_gild` (160, until 「종과 별」) → `sq_norang_week_bell` (165);
+  갈피 / 썩은 관 사슴왕 (maple) `sq_galpi_week_log` (175, after the chapel, until 「마지막 사관」) →
+  `sq_galpi_week_library` / `sq_galpi_week_grave` (190, by the answer); 여울 / 먹빛 날개 구렁이 (inklake)
+  `sq_yeoul_week_serpent` (170, after the tower, until 「나루터의 먹물」) → `sq_yeoul_week_tower` / `sq_yeoul_week_bow`
+  (180, by the answer). Party credit needed no change: the fb goal is credited per looter, the same set the main chain's
+  boss rows count. 은자 바스 (also maple) and 사막 (dunesea, ≤150) got none: one weekly per ground. Tests in
+  `tests/sidequests.mjs` (solo, party, retake refused, the Monday turn, the 2026→2027 turn, old sheets).
 
 ### Q7 — Inventory of post-Lv.200 goals · size S · audit only, **owner decision** on what to build
 - Read the achievements in `60-content.js`/`67-trophies.js`, the dailies, the band rows of 알바 and co-op 알바

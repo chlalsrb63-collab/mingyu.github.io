@@ -534,6 +534,89 @@ for (const pick of [0, 1]) {
   assert.ok(W.ch.ach.includes(`t_sq_yeoul_end_${pick}`) && !W.ch.ach.includes(`t_sq_yeoul_end_${1 - pick}`), "this answer's title only");
   assert.ok(W.ch.keep.kp_satgat, "either answer: 할머니의 삿갓 (루루 sews it into the 먹물 삿갓)");
 }
+// ── Q6 late field-boss 기록: one weekly fb quest per late giver, its text following the arc; party credit; Monday 06:00 KST
+{
+  const WEEKLY = {
+    mesa_norang: ["sq_norang_week_gild", "sq_norang_week_bell"],
+    maple_galpi: ["sq_galpi_week_log", "sq_galpi_week_library", "sq_galpi_week_grave"],
+    ink_yeoul: ["sq_yeoul_week_serpent", "sq_yeoul_week_tower", "sq_yeoul_week_bow"],
+  };
+  assert.deepEqual(D.side.filter((q) => q.repeat === "week").map((q) => q.id).sort(), Object.values(WEEKLY).flat().sort(), "no other weekly quests");
+  for (const [giver, ids] of Object.entries(WEEKLY)) for (const id of ids) {
+    const q = D.side.find((o) => o.id === id), cap = D.lvt[q.req.lv - 1];
+    assert.ok(q.giver === giver && q.goal.type === "fb" && q.goal.map === q.giverMapId && q.req.lv >= 160, `${id}: the field boss of ${giver}'s own ground`);
+    assert.ok(q.reward.xp >= 0.12 * cap && q.reward.xp <= 0.16 * cap && q.reward.gold === 0, `${id}: XP on the scale, no gold`);
+    assert.ok(q.reward.items.every(([it, n]) => it === "stone" && n <= 2), `${id}: 강화석 ≤ 2`);
+  }
+  const KST6 = (y, mo, d) => Date.UTC(y, mo, d, -3);   // 06:00 KST that day
+  const at = (W, t) => W.wait(t - W.S.now);
+  const W = world("주간손님");
+  W.ch.lvl = 170;
+  Object.assign(W.ch.sq.done, { sq_yeoul_ferry: 1, sq_yeoul_tower: 1 });
+  let s = W.self();
+  assert.equal(sqOf(s, "sq_yeoul_week_serpent").st, 1, "after the tower, 여울 asks about the serpent");
+  assert.ok(["sq_yeoul_week_tower", "sq_yeoul_week_bow"].every((id) => sqOf(s, id).st === 0), "the after-the-lamp stages wait");
+  take(W, "sq_yeoul_week_serpent", "ink_yeoul");
+  // a party: the mate, nearby, is credited like the main chain's boss rows (each looter)
+  const mate = "pid-주간동료";
+  L.addPlayer(W.S, mate, L.hero("주간동료", { lvl: 170 }));
+  const M = W.S.players[mate];
+  M.ch.sq.on.sq_yeoul_week_serpent = 0;
+  W.to("inklake", ...L.atlas().maps.inklake.entry);
+  L.runtime(W.S, "inklake").fbAt = 0;
+  W.step();
+  M.map = W.p.map; M.x = W.p.x; M.y = W.p.y + 12; L.runtime(W.S, "inklake").n++;
+  assert.ok(W.act({ t: "pinv", e: M.eid }).ok && L.validateAction(W.S, mate, { t: "pacc" }).ok);
+  L.applyAction(W.S, mate, { t: "pacc" });
+  W.kill("serpentwing_ash", 2);
+  assert.equal(sqOf(W.self(), "sq_yeoul_week_serpent").st, 3, "the killer is done");
+  assert.equal(M.ch.sq.on.sq_yeoul_week_serpent, 1, "the party mate nearby is credited too");
+  const gold = W.ch.gold, stones = bag(W, "stone");
+  done(W, "sq_yeoul_week_serpent", "ink_yeoul");
+  assert.deepEqual([W.ch.gold - gold, bag(W, "stone") - stones], [0, 2], "2 강화석, no gold");
+  assert.match(W.act({ t: "sq", a: "take", id: "sq_yeoul_week_serpent" }).error, /이번 주/, "not again this week");
+  assert.equal(sqOf(W.self(), "sq_yeoul_week_serpent").st, 4);
+  // the arc ends this same week: the next stage opens next week, not now (one a week per giver)
+  Object.assign(W.ch.sq.done, { sq_yeoul_oil: 1, sq_yeoul_lamp: 1, sq_yeoul_end: 1 }); W.ch.sq.flags.sq_yeoul_end = 0; W.ch.lvl = 180;
+  s = W.self();
+  assert.ok(!sqOf(s, "sq_yeoul_week_serpent") && !sqOf(s, "sq_yeoul_week_bow"), "the serpent stage retires, the other answer's stage stays closed");
+  assert.equal(sqOf(s, "sq_yeoul_week_tower").st, 4, "the tower stage waits for the week's turn");
+  at(W, KST6(2026, 10, 16) - 60000);   // self() steps 100 ms
+  assert.equal(sqOf(W.self(), "sq_yeoul_week_tower").st, 4, "Monday 05:59 KST: still this week");
+  at(W, KST6(2026, 10, 16));
+  assert.equal(sqOf(W.self(), "sq_yeoul_week_tower").st, 1, "Monday 06:00 KST: open again (the blue mark is back)");
+  // across the year: handed in on Thursday 2026-12-31, open on Monday 2027-01-04 06:00 KST
+  at(W, Date.UTC(2026, 11, 31, 3));
+  take(W, "sq_yeoul_week_tower", "ink_yeoul");
+  assert.equal(sqOf(W.self(), "sq_yeoul_week_tower").t, undefined, "a weekly fight has no countdown");
+  W.ch.sq.on.sq_yeoul_week_tower = 1;
+  done(W, "sq_yeoul_week_tower", "ink_yeoul");
+  at(W, KST6(2027, 0, 4) - 60000);
+  assert.equal(sqOf(W.self(), "sq_yeoul_week_tower").st, 4, "Sunday night of the new year: still closed");
+  at(W, KST6(2027, 0, 4));
+  assert.equal(sqOf(W.self(), "sq_yeoul_week_tower").st, 1, "the first Monday of 2027 opens it");
+  assert.deepEqual([W.ch.sq.done.sq_yeoul_week_serpent, W.ch.sq.done.sq_yeoul_week_tower], [1, 1], "each hand-in counted (the weekly book's 의뢰 box reads these)");
+  // old sheets: none of these fields is new (t already held deadlines); a saved week keeps, strays go
+  const old = L.newChar("옛주간", "warrior", []);
+  old.sq = { on: {}, done: { sq_norang_week_gild: 3 }, flags: {}, t: { sq_norang_week_gild: KST6(2026, 10, 16), sq_galpi_week_log: 5, sq_bas_roses: 9 } };
+  const O = world("옛주간", old);
+  O.ch.lvl = 160;
+  assert.deepEqual(O.ch.sq.t, { sq_norang_week_gild: KST6(2026, 10, 16) }, "only a done weekly keeps its time");
+  assert.equal(sqOf(O.self(), "sq_norang_week_gild").st, 4, "the saved week still holds");
+  const P = world("옛시트", Object.assign(L.newChar("옛시트", "warrior", []), { sq: { on: {}, done: { sq_galpi_records: 1, sq_galpi_chapel: 1 } } }));
+  P.ch.lvl = 175;
+  assert.equal(sqOf(P.self(), "sq_galpi_week_log").st, 1, "a sheet without t: 갈피's weekly is open");
+  // solo: the hunter alone is credited, and an elite of the same kind is not the field boss
+  take(P, "sq_galpi_week_log", "maple_galpi");
+  P.to("maple", ...L.atlas().maps.maple.entry);
+  P.kill("rotstag", 1);
+  assert.equal(sqOf(P.self(), "sq_galpi_week_log").n, 0, "an elite 사슴왕 is not the field boss");
+  L.runtime(P.S, "maple").fbAt = 0;
+  P.step();
+  P.kill("rotstag", 2);
+  done(P, "sq_galpi_week_log", "maple_galpi");
+  assert.equal(sqOf(P.self(), "sq_galpi_week_library").st, 0, "the after-the-end stages wait for the answer");
+}
 // every new quest item is asked for by some quest (no orphans)
 for (const id of ["q_upwater", "q_silt", "q_wedge", "q_thornsong", "q_mapcharm", "q_lampoil"]) assert.ok(D.side.some((q) => q.goal.item === id), `${id} is used`);
 // every arc step is 추적-resolvable: a giver and hand-in NPC on a real map, a target the client can walk to

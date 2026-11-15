@@ -45,7 +45,7 @@ function selfPayload(p) {
       Math.max(0, (p.wind || 0) - now),
       // then 안락한 휴식 (a bed or a hearth at home, 64-housing.js)
       Math.max(0, ch.house.cozy - now)],
-    wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, cosDye: ch.cosDye, sq: sqView(ch), keep: Object.keys(ch.keep),
+    wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, cosDye: ch.cosDye, sq: sqView(ch, now), keep: Object.keys(ch.keep),
     dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather"), by: p.blame ? p.blame.by : null, lv: p.blame ? p.blame.lv : 0, el: p.blame ? p.blame.el : 0 } : null,
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     // waypoint stones woken: { mapId: bitmask } (bit 0 = the map's first stone)

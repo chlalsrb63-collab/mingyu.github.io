@@ -478,6 +478,8 @@ export async function checkData(dataDir = DATA_DIR) {
     if (req.lv !== undefined && req.lv !== null && (!isInt(req.lv) || req.lv < 1)) err(qf, `${p}.req.lv`, "req.lv는 1 이상의 정수여야 합니다");
     if (req.quest != null && !sids.has(req.quest)) err(qf, `${p}.req.quest`, `선행 퀘스트 "${req.quest}"가 없습니다`);
     if (req.quest != null && req.quest === q.id) err(qf, `${p}.req.quest`, "자기 자신을 선행 퀘스트로 둘 수 없습니다");
+    if (req.until != null && (!sids.has(req.until) || req.until === q.id)) err(qf, `${p}.req.until`, `물러날 때를 정하는 퀘스트 "${req.until}"가 없습니다`);
+    if (q.repeat != null && typeof q.repeat !== "boolean" && q.repeat !== "week") err(qf, `${p}.repeat`, 'repeat은 true/false 또는 "week"여야 합니다');
     if (req.flag != null) {
       const f = req.flag, src = Array.isArray(f) && data.quests.side.find((o) => o.id === f[0]);
       if (!src || !Array.isArray(src.choice)) err(qf, `${p}.req.flag`, "req.flag는 [선택지가 있는 퀘스트 id, 번호]여야 합니다");
