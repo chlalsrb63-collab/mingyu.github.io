@@ -119,6 +119,7 @@ banner or function it names. **When you add, move or split a file, update its ro
 | `mobart_rift_beasts.js` | Pixel models of six local variations from the meadow through the crystal cave |
 | `mobart_rift_bosses.js` | Pixel models of the six bosses in the weekly arena rotation |
 | `mobart_bosses2_adds.js` | Own pixel models of the bosses-2 adds: 혈루 결정 전갈 (bloodshard), 흡혈박쥐 (nightbat), 먹장어 머리 (hagfishhead) |
+| `mobart_named.js` | Own pixel models of four named beasts that once borrowed a tinted sprite: 금 간 뿔 숫양 (meadowram), 검은 왕관 뿌리짐승 (bogcrown), 눈먼 문지기 올빼미 (hollowowl), 얼어붙은 왕릉 파수꾼 (rootwarden) |
 | `weapons.js` [985] | weapon art per kind × tier (sword dagger spear staff book bow), legendary/set looks, skins, glow: `DESIGNS SIL MOTIF_SIL weaponSprite weaponIcon`, `bowSprite(gear, pull, arrow)` (a bow at every pull of its string; motifs bent along the limb); an installed image (`assetKey`: manifest `weapon.<kind>.t<n>`/`.lg.`/`.set.`/`.skin.`, `icon.weapon.…`) replaces a look, rarity ink + glow still applied |
 | `wardrobe.js` [807] · `wardrobe_ui.js` [283] | cosmetic layers drawn over heroes (`ART SLOTS dress anchors`; designs `HAT TOP BACK FACE`, rules in the header); costume shop + 외형 tab |
 | `swing.js` [187] | fixed-size weapon strokes for attacks/casts; the tempo `WIND IMPACT SNAP` (15% wind-up, snap, blow at 0.2) with out-expo/out-back easing; the bow's shot `bowPose` (pull, arrow, release at IMPACT, `bowup` skyward cast) |
