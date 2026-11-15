@@ -138,13 +138,15 @@ export function interact(n) {
   return true;
 }
 const nearPopo = () => !!(G.map && G.me && G.map.npcs.some((n) => n.role === "jobs" && dist(G.me.x, G.me.y, n.x * T + 8, n.y * T + 12) < 52));
+const hallCrew = () => (G.party || []).filter((p) => p[9] === G.map?.id).length;
+const partyLead = () => G.party?.[0]?.[0] === G.you;
 
 // ───────────────────────────── the board window ─────────────────────────────
 
 export function open() { if (!D() || !D().jb) return false; openWin("board"); return true; }
 export function key() {
   const s = G.self, a = active(s);
-  return [s.jb && [s.jb[0], s.jb[1], s.jb[2], s.jb[3] && [...s.jb[3].slice(0, 3), Math.sign(s.jb[3][4] || 0), s.jb[3][5], s.jb[3][7]]], s.rep, nearPopo(), a && a.t.item ? have(s, a.t.item) : 0, G.map && G.map.id];
+  return [s.jb && [s.jb[0], s.jb[1], s.jb[2], s.jb[3] && [...s.jb[3].slice(0, 3), Math.sign(s.jb[3][4] || 0), s.jb[3][5], s.jb[3][7]]], s.rep, nearPopo(), a && a.t.item ? have(s, a.t.item) : 0, G.map && G.map.id, hallCrew(), partyLead(), s.coop];
 }
 export function render(s) {
   const box = $("#board-body");
@@ -154,6 +156,17 @@ export function render(s) {
   const top = el("div", "daily-top");
   top.append(iconImg("note", "#e2c486"), el("span", "", `오늘의 알바 ${done.length}/${per}`), Info.coin(s.gold, "purse"));
   box.append(top);
+  const pipe = G.defs.coop?.jobs?.pipe, atPipe = pipe && near && pipe[5] === G.map?.id;
+  if (atPipe) {
+    const card = el("div", "dcard jb-card cp-offer"), buttons = el("div", "btns");
+    const start = el("button", "btn gold", "협동 배관 수리");
+    start.id = "coop-pipe-start"; start.type = "button"; start.disabled = !partyLead() || hallCrew() < 2;
+    start.addEventListener("click", () => act({ t: "coop_start", k: "pipe" }));
+    card.append(el("b", "", pipe[0]), el("p", "hint", "회관에 모인 2~4명이 급수구와 배수구를 5분 안에 연결합니다."));
+    if (start.disabled) card.append(el("p", "hint", hallCrew() < 2 ? "파티원과 함께 포포에게 와 주세요." : "파티장이 시작할 수 있습니다."));
+    if (s.coop?.includes("pipe")) card.append(el("p", "hint", "오늘 보수 수령 · 다시 하면 수고비만 받습니다."));
+    buttons.append(start); card.append(buttons); box.append(card);
+  }
   if (a) box.append(jobCard(s, a, true));
   box.append(el("div", "section", "오늘의 의뢰"));
   if (!offers.length) box.append(el("p", "hint", "오늘은 맡을 수 있는 알바가 없습니다. 생활 기술을 키우면 일이 늘어납니다."));
@@ -208,6 +221,7 @@ export function render(s) {
   if (coop.length) {
     box.append(el("div", "section", "협동 알바"));
     for (const [k, j] of coop) {
+      if (k === "pipe" && atPipe) continue;
       const row = el("div", "trk-row");
       row.append(el("small", "", `${j[0]} · ${npcLabel(j[4]) === j[4] ? "" : npcLabel(j[4]) + " · "}${placeOf(j[4]) || mapName(j[5])}`));
       const b = Track.button(`coop:${k}`, j[0]);

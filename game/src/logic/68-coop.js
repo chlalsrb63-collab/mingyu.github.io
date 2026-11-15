@@ -17,10 +17,10 @@ function coopNpc(S, p, k) {
   const n = mapOfS(S, p.map).npcs.find((o) => o.id === J.npc);
   return n && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < COOP_T.near ? n : null;
 }
-const coopCut = (c, g) => Math.round(COOP[c.k].par * (COOP[c.k].parN || COOP_T.parN)[c.n] * COOP_T.cuts[g]);
+const coopCut = (c, g) => c.k === "pipe" ? COOP.pipe.gradeSec[g] : Math.round(COOP[c.k].par * (COOP[c.k].parN || COOP_T.parN)[c.n] * COOP_T.cuts[g]);
 /** 0 below C, 1 C · 2 B · 3 A · 4 S. */
-function coopGrade(c) { let g = 0; while (g < 4 && c.score >= coopCut(c, g)) g++; return g; }
-const coopMult = (c) => (1 + 0.1 * Math.min(c.combo, 10)) * (c.state === "fever" ? 1.5 : 1);
+function coopGrade(c) { if (c.k === "pipe") return pipeGrade(c); let g = 0; while (g < 4 && c.score >= coopCut(c, g)) g++; return g; }
+const coopMult = (c) => c.k === "pipe" ? 1 : (1 + 0.1 * Math.min(c.combo, 10)) * (c.state === "fever" ? 1.5 : 1);
 const coopEv = (S, dim, code, x, y, a = 0) => dim.rt.ev.push(["cj", code, Math.round(x), Math.round(y), a]);
 const coopToastAll = (S, dim, m) => { for (const o of dimInside(S, dim.id)) toast(o, m); };
 
@@ -58,7 +58,7 @@ function coopStart(S, p, k) {
     c.pl[o.pid] = { name: o.ch.name, tool: J.tools[i % 2], hold: [], pts: 0, idleAt: t0, x, y, actAt: 0, hintAt: 0, ok: false };
     changeMap(S, o, id, x, y);
     o.spdBuff = Math.max(o.spdBuff || 0, endAt);
-    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint} (공격 키 / F)`);
+    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint}${k === "pipe" ? "" : " (공격 키 / F)"}`);
     o.dirty = true;
   });
   COOP_JOB[k].init(S, dim, c);
@@ -78,20 +78,24 @@ function coopClose(S, dim) {
 }
 /** Time's up: the grade, the report card, and each eligible member's pay (once a day per job). */
 function coopFinish(S, dim, inside) {
-  const c = dim.coop, g = coopGrade(c);
+  const c = dim.coop;
+  if (c.state === "end") return;
+  const g = coopGrade(c);
   c.state = "end"; c.doneAt = S.now + COOP_T.endMs; c.ver++;
   const avg = inside.reduce((s, o) => s + (c.pl[o.pid] ? c.pl[o.pid].pts : 0), 0) / Math.max(1, inside.length);
   const rows = [];
   for (const pid of Object.keys(c.pl)) {
     const q = c.pl[pid], o = S.players[pid];
-    q.ok = !!(o && o.map === dim.id && S.now - q.idleAt < COOP_T.idleMs && q.pts >= COOP_T.lazy * avg);
+    q.ok = !!(o && o.map === dim.id && (c.k === "pipe" ? pipeEligible(c, pid) : S.now - q.idleAt < COOP_T.idleMs && q.pts >= COOP_T.lazy * avg));
     rows.push([q.name, Math.round(q.pts), COOP[c.k].tools.indexOf(q.tool), q.ok ? 1 : 0]);
   }
   S.coopBest = S.coopBest || {};
   S.coopBest[c.k] = Math.max(S.coopBest[c.k] || 0, Math.round(c.score));
   for (const o of inside) {
     const q = c.pl[o.pid];
-    if (q && q.ok) coopPay(S, o, c, g); else toast(o, "근무 태도 불량 — 보상 없음");
+    if (q && q.ok) coopPay(S, o, c, g);
+    else if (c.k === "pipe") toast(o, g ? "완성 배관에 참여한 팀원이 보수를 받았습니다." : "시간이 끝났어요. 급수구에서 배수구까지 다시 이어 보세요.");
+    else toast(o, "근무 태도 불량 — 보상 없음");
     o.coopRes = [g, Math.round(c.score), S.coopBest[c.k], rows, [0, 1, 2, 3].map((i) => coopCut(c, i))];
   }
   coopEv(S, dim, 21, 0, 0, g);
@@ -104,7 +108,8 @@ function coopPay(S, p, c, g) {
   const Tt = Math.max(1, Math.floor(toTier(ch.lvl))), k = R.gradeK[Math.max(0, g - 1)], life = lifeNeed(ch.life[J.skill].lv) * R.base.life;
   const gold = (n) => { ch.gold += n; p.gain.push(["gold", n]); };
   ch.cnt.coop++;
-  if (g === 4) ch.cnt["coopS_" + c.k]++;   // the first S earns the job's cosmetic through its achievement (COS_ACH)
+  const achievement = "coopS_" + c.k;
+  if (g === 4 && Object.hasOwn(ch.cnt, achievement)) ch.cnt[achievement]++;   // registered jobs earn an S achievement
   checkAch(S, p);
   if (!g) {
     gold(R.tip * Tt); gainLife(S, p, J.skill, life * R.tipLife);
@@ -140,10 +145,14 @@ function coopTick(S, now) {
     // anti-AFK: walking 16 px counts as being at work too
     for (const o of inside) { const q = c.pl[o.pid]; if (q && dist(o.x, o.y, q.x, q.y) >= 16) { q.x = o.x; q.y = o.y; q.idleAt = now; } }
     if (c.state === "brief" && now >= c.runAt) { c.state = "run"; c.comboAt = -1e9; coopToastAll(S, dim, "근무 시작!"); }
-    if (c.state === "run" && now >= c.endAt - COOP_T.feverMs) { c.state = "fever"; coopEv(S, dim, 14, 0, 0); coopToastAll(S, dim, "피버 타임! 남은 1분, 점수 ×1.5"); }
+    if (c.state === "run" && now >= c.endAt - COOP_T.feverMs) {
+      c.state = "fever";
+      if (c.k === "pipe") coopToastAll(S, dim, "물이 차오릅니다! 배관을 이을 시간이 1분 남았어요.");
+      else { coopEv(S, dim, 14, 0, 0); coopToastAll(S, dim, "피버 타임! 남은 1분, 점수 ×1.5"); }
+    }
     if (c.state === "run" || c.state === "fever") {
       if (now >= c.endAt) coopFinish(S, dim, inside);
-      else COOP_JOB[c.k].tick(S, dim, c, now);
+      else COOP_JOB[c.k].tick?.(S, dim, c, now);
     } else if (c.state === "end" && now >= c.doneAt) coopClose(S, dim);
   }
 }
@@ -883,6 +892,8 @@ const BREW_HERBS = ["붉은 꽃잎(↑)", "푸른 이끼(→)", "황금 뿌리(�
 
 // ── actions (validated in 70-validate.js, applied in 75-apply.js)
 
+COOP_JOB.pipe = { init: pipeInit, sum: () => [0, 0] };
+
 function coopValidate(S, p, a) {
   const c = coopOf(S, p);
   switch (a.t) {
@@ -904,6 +915,7 @@ function coopValidate(S, p, a) {
       if (a.d !== undefined && !(Number.isInteger(a.d) && a.d >= 0 && a.d <= 3)) return bad("알 수 없는 행동");
       if (c.state === "brief") return bad("곧 근무가 시작됩니다!");
       if (c.state === "end") return bad("근무가 끝났습니다");
+      if (c.k === "pipe") return pipeValidate(S, p, c, a);
       return OK;
     case "coop_leave":
       return c ? OK : bad("근무 중이 아닙니다");
@@ -914,6 +926,7 @@ function coopApply(S, p, a) {
   if (a.t === "coop_start") { coopStart(S, p, a.k); return; }
   const c = coopOf(S, p);
   if (a.t === "coop_leave") { toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다"); coopHome(S, p, c); return; }
+  if (c.k === "pipe") { pipeApply(S, dimAt(S, p.map), c, p, a); return; }
   const q = c.pl[p.pid], job = COOP_JOB[c.k];
   // a rhythm lane's notes come faster than the work key's 250 ms
   if (S.now - q.actAt < (job.lane && job.lane(S, c, p, q) ? COOP_FORGE.laneMs : COOP_T.actMs)) return;
@@ -938,6 +951,7 @@ function coopApply(S, p, a) {
  */
 function coopView(S, p, out) {
   const dim = inDim(p) ? dimAt(S, p.map) : null, c = dim && dim.coop;
+  pipeView(S, p, out, c?.k === "pipe" ? c : null);
   if (c) {
     const now = S.now, g = coopGrade(c), J = COOP[c.k];
     const secs = Math.max(0, Math.ceil(((c.state === "brief" ? c.runAt : c.state === "end" ? c.doneAt : c.endAt) - now) / 1000));

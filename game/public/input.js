@@ -180,7 +180,7 @@ export function setupInput() {
     Sound.unlock();
     if (!G.playing) return;
     if (typing()) { if (e.key === "Escape") document.activeElement.blur(); return; }
-    if (Mini.active()) return;               // a mini-game has the keyboard
+    if (Mini.active() || Coop.boardActive()) return;  // a mini-game has the keyboard
     const act1 = Keymap.actionOf(e);
     if (e.code.startsWith("Arrow") || act1 === "dash" || act1 === "swap") e.preventDefault();
     if (e.repeat) return;

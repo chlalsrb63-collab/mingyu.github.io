@@ -115,7 +115,7 @@ const DATA = {
     {"v":1,"id":"pet_house","replaces":null,"name":"몽글 펫 돌봄집","theme":"interior","style":"inn","bgm":"cafe","safe":true,"band":null,"w":14,"h":10,"ground":["ffffffffffffff","ffffffffffffff","ffffffffffffff","ffffffffffffff","ffffffffffffff","ffuuuuffffffff","ffuuuuffffffff","ffuuuuffffffff","ffuuuuffffffff","fffffffeffffff"],"objects":["==+==~@~==+===","=g g       ]w_","=            _","+            _","=    mmmmm  *_","=            _","= %        % _","=   %        _","=           g_","_______ ______"],"entry":[7,8],"spawns":[],"npcs":[{"id":"pet_monggeul","name":"펫 돌보미 몽글","role":"shop","x":7,"y":2,"look":[9,4,2,3,4,0,3,9,5,2,0],"goods":["pet_chick","pet_bat","pet_wisp"],"lines":["몽글몽글~ 펫 친구를 찾으러 왔구나!","펫은 사냥터에서 떨어진 물건을 주워 줘요. 착하죠?","고양이들은 손님이 아니라 하숙생이에요. 깨우지 말아 주세요."]}],"portals":[{"x":7,"y":9,"to":"town","tx":29,"ty":48}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"starlight_inn","replaces":null,"name":"모닥별 여관","theme":"interior","style":"inn","bgm":"inn","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","fffffffffffllllllllf","ffffxxxffffllllllllf","fffffffffffllllllllf","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffffffefffffffff"],"objects":["===+==@=+==~===+=+==","=w  r#r    popop *g_","=                  _","=  s   s           _","=                  _","=                  _","+                  _","+  kkkkk           _","=  -----           _","=* kkkkk        ww _","=                 ]_","=ok          mmmmm _","=k                 _","=g                *_","=                  _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"inn_maru","name":"여관 주인 마루","role":"shop","x":15,"y":9,"look":[2,3,1,"#8a6a3a","#e6cca4",0],"pose":"wipe","goods":["inn_stew","inn_bread","hp_s","hp_m","mp_s","mp_m","recall","camp"],"lines":["모닥별 여관에 어서 오시게! 스튜가 막 끓었다네.","벽난로 곁에 앉아 쉬면 온기가 오래 남지. 먼 길 떠나기 전엔 꼭 쉬어 가게."]},{"id":"inn_lira","name":"음유시인 리라","role":"talk","x":9,"y":5,"look":[1,2,0,"#7a3a5a","#fff0e4",0],"lines":["♪ 별이 모닥불에 내려앉은 밤, 꼬리 긴 영웅이 길을 떠났네 ♪","심연의 노래를 아나? 아직 끝까지 들은 사람이 없다지."]},{"id":"inn_toto","name":"졸린 나그네 토토","role":"talk","x":8,"y":3,"look":[1,0,3,"#5e6a88","#c8b090",3],"pose":"doze","lines":["음냐… 오 분만 더…","…아, 미안. 숲에서 사흘을 걸었더니 눈이 감기네."]}],"portals":[{"x":10,"y":15,"to":"town","tx":68,"ty":51}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"tales_cafe","replaces":null,"name":"테일즈 카페","theme":"interior","style":"cafe","bgm":"cafe","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","ffffffffffffffffffff","ffffxxxfffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","fuuuuuqqqqqqffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","ffffffffffefffffffff"],"objects":["==++===@=^^=~=======","=g  b#b      rrrb g_","=   %            ] _","=  s   s           _","=           m$$jmm _","=                 w_","+ k               g_","+ o          k     _","= k          o     _","=      kok   k ko  _","=*              k  _","=                  _","=  ok              _","=  k              *_","=g                 _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"cafe_moka","name":"카페 주인 모카","role":"shop","x":16,"y":2,"look":[0,3,1,"#7a4a2c","#f4e0c8",0],"pose":"wipe","goods":["cafe_coffee","cafe_cocoa","cafe_tea","cafe_scone","cafe_pie"],"lines":["어서 와요, 테일즈 카페예요! 오늘의 블렌드는 고소한 맛이 일품이죠.","사냥 나가기 전에 따뜻한 거 한 잔 어때요? 힘이 날 거예요.","벽난로 앞에 앉아 쉬면 몸이 금방 녹아요. 고양이 깨우지는 말고요!"]},{"id":"cafe_somi","name":"단골 손님 솜이","role":"talk","x":10,"y":10,"look":[3,1,0,"#d86a8a","#fff4e8",1],"pose":"sip","lines":["여기 코코아는 마시멜로가 두 개나 들어 있어!","창가 자리에 햇살이 들면 깜빡 졸게 된다니까.","바람초원 들꽃으로 우린 허브차, 꼭 마셔 봐."]},{"id":"cafe_lumi","name":"책벌레 루미","role":"talk","x":3,"y":9,"look":[1,4,2,"#3e6a8a","#d8ccff",0],"pose":"read","lines":["쉿, 지금 제일 재밌는 대목이야… 피의 심연 끝에는 뭐가 있을까?","옛날 모험가들은 이 카페에서 파티를 짰대. 지금 너처럼!"]}],"portals":[{"x":10,"y":15,"to":"town","tx":79,"ty":50}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
-    {"v":1,"id":"town_hall","replaces":null,"name":"버드나무광장 회관","theme":"interior","style":"hall","bgm":"hall","safe":true,"band":null,"w":22,"h":18,"ground":["llllllllllllllllllllll","llllllllllllllllllllll","llllllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyeylllllllll"],"objects":["==++=!==!=~~~=!==!=++=","=g    tt *   * tt   g_","=                    _","=                    _","=#                   _","=                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=  kkkkk      kkkkk  _","+                    _","+                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=b kkkkk      kkkkk v_","=b                   _","=b       *   *       _","=g                  g_","___________ __________"],"entry":[11,16],"spawns":[],"npcs":[{"id":"hall_bori","name":"이장 보리","role":"talk","x":11,"y":3,"look":[2,0,3,"#5a3a6a","#e6d8c0",0],"lines":["버드나무광장 회관에 온 걸 환영하네. 이 마을은 모험가들 덕에 버티고 있지.","벽에 걸린 지도를 보게. 동쪽은 바람초원, 서쪽은 네온 시티 — 그 너머는 아직 아무도 다 그리지 못했다네.","피곤하면 벽난로 곁에 앉아 쉬어 가게. 회관의 불은 꺼진 적이 없어."]},{"id":"hall_hana","name":"게시판지기 해나","role":"daily","x":19,"y":14,"look":[3,0,1,"#4a8ad0","#ffd0a0",2],"lines":["회관 게시판에도 오늘의 과제가 붙어 있어요. 매일 아침 6시에 새로 바뀐답니다!"]},{"id":"hall_map","name":"마을 지도","role":"talk","x":11,"y":0,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["【중앙 광장】 분수와 이동의 돌, 정령나무 모닥불. 리나의 노점과 균열의 오벨리스크도 여기 있다.","【윗마을】 계단 위 마을회관, 서쪽 부엉이 도서관, 동쪽 버드나무광장 수련관과 수련장.","【장터 거리】 동쪽 길 따라 다람쥐 잡화점, 캉캉대장간, 늑대발 용병사무소. 골목 위엔 보글연금공방.","【모닥별 뜰】 남동쪽 광장에 쥬쥬식당, 테일즈 카페, 모닥별 여관.","【살림 마을】 개울 건너 서쪽에 동동아파트와 내 집. 개울가에 마을 창고와 몽글 펫 돌봄집.","【광장 남쪽】 루루 의상실, 그리고 남쪽 길 끝 버드나무 마을과 연못."]},{"id":"popo","name":"알바 중개인 포포","role":"jobs","x":4,"y":9,"look":[6,1,2,9,1,0,3,5,4,2,0],"pose":"write","lines":["일손 구하는 데가 많아요! 하루에 세 건까지 소개해 드릴게요.","일을 잘 해 주면 맡긴 분들이 당신을 믿게 돼요. 단골이 되면 좋은 일이 생기죠!","배달은 시간이 생명! 늦으면 꾸러미가 어디론가 사라진대요…"]}],"portals":[{"x":11,"y":17,"to":"town","tx":49,"ty":26}],"fires":[[2,4]],"waypoint":null,"fishing":false,"boss":null},
+    {"v":1,"id":"town_hall","replaces":null,"name":"버드나무광장 회관","theme":"interior","style":"hall","bgm":"hall","safe":true,"band":null,"w":22,"h":18,"ground":["llllllllllllllllllllll","llllllllllllllllllllll","llllllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyeylllllllll"],"objects":["==++=!==!=~~~=!==!=++=","=g    tt *   * tt   g_","=                    _","=                    _","=#                   _","=                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=  kkkkk      kkkkk  _","+                    _","+                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=b kkkkk      kkkkk v_","=b                   _","=b       *   *       _","=g                  g_","___________ __________"],"entry":[11,16],"spawns":[],"npcs":[{"id":"hall_bori","name":"이장 보리","role":"talk","x":11,"y":3,"look":[2,0,3,"#5a3a6a","#e6d8c0",0],"lines":["버드나무광장 회관에 온 걸 환영하네. 이 마을은 모험가들 덕에 버티고 있지.","벽에 걸린 지도를 보게. 동쪽은 바람초원, 서쪽은 네온 시티 — 그 너머는 아직 아무도 다 그리지 못했다네.","피곤하면 벽난로 곁에 앉아 쉬어 가게. 회관의 불은 꺼진 적이 없어."]},{"id":"hall_hana","name":"게시판지기 해나","role":"daily","x":19,"y":14,"look":[3,0,1,"#4a8ad0","#ffd0a0",2],"lines":["회관 게시판에도 오늘의 과제가 붙어 있어요. 매일 아침 6시에 새로 바뀐답니다!"]},{"id":"hall_map","name":"마을 지도","role":"talk","x":11,"y":0,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["【중앙 광장】 분수와 이동의 돌, 정령나무 모닥불. 리나의 노점과 균열의 오벨리스크도 여기 있다.","【윗마을】 계단 위 마을회관, 서쪽 부엉이 도서관, 동쪽 버드나무광장 수련관과 수련장.","【장터 거리】 동쪽 길 따라 다람쥐 잡화점, 캉캉대장간, 늑대발 용병사무소. 골목 위엔 보글연금공방.","【모닥별 뜰】 남동쪽 광장에 쥬쥬식당, 테일즈 카페, 모닥별 여관.","【살림 마을】 개울 건너 서쪽에 동동아파트와 내 집. 개울가에 마을 창고와 몽글 펫 돌봄집.","【광장 남쪽】 루루 의상실, 그리고 남쪽 길 끝 버드나무 마을과 연못."]},{"id":"popo","name":"알바 중개인 포포","role":"jobs","x":4,"y":9,"look":[6,1,2,9,1,0,3,5,4,2,0],"pose":"write","lines":["일손 구하는 데가 많아요! 하루에 세 건까지 소개해 드릴게요.","일을 잘 해 주면 맡긴 분들이 당신을 믿게 돼요. 단골이 되면 좋은 일이 생기죠!","배달은 시간이 생명! 늦으면 꾸러미가 어디론가 사라진대요…","회관 수도가 또 말썽이에요. 파티원과 함께 오시면 배관 고치는 일도 맡으실 수 있어요."]}],"portals":[{"x":11,"y":17,"to":"town","tx":49,"ty":26}],"fires":[[2,4]],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"willow","safe":true,"band":null,"w":70,"h":56,"ground":[".......,.,......,........,....,.,.pp.....,.....................,......",".,,...............................pp.......,...........,....,.........","...::.::::.::::.::.::....:..:,.:::pp.:.::.:,..::::.,::...:..::::::::..","..,.::rrrr.:.,,t,t:ttt,.....,,,...pp....:.......,:...........::...,...",",.::rrrrrrrr..tttttt,,,......,.,..pp.rrrrr......,,...........,....::.,","..:rrrrrrrrrr.tttt,,t,,.....,,,...pp.rrrrr.................,....,.....","...rrrrrrrrrr.,t,tt,t,t,.....,..,ppp,rrrrr........................::,,","...rrrrrrrrrr.........,.......,.,pp............rrrrrrrrrrr.,.........,","..:rrrrrrrrrr...,,,.........,,..ppp............rrrrrrrrrrr.,....,.,.,.",",...rrrrrrrr,..,......,.........ppppppppppppppprrrrrrrrrrr..,.ssss.:,.","...:..rrrr.,...................ppp.........,.,,.,...,........swwww:...","..:...,.rr.....................pp,........,.,...,..,...,.,..swwwwww:..","..:....,pr.....................pp..........,.,,......,,.,...swwwwww...","..:.....p,,....,.,....\"\"....\"\".pp........,.,.,,,.,..........,swwww:.,.",".,:.,..,ppppppppppppppppppppppppp....,...,,,.,..,,..,.,.......swww.:.,","..:..,,...p....................pp.,......,....,,,,.,,.,.,,....swww:...","..::,.....p...,........,.......pp...................,,pp,.....swww::..","......,...p,.,.................ppp....,.......,...,.,.pp,,....swww....","......,...p,.........,.,.......,pp...........,.,,.....pp,.,..,swww.:..",".....,....p..,,......,.....,....pp.......,.........,..pp......swwws.,.","..,.......p..............t,t....ppp..,.,,..........,..pp.......www::..",",.:,......p,.............,,,..,.,pp........,...,......pp...,..swwws...","..:,.....pp.......,......ttt.....ppp........rrrrrrrrrrpp....,..www....",".,::..ppp..,,....................oooo\"\"\"....rrrrrrrrrrp.....,.swww....","..:,pppppppppppppppppppppppppp,\"\"ooooooo\"\"..rrrrrrrrrr....,..swwwws:.,","....p.\"\"\"\",...\"\"\"\",......,...,\"ooooooooooo\".rrrrrrrrrr.....,.swwww::..","..:.p............,...........\"ooooooooooooo\"rrrrrrrrrr,,....swwwws.:..","..::p.....................,.,ooooooooooooooorrrrrrrrrr.....sswwwws.:..","..:.p......,.......,.....,,..\"ooooooooooooo\"rrrrrrrrrr....swwwwws.....","..:.p..,.,..,,...,...,........\"ooooooooooo\",rrrrrrrrrr...swwwwwws..:,.","...,pppppppppppppppppppppppppp.\"\"ooooooo\"\",.rrrrrr,...sswwwwwwws......","..:......,....,..........,...,...oooo\"\"\"....rrrrrrs.sswwwwwww.....:...",".,:.,..........,tttttttt...,....,..pp....,..sssss,wwwwwwwwww.......:..","..tt,tttt.,.....tttt,,t,.......,...ppsss...wwwwwwwwwwwwwwwss.,...,:...","..ttt,ttt.......,tt,tttt.......,.s.pbwwwwwwwwwwwwwbwwwwwss,,......,:..","..tt,,tt,...........,.....,ss.swwwwbbwwwwwwwwwwwwwbwsss.....,..,......",".,:,,ttt,....,.....,,....s.wwwwwwwwbbwwwwwwwws.sssps.......,.......:..","...:.,.........p.......,swwwwwwwwwbbbws.sssss,.,..p.,............,,:,.",",.,:...,.......p.....s.wwwwwwwwww.pp,..,..ttt,tt..p...................","...,.....s.sssspss.,swwwwwwwws,.s.pp.....,,,tt,t..p..............,,:..",".,:...,.swwwwwbbwws.swwwwwws......ppp.....tttttt..p......,...........,","..:...swwwwwwwbbwwwwswwwbss........pp.\"\"\"\".,....,.p.\"\"\"\"........,....,",",.:..swwwwwwwwbbwwwwwss,p.::t::t::.pppppppppppppppppppppppppppppp,.:..","....swwwwwwwwwbbwwwwww,.p.:pppppp:,pp.......,...p.,.............,.....","..:.swwwwwwwwwwwwwwwww.pp.:t::t:t:.pp...,.....,.p.................::..",".,..wwwwwwwwwwwwwwwwwwwsp.:pppppp:.pp..,.,..,...p.,.............,..:..","..:.,wwwwwwwwwwwwwwwwws.ppppppppppppp...........p.........\"\"\"\"........","...:swwwwwwwwwwwwwwwwws...t::t::::.pp.......,,..ppppppppppppppppp.....",".....swwwwwwwwwwwwwww.....::t::t::..,.,,........p.................:..,",",.....swwwwwwwwwwwww.....,:pppppp:..........,,..p........,.........:..",".,:,...s.wwwwwwwwwss.....,:t::t::t..............p..................:..",".........s.sss.sss...,....:pppppp:.............,p...,.....,....,.....,","......:..:::..:.::.......:.:...:.::,.......::...ppppppppppppppppp,::..",",.:..:.::::.,:::....:::::::.:::..,:.:.:.......:,::::.:.::.::.::::..:..","..,..............,..............,.....,.....,,...........,............","..,..,,................,.............................................."],"objects":["TTPPTTPTPPTTTTTTPTTPTTPTTPPTTTPTTP  TPPPTTPPTTTTTPPTPTPPPTTPTPPTPPTPPT","TTTTTPTTPTPPTTPTTTTPPTTPPTTTTTPPPT  TPTPPTPTTTTPTTPTPTTPPPTTPTTTPPTTTT","TT PT PRCP TPTTHPPHTPHHH T  T  PTP   T TT P   TTPP  PT   T  TTTTTPPTTT","TP  CC    CC      T                 G   T        Thhhhh      PP     TT","TTPC      R C                        ]  ]w hhhh   hhhhh           TPPP","PPP   aa                         L       w hhhh   hhhhh             PT","PPC   aa     R                        aa   hhhh   hhhhh           TPTT","TPC          C            T           T                 ww          TT","TTP R                                                    ]          PP","PT R        C                                                      PPT","PP PRC    RR hhhh  hhhh hhhh            FFFFFFFFFFFFF   FFF       T TT","TTP    C     hhhh  hhhh hhhh            F                 F        TTP","TPP          hhhh  hhhh hhhh  L         F  aa      B      F         TT","TTT        L                            F                 F       R TP","TTP                                     F      u          F        TPP","TTT                 L                   F T               FCCCR   CCTP","PTTT                                    FFFFFFFFFFFFFF  FFFRCRR   CRPP","PT          T              T                               CCC    CCTP","PPWWWWWWW   WWWWWWWWWWWWWWWWW      WWWWWWWWWWWWWWWWWW   WWWRCR    CRTT","TP                      H HH                               CCC    CCTT","PT   hhhh    hhhh  hhhh                  T                 RCR    CRTT","TTP  hhhh    hhhh  hhhh                                    CCC    CCPP","TTP  hhhh    hhhh  hhhh              G      ]  w     L     RCR    CRPP","PTPP        B     B              v      B    aa  aa                 TT","TTP                                                 E              PTT","PP        G                 L L           L L        ]            PTTP","TTT   hhhh   hhhh    hhhh           aa        kok    w             PPP","TPPT  hhhh   hhhh    hhhh           aa             aa              TPT","PTT   hhhh   hhhh    hhhh                    w                      TP","TPP     L               L     L           L                        PPP","TT                                          w: --                   PP","PTP       aa   HH H HHHH        B       B                         R PP","TTTH HHHH                T     ]&     aa             e             TTT","TP                                                                P TP","TP                                          e                    Y TTP","PT                  T                                        T      TP","TTT                           e                                 l  PPT","PP T     u  R                             HHHHRH                   PTT","PP PY                                   T           hhhh  hhhh      PP","TP Y                                 G              hhhh  hhhh     TPP","PTT                                                 hhhh  hhhhaa    TT","TTR     e          e     FFFFFFFFFF  L                  B           TP","PTT                      F        F                                TPP","TT   e                   F        F            L   hhhh  hhhh       PT","PTP                      F        F  a             hhhh  hhhh     PTTP","TT                       F        F                hhhh  hhhh B    PTT","PTP                      F                    T         L           TP","TP P e               e L F             w                            TT","PT                       F        F    ]           hhhh   hhhh    P TP","TP                       F        F                hhhh   hhhh     TPP","TPT                  R   F        F       Y        hhhh   hhhh     TPP","PT l                    RF        F        Y                L       TT","TP    Y  TPP  P TPl   u  FFFFFFFFFF     l  TT                     PTPT","TPP  T TTTP  TTP    TPTPTTT PPP   T T P       T TPTT T TP TT TTTT  TPP","PPTPTPTTTTTPTTTTTTTPPTTTTTPTPPTTTPPTPTPTTTTPTTTTPTPTPPPTTTTTPPTTTPPPPT","PPTPTTTTTTPTTTTTPTTPPPPTTPTTPTTTPPTTPPTTTPTPPTPPTTTTTPPPPPTTPPTTTTTPPT"],"entry":[34,3],"spawns":[],"npcs":[{"id":"willow_board","name":"마을 알바 게시판","role":"jobs","x":33,"y":23,"look":[0,0,0,"#8a6a3a"],"lines":[],"thing":true},{"id":"willow_depot","name":"마을 집하장","role":"talk","x":37,"y":4,"look":[0,0,0,"#8a6a3a"],"lines":["버드나무광장으로 보낼 보급품을 모아 두는 곳이다.","상자마다 꼬리표가 붙어 있다: 생선, 주먹밥, 목재, 등불 병."],"thing":true},{"id":"willow_kitchen","name":"공동 부엌 화덕","role":"cook","x":45,"y":30,"look":[0,0,0,"#8a6a3a"],"lines":[],"thing":true},{"id":"willow_repair","name":"버들의 수리대","role":"craft","x":32,"y":32,"look":[0,0,0,"#8a6a3a"],"lines":[],"thing":true},{"id":"willow_elder","name":"촌장 버들","role":"quest","x":34,"y":31,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 광장 게시판에 마을 알바가 붙어 있으니 한번 보게나.","우유 배달, 제초, 전단지, 쓰레기 줍기, 꽃밭 물주기… 다들 자네 같은 일손을 기다리지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":15,"y":43,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."],"pose":"fish"},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":24,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 할머니랑 같이 가꿔!","우리 강아지 콩떡이 산책 좀 시켜 줄래? 나무 냄새 맡는 걸 제일 좋아해.","버드나무광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":23,"y":46,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 버드나무광장이야. 거기서 동쪽은 바람초원이고."]},{"id":"willow_dairy","name":"목장 주인 음메","role":"talk","x":52,"y":8,"look":[2,0,1,"#4a7aa8","#f4ecdc",2],"lines":["음메~ 우리 목장 우유는 아침에 짜서 아침에 배달해야 제맛이지!","우유 배달을 맡았으면 여기서 병을 받아 가. 집집마다 우편함에 하나씩 넣으면 돼.","꾸물대면 우유가 미지근해져! 시간 안에 돌아야 해."],"pose":"carry"},{"id":"willow_granny","name":"꽃집 할머니 수국","role":"talk","x":17,"y":24,"look":[3,0,0,"#9a6ab8","#e8e0d0",0],"lines":["봄이 할미란다. 꽃은 물을 먹고 자라지, 사람은 정을 먹고 자라고.","꽃밭에 물 주는 걸 도와주겠니? 물뿌리개는 우물이나 연못에서 채우면 된단다."],"pose":"water"},{"id":"willow_flyer","name":"전단지 아저씨 팔랑","role":"talk","x":43,"y":27,"look":[1,2,0,"#c8503a","#c89a5a",1],"lines":["장터 소식이요, 장터 소식! 전단지 붙일 사람 구해요!","가로등이랑 게시판, 표지판에 한 장씩 붙이면 돼. 바람에 날리지 않게 꾹꾹!"],"pose":"wave"},{"id":"willow_sweeper","name":"환경미화원 쓱싹","role":"talk","x":40,"y":40,"look":[4,1,0,"#e89a2a","#8a8a8a",0],"lines":["길에 떨어진 쓰레기 하나가 마을 인상을 망친다고!","쓰레기 줍기를 맡으면 길가에 떨어진 걸 주워 줘. 내 눈엔 다 보인다니까."],"pose":"sweep"},{"id":"willow_farmer","name":"텃밭 농부 감자","role":"talk","x":36,"y":47,"look":[0,0,2,"#6a8a3a","#b07a4a",0],"lines":["잡초는 뽑아도 뽑아도 또 나! 텃밭이랑 뒷마당 풀숲 좀 도와줘.","길게 자란 풀숲이 보이면 거기가 잡초 자리야. 뿌리까지 쏙!"]}],"portals":[{"x":34,"y":1,"to":"town","tx":49,"ty":71},{"x":35,"y":1,"to":"town","tx":50,"ty":71}],"fires":[[23,44]],"waypoint":[40,27,40,28],"fishing":true,"boss":null,"big":[{"t":"fountain","x":36,"y":26},{"t":"prop","k":"stall","x":45,"y":23,"w":2,"h":1},{"t":"prop","k":"stall","x":49,"y":23,"w":2,"h":1},{"t":"prop","k":"cart","x":51,"y":27,"w":2,"h":1},{"t":"house","x":13,"y":10,"v":0},{"t":"house","x":19,"y":10,"v":2},{"t":"house","x":24,"y":10,"v":1},{"t":"house","x":5,"y":20,"v":3},{"t":"house","x":13,"y":20,"v":1},{"t":"house","x":19,"y":20,"v":0},{"t":"house","x":6,"y":26,"v":2},{"t":"house","x":13,"y":26,"v":3},{"t":"house","x":21,"y":26,"v":1},{"t":"house","x":52,"y":38,"v":0},{"t":"house","x":58,"y":38,"v":2},{"t":"house","x":51,"y":43,"v":3},{"t":"house","x":57,"y":43,"v":1},{"t":"house","x":51,"y":48,"v":2},{"t":"house","x":58,"y":48,"v":0},{"t":"house","x":43,"y":4,"v":3},{"t":"bld","k":"barn","x":50,"y":3,"w":5,"h":4,"door":"s","dx":2,"name":"음메 목장 외양간","icon":"crate"},{"t":"prop","k":"cart","x":43,"y":12,"w":2,"h":1},{"t":"prop","k":"lookout","x":6,"y":5,"w":2,"h":2},{"t":"prop","k":"well","x":37,"y":44,"w":1,"h":1},{"t":"prop","k":"laundry","x":62,"y":40,"w":2,"h":1},{"t":"prop","k":"laundry","x":10,"y":31,"w":2,"h":1},{"t":"prop","k":"bench","x":38,"y":32,"w":2,"h":1},{"t":"prop","k":"cart","x":38,"y":6,"w":2,"h":1}],"marks":[{"x":36,"y":3,"kind":"sign","label":"↑ 버드나무광장","to":"town"},{"x":37,"y":22,"kind":"sign","label":"← 마을 길 · 목장 ↗ · 장터 →"},{"x":37,"y":39,"kind":"sign","label":"← 연못 · 텃밭 · 남쪽 마을 →"},{"x":10,"y":25,"kind":"sign","label":"봄이네 꽃밭"}],"crops":[[27,43,1],[28,43,1],[29,43,1],[30,43,1],[31,43,1],[32,43,1],[27,45,2],[28,45,2],[29,45,2],[30,45,2],[31,45,2],[32,45,2],[27,49,3],[28,49,3],[29,49,3],[30,49,4],[31,49,4],[32,49,4],[27,51,5],[28,51,5],[29,51,5],[30,51,6],[31,51,6],[32,51,6]]},
   ],
   links: [{"map":"town","x":49,"y":73,"to":"willow","tx":34,"ty":3,"label":"버드나무 마을"},{"map":"town","x":50,"y":73,"to":"willow","tx":35,"ty":3,"label":"버드나무 마을"},{"map":"town","x":49,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":50,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":36,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":37,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":62,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":63,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":65,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":66,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":72,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":73,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":85,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":86,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":80,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":81,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":72,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":73,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":79,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":80,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":67,"y":51,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":67,"y":52,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":45,"y":51,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":45,"y":52,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":29,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":30,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":10,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"},{"map":"town","x":11,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"},{"map":"oasis","x":13,"y":63,"to":"airship","tx":9,"ty":16,"label":"바람등호 승선"},{"map":"airship","x":8,"y":16,"to":"oasis","tx":12,"ty":64,"label":"모래바람 오아시스 Lv.109–133 하선"}],
@@ -1646,7 +1646,7 @@ const LIFE_MASTER = ["명인 낚시꾼", "명인 요리사", "명인 채집꾼",
 
 // ── fields the later phases fill (the sheet carries them from L1 on, so they never bump it again)
 /** The co-op part-time jobs (C1–C3), by the building they run in. */
-const COOP_KINDS = ["apt", "diner", "forge", "alch"];
+const COOP_KINDS = ["apt", "diner", "forge", "alch", "pipe"];
 /** The 재료 주머니 holds materials (ingots too), staples and flasks, up to this many of each. */
 const POUCH_MAX = 999;
 
@@ -1663,7 +1663,7 @@ const COOP_T = {
   base: { gold: 200, xp: 0.20, life: 0.60, stone: 3, gearQ: 1 }, gradeK: [1, 1.05, 1.1, 1.2],
   tip: 25, tipLife: 0.05, helpTip: 38, helpLife: 0.25, rep: 5,
 };
-const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무" };
+const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무", pipein: "급수 담당", pipeout: "배수 담당" };
 /** An empty row of the forge template's object layer (wall, 28 open tiles, the cut-down front wall). */
 const COOP_ROW = "=" + " ".repeat(28) + "_";
 /** The v1 smithy's object layer (the forge v2 and 보글's lab build on it). */
@@ -1762,6 +1762,21 @@ const COOP = {
     },
   },
 };
+const PIPE_ROOM = { w: 22, h: 18 };
+COOP.pipe = {
+  name: "마을회관 배관이 터졌어요!", npc: "popo", lobby: "town_hall", mins: 5, tools: ["pipein", "pipeout"],
+  par: 135, gradeSec: [0, 45, 90, 135], skill: "craft",
+  hint: "급수구와 배수구를 양쪽에서 이어 주세요. 배관의 방향은 고정이고, 망치로 바위를 한 칸 깰 수 있어요.",
+  st: {}, start: [[8, 10], [13, 10], [8, 12], [13, 12]],
+  tpl: {
+    name: "버드나무광장 회관 · 수리 구역", theme: "interior", style: "hall", bgm: "hall", safe: true,
+    ...PIPE_ROOM, entry: [10, 12],
+    ground: Array.from({ length: PIPE_ROOM.h }, (_, y) => y >= 6 && y < 13 ? "l".repeat(5) + "y".repeat(12) + "l".repeat(5) : "l".repeat(PIPE_ROOM.w)),
+    objects: Array.from({ length: PIPE_ROOM.h }, (_, y) => y === 0 ? "=".repeat(PIPE_ROOM.w)
+      : y === PIPE_ROOM.h - 1 ? "_".repeat(PIPE_ROOM.w) : "=" + " ".repeat(PIPE_ROOM.w - 2) + "_"),
+  },
+};
+
 /**
  * 보글's big kiln hall (alch v2; owner, 2026-11-15: every co-op shift runs in its own big hall, "the same building" but roomier):
  * 64×44 (5.9× the forge's 30×16 room; owner: "훨씬 크게"). The kiln `<` in the middle with four 풀무 tiles round its north
@@ -15671,10 +15686,10 @@ function coopNpc(S, p, k) {
   const n = mapOfS(S, p.map).npcs.find((o) => o.id === J.npc);
   return n && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < COOP_T.near ? n : null;
 }
-const coopCut = (c, g) => Math.round(COOP[c.k].par * (COOP[c.k].parN || COOP_T.parN)[c.n] * COOP_T.cuts[g]);
+const coopCut = (c, g) => c.k === "pipe" ? COOP.pipe.gradeSec[g] : Math.round(COOP[c.k].par * (COOP[c.k].parN || COOP_T.parN)[c.n] * COOP_T.cuts[g]);
 /** 0 below C, 1 C · 2 B · 3 A · 4 S. */
-function coopGrade(c) { let g = 0; while (g < 4 && c.score >= coopCut(c, g)) g++; return g; }
-const coopMult = (c) => (1 + 0.1 * Math.min(c.combo, 10)) * (c.state === "fever" ? 1.5 : 1);
+function coopGrade(c) { if (c.k === "pipe") return pipeGrade(c); let g = 0; while (g < 4 && c.score >= coopCut(c, g)) g++; return g; }
+const coopMult = (c) => c.k === "pipe" ? 1 : (1 + 0.1 * Math.min(c.combo, 10)) * (c.state === "fever" ? 1.5 : 1);
 const coopEv = (S, dim, code, x, y, a = 0) => dim.rt.ev.push(["cj", code, Math.round(x), Math.round(y), a]);
 const coopToastAll = (S, dim, m) => { for (const o of dimInside(S, dim.id)) toast(o, m); };
 
@@ -15712,7 +15727,7 @@ function coopStart(S, p, k) {
     c.pl[o.pid] = { name: o.ch.name, tool: J.tools[i % 2], hold: [], pts: 0, idleAt: t0, x, y, actAt: 0, hintAt: 0, ok: false };
     changeMap(S, o, id, x, y);
     o.spdBuff = Math.max(o.spdBuff || 0, endAt);
-    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint} (공격 키 / F)`);
+    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint}${k === "pipe" ? "" : " (공격 키 / F)"}`);
     o.dirty = true;
   });
   COOP_JOB[k].init(S, dim, c);
@@ -15732,20 +15747,24 @@ function coopClose(S, dim) {
 }
 /** Time's up: the grade, the report card, and each eligible member's pay (once a day per job). */
 function coopFinish(S, dim, inside) {
-  const c = dim.coop, g = coopGrade(c);
+  const c = dim.coop;
+  if (c.state === "end") return;
+  const g = coopGrade(c);
   c.state = "end"; c.doneAt = S.now + COOP_T.endMs; c.ver++;
   const avg = inside.reduce((s, o) => s + (c.pl[o.pid] ? c.pl[o.pid].pts : 0), 0) / Math.max(1, inside.length);
   const rows = [];
   for (const pid of Object.keys(c.pl)) {
     const q = c.pl[pid], o = S.players[pid];
-    q.ok = !!(o && o.map === dim.id && S.now - q.idleAt < COOP_T.idleMs && q.pts >= COOP_T.lazy * avg);
+    q.ok = !!(o && o.map === dim.id && (c.k === "pipe" ? pipeEligible(c, pid) : S.now - q.idleAt < COOP_T.idleMs && q.pts >= COOP_T.lazy * avg));
     rows.push([q.name, Math.round(q.pts), COOP[c.k].tools.indexOf(q.tool), q.ok ? 1 : 0]);
   }
   S.coopBest = S.coopBest || {};
   S.coopBest[c.k] = Math.max(S.coopBest[c.k] || 0, Math.round(c.score));
   for (const o of inside) {
     const q = c.pl[o.pid];
-    if (q && q.ok) coopPay(S, o, c, g); else toast(o, "근무 태도 불량 — 보상 없음");
+    if (q && q.ok) coopPay(S, o, c, g);
+    else if (c.k === "pipe") toast(o, g ? "완성 배관에 참여한 팀원이 보수를 받았습니다." : "시간이 끝났어요. 급수구에서 배수구까지 다시 이어 보세요.");
+    else toast(o, "근무 태도 불량 — 보상 없음");
     o.coopRes = [g, Math.round(c.score), S.coopBest[c.k], rows, [0, 1, 2, 3].map((i) => coopCut(c, i))];
   }
   coopEv(S, dim, 21, 0, 0, g);
@@ -15758,7 +15777,8 @@ function coopPay(S, p, c, g) {
   const Tt = Math.max(1, Math.floor(toTier(ch.lvl))), k = R.gradeK[Math.max(0, g - 1)], life = lifeNeed(ch.life[J.skill].lv) * R.base.life;
   const gold = (n) => { ch.gold += n; p.gain.push(["gold", n]); };
   ch.cnt.coop++;
-  if (g === 4) ch.cnt["coopS_" + c.k]++;   // the first S earns the job's cosmetic through its achievement (COS_ACH)
+  const achievement = "coopS_" + c.k;
+  if (g === 4 && Object.hasOwn(ch.cnt, achievement)) ch.cnt[achievement]++;   // registered jobs earn an S achievement
   checkAch(S, p);
   if (!g) {
     gold(R.tip * Tt); gainLife(S, p, J.skill, life * R.tipLife);
@@ -15794,10 +15814,14 @@ function coopTick(S, now) {
     // anti-AFK: walking 16 px counts as being at work too
     for (const o of inside) { const q = c.pl[o.pid]; if (q && dist(o.x, o.y, q.x, q.y) >= 16) { q.x = o.x; q.y = o.y; q.idleAt = now; } }
     if (c.state === "brief" && now >= c.runAt) { c.state = "run"; c.comboAt = -1e9; coopToastAll(S, dim, "근무 시작!"); }
-    if (c.state === "run" && now >= c.endAt - COOP_T.feverMs) { c.state = "fever"; coopEv(S, dim, 14, 0, 0); coopToastAll(S, dim, "피버 타임! 남은 1분, 점수 ×1.5"); }
+    if (c.state === "run" && now >= c.endAt - COOP_T.feverMs) {
+      c.state = "fever";
+      if (c.k === "pipe") coopToastAll(S, dim, "물이 차오릅니다! 배관을 이을 시간이 1분 남았어요.");
+      else { coopEv(S, dim, 14, 0, 0); coopToastAll(S, dim, "피버 타임! 남은 1분, 점수 ×1.5"); }
+    }
     if (c.state === "run" || c.state === "fever") {
       if (now >= c.endAt) coopFinish(S, dim, inside);
-      else COOP_JOB[c.k].tick(S, dim, c, now);
+      else COOP_JOB[c.k].tick?.(S, dim, c, now);
     } else if (c.state === "end" && now >= c.doneAt) coopClose(S, dim);
   }
 }
@@ -16537,6 +16561,8 @@ const BREW_HERBS = ["붉은 꽃잎(↑)", "푸른 이끼(→)", "황금 뿌리(�
 
 // ── actions (validated in 70-validate.js, applied in 75-apply.js)
 
+COOP_JOB.pipe = { init: pipeInit, sum: () => [0, 0] };
+
 function coopValidate(S, p, a) {
   const c = coopOf(S, p);
   switch (a.t) {
@@ -16558,6 +16584,7 @@ function coopValidate(S, p, a) {
       if (a.d !== undefined && !(Number.isInteger(a.d) && a.d >= 0 && a.d <= 3)) return bad("알 수 없는 행동");
       if (c.state === "brief") return bad("곧 근무가 시작됩니다!");
       if (c.state === "end") return bad("근무가 끝났습니다");
+      if (c.k === "pipe") return pipeValidate(S, p, c, a);
       return OK;
     case "coop_leave":
       return c ? OK : bad("근무 중이 아닙니다");
@@ -16568,6 +16595,7 @@ function coopApply(S, p, a) {
   if (a.t === "coop_start") { coopStart(S, p, a.k); return; }
   const c = coopOf(S, p);
   if (a.t === "coop_leave") { toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다"); coopHome(S, p, c); return; }
+  if (c.k === "pipe") { pipeApply(S, dimAt(S, p.map), c, p, a); return; }
   const q = c.pl[p.pid], job = COOP_JOB[c.k];
   // a rhythm lane's notes come faster than the work key's 250 ms
   if (S.now - q.actAt < (job.lane && job.lane(S, c, p, q) ? COOP_FORGE.laneMs : COOP_T.actMs)) return;
@@ -16592,6 +16620,7 @@ function coopApply(S, p, a) {
  */
 function coopView(S, p, out) {
   const dim = inDim(p) ? dimAt(S, p.map) : null, c = dim && dim.coop;
+  pipeView(S, p, out, c?.k === "pipe" ? c : null);
   if (c) {
     const now = S.now, g = coopGrade(c), J = COOP[c.k];
     const secs = Math.max(0, Math.ceil(((c.state === "brief" ? c.runAt : c.state === "end" ? c.doneAt : c.endAt) - now) / 1000));
@@ -16626,6 +16655,215 @@ function coopDefs() {
     dishes: COOP_DINER.dishes.map((d) => d.name), cook: COOP_DINER.dishes.map((d) => d.cook), trayCap: COOP_DINER.trayCap, washN: COOP_DINER.washN,
     orders: COOP_FORGE.orders.map((o, i) => [COOP.forge.skin.orders[i], o.pat.length, o.pts, o.per, o.pat]), door: tilePx(COOP.forge.door), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP.forge.skin.grades,
     brew: { orders: COOP_BREW.orders.map((o, i) => [COOP.alch.skin.orders[i], o.lo, o.hi, o.hold, o.herbs, o.pts]), chart: COOP_BREW.chart, loop: COOP_BREW.loop, amb: COOP_BREW.amb, herbs: BREW_HERBS, foam: COOP_BREW.foam } };
+}
+// ───────────────────────────── town hall pipe repair ─────────────────────────────
+
+const PIPE_N = 32, PIPE_CELLS = PIPE_N * PIPE_N;
+const PIPE_ROCK = 1, PIPE_FIRST = 2, PIPE_LAST = 5, PIPE_IN = 6, PIPE_OUT = 7, PIPE_HAMMER = 8;
+const PIPE_PORTS = [0, 0, 5, 10, 12, 3, 2, 8];   // masks: N=1, E=2, S=4, W=8
+const PIPE_CHANGES = 64;
+const pipeZone = (index) => index % PIPE_N < PIPE_N / 2 ? 0 : 1;
+const pipeIndex = (x, y) => y * PIPE_N + x;
+
+/** Shuffle the candidate positions and pieces deterministically with a shift's seed box. */
+function pipeShuffle(a, box) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = ri(box, 0, i);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** East and south only; each descent starts after entering from the west and ends by exiting east. */
+function pipeSolution(box) {
+  const startRow = ri(box, 2, 15), fall = ri(box, 5, Math.min(13, 29 - startRow));
+  const columns = pipeShuffle(Array.from({ length: PIPE_N - 2 }, (_, i) => i + 1), box)
+    .slice(0, ri(box, 2, Math.min(5, fall))).sort((a, b) => a - b);
+  const drops = new Array(columns.length);
+  let left = fall, row = startRow;
+  for (let i = 0; i < columns.length; i++) {
+    drops[i] = i === columns.length - 1 ? left : ri(box, 1, left - (columns.length - i - 1));
+    left -= drops[i];
+  }
+  const route = [pipeIndex(0, row)];
+  let at = 0;
+  for (let x = 1; x < PIPE_N; x++) {
+    route.push(pipeIndex(x, row));
+    if (x === columns[at]) {
+      for (let k = 0; k < drops[at]; k++) route.push(pipeIndex(x, ++row));
+      at++;
+    }
+  }
+  return route;
+}
+
+/** Read a route's required four pipe types from its two neighbors. */
+function pipeNeed(path, i) {
+  const prev = path[i] - path[i - 1], next = path[i + 1] - path[i];
+  if (prev === 1 && next === 1) return 3;
+  if (prev === PIPE_N && next === PIPE_N) return 2;
+  return prev === 1 ? 4 : 5;
+}
+
+function pipeLandscape(box, solution) {
+  const board = new Uint8Array(PIPE_CELLS), path = new Set(solution);
+  const src = solution[0], dst = solution[solution.length - 1];
+  board[src] = PIPE_IN;
+  board[dst] = PIPE_OUT;
+  const rocks = [0, 0], half = Math.round(PIPE_CELLS * 0.55) / 2;
+  const limit = [Math.ceil(half), Math.floor(half)];
+  const place = (x, y) => {
+    if (x < 0 || y < 0 || x >= PIPE_N || y >= PIPE_N) return;
+    const i = pipeIndex(x, y), z = pipeZone(i);
+    if (board[i] || path.has(i) || rocks[z] >= limit[z]) return;
+    board[i] = PIPE_ROCK; rocks[z]++;
+  };
+  for (let k = 0; k < 30; k++) {
+    const x = ri(box, 0, PIPE_N - 1), y = ri(box, 0, PIPE_N - 1), r = ri(box, 1, 2);
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.abs(dx) + Math.abs(dy) <= r + 1) place(x + dx, y + dy);
+    }
+  }
+  const rest = [];
+  for (let i = 0; i < PIPE_CELLS; i++) if (!board[i] && !path.has(i)) rest.push(i);
+  for (const i of pipeShuffle(rest, box)) place(i % PIPE_N, Math.floor(i / PIPE_N));
+  return { board, rocks, src, dst };
+}
+
+/** Draw from the common zone packet. A hammer interrupts the draw without changing its cursor. */
+function pipeHand(c, seat, canHammer) {
+  const state = c.pipe, z = seat.zone;
+  if (canHammer && state.rocks[z] > 0 && rnd(c.box) < 0.05) seat.tool = PIPE_HAMMER;
+  else {
+    const pack = state.packs[z];
+    // A side that consumes its planned packet can keep trying, while it still has empty cells.
+    seat.tool = state.cursor[z] < pack.length ? pack[state.cursor[z]++] : ri(c.box, PIPE_FIRST, PIPE_LAST);
+  }
+  seat.handRev++;
+}
+
+function pipeInit(S, dim, c) {
+  const solution = pipeSolution(c.box), map = pipeLandscape(c.box, solution);
+  const packs = [[], []], spare = [PIPE_CELLS / 2 - map.rocks[0], PIPE_CELLS / 2 - map.rocks[1]];
+  spare[pipeZone(map.src)]--; spare[pipeZone(map.dst)]--;
+  for (let i = 1; i < solution.length - 1; i++) packs[pipeZone(solution[i])].push(pipeNeed(solution, i));
+  for (const z of [0, 1]) {
+    const extra = Math.min(spare[z] - packs[z].length, ri(c.box, 4, 8));
+    for (let i = 0; i < extra; i++) packs[z].push(ri(c.box, PIPE_FIRST, PIPE_LAST));
+    pipeShuffle(packs[z], c.box);
+  }
+  c.pipe = {
+    ...map, id: dim.id, solution, packs, cursor: [0, 0], seats: {},
+    owners: new Array(PIPE_CELLS), broken: new Array(PIPE_CELLS), changes: [],
+    rev: 1, wonAt: null, finished: null,
+  };
+  Object.keys(c.pl).forEach((pid, i) => {
+    const seat = c.pipe.seats[pid] = { zone: i % 2, eid: S.players[pid].eid, tool: 0, handRev: 0, acted: false };
+    pipeHand(c, seat, false);
+  });
+}
+
+/** Follow reciprocal ports, skipping the arrival port. A player's drawing order doesn't matter. */
+function pipeTrace(state) {
+  const { board, src, dst } = state, seen = new Set([src]), path = [src];
+  let cell = src, from = 0;
+  while (cell !== dst) {
+    const mask = PIPE_PORTS[board[cell]] & ~from;
+    let next = -1, into = 0;
+    if (mask === 1 && cell >= PIPE_N) { next = cell - PIPE_N; into = 4; }
+    if (mask === 2 && cell % PIPE_N < PIPE_N - 1) { next = cell + 1; into = 8; }
+    if (mask === 4 && cell < PIPE_CELLS - PIPE_N) { next = cell + PIPE_N; into = 1; }
+    if (mask === 8 && cell % PIPE_N > 0) { next = cell - 1; into = 2; }
+    if (next < 0 || seen.has(next) || !(PIPE_PORTS[board[next]] & into)) return null;
+    path.push(next); seen.add(next); cell = next; from = into;
+  }
+  return path;
+}
+
+function pipeValidate(S, p, c, a) {
+  const state = c && c.pipe, seat = state && state.seats[p.pid], member = c && c.pl[p.pid];
+  if (!seat || !member || p.map !== state.id || p.dead) return bad("배관 근무 좌석에 참여하고 있지 않습니다");
+  if (c.state === "brief" || S.now < c.runAt) return bad("곧 배관 근무가 시작됩니다!");
+  if ((c.state !== "run" && c.state !== "fever") || S.now >= c.endAt || state.wonAt !== null) return bad("배관 근무가 끝났습니다");
+  if (a.t !== "coop_act" || Object.keys(a).some((k) => k !== "t" && k !== "i" && k !== "handRev")) return bad("손에 든 도구를 칸에 사용해 주세요");
+  if (!Number.isInteger(a.i) || a.i < 0 || a.i >= PIPE_CELLS) return bad("배관 칸을 골라 주세요");
+  if (pipeZone(a.i) !== seat.zone) return bad("담당 구역에서만 작업할 수 있습니다");
+  if (a.handRev !== seat.handRev) return bad("손에 든 도구가 바뀌었습니다");
+  const cell = state.board[a.i];
+  if (seat.tool === PIPE_HAMMER && cell !== PIPE_ROCK) return bad("망치로는 바위만 깰 수 있습니다");
+  if (seat.tool !== PIPE_HAMMER && cell !== 0) return bad("빈 칸에만 배관을 놓을 수 있습니다");
+  return S.now - member.actAt < COOP_T.actMs ? bad("조금 천천히 작업해 주세요") : OK;
+}
+
+function pipeApply(S, dim, c, p, a) {
+  if (!pipeValidate(S, p, c, a).ok) return false;
+  const state = c.pipe, seat = state.seats[p.pid], i = a.i, z = seat.zone;
+  const hammer = seat.tool === PIPE_HAMMER;
+  state.board[i] = hammer ? 0 : seat.tool;
+  if (hammer) {
+    state.broken[i] = p.pid;
+    state.rocks[z]--;
+  } else state.owners[i] = p.pid;
+  seat.acted = true;
+  const member = c.pl[p.pid];
+  member.actAt = member.idleAt = S.now;
+  pipeHand(c, seat, !hammer);
+  if (hammer && !state.rocks[z]) for (const q of Object.values(state.seats)) {
+    if (q.zone === z && q.tool === PIPE_HAMMER) pipeHand(c, q, false);
+  }
+  state.changes.push([++state.rev, i, state.board[i]]);
+  if (state.changes.length > PIPE_CHANGES) state.changes.shift();
+  const path = !hammer && pipeTrace(state);
+  if (!path) return true;
+
+  const left = new Set(), right = new Set();
+  for (const cell of path) {
+    const owner = state.owners[cell], side = pipeZone(cell);
+    if (state.seats[owner]?.zone === side) (side ? right : left).add(owner);
+  }
+  if (![...left].some((a) => [...right].some((b) => a !== b))) return true;
+
+  state.finished = path;
+  state.wonAt = S.now;
+  c.score = Math.floor((c.endAt - S.now) / 1000);
+  for (const cell of path) for (const pid of [state.owners[cell], state.broken[cell]]) {
+    if (c.pl[pid]) c.pl[pid].pts++;
+  }
+  coopFinish(S, dim, dimInside(S, dim.id));
+  return true;
+}
+
+function pipeGrade(c) {
+  if (c.pipe?.wonAt == null || c.pipe.wonAt >= c.endAt) return 0;
+  const left = c.endAt - c.pipe.wonAt;
+  return COOP.pipe.gradeSec.filter((s) => left >= s * 1000).length;
+}
+
+/** Only a finished path is regular-pay credit; an active worker can earn the normal failure tip. */
+function pipeEligible(c, pid) {
+  if (c.pipe?.wonAt != null) return (c.pl[pid]?.pts || 0) > 0;
+  return !!c.pipe?.seats[pid]?.acted;
+}
+
+/** cp: [revision, full|delta, board string|changed cells, inlet, outlet, visible seat rows]. */
+function pipeView(S, p, out, c) {
+  const state = c && c.pipe, seen = p.pipeSeen;
+  if (!state || !state.seats[p.pid] || p.map !== state.id) {
+    if (seen) { delete p.pipeSeen; out.cp = 0; }
+    return;
+  }
+  const seats = Object.entries(state.seats).flatMap(([pid, q]) => {
+    const o = S.players[pid];
+    return o && o.map === state.id ? [[o.eid, q.zone, q.tool, q.handRev]] : [];
+  });
+  const seatsKey = seats.join(";");
+  if (seen?.id === state.id && seen.rev === state.rev && seen.seatsKey === seatsKey) return;
+  const first = state.changes[0]?.[0] ?? state.rev + 1;
+  const full = !seen || seen.id !== state.id || seen.rev > state.rev || seen.rev < first - 1;
+  const delta = new Map();
+  if (!full) for (const [rev, index, value] of state.changes) if (rev > seen.rev) delta.set(index, value);
+  out.cp = [state.rev, full ? 0 : 1, full ? state.board.join("") : [...delta], state.src, state.dst, seats];
+  p.pipeSeen = { id: state.id, rev: state.rev, seatsKey };
 }
 // ───────────────────────────── actions ─────────────────────────────
 

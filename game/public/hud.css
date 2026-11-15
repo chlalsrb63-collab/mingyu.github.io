@@ -1539,6 +1539,64 @@ body[data-lay="full"] #panel .jt-grid .jt-node img.ji { margin: 0 auto; }
 #coop-res td { padding: 0 3px; }
 #coop-res td:last-child { color: #ff9a80; }
 #coop-res .cr-cut, #coop-res .cr-note { color: #a89c80; }
+#coop-pipes { inset: 0; z-index: 8; display: grid; place-items: center; padding: 6px; color: #f3e5c8; background: #15111cbd;
+  font: var(--t12)/1.35 var(--pix); }
+#coop-pipes[hidden] { display: none; }
+#coop-pipe-panel { width: min(850px, 100%); min-height: 0; max-height: calc(100dvh - 12px); display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px; overflow: auto; padding: 8px 12px; }
+#coop-pipes .cp-head, #coop-pipes .cp-controls { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+#coop-pipes .cp-head h2 { margin: 0; color: #ffe19a; font-size: var(--t13, 14px); line-height: 1.35; }
+#coop-pipes .cp-head p { margin: 2px 0 0; color: #adbac2; }
+#coop-pipe-time { color: #fff0ae; font: var(--t18, 20px)/1 var(--pix); font-variant-numeric: tabular-nums; }
+#coop-pipes.cp-danger .cp-head p, #coop-pipes.cp-danger #coop-pipe-time { color: #ffba9f; }
+#coop-pipes .cp-main { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(148px, 170px); gap: 12px; }
+#coop-pipes .cp-map { min-width: 0; }
+#coop-pipes .cp-map-title { display: flex; width: min(100%, calc(100dvh - 156px)); margin: 0 auto 3px; color: #ebc09c; }
+#coop-pipes .cp-map-title span { flex: 1; text-align: center; }
+#coop-pipes .cp-map-title span + span { color: #b4d5cf; border-left: 1px dashed #9f9272; }
+#coop-pipes .cp-view { box-sizing: content-box; width: min(100% - 4px, 100dvh - 156px); aspect-ratio: 1; margin: 0 auto;
+  border: 2px solid #877669; background: #302b39; }
+#coop-pipe-board { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; image-rendering: pixelated; }
+#coop-pipe-board:focus-visible { outline: 2px solid #ffe29a; outline-offset: 2px; }
+#coop-pipes .cp-side { min-width: 0; display: flex; flex-direction: column; gap: 7px; align-self: start; }
+#coop-pipes .cp-hand { display: flex; align-items: center; gap: 6px; padding: 4px; background: #231e2c; border: 1px solid #54445c; }
+#coop-pipes .cp-hand canvas { width: 36px; height: 36px; flex: none; image-rendering: pixelated; }
+#coop-pipes .cp-hand b, #coop-pipes .cp-hand span { display: block; }
+#coop-pipe-role { color: #ffe29a; }
+#coop-pipe-held { color: #f8d9ad; }
+#coop-pipe-crew { list-style: none; display: grid; gap: 3px; margin: 0; padding: 0; }
+#coop-pipe-crew li { display: flex; align-items: center; justify-content: space-between; min-width: 0; padding: 2px 4px; border-left: 2px solid #bd8b6c; background: #292331; }
+#coop-pipe-crew li.cp-drain { border-left-color: #89b8ae; }
+#coop-pipe-crew li span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#coop-pipe-crew canvas { width: 21px; height: 21px; image-rendering: pixelated; }
+#coop-pipes .cp-tip { margin: 0; color: #c3b9b3; }
+#coop-pipes .cp-zoom, #coop-pipes .cp-controls > div { display: flex; gap: 4px; }
+#coop-pipes .cp-controls > div { flex: none; }
+#coop-pipes .cp-controls output { color: #e2d5c4; overflow-wrap: anywhere; }
+#coop-pipes .btn { min-height: 34px; }
+#coop-pipes .btn:disabled { opacity: .46; }
+#w-board .cp-offer { border-color: #987347; }
+@media (max-width: 570px) {
+  #coop-pipe-panel { padding: 6px 7px; gap: 5px; }
+  #coop-pipes .cp-main { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+  #coop-pipes .cp-view { width: min(100% - 4px, 100dvh - 207px); }
+  #coop-pipes .cp-map-title { width: min(100%, 100dvh - 207px); }
+  #coop-pipes .cp-side { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 4px; }
+  #coop-pipes .cp-hand { gap: 3px; padding: 2px; }
+  #coop-pipes .cp-hand canvas { width: 27px; height: 27px; }
+  #coop-pipes .cp-tip { display: none; }
+  #coop-pipe-crew { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; }
+  #coop-pipe-crew li { padding: 1px 2px; }
+  #coop-pipe-crew canvas { width: 16px; height: 16px; flex: none; }
+  #coop-pipes .cp-zoom .btn { min-width: 29px; padding-inline: 3px; }
+}
+@media (orientation: landscape) and (max-height: 480px) {
+  #coop-pipe-panel { width: min(660px, 100%); }
+  #coop-pipes .cp-main { grid-template-columns: minmax(0, 1fr) minmax(110px, 145px); }
+  #coop-pipes .cp-view { width: min(100% - 4px, 100dvh - 117px); }
+  #coop-pipes .cp-map-title { width: min(100%, 100dvh - 117px); }
+  #coop-pipes .cp-side { display: flex; }
+}
 /* 추적 (track.js): the [추적] buttons and the "추적 중" line; quest and job rows keep their buttons on the right */
 .window .jb-card .btns, #w-talk .sq-card .btns, #w-juana .cm-quest .btns, #quest-body .qdetail .btns { justify-content: flex-end; }
 #daily-body .df .trk { margin-left: auto; }

@@ -32,6 +32,9 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 
 ## CODEX (구현 · 테스트)
 
+차기 게임 소개 페이지와 PDF를 제작할 때는 협동 아르바이트를 독립 항목으로 싣습니다. 실제 2~4인 역할 분담 화면과 근무지별 구성은 [배관 수리 인계](reports/codex-coop-pipes.md)를 참고합니다.
+
+- [x] 마을회관 2~4인 협동 배관 알바. [구현·검증](reports/codex-coop-pipes.md)
 - [x] 루넬샤 필드·균열 보스 7종과 월드 크기 보강. [검수](reports/codex-boss-reference-art.md)
 - [x] 작은꼬리 64×64 캐릭터·NPC·착용 외형, 버드나무토큰과 희귀 망토. [검증](reports/codex-person64.md)
 - [x] 보스 4종 아트 개편과 2·4인 필드 및 균열 보스전 촬영. [검증](reports/codex-boss-combat-report.md)
