@@ -201,6 +201,49 @@ export function faceAnchor(look, view) {
 
 // ───────────────────────────── drawing ─────────────────────────────
 
+// Raised tails use a broader silhouette than the body. The same rows mirror behind the side view.
+const FOX_BRUSH = [
+  "........II",
+  ".......III",
+  "......IIIT",
+  "......IITT",
+  ".....FFTT.",
+  "....FFFFS.",
+  "...FFFFFS.",
+  "..FFFFFSS.",
+  ".FFFFFSS..",
+  "FFFFFFS...",
+  ".FFSS.....",
+];
+const SQUIRREL_CURL = [
+  "......FFF.",
+  ".....FFFFF",
+  "....FFFFFS",
+  "....SSFFFS",
+  "....S..FFS",
+  "......FFFS",
+  "......FFFS",
+  ".....FFFSS",
+  ".....FFFSS",
+  "....FFFSS.",
+  "....FFSS..",
+  "...FFFS...",
+  "..FFFSS...",
+  ".FFFSS....",
+  "FFSS......",
+];
+
+function paintTail(behind, rows, y, palette, sway) {
+  rows.forEach((row, dy) => {
+    // The brush tip ebbs with the stride while its root stays attached to the same spot.
+    const x = 17 + (dy < 5 ? sway : 0);
+    for (let i = 0; i < row.length; i++) {
+      const ink = palette[row[i]];
+      if (ink) behind(x + i, y + dy, 1, 1, ink);
+    }
+  });
+}
+
 /**
  * One frame of a player: `o` from lookOf, `view` front / side / back, `f` a FRAME
  * index, `T` the pixel tools of sprites.js { sheet, brush, finish, shade, blend, lt, FRAME }.
@@ -227,21 +270,16 @@ export function animal(o, view, f, T) {
   // ── tail (0: as the ears suggest, as it always was)
   const tc = pat === 3 || pat === 12 ? deep : fur;
   const tail = o.tail ? o.tail : (o.ear | 0) <= 5 ? [3, 5, 2, 4, 6, 7][o.ear | 0] : sp.def.tail || 2;
-  const tip = pat === 3 ? fur : soft;
+  const sway = f === FRAME.stepA ? -1 : 0;
   [
     null, () => {},
     () => behind(19, 26, 1, 1, tc),
     () => { behind(19, 26, 2, 1, tc); behind(20, 24, 1, 2, tc); },
-    () => { behind(19, 24, 3, 3, tc); behind(21, 24, 1, 1, tip); },
+    () => paintTail(behind, FOX_BRUSH, 16, { F: fur, S: blend(fur, "#784158", 0.42), I: "#fff1db", T: "#dfcbbb" }, sway),
     () => behind(19, 25, 2, 2, tc),
     () => { behind(19, 25, 1, 1, tc); behind(20, 24, 1, 1, tc); },
     () => { behind(19, 26, 3, 1, tc); behind(21, 25, 1, 1, tc); },
-    // a squirrel's tail curls up behind the body, half as tall as the creature
-    () => {
-      const D = pat === 3 || pat === 12 ? deeper : deep;
-      behind(19, 24, 3, 3, D); behind(21, 21, 3, 3, D); behind(22, 18, 3, 3, D); behind(22, 16, 4, 2, D); behind(23, 15, 2, 1, D);
-      behind(23, 16, 1, 1, fur); behind(23, 18, 1, 3, fur); behind(22, 21, 1, 2, fur); behind(20, 24, 1, 2, fur);
-    },
+    () => paintTail(behind, SQUIRREL_CURL, 12, { F: blend(fur, "#a75b3a", 0.38), S: blend(fur, "#5f3645", 0.60) }, sway),
     () => { behind(19, 24, 3, 3, fur); behind(19, 25, 3, 1, deep); behind(21, 24, 1, 1, deep); },
     () => { behind(19, 26, 3, 1, tc); behind(20, 25, 2, 1, tc); behind(21, 24, 1, 1, deep); behind(21, 26, 1, 1, deep); },
     () => { behind(19, 26, 1, 1, tc); behind(20, 25, 1, 1, tc); behind(21, 26, 1, 1, tc); behind(21, 24, 1, 1, tc); },
