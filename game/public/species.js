@@ -233,11 +233,15 @@ const SQUIRREL_CURL = [
   "FFSS......",
 ];
 
-function paintTail(behind, rows, y, palette, sway) {
+// Behind the rump, only a narrow taper of the raised tail remains visible.
+const REAR_ROOT_EDGE = [24, 22, 20, 19];
+
+function paintTail(behind, rows, y, palette, sway, back) {
   rows.forEach((row, dy) => {
     // The brush tip ebbs with the stride while its root stays attached to the same spot.
     const x = 17 + (dy < 5 ? sway : 0);
-    for (let i = 0; i < row.length; i++) {
+    const edge = back ? REAR_ROOT_EDGE[y + dy - 23] ?? 31 : 31;
+    for (let i = 0; i < row.length && x + i <= edge; i++) {
       const ink = palette[row[i]];
       if (ink) behind(x + i, y + dy, 1, 1, ink);
     }
@@ -292,11 +296,11 @@ export function animal(o, view, f, T, seam) {
     null, () => {},
     () => behind(19, 26, 1, 1, tc),
     () => { behind(19, 26, 2, 1, tc); behind(20, 24, 1, 2, tc); },
-    () => paintTail(behind, FOX_BRUSH, 16, { F: fur, S: blend(fur, "#784158", 0.42), I: "#fff1db", T: "#dfcbbb" }, sway),
+    () => paintTail(behind, FOX_BRUSH, 16, { F: fur, S: blend(fur, "#784158", 0.42), I: "#fff1db", T: "#dfcbbb" }, sway, back),
     () => behind(19, 25, 2, 2, tc),
     () => { behind(19, 25, 1, 1, tc); behind(20, 24, 1, 1, tc); },
     () => { behind(19, 26, 3, 1, tc); behind(21, 25, 1, 1, tc); },
-    () => paintTail(behind, SQUIRREL_CURL, 12, { F: blend(fur, "#a75b3a", 0.38), S: blend(fur, "#5f3645", 0.60) }, sway),
+    () => paintTail(behind, SQUIRREL_CURL, 12, { F: blend(fur, "#a75b3a", 0.38), S: blend(fur, "#5f3645", 0.60) }, sway, back),
     () => { behind(19, 24, 3, 3, fur); behind(19, 25, 3, 1, deep); behind(21, 24, 1, 1, deep); },
     () => { behind(19, 26, 3, 1, tc); behind(20, 25, 2, 1, tc); behind(21, 24, 1, 1, deep); behind(21, 26, 1, 1, deep); },
     () => { behind(19, 26, 1, 1, tc); behind(20, 25, 1, 1, tc); behind(21, 26, 1, 1, tc); behind(21, 24, 1, 1, tc); },

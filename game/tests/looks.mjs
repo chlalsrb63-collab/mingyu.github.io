@@ -123,13 +123,12 @@ assert.ok(n > 5000);
 assert.deepEqual(draw([1, 2, 3, 4, 0, 2, 1, 5, 4, 3, 2], "side", 2), draw([1, 2, 3, 4, 0, 2, 1, 5, 4, 3, 2], "side", 2));
 const heads = new Set(SPC.SPECIES.map((_, sp) => JSON.stringify(draw(SPC.withSpecies([], sp), "front", 0))));
 assert.equal(heads.size, SPC.SPECIES.length, "every animal has a face of its own");
-// a guard on the original look: the pixels species 0 draws for the old choices (checked pixel-for-pixel
-// against the old drawing in the browser, _species.html?m=cmp) must not drift
+// Pin the species-0 drawing for the original choices, including the redrawn automatic fox tail.
 {
   const h = createHash("sha1");
   for (let ear = 0; ear < 6; ear++) for (let eye = 0; eye < 6; eye++) for (let nose = 0; nose < 5; nose++)
     for (const view of views) for (const f of [0, 1, 2, 5]) h.update(JSON.stringify(draw([ear, eye, nose, (ear + eye) % 10, nose % 4, (eye + nose) % 4, ear], view, f)));
-  assert.equal(h.digest("hex"), "645b15185ae0498e8e6b252a982406d40df24f72", "the original looks are drawn as before (hash moved with 67017af, the fox brush and squirrel curl redraw)");
+  assert.equal(h.digest("hex"), "3182b678216824d6f577aa729258987bed894f4f", "original look geometry includes the tapered rear fox tail");
 }
 
 // ── presets, species defaults and the hat anchor

@@ -150,19 +150,19 @@ function pawsAndTail(pixels, fur, side) {
 }
 
 /** Ink the join where an exposed tail meets the head, retaining the one-pixel read at half scale. */
-function tailJoin(pixels, head, tail) {
+function tailJoin(pixels, head, tail, bottom) {
   const on = (rows, x, y) => (rows[y] >>> x) & 1;
   const exposed = (x, y) => on(tail, x, y) && !on(head, x, y);
   const meets = (x, y, nx, ny) => (
     (on(head, x, y) && exposed(nx, ny)) || (exposed(x, y) && on(head, nx, ny))
   );
-  for (let y = 0; y < LOGICAL - 1; y++) for (let x = 0; x < LOGICAL - 1; x++) {
+  for (let y = 0; y <= bottom; y++) for (let x = 0; x < LOGICAL - 1; x++) {
     if (meets(x, y, x + 1, y)) {
       const i = at(x * 2 + 2, y * 2);
       if (pixels[i]) pixels[i] = INK;
       if (pixels[i + NATIVE]) pixels[i + NATIVE] = INK;
     }
-    if (meets(x, y, x, y + 1)) {
+    if (y < bottom && meets(x, y, x, y + 1)) {
       const i = at(x * 2, y * 2 + 2);
       if (pixels[i]) pixels[i] = INK;
       if (pixels[i + 1]) pixels[i + 1] = INK;
@@ -189,7 +189,8 @@ export function refinePerson(base, o = {}, view = "front", f = 0, seam) {
     }
     if (cloth) clothes(pixels, cloth, bob, view);
     pawsAndTail(pixels, fur, view === "side");
-    if (seam?.head) tailJoin(pixels, seam.head, seam.tail);
+    // The tail stays behind the body in the rear pose, so ink only against the head.
+    if (seam?.head) tailJoin(pixels, seam.head, seam.tail, view === "back" ? 23 + bob : LOGICAL - 2);
   }
   for (let i = 0, j = 0; i < pixels.length; i++, j += 4) {
     const pigment = pixels[i];
