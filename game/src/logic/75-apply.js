@@ -588,17 +588,19 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "job_change": {
-      const job = JOBS[a.j];
-      ch.gold -= job.cost;
+      const job = JOBS[a.j], back = ch.jobs[a.j];
+      if (!back) ch.gold -= job.cost;
       ch.job = a.j;
-      ch.jp = { lv: 1, xp: 0 };
+      // a job walked before resumes where it was left (47-job-freedom.js)
+      ch.jp = ch.jobs[a.j] = back || { lv: 1, xp: 0 };
       afterGear(S, p);
       S.maps[p.map].ev.push(["jc", p.eid]);
       sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
       toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸이 열렸습니다 — Tab으로 두 무기를 바꿔 듭니다.` : `[${job.name}] 전직!`);
       // the job's signature skill onto the bar
       const signature = SKILL[JOB_SKILL[a.j]];
-      if (signature) toast(p, `직업 Lv.${signature.jobNeed}에 [${signature.name}]${pp(signature.name, "을를")} 배웁니다.`);
+      if (back) toast(p, `[${job.name}] 직업 Lv.${back.lv}부터 이어서 걷습니다.`);
+      else if (signature) toast(p, `직업 Lv.${signature.jobNeed}에 [${signature.name}]${pp(signature.name, "을를")} 배웁니다.`);
       checkAch(S, p);
       break;
     }
@@ -606,6 +608,7 @@ export function applyAction(S, pid, a) {
     case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": lifeApply(S, p, a); break;
     // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
     case "blk": case "w": case "wk": socialApply(S, p, a); break;
+    case "job_reset": case "lv_reset": case "lo": jfApply(S, p, a); break;
     case "wsw": {
       // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops
       [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];

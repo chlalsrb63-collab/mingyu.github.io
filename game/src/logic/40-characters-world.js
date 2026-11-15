@@ -48,7 +48,9 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 17, name, job: "adventurer", jp: null,
+    v: 18, name, job: "adventurer", jp: null,
+    // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
+    jobs: {}, lo: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -197,7 +199,8 @@ function migrate(ch) {
   // The integrated sheet (v16) holds rift and profession records. cleanJobs also adds hammer mastery.
   // boss trophies (v17): known kinds only, each once (67-trophies.js)
   ch.tro = Array.isArray(ch.tro) ? [...new Set(ch.tro.filter((k) => typeof k === "string" && Object.hasOwn(TROPHIES, k)))] : [];
-  ch.v = Math.max(ch.v | 0, 17);
+  // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
+  ch.v = Math.max(ch.v | 0, 18);
   return ch;
 }
 

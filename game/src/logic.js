@@ -117,7 +117,7 @@ const DATA = {
   links: [{"map":"town","x":49,"y":73,"to":"willow","tx":19,"ty":3,"label":"버드나무 마을"},{"map":"town","x":50,"y":73,"to":"willow","tx":20,"ty":3,"label":"버드나무 마을"},{"map":"town","x":49,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":50,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":36,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":37,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"부엉이 도서관"},{"map":"town","x":62,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":63,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":65,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":66,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":72,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":73,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":85,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":86,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":80,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":81,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":72,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":73,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":79,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":80,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":67,"y":51,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":67,"y":52,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":45,"y":51,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":45,"y":52,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":29,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":30,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":10,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"},{"map":"town","x":11,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"}],
   npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":52,"y":70,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":70,"y":23,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 20까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","전직은 되돌릴 수 없다네. 신중하게 고르게."]},{"map":"town","id":"town_charm_juana","name":"참감정사 주아나","role":"charm","x":66,"y":23,"look":[7,0,11,11,0,0,4,6,2,0,0],"lines":["볼주머니에 넣기엔 제법 무거운 조각이네요. 빛을 품을 자리를 같이 찾아봐요.","여기, 테두리에 무늬가 보여요. 돌려 보면 작은 빈자리에도 맞겠어요.","사냥터에서 빛나는 조각을 주우면 가져오세요. 감정해서 참 보드에 놓으면 힘이 된답니다."]}],
   npclife: {"v":1,"places":{"fire":{"map":"town","name":"광장 모닥불","spots":[[56,46,"e"],[60,48,"n"],[56,48,"e"],[60,44,"s"],[61,46,"w"]]},"fountain":{"map":"town","name":"분수대","spots":[[48,37,"s"],[50,37,"s"],[48,42,"s"],[51,42,"s"],[49,43,"s"],[52,43,"s"]]},"bench":{"map":"town","name":"광장 벤치","spots":[[44,47,"s"],[45,47,"s"],[43,47,"s"]]},"garden":{"map":"town","name":"도서관 뜰","spots":[[36,24,"s"],[37,24,"s"],[38,24,"s"],[36,25,"s"]]},"steps":{"map":"town","name":"마을회관 계단","spots":[[48,27,"s"],[50,27,"s"],[52,27,"s"],[47,27,"s"]]},"yard":{"map":"town","name":"수련 마당","spots":[[67,24,"s"],[69,24,"s"],[71,24,"s"],[67,21,"s"],[69,21,"s"]]},"forgeyard":{"map":"town","name":"대장간 마당","spots":[[78,37,"s"],[78,36,"s"],[76,36,"s"]]},"market":{"map":"town","name":"장터 좌판","spots":[[65,39,"s"],[63,39,"s"],[64,40,"s"]]},"terrace":{"map":"town","name":"쥬쥬식당 야외석","spots":[[71,51,"s"],[72,52,"s"],[73,52,"s"],[74,53,"s"],[74,54,"s"],[76,53,"s"],[75,51,"s"]]},"pond":{"map":"town","name":"연못가","spots":[[24,52,"s"],[25,52,"s"],[25,56,"s"],[12,51,"s"]]},"pondfire":{"map":"town","name":"연못 모닥불","spots":[[29,62,"s"],[30,62,"s"],[28,62,"s"]]},"bridge":{"map":"town","name":"돌다리","spots":[[24,41,"s"],[24,46,"s"]]},"laundry":{"map":"town","name":"빨래터","spots":[[6,42,"s"],[7,42,"s"],[13,41,"s"]]},"flowers":{"map":"town","name":"꽃밭","spots":[[14,28,"s"],[15,28,"s"],[12,40,"s"],[40,27,"s"]]},"wall":{"map":"town","name":"북쪽 목책","spots":[[50,11,"s"],[41,12,"s"],[56,14,"s"],[65,12,"s"],[64,12,"s"],[30,11,"s"],[70,11,"s"]]},"egate":{"map":"town","name":"동문","spots":[[93,40,"s"],[92,38,"s"]]},"wgate":{"map":"town","name":"서문","spots":[[5,40,"s"],[6,41,"s"]]},"sroad":{"map":"town","name":"남쪽 길","spots":[[50,68,"s"],[51,68,"s"]]},"barn":{"map":"town","name":"창고 앞","spots":[[33,38,"s"],[34,38,"s"],[31,39,"s"]]},"obelisk":{"map":"town","name":"오벨리스크 앞","spots":[[56,36,"s"],[59,36,"s"]]},"stone":{"map":"town","name":"이동의 돌 곁","spots":[[47,45,"s"],[44,45,"s"]]},"cot1":{"map":"town","name":"살림 마을 1번 집","in":true,"spots":[[5,26,"s"]]},"cot2":{"map":"town","name":"살림 마을 2번 집","in":true,"spots":[[12,25,"s"]]},"cot3":{"map":"town","name":"살림 마을 3번 집","in":true,"spots":[[5,39,"s"]]},"cot4":{"map":"town","name":"살림 마을 4번 집","in":true,"spots":[[11,39,"s"]]},"cot5":{"map":"town","name":"살림 마을 5번 집","in":true,"spots":[[6,47,"s"]]},"r_fountain":{"map":"town","name":"분수대 술래잡기 길","round":[[47,38],[52,38],[53,42],[47,42]]},"r_mail":{"map":"town","name":"우편 배달 길","round":[[10,35],[50,26],[65,38],[72,50]]},"r_errand":{"map":"town","name":"심부름 길","round":[[33,38],[78,36]]},"r_watch":{"map":"town","name":"북문 순찰로","round":[[30,11],[70,11]]},"r_night":{"map":"town","name":"밤 순찰로","round":[[41,12],[30,11],[5,40],[50,68],[93,40],[70,11]]},"diner_t1":{"map":"juju_diner","name":"쥬쥬식당 창가 식탁","spots":[[5,6,"e","sit"],[7,6,"w","sit"]]},"diner_t2":{"map":"juju_diner","name":"쥬쥬식당 동쪽 식탁","spots":[[14,7,"e","sit"],[16,7,"w","sit"]]},"diner_t3":{"map":"juju_diner","name":"쥬쥬식당 가운데 식탁","spots":[[9,8,"e","sit"],[11,8,"w","sit"]]},"diner_t4":{"map":"juju_diner","name":"쥬쥬식당 입구 식탁","spots":[[6,11,"e","sit"],[8,11,"w","sit"]]},"diner_t5":{"map":"juju_diner","name":"쥬쥬식당 구석 식탁","spots":[[14,11,"e","sit"],[16,11,"w","sit"]]},"diner_bar":{"map":"juju_diner","name":"쥬쥬식당 바","spots":[[12,4,"n"],[13,4,"n"],[15,4,"n"]]},"diner_hearth":{"map":"juju_diner","name":"쥬쥬식당 난롯가","spots":[[3,8,"s","sit"],[3,10,"n","sit"]]},"diner_stage":{"map":"juju_diner","name":"쥬쥬식당 악사 자리","spots":[[16,5,"s"]]},"diner_back":{"map":"juju_diner","name":"쥬쥬식당 살림방","in":true,"spots":[[3,1,"s"]]},"cafe_t1":{"map":"tales_cafe","name":"테일즈 카페 안쪽 식탁","spots":[[7,9,"e","sit"],[9,9,"w","sit"]]},"cafe_t2":{"map":"tales_cafe","name":"테일즈 카페 오른쪽 식탁","spots":[[13,7,"s","sit"],[13,9,"n","sit"]]},"cafe_t3":{"map":"tales_cafe","name":"테일즈 카페 왼쪽 식탁","spots":[[2,6,"s","sit"],[2,8,"n","sit"]]},"cafe_hearth":{"map":"tales_cafe","name":"테일즈 카페 난롯가","spots":[[3,3,"s","sit"],[7,3,"s","sit"]]},"cafe_bar":{"map":"tales_cafe","name":"테일즈 카페 바","spots":[[13,5,"n"],[15,5,"n"]]},"inn_hearth":{"map":"starlight_inn","name":"모닥별 여관 난롯가","spots":[[3,3,"s","sit"],[7,3,"s","sit"]]},"inn_table":{"map":"starlight_inn","name":"모닥별 여관 큰 식탁","spots":[[3,7,"s","sit"],[4,7,"s","sit"],[5,7,"s","sit"],[6,7,"s","sit"],[7,7,"s","sit"],[3,9,"n","sit"],[4,9,"n","sit"],[5,9,"n","sit"],[6,9,"n","sit"],[7,9,"n","sit"]]},"inn_beds":{"map":"starlight_inn","name":"모닥별 여관 침상","spots":[[11,2,"s"],[13,2,"s"],[15,2,"s"]]},"inn_up":{"map":"starlight_inn","name":"모닥별 여관 위층","in":true,"spots":[[17,2,"s"]]},"lib_hearth":{"map":"owl_library","name":"부엉이 도서관 난롯가","spots":[[3,3,"s","sit"],[6,3,"s","sit"]]},"lib_table":{"map":"owl_library","name":"부엉이 도서관 열람석","spots":[[15,7,"s","sit"],[16,7,"s","sit"],[17,7,"s","sit"],[15,9,"s","sit"],[16,9,"s","sit"],[17,9,"s","sit"]]},"lib_nook":{"map":"owl_library","name":"부엉이 도서관 안쪽 자리","spots":[[3,8,"s","sit"],[5,8,"s","sit"],[3,11,"s","sit"],[5,11,"s","sit"]]},"lib_stacks":{"map":"owl_library","name":"부엉이 도서관 서가","spots":[[2,6,"s"],[8,2,"s"]]},"hall_seats":{"map":"town_hall","name":"마을회관 대기석","spots":[[3,6,"s","sit"],[4,6,"s","sit"],[14,6,"s","sit"],[15,6,"s","sit"]]},"hall_desk":{"map":"town_hall","name":"마을회관 집무석","spots":[[10,4,"s"],[12,4,"s"]]},"merc_hearth":{"map":"merc_office","name":"용병사무소 난롯가","spots":[[16,3,"s","sit"],[18,3,"s","sit"]]},"merc_table":{"map":"merc_office","name":"용병사무소 회의탁자","spots":[[7,5,"s","sit"],[10,5,"s","sit"]]},"merc_bench":{"map":"merc_office","name":"용병사무소 벤치","spots":[[3,10,"s","sit"],[5,10,"s","sit"]]},"apt_lobby":{"map":"dongdong_apt","name":"동동아파트 로비","spots":[[8,6,"s"],[10,6,"s"]]},"apt_up":{"map":"dongdong_apt","name":"동동아파트 위층","in":true,"spots":[[9,1,"s"]]},"forge_floor":{"map":"kangkang_forge","name":"캉캉대장간 작업대","spots":[[4,2,"s"],[8,4,"s"],[10,7,"n"]]},"forge_back":{"map":"kangkang_forge","name":"캉캉대장간 다락","in":true,"spots":[[2,2,"s"]]},"dojo_floor":{"map":"dojo","name":"버드나무광장 수련관 마룻바닥","spots":[[5,7,"s"],[12,7,"s"],[8,10,"s"]]},"store_floor":{"map":"general_store","name":"다람쥐 잡화점 진열대","spots":[[6,6,"s"],[9,6,"s"]]},"lab_floor":{"map":"bogle_lab","name":"보글연금공방 실험대","spots":[[10,5,"s"],[13,8,"s"]]},"bout_floor":{"map":"boutique","name":"루루 의상실 거울 앞","spots":[[8,6,"s"]]},"pet_floor":{"map":"pet_house","name":"몽글 펫 돌봄집 놀이방","spots":[[5,5,"s"]]}},"cast":{"smith":{"traits":["무뚝뚝","대식가","의리"],"home":"forge_back","cover":"forge_tong","away":"바깥 모루","plan":[{"h":4,"at":"forge_back","act":"sleep"},{"h":7,"at":"forge_floor","act":"work","pose":"hammer"},{"h":12,"at":"terrace","act":"eat","rain":"diner_hearth"},{"h":13.5,"at":"forge_floor","act":"work","pose":"hammer"},{"h":19.5,"at":"diner_t3","act":"eat","with":"bank","days":[0,1,2]},{"h":19.5,"at":"diner_bar","act":"drink","days":[3]},{"h":23,"at":"forge_back","act":"sleep"}],"lines":{"work":["이른 망치질은 소리가 다르지.","불꽃이 누렇게 뜨면 한숨 쉬고 한 번 더 치게."],"off":["망치는 내려놨네. 지금은 숟가락 들 시간이야.","바깥 모루는 그대로 쓰게. 통통이도 곧 나올 걸세."],"eat":["도담이 느린 덕에 국이 식을 틈도 없이 두 그릇 먹었네."],"with":["오늘은 내가 내지. 어제 들은 얘기는 됐고."],"knock":["문에 놓고 가게. 해 뜨면 답해 주지."]}},"bank":{"traits":["꼼꼼","느긋","장사"],"home":"apt_up","away":"창고 보관함","plan":[{"h":4,"at":"barn","act":"tend","pose":"carry"},{"h":7,"at":"post","act":"work"},{"h":12,"at":"diner_t4","act":"eat"},{"h":14,"at":"post","act":"work"},{"h":19.5,"at":"diner_t3","act":"eat","with":"smith","days":[0,1,2]},{"h":19.5,"at":"diner_hearth","act":"drink","days":[3]},{"h":23.5,"at":"apt_up","act":"sleep"}],"lines":{"work":["칸마다 표를 붙이면 돌 하나도 안 잃어버리지.","서두르지 말게. 장부는 기다려 주더라고."],"off":["창고 열쇠는 주머니에, 걱정은 창고에 두고 왔지.","물건 맡길 땐 창고 앞 보관함을 쓰게."],"with":["볼칸은 내게서 듣고 싶은 얘기만 들을 때 느긋해진다니까."],"knock":["아침에 창고에서 보세."]}},"juju":{"traits":["다정","손이 큼","불 조절 장인"],"home":"diner_back","away":"식당 주문대","plan":[{"h":4,"at":"diner_back","act":"sleep"},{"h":7,"at":"post","act":"work"},{"h":14,"at":"terrace","act":"tend","pose":"wipe","rain":"diner_hearth"},{"h":16,"at":"post","act":"work"},{"h":23,"at":"diner_back","act":"sleep"}],"lines":{"work":["한 숟갈 먼저 맛봐요. 오늘은 바람 부는 날 국이에요.","식탁이 가득 차면 물 먼저 내요."],"off":["빈 그릇은 제가 거둘게요.","오늘 메뉴는 주문대에 써 두었어요."],"rain":["비 오면 난롯가 자리가 먼저 차지요."],"knock":["화덕은 다 껐어요. 아침에 봐요!"]}},"forge_tong":{"traits":["성실","덤벙댐","스승 바라기"],"home":"forge_back","plan":[{"h":4,"at":"forge_back","act":"sleep"},{"h":7,"at":"post","act":"work"},{"h":12,"at":"forgeyard","act":"eat"},{"h":14,"at":"post","act":"work"},{"h":23,"at":"forge_back","act":"sleep"}],"lines":{"work":["스승님 안 계실 땐 제가 해 볼게요!","망치 손잡이를 오늘만 세 번 닦았어요."],"off":["점심은 대장간 마당에서 먹어요.","이 점심만 다 먹고 나면 저녁 당번이에요."],"eat":["장갑 벗은 김에 찬물도 한 모금."],"knock":["쉿. 볼칸 아저씨까지 깨면 혼나요."]}},"r_peng":{"name":"펭","hero":[11,6,8,15,0,7,2,8,10,1,0],"cos":["hat_cap_blue"],"traits":["부지런","수다","길눈"],"home":"cot3","plan":[{"h":4,"at":"cot3","act":"sleep"},{"h":7,"at":"r_mail","act":"walk","pose":"carry"},{"h":17,"at":"steps","act":"rest"},{"h":21,"at":"cot3","act":"sleep"}],"lines":{"work":["편지 왔어요! …아, 당신 건 아니네요.","종이마다 바람 냄새가 달라요."],"off":["오늘 배달은 끝! 거꾸로 돌아가는 길은 늘 신기해요.","분수에서 왼쪽으로 가면 우편함이 보여요."],"knock":["내일 첫 편지는 누구에게 갈까?"]}},"story":{"traits":["푸근","이야기꾼","귀 밝음"],"home":"cot1","plan":[{"h":4,"at":"cot1","act":"sleep"},{"h":7,"at":"bench","act":"tend","pose":"knit"},{"h":11,"at":"lib_nook","act":"read"},{"h":19.5,"at":"fire","act":"work"},{"h":26.5,"at":"cot1","act":"sleep"}],"lines":{"work":["불 가까이 앉으렴. 밤바람은 겉옷 사이로 잘도 드나드는구나.","옛날에는 저 정령나무가 우리보다 작았단다."],"off":["낮에는 이야기가 잠을 자요. 밤에 오렴.","볕이 있을 땐 책을 읽고, 해가 지면 기억을 읽지."],"night":["불씨 하나씩 품고 광장을 세웠단다."],"knock":["할미 이야기는 밤에 모닥불에서 이어 가자꾸나."]}},"town_charm_juana":{"traits":["꼼꼼","수집가","볼주머니"],"away":"감정대 위 돋보기","plan":[{"h":4,"at":"post","act":"work"},{"h":12,"at":"market","act":"eat"},{"h":13.5,"at":"post","act":"work"},{"h":20,"at":"steps","act":"rest"}],"lines":{"work":["조각을 빛에 비춰 봐요. 무늬가 보이면 자리가 보여요.","봉인된 참은 서두르면 안 돼요. 볼주머니 속 씨앗처럼 천천히 꺼내야죠."],"off":["감정대는 잠깐 비웠어요. 돋보기는 두고 왔으니 조각은 그대로 맡겨도 돼요.","오늘 본 조각 중에 제일 예쁜 건 볼주머니에 넣어 왔어요. 농담이에요."],"eat":["좌판 호두는 반만 먹고 반은 넣어 둬요. 버릇이라서요."],"knock":["해가 뜨면 감정대에서 봬요."]}}},"rel":[{"a":"smith","b":"bank","kind":"friend","story":"저녁마다 같은 식탁, 한 사람은 말이 없고 한 사람은 느리다.","chat":["a: 따뜻할 때 먹게.","b: 자네도 천천히 좀 먹어.","a: 천천히 먹으면 주인이 더 담아 주질 않아."]},{"a":"smith","b":"forge_tong","kind":"mentor","story":"스승이 식당에 간 밤, 견습생이 모루를 지킨다.","chat":["a: 망치는 팔이 아니라 어깨로 들어.","b: 좋아요, 오늘은 한 번만 넘어뜨릴게요."]}]},
-  quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"버드나무광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":5,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false},{"id":"sq_merc_hares","giver":"merc_grey","title":"초원의 두 머리","text":"바람초원의 쌍두 토끼가 울타리까지 내려온다. 10마리만 쫓아내 주게. 첫 의뢰로 딱이지.","done":"깔끔하군. 늑대발의 일원이 될 자격이 있어.","goal":{"type":"kill","mob":"twinhare","n":10},"req":{"lv":1,"quest":null},"reward":{"xp":150,"gold":100,"items":[["hp_s",5]]},"repeat":false},{"id":"sq_merc_boar","giver":"merc_grey","title":"반쪽 멧돼지 사냥","text":"몸이 반으로 갈라진 멧돼지들이 길을 막고 있다. 8마리만 부탁하지. 돌진하면 옆으로 피하게.","done":"잘했다. 그 녀석들 돌진은 우리 단원들도 무서워하지.","goal":{"type":"kill","mob":"splitboar","n":8},"req":{"lv":10,"quest":"sq_merc_hares"},"reward":{"xp":900,"gold":400,"items":[["hp_m",5],["stone",1]]},"repeat":false},{"id":"sq_merc_letter","giver":"merc_grey","title":"볼칸에게 보내는 주문서","text":"광장 동쪽 장터의 대장장이 볼칸에게 이 주문서를 전해 주게. 단원들 새 칼이 필요하거든.","done":"볼칸이 받았다고? 좋아. 이건 심부름 값이다.","goal":{"type":"talk","npc":"smith"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":120,"items":[["recall",2]]},"repeat":false},{"id":"sq_kong_parcel","giver":"store_kong","title":"콩콩의 급한 배달","text":"보글 아저씨한테 이 상자 좀 전해 줄래? 다리가 짧아서 연금공방까지 가면 해가 질 거야!","done":"고마워! 보글 아저씨가 상자를 흔들어 봤다고? 앗, 조심하라고 했는데!","goal":{"type":"talk","npc":"bogle"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":90,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_borum_frogs","giver":"lib_borum","title":"표본 채집","text":"괴수 도감에 창자 개구리 항목이 비어 있어요. 바람초원에서 8마리를 잡아 와 주세요. 조용히, 도서관에서는 비명 금지!","done":"좋아요, 표본이 충분하네요. 도감이 한 장 두꺼워졌어요.","goal":{"type":"kill","mob":"gutfrog","n":8},"req":{"lv":3,"quest":null},"reward":{"xp":250,"gold":170,"items":[["hp_s",5],["mp_s",3]]},"repeat":false},{"id":"sq_mungchi_trout","giver":"diner_reg2","title":"쥬쥬표 송어 구이","text":"쥬쥬 아줌마의 송어 소금구이가 먹고 싶은데 재료가 똑 떨어졌대. 무지개 송어 3마리만 낚아다 줘!","done":"냠냠, 이 냄새! 약속대로 한 접시 몫은 네 거야.","goal":{"type":"collect","item":"fish_m","n":3},"req":{"lv":8,"quest":null},"reward":{"xp":650,"gold":300,"items":[["food_m",2],["hp_s",3]]},"repeat":false},{"id":"sq_bogle_crows","giver":"bogle","title":"보글보글 까마귀 눈","text":"새 시약에는 까마귀의 눈알이 한 방울 필요합니다. 눈알 까마귀 6마리를 바람초원에서 잡아 주세요. 폭발은 안 해요. 아마도.","done":"오오, 거품이 보랏빛으로! 이건 대성공입니다!","goal":{"type":"kill","mob":"eyecrow","n":6},"req":{"lv":12,"quest":"sq_kong_parcel"},"reward":{"xp":1110,"gold":410,"items":[["hp_m",3],["mp_m",2]]},"repeat":false},{"id":"sq_lira_song","giver":"inn_lira","title":"잠꾸러기를 위한 자장가","text":"새 자장가를 짓는 중인데, 여관 구석의 토토 씨가 어떤 노래를 좋아하는지 물어봐 줄래요?","done":"호오, 숲의 소리가 들어간 노래를 좋아한다고요? 영감이 마구 떠올라요!","goal":{"type":"talk","npc":"inn_toto"},"req":{"lv":20,"quest":null},"reward":{"xp":1910,"gold":510,"items":[["inn_bread",3],["hp_m",2]]},"repeat":false},{"id":"sq_bori_scout","giver":"hall_bori","title":"숲길 정찰","text":"이장으로서 속삭임 숲 길이 안전한지 알아야겠네. 직접 가서 한 바퀴 둘러보고 오게. 조심하게나.","done":"무사히 다녀왔군! 숲이 아직 버틸 만하다니 마을도 한시름 놓겠네.","goal":{"type":"visit","map":"forest"},"req":{"lv":25,"quest":null},"reward":{"xp":2730,"gold":620,"items":[["recall",2],["hp_m",3]]},"repeat":false},{"id":"sq_bawi_deer","giver":"merc_bawi","title":"갈비뼈 사슴의 뿔","text":"내가 젊을 때 갈비뼈 사슴한테 엉덩이를 찔렸지. 속삭임 숲에서 8마리만 혼내 주게. 복수는 후배가 하는 법이야.","done":"허허, 속이 다 시원하구먼. 이건 늙은이의 쌈짓돈일세.","goal":{"type":"kill","mob":"ribdeer","n":8},"req":{"lv":33,"quest":null},"reward":{"xp":6600,"gold":990,"items":[["hp_m",5],["stone",1]]},"repeat":false},{"id":"sq_toto_moths","giver":"inn_toto","title":"불빛 쫓는 나방","text":"으음... 잠을 잘 수가 없어... 인면 나방들이 창문에서 사람 얼굴로 웃고 있거든... 숲의 나방 8마리만 쫓아 줘...","done":"드디어... 조용해... 쿨쿨... 아, 고마워... 이건 꿈값이야...","goal":{"type":"kill","mob":"mothface","n":8},"req":{"lv":45,"quest":"sq_lira_song"},"reward":{"xp":14050,"gold":1320,"items":[["hp_l",3],["stone",1]]},"repeat":false},{"id":"sq_dongdong_pigeons","giver":"dongdong","title":"베란다의 비둘기 떼","text":"입주민들이 난리예요! 네온 시티의 비둘기 떼살이 자꾸 베란다에 앉는대요. 12마리만 정리해 주세요.","done":"살았다! 이제 빨래를 널 수 있겠어요. 관리비 대신 받으세요!","goal":{"type":"kill","mob":"pigeonmass","n":12},"req":{"lv":50,"quest":null},"reward":{"xp":18230,"gold":1460,"items":[["hp_l",3],["stone",2]]},"repeat":false},{"id":"sq_borum_blight","giver":"lib_borum","title":"시든 숲의 기록","text":"단풍 왕도의 다람쥐들이 가을 열병에 걸렸다는 소문이 있어요. 한 꼬리 다람쥐떼 12마리를 기록해 와 주세요. 위험하면 도망쳐도 좋아요!","done":"멋진 기록이에요. 이 한 장이 도감의 마지막 쪽을 채웠어요.","goal":{"type":"kill","mob":"blightsquirrel","n":12},"req":{"lv":150,"quest":"sq_borum_frogs"},"reward":{"xp":1017960,"gold":4210,"items":[["hp_l",5],["mp_l",3],["stone",3],["sc_xp",1]]},"repeat":false}]},
+  quests: {"main":null,"side":[{"id":"sq_willow_letter","giver":"willow_elder","title":"꽃 편지 심부름","text":"버드나무광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.","done":"리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.","goal":{"type":"talk","npc":"shop"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":80,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_willow_frogs","giver":"willow_elder","title":"버드나무의 근심","text":"바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?","done":"고맙네! 이제 밤에 잠 좀 자겠군.","goal":{"type":"kill","mob":"gutfrog","n":6},"req":{"lv":5,"quest":"sq_willow_letter"},"reward":{"xp":300,"gold":120,"items":[["mp_s",3]]},"repeat":false},{"id":"sq_merc_hares","giver":"merc_grey","title":"초원의 두 머리","text":"바람초원의 쌍두 토끼가 울타리까지 내려온다. 10마리만 쫓아내 주게. 첫 의뢰로 딱이지.","done":"깔끔하군. 늑대발의 일원이 될 자격이 있어.","goal":{"type":"kill","mob":"twinhare","n":10},"req":{"lv":1,"quest":null},"reward":{"xp":150,"gold":100,"items":[["hp_s",5]]},"repeat":false},{"id":"sq_merc_boar","giver":"merc_grey","title":"반쪽 멧돼지 사냥","text":"몸이 반으로 갈라진 멧돼지들이 길을 막고 있다. 8마리만 부탁하지. 돌진하면 옆으로 피하게.","done":"잘했다. 그 녀석들 돌진은 우리 단원들도 무서워하지.","goal":{"type":"kill","mob":"splitboar","n":8},"req":{"lv":10,"quest":"sq_merc_hares"},"reward":{"xp":900,"gold":400,"items":[["hp_m",5],["stone",1]]},"repeat":false},{"id":"sq_merc_letter","giver":"merc_grey","title":"볼칸에게 보내는 주문서","text":"광장 동쪽 장터의 대장장이 볼칸에게 이 주문서를 전해 주게. 단원들 새 칼이 필요하거든.","done":"볼칸이 받았다고? 좋아. 이건 심부름 값이다.","goal":{"type":"talk","npc":"smith"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":120,"items":[["recall",2]]},"repeat":false},{"id":"sq_kong_parcel","giver":"store_kong","title":"콩콩의 급한 배달","text":"보글 아저씨한테 이 상자 좀 전해 줄래? 다리가 짧아서 연금공방까지 가면 해가 질 거야!","done":"고마워! 보글 아저씨가 상자를 흔들어 봤다고? 앗, 조심하라고 했는데!","goal":{"type":"talk","npc":"bogle"},"req":{"lv":1,"quest":null},"reward":{"xp":120,"gold":90,"items":[["hp_s",3]]},"repeat":false},{"id":"sq_borum_frogs","giver":"lib_borum","title":"표본 채집","text":"괴수 도감에 창자 개구리 항목이 비어 있어요. 바람초원에서 8마리를 잡아 와 주세요. 조용히, 도서관에서는 비명 금지!","done":"좋아요, 표본이 충분하네요. 도감이 한 장 두꺼워졌어요.","goal":{"type":"kill","mob":"gutfrog","n":8},"req":{"lv":3,"quest":null},"reward":{"xp":250,"gold":170,"items":[["hp_s",5],["mp_s",3]]},"repeat":false},{"id":"sq_mungchi_trout","giver":"diner_reg2","title":"쥬쥬표 송어 구이","text":"쥬쥬 아줌마의 송어 소금구이가 먹고 싶은데 재료가 똑 떨어졌대. 무지개 송어 3마리만 낚아다 줘!","done":"냠냠, 이 냄새! 약속대로 한 접시 몫은 네 거야.","goal":{"type":"collect","item":"fish_m","n":3},"req":{"lv":8,"quest":null},"reward":{"xp":650,"gold":300,"items":[["food_m",2],["hp_s",3]]},"repeat":false},{"id":"sq_bogle_crows","giver":"bogle","title":"보글보글 까마귀 눈","text":"새 시약에는 까마귀의 눈알이 한 방울 필요합니다. 눈알 까마귀 6마리를 바람초원에서 잡아 주세요. 폭발은 안 해요. 아마도.","done":"오오, 거품이 보랏빛으로! 이건 대성공입니다!","goal":{"type":"kill","mob":"eyecrow","n":6},"req":{"lv":12,"quest":"sq_kong_parcel"},"reward":{"xp":1110,"gold":410,"items":[["hp_m",3],["mp_m",2]]},"repeat":false},{"id":"sq_lira_song","giver":"inn_lira","title":"잠꾸러기를 위한 자장가","text":"새 자장가를 짓는 중인데, 여관 구석의 토토 씨가 어떤 노래를 좋아하는지 물어봐 줄래요?","done":"호오, 숲의 소리가 들어간 노래를 좋아한다고요? 영감이 마구 떠올라요!","goal":{"type":"talk","npc":"inn_toto"},"req":{"lv":20,"quest":null},"reward":{"xp":1910,"gold":510,"items":[["inn_bread",3],["hp_m",2]]},"repeat":false},{"id":"sq_bori_scout","giver":"hall_bori","title":"숲길 정찰","text":"이장으로서 속삭임 숲 길이 안전한지 알아야겠네. 직접 가서 한 바퀴 둘러보고 오게. 조심하게나.","done":"무사히 다녀왔군! 숲이 아직 버틸 만하다니 마을도 한시름 놓겠네.","goal":{"type":"visit","map":"forest"},"req":{"lv":25,"quest":null},"reward":{"xp":2730,"gold":620,"items":[["recall",2],["hp_m",3]]},"repeat":false},{"id":"sq_bawi_deer","giver":"merc_bawi","title":"갈비뼈 사슴의 뿔","text":"내가 젊을 때 갈비뼈 사슴한테 엉덩이를 찔렸지. 속삭임 숲에서 8마리만 혼내 주게. 복수는 후배가 하는 법이야.","done":"허허, 속이 다 시원하구먼. 이건 늙은이의 쌈짓돈일세.","goal":{"type":"kill","mob":"ribdeer","n":8},"req":{"lv":33,"quest":null},"reward":{"xp":6600,"gold":990,"items":[["hp_m",5],["stone",1]]},"repeat":false},{"id":"sq_toto_moths","giver":"inn_toto","title":"불빛 쫓는 나방","text":"으음... 잠을 잘 수가 없어... 인면 나방들이 창문에서 사람 얼굴로 웃고 있거든... 숲의 나방 8마리만 쫓아 줘...","done":"드디어... 조용해... 쿨쿨... 아, 고마워... 이건 꿈값이야...","goal":{"type":"kill","mob":"mothface","n":8},"req":{"lv":45,"quest":"sq_lira_song"},"reward":{"xp":14050,"gold":1320,"items":[["hp_l",3],["stone",1]]},"repeat":false},{"id":"sq_dongdong_pigeons","giver":"dongdong","title":"베란다의 비둘기 떼","text":"입주민들이 난리예요! 네온 시티의 비둘기 떼살이 자꾸 베란다에 앉는대요. 12마리만 정리해 주세요.","done":"살았다! 이제 빨래를 널 수 있겠어요. 관리비 대신 받으세요!","goal":{"type":"kill","mob":"pigeonmass","n":12},"req":{"lv":50,"quest":null},"reward":{"xp":18230,"gold":1460,"items":[["hp_l",3],["stone",2]]},"repeat":false},{"id":"sq_borum_blight","giver":"lib_borum","title":"시든 숲의 기록","text":"단풍 왕도의 다람쥐들이 가을 열병에 걸렸다는 소문이 있어요. 한 꼬리 다람쥐떼 12마리를 기록해 와 주세요. 위험하면 도망쳐도 좋아요!","done":"멋진 기록이에요. 이 한 장이 도감의 마지막 쪽을 채웠어요.","goal":{"type":"kill","mob":"blightsquirrel","n":12},"req":{"lv":150,"quest":"sq_borum_frogs"},"reward":{"xp":1017960,"gold":4210,"items":[["hp_l",5],["mp_l",3],["stone",3],["sc_xp",1]]},"repeat":false},{"id":"sq_job_free","giver":"town_job_arsen","title":"경계 너머의 길","text":"레벨 150에 이른 모험가라면 다른 길의 기술도 품을 수 있지. 단풍 왕도의 아가리 그루터기 30마리를 쓰러뜨려 그 각오를 보여 주게.","done":"좋네. 이제 다른 직업에서 익힌 패시브 하나를 함께 지닐 수 있다네. 스킬 창에서 칸을 채우게.","goal":{"type":"kill","mob":"stumpmaw","n":30},"req":{"lv":150,"quest":null},"reward":{"xp":0,"gold":0,"items":[]},"repeat":false}]},
 };
 // ───────────────────────────── jobs and stats: tables ─────────────────────────────
 // docs/design/jobs-and-stats.md. Everybody starts as a 모험가 (adventurer) with six stats at 5;
@@ -403,6 +403,8 @@ const ITEMS = {
   // charms (66-charms.js): one to a slot, never stacked, sold or stored; `charm_nail` opens a cell of the board
   charm: { name: "참", type: "charm", price: 0, desc: "주아나가 감정해 주는 빛나는 조각. 감정한 참은 참 보드에 놓아야 힘을 낸다." },
   charm_nail: { name: "참틀 확장못", type: "mat", price: 0, desc: "주아나에게 가져가면 골드와 함께 참 보드의 칸을 하나 연다." },
+  scr_job: { name: "전직 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 모험가로 돌아간다. 걸었던 직업의 직업 레벨은 그대로 남는다." },
+  scr_lvl: { name: "레벨 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 레벨과 능력치가 1로 돌아간다. 숙련, 장비, 골드, 직업 레벨은 남는다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
   recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 버드나무광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
@@ -6072,7 +6074,9 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 17, name, job: "adventurer", jp: null,
+    v: 18, name, job: "adventurer", jp: null,
+    // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
+    jobs: {}, lo: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -6221,7 +6225,8 @@ function migrate(ch) {
   // The integrated sheet (v16) holds rift and profession records. cleanJobs also adds hammer mastery.
   // boss trophies (v17): known kinds only, each once (67-trophies.js)
   ch.tro = Array.isArray(ch.tro) ? [...new Set(ch.tro.filter((k) => typeof k === "string" && Object.hasOwn(TROPHIES, k)))] : [];
-  ch.v = Math.max(ch.v | 0, 17);
+  // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
+  ch.v = Math.max(ch.v | 0, 18);
   return ch;
 }
 
@@ -6761,6 +6766,7 @@ function gainJob(S, p, n) {
   toast(p, `[${JOBS[ch.job].name}] 직업 Lv.${jp.lv}`);
   const signature = JOB_SKILL[ch.job];
   if (signature && previous < SKILL[signature].jobNeed && skLearned(ch, SKILL[signature])) {
+    loAdd(ch, [signature]);
     toast(p, `새 전직 스킬 ${skLearnNew(p, [signature]).join("")}`);
   }
   const rank = jobSkillRank(jp.lv);
@@ -6836,6 +6842,7 @@ function gainWm(S, p, n, bonus) {
     saveSoon(p);
     // the weapon's skills that open at this level: actives onto the bar, the passive named
     const opened = WK_SKILLS[wk].filter((id) => SKILL[id].need === r.lv);
+    loAdd(ch, opened);
     const act = skLearnNew(p, opened.filter((id) => SKILL[id].kind !== "p")), pas = opened.filter((id) => SKILL[id].kind === "p").map((id) => `[${SKILL[id].name}]`);
     toast(p, `[${WK_NAME[wk]}] 숙련 ${r.lv}!${act.length ? ` 새 스킬 ${act.join(", ")}` : ""}${pas.length ? ` · 패시브 ${pas.join(", ")}` : ""}`);
     if (r.lv === JOB_WM && ch.job === "adventurer") {
@@ -7112,10 +7119,10 @@ function cleanJobs(ch) {
   if (ch.job === "adventurer") ch.jp = null;
   else {
     // Characters with an older job retain their previously learned signature.
-    const record = isObj(ch.jp) ? ch.jp : { lv: JOB_PROGRESS.signature, xp: 0 };
-    const lv = clamp(num(record.lv) ? Math.floor(record.lv) : 1, 1, JOB_PROGRESS.cap);
-    ch.jp = { lv, xp: lv === JOB_PROGRESS.cap ? 0 : clamp(num(record.xp) ? Math.floor(record.xp) : 0, 0, jobNeed(lv) - 1) };
+    const kept = isObj(ch.jobs) && isObj(ch.jobs[ch.job]) ? ch.jobs[ch.job] : null;
+    ch.jp = jpClean(isObj(ch.jp) ? ch.jp : kept || { lv: JOB_PROGRESS.signature, xp: 0 });
   }
+  jfClean(ch);
   ch.rs = clamp(ch.rs | 0, 0, 9);
   ch.sw = ch.sw ? 1 : 0;
 }
@@ -7208,6 +7215,135 @@ function bagApply(S, p, a) {
   toast(p, `가방이 ${ch.bagCap}칸으로 늘어났습니다! (-${gStr(cost)}G)`);
   p.dirty = true;
   saveSoon(p);
+}
+// ───────────────────────────── 직업 자유: job reset, level reset, skill loadout ─────────────────────────────
+// docs/design/job-freedom.md (owner decisions). Every job's progress stays on the sheet (ch.jobs; ch.jp is the
+// current job's record, the same object), the 전직 교관 resets the job (back to 모험가) or the level (stats back
+// to 1), each for a scroll and gold. The loadout (ch.lo[job] = { a, p, x }) holds the skills in use: at most
+// LO_MAX.a actives and LO_MAX.p passives, changed in town or beside a campfire; a job without one set uses its
+// first learned skills (the quick bar's first). The 전직 교관's Lv.150 quest opens one off-job passive slot (x).
+
+const LO_MAX = { a: 5, p: 4 };
+/** The side quest (data/quests.json) whose hand-in opens the off-job passive slot. */
+const JF_QUEST = "sq_job_free";
+const JF_SCROLL = { job: "scr_job", lvl: "scr_lvl" };
+/** Gold for a reset: base + per character level. */
+const JF_COST = { job: [1000, 50], lvl: [5000, 100] };
+const jfGold = (ch, k) => JF_COST[k][0] + JF_COST[k][1] * ch.lvl;
+const loOpen = (ch) => !!ch.sq.done[JF_QUEST];
+const jfSafe = (S, p) => !!(MAP_META[p.map] && MAP_META[p.map].safe) || fireNear(S.maps[p.map], p);
+
+/** A job-progress record, clamped. */
+function jpClean(r) {
+  const lv = clamp(num(r.lv) ? Math.floor(r.lv) : 1, 1, JOB_PROGRESS.cap);
+  return { lv, xp: lv === JOB_PROGRESS.cap ? 0 : clamp(num(r.xp) ? Math.floor(r.xp) : 0, 0, jobNeed(lv) - 1) };
+}
+/** Per-job progress and loadouts (v18), cleaned on every load. ch.jp must already be clean (cleanJobs). */
+function jfClean(ch) {
+  const jobs = isObj(ch.jobs) ? ch.jobs : {}, lo = isObj(ch.lo) ? ch.lo : {};
+  ch.jobs = {}; ch.lo = {};
+  for (const j of Object.keys(JOBS)) {
+    if (j !== "adventurer" && isObj(jobs[j])) ch.jobs[j] = jpClean(jobs[j]);
+    const r = lo[j];
+    if (!isObj(r)) continue;
+    const ids = (v, pas, n) => (Array.isArray(v) ? [...new Set(v.filter((id) => typeof id === "string" && Object.hasOwn(SKILL, id) && (SKILL[id].kind === "p") === pas))].slice(0, n) : []);
+    const x = typeof r.x === "string" && Object.hasOwn(SKILL, r.x) && SKILL[r.x].kind === "p" ? r.x : "";
+    ch.lo[j] = { a: ids(r.a, false, LO_MAX.a), p: ids(r.p, true, LO_MAX.p), x };
+  }
+  // the current job's record is ch.jp itself (a v17 sheet's jp moves in here)
+  if (ch.jp) ch.jobs[ch.job] = ch.jp;
+}
+
+/**
+ * The current job's loadout: the one set at a safe place, else the first learned, those the hand can use first
+ * (one weapon, or a hybrid's pair, never has more than 5 actives, so nobody loses a skill they use).
+ */
+function loOf(ch) {
+  if (ch.lo[ch.job]) return ch.lo[ch.job];
+  const pair = JOBS[ch.job].kind === "hybrid" ? JOBS[ch.job].wk : [inHand(ch)];
+  const now = (id) => skWks(SKILL[id]).some((k) => pair.includes(k));
+  const learned = skillsFor(ch), order = [...learned.filter(now), ...learned.filter((id) => !now(id))];
+  return { a: order.filter((id) => SKILL[id].kind !== "p").slice(0, LO_MAX.a), p: order.filter((id) => SKILL[id].kind === "p").slice(0, LO_MAX.p), x: "" };
+}
+/** May passive `id` sit in the off-job slot: learned, of a weapon of another job this hero has job levels in. */
+function loOffOk(ch, id) {
+  const sk = Object.hasOwn(SKILL, id) ? SKILL[id] : null;
+  return !!sk && sk.kind === "p" && ch.wm[sk.wk].lv >= sk.need && Object.keys(ch.jobs).some((j) => j !== ch.job && JOBS[j].wk.includes(sk.wk));
+}
+/** Is passive `id` in the off-job slot (which works whatever weapon is in hand)? */
+const loOff = (ch, id) => loOpen(ch) && loOf(ch).x === id && loOffOk(ch, id);
+/** New skills learned after a loadout was set: into its free slots. */
+function loAdd(ch, ids) {
+  const lo = ch.lo[ch.job];
+  if (!lo) return;
+  for (const id of ids) {
+    const k = SKILL[id].kind === "p" ? "p" : "a";
+    if (lo[k].length < LO_MAX[k] && !lo[k].includes(id)) lo[k].push(id);
+  }
+}
+
+function jfValidate(S, p, a) {
+  const ch = p.ch;
+  if (a.t === "lo") {
+    if (!jfSafe(S, p)) return bad("스킬 칸은 마을이나 모닥불 곁에서만 바꿀 수 있습니다");
+    if (!Array.isArray(a.a) || !Array.isArray(a.p) || a.a.length > LO_MAX.a || a.p.length > LO_MAX.p) return bad(`액티브 ${LO_MAX.a}개, 패시브 ${LO_MAX.p}개까지 넣을 수 있습니다`);
+    const all = [...a.a, ...a.p];
+    if (!all.every((id) => typeof id === "string" && Object.hasOwn(SKILL, id)) || new Set(all).size !== all.length) return bad("잘못된 스킬입니다");
+    if (!a.a.every((id) => SKILL[id].kind !== "p") || !a.p.every((id) => SKILL[id].kind === "p")) return bad("액티브와 패시브 칸이 맞지 않습니다");
+    if (!all.every((id) => skLearned(ch, SKILL[id]))) return bad("배우지 않은 스킬입니다");
+    const x = a.x === undefined ? "" : a.x;
+    if (x !== "") {
+      if (!loOpen(ch)) return bad("다른 직업 패시브 칸이 아직 열리지 않았습니다");
+      if (typeof x !== "string" || a.p.includes(x) || !loOffOk(ch, x)) return bad("다른 직업 칸에는 직업 Lv.1 이상인 다른 직업의 배운 패시브만 넣을 수 있습니다");
+    }
+    return OK;
+  }
+  if (p.dead) return bad("쓰러진 상태입니다");
+  if (!npcNear(p, "job")) return bad("전직관이 너무 멉니다");
+  const k = a.t === "job_reset" ? "job" : "lvl";
+  if (k === "job" && ch.job === "adventurer") return bad("모험가는 초기화할 직업이 없습니다");
+  if (k === "lvl" && ch.lvl <= 1) return bad("이미 레벨 1입니다");
+  if (countItem(ch, JF_SCROLL[k]) < 1) return bad(`[${ITEMS[JF_SCROLL[k]].name}]${pp(ITEMS[JF_SCROLL[k]].name, "이가")} 필요합니다`);
+  if (ch.gold < jfGold(ch, k)) return bad("골드가 부족합니다");
+  // what comes off goes to the bag: a hybrid's second weapon, or gear above level 1
+  const off = k === "job" ? (ch.eq.weapon2 ? 1 : 0) : SLOTS.filter((s) => ch.eq[s] && (ITEMS[ch.eq[s].id].req || 0) > 1).length;
+  if (ch.inv.length + off > bagCap(ch)) return bad(`가방에 빈칸이 ${off}칸 필요합니다`);
+  return OK;
+}
+function jfApply(S, p, a) {
+  const ch = p.ch;
+  p.dirty = true;
+  if (a.t === "lo") {
+    ch.lo[ch.job] = { a: a.a.slice(), p: a.p.slice(), x: a.x || "" };
+    p.stc = null;
+    toast(p, "스킬 칸을 바꿨습니다.");
+    return;
+  }
+  const k = a.t === "job_reset" ? "job" : "lvl", gold = jfGold(ch, k);
+  takeItem(ch, JF_SCROLL[k], 1);
+  ch.gold -= gold;
+  if (k === "job") {
+    const was = JOBS[ch.job].name;
+    if (ch.jp) ch.jobs[ch.job] = ch.jp;
+    ch.job = "adventurer";
+    ch.jp = null;
+    if (ch.eq.weapon2) { ch.inv.push(ch.eq.weapon2); ch.eq.weapon2 = null; }
+    toast(p, `전직 초기화 — [${was}]의 직업 레벨은 그대로 남습니다. 다시 전직하면 이어서 걷습니다. (${gold.toLocaleString()} G)`);
+  } else {
+    // stats back to 5 and the level to 1; the experience they cost is not given back (망각의 의식 does that)
+    const hand = inHand(ch);
+    ch.st = freshSt(); ch.lvl = 1; ch.xpt = 0;
+    for (const s of SLOTS) if (ch.eq[s] && (ITEMS[ch.eq[s].id].req || 0) > 1) { ch.inv.push(ch.eq[s]); ch.eq[s] = null; }
+    if (inHand(ch) !== hand) handChanged(p);
+    if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);
+    toast(p, `레벨 초기화 — 레벨 1부터 다시 걷습니다. 레벨이 모자란 장비는 가방에 넣었습니다. (${gold.toLocaleString()} G)`);
+  }
+  afterGear(S, p);
+  S.maps[p.map].ev.push(["u", p.eid, 2]);
+}
+/** A reset scroll as a reward (rift and boss chests, 64-dim.js). */
+function jfScroll(p, k) {
+  if (addItem(p.ch, JF_SCROLL[k], 1)) p.gain.push(["item", JF_SCROLL[k], 1, 0]);
 }
 // ───────────────────────────── inventory & loot ─────────────────────────────
 
@@ -8153,6 +8289,9 @@ function skWhy(ch, sk) {
 function pasOn(p, id) {
   const sk = SKILL[id], ch = p.ch, hand = inHand(ch);
   if (!hand || ch.wm[sk.wk].lv < sk.need) return false;
+  // only passives in the loadout work (47-job-freedom.js); the off-job slot's with any weapon in hand
+  if (loOff(ch, id)) return true;
+  if (!loOf(ch).p.includes(id)) return false;
   if (hand === sk.wk) return true;
   const j = JOBS[ch.job];
   return !!j && j.kind === "hybrid" && j.wk.includes(sk.wk) && j.wk.includes(hand);
@@ -8495,10 +8634,11 @@ function crView(p, now) {
 }
 /** The skill list: [id, MP, cooldown left ms, usable, HP if relevant, full cooldown ms for signatures]. */
 function skWire(p, now) {
+  const lo = loOf(p.ch);
   return skillsFor(p.ch).map((id) => {
     const sk = SKILL[id];
     if (sk.kind === "p") return [id, 0, 0, pasOn(p, id) ? 1 : 0];
-    const row = [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(p.ch, sk) ? 0 : 1];
+    const row = [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(p.ch, sk) || !lo.a.includes(id) ? 0 : 1];
     if (sk.hpPct || sk.job) row.push(sk.hpPct ? hammerHpCost(p, sk) : 0);
     if (sk.job) row.push(skCooldown(p, sk));
     return row;
@@ -11446,7 +11586,7 @@ function dimChest(S, dim, p) {
     payout(S, p, r);
     for (let i = 1; i < (R.rune | 0); i++) payout(S, p, { rune: true });
     for (let i = 1; i < (R.gear | 0); i++) payout(S, p, { gear: 1, gearQ: R.gearQ });
-    if (big) charmChest(S, dim, p);
+    if (big) { charmChest(S, dim, p); jfScroll(p, "lvl"); }
     msg = big ? "주간 보스 도전 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다." : "보스 도전 반복 보상을 받았습니다. 큰 보상은 월요일 06:00에 다시 열립니다.";
   } else {
     d.n++;
@@ -11457,6 +11597,8 @@ function dimChest(S, dim, p) {
     const b = Math.min(W.max, Math.floor(((dim.tier || 1) - 1) / W.every) + 1);
     if (!carried && b > d.wb) { wkN = b - d.wb; d.wb = b; r.gold += W.gold * lv * wkN; r.stone += W.stone * wkN; fl |= 8; }
     payout(S, p, r);
+    // shortcut: the reset scrolls' only sources until the gear task places them (job-freedom.md)
+    if (wkN && dim.tier >= 20) jfScroll(p, "job");
     charmChest(S, dim, p);
     msg = carried ? "기여가 부족해 균열의 보상이 줄었습니다. (단수 기록·주간 보너스 없음)"
       : (full ? `균열의 보상을 받았습니다! (오늘 ${d.n}번째)` : `균열의 보상을 받았습니다. 오늘 ${DIM.dailyFull}번을 넘겨 경험치는 절반입니다.`) + (wkN ? ` 주간 첫 정화 보너스 ×${wkN}!` : "");
@@ -13433,6 +13575,7 @@ export function validateAction(S, pid, a) {
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       const why = skWhy(ch, sk);
       if (why) return bad(why);
+      if (!loOf(ch).a.includes(a.id)) return bad("스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
       if (p.dance) return bad("무영난무 중입니다");
       if (p.hammer) return bad("해머를 내려찍는 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
@@ -13641,9 +13784,11 @@ export function validateAction(S, pid, a) {
       const why = jobOk(ch, a.j);
       if (why) return bad(why);
       if (!npcNear(p, "job")) return bad("전직관이 너무 멉니다");
-      if (ch.gold < JOBS[a.j].cost) return bad("골드가 부족합니다");
+      // a job walked before is taken up again for free (47-job-freedom.js)
+      if (!ch.jobs[a.j] && ch.gold < JOBS[a.j].cost) return bad("골드가 부족합니다");
       return OK;
     }
+    case "job_reset": case "lv_reset": case "lo": return jfValidate(S, p, a);
     case "wsw": {
       if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 무기를 바꿔 들 수 있습니다");
       if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
@@ -14252,17 +14397,19 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "job_change": {
-      const job = JOBS[a.j];
-      ch.gold -= job.cost;
+      const job = JOBS[a.j], back = ch.jobs[a.j];
+      if (!back) ch.gold -= job.cost;
       ch.job = a.j;
-      ch.jp = { lv: 1, xp: 0 };
+      // a job walked before resumes where it was left (47-job-freedom.js)
+      ch.jp = ch.jobs[a.j] = back || { lv: 1, xp: 0 };
       afterGear(S, p);
       S.maps[p.map].ev.push(["jc", p.eid]);
       sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
       toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸이 열렸습니다 — Tab으로 두 무기를 바꿔 듭니다.` : `[${job.name}] 전직!`);
       // the job's signature skill onto the bar
       const signature = SKILL[JOB_SKILL[a.j]];
-      if (signature) toast(p, `직업 Lv.${signature.jobNeed}에 [${signature.name}]${pp(signature.name, "을를")} 배웁니다.`);
+      if (back) toast(p, `[${job.name}] 직업 Lv.${back.lv}부터 이어서 걷습니다.`);
+      else if (signature) toast(p, `직업 Lv.${signature.jobNeed}에 [${signature.name}]${pp(signature.name, "을를")} 배웁니다.`);
       checkAch(S, p);
       break;
     }
@@ -14270,6 +14417,7 @@ export function applyAction(S, pid, a) {
     case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": lifeApply(S, p, a); break;
     // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
     case "blk": case "w": case "wk": socialApply(S, p, a); break;
+    case "job_reset": case "lv_reset": case "lo": jfApply(S, p, a); break;
     case "wsw": {
       // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops
       [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];
@@ -14857,6 +15005,9 @@ function selfPayload(p) {
     wm: WK_ORDER.map((k) => [ch.wm[k].lv, ch.wm[k].xp, ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
     jp: ch.jp ? [ch.jp.lv, ch.jp.xp, ch.jp.lv >= JOB_PROGRESS.cap ? 0 : jobNeed(ch.jp.lv)] : null,
     wk2: ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "",
+    // 직업 자유 (47-job-freedom.js): [[job, lv, xp]] every job walked; the loadout [actives, passives, off-job passive, set 1/0, off slot open 1/0]
+    jobs: Object.keys(ch.jobs).map((j) => [j, ch.jobs[j].lv, ch.jobs[j].xp]),
+    lo: (() => { const lo = loOf(ch); return [lo.a, lo.p, lo.x, ch.lo[ch.job] ? 1 : 0, loOpen(ch) ? 1 : 0]; })(),
     gold: ch.gold,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
@@ -15054,6 +15205,8 @@ export function defs() {
     items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
     jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
+    // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
+    jf: { lo: [LO_MAX.a, LO_MAX.p], scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST },
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,

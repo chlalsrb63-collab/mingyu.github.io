@@ -70,6 +70,7 @@ function gainJob(S, p, n) {
   toast(p, `[${JOBS[ch.job].name}] 직업 Lv.${jp.lv}`);
   const signature = JOB_SKILL[ch.job];
   if (signature && previous < SKILL[signature].jobNeed && skLearned(ch, SKILL[signature])) {
+    loAdd(ch, [signature]);
     toast(p, `새 전직 스킬 ${skLearnNew(p, [signature]).join("")}`);
   }
   const rank = jobSkillRank(jp.lv);
@@ -145,6 +146,7 @@ function gainWm(S, p, n, bonus) {
     saveSoon(p);
     // the weapon's skills that open at this level: actives onto the bar, the passive named
     const opened = WK_SKILLS[wk].filter((id) => SKILL[id].need === r.lv);
+    loAdd(ch, opened);
     const act = skLearnNew(p, opened.filter((id) => SKILL[id].kind !== "p")), pas = opened.filter((id) => SKILL[id].kind === "p").map((id) => `[${SKILL[id].name}]`);
     toast(p, `[${WK_NAME[wk]}] 숙련 ${r.lv}!${act.length ? ` 새 스킬 ${act.join(", ")}` : ""}${pas.length ? ` · 패시브 ${pas.join(", ")}` : ""}`);
     if (r.lv === JOB_WM && ch.job === "adventurer") {
@@ -421,10 +423,10 @@ function cleanJobs(ch) {
   if (ch.job === "adventurer") ch.jp = null;
   else {
     // Characters with an older job retain their previously learned signature.
-    const record = isObj(ch.jp) ? ch.jp : { lv: JOB_PROGRESS.signature, xp: 0 };
-    const lv = clamp(num(record.lv) ? Math.floor(record.lv) : 1, 1, JOB_PROGRESS.cap);
-    ch.jp = { lv, xp: lv === JOB_PROGRESS.cap ? 0 : clamp(num(record.xp) ? Math.floor(record.xp) : 0, 0, jobNeed(lv) - 1) };
+    const kept = isObj(ch.jobs) && isObj(ch.jobs[ch.job]) ? ch.jobs[ch.job] : null;
+    ch.jp = jpClean(isObj(ch.jp) ? ch.jp : kept || { lv: JOB_PROGRESS.signature, xp: 0 });
   }
+  jfClean(ch);
   ch.rs = clamp(ch.rs | 0, 0, 9);
   ch.sw = ch.sw ? 1 : 0;
 }

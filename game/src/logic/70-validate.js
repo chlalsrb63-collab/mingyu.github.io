@@ -211,6 +211,7 @@ export function validateAction(S, pid, a) {
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       const why = skWhy(ch, sk);
       if (why) return bad(why);
+      if (!loOf(ch).a.includes(a.id)) return bad("스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
       if (p.dance) return bad("무영난무 중입니다");
       if (p.hammer) return bad("해머를 내려찍는 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
@@ -419,9 +420,11 @@ export function validateAction(S, pid, a) {
       const why = jobOk(ch, a.j);
       if (why) return bad(why);
       if (!npcNear(p, "job")) return bad("전직관이 너무 멉니다");
-      if (ch.gold < JOBS[a.j].cost) return bad("골드가 부족합니다");
+      // a job walked before is taken up again for free (47-job-freedom.js)
+      if (!ch.jobs[a.j] && ch.gold < JOBS[a.j].cost) return bad("골드가 부족합니다");
       return OK;
     }
+    case "job_reset": case "lv_reset": case "lo": return jfValidate(S, p, a);
     case "wsw": {
       if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 무기를 바꿔 들 수 있습니다");
       if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
