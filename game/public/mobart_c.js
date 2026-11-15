@@ -15,11 +15,17 @@ const OWL = mat("#8a6a50"), OWLL = mat("#d8c4a0"), OWLD = mat("#5a4434");
 const GOAT = mat("#d8d0c0"), GOATD = mat("#a89c8c");
 const HORSE = mat("#4a3436"), HORSEM = mat("#2a1e22"), TENDRIL = mat("#e0a8b0", { wet: true });
 const LION = mat("#c89a5a"), LIOND = mat("#8a5a34"), ARM = mat("#e0c0a8");
+const MANE_HIDE = mat("#514055"), MANE_SHADOW = mat("#2c2333", { flat: true });
+const MANE_SKIN = mat("#a16b62"), MANE_CLAW = mat("#e2c4a0", { role: "keep" });
+const MANE_PLATE = mat("#755663"), MANE_BONE_SHADE = mat("#a98069", { role: "keep" });
+const MANE_EYE = mat("#ffc584", { role: "glow" });
 const SERP = mat("#8a3048"), SERPB = mat("#e0c070"), SERPW = mat("#5a2234");
 const SOW = mat("#b07880"), SOWD = mat("#8a5866"), SORE = mat("#b83a4a", { wet: true, drip: true });
 // ── the great ones
 const RIFT = mat("#ff72d6", { role: "glow" }), VOID = mat("#1a0a2a", { role: "keep", flat: true }), HIDE = mat("#4a3a4e"), MANE = mat("#6a2a3a"), BULL = mat("#7a5040");
-const MOTHER = mat("#b898a8", { wet: true }), MOTHERD = mat("#6e4a6a"), BROOD = mat("#5a2a5a", { wet: true });
+const MOTHER = mat("#483746"), MOTHERD = mat("#2a202e", { flat: true }), BROOD = mat("#552a32", { flat: true });
+const GLASS = mat("#7b606d"), CINDER = mat("#ba4845", { role: "keep", flat: true });
+const EMBER = mat("#ff7946", { role: "glow" }), LANTERN = mat("#ffe298", { role: "glow" });
 const WOOD = mat("#8a5a3a"), WOODD = mat("#5e3a26"), IRON = mat("#6a6a7a"), GOLD = mat("#f0c050", { role: "keep" });
 // ── frostkeep: dark winter coats, opaque blue ice, and a warm eye highlight
 const RIME = mat("#66749b"), RIME_D = mat("#354364"), FROST = mat("#9ed7e3"), FROST_D = mat("#478da8");
@@ -448,6 +454,86 @@ export const BEASTS_C = {
     },
   },
 
+  /** The field king's mane grows into uneven, grasping arms above its lion paws. */
+  lionhand_boss: {
+    size: "boss", n: 128, glow: "#ffc584",
+    draw(M, p) {
+      const [lf, lu] = lunge(p, 1.7), wind = p.wind ? 1 : 0, strike = p.strike ? 1 : 0;
+      const f = lf * 0.75, u = 15 + lu + bob(p, 0.9) - (p.dead || 0) * 5;
+      legs4(M, p, { ff: f + 7, bf: f - 9.8, w: 5.2, hu: u - 2.1, r: 2.85, m: MANE_HIDE, foot: MANE_SHADOW, st: 3.5, li: 2.2, splay: 1.22 });
+      const tail = p.walk ? Math.sin(p.ph * Math.PI * 2) * 3 : 0;
+      M.tube([[f - 11, u + 1, 0], [f - 17, u + 4, 2 + tail * 0.4], [f - 21, u + 7, 5 + tail], [f - 23, u + 4, 7 + tail]], [1.65, 1.25, 0.94, 0.46], MANE_SHADOW);
+      M.e([f - 23.5, u + 4.1, 7.1 + tail], [2, 1.2, 1.32], MANE_HIDE, [20, -30, 0]);
+      M.G("body");
+      M.e([f - 5, u - 0.8, 0], [10.8, 5.4, 6.6], MANE_SHADOW);
+      M.e([f + 3.9 - wind, u + 4.5, 0], [8.0, 8.6, 7.6], MANE_HIDE, [0, 15, 0]);
+      M.G();
+      both((s) => {
+        for (const [offset, high] of [[-5.9, 1.1], [-2.9, 1.9], [0.2, 3]]) {
+          M.tube([[f + offset - 1.45, u + high + 2.3, s * 4.8], [f + offset, u + high + 0.8, s * 6.65], [f + offset - 0.75, u + high - 2.0, s * 6.72]], [0.98, 0.82, 0.44], MANE_PLATE);
+        }
+        M.e([f + 6.2 - wind, u + 1.1, s * 6.1], [2.55, 3.55, 1.75], MANE_HIDE, [s * 15, -15, s * 17]);
+      });
+      const head = [f + 11 + strike * 2.6 - wind * 2.6, u + 8.9 - strike * 1.2 + wind * 2.3, 0], [hx, hy] = head;
+      M.G("ruff");
+      M.e([hx - 4, hy - 0.25, 0], [6.1, 7.5, 7.1], MANE_SHADOW);
+      for (const [x, y, w, tip] of [[-6, 3.9, 5.8, 5.3], [-3, 5.8, 5.7, 4.8], [0.5, 4.2, 4.2, 3.3]]) both((s) => {
+        M.cone([hx + x, hy + y - 2.1, s * (w - 1.2)], [hx + x - 3.0, hy + y + tip, s * w], 2.1, MANE_HIDE);
+      });
+      M.G();
+
+      // Two long arms crown one shoulder. Three shorter arms creep around the other's ribs.
+      const limbs = [
+        [-6.1, 3.9, -4.0, -4.6, 16.7, -13.0, 5.4, 19.4, -19.5, 2.8],
+        [-2.1, 1.2, -5.3, 2.1, 7.1, -14.2, 12.4, 5.8, -20.0, 2.45],
+        [-4.7, 4.8, 4.2, -3.2, 11.9, 12.0, 8.1, 13.7, 16.3, 2.13],
+        [-4.6, -0.7, 5.6, -2.8, 3.1, 14.4, 7.3, -1.7, 20.1, 2.6],
+        [-8.0, -1.6, 3.9, -13.1, 3.6, 8.3, -15.8, 9.0, 11.5, 1.8],
+      ];
+      for (const [i, [rf, ru, rs, ef, eu, es, wf, wu, ws, w]] of limbs.entries()) {
+        const wave = p.walk ? Math.sin((p.ph + i * 0.22) * Math.PI * 2) * 1.4 : p.idle ? (i % 2 ? 0.45 : -0.45) : 0;
+        const front = i === 4 ? 0.15 : 1, curl = wind ? 0.35 : strike ? 2.35 : 1.0;
+        const wrist = [f + wf + front * (strike * 9 - wind * 4), u + wu + wave + wind * 4.7 - strike * (i ? 2.6 : 5.1), ws * (strike ? 0.81 : 1)];
+        const elbow = [f + ef + front * (strike * 3 - wind * 2.4), u + eu + wave * 0.3 + wind * 3.0, es];
+        M.G("arm" + i);
+        M.tube([[f + rf, u + ru + 5.5, rs], elbow, wrist], [w * 1.4, w * 0.84, w * 0.68], i < 2 ? MANE_SKIN : MANE_HIDE);
+        M.e(elbow, [w * 0.82, w * 0.92, w], MANE_HIDE);
+        M.e(wrist, [w * 1.15, w * 0.76, w * 1.15], MANE_SKIN, [0, wind ? 26 : -12, 0]);
+        M.tube([[elbow[0] + 0.5, elbow[1] + w * 0.6, elbow[2]], [wrist[0] - 1.7, wrist[1] + w * 0.78, wrist[2]]], [0.96, 0.52], MANE_PLATE);
+        M.G();
+        // Separate the long middle digits from the thumb so the attack still reads as a grasp.
+        const [x, y, s0] = wrist, sign = Math.sign(ws);
+        for (const [j, length] of [3.2, 4.45, 4.05, 2.9].entries()) {
+          const side = s0 + (j - 1.5) * 1.65;
+          const tip = [x + length + (strike ? 0.8 : 0), y - curl, side + (j - 1.5) * 0.46];
+          M.tube([[x + w * 0.4, y + 0.4, side], [x + length * 0.75, y + 0.75, tip[2]], tip], [0.88, 0.70, 0.31], MANE_CLAW);
+          M.e([x + 1.1, y + w * 0.58, side], [0.82, 0.63, 0.64], MANE_BONE_SHADE);
+        }
+        M.tube([[x + 0.4, y - 0.6, s0 - sign * w], [x + 2.2, y - 1.45, s0 - sign * (w + 1.7)], [x + 3.0, y - 1.4 - curl * 0.22, s0 - sign * (w + 2)]], [0.95, 0.65, 0.3], MANE_CLAW);
+      }
+
+      M.G("mask");
+      M.e(head, [4.95, 4.55, 4.8], MANE_HIDE);
+      const mask = [hx + 1.55, hy + 0.58, 0], r = [3.7, 3.55, 4.12];
+      M.e(mask, r, MANE_CLAW);
+      M.box([hx + 3.9, hy - 1.15, 0], [1.8, 1.3, 2.25], MANE_SKIN, [0, -16, 0]);
+      M.e([hx + 5.47, hy - 1.14, 0], [0.63, 0.57, 1.20], MANE_SHADOW);
+      M.G();
+      M.e([hx + 4.1, hy - 2.4, 0], [2.0, 1.05 + strike * 0.95, 2.67], C.MAW, [0, -16, 0]);
+      M.e([hx + 3.8, hy - 3.3 - strike * 1.1, 0], [2.35, 0.85, 2.2], MANE_BONE_SHADE);
+      both((s) => {
+        const socket = surf(mask, r, [0.63, 0.26, s * 0.84]);
+        const outer = surf(mask, r, [0.27, 0.49, s * 0.88]);
+        const inner = surf(mask, r, [0.91, 0.11, s * 0.52]);
+        M.tube([outer, socket, inner], [0.83, 0.94, 0.48], MANE_SHADOW);
+        if (!p.dead) M.tube([[socket[0] + 0.55, socket[1] - 0.12, socket[2] + s * 0.61], [inner[0] + 0.42, inner[1] + 0.15, inner[2] + s * 0.4]], 0.43, MANE_EYE);
+        const cheek = surf(mask, r, [0.55, -0.38, s * 0.88]);
+        M.tube([[cheek[0] - 1.2, cheek[1] + 0.25, cheek[2]], cheek, [hx + 4.65, hy - 1.8, s * 2.40]], [0.84, 0.90, 0.6], MANE_BONE_SHADE);
+        M.cone([hx + 4.46, hy - 1.5, s * 2], [hx + 4.9, hy - 3.45 - strike * 0.7, s * 2.0], 0.8, MANE_CLAW);
+      });
+    },
+  },
+
   /** 날개 구렁이 — a serpent that grew wings and never learned to land. */
   serpentwing: {
     size: "l", n: 70, hover: 10, glow: "#e8c840", k: 1.3,
@@ -515,37 +601,105 @@ export const BEASTS_C = {
     },
   },
 
-  /** 심연의 어미 — the mother of all of it: one swollen body, five necks, and a brood you can see moving inside. */
+  /** 심연의 어미 — five necks under a cracked obsidian mantle, with the stolen lanterns still burning inside. */
   abyssboss: {
-    size: "boss", n: 160, glow: "#b4cc3c",
+    size: "boss", n: 160, glow: "#ff974e",
     draw(M, p) {
-      const [lf, lu] = lunge(p, 2);
-      const f0 = lf * 0.6, u0 = 15 + lu + bob(p, 1) + (p.idle ? 0.4 : 0), sw = p.idle ? 0.6 : 0;
-      // stubby legs, too many of them
-      both((s) => { for (let i = 0; i < 4; i++) { const [a, up] = gait(p, (i * 0.25 + (s > 0 ? 0.5 : 0)) % 1); const f = f0 + 8 - i * 6; M.tube([[f, u0 - 8, s * 10], [f + a * 2, 3 + up * 2, s * 13], [f + a * 3, up * 1.6 + 1, s * 13.6]], [3, 2.4, 2], MOTHERD); } });
-      M.G("body");
-      M.e([f0 - 2, u0, 0], [16 + sw, 12 + sw, 14 + sw], MOTHER);
-      M.G();
-      // the brood under the skin: dark shapes, each with an eye open
-      [[0.3, 0.5, -0.6], [-0.3, 0.7, 0.3], [0.1, 0.2, 0.9], [-0.7, 0.3, -0.5], [0.6, 0.1, 0.5], [-0.5, -0.1, 0.85], [0.2, 0.8, 0.1]].forEach((d, i) => {
-        const q = surf([f0 - 2, u0, 0], [16, 12, 14], d);
-        M.e(q, [2.6, 1.4, 2.2], BROOD);
-        M.eye([q[0] + 0.4, q[1] + 0.8, q[2]], i % 2 ? 2 : 1, i % 3 ? "#c8e040" : "#ff3a2a");
+      const [lf, lu] = lunge(p, 2.2), wind = p.wind ? 1 : 0, strike = p.strike ? 1 : 0;
+      const f = lf * 0.73, u = 15 + lu + bob(p, 0.65) - (p.dead || 0) * 4.5;
+      const phase = p.walk ? p.ph : p.idle ? 0.15 : 0;
+      both((s) => {
+        for (let i = 0; i < 3; i++) {
+          const [sw, step] = gait(p, (i + Number(s > 0)) * 0.5);
+          const x = f - i * 6.2, foot = [x + sw * 3, 1 + step * 1.6, s * (14.2 + i * 0.45)];
+          M.tube([[x, u - 3, s * 9.0], [x - 1.5, u - 3.2, s * 13.3], foot], [3.0, 2.9, 1.6], MOTHERD);
+          M.e([foot[0] + 0.5, foot[1], foot[2]], [2.2, 1.12, 1.5], GLASS);
+        }
+        const reach = strike * 6.5 - wind * 3.8;
+        const claw = [f + 13.3 + reach, 2 + wind * 2.3, s * (15.8 + wind * 1.6)];
+        M.tube([[f + 7, u + 0.4, s * 9.4], [f + 10 + reach * 0.55, u - 1.5 + wind * 1.8, s * 14.6], claw], [4.2, 3.6, 2.1], MOTHERD);
+        M.box([claw[0] - 1.7, u * 0.54 + wind * 1.1, claw[2]], [2.45, 2.15, 2.05], GLASS, [s * 14, -20, 0]);
+        for (const dw of [-1.5, 1.4]) M.cone([claw[0] + 1.0, claw[1], claw[2] + dw], [claw[0] + 4.2, claw[1] - 1.6, claw[2] + dw + s * 0.6], 1.18, C.HORN);
       });
-      for (const [a, b] of [[[0.8, 0.3, -0.4], [0.5, 0.7, -0.5]], [[-0.1, 0.9, -0.4], [-0.5, 0.8, 0.3]], [[0.5, 0.6, 0.6], [0.1, 0.4, 0.9]], [[-0.8, 0.5, 0.2], [-0.6, 0.2, 0.75]]]) M.seam([surf([f0 - 2, u0, 0], [16.2, 12.2, 14.2], a), surf([f0 - 2, u0, 0], [16.2, 12.2, 14.2], [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 0.1, (a[2] + b[2]) / 2]), surf([f0 - 2, u0, 0], [16.2, 12.2, 14.2], b)], "#7a3a6a");
-      // five necks fanned out in front, each ending in a mouth
-      const t = p.walk ? p.ph : p.idle * 0.2;
-      for (let i = 0; i < 5; i++) {
-        const sd = (i - 2) * 4.6, h = 6 + (2 - Math.abs(i - 2)) * 4, w = Math.sin((t + i * 0.23) * Math.PI * 2) * 1.4;
-        const back = p.wind ? -3 : p.strike ? 4 : 0;
-        const hd = [f0 + 20 + back - Math.abs(i - 2) * 2, u0 + h + 4 + w, sd * 1.5];
-        M.tube(bez([f0 + 10, u0 + 2 + h * 0.3, sd * 0.8], [f0 + 16, u0 + h + 7, sd * 1.2], [hd[0] - 1.6, hd[1], hd[2]], 9), [3.2, 2.2], MOTHERD);
-        M.e(hd, [3.4, 2.6, 2.6], MOTHER, [0, -10, 0]);
-        const open = p.strike ? 1.4 : p.wind ? 1 : 0.4;
-        M.e([hd[0] + 2.2, hd[1] - 0.4, hd[2]], [0.8, 0.8 + open, 1.4], C.MAW);
-        teeth(M, [hd[0] + 2.4, hd[1] + 0.4 + open * 0.4, hd[2] - 1], [hd[0] + 2.4, hd[1] + 0.4 + open * 0.4, hd[2] + 1], 3, 1, 0.8);
-        both((s) => M.eye([hd[0] + 1, hd[1] + 1.4, hd[2] + s * 1.4], 1, "#c8e040"));
-        if (open > 0.8) M.dot([hd[0] + 2.4, hd[1] - 1.6 - open, hd[2]], "#b4cc3c", 1, 2);
+
+      const body = [f - 3.1, u, 0], bodyR = [16.6, 11.2, 14.2];
+      M.G("body");
+      M.e(body, bodyR, MOTHER);
+      M.e([f - 3.8, u - 2.6, 0], [15.0, 8.2, 13.4], MOTHERD);
+      M.G();
+      const plates = [
+        [-13.7, 6.6, 3.4, 3.9, 14], [-8.4, 10.0, 4.8, 4.1, 12],
+        [-1.9, 10.8, 5.1, 4.0, -8], [4.8, 9.6, 5.1, 3.1, -15], [9.0, 5.2, 3.7, 2.7, -21],
+      ];
+      for (const [i, [x, y, w, run, tilt]] of plates.entries()) both((s) => {
+        const z = s * (w + 0.8 + (i % 2) * 0.85);
+        M.box([f + x, u + y, z], [run, 1.68, w * 1.02], i % 2 ? GLASS : MOTHER, [s * 10, tilt, -s * 20]);
+        M.cone([f + x - 0.32, u + y + 0.1, s * (w + 3.1)], [f + x - 3.3, u + y + 3.9, s * (w + 5.0)], 1.65, MOTHERD);
+        if (i < plates.length - 1) {
+          const root = [f + x + run - 0.45, u + y + 1.44, s * (w * 0.72)];
+          M.tube([root, [root[0] - 1.05, root[1] - 0.95, root[2] + s * 2.0], [root[0] + 0.3, root[1] - 2.2, root[2] + s * 4.1]], wind ? 0.85 : 0.59, CINDER);
+          M.tube([root, [root[0] - 0.6, root[1] - 0.35, root[2] + s * 1.2]], 0.42, EMBER);
+        }
+      });
+
+      // Broad flank facets face outward, so the hot cracks survive the low quarter-view angle.
+      both((s) => {
+        for (const [i, [axis, lift]] of [[-1.05, 0.44], [-0.42, 0.23], [0.28, 0.45]].entries()) {
+          const [x, y, z] = surf(body, bodyR, [axis, lift, s]);
+          const edge = z + s * 1.1;
+          M.box([x, y, z], [2.75, 1.95, 1.35], GLASS, [-s * axis * 26, 18 - i * 13, s * 13]);
+          const scar = [[x - 2.4, y + 0.75, edge], [x - 0.7, y - 0.15, edge + s * 0.38],
+            [x + 0.15, y + 0.45, edge + s * 0.52], [x + 2.08, y - 0.74, edge + s * 0.15]];
+          M.tube(scar, wind ? 1.02 : 0.69, CINDER);
+          M.tube(scar.slice(1, 3), wind ? 0.62 : 0.49, EMBER);
+        }
+      });
+
+      // The swollen body carries four brood marks and one larger stolen lantern under the throat.
+      const brood = [[-0.36, 0.45, -0.81], [-0.45, 0.22, 0.86], [0.5, 0.21, 0.81], [0.59, 0.31, -0.79]];
+      for (const [i, d] of brood.entries()) {
+        const q = surf(body, bodyR, d);
+        M.e(q, [2.9, 1.74, 1.8], MOTHERD, [Math.sign(d[2]) * 35, 10, 0]);
+        const [x, y, s] = q;
+        M.tube([[x - 1.25, y, s], [x + 0.4, y + 0.4, s + Math.sign(s) * 0.6], [x + 1.72, y, s]], [0.67, 0.61, 0.32], BROOD);
+        if (!p.dead) M.dot([x + 0.6, y + 0.45, s + Math.sign(s) * 1.15], i % 2 ? "#ffad65" : "#ffd584", 1, 1);
+      }
+      M.e([f + 11.8, u + 1.7, 0], [4.4, 5.3, 6.3], MOTHERD);
+      M.e([f + 14.9, u + 2.0, 0], [1.85, 3.35 + wind * 0.8, 4.7], BROOD);
+      M.e([f + 16.42, u + 2.25, 0], [0.9, 2.2 + wind * 0.5, 2.85], EMBER, [0, 14, 0]);
+      M.box([f + 17.05, u + 2.9, 0], [0.55, 1.05, 1.5], LANTERN, [0, -17, 18]);
+
+      // The five necks hold different heights and come from offset roots; the central bite leads a strike.
+      const necks = [
+        [-15.1, 8.0, 15.1, 1.8], [-8.9, 17.5, 12.6, 2.09], [0.8, 25.4, 16.7, 2.6],
+        [8.9, 14.4, 19.9, 2.28], [15.8, 5.1, 17.0, 1.91],
+      ];
+      for (const [i, [side, rise, front, girth]] of necks.entries()) {
+        const wave = Math.sin((phase + i * 0.16) * Math.PI * 2) * (p.walk ? 1.55 : 0.62);
+        const lean = strike * (i === 2 ? 7 : 4.4) - wind * (i === 2 ? 5.2 : 3.4);
+        const h = [f + front + lean, u + rise + wave + wind * 2.6 - strike * (i === 2 ? 2.8 : 1.4), side];
+        const root = [f + (i < 2 ? 3.9 : 8.3), u + (i === 2 ? 9 : 5), side * 0.43];
+        const bow = [f + 9.4 + lean * 0.45 - rise * 0.23, u + rise + 2 + wind * 1.5, side * 0.91];
+        M.G("neck" + i);
+        M.tube([root, bow, [h[0] - 3.5, h[1] - 0.2, side], h], [girth * 1.75, girth * 1.22, girth, girth * 0.83], MOTHER);
+        M.box([bow[0] + 0.25, bow[1] - 0.4, bow[2]], [1.9, 1.35, girth], GLASS, [side * 1.1, 20, 0]);
+        both((s) => {
+          M.tube([[bow[0] - 0.65, bow[1] + 0.05, bow[2] + s * girth], [bow[0] - 1.55, bow[1] - 1.45, bow[2] + s * girth * 1.16]], 0.5, CINDER);
+        });
+        M.G();
+        const [x, y, z] = h, jaw = 0.9 + wind * 0.85 + strike * 2.0;
+        M.G("head" + i);
+        M.e(h, [girth + 0.95, 2.44, girth + 0.35], MOTHERD, [side * 1.1, -10, 0]);
+        M.box([x + 1.55, y + 0.66, z], [2.85, 1.25, girth - 0.14], GLASS, [side * 1.08, -9, 0]);
+        M.e([x + 2.4, y - 1.25, z], [2.15, 0.9 + jaw * 0.53, girth - 0.6], C.MAW);
+        M.e([x + 2.1, y - 1.75 - jaw * 0.55, z], [2.4, 0.65, girth - 0.65], MOTHERD);
+        M.G();
+        both((s) => {
+          M.cone([x - 1.05, y + 1.4, z + s * girth * 0.72], [x - 3.9, y + 3.1, z + s * girth * 1.22], 0.8, MOTHERD);
+          M.cone([x + 3.2, y - 0.61, z + s * girth * 0.56], [x + 3.72, y - 1.73 - jaw * 0.58, z + s * girth * 0.54], 0.6, C.HORN);
+          if (!p.dead) M.tube([[x + 2.02, y + 1.0, z + s * girth], [x + 3.35, y + 0.73, z + s * (girth + 0.12)]], 0.52, wind ? LANTERN : EMBER);
+        });
+        if (wind || strike) M.e([x + 3.9, y - 1.15, z], [0.56, 0.53 + strike * 0.22, 1.05], EMBER);
       }
     },
   },

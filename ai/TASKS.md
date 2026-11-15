@@ -32,6 +32,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 
 ## CODEX (구현 · 테스트)
 
+- [x] 루넬샤 필드·균열 보스 7종과 월드 크기 보강. [검수](reports/codex-boss-reference-art.md)
 - [x] 작은꼬리 64×64 캐릭터·NPC·착용 외형, 버드나무토큰과 희귀 망토. [검증](reports/codex-person64.md)
 - [x] 보스 4종 아트 개편과 2·4인 필드 및 균열 보스전 촬영. [검증](reports/codex-boss-combat-report.md)
 - [x] 직업 스킬 33개 연출·효과음 연결 검수, 해머와 복합 직업 기술의 연출·소리 및 아이콘 보강. [스킬 인계](reports/codex-job-skill-feel.md)

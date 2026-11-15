@@ -4,7 +4,7 @@
  * Each is one real animal gone wrong in one way: one dominant shape, one thing to know it by,
  * and whatever is sharp sits at its ends.
  */
-import { mat, C, bez, gait, bob, lunge, legs4, teeth, ribs, tentacle, surf, both, pitchPt } from "./mobart_kit.js";
+import { mat, C, bez, lerp3, gait, bob, lunge, legs4, teeth, ribs, tentacle, surf, both, pitchPt } from "./mobart_kit.js";
 
 // ── coast: shell cream, wet slate, sea teal; coral red is the accent
 const CONCH = mat("#ecc4a8"), CONCHD = mat("#c47e66"), HCRAB = mat("#5a6ab8"), HCRABD = mat("#38447e");
@@ -31,7 +31,9 @@ const GAT = mat("#4e6a40"), GATD = mat("#2e4430"), GATB = mat("#c4c494");
 // ── the eastern mountains: gold fur and red beads, crane white, mist, gilt
 const GOLDM = mat("#dc9c48"), GOLDMD = mat("#a8682e"), FACEB = mat("#9ab8dc"), BEAD = mat("#6a2430"), TASSEL = mat("#d83a3a");
 const WCR = mat("#f2eee6"), WCRK = mat("#2a2832"), CROWNR = mat("#d83030", { role: "blood" });
-const TIG = mat("#eceae6"), TIGS = mat("#b4c0d4"), STRIPE = mat("#2e2a3a"), MIST = mat("#dfeefa", { role: "glow" });
+const TIG = mat("#dcd8f2"), TIGS = mat("#817aa1"), STRIPE = mat("#382955");
+const MIST = mat("#d5effa", { role: "glow" }), TIGW = mat("#69558c", { flat: true }), TIGWD = mat("#49365f", { flat: true });
+const TIGSPAR = mat("#a89aca", { role: "keep" });
 const PEA = mat("#1e7a8e"), PEAD = mat("#12506a"), GILT = mat("#f0c040"), GILTD = mat("#b88422");
 
 /** How a wing sits in this frame: up (1) … down (−1). */
@@ -57,6 +59,18 @@ function coral(M, a, h, lean, m = CORAL, tip = CORALL) {
 function wing(M, root, s, deg, n, step, chord, mats, back = 0.5) {
   const a = (deg * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a);
   for (let i = 0; i < n; i++) { const L = step * (i + 1); M.e([root[0] - i * back, root[1] + sa * L, root[2] + s * ca * L], [chord - i * 0.15, 0.42, step * 0.75], mats[Math.min(mats.length - 1, i)], [0, 0, -s * deg]); }
+}
+
+/** An angled wing membrane stretched between two blade spars. */
+function tigerMembrane(M, root, edgeA, edgeB, m) {
+  const [df, du, ds] = edgeB.map((v, j) => v - edgeA[j]), mid = lerp3(edgeA, edgeB, 0.5);
+  const yaw = Math.atan2(ds, df) * 180 / Math.PI, pitch = Math.atan2(du, Math.hypot(ds, df)) * 180 / Math.PI;
+  const width = Math.hypot(df, du, ds) * 0.5, length = Math.hypot(...mid.map((v, j) => v - root[j]));
+  const strips = Math.ceil(length / 1.2);
+  for (let i = 1; i <= strips; i++) {
+    const t = i / strips;
+    M.box(lerp3(root, mid, t), [width * t + 0.25, 0.53, 0.84], m, [yaw, pitch, 0]);
+  }
 }
 
 export const BEASTS_E = {
@@ -647,58 +661,83 @@ export const BEASTS_E = {
     },
   },
 
-  /** 운해의 범 — the mountain's white tiger, three faces stacked on one neck; where the stripes cross its ribs they have opened into mouths. */
+  /** 운해의 범 — a moon-pale cliff tiger, its shoulders edged in wind-cut blades. */
   mistiger: {
     size: "xl", n: 98, glow: "#bfe8ff", k: 1.12,
     draw(M, p) {
-      const [lf, lu] = lunge(p, 1.4);
-      const f0 = lf, u0 = 8 + lu + bob(p, 0.6);
-      legs4(M, p, { ff: 5.6, bf: -5.6, w: 3, hu: u0 - 1.4, r: 1.7, m: TIG, st: 2.6, li: 1.8, foot: TIGS, hock: 1.6 });
-      const tw = p.walk ? Math.sin(p.ph * Math.PI * 2) : p.idle ? 0.5 : 0;
-      const tail = bez([f0 - 7.4, u0 + 1, 0], [f0 - 13.5, u0 - 2, tw], [f0 - 13.6, u0 + 7 + tw * 0.6, tw * 1.6], 6);
-      tail.forEach((q, i) => M.s(q, 1.25 - i * 0.03, i % 2 ? STRIPE : TIG));
-      M.s(tail[6], 1.9, MIST); M.s([tail[6][0] - 1.4, tail[6][1] + 1, tail[6][2]], 1.3, MIST);
-      M.G("body");
-      M.e([f0 - 1, u0, 0], [7.4, 3.9, 3.8], TIG);
-      M.e([f0 + 4.6, u0 + 0.8, 0], [4.4, 4.6, 4.2], TIG);
-      M.e([f0, u0 - 2.2, 0], [6, 1.8, 3], TIGS);
+      const [stepF, lift] = lunge(p, 1.4), wind = p.wind, strike = p.strike, down = p.dead;
+      const f = stepF, u = 7.6 + lift + bob(p, 0.65) - down * 2.7;
+      const ripple = p.walk ? Math.sin(p.ph * Math.PI * 2) : p.idle ? 0.8 : 0;
+      const shoulder = u + 2 + strike * 0.5, haunch = u - 0.8 - wind * 1.1;
+      // The close paw overshoots the head in the lunge. The other front leg checks the body.
+      both((s) => {
+        const [fw, fl] = gait(p, s < 0 ? 0 : 0.5), [hw, hl] = gait(p, s < 0 ? 0.5 : 0);
+        const fwd = strike * (s < 0 ? 7.4 : 3.8) - wind * 1.7;
+        const paw = [f + 6.2 + fw * 2.6 + fwd, 1.1 + fl * 1.55 + strike * (s < 0 ? 3 : 0.75), s * (4.6 + wind * 0.7)];
+        const hock = [f - 6.4 - wind * 1.3 + hw * 2.2 - strike * 2.4, 0.9 + hl * 1.4, s * 4.3];
+        M.G("legs" + s);
+        M.tube([[f + 4, shoulder, s * 3.3], [f + 4.3 + fwd * 0.25, u * 0.61, s * 4.45], paw], [2.55, 1.72, 1.28], TIGS);
+        M.e([paw[0] + 0.8, paw[1], paw[2]], [2.1, 1.0, 1.65], TIG);
+        M.tube([[f - 5.5, haunch, s * 3.7], [f - 7.5 + hw, u * 0.46, s * 4.4], hock], [2.2, 1.6, 1.15], TIGS);
+        M.e([hock[0] + 0.45, hock[1], hock[2]], [1.55, 0.8, 1.4], TIG);
+        M.G();
+        M.tube([[paw[0] - 1.0, paw[1] + 0.8, paw[2] + s * 1.1], [paw[0] - 1.2, paw[1] + 2.0, paw[2] + s * 0.55]], 0.50, STRIPE);
+        if (!down) for (const toe of [-0.9, 0.75]) M.cone([paw[0] + 1.3, paw[1] + 0.2, paw[2] + toe], [paw[0] + 2.7 + strike * 0.7, paw[1] - 0.2, paw[2] + toe], 0.5, C.TOOTH);
+      });
+
+      const tail = bez([f - 7.9, haunch + 0.9, 0], [f - 17.3, u - 3.2, 1.3 + ripple * 2], [f - 16.8, u + 4.2 + wind * 2.1, 4 + ripple], 7);
+      M.tube(tail, [1.35, 0.6], TIGS);
+      for (const j of [1, 3, 5]) M.s(tail[j], 1.31 - j * 0.065, STRIPE);
+      M.cone(tail[6], [tail[7][0] - 0.3, tail[7][1] + 1.6, tail[7][2] + 0.2], 0.95, TIG);
+
+      M.G("fur");
+      M.e([f - 1, u, 0], [8.8 + strike, 3.5, 4.1], TIGS, [0, strike ? 4 : -6, 0]);
+      M.e([f + 3.7, shoulder + 0.1, 0], [5.0, 4.05, 4.6], TIG);
+      M.e([f - 5.1, haunch + 0.25, 0], [4.1, 3.45, 4.05], TIG);
       M.G();
-      // stripes over the back; two of them are mouths
-      const gape = p.wind ? 1 : p.strike ? 0.7 : p.idle ? 0.35 : 0.2;
-      [-6.2, -4, -1.8, 0.6, 3, 5.4].forEach((f, j) => {
-        const big = f > 2, c = big ? [f0 + 4.6, u0 + 0.8] : [f0 - 1, u0], R = big ? [4.4, 4.6, 4.2] : [7.4, 3.9, 3.8];
-        const k = Math.sqrt(Math.max(0.06, 1 - ((f0 + f - c[0]) / R[0]) ** 2)) * 1.03, line = [];
-        for (let a = -72; a <= 72; a += 18) { const t = (a * Math.PI) / 180; line.push([f0 + f, c[1] + Math.cos(t) * R[1] * k, Math.sin(t) * R[2] * k]); }
-        M.tube(line, 0.42, STRIPE);
-        if (j === 2 || j === 4) both((s) => {
-          const t = (s * 62 * Math.PI) / 180, m = [f0 + f, c[1] + Math.cos(t) * R[1] * k, Math.sin(t) * R[2] * k];
-          M.e(m, [1.8, 0.45 + gape * 0.8, 0.8], C.MAW);
-          M.dot([m[0] - 0.7, m[1] + 0.2 + gape * 0.4, m[2] + s * 0.8], "#f4eedc", 1, 1); M.dot([m[0] + 0.7, m[1] + 0.2 + gape * 0.4, m[2] + s * 0.8], "#f4eedc", 1, 1);
-          M.dot([m[0], m[1] - 0.3, m[2] + s * 0.8], "#e02838", 1, 1);
-        });
-      });
-      // three faces on the one neck: the lowest roars, the middle watches, the top one sleeps
-      const roar = p.strike ? 1 : p.wind ? 0.7 : 0.12, out = p.strike ? 2 : p.wind ? -1.4 : 0;
-      M.tube([[f0 + 6.4, u0 + 2, 0], [f0 + 8.4 + out * 0.5, u0 + 7.5, 0.6], [f0 + 8 + out * 0.3, u0 + 13.4, -0.6]], [3.2, 2.3, 1.7], TIGS);
-      [[10.4, 2.2, 3.4, roar], [10, 8.4, 2.9, p.wind ? 0.5 : 0], [9.2, 13.8 + (p.idle ? 0.4 : 0), 2.5, 0]].forEach(([f, u, r, op], i) => {
-        const H = [f0 + f + out * (1 - i * 0.3), u0 + u - (p.strike && !i ? 0.8 : 0), [0, 1.5, -1.3][i]];
-        if (i) M.e([H[0] - r * 0.5, H[1] - r * 0.95, H[2] * 0.5], [r * 0.9, 0.6, r * 0.9], STRIPE);
-        M.s(H, r, TIG);
-        M.e([H[0] + r * 0.75, H[1] - r * 0.28 + op * 0.3, H[2]], [r * 0.6, r * 0.42, r * 0.62], TIGS);
-        M.e([H[0] + r * 0.6, H[1] - r * 0.75 - op * r * 0.45, H[2]], [r * 0.62, r * 0.22, r * 0.55], TIGS);
-        if (op > 0.3) {
-          M.e([H[0] + r * 0.72, H[1] - r * 0.5 - op * 0.3, H[2]], [r * 0.5, op * r * 0.3, r * 0.45], C.MAW);
-          both((s) => M.cone([H[0] + r * 1.1, H[1] - r * 0.4, H[2] + s * r * 0.3], [H[0] + r * 1.15, H[1] - r * 0.4 - 1.5, H[2] + s * r * 0.3], 0.45, C.TOOTH));
+      // Three deep crescent stripes wrap each flank at different heights.
+      both((s) => {
+        for (const [x, h, y] of [[-6.2, 2.8, 0.25], [-3.3, 3.15, 0], [0.1, 3.5, 0.2], [3.4, 4.7, 0.4]]) {
+          M.tube([[f + x, u + h, s * 2.6], [f + x - 0.6, u + h - 1.65, s * 4.1], [f + x + 0.3, u + y - 0.8, s * 4.16]], [0.83, 0.7, 0.32], STRIPE);
         }
-        M.dot([H[0] + r * 1.36, H[1] - r * 0.12, H[2]], "#d06a7a", 2, 1);
-        both((s) => {
-          M.cone([H[0] - r * 0.2, H[1] + r * 0.7, H[2] + s * r * 0.65], [H[0] - r * 0.35, H[1] + r * 1.45, H[2] + s * r * 0.95], r * 0.36, STRIPE);
-          M.eye(surf(H, [r, r, r], [0.62, 0.3, s * 0.6]), 2, "#30d0e8", { shut: i === 2 && !p.wind && !p.strike });
-          M.seam([[H[0] + r * 0.15, H[1] + r * 0.25, H[2] + s * r * 0.95], [H[0] - r * 0.1, H[1] - r * 0.45, H[2] + s * r * 0.98]], "#2e2a3a");
-        });
-        M.seam([[H[0] + r * 0.5, H[1] + r * 0.86, H[2]], [H[0] - r * 0.2, H[1] + r, H[2]]], "#2e2a3a");
       });
-      for (const [f, s] of [[6, 3.6], [-6, 3.4], [5, -3.6], [-6.4, -3]]) M.s([f0 + f + (p.walk ? Math.sin(p.ph * 6.28 + f) * 0.6 : 0), 1.1, s], 1.5, MIST);
+
+      // Two stiff blade-shaped fins. They fold across the back in a strike, and flare high on the wind-up.
+      both((s) => {
+        const bank = ripple * s * 0.95, raise = wind * 5.8 - strike * 1.9 - down * 3.2 + bank;
+        const root = [f + 1.8, shoulder + 1.25, s * 2.9];
+        const elbow = [f - 0.5 - strike, u + 8.5 + raise * 0.72, s * (7.5 + wind * 0.55)];
+        const wingTip = [f - 7.5 - strike * 5, u + 8.8 + raise, s * (14.4 + wind * 1.9 - strike * 2.7 - down * 3.5)];
+        const outerNotch = [f - 6.25 - strike * 2.1, u + 4.3 + raise * 0.74, s * (11.25 + wind * 1.55 - down * 2.2)];
+        const innerTip = [f - 9.15 - strike * 2.35, u + 2.7 + raise * 0.68, s * (11.6 + wind - down * 1.9)];
+        M.G("wing" + s);
+        tigerMembrane(M, root, elbow, wingTip, TIGW);
+        tigerMembrane(M, root, wingTip, outerNotch, TIGWD);
+        tigerMembrane(M, root, outerNotch, innerTip, TIGW);
+        M.tube([root, elbow, wingTip], [1.15, 0.77, 0.26], TIGSPAR);
+        M.tube([root, innerTip], [0.65, 0.26], TIGWD);
+        M.tube([lerp3(elbow, wingTip, 0.43), wingTip], [0.62 + wind * 0.18, 0.23], wind ? MIST : TIGSPAR);
+        M.G();
+      });
+
+      const hx = f + 7.7 + strike * 2.25, hy = shoulder + 0.55 - wind * 0.9 + strike * 0.7;
+      const jaw = strike ? 2.7 : wind ? 1.15 : 0.45;
+      M.G("face");
+      M.e([hx - 1.8, hy - 0.2, 0], [3.7, 3.9, 4.0], TIGS);
+      M.e([hx, hy, 0], [3.7, 3.18, 3.8], TIG, [0, -9, 0]);
+      M.e([hx + 2.65, hy - 0.7, 0], [2.6, 1.1, 2.8], TIGS);
+      M.e([hx + 2.2, hy - 2.0 - jaw * 0.6, 0], [2.8, 0.86, 2.35], TIGS, [0, strike ? -12 : 0, 0]);
+      M.G();
+      M.e([hx + 4.32, hy - 0.35, 0], [0.8, 0.63, 1.48], STRIPE);
+      if (!down && jaw > 0.8) M.e([hx + 2.9, hy - 1.72 - jaw * 0.24, 0], [2, 0.55 + jaw * 0.2, 2.58], C.MAW);
+      both((s) => {
+        M.cone([hx - 1.65, hy + 2.15, s * 2.3], [hx - 2.2, hy + 4.72, s * 3.3], 1.42, STRIPE);
+        M.cone([hx - 1.2, hy + 2.6, s * 2.6], [hx - 1.72, hy + 4.22, s * 3.28], 0.82, TIGS);
+        M.cone([hx - 1.0, hy - 0.25, s * 2.95], [hx - 2.8, hy - 1.65, s * 4.72], 1.36, TIG);
+        M.tube([[hx - 1.3, hy + 2.79, s * 1.4], [hx + 0.64, hy + 1.7, s * 2.2], [hx + 1.8, hy + 0.5, s * 2.9]], [0.65, 0.48, 0.35], STRIPE);
+        M.eye([hx + 1.72, hy + 0.7, s * 3.08], 2, wind ? "#d7faff" : "#a7bdf6");
+        if (!down) M.cone([hx + 3.7, hy - 1.38, s * 1.72], [hx + 3.56, hy - 2.55 - jaw * 0.41, s * 1.83], 0.64, C.TOOTH);
+      });
     },
   },
 

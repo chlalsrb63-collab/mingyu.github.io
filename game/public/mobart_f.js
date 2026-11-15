@@ -11,55 +11,96 @@ const CAVITY = mat("#180e1a", { role: "keep", flat: true });
 const HIDE = mat("#44252e", { flat: true }), HIDED = mat("#281a24", { flat: true });
 const REDPLATE = mat("#70353d", { flat: true }), REDROCK = mat("#9e414c", { flat: true });
 const SEAM = mat("#e8494e", { role: "glow" }), SEAMC = mat("#ffab99", { role: "glow" });
+const BRONZE = mat("#9f7351", { role: "keep", flat: true }), BRONZED = mat("#604641", { role: "keep", flat: true });
+const RIBSTONE = mat("#c7ac7e", { role: "keep", flat: true });
 const SHELL = mat("#36525e", { flat: true }), SHELLD = mat("#20313d", { flat: true });
 const CLUB = mat("#9fac9c", { role: "keep", flat: true }), CLUBD = mat("#576978", { flat: true });
 const ICE = mat("#55dcef", { role: "glow" }), ICEC = mat("#cbffff", { role: "glow" });
 
-/** A siege-weight monitor lizard. Its wide skull leads a low body and a broken ridge of crystals. */
+/** A bronze-ribbed battering beast, with red crystals splitting its carapace. */
 const bloodhorn = (p2) => ({
   size: "xl", n: 104, glow: p2 ? "#ff8a7a" : "#ff3b3b", k: 1.22,
   draw(M, p) {
-    const [lf, lift] = lunge(p, 1.6);
-    const f = lf * 0.85, u = 7.5 + lift * 0.6 + bob(p, 0.42) - (p.dead || 0) * 4;
-    const rear = p.wind ? 1 : 0, bite = p.strike ? 1 : 0;
-    for (const [hip, s, phase] of [[5, -1, 0], [5, 1, 0.5], [-9, -1, 0.5], [-9, 1, 0]]) {
-      const [sw, up] = gait(p, phase), reach = hip > 0 ? rear - bite * 2 : 0;
-      const foot = [f + hip + sw * 2.6 - reach, 1 + up * 1.5, s * (hip > 0 ? 11 : 9.2)];
-      M.tube([[f + hip, u - 1.3, s * 5.7], [f + hip - 1.3, u - 1.2, s * 8.9], foot], [3.2, 2.6, 2.0], HIDED);
-      M.e([foot[0] + 0.4, foot[1], foot[2]], [2.7, 1.2, 2.3], HIDE);
-      for (const toe of [-1.25, 1.15]) M.cone([foot[0] + 1.7, foot[1] + 0.4, foot[2] + toe], [foot[0] + 3.7, foot[1] - 0.3, foot[2] + toe], 0.73, MASKD);
+    const [stepF, lift] = lunge(p, 1.6), brace = p.wind, bite = p.strike, down = p.dead;
+    const f = stepF * 0.85, u = 7.8 + lift * 0.56 + bob(p, 0.44) - down * 3.9 + brace * 1.1;
+    const fire = p2 ? SEAMC : SEAM;
+    for (const [hip, s, phase] of [[4.8, -1, 0], [4.8, 1, 0.5], [-9, -1, 0.5], [-9, 1, 0]]) {
+      const [sw, up] = gait(p, phase), front = hip > 0;
+      const step = front ? (bite ? (s < 0 ? 4.8 : 1.2) : -brace * 1.8) : (-bite * 1.5);
+      const claw = [f + hip + sw * (front ? 2.2 : 2.6) + step, 1.25 + up * 1.45 + (front && s < 0 ? bite * 1.45 : 0), s * (front ? 9.9 + brace * 0.6 : 8.4)];
+      const elbow = [f + hip - 0.9 + step * 0.38, u + (front ? 0.75 : -1.7), s * (front ? 8.5 : 8.0)];
+      const root = [f + hip, u + (front ? 2.4 : 0.6), s * (front ? 5.6 : 5.2)];
+      M.G((front ? "foreleg" : "hindleg") + s);
+      M.tube([root, elbow, claw], front ? [4.3, 3.3, 2.1] : [3.0, 2.6, 1.75], HIDED);
+      M.e([claw[0] + 0.75, claw[1], claw[2]], front ? [3.5, 1.28, 2.55] : [2.6, 1.08, 2.15], front ? BRONZED : HIDE);
+      M.G();
+      if (front) {
+        M.box([elbow[0] + 0.25, elbow[1] + 0.45, elbow[2] + s * 0.57], [2.45, 2.38, 1.7], BRONZE, [s * 13, -20 - bite * 6, s * 13]);
+        M.tube([[elbow[0] - 1.4, elbow[1] + 1.9, elbow[2] + s * 1.65], [elbow[0] + 1.9, elbow[1] + 1.45, elbow[2] + s * 1.85], [elbow[0] + 2.7, elbow[1] - 0.4, elbow[2] + s * 1.23]], 0.61, RIBSTONE);
+      }
+      for (const toe of front ? [-1.35, 0.1, 1.5] : [-1.05, 1.05]) {
+        M.cone([claw[0] + 1.65, claw[1] + 0.38, claw[2] + toe], [claw[0] + (front ? 4.0 : 3.05), claw[1] - 0.28, claw[2] + toe * 1.13], front ? 0.72 : 0.60, MASKD);
+      }
     }
-    const tailSwing = p.walk ? Math.sin(p.ph * Math.PI * 2) * 3 : bite ? -5 : 1;
-    M.tube([[f - 9, u, 0], [f - 16, u - 2, tailSwing * 0.45], [f - 22, u - 3, tailSwing], [f - 27, 3.4, tailSwing * 1.45]], [4.5, 3.3, 1.8, 0.4], HIDED);
+
+    const sweep = p.walk ? Math.sin(p.ph * Math.PI * 2) * 3.3 : bite ? -3.8 : 1.25;
+    M.tube([[f - 9, u + 0.45, 0], [f - 16, u - 1.8, sweep * 0.44], [f - 22.1, u - 3.1, sweep], [f - 25.7, 3.7, sweep * 1.35]], [4.35, 3.0, 1.65, 0.44], HIDED);
+    for (const [x, h, s, q] of [[-15, -0.75, 0.4, 3.1], [-19.25, -1.63, 0.66, 2.18], [-22.9, -2.9, 1.02, 1.32]]) {
+      M.e([f + x, u + h, sweep * s], [1.35, Math.max(0.6, q * 0.64), q], BRONZED, [sweep * -2, -22, 0]);
+    }
+
     M.G("body");
-    M.e([f - 2, u - 0.8, 0], [12.8, 4.5, 8.5], HIDED);
-    M.e([f + 2.2, u + 1.3, 0], [9.1, 4.8, 8.6], HIDE, [0, 7, 0]);
-    M.e([f - 7.4, u + 0.2, 0], [7.3, 4.2, 7.7], HIDE);
+    M.e([f - 1.65, u - 0.75, 0], [12.8, 4.85, 8.7], HIDED);
+    M.e([f - 6.8, u + 1.05, 0], [7.0, 4.65, 7.9], HIDE);
+    M.e([f + 3.7, u + 2.1, 0], [7.4, 5.5, 9.2], HIDE);
     M.G();
-    const plates = [[6, 5.2, 5.2, 1.6], [1.5, 6.5, 7.2, 3.4], [-3.4, 5.5, 5.9, 2.1], [-8, 4.4, 4.4, 1.6], [-12.1, 3.2, 3.2, 1.2], [-16.2, 2.2, 3.2, 1.0]];
-    for (const [base, y, h, thick] of plates) {
-      const y0 = u + y, raise = rear * (base > 0 ? 1.2 : 0);
-      M.e([f + base, y0 - 1, 0], [2.9, 1.45, Math.max(3.3, 7 - Math.abs(base) * 0.21)], REDPLATE, [0, 10, 0]);
-      M.cone([f + base, y0, 0], [f + base - 3.6, y0 + h + raise + (p2 ? 2.1 : 0), 0], thick, REDROCK);
-      if (p2 || thick > 2) M.tube([[f + base + 0.3, y0 + 0.9, 0], [f + base - 1.4, y0 + h * 0.48, 0]], 0.48, p2 ? SEAMC : SEAM);
+    // Each angled plate overlaps the next, tapering down the spine. Pale rims stop at the exposed flank.
+    const ridges = [[5.9, 7.35, 8.15, 1.65], [1.9, 7.66, 8.65, 1.52], [-2.35, 7.2, 8.35, 1.33], [-6.5, 6.02, 7.85, 1.28], [-10.35, 4.65, 6.45, 1.1]];
+    ridges.forEach(([x, y, w, r], i) => both((s) => {
+      const uneven = s * (i % 2 ? 0.54 : -0.15), up = u + y + brace * (i < 2 ? 0.6 : 0);
+      const spine = [f + x + uneven, up, s * 0.69];
+      const upper = [f + x - 0.64 + uneven, up - 0.73, s * w * 0.67];
+      const shoulder = [f + x - 1.38 + uneven, up - 3.75, s * w];
+      const shard = [f + x - 1.9 + uneven, up - 5.65 + (i % 2) * 0.42, s * (w + 0.85)];
+      M.G("panel" + i + s);
+      M.tube([spine, upper, shoulder, shard], [r, r * 1.16, r * 1.18, r * 0.43], i % 2 ? BRONZED : BRONZE);
+      M.tube([spine, upper, [shoulder[0] + 0.45, shoulder[1] + 0.27, shoulder[2]]], [0.83, 0.66, 0.46], RIBSTONE);
+      M.G();
+    }));
+
+    // Warm seams show the inward fracture; in phase two the wedge-shaped crystals spread out of it.
+    for (const [x, y, height, width] of [[6, 7.9, 3.7, 1.05], [1.2, 8.3, 6.7, 2.38], [-3.9, 7.4, 4.8, 1.55], [-8.35, 5.6, 3.8, 1.18], [-12.7, 4.15, 2.75, 0.85]]) {
+      const z = u + y, growth = p2 ? 2.25 : 0;
+      M.e([f + x, z - 0.42, 0], [2.2, 1.2, 2.65], REDPLATE, [0, 6, 0]);
+      M.box([f + x - 0.63, z + height * 0.37, 0.16], [width, height * 0.49, width * 0.88], REDROCK, [0, 29, -13]);
+      const tip = [f + x - 2.55 - p2 * 0.78, z + height + growth + brace * 0.63, 0.45];
+      M.cone([f + x, z + 0.54, 0.25], tip, width, REDROCK);
+      M.tube([[f + x + 0.27, z + 0.6, 0.73], [f + x - 0.85, z + height * 0.51, 1], [tip[0] + 0.52, tip[1] - 1.1, 0.62]], [0.60, 0.47, 0.28], fire);
+      if (p2 && width > 1.5) both((s) => M.cone([f + x - 1, z + 0.15, s * 1.7], [f + x - 4.5, z + height * 0.85, s * 3.5], 1.0, SEAM));
     }
-    const hx = f + 12.2 + bite * 2.4, hy = u + 1.8 + rear * 1.8 - bite * 1.1;
+
+    const hx = f + 11.9 + bite * 2.5, hy = u + 2.45 + brace * 2.1 - bite * 1.36;
+    const jaw = bite ? 3.5 : p2 ? 2.0 : 1.15;
     M.G("skull");
-    M.e([hx - 2, hy, 0], [5.0, 3.6, 7.2], HIDED);
-    M.box([hx + 2.1, hy + 0.65, 0], [5.3, 1.8, 5.1], MASKD, [0, -7, 0]);
-    M.e([hx - 0.8, hy + 2, 0], [5.6, 2.3, 6.8], MASK);
-    M.box([hx + 4.55, hy + 0.95, 0], [2.8, 1.6, 3.35], MASK, [0, -8, 0]);
+    M.e([hx - 2, hy + 0.2, 0], [5.1, 3.75, 7.2], HIDED);
+    M.box([hx + 2.55, hy + 0.75, 0], [4.65, 1.8, 4.72], MASKD, [0, -10, 0]);
+    M.e([hx - 0.55, hy + 2.33, 0], [5.15, 2.25, 6.92], MASK);
+    M.box([hx + 4.45, hy + 0.96, 0], [2.95, 1.62, 3.48], MASK, [0, -12, 0]);
     M.G();
-    const jaw = bite ? 3.3 : p2 ? 2.0 : 1.2;
-    M.e([hx + 3, hy - 1.8 - jaw, 0], [5.1, 1.05, 3.85], HIDED, [0, bite ? 9 : 1, 0]);
+    M.e([hx + 3.15, hy - 1.65 - jaw, 0], [5.0, 1.23, 4.12], HIDED, [0, bite ? -14 : -4, 0]);
+    M.e([hx + 4.35, hy - 0.92 - jaw * 0.5, 0], [3.7, 0.82 + bite * 0.52, 3.85], CAVITY);
     both((s) => {
-      M.tube([[hx - 2.4, hy + 2, s * 4.4], [hx - 4.75, hy + 5.6, s * 7.2], [hx - 8.6, hy + 7.8, s * 8.7]], [2, 1.35, 0.35], MASKD);
-      M.cone([hx - 1.4, hy + 3.6, s * 2.8], [hx - 2.6, hy + 7.9, s * 3.4], 1.2, MASK);
-      M.tube([[hx - 2, hy - 0.2, s * 5.1], [hx + 1.9, hy + 0.7, s * 5.2], [hx + 4, hy, s * 4.5]], [1.1, 0.7, 0.35], CAVITY);
-      if (!p.dead) M.tube([[hx + 0.2, hy + 0.05, s * 5.8], [hx + 2.5, hy - 0.1, s * 5.3]], 0.54, p2 ? SEAMC : SEAM);
-      M.cone([hx + 1.7, hy - 1, s * 4.1], [hx + 2.6, hy - 2.8 - jaw * 0.4, s * 4.5], 0.9, MASK);
-      M.cone([hx + 5.7, hy - 0.85, s * 2.55], [hx + 5.9, hy - 2.1, s * 2.8], 0.65, MASK);
-      if (bite) M.tube([[hx + 3.1, hy - 0.2, s * 4.6], [hx + 8.4, hy - 1.3, s * 5.2], [hx + 13.4, hy - 2.9, s * 5.6]], [0.62, 0.28], SEAM);
+      M.tube([[hx - 2.33, hy + 2.2, s * 4.7], [hx - 4.75, hy + 4.2, s * 7.45], [hx - 8.75, hy + 6.35, s * 9.1]], [1.93, 1.4, 0.29], BRONZE);
+      M.tube([[hx - 1.75, hy + 2.5, s * 4.2], [hx - 4.45, hy + 4.85, s * 7.1], [hx - 8.55, hy + 6.45, s * 8.94]], [1.17, 0.81, 0.22], MASK);
+      M.cone([hx - 0.9, hy + 3.65, s * 2.74], [hx - 2.8, hy + 6.9, s * 3.4], 1.26, RIBSTONE);
+      M.tube([[hx - 2.05, hy + 0.1, s * 5.78], [hx + 1.7, hy + 0.62, s * 5.7], [hx + 4.0, hy + 0.01, s * 4.78]], [0.94, 0.70, 0.29], CAVITY);
+      if (!down) M.tube([[hx + 0.45, hy + 0.18, s * 6.03], [hx + 2.85, hy + 0.12, s * 5.4]], [0.58, 0.35], fire);
+      M.cone([hx + 1.76, hy - 1.13, s * 4.21], [hx + 2.62, hy - 2.85 - jaw * 0.41, s * 4.43], 0.89, MASK);
+      M.cone([hx + 5.64, hy - 1.03, s * 2.51], [hx + 5.81, hy - 2.2, s * 2.80], 0.58, MASK);
+      if (bite) {
+        M.tube([[hx + 3.1, hy - 0.2, s * 4.65], [hx + 8.4, hy - 1.45, s * 5.03], [hx + 12.8, hy - 2.73, s * 5.5]], [0.73, 0.25], SEAM);
+        if (p2) M.tube([[hx + 3.5, hy - 0.13, s * 4.48], [hx + 8.1, hy - 1.1, s * 4.84]], [0.55, 0.29], SEAMC);
+      }
     });
   },
 });

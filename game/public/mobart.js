@@ -370,6 +370,7 @@ const PAD = 8;
 /** Everything is built a third bigger than its model's pixel numbers: the cast reads at about one and a half adventurers. */
 const GK = 1.3;
 const rigs = new Map();
+const canvasSize = (def, sc) => Math.ceil((def.n || CANVAS[def.size] || 48) * sc * GK / 2) * 2;
 
 /**
  * One monster's frames, drawn when first asked for. `sc` enlarges it (elites
@@ -382,7 +383,7 @@ export function rig(kind, tint, sc = 1) {
   let R = rigs.get(key);
   if (R) return R;
   const def = BEASTS[kind] || BEASTS.chest;
-  const N = Math.ceil((def.n || CANVAS[def.size] || 48) * sc * GK / 2) * 2, foot = [N / 2, N - Math.round(Math.max(PAD * sc, N * 0.14))];
+  const N = canvasSize(def, sc), foot = [N / 2, N - Math.round(Math.max(PAD * sc, N * 0.14))];
   const frames = [[], [], [], []];
   R = {
     kind, def, N, foot, sc,
@@ -432,6 +433,8 @@ export function icon(kind, tint, fr = 0) {
 
 /** Elites and guardians are drawn bigger. */
 const SCALE = [1, 1.15, 1.6];
+/** Render boss frames at native resolution around the same ground anchor. */
+export const encounterScale = (boss, rank) => boss ? 1.5 : rank === 2 ? 2.16 : SCALE[rank] || 1;
 /** The colour of an elite's aura, and a guardian's. */
 const AURA = ["", "255,196,64", "255,110,214"];
 const nearest = (G, m) => {
@@ -450,6 +453,7 @@ function facing(s, dx, dy) {
 
 /** A scripted boss's look of the moment (net.js `bst` 0 · 1 marked cast · 2 dived, `bph` phase): kind_dive, kind_ch, kind_p2 — each only if drawn. */
 export function artKind(kind, m) {
+  if (m.el === 2 && BEASTS[kind + "_boss"]) kind += "_boss";
   for (const [on, sfx] of [[m.bst === 2, "_dive"], [m.bst === 1, "_ch"], [m.bph >= 2, "_p2"]]) if (on && BEASTS[kind + sfx]) return kind + sfx;
   return kind;
 }
@@ -458,8 +462,10 @@ export function artKind(kind, m) {
  * scene's per-monster scratch state, `parts` its particle list, G the game state.
  */
 export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
-  const el = m.el | 0, sc = d.boss ? 1 : SCALE[el] || 1;
-  const R = rig(m.bst || m.bph > 1 ? artKind(d.sp, m) : d.sp, tint, sc), def = R.def;
+  const el = m.el | 0, boss = d.boss || el === 2;
+  const sc = encounterScale(d.boss, el), baseScale = d.boss ? 1 : SCALE[el] || 1;
+  const kind = artKind(d.sp, m);
+  const R = rig(kind, tint, sc), def = R.def;
   if (s.px === undefined) { s.px = m.x; s.py = m.y; s.fx = (m.id & 1); s.back = 0; s.dist = 0; s.mvT = -1e9; }
   const mx = m.x - s.px, my = m.y - s.py, step = Math.hypot(mx, my);
   if (step > 0.04) { s.mvT = t; s.dist += step; facing(s, mx, my); }
@@ -476,20 +482,21 @@ export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
   let fr, shake = 0, lunge = 0;
   const lp = s.leapT ? t - s.leapT : 1e9;
   if (h < 170 && h >= 0) fr = FR.hurt;
-  else if (lp < 200) { fr = FR.strike; lunge = -Math.sin((lp / 200) * Math.PI) * 6 * sc; }
+  else if (lp < 200) { fr = FR.strike; lunge = -Math.sin((lp / 200) * Math.PI) * 6 * baseScale; }
   else if (w < windMs) { fr = FR.wind; shake = Math.sin(t / 28) * Math.min(1, w / windMs) * 1.2; }
-  else if (a >= 0 && a < 240) { fr = FR.strike; lunge = Math.sin((a / 240) * Math.PI) * 5 * sc; }
-  else if (w >= windMs && w < windMs + 260) { fr = FR.strike; lunge = Math.sin(((w - windMs) / 260) * Math.PI) * 3 * sc; }
+  else if (a >= 0 && a < 240) { fr = FR.strike; lunge = Math.sin((a / 240) * Math.PI) * 5 * baseScale; }
+  else if (w >= windMs && w < windMs + 260) { fr = FR.strike; lunge = Math.sin(((w - windMs) / 260) * Math.PI) * 3 * baseScale; }
   else if (flyer) fr = FR.walk0 + (Math.floor(t / (moving ? 95 : 140) + m.id) % 4);
   else if (moving) fr = FR.walk0 + (Math.floor(s.dist / (2.4 * sc * (def.k || 1) * (def.size === "l" || def.size === "boss" ? 1.4 : 1))) % 4);
   else fr = Math.floor((t + m.id * 137) / 560) % 2 ? FR.idle1 : FR.idle0;
   const img = R.frame(dir, fr);
   if (!R.h) { R.h = height(img); }
-  m._mob = { kind: d.sp, tint, sc, dir, death: def.death || "fall", hover: def.hover || 0, col: def.glow };
+  m._mob = { kind, tint, sc, dir, death: def.death || "fall", hover: def.hover || 0, col: def.glow };
   // the ground: a shadow, and an elite's ring
-  const span = R.N * (flyer ? 0.16 : 0.24), hover = (def.hover || 0) * sc;
+  const span = canvasSize(def, baseScale) * (flyer ? 0.16 : 0.24), hover = (def.hover || 0) * sc;
+  const shadowSpan = span * Math.sqrt(sc / baseScale);
   g.fillStyle = "rgba(20,24,50,.28)";
-  g.beginPath(); g.ellipse(X, Y, span, span * 0.48, 0, 0, 7); g.fill();
+  g.beginPath(); g.ellipse(X, Y, shadowSpan, shadowSpan * 0.48, 0, 0, 7); g.fill();
   if (el || d.boss) {
     const pulse = 0.55 + 0.3 * Math.sin(t / 160 + m.id), col = AURA[el] || "255,90,120";
     g.save();
@@ -522,7 +529,8 @@ export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
   else if (el) { g.shadowColor = "#ffc040"; g.shadowBlur = 4; }
   g.drawImage(white ? whiteOf(img) : img, -R.foot[0], -R.foot[1]);
   g.restore();
-  m.h3 = (R.h + fly) / 26;
+  const labelPad = boss ? Math.min(0, R.foot[1] - R.N + (m.stg ? 31 : 17)) : 0;
+  m.h3 = (R.h + fly + labelPad) / 26;
 }
 /** A frame as a pure white silhouette (the first frames of a hit), cached per frame. */
 const whites = new WeakMap();
