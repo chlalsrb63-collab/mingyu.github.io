@@ -78,6 +78,10 @@ now has a bag icon); 혈루 뿔 왕관 + 갯가재 집게 weapon skin (boss pool
 Play server: `.claude/launch.json` "play-1530" (port 8830, persist `game/.wrangler/play`) restarted 16:20 on this build;
 `public/index.html` carries a local `npm run stamp` cache tag (not committed, as the rules say).
 
+**Rift = 3-floor raid** (owner, after 17:00): one run is 1단 → 2단 (하강의 문, 10 s or all stepped in) → 3단, whose 100% wakes the
+final boss in the far hall; 15 min limit, ~10 min target; the 1–100 ladder is gone (sheet **v22** resets ladder records; `dim[14]` = floor).
+Bots 4 × Lv 17/32/44 × 4 draws: 11/12 clear, 8.6–11.3 min, avg 9.6 (one Lv 17 draw wiped on the boss). `docs/design/scale-and-rift.md` H.7.
+
 **Next, in order:**
 1) Play-test the four co-op jobs (forge/alch bots hit every beat — real players score lower; retune cut-offs) and the bosses-2 raids.
 2) Co-op leftovers: diner burger + two-carrier orders and a clean-plate stack (plates/sink done, C row kind 9; the 3-player cut-off
@@ -85,7 +89,7 @@ Play server: `.claude/launch.json` "play-1530" (port 8830, persist `game/.wrangl
 3) Server-first notice reaches only the channel where it happened (the other channel of that server doesn't hear it).
 4) 55 monsters are regional tints of another sprite (deliberate variants); the four that were different creatures now have art.
 5) Town polish (§3): benches to sit on (seats would sit on a solid prop — needs care), spirit-tree canopy over the fountain.
-Known: rift tier 5+ (measured 16:10, 4 plain-geared bots at Lv.32, 3 draws: tier 1 3/3 ~5 min · 5 2/3 ~7 min · 6 0/3 · 7 1/3 ·
+Known (superseded by the 3-floor raid): rift tier 5+ (measured 16:10, 4 plain-geared bots at Lv.32, 3 draws: tier 1 3/3 ~5 min · 5 2/3 ~7 min · 6 0/3 · 7 1/3 ·
 10/15/20 0/3 with 50–85 deaths; no single table step — monster HP ×1.08^t is the lever (tier 10 with HP ×1 clears 2/3), rewards grow
 linearly; owner decision: how far plain gear should climb before enhancement/sets — nothing changed); `maps` test's build-time assert flakes under load (passes alone); job reset costs as reviewed.
 **Agent worktrees from `isolation: "worktree"` start at origin/main (stale) — first step of every brief: `git rebase main`.**
