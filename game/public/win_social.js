@@ -30,6 +30,10 @@ function partyWhere(member, radius) {
 function partyHuntRadius() {
   return G.defs?.maps?.some((map) => map.id === G.map?.id && !map.safe) ? (G.defs.fieldParty?.tiles || 0) * T : 0;
 }
+export function partyDisplayKey(members) {
+  const radius = partyHuntRadius();
+  return JSON.stringify(members.map((member) => [...member.slice(0, 6), partyWhere(member, radius)]));
+}
 export function renderPartyHud() {
   const box = $("#party-hud");
   box.textContent = "";

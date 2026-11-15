@@ -34,7 +34,7 @@ import { section, refreshUi, resetPurse, hudBars } from "./hud.js";
 import { openStats, openTree } from "./win_char.js";
 import { doorFade } from "./win_world.js";
 import * as Charms from "./charms.js";
-import { renderRank, renderParty, renderGuild, renderPartyHud, renderInvite } from "./win_social.js";
+import { renderRank, renderParty, renderGuild, renderPartyHud, renderInvite, partyDisplayKey } from "./win_social.js";
 
 // ───────────────────────────── connection ─────────────────────────────
 
@@ -265,10 +265,17 @@ function onSnap(s) {
   if (s.chat) for (const c of s.chat) if (c.sys && !far(c) && /나타났습니다/.test(c.m)) Sound.play(/균열/.test(c.m) ? "elite" : "announce");
   if (s.gain) for (const gn of s.gain) onGain(gn);
   if (s.toast) for (const m of s.toast) toast(m);
-  // (a member's place, [7…], changes every step: only who they are and how they fare redraw the party)
+  // Keep live positions for the map. Only visible party fields redraw the cards.
   G.fb = s.fb || null;
-  const pk = JSON.stringify((s.party || []).map((r) => r.slice(0, 7)));
-  if (pk !== G.partyKey) { if (G.partyKey !== undefined && (s.party || []).length > (G.party || []).length) Sound.play("party"); G.partyKey = pk; G.party = s.party || []; renderPartyHud(); if (isOpen("party")) renderParty(); }
+  const oldPartySize = G.party.length;
+  G.party = s.party || [];
+  const pk = partyDisplayKey(G.party), partyChanged = pk !== G.partyKey;
+  if (partyChanged) {
+    if (G.partyKey !== undefined && G.party.length > oldPartySize) Sound.play("party");
+    G.partyKey = pk;
+    renderPartyHud();
+  }
+  if ((partyChanged || s.who) && isOpen("party")) renderParty();
   const gi = s.ginv ? s.ginv.join("|") : null;
   if ((s.pinv || null) !== G.pinv || gi !== G.ginv) { G.pinv = s.pinv || null; G.ginv = gi; renderInvite(); }
   Gather.onSnap(s);                            // `ng`: the nodes you have spent here (gather.js)
