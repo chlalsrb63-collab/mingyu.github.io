@@ -17661,6 +17661,8 @@ export function defs() {
     daily: { resetKST: 6, text: DAILY_TEXT }, social: socialDefs(), tutorial: TUT.map(({ id, title, hint, need }) => ({ id, title, hint, need: need || 1 })), recallMs: RECALL_MS,
     // side quests from the world map editor, with who gives them and where they stand
     questTurnIn: { npc: "elder", map: NPC_MAP.elder },
+    // every NPC id → the map it stands on (the client's 추적 walks there; track.js)
+    npcMap: { ...NPC_MAP },
     side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAP_META[NPC_MAP[q.giver]].name,
       giverMapId: NPC_MAP[q.giver], targetMap: q.id === AIRSHIP_QUEST ? AIRSHIP_MAP : q.goal.type === "talk" ? NPC_MAP[q.goal.npc] : q.goal.type === "visit" ? q.goal.map : null,
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
