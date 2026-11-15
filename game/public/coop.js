@@ -665,7 +665,8 @@ function renderCard() {
     if (o && Math.hypot(me.x - (o.x * T + 8), me.y - (o.y * T + 12)) < D().near - 4) { k = kk; n = o; }
   }
   const done = !!(k && G().self && (G().self.coop || []).includes(k)), party = (G().party || []).length;
-  const key = k ? [k, done, party].join() : "";
+  const lead = party > 0 && G().party[0][0] === G().you;   // row 0 is the leader (as board.js partyLead)
+  const key = k ? [k, done, party, lead].join() : "";
   if (key === st.cardKey) return;
   st.cardKey = key;
   if (!k) { b.hidden = true; return; }
@@ -675,7 +676,7 @@ function renderCard() {
     `<p class="cc-day">${done ? "오늘 보수 수령 완료 · 보수 없이 다시 참여할 수 있어요. 조건을 충족한 미수령 팀원은 보수를 받아요."
       : `참여 조건을 충족하고 C 등급 이상이면 골드·강화석·장비·${SKILL[k] || "생활"} 경험치를 받아요.`}</p>` +
     (done ? "" : `<p class="cc-day">등급별 보수 ${gradePct()}</p>`) +
-    (party > 1 ? `<button class="btn gold">파티와 ${done ? "다시 근무" : "근무 시작"} (파티장)</button><p class="cc-day">파티장만 시작할 수 있어요.</p>` : `<p class="cc-day">협동 알바는 2~4명 파티로만 할 수 있어요. 파티원과 함께 와 주세요.</p>`);
+    (party > 1 ? (lead ? `<button class="btn gold">파티와 ${done ? "다시 근무" : "근무 시작"}</button><p class="cc-day">파티원이 이 방에 모이면 시작하세요.</p>` : `<p class="cc-day">파티장이 이 NPC에게 말을 걸어 근무를 시작해요. 파티장 곁에서 기다려 주세요.</p>`) : `<p class="cc-day">협동 알바는 2~4명 파티로만 할 수 있어요. 파티원과 함께 와 주세요.</p>`);
   const btn = b.querySelector("button");
   if (btn) btn.addEventListener("click", () => A.act({ t: "coop_start", k }));
   b.hidden = false;
