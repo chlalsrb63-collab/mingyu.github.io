@@ -22,7 +22,7 @@ assert.deepEqual(v.self.mk, { twinhare: 3 }, "so is its mastery");
 
 // ── the quest chain names real monsters, in rising level, each of which lives somewhere
 const homes = {};
-for (const m of D.maps) for (const k of m.mobs) homes[k] = m.id;
+for (const m of D.maps) for (const k of [...m.mobs, ...(m.bosses || [])]) homes[k] ??= m.id;   // a field boss (a story-fight step) lives at its ground too
 let lastLv = 0;
 for (const q of D.quests) {
   assert.ok(D.mobs[q.mob], "quest monster exists: " + q.mob);

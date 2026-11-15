@@ -556,9 +556,9 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   assert.deepEqual(ch.wp, { town: 1, meadow: 1, forest: 1 }, "each map it had keeps its first stone");
   assert.deepEqual(ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: D.dim.chal.bosses.map(() => 0) });
   assert.equal(ch.tw, 2, "it is moved onto the current town layout (TOWN_REV)");
-  assert.equal(ch.v, 23);
+  assert.equal(ch.v, 24);
   assert.deepEqual(W.step().self.wp, { town: 1, meadow: 1, forest: 1 }, "the wire carries the masks");
-  assert.equal(L.newChar("새판", "warrior", []).v, 23);
+  assert.equal(L.newChar("새판", "warrior", []).v, 24);
   assert.deepEqual(L.newChar("새판", "warrior", []).wp, { town: 1 });
   const odd = L.newChar("이상", "lancer", []);
   odd.wp = { meadow: 5, nowhere: 1, forest: 0, cave: "x", maple: 1 << 12 }; odd.dim = { day: -4, n: 1e6 };
@@ -582,7 +582,7 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   for (const cls of Object.keys(SH)) for (const L0 of [1, 19, 20, 35, 50]) {
     const ch = join(oldSheet("이주" + n, cls, L0, { xp: 123, gold: 1000, st: { elite: 7, carp: 1 }, qs: [["s", 0], ["i", "hp_s"], null, null, null, null, null, null, null] }));
     const tag = `${cls} L${L0}`;
-    assert.equal(ch.v, 23, tag);
+    assert.equal(ch.v, 24, tag);
     assert.equal(ch.lvl, Math.min(197, 4 * L0 - 3), tag + ": level 4L−3");
     assert.equal(ST.reduce((s, k) => s + ch.st[k] - 5, 0), ch.lvl - 1, tag + ": a level is a point");
     assert.equal(ch.job, L0 >= 20 ? SH[cls][1] : "adventurer", tag + ": the class's job from old level 20");
@@ -643,7 +643,7 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   const h10 = oldSheet("집주인", "rogue", 30, { v: 10, bagCap: 60, house: { tier: 1, storage: [{ id: "hp_m", n: 7 }] } });
   h10.inv = Array.from({ length: 50 }, () => ({ id: "h_1", q: 0, enh: 0, af: [], sk: 0, ru: [] }));
   const hj = join(h10);
-  assert.equal(hj.v, 23); assert.equal(hj.job, "thief"); assert.equal(hj.lvl, 117); assert.equal(hj.wm.dagger.lv, 30);
+  assert.equal(hj.v, 24); assert.equal(hj.job, "thief"); assert.equal(hj.lvl, 117); assert.equal(hj.wm.dagger.lv, 30);
   assert.equal(hj.bagCap, 60); assert.equal(hj.inv.length, 50, "nothing in the bigger bag is lost");
   assert.equal(hj.house.tier, 1); assert.deepEqual(hj.house.storage.map((s) => s.id), ["hp_m"]);
 }
@@ -667,7 +667,7 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   Object.assign(s11, { v: 11, fish: 100000, cnt: { ...s11.cnt, cook: 7 } });
   const v11 = join(s11);
   for (const [ch, fish, cook, tag] of [[v9, 50, 30, "v9"], [v10, 3, 0, "v10"], [v11, 100000, 7, "v11"]]) {
-    assert.equal(ch.v, 23, tag);
+    assert.equal(ch.v, 24, tag);
     assert.deepEqual(ch.life.fish, lvFor(fish * 8), tag + ": 낚시 from the fish caught");
     assert.deepEqual(ch.life.cook, lvFor(cook * 10), tag + ": 요리 from the dishes cooked");
     for (const k of ["gather", "craft", "alch", "deliver"]) assert.deepEqual(ch.life[k], { lv: 1, xp: 0 }, tag + " " + k);

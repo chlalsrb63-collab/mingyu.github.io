@@ -60,6 +60,13 @@ for (const q of SIDE) {
   if (q.req.quest && !SQ_BY[q.req.quest]) q.req.quest = null;
   if (q.req.flag && !SQ_BY[q.req.flag[0]]?.choice) delete q.req.flag;
 }
+// main-chain chapters (P6): a QUESTS row's `sq` is its story beat, a mainChapter quest that opens once the chain reaches
+// that row and must be done before the row can be accepted (70-validate.js); a row naming none, or a missing one, has no beat
+const SQ_MAIN = {};
+for (const [i, Q] of QUESTS.entries()) {
+  if (Q.sq && SQ_BY[Q.sq]?.mainChapter && !Object.hasOwn(SQ_MAIN, Q.sq)) SQ_MAIN[Q.sq] = i;
+  else delete Q.sq;
+}
 /** Who a quest is handed in to: the recipient of a delivery, else the giver. */
 const sqTurnIn = (q) => (q.goal.type === "deliver" ? q.goal.npc : q.giver);
 /** The reward a hand-in pays: the picked option's own, else the quest's. */
@@ -114,7 +121,7 @@ function sqState(ch, q) {
   if (ch.sq.done[q.id] && !q.repeat) return 4;
   const f = q.req.flag;
   if (f && ch.sq.done[f[0]] && (ch.sq.flags[f[0]] | 0) !== f[1]) return -1;
-  if (ch.lvl < q.req.lv || (q.req.main && ch.q.i < QUESTS.length) || (q.req.quest && !ch.sq.done[q.req.quest]) || (f && !ch.sq.done[f[0]])) return 0;
+  if (ch.lvl < q.req.lv || (q.req.main && ch.q.i < QUESTS.length) || (Object.hasOwn(SQ_MAIN, q.id) && ch.q.i < SQ_MAIN[q.id]) || (q.req.quest && !ch.sq.done[q.req.quest]) || (f && !ch.sq.done[f[0]])) return 0;
   return 1;
 }
 const npcName = (id) => (Object.hasOwn(NPC_NAME, id) ? NPC_NAME[id] : id);
@@ -176,6 +183,7 @@ function sqValidate(S, p, a) {
     if (st === -1) return bad("다른 길을 골랐습니다");
     if (ch.lvl < q.req.lv) return bad(`레벨 ${q.req.lv} 이상이어야 합니다`);
     if (q.req.main && ch.q.i < QUESTS.length) return bad("앞선 주요 의뢰를 모두 마쳐야 합니다");
+    if (Object.hasOwn(SQ_MAIN, q.id) && ch.q.i < SQ_MAIN[q.id]) return bad("주요 의뢰를 더 진행해야 합니다");
     if (st === 0) { const pre = SQ_BY[q.req.quest || q.req.flag[0]]; return bad(`먼저 [${pre.title}]${pp(pre.title, "을를")} 마쳐야 합니다`); }
     if (!q.mainChapter && Object.keys(ch.sq.on).filter((id) => !SQ_BY[id]?.mainChapter).length >= SQ_MAX) return bad(`퀘스트는 ${SQ_MAX}개까지 받을 수 있습니다`);
     if (q.goal.type === "deliver" && !canAdd(ch, q.goal.item, q.goal.n)) return bad("맡길 물건을 넣을 가방 자리가 없습니다");

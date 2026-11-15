@@ -183,7 +183,7 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   const old = JSON.parse(JSON.stringify(L.exportChar(W0.S, W0.PID)));
   delete old.jobs; delete old.lo; old.v = 17; old.jp = { lv: 9, xp: 3 };
   const W = world({ ch: old });
-  assert.equal(W.ch.v, 23);
+  assert.equal(W.ch.v, 24);
   assert.deepEqual(W.ch.jobs, { swordsman: { lv: 9, xp: 3 } }); assert.equal(W.ch.jobs.swordsman, W.ch.jp);
   assert.deepEqual(W.ch.lo, {});
   assert.deepEqual(L.newChar("새판", []).jobs, {});
@@ -224,7 +224,7 @@ assert.equal(D.items.scr_job.name, "전직 초기화 주문서"); assert.equal(D
 // ── v20: four field-boss steps went into the main chain; a v19 sheet keeps its place on the same errand
 {
   const Q = D.quests, W = world();
-  const oldIdx = Q.map((q, j) => (q.v20 ? -1 : j)).filter((j) => j >= 0);
+  const oldIdx = Q.map((q, j) => (q.v20 || q.v24 ? -1 : j)).filter((j) => j >= 0);   // a v19 chain had neither
   const k = oldIdx.findIndex((j) => j > Q.findIndex((q) => q.v20));   // the first old step past an insertion
   assert.ok(Q.filter((q) => q.v20).length === 4 && k > 0);
   const old = JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID)));

@@ -422,7 +422,12 @@ export function validateAction(S, pid, a) {
       if (!npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
       const quest = QUESTS[ch.q.i];
       if (!quest) return bad("모든 의뢰를 마쳤습니다");
-      if (a.a === "accept") return ch.q.st === 0 ? OK : bad("이미 진행 중입니다");
+      if (a.a === "accept") {
+        if (ch.q.st !== 0) return bad("이미 진행 중입니다");
+        // a chapter's story beat comes first (QUESTS `sq`, 62-side-quests.js SQ_MAIN)
+        const beat = quest.sq && !ch.sq.done[quest.sq] ? SQ_BY[quest.sq] : null;
+        return beat ? bad(`먼저 [${beat.title}]${pp(beat.title, "을를")} 마쳐 주게 — ${npcName(beat.giver)}`) : OK;
+      }
       if (a.a === "done") {
         if (ch.q.st !== 1 || ch.q.n < quest.n) return bad("아직 의뢰를 마치지 못했습니다");
         for (const [id, n] of quest.items) if (!canAdd(ch, id, n)) return bad("가방을 비우고 다시 오세요");
