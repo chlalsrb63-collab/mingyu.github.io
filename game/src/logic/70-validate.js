@@ -313,6 +313,7 @@ export function validateAction(S, pid, a) {
       if (!from) return bad("잘못된 요청입니다");
       const sl = Number.isInteger(a.s) ? from[a.s] : null;
       if (!sl) return bad("아이템이 없습니다");
+      if (a.a === "put" && isQuestItem(sl.id)) return bad("퀘스트 아이템은 창고에 맡길 수 없습니다");
       const n = isGear(sl.id) ? 1 : a.n | 0;
       if (n < 1 || n > (sl.n || 1)) return bad("잘못된 수량");
       if (a.a === "put") return whRoom(wh, sl.id, n) ? OK : bad("창고가 가득 찼습니다");
@@ -341,6 +342,7 @@ export function validateAction(S, pid, a) {
       }
       const s = invAt(ch, a.s);
       if (!s) return bad("아이템이 없습니다");
+      if (isQuestItem(s.id)) return bad("퀘스트 아이템은 팔 수 없습니다");
       const n = a.n | 0;
       if (n < 1 || n > (s.n || 1)) return bad("잘못된 수량");
       if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");

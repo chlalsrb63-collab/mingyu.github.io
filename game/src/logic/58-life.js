@@ -113,7 +113,9 @@ function cookDish(S, p, r, s) {
   if (s < cookBurnt(L, r)) return { id: "burnt", n: 1, great: false, burnt: true };
   const great = rnd(S) * 100 < lifeOdds(L, r.lv, s)[1];
   gainLife(S, p, "cook", lifeXp(L, r.lv, RXP[lifeGrade(r.lv) - 1] * (great ? 1.5 : 1)));
-  return { id: r.out[0], n: r.out[1] * (great || s >= COOKING.two ? 2 : 1), great, burnt: false };
+  const n = r.out[1] * (great || s >= COOKING.two ? 2 : 1);
+  sqMade(S, p, r.out[0], n);
+  return { id: r.out[0], n, great, burnt: false };
 }
 
 // ── the sheet (D): life, jobBoard, rep, coopDay, coopDone, pouch — cleaned by migrate, never trusted
@@ -359,6 +361,7 @@ function craftOnce(S, p, r, s) {
     else if (addItem(ch, r.out[0], n)) p.gain.push(["item", r.out[0], n, 0]);
   }
   gainLife(S, p, r.sk, xp);
+  sqMade(S, p, r.out[0], r.gear || r.out[0] === "rune*" ? 1 : r.out[1] * (roll.great ? 2 : 1));
   ch.cnt.craft++;
   if (r.sk === "cook") {
     ch.cnt.cook++;

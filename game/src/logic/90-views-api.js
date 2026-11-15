@@ -45,7 +45,7 @@ function selfPayload(p) {
       Math.max(0, (p.wind || 0) - now),
       // then 안락한 휴식 (a bed or a hearth at home, 64-housing.js)
       Math.max(0, ch.house.cozy - now)],
-    wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, sq: sqView(ch),
+    wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, sq: sqView(ch), keep: Object.keys(ch.keep),
     dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather"), by: p.blame ? p.blame.by : null, lv: p.blame ? p.blame.lv : 0, el: p.blame ? p.blame.el : 0 } : null,
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     // waypoint stones woken: { mapId: bitmask } (bit 0 = the map's first stone)
@@ -209,6 +209,18 @@ function worldMapDefs() {
   });
 }
 
+/** One side quest for the client: who gives it and takes it back, where its goal is, what to call it (sidequests.js, track.js). */
+function sideDef(q) {
+  const g = q.goal, r = g.type === "make" ? sqRecipe(g.item) : null, to = sqTurnIn(q);
+  return { ...q, giverName: npcName(q.giver), giverMap: MAP_META[NPC_MAP[q.giver]].name, giverMapId: NPC_MAP[q.giver],
+    turnIn: to, turnInName: npcName(to), turnInMap: MAP_META[NPC_MAP[to]].name,
+    targetMap: q.id === AIRSHIP_QUEST ? AIRSHIP_MAP : g.type === "talk" || g.type === "deliver" ? NPC_MAP[g.npc] : g.type === "visit" || g.map ? g.map || null : null,
+    // make: where the recipe is made ("fire" = any campfire, else the station's NPC)
+    ...(r ? { station: r.at === "fire" ? "fire" : SQ_STATION[r.at] || null } : {}),
+    target: g.type === "kill" ? MOBS[g.mob].name : g.type === "collect" || g.type === "make" || g.type === "deliver" ? ITEMS[g.item].name : g.type === "talk" ? npcName(g.npc)
+      : g.type === "elite" || g.type === "fb" ? g.named || `${g.map ? MAP_META[g.map].name + " " : ""}${g.type === "fb" ? "우두머리" : g.mob ? `정예 ${MOBS[g.mob].name}` : "정예 몬스터"}`
+        : g.type === "choice" ? npcName(q.giver) : MAP_META[g.map].name };
+}
 export function defs() {
   const mobs = {};
   for (const k of Object.keys(MOBS)) {
@@ -256,10 +268,7 @@ export function defs() {
     questTurnIn: { npc: "elder", map: NPC_MAP.elder },
     // every NPC id → the map it stands on (the client's 추적 walks there; track.js)
     npcMap: { ...NPC_MAP },
-    side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAP_META[NPC_MAP[q.giver]].name,
-      giverMapId: NPC_MAP[q.giver], targetMap: q.id === AIRSHIP_QUEST ? AIRSHIP_MAP : q.goal.type === "talk" ? NPC_MAP[q.goal.npc] : q.goal.type === "visit" || q.goal.map ? q.goal.map || null : null,
-      target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc)
-        : q.goal.type === "elite" || q.goal.type === "fb" ? `${q.goal.map ? MAP_META[q.goal.map].name + " " : ""}${q.goal.type === "elite" ? "정예 몬스터" : "우두머리"}` : MAP_META[q.goal.map].name })),
+    side: SIDE.map(sideDef),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
     // life skills: names, curve, grades, the bonus formula, fish, recipes, each map's grade (58-life.js)

@@ -177,8 +177,20 @@ The routines add no character sheet fields.
       //      { "type": "collect", "item": "fish_s", "n": 3 }      (items taken on hand-in)
       //      { "type": "talk", "npc": "town_baker" }
       //      { "type": "visit", "map": "willow" }
-      "req": { "lv": 3, "quest": null },         // min level (1–200); optional named prerequisite
-      "reward": { "xp": 300, "gold": 120, "items": [["hp_s", 3]] },
+      //      { "type": "elite", "n": 1, "map"?: "forest", "mob"?: "hydrasnake", "named"?: "빛나는 눈의 세머리 뱀" }
+      //      { "type": "fb", "n": 1, "map"?: "meadow" }
+      //      { "type": "make", "item": "fd_rice", "n": 3 }        (own cooking/crafting/brewing; item = a life recipe's output)
+      //      { "type": "deliver", "npc": "shop", "item": "q_reed_box", "n"?: 1, "time"?: 900 }
+      //                 (item = ITEMS type "quest", given on take; npc takes it and completes; time 30–3600 s)
+      //      { "type": "choice" }                                (nothing to do: ready on take, answer at the giver)
+      "hint": "연못에서 낚시 · 모닥불에서 요리",           // optional, ≤ 80 chars, quest window
+      "req": { "lv": 3, "quest": null, "flag"?: ["sq_reed_lunch", 0] },
+      //      min level (1–200); optional named prerequisite; flag = that quest was answered with that pick
+      "reward": { "xp": 300, "gold": 120, "items": [["hp_s", 3]], "keep"?: "kp_reed_float", "title"?: "부녀의 심부름꾼" },
+      //      keep = a keepsake (ITEMS type "keep"); title (≤ 16) = a quest title (achievement t_<id>[_<pick>], 이야기)
+      "choice"?: [                                // 2–3 answers on hand-in; each may have its own reply and reward
+        { "label": "「아버지가 보내셨어요.」", "done": "…아빠가?", "reward": { "xp": 450, "gold": 200, "items": [], "keep": "kp_reed_float" } }
+      ],
       "repeat": false
     }
   ]
@@ -187,14 +199,20 @@ The routines add no character sheet fields.
 
 Side-quest progress lives in the character sheet (`ch.sq`, migrated, sheet `v` bumped).
 
-Game side, as built (62-side-quests.js): `ch.sq = { on: { id: progress }, done: { id: times } }`
-(sheet v8; old sheets get `{on:{}, done:{}}`). Up to 10 under way. Actions (validated, Korean
-errors): `{t:"sq", a:"take"|"done", id}` beside the giver, `{a:"drop", id}` anywhere,
-`{a:"talk", npc}` beside that NPC (the client sends it when you talk to a talk target).
-Progress: kill = kills of `mob` (party credit like the main quest), collect = what is in the bag
-(taken on hand-in), talk = once, visit = arriving on the map (or taking it while there).
-The client gets `defs.side` (each quest + `giverName giverMap target`) and `self.sq` =
-`[[id, state, have, need]]`, state 0 locked · 1 can take · 2 under way · 3 ready · 4 done.
+Game side, as built (62-side-quests.js): `ch.sq = { on: { id: progress }, done: { id: times },
+flags: { id: pick }, t: { id: deadline } }` and `ch.keep = { keepsakeId: 1 }` (sheet v23; older sheets
+get empty ones, and a delivery under way gets its quest item back). Up to 10 under way. Actions
+(validated, Korean errors): `{t:"sq", a:"take", id}` beside the giver, `{a:"done", id, pick?}` beside
+the giver — or the recipient of a delivery — (`pick` 0–2 when the quest has `choice`), `{a:"drop", id}`
+anywhere (a delivery's item goes back), `{a:"talk", npc}` beside that NPC.
+Progress: kill = kills of `mob` (party credit like the main quest), collect / deliver = what is in the
+bag (taken on hand-in), talk = once, visit = arriving on the map (or taking it while there), elite /
+fb = elite / field-boss kills (on `map`, of `mob`), make = outputs of the player's own recipes.
+Quest items (ITEMS type `quest`) can't be sold, stored or quick-slotted; one no quest names is removed
+when the sheet loads. Steps of a story are quests chained by `req.quest` (branches by `req.flag`).
+The client gets `defs.side` (each quest + `giverName giverMap turnIn turnInName turnInMap target
+station`) and `self.sq` = `[[id, state, have, need, deadline?]]`, state 0 locked · 1 can take ·
+2 under way · 3 ready · 4 done (a branch not chosen is left out), and `self.keep` = keepsake ids.
 `main` replacement quests are cleaned (unknown mobs/items dropped) and their `xp` is scaled by
 the game's XP curve exactly like the built-in chain.
 

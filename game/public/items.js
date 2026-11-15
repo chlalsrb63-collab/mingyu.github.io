@@ -55,6 +55,7 @@ export function itemDesc(entry) {
     return base.join(" · ");
   }
   if (it.type === "rune") { const r = G.defs.runes[it.rune]; return `${statText(r[1], r[2])} — 장착한 장비의 홈에 끼웁니다.`; }
+  if (it.type === "quest") return `[퀘스트 아이템] ${it.desc || ""} — 팔거나 맡길 수 없습니다.`;
   return it.desc || "";
 }
 /** How many pieces of a set are being worn right now. */
