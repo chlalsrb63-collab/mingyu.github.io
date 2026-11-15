@@ -15,7 +15,7 @@ ms = cold build time on one core (the `maps` test holds each ground under 150 ms
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | 버드나무광장 town | safe | 100×76 | 3,949 | 52 | – | – | – | – | 1 | 17 | 2 | – | – | – | meadow city willow + 13 interiors |
 | 버드나무 마을 willow | safe | 70×56 | 2,368 | 60 | – | – | – | – | 1 | 15 | 1 | – | – | – | town |
-| 바람초원 meadow | 1–25 | 152×102 | 11,687 | 75 | 781 | 67 | 6 | 1–25 | 3 | 1 | 2 | 2 | – | yes | town forest |
+| 바람초원 meadow | 1–25 | **152×102 → 160×120** | **11,687 → 14,716** | 75 | 781 | 67 | 6 | 1–25 | 3 | 1 | 2 | 2 | – | yes | town forest |
 | 속삭임 숲 forest | 29–49 | **152×102 → 160×116** | **11,274 → 13,339** | 72 | **790 → 932** | 70 | 8 | 29–49 | 3 | 1 | 2 | 3 | – | yes | meadow cave crypt maple |
 | 뼈의 지하묘지 crypt | 45–65 | **132×102 → 148×112** | **8,294 → 10,615** | 64 | **1,197 → 1,615** | 152 | 7 | 45–61 | 3 | 1 | 2 | 3 | – | – | forest city |
 | 네온 시티 city | 53–81 | **152×102 → 160×120** | **8,111 → 10,133** | 53 | 813 | 80 | 8 | 53–81 | 3 | 2 | 2 | 3 | – | – | town sewer crypt jungle |
@@ -44,7 +44,7 @@ much of it is a corridor, and whether anybody lives there.
 | map | verdict | why |
 | --- | --- | --- |
 | town, willow, interiors | keep | dense, every tile used; 17 + 15 NPCs |
-| meadow | **pen built; widen blocked** (§6) | the only ground for Lv 1–25. 156×124 and 160×120 pass `maps` and `mapflow` but leave fewer than 8 ram packs behind the elite line (`hunt-routes`); a heavier ram roster puts rams on normal ground. Needs a ram pen vault in the deep end, then widen. |
+| meadow | **pen built, widened** (§6) | the only ground for Lv 1–25, now 160×120 with the ram pen (`cfg.pen`) holding the deep ram packs (`hunt-routes`). |
 | forest | **widened** (§6) | 152×102 for Lv 29–49 next to a crypt that is denser. Every size from 156×120 to 160×124 tried makes the gorge's ways too straight (tortuosity < 1.12) or narrows a chest route; scale `gorge.every` with the height first. |
 | crypt | **widened** (§6) | densest ground (144/1k), 8.3k tiles. At every larger size the catacomb's elite `guard` lands inside the (larger) safe plaza. Keep guards out of zone 0, then widen to ~152×118 (and point the `lifeskills` "below NODE.max" check at a smaller ground). |
 | city | **widened**; POIs next | was 52 % open, 8.1k tiles, four doors, its ossuary door fixed to tile (129, 72). `corridorGate` now takes fractions and steps to the nearest open hallway, so the city grew to 160×120 (10.1k tiles); `trail_clock`, `city_dotol` re-placed by the east gate. Still the least open field: add a market square. |
@@ -110,7 +110,7 @@ Checked with before/after world views of maple and sewer (`shot.mjs --page world
 2. **Widen the cave** (rules, S): unblocked, but it is the slowest field to build (~80 ms quiet); try ≤ 148×112 and
    watch the `maps` time budget. Add a market square / plaza POI to the city.
 3. ~~**Crypt guard placement**~~ done (§6) (rules, S): keep the elite `guard` out of zone 0, then widen the crypt to ~152×118.
-4. **Meadow ram pen** — pen done, widening blocked (§6) (rules, S): a deep-end vault that holds the ram herd, then widen meadow to 160×120.
+4. ~~**Meadow ram pen**~~ done (§6): the pen holds the ram herd and the meadow is 160×120.
 5. ~~**Forest gorge spacing**~~ done (§6) (rules, S): scale `gorge.every` with the map height, then widen to 160×116.
 6. **Second ground for Lv 151–200** — rules/terrain step done (§6); art step next (rules + art + world map, M): build `inklake` 먹빛 호수 from `maps-batch2.md`
    (Lv 153–180, south ↔ mesa north, north ↔ maple south). Maple's south edge already carries the `ice` gate at 0.86;
@@ -141,9 +141,10 @@ Checked with before/after world views of maple and sewer (`shot.mjs --page world
   156×114 lose their pockets; 148×112 holds stones, pockets and every mapflow rule. The rubbing keeper moved to the plaza.
 - **바람초원**: `cfg.pen` [kind, from] makes the deep part of the elite ground one kind's pen; the meadow's rams hold its
   deep 55 % (83 rams, all past the elite line, at the old size). 160×120 passes `maps`, `mapflow` and `hunt-routes`
-  with the pen, but **the balance probes (`balance`, `skills3`, `hammer`) measure on the meadow's own layout** and move
-  with it, so the meadow stays 152×102. Next: give those probes a layout of their own (a fixed test arena map), then
-  set the meadow to 160×120 (and move 울타리지기 마루 to about (9, 55), beside the re-centred west gate).
+  with the pen. The balance probes (`balance`, `skills3`, `hammer`) now measure in a fixed arena of their own
+  (`scripts/balance-probe.mjs` `arena()`: ARENA laid flat over the meadow, no cell spawns, rolls from `ARENA.seed`,
+  skills3's monsters of fixed kinds), so the meadow grew to 160×120 (11,687 → 14,716 walkable; ram spawns 41 → 33,
+  `hunt-routes` still finds 8+ ram packs past the elite line); 울타리지기 마루 moved from (9, 46) to (9, 55) beside the re-centred west gate (60).
 - Tests: `maps` size pins, `mapflow` (inklake held, 16 loops), `hunt-routes` (mesa → inklake → maple legs, the lake's
   order and rare fox, its keeper), `world` (doors both ways, courts, field boss ground, band), `lifeskills` (grade 5; the
   "below NODE.max" check on the frost keep), `trophies`. Two tests were coupled to the ground list: `social-actions`
