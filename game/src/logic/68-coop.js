@@ -240,7 +240,7 @@ function forgeStrike(S, dim, c, p, q, a) {
   else if (pc.heats < O.heats && pc.n >= Math.ceil((O.n * pc.heats) / O.heats)) {
     // a 냄비 needs a second heat halfway (heats = times it came out of the fire)
     pc.hot = 0; coopEv(S, dim, 64, a.x, a.y);
-    toast(p, "한 번 더 달궈야 해요 — 집게로 화덕에!");
+    toast(p, COOP[c.k].skin.txt.reheat);
   }
   c.ver++;
   return true;
@@ -248,7 +248,7 @@ function forgeStrike(S, dim, c, p, q, a) {
 /** The chute: a quenched piece for the most urgent open order of its kind (no order: ×offK). */
 function forgeDeliver(S, dim, c, p, q, h) {
   const F = COOP_FORGE, now = S.now, O = F.orders[h.r], o = c.ents.filter((e) => e.t === 8 && e.r === h.r).sort((a, b) => a.until - b.until)[0];
-  const G = F.grades.find(([m]) => h.q >= m * O.n), cred = {};
+  const gi = F.grades.findIndex(([m]) => h.q >= m * O.n), G = F.grades[gi], K = COOP[c.k].skin, name = K.orders[h.r], cred = {};
   for (const [part, k] of [[h.ct, F.tongsK], [h.ch, F.hammerK]]) {
     const w = Object.values(part).reduce((s, v) => s + v, 0) || 1;
     for (const pid of Object.keys(part)) cred[pid] = (cred[pid] || 0) + (k * part[pid]) / w;
@@ -258,7 +258,7 @@ function forgeDeliver(S, dim, c, p, q, h) {
   q.hold = []; c.ver++;
   const pts = coopGood(S, c, base, cred);
   coopEv(S, dim, 13, p.x, p.y, pts);
-  toast(p, o ? `[${G[2]}] ${O.name} 납품! +${pts}` : `주문에 없는 ${O.name} — 헐값에 넘겼어요 (+${pts})`);
+  toast(p, o ? `[${K.grades[gi]}] ${name} 납품! +${pts}` : `주문에 없는 ${name} — 헐값에 넘겼어요 (+${pts})`);
   return true;
 }
 
@@ -520,14 +520,14 @@ const COOP_JOB = {
       for (const o of c.ents.filter((e) => e.t === 8 && now >= e.until)) {
         c.ents.splice(c.ents.indexOf(o), 1); c.ver++; c.late++;
         coopFail(c, F.latePen); coopEv(S, dim, 61, 0, 0, o.r);
-        coopToastAll(S, dim, `[납기 초과] ${F.orders[o.r].name} 주문이 취소됐어요! 점수 -${F.latePen}`);
+        coopToastAll(S, dim, `[납기 초과] ${COOP[c.k].skin.orders[o.r]} 주문이 취소됐어요! 점수 -${F.latePen}`);
       }
       // furnace temperatures and heats drift every tick: resend them once a second (the client extrapolates the decay)
       if (now >= c.next.sync) { c.next.sync = now + F.syncMs; c.ver++; }
     },
     act(S, dim, c, p, q) {
-      const F = COOP_FORGE, now = S.now, h = q.hold[0], si = (key) => coopSt(c, p, key), J = COOP[c.k];
-      if (q.tool === "tongs") {
+      const F = COOP_FORGE, now = S.now, h = q.hold[0], si = (key) => coopSt(c, p, key), J = COOP[c.k], X = J.skin.txt;
+      if (q.tool === J.tools[0]) {   // tongs (alch: fan)
         const fi = si("furnace");
         if (fi >= 0) {
           const f = forgeEnt(c, 6, "fi", fi);
@@ -550,7 +550,7 @@ const COOP_JOB = {
         if (ai >= 0) {
           const a = forgeEnt(c, 7, "ai", ai);
           if (h && h.st === "bar" && h.hot > now) {
-            if (a.pc) return "이 모루는 사용 중이에요 — 옆 모루로!";
+            if (a.pc) return X.busy;
             if (h.r < 0) h.r = forgeKind(c);
             a.pc = h; q.hold = [];
             a.per = c.state === "fever" ? F.feverBeat : F.beatMs; a.beat0 = now + F.leadMs; a.lastK = -1;
@@ -571,8 +571,8 @@ const COOP_JOB = {
         if (ai >= 0) {
           const a = forgeEnt(c, 7, "ai", ai);
           if (a.pc && a.pc.st === "bar") {
-            if (h) return "들고 있는 것을 먼저 담금질·납품하세요";
-            if (!(a.pc.hot > now)) return "식었어요 — 집게로 다시 달구세요!";
+            if (h) return X.first;
+            if (!(a.pc.hot > now)) return X.cooled;
             return forgeStrike(S, dim, c, p, q, a);
           }
           if (a.pc && !h) { q.hold = [a.pc]; a.pc = null; c.ver++; coopEv(S, dim, 57, a.x, a.y); return true; }
@@ -588,8 +588,8 @@ const COOP_JOB = {
         toast(p, `${COOP_TOOLS[q.tool]}${pp(COOP_TOOLS[q.tool], "을를")} 들었습니다.`);
         return true;
       }
-      if (q.tool === "tongs") return !h ? "철 상자에서 쇠막대를 꺼내세요 (화덕 앞에서는 풀무질!)" : h.hot > now ? "달궈진 쇠를 빈 모루에 올리세요" : "화덕에 넣어 달구세요";
-      return !h ? "모루 위 달궈진 쇠를 박자(고리)에 맞춰 두드리세요" : h.st === "shaped" ? "담금질 통에 식히세요" : "납품구(동쪽)에 내세요";
+      if (q.tool === J.tools[0]) return X.a[!h ? 0 : h.hot > now ? 1 : 2];
+      return X.b[!h ? 0 : h.st === "shaped" ? 1 : 2];
     },
     /** The HUD's job summary: delivered, late. */
     sum: (c) => [c.done, c.late],
@@ -597,6 +597,8 @@ const COOP_JOB = {
     what: (q, now) => q.hold.map((h) => (h.r + 1) * 5 + (h.st === "quenched" ? 4 : h.st === "shaped" ? 3 : h.hot > now ? 2 : 1)),
   },
 };
+/** 보글연금공방 가마: the forge's engine as is; only COOP.alch's names, tools and skin differ. */
+COOP_JOB.alch = COOP_JOB.forge;
 
 // ── actions (validated in 70-validate.js, applied in 75-apply.js)
 
@@ -667,10 +669,11 @@ const coopRow = (now) => (e) => {
 };
 /** `self.coop`: the jobs done today (their day's pay taken). */
 const coopSelf = (p) => (p.ch.coopDay === dayOf(p.S.now) ? p.ch.coopDone : []);
-/** defs().coop: { jobs: { k: [name, minutes, tools, par, npc, lobby, hint, stations] }, kinds, cuts, parN, tools, binCap, near, dishes, cook (ms), trayCap, orders [name, strikes, pts, heats], forge [band lo, hi, scorch, decay/s], grades (piece grade names) }. */
+/** defs().coop: { jobs: { k: [name, minutes, tools, par, npc, lobby, hint, stations, skin {orders, grades} names or 0] }, kinds, cuts, parN, tools, binCap, near, dishes, cook (ms), trayCap, orders [forge name, strikes, pts, heats], forge [band lo, hi, scorch, decay/s], grades (forge piece grade names) }. */
 function coopDefs() {
-  return { jobs: Object.fromEntries(Object.keys(COOP).map((k) => [k, [COOP[k].name, COOP[k].mins, COOP[k].tools, COOP[k].par, COOP[k].npc, COOP[k].lobby, COOP[k].hint, COOP[k].st]])),
+  const J = (k) => COOP[k], skin = (k) => (J(k).skin ? { orders: J(k).skin.orders, grades: J(k).skin.grades } : 0);
+  return { jobs: Object.fromEntries(Object.keys(COOP).map((k) => [k, [J(k).name, J(k).mins, J(k).tools, J(k).par, J(k).npc, J(k).lobby, J(k).hint, J(k).st, skin(k)]])),
     kinds: COOP_KINDS, cuts: COOP_T.cuts, parN: COOP_T.parN, tools: COOP_TOOLS, binCap: COOP_APT.binCap, near: COOP_T.near,
     dishes: COOP_DINER.dishes.map((d) => d.name), cook: COOP_DINER.dishes.map((d) => d.cook), trayCap: COOP_DINER.trayCap,
-    orders: COOP_FORGE.orders.map((o) => [o.name, o.n, o.pts, o.heats]), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP_FORGE.grades.map((g) => g[2]) };
+    orders: COOP_FORGE.orders.map((o, i) => [COOP.forge.skin.orders[i], o.n, o.pts, o.heats]), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP.forge.skin.grades };
 }

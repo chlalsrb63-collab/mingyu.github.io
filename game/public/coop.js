@@ -1,7 +1,7 @@
 /**
- * 협동 아르바이트 in the browser (동동아파트 청소, 쥬쥬식당 서빙, 캉캉대장간 단조; logic 68-coop.js, docs/design/life-and-coop.md C). The
- * server decides everything; this draws and asks.
- * - Lobby: by the job's owner (관리인 동동, 쥬쥬, 캉캉) a card offers [근무 시작] → `coop_start {k}` (the party comes along).
+ * 협동 아르바이트 in the browser (동동아파트 청소, 쥬쥬식당 서빙, 캉캉대장간 단조, 보글연금공방 가마 = the forge's skin; logic 68-coop.js,
+ * docs/design/life-and-coop.md C). The server decides everything; this draws and asks.
+ * - Lobby: by the job's owner (관리인 동동, 쥬쥬, 캉캉, 보글) a card offers [근무 시작] → `coop_start {k}` (the party comes along).
  * - Inside: `cj` drives the HUD line (time, score ×mult, grade and the next cut-off, the job's sum), `C` the piles /
  *   bundles / sofa or the orders / pots / plated dishes (scene props), `cr` the report card. Space / F (or the [일하기]
  *   button) send `coop_act`; [그만두기] `coop_leave`.
@@ -50,11 +50,13 @@ export function onSnap(s) {
   if (s.cr) showReport(s.cr);
 }
 const jobOf = () => (st.cj ? D().kinds[st.cj[0]] : null);
+/** The forge engine's jobs: 캉캉's forge and 보글's alch (its skin: same rows, other art and names). */
+const smithy = (k) => k === "forge" || k === "alch";
 /** The diner's and the forge's fixed stations (crates, boards, trash · iron crate, quench, chute) get a little icon each. */
 function setStations(k) {
   const j = D().jobs[k], sts = j && j[7];
   if (!sts) return;
-  const icons = k === "forge" ? [["crate", 10], ["chute", 11], ...(sts.quench || []).map((t, i) => ["quench" + i, 12, t])]
+  const al = k === "alch", icons = smithy(k) ? [["crate", al ? 13 : 10], ["chute", 11], ...(sts.quench || []).map((t, i) => ["quench" + i, al ? 14 : 12, t])]
     : [["veg", 0], ["fish", 1], ["meat", 2], ["trash", 9], ...(sts.board || []).map((t, i) => ["board" + i, 8, t])];
   for (const [k, code, t] of icons) {
     const [tx, ty] = t || sts[k], key = "cs" + k;
@@ -74,7 +76,7 @@ function setEnts(rows) {
     st.keys.push(key);
     A.S3.props.set(key, { x, y, until: Infinity, draw(g, tt, sx, sy) { t >= 6 ? drawForge(g, tt, Math.round(sx), Math.round(sy), row) : t >= 3 ? drawDiner(g, tt, Math.round(sx), Math.round(sy), row) : drawEnt(g, tt, Math.round(sx), Math.round(sy), t, hp, id); } });
   }
-  if (jobOf() === "diner" || jobOf() === "forge") setStations(jobOf());
+  if (jobOf() === "diner" || smithy(jobOf())) setStations(jobOf());
   // a tool over each worker's head (a prop that follows them)
   for (const [eid] of st.team) {
     const key = "ct" + eid;
@@ -127,11 +129,26 @@ function drawIcon(g, x, y, code) {
   else if (code === 10) { px(g, x - 5, y - 2, 10, 4, "#1a1a20"); px(g, x - 4, y - 1, 8, 2, "#7a7e8a"); px(g, x - 4, y - 1, 8, 1, "#a8acb8"); }   // 쇠막대
   else if (code === 11) { px(g, x - 1, y - 4, 3, 5, "#2a1e16"); px(g, x, y - 4, 1, 4, "#ffd860"); px(g, x - 3, y, 7, 2, "#2a1e16"); px(g, x - 2, y, 5, 1, "#ffd860"); }   // 납품 ↓
   else if (code === 12) { px(g, x - 2, y - 3, 5, 6, "#10203a"); px(g, x - 1, y - 2, 3, 4, "#5aa0e0"); px(g, x, y - 4, 1, 1, "#10203a"); }   // 담금질 물
+  else if (code === 13) { px(g, x - 4, y - 1, 9, 4, "#3a2a1a"); px(g, x - 3, y, 7, 2, "#b08a5a"); px(g, x - 3, y - 3, 2, 2, "#5ab04a"); px(g, x, y - 4, 2, 3, "#3a8a3a"); px(g, x + 2, y - 3, 2, 2, "#8fd060"); }   // 약재 바구니
+  else if (code === 14) drawBrew(g, x, y + 1, 3, 4, 0);   // 병입대: an empty bottle
+}
+/** 보글's brews: order colours (빨간 물약 · 파란 물약 · 엘릭서 · 묘약; −1 herbs) and the kiln's green/purple boil by heat. */
+const BREW = ["#e04848", "#4878e0", "#e8c040", "#a050d0"];
+const brewCol = (h, t) => (h >= 100 ? (Math.floor(t / 250) % 2 ? "#e0ffb0" : "#c890ff") : h >= 70 ? "#8fe070" : h >= 40 ? "#b070e0" : h >= 15 ? "#5a3a6a" : "#4a5a3a");
+/** A brew in hand or in the cauldron by state (1 herbs · 2 boiling · 3 stirred · 4 bottled) and kind. */
+function drawBrew(g, x, y, kind, s, t) {
+  if (s <= 1) { px(g, x - 4, y - 3, 8, 4, "#1a2a14"); px(g, x - 3, y - 2, 2, 2, "#5ab04a"); px(g, x - 1, y - 3, 2, 3, "#3a8a3a"); px(g, x + 1, y - 2, 2, 2, "#8fd060"); return; }
+  if (s === 2 || kind < 0) { px(g, x - 4, y - 2, 8, 4, "#1a1a20"); px(g, x - 3, y - 1, 6, 2, Math.floor(t / 200) % 2 ? "#8fe070" : "#b070e0"); px(g, x - 1 + (Math.floor(t / 300) % 3), y - 4, 1, 1, "#e0ffb0"); return; }
+  const c = BREW[kind] || BREW[0];
+  if (s === 3) { px(g, x - 4, y - 2, 8, 4, "#1a1a20"); px(g, x - 3, y - 1, 6, 2, c); return; }
+  px(g, x - 3, y - 4, 6, 8, "#1a1a20"); px(g, x - 1, y - 6, 2, 2, "#1a1a20");   // a bottle
+  px(g, x - 2, y - 1, 4, 4, c); px(g, x - 2, y - 3, 4, 2, "#d8e8f0"); px(g, x - 1, y - 7, 2, 1, "#8a5a2a");
 }
 /** A piece of iron by its heat 0–100 (100 hot): grey → red → orange → yellow-white. */
 const heatCol = (h) => (h >= 100 ? "#fff0a0" : h >= 70 ? "#ff9a30" : h >= 40 ? "#d0402a" : h >= 15 ? "#7a3a30" : "#6a6e7a");
 /** A forge piece in hand or on the anvil by its state (1 cold bar · 2 hot · 3 shaped · 4 quenched) and kind (0 편자 · 1 괭이날 · 2 검날 · 3 냄비). */
 function drawPiece(g, x, y, kind, s, t) {
+  if (jobOf() === "alch") return drawBrew(g, x, y, kind, s, t);
   const c = s === 2 ? (Math.floor(t / 200) % 2 ? "#fff0a0" : "#ffb040") : s === 4 ? "#a8b8c8" : s === 3 ? "#d0602a" : "#6a6e7a";
   if (s <= 2 || kind < 0) { px(g, x - 5, y - 2, 10, 4, "#1a1a20"); px(g, x - 4, y - 1, 8, 2, c); return; }
   px(g, x - 5, y - 4, 10, 7, "#1a1a20");
@@ -142,19 +159,28 @@ function drawPiece(g, x, y, kind, s, t) {
 }
 /** Forge rows: furnace [.., T, heat…] (a thermometer and the bars in the mouth) · anvil [.., state, kind, strikes, ms to beat, beat ms]. */
 function drawForge(g, t, sx, sy, row) {
-  const [id, kind] = row, F = D().forge || [60, 80, 90, 4];
+  const [id, kind] = row, F = D().forge || [60, 80, 90, 4], al = jobOf() === "alch";
   if (kind === 6) {
     const T = Math.max(0, row[4] - (F[3] * (now() - (st.entsAt || 0))) / 1000), bars = row.slice(5);
+    if (al) {   // 가마: a brick dome over the furnace furniture, its mouth glowing green/purple with the heat
+      px(g, sx - 10, sy - 30, 20, 4, "#2a1a14"); px(g, sx - 12, sy - 26, 24, 14, "#2a1a14"); px(g, sx - 9, sy - 29, 18, 3, "#a0583a");
+      px(g, sx - 11, sy - 25, 22, 12, "#8a4a30"); for (let i = 0; i < 3; i++) px(g, sx - 11, sy - 22 + i * 4, 22, 1, "#5a2e1e");
+      px(g, sx - 9, sy - 18, 18, 7, "#1a1014"); px(g, sx - 8, sy - 17, 16, 5, T >= F[0] ? (Math.floor(t / 300) % 2 ? "#6ad050" : "#9a50d0") : "#3a2a3a");
+    }
     // thermometer: 20 px, the good band marked, the level coloured by band
     const x = sx + 14, y = sy - 34;
     px(g, x - 1, y - 1, 5, 22, "#1a1a20"); px(g, x, y, 3, 20, "#3a3a44");
     px(g, x - 2, y + 20 - Math.round((F[1] / 100) * 20), 7, 1, "#8fd060"); px(g, x - 2, y + 20 - Math.round((F[0] / 100) * 20), 7, 1, "#8fd060");
     const h = Math.round((T / 100) * 20);
     px(g, x, y + 20 - h, 3, h, T > F[2] ? "#ff4030" : T >= F[0] ? "#ffb040" : "#5a8ad0");
-    bars.forEach((b, i) => { if (b >= 0) { px(g, sx - 8 + i * 9, sy - 14, 7, 3, "#1a1a20"); px(g, sx - 7 + i * 9, sy - 13, 5, 1, b >= 100 && Math.floor(t / 250) % 2 ? "#ffffff" : heatCol(b)); } });
+    bars.forEach((b, i) => { if (b >= 0) { px(g, sx - 8 + i * 9, sy - 14, 7, 3, "#1a1a20"); px(g, sx - 7 + i * 9, sy - 13, 5, 1, al ? brewCol(b, t) : b >= 100 && Math.floor(t / 250) % 2 ? "#ffffff" : heatCol(b)); } });
     if (T > F[2] && Math.floor(t / 200) % 2) px(g, sx - 1, sy - 44, 3, 5, "#ff4030");   // scorching
   } else {
     const [, , , , s, k, n] = row;
+    if (al) {   // 가마솥: a black pot on the anvil furniture, its brew bubbling while it is stirred
+      px(g, sx - 11, sy - 18, 22, 11, "#14141a"); px(g, sx - 12, sy - 19, 24, 3, "#2a2a34"); px(g, sx - 9, sy - 8, 3, 3, "#14141a"); px(g, sx + 6, sy - 8, 3, 3, "#14141a");
+      px(g, sx - 10, sy - 18, 20, 2, !s ? "#2a3a2a" : s === 1 ? (Math.floor(t / 250) % 2 ? "#6ad050" : "#9a50d0") : BREW[k] || "#6ad050");
+    }
     if (!s) return;
     const need = ((D().orders || [])[k] || [0, 8])[1];
     drawPiece(g, sx, sy - 16, k, s === 1 ? 2 : s === 2 ? 1 : 3, t);
@@ -211,6 +237,10 @@ function drawTool(g, t, sx, sy, eid) {
     if (row[1] === 0) { px(g, x - 4, y, 7, 3, "#1a1a1e"); px(g, x - 3, y, 5, 2, "#4a4a58"); px(g, x + 3, y + 1, 4, 1, "#6a4a2a"); }   // pan
     else { px(g, x - 6, y + 2, 13, 2, "#3a2a1a"); px(g, x - 5, y + 2, 11, 1, "#b08a5a"); }                                       // tray
     (row[4] || []).forEach((code, i) => drawHeld(g, x - (row[1] ? 3 - i * 7 : 0), y - (row[1] ? 1 : 4), code));
+  } else if (jobOf() === "alch") {
+    if (row[1] === 0) { px(g, x, y - 1, 2, 6, "#2a1e16"); px(g, x - 3, y - 7, 8, 6, "#1a2a14"); px(g, x - 2, y - 6, 6, 4, "#8fd060"); px(g, x - 2, y - 6, 1, 4, "#5ab04a"); px(g, x + 1, y - 6, 1, 4, "#5ab04a"); }   // fan
+    else { px(g, x, y - 6, 2, 12, "#2a1e16"); px(g, x, y - 5, 1, 8, "#c8a070"); px(g, x - 1, y + 3, 4, 4, "#2a1e16"); px(g, x, y + 4, 2, 2, "#c8a070"); }                       // paddle
+    for (const code of row[4] || []) drawPiece(g, x + 1, y - 9, Math.floor(code / 5) - 1, code % 5, t);
   } else if (jobOf() === "forge") {
     if (row[1] === 0) { px(g, x - 1, y - 6, 2, 9, "#1a1a20"); px(g, x + 2, y - 6, 2, 9, "#1a1a20"); px(g, x - 1, y - 5, 1, 7, "#8a8e9a"); px(g, x + 2, y - 5, 1, 7, "#8a8e9a"); }   // tongs
     else { px(g, x, y - 2, 2, 8, "#2a1e16"); px(g, x, y - 1, 1, 6, "#b08a5a"); px(g, x - 3, y - 6, 8, 5, "#1a1a20"); px(g, x - 2, y - 5, 6, 3, "#7a7e8a"); }                 // hammer
@@ -254,8 +284,8 @@ function frame() {
   const me = st.team.find((r) => r[0] === G().you), tools = (job[2] || []).map((t) => D().tools[t] || t);
   const phase = ["준비", "근무", "피버!", "끝"][state];
   const txt = `${job[0]} · ${phase} ${state === 0 ? `${s}초 뒤 시작` : mmss(s)} | 점수 ${score}${mult > 10 ? ` ×${(mult / 10).toFixed(1)}` : ""}${combo > 1 ? ` (콤보 ${combo})` : ""}` +
-    ` | 등급 ${GRADE[grade]}${next ? ` (다음 ${next})` : ""} | ${k === "forge" ? `납품 ${mess} · 납기 초과 ${cap} | 주문 ${forgeOrders()}` : k === "diner" ? `서빙 ${mess} · 화난 손님 ${cap}` : `지저분함 ${mess}/${cap}`}` +
-    `${me ? ` | ${tools[me[1]] || ""}${me[1] === 1 && k !== "forge" ? ` ${me[2]}/${k === "diner" ? D().trayCap : D().binCap}` : ""}` : ""}`;
+    ` | 등급 ${GRADE[grade]}${next ? ` (다음 ${next})` : ""} | ${smithy(k) ? `납품 ${mess} · 납기 초과 ${cap} | 주문 ${forgeOrders()}` : k === "diner" ? `서빙 ${mess} · 화난 손님 ${cap}` : `지저분함 ${mess}/${cap}`}` +
+    `${me ? ` | ${tools[me[1]] || ""}${me[1] === 1 && !smithy(k) ? ` ${me[2]}/${k === "diner" ? D().trayCap : D().binCap}` : ""}` : ""}`;
   const l = b.querySelector(".ch-l");
   if (l.textContent !== txt) l.textContent = txt;
   b.classList.toggle("fever", state === 2);
@@ -266,11 +296,12 @@ function frame() {
 }
 /** The forge's open orders, most urgent first: "검날 1:12 · 편자 0:40" (the client counts the deciseconds down). */
 function forgeOrders() {
-  const names = D().orders || [], rows = st.ents.filter((r) => r[1] === 8).map((r) => [r[4], Math.max(0, Math.ceil(dsLeft(r[5]) / 1000))]).sort((a, b) => a[1] - b[1]);
+  const sk = (D().jobs[jobOf()] || [])[8], names = sk ? sk.orders.map((n) => [n]) : D().orders || [], rows = st.ents.filter((r) => r[1] === 8).map((r) => [r[4], Math.max(0, Math.ceil(dsLeft(r[5]) / 1000))]).sort((a, b) => a[1] - b[1]);
   return rows.length ? rows.map(([k, s]) => `${(names[k] || ["?"])[0]} ${mmss(s)}`).join(" · ") : "없음";
 }
-const SKILL = { apt: "배달", diner: "요리", forge: "제작" };
-const CARD_TIP = { apt: " 낡은 소파는 두 명이 함께 들어요.", diner: " 손님이 기다리다 지치면 화내며 떠나요!", forge: " 모루의 고리가 닫힐 때 두드리면 걸작이 나와요!" };
+const SKILL = { apt: "배달", diner: "요리", forge: "제작", alch: "연금" };
+const CARD_TIP = { apt: " 낡은 소파는 두 명이 함께 들어요.", diner: " 손님이 기다리다 지치면 화내며 떠나요!", forge: " 모루의 고리가 닫힐 때 두드리면 걸작이 나와요!",
+  alch: " 가마솥의 고리가 닫힐 때 저으면 명약이 나와요!" };
 /** By the job's owner in the lobby: the card with [근무 시작]. */
 function renderCard() {
   const m = G().map, me = G().me, b = st.card || (st.card = box("coop-card", "frame"));

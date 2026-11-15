@@ -77,7 +77,8 @@ const RACK = [J.st.rack[0] - 1, J.st.rack[1]], BURN = [J.st.burn[0] + 1, J.st.bu
 {
   const w = world(2), p1 = w.S.players.c1;
   assert.match(act(w, "c1", { t: "coop_start", k: "apt" }).error, /파티장만/);
-  assert.match(act(w, "c0", { t: "coop_start", k: "alch" }).error, /열리지 않은/);
+  assert.match(act(w, "c0", { t: "coop_start", k: "zzz" }).error, /열리지 않은/);
+  assert.match(act(w, "c0", { t: "coop_start", k: "alch" }).error, /보글에게 다가가/);
   assert.match(act(w, "c0", { t: "coop_act" }).error, /근무 중이 아닙니다/);
   at(w.S.players.c0, 300, 300);
   assert.match(act(w, "c0", { t: "coop_start", k: "apt" }).error, /동동에게 다가가/);
@@ -478,10 +479,10 @@ for (let i = 1; i < 4; i++) {
 // ───────────────────────────── 캉캉대장간 단조 (C.6) ─────────────────────────────
 
 const JF = X.COOP.forge, F = X.COOP_FORGE;
-/** A world with `n` players by 캉캉 in his forge (one party when n ≥ 2). */
-function fworld(n, t0 = 1000, seed = 20251111) {
-  const w = world(n, t0, seed), kk = X.mapOf(JF.lobby).npcs.find((o) => o.id === "kangkang");
-  for (const pid of w.pids) { const p = w.S.players[pid]; L.runtime(w.S, p.map).n--; p.map = JF.lobby; L.runtime(w.S, JF.lobby).n++; at(p, kk.x * T + 8, kk.y * T + 12 + 16); }
+/** A world with `n` players by 캉캉 in his forge (k "alch": by 보글 in her lab; one party when n ≥ 2). */
+function fworld(n, t0 = 1000, seed = 20251111, k = "forge") {
+  const JK = X.COOP[k], w = world(n, t0, seed), kk = X.mapOf(JK.lobby).npcs.find((o) => o.id === JK.npc);
+  for (const pid of w.pids) { const p = w.S.players[pid]; L.runtime(w.S, p.map).n--; p.map = JK.lobby; L.runtime(w.S, JK.lobby).n++; at(p, kk.x * T + 8, kk.y * T + 12 + 16); }
   return w;
 }
 const left = ([x, y]) => [x - 1, y];
@@ -573,13 +574,13 @@ function forgeBot(w) {
     const pieces = [...furn.flatMap((f) => f.bars.filter(Boolean)), ...anv.filter((a) => a.pc).map((a) => a.pc), ...Object.values(c.pl).flatMap((q) => q.hold)];
     const claimed = new Set();
     let fetch = 0;
-    const tongs = work.filter((o) => c.pl[o.pid].tool === "tongs").length || 1;
+    const A0 = X.COOP[c.k].tools[0], tongs = work.filter((o) => c.pl[o.pid].tool === A0).length || 1;   // alch: the fan, same stations
     for (const o of work) {
       const q = c.pl[o.pid], h = q.hold[0], ready = now - (last[o.pid] || 0) >= 300;
       const go = (goal) => W.go(o, goal, MS);
       const doAct = () => { last[o.pid] = now; act0(w, o.pid); };
       const nearest = (list, tile) => list.sort((a, b) => W.steps(o, tile(a)) - W.steps(o, tile(b)))[0];
-      if (q.tool === "tongs") {
+      if (q.tool === A0) {
         const freeAnv = anv.filter((a) => !a.pc && !claimed.has("a" + a.id));
         const hotIn = furn.filter((f) => f.bars.some((b) => b && b.heat >= 100) && !claimed.has("f" + f.id));
         const cooled = anv.filter((a) => a.pc && a.pc.st === "bar" && !(a.pc.hot > now) && !claimed.has("a" + a.id));
@@ -635,6 +636,57 @@ for (const n of [1, 2, 3, 4]) {
     assert.ok(act(w, "c0", { t: "coop_start", k: "forge" }).ok);
     forgeBot(w);
     assert.equal(a.ch.gold - gold, X.COOP_T.helpTip, "a helper's tip the second time");
+  }
+}
+
+// ───────────────────────────── 보글연금공방 가마 (C.6 보글 skin: the forge's engine) ─────────────────────────────
+
+// ── starts at 보글 in her lab; fan/paddle; a stir judged on the beat; a delivery in potion words
+{
+  const JA = X.COOP.alch, w = fworld(1, 1000, 20251111, "alch"), S = w.S, p = S.players.c0;
+  assert.deepEqual([JA.npc, JA.lobby, JA.skill, JA.tools], ["bogle", "bogle_lab", "alch", ["fan", "paddle"]]);
+  assert.match(act(fworld(1), "c0", { t: "coop_start", k: "alch" }).error, /보글에게 다가가/, "not at 캉캉's");
+  assert.ok(act(w, "c0", { t: "coop_start", k: "alch" }).ok, "the kiln opens at 보글");
+  const dim = shiftOf(w), c = dim.coop, q = c.pl.c0;
+  assert.deepEqual([dim.map.w, dim.map.h, dim.map.style, q.tool], [30, 16, "lab", "fan"]);
+  step(w, X.COOP_T.briefMs + 1600);
+  atTile(p, below(JA.st.crate)); assert.ok(act0(w, "c0").ok, "herbs from the shelf"); assert.equal(q.hold.length, 1);
+  // a hot brew straight onto a cauldron, then the paddle stirs it on the beat
+  q.hold[0].hot = w.now + 10000; q.hold[0].heats = 1;
+  step(w, 300); atTile(p, above(JA.st.anvil[0])); assert.ok(act0(w, "c0").ok);
+  const a = fEnt(c, 7, 0), pc = a.pc;
+  assert.ok(pc && pc.r >= 0, "in the cauldron, for an order");
+  q.tool = "paddle"; atTile(p, below(JA.st.anvil[0]));
+  for (let i = 0; i < 40 && !(w.now > a.beat0 && Math.abs((w.now - a.beat0) % a.per) <= 50); i++) step(w, 50);
+  const q0 = pc.q; S.now = w.now; act0(w, "c0");
+  assert.deepEqual([pc.n, pc.q - q0], [1, 2], "a stir on the beat: perfect +2");
+  // bottled and delivered for its order: potion words in the toast
+  pc.n = F.orders[pc.r].n; pc.st = "quenched"; a.pc = null; q.hold = [pc];
+  const done = c.done; step(w, 300); atTile(p, left(JA.st.chute)); act0(w, "c0");
+  assert.equal(c.done, done + 1, "delivered");
+  assert.ok(p.toast.some((m) => /\] (빨간 물약|파란 물약|엘릭서|묘약) 납품!/.test(m)), `potion words: ${p.toast.slice(-2)}`);
+  assert.deepEqual(L.defs().coop.jobs.alch[8].orders, ["빨간 물약", "파란 물약", "엘릭서", "묘약"]);
+}
+
+// ── 1–2 bots: the same shift as the forge's (same seed → same score and cut-offs); paid in `alch` with 보글 once a day
+for (const n of [1, 2]) {
+  const run = (k) => { const w = fworld(n, 1000, 20251111, k); act(w, "c0", { t: "coop_start", k }); return [w, forgeBot(w)]; };
+  const [, cf] = run("forge"), [w, c] = run("alch"), a = w.S.players.c0;
+  log(`alch ${n}: score`, Math.round(c.score), "done", c.done, "grade", X.coopGrade(c));
+  assert.equal(c.score, cf.score, "identical rules and numbers");
+  assert.deepEqual([0, 1, 2, 3].map((i) => X.coopCut(c, i)), [0, 1, 2, 3].map((i) => X.coopCut(cf, i)));
+  assert.ok(X.coopGrade(c) >= 3, `${n} walking bot(s) reach A–S: ${c.score}`);
+  assert.deepEqual(a.ch.coopDone, ["alch"]);
+  assert.ok(a.ch.life.alch.xp > 0 || a.ch.life.alch.lv > 1, "life XP (연금)");
+  assert.equal(a.ch.rep.bogle || 0, Object.hasOwn(X.NPC_MAP, "bogle") ? X.COOP_T.rep : 0, "trust with 보글");
+  if (n === 1) {
+    step(w, X.COOP_T.endMs + 200);
+    const bg = X.mapOf("bogle_lab").npcs.find((o) => o.id === "bogle");
+    at(a, bg.x * T + 8, bg.y * T + 28);
+    const gold = a.ch.gold;
+    assert.ok(act(w, "c0", { t: "coop_start", k: "alch" }).ok);
+    forgeBot(w);
+    assert.equal(a.ch.gold - gold, X.COOP_T.helpTip, "once a day: a helper's tip the second time");
   }
 }
 

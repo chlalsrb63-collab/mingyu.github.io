@@ -310,7 +310,7 @@ const COOP_T = {
   xp: [0.08, 0.14, 0.20, 0.28], gold: [40, 60, 80, 110], gearQ: [0, 1, 1, 2], stone: [1, 2, 3, 5], life: [0.30, 0.45, 0.60, 0.80],
   tip: 10, tipLife: 0.1, helpTip: 15, helpLife: 0.25, rep: 5,
 };
-const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치" };
+const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", paddle: "젓개" };
 /** An empty row of the forge template's object layer (wall, 28 open tiles, the cut-down front wall). */
 const COOP_ROW = "=" + " ".repeat(28) + "_";
 /** The jobs: name, owner NPC and lobby, shift minutes, the two tools (rotation A B A B), par, combo window, life skill, template. */
@@ -381,6 +381,11 @@ const COOP = {
   forge: {
     name: "캉캉대장간 단조", npc: "kangkang", lobby: "kangkang_forge", mins: 5, tools: ["tongs", "hammer"], combo: 40000, skill: "craft",
     hint: "집게 담당은 철 상자 → 화덕(풀무질로 60~80도) → 달궈진 쇠를 모루에, 망치 담당은 박자에 맞춰 두드리고 담금질 → 납품구!",
+    // the forge engine's words (68-coop.js): order and grade names, messages; 보글's alch swaps them
+    skin: { orders: ["편자", "괭이날", "검날", "냄비"], grades: ["걸작", "상", "중", "하"], txt: {
+      reheat: "한 번 더 달궈야 해요 — 집게로 화덕에!", busy: "이 모루는 사용 중이에요 — 옆 모루로!", first: "들고 있는 것을 먼저 담금질·납품하세요",
+      cooled: "식었어요 — 집게로 다시 달구세요!", a: ["철 상자에서 쇠막대를 꺼내세요 (화덕 앞에서는 풀무질!)", "달궈진 쇠를 빈 모루에 올리세요", "화덕에 넣어 달구세요"],
+      b: ["모루 위 달궈진 쇠를 박자(고리)에 맞춰 두드리세요", "담금질 통에 식히세요", "납품구(동쪽)에 내세요"] } },
     // cut-offs tuned on walking bots like the others (tests/coop.mjs: 1–4 bots, every blow on the beat, score ≈ 971 · 2,380 ·
     // 2,968 · 5,119 delivering 8 · 14 · 17 · 25 pieces, just over S); a real party, off the beat and slower, lands on B–A
     par: 1000, parN: { 1: 1.07, 2: 2.62, 3: 3.27, 4: 5.6 },
@@ -397,27 +402,31 @@ const COOP = {
     },
   },
 };
+/** 보글연금공방 가마 (C.6 보글 skin): the forge's rules, numbers, map and stations under other names (약재 선반 · 가마 · 가마솥 · 병입대 · 납품 선반). */
+COOP.alch = { ...COOP.forge, name: "보글연금공방 가마", npc: "bogle", lobby: "bogle_lab", tools: ["fan", "paddle"], skill: "alch",
+  hint: "부채 담당은 약재 선반 → 가마(부채질로 60~80도) → 끓는 약재를 가마솥에, 젓개 담당은 박자에 맞춰 젓고 병입대 → 납품 선반!",
+  skin: { orders: ["빨간 물약", "파란 물약", "엘릭서", "묘약"], grades: ["명약", "상", "중", "하"], txt: {
+    reheat: "한 번 더 끓여야 해요 — 부채로 가마에!", busy: "이 가마솥은 사용 중이에요 — 옆 가마솥으로!", first: "들고 있는 것을 먼저 병에 담아 납품하세요",
+    cooled: "식었어요 — 부채로 다시 끓이세요!", a: ["약재 선반에서 약재를 꺼내세요 (가마 앞에서는 부채질!)", "끓는 약재를 빈 가마솥에 부으세요", "가마에 넣어 끓이세요"],
+    b: ["가마솥의 약재를 박자(고리)에 맞춰 저으세요", "병입대에서 병에 담으세요", "납품 선반(동쪽)에 내세요"] } },
+  tpl: { ...COOP.forge.tpl, name: "보글연금공방 (조제 중)", style: "lab", bgm: "brew" } };
 /**
- * 캉캉대장간 단조 (C.6, v1; the 보글 skin is not built). Orders (strikes `n`, points, heats): at most `open[n − 1]` at once,
+ * 캉캉대장간 단조 (C.6, v1; 보글's alch above is its skin). Orders (strikes `n`, points, heats): at most `open[n − 1]` at once,
  * a new one every `orderMs[n − 1]`, `deadMs` to deliver (−`latePen` and combo 0 when missed). A furnace's T loses `decay`/s,
  * a tongs act there pumps +`pump`; a bar in it heats +`heatIn`/s at T ≥ `lo`, +`heatLo`/s from 30, and scorches (quality
  * −`scorchQ`/s) above `scorch`; at 100 it is hot and stays hot `hotMs` out of the fire. On an anvil the beat is `beatMs`
  * (`feverBeat` in fever), the first `leadMs` after placing; a strike within `perfect` ms of a beat is +2, within `good` +1,
  * else −1, after the player's own offset (median of the last 5, ±`latMax`). Grade by quality q vs strikes N (`grades`:
- * [min q/N, ×pts, name]); pay pts × grade × (1 + `timeK`·deadline left) × mult, tongs `tongsK` / hammer `hammerK`.
+ * [min q/N, ×pts]; the names are the skin's); pay pts × grade × (1 + `timeK`·deadline left) × mult, tongs `tongsK` / hammer `hammerK`.
  * A piece no open order wants sells for ×`offK`.
  */
 const COOP_FORGE = {
-  orders: [
-    { name: "편자", n: 6, pts: 40, heats: 1 },
-    { name: "괭이날", n: 8, pts: 55, heats: 1 },
-    { name: "검날", n: 10, pts: 70, heats: 1 },
-    { name: "냄비", n: 8, pts: 55, heats: 2 },
-  ],
+  // 편자 · 괭이날 · 검날 · 냄비 (the names are the job's: COOP[k].skin.orders)
+  orders: [{ n: 6, pts: 40, heats: 1 }, { n: 8, pts: 55, heats: 1 }, { n: 10, pts: 70, heats: 1 }, { n: 8, pts: 55, heats: 2 }],
   open: [3, 3, 4, 4], orderMs: [30000, 20000, 14000, 11000], firstMs: 1000, deadMs: 100000, latePen: 20,
   T0: 60, decay: 4, pump: 9, pumpMs: 300, lo: 60, hi: 80, scorch: 90, heatIn: 12, heatLo: 4, scorchQ: 0.5, hotMs: 12000, reheat: 50, slots: 2,
   beatMs: 750, feverBeat: 600, leadMs: 1000, perfect: 160, good: 320, latMax: 150,
-  grades: [[1.6, 1.6, "걸작"], [1.0, 1.3, "상"], [0.4, 1.0, "중"], [-1e9, 0.5, "하"]], timeK: 0.3, tongsK: 0.45, hammerK: 0.55, offK: 0.25, syncMs: 1000,
+  grades: [[1.6, 1.6], [1.0, 1.3], [0.4, 1.0], [-1e9, 0.5]], timeK: 0.3, tongsK: 0.45, hammerK: 0.55, offK: 0.25, syncMs: 1000,
 };
 /**
  * 쥬쥬식당 서빙 (C.5, v1: no plates to wash, three dishes). By the party size n at the start: at most `seats[n − 1]` tables
