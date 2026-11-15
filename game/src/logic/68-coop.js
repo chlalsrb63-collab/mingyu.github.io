@@ -46,6 +46,7 @@ function coopStart(S, p, k) {
   S.dimN = (S.dimN | 0) + 1;
   const id = "dim:" + S.dimN, seed = Math.imul(S.seed ^ S.nextId++, 2654435761) | 0;
   const map = fromEditor(J.tpl, id);
+  map.style = J.tpl.style;   // the code-built halls may use a shift-only style (apt) the editor list lacks
   finalize(map);
   const t0 = S.now, runAt = t0 + COOP_T.briefMs, endAt = runAt + J.mins * 60000;
   const dim = registerDim(S, { id, map, party: p.party || 0, seed, lv: 1, theme: "interior", expire: endAt + COOP_T.endMs + 60000 });
@@ -1181,5 +1182,5 @@ function coopDefs() {
     orders: COOP_FORGE.orders.map((o, i) => [COOP.forge.skin.orders[i], o.pat.length, o.pts, o.per, o.pat]), door: tilePx(COOP.forge.door), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP.forge.skin.grades,
     metals: COOP_FORGE.metals.map((o) => [o.name, o.col, o.heat, o.tempo, o.win, o.price]),
     brew: { orders: COOP_BREW.orders.map((o, i) => [COOP.alch.skin.orders[i], o.lo, o.hi, o.hold, o.herbs, o.pts]), chart: COOP_BREW.chart, loop: COOP_BREW.loop, amb: COOP_BREW.amb, herbs: BREW_HERBS, foam: COOP_BREW.foam },
-    lib: { genres: COOP_LIB.genres, cols: COOP_LIB.cols, titles: COOP_LIB.titles, deskCap: COOP_LIB.deskCap, carry: COOP_LIB.carry, shelves: LIBH.shelves } };
+    lib: { genres: COOP_LIB.genres, cols: COOP_LIB.cols, titles: COOP_LIB.titles, deskCap: COOP_LIB.deskCap, carry: COOP_LIB.carry, shelves: LIBH.shelves, door: tilePx(LIBH.door) } };
 }

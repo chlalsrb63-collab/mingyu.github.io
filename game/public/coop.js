@@ -28,7 +28,7 @@ import { closeWin } from "./windows.js";
 const T = 16;
 const now = () => performance.now();
 let A = null;   // { G, S3, Sound, act, toast, entityPos }
-const st = { cj: null, at: 0, ents: [], keys: [], team: [], hud: null, card: null, res: null, cardKey: "", beat: {}, lane: null, flash: {}, stop: 0 };
+const st = { cj: null, at: 0, ents: [], keys: [], team: [], hud: null, card: null, res: null, cardKey: "", beat: {}, lane: null, flash: {}, stop: 0, lw: new Map(), lwAt: 0 };
 const DIRS = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 }, DIR_ACT = { up: 0, right: 1, down: 2, left: 3 };
 
 export function init(api) {
@@ -120,8 +120,10 @@ function dirtCell(i, lv) {
   if (!lv) return;
   let h = (Math.imul(i + 1, 2654435761) >>> 0) || 1;
   const r = (n) => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return (h >>> 0) % n; };
-  g.fillStyle = "rgba(74,56,36,.30)"; g.fillRect(x + 2 + r(3), y + 2 + r(3), 9 + r(3), 8 + r(3));
-  for (let k = 0; k < 5; k++) { g.fillStyle = k % 2 ? "#5a4a3a" : "#8a7a62"; g.fillRect(x + 1 + r(13), y + 1 + r(13), 2, 1 + r(2)); }
+  // cool grey on the warm wood and rugs so it reads: a grimy smudge, two dust bunnies (pale fluff on a dark underside), dark specks
+  g.fillStyle = "rgba(54,50,48,.34)"; g.fillRect(x + 1 + r(3), y + 1 + r(3), 11 + r(3), 10 + r(3));
+  for (let k = 0; k < 2; k++) { const bx = x + 2 + r(10), by = y + 2 + r(10); g.fillStyle = "#3a3634"; g.fillRect(bx - 1, by, 5, 3); g.fillStyle = "#d4d0c4"; g.fillRect(bx, by, 3, 2); g.fillStyle = "#a8a49a"; g.fillRect(bx, by + 1, 3, 1); }
+  for (let k = 0; k < 4; k++) { g.fillStyle = "#2e2a28"; g.fillRect(x + 1 + r(14), y + 1 + r(14), 1, 1); }
   if (lv < 2) return;
   const sx = x + 3 + r(8), sy = y + 3 + r(8);
   g.fillStyle = "#2a2018"; g.fillRect(sx - 1, sy - 1, 6, 5);
@@ -144,7 +146,7 @@ function setEnts(rows) {
     A.S3.props.set(key, { x, y, until: Infinity, draw(g, tt, sx, sy) { t >= 13 ? drawLib(g, tt, Math.round(sx), Math.round(sy), row) : t === 11 ? drawKiln(g, tt, Math.round(sx), Math.round(sy), row) : t === 12 ? drawPot(g, tt, Math.round(sx), Math.round(sy), row) : t === 10 ? drawShelved(g, tt, Math.round(sx), Math.round(sy), row) : t >= 6 && t < 9 ? drawForge(g, tt, Math.round(sx), Math.round(sy), row) : t >= 3 ? drawDiner(g, tt, Math.round(sx), Math.round(sy), row) : drawEnt(g, tt, Math.round(sx), Math.round(sy), t, hp, id); } });
   }
   if (jobOf() === "diner" || jobOf() === "apt" || smithy(jobOf())) setStations(jobOf());
-  if (jobOf() === "lib") libSigns();
+  if (jobOf() === "lib") { libSigns(); libWalkers(rows); } else st.lw.clear();
   // a tool over each worker's head (a prop that follows them)
   for (const [eid] of st.team) {
     const key = "ct" + eid;
@@ -212,8 +214,43 @@ function drawLib(g, t, sx, sy, row) {
   px(g, sx - 5, sy - 15, 10, 15, "#1a1420"); px(g, sx - 4, sy - 14, 8, 13, body); px(g, sx - 4, sy - 5, 8, 4, "#3a3040");
   px(g, sx - 5, sy - 24, 10, 10, "#1a1420"); px(g, sx - 4, sy - 23, 8, 8, "#f0d8b8"); px(g, sx - 2, sy - 20, 1, 2, "#1a1420"); px(g, sx + 1, sy - 20, 1, 2, "#1a1420");
   if (row[7] >= 0) drawBook(g, sx, sy - 8, row[7], Math.min(3, row[4]));
+  if (row.gone) return;
   const left = Math.max(0, dsLeft(row[5])) / (row[6] * 100), bw = 14;
   px(g, sx - bw / 2 - 1, sy - 30, bw + 2, 4, "#1a1420"); px(g, sx - bw / 2, sy - 29, Math.round(bw * left), 2, left > 0.5 ? "#8fd060" : left > 0.25 ? "#f0c040" : "#e05040");
+}
+/**
+ * Returners walk (client-side only): a new one starts at the door and walks to its place in the queue, the queue shuffles up
+ * smoothly, and one that is gone (served or angry) walks back out empty-handed. The rules' positions are the targets.
+ */
+const libDoor = () => LB().door || [31 * T + 8, 42 * T + 10];
+function libWalkers(rows) {
+  const seen = new Set(), [dx, dy] = libDoor();
+  for (const row of rows) {
+    if (row[1] !== 13) continue;
+    seen.add(row[0]);
+    const w = st.lw.get(row[0]);
+    const v = w || { x: dx, y: dy, row };
+    v.row = row; st.lw.set(row[0], v);
+    const pr = A.S3.props.get("cp" + row[0]);
+    if (pr) { pr.x = v.x; pr.y = v.y; }
+  }
+  for (const [id, w] of st.lw) {
+    if (!seen.has(id) && !w.row.gone) { w.row = Object.assign([...w.row], { gone: true }); w.row[7] = -1; }
+    if (!w.row.gone) continue;
+    st.keys.push("cw" + id);
+    A.S3.props.set("cw" + id, { x: w.x, y: w.y, until: Infinity, draw(g, tt, sx, sy) { drawLib(g, tt, Math.round(sx), Math.round(sy), w.row); } });
+  }
+}
+function libWalk() {
+  const t = now(), step = Math.min(0.25, (t - (st.lwAt || t)) / 1000) * 80, [dx, dy] = libDoor();
+  st.lwAt = t;
+  for (const [id, w] of st.lw) {
+    const [tx, ty] = w.row.gone ? [dx, dy] : [w.row[2], w.row[3]], d = Math.hypot(tx - w.x, ty - w.y);
+    if (d <= step) { w.x = tx; w.y = ty; } else { w.x += ((tx - w.x) / d) * step; w.y += ((ty - w.y) / d) * step; }
+    const pr = A.S3.props.get((w.row.gone ? "cw" : "cp") + id);
+    if (pr) { pr.x = w.x; pr.y = w.y; }
+    if (w.row.gone && d <= step) { st.lw.delete(id); A.S3.props.delete("cw" + id); }
+  }
 }
 /** A sign over each genre shelf in its colour, and one over the 반납대. */
 function libSigns() {
@@ -332,9 +369,12 @@ function drawCustomer(g, t, sx, sy, row) {
 function drawLane(g, t, sx, sy, row) {
   const [id, , , , , k, n, , per, b0, hot] = row, o = (D().orders || [])[k];
   if (!o) return;
-  const nowL = now() < st.stop ? st.stopAt : now(), base = (st.entsAt || 0) + b0, W = 76, x0 = sx - 38, y = sy - 52, hit = x0 + 8, span = 2000;
+  const nowL = now() < st.stop ? st.stopAt : now(), base = (st.entsAt || 0) + b0, W = 76, x0 = sx - 30, y = sy - 60, hit = x0 + 8, span = 2000;
   const mine = st.lane === id;
   px(g, x0 - 1, y - 7, W + 2, 14, "#1a1a20"); px(g, x0, y - 6, W, 12, mine ? "#3a2a24" : "#2a2226");
+  // the hot bar being shaped, in a slot at the lane's left end (the anvil itself hides under the hammer's name tag)
+  px(g, x0 - 17, y - 7, 17, 14, "#1a1a20"); px(g, x0 - 16, y - 6, 15, 12, "#6a5444");
+  drawPiece(g, x0 - 8, y + 1, k, 1, t, row[11]);
   const fl = st.flash[id], fla = fl && now() - fl[0] < 160 ? fl[1] : -1;
   px(g, hit - 1, y - 6, 3, 12, fla === 0 ? "#ffffff" : fla === 1 ? "#ffd860" : fla === 2 ? "#e05040" : "#c8a070");
   o[4].forEach(([b, kind], i) => {
@@ -715,6 +755,7 @@ export function tick() {
     if (jobOf() === "pipe") { Pipes.update(st.cj, st.at); return; }
     for (const [eid] of st.team) { const pr = A.S3.props.get("ct" + eid), e = A.entityPos(eid); if (pr && e) { pr.x = e.x; pr.y = e.y + 1; } }
     for (const row of st.ents) if (row[1] === 8 && row.length >= 10) { const pr = A.S3.props.get("cp" + row[0]); if (pr) [pr.x, pr.y] = custPos(row); }
+    if (jobOf() === "lib") libWalk();
     st.lane = jobOf() === "forge" ? laneOf() : jobOf() === "alch" ? brewLaneOf() : null;
     frame();
   }

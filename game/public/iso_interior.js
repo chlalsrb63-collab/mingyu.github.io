@@ -61,6 +61,8 @@ const STYLE = {
   dojo: { paper: "#efe6cc", paper2: "#d8cca8", pat: "shoji", wood: "#7a5434", curtain: "#3a4a6a", banner: "#b83a34", trim: "#c8a050", cush: "#3a4a6a" },
   lab: { paper: "#a8c8b0", paper2: "#94b8a0", pat: "tile", wood: "#5a4a3a", curtain: "#7a5a9a", banner: "#7a5a9a", trim: "#b8a060", cush: "#7a5a9a" },
   lobby: { paper: "#e0d0a8", paper2: "#cfbc90", pat: "flower", dot: "#f4ead0", wood: "#7a5a3a", curtain: "#5a8a6a", banner: "#4a7aa8", trim: "#c8a060", cush: "#5a8a6a" },
+  // 동동아파트's shift hall: pale striped wallpaper over a grey-green dado; `b`/`m` are plaster partitions, `]` wheelie bins, `n` stairs
+  apt: { paper: "#e8e0cc", paper2: "#d8ceb6", pat: "stripe", wood: "#7a8a7a", curtain: "#6a8aa8", banner: "#4a7aa8", trim: "#c8b088", cush: "#6a8aa8", dado: "#9aa894" },
 };
 const styleOf = (m) => STYLE[m.style] || STYLE.cafe;
 
@@ -308,6 +310,14 @@ function rugTex(r, A, B, under) {
   if (d > 0.3) return C("#e0b450");
   return C(d < 0.14 ? "#f0d8c8" : "#c85a6a");
 }
+/** Concrete stair treads across B: a lit nosing, the tread, a dark riser shadow, a scuffed fleck here and there. */
+function stairTex(A, B) {
+  const b = B % 6;
+  if (b === 0) return C("#e4ddd0");
+  if (b === 5) return C("#6e6a64");
+  if (b === 4) return C("#8e8880");
+  return C(hash(A >> 2, B, 75) < 0.12 ? "#a8a298" : "#b8b2a6");
+}
 function matTex(A, B) {
   const a = A & 15, b = B & 15, e = Math.min(a, b, 15 - a, 15 - b);
   if (e < 2) return C(e === 0 ? "#5a3a22" : "#7a5230");
@@ -340,6 +350,7 @@ export function bakeRoom(m) {
         if (ch === "x") c = flags(A, B);
         else if (ch === "h") c = herring(A, B);
         else if (ch === "e") c = matTex(A, B);
+        else if (ch === "n") c = stairTex(A, B);
         else if ("quy".includes(ch)) c = rugTex(RUG.get(x + "," + y), A, B, plank);
         else c = plank;
         // a soft band of shade along the foot of the back walls
@@ -971,6 +982,45 @@ function crates(m, x, y) {
   return M.piece();
 }
 
+/**
+ * An apartment partition (apt style `b`/`m`): plaster on a skirting board, a grey-green dado and a rail, striped paper above,
+ * a pale cap; it joins its neighbours along x and y, and beside a doorway (an open tile in its run) stands a door post with a brass number.
+ */
+function partition(m, x, y) {
+  const S = styleOf(m), H = 24, M = new Model(H + 4);
+  const o = (i, j) => (i < 0 || j < 0 || i >= m.w || j >= m.h ? null : m.o[j][i]);
+  const wall = (i, j) => { const c = o(i, j); return c === "b" || c === "m" || (c !== null && WALLS.includes(c)); };
+  const door = (i, j) => o(i, j) === " ";
+  const skin = (f, s, z, k) => {
+    if (f === "top") return C("#d8ccb4");
+    if (z < 2) return F("#4a3a2e", k);
+    if (z === 2) return F("#8a6a4a", k);
+    if (z < 10) return F(z === 3 ? shade(S.dado, 0.8) : S.dado, k);
+    if (z === 10) return F(S.trim, k);
+    if (z >= H - 2) return F(light(S.paper, 1.08), k);
+    return F(((x + y) * 16 + s) % 8 < 3 ? S.paper2 : S.paper, k);
+  };
+  const L = wall(x - 1, y), R = wall(x + 1, y), U = wall(x, y - 1), Dn = wall(x, y + 1);
+  const alongX = L || R || !(U || Dn), alongY = U || Dn;
+  if (alongX) M.box(L ? 0 : 5, 5, 0, (R ? 16 : 11) - (L ? 0 : 5), 6, H, S.paper, skin);
+  if (alongY) M.box(5, U ? 0 : 5, 0, 6, (Dn ? 16 : 11) - (U ? 0 : 5), H, S.paper, skin);
+  // door posts (dark wood, a brass number plate) where the run opens into a flat
+  const plate = (f, s, z, k) => (f === "top" ? C("#a87a4c") : z === 16 || z === 17 ? F(s === 0 ? "#f0d070" : "#c89a3a", k) : 0);
+  if (alongX && !alongY) { if (door(x - 1, y)) M.box(0, 4, 0, 2, 8, H + 2, "#6a4a32", plate); if (door(x + 1, y)) M.box(14, 4, 0, 2, 8, H + 2, "#6a4a32", plate); }
+  if (alongY && !alongX) { if (door(x, y - 1)) M.box(4, 0, 0, 8, 2, H + 2, "#6a4a32", plate); if (door(x, y + 1)) M.box(4, 14, 0, 8, 2, H + 2, "#6a4a32", plate); }
+  return M.piece();
+}
+/** A wheelie bin in the back yard (apt style `]`): a green body with ribs and a pale label, a dark lid with a handle, two wheels; green where x + y is odd (the dumpster at 60, 27), else blue (recycling). */
+function wheelieBin(m, x, y) {
+  const M = new Model(24), body = (x + y) & 1 ? "#3e8a4a" : "#3a6a9a", dark = shade(body, 0.62);
+  M.box(3, 10, 0, 3, 3, 3, "#1a1a20"); M.box(11, 10, 0, 3, 3, 3, "#1a1a20");
+  M.box(2, 2, 1, 13, 11, 13, body, (f, s, z, k) => (f === "top" ? 0 : z === 0 ? F(dark, k) : z === 10 ? F(light(body, 1.25), k)
+    : f === "front" && (s === 2 || s === 10) && z > 1 && z < 9 ? F(dark, k) : f === "front" && s >= 5 && s <= 7 && z >= 4 && z <= 6 ? F("#f0f0e8", k) : 0));
+  M.box(1, 1, 14, 15, 13, 2, dark, (f, s, z, k) => (f !== "top" && z === 1 ? F(light(dark, 1.2), k) : 0));
+  M.box(6, 13, 12, 5, 2, 1, "#2a2a30");
+  return M.piece();
+}
+
 /** The cat's cushion; the cat itself breathes in the anim (drawn each frame). */
 function catCushion(m, x, y) {
   const M = new Model(10);
@@ -1299,6 +1349,8 @@ export function roomPiece(m, x, y) {
   const ch = m.o[y][x];
   let p = null;
   if (WALLS.includes(ch)) p = wallPiece(m, x, y, ch);
+  else if (m.style === "apt" && (ch === "b" || ch === "m")) p = partition(m, x, y);
+  else if (m.style === "apt" && ch === "]") p = wheelieBin(m, x, y);
   else if (ch === STUB) p = stubPiece(m, x, y);
   else switch (ch) {
     case "o": p = roundTable(m, x, y); break;
