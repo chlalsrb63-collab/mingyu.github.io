@@ -106,6 +106,7 @@ function hudFrame(s) {
   const jobName = Mastery.jobOf(s, G.defs).name;
   setOnce($("#st-job"), s.job || "", (n) => n.append(Info.jobMark(s.job)));
   setOnce($("#st-lv"), `${s.lvl}:${jobName}:${s.jp?.[0]}`, (n) => { n.textContent = `Lv.${s.lvl}`; n.title = `캐릭터 Lv.${s.lvl} · ${jobName}${s.jp ? ` 직업 Lv.${s.jp[0]}` : ""}`; });
+  hudJobBar(s);
   drawFace();
   hudMastery(s);
   hudPurse(s);
@@ -116,6 +117,19 @@ function hudFrame(s) {
   $("#exp-text").textContent = maxed ? `경험치 ${s.xp.toLocaleString()}` : s.xp >= need ? `EXP ${s.xp.toLocaleString()} — 레벨을 올릴 수 있습니다 (모닥불·수련관)` : `EXP ${s.xp.toLocaleString()} / ${need.toLocaleString()}  (${((s.xp / need) * 100).toFixed(2)}%)`;
   $("#exp").classList.toggle("ready", !maxed && s.xp >= need);
   hudBars();
+}
+/** Job level + job-XP bar under the mana bar (hidden for 모험가); a level gained (jp[0] rises) pulses it. */
+let jobLv = 0;
+function hudJobBar(s) {
+  const jb = $("#st-jb"), jp = s.jp;
+  jb.hidden = !jp;
+  if (!jp) { jobLv = 0; return; }
+  const [lv, xp, need] = jp;
+  $("#st-jb-fill").style.width = need > 0 ? `${Math.min(100, (xp / need) * 100)}%` : "100%";
+  $("#st-jb-t").textContent = `Lv.${lv}`;
+  jb.title = `직업 Lv.${lv} · ${need > 0 ? `${xp.toLocaleString()} / ${need.toLocaleString()}` : "최대"}`;
+  if (jobLv && lv > jobLv) { jb.classList.remove("pop"); void jb.offsetWidth; jb.classList.add("pop"); }
+  jobLv = lv;
 }
 /** The weapon-mastery strip beside the bars (mastery.js); a level gained flashes it and chimes. */
 function hudMastery(s) {
