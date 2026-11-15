@@ -457,6 +457,16 @@ for (const cls of Object.keys(WK)) {
   assert.equal(D.lvc.length, 200);
   for (let lv = 1; lv < 200; lv++) assert.ok(D.lvc[lv] > D.lvc[lv - 1], `Lv.${lv + 1}'s point costs more than Lv.${lv}'s`);
   assert.deepEqual(D.statK, [0.004, 30]);
+  // time per level at the balance-probe's kills-only pace (XP/min by monster tier, measured 2026-11-16 with band gear,
+  // tier 6 from Lv.181; balance-2026-11-15 §8): Lv.61–200 ≈ 44 h, and each 20 levels at most ×2 the last, never steeper
+  // than the step before (the old Lv.81–100 cliff was ×2.5 after ×1.8)
+  const PACE = [[16, 5594], [18, 6957], [20, 8120], [22, 7993], [24, 8167], [26, 10644], [28, 10832], [30, 15361], [33, 17803], [36, 15593], [38, 20843], [40, 24322], [42, 22752], [44, 25783], [45, 25496], [46, 34380], [47, 32240], [48, 33075], [49, 35609], [50, 40009]];
+  const xpm = (t) => { const i = PACE.findIndex(([u]) => u >= t), [b, y] = PACE[i], [a, x] = PACE[Math.max(0, i - 1)]; return b === a ? y : x + ((y - x) * (t - a)) / (b - a); };
+  const seg = [];
+  for (let a = 61; a < 200; a += 20) { let m = 0; for (let l = a; l < a + 20 && l < 200; l++) m += D.lvc[l - 1] / xpm(Math.min(50, (l + 3) / 4)); seg.push(m); }
+  const hours = seg.reduce((s, m) => s + m, 0) / 60, step = seg.slice(1).map((m, i) => (m / Math.min(20, 119 - 20 * i)) / (seg[i] / 20));
+  assert.ok(hours > 42 && hours < 46, `Lv.61–200 in ${hours.toFixed(1)} h`);
+  step.forEach((r, i) => assert.ok(r < 2 && (i === 0 || r <= step[i - 1] + 0.02), `20-level step ${i}: ×${r.toFixed(2)} (${step.map((x) => x.toFixed(2))})`));
 }
 
 console.log("growth ok");

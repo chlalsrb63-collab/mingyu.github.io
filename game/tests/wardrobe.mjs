@@ -80,7 +80,7 @@ assert.equal(town.o[shopNpc.y][shopNpc.x], " ", "on open ground");
 assert.ok(!"pb".includes(town.g[shopNpc.y][shopNpc.x]), "not on a road");
 
 // ── weapon art: every kind and tier, every legendary power and set as a motif
-for (const wk of Object.keys(D.wkinds)) assert.equal((DESIGNS[wk] || []).length, 5, wk + " has five tier designs");
+for (const wk of Object.keys(D.wkinds)) assert.equal((DESIGNS[wk] || []).length, Math.max(...Object.values(D.items).filter((it) => it.wk === wk).map((it) => it.tier)), wk + " has a design for every gear tier (six)");
 for (const k of Object.keys(D.legend)) assert.ok(MOTIFS.includes(k), "legendary " + k + " has a look");
 for (const k of Object.keys(D.sets)) assert.ok(MOTIFS.includes(k), "set " + k + " has a look");
 

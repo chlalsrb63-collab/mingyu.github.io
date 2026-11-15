@@ -167,7 +167,7 @@ function rollRarity(S, rank, mf) {
   return r < top + rare ? 2 : r < top + rare + magic ? 1 : 0;
 }
 function tierFor(lv) {
-  return lv < 8 ? 1 : lv < 16 ? 2 : lv < 26 ? 3 : lv < 38 ? 4 : 5;
+  return lv < 8 ? 1 : lv < 16 ? 2 : lv < 26 ? 3 : lv < 38 ? 4 : lv < 46 ? 5 : 6;
 }
 /** Which kind of piece drops: weapons most often, jewellery least. */
 const DROP_TYPES = [["weapon", 24], ["helm", 13], ["armor", 15], ["gloves", 13], ["boots", 13], ["ring", 13], ["amulet", 9]];
@@ -187,7 +187,7 @@ function lootFor(S, rt, mob, p) {
   for (let i = 0; i < tries; i++) {
     if (rnd(S) >= (rank === 2 || d.chest ? 1 : rank === 1 ? 0.35 : d.gear) * (1 + st.mf / 100)) continue;
     let tier = tierFor(d.lv);
-    if (rank && rnd(S) < 0.25) tier = Math.min(5, tier + 1);
+    if (rank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
     for (const [t, w] of DROP_TYPES) { if (roll < w) { type = t; break; } roll -= w; }
     let id;
