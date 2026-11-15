@@ -1065,6 +1065,9 @@ const MOB_LORE = {
   chest_dunesea: "모래 밑에서 오래 굴러 장식 한쪽만 반들반들하다.",
   chest_cloudtemple: "잠금쇠에 끼인 염주알 하나가 맑게 울린다.",
   chest_mesa: "열을 먹은 금박이 갈라져 가느다란 벼랑 무늬를 이룬다.",
+  bloodhorn: "뿔관 아래 눈가에서 붉은 즙을 쏘아 낸다. 그 즙이 굳은 자리마다 결정이 자란다.",
+  bloodshard: "왕도마뱀의 피눈물이 굳어 기어 나온 것. 꼬리 끝이 아직 따뜻하다.",
+  clubshrimp: "주먹을 내지르면 물이 먼저 터진다. 그 소리에 해안의 게들이 모래 속으로 숨는다.",
 };
 // ───────────────────────────── life skills: tables (docs/design/life-and-coop.md B) ─────────────────────────────
 // Six life skills, levels 1–50 on one curve, separate from combat level and weapon mastery. What they give is
