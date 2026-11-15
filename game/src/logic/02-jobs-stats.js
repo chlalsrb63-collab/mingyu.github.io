@@ -19,8 +19,8 @@ const LV_DIV = 4.4, STAT_K = 0.004, STAT_K0 = 30;
 /** The world's own scale (monster levels, map bands): 1–50. Players see 4·tier − 3. */
 const TIER_MAX = 50;
 /** Weapon kinds in wire order (`wm`, `["wm", eid, kindIndex, lv]`), and the mastery cap. */
-const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow"], WM_MAX = 50;
-const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활" };
+const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow", "hammer"], WM_MAX = 50;
+const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활", hammer: "양손해머" };
 /** Mastery a single job asks for in its weapon; a hybrid asks HYB_WM in both of its two. */
 const JOB_WM = 20, HYB_WM = 15;
 const JOB_COST = 1000, HYB_COST = 5000;
@@ -37,6 +37,7 @@ const SCALE = {
   staff: { int: "A", wis: "C" },
   book: { int: "A", wil: "C" },
   bow: { dex: "A", luk: "C" },
+  hammer: { str: "A", wil: "C" },
 };
 /** A single job adds this to both of its weapon's coefficients. */
 const JOB_PLUS = 0.1;
@@ -55,6 +56,7 @@ const JOBS = {
   wizard: { name: "마법사", kind: "single", wk: ["staff"], cost: JOB_COST },
   warlock: { name: "마도사", kind: "single", wk: ["book"], cost: JOB_COST },
   archer: { name: "궁수", kind: "single", wk: ["bow"], cost: JOB_COST },
+  destroyer: { name: "파괴자", kind: "single", wk: ["hammer"], cost: JOB_COST },
   spellblade: { name: "마검사", kind: "hybrid", wk: ["sword", "staff"], scale: { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 }, cost: HYB_COST },
   tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.8, luk: 0.8 }, cost: HYB_COST },
   dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: HYB_COST },
@@ -102,6 +104,7 @@ const BUILD = {
   staff: { int: 0.45, wis: 0.3, wil: 0.2, luk: 0.05 },
   book: { int: 0.45, wil: 0.3, wis: 0.2, luk: 0.05 },
   bow: { dex: 0.45, luk: 0.3, wil: 0.15, str: 0.05, wis: 0.05 },
+  hammer: { str: 0.45, wil: 0.35, dex: 0.05, wis: 0.05, luk: 0.1 },
 };
 /** Old class → [its weapon kind, the single job it becomes at old level 20+]. Mage picks by the weapon in hand. */
 const OLD_CLASS = { warrior: ["sword", "swordsman"], rogue: ["dagger", "thief"], lancer: ["spear", "lancer"], mage: ["staff", "wizard"] };

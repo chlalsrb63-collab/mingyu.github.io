@@ -59,6 +59,7 @@ const WKIND = {
   book: { name: "마도서", cd: 800, range: 84, fx: 5, splash: 26, mult: 1.05, kb: 4, arc: 40, crit: 3, mag: 1 },
   // an arrow flies (45-jobs.js shots): the finisher hits 1.4× and goes through one more
   bow: { name: "활", cd: 760, range: 150, fx: 6, kb: 3, mult: 0.9, arc: 20, crit: 6, shot: { spd: 420, r: 6 } },
+  hammer: { name: "양손해머", cd: 1100, range: 30, fx: 7, center: 16, r: 14, wind: 200, mult: 2.23, crit: 3 },
 };
 /**
  * Basic attacks come in threes: two strokes and a finisher. Strike again within

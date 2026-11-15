@@ -42,11 +42,14 @@ export function castSkill(id) {
   const why = QS.skillWhy(id);
   if (why) { if (!G.auto) { toast(why); Sound.play("no"); } return false; }
   const mpc = QS.skillMp(id);          // a full resonance makes a staff skill free
+  const hpc = QS.skillHp(id);
+  if (hpc && G.me.hp <= hpc) { if (!G.auto) toast("HP가 부족합니다"); return false; }
   if (t < (G.cdEnd[id] || 0) || G.me.mp < mpc) { if (G.me.mp < mpc && !G.auto) toast("MP가 부족합니다"); return false; }
   act({ t: "sk", id, a: G.me.aimI });
   G.cdEnd[id] = t + sk.cd * (1 - (s.dv ? s.dv[3] : 0) / 100);
   G.me.atkT = t; G.me.atkN = 2; G.lastAtk = t; G.lastSkill = t; G.comboWeapon = null;
-  preAim(aimCone());
+  if (sk.wk === "hammer") { G.me.hammerWind = sk.wind; G.me.atkN = 0; preHammerAim(); }
+  else preAim(aimCone());
   return true;
 }
 export function countItem(id) {
@@ -76,13 +79,14 @@ export function attack() {
   // Predict the next beat using the same weapon and window as the server.
   const kind = G.self.wk, wk = G.defs.wkinds?.[kind];
   const chained = t - G.lastAtk < G.self.acd + 700;
-  G.combo = kind === "sword" ? (chained && G.comboWeapon === kind ? 1 - (G.combo | 0) : 0) :
+  G.combo = kind === "hammer" ? 0 : kind === "sword" ? (chained && G.comboWeapon === kind ? 1 - (G.combo | 0) : 0) :
     chained && G.comboWeapon !== "sword" ? ((G.combo | 0) + 1) % 3 : 0;
   G.comboWeapon = kind;
   G.me.atkN = G.combo;
   G.lastAtk = t; G.me.atkT = t;
   G.impactAt = t + S3.impactMs(G.self.wk, G.combo);
-  preAim((wk && wk.arc) || aimCone());
+  if (kind === "hammer") { G.me.hammerWind = wk.wind; preHammerAim(); }
+  else preAim((wk && wk.arc) || aimCone());
   G.aimFlash = t;
   act({ t: "atk", a: G.me.aimI });
 }
@@ -93,6 +97,11 @@ const aimCone = () => (G.defs && G.defs.aim ? G.defs.aim[1] : 40);
 export function aimIdx(dx, dy) { const n = aimN(); return ((Math.round((Math.atan2(dy, dx) / (2 * Math.PI)) * n) % n) + n) % n; }
 /** The unit vector of aim step `i`. */
 function aimVec(i) { const a = (i / aimN()) * 2 * Math.PI; return [Math.cos(a), Math.sin(a)]; }
+function preHammerAim() {
+  const me = G.me, [x, y] = aimVec(me.aimI);
+  me.hammerYaw = (me.aimI / aimN()) * 2 * Math.PI;
+  me.aim = [me.x + x * 24, me.y + y * 24];
+}
 /** Aim at a point on the ground (a monster clicked, the auto-hunt's quarry). */
 export function aimAtPoint(x, y) { if (Math.hypot(x - G.me.x, y - G.me.y) > 1) G.me.aimI = aimIdx(x - G.me.x, y - G.me.y); }
 /** Turn toward the nearest monster within reach inside the arc of the aim the moment the swing

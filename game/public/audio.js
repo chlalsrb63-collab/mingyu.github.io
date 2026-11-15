@@ -605,6 +605,7 @@ const THROTTLE = { gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.0
 /** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
 const BOOST = {
   swing: 3, swing_sword: 3, swing_dagger: 3, swing_spear: 3, swing_staff: 2, swing_book: 2.2, shoot: 1.6, magic: 1.5,
+  swing_hammer: 1.65, hammer_land: 2,
   bow_draw: 2, bow_shot: 2.6, release: 2.6, arrow_hit: 2, arrow_wall: 1.6,
   hit: 2, crit: 1.6, hurt: 2, die: 2, die_small: 2.2, die_big: 1.8, mob_shot: 1.8, charge: 2, volley: 1.8, spit: 2, pop: 2, buff: 1.5,
   charm_place: 1.6, charm_remove: 1.6, charm_id: 1.6, charm_expand: 1.5, ui: 1.8, open: 2, close: 2, tab: 2, blip: 1.8, emote: 1.6, cast: 1.8, coin: 1.5, salvage: 1.5, recall: 1.4, warp_out: 1.4, rift_warn: 1.5, fail: 1.4,
@@ -622,6 +623,13 @@ const SFX = {
   swing_sword(fin) { const p = this.vary(); this.noise(fin ? 0.18 : 0.13, fin ? 0.32 : 0.24, 500 * p, "bandpass", 0, 2600 * p); this.tone("triangle", 150 * p, 70 * p, 0.11, 0.08); this.tone(0.5, 420 * p, 140 * p, 0.04, 0.04); },
   swing_dagger() { const p = this.vary(); this.noise(0.05, 0.2, 2800 * p, "bandpass", 0, 5600 * p); this.tone(0.5, 900 * p, 300 * p, 0.03, 0.03); },
   swing_spear(fin) { const p = this.vary(); this.noise(fin ? 0.12 : 0.09, 0.22, 1000 * p, "bandpass", 0, 3600 * p); this.tone("triangle", 300 * p, 560 * p, 0.06, 0.05); this.tone("sine", 120 * p, 70 * p, 0.08, 0.06); },
+  swing_hammer() { const p = this.vary(); this.noise(0.055, 0.10, 780 * p, "bandpass", 0, 1350 * p); this.tone("triangle", 185 * p, 118 * p, 0.05, 0.043); },
+  hammer_land({ hit, crit, final } = {}) {
+    const p = this.vary();
+    if (!hit) { this.noise(0.065, 0.079, 710 * p, "bandpass"); this.tone("sine", 86 * p, 64 * p, 0.065, 0.074); return; }
+    this.punch(p, crit ? 315 : 265, final ? 89 : 107, crit ? 1650 : 1170, final || crit ? 0.95 : 0.67);
+    this.noise(0.082, 0.075, 940 * p, "lowpass", 0.014);
+  },
   swing_staff() { this.tone("sine", 420, 760, 0.18, 0.1); this.tone("triangle", 630, 1140, 0.16, 0.05, 0.02); this.noise(0.12, 0.06, 3000, "highpass"); },
   swing_book() { this.noise(0.08, 0.12, 2400, "bandpass", 0, 1200); this.noise(0.06, 0.1, 3000, "bandpass", 0.07, 1600); this.tone("sine", 880, 1320, 0.14, 0.06, 0.04); },
   shoot() { this.noise(0.06, 0.16, 2500); this.tone(0.5, 900, 400, 0.08, 0.07); },

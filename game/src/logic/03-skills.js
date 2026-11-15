@@ -105,13 +105,29 @@ const SKILL = {
     desc: "마궁사의 기술 · 불·얼음·번개 화살 셋을 한꺼번에 쏜다. 화살은 일직선을 꿰뚫고, 처음 맞힌 자리에 원소를 남겨 서로 원소 반응을 일으킨다." },
   inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.8, per: 2, brandK: 0.4, mag: 1, fx: 128,
     desc: "각인궁사의 기술 · 룬 먹물을 먹인 화살 다섯 대를 부채꼴로 쏜다. 꿰뚫린 적마다 낙인이 새겨지고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 한 적은 최대 두 대까지 맞는다." },
+  hammer_stamp: { kind: "a", wk: "hammer", need: 1, name: "쐐기찍기", mp: 3, hpPct: 0.03, autoHp: 0.35, cd: 6000, center: 16, r: 16, wind: 200, mult: 2.55, splashMult: 1, stun: 180, fx: 130,
+    desc: "앞쪽을 내려찍어 가장 가까운 적에게 정타를 가하고 두 적까지 충격을 준다. 맞은 일반 적은 잠깐 휘청인다." },
+  hammer_fault: { kind: "a", wk: "hammer", need: 10, name: "금맥 벌리기", mp: 5, hpPct: 0.05, autoHp: 0.35, cd: 10000, center: 16, r: 18, wind: 200, mult: 2.85, splashMult: 1.10, crackMult: 1.25, fx: 131,
+    desc: "해머로 땅을 갈라 세 적까지 맞힌다. 정타 대상에 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 25% 늘어난다." },
+  hammer_final: { kind: "j", job: "destroyer", wk: "hammer", need: 20, name: "파성추", mp: 10, hpPct: 0.08, autoHp: 0.35, cd: 32000, center: 14, r: 21, wind: 400, mult: 4.5, splashMult: 1.60, crackMult: 1.35, brace: 0.25, fx: 132,
+    desc: "파괴자의 기술. 잠시 버티고 크게 내려찍는다. 준비 중 경직이 25% 줄며 균열 두 개를 터뜨리면 정타 피해가 35% 늘어난다." },
+  hammer_crack: { kind: "p", wk: "hammer", need: 10, name: "균열 새기기", max: 2, ms: 5000,
+    desc: "해머 기본 공격 정타에 맞은 적에게 5초 동안 내 균열을 남긴다. 최대 두 개까지 쌓인다." },
+  hammer_brace: { kind: "p", wk: "hammer", need: 20, name: "버팀발", brace: 0.20,
+    desc: "해머를 들어 올리는 동안 받는 경직이 20% 줄어든다. 파성추 중에는 더 큰 효과를 적용한다." },
+  hammer_hold: { kind: "p", wk: "hammer", need: 30, name: "금의 결", ms: 7000,
+    desc: "내 해머 정타가 남긴 균열의 지속 시간이 5초에서 7초로 늘어난다." },
+  hammer_breath: { kind: "p", wk: "hammer", need: 40, name: "반동 호흡", discount: 0.01,
+    desc: "해머 기술의 HP 소모가 최대 HP의 1%만큼 줄어든다. 최소 소모량은 최대 HP의 1%다." },
+  hammer_heart: { kind: "p", wk: "hammer", need: 50, name: "심철의 파문", bonus: 1.08,
+    desc: "해머 기술로 내 균열 두 개를 실제로 터뜨리면 정타 피해가 추가로 8% 늘어난다." },
 };
 for (const id of Object.keys(SKILL)) SKILL[id].id = id;
 /** The order skills are listed in (per weapon: L1, L10 active, L10 passive; then single, then hybrid signatures — the first six, then the nine of the expansion). */
 const SKILL_ORDER = Object.keys(SKILL);
 /** The skills each weapon kind brings, in order. */
-const WK_SKILLS = Object.fromEntries(["sword", "dagger", "spear", "staff", "book", "bow"].map((k) => [k, SKILL_ORDER.filter((id) => SKILL[id].wk === k && (SKILL[id].kind === "a" || SKILL[id].kind === "p"))]));
+const WK_SKILLS = Object.fromEntries(WK_ORDER.map((k) => [k, SKILL_ORDER.filter((id) => SKILL[id].wk === k && (SKILL[id].kind === "a" || SKILL[id].kind === "p"))]));
 /** A job's signature skill. */
 const JOB_SKILL = Object.fromEntries(SKILL_ORDER.filter((id) => SKILL[id].job).map((id) => [SKILL[id].job, id]));
 /** The weapon passive of each kind. */
-const WK_PASSIVE = Object.fromEntries(SKILL_ORDER.filter((id) => SKILL[id].kind === "p").map((id) => [SKILL[id].wk, id]));
+const WK_PASSIVE = Object.fromEntries(WK_ORDER.map(wk => [wk, WK_SKILLS[wk].find(id => SKILL[id].kind === "p")]));

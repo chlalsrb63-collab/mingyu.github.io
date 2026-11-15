@@ -64,15 +64,15 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
 
 // ═════════ the tables
 {
-  assert.equal(D.skillOrder.length, 39, "per weapon L1, L10 and a passive (18), six single and fifteen hybrid signatures");
+  assert.equal(D.skillOrder.length, 47, "the existing 39 plus eight hammer skills");
   assert.deepEqual(Object.keys(SK), D.skillOrder);
-  const kinds = D.skillOrder.map((id) => SK[id].kind).join("");
+  const kinds = D.skillOrder.filter(id => SK[id].wk !== "hammer").map((id) => SK[id].kind).join("");
   assert.equal(kinds, "aap".repeat(6) + "j".repeat(6) + "h".repeat(15));
   for (const id of D.skillOrder) {
     const s = SK[id];
     assert.equal(s.id, id);
     assert.ok(s.name && s.desc && s.desc.length > 20, id + " is named and described in Korean");
-    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128)), id + " costs, waits and has an fx code");
+    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 132)), id + " costs, waits and has an fx code");
     if (s.kind === "j") { assert.equal(D.jobs[s.job].kind, "single"); assert.equal(D.jobs[s.job].wk[0], s.wk); assert.equal(s.need, 20); }
     if (s.kind === "h") { assert.equal(D.jobs[s.job].kind, "hybrid"); assert.equal(s.need, D.hybWm, id + " grows from mastery 15"); }
   }
@@ -505,11 +505,11 @@ for (const [id, hand] of CASTS) {
   const W = world("전선", { wk: "staff", wm: { staff: 20, book: 3 }, job: "wizard" });
   const s = W.self();
   assert.ok(!("skm" in s) && !("cds" in s) && !("lc" in s), "the old fields are gone");
-  assert.deepEqual(s.sk.map((x) => x[0]), ["slash", "ambush", "spiral", "fireball", "frostring", "reso", "soulbolt", "pierce", "meteor"], "every skill learned, in order (every weapon's first, and other weapons' too)");
+  assert.deepEqual(s.sk.map((x) => x[0]), ["slash", "ambush", "spiral", "fireball", "frostring", "reso", "soulbolt", "pierce", "meteor", "hammer_stamp"], "every skill learned, in order (every weapon's first, and other weapons' too)");
   for (const [id, mp, cd, use] of s.sk) {
     assert.ok(Number.isInteger(mp) && Number.isInteger(cd) && (use === 0 || use === 1), id);
     assert.equal(use, SK[id].wk === "staff" ? 1 : 0, id + " usable only with the staff in hand");
   }
   assert.ok(!("legacyCls" in D) && D.mech && !("grit" in D.mech), "no class kit left in defs");
 }
-console.log("skills ok — 39 skills, six passives, signatures, fifteen hybrids, the bar and the wire");
+console.log(`skills ok — ${D.skillOrder.length} skills, passives, signatures, fifteen hybrids, the bar and the wire`);

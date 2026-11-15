@@ -328,7 +328,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (!dealMob(S, rt, mob, p, dmg, graze ? 2 : crit)) {
     // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
     if (!mob.dead) stagger(S, mob, p, crit);
-    return;
+    return crit;
   }
   // legendary powers that answer a kill
   if (st.lg.feast && !p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * 0.04);
@@ -338,6 +338,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
     for (const o of mobsWithin(rt, x, y, 34)) hurtMob(S, rt, o, p, 0.8);
     p.chainKill = false;
   }
+  return crit;
 }
 
 function killMob(S, rt, mob) {
@@ -556,6 +557,14 @@ function basicAttack(S, p) {
   const c = st.arm;
   const rt = S.maps[p.map];
   const now = S.now;
+  if (st.wk === "hammer") {
+    p.atkAt = now;
+    p.combo = 0;
+    p.swordBeat = null;
+    newAct(p, false);
+    startHammer(S, p, c);
+    return;
+  }
   const chained = now - p.atkAt < atkCd(p) + COMBO_MS;
   p.combo = chained ? (p.combo + 1) % 3 : 0;
   const fin = p.combo === 2;

@@ -21,6 +21,7 @@
  */
 import * as Art from "./art.js";
 import { icon } from "./uiicons.js";
+import { mapChart, shortestRoute, questMaps, nextGate, chartBase, paintChart, mapDetail } from "./worldmap.js";
 
 const T = 16;
 const INK = "#120e18";
@@ -170,10 +171,12 @@ export function loadMap(m) {
   const stones = [];
   for (const k of m.marks || []) if (k.kind === "waypoint") stones.push({ x: k.x, y: k.y, i: stones.length });
   // a gate is two tiles wide: one mark per door
-  const portals = [];
+  const portals = [], labelled = D?.G.defs.maps?.find(d => d.id === m.id)?.doors || [];
   for (const p of m.portals || []) {
     const q = portals.find((o) => o.to === p.to && Math.abs(o.x0 - p.x) <= 2 && Math.abs(o.y0 - p.y) <= 2);
-    if (q) { q.sx += p.x; q.sy += p.y; q.n++; } else portals.push({ x0: p.x, y0: p.y, sx: p.x, sy: p.y, n: 1, to: p.to, door: !!p.door });
+    const target = labelled.find(([x, y]) => x === p.x && y === p.y)?.[2];
+    if (q) { q.sx += p.x; q.sy += p.y; q.n++; if (target) q.mapIds.push(target); }
+    else portals.push({ x0: p.x, y0: p.y, sx: p.x, sy: p.y, n: 1, to: p.to, door: !!p.door, mapIds: target ? [target] : [] });
   }
   for (const p of portals) { p.x = p.sx / p.n; p.y = p.sy / p.n; }
   const shrines = [];
@@ -293,6 +296,13 @@ export function draw(t) {
   };
   if (G.fb) for (const [bx, by] of G.fb) { const [x, y] = P(bx, by); if (Math.floor(t / 350) % 3) pin(x, y, COL.boss, spr("skull", COL.boss)); }
   for (const q of party) { const [x, y] = P(q.x, q.y); pin(x, y, q.col, disc(q.col, q.n)); }
+  if (world.selected) {
+    const chart = currentChart(), route = guidePath(chart);
+    if (route.length > 1) {
+      const gate = nextGate(M.portals, chart.nodes.get(route[1]).d, mx, my);
+      if (gate) { const [x, y] = Pt(gate.x, gate.y); pin(x, y, "#ffe56b", rimArrow(Math.atan2(y - H / 2, x - W / 2), "#ffe56b")); }
+    }
+  }
   // me: a pulse on the ground, then the arrow along my aim
   const [cx, cy] = P(me.x, me.y), ph = (t % 1400) / 1400;
   ring(g, cx, cy + 1, 5 + ph * 14, `rgba(255,244,200,${(0.85 * (1 - ph)).toFixed(2)})`);
@@ -329,10 +339,6 @@ function setZoom(i) {
 // ───────────────────────────── the map window ─────────────────────────────
 
 const view = { tab: "here", z: 1, cx: 0, cy: 0, reset: true, dirty: true, at: 0, hits: [], hover: null, drag: null, u: 1, ox: 0, oy: 0 };
-const KIND = {
-  town: ["#e2c486", "마을"], field: ["#6ac86a", "사냥터"], dun: ["#e0506a", "던전"], in: ["#c89a6a", "실내"],
-};
-const kindOf = (d) => (d.theme === "interior" ? "in" : d.safe ? "town" : ["crypt", "sewer", "abyss"].includes(d.theme) ? "dun" : "field");
 const bandOf = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
 
 /** The map window, drawn while it is open (15 times a second: the blink, the party). */
@@ -437,91 +443,101 @@ function drawHere(g, W, H, t) {
   }
 }
 
-// ── the world route map ──
-let world = null;
-/** Lay the regions out in columns by how many doors they are from the town (cached per size). */
-function layoutWorld(W, H) {
-  const maps = D.G.defs.maps || [], key = `${W}x${H}:${maps.length}`;
-  if (world && world.key === key) return world;
-  const by = new Map(maps.map((d) => [d.id, d])), adj = new Map(maps.map((d) => [d.id, new Set()]));
-  for (const d of maps) for (const to of d.to || []) if (adj.has(to)) { adj.get(d.id).add(to); adj.get(to).add(d.id); }
-  const root = by.has("town") ? "town" : maps[0] && maps[0].id, depth = new Map();
-  if (root) { depth.set(root, 0); const q = [root]; while (q.length) { const a = q.shift(); for (const b of adj.get(a)) if (!depth.has(b)) { depth.set(b, depth.get(a) + 1); q.push(b); } } }
-  let maxD = 0;
-  for (const d of depth.values()) maxD = Math.max(maxD, d);
-  for (const d of maps) if (!depth.has(d.id)) depth.set(d.id, maxD + 1);
-  maxD = Math.max(...depth.values(), 0);
-  const cols = [];
-  for (const d of maps) (cols[depth.get(d.id)] ||= []).push(d);
-  const row = new Map();
-  cols.forEach((col, i) => {
-    const bary = (d) => { const ps = [...adj.get(d.id)].filter((p) => depth.get(p) === i - 1); return ps.length ? ps.reduce((s, p) => s + row.get(p), 0) / ps.length : 0; };
-    col.sort((a, b) => (kindOf(a) === "in") - (kindOf(b) === "in") || bary(a) - bary(b) || (a.band ? a.band[0] : 0) - (b.band ? b.band[0] : 0));
-    col.forEach((d, j) => row.set(d.id, j));
-  });
-  const padX = 10, nw = Math.max(70, Math.min(132, Math.floor((W - padX * 2) / (maxD + 1)) - 22));
-  const colW = maxD ? (W - padX * 2 - nw) / maxD : 0;
-  const nodes = new Map();
-  cols.forEach((col, i) => {
-    const step = H / (col.length + 1), nh = Math.max(20, Math.min(34, step - 6));
-    col.forEach((d, j) => {
-      const k = kindOf(d), h = k === "in" ? Math.max(18, nh - 8) : nh;
-      nodes.set(d.id, { d, k, x: Math.round(padX + i * colW), y: Math.round(step * (j + 1) - h / 2), w: k === "in" ? nw - 14 : nw, h, col: i });
-    });
-  });
-  return (world = { key, nodes, adj });
+// ── the world chart ──
+const world = { defs: null, chart: null, base: null, selected: null, z: 1, x: 0, y: 0, frame: null, detailKey: null, routeKey: null, route: [] };
+
+function currentChart() {
+  const defs = D.G.defs;
+  if (world.defs !== defs) {
+    world.defs = defs;
+    world.chart = mapChart(defs.maps || []);
+    world.base = null;
+    world.routeKey = null;
+    world.detailKey = null;
+    const picker = $("#map-region");
+    picker.length = 1;
+    for (const { d } of world.chart.nodes.values()) picker.add(new Option(d.name, d.id));
+    if (!world.chart.nodes.has(world.selected)) world.selected = null;
+    picker.value = world.selected || "";
+  }
+  return world.chart;
+}
+function guidePath(chart) {
+  const G = D.G, level = G.self?.lvl || 1, start = G.map?.id;
+  const key = JSON.stringify([start, world.selected, level]);
+  if (key !== world.routeKey) {
+    world.routeKey = key;
+    world.route = shortestRoute(chart.graph, start, world.selected, id => level >= (chart.nodes.get(id).d.minLv || 1));
+  }
+  return world.route;
+}
+function selectWorld(id, focus = false) {
+  const chart = currentChart(), n = chart.nodes.get(id);
+  world.selected = n ? id : null;
+  $("#w-map").classList.toggle("map-has-detail", !!n);
+  if (focus && n) world.focus = id;
+  $("#map-region").value = world.selected || "";
+  view.dirty = true;
+  D.play("ui");
+}
+function clampWorld(chart, W, H, scale) {
+  const x = Math.max(0, (chart.width * scale - W) / 2), y = Math.max(0, (chart.height * scale - H) / 2);
+  world.x = Math.max(-x, Math.min(x, world.x));
+  world.y = Math.max(-y, Math.min(y, world.y));
+}
+function worldZoom(f, x, y) {
+  if (!world.frame) return;
+  const { centerX, centerY, fit } = world.frame;
+  const z = Math.max(0.65, Math.min(4.5, world.z * f));
+  const k = z / world.z;
+  world.x = (world.x - x + centerX) * k + x - centerX;
+  world.y = (world.y - y + centerY) * k + y - centerY;
+  world.z = z;
+  clampWorld(world.chart, centerX * 2, centerY * 2, fit * z);
+  view.dirty = true;
 }
 function drawWorld(g, W, H, t) {
-  const G = D.G, { nodes, adj } = layoutWorld(W, H), here = G.map && G.map.id;
-  // the lines first, metro style: out of the right side, across, into the left side
-  const done = new Set();
-  for (const [a, set] of adj) for (const b of set) {
-    const k = a < b ? a + "|" + b : b + "|" + a;
-    if (done.has(k) || !nodes.has(a) || !nodes.has(b)) continue;
-    done.add(k);
-    let A = nodes.get(a), B = nodes.get(b);
-    if (A.col > B.col) [A, B] = [B, A];
-    const ay = A.y + A.h / 2, by = B.y + B.h / 2, inner = A.k === "in" || B.k === "in";
-    const pts = [];
-    if (A.col === B.col) { const x = Math.max(A.x + A.w, B.x + B.w) + 8; pts.push([A.x + A.w, ay], [x, ay], [x, by], [B.x + B.w, by]); }
-    else { const mx = Math.round((A.x + A.w + B.x) / 2); pts.push([A.x + A.w, ay], [mx, ay], [mx, by], [B.x, by]); }
-    const lit = a === here || b === here;
-    for (const [w, col] of [[inner ? 4 : 6, INK], [inner ? 2 : 4, lit ? "#ffd84a" : inner ? "#8a6a4a" : "#a89068"]]) {
-      g.fillStyle = col;
-      for (let i = 1; i < pts.length; i++) {
-        const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
-        g.fillRect(Math.round(Math.min(x0, x1) - w / 2), Math.round(Math.min(y0, y1) - w / 2), Math.round(Math.abs(x1 - x0) + w), Math.round(Math.abs(y1 - y0) + w));
-      }
-    }
+  const G = D.G, chart = currentChart();
+  world.base ||= chartBase(chart, (width, height) => Object.assign(document.createElement("canvas"), { width, height }));
+  // Phones begin in a readable crop. The fit button can show the entire chart.
+  const fit = Math.min(W / chart.width, H / chart.height);
+  if (!world.frame && W < 480) world.z = Math.min(3.5, Math.max(1, 0.68 / fit));
+  world.z = world.focus ? Math.max(world.z, 1.25, Math.min(3.5, 0.72 / fit)) : world.z;
+  const scale = fit * world.z;
+  if (world.focus || (!world.frame && W < 480)) {
+    const n = chart.nodes.get(world.focus || G.map?.id);
+    world.focus = null;
+    if (n) { world.x = (chart.width / 2 - n.x) * scale; world.y = (chart.height / 2 - n.y) * scale; }
   }
-  // the regions
+  clampWorld(chart, W, H, scale);
+  world.frame = { centerX: W / 2, centerY: H / 2, fit };
+  const camp = { scale, ox: (W - chart.width * scale) / 2 + world.x, oy: (H - chart.height * scale) / 2 + world.y };
   const party = new Map();
-  (G.party || []).forEach((r, i) => { if (r[0] !== G.you && r[9]) (party.get(r[9]) || party.set(r[9], []).get(r[9])).push({ n: i + 1, col: PARTY_COL[i % PARTY_COL.length], name: r[1] }); });
-  for (const [id, n] of nodes) {
-    const cur = id === here, [edge, kname] = KIND[n.k];
-    g.fillStyle = INK; g.fillRect(n.x - 2, n.y - 2, n.w + 4, n.h + 4);
-    g.fillStyle = cur ? (Math.floor(t / 500) % 2 ? "#ffd84a" : "#e8b84a") : edge; g.fillRect(n.x, n.y, n.w, n.h);
-    g.fillStyle = cur ? "#3a2408" : "#1d1826"; g.fillRect(n.x + 2, n.y + 2, n.w - 4, n.h - 4);
-    const big = n.h >= 28;
-    const band = n.d.minLv ? `Lv.${n.d.minLv} 전용` : bandOf(n.d.band);
-    // (a short box says its level band on the same line)
-    const one = !big && n.d.band ? `${n.d.name} ${band}` : n.d.name;
-    label(g, one, n.x + n.w / 2, n.y + (big ? n.h / 2 - 6 : n.h / 2), cur ? "#fff2a0" : "#f4ecd0", n.k === "in" || one !== n.d.name ? 10 : 11);
-    if (big) label(g, n.k === "dun" ? `던전 ${band}` : n.k === "town" ? "안전 지대" : band, n.x + n.w / 2, n.y + n.h / 2 + 7, cur ? "#ffe8a0" : edge, 10);
-    if (cur) blit(g, meArrow(0), n.x - 4, n.y + n.h / 2);
-    (party.get(id) || []).forEach((q, j) => blit(g, disc(q.col, q.n), n.x + n.w - 4 - j * 11, n.y - 1));
-    const stones = n.d.wpn ? ` · 이동의 돌 ${n.d.wpn}개` : "";
-    const who = (party.get(id) || []).map((q) => q.name).join(", ");
-    view.hits.push({ x: n.x + n.w / 2, y: n.y + n.h / 2, rect: [n.x, n.y, n.w, n.h],
-      tip: `${n.d.name} · ${kname} · ${n.k === "in" ? "실내" : band}${n.d.mobs && n.d.mobs.length ? ` · 몬스터 ${n.d.mobs.length}종` : ""}${stones}${cur ? " · 현재 위치" : ""}${who ? ` · 파티원: ${who}` : ""}` });
-  }
+  (G.party || []).forEach((r, i) => {
+    if (r[0] === G.you || !r[9]) return;
+    if (!party.has(r[9])) party.set(r[9], []);
+    party.get(r[9]).push({ n: i + 1, col: PARTY_COL[i % PARTY_COL.length], name: r[1] });
+  });
+  const state = { t, selected: world.selected, current: G.map?.id, route: guidePath(chart), seen: new Set(G.self?.seen),
+    quests: questMaps(G.defs, G.self, chart.nodes), party, self: G.self, woke: D.wpWoke };
+  view.hits = paintChart(g, chart, world.base, camp, state).map(h => ({ ...h, click: () => selectWorld(h.id) }));
+  if (view.hover) view.hover = view.hits.find(h => h.id === view.hover.id) || null;
+  const detail = $("#map-detail"), d = chart.nodes.get(world.selected)?.d;
+  detail.hidden = !d;
+  if (!d) { world.detailKey = null; return; }
+  const canWarp = !!D.canWarp(), key = JSON.stringify([d.id, state.current, state.route, state.quests.get(d.id), G.self?.wp?.[d.id], G.self?.lvl, canWarp, state.seen.has(d.id)]);
+  if (key === world.detailKey) return;
+  world.detailKey = key;
+  mapDetail(detail, d, { defs: G.defs, chart, state, canWarp, select: selectWorld, travel: (to, i) => {
+    D.act({ t: "warp", to, i }); D.play("ui");
+  } });
 }
 
 function showHover() {
   const h = view.hover, el = $("#map-info");
-  const txt = h ? h.tip : view.tab === "here" ? `${D.G.map.name}${D.G.map.band ? " · " + bandOf(D.G.map.band) : ""} · 휠/±로 확대, 끌어서 이동 · 깨운 돌을 누르면 순간이동` : "문으로 이어진 모든 지역 · 금색이 지금 있는 곳 · 숫자 원은 파티원";
+  const txt = h ? h.tip : view.tab === "here" ? `${D.G.map.name}${D.G.map.band ? " · " + bandOf(D.G.map.band) : ""} · 휠/±로 확대, 끌어서 이동 · 깨운 돌을 누르면 순간이동` : "지도 조각을 누르거나 지역을 골라 경로를 확인하세요";
   if (el.textContent !== txt) el.textContent = txt;
-  $("#map-cv").style.cursor = h && h.click ? "pointer" : view.tab === "here" ? (view.drag ? "grabbing" : "grab") : "default";
+  $("#map-cv").style.cursor = h && h.click ? "pointer" : view.drag ? "grabbing" : "grab";
 }
 function hitAt(x, y) {
   let best = null, bd = Infinity;
@@ -534,6 +550,7 @@ function hitAt(x, y) {
 }
 /** Zoom the current-region view by `f` about the canvas point (x, y). */
 function zoomAt(f, x, y) {
+  if (view.tab === "world") { worldZoom(f, x, y); return; }
   const z = Math.max(1, Math.min(8, view.z * f));
   if (z === view.z) return;
   const { u, ox, oy } = view;
@@ -548,8 +565,15 @@ function zoomAt(f, x, y) {
 function clampView() { const m = M && M.m; if (!m) return; view.cx = Math.max(0, Math.min(m.w, view.cx)); view.cy = Math.max(0, Math.min(m.h, view.cy)); }
 function setTab(tab) {
   view.tab = tab; view.hover = null; view.dirty = true;
-  for (const b of document.querySelectorAll("#map-tabs button[data-tab]")) b.classList.toggle("on", b.dataset.tab === tab);
-  $("#map-zoom").hidden = tab !== "here";
+  for (const b of document.querySelectorAll("#map-tabs button[data-tab]")) {
+    b.classList.toggle("on", b.dataset.tab === tab);
+    b.setAttribute("aria-pressed", String(b.dataset.tab === tab));
+  }
+  $("#w-map").classList.toggle("world-chart", tab === "world");
+  $("#w-map").classList.toggle("map-has-detail", tab === "world" && !!world.selected);
+  $("#map-region-bar").hidden = tab !== "world";
+  $("#map-detail").hidden = tab !== "world" || !world.selected;
+  if (tab === "world") currentChart();
   legend();
 }
 /** The legend under the map: what each mark means (per tab). */
@@ -564,8 +588,8 @@ function legend() {
     chip(spr("sword", ROLE.train[1]), "수련관"); chip(spr("bag", ROLE.bank[1]), "창고"); chip(spr("excl", ROLE.elder[1]), "의뢰"); chip(spr("fire", COL.fire), "모닥불");
     chip(spr("rift", COL.obelisk), "오벨리스크"); chip(spr("wind", COL.wind), "바람 신단"); chip(spr("skull", COL.boss), "우두머리"); chip(sw("#ff5050"), "몬스터");
   } else {
-    for (const k of ["town", "field", "dun", "in"]) chip(sw(KIND[k][0]), KIND[k][1]);
     chip(sw("#ffd84a"), "현재 위치"); chip(disc(PARTY_COL[0], 1), "파티원");
+    chip(spr("excl", ROLE.elder[1]), "의뢰"); chip(sw("#1b6258"), "안내 경로");
   }
 }
 
@@ -590,23 +614,34 @@ export function init(deps) {
   const local = (e) => { const r = cv.getBoundingClientRect(); return [((e.clientX - r.left) * cv.width) / r.width, ((e.clientY - r.top) * cv.height) / r.height]; };
   $("#map-zi").addEventListener("click", () => { zoomAt(1.5, cv.width / 2, cv.height / 2); });
   $("#map-zo").addEventListener("click", () => { zoomAt(1 / 1.5, cv.width / 2, cv.height / 2); });
-  $("#map-fit").addEventListener("click", () => { view.z = 1; view.reset = true; view.dirty = true; });
-  cv.addEventListener("wheel", (e) => { if (view.tab !== "here") return; e.preventDefault(); const [x, y] = local(e); zoomAt(e.deltaY < 0 ? 1.25 : 0.8, x, y); }, { passive: false });
+  $("#map-region").addEventListener("change", e => selectWorld(e.target.value, true));
+  $("#map-fit").addEventListener("click", () => {
+    if (view.tab === "world") { world.z = Math.min(1, 1 / (world.frame?.fit || 1)); world.x = world.y = 0; }
+    else { view.z = 1; view.reset = true; }
+    view.dirty = true;
+  });
+  cv.addEventListener("wheel", (e) => { e.preventDefault(); const [x, y] = local(e); zoomAt(e.deltaY < 0 ? 1.25 : 0.8, x, y); }, { passive: false });
   cv.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
     const [x, y] = local(e);
-    view.drag = { x, y, cx: view.cx, cy: view.cy, moved: false, id: e.pointerId };
+    view.drag = { x, y, cx: view.cx, cy: view.cy, wx: world.x, wy: world.y, moved: false, id: e.pointerId };
     cv.setPointerCapture(e.pointerId);
   });
   cv.addEventListener("pointermove", (e) => {
     const [x, y] = local(e), d = view.drag;
-    if (d && view.tab === "here") {
+    if (d) {
       const dx = x - d.x, dy = y - d.y;
       if (!d.moved && Math.hypot(dx, dy) > 4) d.moved = true;
       if (d.moved) {
-        const a = dx / view.u, b = (2 * dy) / view.u;
-        view.cx = d.cx - (a + b) / 2; view.cy = d.cy - (b - a) / 2;
-        clampView(); view.dirty = true;
+        if (view.tab === "world") {
+          world.x = d.wx + dx; world.y = d.wy + dy;
+        } else {
+          const a = dx / view.u, b = (2 * dy) / view.u;
+          view.cx = d.cx - (a + b) / 2; view.cy = d.cy - (b - a) / 2;
+          clampView();
+        }
+        view.dirty = true;
+        return;
       }
     }
     const h = hitAt(x, y);

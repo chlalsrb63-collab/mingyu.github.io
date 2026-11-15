@@ -62,7 +62,10 @@ const hurt = (m, hp = 50000) => m.hp < hp;
 // ── the tables
 assert.equal(AIM_N, 64);
 assert.ok(CONE > 20 && CONE < 60);
-for (const [k, w] of Object.entries(D.wkinds)) assert.ok(w.arc > 10 && w.arc < 90, k + " has an arc");
+for (const [k, w] of Object.entries(D.wkinds)) {
+  if (k === "hammer") assert.equal(w.center + w.r, w.range, "hammer has a circular impact at its declared reach");
+  else assert.ok(w.arc > 10 && w.arc < 90, k + " has an arc");
+}
 assert.ok(D.wkinds.sword.arc > D.wkinds.dagger.arc && D.wkinds.dagger.arc > D.wkinds.spear.arc, "a greatsword sweeps wide, a dagger less, a spear thrusts narrow");
 
 // ── the aim field: whole steps round the compass only

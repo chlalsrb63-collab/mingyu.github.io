@@ -224,7 +224,7 @@ function skillRows(box, s, k) {
     const at = pas ? "" : QS.keysOf(["s", id]);
     hd.append(el("b", "", sk.name), at ? el("kbd", "", at) : "");
     if (pas) hd.append(el("small", "", "패시브"));
-    else hd.append(el("small", "mp", `MP ${w ? w[1] : sk.mp}`), el("small", "", `재사용 ${sk.cd / 1000}초`));
+    else hd.append(el("small", "mp", `MP ${w ? w[1] : sk.mp}${w?.[4] ? ` · HP ${w[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : ""}`), el("small", "", `재사용 ${sk.cd / 1000}초`));
     hd.append(el("small", "", why || (sk.job ? "전직 기술" : `숙련 ${sk.need} 습득`)));
     row.append(ic, hd, el("p", "", sk.desc));
     if (!pas) {

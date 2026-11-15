@@ -376,12 +376,51 @@ const REACT_NAME = [null, ["증기 폭발!", "#ffffff"], ["초전도!", "#b8a0ff
 /** Passive flashes: no swing of the weapon, only a sign where it happened. */
 const PASSIVE = new Set([110, 111, 113, 114, 115]);
 
+/** Dust and a stepped crack on the ground mark the server's exact circle. */
+export function hammerImpact(x, y, r, hit, crit, kind) {
+  const final = kind === 132;
+  const f = S3.fx, col = crit ? "#ffdc75" : final ? "#f3a567" : hit ? "#e4be83" : "#a98c6d";
+  const [cx, cy] = at(x, y);
+  f.wave(x, y, r, col, final ? 310 : 220);
+  f.burst(x, y, 0.08, col, final ? 19 : hit ? 10 : 5, final ? 2.1 : 1.2);
+  if (!hit) return;
+  if (crit || kind !== 7) f.spark(x, y, col, final ? 1.65 : 0.95);
+  // Draw native pixels on the projected plane so the branches fade without a blurred edge.
+  const arms = final ? 8 : 5, shift = ((Math.round(x) + Math.round(y)) % 7) * Math.PI / 7;
+  S3.fxCustom((g, k) => {
+    if (k < 0.055) {
+      for (let row = -2; row <= 2; row++) {
+        const w = (final ? 6 : 4) - Math.abs(row);
+        px(g, cx - w, cy + row, 1 + w * 2, 1, "#fff4ce");
+      }
+    }
+    const extent = r * Math.min(0.9, 0.2 + 6 * k);
+    for (let i = 0; i < arms; i++) {
+      const ang = shift + (i / arms) * Math.PI * 2, ux = Math.cos(ang), uy = Math.sin(ang);
+      for (let j = 1; j < extent * (i % 2 ? 0.72 : 1); j++) {
+        if (k > 0.58 && ((i + j) % 3 === 0 || j / extent > (1 - k) * 2.3)) continue;
+        const bend = j < 5 ? 0 : (i % 2 ? -1 : 1) * (j < 9 ? 1.2 : 0.6);
+        const [sx, sy] = at(x + ux * j - uy * bend, y + uy * j + ux * bend);
+        px(g, sx, sy, 2, 1, k < 0.24 ? col : "#604940");
+        if (k < 0.24) px(g, sx, sy + 1, 2, 1, "#604940");
+      }
+    }
+  }, final ? 410 : 260);
+}
+
 export function skillEvent(e, ctx) {
   const { G, entityPos } = ctx;
   // the skills' effects go through the scaled-up set (scene2d big): denser, bigger, a core flash, shockwaves
   const B = S3.big(), f = B.fx, t = ctx.t;
   live.G = G;
   switch (e[0]) {
+    case "hm": {
+      const [, eid, x, y, r, hit, crit, kind] = e;
+      hammerImpact(x, y, r, hit, crit, kind);
+      if (eid === G.you || Math.hypot(x - G.me.x, y - G.me.y) < 180) Sound.play("hammer_land", { hit, crit, final: kind === 132 });
+      if (eid === G.you && hit && kind === 132) S3.shake(4.5);
+      return true;
+    }
     case "a": {
       const kind = e[2];
       if (kind < 70) return false;

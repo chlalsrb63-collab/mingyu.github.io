@@ -13,6 +13,7 @@ export const WORDS = {
   staff: { diff: 2, feel: "불과 얼음, 원소를 엮는 마법" },
   book: { diff: 3, feel: "낙인을 새기고 터뜨리는 저주" },
   bow: { diff: 2, feel: "멀리서 날리는 화살" },
+  hammer: { diff: 2, feel: "가까운 땅을 내려찍는 무거운 원형 정타" },
 };
 export const DIFF_NAME = ["", "쉬움", "보통", "어려움"];
 /** A basic attack reaching this far (px) is told as 원거리. */
@@ -25,6 +26,7 @@ export const FALLBACK = [
   ["staff", "스태프", "견습 지팡이", "파이어볼", 100],
   ["book", "마도서", "낡은 주문서", "영혼 화살", 84],
   ["bow", "활", "나무 짧은활", "관통 화살", 150],
+  ["hammer", "양손해머", "말뚝박이 망치", "쐐기찍기", 30],
 ];
 /** A list as the server sent it, kept only if it is well-formed (else the fallback). */
 export function cleanStarters(list) {

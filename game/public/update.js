@@ -180,7 +180,7 @@ export function update(dt, t) {
           // (usable with the weapon in hand, not kept from auto-hunt, MP to spare; never swaps weapons)
           for (const id of QS.autoSkills()) {
             const sk = G.defs.skills[id];
-            if (!sk || QS.skillWhy(id) || sk.noAuto || (sk.autoHp && me.hp < s.mhp * sk.autoHp)) continue;
+            if (!sk || QS.skillWhy(id) || sk.noAuto || (sk.autoHp && me.hp - QS.skillHp(id) < s.mhp * sk.autoHp)) continue;
             if (t >= (G.cdEnd[id] || 0) && me.mp >= QS.skillMp(id) + 4) { if (castSkill(id)) { autoSt.lastSkill = t; break; } }
           }
         }

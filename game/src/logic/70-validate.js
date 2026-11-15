@@ -180,6 +180,7 @@ export function validateAction(S, pid, a) {
     case "atk":
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       if (p.dance) return bad("무영난무 중입니다");
+      if (p.hammer) return bad("해머를 내려찍는 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
@@ -205,9 +206,11 @@ export function validateAction(S, pid, a) {
       const why = skWhy(ch, sk);
       if (why) return bad(why);
       if (p.dance) return bad("무영난무 중입니다");
+      if (p.hammer) return bad("해머를 내려찍는 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
       if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
       if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");
+      if (sk.hpPct && p.hp <= hammerHpCost(p, sk)) return bad("HP가 부족합니다");
       return OK;
     }
     case "use": {

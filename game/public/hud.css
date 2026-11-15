@@ -766,6 +766,28 @@ body.touch #mini-bar #mini-map kbd { display: none; }
 #map-legend span { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
 #map-legend img { image-rendering: pixelated; }
 body[data-lay="port"] #map-box, body[data-lay="land"] #map-box { height: clamp(150px, calc(100vh - 200px), 420px); }
+#w-map.world-chart { --win-max: 900px; width: min(900px, calc(var(--zone-w) - 8px)); }
+#w-map.world-chart #map-box { flex: 0 0 auto; height: clamp(250px, calc(var(--zone-h) - var(--tabs-h) - 180px), 555px); background: #5c4638; }
+#map-region-bar { display: flex; align-items: center; gap: 7px; color: #eee0b9; font: 11px var(--pix); }
+#map-region-bar[hidden], #map-detail[hidden] { display: none; }
+#map-region { max-width: 72%; min-height: 26px; background: #211b2c; color: #f0e0b6; border: 1px solid #6c5c49; padding: 2px 6px; }
+#map-detail { padding: 6px 8px; flex: 0 0 auto; }
+.map-detail-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; color: #eac880; }
+.map-detail-head span { color: #cfc3a7; font-size: 11px; }
+.map-guide { margin: 3px 0 5px; color: #a8ebd3; font-size: 11px; overflow-wrap: anywhere; }
+.map-detail-grid { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 8px; color: #ded2b9; font-size: 11px; }
+.map-detail-key { color: #b3a787; }
+.map-detail-buttons { display: flex; gap: 4px; flex-wrap: wrap; }
+.map-detail-buttons button { padding: 3px 7px; min-height: 23px; }
+.map-fast-travel { align-items: center; padding: 5px 0; margin-bottom: 5px; border-bottom: 1px solid #665544; color: #eee0b9; font-size: 11px; }
+.map-fast-travel button:not(:disabled) { border-color: #d3aa6c; color: #ffdf92; }
+.map-fast-travel span { color: #cfc3a7; }
+body[data-lay="port"] #w-map.world-chart #map-box { height: clamp(280px, calc(100dvh - 250px), 485px); }
+body[data-lay="land"] #w-map.world-chart #map-box { height: clamp(175px, calc(100dvh - 120px), 385px); }
+body[data-lay="port"] #w-map.world-chart.map-has-detail #map-box { height: clamp(195px, calc(100dvh - 500px), 340px); }
+body[data-lay="land"] #w-map.world-chart.map-has-detail #map-box { height: clamp(145px, calc(100dvh - 170px), 270px); }
+body[data-lay="port"] #w-map.world-chart .map-detail-buttons { gap: 5px; }
+body.touch #map-zoom button, body.touch .map-detail-buttons button { min-height: 32px; }
 /* ─────────────────────────── the bag's size and a house of one's own (housing.js) ─────────────────────────── */
 /* the bag grows to 100 slots: on a desktop the docked bag scrolls in its column (above); in the
    phone drawer it scrolls past four rows, in the landscape drawer past six */

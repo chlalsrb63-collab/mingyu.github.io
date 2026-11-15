@@ -1,0 +1,168 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8");
+const { __hammer: H, ...L } = await import("data:text/javascript;base64," + Buffer.from(src + `
+export const __hammer = { canStand, mapOf, changeMap, newMob, stats, fall, hammerHpCost, hammerBracing, plain };`).toString("base64"));
+const D = L.defs();
+const S = L.setup();
+S.now = 1_000_000;
+
+const actions = (p, a) => {
+  const v = L.validateAction(S, p.pid, a);
+  if (v.ok) L.applyAction(S, p.pid, a);
+  return v;
+};
+const advance = ms => { L.endTick(S); L.tick(S, S.now + ms); };
+const find = (m, check) => {
+  for (let ty = 4; ty < m.h - 4; ty++) for (let tx = 4; tx < m.w - 4; tx++) {
+    const x = tx * 16 + 8, y = ty * 16 + 8;
+    if (check(x, y)) return [x, y];
+  }
+  throw new Error("missing arena fixture");
+};
+const land = H.mapOf("meadow");
+const [ox, oy] = find(land, (x, y) => [-40, -16, 0, 16, 40].every(dx => [-24, 0, 24].every(dy => H.canStand(land, x + dx, y + dy))));
+function player(id, wk, wm, level = 61) {
+  const ch = L.hero("검증" + id, { wk, lvl: level, migrate: true });
+  ch.job = "adventurer";
+  ch.gold = 5000;
+  ch.wm[wk] = { lv: wm, xp: 0 };
+  L.addPlayer(S, id, ch);
+  const p = S.players[id];
+  H.changeMap(S, p, "meadow", ox, oy);
+  return p;
+}
+const p = player("first", "hammer", 19), rt = S.maps.meadow;
+const NPC = H.mapOf("town").npcs.find(n => n.role === "job");
+assert.ok(NPC, "Arsene is reachable");
+const tryJob = () => actions(p, { t: "job_change", j: "destroyer" });
+H.changeMap(S, p, "town", NPC.x * 16 + 8, NPC.y * 16 + 12);
+assert.match(tryJob().why || tryJob().error || "", /20/);
+p.ch.wm.hammer.lv = 20;
+const initialGold = p.ch.gold;
+assert.ok(tryJob().ok);
+assert.equal(p.ch.job, "destroyer");
+assert.equal(initialGold - p.ch.gold, D.jobs.destroyer.cost);
+H.changeMap(S, p, "meadow", ox, oy);
+
+const atk = { t: "atk", a: 0 }, stamp = { t: "sk", id: "hammer_stamp", a: 0 };
+const m = (dx, dy, k = "twinhare") => {
+  const mob = H.newMob(S, k, [0, 0, 0, 0]);
+  rt.mobs.push(mob);
+  return Object.assign(mob, { x: ox + dx, y: oy + dy, hx: ox + dx, hy: oy + dy, hp: 1e8, el: 0, tr: [], stun: 2e9, castAt: 2e9, atkAt: 2e9 });
+};
+function ready(who = p) { who.atkAt = 0; who.stag = 0; who.hp = H.stats(who).mhp; who.mp = H.stats(who).mmp; who.cds = {}; }
+const dmg = (mob, who = p) => mob.by[who.pid] || 0;
+const impact = () => rt.ev.find(e => e[0] === "hm");
+
+{
+  const first = m(16, 1), second = m(16, -1), edge = m(30, 0), extra = m(16, 14), behind = m(-1, 0), out = m(16, -15);
+  for (let i = 0; i < 3; i++) {
+    ready();
+    L.endTick(S);
+    assert.ok(actions(p, atk).ok);
+    assert.deepEqual(rt.ev.find(e => e[0] === "a").slice(2), [7, ox + 16, oy, p.dir, 0, 200, 0]);
+    const hp = first.hp;
+    advance(199);
+    assert.equal(first.hp, hp);
+    advance(1);
+    assert.deepEqual(impact().slice(2, 6), [ox + 16, oy, 14, 1]);
+    assert.ok(first.hp < hp);
+    // Incidental knockback must not move the next cast's fixture.
+    for (const o of [first, second, edge, extra, behind, out]) { o.x = o.hx; o.y = o.hy; }
+  }
+  assert.ok(dmg(first) > dmg(second) && dmg(second) > 0, "entity ID breaks a center tie");
+  assert.ok(dmg(edge) > 0, "14px boundary is included");
+  assert.equal(dmg(extra) + dmg(behind) + dmg(out), 0);
+  assert.equal(p.hammerCracks.get(first).n, 2);
+  const other = player("second", "hammer", 20);
+  ready(other); assert.ok(actions(other, atk).ok); advance(200);
+  assert.equal(other.hammerCracks.get(first).n, 1);
+  assert.equal(p.hammerCracks.get(first).n, 2);
+  ready(); assert.ok(actions(p, { t: "sk", id: "hammer_fault", a: 0 }).ok); advance(200);
+  assert.equal(p.hammerCracks.has(first), false);
+  advance(5001); assert.equal(other.hammerCracks.size, 0);
+  for (const o of [first, second, edge, extra, behind, out]) o.dead = true;
+  L.removePlayer(S, other.pid);
+}
+
+{
+  const target = m(16, 0), old = p.ch.eq.weapon;
+  const cost = H.hammerHpCost(p, D.skills.hammer_stamp);
+  ready(); p.hp = cost;
+  assert.equal(actions(p, stamp).ok, false, "HP cost cannot kill the caster");
+  ready(); const hp = p.hp;
+  assert.ok(actions(p, stamp).ok);
+  assert.equal(p.hp, hp - cost);
+  assert.equal(actions(p, stamp).ok, false, "pending cast and cooldown reject duplicate spend");
+  assert.equal(p.hp, hp - cost);
+  p.ch.eq.weapon = H.plain("w_warrior_1");
+  advance(200); assert.equal(dmg(target), 0);
+  assert.equal(actions(p, stamp).ok, false, "skills require a hammer in hand");
+  p.ch.eq.weapon = old; p.stc = null;
+  ready(); assert.ok(actions(p, atk).ok);
+  H.changeMap(S, p, "town", NPC.x * 16 + 8, NPC.y * 16 + 12);
+  H.changeMap(S, p, "meadow", ox, oy);
+  advance(200); assert.equal(dmg(target), 0);
+  ready(); assert.ok(actions(p, atk).ok); H.fall(S, rt, p);
+  assert.equal(p.hammer, null); p.dead = false; advance(200); assert.equal(dmg(target), 0);
+  for (const o of rt.mobs) { o.dead = true; o.respAt = Infinity; }
+  rt.cellAt = Infinity;
+  ready(); const mastery = p.ch.wm.hammer.xp;
+  assert.ok(actions(p, atk).ok); advance(200);
+  assert.equal(impact()[5], 0); assert.equal(p.ch.wm.hammer.xp, mastery);
+  ready(); assert.ok(actions(p, { t: "sk", id: "hammer_final", a: 0 }).ok);
+  assert.equal(H.hammerBracing(p, S.now), 0.25);
+  advance(400);
+}
+
+{
+  const [x, y] = find(land, (x, y) => H.canStand(land, x, y) && !H.canStand(land, x + 16, y) && H.canStand(land, x + 32, y));
+  p.x = x; p.y = y; ready();
+  assert.ok(actions(p, atk).ok);
+  assert.ok(p.hammer.x < x + 16, "a wall stops the landing point");
+  const target = m(0, 0); target.x = target.hx = x + 32; target.y = target.hy = y;
+  advance(200); assert.equal(dmg(target), 0);
+  target.dead = true; p.x = ox; p.y = oy;
+}
+
+{
+  const old = L.newChar("옛망치", []); old.v = 13; delete old.wm.hammer;
+  L.addPlayer(S, "migration", old);
+  assert.deepEqual(S.players.migration.ch.wm.hammer, { lv: 1, xp: 0 });
+  assert.equal(S.players.migration.ch.v, 14);
+  assert.equal(D.wkOrder.at(-1), "hammer");
+  assert.equal(Object.values(D.items).filter(it => it.wk === "hammer").length, 5);
+  assert.equal(Object.values(D.skills).filter(sk => sk.wk === "hammer" && sk.kind === "p").length, 5);
+}
+
+// Identical level, stats, tier/rarity and mastery. Frozen mobs isolate range and cadence.
+function compare(kind, offsets, duo) {
+  const team = Array.from({ length: duo ? 2 : 1 }, (_, i) => player(`balance-${kind}-${i}`, kind, 30));
+  for (const o of team) {
+    o.ch.eq.weapon = H.plain(kind === "hammer" ? "w_h_3" : "w_warrior_3");
+    o.ch.job = kind === "hammer" ? "destroyer" : "swordsman";
+    o.stc = null; ready(o);
+  }
+  const targets = offsets.map(([x,y]) => m(x,y));
+  const cd = H.stats(team[0]).acd;
+  for (let n = 0; n < 120; n++) {
+    for (const o of team) assert.ok(actions(o, atk).ok);
+    if (kind === "hammer") advance(200);
+    for (const o of targets) { o.x = o.hx; o.y = o.hy; }
+    advance(cd - (kind === "hammer" ? 200 : 0));
+  }
+  const total = targets.reduce((a, target) => a + team.reduce((b,o) => b + dmg(target,o), 0), 0);
+  for (const o of targets) { o.dead = true; o.respAt = Infinity; }
+  for (const o of team) L.removePlayer(S,o.pid);
+  return total / (120 * cd / 1000);
+}
+for (const duo of [false, true]) {
+  const single = [[16, 0]], spread = [[16, 0], [24, 14], [24, -14], [32, 0]];
+  const h = compare("hammer", single, duo), s = compare("sword", single, duo);
+  const hm = compare("hammer", spread, duo), sm = compare("sword", spread, duo);
+  assert.ok(h / s >= 1.08 && h / s <= 1.15 && sm > hm, `hammer ${h}/${hm}, sword ${s}/${sm}`);
+  console.log(`${duo ? "duo" : "solo"}: single hammer ${h.toFixed(1)}, sword ${s.toFixed(1)} DPS; four spread hammer ${hm.toFixed(1)}, sword ${sm.toFixed(1)} DPS`);
+}
+console.log("hammer: repeat, timing, shape, cap, wall, costs, cracks, cancellation, migration and Destroyer verified");

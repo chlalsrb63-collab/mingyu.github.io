@@ -12,6 +12,7 @@ import * as Mini from "./minigames.js";
 import * as MobArt from "./mobart.js";
 import * as Growth from "./growth.js";
 import * as SkillFx from "./skillfx.js";
+import { HAMMER_IMPACT } from "./swing.js";
 import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
 import * as Life from "./life.js";
@@ -35,6 +36,20 @@ export const DUNGEONS = new Set(["crypt", "sewer", "abyss"]);
 const heightOf = (e) => e.h3 || 1.3;
 
 export function onEvent(e, t) {
+  if (e[0] === "a" && (e[2] === 7 || (e[2] >= 130 && e[2] <= 132))) {
+    const [, eid, , x, y, dir, , wind = HAMMER_IMPACT, aim] = e;
+    const src = entityPos(eid);
+    if (!src) return;
+    // Keep the local button prediction. Other players start when their attack reaches us.
+    if (eid !== G.you || t - src.atkT > wind) src.atkT = t;
+    src.dir = dir; src.atkN = 0; src.hammerWind = wind;
+    src.aim = [x, y];
+    if (Number.isInteger(aim)) src.hammerYaw = (aim / (G.defs.aim?.[0] || 64)) * Math.PI * 2;
+    else if (eid !== G.you || src.hammerYaw === undefined) src.hammerYaw = Math.atan2(y - src.y, x - src.x);
+    G.hitFrom = [src.x, src.y];
+    if (eid === G.you || dist(G.me.x, G.me.y, x, y) < 180) Sound.play("swing_hammer");
+    return;
+  }
   if (SkillFx.skillEvent(e, { G, S3, Sound, entityPos, heightOf, t })) return;
   if (Dim.onEvent(e)) return;
   if (Housing.onEvent(e)) return;
@@ -76,10 +91,11 @@ export function onEvent(e, t) {
       break;
     }
     case "h": {
-      const [, id, dmg, crit, isPlayer] = e;
+      const [, id, dmg, crit, isPlayer, cost] = e;
       const tgt = entityPos(id);
       if (!tgt) break;
       const h = heightOf(tgt);
+      if (cost) { floatText(`−${dmg}`, tgt.x, tgt.y, h + 0.25, "#e89970"); break; }
       if (dmg < 0) floatText(`+${-dmg}`, tgt.x, tgt.y, h + 0.3, "#8cff8c");
       else {
         floatText(crit ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit, true);

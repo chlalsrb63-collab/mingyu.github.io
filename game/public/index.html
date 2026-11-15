@@ -226,8 +226,10 @@
       <section class="window" id="w-map" hidden>
         <header><span class="t">지도</span><kbd>M</kbd><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body">
-          <div class="tabs" id="map-tabs"><button data-tab="here" class="on">현재 지역</button><button data-tab="world">월드 노선도</button><span id="map-zoom"><button id="map-zo" title="축소">−</button><button id="map-zi" title="확대">+</button><button id="map-fit" title="전체 보기">맞춤</button></span></div>
-          <div class="sunk" id="map-box"><canvas id="map-cv"></canvas></div>
+          <div class="tabs" id="map-tabs"><button data-tab="here" class="on" aria-pressed="true">지역</button><button data-tab="world" aria-pressed="false">세계</button><span id="map-zoom"><button id="map-zo" title="축소">−</button><button id="map-zi" title="확대">+</button><button id="map-fit" title="전체 보기">맞춤</button></span></div>
+          <div id="map-region-bar" hidden><label for="map-region">지역 선택</label><select id="map-region" class="sel"><option value="">안내 종료</option></select></div>
+          <div class="sunk" id="map-box"><canvas id="map-cv" aria-label="지도"></canvas></div>
+          <div id="map-detail" class="sunk" hidden></div>
           <div id="map-info"></div>
           <div id="map-legend"></div>
         </div>

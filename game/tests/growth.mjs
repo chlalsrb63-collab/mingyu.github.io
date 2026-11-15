@@ -45,7 +45,9 @@ const count = (ch, id) => ch.inv.reduce((a, s) => a + (s.id === id ? s.n || 1 : 
 // (weapon skills: each weapon brings an active at mastery 1, another and a passive at 10; tests/skills.mjs has the rest)
 for (const wk of D.wkOrder) {
   const own = D.skillOrder.filter((id) => D.skills[id].wk === wk && "ap".includes(D.skills[id].kind));
-  assert.deepEqual(own.map((id) => [D.skills[id].kind, D.skills[id].need]), [["a", 1], ["a", 10], ["p", 10]], wk + "'s three skills");
+  const expected = [["a", 1], ["a", 10], ["p", 10]];
+  if (wk === "hammer") expected.push(["p", 20], ["p", 30], ["p", 40], ["p", 50]);
+  assert.deepEqual(own.map((id) => [D.skills[id].kind, D.skills[id].need]), expected, wk + "'s mastery unlocks");
 }
 assert.equal(D.whSlots, 60);
 for (const id of ["sc_atk", "sc_def", "sc_xp", "feather", "pet_chick", "pet_bat", "pet_wisp", "hp_l", "mp_l"]) {

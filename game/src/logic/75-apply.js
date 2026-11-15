@@ -86,6 +86,7 @@ export function applyAction(S, pid, a) {
       const k = a.k === "weapon2" ? "weapon2" : fits.includes(a.k) ? a.k : fits.find((o) => !ch.eq[o]) || fits[0];
       const old = ch.eq[k], was = inHand(ch);
       ch.eq[k] = s;
+      if (k === "weapon") p.hammer = null;
       if (old) ch.inv[a.s] = old;
       else ch.inv.splice(a.s, 1);
       // another kind of weapon in hand: a dance stops; a kind never used before puts its first skill on the bar
@@ -98,6 +99,7 @@ export function applyAction(S, pid, a) {
       const was = inHand(ch);
       ch.inv.push(ch.eq[a.k]);
       ch.eq[a.k] = null;
+      if (a.k === "weapon") p.hammer = null;
       if (inHand(ch) !== was) handChanged(p);
       afterGear(S, p);
       break;
@@ -621,6 +623,7 @@ export function applyAction(S, pid, a) {
 function handChanged(p) {
   const ch = p.ch, wk = inHand(ch);
   p.dance = null;
+  p.hammer = null;
   qsFollow(ch);
   if (!wk || ch.wm[wk].lv > 1 || ch.wm[wk].xp > 0) return;
   for (const id of WK_SKILLS[wk]) if (SKILL[id].kind === "a" && SKILL[id].need <= 1) qsLearn(ch, id);

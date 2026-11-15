@@ -5,7 +5,25 @@
  */
 const LIGHT = "#e6e0d0", DIM = "#8f8b80";
 
+// Pixel blocks in a shared hammer silhouette; the cut, shock ring or brace reads at 1×.
+function hammerGlyph(blocks) {
+  const pixels = Array.from({ length: 16 }, () => Array(16).fill("."));
+  for (const [x, y, w, h, ink] of blocks) for (let j = y; j < y + h; j++) {
+    for (let i = x; i < x + w; i++) pixels[j][i] = ink;
+  }
+  return pixels.map(row => row.join(""));
+}
+const hammerHead = [[3, 3, 10, 4, "#"], [2, 4, 12, 2, "#"], [4, 6, 8, 1, "o"], [7, 7, 2, 5, "#"], [6, 12, 4, 2, "o"]];
+
 const GLYPH = {
+  hammer_stamp: hammerGlyph([...hammerHead, [3, 14, 10, 1, "#"]]),
+  hammer_fault: hammerGlyph([...hammerHead, [3, 13, 4, 1, "#"], [9, 14, 4, 1, "#"], [12, 12, 2, 1, "#"]]),
+  hammer_final: hammerGlyph([...hammerHead, [1, 9, 3, 1, "#"], [12, 9, 3, 1, "#"], [3, 13, 10, 2, "#"], [5, 13, 6, 1, "o"]]),
+  hammer_crack: hammerGlyph([[5, 2, 6, 2, "#"], [4, 4, 2, 4, "#"], [10, 4, 2, 4, "#"], [6, 7, 4, 2, "o"], [7, 9, 2, 2, "#"], [9, 11, 2, 2, "#"], [6, 13, 3, 1, "#"]]),
+  hammer_brace: hammerGlyph([[4, 2, 8, 2, "#"], [3, 4, 10, 5, "o"], [4, 9, 8, 2, "#"], [6, 11, 4, 2, "#"], [7, 5, 2, 5, "#"]]),
+  hammer_hold: hammerGlyph([[5, 2, 6, 2, "#"], [6, 4, 4, 1, "o"], [7, 5, 2, 5, "#"], [6, 10, 4, 2, "o"], [5, 12, 6, 2, "#"]]),
+  hammer_breath: hammerGlyph([[3, 4, 3, 2, "#"], [10, 4, 3, 2, "#"], [2, 6, 12, 4, "#"], [4, 10, 8, 2, "o"], [6, 12, 4, 2, "#"], [7, 6, 2, 4, "o"]]),
+  hammer_heart: hammerGlyph([[7, 1, 2, 14, "#"], [2, 7, 12, 2, "#"], [4, 4, 8, 8, "o"], [6, 5, 4, 6, "#"], [7, 7, 2, 2, "o"]]),
   // ── 대검
   slash: [ // 파워 슬래쉬: a wide crescent swept round a greatsword
     "................",

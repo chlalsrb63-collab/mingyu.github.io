@@ -6,9 +6,10 @@ const WEAPON_NAMES = {
   staff: ["견습 지팡이", "룬 지팡이", "현자의 지팡이", "플라즈마 로드", "공허의 홀"],
   book: ["낡은 주문서", "룬 마도서", "현자의 법전", "홀로그램 코덱스", "공허의 서"],
   bow: ["나무 짧은활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위"],
+  hammer: ["말뚝박이 망치", "강철 노두 망치", "성문지기의 중추", "충격 코일 해머", "균열봉합 추"],
 };
 /** The word each weapon kind uses in its item ids (persisted: the old class names stay). Anyone may wield anything. */
-const WK_ID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow" };
+const WK_ID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow", hammer: "h" };
 const W_ATK = [6, 14, 26, 42, 64];
 /** The level each tier of gear asks for, on the 1–200 player scale (= 4·old − 3). */
 const G_REQ = [1, 29, 61, 101, 149];
@@ -130,7 +131,7 @@ const FILTER_Q = [0, 1, 2];
 /** How often a pet runs for something. */
 const PET_MS = 300;
 
-const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1", "h_1", "a_1", "g_1", "b_1"];
+const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1", "w_h_1", "h_1", "a_1", "g_1", "b_1"];
 const ENH_RATE = [100, 95, 90, 80, 70, 55, 45, 35, 25, 15];
 
 // ── the cosy side: campfires, fishing, guilds

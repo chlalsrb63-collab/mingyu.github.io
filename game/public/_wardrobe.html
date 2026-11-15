@@ -1,4 +1,4 @@
-<!doctype html><meta charset="utf-8"><title>wardrobe</title><body style="margin:0;background:#2a2834;color:#ddd;font:12px sans-serif"><canvas id="c"></canvas>
+<!doctype html><meta charset="utf-8"><title>wardrobe</title><link rel="icon" href="data:,"><body style="margin:0;background:#2a2834;color:#ddd;font:12px sans-serif"><canvas id="c"></canvas>
 <script type="module">
 // dev-only preview: every weapon tier, motif and glow; every cosmetic on several looks in every facing
 import * as WP from "./weapons.js";
@@ -8,7 +8,7 @@ const q = new URLSearchParams(location.search), mode = q.get("m") || "weapons";
 if (q.get("code") !== "1") await (await import("./assetlib.js")).ready();
 const cv = document.getElementById("c"), g = cv.getContext("2d");
 const txt = (s, x, y, col = "#ddd") => { g.fillStyle = col; g.font = "12px sans-serif"; g.fillText(s, x, y); };
-const KINDS = ["sword", "dagger", "spear", "staff", "book", "bow"];
+const KINDS = Object.keys(WP.DESIGNS);
 if (mode === "weapons") {
   const z = 4, CW = 52 * z + 8, RH = 32 * z + 4;
   cv.width = 5 * CW + 120; cv.height = KINDS.length * RH + 470;
@@ -42,6 +42,30 @@ if (mode === "weapons") {
     g.drawImage(WP.weaponIcon("sword", 4, { we: e }), 6 + i * 300 + 140, y1 + 96, 48, 48);
     txt("+" + e, 6 + i * 300, y1 + 10);
   });
+}
+if (mode === "hammer") {
+  const rows = [
+    [1, 2, 3, 4, 5].map((wt) => [`티어 ${wt}`, { wt }]),
+    WP.silhouetteSamples("hammer").map(([, wl]) => [WP.motifName(wl), { wt: 3, wl, wq: 3 }]),
+  ];
+  const width = 172, height = 160;
+  cv.width = width * 5 + 8;
+  cv.height = height * rows.length + 8;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#242131";
+  g.fillRect(0, 0, cv.width, cv.height);
+  rows.forEach((row, j) => row.forEach(([name, gear], i) => {
+    const x = 8 + i * width, y = 8 + j * height;
+    g.fillStyle = "#39464a";
+    g.fillRect(x, y, width - 8, height - 8);
+    txt(name, x + 10, y + 20);
+    const sprite = WP.weaponSprite("hammer", gear), icon = WP.weaponIcon("hammer", gear.wt, gear);
+    g.drawImage(sprite, x + 6, y + 24, sprite.width * 3, sprite.height * 3);
+    g.drawImage(sprite, x + 22, y + 108);
+    g.fillStyle = "#242131";
+    g.fillRect(x + 105, y + 83, 48, 48);
+    g.drawImage(icon, x + 105, y + 83, 48, 48);
+  }));
 }
 if (mode === "sil") {
   const z = 4, cols = 5, cw = 244, rh = 172;

@@ -188,6 +188,7 @@ function migrate(ch) {
   charmsClean(ch);
   // social, the weekly book, enhancement pity (v14): block list, gauge, the week's baselines, the day's rest bonus (63-social-weekly.js)
   socialSheetClean(ch, dl);
+  // cleanJobs adds the hammer mastery slot to saves made before v14.
   ch.v = Math.max(ch.v | 0, 14);
   return ch;
 }

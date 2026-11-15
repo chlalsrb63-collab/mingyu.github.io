@@ -132,6 +132,7 @@ TF.init({ hour: () => Sky.hour(), dayMs: () => (G && G.defs && G.defs.sky && G.d
 export const townBubbles = (t) => TF.bubbles(t);
 /** Milliseconds from the start of a stroke to the moment its blade crosses the target. */
 export function impactMs(wk, beat) {
+  if (wk === "hammer") return Sw.HAMMER_IMPACT;
   const hold = SP.HOLD[wk] || SP.HOLD.sword;
   return hold.time * (beat === 2 ? 1.15 : 1) * 1000 * Sw.IMPACT;
 }

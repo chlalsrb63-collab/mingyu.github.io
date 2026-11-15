@@ -436,12 +436,77 @@ const BOW = [
   })),
 ];
 
-export const DESIGNS = { sword: SWORD, dagger: DAGGER, spear: SPEAR, staff: STAFF, book: BOOK, bow: BOW };
+// Short wrapped hafts leave room for a broad striking face on the 32×32 world sprite.
+function hammerHead(head, blade, shapes, handle = "dwood", fittings = "iron") {
+  return () => ({
+    sh: [
+      R(-3, 12, -1.5, 2, handle), R(-4, -2, -2, 2.5, fittings),
+      R(-1, 5, -2, 2.5, "leather"), R(0, 1, -2, 2.5, "wrap"), R(3, 4, -2, 2.5, "wrap"),
+      R(8, 11, -2.5, 3, fittings), ...shapes,
+    ],
+    head, blade,
+  });
+}
+
+const HAMMER = [
+  // A battered pile driver with a squared face and a protruding wooden wedge.
+  hammerHead([11, 19, -5, 6], ["iron"], [
+    P([[11,-6],[17,-6],[19,-4],[19,5],[17,6],[11,6],[10,4],[10,-4]], "iron"),
+    R(16,19,-5,5,"rust"), R(17,18,-4,4,"dull"),
+    R(11,13,-7,-4,"wood"), R(13,15,4,6,"spot"),
+  ]),
+  // A double-sided forged sledge with a pinched waist and two wide steel caps.
+  hammerHead([11, 19, -6, 7], ["steel"], [
+    P([[11,-8],[17,-8],[20,-6],[18,-3],[18,3],[20,5],[20,7],[17,8],[11,8],[10,6],[12,3],[12,-3],[10,-5]], "steel"),
+    R(12,18,-2,3,"dark"), R(12,18,-7,-5,"bright"), R(12,18,5,7,"bright"),
+    R(13,17,-1,2,"dull"),
+  ], "wood"),
+  // The gatekeeper's ram: capped bronze cylinder, side ribs, a red inspection seal.
+  hammerHead([11, 20, -6, 7], ["gold"], [
+    P([[11,-7],[18,-7],[21,-4],[21,4],[18,7],[11,7],[9,4],[9,-4]], "gold"),
+    R(11,14,-8,8,"iron"), R(17,20,-6,7,"gold"), R(14,17,-5,5,"dwood"),
+    C(14.5,0,2.2,"gold"), D(14,0,"ruby"),
+  ], "dwood", "gold"),
+  // A slotted coil is visible between two gunmetal anvils.
+  hammerHead([11, 21, -6, 7], ["gun"], [
+    P([[10,-6],[14,-9],[19,-9],[22,-6],[22,-3],[19,-2],[19,2],[22,3],[22,6],[19,9],[14,9],[10,6]], "gun"),
+    R(12,20,-3,3,"carbon"), R(13,19,-2,2,"teal"),
+    L(13,-2,18,-2,"glow"), L(14,1,18,1,"glow"),
+    R(15,19,-7,-5,"steel"), R(15,19,5,7,"dark"),
+  ], "carbon", "gun"),
+  // Two crystal lobes held around a heavy void socket.
+  hammerHead([12, 22, -6, 7], ["crystal", "void"], [
+    P([[12,-4],[13,-10],[18,-11],[22,-6],[21,-2],[24,0],[21,3],[21,7],[16,11],[12,8],[10,4],[10,-2]], "crystal"),
+    P([[11,-5],[15,-5],[19,-2],[20,1],[17,5],[11,6],[10,3],[10,-2]], "void"),
+    L(14,-8,18,-9,"energy"), L(16,8,19,5,"energy"), D(16,0,"core"),
+  ], "black", "void"),
+];
+
+export const DESIGNS = { sword: SWORD, dagger: DAGGER, spear: SPEAR, staff: STAFF, book: BOOK, bow: BOW, hammer: HAMMER };
 /** Extra designs other modules can register (new weapon kinds): kind → [tier1…tier5] design functions. */
 export function registerKind(kind, designs) { DESIGNS[kind] = designs; }
 
 // Legendary silhouettes share each weapon's grip position and canvas.
 export const SIL = {
+  hammer: {
+    twin: hammerHead([11, 21, -7, 7], ["steel"], [
+      P([[12,-10],[18,-10],[22,-7],[22,-4],[18,-2],[18,2],[22,5],[22,8],[19,10],[12,10],[10,7],[13,3],[13,-3],[10,-7]], "steel"),
+      R(12,19,-2,3,"dark"), R(13,19,-8,-6,"bright"), R(14,19,6,8,"bright"), D(16,0,"sapph"),
+    ], "black", "gold"),
+    furnace: hammerHead([12, 21, -6, 6], ["iron"], [
+      P([[10,-5],[13,-8],[19,-8],[22,-5],[23,0],[22,5],[19,8],[13,8],[10,5]], "iron"),
+      P([[12,-3],[15,-6],[19,-4],[21,0],[19,4],[15,6],[12,3]], "dark"), C(16,0,2.4,"orange"),
+      D(15,-1,"spark"), R(10,13,-7,-5,"gold"), R(10,13,5,7,"gold"),
+    ], "dwood", "gold"),
+    bell: hammerHead([11, 20, -7, 8], ["gold"], [
+      P([[11,-3],[13,-5],[17,-7],[20,-10],[22,-10],[22,11],[20,11],[17,8],[13,6],[11,4]], "gold"),
+      R(20,23,-11,12,"iron"), R(12,14,-5,6,"dark"), D(16,-1,"ruby"),
+    ], "wood", "gold"),
+    tusk: hammerHead([11, 21, -7, 7], ["bone"], [
+      P([[11,-6],[15,-8],[17,-11],[20,-9],[19,-5],[22,-3],[23,2],[21,6],[18,7],[18,10],[15,11],[14,8],[11,5],[10,1]], "bone"),
+      R(12,16,-3,4,"black"), L(16,-2,18,-2,"ruby"), L(18,2,20,2,"dark"),
+    ], "dwood", "black"),
+  },
   bow: {
     recurve: bow({ T: 11.5, tip: 1.5, g: 2.3, w0: 3.2, w1: 2.1, rc: 3.1, mat: "steel", str: "gut" }, (c, t) => ({
       sh: [R(5, 9, -3, 3, "leather"), ...[-1, 1].map((sg) => C(c(t - 1), sg * (t - 1), 1.2, "gold"))],
@@ -659,6 +724,7 @@ export const SIL = {
 };
 
 export const MOTIF_SIL = {
+  hammer: { chain: "twin", nova: "furnace", greed: "bell", haste: "twin", thorn: "tusk", feast: "tusk", echo: "bell", giant: "furnace" },
   bow: { chain: "fork", nova: "horn", greed: "recurve", haste: "recurve", thorn: "fork", feast: "horn", echo: "wave", giant: "wave" },
   sword: { chain: "flamberge", nova: "cleaver", greed: "sabre", haste: "rapier", thorn: "serrated", feast: "bone", echo: "crystal", giant: "cleaver" },
   dagger: { chain: "kris", nova: "tanto", greed: "parrying", haste: "tanto", thorn: "hook", feast: "hook", echo: "kris", giant: "parrying" },

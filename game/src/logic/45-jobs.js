@@ -124,7 +124,7 @@ function gainWm(S, p, n, bonus) {
     }
     if (r.lv === HYB_WM && ch.job === "adventurer") {
       // the two-weapon jobs this level opens: every pair whose other weapon is already there
-      const open = WK_ORDER.filter((k) => k !== wk && ch.wm[k].lv >= HYB_WM).map((k) => JOBS[hybridOf(wk, k)].name);
+      const open = WK_ORDER.filter((k) => k !== wk && ch.wm[k].lv >= HYB_WM).map((k) => hybridOf(wk, k)).filter(Boolean).map((id) => JOBS[id].name);
       if (open.length) toast(p, `[${WK_NAME[wk]}] 숙련 ${HYB_WM}! 두 갈래 길 [${open.join("], [")}]${pp(open[open.length - 1], "이가")} 열렸습니다 — 전직관 아르센에게 가 보세요.`);
     }
   }
@@ -191,7 +191,7 @@ function staggerPlayer(S, rt, p, mob) {
       if (go > 0) { p.x += ux * go; p.y += uy * go; p.fix = true; p.mvAt = S.now; }
     }
   }
-  p.stag = S.now + Math.round(SFX.stagMs * (1 - st.poise));
+  p.stag = S.now + Math.round(SFX.stagMs * (1 - st.poise) * (1 - hammerBracing(p, S.now)));
   rt.ev.push(["sg", p.eid]);
 }
 

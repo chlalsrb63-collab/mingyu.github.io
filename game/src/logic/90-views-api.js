@@ -160,6 +160,32 @@ export function mapStats() {
   return { built: Object.keys(MAP_CACHE), meta: MAP_META };
 }
 
+// Fixed positions for the main world map at 1×. Editor maps fall back to layout by route.
+const WORLD_MAP_POS = {
+  willow: [170, 233], town: [327, 205], meadow: [348, 93], forest: [548, 124], crypt: [723, 133],
+  city: [367, 334], sewer: [552, 320], cave: [710, 302], abyss: [928, 335], maple: [824, 229],
+  jungle: [203, 417], coast: [370, 528], oasis: [622, 470], dunesea: [838, 516], frostkeep: [915, 91],
+};
+const WORLD_MAP_ART = { willow: "willow", frostkeep: "frostkeep", dunesea: "dunesea" };
+
+function worldMapDefs() {
+  // Only custom labels need coordinates to disambiguate the destination. Keep generated terrain lazy.
+  const doors = {};
+  for (const link of DATA.links) {
+    if (typeof link.label !== "string" || !link.label) continue;
+    const from = realId(link.map), to = realId(link.to);
+    if (!from || !to || !xyOk(MAP_META[from], link.x, link.y) || !xyOk(MAP_META[to], link.tx, link.ty)) continue;
+    (doors[from] ??= []).push([link.x, link.y, to]);
+  }
+  return Object.entries(MAP_META).map(([id, meta]) => {
+    const { name, band, kinds, theme, safe, w, h, wpn, minLv } = meta;
+    const kind = theme === "interior" ? "in" : safe ? "town" : (minLv || ["crypt", "sewer", "cave", "abyss"].includes(theme)) ? "dun" : "field";
+    const bosses = [...new Set([FIELD_BOSS[id], ...kinds.filter((mob) => MOBS[mob].boss)].filter(Boolean))];
+    return { id, name, band: band && band.map(shownLv), mobs: kinds.slice(), theme, safe, w, h, wpn, to: ROUTES[id],
+      kind, gateLabel: doorName(meta), pos: WORLD_MAP_POS[id]?.slice() || null, bosses, ...(Object.hasOwn(WORLD_MAP_ART, id) ? { art: WORLD_MAP_ART[id] } : {}), ...(minLv ? { minLv } : {}), ...(doors[id] ? { doors: doors[id] } : {}) };
+  });
+}
+
 export function defs() {
   const mobs = {};
   for (const k of Object.keys(MOBS)) {
@@ -197,7 +223,9 @@ export function defs() {
     event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },
     daily: { resetKST: 6, text: DAILY_TEXT }, social: socialDefs(), tutorial: TUT.map(({ id, title, hint, need }) => ({ id, title, hint, need: need || 1 })), recallMs: RECALL_MS,
     // side quests from the world map editor, with who gives them and where they stand
+    questTurnIn: { npc: "elder", map: NPC_MAP.elder },
     side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAP_META[NPC_MAP[q.giver]].name,
+      giverMapId: NPC_MAP[q.giver], targetMap: q.goal.type === "talk" ? NPC_MAP[q.goal.npc] : q.goal.type === "visit" ? q.goal.map : null,
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
@@ -205,8 +233,6 @@ export function defs() {
     life: lifeDefs(), npclife: npcLifeDefs(),
     // charms: shapes, options and caps, legendaries, the expansion order and prices, 주아나's quests (66-charms.js)
     charms: charmDefs(),
-    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), mobs: MAP_META[id].kinds.slice(),
-      // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
-      theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id], minLv: MAP_META[id].minLv || undefined })),
+    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: worldMapDefs(),
   };
 }

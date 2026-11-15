@@ -384,7 +384,7 @@ const GOLD = "#f0cc60";
 const RARE_INK = [INK, "#2c4a8c", "#8a6a14", "#9a4a12", "#1f6a3a"];
 
 /** The weapon each class starts with; a mage may also carry a `book`. */
-export const WEAPON_OF = { warrior: "sword", rogue: "dagger", lancer: "spear", ranger: "spear", mage: "staff" };
+export const WEAPON_OF = { warrior: "sword", rogue: "dagger", lancer: "spear", ranger: "spear", mage: "staff", destroyer: "hammer" };
 /** The kind of weapon to draw: what the gear says, else the class's own. */
 export function weaponKind(cls, gear = {}) {
   return HOLD[gear && gear.wk] ? gear.wk : WEAPON_OF[cls] || "sword";
@@ -393,7 +393,7 @@ export function weaponKind(cls, gear = {}) {
 /**
  * A weapon sprite. Swords, daggers, spears and staves point right with the
  * grip at `GRIP`; a book is drawn open and upright around the sheet's centre.
- * `kind`: sword · dagger · spear · staff · book · bow (a class id is accepted too; a bow is
+ * `kind`: sword · dagger · spear · staff · book · bow · hammer (a class id is accepted too; a bow is
  * held square to the shot, its limbs across the sprite, its riser ahead of the grip).
  * `gear`: wt tier (1–5) · wq rarity (0–4) · we enhancement.
  */
@@ -472,6 +472,7 @@ export const HOLD = {
   // a bow is held square to the shot (weapons.js: the limbs across, the arrow along) and drawn,
   // not swung: no smear, no swell; at rest it hangs nearly upright at the body's side
   bow: { rest: -16, arc: 0, time: 0.42, push: 0, style: "bow" },
+  hammer: { rest: 35, time: 0.44, style: "hammer" },
 };
 /** A bow at a moment of its shot (pull −0.25 … 1, an arrow on the string or not): see weapons.js bowSprite. */
 export const bowSprite = (gear, pull, arrow) => WPN.bowSprite(gear || {}, pull, arrow);

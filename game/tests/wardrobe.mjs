@@ -64,7 +64,7 @@ for (const k of Object.keys(D.sets)) assert.ok(MOTIFS.includes(k), "set " + k + 
 assert.ok(SIL && MOTIF_SIL, "legendary weapons have their own silhouette catalogue");
 assert.deepEqual(Object.keys(SIL).sort(), Object.keys(D.wkinds).sort());
 assert.deepEqual(Object.keys(MOTIF_SIL).sort(), Object.keys(D.wkinds).sort());
-const maxLength = { sword: 38, dagger: 20, spear: 48, staff: 28, book: 20, bow: 23 };
+const maxLength = { sword: 38, dagger: 20, spear: 48, staff: 28, book: 20, bow: 23, hammer: 29 };
 for (const [kind, designs] of Object.entries(SIL)) {
   assert.ok(Object.keys(designs).length >= 4, kind + " has distinct variants");
   const mapping = MOTIF_SIL[kind];
@@ -75,9 +75,11 @@ for (const [kind, designs] of Object.entries(SIL)) {
   const canvasWidth = kind === "spear" ? 52 : kind === "sword" ? 44 : 32;
   const grip = kind === "book" ? 16 : 5;
   const sMin = 1 - grip, sMax = canvasWidth - 1 - grip;
-  for (const [name, make] of Object.entries(designs)) {
+  const samples = Object.entries(designs);
+  if (kind === "hammer") DESIGNS.hammer.forEach((make, i) => samples.push([`tier ${i + 1}`, make]));
+  for (const [name, make] of samples) {
     const label = kind + " " + name;
-    assert.ok(Object.values(mapping).includes(name), label + " appears on a legendary weapon");
+    if (Object.hasOwn(designs, name)) assert.ok(Object.values(mapping).includes(name), label + " appears on a legendary weapon");
     const { sh, head, blade } = make();
     if (kind === "bow") for (const pull of [-0.25, 0, 1]) {
       const drawn = make(false, { pull, arrow: true });

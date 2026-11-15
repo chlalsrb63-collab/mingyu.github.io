@@ -61,6 +61,7 @@ const WKIND = {
   book: { name: "마도서", cd: 800, range: 84, fx: 5, splash: 26, mult: 1.05, kb: 4, arc: 40, crit: 3, mag: 1 },
   // an arrow flies (45-jobs.js shots): the finisher hits 1.4× and goes through one more
   bow: { name: "활", cd: 760, range: 150, fx: 6, kb: 3, mult: 0.9, arc: 20, crit: 6, shot: { spd: 420, r: 6 } },
+  hammer: { name: "양손해머", cd: 1100, range: 30, fx: 7, center: 16, r: 14, wind: 200, mult: 2.23, crit: 3 },
 };
 /**
  * Basic attacks come in threes: two strokes and a finisher. Strike again within
@@ -138,8 +139,8 @@ const LV_DIV = 4.4, STAT_K = 0.004, STAT_K0 = 30;
 /** The world's own scale (monster levels, map bands): 1–50. Players see 4·tier − 3. */
 const TIER_MAX = 50;
 /** Weapon kinds in wire order (`wm`, `["wm", eid, kindIndex, lv]`), and the mastery cap. */
-const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow"], WM_MAX = 50;
-const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활" };
+const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow", "hammer"], WM_MAX = 50;
+const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활", hammer: "양손해머" };
 /** Mastery a single job asks for in its weapon; a hybrid asks HYB_WM in both of its two. */
 const JOB_WM = 20, HYB_WM = 15;
 const JOB_COST = 1000, HYB_COST = 5000;
@@ -156,6 +157,7 @@ const SCALE = {
   staff: { int: "A", wis: "C" },
   book: { int: "A", wil: "C" },
   bow: { dex: "A", luk: "C" },
+  hammer: { str: "A", wil: "C" },
 };
 /** A single job adds this to both of its weapon's coefficients. */
 const JOB_PLUS = 0.1;
@@ -174,6 +176,7 @@ const JOBS = {
   wizard: { name: "마법사", kind: "single", wk: ["staff"], cost: JOB_COST },
   warlock: { name: "마도사", kind: "single", wk: ["book"], cost: JOB_COST },
   archer: { name: "궁수", kind: "single", wk: ["bow"], cost: JOB_COST },
+  destroyer: { name: "파괴자", kind: "single", wk: ["hammer"], cost: JOB_COST },
   spellblade: { name: "마검사", kind: "hybrid", wk: ["sword", "staff"], scale: { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 }, cost: HYB_COST },
   tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.8, luk: 0.8 }, cost: HYB_COST },
   dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: HYB_COST },
@@ -221,6 +224,7 @@ const BUILD = {
   staff: { int: 0.45, wis: 0.3, wil: 0.2, luk: 0.05 },
   book: { int: 0.45, wil: 0.3, wis: 0.2, luk: 0.05 },
   bow: { dex: 0.45, luk: 0.3, wil: 0.15, str: 0.05, wis: 0.05 },
+  hammer: { str: 0.45, wil: 0.35, dex: 0.05, wis: 0.05, luk: 0.1 },
 };
 /** Old class → [its weapon kind, the single job it becomes at old level 20+]. Mage picks by the weapon in hand. */
 const OLD_CLASS = { warrior: ["sword", "swordsman"], rogue: ["dagger", "thief"], lancer: ["spear", "lancer"], mage: ["staff", "wizard"] };
@@ -335,16 +339,32 @@ const SKILL = {
     desc: "마궁사의 기술 · 불·얼음·번개 화살 셋을 한꺼번에 쏜다. 화살은 일직선을 꿰뚫고, 처음 맞힌 자리에 원소를 남겨 서로 원소 반응을 일으킨다." },
   inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.8, per: 2, brandK: 0.4, mag: 1, fx: 128,
     desc: "각인궁사의 기술 · 룬 먹물을 먹인 화살 다섯 대를 부채꼴로 쏜다. 꿰뚫린 적마다 낙인이 새겨지고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 한 적은 최대 두 대까지 맞는다." },
+  hammer_stamp: { kind: "a", wk: "hammer", need: 1, name: "쐐기찍기", mp: 3, hpPct: 0.03, autoHp: 0.35, cd: 6000, center: 16, r: 16, wind: 200, mult: 2.55, splashMult: 1, stun: 180, fx: 130,
+    desc: "앞쪽을 내려찍어 가장 가까운 적에게 정타를 가하고 두 적까지 충격을 준다. 맞은 일반 적은 잠깐 휘청인다." },
+  hammer_fault: { kind: "a", wk: "hammer", need: 10, name: "금맥 벌리기", mp: 5, hpPct: 0.05, autoHp: 0.35, cd: 10000, center: 16, r: 18, wind: 200, mult: 2.85, splashMult: 1.10, crackMult: 1.25, fx: 131,
+    desc: "해머로 땅을 갈라 세 적까지 맞힌다. 정타 대상에 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 25% 늘어난다." },
+  hammer_final: { kind: "j", job: "destroyer", wk: "hammer", need: 20, name: "파성추", mp: 10, hpPct: 0.08, autoHp: 0.35, cd: 32000, center: 14, r: 21, wind: 400, mult: 4.5, splashMult: 1.60, crackMult: 1.35, brace: 0.25, fx: 132,
+    desc: "파괴자의 기술. 잠시 버티고 크게 내려찍는다. 준비 중 경직이 25% 줄며 균열 두 개를 터뜨리면 정타 피해가 35% 늘어난다." },
+  hammer_crack: { kind: "p", wk: "hammer", need: 10, name: "균열 새기기", max: 2, ms: 5000,
+    desc: "해머 기본 공격 정타에 맞은 적에게 5초 동안 내 균열을 남긴다. 최대 두 개까지 쌓인다." },
+  hammer_brace: { kind: "p", wk: "hammer", need: 20, name: "버팀발", brace: 0.20,
+    desc: "해머를 들어 올리는 동안 받는 경직이 20% 줄어든다. 파성추 중에는 더 큰 효과를 적용한다." },
+  hammer_hold: { kind: "p", wk: "hammer", need: 30, name: "금의 결", ms: 7000,
+    desc: "내 해머 정타가 남긴 균열의 지속 시간이 5초에서 7초로 늘어난다." },
+  hammer_breath: { kind: "p", wk: "hammer", need: 40, name: "반동 호흡", discount: 0.01,
+    desc: "해머 기술의 HP 소모가 최대 HP의 1%만큼 줄어든다. 최소 소모량은 최대 HP의 1%다." },
+  hammer_heart: { kind: "p", wk: "hammer", need: 50, name: "심철의 파문", bonus: 1.08,
+    desc: "해머 기술로 내 균열 두 개를 실제로 터뜨리면 정타 피해가 추가로 8% 늘어난다." },
 };
 for (const id of Object.keys(SKILL)) SKILL[id].id = id;
 /** The order skills are listed in (per weapon: L1, L10 active, L10 passive; then single, then hybrid signatures — the first six, then the nine of the expansion). */
 const SKILL_ORDER = Object.keys(SKILL);
 /** The skills each weapon kind brings, in order. */
-const WK_SKILLS = Object.fromEntries(["sword", "dagger", "spear", "staff", "book", "bow"].map((k) => [k, SKILL_ORDER.filter((id) => SKILL[id].wk === k && (SKILL[id].kind === "a" || SKILL[id].kind === "p"))]));
+const WK_SKILLS = Object.fromEntries(WK_ORDER.map((k) => [k, SKILL_ORDER.filter((id) => SKILL[id].wk === k && (SKILL[id].kind === "a" || SKILL[id].kind === "p"))]));
 /** A job's signature skill. */
 const JOB_SKILL = Object.fromEntries(SKILL_ORDER.filter((id) => SKILL[id].job).map((id) => [SKILL[id].job, id]));
 /** The weapon passive of each kind. */
-const WK_PASSIVE = Object.fromEntries(SKILL_ORDER.filter((id) => SKILL[id].kind === "p").map((id) => [SKILL[id].wk, id]));
+const WK_PASSIVE = Object.fromEntries(WK_ORDER.map(wk => [wk, WK_SKILLS[wk].find(id => SKILL[id].kind === "p")]));
 // ── gear: seven kinds of piece, five tiers each
 const WEAPON_NAMES = {
   sword: ["녹슨 대검", "강철 양손검", "기사단 클레이모어", "고주파 대검", "차원 절단기"],
@@ -353,9 +373,10 @@ const WEAPON_NAMES = {
   staff: ["견습 지팡이", "룬 지팡이", "현자의 지팡이", "플라즈마 로드", "공허의 홀"],
   book: ["낡은 주문서", "룬 마도서", "현자의 법전", "홀로그램 코덱스", "공허의 서"],
   bow: ["나무 짧은활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위"],
+  hammer: ["말뚝박이 망치", "강철 노두 망치", "성문지기의 중추", "충격 코일 해머", "균열봉합 추"],
 };
 /** The word each weapon kind uses in its item ids (persisted: the old class names stay). Anyone may wield anything. */
-const WK_ID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow" };
+const WK_ID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow", hammer: "h" };
 const W_ATK = [6, 14, 26, 42, 64];
 /** The level each tier of gear asks for, on the 1–200 player scale (= 4·old − 3). */
 const G_REQ = [1, 29, 61, 101, 149];
@@ -477,7 +498,7 @@ const FILTER_Q = [0, 1, 2];
 /** How often a pet runs for something. */
 const PET_MS = 300;
 
-const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1", "h_1", "a_1", "g_1", "b_1"];
+const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1", "w_h_1", "h_1", "a_1", "g_1", "b_1"];
 const ENH_RATE = [100, 95, 90, 80, 70, 55, 45, 35, 25, 15];
 
 // ── the cosy side: campfires, fishing, guilds
@@ -5867,6 +5888,7 @@ function migrate(ch) {
   charmsClean(ch);
   // social, the weekly book, enhancement pity (v14): block list, gauge, the week's baselines, the day's rest bonus (63-social-weekly.js)
   socialSheetClean(ch, dl);
+  // cleanJobs adds the hammer mastery slot to saves made before v14.
   ch.v = Math.max(ch.v | 0, 14);
   return ch;
 }
@@ -6445,7 +6467,7 @@ function gainWm(S, p, n, bonus) {
     }
     if (r.lv === HYB_WM && ch.job === "adventurer") {
       // the two-weapon jobs this level opens: every pair whose other weapon is already there
-      const open = WK_ORDER.filter((k) => k !== wk && ch.wm[k].lv >= HYB_WM).map((k) => JOBS[hybridOf(wk, k)].name);
+      const open = WK_ORDER.filter((k) => k !== wk && ch.wm[k].lv >= HYB_WM).map((k) => hybridOf(wk, k)).filter(Boolean).map((id) => JOBS[id].name);
       if (open.length) toast(p, `[${WK_NAME[wk]}] 숙련 ${HYB_WM}! 두 갈래 길 [${open.join("], [")}]${pp(open[open.length - 1], "이가")} 열렸습니다 — 전직관 아르센에게 가 보세요.`);
     }
   }
@@ -6512,7 +6534,7 @@ function staggerPlayer(S, rt, p, mob) {
       if (go > 0) { p.x += ux * go; p.y += uy * go; p.fix = true; p.mvAt = S.now; }
     }
   }
-  p.stag = S.now + Math.round(SFX.stagMs * (1 - st.poise));
+  p.stag = S.now + Math.round(SFX.stagMs * (1 - st.poise) * (1 - hammerBracing(p, S.now)));
   rt.ev.push(["sg", p.eid]);
 }
 
@@ -7099,7 +7121,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (!dealMob(S, rt, mob, p, dmg, graze ? 2 : crit)) {
     // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
     if (!mob.dead) stagger(S, mob, p, crit);
-    return;
+    return crit;
   }
   // legendary powers that answer a kill
   if (st.lg.feast && !p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * 0.04);
@@ -7109,6 +7131,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
     for (const o of mobsWithin(rt, x, y, 34)) hurtMob(S, rt, o, p, 0.8);
     p.chainKill = false;
   }
+  return crit;
 }
 
 function killMob(S, rt, mob) {
@@ -7327,6 +7350,14 @@ function basicAttack(S, p) {
   const c = st.arm;
   const rt = S.maps[p.map];
   const now = S.now;
+  if (st.wk === "hammer") {
+    p.atkAt = now;
+    p.combo = 0;
+    p.swordBeat = null;
+    newAct(p, false);
+    startHammer(S, p, c);
+    return;
+  }
   const chained = now - p.atkAt < atkCd(p) + COMBO_MS;
   p.combo = chained ? (p.combo + 1) % 3 : 0;
   const fin = p.combo === 2;
@@ -7390,6 +7421,82 @@ function basicAttack(S, p) {
   }
 }
 
+// Hammer impacts are locked to the place and direction shown at the start of the stroke.
+function hammerLine(m, x, y, ux, uy, len) {
+  let far = 0;
+  while (far < len) {
+    const next = Math.min(len, far + 2);
+    if (solidAt(m, x + ux * next, y + uy * next)) break;
+    far = next;
+  }
+  return far;
+}
+
+function startHammer(S, p, move, skill = null, power = 1) {
+  const m = mapOfS(S, p.map), [ux, uy] = AIM_V[p.aim | 0];
+  const far = hammerLine(m, p.x, p.y, ux, uy, move.center);
+  const x = p.x + ux * far, y = p.y + uy * far;
+  p.hammer = { move, skill, power, x, y, ox: p.x, oy: p.y, ux, uy,
+    map: p.map, hand: p.ch.eq.weapon, at: S.now + move.wind };
+  S.maps[p.map].ev.push(["a", p.eid, move.fx, Math.round(x), Math.round(y), p.dir, 0, move.wind, p.aim | 0]);
+}
+
+function hammerHpCost(p, sk) {
+  if (!sk.hpPct) return 0;
+  const pct = sk.hpPct - (pasOn(p, "hammer_breath") ? SKILL.hammer_breath.discount : 0);
+  return Math.ceil(stats(p).mhp * Math.max(0.01, pct));
+}
+
+function hammerBracing(p, now) {
+  if (!p.hammer || now >= p.hammer.at) return 0;
+  return Math.max(p.hammer.move.brace || 0, pasOn(p, "hammer_brace") ? SKILL.hammer_brace.brace : 0);
+}
+
+function hammerTick(S, p, now) {
+  const cracks = p.hammerCracks;
+  if (cracks) for (const [mob, mark] of cracks) if (mark.until <= now || mob.dead) cracks.delete(mob);
+  const cast = p.hammer;
+  if (!cast || now < cast.at) return;
+  p.hammer = null;
+  if (p.dead || p.map !== cast.map || p.ch.eq.weapon !== cast.hand || inHand(p.ch) !== "hammer") return;
+
+  const { move, skill, power, x, y, ox, oy, ux, uy } = cast;
+  const m = mapOfS(S, p.map), rt = S.maps[p.map], st = stats(p);
+  const distance = (mob) => dist(x, y, mob.x, mob.y);
+  const targets = rt.mobs.filter(mob => {
+    if (mob.dead || distance(mob) > move.r || (mob.x - ox) * ux + (mob.y - oy) * uy < 0) return false;
+    const d = dist(ox, oy, mob.x, mob.y);
+    return d === 0 || hammerLine(m, ox, oy, (mob.x - ox) / d, (mob.y - oy) / d, d) >= d;
+  }).sort((a, b) => distance(a) - distance(b) || a.id - b.id).slice(0, 3);
+  const primary = targets[0];
+  let critical = false;
+  if (primary) {
+    let mult = move.mult;
+    const mark = cracks?.get(primary);
+    if (move.crackMult && mark?.n === SKILL.hammer_crack.max) {
+      cracks.delete(primary);
+      mult *= move.crackMult * (pasOn(p, "hammer_heart") ? SKILL.hammer_heart.bonus : 1);
+    }
+    critical = hurtMob(S, rt, primary, p, mult * power, false, skill ? { sk: skill } : null) === true;
+    if (!skill && !primary.dead && !MOBS[primary.k].chest && pasOn(p, "hammer_crack")) {
+      const ms = pasOn(p, "hammer_hold") ? SKILL.hammer_hold.ms : SKILL.hammer_crack.ms;
+      (p.hammerCracks ||= new Map()).set(primary, { n: Math.min(SKILL.hammer_crack.max, (mark?.n || 0) + 1), until: now + ms });
+    }
+    for (const target of targets.slice(1)) {
+      hurtMob(S, rt, target, p, (move.splashMult ?? move.mult * 0.45) * power, false, skill ? { sk: skill } : null);
+    }
+    for (const target of targets) if (move.stun && !target.dead && !MOBS[target.k].boss && !MOBS[target.k].still && target.el !== 2) {
+      holdMob(S, target, move.stun * (target.el ? STAGGER.elite : 1));
+    }
+    if (!skill && st.lg.chain && rnd(S) < 0.25 * st.proc) {
+      for (const target of mobsWithin(rt, x, y, 70).filter(o => !targets.includes(o)).slice(0, 2)) {
+        rt.ev.push(["z", Math.round(x), Math.round(y - 6), Math.round(target.x), Math.round(target.y - 6), 0]);
+        hurtMob(S, rt, target, p, 0.6);
+      }
+    }
+  }
+  rt.ev.push(["hm", p.eid, Math.round(x), Math.round(y), move.r, +!!primary, +critical, move.fx]);
+}
 // ───────────────────────────── weapon skills ─────────────────────────────
 // docs/design/jobs-and-stats.md C (tables in 03-skills.js). A skill belongs to a weapon: it is usable
 // while that weapon is in hand and its mastery has reached the skill's `need`; a job signature needs the
@@ -7711,6 +7818,7 @@ function danceStep(S, p, now) {
 }
 /** What a hand keeps track of from moment to moment. */
 function weaponTick(S, p, now) {
+  if (p.hammer || p.hammerCracks?.size) hammerTick(S, p, now);
   if (p.dance) danceStep(S, p, now);
   if (p.hide && now >= p.hide) p.hide = 0;
   if (p.inert && now - p.inertAt > SKILL.inertia.ms) { p.inert = 0; p.dirty = true; }
@@ -7719,6 +7827,7 @@ function weaponTick(S, p, now) {
 /** Whatever a hand had going that does not survive a fall or a change of map. */
 function weaponReset(p, death) {
   p.dance = null; p.hide = 0; p.inert = 0; p.weave = null;
+  p.hammer = null; p.hammerCracks = null;
   if (death) { p.reso = 0; p.sanctAt = 0; }
 }
 /** The bits other players see: 4 untouchable in the air, 16 dancing, 32 resonance full, 64 hidden. */
@@ -7743,6 +7852,7 @@ function crOf(p, wk, now) {
     case "spear": return { k: "tip", tip: Math.round(WKIND.spear.range * SKILL.tip.at) };
     case "staff": return { k: "reso", v: p.reso | 0, max: SKILL.reso.n, e: p.weave && p.weave.until > now ? WEAVE_CODE[p.weave.e] : 0 };
     case "book": return { k: "brand" };
+    case "hammer": return null;
     default: return { k: "hawk", d0: SKILL.hawk.d0, span: SKILL.hawk.span };
   }
 }
@@ -7760,7 +7870,9 @@ function skWire(p, now) {
   return skillsFor(p.ch).map((id) => {
     const sk = SKILL[id];
     if (sk.kind === "p") return [id, 0, 0, pasOn(p, id) ? 1 : 0];
-    return [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(p.ch, sk) ? 0 : 1];
+    const row = [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(p.ch, sk) ? 0 : 1];
+    if (sk.hpPct) row.push(hammerHpCost(p, sk));
+    return row;
   });
 }
 /** New skills from a mastery level or a job: onto the bar if there is room. Returns their names. */
@@ -7794,6 +7906,7 @@ function castSkill(S, p, id) {
     else if ((p.reso = (p.reso | 0) + 1) >= SKILL.reso.n) ev(113, p.x, p.y - 6);
   }
   p.mp -= cost;
+  if (sk.hpPct) { const hp = hammerHpCost(p, sk); p.hp -= hp; rt.ev.push(["h", p.eid, hp, 0, 1, 1]); }
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1]); } }
   // WIS shortens every wait; an echo (legendary) may give it straight back
   p.cds[id] = now + Math.round(sk.cd * (1 - st.cdr));
@@ -7801,6 +7914,7 @@ function castSkill(S, p, id) {
   p.atkAt = now;
   p.swordBeat = null;
   p.dirty = true;
+  if (sk.wk === "hammer") { startHammer(S, p, sk, sk, k); return; }
   const opt = { mag: sk.mag, sk };
   const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult * k, !!(more && more.sure), more ? { ...opt, ...more } : opt);
   const [aimX, aimY] = AIM_V[p.aim | 0];
@@ -12223,6 +12337,7 @@ export function validateAction(S, pid, a) {
     case "atk":
       if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
       if (p.dance) return bad("무영난무 중입니다");
+      if (p.hammer) return bad("해머를 내려찍는 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
@@ -12248,9 +12363,11 @@ export function validateAction(S, pid, a) {
       const why = skWhy(ch, sk);
       if (why) return bad(why);
       if (p.dance) return bad("무영난무 중입니다");
+      if (p.hammer) return bad("해머를 내려찍는 중입니다");
       if (now < (p.stag || 0)) return bad("stag");
       if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
       if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");
+      if (sk.hpPct && p.hp <= hammerHpCost(p, sk)) return bad("HP가 부족합니다");
       return OK;
     }
     case "use": {
@@ -12562,6 +12679,7 @@ export function applyAction(S, pid, a) {
       const k = a.k === "weapon2" ? "weapon2" : fits.includes(a.k) ? a.k : fits.find((o) => !ch.eq[o]) || fits[0];
       const old = ch.eq[k], was = inHand(ch);
       ch.eq[k] = s;
+      if (k === "weapon") p.hammer = null;
       if (old) ch.inv[a.s] = old;
       else ch.inv.splice(a.s, 1);
       // another kind of weapon in hand: a dance stops; a kind never used before puts its first skill on the bar
@@ -12574,6 +12692,7 @@ export function applyAction(S, pid, a) {
       const was = inHand(ch);
       ch.inv.push(ch.eq[a.k]);
       ch.eq[a.k] = null;
+      if (a.k === "weapon") p.hammer = null;
       if (inHand(ch) !== was) handChanged(p);
       afterGear(S, p);
       break;
@@ -13097,6 +13216,7 @@ export function applyAction(S, pid, a) {
 function handChanged(p) {
   const ch = p.ch, wk = inHand(ch);
   p.dance = null;
+  p.hammer = null;
   qsFollow(ch);
   if (!wk || ch.wm[wk].lv > 1 || ch.wm[wk].xp > 0) return;
   for (const id of WK_SKILLS[wk]) if (SKILL[id].kind === "a" && SKILL[id].need <= 1) qsLearn(ch, id);
@@ -13797,6 +13917,32 @@ export function mapStats() {
   return { built: Object.keys(MAP_CACHE), meta: MAP_META };
 }
 
+// Fixed positions for the main world map at 1×. Editor maps fall back to layout by route.
+const WORLD_MAP_POS = {
+  willow: [170, 233], town: [327, 205], meadow: [348, 93], forest: [548, 124], crypt: [723, 133],
+  city: [367, 334], sewer: [552, 320], cave: [710, 302], abyss: [928, 335], maple: [824, 229],
+  jungle: [203, 417], coast: [370, 528], oasis: [622, 470], dunesea: [838, 516], frostkeep: [915, 91],
+};
+const WORLD_MAP_ART = { willow: "willow", frostkeep: "frostkeep", dunesea: "dunesea" };
+
+function worldMapDefs() {
+  // Only custom labels need coordinates to disambiguate the destination. Keep generated terrain lazy.
+  const doors = {};
+  for (const link of DATA.links) {
+    if (typeof link.label !== "string" || !link.label) continue;
+    const from = realId(link.map), to = realId(link.to);
+    if (!from || !to || !xyOk(MAP_META[from], link.x, link.y) || !xyOk(MAP_META[to], link.tx, link.ty)) continue;
+    (doors[from] ??= []).push([link.x, link.y, to]);
+  }
+  return Object.entries(MAP_META).map(([id, meta]) => {
+    const { name, band, kinds, theme, safe, w, h, wpn, minLv } = meta;
+    const kind = theme === "interior" ? "in" : safe ? "town" : (minLv || ["crypt", "sewer", "cave", "abyss"].includes(theme)) ? "dun" : "field";
+    const bosses = [...new Set([FIELD_BOSS[id], ...kinds.filter((mob) => MOBS[mob].boss)].filter(Boolean))];
+    return { id, name, band: band && band.map(shownLv), mobs: kinds.slice(), theme, safe, w, h, wpn, to: ROUTES[id],
+      kind, gateLabel: doorName(meta), pos: WORLD_MAP_POS[id]?.slice() || null, bosses, ...(Object.hasOwn(WORLD_MAP_ART, id) ? { art: WORLD_MAP_ART[id] } : {}), ...(minLv ? { minLv } : {}), ...(doors[id] ? { doors: doors[id] } : {}) };
+  });
+}
+
 export function defs() {
   const mobs = {};
   for (const k of Object.keys(MOBS)) {
@@ -13834,7 +13980,9 @@ export function defs() {
     event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },
     daily: { resetKST: 6, text: DAILY_TEXT }, social: socialDefs(), tutorial: TUT.map(({ id, title, hint, need }) => ({ id, title, hint, need: need || 1 })), recallMs: RECALL_MS,
     // side quests from the world map editor, with who gives them and where they stand
+    questTurnIn: { npc: "elder", map: NPC_MAP.elder },
     side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAP_META[NPC_MAP[q.giver]].name,
+      giverMapId: NPC_MAP[q.giver], targetMap: q.goal.type === "talk" ? NPC_MAP[q.goal.npc] : q.goal.type === "visit" ? q.goal.map : null,
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
@@ -13842,8 +13990,6 @@ export function defs() {
     life: lifeDefs(), npclife: npcLifeDefs(),
     // charms: shapes, options and caps, legendaries, the expansion order and prices, 주아나's quests (66-charms.js)
     charms: charmDefs(),
-    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: Object.keys(MAP_META).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), mobs: MAP_META[id].kinds.slice(),
-      // the world route map (radar.js): theme, safe, big, how many stones, and the maps its doors lead to
-      theme: MAP_META[id].theme, safe: MAP_META[id].safe, w: MAP_META[id].w, h: MAP_META[id].h, wpn: MAP_META[id].wpn, to: ROUTES[id], minLv: MAP_META[id].minLv || undefined })),
+    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: worldMapDefs(),
   };
 }

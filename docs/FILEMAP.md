@@ -100,6 +100,7 @@ banner or function it names. **When you add, move or split a file, update its ro
 | `art.js` | item icons `buildIcons` (pouch goods from gatherart.js `matIcon`, crafted consumables and tools from `lifeicons.js`), minimap colours `renderMini` (the radar's texture), old scenery helpers; re-exports `chars.js` |
 | `lifeicons.js` | 16×16 item masks and palettes for fish, dishes, elixirs and forge supplies, rasterised by `art.js` |
 | `radar.js` [624] | the radar (side-column minimap, player-centred: zoom `ZOOMS` ± remembered, texture window blitted through the iso turn, glyph marks, town roofs and building sign glyphs at their doors, party discs pinned to the rim, my aim arrow; `perf` draw ms) and the map window `#w-map` (M; tabs 현재 지역 = whole map, zoom/pan, click a woken stone to warp · 월드 노선도 = regions from `defs.maps[].to` in columns by doors from town); `init(deps) loadMap draw drawWin opened` |
+| `worldmap.js` · `worldmap_art.js` · `worldmap_land.js` | illustrated world terrain, pins and walkable routes from `defs().maps`, fast travel to eligible waypoint stones |
 | `chars.js` [471] | legacy smooth illustrated figures (re-exported by art.js; heroes now come from sprites.js) |
 | `sprites.js` [1259] | 32×32 sheets: heroes `personSheet/playerLook`, NPCs, pets, weapons `weaponSprite`, `monsterSheet`, tints |
 | `species.js` [403] | hero species and face parts: `SPECIES PARTS TABS PRESETS cleanLook withSpecies` (limits mirror logic `LOOK_MAX`); fit data for worn things: `EARS headAnchor faceAnchor EYE_PIX HEAD_BOB` |

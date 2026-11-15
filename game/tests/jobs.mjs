@@ -73,7 +73,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   const ch = L.newChar("새싹", [1, 2]);
   assert.equal(ch.v, 14); assert.equal(ch.job, "adventurer"); assert.equal(ch.lvl, 1); assert.equal(ch.xp, 0); assert.equal(ch.xpt, 0);
   assert.deepEqual(ch.st, { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 });
-  assert.deepEqual(Object.keys(ch.wm), ["sword", "dagger", "spear", "staff", "book", "bow"]);
+  assert.deepEqual(Object.keys(ch.wm), ["sword", "dagger", "spear", "staff", "book", "bow", "hammer"]);
   assert.ok(Object.values(ch.wm).every((r) => r.lv === 1 && r.xp === 0));
   assert.equal(ch.rs, 0); assert.equal(ch.sw, 0);
   assert.equal(ch.eq.weapon.id, "w_rogue_1", "a new 모험가 holds an old dagger"); assert.equal(ch.eq.weapon2, null);
@@ -88,19 +88,20 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(D.maxLv, 200);
   assert.deepEqual(D.stats.map((s) => s[0]), ST);
   assert.ok(D.stats.every((s) => s[1] && s[2]), "every stat has a Korean name and a line");
-  assert.deepEqual(D.wkOrder, ["sword", "dagger", "spear", "staff", "book", "bow"]);
+  assert.deepEqual(D.wkOrder, ["sword", "dagger", "spear", "staff", "book", "bow", "hammer"]);
   assert.deepEqual(D.scale.sword, { str: "A", wil: "C" });
   assert.deepEqual(D.scale.bow, { dex: "A", luk: "C" });
   const singles = Object.keys(D.jobs).filter((j) => D.jobs[j].kind === "single");
   const hybrids = Object.keys(D.jobs).filter((j) => D.jobs[j].kind === "hybrid");
-  assert.deepEqual(singles, ["swordsman", "thief", "lancer", "wizard", "warlock", "archer"]);
+  assert.deepEqual(singles, ["swordsman", "thief", "lancer", "wizard", "warlock", "archer", "destroyer"]);
   assert.deepEqual(hybrids, ["spellblade", "tracker", "dragoon", "hexblade", "stormrider", "darkknight",
     "bladedancer", "breaker", "arcblade", "shadowlance", "trickster", "spellspear", "runesage", "spellarcher", "runearcher"]);
   assert.deepEqual(singles.map((j) => D.jobs[j].wk[0]), D.wkOrder, "one single job per weapon");
   // every one of the 15 pairs of weapons has exactly one hybrid
   const pairs = hybrids.map((j) => D.jobs[j].wk.slice().sort().join("+"));
   const want = [];
-  D.wkOrder.forEach((a, i) => D.wkOrder.slice(i + 1).forEach((b) => want.push([a, b].sort().join("+"))));
+  const hybridKinds = D.wkOrder.filter(k => k !== "hammer");
+  hybridKinds.forEach((a, i) => hybridKinds.slice(i + 1).forEach((b) => want.push([a, b].sort().join("+"))));
   assert.equal(want.length, 15);
   assert.deepEqual(pairs.slice().sort(), want.sort(), "one hybrid for each pair");
   for (const j of hybrids) {

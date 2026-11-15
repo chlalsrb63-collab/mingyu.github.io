@@ -319,6 +319,7 @@ function danceStep(S, p, now) {
 }
 /** What a hand keeps track of from moment to moment. */
 function weaponTick(S, p, now) {
+  if (p.hammer || p.hammerCracks?.size) hammerTick(S, p, now);
   if (p.dance) danceStep(S, p, now);
   if (p.hide && now >= p.hide) p.hide = 0;
   if (p.inert && now - p.inertAt > SKILL.inertia.ms) { p.inert = 0; p.dirty = true; }
@@ -327,6 +328,7 @@ function weaponTick(S, p, now) {
 /** Whatever a hand had going that does not survive a fall or a change of map. */
 function weaponReset(p, death) {
   p.dance = null; p.hide = 0; p.inert = 0; p.weave = null;
+  p.hammer = null; p.hammerCracks = null;
   if (death) { p.reso = 0; p.sanctAt = 0; }
 }
 /** The bits other players see: 4 untouchable in the air, 16 dancing, 32 resonance full, 64 hidden. */
@@ -351,6 +353,7 @@ function crOf(p, wk, now) {
     case "spear": return { k: "tip", tip: Math.round(WKIND.spear.range * SKILL.tip.at) };
     case "staff": return { k: "reso", v: p.reso | 0, max: SKILL.reso.n, e: p.weave && p.weave.until > now ? WEAVE_CODE[p.weave.e] : 0 };
     case "book": return { k: "brand" };
+    case "hammer": return null;
     default: return { k: "hawk", d0: SKILL.hawk.d0, span: SKILL.hawk.span };
   }
 }
@@ -368,7 +371,9 @@ function skWire(p, now) {
   return skillsFor(p.ch).map((id) => {
     const sk = SKILL[id];
     if (sk.kind === "p") return [id, 0, 0, pasOn(p, id) ? 1 : 0];
-    return [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(p.ch, sk) ? 0 : 1];
+    const row = [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(p.ch, sk) ? 0 : 1];
+    if (sk.hpPct) row.push(hammerHpCost(p, sk));
+    return row;
   });
 }
 /** New skills from a mastery level or a job: onto the bar if there is room. Returns their names. */
@@ -402,6 +407,7 @@ function castSkill(S, p, id) {
     else if ((p.reso = (p.reso | 0) + 1) >= SKILL.reso.n) ev(113, p.x, p.y - 6);
   }
   p.mp -= cost;
+  if (sk.hpPct) { const hp = hammerHpCost(p, sk); p.hp -= hp; rt.ev.push(["h", p.eid, hp, 0, 1, 1]); }
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1]); } }
   // WIS shortens every wait; an echo (legendary) may give it straight back
   p.cds[id] = now + Math.round(sk.cd * (1 - st.cdr));
@@ -409,6 +415,7 @@ function castSkill(S, p, id) {
   p.atkAt = now;
   p.swordBeat = null;
   p.dirty = true;
+  if (sk.wk === "hammer") { startHammer(S, p, sk, sk, k); return; }
   const opt = { mag: sk.mag, sk };
   const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult * k, !!(more && more.sure), more ? { ...opt, ...more } : opt);
   const [aimX, aimY] = AIM_V[p.aim | 0];

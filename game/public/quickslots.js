@@ -78,6 +78,7 @@ export function skillWhy(id) {
 }
 /** What skill `id` costs right now (a full resonance makes a staff skill free). */
 export const skillMp = (id) => { const r = row(id); return r ? r[1] : (C.G.defs.skills[id] || {}).mp || 0; };
+export const skillHp = (id) => row(id)?.[4] || 0;
 const same = (a, b) => !!a && !!b && a[0] === b[0] && a[1] === b[1];
 /** Where (if anywhere) a skill or item sits: "1", "1·4" … */
 export function keysOf(v) {
@@ -227,7 +228,7 @@ export function tick(t) {
     if (v && v[0] === "s" && list[v[1]]) {
       const sk = list[v[1]];
       left = (G.cdEnd[v[1]] || 0) - t; full = sk.cd;
-      nomp = G.me.mp < skillMp(v[1]) && !skillWhy(v[1]);
+      nomp = (G.me.mp < skillMp(v[1]) || (skillHp(v[1]) > 0 && G.me.hp <= skillHp(v[1]))) && !skillWhy(v[1]);
     } else if (v && v[0] === "i" && G.defs.items[v[1]] && G.defs.items[v[1]].type === "pot") {
       left = G.potAt - t; full = 950;
     }
@@ -280,7 +281,7 @@ function slotTip(h, v) {
     const sk = skills()[v[1]];
     if (!sk) return;
     h.append(el("div", "nm", sk.name));
-    h.append(el("div", "ds", `MP ${skillMp(v[1])} · 재사용 ${sk.cd / 1000}초${sk.job ? " · 전직 기술" : ""}`));
+    h.append(el("div", "ds", `MP ${skillMp(v[1])}${skillHp(v[1]) ? ` · HP ${skillHp(v[1])}` : ""} · 재사용 ${sk.cd / 1000}초${sk.job ? " · 전직 기술" : ""}`));
     const why = skillWhy(v[1]);
     if (why) h.append(el("div", "err-line", why));
     h.append(el("div", "ds", sk.desc));

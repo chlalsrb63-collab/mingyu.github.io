@@ -49,6 +49,24 @@ const oBack = (u) => { const c = 1.70158, v = u - 1; return 1 + (c + 1) * v * v 
  */
 export const WIND = 0.15, IMPACT = 0.2, SNAP = 0.5;
 
+export const HAMMER_IMPACT = 200, HAMMER_RECOVER = 240;
+/** The hammer repeats one forward stroke. The head lifts, drops and recovers in the same plane. */
+export function hammerPose(ms, impact = HAMMER_IMPACT) {
+  const raisedAt = impact - 60;
+  const lift = ms < raisedAt ? eIO(Math.max(0, ms) / raisedAt) : 1 - eIn(Math.min(1, (ms - raisedAt) / 60));
+  const drop = eIn(Math.min(1, Math.max(0, (ms - raisedAt) / 60)));
+  const held = 1 - eIO(Math.min(1, Math.max(0, (ms - impact - 38) / (HAMMER_RECOVER - 38))));
+  return {
+    yaw: 0,
+    pitch: (20 + 39 * lift - 52 * drop * held) * D,
+    reach: -2 * lift + 4 * drop * held,
+    lift: 4 * lift,
+    lean: -0.5 * lift + 1.5 * drop * held,
+    fr: ms >= impact && ms < impact + 85 ? "crouch" : "",
+    strike: false,
+  };
+}
+
 /** Key poses: [k, yaw°, pitch°, reach px, lean px, frame, ease into this key]. */
 const K = (k, yaw, pitch, reach, lean, fr, ease) => ({ k, yaw: yaw * D, pitch: pitch * D, reach, lean, fr: fr || "", ease: ease || lin });
 // every stroke: wind-up (eOut) -> impact (linear: the blade at full speed) -> the rest of the
@@ -102,6 +120,7 @@ const TWIRL = { staff: 360 * D };
  * which way round the sweep goes (the second beat comes back the other way).
  */
 export function pose(wk, beat, k, side) {
+  if (wk === "hammer") return hammerPose(k * (HAMMER_IMPACT + HAMMER_RECOVER));
   const set = STROKES[wk];
   if (!set) return null;
   const keys = set[beat] || set[0];
@@ -182,5 +201,5 @@ export function bladeLen(img, grip) {
 }
 
 /** Does this weapon kind have strokes of its own? (A new kind borrows by style.) */
-export const has = (wk) => !!STROKES[wk];
+export const has = (wk) => wk === "hammer" || !!STROKES[wk];
 export { eOut, oExpo, oBack };
