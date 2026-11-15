@@ -20,7 +20,7 @@ import * as Gather from "./gather.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
 import { isOpen, touch, hideTip, closeDrawer, openWin, hoverTip } from "./windows.js";
-import { invOrder, itemSlot, QS_USE, useSlot, isGear, sellPrice, itemTip, itemName, SLOT_NAME, SLOT_GLYPH, setWorn, statText } from "./items.js";
+import { invOrder, itemSlot, QS_USE, useSlot, isGear, emptyEquipSlot, sellPrice, itemTip, itemName, SLOT_NAME, SLOT_GLYPH, setWorn, statText } from "./items.js";
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
@@ -56,17 +56,23 @@ export function renderInv(s) {
   for (let n = 0; n < cap; n++) {
     const i = order[n];
     if (i === undefined) { grid.append(itemSlot(null)); continue; }
-    const entry = s.inv[i];
-    const usable = QS_USE.includes(it[entry.id].type), at = usable ? QS.keysOf(["i", entry.id]) : "";
+    const entry = s.inv[i], item = it[entry.id];
+    const free = emptyEquipSlot(item, s);
+    const usable = QS_USE.includes(item.type), at = usable ? QS.keysOf(["i", entry.id]) : "";
+    const hint = Charms.isCharm(entry) ? `참 탭에서 살펴보고, 참 보드(${K("charm")})에 놓으면 효과를 냅니다`
+      : isOpen("shop") ? "클릭해서 고른 뒤 아래 버튼으로 판매"
+      : isOpen("smith") && isGear(entry.id) ? "클릭해서 고른 뒤 아래 버튼으로 분해"
+      : usable ? `아래 단축칸(1~9)에 끌어다 놓을 수 있습니다${at ? ` · 지금 ${at}번` : ""}` : "";
     const node = itemSlot(entry, {
       selected: i === G.sel,
       onClick: () => { G.sel = G.sel === i ? -1 : i; Sound.play("ui"); refreshUi(); },
       onUse: () => useSlot(i),
-      hint: Charms.isCharm(entry) ? `참 탭에서 살펴보고, 참 보드(${K("charm")})에 놓으면 효과를 냅니다` : isOpen("shop") ? "클릭해서 고른 뒤 아래 버튼으로 판매" : isOpen("smith") && isGear(entry.id) ? "클릭해서 고른 뒤 아래 버튼으로 분해" : usable ? `아래 단축칸(1~9)에 끌어다 놓을 수 있습니다${at ? ` · 지금 ${at}번` : ""}` : "",
+      hint: [free && `▲ 빈 슬롯에 낄 수 있음 · ${SLOT_NAME[free]}`, hint].filter(Boolean).join(" · "),
       price: isOpen("shop") && !Charms.isCharm(entry) ? `판매가 ${(sellPrice(entry) * (entry.n || 1)).toLocaleString()}G${entry.n > 1 ? ` (개당 ${sellPrice(entry)}G)` : ""}` : "",
     });
     // a usable thing can be dragged onto the quick slots; the slot it sits in shows in the corner
     if (usable) { QS.dragSource(node, ["i", entry.id]); if (at) node.append(el("span", "qk", at)); }
+    if (free) node.append(el("span", "qk equip-ready", "▲"));
     grid.append(node);
   }
   Housing.bagBar(s, $("#inv-grow"));
@@ -95,6 +101,8 @@ export function renderInv(s) {
     if (!fireNear()) btns.append(el("span", "ds", "모닥불 곁에서 구울 수 있습니다"));
   }
   if (isGear(entry.id)) {
+    const free = emptyEquipSlot(d, s);
+    if (free) det.append(el("div", "equip-ready", `▲ 빈 슬롯에 낄 수 있음 · ${SLOT_NAME[free]}`));
     const off = (d.cls && d.cls !== s.cls) || s.lvl < d.req;
     if (d.type === "ring" && s.eq.ring1 && s.eq.ring2) {
       for (const k of ["ring1", "ring2"]) add(`${SLOT_NAME[k]}에 장착`, () => { act({ t: "eq", s: G.sel, k }); G.sel = -1; }, off, true);

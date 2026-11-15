@@ -24,6 +24,11 @@ export const SLOT_NAME = { weapon: "무기", helm: "투구", armor: "갑옷", gl
 export const SLOT_GLYPH = { weapon: "sword", helm: "eq_helm", armor: "eq_armor", gloves: "eq_gloves", boots: "eq_boots", ring1: "eq_ring", ring2: "eq_ring", amulet: "eq_amulet", weapon2: "eq_off" };
 export const isGear = (id) => GEAR.includes(G.defs.items[id].type);
 const slotsFor = (type) => (type === "ring" ? ["ring1", "ring2"] : [type]);
+/** An empty slot filled by the item's default equip action. */
+export function emptyEquipSlot(it, s) {
+  if (!GEAR.includes(it.type) || s.lvl < it.req || (it.cls && it.cls !== s.cls)) return null;
+  return slotsFor(it.type).find(k => !s.eq[k]) || null;
+}
 function runewordOf(g) {
   if (!g.sk || !g.ru || g.ru.length !== g.sk) return null;
   return G.defs.runewords.find((rw) => rw.seq.length === g.sk && rw.seq.every((r, i) => g.ru[i] === r)) || null;
