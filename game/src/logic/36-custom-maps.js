@@ -244,7 +244,7 @@ for (const id of [...BUILTIN_MAPS, ...Object.keys(FILES).filter((id) => !BUILTIN
     MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, minLv, kinds: metaKinds(m), eager: true };
   } else {
     const g = GEN[id], c = g.cfg();
-    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, minLv, kinds: genKinds(id), eager: false };
+    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, minLv, kinds: [...new Set(genKinds(id).concat(ZONE_EXTRA[id] || []))], eager: false };
   }
 }
 function mapLevelNeed(ch, id) {

@@ -284,6 +284,15 @@ const MOBS = {
   spoolsnipe: { name: "실패부리 도요", lv: 16, hp: 368, atk: 44, def: 5, spd: 42, xp: 172, gold: [20, 42], aggro: 80, range: 52, cd: 1800, shot: true, fan: 92, bonusOptional: true },
   sluiceeel: { name: "쇠살 장어", lv: 24, hp: 945, atk: 77, def: 15, spd: 36, xp: 440, gold: [42, 80], aggro: 76, range: 20, cd: 1600, pool: 22, bonusOptional: true },
   prismmole: { name: "겹렌즈 두더지", lv: 27, hp: 1310, atk: 93, def: 18, spd: 34, xp: 600, gold: [54, 98], aggro: 84, range: 21, cd: 1500, fan: 100, slam: 32, bonusOptional: true },
+  // The second wave of beasts (art: mobart_g.js), each with a telegraphed trick and a home ground (ZONE_EXTRA, 33-maps-zones.js).
+  slugtongue: { name: "혀 민달팽이", lv: 9, hp: 190, atk: 22, def: 2, spd: 16, xp: 66, gold: [10, 22], aggro: 60, range: 16, cd: 1500, cloud: 30 },
+  gnawbadger: { name: "이빨굴 오소리", lv: 11, hp: 250, atk: 28, def: 4, spd: 40, xp: 100, gold: [12, 27], aggro: 88, range: 17, cd: 1100, burrow: 100 },
+  gravecricket: { name: "무덤 귀뚜라미", lv: 14, hp: 290, atk: 38, def: 4, spd: 50, xp: 135, gold: [17, 34], aggro: 96, range: 17, cd: 1000, pounce: 96 },
+  smoggecko: { name: "매연 도마뱀붙이", lv: 18, hp: 470, atk: 54, def: 6, spd: 44, xp: 230, gold: [26, 52], aggro: 90, range: 18, cd: 1200, breath: 58 },
+  dropsloth: { name: "낙하 나무늘보", lv: 22, hp: 820, atk: 70, def: 12, spd: 24, xp: 360, gold: [38, 74], aggro: 80, range: 20, cd: 1500, pounce: 100 },
+  gigglehyena: { name: "웃는 하이에나", lv: 23, hp: 880, atk: 74, def: 14, spd: 48, xp: 400, gold: [42, 80], aggro: 90, range: 19, cd: 1100, howl: 110 },
+  dunescarab: { name: "해골 쇠똥구리", lv: 30, hp: 1500, atk: 96, def: 26, spd: 32, xp: 720, gold: [60, 108], aggro: 86, range: 20, cd: 1400, burrow: 110 },
+  rimewalrus: { name: "서리숨 바다코끼리", lv: 50, hp: 5200, atk: 140, def: 36, spd: 30, xp: 3800, gold: [140, 214], aggro: 84, range: 22, cd: 1600, breath: 64 },
   // Weekly arena opponents, separate from the field boss roster and story fights.
   wickregent: { name: "밀랍굴의 여왕 심지귀", lv: 19, hp: 6200, atk: 105, def: 17, spd: 35, xp: 1800, gold: [130, 230], aggro: 130, range: 24, cd: 1500, boss: true },
   knotwidow: { name: "등불매듭 뿌리거미", lv: 22, hp: 8500, atk: 110, def: 21, spd: 38, xp: 2300, gold: [155, 270], aggro: 132, range: 27, cd: 1450, boss: true },

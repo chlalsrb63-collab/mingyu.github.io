@@ -710,6 +710,15 @@ const MOBS = {
   spoolsnipe: { name: "실패부리 도요", lv: 16, hp: 368, atk: 44, def: 5, spd: 42, xp: 172, gold: [20, 42], aggro: 80, range: 52, cd: 1800, shot: true, fan: 92, bonusOptional: true },
   sluiceeel: { name: "쇠살 장어", lv: 24, hp: 945, atk: 77, def: 15, spd: 36, xp: 440, gold: [42, 80], aggro: 76, range: 20, cd: 1600, pool: 22, bonusOptional: true },
   prismmole: { name: "겹렌즈 두더지", lv: 27, hp: 1310, atk: 93, def: 18, spd: 34, xp: 600, gold: [54, 98], aggro: 84, range: 21, cd: 1500, fan: 100, slam: 32, bonusOptional: true },
+  // The second wave of beasts (art: mobart_g.js), each with a telegraphed trick and a home ground (ZONE_EXTRA, 33-maps-zones.js).
+  slugtongue: { name: "혀 민달팽이", lv: 9, hp: 190, atk: 22, def: 2, spd: 16, xp: 66, gold: [10, 22], aggro: 60, range: 16, cd: 1500, cloud: 30 },
+  gnawbadger: { name: "이빨굴 오소리", lv: 11, hp: 250, atk: 28, def: 4, spd: 40, xp: 100, gold: [12, 27], aggro: 88, range: 17, cd: 1100, burrow: 100 },
+  gravecricket: { name: "무덤 귀뚜라미", lv: 14, hp: 290, atk: 38, def: 4, spd: 50, xp: 135, gold: [17, 34], aggro: 96, range: 17, cd: 1000, pounce: 96 },
+  smoggecko: { name: "매연 도마뱀붙이", lv: 18, hp: 470, atk: 54, def: 6, spd: 44, xp: 230, gold: [26, 52], aggro: 90, range: 18, cd: 1200, breath: 58 },
+  dropsloth: { name: "낙하 나무늘보", lv: 22, hp: 820, atk: 70, def: 12, spd: 24, xp: 360, gold: [38, 74], aggro: 80, range: 20, cd: 1500, pounce: 100 },
+  gigglehyena: { name: "웃는 하이에나", lv: 23, hp: 880, atk: 74, def: 14, spd: 48, xp: 400, gold: [42, 80], aggro: 90, range: 19, cd: 1100, howl: 110 },
+  dunescarab: { name: "해골 쇠똥구리", lv: 30, hp: 1500, atk: 96, def: 26, spd: 32, xp: 720, gold: [60, 108], aggro: 86, range: 20, cd: 1400, burrow: 110 },
+  rimewalrus: { name: "서리숨 바다코끼리", lv: 50, hp: 5200, atk: 140, def: 36, spd: 30, xp: 3800, gold: [140, 214], aggro: 84, range: 22, cd: 1600, breath: 64 },
   // Weekly arena opponents, separate from the field boss roster and story fights.
   wickregent: { name: "밀랍굴의 여왕 심지귀", lv: 19, hp: 6200, atk: 105, def: 17, spd: 35, xp: 1800, gold: [130, 230], aggro: 130, range: 24, cd: 1500, boss: true },
   knotwidow: { name: "등불매듭 뿌리거미", lv: 22, hp: 8500, atk: 110, def: 21, spd: 38, xp: 2300, gold: [155, 270], aggro: 132, range: 27, cd: 1450, boss: true },
@@ -1043,6 +1052,14 @@ const HOUSE_TOWN = { map: "town", house: [14, 43], door: [[15, 46], [16, 46]], o
 
 // Bestiary notes keyed by stable monster ID, including retired variants and treasure chests.
 const MOB_LORE = {
+  slugtongue: "껍데기 대신 혀를 얻었다. 지나간 자리의 점액이 발목을 붙잡는다.",
+  gnawbadger: "굴을 파는 건 발이 아니라 이빨이다. 땅이 들썩이면 이미 발밑에 있다.",
+  gravecricket: "묘비 위에서 우는 소리가 멎으면, 그다음은 도약이다.",
+  smoggecko: "굴뚝에 붙어 매연만 먹고 자랐다. 숨을 들이켜는 순간 물러서라.",
+  dropsloth: "한 번 매달리면 사흘을 움직이지 않는다. 떨어질 곳을 고르는 데 그만큼 걸린다.",
+  gigglehyena: "웃음소리가 하수도에 울리면 주위의 짐승들이 미쳐 날뛴다.",
+  dunescarab: "굴리던 해골 속에 알을 낳는다. 모래가 갈라지면 해골부터 튀어나온다.",
+  rimewalrus: "엄니 사이로 내뿜는 숨이 공기째 얼려 버린다.",
   wickhare: "귀 끝이 녹기 전에는 공격하지 않는다. 녹은 끝은 풀밭에 번진다.",
   burrlynx: "등 가시를 오므린 틈에 그늘로 숨었다가 낮게 도약한다.",
   bellnewt: "가슴 속 조그만 뼈종이 울리면 가까운 관도 화답한다.",
@@ -5466,10 +5483,15 @@ function zoneMap(m) {
  * ZONE_EP elites, the safe plaza and the hidden pockets none — a pocket gets one guardian beside its
  * chest instead. Counts follow the map's DENSITY (×ZONE_DENS of the zone), carried over block to block.
  */
+/** Kinds a ground holds besides its cfg.mobs (34-maps-world.js): the second wave of beasts, mobart_g.js. */
+const ZONE_EXTRA = {
+  forest: ["slugtongue", "gnawbadger"], crypt: ["gravecricket"], city: ["smoggecko"], jungle: ["dropsloth"],
+  sewer: ["gigglehyena"], oasis: ["dunescarab"], frostkeep: ["rimewalrus"],
+};
 function zoneSpawns(m, cfg) {
   const W = m.w, H = m.h, z = m.zone, d = m.zdist, { D, safeR, eliteD } = m.zinfo;
   const sorted = (l) => l.map((k, i) => [k, i]).sort((a, b) => MOBS[a[0]].lv - MOBS[b[0]].lv || a[1] - b[1]).map((a) => a[0]);
-  const all = sorted(cfg.mobs);
+  const roster = cfg.mobs.concat(ZONE_EXTRA[m.id] || []), all = sorted(roster);
   const progN = (dd) => clamp((dd - safeR) / Math.max(1, eliteD - safeR), 0, 0.999);
   // (a ground of several habitats — dunesea: dunes, oasis belt, sea — names the kinds of a place: cfg.rosterAt(x, y))
   const pick = (zone, dd, h, x, y) => {
@@ -5484,7 +5506,7 @@ function zoneSpawns(m, cfg) {
   const old = m.spawns;
   const out = old.filter((sp) => MOBS[sp.k].chest || MOBS[sp.k].boss || sp.el);
   // a kind that is not on the roster (a lair's own pack) keeps its ground, unless that is the plaza or a pocket
-  for (const sp of old) if (!out.includes(sp) && !cfg.mobs.includes(sp.k) && zoneAt(sp.r) !== Z_SAFE && zoneAt(sp.r) !== Z_HIDDEN) out.push(sp);
+  for (const sp of old) if (!out.includes(sp) && !roster.includes(sp.k) && zoneAt(sp.r) !== Z_SAFE && zoneAt(sp.r) !== Z_HIDDEN) out.push(sp);
   const carry = [0, 0, 0, 0];
   for (let by = 0; by < H; by += SUB) for (let bx = 0; bx < W; bx += SUB) for (const zz of [Z_NORMAL, Z_ELITE]) {
     let cnt = 0, sd = 0, x0 = W, y0 = H, x1 = -1, y1 = -1;
@@ -5525,7 +5547,7 @@ function zoneSpawns(m, cfg) {
   }
   m.spawns = out;
   // every kind the ground is meant to hold lives somewhere in it
-  cover(m, cfg.mobs);
+  cover(m, roster);
 }
 
 // (a sheet's woken stones are ch.wp = { mapId: bitmask }, bit i = stone i: wpWoken in 36-custom-maps.js)
@@ -6839,7 +6861,7 @@ for (const id of [...BUILTIN_MAPS, ...Object.keys(FILES).filter((id) => !BUILTIN
     MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, minLv, kinds: metaKinds(m), eager: true };
   } else {
     const g = GEN[id], c = g.cfg();
-    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, minLv, kinds: genKinds(id), eager: false };
+    MAP_META[id] = { id, name: c.name, theme: g.theme || c.theme || null, band: g.band.slice(), safe: false, w: c.w, h: c.h, wp: true, wpn: g.stones || 1, minLv, kinds: [...new Set(genKinds(id).concat(ZONE_EXTRA[id] || []))], eager: false };
   }
 }
 function mapLevelNeed(ch, id) {
@@ -17323,7 +17345,7 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
     if (dd <= d.range + 16 || dd > d[k]) return false;
     mob.act = { at, f: k, x: tgt.x, y: tgt.y };
     rt.tele.push({ x: tgt.x, y: tgt.y, r: A.r, at, dmg: atk * A.k, by: mob, how: "mv" });
-    if (k === "burrow") { mob.dive = 1; rt.ev.push(["b", Math.round(mob.x), Math.round(mob.y), 10, 1]); }
+    if (k === "burrow") { mob.dive = 2; rt.ev.push(["b", Math.round(mob.x), Math.round(mob.y), 10, 1]); }
     rt.ev.push(["t", tx, ty, A.r, A.ms]);
   } else if (k === "spit") {
     // one lobbed glob, landing on the spot it was aimed at
@@ -17413,7 +17435,7 @@ function tickMob(S, m, rt, mob, dt, here) {
     return;
   }
   // (a burrower whose trick was cut short, by a rift's reset say, comes back up)
-  if (mob.dive && !bsDef(mob)) mob.dive = 0;
+  if (mob.dive === 2) mob.dive = 0;
   if (mob.stun > now) return;
   const swift = has(mob, "swift");
   const speed = d.spd * (mob.slow > now ? 0.5 : 1) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1);

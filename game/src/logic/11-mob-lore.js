@@ -1,5 +1,13 @@
 // Bestiary notes keyed by stable monster ID, including retired variants and treasure chests.
 const MOB_LORE = {
+  slugtongue: "껍데기 대신 혀를 얻었다. 지나간 자리의 점액이 발목을 붙잡는다.",
+  gnawbadger: "굴을 파는 건 발이 아니라 이빨이다. 땅이 들썩이면 이미 발밑에 있다.",
+  gravecricket: "묘비 위에서 우는 소리가 멎으면, 그다음은 도약이다.",
+  smoggecko: "굴뚝에 붙어 매연만 먹고 자랐다. 숨을 들이켜는 순간 물러서라.",
+  dropsloth: "한 번 매달리면 사흘을 움직이지 않는다. 떨어질 곳을 고르는 데 그만큼 걸린다.",
+  gigglehyena: "웃음소리가 하수도에 울리면 주위의 짐승들이 미쳐 날뛴다.",
+  dunescarab: "굴리던 해골 속에 알을 낳는다. 모래가 갈라지면 해골부터 튀어나온다.",
+  rimewalrus: "엄니 사이로 내뿜는 숨이 공기째 얼려 버린다.",
   wickhare: "귀 끝이 녹기 전에는 공격하지 않는다. 녹은 끝은 풀밭에 번진다.",
   burrlynx: "등 가시를 오므린 틈에 그늘로 숨었다가 낮게 도약한다.",
   bellnewt: "가슴 속 조그만 뼈종이 울리면 가까운 관도 화답한다.",

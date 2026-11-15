@@ -138,10 +138,15 @@ function zoneMap(m) {
  * ZONE_EP elites, the safe plaza and the hidden pockets none — a pocket gets one guardian beside its
  * chest instead. Counts follow the map's DENSITY (×ZONE_DENS of the zone), carried over block to block.
  */
+/** Kinds a ground holds besides its cfg.mobs (34-maps-world.js): the second wave of beasts, mobart_g.js. */
+const ZONE_EXTRA = {
+  forest: ["slugtongue", "gnawbadger"], crypt: ["gravecricket"], city: ["smoggecko"], jungle: ["dropsloth"],
+  sewer: ["gigglehyena"], oasis: ["dunescarab"], frostkeep: ["rimewalrus"],
+};
 function zoneSpawns(m, cfg) {
   const W = m.w, H = m.h, z = m.zone, d = m.zdist, { D, safeR, eliteD } = m.zinfo;
   const sorted = (l) => l.map((k, i) => [k, i]).sort((a, b) => MOBS[a[0]].lv - MOBS[b[0]].lv || a[1] - b[1]).map((a) => a[0]);
-  const all = sorted(cfg.mobs);
+  const roster = cfg.mobs.concat(ZONE_EXTRA[m.id] || []), all = sorted(roster);
   const progN = (dd) => clamp((dd - safeR) / Math.max(1, eliteD - safeR), 0, 0.999);
   // (a ground of several habitats — dunesea: dunes, oasis belt, sea — names the kinds of a place: cfg.rosterAt(x, y))
   const pick = (zone, dd, h, x, y) => {
@@ -156,7 +161,7 @@ function zoneSpawns(m, cfg) {
   const old = m.spawns;
   const out = old.filter((sp) => MOBS[sp.k].chest || MOBS[sp.k].boss || sp.el);
   // a kind that is not on the roster (a lair's own pack) keeps its ground, unless that is the plaza or a pocket
-  for (const sp of old) if (!out.includes(sp) && !cfg.mobs.includes(sp.k) && zoneAt(sp.r) !== Z_SAFE && zoneAt(sp.r) !== Z_HIDDEN) out.push(sp);
+  for (const sp of old) if (!out.includes(sp) && !roster.includes(sp.k) && zoneAt(sp.r) !== Z_SAFE && zoneAt(sp.r) !== Z_HIDDEN) out.push(sp);
   const carry = [0, 0, 0, 0];
   for (let by = 0; by < H; by += SUB) for (let bx = 0; bx < W; bx += SUB) for (const zz of [Z_NORMAL, Z_ELITE]) {
     let cnt = 0, sd = 0, x0 = W, y0 = H, x1 = -1, y1 = -1;
@@ -197,7 +202,7 @@ function zoneSpawns(m, cfg) {
   }
   m.spawns = out;
   // every kind the ground is meant to hold lives somewhere in it
-  cover(m, cfg.mobs);
+  cover(m, roster);
 }
 
 // (a sheet's woken stones are ch.wp = { mapId: bitmask }, bit i = stone i: wpWoken in 36-custom-maps.js)

@@ -129,7 +129,7 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
     if (dd <= d.range + 16 || dd > d[k]) return false;
     mob.act = { at, f: k, x: tgt.x, y: tgt.y };
     rt.tele.push({ x: tgt.x, y: tgt.y, r: A.r, at, dmg: atk * A.k, by: mob, how: "mv" });
-    if (k === "burrow") { mob.dive = 1; rt.ev.push(["b", Math.round(mob.x), Math.round(mob.y), 10, 1]); }
+    if (k === "burrow") { mob.dive = 2; rt.ev.push(["b", Math.round(mob.x), Math.round(mob.y), 10, 1]); }
     rt.ev.push(["t", tx, ty, A.r, A.ms]);
   } else if (k === "spit") {
     // one lobbed glob, landing on the spot it was aimed at
@@ -219,7 +219,7 @@ function tickMob(S, m, rt, mob, dt, here) {
     return;
   }
   // (a burrower whose trick was cut short, by a rift's reset say, comes back up)
-  if (mob.dive && !bsDef(mob)) mob.dive = 0;
+  if (mob.dive === 2) mob.dive = 0;
   if (mob.stun > now) return;
   const swift = has(mob, "swift");
   const speed = d.spd * (mob.slow > now ? 0.5 : 1) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1);
