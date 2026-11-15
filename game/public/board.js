@@ -355,7 +355,8 @@ function jobCard(s, a, full) {
   hd.append(nm, el("span", "tag", (KIND[a.t.kind] || [a.t.kind])[0]));
   card.append(hd, el("p", "say", a.t.text));
   const nx = nextStep(a), pr = progOf(s, a);
-  card.append(el("small", "where", pr && a.t.kind === "scout" && !a.got ? `${pr[0]} → ${npcLabel(nx.npc)}에게 보고` : `${npcLabel(nx.npc)}에게 ${nx.verb} · ${placeOf(nx.npc)}`));
+  // a chore's spots still to do have no NPC to name (the bar below says how many): no "에게 … ·" line
+  if (nx.npc) card.append(el("small", "where", pr && a.t.kind === "scout" && !a.got ? `${pr[0]} → ${npcLabel(nx.npc)}에게 보고` : `${npcLabel(nx.npc)}에게 ${nx.verb} · ${placeOf(nx.npc)}`));
   if (pr) {
     const bar = el("div", "bar"), f = el("i");
     f.style.width = `${clamp((pr[1] / pr[2]) * 100, 0, 100)}%`;
@@ -454,7 +455,7 @@ export function trackRows(s, qt, goal) {
   const nx = nextStep(a);
   const pr = progOf(s, a);
   if (pr) qt.append(goal(pr[0], pr[1], pr[2], `${npcLabel(nx.npc)}에게 ${a.t.item ? "전하기" : "보고하기"}`));
-  qt.append(el("div", "qp", `→ ${npcLabel(nx.npc)}${a.t.kind === "deliver" ? `에게 ${nx.verb}` : ""} · ${placeOf(nx.npc)}`));
+  if (nx.npc) qt.append(el("div", "qp", `→ ${npcLabel(nx.npc)}${a.t.kind === "deliver" ? `에게 ${nx.verb}` : ""} · ${placeOf(nx.npc)}`));
   clockLines(now());
   return true;
 }
