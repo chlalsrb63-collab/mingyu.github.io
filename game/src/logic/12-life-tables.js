@@ -393,6 +393,45 @@ const COOP_HALL = (() => {
   return o.map((r) => r.join(""));
 })();
 /**
+ * 동동아파트 (apt v3; owner, 2026-11-15: "전용 인스턴스 공간은 지금 크기보다 훨씬 크게"): 64×37 (was 45×19), built in code like HALL.
+ * Two wings: 윗동 (ten flats north and south of corridor A, y 8–10) and 아랫동 (eight flats round corridor B, y 26–28), joined by
+ * the stairwell (x 27–30, y 11–25) where the tool rack stands; the bins empty at the dumpster in the back yard (뒷마당, x 53–62,
+ * y 19–35) through the back door at corridor B's east end, the far end from 윗동. `rows`: [y0, y1, door row, flats]; the
+ * middle rows give their third column to the stairwell (a flat x 32–38 beside it).
+ */
+const APT = { W: 64, H: 37, cols: [[1, 12], [14, 25], [27, 38], [40, 51], [53, 62]], stair: [27, 30, 11, 25], yard: [53, 19, 62, 35],
+  rows: [[1, 6, 7, 5], [12, 17, 11, 5], [19, 24, 25, 4], [30, 35, 29, 4]], dump: [60, 27], rack: [29, 12] };
+const APT_MAP = (() => {
+  const { W, H } = APT, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
+  const g = Array.from({ length: H }, () => "f".repeat(W).split("")), rooms = [];
+  const put = (ch, x, y) => { o[y][x] = ch; };
+  const [sx0, sx1, sy0, sy1] = APT.stair, stair = (x, y) => x >= sx0 && x <= sx1 && y >= sy0 && y <= sy1;
+  for (let x = 1; x < W - 1; x++) if (!stair(x, 18)) put("b", x, 18);
+  APT.rows.forEach(([y0, y1, dr, n], ri) => {
+    const east = n === 5 ? W - 2 : APT.yard[0] - 2;
+    for (let x = 1; x <= east; x++) if (!stair(x, dr)) put("m", x, dr);
+    const cols = APT.cols.slice(0, n).map((c, i) => (i === 2 && (ri === 1 || ri === 2) ? [sx1 + 2, c[1]] : c));
+    cols.forEach(([x0, x1], i) => {
+      rooms.push([x0, y0, x1, y1]);
+      const cx = (x0 + x1) >> 1, back = dr > y1 ? y0 : y1;
+      for (let y = y0; y <= y1; y++) { if (x1 + 1 < W - 1) put("b", x1 + 1, y); if (x0 - 1 > 0) put("b", x0 - 1, y); }
+      put(" ", cx, dr); put(" ", cx + 1, dr);
+      for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) g[y][x] = "uqlu"[(ri + i) % 4];
+      put("p", x0 + 1, back); put("p", x0 + 2, back); put("r", x1 - 1, back); put("o", cx, (y0 + y1) >> 1);
+      if (x1 - x0 > 8) put("s", cx + 2, (y0 + y1) >> 1);
+    });
+  });
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) if (stair(x, y)) { o[y][x] = " "; g[y][x] = "y"; }
+  for (const [y0, y1] of [[8, 10], [26, 28]]) for (let y = y0; y <= y1; y++) for (let x = 1; x < W - 1; x++) if (o[y][x] === " ") g[y][x] = "h";
+  // the back yard: flagstones, the dumpster `]` (station dump), barrels and plants; the back door at corridor B's east end
+  const [yx0, yy0, yx1, yy1] = APT.yard;
+  for (let y = yy0; y <= yy1; y++) { put("b", yx0 - 1, y); for (let x = yx0; x <= yx1; x++) { o[y][x] = " "; g[y][x] = "x"; } }
+  for (let y = 26; y <= 28; y++) { put(" ", yx0 - 1, y); g[y][yx0 - 1] = "e"; }
+  put("]", ...APT.dump); put("w", 62, 20); put("w", 62, 21); put("w", 62, 34); put("g", 53, 19); put("g", 53, 35); put("]", 61, 23);
+  put(">", ...APT.rack); put("g", 1, 8); put("g", 62, 8); put("g", 1, 28);
+  return { ground: g.map((r) => r.join("")), objects: o.map((r) => r.join("")), rooms };
+})();
+/**
  * 쥬쥬식당's hall (diner v2; owner, 2026-11-15: "훨씬 크게 … 손님이 계속 몰려오게"): 64×36 (was 44×24), built in code. The kitchen
  * along the north wall (four stoves `:`, three boards `-`, the crates 채소 `]` · 생선 `w` · 고기 `]`, the trash `w`, the sink `r`),
  * the counter at y 7 with an 8-tile pass round the rack and two gaps, and a hall of 20 tables (4 rows × 5, 4–28 tiles from the pass).
@@ -418,33 +457,16 @@ const DIN_MAP = (() => {
 const COOP = {
   apt: {
     name: "동동아파트 청소", npc: "dongdong", lobby: "dongdong_apt", mins: 5, tools: ["broom", "bin"], combo: 20000, skill: "deliver",
-    // cut-offs: par · parN[n] · cuts, tuned on quick walking bots (an act every 300 ms; owner, 2026-11-15: hard, piles flood in): ≈ 2,345 · 4,993 ·
-    // 7,300, just over S; realistic ones (every 400 ms) ≈ 1,809 · 4,004 · 6,711, A (tests/coop.mjs)
-    par: 1000, parN: { 2: 2.49, 3: 5.3, 4: 7.9 },
-    hint: "빗자루로 쓸고, 쓰레기통으로 모아 소각로(서쪽 끝)·재활용함(동쪽 끝)에 버리세요.",
-    // stations (tiles; solid furniture, used from a neighbouring tile): 소각로 `<` at the corridor's west end, 재활용함 `w`
-    // at its east end (44 tiles apart, so the bins really walk), the tool rack `>` in the middle
-    st: { burn: [1, 9], recycle: [43, 9], rack: [22, 9] },
-    start: [[21, 8], [23, 8], [21, 10], [23, 10]],
-    // eight flats (spawn rooms, tile rects): four north of the corridor (y 8–10), four south, a 2-tile door each
-    rooms: [[1, 1, 10, 6], [12, 1, 21, 6], [23, 1, 32, 6], [34, 1, 43, 6], [1, 12, 10, 17], [12, 12, 21, 17], [23, 12, 32, 17], [34, 12, 43, 17]],
-    tpl: {
-      name: "동동아파트 (근무 중)", theme: "interior", style: "lobby", bgm: "clean", safe: true, w: 45, h: 19, entry: [22, 8],
-      ground: ["fffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff",
-        "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff",
-        "fffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffff", "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf",
-        "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf", "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf", "fffffffffffffffffffffffffffffffffffffffffffff",
-        "fffffffffffffffffffffffffffffffffffffffffffff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff",
-        "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "fffffffffffffffffffffffffffffffffffffffffffff",
-        "fffffffffffffffffffffffffffffffffffffffffffff"],
-      objects: ["===+==~===+==~===+==~===+==~===+==~===+==~===", "=pp      r b r      ppbpp      r b r      pp_", "=          b          b          b          _",
-        "=    o     b     o    b    o     b     o    _", "=          b          b          b          _", "=      s   b   s      b      s   b   s      _",
-        "=         gbg         b         gbg         _", "=mmmm  mmmmmmmmm  mmmmmmmmm  mmmmmmmmm  mmmm_", "=                                           _",
-        "=<                    >                    w_", "=                                           _", "=mmmm  mmmmmmmmm  mmmmmmmmm  mmmmmmmmm  mmmm_",
-        "=g         b         gbg         b         g_", "=   s      b      s   b   s      b      s   _", "=          b          b          b          _",
-        "=     o    b    o     b     o    b    o     _", "=          b          b          b          _", "= r      ppbpp      r b r      ppbpp      r _",
-        "_____________________________________________"],
-    },
+    // the score is the 청소율 in ‰ (1000 = spotless), so the cut-offs are shares of it: par 1000 · parN[n] · cuts, tuned on walking
+    // bots (tests/coop.mjs, owner 2026-11-15: hard, mess keeps coming): quick bots (an act every 300 ms) 604 · 650 · 766 ‰, just over S
+    // (581 · 625 · 739); realistic ones (every 400 ms, walking at 90 %) 448 · 473 · 520, B
+    par: 1000, parN: { 2: 0.66, 3: 0.71, 4: 0.84 },
+    hint: "빗자루로 먼지를 쓸어 모으면, 쓰레기통 담당이 주워 담아 뒷마당(아랫동 동쪽 끝 뒷문)의 버리는 곳에 버려요. 청소율을 최대한 올리세요!",
+    // stations (tiles; solid furniture, used from a neighbouring tile): the dumpster in the back yard, the tool rack in the stairwell
+    st: { dump: APT.dump, rack: APT.rack },
+    start: [[28, 14], [29, 14], [28, 16], [29, 16]],
+    rooms: APT_MAP.rooms,
+    tpl: { name: "동동아파트 (근무 중)", theme: "interior", style: "lobby", bgm: "clean", safe: true, w: APT.W, h: APT.H, entry: [28, 15], ground: APT_MAP.ground, objects: APT_MAP.objects },
   },
   diner: {
     name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan", "tray"], combo: 25000, skill: "cook",
@@ -624,11 +646,17 @@ const COOP_DINER = {
   burnMs: 8000, burnPen: 5, angryPen: 15, eatMs: 6000, washN: 3, washPts: 5, trayCap: 2, passCap: 6, serveK: 0.5, cookK: 0.5,
 };
 /**
- * 동동아파트 청소 (C.4, without pests and dust in v1): piles, bundles, the two-person sofa, the mess meter. By the party
- * size n at the start: an opening spread of `open[0] + open[1]·n` piles over the flats, a new pile every `pileMs[n]`,
- * at most `pileCap[0] + pileCap[1]·n` piles at once, the mess cap `messCap[0] + messCap[1]·n`.
+ * 동동아파트 청소 v3 (owner, 2026-11-15: "한명은 빗자루, 다른 한명은 쓰레기통 … 아파트 공간을 최대한 많이 치워야함 (%로 표시) …
+ * 쓰레기통은 일정량 채우면 꽉 차므로, 중간중간 버리는장소로 가서 비워줘야함"). Every floor tile of the flats, corridors and stairwell
+ * starts dirty: dust (1) below `dirt[0]`, litter (2) below `dirt[1]`, else clean. A broom act takes `sweepN` units off the 3×3
+ * round its worker into the nearest pile within `pileR` px with room (up to `pileMax` units), else a new one; a bin holds `binCap` 칸 of
+ * `binUnit` units each (a pile too big for the room left is taken in part) and only emptying it at the dumpster
+ * takes the dirt away. 청소율 = 1 − (dirt + piles + bins) / the opening dirt. New mess by the party size n: `dustN` tiles every
+ * `dustMs[n]` (dust drifting) and a resident's `litterN`-tile mess every `litterMs[n]` (×feverK faster in fever); the sofa
+ * (`sofaUnits`, two lift it `sofaHp` times) breaks into `sofaPiles` piles. The bin holder gets `holdK` of a load's credit.
  */
 const COOP_APT = {
-  open: [3, 3], pileMs: { 2: 3800, 3: 2800, 4: 2200 }, pileHp: 3, pileCap: [8, 6], spreadMs: 40000, binCap: 5, bundlePts: 10, recycleK: 1.5, holdK: 0.6,
-  sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaBundles: 3, complainMs: 10000, complainPen: 20, messCap: [16, 8],
+  dirt: [0.62, 0.86], sweepN: 5, pileMax: 40, pileR: 48, binCap: 10, binUnit: 40, holdK: 0.6,
+  dustMs: { 2: 6000, 3: 4500, 4: 3500 }, dustN: 2, litterMs: { 2: 15000, 3: 11000, 4: 8500 }, litterN: 6, feverK: 1.5,
+  sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaUnits: 12, sofaPiles: 3,
 };
