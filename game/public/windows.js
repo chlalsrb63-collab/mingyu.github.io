@@ -24,6 +24,7 @@ import { stoneNear } from "./actions.js";
 import { wpWoke } from "./overlay.js";
 import { refreshUi } from "./hud.js";
 import { tutTry } from "./win_world.js";
+import { K } from "./keymap.js";
 import * as Info from "./infocard.js";
 import { renderParty, renderGuild } from "./win_social.js";
 
@@ -470,6 +471,17 @@ export function addChat(m, cls, name) {
   return p;
 }
 const CHAT_HINT = { all: "Enter 채팅 · /p 파티 · /g 길드", party: "Enter 로 파티 채팅", guild: "Enter 로 길드 채팅", sys: "Enter 로 채팅" };
+/** The chat box's grey hint: the open tab's, led by the 답장 key once someone has whispered to me. */
+export function chatHint() {
+  const input = $("#chat-in"), base = CHAT_HINT[chatLog.dataset.tab] || CHAT_HINT.all, who = G.lastWhisper;
+  input.placeholder = who ? `${K("reply")} → ${who}에게 답장 · ${base}` : base;
+  input.title = `Enter 로 채팅 · /p 파티 · /g 길드 · /w 이름 귓속말 · ${K("reply")} 마지막 귓속말에 답장 · Shift+클릭(가방) 아이템 링크`;
+}
+/** The 답장 key (keymap `reply`, WoW's R): the chat box opens as `/w <who whispered last> `. */
+export function replyWhisper() {
+  if (!G.lastWhisper) { toast("답할 귓속말이 없습니다"); return; }
+  chatTo(`/w ${G.lastWhisper} `);
+}
 /** Put a line in the chat box ready to finish (the friend list's 귓속말 button, a click on a whisper). */
 export function chatTo(prefix) {
   const input = $("#chat-in");
@@ -576,7 +588,7 @@ export function setupWindows({ walkToDoor }) {
     b.addEventListener("click", () => {
       for (const o of $$("#chat-tabs button")) o.classList.toggle("on", o === b);
       chatLog.dataset.tab = b.dataset.tab;
-      $("#chat-in").placeholder = CHAT_HINT[b.dataset.tab];
+      chatHint();
       chatLog.scrollTop = chatLog.scrollHeight;
       Sound.play("ui");
     });
@@ -592,6 +604,8 @@ export function setupWindows({ walkToDoor }) {
     input.value = "";
     input.blur();
   });
+  chatHint();
+  $("#chat-in").addEventListener("blur", chatHint);   // (a key rebound in the settings shows here next time)
   // ↑ / ↓ in the chat box: the last 20 lines sent (a /w 이름 or a long party call, again)
   const sent = [];
   let back = 0;

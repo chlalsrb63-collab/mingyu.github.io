@@ -31,7 +31,7 @@ import { G, el, $, resize, $$, tg, text, now, T } from "./state.js";
 import { JOB_ALIAS, onEvent, onGain } from "./events.js";
 import { countItem, usePotion, castSkill } from "./actions.js";
 import { snd } from "./update.js";
-import { addChat, chatTo, hoverTip, toast, showTip, hideTip, touch, closeWin, banner, isOpen, saveOpen, restoreOpen } from "./windows.js";
+import { addChat, chatTo, chatHint, hoverTip, toast, showTip, hideTip, touch, closeWin, banner, isOpen, saveOpen, restoreOpen } from "./windows.js";
 import { itemSlot, isGear, sellPrice, useSlot } from "./items.js";
 import { section, refreshUi, resetPurse, hudBars } from "./hud.js";
 import { openStats, openTree } from "./win_char.js";
@@ -205,7 +205,7 @@ function loadMap(m) {
 function whisperLine(c) {
   const p = addChat(c.m, "whisper", c.w === 1 ? `[귓속말] ${c.n}` : `[귓속말 → ${c.n}]`);
   p.addEventListener("click", () => chatTo(`/w ${c.n} `));
-  if (c.w === 1) { G.lastWhisper = c.n; Sound.play("ui"); }
+  if (c.w === 1) { G.lastWhisper = c.n; Sound.play("ui"); chatHint(); }
 }
 function onSnap(s) {
   const t = now();
