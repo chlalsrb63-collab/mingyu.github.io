@@ -14,6 +14,7 @@
 import * as S3 from "./scene2d.js";
 import * as SP from "./sprites.js";
 import { Sound } from "./audio.js";
+import { HAMMER_IMPACT } from "./swing.js";
 
 const P = 2;                       // world unit → world pixel, as in scene2d (flat effects are drawn in these)
 /** Server units → iso pixels, lifted `up` pixels: where things in the air are drawn. */
@@ -331,27 +332,43 @@ const follow = new Map();
 function propBeat(G, B, f, e) {
   const [, id, x, y, extra] = e, o = placed.get(id);
   if (!o) return;
+  const canHear = o.eid === G.you || skillNear(G, x, y);
+  const play = (key) => { if (canHear) Sound.play(key); };
   switch (o.kind) {
-    case "grav": f.ring(x, y, o.r * 0.5, "#c8a0ff", 300); f.sparkle(x, y, 0.3, "#8a5ad8", 4); Sound.play("gravity_tick"); break;
+    case "grav": f.ring(x, y, o.r * 0.5, "#c8a0ff", 300); f.sparkle(x, y, 0.3, "#8a5ad8", 4); play("gravity_tick"); break;
     case "phantom": {
       const pr = S3.props.get("pr" + id);
       if (pr) { pr.tx = x; pr.ty = y; pr.bite = now() + 220; }
       const m = G.mobs.get(extra);
       if (m) { f.slash(m.x, m.y, Math.atan2(m.y - y, m.x - x), "#8a5ad8", 0.9); f.slash(m.x, m.y, Math.atan2(m.y - y, m.x - x) + 0.6, "#ff5a8a", 0.7, true); }
-      Sound.play("phantom_bite");
+      play("phantom_bite");
       break;
     }
     case "pillar": {
       const last = extra === 1;
       B.fx.zap(x + rand(-10, 10), y + rand(-6, 6), "#bfe8ff", 260);
-      if (last) { B.fx.zap(x, y, "#ffffff", 360); B.fx.ring(x, y, o.r, "#9fdcff", 360, true); f.crack(x, y, o.r * 0.6, "#bfe8ff", 600); B.shake(9); Sound.play("dragon_final"); }
-      else Sound.play("bolt");
+      if (last) { B.fx.zap(x, y, "#ffffff", 360); B.fx.ring(x, y, o.r, "#9fdcff", 360, true); f.crack(x, y, o.r * 0.6, "#bfe8ff", 600); B.shake(9); play("dragon_final"); }
+      else play("bolt");
       break;
     }
     case "meteor": {
-      // a stone out of the sky, then the crater
-      f.fall(x, y, "#ff8a3a", 300);
-      setTimeout(() => { B.fx.ring(x, y, 30, "#ff8a3a", 300, true); f.crack(x, y, 22, "#ff7a3a", 600); f.burst(x, y, 0.3, "#ffd84a", 22, 3); B.shake(6); Sound.play("meteor_hit"); }, 300);
+      // The server applies each meteor strike with this pulse. Show the crater and the falling trail together.
+      const r = G.defs?.skills?.meteor?.hr || 30, flat = S3.fx;
+      const [sx, sy] = at(x, y);
+      S3.fxCustom((g, k) => {
+        const h = Math.round(72 * (1 - k)), w = Math.ceil(7 * (1 - k));
+        for (let j = 0; j < h; j += 3) {
+          const offset = -Math.floor(j / 7), width = Math.max(1, w - (j >> 4));
+          px(g, sx + offset - width, sy - j - 2, width * 2, 3, j < 24 ? "#ffaf64" : "#ad543a");
+          if (k < 0.42) px(g, sx + offset, sy - j - 2, 2, 3, "#fff2cc");
+        }
+      }, 145);
+      flat.flash(x, y, 13, 0, 0.12);
+      flat.wave(x, y, r, "#ffad56", 260);
+      flat.crack(x, y, r * 0.78, "#b35b42", 400);
+      shards(x, y, r, 7, 23, "#b65b39", "#ffcf7a", 270);
+      if (canHear) B.shake(4);
+      play("meteor_hit");
       break;
     }
     case "storm": B.fx.zap(x + rand(-o.r, o.r) * 0.7, y + rand(-o.r, o.r) * 0.5, "#bfe8ff", 220); break;
@@ -360,15 +377,15 @@ function propBeat(G, B, f, e) {
       const el = extra >= 1 && extra <= 3 ? extra : 1, col = ELEM_COL[el];
       o.el = el; o.beatNew = true;
       S3.fx.wave(x, y, o.r, col, 340); S3.fx.wave(x, y, o.r * 0.6, "#ffffff", 260, 40);
-      if (el === 1) { for (let i = 0; i < 5; i++) { const a = rand(0, 6.28), d = rand(0.2, 0.8) * o.r; f.burst(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, 0.1, i % 2 ? "#ffd84a" : "#ff8a3a", 4, 1.6); } Sound.play("ember"); }
-      else if (el === 2) { for (let i = 0; i < 6; i++) { const a = rand(0, 6.28), d = rand(0.2, 0.85) * o.r; f.sparkle(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, 0.2, i % 2 ? "#e8f8ff" : "#9fe8ff", 3); } Sound.play("frost"); }
-      else { for (let i = 0; i < 2; i++) { const a = rand(0, 6.28), d = rand(0.25, 0.75) * o.r; S3.fx.zap(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, "#fff27a", 200, i * 70); } Sound.play("bolt"); }
+      if (el === 1) { for (let i = 0; i < 5; i++) { const a = rand(0, 6.28), d = rand(0.2, 0.8) * o.r; f.burst(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, 0.1, i % 2 ? "#ffd84a" : "#ff8a3a", 4, 1.6); } play("ember"); }
+      else if (el === 2) { for (let i = 0; i < 6; i++) { const a = rand(0, 6.28), d = rand(0.2, 0.85) * o.r; f.sparkle(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, 0.2, i % 2 ? "#e8f8ff" : "#9fe8ff", 3); } play("frost"); }
+      else { for (let i = 0; i < 2; i++) { const a = rand(0, 6.28), d = rand(0.25, 0.75) * o.r; S3.fx.zap(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, "#fff27a", 200, i * 70); } play("bolt"); }
       break;
     }
     case "burst": {
       B.fx.ring(x, y, o.r, "#c8324a", 380, true);
       for (let i = 0; i < 10; i++) { const a = (i / 10) * 6.28; f.burst(x + Math.cos(a) * o.r * 0.5, y + Math.sin(a) * o.r * 0.5, 0.3, "#c8324a", 6, 2.4); }
-      B.shake(9); Sound.play("blood_burst");
+      B.shake(9); play("blood_burst");
       break;
     }
   }
@@ -470,20 +487,27 @@ const PASSIVE = new Set([110, 111, 113, 114, 115]);
 
 /** Dust and a stepped crack on the ground mark the server's exact circle. */
 export function hammerImpact(x, y, r, hit, crit, kind) {
-  const final = kind === 132;
-  const f = S3.fx, col = crit ? "#ffdc75" : final ? "#f3a567" : hit ? "#e4be83" : "#a98c6d";
+  const stamp = kind === 130, fault = kind === 131, final = kind === 132;
+  const f = S3.fx;
+  const col = crit ? "#ffdc75" : final ? "#f3a567" : fault ? "#ffc05c" : stamp ? "#c9e6e5" : hit ? "#e4be83" : "#a98c6d";
+  const edge = fault ? "#a65a30" : stamp ? "#678d94" : "#a96945";
   const [cx, cy] = at(x, y);
   f.wave(x, y, r, col, final ? 310 : 220);
-  if (kind === 7) rim(x, y, r, "#8d7159", col, 160, 0.1);
+  rim(x, y, r, kind === 7 ? "#8d7159" : edge, col, kind === 7 ? 160 : 270, 0.1);
   f.burst(x, y, 0.08, col, final ? 19 : hit ? 10 : 5, final ? 2.1 : 1.2);
   if (!hit) return;
-  if (kind !== 7) {
-    rim(x, y, r, "#a96945", "#ffe7a5", final ? 350 : 240);
-    shards(x, y, r, final ? 10 : 6, final ? 29 : 13, "#ae623d", col, final ? 380 : 248, 22);
+  if (stamp) {
+    f.flash(x, y, 10, 0, 0.12);
+    shards(x, y, r * 0.6, 5, 22, edge, "#dff7f4", 240, 12);
+  } else if (fault || final) {
+    f.crack(x, y, r * 0.78, final ? "#f58859" : "#e3a24d", final ? 570 : 420);
+    rim(x, y, r * 0.72, edge, "#ffe7a5", 300, 0.53);
+    shards(x, y, r, final ? 10 : 7, final ? 29 : 16, edge, col, final ? 380 : 264, 22);
+    if (final) f.flash(x, y, 16, 0, 0.18);
   }
   if (crit || kind !== 7) f.spark(x, y, col, final ? 1.65 : 0.95);
   // Draw native pixels on the projected plane so the branches fade without a blurred edge.
-  const arms = final ? 8 : 5, shift = ((Math.round(x) + Math.round(y)) % 7) * Math.PI / 7;
+  const arms = final ? 8 : fault ? 7 : stamp ? 3 : 5, shift = ((Math.round(x) + Math.round(y)) % 7) * Math.PI / 7;
   S3.fxCustom((g, k) => {
     if (k < 0.055) {
       for (let row = -2; row <= 2; row++) {
@@ -545,8 +569,11 @@ export function skillEvent(e, ctx) {
     case "hm": {
       const [, eid, x, y, r, hit, crit, kind] = e;
       hammerImpact(x, y, r, hit, crit, kind);
-      if (eid === G.you || Math.hypot(x - G.me.x, y - G.me.y) < 180) Sound.play("hammer_land", { hit, crit, final: kind === 132 });
-      if (eid === G.you && hit && kind === 132) S3.shake(4.5);
+      if (eid === G.you || skillNear(G, x, y)) Sound.play("hammer_land", { kind, hit, crit, final: kind === 132 });
+      if (eid === G.you && hit) {
+        const strength = kind === 132 ? 4.5 : crit ? 3.3 : kind === 131 ? 2.5 : kind === 130 ? 2 : 1.5;
+        S3.shake(strength, Math.atan2(y - G.me.y, x - G.me.x));
+      }
       return true;
     }
     case "a": {
@@ -556,19 +583,34 @@ export function skillEvent(e, ctx) {
       const src = entityPos(eid);
       if (!src) return true;
       if (kind === 133 || kind === 134) {
-        const ward = kind === 134, color = ward ? "#ffe3a0" : "#9ce6d8", y = ty + 6;
+        const ward = kind === 134, color = ward ? "#ffe3a0" : "#9ce6d8", y = ty + 6, dir = e[5];
         const radius = e[7] || (ward ? 34 : 23), flat = S3.fx;
-        src.atkT = t; src.atkN = 0;
+        const line = ward ? null : lineOf(9);
+        const dash = line && Math.hypot(line.bx - tx, line.by - y) < 2 ? line : null;
+        const aim = dash && (dash.ax !== dash.bx || dash.ay !== dash.by) ? Math.atan2(dash.by - dash.ay, dash.bx - dash.ax)
+          : [Math.PI / 2, Math.PI, 0, -Math.PI / 2][dir] || 0;
+        const ux = Math.cos(aim), uy = Math.sin(aim);
+        const wk = G.who?.get(eid)?.gear?.wk || (eid === G.you ? G.self?.wk : "");
+        src.dir = dir; src.aim = [tx + 30 * ux, y + 30 * uy];
+        src.atkN = wk === "hammer" ? 0 : 2;
+        src.hammerWind = HAMMER_IMPACT; src.hammerYaw = aim;
+        src.atkT = t - (wk ? S3.impactMs(wk, src.atkN) : HAMMER_IMPACT);
+        G.hitFrom = dash ? [dash.ax, dash.ay] : [tx, y];
+        const near = eid === G.you || skillNear(G, tx, y);
         flat.wave(tx, y, radius, color, 320);
         flat.flash(tx, y, 8, 0, 0.15);
         if (ward) {
+          rim(tx, y, radius, "#bd9157", color, 330, 0.36);
           oathSeal(tx, y, G.defs?.skills?.oathward?.healR || 70);
-          Sound.play("sanctuary");
+          if (near) Sound.play("oath_cast");
         } else {
+          if (dash) {
+            const half = (G.defs?.skills?.ironsiege?.half || 11) * 0.76;
+            for (const side of [-half, half]) flat.beam(dash.ax - uy * side, dash.ay + ux * side, tx - uy * side, y + ux * side, color, 0.24);
+          }
           rim(tx, y, radius, "#46948d", color, 275);
           shards(tx, y, radius, 7, 20, "#458878", color, 295, 16);
-          if (eid === G.you) S3.shake(4);
-          Sound.play("hammer_land", { hit: 1, final: true });
+          if (near) { S3.shake(eid === G.you ? 4 : 2, aim); Sound.play("merc_dash"); }
         }
         return true;
       }
@@ -742,6 +784,7 @@ export function skillEvent(e, ctx) {
   return false;
 }
 const dist2 = (a, x, y) => (a.x - x) ** 2 + (a.y - y) ** 2;
+const skillNear = (G, x, y) => !!G.me && dist2(G.me, x, y) < 180 ** 2;
 
 // ── the bow's shot: client.js attackFx calls bowFire for fx code 6 (the "a" event of a bow's basic
 // attack); the bow skills call it too. The arrow itself comes on its own ("ar", above): it is held on
@@ -897,8 +940,10 @@ export function bowFire(G, src, beat = 0, up = false) {
   src.bowUp = !!up;
   bowShots.push({ eid, x: src.x, y: src.y, t, at: t + left, wt: (w && w.gear && w.gear.wt) || 1 });
   if (bowShots.length > 24) bowShots.shift();
-  Sound.play("bow_draw");
-  setTimeout(() => Sound.play("bow_shot", beat === 2 || up), left);
+  if (src === G.me || skillNear(G, src.x, src.y)) {
+    Sound.play("bow_draw");
+    setTimeout(() => Sound.play("bow_shot", beat === 2 || up), left);
+  }
 }
 
 /** A passive showing itself where it happened: no swing, a sign and a small sound. */
@@ -918,16 +963,20 @@ function cast(kind, src, eid, tx, ty, extra, G) {
   const ang = Math.hypot(tx - src.x, ty - src.y) > 2 ? Math.atan2(ty - src.y, tx - src.x) : [Math.PI / 2, Math.PI, 0, -Math.PI / 2][src.dir] || 0;
   // scaled-up effects, and a shake that kicks along the skill's aim
   const B = S3.big(ang), f = B.fx, mine = eid === G.you;
+  const near = mine || skillNear(G, src.x, src.y) || skillNear(G, tx, ty);
+  const play = (key) => { if (near) Sound.play(key); };
   switch (kind) {
     // ── 스태프
     case 70: {
-      f.proj(src.x, src.y, 1.1, tx, ty, 0.4, "#ff8a3a", 0.12, 15, () => {
-        S3.fx.flash(tx, ty, 9);
-        rim(tx, ty, 26, "#c55337", "#ffd58e", 305, 0.56);
-        shards(tx, ty, 26, 8, 24, "#e97b32", "#ffdc7f", 330, 12);
-        f.burst(tx, ty, 0.25, "#d67b49", 7, 1.2);
-        B.shake(3); Sound.play("boom");
-      }); Sound.play("ember"); break;
+      const flat = S3.fx, r = G.defs?.skills?.fireball?.r || 30;
+      f.beam(src.x, src.y, tx, ty, "#ee8c58", 0.72);
+      flat.flash(tx, ty, 10, 0, 0.18);
+      flat.wave(tx, ty, r, "#ffc377", 240);
+      rim(tx, ty, r, "#c55337", "#ffd58e", 285, 0.55);
+      shards(tx, ty, r * 0.88, 7, 21, "#e97b32", "#ffdc7f", 285, 12);
+      f.burst(tx, ty, 0.25, "#d67b49", 7, 1.2);
+      if (near) B.shake(3);
+      play("ember"); play("boom"); break;
     }
     case 71: {
       const r = extra || 56;
@@ -935,54 +984,54 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       S3.fx.wave(src.x, src.y, r, "#d4f9ff", 360);
       rim(src.x, src.y, r, "#6caddd", "#d5f8ff", 415, 0.57);
       shards(src.x, src.y, r * 0.88, 12, 18, "#549acc", "#d5f8ff", 360, 30);
-      B.shake(4); Sound.play("frost"); break;
+      B.shake(4); play("frost"); break;
     }
-    case 90: f.sparkle(src.x, src.y, 1.2, "#ff8a3a", 18); f.ring(tx, ty, extra || 80, "#ff5a3a", 500); if (mine) text(G, "메테오 스톰!", src.x, src.y, 2.2, "#ffb04a", true); Sound.play("meteor_cast"); break;
+    case 90: f.sparkle(src.x, src.y, 1.2, "#ff8a3a", 18); f.ring(tx, ty, extra || 80, "#ff5a3a", 500); if (mine) text(G, "메테오 스톰!", src.x, src.y, 2.2, "#ffb04a", true); play("meteor_cast"); break;
     // ── 대검
     case 80: {
       // a wide crescent of steel thrown off the swing, and everything in it reels
       const r = extra || 46;
       swordCrescent(src.x, src.y, ang, r);
       shards(tx, ty, r * 0.32, 5, 12, "#739aca", "#deefff", 240, 96);
-      B.shake(6); Sound.play("power_slash");
+      B.shake(6); play("power_slash");
       break;
     }
-    case 81: f.ring(tx, ty, extra || 38, "#e0c890", 360, true); f.crack(tx, ty, (extra || 38) * 0.7, "#ffd84a", 600); f.burst(tx, ty, 0.1, "#b8a878", 22, 2.6); B.shake(8); Sound.play("slam"); break;
+    case 81: f.ring(tx, ty, extra || 38, "#e0c890", 360, true); f.crack(tx, ty, (extra || 38) * 0.7, "#ffd84a", 600); f.burst(tx, ty, 0.1, "#b8a878", 22, 2.6); B.shake(8); play("slam"); break;
     case 82: {
       // the split running on ahead: bursts of earth one after another
       along(src.x, src.y, tx, ty, 14).forEach(([x, y], i) => { f.ring(x, y, 10, "#e0c890", 220, true, i * 35); setTimeout(() => f.burst(x, y, 0.05, "#a89068", 6, 1.8), i * 35); });
-      Sound.play("quake");
+      play("quake");
       break;
     }
     case 83: {
       f.storm(src.x, src.y, extra || 70, "#ffd84a", 360, 6); f.slash(src.x, src.y, ang, "#ff5a3a", 2); f.slash(src.x, src.y, ang + Math.PI, "#ff5a3a", 2, true);
-      B.shake(12); Sound.play("verdict");
+      B.shake(12); play("verdict");
       if (mine) text(G, "단죄의 일격!", src.x, src.y, 2.3, "#ffb04a", true);
       break;
     }
     // ── 단검
-    case 84: f.slash(tx, ty, ang, "#c890ff", 1.1); f.spark(tx, ty, "#f0d0ff", 1.3); B.shake(4); Sound.play("swap"); break;
-    case 85: f.burst(src.x, src.y, 0.6, "#3a2a58", 10, 1.4); Sound.play("shade"); break;
+    case 84: f.slash(tx, ty, ang, "#c890ff", 1.1); f.spark(tx, ty, "#f0d0ff", 1.3); B.shake(4); play("swap"); break;
+    case 85: f.burst(src.x, src.y, 0.6, "#3a2a58", 10, 1.4); play("shade"); break;
     case 86:
-      if (extra === 1) { f.slash(tx, ty, ang + 0.8, "#c070ff", 1.1); f.slash(tx, ty, ang - 0.8, "#c070ff", 1.1, true); f.spark(tx, ty, "#f0d0ff", 1.5); B.shake(3); Sound.play("crit"); }
-      else { f.burst(src.x, src.y, 0.6, "#2a2040", 30, 1.8); f.storm(src.x, src.y, 24, "#a070e0", 300, 3); Sound.play("dance"); if (mine) text(G, "무영난무!", src.x, src.y, 2.2, "#d8b0ff", true); }
+      if (extra === 1) { f.slash(tx, ty, ang + 0.8, "#c070ff", 1.1); f.slash(tx, ty, ang - 0.8, "#c070ff", 1.1, true); f.spark(tx, ty, "#f0d0ff", 1.5); B.shake(3); play("crit"); }
+      else { f.burst(src.x, src.y, 0.6, "#2a2040", 30, 1.8); f.storm(src.x, src.y, 24, "#a070e0", 300, 3); play("dance"); if (mine) text(G, "무영난무!", src.x, src.y, 2.2, "#d8b0ff", true); }
       break;
     // ── 창
     case 87: {
       // the twist: a white-hot line with a spiral of the spear's green wound round it
       f.beam(src.x, src.y, tx, ty, "#ffffff", 0.55);
       along(src.x, src.y, tx, ty, 10).forEach(([x, y], i) => { const a = i * 1.3, o = 3; f.sparkle(x - Math.sin(ang) * Math.cos(a) * o, y + Math.cos(ang) * Math.cos(a) * o, 0.55, i % 2 ? "#5ad0b8" : "#c8fff0", 2); });
-      f.spark(tx, ty, "#c8fff0", 1.3); B.shake(5); Sound.play("spiral");
+      f.spark(tx, ty, "#c8fff0", 1.3); B.shake(5); play("spiral");
       break;
     }
-    case 88: f.ring(src.x, src.y, 26, "#5ad0b8", 360, true); f.burst(src.x, src.y, 0.2, "#c8fff0", 20, 2.4); B.shake(8); Sound.play("hundred"); break;
+    case 88: f.ring(src.x, src.y, 26, "#5ad0b8", 360, true); f.burst(src.x, src.y, 0.2, "#c8fff0", 20, 2.4); B.shake(8); play("hundred"); break;
     case 89: {
       const r = extra || 64;
       S3.fx.zap(tx, ty, "#b6e6ff", 240);
       rim(tx, ty, r, "#649add", "#d2f7ff", 500, 0.72);
       rim(tx, ty, r * 0.61, "#7063b5", "#a1bfff", 340, 0.4);
       shards(tx, ty, r * 0.7, 8, 28, "#5e77d6", "#bae8ff", 325, 27);
-      B.shake(6); Sound.play("dragon"); if (mine) text(G, "뇌룡승천!", src.x, src.y, 2.2, "#bfe8ff", true); break;
+      B.shake(6); play("dragon"); if (mine) text(G, "뇌룡승천!", src.x, src.y, 2.2, "#bfe8ff", true); break;
     }
     // ── 마도서
     case 91: {
@@ -994,15 +1043,15 @@ function cast(kind, src, eid, tx, ty, extra, G) {
         rim(tx, ty, 16, "#936bc4", "#dabaff", 260, 0.6);
         shards(tx, ty, 15, 5, 12, "#8256a9", "#dba7fa", 235);
       });
-      S3.fx.sparkle(src.x, src.y, 0.8, "#ae78db", 6); Sound.play("soulbolt");
+      S3.fx.sparkle(src.x, src.y, 0.8, "#ae78db", 6); play("soulbolt");
       break;
     }
-    case 92: f.ring(tx, ty, extra || 60, "#8a5ad8", 420, true); f.burst(tx, ty, 0.3, "#3a2a58", 24, 2); B.shake(4); Sound.play("gravity"); break;
-    case 93: f.sparkle(src.x, src.y, 1, "#8a5ad8", 20); Sound.play("pact"); if (mine) text(G, "심연의 계약", src.x, src.y, 2.2, "#c8a0ff", true); break;
+    case 92: f.ring(tx, ty, extra || 60, "#8a5ad8", 420, true); f.burst(tx, ty, 0.3, "#3a2a58", 24, 2); B.shake(4); play("gravity"); break;
+    case 93: f.sparkle(src.x, src.y, 1, "#8a5ad8", 20); play("pact"); if (mine) text(G, "심연의 계약", src.x, src.y, 2.2, "#c8a0ff", true); break;
     // ── 활 (the pose and the twang: bowFire; the arrows come as "ar")
-    case 94: SkillFx_bow(G, src, false); f.flash(src.x, src.y, 10); Sound.play("pierce"); break;
-    case 95: SkillFx_bow(G, src, false); f.burst(src.x, src.y, 0.1, "#b8a878", 14, 1.8); Sound.play("leapshot"); break;
-    case 96: SkillFx_bow(G, src, true); f.sparkle(src.x, src.y, 1.4, "#fff4dc", 10); Sound.play("rain"); if (mine) text(G, "화살비!", src.x, src.y, 2.2, "#ffe9a0", true); break;
+    case 94: SkillFx_bow(G, src, false); f.flash(src.x, src.y, 10); play("pierce"); break;
+    case 95: SkillFx_bow(G, src, false); f.burst(src.x, src.y, 0.1, "#b8a878", 14, 1.8); play("leapshot"); break;
+    case 96: SkillFx_bow(G, src, true); f.sparkle(src.x, src.y, 1.4, "#fff4dc", 10); play("rain"); if (mine) text(G, "화살비!", src.x, src.y, 2.2, "#ffe9a0", true); break;
     // ── hybrid signatures
     case 97: {
       // a crescent of fire flying the length of the line
@@ -1014,25 +1063,25 @@ function cast(kind, src, eid, tx, ty, extra, G) {
           px(g, x + Math.cos(a) * r - 1, y + Math.sin(a) * r * 0.8 - 1, 3, 3, Math.abs(i) < 3 ? "#ffffff" : i % 2 ? "#ff5a3a" : "#ffd84a");
         }
       }, Math.max(160, Math.hypot(tx - ax, ty - ay) * 2));
-      f.beam(ax, ay, tx, ty, "#ff8a3a", 0.6); B.shake(8); Sound.play("crimson");
+      f.beam(ax, ay, tx, ty, "#ff8a3a", 0.6); B.shake(8); play("crimson");
       if (mine) text(G, "홍련참!", src.x, src.y, 2.2, "#ff8a5a", true);
       break;
     }
-    case 98: f.burst(tx, ty, 0.6, "#2a2040", 30, 1.6); f.ring(tx, ty, 45, "#8a5ad8", 400); Sound.play("decoy"); break;
-    case 99: f.fall(tx, ty, "#c8a0ff", 260); B.shake(10); Sound.play("dive"); if (mine) text(G, "심연의 강림!", src.x, src.y, 2.3, "#e0c8ff", true); break;
-    case 100: f.ring(src.x, src.y, extra || 100, "#c8324a", 400); f.sparkle(src.x, src.y, 0.8, "#ff3a5a", 16); Sound.play("blood_bind"); break;
-    case 101: f.zap(tx, ty, "#fff27a", 300); f.ring(tx, ty, 40, "#bfe8ff", 360, true); B.shake(9); Sound.play("thunder"); if (mine) text(G, "천뢰!", src.x, src.y, 2.2, "#fff27a", true); break;
+    case 98: f.burst(tx, ty, 0.6, "#2a2040", 30, 1.6); f.ring(tx, ty, 45, "#8a5ad8", 400); play("decoy"); break;
+    case 99: f.fall(tx, ty, "#c8a0ff", 260); B.shake(10); play("dive"); if (mine) text(G, "심연의 강림!", src.x, src.y, 2.3, "#e0c8ff", true); break;
+    case 100: f.ring(src.x, src.y, extra || 100, "#c8324a", 400); f.sparkle(src.x, src.y, 0.8, "#ff3a5a", 16); play("blood_bind"); break;
+    case 101: f.zap(tx, ty, "#fff27a", 300); f.ring(tx, ty, 40, "#bfe8ff", 360, true); B.shake(9); play("thunder"); if (mine) text(G, "천뢰!", src.x, src.y, 2.2, "#fff27a", true); break;
     // ── the hybrid expansion (docs/design/jobs-and-stats.md H.4)
     case 120: {
       // 십자 난도: the great blade's crescent across everything ahead, then a dagger's X on each one it swept
       const r = extra || 64;
       f.slash(src.x, src.y, ang, "#e8f0ff", 2.1); f.slash(src.x, src.y, ang, "#9fb8ff", 1.6, true);
       for (let i = -2; i <= 2; i++) { const a = ang + i * 0.36; f.spark(src.x + Math.cos(a) * r * 0.86, src.y + Math.sin(a) * r * 0.86, "#ffffff", 0.7); }
-      B.shake(9); Sound.play("power_slash");
+      B.shake(9); play("cross_cut");
       const swept = [...G.mobs.values()].filter((m) => !m.dead && Math.hypot(m.x - src.x, m.y - src.y) <= r + 8 && Math.cos(Math.atan2(m.y - src.y, m.x - src.x) - ang) > 0.5).slice(0, 8);
       later(170, () => {
         for (const m of swept) { f.slash(m.x, m.y, ang + 0.8, "#c890ff", 0.6); f.slash(m.x, m.y, ang - 0.8, "#f0d0ff", 0.6, true); S3.fx.spark(m.x, m.y, "#f0d0ff", 1.2); }
-        if (swept.length) { B.shake(4); Sound.play("crit"); }
+        if (swept.length) B.shake(4);
       });
       if (mine) text(G, "십자 난도!", src.x, src.y, 2.2, "#d8c8ff", true);
       break;
@@ -1046,7 +1095,7 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       f.slash(tx, ty, a, "#ffd84a", 1.7); f.slash(tx, ty, a + Math.PI, "#e8f0ff", 1.3, true);
       for (let i = 0; i < 10; i++) { const q = (i / 10) * 6.28; S3.fx.sparkle(tx + Math.cos(q) * r * 0.86, ty + Math.sin(q) * r * 0.86, 0.2, i % 2 ? "#5ad0b8" : "#c8fff0", 2); }
       S3.fx.ring(tx, ty, r * 0.86, "#5ad0b8", 320, false, 60);
-      B.shake(11, a); Sound.play("verdict");
+      B.shake(11, a); play("verdict");
       if (mine) text(G, "파진돌격!", tx, ty, 2.3, "#ffd84a", true);
       break;
     }
@@ -1065,7 +1114,7 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       f.beam(ax, ay, tx, ty, "#ffe9a0", 0.5);
       along(ax, ay, tx, ty, 24).forEach(([x, y], i, all) => later((i / all.length) * ms, () => S3.fx.sparkle(x, y, 0.5, i % 2 ? "#ffffff" : "#ffd84a", 2)));
       qi.at = now(); qi.ms = ms;
-      f.flash(src.x, src.y, 12); B.shake(7); Sound.play("pierce"); Sound.play("power_slash");
+      f.flash(src.x, src.y, 12); B.shake(7); play("pierce"); play("power_slash");
       if (mine) text(G, "검기 화살!", src.x, src.y, 2.2, "#ffe9a0", true);
       break;
     }
@@ -1084,7 +1133,7 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       }, 420);
       along(ax, ay, tx, ty, 26).forEach(([x, y], i) => { f.burst(x, y, 0.5, i % 2 ? "#3a2a58" : "#6a4a9a", 4, 0.9); });
       f.burst(tx, ty, 0.5, "#a070e0", 10, 1.8); S3.fx.spark(tx + Math.cos(a) * 10, ty + Math.sin(a) * 10, "#f0d0ff", 1.2);
-      B.shake(7, a); Sound.play("shade"); Sound.play("spiral");
+      B.shake(7, a); play("shade"); play("spiral");
       if (mine) text(G, "그림자 관통!", tx, ty, 2.2, "#d8b0ff", true);
       break;
     }
@@ -1093,7 +1142,7 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       fan.n = 3; fan.at = now();
       [1, 2, 3].forEach((el, j) => { const a = ang + (j - 1) * 0.32; S3.fx.spark(src.x + Math.cos(a) * 12, src.y + Math.sin(a) * 12, ELEM_COL[el], 0.8); });
       f.slash(src.x, src.y, ang, "#f0d0ff", 0.9);
-      B.shake(5); Sound.play("shade"); Sound.play("swap");
+      B.shake(5); play("element_dagger");
       if (mine) text(G, "원소 비수!", src.x, src.y, 2.2, "#f0d0ff", true);
       break;
     }
@@ -1103,16 +1152,16 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       along(src.x, src.y, tx, ty, 12).forEach(([x, y], i) => f.sparkle(x, y, 0.5, i % 2 ? "#e8f8ff" : "#9fe8ff", 2));
       f.ring(tx, ty, 44, "#9fe8ff", 380, true); f.burst(tx, ty, 0.3, "#e8f8ff", 16, 2.6);
       iceSpire(tx, ty);
-      B.shake(8); Sound.play("spiral"); Sound.play("frost");
+      B.shake(8); play("frost_lance");
       if (mine) text(G, "빙결창!", src.x, src.y, 2.2, "#bfe8ff", true);
       break;
     }
-    case 126: f.sparkle(src.x, src.y, 1, "#c8a0ff", 14); f.ring(tx, ty, extra || 64, "#c8a0ff", 420, true); f.burst(tx, ty, 0.2, "#8a5ad8", 16, 2); B.shake(4); Sound.play("pact"); if (mine) text(G, "메아리 법진", src.x, src.y, 2.2, "#e0c8ff", true); break;
+    case 126: f.sparkle(src.x, src.y, 1, "#c8a0ff", 14); f.ring(tx, ty, extra || 64, "#c8a0ff", 420, true); f.burst(tx, ty, 0.2, "#8a5ad8", 16, 2); B.shake(4); play("rune_circle"); if (mine) text(G, "메아리 법진", src.x, src.y, 2.2, "#e0c8ff", true); break;
     case 127: {
       // 삼원소 화살: the three arrows come as "ar" kinds 4–6; here the string's glow in all three
       SkillFx_bow(G, src, false);
       [1, 2, 3].forEach((el, j) => S3.fx.sparkle(src.x + Math.cos(ang + (j - 1) * 0.5) * 8, src.y + Math.sin(ang + (j - 1) * 0.5) * 8, 0.8, ELEM_COL[el], 5));
-      f.flash(src.x, src.y, 12); B.shake(5); Sound.play("pierce"); Sound.play("ember");
+      f.flash(src.x, src.y, 12); B.shake(5); play("pierce"); play("ember");
       if (mine) text(G, "삼원소 화살!", src.x, src.y, 2.2, "#fff4dc", true);
       break;
     }
@@ -1121,11 +1170,11 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       SkillFx_bow(G, src, false);
       f.burst(src.x, src.y, 0.6, "#2a2040", 14, 1.8); S3.fx.sparkle(src.x, src.y, 0.9, "#b46aff", 8);
       S3.fx.ring(src.x, src.y, 16, "#b46aff", 280);
-      B.shake(5); Sound.play("leapshot"); Sound.play("brand");
+      B.shake(5); play("inkshot");
       if (mine) text(G, "룬 먹화살!", src.x, src.y, 2.2, "#d8a8ff", true);
       break;
     }
-    case 102: f.ring(src.x, src.y, extra || 90, "#c8324a", 500, true); f.sparkle(src.x, src.y, 1, "#ff6a8a", 20); B.shake(5); Sound.play("sanctuary"); if (mine) text(G, "불멸의 성역", src.x, src.y, 2.2, "#ff8a9a", true); break;
+    case 102: f.ring(src.x, src.y, extra || 90, "#c8324a", 500, true); f.sparkle(src.x, src.y, 1, "#ff6a8a", 20); B.shake(5); play("sanctuary"); if (mine) text(G, "불멸의 성역", src.x, src.y, 2.2, "#ff8a9a", true); break;
   }
 }
 /** 빙결창's ice: three crystals shooting up out of the ground at (wx, wy), standing a moment, blinking out as they break. */

@@ -26,6 +26,8 @@ import { entityPos } from "./net.js";
 import { addChat, banner, chatLog } from "./windows.js";
 import { fadeIn } from "./win_world.js";
 
+const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3 }; // h[6], on selected impacts or healing spells
+
 const MOB_COL = { twinhare: "#a83848", gutfrog: "#7a9a4a", eyecrow: "#5c3c6c", splitboar: "#a83848", ribdeer: "#e0d8c8", hydrasnake: "#5a8a4a", mothface: "#b8a890", ratking: "#c87a8a", bonehound: "#a83848", batcluster: "#5c3c6c", pigeonmass: "#7a8aa0", doghead: "#7a5a48", catsplit: "#a83848", fishwalker: "#8ab0c0", leechmaw: "#b4cc3c", gatorhalf: "#5a7a4a", eelknot: "#4a5a6a", spiderhand: "#e0d8c8", bearmaw: "#a83848", owlstare: "#7a5a48", twingoat: "#e0d8c8", horsehalf: "#a83848", serpentwing: "#b4cc3c", boss: "#e050b8", abyssboss: "#b4cc3c", chest_meadow: "#f0c040", chest_forest: "#f0c040", chest_city: "#f0c040", chest_cave: "#f0c040", chest_crypt: "#f0c040", chest_sewer: "#f0c040", chest_abyss: "#f0c040" , lambmaw: "#a83848", foxtwine: "#c8643c", toadbrood: "#7a8a4a", squidrat: "#8a6a7a", crabskull: "#c85a3a", moleworm: "#5a566a", lionhand: "#b8905a", sowseer: "#d8a0a8", twinhare_bone: "#e0d8c8", gutfrog_poison: "#8ad84a", ratking_bile: "#b4cc3c", splitboar_frost: "#8ad8ff", hydrasnake_steel: "#a8b4c8", bonehound_ash: "#5a5a66", batcluster_blood: "#b02838", doghead_fire: "#ff8a3a" };
 export const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * G.defs.eliteHp[m.el | 0]);
 export const RANK_NAME = ["", "정예 ", "우두머리 "];
@@ -93,13 +95,21 @@ export function onEvent(e, t) {
       break;
     }
     case "h": {
-      const [, id, dmg, crit, isPlayer, cost] = e;
+      const [, id, dmg, crit, isPlayer, cost, cue] = e;
       const tgt = entityPos(id);
       if (!tgt) break;
       const h = heightOf(tgt);
       if (cost) { floatText(`−${dmg}`, tgt.x, tgt.y, h + 0.25, "#e89970"); break; }
-      if (dmg < 0) floatText(`+${-dmg}`, tgt.x, tgt.y, h + 0.3, "#8cff8c");
-      else {
+      if (dmg < 0) {
+        floatText(`+${-dmg}`, tgt.x, tgt.y, h + 0.3, "#8cff8c");
+        if (cue === HIT_CUE.oath || cue === HIT_CUE.sanctuary) {
+          const oath = cue === HIT_CUE.oath, color = oath ? "#a8f6cd" : "#e99bba";
+          S3.fx.wave(tgt.x, tgt.y, oath ? 15 : 10, color, 350);
+          S3.fx.burst(tgt.x, tgt.y, 0.3, color, oath ? 7 : 4, 1.1);
+          if (id === G.you) Sound.play(oath ? "oath_heal" : "heal");
+        }
+      } else {
+        const hammer = cue === HIT_CUE.hammer; // the accompanying hm event plays the one landing cue
         floatText(crit ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit, true);
         tgt.hurtT = t; tgt.hsMs = 0;
         let wk;   // my own weapon kind, when it is my blow: the impact sound follows the weapon
@@ -118,12 +128,12 @@ export function onEvent(e, t) {
             wk = G.self?.wk;
             if (!G.me.hs || t > G.me.hs.at + G.me.hs.dur) G.me.hs = { at: t, dur: stop };
             tgt.hsMs = stop;
-            if (heavy) S3.shake(5, tgt.hurtA); else S3.shake(1.5);
-            if (heavy) { G.punch = 1; Sound.play(fin ? "finisher" : "crit", wk); }
+            if (!hammer) S3.shake(heavy ? 5 : 1.5, heavy ? tgt.hurtA : undefined);
+            if (heavy) { G.punch = 1; if (!hammer) Sound.play(fin ? "finisher" : "crit", wk); }
           }
         }
         if (id === G.you) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
-        else if (!isPlayer) Sound.play(crit ? "crit" : "hit", wk);
+        else if (!isPlayer && !hammer) Sound.play(crit ? "crit" : "hit", wk);
         S3.fx.burst(tgt.x, tgt.y, h * 0.55, isPlayer ? "#ff7a7a" : "#ffffff", crit ? 14 : 8, crit ? 2.6 : 2);
       }
       break;

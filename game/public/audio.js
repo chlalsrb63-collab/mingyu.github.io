@@ -679,7 +679,10 @@ const IMPACT0 = [300, 112, 2300, 1600];
 const IMPACT = { sword: [330, 118, 2500, 1900], dagger: [420, 130, 3300, 2600], spear: [360, 112, 2100, 1700], hammer: [220, 82, 0, 900], staff: [260, 96, 0, 1200], book: [280, 100, 0, 1300] };
 
 /** Minimum seconds between two plays of the same effect. */
-const THROTTLE = { gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.035, magic_hit: 0.04, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
+const THROTTLE = { gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.035, magic_hit: 0.04, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5,
+  hammer_land: 0.065, merc_dash: 0.1, oath_cast: 0.15, oath_heal: 0.28,
+  cross_cut: 0.1, element_dagger: 0.12, frost_lance: 0.12, rune_circle: 0.18, inkshot: 0.12,
+};
 /** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
 const BOOST = {
   swing: 3, swing_sword: 3, swing_dagger: 3, swing_spear: 3, swing_staff: 2, swing_book: 2.2, shoot: 1.6, magic: 1.5,
@@ -691,7 +694,7 @@ const BOOST = {
   drip: 1.6, reel: 1.8, slack: 1.6, sizzle: 1.4, pan_place: 1.8, pan_turn: 1.6, pan_bump: 1.6,
 };
 /** Effects that play even when many voices are already sounding. */
-const IMPORTANT = new Set(["verdict", "steam", "overload", "supercon", "dragon_final", "meteor_cast", "crimson", "dive", "thunder", "sanctuary", "pact", "hundred", "level", "achieve", "death", "rift_start", "rift_boss", "rc_ping", "dim_boss", "dim_clear", "announce", "enh_ok", "enh_fail", "warp", "loot"]);
+const IMPORTANT = new Set(["verdict", "steam", "overload", "supercon", "dragon_final", "meteor_cast", "crimson", "dive", "thunder", "sanctuary", "pact", "hundred", "oath_cast", "level", "achieve", "death", "rift_start", "rift_boss", "rc_ping", "dim_boss", "dim_clear", "announce", "enh_ok", "enh_fail", "warp", "loot"]);
 
 /** The catalogue. `this` is Sound. */
 const SFX = {
@@ -705,11 +708,29 @@ const SFX = {
   swing_dagger() { const p = this.vary(); this.noise(0.05, 0.2, 2800 * p, "bandpass", 0, 5600 * p); this.tone(0.5, 900 * p, 300 * p, 0.03, 0.03); },
   swing_spear(fin) { const p = this.vary(); this.noise(fin ? 0.12 : 0.09, 0.22, 1000 * p, "bandpass", 0, 3600 * p); this.tone("triangle", 300 * p, 560 * p, 0.06, 0.05); this.tone("sine", 120 * p, 70 * p, 0.08, 0.06); },
   swing_hammer() { const p = this.vary(); this.noise(0.055, 0.10, 780 * p, "bandpass", 0, 1350 * p); this.tone("triangle", 185 * p, 118 * p, 0.05, 0.043); },
-  hammer_land({ hit, crit, final } = {}) {
+  hammer_land({ hit, crit, kind = 7, final } = {}) {
     const p = this.vary();
-    if (!hit) { this.noise(0.065, 0.079, 710 * p, "bandpass"); this.tone("sine", 86 * p, 64 * p, 0.065, 0.074); return; }
-    this.punch(p, crit ? 315 : 265, final ? 89 : 107, crit ? 1650 : 1170, final || crit ? 0.95 : 0.67);
-    this.noise(0.082, 0.075, 940 * p, "lowpass", 0.014);
+    if (final) kind = 132;
+    const strength = crit ? 0.91 : 0.7;
+    if (kind === 130) { // A pointed wedge rings briefly as it bites.
+      if (hit) this.punch(p, 360, 121, 2120, strength);
+      this.noise(0.048, hit ? 0.09 : 0.07, 2480 * p, "bandpass", 0.01, 690 * p);
+      this.tone("triangle", 540 * p, 265 * p, 0.064, hit ? 0.08 : 0.04);
+    } else if (kind === 131) { // Stone splits after the initial strike.
+      if (hit) this.punch(p, 270, 103, 990, strength);
+      this.noise(0.12, hit ? 0.095 : 0.06, 1780 * p, "bandpass", 0.035, 480 * p);
+      this.noise(0.085, 0.05, 810 * p, "lowpass", 0.09);
+      this.tone("triangle", 170 * p, 87 * p, 0.13, 0.063, 0.05);
+    } else if (kind === 132) { // The ram lands, then the ground answers.
+      if (hit) this.punch(p, 300, 90, 1530, crit ? 0.98 : 0.87);
+      this.tone("sine", 94 * p, 44 * p, 0.23, hit ? 0.13 : 0.085, 0.035);
+      this.noise(0.22, hit ? 0.13 : 0.075, 1400 * p, "lowpass", 0.055, 180 * p);
+      this.tone("triangle", 220 * p, 92 * p, 0.1, 0.064, 0.11);
+    } else { // The ordinary hammer has a single short knock.
+      if (hit) this.punch(p, crit ? 315 : 245, 105, crit ? 1500 : 1020, strength);
+      this.noise(0.065, 0.065, 710 * p, "bandpass");
+      if (!hit) this.tone("sine", 86 * p, 64 * p, 0.065, 0.074);
+    }
   },
   swing_staff() { this.tone("sine", 420, 760, 0.18, 0.1); this.tone("triangle", 630, 1140, 0.16, 0.05, 0.02); this.noise(0.12, 0.06, 3000, "highpass"); },
   swing_book() { this.noise(0.08, 0.12, 2400, "bandpass", 0, 1200); this.noise(0.06, 0.1, 3000, "bandpass", 0.07, 1600); this.tone("sine", 880, 1320, 0.14, 0.06, 0.04); },
@@ -769,6 +790,57 @@ const SFX = {
   blood_burst() { this.noise(0.3, 0.32, 900, "lowpass", 0, 120); this.tone("square", 220, 55, 0.25, 0.14); this.noise(0.15, 0.12, 2200, "bandpass", 0.05); },
   thunder() { this.noise(0.15, 0.3, 3000, "highpass"); this.tone("square", 1600, 120, 0.25, 0.1); this.noise(0.6, 0.24, 700, "lowpass", 0.1, 60); },
   sanctuary() { this.tone("sawtooth", 82, 82, 0.9, 0.1); this.arp("triangle", [196, 247, 294, 392], 0.08, 0.5, 0.06, 0.05); this.noise(0.8, 0.08, 900, "bandpass", 0, 300); },
+  // Hybrid signatures: give the swing, cast or movement one voice of its own.
+  merc_dash() {
+    const p = this.vary();
+    this.noise(0.145, 0.16, 660 * p, "bandpass", 0, 2900 * p);
+    this.tone("triangle", 156 * p, 264 * p, 0.11, 0.07);
+    this.tone("sine", 1450 * p, 1130 * p, 0.065, 0.064, 0.055);
+    this.noise(0.05, 0.073, 1320 * p, "bandpass", 0.097, 530 * p);
+  },
+  oath_cast() {
+    this.tone("sine", 262, 262, 0.4, 0.08);
+    this.arp("triangle", [392, 523, 659, 784], 0.043, 0.23, 0.067, 0.02);
+    this.tone("sine", 1047, 1047, 0.31, 0.05, 0.13);
+  },
+  oath_heal() {
+    this.arp("sine", [784, 1047], 0.056, 0.15, 0.049);
+    this.tone("triangle", 1568, 1568, 0.13, 0.021, 0.06);
+  },
+  cross_cut() {
+    const p = this.vary();
+    this.noise(0.115, 0.18, 740 * p, "bandpass", 0, 3360 * p);
+    this.tone("triangle", 215 * p, 98 * p, 0.11, 0.12);
+    this.noise(0.055, 0.115, 4900 * p, "bandpass", 0.14, 2350 * p);
+    this.tone("sine", 1830 * p, 1310 * p, 0.085, 0.062, 0.158);
+  },
+  element_dagger() {
+    const p = this.vary();
+    this.noise(0.07, 0.105, 900 * p, "bandpass", 0, 3100 * p);
+    this.tone("triangle", 410 * p, 620 * p, 0.081, 0.075);
+    this.tone("sine", 1780 * p, 1350 * p, 0.095, 0.071, 0.047);
+    this.noise(0.063, 0.086, 5600 * p, "highpass", 0.088);
+    this.tone("square", 940 * p, 310 * p, 0.06, 0.029, 0.092);
+  },
+  frost_lance() {
+    const p = this.vary();
+    this.noise(0.093, 0.13, 1200 * p, "bandpass", 0, 5600 * p);
+    this.tone("triangle", 380 * p, 1060 * p, 0.078, 0.064);
+    this.arp("sine", [1790 * p, 2260 * p, 2820 * p], 0.029, 0.13, 0.065, 0.075);
+    this.noise(0.11, 0.069, 4900 * p, "highpass", 0.105);
+  },
+  rune_circle() {
+    this.tone("triangle", 175, 350, 0.35, 0.09);
+    this.arp("sine", [349, 523, 698, 587], 0.072, 0.28, 0.068, 0.024);
+    this.tone("sine", 1047, 1047, 0.23, 0.044, 0.24);
+  },
+  inkshot() {
+    const p = this.vary();
+    this.noise(0.115, 0.106, 900 * p, "bandpass", 0, 290 * p);
+    this.tone(0.25, 480 * p, 168 * p, 0.147, 0.088);
+    this.tone("sine", 196 * p, 102 * p, 0.165, 0.086, 0.028);
+    this.noise(0.054, 0.063, 2700 * p, "bandpass", 0.088, 680 * p);
+  },
   quake() { this.tone("sine", 70, 40, 0.18, 0.28); this.noise(0.12, 0.12, 400, "lowpass"); },
   swap() { this.tone("sine", 900, 300, 0.12, 0.1); this.tone("sine", 300, 900, 0.12, 0.08, 0.1); this.noise(0.12, 0.08, 3000, "highpass"); },
   decoy() { this.noise(0.4, 0.12, 2000, "bandpass", 0, 500); this.tone("sine", 700, 350, 0.3, 0.05); },
@@ -788,7 +860,12 @@ const SFX = {
   hit(wk) { const p = this.vary(), [d, th, m, cr] = IMPACT[wk] || IMPACT0; this.punch(p, d, th, m, 1); this.tone("sine", 64 * p, 40 * p, 0.13, 0.2); this.noise(0.045, 0.15, cr * p, "bandpass"); },
   // a crit: higher, harder and louder — a deeper boom, a sharp snap on top, the glint
   crit(wk) { const p = this.vary(), [d, th, m, cr] = IMPACT[wk] || IMPACT0; this.punch(p, d * 1.9, th * 1.2, m ? m * 1.15 : 2900, 1.3); this.tone("sine", 58 * p, 32 * p, 0.2, 0.3); this.noise(0.018, 0.32, 6500 * p, "highpass"); this.noise(0.1, 0.22, cr * 0.8 * p, "bandpass"); this.tone("sine", 1400 * p, 1100 * p, 0.08, 0.06, 0.02); },
-  finisher() { const p = this.vary(); this.punch(p, 260, 95, 1700, 1.25); this.noise(0.2, 0.28, 2400 * p, "lowpass", 0, 200); this.tone("sine", 85 * p, 40 * p, 0.28, 0.26); },
+  finisher(wk) {
+    const p = this.vary(), [drop, thud, metal, crack] = IMPACT[wk] || IMPACT0;
+    this.punch(p, drop * 0.88, thud * 0.85, metal * 0.74, 1.15);
+    this.noise(0.2, 0.22, crack * 1.3 * p, "lowpass", 0, 200);
+    this.tone("sine", thud * 0.75 * p, 40 * p, 0.25, 0.2);
+  },
   hurt() { this.tone("sawtooth", 190, 70, 0.16, 0.17); this.noise(0.08, 0.1, 900, "bandpass"); },
   // ── monsters ──
   die() { this.tone(0.5, 300, 60, 0.22, 0.12); },

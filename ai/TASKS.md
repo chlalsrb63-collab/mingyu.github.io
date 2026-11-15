@@ -33,6 +33,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 
 ## CODEX (구현 · 테스트)
 
+- [x] 직업 스킬 33개 연출·효과음 연결 검수, 해머와 복합 직업 기술의 연출·소리 및 아이콘 보강. [스킬 인계](reports/codex-job-skill-feel.md)
 - [x] 지역 몬스터 6종과 월요일 06:00에 교대하는 주간 보스 6종 적용. [몬스터·보스 인계](reports/codex-region-beasts-refresh.md)
 - [x] 제미나이 실외·실내 BGM과 균열 테마별 재생 연결. [BGM 인계](reports/codex-recorded-map-bgm.md)
 - [x] 양손해머의 머리 위 내려찍기, 월드 스프라이트 크기 및 원형 타격 범위 확대.

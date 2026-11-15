@@ -41,13 +41,14 @@ function hammerTick(S, p, now) {
   const m = mapOfS(S, p.map), rt = S.maps[p.map], st = stats(p);
   const distance = (mob) => dist(x, y, mob.x, mob.y);
   const targets = rt.mobs.filter(mob => {
-    if (mob.dead || distance(mob) > move.r || (mob.x - ox) * ux + (mob.y - oy) * uy < 0) return false;
+    if (mob.dead || mob.dive || distance(mob) > move.r || (mob.x - ox) * ux + (mob.y - oy) * uy < 0) return false;
     const d = dist(ox, oy, mob.x, mob.y);
     return d === 0 || hammerLine(m, ox, oy, (mob.x - ox) / d, (mob.y - oy) / d, d) >= d;
   }).sort((a, b) => distance(a) - distance(b) || a.id - b.id).slice(0, 3);
   const primary = targets[0];
   let critical = false;
   if (primary) {
+    const hitOpts = { sk: skill, cue: HIT_CUE.hammer };
     let mult = move.mult;
     const mark = cracks?.get(primary);
     const rupture = move.crackMult && mark?.n === SKILL.hammer_crack.max;
@@ -55,14 +56,14 @@ function hammerTick(S, p, now) {
       cracks.delete(primary);
       mult *= move.crackMult * (pasOn(p, "hammer_heart") ? SKILL.hammer_heart.bonus : 1);
     }
-    critical = hurtMob(S, rt, primary, p, mult * power, false, skill ? { sk: skill } : null) === true;
+    critical = hurtMob(S, rt, primary, p, mult * power, false, hitOpts) === true;
     if (rupture && move.hpRefund) healP(rt, p, Math.floor(hpSpent * move.hpRefund));
     if (!skill && !primary.dead && !MOBS[primary.k].chest && pasOn(p, "hammer_crack")) {
       const ms = pasOn(p, "hammer_hold") ? SKILL.hammer_hold.ms : SKILL.hammer_crack.ms;
       (p.hammerCracks ||= new Map()).set(primary, { n: Math.min(SKILL.hammer_crack.max, (mark?.n || 0) + 1), until: now + ms });
     }
     for (const target of targets.slice(1)) {
-      hurtMob(S, rt, target, p, (move.splashMult ?? move.mult * 0.45) * power, false, skill ? { sk: skill } : null);
+      hurtMob(S, rt, target, p, (move.splashMult ?? move.mult * 0.45) * power, false, hitOpts);
     }
     for (const target of targets) if (move.stun && !target.dead && !MOBS[target.k].boss && !MOBS[target.k].still && target.el !== 2) {
       holdMob(S, target, move.stun * (target.el ? STAGGER.elite : 1));

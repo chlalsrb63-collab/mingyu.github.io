@@ -128,12 +128,14 @@ function dealt(p, mobs, fn) {
   return after - before;
 }
 /** Give `p` back `n` HP (a heal number over them). */
-function healP(rt, p, n) {
+function healP(rt, p, n, cue) {
   if (p.dead) return 0;
   const amt = Math.min(stats(p).mhp - p.hp, Math.round(n));
   if (amt < 1) return 0;
   p.hp += amt;
-  rt.ev.push(["h", p.eid, -amt, 0, 1]);
+  const event = ["h", p.eid, -amt, 0, 1];
+  if (cue) event.push(0, cue);
+  rt.ev.push(event);
   return amt;
 }
 
@@ -269,7 +271,7 @@ function propPulse(S, rt, m, p, o, now) {
       const list = mobsWithin(rt, o.x, o.y, o.r);
       const got = list.length ? dealt(p, list, () => { for (const mob of list) hit(mob, o.mult); }) : 0;
       const low = inside.sort((a, b) => a.hp / stats(a).mhp - b.hp / stats(b).mhp)[0];
-      if (low && got > 0) healP(rt, low, got * 0.5);
+      if (low && got > 0) healP(rt, low, got * 0.5, HIT_CUE.sanctuary);
       return false;
     }
   }
@@ -419,7 +421,7 @@ function castSkill(S, p, id) {
   p.mp -= cost;
   const hpSpent = sk.hpPct ? hammerHpCost(p, sk) : 0;
   if (hpSpent) { p.hp -= hpSpent; rt.ev.push(["h", p.eid, hpSpent, 0, 1, 1]); }
-  if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1]); } }
+  if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1, 1]); } }
   // WIS shortens every wait; an echo (legendary) may give it straight back
   p.cds[id] = now + skCooldown(p, sk);
   if (st.lg.echo && rnd(S) < 0.2 * st.proc) { p.cds[id] = now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
@@ -455,7 +457,7 @@ function castSkill(S, p, id) {
       }
       const healed = [];
       for (const ally of members(S, p)) if (ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= sk.healR) {
-        const restored = healP(rt, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal);
+        const restored = healP(rt, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal, HIT_CUE.oath);
         if (restored && ally !== p) healed.push(ally.pid);
       }
       if (healed.length) p.oathSupport = { until: now + sk.creditMs, party: p.party, map: p.map, healed };

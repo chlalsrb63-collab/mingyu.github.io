@@ -230,8 +230,11 @@ function gainXp(S, p, n) {
   p.dirty = true;
 }
 
+// Optional presentation tag at h[6]. h[5] is reserved for HP costs.
+const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3 };
+
 /** Take `dmg` off a monster on behalf of `p`; true if that killed it. */
-function dealMob(S, rt, mob, p, dmg, crit) {
+function dealMob(S, rt, mob, p, dmg, crit, cue) {
   // a boss that dived out of reach is not hit at all (56-boss-script.js)
   if (mob.dead || mob.dive) return false;
   // a scripted boss stunned by a broken cast takes more (its script's vuln), half behind its shielding adds
@@ -244,7 +247,9 @@ function dealMob(S, rt, mob, p, dmg, crit) {
   if (mob.cast) bsDealt(S, rt, mob, dmg);      // a scripted boss's stagger gauge (56-boss-script.js)
   if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
   if (!mob.tgt) mob.tgt = p.pid;
-  rt.ev.push(["h", mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0]);
+  const event = ["h", mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0];
+  if (cue) event.push(0, cue);
+  rt.ev.push(event);
   if (mob.hp > 0) return false;
   killMob(S, rt, mob);
   return true;
@@ -335,7 +340,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)));
   const x = mob.x, y = mob.y;
   wmHit(S, p, mob);
-  if (!dealMob(S, rt, mob, p, dmg, graze ? 2 : crit)) {
+  if (!dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue)) {
     // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
     if (!mob.dead) stagger(S, mob, p, crit);
     return crit;

@@ -73,6 +73,7 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
     advance(1);
     assert.deepEqual(impact().slice(2, 6), [ox + center, oy, radius, 1]);
     assert.ok(first.hp < hp);
+    assert.equal(rt.ev.filter(e => e[0] === "h" && e[2] > 0 && !e[4] && e[6] === 3).length, 3, "all three hammer impacts carry the single-landing sound tag");
     // Incidental knockback must not move the next cast's fixture.
     for (const o of [first, second, edge, extra, behind, out]) { o.x = o.hx; o.y = o.hy; }
   }
@@ -153,6 +154,18 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
     edge.respAt = outside.respAt = Infinity;
   }
   p.x = ox; p.y = oy;
+}
+
+{
+  const submerged = m(center, 0);
+  submerged.dive = true;
+  ready();
+  assert.ok(actions(p, atk).ok);
+  advance(wind);
+  assert.equal(dmg(submerged), 0);
+  assert.equal(impact()[5], 0, "an unreachable target cannot trigger the landed-hit cue");
+  submerged.dead = true;
+  submerged.respAt = Infinity;
 }
 
 {
@@ -271,8 +284,11 @@ for (const duo of [false, true]) {
   far.x = paladin.x + oath.healR + 1; far.y = paladin.y;
   ready(paladin);
   for (const o of [paladin, merc, nearby, far, p]) o.hp = 5;
+  L.endTick(S);
   assert.ok(actions(paladin, { t: "sk", id: "oathward", a: 0 }).ok);
   for (const o of [paladin, merc, nearby]) assert.equal(o.hp, 5 + heal(o));
+  assert.deepEqual(rt.ev.filter(e => e[0] === "h" && e[2] < 0 && e[6] === 1).map(e => e[1]).sort(),
+    [paladin.eid, merc.eid, nearby.eid].sort(), "only recipients who recover HP get the oath cue");
   assert.equal(far.hp, 5, "a distant party member is outside the healing radius");
   assert.equal(p.hp, 5, "an outsider is never healed");
   const stay = { x: ox, y: oy };

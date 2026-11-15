@@ -1,18 +1,24 @@
-<!doctype html><meta charset="utf-8"><body style="margin:0;background:#15161c"><canvas id="c"></canvas><pre id="o" style="color:#f88"></pre>
+<!doctype html><meta charset="utf-8"><link rel="icon" href="data:,"><body style="margin:0;background:#15161c"><canvas id="c"></canvas><pre id="o" style="color:#f88"></pre>
 <script type="module">
 import * as I from "./skillicons.js";
 const cv = document.getElementById("c"), g = cv.getContext("2d");
-const z = 8, W = 16 * z + 24;
-cv.width = 8 * W; cv.height = 3 * W + 80;
+const selection = new URLSearchParams(location.search).get("ids");
+const requested = selection === null ? I.ALL : [...new Set(selection.split(",").map(id => id.trim()).filter(Boolean))];
+const ids = requested.filter(id => I.ALL.includes(id)), unknown = requested.filter(id => !I.ALL.includes(id));
+const W = 132, H = 124;
+const cols = Math.max(1, Math.min(8, Math.floor(innerWidth / W), ids.length));
+cv.width = cols * W; cv.height = Math.max(1, Math.ceil(ids.length / cols)) * H;
 g.imageSmoothingEnabled = false;
 g.fillStyle = "#15161c"; g.fillRect(0, 0, cv.width, cv.height);
-I.ALL.forEach((id, i) => {
-  const x = (i % 8) * W + 12, y = Math.floor(i / 8) * W + 12;
-  g.fillStyle = "#23252e"; g.fillRect(x - 6, y - 6, 16 * z + 12, 16 * z + 12);
-  g.drawImage(I.skillIcon(id), x, y, 16 * z, 16 * z);
+g.font = "11px monospace"; g.textAlign = "center";
+ids.forEach((id, i) => {
+  const x = (i % cols) * W, y = Math.floor(i / cols) * H, icon = I.skillIcon(id);
+  g.fillStyle = "#23252e"; g.fillRect(x + 4, y + 4, W - 8, H - 8);
+  g.drawImage(icon, x + 10, y + 10, 80, 80);
+  g.drawImage(icon, x + 93, y + 20, 32, 32);
+  g.drawImage(icon, x + 101, y + 62, 16, 16);
+  g.fillStyle = "#e6e0d0"; g.fillText(id, x + W / 2, y + 110);
 });
-// the same icons at the size they are used
-I.ALL.forEach((id, i) => { g.fillStyle = "#23252e"; g.beginPath(); g.arc(30 + i * 52, 3 * W + 40, 22, 0, 7); g.fill(); g.drawImage(I.skillIcon(id), 30 + i * 52 - 16, 3 * W + 24, 32, 32); });
-document.getElementById("o").textContent = I.badRows().join(" ");
+document.getElementById("o").textContent = [...unknown.map(id => `없는 아이콘 ${id}`), ...I.badRows()].join("\n");
 document.title = "ready";
 </script>

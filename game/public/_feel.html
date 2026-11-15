@@ -1,4 +1,4 @@
-<!doctype html><meta charset="utf-8">
+<!doctype html><meta charset="utf-8"><link rel="icon" href="data:,">
 <body style="margin:0;background:#101426;overflow:hidden"><canvas id="c" style="image-rendering:pixelated;display:block"></canvas>
 <canvas id="out" style="position:fixed;left:0;top:0;image-rendering:pixelated"></canvas>
 <script type="module">
@@ -29,6 +29,7 @@ const rows = (q.get("rows") || "slam,bolt,nova,hit,crit,walk,dash").split(",");
 const out = document.getElementById("out");
 out.width = n * cw * Z + 60; out.height = rows.length * ch * Z;
 const o = out.getContext("2d"); o.imageSmoothingEnabled = false;
+o.fillStyle = "#101426"; o.fillRect(0, 0, out.width, out.height);
 let t = 50000;
 const frame = (dt = 0.016) => S.render(me.x, me.y, dt, t, true);
 const setup = {
@@ -40,11 +41,12 @@ const setup = {
   walk() { me.moving = true; me.v = 48; },
   dash() { me.moving = true; me.v = 110; },
 };
-const previewWeapons = { 70: "staff", 71: "staff", 80: "sword", 89: "spear", 91: "book", 130: "hammer", 131: "hammer", 132: "hammer", 133: "spear", 134: "hammer" };
+const previewWeapons = { 70: "staff", 71: "staff", 80: "sword", 89: "spear", 91: "book", 120: "dagger", 124: "dagger", 125: "spear", 126: "book", 128: "bow", 130: "hammer", 131: "hammer", 132: "hammer", 133: "spear", 134: "hammer" };
+const hammerRadii = { 130: 28, 131: 31, 132: 36 };
 for (let r = 0; r < rows.length; r++) {
   const row = rows[r];
   const codeOfRow = Number(row.match(/^sk(\d+)/)?.[1]);
-  G.who.get(1).gear.wk = q.get("wk") || previewWeapons[codeOfRow] || "sword";
+  G.who.get(1).gear.wk = q.get("wk") || previewWeapons[codeOfRow] || (row === "pr:meteor" ? "staff" : "sword");
   S.fx.clear(); G.mobs.clear(); me.moving = false; me.aim = null; me.atkT = -1e9; me.hs = null; me.x = fx * 16 + 8; me.y = fy * 16 + 8; me.v = 0;
   for (let i = 0; i < 30; i++) { t += 16; frame(); }
   if (setup[row]) setup[row]();
@@ -58,7 +60,10 @@ for (let r = 0; r < rows.length; r++) {
     const ev = (...e) => SkillFx.skillEvent(e, ctx), rad = (d) => (d * Math.PI) / 180;
     if (code === 120) for (const [i, dx, dy] of [[2, 44, -18], [3, 30, 26]]) G.mobs.set(i, { ...mob, id: i, x: me.x + dx, y: me.y + dy });
     if (code >= 130 && code <= 132) {
-      ev("hm", 1, mob.x, mob.y, extra || 21, 1, +(code === 132), code);
+      ev("hm", 1, mob.x, mob.y, extra || hammerRadii[code], 1, +(code === 132), code);
+    } else if (code === 133) {
+      ev("ln", 9, me.x - 64, me.y, me.x, me.y);
+      ev("a", 1, code, me.x, me.y - 6, 2, 2, 34);
     } else if (code === 134) {
       ev("a", 1, code, me.x, me.y - 6, 2, 2, 34);
     } else if (code === 121 || code === 123) {

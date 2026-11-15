@@ -2,10 +2,12 @@
 // fx code, the gating, the six passives, the job and hybrid signatures, the bar, the wire.   node tests/skills.mjs
 import assert from "node:assert/strict";
 import * as L from "../src/logic.js";
+import { ALL as SKILL_ICONS } from "../public/skillicons.js";
 
 const D = L.defs();
 const T = 16;
 const SK = D.skills;
+assert.deepEqual(new Set(SKILL_ICONS), new Set(Object.keys(SK)), "every live skill has its own icon entry");
 const JOB = { sword: "swordsman", dagger: "thief", spear: "lancer", staff: "wizard", book: "warlock", bow: "archer" };
 
 /** A hero (L.hero options) alone on open meadow ground, every monster put away until a test calls one up. */
@@ -315,7 +317,7 @@ for (const [id, hand] of CASTS) {
   p.hp = 1000; p.mp = 999;
   assert.ok(W.act({ t: "sk", id: "sanctuary", a: 0 }).ok);
   assert.equal(p.hp, 800, "a fifth of the HP");
-  W.step(200);
+  assert.ok(evts(W.step(200), "h").some(e => e[1] === p.eid && e[2] === 200 && e[5] === 1), "skill payment is not a hurt cue");
   assert.ok(p.sanctAt > W.now, "warded inside");
   assert.equal(SK.sanctuary.autoHp, 0.6, "auto-hunt keeps it for when HP is above 60%");
 }
