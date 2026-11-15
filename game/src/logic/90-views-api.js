@@ -130,7 +130,7 @@ export function viewFor(S, pid) {
       out.who.push([o.eid, o.ch.name, o.ch.job, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
         wp ? wp.q : 0, wp ? wp.enh : 0, o.ch.pet || 0, weaponKind(o.ch), o.ch.guild, titleOf(o.ch),
         // the outfit (cosmetic codes, slot order) and the weapon's legendary power or set, for its look
-        cosWire(o.ch), wp ? wp.lg || wp.set || "" : "",
+        cosWire(o.ch), wp ? wp.lg || wp.set || (ITEMS[wp.id].uniq ? wp.id : "") : "",   // a unique (bosses-2) weapon: its own look (weapons.js MOTIF[id])
         // a hybrid's second weapon, on the back
         o.ch.eq.weapon2 ? ITEMS[o.ch.eq.weapon2.id].wk : ""]);
     }
