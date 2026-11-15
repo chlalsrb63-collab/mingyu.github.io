@@ -93,6 +93,11 @@ gold = 30 × Lv (last step × 2), keepsakes and titles for arc ends. 알바 stay
 - Four steps (Lv.86, 90, 94, 98), sewer to cave: deliver to 울로, collect, make, talk. They lead into the airship
   arc at 100, so the 7 quests at Lv.100 stop arriving all at once. Move 2 of those 7 down to Lv.96–98 (`req.lv` only).
 - Files: `quests.json`. Test: `data:check` and `content.mjs`.
+- **As built:** `sq_toruk_bottle` (86, 토룩 → deliver 거꾸로 담긴 물 to 울로), `sq_ullo_silt` (90, 울로: collect 4 수정 앙금
+  from the sewer's 거머리 아가리), `sq_toruk_wedge` (94, 토룩: make 수문 쐐기 at 캉캉, a quest-only craft recipe, 제작
+  Lv.20), `sq_ullo_sky` (98, 울로 → talk to 신호수 노을, who points at 바람등호). Rewards 15 % `lvt` / 30 × Lv, the last
+  step 30 % / × 2. Moved down: `sq_bogle_essence` 100 → 96 and `sq_monggeul_bears` 100 → 98. New quest items have
+  icons (`lifeicons.js`). The chain is walked step by step at its levels in `tests/sidequests.mjs`.
 
 ### Q3 — Main-chain beats for chapters 7–8 · size S · **owner decision** (kill counts)
 - Add two `sq_mc_*` chapter quests: one before `rotstag` ×4 (`10-tables.js:593`, the chapel inscription

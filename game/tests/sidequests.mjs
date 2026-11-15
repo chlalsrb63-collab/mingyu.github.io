@@ -409,8 +409,52 @@ for (const pick of [0, 1]) { const W = world("항해사" + pick); arcA3(W, pick)
   done(W, "sq_bogle_hand", "bogle");
   assert.ok(W.ch.keep.kp_shardjar && W.ch.ach.includes("t_sq_bogle_hand"), "the shard jar and 「균열 기록관」");
 }
+// ── content-audit-2026-11-16 §3 packages: each chain in order, every step taken at its own level, givers where the players are
+/** The chain `ids` is whole: in order (req.quest), levels inside [lo, hi] and rising, the giver on `maps[i]`, rewards on the audit scale. */
+function chainShape(ids, lo, hi, maps, scaled = ids) {
+  let prev = null;
+  for (const [i, id] of ids.entries()) {
+    const q = D.side.find((o) => o.id === id);
+    assert.ok(q, `${id} is a valid side quest`);
+    assert.ok(q.req.lv >= lo && q.req.lv <= hi, `${id}: Lv.${q.req.lv} in ${lo}–${hi}`);
+    if (i) assert.ok(q.req.quest === ids[i - 1] && q.req.lv >= prev.req.lv, `${id} follows ${ids[i - 1]}`);
+    assert.equal(q.giverMapId, maps[i], `${id}: the giver stands on ${maps[i]}`);
+    assert.ok(L.atlas().maps[q.giverMapId].npcs.some((n) => n.id === q.giver), `${id}: ${q.giver} is really there`);
+    const rws = [q.reward, ...(q.choice || []).map((o) => o.reward).filter(Boolean)], xp = Math.max(...rws.map((r) => r.xp)), cap = D.lvt[q.req.lv - 1];
+    if (scaled.includes(id)) assert.ok(xp >= 0.12 * cap && xp <= 0.32 * cap && Math.max(...rws.map((r) => r.gold)) <= 60 * q.req.lv, `${id}: reward on the audit scale`);
+    prev = q;
+  }
+}
+{
+  // Q2 「거꾸로 흐르는 물」: 토룩 → 울로 → 토룩 → 울로 → 노을, sewer to cave, into the airship arc at Lv.100
+  chainShape(["sq_toruk_bottle", "sq_ullo_silt", "sq_toruk_wedge", "sq_ullo_sky"], 85, 99, ["sewer", "cave", "sewer", "cave"]);
+  assert.deepEqual(["sq_bogle_essence", "sq_monggeul_bears"].map((id) => D.side.find((q) => q.id === id).req.lv), [96, 98], "two of the Lv.100 pile moved down");
+  const W = world("물때지기");
+  W.ch.lvl = 86;
+  take(W, "sq_toruk_bottle", "trail_drain");
+  assert.equal(bag(W, "q_upwater"), 1, "토룩 hands over the bottle");
+  done(W, "sq_toruk_bottle", "trail_echo");
+  W.ch.lvl = 89;
+  assert.equal(sqOf(W.self(), "sq_ullo_silt").st, 0, "the silt waits for Lv.90");
+  W.ch.lvl = 90;
+  take(W, "sq_ullo_silt", "trail_echo");
+  hunt(W, "sq_ullo_silt", "sewer", "leechmaw");
+  done(W, "sq_ullo_silt", "trail_echo");
+  W.ch.lvl = 94;
+  W.meet("kangkang"); W.ch.life.craft.lv = 20;
+  assert.match(W.act({ t: "craft_open", r: "q_wedge" }).error, /퀘스트/, "the wedge is cut only for 토룩's quest");
+  take(W, "sq_toruk_wedge", "trail_drain");
+  make(W, "sq_toruk_wedge", "q_wedge", "kangkang", [["m_o3", 30], ["m_w3", 30]], "craft");
+  done(W, "sq_toruk_wedge", "trail_drain");
+  assert.equal(bag(W, "q_wedge"), 0, "the wedge goes into the sluice");
+  W.ch.lvl = 98;
+  take(W, "sq_ullo_sky", "trail_echo");
+  talk(W, "airship_signal");
+  done(W, "sq_ullo_sky", "trail_echo");
+  assert.equal(W.ch.sq.done.sq_ullo_sky, 1);
+}
 // every arc step is 추적-resolvable: a giver and hand-in NPC on a real map, a target the client can walk to
-for (const q of D.side.filter((o) => /^sq_(chomi|aru|noeul_stone|sora|elder_chart|eunha|samak|norang|galpi|borum_ink|bogle_(shards|essence|hand)|borum_(rubbing|krion))/.test(o.id))) {
+for (const q of D.side.filter((o) => /^sq_(chomi|aru|noeul_stone|sora|elder_chart|eunha|samak|norang|galpi|borum_ink|bogle_(shards|essence|hand)|borum_(rubbing|krion)|toruk_|ullo_|bas_|yeoul_)/.test(o.id))) {
   assert.ok(q.giverMapId && L.atlas().maps[q.giverMapId].npcs.some((n) => n.id === q.giver), `${q.id}: giver stands on ${q.giverMapId}`);
   assert.ok(q.turnInMap && q.target, `${q.id}: hand-in and target named`);
   if (q.goal.mob) assert.ok(D.maps.some((m) => m.mobs.includes(q.goal.mob)), `${q.id}: ${q.goal.mob} lives somewhere`);

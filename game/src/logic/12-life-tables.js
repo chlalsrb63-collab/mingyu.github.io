@@ -193,6 +193,7 @@ Object.assign(RECIPES, {
   camp: recipeRow("craft", 5, "craft", [["m_w1", 5]], "camp", 1, 42),
   stone_x2: recipeRow("craft", 10, "craft", [["m_o1", 7], ["m_w1", 2]], "stone", 2, 126, { rep: "kangkang" }),
   stone_b: recipeRow("craft", 20, "craft", [["stone", 3], ["m_o3", 2]], "stone_b", 1, 300),
+  q_wedge: recipeRow("craft", 20, "craft", [["m_o3", 2], ["m_w3", 2]], "q_wedge", 1, 40, { sq: "sq_toruk_wedge" }),   // Q2's quest recipe: only while 토룩's quest is on
   punch: recipeRow("craft", 30, "craft", [["m_o4", 3], ["m_w4", 2]], "punch", 1, 2000),
   // the bosses-2 trophies: 피눈물 결정 (혈루 왕도마뱀) and 망치 갯가재 집게 make the two dear tools a cheaper way
   stone_b_bt: recipeRow("craft", 20, "craft", [["stone", 2], ["mat_bloodtear", 1]], "stone_b", 1, 200),

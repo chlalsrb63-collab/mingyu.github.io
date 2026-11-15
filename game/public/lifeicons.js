@@ -891,6 +891,60 @@ export const LIFE_ICONS = {
       "............",
     ],
   },
+  // Upside-down water (Q2): a corked flask whose water clings to the cork end.
+  q_upwater: {
+    palette: { h: "#e4f0f4", m: "#9ab4c0", d: "#3a4a58", a: "#4a8ac8", b: "#8a5a3a" },
+    rows: [
+      "............",
+      ".....bb.....",
+      ".....bb.....",
+      "....daad....",
+      "....daad....",
+      "...daaaad...",
+      "..dhaaaamd..",
+      "..dhmmmmmd..",
+      "..dhmmmmmd..",
+      "...dmmmmd...",
+      "....dddd....",
+      "............",
+    ],
+  },
+  // Crystal silt (Q2): a small glittering mound, pale blue glints.
+  q_silt: {
+    palette: { h: "#d8f4ff", m: "#7a9ab0", d: "#2e3a48", a: "#b8e0ff", b: "#ffffff" },
+    rows: [
+      "............",
+      "............",
+      "............",
+      ".....d......",
+      "....dbd.....",
+      "...dmamd.d..",
+      "..dmmhmmdbd.",
+      "..dmamhmamd.",
+      ".dmmmmammmd.",
+      ".dmhmmmmhmd.",
+      "..dddddddd..",
+      "............",
+    ],
+  },
+  // Sluice wedge (Q2): a scrap-iron cap over a wooden wedge.
+  q_wedge: {
+    palette: { h: "#c8d0d8", m: "#7a8490", d: "#2b2233", a: "#a8784a", b: "#6a4a2a" },
+    rows: [
+      "............",
+      "............",
+      "..dddddddd..",
+      "..dhhhhhhd..",
+      "..dmmmmmmd..",
+      "..daaaaaad..",
+      "...dabaad...",
+      "...daaabd...",
+      "....dbad....",
+      "....daad....",
+      ".....dd.....",
+      "............",
+    ],
+  },
   // Wind-lantern compass: brass case, cream face, a red needle pointing off north.
   kp_compass: {
     palette: { h: "#f8dc7a", m: "#c89a3a", d: "#6a4a1a", a: "#f4ead2", b: "#c84a3a" },

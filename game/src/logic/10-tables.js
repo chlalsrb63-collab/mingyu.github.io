@@ -87,6 +87,10 @@ const ITEMS = {
   q_ink: { name: "기록 보존액", type: "quest", price: 0, desc: "보름이 알려 준 대로 끓인 맑은 약. 바르면 썩어 가던 종이가 단풍잎처럼 단단해진다." },
   q_lastrec: { name: "왕도의 마지막 기록", type: "quest", price: 0, desc: "갈피가 끈으로 묶어 건넨 기록 한 다발. 맨 끝 장은 반쯤 타 있다." },
   q_shard: { name: "균열 조각", type: "quest", price: 0, desc: "닫힌 차원 균열 가장자리에서 떨어져 나온 검은 유리. 안쪽에 글자 같은 금이 나 있다." },
+  // 「거꾸로 흐르는 물」 (Q2, content-audit-2026-11-16 §3): 토룩 and 울로, sewer to cave
+  q_upwater: { name: "거꾸로 담긴 물", type: "quest", price: 0, desc: "하수도 배수관에서 받은 물 한 병. 병을 뒤집어도 물이 마개 쪽에 붙어 있다." },
+  q_silt: { name: "수정 앙금", type: "quest", price: 0, desc: "거꾸로 오른 물이 남긴 반짝이는 앙금. 귀에 대면 아주 작게 노래한다." },
+  q_wedge: { name: "수문 쐐기", type: "quest", price: 0, desc: "네온 고철에 기름 먹은 판자를 덧대 깎은 쐐기. 배수문이 위로 밀려 열리지 않게 박는다." },
   // keepsakes (기념품): no stats, never in the bag — kept forever in ch.keep; 루루 의상실 will sew them into outfits later
   kp_reed_float: { name: "갈대의 낡은 찌", type: "keep", price: 0, arc: "갈대의 송사리 도시락", desc: "갈대가 딸과 처음 낚시하던 날 쓰던 빨간 찌. \"이제 나한텐 필요 없어. 네가 가져.\"" },
   kp_willow_key: { name: "버드나무 새집 열쇠", type: "keep", price: 0, arc: "버드나무의 새 식구", desc: "도란네 오두막의 여벌 열쇠. 콩알이 도토리 모자를 씌워 놨다. \"언제든 놀러 와도 된대!\"" },
