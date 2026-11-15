@@ -201,6 +201,8 @@ export function validateAction(S, pid, a) {
       // a big ground has several stones: `i` picks one (0, the first, when left out)
       const i = a.i === undefined ? 0 : a.i;
       if (!hasWp(a.to) || !Number.isInteger(i) || i < 0 || i >= MAP_META[a.to].wpn) return bad("그곳에는 이동의 돌이 없습니다");
+      const denied = airshipAccess(ch, a.to);
+      if (denied) return bad(denied);
       const minLv = mapLevelNeed(ch, a.to);
       if (minLv) return bad(mapLevelMessage(minLv));
       const at = wpNear(p);
@@ -235,6 +237,7 @@ export function validateAction(S, pid, a) {
       if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
       if (it.type === "buff" || it.type === "pet") return OK;
       if (it.type === "scroll") {
+        if (S.dims[p.map]?.story?.airship) return bad("구조 중에는 [떠나기]로 오아시스에 돌아갈 수 있습니다");
         if (p.map === START.map) return bad("이미 마을에 있습니다");
         if (p.recall) return bad("이미 귀환을 준비하고 있습니다");
         return OK;
@@ -391,7 +394,7 @@ export function validateAction(S, pid, a) {
       if (!npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
       if (a.a === "take") {
         const d = MOBS[a.k];
-        if (typeof a.k !== "string" || !d || d.boss || d.chest) return bad("그런 의뢰는 없습니다");
+        if (typeof a.k !== "string" || !d || d.boss || d.chest || d.questOnly) return bad("그런 의뢰는 없습니다");
         if (d.lv > toTier(ch.lvl) + 4) return bad("아직 감당하기 어려운 상대입니다");
         return OK;
       }

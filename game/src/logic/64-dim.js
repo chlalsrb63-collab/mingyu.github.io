@@ -534,6 +534,7 @@ function dimRespawn(S, p) {
 function dimReviveWait(S, p) {
   if (!inDim(p)) return 0;
   const dim = dimAt(S, p.map), chal = dim && dim.chal;
+  if (dim?.story?.airship) return 0;
   // a boss challenge: nobody gets up while the fight is on (99: until it ends — a wipe resets the boss)
   if (chal && dim.state === "boss" && chal.engAt) return 99;
   if (chal && chal.upAt) return Math.max(1, Math.ceil((chal.upAt - S.now) / 1000));
@@ -677,7 +678,11 @@ function dimApply(S, p, a) {
       break;
     case "dim_cancel": rcEnd(S, party, "파티장이 차원 균열 입장을 취소했습니다."); break;
     case "dim_leave":
-      if (dimAt(S, p.map).story) { storyHome(S, p, "도전을 그만두고 돌아왔습니다. 다시 그 자리로 다가가면 재도전할 수 있습니다."); break; }
+      if (dimAt(S, p.map).story) {
+        const story = dimAt(S, p.map).story;
+        storyHome(S, p, story.airship && story.won ? "안전해진 바람등호의 갑판으로 돌아왔습니다." : "도전을 그만두고 돌아왔습니다. 다시 그 자리로 다가가면 재도전할 수 있습니다.");
+        break;
+      }
       toast(p, "차원 균열을 떠나 버드나무광장으로 돌아왔습니다."); dimHome(S, p); break;
     case "dim_join": {
       const dim = dimJoinable(S, p);
@@ -713,9 +718,10 @@ function dimView(S, p, out) {
     if (key !== p.dimKey || p.sendMap) { out.dim = v; p.dimKey = key; }
   } else if (p.dimKey) { out.dim = 0; p.dimKey = null; }
   // a solo story fight (67-trophies.js): `sty` [seconds left, won, boss kind] when it begins or is won, 0 on leaving; the client counts down
-  const sty = dim && dim.story, sk = sty ? `${dim.id}:${sty.won}` : null;
+  const sty = dim && dim.story, sk = sty ? `${dim.id}:${sty.won}${sty.airship ? ":" + sty.remaining : ""}` : null;
   if (sk !== (p.styKey || null) || (sty && p.sendMap)) {
     out.sty = sty ? [Math.max(0, Math.ceil(((sty.won ? sty.endAt : dim.expire) - now) / 1000)), sty.won, sty.k] : 0;
+    if (sty?.airship) out.sty.push(sty.remaining);
     p.styKey = sk;
   }
   // the ready check: [id, seconds left, [[eid, name, answer]…], level, am I the leader]

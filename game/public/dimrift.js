@@ -181,14 +181,16 @@ function renderHud() {
 /** A solo story fight (67-trophies.js `sty`): the boss's name, the time left, and the same [떠나기]. */
 const storyLeft = () => Math.max(0, st.sty[0] - Math.floor((now() - st.styAt) / 1000));
 function renderStory(box) {
-  const [, won, k] = st.sty, def = A.G.defs.mobs[k];
+  const [, won, k, raiders] = st.sty, def = A.G.defs.mobs[k];
+  const rescue = Number.isInteger(raiders);
   box.hidden = false;
   box.classList.add("story"); box.classList.remove("boss", "clear");
-  $("#dim-title").textContent = `홀로 도전 · ${def ? def.name : "우두머리"}`;
+  $("#dim-title").textContent = rescue ? "바람등호 구조" : `홀로 도전 · ${def ? def.name : "우두머리"}`;
   $("#dim-time").textContent = mmss(storyLeft());
   $("#dim-time").classList.toggle("low", !won && storyLeft() <= 60);
-  $("#dim-fill").style.width = won ? "100%" : "0%";
-  $("#dim-pct").textContent = won ? "승리! 전리품을 줍고 곧 돌아갑니다" : "쓰러뜨리면 보스 전리품을 얻습니다";
+  $("#dim-fill").style.width = won ? "100%" : rescue ? `${(4 - raiders) * 20}%` : "0%";
+  $("#dim-pct").textContent = rescue ? won ? "갑판 해방! 곧 안전 갑판으로 이동합니다" : raiders > 0 ? `남은 침입자 ${raiders}마리` : `${def.name} 격퇴`
+    : won ? "승리! 전리품을 줍고 곧 돌아갑니다" : "쓰러뜨리면 보스 전리품을 얻습니다";
   if ($("#dim-team").dataset.k) { $("#dim-team").innerHTML = ""; $("#dim-team").dataset.k = ""; }
   $("#dim-boss").hidden = true;
 }

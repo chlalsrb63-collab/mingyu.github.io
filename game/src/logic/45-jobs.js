@@ -186,7 +186,7 @@ function wmEligible(p, d) {
 }
 /** A landed basic attack or skill counts once, including volleys and attacks that hit several mobs. */
 function wmHit(S, p, mob) {
-  if (!wmEligible(p, MOBS[mob.k])) return;
+  if (S.dims[p.map]?.story?.airship || !wmEligible(p, MOBS[mob.k])) return;
   const [a, n] = p.hitAct || [p.actN | 0, p.actGain | 0];
   if (!a || a <= (p.wmAct | 0)) return;
   p.wmAct = a;

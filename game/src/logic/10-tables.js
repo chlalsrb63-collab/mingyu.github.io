@@ -74,6 +74,12 @@ for (const wk of Object.keys(WEAPON_NAMES)) {
     const base = wk === "book" ? { atk: Math.round(W_ATK[t - 1] * 0.85), mp: [15, 35, 60, 100, 150][t - 1] } : { atk: W_ATK[t - 1] };
     ITEMS[`w_${WK_ID[wk]}_${t}`] = { name: WEAPON_NAMES[wk][t - 1], type: "weapon", wk, tier: t, base, req: G_REQ[t - 1], price: G_PRICE[t - 1] };
   }
+  // Plain patrol stock for the airship. Crafted and dropped weapons keep the full tier stats.
+  for (const t of [4, 5]) {
+    const item = ITEMS[`w_${WK_ID[wk]}_${t}`];
+    ITEMS[`w_ship_${WK_ID[wk]}_${t}`] = { ...item, name: `정찰대 ${item.name}`, price: t === 4 ? 5000 : 14000,
+      base: { ...item.base, atk: Math.floor(item.base.atk * 0.9) }, desc: "바람등호가 정찰대에 지급하는 보급 무기." };
+  }
 }
 // bosses-2 §7: the two field bosses' own finds — a material each (for crafting to come) and a top-tier weapon (drops legendary)
 Object.assign(ITEMS, {
@@ -410,6 +416,11 @@ const MOBS = {
   mistiger: { name: "운해의 범", lv: 36, hp: 30000, atk: 160, def: 34, spd: 40, xp: 14000, gold: [2000, 3200], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1, charge: 150, leap: 120, fan: 150 },
   spinescorp: { name: "전갈 등뼈", lv: 29, hp: 1400, atk: 96, def: 14, spd: 48, xp: 700, gold: [58, 104], aggro: 94, range: 19, cd: 1000, charge: 114 },
   ribvulture: { name: "독수리 갈비", lv: 30, hp: 1300, atk: 94, def: 10, spd: 44, xp: 760, gold: [60, 110], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
+  airship_gale: { name: "그을린 날개 추격수", lore: "한쪽 날개의 깃이 잿빛으로 굳었다. 바람등호의 신호등이 켜지면 돛줄에 내려앉는다.",
+    lv: 26, hp: 840, atk: 74, def: 9, spd: 44, xp: 0, gold: [0, 0], aggro: 105, range: 18, cd: 1250, questOnly: true },
+  airship_lookout: { name: "흑기수 외눈수리", lore: "깃이 찢어진 외눈수리가 정찰등 하나를 낚아채 매달고 다닌다. 빛을 본 조류 떼가 그 뒤를 따른다.",
+    lv: 28, hp: 4300, atk: 101, def: 13, spd: 36, xp: 0, gold: [0, 0], aggro: 125, range: 70, cd: 1500, shot: true, boss: true, questOnly: true,
+    fan: 112, script: { gap: 5800, reach: 148, pats: [["검댕 깃털", "fan"], ["돛대 덮치기", "leapslam"]] } },
   crownpeacock: { name: "금관 공작", lv: 42, hp: 4200, atk: 124, def: 30, spd: 46, xp: 1900, gold: [104, 180], aggro: 92, range: 22, cd: 1300, fan: 150, charge: 120, pool: 28, poolKind: 1 },
   // bosses-2 (docs/design/bosses-2.md §2–3, §6–7): 혈루 왕도마뱀 keeps its own lair in mesa (a boss row: its health is the design's
   // field-boss figure 4,800 × 14, its atk 128 × 1.8), 망치 갯가재 is the coast's field boss (FIELD_BOSS: × 14 / × 1.8 at spawn).
@@ -471,9 +482,9 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   mob: String(q.mob), n: Math.max(1, q.n | 0), title: String(q.title || ""), text: String(q.text || ""), xp: Math.max(0, q.xp | 0), gold: Math.max(0, q.gold | 0),
   fb: q.fb ? 1 : 0, items: (Array.isArray(q.items) ? q.items : []).filter((it) => Array.isArray(it) && typeof it[0] === "string" && Object.hasOwn(ITEMS, it[0])).map(([id, n]) => [id, Math.max(1, n | 0)]),
 })).filter((q) => Object.hasOwn(MOBS, q.mob)) : [
-  { mob: "twinhare", n: 5, title: "초원의 쌍두 토끼", text: "차원이 겹친 뒤로 초원의 짐승들이 뒤틀려 돌아왔다네. 머리 둘 달린 토끼 5마리만 정리해 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
-  { mob: "gutfrog", n: 6, title: "뒤집힌 개구리", text: "속이 밖으로 나온 개구리가 길목에서 뛰어든다네. 창자 개구리 6마리를 잡아 주게.", xp: 220, gold: 120, items: [["mp_s", 5]] },
-  { mob: "eyecrow", n: 8, title: "지켜보는 것들", text: "연못 위를 도는 눈알 까마귀 8마리를 떨어뜨려 주게. 먼저 덤비진 않지만, 보고 있는 게 영 꺼림칙해.", xp: 520, gold: 200, items: [["stone", 2]] },
+  { mob: "twinhare", n: 5, title: "초원의 쌍두 토끼", text: "우린 스스로를 작은꼬리들(Tinytales)이라 부르네. 루넬샤의 풀과 나무 사이에 집을 짓고 수천 해를 평화롭게 살았지. 옛날 이 땅을 지옥의 괴물들이 다스렸다는 말은 아이들 겁주는 동화인 줄만 알았네. 그런데 대륙 동쪽 끝에서 풀과 짐승이 뒤틀리더니, 이제 초원까지 왔어. 광장으로 오는 길의 쌍두 토끼 5마리를 물리쳐 주겠나?", xp: 90, gold: 60, items: [["hp_s", 5]] },
+  { mob: "gutfrog", n: 6, title: "뒤집힌 개구리", text: "네온 시티가 함락된 뒤 우리는 서쪽 버드나무숲으로 피했네. 광장 식구들은 내일 장이 설 것처럼 웃으며 자리를 펴지만, 피난길에서 돌아오지 못한 이들이 많아. 길목에서 창자 개구리 6마리를 잡아 주게. 뒤따라오는 작은꼬리들이 건너올 수 있도록.", xp: 220, gold: 120, items: [["mp_s", 5]] },
+  { mob: "eyecrow", n: 8, title: "지켜보는 것들", text: "숲에서 숨죽이고 기다리기만 할 수 없다고 나선 작은꼬리들이 있네. 자네와 함께 동쪽의 일을 알아보고 싶다더군. 우선 연못 위를 도는 눈알 까마귀 8마리부터 떨어뜨려 주게. 먼저 덤비지는 않지만 사방을 지켜보고 있어.", xp: 520, gold: 200, items: [["stone", 2]] },
   { mob: "lambmaw", n: 8, title: "뒤집힌 것", text: "초원 가장 깊은 곳에 안팎이 뒤집힌 양이 돌아다닌다네. 8마리를 잡아 주게. 고개를 숙이면 곧장 달려드니, 그 줄에서 비켜서게.", xp: 800, gold: 300, items: [["hp_s", 8]] },
   { mob: "lambmaw", n: 1, fb: 1, title: "초원의 우두머리", text: "초원 깊은 곳에 유난히 큰 뒤집힌 양이 버티고 섰다네. 그 녀석이 선 자리로 가 보게. 혼자서 맞서야 할 걸세.", xp: 900, gold: 320, items: [] },
   { mob: "splitboar", n: 10, title: "숲의 반쪽", text: "속삭임 숲에는 몸이 반만 남은 멧돼지가 돌아다닌다네. 10마리를 사냥해 주게. 멀리서도 뛰어드니 동료를 구해 보게.", xp: 1300, gold: 450, items: [["hp_m", 5], ["ru_vit", 1]] },
@@ -495,13 +506,13 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   { mob: "moleworm", n: 1, fb: 1, title: "땅속의 장님", text: "수정 동굴 깊은 곳의 눈먼 두더지 우두머리가 땅을 뒤집고 있다네. 놈의 자리로 가서 혼자 끝내 주게.", xp: 24000, gold: 3400, items: [] },
   { mob: "loggator", n: 1, fb: 1, v20: 1, title: "썩은 통나무의 주둥이", text: "정글 해안도로 물가에 통나무인 척 누운 악어가 있다네. 지나가는 이를 죄다 삼킨다지. 놈이 누운 자리로 가서 홀로 뒤집어 주게.", xp: 25000, gold: 3500, items: [] },
   { mob: "mummycamel", n: 1, fb: 1, v20: 1, title: "붕대 감은 짐꾼", text: "모래바람 오아시스에 붕대를 칭칭 감은 낙타가 짐을 지고 서성인다네. 상인들이 길을 못 건너 난리일세. 놈의 자리로 가서 홀로 쓰러뜨려 주게.", xp: 28000, gold: 4500, items: [] },
-  { mob: "boss", n: 1, title: "균열의 군주", text: "모든 세계를 뒤섞은 장본인, 균열의 군주 크리온을 쓰러뜨려 주게. 반드시 파티를 꾸려서 가게.", xp: 45000, gold: 8000, items: [["stone", 10], ["ru_lum", 1]] },
+  { mob: "boss", n: 1, title: "균열의 군주", text: "깊은 균열 건너에 군주 크리온이 있네. 놈이 서 있는 곳마다 길이 갈라진다는 보고가 들어왔어. 반드시 파티를 꾸려서 크리온을 쓰러뜨려 주게.", xp: 45000, gold: 8000, items: [["stone", 10], ["ru_lum", 1]] },
   { mob: "horsehalf", n: 12, title: "군주의 뒤편", text: "군주가 쓰러진 자리 뒤에 더 깊은 균열이 열렸네. 피의 심연의 반쪽 말 12마리를 쓰러뜨려 주게.", xp: 30000, gold: 5000, items: [["hp_m", 10], ["ru_fos", 1]] },
   { mob: "lionhand", n: 10, title: "손으로 된 갈기", text: "심연 깊은 곳의 손갈기 사자 10마리를 쓰러뜨려 주게. 땅을 치고, 멀리서는 무언가를 던진다네.", xp: 38000, gold: 6000, items: [["stone", 8]] },
   { mob: "lionhand", n: 1, fb: 1, title: "갈기의 손아귀", text: "심연 깊은 곳에 손으로 된 갈기를 두른 사자 우두머리가 있네. 놈이 선 자리에서 홀로 맞서 주게.", xp: 42000, gold: 5000, items: [] },
   { mob: "bearmaw_ash", n: 1, fb: 1, v20: 1, title: "재 쌓인 종지기", text: "구름 사원 종루에 재를 뒤집어쓴 곰이 종을 붙들고 있다네. 그 종소리에 산이 다 울린다지. 놈이 선 자리로 가서 홀로 입을 막아 주게.", xp: 44000, gold: 5200, items: [] },
   { mob: "sandmaw", n: 1, fb: 1, v20: 1, title: "모래 속의 아가리", text: "모래바다 한복판에서 모래가 소용돌이치면 아가리가 올라온다네. 오아시스 마을 사람들이 그 밑에 발을 못 붙이고 있어. 놈의 자리로 가서 홀로 맞서 주게.", xp: 46000, gold: 5600, items: [] },
-  { mob: "abyssboss", n: 1, title: "심연의 어미", text: "뒤틀린 것들은 전부 한곳에서 태어났네. 심연의 어미를 쓰러뜨려, 이 일을 끝내 주게.", xp: 120000, gold: 20000, items: [["stone", 20], ["ru_lum", 2]] },
+  { mob: "abyssboss", n: 1, title: "심연의 어미", text: "심연의 어미 곁에서 변이가 유난히 짙어지네. 어미를 쓰러뜨려 더 번지는 걸 막아 주게. 길 위에 남은 흔적은 그 뒤에 마저 살펴보세.", xp: 120000, gold: 20000, items: [["stone", 20], ["ru_lum", 2]] },
   { mob: "blightsquirrel", n: 12, title: "단풍 아래의 병", text: "어미는 쓰러졌지만, 그 병은 뿌리를 타고 지상으로 번졌다네. 속삭임 숲 동쪽, 단풍에 묻힌 옛 왕도로 가서 한 꼬리 다람쥐떼 12마리를 정리해 주게.", xp: 40000, gold: 6500, items: [["hp_m", 10]] },
   { mob: "shroomboar", n: 12, title: "포자 무덤", text: "왕도의 멧돼지들은 등에 버섯을 키운다네. 버섯등 멧돼지 12마리를 잡아 주게. 뱉어 낸 포자 웅덩이는 독이니 밟지 말게.", xp: 46000, gold: 7200, items: [["stone", 8], ["mp_m", 6]] },
   { mob: "rotstag", n: 4, title: "썩은 왕관", text: "무너진 예배당엔 왕관을 쓴 사슴이 산다네. 옛 왕의 사냥감이었다지. 썩은 관 사슴왕 4마리를 쓰러뜨려, 왕도의 병을 끊어 주게.", xp: 60000, gold: 9000, items: [["stone", 12], ["ru_lum", 1]] },
@@ -509,7 +520,7 @@ const QUESTS = Array.isArray(DATA.quests.main) && DATA.quests.main.length ? DATA
   { mob: "bogcrown", n: 24, title: "서리에 물든 뿌리", text: "단풍 왕도 안쪽부터 땅이 얼고 있네. 검은 왕관 뿌리짐승 24마리를 베어 오래된 왕릉으로 가는 길을 트게.", xp: 52000, gold: 9500, items: [["stone", 12]] },
   { mob: "hollowowl", n: 28, title: "소리로 지키는 길", text: "왕도 깊은 폐허의 올빼미는 발자국 소리를 듣고 날아오르네. 눈먼 문지기 올빼미 28마리를 쓰러뜨려 사냥길을 열게.", xp: 61000, gold: 11000, items: [["hp_m", 15], ["mp_m", 10]] },
   { mob: "rootwarden", n: 32, title: "얼어붙은 왕의 문", text: "단풍 왕도 남동쪽에서 얼어붙은 왕릉 파수꾼 32마리를 쓰러뜨려 주게. 성에왕의 성채는 Lv.200부터 들어갈 수 있네.", xp: 74000, gold: 15000, items: [["stone", 16], ["ru_fos", 2]] },
-  { mob: "crownstag", n: 1, title: "마지막 왕의 뿔", text: "성에왕의 성채 안쪽 왕좌에 유리뿔이 있다네. 원형 광장 바깥으로 빠질 길을 살핀 뒤, 동료와 함께 왕을 쓰러뜨려 주게.", xp: 40000, gold: 24000, items: [["stone", 20], ["ru_lum", 2]] },
+  { mob: "crownstag", n: 1, title: "마지막 왕의 뿔", text: "성에왕의 성채 안쪽 왕좌에 유리뿔이 있다네. 원형 광장 바깥으로 빠질 길을 살핀 뒤 동료와 함께 왕을 쓰러뜨리고, 광장에 돌아와 보고해 주게. 정찰대가 왕좌 곁에서 읽어 볼 만한 비석을 찾았다네.", xp: 40000, gold: 24000, items: [["stone", 20], ["ru_lum", 2]] },
 ];
 
 // ───────────────────────────── bag expansion and housing (46-bag.js, 64-housing.js) ─────────────────────────────

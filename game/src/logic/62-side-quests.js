@@ -16,9 +16,9 @@ const SIDE = DATA.quests.side.filter((q) => typeof q.id === "string" && /^[a-z][
   if (g.type === "visit") goal.map = g.map;
   return {
     id: q.id, giver: q.giver, title: txt(q.title, 40) || q.id, text: txt(q.text, 400), done: txt(q.done, 400),
-    goal, req: { lv: clamp(req.lv | 0, 0, MAXLV), quest: typeof req.quest === "string" ? req.quest : null },
+    goal, req: { lv: clamp(req.lv | 0, 0, MAXLV), quest: typeof req.quest === "string" ? req.quest : null, ...(req.main === true ? { main: true } : {}) },
     reward: { xp: Math.max(0, rw.xp | 0), gold: Math.max(0, rw.gold | 0), items: (Array.isArray(rw.items) ? rw.items : []).filter((it) => Array.isArray(it) && typeof it[0] === "string" && Object.hasOwn(ITEMS, it[0])).map(([id, n]) => [id, clamp(n | 0, 1, 999)]) },
-    repeat: !!q.repeat,
+    repeat: !!q.repeat, ...(q.mainChapter ? { mainChapter: true } : {}),
   };
 }).filter((q, i, all) => all.findIndex((o) => o.id === q.id) === i && NPC_MAP[q.giver] && (
   q.goal.type === "kill" ? Object.hasOwn(MOBS, q.goal.mob) : q.goal.type === "collect" ? Object.hasOwn(ITEMS, q.goal.item) : q.goal.type === "talk" ? !!NPC_MAP[q.goal.npc] : Object.hasOwn(MAP_META, q.goal.map)));
@@ -31,7 +31,13 @@ const sqEmpty = () => ({ on: {}, done: {} });
 function sqClean(v) {
   const out = sqEmpty();
   if (!isObj(v)) return out;
-  if (isObj(v.on)) for (const id of Object.keys(v.on)) if (SQ_BY[id] && Object.keys(out.on).length < SQ_MAX) out.on[id] = clamp(v.on[id] | 0, 0, SQ_BY[id].goal.n);
+  let side = 0;
+  if (isObj(v.on)) for (const id of Object.keys(v.on)) {
+    const q = Object.hasOwn(SQ_BY, id) ? SQ_BY[id] : null;
+    if (!q || (!q.mainChapter && side >= SQ_MAX)) continue;
+    out.on[id] = clamp(v.on[id] | 0, 0, q.goal.n);
+    if (!q.mainChapter) side++;
+  }
   if (isObj(v.done)) for (const id of Object.keys(v.done).slice(0, 400)) if (/^[a-z][a-z0-9_]{2,31}$/.test(id) && (v.done[id] | 0) > 0) out.done[id] = Math.min(9999, v.done[id] | 0);
   return out;
 }
@@ -41,7 +47,7 @@ const sqHave = (ch, q) => (q.goal.type === "collect" ? Math.min(q.goal.n, countI
 function sqState(ch, q) {
   if (Object.hasOwn(ch.sq.on, q.id)) return sqHave(ch, q) >= q.goal.n ? 3 : 2;
   if (ch.sq.done[q.id] && !q.repeat) return 4;
-  if (ch.lvl < q.req.lv || (q.req.quest && !ch.sq.done[q.req.quest])) return 0;
+  if (ch.lvl < q.req.lv || (q.req.main && ch.q.i < QUESTS.length) || (q.req.quest && !ch.sq.done[q.req.quest])) return 0;
   return 1;
 }
 const npcName = (id) => (Object.hasOwn(NPC_NAME, id) ? NPC_NAME[id] : id);
@@ -70,21 +76,28 @@ function sqPicked(p, item) {
 }
 function sqValidate(S, p, a) {
   const ch = p.ch;
-  if (a.a === "drop") return typeof a.id === "string" && Object.hasOwn(ch.sq.on, a.id) ? OK : bad("진행 중인 퀘스트가 아닙니다");
+  if (a.a === "drop") {
+    if (a.id === AIRSHIP_QUEST && S.dims[p.map]?.story?.airship) return bad("갑판을 떠난 뒤 구조 의뢰를 포기할 수 있습니다");
+    return typeof a.id === "string" && Object.hasOwn(ch.sq.on, a.id) ? OK : bad("진행 중인 퀘스트가 아닙니다");
+  }
   if (a.a === "talk") return typeof a.npc === "string" && npcReach(p, a.npc) ? OK : bad("너무 멉니다");
   const q = typeof a.id === "string" && Object.hasOwn(SQ_BY, a.id) ? SQ_BY[a.id] : null;
   if (!q) return bad("없는 퀘스트입니다");
   if (!npcReach(p, q.giver)) return bad(`${npcName(q.giver)}에게 가까이 가야 합니다`);
   const st = sqState(ch, q);
   if (a.a === "take") {
+    if (q.mainChapter && p.dead) return bad("쓰러진 채로는 주요 의뢰를 받을 수 없습니다");
     if (st === 2 || st === 3) return bad("이미 진행 중입니다");
     if (st === 4) return bad("이미 마친 퀘스트입니다");
     if (ch.lvl < q.req.lv) return bad(`레벨 ${q.req.lv} 이상이어야 합니다`);
+    if (q.req.main && ch.q.i < QUESTS.length) return bad("앞선 주요 의뢰를 모두 마쳐야 합니다");
     if (st === 0) return bad(`먼저 [${SQ_BY[q.req.quest].title}]${pp(SQ_BY[q.req.quest].title, "을를")} 마쳐야 합니다`);
-    if (Object.keys(ch.sq.on).length >= SQ_MAX) return bad(`퀘스트는 ${SQ_MAX}개까지 받을 수 있습니다`);
+    if (!q.mainChapter && Object.keys(ch.sq.on).filter((id) => !SQ_BY[id]?.mainChapter).length >= SQ_MAX) return bad(`퀘스트는 ${SQ_MAX}개까지 받을 수 있습니다`);
     return OK;
   }
   if (a.a === "done") {
+    if (q.id === AIRSHIP_QUEST) return bad("감염된 정찰대장을 쓰러뜨리면 구조 의뢰가 완료됩니다");
+    if (q.mainChapter && p.dead) return bad("쓰러진 채로는 주요 의뢰를 마칠 수 없습니다");
     if (st !== 3) return bad("아직 퀘스트를 마치지 못했습니다");
     for (const [id, n] of q.reward.items) if (!canAdd(ch, id, n)) return bad("가방을 비우고 다시 오세요");
     return OK;
@@ -98,7 +111,7 @@ function sqApply(S, p, a) {
   if (a.a === "drop") { const q = SQ_BY[a.id]; delete ch.sq.on[a.id]; toast(p, `퀘스트 포기: ${q ? q.title : a.id}`); return; }
   const q = SQ_BY[a.id];
   if (a.a === "take") {
-    ch.sq.on[q.id] = 0;
+    ch.sq.on[q.id] = q.req.main && q.goal.type === "talk" && q.goal.npc === q.giver ? 1 : 0;
     toast(p, `퀘스트 수락: ${q.title}`);
     if (q.goal.type === "visit" && p.map === q.goal.map) sqProgress(S, p, "visit", (g) => g.map === p.map);
     return;
@@ -111,7 +124,7 @@ function sqApply(S, p, a) {
   if (q.reward.gold) { ch.gold += q.reward.gold; p.gain.push(["gold", q.reward.gold]); }
   for (const [id, n] of q.reward.items) if (addItem(ch, id, n)) p.gain.push(["item", id, n, 0]);
   toast(p, `퀘스트 완료: ${q.title}`);
-  if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "퀘스트 보상");
+  if (q.id !== AIRSHIP_QUEST && cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "퀘스트 보상");
   if (q.reward.xp) gainXp(S, p, q.reward.xp);
 }
 /** What the quest windows show: [id, state, have, need] for every side quest. */

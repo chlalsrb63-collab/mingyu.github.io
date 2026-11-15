@@ -528,6 +528,21 @@ export function townProps() {
   const W0 = [WOOD_L, WOOD, WOOD_D], ST = STONE;
   const post = (box, a, bb, h, c = W0) => box(a - 1, bb - 1, a + 1, bb + 1, 0, h, c[0], c[1], c[2]);
   TP = {
+    shiprig: isoProp(3, 2, 142, (b, P, box, quad) => {
+      const ink = "#352c40", brass = "#deb778", sail = "#ecdebc", fold = "#c0a38f";
+      // The sail sits behind the mast and has a rolled lower edge in shadow.
+      quad([P(4, 15, 97), P(45, 15, 97), P(41, 18, 61), P(8, 18, 59)], ink);
+      quad([P(6, 15, 95), P(43, 15, 95), P(39, 18, 63), P(10, 18, 61)], sail);
+      quad([P(11, 18, 71), P(38, 18, 73), P(39, 18, 63), P(10, 18, 61)], fold);
+      box(2, 14, 46, 17, 96, 99, brass, WOOD, WOOD_D);
+      box(20, 11, 28, 19, 0, 7, brass, WOOD, WOOD_D);
+      box(22, 13, 26, 17, 7, 117, WOOD_L, WOOD, WOOD_D);
+      for (const z of [12, 45, 91]) box(21, 12, 27, 18, z, z + 2, brass, "#aa7648", WOOD_D);
+      quad([P(24, 14, 116), P(44, 14, 113), P(39, 14, 106), P(24, 14, 107)], ink);
+      quad([P(25, 14, 115), P(42, 14, 112), P(38, 14, 107), P(25, 14, 108)], "#a55272");
+      const [x, y] = P(24, 15, 118);
+      b.r(x - 2, y - 2, 5, 3, brass);
+    }),
     // a watch post: four log legs, a railed platform, a shingled roof, a lantern hanging under it
     watch: isoProp(2, 2, 110, (b, P, box, quad) => {
       for (const [a, bb] of [[4, 4], [28, 4], [4, 28], [28, 28]]) post(box, a, bb, 54);

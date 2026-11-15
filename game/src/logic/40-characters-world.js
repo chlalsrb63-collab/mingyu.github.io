@@ -331,9 +331,12 @@ export function exportChar(S, pid) {
   if (!p) return null;
   const ch = p.ch;
   ch.map = p.map; ch.x = Math.round(p.x); ch.y = Math.round(p.y);
+  const story = S.dims[p.map]?.story;
   // a runtime instance is never saved: whoever is saved inside one wakes in town (out of a house: at its door)
-  if (!Object.hasOwn(MAP_META, p.map)) { const back = homeExit(p.map) || START; ch.map = back.map; ch.x = back.x; ch.y = back.y; }
-  ch.hp = p.dead ? 0 : Math.round(p.hp); ch.mp = Math.round(p.mp);
+  if (story?.airship) [ch.map, ch.x, ch.y] = airshipReturn(story);
+  else if (!Object.hasOwn(MAP_META, p.map)) { const back = homeExit(p.map) || START; ch.map = back.map; ch.x = back.x; ch.y = back.y; }
+  ch.hp = p.dead ? (story?.airship ? Math.round(stats(p).mhp * 0.5) : 0) : Math.round(p.hp);
+  ch.mp = Math.round(p.mp);
   p.save = false;
   return ch;
 }
@@ -575,7 +578,8 @@ export function addPlayer(S, pid, ch) {
   migrate(ch);
   // a place that is gone (a closed instance, a map removed from the editor's data) is the town
   const minLv = mapLevelNeed(ch, ch.map);
-  if (minLv) { ch.map = START.map; ch.x = START.x; ch.y = START.y; }
+  const denied = airshipAccess(ch, ch.map) || (minLv ? mapLevelMessage(minLv) : "");
+  if (denied) { ch.map = START.map; ch.x = START.x; ch.y = START.y; }
   else if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, aim: AIM_N / 4, hp: 1, mp: 0, dead: false, stc: null,
@@ -583,7 +587,7 @@ export function addPlayer(S, pid, ch) {
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, inert: 0, inertAt: 0, reso: 0, vitSpd: 0, sanctAt: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
-  if (minLv) toast(p, mapLevelMessage(minLv));
+  if (denied) toast(p, denied);
   // a place that changed under their feet (the hunting grounds grew): the way in of that same ground
   const here = mapOf(p.map);
   if (!(p.x >= 0 && p.y >= 0) || !canStand(here, p.x, p.y) || !here.reach[Math.floor(p.y / T) * here.w + Math.floor(p.x / T)]) {
@@ -618,6 +622,7 @@ export function removePlayer(S, pid) {
   S.maps[p.map].who = true;
   delete S.players[pid];
   S.n--;
+  if (S.dims[p.map]?.story?.airship) closeDim(S, p.map);
   return ch;
 }
 
@@ -626,10 +631,13 @@ function dropAggro(S, p) {
 }
 
 function changeMap(S, p, to, x, y) {
+  const story = S.dims[to]?.story;
+  if (story?.airship && story.pid !== p.pid) return;
   const minLv = mapLevelNeed(p.ch, to);
-  if (minLv) {
+  const denied = airshipAccess(p.ch, to) || (minLv ? mapLevelMessage(minLv) : "");
+  if (denied) {
     if (S.now >= (p.gateHintAt || 0)) {
-      toast(p, mapLevelMessage(minLv));
+      toast(p, denied);
       p.gateHintAt = S.now + 1500;
     }
     return;
@@ -645,7 +653,7 @@ function changeMap(S, p, to, x, y) {
   rt.n++;
   rt.who = true;
   p.sendMap = true; p.fix = true;
-  explore(S, p);
+  if (!story?.airship) explore(S, p);
   sqProgress(S, p, "visit", (g) => g.map === to);
 }
 

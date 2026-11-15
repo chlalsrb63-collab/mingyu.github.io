@@ -256,9 +256,100 @@ const bloomwhale = (ph) => ({
   },
 });
 
+const ASH = mat("#777c84", { flat: true }), ASH_DARK = mat("#48465b", { flat: true });
+const GROWTH = mat("#a4d2b1", { role: "glow", flat: true }), BEAK = mat("#c3a985", { flat: true });
+
+/** Fast boarding raptor: an ash-grey arrow with wing tips missing in uneven chunks. */
+const airshipGale = {
+  size: "s", hover: 8, k: 1.13,
+  draw(M, p) {
+    const [f, rise] = lunge(p, 1.3);
+    const flap = p.dead ? -0.3 : p.wind ? 1 : p.strike ? -1 : p.walk ? Math.cos(p.ph * Math.PI * 2) : p.idle ? 0.1 : 0.6;
+    const u = 6.2 + rise - flap * 0.6;
+    M.G("body");
+    M.e([f - 0.8, u, 0], [3.8, 2.25, 2.15], ASH, [0, 12, 0]);
+    M.e([f + 0.8, u - 0.75, 0], [2.35, 1.35, 1.7], ASH_DARK);
+    both((s) => M.cone([f - 3.2, u - 0.2, s * 0.9], [f - 8.3, u + 0.9, s * 2.65], 1.02, ASH_DARK));
+    M.G();
+
+    // Raised leading edges with jagged, swept-back primary feathers.
+    both((s) => {
+      M.G(s < 0 ? "left-wing" : "right-wing");
+      const shoulder = [f - 1.1, u + 1.45, s * 1.5];
+      const elbow = [f + 0.7, u + 2.35 + flap * 2.5, s * 5.2];
+      const tip = [f - 2.8, u + 1.4 + flap * 3.8, s * 10.4];
+      M.tube([shoulder, elbow, tip], [1.45, 1.15, 0.55], ASH);
+      for (const [forward, height, span, feather] of [[0.3, 2.1, 4, 3.6], [-0.2, 2.1, 5.5, 4.7], [-1.6, 1.9, 7.4, 2.5], [-2.8, 1.6, 9.1, 3.2]]) {
+        const v = u + height + flap * span * 0.35;
+        M.cone([f + forward, v, s * span], [f + forward - feather, v - 1, s * (span + 0.9)], 0.94, ASH_DARK);
+      }
+      M.G();
+      if (p.strike) M.cone([f + 0.8, u - 1.3, s * 1.3], [f + 3.4, u - 2.6, s * 1.7], 0.58, BEAK);
+    });
+
+    const head = [f + 3.1 + p.strike * 0.8, u + 1.15 - p.strike * 1.05, 0];
+    M.e(head, [2.05, 1.65, 1.55], ASH_DARK);
+    M.cone([head[0] + 0.3, head[1] + 1.1, 0], [head[0] - 1.9, head[1] + 2.2, 0], 0.85, GROWTH);
+    M.tube([[head[0] + 1.2, head[1] + 0.15, 0], [head[0] + 2.9, head[1] - 0.2, 0], [head[0] + 3.1, head[1] - 1.45, 0]], [0.9, 0.65, 0.3], BEAK);
+    both((s) => M.eye(surf(head, [2.05, 1.65, 1.55], [0.75, 0.45, s]), 1, "#a4d2b1"));
+  },
+};
+
+const OBSIDIAN = mat("#232336", { flat: true }), OBSIDIAN_RIM = mat("#454158", { flat: true });
+const PINION = mat("#9b384a", { flat: true }), PINION_RIM = mat("#d66558", { flat: true });
+
+/** The lookout's amber eye sits beneath a blade-like crest, with one torn red wing. */
+const airshipLookout = {
+  size: "l", hover: 11, glow: "#ffc16b", k: 1.09,
+  draw(M, p) {
+    const [f, rise] = lunge(p, 1.6);
+    const beat = p.dead ? -0.4 : p.wind ? 1 : p.strike ? -0.8 : p.walk ? Math.cos(p.ph * Math.PI * 2) * 0.72 : p.idle ? 0.05 : 0.48;
+    const u = 9.2 + rise - beat * 0.8;
+    M.G("body");
+    M.e([f - 1.65, u, 0], [6.4, 3.9, 3.85], OBSIDIAN, [0, 18, 0]);
+    M.e([f + 1.4, u - 0.95, 0], [3.8, 2.95, 3.2], OBSIDIAN_RIM);
+    for (const s of [-1, 0, 1]) M.cone([f - 4.7, u - 0.5, s * 1.5], [f - 11.6 + Math.abs(s) * 1.6, u + 1, s * 3.3], 1.35, OBSIDIAN);
+    M.G();
+
+    both((s) => {
+      const red = s > 0;
+      const wing = red ? PINION : OBSIDIAN;
+      const rim = red ? PINION_RIM : OBSIDIAN_RIM;
+      const shoulder = [f - 0.5, u + 2.8, s * 3.1];
+      const elbow = [f + 1.05, u + 3.8 + beat * 3.9, s * 7.8];
+      const tip = [f - 4.3, u + 3 + beat * 6, s * (red ? 15 : 17)];
+      M.G(red ? "red-wing" : "black-wing");
+      M.tube([shoulder, elbow, tip], [2.15, 1.7, 0.65], wing);
+      M.tube([[elbow[0] - 0.4, elbow[1] + 1.2, elbow[2]], [tip[0] + 0.65, tip[1] + 0.25, tip[2] - s]], [0.75, 0.4], rim);
+      const lengths = red ? [6.6, 7.2, 3.3, 7.9, 3.4] : [5.8, 6.6, 7.4, 7.1, 6.6];
+      for (let i = 0; i < lengths.length; i++) {
+        const span = 5.3 + i * 2.1;
+        const a = [f + 0.65 - i * 0.96, u + 3.5 + beat * span * 0.4, s * span];
+        const b = [a[0] - lengths[i], a[1] - 1.5 - (red ? (i % 2) * 1.6 : 0), a[2] + s * 2.0];
+        M.cone(a, b, 1.4 - i * 0.13, wing);
+      }
+      M.G();
+
+      const spread = p.strike ? 1.7 : 0;
+      const foot = [f + 1.1 + spread, u - 4.85, s * 1.85];
+      M.tube([[f - 0.8, u - 1.6, s * 2.1], [f - 0.4, u - 3.6, s * 2.25], foot], [0.85, 0.64, 0.57], OBSIDIAN_RIM);
+      M.cone(foot, [foot[0] + 1.8, foot[1] - 0.4, foot[2] + s * 0.65], 0.58, BEAK);
+    });
+
+    const head = [f + 4.3 + p.strike * 1.25, u + 3.1 - p.strike * 1.95, 0];
+    M.e(head, [3.4, 3, 2.8], OBSIDIAN);
+    M.cone([head[0] - 0.1, head[1] + 1.65, 0], [head[0] - 3.35, head[1] + 5.55, 0], 1.42, OBSIDIAN_RIM);
+    M.tube([[head[0] + 1.9, head[1] - 0.9, 0], [head[0] + 4.9, head[1] - 1.1, 0], [head[0] + 5.25, head[1] - 3.1, 0]], [1.55, 1.02, 0.35], BEAK);
+    const eye = [head[0] + 1.35, head[1] + 0.6, 0];
+    M.s(eye, 1.8, OBSIDIAN_RIM);
+    M.stare(eye, 1.8, "#ffc16b", 4);
+  },
+};
+
 export const BEASTS_F = {
   bloodhorn: bloodhorn(false), bloodhorn_p2: bloodhorn(true),
   clubshrimp: clubshrimp(false), clubshrimp_p2: clubshrimp(true),
   cloakbat: cloakbat(1), cloakbat_p2: cloakbat(2), cloakbat_ch: cloakbat(3),
   bloomwhale: bloomwhale(1), bloomwhale_p2: bloomwhale(2), bloomwhale_ch: bloomwhale(3), bloomwhale_dive: bloomwhale(4),
+  airship_gale: airshipGale, airship_lookout: airshipLookout,
 };

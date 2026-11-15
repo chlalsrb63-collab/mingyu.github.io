@@ -307,7 +307,7 @@ export function loadMap(m) {
     slice(st, x, y, 2, 1);
     statics.push(st);
   }
-  const TP = theme === "town" || theme === "meadow" ? DC.townProps() : null;
+  const TP = theme === "town" || theme === "meadow" || theme === "mist" ? DC.townProps() : null;
   for (const b of m.big) {
     if (b.t === "bld") {
       // a named building (iso_tall.js models it): its sign beside the door, its windows lit after dark,

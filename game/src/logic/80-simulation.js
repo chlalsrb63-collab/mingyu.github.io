@@ -498,7 +498,7 @@ export function tick(S, now) {
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;
     ensureDaily(S, p);
-    explore(S, p);
+    if (!S.dims[p.map]?.story?.airship) explore(S, p);
     const st = stats(p);
     const calm = now - p.hitAt > 5000;
     // a campfire is a place to catch your breath; sitting by it is better still

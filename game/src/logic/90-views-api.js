@@ -185,8 +185,9 @@ const WORLD_MAP_POS = {
   willow: [170, 233], town: [327, 205], meadow: [348, 93], forest: [548, 124], crypt: [723, 133],
   city: [367, 334], sewer: [552, 320], cave: [710, 302], abyss: [928, 335], maple: [824, 229],
   jungle: [203, 417], coast: [370, 528], oasis: [622, 470], dunesea: [838, 516], frostkeep: [915, 91],
+  airship: [622, 389], mesa: [764, 386],
 };
-const WORLD_MAP_ART = { willow: "willow", frostkeep: "frostkeep", dunesea: "dunesea" };
+const WORLD_MAP_ART = { willow: "willow", frostkeep: "frostkeep", dunesea: "dunesea", airship: "airship" };
 
 function worldMapDefs() {
   // Only custom labels need coordinates to disambiguate the destination. Keep generated terrain lazy.
@@ -202,7 +203,8 @@ function worldMapDefs() {
     const kind = theme === "interior" ? "in" : safe ? "town" : (minLv || ["crypt", "sewer", "cave", "abyss"].includes(theme)) ? "dun" : "field";
     const bosses = [...new Set([FIELD_BOSS[id], ...kinds.filter((mob) => MOBS[mob].boss)].filter(Boolean))];
     return { id, name, band: band && band.map(shownLv), mobs: kinds.slice(), theme, safe, w, h, wpn, to: ROUTES[id],
-      kind, gateLabel: doorName(meta), pos: WORLD_MAP_POS[id]?.slice() || null, bosses, ...(Object.hasOwn(WORLD_MAP_ART, id) ? { art: WORLD_MAP_ART[id] } : {}), ...(minLv ? { minLv } : {}), ...(doors[id] ? { doors: doors[id] } : {}) };
+      kind, gateLabel: doorName(meta), pos: WORLD_MAP_POS[id]?.slice() || null, bosses, ...(Object.hasOwn(WORLD_MAP_ART, id) ? { art: WORLD_MAP_ART[id] } : {}), ...(minLv ? { minLv } : {}), ...(doors[id] ? { doors: doors[id] } : {}),
+      ...(id === AIRSHIP_MAP ? { unlockQuest: AIRSHIP_QUEST } : {}) };
   });
 }
 
@@ -213,6 +215,7 @@ export function defs() {
     // levels as players see them (4·tier − 3); `tier` the world's own
     mobs[k] = { name: d.name, lore: d.lore || MOB_LORE[k] || "", sp: d.sp, tint: d.tint || null, lv: shownLv(d.lv), tier: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0, aggro: d.aggro || 0 };
     if (d.bonusOptional) mobs[k].optional = 1;
+    if (d.questOnly) mobs[k].questOnly = 1;
   }
   const affix = {};
   for (const [k, label, prefix] of AFFIX) affix[k] = [label, prefix];
@@ -226,6 +229,7 @@ export function defs() {
     jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.kind === "hybrid" ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {}, wm: j.kind === "none" ? 0 : jobWmOf(id), sig: JOB_SKILL[id] || "" };
   }
   return {
+    worldName: "루넬샤대륙",
     items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
     jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
@@ -250,7 +254,7 @@ export function defs() {
     // side quests from the world map editor, with who gives them and where they stand
     questTurnIn: { npc: "elder", map: NPC_MAP.elder },
     side: SIDE.map((q) => ({ ...q, giverName: npcName(q.giver), giverMap: MAP_META[NPC_MAP[q.giver]].name,
-      giverMapId: NPC_MAP[q.giver], targetMap: q.goal.type === "talk" ? NPC_MAP[q.goal.npc] : q.goal.type === "visit" ? q.goal.map : null,
+      giverMapId: NPC_MAP[q.giver], targetMap: q.id === AIRSHIP_QUEST ? AIRSHIP_MAP : q.goal.type === "talk" ? NPC_MAP[q.goal.npc] : q.goal.type === "visit" ? q.goal.map : null,
       target: q.goal.type === "kill" ? MOBS[q.goal.mob].name : q.goal.type === "collect" ? ITEMS[q.goal.item].name : q.goal.type === "talk" ? npcName(q.goal.npc) : MAP_META[q.goal.map].name })),
     // the turning day and the weather (the client keeps the same clock), the fire's company
     sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },

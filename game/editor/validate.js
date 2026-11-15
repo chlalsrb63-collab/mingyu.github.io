@@ -285,7 +285,7 @@ export function checkQuests(f, ctx) {
     else if (g.type === "visit") { if (!mapIds.has(g.map)) add(p, `${who}: 찾아갈 맵을 골라 주세요.`); }
     else add(p, `${who}: 목표 종류(잡기·모으기·대화·방문)를 골라 주세요.`);
     const req = q.req || {};
-    if (req.lv != null && (!isInt(req.lv) || req.lv < 1 || req.lv > 99)) add(p, `${who}: 필요 레벨은 1~99예요.`);
+    if (req.lv != null && (!isInt(req.lv) || req.lv < 1 || req.lv > 200)) add(p, `${who}: 필요 레벨은 1~200이에요.`);
     if (req.quest != null && !ids.has(req.quest)) add(p, `${who}: 선행 퀘스트 "${req.quest}"가 없어요.`);
     if (req.quest === q.id) add(p, `${who}: 자기 자신을 선행 퀘스트로 할 수 없어요.`);
     const rw = q.reward || {};

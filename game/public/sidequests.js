@@ -66,14 +66,14 @@ export function renderTalk(box, npc, s, say) {
   const st = states(s);
   const mine = side().filter((q) => q.giver === npc.id);
   if (!mine.length) return;
-  box.append(el("div", "section", "퀘스트"));
+  box.append(el("div", "section", mine.some((q) => q.mainChapter) ? "주요 의뢰" : "퀘스트"));
   let shown = 0;
   for (const q of mine) {
     const v = st.get(q.id);
     if (!v) continue;
     if (v.st === 0) {
       const lock = q.req.quest ? (side().find((o) => o.id === q.req.quest) || {}).title : null;
-      box.append(el("p", "ds", `잠김 · ${q.title} — ${s.lvl < q.req.lv ? `레벨 ${q.req.lv} 이상` : `[${lock}] 완료 후`}`));
+      box.append(el("p", "ds", `잠김 · ${q.title} — ${s.lvl < q.req.lv ? `레벨 ${q.req.lv} 이상` : q.req.main ? "앞선 주요 의뢰 완료 후" : `[${lock}] 완료 후`}`));
       continue;
     }
     shown++;
@@ -101,14 +101,18 @@ export function renderTalk(box, npc, s, say) {
 }
 
 /** Entries for the quest window's list: the side quests under way (and ready to hand in). */
-export function listEntries(s, entry, group) {
+export function listEntries(s, entry, group, chapters = false) {
   const st = states(s);
-  const on = side().filter((q) => st.get(q.id) && st.get(q.id).st >= 2 && st.get(q.id).st <= 3);
+  const on = side().filter((q) => {
+    const state = st.get(q.id)?.st || 0;
+    return chapters ? q.mainChapter && state >= 1 : !q.mainChapter && (state === 2 || state === 3);
+  });
   if (!on.length) return;
-  group("사이드 퀘스트");
+  if (!chapters) group("사이드 퀘스트");
   for (const q of on) {
     const v = st.get(q.id);
-    entry(`sq:${q.id}`, q.title, v.st === 3 ? "완료!" : `${Math.min(v.n, v.need)}/${v.need}`, v.st === 3 ? "done" : "");
+    const sub = v.st === 1 ? "새 의뢰" : v.st === 3 ? "완료!" : v.st === 4 ? "완료" : `${Math.min(v.n, v.need)}/${v.need}`;
+    entry(`sq:${q.id}`, q.title, sub, v.st === 3 ? "done" : v.st === 4 ? "past" : "");
   }
 }
 /** The quest window's detail for a side quest. */
@@ -116,10 +120,18 @@ export function detail(det, id, s) {
   const { el, act, Sound } = C;
   const q = side().find((o) => o.id === id), v = states(s).get(id);
   if (!q || !v) return;
+  if (q.mainChapter && v.st === 4) {
+    det.append(el("div", "q-title", q.title), el("p", "say", q.done), el("p", "ds", "완료한 주요 의뢰입니다."));
+    return;
+  }
   det.append(el("div", "q-title", q.title), el("p", "say", q.text), goalRow(q, v), el("div", "q-reward", rewardText(q)));
-  det.append(el("p", "ds", v.st === 3 ? `${q.giverMap}의 ${q.giverName}에게 돌아가 완료하세요.` : `의뢰인: ${q.giverName} (${q.giverMap})`));
-  const btns = el("div", "btns"), b = el("button", "btn", "포기");
-  b.addEventListener("click", () => { act({ t: "sq", a: "drop", id }); Sound.play("ui"); });
+  det.append(el("p", "ds", v.st === 3 ? `${q.giverMap}의 ${q.giverName}에게 돌아가 완료하세요.`
+    : q.mainChapter && q.goal.type === "kill" && v.st === 2 ? `${q.giverMap}에서 승선장을 찾아 구조에 나서세요.`
+    : `의뢰인: ${q.giverName} (${q.giverMap})`));
+  const action = q.mainChapter && v.st === 1 ? "take" : q.mainChapter && v.st === 3 ? "done" : "drop";
+  const btns = el("div", "btns"), b = el("button", action === "drop" ? "btn" : "btn gold", { take: "수락", done: "완료", drop: "포기" }[action]);
+  if (action !== "drop") b.disabled = C.G.near?.id !== q.giver;
+  b.addEventListener("click", () => { act({ t: "sq", a: action, id }); Sound.play("ui"); });
   btns.append(b);
   det.append(btns);
 }

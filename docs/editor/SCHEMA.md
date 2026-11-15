@@ -28,7 +28,7 @@ logic.js stays one file with no imports. Missing files = empty defaults = the ga
   "id": "willow",                 // [a-z][a-z0-9_]{1,23}; unique; may equal a built-in id only with "replaces"
   "replaces": null,               // or a built-in map id ("meadow", "town", …): this file REPLACES the generated map
   "name": "버드나무 마을",         // Korean display name
-  "theme": "meadow",              // town meadow forest crypt city sewer cave abyss interior (ground/wall art + palette)
+  "theme": "meadow",              // town meadow forest crypt city sewer cave abyss autumn interior mist
   "bgm": "field",                 // audio.js TRACKS key
   "safe": false,                  // true = no monsters, no PvE damage (like town)
   "band": [5, 9],                 // level band shown on doors, or null
@@ -46,6 +46,9 @@ logic.js stays one file with no imports. Missing files = empty defaults = the ga
   "boss": null                    // or { "k": "lambmaw", "x": 40, "y": 8 } field-boss spot
 }
 ```
+
+Named chapters may set `mainChapter: true` for the main quest UI, while using the named quest
+save format. Optional `req.main: true` requires completing the linear main quest chain.
 
 - `role`: `talk` (lines only), `quest` (gives side quests whose `giver` is this id), or any built-in
   service role (`shop smith train bank warp daily collector achieve costume`; `charm` is 주아나 the
@@ -171,7 +174,7 @@ The routines add no character sheet fields.
       //      { "type": "collect", "item": "fish_s", "n": 3 }      (items taken on hand-in)
       //      { "type": "talk", "npc": "town_baker" }
       //      { "type": "visit", "map": "willow" }
-      "req": { "lv": 3, "quest": null },         // min level; side quest id that must be done first
+      "req": { "lv": 3, "quest": null },         // min level (1–200); optional named prerequisite
       "reward": { "xp": 300, "gold": 120, "items": [["hp_s", 3]] },
       "repeat": false
     }

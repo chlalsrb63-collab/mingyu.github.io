@@ -1,0 +1,270 @@
+{
+  "v": 1,
+  "id": "airship",
+  "replaces": null,
+  "name": "바람등호",
+  "theme": "mist",
+  "bgm": "oasis",
+  "safe": true,
+  "band": null,
+  "w": 50,
+  "h": 32,
+  "ground": [
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwbbbbbbbwwwwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwbbbbbbbbbbbbbbbbbbwwwwww",
+    "wwwwwwwwwwwwwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbwwwww",
+    "wwwwwwwwwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwwww",
+    "wwwwwwwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwwww",
+    "wwwwwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwwww",
+    "wwwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwww",
+    "wwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwww",
+    "wwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwww",
+    "wwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwww",
+    "wwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwww",
+    "wwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwww",
+    "wwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwww",
+    "wwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwww",
+    "wwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwww",
+    "wwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwww",
+    "wwwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwww",
+    "wwwwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwwww",
+    "wwwwwwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwwww",
+    "wwwwwwwwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwwww",
+    "wwwwwwwwwwwwwwwwbbbbbbbbbbbbbbbbbbbbbbbbbbbbwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwbbbbbbbbbbbbbbbbbbbbbwwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwbbbbbbbbbbbbwwwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+    "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+  ],
+  "objects": [
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                           hh                     ",
+    "              hh         FFhh FF   v| ok          ",
+    "             Ghh                         w]       ",
+    "                                       hh         ",
+    "                                           G      ",
+    "          L                                       ",
+    "        G        L      L                         ",
+    "                       h                  FF      ",
+    "                             L             F      ",
+    "                                                  ",
+    "                                                  ",
+    "             w                              L     ",
+    "                             G        L           ",
+    "           ok                                     ",
+    "                   ]] hh                          ",
+    "                  w  w       >>mh     ]           ",
+    "                 FF    FFF        &h<w            ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  "
+  ],
+  "entry": [
+    9,
+    16
+  ],
+  "spawns": [],
+  "npcs": [
+    {
+      "id": "airship_captain",
+      "name": "선장 아루",
+      "role": "quest",
+      "x": 39,
+      "y": 13,
+      "look": [
+        5,
+        1,
+        0,
+        "#384d75"
+      ],
+      "lines": [
+        "갑판을 되찾아 줘서 고맙네. 오아시스의 수색대가 다시 우리 바람등을 볼 수 있겠군.",
+        "날개 달린 놈들이 어떻게 구름을 헤치고 올라왔는지 알아내야지. 해가 기울면 지상 독수리 떼의 이동 경로부터 살필 걸세."
+      ]
+    },
+    {
+      "id": "airship_scout",
+      "name": "기록관 초미",
+      "role": "quest",
+      "x": 15,
+      "y": 11,
+      "look": [
+        7,
+        0,
+        0,
+        "#837649"
+      ],
+      "lines": [
+        "정찰 일지엔 모래바람 방향, 피난 행렬, 감염 발견 지점을 표시해. 셋 중 하나만 틀려도 수색대가 길을 잃거든.",
+        "갑판에서 본 것을 오아시스에 전해 주겠어? 저 아래 동물들도 우리가 무사한지 궁금할 거야."
+      ]
+    },
+    {
+      "id": "airship_armorer",
+      "name": "무기상 단추",
+      "role": "shop",
+      "x": 31,
+      "y": 20,
+      "look": [
+        3,
+        2,
+        0,
+        "#854f48"
+      ],
+      "lines": [
+        "동쪽 수색대가 쓰던 무기야. 하늘 위에선 손에 익은 무기라도 끈부터 단단히 매.",
+        "고주파 장비는 101레벨, 차원 장비는 149레벨부터 들 수 있어."
+      ],
+      "goods": [
+        "w_ship_warrior_4",
+        "w_ship_rogue_4",
+        "w_ship_lancer_4",
+        "w_ship_mage_4",
+        "w_ship_book_4",
+        "w_ship_bow_4",
+        "w_ship_h_4",
+        "w_ship_warrior_5",
+        "w_ship_rogue_5",
+        "w_ship_lancer_5",
+        "w_ship_mage_5",
+        "w_ship_book_5",
+        "w_ship_bow_5",
+        "w_ship_h_5",
+        "hp_l",
+        "mp_l",
+        "stone",
+        "recall"
+      ]
+    },
+    {
+      "id": "airship_smith",
+      "name": "기관장 볼트",
+      "role": "smith",
+      "x": 34,
+      "y": 21,
+      "look": [
+        8,
+        1,
+        0,
+        "#756044"
+      ],
+      "lines": [
+        "엔진 진동이 세 번 들릴 때 추를 내려. 그 박자에 맞추면 갑판 위에서도 강화할 수 있어.",
+        "갈라진 연료관은 둘러막았어. 다음 정찰 전까지 무기 수리는 여기서 맡을게."
+      ]
+    }
+  ],
+  "portals": [],
+  "fires": [],
+  "waypoint": [
+    12,
+    14,
+    12,
+    15
+  ],
+  "fishing": false,
+  "boss": null,
+  "big": [
+    {
+      "t": "prop",
+      "k": "shiprig",
+      "x": 22,
+      "y": 15,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "t": "prop",
+      "k": "lookout",
+      "x": 14,
+      "y": 9,
+      "w": 2,
+      "h": 2
+    },
+    {
+      "t": "prop",
+      "k": "watch",
+      "x": 27,
+      "y": 8,
+      "w": 2,
+      "h": 2
+    },
+    {
+      "t": "prop",
+      "k": "stall",
+      "x": 32,
+      "y": 23,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "anvil",
+      "x": 35,
+      "y": 24,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "bench",
+      "x": 22,
+      "y": 22,
+      "w": 2,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "bench",
+      "x": 39,
+      "y": 11,
+      "w": 2,
+      "h": 1
+    }
+  ],
+  "marks": [
+    {
+      "x": 8,
+      "y": 14,
+      "kind": "sign",
+      "label": "오아시스 하선",
+      "to": "oasis"
+    },
+    {
+      "x": 13,
+      "y": 10,
+      "kind": "sign",
+      "label": "함수 정찰대"
+    },
+    {
+      "x": 29,
+      "y": 20,
+      "kind": "sign",
+      "label": "후미 보급소"
+    },
+    {
+      "x": 43,
+      "y": 12,
+      "kind": "sign",
+      "label": "선장 지휘소"
+    }
+  ]
+}

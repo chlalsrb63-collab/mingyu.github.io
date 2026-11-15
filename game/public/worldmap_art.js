@@ -279,8 +279,53 @@ function dunesea(g) {
   rect(g, 26, 33, 9, 1, "#e6c18b");
 }
 
+function airship(g) {
+  const wood = "#965b45", shade = "#674553", deck = "#d49b64";
+  const brass = "#e8bc73", metal = "#a87553";
+  const cloth = "#f3e6c3", clothShade = "#aebebb";
+  const plum = "#914252", rose = "#d97864";
+
+  // Long, offset cloud shapes keep the ship clear of a painted ground tile.
+  poly(g, [[2, 40], [7, 40], [9, 38], [15, 38], [17, 39], [24, 39], [20, 42], [5, 42]], clothShade);
+  rect(g, 7, 39, 9, 1, cloth);
+  poly(g, [[47, 7], [51, 4], [55, 4], [57, 6], [60, 6], [57, 9], [48, 9]], clothShade);
+  rect(g, 51, 5, 5, 1, cloth);
+
+  // Tall forward mast, curved canvas and a furled aft vane.
+  rect(g, 25, 3, 2, 21, INK);
+  poly(g, [[27, 4], [31, 4], [35, 6], [40, 6], [36, 9], [31, 8], [27, 8]], INK);
+  poly(g, [[27, 5], [31, 5], [36, 7], [37, 7], [35, 8], [31, 7], [27, 7]], rose);
+  poly(g, [[26, 10], [33, 11], [39, 15], [40, 20], [30, 18], [24, 19], [21, 21], [23, 16]], INK);
+  poly(g, [[27, 11], [33, 12], [38, 16], [39, 19], [31, 17], [24, 18], [25, 15]], clothShade);
+  poly(g, [[27, 11], [33, 12], [37, 15], [36, 16], [31, 15], [25, 17]], cloth);
+  poly(g, [[44, 18], [47, 12], [51, 11], [51, 14], [48, 19]], INK);
+  poly(g, [[45, 18], [48, 13], [50, 12], [48, 17]], cloth);
+
+  // Main hull. The lighter upper plane and angled bow make the heading readable.
+  poly(g, [[2, 28], [11, 24], [33, 20], [47, 17], [54, 17], [59, 23], [57, 29], [49, 32], [36, 36], [23, 38], [15, 37], [9, 34], [6, 30]], INK);
+  poly(g, [[7, 28], [17, 27], [47, 21], [57, 23], [56, 28], [47, 31], [35, 35], [23, 37], [15, 36], [10, 33]], shade);
+  poly(g, [[8, 28], [17, 25], [47, 19], [54, 19], [57, 23], [54, 26], [42, 30], [25, 34], [16, 34], [10, 31]], wood);
+  poly(g, [[9, 28], [17, 25], [48, 18], [53, 18], [56, 22], [48, 24], [25, 29], [16, 31], [11, 30]], deck);
+
+  // A raised wheelhouse and a large brass pod set into the near side.
+  poly(g, [[40, 22], [43, 17], [49, 15], [55, 18], [56, 21], [49, 25]], INK);
+  poly(g, [[43, 19], [49, 16], [54, 18], [48, 21]], rose);
+  poly(g, [[43, 19], [48, 21], [55, 18], [55, 21], [49, 24], [42, 22]], plum);
+  rect(g, 49, 21, 3, 1, brass);
+  poly(g, [[37, 31], [42, 27], [49, 26], [54, 28], [54, 32], [50, 35], [42, 36], [38, 34]], INK);
+  poly(g, [[38, 31], [43, 28], [49, 27], [53, 29], [53, 32], [49, 34], [42, 35]], metal);
+  poly(g, [[39, 31], [44, 28], [49, 27], [52, 29], [48, 31], [42, 32]], brass);
+  rect(g, 49, 31, 3, 2, shade);
+
+  // Short ventral wing and the brass stem where the model tapers to the bow.
+  poly(g, [[27, 33], [36, 32], [34, 36], [28, 39], [22, 39], [24, 36]], INK);
+  poly(g, [[27, 34], [34, 33], [32, 36], [27, 38], [24, 38]], clothShade);
+  poly(g, [[27, 34], [33, 33], [30, 35], [25, 37]], cloth);
+  rect(g, 11, 29, 6, 1, brass);
+}
+
 const terrains = new Map([
-  ["frostkeep", frostkeep], ["dunesea", dunesea],
+  ["frostkeep", frostkeep], ["dunesea", dunesea], ["airship", airship],
   ["town", town], ["willow", g => town(g, true)], ["city", city],
   ["meadow", meadow], ["forest", forest], ["jungle", jungle], ["coast", coast],
   ["desert", oasis], ["oasis", oasis], ["autumn", autumn], ["maple", autumn],

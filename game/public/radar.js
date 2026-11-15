@@ -22,7 +22,7 @@
 import * as Art from "./art.js";
 import * as NPC from "./npclife.js";
 import { icon } from "./uiicons.js";
-import { mapChart, shortestRoute, questMaps, nextGate, chartBase, paintChart, mapDetail } from "./worldmap.js";
+import { mapChart, shortestRoute, questMaps, nextGate, chartBase, paintChart, mapDetail, unlockState } from "./worldmap.js";
 
 const T = 16;
 const INK = "#120e18";
@@ -642,7 +642,7 @@ function drawWorld(g, W, H, t) {
   const detail = $("#map-detail"), d = chart.nodes.get(world.selected)?.d;
   detail.hidden = !d;
   if (!d) { world.detailKey = null; return; }
-  const canWarp = !!D.canWarp(), key = JSON.stringify([d.id, state.current, state.route, state.quests.get(d.id), G.self?.wp?.[d.id], G.self?.lvl, canWarp, state.seen.has(d.id)]);
+  const canWarp = !!D.canWarp(), key = JSON.stringify([d.id, state.current, state.route, state.quests.get(d.id), G.self?.wp?.[d.id], G.self?.lvl, canWarp, state.seen.has(d.id), unlockState(d, G.self)]);
   if (key === world.detailKey) return;
   world.detailKey = key;
   mapDetail(detail, d, { defs: G.defs, chart, state, canWarp, select: selectWorld, travel: (to, i) => {
@@ -689,6 +689,7 @@ function setTab(tab) {
   $("#w-map").classList.toggle("world-chart", tab === "world");
   $("#w-map").classList.toggle("map-has-detail", tab === "world" && !!world.selected);
   $("#map-region-bar").hidden = tab !== "world";
+  if (tab === "world") $("#map-world-name").textContent = D.G.defs?.worldName || "";
   $("#map-detail").hidden = tab !== "world" || !world.selected;
   $("#map-zoom").hidden = $("#map-box").hidden = $("#map-info").hidden = $("#map-legend").hidden = tab === "residents";
   $("#map-residents").hidden = tab !== "residents";

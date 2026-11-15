@@ -331,6 +331,52 @@
       "req": { "lv": 25, "quest": null },
       "reward": { "xp": 9000, "gold": 1200, "items": [["sc_atk", 1], ["hp_m", 5]] },
       "repeat": false
+    },
+    {
+      "id": "sq_airship_rescue",
+      "giver": "airship_signal",
+      "mainChapter": true,
+      "title": "구름 위의 구조신호",
+      "text": "피난 온 작은꼬리들이 감염을 조사하고 오아시스 모험단을 지원하려고 바람등호를 띄웠어. 구름 위라면 안전하리라 믿었지. 방금 붉은 등불이 세 번 깜빡였어. 감염된 독수리 떼가 갑판에 들이닥쳤대. 승강장에서 배에 올라 선원들을 구해 줘.",
+      "done": "바람등호의 구조등이 다시 푸르게 빛난다. 선원들이 갑판을 정리하는 사이, 선장 아루가 배를 모험단의 보급 거점으로 열었다.",
+      "goal": { "type": "kill", "mob": "airship_lookout", "n": 1 },
+      "req": { "lv": 100, "quest": null },
+      "reward": { "xp": 36000, "gold": 8500, "items": [] },
+      "repeat": false
+    },
+    {
+      "id": "sq_airship_logbook",
+      "giver": "airship_scout",
+      "title": "두 곳에서 본 하늘",
+      "text": "안전한 비행로를 다시 그리는 중이야. 배에서 본 시간하고 오아시스의 관측을 나란히 적어야 독수리가 올라온 때를 찾을 수 있어. 신호수 노을에게 우리 일지를 전하고 그쪽 관측도 받아 와 줘.",
+      "done": "두 일지에서 처음 이상이 나타난 지점을 이으니, 옛 지도에만 남은 길과 겹쳐. 독수리가 그 길을 따라왔는지, 그 아래 묻힌 무언가에 이끌렸는지는 아직 모르겠어. 다음 정찰 때 그 구간에서 신호를 더 자주 보낼게.",
+      "goal": { "type": "talk", "npc": "airship_signal" },
+      "req": { "lv": 100, "quest": null },
+      "reward": { "xp": 22000, "gold": 1850, "items": [["recall", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_airship_clear_sky",
+      "giver": "airship_captain",
+      "title": "수색대의 하늘길",
+      "text": "오아시스 지상의 백골 독수리 갈비들은 낮게 도는 법을 배웠어. 다음 정찰 전에 우리 배를 쫓는 다섯 마리를 떨어뜨려 주게. 시간은 모험단이 내려가 움직이기 좋을 때로 골라도 되네.",
+      "done": "수색대가 발을 떼도 되겠군. 정찰등은 어두워도 계속 켜 두겠네. 길을 잃으면 하늘을 보게.",
+      "goal": { "type": "kill", "mob": "ribvulture_bone", "n": 5 },
+      "req": { "lv": 100, "quest": null },
+      "reward": { "xp": 28000, "gold": 2900, "items": [["stone", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_lunelsha_tablet",
+      "giver": "lunelsha_tablet",
+      "mainChapter": true,
+      "title": "서리 아래 남은 이름",
+      "text": "고대비석의 첫 줄에 지금의 지도에도 남아 있는 이름이 있다. 루넬샤. 손바닥으로 서리를 걷어 내고 끊어진 글줄을 따라가 보자.",
+      "done": "비석에는 승전 기록이 남아 있다. 먼 대륙에서 건너온 작은꼬리들의 조상은 강한 전투 민족이었다. 그들은 다른 땅을 차지할 때마다 변이 흑마법을 뿌려 그곳에 살던 민족과 동식물을 죽였다. 루넬샤도 그렇게 빼앗았다. 그 주문은 수천 년간 땅속에 잠들어 있다가 다시 깨어났다. 이제는 이 땅을 고향이라 부르는 후손들까지 변이에 휩쓸리고 있다. 새김은 거기서 끊긴다. 그 뒤의 이야기는 아직 살아 있는 작은꼬리들이 써야 한다.",
+      "goal": { "type": "talk", "npc": "lunelsha_tablet" },
+      "req": { "lv": 200, "quest": null, "main": true },
+      "reward": { "xp": 0, "gold": 0, "items": [] },
+      "repeat": false
     }
   ]
 }

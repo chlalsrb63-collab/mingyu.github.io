@@ -33,7 +33,7 @@ for (const q of D.quests) {
 // Retired stand-ins stay for old collections, and summoned adds live in their encounter.
 const NOT_PLACED = new Set("nightbat hagfishhead catsplit_gold toadbrood_poison mothface_bile ribdeer_bile lambmaw_bone eyecrow_ash twingoat_gold bearmaw_gold crabskull_blood fishwalker_frost eelknot_frost squidrat_blood gatorhalf_steel spiderhand_bone owlstare_gold fishwalker_blood crabskull_frost moleworm_gold spinescorp ribvulture crownpeacock bloodshard clubshrimp".split(" "));
 const arenaBosses = new Set(D.dim.chal.bosses.map(([k]) => k));
-for (const k of Object.keys(D.mobs)) assert.ok(homes[k] || arenaBosses.has(k) || NOT_PLACED.has(k), "every monster has a home or challenge arena: " + k);
+for (const k of Object.keys(D.mobs)) assert.ok(homes[k] || arenaBosses.has(k) || NOT_PLACED.has(k) || D.mobs[k].questOnly, "every monster has a home or encounter: " + k);
 for (const k of arenaBosses) assert.ok(D.mobs[k]?.boss, `${k} is a declared boss`);
 
 // ── walk the whole world: from each arrival point, every door of that map can be reached on foot,
@@ -55,6 +55,7 @@ const flood = (m, sx, sy) => {
 const place = (id, x, y) => { L.runtime(S, p.map).n--; p.map = id; L.runtime(S, id).n++; p.x = x; p.y = y; p.mvAt = now; p.sendMap = true; p.hp = 1e9; };
 const hero = L.hero("길잡이", { wk: "sword", lvl: 200 });
 Object.assign(p.ch, { st: hero.st, lvl: hero.lvl });
+for (const map of D.maps) if (map.unlockQuest) p.ch.sq.done[map.unlockQuest] = 1;
 p.stc = null;
 const seen = {}, maps = {}, todo = [["town", 20 * 16 + 8, 18 * 16 + 8]];
 while (todo.length) {

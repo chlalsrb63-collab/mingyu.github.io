@@ -18,7 +18,13 @@ export function applyAction(S, pid, a) {
       if (validAim(a.a)) p.aim = a.a;
       // stepping anywhere on a gate tile (or brushing its edge) takes you through
       for (const pt of m.portals) {
-        if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) < 12) { const at = arrivalOf(S, pt); if (at) changeMap(S, p, pt.to, at[0] * T + 8, at[1] * T + 10); break; }
+        if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) >= 12) continue;
+        if (p.map === AIRSHIP_BACK[0] && pt.to === AIRSHIP_MAP && !airshipCleared(ch)) airshipBoard(S, p);
+        else {
+          const at = arrivalOf(S, pt);
+          if (at) changeMap(S, p, pt.to, at[0] * T + 8, at[1] * T + 10);
+        }
+        break;
       }
       // the "내 집" door in town (64-housing.js)
       homeDoor(S, p);
@@ -556,6 +562,8 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "warp": {
+      const denied = airshipAccess(ch, a.to);
+      if (denied) { toast(p, denied); break; }
       const minLv = mapLevelNeed(ch, a.to);
       if (minLv) { toast(p, mapLevelMessage(minLv)); break; }
       const i = a.i || 0, w = stonesOf(mapOf(a.to))[i] || wpOf(a.to);

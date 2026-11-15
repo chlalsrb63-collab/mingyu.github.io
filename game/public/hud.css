@@ -801,6 +801,7 @@ body[data-lay="port"] #map-box, body[data-lay="land"] #map-box { height: clamp(1
 #w-map.world-chart { --win-max: 900px; width: min(900px, calc(var(--zone-w) - 8px)); }
 #w-map.world-chart #map-box { flex: 0 0 auto; height: clamp(250px, calc(var(--zone-h) - var(--tabs-h) - 180px), 555px); background: #5c4638; }
 #map-region-bar { display: flex; align-items: center; gap: 7px; color: #eee0b9; font: 11px var(--pix); }
+#map-world-name { margin-inline-start: auto; color: #f0d7a3; font-size: 13px; white-space: nowrap; }
 #map-region-bar[hidden], #map-detail[hidden] { display: none; }
 #map-region { max-width: 72%; min-height: 26px; background: #211b2c; color: #f0e0b6; border: 1px solid #6c5c49; padding: 2px 6px; }
 #map-detail { padding: 6px 8px; flex: 0 0 auto; }

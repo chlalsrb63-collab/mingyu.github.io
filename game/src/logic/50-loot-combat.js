@@ -376,6 +376,7 @@ function killMob(S, rt, mob) {
   mob.dot = null;
   mob.mk = 0; mob.dec = null; mob.vuln = 0; mob.brand = 0;
   rt.ev.push(["k", mob.id]);
+  if (S.dims[rt.id]?.story?.airship) { airshipKill(S, rt, mob); return; }
   // the hands that struck it learn from it
   wmKill(S, rt, mob);
   // In the field, a party member needs to be near a hitter and the fallen monster.

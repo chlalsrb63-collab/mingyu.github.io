@@ -90,16 +90,20 @@ export function questMaps(defs, self, nodes) {
   for (const [id, state] of self?.sq || []) {
     const side = sides.get(id);
     if (!side) continue;
+    if (side.mainChapter && state === 1) add(side.giverMapId, side.title);
     if (state === 3) add(side.giverMapId, side.title);
+    else if (state === 2 && side.mainChapter && side.targetMap) add(side.targetMap, side.title);
     else if (state === 2 && side.goal.type === "kill") hunt(side.goal.mob, side.title);
     else if (state === 2) add(side.targetMap, side.title);
   }
   return quests;
 }
 
-const band = d => d.minLv ? `Lv.${d.minLv} 전용` : d.band ? `Lv.${d.band[0]}–${d.band[1]}` : d.safe ? "안전 지대" : names[d.kind];
+const band = d => d.minLv ? `Lv.${d.minLv} ${d.unlockQuest ? "이상" : "전용"}` : d.band ? `Lv.${d.band[0]}–${d.band[1]}` : d.safe ? "안전 지대" : names[d.kind];
+export const unlockState = (d, self) => d.unlockQuest ? self?.sq?.find(([id]) => id === d.unlockQuest)?.[1] || 0 : 4;
 const room = n => n.d.kind === "in";
 export function wokeStones(d, self, woke) {
+  if (unlockState(d, self) !== 4) return [];
   return Array.from({ length: d.wpn || 0 }, (_, i) => i).filter(i => woke(self, d.id, i));
 }
 
@@ -188,6 +192,7 @@ export function paintChart(g, chart, base, cam, state) {
   for (const [id, n] of chart.nodes) {
     const { d } = n, [x, y] = screen(n), inside = room(n), hitW = Math.min(146, CELL_W * scale - 3);
     const cur = current === id, known = cur || seen.has(id), sel = selected === id;
+    const locked = unlockState(d, self) !== 4;
     const stoneCount = wokeStones(d, self, woke).length;
     const members = party.get(id) || [], todo = quests.get(id) || [];
     const art = terrainIcon(d.art || d.theme, d.kind);
@@ -195,7 +200,7 @@ export function paintChart(g, chart, base, cam, state) {
     const labelY = inside ? y + 1 : y + Math.round(13 * scale);
     const top = inside ? y - 20 * scale : y - 39 * scale;
     const low = labelY + (inside ? 13 : 26);
-    const sub = `${band(d)}${d.wpn ? ` · ◆${stoneCount}/${d.wpn}` : ""}`;
+    const sub = `${band(d)}${locked ? " · 구조 대기" : d.wpn ? ` · ◆${stoneCount}/${d.wpn}` : ""}`;
     g.font = `bold ${inside ? 10 : 12}px Galmuri11, sans-serif`;
     const nameWidth = g.measureText(d.name).width;
     g.font = "10px Galmuri11, sans-serif";
@@ -251,6 +256,7 @@ export function mapDetail(host, d, ctx) {
   const addRow = (root, key, value) => { if (value) root.append(E("div", key, "map-detail-key"), E("div", value)); };
   const head = E("div", "", "map-detail-head");
   head.append(E("strong", d.name), E("span", [names[d.kind], band(d), d.id === current ? "현재 위치" : !seen.has(d.id) ? "미방문" : ""].filter(Boolean).join(" · ")));
+  const unlock = unlockState(d, self), chapter = defs.side?.find(q => q.id === d.unlockQuest);
   const path = route.length > 1 ? route.map(nameOf).join(" → ") : d.id === current ? "지금 이 지역에 있습니다" : "현재 갈 수 있는 문 경로가 없습니다";
   const guide = E("p", path, "map-guide");
   const open = wokeStones(d, self, woke), ways = defs.waypoints?.find(w => w.id === d.id);
@@ -268,6 +274,9 @@ export function mapDetail(host, d, ctx) {
     if (open.length && (!canWarp || levelLocked)) stones.append(E("span", levelLocked ? `Lv.${d.minLv} 필요` : "이동의 돌 곁에서 사용 가능"));
   }
   const body = E("div", "", "map-detail-grid");
+  if (chapter) addRow(body, "승선", unlock === 4 ? "해방된 갑판 · 무기 상점과 선원 의뢰"
+    : unlock >= 2 ? `${chapter.giverMap} 승선장에서 구조에 나서세요`
+    : `${chapter.giverMap}의 ${chapter.giverName}에게서 [${chapter.title}] 수락`);
   const mobName = id => defs.mobs?.[id]?.name || "";
   addRow(body, "몬스터", (d.mobs || []).filter(id => !defs.mobs?.[id]?.boss && !defs.mobs?.[id]?.chest).map(mobName).filter(Boolean).join(", "));
   addRow(body, "보스", (d.bosses || []).map(mobName).filter(Boolean).join(", "));

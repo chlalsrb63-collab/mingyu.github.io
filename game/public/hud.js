@@ -171,9 +171,10 @@ function tracker(s) {
   // while the first steps are unfinished the daily tasks stay out of the tracker (첫걸음 and the main quest only)
   const tutOn = !!(s.tut && s.tut.i < (G.defs.tutorial || []).length);
   const dl = !tutOn && s.daily && s.daily.tasks.filter((d) => !d.claimed);
-  const key = JSON.stringify([s.q, s.bq, dl, Board.trackKey(s)]);
+  const chapter = G.defs.side?.find((q) => q.mainChapter && s.sq?.some(([id, state]) => id === q.id && state === 2));
+  const key = JSON.stringify([s.q, s.bq, dl, Board.trackKey(s), chapter?.id]);
   setOnce($("#quest-track"), key, (qt) => {
-    if (!quest && !s.bq && !(dl && dl.length) && !Board.active(s)) return;
+    if (!quest && !chapter && !s.bq && !(dl && dl.length) && !Board.active(s)) return;
     // no heading: each line's glyph says what kind of work it is (hover: the name, click: its card)
     const goal = (label, n, need, doneText) => {
       const done = n >= need, row = el("div", "qp");
@@ -187,6 +188,10 @@ function tracker(s) {
       return row;
     };
     Board.trackRows(s, qt, goal);                     // the 알바 in hand comes first: a parcel is on the clock (board.js)
+    if (chapter) {
+      const t = el("div", "qt"); t.append(Info.questMark("main"), chapter.title);
+      qt.append(t, el("div", "qp", chapter.goal.type === "kill" ? `${chapter.giverMap} 승선장 · 침입자 격퇴` : SideQ.goalText(chapter)));
+    }
     if (quest && s.q.st === 1) {
       const t = el("div", "qt"); t.append(Info.questMark("main"), quest.title);
       qt.append(t, goal(G.defs.mobs[quest.mob].name, s.q.n, quest.n, "완료! 엘더윈에게 돌아가세요"));

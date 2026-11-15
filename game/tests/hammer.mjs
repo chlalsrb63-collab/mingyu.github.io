@@ -184,7 +184,11 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
   assert.deepEqual(S.players.migration.ch.wm.hammer, { lv: 1, xp: 0 });
   assert.equal(S.players.migration.ch.v, 22);
   assert.equal(D.wkOrder.at(-1), "hammer");
-  assert.equal(Object.values(D.items).filter(it => it.wk === "hammer" && !it.uniq).length, 5);
+  for (let tier = 1; tier <= 5; tier++) {
+    const item = D.items[`w_h_${tier}`];
+    assert.equal(item?.wk, "hammer");
+    assert.equal(item.tier, tier);
+  }
   assert.equal(Object.values(D.skills).filter(sk => sk.wk === "hammer" && sk.kind === "p").length, 5);
 }
 

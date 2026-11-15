@@ -119,7 +119,7 @@ export function renderQuest(s) {
   // a main quest just handed in: show the next one rather than the finished page
   if (G.qCur !== undefined && G.qCur !== cur && G.qsel === `main:${G.qCur}`) G.qsel = `main:${cur}`;
   G.qCur = cur;
-  const picks = Object.keys(mobs).filter((k) => !mobs[k].boss && !mobs[k].chest && mobs[k].tier <= (s.lvl + 3) / 4 + 4 && (!s.bq || s.bq.k !== k)).sort((a, b) => mobs[b].lv - mobs[a].lv).slice(0, 4);
+  const picks = Object.keys(mobs).filter((k) => !mobs[k].boss && !mobs[k].chest && !mobs[k].questOnly && mobs[k].tier <= (s.lvl + 3) / 4 + 4 && (!s.bq || s.bq.k !== k)).sort((a, b) => mobs[b].lv - mobs[a].lv).slice(0, 4);
   const keys = [];
   const entry = (key, label, sub, cls) => {
     keys.push(key);
@@ -135,6 +135,7 @@ export function renderQuest(s) {
     const q = qs[cur];
     entry(`main:${cur}`, `${cur + 1}. ${q.title}`, s.q.st === 0 ? "새 의뢰" : s.q.n >= q.n ? "완료!" : `${s.q.n}/${q.n}`, s.q.st === 1 && s.q.n >= q.n ? "done" : "");
   }
+  SideQ.listEntries(s, entry, null, true);
   for (let i = cur - 1; i >= 0; i--) entry(`main:${i}`, `${i + 1}. ${qs[i].title}`, "완료", "past");
   SideQ.listEntries(s, entry, (t) => list.append(el("div", "grp", t)));
   list.append(el("div", "grp", "반복 의뢰"));

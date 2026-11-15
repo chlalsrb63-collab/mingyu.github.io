@@ -108,7 +108,7 @@ function form() {
     el("h4.full", null, "목표"),
     ...f2("종류", gType), ...f2("내용", goalIn),
     el("h4.full", null, "조건"),
-    ...f2("필요 레벨", intIn(q.req.lv, 1, 99, (v) => { q.req.lv = v; }, "이 레벨 이상이어야 받을 수 있어요")),
+    ...f2("필요 레벨", intIn(q.req.lv, 1, 200, (v) => { q.req.lv = v; }, "이 레벨 이상이어야 받을 수 있어요")),
     ...f2("선행 퀘스트", el("select", { title: "이 퀘스트를 먼저 끝내야 받을 수 있어요", onchange: set((v) => { q.req.quest = v || null; }) }, el("option", { value: "" }, "없음"), ...others.map((o) => el("option", { value: o.id, selected: o.id === q.req.quest }, `${o.title} (${o.id})`)))),
     el("h4.full", null, "보상"),
     ...f2("경험치", intIn(q.reward.xp, 0, 10000000, (v) => { q.reward.xp = v || 0; })),

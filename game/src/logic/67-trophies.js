@@ -135,9 +135,9 @@ function storyClear(S, rt, mob) {
 function storyHome(S, p, why) {
   const dim = dimAt(S, p.map), st = dim && dim.story;
   if (!st) return;
-  const [map, x, y] = st.from;
+  const [map, x, y] = st.airship ? airshipReturn(st) : st.from;
   if (p.dead) { p.dead = false; const s = stats(p); p.hp = Math.round(s.mhp * 0.5); p.mp = Math.max(p.mp, Math.round(s.mmp * 0.5)); }
-  p.storyBack = 1;
+  if (!st.airship) p.storyBack = 1;
   changeMap(S, p, map, x, y);
   if (why) toast(p, why);
   p.dirty = true;
@@ -150,7 +150,7 @@ function storyTick(S, now) {
     if (!st) continue;
     const p = S.players[st.pid];
     if (!p || p.map !== id) { closeDim(S, id); continue; }
-    if (st.won) { if (now >= st.endAt) storyHome(S, p, "원래 자리로 돌아왔습니다."); continue; }
+    if (st.won) { if (now >= st.endAt) storyHome(S, p, st.airship ? "안전해진 바람등호의 갑판으로 돌아왔습니다." : "원래 자리로 돌아왔습니다."); continue; }
     if (p.dead) { if (!st.deadAt) st.deadAt = now; else if (now - st.deadAt >= STORY.failMs) storyHome(S, p, "쓰러졌습니다… 다시 그 자리로 다가가면 재도전할 수 있습니다."); continue; }
     if (now >= dim.expire) storyHome(S, p, "시간이 다 되었습니다. 다시 그 자리로 다가가면 재도전할 수 있습니다.");
   }

@@ -6,7 +6,8 @@
 // here it is moved to the nearest open tile so nobody is ever stuck in a wall).
 // Malformed entries are skipped: npm run data:check is where the owner hears about them.
 
-const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn", "interior"];
+const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn", "interior", "mist"];
+const AIRSHIP_MAP = "airship", AIRSHIP_MIN_LV = 100;
 /** The looks an interior can have (wallpaper, wood and light; public/iso_interior.js). */
 const ROOM_STYLES = ["cafe", "hall", "inn", "library", "office", "forge", "tavern", "shop", "boutique", "dojo", "lab", "lobby"];
 /** Little idle acts an NPC can play out (public/iso_interior.js npcPose). */
@@ -234,7 +235,7 @@ const metaKinds = (m) => [...new Set(m.spawns.map((sp) => sp.k))];
 const MAP_META = {};
 const EAGER = {};
 for (const id of [...BUILTIN_MAPS, ...Object.keys(FILES).filter((id) => !BUILTIN_MAPS.includes(id))]) {
-  const minLv = GEN[id]?.minLv || 0;
+  const minLv = id === AIRSHIP_MAP ? AIRSHIP_MIN_LV : GEN[id]?.minLv || 0;
   if (id === "town" || FILES[id]) {
     const m = (EAGER[id] = baseMap(id));
     MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, minLv, kinds: metaKinds(m), eager: true };
@@ -346,7 +347,7 @@ for (const id of Object.keys(MAP_META)) {
  * sheet on tile (tx, ty) of `map`, or the nearest tile a player can stand on, or the entrance.
  */
 export function devPlace(ch, map, tx, ty) {
-  if (!ch || mapLevelNeed(ch, map)) return false;
+  if (!ch || mapLevelNeed(ch, map) || (map === AIRSHIP_MAP && !airshipCleared(ch))) return false;
   const m = typeof map === "string" ? mapOf(map) : null;
   if (!m) return false;
   const at = (Number.isInteger(tx) && Number.isInteger(ty) && inMap(m, tx, ty) && m.reach[ty * m.w + tx] ? [tx, ty] : null) || freeTile(m, tx | 0, ty | 0) || m.entry;
