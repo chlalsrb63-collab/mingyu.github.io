@@ -521,7 +521,7 @@ generators, `MAP_META`, cells, `setup/runtime/changeMap`, `buildTown`, or `tickM
 
 **J1 as built** (what differs from or adds to the plan above; these are the contracts J2/J3 build on):
 - Wire: `ar` is `["ar", id, x0, y0, ux·1000, uy·1000, spd, kind, shooterEid]` (shooter appended for the bow art;
-  `kind` 0 plain, 1 finisher, 2+ skill); `ae` is `["ae", id, x, y, how]` with `how` 0 struck, 1 stuck in a wall, 2 out
+  `kind` 0 plain, 1 finisher, 2–7 skill, 8 staff missile, 9 book orb — those two home on a 10th field, the monster id); `ae` is `["ae", id, x, y, how]` with `how` 0 struck, 1 stuck in a wall, 2 out
   of range (or its shooter fell / left: arrows of an absent shooter end on that map's next tick, so `changeMap` and
   `fall` are untouched). The arrow flies 6 px above the ground (`y0 = p.y − 6`), walls are `solidAt` at its foot.
   Swap event `["ws", eid]`. Quiet refusals `"stag"` and `"wsw"` (swap cooldown); the client drops both.

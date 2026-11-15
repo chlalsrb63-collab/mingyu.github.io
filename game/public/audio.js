@@ -601,11 +601,11 @@ export const Sound = {
 };
 
 /** Minimum seconds between two plays of the same effect. */
-const THROTTLE = { gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.035, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
+const THROTTLE = { gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.035, magic_hit: 0.04, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
 /** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
 const BOOST = {
   swing: 3, swing_sword: 3, swing_dagger: 3, swing_spear: 3, swing_staff: 2, swing_book: 2.2, shoot: 1.6, magic: 1.5,
-  bow_draw: 2, bow_shot: 2.6, release: 2.6, arrow_hit: 2, arrow_wall: 1.6,
+  bow_draw: 2, bow_shot: 2.6, release: 2.6, arrow_hit: 2, magic_hit: 1.8, arrow_wall: 1.6,
   hit: 2, crit: 1.6, hurt: 2, die: 2, die_small: 2.2, die_big: 1.8, mob_shot: 1.8, charge: 2, volley: 1.8, spit: 2, pop: 2, buff: 1.5,
   charm_place: 1.6, charm_remove: 1.6, charm_id: 1.6, charm_expand: 1.5, ui: 1.8, open: 2, close: 2, tab: 2, blip: 1.8, emote: 1.6, cast: 1.8, coin: 1.5, salvage: 1.5, recall: 1.4, warp_out: 1.4, rift_warn: 1.5, fail: 1.4,
   step_grass: 2.5, step_dirt: 2.5, step_stone: 2, step_wood: 1.6, step_water: 2,
@@ -640,6 +640,8 @@ const SFX = {
   },
   release(fin) { SFX.bow_shot.call(this, fin); },
   arrow_hit() { const p = this.vary(); this.tone("sine", 160 * p, 70 * p, 0.08, 0.2); this.noise(0.035, 0.15, 1200 * p, "lowpass"); this.tone(0.5, 620 * p, 300 * p, 0.03, 0.04); },
+  // a staff's missile or a book's orb bursting: a bright glassy ping falling away over a soft fizz (`big`: the orb, a finisher)
+  magic_hit(big) { const p = this.vary(); this.tone("triangle", 1180 * p, 520 * p, 0.1, 0.1); this.tone("sine", 660 * p, (big ? 180 : 300) * p, big ? 0.22 : 0.12, 0.12, 0.01); this.noise(big ? 0.12 : 0.07, 0.08, 2600 * p, "bandpass", 0, 900); },
   arrow_wall() { const p = this.vary(); this.tone("square", 330 * p, 260 * p, 0.035, 0.06); this.noise(0.05, 0.12, 2400 * p, "bandpass"); this.tone("triangle", 190 * p, 182 * p, 0.14, 0.05, 0.02); this.tone("triangle", 196 * p, 188 * p, 0.1, 0.03, 0.06); },
   magic() { this.tone("sine", 500, 1300, 0.16, 0.14); this.tone("triangle", 750, 1700, 0.14, 0.07, 0.03); },
   boom() { this.noise(0.34, 0.36, 1600, "lowpass", 0, 120); this.tone("square", 150, 40, 0.3, 0.16); },

@@ -406,6 +406,8 @@ export function skillEvent(e, ctx) {
     // and ended ["ae", id, x, y, how] (0 struck or ran out, 1 stuck in a wall, 2 ran out of range)
     case "ar": {
       const [, id, x0, y0, ux, uy, spd, kind, pid] = e, n = Math.hypot(ux, uy) || 1;
+      // a staff's missile or a book's orb (kinds 8, 9; the 10th field the monster it homes on): no bow drawn for it
+      if (MISSILE_LOOK[kind]) { missile(G, id, x0, y0, ux / n, uy / n, spd, kind, e[9]); return true; }
       let sh = null, best = 40;
       for (const s of bowShots) {
         if (t - s.t > 700 || (pid !== undefined && s.eid !== pid)) continue;
@@ -427,6 +429,7 @@ export function skillEvent(e, ctx) {
     }
     case "ae": {
       const [, id, x, y, how] = e, from = arrowFrom.get(id);
+      if (missiles.has(id)) { missileEnd(f, id, x, y, how, e[5] | 0); return true; }
       arrowFrom.delete(id);
       // struck nothing and simply ran its whole range: it drops out of sight, no spark
       const spent = how === 2 || (!how && from && Math.hypot(x - from[0], y - from[1]) >= from[2] - 6);
@@ -602,6 +605,66 @@ function dressArrow(g, f, look) {
     for (let i = 0; i < 6; i++) dot(5 + i * 3, i % 2 ? 1 : -1, i < 3 ? 2 : 1, i % 2 ? T[0] : T[3]);
     dot(-3 - (n % 2), 0, 1, T[0]);
   }
+}
+/**
+ * The basic attacks' magic missiles (45-jobs.js magicShot): kind 8 the staff's violet bolt with a short
+ * sparkling tail, 9 the book's bigger lilac orb. `r` the glow's half-size in px, `hot` its core,
+ * `glow` the body, `rim` the dark edge that keeps it readable on bright ground, `tail` nearest first.
+ */
+const MISSILE_LOOK = {
+  8: { r: 2, hot: "#ffffff", glow: "#c8a8ff", rim: "#5a3aa8", tail: ["#e8dcff", "#b08aff", "#8a5ad8", "#5a3aa8"] },
+  9: { r: 3, hot: "#ffffff", glow: "#e0c8ff", rim: "#7a4ac8", tail: ["#e0c8ff", "#c8a0ff", "#a07ae0"] },
+};
+/** Missiles in flight: id → { x, y, ux, uy, spd, kind, home, trail, end }. */
+const missiles = new Map();
+/**
+ * A magic missile cast at (x0, y0): flies at `spd`, steering at monster `home` (where it is drawn now)
+ * while there is one, until the server's "ae" says where it ended (or it gives up after a while).
+ */
+function missile(G, id, x0, y0, ux, uy, spd, kind, home) {
+  const L = MISSILE_LOOK[kind], m = { x: x0, y: y0, ux, uy, spd: spd || 300, kind, home, trail: [], end: false, t: 0, n: 0 };
+  missiles.set(id, m);
+  if (missiles.size > 48) missiles.delete(missiles.keys().next().value);
+  const dur = 1600;
+  S3.fxCustom((g, k) => {
+    if (m.end) return;
+    const t = k * dur, dt = Math.min(60, t - m.t) / 1000;
+    m.t = t; m.n++;
+    const o = m.home && G.mobs.get(m.home);
+    let step = m.spd * dt;
+    if (o) {
+      const dx = o.x - m.x, dy = o.y - 6 - m.y, d = Math.hypot(dx, dy) || 1;
+      m.ux = dx / d; m.uy = dy / d; step = Math.min(step, d);   // (it waits on its monster for the server's word)
+    }
+    m.x += m.ux * step; m.y += m.uy * step;
+    m.trail.unshift(at(m.x, m.y, 9));
+    if (m.trail.length > 7) m.trail.pop();
+    const [x, y] = m.trail[0], T = L.tail;
+    // the tail: sparks shed behind it, flickering either side of its path
+    for (let i = 2; i < m.trail.length; i++) {
+      const [tx, ty] = m.trail[i], j = ((m.n + i * 3) % 3) - 1;
+      px(g, tx + j, ty - j, 1, 1, T[Math.min(T.length - 1, i - 2)]);
+      if (i < (kind === 9 ? 5 : 4)) px(g, tx - 1, ty - 1, 2, 2, T[i - 2]);
+    }
+    // the head: a dark-edged glowing plus (the orb a round one), a white-hot core, pulsing
+    const r = L.r, w = r * 2 + 1;
+    px(g, x - r - 1, y - r, w + 2, w, L.rim); px(g, x - r, y - r - 1, w, w + 2, L.rim);
+    px(g, x - r, y - r, w, w, L.glow);
+    px(g, x - (m.n % 4 < 2 ? 0 : 1), y - (m.n % 4 < 2 ? 0 : 1), 1 + (kind === 9 ? 1 : 0), 1 + (kind === 9 ? 1 : 0), L.hot);
+    if (kind === 8 && m.n % 3 === 0) px(g, x + ((m.n >> 2) % 2 ? 2 : -2), y - 2, 1, 1, T[0]);
+  }, dur);
+}
+/** The server ended missile `id` at (x, y): 0 struck (a burst; `ring` the book's splash or a finisher's), 1 a wall, 2 spent. */
+function missileEnd(f, id, x, y, how, ring) {
+  const m = missiles.get(id), L = MISSILE_LOOK[m.kind];
+  missiles.delete(id);
+  m.end = true;
+  if (how === 2) { f.burst(x, y, 0.4, L.tail[1], 3, 0.6); return; }
+  f.burst(x, y, 0.4, L.glow, m.kind === 9 ? 10 : 6, 1.4);
+  f.burst(x, y, 0.4, "#ffffff", 3, 0.9);
+  f.ring(x, y, m.kind === 9 ? 12 : 8, L.tail[1], 200);
+  if (ring) f.ring(x, y, ring, "#c8a0ff", 220, true);
+  Sound.play("magic_hit", m.kind === 9 || ring > 0);
 }
 /** Bows drawn in the last moments, waiting for their arrows: { eid, x, y, t, at (release time), wt (tier) }. */
 const bowShots = [];

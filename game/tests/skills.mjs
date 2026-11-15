@@ -251,7 +251,7 @@ for (const [id, hand] of CASTS) {
   assert.ok(fx(vs, p.eid).includes(114), "fx 114");
   assert.ok(vs[vs.length - 1].M.find((r) => r[0] === m.id)[9] === 1, "the brand rides on the monster's row");
   assert.equal(W.self().cr.k, "brand");
-  const blows = (brand) => { let s = 0; for (let i = 0; i < 60; i++) { W.ready(); const [q] = W.mobs([[30, 0]], 50000, { brand: brand ? W.now + 5000 : 0 }); W.act({ t: "atk", a: 0 }); s += 50000 - q.hp; } return s; };
+  const blows = (brand) => { let s = 0; for (let i = 0; i < 60; i++) { W.ready(); const [q] = W.mobs([[30, 0]], 50000, { brand: brand ? W.now + 5000 : 0 }); W.act({ t: "atk", a: 0 }); run(W, 3); s += 50000 - q.hp; } return s; };
   const r = blows(true) / blows(false);
   assert.ok(r > 1.08 && r < 1.25, `branded takes more: ×${r.toFixed(3)}`);
   const B = world("낙인전", { wk: "book", wm: { book: 9 } });
