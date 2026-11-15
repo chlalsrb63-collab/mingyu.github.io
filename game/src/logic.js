@@ -7291,7 +7291,8 @@ const LO_MAX = { a: 5, p: 4 };
 const JF_QUEST = "sq_job_free";
 const JF_SCROLL = { job: "scr_job", lvl: "scr_lvl" };
 /** Gold for a reset: base + per character level. */
-const JF_COST = { job: [1000, 50], lvl: [5000, 100] };
+// economy review 2026-11-15: the level reset's slope 100 → 250 (it was under an hour of gold at every level)
+const JF_COST = { job: [1000, 50], lvl: [5000, 250] };
 const jfGold = (ch, k) => JF_COST[k][0] + JF_COST[k][1] * ch.lvl;
 const loOpen = (ch) => !!ch.sq.done[JF_QUEST];
 const jfSafe = (S, p) => !!(MAP_META[p.map] && MAP_META[p.map].safe) || fireNear(S.maps[p.map], p);
@@ -11840,8 +11841,9 @@ function dimReward(lv, tier, full, carried) {
  * "fb" a field boss (each looter). `wkN` weekly brackets cleared add one 저주 해제 주문서 each.
  */
 const LOOT_X = {
-  rift: { skeFrom: 10, ske: 0.01, skeMax: 0.15, unc: 0.04, uncTier: 0.005, uncMax: 0.25 },
-  big: { ske: [1, 2], unc: 1 }, small: { unc: 0.1 },
+  // economy review 2026-11-15: stones from tier 5 (the rift's lower tiers were starved), uncurse grows faster and stays the commoner
+  rift: { skeFrom: 5, ske: 0.01, skeMax: 0.2, unc: 0.04, uncTier: 0.008, uncMax: 0.3 },
+  big: { ske: [2, 3], unc: 1 }, small: { unc: 0.1 },
   fb: { ske: 0.03, unc: 0.08, job: 0.02, lvl: 0.01 },
 };
 function lootX(S, src, tier = 0, wkN = 0) {

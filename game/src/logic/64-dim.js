@@ -305,8 +305,9 @@ function dimReward(lv, tier, full, carried) {
  * "fb" a field boss (each looter). `wkN` weekly brackets cleared add one 저주 해제 주문서 each.
  */
 const LOOT_X = {
-  rift: { skeFrom: 10, ske: 0.01, skeMax: 0.15, unc: 0.04, uncTier: 0.005, uncMax: 0.25 },
-  big: { ske: [1, 2], unc: 1 }, small: { unc: 0.1 },
+  // economy review 2026-11-15: stones from tier 5 (the rift's lower tiers were starved), uncurse grows faster and stays the commoner
+  rift: { skeFrom: 5, ske: 0.01, skeMax: 0.2, unc: 0.04, uncTier: 0.008, uncMax: 0.3 },
+  big: { ske: [2, 3], unc: 1 }, small: { unc: 0.1 },
   fb: { ske: 0.03, unc: 0.08, job: 0.02, lvl: 0.01 },
 };
 function lootX(S, src, tier = 0, wkN = 0) {

@@ -10,7 +10,8 @@ const LO_MAX = { a: 5, p: 4 };
 const JF_QUEST = "sq_job_free";
 const JF_SCROLL = { job: "scr_job", lvl: "scr_lvl" };
 /** Gold for a reset: base + per character level. */
-const JF_COST = { job: [1000, 50], lvl: [5000, 100] };
+// economy review 2026-11-15: the level reset's slope 100 → 250 (it was under an hour of gold at every level)
+const JF_COST = { job: [1000, 50], lvl: [5000, 250] };
 const jfGold = (ch, k) => JF_COST[k][0] + JF_COST[k][1] * ch.lvl;
 const loOpen = (ch) => !!ch.sq.done[JF_QUEST];
 const jfSafe = (S, p) => !!(MAP_META[p.map] && MAP_META[p.map].safe) || fireNear(S.maps[p.map], p);

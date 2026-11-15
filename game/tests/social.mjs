@@ -547,17 +547,17 @@ class FakeStore {
   const R = { seed: 12345 }, N = 20000;
   const rate = (src, tier, id) => { let n = 0; for (let i = 0; i < N; i++) for (const [k, c] of X.lootX(R, src, tier)) if (k === id) n += c; return n / N; };
   const near = (got, want, msg) => assert.ok(Math.abs(got - want) < Math.max(0.006, want * 0.15), `${msg}: ${got} vs ${want}`);
-  assert.equal(rate("rift", 9, "ske_stone"), 0, "no skill stone under rift tier 10");
-  near(rate("rift", 10, "ske_stone"), 0.01, "tier 10 stone");
-  near(rate("rift", 20, "ske_stone"), 0.11, "tier 20 stone");
+  assert.equal(rate("rift", 4, "ske_stone"), 0, "no skill stone under rift tier 5");
+  near(rate("rift", 10, "ske_stone"), 0.06, "tier 10 stone");
+  near(rate("rift", 20, "ske_stone"), 0.16, "tier 20 stone");
   near(rate("rift", 40, "ske_stone"), X.LOOT_X.rift.skeMax, "the stone's cap");
-  near(rate("rift", 10, "uncurse"), 0.09, "tier 10 uncurse");
+  near(rate("rift", 10, "uncurse"), 0.12, "tier 10 uncurse");
   for (const t of [10, 20, 30, 40]) assert.ok(rate("rift", t, "uncurse") > rate("rift", t, "ske_stone"), `uncurse beats the stone at tier ${t}`);
   near(rate("fb", 0, "ske_stone"), 0.03, "field boss stone"); near(rate("fb", 0, "uncurse"), 0.08, "field boss uncurse");
   near(rate("fb", 0, "scr_job"), 0.02, "field boss job scroll"); near(rate("fb", 0, "scr_lvl"), 0.01, "field boss level scroll");
   for (let i = 0; i < 200; i++) {
     const big = Object.fromEntries(X.lootX(R, "big"));
-    assert.ok(big.ske_stone >= 1 && big.ske_stone <= 2 && big.uncurse === 1, JSON.stringify(big));
+    assert.ok(big.ske_stone >= 2 && big.ske_stone <= 3 && big.uncurse === 1, JSON.stringify(big));
   }
   near(rate("small", 0, "uncurse"), 0.1, "repeat challenge uncurse"); assert.equal(rate("small", 0, "ske_stone"), 0);
   assert.deepEqual(X.lootX(R, "", 30, 2), [["uncurse", 2]], "weekly brackets: one scroll each, nothing rolled");
