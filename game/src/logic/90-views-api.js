@@ -61,7 +61,7 @@ function selfPayload(p) {
     // boss trophies held (67-trophies.js): field-boss kinds, in the order won
     tro: p.ch.tro,
     // life skills (58-life.js): [lv, xp, need] per skill in LIFE order; L2: the 알바 board, trust, the 재료 주머니
-    life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch,
+    life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch, fbook: ch.fbook,
     // the block list, the enhancement pity gauge, the weekly book (63-social-weekly.js)
     ...socialSelf(p),
     // 협동 아르바이트 paid today (68-coop.js)

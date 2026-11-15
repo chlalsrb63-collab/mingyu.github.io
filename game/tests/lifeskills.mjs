@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { gainLife, lifeOdds, lifeTime, lifeGrade, lifeXp, gradeOfMap, fishLand, fishWait, cookDish, cookBurnt, lifeSheetClean, RECIPES, FISH_G, RXP, GRADE_LV, NPC_ROLES, NPC_MAP, ITEMS," +
+  "\nexport const __t = { FISH_LOCAL, FISH_CM, FISH_BOOK, fbookN, lifeBuff, gatBonus, lifeStepText, LIFE_STEP, gainLife, lifeOdds, lifeTime, lifeGrade, lifeXp, gradeOfMap, fishLand, fishWait, cookDish, cookBurnt, lifeSheetClean, RECIPES, FISH_G, RXP, GRADE_LV, NPC_ROLES, NPC_MAP, ITEMS," +
   // L2
   " lifeNodes, mapOf, mapPayload, MAP_META, FIRES, NODE, nodeMat, lifeTick, gatDone, craftOnce, JB, JB_PAY, jbOffers, jbOffersOf, jbRoll, jbNeed, jbQual, jbSit, jbGold, JB_GRADE, JB_RUSH, isNight, MOBS, jbRoute, jbLimit, parcelSpd, addRep, REP_TIER, REP_PERK," +
   " CRAFT, GEAR_CRAFT, SHOP, sellPrice, POUCH_MAX, addItem, takeItem, countItem, canAdd, stats, dayOf, lifeNeed, ENH_RATE, ENH_BLESS, AFFIX, rollGear, CNT_KEYS, ACH, DAILY_OTHER, LIFE_MASTER, exportChar, CHORES, CHORE, chorePool, choreSpots, walk, canStand, waterNear };\n";
@@ -76,7 +76,7 @@ const count = (id) => ch.inv.filter((s) => s.id === id).reduce((n, s) => n + s.n
 
 // ── grades of the world (B.3): meadow 1 · forest, crypt 2 · city, sewer 3 · cave, abyss 4 · 단풍 왕도 5
 {
-  const want = { town: 1, willow: 1, meadow: 1, forest: 2, crypt: 2, city: 3, sewer: 3, cave: 4, abyss: 4, maple: 5, jungle: 3, oasis: 4, coast: 4, dunesea: 4, cloudtemple: 4, mesa: 4 };
+  const want = { town: 1, willow: 1, meadow: 1, forest: 2, crypt: 2, city: 3, sewer: 3, cave: 4, abyss: 4, maple: 5, jungle: 3, oasis: 4, coast: 4, dunesea: 4, cloudtemple: 4, mesa: 5 };   // P7: mesa is the grade-5 door (GRADE_MAP)
   for (const [id, g] of Object.entries(want)) if (D.life.mapGrade[id] !== undefined) assert.equal(D.life.mapGrade[id], g, id);
   for (const id of ["meadow", "forest", "city", "cave", "maple", "jungle", "oasis", "coast", "dunesea", "cloudtemple", "mesa"]) assert.equal(D.life.mapGrade[id], want[id], id);
   assert.equal(X.gradeOfMap({ grade: 4, band: [1, 3] }), 4, "an editor map's own grade wins");
@@ -122,7 +122,11 @@ function fishRun(map, lv, score) {
   // 단풍 왕도 at 40: 황금 잉어 is the top candidate there ("common-ish")
   const m40 = fishRun("maple", 40, 80);
   assert.ok(m40.share.fish_l > 0.38, "carp in the autumn field: " + m40.share.fish_l);
-  assert.ok(m40.share.fish_v > 0.15 && !m40.share.fish_c, "4등급 next, 3등급 not in the split");
+  assert.ok(m40.share.fish_v > 0.1 && !m40.share.fish_c, "4등급 next, 3등급 not in the split");
+  // P8: a water's own fish takes FISH_LOCAL of its grade's catches (단풍 송어: 4등급's, never 황금 잉어's)
+  near(m40.share.fish_mtrout || 0, 0.2 * X.FISH_LOCAL, 0.03, "단풍 송어"); near(m40.share.fish_v, 0.2 * (1 - X.FISH_LOCAL), 0.03, "장님고기 left");
+  assert.ok(!fishRun("maple", 39, 80).share.fish_mtrout, "a grade-5 fish needs a grade-5 angler");
+  near(fishRun("jungle", 20, 80).share.fish_jcat || 0, 0.34 * X.FISH_LOCAL, 0.03, "정글 메기");
   // 대성공 lands two: 3 % for a beginner at an average fight, 60 % + 10 %p for a master's perfect one
   near(fishRun("meadow", 1, 50).two, 0.03 * 0.95, 0.012, "beginner 대성공");
   // (황금 잉어 is grade 5: at 50 its 대성공 is 15 % + 10 %p)
@@ -191,7 +195,7 @@ function fishRun(map, lv, score) {
   // the new fish cook too: 은빛 메기 → 구이, grade-3 experience at any level
   const c0 = count("food_c");
   const rc = cook(1, "fish_c", 60);
-  assert.ok(count("food_c") > c0 && (rc.xp === 22 || rc.xp === 33), "food_c, xp " + rc.xp);
+  assert.ok(count("food_c") > c0 && (rc.xp === X.RXP[2] || rc.xp === X.RXP[2] * 1.5), "food_c, xp " + rc.xp);
   const v0 = count("food_v");
   assert.equal(count("food_v"), v0);
   cook(1, "fish_v", 90);
@@ -212,7 +216,7 @@ function fishRun(map, lv, score) {
 // ── materials, the sheet's other life fields, the town's new roles
 {
   const mats = D.life.mats;
-  assert.equal(mats.length, 26, "15 materials + 5 ingots (L2) + 6 crops (H10 farm)");
+  assert.equal(mats.length, 28, "15 materials + 5 ingots (L2) + 6 crops (H10 farm) + milk, honey (P8)");
   const sell = (id) => Math.floor(X.ITEMS[id].price * 0.4);
   assert.deepEqual([1, 2, 3, 4, 5].map((g) => sell("m_h" + g)), [6, 14, 30, 60, 110]);
   assert.ok(mats.every((id) => X.ITEMS[id].type === "lmat" && X.ITEMS[id].grade >= 1 && /[가-힣]/.test(X.ITEMS[id].name)));
@@ -418,7 +422,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   assert.ok(weeds.filter(([x, y]) => x > 25 && x < 34 && y > 41 && y < 52).length >= 8, "most of them on the plot");
   assert.ok(X.chorePool("litter").every(([x, y]) => !ns.some((q) => q[2] === x && q[3] === y)), "no litter on the crop rows");
   // the dishes, at the village kitchen (any stove; 감자구이 and 당근 수프 on a campfire too)
-  ch.life.cook = { lv: 20, xp: 0 };
+  ch.life.cook = { lv: 45, xp: 0 };   // 100 % success, whatever the seed
   standBy("willow_kitchen");
   for (const [r, ins] of [["fd_potato", [["m_c1", 2]]], ["fd_carrot", [["m_c2", 2], ["staple", 1]]], ["fd_veg", [["m_c3", 1], ["m_c4", 1], ["staple", 1]]], ["fd_corn", [["m_c5", 1], ["m_c6", 1], ["staple", 1]]]]) {
     assert.deepEqual(X.RECIPES[r].in, ins, r);
@@ -961,7 +965,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   const nc = L.newChar("새싹", []);
   assert.deepEqual([nc.cnt.gat, nc.cnt.craft, nc.cnt.deliver], [0, 0, 0]);
   assert.ok(D.life.jb.jb_dl_cafe.toName && D.life.rep.tier.length === 3 && D.life.pouch.ids.includes("staple") && D.life.nodes.kinds.join("") === "howc");
-  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 95 && D.life.recipes.some((r) => r.id === "gr_w_h_5"));
+  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 112 && D.life.recipes.some((r) => r.id === "gr_w_h_5"));
   // the town's hosts: 캉캉 crafts, 보글 brews, 쥬쥬's stove cooks, 포포 runs the board, 쥬쥬 and 보글's shelf sell the staples
   const role = (nid) => X.mapOf(X.NPC_MAP[nid]).npcs.find((n) => n.id === nid);
   assert.deepEqual(["kangkang", "bogle", "juju_stove", "popo"].map((nid) => role(nid).role), ["craft", "alch", "cook", "jobs"]);
@@ -1031,11 +1035,12 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
     standBy("willow_board");
     assert.equal(act({ t: "jb", a: "give" }).error, "텃밭 농부 감자에게 가서 알려 주세요");
     standBy("willow_farmer");
-    const g0 = ch.gold;
+    const g0 = ch.gold, c0 = X.countItem(ch, "m_c1");
     assert.ok(act({ t: "jb", a: "give" }).ok);
     assert.equal(ch.gold - g0, Math.round(Math.round((120 + 24 * 10) * k) * (r0.rush ? 1.5 : 1)), "board pay (120 + 24·L) × grade");
     assert.equal(ch.rep.willow_farmer, Math.round(2 * k));
     assert.deepEqual(ch.jobBoard.done, [id]);
+    assert.equal(X.countItem(ch, "m_c1") - c0, g ? 2 : 1, "P8: the farmer adds potatoes (2 from 보통 up)");
     assert.ok(g >= 0);
   }
   // 우유 배달: the dairy's bottles first, a clock from then on, each mailbox once; a sheet saved mid-way keeps the
@@ -1220,6 +1225,73 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   visit(board);
   const other = X.jbOffersOf(S, p).find((id) => !ids.includes(id));
   assert.equal(v(other, "take").error, "알바는 하루에 4개까지입니다", "legacy orders share the Willow quota");
+}
+
+// ── P7/P8 (content audit 2026-11-15): no recipe loses money, the L31–50 board, a step every level, the life items
+{
+  // every output is worth ≥ 0.9 × its inputs at shop price + fee (되새김 인장 has no price: a reset token)
+  const P = (id) => X.ITEMS[id].price;
+  for (const [id, r] of Object.entries(X.RECIPES)) {
+    if (r.out[0] === "rune*" || !P(r.out[0])) continue;
+    const cost = r.in.reduce((s, [i, n]) => s + P(i) * n, 0) + r.fee;
+    assert.ok(P(r.out[0]) * r.out[1] >= 0.9 * cost - 1e-9, `${id}: ${P(r.out[0]) * r.out[1]} G for ${cost} G of goods + fee`);
+  }
+  // each skill has a board row in every grade's levels, and two or more past L30 (a hunt's lv is the character's)
+  for (const k of ["gather", "fish", "cook", "craft", "alch", "deliver"]) {
+    const rows = Object.values(X.JB).filter((t) => t.sk === k && t.kind !== "hunt");
+    for (let g = 1; g <= 5; g++) assert.ok(rows.some((t) => X.lifeGrade(t.lv) === g), `${k}: a row in grade ${g}`);
+    assert.ok(rows.filter((t) => t.lv > 30).length >= 2, `${k}: two rows at L31–50`);
+  }
+  // every level says what it gave: the recipes first known there, else the steady gains; 채집's 덤 grows
+  assert.equal(X.lifeStepText("cook", 12), "새 제작법: 숲향 허브차");
+  assert.equal(X.lifeStepText("craft", 12), "새 제작법: 2단계 장비, 참나무 책상");
+  assert.equal(X.lifeStepText("gather", 11), "채집 시간 -9% · 덤 8%");
+  for (const k of ["fish", "cook", "gather", "craft", "alch", "deliver"]) for (let lv = 2; lv < 50; lv++) assert.ok(X.lifeStepText(k, lv).length > 6, k + lv);
+  near(X.gatBonus(1), 0.04, 1e-9, "덤 at 1"); near(X.gatBonus(50), 0.236, 1e-9, "덤 at 50");
+  // a life-buff food takes the food slot and trades the meal's buff for the work; it runs out
+  fresh(); p.potAt = 0; S.now = now;
+  give("fd_herbtea", 1);
+  assert.ok(act({ t: "use", id: "fd_herbtea" }).ok, "tea");
+  assert.deepEqual([X.lifeBuff(S, p, "gat"), X.lifeBuff(S, p, "bite"), p.food.xp, p.food.atk], [20, 0, 0, 0]);
+  S.now = p.food.until + 1;
+  assert.equal(X.lifeBuff(S, p, "gat"), 0, "expired");
+  S.now = now;
+  for (let i = 0; i < 50; i++) assert.ok(X.fishWait(S, ch, 25) <= 7000 * X.lifeTime(ch.life.fish.lv) * 0.75 + 1e-6, "도시락: bites −25 %");
+  p.food = { id: "al_candle", until: now + 60000, xp: 0, atk: 0, lf: { lxp: 10 } };
+  ch.life.alch = { lv: 1, xp: 0 };
+  X.gainLife(S, p, "alch", 30);
+  assert.equal(ch.life.alch.xp, 33, "향초: life XP +10 %");
+  p.food = null;
+  // 해독 물약 clears poison, burn and slow
+  p.potAt = 0; give("al_cure", 1);
+  p.poison = { until: now + 5000, next: now + 1000, dmg: 3 }; p.burn = { until: now + 4000, next: now + 1000, dmg: 2 }; p.slowed = now + 3000;
+  assert.ok(act({ t: "use", id: "al_cure" }).ok, "cure");
+  assert.deepEqual([p.poison, p.burn, p.slowed], [null, null, 0]);
+  // the 물고기 도감: lengths by species, 소/중/대, a reward once at 5 and 11 entries
+  ch.fbook = {}; ch.life.fish = { lv: 50, xp: 0 };
+  const g0 = ch.gold, b0 = X.countItem(ch, "stone_b");
+  to("maple");
+  for (let i = 0; i < 600; i++) X.fishLand(S, p, 90);
+  assert.deepEqual(Object.keys(ch.fbook).sort(), ["fish_l", "fish_mtrout", "fish_s", "fish_v"]);
+  for (const [id, [cm, bits]] of Object.entries(ch.fbook)) assert.ok(cm >= X.FISH_CM[id][0] && cm <= X.FISH_CM[id][1] && bits === 7, id);
+  assert.equal(X.fbookN(ch), 12);
+  assert.deepEqual([ch.gold - g0, X.countItem(ch, "stone_b") - b0], [1000 + 3000, 1], "5 and 11 entries paid once");
+  to("town"); S.maps.maple.ev.length = 0; p.toast.length = 0;
+  // the sheet: saved and loaded as is; an old sheet starts an empty book; junk is dropped
+  const saved = JSON.parse(JSON.stringify(L.exportChar(S, "a")));
+  X.lifeSheetClean(saved);
+  assert.deepEqual(saved.fbook, ch.fbook);
+  const old = JSON.parse(JSON.stringify(saved));
+  delete old.fbook;
+  X.lifeSheetClean(old);
+  assert.deepEqual(old.fbook, {});
+  old.fbook = { fish_s: [12.7, 9], bogus: [1, 1], fish_m: "x", fish_c: [5, 0] };
+  X.lifeSheetClean(old);
+  assert.deepEqual(old.fbook, { fish_s: [12, 1] });
+  // crafted furniture is housing furniture (64-housing.js reads FURN) and not in the agent's shop
+  for (const id of ["fn_wicker", "fn_desk", "fn_plaque", "fn_oilshelf", "fn_gyotaku", "fn_fossilbed", "fn_keepcase", "fn_screen"]) {
+    assert.ok(X.ITEMS[id].type === "furn" && X.RECIPES[id].at === "craft" && !D.house?.shop?.includes?.(id), id);
+  }
 }
 
 console.log("lifeskills ok — curve 50…24,050, grades", Object.values(D.life.mapGrade).join(""), "recipes", D.life.recipes.length, "materials", D.life.mats.length);

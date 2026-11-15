@@ -92,7 +92,7 @@ function choreApply(S, p, a, act) {
     if (c.src === "water") { act.fill = c.carry; toast(p, `${c.get} (${c.carry}번)`); return; }
     act.fill = need - act.prog;
     if (c.timed) {
-      const limit = choreLimit(ch, act, g);
+      const limit = Math.round(choreLimit(ch, act, g) * (1 + lifeBuff(S, p, "dlv") / 100));
       act.expAt = S.now + limit;
       toast(p, `${c.get}! ${Math.ceil(limit / 1000)}초 안에 ${c.spot} ${act.fill}곳을 돌아 주세요.`);
     } else toast(p, `${c.get}!`);

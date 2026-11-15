@@ -17,6 +17,7 @@ function lifeGrade(L) {
 /** The grade of a map: its own `grade` (editor maps), else by the first tier of its level band; 1 without one. */
 function gradeOfMap(m) {
   if (m && Number.isInteger(m.grade) && m.grade >= 1 && m.grade <= 5) return m.grade;
+  if (m && Object.hasOwn(GRADE_MAP, m.id)) return GRADE_MAP[m.id];
   const band = m && (m.band || (m.id && Object.hasOwn(MAP_META, m.id) && MAP_META[m.id].band));
   if (!band) return 1;
   let g = 0;
@@ -24,7 +25,7 @@ function gradeOfMap(m) {
   return Math.max(1, g);
 }
 /** A map's grade by id without building a hunting ground (editor and town maps are built at load). */
-const mapGradeOf = (id) => (MAP_META[id].eager ? gradeOfMap(mapOf(id)) : gradeOfMap({ band: MAP_META[id].band }));
+const mapGradeOf = (id) => (MAP_META[id].eager ? gradeOfMap(mapOf(id)) : gradeOfMap({ id, band: MAP_META[id].band }));
 
 const r1L = (v) => Math.round(v * 10) / 10;
 /**
@@ -45,6 +46,25 @@ function lifeRoll(S, L, unlockLv, s = 50, extra = 0) {
 }
 /** The time factor for channels, bite waits and minimum craft times: −0.8 % a level (×0.6 at 50). */
 const lifeTime = (L) => 1 - LIFE_ROLL.time * clamp(L, 1, LIFE_MAX);
+/** A life-buff food's effect `k` (P8, ITEMS[].buff.lf: gat bite great dlv lxp) while it lasts, else 0. */
+const lifeBuff = (S, p, k) => (p.food && p.food.lf && p.food.until > S.now ? p.food.lf[k] | 0 : 0);
+/** Gathering's 덤 chance (0..1) at level L (P7: grows LIFE_STEP.bonus %p a level). */
+const gatBonus = (L) => NODE.bonus + (LIFE_STEP.bonus * (clamp(L, 1, LIFE_MAX) - 1)) / 100;
+/** What level `lv` of skill `k` gave (P7, the level-up toast): the recipes first known at it, else the steady gains. */
+function lifeStepText(k, lv) {
+  const made = new Set();
+  for (const id of Object.keys(RECIPES)) {
+    const r = RECIPES[id];
+    if (r.sk !== k || r.lv !== lv || r.any) continue;
+    made.add(r.gear ? `${ITEMS[r.out[0]].tier}단계 장비` : r.out[0] === "rune*" ? "룬 변환" : ITEMS[r.out[0]].name);
+  }
+  if (made.size) return `새 제작법: ${[...made].join(", ")}`;
+  const t = Math.round((1 - lifeTime(lv)) * 100);
+  if (k === "gather") return `채집 시간 -${t}% · 덤 ${r1L(gatBonus(lv) * 100)}%`;
+  if (k === "fish") return `입질 대기 -${t}% · 놓치는 기준 ${r1L(FISHING.keep[0] - FISHING.keep[1] * lv)}점`;
+  if (k === "deliver") return `꾸러미를 들고 걷는 속도 ${Math.round((JB_PAY.spd[0] + JB_PAY.spd[1] * lv) * 100)}%`;
+  return `제작 시간 -${t}% · 대성공 확률 +1.2%p`;
+}
 /** Experience for work unlocked at `unlockLv`, stale work (20+ levels below) at a quarter; at least 1. */
 const lifeXp = (L, unlockLv, base) => Math.max(1, Math.round(L - unlockLv >= LIFE_STALE_D ? base * LIFE_STALE : base));
 
@@ -64,11 +84,11 @@ function lifeAdd(e, n, cap = LIFE_MAX) {
 function gainLife(S, p, k, n) {
   const i = LIFE.indexOf(k), e = p.ch.life[k];
   if (i < 0 || !e || !(n > 0)) return 0;
-  const ups = lifeAdd(e, n);
+  const ups = lifeAdd(e, n * (1 + lifeBuff(S, p, "lxp") / 100));
   for (const lv of ups) {
     S.maps[p.map].ev.push(["lv2", p.eid, i, lv]);
     toast(p, lv >= LIFE_MAX ? `[${LIFE_NAME[i]}] 레벨 ${lv}! 명장의 경지에 올랐습니다.`
-      : LIFE_UNLOCK[lv] ? `[${LIFE_NAME[i]}] 레벨 ${lv}! ${LIFE_UNLOCK[lv]} 재료를 다룰 수 있습니다.` : `[${LIFE_NAME[i]}] 레벨 ${lv}!`);
+      : LIFE_UNLOCK[lv] ? `[${LIFE_NAME[i]}] 레벨 ${lv}! ${LIFE_UNLOCK[lv]} 재료를 다룰 수 있습니다.` : `[${LIFE_NAME[i]}] 레벨 ${lv}! ${lifeStepText(k, lv)}`);
   }
   // (Lv 10/30 in any skill and 50 in each are achievements with titles, 60-content.js ACH)
   if (ups.length) checkAch(S, p);
@@ -81,7 +101,25 @@ function gainLife(S, p, k, n) {
 /** The fight score below which a fish gets away, at this angler's level (30 at 1, 15 at 50). */
 const fishKeep = (ch) => FISHING.keep[0] - FISHING.keep[1] * ch.life.fish.lv;
 /** How long until a bite (ms), before the weather. */
-const fishWait = (S, ch) => (FISHING.wait[0] + rnd(S) * FISHING.wait[1]) * lifeTime(ch.life.fish.lv);
+const fishWait = (S, ch, cut = 0) => (FISHING.wait[0] + rnd(S) * FISHING.wait[1]) * lifeTime(ch.life.fish.lv) * (1 - cut / 100);
+/** Entries in a 물고기 도감 (species × sizes seen). */
+const fbookN = (ch) => Object.values(ch.fbook || {}).reduce((n, e) => n + (e[1] & 1) + ((e[1] >> 1) & 1) + ((e[1] >> 2) & 1), 0);
+/** A landed fish measured (P8) and written into the 물고기 도감; a new entry may reach a FISH_BOOK reward. */
+function fishBook(S, p, id, k) {
+  if (!Object.hasOwn(FISH_CM, id)) return;
+  const ch = p.ch, [lo, hi] = FISH_CM[id], u = clamp(0.75 * rnd(S) + 0.25 * k, 0, 1);
+  const cm = Math.round(lo + (hi - lo) * u), z = u < 1 / 3 ? 0 : u < 2 / 3 ? 1 : 2;
+  const e = ch.fbook[id] || (ch.fbook[id] = [0, 0]), fresh = !(e[1] & (1 << z)), best = cm > e[0];
+  e[0] = Math.max(e[0], cm);
+  e[1] |= 1 << z;
+  toast(p, `${ITEMS[id].name} ${cm}cm (${FISH_SIZE[z]})${fresh ? " — 물고기 도감에 새로 올렸습니다!" : best ? " — 최고 기록!" : ""}`);
+  const n = fresh ? fbookN(ch) : 0, m = FISH_BOOK.find((b) => b[0] === n);
+  if (!m) return;
+  ch.gold += m[1];
+  p.gain.push(["gold", m[1]]);
+  if (m[2] && addItem(ch, m[2], 1)) p.gain.push(["item", m[2], 1, 1]);
+  toast(p, `물고기 도감 ${n}/${Object.keys(FISH_CM).length * 3}칸! 보상 ${m[1]}G${m[2] ? ` · ${ITEMS[m[2]].name}` : ""}`);
+}
 /**
  * What a well-enough played fish turns into: candidates are the fish of grade ≤ min(the map's grade, the
  * angler's grade); 황금 잉어 has its own roll everywhere; then the top candidate, the next one down, a stone,
@@ -93,11 +131,15 @@ function fishLand(S, p, score) {
   const carp = FISHING.carp[0] + FISHING.carp[1] * k * k + FISHING.carp[2] * L;
   const top = cap >= 2 ? FISHING.top[0] + FISHING.top[1] * k : 0, next = cap >= 3 ? FISHING.next : 0;
   let r = rnd(S);
-  const id = (r -= carp) < 0 ? "fish_l" : (r -= top) < 0 ? FISH_G[cap - 1] : (r -= next) < 0 ? FISH_G[cap - 2] : (r -= FISHING.stone) < 0 ? "stone" : FISH_G[0];
+  let id = (r -= carp) < 0 ? "fish_l" : (r -= top) < 0 ? FISH_G[cap - 1] : (r -= next) < 0 ? FISH_G[cap - 2] : (r -= FISHING.stone) < 0 ? "stone" : FISH_G[0];
+  // this water's own fish (P8), never above the angler's grade; a grade-5 one takes 4등급's place, never 황금 잉어's
+  const loc = Object.hasOwn(FISH_MAP, p.map) ? FISH_MAP[p.map] : "";
+  if (loc && id === FISH_G[Math.min(ITEMS[loc].grade, 4) - 1] && ITEMS[loc].grade <= cap && rnd(S) < FISH_LOCAL) id = loc;
   const g = ITEMS[id].grade || 1, unlock = GRADE_LV[g - 1];
   const great = id !== "stone" && rnd(S) * 100 < lifeOdds(L, unlock, score)[1];
   const n = great && canAdd(ch, id, 2) ? 2 : 1;
   gainLife(S, p, "fish", lifeXp(L, unlock, RXP[g - 1] * (0.5 + score / 100) * (great ? 1.5 : 1)));
+  fishBook(S, p, id, k);
   return { id, n, great: n === 2 };
 }
 /** The recipe a fish is cooked by, or null. */
@@ -163,9 +205,16 @@ function lifeSheetClean(ch) {
   const pouch = {};
   if (isObj(ch.pouch)) for (const id of Object.keys(ch.pouch)) { const n = clamp(ch.pouch[id] | 0, 0, POUCH_MAX); if (n > 0 && pouchOk(id)) pouch[id] = n; }
   ch.pouch = pouch;
+  // the 물고기 도감 (P8): known species only, [best cm 0..999, size bits 0..7]; an old sheet starts it empty
+  const fb = {};
+  if (isObj(ch.fbook)) for (const id of Object.keys(ch.fbook)) {
+    const e = ch.fbook[id];
+    if (Object.hasOwn(FISH_CM, id) && Array.isArray(e) && (e[1] & 7)) fb[id] = [clamp(Math.floor(num(e[0]) ? e[0] : 0), 0, 999), e[1] & 7];
+  }
+  ch.fbook = fb;
 }
 /** A fresh sheet's life fields. */
-const lifeFresh = () => ({ life: lifeEmpty(), jobBoard: { day: 0, done: [], active: null }, rep: {}, coopDay: 0, coopDone: [], pouch: {} });
+const lifeFresh = () => ({ life: lifeEmpty(), jobBoard: { day: 0, done: [], active: null }, rep: {}, coopDay: 0, coopDone: [], pouch: {}, fbook: {} });
 
 // ───────────── L2: the 재료 주머니, gathering, crafting, the 알바 board, delivery, trust (B.4, B.6–B.11)
 
@@ -257,7 +306,7 @@ function gatDone(S, p) {
   const great = rnd(S) * 100 < lifeOdds(L, unlock, 50, g.extra)[1];
   const cnt = great && canAdd(ch, id, 2) ? 2 : 1;
   if (addItem(ch, id, cnt)) p.gain.push(["item", id, cnt, 0]);
-  if (rnd(S) < NODE.bonus) {
+  if (rnd(S) < gatBonus(L)) {
     // a herb's seed of the next grade, a stone in the vein, a bundle of kindling from the log, the next crop's root
     const b = n[0] === 0 ? `m_h${Math.min(5, n[1] + 1)}` : n[0] === 1 ? "stone" : n[0] === 3 ? `m_c${Math.min(CROP.length, n[1] + 1)}` : "camp";
     if (addItem(ch, b, 1)) { p.gain.push(["item", b, 1, 1]); toast(p, `덤으로 ${ITEMS[b].name}${pp(ITEMS[b].name, "을를")} 얻었습니다!`); }
@@ -334,7 +383,7 @@ function craftOnce(S, p, r, s) {
   }
   const L = ch.life[r.sk].lv;
   const taken = r.in.map(([id, n]) => (id === "rune*" ? takeRunes(ch, n) : (takeItem(ch, id, n), [id, n])));
-  const extra = r.sk === "cook" && r.at === "cook" && REP_PERK.juju.great && repOf(ch, "juju") >= REP_TIER[1] ? REP_PERK.juju.great : 0;
+  const extra = (r.sk === "cook" && r.at === "cook" && REP_PERK.juju.great && repOf(ch, "juju") >= REP_TIER[1] ? REP_PERK.juju.great : 0) + lifeBuff(S, p, "great");
   const roll = lifeRoll(S, L, r.lv, s, extra);
   const xp = lifeXp(L, r.lv, RXP[lifeGrade(r.lv) - 1] * (roll.great ? 1.5 : 1));
   if (!roll.ok) {
@@ -536,6 +585,9 @@ function jbPay(S, p) {
     ch.cnt.deliver++;
   } else {
     if (t.item) takeItem(ch, t.item, jbNeed(t, g));
+    // a village chore's produce (P8): one, two from 보통 up
+    const gift = t.kind === "chore" && CHORES[t.job].gift;
+    if (gift && addItem(ch, gift, g ? 2 : 1)) p.gain.push(["item", gift, g ? 2 : 1, 0]);
     fast = rush > 0 && now <= a.expAt;
     if (fast) gold = Math.round(gold * JB_RUSH.bonus);
     addRep(S, p, t.npc, Math.round(JB_PAY.rep * k));
@@ -703,7 +755,7 @@ function lifeApply(S, p, a) {
     case "gat": {
       // a channel of NODE.ch × the time factor; the "반짝!" moment somewhere in tapAt of it (lifeTick sends it)
       rouse(S, p);
-      const n = lifeNodes(mapOfS(S, p.map))[a.i], dur = Math.round(NODE.ch * lifeTime(ch.life.gather.lv));
+      const n = lifeNodes(mapOfS(S, p.map))[a.i], dur = Math.round(NODE.ch * lifeTime(ch.life.gather.lv) * (1 - lifeBuff(S, p, "gat") / 100));
       p.gat = { i: a.i, k: n[0], map: p.map, x: p.x, y: p.y, at: now, end: now + dur, tapAt: now + Math.round(dur * (NODE.tapAt[0] + (NODE.tapAt[1] - NODE.tapAt[0]) * rnd(S))), sent: false, tapped: false, extra: 0 };
       S.maps[p.map].ev.push(["gs", p.eid, n[0], dur]);
       break;
@@ -748,7 +800,7 @@ function lifeApply(S, p, a) {
         toast(p, "알바를 그만두었습니다.");
       } else if (JB[jb.active.id].kind === "chore" && a.a !== "give") choreApply(S, p, a, jb.active);
       else if (a.a === "pick") {
-        const t = JB[jb.active.id], limit = jbLimit(jb.active.id, jbRoll(ch, jb.day, jb.active.id).g);
+        const t = JB[jb.active.id], limit = Math.round(jbLimit(jb.active.id, jbRoll(ch, jb.day, jb.active.id).g) * (1 + lifeBuff(S, p, "dlv") / 100));
         p.parcel = { id: jb.active.id, from: t.npc, to: t.to, until: now + limit, limit };
         p.stc = null;
         jb.active.prog = 1;
@@ -860,5 +912,7 @@ function lifeDefs() {
     rep: { tier: REP_TIER, name: REP_NAME, disc: REP_DISC, tip: REP_TIP, perk: REP_PERK },
     pouch: { max: POUCH_MAX, ids: Object.keys(ITEMS).filter(pouchOk) },
     master: LIFE_MASTER,
+    // P7/P8: the 덤 step, the waters' own fish, the 물고기 도감 (lengths, sizes, rewards)
+    step: LIFE_STEP, fishMap: FISH_MAP, fbook: { cm: FISH_CM, size: FISH_SIZE, at: FISH_BOOK },
   };
 }

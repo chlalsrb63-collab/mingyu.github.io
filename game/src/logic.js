@@ -108,7 +108,7 @@ const DATA = {
     {"v":1,"id":"dojo","replaces":null,"name":"버드나무광장 수련관","theme":"interior","style":"dojo","bgm":"town","safe":true,"band":null,"w":18,"h":14,"ground":["llllllllllllllllll","llllllllllllllllll","llllllllllllllllll","llllllllllllllllll","llllllllllllllllll","llllqqqqqqqqqqllll","llllqqqqqqqqqqllll","llllqqqqqqqqqqllll","llllqqqqqqqqqqllll","llllqqqqqqqqqqllll","llllqqqqqqqqqqllll","llllllllyyylllllll","llllllllyyylllllll","lllllllllellllllll"],"objects":["=!=+==!=~@~=!==+!=","= >>>  v     >>>g_","=                _","=                _","+t              *_","=t               _","=    `      `    _","=                _","=*               _","+    `      `    _","=                _","=               w_","=g               _","_________ ________"],"entry":[9,12],"spawns":[],"npcs":[{"id":"dojo_panpan","name":"사범 판판","role":"train","x":9,"y":3,"look":[2,8,7,0,3,12,2,13,2,9,0],"lines":["어서 오너라! 땀 한 방울이 힘 한 줌이다.","수련 인형은 마음껏 때려도 된다. 아프다고 안 하거든.","길을 정했으면 두루마리 앞에 서 보거라. 전직의 길이 보일 게다."]},{"id":"dojo_scroll","name":"전직의 두루마리","role":"job","x":7,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["무기를 숙련 20까지 다룬 자에게 새 길이 열린다.","전직은 되돌릴 수 없다. 신중히 고르라."]}],"portals":[{"x":9,"y":13,"to":"town","tx":62,"ty":21}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"dongdong_apt","replaces":null,"name":"동동아파트","theme":"interior","style":"lobby","bgm":"clean","safe":true,"band":null,"w":14,"h":10,"ground":["hhhhhhhhhhhhhh","hhhhhhhhhhhhhh","hhhhhhhhhhhhhh","hhhhhhyyyhhhhh","hhhhhhyyyhhhhh","hhhhhhyyyhhhhh","hhhhhhyyyhhhhh","hhhhhhyyyhhhhh","hhhhhhyyyhhhhh","hhhhhhhehhhhhh"],"objects":["=+==~====~==+=","=g rrrrr  * g_","=            _","+            _","=            _","=        --- _","=%           _","=           g_","=            _","_______ ______"],"entry":[7,8],"spawns":[],"npcs":[{"id":"dongdong","name":"관리인 동동","role":"talk","x":4,"y":3,"look":[11,6,8,15,0,7,11,8,10,1,0],"pose":"sweep","lines":["동동아파트에 어서 오세요! 관리인 동동이에요.","복도에서 뛰면 안 돼요. 3층 할머니가 주무세요.","언젠가 모험가님들도 여기 살 수 있게 될 거예요. 방 청소 해 둘게요!"]},{"id":"apt_mail","name":"우편함","role":"talk","x":6,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["편지가 없네요.","옆 칸에 꽂힌 쪽지: \"201호 펭귄님, 생선 잘 먹었어요!\"","또 다른 쪽지: \"밤마다 노래하는 분… 조금만 작게요.\""]}],"portals":[{"x":7,"y":9,"to":"town","tx":10,"ty":35}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"general_store","replaces":null,"name":"다람쥐 잡화점","theme":"interior","style":"shop","bgm":"town","safe":true,"band":null,"w":16,"h":12,"ground":["ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffqqqqqfffff","ffffffqqqqqfffff","ffffffffffffffff","ffffffffefffffff"],"objects":["==+====^^=~==+==","=rrr g    g >rr_","+              _","=%            *_","=              _","=     mmjmm    _","=              _","+ $$        $$ _","=             w_","=]]           w_","=              _","________ _______"],"entry":[8,10],"spawns":[],"npcs":[{"id":"store_dari","name":"잡화점 주인 다리","role":"shop","x":8,"y":3,"look":[12,0,11,10,2,7,11,14,8,2,0],"pose":"wipe","goods":["hp_s","hp_m","hp_l","mp_s","mp_m","mp_l","recall","camp","feather","sc_atk","sc_def","sc_xp","stone"],"lines":["다람쥐 잡화점이에요! 물약부터 주문서까지 다 있어요.","도토리 한 줌… 아니 골드 한 줌이면 충분해요!","먼 길 떠나기 전엔 귀환 주문서 한 장, 꼭 챙기세요."]},{"id":"store_kong","name":"심부름꾼 콩콩","role":"talk","x":11,"y":8,"look":[7,0,11,20,0,7,1,6,2,1,0],"pose":"carry","lines":["영차, 영차! 상자가 나보다 커요.","다리 언니가 그러는데, 물약은 흔들면 안 된대요. …방금 흔들었어요."]}],"portals":[{"x":8,"y":11,"to":"town","tx":65,"ty":38}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
-    {"v":1,"id":"juju_diner","replaces":null,"name":"쥬쥬식당 · 선술집","theme":"interior","style":"tavern","bgm":"juju","safe":true,"band":null,"w":20,"h":14,"ground":["ffffffffffffffffffff","ffffffffffffffffffff","fffxxxffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffqqqqqfffffff","ffffffffqqqqqfffffff","ffxfffffqqqqqfffffff","ffxfffffqqqqqfffffff","ffxfffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffefffffffff"],"objects":["==+==^^===@==+==!===","=wr :       r www g_","=                  _","=          mmjmmm  _","+                  _","+ %                _","=    kok           _","=             kok  _","=  s     kok       _","=#                *_","+  s               _","=     kok     kok  _","=g                 _","__________ _________"],"entry":[10,12],"spawns":[],"npcs":[{"id":"juju","name":"쥬쥬","role":"shop","x":5,"y":2,"look":[2,13,0,14,3,5,10,11,9,9,4],"pose":"stir","goods":["food_s","food_m","food_l","inn_bread","staple"],"lines":["쥬쥬식당에 어서 와! 오늘 국물은 끝내준다구.","배고픈 모험가는 못 싸워. 든든히 먹고 가!","화덕 옆에서 쉬어 가도 돼. 요리도 직접 해 볼래?","식재료 꾸러미는 나한테 사! 화덕은 마음껏 써도 돼."]},{"id":"juju_stove","name":"쥬쥬의 화덕","role":"cook","x":4,"y":1,"look":[0,0,0,"#b8a898"],"thing":true,"lines":["보글보글 끓는 냄비가 올려진 화덕. 재료가 있으면 요리할 수 있다."]},{"id":"diner_piri","name":"떠돌이 악사 피리","role":"talk","x":17,"y":5,"look":[8,9,3,11,0,4,4,12,2,2,1],"lines":["♪ 국물 한 숟갈에 하루가 녹고, 노래 한 소절에 밤이 녹네 ♪","신청곡? 음… 동전 한 닢이면 생각해 볼게!"]},{"id":"diner_reg1","name":"단골 손님 나비","role":"talk","x":10,"y":9,"look":[0,3,10,10,2,2,3,1,3,2,4],"pose":"sip","lines":["여기 스튜 먹으려고 매일 사냥 나간다니까.","쥬쥬한테 '곱빼기'라고 하면 진짜 두 배로 줘."]},{"id":"diner_reg2","name":"단골 손님 뭉치","role":"talk","x":15,"y":10,"look":[3,3,3,11,2,7,1,2,6,1,0],"pose":"sip","lines":["건배! …아, 혼자구나. 그래도 건배!","바람초원 갔다 왔어? 토끼 머리가 둘이었지? 그치?"]}],"portals":[{"x":10,"y":13,"to":"town","tx":72,"ty":50}],"fires":[[4,2],[2,9]],"waypoint":null,"fishing":false,"boss":null},
+    {"v":1,"id":"juju_diner","replaces":null,"name":"쥬쥬식당 · 선술집","theme":"interior","style":"tavern","bgm":"juju","safe":true,"band":null,"w":20,"h":14,"ground":["ffffffffffffffffffff","ffffffffffffffffffff","fffxxxffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffqqqqqfffffff","ffffffffqqqqqfffffff","ffxfffffqqqqqfffffff","ffxfffffqqqqqfffffff","ffxfffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffefffffffff"],"objects":["==+==^^===@==+==!===","=wr :       r www g_","=                  _","=          mmjmmm  _","+                  _","+ %                _","=    kok           _","=             kok  _","=  s     kok       _","=#                *_","+  s               _","=     kok     kok  _","=g                 _","__________ _________"],"entry":[10,12],"spawns":[],"npcs":[{"id":"juju","name":"쥬쥬","role":"shop","x":5,"y":2,"look":[2,13,0,14,3,5,10,11,9,9,4],"pose":"stir","goods":["food_s","food_m","food_l","inn_bread","staple","pr_milk","pr_honey"],"lines":["쥬쥬식당에 어서 와! 오늘 국물은 끝내준다구.","배고픈 모험가는 못 싸워. 든든히 먹고 가!","화덕 옆에서 쉬어 가도 돼. 요리도 직접 해 볼래?","식재료 꾸러미는 나한테 사! 화덕은 마음껏 써도 돼."]},{"id":"juju_stove","name":"쥬쥬의 화덕","role":"cook","x":4,"y":1,"look":[0,0,0,"#b8a898"],"thing":true,"lines":["보글보글 끓는 냄비가 올려진 화덕. 재료가 있으면 요리할 수 있다."]},{"id":"diner_piri","name":"떠돌이 악사 피리","role":"talk","x":17,"y":5,"look":[8,9,3,11,0,4,4,12,2,2,1],"lines":["♪ 국물 한 숟갈에 하루가 녹고, 노래 한 소절에 밤이 녹네 ♪","신청곡? 음… 동전 한 닢이면 생각해 볼게!"]},{"id":"diner_reg1","name":"단골 손님 나비","role":"talk","x":10,"y":9,"look":[0,3,10,10,2,2,3,1,3,2,4],"pose":"sip","lines":["여기 스튜 먹으려고 매일 사냥 나간다니까.","쥬쥬한테 '곱빼기'라고 하면 진짜 두 배로 줘."]},{"id":"diner_reg2","name":"단골 손님 뭉치","role":"talk","x":15,"y":10,"look":[3,3,3,11,2,7,1,2,6,1,0],"pose":"sip","lines":["건배! …아, 혼자구나. 그래도 건배!","바람초원 갔다 왔어? 토끼 머리가 둘이었지? 그치?"]}],"portals":[{"x":10,"y":13,"to":"town","tx":72,"ty":50}],"fires":[[4,2],[2,9]],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"kangkang_forge","replaces":null,"name":"캉캉대장간","theme":"interior","style":"forge","bgm":"forge","safe":true,"band":null,"w":18,"h":12,"ground":["xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxllllllx","xxxxxxxxxxxllllllx","xxxxxxxxxxxllllllx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxexxxxxxxx","xxxxxxxxxexxxxxxxx"],"objects":["==!==+===+===+==!=","=] <    >>>    ]w_","=                _","=w              *_","=    &           _","+           mmmm _","=>               _","=>               _","=              ]]_","=      *        ]_","=                _","_________ ________"],"entry":[9,10],"spawns":[],"npcs":[{"id":"forge_tong","name":"견습 대장장이 통통","role":"smith","x":6,"y":3,"look":[5,2,9,8,0,0,8,10,7,10,0],"pose":"hammer","lines":["캉! 캉! 강화하실 거예요? 모루 앞으로 오세요!","볼칸 스승님만큼은 아니어도… 저도 꽤 한다고요!","화덕에 너무 가까이 오지 마세요. 꼬리털 탄다고요."]},{"id":"forge_musoe","name":"갑옷장이 무쇠","role":"shop","x":13,"y":3,"look":[2,8,7,11,3,0,9,4,2,2,0],"pose":"wipe","goods":["w_warrior_1","w_rogue_1","w_lancer_1","w_mage_1","w_book_1","w_bow_1","w_h_1","h_1","a_1","g_1","b_1","h_2","a_2","g_2","b_2","ru_ign","ru_aeg","ru_vit","ru_men","ru_cel","ru_acu","ru_san","ru_lum","ru_fos"],"lines":["튼튼한 갑옷 하나가 목숨 열 개보다 낫지.","룬도 있다네. 소켓 난 장비에 박으면 힘이 깃들지."]},{"id":"forge_anvil","name":"모루","role":"smith","x":5,"y":4,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["묵직한 모루. 장비를 강화하거나 분해할 수 있다."]},{"id":"kangkang","name":"캉캉","role":"craft","x":11,"y":6,"look":[4,5,9,8,0,0,8,10,7,10,0],"pose":"hammer","lines":["캉! 캉! 내가 이 대장간의 주인 캉캉이다! 광석이랑 목재만 가져와, 뭐든 두들겨 줄 테니.","강화석은 사지 말고 만들어 써! 구리 원석 넷에 마른 가지 하나면 충분해.","주괴 네 개에 판자 두 장이면 쓸 만한 장비가 나오지. 운이 좋으면 아주 좋은 놈이!"]}],"portals":[{"x":9,"y":11,"to":"town","tx":72,"ty":38}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"merc_office","replaces":null,"name":"늑대발 용병사무소","theme":"interior","style":"office","bgm":"town","safe":true,"band":null,"w":20,"h":14,"ground":["llllllllllllllllllll","llllllllllllllllllll","llllllllllllllllxxxl","llllllllllllllllllll","llllllllllllllllllll","llllllllllllllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","llllllllllelllllllll"],"objects":["=!=+===~~~~==+==!=+=","=   >> g    v v  # _","=>                 _","=>              s s_","+      ----        _","=      k  k        _","=*                 _","+                  _","= mmmm       *     _","=                ]]_","=  k k            w_","=                 w_","=g                 _","__________ _________"],"entry":[10,12],"spawns":[],"npcs":[{"id":"merc_grey","name":"용병단장 그레이","role":"quest","x":9,"y":2,"look":[4,8,3,14,3,1,8,2,6,9,0],"lines":["늑대발 용병사무소다. 일거리를 찾나?","북쪽 숲이 시끄럽다. 손 빌려줄 모험가는 언제나 환영이지.","의뢰는 게시판에, 동료는 파티 구인판에. 보수는 확실하다."]},{"id":"merc_mimi","name":"접수원 미미","role":"daily","x":4,"y":6,"look":[1,2,1,0,0,0,6,3,5,0,6],"pose":"write","lines":["어서 오세요! 오늘의 의뢰는 아침 6시에 새로 붙어요.","다 끝내면 보수를 챙겨 드릴게요. 꼭 살아서 오세요!"]},{"id":"merc_bawi","name":"은퇴한 용병 바위","role":"talk","x":17,"y":4,"look":[2,13,7,9,3,0,3,4,2,2,0],"pose":"doze","lines":["음… 내가 젊었을 땐 쌍두 토끼를 맨손으로… 쿨.","차원 균열에 들어갈 땐 꼭 넷이서 가게. 혼자는 무모해.","불 옆이 최고야. 무릎이 쑤시거든."]},{"id":"merc_board","name":"의뢰 게시판","role":"daily","x":12,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["빼곡한 의뢰서들. 오늘의 의뢰를 확인하자."]},{"id":"merc_party","name":"파티 구인판","role":"talk","x":14,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["【파티 모집 안내】 P 키로 파티 창을 열 수 있어요.","가까이 있는 모험가에게 초대를 보내면 함께 사냥할 수 있어요. 최대 4명!","광장의 오벨리스크에서 파티원 모두가 준비하면 차원 균열에 들어갈 수 있어요.","구석에 누가 낙서해 두었다: \"힐러 구함. 아니 그냥 친구 구함.\""]}],"portals":[{"x":10,"y":13,"to":"town","tx":85,"ty":37}],"fires":[[17,2]],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"owl_library","replaces":null,"name":"부엉이 도서관","theme":"interior","style":"library","bgm":"cafe","safe":true,"band":null,"w":22,"h":16,"ground":["llllllllllllllllllllll","llllllllllllllllllllll","lllxxxxlllllllllllllll","llllllllllllllllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","lllllllllllellllllllll"],"objects":["=+==~~=!=+=@=+=!=~~=+=","=bbb#bbb ;;;;; bbbb g_","=                    _","+  s  s            % _","=                    _","=b      |     |      _","=b                   _","+              kkk   _","+  kok         ---  t_","=              kkk   _","=b                   _","=b kok               _","=b      *     *      _","+                  | _","=g                  g_","___________ __________"],"entry":[11,14],"spawns":[],"npcs":[{"id":"lib_borum","name":"사서 보름","role":"talk","x":7,"y":3,"look":[9,12,2,1,0,0,9,9,5,2,0],"pose":"read","lines":["쉿… 도서관에서는 발소리도 살금살금.","독서대의 낡은 책들은 마을의 옛이야기예요. 천천히 읽어 보세요.","저 진열장 속 괴수가 자꾸 쳐다본다고요? …기분 탓이에요. 아마도요."]},{"id":"hall_pipi","name":"지도 제작자 피피","role":"collector","x":16,"y":4,"look":[3,1,2,"#3a6a42","#a8845c",1],"pose":"read","lines":["몬스터를 많이 만나 볼수록 지도가 정확해져. 도감을 채워 오면 그 땅의 힘을 나눠 줄게.","회관보다 여기가 조용해서 좋아. 지도 그리기엔 딱이지!"]},{"id":"hall_momo","name":"서기관 모모","role":"achieve","x":17,"y":11,"look":[0,2,0,"#d8a830","#fff0c0",0],"pose":"write","lines":["자네의 공적은 내가 빠짐없이 적어 두지. 기록의 서판에도 이름이 새겨질 걸세."]},{"id":"lib_case","name":"괴수 도감 진열장","role":"collector","x":11,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["유리병 속 괴수가 눈을 깜빡였다…!","도감을 채우면 그 땅의 힘이 깃든다고 적혀 있다."]},{"id":"lib_tablet","name":"기록의 서판","role":"achieve","x":20,"y":8,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["모험가들의 이름과 공적이 빼곡히 새겨져 있다."]},{"id":"lib_book_1","name":"낡은 책: 정령나무","role":"talk","x":8,"y":5,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["광장의 정령나무는 마을보다 먼저 거기 있었다.","어둠이 숲을 삼키던 밤, 동물들은 그 나무 아래로 모여들었다.","나무는 잎을 떨어뜨려 빛의 울타리를 쳤고, 그 안은 따뜻했다.","그래서 우리는 지금도 해마다 그 뿌리에 물을 준다. 고맙다는 인사로."]},{"id":"lib_book_2","name":"낡은 책: 어둠에 먹힌 숲","role":"talk","x":14,"y":5,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["북쪽 숲은 원래 노래하는 숲이었다고 한다.","어느 날부터 새들이 울지 않았고, 나무들이 검게 말라 갔다.","숲에 남은 짐승들은 머리가 둘이 되거나, 눈이 셋이 되었다.","울타리 너머로 들리는 소리는… 아직 그 숲이 무언가를 부르는 소리일지도 모른다."]},{"id":"lib_book_3","name":"낡은 책: 첫 이주민들","role":"talk","x":19,"y":13,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["첫 이주민은 다람쥐 셋, 곰 하나, 그리고 아주 겁 많은 양 한 마리였다.","곰이 통나무를 나르고, 다람쥐들이 지붕을 엮고, 양은… 모두를 위해 털실을 떴다.","울타리 한 칸, 집 한 채씩. 그렇게 버드나무광장이 생겼다.","책 끝에 삐뚤빼뚤한 글씨: \"다음 페이지는 네가 써 줘.\""]}],"portals":[{"x":11,"y":15,"to":"town","tx":36,"ty":22}],"fires":[[4,2]],"waypoint":null,"fishing":false,"boss":null},
@@ -557,7 +557,7 @@ const ITEMS = {
   cafe_tea: { name: "들꽃 허브차", type: "food", heal: 60, mana: 80, buff: { xp: 3, atk: 0, min: 20 }, price: 50, desc: "바람초원 들꽃을 우렸다. HP 60, MP 80 회복. 20분간 경험치 +3%." },
   cafe_scone: { name: "버터 스콘", type: "food", heal: 220, buff: { xp: 5, atk: 0, min: 10 }, price: 60, desc: "겉은 바삭, 속은 촉촉. HP 220 회복. 10분간 경험치 +5%." },
   cafe_pie: { name: "산딸기 파이", type: "food", heal: 420, buff: { xp: 8, atk: 3, min: 15 }, price: 180, desc: "모카의 자랑. HP 420 회복. 15분간 경험치 +8%, 공격력 +3%." },
-  inn_stew: { name: "여관 스튜", type: "food", heal: 360, mana: 60, buff: { xp: 6, atk: 0, min: 20 }, price: 110, desc: "뭉근히 끓인 고기 스튜. HP 360, MP 60 회복. 20분간 경험치 +6%." },
+  inn_stew: { name: "여관 스튜", type: "food", heal: 360, mana: 60, buff: { xp: 6, atk: 0, min: 20 }, price: 220, desc: "뭉근히 끓인 고기 스튜. HP 360, MP 60 회복. 20분간 경험치 +6%." },
   inn_bread: { name: "갓 구운 호밀빵", type: "food", heal: 120, buff: { xp: 2, atk: 0, min: 10 }, price: 25, desc: "든든한 한 덩이. HP 120 회복. 10분간 경험치 +2%." },
   // scrolls of blessing, ten minutes each; reading the same one again only refills its time (메이플 주문서 · 바람의나라 부적)
   sc_atk: { name: "공격의 주문서", type: "buff", buff: "atk", pct: 10, min: 10, price: 300, desc: "10분간 공격력 +10%. 같은 주문서는 겹치지 않고 남은 시간만 다시 채운다." },
@@ -1342,7 +1342,12 @@ const lifeNeed = (L) => 10 * L * L + 40;
 /** Material grade g (1..5) unlocks at life level GRADE_LV[g−1]; 50 is the 명장 level. */
 const GRADE_LV = [1, 10, 20, 30, 40];
 /** Life experience for one action at grade g (index g−1); ×1.5 on a 대성공 where the skill says so. */
-const RXP = [8, 14, 22, 34, 50];
+const RXP = [8, 16, 30, 50, 75];   // P7 (content audit 2026-11-15): was 8/14/22/34/50, the L31–50 wall a third shorter
+/**
+ * P7: every level shows what it gave (gainLife's toast, lifeStepText): its grade, the recipes first known at it, else
+ * the steady gains — and gathering's 덤 (one bonus item) grows by `bonus` %p a level from NODE.bonus (4 % → 23.6 % at 50).
+ */
+const LIFE_STEP = { bonus: 0.4 };
 /** Work on a grade unlocked this many levels below you is stale: ×LIFE_STALE experience. */
 const LIFE_STALE_D = 20, LIFE_STALE = 0.25;
 /**
@@ -1358,6 +1363,8 @@ const LIFE_UNLOCK = { 10: "2등급", 20: "3등급", 30: "4등급", 40: "5등급"
  * forest/crypt → G2, city/sewer → G3, cave/abyss → G4, 단풍 왕도 → G5). An editor map may say `"grade"`.
  */
 const GRADE_TIER = [1, 8, 14, 24, 40];
+/** A map whose grade is not its band's (P7: 붉은바위 황금궁, Lv 36–42, is the grade-5 door before 왕도). */
+const GRADE_MAP = { mesa: 5 };
 const GRADE_NAME = ["1등급", "2등급", "3등급", "4등급", "5등급"];
 
 // ── materials (B.3): herb / ore / wood of each grade; gathered from L2 on, kept in the 재료 주머니 (pouch)
@@ -1452,7 +1459,7 @@ Object.assign(ITEMS, {
   fd_rice: { name: "들꽃 주먹밥", type: "food", heal: 150, buff: { xp: 4, atk: 2, min: 10 }, price: 38, desc: "HP 150 회복. 10분간 경험치 +4%, 공격력 +2%." },
   fd_skewer: { name: "버섯 꼬치", type: "food", heal: 320, buff: { xp: 5, atk: 4, min: 15 }, price: 78, desc: "HP 320 회복. 15분간 경험치 +5%, 공격력 +4%." },
   fd_stew: { name: "메기 매운탕", type: "food", heal: 600, mana: 120, buff: { xp: 8, atk: 0, min: 15 }, price: 300, desc: "HP 600, MP 120 회복. 15분간 경험치 +8%." },
-  fd_steam: { name: "장님고기 찜", type: "food", heal: 1100, buff: { xp: 10, atk: 4, min: 20 }, price: 560, desc: "HP 1100 회복. 20분간 경험치 +10%, 공격력 +4%." },
+  fd_steam: { name: "장님고기 찜", type: "food", heal: 1100, buff: { xp: 10, atk: 4, min: 20 }, price: 700, desc: "HP 1100 회복. 20분간 경험치 +10%, 공격력 +4%." },
   // the farm's dishes (H10): the plot's crops, at a campfire or a stove
   fd_potato: { name: "감자구이", type: "food", heal: 100, buff: { xp: 3, atk: 1, min: 10 }, price: 28, desc: "HP 100 회복. 10분간 경험치 +3%, 공격력 +1%." },
   fd_carrot: { name: "당근 수프", type: "food", heal: 140, mana: 60, buff: { xp: 4, atk: 1, min: 10 }, price: 38, desc: "HP 140, MP 60 회복. 10분간 경험치 +4%, 공격력 +1%." },
@@ -1464,8 +1471,8 @@ Object.assign(ITEMS, {
   el_atk: { name: "공격의 엘릭서", type: "buff", buff: "atk", min: 15, el: 1, price: 300, desc: "15분간 공격력 +10%. 공격의 주문서와 같은 힘이 더 오래 간다." },
   el_def: { name: "수호의 엘릭서", type: "buff", buff: "def", min: 15, el: 1, price: 300, desc: "15분간 받는 피해 -12%. 방어의 주문서와 같은 힘이 더 오래 간다." },
   el_xp: { name: "경험의 엘릭서", type: "buff", buff: "xp", min: 15, el: 1, price: 450, desc: "15분간 경험치 +20%. 경험의 주문서와 같은 힘이 더 오래 간다." },
-  el_spd: { name: "신속의 물약", type: "buff", buff: "spd", sec: 60, el: 1, price: 200, desc: "60초간 이동속도가 40% 빨라진다." },
-  el_all: { name: "연금 정수", type: "buff", buff: "all", min: 20, el: 1, price: 1200, desc: "20분간 공격력 +10%, 받는 피해 -12%, 경험치 +20%. 세 주문서의 힘을 한 병에." },
+  el_spd: { name: "신속의 물약", type: "buff", buff: "spd", sec: 60, el: 1, price: 400, desc: "60초간 이동속도가 40% 빨라진다." },
+  el_all: { name: "연금 정수", type: "buff", buff: "all", min: 20, el: 1, price: 1650, desc: "20분간 공격력 +10%, 받는 피해 -12%, 경험치 +20%. 세 주문서의 힘을 한 병에." },
   stone_b: { name: "축복 강화석", type: "mat", price: 1000, desc: "강화할 때 함께 쓰면 성공 확률이 10%p 오르고, 실패해도 단계가 내려가지 않는다." },
   punch: { name: "홈 송곳", type: "tool", price: 4000, desc: "장착한 장비에 홈을 하나 더 뚫는다 (부위의 최대치까지). 한 번 쓰면 사라진다." },
   whet: { name: "명장의 숫돌", type: "tool", price: 10000, desc: "장착한 장비의 가장 약한 옵션 하나를 새로 굴린다. 한 번 쓰면 사라진다." },
@@ -1489,7 +1496,7 @@ Object.assign(RECIPES, {
   fd_steam: recipeRow("cook", 30, "cook", [["fish_v", 1], ["m_h4", 2], ["staple", 1]], "fd_steam", 1, 0),
   fd_feast: recipeRow("cook", 50, "cook", [["fish_l", 1], ["m_h5", 2], ["m_h4", 1], ["staple", 2]], "fd_feast", 1, 0),
   cafe_pie: recipeRow("cook", 10, "cook", [["m_h1", 3], ["m_h2", 1], ["staple", 1]], "cafe_pie", 1, 72, { rep: "cafe_moka" }),
-  inn_stew: recipeRow("cook", 15, "cook", [["fish_m", 1], ["m_h2", 1], ["staple", 2]], "inn_stew", 1, 8, { rep: "inn_maru" }),
+  inn_stew: recipeRow("cook", 15, "cook", [["fish_m", 1], ["m_h2", 1], ["staple", 2]], "inn_stew", 1, 66, { rep: "inn_maru" }),
   fd_potato: recipeRow("cook", 1, "fire", [["m_c1", 2]], "fd_potato", 1, 0),
   fd_carrot: recipeRow("cook", 3, "fire", [["m_c2", 2], ["staple", 1]], "fd_carrot", 1, 0),
   fd_veg: recipeRow("cook", 10, "cook", [["m_c3", 1], ["m_c4", 1], ["staple", 1]], "fd_veg", 1, 0),
@@ -1506,7 +1513,7 @@ Object.assign(RECIPES, {
   el_def: recipeRow("alch", 25, "alch", [["m_h3", 2], ["m_o3", 1], ["flask", 1]], "el_def", 1, 88, { eq: ["sc_def"] }),
   el_xp: recipeRow("alch", 25, "alch", [["m_h3", 2], ["m_o3", 1], ["flask", 1]], "el_xp", 1, 178, { eq: ["sc_xp"] }),
   el_spd: recipeRow("alch", 30, "alch", [["m_h4", 1], ["m_w4", 1], ["flask", 1]], "el_spd", 1, 50),
-  feather: recipeRow("alch", 35, "alch", [["m_h4", 2], ["m_o4", 1], ["m_w3", 1]], "feather", 1, 0),
+  feather: recipeRow("alch", 35, "alch", [["m_h4", 1], ["m_w2", 1]], "feather", 1, 80),   // P7: was 2 수정꽃 + 심연 결정 + 판자 (525 G of goods for a 250 G feather)
   ru_mix: recipeRow("alch", 40, "alch", [["rune*", 3], ["m_h5", 1]], "rune*", 1, 200),
   el_all: recipeRow("alch", 50, "alch", [["m_h5", 2], ["m_o5", 1], ["m_w5", 1], ["flask", 1]], "el_all", 1, 400, { eq: ["sc_atk", "sc_def", "sc_xp"] }),
   // 제작: the stone (the main sink), camp kits, blessed stones, the punch, the whetstone (ingots and gear below)
@@ -1526,17 +1533,102 @@ for (let g = 1; g <= 5; g++) RECIPES[`ing_${g}`] = recipeRow("craft", GRADE_LV[g
  * Gear (B.6): tier t (2–5) at Lv 12/22/32/42 — four ingots and two planks of grade t, a fee of 30 % of the shop
  * price; rarity q[0]..q[1] (마법..희귀; a 대성공 raises it one step, never 전설/세트), affixes rolled at item level
  * ilvl[t−1]. No batch mode. 48 recipes: six weapon kinds + six other pieces × four tiers.
+ * P7: tier 2's small pieces (helm, gloves, boots, ring, amulet; shop 360–480 G) take `ing2` ingots (four cost more than
+ * the piece); a fee never below what the economy guard needs (inputs at sell value + fee ≥ 60 % of the shop's price).
  */
-const GEAR_CRAFT = { lv: [12, 22, 32, 42], ing: 4, wood: 2, fee: 0.3, q: [1, 2], ilvl: [4, 12, 21, 32, 44], ms: 6000 };
+const GEAR_CRAFT = { lv: [12, 22, 32, 42], ing: 4, ing2: 2, wood: 2, fee: 0.29, q: [1, 2], ilvl: [4, 12, 21, 32, 44], ms: 6000 };
 for (let t = 2; t <= 5; t++) {
   const ids = [...WK_ORDER.map((wk) => `w_${WK_ID[wk]}_${t}`), ...["helm", "armor", "gloves", "boots", "ring", "amulet"].map((ty) => `${GEAR[ty].pre}_${t}`)];
   for (const id of ids) {
-    RECIPES[`gr_${id}`] = recipeRow("craft", GEAR_CRAFT.lv[t - 2], "craft", [[`ing_${t}`, GEAR_CRAFT.ing], [`m_w${t}`, GEAR_CRAFT.wood]], id, 1,
-      Math.round(ITEMS[id].price * GEAR_CRAFT.fee), { gear: 1, ms: GEAR_CRAFT.ms });
+    const ing = t === 2 && /^[hgbrn]_/.test(id) ? GEAR_CRAFT.ing2 : GEAR_CRAFT.ing, P = ITEMS[id].price;
+    const sold = ing * Math.floor(ITEMS[`ing_${t}`].price * 0.4) + GEAR_CRAFT.wood * Math.floor(ITEMS[`m_w${t}`].price * 0.4);
+    RECIPES[`gr_${id}`] = recipeRow("craft", GEAR_CRAFT.lv[t - 2], "craft", [[`ing_${t}`, ing], [`m_w${t}`, GEAR_CRAFT.wood]], id, 1,
+      Math.max(Math.round(P * GEAR_CRAFT.fee), Math.ceil(0.6 * P - sold)), { gear: 1, ms: GEAR_CRAFT.ms });
   }
 }
 /** Batch crafting (B.6): up to `batch` at once without a mini-game (scored `batchS`) once `batchD`+ levels above the recipe; a failure gives `failXp` of the XP. */
 const CRAFT = { batch: 10, batchS: 70, batchD: 20, failXp: 0.5 };
+
+// ── P8 (content audit 2026-11-15): life items. Every price sits at 0.9–1.3 × its inputs + fee (lifeskills.mjs).
+// Life-buff foods ride the one food slot (p.food; 75-apply.js): `lf` = { gat: channel −%, bite: bite wait −%, great:
+// %p 대성공 at the stations, dlv: parcel / milk clock +%, lxp: life XP +% } (58-life.js lifeBuff). None beats a
+// combat food: they trade the meal's xp/atk for the work.
+/** Village produce (H10 chores give 1–2, 쥬쥬 sells them): pouch goods for the dairy and honey dishes. */
+Object.assign(ITEMS, {
+  pr_milk: { name: "음메 우유", type: "lmat", grade: 1, mk: "c", price: 50, desc: "버드나무 마을 음메 목장의 고소한 우유. 요리 재료로 쓰인다." },
+  pr_honey: { name: "버들 꿀", type: "lmat", grade: 2, mk: "c", price: 100, desc: "꽃집 할머니 수국의 꽃밭에서 모은 꿀. 요리와 연금술에 쓰인다." },
+  fd_butter: { name: "감자 버터구이", type: "food", heal: 180, mana: 80, buff: { xp: 4, atk: 2, min: 10 }, price: 76, desc: "HP 180, MP 80 회복. 10분간 경험치 +4%, 공격력 +2%." },
+  fd_herbtea: { name: "숲향 허브차", type: "food", heal: 120, mana: 120, buff: { xp: 0, atk: 0, min: 20, lf: { gat: 20 } }, price: 112, desc: "HP·MP 120 회복. 20분간 채집 시간 -20%." },
+  fd_fishbox: { name: "갈대의 낚시 도시락", type: "food", heal: 300, buff: { xp: 0, atk: 0, min: 20, lf: { bite: 25 } }, price: 150, desc: "HP 300 회복. 20분간 입질 대기 -25%." },
+  fd_cheese: { name: "치즈 수프", type: "food", heal: 480, mana: 200, buff: { xp: 7, atk: 2, min: 15 }, price: 175, desc: "HP 480, MP 200 회복. 15분간 경험치 +7%, 공격력 +2%." },
+  fd_barley: { name: "대장장이 보리차", type: "food", heal: 200, mana: 200, buff: { xp: 0, atk: 0, min: 20, lf: { great: 3 } }, price: 175, desc: "HP·MP 200 회복. 20분간 제작·연금·요리 대성공 +3%p." },
+  fd_honeycake: { name: "버들 꿀떡", type: "food", heal: 300, buff: { xp: 0, atk: 0, min: 20, lf: { dlv: 20 } }, price: 210, desc: "HP 300 회복. 20분간 배달·우유 배달 제한 시간 +20%." },
+  fd_honeybread: { name: "꿀 호밀빵", type: "food", heal: 900, mana: 300, buff: { xp: 9, atk: 4, min: 20 }, price: 290, desc: "HP 900, MP 300 회복. 20분간 경험치 +9%, 공격력 +4%." },
+  al_candle: { name: "집중의 향초", type: "food", lit: 1, buff: { xp: 0, atk: 0, min: 20, lf: { lxp: 10 } }, price: 240, desc: "밀랍 향초. 피워 두면 20분간 생활 경험치 +10%." },
+  al_cure: { name: "해독 물약", type: "pot", cure: 1, heal: 0, price: 45, desc: "독, 화상, 둔화를 바로 씻어 낸다." },
+});
+Object.assign(RECIPES, {
+  fd_butter: recipeRow("cook", 8, "fire", [["m_c1", 2], ["pr_milk", 1]], "fd_butter", 1, 0),
+  fd_herbtea: recipeRow("cook", 12, "cook", [["m_h2", 2], ["pr_milk", 1]], "fd_herbtea", 1, 0),
+  fd_fishbox: recipeRow("cook", 18, "cook", [["fd_rice", 1], ["fish_m", 1], ["staple", 1]], "fd_fishbox", 1, 0),
+  fd_cheese: recipeRow("cook", 22, "cook", [["pr_milk", 2], ["m_h3", 1], ["staple", 1]], "fd_cheese", 1, 0),
+  fd_barley: recipeRow("cook", 25, "cook", [["m_h3", 1], ["pr_honey", 1], ["staple", 1]], "fd_barley", 1, 0),
+  fd_honeycake: recipeRow("cook", 28, "cook", [["pr_honey", 2], ["staple", 2]], "fd_honeycake", 1, 0),
+  fd_honeybread: recipeRow("cook", 35, "cook", [["pr_honey", 1], ["m_h4", 1], ["m_c5", 1], ["staple", 2]], "fd_honeybread", 1, 0),
+  al_cure: recipeRow("alch", 8, "alch", [["m_h1", 2], ["m_h2", 1], ["flask", 2]], "al_cure", 2, 10),
+  al_candle: recipeRow("alch", 22, "alch", [["m_h3", 1], ["m_w2", 1], ["pr_honey", 1]], "al_candle", 1, 30),
+});
+/**
+ * Fish of one water (P8): on its map a catch of that grade's fish is this one instead FISH_LOCAL of the time (never
+ * above the angler's grade). No campfire recipe: they sell, fill the 물고기 도감 and the 알바 board's fish rows.
+ */
+Object.assign(ITEMS, {
+  fish_jcat: { name: "정글 메기", type: "fish", grade: 3, price: 260, desc: "정글 해안도로 늪에 사는 수염 긴 메기. 물고기 도감에 오른다." },
+  fish_bream: { name: "산호 도미", type: "fish", grade: 4, price: 460, desc: "산호 해안의 분홍빛 도미. 물고기 도감에 오른다." },
+  fish_eel: { name: "모래 장어", type: "fish", grade: 4, price: 480, desc: "모래바다 오아시스의 물에 숨어 사는 장어. 물고기 도감에 오른다." },
+  fish_ayu: { name: "운해 은어", type: "fish", grade: 4, price: 500, desc: "운해 사원의 맑은 물에서 수박 향이 나는 은어. 물고기 도감에 오른다." },
+  fish_mtrout: { name: "단풍 송어", type: "fish", grade: 5, price: 650, desc: "단풍 왕도의 붉은 물에 사는 송어. 물고기 도감에 오른다." },
+  fish_ssog: { name: "붉은바위 쏘가리", type: "fish", grade: 5, price: 700, desc: "붉은바위 황금궁의 바위틈에 숨은 얼룩 쏘가리. 물고기 도감에 오른다." },
+});
+const FISH_MAP = { jungle: "fish_jcat", coast: "fish_bream", dunesea: "fish_eel", oasis: "fish_eel", cloudtemple: "fish_ayu", maple: "fish_mtrout", mesa: "fish_ssog" };
+const FISH_LOCAL = 0.4;
+/**
+ * 물고기 도감 (P8): each species' length range in cm; a catch rolls u = 0.75·rnd + 0.25·score (0–1), the length
+ * lo + (hi − lo)·u, the size 소/중/대 by thirds of u. The sheet's `fbook` {id: [best cm, size bits]}: 11 × 3 = 33
+ * entries. FISH_BOOK [entries, gold, item?] pays once when the count reaches it (33 is also a title, ACH `fbook`).
+ */
+const FISH_CM = { fish_s: [4, 9], fish_m: [25, 60], fish_c: [40, 110], fish_v: [20, 45], fish_l: [40, 90],
+  fish_jcat: [50, 130], fish_bream: [30, 70], fish_eel: [60, 150], fish_ayu: [15, 30], fish_mtrout: [30, 75], fish_ssog: [35, 80] };
+const FISH_SIZE = ["소", "중", "대"];
+const FISH_BOOK = [[5, 1000], [11, 3000, "stone_b"], [22, 6000, "fn_gyotaku"], [33, 15000]];
+/**
+ * Crafted furniture (P8): 캉캉's bench makes eight pieces from wood and ingots (the second wood sink); they are
+ * not in the 하우징 안내인's shop (FURN_SHOP was taken in 10-tables.js). `ch` reuses an interior sprite.
+ */
+Object.assign(FURN, {
+  fn_wicker: { name: "버들 바구니 의자", ch: "k", kind: "decor", price: 250, desc: "마른 가지를 엮어 만든 가벼운 의자. 캉캉대장간에서 만든다." },
+  fn_desk: { name: "참나무 책상", ch: "-", kind: "decor", price: 560, desc: "강철 모서리를 댄 튼튼한 참나무 책상. 캉캉대장간에서 만든다." },
+  fn_plaque: { name: "협동 알바 감사패", ch: "r", kind: "decor", wall: 1, price: 500, desc: "\"늘 고마워요!\" 마을 가게들이 새겨 준 강철 감사패. 벽에 붙여 둔다." },
+  fn_oilshelf: { name: "기름등 선반", ch: "b", kind: "decor", wall: 1, price: 1000, desc: "기름 먹은 판자 선반에 작은 기름등을 달았다. 벽에 붙여 둔다." },
+  fn_gyotaku: { name: "어탁 액자", ch: ";", kind: "decor", price: 1050, desc: "가장 큰 물고기를 먹으로 떠낸 어탁을 유리 액자에 담았다." },
+  fn_fossilbed: { name: "화석 목재 침대", ch: "p", kind: "rest", price: 2300, desc: "화석 목재로 짠 단단한 침대. 누우면 [안락한 휴식] (30분에 한 번)." },
+  fn_keepcase: { name: "기념품 진열장", ch: "t", kind: "decor", wall: 1, price: 2600, desc: "여행의 기념품을 늘어놓는 유리 진열장. 벽에 붙여 둔다." },
+  fn_screen: { name: "단풍 병풍", ch: "v", kind: "decor", price: 3000, desc: "단풍 고목 틀에 붉은 단풍잎을 눌러 붙인 병풍." },
+});
+for (const id of ["fn_wicker", "fn_desk", "fn_plaque", "fn_oilshelf", "fn_gyotaku", "fn_fossilbed", "fn_keepcase", "fn_screen"]) {
+  const f = FURN[id];
+  ITEMS[id] = { name: f.name, type: "furn", furn: f.kind, price: f.price, desc: f.desc };
+}
+Object.assign(RECIPES, {
+  fn_wicker: recipeRow("craft", 5, "craft", [["m_w1", 6], ["m_h1", 2]], "fn_wicker", 1, 60),
+  fn_desk: recipeRow("craft", 12, "craft", [["m_w2", 6], ["ing_2", 1]], "fn_desk", 1, 120),
+  fn_plaque: recipeRow("craft", 15, "craft", [["ing_2", 2], ["m_w2", 2]], "fn_plaque", 1, 120),
+  fn_oilshelf: recipeRow("craft", 20, "craft", [["m_w3", 5], ["ing_3", 1]], "fn_oilshelf", 1, 200),
+  fn_gyotaku: recipeRow("craft", 25, "craft", [["m_w3", 3], ["fish_v", 1]], "fn_gyotaku", 1, 200),
+  fn_fossilbed: recipeRow("craft", 30, "craft", [["m_w4", 6], ["ing_4", 1]], "fn_fossilbed", 1, 400),
+  fn_keepcase: recipeRow("craft", 35, "craft", [["m_w4", 4], ["ing_4", 2]], "fn_keepcase", 1, 500),
+  fn_screen: recipeRow("craft", 40, "craft", [["m_w5", 4], ["m_h5", 2]], "fn_screen", 1, 600),
+});
 
 // ── the solo 알바 board (B.9) and delivery (B.8)
 /**
@@ -1621,6 +1713,20 @@ const JB = {
   jb_dl_tale: { kind: "deliver", npc: "story", to: "inn_lira", lv: 5, sk: "deliver", when: "night", text: "이야기꾼 할머니 소담의 옛이야기 책을 여관의 리라에게 갖다주세요. 밤이 깊기 전에!" },
   jb_dl_kong: { kind: "deliver", npc: "store_kong", to: "merc_mimi", lv: 15, sk: "deliver", text: "심부름꾼 콩콩이 깜빡한 장부를 늑대발 용병사무소 미미에게 전해 주세요." },
   jb_dl_lunch: { kind: "deliver", npc: "juju", to: "willow_fisher", lv: 20, sk: "deliver", rep: 10, text: "쥬쥬가 단골에게만 맡기는 배달이에요. 낚시꾼 갈대의 도시락을 버드나무 마을까지!" },
+  // ── P7: the L31–50 band (3 rows before) gets two per skill at L33 and L45, and 연금 a first-grade row
+  jb_cure: { kind: "make", npc: "guard", lv: 8, sk: "alch", item: "al_cure", n: 3, text: "경비병 토비가 늪지 순찰 전에 [해독 물약] 3병을 챙기고 싶대요. 개구리 독이 무섭대요!" },
+  jb_ore4: { kind: "bring", npc: "forge_musoe", lv: 33, sk: "gather", item: "m_o4", n: 5, text: "갑옷장이 무쇠가 원정대 갑옷에 박을 [심연 결정] 5개를 주문했어요." },
+  jb_herb5: { kind: "bring", npc: "bogle", lv: 45, sk: "gather", item: "m_h5", n: 4, text: "보글이 왕도의 [붉은 단풍잎] 4장으로 새 물약을 연구한대요. 빨갛게 끓는대요!" },
+  jb_fish_bream: { kind: "fish", npc: "inn_maru", lv: 33, sk: "fish", item: "fish_bream", n: 2, text: "여관 주인 마루가 바닷가 손님상에 올릴 [산호 도미] 2마리를 구해요." },
+  jb_fish_mtrout: { kind: "fish", npc: "willow_fisher", lv: 45, sk: "fish", item: "fish_mtrout", n: 2, text: "낚시꾼 갈대가 평생 한 번도 못 낚아 본 [단풍 송어] 2마리를 보고 싶대요." },
+  jb_steam2: { kind: "make", npc: "diner_piri", lv: 33, sk: "cook", item: "fd_steam", n: 2, text: "떠돌이 악사 피리가 공연 뒤풀이에 [장님고기 찜] 2접시를 원해요." },
+  jb_honeybread: { kind: "make", npc: "willow_elder", lv: 45, sk: "cook", item: "fd_honeybread", n: 3, text: "촌장 버들이 마을 잔치 상에 올릴 [꿀 호밀빵] 3개를 부탁했어요." },
+  jb_ing4: { kind: "make", npc: "kangkang", lv: 33, sk: "craft", item: "ing_4", n: 3, text: "캉캉이 큰 작품에 쓸 [심연 주괴] 3개를 기다려요. 불이 활활!" },
+  jb_screen: { kind: "make", npc: "hall_bori", lv: 45, sk: "craft", item: "fn_screen", n: 1, text: "이장 보리가 마을회관 손님방에 둘 [단풍 병풍]을 주문했어요." },
+  jb_candle: { kind: "make", npc: "lib_borum", lv: 33, sk: "alch", item: "al_candle", n: 2, text: "사서 보름이 밤샘 정리에 쓸 [집중의 향초] 2개를 원해요." },
+  jb_elxp2: { kind: "make", npc: "merc_grey", lv: 45, sk: "alch", item: "el_xp", n: 3, text: "용병단장 그레이가 신입 용병들 훈련에 쓸 [경험의 엘릭서] 3병을 주문했어요." },
+  jb_dl_milk: { kind: "deliver", npc: "willow_dairy", to: "inn_maru", lv: 33, sk: "deliver", text: "목장 주인 음메의 우유 통을 모닥별 여관 마루에게 상하기 전에 전해 주세요." },
+  jb_dl_map: { kind: "deliver", npc: "willow_granny", to: "hall_pipi", lv: 45, sk: "deliver", text: "꽃집 할머니 수국이 손으로 그린 약초 지도를 마을회관 지도 제작자 피피에게 전해 주세요." },
   // 버드나무 마을 chores (H10, 59-chores.js): `job` a CHORES key, `n` spots (× grade) on CHORE_MAP; JB_PAY.chores a day
   jb_ch_milk: { kind: "chore", job: "milk", npc: "willow_dairy", lv: 1, sk: "deliver", n: 4, text: "목장 주인 음메의 아침 우유를 집집마다 우편함에 넣어 주세요. 우유가 미지근해지기 전에!" },
   jb_ch_weed: { kind: "chore", job: "weed", npc: "willow_farmer", lv: 1, sk: "gather", n: 6, text: "텃밭 농부 감자의 텃밭과 뒷마당 풀숲에서 잡초를 뽑아 주세요. 뿌리까지 쏙!" },
@@ -1632,17 +1738,17 @@ const JB = {
 /**
  * The village chores (H10). `spot`: what one act is done to (the toast); `src`: what to fetch before the acts —
  * "npc" from the giver (all the acts at once: the milk bottles, the dog's leash) or "water" (a well or the water's
- * edge, `carry` acts a fill); `timed`: the fetch starts a parcel-like clock and running out fails the job (never
+ * edge, `carry` acts a fill); `gift`: produce the giver adds on payment (1, 2 from 보통 up; P8); `timed`: the fetch starts a parcel-like clock and running out fails the job (never
  * 긴급); `box`: the carry code (58-life.js carryOf) held in both hands while acts are carried. CHORE: act reach (px), the least ms between two acts, the reach of a water source (tiles), weeds within this many tiles of
  * the 제초 giver (the farmer's plot and backyard).
  */
 const CHORE_MAP = "willow";
 const CHORES = {
-  milk: { name: "우유 배달", spot: "우편함", src: "npc", timed: true, box: 2, get: "우유병을 받았습니다" },
-  weed: { name: "제초", spot: "잡초" },
+  milk: { name: "우유 배달", spot: "우편함", src: "npc", timed: true, box: 2, get: "우유병을 받았습니다", gift: "pr_milk" },
+  weed: { name: "제초", spot: "잡초", gift: "m_c1" },
   flyer: { name: "전단지 붙이기", spot: "전단지" },
   litter: { name: "쓰레기 줍기", spot: "쓰레기" },
-  water: { name: "꽃밭 물주기", spot: "꽃밭", src: "water", carry: 3, get: "물뿌리개를 가득 채웠습니다" },
+  water: { name: "꽃밭 물주기", spot: "꽃밭", src: "water", carry: 3, get: "물뿌리개를 가득 채웠습니다", gift: "pr_honey" },
   dog: { name: "강아지 산책", spot: "나무", src: "npc", get: "콩떡이의 목줄을 잡았습니다" },
 };
 const CHORE = { range: 28, gap: 500, src: 1, weed: 12 };
@@ -11142,6 +11248,7 @@ function lifeGrade(L) {
 /** The grade of a map: its own `grade` (editor maps), else by the first tier of its level band; 1 without one. */
 function gradeOfMap(m) {
   if (m && Number.isInteger(m.grade) && m.grade >= 1 && m.grade <= 5) return m.grade;
+  if (m && Object.hasOwn(GRADE_MAP, m.id)) return GRADE_MAP[m.id];
   const band = m && (m.band || (m.id && Object.hasOwn(MAP_META, m.id) && MAP_META[m.id].band));
   if (!band) return 1;
   let g = 0;
@@ -11149,7 +11256,7 @@ function gradeOfMap(m) {
   return Math.max(1, g);
 }
 /** A map's grade by id without building a hunting ground (editor and town maps are built at load). */
-const mapGradeOf = (id) => (MAP_META[id].eager ? gradeOfMap(mapOf(id)) : gradeOfMap({ band: MAP_META[id].band }));
+const mapGradeOf = (id) => (MAP_META[id].eager ? gradeOfMap(mapOf(id)) : gradeOfMap({ id, band: MAP_META[id].band }));
 
 const r1L = (v) => Math.round(v * 10) / 10;
 /**
@@ -11170,6 +11277,25 @@ function lifeRoll(S, L, unlockLv, s = 50, extra = 0) {
 }
 /** The time factor for channels, bite waits and minimum craft times: −0.8 % a level (×0.6 at 50). */
 const lifeTime = (L) => 1 - LIFE_ROLL.time * clamp(L, 1, LIFE_MAX);
+/** A life-buff food's effect `k` (P8, ITEMS[].buff.lf: gat bite great dlv lxp) while it lasts, else 0. */
+const lifeBuff = (S, p, k) => (p.food && p.food.lf && p.food.until > S.now ? p.food.lf[k] | 0 : 0);
+/** Gathering's 덤 chance (0..1) at level L (P7: grows LIFE_STEP.bonus %p a level). */
+const gatBonus = (L) => NODE.bonus + (LIFE_STEP.bonus * (clamp(L, 1, LIFE_MAX) - 1)) / 100;
+/** What level `lv` of skill `k` gave (P7, the level-up toast): the recipes first known at it, else the steady gains. */
+function lifeStepText(k, lv) {
+  const made = new Set();
+  for (const id of Object.keys(RECIPES)) {
+    const r = RECIPES[id];
+    if (r.sk !== k || r.lv !== lv || r.any) continue;
+    made.add(r.gear ? `${ITEMS[r.out[0]].tier}단계 장비` : r.out[0] === "rune*" ? "룬 변환" : ITEMS[r.out[0]].name);
+  }
+  if (made.size) return `새 제작법: ${[...made].join(", ")}`;
+  const t = Math.round((1 - lifeTime(lv)) * 100);
+  if (k === "gather") return `채집 시간 -${t}% · 덤 ${r1L(gatBonus(lv) * 100)}%`;
+  if (k === "fish") return `입질 대기 -${t}% · 놓치는 기준 ${r1L(FISHING.keep[0] - FISHING.keep[1] * lv)}점`;
+  if (k === "deliver") return `꾸러미를 들고 걷는 속도 ${Math.round((JB_PAY.spd[0] + JB_PAY.spd[1] * lv) * 100)}%`;
+  return `제작 시간 -${t}% · 대성공 확률 +1.2%p`;
+}
 /** Experience for work unlocked at `unlockLv`, stale work (20+ levels below) at a quarter; at least 1. */
 const lifeXp = (L, unlockLv, base) => Math.max(1, Math.round(L - unlockLv >= LIFE_STALE_D ? base * LIFE_STALE : base));
 
@@ -11189,11 +11315,11 @@ function lifeAdd(e, n, cap = LIFE_MAX) {
 function gainLife(S, p, k, n) {
   const i = LIFE.indexOf(k), e = p.ch.life[k];
   if (i < 0 || !e || !(n > 0)) return 0;
-  const ups = lifeAdd(e, n);
+  const ups = lifeAdd(e, n * (1 + lifeBuff(S, p, "lxp") / 100));
   for (const lv of ups) {
     S.maps[p.map].ev.push(["lv2", p.eid, i, lv]);
     toast(p, lv >= LIFE_MAX ? `[${LIFE_NAME[i]}] 레벨 ${lv}! 명장의 경지에 올랐습니다.`
-      : LIFE_UNLOCK[lv] ? `[${LIFE_NAME[i]}] 레벨 ${lv}! ${LIFE_UNLOCK[lv]} 재료를 다룰 수 있습니다.` : `[${LIFE_NAME[i]}] 레벨 ${lv}!`);
+      : LIFE_UNLOCK[lv] ? `[${LIFE_NAME[i]}] 레벨 ${lv}! ${LIFE_UNLOCK[lv]} 재료를 다룰 수 있습니다.` : `[${LIFE_NAME[i]}] 레벨 ${lv}! ${lifeStepText(k, lv)}`);
   }
   // (Lv 10/30 in any skill and 50 in each are achievements with titles, 60-content.js ACH)
   if (ups.length) checkAch(S, p);
@@ -11206,7 +11332,25 @@ function gainLife(S, p, k, n) {
 /** The fight score below which a fish gets away, at this angler's level (30 at 1, 15 at 50). */
 const fishKeep = (ch) => FISHING.keep[0] - FISHING.keep[1] * ch.life.fish.lv;
 /** How long until a bite (ms), before the weather. */
-const fishWait = (S, ch) => (FISHING.wait[0] + rnd(S) * FISHING.wait[1]) * lifeTime(ch.life.fish.lv);
+const fishWait = (S, ch, cut = 0) => (FISHING.wait[0] + rnd(S) * FISHING.wait[1]) * lifeTime(ch.life.fish.lv) * (1 - cut / 100);
+/** Entries in a 물고기 도감 (species × sizes seen). */
+const fbookN = (ch) => Object.values(ch.fbook || {}).reduce((n, e) => n + (e[1] & 1) + ((e[1] >> 1) & 1) + ((e[1] >> 2) & 1), 0);
+/** A landed fish measured (P8) and written into the 물고기 도감; a new entry may reach a FISH_BOOK reward. */
+function fishBook(S, p, id, k) {
+  if (!Object.hasOwn(FISH_CM, id)) return;
+  const ch = p.ch, [lo, hi] = FISH_CM[id], u = clamp(0.75 * rnd(S) + 0.25 * k, 0, 1);
+  const cm = Math.round(lo + (hi - lo) * u), z = u < 1 / 3 ? 0 : u < 2 / 3 ? 1 : 2;
+  const e = ch.fbook[id] || (ch.fbook[id] = [0, 0]), fresh = !(e[1] & (1 << z)), best = cm > e[0];
+  e[0] = Math.max(e[0], cm);
+  e[1] |= 1 << z;
+  toast(p, `${ITEMS[id].name} ${cm}cm (${FISH_SIZE[z]})${fresh ? " — 물고기 도감에 새로 올렸습니다!" : best ? " — 최고 기록!" : ""}`);
+  const n = fresh ? fbookN(ch) : 0, m = FISH_BOOK.find((b) => b[0] === n);
+  if (!m) return;
+  ch.gold += m[1];
+  p.gain.push(["gold", m[1]]);
+  if (m[2] && addItem(ch, m[2], 1)) p.gain.push(["item", m[2], 1, 1]);
+  toast(p, `물고기 도감 ${n}/${Object.keys(FISH_CM).length * 3}칸! 보상 ${m[1]}G${m[2] ? ` · ${ITEMS[m[2]].name}` : ""}`);
+}
 /**
  * What a well-enough played fish turns into: candidates are the fish of grade ≤ min(the map's grade, the
  * angler's grade); 황금 잉어 has its own roll everywhere; then the top candidate, the next one down, a stone,
@@ -11218,11 +11362,15 @@ function fishLand(S, p, score) {
   const carp = FISHING.carp[0] + FISHING.carp[1] * k * k + FISHING.carp[2] * L;
   const top = cap >= 2 ? FISHING.top[0] + FISHING.top[1] * k : 0, next = cap >= 3 ? FISHING.next : 0;
   let r = rnd(S);
-  const id = (r -= carp) < 0 ? "fish_l" : (r -= top) < 0 ? FISH_G[cap - 1] : (r -= next) < 0 ? FISH_G[cap - 2] : (r -= FISHING.stone) < 0 ? "stone" : FISH_G[0];
+  let id = (r -= carp) < 0 ? "fish_l" : (r -= top) < 0 ? FISH_G[cap - 1] : (r -= next) < 0 ? FISH_G[cap - 2] : (r -= FISHING.stone) < 0 ? "stone" : FISH_G[0];
+  // this water's own fish (P8), never above the angler's grade; a grade-5 one takes 4등급's place, never 황금 잉어's
+  const loc = Object.hasOwn(FISH_MAP, p.map) ? FISH_MAP[p.map] : "";
+  if (loc && id === FISH_G[Math.min(ITEMS[loc].grade, 4) - 1] && ITEMS[loc].grade <= cap && rnd(S) < FISH_LOCAL) id = loc;
   const g = ITEMS[id].grade || 1, unlock = GRADE_LV[g - 1];
   const great = id !== "stone" && rnd(S) * 100 < lifeOdds(L, unlock, score)[1];
   const n = great && canAdd(ch, id, 2) ? 2 : 1;
   gainLife(S, p, "fish", lifeXp(L, unlock, RXP[g - 1] * (0.5 + score / 100) * (great ? 1.5 : 1)));
+  fishBook(S, p, id, k);
   return { id, n, great: n === 2 };
 }
 /** The recipe a fish is cooked by, or null. */
@@ -11288,9 +11436,16 @@ function lifeSheetClean(ch) {
   const pouch = {};
   if (isObj(ch.pouch)) for (const id of Object.keys(ch.pouch)) { const n = clamp(ch.pouch[id] | 0, 0, POUCH_MAX); if (n > 0 && pouchOk(id)) pouch[id] = n; }
   ch.pouch = pouch;
+  // the 물고기 도감 (P8): known species only, [best cm 0..999, size bits 0..7]; an old sheet starts it empty
+  const fb = {};
+  if (isObj(ch.fbook)) for (const id of Object.keys(ch.fbook)) {
+    const e = ch.fbook[id];
+    if (Object.hasOwn(FISH_CM, id) && Array.isArray(e) && (e[1] & 7)) fb[id] = [clamp(Math.floor(num(e[0]) ? e[0] : 0), 0, 999), e[1] & 7];
+  }
+  ch.fbook = fb;
 }
 /** A fresh sheet's life fields. */
-const lifeFresh = () => ({ life: lifeEmpty(), jobBoard: { day: 0, done: [], active: null }, rep: {}, coopDay: 0, coopDone: [], pouch: {} });
+const lifeFresh = () => ({ life: lifeEmpty(), jobBoard: { day: 0, done: [], active: null }, rep: {}, coopDay: 0, coopDone: [], pouch: {}, fbook: {} });
 
 // ───────────── L2: the 재료 주머니, gathering, crafting, the 알바 board, delivery, trust (B.4, B.6–B.11)
 
@@ -11382,7 +11537,7 @@ function gatDone(S, p) {
   const great = rnd(S) * 100 < lifeOdds(L, unlock, 50, g.extra)[1];
   const cnt = great && canAdd(ch, id, 2) ? 2 : 1;
   if (addItem(ch, id, cnt)) p.gain.push(["item", id, cnt, 0]);
-  if (rnd(S) < NODE.bonus) {
+  if (rnd(S) < gatBonus(L)) {
     // a herb's seed of the next grade, a stone in the vein, a bundle of kindling from the log, the next crop's root
     const b = n[0] === 0 ? `m_h${Math.min(5, n[1] + 1)}` : n[0] === 1 ? "stone" : n[0] === 3 ? `m_c${Math.min(CROP.length, n[1] + 1)}` : "camp";
     if (addItem(ch, b, 1)) { p.gain.push(["item", b, 1, 1]); toast(p, `덤으로 ${ITEMS[b].name}${pp(ITEMS[b].name, "을를")} 얻었습니다!`); }
@@ -11459,7 +11614,7 @@ function craftOnce(S, p, r, s) {
   }
   const L = ch.life[r.sk].lv;
   const taken = r.in.map(([id, n]) => (id === "rune*" ? takeRunes(ch, n) : (takeItem(ch, id, n), [id, n])));
-  const extra = r.sk === "cook" && r.at === "cook" && REP_PERK.juju.great && repOf(ch, "juju") >= REP_TIER[1] ? REP_PERK.juju.great : 0;
+  const extra = (r.sk === "cook" && r.at === "cook" && REP_PERK.juju.great && repOf(ch, "juju") >= REP_TIER[1] ? REP_PERK.juju.great : 0) + lifeBuff(S, p, "great");
   const roll = lifeRoll(S, L, r.lv, s, extra);
   const xp = lifeXp(L, r.lv, RXP[lifeGrade(r.lv) - 1] * (roll.great ? 1.5 : 1));
   if (!roll.ok) {
@@ -11661,6 +11816,9 @@ function jbPay(S, p) {
     ch.cnt.deliver++;
   } else {
     if (t.item) takeItem(ch, t.item, jbNeed(t, g));
+    // a village chore's produce (P8): one, two from 보통 up
+    const gift = t.kind === "chore" && CHORES[t.job].gift;
+    if (gift && addItem(ch, gift, g ? 2 : 1)) p.gain.push(["item", gift, g ? 2 : 1, 0]);
     fast = rush > 0 && now <= a.expAt;
     if (fast) gold = Math.round(gold * JB_RUSH.bonus);
     addRep(S, p, t.npc, Math.round(JB_PAY.rep * k));
@@ -11828,7 +11986,7 @@ function lifeApply(S, p, a) {
     case "gat": {
       // a channel of NODE.ch × the time factor; the "반짝!" moment somewhere in tapAt of it (lifeTick sends it)
       rouse(S, p);
-      const n = lifeNodes(mapOfS(S, p.map))[a.i], dur = Math.round(NODE.ch * lifeTime(ch.life.gather.lv));
+      const n = lifeNodes(mapOfS(S, p.map))[a.i], dur = Math.round(NODE.ch * lifeTime(ch.life.gather.lv) * (1 - lifeBuff(S, p, "gat") / 100));
       p.gat = { i: a.i, k: n[0], map: p.map, x: p.x, y: p.y, at: now, end: now + dur, tapAt: now + Math.round(dur * (NODE.tapAt[0] + (NODE.tapAt[1] - NODE.tapAt[0]) * rnd(S))), sent: false, tapped: false, extra: 0 };
       S.maps[p.map].ev.push(["gs", p.eid, n[0], dur]);
       break;
@@ -11873,7 +12031,7 @@ function lifeApply(S, p, a) {
         toast(p, "알바를 그만두었습니다.");
       } else if (JB[jb.active.id].kind === "chore" && a.a !== "give") choreApply(S, p, a, jb.active);
       else if (a.a === "pick") {
-        const t = JB[jb.active.id], limit = jbLimit(jb.active.id, jbRoll(ch, jb.day, jb.active.id).g);
+        const t = JB[jb.active.id], limit = Math.round(jbLimit(jb.active.id, jbRoll(ch, jb.day, jb.active.id).g) * (1 + lifeBuff(S, p, "dlv") / 100));
         p.parcel = { id: jb.active.id, from: t.npc, to: t.to, until: now + limit, limit };
         p.stc = null;
         jb.active.prog = 1;
@@ -11985,6 +12143,8 @@ function lifeDefs() {
     rep: { tier: REP_TIER, name: REP_NAME, disc: REP_DISC, tip: REP_TIP, perk: REP_PERK },
     pouch: { max: POUCH_MAX, ids: Object.keys(ITEMS).filter(pouchOk) },
     master: LIFE_MASTER,
+    // P7/P8: the 덤 step, the waters' own fish, the 물고기 도감 (lengths, sizes, rewards)
+    step: LIFE_STEP, fishMap: FISH_MAP, fbook: { cm: FISH_CM, size: FISH_SIZE, at: FISH_BOOK },
   };
 }
 // ───────────────────────────── 버드나무 마을 chores (docs/design/life-and-coop.md H10) ─────────────────────────────
@@ -12081,7 +12241,7 @@ function choreApply(S, p, a, act) {
     if (c.src === "water") { act.fill = c.carry; toast(p, `${c.get} (${c.carry}번)`); return; }
     act.fill = need - act.prog;
     if (c.timed) {
-      const limit = choreLimit(ch, act, g);
+      const limit = Math.round(choreLimit(ch, act, g) * (1 + lifeBuff(S, p, "dlv") / 100));
       act.expAt = S.now + limit;
       toast(p, `${c.get}! ${Math.ceil(limit / 1000)}초 안에 ${c.spot} ${act.fill}곳을 돌아 주세요.`);
     } else toast(p, `${c.get}!`);
@@ -12366,6 +12526,7 @@ const ACH = [
   ...LIFE.map((k, i) => [`life50_${k}`, "생활", LIFE_MASTER[i], `${LIFE_NAME[i]} Lv.50 달성`, 30, (c) => !!c.life && c.life[k].lv >= LIFE_MAX, LIFE_MASTER[i]]),
   ["gat100", "생활", "부지런한 채집꾼", "채집 100번", 5, (c) => c.cnt.gat >= 100],
   ["craft50", "생활", "솜씨 좋은 손", "제작·연금·요리 50번 성공", 10, (c) => c.cnt.craft >= 50],
+  ["fbook", "생활", "물고기 박사", "물고기 도감 33칸을 모두 채우기", 20, (c) => fbookN(c) >= FISH_BOOK[FISH_BOOK.length - 1][0], "물고기 박사"],
   ["deliver20", "생활", "믿음직한 배달부", "배달 20번 성공", 10, (c) => c.cnt.deliver >= 20],
   // trust 60 (가족) with an NPC who has perks: their title
   ...Object.keys(REP_PERK).map((id) => [`rep_${id}`, "함께", REP_PERK[id].title, `${REP_PERK[id].who}의 신뢰 ${REP_TIER[2]} (${REP_NAME[2]})`, 10, (c) => !!c.rep && (c.rep[id] | 0) >= REP_TIER[2], REP_PERK[id].title]),
@@ -18364,8 +18525,9 @@ export function applyAction(S, pid, a) {
         break;
       }
       if (it.type === "food") {
-        p.food = { id: a.id, until: now + it.buff.min * 60000, xp: it.buff.xp, atk: it.buff.atk };
-        toast(p, `${it.name}${pp(it.name, "을를")} 먹었습니다. ${it.desc}`);
+        // a life-buff food (P8) trades the meal's xp/atk for its work buff `lf` (58-life.js lifeBuff)
+        p.food = { id: a.id, until: now + it.buff.min * 60000, xp: it.buff.xp, atk: it.buff.atk, lf: it.buff.lf || null };
+        toast(p, `${it.name}${pp(it.name, "을를")} ${it.lit ? "피웠습니다" : "먹었습니다"}. ${it.desc}`);
       }
       p.potAt = now + 900;
       if (it.heal) {
@@ -18374,6 +18536,7 @@ export function applyAction(S, pid, a) {
         S.maps[p.map].ev.push(["h", p.eid, -amt, 0, 1]);
       }
       if (it.mana) p.mp = Math.min(st.mmp, p.mp + it.mana);
+      if (it.cure) { p.burn = null; p.poison = null; p.slowed = 0; toast(p, "몸이 개운해졌습니다. 독·화상·둔화가 씻겨 나갔습니다."); }
       S.maps[p.map].ev.push(["u", p.eid, it.heal ? 0 : 1]);
       p.dirty = true;
       break;
@@ -18574,7 +18737,7 @@ export function applyAction(S, pid, a) {
       rouse(S, p);
       const [wx, wy] = waterNear(m, p);
       // a practised angler gets bites sooner (life skills: −0.8 % a 낚시 level)
-      p.fish = { at: now + fishWait(S, ch) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
+      p.fish = { at: now + fishWait(S, ch, lifeBuff(S, p, "bite")) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
       p.dir = dirOf(wx - p.x, wy - p.y);
       S.maps[p.map].ev.push(["f", p.eid, 1, wx, wy]);
       break;
@@ -19629,7 +19792,7 @@ function selfPayload(p) {
     // boss trophies held (67-trophies.js): field-boss kinds, in the order won
     tro: p.ch.tro,
     // life skills (58-life.js): [lv, xp, need] per skill in LIFE order; L2: the 알바 board, trust, the 재료 주머니
-    life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch,
+    life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch, fbook: ch.fbook,
     // the block list, the enhancement pity gauge, the weekly book (63-social-weekly.js)
     ...socialSelf(p),
     // 협동 아르바이트 paid today (68-coop.js)
