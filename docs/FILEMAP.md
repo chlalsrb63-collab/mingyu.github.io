@@ -165,6 +165,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `mobart_rift_bosses.js` [281] | Pixel models of the six bosses in the weekly arena rotation |
 | `mobart_bosses2_adds.js` [208] | Own pixel models of the bosses-2 adds: 혈루 결정 전갈 (bloodshard), 밤장막 흡혈박쥐 (nightbat), 먹장어 머리 (hagfishhead) |
 | `mobart_named.js` [160] | Own pixel models of four named beasts that once borrowed a tinted sprite: 금 간 뿔 숫양 (meadowram), 검은 왕관 뿌리짐승 (bogcrown), 눈먼 문지기 올빼미 (hollowowl), 얼어붙은 왕릉 파수꾼 (rootwarden) |
+| `mobart_inklake.js` [180] | Own bodies for the 먹빛 호수 kinds (inkleech inkfish inkcrane inkmoth plumspider inkrose, rare inkfox, boss inkserpent xl); spread into `BEASTS` in `mobart.js`. |
 | `weapons.js` [1072] | Seven weapon families (sword, dagger, spear, staff, book, bow, hammer), tier/legendary/set/skin art. `DESIGNS SIL MOTIF_SIL weaponSprite weaponIcon bowSprite`; installed manifest keys can replace code-drawn looks. |
 | `wardrobe.js` · `wardrobe_ui.js` | native cosmetic layers in logical positions (`ART SLOTS dress anchors`; designs `HAT TOP BACK FACE`, rules in the header); 16×16 icons, costume shop + 외형 tab |
 | `swing.js` [207] | Fixed-size weapon poses: alternating greatsword sweeps, repeating overhead hammer strike (`hammerPose`), and bow draw/release (`bowPose`). `WIND IMPACT SNAP` control anticipation and snap. |

@@ -427,14 +427,14 @@ const MOBS = {
   // existing bodies (the design's fallbacks), one level step each from 157 to 177, a second ground beside the old kingdom;
   // 흰 꼬인 여우 is the rare kind (a pocket keeper until the rare-spawn rule), 먹빛 날개 구렁이 the field boss (Lv.181:
   // the design's tier 45 is the frost boar's now). Placeholders, balanced later with the other new grounds
-  leechmaw_ash: { name: "먹 거머리 아가리", sp: "leechmaw", tint: "ash", lv: 40, hp: 2500, atk: 114, def: 18, spd: 40, xp: 1500, gold: [96, 168], aggro: 90, range: 19, cd: 1100, leap: 96 },
-  fishwalker_ash: { name: "먹빛 다리 달린 생선", sp: "fishwalker", tint: "ash", lv: 41, hp: 3300, atk: 118, def: 30, spd: 30, xp: 1560, gold: [98, 170], aggro: 80, range: 22, cd: 1500, slam: 40 },
-  wingcrane_ash: { name: "먹빛 겹날개 두루미", sp: "wingcrane", tint: "ash", lv: 42, hp: 2700, atk: 120, def: 18, spd: 44, xp: 1620, gold: [100, 174], aggro: 98, range: 74, cd: 1700, fly: true, volley: true },
-  mothface_ash: { name: "인면 먹나방", sp: "mothface", tint: "ash", lv: 43, hp: 2900, atk: 124, def: 20, spd: 44, xp: 1700, gold: [104, 180], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 26 },
-  spiderhand_blood: { name: "매화 손가락 거미", sp: "spiderhand", tint: "blood", lv: 44, hp: 3200, atk: 128, def: 22, spd: 56, xp: 1780, gold: [108, 186], aggro: 96, range: 18, cd: 1000, leap: 100, pool: 28 },
-  gravrose_blood: { name: "붉은 묘지 매화", sp: "gravrose", tint: "blood", lv: 45, hp: 3400, atk: 132, def: 24, spd: 22, xp: 1980, gold: [110, 190], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
-  foxtwine_frost: { name: "흰 꼬인 여우", sp: "foxtwine", tint: "frost", lv: 44, hp: 3500, atk: 128, def: 22, spd: 62, xp: 2400, gold: [150, 250], aggro: 98, range: 17, cd: 850, leap: 100 },
-  serpentwing_ash: { name: "먹빛 날개 구렁이", sp: "serpentwing", tint: "ash", lv: 46, hp: 5000, atk: 136, def: 30, spd: 46, xp: 2200, gold: [120, 204], aggro: 100, range: 78, cd: 1500, fly: true, fan: 150, pool: 30, poolKind: 2, charge: 130 },
+  leechmaw_ash: { name: "먹 거머리 아가리", sp: "inkleech", lv: 40, hp: 2500, atk: 114, def: 18, spd: 40, xp: 1500, gold: [96, 168], aggro: 90, range: 19, cd: 1100, leap: 96 },
+  fishwalker_ash: { name: "먹빛 다리 달린 생선", sp: "inkfish", lv: 41, hp: 3300, atk: 118, def: 30, spd: 30, xp: 1560, gold: [98, 170], aggro: 80, range: 22, cd: 1500, slam: 40 },
+  wingcrane_ash: { name: "먹빛 겹날개 두루미", sp: "inkcrane", lv: 42, hp: 2700, atk: 120, def: 18, spd: 44, xp: 1620, gold: [100, 174], aggro: 98, range: 74, cd: 1700, fly: true, volley: true },
+  mothface_ash: { name: "인면 먹나방", sp: "inkmoth", lv: 43, hp: 2900, atk: 124, def: 20, spd: 44, xp: 1700, gold: [104, 180], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 26 },
+  spiderhand_blood: { name: "매화 손가락 거미", sp: "plumspider", lv: 44, hp: 3200, atk: 128, def: 22, spd: 56, xp: 1780, gold: [108, 186], aggro: 96, range: 18, cd: 1000, leap: 100, pool: 28 },
+  gravrose_blood: { name: "붉은 묘지 매화", sp: "inkrose", lv: 45, hp: 3400, atk: 132, def: 24, spd: 22, xp: 1980, gold: [110, 190], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
+  foxtwine_frost: { name: "흰 꼬인 여우", sp: "inkfox", lv: 44, hp: 3500, atk: 128, def: 22, spd: 62, xp: 2400, gold: [150, 250], aggro: 98, range: 17, cd: 850, leap: 100 },
+  serpentwing_ash: { name: "먹빛 날개 구렁이", sp: "inkserpent", lv: 46, hp: 5000, atk: 136, def: 30, spd: 46, xp: 2200, gold: [120, 204], aggro: 100, range: 78, cd: 1500, fly: true, fan: 150, pool: 30, poolKind: 2, charge: 130 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes
   blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
