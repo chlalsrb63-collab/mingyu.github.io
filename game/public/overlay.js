@@ -164,6 +164,9 @@ function renderText(t) {
   const m = G.map, me = G.me;
   const myParty = G.who.get(G.you)?.party;
   const at = (x, y, h) => S3.project(x, y, h);
+  // a name pinned off the screen draws nothing: skip its text work (the margin outruns the widest label)
+  const VW = text.width / dpr, VH = text.height / dpr;
+  const off = (x, y) => x < -240 || x > VW + 240 || y < -160 || y > VH + 160;
   // signpost boards: a small dark plate with the destination over each visible post
   if (S3.labels) {
     tg.font = `700 ${Math.round(10 * dpr)}px Pretendard, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
@@ -187,6 +190,7 @@ function renderText(t) {
   for (const p of m.portals) {
     if (p !== m.portals.find((q) => q.to === p.to)) continue;
     const [x, y] = at(p.x * T + 8, p.y * T + 8, 2.1);
+    if (off(x, y)) continue;
     label(`▸ ${p.to}`, x, y, "#e0c8ff");
   }
   const server = Sky.serverNow();
@@ -195,6 +199,7 @@ function renderText(t) {
     const actor = NPC.cast(n.id), away = actor && !NPC.at(n.id, server)?.onPost;
     if (actor ? away && !S3.npcService(n) : !S3.npcOut(n)) continue;
     const [x, y] = at(n.x * T + 8, n.y * T + 12, 1.55);
+    if (off(x, y)) continue;
     label(away ? `${n.name} 안내판` : n.name, x, y, away ? "#d5bd99" : "#f0d48a");
     const sqm = SideQ.mark(n, G.self);
     if (sqm) label(sqm, x, y - 18 + Math.sin(t / 200) * 3, sqm === "!" ? "#ffd84a" : "#8cff8c", 18);
@@ -207,6 +212,7 @@ function renderText(t) {
   for (const n of NPC.list(server)) {
     if (n.onPost || n.fade < 0.5) continue;
     const [x, y] = at(n.x, n.y, 1.55);
+    if (off(x, y)) continue;
     label(n.name, x, y, "#f0d48a");
     const mark = SideQ.mark(n, G.self);
     if (mark) label(mark, x, y - 18 + Math.sin(t / 200) * 3, mark === "!" ? "#ffd84a" : "#8cff8c", 18);
@@ -217,6 +223,7 @@ function renderText(t) {
     const d = G.defs.mobs[mob.k], max = mobMax(mob);
     if (!(d.boss || mob.el || mob.hp < max)) continue;
     const [x, y] = at(mob.x, mob.y, (mob.h3 || 1) + 0.28);
+    if (off(x, y)) continue;
     // in a dungeon the rank-2 monster is its guardian; out in the open it is the field boss
     // an elite wears its traits: named in its title, and stamped as glyphs above it
     const tr = mob.tr || [], traits = G.defs.traits || {};
@@ -236,6 +243,7 @@ function renderText(t) {
     // the loot filter decides whose names are shown: everything, magic and up, or rare and up
     if (!Growth.showDrop(d)) continue;
     const [x, y] = at(d.x, d.y, 0.6);
+    if (off(x, y)) continue;
     label(Growth.dropName(d), x, y, d.it === "gold" ? "#ffd84a" : Art.RARITY_COL[d.q | 0]);
   }
   const mine = G.who.get(G.you);
@@ -243,6 +251,7 @@ function renderText(t) {
     const w = G.who.get(eid);
     if (!w) continue;
     const [x, y] = at(p.x, p.y, (p.h3 || 1.32) + 0.22);
+    if (off(x, y)) continue;
     nameLabel(w, x, y, p.dead ? "#9a9aa8" : w.party && w.party === myParty ? "#8cff8c" : "#dce6f2");
     if (w.guild) label(`‹${w.guild}›`, x, y - 13, mine && w.guild === mine.guild ? "#9af0ae" : "#c8b8e8", 11);
     if (w.title) label(`「${w.title}」`, x, y - (w.guild ? 26 : 13), "#ffcf6a", 11);
