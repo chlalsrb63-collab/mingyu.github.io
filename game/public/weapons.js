@@ -775,6 +775,12 @@ const MOTIF = {
   bamboo: { name: "대나무", blade: M.bamboo, fit: ["#c8a878", "#8a6a4a", "#5a4030"], add: (h) => [...along(h, 3, (s) => L(s, h[2], s, h[3] - 1, "node")), P([[h[1] - 3, h[2] + 0.5], [h[1], h[2] + 0.5], [h[1] - 1, h[2] - 2.5]], "green")] },
   shard: { name: "균열 파편", blade: ["#8a6ad0", "#4a2e8a", "#241650"], fit: M.void, add: (h) => along(h, 3, (s, i) => P([[s - 1.2, (h[2] + h[3]) / 2 + 1], [s + 0.2, (h[2] + h[3]) / 2 - 2 - (i % 2)], [s + 1.4, (h[2] + h[3]) / 2 + 1]], "energy")) },
   bee: { name: "꿀벌", blade: ["#fff4a8", "#f4c440", "#b8842a"], fit: M.black, add: (h) => along(h, 3, (s) => L(s, h[2], s, h[3] - 1, "bee")) },
+  // the bosses-2 raid uniques: keyed by item id (wire `wl` / entryIconUrl pass the id), so each has its own look
+  w_bloodcrown: { name: "혈루 왕관", blade: ["#ffd0d0", "#e0384a", "#7a1430"], fit: M.black, add: (h) => [P([[h[1] - 6, h[2] + 0.5], [h[1] - 4.5, h[2] - 2.5], [h[1] - 3, h[2] + 0.5]], "ruby"), P([[h[1] - 3.5, h[2] + 0.5], [h[1] - 2, h[2] - 3.5], [h[1] - 0.5, h[2] + 0.5]], "ruby"), P([[h[1] - 1, h[2] + 0.5], [h[1] + 0.5, h[2] - 2.5], [h[1] + 2, h[2] + 0.5]], "ruby"), D(h[0] + 3, (h[2] + h[3]) / 2 - 0.5, "ruby")] },
+  w_cavhammer: { name: "공동 망치", blade: ["#ffc08a", "#f0502a", "#8a2418"], fit: ["#d84a2a", "#9a2a1e", "#5a1a1e"], add: (h) => [L(h[0] + 1, h[2], h[0] + 1, h[3] - 1, "foam"), L(h[1] - 2, h[2], h[1] - 2, h[3] - 1, "foam"), D(h[0] + 3, h[2] - 1, "foam"), D((h[0] + h[1]) / 2, h[3] + 1, "foam"), D(h[1] - 1, h[2] - 1, "foam")] },
+  w_ribbook: { name: "흉곽 등불", blade: M.bone, fit: M.black, add: (h) => [...along(h, 3, (s) => L(s, h[2], s, h[3] - 1, "ink")), D((h[0] + h[1]) / 2, (h[2] + h[3]) / 2 - 0.5, "energy"), D((h[0] + h[1]) / 2, h[2] - 1.5, "energy")] },
+  w_whalebow: { name: "고래뼈 활", blade: ["#f4fcff", "#a8d0ec", "#5a86b8"], fit: M.bone, add: (h) => along(h, 3, (s) => D(s, h[2] - 0.5, "white")) },
+  w_bloomstaff: { name: "혼꽃", blade: ["#e8f4ff", "#a8c4ec", "#5a6aa8"], fit: M.bone, add: (h) => [C(h[1] + 1, (h[2] + h[3]) / 2, 2.2, "petal", { top: true }), C(h[1] + 1, (h[2] + h[3]) / 2, 0.9, "white", { top: true }), D(h[1] + 1, h[2] - 2, "ice"), D(h[1] + 1, h[3] + 1, "ice")] },
   clubclaw: { name: "갯가재 집게", blade: ["#ffc08a", "#ff6a2a", "#a8301e"], fit: ["#d84a2a", "#9a2a1e", "#5a1a1e"], add: (h) => [...along(h, 3, (s, i) => L(s, h[2], s, h[3] - 1, i % 2 ? "orange" : "foam")), P([[h[1] - 2.5, h[2] - 0.5], [h[1] + 0.5, (h[2] + h[3]) / 2], [h[1] - 2.5, h[3] + 0.5]], "orange")] },
 };
 const EXTRA = { petal: "#ff9ac0", ice: "#e8fbff", candy: "#e8485a", foam: "#f4ffff", sand: "#fff8dc", node: "#4a7a3a", bee: "#3a3040" };
@@ -1055,7 +1061,7 @@ const urls = new Map();
 /** A data URL for an item entry's icon when it looks different from its base item (legendary, set, +7, skin), else null. */
 export function entryIconUrl(entry, it) {
   if (!entry || !it || it.type !== "weapon") return null;
-  const wl = entry.lg || entry.set || "", we = entry.enh | 0;
+  const wl = entry.lg || entry.set || (MOTIF[it.id || entry.id] ? it.id || entry.id : ""), we = entry.enh | 0;
   if (!wl && we < 7) return null;
   const key = `${it.wk}:${it.tier}:${wl}:${we >= 10 ? 10 : 7 * (we >= 7)}`;
   if (!urls.has(key)) urls.set(key, weaponIcon(it.wk, it.tier, { wl, we }).toDataURL());
