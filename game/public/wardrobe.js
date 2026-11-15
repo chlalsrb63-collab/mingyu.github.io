@@ -785,16 +785,27 @@ const BACK = {
   },
   // a waiter's silver tray balanced on the shoulder, a domed lid on it; it bobs with the step
   tray: (b, A, p) => {
-    const y = A.bt - 6 - (sway(A) ? 1 : 0), x = A.front ? 18 : A.side ? 6 : 4;   // from behind it sits out past the widest heads
+    const y = A.bt - 5 - (sway(A) ? 1 : 0);
+    const x = A.front ? A.x1 + 1 : A.side ? A.x0 - 7 : 4;
     b.grid(x, y, ["...y...", "..lcc..", ".lcccs.", ".ccccs.", "bbbbbbb", ".BBBBB."], { c: p.c, l: li(p.c, 0.6), s: sh(p.c, 0.3), y: GOLD, b: p.b, B: sh(p.b, 0.35) }, A.back);
+    if (!A.back) {
+      // A short holder at the tray's inner edge meets the character's shoulder.
+      const from = A.front ? x + 1 : x + 5, shoulder = A.front ? 18 : 13;
+      b.r(Math.min(from, shoulder), y + 5, Math.abs(from - shoulder) + 1, 1, sh(p.b, 0.35));
+      b.r(shoulder, y + 6, 1, 2, sh(p.b, 0.35));
+    }
   },
   // a little cauldron worn like a pack, green brew bubbling over its rim
   cauldron: (b, A, p) => {
-    const y = A.bt, last = A.foot - 1, dk = sh(p.c, 0.35), lt = li(p.c, 0.3), brew = p.b, foam = li(p.b, 0.5), up = A.f & 1;
-    const x0 = A.back ? 12 : A.side ? 7 : 10, w = A.back ? 8 : A.side ? 6 : 12;
-    b.r(x0, y, w, last - y + 1, p.c); b.r(x0, y, w, 1, lt); b.r(x0, last, w, 1, dk); b.r(x0 + w - 2, y + 1, 2, last - y - 1, dk);
-    b.r(x0 + 1, y - 1, w - 2, 1, brew); b.px(x0 + 2, y - 1, foam);
-    b.px(x0 + 2, y - 3 - up, foam); b.px(x0 + w - 3, y - 2 - (1 - up), brew); if (A.back) b.px(x0 + 4, y - 4 + up, foam);
+    const y = A.back ? A.bt : A.bt - 1;
+    const x = A.back ? 12 : A.side ? A.x0 - 6 : A.x1 - 1;
+    const brew = p.b, foam = li(brew, 0.5);
+    const pal = { c: p.c, d: sh(p.c, 0.35), l: li(p.c, 0.3), g: brew, f: foam };
+    b.grid(x, y, [".lfgggf.", "lcccccdl", ".lccddd.", "..ddddd."], pal, A.side);
+    const edge = x + (A.back ? 5 : A.side ? 1 : 6);
+    const rise = A.f & 1;
+    if (!A.back) b.px(edge, y - 1 - rise, foam);
+    b.px(edge, y + (A.back && rise ? 1 : 0), brew);
   },
 };
 /** A strap from one shoulder to the other hip, for what is slung on the back. */
