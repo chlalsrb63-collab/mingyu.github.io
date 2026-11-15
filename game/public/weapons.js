@@ -728,8 +728,8 @@ export const MOTIF_SIL = {
   bow: { chain: "fork", nova: "horn", greed: "recurve", haste: "recurve", thorn: "fork", feast: "horn", echo: "wave", giant: "wave" },
   sword: { chain: "flamberge", nova: "cleaver", greed: "sabre", haste: "rapier", thorn: "serrated", feast: "bone", echo: "crystal", giant: "cleaver" },
   dagger: { chain: "kris", nova: "tanto", greed: "parrying", haste: "tanto", thorn: "hook", feast: "hook", echo: "kris", giant: "parrying" },
-  spear: { chain: "trident", nova: "glaive", greed: "partisan", haste: "glaive", thorn: "trident", feast: "scythe", echo: "partisan", giant: "scythe" },
-  staff: { chain: "fork", nova: "cage", greed: "crook", haste: "crook", thorn: "fork", feast: "crescent", echo: "cage", giant: "crescent" },
+  spear: { chain: "trident", nova: "glaive", greed: "partisan", haste: "glaive", thorn: "trident", feast: "scythe", echo: "partisan", giant: "scythe", w_bloodcrown: "trident" },
+  staff: { chain: "fork", nova: "cage", greed: "crook", haste: "crook", thorn: "fork", feast: "crescent", echo: "cage", giant: "crescent", w_bloomstaff: "crescent" },
   book: { chain: "chained", nova: "grimoire", greed: "atlas", haste: "atlas", thorn: "grimoire", feast: "skull", echo: "chained", giant: "skull" },
 };
 
