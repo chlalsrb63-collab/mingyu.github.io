@@ -1,15 +1,16 @@
 /**
  * Weapon mastery at a glance (docs/design/jobs-and-stats.md B.10, F.2): the strip beside the
  * HP/MP bars in the dock — the weapon in hand, "숙련 Lv.N" and a thin bar to the next level
- * (a hybrid job shows both of its weapons) — and the hover card listing all six weapons, the
- * job and what the next mastery level unlocks. A hybrid's back weapon carries a "Tab" key cap (the swap);
+ * (a hybrid job shows both of its weapons) — and the hover card listing all seven weapons, the
+ * job and what the next mastery level unlocks. A hybrid's back weapon carries the swap key cap (the swap);
  * a click on the strip opens the K window's 전직의 길 (client.js, jobtree.js).
  *
- * Reads only the wire: `self.wm` = [[lv, xp, need] × 6 in WK_ORDER], `self.wk` (in hand),
+ * Reads only the wire: `self.wm` = [[lv, xp, need] × 7 in WK_ORDER], `self.wk` (in hand),
  * `self.wk2` (a hybrid's other weapon), `self.job` + `defs.jobs`. Before the server sends `wm`
  * every weapon reads as Lv.1 with an empty bar, so the strip never breaks.
  */
 import { weaponIcon } from "./weapons.js";
+import { K } from "./keymap.js";
 
 export const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow", "hammer"];
 const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활", hammer: "양손해머" };
@@ -101,7 +102,7 @@ export function renderStrip(box, s, defs, handUrl) {
       t.append(`Lv.${m.lv}`);
       const bar = el("i", "wb"), f = el("i"); f.style.width = `${pct(m)}%`; bar.append(f);
       c.append(ic, t, bar);
-      if (job.kind === "hybrid" && k !== s.wk) c.append(el("kbd", "wm-tab", "Tab"));
+      if (job.kind === "hybrid" && k !== s.wk) c.append(el("kbd", "wm-tab", K("swap")));
       c.dataset.k = k;
       box.append(c);
     });
@@ -115,7 +116,7 @@ export function renderStrip(box, s, defs, handUrl) {
   return ups;
 }
 
-/** The hover card: the job, all six weapons with mini bars (the hand marked), and what comes next. */
+/** The hover card: the job, all seven weapons with mini bars (the hand marked), and what comes next. */
 export function fillTip(node, s, defs) {
   const wm = masteryOf(s), job = jobOf(s, defs), kinds = shownKinds(s, job);
   node.classList.add("wm-tip");

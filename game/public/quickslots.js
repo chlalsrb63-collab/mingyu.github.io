@@ -114,7 +114,7 @@ function clear(i) {
 function setPicked(v) {
   picked = v;
   document.body.classList.toggle("qs-pick", !!v);
-  if (v) C.toast(C.touch() ? "놓을 단축칸을 누르세요 · 같은 버튼을 다시 누르면 취소" : "놓을 단축칸(1~9)을 누르세요 · Esc 취소");
+  if (v) C.toast(C.touch() ? "놓을 단축칸을 누르세요 · 같은 버튼을 다시 누르면 취소" : `놓을 단축칸(${K("slot1")}~${K("slot9")})을 누르세요 · Esc 취소`);
 }
 /** "단축칸" buttons in the skill window and the bag: pick this up and tap a slot. */
 export function pick(v) { setPicked(same(picked, v) ? null : v); Sound.play("ui"); }
@@ -216,7 +216,7 @@ export function render() {
   // (only once there is a skill to put there: a new Lv.1 has enough to read)
   if (!any && !render.told && have.size) {
     render.told = true;
-    C.addChat(`단축칸 1~9는 비어 있습니다. 스킬 창(${K('skill')})의 스킬이나 가방의 물약·음식·주문서를 아래 단축칸에 끌어다 놓으면 그 숫자 키로 씁니다. (터치: 스킬·아이템의 [단축칸] 버튼 → 칸 누르기)`, "sys");
+    C.addChat(`단축칸 ${K("slot1")}~${K("slot9")}는 비어 있습니다. 스킬 창(${K('skill')})의 스킬이나 가방의 물약·음식·주문서를 아래 단축칸에 끌어다 놓으면 그 숫자 키로 씁니다. (터치: 스킬·아이템의 [단축칸] 버튼 → 칸 누르기)`, "sys");
   }
 }
 
