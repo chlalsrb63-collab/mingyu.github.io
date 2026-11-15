@@ -49,6 +49,7 @@ H.changeMap(S, p, "meadow", ox, oy);
 
 const atk = { t: "atk", a: 0 }, stamp = { t: "sk", id: "hammer_stamp", a: 0 };
 const { center, r: radius, wind } = D.wkinds.hammer;
+assert.equal(D.wkinds.hammer.range, center + radius);
 const m = (dx, dy, k = "twinhare") => {
   const mob = H.newMob(S, k, [0, 0, 0, 0]);
   rt.mobs.push(mob);
@@ -132,6 +133,26 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
   assert.ok(actions(p, { t: "sk", id: "hammer_final", a: 0 }).ok);
   assert.equal(H.hammerBracing(p, S.now), 0.25);
   advance(400);
+}
+
+{
+  for (const id of ["hammer_stamp", "hammer_fault", "hammer_final"]) {
+    const skill = D.skills[id];
+    const [x, y] = find(land, (x, y) => Array.from({ length: 21 }, (_, i) => i / 20).every(t =>
+      H.canStand(land, x + t * skill.center, y) && H.canStand(land, x + t * skill.center, y + t * (skill.r + 1))));
+    p.x = x; p.y = y;
+    const edge = m(x - ox + skill.center, y - oy + skill.r);
+    const outside = m(x - ox + skill.center, y - oy + skill.r + 1);
+    ready();
+    assert.ok(actions(p, { t: "sk", id, a: 0 }).ok, id);
+    advance(skill.wind);
+    assert.deepEqual(impact().slice(2, 5), [x + skill.center, y, skill.r], `${id} shows its server radius`);
+    assert.ok(dmg(edge) > 0, `${id} hits at the side of the circle`);
+    assert.equal(dmg(outside), 0, `${id} misses just outside the circle`);
+    edge.dead = outside.dead = true;
+    edge.respAt = outside.respAt = Infinity;
+  }
+  p.x = ox; p.y = oy;
 }
 
 {
