@@ -347,6 +347,8 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   // 22·m² a level, an event, a toast; capped at 50
   ch.wm.sword = { lv: 9, xp: 22 * 81 - 1 };
   const [m2] = mobs([[16, 0]]);
+  // hitstun holds a shoved monster where it landed: put it back in reach before each blow
+  const reach = () => { m2.x = W.p.x + 16; m2.y = W.p.y; m2.stun = 0; };
   ready(W);
   W.act({ t: "atk", a: 0 });
   let v = W.step();
@@ -354,14 +356,14 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.ok(v.ev.some((e) => e[0] === "wm" && e[1] === W.p.eid && e[2] === 0 && e[3] === 10));
   assert.ok(W.p.toast.some((t) => t.includes("[대검] 숙련 10!")) || (v.toast || []).some((t) => t.includes("[대검] 숙련 10!")));
   ch.wm.sword = { lv: 19, xp: 22 * 361 - 1 };
-  ready(W); m2.hp = 50000; W.act({ t: "atk", a: 0 }); v = W.step();
+  ready(W); reach(); m2.hp = 50000; W.act({ t: "atk", a: 0 }); v = W.step();
   assert.ok((v.toast || []).some((t) => t.includes("전직관 아르센") && t.includes("[대검전사]")), "at 20 the job is offered");
   assert.deepEqual(ch.wm.sword, { lv: 20, xp: 0 }, "the overflow past 20 goes back to the normal rate");
   ch.wm.sword = { lv: 50, xp: 0 };
-  ready(W); W.act({ t: "atk", a: 0 }); W.step();
+  ready(W); reach(); W.act({ t: "atk", a: 0 }); W.step();
   assert.deepEqual(ch.wm.sword, { lv: 50, xp: 0 }, "capped at 50");
   ch.wm.sword = { lv: 20, xp: 0 };
-  ready(W); W.act({ t: "atk", a: 0 }); W.step();
+  ready(W); reach(); W.act({ t: "atk", a: 0 }); W.step();
   assert.equal(ch.wm.sword.xp, 1, "ordinary mastery rate after job mastery");
   // at 15 the two-weapon jobs whose other weapon is already at 15 are named
   ch.wm.sword = { lv: 14, xp: 22 * 196 - 1 }; ch.wm.bow.lv = 15; ch.wm.staff.lv = 18; ch.wm.dagger.lv = 14;
@@ -424,7 +426,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
     const mobs = arena(W);
     const [m] = mobs([[16, 0]], { k: "ribdeer" });     // tier 10 vs tier 1 → 9 tiers up: 10 + 27 − wm
     let n = 0, g = 0;
-    for (let i = 0; i < 300; i++) { ready(W); m.hp = 50000; W.act({ t: "atk", a: 0 }); for (const e of W.rt.ev) if (e[0] === "h" && e[1] === m.id) { n++; if (e[3] === 2) g++; } W.step(); }
+    for (let i = 0; i < 300; i++) { ready(W); m.hp = 50000; m.x = W.p.x + 16; m.y = W.p.y; W.act({ t: "atk", a: 0 }); for (const e of W.rt.ev) if (e[0] === "h" && e[1] === m.id) { n++; if (e[3] === 2) g++; } W.step(); }
     return g / n;
   };
   near(graze(1), 0.36, 0.07, "a fresh sword nine tiers deep grazes 36 %");

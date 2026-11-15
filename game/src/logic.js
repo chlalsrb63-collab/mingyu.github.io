@@ -7662,13 +7662,14 @@ function dealMob(S, rt, mob, p, dmg, crit) {
  * striker, stopping short of anything solid (knock). Bosses, field bosses / guardians and things
  * rooted to the spot only flinch on screen. A wound-up charge still goes off (tickMob).
  */
-const STAGGER = { ms: 140, crit: 200, elite: 0.65, kb: 3, eliteKb: 2 };
+// owner (2026-11-15, "경직 더 길게"): 140/200 ms → 220/320, budget 340 → 520 ms; the shove stays (more splits ranged targets)
+const STAGGER = { ms: 220, crit: 320, elite: 0.65, kb: 3, eliteKb: 2 };
 /**
  * No stun-lock: from a monster's first hold, for HOLD.win ms it is held (and its cooldowns paused)
  * for at most HOLD.cap ms in all; past that it shrugs blows off (no hold, no shove) until the
- * window ends. So however many hit it, it still strikes at least ~86% as often as unhurt.
+ * window ends. So however many hit it, it still strikes at least ~78% as often as unhurt.
  */
-const HOLD = { win: 2400, cap: 340 };
+const HOLD = { win: 2400, cap: 520 };
 /** Is it shrugging hitstun off just now (its hold budget for this window spent)? */
 function steady(S, mob) { return S.now < (mob.hw || 0) && (mob.hu || 0) >= HOLD.cap; }
 /** Hold a monster still until `S.now + ms` (within its HOLD budget): its stun runs longer, and its cooldowns pause for the extra time. */

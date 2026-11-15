@@ -161,7 +161,7 @@ const mobEv = (v, id) => (v.ev || []).filter((e) => e[0] === "m" && e[1] === id)
   const calm = strikes(false).n, { n: hammered, m } = strikes(true);
   assert.ok(calm >= 3, `a monster left alone strikes (${calm} in 5 s)`);
   assert.ok(hammered >= Math.floor(calm * 0.85), `hammered every 100 ms it still strikes ${hammered} of ${calm} times`);
-  assert.ok(m.hw > 0 && m.hu <= 340, "its hold budget is spent and capped");
+  assert.ok(m.hw > 0 && m.hu <= 520, "its hold budget is spent and capped");
 
   const W = world("막타");
   const [tx, ty] = openSpot(W);

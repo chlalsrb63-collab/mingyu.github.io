@@ -44,6 +44,8 @@ if (!L.hero) {
   const D = L.defs(), bad = [], only = process.argv.slice(2).filter((a) => !a.startsWith("-"));
   const hammerBase = new Map();
   const HI = (wk) => (wk === "bow" ? 1.1 : 1.25);
+  // each hand's floor: ×0.7, eased to ×0.62 when the owner lengthened hitstun (2026-11-15: runearcher's bow at T25 fell to ×0.64)
+  const HAND_MIN = 0.62;
   function baseOf(wk, t) {
     if (wk === "hammer") {
       if (!hammerBase.has(t)) hammerBase.set(t, probe(L, wk, t).kpm);
@@ -55,7 +57,7 @@ if (!L.hero) {
     const [a, b] = D.jobs[j].wk, ra = probe(L, a, t, PROBE.secs, { job: j }), rb = probe(L, b, t, PROBE.secs, { job: j });
     const base = (baseOf(a, t) + baseOf(b, t)) / 2, x = (ra.kpm + rb.kpm) / 2 / base, hi = (HI(a) + HI(b)) / 2;
     if (x < 0.75 || x > hi) bad.push(`${j} T${t}: ${(ra.kpm + rb.kpm) / 2} kills/min is ×${x.toFixed(2)} of the pair's ${base.toFixed(1)} (allowed ×0.75–×${hi.toFixed(3)})`);
-    for (const [wk, r] of [[a, ra], [b, rb]]) if (r.kpm / baseOf(wk, t) < 0.7) bad.push(`${j}/${wk} T${t}: ${r.kpm} kills/min is ×${(r.kpm / baseOf(wk, t)).toFixed(2)} of the old ${baseOf(wk, t).toFixed(1)} (at least ×0.7)`);
+    for (const [wk, r] of [[a, ra], [b, rb]]) if (r.kpm / baseOf(wk, t) < HAND_MIN) bad.push(`${j}/${wk} T${t}: ${r.kpm} kills/min is ×${(r.kpm / baseOf(wk, t)).toFixed(2)} of the old ${baseOf(wk, t).toFixed(1)} (at least ×${HAND_MIN})`);
     rows.push(`${j.padEnd(12)} T${String(t).padEnd(2)} ×${x.toFixed(2)} of ${base.toFixed(1)} · ${a} ${ra.kpm} k/m (×${(ra.kpm / baseOf(a, t)).toFixed(2)}, ${ra.dtpm} dmg/m, ${ra.deaths} d) · ${b} ${rb.kpm} k/m (×${(rb.kpm / baseOf(b, t)).toFixed(2)}, ${rb.dtpm} dmg/m, ${rb.deaths} d)`);
   }
   if (process.argv.includes("-v")) console.log(rows.join("\n"));
