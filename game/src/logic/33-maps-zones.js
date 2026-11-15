@@ -152,6 +152,9 @@ function zoneSpawns(m, cfg) {
   const pick = (zone, dd, h, x, y) => {
     const ros = cfg.rosterAt ? sorted(cfg.rosterAt(x, y)) : all;
     const n = ros.length, normTop = Math.max(1, Math.ceil(n * 0.85)), eliteLo = Math.min(n - 1, Math.floor(n * 0.5));
+    // (a pen — cfg.pen [kind, from]: the elite ground past `from` of the way from the elite line to the far end holds that
+    // kind's herd; the meadow's rams, so a wider meadow keeps them deep and many)
+    if (zone === Z_ELITE && cfg.pen && (dd - eliteD) / Math.max(1, D - eliteD) >= cfg.pen[1]) return cfg.pen[0];
     // (a habitat's kinds are few and all its own: any of them anywhere in it, the stronger half on elite ground)
     if (cfg.rosterAt) return zone === Z_ELITE ? ros[Math.min(n - 1, eliteLo + Math.floor(h * (n - eliteLo)))] : ros[Math.min(normTop - 1, Math.floor(h * normTop))];
     if (zone === Z_ELITE) return ros[clamp(eliteLo + Math.floor(clamp((dd - eliteD) / Math.max(1, D - eliteD), 0, 0.999) * (n - eliteLo) + (h - 0.5) * 1.2), eliteLo, n - 1)];
