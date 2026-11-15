@@ -302,17 +302,21 @@ function slotTip(h, v) {
   h.append(el("div", "hint", "끌어서 옮기기 · 바깥에 놓거나 우클릭하면 비우기"));
 }
 
-/** Make a skill row or a bag slot something that can be dragged onto the bar. */
-export function dragSource(node, v) {
+/**
+ * Make a skill row or a bag slot something that can be dragged onto the bar. `o.qs: false` — it cannot go on the bar
+ * (gear, materials); `o.drop(hit)` — dropped anywhere else (the element under the pointer): the bag ↔ warehouse
+ * (growth.js renderBank, win_char.js renderInv) moves it there.
+ */
+export function dragSource(node, v, o = {}) {
   node.addEventListener("pointerdown", (e) => {
     if (e.button !== 0 && e.pointerType === "mouse") return;
-    startDrag(e, v, -1);
+    startDrag(e, v, -1, o);
   });
   node.classList.add("qs-src");
 }
-function startDrag(e, v, from) {
+function startDrag(e, v, from, o = {}) {
   endDrag(null, true);
-  drag = { v, from, x0: e.clientX, y0: e.clientY, moved: false, ghost: null, id: e.pointerId };
+  drag = { v, from, o, x0: e.clientX, y0: e.clientY, moved: false, ghost: null, id: e.pointerId };
   addEventListener("pointermove", onMove, true);
   addEventListener("pointerup", onUp, true);
   addEventListener("pointercancel", onCancel, true);
@@ -328,11 +332,12 @@ function onMove(e) {
     g.src = drag.v[0] === "s" ? skillIconUrl(drag.v[1]) : C.G.icons.url[drag.v[1]];
     document.body.append(g);
     drag.ghost = g;
-    document.body.classList.add("qs-drag");
+    if (drag.o.qs !== false) document.body.classList.add("qs-drag");
+    if (drag.o.drop) document.body.classList.add("item-drag");   // the warehouse panes light up (hud.css)
   }
   drag.ghost.style.left = `${e.clientX - 16}px`;
   drag.ghost.style.top = `${e.clientY - 16}px`;
-  const over = slotAt(e.clientX, e.clientY);
+  const over = drag.o.qs === false ? null : slotAt(e.clientX, e.clientY);
   for (const b of btns) b.classList.toggle("over", b === over);
 }
 function slotAt(x, y) {
@@ -348,7 +353,7 @@ function endDrag(e, quiet) {
   removeEventListener("pointermove", onMove, true);
   removeEventListener("pointerup", onUp, true);
   removeEventListener("pointercancel", onCancel, true);
-  document.body.classList.remove("qs-drag");
+  document.body.classList.remove("qs-drag", "item-drag");
   for (const b of btns) b.classList.remove("over");
   const d = drag;
   drag = null;
@@ -356,9 +361,10 @@ function endDrag(e, quiet) {
   if (d.ghost) d.ghost.remove();
   if (quiet || !d.moved || !e) return;
   swallowClick = performance.now();
-  const over = slotAt(e.clientX, e.clientY);
+  const over = d.o.qs === false ? null : slotAt(e.clientX, e.clientY);
   const to = over ? Number(over.dataset.i) : -1;
   if (to >= 0 && d.from >= 0) swap(d.from, to);
   else if (to >= 0) set(to, d.v);
   else if (d.from >= 0) { clear(d.from); C.toast(`${d.from + 1}번 단축칸을 비웠습니다`); }
+  else if (d.o.drop) d.o.drop(document.elementFromPoint(e.clientX, e.clientY));
 }

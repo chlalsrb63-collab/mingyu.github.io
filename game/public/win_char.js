@@ -82,7 +82,10 @@ export function renderInv(s) {
       price: isOpen("shop") && !Charms.isCharm(entry) ? `판매가 ${(sellPrice(entry) * (entry.n || 1)).toLocaleString()}G${entry.n > 1 ? ` (개당 ${sellPrice(entry)}G)` : ""}` : "",
     });
     // a usable thing can be dragged onto the quick slots; the slot it sits in shows in the corner
-    if (usable) { QS.dragSource(node, ["i", entry.id]); if (at) node.append(el("span", "qk", at)); }
+    // with the warehouse open, anything can be dragged into it (a whole stack, like a click on its 가방 pane)
+    const bank = isOpen("bank") ? (hit) => { if (hit && hit.closest("#w-bank")) { act({ t: "wh", a: "put", s: i, n: entry.n || 1 }); Sound.play("item"); } } : null;
+    if (usable || bank) QS.dragSource(node, ["i", entry.id], { qs: usable, drop: bank });
+    if (at) node.append(el("span", "qk", at));
     if (free) node.append(el("span", "qk equip-ready", "▲"));
     // 새로 얻음: glows with a 새 tag until hovered (or tapped), sorted, or the bag is closed
     const k = invSig(entry);

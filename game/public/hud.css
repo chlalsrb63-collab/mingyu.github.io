@@ -271,6 +271,9 @@ body.qs-pick .act.qs, body.qs-drag .act.qs { border-color: var(--b-mid); animati
 #qs-ghost { position: fixed; z-index: 60; width: 32px; height: 32px; image-rendering: pixelated; pointer-events: none; opacity: .85; outline: 2px solid var(--b-hi); background: rgba(18, 15, 24, .7); }
 body.qs-drag, body.qs-drag * { cursor: grabbing !important; }
 .qs-src img { -webkit-user-drag: none; }
+/* an item dragged with the warehouse open: where it can land (quickslots.js item-drag, growth.js renderBank) */
+body.item-drag #w-bank .pane, body.item-drag #w-inv #inv-grid { outline: 2px dashed var(--b-mid); outline-offset: 1px; }
+body.item-drag, body.item-drag * { cursor: grabbing !important; }
 #qs-hint { position: absolute; left: 50%; top: -15px; transform: translateX(-50%); padding: 0 6px; white-space: nowrap; pointer-events: none;
   font: var(--t10)/12px var(--pix9); color: var(--tx-hd, var(--b-hi)); background: var(--frame-bg, rgba(18, 15, 24, .9)); border: 1px solid var(--rim, #5a4426); animation: qs-bob 1.2s steps(2) infinite; }
 #qs-hint::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -4px; border: 4px solid transparent; border-bottom: 0; border-top-color: var(--rim, #5a4426); }

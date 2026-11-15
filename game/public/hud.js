@@ -275,7 +275,7 @@ export function refreshUi() {
   const near = G.near && G.near.role;
   trackNew(s);                                  // 새로 얻은 bag items (win_char.js)
   Charms.sync(s);                               // what the server confirmed: a charm set down, a seal broken (charms.js)
-  draw("inv", () => [Charms.bagKey(s), s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs, s.bagCap, Gather.pouchKey(s)], renderInv);
+  draw("inv", () => [Charms.bagKey(s), s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), isOpen("bank"), fireNear(), touch(), s.pet, s.qs, s.bagCap, Gather.pouchKey(s)], renderInv);
   // the C window: 장비 or 능력치 (points can be bought by a campfire or at 수련관 카이)
   draw("char", () => G.charTab === "cos" ? ["cos", s.xp, s.nx] : G.charTab === "stat"
     ? ["stat", s.st, s.lvl, s.xp, s.xpt, s.nx, s.rs, s.dv, s.atk, s.mhp, s.mmp, s.def, s.crit, s.critd, s.mf, s.job, s.wk, s.eq.weapon && s.eq.weapon.id, s.dead, fireNear(), near, StatWin.key()]
