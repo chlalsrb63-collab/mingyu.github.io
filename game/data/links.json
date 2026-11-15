@@ -44,7 +44,7 @@
       "to": "owl_library",
       "tx": 11,
       "ty": 14,
-      "label": "부엉이 도서관"
+      "label": "올빼미 도서관"
     },
     {
       "map": "town",
@@ -53,7 +53,7 @@
       "to": "owl_library",
       "tx": 11,
       "ty": 14,
-      "label": "부엉이 도서관"
+      "label": "올빼미 도서관"
     },
     {
       "map": "town",

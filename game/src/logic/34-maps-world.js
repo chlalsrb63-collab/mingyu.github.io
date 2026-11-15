@@ -13,7 +13,7 @@ const TOWN_REV = 2;
  */
 const TOWN_BLD = [
   { k: "hall", name: "버드나무광장 회관", icon: "banner", x: 46, y: 20, w: 8, h: 5, door: "s", d: [[49, 25], [50, 25]] },
-  { k: "library", name: "부엉이 도서관", icon: "book", x: 33, y: 16, w: 7, h: 5, door: "s", d: [[36, 21], [37, 21]] },
+  { k: "library", name: "올빼미 도서관", icon: "book", x: 33, y: 16, w: 7, h: 5, door: "s", d: [[36, 21], [37, 21]] },
   { k: "dojo", name: "버드나무광장 수련관", icon: "sword", x: 60, y: 16, w: 6, h: 4, door: "s", d: [[62, 20], [63, 20]] },
   { k: "store", name: "다람쥐 잡화점", icon: "bag", x: 63, y: 33, w: 5, h: 4, door: "s", d: [[65, 37], [66, 37]] },
   { k: "smithy", name: "캉캉대장간", icon: "anvil", x: 70, y: 33, w: 6, h: 4, door: "s", d: [[72, 37], [73, 37]] },
@@ -208,7 +208,7 @@ function buildTown() {
   const gateLabel = (id, f) => { let s = null; return () => s || (s = f(doorName(MAP_META[id]))); };
   const signs = [
     [93, 42, gateLabel("meadow", (n) => `${n} →`), "meadow"], [5, 42, gateLabel("city", (n) => `← ${n}`), "city"],
-    [47, 31, "↑ 마을회관 · 도서관 · 수련관", "town_hall"], [31, 26, "← 부엉이 도서관", "owl_library"],
+    [47, 31, "↑ 마을회관 · 도서관 · 수련관", "town_hall"], [31, 26, "← 올빼미 도서관", "owl_library"],
     [71, 28, "→ 수련장 · 전직관", "dojo"], [62, 43, "→ 장터 거리 · 잡화점 · 대장간", "general_store"],
     [79, 39, "↑ 보글연금공방 · 용병사무소 →", "bogle_lab"], [75, 42, "↓ 쥬쥬식당 · 카페 · 여관", "juju_diner"],
     [38, 43, "← 살림 마을 · 창고 · 펫 돌봄집", "dongdong_apt"], [24, 42, "← 동동아파트 · 내 집", "dongdong_apt"],

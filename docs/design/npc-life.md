@@ -204,7 +204,7 @@ own `k`/`s`. `~` = suggestion, N3 settles within ±2 (data:check judges).
 | `diner_bar` · `diner_hearth` (sit) · `diner_stage` · `diner_back` (`in`) | 바 · 난롯가 · 무대 · 살림방 | (12,4)(13,4)(15,4) · (3,8)(3,10) · (16,5) · (3,1) |
 | `cafe_t1`…`t3` (sit) · `cafe_hearth` (sit) · `cafe_bar` | 테일즈 카페 | (7,9)(9,9) · (13,7)(13,9) · (2,6)(2,8) · (3,3)(7,3) · (13,5)(15,5) |
 | `inn_hearth` (sit) · `inn_table` (sit) · `inn_beds` · `inn_up` (`in`) | 모닥별 여관 · 위층 객실 | (3,3)(7,3) · (3,7)…(7,7), (3,9)…(7,9) · (11,2)(13,2)(15,2) · (17,2) |
-| `lib_hearth` (sit) · `lib_table` (sit) · `lib_nook` (sit) · `lib_stacks` | 부엉이 도서관 | (3,3)(6,3) · (15,7)(16,7)(17,7)(15,9)(16,9)(17,9) · (3,8)(5,8)(3,11)(5,11) · (2,6)(8,2) |
+| `lib_hearth` (sit) · `lib_table` (sit) · `lib_nook` (sit) · `lib_stacks` | 올빼미 도서관 | (3,3)(6,3) · (15,7)(16,7)(17,7)(15,9)(16,9)(17,9) · (3,8)(5,8)(3,11)(5,11) · (2,6)(8,2) |
 | `hall_seats` (sit) · `hall_desk` | 마을회관 | (3,6)(4,6)(14,6)(15,6) · (10,4)(12,4) |
 | `merc_hearth` (sit) · `merc_table` (sit) · `merc_bench` (sit) | 용병사무소 | (16,3)(18,3) · (7,5)(10,5) · (3,10)(5,10) |
 | `apt_lobby` · `apt_up` (`in`) | 동동아파트 로비 · 위층 | (8,6)(10,6) · (9,1) |

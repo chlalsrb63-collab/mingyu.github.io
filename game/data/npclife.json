@@ -447,7 +447,7 @@
     },
     "lib_hearth": {
       "map": "owl_library",
-      "name": "부엉이 도서관 난롯가",
+      "name": "올빼미 도서관 난롯가",
       "spots": [
         [3, 3, "s", "sit"],
         [6, 3, "s", "sit"]
@@ -455,7 +455,7 @@
     },
     "lib_table": {
       "map": "owl_library",
-      "name": "부엉이 도서관 열람석",
+      "name": "올빼미 도서관 열람석",
       "spots": [
         [15, 7, "s", "sit"],
         [16, 7, "s", "sit"],
@@ -467,7 +467,7 @@
     },
     "lib_nook": {
       "map": "owl_library",
-      "name": "부엉이 도서관 안쪽 자리",
+      "name": "올빼미 도서관 안쪽 자리",
       "spots": [
         [3, 8, "s", "sit"],
         [5, 8, "s", "sit"],
@@ -477,7 +477,7 @@
     },
     "lib_stacks": {
       "map": "owl_library",
-      "name": "부엉이 도서관 서가",
+      "name": "올빼미 도서관 서가",
       "spots": [
         [2, 6, "s"],
         [8, 2, "s"]

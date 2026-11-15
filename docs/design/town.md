@@ -80,7 +80,7 @@ self-describing); add an old-sheet case to `content.mjs`. Sheets saved in an int
 10 TTCCCCCCC.CwC.......a...........a..............FTT    , upper terrace (윗마을) · W 석축 retaining wall
 12 TTCCCCCCC.CwC..,,,,,,,,,,,,,,,,,,,,,rr.........FTT    S stone steps (ground v) · o plaza · p road · r lane
 14 TT.CCCCC..CwC..,,,,,,,,,,,,,,,,,,,,,rr.........FTT    + door tiles (links.json / HOUSE_TOWN)
-16 TT........CwC..,LLLL,,,,,,,,,,JJJ,,,rr.........FTT    H 마을회관 · L 부엉이 도서관 · J 버드나무광장 수련관
+16 TT........CwC..,LLLL,,,,,,,,,,JJJ,,,rr.........FTT    H 마을회관 · L 올빼미 도서관 · J 버드나무광장 수련관
 18 TT........CwC..,LLLL,,,,,,,,,,JJJ,,,rr.........FTT    A 보글연금공방 · G 다람쥐 잡화점 · K 캉캉대장간
 20 TT........CwC..,LL+L,,,HHHH,,,,+,,,,rr.........FTT    M 늑대발 용병사무소 · R 마을 창고 (barn, no door)
 22 TThh.hhh..CwC..,,,,,,,,HHHH,,,,,,,,,rr........aFTT    Z 동동아파트 · h villagers' cottages (no doors)
@@ -120,7 +120,7 @@ script, not committed). T-A builds it with tile precision from the tables below;
 | district | area (tiles) | mood and content |
 | --- | --- | --- |
 | **중앙 광장** plaza | ellipse centre (50,40), rx 12.5, ry 8.5, ground `o` | fountain, waypoint stone, 엘더윈, 하루's board, 노바, 리나's stall, spirit tree + fire, obelisk + 오르카, benches, lamp strings (existing `L` string logic), flower tubs |
-| **윗마을** upper terrace (public) | x 30–74, y 12–28; promenade `r` y 26–27 x 32–72 | 마을회관 (centre, facing the plaza stairs), 부엉이 도서관 (west, by the ravine, reading garden), 버드나무광장 수련관 + training yard (east). Quiet, stone + ivy, flower beds along the wall |
+| **윗마을** upper terrace (public) | x 30–74, y 12–28; promenade `r` y 26–27 x 32–72 | 마을회관 (centre, facing the plaza stairs), 올빼미 도서관 (west, by the ravine, reading garden), 버드나무광장 수련관 + training yard (east). Quiet, stone + ivy, flower beds along the wall |
 | **장터 거리** market (commercial) | north side of the east road y 40–41, x 62–98; lane x 80–81 north to y 29 | 잡화점, 캉캉대장간 + open forge yard x 76–79 × 33–38, 용병사무소 near the east gate, 보글연금공방 up the lane. Awnings, crates, barrels, carts |
 | **모닥별 뜰** hospitality | lane x 76–77 (y 42–49) to square x 68–80 × 50–56 (`r`) | 쥬쥬식당, 테일즈 카페, 모닥별 여관 around a lantern-strung square with outdoor tables (`o` + `k`), a well |
 | **살림 마을** residential (west, across the stream) | x 3–20, y 20–50 | 동동아파트, 내 집 + 하우징 안내인 포근, five villagers' cottages (legacy `house()` v0–3, no doors), vegetable gardens, laundry lines, chicken-less pens, mailboxes |
@@ -156,7 +156,7 @@ the room's door tile is (dx, H−1) with ground `e`, entry (dx, H−2); its port
 | k (`bld.k`) | sign (name · icon) | function | district | footprint x,y,w,h | town door tiles | town landing | interior id · size · door/entry | exterior style |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | hall | 버드나무광장 회관 · `banner` | civic, main-quest elder outside, daily board inside | 윗마을 | 46,20,8,5 s | (49,25)(50,25) | (49,26) | `town_hall` 22×18 · (11,17)/(11,16) (exists) | big timber hall on a stone plinth, moss-green shingle hip roof, clock gable, two banners, twin lanterns |
-| library | 부엉이 도서관 · `book` | lore, 도감, records | 윗마을 W | 33,16,7,5 s | (36,21)(37,21) | (36,22) | `owl_library` 22×16 · (11,15)/(11,14) | round stone tower + timber wing, slate-blue roof, round "owl-eye" window, ivy, reading garden with benches |
+| library | 올빼미 도서관 · `book` | lore, 도감, records | 윗마을 W | 33,16,7,5 s | (36,21)(37,21) | (36,22) | `owl_library` 22×16 · (11,15)/(11,14) | round stone tower + timber wing, slate-blue roof, round "owl-eye" window, ivy, reading garden with benches |
 | dojo | 버드나무광장 수련관 · `sword` | stat training, jobs | 윗마을 E | 60,16,6,4 s | (62,20)(63,20) | (62,21) | `dojo` 18×14 · (9,13)/(9,12) | long low timber hall, deep eaves, rust roof, banner poles; yard x 66–72 × 17–25 with dummies |
 | store | 다람쥐 잡화점 · `bag` | potions, scrolls, sundries | 장터 | 63,33,5,4 s | (65,37)(66,37) | (65,38) | `general_store` 16×12 · (8,11)/(8,10) | timber, striped awning, barrels/crates out front, hanging acorn-bag sign |
 | smithy | 캉캉대장간 · `anvil` | enhance, salvage, gear, runes | 장터 | 70,33,6,4 s | (72,37)(73,37) | (72,38) | `kangkang_forge` 18×12 · (9,11)/(9,10) | stone ground floor, tall chimney (glow + sparks), slate roof; open forge yard x 76–79 × 33–38 with outdoor anvil |
@@ -248,7 +248,7 @@ Every room is `safe`, `theme: "interior"`, has ≥ 1 light (`*`, `o`, `#`, `<` o
 
 | room | style · bgm | NPCs (id · name · role · species look hint · pose · tile) | things (thing NPCs) | furniture highlights |
 | --- | --- | --- | --- | --- |
-| `owl_library` 부엉이 도서관 | library · cafe | `lib_borum` 사서 보름 · talk · 양, round glasses · read · (5,3)<br>`hall_pipi` 지도 제작자 피피 · collector · (moved from town_hall) · read · (16,4)<br>`hall_momo` 서기관 모모 · achieve · (moved) · write · (17,10) | `lib_case` 괴수 도감 진열장 · collector · on `;` (14,2)<br>`lib_tablet` 기록의 서판 · achieve · on `t` (20,8)<br>`lib_book_1..3` 낡은 책: 정령나무 / 어둠에 먹힌 숲 / 첫 이주민들 · talk (4–6 lore lines each) · on `\|` | walls of `b`, ladders implied, reading tables `o`+`k`, `~` old maps, `;` specimen row, fireplace `#` + `fires`, rug `y` runner |
+| `owl_library` 올빼미 도서관 | library · cafe | `lib_borum` 사서 보름 · talk · 양, round glasses · read · (5,3)<br>`hall_pipi` 지도 제작자 피피 · collector · (moved from town_hall) · read · (16,4)<br>`hall_momo` 서기관 모모 · achieve · (moved) · write · (17,10) | `lib_case` 괴수 도감 진열장 · collector · on `;` (14,2)<br>`lib_tablet` 기록의 서판 · achieve · on `t` (20,8)<br>`lib_book_1..3` 낡은 책: 정령나무 / 어둠에 먹힌 숲 / 첫 이주민들 · talk (4–6 lore lines each) · on `\|` | walls of `b`, ladders implied, reading tables `o`+`k`, `~` old maps, `;` specimen row, fireplace `#` + `fires`, rug `y` runner |
 | `merc_office` 늑대발 용병사무소 | office · town | `merc_grey` 용병단장 그레이 · quest · 강아지 (wolfish grey), scar · — · (10,3)<br>`merc_mimi` 접수원 미미 · daily · 토끼 · write · (4,6)<br>`merc_bawi` 은퇴한 용병 바위 · talk · 곰 · doze · (16,10) | `merc_board` 의뢰 게시판 · daily · on `v`<br>`merc_party` 파티 구인판 · talk (how to party: P, invites, 4 max, 차원 균열 ready check at the obelisk) · on `v` | map table `-` with `~` maps above, `>` weapon racks, `!` banners, `]` `w` supplies, armchairs `s` by `#` |
 | `general_store` 다람쥐 잡화점 | shop · town | `store_dari` 잡화점 주인 다리 · shop `goods: hp_s hp_m hp_l mp_s mp_m mp_l recall camp feather sc_atk sc_def sc_xp stone` · 다람쥐 · wipe · behind `m` (8,3)<br>`store_kong` 심부름꾼 콩콩 · talk · 햄스터 · carry · (12,8) | — | counter `m` run + `j` (register), `$` displays, `r` jar shelves, `]` crates, `w` barrels |
 | `kangkang_forge` 캉캉대장간 | forge · town | `forge_tong` 견습 대장장이 통통 · smith · 생쥐 · hammer · (6,4)<br>`forge_musoe` 갑옷장이 무쇠 · shop `goods: W1 w_book_1 h_1 a_1 g_1 b_1 h_2 a_2 g_2 b_2 ru_ign ru_aeg ru_vit ru_men ru_cel ru_acu ru_san ru_lum ru_fos` · 곰 · wipe · (13,3)<br>reserved tile (11,6) for 캉캉 (life-and-coop C1, role `craft`) | `forge_anvil` 모루 · smith · on `&` | furnace `<`, anvil `&`, quench `w`, `>` racks, `]` ore crates, flagstone `x` floor |
@@ -285,7 +285,7 @@ players flagged "파티 구함" with level/job, click → invite). Until someone
 | (93,42) | `${doorName(meadow)} →` | meadow |
 | (5,42) | `← ${doorName(city)}` | city |
 | (47,31) | ↑ 마을회관 · 도서관 · 수련관 | town_hall |
-| (31,26) | ← 부엉이 도서관 | owl_library |
+| (31,26) | ← 올빼미 도서관 | owl_library |
 | (71,28) | → 수련장 · 전직관 | dojo |
 | (62,43) | → 장터 거리 · 잡화점 · 대장간 | general_store |
 | (79,39) | ↑ 보글연금공방 · 용병사무소 → | bogle_lab |

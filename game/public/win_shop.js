@@ -7,6 +7,7 @@ import { Sound } from "./audio.js";
 import * as Growth from "./growth.js";
 import * as SideQ from "./sidequests.js";
 import * as Board from "./board.js";
+import * as NPC from "./npclife.js";
 import { G, $, el, clamp } from "./state.js";
 import { act } from "./net.js";
 import { countItem } from "./actions.js";
@@ -27,7 +28,10 @@ export function renderShop(s) {
   if (win) {
     win.querySelector("header .t").textContent = keeper ? keeper.name : "보급상 리나";
     const say = win.querySelector(".say");
-    if (say) say.textContent = keeper && keeper.goods && keeper.lines ? keeper.lines[0] : "어서 와요! 필요한 건 다 있답니다. 가방에서 물건을 고르면 팔 수도 있어요.";
+    // the keeper is out on their day (npclife.js): the sign at the counter serves instead
+    const cast = keeper && NPC.cast(keeper.id), away = cast && !NPC.at(keeper.id)?.onPost;
+    if (say) say.textContent = away ? `[${cast.away || "안내판"}] 주인이 잠시 자리를 비웠어요. 값은 그대로니 골라 가세요. 가방에서 물건을 고르면 팔 수도 있어요.`
+      : keeper && keeper.goods && keeper.lines ? keeper.lines[0] : "어서 와요! 필요한 건 다 있답니다. 가방에서 물건을 고르면 팔 수도 있어요.";
     // the keeper's trust (board.js): a 단골 pays 5 % less here, as the server counts it
     let rep = win.querySelector("#shop-rep");
     if (!rep) { rep = el("div", "shop-rep"); rep.id = "shop-rep"; list.before(rep); }

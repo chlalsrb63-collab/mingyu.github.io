@@ -29,6 +29,8 @@ export const autoSt = { stuck: 0, side: 0, sign: 1, lastSkill: 0, target: null, 
 const AUTO_LEASH = 220;
 /** How long (ms) auto-hunt waits with nothing within the leash before it looks further (to 2× over as long again). */
 const AUTO_IDLE = 8000;
+/** How close (px) a drop must lie for auto-hunt to grab it on the way to the next monster. */
+const AUTO_GRAB = 72;
 /**
  * Whether auto-hunt should pick this monster: never a boss or field boss, nor an elite
  * three or more levels above you — unless it is already fighting you, then you answer.
@@ -138,10 +140,11 @@ export function update(dt, t) {
     if (best || threat) { autoSt.idleAt = t; autoSt.none = false; }
     // a quarry found out past the leash: the hunt moves there instead of drifting back
     if (best && dist(home.x, home.y, best.x, best.y) > AUTO_LEASH) autoSt.home = { map: G.map.id, x: best.x, y: best.y };
-    // between fights: gold and loot on the ground within the leash (the view sends only what is ours to take)
+    // between fights: gold and loot on the ground within the leash (the view sends only what is ours to take);
+    // on the way to the next quarry, what lies closer than it (and close by) is picked up first
     let loot = null;
-    if (!threat && !best) {
-      let ld = 1e9;
+    if (!threat && (!best || bd > s.range * 0.8)) {
+      let ld = best ? Math.min(bd, AUTO_GRAB) : 1e9;
       for (const d of G.drops.values()) {
         if ((autoSt.skip.get("d" + d.id) || 0) > t || dist(home.x, home.y, d.x, d.y) > AUTO_LEASH) continue;
         const dd = dist(me.x, me.y, d.x, d.y);
@@ -169,7 +172,7 @@ export function update(dt, t) {
     }
     // nothing to hunt nearby: drift back to the spot and wait for the next to turn up
     if (!threat && !best && !loot && !G.path && dist(me.x, me.y, autoSt.home.x, autoSt.home.y) > 48) { const route = pathTo(autoSt.home.x, autoSt.home.y); if (route) { G.path = route; autoSt.homing = true; } }
-    if (best) {
+    if (best && !loot) {
       const range = s.range * 0.8;
       if (bd > range) {
         const ux = (best.x - me.x) / bd, uy = (best.y - me.y) / bd;
