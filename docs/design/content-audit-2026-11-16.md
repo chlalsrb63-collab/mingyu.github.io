@@ -88,11 +88,27 @@ gold = 30 × Lv (last step × 2), keepsakes and titles for arc ends. 알바 stay
 - Files: `game/data/npcs.json`, `game/data/quests.json`, and a keepsake row in `ITEMS` (`10-tables.js`) if a new
   one is needed.
 - Test: `npm run data:check`, plus a chain case in `tests/content.mjs` (req.quest order, rewards in scale).
+- **As built:** a new giver, 사공 여울 (`ink_yeoul`, `npcs.json`), stands beside the 나루터 stone. A thing, 「외딴 탑의
+  빈 등걸이」 (`ink_pagoda`), stands by the 외딴 탑 섬 stone and serves as the visit step: `visit` only knows whole
+  maps, so the step is a talk to the thing, the same way as A5's chapel stone. The ground already had a camp keeper
+  (나루지기 먹선, `camp_inklake`), and she is the first talk. Steps: `sq_yeoul_ferry` (158, talk to 먹선),
+  `sq_yeoul_tower` (163, talk to the pagoda hook), `sq_yeoul_oil` (168, make 맑은 등기름, a quest-only 연금 Lv.30
+  recipe at 보글), `sq_yeoul_lamp` (174, the named elite 매화 손가락 거미 on inklake, the only fight), and
+  `sq_yeoul_end` (180, a choice: hang the lamp on the tower or on 여울's bow). The titles are 「외딴 탑의 등불지기」 and
+  「먹물 위의 길손」. Rewards are on the scale. **No keepsake:** every keepsake needs a sewn wardrobe piece
+  (`KEEP_SEW`, `65-cosmetics.js`, and its art). Those files were off limits for this pass, so the keepsake is a
+  follow-up for the wardrobe owner. Placement, both answers and the levels are checked in `tests/sidequests.mjs`
+  (the doc's `content.mjs` case lives there, next to the other arcs). The ink itself is not explained or cured.
 
 ### Q2 — Bridge Lv.85–99: 토룩 and 울로, 「거꾸로 흐르는 물」 · size S · data only
 - Four steps (Lv.86, 90, 94, 98), sewer to cave: deliver to 울로, collect, make, talk. They lead into the airship
   arc at 100, so the 7 quests at Lv.100 stop arriving all at once. Move 2 of those 7 down to Lv.96–98 (`req.lv` only).
 - Files: `quests.json`. Test: `data:check` and `content.mjs`.
+- **As built:** `sq_toruk_bottle` (86, 토룩 → deliver 거꾸로 담긴 물 to 울로), `sq_ullo_silt` (90, 울로: collect 4 수정 앙금
+  from the sewer's 거머리 아가리), `sq_toruk_wedge` (94, 토룩: make 수문 쐐기 at 캉캉, a quest-only craft recipe, 제작
+  Lv.20), `sq_ullo_sky` (98, 울로 → talk to 신호수 노을, who points at 바람등호). Rewards 15 % `lvt` / 30 × Lv, the last
+  step 30 % / × 2. Moved down: `sq_bogle_essence` 100 → 96 and `sq_monggeul_bears` 100 → 98. New quest items have
+  icons (`lifeicons.js`). The chain is walked step by step at its levels in `tests/sidequests.mjs`.
 
 ### Q3 — Main-chain beats for chapters 7–8 · size S · **owner decision** (kill counts)
 - Add two `sq_mc_*` chapter quests: one before `rotstag` ×4 (`10-tables.js:593`, the chapel inscription
@@ -112,6 +128,15 @@ gold = 30 × Lv (last step × 2), keepsakes and titles for arc ends. 알바 stay
 - Change the steps at 168 and 190 from kill to talk/deliver/make (a hermit's 단풍 부적 recipe), and keep the elite at
   180. Add one step at Lv.195 that leads into 성에왕, which fills the Lv.191–199 gap.
 - Files: `quests.json`. Test: `data:check` and `content.mjs`.
+- **As built:** same ids, no kill step left. `sq_bas_roses` (168) is now a delivery: a thorn that hums the old
+  guard-change song goes to 음유시인 솔 in 버드나무 마을, who names it. `sq_bas_leaves` (170, collect) and
+  `sq_bas_elites` (180, elite) keep their goals with new lines. `sq_bas_wardens` (190) is now make 3 단풍 부적, a
+  quest-only 요리 Lv.20 recipe made on any campfire (3 붉은 단풍잎 each). New `sq_bas_frost` (195): talk to a new thing,
+  `maple_frostgate` 「서리 덮인 경계석」 by the ice gate to frostkeep. It ends on the title 「마지막 교대병」 and leaves
+  open whether the king called the frost or was caught by it. The old rewards stay as they were (they are above the
+  audit scale; cutting them is an owner call), and the new step is on the scale (30 % / × 2). An old sheet with a
+  roses or wardens kill count loads clean: the thorn is given, and the count is clamped to 3, so that step may be ready
+  at once.
 
 ### Q6 — Late field-boss 기록 (weekly, repeatable) · size M · **owner decision** (repeat cadence)
 - Each late field giver (노랑, 갈피, the Q1 giver) holds one weekly side quest against their ground's boss. Its text

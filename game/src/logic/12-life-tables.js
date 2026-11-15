@@ -172,6 +172,7 @@ Object.assign(RECIPES, {
   fd_carrot: recipeRow("cook", 3, "fire", [["m_c2", 2], ["staple", 1]], "fd_carrot", 1, 0),
   fd_veg: recipeRow("cook", 10, "cook", [["m_c3", 1], ["m_c4", 1], ["staple", 1]], "fd_veg", 1, 0),
   fd_corn: recipeRow("cook", 20, "cook", [["m_c5", 1], ["m_c6", 1], ["staple", 1]], "fd_corn", 1, 0),
+  q_mapcharm: recipeRow("cook", 20, "fire", [["m_h5", 3]], "q_mapcharm", 1, 0, { sq: "sq_bas_wardens" }),   // Q5: 바스's charm, singed on any campfire, only while his quest is on
   // 연금: potions in threes, elixirs, feathers, runes
   hp_s: recipeRow("alch", 1, "alch", [["m_h1", 2], ["flask", 3]], "hp_s", 3, 18),
   mp_s: recipeRow("alch", 1, "alch", [["m_h1", 2], ["flask", 3]], "mp_s", 3, 27),
@@ -185,6 +186,7 @@ Object.assign(RECIPES, {
   el_xp: recipeRow("alch", 25, "alch", [["m_h3", 2], ["m_o3", 1], ["flask", 1]], "el_xp", 1, 178, { eq: ["sc_xp"] }),
   el_spd: recipeRow("alch", 30, "alch", [["m_h4", 1], ["m_w4", 1], ["flask", 1]], "el_spd", 1, 50),
   q_ink: recipeRow("alch", 30, "alch", [["m_h4", 2], ["flask", 1]], "q_ink", 1, 60, { sq: "sq_borum_ink" }),   // arc A5's quest recipe: only while 보름's quest is on
+  q_lampoil: recipeRow("alch", 30, "alch", [["m_h4", 1], ["m_h5", 1], ["flask", 1]], "q_lampoil", 1, 60, { sq: "sq_yeoul_oil" }),   // Q1: only while 여울's quest is on
   feather: recipeRow("alch", 35, "alch", [["m_h4", 1], ["m_w2", 1]], "feather", 1, 80),   // P7: was 2 수정꽃 + 심연 결정 + 판자 (525 G of goods for a 250 G feather)
   ru_mix: recipeRow("alch", 40, "alch", [["rune*", 3], ["m_h5", 1]], "rune*", 1, 200),
   el_all: recipeRow("alch", 50, "alch", [["m_h5", 2], ["m_o5", 1], ["m_w5", 1], ["flask", 1]], "el_all", 1, 400, { eq: ["sc_atk", "sc_def", "sc_xp"] }),
@@ -193,6 +195,7 @@ Object.assign(RECIPES, {
   camp: recipeRow("craft", 5, "craft", [["m_w1", 5]], "camp", 1, 42),
   stone_x2: recipeRow("craft", 10, "craft", [["m_o1", 7], ["m_w1", 2]], "stone", 2, 126, { rep: "kangkang" }),
   stone_b: recipeRow("craft", 20, "craft", [["stone", 3], ["m_o3", 2]], "stone_b", 1, 300),
+  q_wedge: recipeRow("craft", 20, "craft", [["m_o3", 2], ["m_w3", 2]], "q_wedge", 1, 40, { sq: "sq_toruk_wedge" }),   // Q2's quest recipe: only while 토룩's quest is on
   punch: recipeRow("craft", 30, "craft", [["m_o4", 3], ["m_w4", 2]], "punch", 1, 2000),
   // the bosses-2 trophies: 피눈물 결정 (혈루 왕도마뱀) and 망치 갯가재 집게 make the two dear tools a cheaper way
   stone_b_bt: recipeRow("craft", 20, "craft", [["stone", 2], ["mat_bloodtear", 1]], "stone_b", 1, 200),

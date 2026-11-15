@@ -409,8 +409,134 @@ for (const pick of [0, 1]) { const W = world("항해사" + pick); arcA3(W, pick)
   done(W, "sq_bogle_hand", "bogle");
   assert.ok(W.ch.keep.kp_shardjar && W.ch.ach.includes("t_sq_bogle_hand"), "the shard jar and 「균열 기록관」");
 }
+// ── content-audit-2026-11-16 §3 packages: each chain in order, every step taken at its own level, givers where the players are
+/** The chain `ids` is whole: in order (req.quest), levels inside [lo, hi] and rising, the giver on `maps[i]`, rewards on the audit scale. */
+function chainShape(ids, lo, hi, maps, scaled = ids) {
+  let prev = null;
+  for (const [i, id] of ids.entries()) {
+    const q = D.side.find((o) => o.id === id);
+    assert.ok(q, `${id} is a valid side quest`);
+    assert.ok(q.req.lv >= lo && q.req.lv <= hi, `${id}: Lv.${q.req.lv} in ${lo}–${hi}`);
+    if (i) assert.ok(q.req.quest === ids[i - 1] && q.req.lv >= prev.req.lv, `${id} follows ${ids[i - 1]}`);
+    assert.equal(q.giverMapId, maps[i], `${id}: the giver stands on ${maps[i]}`);
+    assert.ok(L.atlas().maps[q.giverMapId].npcs.some((n) => n.id === q.giver), `${id}: ${q.giver} is really there`);
+    const rws = [q.reward, ...(q.choice || []).map((o) => o.reward).filter(Boolean)], xp = Math.max(...rws.map((r) => r.xp)), cap = D.lvt[q.req.lv - 1];
+    if (scaled.includes(id)) assert.ok(xp >= 0.12 * cap && xp <= 0.32 * cap && Math.max(...rws.map((r) => r.gold)) <= 60 * q.req.lv, `${id}: reward on the audit scale`);
+    prev = q;
+  }
+}
+{
+  // Q2 「거꾸로 흐르는 물」: 토룩 → 울로 → 토룩 → 울로 → 노을, sewer to cave, into the airship arc at Lv.100
+  chainShape(["sq_toruk_bottle", "sq_ullo_silt", "sq_toruk_wedge", "sq_ullo_sky"], 85, 99, ["sewer", "cave", "sewer", "cave"]);
+  assert.deepEqual(["sq_bogle_essence", "sq_monggeul_bears"].map((id) => D.side.find((q) => q.id === id).req.lv), [96, 98], "two of the Lv.100 pile moved down");
+  const W = world("물때지기");
+  W.ch.lvl = 86;
+  take(W, "sq_toruk_bottle", "trail_drain");
+  assert.equal(bag(W, "q_upwater"), 1, "토룩 hands over the bottle");
+  done(W, "sq_toruk_bottle", "trail_echo");
+  W.ch.lvl = 89;
+  assert.equal(sqOf(W.self(), "sq_ullo_silt").st, 0, "the silt waits for Lv.90");
+  W.ch.lvl = 90;
+  take(W, "sq_ullo_silt", "trail_echo");
+  hunt(W, "sq_ullo_silt", "sewer", "leechmaw");
+  done(W, "sq_ullo_silt", "trail_echo");
+  W.ch.lvl = 94;
+  W.meet("kangkang"); W.ch.life.craft.lv = 20;
+  assert.match(W.act({ t: "craft_open", r: "q_wedge" }).error, /퀘스트/, "the wedge is cut only for 토룩's quest");
+  take(W, "sq_toruk_wedge", "trail_drain");
+  make(W, "sq_toruk_wedge", "q_wedge", "kangkang", [["m_o3", 30], ["m_w3", 30]], "craft");
+  done(W, "sq_toruk_wedge", "trail_drain");
+  assert.equal(bag(W, "q_wedge"), 0, "the wedge goes into the sluice");
+  W.ch.lvl = 98;
+  take(W, "sq_ullo_sky", "trail_echo");
+  talk(W, "airship_signal");
+  done(W, "sq_ullo_sky", "trail_echo");
+  assert.equal(W.ch.sq.done.sq_ullo_sky, 1);
+}
+{
+  // Q5 바스's arc as a story: the song to 솔 → the leaves → the old guard → charms singed on a campfire → the frost road (Lv.195)
+  const BAS = ["sq_bas_roses", "sq_bas_leaves", "sq_bas_elites", "sq_bas_wardens", "sq_bas_frost"];
+  chainShape(BAS, 168, 199, BAS.map(() => "maple"), ["sq_bas_frost"]);
+  assert.ok(BAS.every((id) => D.side.find((q) => q.id === id).goal.type !== "kill"), "no kill step left in 바스's arc");
+  const W = world("교대병");
+  W.ch.lvl = 168;
+  take(W, "sq_bas_roses", "hermit");
+  assert.equal(bag(W, "q_thornsong"), 1, "바스 hands over the thorn");
+  done(W, "sq_bas_roses", "willow_bard");
+  W.ch.lvl = 170;
+  take(W, "sq_bas_leaves", "hermit");
+  W.ch.inv.push({ id: "m_h5", n: 8 });
+  done(W, "sq_bas_leaves", "hermit");
+  W.ch.lvl = 180;
+  take(W, "sq_bas_elites", "hermit");
+  W.to("maple", ...L.atlas().maps.maple.entry);
+  for (let i = 0; i < 5; i++) W.kill("blightsquirrel", 1);
+  done(W, "sq_bas_elites", "hermit");
+  W.ch.lvl = 190;
+  W.meet("hermit"); W.ch.life.cook.lv = 20;
+  assert.match(W.act({ t: "craft_open", r: "q_mapcharm" }).error, /퀘스트/, "the charm is singed only for 바스's quest");
+  take(W, "sq_bas_wardens", "hermit");
+  make(W, "sq_bas_wardens", "q_mapcharm", "hermit", [["m_h5", 30]], "cook");
+  done(W, "sq_bas_wardens", "hermit");
+  assert.equal(bag(W, "q_mapcharm"), 0, "the charms go to the wardens");
+  W.ch.lvl = 194;
+  assert.equal(sqOf(W.self(), "sq_bas_frost").st, 0, "the frost road waits for Lv.195");
+  W.ch.lvl = 195;
+  take(W, "sq_bas_frost", "hermit");
+  talk(W, "maple_frostgate");
+  done(W, "sq_bas_frost", "hermit");
+  assert.ok(W.ch.ach.includes("t_sq_bas_frost"), "「마지막 교대병」");
+  // an old sheet mid-way through the retired kill steps loads clean: the thorn is handed over, the count fits the new goal
+  const old = L.newChar("옛파수꾼", "warrior", []);
+  old.sq = { on: { sq_bas_roses: 7, sq_bas_wardens: 5 }, done: { sq_bas_elites: 1 } };
+  const O = world("옛파수꾼", old);
+  assert.equal(bag(O, "q_thornsong"), 1, "the thorn for 솔 is in the bag");
+  assert.ok(O.ch.sq.on.sq_bas_wardens <= 3, "the kill count is clamped to the charm count");
+}
+for (const pick of [0, 1]) {
+  // Q1 「나루터의 먹물」: 사공 여울 at the 먹빛 호수 landing — 먹선, the lone pagoda, the clear oil, the lamp in the reeds, where to hang it
+  const YEOUL = ["sq_yeoul_ferry", "sq_yeoul_tower", "sq_yeoul_oil", "sq_yeoul_lamp", "sq_yeoul_end"];
+  chainShape(YEOUL, 157, 181, YEOUL.map(() => "inklake"));
+  assert.ok(YEOUL.filter((id) => ["kill", "elite", "fb"].includes(D.side.find((q) => q.id === id).goal.type)).length <= 1, "at most one fight in five");
+  const ink = L.atlas().maps.inklake, at = (id) => ink.npcs.find((n) => n.id === id);
+  const stone = ink.stones[0];
+  assert.ok(Math.hypot(at("ink_yeoul").x - stone.x, at("ink_yeoul").y - stone.y) <= 4, "여울 stands by the 나루터 stone");
+  assert.ok(Math.hypot(at("ink_pagoda").x - ink.stones[2].x, at("ink_pagoda").y - ink.stones[2].y) <= 4, "the lamp hook is on the 외딴 탑 섬");
+  const W = world("나룻손님" + pick);
+  W.ch.lvl = 158;
+  take(W, "sq_yeoul_ferry", "ink_yeoul");
+  talk(W, "camp_inklake");
+  done(W, "sq_yeoul_ferry", "ink_yeoul");
+  W.ch.lvl = 163;
+  take(W, "sq_yeoul_tower", "ink_yeoul");
+  talk(W, "ink_pagoda");
+  done(W, "sq_yeoul_tower", "ink_yeoul");
+  W.ch.lvl = 168;
+  W.meet("bogle"); W.ch.life.alch.lv = 30;
+  assert.match(W.act({ t: "craft_open", r: "q_lampoil" }).error, /퀘스트/, "the lamp oil is brewed only for 여울's quest");
+  take(W, "sq_yeoul_oil", "ink_yeoul");
+  make(W, "sq_yeoul_oil", "q_lampoil", "bogle", [["m_h4", 15], ["m_h5", 15], ["flask", 15]], "alch");
+  done(W, "sq_yeoul_oil", "ink_yeoul");
+  assert.equal(bag(W, "q_lampoil"), 0, "the oil goes to 여울");
+  W.ch.lvl = 174;
+  take(W, "sq_yeoul_lamp", "ink_yeoul");
+  W.to("inklake", ...ink.entry);
+  W.kill("spiderhand_blood", 0);
+  W.kill("gravrose_blood", 1);
+  assert.equal(sqOf(W.self(), "sq_yeoul_lamp").n, 0, "a plain spider or another elite is not the one");
+  W.kill("spiderhand_blood", 1);
+  done(W, "sq_yeoul_lamp", "ink_yeoul");
+  W.ch.lvl = 179;
+  assert.equal(sqOf(W.self(), "sq_yeoul_end").st, 0, "the last answer waits for Lv.180");
+  W.ch.lvl = 180;
+  take(W, "sq_yeoul_end");
+  done(W, "sq_yeoul_end", null, pick);
+  assert.ok(W.ch.ach.includes(`t_sq_yeoul_end_${pick}`) && !W.ch.ach.includes(`t_sq_yeoul_end_${1 - pick}`), "this answer's title only");
+}
+// every new quest item is asked for by some quest (no orphans)
+for (const id of ["q_upwater", "q_silt", "q_wedge", "q_thornsong", "q_mapcharm", "q_lampoil"]) assert.ok(D.side.some((q) => q.goal.item === id), `${id} is used`);
 // every arc step is 추적-resolvable: a giver and hand-in NPC on a real map, a target the client can walk to
-for (const q of D.side.filter((o) => /^sq_(chomi|aru|noeul_stone|sora|elder_chart|eunha|samak|norang|galpi|borum_ink|bogle_(shards|essence|hand)|borum_(rubbing|krion))/.test(o.id))) {
+for (const q of D.side.filter((o) => /^sq_(chomi|aru|noeul_stone|sora|elder_chart|eunha|samak|norang|galpi|borum_ink|bogle_(shards|essence|hand)|borum_(rubbing|krion)|toruk_|ullo_|bas_|yeoul_)/.test(o.id))) {
   assert.ok(q.giverMapId && L.atlas().maps[q.giverMapId].npcs.some((n) => n.id === q.giver), `${q.id}: giver stands on ${q.giverMapId}`);
   assert.ok(q.turnInMap && q.target, `${q.id}: hand-in and target named`);
   if (q.goal.mob) assert.ok(D.maps.some((m) => m.mobs.includes(q.goal.mob)), `${q.id}: ${q.goal.mob} lives somewhere`);
