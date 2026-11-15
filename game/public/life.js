@@ -71,7 +71,7 @@ function render(s) {
     if (OPEN[i]) card.title = `${HOW()[i]} 경험치를 얻습니다.`;
     box.append(card);
   });
-  box.append(el("p", "hint", "낚시: 사냥터마다 물의 등급이 다르고, 낚시 레벨이 오를수록 높은 등급의 물고기가 입질합니다. 요리: 쥬쥬식당의 화덕이나 모닥불 곁에서 F. 숙련될수록 덜 타고, 대성공하면 두 접시가 나옵니다. 채집: 캐는 도중 \"반짝!\" 할 때 " + K("interact") + "나 " + K("attack") + "를 누르면 대성공하기 쉽습니다."));
+  box.append(el("p", "hint", "낚시: 사냥터마다 물의 등급이 다르고, 낚시 레벨이 오를수록 높은 등급의 물고기가 입질합니다. 요리: 쥬쥬식당의 화덕이나 모닥불 곁에서 F. 숙련될수록 덜 타고, 대성공하면 두 접시가 나옵니다. 채집: 캐는 도중 \"반짝!\" 할 때 " + K("interact") + "나 " + K("dash") + "를 누르면 대성공하기 쉽습니다."));
   if (A.renderJobs) A.renderJobs(box, s);
   if (A.renderPouch) A.renderPouch($("#life-pouch"), s, { where: "life" });
 }

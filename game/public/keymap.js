@@ -7,8 +7,6 @@
  * - 글자 크기: body[data-ts="s|m|l"] swaps the --t10/--t11/--t12 integer font sizes of hud.css.
  */
 import { $ } from "./state.js";
-import { toast } from "./windows.js";
-import { Sound } from "./audio.js";
 
 // [id, Korean name, default (Shift+)code, group]
 const A = [
@@ -96,7 +94,9 @@ function assign(id, code) {
 
 /** Build the 단축키 list and the 글자 크기 buttons in the settings window (index.html #keys-list, #opt-ts). */
 load();   // module-level hint strings elsewhere read the saved bindings at import time
-export function setupKeymap() {
+let toast = () => {}, Sound = { play() {} };   // injected by setupKeymap: importing windows.js/audio.js here would make an import cycle
+export function setupKeymap(api) {
+  ({ toast, Sound } = api);
   // capture first: while a row waits for a key, the game's own keydown must not run
   addEventListener("keydown", (e) => {
     if (!cap) return;

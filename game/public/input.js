@@ -149,7 +149,7 @@ export function toggleAuto() {
 
 /** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */
 export function setupInput() {
-  Keymap.setupKeymap();
+  Keymap.setupKeymap({ toast, Sound });
 
   addEventListener("keydown", (e) => {
     Sound.unlock();

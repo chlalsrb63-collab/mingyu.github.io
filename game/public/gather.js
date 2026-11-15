@@ -228,7 +228,7 @@ function showTap(on, hit) {
     st.tapEl = b;
   }
   const b = st.tapEl, touch = document.body.classList.contains("touch");
-  if (on) { b.textContent = touch ? "반짝! ▶ 누르기" : `반짝!  ${K("interact")} / ${K("attack")}`; b.className = "frame"; b.hidden = false; }
+  if (on) { b.textContent = touch ? "반짝! ▶ 누르기" : `반짝!  ${K("interact")} / ${K("dash")}`; b.className = "frame"; b.hidden = false; }
   else if (hit) { b.textContent = "좋아요!"; b.className = "frame good"; setTimeout(() => { if (b.classList.contains("good")) b.hidden = true; }, 500); }
   else b.hidden = true;
 }
