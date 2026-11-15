@@ -299,6 +299,40 @@ function dimReward(lv, tier, full, carried) {
     xp: Math.round(R.xp * xpNeed(lv) * Math.min(K.xpMax, 1 + K.xp * t) * (full ? 1 : 0.5) * ck),
   };
 }
+/**
+ * Rare loot with no other source (HANDOFF §0.1): 스킬 강화석, 저주 해제 주문서, the two reset scrolls. `src`: "rift" a
+ * full-reward clear at `tier` (the stone from tier `skeFrom`, +`ske` a tier), "big" / "small" a weekly boss challenge,
+ * "fb" a field boss (each looter). `wkN` weekly brackets cleared add one 저주 해제 주문서 each.
+ */
+const LOOT_X = {
+  rift: { skeFrom: 10, ske: 0.01, skeMax: 0.15, unc: 0.04, uncTier: 0.005, uncMax: 0.25 },
+  big: { ske: [1, 2], unc: 1 }, small: { unc: 0.1 },
+  fb: { ske: 0.03, unc: 0.08, job: 0.02, lvl: 0.01 },
+};
+function lootX(S, src, tier = 0, wkN = 0) {
+  const out = wkN > 0 ? [["uncurse", wkN]] : [], chance = (id, c) => { if (rnd(S) < c) out.push([id, 1]); };
+  if (src === "rift") {
+    const R = LOOT_X.rift, t = tier | 0;
+    if (t >= R.skeFrom) chance(SKE_ITEM, Math.min(R.skeMax, R.ske * (t - R.skeFrom + 1)));
+    chance("uncurse", Math.min(R.uncMax, R.unc + R.uncTier * t));
+  } else if (src === "big") out.push([SKE_ITEM, ri(S, LOOT_X.big.ske[0], LOOT_X.big.ske[1])], ["uncurse", LOOT_X.big.unc]);
+  else if (src === "small") chance("uncurse", LOOT_X.small.unc);
+  else if (src === "fb") {
+    const F = LOOT_X.fb;
+    chance(SKE_ITEM, F.ske); chance("uncurse", F.unc); chance(JF_SCROLL.job, F.job); chance(JF_SCROLL.lvl, F.lvl);
+  }
+  return out;
+}
+function giveX(S, p, src, tier, wkN, box = S) {
+  for (const [id, n] of lootX(box, src, tier, wkN)) {
+    if (addItem(p.ch, id, n)) p.gain.push(["item", id, n, 0]); else bagFull(S, p);
+  }
+}
+/** A field boss's share for one looter, from the ground's own draw so the world's other draws stay as they were. */
+function fbLoot(S, rt, p) {
+  if (!rt.lxRng) rt.lxRng = { seed: ((rt.fbRng ? rt.fbRng.seed : S.seed) ^ 0x2545f491) | 0 };
+  giveX(S, p, "fb", 0, 0, rt.lxRng);
+}
 /** Each member's own reward from the master's chest, once; full experience for the first few clears of the day. */
 function dimChest(S, dim, p) {
   const ch = p.ch, lv = dim.lv;
@@ -315,6 +349,7 @@ function dimChest(S, dim, p) {
     for (let i = 1; i < (R.rune | 0); i++) payout(S, p, { rune: true });
     for (let i = 1; i < (R.gear | 0); i++) payout(S, p, { gear: 1, gearQ: R.gearQ });
     if (big) { charmChest(S, dim, p); jfScroll(p, "lvl"); }
+    giveX(S, p, big ? "big" : carried ? "" : "small");
     msg = big ? "주간 보스 도전 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다." : "보스 도전 반복 보상을 받았습니다. 큰 보상은 월요일 06:00에 다시 열립니다.";
   } else {
     d.n++;
@@ -325,8 +360,8 @@ function dimChest(S, dim, p) {
     const b = Math.min(W.max, Math.floor(((dim.tier || 1) - 1) / W.every) + 1);
     if (!carried && b > d.wb) { wkN = b - d.wb; d.wb = b; r.gold += W.gold * lv * wkN; r.stone += W.stone * wkN; fl |= 8; }
     payout(S, p, r);
-    // shortcut: the reset scrolls' only sources until the gear task places them (job-freedom.md)
     if (wkN && dim.tier >= 20) jfScroll(p, "job");
+    if (!carried) giveX(S, p, full ? "rift" : "", dim.tier, wkN);
     charmChest(S, dim, p);
     msg = carried ? "기여가 부족해 균열의 보상이 줄었습니다. (단수 기록·주간 보너스 없음)"
       : (full ? `균열의 보상을 받았습니다! (오늘 ${d.n}번째)` : `균열의 보상을 받았습니다. 오늘 ${DIM.dailyFull}번을 넘겨 경험치는 절반입니다.`) + (wkN ? ` 주간 첫 정화 보너스 ×${wkN}!` : "");
