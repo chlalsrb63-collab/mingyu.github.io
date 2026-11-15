@@ -100,6 +100,7 @@ export function onEvent(e, t) {
       else {
         floatText(crit ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit, true);
         tgt.hurtT = t; tgt.hsMs = 0;
+        let wk;   // my own weapon kind, when it is my blow: the impact sound follows the weapon
         // recoil away from whoever struck last
         if (!isPlayer && G.hitFrom) {
           tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]);
@@ -111,15 +112,16 @@ export function onEvent(e, t) {
           if (mine) {
             // a local hitstop: the blow and what it struck hold still for a beat (2–3 frames on a
             // crit, a finisher or a skill; barely one on a plain hit, so the tempo stays high)
-            const stop = heavy ? 45 : 18;
+            const stop = heavy ? 60 : 18;
+            wk = G.self?.wk;
             if (!G.me.hs || t > G.me.hs.at + G.me.hs.dur) G.me.hs = { at: t, dur: stop };
             tgt.hsMs = stop;
-            if (heavy) S3.shake(5, tgt.hurtA); else S3.shake(2.5);
-            if (heavy) { G.punch = 1; Sound.play(fin ? "finisher" : "crit"); }
+            if (heavy) S3.shake(5, tgt.hurtA); else S3.shake(1.5);
+            if (heavy) { G.punch = 1; Sound.play(fin ? "finisher" : "crit", wk); }
           }
         }
         if (id === G.you) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
-        else if (!isPlayer) Sound.play(crit ? "crit" : "hit");
+        else if (!isPlayer) Sound.play(crit ? "crit" : "hit", wk);
         S3.fx.burst(tgt.x, tgt.y, h * 0.55, isPlayer ? "#ff7a7a" : "#ffffff", crit ? 14 : 8, crit ? 2.6 : 2);
       }
       break;
