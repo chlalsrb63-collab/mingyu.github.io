@@ -2,12 +2,14 @@
 // fx code, the gating, the six passives, the job and hybrid signatures, the bar, the wire.   node tests/skills.mjs
 import assert from "node:assert/strict";
 import * as L from "../src/logic.js";
-import { ALL as SKILL_ICONS } from "../public/skillicons.js";
+import { ALL as SKILL_ICONS, badRows, iconPixels } from "../public/skillicons.js";
 
 const D = L.defs();
 const T = 16;
 const SK = D.skills;
 assert.deepEqual(new Set(SKILL_ICONS), new Set(Object.keys(SK)), "every live skill has its own icon entry");
+assert.deepEqual(badRows(), [], "every icon draws a motif");
+assert.equal(iconPixels("slash").px.length, 32 * 32, "icons are drawn natively at 32×32");
 const JOB = { sword: "swordsman", dagger: "thief", spear: "lancer", staff: "wizard", book: "warlock", bow: "archer" };
 
 /** A hero (L.hero options) alone on open meadow ground, every monster put away until a test calls one up. */
