@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
   "\nexport const __t = { JB, JB_WILLOW, CHORES, CHORE_MAP, chorePool, ITEMS, RECIPES, MAP_META, mapOf, lifeNodes, nodeMat, nodeLv, gradeOfMap," +
-  " GRADE_LV, lifeGrade, FISH_G, lifePostAt, jbRoute, jbLimit, jbNeed, JB_GRADE, parcelSpd, BASE_SPD, HERO_SPD_K, MOBS, FIRES, START, legTiles, SHOP, SIDE };\n";
+  " GRADE_LV, lifeGrade, FISH_G, FISH_MAP, lifePostAt, jbRoute, jbLimit, jbNeed, JB_GRADE, parcelSpd, BASE_SPD, HERO_SPD_K, MOBS, FIRES, START, legTiles, SHOP, SIDE };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, VERBOSE = process.argv.includes("-v");
 
@@ -36,6 +36,8 @@ for (const [id, m] of reach) {
     const g = X.gradeOfMap(m);
     for (let k = 1; k <= g; k++) add(X.FISH_G[k - 1], { how: "fish", sk: "fish", lv: X.GRADE_LV[k - 1], map: id, cl: minLv(id) });
     add("fish_l", { how: "fish(carp)", sk: "fish", lv: 1, map: id, cl: minLv(id) });
+    // this water's own fish (P8), from its grade's level
+    if (Object.hasOwn(X.FISH_MAP, id) && X.ITEMS[X.FISH_MAP[id]].grade <= g) add(X.FISH_MAP[id], { how: "fish(local)", sk: "fish", lv: X.GRADE_LV[X.ITEMS[X.FISH_MAP[id]].grade - 1], map: id, cl: minLv(id) });
   }
   for (const n of m.npcs) if (n.role === "shop") for (const g of n.goods || X.SHOP) add(g, { how: "shop", sk: null, lv: 0, map: id, cl: minLv(id) });
 }

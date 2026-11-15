@@ -56,7 +56,7 @@ const ITEMS = {
   cafe_tea: { name: "들꽃 허브차", type: "food", heal: 60, mana: 80, buff: { xp: 3, atk: 0, min: 20 }, price: 50, desc: "바람초원 들꽃을 우렸다. HP 60, MP 80 회복. 20분간 경험치 +3%." },
   cafe_scone: { name: "버터 스콘", type: "food", heal: 220, buff: { xp: 5, atk: 0, min: 10 }, price: 60, desc: "겉은 바삭, 속은 촉촉. HP 220 회복. 10분간 경험치 +5%." },
   cafe_pie: { name: "산딸기 파이", type: "food", heal: 420, buff: { xp: 8, atk: 3, min: 15 }, price: 180, desc: "모카의 자랑. HP 420 회복. 15분간 경험치 +8%, 공격력 +3%." },
-  inn_stew: { name: "여관 스튜", type: "food", heal: 360, mana: 60, buff: { xp: 6, atk: 0, min: 20 }, price: 110, desc: "뭉근히 끓인 고기 스튜. HP 360, MP 60 회복. 20분간 경험치 +6%." },
+  inn_stew: { name: "여관 스튜", type: "food", heal: 360, mana: 60, buff: { xp: 6, atk: 0, min: 20 }, price: 220, desc: "뭉근히 끓인 고기 스튜. HP 360, MP 60 회복. 20분간 경험치 +6%." },
   inn_bread: { name: "갓 구운 호밀빵", type: "food", heal: 120, buff: { xp: 2, atk: 0, min: 10 }, price: 25, desc: "든든한 한 덩이. HP 120 회복. 10분간 경험치 +2%." },
   // scrolls of blessing, ten minutes each; reading the same one again only refills its time (메이플 주문서 · 바람의나라 부적)
   sc_atk: { name: "공격의 주문서", type: "buff", buff: "atk", pct: 10, min: 10, price: 300, desc: "10분간 공격력 +10%. 같은 주문서는 겹치지 않고 남은 시간만 다시 채운다." },

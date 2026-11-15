@@ -73,8 +73,9 @@ export function applyAction(S, pid, a) {
         break;
       }
       if (it.type === "food") {
-        p.food = { id: a.id, until: now + it.buff.min * 60000, xp: it.buff.xp, atk: it.buff.atk };
-        toast(p, `${it.name}${pp(it.name, "을를")} 먹었습니다. ${it.desc}`);
+        // a life-buff food (P8) trades the meal's xp/atk for its work buff `lf` (58-life.js lifeBuff)
+        p.food = { id: a.id, until: now + it.buff.min * 60000, xp: it.buff.xp, atk: it.buff.atk, lf: it.buff.lf || null };
+        toast(p, `${it.name}${pp(it.name, "을를")} ${it.lit ? "피웠습니다" : "먹었습니다"}. ${it.desc}`);
       }
       p.potAt = now + 900;
       if (it.heal) {
@@ -83,6 +84,7 @@ export function applyAction(S, pid, a) {
         S.maps[p.map].ev.push(["h", p.eid, -amt, 0, 1]);
       }
       if (it.mana) p.mp = Math.min(st.mmp, p.mp + it.mana);
+      if (it.cure) { p.burn = null; p.poison = null; p.slowed = 0; toast(p, "몸이 개운해졌습니다. 독·화상·둔화가 씻겨 나갔습니다."); }
       S.maps[p.map].ev.push(["u", p.eid, it.heal ? 0 : 1]);
       p.dirty = true;
       break;
@@ -283,7 +285,7 @@ export function applyAction(S, pid, a) {
       rouse(S, p);
       const [wx, wy] = waterNear(m, p);
       // a practised angler gets bites sooner (life skills: −0.8 % a 낚시 level)
-      p.fish = { at: now + fishWait(S, ch) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
+      p.fish = { at: now + fishWait(S, ch, lifeBuff(S, p, "bite")) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
       p.dir = dirOf(wx - p.x, wy - p.y);
       S.maps[p.map].ev.push(["f", p.eid, 1, wx, wy]);
       break;

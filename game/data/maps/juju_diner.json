@@ -73,7 +73,9 @@
         "food_m",
         "food_l",
         "inn_bread",
-        "staple"
+        "staple",
+        "pr_milk",
+        "pr_honey"
       ],
       "lines": [
         "쥬쥬식당에 어서 와! 오늘 국물은 끝내준다구.",
