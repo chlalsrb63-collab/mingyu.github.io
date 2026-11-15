@@ -1,6 +1,15 @@
 {
   "_readme": "External images and sounds the client uses instead of the code drawing (public/assetlib.js). Empty = everything code-drawn. Written by scripts/import-art.mjs --install (approved files from the repo's asset/ folder; sources recorded in asset/CREDITS.md). Keys: weapon.<kind>.t<tier> | .lg.<power> | .set.<set> | .skin.<motif>, icon.weapon.<kind>..., icon.item.<item id>; free-form for others (mob.twinhare, sfx.coin). Paths are relative to public/.",
-  "images": {},
+  "images": {
+    "icon.item.bloom_a": { "src": "assets/gear/armor/bloom_a.png?v=86ce4baa", "w": 16, "h": 16 },
+    "icon.item.bloom_h": { "src": "assets/gear/helm/bloom_h.png?v=fd0c8b05", "w": 16, "h": 16 },
+    "icon.item.bloom_n": { "src": "assets/gear/amulet/bloom_n.png?v=00214580", "w": 16, "h": 16 },
+    "icon.item.bloom_r": { "src": "assets/gear/ring/bloom_r.png?v=6bb7a1dd", "w": 16, "h": 16 },
+    "icon.item.veil_a": { "src": "assets/gear/armor/veil_a.png?v=674379fa", "w": 16, "h": 16 },
+    "icon.item.veil_h": { "src": "assets/gear/helm/veil_h.png?v=debac191", "w": 16, "h": 16 },
+    "icon.item.veil_n": { "src": "assets/gear/amulet/veil_n.png?v=e88a3236", "w": 16, "h": 16 },
+    "icon.item.veil_r": { "src": "assets/gear/ring/veil_r.png?v=43b0f4aa", "w": 16, "h": 16 }
+  },
   "audio": {},
   "bgmLocal": {
     "title": [["0.TITLE1.mp3", 2.76, 159.34], ["0.title2.mp3", 2.77, 129.03]],

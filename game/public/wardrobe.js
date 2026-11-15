@@ -1380,6 +1380,7 @@ export const ART = {
   back_batcape: ["back", "batcape", { c: "#4a1a2e" }],   // 밤장막 crimson, bat-wing hem
   ws_bee: ["wskin", "bee", {}],
   ws_clubclaw: ["wskin", "clubclaw", {}],
+  ws_porcelain: ["wskin", "porcelain", {}],
   // the co-op part-time jobs' S grades
   hat_kerchief: ["hat", "kerchief", { c: "#5a9ae0", b: "#f6f4fa" }],
   back_tray: ["back", "tray", { c: "#d8dce8", b: "#a8acb8" }],
