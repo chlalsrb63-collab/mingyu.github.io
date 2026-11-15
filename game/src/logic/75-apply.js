@@ -269,7 +269,7 @@ export function applyAction(S, pid, a) {
     }
     case "sit":
       if (p.sit) p.sit = false;
-      else { rouse(S, p); sitDown(S, p); }
+      else { rouse(S, p); sitDown(S, p); fieldFire(S, p, now); }
       break;
     case "fish": {
       rouse(S, p);

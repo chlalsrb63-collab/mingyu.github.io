@@ -123,6 +123,19 @@ function sitDown(S, p) {
   p.fix = true;
   return true;
 }
+/** 모닥불 피우기 (owner): sitting down in the field lights a short fire — calm, no live monster this close, none burning near. */
+const FIELD_FIRE_MS = 120000, FIELD_FIRE_CALM = 5000, FIELD_FIRE_MOB = 160;
+/** Called when someone sits down: lights a field fire when it may, says why when it may not. */
+function fieldFire(S, p, now) {
+  const rt = S.maps[p.map], m = mapOfS(S, p.map);
+  if (fireNear(rt, p) || m.safe || m.theme === "interior") return;
+  if (now - p.hitAt < FIELD_FIRE_CALM) return toast(p, "싸우는 중에는 모닥불을 피울 수 없습니다");
+  if (rt.mobs.some((o) => !o.dead && dist(o.x, o.y, p.x, p.y) < FIELD_FIRE_MOB)) return toast(p, "몬스터가 가까워 모닥불을 피울 수 없습니다");
+  if (rt.fires.filter((f) => f.until).length >= FIRE_MAX) return toast(p, "이 지역에는 모닥불이 너무 많습니다");
+  rt.fires.push({ id: S.nextId++, x: Math.round(p.x), y: Math.round(p.y) - 14, until: now + FIELD_FIRE_MS });
+  rt.ev.push(["u", p.eid, 2]);
+  toast(p, "모닥불을 피웠습니다 — 2분 동안 요리, 스킬 칸 바꾸기, 수련을 이 곁에서 할 수 있습니다.");
+}
 /** Once a second, for a calm player sitting by a fire: warmth that grows with the company. */
 function warmTick(S, p, fire, now) {
   if (++p.warmT < WARM_SEC) return;

@@ -229,4 +229,35 @@ assert.ok(L.atlas().maps.town.npcs.some((n) => n.id === teller.id && n.night), "
   assert.equal(sees(tf), false, "in fog it does not");
 }
 
+// 모닥불 피우기: sitting down in the field, calm and with no monster near, lights a short fire
+{
+  const p = P[2], rt = L.runtime(S, "meadow");
+  for (const q of P) { q.sit = false; }
+  L.runtime(S, p.map).n--; p.map = "meadow"; rt.n++; p.sendMap = true;
+  const spot = rt.mobs.find((m) => !m.dead) || { x: 400, y: 400 };
+  near(p, spot.x, spot.y);
+  const n0 = rt.fires.length;
+  assert.ok(act(ids[2], { t: "sit" }).ok && p.sit);
+  assert.equal(rt.fires.length, n0, "a monster this close: no fire");
+  act(ids[2], { t: "sit" });
+  const keep = rt.mobs.map((m) => m.dead);
+  for (const m of rt.mobs) m.dead = true;
+  p.hitAt = now - 1000;
+  act(ids[2], { t: "sit" }); act(ids[2], { t: "sit" });
+  assert.equal(rt.fires.length, n0, "in combat: no fire");
+  near(p, spot.x, spot.y);
+  assert.ok(act(ids[2], { t: "sit" }).ok);
+  assert.equal(rt.fires.length, n0 + 1, "calm and alone: a fire");
+  const f = rt.fires.at(-1);
+  assert.ok(f.until > now && Math.hypot(f.x - p.x, f.y - p.y) <= D.fireR, "a short fire within reach");
+  act(ids[2], { t: "sit" }); act(ids[2], { t: "sit" });
+  assert.equal(rt.fires.length, n0 + 1, "one fire is enough");
+  rt.mobs.forEach((m, i) => { m.dead = keep[i]; });
+  // in town (safe) sitting never lights one
+  const t0 = L.runtime(S, "town").fires.length;
+  near(P[3], fire.x + 300, fire.y); P[3].sit = false;
+  act(ids[3], { t: "sit" });
+  assert.equal(L.runtime(S, "town").fires.length, t0);
+}
+
 console.log("daynight ok");
