@@ -311,6 +311,43 @@ export function closeTop() {
   else if (panelId) { closeWin(panelId); Sound.play("close"); }
   else if (drawerOpen() || G.sel >= 0) closeWin("inv");
 }
+/**
+ * Which windows were open (W2): per character, saved when the page goes away (or the game is left), opened again
+ * at the first snapshot, bottom-most first, where they stood (folded ones fold again). Only the player's own
+ * windows: an NPC's (a shop, the smith, a talk, the warehouse…) needs the NPC beside you.
+ */
+const KEEP = [...PANEL, "map"];
+const OPEN_KEY = (name) => `lumentale:open:${name}`;
+let restoredFor = null;
+export function saveOpen(leaving) {
+  const s = G.self;
+  if (s && restoredFor === s.name) {
+    const list = KEEP.filter((id) => !(id === "inv" && compact()) && !winEl(id).hidden)
+      .sort((a, b) => (+winEl(a).style.zIndex || 0) - (+winEl(b).style.zIndex || 0))
+      .map((id) => (paned(id) ? [id] : [id, parseFloat(winEl(id).style.left) || 0, parseFloat(winEl(id).style.top) || 0, folded(id) ? 1 : 0]));
+    try { localStorage.setItem(OPEN_KEY(s.name), JSON.stringify(list)); } catch { /* private mode */ }
+  }
+  if (leaving) restoredFor = null;
+}
+/** Called with every self snapshot: does its work once per character per game. */
+export function restoreOpen() {
+  const s = G.self;
+  if (!s || restoredFor === s.name) return;
+  restoredFor = s.name;
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(OPEN_KEY(s.name)) || "[]"); } catch { /* a damaged entry: open nothing */ }
+  if (!Array.isArray(list)) return;
+  for (const r of list) {
+    const id = Array.isArray(r) ? r[0] : "";
+    if (!KEEP.includes(id) || isOpen(id)) continue;
+    openWin(id);
+    if (paned(id)) continue;
+    if (Number.isFinite(r[1]) && Number.isFinite(r[2])) keepIn(id, r[1], r[2]);
+    if (r[3] === 1) fold(id);
+  }
+}
+addEventListener("pagehide", () => saveOpen());
+
 // a window whose content grows or shrinks (a list arriving, a tab switched) is kept inside the zone
 const winSize = typeof ResizeObserver === "function" ? new ResizeObserver((es) => { for (const e of es) keepIn(e.target.id.slice(2)); }) : null;
 

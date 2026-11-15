@@ -31,7 +31,7 @@ import { G, el, $, resize, $$, tg, text, now, T } from "./state.js";
 import { JOB_ALIAS, onEvent, onGain } from "./events.js";
 import { countItem, usePotion, castSkill } from "./actions.js";
 import { snd } from "./update.js";
-import { addChat, chatTo, hoverTip, toast, showTip, hideTip, touch, closeWin, banner, isOpen } from "./windows.js";
+import { addChat, chatTo, hoverTip, toast, showTip, hideTip, touch, closeWin, banner, isOpen, saveOpen, restoreOpen } from "./windows.js";
 import { itemSlot, isGear, sellPrice, useSlot } from "./items.js";
 import { section, refreshUi, resetPurse, hudBars } from "./hud.js";
 import { openStats, openTree } from "./win_char.js";
@@ -171,6 +171,7 @@ export function stopGame() {
   NpcLife.load(null, null);
   resetPurse(); // the next character's purse starts without a +N
   $("#hud").hidden = true; $("#dead").hidden = true; G.me.dead = false; $("#tip").hidden = true;
+  saveOpen(true);   // which windows were open, before they close (windows.js)
   for (const w of $$("#windows .window, #panel .window")) if (!w.hidden) closeWin(w.id.slice(2));
   resize();
   tg.clearRect(0, 0, text.width, text.height);
@@ -252,6 +253,7 @@ function onSnap(s) {
     if (s.self.daily) G.dailyReset = t + s.self.daily.reset;
     if (s.self.recall > 0 && !G.cast) G.cast = { start: t - (G.defs.recallMs - s.self.recall), end: t + s.self.recall };
     refreshUi();
+    restoreOpen();                               // the windows open when this character last left (once per game, windows.js)
     Growth.onSelf(s.self);
     if (isOpen("guild")) renderGuild();
   }
