@@ -100,7 +100,8 @@ function coopFinish(S, dim, inside) {
 function coopPay(S, p, c, g) {
   const ch = p.ch, J = COOP[c.k], R = COOP_T, today = dayOf(S.now);
   if (ch.coopDay !== today) { ch.coopDay = today; ch.coopDone = []; }
-  const Tt = Math.max(1, Math.floor(toTier(ch.lvl))), life = lifeNeed(ch.life[J.skill].lv) * R.life[Math.max(0, g - 1)];
+  // one base reward, × the grade's share (C 100 % · B 105 % · A 110 % · S 120 %) for gold and XP; stones and gear stay at base
+  const Tt = Math.max(1, Math.floor(toTier(ch.lvl))), k = R.gradeK[Math.max(0, g - 1)], life = lifeNeed(ch.life[J.skill].lv) * R.base.life;
   const gold = (n) => { ch.gold += n; p.gain.push(["gold", n]); };
   ch.cnt.coop++;
   if (g === 4) ch.cnt["coopS_" + c.k]++;   // the first S earns the job's cosmetic through its achievement (COS_ACH)
@@ -113,13 +114,13 @@ function coopPay(S, p, c, g) {
     toast(p, "오늘 보수는 이미 받았습니다 — 도와준 수고비를 받았습니다.");
   } else {
     ch.coopDone.push(c.k);
-    gold(R.gold[g - 1] * Tt);
-    if (addItem(ch, "stone", R.stone[g - 1])) p.gain.push(["item", "stone", R.stone[g - 1], 0]);
-    rewardGear(S, p, Tt, R.gearQ[g - 1]);
-    gainXp(S, p, Math.round(tierXp(Tt) * R.xp[g - 1]));
-    gainLife(S, p, J.skill, life);
+    gold(Math.round(R.base.gold * Tt * k));
+    if (addItem(ch, "stone", R.base.stone)) p.gain.push(["item", "stone", R.base.stone, 0]);
+    rewardGear(S, p, Tt, R.base.gearQ);
+    gainXp(S, p, Math.round(tierXp(Tt) * R.base.xp * k));
+    gainLife(S, p, J.skill, life * k);
     addRep(S, p, J.npc, R.rep);
-    toast(p, `[${J.name}] ${"CBAS"[g - 1]} 등급! 오늘의 보수를 받았습니다.`);
+    toast(p, `[${J.name}] ${"CBAS"[g - 1]} 등급! 오늘의 보수 ${Math.round(k * 100)}%를 받았습니다.`);
   }
   p.dirty = true;
 }
@@ -962,11 +963,11 @@ const coopRow = (now, c) => (e) => {
 };
 /** `self.coop`: the jobs done today (their day's pay taken). */
 const coopSelf = (p) => (p.ch.coopDay === dayOf(p.S.now) ? p.ch.coopDone : []);
-/** defs().coop: { jobs: { k: [name, minutes, tools, par, npc, lobby, hint, stations, skin {orders, grades} names or 0] }, kinds, cuts, parN, tools, binCap, near, dishes, cook (ms), trayCap, washN, orders (forge v2) [name, notes, pts, beat ms, pattern [[beat, note 0 blow · 1 answer · 2–5 flip ↑→↓←]…]], door (the forge customers' door, px), forge [band lo, hi, scorch, decay/s], grades (forge piece grade names), brew (alch) { orders [name, lo, hi, hold ms, herbs, pts], chart [[beat, dir]…], loop, amb, herbs (names), foam } }. */
+/** defs().coop: { jobs: { k: [name, minutes, tools, par, npc, lobby, hint, stations, skin {orders, grades} names or 0] }, kinds, cuts, gradeK (pay share C B A S), parN, tools, binCap, near, dishes, cook (ms), trayCap, washN, orders (forge v2) [name, notes, pts, beat ms, pattern [[beat, note 0 blow · 1 answer · 2–5 flip ↑→↓←]…]], door (the forge customers' door, px), forge [band lo, hi, scorch, decay/s], grades (forge piece grade names), brew (alch) { orders [name, lo, hi, hold ms, herbs, pts], chart [[beat, dir]…], loop, amb, herbs (names), foam } }. */
 function coopDefs() {
   const J = (k) => COOP[k], skin = (k) => (J(k).skin ? { orders: J(k).skin.orders, grades: J(k).skin.grades } : 0);
   return { jobs: Object.fromEntries(Object.keys(COOP).map((k) => [k, [J(k).name, J(k).mins, J(k).tools, J(k).par, J(k).npc, J(k).lobby, J(k).hint, J(k).st, skin(k)]])),
-    kinds: COOP_KINDS, cuts: COOP_T.cuts, parN: COOP_T.parN, tools: COOP_TOOLS, binCap: COOP_APT.binCap, near: COOP_T.near,
+    kinds: COOP_KINDS, cuts: COOP_T.cuts, gradeK: COOP_T.gradeK, parN: COOP_T.parN, tools: COOP_TOOLS, binCap: COOP_APT.binCap, near: COOP_T.near,
     dishes: COOP_DINER.dishes.map((d) => d.name), cook: COOP_DINER.dishes.map((d) => d.cook), trayCap: COOP_DINER.trayCap, washN: COOP_DINER.washN,
     orders: COOP_FORGE.orders.map((o, i) => [COOP.forge.skin.orders[i], o.pat.length, o.pts, o.per, o.pat]), door: tilePx(COOP.forge.door), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP.forge.skin.grades,
     brew: { orders: COOP_BREW.orders.map((o, i) => [COOP.alch.skin.orders[i], o.lo, o.hi, o.hold, o.herbs, o.pts]), chart: COOP_BREW.chart, loop: COOP_BREW.loop, amb: COOP_BREW.amb, herbs: BREW_HERBS, foam: COOP_BREW.foam } };

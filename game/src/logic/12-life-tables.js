@@ -364,9 +364,10 @@ const POUCH_MAX = 999;
 const COOP_T = {
   briefMs: 8000, feverMs: 60000, endMs: 30000, emptyMs: 20000, max: 6, actMs: 250, near: 56, reach: 28, station: 26,
   zzzMs: 45000, idleMs: 90000, lazy: 0.15, cuts: [0.30, 0.50, 0.70, 0.88], parN: { 2: 1, 3: 1.35, 4: 1.65 },
-  // gold ×2.5 and tips with it on 2026-11-15 (알바 as a main gold source)
-  xp: [0.08, 0.14, 0.20, 0.28], gold: [100, 150, 200, 275], gearQ: [0, 1, 1, 2], stone: [1, 2, 3, 5], life: [0.30, 0.45, 0.60, 0.80],
-  tip: 25, tipLife: 0.1, helpTip: 38, helpLife: 0.25, rep: 5,
+  // one base reward (about the old A: gold ×2.5 on 2026-11-15, 알바 as a main gold source) × the grade's share C B A S
+  // (owner, 2026-11-15: 100 · 105 · 110 · 120 %) for gold, XP and life XP; stones and the gear's rarity stay at base
+  base: { gold: 200, xp: 0.20, life: 0.60, stone: 3, gearQ: 1 }, gradeK: [1, 1.05, 1.1, 1.2],
+  tip: 25, tipLife: 0.05, helpTip: 38, helpLife: 0.25, rep: 5,
 };
 const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무" };
 /** An empty row of the forge template's object layer (wall, 28 open tiles, the cut-down front wall). */
@@ -379,9 +380,9 @@ const COOP_SMITHY = ["+===^===+===^===+===^===+=====", "= ]]   <     <" + " ".re
 const COOP = {
   apt: {
     name: "동동아파트 청소", npc: "dongdong", lobby: "dongdong_apt", mins: 5, tools: ["broom", "bin"], combo: 20000, skill: "deliver",
-    // cut-offs: par · parN[n] · cuts, tuned on walking bots at player speed (tests/coop.mjs: 2–4 bots score ≈ 1,884 ·
-    // 4,255 · 5,239 with the heroes 15 % faster, just over S); a real party, slower to decide, lands on B–A
-    par: 1000, parN: { 2: 2.0, 3: 4.5, 4: 5.55 },
+    // cut-offs: par · parN[n] · cuts, tuned on quick walking bots (an act every 300 ms; owner, 2026-11-15: hard, piles flood in): ≈ 2,345 · 4,993 ·
+    // 7,300, just over S; realistic ones (every 400 ms) ≈ 1,809 · 4,004 · 6,711, A (tests/coop.mjs)
+    par: 1000, parN: { 2: 2.49, 3: 5.3, 4: 7.9 },
     hint: "빗자루로 쓸고, 쓰레기통으로 모아 소각로(서쪽 끝)·재활용함(동쪽 끝)에 버리세요.",
     // stations (tiles; solid furniture, used from a neighbouring tile): 소각로 `<` at the corridor's west end, 재활용함 `w`
     // at its east end (44 tiles apart, so the bins really walk), the tool rack `>` in the middle
@@ -411,9 +412,9 @@ const COOP = {
     name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan", "tray"], combo: 25000, skill: "cook",
     hint: "프라이팬 담당은 상자에서 재료를 꺼내 도마·화덕을 거쳐 패스대에, 쟁반 담당은 패스대의 요리를 주문한 테이블로!",
     // cut-offs tuned on walking bots like the apartment's (tests/coop.mjs: 2–4 bots, clearing and washing plates, score ≈
-    // 1,276 · 1,658 · 3,204 serving 23 · 24 · 39 orders with the heroes 15 % faster, just over S); a real party lands on B–A. A lone tray (3 players)
+    // 997 · 1,356 · 2,295 with orders flooding in (hard), just over S; slower bots (every 600 ms) 807 · 1,204, A; at 4 the kitchen bounds both. A lone tray (3 players)
     // is the bottleneck now that it also carries the plates; two trays (4) is where the score jumps.
-    par: 1000, parN: { 2: 1.35, 3: 1.76, 4: 3.4 },
+    par: 1000, parN: { 2: 1.06, 3: 1.44, 4: 2.44 },
     // stations (tiles; solid furniture, used from a neighbouring tile): stoves `:` and boards `-` on the kitchen's back
     // wall, crates (채소 `]` · 생선 `w` · 고기 `]`), the trash `w`, the sink (the `r` east of the trash); the pass is four counter tiles, the rack sits in the counter
     st: { stove: [[6, 1], [9, 1], [12, 1]], board: [[17, 1], [20, 1]], veg: [25, 1], fish: [28, 1], meat: [31, 1], trash: [37, 1], sink: [40, 1],
@@ -469,20 +470,23 @@ const COOP = {
 };
 /**
  * 보글's big kiln hall (alch v2; owner, 2026-11-15: every co-op shift runs in its own big hall, "the same building" but roomier):
- * 48×32 (3.2× the forge's room). The kiln `<` (23, 12) in the middle with four 풀무 tiles round its north half and lanterns, the
- * cauldron `&` (23, 15) in front of it; the herb wall west (`]` 8, 15 between two shelves), the rack `>` (3, 22), the 진열대 (six
- * counter tiles `m`, x 40, y 12–17) with the customers' aisle east of it and their door (41, 29); shelves, jars, glassware,
- * work benches and 보글's lectern for flavour.
+ * 64×44 (5.9× the forge's 30×16 room; owner: "훨씬 크게"). The kiln `<` in the middle with four 풀무 tiles round its north
+ * half and lanterns, the cauldron `&` 3 tiles in front of it; the herb wall west (`]` between two shelves, 21 tiles from the
+ * cauldron), the rack `>`, the 진열대 (six counter tiles `m`, 21 tiles east) with the customers' aisle east of it and their door
+ * by the front wall; shelves, jars, glassware, work benches and 보글's lectern for flavour. Positions: LAB.
  */
+const LAB = { W: 64, H: 44, kiln: [31, 18], pot: [31, 21], herbs: [10, 21], rack: [4, 30], shelfX: 52, shelfY: 18, door: [53, 41] };
 const COOP_LAB = (() => {
-  const W = 48, H = 32, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(6) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
+  const { W, H } = LAB, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
   const put = (ch, x0, x1, y) => { for (let x = x0; x <= x1; x++) o[y][x] = ch; };
-  put("b", 3, 10, 1); put(")", 12, 12, 1); put(";", 13, 17, 1); put(")", 19, 19, 1); put("b", 28, 34, 1); put(";", 36, 38, 1); put("w", 44, 45, 1);
-  put("g", 1, 1, 1); put("g", 46, 46, 30); put("g", 1, 1, 30); put("t", 1, 1, 8); put("t", 1, 1, 9);
-  put("<", 23, 23, 12); put("*", 20, 20, 10); put("*", 26, 26, 10); put("&", 23, 23, 15);
-  put("r", 8, 8, 14); put("]", 8, 8, 15); put("r", 8, 8, 16); put(">", 3, 3, 22);
-  put("m", 40, 40, 12); put("m", 40, 40, 13); put("m", 40, 40, 14); put("m", 40, 40, 15); put("m", 40, 40, 16); put("m", 40, 40, 17);
-  put("-", 13, 18, 24); put(")", 13, 13, 23); put(";", 18, 18, 23); put("-", 27, 32, 24); put(")", 32, 32, 23); put("|", 30, 30, 7);
+  const [kx, ky] = LAB.kiln, [hx, hy] = LAB.herbs;
+  put("b", 3, 12, 1); put(")", 14, 14, 1); put(";", 15, 20, 1); put(")", 22, 22, 1); put("b", 38, 46, 1); put(";", 48, 51, 1); put("w", 58, 60, 1);
+  put("g", 1, 1, 1); put("g", W - 2, W - 2, H - 2); put("g", 1, 1, H - 2); put("t", 1, 1, 10); put("t", 1, 1, 11); put("t", 1, 1, 12);
+  put("<", kx, kx, ky); put("*", kx - 3, kx - 3, ky - 2); put("*", kx + 3, kx + 3, ky - 2); put("&", LAB.pot[0], LAB.pot[0], LAB.pot[1]);
+  put("r", hx, hx, hy - 1); put("]", hx, hx, hy); put("r", hx, hx, hy + 1); put(">", LAB.rack[0], LAB.rack[0], LAB.rack[1]);
+  for (let i = 0; i < 6; i++) put("m", LAB.shelfX, LAB.shelfX, LAB.shelfY + i);
+  put("-", 16, 23, 32); put(")", 16, 16, 31); put(";", 23, 23, 31); put("-", 38, 45, 32); put(")", 45, 45, 31); put("|", 40, 40, 9);
+  put("-", 16, 23, 9); put(";", 18, 18, 8); put("b", 3, 8, H - 2);
   return o.map((r) => r.join(""));
 })();
 /**
@@ -491,22 +495,22 @@ const COOP_LAB = (() => {
  * where customers buy them (the forge's shop). Rules COOP_JOB.alch (68-coop.js), numbers COOP_BREW.
  */
 COOP.alch = { ...COOP.forge, name: "보글연금공방 가마", npc: "bogle", lobby: "bogle_lab", tools: ["bellows", "fan"], skill: "alch",
-  // cut-offs tuned on walking bots in the big hall at 55 % perfect · 30 % good · 15 % wrong notes (tests/coop.mjs: 2–4 bots score
-  // ≈ 3,624 · 5,323 · 6,569 selling 18 · 24 · 28 potions, just over S; at 35 · 30 · 35 % ≈ 1,195 · 2,609 · 4,907, C–A); a real party lands on B–A
-  par: 1000, parN: { 2: 3.8, 3: 5.65, 4: 6.95 },
+  // hard cut-offs (owner, 2026-11-15) tuned on walking bots in the 64×44 hall (tests/coop.mjs): near-perfect bots (92 % perfect,
+  // quick at every station) score ≈ 1,353 · 2,722 · 3,145, just over S; realistic ones (55 / 30 / 15 %, slower) ≈ 1,166 · 1,997 · 2,649, B–A
+  par: 1000, parN: { 2: 1.43, 3: 2.89, 4: 3.34 },
   // stations (tiles; solid furniture, used from a neighbouring tile; COOP_LAB): the herb shelf, the kiln (풀무 stand round
   // it), the cauldron in front of it, the 진열대 and its seats, the rack; customers come in at `door`
-  st: { herbs: [8, 15], kiln: [23, 12], pot: [23, 15], shelf: [12, 13, 14, 15, 16, 17].map((y) => [40, y]), rack: [3, 22] },
-  seats: [12, 13, 14, 15, 16, 17].map((y) => [41, y]), door: [41, 29],
-  start: [[22, 11], [24, 11], [22, 12], [23, 17]],
+  st: { herbs: LAB.herbs, kiln: LAB.kiln, pot: LAB.pot, shelf: [0, 1, 2, 3, 4, 5].map((i) => [LAB.shelfX, LAB.shelfY + i]), rack: LAB.rack },
+  seats: [0, 1, 2, 3, 4, 5].map((i) => [LAB.shelfX + 1, LAB.shelfY + i]), door: LAB.door,
+  start: [[LAB.kiln[0] - 1, LAB.kiln[1] - 1], [LAB.kiln[0] + 1, LAB.kiln[1] - 1], [LAB.kiln[0] - 1, LAB.kiln[1]], [LAB.pot[0], LAB.pot[1] + 2]],
   hint: "풀무 담당은 가마 앞에서 F로 풀무를 잡고 화살표 음표에 맞춰 방향키! 부채 담당은 약재 선반에서 색 순서대로 약재 → 가마솥 → 병에 담아 진열대로. 온도계의 띠를 지키세요!",
   skin: { orders: ["빨간 물약", "파란 물약", "엘릭서", "묘약", "해독제", "무지개 물약"], grades: ["명약", "상", "중", "하"], txt: {
     full: "진열대가 꽉 찼어요 — 손님을 기다리세요!", busy: "가마솥이 아직 끓고 있어요 — 다 되면 부으세요",
     keys: "방향키로 풀무질! (F: 풀무 놓기)", herbBad: "약재 순서가 틀렸어요! 선반에서 F로 다시", fanOnly: "약재와 불 조절은 부채 담당이 해요",
     calm: "넘쳐요! 부채로 F 연타해서 가라앉히세요", a: ["약재 선반에서 F, 방향키로 색 순서대로 약재를 담으세요", "약재를 가마솥에 부으세요", "진열대(동쪽)에 올리세요"],
     b: ["가마 앞에서 F로 풀무를 잡으세요", "가마 앞에서 F로 풀무를 잡으세요", "진열대(동쪽)에 올리세요"] } },
-  tpl: { name: "보글연금공방 · 대형 가마실 (작업 중)", theme: "interior", style: "lab", bgm: "brew", safe: true, w: 48, h: 32, entry: [23, 18],
-    ground: Array.from({ length: 32 }, () => "x".repeat(48)), objects: COOP_LAB } };
+  tpl: { name: "보글연금공방 · 대형 가마실 (작업 중)", theme: "interior", style: "lab", bgm: "brew", safe: true, w: LAB.W, h: LAB.H, entry: [LAB.pot[0], LAB.pot[1] + 3],
+    ground: Array.from({ length: LAB.H }, () => "x".repeat(LAB.W)), objects: COOP_LAB } };
 /**
  * 보글's kiln (alch v2). The kiln's heat H (0–100) cools toward `amb` by `cool[n]`·(H − amb)/s (more 풀무, a hungrier kiln: everyone pumps); a 풀무 note on the shared chart
  * (`chart` [beat, dir 0 ↑ · 1 → · 2 ↓ · 3 ←] over a `loop`-beat bar at `per[n]` ms a beat, from the run's start + `leadMs`) is
@@ -530,7 +534,8 @@ const COOP_BREW = {
   chart: [[0, 0], [1, 1], [2, 2], [3, 3], [4, 1], [4.5, 3], [5, 0], [6, 2], [7, 0]], loop: 8, per: { 2: 600, 3: 560, 4: 520 },
   amb: 20, H0: 20, cool: { 2: 0.05, 3: 0.11, 4: 0.16 }, heat: [5, 3, 2], joint: 2, perfect: 130, good: 260, latMax: 150, leadMs: 1500,
   stir: [300, 180, 200], over: 6, overMs: 1500, doneMs: 7000, foam: 5, calmHeat: 3, ruinMs: 9000, ruinPen: 15, trim: 6, boilQ: 0.25,
-  open: { 2: 4, 3: 5, 4: 6 }, orderMs: { 2: 9000, 3: 7000, 4: 5500 }, firstMs: 1000, deadMs: 100000, latePen: 20,
+  // hard (owner, 2026-11-15: "손님이 계속 몰려오게"): a customer every few seconds, up to six waiting, short patience
+  open: { 2: 5, 3: 6, 4: 6 }, orderMs: { 2: 6000, 3: 4500, 4: 3500 }, firstMs: 1000, deadMs: 55000, latePen: 20,
   walk: 48, browseMs: 1200, leaveMs: 2500, syncMs: 500,
   grades: [[0.75, 1.6], [0.55, 1.3], [0.35, 1.0], [-1e9, 0.5]], timeK: 0.3, tongsK: 0.45, hammerK: 0.55,
 };
@@ -577,7 +582,7 @@ const COOP_DINER = {
     { name: "생선구이", crate: "fish", chop: 0, cook: 6000, pts: 30, at: 0 },
     { name: "고기 스튜", crate: "meat", chop: 4, cook: 8000, pts: 45, at: 90000 },
   ],
-  seats: { 2: 4, 3: 6, 4: 8 }, orderMs: { 2: 12000, 3: 8000, 4: 6500 }, patience: { 2: 75000, 3: 70000, 4: 65000 }, feverK: 0.8, firstMs: 3000,
+  seats: { 2: 6, 3: 8, 4: 10 }, orderMs: { 2: 8000, 3: 6000, 4: 4800 }, patience: { 2: 50000, 3: 45000, 4: 42000 }, feverK: 0.8, firstMs: 3000,
   burnMs: 8000, burnPen: 5, angryPen: 15, eatMs: 6000, washN: 3, washPts: 5, trayCap: 2, passCap: 6, serveK: 0.5, cookK: 0.5,
 };
 /**
@@ -586,6 +591,6 @@ const COOP_DINER = {
  * at most `pileCap[0] + pileCap[1]·n` piles at once, the mess cap `messCap[0] + messCap[1]·n`.
  */
 const COOP_APT = {
-  open: [3, 3], pileMs: { 2: 5000, 3: 3600, 4: 2800 }, pileHp: 3, pileCap: [8, 6], spreadMs: 40000, binCap: 5, bundlePts: 10, recycleK: 1.5, holdK: 0.6,
+  open: [3, 3], pileMs: { 2: 3800, 3: 2800, 4: 2200 }, pileHp: 3, pileCap: [8, 6], spreadMs: 40000, binCap: 5, bundlePts: 10, recycleK: 1.5, holdK: 0.6,
   sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaBundles: 3, complainMs: 10000, complainPen: 20, messCap: [16, 8],
 };

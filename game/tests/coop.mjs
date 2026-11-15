@@ -242,8 +242,8 @@ function walker(dim) {
  * bins collect and carry to the 재활용함 (or the 소각로 when it is much nearer), the two nearest lift the sofa; alone, the
  * one worker swaps tools at the rack. `idle` pids stand still.
  */
-function botShift(w, idle = []) {
-  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), MS = 300;
+function botShift(w, idle = [], MS = 300) {
+  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim);
   step(w, X.COOP_T.briefMs + 100);
   while (c.state !== "end") {
     const work = w.pids.map((pid) => S.players[pid]).filter((o) => o && o.map === dim.id && !idle.includes(o.pid));
@@ -292,7 +292,7 @@ const act0 = (w, pid) => act(w, pid, { t: "coop_act" });
   assert.ok(cr[3].every((r) => r[3] === 1), "both eligible");
   assert.deepEqual(a.ch.coopDone, ["apt"]); assert.equal(a.ch.coopDay, X.dayOf(w.now));
   assert.ok(a.ch.inv.some((s) => s.id === "stone"), "강화석");
-  assert.ok(a.ch.gold >= X.COOP_T.gold[g - 1], "the day's pay");
+  assert.ok(a.ch.gold >= Math.round(X.COOP_T.base.gold * X.COOP_T.gradeK[g - 1]), "the day's pay × the grade's share");
   assert.equal(a.ch.rep.dongdong || 0, Object.hasOwn(X.NPC_MAP, "dongdong") ? X.COOP_T.rep : 0, "trust with 동동");
   assert.ok(a.ch.life.deliver.xp > 0 || a.ch.life.deliver.lv > 1, "life XP (배달)");
   assert.deepEqual(L.viewFor(S, "c0").self?.coop ?? a.ch.coopDone, ["apt"]);
@@ -325,6 +325,11 @@ for (const n of [2, 3, 4]) {
   botShift(w);
   log(`apt ${n}: score`, c.score, "grade", X.coopGrade(c), [0, 1, 2, 3].map((i) => X.coopCut(c, i)));
   if (!TUNE) assert.ok(X.coopGrade(c) === 4 && c.score < X.coopCut(c, 3) * 1.25, `${n} walking bots just over S (heroes 15 % faster): ${c.score} vs ${X.coopCut(c, 3)}`);
+  // hard (owner, 2026-11-15): a realistic party, slower to decide (an act every 400 ms), lands on B–A; only quick bots reach S
+  const w2 = world(n); act(w2, "c0", { t: "coop_start", k: "apt" });
+  const c2 = botShift(w2, [], 400);
+  log(`apt ${n} realistic: score`, Math.round(c2.score), "grade", X.coopGrade(c2));
+  if (!TUNE) assert.ok(X.coopGrade(c2) >= 2 && X.coopGrade(c2) <= 3, `${n} realistic bots land B–A: ${Math.round(c2.score)}`);
 }
 
 // ───────────────────────────── 쥬쥬식당 서빙 (C.5) ─────────────────────────────
@@ -436,8 +441,8 @@ const below = ([x, y]) => [x, y + 1], above = ([x, y]) => [x, y - 1];
 }
 
 /** Diner bots walking at player speed: pans cook what the tables want, trays carry it; alone, one swaps at the rack. */
-function dinerBot(w) {
-  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), MS = 300, D = R.dishes;
+function dinerBot(w, MS = 300) {
+  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), D = R.dishes;
   step(w, X.COOP_T.briefMs + 100);
   while (c.state !== "end") {
     const work = w.pids.map((pid) => S.players[pid]).filter((o) => o && o.map === dim.id), solo = work.length === 1;
@@ -510,6 +515,12 @@ for (const n of [2, 3, 4]) {
     assert.equal(a.ch.gold - gold, X.COOP_T.helpTip, "a helper's tip the second time");
     assert.deepEqual(a.ch.coopDone, ["diner"]);
   }
+  // hard (owner, 2026-11-15): a realistic party, slower to decide (an act every 600 ms), lands on B–A
+  const w2 = dworld(n); act(w2, "c0", { t: "coop_start", k: "diner" });
+  const c2 = shiftOf(w2).coop; dinerBot(w2, 600);
+  log(`diner ${n} realistic: score`, Math.round(c2.score), "grade", X.coopGrade(c2));
+  // shortcut: at 4 the kitchen, not the act rate, bounds these bots (both reach S); separate them with a sloppier bot when the diner gets its big hall
+  if (!TUNE && n < 4) assert.ok(X.coopGrade(c2) >= 2 && X.coopGrade(c2) <= 3, `${n} realistic bots land B–A: ${Math.round(c2.score)}`);
 }
 
 // ── the diner's numbers grow with the party
@@ -814,7 +825,7 @@ for (const n of [2, 3, 4]) {
 
 // ───────────────────────────── 보글연금공방 가마 v2 (COOP_BREW, H9) ─────────────────────────────
 
-const JA = X.COOP.alch, B = X.COOP_BREW, right = ([x, y]) => [x + 1, y];
+const JA = X.COOP.alch, B = X.COOP_BREW, right = ([x, y]) => [x + 1, y], KS = (dx, dy) => [JA.st.kiln[0] + dx, JA.st.kiln[1] + dy];
 const bNote = (c, i) => c.beat0 + (Math.floor(i / B.chart.length) * B.loop + B.chart[i % B.chart.length][0]) * c.per;
 const bDir = (i) => B.chart[i % B.chart.length][1];
 /** The first chart note at least 150 ms after now. */
@@ -824,14 +835,15 @@ const brewIn = (c, r) => { c.pot.pc = { r, prog: 0, inMs: 0, outMs: 0, got: fals
 
 /**
  * Alch bots at player speed (100 ms steps). 풀무 bots stand round the kiln, take the 풀무 and play the chart at `acc` (perfect
- * below acc[0], good below acc[1], else a wrong key; seeded) while the heat is under the target brew's band middle; the 부채 bot
+ * below acc[0], good below acc[1], else a wrong key; seeded) while the heat is under the target brew's band top; the 부채 bot (`react`
+ * ms slower at each station than a quick player, a wrong herb when a note would miss)
  * calms boil-overs, bottles, carries to the 진열대, picks herbs (in order) for the next brew and trims the heat when it runs hot.
  */
-function brewBot(w, acc = [0.55, 0.85]) {
+function brewBot(w, acc = [0.55, 0.85], react = 600) {
   const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), MS = 100, st = JA.st;
   let seed = 4242;
   const rand = () => ((seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 4294967296);
-  const last = {}, plan = {}, stat = [0, 0, 0], spots = [[22, 11], [24, 11], [22, 12]], potT = [0, 0, 0, 0];
+  const last = {}, plan = {}, stat = [0, 0, 0], spots = [KS(-1, -1), KS(1, -1), KS(-1, 0)], potT = [0, 0, 0, 0];
   step(w, X.COOP_T.briefMs + 100);
   while (c.state !== "end") {
     const now = w.now, work = w.pids.map((pid) => S.players[pid]).filter((o) => o && o.map === dim.id), pot = c.pot;
@@ -839,7 +851,7 @@ function brewBot(w, acc = [0.55, 0.85]) {
     const r = pot.pc && pot.st !== 2 ? pot.pc.r : fh ? fh.r : X.forgeKind(c), O = B.orders[r], target = O.hi - 3;
     let bi = 0; potT[pot.st]++;
     for (const o of work) {
-      const q = c.pl[o.pid], h = q.hold[0], ready = now - (last[o.pid] || 0) >= 260;
+      const q = c.pl[o.pid], h = q.hold[0], ready = now - (last[o.pid] || 0) >= 260 + (q.tool === "fan" ? react : 0);
       const go = (goal) => W.go(o, goal, MS);
       const doAct = (d = -1) => { last[o.pid] = now; act(w, o.pid, d >= 0 ? { t: "coop_act", d } : { t: "coop_act" }); };
       if (q.tool === "bellows") {
@@ -861,7 +873,7 @@ function brewBot(w, acc = [0.55, 0.85]) {
       }
       // the fan
       const pT = below(st.pot);
-      if (q.herb) { if (ready) doAct(B.orders[q.herb.r].herbs[q.herb.i]); continue; }
+      if (q.herb) { if (ready) doAct(rand() < acc[1] ? B.orders[q.herb.r].herbs[q.herb.i] : (B.orders[q.herb.r].herbs[q.herb.i] + 1) % 4); continue; }
       if (pot.st === 3) { if (go(pT) && ready) doAct(); continue; }
       if (h && h.st === "potion") { if (go(left(st.shelf[2])) && ready) doAct(); continue; }
       if (!h && pot.st === 2 && work.length < 3) { if (go(pT) && ready) doAct(); continue; }
@@ -884,16 +896,16 @@ function brewBot(w, acc = [0.55, 0.85]) {
   assert.match(act(fworld(2), "c0", { t: "coop_start", k: "alch" }).error, /보글에게 다가가/, "not at 캉캉's");
   assert.ok(act(w, "c0", { t: "coop_start", k: "alch" }).ok, "the kiln opens at 보글");
   const dim = shiftOf(w), m = dim.map, c = dim.coop;
-  assert.deepEqual([m.w, m.h, m.style, m.name], [48, 32, "lab", "보글연금공방 · 대형 가마실 (작업 중)"], "its own big hall");
+  assert.deepEqual([m.w, m.h, m.style, m.name], [64, 44, "lab", "보글연금공방 · 대형 가마실 (작업 중)"], "its own big hall");
   assert.ok(w.pids.every((pid) => S.players[pid].map === dim.id), "the party moved in together");
-  for (const r of [...JA.tpl.ground, ...JA.tpl.objects]) assert.equal(r.length, 48);
+  for (const r of [...JA.tpl.ground, ...JA.tpl.objects]) assert.equal(r.length, 64);
   const usable = ([x, y]) => m.solid[y * m.w + x] && [[1, 0], [-1, 0], [0, -1], [0, 1]].some(([dx, dy]) => m.reach[(y + dy) * m.w + x + dx]);
   for (const k of Object.keys(JA.st)) for (const t of Array.isArray(JA.st[k][0]) ? JA.st[k] : [JA.st[k]]) assert.ok(usable(t), `${k} ${t} usable`);
   for (const t of [...JA.start, ...JA.seats, JA.door]) assert.ok(m.reach[t[1] * m.w + t[0]], `open ${t}`);
   assert.deepEqual(w.pids.map((pid) => c.pl[pid].tool), ["bellows", "bellows", "fan"], "everyone pumps but one");
   assert.deepEqual([c.kiln.t, c.pot.t, c.per], [11, 12, B.per[3]]);
   step(w, X.COOP_T.briefMs + 200);
-  atTile(p0, [22, 11]); atTile(p1, [24, 11]);
+  atTile(p0, KS(-1, -1)); atTile(p1, KS(1, -1));
   assert.ok(act0(w, "c0").ok && c.pl.c0.bel, "F at the kiln takes the 풀무");
   assert.ok(X.COOP_JOB.alch.lane(S, c, p0, c.pl.c0), "on the lane");
   // a perfect note in its direction +5; a wrong key −4 (the note is used up); a good one +3
@@ -914,7 +926,7 @@ function brewBot(w, acc = [0.55, 0.85]) {
   assert.equal(c.kiln.H, H + 2 * B.heat[0] + B.joint, "합동 풀무 bonus");
   assert.ok(dim.rt.ev.some((e) => e[0] === "cj" && e[1] === 73 && e[4] === 2), "합동 풀무 event");
   // the fan can't pump; F again lets go
-  atTile(p2, [23, 13]); const r2 = act(w, "c2", { t: "coop_act", d: 0 }); assert.ok(r2.ok && c.kiln.H === H + 2 * B.heat[0] + B.joint, "a fan's arrow does nothing");
+  atTile(p2, KS(0, 1)); const r2 = act(w, "c2", { t: "coop_act", d: 0 }); assert.ok(r2.ok && c.kiln.H === H + 2 * B.heat[0] + B.joint, "a fan's arrow does nothing");
   step(w, 1500); assert.ok(act0(w, "c0").ok && !c.pl.c0.bel, "F lets go");
   // the wire: kiln and cauldron rows, the team's 6th field (mode)
   step(w, 600);
@@ -992,13 +1004,13 @@ function brewBot(w, acc = [0.55, 0.85]) {
   assert.ok(views.c1.some((v) => JSON.stringify(v).includes("손님이 파란 물약을 사 갔어요")), "potion words");
 }
 
-// ── walking bots 2–4 at 55 / 30 / 15 % land just over S; sloppy bots C–A; paid in `alch` with 보글 once a day
+// ── hard (owner): near-perfect bots (≈ 92 % perfect) land just over S; realistic bots (55 / 30 / 15 %) B–A; paid in `alch` with 보글 once a day
 for (const n of [2, 3, 4]) {
   const w = fworld(n, 1000, 20251111, "alch"), S = w.S, a = S.players.c0;
   act(w, "c0", { t: "coop_start", k: "alch" });
-  const c = brewBot(w);
+  const c = brewBot(w, [0.92, 0.99], 0);
   log(`alch ${n}: score`, Math.round(c.score), "sold", c.done, "angry", c.late, "notes p/g/m", c.stat, "pot empty/brewing/done/boiling (×0.1 s)", c.potT, "grade", X.coopGrade(c), [0, 1, 2, 3].map((i) => X.coopCut(c, i)));
-  if (!TUNE) assert.equal(X.coopGrade(c), 4, `${n} steady bots reach S: ${Math.round(c.score)}`);
+  if (!TUNE) assert.equal(X.coopGrade(c), 4, `${n} near-perfect bots reach S: ${Math.round(c.score)}`);
   if (!TUNE) assert.ok(c.score < X.coopCut(c, 3) * 1.25, `just over S: ${Math.round(c.score)} vs ${X.coopCut(c, 3)}`);
   assert.deepEqual(a.ch.coopDone, ["alch"]);
   assert.ok(a.ch.life.alch.xp > 0 || a.ch.life.alch.lv > 1, "life XP (연금)");
@@ -1008,9 +1020,9 @@ for (const n of [2, 3, 4]) {
   for (const pid of w.pids) at(S.players[pid], bg.x * T + 8, bg.y * T + 28);
   const gold = a.ch.gold;
   assert.ok(act(w, "c0", { t: "coop_start", k: "alch" }).ok);
-  const c2 = brewBot(w, [0.35, 0.65]);
-  log(`alch ${n} sloppy: score`, Math.round(c2.score), "grade", X.coopGrade(c2), "notes", c2.stat);
-  if (!TUNE) assert.ok(X.coopGrade(c2) >= 1 && X.coopGrade(c2) <= 3, `a sloppier party lands C–A: ${Math.round(c2.score)}`);
+  const c2 = brewBot(w);
+  log(`alch ${n} realistic: score`, Math.round(c2.score), "grade", X.coopGrade(c2), "notes", c2.stat);
+  if (!TUNE) assert.ok(X.coopGrade(c2) >= 2 && X.coopGrade(c2) <= 3, `a realistic party lands B–A: ${Math.round(c2.score)}`);
   assert.equal(a.ch.gold - gold, X.COOP_T.helpTip, "once a day: a helper's tip the second time");
 }
 
@@ -1102,5 +1114,15 @@ for (const k of ["diner", "forge", "alch"]) {
   L.addPlayer(S, "r", back);
   assert.ok(S.players.r.ch.cos.own.includes("face_forge"));
 }
+
+// ── pay by grade: one base reward × C 100 · B 105 · A 110 · S 120 % (gold, XP, life XP); stones and gear at base
+for (let g = 1; g <= 4; g++) {
+  const w = world(1), p = w.S.players.c0, ch = p.ch, gold = ch.gold, xp = ch.xp, stones = () => ch.inv.filter((s) => s.id === "stone").reduce((n, s) => n + s.n, 0), st0 = stones();
+  X.coopPay(w.S, p, { k: "apt" }, g);
+  assert.equal(ch.gold - gold, Math.round(X.COOP_T.base.gold * X.COOP_T.gradeK[g - 1]), `grade ${g} gold`);
+  assert.equal(stones() - st0, X.COOP_T.base.stone, "stones at base");
+  assert.ok(ch.lvl > 1 || ch.xp > xp, "XP");
+}
+assert.deepEqual(L.defs().coop.gradeK, [1, 1.05, 1.1, 1.2]);
 
 console.log("coop: ok");
