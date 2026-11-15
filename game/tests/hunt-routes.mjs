@@ -50,9 +50,9 @@ increasing(maps.meadow, ["twinhare", "gutfrog", "eyecrow", "lambmaw", "meadowram
 assert.ok(stats(maps.meadow, "meadowram").near > maps.meadow.zinfo.eliteD);
 assert.ok(stats(maps.forest, "splitboar").near < 30, "the job-level hunt is close to the forest entrance");
 increasing(maps.forest, ["splitboar", "ribdeer", "mothface"]);
-increasing(maps.jungle, ["catsplit_gold", "hydrasnake_poison", "ribdeer_bile"]);
-increasing(maps.coast, ["crabskull_blood", "squidrat_blood", "gatorhalf_steel"]);
-increasing(maps.oasis, ["foxtwine_gold", "eyecrow_ash", "bearmaw_gold"]);
+increasing(maps.jungle, ["vinemonkey", "hydrasnake_poison", "loggator"]);
+increasing(maps.coast, ["hermitskull", "eyegull", "coralturtle"]);
+increasing(maps.oasis, ["foxtwine_gold", "ribvulture_bone", "mummycamel"]);
 increasing(maps.maple, ["blightsquirrel", "gravrose", "bogcrown", "hollowowl", "rootwarden"]);
 assert.deepEqual(D.quests.slice(-4).map((q) => q.mob), ["bogcrown", "hollowowl", "rootwarden", "crownstag"]);
 

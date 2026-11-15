@@ -156,7 +156,7 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "ribdeer_bile", oasis: "bearmaw_gold", coast: "gatorhalf_steel", dunesea: "moleworm_gold" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -307,6 +307,39 @@ const MOBS = {
   rimehare: { name: "서리창 쌍두토끼", lv: 50, hp: 4600, atk: 142, def: 30, spd: 52, xp: 3400, gold: [132, 204], aggro: 80, range: 18, cd: 1350, leap: 92 },
   frostmoth: { name: "갈라진 유리날개", lv: 50, hp: 4500, atk: 149, def: 33, spd: 37, xp: 3900, gold: [142, 218], aggro: 92, range: 32, cd: 1900, fly: true, fan: 96 },
   crownstag: { name: "성에왕 유리뿔", lv: 50, hp: 520000, atk: 205, def: 50, spd: 34, xp: 74000, gold: [5200, 7600], aggro: 124, range: 30, cd: 1500, resp: 300000, boss: true, gear: 1, charge: 148, slam: 48, fan: 144, pool: 34, poolKind: 2 },
+  // ── new species (public/mobart_e.js). Each took the row of the tinted stand-in it replaced, so the grounds weigh what
+  //    they did; the stand-ins' rows stay above for old collections (the ones no longer met: catsplit_gold, toadbrood_poison,
+  //    mothface_bile, ribdeer_bile; lambmaw_bone, eyecrow_ash, twingoat_gold, bearmaw_gold; crabskull_blood, fishwalker_frost,
+  //    eelknot_frost, squidrat_blood, gatorhalf_steel; spiderhand_bone, owlstare_gold, moleworm_gold, fishwalker_blood, crabskull_frost).
+  // 정글 해안도로
+  vinemonkey: { name: "덩굴 원숭이", lv: 20, hp: 600, atk: 64, def: 6, spd: 56, xp: 290, gold: [32, 62], aggro: 94, range: 18, cd: 1000, leap: 100 },
+  dartbrood: { name: "독개구리 떼", lv: 21, hp: 760, atk: 68, def: 14, spd: 30, xp: 330, gold: [36, 70], aggro: 86, range: 20, cd: 1500, pool: 26 },
+  orchidmantis: { name: "난초 사마귀", lv: 24, hp: 880, atk: 82, def: 8, spd: 44, xp: 450, gold: [44, 84], aggro: 96, range: 72, cd: 1400, shot: true, pool: 22 },
+  loggator: { name: "악어 통나무", lv: 26, hp: 1500, atk: 92, def: 22, spd: 30, xp: 540, gold: [50, 94], aggro: 80, range: 20, cd: 1400, slam: 38, charge: 110 },
+  // 산호 해안
+  hermitskull: { name: "집게 소라게 떼", lv: 26, hp: 1370, atk: 92, def: 24, spd: 34, xp: 540, gold: [48, 88], aggro: 84, range: 20, cd: 1400, charge: 118 },
+  barnacleseal: { name: "따개비 물개", lv: 27, hp: 1580, atk: 95, def: 22, spd: 32, xp: 590, gold: [52, 92], aggro: 80, range: 22, cd: 1500, slam: 38 },
+  brainjelly: { name: "해파리 뇌", lv: 28, hp: 1320, atk: 99, def: 16, spd: 40, xp: 660, gold: [56, 100], aggro: 98, range: 76, cd: 1800, volley: true },
+  eyegull: { name: "갈매기 눈알", lv: 29, hp: 1500, atk: 101, def: 18, spd: 56, xp: 715, gold: [59, 105], aggro: 96, range: 18, cd: 1000, fly: true, pool: 24, poolKind: 2 },
+  coralturtle: { name: "산호 뿔 거북", lv: 32, hp: 2100, atk: 106, def: 30, spd: 30, xp: 880, gold: [69, 119], aggro: 82, range: 21, cd: 1500, slam: 42, charge: 112 },
+  // 모래바람 오아시스
+  spinescorp_gold: { name: "모래 전갈 등뼈", sp: "spinescorp", tint: "gold", lv: 30, hp: 1800, atk: 100, def: 16, spd: 40, xp: 790, gold: [64, 114], aggro: 90, range: 19, cd: 1200, charge: 112 },
+  ribvulture_bone: { name: "백골 독수리 갈비", sp: "ribvulture", tint: "bone", lv: 31, hp: 1750, atk: 98, def: 12, spd: 46, xp: 850, gold: [66, 118], aggro: 98, range: 18, cd: 1100, fly: true },
+  cactushog: { name: "선인장 고슴도치", lv: 33, hp: 2000, atk: 100, def: 24, spd: 44, xp: 980, gold: [74, 130], aggro: 90, range: 20, cd: 1100, charge: 110 },
+  mummycamel: { name: "미라 낙타", lv: 34, hp: 2600, atk: 104, def: 28, spd: 28, xp: 1060, gold: [78, 136], aggro: 80, range: 21, cd: 1500, slam: 40, charge: 110 },
+  // 모래바다
+  spinescorp_bone: { name: "백골 전갈 등뼈", sp: "spinescorp", tint: "bone", lv: 32, hp: 2250, atk: 102, def: 16, spd: 56, xp: 910, gold: [70, 124], aggro: 94, range: 18, cd: 1000, charge: 112 },
+  ribvulture_gold: { name: "모래 독수리 갈비", sp: "ribvulture", tint: "gold", lv: 34, hp: 1900, atk: 108, def: 16, spd: 42, xp: 1050, gold: [78, 136], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
+  barnacleseal_blood: { name: "붉은 따개비 물개", sp: "barnacleseal", tint: "blood", lv: 35, hp: 2500, atk: 106, def: 24, spd: 32, xp: 1120, gold: [80, 140], aggro: 80, range: 22, cd: 1500, slam: 38 },
+  hermitskull_frost: { name: "푸른 집게 소라게 떼", sp: "hermitskull", tint: "frost", lv: 36, hp: 2600, atk: 108, def: 30, spd: 34, xp: 1220, gold: [86, 150], aggro: 84, range: 20, cd: 1400, charge: 118 },
+  sandmaw: { name: "모래 지렁이 아가리", lv: 37, hp: 2800, atk: 112, def: 22, spd: 44, xp: 1300, gold: [90, 158], aggro: 90, range: 19, cd: 1200, leap: 100, slam: 40 },
+  // 붉은 협곡 (mesa) and 구름 사원 (cloudtemple) — not met yet: their maps take these when they open (docs/design/maps-batch2.md)
+  beadmonkey: { name: "염주 원숭이", lv: 30, hp: 1500, atk: 100, def: 14, spd: 60, xp: 790, gold: [64, 114], aggro: 98, range: 18, cd: 900, leap: 96 },
+  wingcrane: { name: "겹날개 두루미", lv: 32, hp: 1700, atk: 104, def: 14, spd: 44, xp: 910, gold: [70, 124], aggro: 98, range: 74, cd: 1700, fly: true, volley: true },
+  mistiger: { name: "운해의 범", lv: 36, hp: 30000, atk: 160, def: 34, spd: 40, xp: 14000, gold: [2000, 3200], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1, charge: 150, leap: 120, fan: 150 },
+  spinescorp: { name: "전갈 등뼈", lv: 29, hp: 1400, atk: 96, def: 14, spd: 48, xp: 700, gold: [58, 104], aggro: 94, range: 19, cd: 1000, charge: 114 },
+  ribvulture: { name: "독수리 갈비", lv: 30, hp: 1300, atk: 94, def: 10, spd: 44, xp: 760, gold: [60, 110], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
+  crownpeacock: { name: "금관 공작", lv: 42, hp: 4200, atk: 124, def: 30, spd: 46, xp: 1900, gold: [104, 180], aggro: 92, range: 22, cd: 1300, fan: 150, charge: 120, pool: 28, poolKind: 1 },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
