@@ -350,7 +350,9 @@ export function onEvent(e) {
   if (e[0] === "cb") { st.beat[e[1]] = [now() + e[2], e[3]]; return true; }   // an anvil's beat: [id, ms to the first, beat ms]
   if (e[0] !== "cj") return false;
   const [, code, x, y] = e;
-  if (SND[code]) A.Sound.play(SND[code]);
+  const own = smithy(jobOf()) && (jobOf() === "alch" ? { 9: "stir_perfect", 10: "stir_good", 11: "stir_miss", 12: "bottle_pop", 13: "order_done", 17: "kiln_whoosh", 51: "kiln_whoosh", 61: "order_late" }
+    : { 9: "anvil_perfect", 10: "anvil_good", 11: "anvil_miss", 12: "quench_hiss", 13: "order_done", 17: "bellows_puff", 61: "order_late", 65: "furnace_roar" })[code];
+  if (own || SND[code]) A.Sound.play(own || SND[code]);
   if (code >= 9 && code <= 11) A.S3.fx.spark(x, y - 8, ["#ffe060", "#ffffff", "#6a6e7a"][code - 9], code === 9 ? 1.4 : 1);   // perfect · good · miss
   if (COL[code] && (x || y)) A.S3.fx.burst(x, y, 0.3, COL[code], code === 5 || code === 22 || code === 38 ? 10 : 4, 0.8);
   return true;
