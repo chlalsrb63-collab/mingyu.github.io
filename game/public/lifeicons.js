@@ -747,6 +747,24 @@ export const LIFE_ICONS = {
       "............",
     ],
   },
+  // 엘더윈's letter (P6 main chapter 4): a fat cream envelope, the flap's V, a red wax seal.
+  q_mc_letter: {
+    palette: { h: "#f4ead2", m: "#d8c8a0", d: "#6a5440", a: "#c84a3a" },
+    rows: [
+      "............",
+      "............",
+      "............",
+      "dddddddddddd",
+      "dmhhhhhhhhmd",
+      "dhmhhhhhhmhd",
+      "dhhmmhhmmhhd",
+      "dhhhhaahhhhd",
+      "dhhhhaahhhhd",
+      "dmmmmmmmmmmd",
+      "dddddddddddd",
+      "............",
+    ],
+  },
   // Old route copy: a half-rolled chart, red dots on a dashed line.
   q_chart: {
     palette: { h: "#f4ead2", m: "#d8c8a0", d: "#8a6a3a", a: "#c84a3a", b: "#6a5a48" },

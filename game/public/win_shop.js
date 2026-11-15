@@ -137,7 +137,10 @@ function questBody(s) {
     b.addEventListener("click", () => { G.qsel = key; Sound.play("tab"); refreshUi(); });
     list.append(b);
   };
-  list.append(el("div", "grp", "주요 의뢰"));
+  // the chapter a main step belongs to: the nearest row at or before it that opens one (QUESTS chap/intro)
+  const chapOf = (i) => { for (let j = Math.min(i, qs.length - 1); j >= 0; j--) if (qs[j].chap) return qs[j]; return null; };
+  const curChap = chapOf(cur);
+  list.append(el("div", "grp", curChap ? `주요 의뢰 · ${curChap.chap}` : "주요 의뢰"));
   if (qs[cur]) {
     const q = qs[cur];
     entry(`main:${cur}`, `${cur + 1}. ${q.title}`, s.q.st === 0 ? "새 의뢰" : s.q.n >= q.n ? "완료!" : `${s.q.n}/${q.n}`, s.q.st === 1 && s.q.n >= q.n ? "done" : "");
@@ -173,12 +176,18 @@ function questBody(s) {
   const [kind, arg] = G.qsel.split(":");
   if (kind === "main") {
     const i = +arg, q = qs[i], mob = mobs[q.mob];
+    const c = chapOf(i);
+    if (c) det.append(el("div", "section", c.chap), el("p", "ds", c.intro));
     det.append(el("div", "q-title", `${i + 1}. ${q.title}`), el("p", "say", q.text));
     if (i < cur) { det.append(el("div", "q-reward", "완료한 의뢰입니다.")); return; }
+    // the chapter's story beat (a 주요 의뢰 side quest) comes before this step can be accepted
+    const beat = s.q.st === 0 && q.sq && (G.defs.side || []).find((o) => o.id === q.sq);
+    const beatOpen = !!beat && s.sq?.find(([id]) => id === q.sq)?.[1] !== 4;
+    if (beatOpen) det.append(el("p", "ds", `먼저 주요 의뢰 [${beat.title}]부터 마쳐야 합니다 — ${beat.giverName} (${beat.giverMap})`));
     if (s.q.st === 1) det.append(goal(`Lv.${mob.lv} ${mob.name}`, s.q.n, q.n));
     else det.append(el("div", "q-goal", `목표: Lv.${mob.lv} ${mob.name} ${q.n}마리`));
     det.append(el("div", "q-reward", `보상: EXP ${q.xp.toLocaleString()} · ${q.gold.toLocaleString()}G · ${q.items.map(([id, n]) => `${it[id].name} ×${n}`).join(", ")}`));
-    if (s.q.st === 0) button("의뢰 수락", () => act({ t: "quest", a: "accept" }), true);
+    if (s.q.st === 0) button("의뢰 수락", () => act({ t: "quest", a: "accept" }), !beatOpen);
     else button("의뢰 완료", () => act({ t: "quest", a: "done" }), s.q.n >= q.n);
   } else if (kind === "sq") {
     SideQ.detail(det, arg, s);
