@@ -1185,7 +1185,7 @@ body.touch #wm .wm-tab { display: none; }
 .window .jb-card .btns .btn:disabled { opacity: .45; }
 .window .jb-card .why { color: #ff9a8a; font: var(--t11) var(--pix); }
 .window .jb-card .ok { display: block; margin-top: 3px; color: #9af0ae; font: var(--t11) var(--pix); }
-.window .jb-card .where { display: block; margin: 2px 0; color: #ffe08a; font: var(--t11) var(--pix); }
+.window .jb-card .where { display: block; margin: 2px 0; color: #ffe08a; font: var(--t11)/1.45 var(--pix); }   /* a line-height, or a wrapped line runs into the pay row below */
 .window .jb-card .late { display: block; color: #ffb08a; font: var(--t11) var(--pix); }
 .window .jb-card .bar { height: 14px; background: #000; border: 1px solid #000; }
 .window .jb-card .bar b { line-height: 14px; }
