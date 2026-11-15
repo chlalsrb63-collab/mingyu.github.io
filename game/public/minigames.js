@@ -5,6 +5,7 @@
  * the server decides what that score is worth.
  */
 import { Sound } from "./audio.js";
+import * as Keymap from "./keymap.js";
 
 let root = null, closer = null;
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
@@ -39,7 +40,7 @@ const PATTERNS = [
 ];
 
 export function fishing(onDone) {
-  const box = open("낚시 — 박자에 맞춰 당기기", "물결이 찌에 닿는 순간 F · Space · 화면을 누르세요");
+  const box = open("낚시 — 박자에 맞춰 당기기", `물결이 찌에 닿는 순간 ${Keymap.label("interact")} · ${Keymap.label("dash")} · 화면을 누르세요`);
   const cv = el("canvas", "mg-lane");
   cv.width = 340; cv.height = 96;
   const g = cv.getContext("2d");
@@ -69,7 +70,7 @@ export function fishing(onDone) {
     if (e.type === "keydown") {
       if (e.repeat) return;
       if (e.key === "Escape") { finish(true); return; }
-      if (!["f", "F", "ㄹ", " ", "Enter"].includes(e.key)) return;
+      if (!(Keymap.is(e, "interact") || Keymap.is(e, "dash") || e.key === "Enter")) return;
       e.preventDefault();
     }
     if (!done) judge(performance.now());
@@ -276,7 +277,7 @@ export function cooking(dish, onDone) {
 
 const BLOWS = 5;
 export function forge(title, onDone) {
-  const box = open(`제작 — ${title}`, "달군 쇠의 빛이 노란 칸에 들 때 F · Space · 화면을 눌러 두드리세요 (5번)");
+  const box = open(`제작 — ${title}`, `달군 쇠의 빛이 노란 칸에 들 때 ${Keymap.label("interact")} · ${Keymap.label("dash")} · 화면을 눌러 두드리세요 (5번)`);
   const cv = el("canvas", "mg-lane");
   cv.width = 340; cv.height = 120;
   const g = cv.getContext("2d");
@@ -305,7 +306,7 @@ export function forge(title, onDone) {
     if (e.type === "keydown") {
       if (e.repeat) return;
       if (e.key === "Escape") { e.preventDefault(); finish(true); return; }
-      if (!["f", "F", "ㄹ", " ", "Enter"].includes(e.key)) return;
+      if (!(Keymap.is(e, "interact") || Keymap.is(e, "dash") || e.key === "Enter")) return;
       e.preventDefault();
     }
     strike(performance.now());
@@ -373,7 +374,7 @@ export function forge(title, onDone) {
 // the needle spends inside the band is the score. It runs at least `ms` (+1.2 s). `onDone(null)` on Esc.
 
 export function brew(title, ms, onDone) {
-  const box = open(`연금 — ${title}`, "F · Space · 화면을 누르고 있으면 바늘이 오르고, 떼면 내려갑니다. 초록 칸 안에 머물게 하세요");
+  const box = open(`연금 — ${title}`, `${Keymap.label("interact")} · ${Keymap.label("dash")} · 화면을 누르고 있으면 바늘이 오르고, 떼면 내려갑니다. 초록 칸 안에 머물게 하세요`);
   const cv = el("canvas", "mg-lane");
   cv.width = 340; cv.height = 120;
   const g = cv.getContext("2d");
@@ -383,18 +384,18 @@ export function brew(title, ms, onDone) {
   const DUR = Math.max(5000, ms + 1200), t0 = performance.now() + 700, W = 0.22;
   let x = 0.3, v = 0, c = 0.5, aim = 0.5, nextAim = 0, hold = false, inside = 0, last = performance.now();
   let done = false, raf = 0, bubbleAt = 0, bubbles = [];
-  const KEYS = [" ", "f", "F", "ㄹ", "Enter"];
+  const isTap = (e) => Keymap.is(e, "interact") || Keymap.is(e, "dash") || e.key === "Enter";
   const down = (e) => {
     if (e.type === "keydown") {
-      if (e.repeat) { if (KEYS.includes(e.key)) e.preventDefault(); return; }
+      if (e.repeat) { if (isTap(e)) e.preventDefault(); return; }
       if (e.key === "Escape") { e.preventDefault(); finish(true); return; }
-      if (!KEYS.includes(e.key)) return;
+      if (!isTap(e)) return;
       e.preventDefault();
     }
     if (!hold) Sound.play("brew_stir");
     hold = true;
   };
-  const up = (e) => { if (e.type === "keyup" && !KEYS.includes(e.key)) return; hold = false; };
+  const up = (e) => { if (e.type === "keyup" && !isTap(e)) return; hold = false; };
   const share = () => Math.round(Math.min(1, inside / (DUR * 0.92)) * 100);
   const finish = (gaveUp) => {
     if (done) return;

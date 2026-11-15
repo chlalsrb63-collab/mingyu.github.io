@@ -11,6 +11,7 @@ import * as QS from "./quickslots.js";
 import * as Sky from "./sky.js";
 import { G, T, dist, $, el } from "./state.js";
 import { act } from "./net.js";
+import * as Keymap from "./keymap.js";
 import { moveVector, typing, keys, held, pathTo } from "./input.js";
 import { aimAtPoint, castSkill, usePotion, aimIdx, canStand, attack, nearestNpc, fireNear } from "./actions.js";
 import * as Gather from "./gather.js";
@@ -89,7 +90,7 @@ export function update(dt, t) {
   const me = G.me, s = G.self;
   if (!G.map || !s) return;
   let [mx, my] = me.dead ? [0, 0] : moveVector();
-  let wantAtk = !me.dead && !typing() && !Mini.active() && (keys.has("x") || keys.has("ㅌ") || held.atk);
+  let wantAtk = !me.dead && !typing() && !Mini.active() && (Keymap.held(keys, "attack") || held.atk);
 
   // auto-hunt: walk at the nearest monster, hit it, drink when low
   // a route taken to get round a wall ends as soon as its monster is within reach
@@ -196,7 +197,7 @@ export function update(dt, t) {
   const ox = me.x, oy = me.y;
   // the aim follows the way you walk; Shift held turns you on the spot without a step
   if (mx || my) me.aimI = aimIdx(mx, my);
-  if (keys.has("Shift") && !G.path && !G.auto) { if (mx || my) me.dir = Math.abs(mx) > Math.abs(my) ? (mx < 0 ? 1 : 2) : my < 0 ? 3 : 0; mx = my = 0; }
+  if ((keys.has("ShiftLeft") || keys.has("ShiftRight")) && !G.path && !G.auto) { if (mx || my) me.dir = Math.abs(mx) > Math.abs(my) ? (mx < 0 ? 1 : 2) : my < 0 ? 3 : 0; mx = my = 0; }
   if (mx || my) {
     const nx = me.x + mx * speed * dt, ny = me.y + my * speed * dt;
     if (canStand(nx, me.y)) me.x = nx;
@@ -258,7 +259,7 @@ export function update(dt, t) {
     const p = $("#prompt");
     p.hidden = !near && !gat;
     p.classList.toggle("jb", !!jb);
-    if (near || gat) { p.textContent = ""; p.append(el("b", "", document.body.classList.contains("touch") ? "▶ " : "F  "), near ? jb || near.name : gat); }
+    if (near || gat) { p.textContent = ""; p.append(el("b", "", document.body.classList.contains("touch") ? "▶ " : Keymap.label("interact") + "  "), near ? jb || near.name : gat); }
     if (moved && !near) { closeWin("shop"); closeWin("smith"); closeWin("talk"); closeWin("train"); closeWin("job"); closeWin("juana"); if (isOpen("warp")) delete shown.warp; }
     // the stat tab and the job card say what can be done where you stand
     if (moved && (isOpen("char") || isOpen("skill"))) refreshUi();

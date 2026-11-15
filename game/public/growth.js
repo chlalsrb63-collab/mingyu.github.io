@@ -15,6 +15,7 @@
  */
 import { Sound } from "./audio.js";
 import * as SP from "./sprites.js";
+import { K } from "./keymap.js";
 
 /** What client.js lends us: its state, its helpers, its windows. */
 let C = null;
@@ -168,7 +169,7 @@ function deathTip(s) {
   if (d.lv >= s.lvl + 12) return `나보다 ${d.lv - s.lvl}레벨 높은 상대입니다. 입구 쪽 약한 몬스터부터 사냥하세요.`;
   if (!hp) return "빨간 물약이 없었습니다. 보급상 리나에게서 넉넉히 사 두세요.";
   if (d.el === 1) return "정예는 일반 몬스터보다 훨씬 셉니다. 체력이 줄면 물러서세요.";
-  return "체력이 줄면 물약(Q)을 마시고, 모닥불 곁에서 쉬어 가세요.";
+  return `체력이 줄면 물약(${K("hp")})을 마시고, 모닥불 곁에서 쉬어 가세요.`;
 }
 
 export function onSelf(s) {

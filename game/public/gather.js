@@ -9,6 +9,7 @@
  * - The 재료 주머니: `self.pouch = {itemId: n}` → `renderPouch(box, s)` (the bag window and the 생활 window).
  */
 import * as GA from "./gatherart.js";
+import { K } from "./keymap.js";
 
 const T = 16;
 const now = () => performance.now();
@@ -227,7 +228,7 @@ function showTap(on, hit) {
     st.tapEl = b;
   }
   const b = st.tapEl, touch = document.body.classList.contains("touch");
-  if (on) { b.textContent = touch ? "반짝! ▶ 누르기" : "반짝!  F / Space"; b.className = "frame"; b.hidden = false; }
+  if (on) { b.textContent = touch ? "반짝! ▶ 누르기" : `반짝!  ${K("interact")} / ${K("dash")}`; b.className = "frame"; b.hidden = false; }
   else if (hit) { b.textContent = "좋아요!"; b.className = "frame good"; setTimeout(() => { if (b.classList.contains("good")) b.hidden = true; }, 500); }
   else b.hidden = true;
 }
@@ -251,7 +252,7 @@ export function renderPouch(box, s, opts = {}) {
   hd.addEventListener("click", () => { localStorage.setItem(key, open ? "0" : "1"); A.Sound.play("ui"); renderPouch(box, s, opts); });
   box.append(hd);
   if (!open) return;
-  if (!ids.length) { box.append(el("p", "hint", "사냥터의 약초 · 광맥 · 통나무 곁에서 F — 모은 재료가 여기에 쌓입니다.")); return; }
+  if (!ids.length) { box.append(el("p", "hint", `사냥터의 약초 · 광맥 · 통나무 곁에서 ${K("interact")} — 모은 재료가 여기에 쌓입니다.`)); return; }
   const grid = el("div", "grid pouch-grid");
   for (const id of ids) {
     // at a shop: a click sells one, Shift+click all of them (the server checks the counter and the count)
