@@ -328,6 +328,19 @@ Consumables with roles, village produce, fish, crafted furniture. No combat stat
 | 사계절 × 4 (벚꽃 · 한여름 바다 · 단풍 · 눈꽃): hat, top, back, wskin each | P12 seasonal festival tokens | layered petals/leaves, knit and fur patterns, snow trim; wskin motifs `maple`, `snow`, `sakura` gain shape not just colour |
 | face slot +8 (주근깨, 반창고 별, 꽃 귀걸이, 눈꽃 볼 화장, 장인 고글 이마걸이 …) | shop 4, chores/arcs 4 | room for small details a 32×32 face could not hold |
 | wskin +6 (버들 가지, 등불, 사원 종, 단풍, 고래뼈, 별사탕) | arcs, festival, co-op | wrap patterns along the blade, hanging charms |
+- **As built (2026-11-16, 사계절 and 이야기 기념품; face +8 and wskin +6 not done):** codes 141–162, new source `fair`
+  (COSMETICS price 0: FAIR_SHOP holds it; the wardrobe names the season and price). **사계절** sets `spring` `summer` `autumn`
+  `winter`, the fixed P12 ids, so 다래's stall sells every row (no "곧 들어옵니다" left): 벚꽃 머리띠 · 벚꽃 카디건 · 벚꽃
+  종이우산 · 벚꽃 가지 무기 외형; 불가사리 머리핀 · 꽃무늬 여름 셔츠 · 줄무늬 튜브 (round the waist: far half behind, near half
+  BACK_FRONT) · 파도; 단풍잎 화관 · 꽈배기 스웨터 · 도토리 배낭 · 단풍; 눈꽃 털모자 · 털깃 겨울 코트 · 눈사람 배낭 · 눈꽃.
+  Weapon skins are four new weapons.js motifs `ssnSakura ssnSea ssnMaple ssnSnow` (shapes along the blade: a blossoming
+  twig, foam crests, five-point leaves, three-line snowflakes). **이야기 기념품** set `story`, all `sew`, KEEP_SEW filled:
+  갈대 찌 → 빨간 찌 귀걸이 (face), 마지막 불빛 등 → 네온 간판 등 배낭 (a sign raised over the head, 「집」 in native pixels),
+  나침반 → 하늘 항해사 모자 (compass badge), 작은 사원 종 → 운해 종지기 등장식 (bell on a crook), 깃펜 → 사관 모자 (사모 with
+  flat wings and a quill), 균열 표본병 → 균열 연구원 고글 (violet lenses the eyes show through); the A1 key stays 버드나무
+  마을's 밀짚 두건. Every piece but the starfish (dyes whole) has a trim `b`; 64px detail via `brush.fp`. The knit hat and
+  the navigator cap cover the ears (`behind`): with holes a rabbit's ears hid the crown. Tests: wardrobe.mjs P11 block,
+  festival.mjs buys a 사계절 piece.
 
 ### P12 — 버드나무 장날과 계절 (rules + small art, after P9) · size M
 - **Season** from `S.now` only (KST day count ÷ 91, no `Date`): spring/summer/autumn/winter, shown on the sky/HUD.
