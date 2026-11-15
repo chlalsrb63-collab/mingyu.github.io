@@ -87,7 +87,11 @@ function nextStep(a) {
   if (a.t.kind === "deliver") return a.prog === 1 ? { npc: a.t.to, verb: "꾸러미 전하기" } : { npc: a.t.npc, verb: "꾸러미 받기" };
   if (a.t.kind === "hunt") return { npc: a.t.npc, verb: "토벌 보고하기" };
   if (a.t.kind === "scout") return { npc: a.t.npc, verb: "정찰 보고하기" };
-  if (a.t.kind === "chore") return a.got < a.n && chOf(a).src === "npc" && !a.fill ? { npc: a.t.npc, verb: `${chOf(a).name} 시작하기` } : { npc: a.t.npc, verb: "알바 보고하기" };
+  if (a.t.kind === "chore") {
+    if (a.got >= a.n) return { npc: a.t.npc, verb: "알바 보고하기" };
+    // still spots to do: the giver only when the chore starts from them (the milk crate, the leash), else the spots themselves
+    return chOf(a).src === "npc" && !a.fill ? { npc: a.t.npc, verb: `${chOf(a).name} 시작하기` } : { npc: "", verb: `${chOf(a).name} ${a.got}/${a.n}` };
+  }
   return { npc: a.t.npc, verb: `${itemName(a.t.item)} 전하기` };
 }
 /** Hand-in progress of the job in hand: [label, have, need] (null for deliveries). */
