@@ -159,4 +159,9 @@ function questV17(i) {
   const old = QUESTS.map((q, j) => (q.fb ? -1 : j)).filter((j) => j >= 0);
   return i < old.length ? old[i] : QUESTS.length;
 }
+/** (migrate, sheets v17–v19) an old index → now: the four field-boss steps marked `v20` went in between. */
+function questV20(i) {
+  const old = QUESTS.map((q, j) => (q.v20 ? -1 : j)).filter((j) => j >= 0);
+  return i < old.length ? old[i] : QUESTS.length;
+}
 const trophyDefs = () => ({ list: TROPHIES, cap: TROPHY_CAP, p: TROPHY_P, gold: TROPHY_GOLD, story: { r: STORY.r, limit: STORY.limit } });

@@ -159,7 +159,7 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   const old = JSON.parse(JSON.stringify(L.exportChar(W0.S, W0.PID)));
   delete old.jobs; delete old.lo; old.v = 17; old.jp = { lv: 9, xp: 3 };
   const W = world({ ch: old });
-  assert.equal(W.ch.v, 19);
+  assert.equal(W.ch.v, 20);
   assert.deepEqual(W.ch.jobs, { swordsman: { lv: 9, xp: 3 } }); assert.equal(W.ch.jobs.swordsman, W.ch.jp);
   assert.deepEqual(W.ch.lo, {});
   assert.deepEqual(L.newChar("새판", []).jobs, {});
@@ -196,5 +196,20 @@ assert.equal(D.items.scr_job.name, "전직 초기화 주문서"); assert.equal(D
   assert.deepEqual(S2.players["old@s1"].ch.ske, { [id]: 10 });
   delete old.ske; L.addPlayer(S2, "older@s1", old);
   assert.deepEqual(S2.players["older@s1"].ch.ske, {});
+}
+// ── v20: four field-boss steps went into the main chain; a v19 sheet keeps its place on the same errand
+{
+  const Q = D.quests, W = world();
+  const oldIdx = Q.map((q, j) => (q.v20 ? -1 : j)).filter((j) => j >= 0);
+  const k = oldIdx.findIndex((j) => j > Q.findIndex((q) => q.v20));   // the first old step past an insertion
+  assert.ok(Q.filter((q) => q.v20).length === 4 && k > 0);
+  const old = JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID)));
+  old.v = 19; old.q = { ...old.q, i: k };
+  const S2 = L.setup(); L.addPlayer(S2, "q19@s1", old);
+  assert.equal(S2.players["q19@s1"].ch.q.i, oldIdx[k], "the same errand after the new steps");
+  assert.equal(Q[S2.players["q19@s1"].ch.q.i].title, Q[oldIdx[k]].title);
+  const fresh = JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID))); fresh.q = { ...fresh.q, i: k };
+  const S3 = L.setup(); L.addPlayer(S3, "q20@s1", fresh);
+  assert.equal(S3.players["q20@s1"].ch.q.i, k, "a v20 sheet is left alone");
 }
 console.log("jobfreedom: ok");

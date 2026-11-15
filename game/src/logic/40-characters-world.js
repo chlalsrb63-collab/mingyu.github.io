@@ -48,7 +48,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 19, name, job: "adventurer", jp: null,
+    v: 20, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -127,6 +127,7 @@ function migrate(ch) {
   if (!isObj(ch.q)) ch.q = { i: 0, n: 0, st: 0 };
   // (v17) boss quests went into the main chain: an older index points at the same errand as before
   if ((ch.v | 0) < 17) ch.q.i = questV17(ch.q.i | 0);
+  else if ((ch.v | 0) < 20) ch.q.i = questV20(ch.q.i | 0);
   ch.q = { i: clamp(ch.q.i | 0, 0, QUESTS.length), n: Math.max(0, ch.q.n | 0), st: ch.q.st === 1 ? 1 : 0 };
   ch.bq = isObj(ch.bq) && MOBS[ch.bq.k] ? { k: ch.bq.k, n: ch.bq.n | 0, need: BOUNTY_N } : null;
   ch.bn = ch.bn | 0;
@@ -204,7 +205,7 @@ function migrate(ch) {
   // skill enhancement (v19): { [active skill id]: 1..10 } (48-skill-enh.js)
   skeClean(ch);
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
-  ch.v = Math.max(ch.v | 0, 19);
+  ch.v = Math.max(ch.v | 0, 20);
   return ch;
 }
 
