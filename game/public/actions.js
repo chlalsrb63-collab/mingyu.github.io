@@ -318,6 +318,8 @@ export function refreshNpcTalk() {
   const friend = G.defs.life?.rep?.tier?.[1];
   const trust = G.self?.rep?.[n.id] || 0;
   where.textContent = actText ? `지금 ${actText}${place ? " · " + place : ""}${friend && trust >= friend && spot?.nextPlace ? " · 다음 " + spot.nextPlace : ""}` : "";
+  // a keeper met off duty only chats: say where the shop (training, …) still works
+  if (actText && n.offDuty && SERVICE_WINDOWS[n.originRole]) where.textContent += " · 업무는 안내판에서";
 }
 function talkShow() {
   $("#talk-text").textContent = talk.lines[talk.i % talk.lines.length];
