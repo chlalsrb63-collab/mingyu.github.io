@@ -16,6 +16,8 @@
 import * as Art from "./dimart.js";
 
 const $ = (s) => document.querySelector(s);
+/** Set an element's text only when it differs (a same-value write still swaps the text node and restyles). */
+const put = (e, s) => { if (e.textContent !== s) e.textContent = s; };
 const now = () => performance.now();
 const T = 16;
 let A = null;                       // { G, S3, Sound, act, openWin, closeWin, isOpen, toast }
@@ -136,7 +138,7 @@ function renderHud() {
   if (!d && st.sty && inside()) { renderStory(box); return; }
   if (!d || !inside()) { if (!box.hidden) box.hidden = true; return; }
   box.hidden = false;
-  box.classList.remove("story");
+  if (box.classList.contains("story")) box.classList.remove("story");
   const secs = Math.max(0, d[1] - Math.floor((now() - st.at) / 1000));
   const pct = Math.min(100, d[0] / 10);
   const name = D().themes[d[10]] || "차원 균열";
@@ -145,11 +147,11 @@ function renderHud() {
   const fname = (D().raid && D().raid.names && D().raid.names[d[14] - 1]) || name;
   // (the wire carries the rift's world tier; players see levels as 4·tier − 3, like monsters and doors)
   const chal = d[15], bossName = chal && chalDef(chal[0]) ? `${chalDef(chal[0])[1]} · ${stepWord(chal[0], chal[7])}` : "";
-  $("#dim-title").textContent = chal ? `보스 도전 · ${bossName}` : `차원 균열 Lv.${4 * d[4] - 3} · ${d[14]}단 · ${fname} (${d[14]}/${floors()})`;
-  $("#dim-time").textContent = clock(d[2], secs);
+  put($("#dim-title"), chal ? `보스 도전 · ${bossName}` : `차원 균열 Lv.${4 * d[4] - 3} · ${d[14]}단 · ${fname} (${d[14]}/${floors()})`);
+  put($("#dim-time"), clock(d[2], secs));
   $("#dim-time").classList.toggle("low", (d[2] <= 1 && secs <= 180) || d[2] === 4);
   $("#dim-fill").style.width = `${pct}%`;
-  $("#dim-pct").textContent = d[2] === 0 ? `${pct.toFixed(1)}%` : d[15] && d[2] === 1 ? "보스를 쓰러뜨리세요!" : label;
+  put($("#dim-pct"), d[2] === 0 ? `${pct.toFixed(1)}%` : d[15] && d[2] === 1 ? "보스를 쓰러뜨리세요!" : label);
   box.classList.toggle("boss", d[2] === 1);
   box.classList.toggle("clear", d[2] === 2);
   // the party inside: a chip per member, their health
@@ -166,16 +168,16 @@ function renderHud() {
   if (m && A.G.defs.mobs[m.k]) {
     const def = A.G.defs.mobs[m.k], max = def.hp * (A.G.defs.eliteHp[m.el] || 1);
     bar.hidden = false;
-    $("#dim-boss-name").textContent = chal ? `${def.name} · ${chal[5]}번째 시도${chal[4] ? ` · 광폭 ${chal[4]}` : ""}${chal[6] ? ` · 분노 ${chal[6]}` : ""}` : `최종 보스 · ${def.name}`;
+    put($("#dim-boss-name"), chal ? `${def.name} · ${chal[5]}번째 시도${chal[4] ? ` · 광폭 ${chal[4]}` : ""}${chal[6] ? ` · 분노 ${chal[6]}` : ""}` : `최종 보스 · ${def.name}`);
     $("#dim-boss-fill").style.width = `${Math.max(0, Math.min(100, (100 * m.hp) / max))}%`;
-  } else bar.hidden = true;
+  } else if (!bar.hidden) bar.hidden = true;
   // the stagger gauge of a marked cast: empty it with damage before the time runs out
   const sg = $("#dim-stag"), mode = chal ? chal[1] : 0;
-  sg.hidden = !mode;
+  if (sg.hidden !== !mode) sg.hidden = !mode;
   if (mode) {
     const cd = chalDef(chal[0]), left = (chal[3] / 2).toFixed(1);
     sg.classList.toggle("broke", mode === 2);
-    $("#dim-stag-t").textContent = mode === 1 ? `[${cd ? cd[3] : "?"}] 무력화 게이지 ${chal[2]}% · ${left}초` : `무력화! ${left}초`;
+    put($("#dim-stag-t"), mode === 1 ? `[${cd ? cd[3] : "?"}] 무력화 게이지 ${chal[2]}% · ${left}초` : `무력화! ${left}초`);
     $("#dim-stag-fill").style.width = `${mode === 1 ? chal[2] : 100}%`;
   }
   if (d[2] <= 1 && secs <= 180 && !st.warned) { st.warned = true; A.Sound.play("rift_warn"); }

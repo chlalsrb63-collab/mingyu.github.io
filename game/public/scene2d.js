@@ -176,8 +176,12 @@ export function impactMs(wk, beat) {
   return hold.time * (beat === 2 ? 1.15 : 1) * 1000 * Sw.IMPACT;
 }
 
+let lastRender = 0;
 export function render(focusX, focusY, dt, t, snap) {
   if (!map || !ground || !G) return;
+  // back from a hidden tab: the sparks every hit pushed meanwhile (none lives 3 s) would all burst at once
+  if (t - lastRender > 5000) parts.length = 0;
+  lastRender = t;
   const [fX, fY] = iso(focusX, focusY);
   const minX = -map.h * 16 * K, maxX = map.w * 16 * K, maxY = (map.w + map.h) * 8 * K;
   // the view follows you, but never wanders far past the corners of the map's diamond

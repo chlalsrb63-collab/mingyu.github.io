@@ -375,7 +375,6 @@ export function connecting() {
   if (view === "servers") setMsg("서버에 연결하는 중…", "info");
   else if (view === "create") { $("#create-msg").textContent = "서버에 다시 연결하는 중…"; $("#create-msg").className = "info"; }
 }
-export const inLobby = () => view !== "game";
 
 // ───────────────────────────── in the game: channels, account ─────────────────────────────
 

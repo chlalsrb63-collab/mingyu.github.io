@@ -1120,4 +1120,3 @@ const SFX = {
   step_water() { const p = this.vary(); this.noise(0.07, 0.035, 1400 * p, "bandpass", 0, 3200 * p); this.tone("sine", 700 * p, 1100 * p, 0.04, 0.012, 0.015); },
   step_wood() { this.tone("triangle", 220, 160, 0.05, 0.05); this.noise(0.03, 0.025, 1200, "bandpass"); },
 };
-export const SFX_NAMES = Object.keys(SFX);

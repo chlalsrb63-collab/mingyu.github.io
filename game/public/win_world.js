@@ -291,7 +291,7 @@ export function tutCard(s) {
 // ── the world event, the return scroll's cast bar, the arrival fade ──
 export function eventWidget(t) {
   const e = G.evt, box = $("#evt");
-  if (!e || !G.defs.maps) { box.hidden = true; return; }
+  if (!e || !G.defs.maps) { if (!box.hidden) box.hidden = true; return; }
   const name = (id) => (G.defs.maps.find((m) => m.id === id) || {}).name || id;
   const live = e.phase === "on" || e.phase === "boss";
   let html;
@@ -305,7 +305,8 @@ export function eventWidget(t) {
   if (fold) html = html.slice(0, 1);
   const v = `<i class="fold" title="${fold ? "펼치기" : "접기"}">${fold ? "▸" : "▾"}</i>` + html.map((h) => `<span>${h}</span>`).join("");
   if (box.dataset.v !== v) { box.dataset.v = v; box.innerHTML = v; }
-  box.className = "frame" + (live ? " live" : e.phase === "warn" ? " warn" : "");
+  const cls = "frame" + (live ? " live" : e.phase === "warn" ? " warn" : "");
+  if (box.className !== cls) box.className = cls;
   box.hidden = false;
   document.body.classList.toggle("evt-live", live);
   if (G.evtPhase !== e.phase) {

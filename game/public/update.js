@@ -240,13 +240,6 @@ export function update(dt, t) {
       if (e.moving) e.walk += dt * 6;
     }
   }
-  for (let i = G.parts.length - 1; i >= 0; i--) {
-    const p = G.parts[i];
-    p.life -= dt;
-    if (p.life <= 0) { G.parts.splice(i, 1); continue; }
-    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt;
-  }
-  G.shake = Math.max(0, G.shake - dt * 18);
   G.flash = Math.max(0, G.flash - dt * 4);
 
   const near = me.dead ? null : nearestNpc();

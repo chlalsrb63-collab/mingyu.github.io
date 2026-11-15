@@ -483,8 +483,6 @@ const HAMMER = [
 ];
 
 export const DESIGNS = { sword: SWORD, dagger: DAGGER, spear: SPEAR, staff: STAFF, book: BOOK, bow: BOW, hammer: HAMMER };
-/** Extra designs other modules can register (new weapon kinds): kind → [tier1…tier5] design functions. */
-export function registerKind(kind, designs) { DESIGNS[kind] = designs; }
 
 // Legendary silhouettes share each weapon's grip position and canvas.
 export const SIL = {
@@ -871,7 +869,8 @@ function outline(c, inks) {
 function build(kind, tier, motif, icon, o) {
   const list = DESIGNS[kind] || DESIGNS.sword;
   const name = MOTIF_SIL[kind]?.[motif] || UNIQ_SIL[motif];
-  const design = name ? SIL[kind][name] : list[Math.max(0, Math.min(list.length - 1, tier - 1))];
+  // (a unique's silhouette is its own kind's: a spear's trident motif on a sword keeps the sword's design)
+  const design = (name && SIL[kind] && SIL[kind][name]) || list[Math.max(0, Math.min(list.length - 1, tier - 1))];
   const d = design(icon, o);
   const mats = {};
   let sh = d.sh.slice();
