@@ -11,6 +11,7 @@ import * as QS from "./quickslots.js";
 import * as Housing from "./housing.js";
 import * as Gather from "./gather.js";
 import * as Charms from "./charms.js";
+import * as Coop from "./coop.js";
 import { G, $, dist, T, clamp, world, now, resize } from "./state.js";
 import { act } from "./net.js";
 import { usePotion, interact, stoneNear, aimAtPoint, attack, dash, talkKey } from "./actions.js";
@@ -35,7 +36,8 @@ export const typing = () => document.activeElement && ["INPUT", "TEXTAREA"].incl
  */
 export function moveVector() {
   let x = 0, y = 0;
-  if (Mini.active()) { keys.clear(); G.path = null; return [0, 0]; }
+  // a mini-game, or the forge's rhythm lane (its movement keys are the flip arrows), holds you still
+  if (Mini.active() || Coop.lane()) { keys.clear(); G.path = null; return [0, 0]; }
   if (Keymap.held(keys, "left")) x -= 1;
   if (Keymap.held(keys, "right")) x += 1;
   if (Keymap.held(keys, "up")) y -= 1;
