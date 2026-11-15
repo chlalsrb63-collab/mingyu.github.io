@@ -821,7 +821,7 @@ body.playing .window.mini:hover { box-shadow: inset 0 0 0 2px var(--b-mid); }
 #mini-fl { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px 0 1px; }
 #mini-fl[hidden] { display: none; }
 #mini-fl button { flex: 1 1 auto; height: 18px; padding: 0 2px; font: var(--t10)/1 var(--pix9); color: #2a1806; background: var(--b-mid); border: 2px solid var(--ink); border-radius: 0; box-shadow: inset 1px 1px 0 var(--b-hi), inset -1px -1px 0 var(--b-lo); cursor: pointer; }
-#mini-fl button.off { color: var(--tx3, #9a90a8); background: var(--sf2, #1f1a28); box-shadow: none; text-decoration: line-through; }
+#mini-fl button.off { color: var(--tx3, #9a90a8); background: var(--sf1, #18141f); box-shadow: none; text-decoration: line-through; }
 #mini-fl button i { display: inline-block; width: 5px; height: 5px; margin-right: 2px; border: 1px solid var(--ink); vertical-align: 0; }
 /* the quest tracker: ▾ / ▸ fold a section, 고정 keeps the tracker over a side-panel window (hud.js tracker) */
 #quest-track .qt-fold { width: 12px; padding: 0; margin: 0 2px 0 0; border: 0; background: none; color: var(--tx-hd2, var(--b-mid)); font: var(--t12)/1 var(--pix); cursor: pointer; vertical-align: 0; }
@@ -1718,6 +1718,12 @@ body[data-lay="full"] #panel .jt-grid .jt-node img.ji { margin: 0 auto; }
 /* body sets its colour from the default --text, so the HUD containers re-read it in their theme (zero specificity: any own rule wins) */
 :where(#hud, #tip, #windows, #dead, #info, #mirror) { color: var(--text); }
 
+/* (UX pass 2, theme audit) the selected quest's tag (새 의뢰 · 진행 중) on its gold row: dark like the row's text */
+.window .qlist button.on small { color: #5a3a10; }
+/* light themes: a meaning colour set inline for a dark panel (rarity names in tooltips, the wardrobe and chat links,
+   job colours) keeps its hue and gets an ink outline, so a 일반 white or 희귀 yellow name reads on cream */
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#tip, #windows, #hud) [style^="color"] { text-shadow: 1px 0 var(--ink), -1px 0 var(--ink), 0 1px var(--ink), 0 -1px var(--ink); }
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#tip, #windows, #hud) [style^="color"] small { text-shadow: none; }
 /* 베이지 리넨: pale linen panels, walnut ink */
 body[data-hud="linen"] :is(#hud, #tip, #windows, #dead, #info, #mirror) {
   --face: #efe5cf; --scr: #e4d7bb; --frame-bg: rgba(239, 229, 207, .97); --ink: #3b2b1c; --fr-ink: #3b2b1c;
