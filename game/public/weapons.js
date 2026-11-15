@@ -869,7 +869,8 @@ function outline(c, inks) {
 function build(kind, tier, motif, icon, o) {
   const list = DESIGNS[kind] || DESIGNS.sword;
   const name = MOTIF_SIL[kind]?.[motif] || UNIQ_SIL[motif];
-  const design = name ? SIL[kind][name] : list[Math.max(0, Math.min(list.length - 1, tier - 1))];
+  // (a unique's silhouette is its own kind's: a spear's trident motif on a sword keeps the sword's design)
+  const design = (name && SIL[kind] && SIL[kind][name]) || list[Math.max(0, Math.min(list.length - 1, tier - 1))];
   const d = design(icon, o);
   const mats = {};
   let sh = d.sh.slice();
