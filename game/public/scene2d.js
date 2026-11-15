@@ -50,6 +50,7 @@ import { wpLit, lights, map, ground, theme, artGround, drawWater, pulseCv, pulse
 import { npcOut, npcService, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, seatOf, drawPerson, drawJam } from "./scene_people.js";
 import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, drawAimArrow, props, TRAIT_TINT, hooks, glows } from "./scene_fx.js";
 import { drawDepthGround, depthSprite } from "./scene_depth.js";
+import { frame as postFx } from "./postfx.js";
 
 // ───────────────────────────── the frame ─────────────────────────────
 
@@ -476,13 +477,14 @@ export function render(focusX, focusY, dt, t, snap) {
     g.drawImage(lightCv, 0, 0);
   }
   // indoors: warm lamplight and the fire, sunlight through the windows by day (iso_interior.js)
-  if (theme === "interior") { IN.roomLight(g, roomL, t, dt, ox, oy, vw, vh, Sky.nightK()); cam.ox = ox; cam.oy = oy; return; }
+  if (theme === "interior") { IN.roomLight(g, roomL, t, dt, ox, oy, vw, vh, Sky.nightK()); postFx(g, vw, vh, t, dt, fY - oy, ox, theme, Sky.nightK(), false); cam.ox = ox; cam.oy = oy; return; }
   // outdoors the day turns: the whole view graded by the hour and the weather (one even multiply,
   // never darker at the edges), with lamps, windows, runes and fires cut into the night as pools
   const L = outdoor ? Sky.grade(g, vw, vh, dt, t, lightSources, Sky.cloudPainter(ox, oy, t)) : null;
   if (L && L.night > 0.05) glowAfterDark(L.night, t, ox, oy);
   drawAmbient(dt, t, ox, oy);
   Sky.drawWeather(g, vw, vh, dt, t, ox, oy, outdoor, theme, outdoor ? camps.map((c) => ({ x: c.x - ox, y: c.y - oy })) : [], L);
+  postFx(g, vw, vh, t, dt, fY - oy, ox, theme, outdoor ? night : DARK[theme] ? 0.8 : 0, outdoor, lightSources); // HD-2D depth of field, bloom, shafts, grade (postfx.js)
   cam.ox = ox; cam.oy = oy;
 }
 /** The local player's last drawn look, for the ghost shown through walls. */
