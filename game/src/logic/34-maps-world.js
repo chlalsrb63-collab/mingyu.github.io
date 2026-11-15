@@ -296,7 +296,7 @@ const GEN = {
   meadow: { make: wilds, band: [1, 7], stones: 3, cfg: () => ({
     // maps-v2 (docs/design/maps-v2.md, reference 2): highland falls — three terrace levels of wide grass, cliff
     // edges climbed by wide ramps, the river pouring over each step into a pool, thin dirt paths winding across
-    id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 160, h: 120, r: 9.6, warp: 9, wind: 0.55, loops: 0.3, merge: 0.32, cliff: 0.15, gap: 2,
+    id: "meadow", name: "바람초원", theme: "meadow", seed: 22021, w: 152, h: 102, r: 9.6, warp: 9, wind: 0.55, loops: 0.3, merge: 0.32, cliff: 0.15, gap: 2,
     tiers: 3, tierOpen: 0.6, ramp: 2, roadW: 3, pools: 2.6, widen: "TPBRulYAe", pen: ["meadowram", 0.45],
     ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 4, lakeR: 5, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
@@ -350,7 +350,7 @@ const GEN = {
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
   crypt: { make: catacomb, route: "city", band: [12, 17], stones: 3, cfg: () => ({
     // maps-v2 벽돌 회랑 (`halls`): plazas ≥ 11 × 9 in cells ≥ 14 × 12, corridors three wide, more loops
-    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 132, h: 102, min: 17, minH: 13, leaf: 620, entryY: 0.8, wind: 0.6, loops: 0.3, out: true, n: 3,
+    id: "crypt", name: "뼈의 지하묘지", theme: "crypt", seed: 66017, w: 148, h: 112, min: 17, minH: 13, leaf: 620, entryY: 0.8, wind: 0.6, loops: 0.3, out: true, n: 3,
     // dungeon widening: rooms ≥ 15 × 11 (`room`), ways 5 wide on the critical path, 4 elsewhere, 3 to an ossuary
     halls: true, soft: "12345I", room: [15, 11], ways: [5, 4, 3],
     shapes: ["plain", "chapel", "cross", "octagon", "ell", "chapel", "cross"], styles: ["pillars", "pool", "rows", "rubble", "shrine", "plain", "plain"], vaultName: "ossuary",

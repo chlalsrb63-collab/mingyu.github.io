@@ -272,9 +272,9 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
     if (fresh2[id]) assert.deepEqual(X.lifeNodes(fresh2[id]), ns, id + ": the same nodes on a fresh build (deterministic)");
     if (VERBOSE) console.log(id.padEnd(8), "open", open, "nodes", ns.length, "kinds", [0, 1, 2].map((k) => ns.filter((n) => n[0] === k).length).join("/"));
   }
-  // the 4× grounds are capped: the biggest gets NODE.max, the crypt (≈ 4,800 open) about a third of the meadow's ground
+  // the 4× grounds are capped: the biggest gets NODE.max, a small ground (the frost keep, ≈ 2,500 open) far fewer
   assert.equal(X.lifeNodes(X.mapOf("meadow")).length, X.NODE.max);
-  assert.ok(X.lifeNodes(X.mapOf("crypt")).length < X.NODE.max);
+  assert.ok(X.lifeNodes(X.mapOf("frostkeep")).length < X.NODE.max);
   assert.deepEqual(X.mapPayload(X.mapOf("meadow")).nodes, X.lifeNodes(X.mapOf("meadow")), "the map payload carries them");
   if (VERBOSE) console.log("nodes checked in", Date.now() - t0, "ms");
 }

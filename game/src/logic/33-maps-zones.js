@@ -203,6 +203,18 @@ function zoneSpawns(m, cfg) {
     pk.guard = [gx, gy];
     out.push({ k: kind, n: 1, r: [gx, gy, gx, gy], el: 1, zone: Z_HIDDEN });
   }
+  // a guardian or a chest the generator stood inside the quiet ground round a door (a catacomb's guard room by the way
+  // out grows into the arrival's plaza on a wider map) steps to the nearest hunting ground instead
+  for (const sp of out) {
+    if (!(sp.el || MOBS[sp.k].chest) || zoneAt(sp.r) !== Z_SAFE) continue;
+    const s = Math.floor((sp.r[1] + sp.r[3]) / 2) * W + Math.floor((sp.r[0] + sp.r[2]) / 2), seen = new Uint8Array(W * H), q = [s];
+    seen[s] = 1;
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h];
+      if (d[i] >= 0 && z[i] !== Z_SAFE && z[i] !== Z_HIDDEN) { const x = i % W, y = (i - x) / W; sp.r = [x, y, x, y]; break; }
+      for (const n of [i + 1, i - 1, i + W, i - W]) if (n >= 0 && n < W * H && !seen[n] && d[n] >= 0) { seen[n] = 1; q.push(n); }
+    }
+  }
   m.spawns = out;
   // every kind the ground is meant to hold lives somewhere in it
   cover(m, roster);

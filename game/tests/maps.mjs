@@ -106,7 +106,7 @@ for (const id of ["meadow", "forest", "cave", "maple"]) {
 // hidden pockets with a chest and its guardian, three waypoint stones with a wind shrine past each later one
 const D0 = (k) => D.mobs[k];
 const DENS = Function(`return (${/const DENSITY = (\{[^}]*\})/.exec((await import("node:fs")).readFileSync(new URL("../src/logic/10-tables.js", import.meta.url), "utf8"))[1]})`)();
-const SIZE = { meadow: [160, 120], forest: [160, 116], crypt: [132, 102], city: [160, 120], sewer: [160, 120], cave: [132, 100], abyss: [152, 120], maple: [196, 136], jungle: [168, 112], oasis: [168, 116], coast: [176, 120], dunesea: [288, 192], cloudtemple: [176, 128], mesa: [184, 124], inklake: [176, 120] };
+const SIZE = { meadow: [152, 102], forest: [160, 116], crypt: [148, 112], city: [160, 120], sewer: [160, 120], cave: [132, 100], abyss: [152, 120], maple: [196, 136], jungle: [168, 112], oasis: [168, 116], coast: [176, 120], dunesea: [288, 192], cloudtemple: [176, 128], mesa: [184, 124], inklake: [176, 120] };
 const zrep = [];
 for (const id of HUNT) {
   const m = maps[id], W = m.w, Z = m.zone, d = flood(m, m.entry[0], m.entry[1]);
