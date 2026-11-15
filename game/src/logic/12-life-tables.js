@@ -188,9 +188,12 @@ const CRAFT = { batch: 10, batchS: 70, batchD: 20, failXp: 0.5 };
 
 // ── the solo 알바 board (B.9) and delivery (B.8)
 /**
- * JB[id] = { kind, npc, lv, sk, item?, n?, to?, text } — kind bring (gathered materials), make (crafted goods
- * no shop sells), fish (caught fish), deliver (a parcel from `npc` to `to`). `lv` is the level of skill `sk`
- * the offer needs. `npc`/`to` are static NPC ids (town, its interiors, 버드나무 마을).
+ * JB[id] = { kind, npc, lv, sk, item?, n?, to?, mob?, map?, rep?, when?, rush?, text } — kind bring (gathered
+ * materials), make (crafted goods no shop sells), fish (caught fish), deliver (a parcel from `npc` to `to`), hunt
+ * (slay `n` of monster `mob`; `lv` is the CHARACTER level), scout (walk onto map `map[grade]` and come back to
+ * `npc`). `lv` is otherwise the level of skill `sk` the offer needs. Board v2: `rep` = trust with `npc` needed
+ * before it is offered; `when` "night" | "rain" = an extra offer only while it is night / raining in the town;
+ * `rush` = always 긴급 with that many minutes. `npc`/`to` are static NPC ids (town, its interiors, 버드나무 마을).
  */
 const JB = {
   jb_herb1: { kind: "bring", npc: "bogle", lv: 1, sk: "gather", item: "m_h1", n: 6, text: "보글이 [들꽃잎] 6장이 필요하대요. 물약에 넣는대요." },
@@ -225,7 +228,42 @@ const JB = {
   jb_dl_flower: { kind: "deliver", npc: "willow_florist", to: "cafe_moka", lv: 10, sk: "deliver", text: "버드나무 마을 봄이의 꽃다발을 테일즈 카페 모카에게 전해 주세요." },
   jb_dl_apt: { kind: "deliver", npc: "juju", to: "dongdong", lv: 25, sk: "deliver", text: "쥬쥬의 도시락을 동동아파트 관리인 동동에게 식기 전에 전해 주세요." },
   jb_dl_lab: { kind: "deliver", npc: "kangkang", to: "bogle", lv: 25, sk: "deliver", text: "캉캉이 고친 가마솥 뚜껑을 보글연금공방 보글에게 전해 주세요." },
+  // ── board v2: hunts (character level), scouting, trust-gated, night / rain and 긴급 rows
+  jb_hunt_hare: { kind: "hunt", npc: "guard", lv: 1, sk: "gather", mob: "twinhare", n: 6, text: "경비병 토비가 밭을 망치는 [쌍두 토끼] 6마리를 쫓아내 달래요. 머리가 둘이라 두 배로 먹는대요!" },
+  jb_hunt_frog: { kind: "hunt", npc: "diner_reg1", lv: 8, sk: "gather", mob: "gutfrog", n: 6, text: "단골 손님 나비가 밤새 우는 [창자 개구리] 6마리 때문에 잠을 못 잔대요." },
+  jb_hunt_crow: { kind: "hunt", npc: "willow_florist", lv: 16, sk: "gather", mob: "eyecrow", n: 5, text: "꽃집 아이 봄이의 꽃밭을 [눈알 까마귀] 5마리가 노려봐요. 너무 무섭대요!" },
+  jb_hunt_boar: { kind: "hunt", npc: "store_kong", lv: 28, sk: "gather", mob: "splitboar", n: 5, text: "심부름꾼 콩콩이 장 보러 가는 길을 [반쪽 멧돼지] 5마리가 막는대요." },
+  jb_hunt_moth: { kind: "hunt", npc: "lib_borum", lv: 48, sk: "gather", mob: "mothface", n: 6, when: "night", text: "밤마다 도서관 창문에 [인면 나방]이 달라붙어요. 사서 보름이 6마리만 치워 달래요." },
+  jb_hunt_hound: { kind: "hunt", npc: "merc_grey", lv: 52, sk: "gather", mob: "bonehound", n: 6, rep: 10, text: "용병단장 그레이가 단골에게만 맡기는 토벌이에요. [가죽 벗겨진 사냥개] 6마리!" },
+  jb_hunt_squid: { kind: "hunt", npc: "dongdong", lv: 68, sk: "gather", mob: "squidrat", n: 6, text: "관리인 동동이 하수구로 기어 올라오는 [촉수 쥐] 6마리를 잡아 달래요. 으, 미끌미끌!" },
+  jb_hunt_bear: { kind: "hunt", npc: "merc_grey", lv: 104, sk: "gather", mob: "bearmaw", n: 3, rep: 30, text: "그레이가 믿는 친구에게만 부탁한대요. [아가리 곰] 3마리, 만만치 않을 거예요." },
+  jb_hunt_stag: { kind: "hunt", npc: "inn_toto", lv: 128, sk: "gather", mob: "ribdeer_gold", n: 4, text: "졸린 나그네 토토가 단풍 왕도에서 [단풍 갈비뼈 사슴]에게 쫓겼대요. 4마리만 혼내 주세요." },
+  jb_hunt_squirrel: { kind: "hunt", npc: "hall_bori", lv: 156, sk: "gather", mob: "blightsquirrel", n: 5, rush: 25, text: "이장 보리가 급해요! 왕도 길목의 [한 꼬리 다람쥐떼] 5무리를 서둘러 정리해 주세요." },
+  jb_sc_pipi: { kind: "scout", npc: "hall_pipi", lv: 1, sk: "deliver", map: ["meadow", "forest", "crypt"], text: "지도 제작자 피피가 새 지도에 그릴 곳을 둘러보고 와 달래요. 길만 보고 오면 돼요!" },
+  jb_sc_lira: { kind: "scout", npc: "inn_lira", lv: 5, sk: "deliver", map: ["meadow", "forest", "city"], when: "night", text: "음유시인 리라가 밤 풍경 노래를 짓는대요. 깜깜한 밤길을 다녀와서 들려주세요." },
+  jb_sc_lumi: { kind: "scout", npc: "cafe_lumi", lv: 10, sk: "deliver", map: ["city", "sewer", "cave"], text: "책벌레 루미가 소설 배경으로 쓸 곳을 직접 보고 와서 이야기해 달래요." },
+  jb_sc_mimi: { kind: "scout", npc: "merc_mimi", lv: 15, sk: "deliver", map: ["forest", "crypt", "abyss"], rush: 12, text: "접수원 미미가 급하게 정찰을 부탁해요! 다녀와서 바로 보고해 주세요." },
+  jb_sc_sol: { kind: "scout", npc: "willow_bard", lv: 25, sk: "deliver", map: ["cave", "abyss", "maple"], text: "음유시인 솔이 새 노래의 무대를 찾아요. 어떤 곳인지 보고 와서 들려주세요." },
+  jb_fish_somi: { kind: "fish", npc: "cafe_somi", lv: 1, sk: "fish", item: "fish_s", n: 4, text: "단골 손님 솜이네 고양이가 [송사리] 4마리를 목 빠지게 기다려요." },
+  jb_fish_rain: { kind: "fish", npc: "willow_fisher", lv: 5, sk: "fish", item: "fish_m", n: 3, when: "rain", text: "비 오는 날엔 물고기가 잘 문대요! 낚시꾼 갈대가 [무지개 송어] 3마리를 기다려요." },
+  jb_fish_gold: { kind: "fish", npc: "juju", lv: 25, sk: "fish", item: "fish_l", n: 1, rep: 10, text: "쥬쥬가 단골에게만 슬쩍 부탁해요. 귀하디귀한 [황금 잉어] 한 마리!" },
+  jb_wood_rain: { kind: "bring", npc: "dongdong", lv: 1, sk: "gather", item: "m_w1", n: 10, when: "rain", rush: 15, text: "비가 새요! 관리인 동동이 지붕 틈을 막을 [마른 가지] 10개가 급하대요." },
+  jb_ore_tong: { kind: "bring", npc: "forge_tong", lv: 20, sk: "gather", item: "m_o3", n: 6, text: "견습 대장장이 통통이 캉캉 몰래 연습하려고 [네온 고철] 6개를 찾아요. 비밀이에요!" },
+  jb_crys_bogle: { kind: "bring", npc: "bogle", lv: 30, sk: "gather", item: "m_h4", n: 6, rep: 30, text: "보글이 친구에게만 털어놓는 실험이래요. [수정꽃] 6송이, 조심조심!" },
+  jb_steam: { kind: "make", npc: "inn_maru", lv: 30, sk: "cook", item: "fd_steam", n: 2, rep: 30, text: "여관 주인 마루가 친구에게만 맡기는 귀빈상이에요. [장님고기 찜] 2접시!" },
+  jb_feast: { kind: "make", npc: "diner_reg2", lv: 50, sk: "cook", item: "fd_feast", n: 1, rush: 30, text: "단골 손님 뭉치가 생일 잔치를 열어요! 서둘러 [쥬쥬 특선 정식]을 차려 주세요." },
+  jb_elspd: { kind: "make", npc: "inn_toto", lv: 30, sk: "alch", item: "el_spd", n: 2, text: "졸린 나그네 토토가 잠 깨는 데 좋은 [신속의 물약] 2병을 원해요." },
+  jb_dl_tale: { kind: "deliver", npc: "story", to: "inn_lira", lv: 5, sk: "deliver", when: "night", text: "이야기꾼 할머니 소담의 옛이야기 책을 여관의 리라에게 갖다주세요. 밤이 깊기 전에!" },
+  jb_dl_kong: { kind: "deliver", npc: "store_kong", to: "merc_mimi", lv: 15, sk: "deliver", text: "심부름꾼 콩콩이 깜빡한 장부를 늑대발 용병사무소 미미에게 전해 주세요." },
+  jb_dl_lunch: { kind: "deliver", npc: "juju", to: "willow_fisher", lv: 20, sk: "deliver", rep: 10, text: "쥬쥬가 단골에게만 맡기는 배달이에요. 낚시꾼 갈대의 도시락을 버드나무 마을까지!" },
 };
+/**
+ * Board v2 grades, rolled per offer from (name, day, id): 0 쉬움 · 1 보통 · 2 어려움 by weight `odds`. Items and
+ * monsters × n (rounded up), a parcel's time × lim, scouting goes to map[grade]; gold, life XP and trust × pay.
+ */
+const JB_GRADE = { name: ["쉬움", "보통", "어려움"], odds: [45, 35, 20], n: [1, 1.5, 2], lim: [1, 0.8, 0.65], pay: [1, 1.6, 2.5] };
+/** 긴급: one non-delivery offer in `odds` (and every `rush` row) must be finished within `min` minutes (the row's `rush` wins) for gold × bonus; late it still pays without the bonus. */
+const JB_RUSH = { odds: 4, min: 15, bonus: 1.5 };
 /**
  * What a board job pays (B.8, B.9): gold gold[0] + gold[1]·L (deliveries dGold, plus up to `tip` more by the time
  * left), life XP lifeNeed(L)·xp in the job's skill, trust `rep` with the NPC (deliveries: repTo with the

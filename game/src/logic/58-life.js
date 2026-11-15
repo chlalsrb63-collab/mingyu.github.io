@@ -371,21 +371,56 @@ function jbEnsure(S, p) {
   p.jbOff = null;
   p.dirty = true;
 }
-/** Today's offers for a sheet: up to JB_PAY.offers templates it qualifies for, seeded by name and day. */
+/** Does a sheet qualify for template `t`: its level (hunts: the character's) and, for a trust row, the NPC's trust. */
+const jbQual = (ch, t) => (t.kind === "hunt" ? ch.lvl : ch.life[t.sk].lv) >= t.lv && !(t.rep > repOf(ch, t.npc));
+/**
+ * Today's offers for a sheet: up to JB_PAY.offers templates it qualifies for (not the night / rain extras), seeded
+ * by name and day; each draw prefers a kind not drawn yet, so a day is a mix.
+ */
 function jbOffers(ch, day) {
   const box = { seed: strHash(`${ch.name}:${day}:jb`) | 0 };
-  const pool = Object.keys(JB).filter((id) => ch.life[JB[id].sk].lv >= JB[id].lv);
-  const out = [];
-  while (out.length < JB_PAY.offers && pool.length) out.push(pool.splice(ri(box, 0, pool.length - 1), 1)[0]);
+  const pool = Object.keys(JB).filter((id) => !JB[id].when && jbQual(ch, JB[id]));
+  const out = [], kinds = new Set();
+  while (out.length < JB_PAY.offers && pool.length) {
+    const fresh = pool.filter((id) => !kinds.has(JB[id].kind)), from = fresh.length ? fresh : pool;
+    const id = from[ri(box, 0, from.length - 1)];
+    pool.splice(pool.indexOf(id), 1);
+    out.push(id);
+    kinds.add(JB[id].kind);
+  }
   return out;
 }
-/** The offers this player sees today (drawn once a day per session: a level gained at noon does not reshuffle them). */
+/** The town's situation now: "night", "rain" (either, both or none). */
+const jbSit = (now) => [isNight(now) ? "night" : "", weatherAt(START.map, now) === WX.rain ? "rain" : ""].filter(Boolean);
+/** The offers this player sees today (drawn once a day per session: a level gained at noon does not reshuffle them), plus one extra per situation that holds now. */
 function jbOffersOf(S, p) {
   jbEnsure(S, p);
-  const day = p.ch.jobBoard.day;
-  if (!p.jbOff || p.jbOff.day !== day) p.jbOff = { day, ids: jbOffers(p.ch, day) };
-  return p.jbOff.ids;
+  const ch = p.ch, day = ch.jobBoard.day;
+  if (!p.jbOff || p.jbOff.day !== day) p.jbOff = { day, ids: jbOffers(ch, day) };
+  const extra = [];
+  for (const w of jbSit(S.now)) {
+    const c = Object.keys(JB).filter((id) => JB[id].when === w && jbQual(ch, JB[id]));
+    if (c.length) extra.push(c[(strHash(`${ch.name}:${day}:${w}`) >>> 0) % c.length]);
+  }
+  // a taken situational job stays on the board after the night or the rain ends
+  const a = ch.jobBoard.active;
+  if (a && JB[a.id].when && !extra.includes(a.id)) extra.push(a.id);
+  return p.jbOff.ids.concat(extra.filter((id) => !p.jbOff.ids.includes(id)));
 }
+/** An offer's grade (0 쉬움 · 1 보통 · 2 어려움) and 긴급 minutes (0 = none), fixed by name, day and template. */
+function jbRoll(ch, day, id) {
+  const box = { seed: strHash(`${ch.name}:${day}:${id}:g`) | 0 }, t = JB[id], O = JB_GRADE.odds;
+  let r = rnd(box) * O.reduce((a, b) => a + b, 0), g = 0;
+  while (g < O.length - 1 && r >= O[g]) { r -= O[g]; g++; }
+  const urgent = t.kind !== "deliver" && (t.rush > 0 || ri(box, 1, JB_RUSH.odds) === 1);
+  return { g, rush: urgent ? t.rush || JB_RUSH.min : 0 };
+}
+/** What the job needs by its grade: items or monsters (n × grade, rounded up), or 0 (deliveries, scouting). */
+const jbNeed = (t, g) => (t.n ? Math.ceil(t.n * JB_GRADE.n[g]) : 0);
+/** A scouting job's map for its grade. */
+const jbMap = (t, g) => t.map[Math.min(g, t.map.length - 1)];
+/** A hunt's progress: kills of its monster since it was taken (`active.prog` keeps the kill count at that time). */
+const jbKills = (ch, a) => Math.max(0, (ch.mk[JB[a.id].mob] | 0) - a.prog);
 /** Where a static NPC stands: { m, x, y }, or null. */
 function lifePostAt(id) {
   const m = Object.hasOwn(NPC_MAP, id) ? mapOf(NPC_MAP[id]) : null;
@@ -427,13 +462,15 @@ function jbRoute(id) {
   return n;
 }
 /** A parcel's time limit (ms): the path at 85 % walking speed, × 1.8, + 20 s. */
-const jbLimit = (id) => Math.round(((jbRoute(id) * T) / (BASE_SPD * JB_PAY.limit[0])) * JB_PAY.limit[1] * 1000 + JB_PAY.limit[2]);
+const jbLimit = (id, g = 0) => Math.round(((jbRoute(id) * T) / (BASE_SPD * JB_PAY.limit[0])) * JB_PAY.limit[1] * JB_GRADE.lim[g] * 1000 + JB_PAY.limit[2]);
 /** Walking speed while carrying a parcel (deriveStats reads it): ×0.85 at 배달 1, ×1.0 at 25, ×1.15 at 50. */
 const parcelSpd = (ch) => JB_PAY.spd[0] + JB_PAY.spd[1] * ch.life.deliver.lv;
-/** A job's gold before any tip (deliveries: B.8, others: B.9), +10 % from a 단골's own NPC. */
-function jbGold(ch, t) {
-  const L = ch.life[t.sk].lv, base = t.kind === "deliver" ? JB_PAY.dGold[0] + JB_PAY.dGold[1] * L : JB_PAY.gold[0] + JB_PAY.gold[1] * L;
-  return Math.round(base * (repOf(ch, t.npc) >= REP_TIER[0] ? REP_TIP : 1));
+/** The level a job pays by: its skill's (a hunt: the character's tier, 1–50). */
+const jbL = (ch, t) => (t.kind === "hunt" ? clamp(Math.floor(toTier(ch.lvl)), 1, LIFE_MAX) : ch.life[t.sk].lv);
+/** A job's gold before any tip or 긴급 bonus (deliveries: B.8, others: B.9) × its grade, +10 % from a 단골's own NPC. */
+function jbGold(ch, t, g = 0) {
+  const L = jbL(ch, t), base = t.kind === "deliver" ? JB_PAY.dGold[0] + JB_PAY.dGold[1] * L : JB_PAY.gold[0] + JB_PAY.gold[1] * L;
+  return Math.round(base * JB_GRADE.pay[g] * (repOf(ch, t.npc) >= REP_TIER[0] ? REP_TIP : 1));
 }
 /** A parcel is lost (late, or its carrier fell): nothing paid, no trust lost, the job off the board's hand. */
 function jbFail(S, p) {
@@ -462,25 +499,27 @@ function addRep(S, p, id, n) {
 }
 /** A board job handed in: items taken (or the parcel), gold (+ the tip), life XP, trust; one more done today. */
 function jbPay(S, p) {
-  const ch = p.ch, a = ch.jobBoard.active, t = JB[a.id], now = S.now;
-  let gold = jbGold(ch, t);
+  const ch = p.ch, a = ch.jobBoard.active, t = JB[a.id], now = S.now, { g, rush } = jbRoll(ch, ch.jobBoard.day, a.id), k = JB_GRADE.pay[g];
+  let gold = jbGold(ch, t, g), fast = false;
   if (t.kind === "deliver") {
     gold += Math.round(gold * JB_PAY.tip * clamp((p.parcel.until - now) / p.parcel.limit, 0, 1));
     p.parcel = null; p.stc = null;
-    addRep(S, p, t.to, JB_PAY.repTo);
-    addRep(S, p, t.npc, JB_PAY.repFrom);
+    addRep(S, p, t.to, Math.round(JB_PAY.repTo * k));
+    addRep(S, p, t.npc, Math.round(JB_PAY.repFrom * k));
     ch.cnt.deliver++;
   } else {
-    takeItem(ch, t.item, t.n);
-    addRep(S, p, t.npc, JB_PAY.rep);
+    if (t.item) takeItem(ch, t.item, jbNeed(t, g));
+    fast = rush > 0 && now <= a.expAt;
+    if (fast) gold = Math.round(gold * JB_RUSH.bonus);
+    addRep(S, p, t.npc, Math.round(JB_PAY.rep * k));
   }
   ch.gold += gold;
   p.gain.push(["gold", gold]);
-  gainLife(S, p, t.sk, Math.round(lifeNeed(ch.life[t.sk].lv) * JB_PAY.xp));
+  gainLife(S, p, t.sk, Math.round(lifeNeed(ch.life[t.sk].lv) * JB_PAY.xp * k));
   ch.jobBoard.done.push(a.id);
   ch.jobBoard.active = null;
   S.maps[p.map].ev.push(["dl", p.eid, 2]);
-  toast(p, `알바 완료! ${gold}G (${ch.jobBoard.done.length}/${JB_PAY.perDay})`);
+  toast(p, `알바 완료${fast ? " — 긴급 성공!" : ""} ${gold}G (${ch.jobBoard.done.length}/${JB_PAY.perDay})`);
   checkAch(S, p);
   p.dirty = true;
 }
@@ -617,7 +656,10 @@ function lifeValidate(S, p, a) {
         const to = t.kind === "deliver" ? t.to : t.npc;
         if (!npcReach(p, to)) return bad(`${npcName(to)}에게 가져가세요`);
         if (t.kind === "deliver") return act.prog === 1 && p.parcel && now <= p.parcel.until ? OK : bad("전할 꾸러미가 없습니다");
-        return countItem(ch, t.item) >= t.n ? OK : bad(`${ITEMS[t.item].name}${pp(ITEMS[t.item].name, "이가")} 부족합니다 (${countItem(ch, t.item)}/${t.n})`);
+        const g = jbRoll(ch, jb.day, act.id).g, need = jbNeed(t, g);
+        if (t.kind === "hunt") { const k = jbKills(ch, act); return k >= need ? OK : bad(`${MOBS[t.mob].name}${pp(MOBS[t.mob].name, "을를")} 더 잡아야 합니다 (${k}/${need})`); }
+        if (t.kind === "scout") return act.prog >= 1 ? OK : bad(`먼저 ${MAP_META[jbMap(t, g)].name}에 다녀오세요`);
+        return countItem(ch, t.item) >= need ? OK : bad(`${ITEMS[t.item].name}${pp(ITEMS[t.item].name, "이가")} 부족합니다 (${countItem(ch, t.item)}/${need})`);
       }
       return bad("잘못된 요청입니다");
     }
@@ -664,15 +706,17 @@ function lifeApply(S, p, a) {
     case "jb": {
       const jb = ch.jobBoard;
       if (a.a === "take") {
-        const t = JB[a.id];
-        jb.active = { id: a.id, npc: t.npc, prog: 0, expAt: 0 };
-        toast(p, `알바를 맡았습니다: ${t.text}`);
+        const t = JB[a.id], { g, rush } = jbRoll(ch, jb.day, a.id);
+        // a hunt keeps the kill count it starts from in `prog`; 긴급 keeps its deadline in `expAt`
+        jb.active = { id: a.id, npc: t.npc, prog: t.kind === "hunt" ? ch.mk[t.mob] | 0 : 0, expAt: rush ? now + rush * 60000 : 0 };
+        p.jbSeen = 0; p.jbLate = 0;
+        toast(p, `[${JB_GRADE.name[g]}${rush ? ` · 긴급 ${rush}분` : ""}] 알바를 맡았습니다: ${t.text}`);
       } else if (a.a === "drop") {
         if (p.parcel) { p.parcel = null; p.stc = null; }
         jb.active = null;
         toast(p, "알바를 그만두었습니다.");
       } else if (a.a === "pick") {
-        const t = JB[jb.active.id], limit = jbLimit(jb.active.id);
+        const t = JB[jb.active.id], limit = jbLimit(jb.active.id, jbRoll(ch, jb.day, jb.active.id).g);
         p.parcel = { id: jb.active.id, from: t.npc, to: t.to, until: now + limit, limit };
         p.stc = null;
         jb.active.prog = 1;
@@ -699,6 +743,7 @@ function lifeTick(S, p, now) {
     else if (!g.sent && now >= g.tapAt) { g.sent = true; S.maps[p.map].ev.push(["gt", p.eid, NODE.tap]); }
   }
   if (p.parcel && (p.dead || now > p.parcel.until)) jbFail(S, p);
+  jbWatch(S, p, now);
   if (p.ng) for (const id of Object.keys(p.ng)) {
     const o = p.ng[id];
     for (const i of Object.keys(o)) if (o[i] <= now) delete o[i];
@@ -707,13 +752,49 @@ function lifeTick(S, p, now) {
   jbEnsure(S, p);
 }
 
+/**
+ * Board v2, once a tick: a hunt's kill count (a toast per kill, dirty), a scout reaching its map (`prog` 1), and
+ * the board re-sent when night or rain starts or ends in the town (its extra offers change).
+ */
+function jbWatch(S, p, now) {
+  const ch = p.ch, a = ch.jobBoard.active, t = a && JB[a.id];
+  if (t && (t.kind === "hunt" || t.kind === "scout")) {
+    const g = jbRoll(ch, ch.jobBoard.day, a.id).g;
+    if (t.kind === "scout" && a.prog === 0 && p.map === jbMap(t, g)) {
+      a.prog = 1;
+      toast(p, `[알바] ${MAP_META[p.map].name}${pp(MAP_META[p.map].name, "을를")} 둘러봤습니다. ${npcName(t.npc)}에게 알려 주세요!`);
+      p.dirty = true;
+    } else if (t.kind === "hunt") {
+      const need = jbNeed(t, g), k = Math.min(need, jbKills(ch, a));
+      if (p.jbSeen !== k) {
+        if (p.jbSeen !== undefined && k > p.jbSeen) toast(p, k >= need ? `[알바] ${MOBS[t.mob].name} ${k}/${need} — 다 잡았습니다! ${npcName(t.npc)}에게 알려 주세요.` : `[알바] ${MOBS[t.mob].name} ${k}/${need}`);
+        p.jbSeen = k;
+        p.dirty = true;
+      }
+    }
+  }
+  if (t && t.kind !== "deliver" && a.expAt && now > a.expAt && p.jbLate !== a.expAt) {
+    if (p.jbLate !== undefined) toast(p, "긴급 시간이 지났습니다. 지금 마쳐도 기본 보수는 받습니다.");
+    p.jbLate = a.expAt;
+    p.dirty = true;
+  }
+  const sit = jbSit(now).join();
+  if (p.jbSit !== sit) { if (p.jbSit !== undefined) p.dirty = true; p.jbSit = sit; }
+}
+
 // ── the wire (B.12)
 
-/** self.jb: [day, offers [[id, kind, npc name, text, gold, skill index]…], done ids, active ? [id, prog, need n, secs left] : 0]. */
+/**
+ * self.jb: [day, offers [[id, kind, npc name, text, gold, skill index, grade, need n, 긴급 minutes]…], done ids,
+ * active ? [id, prog, need n, parcel secs left, 긴급 secs left (0 none, -1 missed), done so far (hunt kills, scout 0/1)] : 0].
+ */
 function jbView(p) {
-  const ch = p.ch, offers = jbOffersOf(p.S, p), a = ch.jobBoard.active;
-  return [ch.jobBoard.day, offers.map((id) => { const t = JB[id]; return [id, t.kind, npcName(t.npc), t.text, jbGold(ch, t), LIFE.indexOf(t.sk)]; }),
-    ch.jobBoard.done.slice(), a ? [a.id, a.prog, JB[a.id].n || 0, p.parcel ? Math.max(0, Math.ceil((p.parcel.until - p.S.now) / 1000)) : 0] : 0];
+  const ch = p.ch, day = ch.jobBoard.day, offers = jbOffersOf(p.S, p), a = ch.jobBoard.active, now = p.S.now;
+  const ar = a && jbRoll(ch, day, a.id), at = a && JB[a.id];
+  return [day, offers.map((id) => { const t = JB[id], r = jbRoll(ch, day, id); return [id, t.kind, npcName(t.npc), t.text, jbGold(ch, t, r.g), LIFE.indexOf(t.sk), r.g, jbNeed(t, r.g), r.rush]; }),
+    ch.jobBoard.done.slice(), a ? [a.id, a.prog, jbNeed(at, ar.g), p.parcel ? Math.max(0, Math.ceil((p.parcel.until - now) / 1000)) : 0,
+      a.expAt && at.kind !== "deliver" ? (now <= a.expAt ? Math.max(1, Math.ceil((a.expAt - now) / 1000)) : -1) : 0,
+      at.kind === "hunt" ? Math.min(jbNeed(at, ar.g), jbKills(ch, a)) : at.kind === "scout" ? Math.min(1, a.prog) : 0] : 0];
 }
 /** self.rep: [[npcId, trust]…] (only NPCs above 0). */
 const repView = (ch) => Object.keys(ch.rep).map((id) => [id, ch.rep[id]]);
@@ -739,7 +820,7 @@ function lifeDefs() {
     nodes: { kinds: NODE_KINDS, names: NODE_NAME, cd: NODE.cd, ch: NODE.ch, range: NODE.range, tap: NODE.tap },
     mg: MG, craft: CRAFT, bless: ENH_BLESS, gearCraft: { q: GEAR_CRAFT.q },
     jb: Object.fromEntries(Object.keys(JB).map((id) => [id, { ...JB[id], npcName: npcName(JB[id].npc), toName: JB[id].to ? npcName(JB[id].to) : "" }])),
-    jbPay: JB_PAY,
+    jbPay: JB_PAY, jbGrade: JB_GRADE, jbRush: JB_RUSH,
     rep: { tier: REP_TIER, name: REP_NAME, disc: REP_DISC, tip: REP_TIP, perk: REP_PERK },
     pouch: { max: POUCH_MAX, ids: Object.keys(ITEMS).filter(pouchOk) },
     master: LIFE_MASTER,
