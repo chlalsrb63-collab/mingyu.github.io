@@ -59,7 +59,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 - [x] [VFX] 새 보스 졸개 3종의 전용 그림: 혈루 결정 전갈 `bloodshard`(지금은 붉게 칠한 전갈), 밤장막 박쥐 `nightbat`(지금은 batcluster 색만 바꿈), 먹장어 머리 `hagfishhead`(지금은 eelknot). `game/public/mobart_f.js`의 보스 그림 방식 그대로, 지옥 괴수 느낌(귀엽지 않게), 16색 이내·외곽선. `--page mobs --q "k=bloodshard,nightbat,hagfishhead&z=4"` 스크린샷 1장
 - [x] [VFX] 꽃무덤 고래 `bloomwhale`의 잠수/떠오름 이펙트와 혈루 왕도마뱀 `bloodhorn`의 혈루 사출(jet) 물줄기를 `game/public/skillfx.js`에 코드로 그리기 (서버 이벤트 `bt`/`bc`는 그대로, 그림만). 바닥 경고와 겹쳐도 잘 보이게
 - [x] [VFX] 스킬 이펙트·타격음 점검표: 모든 액티브 스킬 35개와 직업 스킬(`game/src/logic/03-skills.js`·`02-jobs-stats.js`의 `fx` 번호)마다 지금 화면에 무엇이 그려지고(`game/public/skillfx.js`, `swing.js`, `events.js`, `growth.js`) 어떤 소리가 나는지(`game/public/audio.js`) 표로 정리하고, "약함/보통/좋음"과 이유를 매겨 `docs/fx-audit.md`에 작성. 맨 아래에 고칠 순서(약한 것부터) 목록. 코드는 고치지 말 것
-- [ ] [VFX] `docs/fx-audit.md`에서 "약함"인 검·단검·창 스킬 이펙트를 다시 그리기 (휘두름 궤적, 타격 순간 섬광·파편, 바닥 충격). 서버 이벤트·판정 범위는 그대로, 그림이 실제 판정 범위와 맞게. 스킬마다 미리보기 스크린샷
+- [x] [VFX] `docs/fx-audit.md`에서 "약함"인 검·단검·창 스킬 이펙트를 다시 그리기 (휘두름 궤적, 타격 순간 섬광·파편, 바닥 충격). 서버 이벤트·판정 범위는 그대로, 그림이 실제 판정 범위와 맞게. 스킬마다 미리보기 스크린샷
 - [ ] [VFX] 같은 방식으로 지팡이·마도서·활 스킬 (원소별 색: 불·얼음·번개·암흑 구분이 한눈에)
 - [ ] [VFX] 같은 방식으로 해머와 직업 스킬(파괴자·머서너리·성기사 등, `hammer_*`, `ironsiege`, `oathward` …)
 - [ ] [SFX] `docs/fx-audit.md`에서 전용 소리가 없는 스킬마다 시전음·타격음을 `game/public/audio.js`에 코드로 만들고 연결 (무기 종류별로 결이 다르게: 금속·둔기·마법·활시위). 지금 가장 큰 타격음보다 크지 않게, 보고서에 새 소리 이름 목록
