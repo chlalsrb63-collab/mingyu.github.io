@@ -41,7 +41,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 
 - [x] 거울(외형 변경)을 골드가 부족할 때 시도하면 거절되고 골드·외형이 그대로인지 확인하는 테스트를 `game/tests/looks.mjs`에 추가
 - [x] 더 이상 쓰지 않는 옛 스킬 이펙트 코드 정리: `game/public/growth.js`의 `skillFx` 25–32번·`zoneFx` 4–6번, `game/public/client.js`의 `attackFx` 10–24번, `game/public/scene2d.js`의 `showcase`/`renderStage`/`leaveStage` — 호출하는 곳이 없는지 grep으로 확인한 뒤 삭제, 테스트와 `shot.mjs --live`로 오류 없음 확인
-- [ ] 휴대폰 가로 화면의 캐릭터 생성 페이지에서 추천 모습 버튼에 이름이 안 보이는 문제 수정 (`game/public/lobby.css`), `shot.mjs`로 iPhone 가로 크기 한 장 확인
+- [x] 휴대폰 캐릭터 생성 화면에서 추천 외형 20개 이름을 표시. 844×390, 667×375, 390×844 확인.
 - [x] 몬스터 도감 설명 129개를 `11-mob-lore.js`에 추가하고 등록 카드에 표시. 지역은 선택 메뉴로 전환하고 설명 데이터·등록 전후 화면 검증.
 - [ ] 일일 과제 종류 2가지 추가 (모닥불에서 요리 1회, 파티로 몬스터 10마리) — `game/src/logic/60-content.js`, 테스트 추가
 - [x] 가방에서 요구 레벨을 충족한 장비로 빈 슬롯을 채울 수 있으면 ▲와 부위를 표시. 실제 서버에서 갑옷을 벗긴 뒤 `#w-inv`로 확인.
