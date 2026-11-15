@@ -271,6 +271,7 @@ export function openWin(id) {
 /** Hooks a module sets for its own window being closed (the trade window cancels the trade: sxwin.js). */
 export const onClose = {};
 export function closeWin(id) {
+  if (id === "inv" && G.invNew) G.invNew.clear();   // the 새 tags last until the bag is put away
   if (id === "inv" && compact()) {
     if (tip.from && winEl("inv").contains(tip.from)) hideTip();
     if (G.sel >= 0) { G.sel = -1; refreshUi(); }
@@ -403,6 +404,7 @@ export const chatLog = $("#chat-log");
 export function addChat(m, cls, name) {
   const stick = chatLog.scrollTop + chatLog.clientHeight >= chatLog.scrollHeight - 12;
   const p = el("p", cls || "");
+  p.title = new Date().toTimeString().slice(0, 5);   // hover a line: when it was said
   if (name) {
     const who = el("span", "who", `${name}: `);
     // the speaker's job, when they stand in this place (chat carries a name only)
@@ -538,8 +540,19 @@ export function setupWindows({ walkToDoor }) {
     const m = input.value.trim();
     const a = m && chatAction(m);
     if (a) act(a);
+    if (m && sent[sent.length - 1] !== m) { sent.push(m); if (sent.length > 20) sent.shift(); }
+    back = sent.length;
     input.value = "";
     input.blur();
+  });
+  // ↑ / ↓ in the chat box: the last 20 lines sent (a /w 이름 or a long party call, again)
+  const sent = [];
+  let back = 0;
+  $("#chat-in").addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    back = clamp(back + (e.key === "ArrowUp" ? -1 : 1), 0, sent.length);
+    e.target.value = sent[back] || "";
   });
   chatLog.addEventListener("click", () => {
     if (!touch()) return;

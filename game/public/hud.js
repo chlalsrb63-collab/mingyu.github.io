@@ -32,8 +32,8 @@ import * as Trophies from "./trophies.js";
 import * as Track from "./track.js";
 import * as Info from "./infocard.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
-import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn } from "./windows.js";
-import { openTree, openStats, renderInv, renderChar, renderSkills } from "./win_char.js";
+import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn, addChat, toast } from "./windows.js";
+import { openTree, openStats, renderInv, renderChar, renderSkills, trackNew } from "./win_char.js";
 import { renderWarp, renderDaily, renderWeek, renderAchieve, renderCollect, tutCard, eventWidget, castBar, tickDaily } from "./win_world.js";
 import { renderShop, renderSmith, renderQuest } from "./win_shop.js";
 import { K } from "./keymap.js";
@@ -162,7 +162,14 @@ function hotbar(s) {
     const [n, show] = Growth.potionCount(kind);
     setSrc($(`${btn} img`), G.icons.url[show]);
     $(`${btn} .n`).textContent = n;
-    $(btn).style.opacity = n ? 1 : 0.45;
+    // running low (2 or fewer) turns the count amber, none turns it red; crossing either says so once
+    const b = $(btn), name = kind === "hp" ? "HP 물약" : "MP 물약", was = (hotbar.had ||= {})[kind];
+    b.classList.toggle("low", n > 0 && n <= 2);
+    b.classList.toggle("none", !n);
+    b.title = n ? `${name} (${K(kind)}) — ${n}개${n <= 2 ? " · 얼마 남지 않았습니다" : ""}` : `${name}이 없습니다 — 잡화점에서 살 수 있습니다`;
+    if (was !== undefined && was > 2 && n > 0 && n <= 2) addChat(`${name}이 ${n}개 남았습니다.`, "sys");
+    if (was > 0 && !n) toast(`${name}이 떨어졌습니다 — 잡화점에서 살 수 있습니다`);
+    hotbar.had[kind] = n;
   }
   QS.render();                                      // the quick slots 1–9 (quickslots.js)
   // the attack button carries the weapon in hand
@@ -234,6 +241,7 @@ export function refreshUi() {
   hotbar(s);
   tracker(s);
   const near = G.near && G.near.role;
+  trackNew(s);                                  // 새로 얻은 bag items (win_char.js)
   Charms.sync(s);                               // what the server confirmed: a charm set down, a seal broken (charms.js)
   draw("inv", () => [Charms.bagKey(s), s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs, s.bagCap, Gather.pouchKey(s)], renderInv);
   // the C window: 장비 or 능력치 (points can be bought by a campfire or at 수련관 카이)

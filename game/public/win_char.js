@@ -26,6 +26,17 @@ import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
 
 // ── the bag ──
+/** A bag entry's identity without its stack count (a bigger stack of potions is not a new item). */
+const invSig = (e) => JSON.stringify(e, (k, v) => (k === "n" ? undefined : v));
+/** Every sheet (refreshUi): entries not in the bag before go in `G.invNew`; the first sheet only learns the bag. */
+export function trackNew(s) {
+  if (s.inv === trackNew.inv) return;
+  trackNew.inv = s.inv;
+  const now = s.inv.map(invSig);
+  if (G.invKnown) for (const k of now) if (!G.invKnown.has(k)) G.invNew.add(k);
+  G.invKnown = new Set(now);
+  G.invNew = new Set(now.filter((k) => G.invNew && G.invNew.has(k)));
+}
 export function renderInv(s) {
   const it = G.defs.items;
   $("#inv-gold").textContent = "";
@@ -73,6 +84,13 @@ export function renderInv(s) {
     // a usable thing can be dragged onto the quick slots; the slot it sits in shows in the corner
     if (usable) { QS.dragSource(node, ["i", entry.id]); if (at) node.append(el("span", "qk", at)); }
     if (free) node.append(el("span", "qk equip-ready", "▲"));
+    // 새로 얻음: glows with a 새 tag until hovered (or tapped), sorted, or the bag is closed
+    const k = invSig(entry);
+    if (G.invNew && G.invNew.has(k)) {
+      node.classList.add("new");
+      node.append(el("span", "nw", "새"));
+      node.addEventListener("pointerenter", () => { G.invNew.delete(k); node.classList.remove("new"); node.querySelector(".nw")?.remove(); }, { once: true });
+    }
     grid.append(node);
   }
   Housing.bagBar(s, $("#inv-grow"));

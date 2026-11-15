@@ -196,6 +196,7 @@ export function setupItems() {
   $("#inv-sort").addEventListener("click", () => {
     if (!G.self || G.self.inv.length < 2) return;
     act({ t: "sort" });
+    if (G.invNew) G.invNew.clear();
     G.sel = -1;
     hideTip();
     Sound.play("ui");
