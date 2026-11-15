@@ -424,6 +424,7 @@ function dimChest(S, dim, p) {
   p.dimRes = [dim.chal ? 1 : 0, dim.chal ? CHAL_KEYS.indexOf(dim.chal.k) : dim.floor, Math.round(((dim.clearAt | 0) - (dim.opened | 0)) / 1000), fl, r.gold, r.xp, wkN];
   dim.rt.ev.push(["dm", "chest", dim.chest.x, dim.chest.y]);
   toast(p, msg);
+  sqFind(S, p, "rift");   // arc A6: a rift sample for 보글 while 「균열의 표본」 is under way
   saveSoon(p);
 }
 function dimFail(S, dim, why) {

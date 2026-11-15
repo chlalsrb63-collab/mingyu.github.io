@@ -443,7 +443,13 @@ export async function checkData(dataDir = DATA_DIR) {
     const g = q.goal;
     if (!isObj(g)) err(qf, `${p}.goal`, "목표(goal)가 없습니다");
     else if (g.type === "kill") { if (!mob(g.mob)) err(qf, `${p}.goal.mob`, `알 수 없는 몬스터 "${g.mob}"`); if (!isInt(g.n) || g.n < 1) err(qf, `${p}.goal.n`, "n은 1 이상이어야 합니다"); }
-    else if (g.type === "collect") { if (!item(g.item)) err(qf, `${p}.goal.item`, `알 수 없는 아이템 "${g.item}"`); if (!isInt(g.n) || g.n < 1) err(qf, `${p}.goal.n`, "n은 1 이상이어야 합니다"); }
+    else if (g.type === "collect") {
+      if (!item(g.item)) err(qf, `${p}.goal.item`, `알 수 없는 아이템 "${g.item}"`); if (!isInt(g.n) || g.n < 1) err(qf, `${p}.goal.n`, "n은 1 이상이어야 합니다");
+      // quest-only finds: a quest item may drop from one kind (`mob`) or come from each cleared rift's chest (`rift`)
+      if ((g.mob != null || g.rift != null) && !itemOf(g.item, "quest")) err(qf, `${p}.goal.item`, "mob/rift 출처는 퀘스트 아이템(type quest)에만 쓸 수 있습니다");
+      if (g.mob != null && !mob(g.mob)) err(qf, `${p}.goal.mob`, `알 수 없는 몬스터 "${g.mob}"`);
+      if (g.rift != null && g.rift !== true) err(qf, `${p}.goal.rift`, "rift는 true만 쓸 수 있습니다");
+    }
     else if (g.type === "talk") { if (!npcIds.has(g.npc)) err(qf, `${p}.goal.npc`, `알 수 없는 NPC "${g.npc}"`); }
     else if (g.type === "visit") { if (!real(g.map) && !mapIds.has(g.map)) err(qf, `${p}.goal.map`, `알 수 없는 지도 "${g.map}"`); }
     else if (g.type === "elite" || g.type === "fb") {

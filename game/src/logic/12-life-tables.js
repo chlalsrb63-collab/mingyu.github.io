@@ -184,6 +184,7 @@ Object.assign(RECIPES, {
   el_def: recipeRow("alch", 25, "alch", [["m_h3", 2], ["m_o3", 1], ["flask", 1]], "el_def", 1, 88, { eq: ["sc_def"] }),
   el_xp: recipeRow("alch", 25, "alch", [["m_h3", 2], ["m_o3", 1], ["flask", 1]], "el_xp", 1, 178, { eq: ["sc_xp"] }),
   el_spd: recipeRow("alch", 30, "alch", [["m_h4", 1], ["m_w4", 1], ["flask", 1]], "el_spd", 1, 50),
+  q_ink: recipeRow("alch", 30, "alch", [["m_h4", 2], ["flask", 1]], "q_ink", 1, 60, { sq: "sq_borum_ink" }),   // arc A5's quest recipe: only while 보름's quest is on
   feather: recipeRow("alch", 35, "alch", [["m_h4", 1], ["m_w2", 1]], "feather", 1, 80),   // P7: was 2 수정꽃 + 심연 결정 + 판자 (525 G of goods for a 250 G feather)
   ru_mix: recipeRow("alch", 40, "alch", [["rune*", 3], ["m_h5", 1]], "rune*", 1, 200),
   el_all: recipeRow("alch", 50, "alch", [["m_h5", 2], ["m_o5", 1], ["m_w5", 1], ["flask", 1]], "el_all", 1, 400, { eq: ["sc_atk", "sc_def", "sc_xp"] }),

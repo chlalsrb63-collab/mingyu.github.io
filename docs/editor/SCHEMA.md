@@ -175,6 +175,8 @@ The routines add no character sheet fields.
       "done": "고맙네! 이제 밤에 잠 좀 자겠군.",
       "goal": { "type": "kill", "mob": "gutfrog", "n": 6 },
       //      { "type": "collect", "item": "fish_s", "n": 3 }      (items taken on hand-in)
+      //      { "type": "collect", "item": "q_record", "n": 4, "mob"?: "blightsquirrel", "rift"?: true }
+      //                 (quest item only: a kill of `mob` drops one 35 % of the time; `rift` = one per cleared rift chest)
       //      { "type": "talk", "npc": "town_baker" }
       //      { "type": "visit", "map": "willow" }
       //      { "type": "elite", "n": 1, "map"?: "forest", "mob"?: "hydrasnake", "named"?: "빛나는 눈의 세머리 뱀" }
@@ -207,7 +209,8 @@ the giver — or the recipient of a delivery — (`pick` 0–2 when the quest ha
 anywhere (a delivery's item goes back), `{a:"talk", npc}` beside that NPC.
 Progress: kill = kills of `mob` (party credit like the main quest), collect / deliver = what is in the
 bag (taken on hand-in), talk = once, visit = arriving on the map (or taking it while there), elite /
-fb = elite / field-boss kills (on `map`, of `mob`), make = outputs of the player's own recipes.
+fb = elite / field-boss kills (on `map`, of `mob`), make = outputs of the player's own recipes (a made quest
+item is handed over too; a recipe with `sq: questId` is known only while that quest is under way).
 Quest items (ITEMS type `quest`) can't be sold, stored or quick-slotted; one no quest names is removed
 when the sheet loads. Steps of a story are quests chained by `req.quest` (branches by `req.flag`).
 The client gets `defs.side` (each quest + `giverName giverMap turnIn turnInName turnInMap target
