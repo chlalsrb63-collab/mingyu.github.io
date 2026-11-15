@@ -187,49 +187,127 @@ function flurrySlash(wx, wy, ang) {
   }, 185);
 }
 
-/** The spear's straight reach, two moving twists, and a highlighted sweet-spot tip zone (72%–100%). */
-function spiralThrust(ax, ay, bx, by) {
+/**
+ * 창 직선 찌르기 (inter-basic melee & spiral thrust):
+ * 3 distinct phases (0..0.18 anticipation draw-back -> 0.18..0.62 straight thrust & locked endpoint -> 0.62..1 dissipation),
+ * with clear `±half` lane ticks, 72% sweet-spot collar, and an unmistakable barbed spearhead + target chevron at (bx, by).
+ */
+export function meleeSpearThrust(ax, ay, bx, by, half = 12, farRatio = 0.72) {
   const [sx, sy] = at(ax, ay, 13), [ex, ey] = at(bx, by, 13);
   const dx = ex - sx, dy = ey - sy, length = Math.hypot(dx, dy);
   if (length < 2) return;
   const ux = dx / length, uy = dy / length, nx = -uy, ny = ux;
-  const tipWx = ax + (bx - ax) * 0.86, tipWy = ay + (by - ay) * 0.86;
-  S3.fx.flash(bx, by, 7, 0, 0.14);
-  shards(tipWx, tipWy, 14, 4, 12, "#2f756e", "#dcfff0", 200);
+  const wdx = bx - ax, wdy = by - ay, wlen = Math.hypot(wdx, wdy) || 1;
+  const wux = wdx / wlen, wuy = wdy / wlen, wnx = -wuy, wny = wux;
+
+  // Ground lane ticks (`±half`) and endpoint ground bracket — open segments so boss telegraphs underneath stay visible
   S3.fxCustom((g, k) => {
-    const from = k ** 1.7, to = Math.min(1, 0.78 + k * 4);
-    if (k < 0.56) {
-      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, INK, 6);
-      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, "#356c72", 4);
-      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, "#e5fff0", 2);
+    if (k < 0.18) {
+      // Phase 1 (Anticipation): converging aim ticks near caster
+      const ak = k / 0.18, pull = (1 - ak) * 6;
+      for (const side of [-1, 1]) {
+        const [gx, gy] = at(ax - wux * pull + wnx * side * half * (1.15 - 0.25 * ak), ay - wuy * pull + wny * side * half * (1.15 - 0.25 * ak), 0);
+        px(g, gx - 2, gy - 1, 4, 3, INK);
+        px(g, gx - 1, gy, 2, 1, "#fff6b8");
+      }
+      return;
     }
-    for (let i = Math.ceil(length * from); i < length * to; i += 2) {
-      const u = i / length, inTip = u >= 0.72;
-      const spread = (inTip ? 9 : 7) * Math.sin(Math.PI * u) * (1 - k * 0.55);
-      const twist = Math.sin(u * Math.PI * 5.5 - k * 6) * spread;
-      const c1 = inTip ? "#fff6b8" : k < 0.52 ? "#b3f0d5" : "#5dc8b1";
-      const c2 = inTip ? "#7ef5d8" : "#4b9d99";
-      px(g, sx + dx * u + nx * twist - 1, sy + dy * u + ny * twist - 1, 4, 4, INK);
-      px(g, sx + dx * u + nx * twist, sy + dy * u + ny * twist, 2, 2, c1);
-      if (k < 0.68) {
-        px(g, sx + dx * u - nx * twist - 1, sy + dy * u - ny * twist - 1, 4, 4, INK);
-        px(g, sx + dx * u - nx * twist, sy + dy * u - ny * twist, 2, 2, c2);
+    const fade = k < 0.62 ? 1 : (1 - k) / 0.38;
+    g.globalAlpha = fade;
+    // Subtle `±half` lane boundary ticks at 35%, 72% (sweet-spot start), and 100% (endpoint)
+    for (const u of [0.35, farRatio, 1]) {
+      if (k >= 0.62 && u < farRatio) continue;
+      for (const side of [-1, 1]) {
+        const [gx, gy] = at(ax + wdx * u + wnx * side * half, ay + wdy * u + wny * side * half, 0);
+        px(g, gx - 2, gy - 1, 4, 3, INK);
+        px(g, gx - 1, gy, 2, 1, u >= farRatio ? "#fff6b8" : "#5dc8b1");
       }
     }
-    // Sweet-spot collar at 72% reach + barbed pixel spearhead along 72%–100%
-    if (to >= 0.72 && k < 0.68) {
-      const cx = sx + dx * 0.72, cy = sy + dy * 0.72, collar = Math.round(7 * (1 - k * 0.5));
+  }, 260);
+
+  // Air spear shaft, spiral wake, sweet-spot collar, and locked endpoint spearhead
+  S3.fxCustom((g, k) => {
+    // Phase 1 (0..0.18): Anticipation — spear point drawn back behind (sx, sy) with focus glint
+    if (k < 0.18) {
+      const ak = k / 0.18, back = (1 - ak) * 8;
+      const bx0 = sx - ux * (back + 10), by0 = sy - uy * (back + 10), tx0 = sx + ux * (8 - back), ty0 = sy + uy * (8 - back);
+      pixelLine(g, bx0, by0, tx0, ty0, INK, 5);
+      pixelLine(g, bx0, by0, tx0, ty0, "#356c72", 3);
+      pixelLine(g, bx0, by0, tx0, ty0, "#fff6b8", 1);
+      const r = Math.round(6 * (1 - ak * 0.5));
+      for (const s of [-1, 1]) {
+        px(g, sx - ux * back + nx * s * r - 1, sy - uy * back + ny * s * r - 1, 3, 3, INK);
+        px(g, sx - ux * back + nx * s * r, sy - uy * back + ny * s * r, 2, 2, "#7ef5d8");
+      }
+      px(g, tx0 - 1, ty0 - 1, 3, 3, "#ffffff");
+      return;
+    }
+
+    // Phase 2 (0.18..0.62): Strike & endpoint lock  |  Phase 3 (0.62..1): Segmented dissipation
+    const sk = (k - 0.18) / 0.82;
+    const inStrike = k < 0.62;
+    const from = inStrike ? 0 : Math.min(0.82, ((k - 0.62) / 0.38) * 0.85);
+    const to = Math.min(1, 0.45 + sk * 4.2);
+
+    // Straight spear shaft (solid in Phase 2, breaking into dashes in Phase 3)
+    if (inStrike) {
+      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, INK, 6);
+      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, "#2f666c", 4);
+      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, "#7ef5d8", 2);
+      pixelLine(g, sx + dx * Math.max(from, farRatio), sy + dy * Math.max(from, farRatio), sx + dx * to, sy + dy * to, "#ffffff", 1);
+    } else {
+      for (let i = Math.ceil(length * from); i < length * to; i += 6) {
+        const u0 = i / length, u1 = Math.min(to, (i + 3) / length);
+        pixelLine(g, sx + dx * u0, sy + dy * u0, sx + dx * u1, sy + dy * u1, INK, 4);
+        pixelLine(g, sx + dx * u0, sy + dy * u0, sx + dx * u1, sy + dy * u1, u0 >= farRatio ? "#fff2a8" : "#5dc8b1", 2);
+      }
+    }
+
+    // Double-helix spiral wake along the thrust
+    for (let i = Math.ceil(length * from); i < length * to; i += 3) {
+      if (!inStrike && (i & 1)) continue;
+      const u = i / length, inTip = u >= farRatio;
+      const spread = (inTip ? 8 : 6) * Math.sin(Math.PI * u) * (1 - sk * 0.55);
+      const twist = Math.sin(u * Math.PI * 5 - sk * 5.5) * spread;
+      px(g, sx + dx * u + nx * twist - 1, sy + dy * u + ny * twist - 1, 4, 4, INK);
+      px(g, sx + dx * u + nx * twist, sy + dy * u + ny * twist, 2, 2, inTip ? "#fff6b8" : "#b3f0d5");
+      if (k < 0.76) {
+        px(g, sx + dx * u - nx * twist - 1, sy + dy * u - ny * twist - 1, 4, 4, INK);
+        px(g, sx + dx * u - nx * twist, sy + dy * u - ny * twist, 2, 2, inTip ? "#7ef5d8" : "#4b9d99");
+      }
+    }
+
+    // Sweet-spot collar at `farRatio` (72% reach)
+    if (to >= farRatio && k < 0.78) {
+      const cx = sx + dx * farRatio, cy = sy + dy * farRatio, collar = Math.round(7 * (1 - sk * 0.45));
       pixelLine(g, cx - nx * collar, cy - ny * collar, cx + nx * collar, cy + ny * collar, INK, 4);
       pixelLine(g, cx - nx * collar, cy - ny * collar, cx + nx * collar, cy + ny * collar, "#fff2a8", 2);
-      const hx = sx + dx * to, hy = sy + dy * to, headLen = Math.min(18, length * 0.26);
-      for (let q = 0; q <= headLen; q += 2) {
-        const w = Math.max(1, Math.round((1 - q / headLen) * 5 * (1 - k * 0.4)));
-        const px0 = hx - ux * q, py0 = hy - uy * q;
-        pixelLine(g, px0 - nx * (w + 1), py0 - ny * (w + 1), px0 + nx * (w + 1), py0 + ny * (w + 1), INK, 2);
-        pixelLine(g, px0 - nx * w, py0 - ny * w, px0 + nx * w, py0 + ny * w, q < 6 ? "#ffffff" : "#b8ffe8", 2);
-      }
     }
-  }, 235);
+
+    // Distinct endpoint spearhead + target chevron at (ex, ey) so 1x scale clearly reads the exact tip
+    const hx = sx + dx * to, hy = sy + dy * to, headLen = Math.min(18, length * 0.25);
+    const scale = inStrike ? 1 : Math.max(0.35, 1 - (k - 0.62) / 0.38);
+    for (let q = 0; q <= headLen * scale; q += 2) {
+      const w = Math.max(1, Math.round((1 - q / (headLen * scale + 1)) * 5 * scale));
+      const px0 = hx - ux * q, py0 = hy - uy * q;
+      pixelLine(g, px0 - nx * (w + 1), py0 - ny * (w + 1), px0 + nx * (w + 1), py0 + ny * (w + 1), INK, 2);
+      pixelLine(g, px0 - nx * w, py0 - ny * w, px0 + nx * w, py0 + ny * w, q < 5 ? "#ffffff" : q < 11 ? "#fff6b8" : "#6adbc2", 2);
+    }
+    // Endpoint lock chevron & compact point spark at (ex, ey)
+    if (to >= 0.95) {
+      const wing = Math.round(8 * scale);
+      for (const s of [-1, 1]) {
+        pixelLine(g, ex + ux * 3, ey + uy * 3, ex - ux * 5 + nx * s * wing, ey - uy * 5 + ny * s * wing, INK, 4);
+        pixelLine(g, ex + ux * 3, ey + uy * 3, ex - ux * 5 + nx * s * wing, ey - uy * 5 + ny * s * wing, inStrike ? "#fff6b8" : "#5dc8b1", 2);
+      }
+      px(g, ex - 2, ey - 2, 5, 5, INK);
+      px(g, ex - 1, ey - 1, 3, 3, inStrike ? "#ffffff" : "#fff6b8");
+    }
+  }, 260);
+}
+
+function spiralThrust(ax, ay, bx, by) {
+  meleeSpearThrust(ax, ay, bx, by, 12, 0.72);
 }
 
 /** 유성창 (comet): wide drag corridor (`half = 20`) + blazing spear comet + landing stun crater. */
@@ -484,20 +562,97 @@ function shards(x, y, r, count, height, edge, light, ms, delay = 0) {
   }, ms, false, delay);
 }
 
-function swordCrescent(x, y, ang, r) {
+/**
+ * 대검 호 형태 검기 (inter-basic melee & 파워 슬래쉬):
+ * 3 distinct phases:
+ * - Phase 1 (0..0.19): Anticipation glint & cocked blade line at the back-swing edge (-halfArc).
+ * - Phase 2 (0.19..0.60): Directional crescent sweep from -halfArc to +halfArc at exact radius `r` (thin tail -> wide beveled leading head)
+ *   + single compact contact spark at apex + open boundary ticks.
+ * - Phase 3 (0.60..1.0): Segmented pixel steel-qi fragments drifting outward and vanishing cleanly without hiding boss telegraphs.
+ */
+export function meleeSwordArc(x, y, ang, r = 46, arcDeg = 75) {
+  const halfArc = (arcDeg * Math.PI) / 360;
   S3.fxCustom((g, k) => {
-    const from = -1.18 + Math.max(0, k - 0.24) * 2.58;
-    const to = Math.min(1.15, -0.26 + k * 5.2);
-    for (let a = from; a < to; a += 0.025) {
-      const u = Math.cos(ang + a), v = Math.sin(ang + a), reach = r * (0.78 + 0.1 * Math.cos(a * 1.4));
-      const thick = Math.max(1, (1 - Math.abs(a) / 1.28) * (k < 0.32 ? 11 : 6 * (1 - k)));
-      const [ax, ay] = at(x + u * (reach - thick), y + v * (reach - thick), 10);
-      const [bx, by] = at(x + u * reach, y + v * reach, 10);
-      pixelLine(g, ax, ay + 2, bx, by + 2, k < 0.52 ? "#648bc9" : "#7297b0", 2);
-      px(g, bx, by, 2, 2, k < 0.39 ? "#ecfdff" : "#a6cced");
-      if (k < 0.32) px(g, (ax + bx) / 2, (ay + by) / 2 + 1, 2, 1, "#b2e0ff");
+    // Phase 1 (0..0.19): Anticipation at back-swing edge (-halfArc)
+    if (k < 0.19) {
+      const ak = k / 0.19, a0 = ang - halfArc * (1.08 - 0.08 * ak);
+      const u = Math.cos(a0), v = Math.sin(a0);
+      const [p0x, p0y] = at(x + u * r * 0.34, y + v * r * 0.34, 11);
+      const [p1x, p1y] = at(x + u * r * (0.72 + 0.16 * ak), y + v * r * (0.72 + 0.16 * ak), 11);
+      pixelLine(g, p0x, p0y, p1x, p1y, INK, 5);
+      pixelLine(g, p0x, p0y, p1x, p1y, "#5a7fb8", 3);
+      pixelLine(g, p0x, p0y, p1x, p1y, "#ecfdff", 1);
+      px(g, p1x - 2, p1y - 2, 5, 5, INK);
+      px(g, p1x - 1, p1y - 1, 3, 3, "#ffffff");
+      return;
     }
-  }, 220, false, 58);
+
+    const sk = (k - 0.19) / 0.81;
+    const inStrike = k < 0.60;
+    const steps = 28;
+    const fromStep = inStrike ? Math.floor(Math.max(0, (sk - 0.15) * 0.55) * steps) : Math.floor(((k - 0.60) / 0.40) * 0.45 * steps);
+    const toStep = Math.min(steps, Math.ceil((0.28 + sk * 2.8) * steps));
+    const drift = inStrike ? 0 : ((k - 0.60) / 0.40) * 4.5;
+
+    // Open ground cone boundary ticks at exact radius `r` and `±halfArc` side limits (never an opaque fill)
+    if (k < 0.82) {
+      for (const side of [-1, 1]) {
+        const aLim = ang + side * halfArc;
+        const [gx0, gy0] = at(x + Math.cos(aLim) * r * 0.68, y + Math.sin(aLim) * r * 0.68, 0);
+        const [gx1, gy1] = at(x + Math.cos(aLim) * r, y + Math.sin(aLim) * r, 0);
+        pixelLine(g, gx0, gy0, gx1, gy1, INK, 3);
+        pixelLine(g, gx0, gy0, gx1, gy1, "#7da6dc", 1);
+      }
+    }
+
+    // Crescent body: thin at trailing tail (-halfArc), thickening toward the leading beveled head (+halfArc)
+    for (let i = fromStep; i <= toStep; i++) {
+      // Phase 3 breaks the crescent into segmented pixel clusters
+      if (!inStrike && (i % 4 === 2 || i % 4 === 3)) continue;
+      const u = i / steps; // 0 = trailing tail (-halfArc), 1 = leading head (+halfArc)
+      const a = ang + (u * 2 - 1) * halfArc;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const reach = r * (0.90 + 0.10 * Math.sin(u * Math.PI)) + drift;
+      // Asymmetric directional taper: tail is 2px, leading 75% swells to 11px, tip bevels to a point
+      const profile = u < 0.84 ? 0.18 + 0.82 * (u / 0.84) ** 0.85 : Math.max(0.15, (1 - u) / 0.16);
+      const thick = Math.max(1.5, profile * (inStrike ? 11.5 : 6.5 * (1 - (k - 0.60) / 0.40)));
+      const [ax, ay] = at(x + ca * (reach - thick), y + sa * (reach - thick), 10);
+      const [bx, by] = at(x + ca * reach, y + sa * reach, 10);
+      pixelLine(g, ax, ay, bx, by, INK, 4);
+      pixelLine(g, ax, ay, bx, by, u > 0.58 && inStrike ? "#8eb4e6" : "#5376ab", 2);
+      // Outer cutting edge & leading specular ridge
+      px(g, bx - 2, by - 2, 4, 4, INK);
+      px(g, bx - 1, by - 1, 2, 2, u > 0.52 && inStrike ? "#ffffff" : "#bce4ff");
+      if (inStrike && u > 0.35 && u < 0.88) {
+        px(g, (ax + bx) * 0.5 - 1, (ay + by) * 0.5 - 1, 2, 2, "#d6f2ff");
+      }
+    }
+
+    // Directional leading sword-point head at `toStep` so swing direction reads at 1x
+    if (inStrike) {
+      const uLead = toStep / steps, aLead = ang + (uLead * 2 - 1) * halfArc;
+      const tx = -Math.sin(aLead), ty = Math.cos(aLead);
+      const [hx, hy] = at(x + Math.cos(aLead) * (r * 0.94), y + Math.sin(aLead) * (r * 0.94), 10);
+      const [tipX, tipY] = at(x + Math.cos(aLead) * (r * 0.96) + tx * 6, y + Math.sin(aLead) * (r * 0.96) + ty * 6, 10);
+      pixelLine(g, hx, hy, tipX, tipY, INK, 4);
+      pixelLine(g, hx, hy, tipX, tipY, "#ffffff", 2);
+    }
+
+    // Single compact directional impact spark at the apex (no repeated flash)
+    if (k >= 0.22 && k < 0.46) {
+      const [ix, iy] = at(x + Math.cos(ang) * r * 0.82, y + Math.sin(ang) * r * 0.82, 11);
+      const sr = Math.round(7 * (1 - (k - 0.22) / 0.24));
+      px(g, ix - sr - 1, iy - 1, sr * 2 + 3, 3, INK);
+      px(g, ix - 1, iy - sr - 1, 3, sr * 2 + 3, INK);
+      px(g, ix - sr, iy, sr * 2 + 1, 1, "#d6f2ff");
+      px(g, ix, iy - sr, 1, sr * 2 + 1, "#d6f2ff");
+      px(g, ix - 1, iy - 1, 3, 3, "#ffffff");
+    }
+  }, 275);
+}
+
+function swordCrescent(x, y, ang, r) {
+  meleeSwordArc(x, y, ang, r || 46, 75);
 }
 
 /** Holy light rises in points spaced along the healing seal, leaving the centre clear. */
@@ -967,48 +1122,153 @@ const REACT_NAME = [null, ["증기 폭발!", "#ffffff"], ["초전도!", "#b8a0ff
 /** Passive flashes: no swing of the weapon, only a sign where it happened. */
 const PASSIVE = new Set([110, 111, 113, 114, 115]);
 
-/** Dust and a stepped crack on the ground mark the server's exact circle. */
-export function hammerImpact(x, y, r, hit, crit, kind) {
+/**
+ * 양손해머 예비 동작 (Phase 1: Wind-up target brace on the ground before `hm` lands):
+ * 4 open corner brackets contracting onto exact radius `r` + a directional approach tick along `-ang`.
+ * Keeps the ground interior open so boss telegraphs (`bt`/`t`) are never obscured.
+ */
+export function hammerWindup(x, y, r = 28, windMs = 200, ang = 0) {
+  const dur = Math.max(90, Math.min(450, windMs || 200));
+  S3.fxCustom((g, k) => {
+    const rad = r * (1.12 - 0.12 * k);
+    // 4 contracting corner brackets around radius `r`
+    for (let c = 0; c < 4; c++) {
+      const aMid = ang + c * (Math.PI / 2) + Math.PI / 4;
+      for (let j = -2; j <= 2; j++) {
+        const a = aMid + j * 0.09;
+        const [gx, gy] = at(x + Math.cos(a) * rad, y + Math.sin(a) * rad, 0);
+        px(g, gx - 2, gy - 1, 4, 3, INK);
+        px(g, gx - 1, gy, 2, 1, j === 0 ? "#fff4ce" : "#d8b888");
+      }
+    }
+    // Directional approach shadow tick from caster toward landing center (x, y)
+    const [cx, cy] = at(x, y, 0);
+    const [bx, by] = at(x - Math.cos(ang) * r * (0.65 * (1 - k)), y - Math.sin(ang) * r * (0.65 * (1 - k)), 0);
+    pixelLine(g, bx, by, cx, cy, INK, 3);
+    pixelLine(g, bx, by, cx, cy, "#ffe7a5", 1);
+    px(g, cx - 2, cy - 1, 5, 3, INK);
+    px(g, cx - 1, cy, 3, 1, "#fff4ce");
+  }, dur);
+}
+
+/**
+ * 3-plane pixel stone chunks (22-materials-hard.md Rule 10) bursting from landing center (x, y) toward radius `r`,
+ * then settling as small outlined pebbles in the dissipation phase.
+ */
+function stoneDebris(x, y, r, count, ang, topCol, midCol, dur) {
+  const shadeCol = "#454257";
+  S3.fxCustom((g, k) => {
+    const settle = k >= 0.58;
+    for (let i = 0; i < count; i++) {
+      // Bias half the stones into the forward hemisphere along `ang` so attack direction reads clearly
+      const a = ang + (i - (count - 1) / 2) * (Math.PI * 1.45 / Math.max(1, count - 1)) + (i % 2 ? 0.18 : -0.18);
+      const distU = 0.34 + ((i * 3) % 5) * 0.12;
+      const reach = r * distU * Math.min(1, k * 1.45);
+      const lift = settle
+        ? Math.max(0, Math.round(Math.sin(((k - 0.58) / 0.42) * Math.PI) * 4))
+        : Math.round(Math.sin((k / 0.58) * Math.PI) * (14 + (i % 3) * 5));
+      const [sx, sy] = at(x + Math.cos(a) * reach, y + Math.sin(a) * reach, lift);
+      if (settle) {
+        if (k > 0.84 && (i & 1)) continue;
+        // Phase 3 (Dissipation): small 3x2 outlined pebble on the ground
+        px(g, sx - 2, sy - 1, 5, 4, INK);
+        px(g, sx - 1, sy, 3, 2, midCol);
+        px(g, sx - 1, sy, 2, 1, topCol);
+      } else {
+        // Phase 2 (Impact): 3-plane chunky rock block (top lit, mid side, dark bottom-right shadow)
+        const w = i % 2 === 0 ? 5 : 4, h = i % 3 === 0 ? 5 : 4;
+        const x0 = Math.round(sx - (w >> 1)), y0 = Math.round(sy - (h >> 1));
+        px(g, x0 - 1, y0 - 1, w + 2, h + 2, INK);
+        px(g, x0, y0, w, h, midCol);
+        px(g, x0, y0, w - 1, Math.max(1, h >> 1), topCol);
+        px(g, x0 + 1, y0 + h - 1, w - 1, 1, shadeCol);
+        px(g, x0 + w - 1, y0 + 1, 1, h - 1, shadeCol);
+      }
+    }
+  }, dur);
+}
+
+/**
+ * 양손해머 착지 충격 (Phase 2: Impact ground ripple + stone debris -> Phase 3: Dissipation settle):
+ * Expanding segmented pixel ground ripples starting from the landing point (x, y) out to `r`,
+ * directional forward wave emphasis, 3-plane stone debris, and stepped radial ground cracks.
+ */
+export function hammerImpact(x, y, r, hit, crit, kind, ang = 0) {
   const stamp = kind === 130, fault = kind === 131, final = kind === 132;
   const f = S3.fx;
   const col = crit ? "#ffdc75" : final ? "#f3a567" : fault ? "#ffc05c" : stamp ? "#c9e6e5" : hit ? "#e4be83" : "#a98c6d";
-  const edge = fault ? "#a65a30" : stamp ? "#678d94" : "#a96945";
+  const edge = fault ? "#a65a30" : stamp ? "#678d94" : "#8d7159";
   const [cx, cy] = at(x, y);
-  f.wave(x, y, r, col, final ? 310 : 220);
-  rim(x, y, r, kind === 7 ? "#8d7159" : edge, col, kind === 7 ? 160 : 270, 0.1);
-  f.burst(x, y, 0.08, col, final ? 19 : hit ? 10 : 5, final ? 2.1 : 1.2);
-  if (!hit) return;
-  if (stamp) {
-    f.flash(x, y, 10, 0, 0.12);
-    shards(x, y, r * 0.6, 5, 22, edge, "#dff7f4", 240, 12);
-  } else if (fault || final) {
-    f.crack(x, y, r * 0.78, final ? "#f58859" : "#e3a24d", final ? 570 : 420);
-    rim(x, y, r * 0.72, edge, "#ffe7a5", 300, 0.53);
-    shards(x, y, r, final ? 10 : 7, final ? 29 : 16, edge, col, final ? 380 : 264, 22);
-    if (final) f.flash(x, y, 16, 0, 0.18);
-  }
-  if (crit || kind !== 7) f.spark(x, y, col, final ? 1.65 : 0.95);
-  // Draw native pixels on the projected plane so the branches fade without a blurred edge.
-  const arms = final ? 8 : fault ? 7 : stamp ? 3 : 5, shift = ((Math.round(x) + Math.round(y)) % 7) * Math.PI / 7;
+  const dur = final ? 410 : 285;
+
+  // Outward ground ripples starting from landing point (x, y) -> exact radius `r` (open segments, never hiding boss telegraphs)
   S3.fxCustom((g, k) => {
-    if (k < 0.055) {
+    const inImpact = k < 0.56;
+    const prog = inImpact ? 0.16 + 0.84 * (1 - (1 - k / 0.56) ** 2.4) : 1;
+    for (const [ringScale, segs] of [[1, 8], [0.64, 6]]) {
+      if (!inImpact && ringScale < 1) continue;
+      const rad = r * ringScale * prog;
+      for (let s = 0; s < segs; s++) {
+        const aMid = ang + (s / segs) * Math.PI * 2;
+        const isFront = Math.cos(aMid - ang) > 0.35;
+        const span = (inImpact ? (isFront ? 0.24 : 0.18) : 0.10 * (1 - (k - 0.56) / 0.44));
+        const steps = Math.max(2, Math.ceil(rad * span * 0.45));
+        for (let j = -steps; j <= steps; j++) {
+          const a = aMid + (j / steps) * span;
+          const [gx, gy] = at(x + Math.cos(a) * rad, y + Math.sin(a) * rad, 0);
+          const sz = inImpact && isFront ? 3 : 2;
+          px(g, gx - 1, gy - 1, sz + 2, sz + 1, INK);
+          px(g, gx, gy, sz, Math.max(1, sz - 1), inImpact && (isFront || Math.abs(j) <= 1) ? "#fff4ce" : col);
+          if (inImpact) px(g, gx, gy + sz - 1, sz, 1, edge);
+        }
+      }
+    }
+  }, dur);
+
+  // 3-plane pixel stone debris bursting from (x, y) and settling near `r`
+  const rockCount = final ? 10 : (stamp || fault) ? 8 : hit ? 6 : 4;
+  stoneDebris(x, y, r, rockCount, ang, stamp ? "#dff7f4" : "#fff4ce", edge, dur);
+
+  f.burst(x, y, 0.08, col, final ? 14 : hit ? 7 : 4, final ? 1.9 : 1.1);
+  if (hit && (stamp || fault || final)) {
+    shards(x, y, r * 0.78, final ? 8 : 5, final ? 24 : 16, edge, col, final ? 340 : 240, 12);
+  }
+
+  // Stepped radial ground cracks starting at (x, y): dark crevice body, lighter pixel at the crack tip (Rule 12)
+  const arms = final ? 8 : fault ? 7 : stamp ? 4 : 5, shift = ((Math.round(x) + Math.round(y)) % 7) * Math.PI / 7;
+  S3.fxCustom((g, k) => {
+    if (k < 0.16) {
+      // Single compact landing contact star at (cx, cy)
       for (let row = -2; row <= 2; row++) {
         const w = (final ? 6 : 4) - Math.abs(row);
+        px(g, cx - w - 1, cy + row, 3 + w * 2, 1, INK);
         px(g, cx - w, cy + row, 1 + w * 2, 1, "#fff4ce");
       }
     }
-    const extent = r * Math.min(0.9, 0.2 + 6 * k);
+    const extent = r * Math.min(0.9, 0.22 + 4.8 * k);
     for (let i = 0; i < arms; i++) {
-      const ang = shift + (i / arms) * Math.PI * 2, ux = Math.cos(ang), uy = Math.sin(ang);
-      for (let j = 1; j < extent * (i % 2 ? 0.72 : 1); j++) {
-        if (k > 0.58 && ((i + j) % 3 === 0 || j / extent > (1 - k) * 2.3)) continue;
+      const a = shift + (i / arms) * Math.PI * 2, ux = Math.cos(a), uy = Math.sin(a);
+      const armLen = Math.floor(extent * (i % 2 ? 0.74 : 1));
+      for (let j = 2; j <= armLen; j += 2) {
+        if (k > 0.58 && ((i + j) % 3 === 0 || j / Math.max(1, armLen) < (k - 0.58) * 1.9)) continue;
         const bend = j < 5 ? 0 : (i % 2 ? -1 : 1) * (j < 9 ? 1.2 : 0.6);
         const [sx, sy] = at(x + ux * j - uy * bend, y + uy * j + ux * bend);
-        px(g, sx, sy, 2, 1, k < 0.24 ? col : "#604940");
-        if (k < 0.24) px(g, sx, sy + 1, 2, 1, "#604940");
+        const isTip = j >= armLen - 2;
+        px(g, sx - 1, sy - 1, 4, 3, INK);
+        px(g, sx, sy, 2, 1, isTip ? "#fff4ce" : k < 0.35 ? col : "#604940");
       }
     }
-  }, final ? 410 : 260);
+  }, dur);
+}
+
+/** Standalone helper for previewing or invoking the full 3-phase hammer blow (wind-up -> impact -> settle). */
+export function meleeHammerSlam(x, y, r = 28, windMs = 200, kind = 130, ang = 0) {
+  if (windMs > 0) {
+    hammerWindup(x, y, r, windMs, ang);
+    later(windMs, () => hammerImpact(x, y, r, true, false, kind, ang));
+  } else {
+    hammerImpact(x, y, r, true, false, kind, ang);
+  }
 }
 
 // ───────────────────────────── a boss's shaped telegraphs ─────────────────────────────
@@ -1394,7 +1654,9 @@ export function skillEvent(e, ctx) {
     }
     case "hm": {
       const [, eid, x, y, r, hit, crit, kind] = e;
-      hammerImpact(x, y, r, hit, crit, kind);
+      const src = entityPos(eid);
+      const ang = src ? (src.hammerYaw ?? Math.atan2(y - src.y, x - src.x)) : 0;
+      hammerImpact(x, y, r, hit, crit, kind, ang);
       if (eid === G.you || skillNear(G, x, y)) Sound.play("hammer_land", { kind, hit, crit, final: kind === 132 });
       if (eid === G.you && hit) {
         const strength = kind === 132 ? 4.5 : crit ? 3.3 : kind === 131 ? 2.5 : kind === 130 ? 2 : 1.5;
