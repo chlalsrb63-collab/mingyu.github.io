@@ -172,6 +172,7 @@ export function renderDoll(s) {
   two.title = `Ⅱ 보조 무기와 바꿔 듭니다 (${K("swap")})`;
   two.disabled = !s.eq.weapon2;
   two.onclick = () => { act({ t: "wsw" }); Sound.play("ui"); };
+  for (const b of [one, two]) b.style.cssText = "padding:0 4px;min-width:0;line-height:1.2";
   wsw.append(one, two);
   $("#eq-weapon").before(wsw);
   resetDoll();
