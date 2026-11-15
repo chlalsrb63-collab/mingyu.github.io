@@ -222,6 +222,22 @@ rarity/affix/set rules (`docs/RECIPES.md` item/set recipes) when building.
 
 Suggested split: T1 = 1 · T2 = 2+3 · T3 = 4 · T4 = 5 · T5 = F1+F2 data/art · T6 = R1 data/art · T7 = R2 data/art.
 
+**Boss-script runner — as built (T1)**, `src/logic/56-boss-script.js`, test `tests/bossscript.mjs`:
+- `MOBS[k].script = { cast, pats: [[name, kind]…], phases: [{ at, pats?, gap?, steps?, cast? }…], …overrides }`; overrides are any
+  `BOSS_SCRIPT` key: every castMs stunMs stag blast fury gap vuln enrage enrageStep enrageK hard hardEvery hardK reach diveMs diveR.
+  A challenge boss reads `DIM_CHAL.bosses[k]` with DIM_CHAL's numbers and `vuln: 0` (unchanged); `bsDef(mob)` merges and caches.
+- Phases: listed top down (`at` = hp fraction, falling); phase n+1 starts under `phases[n−1].at`, never goes back until the fight ends.
+  pats/gap fall back to the script's own; `steps` (`{f: fan|pool|charge|land, dt, …}`) are queued after every pattern; `cast: 1` opens with the marked cast.
+- New pattern kinds go in `bsCast`'s switch (follow-ups in `mob.bs.q`, played by `bsTick`). Built: fan2 fan3 rings pools charge2 leapslam **dive**
+  (`mob.dive = 1`: `dealMob` ignores it, `aimMob`/`mobsWithin`/`mobsInLine` skip it; ring `diveR` on the party's centre, lands after `diveMs`).
+- State `mob.bs = bsNew(ak)` {n pi q fury engAt rage ak ph force hard}; a challenge boss shares it with `dim.chal`. Field bosses: `bsField` each
+  tick (fight starts with a target; walking home `st 2` forgets it, `bsEnd`). Folk = challenge arena, else heroes within `reach` px.
+- Stagger anywhere: `dealMob` → `bsDealt` while `mob.cast`; broken → `mob.stag` stun, `vuln` (+30 %) more damage taken while `mob.stag > now`.
+- Wire: a scripted mob's `M` row always ends `…, marks, brand, phase, state` (`r[10]` phase from 1, `r[11]` 0 · 1 casting · 2 dived);
+  `net.js` → `e.bph e.bst`; `mobart.js artKind` draws `k_dive` / `k_ch` / `k_p2` when that model exists; auto-hunt and pre-aim skip dived.
+- Not done: the stagger gauge bar for field bosses (the rift HUD's `#dim-stag` lives in the rift box; a field HUD bar is its own small task);
+  boss `["dc", …]` events share the code with the tracker's decoy in `skillfx.js` (pre-existing clash, the client draws a lure for them).
+
 ## 9. Open questions for the owner
 
 1. Levels: tiers 45/50 for the raids (shown Lv.177 / 197–200) — or did you mean player Lv.45/100 (tiers 12/25),

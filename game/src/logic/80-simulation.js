@@ -153,6 +153,8 @@ function tickMob(S, m, rt, mob, dt) {
       if (o && o.map === m.id && dealMob(S, rt, mob, o, dot.dmg, 0)) return;
     }
   }
+  // a scripted field boss: its phases, the marked cast, the enrage (a challenge's boss: chalTick, 64-dim.js)
+  if (d.script && !mob.chal) bsField(S, m, rt, mob);
   if (d.still) return;
   const atk = d.atk * ELITE[mob.el].atk;
   // a charge already wound up goes off whatever is done to the charger in the meantime
@@ -191,8 +193,8 @@ function tickMob(S, m, rt, mob, dt) {
   }
   if (tgt) {
     const dd = dist(mob.x, mob.y, tgt.x, tgt.y);
-    // a boss challenge's boss follows its own script (64-dim.js chalCast)
-    if (now >= mob.castAt && mob.chal) { chalCast(S, rt, mob, tgt); return; }
+    // a scripted boss (a challenge's, or MOBS[k].script) takes its turns from its script (56-boss-script.js)
+    if (now >= mob.castAt && bsDef(mob)) { bsCast(S, rt, mob, tgt); return; }
     if (now >= mob.castAt) {
       const big = d.boss || mob.el === 2;
       // each kind has its own tricks: it tries them in turn and uses the first that suits the moment.
