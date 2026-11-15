@@ -361,6 +361,7 @@ function dmgBoard(S, rt, by) {
   const rows = Object.keys(by).filter((pid) => S.players[pid] && S.players[pid].map === rt.id && by[pid] > 0).sort((a, b) => by[b] - by[a]);
   if (rows.length < 2) return;
   const sum = rows.reduce((n, pid) => n + by[pid], 0), pct = (pid) => Math.round((100 * by[pid]) / sum);
+  S.players[rows[0]].ch.cnt.mvp++;
   const line = rows.slice(0, 3).map((pid, i) => `${i + 1}. ${S.players[pid].ch.name} ${pct(pid)}%`).join(" · ");
   rows.forEach((pid, i) => toast(S.players[pid], `피해 기여도 — ${line}${i >= 3 ? ` · 나 ${i + 1}위 ${pct(pid)}%` : ""}`));
 }

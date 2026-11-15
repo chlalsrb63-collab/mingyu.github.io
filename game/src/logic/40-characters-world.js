@@ -253,7 +253,9 @@ const qsStarter = (ch) => skillsFor(ch).filter((id) => SKILL[id].kind !== "p" &&
 /** Counters kept for achievements (`ch.cnt`; `dim` = 차원 균열 clears). */
 const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim",
   // life skills L2: gathered, crafted (any station), delivered
-  "gat", "craft", "deliver"];
+  "gat", "craft", "deliver",
+  // top of a boss's damage ranking (50 dmgBoard; added 2026-11-15, old sheets start at 0)
+  "mvp"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {

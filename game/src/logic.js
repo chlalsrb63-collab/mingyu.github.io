@@ -6794,7 +6794,9 @@ const qsStarter = (ch) => skillsFor(ch).filter((id) => SKILL[id].kind !== "p" &&
 /** Counters kept for achievements (`ch.cnt`; `dim` = 차원 균열 clears). */
 const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim",
   // life skills L2: gathered, crafted (any station), delivered
-  "gat", "craft", "deliver"];
+  "gat", "craft", "deliver",
+  // top of a boss's damage ranking (50 dmgBoard; added 2026-11-15, old sheets start at 0)
+  "mvp"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {
@@ -8281,6 +8283,7 @@ function dmgBoard(S, rt, by) {
   const rows = Object.keys(by).filter((pid) => S.players[pid] && S.players[pid].map === rt.id && by[pid] > 0).sort((a, b) => by[b] - by[a]);
   if (rows.length < 2) return;
   const sum = rows.reduce((n, pid) => n + by[pid], 0), pct = (pid) => Math.round((100 * by[pid]) / sum);
+  S.players[rows[0]].ch.cnt.mvp++;
   const line = rows.slice(0, 3).map((pid, i) => `${i + 1}. ${S.players[pid].ch.name} ${pct(pid)}%`).join(" · ");
   rows.forEach((pid, i) => toast(S.players[pid], `피해 기여도 — ${line}${i >= 3 ? ` · 나 ${i + 1}위 ${pct(pid)}%` : ""}`));
 }
@@ -10822,6 +10825,7 @@ const ACH = [
   ["clubshrimp", "사냥", "파도를 꺾은 자", "망치 갯가재 처치", 30, (c) => (c.mk.clubshrimp || 0) >= 1, "파도를 꺾은 자", [["hp", 3]]],
   ["bloodhorn", "사냥", "피눈물을 닦은 자", "혈루 왕도마뱀 처치", 40, (c) => (c.mk.bloodhorn || 0) >= 1, "피눈물을 닦은 자", [["atkp", 3]]],
   ["cloakbat", "사냥", "장막을 걷은 자", "밤장막 박쥐군주 처치 (주간 도전)", 40, (c) => (c.mk.cloakbat || 0) >= 1, "장막을 걷은 자", [["crit", 2]]],
+  ["mvp10", "사냥", "선봉장", "보스·수문장 피해 기여도 1위 10번", 30, (c) => c.cnt.mvp >= 10, "선봉장"],
   ["bloomwhale", "사냥", "고래의 장송곡", "꽃무덤 고래 처치 (주간 도전)", 60, (c) => (c.mk.bloomwhale || 0) >= 1, "고래의 장송곡", [["atkp", 4], ["hp", 4]]],
   ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, (c) => c.cnt.evt >= 1],
   ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.cnt.evt >= 10, "균열 수호자", [["def", 3]]],

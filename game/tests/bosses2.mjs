@@ -306,7 +306,7 @@ for (const [k, t] of [["cloakbat", 25], ["bloomwhale", 50]]) {
   assert.equal(L.firstNotice(S, "x", "slime"), false, "only the listed bosses"); }
 // the damage ranking after a boss falls to two or more
 { L.addPlayer(S, "p2", L.hero("둘째", { wk: "bow", lvl: 160, migrate: true })); const p1 = S.players.p1, p2 = S.players.p2; p2.map = p1.map; p1.toast = []; p2.toast = [];
-  X.dmgBoard(S, S.maps[p1.map], { p1: 300, p2: 100 });
+  X.dmgBoard(S, S.maps[p1.map], { p1: 300, p2: 100 }); assert.equal(p1.ch.cnt.mvp, 1, "the top hitter counted");
   assert.ok(p2.toast.some((m) => m.includes("피해 기여도 — 1. 시험 75% · 2. 둘째 25%")), JSON.stringify(p2.toast));
   p1.toast = []; X.dmgBoard(S, S.maps[p1.map], { p1: 300 }); assert.equal(p1.toast.length, 0, "alone: no board"); L.removePlayer(S, "p2"); }
 console.log("bosses2: 밤장막 박쥐군주 and 꽃무덤 고래 (weekly raids) — phases, shapes, shared mark, feeding bats, shielding heads, enrage, rewards, bot win/lose ok");
