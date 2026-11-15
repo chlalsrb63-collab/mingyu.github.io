@@ -655,6 +655,8 @@ export function applyAction(S, pid, a) {
     case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": charmApply(S, p, a); break;
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": coopApply(S, p, a); break;
+    // player to player: requests, trade, mini-games (69-social-play.js)
+    case "sx": sxApply(S, p, a); break;
   }
   if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;

@@ -18,6 +18,8 @@ import { usePotion, interact, stoneNear, aimAtPoint, attack, dash, talkKey } fro
 import { autoSt } from "./update.js";
 import { toggleWin, closeTop, openWin, toast, isOpen } from "./windows.js";
 import * as Track from "./track.js";
+import * as PMenu from "./pmenu.js";
+import * as SX from "./sxwin.js";
 import { openEmotes } from "./win_social.js";
 import * as Keymap from "./keymap.js";
 
@@ -43,7 +45,7 @@ export function moveVector() {
   if (Keymap.held(keys, "up")) y -= 1;
   if (Keymap.held(keys, "down")) y += 1;
   if (joy.on) { x = joy.x; y = joy.y; }
-  if (x || y) { G.path = null; [x, y] = [x + y, y - x]; }
+  if (x || y) { G.path = null; [x, y] = [x + y, y - x]; if (PMenu.following()) PMenu.stopFollow("따라가기를 취소했습니다"); }
   else if (G.path) {
     while (G.path.length && dist(G.me.x, G.me.y, G.path[0][0], G.path[0][1]) < 2.5) G.path.shift();
     if (!G.path.length) G.path = null;
@@ -181,6 +183,7 @@ export function setupInput() {
     if (!G.playing) return;
     if (typing()) { if (e.key === "Escape") document.activeElement.blur(); return; }
     if (Mini.active() || Coop.boardActive()) return;  // a mini-game has the keyboard
+    if (SX.onKey(e) || PMenu.onKey(e)) { e.preventDefault(); return; }   // 가위바위보 keys 1 2 3, Esc closes the player menu
     const act1 = Keymap.actionOf(e);
     if (e.code.startsWith("Arrow") || act1 === "dash" || act1 === "swap") e.preventDefault();
     if (e.repeat) return;
@@ -191,6 +194,7 @@ export function setupInput() {
     if (ta) { e.preventDefault(); talkKey(ta); return; }
     // walking a 추적 trip: a blow, a dash or auto-hunt breaks it off (a move key or a click drops G.path: track.js)
     if (Track.active() && ["attack", "dash", "auto"].includes(act1)) Track.stop("추적을 취소했습니다");
+    if (PMenu.following() && ["attack", "dash", "auto"].includes(act1)) PMenu.stopFollow("따라가기를 취소했습니다");
     // decorating a house: R turns the piece in hand, Esc lets go of it, Delete picks a piece up (housing.js)
     if (Housing.onKey(k)) { e.preventDefault(); return; }
     // gathering: F and Space are the "반짝!" tap, not a talk or a blow (gather.js)
@@ -243,6 +247,7 @@ export function setupInput() {
     const hit = S3.pick(e.clientX, e.clientY);
     if (!hit) return;
     if (Housing.onWorldDown(e)) return;             // decorating a house: place or pick a piece
+    if (PMenu.onWorldDown(e)) return;               // another player: the menu beside them (pmenu.js)
     if (Gather.onWorldDown(e)) return;              // a gathering node: gather, or walk there first (gather.js)
     const stone = (G.map.marks || []).find((m) => m.kind === "waypoint" && Math.floor(hit[0] / T) === m.x && Math.floor(hit[1] / T) === m.y);
     if (stone) {
@@ -255,6 +260,7 @@ export function setupInput() {
       aimAtPoint(mob.x, mob.y);
       if (dist(G.me.x, G.me.y, mob.x, mob.y) < G.self.range) { G.path = null; attack(); return; }
     }
+    if (PMenu.following()) PMenu.stopFollow("따라가기를 취소했습니다");
     G.path = pathTo(hit[0], hit[1]);
     if (G.path) G.mark = { at: now(), pos: G.path[G.path.length - 1] }
   });

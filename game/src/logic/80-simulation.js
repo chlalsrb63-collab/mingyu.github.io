@@ -434,6 +434,7 @@ export function tick(S, now) {
   dimTick(S, now);
   storyTick(S, now);
   coopTick(S, now);     // 협동 아르바이트 shifts (68-coop.js)
+  sxTick(S, now);       // trades and mini-games between players (69-social-play.js)
   homeTick(S, now);
   const pids = Object.keys(S.players);
   for (const id of liveMapIds(S)) {

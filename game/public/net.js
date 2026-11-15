@@ -24,6 +24,7 @@ import * as Gather from "./gather.js";
 import * as Radar from "./radar.js";
 import * as Housing from "./housing.js";
 import * as Coop from "./coop.js";
+import * as SX from "./sxwin.js";
 import { setJobDefs } from "./jobpal.js";
 import { G, el, $, resize, $$, tg, text, now, T } from "./state.js";
 import { JOB_ALIAS, onEvent, onGain } from "./events.js";
@@ -125,6 +126,7 @@ function onMessage(msg) {
         JobTree.init({ G, act, el, section, Sound, hoverTip, redraw: refreshUi, openTree });
       }
       G.players.clear(); G.mobs.clear(); G.drops.clear(); G.fires.clear(); G.bobs.clear(); G.who.clear();
+      SX.reset();                                // a fresh world: no request, trade or game carried over (sxwin.js)
       $("#hud").hidden = false;
       if (Lobby.welcome(msg) === "switch" && G.playing) {
         addChat(`${channelName()}(으)로 이동했습니다.`, "sys");
@@ -284,6 +286,7 @@ function onSnap(s) {
   Dim.onSnap(s);                               // 차원 균열: HUD, ready check, shrines and orbs (dimrift.js)
   Housing.onSnap(s);                           // a house of one's own: its bar, the ghost, the windows (housing.js)
   Coop.onSnap(s);                              // 협동 아르바이트: cj C cr (coop.js)
+  SX.onSnap(s);                                // sx: a request for me, the trade window, 가위바위보 (sxwin.js)
   hudBars();
 }
 

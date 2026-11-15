@@ -60,6 +60,8 @@ import { resize, world, $, G, el, $$, now } from "./state.js";
 import { act, entityPos, connect, disconnect, stopGame, channel, ws, setupNet } from "./net.js";
 import { pathTo, setupInput, toggleAuto, walkToDoor } from "./input.js";
 import * as Track from "./track.js";
+import * as PMenu from "./pmenu.js";
+import * as SX from "./sxwin.js";
 import { update } from "./update.js";
 import { render } from "./overlay.js";
 import { floatText } from "./events.js";
@@ -93,6 +95,7 @@ for (const b of $$("#menu button")) { const g = MENU_ICON[b.dataset.win || b.id.
 $("#b-auto").prepend(iconImg(MENU_ICON.auto));
 setupInput();
 Track.setup();                                   // the 추적 line's [취소] (track.js)
+PMenu.setup(); SX.setup();                       // the player menu, 따라가기, requests, trade, 가위바위보
 setupWindows({ walkToDoor });
 setupItems();
 Charms.setup();
@@ -130,6 +133,7 @@ function frame() {
     update(dt, t);
     Gather.tick(t);
     Coop.tick(t);
+    PMenu.tick(t); SX.tick(t);
     render(t, dt);
     Radar.draw(t);
     Radar.drawWin(t);

@@ -1610,3 +1610,47 @@ body[data-lay="full"] #panel .jt-grid .jt-node img.ji { margin: 0 auto; }
 #track-ind { left: calc(var(--vpw) / 2); transform: translateX(-50%); top: calc(var(--vph) - 80px); z-index: 7; display: flex; align-items: center; gap: 8px; padding: 3px 6px 3px 12px;
   font: var(--t12) var(--pix); color: #ffe08a; white-space: nowrap; }
 #track-ind[hidden] { display: none; }
+
+/* ── player to player: the menu beside a player, 따라가기, a request, the trade window, 가위바위보 (pmenu.js, sxwin.js) ── */
+#pmenu { position: absolute; z-index: 30; display: flex; flex-direction: column; min-width: 104px; padding: 4px; font: var(--t12) var(--pix); }
+#pmenu[hidden], #sx-ask[hidden], #rps[hidden], #follow-ind[hidden] { display: none; }
+#pmenu .pm-h { color: var(--b-hi); font-weight: 700; padding: 1px 6px 3px; border-bottom: 2px solid #5a4426; margin-bottom: 2px; white-space: nowrap; }
+#pmenu .pm-i { all: unset; display: block; padding: 3px 8px; color: #fff6dc; cursor: pointer; white-space: nowrap; font: var(--t12) var(--pix); }
+#pmenu .pm-i:hover, #pmenu .pm-i:focus-visible { background: #463b55; }
+#pmenu .pm-i.off { color: #7d7488; }
+#pmenu .pm-sub { display: flex; flex-direction: column; margin: 0 0 0 10px; border-left: 2px solid #5a4426; }
+#pmenu .pm-sub[hidden] { display: none; }
+#follow-ind { left: calc(var(--vpw) / 2); transform: translateX(-50%); top: calc(var(--vph) - 108px); z-index: 7; display: flex; align-items: center; gap: 8px; padding: 3px 6px 3px 12px;
+  font: var(--t12) var(--pix); color: #9be05a; white-space: nowrap; }
+#sx-ask { left: calc(var(--vpw) / 2); top: 128px; transform: translateX(-50%); padding: 6px 10px; display: flex; gap: 8px; align-items: center; white-space: nowrap; z-index: 15; font: var(--t12) var(--pix); color: #fff6dc; }
+#sx-ask button, #rps .btn { font: var(--t12) var(--pix); color: #fff6dc; background: #2f2838; border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #463b55, inset -2px -2px 0 #1f1a28; padding: 2px 8px; cursor: pointer; }
+#sx-ask button.gold, #rps .btn.gold { color: #2a1806; background: var(--b-mid); box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px -2px 0 var(--b-lo); }
+#rps { left: calc(var(--vpw) / 2); top: 28%; transform: translateX(-50%); z-index: 16; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; font: var(--t12) var(--pix); color: #fff6dc; min-width: 260px; }
+#rps .rps-h { color: var(--b-hi); font-weight: 700; }
+#rps .rps-bar { display: block; width: 100%; height: 6px; background: #1f1a28; border: 2px solid var(--ink); }
+#rps .rps-bar i { display: block; height: 100%; background: #ffd36a; }
+#rps .rps-row { display: flex; align-items: center; gap: 14px; }
+#rps .rps-me, #rps .rps-them { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 96px; }
+#rps .rps-hand { width: 72px; height: 72px; image-rendering: pixelated; }
+#rps .rps-pick .rps-hand { width: 36px; height: 36px; display: block; margin: 0 auto 2px; }
+#rps .rps-vs { color: #ff8a6a; }
+#rps .rps-pick, #rps .btns { display: flex; gap: 6px; }
+#rps .rps-pick kbd { font: var(--t10) var(--pix9); color: var(--b-hi); }
+#rps .rps-res { font: 700 var(--t16, 16px) var(--pix); }
+#rps .rps-res.win { color: #9be05a; } #rps .rps-res.lose { color: #ff8a7a; } #rps .rps-res.draw { color: #c8c8d8; }
+#rps .hint { color: #b9aec8; margin: 0; }
+#w-trade { width: 430px; max-width: calc(100vw - 8px); }
+#trade-body .tr-sides { display: flex; gap: 8px; }
+#trade-body .tr-side { flex: 1; border: 2px solid #3a3146; padding: 4px; }
+#trade-body .tr-side.locked { border-color: #9be05a; }
+#trade-body .tr-name { color: var(--b-hi); font-weight: 700; }
+#trade-body .tr-grid, #trade-body .tr-bag { --slot: 36px; grid-template-columns: repeat(4, var(--slot)); justify-content: start; gap: 2px; }
+#trade-body .tr-bag { grid-template-columns: repeat(auto-fill, var(--slot)); max-height: 160px; overflow-y: auto; }
+#trade-body .slot { width: var(--slot); height: var(--slot); }
+#trade-body .slot.empty { cursor: default; opacity: .5; }
+#trade-body .slot.off { opacity: .35; }
+#trade-body .tr-gold { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+#trade-body .tr-gold input { width: 90px; font: var(--t12) var(--pix); color: #fff6dc; background: #1f1a28; border: 2px solid var(--ink); padding: 1px 4px; }
+#trade-body .tr-st { color: #b9aec8; }
+#trade-body .tr-side.locked .tr-st { color: #9be05a; }
+#trade-body .btns { display: flex; gap: 6px; margin-top: 6px; }

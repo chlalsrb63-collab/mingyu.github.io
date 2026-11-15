@@ -9,6 +9,7 @@ Read only the doc for your task, and in it only your phase's sections (`grep -n 
 | [`town.md`](town.md) | **live** — T-A exterior + T-B interiors building | working on the town, its buildings, interiors, residents |
 | [`jobs-and-stats.md`](jobs-and-stats.md) | built — J1, J2, J3 ("… as built" in F.4); open: bow art polish, `_icons`/`_swing` previews | stats, levels, weapon mastery, jobs, weapon skills, the bow |
 | [`skills-v2.md`](skills-v2.md) | built — rules and data (palettes, felt passives, balance); open: icons and effects (client) | job palettes, skill inventory, passive redesign, measurements, the icon/effect brief |
+| [`player-interaction.md`](player-interaction.md) | **live** — built 2026-11-15 | the menu on another player, 따라가기, trade, mini-games (가위바위보) |
 | [`life-and-coop.md`](life-and-coop.md) | **live** — L1 built ("L1 as built", sheet v12); L2 rules built ("L2 rules as built": wire + actions for the client), L2 client ∥ C1 next, then C2 → C3; town coords now in `town.md` | life skills, part-time jobs, co-op instances |
 | [`willow-job-economy.md`](willow-job-economy.md) | **draft** — waits for Claude's Willow village expansion | village facilities, 12 job designs, net-income targets and rollout |
 | [`npc-life.md`](npc-life.md) | **N1 rules built** — N2 client ∥ N3 content → N4 quests (section K; K.1 maps a Codex build onto it) | NPC daily routines (`npcAt`, `data/npclife.json`, wire `nl`/`nw`), posts and services while away, places, the 61-member cast, relationships, `meet` quests and the eight quest lines |

@@ -59,6 +59,11 @@
       <div id="minigame" hidden></div>
       <div id="streak" hidden><b id="streak-n"></b><span id="streak-b"></span><i><i id="streak-bar"></i></i></div>
       <div id="invite" class="frame" hidden><span id="invite-text"></span><button id="invite-yes" class="btn gold">수락</button><button id="invite-no" class="btn">거절</button></div>
+      <!-- another player clicked: 파티 초대 · 거래 · 친구 · 귓속말 · 따라가기 · 미니게임 (pmenu.js); a request for me, 가위바위보 (sxwin.js) -->
+      <div id="pmenu" class="frame" hidden></div>
+      <div id="follow-ind" class="frame" hidden><span id="follow-name"></span><button id="follow-x" class="btn small">취소</button></div>
+      <div id="sx-ask" class="frame" hidden><span id="sx-ask-text"></span><button id="sx-yes" class="btn gold">수락</button><button id="sx-no" class="btn">거절</button></div>
+      <div id="rps" class="frame" hidden></div>
       <button id="prompt" class="frame" hidden></button>
       <div id="toasts"></div>
       <div id="banner" hidden></div>
@@ -318,6 +323,11 @@
       <section class="window" id="w-alba" hidden>
         <header><span class="t">아르바이트</span><kbd data-key="alba">Shift+J</kbd><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body"><div id="alba-body"></div></div>
+      </section>
+
+      <section class="window" id="w-trade" hidden>
+        <header><span class="t">거래</span><button class="x" title="닫기 (Esc) · 거래 취소"></button></header>
+        <div class="body"><div id="trade-body"></div></div>
       </section>
 
       <section class="window" id="w-board" hidden>
