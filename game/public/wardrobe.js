@@ -526,18 +526,25 @@ const HAT = {
       if (A.back) b.cr(T - 1, W, 1, p.b);
     },
   },
-  // a soft bucket hat, the brim sloping down, a float pinned to the band
+  // 명인 낚시꾼: a soft bucket hat, the brim sloping down, a float pinned to the band (the trim, what a dye
+  // recolours); at 64px the band's fish embroidery on the crown and the brim's stitched edge, both in the trim
   bucket: {
     ears: "through",
     draw(b, A, p) {
       const T = A.top, W = A.x1 - A.x0 + 1;
       b.cr(T - 4, W - 2, 1, p.c); b.cr(T - 3, W, 2, p.c); b.cr(T - 1, W, 1, p.b);
       b.r(A.x1 - 2, T - 4, 2, 3, sh(p.c)); b.r(A.x0 + 1, T - 4, 3, 1, li(p.c, 0.4));
+      b.r(A.x1 - 2, T - 1, 2, 1, sh(p.b, 0.25));
+      if (A.back) return;
+      const x = A.side ? b.c0 - 3 : A.x0 + 2, y = T - 3;   // a fish swimming toward the float
+      for (const [u, v] of [[0, 0.5], [0.5, 0], [0.5, 0.5], [1, 0], [1, 0.5], [1.5, 0.5]]) b.fp(x + u, y + v, p.b);
+      b.fp(x - 0.5, y, p.b); b.fp(x - 0.5, y + 1, p.b); b.fp(x + 1.5, y, INK);
     },
     over(b, A, p) {
-      const T = A.top, W = A.x1 - A.x0 + 1;
+      const T = A.top, W = A.x1 - A.x0 + 1, x0 = Math.round(A.cx + 0.5 - (W + 4) / 2);
       b.cr(T, W + 4, 1, p.c); b.cr(T, W, 1, sh(p.c)); b.sym(W / 2 + 2, T + 1, 1, 1, sh(p.c));
-      if (!A.back) { const x = b.c0 + (A.side ? 3 : 2); b.px(x, T - 2, p.l); b.px(x, T - 3, "#ffffff"); b.px(x, T - 1, p.l); }
+      for (let x = x0; x < x0 + W + 4; x++) b.fp(x + (x & 1) * 0.5, T + 0.5, p.b);
+      if (!A.back) { const x = b.c0 + (A.side ? 3 : 2); b.px(x, T - 2, p.l); b.px(x, T - 3, "#ffffff"); b.px(x, T - 1, p.l); b.fp(x, T - 2, li(p.l, 0.5)); }
     },
   },
   // a cleaner's polka-dot kerchief snug over the crown, knotted at the back with two short tails
@@ -822,6 +829,9 @@ const HAT = {
 // Colours: c main, s shade, d deep shade, l light, b accent, B accent shade, w white, y gold,
 // r red, k ink. Every top needs a clear motif in front, side and back.
 
+/** 생활 명인's badge, embroidered at 64px only: a gold bar over a bar of the piece's trim (so it takes the dye). */
+const masterBadge = (b, x, y, trim) => { b.fp(x, y, li(GOLD, 0.4)); b.fp(x + 0.5, y, GOLD); b.fp(x, y + 0.5, trim); b.fp(x + 0.5, y + 0.5, trim); };
+
 const TOP = {
   overalls: {
     front: [".bcbbcb.", ".cyccyc.", ".ccsscc."], side: [".bbbbcb.", ".scccyc.", ".sccscc."], back: [".bcbbcb.", ".ccsscc.", ".ccsscc."],
@@ -885,24 +895,43 @@ const TOP = {
   delver: {
     front: [".bccccb.", ".cbyybc.", ".BBBBBB."], side: [".sccbcc.", ".sccybc.", ".BBBBBB."], back: [".bccccb.", ".cbbbbc.", ".BBBBBB."],
   },
-  // a white double-breasted coat, a red neckerchief
+  // 명인 요리사: a white double-breasted coat, the neckerchief (the trim) knotted behind; at 64px the hem's piping
+  // in the trim and the 명인 badge between the buttons
   chefcoat: {
     pal: (p) => ({ c: "#f8f8ff", s: sh("#f8f8ff", 0.25), l: "#ffffff", r: p.b }),
-    front: [".scrrcs.", ".cyccyc.", ".syccys."], side: [".sccrrc.", ".scccyc.", ".ssccyc."], back: [".sccccs.", ".csccsc.", ".sccccs."],
+    front: [".scrrcs.", ".cyccyc.", ".syccys."], side: [".sccrrc.", ".scccyc.", ".ssccyc."], back: [".scrrcs.", ".csccsc.", ".sccccs."],
+    fine(b, A, pal) {
+      for (let x = 13; x < 19; x += 0.5) b.fp(x, A.foot - 0.5, pal.r);
+      if (A.front) masterBadge(b, 15.5, A.foot - 2, pal.r);
+    },
   },
   // a bib apron: straps over the shoulders, a pocket (d), tied in a bow behind
   apron: {
     pal: (p) => ({ d: p.d }),
     front: [".bccccb.", ".ccddcc.", ".cccccc.", "...cc..."], side: [".bbcccc.", "..bccdc.", "...cccc."], back: [".b....b.", "..bbbb..", "...bb..."],
   },
-  // a smith's thick apron: a tool loop, a scorched hem
+  // 명인 대장장이: a smith's thick apron, straps (the trim), a tool loop, a scorched hem; at 64px brass rivets where
+  // the straps meet the bib, the 명인 badge, sparks burnt into the hem
   smith: {
     front: [".bccccb.", ".cccycc.", ".cddddc.", "...cc..."], side: [".bbcccc.", "..bccyc.", "..bdddc."], back: [".b....b.", "..bbbb..", "..b..b.."],
+    fine(b, A, pal) {
+      if (A.back) return;
+      if (A.foot - A.bt >= 3) { b.fp(A.side ? 13 : 13.5, A.foot - 2.5, GOLD); if (A.front) b.fp(18, A.foot - 2.5, GOLD); }
+      if (A.front) { masterBadge(b, 14, A.foot - 2, pal.b); b.fp(15, A.foot - 1, "#e8903a"); b.fp(16.5, A.foot - 0.5, "#e8903a"); }
+    },
   },
-  // an alchemist's coat: a bandolier of vials across it
+  // 명인 연금술사: a long coat, a bandolier (the trim) of vials across it; at 64px the vials' glints, the hem's
+  // piping in the trim and the 명인 badge on the breast
   alch: {
     pal: () => ({ g: "#6ae08a", r: "#ff6a8a" }),
     front: [".bgcccl.", ".ccbrcc.", ".ccccby.", "...cc..."], side: [".scccbg.", ".sccbrc.", ".sccccc.", "...cc..."], back: [".ccccbc.", ".cccbcc.", ".ccbccc.", "...cc..."],
+    fine(b, A, pal) {
+      for (let x = 15; x < 17; x += 0.5) b.fp(x, A.foot + 0.5, pal.b);
+      if (A.back) return;
+      if (A.foot - A.bt >= 3) b.fp(A.side ? 18 : 14, A.foot - 3, WHITE);
+      b.fp(A.side ? 17 : 16, A.foot - 2, WHITE);
+      if (A.front) masterBadge(b, 13.5, A.foot - 2, pal.b);
+    },
   },
   // a scarf wound round the neck, one end hanging with a fringe
   scarf: {
@@ -1189,18 +1218,23 @@ const BACK = {
     b.r(out > 0 ? x + 1 : x - 2, T - 6, 2, 1, p.c);
     b.grid((out > 0 ? x + 1 : x - 3) + sw, T - 5, [".k.", "bbb", "yly", "yoy", "bbb"], { k: p.b, b: p.b, y: "#ffe680", l: "#fffbe0", o: "#ffb040" });
   },
-  // a wicker basket brimming with herbs
+  // 명인 채집꾼: a wicker basket brimming with herbs, a leather band round it (the trim); from behind, at 64px, the
+  // weave and the 명인 badge on the band
   basket: (b, A, p) => {
-    const y = A.bt, last = A.foot - 1, dk = sh(p.c, 0.3), lt = li(p.c, 0.35), leaf = "#5aa84a", lf2 = "#8ad06a";
+    const y = A.bt, last = A.foot - 1, dk = sh(p.c, 0.3), lt = li(p.c, 0.35), leaf = "#5aa84a", lf2 = "#8ad06a", band = p.b || dk;
     if (A.back) {
       b.r(12, y, 8, last - y + 1, p.c); b.r(12, y, 8, 1, lt); b.r(12, last, 8, 1, dk);
       for (let x = 13; x < 20; x += 2) b.px(x, y + 1, dk);
+      for (let v = y + 1; v < last; v++) for (let x = 12; x < 20; x++) b.fp(x + ((x + v) & 1) * 0.5, v + 0.5, dk);
+      if (last - 1 > y + 1) { b.r(12, last - 1, 8, 1, band); b.r(18, last - 1, 2, 1, sh(band, 0.3)); masterBadge(b, 15.5, last - 1, li(band, 0.25)); }
       b.r(10, y, 2, 1, leaf); b.r(20, y, 2, 1, lf2); b.px(10, y - 1, lf2); b.px(21, y - 1, leaf);
     } else if (A.side) {
       b.r(8, y - 1, 5, last - y + 2, p.c); b.r(8, y - 1, 5, 1, lt); b.r(8, last, 5, 1, dk); b.px(9, y + 1, dk); b.px(11, y + 1, dk);
+      if (last - 1 > y + 1) b.r(8, last - 1, 5, 1, band);
       b.r(7, y - 2, 4, 1, leaf); b.px(8, y - 3, lf2); b.px(10, y - 3, leaf); b.px(9, y - 2, lf2);
     } else {
       b.r(10, y, 12, last - y + 1, p.c); b.r(10, y, 12, 1, lt); b.r(10, last, 12, 1, dk); b.px(11, y + 1, dk); b.px(20, y + 1, dk);
+      if (last - 1 > y + 1) b.r(10, last - 1, 12, 1, band);
       b.r(8, y - 1, 3, 1, leaf); b.px(8, y - 2, lf2); b.r(21, y - 1, 3, 1, leaf); b.px(23, y - 2, lf2);
     }
   },
@@ -1208,6 +1242,16 @@ const BACK = {
   satchel: (b, A, p) => {
     const rows = ["..ww", "bbbb", "cycc", "cccc", "ssss"];
     b.grid(A.back ? 18 : A.side ? 9 : 8, A.bt - 1, rows, { c: p.c, s: sh(p.c, 0.35), b: sh(p.c, 0.2), y: GOLD, w: WHITE }, A.back);
+  },
+  // 명인 배달부: the courier's satchel, its flap (the trim) over a tan bag, a buckle, a letter sticking out; at 64px
+  // the letter's red seal, the flap's stitched edge and the 명인 badge on the flap
+  courier: (b, A, p) => {
+    const x = A.back ? 18 : A.side ? 9 : 8, y = A.bt - 1, fl = !!A.back;
+    b.grid(x, y, ["..ww", "bbbb", "BybB", "cccc", "ssss"], { c: p.c, s: sh(p.c, 0.35), b: p.b, B: sh(p.b, 0.3), y: GOLD, w: WHITE }, fl);
+    const fx = (u) => (fl ? x + 3.5 - u : x + u);
+    b.fp(fx(2.5), y, "#d84a3a"); b.fp(fx(3), y + 0.5, "#c8c4d4");
+    for (let u = 0; u < 4; u += 0.5) if (u < 1 || u >= 2.5) b.fp(fx(u), y + 2.5, sh(p.b, 0.5));
+    masterBadge(b, fx(fl ? 3.5 : 2.5), y + 1, li(p.b, 0.3));
   },
   // a smith's great hammer slung across the back, its head over one shoulder
   hammer: (b, A, p) => {
@@ -1426,7 +1470,7 @@ const sling = (b, A, p) => {
 };
 /** What a back piece shows in front of the body (a cape's collar and clasp, a pack's straps), front and side views. */
 const BACK_FRONT = {
-  surf: sling, gourd: sling, lantern: sling, satchel: sling, hammer: sling, trophy: sling,
+  surf: sling, gourd: sling, lantern: sling, satchel: sling, courier: sling, hammer: sling, trophy: sling,
   mapcase: sling, tradeJar: sling, fishScroll: sling,
   marketBasket: (b, A, p) => BACK_FRONT.pack(b, A, p),
   // the name tag on the chest: a gold-rimmed card on a cord, a red 「왕」 stroke for a name (64px)
@@ -1887,10 +1931,10 @@ export const ART = {
   // the life skill masters
   hat_fisher: ["hat", "bucket", { c: "#8ab06a", b: "#f0e8d0", l: "#e8404a" }],
   top_chefcoat: ["top", "chefcoat", { c: "#f8f8ff", b: "#e04a4a" }],
-  back_basket: ["back", "basket", { c: "#c8a060" }],
+  back_basket: ["back", "basket", { c: "#c8a060", b: "#8a4a3a" }],
   top_smith: ["top", "smith", { c: "#8a5a3a", b: "#4a3a34" }],
   top_alch: ["top", "alch", { c: "#2e6a6a", b: "#c8a060" }],
-  back_satchel: ["back", "satchel", { c: "#b8763a" }],
+  back_satchel: ["back", "courier", { c: "#c8945a", b: "#c8483a" }],
   // gifts from the NPCs who trust you
   top_apron_juju: ["top", "apron", { c: "#ffb0c8", b: "#e0607a", d: "#e04a6a" }],
   back_hammer: ["back", "hammer", { c: "#8a90a0", b: "#8a5a3a", s: "#5a3a2a" }],
