@@ -91,7 +91,7 @@
     "PT   hhhh    hhhh  hhhh                  T                 RCR    CRTT",
     "TTP  hhhh    hhhh  hhhh                                    CCC    CCPP",
     "TTP  hhhh    hhhh  hhhh              G      ]  w     L     RCR    CRPP",
-    "PTPP        B     B              v      B    aa  aa                 TT",
+    "PTPP        B     B              v      B    aa  aa  aa             TT",
     "TTP                                                 E              PTT",
     "PP        G                 L L           L L        ]            PTTP",
     "TTT   hhhh   hhhh    hhhh           aa        kok    w             PPP",
@@ -415,6 +415,20 @@
         "도토리 세 개 모았어. 아빠 오면 하나 줄 거야.",
         "엄마가 울면 나는 안 울어. 내가 형아니까."
       ]
+    },
+    {
+      "id": "willow_fair",
+      "name": "장꾼 다래",
+      "role": "fair",
+      "x": 47,
+      "y": 24,
+      "look": [2, 1, 0, "#d88a3a", "#f4ecdc", 2],
+      "lines": [
+        "일요일엔 장이 서요! 아침 10시부터 밤 10시까지.",
+        "장날 알바를 하면 장날 토큰을 드려요. 토큰으로는 이 계절의 옷을 살 수 있죠.",
+        "공동 부엌 요리 대회도 열려요. 오늘 제일 잘 부친 사람이 1등!"
+      ],
+      "pose": "wave"
     }
   ],
   "portals": [
@@ -457,6 +471,14 @@
       "t": "prop",
       "k": "stall",
       "x": 49,
+      "y": 23,
+      "w": 2,
+      "h": 1
+    },
+    {
+      "t": "prop",
+      "k": "stall",
+      "x": 53,
       "y": 23,
       "w": 2,
       "h": 1

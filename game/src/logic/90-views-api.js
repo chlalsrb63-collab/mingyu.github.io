@@ -62,6 +62,8 @@ function selfPayload(p) {
     tro: p.ch.tro,
     // life skills (58-life.js): [lv, xp, need] per skill in LIFE order; L2: the 알바 board, trust, the 재료 주머니
     life: lifeView(ch), jb: jbView(p), rep: repView(ch), pouch: ch.pouch, fbook: ch.fbook,
+    // 버드나무 장날 (63-festival.js): [purse, earned today, my best pan, the day's best, its cook]
+    fair: fairSelf(p),
     // the block list, the enhancement pity gauge, the weekly book (63-social-weekly.js)
     ...socialSelf(p),
     // 협동 아르바이트 paid today (68-coop.js)
@@ -121,10 +123,10 @@ export function viewFor(S, pid) {
   // (and a whisper only its reader, and nobody a name they blocked: 63-social-weekly.js chatFor)
   if (S.chat.length) { const chat = chatFor(S, p, pid); if (chat.length) out.chat = chat; }
   if (p.sendMap) out.map = mapPayload(mapOfS(S, p.map));
-  // the sky: [weather (-1 under a roof), server clock in seconds], when the weather turns, on
-  // arrival, and once a minute to keep everyone's hour of the day in step
-  const wx = rt.wx ?? weatherAt(p.map, S.now);
-  if (p.sendMap || wx !== p.wx || S.now - (p.dnAt || 0) >= 60000) { out.dn = [wx, Math.floor(S.now / 1000)]; p.wx = wx; p.dnAt = S.now; }
+  // the sky: [weather (-1 under a roof), server clock in seconds, season 0–3, 장날 open 0/1 (63-festival.js)], when
+  // the weather turns or the market opens or closes, on arrival, and once a minute to keep everyone's hour in step
+  const wx = rt.wx ?? weatherAt(p.map, S.now), fo = fairOpen(S.now) ? 1 : 0;
+  if (p.sendMap || wx !== p.wx || fo !== p.fairDn || S.now - (p.dnAt || 0) >= 60000) { out.dn = [wx, Math.floor(S.now / 1000), seasonOf(S.now), fo]; p.wx = wx; p.fairDn = fo; p.dnAt = S.now; }
   if (p.sendMap || rt.who) {
     out.who = [];
     for (const oid of Object.keys(S.players)) {
@@ -278,7 +280,8 @@ export function defs() {
     npcMap: { ...NPC_MAP },
     side: SIDE.map(sideDef),
     // the turning day and the weather (the client keeps the same clock), the fire's company
-    sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM },
+    sky: { dayMs: SKY_DAY_MS, phases: PHASES, weather: WEATHER, wxMs: WX_MS, warm: [WARM_N, WARM_BASE, WARM_STEP, WARM_NIGHT, WARM_REGEN], tales: TALES, teller: TELLER.name, jam: JAM, season: SEASON.name },
+    fair: fairDefs(),
     // life skills: names, curve, grades, the bonus formula, fish, recipes, each map's grade (58-life.js)
     life: lifeDefs(), npclife: npcLifeDefs(),
     // charms: shapes, options and caps, legendaries, the expansion order and prices, 주아나's quests (66-charms.js)
