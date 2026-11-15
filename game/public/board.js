@@ -214,7 +214,7 @@ export function render(s) {
     if (fin) card.append(el("small", "ok", "오늘 끝낸 알바입니다"));
     else if (mine) card.append(el("small", "ok", "맡은 알바입니다"));
     else {
-      const why = a ? "이미 맡은 알바가 있습니다" : !(t && t.fair) && nDone >= per ? `알바는 하루에 ${per}개까지입니다` : !near ? "포포나 마을 알바 게시판 곁에서 맡을 수 있습니다" : "";
+      const why = a ? "이미 맡은 알바가 있습니다" : !(t && t.fair) && nDone >= per ? `알바는 하루에 ${per}개까지입니다` : !near ? "버드나무 마을 알바 게시판 곁에서 맡을 수 있습니다" : "";
       const btns = el("div", "btns"), b = el("button", "btn gold", "수락");
       b.disabled = !!why;
       if (why) b.title = why;
@@ -266,7 +266,9 @@ function fairCard(box, s) {
   if (rows.length) card.append(el("div", "section", `장꾼 다래의 ${F.season[si]} 좌판`));
   for (const [id, price, onSale, name, slot] of rows) {
     const row = el("div", "trk-row"), own = s.cos && s.cos.own.includes(id);
-    row.append(el("small", "", onSale ? `${name} (${slot}) · 토큰 ${price}` : `사계절 ${slot} · 토큰 ${price} · 곧 들어옵니다`));
+    const lb = el("small", "", onSale ? `${name} (${slot}) · 토큰 ${price}` : `사계절 ${slot} · 토큰 ${price} · 곧 들어옵니다`);
+    if (onSale && G.defs.cos?.[id]?.desc) lb.title = G.defs.cos[id].desc;   // what the piece looks like, before spending a season's tokens
+    row.append(lb);
     const why = !onSale ? "곧 들어옵니다" : own ? "이미 가지고 있습니다" : !near ? "장꾼 다래 곁에서 살 수 있습니다" : tok < price ? "장날 토큰이 부족합니다" : "";
     const b = el("button", "btn gold small", !onSale ? "준비 중" : own ? "보유" : "사기");
     b.type = "button"; b.disabled = !!why;
@@ -336,7 +338,7 @@ export function renderAlba(s) {
     if (a.t.kind === "deliver" && a.prog !== 1) ru.after(el("small", "hint", "꾸러미를 받는 순간부터 제한 시간이 흐릅니다."));
     box.append(card);
   } else {
-    box.append(el("p", "hint", done.length >= per ? `오늘의 알바 ${per}개를 모두 끝냈습니다. 아침 6시에 새 의뢰가 붙습니다.` : "맡은 알바가 없습니다. 포포나 마을 알바 게시판에서 맡을 수 있습니다."));
+    box.append(el("p", "hint", done.length >= per ? `오늘의 알바 ${per}개를 모두 끝냈습니다. 아침 6시에 새 의뢰가 붙습니다.` : "맡은 알바가 없습니다. 버드나무 마을 알바 게시판에서 맡을 수 있습니다."));
   }
   const btns = el("div", "btns"), b = el("button", "btn", "알바 게시판 보기");
   b.addEventListener("click", () => { open(); Sound.play("open"); });
