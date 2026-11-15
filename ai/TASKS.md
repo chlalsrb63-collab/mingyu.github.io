@@ -52,7 +52,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 
 ## GEMINI (분석 · 문서 · 콘텐츠 · [ART]/[VFX] 그림과 이펙트 — `ai/gemini.md` 5번)
 
-- [ ] [VFX] 새 보스 졸개 3종의 전용 그림: 혈루 결정 전갈 `bloodshard`(지금은 붉게 칠한 전갈), 밤장막 박쥐 `nightbat`(지금은 batcluster 색만 바꿈), 먹장어 머리 `hagfishhead`(지금은 eelknot). `game/public/mobart_f.js`의 보스 그림 방식 그대로, 지옥 괴수 느낌(귀엽지 않게), 16색 이내·외곽선. `--page mobs --q "k=bloodshard,nightbat,hagfishhead&z=4"` 스크린샷 1장
+- [x] [VFX] 새 보스 졸개 3종의 전용 그림: 혈루 결정 전갈 `bloodshard`(지금은 붉게 칠한 전갈), 밤장막 박쥐 `nightbat`(지금은 batcluster 색만 바꿈), 먹장어 머리 `hagfishhead`(지금은 eelknot). `game/public/mobart_f.js`의 보스 그림 방식 그대로, 지옥 괴수 느낌(귀엽지 않게), 16색 이내·외곽선. `--page mobs --q "k=bloodshard,nightbat,hagfishhead&z=4"` 스크린샷 1장
 - [ ] [VFX] 꽃무덤 고래 `bloomwhale`의 잠수/떠오름 이펙트와 혈루 왕도마뱀 `bloodhorn`의 혈루 사출(jet) 물줄기를 `game/public/skillfx.js`에 코드로 그리기 (서버 이벤트 `bt`/`bc`는 그대로, 그림만). 바닥 경고와 겹쳐도 잘 보이게
 - [ ] [ART] 쥬쥬식당 협동 알바 도구·요리 아이콘 시안 6개(프라이팬, 쟁반, 샐러드, 생선구이, 스튜, 더러운 접시) 16×16 → `asset/generated/coop-diner/`, 프롬프트 파일 포함. 설치는 하지 말 것 (Owner 승인 후 Claude가 설치)
 
