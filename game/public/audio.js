@@ -9,6 +9,7 @@
 
 import { TRACKS } from "./bgm.js";
 import { arrangedTrack, DEFAULT_MUSIC_STYLE, MUSIC_STYLES } from "./bgm-arrangements.js";
+import { localHost } from "./local-host.js";
 import { ready as assetsReady } from "./assetlib.js";
 
 // ───────────────────────────── notes and chords ─────────────────────────────
@@ -118,7 +119,7 @@ export const Sound = {
   ctx: null, master: null, music: null, sfx: null, verb: null,
   /** Kept for older callers: both follow `muted`. */
   sfxOn: true, bgmOn: true,
-  vol: { music: 0.7, sfx: 0.85, mute: false, style: DEFAULT_MUSIC_STYLE },
+  vol: { music: 0.7, sfx: 0.85, mute: false },
   base: null, mapScore: null, theme: null, playing: [], timer: 0,
   recordings: null, localScores: {}, recordingRequest: null,
   voices: 0, last: {}, k: 1, amb: 0, ambNext: 0, noiseBuf: null, waves: {},
@@ -128,14 +129,13 @@ export const Sound = {
     if (this.ctx) { this.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
-    try { Object.assign(this.vol, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch { /* defaults */ }
+    this.load();
     this.init(new AC());
     this.resume();
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) this.ctx.suspend().catch(() => {}); else this.resume();
     });
     this.timer = setInterval(() => this.pump(), 50);
-    this.pick();
     assetsReady().then(manifest => {
       this.recordings = manifest.bgm || {};
       this.localScores = manifest.bgmLocal || {};
@@ -181,15 +181,10 @@ export const Sound = {
   },
   save() { try { localStorage.setItem(STORE, JSON.stringify(this.vol)); } catch { /* private mode */ } },
   setMusic(v) { this.vol.music = Math.max(0, Math.min(1, v)); this.save(); this.applyVolume(); },
-  setMusicStyle(value) {
-    const style = styleOf(value);
-    if (this.vol.style === style) return;
-    this.vol.style = style; this.save(); this.pick();
-  },
   setSfx(v) { this.vol.sfx = Math.max(0, Math.min(1, v)); this.save(); this.applyVolume(); },
   setMute(m) { this.vol.mute = !!m; this.save(); this.applyVolume(); },
   /** Read before unlock, so the settings window can show saved values. */
-  load() { try { Object.assign(this.vol, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch { /* defaults */ } this.vol.style = styleOf(this.vol.style); this.sfxOn = this.bgmOn = !this.vol.mute; return this.vol; },
+  load() { try { Object.assign(this.vol, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch { /* defaults */ } delete this.vol.style; this.sfxOn = this.bgmOn = !this.vol.mute; return this.vol; },
 
   // ── music ──
   /** The map's own music: its id has a track, or else its `fallback` name does. */
@@ -212,19 +207,31 @@ export const Sound = {
     gain.linearRampToValueAtTime(0, time + fade);
     track.dying = time + fade + 0.1;
   },
-  async queueRecording(key, first, variants, fallback) {
+  recordingChoices(key, loose) {
+    const local = loose ? this.localScores[key] : null;
+    const variants = typeof local === "string" ? this.localScores[local] : local;
+    const list = Array.isArray(variants) ? variants : [];
+    const offset = list.length > 1 ? Math.floor(Math.random() * list.length) : 0;
+    const override = loose && RECORDING_KEY.test(key) ? localTrack([`${key}.mp3`]) : null;
+    return [this.recordings[key], override, ...list.slice(offset).concat(list.slice(0, offset)).map(localTrack)].filter(Boolean);
+  },
+  async queueRecording(keys, loose) {
+    const key = keys.join("|");
     if (this.recordingRequest?.key === key) return;
     this.recordingRequest?.controller.abort();
     this.recordingRequest = null;
     if (!key) return;
-    const offset = variants.length > 1 ? Math.floor(Math.random() * variants.length) : 0;
-    const candidates = first.concat(variants.slice(offset).concat(variants.slice(0, offset)).map(localTrack), fallback);
+    const candidates = keys.flatMap(k => this.recordingChoices(k, loose));
+    const seen = new Set();
     const request = { key, controller: new AbortController() };
     this.recordingRequest = request;
     const c = this.ctx;
     for (const entry of candidates) {
       if (this.recordingRequest !== request) return;
-      if (!RECORDING_SRC.test(entry?.src || "")) continue;
+      if (!RECORDING_SRC.test(entry.src) || seen.has(entry.src)) continue;
+      seen.add(entry.src);
+      const live = this.playing.find(p => !p.dying);
+      if (live?.src === entry.src) { live.key = keys[0]; return; }
       try {
         const r = await fetch(new URL(entry.src, import.meta.url), { signal: request.controller.signal });
         if (r.status === 204 || (r.status === 404 && entry.loose)) continue;
@@ -241,74 +248,46 @@ export const Sound = {
         gain.gain.setValueAtTime(0, t);
         gain.gain.linearRampToValueAtTime(Math.max(0.05, Math.min(1, entry.gain ?? 0.65)), t + FADE);
         this.fadeOut(this.playing.find(p => !p.dying), t, FADE);
-        this.playing.push({ key, src: entry.src, source, gain, dying: 0 });
+        this.playing.push({ key: keys[0], src: entry.src, source, gain, dying: 0 });
         source.start(t, start);
         return;
       } catch (error) {
         if (this.recordingRequest === request) console.warn(`[BGM] ${key}: ${error.message}`);
       }
     }
+    if (this.recordingRequest === request) this.fadeOut(this.playing.find(p => !p.dying), c.currentTime, FADE);
   },
-  /** Crossfade to whichever track should be playing now. */
+  /** Live music uses recordings only, including during loading and missing-file fallbacks. */
   pick() {
-    const c = this.ctx;
-    if (!c) return;
-    const style = styleOf(this.vol.style), records = style === DEFAULT_MUSIC_STYLE ? this.recordings : null;
+    if (!this.ctx || !this.recordings) return;
+    const loose = typeof location !== "undefined" && localHost(location.hostname);
     const mapScore = this.base && this.mapScore;
-    const exact = Object.hasOwn(records || {}, mapScore);
-    const night = this.night && (NIGHT[mapScore] || (!exact && NIGHT[this.base]));
-    const day = this.base || "title", want = this.theme || night || day;
-    const { def, song } = SCORES[style][want];
-    // Keep the map's recording in the evening until a separate night version is installed.
-    const recordedNight = night && Object.hasOwn(records || {}, night) ? night : null;
-    const recording = this.theme || recordedNight || mapScore || day;
-    const live = this.playing.find((p) => !p.dying);
-    const loose = style === DEFAULT_MUSIC_STYLE && this.recordings !== null && typeof location !== "undefined"
-      && ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname);
-    const named = loose ? this.localScores[recording] : null;
-    const tracks = typeof named === "string" ? this.localScores[named] : named;
-    const variants = Array.isArray(tracks) ? tracks : [];
-    const looseEntry = loose && RECORDING_KEY.test(recording) ? localTrack([`${recording}.mp3`]) : null;
-    const fallback = !this.theme && recording !== day && records?.[day] ? [records[day]] : [];
-    const first = [records?.[recording], looseEntry].filter(Boolean);
-    const key = first.length || variants.length || fallback.length ? recording : null;
-    if (key && live?.source && live.key === key) return;
-    this.queueRecording(key, first, variants, fallback);
-    if (live?.name === want && live.style === style) return;
+    const day = this.base || "title";
+    const recorded = k => Object.hasOwn(this.recordings, k) || (loose && Object.hasOwn(this.localScores, k));
+    const night = this.night && (NIGHT[mapScore] || (!recorded(mapScore) && NIGHT[day]));
+    const recordedNight = night && recorded(night) ? night : null;
+    this.queueRecording([...new Set([this.theme, recordedNight, mapScore, day].filter(Boolean))], loose);
+  },
+  /** Synth scores are used explicitly by the offline authoring tool. */
+  previewScore(name, style) {
+    const c = this.ctx, { def, song } = SCORES[styleOf(style)][name];
     const t = c.currentTime;
-    let step = 0, next = t + 0.12;
-    if (live?.name === want) {
-      // Catch the same phrase on the next unscheduled beat when only the orchestration changes.
-      step = live.step;
-      next = Math.max(t + 0.05, live.next);
-    }
-    const fade = live?.name === want ? 0.8 : FADE;
-    this.fadeOut(live, t, fade);
     const g = c.createGain();
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(def.trim ?? TRIM[want] ?? 1, t + fade);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(def.trim ?? TRIM[name] ?? 1, t + FADE);
     g.connect(this.music);
     const send = c.createGain(); send.gain.value = def.delay || 0; g.connect(send); send.connect(this.verb);
-    this.playing.push({ name: want, style, def, song, gain: g, send, step, next, dying: 0 });
+    return { def, song, gain: g, send, step: 0, next: t + 0.12 };
   },
-  /** Schedule music (and the fire's crackle) a little ahead of the audio clock. */
+  /** Finish fading recordings and schedule nearby ambience. */
   pump() {
     const c = this.ctx;
     if (!c || c.state !== "running") return;
     const now = c.currentTime;
     for (let i = this.playing.length - 1; i >= 0; i--) {
       const p = this.playing[i];
-      if (p.dying && now > p.dying) {
-        if (p.source) { p.source.stop(); p.source.disconnect(); }
-        p.gain.disconnect(); p.send?.disconnect(); this.playing.splice(i, 1); continue;
-      }
-      if (p.source) continue;
-      const sixteenth = 60 / p.def.bpm / 4;
-      if (p.next < now - 0.5) p.next = now + 0.05;          // woke from a long sleep: don't rush to catch up
-      while (p.next < now + LOOKAHEAD) {
-        this.tick(p, p.next, sixteenth);
-        p.step++;
-        p.next += sixteenth;
-      }
+      if (!p.dying || now <= p.dying) continue;
+      p.source.stop(); p.source.disconnect(); p.gain.disconnect();
+      this.playing.splice(i, 1);
     }
     this.ambience(now);
     // a campfire nearby crackles and pops now and then
@@ -320,7 +299,7 @@ export const Sound = {
       }
     }
     // under an autumn track, a breeze through dry leaves now and then
-    if (!this.vol.mute && this.playing.some((p) => !p.dying && p.def?.rustle)) {
+    if (!this.vol.mute && this.base === "maple" && !this.theme) {
       if (!this.rustleNext || this.rustleNext < now) this.rustleNext = now + 1 + Math.random() * 3;
       if (this.rustleNext < now + LOOKAHEAD) { this.rustle(this.rustleNext); this.rustleNext += 2.5 + Math.random() * 5; }
     }

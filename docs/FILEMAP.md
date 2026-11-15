@@ -9,7 +9,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 ### Server — `game/src/`
 | file | owns · key exports |
 | --- | --- |
-| `worker.ts` [110] | Worker entry: `/api/*` → vault, `/ws/<channel>` → Room; localhost playtest MP3s through `/__local-bgm/`. Re-exports `Room`. |
+| `worker.ts` [110] | Worker entry: `/api/*` → vault, `/ws/<channel>` → Room; local and home LAN playtest MP3s through `/__local-bgm/`. Re-exports `Room`. |
 | `room.ts` [682] | `class Room` DO: join/auth, create character, action dispatch, 100 ms alarm tick, 15 s saves, vault ops `auth count load create save rank guild`; `VAULT_NAME`, `VAULT_PATH` |
 | `protocol.ts` [69] | `parseClientMessage` — size limits and shape of untrusted frames |
 | `accounts.js` [412] | plain JS (runs in DO and node): `SERVERS`, `CHANNELS`, `class Accounts` (signup/login/logout/auth/me/servers), `parseApiBody`, storage key scheme `K`, `pidFor`, throttle rules |
@@ -187,7 +187,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `sidequests.js` [137] | side-quest cards in the talk window, quest-window entries, "!"/"?" over givers |
 | `audio.js` [1123], `bgm.js` [596], `bgm-arrangements.js` [79] | Web Audio score player, map/day-night themes and acoustic arrangements, `SFX` catalogue (gathering: `gat_start gat_work gat_tap gat_hit gat_great gat_break`; stations: `forge_hit forge_quench brew_stir brew_bubble brew_done craft_ok craft_great craft_fail`), `Sound.play(name)`. Score authoring and offline previews in `.agents/skills/tales-tales-bgm/`. |
 | `bgm-regions.js` [90] | original jungle, coral coast and oasis scores imported by `bgm.js` |
-| `assets/music/` · `assets/manifest.json` [44] | Installed external art/audio and the `bgm`/`bgmLocal` catalogue. Local recordings support `inside/`, rift terrain aliases, random variants and measured loops through `/__local-bgm/`. Catalogue tool `scripts/import-bgm.mjs`, prompts under `ai/prompts/`. |
+| `assets/music/` · `assets/manifest.json` [44] | Installed external art/audio and the `bgm`/`bgmLocal` catalogue for recordings-only playback. Local/LAN recordings support `inside/`, rift terrain aliases, random variants and measured loops through `/__local-bgm/`. Shared host classification is in `public/local-host.js`. Catalogue tool `scripts/import-bgm.mjs`, prompts under `ai/prompts/`. |
 | `titlescene.js` [604] | title-screen diorama, pixel logo `logo(S)` and subtitle wordmark `subtitle(S)` (Fantasy Life in forest) |
 | `assetlib.js` [131] | external asset loader, `ready()` awaited at client start-up; `canvas meta has loadImage loadAudio loadSounds play`. Used by weapons.js and art.js `buildIcons` (`icon.item.<id>`) |
 | `style.css` [358] · `hud.css` [1509] · `lobby.css` [248] | base + CRT, HUD/windows (the "responsive" section: breakpoints ≤1100 wide / ≤640 high / ≤860 phones, the window safe zone, scrolling bodies, folded tabs, text wrapping; docked windows `.window.docked` and the desktop side panel `#panel`), lobby |

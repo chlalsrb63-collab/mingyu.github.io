@@ -20,6 +20,7 @@
 import type { Env } from "./env";
 import { CHANNELS, MAX_BODY_BYTES, parseApiBody } from "./accounts.js";
 import { Room, VAULT_NAME, VAULT_PATH } from "./room";
+import { localHost } from "../public/local-host.js";
 
 export { Room };
 
@@ -80,10 +81,10 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // A loose recording is a local playtest convenience. An absent file keeps the synth playing.
+    // Recordings from loose files are available on loopback and home LAN during local playtests.
     const music = url.pathname.match(/^\/__local-bgm\/((?:inside\/)?[a-z0-9][a-z0-9_.-]*\.mp3)$/i);
     if (music && request.method === "GET" && env.PLAYTEST === "1" && env.HF_ENV !== "prod"
-        && ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) {
+        && localHost(url.hostname)) {
       const asset = await env.ASSETS.fetch(new Request(new URL(`/assets/music/${music[1]}`, url)));
       return asset.ok ? asset : new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
     }

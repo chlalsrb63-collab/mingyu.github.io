@@ -35,6 +35,8 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 
 ## CODEX (구현 · 테스트)
 
+- [x] 녹음 BGM만 재생하고 LAN에서도 같은 음원 사용. [검증 및 2.5D 검토](reports/codex-recordings-only.md)
+
 - [ ] `codex/combat-pressure`(ffda360, 보스 실루엣·엔드게임 장비 그림)를 지금 main 위로 rebase하고 `art.js`·`mobart.js`·`mobart_c.js` 충돌을 직접 해결(내 새 그림 6b283ed·7ad1e06과 합치기). `node tests/mobart.mjs`와 `--page mobs` 확인 후 넘기기 — Alpha 1.0.1에서 충돌로 빠짐
 - [ ] `game/scripts/import-art.mjs --install`이 manifest를 다시 쓸 때 `bgmLocal`(로컬 BGM 목록)을 지워 버림 → `writeManifest`가 모르는 키를 보존하게 고치고, 설치 전후 manifest 비교 테스트 추가
 - [x] Alpha 1.0.1 월드 원근·광원, 같은 와이파이 파티 접속. [검수](reports/codex-scene-depth.md)

@@ -35,10 +35,9 @@ try {
       const sampleRate = 44100;
       // The first cycle primes the synth and echo. The second cycle is the preview.
       const context = new OfflineAudioContext(2, Math.ceil((0.12 + 2 * seconds + 0.05) * sampleRate), sampleRate);
-      const sound = { ...Sound, playing: [], waves: {}, vol: { ...Sound.vol, style } };
+      const sound = { ...Sound, playing: [], waves: {}, vol: { ...Sound.vol } };
       sound.init(context);
-      sound.bgm(track);
-      const playing = sound.playing[0];
+      const playing = sound.previewScore(track, style);
       for (let step = 0; step < steps * 2; step++) {
         playing.step = step;
         sound.tick(playing, playing.next + step * s16, s16);
