@@ -327,6 +327,7 @@ for (const [left, grade] of [[135_000, 4], [134_999, 3], [90_000, 3], [89_999, 2
       const p = w.S.players[pid];
       const report = view(w, pid).cr;
       assert.equal(report[0], 4, "quick complete earns S");
+      assert.equal(report[5], attempt === 1 ? 2 : 1, "the report distinguishes replay from earning the day's pay");
       assert.ok(report[3].every(([, points, , eligible]) => points > 0 && eligible === 1));
       assert.equal(p.ch.cos.tokens, paid);
       assert.deepEqual(p.ch.coopDone, ["pipe"]);

@@ -159,12 +159,15 @@ export function render(s) {
   const pipe = G.defs.coop?.jobs?.pipe, atPipe = pipe && near && pipe[5] === G.map?.id;
   if (atPipe) {
     const card = el("div", "dcard jb-card cp-offer"), buttons = el("div", "btns");
-    const start = el("button", "btn gold", "협동 배관 수리");
+    const paid = s.coop?.includes("pipe");
+    const start = el("button", "btn gold", paid ? "협동 배관 수리 다시 하기" : "협동 배관 수리");
     start.id = "coop-pipe-start"; start.type = "button"; start.disabled = !partyLead() || hallCrew() < 2;
     start.addEventListener("click", () => act({ t: "coop_start", k: "pipe" }));
     card.append(el("b", "", pipe[0]), el("p", "hint", "회관에 모인 2~4명이 급수구와 배수구를 5분 안에 연결합니다."));
     if (start.disabled) card.append(el("p", "hint", hallCrew() < 2 ? "파티원과 함께 포포에게 와 주세요." : "파티장이 시작할 수 있습니다."));
-    if (s.coop?.includes("pipe")) card.append(el("p", "hint", "오늘 보수 수령 · 다시 하면 수고비만 받습니다."));
+    card.append(el("p", "hint", paid
+      ? "오늘 보수 수령 완료 · 보수 없이 다시 참여할 수 있어요. 조건을 충족한 미수령 팀원은 보수를 받아요."
+      : "오늘 보수 수령 가능 · 배관 연결에 기여하면 보수를 받아요."));
     buttons.append(start); card.append(buttons); box.append(card);
   }
   if (a) box.append(jobCard(s, a, true));
@@ -313,7 +316,7 @@ export function renderAlba(s) {
     box.append(el("div", "section", `협동 알바 · 오늘 보수 ${coop.filter(([k]) => paid.includes(k)).length}/${coop.length}`));
     for (const [k, j] of coop) {
       const row = el("div", "trk-row"), got = paid.includes(k);
-      row.append(el("small", got ? "ok" : "", `${got ? "✓ " : ""}${j[0]} · ${placeOf(j[4]) || mapName(j[5])} · ${got ? "보수는 아침 6시 뒤에 다시" : "오늘 보수 받을 수 있음"}`));
+      row.append(el("small", got ? "ok" : "", `${got ? "✓ " : ""}${j[0]} · ${placeOf(j[4]) || mapName(j[5])} · ${got ? "오늘 보수 수령 완료 · 보수 없이 재참여 가능" : "오늘 보수 수령 가능"}`));
       const tb = Track.button(`coop:${k}`, j[0]);
       if (tb) row.append(tb);
       box.append(row);

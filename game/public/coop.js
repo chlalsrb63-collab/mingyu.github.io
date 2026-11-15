@@ -512,23 +512,26 @@ function renderCard() {
   const j = D().jobs[k];
   b.innerHTML = `<b>협동 아르바이트 · ${j[0]}</b><p>${n.name}: "일손이 필요해요! 2~4명 파티로, ${j[1]}분 근무예요."</p>` +
     `<p>${esc(j[6] || "")}${CARD_TIP[k] || ""}</p>` +
-    `<p class="cc-day">${done ? "✓ 오늘 보수를 받았어요 (다시 하면 도와준 수고비만)" : `오늘의 보수: 등급 C 이상이면 골드·강화석·장비·${SKILL[k] || "생활"} 경험치`}</p><p class="cc-day">등급별 보상 ${gradePct()} (S는 어려워요!)</p>` +
-    (party > 1 ? `<button class="btn gold">파티와 근무 시작 (파티장)</button>` : `<p class="cc-day">협동 알바는 2명 이상 파티로만 할 수 있어요. 파티원과 함께 와 주세요.</p>`);
+    `<p class="cc-day">${done ? "오늘 보수 수령 완료 · 보수 없이 다시 참여할 수 있어요. 조건을 충족한 미수령 팀원은 보수를 받아요."
+      : `참여 조건을 충족하고 C 등급 이상이면 골드·강화석·장비·${SKILL[k] || "생활"} 경험치를 받아요.`}</p>` +
+    (done ? "" : `<p class="cc-day">등급별 보수 ${gradePct()}</p>`) +
+    (party > 1 ? `<button class="btn gold">파티와 ${done ? "다시 근무" : "근무 시작"} (파티장)</button>` : `<p class="cc-day">협동 알바는 2명 이상 파티로만 할 수 있어요. 파티원과 함께 와 주세요.</p>`);
   const btn = b.querySelector("button");
   if (btn) btn.addEventListener("click", () => A.act({ t: "coop_start", k }));
   b.hidden = false;
 }
 function showReport(cr) {
-  const [grade, score, best, rows, cuts] = cr;
+  const [grade, score, best, rows, cuts, reward] = cr;
   const b = st.res || (st.res = box("coop-res", "frame"));
   const tools = ((D().jobs[jobOf()] || [])[2] || ["broom", "bin"]).map((t) => D().tools[t] || t);
   const pipe = jobOf() === "pipe";
   const finish = pipe ? (grade ? `배관 연결 완료 · ${mmss(score)} 남김` : "배관 연결 미완료") : grade ? "근무 완료!" : "근무 평가 미달";
+  const pay = reward === 1 ? `내 보수 ${Math.round((D().gradeK || [1, 1.05, 1.1, 1.2])[grade - 1] * 100)}% 지급 완료` : "이번 근무 보수 없음";
   b.innerHTML = `<div class="cr-g g${grade}">${GRADE[grade]}</div><b>${finish}</b>` +
     (pipe ? `<p>이 채널 최고 ${mmss(best)} 남김</p><p class="cr-cut">C 연결 · B ${cuts[1]}초 · A ${cuts[2]}초 · S ${cuts[3]}초</p>` :
       `<p>점수 ${score} · 이 채널 최고 ${best}</p><p class="cr-cut">C ${cuts[0]} · B ${cuts[1]} · A ${cuts[2]} · S ${cuts[3]}</p>`) +
-    (grade ? `<p class="cr-cut">보상 ${Math.round((D().gradeK || [1, 1.05, 1.1, 1.2])[grade - 1] * 100)}% (${gradePct()})</p>` : "") +
-    `<table>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${tools[r[2]] || ""}</td><td>${r[1]}${pipe ? "칸" : "점"}</td><td>${r[3] ? "" : "보상 없음"}</td></tr>`).join("")}</table>` +
+    (reward === undefined ? "" : `<p class="cr-cut">${reward === 2 ? "오늘 보수 수령 완료 · " : ""}${pay}</p>`) +
+    `<table>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${tools[r[2]] || ""}</td><td>${r[1]}${pipe ? "칸" : "점"}</td><td>${r[3] ? "" : "참여 조건 미충족"}</td></tr>`).join("")}</table>` +
     `<p class="cr-note">잠시 뒤 로비로 돌아갑니다.</p><button class="btn">확인</button>`;
   b.querySelector("button").addEventListener("click", () => { b.hidden = true; });
   b.hidden = false;

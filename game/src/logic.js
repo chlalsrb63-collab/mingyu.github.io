@@ -1670,7 +1670,7 @@ const COOP_T = {
   // one base reward (about the old A: gold ×2.5 on 2026-11-15, 알바 as a main gold source) × the grade's share C B A S
   // (owner, 2026-11-15: 100 · 105 · 110 · 120 %) for gold, XP and life XP; stones and the gear's rarity stay at base
   base: { gold: 200, xp: 0.20, life: 0.60, stone: 3, gearQ: 1 }, gradeK: [1, 1.05, 1.1, 1.2],
-  tip: 25, tipLife: 0.05, helpTip: 38, helpLife: 0.25, rep: 5,
+  rep: 5,
 };
 const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무", pipein: "급수 담당", pipeout: "배수 담당" };
 /** An empty row of the forge template's object layer (wall, 28 open tiles, the cut-down front wall). */
@@ -15772,42 +15772,45 @@ function coopFinish(S, dim, inside) {
   S.coopBest[c.k] = Math.max(S.coopBest[c.k] || 0, Math.round(c.score));
   for (const o of inside) {
     const q = c.pl[o.pid];
-    if (q && q.ok) coopPay(S, o, c, g);
-    else if (c.k === "pipe") toast(o, g ? "완성 배관에 참여한 팀원이 보수를 받았습니다." : "시간이 끝났어요. 급수구에서 배수구까지 다시 이어 보세요.");
+    let reward = 0;
+    if (q?.ok || coopSelf(o).includes(c.k)) reward = coopPay(S, o, c, q?.ok ? g : 0);
+    else if (c.k === "pipe") toast(o, g ? "완성된 배관에 참여해야 보수를 받을 수 있어요." : "시간이 끝났어요. 급수구에서 배수구까지 다시 이어 보세요.");
     else toast(o, "근무 태도 불량 — 보상 없음");
-    o.coopRes = [g, Math.round(c.score), S.coopBest[c.k], rows, [0, 1, 2, 3].map((i) => coopCut(c, i))];
+    o.coopRes = [g, Math.round(c.score), S.coopBest[c.k], rows, [0, 1, 2, 3].map((i) => coopCut(c, i)), reward];
   }
   coopEv(S, dim, 21, 0, 0, g);
 }
-/** C.7: a full day's pay at C or better (the first time today), a helper's tip after that, a small tip below C. */
+/** Report pay status: 0 no grade, 1 paid, 2 already claimed. Only a paid clear advances achievements. */
 function coopPay(S, p, c, g) {
   const ch = p.ch, J = COOP[c.k], R = COOP_T, today = dayOf(S.now);
+  if (coopSelf(p).includes(c.k)) {
+    toast(p, "오늘 보수는 이미 받았어요. 친구들과 다시 참여할 수 있어요.");
+    return 2;
+  }
+  if (!g) {
+    toast(p, c.k === "pipe" ? "시간이 끝났어요. 배관 연결을 다시 도전할 수 있어요." : "C등급에 도달하면 보수를 받을 수 있어요. 오늘 다시 도전할 수 있어요.");
+    return 0;
+  }
   if (ch.coopDay !== today) { ch.coopDay = today; ch.coopDone = []; }
   // one base reward, × the grade's share (C 100 % · B 105 % · A 110 % · S 120 %) for gold and XP; stones and gear stay at base
-  const Tt = Math.max(1, Math.floor(toTier(ch.lvl))), k = R.gradeK[Math.max(0, g - 1)], life = lifeNeed(ch.life[J.skill].lv) * R.base.life;
-  const gold = (n) => { ch.gold += n; p.gain.push(["gold", n]); };
+  const Tt = Math.max(1, Math.floor(toTier(ch.lvl))), k = R.gradeK[g - 1], life = lifeNeed(ch.life[J.skill].lv) * R.base.life;
+  ch.coopDone.push(c.k);
   ch.cnt.coop++;
   const achievement = "coopS_" + c.k;
   if (g === 4 && Object.hasOwn(ch.cnt, achievement)) ch.cnt[achievement]++;   // registered jobs earn an S achievement
   checkAch(S, p);
-  if (!g) {
-    gold(R.tip * Tt); gainLife(S, p, J.skill, life * R.tipLife);
-    toast(p, "근무 평가 미달 — 수고비만 받았습니다. 오늘 다시 도전할 수 있어요.");
-  } else if (ch.coopDone.includes(c.k)) {
-    gold(R.helpTip * Tt); gainLife(S, p, J.skill, life * R.helpLife);
-    toast(p, "오늘 보수는 이미 받았습니다 — 도와준 수고비를 받았습니다.");
-  } else {
-    ch.coopDone.push(c.k);
-    gold(Math.round(R.base.gold * Tt * k));
-    const tokens = gainWillowToken(p, 2);
-    if (addItem(ch, "stone", R.base.stone)) p.gain.push(["item", "stone", R.base.stone, 0]);
-    rewardGear(S, p, Tt, R.base.gearQ);
-    gainXp(S, p, Math.round(tierXp(Tt) * R.base.xp * k));
-    gainLife(S, p, J.skill, life * k);
-    addRep(S, p, J.npc, R.rep);
-    toast(p, `[${J.name}] ${"CBAS"[g - 1]} 등급! 오늘의 보수 ${Math.round(k * 100)}%를 받았습니다.${tokens ? ` 버드나무토큰 +${tokens}` : ""}`);
-  }
+  const gold = Math.round(R.base.gold * Tt * k);
+  ch.gold += gold;
+  p.gain.push(["gold", gold]);
+  const tokens = gainWillowToken(p, 2);
+  if (addItem(ch, "stone", R.base.stone)) p.gain.push(["item", "stone", R.base.stone, 0]);
+  rewardGear(S, p, Tt, R.base.gearQ);
+  gainXp(S, p, Math.round(tierXp(Tt) * R.base.xp * k));
+  gainLife(S, p, J.skill, life * k);
+  addRep(S, p, J.npc, R.rep);
+  toast(p, `[${J.name}] ${"CBAS"[g - 1]} 등급! 오늘의 보수 ${Math.round(k * 100)}%를 받았습니다.${tokens ? ` 버드나무토큰 +${tokens}` : ""}`);
   p.dirty = true;
+  return 1;
 }
 /** Every tick: each shift — empty, its phases, its job's own clock. */
 function coopTick(S, now) {

@@ -1,6 +1,6 @@
 // Headless test of 협동 아르바이트 (docs/design/life-and-coop.md C, H7–H9): party-only (2–4; a solo start refused), 동동아파트 청소
 // by parties of 2–4, the template, sweeping / bins / chutes, the two-person sofa, the spread and the
-// complaints, failing on the clock, a bot clearing it, rewards once a day (helpers tip only), leaving, a disconnect
+// complaints, failing on the clock, a bot clearing it, daily rewards and unpaid replays, leaving, a disconnect
 // mid-shift, cleanup, determinism, the wire and an old sheet's migration; 쥬쥬식당 서빙; 캉캉대장간 단조 v2 (each piece's rhythm
 // pattern judged, flips, 갑옷's answers, reheating, the 진열대 and its customers, the latency calibration, walking bots 2–4 at a
 // human-ish accuracy); 보글연금공방 가마 v2 (its big hall, 풀무 notes per direction, 합동 풀무, bands per recipe, boil-overs and the fan, herb order, the shop, walking bots 2–4). node tests/coop.mjs [-v] [--tune]
@@ -49,6 +49,10 @@ const lastOf = (pid, key) => { for (let i = views[pid].length - 1; i >= 0; i--) 
 const shiftOf = (w) => { const id = Object.keys(w.S.dims).find((k) => w.S.dims[k].coop); return id ? w.S.dims[id] : null; };
 const at = (p, x, y) => { p.x = x; p.y = y; };
 const atTile = (p, [tx, ty]) => at(p, ...X.tilePx([tx, ty]));
+function rewardState({ ch }) {
+  const { gold, lvl, xp, xpt, life, inv, rep, cnt, ach, cos } = ch;
+  return structuredClone({ gold, lvl, xp, xpt, life, inv, rep, cnt, ach, cos });
+}
 // where a worker stands to use each station (the tile beside it, in the corridor)
 const RACK = [J.st.rack[0] - 1, J.st.rack[1]], BURN = [J.st.burn[0] + 1, J.st.burn[1]], RECY = [J.st.recycle[0] - 1, J.st.recycle[1]];
 
@@ -171,6 +175,7 @@ for (const n of [2, 3, 4]) {
   // a little work so the score shows, then walk about until the clock runs out
   step(w, X.COOP_T.briefMs + 200);
   const pile = c.ents.find((e) => e.t === 0), [a, b] = [S.players.c0, S.players.c1];
+  const before = rewardState(a);
   at(a, pile.x, pile.y); for (let i = 0; i < 3; i++) { act(w, "c0", { t: "coop_act" }); step(w, 300); }
   at(b, pile.x, pile.y); act(w, "c1", { t: "coop_act" }); step(w, 300);
   atTile(b, RECY); act(w, "c1", { t: "coop_act" });
@@ -186,8 +191,10 @@ for (const n of [2, 3, 4]) {
   assert.equal(c.score, 0, "complaints ate the points");
   const cr = lastOf("c0", "cr");
   assert.equal(cr[0], 0, "graded below C");
+  assert.equal(cr[3][0][3], 1, "contributed to the failed shift");
   assert.equal(a.ch.coopDone.length, 0, "a fail doesn't use up the day");
-  assert.ok(a.ch.gold > 0, "a small tip");
+  assert.deepEqual(rewardState(a), before, "a failed shift pays nothing and adds no progression");
+  assert.equal(cr[5], 0, "report an unpaid shift");
   // the report, then home after endMs; the instance is gone
   step(w, X.COOP_T.endMs + 200);
   assert.equal(a.map, J.lobby); assert.equal(b.map, J.lobby);
@@ -280,7 +287,7 @@ function botShift(w, idle = [], MS = 300) {
 }
 const act0 = (w, pid) => act(w, pid, { t: "coop_act" });
 
-// ── a bot party clears it; rewards once a day; helpers tip only; the next day pays again
+// ── a bot party clears it; rewards once a day; the same party can replay; the next day pays again
 {
   const w = world(2), S = w.S, [a, b] = [S.players.c0, S.players.c1];
   act(w, "c0", { t: "coop_start", k: "apt" });
@@ -288,7 +295,7 @@ const act0 = (w, pid) => act(w, pid, { t: "coop_act" });
   log("duo bot score", c.score, "grade", g, "cuts", [0, 1, 2, 3].map((i) => X.coopCut(c, i)));
   assert.ok(g >= 3, `a steady duo reaches A or S: ${c.score}`);
   const cr = lastOf("c0", "cr");
-  assert.equal(cr[0], g); assert.equal(cr[1], Math.round(c.score)); assert.equal(cr[3].length, 2);
+  assert.equal(cr[0], g); assert.equal(cr[1], Math.round(c.score)); assert.equal(cr[3].length, 2); assert.equal(cr[5], 1);
   assert.ok(cr[3].every((r) => r[3] === 1), "both eligible");
   assert.deepEqual(a.ch.coopDone, ["apt"]); assert.equal(a.ch.coopDay, X.dayOf(w.now));
   assert.ok(a.ch.inv.some((s) => s.id === "stone"), "강화석");
@@ -297,15 +304,16 @@ const act0 = (w, pid) => act(w, pid, { t: "coop_act" });
   assert.equal(a.ch.rep.dongdong || 0, Object.hasOwn(X.NPC_MAP, "dongdong") ? X.COOP_T.rep : 0, "trust with 동동");
   assert.ok(a.ch.life.deliver.xp > 0 || a.ch.life.deliver.lv > 1, "life XP (배달)");
   assert.deepEqual(L.viewFor(S, "c0").self?.coop ?? a.ch.coopDone, ["apt"]);
-  // again the same day: a helper's tip
+  // again the same day: play without rewards
   step(w, X.COOP_T.endMs + 200);
-  const gold = a.ch.gold, stones = a.ch.inv.filter((s) => s.id === "stone").reduce((n, s) => n + s.n, 0);
+  const before = [rewardState(a), rewardState(b)];
+  const stones = a.ch.inv.filter((s) => s.id === "stone").reduce((n, s) => n + s.n, 0);
   for (const o of [a, b]) { const dd = X.mapOf(J.lobby).npcs.find((q) => q.id === "dongdong"); at(o, dd.x * T + 8, dd.y * T + 28); }
   assert.ok(act(w, "c0", { t: "coop_start", k: "apt" }).ok);
   botShift(w);
-  assert.equal(a.ch.gold - gold, X.COOP_T.helpTip * 1, "helper tip 15·T");
-  assert.equal(a.ch.cos.tokens, 2, "helping on a repeat does not earn more tokens");
-  assert.equal(a.ch.inv.filter((s) => s.id === "stone").reduce((n, s) => n + s.n, 0), stones, "no second pay");
+  assert.deepEqual([rewardState(a), rewardState(b)], before, "same-day replays add no rewards or progression");
+  assert.equal(lastOf("c0", "cr")[5], 2);
+  assert.equal(lastOf("c1", "cr")[5], 2);
   // the next day pays again
   step(w, X.COOP_T.endMs + 200);
   w.now += DAY;
@@ -316,6 +324,22 @@ const act0 = (w, pid) => act(w, pid, { t: "coop_act" });
   assert.equal(a.ch.coopDay, X.dayOf(w.now)); assert.deepEqual(a.ch.coopDone, ["apt"]);
   assert.ok(a.ch.inv.filter((s) => s.id === "stone").reduce((n, s) => n + s.n, 0) > stones, "a new day's pay");
   assert.equal(a.ch.cos.tokens, 4, "the next day's qualified shift rewards tokens again");
+}
+
+// ── a worker who already claimed the reward can play alongside a friend who has yet to claim it
+{
+  const w = world(2), [a, b] = [w.S.players.c0, w.S.players.c1];
+  X.coopPay(w.S, a, { k: "apt" }, 1);
+  const before = rewardState(a), friendGold = b.ch.gold;
+  assert.ok(act(w, "c0", { t: "coop_start", k: "apt" }).ok);
+  botShift(w);
+  const replay = lastOf("c0", "cr"), first = lastOf("c1", "cr");
+  assert.ok(replay[3].every((r) => r[3] === 1), "both workers contributed");
+  assert.equal(replay[5], 2);
+  assert.equal(first[5], 1);
+  assert.deepEqual(rewardState(a), before, "the previously paid party leader earns nothing");
+  assert.ok(b.ch.gold > friendGold, "the friend still earns the day's pay");
+  assert.deepEqual(b.ch.coopDone, ["apt"]);
 }
 
 // ── walking bots at player speed, 1–4 workers: the opening mess and the spawn rate grow with the party; the cut-offs
@@ -508,14 +532,15 @@ for (const n of [2, 3, 4]) {
   assert.ok(a.ch.life.cook.xp > 0 || a.ch.life.cook.lv > 1, "life XP (요리)");
   assert.ok(a.ch.inv.some((s) => s.id === "stone"), "강화석");
   if (n === 4) {
-    // the same day again: helpers' tips only
+    // the same day again: unpaid replay
     step(w, X.COOP_T.endMs + 200);
     const jj = X.mapOf(JD.lobby).npcs.find((o) => o.id === "juju");
     for (const pid of w.pids) at(S.players[pid], jj.x * T + 8, jj.y * T + 28);
     const gold = a.ch.gold;
     assert.ok(act(w, "c0", { t: "coop_start", k: "diner" }).ok);
     dinerBot(w);
-    assert.equal(a.ch.gold - gold, X.COOP_T.helpTip, "a helper's tip the second time");
+    assert.equal(a.ch.gold, gold, "diner replay is unpaid");
+    assert.equal(lastOf("c0", "cr")[5], 2);
     assert.deepEqual(a.ch.coopDone, ["diner"]);
   }
   // hard (owner, 2026-11-15): a realistic party, slower to decide (an act every 600 ms), lands on B–A
@@ -823,7 +848,8 @@ for (const n of [2, 3, 4]) {
   const c2 = forgeBot(w, [0.35, 0.65]);
   log(`forge ${n} sloppy: score`, Math.round(c2.score), "grade", X.coopGrade(c2), "notes", c2.stat);
   assert.ok(X.coopGrade(c2) >= 1 && X.coopGrade(c2) <= 3, `a sloppier party lands C–A: ${Math.round(c2.score)}`);
-  assert.equal(a.ch.gold - gold, X.COOP_T.helpTip, "a helper's tip the second time");
+  assert.equal(a.ch.gold, gold, "forge replay is unpaid");
+  assert.equal(lastOf("c0", "cr")[5], 2);
 }
 
 // ───────────────────────────── 보글연금공방 가마 v2 (COOP_BREW, H9) ─────────────────────────────
@@ -1026,7 +1052,8 @@ for (const n of [2, 3, 4]) {
   const c2 = brewBot(w);
   log(`alch ${n} realistic: score`, Math.round(c2.score), "grade", X.coopGrade(c2), "notes", c2.stat);
   if (!TUNE) assert.ok(X.coopGrade(c2) >= 2 && X.coopGrade(c2) <= 3, `a realistic party lands B–A: ${Math.round(c2.score)}`);
-  assert.equal(a.ch.gold - gold, X.COOP_T.helpTip, "once a day: a helper's tip the second time");
+  assert.equal(a.ch.gold, gold, "kiln replay is unpaid");
+  assert.equal(lastOf("c0", "cr")[5], 2);
 }
 
 // ── party-only in every job: a solo start is refused with the reason
@@ -1094,11 +1121,16 @@ for (const k of ["diner", "forge", "alch"]) {
   assert.deepEqual(["coop", "coopS_apt", "coopS_alch"].map((k) => S.players.oc.ch.cnt[k]), [0, 0, 0]);
 }
 
-// ── S-grade rewards: the first S in a job gives its achievement and cosmetic once; 20 shifts give 「단골 알바생」
+// ── S-grade rewards: a paid S gives its achievement and cosmetic once; 20 paid shifts give 「단골 알바생」
 {
   const w = world(1), S = w.S, p = S.players.c0, ch = p.ch;
   X.coopPay(S, p, { k: "diner" }, 3);
   assert.equal(ch.cnt.coop, 1); assert.equal(ch.cnt.coopS_diner, 0); assert.ok(!ch.ach.includes("coopS_diner"), "A is not S");
+  assert.equal(X.coopPay(S, p, { k: "diner" }, 4), 2);
+  assert.equal(X.coopPay(S, p, { k: "diner" }, 0), 2);
+  assert.equal(ch.cnt.coop, 1); assert.equal(ch.cnt.coopS_diner, 0);
+  assert.ok(!ch.ach.includes("coopS_diner") && !ch.cos.own.includes("back_tray"), "replay grants no S rewards");
+  S.now += DAY;
   X.coopPay(S, p, { k: "diner" }, 4);
   assert.equal(ch.cnt.coopS_diner, 1); assert.ok(ch.ach.includes("coopS_diner"));
   assert.ok(ch.cos.own.includes("back_tray"), "the S cosmetic");
@@ -1110,8 +1142,12 @@ for (const k of ["diner", "forge", "alch"]) {
     assert.ok(ch.ach.includes("coopS_" + k) && ch.cos.own.includes(id), k);
   }
   assert.ok(!ch.ach.includes("coop20"));
-  while (ch.cnt.coop < 20) X.coopPay(S, p, { k: "apt" }, 0);
-  assert.ok(ch.ach.includes("coop20"), "20 shifts");
+  for (let paid = ch.cnt.coop; paid < 20; paid++) {
+    S.now += DAY;
+    assert.equal(X.coopPay(S, p, { k: "apt" }, 1), 1);
+  }
+  assert.equal(ch.cnt.coop, 20);
+  assert.ok(ch.ach.includes("coop20"), "20 paid shifts");
   // a saved sheet keeps them: migrate re-grants an achievement's cosmetic
   const back = L.newChar("복원", []); back.ach = ["coopS_forge"];
   L.addPlayer(S, "r", back);

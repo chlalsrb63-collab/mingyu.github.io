@@ -369,7 +369,7 @@ const COOP_T = {
   // one base reward (about the old A: gold ×2.5 on 2026-11-15, 알바 as a main gold source) × the grade's share C B A S
   // (owner, 2026-11-15: 100 · 105 · 110 · 120 %) for gold, XP and life XP; stones and the gear's rarity stay at base
   base: { gold: 200, xp: 0.20, life: 0.60, stone: 3, gearQ: 1 }, gradeK: [1, 1.05, 1.1, 1.2],
-  tip: 25, tipLife: 0.05, helpTip: 38, helpLife: 0.25, rep: 5,
+  rep: 5,
 };
 const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무", pipein: "급수 담당", pipeout: "배수 담당" };
 /** An empty row of the forge template's object layer (wall, 28 open tiles, the cut-down front wall). */

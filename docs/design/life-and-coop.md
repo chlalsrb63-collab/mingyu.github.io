@@ -57,7 +57,7 @@ life-skill spec was cut off after its first section. Tags used below:
     Migration gives old characters life XP from their fish/cook counters.
 12. **Once-a-day rewards per job** (first clear at C or better): XP `tierXp(T)·[.08 .14 .20 .28]`, gold
     `T·[40 60 80 110]`, one `rewardGear`, enhancement stones `[1 2 3 5]`, life XP `lifeNeed(L)·[.3 .45 .6 .8]` in the
-    matching skill (T = `toTier(lvl)`). A member who already cleared today can still join as a helper for a tip.
+    matching skill (T = `toTier(lvl)`). A member who already received the day's pay can join further shifts with friends for no rewards.
 
 ---------------------------------------------------------------------------------------------------------------
 
@@ -497,10 +497,9 @@ lazy reset `coopDay !== dayOf(now)` → `coopDone = []`, `coopDay = today`):
 | S | ·0.28 | `110·T` | minQ 2 | 5, 25 % +1 축복 강화석 | ·0.80 | first S ever in this job: cosmetic (쥬쥬 앞치마 · 동동 고무장갑 · 캉캉 두건 · 보글 고글) |
 
 - T = `toTier(ch.lvl)`; L = the member's level in the matching skill: diner → `cook`, forge → `craft`, alch →
-  `alch`, apt → `deliver` (proposal; question G.4). Below C ("근무 평가 미달") pays a tip `10·T` gold and 10 % of the
-  life XP, and does not use up the day, so the party can retry.
-- Helpers (k already in `coopDone`) get a tip `15·T` and life XP ×0.25 only. That lets friends help without being
-  farmed.
+  `alch`, apt → `deliver` (proposal; question G.4), pipe → `craft`. Below C pays nothing and leaves the daily reward available.
+- Members who already received pay at that site can keep joining for the score and grade. Replays award no currency,
+  items, experience, trust or achievement progress to those members. Eligible teammates can still earn their first pay.
 - Economy (economy-designer view): at most 4 × 110·T = 440·T gold a day (T 10 → 4,400 G, T 40 → 17,600 G ≈ 25
   min of band-level hunting) and 4 × 0.28 = 1.12 old levels of XP. That is below a day of 차원 균열 (3 × 0.5).
   These are the "paycheck" and the life-skill booster, not a replacement for hunting. Gear is one roll per clear,
@@ -517,8 +516,7 @@ lazy reset `coopDay !== dayOf(now)` → `coopDone = []`, `coopDay = today`):
   out. `use` is limited to potions and food; recall = leave.
 - Rate limits: `coop_act` 250 ms, pumps 300 ms, 3 scrubs per plate, 4 chops per item, pickups need the hand state.
 - Rewards: once per job per day, only for members who are eligible (C.3). The cut-offs are fixed at the starting
-  party size, so dropping members does not make the job easier. Helpers get tips only. Two accounts of one person
-  can still team up. That is accepted; the payout per character is capped anyway.
+  party size, so dropping members does not make the job easier. Repeat clears are unpaid for members who already claimed that day.
 - Instances: one per party at a time (`party.coop`), cap 6 per channel, hard `expire`, empty → closed in 20 s.
   Tests assert there are no leftover `coop_*` keys in `S.maps`.
 - Determinism: all spawns and choices come from `dim.coop.box` (seeded). The same seed and the same action script
@@ -654,7 +652,7 @@ L/C touch `70/75` only by appending cases, and `client.js` only through `onSnap`
   weapons hidden, `atk` refused); solo / non-leader / outside lobby / cap / already in an instance refused; sweep →
   bundle → bin → 소각로 scores, broom alone never scores, bin cap 5, recycling refuses pests, stun 5 s and wake,
   a rat tears a bundle, mess complaint; combo, fever ×1.5, grade cut-offs for n = 2/3/4; **once-a-day reward**
-  (second clear the same day pays only the helper tip, again after 06:00 KST); below C keeps the day; AFK member
+  (replays award nothing until 06:00 KST); below C keeps the day; AFK member
   ineligible; leave/disconnect/rejoin; instance closed 60 s after end and 20 s when empty, no leftovers; same seed +
   script = same score; `cj` ≤ 40 B and `C` ≤ 600 B. A **bot crew** (scripted, 350 ms reaction) reaches S at n = 2/3/4;
   one working bot + idle partners stays below B. These two results set `par`.
@@ -692,8 +690,8 @@ test:rules`, `npm run data:check`, one targeted screenshot for art (`shot.mjs --
    30-slot bag cannot hold 15 material kinds.
 4. **Which life skill 동동아파트 feeds.** The six skills have no "cleaning". Default: `deliver` (배달 = odd jobs and
    errands); alternative `gather`.
-5. **Reward size and helpers.** Default: the C.7 table (≤ 440·T gold and ≤ 1.12 old levels of XP a day for all four
-   jobs at S, below a day of 차원 균열), helpers who already cleared that job today get a tip only. The bot-crew test
+5. **Reward size and replays.** Default: the C.7 table (≤ 440·T gold and ≤ 1.12 old levels of XP a day for all four
+   original jobs at S, below a day of 차원 균열). Helpers who already claimed receive no additional pay. The bot-crew test
    sets `par`, so the C/B/A/S cut-offs are measured, not guessed.
 
 ---------------------------------------------------------------------------------------------------------------
@@ -914,7 +912,7 @@ H2's, unchanged. Notes for L2c:
 - **Start**: `coop_start {k}` within 56 px of the owner in the lobby (`dongdong_apt` → 관리인 동동). **2–4 players, party-only for all four jobs** (owner, 2026-11-15: "협동 알바는 무조건 2인 이상 파티"; `coop_start` refuses a solo start or a party with only one member in the lobby: "협동 알바는 2명 이상 파티로만 할 수 있어요…", the card says so; no solo `parN` row, per-party tables keyed 2–4). A shift that drops to one worker (leave/disconnect) goes on to the end at its starting size's cut-offs; the one left swaps tools at the rack; a party's leader starts it and every member in the lobby comes along. **No ready check** (Phase 2's `rc` is town-bound in 64-dim.js), no `coop_join`. Cap 6 shifts and `DIM.max` rooms.
 - **Map** (v2, bigger for 4): built in code from `COOP.apt.tpl` (45×19 interior through `fromEditor`, 574 open tiles ≈ 2.4× v1): eight flats (10×6, a 2-tile door each) north and south of a 3-tile corridor; 소각로 `<` (1,9) at its west end, 재활용함 `w` (43,9, ×1.5) at its east end, 44 tiles apart, rack `>` (22,9) in the middle; existing furniture only.
 - **Play** (brief 8 s → 5:00 → last 60 s fever ×1.5 → report, home after 30 s): an opening spread of `3 + 3n` piles (6 · 9 · 12 · 15) over the flats, then a pile every `pileMs[n−1]` = 9 · 5 · 3.6 · 2.8 s, at most `8 + 6n` at once; piles hp 3, broom sweeps → bundle; the bin (5) carries to a chute, `10·n·(1+0.1(n−1))`, credit 60 % bin / 40 % sweepers. A pile left 40 s spreads. **낡은 소파** (shifts of 2+, every `45 s / parN`): two players act within 1.5 s, 4 times → 3 bundles. Mess `2·piles + bundles + 3·sofa` over `16 + 8n` → 민원 −20 every 10 s. Tool swap = `coop_act` at the rack (no per-tool stock). No pests or dust yet.
-- **Actions** `coop_start {k}`, `coop_act` (250 ms), `coop_leave`. **Wire**: `cj` [job, state, secs, score, combo, mult×10, grade, next cut, mess, cap, [[eid, tool, held, zzz]…]], `C` [[id, 0 pile·1 bundle·2 sofa, x, y, hp]…], `cr` [grade, score, best, [[name, pts, tool, ok]…], cuts]; events `["cj", code, x, y, a]`; `self.coop` (paid today); `defs().coop`. Nothing on `me`/`P`/`who`: tools are drawn from `cj`.
+- **Actions** `coop_start {k}`, `coop_act` (250 ms), `coop_leave`. **Wire**: `cj` [job, state, secs, score, combo, mult×10, grade, next cut, mess, cap, [[eid, tool, held, zzz]…]], `C` [[id, 0 pile·1 bundle·2 sofa, x, y, hp]…], `cr` [grade, score, best, [[name, pts, tool, qualified]…], cuts, personal pay (0 none · 1 paid · 2 previously paid)]; events `["cj", code, x, y, a]`; `self.coop` (paid today); `defs().coop`. Tools are drawn from `cj`.
 - **Cut-offs** `par · parN[n] · cuts` with a job’s own `parN` (apt: par 1000, parN 0.28 · 2.0 · 3.8 · 4.5 → S at 246 · 1,760 · 3,344 · 3,960). Tuned on walking bots in `tests/coop.mjs` (BFS paths at the shift’s ×1.4 player speed, an act every 300 ms): 1–4 bots score 265 · 1,960 · 3,846 · 4,414, just over S; a real party at 60–80 % of a bot lands on B–A. Solo is slow by design (one worker swaps tools). Retune after playtests.
 - **쥬쥬식당 서빙** (C.5 v1, `k: "diner"`, started at 쥬쥬 in `juju_diner`; numbers `COOP.diner`, `COOP_DINER`): a 44×24 map (832 open tiles) — a kitchen along the north wall (stoves `:` ×3, boards `-` ×2, crates 채소/생선/고기, trash), a counter with a 4-tile pass, the rack and two doors, and a hall of 12 tables (3 × 4, 4–16 tiles from the pass). Tools **프라이팬** (cook) / **쟁반** (server), rotation pan·tray; alone you swap at the rack. Dishes: 채소 샐러드 (veg → 4 chops, 20) · 생선구이 (fish → stove 6 s, 30) · 고기 스튜 (meat → 4 chops → stove 8 s, 45; ordered from 1:30). A pot burns 8 s after it is done (−5). Plated dishes wait on the pass (6 max); a tray carries 2 to the table that ordered them ("주문과 다른 요리예요" otherwise): `pts × (1 + 0.5·patience left)` × mult, cook 50 % / server 50 %. By party size 1–4: tables ordering at once 3 · 4 · 6 · 8, a new order every 16 · 12 · 8 · 6.5 s (n at the open), patience 90 · 75 · 70 · 65 s (×0.8 in fever); a customer who runs out leaves angry (−15, combo 0); a served table eats 6 s, then leaves a dirty plate. **Plates (v2-lite):** the plate keeps its table closed to new orders until a 쟁반 takes it (one act, one tray slot) to the **sink** (`st.sink` [40, 1], the existing `r` furniture east of the trash); anyone with empty hands scrubs there, 3 acts a plate ("설거지 n/3"), +5 × mult to the washer. Plating needs no clean plate: washing only pays and frees tables (no clean-plate stack). Cut-offs par 1000 × parN 0.46 · 0.96 · 1.38 · 2.95 (walking bots that clear and wash: 414 · 855 · 1,231 · 2,618, just over S; a lone tray at 3 players is the bottleneck). No burger, no big two-carrier order yet. Wire: `cj[8..9]` = served, missed; team rows gain `what` (dish·3 + stage); `C` rows 3 order [.., dish, ds left, ds patience] · 4 pot [.., dish, ds to done, ds to burnt] · 5 plated [.., dish] · 9 plate [.., ds still eating (0 dirty), washes left, at the sink 0/1]; held plates are `what` 9 (dish 3); events 30–43 (41 into the sink / a scrub · 42 washed · 43 plate onto the tray); `defs().coop` gains hint, stations (incl. sink), dishes, cook, trayCap, washN. Reward skill `cook`, trust with 쥬쥬.
 - **Rewards** as C.7 (`deliver` skill, rep +5 with 동동, `rewardGear` at T = ⌊toTier⌋), without the S cosmetic, the 25 % 축복 강화석, achievements and the daily task. AFK = 90 s without a step or an accepted act, or < 15 % of the team average.
