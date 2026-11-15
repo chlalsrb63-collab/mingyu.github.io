@@ -15,6 +15,7 @@ import { placeToasts, touch, banner, openWin, toast } from "./windows.js";
 import { statText } from "./items.js";
 import { refreshUi, setOnce, section } from "./hud.js";
 import { K } from "./keymap.js";
+import * as Track from "./track.js";
 
 // ── waypoints ──
 const bandText = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
@@ -70,6 +71,8 @@ export function renderDaily(s) {
     const b = el("button", tk.done && !tk.claimed ? "btn gold small" : "btn small", tk.claimed ? "받음" : "받기");
     b.disabled = !tk.done || tk.claimed;
     b.addEventListener("click", () => { act({ t: "daily", i }); Sound.play("daily"); });
+    const go = Track.button(`daily:${i}`, tk.text);   // a hunting task: walk to its ground (track.js)
+    if (go) ft.append(go);
     ft.append(b);
     card.append(hd, bar, ft);
     if (i === 0 && !tk.done && !tk.claimed && (tk.kind === "party" || (tk.kind === "kill" && tk.n === 0))) {
@@ -112,6 +115,10 @@ export function renderWeek(s) {
   const top = el("div", "daily-top");
   top.append(iconImg("clock", "#e2c486"), el("span", "", `이번 주 ${wk.done} / ${def.boxes.length}칸 · ${def.need}칸이면 완성`), el("b", "", `초기화까지 ${days(wk.reset)}`));
   box.append(top);
+  // the weekly boss challenge starts at the town's obelisk: its keeper, with a [추적] (track.js)
+  const ob = el("div", "trk-row"), go = Track.button("week", "주간 보스 도전");
+  ob.append(el("small", "", "주간 보스 도전 · 버드나무광장 오벨리스크의 균열 지기"));
+  if (go) { ob.append(go); box.append(ob); }
   const grid = el("div", "week-boxes");
   def.boxes.forEach(([, text, need], i) => {
     const n = Math.min(wk.v[i] | 0, need), done = n >= need;
@@ -281,7 +288,7 @@ export function tutCard(s) {
   if (step && step.id === "bag" && !$("#w-inv").hidden && tutCard.bag !== i) { tutCard.bag = i; tutTry("bag"); }
   if (card.hidden !== hide) { card.hidden = hide; placeToasts(); }
   if (hide) return;
-  setOnce($("#tut-title"), `${i}`, (n) => n.append(step.title));
+  setOnce($("#tut-title"), `${i}`, (n) => { n.append(step.title); const go = Track.button("tut", step.title); if (go) n.append(go); });
   $("#tut-n").textContent = `첫걸음 ${i + 1}/${steps.length}${step.need > 1 ? ` · ${s.tut.n}/${step.need}` : ""}`;
   const hint = (touch() && TUT_TOUCH[step.id]) || step.hint;
   if ($("#tut-hint").textContent !== hint) { $("#tut-hint").textContent = hint; placeToasts(); }

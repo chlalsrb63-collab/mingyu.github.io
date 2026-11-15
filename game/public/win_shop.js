@@ -14,6 +14,7 @@ import { hoverTip } from "./windows.js";
 import * as Info from "./infocard.js";
 import { itemDesc, itemTip, itemName, SLOT_NAME } from "./items.js";
 import { refreshUi } from "./hud.js";
+import * as Track from "./track.js";
 
 // ── shop, smith (수련관 카이 and 전직관 아르센: statwin.js, jobtree.js) ──
 export function renderShop(s) {
@@ -108,6 +109,12 @@ function pityLine(s, g) {
 }
 // ── quests: a log on the left, the chosen entry on the right ──
 export function renderQuest(s) {
+  questBody(s);
+  // the chosen entry's [추적]: walk to its NPC or monster (track.js), beside its own buttons
+  const det = $("#quest-body .qdetail"), trk = det && Track.button(G.qsel);
+  if (trk) ([...det.querySelectorAll(".btns")].pop() || det).append(trk);
+}
+function questBody(s) {
   const qs = G.defs.quests, mobs = G.defs.mobs, it = G.defs.items;
   const atElder = G.near && G.near.role === "elder";
   const body = $("#quest-body");

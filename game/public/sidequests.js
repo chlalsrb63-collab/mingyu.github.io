@@ -5,6 +5,8 @@
  * `self.sq` ([id, state, have, need] — state 0 locked · 1 can take · 2 under way ·
  * 3 ready to hand in · 4 finished) against `defs.side`, and asks with {t:"sq"}.
  */
+import * as Track from "./track.js";
+
 let C = null;
 /** ctx: { G, act, el, Sound } */
 export function init(ctx) { C = ctx; }
@@ -100,6 +102,8 @@ export function renderTalk(box, npc, s, say) {
     });
     btns.append(b);
     if (v.st === 2) btns.append(el("span", "ds", "진행 중"));
+    const go = v.st === 2 && Track.button(`sq:${q.id}`, q.title);   // under way: walk to its goal (track.js)
+    if (go) btns.append(go);
     card.append(btns);
     box.append(card);
   }

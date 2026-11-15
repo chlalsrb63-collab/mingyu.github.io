@@ -95,3 +95,16 @@ const complete = questMaps(D, self, chart.nodes);
 assert.ok(complete.get(D.questTurnIn.map).includes(D.quests[0].title));
 assert.ok(complete.get(side.giverMapId).includes(side.title));
 console.log(`World chart: ${chart.nodes.size} regions, ${chart.edges.length} physical trails, all reachable from town.`);
+
+// 추적 (public/track.js): every objective NPC is on a real map that the route graph reaches from town
+const mapIds = new Set(D.maps.map((m) => m.id));
+assert.ok(Object.keys(D.npcMap).length > 20, "defs.npcMap lists the NPCs");
+for (const [nid, mid] of Object.entries(D.npcMap)) assert.ok(mapIds.has(mid), `${nid} on a known map (${mid})`);
+const wanted = new Set([D.questTurnIn.npc, "train", "shop", "dimkeeper", "popo", D.charms.npc, ...D.side.flatMap((q) => [q.giver, q.goal.npc].filter(Boolean)),
+  ...Object.values(D.life.jb).flatMap((t) => [t.npc, t.to].filter(Boolean)), ...Object.values(D.coop.jobs).map((j) => j[4])]);
+for (const nid of wanted) {
+  const mid = D.npcMap[nid];
+  assert.ok(mid, `objective NPC ${nid} has a map`);
+  assert.ok(shortestRoute(chart.graph, "town", mid).length, `${nid}'s map ${mid} is reachable from town`);
+}
+console.log(`추적: ${wanted.size} objective NPCs on reachable maps.`);

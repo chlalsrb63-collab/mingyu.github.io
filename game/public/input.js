@@ -13,9 +13,10 @@ import * as Gather from "./gather.js";
 import * as Charms from "./charms.js";
 import { G, $, dist, T, clamp, world, now, resize } from "./state.js";
 import { act } from "./net.js";
-import { usePotion, interact, stoneNear, aimAtPoint, attack, dash } from "./actions.js";
+import { usePotion, interact, stoneNear, aimAtPoint, attack, dash, talkKey } from "./actions.js";
 import { autoSt } from "./update.js";
-import { toggleWin, closeTop, openWin, toast } from "./windows.js";
+import { toggleWin, closeTop, openWin, toast, isOpen } from "./windows.js";
+import * as Track from "./track.js";
 import { openEmotes } from "./win_social.js";
 import * as Keymap from "./keymap.js";
 
@@ -183,6 +184,11 @@ export function setupInput() {
     if (e.repeat) return;
     // Housing and Gather still speak in the old key letters: translate the bound action back for them
     const k = act1 === "interact" ? "f" : act1 === "dash" ? " " : act1 === "auto" ? "r" : e.key;
+    // a talk window open: F (talkNext) is the next line / its button, C (talkEnd) closes it (actions.js talkKey)
+    const ta = isOpen("talk") && Keymap.talkActionOf(e);
+    if (ta) { e.preventDefault(); talkKey(ta); return; }
+    // walking a 추적 trip: a blow, a dash or auto-hunt breaks it off (a move key or a click drops G.path: track.js)
+    if (Track.active() && ["attack", "dash", "auto"].includes(act1)) Track.stop("추적을 취소했습니다");
     // decorating a house: R turns the piece in hand, Esc lets go of it, Delete picks a piece up (housing.js)
     if (Housing.onKey(k)) { e.preventDefault(); return; }
     // gathering: F and Space are the "반짝!" tap, not a talk or a blow (gather.js)
@@ -195,6 +201,7 @@ export function setupInput() {
     switch (act1) {
       case "hp": usePotion("hp"); break;
       case "mp": usePotion("mp"); break;
+      case "track": Track.toggle(isOpen("quest") ? G.qsel : null); break;   // 추적 (track.js)
       case "interact": interact(); break;
       // the basic attack is a held key (update.js); the dash and sit/stand are keys of their own
       case "dash": dash(); break;

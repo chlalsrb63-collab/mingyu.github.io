@@ -29,6 +29,7 @@ import * as Chores from "./chores.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
 import * as Trophies from "./trophies.js";
+import * as Track from "./track.js";
 import * as Info from "./infocard.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
 import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn } from "./windows.js";
@@ -190,27 +191,29 @@ function tracker(s) {
       }
       return row;
     };
-    Board.trackRows(s, qt, goal);                     // the 알바 in hand comes first: a parcel is on the clock (board.js)
+    // each objective's [추적] button walks there (track.js)
+    const tb = (node, k, label) => { const b = Track.button(k, label); if (b) node.append(b); };
+    if (Board.trackRows(s, qt, goal)) tb(qt.querySelector(".qt"), "job", "알바");   // the 알바 in hand comes first: a parcel is on the clock (board.js)
     if (chapter) {
-      const t = el("div", "qt"); t.append(Info.questMark("main"), chapter.title);
+      const t = el("div", "qt"); t.append(Info.questMark("main"), chapter.title); tb(t, `sq:${chapter.id}`, chapter.title);
       qt.append(t, el("div", "qp", chapter.goal.type === "kill" ? `${chapter.giverMap} 승선장 · 침입자 격퇴` : SideQ.goalText(chapter)));
     }
     if (quest && s.q.st === 1) {
-      const t = el("div", "qt"); t.append(Info.questMark("main"), quest.title);
+      const t = el("div", "qt"); t.append(Info.questMark("main"), quest.title); tb(t, `main:${s.q.i}`, quest.title);
       qt.append(t, goal(G.defs.mobs[quest.mob].name, s.q.n, quest.n, "완료! 엘더윈에게 돌아가세요"));
       if (quest.fb && s.q.n < quest.n) qt.append(el("div", "qp", `우두머리 [${G.defs.mobs[quest.mob].name}] 홀로 쓰러뜨리기 — 그 자리로 가세요`));
     } else if (quest) {
-      const t = el("div", "qt"); t.append(Info.questMark("main"), "엘더윈에게 새 의뢰가 있습니다");
+      const t = el("div", "qt"); t.append(Info.questMark("main"), "엘더윈에게 새 의뢰가 있습니다"); tb(t, `main:${s.q.i}`, "새 의뢰");
       qt.append(t);
     }
     if (s.bq) {
-      const t = el("div", "qt"); t.append(Info.questMark("repeat"), `${mobs[s.bq.k].name} 토벌`);
+      const t = el("div", "qt"); t.append(Info.questMark("repeat"), `${mobs[s.bq.k].name} 토벌`); tb(t, "bq", "반복 의뢰");
       qt.append(t, goal(mobs[s.bq.k].name, s.bq.n, s.bq.need, "완료! 엘더윈에게 보고하세요"));
     }
     if (dl && dl.length) {
       const t = el("div", "qt"); t.append(Info.questMark("daily"), `오늘의 과제 ${3 - dl.length}/3`);
       qt.append(t);
-      for (const d of dl) qt.append(goal(d.text, d.n, d.need, `${d.text} — 완료! (U)`));
+      for (const d of dl) { const row = goal(d.text, d.n, d.need, `${d.text} — 완료! (U)`); tb(row, `daily:${s.daily.tasks.indexOf(d)}`, d.text); qt.append(row); }
     }
   });
 }
@@ -307,6 +310,7 @@ export function hudTick(t) {
   skyTick(t);
   castBar(t);
   Board.tick(t);                                    // a parcel's countdown (board.js)
+  Track.tick();                                     // a 추적 trip under way (track.js)
   Chores.tick();                                    // the village chore's spots (chores.js)
   if (isOpen("daily")) tickDaily(t);
   const s = G.self;
