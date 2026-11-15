@@ -58,11 +58,11 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 
 ## GEMINI (분석 · 문서 · 콘텐츠 · [ART]/[VFX] 그림과 이펙트 — `ai/gemini.md` 5번)
 
-**스킬 완성도 우선 (Owner, 2026-11-15)** — 아래 [SKILL] 표시 작업부터. 스킬 조합 규칙은 `docs/design/skill-combos.md` (상태 7종과 `["cb", mobId, code]` 이벤트).
+**스킬 완성도 우선 (Owner, 2026-11-15)** — 아래 [SKILL] 표시 작업부터. 스킬 색은 직업 팔레트(`defs().jobPal`, `game/src/logic/04-job-palettes.js`)를 따를 것. 스킬 조합 규칙은 `docs/design/skill-combos.md` (상태 7종과 `["cb", mobId, code]` 이벤트).
 - [ ] [VFX] 같은 방식으로 해머와 직업 스킬(파괴자·머서너리·성기사 등, `hammer_*`, `ironsiege`, `oathward` …)
 - [ ] [SFX] `docs/fx-audit.md`에서 전용 소리가 없는 스킬마다 시전음·타격음을 `game/public/audio.js`에 코드로 만들고 연결 (무기 종류별로 결이 다르게: 금속·둔기·마법·활시위). 지금 가장 큰 타격음보다 크지 않게, 보고서에 새 소리 이름 목록
 - [ ] [SFX] 치명타·스킬 마무리 타격음과 몬스터 피격/사망음을 크기별(일반·정예·보스)로 다르게
-- [ ] [VFX] [SKILL] 스킬 아이콘 손보기: `game/public/skillicons.js`에서 아이콘끼리 비슷하거나 무엇을 하는지 안 보이는 스킬을 골라 다시 그리기(16×16, 무기별 색 계열 유지). 새로 생긴 스킬(`03-skills.js`에 있는데 아이콘이 기본 모양인 것)도 포함. 미리보기 `--page icons` 스크린샷
+- [x] (Claude 17시 세션이 직업 색으로 다시 그림 — Gemini는 `game/public/skillicons.js`를 고치지 말 것) [VFX] [SKILL] 스킬 아이콘 손보기: `game/public/skillicons.js`에서 아이콘끼리 비슷하거나 무엇을 하는지 안 보이는 스킬을 골라 다시 그리기(16×16, 무기별 색 계열 유지). 새로 생긴 스킬(`03-skills.js`에 있는데 아이콘이 기본 모양인 것)도 포함. 미리보기 `--page icons` 스크린샷
 - [ ] [VFX] [SKILL] 조합 상태 표시: 몬스터에게 걸린 경직·공중·빙결·표식·낙인·화상(1~3중첩)·끌림을 머리 위 작은 도트 표시/오라로 (한 몬스터에 여러 개가 겹쳐도 읽히게), 그리고 `["cb", mobId, code]`로 상태를 터뜨릴 때 코드별 폭발 연출(파쇄 얼음 조각, 점화 불꽃, 표식 폭발…). **`game/public/skillfx_combo.js`가 main에 생긴 뒤에만** — 없으면 건너뛰고 다음 작업으로
 - [ ] [VFX] [SKILL] 새 시전 동작 연출: 차지(모을수록 커지는 빛), 집중(채널링 줄기), 도약·후퇴 잔상, 지정 위치 마법진. 위와 같은 조건(`skillfx_combo.js`가 생긴 뒤)
 - [ ] [SFX] [SKILL] 조합 터뜨리기 소리 7종(상태별)과 차지 완료·집중 유지음. 위와 같은 조건
