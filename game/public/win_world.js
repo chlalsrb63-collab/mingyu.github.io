@@ -278,7 +278,11 @@ export function renderCollect(s) {
 // ── first steps ──
 export function tutTry(id) {
   const s = G.self, step = s && s.tut && G.defs.tutorial && G.defs.tutorial[s.tut.i];
-  if (step && step.id === id) act({ t: "tut", s: id });
+  if (!step || step.id !== id) return;
+  // two callers (opening the bag, the card's poll) can both fire before the snapshot moves on: send once, or the second earns an error toast
+  if (tutTry.i === s.tut.i && Date.now() - tutTry.t < 3000) return;
+  tutTry.i = s.tut.i; tutTry.t = Date.now();
+  act({ t: "tut", s: id });
 }
 /** The first steps told for fingers: the server's hints name keyboard keys a phone does not have. */
 const TUT_TOUCH = {
