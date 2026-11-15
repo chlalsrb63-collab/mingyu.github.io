@@ -18,7 +18,7 @@ ms = cold build time on one core (the `maps` test holds each ground under 150 ms
 | 바람초원 meadow | 1–25 | 152×102 | 11,687 | 75 | 781 | 67 | 6 | 1–25 | 3 | 1 | 2 | 2 | – | yes | town forest |
 | 속삭임 숲 forest | 29–49 | 152×102 | 11,274 | 73 | 790 | 70 | 8 | 29–49 | 3 | 1 | 2 | 3 | – | yes | meadow cave crypt maple |
 | 뼈의 지하묘지 crypt | 45–65 | 132×102 | 8,294 | 62 | 1,197 | 144 | 7 | 45–61 | 3 | 1 | 2 | 3 | – | – | forest city |
-| 네온 시티 city | 53–81 | 152×102 | 8,111 | 52 | 648 | 80 | 8 | 53–81 | 3 | 2 | 2 | 3 | – | – | town sewer crypt jungle |
+| 네온 시티 city | 53–81 | **152×102 → 160×120** | **8,111 → 10,133** | 53 | 813 | 80 | 8 | 53–81 | 3 | 2 | 2 | 3 | – | – | town sewer crypt jungle |
 | 정글 해안도로 jungle | 77–101 | 168×112 | 12,400 | 66 | 857 | 69 | 6 | 77–101 | 3 | **0 → 1** | 2 | 5 | – | yes | city coast |
 | 하수도 sewer | 85–105 | **152×102 → 160×120** | **9,260 → 11,580** | 60 | 1,555 | 134 | 7 | 85–101 | 3 | 1 | 2 | 4 | – | – | city cave |
 | 수정 동굴 cave | 93–125 | 132×100 | 8,454 | 64 | 754 | 89 | 8 | 93–113 (+boss 125) | 3 | 1 | 3 | 3 | – | – | forest abyss sewer oasis cloudtemple |
@@ -46,7 +46,7 @@ much of it is a corridor, and whether anybody lives there.
 | meadow | **widen (next)** | the only ground for Lv 1–25. 156×124 and 160×120 pass `maps` and `mapflow` but leave fewer than 8 ram packs behind the elite line (`hunt-routes`); a heavier ram roster puts rams on normal ground. Needs a ram pen vault in the deep end, then widen. |
 | forest | **widen (next)** | 152×102 for Lv 29–49 next to a crypt that is denser. Every size from 156×120 to 160×124 tried makes the gorge's ways too straight (tortuosity < 1.12) or narrows a chest route; scale `gorge.every` with the height first. |
 | crypt | **restructure** | densest ground (144/1k), 8.3k tiles. At every larger size the catacomb's elite `guard` lands inside the (larger) safe plaza. Keep guards out of zone 0, then widen to ~152×118 (and point the `lifeskills` "below NODE.max" check at a smaller ground). |
-| city | **widen + POIs (next)** | 52 % open, 8.1k tiles, four doors. Blocked by `corridorGate(m, "ossuary", 129, 72)` (a door fixed to one tile of this layout) and two `npcs.json` NPCs placed by the east gate. Make the ossuary an edge gate like maple's `ice`, re-place the two NPCs, then 160×120. |
+| city | **widened**; POIs next | was 52 % open, 8.1k tiles, four doors, its ossuary door fixed to tile (129, 72). `corridorGate` now takes fractions and steps to the nearest open hallway, so the city grew to 160×120 (10.1k tiles); `trail_clock`, `city_dotol` re-placed by the east gate. Still the least open field: add a market square. |
 | jungle | keep, **NPC added** | big enough; a road map with five pockets. No NPC before; no main quest. |
 | sewer | **widened** | 9.3k → 11.6k tiles, plazas and loops held (`mapflow` green). |
 | cave | widen later | 8.5k tiles with five doors (the busiest junction). Same fixed-door blocker (`drain` at 10,34). |
@@ -89,6 +89,8 @@ because `bogcrown`/`hollowowl`/`rootwarden` jump from 2,200 to 3,100–3,950 xp.
 - **Band gap fixed**: `shroomboar_frost` 서리 버섯등 멧돼지 (Lv 177) and `crowscare_frost` 서리 까마귀 허수아비 (Lv 189),
   frost-tinted bodies of maple kinds (no new art), with lore. Placed by the walk like the rest: deeper than 묘지 장미
   and before 검은 왕관 뿌리짐승, and between 뿌리짐승 and 왕릉 파수꾼. Lv 153–197 now has a regular monster at every step.
+- **네온 시티** 152×102 → 160×120 (8,111 → 10,133 walkable); `corridorGate` takes fractions, so the ossuary door
+  follows the layout instead of a fixed tile; the two NPCs by the east gate re-placed in `data/npcs.json`.
 - **하수도** 152×102 → 160×120 (9,260 → 11,580 walkable). 160 is the editor's size cap (`editor/validate.js`).
 - **Camp keepers** (`CAMP_KEEPERS`, 34-maps-world.js): the maple hermit moved into the table; a field merchant stands
   by the camp fire of 정글 해안도로 (길잡이 망고), 산호 해안 (조개잡이 소라), 모래바다 (대상 몰이꾼 사막), 운해 사원
@@ -102,9 +104,10 @@ Checked with before/after world views of maple and sewer (`shot.mjs --page world
 
 ## 5. Next steps (one agent task each)
 
-1. **Fixed hallway doors → gates** (rules, S): city `ossuary` (129, 72) and cave `drain` (10, 34) as edge/auto
-   gates, as done for maple; re-place `trail_clock`, `city_dotol` from the new gate positions. Unblocks 2.
-2. **Widen city and cave** to 160×120 (rules, S) after 1; add a market square / plaza POI to the city.
+1. ~~Fixed hallway doors~~ done: `corridorGate` takes fractions of the map and finds the nearest open hallway
+   (city and cave lay out exactly as before at their old sizes; the city then grew).
+2. **Widen the cave** (rules, S): unblocked, but it is the slowest field to build (~80 ms quiet); try ≤ 148×112 and
+   watch the `maps` time budget. Add a market square / plaza POI to the city.
 3. **Crypt guard placement** (rules, S): keep the elite `guard` out of zone 0, then widen the crypt to ~152×118.
 4. **Meadow ram pen** (rules, S): a deep-end vault that holds the ram herd, then widen meadow to 160×120.
 5. **Forest gorge spacing** (rules, S): scale `gorge.every` with the map height, then widen to 160×116.

@@ -331,7 +331,7 @@ const GEN = {
       : b === "fern" ? (h < 0.04 ? "P" : h < 0.055 ? "B" : h < 0.065 ? "R" : null)
       : (n1 > 0.55 ? h < 0.24 : h < 0.09) ? "P" : h < 0.1 ? "B" : h < 0.107 ? "l" : h < 0.113 ? "u" : null),
   }) },
-  cave: { make: cavern, after: (m) => corridorGate(m, "drain", 10, 34), route: "abyss", band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
+  cave: { make: cavern, after: (m) => corridorGate(m, "drain", 10 / 132, 34 / 100), route: "abyss", band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
     id: "cave", name: "수정 동굴", seed: 44093, w: 132, h: 100, r: 8, vaults: 10, tpm: 16, chest: "chest_cave",
     // maps-v2 비취 수정굴: the moss way (sites `r` apart, half-width `w`), shelves where the swell passes `shelf`
     // dungeon widening (`wide`): bigger caverns (`fill`), pillars only in the biggest halls, the moss way 9 wide
@@ -342,8 +342,8 @@ const GEN = {
     shaft: 0.6,
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
-  city: { make: metro, after: (m) => corridorGate(m, "ossuary", 129, 72), route: "sewer", band: [14, 21], stones: 3, theme: "city", cfg: () => ({
-    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 152, h: 102, gate: "east", gateY: 0.5, south: 0.3, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
+  city: { make: metro, after: (m) => corridorGate(m, "ossuary", 129 / 152, 72 / 102), route: "sewer", band: [14, 21], stones: 3, theme: "city", cfg: () => ({
+    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 160, h: 120, gate: "east", gateY: 0.5, south: 0.3, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
     mobs: ["pigeonmass", "gutfrog_poison", "doghead", "squidrat", "catsplit", "fishwalker"], chest: "chest_city",
   }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
@@ -570,8 +570,20 @@ const GEN = {
     mobs: ["rimehare", "rimehare", "frostmoth"], boss: "crownstag",
   }) },
 };
-/** A paired threshold across an existing open hallway, with its arrival two tiles off the door. */
-function corridorGate(m, name, x, y) {
+/**
+ * A paired threshold across an existing open hallway, with its arrival two tiles off the door: at (x, y) as fractions
+ * of the map (so a ground can grow without its door landing in a wall), or the nearest open spot to it.
+ */
+function corridorGate(m, name, fx, fy) {
+  const free = (x, y) => x > 0 && y > 0 && x + 2 < m.w - 1 && y + 1 < m.h - 1 && [[x, y], [x, y + 1], [x + 2, y], [x + 2, y + 1]].every(([a, b]) => m.o[b][a] === " " && !SOLID_G.includes(m.g[b][a]));
+  const x0 = Math.round(fx * m.w), y0 = Math.round(fy * m.h);
+  let at = [x0, y0];
+  for (let r = 1; r <= 30 && !free(...at); r++) {
+    const ring = [];
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (Math.max(Math.abs(dx), Math.abs(dy)) === r && free(x0 + dx, y0 + dy)) ring.push([dx * dx + dy * dy, x0 + dx, y0 + dy]);
+    if (ring.length) at = ring.sort((a, b) => a[0] - b[0] || a[2] - b[2] || a[1] - b[1])[0].slice(1);
+  }
+  const [x, y] = at;
   m.gates[name] = { t: [[x, y], [x, y + 1]], a: [[x + 2, y], [x + 2, y + 1]] };
 }
 
