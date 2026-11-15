@@ -45,7 +45,7 @@ function flatArena(m, A) {
   return () => Object.assign(m, keep);
 }
 const tierFor = (lv) => (lv < 8 ? 1 : lv < 16 ? 2 : lv < 26 ? 3 : lv < 38 ? 4 : 5);
-const WID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow" };
+const WID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow", hammer: "h" };
 const plain = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
 /** The template stat shares of each weapon kind (mirrors logic BUILD), for a hybrid's half-and-half build. */
 const BUILD = {
@@ -55,6 +55,7 @@ const BUILD = {
   staff: { int: 0.45, wis: 0.3, wil: 0.2, luk: 0.05 },
   book: { int: 0.45, wil: 0.3, wis: 0.2, luk: 0.05 },
   bow: { dex: 0.45, luk: 0.3, wil: 0.15, str: 0.05, wis: 0.05 },
+  hammer: { str: 0.45, wil: 0.35, dex: 0.05, wis: 0.05, luk: 0.1 },
 };
 /** hero() options for a hybrid probe: the job, the other weapon on the back, both masteries, a mixed build. */
 function hybridHero(D, job, wk, tier) {

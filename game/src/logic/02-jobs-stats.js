@@ -24,6 +24,7 @@ const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스�
 /** Mastery a single job asks for in its weapon; a hybrid asks HYB_WM in both of its two. */
 const JOB_WM = 20, HYB_WM = 15;
 const JOB_COST = 1000, HYB_COST = 5000;
+const JOB_PROGRESS = { cap: 50, signature: 5, hp: 0.003, mp: 0.002, atk: 0.0024, def: 0.002 };
 // Eligible PvE kills boost character XP through 30, then taper to the regular reward at 40.
 const HUNT_EARLY = { full: 30, end: 40, ahead: 3, extra: 0.6 };
 
@@ -67,6 +68,8 @@ const JOBS = {
   spellspear: { name: "마창사", kind: "hybrid", wk: ["spear", "staff"], scale: { str: 0.8, int: 0.8, wis: 0.6 }, cost: HYB_COST },
   runesage: { name: "룬술사", kind: "hybrid", wk: ["staff", "book"], scale: { int: 0.8, wis: 0.3, wil: 0.3 }, cost: HYB_COST },
   runearcher: { name: "각인궁사", kind: "hybrid", wk: ["book", "bow"], scale: { int: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: HYB_COST },
+  mercenary: { name: "머서너리", kind: "hybrid", wk: ["hammer", "spear"], scale: { str: 0.9, wil: 0.5, wis: 0.4 }, cost: HYB_COST },
+  paladin: { name: "성기사", kind: "hybrid", wk: ["hammer", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: HYB_COST },
 };
 
 /**

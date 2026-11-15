@@ -71,7 +71,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 // ═════════ the sheet ═════════
 {
   const ch = L.newChar("새싹", [1, 2]);
-  assert.equal(ch.v, 14); assert.equal(ch.job, "adventurer"); assert.equal(ch.lvl, 1); assert.equal(ch.xp, 0); assert.equal(ch.xpt, 0);
+  assert.equal(ch.v, 15); assert.equal(ch.job, "adventurer"); assert.equal(ch.lvl, 1); assert.equal(ch.xp, 0); assert.equal(ch.xpt, 0);
   assert.deepEqual(ch.st, { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 });
   assert.deepEqual(Object.keys(ch.wm), ["sword", "dagger", "spear", "staff", "book", "bow", "hammer"]);
   assert.ok(Object.values(ch.wm).every((r) => r.lv === 1 && r.xp === 0));
@@ -95,11 +95,11 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   const hybrids = Object.keys(D.jobs).filter((j) => D.jobs[j].kind === "hybrid");
   assert.deepEqual(singles, ["swordsman", "thief", "lancer", "wizard", "warlock", "archer", "destroyer"]);
   assert.deepEqual(hybrids, ["spellblade", "tracker", "dragoon", "hexblade", "darkknight",
-    "bladedancer", "trickster", "spellspear", "runesage", "runearcher"]);
+    "bladedancer", "trickster", "spellspear", "runesage", "runearcher", "mercenary", "paladin"]);
   assert.deepEqual(singles.map((j) => D.jobs[j].wk[0]), D.wkOrder, "one single job per weapon");
   // Each supported pair is unique. The five retired combinations have no job.
   const pairs = hybrids.map((j) => D.jobs[j].wk.slice().sort().join("+"));
-  assert.equal(new Set(pairs).size, 10);
+  assert.equal(new Set(pairs).size, 12);
   for (const pair of ["spear+sword", "dagger+spear", "bow+sword", "bow+spear", "bow+staff"]) assert.ok(!pairs.includes(pair), pair);
   for (const j of hybrids) {
     const [a, b] = D.jobs[j].wk;
@@ -286,6 +286,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   for (const [job, sv, atk, hp, mp, def, crit, aspd, eva, cdr] of rows) {
     const st = Object.fromEntries(ST.map((k, i) => [k, sv[i]]));
     const ch = L.hero("표본", { st, job });
+    if (job !== "adventurer") ch.jp = { lv: 1, xp: 0 };
     ch.eq.weapon = null; ch.eq.armor = null;     // B.7 is measured bare: no weapon, no gear
     const W = world({ ch });
     const s = W.self();
@@ -307,7 +308,11 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.ok(pair("staff", { int: 40 }) > pair("staff", {}) + 25);
   assert.ok(pair("bow", { dex: 40 }) > pair("bow", {}) + 25);
   // a single job adds to its own weapon only; a hybrid uses its own table for both of its weapons
-  const atkJob = (job, wk) => { const W = world({ wk, job, st: { str: 40, wil: 5, dex: 5, int: 40, wis: 5, luk: 5 } }); return W.self().atk; };
+  const atkJob = (job, wk) => {
+    const ch = L.hero("직업보정", { wk, job, st: { str: 40, wil: 5, dex: 5, int: 40, wis: 5, luk: 5 } });
+    if (job !== "adventurer") ch.jp = { lv: 1, xp: 0 };
+    return world({ ch }).self().atk;
+  };
   near(atkJob("swordsman", "sword") - atkJob("adventurer", "sword"), 0.1 * 40, 1, "대검전사 +0.1 STR on the sword");
   assert.equal(atkJob("swordsman", "staff"), atkJob("adventurer", "staff"), "but nothing on a staff");
   near(atkJob("spellblade", "staff") - atkJob("adventurer", "staff"), 0.8 * 40 + 0.8 * 40 - 0.85 * 40 + (0.3 - 0.5) * 5, 1, "마검사's table on the staff");
@@ -477,6 +482,8 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   ch.wm.staff.lv = 15;
   assert.ok(W.act({ t: "job_change", j: "spellblade" }).ok, "sword 15 + staff 15 → 마검사");
   assert.equal(ch.job, "spellblade"); assert.equal(ch.gold, 30000 - D.jobs.spellblade.cost);
+  assert.deepEqual(ch.jp, { lv: 1, xp: 0 });
+  assert.match(W.act({ t: "sk", id: "crimson" }).error, /직업 Lv\.5/);
   let v = W.step();
   assert.ok(v.ev.some((e) => e[0] === "jc" && e[1] === W.p.eid));
   assert.ok(ch.ach.includes("job1") && ch.ach.includes("job2"));

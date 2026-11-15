@@ -48,7 +48,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 14, name, job: "adventurer",
+    v: 15, name, job: "adventurer", jp: null,
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -189,7 +189,7 @@ function migrate(ch) {
   // social, the weekly book, enhancement pity (v14): block list, gauge, the week's baselines, the day's rest bonus (63-social-weekly.js)
   socialSheetClean(ch, dl);
   // cleanJobs adds the hammer mastery slot to saves made before v14.
-  ch.v = Math.max(ch.v | 0, 14);
+  ch.v = Math.max(ch.v | 0, 15);
   return ch;
 }
 

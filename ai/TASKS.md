@@ -7,12 +7,13 @@
 **Claude와 Codex는 한 프로젝트입니다** (규칙: `ai/HANDOFF.md` §1). 기준은 언제나 로컬 `main` 하나 —
 일은 `main`에서 브랜치를 따서 시작하고, 끝나면 `main` 위로 rebase해서 넘기고, Claude가 `main`에 합칩니다.
 시작하기 전에 아래 "진행 중" 표에 한 줄을 적고, 남이 잡은 일은 하지 않습니다.
+기능이 바뀌면 새 채팅에서 해당 행과 설계 문서로 시작합니다. 이어서 작업할 때는 보고서의 브랜치, 마지막 커밋, 검증 결과, 다음 작업을 읽습니다.
 
 ## 진행 중 (누가 · 무엇을 · 어디서)
 
 | 누가 | 일 | 브랜치 · 폴더 | 시작 |
 | --- | --- | --- | --- |
-| Codex | 양손해머와 파괴자 구현 | `codex/hammer` · `~/.codex/worktrees/world-map` | 2026-11-15 |
+| Codex | 양손해머·직업 성장·복합 전직과 월드맵 | `codex/hammer` · `~/.codex/worktrees/world-map` | 2026-11-15 |
 | Codex | 레퍼런스 기반 낚시·요리·연금·대장 아이콘 | `codex/item-reference-art` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | 초반 캐릭터 Lv.30 ↔ 무기 숙련도 Lv.20 도달 구간 검증 및 조정 | `codex/early-mastery` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | 레벨대별 사냥 동선과 Lv.200 전용 사냥터 | `codex/hunt-routes` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |

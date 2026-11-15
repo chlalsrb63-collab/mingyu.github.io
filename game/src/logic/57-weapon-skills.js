@@ -10,7 +10,7 @@ const inHand = (ch) => (ch.eq.weapon ? ITEMS[ch.eq.weapon.id].wk : "");
 /** The weapon kinds a skill can be used with. */
 const skWks = (sk) => (sk.kind === "h" ? JOBS[sk.job].wk : [sk.wk]);
 /** Has this character learned the skill (mastery for a weapon skill, the job for a signature)? */
-const skLearned = (ch, sk) => (sk.job ? ch.job === sk.job : ch.wm[sk.wk].lv >= sk.need);
+const skLearned = (ch, sk) => (sk.job ? ch.job === sk.job && (ch.jp?.lv || 0) >= sk.jobNeed : ch.wm[sk.wk].lv >= sk.need);
 /** Skills that count as a staff's (resonance) or a book's (the brand): the weapon's own and its jobs' signatures. */
 const skOf = (sk, wk) => (sk.job ? JOBS[sk.job].wk.includes(wk) : sk.wk === wk);
 /** Every skill a character has learned, in SKILL_ORDER (the wire's list). */
@@ -19,6 +19,7 @@ const skillsFor = (ch) => SKILL_ORDER.filter((id) => skLearned(ch, SKILL[id]));
 function skWhy(ch, sk) {
   const wk = skWks(sk)[0];
   if (sk.job && ch.job !== sk.job) return `[${JOBS[sk.job].name}]의 스킬입니다`;
+  if (sk.job && !skLearned(ch, sk)) return `[${JOBS[sk.job].name}] 직업 Lv.${sk.jobNeed}에 배웁니다`;
   if (!sk.job && ch.wm[sk.wk].lv < sk.need) return `[${WK_NAME[sk.wk]}] 숙련 ${sk.need}에 배웁니다`;
   if (!skWks(sk).includes(inHand(ch))) return `[${WK_NAME[wk]}]${pp(WK_NAME[wk], "을를")} 들어야 쓸 수 있습니다`;
   return "";
@@ -37,7 +38,8 @@ function pasOn(p, id) {
 /** Skill power from mastery past the skill's need (a hybrid signature: the lower of its two weapons). */
 function skGrow(ch, sk) {
   const m = Math.min(...skWks(sk).map((k) => ch.wm[k].lv));
-  return 1 + SK_GROW * Math.max(0, m - sk.need);
+  const rank = Math.max(0, (ch.jp?.lv || 0) - (sk.jobNeed || 0));
+  return (1 + SK_GROW * Math.max(0, m - sk.need)) * (sk.job ? 1 + rank * SK_GROW : 1);
 }
 /** Resonance full: the next staff skill is free and hits harder. */
 const resoReady = (p, sk) => skOf(sk, "staff") && (p.reso | 0) >= SKILL.reso.n && pasOn(p, "reso");
@@ -422,6 +424,31 @@ function castSkill(S, p, id) {
   const ahead = (n) => [p.x + aimX * n, p.y + aimY * n];
   const prop = (o) => addProp(S, rt, p, { sk, mag: sk.mag, k, ...o });
   switch (id) {
+    case "ironsiege": {
+      const ox = p.x, oy = p.y, len = stepTo(m, ox, oy, aimX, aimY, sk.len);
+      const passed = mobsInLine(rt, ox, oy, aimX, aimY, len, sk.half).slice(0, 4);
+      p.x += aimX * len; p.y += aimY * len; p.fix = true; p.mvAt = now;
+      const struck = mobsWithin(rt, p.x, p.y, sk.r).slice(0, 4);
+      rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(sk.fx, p.x, p.y - 6, sk.r);
+      for (const o of new Set([...struck, ...passed])) {
+        const dx = o.x - ox, dy = o.y - oy, d = Math.hypot(dx, dy);
+        if (d && hammerLine(m, ox, oy, dx / d, dy / d, d) < d) continue;
+        hit(o, struck.includes(o) ? sk.mult : sk.sweep, { mag: 0 });
+      }
+      break;
+    }
+    case "oathward": {
+      ev(sk.fx, p.x, p.y - 6, sk.r);
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r).slice(0, 5)) {
+        const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
+        if (!d || hammerLine(m, p.x, p.y, dx / d, dy / d, d) >= d) hit(o, sk.mult, { mag: 1 });
+      }
+      for (const ally of members(S, p)) if (ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= sk.healR) {
+        healP(rt, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal);
+      }
+      break;
+    }
     // ── 대검
     case "slash": {
       ev(80, ...ahead(sk.r * 0.6), sk.r);

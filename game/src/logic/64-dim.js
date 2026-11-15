@@ -12,7 +12,12 @@ const dimCnt = (ch) => ch.cnt;
 /** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
 const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), 10, TIER_MAX - 1);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
-const dimHk = (n, lv, mlv) => (DIM.hpBase + DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv)) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
+function dimHk(n, lv, mlv) {
+  const [mid, width, bonus] = DIM.hpMid;
+  const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv);
+  const extra = bonus * Math.max(0, 1 - Math.abs(lv - mid) / width);
+  return (DIM.hpBase + low + extra) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
+}
 
 const inDim = (p) => typeof p.map === "string" && p.map.startsWith("dim:");
 const dimAt = (S, id) => (S.dims && Object.hasOwn(S.dims, id) ? S.dims[id] : null);

@@ -37,12 +37,20 @@ if (!L.hero) {
     assert.ok(x >= lo && x <= hi, `${wk} T${t}: ${r.kpm} kills/min is ×${x.toFixed(2)} of the old ${base.toFixed(1)} (allowed ×${lo}–×${hi})`);
     rows.push(`${wk.padEnd(6)} T${String(t).padEnd(2)} ${String(r.kpm).padStart(5)} k/m (base ${base.toFixed(1)}, ×${(r.kpm / base).toFixed(2)})  ${String(r.dtpm).padStart(5)} dmg/m  ${r.deaths} deaths`);
   }
-  // hybrids (docs/design/jobs-and-stats.md "Hybrid expansion"): each of the 15 is probed holding either of its weapons, from
+  // Hybrids (docs/design/jobs-and-stats.md "Hybrid expansion"): probe each of their weapons from
   // the first tier one can be had (both masteries 15 at T13). Its kills/min (the mean of its two hands) must land in the
   // band of its pair: against the mean of its two weapons' baselines, ×0.75 up to the mean of their upper bounds (×1.25 a
   // weapon, ×1.1 the bow); and neither hand may fall below ×0.7 of its own weapon's baseline.
   const D = L.defs(), bad = [], only = process.argv.slice(2).filter((a) => !a.startsWith("-"));
-  const HI = (wk) => (wk === "bow" ? 1.1 : 1.25), baseOf = (wk, t) => VS[wk].reduce((s, c) => s + BASE[c][t][0], 0) / VS[wk].length;
+  const hammerBase = new Map();
+  const HI = (wk) => (wk === "bow" ? 1.1 : 1.25);
+  function baseOf(wk, t) {
+    if (wk === "hammer") {
+      if (!hammerBase.has(t)) hammerBase.set(t, probe(L, wk, t).kpm);
+      return hammerBase.get(t);
+    }
+    return VS[wk].reduce((s, c) => s + BASE[c][t][0], 0) / VS[wk].length;
+  }
   for (const j of Object.keys(D.jobs).filter((id) => D.jobs[id].kind === "hybrid" && (!only.length || only.includes(id)))) for (const t of PROBE.hybTiers) {
     const [a, b] = D.jobs[j].wk, ra = probe(L, a, t, PROBE.secs, { job: j }), rb = probe(L, b, t, PROBE.secs, { job: j });
     const base = (baseOf(a, t) + baseOf(b, t)) / 2, x = (ra.kpm + rb.kpm) / 2 / base, hi = (HI(a) + HI(b)) / 2;

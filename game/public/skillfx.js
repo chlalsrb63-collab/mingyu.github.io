@@ -427,6 +427,16 @@ export function skillEvent(e, ctx) {
       const [, eid, , tx, ty] = e;
       const src = entityPos(eid);
       if (!src) return true;
+      if (kind === 133 || kind === 134) {
+        const ward = kind === 134, color = ward ? "#ffe3a0" : "#9ce6d8";
+        src.atkT = t; src.atkN = 0;
+        f.ring(tx, ty + 6, e[7], color, 360, true);
+        f.burst(tx, ty + 6, 0.3, color, 18, 1.8);
+        f.flash(tx, ty + 6, 12);
+        if (ward) { f.ring(tx, ty + 6, 70, "#ffe7ab", 520); Sound.play("sanctuary"); }
+        else { if (eid === G.you) S3.shake(4); Sound.play("hammer_land", { hit: 1, final: true }); }
+        return true;
+      }
       if (PASSIVE.has(kind)) { passive(kind, src, eid, tx, ty + 6, G); return true; }
       if (eid !== G.you) { src.atkT = t; src.dir = e[5]; src.atkN = 2; }
       else { G.me.dir = e[5]; G.me.atkN = 2; }

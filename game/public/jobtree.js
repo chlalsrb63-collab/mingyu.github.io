@@ -109,7 +109,7 @@ function jobCard(s, j, atJob) {
     const sk = d.skills[sig], r = el("div", "jt-sig");
     const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(sig);
     const tx = el("div", "tx");
-    tx.append(el("b", "", sk.name), el("small", "", ` MP ${sk.mp} · 재사용 ${sk.cd / 1000}초`), el("p", "", sk.desc));
+    tx.append(el("b", "", sk.name), el("small", "", ` 직업 Lv.${sk.jobNeed} · MP ${sk.mp} · 재사용 ${sk.cd / 1000}초`), el("p", "", sk.desc));
     r.append(ic, tx);
     card.append(r);
   }
@@ -229,6 +229,7 @@ export function renderTree(box, s, { atJob }) {
   const root = el("div", "jt-root" + (adv ? " cur" : ""));
   root.append(Info.jobMark(s.job), el("b", "", adv ? "모험가" : `모험가 ▸ ${jobs[s.job].name}`));
   root.append(el("small", "", adv ? "아이콘이 있는 조합에서 전직할 수 있습니다. 전직은 한 번뿐입니다." : `지금 [${jobs[s.job].name}] — 전직은 되돌릴 수 없습니다`));
+  if (s.jp) root.append(jobProgress(s.jp));
   box.append(root);
 
   // the picked job: by default the current one, else the first open one, else the hand's single job
@@ -318,3 +319,12 @@ export function renderJobNpc(box, s, { atJob }) {
 }
 /** Forget a half-asked question when the window closes. */
 export function reset() { ask = ""; }
+
+function jobProgress([level, xp, need]) {
+  const row = el("div", "jt-progress"), bar = document.createElement("progress");
+  bar.max = need || 1;
+  bar.value = need ? xp : 1;
+  bar.setAttribute("aria-label", "직업 경험치");
+  row.append(el("b", "", `직업 Lv.${level}`), bar, el("span", "", need ? `${xp.toLocaleString()} / ${need.toLocaleString()}` : "최고 직업 레벨"));
+  return row;
+}

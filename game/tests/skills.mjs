@@ -64,15 +64,15 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
 
 // ═════════ the tables
 {
-  assert.equal(D.skillOrder.length, 42, "retained weapon and job skills");
+  assert.equal(D.skillOrder.length, 44, "retained weapon and job skills plus two hammer hybrids");
   assert.deepEqual(Object.keys(SK), D.skillOrder);
-  const kinds = D.skillOrder.filter(id => SK[id].wk !== "hammer").map((id) => SK[id].kind).join("");
+  const kinds = D.skillOrder.filter(id => SK[id].wk !== "hammer" && !["mercenary", "paladin"].includes(SK[id].job)).map((id) => SK[id].kind).join("");
   assert.equal(kinds, "aap".repeat(6) + "j".repeat(6) + "h".repeat(10));
   for (const id of D.skillOrder) {
     const s = SK[id];
     assert.equal(s.id, id);
     assert.ok(s.name && s.desc && s.desc.length > 20, id + " is named and described in Korean");
-    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 132)), id + " costs, waits and has an fx code");
+    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 134)), id + " costs, waits and has an fx code");
     if (s.kind === "j") { assert.equal(D.jobs[s.job].kind, "single"); assert.equal(D.jobs[s.job].wk[0], s.wk); assert.equal(s.need, 20); }
     if (s.kind === "h") { assert.equal(D.jobs[s.job].kind, "hybrid"); assert.equal(s.need, D.hybWm, id + " grows from mastery 15"); }
   }
@@ -443,7 +443,8 @@ for (const [id, hand] of CASTS) {
   p.x = arsen.x * T + 8; p.y = arsen.y * T + 30; p.mvAt = W.now;
   const r = W.act({ t: "job_change", j: "lancer" });
   assert.ok(r.ok, r.error);
-  assert.ok(ch.qs.some((x) => x && x[1] === "dragon"), "the signature joins the bar on the job change");
+  assert.deepEqual(ch.jp, { lv: 1, xp: 0 });
+  assert.ok(!ch.qs.some((x) => x && x[1] === "dragon"), "the signature waits for job level five");
 }
 
 // ═════════ the wire and defs

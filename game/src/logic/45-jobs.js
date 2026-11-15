@@ -50,6 +50,29 @@ function jobOk(ch, j) {
 const jobWmOf = (j) => (JOBS[j] && JOBS[j].kind === "hybrid" ? HYB_WM : JOB_WM);
 const isHybrid = (ch) => !!JOBS[ch.job] && JOBS[ch.job].kind === "hybrid";
 
+const jobNeed = lv => 24 + 12 * lv + 2 * lv * lv;
+function gainJob(S, p, n) {
+  const ch = p.ch, jp = ch.jp;
+  if (!jp || jp.lv >= JOB_PROGRESS.cap) return;
+  const previous = jp.lv;
+  jp.xp += n;
+  while (jp.lv < JOB_PROGRESS.cap && jp.xp >= jobNeed(jp.lv)) {
+    jp.xp -= jobNeed(jp.lv);
+    jp.lv++;
+  }
+  if (jp.lv === JOB_PROGRESS.cap) jp.xp = 0;
+  p.dirty = true;
+  if (jp.lv === previous) return;
+  p.stc = null;
+  saveSoon(p);
+  S.maps[p.map].ev.push(["jl", p.eid, jp.lv]);
+  toast(p, `[${JOBS[ch.job].name}] 직업 Lv.${jp.lv}`);
+  const signature = JOB_SKILL[ch.job];
+  if (signature && previous < SKILL[signature].jobNeed && skLearned(ch, SKILL[signature])) {
+    toast(p, `새 전직 스킬 ${skLearnNew(p, [signature]).join("")}`);
+  }
+}
+
 /**
  * Everything about a character that only changes with their sheet (cached in `p.stc` until the sheet
  * changes): the six stats through their soft caps, the weapon's scaling and mastery, gear. `arm` is the
@@ -67,13 +90,14 @@ function deriveStats(p) {
   let core = SFX.atk[0] + SFX.atk[1] * lv;
   for (const k of Object.keys(sc)) core += sc[k] * E[k];
   const wm = w ? ch.wm[wk].lv : 0;
+  const jl = Math.max(0, (ch.jp?.lv || 0) - 1);
   const luk = E.luk, dex = E.dex, wil = E.wil, wis = E.wis;
   p.stc = {
-    mhp: Math.round(SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp),
-    mmp: Math.round(SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp),
-    atk0: (core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk,
+    mhp: Math.round((SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp) * (1 + JOB_PROGRESS.hp * jl)),
+    mmp: Math.round((SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp) * (1 + JOB_PROGRESS.mp * jl)),
+    atk0: ((core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk) * (1 + JOB_PROGRESS.atk * jl),
     core, cm,
-    def: Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def),
+    def: Math.round((Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def)) * (1 + JOB_PROGRESS.def * jl)),
     crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh : 0) + b.crit),
     critd: SFX.critd[0] + SFX.critd[1] * luk + b.critd / 100,
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
@@ -158,6 +182,7 @@ function wmKill(S, rt, mob) {
     const p = S.players[pid];
     if (!p || p.map !== rt.id || p.dead || !wmEligible(p, d)) continue;
     gainWm(S, p, n, bonus);
+    gainJob(S, p, n * 2);
   }
 }
 
@@ -355,6 +380,13 @@ function cleanJobs(ch) {
   }
   // a job once taken is never revoked, whatever the mastery says now
   ch.job = typeof ch.job === "string" && Object.hasOwn(JOBS, ch.job) ? ch.job : "adventurer";
+  if (ch.job === "adventurer") ch.jp = null;
+  else {
+    // Characters with an older job retain their previously learned signature.
+    const record = isObj(ch.jp) ? ch.jp : { lv: JOB_PROGRESS.signature, xp: 0 };
+    const lv = clamp(num(record.lv) ? Math.floor(record.lv) : 1, 1, JOB_PROGRESS.cap);
+    ch.jp = { lv, xp: lv === JOB_PROGRESS.cap ? 0 : clamp(num(record.xp) ? Math.floor(record.xp) : 0, 0, jobNeed(lv) - 1) };
+  }
   ch.rs = clamp(ch.rs | 0, 0, 9);
   ch.sw = ch.sw ? 1 : 0;
 }

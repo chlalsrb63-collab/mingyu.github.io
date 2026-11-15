@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8");
 const { __hammer: H, ...L } = await import("data:text/javascript;base64," + Buffer.from(src + `
-export const __hammer = { canStand, mapOf, changeMap, newMob, stats, fall, hammerHpCost, hammerBracing, plain };`).toString("base64"));
+export const __hammer = { canStand, mapOf, changeMap, newMob, stats, deriveStats, fall, hammerHpCost, hammerBracing, plain, gainJob, grazeChance, jobNeed };`).toString("base64"));
 const D = L.defs();
 const S = L.setup();
 S.now = 1_000_000;
@@ -43,6 +43,7 @@ p.ch.wm.hammer.lv = 20;
 const initialGold = p.ch.gold;
 assert.ok(tryJob().ok);
 assert.equal(p.ch.job, "destroyer");
+assert.deepEqual(p.ch.jp, { lv: 1, xp: 0 });
 assert.equal(initialGold - p.ch.gold, D.jobs.destroyer.cost);
 H.changeMap(S, p, "meadow", ox, oy);
 
@@ -112,7 +113,10 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
   ready(); const mastery = p.ch.wm.hammer.xp;
   assert.ok(actions(p, atk).ok); advance(200);
   assert.equal(impact()[5], 0); assert.equal(p.ch.wm.hammer.xp, mastery);
-  ready(); assert.ok(actions(p, { t: "sk", id: "hammer_final", a: 0 }).ok);
+  ready();
+  assert.match(actions(p, { t: "sk", id: "hammer_final", a: 0 }).error, /직업 Lv\.5/);
+  p.ch.jp.lv = 5; p.stc = null; ready();
+  assert.ok(actions(p, { t: "sk", id: "hammer_final", a: 0 }).ok);
   assert.equal(H.hammerBracing(p, S.now), 0.25);
   advance(400);
 }
@@ -131,7 +135,7 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
   const old = L.newChar("옛망치", []); old.v = 13; delete old.wm.hammer;
   L.addPlayer(S, "migration", old);
   assert.deepEqual(S.players.migration.ch.wm.hammer, { lv: 1, xp: 0 });
-  assert.equal(S.players.migration.ch.v, 14);
+  assert.equal(S.players.migration.ch.v, 15);
   assert.equal(D.wkOrder.at(-1), "hammer");
   assert.equal(Object.values(D.items).filter(it => it.wk === "hammer").length, 5);
   assert.equal(Object.values(D.skills).filter(sk => sk.wk === "hammer" && sk.kind === "p").length, 5);
@@ -165,4 +169,74 @@ for (const duo of [false, true]) {
   assert.ok(h / s >= 1.08 && h / s <= 1.15 && sm > hm, `hammer ${h}/${hm}, sword ${s}/${sm}`);
   console.log(`${duo ? "duo" : "solo"}: single hammer ${h.toFixed(1)}, sword ${s.toFixed(1)} DPS; four spread hammer ${hm.toFixed(1)}, sword ${sm.toFixed(1)} DPS`);
 }
+
+{
+  const promote = (who, job) => {
+    H.changeMap(S, who, "town", NPC.x * 16 + 8, NPC.y * 16 + 12);
+    return () => actions(who, { t: "job_change", j: job });
+  };
+  const merc = player("merc", "hammer", 15, 29), paladin = player("paladin", "hammer", 15, 29);
+  for (const [who, job, secondary] of [[merc, "mercenary", "spear"], [paladin, "paladin", "book"]]) {
+    const change = promote(who, job);
+    who.ch.wm[secondary].lv = 14;
+    assert.equal(change().ok, false);
+    who.ch.wm[secondary].lv = 15;
+    assert.ok(change().ok);
+    assert.deepEqual(who.ch.jp, { lv: 1, xp: 0 });
+    H.changeMap(S, who, "meadow", ox, oy);
+  }
+  for (const o of rt.mobs) { o.dead = true; o.respAt = Infinity; }
+  const prey = m(16, 0, "gutfrog"); prey.hp = 1;
+  const skill = { t: "sk", id: "ironsiege", a: 0 };
+  const level = merc.ch.lvl, masteryBefore = merc.ch.wm.hammer.xp;
+  merc.ch.jp = { lv: 4, xp: H.jobNeed(4) - 1 };
+  ready(merc);
+  const before = H.stats(merc), beforeAtk = H.deriveStats(merc).atk0;
+  assert.match(actions(merc, skill).error, /직업 Lv\.5/);
+  assert.ok(actions(merc, atk).ok);
+  advance(200);
+  assert.ok(prey.dead);
+  assert.deepEqual(merc.ch.jp, { lv: 5, xp: 3 });
+  assert.equal(merc.ch.lvl, level);
+  assert.ok(merc.ch.wm.hammer.xp > masteryBefore);
+  assert.deepEqual(paladin.ch.jp, { lv: 1, xp: 0 }, "no credit for idle players");
+  assert.equal(merc.ch.qs.filter(x => x?.[1] === skill.id).length, 1);
+  assert.ok(H.stats(merc).mhp > before.mhp);
+  assert.ok(H.deriveStats(merc).atk0 > beforeAtk);
+  const overlap = m(35, 0);
+  ready(merc);
+  L.endTick(S);
+  assert.ok(actions(merc, skill).ok);
+  assert.ok(dmg(overlap, merc) > 0);
+  assert.equal(rt.ev.filter(e => e[0] === "h" && e[1] === overlap.id).length, 1);
+  overlap.dead = true;
+  const base = H.stats(merc);
+  H.gainJob(S, merc, 1e7);
+  assert.deepEqual(merc.ch.jp, { lv: 50, xp: 0 });
+  assert.ok(H.stats(merc).atk > base.atk && H.stats(merc).def > base.def);
+  assert.deepEqual(L.viewFor(S, merc.pid).self.jp, [50, 0, 0]);
+
+  const expert = merc.ch.wm.hammer.lv, deep = { k: "moleworm" };
+  const expertGraze = H.grazeChance(merc, deep), expertAtk = H.deriveStats(merc).atk0;
+  merc.ch.wm.hammer.lv = 1; merc.stc = null;
+  assert.ok(H.grazeChance(merc, deep) > expertGraze);
+  assert.ok(H.deriveStats(merc).atk0 < expertAtk);
+  merc.ch.wm.hammer.lv = expert; merc.stc = null;
+
+  H.gainJob(S, paladin, 300);
+  assert.ok(actions(paladin, { t: "pinv", e: merc.eid }).ok);
+  assert.ok(actions(merc, { t: "pacc" }).ok);
+  ready(merc); ready(paladin); ready();
+  merc.hp = 5; p.hp = 5;
+  assert.ok(actions(paladin, { t: "sk", id: "oathward", a: 0 }).ok);
+  assert.ok(merc.hp > 5 && p.hp === 5, "the oath heals party members only");
+  L.removePlayer(S, merc.pid); L.removePlayer(S, paladin.pid);
+
+  const old = L.newChar("옛전직", [], "hammer");
+  old.v = 14; old.job = "destroyer"; delete old.jp;
+  L.addPlayer(S, "oldjob", old);
+  assert.deepEqual(S.players.oldjob.ch.jp, { lv: 5, xp: 0 });
+  L.removePlayer(S, "oldjob");
+}
+
 console.log("hammer: repeat, timing, shape, cap, wall, costs, cracks, cancellation, migration and Destroyer verified");

@@ -71,6 +71,7 @@ export function skillWhy(id) {
   const r = row(id);
   if (r && r[3]) return "";
   if (sk.job && s.job !== sk.job) return `[${G.defs.jobs[sk.job].name}]의 스킬입니다`;
+  if (sk.jobNeed && (s.jp?.[0] || 0) < sk.jobNeed) return `직업 Lv.${sk.jobNeed}에 배웁니다`;
   const wk = sk.wk || (G.defs.jobs[sk.job] ? G.defs.jobs[sk.job].wk[0] : "");
   if (!sk.job && !r) return `[${G.defs.wkName[sk.wk]}] 숙련 ${sk.need}에 배웁니다`;
   const name = G.defs.wkName[wk] || "무기";
@@ -173,7 +174,7 @@ export function render() {
         locked = !!why;
         mp = String(skillMp(sk.id));
         // a dim slot names what it waits for: the weapon (or the job) it needs, or the mastery
-        b.dataset.lv = !row(sk.id) && !sk.job ? `숙련${sk.need}` : sk.job && C.G.self.job !== sk.job ? "전직" : wkn[sk.wk || (C.G.defs.jobs[sk.job] || { wk: [""] }).wk[0]] || "";
+        b.dataset.lv = sk.job && C.G.self.job !== sk.job ? "전직" : !row(sk.id) ? (sk.jobNeed ? `직업${sk.jobNeed}` : `숙련${sk.need}`) : wkn[sk.wk || (C.G.defs.jobs[sk.job] || { wk: [""] }).wk[0]] || "";
         title = `${sk.name} (${i + 1}) — MP ${sk.mp} · ${sk.cd / 1000}초${why ? ` · ${why}` : ""}\n${sk.desc}`;
       }
     } else if (kind === "i") {

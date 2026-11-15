@@ -144,6 +144,7 @@ const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스�
 /** Mastery a single job asks for in its weapon; a hybrid asks HYB_WM in both of its two. */
 const JOB_WM = 20, HYB_WM = 15;
 const JOB_COST = 1000, HYB_COST = 5000;
+const JOB_PROGRESS = { cap: 50, signature: 5, hp: 0.003, mp: 0.002, atk: 0.0024, def: 0.002 };
 // Eligible PvE kills boost character XP through 30, then taper to the regular reward at 40.
 const HUNT_EARLY = { full: 30, end: 40, ahead: 3, extra: 0.6 };
 
@@ -187,6 +188,8 @@ const JOBS = {
   spellspear: { name: "마창사", kind: "hybrid", wk: ["spear", "staff"], scale: { str: 0.8, int: 0.8, wis: 0.6 }, cost: HYB_COST },
   runesage: { name: "룬술사", kind: "hybrid", wk: ["staff", "book"], scale: { int: 0.8, wis: 0.3, wil: 0.3 }, cost: HYB_COST },
   runearcher: { name: "각인궁사", kind: "hybrid", wk: ["book", "bow"], scale: { int: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: HYB_COST },
+  mercenary: { name: "머서너리", kind: "hybrid", wk: ["hammer", "spear"], scale: { str: 0.9, wil: 0.5, wis: 0.4 }, cost: HYB_COST },
+  paladin: { name: "성기사", kind: "hybrid", wk: ["hammer", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: HYB_COST },
 };
 
 /**
@@ -339,8 +342,15 @@ const SKILL = {
     desc: "해머 기술의 HP 소모가 최대 HP의 1%만큼 줄어든다. 최소 소모량은 최대 HP의 1%다." },
   hammer_heart: { kind: "p", wk: "hammer", need: 50, name: "심철의 파문", bonus: 1.08,
     desc: "해머 기술로 내 균열 두 개를 실제로 터뜨리면 정타 피해가 추가로 8% 늘어난다." },
+  ironsiege: { kind: "h", job: "mercenary", need: HYB_WM, name: "철쇄 돌진", mp: 24, cd: 28000, len: 48, half: 11, r: 23, mult: 2.45, sweep: 1.05, fx: 133,
+    desc: "창으로 열린 길을 따라 전진하고 끝에서 해머를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다." },
+  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 28, cd: 32000, r: 34, mult: 1.55, healR: 70, heal: 0.08, atkHeal: 0.25, fx: 134,
+    desc: "성문을 지키는 망치로 주변을 내리친다. 자신과 가까운 파티원의 최대 HP 8%에 성기사 공격력의 25%를 더해 회복시킨다." },
 };
-for (const id of Object.keys(SKILL)) SKILL[id].id = id;
+for (const [id, sk] of Object.entries(SKILL)) {
+  sk.id = id;
+  if (sk.job) sk.jobNeed = JOB_PROGRESS.signature;
+}
 /** The order skills are listed in (per weapon: L1, L10 active, L10 passive; then single, then hybrid signatures — the first six, then the nine of the expansion). */
 const SKILL_ORDER = Object.keys(SKILL);
 /** The skills each weapon kind brings, in order. */
@@ -2843,7 +2853,8 @@ const DIM = {
   // → 5.4 with J2's weapon skills, which lost the old kits' party heals, taunts and guards:
   // bot clears 5.2 / 5.6 / 6.3 / 7.0 min at tiers 17 / 24 / 32 / 40; → 4.9 and a low-band step of 0.85 once the test
   // ran five draws of each rift (a hard seed at 24 and at 17 wiped the party): clears 4.7–8.2 min, 6.2 on average)
-  hpBase: 4.9, hpLow: [24, 0.85], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
+  // Mid-band parties gain enough job levels to shorten the rift. Taper the adjustment before 24 and after 40.
+  hpBase: 4.9, hpLow: [24, 0.85], hpMid: [32, 8, 0.6], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
   reviveMs: 25000,
   // the master's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then
   reward: { gold: 60, xp: 0.05, gearQ: 3, stone: 2, rune: 0.6 }, dailyFull: 3, failGold: 30, lootGold: 0.5,
@@ -5732,7 +5743,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 14, name, job: "adventurer",
+    v: 15, name, job: "adventurer", jp: null,
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -5873,7 +5884,7 @@ function migrate(ch) {
   // social, the weekly book, enhancement pity (v14): block list, gauge, the week's baselines, the day's rest bonus (63-social-weekly.js)
   socialSheetClean(ch, dl);
   // cleanJobs adds the hammer mastery slot to saves made before v14.
-  ch.v = Math.max(ch.v | 0, 14);
+  ch.v = Math.max(ch.v | 0, 15);
   return ch;
 }
 
@@ -6377,6 +6388,29 @@ function jobOk(ch, j) {
 const jobWmOf = (j) => (JOBS[j] && JOBS[j].kind === "hybrid" ? HYB_WM : JOB_WM);
 const isHybrid = (ch) => !!JOBS[ch.job] && JOBS[ch.job].kind === "hybrid";
 
+const jobNeed = lv => 24 + 12 * lv + 2 * lv * lv;
+function gainJob(S, p, n) {
+  const ch = p.ch, jp = ch.jp;
+  if (!jp || jp.lv >= JOB_PROGRESS.cap) return;
+  const previous = jp.lv;
+  jp.xp += n;
+  while (jp.lv < JOB_PROGRESS.cap && jp.xp >= jobNeed(jp.lv)) {
+    jp.xp -= jobNeed(jp.lv);
+    jp.lv++;
+  }
+  if (jp.lv === JOB_PROGRESS.cap) jp.xp = 0;
+  p.dirty = true;
+  if (jp.lv === previous) return;
+  p.stc = null;
+  saveSoon(p);
+  S.maps[p.map].ev.push(["jl", p.eid, jp.lv]);
+  toast(p, `[${JOBS[ch.job].name}] 직업 Lv.${jp.lv}`);
+  const signature = JOB_SKILL[ch.job];
+  if (signature && previous < SKILL[signature].jobNeed && skLearned(ch, SKILL[signature])) {
+    toast(p, `새 전직 스킬 ${skLearnNew(p, [signature]).join("")}`);
+  }
+}
+
 /**
  * Everything about a character that only changes with their sheet (cached in `p.stc` until the sheet
  * changes): the six stats through their soft caps, the weapon's scaling and mastery, gear. `arm` is the
@@ -6394,13 +6428,14 @@ function deriveStats(p) {
   let core = SFX.atk[0] + SFX.atk[1] * lv;
   for (const k of Object.keys(sc)) core += sc[k] * E[k];
   const wm = w ? ch.wm[wk].lv : 0;
+  const jl = Math.max(0, (ch.jp?.lv || 0) - 1);
   const luk = E.luk, dex = E.dex, wil = E.wil, wis = E.wis;
   p.stc = {
-    mhp: Math.round(SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp),
-    mmp: Math.round(SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp),
-    atk0: (core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk,
+    mhp: Math.round((SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp) * (1 + JOB_PROGRESS.hp * jl)),
+    mmp: Math.round((SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp) * (1 + JOB_PROGRESS.mp * jl)),
+    atk0: ((core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk) * (1 + JOB_PROGRESS.atk * jl),
     core, cm,
-    def: Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def),
+    def: Math.round((Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def)) * (1 + JOB_PROGRESS.def * jl)),
     crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh : 0) + b.crit),
     critd: SFX.critd[0] + SFX.critd[1] * luk + b.critd / 100,
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
@@ -6485,6 +6520,7 @@ function wmKill(S, rt, mob) {
     const p = S.players[pid];
     if (!p || p.map !== rt.id || p.dead || !wmEligible(p, d)) continue;
     gainWm(S, p, n, bonus);
+    gainJob(S, p, n * 2);
   }
 }
 
@@ -6682,6 +6718,13 @@ function cleanJobs(ch) {
   }
   // a job once taken is never revoked, whatever the mastery says now
   ch.job = typeof ch.job === "string" && Object.hasOwn(JOBS, ch.job) ? ch.job : "adventurer";
+  if (ch.job === "adventurer") ch.jp = null;
+  else {
+    // Characters with an older job retain their previously learned signature.
+    const record = isObj(ch.jp) ? ch.jp : { lv: JOB_PROGRESS.signature, xp: 0 };
+    const lv = clamp(num(record.lv) ? Math.floor(record.lv) : 1, 1, JOB_PROGRESS.cap);
+    ch.jp = { lv, xp: lv === JOB_PROGRESS.cap ? 0 : clamp(num(record.xp) ? Math.floor(record.xp) : 0, 0, jobNeed(lv) - 1) };
+  }
   ch.rs = clamp(ch.rs | 0, 0, 9);
   ch.sw = ch.sw ? 1 : 0;
 }
@@ -7493,7 +7536,7 @@ const inHand = (ch) => (ch.eq.weapon ? ITEMS[ch.eq.weapon.id].wk : "");
 /** The weapon kinds a skill can be used with. */
 const skWks = (sk) => (sk.kind === "h" ? JOBS[sk.job].wk : [sk.wk]);
 /** Has this character learned the skill (mastery for a weapon skill, the job for a signature)? */
-const skLearned = (ch, sk) => (sk.job ? ch.job === sk.job : ch.wm[sk.wk].lv >= sk.need);
+const skLearned = (ch, sk) => (sk.job ? ch.job === sk.job && (ch.jp?.lv || 0) >= sk.jobNeed : ch.wm[sk.wk].lv >= sk.need);
 /** Skills that count as a staff's (resonance) or a book's (the brand): the weapon's own and its jobs' signatures. */
 const skOf = (sk, wk) => (sk.job ? JOBS[sk.job].wk.includes(wk) : sk.wk === wk);
 /** Every skill a character has learned, in SKILL_ORDER (the wire's list). */
@@ -7502,6 +7545,7 @@ const skillsFor = (ch) => SKILL_ORDER.filter((id) => skLearned(ch, SKILL[id]));
 function skWhy(ch, sk) {
   const wk = skWks(sk)[0];
   if (sk.job && ch.job !== sk.job) return `[${JOBS[sk.job].name}]의 스킬입니다`;
+  if (sk.job && !skLearned(ch, sk)) return `[${JOBS[sk.job].name}] 직업 Lv.${sk.jobNeed}에 배웁니다`;
   if (!sk.job && ch.wm[sk.wk].lv < sk.need) return `[${WK_NAME[sk.wk]}] 숙련 ${sk.need}에 배웁니다`;
   if (!skWks(sk).includes(inHand(ch))) return `[${WK_NAME[wk]}]${pp(WK_NAME[wk], "을를")} 들어야 쓸 수 있습니다`;
   return "";
@@ -7520,7 +7564,8 @@ function pasOn(p, id) {
 /** Skill power from mastery past the skill's need (a hybrid signature: the lower of its two weapons). */
 function skGrow(ch, sk) {
   const m = Math.min(...skWks(sk).map((k) => ch.wm[k].lv));
-  return 1 + SK_GROW * Math.max(0, m - sk.need);
+  const rank = Math.max(0, (ch.jp?.lv || 0) - (sk.jobNeed || 0));
+  return (1 + SK_GROW * Math.max(0, m - sk.need)) * (sk.job ? 1 + rank * SK_GROW : 1);
 }
 /** Resonance full: the next staff skill is free and hits harder. */
 const resoReady = (p, sk) => skOf(sk, "staff") && (p.reso | 0) >= SKILL.reso.n && pasOn(p, "reso");
@@ -7905,6 +7950,31 @@ function castSkill(S, p, id) {
   const ahead = (n) => [p.x + aimX * n, p.y + aimY * n];
   const prop = (o) => addProp(S, rt, p, { sk, mag: sk.mag, k, ...o });
   switch (id) {
+    case "ironsiege": {
+      const ox = p.x, oy = p.y, len = stepTo(m, ox, oy, aimX, aimY, sk.len);
+      const passed = mobsInLine(rt, ox, oy, aimX, aimY, len, sk.half).slice(0, 4);
+      p.x += aimX * len; p.y += aimY * len; p.fix = true; p.mvAt = now;
+      const struck = mobsWithin(rt, p.x, p.y, sk.r).slice(0, 4);
+      rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(sk.fx, p.x, p.y - 6, sk.r);
+      for (const o of new Set([...struck, ...passed])) {
+        const dx = o.x - ox, dy = o.y - oy, d = Math.hypot(dx, dy);
+        if (d && hammerLine(m, ox, oy, dx / d, dy / d, d) < d) continue;
+        hit(o, struck.includes(o) ? sk.mult : sk.sweep, { mag: 0 });
+      }
+      break;
+    }
+    case "oathward": {
+      ev(sk.fx, p.x, p.y - 6, sk.r);
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r).slice(0, 5)) {
+        const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
+        if (!d || hammerLine(m, p.x, p.y, dx / d, dy / d, d) >= d) hit(o, sk.mult, { mag: 1 });
+      }
+      for (const ally of members(S, p)) if (ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= sk.healR) {
+        healP(rt, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal);
+      }
+      break;
+    }
     // ── 대검
     case "slash": {
       ev(80, ...ahead(sk.r * 0.6), sk.r);
@@ -10407,7 +10477,12 @@ const dimCnt = (ch) => ch.cnt;
 /** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
 const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), 10, TIER_MAX - 1);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
-const dimHk = (n, lv, mlv) => (DIM.hpBase + DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv)) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
+function dimHk(n, lv, mlv) {
+  const [mid, width, bonus] = DIM.hpMid;
+  const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv);
+  const extra = bonus * Math.max(0, 1 - Math.abs(lv - mid) / width);
+  return (DIM.hpBase + low + extra) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
+}
 
 const inDim = (p) => typeof p.map === "string" && p.map.startsWith("dim:");
 const dimAt = (S, id) => (S.dims && Object.hasOwn(S.dims, id) ? S.dims[id] : null);
@@ -13083,12 +13158,14 @@ export function applyAction(S, pid, a) {
       const job = JOBS[a.j];
       ch.gold -= job.cost;
       ch.job = a.j;
+      ch.jp = { lv: 1, xp: 0 };
       afterGear(S, p);
       S.maps[p.map].ev.push(["jc", p.eid]);
       sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
       toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸이 열렸습니다 — Tab으로 두 무기를 바꿔 듭니다.` : `[${job.name}] 전직!`);
       // the job's signature skill onto the bar
-      toast(p, `새 스킬 ${skLearnNew(p, [JOB_SKILL[a.j]]).join("")}`);
+      const signature = SKILL[JOB_SKILL[a.j]];
+      if (signature) toast(p, `직업 Lv.${signature.jobNeed}에 [${signature.name}]${pp(signature.name, "을를")} 배웁니다.`);
       checkAch(S, p);
       break;
     }
@@ -13675,6 +13752,7 @@ function selfPayload(p) {
     // [lv, xp, need] per kind (WK_ORDER), the kinds in hand and on the back
     name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, st: ch.st, nx: nextCosts(ch), rs: ch.rs, sw: ch.sw,
     wm: WK_ORDER.map((k) => [ch.wm[k].lv, ch.wm[k].xp, ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
+    jp: ch.jp ? [ch.jp.lv, ch.jp.xp, ch.jp.lv >= JOB_PROGRESS.cap ? 0 : jobNeed(ch.jp.lv)] : null,
     wk2: ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "",
     gold: ch.gold,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,

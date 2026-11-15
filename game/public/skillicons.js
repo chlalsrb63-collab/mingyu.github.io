@@ -16,6 +16,8 @@ function hammerGlyph(blocks) {
 const hammerHead = [[3, 3, 10, 4, "#"], [2, 4, 12, 2, "#"], [4, 6, 8, 1, "o"], [7, 7, 2, 5, "#"], [6, 12, 4, 2, "o"]];
 
 const GLYPH = {
+  ironsiege: hammerGlyph([...hammerHead, [1, 10, 4, 1, "o"], [2, 12, 4, 1, "o"], [10, 11, 4, 2, "#"], [12, 10, 2, 4, "#"]]),
+  oathward: hammerGlyph([[4, 3, 8, 2, "#"], [3, 5, 10, 5, "o"], [4, 10, 8, 2, "o"], [6, 12, 4, 2, "#"], [7, 5, 2, 5, "#"], [6, 6, 4, 2, "#"]]),
   hammer_stamp: hammerGlyph([...hammerHead, [3, 14, 10, 1, "#"]]),
   hammer_fault: hammerGlyph([...hammerHead, [3, 13, 4, 1, "#"], [9, 14, 4, 1, "#"], [12, 12, 2, 1, "#"]]),
   hammer_final: hammerGlyph([...hammerHead, [1, 9, 3, 1, "#"], [12, 9, 3, 1, "#"], [3, 13, 10, 2, "#"], [5, 13, 6, 1, "o"]]),

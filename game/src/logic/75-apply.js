@@ -590,12 +590,14 @@ export function applyAction(S, pid, a) {
       const job = JOBS[a.j];
       ch.gold -= job.cost;
       ch.job = a.j;
+      ch.jp = { lv: 1, xp: 0 };
       afterGear(S, p);
       S.maps[p.map].ev.push(["jc", p.eid]);
       sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
       toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸이 열렸습니다 — Tab으로 두 무기를 바꿔 듭니다.` : `[${job.name}] 전직!`);
       // the job's signature skill onto the bar
-      toast(p, `새 스킬 ${skLearnNew(p, [JOB_SKILL[a.j]]).join("")}`);
+      const signature = SKILL[JOB_SKILL[a.j]];
+      if (signature) toast(p, `직업 Lv.${signature.jobNeed}에 [${signature.name}]${pp(signature.name, "을를")} 배웁니다.`);
       checkAch(S, p);
       break;
     }

@@ -104,7 +104,7 @@ function hudFrame(s) {
   // the job's emblem, the name and the level on one line: the emblem says the job (hover: its name, click: its card)
   const jobName = Mastery.jobOf(s, G.defs).name;
   setOnce($("#st-job"), s.job || "", (n) => n.append(Info.jobMark(s.job)));
-  setOnce($("#st-lv"), `${s.lvl}:${jobName}`, (n) => { n.textContent = `Lv.${s.lvl}`; n.title = `레벨 ${s.lvl} · ${jobName}`; });
+  setOnce($("#st-lv"), `${s.lvl}:${jobName}:${s.jp?.[0]}`, (n) => { n.textContent = `Lv.${s.lvl}`; n.title = `캐릭터 Lv.${s.lvl} · ${jobName}${s.jp ? ` 직업 Lv.${s.jp[0]}` : ""}`; });
   drawFace();
   hudMastery(s);
   hudPurse(s);
@@ -210,7 +210,7 @@ export function refreshUi() {
     ? ["stat", s.st, s.lvl, s.xp, s.xpt, s.nx, s.rs, s.dv, s.atk, s.mhp, s.mmp, s.def, s.crit, s.critd, s.mf, s.job, s.wk, s.eq.weapon && s.eq.weapon.id, s.dead, fireNear(), near, StatWin.key()]
     : ["gear", s.xp, s.nx, s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.lvl, s.name, s.guild], renderChar);
   // K: 무기 · 스킬 or 전직의 길
-  draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey()], renderSkills);
+  draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.jp?.join(), s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey()], renderSkills);
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near, s.rep], renderShop);
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone"), s.pity], renderSmith);
   draw("train", () => [s.xp, s.xpt, s.nx, s.rs, s.sw, s.lvl, s.inv.length, near, StatWin.trainerKey()], (s) => StatWin.renderTrainer($("#train-body"), s, { atTrainer: near === "train" }));

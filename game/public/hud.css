@@ -960,6 +960,8 @@ body.touch #wm .wm-tab { display: none; }
 .jt-root.cur { background: var(--b-mid); box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px -2px 0 var(--b-lo); }
 .jt-root.cur b, .jt-root.cur small { color: #2a1806; }
 .jt-root small { flex-basis: 100%; color: #b8ac90; }
+.jt-progress { display: flex; align-items: center; gap: 5px; width: 100%; color: #d8cbb8; font: 10px var(--pix); margin-top: 5px; }
+.jt-progress progress { flex: 1; min-width: 30px; height: 7px; accent-color: #e8ba64; }
 .jt-wrap { overflow: hidden; display: flex; justify-content: center; }
 .jt-map { position: relative; flex: none; }
 .jt-map canvas { position: absolute; left: 0; top: 0; image-rendering: pixelated; }

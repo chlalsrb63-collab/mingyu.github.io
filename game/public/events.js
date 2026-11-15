@@ -225,6 +225,12 @@ export function onEvent(e, t) {
       if (e[1] === G.you) { Sound.play("achieve"); const j = G.self && G.defs.jobs[G.self.job]; banner(j && j.kind !== "none" ? `${j.name}의 길` : "전직!"); }
       break;
     }
+    case "jl": {
+      const p = entityPos(e[1]);
+      if (p) { S3.fx.pillar(p.x, p.y); floatText(`직업 Lv.${e[2]}`, p.x, p.y, heightOf(p) + 0.6, "#f4d27a", true); }
+      if (e[1] === G.you) Sound.play("level");
+      break;
+    }
     // what someone says floats over their head for a while, longer for longer lines
     case "s": G.bubbles.set(e[1], { text: e[2], t0: t, until: t + 3500 + Math.min(4000, e[2].length * 90) }); Sound.play("blip"); break;
     case "o": G.bubbles.set(e[1], { emo: e[2] | 0, t0: t, until: t + 2800 }); Sound.play("emote"); break;

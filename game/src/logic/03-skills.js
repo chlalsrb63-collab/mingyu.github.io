@@ -111,8 +111,15 @@ const SKILL = {
     desc: "해머 기술의 HP 소모가 최대 HP의 1%만큼 줄어든다. 최소 소모량은 최대 HP의 1%다." },
   hammer_heart: { kind: "p", wk: "hammer", need: 50, name: "심철의 파문", bonus: 1.08,
     desc: "해머 기술로 내 균열 두 개를 실제로 터뜨리면 정타 피해가 추가로 8% 늘어난다." },
+  ironsiege: { kind: "h", job: "mercenary", need: HYB_WM, name: "철쇄 돌진", mp: 24, cd: 28000, len: 48, half: 11, r: 23, mult: 2.45, sweep: 1.05, fx: 133,
+    desc: "창으로 열린 길을 따라 전진하고 끝에서 해머를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다." },
+  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 28, cd: 32000, r: 34, mult: 1.55, healR: 70, heal: 0.08, atkHeal: 0.25, fx: 134,
+    desc: "성문을 지키는 망치로 주변을 내리친다. 자신과 가까운 파티원의 최대 HP 8%에 성기사 공격력의 25%를 더해 회복시킨다." },
 };
-for (const id of Object.keys(SKILL)) SKILL[id].id = id;
+for (const [id, sk] of Object.entries(SKILL)) {
+  sk.id = id;
+  if (sk.job) sk.jobNeed = JOB_PROGRESS.signature;
+}
 /** The order skills are listed in (per weapon: L1, L10 active, L10 passive; then single, then hybrid signatures — the first six, then the nine of the expansion). */
 const SKILL_ORDER = Object.keys(SKILL);
 /** The skills each weapon kind brings, in order. */
