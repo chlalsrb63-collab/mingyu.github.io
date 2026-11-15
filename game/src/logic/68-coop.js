@@ -101,6 +101,9 @@ function coopPay(S, p, c, g) {
   if (ch.coopDay !== today) { ch.coopDay = today; ch.coopDone = []; }
   const Tt = Math.max(1, Math.floor(toTier(ch.lvl))), life = lifeNeed(ch.life[J.skill].lv) * R.life[Math.max(0, g - 1)];
   const gold = (n) => { ch.gold += n; p.gain.push(["gold", n]); };
+  ch.cnt.coop++;
+  if (g === 4) ch.cnt["coopS_" + c.k]++;   // the first S earns the job's cosmetic through its achievement (COS_ACH)
+  checkAch(S, p);
   if (!g) {
     gold(R.tip * Tt); gainLife(S, p, J.skill, life * R.tipLife);
     toast(p, "근무 평가 미달 — 수고비만 받았습니다. 오늘 다시 도전할 수 있어요.");

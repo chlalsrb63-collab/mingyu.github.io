@@ -6805,7 +6805,9 @@ const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest"
   // life skills L2: gathered, crafted (any station), delivered
   "gat", "craft", "deliver",
   // top of a boss's damage ranking (50 dmgBoard; added 2026-11-15, old sheets start at 0)
-  "mvp"];
+  "mvp",
+  // co-op part-time shifts finished (68-coop.js coopPay) and S grades per job (added 2026-11-15, old sheets start at 0)
+  "coop", "coopS_apt", "coopS_diner", "coopS_forge", "coopS_alch"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {
@@ -10855,6 +10857,12 @@ const ACH = [
   // life skills (58-life.js): any skill at 10 and 30, each at 50 with its master's title; gathering, making, deliveries
   ["life10", "생활", "생활의 발견", "생활 기술 하나를 Lv.10까지 올리기", 5, (c) => !!c.life && LIFE.some((k) => c.life[k].lv >= 10)],
   ["life30", "생활", "생활의 달인", "생활 기술 하나를 Lv.30까지 올리기", 15, (c) => !!c.life && LIFE.some((k) => c.life[k].lv >= 30), "생활의 달인"],
+  // co-op part-time jobs (68-coop.js): the first S in each earns that job's cosmetic (COS_ACH)
+  ["coopS_apt", "생활", "청소의 달인", "동동아파트 청소 S 등급", 20, (c) => c.cnt.coopS_apt >= 1, "청소의 달인"],
+  ["coopS_diner", "생활", "서빙의 달인", "쥬쥬식당 서빙 S 등급", 20, (c) => c.cnt.coopS_diner >= 1, "서빙의 달인"],
+  ["coopS_forge", "생활", "단조의 달인", "캉캉대장간 단조 S 등급", 20, (c) => c.cnt.coopS_forge >= 1, "단조의 달인"],
+  ["coopS_alch", "생활", "가마의 달인", "보글연금공방 가마 S 등급", 20, (c) => c.cnt.coopS_alch >= 1, "가마의 달인"],
+  ["coop20", "생활", "단골 알바생", "협동 알바 20번 완수", 30, (c) => c.cnt.coop >= 20, "단골 알바생"],
   ...LIFE.map((k, i) => [`life50_${k}`, "생활", LIFE_MASTER[i], `${LIFE_NAME[i]} Lv.50 달성`, 30, (c) => !!c.life && c.life[k].lv >= LIFE_MAX, LIFE_MASTER[i]]),
   ["gat100", "생활", "부지런한 채집꾼", "채집 100번", 5, (c) => c.cnt.gat >= 100],
   ["craft50", "생활", "솜씨 좋은 손", "제작·연금·요리 50번 성공", 10, (c) => c.cnt.craft >= 50],
@@ -13473,9 +13481,14 @@ const COSMETICS = Object.fromEntries([
   ["back_batcape", 102, "back", "박쥐 망토", 3, "weekly", 0, "밤장막 박쥐군주의 날개를 본뜬 망토. 펄럭일 때마다 작은 박쥐가 숨는다.", "rift"],
   ["hat_bloodcrown", 103, "hat", "혈루 뿔 왕관", 3, "boss", 0, "혈루 왕도마뱀의 뿔을 깎아 만든 붉은 왕관. 아직 미지근하다."],
   ["ws_clubclaw", 104, "wskin", "갯가재 집게 무기 외형", 2, "boss", 0, "망치 갯가재의 집게를 씌운 무기. 휘두를 때마다 물이 튄다."],
+  // co-op part-time jobs: the first S grade in each (ACH coopS_<job>)
+  ["hat_kerchief", 105, "hat", "동동 청소부 두건", 2, "ach", "coopS_apt", "동동아파트가 S 등급 청소부에게 주는 물방울무늬 두건.", "coop"],
+  ["back_tray", 106, "back", "쥬쥬 서빙 쟁반", 2, "ach", "coopS_diner", "뚜껑 덮인 은쟁반. 무엇이 들었는지는 쥬쥬만 안다.", "coop"],
+  ["face_forge", 107, "face", "캉캉 단조 보안경", 2, "ach", "coopS_forge", "불똥이 튀어도 끄떡없는 검은 보안경.", "coop"],
+  ["back_cauldron", 108, "back", "보글 꼬마 가마솥", 2, "ach", "coopS_alch", "등에 멘 꼬마 가마솥. 초록 거품이 보글보글.", "coop"],
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
-const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근" };
+const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근", coop: "협동 알바" };
 const COS_IDS = Object.keys(COSMETICS);
 const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
 const COS_ACH = Object.fromEntries(COS_IDS.filter((id) => COSMETICS[id].ach).map((id) => [COSMETICS[id].ach, id]));
@@ -14401,6 +14414,9 @@ function coopPay(S, p, c, g) {
   if (ch.coopDay !== today) { ch.coopDay = today; ch.coopDone = []; }
   const Tt = Math.max(1, Math.floor(toTier(ch.lvl))), life = lifeNeed(ch.life[J.skill].lv) * R.life[Math.max(0, g - 1)];
   const gold = (n) => { ch.gold += n; p.gain.push(["gold", n]); };
+  ch.cnt.coop++;
+  if (g === 4) ch.cnt["coopS_" + c.k]++;   // the first S earns the job's cosmetic through its achievement (COS_ACH)
+  checkAch(S, p);
   if (!g) {
     gold(R.tip * Tt); gainLife(S, p, J.skill, life * R.tipLife);
     toast(p, "근무 평가 미달 — 수고비만 받았습니다. 오늘 다시 도전할 수 있어요.");
