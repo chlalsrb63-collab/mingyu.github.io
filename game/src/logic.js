@@ -12694,6 +12694,8 @@ const ACH = [
   // life skills (58-life.js): any skill at 10 and 30, each at 50 with its master's title; gathering, making, deliveries
   ["life10", "생활", "생활의 발견", "생활 기술 하나를 Lv.10까지 올리기", 5, (c) => !!c.life && LIFE.some((k) => c.life[k].lv >= 10)],
   ["life30", "생활", "생활의 달인", "생활 기술 하나를 Lv.30까지 올리기", 15, (c) => !!c.life && LIFE.some((k) => c.life[k].lv >= 30), "생활의 달인"],
+  // each skill at 30: its 견습 장인 tool belt (COS_ACH)
+  ...LIFE.map((k, i) => [`life30_${k}`, "생활", LIFE_MASTER[i].replace("명인", "견습"), `${LIFE_NAME[i]} Lv.30 달성`, 10, (c) => !!c.life && c.life[k].lv >= 30]),
   // co-op part-time jobs (68-coop.js): the first S in each earns that job's cosmetic (COS_ACH)
   ["coopS_apt", "생활", "청소의 달인", "동동아파트 청소 S 등급", 20, (c) => c.cnt.coopS_apt >= 1, "청소의 달인"],
   ["coopS_diner", "생활", "서빙의 달인", "쥬쥬식당 서빙 S 등급", 20, (c) => c.cnt.coopS_diner >= 1, "서빙의 달인"],
@@ -15726,6 +15728,28 @@ const COSMETICS = Object.fromEntries([
   ["back_cloud_bell", 160, "back", "운해 종지기 등장식", 2, "sew", 0, "등에 진 작은 종틀. 걸을 때마다 새끼 종이 구름 소리를 낸다.", "story"],
   ["hat_chronicler", 161, "hat", "사관 모자", 2, "sew", 0, "날개 달린 검은 사모에 갈피의 회색 깃펜을 꽂았다.", "story"],
   ["face_rift_goggles", 162, "face", "균열 연구원 고글", 2, "sew", 0, "균열 표본을 들여다보던 보글의 보라 렌즈 고글. 렌즈에 금빛이 번뜩인다.", "story"],
+  // 견습 장인 (P10): a tool belt per life skill at Lv 30 (ACH life30_<skill>), the skill's tool on the hip
+  ["top_appr_fish", 163, "top", "견습 낚시꾼의 연장 띠", 1, "ach", "life30_fish", "빨간 찌를 허리에 매단 낚시꾼의 띠. 옷자락에 물방울이 튀어 있다."],
+  ["top_appr_cook", 164, "top", "견습 요리사의 연장 띠", 1, "ach", "life30_cook", "국자를 허리에 꽂은 요리사의 띠. 털에 밀가루가 묻었다."],
+  ["top_appr_gather", 165, "top", "견습 채집꾼의 연장 띠", 1, "ach", "life30_gather", "빨간 손잡이 가위를 찬 채집꾼의 띠. 풀물이 들었다."],
+  ["top_appr_craft", 166, "top", "견습 대장장이의 연장 띠", 1, "ach", "life30_craft", "작은 망치를 건 대장장이의 띠. 검댕이 묻었다."],
+  ["top_appr_alch", 167, "top", "견습 연금술사의 연장 띠", 1, "ach", "life30_alch", "초록 약병을 매단 연금술사의 띠. 약물이 튀었다."],
+  ["top_appr_deliver", 168, "top", "견습 배달부의 연장 띠", 1, "ach", "life30_deliver", "편지 한 통을 꽂은 배달부의 띠. 잉크 얼룩이 남았다."],
+  // face +8 (P11): four at 루루's shop, four from chores and life work
+  ["face_freckles", 169, "face", "주근깨", 0, "shop", 600, "콧등과 볼에 톡톡 찍은 주근깨. 햇볕 아래 뛰어논 얼굴."],
+  ["face_star_bandage", 170, "face", "반창고 별", 0, "shop", 500, "별 모양 반창고. 다친 데가 없어도 붙이고 싶다."],
+  ["face_flower_earring", 171, "face", "꽃 귀걸이", 1, "shop", 1800, "볼 옆에 달랑이는 작은 꽃 한 송이."],
+  ["face_snow_blush", 172, "face", "눈꽃 볼 화장", 1, "shop", 2000, "양 볼에 그린 파란 눈꽃. 한겨울에도 볼이 발그레하다."],
+  ["face_craft_goggles", 173, "face", "장인 고글 이마걸이", 2, "ach", "life30", "이마에 밀어 올린 놋쇠 작업 고글. 생활의 달인이 쉬는 자세."],
+  ["face_flour_nose", 174, "face", "밀가루 코끝", 1, "ach", "craft50", "만들고 굽고 끓이다 보면 코끝에 꼭 뭐가 묻는다."],
+  ["face_grass_whistle", 175, "face", "풀잎 피리", 0, "ach", "gat100", "입에 문 풀잎 한 장. 불면 삐익 소리가 난다."],
+  ["face_good_stamp", 176, "face", "참 잘했어요 도장", 1, "ach", "coop20", "단골 알바생의 볼에 찍어 준 빨간 칭찬 도장."],
+  // wskin +5 (P11; 단풍 is ws_ssn_maple): story hand-ins, bosses and the daily box
+  ["ws_willow_twig", 177, "wskin", "버들 가지 무기 외형", 2, "quest", 0, "버들 가지를 날에 감았다. 잎사귀가 늘어져 살랑인다."],
+  ["ws_lantern", 178, "wskin", "등불 무기 외형", 2, "quest", 0, "날 끝에 작은 종이 등을 매달았다. 어두운 길에서도 안심."],
+  ["ws_temple_bell", 179, "wskin", "사원 종 무기 외형", 2, "quest", 0, "새끼줄을 감고 놋쇠 종을 달았다. 휘두르면 댕 소리가 난다."],
+  ["ws_whalebone", 180, "wskin", "고래뼈 무기 외형", 3, "boss", 0, "고래의 갈비뼈로 깎은 날. 끝에는 푸른 꼬리지느러미."],
+  ["ws_star_candy", 181, "wskin", "별사탕 무기 외형", 1, "daily", 0, "알록달록 별사탕이 날에 콕콕 박혔다."],
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" || src === "token" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
 const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근", coop: "협동 알바", willowpatrol: "버들 순찰대", coraltrade: "산호 항구 상단", brasssurvey: "황동 탐사대", moonarchive: "달빛 기록원", mapleramblers: "단풍길 탐험대",

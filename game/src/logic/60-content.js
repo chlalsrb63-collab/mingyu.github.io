@@ -173,6 +173,8 @@ const ACH = [
   // life skills (58-life.js): any skill at 10 and 30, each at 50 with its master's title; gathering, making, deliveries
   ["life10", "생활", "생활의 발견", "생활 기술 하나를 Lv.10까지 올리기", 5, (c) => !!c.life && LIFE.some((k) => c.life[k].lv >= 10)],
   ["life30", "생활", "생활의 달인", "생활 기술 하나를 Lv.30까지 올리기", 15, (c) => !!c.life && LIFE.some((k) => c.life[k].lv >= 30), "생활의 달인"],
+  // each skill at 30: its 견습 장인 tool belt (COS_ACH)
+  ...LIFE.map((k, i) => [`life30_${k}`, "생활", LIFE_MASTER[i].replace("명인", "견습"), `${LIFE_NAME[i]} Lv.30 달성`, 10, (c) => !!c.life && c.life[k].lv >= 30]),
   // co-op part-time jobs (68-coop.js): the first S in each earns that job's cosmetic (COS_ACH)
   ["coopS_apt", "생활", "청소의 달인", "동동아파트 청소 S 등급", 20, (c) => c.cnt.coopS_apt >= 1, "청소의 달인"],
   ["coopS_diner", "생활", "서빙의 달인", "쥬쥬식당 서빙 S 등급", 20, (c) => c.cnt.coopS_diner >= 1, "서빙의 달인"],

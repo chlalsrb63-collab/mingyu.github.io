@@ -502,4 +502,35 @@ for (const [kind, designs] of Object.entries(SIL)) {
   for (const id of ["hat_chronicler", "back_neon_sign", "face_rift_goggles"]) assert.ok(W.act({ t: "cos_eq", id }).ok, id + " worn");
 }
 
+// ── P10 견습 장인 (a tool belt per life skill at 30) and P11 face +8, wskin +5
+{
+  const X = (await import("data:text/javascript;base64," + Buffer.from(readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") + "\nexport const __t = { checkAch };\n").toString("base64"))).__t;
+  for (const k of D.life.keys) assert.equal(achCos("life30_" + k).length, 1, "a 견습 장인 belt for " + k);
+  const W = world("견습");
+  const p = W.S.players.A, ch = p.ch;
+  W.step();
+  const has = (...l) => l.every((id) => ch.cos.own.includes(id));
+  ch.life.cook.lv = 29; X.checkAch(W.S, p);
+  assert.ok(!has("top_appr_cook"), "29 is not enough");
+  ch.life.cook.lv = 30; X.checkAch(W.S, p);
+  assert.ok(has("top_appr_cook") && !has("top_appr_fish") && ch.ach.includes("life30"), "요리 30: the cook's belt only (and 생활의 달인 too)");
+  assert.ok(has("face_craft_goggles"), "생활의 달인 pays the brow goggles");
+  ch.cnt.gat = 100; ch.cnt.craft = 50; ch.cnt.coop = 20; X.checkAch(W.S, p);
+  assert.ok(has("face_grass_whistle", "face_flour_nose", "face_good_stamp"), "chores and life work pay three face pieces");
+  // four faces at 루루's shop, each in its rarity's gold band (checked above); one bought here
+  const shopFaces = ["face_freckles", "face_star_bandage", "face_flower_earring", "face_snow_blush"];
+  assert.ok(shopFaces.every((id) => D.cos[id].src === "shop"));
+  W.to("A", shopNpc.x, shopNpc.y + 1);
+  ch.gold = 5000;
+  assert.ok(W.act({ t: "cos_buy", id: "face_freckles" }).ok && has("face_freckles") && ch.gold === 5000 - D.cos.face_freckles.price);
+  if (ch.cos.on.face !== "face_freckles") assert.ok(W.act({ t: "cos_eq", id: "face_freckles" }).ok);
+  assert.ok(W.act({ t: "cos_eq", id: "top_appr_cook" }).ok && ch.cos.on.face === "face_freckles", "belt and freckles worn together");
+  // the five new weapon skins are motifs and drop from their sources
+  for (const id of ["ws_willow_twig", "ws_lantern", "ws_temple_bell", "ws_whalebone", "ws_star_candy"]) assert.ok(MOTIFS.includes(skinMotif(id)) && ["quest", "boss", "daily"].includes(D.cos[id].src), id);
+  // an old sheet that already holds the achievement catches up on the belt
+  const old = JSON.parse(JSON.stringify(L.exportChar(W.S, "A")));
+  old.cos = { own: [], on: {} }; old.ach = ["life30_alch"];
+  assert.ok(W.join("B", "", "warrior", old).ch.cos.own.includes("top_appr_alch"), "life30_alch pays the alchemist's belt");
+}
+
 console.log("wardrobe: ok —", ids.length, "cosmetics,", Object.keys(D.wkinds).length * 5, "weapon designs,", MOTIFS.length, "motifs");

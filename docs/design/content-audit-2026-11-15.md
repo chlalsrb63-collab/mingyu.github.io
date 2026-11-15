@@ -320,6 +320,12 @@ Consumables with roles, village produce, fish, crafted furniture. No combat stat
   두루마리 from the existing `fbook`, 방수모 from `fbig10` (ten species at 대). 64px-only detail through `brush.fp`
   (a half-pixel dot, nothing at 32px) and an optional `TOP[k].fine`; every piece has a trim `b` except the blush
   (its dye is its colour). Wardrobe source text for `sew` names the keepsake. Tests: wardrobe.mjs P10 block.
+- **As built (2026-11-16, 견습 장인; the 명인 redraw still not done):** codes 163–168, top slot (a chest strap, a tool belt
+  `b` = the dye, a short canvas flap `c` at the feet row), no set (one slot only). ACH `life30_<skill>` (new, 10 pts, name
+  `견습 …`; the generic `life30` stays). wardrobe.js `toolBelt` + `APPRENTICE`: the tool hangs on the hip, 2×3 px —
+  찌 (fish), 국자 (cook), 가위 (gather), 망치 (craft), 약병 (alch), 편지 (deliver) — with 64px parts, and a stain on the
+  fur at 64px only (spray, flour, grass, soot, potion, ink). Tests: wardrobe.mjs "견습 장인" block (an old sheet holding the
+  achievement catches up through cosClean).
 
 ### P11 — 외형 세트 2: 이야기와 계절 (after 64×64; art) · size M–L
 | set | earned by | what 64×64 adds |
@@ -341,6 +347,15 @@ Consumables with roles, village produce, fish, crafted furniture. No combat stat
   마을's 밀짚 두건. Every piece but the starfish (dyes whole) has a trim `b`; 64px detail via `brush.fp`. The knit hat and
   the navigator cap cover the ears (`behind`): with holes a rabbit's ears hid the crown. Tests: wardrobe.mjs P11 block,
   festival.mjs buys a 사계절 piece.
+- **As built (2026-11-16, face +8, wskin +5, contrast):** face codes 169–176, no set. Shop: 주근깨 600 · 반창고 별 500 (q0),
+  꽃 귀걸이 1800 · 눈꽃 볼 화장 2000 (q1). From existing achievements (no new counters): 장인 고글 이마걸이 `life30` (goggles
+  pushed up on the brow, the eyes stay bare; strap seen from behind), 밀가루 코끝 `craft50`, 풀잎 피리 `gat100`, 참 잘했어요
+  도장 `coop20`. Every face has a trim `b` or dyes whole. Weapon skins codes 177–181 (단풍 already existed as
+  `ws_ssn_maple`, so five): motifs `willowTwig` (withe and drooping leaves) and `lantern` (paper lantern under the tip),
+  `templeBell` (rope wraps, a bell charm) from `quest`; `whalebone` (ribs, a blue fluke) from `boss`; `starCandy` (five-point
+  candy stars) from `daily`. No festival or co-op source: FAIR_SHOP and 68-coop.js were off limits, and the co-op
+  achievements already pay whole sets. **Contrast:** 벚꽃 카디건 (main pink deepened to #f09ab8) and 꽈배기 스웨터 take the deep
+  shade `d` in their outer columns, so they part from white rabbit and tan shiba fur at 1×.
 
 ### P12 — 버드나무 장날과 계절 (rules + small art, after P9) · size M
 - **Season** from `S.now` only (KST day count ÷ 91, no `Date`): spring/summer/autumn/winter, shown on the sky/HUD.
