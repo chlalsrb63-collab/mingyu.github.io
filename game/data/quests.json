@@ -287,6 +287,50 @@
       "req": { "lv": 149, "quest": "sq_lantern_abyss" },
       "reward": { "xp": 120000, "gold": 6000, "items": [["stone", 4], ["sc_def", 1]] },
       "repeat": false
+    },
+    {
+      "id": "sq_bawi_shrimp",
+      "giver": "merc_bawi",
+      "title": "물을 끓이는 집게",
+      "text": "산호 해안에 망치 갯가재가 나타났다더군. 집게 한 방에 바닷물이 끓는다지. 쓰러뜨리고 오면 용병단이 값을 치르겠네.",
+      "done": "정말 해냈군! 그 집게는 캉캉에게 가져가 보게. 쓸모가 있을 거야.",
+      "goal": { "type": "kill", "mob": "clubshrimp", "n": 1 },
+      "req": { "lv": 36, "quest": null },
+      "reward": { "xp": 14000, "gold": 1800, "items": [["stone", 2], ["hp_l", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_bawi_bloodhorn",
+      "giver": "merc_bawi",
+      "title": "붉은바위의 피눈물",
+      "text": "붉은바위 황금궁 종루 아래에 혈루 왕도마뱀이 산다. 파티를 꾸려 가게. 혼자 가면 피눈물 웅덩이에 발이 묶일 걸세.",
+      "done": "피눈물 결정은 캉캉이 축복 강화석으로 굳혀 준다더군. 잘 쓰게.",
+      "goal": { "type": "kill", "mob": "bloodhorn", "n": 1 },
+      "req": { "lv": 41, "quest": "sq_bawi_shrimp" },
+      "reward": { "xp": 40000, "gold": 3500, "items": [["stone_b", 1], ["hp_l", 5]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_bawi_tears",
+      "giver": "merc_bawi",
+      "title": "피눈물 결정 수집",
+      "text": "용병단 대장간에서도 피눈물 결정을 연구하고 싶어 하네. 하나 가져오면 저주 해제 주문서와 바꿔 주지. 몇 번이고 좋네.",
+      "done": "고맙네. 이 주문서면 저주받은 장비 하나쯤은 풀 수 있을 걸세.",
+      "goal": { "type": "collect", "item": "mat_bloodtear", "n": 1 },
+      "req": { "lv": 41, "quest": "sq_bawi_bloodhorn" },
+      "reward": { "xp": 6000, "gold": 600, "items": [["uncurse", 1]] },
+      "repeat": true
+    },
+    {
+      "id": "sq_bawi_bats",
+      "giver": "merc_bawi",
+      "title": "장막 속 박쥐",
+      "text": "주간 도전의 밤장막 박쥐군주 곁에는 피를 빠는 박쥐들이 들끓는다지. 군주에게 돌아가기 전에 20마리를 떨어뜨려 주게.",
+      "done": "박쥐가 군주에게 못 돌아가면 군주도 배를 곯겠지. 수고했네.",
+      "goal": { "type": "kill", "mob": "nightbat", "n": 20 },
+      "req": { "lv": 25, "quest": null },
+      "reward": { "xp": 9000, "gold": 1200, "items": [["sc_atk", 1], ["hp_m", 5]] },
+      "repeat": false
     }
   ]
 }
