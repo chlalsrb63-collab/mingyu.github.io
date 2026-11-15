@@ -60,10 +60,11 @@ export function hammerPose(ms, impact = HAMMER_IMPACT) {
   const raised = rise * (1 - fall), planted = fall * held;
   return {
     yaw: 0,
-    pitch: (20 + 92 * raised - 53 * planted) * D,
-    reach: -2 * raised + 5 * planted,
-    lift: 9 * raised - 2 * planted,
-    lean: -2.5 * raised + 4 * planted,
+    // owner (2026-11-15): raised well over the head before the slam (was pitch 112°, lift 9 px; now 120°, 21 px — the head now rides ~35 % higher)
+    pitch: (20 + 100 * raised - 53 * planted) * D,
+    reach: -3.5 * raised + 5 * planted,
+    lift: 21 * raised - 2 * planted,
+    lean: -3.5 * raised + 4 * planted,
     fr: ms >= impact && ms < impact + 94 ? "crouch" : raised > 0.65 ? "stretch" : "",
     strike: false,
   };
