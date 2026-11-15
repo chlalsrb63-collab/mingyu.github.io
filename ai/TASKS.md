@@ -13,6 +13,8 @@
 
 | 누가 | 일 | 브랜치 · 폴더 | 시작 |
 | --- | --- | --- | --- |
+| Claude (통합 세션 2) | **협동 알바 전체** — 동동아파트 청소 개편, 쥬쥬식당 큰 홀, 대장간 v3, 새 알바 올빼미 도서관. `game/src/logic/68-coop.js`, `game/public/coop.js`, `12-life-tables.js`의 협동(COOP) 블록은 **Codex 손대지 말 것** (보상 1일 1회·재도전 가능 정책은 Codex 1998f06 그대로) | main | 2026-11-15 22:00 |
+| Claude (통합 세션 1·2) | 스킬 이펙트·아이콘(`skillfx.js`, `skillfx_combo.js`, `skillicons.js`, `jobpal.js`, `swing.js`) — Codex 손대지 말 것 | main | 2026-11-15 |
 | Codex | 레퍼런스 기반 낚시·요리·연금·대장 아이콘 | `codex/item-reference-art` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | 초반 캐릭터 Lv.30 ↔ 무기 숙련도 Lv.20 도달 구간 검증 및 조정 | `codex/early-mastery` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | 레벨대별 사냥 동선과 Lv.200 전용 사냥터 | `codex/hunt-routes` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
@@ -27,8 +29,8 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 - [x] 창 전열 구호기·마도서 되살림 제본과 근접 무기 HP 비용. [지원 기술 인계](reports/codex-field-support-skills.md)
 - [x] 7개 무기별 패시브 5개와 교차 장착 2칸. [숙련 패시브 인계](reports/codex-weapon-mastery-passives.md)
 - [x] 되새김 인장 제작과 레벨별 골드 재분배. [스탯 인계](reports/codex-stat-redistribution.md)
-- [ ] 협동 근무지 5곳 → `life-and-coop.md` F의 C1–C3 순서로 (새 마을의 건물·실내 사용, `coopjobs.js`를 출발점으로)
-- [ ] `89afb18` 스킬 이펙트·타격음 다듬기를 지금의 `skillfx.js` 코드 번호에 맞춰
+- [ ] (Claude 통합 세션 2가 맡음 — Codex 건너뛸 것) 협동 근무지 5곳 → `life-and-coop.md` F의 C1–C3 순서로 (새 마을의 건물·실내 사용, `coopjobs.js`를 출발점으로)
+- [ ] (Claude·Gemini 스킬 이펙트 작업 중 — Codex 건너뛸 것) `89afb18` 스킬 이펙트·타격음 다듬기를 지금의 `skillfx.js` 코드 번호에 맞춰
 
 ## CODEX (구현 · 테스트)
 
