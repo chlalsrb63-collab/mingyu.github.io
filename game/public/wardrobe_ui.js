@@ -36,7 +36,7 @@ css.textContent = `
 .wr-worn .ws { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: var(--muted, #aaa); cursor: pointer; }
 .wr-worn .ws canvas, .wr-grid canvas, #w-costume .list canvas { width: 32px; height: 32px; image-rendering: pixelated; background: var(--well, #1a1820); border: 1px solid #000; border-radius: 3px; }
 .wr-worn .ws.empty canvas { opacity: .35; }
-.wr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 4px; margin-top: 6px; max-height: 190px; overflow-y: auto; padding-right: 2px; }
+.wr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 4px; margin-top: 6px; max-height: 230px; overflow-y: auto; padding-right: 2px; }
 .wr-grid .c { position: relative; display: flex; justify-content: center; cursor: pointer; }
 .wr-grid .c canvas { border-width: 2px; }
 .wr-grid .c.lock canvas { filter: grayscale(1) brightness(.45); }
@@ -48,6 +48,11 @@ css.textContent = `
 #w-costume .list .it.try { box-shadow: inset 0 0 0 1px var(--line-hi, #8a7a5a); }
 #w-costume .list .it .own { font-size: 11px; color: #7ad08a; font-weight: 700; padding: 0 4px; }
 .wr-tip .src { margin-top: 3px; color: #e2c486; font-size: 11px; }
+.wr-tip .set { color: #9ad0c0; font-size: 11px; }
+.wr-set { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin: 6px 0 2px; padding: 1px 4px; font-size: 11px; font-weight: 700; color: var(--gold, #e2c486); border-bottom: 1px solid rgba(255,255,255,.12); }
+.wr-set:first-child { margin-top: 0; }
+.wr-set small { font-weight: 400; color: var(--muted, #aaa); }
+.wr-set.full small { color: #7ad08a; }
 `;
 document.head.append(css);
 
@@ -124,8 +129,26 @@ function srcText(d) {
   const ach = d.src === "ach" && C.G.defs.achievements.find((a) => a.id === d.ach);
   return {
     shop: `의상실에서 ${d.price.toLocaleString()}G`, chest: "보물 상자를 열면 가끔", boss: "사냥터 우두머리·던전 수문장이 가끔",
-    daily: "일일 과제 보상 상자", rift: "균열 침공 1위 (3위 안이면 가끔)", ach: `업적 「${ach ? ach.name : d.ach}」 달성`,
+    daily: "일일 과제 보상 상자", rift: "균열 침공 1위 (3위 안이면 가끔)",
+    ach: ach ? `${ach.desc} (업적 「${ach.name}」)` : `업적 「${d.ach}」 달성`,
+    quest: "의뢰 보상 — 곧 열립니다", weekly: "주간 도전 보상 — 곧 열립니다",
   }[d.src] || "";
+}
+/** The catalogue in groups: each themed set (in the catalogue's order), then everything that is in no set. */
+function groups(ids) {
+  const D = C.G.defs, sets = D.cosSets || {};
+  const out = Object.keys(sets).map((k) => ({ k, name: sets[k], ids: ids.filter((id) => D.cos[id].set === k) }));
+  out.push({ k: "", name: "낱개 외형", ids: ids.filter((id) => !sets[D.cos[id].set]) });
+  return out.filter((g) => g.ids.length);
+}
+/** A group's heading: "세트 · 바닷가" and how much of the whole set is owned. */
+function setHead(g, s) {
+  const D = C.G.defs;
+  if (!g.k) return C.el("div", "wr-set", g.name);
+  const all = Object.keys(D.cos).filter((id) => D.cos[id].set === g.k), have = all.filter((id) => s.cos.own.includes(id)).length;
+  const h = C.el("div", "wr-set" + (have === all.length ? " full" : ""), `세트 · ${g.name}`);
+  h.append(C.el("small", "", `${have} / ${all.length}${have === all.length ? " 완성" : ""}`));
+  return h;
 }
 function tipFor(id, host, extra) {
   const D = C.G.defs, d = D.cos[id], s = C.G.self, own = s.cos.own.includes(id);
@@ -133,6 +156,7 @@ function tipFor(id, host, extra) {
   const nm = C.el("div", "nm", d.name);
   nm.style.color = RARITY_COL[d.q];
   host.append(nm, C.el("div", "rar", `${D.rarity[d.q]} 외형 · ${D.cosSlotName[d.slot]}`), C.el("div", "ds", d.desc));
+  if (d.set && D.cosSets && D.cosSets[d.set]) host.append(C.el("div", "set", `세트 · ${D.cosSets[d.set]}`));
   host.append(C.el("div", "src", own ? (s.cos.on[d.slot] === id ? "입고 있음" : "보유 중") : `얻는 곳: ${srcText(d)}`));
   if (extra) host.append(C.el("div", "hint", extra));
 }
@@ -193,11 +217,12 @@ function slotBar(host, cur, set) {
 function renderShop(s) {
   const D = C.G.defs, list = $("#wr-shop-list");
   slotBar($("#wr-shop-slots"), shopSlot, (k) => { shopSlot = k; });
-  $("#wr-shop-hint").textContent = `가진 골드 ${s.gold.toLocaleString()}G · 상점에 없는 외형은 보물 상자, 우두머리, 일일 과제, 균열 침공, 업적에서 얻습니다.`;
+  $("#wr-shop-hint").textContent = `가진 골드 ${s.gold.toLocaleString()}G · 상점에 없는 외형은 보물 상자, 우두머리, 일일 과제, 균열 침공, 업적(생활 명인 · 가족이 된 이웃의 선물)에서 얻습니다.`;
   list.textContent = "";
-  for (const id of Object.keys(D.cos)) {
+  for (const g of groups(Object.keys(D.cos).filter((id) => D.cos[id].src === "shop" && (shopSlot === "all" || D.cos[id].slot === shopSlot)))) {
+   list.append(setHead(g, s));
+   for (const id of g.ids) {
     const d = D.cos[id];
-    if (d.src !== "shop" || (shopSlot !== "all" && d.slot !== shopSlot)) continue;
     const own = s.cos.own.includes(id);
     const row = C.el("div", "it" + (tried === id ? " try" : ""));
     const ic = iconCanvas(id);
@@ -220,6 +245,7 @@ function renderShop(s) {
     row.addEventListener("click", () => { tried = tried === id ? null : id; key.shop = ""; Sound.play("ui"); refresh(C.G.self); });
     C.hoverTip(ic, (h) => tipFor(id, h, own ? "" : "눌러서 입어 보기"));
     list.append(row);
+   }
   }
 }
 function renderTab(s) {
@@ -242,9 +268,11 @@ function renderTab(s) {
   $("#wr-count").textContent = `모은 외형 ${have.length} / ${ids.length}`;
   const grid = $("#wr-grid");
   grid.textContent = "";
-  // owned first, then the rest by rarity: a collection to fill
-  const order = [...have, ...ids.filter((id) => !s.cos.own.includes(id)).sort((a, b) => D.cos[a].q - D.cos[b].q)];
-  for (const id of order) {
+  // set by set; inside each, owned first, then the rest by rarity: a collection to fill
+  for (const g of groups(ids)) {
+   grid.append(setHead(g, s));
+   const order = [...g.ids.filter((id) => s.cos.own.includes(id)), ...g.ids.filter((id) => !s.cos.own.includes(id)).sort((a, b) => D.cos[a].q - D.cos[b].q)];
+   for (const id of order) {
     const d = D.cos[id], own = s.cos.own.includes(id), on = s.cos.on[d.slot] === id;
     const c = C.el("div", "c" + (own ? "" : " lock") + (on ? " on" : "") + (tried === id ? " try" : ""));
     const ic = iconCanvas(id);
@@ -257,6 +285,7 @@ function renderTab(s) {
     });
     C.hoverTip(c, (h) => tipFor(id, h, own ? (on ? "누르면 벗습니다" : "누르면 입습니다") : "누르면 미리 입어 봅니다"));
     grid.append(c);
+   }
   }
 }
 
