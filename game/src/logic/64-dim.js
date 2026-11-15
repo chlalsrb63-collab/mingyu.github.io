@@ -16,9 +16,9 @@ const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.l
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 function dimHk(n, lv, mlv) {
   const [mid, width, trim] = DIM.hpMid;
-  const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv);
+  const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv), high = DIM.hpHigh[1] * Math.max(0, lv - DIM.hpHigh[0]);
   const middle = trim * Math.max(0, 1 - Math.abs(lv - mid) / width);
-  return (DIM.hpBase + low + middle) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
+  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
 }
 
 /**
@@ -272,6 +272,11 @@ function dimBoss(S, dim) {
   const rt = dim.rt, m = dim.map, now = S.now;
   dim.state = "boss"; dim.bossAt = now;
   const [tx, ty] = bossSpot(S, m, m.dim.boss[0], m.dim.boss[1], 0, 4);
+  // while it lives the fallen get up `DIM.ckR` steps short of its hall (walking back alone from the way in only feeds it, one by one)
+  const W = m.w, toHall = bfs(W, m.h, m.dim.boss[1] * W + m.dim.boss[0], (i) => m.reach[i] === 1);
+  let at = m.dim.start[1] * W + m.dim.start[0];
+  for (let n = at; toHall[at] > DIM.ckR && n >= 0; at = n) n = D4.map(([dx, dy]) => at + dy * W + dx).find((q) => toHall[q] >= 0 && toHall[q] < toHall[at]) ?? -1;
+  dim.ck = [at % W, Math.floor(at / W)];
   const mob = newMob(S, m.dim.bossK, [tx, ty, tx, ty]);
   mob.el = 2; mob.temp = true; mob.dim = 1;
   mob.tr = rollTraits(S, dim.tk.boss || 2);
@@ -514,7 +519,7 @@ function dimRespawn(S, p) {
   const dim = dimAt(S, p.map);
   if (!dim) return false;
   if (dim.story) { storyHome(S, p, "쓰러졌습니다… 다시 그 자리로 다가가면 재도전할 수 있습니다."); return true; }
-  const [x, y] = dimSpot(dim.map, ri(S, 0, 8));
+  const ck = dim.state === "boss" && dim.ck, [x, y] = ck ? tilePx(ck) : dimSpot(dim.map, ri(S, 0, 8));
   p.dead = false; p.dimDeadAt = 0;
   const st = stats(p);
   p.hp = st.mhp; p.mp = st.mmp;
@@ -522,7 +527,7 @@ function dimRespawn(S, p) {
   p.ghost = S.now + 2500;
   dim.rt.ev.push(["u", p.eid, 2]);
   p.dirty = true;
-  toast(p, "시작 지점에서 다시 일어났습니다. (차원 균열 안에서는 경험치를 잃지 않습니다)");
+  toast(p, `${ck ? "최종 보스의 방 앞에서" : "시작 지점에서"} 다시 일어났습니다. (차원 균열 안에서는 경험치를 잃지 않습니다)`);
   return true;
 }
 /** Seconds `p` must still wait to get up in an instance (0: may). */

@@ -507,6 +507,8 @@ function runParty(lv, classes, seedSalt, shift = 0, opt = {}) {
     if (!here) break;
     if (here !== dim) { dim = here; m = dim.map; rt = dim.rt; W = m.w; fields.clear(); floorAt.push(now); }
     for (const p of ps) {
+      // knocked onto a floor's door home: walk back in at the obelisk, as a player would
+      if (p.map === "town" && dim.state !== "clear" && !dim.chal) { p.x = OBX; p.y = OBY; act(S, p.pid, { t: "dim_join" }); continue; }
       if (p.map !== dim.id) continue;
       if (p.dead) { act(S, p.pid, { t: "respawn" }); continue; }
       const st = X.stats(p);
@@ -579,7 +581,7 @@ function runParty(lv, classes, seedSalt, shift = 0, opt = {}) {
   const missed = runs.filter(miss), say = missed.map((r) => `Lv.${r.lv} (+${r.sh}) ${r.state} floor ${r.floor} ${r.clear && r.clear.toFixed(2)}`).join(", ");
   for (const r of runs) {
     const [f2, f3] = r.floors, end = r.clear ?? (r.state === "fail" ? D.limit / 60000 : 0);
-    log(`4 bots Lv.${r.lv} ${r.theme} (+${r.sh}): floor 1 ${f2 ? f2.toFixed(1) : "-"} · floor 2 ${f3 ? (f3 - f2).toFixed(1) : "-"} · floor 3 ${f3 && r.boss ? (r.boss - f3).toFixed(1) : "-"} + boss ${r.boss && r.clear ? (r.clear - r.boss).toFixed(1) : "-"} = ${end.toFixed(1)} min, ${r.kills} kills, ${r.elites} elites (last floor), chests ${r.got}/${r.n}, ${r.deaths} deaths, end ${r.state} floor ${r.floor}, dim wire ${r.wire.toFixed(0)} B/snap`);
+    log(`4 bots Lv.${r.lv} ${r.theme} (+${r.sh}): floor 1 ${f2 ? f2.toFixed(1) : "-"} · floor 2 ${f3 ? (f3 - f2).toFixed(1) : "-"} · floor 3 ${f3 && r.boss ? (r.boss - f3).toFixed(1) : "-"} + boss ${r.boss && r.clear ? (r.clear - r.boss).toFixed(1) : "-"} = ${end.toFixed(1)} min, ${r.kills} kills, ${r.elites} elites (last floor), chests ${r.got}/${r.n}, ${r.deaths} deaths, end ${r.state} floor ${r.floor} gauge ${r.prog.toFixed(0)}, dim wire ${r.wire.toFixed(0)} B/snap`);
     if (!process.env.NOCLEAR && !miss(r)) assert.equal(r.got, r.n, "every member opens the chest once");
     assert.ok(r.wire <= 120, `the dim block averages ${r.wire.toFixed(0)} B a snapshot`);
   }

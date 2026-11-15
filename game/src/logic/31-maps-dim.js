@@ -17,8 +17,8 @@ const DIM = {
   // 하강의 문 (everyone inside goes down after `downMs`, sooner once all standing stepped within `downR`); floor 3's 100%
   // wakes the final boss in its hall at the far end. Per floor: monster health and blows ×, pack leaders made elite,
   // elite traits; `boss` the final boss's traits.
-  floors: 3, downMs: 10000, downR: 16,
-  floor: [{ hp: 1, atk: 1, elites: 0, traits: 1 }, { hp: 1.15, atk: 1.08, elites: 1, traits: 1 }, { hp: 1.3, atk: 1.15, elites: 2, traits: 2, boss: 2 }],
+  floors: 3, downMs: 10000, downR: 16, ckR: 12,     // (ckR: the fallen get up this many steps short of the final boss's hall)
+  floor: [{ hp: 1, atk: 1, elites: 0, traits: 1 }, { hp: 1.1, atk: 1.03, elites: 1, traits: 1 }, { hp: 1.2, atk: 1.06, elites: 1, traits: 1, boss: 2 }],
   emptyMs: 20000, portalMs: 90000, failMs: 8000, memberMs: 180000, rcMs: 20000, near: 80,
   // the gauge: a kill, an elite (guardians too), an orb an elite leaves behind; a rift with fewer monsters scales
   // these up so that everything together is worth `full` (64-dim.js dim.gK)
@@ -34,8 +34,10 @@ const DIM = {
   // → 5.4 with J2's weapon skills, which lost the old kits' party heals, taunts and guards:
   // bot clears 5.2 / 5.6 / 6.3 / 7.0 min at tiers 17 / 24 / 32 / 40; → 4.9 and a low-band step of 0.85 once the test
   // ran five draws of each rift (a hard seed at 24 and at 17 wiped the party): clears 4.7–8.2 min, 6.2 on average)
-  // Trim about 1% at the mid-band after the profession and ladder merge, before the tier multiplier.
-  hpBase: 4.9, hpLow: [24, 0.85], hpMid: [32, 8, -0.05], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
+  // 3-floor raid (2026-11-15), 4 bots × 4 draws at tiers 17 / 32 / 44: `hpMid` [band, width, + at it] adds 0.5 at 32 (the
+  // mid band ran 7.5–9 min), `hpHigh` [above this level, − per level] trims the top band (44 took 12+ min), the final boss
+  // `bossHp` 0.65 at floor 3's row (0.8 made low-band parties wipe-loop on it): clears 8.6–11.3 min, 9.7 on average.
+  hpBase: 4.9, hpLow: [24, 0.85], hpHigh: [38, 0.12], hpMid: [32, 8, 0.5], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.65, bossAtk: 0.7, poolLv: [3, 2],
   reviveMs: 25000,
   // the final boss's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then (what the old
   // ladder's tier 3 paid); a failed run's consolation is `failGold` × lv a floor reached
