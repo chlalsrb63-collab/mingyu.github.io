@@ -25,6 +25,7 @@
  */
 
 import * as Assets from "./assetlib.js";
+import { porcelainWeaponSprite, porcelainWeaponIcon, PORCELAIN_MOTIF } from "./weapons_porcelain.js";
 
 const GRIP = [5, 16];
 const INK = "#2b2233";
@@ -865,6 +866,8 @@ const MOTIF = {
   clubclaw: { name: "갯가재 집게", blade: ["#ffc08a", "#ff6a2a", "#a8301e"], fit: ["#d84a2a", "#9a2a1e", "#5a1a1e"], add: (h) => [...along(h, 3, (s, i) => L(s, h[2], s, h[3] - 1, i % 2 ? "orange" : "foam")), P([[h[1] - 2.5, h[2] - 0.5], [h[1] + 0.5, (h[2] + h[3]) / 2], [h[1] - 2.5, h[3] + 0.5]], "orange")] },
 };
 const EXTRA = { petal: "#ff9ac0", ice: "#e8fbff", candy: "#e8485a", foam: "#f4ffff", sand: "#fff8dc", node: "#4a7a3a", bee: "#3a3040" };
+// 백자 청화 skin: drawn whole per weapon kind by weapons_porcelain.js (sprite() / weaponIcon() hand over); this row only names it
+MOTIF.porcelain = PORCELAIN_MOTIF.porcelain;
 export const MOTIFS = Object.keys(MOTIF);
 export const motifName = (k) => (MOTIF[k] ? MOTIF[k].name : "");
 
@@ -1076,6 +1079,7 @@ function sprite(kind, gear, o) {
   const key = `${kind}:${wt}:${wq}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}:${motif}${o ? `:${o.q}:${o.arrow ? 1 : 0}` : ""}`;
   let c = cache.get(key);
   if (c) return c;
+  if (motif === "porcelain") { c = porcelainWeaponSprite(kind, gear, o); cache.set(key, c); return c; }
   const book = kind === "book", hammer = kind === "hammer";
   const W = kind === "spear" ? 52 : kind === "sword" ? 44 : hammer ? 40 : 32, H = hammer ? 36 : 32;
   const ox = book ? 16 : GRIP[0], oy = 16;
@@ -1101,6 +1105,7 @@ export function weaponIcon(kind, tier, o = {}) {
   const key = `i:${kind}:${tier}:${motif}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}`;
   let c = cache.get(key);
   if (c) return c;
+  if (motif === "porcelain") { c = porcelainWeaponIcon(kind, o); cache.set(key, c); return c; }
   const ext = fromAsset("icon.weapon." + assetKey(kind, tier, o), 16, 16, 8, 8, true);
   if (ext) {
     // laid corner to corner: the striking part is the upper right

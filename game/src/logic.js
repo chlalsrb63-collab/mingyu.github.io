@@ -14764,6 +14764,8 @@ const COSMETICS = Object.fromEntries([
   ["hat_maple_ramblers", 125, "hat", "단풍깃 챙모자", 0, "shop", 1500, "비탈에 오를 때 쓰는 짧은 챙모자. 옆에 단풍깃을 꽂았다.", "mapleramblers"],
   ["top_maple_ramblers", 126, "top", "단풍길 행장 조끼", 1, "token", 16, "바람이 드는 틈을 막아 주는 높은 깃과 깊은 주머니.", "mapleramblers"],
   ["back_maple_cape", 127, "back", "단풍바람 어깨 망토", 3, "rareBoss", 0, "한쪽 어깨에 둘러 잠그고 뒤쪽 잎 모양 밑단을 길게 내렸다.", "mapleramblers"],
+  // 백자 청화 어전무구: one skin, drawn per weapon kind by public/weapons_porcelain.js
+  ["ws_porcelain", 129, "wskin", "백자 청화 무기 외형", 2, "shop", 8000, "백자 유약에 청화 구름문과 주사 인장을 새긴 어전 무구. 어떤 무기든 도자기처럼 빚어낸다."],
   ["face_maple_glasses", 128, "face", "호박색 사각테 안경", 1, "token", 12, "호박색 두꺼운 테와 솔빛 연결쇠. 산길 지도를 펼칠 때 쓴다.", "mapleramblers"],
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" || src === "token" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
