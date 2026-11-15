@@ -84,16 +84,18 @@ for (const wk of Object.keys(D.wkinds)) assert.equal((DESIGNS[wk] || []).length,
 for (const k of Object.keys(D.legend)) assert.ok(MOTIFS.includes(k), "legendary " + k + " has a look");
 for (const k of Object.keys(D.sets)) assert.ok(MOTIFS.includes(k), "set " + k + " has a look");
 
-assert.ok(SIL && MOTIF_SIL, "legendary weapons have their own silhouette catalogue");
+assert.ok(SIL && MOTIF_SIL, "weapon motifs have their own silhouette catalogue");
 assert.deepEqual(Object.keys(SIL).sort(), Object.keys(D.wkinds).sort());
 assert.deepEqual(Object.keys(MOTIF_SIL).sort(), Object.keys(D.wkinds).sort());
 const maxLength = { sword: 38, dagger: 20, spear: 48, staff: 28, book: 20, bow: 23, hammer: 29 };
 for (const [kind, designs] of Object.entries(SIL)) {
   assert.ok(Object.keys(designs).length >= 4, kind + " has distinct variants");
   const mapping = MOTIF_SIL[kind];
-  assert.deepEqual(Object.keys(mapping).sort(), Object.keys(D.legend).sort(), kind + " maps every legendary power");
-  for (const [power, name] of Object.entries(mapping)) {
-    assert.ok(Object.hasOwn(designs, name), kind + " " + power + " maps to " + name);
+  for (const power of Object.keys(D.legend)) assert.ok(Object.hasOwn(mapping, power), kind + " maps legendary " + power);
+  assert.equal(mapping.shard, "riftglass", kind + " has a dedicated rift shard design");
+  for (const [motif, name] of Object.entries(mapping)) {
+    assert.ok(MOTIFS.includes(motif), kind + " has known motif " + motif);
+    assert.ok(Object.hasOwn(designs, name), kind + " " + motif + " maps to " + name);
   }
   const canvasWidth = kind === "spear" ? 52 : kind === "sword" ? 44 : 32;
   const grip = kind === "book" ? 16 : 5;
@@ -102,7 +104,7 @@ for (const [kind, designs] of Object.entries(SIL)) {
   if (kind === "hammer") DESIGNS.hammer.forEach((make, i) => samples.push([`tier ${i + 1}`, make]));
   for (const [name, make] of samples) {
     const label = kind + " " + name;
-    if (Object.hasOwn(designs, name)) assert.ok(Object.values(mapping).includes(name), label + " appears on a legendary weapon");
+    if (Object.hasOwn(designs, name)) assert.ok(Object.values(mapping).includes(name), label + " appears on a weapon motif");
     const { sh, head, blade } = make();
     if (kind === "bow") for (const pull of [-0.25, 0, 1]) {
       const drawn = make(false, { pull, arrow: true });

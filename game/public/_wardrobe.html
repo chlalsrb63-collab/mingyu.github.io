@@ -87,6 +87,33 @@ if (mode === "sil") {
   });
 }
 
+if (mode === "skin") {
+  const motif = WP.MOTIFS.includes(q.get("skin")) ? q.get("skin") : "shard";
+  const gear = { wt: 3, ws: motif };
+  const names = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활", hammer: "해머" };
+  const cols = 4, cw = 216, rh = 151, z = 3;
+  cv.width = cols * cw + 16;
+  cv.height = Math.ceil(KINDS.length / cols) * rh + 50;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#242131";
+  g.fillRect(0, 0, cv.width, cv.height);
+  txt(`${WP.motifName(motif)} 무기 외형 · 장착 스프라이트와 인벤토리 아이콘`, 16, 24);
+  KINDS.forEach((kind, i) => {
+    const x = 8 + (i % cols) * cw, y = 38 + Math.floor(i / cols) * rh;
+    const sprite = WP.weaponSprite(kind, gear), icon = WP.weaponIcon(kind, gear.wt, gear);
+    g.fillStyle = "#39464a";
+    g.fillRect(x, y, cw - 8, rh - 8);
+    txt(names[kind], x + 10, y + 19);
+    g.drawImage(sprite, x + 10, y + 19, sprite.width * z, sprite.height * z);
+    const mini = kind === "bow" ? WP.bowSprite(gear, 1, true) : sprite;
+    g.drawImage(mini, x + 10, y + 103);
+    g.fillStyle = "#263235";
+    g.fillRect(x + 150, y + 74, 48, 48);
+    g.drawImage(icon, x + 150, y + 74, 48, 48);
+    g.drawImage(icon, x + 182, y + 125);
+  });
+}
+
 if (mode === "cos") {
   // every cosmetic of one slot (?s=hat|top|back|face) on six looks: species, facings and frames mixed
   const SPC = await import("./species.js");

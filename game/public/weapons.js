@@ -56,6 +56,7 @@ const M = {
   violet: ["#d8a8ff", "#9a5ae0", "#5a2ea0"],
   void: ["#6a4a9a", "#3c2668", "#221640"],
   crystal: ["#ffd0ff", "#c88af0", "#7e48c0"],
+  riftglass: ["#ddd9ff", "#8780d8", "#4d438e"],
   teal: ["#9af0e0", "#3ab8b0", "#1e6a7a"],
   page: ["#fffaee", "#f2e6cc", "#c8b494"],
   oldpage: ["#f4e6c0", "#dcc89a", "#a89070"],
@@ -504,6 +505,14 @@ export const SIL = {
       P([[11,-6],[15,-8],[17,-11],[20,-9],[19,-5],[22,-3],[23,2],[21,6],[18,7],[18,10],[15,11],[14,8],[11,5],[10,1]], "bone"),
       R(12,16,-3,4,"black"), L(16,-2,18,-2,"ruby"), L(18,2,20,2,"dark"),
     ], "dwood", "black"),
+    // The impact end is a slab split into two glass faces. A forged heel takes the strain below it.
+    riftglass: hammerHead([10, 22, -9, 10], ["riftglass"], [
+      P([[10, -6], [12, -9], [20, -9], [23, -5], [22, 4], [18, 8], [16, 11], [11, 10], [9, 7], [9, -1]], "gun"),
+      P([[12, -8], [20, -8], [22, -6], [22, -3], [19, -1], [12, -2], [10, -4]], "riftglass"),
+      P([[13, 0], [19, 1], [21, 0], [21, 4], [17, 7], [13, 5], [11, 3]], "riftglass"),
+      P([[11, 5], [14, 7], [17, 7], [16, 10], [11, 9], [10, 7]], "black"),
+      P([[13, -7], [19, -7], [17, -5], [12, -5]], "holo"), R(12, 16, 7, 8, "gild"),
+    ], "black", "gun"),
   },
   bow: {
     recurve: bow({ T: 11.5, tip: 1.5, g: 2.3, w0: 3.2, w1: 2.1, rc: 3.1, mat: "steel", str: "gut" }, (c, t) => ({
@@ -521,6 +530,22 @@ export const SIL = {
       sh: [P([[4.5, -3.9], [8, -5], [10, -2], [10, 2], [8, 5], [4.5, 3.9]], "black"),
         ...[-1, 1].map((sg) => P([[c(t - 4) - 1.2, sg * (t - 3.4)], [c(t - 4) + 1, sg * (t - 4.8)],
           [c(t - 4) + 5, sg * (t - 2.1)], [c(t - 4) + 1.7, sg * (t - 1)]], "void"))],
+    })),
+    // Short overlapping splints hug the flexing limbs, with bright nocks and a metal grip.
+    riftglass: bow({ T: 12.3, tip: 2.2, g: 2.7, w0: 3, w1: 2.2, rc: 1.3, mat: "riftglass", str: "holo", fl: "violet" }, (c, T, tip, k) => ({
+      sh: [
+        P([[5, -3.8], [8.5, -4.5], [10, -2], [10, 2], [8.5, 4.5], [5, 3.8]], "gun"),
+        R(5.7, 8.5, -1.5, 1.5, "black"),
+        ...[-1, 1].flatMap((sg) => {
+          const a = 4.4, b = T - 1.8, n = T - 0.7;
+          return [
+            P([[c(a) + 0.2, sg * a], [c(a) + 3 * k, sg * (a + 0.8)], [c(b) + 2.3 * k, sg * (b - 0.5)],
+              [c(b) + 0.2, sg * b], [c(b) - 0.7, sg * (b - 1.7)]], "gun"),
+            P([[c(b) - 0.6, sg * (b - 0.8)], [c(b) + 1.8 * k, sg * b], [c(n) + 1.5 * k, sg * n],
+              [c(T) + 0.25, sg * (T + 0.7)], [c(T) - 1.1, sg * T]], "holo"),
+          ];
+        }),
+      ],
     })),
   },
   sword: {
@@ -581,6 +606,18 @@ export const SIL = {
       ],
       head: [12, 29, -3, 4], blade: ["crystal"],
     }),
+    // A broad slab with one broken step in the spine, the remaining facet running toward the point.
+    riftglass: () => ({
+      sh: [
+        R(-4, 8, -1.5, 2, "black"), P([[-4, -2], [-1, -3], [0, -1], [0, 2], [-1, 3], [-4, 2]], "gun"),
+        P([[4, -4], [7, -6], [10, -5], [9, 0], [11, 5], [8, 7], [4, 5], [6, 2], [6, -1]], "gun"),
+        P([[8, -3], [14, -5], [21, -5], [21, -3], [25, -3], [27, -7], [34, -3], [31, 3], [26, 5],
+          [17, 5], [13, 3], [8, 3]], "riftglass"),
+        P([[12, 0], [18, -3], [26, -1], [33, -3], [29, 1], [21, 3], [14, 2]], "violet"),
+        P([[16, -3], [21, -3], [26, -1], [20, -1]], "holo"), R(7, 10, -1, 1, "gild"),
+      ],
+      head: [10, 34, -5, 5], blade: ["riftglass"],
+    }),
   },
   dagger: {
     kris: () => ({
@@ -611,6 +648,15 @@ export const SIL = {
         P([[5, -2], [8, -2], [11, -6], [15, -6], [16, -3], [13, -4], [11, 0], [10, 5], [6, 4]], "bone"),
       ],
       head: [6, 14, -4, 3], blade: ["bone"],
+    }),
+    riftglass: () => ({
+      sh: [
+        R(-4, 5, -1.5, 2, "black"), R(-4, -2, -2.5, 2.5, "gun"),
+        P([[2, -4], [5, -4], [7, 1], [6, 4], [3, 5], [4, 1]], "gun"),
+        P([[5, -2], [9, -3], [12, -6], [16, -6], [16, -3], [13, -2], [12, 1], [9, 4], [6, 3]], "riftglass"),
+        P([[7, 0], [12, -4], [15, -5], [13, -2], [10, 1]], "holo"), R(5, 7, 1, 3, "gild"),
+      ],
+      head: [6, 16, -6, 4], blade: ["riftglass"],
     }),
   },
   spear: {
@@ -644,6 +690,17 @@ export const SIL = {
           [37, -4], [36, 0], [33, 4]], "steel"),
       ],
       head: [32, 43, -8, -4], blade: ["steel"],
+    }),
+    // Forged tines leave open gaps around the long centre spearhead.
+    riftglass: () => ({
+      sh: [
+        R(-3, 33, -1.5, 1.5, "black"), R(-3, 0, -2, 2, "gun"), R(13, 16, -1.5, 1.5, "gun"),
+        P([[24, -2], [27, -4], [30, -3], [36, -8], [38, -7], [35, -4], [31, 0], [34, 4], [36, 7],
+          [32, 7], [27, 3], [24, 2]], "gun"),
+        P([[30, -2], [33, -4], [38, -2], [45, 0], [39, 3], [33, 4], [30, 2]], "riftglass"),
+        P([[33, -2], [38, -1], [43, 0], [38, 0], [33, 1]], "holo"), R(27, 29, -2, 2, "gild"),
+      ],
+      head: [30, 45, -4, 4], blade: ["riftglass"],
     }),
   },
   staff: {
@@ -679,6 +736,17 @@ export const SIL = {
           [19, 4], [23, 4], [25, 7], [20, 8], [15, 5]], "crystal"),
       ],
       head: [14, 23, -5, 4], blade: ["crystal"],
+    }),
+    // The cage rails cradle a separate crystal, leaving air on either side of it.
+    riftglass: () => ({
+      sh: [
+        R(-3, 16, -1.5, 1.5, "black"), R(-3, -1, -2.5, 2.5, "gun"), R(11, 14, -2.5, 2.5, "gild"),
+        P([[13, -2], [17, -6], [22, -8], [25, -5], [23, -4], [21, -5], [18, -3], [17, 1],
+          [19, 4], [22, 5], [25, 3], [25, 6], [22, 8], [17, 6], [13, 2]], "gun"),
+        P([[18, 0], [21, -4], [24, -2], [25, 0], [22, 3], [20, 4]], "riftglass"),
+        P([[21, -3], [23, -1], [21, 2], [20, 1]], "holo"),
+      ],
+      head: [18, 25, -4, 4], blade: ["riftglass"],
     }),
   },
   book: {
@@ -718,23 +786,36 @@ export const SIL = {
       ],
       head: [-7, 8, -4, 4], blade: ["page"],
     }),
+    // A closed field grimoire with steel corners, a thick page block and one large inset shard.
+    riftglass: () => ({
+      sh: [
+        P([[-10, -4], [-8, -6], [7, -6], [10, -4], [10, 4], [7, 6], [-9, 6], [-10, 4]], "black"),
+        P([[-6, 3], [9, 3], [8, 5], [-6, 5]], "page"),
+        P([[-7, -5], [7, -5], [9, -3], [9, 2], [7, 4], [-7, 4]], "void"),
+        R(-9, -7, -5, 5, "gun"), R(5, 8, -6, -4, "gun"), R(6, 9, 3, 5, "gun"),
+        P([[-4, 0], [-1, -4], [4, -3], [6, 0], [2, 3], [-2, 3]], "riftglass"),
+        P([[-1, -3], [3, -2], [2, 0], [-2, 1]], "holo"),
+        R(-3, -1, 5, 8, "crystal"),
+      ],
+      head: [-5, 6, -4, 4], blade: ["riftglass"],
+    }),
   },
 };
 
 export const MOTIF_SIL = {
-  hammer: { chain: "twin", nova: "furnace", greed: "bell", haste: "twin", thorn: "tusk", feast: "tusk", echo: "bell", giant: "furnace" },
-  bow: { chain: "fork", nova: "horn", greed: "recurve", haste: "recurve", thorn: "fork", feast: "horn", echo: "wave", giant: "wave" },
-  sword: { chain: "flamberge", nova: "cleaver", greed: "sabre", haste: "rapier", thorn: "serrated", feast: "bone", echo: "crystal", giant: "cleaver" },
-  dagger: { chain: "kris", nova: "tanto", greed: "parrying", haste: "tanto", thorn: "hook", feast: "hook", echo: "kris", giant: "parrying" },
-  spear: { chain: "trident", nova: "glaive", greed: "partisan", haste: "glaive", thorn: "trident", feast: "scythe", echo: "partisan", giant: "scythe" },
-  staff: { chain: "fork", nova: "cage", greed: "crook", haste: "crook", thorn: "fork", feast: "crescent", echo: "cage", giant: "crescent" },
-  book: { chain: "chained", nova: "grimoire", greed: "atlas", haste: "atlas", thorn: "grimoire", feast: "skull", echo: "chained", giant: "skull" },
+  hammer: { chain: "twin", nova: "furnace", greed: "bell", haste: "twin", thorn: "tusk", feast: "tusk", echo: "bell", giant: "furnace", shard: "riftglass" },
+  bow: { chain: "fork", nova: "horn", greed: "recurve", haste: "recurve", thorn: "fork", feast: "horn", echo: "wave", giant: "wave", shard: "riftglass" },
+  sword: { chain: "flamberge", nova: "cleaver", greed: "sabre", haste: "rapier", thorn: "serrated", feast: "bone", echo: "crystal", giant: "cleaver", shard: "riftglass" },
+  dagger: { chain: "kris", nova: "tanto", greed: "parrying", haste: "tanto", thorn: "hook", feast: "hook", echo: "kris", giant: "parrying", shard: "riftglass" },
+  spear: { chain: "trident", nova: "glaive", greed: "partisan", haste: "glaive", thorn: "trident", feast: "scythe", echo: "partisan", giant: "scythe", shard: "riftglass" },
+  staff: { chain: "fork", nova: "cage", greed: "crook", haste: "crook", thorn: "fork", feast: "crescent", echo: "cage", giant: "crescent", shard: "riftglass" },
+  book: { chain: "chained", nova: "grimoire", greed: "atlas", haste: "atlas", thorn: "grimoire", feast: "skull", echo: "chained", giant: "skull", shard: "riftglass" },
 };
 
 /** The bosses-2 uniques that take another silhouette of their kind (their motif is keyed by item id). */
 const UNIQ_SIL = { w_bloodcrown: "trident", w_bloomstaff: "crescent" };
 
-/** One legendary rendering of each silhouette for previews and exports. */
+/** One motif rendering of each silhouette for previews and exports. */
 export function silhouetteSamples(kind) {
   const mapping = Object.entries(MOTIF_SIL[kind] || {});
   return Object.keys(SIL[kind] || {}).map((name) => [name, mapping.find(([, sil]) => sil === name)[0]]);
@@ -769,12 +850,11 @@ const MOTIF = {
   bone: { name: "해골", blade: M.bone, fit: M.black, add: (h) => [D(h[0] + 2, (h[2] + h[3]) / 2 - 0.5, "ink"), D(h[0] + 4, (h[2] + h[3]) / 2 - 0.5, "ink")] },
   star: { name: "별빛", blade: ["#8a9af0", "#3a4aa0", "#1e2460"], add: (h) => along(h, 3, (s, i) => D(s, h[2] + 1 + (i % 2), "spark")) },
   flame: { name: "화염", blade: ["#fff0a0", "#ffa040", "#c8402a"], add: (h) => along(h, 3, (s) => P([[s - 1.5, h[2] + 0.5], [s + 1, h[2] + 0.5], [s + 1.5, h[2] - 2.5]], "orange")) },
-  // weapon skins of the themed sets (a motif recolours whatever design it is laid on, so a skin fits every
-  // weapon kind there is or will be: nothing here is keyed by kind)
+  // Weapon skins of the themed sets. A skin uses the tier design when it has no kind-specific silhouette.
   coral: { name: "산호", blade: ["#fff4ec", "#ffa890", "#d0586a"], fit: ["#9ae8e0", "#3aa8a8", "#1e6a7a"], add: (h) => along(h, 3, (s, i) => C(s, i % 2 ? h[2] : h[3], 1.1, "foam", { top: true })) },
   dune: { name: "모래바람", blade: ["#fff2c4", "#e8b860", "#a8703a"], fit: ["#b48a64", "#8a5a3a", "#5a3a34"], add: (h) => along(h, 3, (s, i) => L(s - 1.5, (h[2] + h[3]) / 2 - 1 + (i % 2), s + 1.5, (h[2] + h[3]) / 2 - (i % 2), "sand")) },
   bamboo: { name: "대나무", blade: M.bamboo, fit: ["#c8a878", "#8a6a4a", "#5a4030"], add: (h) => [...along(h, 3, (s) => L(s, h[2], s, h[3] - 1, "node")), P([[h[1] - 3, h[2] + 0.5], [h[1], h[2] + 0.5], [h[1] - 1, h[2] - 2.5]], "green")] },
-  shard: { name: "균열 파편", blade: ["#8a6ad0", "#4a2e8a", "#241650"], fit: M.void, add: (h) => along(h, 3, (s, i) => P([[s - 1.2, (h[2] + h[3]) / 2 + 1], [s + 0.2, (h[2] + h[3]) / 2 - 2 - (i % 2)], [s + 1.4, (h[2] + h[3]) / 2 + 1]], "energy")) },
+  shard: { name: "균열 파편", blade: M.riftglass, fit: M.black, add: () => [] },
   bee: { name: "꿀벌", blade: ["#fff4a8", "#f4c440", "#b8842a"], fit: M.black, add: (h) => along(h, 3, (s) => L(s, h[2], s, h[3] - 1, "bee")) },
   // the bosses-2 raid uniques: keyed by item id (wire `wl` / entryIconUrl pass the id), so each has its own look
   w_bloodcrown: { name: "혈루 왕관", blade: ["#ffd0d0", "#e0384a", "#7a1430"], fit: M.black, add: (h) => [P([[h[1] - 6, h[2] + 0.5], [h[1] - 4.5, h[2] - 2.5], [h[1] - 3, h[2] + 0.5]], "ruby"), P([[h[1] - 3.5, h[2] + 0.5], [h[1] - 2, h[2] - 3.5], [h[1] - 0.5, h[2] + 0.5]], "ruby"), P([[h[1] - 1, h[2] + 0.5], [h[1] + 0.5, h[2] - 2.5], [h[1] + 2, h[2] + 0.5]], "ruby"), D(h[0] + 3, (h[2] + h[3]) / 2 - 0.5, "ruby")] },

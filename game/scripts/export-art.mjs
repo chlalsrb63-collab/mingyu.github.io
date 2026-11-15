@@ -25,7 +25,8 @@ const L = await import(pathToFileURL(join(GAME, "src", "logic.js")).href);
 const defs = L.defs();
 const data = { items: defs.items, mobs: defs.mobs, cos: defs.cos, legend: Object.keys(defs.legend), sets: Object.keys(defs.sets), only: only ? [...only] : null };
 
-const PAGE = `<!doctype html><meta charset="utf-8"><title>export</title><link rel="icon" href="data:,"><body></body>`;
+// The inventory icon module graph initializes the shared rendering canvases on import.
+const PAGE = `<!doctype html><meta charset="utf-8"><title>export</title><link rel="icon" href="data:,"><body><canvas id="world"></canvas><canvas id="text"></canvas></body>`;
 const srv = await serve(PUBLIC, 0, { "/__export.html": PAGE });
 const browser = await launch(opt.channel);
 const errors = [];

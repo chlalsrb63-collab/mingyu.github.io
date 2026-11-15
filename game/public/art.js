@@ -555,12 +555,12 @@ const HELM_ART = [
     "..lmmmmlmss...", "..lmmmmsmss...", "..lmmmmssss...", ".lllmmmmmmml..",
     ".ssssssssssss.", "..smms........", "...mss........", "...sas........", "....s.........",
   ] },
-  // Steel helm: a forged ridge, dark visor slit and a pointed faceplate.
+  // Steel helm: swept horns above a ridged dome and open cheek guards.
   { palette: { l: "#d8e1ec", m: "#91a7bf", s: "#5c6a8a", d: "#37354e", a: "#eddca1" }, rows: [
-    ".....ll.......", "....llms......", "...llmmsm.....", "..llmmmmsm....",
-    ".llmmmmmmms...", ".lmmmmllllls..", ".lmmmaadddds..", ".lmmmlmmmmds..",
-    ".smmmlmdmdss..", "..smmlmdmsms..", "...smllmmsm...", "...ssmmmss....",
-    ".....ss.......",
+    "..............", ".a..........a.", ".aa........aa.", ".laa.llm.aal..",
+    "..lallmmals...", "...llmmmms....", "..lmmmmmmms...", "..lllllmsms...",
+    "..lssssssms...", "..md..ld.ms...", "..ms..ms.ss...", "...s..ms.s....",
+    "......ss......",
   ] },
   // Tactical helmet: low armor shell, comms plate and a protruding cyan sight.
   { palette: { l: "#9bafaa", m: "#5b716c", s: "#3e4d56", d: "#2e3445", a: "#79e9ee" }, rows: [
@@ -577,14 +577,75 @@ const HELM_ART = [
     "....sdddds....",
   ] },
 ];
-function helmIcon(tier) {
+function paintedGear({ rows, palette }) {
   const [c, g] = canvas(16, 16);
-  const { rows, palette } = HELM_ART[tier - 1];
   paint(g, rows, palette, 1, 1);
   outline(c, g, "#2b2233");
   return c;
 }
+const helmIcon = (tier) => paintedGear(HELM_ART[tier - 1]);
+
+const ARMOR_ART = {
+  2: { palette: { l: "#d4a06b", m: "#a96f46", s: "#774b3b", d: "#4b3443", a: "#ecc78c" }, rows: [
+    "..............", "..............", "...ll....ls...", "..lmmm..msss..",
+    ".llmmmlamsdss.", ".lmmssalmsdss.", "..sssmlamsdd..", "...mmsmamsd...",
+    "...lmmslmsd...", "...mmsasmsd...", "...llllmmsd...", "...mmdssssd...",
+    "....dddddd....",
+  ] },
+  3: { palette: { l: "#dbe7ee", m: "#a0adba", s: "#6b768e", d: "#46536d", a: "#e1b86c" }, rows: [
+    "..............", "..............", "..llm....mss..", ".lmmml..lmmss.",
+    ".lmssmllmssds.", ".lmmalssasmds.", "..dssallassd..", "...lmsamsmd...",
+    "...lsmmsmsd...", "...lsssmdsd...", "...llmmsmsd...", "...mssssssd...",
+    "....dddddd....",
+  ] },
+};
+const STEEL_GLOVES = { palette: { l: "#dbe7ee", m: "#a0adba", s: "#6b768e", d: "#46536d", a: "#e1b86c" }, rows: [
+  "..............", "......llll....", ".....lmmmmss..", ".....lasmdds..",
+  ".....lmmmms...", "....lmmmsds...", "....lmmmsdsm..", "...lmmmmsmsms.",
+  "...lmmmdmsmms.", "..lmmmds..ms..", "..lmmsds..s...", "..lms.s.......",
+  "..ms..........",
+] };
+const STEEL_BOOTS = { palette: { l: "#dbe7ee", m: "#a0adba", s: "#6b768e", d: "#46536d", a: "#e1b86c" }, rows: [
+  "..............", "...lllll......", "..lmmmsms.....", "..lmmmmds.....",
+  "..lasmmms.....", "...lssmds.....", "...lmmmds.....", "...lsmdss.....",
+  "...lmmms......", "...lmmmsslll..", "...lmmssmmsms.", "...mmsddsssss.",
+  "....ddddddddd.",
+] };
+const RING_ART = {
+  // Silver claw setting on a broad band, with a true opening through the shank.
+  2: { palette: { l: "#eef4ff", m: "#aeb9ce", s: "#6d7993", g: "#6a9cff", d: "#3a58ac" }, rows: [
+    "..............", "......gg......", ".....lggg.....", "....lmggdl....",
+    "...lmmlddms...", "..lmm...mss...", "..lm......ms..", "..lm......ms..",
+    "..lm......ms..", "...lm....mss..", "...lmmsmsss...", "....msssss....",
+    "......ss......",
+  ] },
+  // A gold signet set low on the diagonal shank, with a shield-cut garnet.
+  3: { palette: { l: "#fff0a4", m: "#e7b845", s: "#9e632a", g: "#f86c7d", d: "#973253" }, rows: [
+    "..............", "....llllm.....", "...lmmmmmms...", "..lmm....mms..",
+    "..lm......ms..", "..lm......ms..", "..lm......ms..", "...lm.....ms..",
+    "...lmm..lmmms.", "....mmmslgdms.", ".....sslggdms.", ".......lgdms..",
+    "........mms...",
+  ] },
+};
+const AMULET_ART = {
+  // Silver cord and a long angular blue stone in a simple cap.
+  2: { palette: { l: "#eaf2ff", m: "#aeb9ce", s: "#6d7993", g: "#649df4", d: "#3b57a5" }, rows: [
+    "..............", ".lm........sm.", "..mm......ss..", "...mm....ss...",
+    "....lm..ss....", ".....lmss.....", "......lms.....", ".....lmgs.....",
+    "....lmggds....", "....mggdds....", ".....ggds.....", ".....gdss.....",
+    "......s.......",
+  ] },
+  // A circular ward on a dark cord, its engraved rune picked out in garnet.
+  3: { palette: { l: "#fff1a2", m: "#e7b74e", s: "#a66a34", c: "#79503f", r: "#a63c55" }, rows: [
+    "..............", ".mc........cm.", "..cc......cc..", "...cc....cc...",
+    "....cm..mc....", ".....cmms.....", ".....lllms....", "....lmmrmsm...",
+    "...lmrmmmms...", "...lmrrrmsm...", "...lmmmmms....", "....msssss....",
+    ".....sss......",
+  ] },
+};
+
 function glovesIcon(tier) {
+  if (tier === 3) return paintedGear(STEEL_GLOVES);
   const [c, g] = canvas(16, 16);
   const [m, md] = tier === 1 ? ["#b8ac90", "#8e8468"] : tier === 2 ? ["#8a6238", "#5e4022"] : METAL[tier];
   g.fillStyle = m; g.fillRect(4, 3, 7, 7); g.fillRect(5, 10, 6, 4); g.fillRect(11, 5, 2, 4);
@@ -594,6 +655,7 @@ function glovesIcon(tier) {
   return c;
 }
 function bootsIcon(tier) {
+  if (tier === 3) return paintedGear(STEEL_BOOTS);
   const [c, g] = canvas(16, 16);
   const [m, md] = tier === 1 ? ["#c8b070", "#9a8448"] : tier === 2 ? ["#8a6238", "#5e4022"] : METAL[tier];
   // a folded cuff, the shaft, a rounded toe pointing right, a heel and a sole
@@ -604,6 +666,7 @@ function bootsIcon(tier) {
   return c;
 }
 function ringIcon(tier) {
+  if (RING_ART[tier]) return paintedGear(RING_ART[tier]);
   const [c, g] = canvas(16, 16);
   const [m, md] = [["#c88a50", "#8e5a2c"], ["#c8ccd4", "#8e94a0"], ["#f0c840", "#b08a20"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"]][tier - 1];
   disc(g, 8, 10, 4.5, 4.5, m);
@@ -614,6 +677,7 @@ function ringIcon(tier) {
   return c;
 }
 function amuletIcon(tier) {
+  if (AMULET_ART[tier]) return paintedGear(AMULET_ART[tier]);
   const [c, g] = canvas(16, 16);
   const [m, md] = [["#8a6238", "#5e4022"], ["#c8ccd4", "#8e94a0"], ["#f0c840", "#b08a20"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"]][tier - 1];
   // a cord in a V, a pendant where it meets
@@ -624,6 +688,7 @@ function amuletIcon(tier) {
   return c;
 }
 function armorIcon(tier) {
+  if (ARMOR_ART[tier]) return paintedGear(ARMOR_ART[tier]);
   const [c, g] = canvas(16, 16);
   const cols = [null, ["#b8ac90", "#8e8468"], ["#7a5530", "#573a1e"], ["#7c8698", "#565e70"], ["#33373f", "#1f2228"], ["#3ab0c0", "#1f7888"]][tier];
   g.fillStyle = cols[0]; g.fillRect(4, 4, 8, 10); g.fillRect(2, 4, 12, 4);

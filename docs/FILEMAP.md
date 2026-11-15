@@ -194,7 +194,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `.assetsignore` [3] | Excludes developer files whose names start with `_` from deployment. |
 | `fonts/` | Galmuri pixel fonts (OFL) |
 | `_scene.html` [71] · `_world.html` [19] · `_over.html` [27] · `_iso.html` [79] · `_mini.html` [11] · `_chunks.html` [63] | Field scene, full world layout, map overlay, isometric, radar, and chunk ground bake previews. |
-| `_mobs.html` [121] · `_sheet.html` [88] · `_species.html` [95] · `_wardrobe.html` [149] · `_title.html` [12] | Monster, sprite sheet, species, cosmetics/weapon silhouettes, and title previews. |
+| `_mobs.html` [121] · `_sheet.html` [88] · `_species.html` [95] · `_wardrobe.html` · `_title.html` [12] | Monster, sprite sheet, species, cosmetics/weapon silhouettes, and title previews. `_wardrobe.html?m=skin&skin=shard` shows a single weapon skin on all seven families, including native-size icons and a drawn bow. |
 | `_feel.html` [110] · `_swing.html` [76] · `_bow.html` [148] | Combat effects (e.g. `rows=sk80,sk89:64,pr:grav`), swings and bow poses/projectiles. |
 | `_feel.html` [122] · `_swing.html` [76] · `_bow.html` [148] | Combat effects (e.g. `rows=sk80,sk89:64,pr:grav`), swings and bow poses/projectiles. |
 | `_icons.html` [24] · `_uicons.html` [19] · `_jobs.html` [40] · `_emo.html` [18] · `_charm.html` [48] | Item/UI glyphs, job emblems, chat emotes, and charm layouts. |

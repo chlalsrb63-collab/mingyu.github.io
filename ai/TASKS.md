@@ -34,6 +34,8 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 
 ## CODEX (구현 · 테스트)
 
+- [x] 균열 파편 무기 7종 실루엣, 장비 아이콘 9종, 여우·다람쥐 꼬리와 얼굴 윤곽 보정. [검수](reports/codex-reference-weapon-art.md)
+
 차기 게임 소개 페이지와 PDF를 제작할 때는 협동 아르바이트를 독립 항목으로 싣습니다. 실제 2~4인 역할 분담 화면과 근무지별 구성은 [배관 수리 인계](reports/codex-coop-pipes.md)를 참고합니다.
 
 - [x] 마을회관 2~4인 협동 배관 알바. [구현·검증](reports/codex-coop-pipes.md)
