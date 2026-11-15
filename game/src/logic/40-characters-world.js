@@ -269,8 +269,6 @@ function runeword(g) {
 }
 /** The kind of weapon in hand; bare hands fight like the job's weapon, or a dagger. */
 const weaponKind = (ch) => (ch.eq.weapon && ITEMS[ch.eq.weapon.id].wk) || (JOBS[ch.job] && JOBS[ch.job].wk[0]) || "dagger";
-/** How a character's basic attack lands. */
-const armOf = (ch) => WKIND[weaponKind(ch)];
 /** Mastery rank (0–5) against one kind of monster. */
 function masteryRank(ch, k) {
   const n = ch.mk[k] || 0;

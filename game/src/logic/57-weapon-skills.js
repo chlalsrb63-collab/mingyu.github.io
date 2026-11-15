@@ -28,12 +28,13 @@ function skWhy(ch, sk) {
  * Is weapon passive `id` working now? Its weapon is in hand with the mastery for it; a hybrid keeps
  * both of its weapons' passives on whichever of the two it holds.
  */
-function pasNative(ch, id, load = loOf(ch), hand = inHand(ch)) {
+function pasNative(ch, id, load, hand = inHand(ch)) {
   const sk = SKILL[id];
-  if (!hand || ch.wm[sk.wk].lv < sk.need || !load.p.includes(id)) return false;
-  if (hand === sk.wk) return true;
+  if (!hand || ch.wm[sk.wk].lv < sk.need) return false;
   const j = JOBS[ch.job];
-  return !!j && j.kind === "hybrid" && j.wk.includes(sk.wk) && j.wk.includes(hand);
+  if (hand !== sk.wk && !(j && j.kind === "hybrid" && j.wk.includes(sk.wk) && j.wk.includes(hand))) return false;
+  // the loadout last: building one is the dear part (pasOn runs on every snapshot)
+  return (load || loOf(ch)).p.includes(id);
 }
 const pasOn = (p, id) => pasNative(p.ch, id);
 /** Skill power from mastery past the skill's need (a hybrid signature: the lower of its two weapons). */
