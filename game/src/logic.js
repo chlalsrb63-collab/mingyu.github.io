@@ -441,6 +441,13 @@ for (const wk of Object.keys(WEAPON_NAMES)) {
     ITEMS[`w_${WK_ID[wk]}_${t}`] = { name: WEAPON_NAMES[wk][t - 1], type: "weapon", wk, tier: t, base, req: G_REQ[t - 1], price: G_PRICE[t - 1] };
   }
 }
+// bosses-2 §7: the two field bosses' own finds — a material each (for crafting to come) and a top-tier weapon (drops legendary)
+Object.assign(ITEMS, {
+  mat_bloodtear: { name: "피눈물 결정", type: "mat", price: 400, desc: "혈루 왕도마뱀이 흘린 붉은 결정. 아직 쓰임새를 아는 이가 없다." },
+  mat_clubclaw: { name: "망치 갯가재 집게", type: "mat", price: 380, desc: "물을 끓게 하던 갯가재의 집게. 아직 쓰임새를 아는 이가 없다." },
+  w_bloodcrown: { ...ITEMS.w_lancer_5, name: "혈루 왕관 창", uniq: 1 },
+  w_cavhammer: { ...ITEMS.w_h_5, name: "공동 망치", uniq: 1 },
+});
 for (const type of Object.keys(GEAR)) {
   const d = GEAR[type];
   for (let t = 1; t <= 5; t++) {
@@ -535,7 +542,7 @@ const BOUNTY_N = 25;
 /** A hunting ground's field boss stands at its fixed spot from the start and is back there this long after it falls (ms). */
 const FB_RESP = 600000;
 /** Each hunting ground's field boss, by map (its trophy: TROPHIES, 67-trophies.js). */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "clubshrimp", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -737,6 +744,29 @@ const MOBS = {
   spinescorp: { name: "전갈 등뼈", lv: 29, hp: 1400, atk: 96, def: 14, spd: 48, xp: 700, gold: [58, 104], aggro: 94, range: 19, cd: 1000, charge: 114 },
   ribvulture: { name: "독수리 갈비", lv: 30, hp: 1300, atk: 94, def: 10, spd: 44, xp: 760, gold: [60, 110], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
   crownpeacock: { name: "금관 공작", lv: 42, hp: 4200, atk: 124, def: 30, spd: 46, xp: 1900, gold: [104, 180], aggro: 92, range: 22, cd: 1300, fan: 150, charge: 120, pool: 28, poolKind: 1 },
+  // bosses-2 (docs/design/bosses-2.md §2–3, §6–7): 혈루 왕도마뱀 keeps its own lair in mesa (a boss row: its health is the design's
+  // field-boss figure 4,800 × 14, its atk 128 × 1.8), 망치 갯가재 is the coast's field boss (FIELD_BOSS: × 14 / × 1.8 at spawn).
+  // `script` drives their fights (56-boss-script.js); `drops` [item, chance, min, max] are their own finds (lootFor).
+  bloodhorn: { name: "혈루 왕도마뱀", lv: 41, hp: 67200, atk: 230, def: 32, spd: 34, xp: 32000, gold: [4200, 6400], aggro: 130, range: 30, cd: 1300, resp: 240000,
+    boss: true, gear: 1, charge: 140, pool: 26, poolKind: 1, drops: [["mat_bloodtear", 1, 1, 3], ["w_bloodcrown", 0.03]],
+    script: { cast: "혈루 대분출", castMs: 4000, stunMs: 4000, stag: 0.04, blast: 2.2, gap: 5000, enrage: 150000, reach: 220,
+      pats: [["혈루 사출", "jet"], ["뿔관 돌진", "charge"], ["결정 가시 산탄", "fan"], ["모래 잠행", "leapslam"], ["꼬리 휩쓸기", "cone", { back: 1 }], ["피의 비", "blast"]],
+      phases: [
+        { at: 0.6, cast: 1, pats: [["혈루 사출", "jet"], ["뿔관 연속 돌진", "charge2"], ["결정 가시 폭풍", "fan3"], ["모래 잠행", "leapslam"], ["꼬리 휩쓸기", "cone", { back: 1 }],
+          ["붉은 결정 성장", "adds", { kind: "bloodshard", n: 3, cap: 3, d: 48 }], ["피의 비", "blast"]] },
+        // 혈루 폭주: every pattern leaves a burn pool, the gap a quarter shorter
+        { at: 0.25, cast: 1, gap: 3750, steps: [{ f: "pool", dt: 400 }], pats: [["혈루 사출", "jet"], ["뿔관 연속 돌진", "charge2"], ["결정 가시 폭풍", "fan3"], ["모래 잠행", "leapslam"],
+          ["꼬리 휩쓸기", "cone", { back: 1 }], ["붉은 결정 성장", "adds", { kind: "bloodshard", n: 3, cap: 3, d: 48 }], ["피의 비", "blast"]] },
+      ] } },
+  // its phase-2 adds (shortcut: a blood-tinted scorpion stands in for the design's still crystals until they have art)
+  bloodshard: { name: "혈루 결정 전갈", sp: "spinescorp", tint: "blood", lv: 41, hp: 1000, atk: 110, def: 20, spd: 40, xp: 420, gold: [20, 40], aggro: 140, range: 19, cd: 1100, slam: 34 },
+  clubshrimp: { name: "망치 갯가재", lv: 39, hp: 4400, atk: 120, def: 30, spd: 42, xp: 1700, gold: [96, 166], aggro: 92, range: 22, cd: 1200, charge: 120, pool: 26, poolKind: 2,
+    drops: [["mat_clubclaw", 1, 1, 3], ["w_cavhammer", 0.03]],
+    script: { cast: "초공동 일격", castMs: 5000, stunMs: 5000, stag: 0.04, blast: 2.4, gap: 5000, enrage: 150000,
+      pats: [["공동 펀치", "punch"], ["연타 돌진", "charge"], ["물거품 산탄", "fan"], ["소용돌이", "donut"], ["거품 함정", "pools"], ["조수 표식", "mark", { n: 2 }], ["파도 강타", "blast"]],
+      // 갑각 균열: punches in pairs, the whirl faster, three marked
+      phases: [{ at: 0.5, pats: [["공동 연타", "punch", { n: 2 }], ["연타 돌진", "charge2"], ["물거품 산탄", "fan"], ["소용돌이", "donut", { ms: 1100 }], ["거품 함정", "pools"],
+        ["조수 표식", "mark", { n: 3 }], ["파도 강타", "blast"]] }] } },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
@@ -5384,10 +5414,12 @@ const GEN = {
       river: true, riverAt: [0.46, 0.05], gorge: { first: 12, every: 22, open: true, ford: "~" }, wet: 60,
       ground: "s", edge: "C", treeCh: "Σ", treeCh2: "Θ", road: "p", shore: "t", lakes: 0, lakeR: 5, vaults: 7, ruins: 2, tpm: 15.5,
       walls: [["rocks", 1]], rocks: ["Θ", "R"], gates: [["west", "w", 0.3], ["ledge", "n", 0.78]], exit: "ledge",
-      mobs: [SPIDER, FOX, OWL, GOAT, SOW, HORSE, LION], pondMob: null, chest: "chest_mesa",
+      mobs: [SPIDER, FOX, OWL, GOAT, SOW, HORSE, LION], pondMob: null, chest: "chest_mesa", boss: "bloodhorn",
       campPiece: "templetown", vaultKinds: ["mistfall", "ledgeshrine", "pillartop", "colonnade", "cache", "menhir"], vaultMobs: { mistfall: "serpentwing_bone" },
       vaultAt: (r, t) => (t === 0 ? "mistfall" : t === 1 ? "ledgeshrine" : t === 2 ? "pillartop" : "colonnade"),
-      courts: [{ piece: "thronecourt", at: [0.86, 0.84], field: true, guards: [LION, 2] }, { piece: "goldhall", at: [0.68, 0.88], stone: 1 }, { piece: "goldhall", at: [0.93, 0.62] },
+      courts: [{ piece: "thronecourt", at: [0.86, 0.84], field: true, guards: [LION, 2] }, { piece: "goldhall", at: [0.68, 0.88], stone: 1 },
+        // 혈루 왕도마뱀's lair (bosses-2 owner decision: its own walled court; crownpeacock stays the field boss)
+        { piece: "belltower", at: [0.86, 0.6], boss: "bloodhorn" },
         { piece: "lowertown", at: [0.1, 0.3] }],
       biomes: { plain: "town" }, featureP: 0.5, features: ["boulders", "cairn", "stones", "dead", "boulders"],
       tierOf: (r) => tierAt(r.px, r.py, r.e),
@@ -6721,6 +6753,7 @@ function readyMob(S, mob) {
   mob.hp = mobMax(mob);
   mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null; mob.act = null; mob.mv = 0; mob.cn = 0;
   mob.wx = mob.x; mob.wy = mob.y;
+  bsEnd(mob);   // a scripted boss risen again forgets its last fight (56-boss-script.js)
   mob.castAt = S.now + 3000 + rnd(S) * 3000;
 }
 /** How far (tiles) a field boss keeps from the waypoint stone and signposts, and from players. */
@@ -7809,6 +7842,8 @@ function lootFor(S, rt, mob, p) {
   }
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
+  // a kind's own finds (MOBS[k].drops: [item, chance, min, max]); its weapon always drops legendary
+  for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(ITEMS[it].type === "weapon" ? { g: rollGear(S, it, 3, d.lv) } : { it, n: ri(S, lo, hi) });
   if (rnd(S) < 0.1) out.push({ it: d.lv < 8 ? "hp_s" : d.lv < 26 ? "hp_m" : "hp_l", n: 1 });
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   for (const o of out) {
@@ -8276,14 +8311,12 @@ function magicLand(S, rt, p, s, mob) {
 // Phases are listed from the top down (`at` falling); phase n+1 begins under phases[n−1].at and only ever goes up
 // until the fight is forgotten. A phase's pats/gap fall back to the script's own. `steps` follow every pattern of
 // that phase (queued like a pattern's own follow-ups: f "fan" {off} | "pool" | "charge" | "land" {x, y}); `cast: 1`
-// opens the phase with the marked cast. Pattern kinds: fan2 fan3 rings pools charge2 leapslam dive, and the shaped
-// ones donut cone mark adds (bosses-2 §8), written `[name, kind, { …BS_PAT[kind] overrides }]`.
+// opens the phase with the marked cast. Pattern kinds: charge fan fan2 fan3 rings pools charge2 leapslam dive blast jet punch,
+// and the shaped ones donut cone mark adds (bosses-2 §8), written `[name, kind, { …BS_PAT[kind] overrides }]`.
 // State `mob.bs` (bsNew; a challenge's boss shares it with `dim.chal`). Events `["bc", id, i]` pattern i, 9 cast, 8 broken,
 // 7 failed ("bc", not "dc": that is the tracker's lure); `["bt", shape, x, y, r, ms, …]` a shaped telegraph (bsShape).
-// No boss in MOBS has a script yet. bosses-2's F2 망치 갯가재, once its row exists, would read:
-//   script: { cast: "공동 펀치", pats: [["집게 펀치", "cone", { r: 60 }], ["소용돌이", "donut", { r0: 30, r: 90 }], ["조수 표식", "mark", { n: 2 }]],
-//     phases: [{ at: 0.5, pats: [["소용돌이", "donut", { ms: 1100 }], ["조수 표식", "mark", { n: 3 }]] }] }
-// and R2 꽃무덤 고래's heads a pattern ["먹장어 머리", "adds", { kind: "<its hagfish row>", n: 3, cap: 3 }].
+// Scripted rows: bloodhorn (mesa's lair boss) and clubshrimp (the coast's field boss), 10-tables.js — tests/bosses2.mjs.
+// R2 꽃무덤 고래's heads would be a pattern ["먹장어 머리", "adds", { kind: "<its hagfish row>", n: 3, cap: 3 }].
 
 /** The defaults every script may override. `reach`: how near a hero must stand to be in a field boss's fight. */
 const BOSS_SCRIPT = {
@@ -8297,6 +8330,11 @@ const BS_PAT = {
   cone: { ms: 1000, r: 56, half: 1.047, back: 0, k: 1.5 },
   mark: { ms: 3000, r: 36, n: 4, k: 1.6 },
   adds: { kind: "", n: 3, cap: 6, d: 40 },
+  // bosses-2's F1/F2 vocabulary: a ring on every hero (the party blast), a lane of `n` rings over `len` px with burn pools on
+  // every other one (혈루 사출), and a punch on `n` heroes: ring `r` after `ms`, then the bubble's ring `r2` `ms2` later (공동 펀치)
+  blast: { ms: 1300, r: 32, k: 1.3 },
+  jet: { ms: 900, r: 13, n: 5, len: 140, k: 1.6 },
+  punch: { ms: 900, r: 22, k: 1.4, ms2: 600, r2: 40, k2: 1, n: 1 },
 };
 const BS_DEFS = {};
 /** A mob's script with every number filled in, or null. A challenge's boss: DIM_CHAL's numbers, no vuln (as first tuned). */
@@ -8383,7 +8421,30 @@ function bsCast(S, rt, mob, tgt) {
   const i = c.pi++ % pats.length, o = { ...BS_PAT[pats[i][1]], ...pats[i][2] };
   let dur = 1500;
   switch (pats[i][1]) {
-    case "fan2":      // two volleys, the second through the gaps of the first
+    case "charge":    // the plain run at its target
+      bsCharge(S, rt, mob, tgt); dur = CHARGE_MS + 800; break;
+    case "fan":       // one volley of five
+      bsVolley(S, rt, mob, tgt, atk, 5, 0); dur = VOLLEY_MS + 300; break;
+    case "blast":     // a ring under every one of the party: everyone walks a body-length
+      for (const v of alive) bsRing(S, rt, mob, v.x, v.y, o.r, o.ms, atk * o.k);
+      dur = o.ms + 300; break;
+    case "jet": {     // a lane of rings toward its target, a burn pool left on every other one
+      const dd = Math.max(1, dist(mob.x, mob.y, tgt.x, tgt.y)), ux = (tgt.x - mob.x) / dd, uy = (tgt.y - mob.y) / dd;
+      for (let j = 1; j <= o.n; j++) {
+        const x = mob.x + (ux * o.len * j) / o.n, y = mob.y + (uy * o.len * j) / o.n;
+        bsRing(S, rt, mob, x, y, o.r, o.ms, atk * o.k);
+        if (j % 2) bsPool(S, rt, mob, { x, y }, atk);
+      }
+      mob.dir = ux < 0 ? 1 : 2; mob.stun = now + o.ms; dur = o.ms + 300; break;
+    }
+    case "punch":     // a punch where each of `n` heroes stands, the bubble collapsing wider on the same spot a moment later
+      for (let j = 0; j < Math.min(o.n, alive.length); j++) {
+        const v = j ? alive[(c.pi + j) % alive.length] : tgt, at = j * 700;
+        bsRing(S, rt, mob, v.x, v.y, o.r, o.ms + at, atk * o.k);
+        bsRing(S, rt, mob, v.x, v.y, o.r2, o.ms + o.ms2 + at, atk * o.k2);
+      }
+      mob.stun = now + o.ms; dur = o.ms + o.ms2 + 300; break;
+    case "fan2":     // two volleys, the second through the gaps of the first
       bsVolley(S, rt, mob, tgt, atk, 5, 0); q.push({ at: now + 900, f: "fan", off: 0.21 }); dur = 900 + VOLLEY_MS; break;
     case "fan3":      // three sweeping volleys and a puddle under the target
       bsVolley(S, rt, mob, tgt, atk, 5, 0); q.push({ at: now + 800, f: "fan", off: 0.28 }, { at: now + 1600, f: "fan", off: -0.28 }, { at: now + 400, f: "pool" });
@@ -13687,6 +13748,8 @@ const TROPHIES = {
   sandmaw: { name: "모래 아가리 이빨", fx: { drop: 4 } },
   crownpeacock: { name: "금관 공작 깃", fx: { crit: 2, gold: 2 } },
   rotstag: { name: "썩은 사슴왕의 관", fx: { xp: 3, crit: 3 } },
+  // the coast's field boss since bosses-2 (coralturtle's trophy stays: sheets may hold it)
+  clubshrimp: { name: "공동 갯가재 눈자루", fx: { aspd: 3, hp: 2 } },
 };
 const TROPHY_CAP = { gold: 8, xp: 8, move: 5, aspd: 5, drop: 6, hp: 5, crit: 4 };
 const TROPHY_P = 0.05, TROPHY_GOLD = 40;
