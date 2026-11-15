@@ -53,6 +53,7 @@ import * as Housing from "./housing.js";
 import * as Life from "./life.js";
 import * as Gather from "./gather.js";
 import * as Board from "./board.js";
+import * as Coop from "./coop.js";
 import * as Charms from "./charms.js";
 import * as Info from "./infocard.js";
 import { resize, world, $, G, el, $$, now } from "./state.js";
@@ -83,6 +84,8 @@ Life.init({ G, S3, Sound, el, iconImg, entityPos: (id) => entityPos(id), draw: (
 // gathering nodes, the channel and its "반짝!", the 재료 주머니 (gather.js)
 Gather.init({ G, S3, Sound, act, el, iconImg, itemSlot: (e, o) => itemSlot(e, o), toast: (m) => toast(m), entityPos: (id) => entityPos(id),
   floatText: (...a) => floatText(...a), pathTo: (x, y) => pathTo(x, y), stopAuto: () => { if (G.auto) toggleAuto(); } });
+// 협동 아르바이트: the lobby card, the shift HUD, its props and the work key (coop.js)
+Coop.init({ G, S3, Sound, act, toast: (m) => toast(m), entityPos: (id) => entityPos(id) });
 Dim.bindUi();
 // every menu button wears its glyph above its word; the auto-hunt button wears one too
 for (const b of $$("#menu button")) { const g = MENU_ICON[b.dataset.win || b.id.slice(2)]; if (g) b.prepend(iconImg(g)); }
@@ -124,6 +127,7 @@ function frame() {
   if (G.playing) {
     update(dt, t);
     Gather.tick(t);
+    Coop.tick(t);
     render(t, dt);
     Radar.draw(t);
     Radar.drawWin(t);
