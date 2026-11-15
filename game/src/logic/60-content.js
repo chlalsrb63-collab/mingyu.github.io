@@ -55,9 +55,11 @@ function strHash(s) {
   return h >>> 0;
 }
 const DAILY_TEXT = { kill: "{mob} {need}마리 처치", elite: "정예 몬스터 {need}마리 처치", fish: "물고기 {need}마리 낚기", cook: "요리 {need}번 성공하기", chest: "보물 상자 {need}개 열기", bounty: "반복 의뢰 {need}번 보고하기",
-  gather: "채집 {need}번 하기", craft: "제작·연금·요리 {need}번 성공하기" };
+  gather: "채집 {need}번 하기", craft: "제작·연금·요리 {need}번 성공하기",
+  campcook: "모닥불 요리 {need}회 성공하기", party: "파티로 몬스터 {need}마리 처치" };
 // (gather and craft: life skills L2, counted in 58-life.js gatDone/craftOnce)
-const DAILY_OTHER = ["elite", "fish", "cook", "chest", "bounty", "gather", "craft"];
+const DAILY_OTHER = ["elite", "fish", "campcook", "chest", "bounty", "gather", "craft"];
+const DAILY_PARTY_KILLS = 10;
 function rollDaily(ch, day) {
   const box = { seed: strHash(`${ch.name}:${day}`) | 0 };
   // the monster to hunt is one around the character's level that lives somewhere they can reach
@@ -68,7 +70,7 @@ function rollDaily(ch, day) {
   const pool = DAILY_OTHER.slice();
   while (tasks.length < 3) {
     const kind = pool.splice(ri(box, 0, pool.length - 1), 1)[0];
-    const need = { elite: ri(box, 3, 5), fish: ri(box, 4, 6), cook: ri(box, 2, 4), chest: 2, bounty: 1, gather: ri(box, 4, 6), craft: ri(box, 2, 3) }[kind];
+    const need = { elite: ri(box, 3, 5), fish: ri(box, 4, 6), campcook: ri(box, 1, 1), chest: 2, bounty: 1, gather: ri(box, 4, 6), craft: ri(box, 2, 3) }[kind];
     tasks.push({ kind, k: null, n: 0, need });
   }
   return { day, tasks, claimed: [false, false, false], bonus: false };
@@ -91,7 +93,7 @@ const rewardTier = (ch) => Math.min(toTier(ch.lvl), TIER_MAX - 1);
 function dailyReward(ch, t) {
   const tr = rewardTier(ch);
   const k = restK(ch);
-  return { gold: Math.round((60 + 25 * tr) * k), xp: Math.round(tierXp(tr) * 0.12 * k), stone: t.kind === "kill" || t.kind === "elite" || t.kind === "chest" ? 1 : 0 };
+  return { gold: Math.round((60 + 25 * tr) * k), xp: Math.round(tierXp(tr) * 0.12 * k), stone: ["kill", "party", "elite", "chest"].includes(t.kind) ? 1 : 0 };
 }
 function dailyBonus(ch) {
   const tr = rewardTier(ch);
@@ -103,7 +105,8 @@ function dailyProg(S, p, kind, k) {
   ensureDaily(S, p);
   weekProg(S, p, kind, k);
   for (const t of p.ch.daily.tasks) {
-    if (t.kind !== kind || (kind === "kill" && t.k !== k) || t.n >= t.need) continue;
+    const matches = t.kind === kind || (t.kind === "campcook" && kind === "cook" && k === "fire");
+    if (!matches || (kind === "kill" && t.k !== k) || t.n >= t.need) continue;
     t.n++;
     p.dirty = true;
     if (t.n >= t.need) toast(p, `일일 과제 완료: ${dailyText(t)} — 보상을 받으세요.`);

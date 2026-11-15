@@ -153,6 +153,12 @@ export function validateAction(S, pid, a) {
     case "daily": {
       ensureDaily(S, p);
       const dl = ch.daily;
+      if (a.i === "party" || a.i === "solo") {
+        const hunt = dl.tasks[0];
+        if (dl.claimed[0] || hunt.n >= hunt.need) return bad("오늘의 사냥 과제를 이미 마쳤습니다");
+        if (a.i === "party") return hunt.kind === "kill" && hunt.n === 0 ? OK : bad("처치를 시작하기 전에 파티 과제로 바꿀 수 있습니다");
+        return hunt.kind === "party" ? OK : bad("현재 파티 과제를 진행하고 있지 않습니다");
+      }
       if (a.i === "bonus") {
         if (dl.bonus) return bad("이미 보상을 받았습니다");
         if (!dl.claimed.every(Boolean)) return bad("세 과제의 보상을 모두 받아야 합니다");
@@ -162,7 +168,8 @@ export function validateAction(S, pid, a) {
       if (!t) return bad("없는 과제입니다");
       if (dl.claimed[a.i]) return bad("이미 보상을 받았습니다");
       if (t.n < t.need) return bad("아직 과제를 마치지 못했습니다");
-      return canAdd(ch, "stone", 1) ? OK : bad("가방이 가득 찼습니다");
+      const { stone } = dailyReward(ch, t);
+      return !stone || canAdd(ch, "stone", stone) ? OK : bad("가방이 가득 찼습니다");
     }
     case "tut": {
       const step = TUT[ch.tut.i];

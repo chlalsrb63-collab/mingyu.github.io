@@ -212,6 +212,7 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   W.to(home.id, 10, 10); W.step();
   W.kill(kt.k);
   assert.equal(W.self().daily.tasks[0].n, 1, "a kill of the named monster counts");
+  assert.ok(!W.act({ t: "daily", i: "party" }).ok, "a progressing solo hunt cannot be discarded");
   const other = home.mobs.find((k) => k !== kt.k && !D.mobs[k].chest && !D.mobs[k].boss);
   if (other) { W.kill(other); assert.equal(W.self().daily.tasks[0].n, 1, "another monster does not"); }
   // an elite counts for an elite task if there is one
@@ -250,6 +251,52 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   me = W.self();
   assert.equal(me.daily.day, day0 + 1, "06:00 KST rolls a new day");
   assert.ok(!me.daily.bonus && me.daily.tasks.every((t) => t.n === 0 && !t.claimed), "with fresh tasks");
+}
+
+// The optional party hunt replaces one task and shares its count with nearby party looters.
+{
+  const W = world("동행");
+  L.addPlayer(W.S, W.PID, L.hero("동행", { lvl: 5 }));
+  W.to("meadow", 10, 10);
+  const original = W.self().daily.tasks[0];
+  assert.ok(W.act({ t: "daily", i: "party" }).ok);
+  assert.ok(W.act({ t: "daily", i: "solo" }).ok);
+  assert.deepEqual(W.self().daily.tasks[0], original);
+  assert.ok(W.act({ t: "daily", i: "party" }).ok);
+  const pid = "pid-companion";
+  L.addPlayer(W.S, pid, L.hero("길벗", { lvl: 5 }));
+  const other = W.S.players[pid];
+  const actOther = (a) => {
+    const result = L.validateAction(W.S, pid, a);
+    if (result.ok) L.applyAction(W.S, pid, a);
+    return result;
+  };
+  other.map = W.p.map;
+  other.x = W.p.x;
+  other.y = W.p.y + 12;
+  assert.ok(actOther({ t: "daily", i: "party" }).ok);
+  W.kill("twinhare");
+  assert.equal(W.p.ch.daily.tasks[0].n, 0, "other players standing nearby are insufficient");
+  assert.ok(W.act({ t: "pinv", e: other.eid }).ok && actOther({ t: "pacc" }).ok);
+  other.x = W.p.x + 500;
+  W.kill("twinhare");
+  assert.equal(W.p.ch.daily.tasks[0].n, 0, "out-of-range party members do not count");
+  other.x = W.p.x;
+  const pt = W.p.ch.daily.tasks[0];
+  assert.equal(pt.need, 10);
+  for (let i = 0; i < 10; i++) W.kill("twinhare");
+  assert.equal(pt.n, 10);
+  assert.equal(other.ch.daily.tasks[0].n, 10, "both eligible party players get the kill");
+  assert.ok(!W.act({ t: "daily", i: "solo" }).ok, "a finished task is reserved for its reward");
+  assert.ok(W.act({ t: "daily", i: 0 }).ok);
+  assert.ok(!W.act({ t: "daily", i: 0 }).ok);
+  const saved = L.exportChar(W.S, W.PID);
+  const next = world("동행", W.now);
+  L.addPlayer(next.S, next.PID, saved);
+  assert.equal(next.self().daily.tasks[0].kind, "party");
+  assert.equal(next.self().daily.tasks[0].claimed, true);
+  next.now += DAY;
+  assert.equal(next.self().daily.tasks[0].kind, "kill");
 }
 
 // ── achievements and titles

@@ -72,6 +72,15 @@ export function renderDaily(s) {
     b.addEventListener("click", () => { act({ t: "daily", i }); Sound.play("daily"); });
     ft.append(b);
     card.append(hd, bar, ft);
+    if (i === 0 && !tk.done && !tk.claimed && (tk.kind === "party" || (tk.kind === "kill" && tk.n === 0))) {
+      const party = tk.kind === "party";
+      const pick = el("button", "btn small", party ? "일반 사냥으로 변경" : "파티 사냥으로 변경");
+      pick.addEventListener("click", () => act({ t: "daily", i: party ? "solo" : "party" }));
+      const guide = party
+        ? (tk.n ? "가까운 파티원과 함께 처치하세요. 변경 시 파티 처치 기록이 초기화됩니다." : "가까운 파티원과 함께 처치하세요.")
+        : "첫 처치 전에 사냥 과제를 바꿀 수 있습니다.";
+      card.append(el("p", "hint", guide), pick);
+    }
     box.append(card);
   });
   const all = d.tasks.every((tk) => tk.claimed);

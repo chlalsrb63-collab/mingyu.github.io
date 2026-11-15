@@ -320,7 +320,7 @@ export function applyAction(S, pid, a) {
       addItem(ch, out, n);
       p.gain.push(["item", out, n, 0]);
       toast(p, burnt ? "태워 버렸습니다…" : n > 1 ? `${great ? "대성공" : "완벽한 요리"}! ${ITEMS[out].name} ${n}개` : `${ITEMS[out].name} 완성`);
-      if (!burnt) { ch.cnt.cook++; dailyProg(S, p, "cook"); checkAch(S, p); }
+      if (!burnt) { ch.cnt.cook++; dailyProg(S, p, "cook", r.at); checkAch(S, p); }
       S.maps[p.map].ev.push(["u", p.eid, 0]);
       p.dirty = true;
       break;
@@ -525,6 +525,13 @@ export function applyAction(S, pid, a) {
     }
     case "daily": {
       const dl = ch.daily;
+      if (a.i === "party" || a.i === "solo") {
+        dl.tasks[0] = a.i === "party"
+          ? { kind: "party", k: null, n: 0, need: DAILY_PARTY_KILLS }
+          : rollDaily(ch, dl.day).tasks[0];
+        p.dirty = true;
+        break;
+      }
       if (a.i === "bonus") {
         dl.bonus = true;
         ch.cnt.daily++;

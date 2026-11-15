@@ -321,7 +321,7 @@ function craftOnce(S, p, r, s) {
     takeItem(ch, r.in[0][0], 1);
     const d = cookDish(S, p, r, s);
     if (addItem(ch, d.id, d.n)) p.gain.push(["item", d.id, d.n, 0]);
-    if (!d.burnt) { ch.cnt.cook++; dailyProg(S, p, "cook"); }
+    if (!d.burnt) { ch.cnt.cook++; dailyProg(S, p, "cook", fireNear(S.maps[p.map], p) ? "fire" : null); }
     return d.burnt ? 0 : d.great ? 2 : 1;
   }
   const L = ch.life[r.sk].lv;
@@ -354,7 +354,10 @@ function craftOnce(S, p, r, s) {
   }
   gainLife(S, p, r.sk, xp);
   ch.cnt.craft++;
-  if (r.sk === "cook") { ch.cnt.cook++; dailyProg(S, p, "cook"); }
+  if (r.sk === "cook") {
+    ch.cnt.cook++;
+    dailyProg(S, p, "cook", r.at === "fire" && fireNear(S.maps[p.map], p) ? "fire" : null);
+  }
   dailyProg(S, p, "craft");
   return roll.great ? 2 : 1;
 }

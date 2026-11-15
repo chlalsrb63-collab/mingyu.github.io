@@ -168,6 +168,9 @@ function fishRun(map, lv, score) {
   assert.deepEqual([X.cookBurnt(1, R.food_s), X.cookBurnt(40, R.food_l), X.cookBurnt(45, R.food_l)], [35, 35, 33]);
   near(X.cookBurnt(50, R.food_s), 15.4, 1e-9, "a master burns only below 15.4");
   assert.deepEqual(D.life.recipes.map((r) => r.id), Object.keys(R));
+  L.tick(S, now);
+  const dailyPan = { kind: "campcook", k: null, n: 0, need: 1 };
+  ch.daily.tasks[1] = dailyPan;
   const cook = (lv, id, s) => {
     ch.life.cook = { lv, xp: 0 };
     ch.inv.push({ id, n: 1 });
@@ -178,9 +181,11 @@ function fishRun(map, lv, score) {
   };
   const burnt0 = count("burnt");
   assert.deepEqual(cook(1, "fish_s", 30), { xp: 0, done: 0 }, "a beginner burns a pan of 30, learns nothing");
+  assert.equal(dailyPan.n, 0, "burnt food does not count for the campfire task");
   assert.equal(count("burnt"), burnt0 + 1);
   const s0 = count("food_s");
   const r50 = cook(45, "fish_s", 30);
+  assert.equal(dailyPan.n, 1, "a successful campfire recipe completes the daily task");
   assert.ok(count("food_s") > s0 && r50.done === 1, "a master (45: burns below 17) saves it");
   assert.ok(r50.xp === 2 || r50.xp === 3, "stale work: 8 (12 on a 대성공) × 0.25, got " + r50.xp);
   // the new fish cook too: 은빛 메기 → 구이, grade-3 experience at any level

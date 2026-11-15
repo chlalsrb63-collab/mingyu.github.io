@@ -385,7 +385,8 @@ function killMob(S, rt, mob) {
     const ch = p.ch;
     // a chest is opened, not hunted: it pays out its loot and nothing else
     if (d.chest) { p.dirty = true; lootFor(S, rt, mob, p); dailyProg(S, p, "chest"); if (cosRoll(S, p, "chest") < COS_CHEST) cosFrom(S, p, "chest", "보물 상자"); continue; }
-    const n = Math.min(PARTY_MAX, allies(S, p).length);
+    const nearby = allies(S, p);
+    const n = Math.min(PARTY_MAX, nearby.length);
     // a kill soon after the last one keeps the streak alive
     p.streak = S.now - p.streakAt < STREAK_MS ? p.streak + 1 : 1;
     p.streakAt = S.now;
@@ -418,6 +419,7 @@ function killMob(S, rt, mob) {
     else if (el === 2) { if (mob.evt) ch.cnt.evb++; else if (mob.temp) ch.cnt.fb++; else ch.cnt.guard++; }
     if (n >= 2) ch.cnt.party++;
     dailyProg(S, p, "kill", mob.k);
+    if (ch.daily.tasks[0].kind === "party" && nearby.some((o) => o !== p && looters.has(o))) dailyProg(S, p, "party");
     if (el >= 1) dailyProg(S, p, "elite");
     if (mob.k === "twinhare") tutStep(S, p, "hunt");
     checkAch(S, p);
