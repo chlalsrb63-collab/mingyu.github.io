@@ -253,6 +253,21 @@ Object.assign(RECIPES, {
   fd_honeybread: recipeRow("cook", 35, "cook", [["pr_honey", 1], ["m_h4", 1], ["m_c5", 1], ["staple", 2]], "fd_honeybread", 1, 0),
   al_cure: recipeRow("alch", 8, "alch", [["m_h1", 2], ["m_h2", 1], ["flask", 2]], "al_cure", 2, 10),
   al_candle: recipeRow("alch", 22, "alch", [["m_h3", 1], ["m_w2", 1], ["pr_honey", 1]], "al_candle", 1, 30),
+  // 염료 (P9): the herbs' sink — 루루 dyes one worn piece's trim with one (65-cosmetics.js COS_DYES)
+  dye_pink: recipeRow("alch", 5, "alch", [["m_h1", 3], ["flask", 1]], "dye_pink", 2, 20),
+  dye_green: recipeRow("alch", 10, "alch", [["m_h2", 3], ["flask", 1]], "dye_green", 2, 30),
+  dye_black: recipeRow("alch", 15, "alch", [["m_w1", 4], ["m_h1", 1], ["flask", 1]], "dye_black", 2, 36),
+  dye_teal: recipeRow("alch", 20, "alch", [["m_h3", 3], ["flask", 1]], "dye_teal", 2, 50),
+  dye_violet: recipeRow("alch", 30, "alch", [["m_h4", 2], ["flask", 1]], "dye_violet", 2, 70),
+  dye_orange: recipeRow("alch", 40, "alch", [["m_h5", 2], ["flask", 1]], "dye_orange", 2, 90),
+});
+Object.assign(ITEMS, {
+  dye_pink: { name: "들꽃 분홍 염료", type: "mat", price: 36, desc: "들꽃잎을 우린 분홍 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
+  dye_green: { name: "이끼 초록 염료", type: "mat", price: 70, desc: "이끼버섯을 고아 낸 초록 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
+  dye_black: { name: "숯 검정 염료", type: "mat", price: 58, desc: "마른 가지를 태운 숯가루를 갠 검정 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
+  dye_teal: { name: "형광 청록 염료", type: "mat", price: 140, desc: "형광 덩굴즙으로 만든 은은히 빛나는 청록 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
+  dye_violet: { name: "수정 보라 염료", type: "mat", price: 190, desc: "수정꽃 꽃잎을 녹인 보라 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
+  dye_orange: { name: "단풍 주홍 염료", type: "mat", price: 325, desc: "붉은 단풍잎을 졸인 주홍 물감. 의상실 루루에게 가져가면 외형 한 점의 장식 색을 바꿔 준다." },
 });
 /**
  * Fish of one water (P8): on its map a catch of that grade's fish is this one instead FISH_LOCAL of the time (never

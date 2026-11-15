@@ -45,7 +45,7 @@ let faceKey = "";
 function drawFace() {
   const w = look(), s = G.self;
   if (!w || !s) return;
-  const key = JSON.stringify([s.cls, w.look, w.gear && w.gear.cos]);
+  const key = JSON.stringify([s.cls, w.look, w.gear && w.gear.cos, w.gear && w.gear.dye]);
   if (key === faceKey) return;
   faceKey = key;
   const fr = SP.personSheet(SP.playerLook(s.cls, w.look, w.gear)).front[0];

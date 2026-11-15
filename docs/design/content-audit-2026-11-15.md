@@ -292,6 +292,17 @@ Consumables with roles, village produce, fish, crafted furniture. No combat stat
 - **Sets ≥ 4 pieces across 4 slots**, each with a source (table in P10/P11). Wire: `self.cosDye` only when changed.
 - **Touches:** `65-cosmetics.js`, `40-characters-world.js` (migrate `cosDye`), `70`/`75` (`dye` action), `90` (defs),
   `public/win_wardrobe*.js`, `wardrobe.js` (`dress` takes a dye index). **Tests:** `tests/wardrobe.mjs` dye, reset, old sheet.
+- **As built (2026-11-16):** `ch.cosDye` { id: 1–6 } — six dyes, so 0 (original, not stored) + 1–6, one per dye in
+  `COS_DYES` order (분홍 초록 청록 보라 주홍 검정); sheet v25, `cosDyeClean` drops junk/unowned/weapon skins. Dyes are
+  bag `mat` items brewed by 연금: 분홍 L5 (들꽃잎), 초록 L10 (이끼버섯), 검정 L15 (마른 가지 숯), 청록 L20 (형광 덩굴),
+  보라 L30 (수정꽃), 주홍 L40 (붉은 단풍잎), two per brew, priced by the no-loss rule. Actions `cos_dye {id, d}` (near
+  루루, one dye; `d: 0` free) and `cos_sew {k}`. Weapon skins are not dyeable (weapons.js draws them). Wire: a worn
+  code + 1000 × dye (`defs.cosDyeK`), so undyed codes are unchanged; `self.cosDye` rides on the dirty `self`.
+  Art: `wardrobe.js dyed()` swaps the piece's trim `b` (else its main `c`) for the dye; dye 0 returns the same art
+  entry (golden hashes untouched). UI: 루루's window (`wardrobe_ui.js`, not `win_wardrobe*`) has a 염색 row — worn
+  slot, six swatches (greyed with none; tooltip shows the count), 원래대로, 물들이기 after a preview. Preview page:
+  `_wardrobe.html?m=dye`. **Keepsake sewing is a hook only:** `KEEP_SEW` (65-cosmetics.js) lists all seven `kp_*`
+  with `""` — no outfit piece exists yet; P11 fills in the ids and 루루 shows a 재봉 button per sewable keepsake.
 
 ### P10 — 외형 세트 1: 마을과 생활 (after 64×64; art) · size M–L
 | set (slots) | earned by | what 64×64 adds |

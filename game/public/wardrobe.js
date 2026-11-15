@@ -1420,6 +1420,17 @@ export function seenFrom(id) {
   if (a[0] === "face") return FACE[a[1]] && FACE[a[1]].back ? ["front", "side", "back"] : ["front", "side"];
   return ["front", "side", "back"];
 }
+/**
+ * 염색 (P9): the six dyes in the server's order (defs.cosDyes; dye n is DYES[n - 1]). A dye swaps one colour of the
+ * piece's own palette — its trim `b`, or its main `c` when it has no trim — so every shade the design derives from
+ * that colour follows. Dye 0 hands back the very same art entry: an undyed piece draws byte for byte as before.
+ * The black stays off the outline ink (#2b2233) so edges still read.
+ */
+export const DYES = ["#f08ab4", "#5c9e4a", "#38c4b8", "#9a6ad8", "#e8663a", "#4a4652"];
+export function dyed(a, d) {
+  if (!a || !d || !DYES[d - 1] || a[0] === "wskin") return a;
+  return [a[0], a[1], { ...a[2], ["b" in a[2] ? "b" : "c"]: DYES[d - 1] }];
+}
 /** Is the item made to cover an eye (shades, a patch)? Everything else must leave the eyes alone. */
 export const coversEyes = (id) => !!(ART[id] && ART[id][0] === "face" && FACE[ART[id][1]] && FACE[ART[id][1]].covers);
 
@@ -1430,7 +1441,7 @@ export const coversEyes = (id) => !!(ART[id] && ART[id][0] === "face" && FACE[AR
  */
 export function dress(base, o, view, f, highBase = null) {
   const artBase = highBase || base, size = artBase.width, scale = size / SZ;
-  const list = (o && o.cos ? o.cos : []).map((id) => ART[id]).filter((a) => a && a[0] !== "wskin");
+  const list = (o && o.cos ? o.cos : []).map((id) => dyed(ART[id], o.dye && o.dye[id])).filter((a) => a && a[0] !== "wskin");
   if (!list.length) return artBase;
   const A = anchors(artBase, o, view, f);
   const of = (slot) => list.find((a) => a[0] === slot);

@@ -533,6 +533,18 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
+    case "cos_dye": {
+      const c = COSMETICS[a.id];
+      if (a.d) { takeItem(ch, COS_DYES[a.d - 1], 1); ch.cosDye[a.id] = a.d; }
+      else delete ch.cosDye[a.id];
+      if (ch.cos.on[c.slot] === a.id) S.maps[p.map].who = true;
+      toast(p, a.d ? `[${c.name}]${pp(c.name, "을를")} ${ITEMS[COS_DYES[a.d - 1]].name}${pp(ITEMS[COS_DYES[a.d - 1]].name, "으로")} 물들였습니다.` : `[${c.name}]${pp(c.name, "을를")} 원래 색으로 되돌렸습니다.`);
+      p.dirty = true;
+      break;
+    }
+    case "cos_sew":
+      giveCos(S, p, KEEP_SEW[a.k], `루루가 [${ITEMS[a.k].name}]${pp(ITEMS[a.k].name, "으로")} 지어 주었습니다`);
+      break;
     case "daily": {
       const dl = ch.daily;
       if (a.i === "party" || a.i === "solo") {

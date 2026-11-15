@@ -172,5 +172,23 @@ if (mode === "all") {
     r++;
   }
 }
+if (mode === "dye") {
+  // 염색 (P9): chosen pieces (?c=a,b) in every dye 0–6 (0 = original), one look (?l=), front and back
+  const SPC = await import("./species.js");
+  const ids = (q.get("c") || "hat_beanie_red,top_robe,back_cape_red,face_glasses,hat_straw,top_overalls").split(",");
+  const lk = Object.fromEntries(SPC.PRESETS)[q.get("l") || "치즈 고양이"] || [];
+  const z = 3, F = 28 * z, V = ["front", "back"];
+  cv.width = 7 * V.length * F + 120; cv.height = ids.length * (F + 4) + 24;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#6a9a5a"; g.fillRect(0, 0, cv.width, cv.height);
+  ["원래", "분홍", "초록", "청록", "보라", "주홍", "검정"].forEach((n, d) => txt(n, 120 + d * V.length * F + 4, 14, "#fff"));
+  ids.forEach((id, r) => {
+    txt(id, 4, 24 + r * (F + 4) + F / 2, "#fff");
+    for (let d = 0; d <= 6; d++) V.forEach((v, k) => {
+      const fr = SP.personSheet(SP.playerLook("warrior", lk, { cos: [id], ...(d ? { dye: { [id]: d } } : {}) }))[v][0];
+      SP.drawPersonCrop(g, fr, 2, 3, 28, 28, 120 + (d * V.length + k) * F, 20 + r * (F + 4), F, F);
+    });
+  });
+}
 document.title = "ready";
 </script>

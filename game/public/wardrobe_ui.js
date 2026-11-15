@@ -3,7 +3,7 @@
  * the character window (what is worn, everything owned, and what is still to be
  * found and where), the try-on preview, and turning the wire's outfit codes into
  * what sprites.js and weapons.js draw. The rules live on the server (logic.js,
- * cos_buy / cos_eq / cos_off); this only asks.
+ * cos_buy / cos_eq / cos_off, and at 루루's cos_dye / cos_sew); this only asks.
  *
  * client.js calls `init` once, `refresh` from its UI refresh, and `wireGear` when
  * it reads the who list. The markup is built here, at import time, so the
@@ -53,6 +53,16 @@ css.textContent = `
 .wr-set:first-child { margin-top: 0; }
 .wr-set small { font-weight: 400; color: var(--muted, #aaa); }
 .wr-set.full small { color: #7ad08a; }
+.wr-dye { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; padding: 5px 6px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 3px; }
+.wr-dye .row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.wr-dye .lb { font-size: 11px; font-weight: 700; color: var(--gold, #e2c486); margin-right: 2px; }
+.wr-dye .sw { width: 18px; height: 18px; padding: 0; border: 1px solid #000; border-radius: 2px; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+.wr-dye .sw.off { opacity: .3; cursor: default; }
+.wr-dye .sw.on { outline: 1px solid var(--gold, #e2c486); outline-offset: 1px; }
+.wr-dye .sw.sel { outline: 2px solid #fff; outline-offset: 1px; }
+.wr-dye button.tx { padding: 1px 6px; font-size: 11px; color: var(--muted, #aaa); background: rgba(255,255,255,.04); border: 1px solid #000; border-radius: 3px; cursor: pointer; }
+.wr-dye button.tx.on { color: var(--gold, #e2c486); box-shadow: inset 0 0 0 1px var(--line-hi, #8a7a5a); }
+.wr-dye button.tx:disabled { opacity: .4; cursor: default; }
 `;
 document.head.append(css);
 
@@ -65,6 +75,7 @@ shopWin.innerHTML = `<header><span class="t">의상실 주인 루루</span><butt
   <p class="say">어서 와요! 모자, 옷, 망토, 안경, 무기 외형까지 — 능력치는 그대로, 모습만 바뀌어요. 눌러서 입어 보고 마음에 들면 사세요.</p>
   <div class="wr-top"><canvas class="wr-pv" id="wr-shop-pv" width="150" height="150" title="눌러서 돌려 보기"></canvas>
     <div class="wr-side"><div class="wr-slots" id="wr-shop-slots"></div><div class="wr-hint" id="wr-shop-hint"></div></div></div>
+  <div class="wr-dye" id="wr-dye"></div>
   <div class="list" id="wr-shop-list"></div>
 </div>`;
 (document.getElementById("windows") || document.body).append(shopWin);
@@ -97,12 +108,25 @@ tabs.addEventListener("click", (e) => {
 
 // ───────────────────────────── the wire ─────────────────────────────
 
-/** What a who row's outfit codes and weapon key become in a person's gear: cos ids, a weapon-skin motif, the legendary/set key. */
+/**
+ * What a who row's outfit codes and weapon key become in a person's gear: cos ids, a weapon-skin motif, the
+ * legendary/set key, and `dye` { id: 1–6 } only when a worn piece is dyed (a code ≥ defs.cosDyeK carries its dye).
+ */
 export function wireGear(defs, codes, wl) {
-  const ids = (Array.isArray(codes) ? codes : []).map((n) => (n && defs.cosN ? defs.cosN[n] : null)).filter(Boolean);
+  const K = defs.cosDyeK || 1000, ids = [], dye = {};
+  for (const c of Array.isArray(codes) ? codes : []) {
+    const id = c && defs.cosN ? defs.cosN[c % K] : null;
+    if (!id) continue;
+    ids.push(id);
+    if (c >= K) dye[id] = Math.floor(c / K);
+  }
   const skin = ids.find((id) => WR.skinMotif(id));
-  return { cos: ids.filter((id) => !WR.skinMotif(id)), ws: skin ? WR.skinMotif(skin) : "", wl: wl || "" };
+  const out = { cos: ids.filter((id) => !WR.skinMotif(id)), ws: skin ? WR.skinMotif(skin) : "", wl: wl || "" };
+  if (Object.keys(dye).length) out.dye = dye;
+  return out;
 }
+/** A worn piece's wire code with the player's own dye on it (the preview draws what others will see). */
+const codeOf = (D, s, id) => D.cos[id].n + (D.cosDyeK || 1000) * ((s.cosDye && s.cosDye[id]) || 0);
 
 // ───────────────────────────── helpers ─────────────────────────────
 
@@ -165,6 +189,7 @@ function tipFor(id, host, extra) {
 // ───────────────────────────── preview ─────────────────────────────
 
 let tried = null;      // an id being tried on
+let dyeSlot = "", dyeTry = null;   // at 루루's: the worn slot being dyed, and a dye (0–6) picked to try before paying
 let spin = 0, spinAt = 0;
 /** Draw the player in `cos` (ids) into a preview canvas: turning, walking, the weapon beside. */
 function drawPreview(cv, t) {
@@ -172,7 +197,10 @@ function drawPreview(cv, t) {
   if (!w || !s || !cv || cv.offsetParent === null) return;
   const worn = SLOTS.map((k) => s.cos.on[k]).filter(Boolean);
   if (tried) { const sl = G.defs.cos[tried].slot; for (let i = worn.length - 1; i >= 0; i--) if (G.defs.cos[worn[i]].slot === sl) worn.splice(i, 1); worn.push(tried); }
-  const gear = { ...(w.gear || {}), ...wireGear(G.defs, worn.map((id) => G.defs.cos[id].n), w.gear && w.gear.wl) };
+  // at 루루's a dye picked but not yet paid for shows on the piece it is for
+  const trying = cv.id === "wr-shop-pv" && dyeTry !== null ? s.cos.on[dyeSlot] : null;
+  const codes = worn.map((id) => (id === trying ? G.defs.cos[id].n + (G.defs.cosDyeK || 1000) * dyeTry : codeOf(G.defs, s, id)));
+  const gear = { ...(w.gear || {}), dye: undefined, ...wireGear(G.defs, codes, w.gear && w.gear.wl) };
   const g = cv.getContext("2d");
   g.imageSmoothingEnabled = false;
   g.fillStyle = "#5e8a50"; g.fillRect(0, 0, cv.width, cv.height);
@@ -206,7 +234,7 @@ for (const id of ["#wr-shop-pv", "#wr-tab-pv"]) $(id).addEventListener("click", 
 // ───────────────────────────── rendering ─────────────────────────────
 
 let shopSlot = "all", tabSlot = "all";
-const key = { shop: "", tab: "" };
+const key = { shop: "", tab: "", dye: "" };
 function slotBar(host, cur, set) {
   host.textContent = "";
   for (const k of ["all", ...SLOTS]) {
@@ -250,6 +278,66 @@ function renderShop(s) {
     list.append(row);
    }
   }
+}
+/** How many of a bag item the player holds (dyes never go in the 재료 주머니). */
+const held = (s, id) => (s.inv || []).reduce((n, x) => n + (x && x.id === id ? x.n || 1 : 0), 0);
+/**
+ * 루루's dye row (P9): pick a worn piece, pick a dye to see it on the preview, then pay one dye; 원래대로 is free.
+ * Below it, keepsakes 루루 can sew into their outfit piece (the keepsake stays).
+ */
+function renderDye(s) {
+  const D = C.G.defs, host = $("#wr-dye"), dyes = D.cosDyes || [], mine = s.cosDye || {};
+  host.textContent = "";
+  const slots = SLOTS.filter((k) => k !== "wskin" && s.cos.on[k]);
+  if (!slots.includes(dyeSlot)) { dyeSlot = slots[0] || ""; dyeTry = null; }
+  const top = C.el("div", "row");
+  top.append(C.el("span", "lb", "염색"));
+  host.append(top);
+  if (!dyeSlot) { top.append(C.el("span", "wr-hint", "모자·상의·등·얼굴 외형을 입으면 장식 색을 물들일 수 있어요.")); }
+  else {
+    for (const k of slots) {
+      const b = C.el("button", "tx" + (k === dyeSlot ? " on" : ""), D.cosSlotName[k]);
+      b.title = D.cos[s.cos.on[k]].name;
+      b.addEventListener("click", () => { dyeSlot = k; dyeTry = null; key.dye = ""; Sound.play("ui"); refresh(C.G.self); });
+      top.append(b);
+    }
+    const id = s.cos.on[dyeSlot], now = mine[id] || 0, row = C.el("div", "row");
+    dyes.forEach((did, i) => {
+      const d = i + 1, n = held(s, did), it = D.items[did], r = D.life.recipes.find((x) => x.out[0] === did);
+      const sw = C.el("button", "sw" + (n ? "" : " off") + (now === d ? " on" : "") + (dyeTry === d ? " sel" : ""));
+      sw.style.background = WR.DYES[i];
+      sw.setAttribute("aria-label", it.name);
+      sw.setAttribute("aria-disabled", String(!n));
+      sw.addEventListener("click", () => { if (!n || now === d) return; dyeTry = dyeTry === d ? null : d; key.dye = ""; Sound.play("ui"); refresh(C.G.self); });
+      C.hoverTip(sw, (h) => {
+        h.append(C.el("div", "nm", it.name), C.el("div", "ds", n ? `${n}개 가지고 있어요` : "가지고 있지 않아요"));
+        h.append(C.el("div", "hint", now === d ? "지금 이 색이에요" : n ? "눌러서 미리 보기" : r ? `연금 Lv.${r.lv} · 보글의 가마솥에서 만들어요` : ""));
+      });
+      row.append(sw);
+    });
+    const reset = C.el("button", "tx", "원래대로");
+    reset.disabled = !now;
+    reset.title = now ? "원래 색으로 되돌립니다 (무료)" : "이미 원래 색이에요";
+    reset.addEventListener("click", () => { C.act({ t: "cos_dye", id, d: 0 }); dyeTry = null; Sound.play("ui"); });
+    const go = C.el("button", "tx", dyeTry ? `물들이기 (${D.items[dyes[dyeTry - 1]].name} 1개)` : "물들이기");
+    go.disabled = !dyeTry;
+    go.addEventListener("click", () => { if (!dyeTry) return; C.act({ t: "cos_dye", id, d: dyeTry }); dyeTry = null; Sound.play("coin"); });
+    row.append(reset, go);
+    host.append(row);
+  }
+  // 기념품 재봉: a keepsake with its piece drawn and not yet owned
+  const keep = (s.keep || []).filter((k) => D.keepSew && Object.hasOwn(D.keepSew, k));
+  const sewable = keep.filter((k) => D.keepSew[k] && !s.cos.own.includes(D.keepSew[k]));
+  if (sewable.length) {
+    const row = C.el("div", "row");
+    row.append(C.el("span", "lb", "재봉"));
+    for (const k of sewable) {
+      const b = C.el("button", "tx", `${D.items[k].name} → ${D.cos[D.keepSew[k]].name}`);
+      b.addEventListener("click", () => { C.act({ t: "cos_sew", k }); Sound.play("ui"); });
+      row.append(b);
+    }
+    host.append(row);
+  } else if (keep.some((k) => !D.keepSew[k])) host.append(C.el("div", "wr-hint", "기념품 재봉: 루루가 이야기 기념품의 옷본을 그리고 있어요. 조금만 기다려 주세요!"));
 }
 function renderTab(s) {
   const D = C.G.defs;
@@ -298,7 +386,9 @@ export function refresh(s) {
   if (!shopWin.hidden) {
     const k = JSON.stringify([s.gold, s.cos, shopSlot, tried]);
     if (k !== key.shop) { key.shop = k; renderShop(s); }
-  } else key.shop = "";
+    const dk = JSON.stringify([s.cos.on, s.cosDye, s.keep, s.cos.own.length, (C.G.defs.cosDyes || []).map((id) => held(s, id)), dyeSlot, dyeTry]);
+    if (dk !== key.dye) { key.dye = dk; renderDye(s); }
+  } else { key.shop = key.dye = ""; dyeTry = null; }
   if (!tabBox.hidden && !$("#w-char").hidden) {
     const k = JSON.stringify([s.cos, tabSlot, tried]);
     if (k !== key.tab) { key.tab = k; renderTab(s); }
