@@ -733,19 +733,342 @@ function soulTrail(ax, ay, bx, by, ms) {
   const d = Math.max(1, Math.hypot(x1 - x0, y1 - y0)), ux = (x1 - x0) / d, uy = (y1 - y0) / d;
   S3.fxCustom((g, k) => {
     const x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k - Math.sin(k * Math.PI) * 7;
-    const tail = Math.min(23, d * k);
-    for (let i = 0; i < tail; i++) {
+    const tail = Math.min(26, d * k);
+    for (let i = 0; i < tail; i += 2) {
       const o = Math.sin(i * 0.31 - k * 8) * Math.min(6, i * 0.35);
       const sx = x - ux * i, sy = y - uy * i;
-      px(g, sx + uy * o, sy - ux * o, 2, 2, i < 11 ? "#b387ed" : "#50346d");
-      if (i < 16) px(g, sx - uy * o, sy + ux * o, 2, 2, "#8563bc");
+      px(g, sx + uy * o - 1, sy - ux * o - 1, 4, 4, INK);
+      px(g, sx + uy * o, sy - ux * o, 2, 2, i < 10 ? "#f0c4ff" : i < 18 ? "#b44cff" : "#4b237a");
+      if (i < 16) {
+        px(g, sx - uy * o - 1, sy + ux * o - 1, 3, 3, INK);
+        px(g, sx - uy * o, sy + ux * o, 2, 2, "#7a3ec8");
+      }
     }
-    for (let j = -4; j <= 4; j++) {
-      const w = 4 - Math.abs(j);
-      px(g, x - w, y + j, 2 * w + 1, 1, "#b878e3");
-      if (w > 1) px(g, x - w + 2, y + j, 2 * w - 3, 1, "#f8dcff");
+    // Outlined dark-element diamond head with abyssal core and magenta-violet rim
+    for (let j = -5; j <= 5; j++) {
+      const w = 5 - Math.abs(j);
+      px(g, x - w - 1, y + j, 2 * w + 3, 1, INK);
+      if (w >= 1) px(g, x - w, y + j, 2 * w + 1, 1, "#b44cff");
+      if (w >= 2) px(g, x - w + 1, y + j, 2 * w - 1, 1, "#12091f");
+      if (w >= 3) px(g, x - w + 2, y + j, 2 * w - 3, 1, "#f0c4ff");
     }
   }, ms);
+}
+
+/**
+ * [불 Fire] 파이어볼 (`fx: 70`):
+ * Outlined pixel fireball orb flying from (ax, ay) to (bx, by) with licking flame tail,
+ * followed by an r=30 8-tongue pixel fire crown detonation and scorched ground embers.
+ */
+export function fireballOrb(ax, ay, bx, by, r = 30) {
+  const dist = Math.hypot(bx - ax, by - ay);
+  const flightMs = Math.max(110, Math.min(210, Math.round(dist * 1.35)));
+  const [x0, y0] = at(ax, ay, 16), [x1, y1] = at(bx, by, 6);
+  const d = Math.max(1, Math.hypot(x1 - x0, y1 - y0)), ux = (x1 - x0) / d, uy = (y1 - y0) / d, nx = -uy, ny = ux;
+  // 1. Flying pixel fireball projectile + flame wake
+  S3.fxCustom((g, k) => {
+    const x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k - Math.sin(k * Math.PI) * 10;
+    const tailLen = Math.min(30, d * k);
+    for (let i = 3; i < tailLen; i += 3) {
+      const sway = Math.sin(i * 0.45 - k * 14) * (i < 14 ? 2.5 : 4);
+      const tx = x - ux * i + nx * sway, ty = y - uy * i + ny * sway;
+      const sz = i < 12 ? 3 : 2;
+      px(g, tx - 2, ty - 2, sz + 2, sz + 2, INK);
+      px(g, tx - 1, ty - 1, sz, sz, i < 9 ? "#ffb83b" : i < 18 ? "#ff5a26" : "#8f251e");
+    }
+    // 9x9 outlined pixel fireball head
+    for (let dy = -4; dy <= 4; dy++) {
+      const w = 4 - (Math.abs(dy) > 2 ? Math.abs(dy) - 1 : 0);
+      px(g, x - w - 1, y + dy, w * 2 + 3, 1, INK);
+      px(g, x - w, y + dy, w * 2 + 1, 1, dy > 1 ? "#8f251e" : "#ff5a26");
+      if (w >= 2) px(g, x - w + 1, y + dy, w * 2 - 1, 1, "#ffb83b");
+      if (Math.abs(dy) <= 1) px(g, x - 1, y + dy, 3, 1, "#fff6cc");
+    }
+  }, flightMs);
+
+  // 2. Detonation at (bx, by) with radius r = 30
+  later(Math.max(0, flightMs - 30), () => {
+    S3.fx.flash(bx, by, 10, 0, 0.18);
+    S3.fx.wave(bx, by, r, "#ffb83b", 250);
+    rim(bx, by, r, "#8f251e", "#fff6cc", 310, 0.52);
+    shards(bx, by, r * 0.9, 8, 22, "#8f251e", "#ffb83b", 300, 12);
+    S3.fxCustom((g, k) => {
+      const expand = 0.25 + 0.75 * (1 - (1 - Math.min(1, k * 1.5)) ** 2);
+      // 8 rising pixel flame tongues around the r=30 blast perimeter
+      for (let i = 0; i < 8; i++) {
+        const a = i * (Math.PI / 4) + k * 0.25;
+        const rad = r * expand * (i % 2 ? 0.78 : 0.96);
+        const [fx0, fy0] = at(bx + Math.cos(a) * rad, by + Math.sin(a) * rad, 0);
+        const h = Math.max(3, Math.round((i % 2 ? 12 : 16) * Math.sin(k * Math.PI)));
+        for (let step = 0; step < h; step += 2) {
+          const w = step < h * 0.45 ? 3 : step < h * 0.8 ? 2 : 1;
+          const sway = Math.round(Math.sin(step * 0.5 + i) * 1.2);
+          px(g, fx0 + sway - w, fy0 - step - 1, w * 2 + 1, 3, INK);
+          px(g, fx0 + sway - w + 1, fy0 - step, w * 2 - 1, 2, step < 4 ? "#fff6cc" : step < h * 0.6 ? "#ffb83b" : "#ff5a26");
+        }
+      }
+    }, 320);
+  });
+}
+
+/** [불 Fire] 화상 장판 틱 (`b` kind 10): pixel ground embers and small flame tongues inside `r`. */
+function fireBurnPatch(x, y, r = 30) {
+  rim(x, y, r, "#8f251e", "#ff5a26", 260, 0.18);
+  S3.fxCustom((g, k) => {
+    for (let i = 0; i < 6; i++) {
+      const a = i * 1.047 + (Math.round(x + y) % 5) * 0.3, d = r * (0.28 + (i % 3) * 0.24);
+      const [sx, sy] = at(x + Math.cos(a) * d, y + Math.sin(a) * d, Math.round(k * 9));
+      const h = k < 0.65 ? 5 : 3;
+      px(g, sx - 2, sy - h, 5, h + 2, INK);
+      px(g, sx - 1, sy - h + 1, 3, h, "#ff5a26");
+      px(g, sx, sy - h + 2, 1, Math.max(1, h - 2), "#fff6cc");
+    }
+  }, 260);
+}
+
+/**
+ * [얼음 Ice] 서리 고리 (`fx: 71`):
+ * Expanding r=56 frost ring with 12 jagged pixel ice crystal spikes jutting outward around the perimeter
+ * and crisp hexagonal frost facets (#2b5c8f -> #7be0ff -> #dbfaff -> #ffffff).
+ */
+export function frostNovaRing(x, y, r = 56) {
+  S3.fx.flash(x, y, 10);
+  S3.fx.wave(x, y, r, "#dbfaff", 360);
+  rim(x, y, r, "#2b5c8f", "#ffffff", 430, 0.55);
+  shards(x, y, r * 0.9, 12, 18, "#2b5c8f", "#dbfaff", 370, 30);
+  S3.fxCustom((g, k) => {
+    const grow = Math.min(1, k / 0.22);
+    const fade = k < 0.72 ? 1 : (1 - k) / 0.28;
+    g.globalAlpha = fade;
+    // 12 jagged pixel glacier spikes around the r=56 ring
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const rad = r * (0.35 + 0.62 * grow) * (i % 2 ? 0.86 : 1);
+      const [ix, iy] = at(x + Math.cos(a) * rad, y + Math.sin(a) * rad, 0);
+      const tall = Math.max(4, Math.round((i % 2 ? 11 : 16) * grow));
+      for (let row = 0; row < tall; row++) {
+        const hw = Math.max(0, Math.round((1 - row / tall) * (i % 2 ? 2.5 : 3.5)));
+        px(g, ix - hw - 1, iy - row - 1, hw * 2 + 3, 1, INK);
+        px(g, ix - hw, iy - row - 1, hw * 2 + 1, 1, "#7be0ff");
+        px(g, ix - hw, iy - row - 1, Math.max(1, hw), 1, row > tall * 0.6 ? "#ffffff" : "#dbfaff");
+        if (hw >= 1) px(g, ix + hw, iy - row - 1, 1, 1, "#2b5c8f");
+      }
+      px(g, ix - 1, iy - tall - 1, 3, 1, INK);
+    }
+    // 6 inner ice crystal stars
+    if (k < 0.68) {
+      for (let i = 0; i < 6; i++) {
+        const a = i * (Math.PI / 3) + 0.26, [sx, sy] = at(x + Math.cos(a) * r * 0.52 * grow, y + Math.sin(a) * r * 0.52 * grow, 4);
+        px(g, sx - 1, sy - 4, 3, 9, INK); px(g, sx - 4, sy - 1, 9, 3, INK);
+        px(g, sx, sy - 3, 1, 7, "#dbfaff"); px(g, sx - 3, sy, 7, 1, "#dbfaff");
+        px(g, sx, sy, 1, 1, "#ffffff");
+      }
+    }
+    g.globalAlpha = 1;
+  }, 420);
+}
+
+/**
+ * [번개 Lightning] 연쇄 번개 (`ln: 4`):
+ * INK-outlined jagged pixel lightning arc with forked branches and high-voltage yellow/cyan-blue flash.
+ */
+export function chainLightningArc(ax, ay, bx, by) {
+  const [x0, y0] = at(ax, ay, 10), [x1, y1] = at(bx, by, 10);
+  const dx = x1 - x0, dy = y1 - y0, len = Math.max(1, Math.hypot(dx, dy));
+  const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+  S3.fxCustom((g, k) => {
+    const segs = 7, pts = [[x0, y0]];
+    const flicker = Math.floor(k * 12);
+    for (let i = 1; i < segs; i++) {
+      const u = i / segs;
+      const jag = ((i * 5 + flicker * 3) % 7 - 3) * 2.4;
+      pts.push([x0 + dx * u + nx * jag, y0 + dy * u + ny * jag]);
+    }
+    pts.push([x1, y1]);
+    for (let i = 0; i < pts.length - 1; i++) {
+      pixelLine(g, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], INK, 5);
+    }
+    for (let i = 0; i < pts.length - 1; i++) {
+      pixelLine(g, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], "#8cf0ff", 3);
+      pixelLine(g, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], i % 2 ? "#ffffff" : "#ffe852", 1);
+      if (i % 2 === 1 && k < 0.7) {
+        const side = i % 4 === 1 ? 1 : -1;
+        const fx = pts[i][0] + ux * 7 + nx * side * 7, fy = pts[i][1] + uy * 7 + ny * side * 7;
+        pixelLine(g, pts[i][0], pts[i][1], fx, fy, INK, 3);
+        pixelLine(g, pts[i][0], pts[i][1], fx, fy, "#ffe852", 1);
+      }
+    }
+    // Electric impact star at (x1, y1)
+    px(g, x1 - 2, y1 - 5, 5, 11, INK); px(g, x1 - 5, y1 - 2, 11, 5, INK);
+    px(g, x1 - 1, y1 - 4, 3, 9, "#ffe852"); px(g, x1 - 4, y1 - 1, 9, 3, "#8cf0ff");
+    px(g, x1 - 1, y1 - 1, 3, 3, "#ffffff");
+  }, 240);
+}
+
+/**
+ * [암흑 Dark] 중력 왜곡진 (`fx: 92` + `pr`/`pp` `"grav"`):
+ * Pixel-art abyssal singularity at (x, y) and inward-spiraling void shards + gravity chevrons across radius `r = 60`
+ * (replaces the anti-aliased Canvas2D `g.arc` vortex).
+ */
+export function gravityWell(x, y, r = 60, ms = 4000) {
+  groundRing(x, y, r, ms, "#7a3ec8", 0.18);
+  S3.fxCustom((g, k) => {
+    const t = k * ms, fade = Math.min(1, k * 10, (1 - k) * 8);
+    const [cx, cy] = at(x, y, 0);
+    g.globalAlpha = fade;
+    // 1. Segmented pixel outer boundary ring at exact radius r = 60
+    for (let i = 0; i < 48; i++) {
+      if (i % 4 === 3) continue;
+      const a = (i / 48) * Math.PI * 2 - t / 1800;
+      const [bx, by] = at(x + Math.cos(a) * r, y + Math.sin(a) * r, 0);
+      px(g, bx - 2, by - 1, 4, 3, INK);
+      px(g, bx - 1, by, 2, 1, i % 4 === 0 ? "#f0c4ff" : i % 2 ? "#b44cff" : "#4b237a");
+    }
+    // 2. Two inward-contracting pixel octagons + 8 inward suction chevrons showing pull toward center
+    for (let ring = 0; ring < 2; ring++) {
+      const u = ((t / 850 + ring * 0.5) % 1);
+      const rad = r * (0.92 - 0.74 * u);
+      for (let s = 0; s < 8; s++) {
+        const a = s * (Math.PI / 4) + u * 1.8 + ring * 0.4;
+        const ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
+        const [px0, py0] = at(x + ux * rad, y + uy * rad, 0);
+        const [px1, py1] = at(x + ux * (rad + 5) + nx * 4, y + uy * (rad + 5) + ny * 4, 0);
+        pixelLine(g, px0, py0, px1, py1, INK, 3);
+        pixelLine(g, px0, py0, px1, py1, ring === 0 ? "#b44cff" : "#4b237a", 1);
+        px(g, px0 - 1, py0 - 1, 3, 3, "#f0c4ff");
+      }
+    }
+    // 3. 10 dark-matter pixel shards spiraling inward and getting crushed into the singularity
+    for (let i = 0; i < 10; i++) {
+      const u = ((t / 720 + i / 10) % 1);
+      const d = r * 0.88 * (1 - u * 0.85), a = i * 1.884 + u * 3.6;
+      const lift = Math.round(Math.sin(u * Math.PI) * 9);
+      const [sx, sy] = at(x + Math.cos(a) * d, y + Math.sin(a) * d, lift);
+      px(g, sx - 2, sy - 2, 5, 4, INK);
+      px(g, sx - 1, sy - 1, 3, 2, i % 2 ? "#b44cff" : "#4b237a");
+      px(g, sx, sy - 1, 1, 1, "#f0c4ff");
+    }
+    // 4. Central pixel black-hole core (abyssal void #12091f ringed by #b44cff and #f0c4ff)
+    const pulse = Math.floor(t / 140) % 2;
+    for (let dy = -5; dy <= 5; dy++) {
+      const w = Math.max(2, 7 - Math.abs(dy));
+      px(g, cx - w - 1, cy + dy, w * 2 + 2, 1, INK);
+      px(g, cx - w, cy + dy, w * 2, 1, Math.abs(dy) >= 4 ? "#b44cff" : "#4b237a");
+      if (Math.abs(dy) <= 3) px(g, cx - w + 2, cy + dy, w * 2 - 4, 1, "#12091f");
+    }
+    px(g, cx - 6 - pulse, cy, 2, 1, "#f0c4ff");
+    px(g, cx + 5 + pulse, cy, 2, 1, "#f0c4ff");
+    px(g, cx, cy - 5 - pulse, 1, 2, "#f0c4ff");
+    px(g, cx, cy + 4 + pulse, 1, 2, "#f0c4ff");
+    g.globalAlpha = 1;
+  }, ms, false);
+}
+
+/** [암흑 Dark] 중력 왜곡진 틱 파동 (`pp` `"grav"`): radial pixel pull streaks snapping into center. */
+function gravityPulse(x, y, r = 60) {
+  rim(x, y, r * 0.82, "#4b237a", "#f0c4ff", 260, 0.25);
+  S3.fxCustom((g, k) => {
+    const [cx, cy] = at(x, y, 2);
+    for (let i = 0; i < 8; i++) {
+      const a = i * (Math.PI / 4) + 0.2;
+      const d0 = r * 0.85 * (1 - k * 0.7), d1 = Math.max(4, d0 - 14);
+      const [ax, ay] = at(x + Math.cos(a) * d0, y + Math.sin(a) * d0, 3);
+      const [bx, by] = at(x + Math.cos(a) * d1, y + Math.sin(a) * d1, 2);
+      pixelLine(g, ax, ay, bx, by, INK, 3);
+      pixelLine(g, ax, ay, bx, by, i % 2 ? "#f0c4ff" : "#b44cff", 1);
+    }
+    px(g, cx - 3, cy - 2, 7, 5, INK);
+    px(g, cx - 2, cy - 1, 5, 3, "#12091f");
+  }, 250);
+}
+
+/**
+ * [불+번개 Fire+Lightning] 원소 마검: 홍련참 (`fx: 97`):
+ * Full width (`half = 20`, total 40px) dual-element crescent wave flying from (ax, ay) to (bx, by),
+ * pairing a roaring crimson-gold flame edge with a coiling high-voltage yellow/cyan lightning wake.
+ */
+export function crimsonArcWave(ax, ay, bx, by, half = 20) {
+  const dist = Math.max(1, Math.hypot(bx - ax, by - ay));
+  const ux = (bx - ax) / dist, uy = (by - ay) / dist, nx = -uy, ny = ux;
+  const ang = Math.atan2(uy, ux), dur = Math.max(180, Math.min(320, Math.round(dist * 1.8)));
+  S3.fxCustom((g, k) => {
+    const wx = ax + (bx - ax) * k, wy = ay + (by - ay) * k;
+    const [cx, cy] = at(wx, wy, 11), sa = S3.sAng(ux, uy);
+    // 1. Coiling Fire + Lightning dual wake along the path
+    const tailSteps = Math.min(12, Math.floor(k * 16));
+    for (let s = 1; s <= tailSteps; s++) {
+      const u = Math.max(0, k - s * 0.045);
+      const tx0 = ax + (bx - ax) * u, ty0 = ay + (by - ay) * u;
+      const boltOff = ((s * 5 + Math.floor(k * 20)) % 5 - 2) * (half * 0.35);
+      const [lx, ly] = at(tx0 + nx * boltOff, ty0 + ny * boltOff, 10);
+      const [fx, fy] = at(tx0 - nx * boltOff * 0.7, ty0 - ny * boltOff * 0.7, 8);
+      px(g, fx - 2, fy - 2, 4, 4, INK);
+      px(g, fx - 1, fy - 1, 2, 2, s < 5 ? "#ffb83b" : "#ff5a26");
+      px(g, lx - 2, ly - 2, 4, 4, INK);
+      px(g, lx - 1, ly - 1, 2, 2, s % 2 ? "#ffe852" : "#8cf0ff");
+    }
+    // 2. Full-width (half=20) outlined Fire + Lightning crescent blade
+    for (let i = -9; i <= 9; i++) {
+      const u = i / 9, a = sa + u * 1.18;
+      const thick = Math.max(2, Math.round((1 - Math.abs(u) * 0.65) * 6));
+      const rx = cx + Math.cos(a) * half, ry = cy + Math.sin(a) * half * 0.82;
+      px(g, rx - (thick >> 1) - 1, ry - (thick >> 1) - 1, thick + 2, thick + 2, INK);
+      px(g, rx - (thick >> 1), ry - (thick >> 1), thick, thick, i < 0 ? "#ff5a26" : "#ffb83b");
+      if (Math.abs(i) <= 4) px(g, rx - 1, ry - 1, 2, 2, "#fff6cc");
+      // Lightning barbs crackling across the inner curve
+      if (i % 3 === 0) {
+        const ix = cx + Math.cos(a) * (half - 6), iy = cy + Math.sin(a) * (half - 6) * 0.82;
+        pixelLine(g, rx, ry, ix, iy, INK, 3);
+        pixelLine(g, rx, ry, ix, iy, i % 2 ? "#ffe852" : "#8cf0ff", 1);
+      }
+    }
+  }, dur);
+}
+
+/**
+ * [활 관통 화살] (`fx: 94` muzzle cone):
+ * Outlined pixel wind-shear shock rings and directional rails showing the `r = 8` (16px wide) high-velocity pierce corridor.
+ */
+export function pierceMuzzle(x, y, tx, ty) {
+  const ang = Math.atan2(ty - y, tx - x), ux = Math.cos(ang), uy = Math.sin(ang), nx = -uy, ny = ux;
+  S3.fxCustom((g, k) => {
+    const [sx, sy] = at(x + ux * 10, y + uy * 10, 11);
+    const [ex, ey] = at(x + ux * (26 + k * 24), y + uy * (26 + k * 24), 11);
+    // Double sonic compression rings around the bow nozzle
+    for (const [dist, span] of [[6 + k * 8, 9], [14 + k * 14, 6]]) {
+      const [rx, ry] = at(x + ux * dist, y + uy * dist, 11);
+      for (let j = -span; j <= span; j += 2) {
+        const px0 = rx + nx * j - ux * Math.abs(j) * 0.35;
+        const py0 = ry + ny * j - uy * Math.abs(j) * 0.35;
+        px(g, px0 - 1, py0 - 1, 3, 3, INK);
+        px(g, px0, py0, 2, 2, Math.abs(j) <= 2 ? "#ffffff" : "#5ce6c8");
+      }
+    }
+    pixelLine(g, sx, sy, ex, ey, INK, 3);
+    pixelLine(g, sx, sy, ex, ey, "#d8fff4", 1);
+  }, 210);
+}
+
+/**
+ * [활 도약 사격] (`ln: 8` vaulted backflip arc + wind feathers):
+ * Replaces the flat ground line with an airborne pixel jump arc (`lift` up to 32px), launch dust ring, and wind-feather wake.
+ */
+export function leapShotArc(ax, ay, bx, by) {
+  rim(ax, ay, 18, "#328a48", "#fff2a6", 240, 0.32);
+  S3.fxCustom((g, k) => {
+    const steps = 12;
+    for (let i = 0; i <= steps; i++) {
+      const u = i / steps;
+      if (u > k * 1.5) break;
+      const lift = 8 + Math.sin(u * Math.PI) * 32;
+      const [sx, sy] = at(ax + (bx - ax) * u, ay + (by - ay) * u, lift);
+      if (k > 0.65 && (i & 1)) continue;
+      px(g, sx - 2, sy - 2, 5, 4, INK);
+      px(g, sx - 1, sy - 1, 3, 2, i % 2 ? "#8ee874" : "#fff2a6");
+      if (i % 3 === 0) px(g, sx, sy - 3, 2, 2, "#ffffff");
+    }
+  }, 340);
+  later(160, () => rim(bx, by, 15, "#328a48", "#8ee874", 220, 0.25));
 }
 
 // ───────────────────────────── props: what skills leave standing ─────────────────────────────
@@ -863,17 +1186,7 @@ function placeProp(G, B, f, id, kind, x, y, r, ms, eid) {
   if (placed.size > 60) placed.delete(placed.keys().next().value);
   switch (kind) {
     case "grav": {
-      groundRing(x, y, r, ms, "#8a5ad8", 0.2);
-      // the vortex: dark rings turning inward
-      S3.fxCustom((g, k) => {
-        const t = k * ms;
-        for (let i = 0; i < 3; i++) {
-          const u = ((t / 900 + i / 3) % 1), rr = r * P * (1 - u);
-          g.globalAlpha = 0.6 * u; g.strokeStyle = i % 2 ? "#c8a0ff" : "#3a2a58"; g.lineWidth = 3;
-          g.beginPath(); g.arc(x * P, y * P, Math.max(1, rr), t / 300 + i, t / 300 + i + 4.4); g.stroke();
-        }
-        g.globalAlpha = 1;
-      }, ms, true);
+      gravityWell(x, y, r, ms);
       break;
     }
     case "phantom": phantom(id, x, y, ms); f.burst(x, y, 0.4, "#3a2a58", 24, 1.8); f.ring(x, y, 22, "#8a5ad8", 360, true); break;
@@ -966,7 +1279,7 @@ function propBeat(G, B, f, e) {
   const canHear = o.eid === G.you || skillNear(G, x, y);
   const play = (key) => { if (canHear) Sound.play(key); };
   switch (o.kind) {
-    case "grav": f.ring(x, y, o.r * 0.5, "#c8a0ff", 300); f.sparkle(x, y, 0.3, "#8a5ad8", 4); play("gravity_tick"); break;
+    case "grav": gravityPulse(x, y, o.r); f.sparkle(x, y, 0.3, "#b44cff", 4); play("gravity_tick"); break;
     case "phantom": {
       const pr = S3.props.get("pr" + id);
       if (pr) { pr.tx = x; pr.ty = y; pr.bite = now() + 220; }
@@ -1724,7 +2037,7 @@ export function skillEvent(e, ctx) {
       return true;
     }
     case "b": {
-      if ((e[4] | 0) === 10) { f.burst(e[1] + (Math.random() - 0.5) * e[3], e[2], 0.1, "#ff8a3a", 5, 0.8); f.sparkle(e[1], e[2], 0.1, "#ffd84a", 4); f.ring(e[1], e[2], e[3], "rgba(255,120,40,.6)", 260, true); return true; }
+      if ((e[4] | 0) === 10) { fireBurnPatch(e[1], e[2], e[3] || 30); return true; }
       return false;
     }
     // ── the bow's arrows (docs/design/jobs-and-stats.md D.2): fired ["ar", id, x0, y0, ux·1000, uy·1000,
@@ -1842,7 +2155,7 @@ export function skillEvent(e, ctx) {
       } else if (kind === 3) {
         streakWake(ax, ay, bx, by, "#559c8a", "#fff1c3", 10);
         S3.fx.burst(ax, ay, 0.1, "#b8a878", 8, 1.6);
-      } else if (kind === 4) { f.bolt(ax, ay + 8, bx, by + 8, "#fff27a", 260); f.spark(bx, by + 6, "#fff6b0", 1.3); Sound.play("bolt"); }
+      } else if (kind === 4) { chainLightningArc(ax, ay, bx, by); Sound.play("bolt"); }
       else if (kind === 5) {
         shadowAfterimage(ax, ay, 240);
         streakWake(ax, ay, bx, by, "#4a2a78", "#e8c8ff", 7);
@@ -1872,7 +2185,7 @@ export function skillEvent(e, ctx) {
         f.beam(ax, ay, bx, by, col, 0.45);
         along(ax, ay, bx, by, 26).forEach(([x, y], i, all) => later((i / all.length) * ms, () => S3.fx.sparkle(x, y, 0.4, col, 2)));
         later(ms, () => { S3.fx.ring(bx, by, 10, col, 240); S3.fx.burst(bx, by, 0.4, col, 6, 1.6); });
-      } else if (kind === 8) { f.beam(ax, ay - 4, bx, by - 4, "#d8c8a0", 0.3); f.burst(ax, ay, 0.1, "#b8a878", 12, 1.6); }
+      } else if (kind === 8) { leapShotArc(ax, ay, bx, by); f.burst(ax, ay, 0.1, "#b8a878", 10, 1.6); }
       else if (kind === 9) {
         // up and over: an inked pixel leap arc and launch dust
         S3.fxCustom((g, k) => {
@@ -1934,14 +2247,16 @@ const lineOf = (kind) => (lastLn && lastLn.kind === kind && now() - lastLn.at < 
 const qi = { at: 0, ms: 0 };
 /** 원소 비수 (fx 124) just thrown: how many of its three "ln 7" blades are still to come, and when it was. */
 const fan = { n: 0, at: 0 };
-/** How far each special arrow flies (the server's `len`): 관통 화살, 삼원소 화살's three, 룬 먹화살. */
-const ARROW_RANGE = { 2: 180, 4: 190, 5: 190, 6: 190, 7: 170 };
+/** How far each special arrow flies (the server's `len`): 관통 화살, 도약 사격, 삼원소 화살's three, 룬 먹화살. */
+const ARROW_RANGE = { 2: 180, 3: 150, 4: 190, 5: 190, 6: 190, 7: 170 };
 /**
- * The dressed arrows (docs/design/jobs-and-stats.md H.4): kind 4 fire, 5 ice, 6 lightning, 7 rune ink.
+ * The dressed arrows (docs/design/jobs-and-stats.md H.4): kind 2 관통 화살, 3 도약 사격, 4 fire, 5 ice, 6 lightning, 7 rune ink.
  * `tier` picks the ink of the white-hot arrow underneath (scene2d ARROW_HOT: 1 gold, 4 cyan, 5 violet);
  * `tail` is what streams behind it, nearest first; `shaft` repaints the arrow itself (the ink arrow is black).
  */
 const ARROW_LOOK = {
+  2: { tier: 4, how: "pierce", tail: ["#ffffff", "#d8fff4", "#5ce6c8", "#24786e"], shaft: "#d8fff4" },
+  3: { tier: 1, how: "gale", tail: ["#ffffff", "#fff2a6", "#8ee874", "#328a48"], shaft: "#fff2a6" },
   4: { tier: 1, how: "flame", tail: ["#ffffff", "#ffd84a", "#ff8a3a", "#d83a2a"] },
   5: { tier: 4, how: "frost", tail: ["#ffffff", "#e8f8ff", "#9fe8ff", "#5aa8e0"] },
   6: { tier: 1, how: "spark", tail: ["#ffffff", "#fff27a", "#ffe86a", "#c8a030"] },
@@ -1958,7 +2273,31 @@ function dressArrow(g, f, look) {
     for (let q = -L / 2 + 2; q <= L / 2 - 2; q++) px(g, x + ux * q, y + uy * q, 1, 1, look.shaft);
   }
   const T = look.tail;
-  if (look.how === "flame") {
+  if (look.how === "pierce") {
+    // Outlined heavy bodkin warhead + swept wind-shear wings + sonic compression ring wake (r=8)
+    for (const s of [-1, 1]) {
+      dot(-2, s * 2, 3, INK); dot(-2, s * 2, 2, T[1]);
+      dot(1, s * 4, 3, INK); dot(1, s * 4, 2, T[2]);
+    }
+    dot(-5, 0, 3, INK); dot(-5, 0, 2, T[0]);
+    for (let i = 0; i < 7; i++) {
+      const d = 4 + i * 3;
+      const spread = (i % 2 === 0 ? 5 : 3) * (((n + i) % 2) ? 1 : -1);
+      dot(d, spread, 3, INK); dot(d, spread, 2, T[Math.min(3, 1 + (i >> 1))]);
+      dot(d, 0, 2, T[i < 3 ? 0 : 2]);
+    }
+  } else if (look.how === "gale") {
+    // Outlined emerald-gold feathered head + spiralling leaf-wind trail
+    for (const s of [-1, 1]) {
+      dot(-2, s * 2, 3, INK); dot(-2, s * 2, 2, T[1]);
+    }
+    dot(-4, 0, 3, INK); dot(-4, 0, 2, T[0]);
+    for (let i = 0; i < 6; i++) {
+      const d = 4 + i * 2.6, o = Math.round(Math.sin(i * 1.1 + n * 0.6) * 2.5);
+      dot(d, o, 3, INK);
+      dot(d, o, 2, T[Math.min(3, 1 + (i >> 1))]);
+    }
+  } else if (look.how === "flame") {
     // a tongue of fire licking back off the head, flickering, embers lifting off it as it cools
     for (let i = 0; i < 7; i++) {
       const d = 4 + i * 2.2;
@@ -2106,22 +2445,14 @@ function cast(kind, src, eid, tx, ty, extra, G) {
   switch (kind) {
     // ── 스태프
     case 70: {
-      const flat = S3.fx, r = G.defs?.skills?.fireball?.r || 30;
-      f.beam(src.x, src.y, tx, ty, "#ee8c58", 0.72);
-      flat.flash(tx, ty, 10, 0, 0.18);
-      flat.wave(tx, ty, r, "#ffc377", 240);
-      rim(tx, ty, r, "#c55337", "#ffd58e", 285, 0.55);
-      shards(tx, ty, r * 0.88, 7, 21, "#e97b32", "#ffdc7f", 285, 12);
-      f.burst(tx, ty, 0.25, "#d67b49", 7, 1.2);
+      const r = G.defs?.skills?.fireball?.r || 30;
+      fireballOrb(src.x, src.y, tx, ty, r);
       if (near) B.shake(3);
       play("ember"); play("boom"); break;
     }
     case 71: {
       const r = extra || 56;
-      S3.fx.flash(src.x, src.y, 10);
-      S3.fx.wave(src.x, src.y, r, "#d4f9ff", 360);
-      rim(src.x, src.y, r, "#6caddd", "#d5f8ff", 415, 0.57);
-      shards(src.x, src.y, r * 0.88, 12, 18, "#549acc", "#d5f8ff", 360, 30);
+      frostNovaRing(src.x, src.y, r);
       B.shake(4); play("frost"); break;
     }
     case 90: f.sparkle(src.x, src.y, 1.2, "#ff8a3a", 18); f.ring(tx, ty, extra || 80, "#ff5a3a", 500); if (mine) text(G, "메테오 스톰!", src.x, src.y, 2.2, "#ffb04a", true); play("meteor_cast"); break;
@@ -2217,30 +2548,38 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       soulTrail(src.x, src.y, tx, ty, ms);
       later(ms, () => {
         S3.fx.flash(tx, ty, 6);
-        rim(tx, ty, 16, "#936bc4", "#dabaff", 260, 0.6);
-        shards(tx, ty, 15, 5, 12, "#8256a9", "#dba7fa", 235);
+        rim(tx, ty, 16, "#4b237a", "#f0c4ff", 260, 0.6);
+        shards(tx, ty, 15, 6, 14, "#4b237a", "#b44cff", 240);
       });
-      S3.fx.sparkle(src.x, src.y, 0.8, "#ae78db", 6); play("soulbolt");
+      S3.fx.sparkle(src.x, src.y, 0.8, "#b44cff", 6); play("soulbolt");
       break;
     }
-    case 92: f.ring(tx, ty, extra || 60, "#8a5ad8", 420, true); f.burst(tx, ty, 0.3, "#3a2a58", 24, 2); B.shake(4); play("gravity"); break;
+    case 92: {
+      const r = extra || 60;
+      rim(tx, ty, r, "#4b237a", "#f0c4ff", 340, 0.45);
+      f.burst(tx, ty, 0.3, "#12091f", 20, 1.8);
+      B.shake(4); play("gravity");
+      break;
+    }
     case 93: f.sparkle(src.x, src.y, 1, "#8a5ad8", 20); play("pact"); if (mine) text(G, "심연의 계약", src.x, src.y, 2.2, "#c8a0ff", true); break;
     // ── 활 (the pose and the twang: bowFire; the arrows come as "ar")
-    case 94: SkillFx_bow(G, src, false); f.flash(src.x, src.y, 10); play("pierce"); break;
-    case 95: SkillFx_bow(G, src, false); f.burst(src.x, src.y, 0.1, "#b8a878", 14, 1.8); play("leapshot"); break;
+    case 94: SkillFx_bow(G, src, false); pierceMuzzle(src.x, src.y, tx, ty); play("pierce"); break;
+    case 95: {
+      SkillFx_bow(G, src, false);
+      for (let j = -2; j <= 2; j++) {
+        const a = ang + j * 0.13;
+        S3.fx.spark(src.x + Math.cos(a) * 10, src.y + Math.sin(a) * 10, j % 2 ? "#8ee874" : "#fff2a6", 0.9);
+      }
+      f.burst(src.x, src.y, 0.1, "#8ee874", 10, 1.5);
+      play("leapshot");
+      break;
+    }
     case 96: SkillFx_bow(G, src, true); f.sparkle(src.x, src.y, 1.4, "#fff4dc", 10); play("rain"); if (mine) text(G, "화살비!", src.x, src.y, 2.2, "#ffe9a0", true); break;
     // ── hybrid signatures
     case 97: {
-      // a crescent of fire flying the length of the line
-      const ax = src.x, ay = src.y;
-      S3.fxCustom((g, k) => {
-        const [x, y] = at(ax + (tx - ax) * k, ay + (ty - ay) * k, 12), sa = S3.sAng(Math.cos(ang), Math.sin(ang));
-        for (let i = -6; i <= 6; i++) {
-          const a = sa + (i / 6) * 1.1, r = 16 - Math.abs(i);
-          px(g, x + Math.cos(a) * r - 1, y + Math.sin(a) * r * 0.8 - 1, 3, 3, Math.abs(i) < 3 ? "#ffffff" : i % 2 ? "#ff5a3a" : "#ffd84a");
-        }
-      }, Math.max(160, Math.hypot(tx - ax, ty - ay) * 2));
-      f.beam(ax, ay, tx, ty, "#ff8a3a", 0.6); B.shake(8); play("crimson");
+      // 원소 마검: 홍련참 — full-width (half=20) Fire + Lightning crescent wave
+      crimsonArcWave(src.x, src.y, tx, ty, G.defs?.skills?.crimson?.half || 20);
+      B.shake(8); play("crimson");
       if (mine) text(G, "홍련참!", src.x, src.y, 2.2, "#ff8a5a", true);
       break;
     }
