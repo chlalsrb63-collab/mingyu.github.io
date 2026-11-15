@@ -443,13 +443,18 @@ function facing(s, dx, dy) {
   if (Math.abs(sy) > 0.02) s.back = sy < 0 ? 1 : 0;
 }
 
+/** A scripted boss's look of the moment (net.js `bst` 0 · 1 marked cast · 2 dived, `bph` phase): kind_dive, kind_ch, kind_p2 — each only if drawn. */
+export function artKind(kind, m) {
+  for (const [on, sfx] of [[m.bst === 2, "_dive"], [m.bst === 1, "_ch"], [m.bph >= 2, "_p2"]]) if (on && BEASTS[kind + sfx]) return kind + sfx;
+  return kind;
+}
 /**
  * Draw monster `m` (its defs entry `d`) standing at iso pixel (X, Y). `s` is the
  * scene's per-monster scratch state, `parts` its particle list, G the game state.
  */
 export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
   const el = m.el | 0, sc = d.boss ? 1 : SCALE[el] || 1;
-  const R = rig(d.sp, tint, sc), def = R.def;
+  const R = rig(m.bst || m.bph > 1 ? artKind(d.sp, m) : d.sp, tint, sc), def = R.def;
   if (s.px === undefined) { s.px = m.x; s.py = m.y; s.fx = (m.id & 1); s.back = 0; s.dist = 0; s.mvT = -1e9; }
   const mx = m.x - s.px, my = m.y - s.py, step = Math.hypot(mx, my);
   if (step > 0.04) { s.mvT = t; s.dist += step; facing(s, mx, my); }
