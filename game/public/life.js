@@ -86,11 +86,12 @@ function renderBook(box, s) {
   const card = el("div", "dcard life-card"), hd = el("div", "dh");
   hd.append(el("b", "", "물고기 도감"), el("span", "lv", `${n} / ${ids.length * 3}`));
   card.append(hd);
+  const row = (cls, text) => { const r = el("div", "df"); r.append(el("small", cls, text)); card.append(r); };
   for (const id of ids) {
     const e = mine[id], marks = B.size.map((z, i) => ((bits(id) >> i) & 1 ? z : "·")).join(" ");
-    card.append(el("small", e ? "" : "soon", e ? `${(G().defs.items[id] || { name: id }).name} — ${e[0]}cm · ${marks}` : `??? (${marks})`));
+    row(e ? "" : "soon", e ? `${(G().defs.items[id] || { name: id }).name} — ${e[0]}cm · ${marks}` : `??? (${marks})`);
   }
   const next = B.at.find((a) => a[0] > n), last = B.at[B.at.length - 1];
-  if (next) card.append(el("small", "next", `${next[0]}칸: ${next[1].toLocaleString("ko-KR")}G${next[2] ? ` · ${(G().defs.items[next[2]] || {}).name || next[2]}` : ""}${next === last ? " · 칭호 [물고기 박사]" : ""}`));
+  if (next) row("next", `${next[0]}칸 보상: ${next[1].toLocaleString("ko-KR")}G${next[2] ? ` · ${(G().defs.items[next[2]] || {}).name || next[2]}` : ""}${next === last ? " · 칭호 [물고기 박사]" : ""}`);
   box.append(card);
 }

@@ -365,3 +365,37 @@ Also: `species.js` head measures, `swing.js` grip points, and the `--page wardro
 3. Arc choices change small things (a line, a title, one 알바 row) — or should one choice change an NPC's home?
 4. The 장날 day and hours (P12: Sunday 10–22 KST) and whether season sets come back each year.
 5. Dye count per piece (6 trims) and whether dyes are tradeable.
+
+## 7. P7/P8 as built (2026-11-15)
+
+- **P7 numbers** (`12-life-tables.js`): `RXP` 8/16/30/50/75; `GRADE_MAP.mesa` 5. Every recipe sells for ≥ 0.9 × its inputs
+  at shop price + fee (`lifeskills.mjs`; the B.7 guard still passes): 여관 스튜 220 G with fee 66 (the inn sells it, so the
+  guard needs the fee), 장님고기 찜 700, 신속의 물약 400, 연금 정수 1,650, 부활 깃털 = 수정꽃 + 참나무 목재, fee 80 (0.48 → 0.94);
+  tier-2 helm/gloves/boots/ring/amulet take **2 ingots** (a fee cut alone could not reach 0.9), fee ≥ the guard's floor;
+  gear fee 30 → 29 %. 되새김 인장 has no price (exempt).
+- **Board** +13 rows (87): two per skill at L33/L45 (심연 결정, 붉은 단풍잎, 산호 도미, 단풍 송어, 장님고기 찜, 꿀 호밀빵, 심연 주괴,
+  단풍 병풍, 집중의 향초, 경험의 엘릭서, 음메 → 마루 and 수국 → 피피 parcels) and 연금's first grade (해독 물약 for 토비).
+  Every skill has a row in each grade and ≥ 2 past L30 (`lifeskills.mjs`); `jobaudit` passes.
+- **Every level shows progress**: the level-up toast names the recipes first known there, else the steady gains (time,
+  대성공, keep score, parcel pace); 채집's 덤 grows 4 % → 23.6 % (`LIFE_STEP`).
+- **Hours to L50** (Σ lifeNeed / RXP at the band's grade; an action = its channel × lifeTime(L) + handling: gather 2.4 s
+  + 8 s walk, fish 4.75 + 5, cook 3 + 4, craft 4.5 + 4, alch 4 + 4; no 대성공, board or buffs):
+
+  | | 채집 | 낚시 | 요리 | 제작 | 연금 |
+  | --- | --- | --- | --- | --- | --- |
+  | hours | 33.4 → 24.2 | 29.1 → 21.1 | 21.2 → 15.4 | 25.0 → 18.2 | 23.8 → 17.3 |
+
+  Actions 12,296 → 8,895 (L31–49: 7,256 → 4,881). 배달 has no action XP: 196 쉬움 jobs (≈ 137 at the grade mix), unchanged.
+- **P8**: produce `pr_milk` `pr_honey` (우유 배달 / 꽃밭 물주기 pay 1–2, 제초 감자; 쥬쥬 also sells them — buying is a sink);
+  dishes 감자 버터구이 (요리 8), 치즈 수프 (22), 꿀 호밀빵 (35); life-buff foods in the one food slot (`buff.lf`, `lifeBuff`):
+  숲향 허브차 (12, 채집 −20 %), 갈대의 낚시 도시락 (18, 입질 −25 %), 대장장이 보리차 (25, station 대성공 +3 %p), 버들 꿀떡 (28,
+  parcel/milk clock +20 % — not speed: the parcel factor lives in 45-jobs.js), 집중의 향초 (연금 22, life XP +10 %; the brew
+  window is client-only); 해독 물약 (연금 8, `cure`: poison, burn, slow).
+- **Fish**: 정글 메기, 산호 도미, 모래 장어 (dunesea, oasis), 운해 은어, 단풍 송어, 붉은바위 쏘가리 (mesa: frostkeep has no water)
+  take `FISH_LOCAL` 40 % of their grade's catch (grade 5 takes 장님고기's place, never 황금 잉어's). **물고기 도감**: sheet
+  `fbook {id: [best cm, size bits]}` (lifeFresh + lifeSheetClean; optional field, no `v` bump), 11 × 소/중/대 = 33; rewards at
+  5/11/22/33 (1,000 G · 3,000 G + 축복 강화석 · 6,000 G + 어탁 액자 · 15,000 G + title 물고기 박사). Wire `self.fbook`,
+  `defs.life.fbook/fishMap/step`; a card in the life window.
+- **Furniture** (캉캉, 제작 5–40): 버들 바구니 의자, 참나무 책상, 협동 알바 감사패, 기름등 선반, 어탁 액자, 화석 목재 침대 (rest),
+  기념품 진열장, 단풍 병풍 — `FURN` rows (placeable, not in the agent's shop) on **reused** interior sprites. Left: their own
+  sprites, the frame showing your record fish, the cabinet showing `ch.keep`. Icons `lifeicons.js` (`shots/life-items.png`).
