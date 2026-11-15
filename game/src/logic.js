@@ -59,12 +59,12 @@ const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 const WKIND = {
   // unhurried, weighty blows: each lands harder than a quick one would
   sword: { name: "대검", cd: 920, range: 34, fx: 0, cleave: 3, kb: 9, mult: 1.45, arc: 65, crit: 3 },
-  dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 1.1, arc: 35, crit: 10 },
-  spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.4, arc: 25, crit: 5 },
+  dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 0.9, arc: 35, crit: 10 },
+  spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.3, arc: 25, crit: 5 },
   staff: { name: "스태프", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.25, arc: 40, crit: 3, mag: 1, shot: { spd: 320, r: 5, kind: 8 } },
   book: { name: "마도서", cd: 800, range: 84, fx: 5, splash: 26, mult: 1.05, kb: 4, arc: 40, crit: 3, mag: 1, shot: { spd: 240, r: 7, kind: 9 } },
   // an arrow flies (45-jobs.js shots): the finisher hits 1.4× and goes through one more
-  bow: { name: "활", cd: 760, range: 150, fx: 6, kb: 3, mult: 0.9, arc: 20, crit: 6, shot: { spd: 420, r: 6 } },
+  bow: { name: "활", cd: 760, range: 150, fx: 6, kb: 3, mult: 0.86, arc: 20, crit: 6, shot: { spd: 420, r: 6 } },
   hammer: { name: "양손해머", cd: 1100, range: 49, fx: 7, center: 25, r: 24, wind: 200, mult: 2.23, crit: 3 },
 };
 /**
@@ -188,17 +188,17 @@ const JOBS = {
   warlock: { name: "마도사", kind: "single", wk: ["book"], cost: JOB_COST },
   archer: { name: "궁수", kind: "single", wk: ["bow"], cost: JOB_COST },
   destroyer: { name: "파괴자", kind: "single", wk: ["hammer"], cost: JOB_COST },
-  spellblade: { name: "마검사", kind: "hybrid", wk: ["sword", "staff"], scale: { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 }, cost: HYB_COST },
-  tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.8, luk: 0.8 }, cost: HYB_COST },
-  dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: HYB_COST },
-  hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wil: 0.3 }, cost: HYB_COST },
-  darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.8, str: 0.8, int: 0.3 }, cost: HYB_COST },
+  spellblade: { name: "마검사", kind: "hybrid", wk: ["sword", "staff"], scale: { str: 0.9, int: 0.9, wil: 0.2, wis: 0.2 }, cost: HYB_COST },
+  tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.75, luk: 0.8 }, cost: HYB_COST },
+  dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 }, cost: HYB_COST },
+  hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.5, int: 0.78, luk: 0.3, wil: 0.3 }, cost: HYB_COST },
+  darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.9, str: 0.9, int: 0.4 }, cost: HYB_COST },
   // Additional hybrid pairings (docs/design/jobs-and-stats.md).
-  bladedancer: { name: "검무사", kind: "hybrid", wk: ["sword", "dagger"], scale: { str: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, cost: HYB_COST },
-  trickster: { name: "환술사", kind: "hybrid", wk: ["dagger", "staff"], scale: { dex: 0.8, int: 0.8, luk: 0.3, wis: 0.3 }, cost: HYB_COST },
+  bladedancer: { name: "검무사", kind: "hybrid", wk: ["sword", "dagger"], scale: { str: 0.68, dex: 0.5, wil: 0.3, luk: 0.3 }, cost: HYB_COST },
+  trickster: { name: "환술사", kind: "hybrid", wk: ["dagger", "staff"], scale: { dex: 0.5, int: 0.75, luk: 0.3, wis: 0.3 }, cost: HYB_COST },
   spellspear: { name: "마창사", kind: "hybrid", wk: ["spear", "staff"], scale: { str: 0.8, int: 0.8, wis: 0.6 }, cost: HYB_COST },
-  runesage: { name: "룬술사", kind: "hybrid", wk: ["staff", "book"], scale: { int: 0.8, wis: 0.3, wil: 0.3 }, cost: HYB_COST },
-  runearcher: { name: "각인궁사", kind: "hybrid", wk: ["book", "bow"], scale: { int: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, hand: { bow: { dex: 0.95 } }, cost: HYB_COST },
+  runesage: { name: "룬술사", kind: "hybrid", wk: ["staff", "book"], scale: { int: 0.9, wis: 0.4, wil: 0.4 }, cost: HYB_COST },
+  runearcher: { name: "각인궁사", kind: "hybrid", wk: ["book", "bow"], scale: { int: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, hand: { bow: { dex: 0.95, luk: 0.45 } }, cost: HYB_COST },
   mercenary: { name: "머서너리", kind: "hybrid", wk: ["hammer", "spear"], scale: { str: 0.9, wil: 0.5, wis: 0.4 }, cost: HYB_COST },
   paladin: { name: "성기사", kind: "hybrid", wk: ["hammer", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: HYB_COST },
 };
@@ -261,35 +261,35 @@ const SK_GROW = 0.004;
 
 const SKILL = {
   // ── 대검 sword
-  slash: { kind: "a", wk: "sword", need: 1, name: "파워 슬래쉬", mp: 3, hpPct: 0.02, autoHp: 0.35, cd: 3500, mult: 1.45, r: 46, arc: 75, stag: [600, 360], knock: 14, eat: { drag: 0.3 }, fx: 80,
-    desc: "대검을 크게 휘둘러 앞쪽 부채꼴의 적을 모두 벤다. 맞은 적은 휘청이며 밀려나 경직된다. 끌려온 적에게는 +30%." },
+  slash: { kind: "a", wk: "sword", need: 1, name: "파워 슬래쉬", mp: 3, hpPct: 0.02, autoHp: 0.35, cd: 3500, mult: 1.45, core: 1.3, r: 46, arc: 75, stag: [600, 360], knock: 14, eat: { drag: 0.3 }, fx: 80,
+    desc: "대검을 크게 휘둘러 앞쪽 부채꼴의 적을 모두 벤다. 겨눈 적은 정통으로 맞아 피해가 30% 더 크다. 맞은 적은 휘청이며 밀려나 경직된다. 끌려온 적에게는 +30%." },
   rend: { kind: "a", wk: "sword", need: 10, name: "대지 가르기", mp: 7, hpPct: 0.03, autoHp: 0.35, cd: 9000, leap: 60, r: 38, mult: 1.7, len: 120, half: 14, wave: 1.2, air: 700, fx: 81,
     desc: "앞으로 뛰어올라 내려찍어(범위) 적을 0.7초 띄우고, 착지한 자리에서 일직선으로 땅을 가르는 충격파를 보내 경직시킨다. 벽은 넘지 못한다." },
-  inertia: { kind: "p", wk: "sword", need: 10, name: "거검의 관성", max: 5, ms: 2500, reach: 0.06, critd: 0.06, fx: 110, borrow: ["atk", 4],
+  inertia: { kind: "p", wk: "sword", need: 10, name: "거검의 관성", max: 5, ms: 2500, reach: 0.06, critd: 0.08, fx: 110, borrow: ["atk", 4],
     desc: "대검으로 적을 맞힐 때마다 관성이 1 쌓인다(최대 5). 관성 1당 사거리 +6%, 치명타 피해 +8%. 2.5초 동안 맞히지 못하면 사라진다." },
-  sword_steadfast20: { kind: "p", wk: "sword", need: 20, name: "반걸음 버티기", perk: ["poise", 8],
-    desc: "무거운 칼을 받치는 발을 굳힌다. 경직 저항이 8%p 증가한다." },
-  sword_fortify30: { kind: "p", wk: "sword", need: 30, name: "두 손의 버팀", perk: ["def", 7],
-    desc: "두 손으로 칼을 붙들고 상대의 충격을 흘린다. 방어력이 7% 증가한다." },
-  sword_weight40: { kind: "p", wk: "sword", need: 40, name: "날에 실은 무게", perk: ["atk", 4],
-    desc: "칼날이 떨어지는 순간까지 무게를 싣는다. 공격력이 4% 증가한다." },
-  sword_edge50: { kind: "p", wk: "sword", need: 50, name: "칼끝의 결단", perk: ["critd", 8],
-    desc: "한 번 드러난 급소를 끝까지 벤다. 치명타 피해 배율이 8%p 증가한다." },
+  sword_steadfast20: { kind: "p", wk: "sword", need: 20, name: "반걸음 버티기", perk: ["poise", 15],
+    desc: "무거운 칼을 받치는 발을 굳힌다. 경직 저항이 15%p 증가한다." },
+  sword_fortify30: { kind: "p", wk: "sword", need: 30, name: "벼랑 끝 투지", ps: 140, below: 0.4, guard: 0.15, aspd: 0.2, borrow: ["def", 7],
+    desc: "HP가 40% 아래로 떨어지면 받는 피해가 15% 줄고 기본 공격 속도가 20% 빨라진다." },
+  sword_weight40: { kind: "p", wk: "sword", need: 40, name: "날에 실은 무게", ps: 141, r: 36, mult: 0.35, borrow: ["atk", 4],
+    desc: "기본 공격 3연타의 마지막 일격이 땅을 울려, 맞은 적 둘레 36 안의 적 모두에게 공격력의 35% 피해를 준다." },
+  sword_edge50: { kind: "p", wk: "sword", need: 50, name: "칼끝의 결단", ps: 142, below: 0.3, k: 0.35, borrow: ["critd", 8],
+    desc: "HP가 30% 아래인 적에게 주는 피해가 35% 증가한다. 쓰러뜨릴 적을 끝까지 벤다." },
   // ── 단검 dagger
-  ambush: { kind: "a", wk: "dagger", need: 1, name: "암습", mp: 4, hpPct: 0.015, autoHp: 0.35, cd: 6000, len: 110, mult: 1.3, behind: 16, crit: 30, eat: { air: 0.5 }, fx: 84,
+  ambush: { kind: "a", wk: "dagger", need: 1, name: "암습", mp: 4, hpPct: 0.015, autoHp: 0.35, cd: 6000, len: 110, mult: 1.8, behind: 16, crit: 30, eat: { air: 0.5 }, fx: 84,
     desc: "겨눈 적의 등 뒤로 순간이동해 찌른다. 나를 노리지 않던 적에게는 반드시 치명타, 아니면 치명타 확률 +30%. 공중에 뜬 적에게는 추가타 +50%." },
   shade: { kind: "a", wk: "dagger", need: 10, name: "그림자 칼날", mp: 6, hpPct: 0.022, autoHp: 0.35, cd: 8000, n: 3, spread: 15, len: 120, half: 10, mult: 0.5, fx: 85,
     desc: "그림자 칼날 세 자루를 부채꼴로 던진다. 칼날은 적을 꿰뚫고, 맞은 적마다 표식을 하나씩 남긴다." },
-  vitals: { kind: "p", wk: "dagger", need: 10, name: "급소 도려내기", max: 5, crit: 3, bleed: 0.08, ms: 4000, spd: 0.2, spdMs: 2000, fx: 111, borrow: ["crit", 3],
-    desc: "단검 기본 공격이 표식을 남긴다(최대 5, 10초). 표식 1개당 치명타 확률 +4%. 표식 있는 적을 베면 4초간 출혈(초당 공격력의 12%)을 일으키고 2초간 이동 속도 +20%." },
-  dagger_shade20: { kind: "p", wk: "dagger", need: 20, name: "그림자 보폭", perk: ["spd", 5],
-    desc: "그림자가 먼저 발을 디딜 만큼 가볍게 걷는다. 이동 속도가 5% 증가한다." },
-  dagger_snap30: { kind: "p", wk: "dagger", need: 30, name: "짧은 칼놀림", perk: ["aspd", 4],
-    desc: "짧게 벤 뒤 손목을 제자리로 돌린다. 기본 공격 속도가 4% 증가한다." },
-  dagger_edge40: { kind: "p", wk: "dagger", need: 40, name: "빈틈을 읽는 눈", perk: ["crit", 3],
-    desc: "적이 자세를 바꾸기 직전의 빈틈을 읽는다. 치명타 확률이 3%p 증가한다." },
-  dagger_fang50: { kind: "p", wk: "dagger", need: 50, name: "피를 머금은 날", perk: ["ls", 1.5],
-    desc: "상처에서 빼낸 기운으로 숨을 고른다. 공격 적중 시 생명력 흡수 비율이 1.5%p 증가한다." },
+  vitals: { kind: "p", wk: "dagger", need: 10, name: "급소 도려내기", max: 5, crit: 1.5, bleed: 0.08, ms: 4000, spd: 0.2, spdMs: 2000, fx: 111, borrow: ["crit", 3],
+    desc: "단검 기본 공격이 표식을 남긴다(최대 5, 10초). 표식 1개당 치명타 확률 +1.5%. 표식 있는 적을 베면 4초간 출혈(초당 공격력의 8%)을 일으키고 2초간 이동 속도 +20%." },
+  dagger_shade20: { kind: "p", wk: "dagger", need: 20, name: "그림자 보폭", perk: ["spd", 10],
+    desc: "그림자가 먼저 발을 디딜 만큼 가볍게 걷는다. 이동 속도가 10% 증가한다." },
+  dagger_snap30: { kind: "p", wk: "dagger", need: 30, name: "그림자 회수", ps: 143, k: 0.3, borrow: ["aspd", 4],
+    desc: "적을 처치할 때마다 단검 스킬들의 남은 재사용 대기시간이 30% 줄어든다." },
+  dagger_edge40: { kind: "p", wk: "dagger", need: 40, name: "빈틈을 읽는 눈", ps: 144, borrow: ["crit", 3],
+    desc: "아직 내게 한 번도 맞지 않은 적을 처음 벨 때는 반드시 치명타가 터진다(스킬 포함)." },
+  dagger_fang50: { kind: "p", wk: "dagger", need: 50, name: "피를 머금은 날", ps: 145, heal: 0.06, aspd: 0.25, ms: 3000, borrow: ["ls", 1.5],
+    desc: "적을 처치하면 최대 HP의 6%를 회복하고, 3초 동안 기본 공격 속도가 25% 빨라진다." },
   // ── 창 spear
   spiral: { kind: "a", wk: "spear", need: 1, name: "나선 찌르기", mp: 3, hpPct: 0.018, autoHp: 0.35, cd: 3500, len: 110, half: 12, mult: 1.1, far: 0.72, eat: { frz: 0.6 }, fx: 87,
     desc: "창을 비틀어 일직선을 모두 꿰뚫는다. 끝부분(28%)에 걸린 적은 창끝으로 맞는다. 얼어붙은 적은 얼음째 부서진다(파쇄 +60%)." },
@@ -299,14 +299,14 @@ const SKILL = {
     desc: "사거리의 72% 이상 떨어진 적을 맞히면 창끝 일격 — 피해 ×1.5, 방어력의 35%를 무시한다." },
   rally_banner: { kind: "a", wk: "spear", need: 15, name: "전열 구호기", mp: 12, cd: 16000, r: 76, ms: 6000, every: 1000, heal: 0.023, atkHeal: 0.06, haste: 0.10, creditMs: 10000, support: true, noAuto: true, fx: 135,
     desc: "6초 동안 깃발 주변의 파티원을 매초 최대 HP 2.3%와 공격력의 6%만큼 회복시키고 기본 공격 속도를 10% 높인다. 시전자 회복은 절반이며 깃발 효과는 겹치지 않는다." },
-  spear_guard20: { kind: "p", wk: "spear", need: 20, name: "전열의 간격", perk: ["def", 7],
-    desc: "창대를 세워 들고 방어할 틈을 벌린다. 방어력이 7% 증가한다." },
-  spear_advance30: { kind: "p", wk: "spear", need: 30, name: "한 걸음 더", perk: ["spd", 4],
-    desc: "창끝을 겨눈 채로도 보폭을 잃지 않는다. 이동 속도가 4% 증가한다." },
-  spear_truss40: { kind: "p", wk: "spear", need: 40, name: "굽히지 않는 창대", perk: ["poise", 8],
-    desc: "굽힌 몸과 창대로 적의 힘을 받는다. 경직 저항이 8%p 증가한다." },
-  spear_edge50: { kind: "p", wk: "spear", need: 50, name: "하나로 모인 힘", perk: ["critd", 8],
-    desc: "두 발에서 올라온 힘을 창끝 한 점에 모은다. 치명타 피해 배율이 8%p 증가한다." },
+  spear_guard20: { kind: "p", wk: "spear", need: 20, name: "전열의 간격", perk: ["def", 15],
+    desc: "창대를 세워 들고 방어할 틈을 벌린다. 방어력이 15% 증가한다." },
+  spear_advance30: { kind: "p", wk: "spear", need: 30, name: "창끝 반동", ps: 146, cut: 500, borrow: ["spd", 4],
+    desc: "창끝 일격이 적중할 때마다 창 스킬들의 재사용 대기시간이 0.5초 줄어든다." },
+  spear_truss40: { kind: "p", wk: "spear", need: 40, name: "굽히지 않는 창대", perk: ["poise", 15],
+    desc: "굽힌 몸과 창대로 적의 힘을 받는다. 경직 저항이 15%p 증가한다." },
+  spear_edge50: { kind: "p", wk: "spear", need: 50, name: "하나로 모인 힘", ps: 147, borrow: ["critd", 8],
+    desc: "두 발에서 올라온 힘을 창끝 한 점에 모은다. 창끝 일격은 빗맞지 않는 한 반드시 치명타가 된다." },
   // ── 스태프 staff
   fireball: { kind: "a", wk: "staff", need: 1, name: "파이어볼", mp: 8, cd: 3500, el: "f", mag: 1, r: 30, mult: 1.4, burn: 0.1, fx: 70,
     desc: "불덩이를 던진다(범위). 맞은 적에게 화상이 1 쌓이고(최대 3, 6초) 떨어진 자리는 3초간 타오른다. 불 원소." },
@@ -314,16 +314,16 @@ const SKILL = {
     desc: "주변에 서리 고리를 퍼뜨려 적을 밀어내고 느리게 한다. 이미 느려진 적은 1초간 빙결된다. 끌려온 적에게는 +30%. 얼음 원소." },
   reso: { kind: "p", wk: "staff", need: 10, name: "마력 공명", n: 3, k: 0.3, fx: 113, borrow: ["mp", 6],
     desc: "스태프 스킬을 세 번 쓰면 공명이 차오른다 — 다음 스태프 스킬은 MP 없이 쓰고 피해 +30%. 불·얼음·번개가 겹치면 원소 반응이 일어난다." },
-  staff_mind20: { kind: "p", wk: "staff", need: 20, name: "깊은 마력 그릇", perk: ["mp", 8],
-    desc: "공명을 일으키고 남은 마력도 모아 둔다. 최대 MP가 8% 증가한다." },
-  staff_chant30: { kind: "p", wk: "staff", need: 30, name: "짧은 주문", perk: ["cdr", 4],
-    desc: "말끝 하나로 흩어진 마력을 다시 모은다. 스킬 재사용 대기시간 감소율이 4%p 증가한다." },
-  staff_spark40: { kind: "p", wk: "staff", need: 40, name: "벼락의 꼭짓점", perk: ["crit", 3],
-    desc: "여러 갈래 중 적에게 닿을 벼락을 먼저 찾는다. 치명타 확률이 3%p 증가한다." },
-  staff_flood50: { kind: "p", wk: "staff", need: 50, name: "쏟아지는 마력", perk: ["atk", 5],
-    desc: "원소의 힘이 새지 않도록 지팡이 끝에 모은다. 공격력이 5% 증가한다." },
+  staff_mind20: { kind: "p", wk: "staff", need: 20, name: "깊은 마력 그릇", perk: ["mp", 15],
+    desc: "공명을 일으키고 남은 마력도 모아 둔다. 최대 MP가 15% 증가한다." },
+  staff_chant30: { kind: "p", wk: "staff", need: 30, name: "원소 증폭", ps: 148, k: 0.15, borrow: ["cdr", 4],
+    desc: "내가 일으킨 원소 반응(증기 폭발 · 초전도 · 과부하)의 피해가 15% 증가한다." },
+  staff_spark40: { kind: "p", wk: "staff", need: 40, name: "정신 집중", ps: 149, ms: 1500, k: 0.4, borrow: ["crit", 3],
+    desc: "1.5초 동안 움직이지 않으면 집중한다 — 다음 스킬 한 번의 피해가 40% 증가한다." },
+  staff_flood50: { kind: "p", wk: "staff", need: 50, name: "쏟아지는 마력", ps: 150, at: 0.7, k: 0.15, borrow: ["atk", 5],
+    desc: "MP가 70% 이상 남아 있는 동안 주는 모든 피해가 15% 증가한다." },
   // ── 마도서 book
-  soulbolt: { kind: "a", wk: "book", need: 1, name: "영혼 화살", mp: 8, cd: 3500, mag: 1, len: 150, arc: 30, spd: 350, mult: 2.0, heal: 0.06, fx: 91,
+  soulbolt: { kind: "a", wk: "book", need: 1, name: "영혼 화살", mp: 8, cd: 3500, mag: 1, len: 150, arc: 30, spd: 350, mult: 2.4, heal: 0.06, fx: 91,
     desc: "겨눈 적을 쫓아가는 영혼의 화살을 쏜다. 맞히면 준 피해의 6%만큼 HP를 회복한다." },
   gravity: { kind: "a", wk: "book", need: 10, name: "중력 왜곡진", mp: 15, cd: 11000, mag: 1, at: 70, r: 60, ms: 4000, every: 500, pull: 6, mult: 0.4, fx: 92,
     desc: "앞쪽에 4초간 중력의 소용돌이를 연다. 0.5초마다 안의 적을 가운데로 끌어당기며 피해를 준다. 끌려간 적은 모여 광역기에 더 아프다." },
@@ -331,33 +331,33 @@ const SKILL = {
     desc: "마도서 스킬에 맞은 적에게 6초간 낙인을 새긴다. 낙인 찍힌 적은 누구에게서나 피해를 15% 더 받는다." },
   revive_binding: { kind: "a", wk: "book", need: 15, name: "되살림 제본", mp: 19, cd: 18000, r: 105, heal: 0.19, atkHeal: 0.30, creditMs: 10000, support: true, noAuto: true, fx: 136,
     desc: "가까이에서 가장 위급한 파티원을 최대 HP 19%와 공격력의 30%만큼, 다음 파티원을 절반만큼 즉시 회복시킨다. 회복할 파티원이 없으면 자신이 절반을 회복한다." },
-  book_margin20: { kind: "p", wk: "book", need: 20, name: "널찍한 여백", perk: ["hp", 6],
-    desc: "여백에 회복 주문을 적어 몸에 새긴다. 최대 HP가 6% 증가한다." },
-  book_clause30: { kind: "p", wk: "book", need: 30, name: "한 줄로 묶기", perk: ["cdr", 4],
-    desc: "같은 문장을 다시 읽느라 페이지를 되돌릴 필요가 없다. 스킬 재사용 대기시간 감소율이 4%p 증가한다." },
-  book_ink40: { kind: "p", wk: "book", need: 40, name: "묵향의 잔재", perk: ["mp", 8],
-    desc: "마르지 않은 글씨에서 남은 마력을 건져 올린다. 최대 MP가 8% 증가한다." },
-  book_return50: { kind: "p", wk: "book", need: 50, name: "돌아오는 활자", perk: ["ls", 1.25],
-    desc: "적에게 퍼진 활자가 돌아오며 상처를 덮는다. 공격 적중 시 생명력 흡수 비율이 1.25%p 증가한다." },
+  book_margin20: { kind: "p", wk: "book", need: 20, name: "널찍한 여백", perk: ["hp", 12],
+    desc: "여백에 회복 주문을 적어 몸에 새긴다. 최대 HP가 12% 증가한다." },
+  book_clause30: { kind: "p", wk: "book", need: 30, name: "낙인 전염", ps: 151, n: 2, r: 64, borrow: ["cdr", 4],
+    desc: "낙인 찍힌 적이 쓰러지면, 남은 낙인이 둘레 64 안의 적 둘에게 옮겨 붙는다." },
+  book_ink40: { kind: "p", wk: "book", need: 40, name: "묵향의 잔재", perk: ["mp", 15],
+    desc: "마르지 않은 글씨에서 남은 마력을 건져 올린다. 최대 MP가 15% 증가한다." },
+  book_return50: { kind: "p", wk: "book", need: 50, name: "영혼 흡수", ps: 152, k: 0.05, borrow: ["ls", 1.25],
+    desc: "낙인 찍힌 적에게 준 피해의 5%만큼 HP를 회복한다." },
   // ── 활 bow
   pierce: { kind: "a", wk: "bow", need: 1, name: "관통 화살", mp: 7, cd: 4500, spd: 600, len: 180, r: 8, mult: 1.6, fx: 94,
     desc: "빠른 화살 한 대가 일직선의 적을 모두 꿰뚫고 날아간다." },
   leapshot: { kind: "a", wk: "bow", need: 10, name: "도약 사격", mp: 13, cd: 9000, back: 60, n: 5, spread: 30, len: 150, mult: 1.2, per: 2, fx: 95,
     desc: "뒤로 뛰어 물러나며 화살 다섯 대를 부채꼴로 쏜다. 한 적은 최대 두 대까지 맞는다." },
   hawk: { kind: "p", wk: "bow", need: 10, name: "매의 시야", k: 0.15, d0: 40, span: 110, fx: 115, borrow: ["atk", 4],
-    desc: "멀리서 쏜 화살일수록 세다 — 쏜 자리에서 40 너머부터 거리에 따라 최대 +25%(150에서)." },
-  bow_lithe20: { kind: "p", wk: "bow", need: 20, name: "나뭇가지 걸음", perk: ["spd", 4],
-    desc: "잔가지를 밟아도 휘어지기 전에 발을 뗀다. 이동 속도가 4% 증가한다." },
-  bow_string30: { kind: "p", wk: "bow", need: 30, name: "팽팽한 시위", perk: ["aspd", 4],
-    desc: "앞 화살이 떠나자마자 다음 화살을 시위에 올린다. 기본 공격 속도가 4% 증가한다." },
-  bow_focus40: { kind: "p", wk: "bow", need: 40, name: "바람 틈의 표적", perk: ["crit", 3],
-    desc: "바람이 멈추는 찰나에 과녁의 작은 점을 겨눈다. 치명타 확률이 3%p 증가한다." },
-  bow_quill50: { kind: "p", wk: "bow", need: 50, name: "궤적을 찢는 깃", perk: ["atk", 5],
-    desc: "화살 깃을 다듬어 바람 속에서도 힘을 잃지 않는다. 공격력이 5% 증가한다." },
+    desc: "멀리서 쏜 화살일수록 세다 — 쏜 자리에서 40 너머부터 거리에 따라 최대 +15%(150에서)." },
+  bow_lithe20: { kind: "p", wk: "bow", need: 20, name: "나뭇가지 걸음", perk: ["spd", 10],
+    desc: "잔가지를 밟아도 휘어지기 전에 발을 뗀다. 이동 속도가 10% 증가한다." },
+  bow_string30: { kind: "p", wk: "bow", need: 30, name: "연속 사격", ps: 153, n: 5, k: 0.3, borrow: ["aspd", 4],
+    desc: "기본 공격 화살 다섯 발마다 같은 쪽으로 화살 한 발을 더 쏜다(위력 30%)." },
+  bow_focus40: { kind: "p", wk: "bow", need: 40, name: "바람 틈의 표적", perk: ["crit", 6],
+    desc: "바람이 멈추는 찰나에 과녁의 작은 점을 겨눈다. 치명타 확률이 6%p 증가한다." },
+  bow_quill50: { kind: "p", wk: "bow", need: 50, name: "약점 포착", ps: 154, ms: 4000, k: 0.15, borrow: ["atk", 5],
+    desc: "치명타를 맞힌 적은 4초 동안 나에게 받는 피해가 15% 늘어난다." },
 
   // ── single-job signatures
-  verdict: { kind: "j", job: "swordsman", wk: "sword", need: 20, name: "단죄의 일격", mp: 16, hpPct: 0.05, autoHp: 0.35, cd: 36000, r: 70, mult: 1.3, miss: 0.9, knock: 20, fx: 83,
-    desc: "대검전사의 기술 · 대검을 한 바퀴 휘둘러 주변을 모두 벤다. 잃은 HP가 많을수록 강하다(최대 +90%)." },
+  verdict: { kind: "j", job: "swordsman", wk: "sword", need: 20, name: "단죄의 일격", mp: 16, hpPct: 0.05, autoHp: 0.35, cd: 36000, r: 70, mult: 1.3, miss: 0.9, inert: 0.1, knock: 20, fx: 83,
+    desc: "대검전사의 기술 · 대검을 한 바퀴 휘둘러 주변을 모두 벤다. 잃은 HP가 많을수록 강하고(최대 +90%), 쌓인 관성을 모두 터뜨려 관성 1당 피해가 10% 늘어난다." },
   flurry: { kind: "j", job: "thief", wk: "dagger", need: 20, name: "무영난무", mp: 18, hpPct: 0.035, autoHp: 0.35, cd: 36000, n: 7, every: 220, r: 90, mult: 1.2, per: 0.3, fx: 86,
     desc: "도적의 기술 · 그림자가 되어 주변의 적 사이를 일곱 번 넘나들며 벤다(표식 있는 적부터, 표식 1개당 +30%). 그동안 피해를 입지 않는다." },
   dragon: { kind: "j", job: "lancer", wk: "spear", need: 20, name: "뇌룡승천", mp: 17, hpPct: 0.04, autoHp: 0.35, cd: 32000, at: 80, r: 64, pull: 20, n: 3, every: 400, mult: 0.4, fin: 0.8, stun: [1500, 600], el: "l", fx: 89,
@@ -437,6 +437,39 @@ const WK_SKILLS = Object.fromEntries(WK_ORDER.map((k) => [k, SKILL_ORDER.filter(
 const JOB_SKILL = Object.fromEntries(SKILL_ORDER.filter((id) => SKILL[id].job).map((id) => [SKILL[id].job, id]));
 /** The weapon passive of each kind. */
 const WK_PASSIVE = Object.fromEntries(WK_ORDER.map(wk => [wk, WK_SKILLS[wk].find(id => SKILL[id].kind === "p")]));
+// ───────────────────────────── job palettes (docs/design/skills-v2.md) ─────────────────────────────
+// One representative colour per job and the combo its skill icons and effects are drawn from (owner, 2026-11-15):
+// c = [main, light, dark, accent] — main: the body of a burst, a blade arc or a projectile; light: its flash and
+// highlights; dark: outlines and the one shadow tone; accent: the second note (sparks, marks, an element). A hybrid
+// blends its two weapons' palettes and keeps an accent of its own. Sent once in defs() as `jobPal`, with `skillJob`
+// (which job's palette each skill is drawn in: a signature its job's, a weapon skill its weapon's single job's).
+const JOB_PAL = {
+  adventurer: { name: "길 위의 첫걸음", c: ["#c8a46a", "#f0dcae", "#5e4626", "#7fb6d9"] },
+  swordsman: { name: "강철과 불꽃", c: ["#e2413b", "#ff9a80", "#6a1418", "#c9d2dc"] },
+  thief: { name: "그림자와 독", c: ["#9353d3", "#cfa8f5", "#2c1648", "#7ee07a"] },
+  lancer: { name: "천둥 기병", c: ["#3f86e8", "#a8d0ff", "#14345e", "#ffe066"] },
+  wizard: { name: "원소의 불씨", c: ["#ff8c2e", "#ffd29a", "#6e2c06", "#6fe3ff"] },
+  warlock: { name: "심연의 낙인", c: ["#cf3fa0", "#f5a6d6", "#4a0f36", "#5be3b0"] },
+  archer: { name: "숲의 바람", c: ["#62c25a", "#bdf0ae", "#1d4a22", "#f0c850"] },
+  destroyer: { name: "용광로와 금맥", c: ["#e8b830", "#ffe68a", "#5c4208", "#ff5a2a"] },
+  spellblade: { name: "홍련과 뇌전", c: ["#ff6a4a", "#ffbfa6", "#6e1c12", "#ffe066"] },
+  tracker: { name: "밤숲의 덫", c: ["#8fb83a", "#d6ee9e", "#33441a", "#9353d3"] },
+  dragoon: { name: "심연의 비룡", c: ["#5c5ee6", "#b4b6ff", "#1c1d5a", "#cf3fa0"] },
+  hexblade: { name: "피의 주술", c: ["#b02a48", "#f0889e", "#3c0a16", "#c48cff"] },
+  darkknight: { name: "검은 성역", c: ["#9aa4b8", "#dfe5f0", "#262b38", "#e2413b"] },
+  bladedancer: { name: "칼바람 춤", c: ["#f0679e", "#ffb8d8", "#66183e", "#c9d2dc"] },
+  trickster: { name: "환영의 세 원소", c: ["#36d1b4", "#a8f5e4", "#0c4a40", "#ff8c2e"] },
+  spellspear: { name: "빙결의 창", c: ["#66d6ff", "#d2f4ff", "#164c68", "#3f86e8"] },
+  runesage: { name: "메아리 법진", c: ["#b49cff", "#e4dcff", "#3a2c6e", "#ffd166"] },
+  runearcher: { name: "먹과 룬의 화살", c: ["#e6dcc0", "#fffbea", "#2b2620", "#62c25a"] },
+  mercenary: { name: "녹슨 철쇄", c: ["#b07850", "#e8c4a4", "#46281a", "#6fa8e0"] },
+  paladin: { name: "성문의 빛", c: ["#f2dc7a", "#fff7cc", "#74601c", "#8fd6ff"] },
+};
+/** Each skill's palette owner: a signature's job, a weapon skill's single job of that weapon. */
+const SKILL_JOB = Object.fromEntries(SKILL_ORDER.map((id) => {
+  const sk = SKILL[id];
+  return [id, sk.job || Object.keys(JOBS).find((j) => JOBS[j].kind === "single" && JOBS[j].wk[0] === sk.wk)];
+}));
 // ── gear: seven kinds of piece, five tiers each
 const WEAPON_NAMES = {
   sword: ["녹슨 대검", "강철 양손검", "기사단 클레이모어", "고주파 대검", "차원 절단기"],
@@ -908,7 +941,7 @@ const MOBS = {
   cloakbat: { name: "밤장막 박쥐군주", lv: 25, hp: 21000, atk: 120, def: 22, spd: 36, xp: 7000, gold: [1200, 2000], aggro: 140, range: 30, cd: 1400, boss: true, gear: 1,
     fan: 150, pool: 30, poolKind: 0, drops: [["veil_h", 0.03], ["veil_a", 0.03], ["veil_r", 0.03], ["veil_n", 0.03], ["w_ribbook", 0.04]] },
   nightbat: { name: "밤장막 흡혈박쥐", sp: "nightbat", lv: 25, hp: 500, atk: 40, def: 8, spd: 54, xp: 300, gold: [20, 40], aggro: 220, range: 18, cd: 1100, fly: true },
-  bloomwhale: { name: "꽃무덤 고래", lv: 50, hp: 60000, atk: 165, def: 52, spd: 30, xp: 90000, gold: [6000, 9000], aggro: 170, range: 34, cd: 1500, boss: true, gear: 1,
+  bloomwhale: { name: "꽃무덤 고래", lv: 50, hp: 56000, atk: 165, def: 52, spd: 30, xp: 90000, gold: [6000, 9000], aggro: 170, range: 34, cd: 1500, boss: true, gear: 1,
     fan: 160, pool: 34, poolKind: 2, drops: [["bloom_h", 0.025], ["bloom_a", 0.025], ["bloom_r", 0.025], ["bloom_n", 0.025], ["w_whalebow", 0.015], ["w_bloomstaff", 0.015], ["pet_hagfish", 0.02]] },
   hagfishhead: { name: "먹장어 머리", sp: "hagfishhead", lv: 50, hp: 9000, atk: 150, def: 30, spd: 8, xp: 2000, gold: [60, 120], aggro: 300, range: 76, cd: 1500, shot: true },
   // its phase-2 adds.
@@ -8069,6 +8102,12 @@ function bowShot(S, rt, p, fin) {
   const far = mob ? dist(p.x, p.y, mob.x, mob.y) : c.range * 0.7;
   rt.ev.push(["a", p.eid, 6, Math.round(p.x + ux * far), Math.round(p.y - 6 + uy * far), p.dir, p.combo]);
   fireArrow(S, rt, p, mob, (c.mult || 1) * (fin ? FINISH.mult : 1), fin ? 1 : 0, fin ? 1 : 0);
+  // 연속 사격 (55-passives.js): every n-th arrow brings one more along
+  const ds = SKILL.bow_string30;
+  if (pasHas(p, "bow_string30") && (p.bowN = ((p.bowN | 0) + 1) % ds.n) === 0) {
+    pasFx(rt, p, "bow_string30", p.x, p.y);
+    fireArrow(S, rt, p, mob, (c.mult || 1) * ds.k, 0, 0);
+  }
 }
 
 /**
@@ -8766,7 +8805,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const graze = !sure && rnd(S) * 100 < grazeChance(p, mob);
   // 급소 도려내기: a dagger finds the gaps its marks point to (+4% critical chance per mark)
   const vit = st.wk === "dagger" && pasOn(p, "vitals") ? marksOf(S, mob) * SKILL.vitals.crit : 0;
-  const crit = !graze && (sure || rnd(S) * 100 < st.crit + vit + (o.crit || 0));
+  const crit = !graze && (sure || pasFirst(p, mob) || rnd(S) * 100 < st.crit + vit + (o.crit || 0));
   // 거검의 관성: each stack a sword carries adds to its critical damage
   const critd = st.critd + (st.wk === "sword" ? inertOf(p) * SKILL.inertia.critd : 0);
   let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - (o.ign || 0));
@@ -8778,6 +8817,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (mob.vuln > S.now) dmg *= 1.3;
   // 금서의 낙인: a branded monster takes more from everyone
   if (mob.brand > S.now) dmg *= 1 + SKILL.brand.k;
+  dmg *= pasHurtK(S, p, mob, st);   // the felt passives (55-passives.js)
   // a sword hit builds inertia, once an action
   if (st.wk === "sword" && p.inAct !== p.actN && pasOn(p, "inertia")) {
     p.inAct = p.actN;
@@ -8799,7 +8839,9 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)));
   const x = mob.x, y = mob.y;
   wmHit(S, p, mob);
-  if (!dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue)) {
+  const brand = mob.brand, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue);
+  pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand);
+  if (!killed) {
     // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
     if (!mob.dead) stagger(S, mob, p, crit);
     return crit;
@@ -8939,7 +8981,7 @@ function hurtPlayer(S, rt, p, raw, mob) {
   const st = stats(p);
   // inside a dark knight's blood sanctuary a blow lands lighter (57-weapon-skills.js)
   const ward = S.now < (p.sanctAt || 0) ? 1 - SKILL.sanctuary.guard : 1;
-  const dmg = Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard * ward));
+  const dmg = Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard * ward * pasGuard(p)));
   p.hp -= dmg;
   p.hitAt = S.now;
   rouse(S, p);
@@ -9036,7 +9078,7 @@ function aimVec(p, mob) {
 
 /** How long a basic attack takes now. */
 function atkCd(p) {
-  return stats(p).acd;
+  return Math.round(stats(p).acd * pasAspd(p));
 }
 /** How far a basic attack reaches now: a greatsword with inertia (거검의 관성) reaches further. */
 function atkRange(p) {
@@ -9097,7 +9139,8 @@ function basicAttack(S, p) {
   // 급소 도려내기: a stab on a marked monster opens it up (bleeding, and a burst of speed); every stab marks
   const vit = c === WKIND.dagger && pasOn(p, "vitals") ? SKILL.vitals : null;
   const marked = vit && marksOf(S, mob) > 0;
-  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1) * charmMarkK(S, rt, p, mob), false, tip ? { ign: SKILL.tip.ign } : null);
+  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1) * charmMarkK(S, rt, p, mob), false, tip ? pasTip(S, rt, p) : null);
+  if (fin && c === WKIND.sword && pasHas(p, "sword_weight40")) pasQuake(S, rt, p, mob, zx, zy);
   if (vit && !mob.dead) {
     if (marked) {
       if (!(mob.dot && mob.dot.until > now && mob.dot.pid === p.pid)) rt.ev.push(["a", p.eid, 111, Math.round(mob.x), Math.round(mob.y - 6), p.dir]);
@@ -9143,6 +9186,117 @@ function magicLand(S, rt, p, s, mob) {
   chainBlow(S, rt, p, st, mob, zx, zy);
 }
 
+// ───────────────────────────── felt passives (docs/design/skills-v2.md) ─────────────────────────────
+// The weapon passives at mastery 30/40/50 (and a few at 20) that used to add 3–8 % to a stat now each change
+// how a fight goes: a low-HP rally, a finisher shockwave, an execute, cooldown refunds on kills, a sure first
+// crit, a tip-crit spear, amplified reactions, a standing-still focus, a full-mana bonus, spreading brands,
+// a brand drain, a double arrow, an exposed target. Their data is SKILL[id] (03-skills.js, `ps` = the proc
+// code the client draws in the ["ps", eid, code, x, y] event); a borrowed copy still only gives `borrow`.
+
+/** The triggered weapon passives (they carry a proc code `ps`). */
+const PAS_TRIG = SKILL_ORDER.filter((id) => SKILL[id].kind === "p" && SKILL[id].ps);
+/** The triggered passives working for `p` now; cached against the derived stats (rebuilt with the sheet, the hand or the loadout). */
+function pasSet(p) {
+  const st = deriveStats(p);
+  if (p.psK !== st) {
+    const lo = loOf(p.ch);
+    p.psK = st;
+    p.psC = new Set(PAS_TRIG.filter((id) => pasNative(p.ch, id, lo)));
+  }
+  return p.psC;
+}
+const pasHas = (p, id) => pasSet(p).has(id);
+/** A passive went off: the client draws proc `SKILL[id].ps` over (x, y). */
+const pasFx = (rt, p, id, x, y) => rt.ev.push(["ps", p.eid, SKILL[id].ps, Math.round(x), Math.round(y - 6)]);
+/** 벼랑 끝 투지: is the sword's low-HP rally on? */
+const pasLow = (p, ps) => ps.has("sword_fortify30") && p.hp < stats(p).mhp * SKILL.sword_fortify30.below;
+/** 정신 집중: stood still long enough for the focused next skill. */
+const pasFocus = (p, ps, now) => ps.has("staff_spark40") && now - Math.max(p.mvAt || 0, p.focusAt || 0) >= SKILL.staff_spark40.ms;
+
+/** Damage multiplier from the passives on one blow of `p` on `mob`. */
+function pasHurtK(S, p, mob, st) {
+  const ps = pasSet(p);
+  if (!ps.size) return 1;
+  let k = 1;
+  if (ps.has("sword_edge50") && mob.hp < mobMax(mob) * SKILL.sword_edge50.below) k *= 1 + SKILL.sword_edge50.k;
+  if (ps.has("staff_flood50") && p.mp >= st.mmp * SKILL.staff_flood50.at) k *= 1 + SKILL.staff_flood50.k;
+  if (ps.has("bow_quill50") && mob.expAt > S.now && mob.expBy === p.pid) k *= 1 + SKILL.bow_quill50.k;
+  return k;
+}
+/** 빈틈을 읽는 눈: the first blow `p` ever lands on `mob` is a sure crit. */
+const pasFirst = (p, mob) => !mob.by[p.pid] && pasHas(p, "dagger_edge40");
+
+/** After a blow of `dmg` landed (`killed`: it fell; `brand`: its brand before the blow). */
+function pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand) {
+  const ps = pasSet(p);
+  if (!ps.size || p.dead) return;
+  const now = S.now;
+  if (crit && !killed && ps.has("bow_quill50")) {
+    if (!(mob.expAt > now && mob.expBy === p.pid)) pasFx(rt, p, "bow_quill50", mob.x, mob.y);
+    mob.expAt = now + SKILL.bow_quill50.ms; mob.expBy = p.pid;
+  }
+  if (brand > now && ps.has("book_return50") && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round(dmg * SKILL.book_return50.k)));
+  if (!killed) return;
+  if (ps.has("dagger_snap30")) {
+    let cut = false;
+    for (const id of Object.keys(p.cds)) {
+      if (!SKILL[id] || !skOf(SKILL[id], "dagger") || !(p.cds[id] > now)) continue;
+      p.cds[id] = now + Math.round((p.cds[id] - now) * (1 - SKILL.dagger_snap30.k));
+      cut = true;
+    }
+    if (cut) { p.dirty = true; pasFx(rt, p, "dagger_snap30", p.x, p.y); }
+  }
+  if (ps.has("dagger_fang50")) {
+    healP(rt, p, st.mhp * SKILL.dagger_fang50.heal);
+    p.fangAt = now + SKILL.dagger_fang50.ms;
+    pasFx(rt, p, "dagger_fang50", p.x, p.y);
+  }
+  if (brand > now && ps.has("book_clause30")) {
+    const c = SKILL.book_clause30;
+    const next = mobsWithin(rt, mob.x, mob.y, c.r).filter((o) => o !== mob && !(o.brand > now) && !MOBS[o.k].chest)
+      .sort((a, b) => dist(a.x, a.y, mob.x, mob.y) - dist(b.x, b.y, mob.x, mob.y) || a.id - b.id).slice(0, c.n);
+    for (const o of next) {
+      o.brand = brand;
+      rt.ev.push(["ln", 10, Math.round(mob.x), Math.round(mob.y - 6), Math.round(o.x), Math.round(o.y - 6)]);
+    }
+    if (next.length) pasFx(rt, p, "book_clause30", mob.x, mob.y);
+  }
+}
+/** Attack-interval multiplier (the sword's low-HP rally, the dagger's kill rush). */
+function pasAspd(p) {
+  const ps = pasSet(p);
+  if (!ps.size) return 1;
+  let k = 1;
+  if (pasLow(p, ps)) k *= 1 - SKILL.sword_fortify30.aspd;
+  if (ps.has("dagger_fang50") && p.fangAt > p.S.now) k *= 1 - SKILL.dagger_fang50.aspd;
+  return k;
+}
+/** Damage-taken multiplier (the sword's low-HP rally). */
+const pasGuard = (p) => (pasLow(p, pasSet(p)) ? 1 - SKILL.sword_fortify30.guard : 1);
+/** Every tick: a changed attack interval reaches the client (its bar paces the blows by `acd`). */
+function pasTick(S, rt, p) {
+  const ps = pasSet(p);
+  if (!ps.size) return;
+  const low = pasLow(p, ps), as = pasAspd(p);
+  if (low && !p.psLow) pasFx(rt, p, "sword_fortify30", p.x, p.y);
+  p.psLow = low;
+  if (as !== (p.psAs || 1)) { p.psAs = as; p.dirty = true; }
+}
+/** A spear's tip found its mark: 창끝 반동 trims the spear skills' waits; returns the tip blow's options (하나로 모인 힘: a sure crit). */
+function pasTip(S, rt, p) {
+  const ps = pasSet(p), now = S.now;
+  if (ps.has("spear_advance30")) {
+    for (const id of Object.keys(p.cds)) if (SKILL[id] && skOf(SKILL[id], "spear") && p.cds[id] > now) p.cds[id] = Math.max(now, p.cds[id] - SKILL.spear_advance30.cut);
+    p.dirty = true;
+  }
+  return { ign: SKILL.tip.ign, crit: ps.has("spear_edge50") ? 100 : 0 };
+}
+/** 날에 실은 무게: a sword finisher's shockwave round (x, y), on all but the one it struck. */
+function pasQuake(S, rt, p, mob, x, y) {
+  const q = SKILL.sword_weight40;
+  pasFx(rt, p, "sword_weight40", x, y);
+  for (const o of mobsWithin(rt, x, y, q.r)) if (o !== mob) hurtMob(S, rt, o, p, q.mult);
+}
 // ───────────────────────────── the boss-script runner ─────────────────────────────
 // A scripted boss — any mob whose kind has `MOBS[k].script`, and a weekly challenge's boss (DIM_CHAL.bosses[k]) —
 // takes its turns from its script instead of its own tricks (tickMob): its patterns in turn, every `every`-th turn
@@ -9669,7 +9823,7 @@ function react(S, rt, p, key, x, y, k) {
   for (const o of mobsWithin(rt, x, y, rx.r)) {
     if (rx.vuln) { o.vuln = now + rx.vuln; rt.ev.push(["vu", o.id, rx.vuln]); }
     if (rx.knock) { const d = dist(x, y, o.x, o.y) || 1; knock(m, o, (o.x - x) / d, (o.y - y) / d, rx.knock); }
-    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst), false, { mag: 1 });
+    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst) * (pasHas(p, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1), false, { mag: 1 });
   }
   return rx;
 }
@@ -9950,6 +10104,7 @@ function weaponTick(S, p, now) {
   if (p.hide && now >= p.hide) p.hide = 0;
   if (p.inert && now - p.inertAt > SKILL.inertia.ms) { p.inert = 0; p.dirty = true; }
   if (p.weave && now >= p.weave.until) p.weave = null;
+  pasTick(S, S.maps[p.map], p);
 }
 /** Whatever a hand had going that does not survive a fall or a change of map. */
 function weaponReset(p, death) {
@@ -9959,7 +10114,7 @@ function weaponReset(p, death) {
 }
 /** The bits other players see: 4 untouchable in the air, 16 dancing, 32 resonance full, 64 hidden. */
 function flagsOf(p, now) {
-  return (p.ghost > now ? 4 : 0) | (p.dance ? 16 : 0) | ((p.reso | 0) >= SKILL.reso.n && inHand(p.ch) === "staff" ? 32 : 0) | (p.hide > now ? 64 : 0);
+  return (p.ghost > now ? 4 : 0) | (p.dance ? 16 : 0) | ((p.reso | 0) >= SKILL.reso.n && inHand(p.ch) === "staff" ? 32 : 0) | (p.hide > now ? 64 : 0) | (pasFocus(p, pasSet(p), now) ? 128 : 0);
 }
 const WEAVE_CODE = { f: 1, i: 2, l: 3 };
 /** The gauge's live number on every snapshot: inertia stacks, or resonance + 4 × the element held. */
@@ -10029,6 +10184,8 @@ function castSkill(S, p, id) {
   const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
   // mastery grows a skill; a full resonance makes a staff skill free and 30% stronger
   let k = skGrow(p.ch, sk) * charmSkd(p, id);   // (and what the charm board adds to this skill, 66-charms.js)
+  // 정신 집중 (55-passives.js): standing still, the next skill lands harder
+  if (pasFocus(p, pasSet(p), now)) { k *= 1 + SKILL.staff_spark40.k; p.focusAt = now; pasFx(rt, p, "staff_spark40", p.x, p.y); }
   const cost = skMp(p, sk);
   if (skOf(sk, "staff") && pasOn(p, "reso")) {
     if ((p.reso | 0) >= SKILL.reso.n) { p.reso = 0; k *= 1 + SKILL.reso.k; }
@@ -10109,10 +10266,12 @@ function skStrike(S, p, id, k, cost, tgt) {
     // ── 대검
     case "slash": {
       ev(80, ...ahead(sk.r * 0.6), sk.r);
+      // the one it was aimed at takes the flat of the blade full on
+      const core = aimMob(rt, p, sk.r, sk.arc);
       for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
         if (!inArc(p, o, sk.arc)) continue;
         if (!MOBS[o.k].boss && o.el !== 2) { const [ux, uy] = aimVec(p, o); knock(m, o, ux, uy, sk.knock * (o.el ? 0.5 : 1)); holdMob(S, o, o.el ? sk.stag[1] : sk.stag[0]); o.stg = now + STG_MS; }
-        hit(o, sk.mult);
+        hit(o, sk.mult * (o === core && sk.core ? sk.core : 1));
       }
       break;
     }
@@ -10139,10 +10298,12 @@ function skStrike(S, p, id, k, cost, tgt) {
     }
     case "verdict": {
       // the more you have bled, the harder it falls
-      const miss = clamp(1 - p.hp / st.mhp, 0, sk.miss);
+      // and it spends the inertia the blade has built: +10% a stack
+      const miss = clamp(1 - p.hp / st.mhp, 0, sk.miss), inert = pasOn(p, "inertia") ? inertOf(p) : 0;
+      if (inert) { p.inert = 0; ev(110, p.x, p.y - 6); }
       ev(83, p.x, p.y - 6, sk.r);
       rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 2]);
-      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { const [ux, uy] = aimVec(p, o); knock(m, o, ux, uy, sk.knock); hit(o, sk.mult * (1 + miss)); }
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { const [ux, uy] = aimVec(p, o); knock(m, o, ux, uy, sk.knock); hit(o, sk.mult * (1 + miss) * (1 + sk.inert * inert)); }
       break;
     }
 
@@ -10188,7 +10349,7 @@ function skStrike(S, p, id, k, cost, tgt) {
         // the far end of the thrust is the spear's tip
         const tip = tipOn && (o.x - p.x) * aimX + (o.y - p.y) * aimY >= sk.len * sk.far;
         if (tip) rt.ev.push(["tip", o.id]);
-        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
+        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? pasTip(S, rt, p) : null);
       }
       break;
     }
@@ -10465,7 +10626,7 @@ function skStrike(S, p, id, k, cost, tgt) {
           if (!MOBS[o.k].boss && o.el !== 2) { o.stun = Math.max(o.stun, now + sk.freeze * (o.el ? 0.5 : 1)); o.frz = o.stun; rt.ev.push(["fz", o.id, sk.freeze]); }
         }
         o.slow = Math.max(o.slow || 0, now + 3000);
-        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
+        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? pasTip(S, rt, p) : null);
       }
       for (const o of mobsWithin(rt, ex, ey, sk.r)) hit(o, sk.burst);
       weave(S, rt, p, "i", ex, ey, k);
@@ -18312,7 +18473,7 @@ export function defs() {
   }
   return {
     worldName: "루넬샤대륙",
-    items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
+    items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, jobPal: JOB_PAL, skillJob: SKILL_JOB, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
     jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest

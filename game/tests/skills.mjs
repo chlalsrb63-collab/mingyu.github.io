@@ -199,14 +199,14 @@ for (const [id, hand] of CASTS) {
   assert.ok(m.hp < hp, "the bleeding bites on its own");
   assert.ok(v.M.find((r) => r[0] === m.id)[8] === 2, "the marks ride on the monster's row");
   void spd0;
-  // marks add 3% crit chance each: many stabs on a 5-mark monster crit more than on a clean one
+  // marks add 1.5% crit chance each: many stabs on a 5-mark monster crit more than on a clean one
   const crits = (marks) => {
     const C = world("치명" + marks, { wk: "dagger", wm: { dagger: 10 }, st: { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 } });
     let n = 0;
     for (let i = 0; i < 300; i++) { C.ready(); const [q] = C.mobs([[16, 0]], 50000, { tgt: C.PID, mk: marks, mkAt: C.now + 9000 }); C.act({ t: "atk", a: 0 }); const h = C.rt.ev.find((e) => e[0] === "h" && e[1] === q.id); if (h && h[3] === 1) n++; L.endTick(C.S); }
     return n;
   };
-  assert.ok(crits(4) > crits(0) + 15, "marks point to the gaps");
+  assert.ok(crits(5) > crits(0) + 10, "marks point to the gaps");
 }
 // 창끝의 거리: a blow at the far end of the reach hits ×1.5 and through 35% of the armour
 {

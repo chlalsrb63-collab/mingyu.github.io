@@ -57,12 +57,12 @@ const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 const WKIND = {
   // unhurried, weighty blows: each lands harder than a quick one would
   sword: { name: "대검", cd: 920, range: 34, fx: 0, cleave: 3, kb: 9, mult: 1.45, arc: 65, crit: 3 },
-  dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 1.1, arc: 35, crit: 10 },
-  spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.4, arc: 25, crit: 5 },
+  dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 0.9, arc: 35, crit: 10 },
+  spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.3, arc: 25, crit: 5 },
   staff: { name: "스태프", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.25, arc: 40, crit: 3, mag: 1, shot: { spd: 320, r: 5, kind: 8 } },
   book: { name: "마도서", cd: 800, range: 84, fx: 5, splash: 26, mult: 1.05, kb: 4, arc: 40, crit: 3, mag: 1, shot: { spd: 240, r: 7, kind: 9 } },
   // an arrow flies (45-jobs.js shots): the finisher hits 1.4× and goes through one more
-  bow: { name: "활", cd: 760, range: 150, fx: 6, kb: 3, mult: 0.9, arc: 20, crit: 6, shot: { spd: 420, r: 6 } },
+  bow: { name: "활", cd: 760, range: 150, fx: 6, kb: 3, mult: 0.86, arc: 20, crit: 6, shot: { spd: 420, r: 6 } },
   hammer: { name: "양손해머", cd: 1100, range: 49, fx: 7, center: 25, r: 24, wind: 200, mult: 2.23, crit: 3 },
 };
 /**

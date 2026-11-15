@@ -147,7 +147,7 @@ function react(S, rt, p, key, x, y, k) {
   for (const o of mobsWithin(rt, x, y, rx.r)) {
     if (rx.vuln) { o.vuln = now + rx.vuln; rt.ev.push(["vu", o.id, rx.vuln]); }
     if (rx.knock) { const d = dist(x, y, o.x, o.y) || 1; knock(m, o, (o.x - x) / d, (o.y - y) / d, rx.knock); }
-    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst), false, { mag: 1 });
+    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst) * (pasHas(p, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1), false, { mag: 1 });
   }
   return rx;
 }
@@ -428,6 +428,7 @@ function weaponTick(S, p, now) {
   if (p.hide && now >= p.hide) p.hide = 0;
   if (p.inert && now - p.inertAt > SKILL.inertia.ms) { p.inert = 0; p.dirty = true; }
   if (p.weave && now >= p.weave.until) p.weave = null;
+  pasTick(S, S.maps[p.map], p);
 }
 /** Whatever a hand had going that does not survive a fall or a change of map. */
 function weaponReset(p, death) {
@@ -437,7 +438,7 @@ function weaponReset(p, death) {
 }
 /** The bits other players see: 4 untouchable in the air, 16 dancing, 32 resonance full, 64 hidden. */
 function flagsOf(p, now) {
-  return (p.ghost > now ? 4 : 0) | (p.dance ? 16 : 0) | ((p.reso | 0) >= SKILL.reso.n && inHand(p.ch) === "staff" ? 32 : 0) | (p.hide > now ? 64 : 0);
+  return (p.ghost > now ? 4 : 0) | (p.dance ? 16 : 0) | ((p.reso | 0) >= SKILL.reso.n && inHand(p.ch) === "staff" ? 32 : 0) | (p.hide > now ? 64 : 0) | (pasFocus(p, pasSet(p), now) ? 128 : 0);
 }
 const WEAVE_CODE = { f: 1, i: 2, l: 3 };
 /** The gauge's live number on every snapshot: inertia stacks, or resonance + 4 × the element held. */
@@ -507,6 +508,8 @@ function castSkill(S, p, id) {
   const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
   // mastery grows a skill; a full resonance makes a staff skill free and 30% stronger
   let k = skGrow(p.ch, sk) * charmSkd(p, id);   // (and what the charm board adds to this skill, 66-charms.js)
+  // 정신 집중 (55-passives.js): standing still, the next skill lands harder
+  if (pasFocus(p, pasSet(p), now)) { k *= 1 + SKILL.staff_spark40.k; p.focusAt = now; pasFx(rt, p, "staff_spark40", p.x, p.y); }
   const cost = skMp(p, sk);
   if (skOf(sk, "staff") && pasOn(p, "reso")) {
     if ((p.reso | 0) >= SKILL.reso.n) { p.reso = 0; k *= 1 + SKILL.reso.k; }
@@ -587,10 +590,12 @@ function skStrike(S, p, id, k, cost, tgt) {
     // ── 대검
     case "slash": {
       ev(80, ...ahead(sk.r * 0.6), sk.r);
+      // the one it was aimed at takes the flat of the blade full on
+      const core = aimMob(rt, p, sk.r, sk.arc);
       for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
         if (!inArc(p, o, sk.arc)) continue;
         if (!MOBS[o.k].boss && o.el !== 2) { const [ux, uy] = aimVec(p, o); knock(m, o, ux, uy, sk.knock * (o.el ? 0.5 : 1)); holdMob(S, o, o.el ? sk.stag[1] : sk.stag[0]); o.stg = now + STG_MS; }
-        hit(o, sk.mult);
+        hit(o, sk.mult * (o === core && sk.core ? sk.core : 1));
       }
       break;
     }
@@ -617,10 +622,12 @@ function skStrike(S, p, id, k, cost, tgt) {
     }
     case "verdict": {
       // the more you have bled, the harder it falls
-      const miss = clamp(1 - p.hp / st.mhp, 0, sk.miss);
+      // and it spends the inertia the blade has built: +10% a stack
+      const miss = clamp(1 - p.hp / st.mhp, 0, sk.miss), inert = pasOn(p, "inertia") ? inertOf(p) : 0;
+      if (inert) { p.inert = 0; ev(110, p.x, p.y - 6); }
       ev(83, p.x, p.y - 6, sk.r);
       rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 2]);
-      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { const [ux, uy] = aimVec(p, o); knock(m, o, ux, uy, sk.knock); hit(o, sk.mult * (1 + miss)); }
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { const [ux, uy] = aimVec(p, o); knock(m, o, ux, uy, sk.knock); hit(o, sk.mult * (1 + miss) * (1 + sk.inert * inert)); }
       break;
     }
 
@@ -666,7 +673,7 @@ function skStrike(S, p, id, k, cost, tgt) {
         // the far end of the thrust is the spear's tip
         const tip = tipOn && (o.x - p.x) * aimX + (o.y - p.y) * aimY >= sk.len * sk.far;
         if (tip) rt.ev.push(["tip", o.id]);
-        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
+        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? pasTip(S, rt, p) : null);
       }
       break;
     }
@@ -943,7 +950,7 @@ function skStrike(S, p, id, k, cost, tgt) {
           if (!MOBS[o.k].boss && o.el !== 2) { o.stun = Math.max(o.stun, now + sk.freeze * (o.el ? 0.5 : 1)); o.frz = o.stun; rt.ev.push(["fz", o.id, sk.freeze]); }
         }
         o.slow = Math.max(o.slow || 0, now + 3000);
-        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? { ign: SKILL.tip.ign } : null);
+        hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? pasTip(S, rt, p) : null);
       }
       for (const o of mobsWithin(rt, ex, ey, sk.r)) hit(o, sk.burst);
       weave(S, rt, p, "i", ex, ey, k);

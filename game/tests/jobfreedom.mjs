@@ -145,7 +145,7 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   assert.match(W.act({ ...load, y: "bow_quill50" }).error, /배운 패시브/);
   assert.ok(W.act({ ...load, p: ["vitals", "dagger_shade20"], x: "inertia", y: "hawk" }).ok);
   assert.ok(Math.abs(W.p.stc.atk0 / baseline - 1.04) < 1e-9, "two attack perks at half their 4% values");
-  assert.ok(Math.abs(W.p.stc.spd0 / speed - 1.05) < 1e-9, "native dagger passive adds its full bonus");
+  assert.ok(Math.abs(W.p.stc.spd0 / speed - 1.10) < 1e-9, "native dagger passive adds its full bonus (10%)");
   const v = W.self();
   assert.deepEqual([v.lo[2], v.lo[5]], ["inertia", "hawk"]);
   for (const id of ["inertia", "hawk", "vitals", "dagger_shade20"]) assert.equal(v.sk.find((r) => r[0] === id)[3], 1);
