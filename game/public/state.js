@@ -26,9 +26,9 @@ export const G = {
   playing: false, you: 0, defs: null, icons: null, self: null, map: null, friends: null, lastWhisper: "",
   me: { x: 0, y: 0, dir: 0, aimI: 16, hp: 1, mp: 0, dead: false, walk: 0, moving: false, atkT: -1e9, hurtT: -1e9 },
   who: new Map(), players: new Map(), mobs: new Map(), gone: new Map(), drops: new Map(), fires: new Map(), bobs: new Map(), ginv: null,
-  fx: [], parts: [], texts: [], bubbles: new Map(), statics: [],
+  texts: [], bubbles: new Map(),
   cdEnd: {}, buffEnd: [0, 0], potAt: 0, lastAtk: 0, lastSkill: 0,
-  auto: false, sel: -1, shake: 0, flash: 0, near: null, party: [], pinv: null, path: null, mark: null,
+  auto: false, sel: -1, flash: 0, near: null, party: [], pinv: null, path: null, mark: null,
 };
 export let dpr = 1;
 
