@@ -6,10 +6,10 @@
  * Each pose says where the blade points on the ground (yaw, relative to the
  * target, mirrored by the beat's side), how far it is raised (pitch), how far
  * the hand is pushed out along the blade (reach), how far the body leans or
- * steps toward the target (lean), and which body frame shows the weight
+ * steps toward the target (lean), how high the grip sits (lift), and which body frame shows the weight
  * (crouch on the wind-up and the landing, stretch at full reach).
  *
- * The blow lands at k = IMPACT (0.2) for every weapon (scene2d's impactMs): the
+ * The blow lands at k = IMPACT (0.2) for these normalized strokes (scene2d's impactMs): the
  * pose keyed there is the one crossing or touching the target. The order is the
  * one the pixel-art rules ask for, at a high tempo: a very short wind-up the other
  * way (15% of the stroke, under ~85 ms), a snap (35%) that crosses the target in
@@ -69,8 +69,8 @@ export function hammerPose(ms, impact = HAMMER_IMPACT) {
   };
 }
 
-/** Key poses: [k, yaw°, pitch°, reach px, lean px, frame, ease into this key]. */
-const K = (k, yaw, pitch, reach, lean, fr, ease) => ({ k, yaw: yaw * D, pitch: pitch * D, reach, lean, fr: fr || "", ease: ease || lin });
+/** Key poses: [k, yaw°, pitch°, reach px, lean px, frame, ease into this key, grip lift px]. */
+const K = (k, yaw, pitch, reach, lean, fr, ease, lift = 0) => ({ k, yaw: yaw * D, pitch: pitch * D, reach, lean, fr: fr || "", ease: ease || lin, lift });
 // every stroke: wind-up (eOut) -> impact (linear: the blade at full speed) -> the rest of the
 // snap (out-expo, so a sweep carries on as fast as it crossed and then brakes) -> a held beat
 // -> the settle (out-back). Thrusts keep an extra key: still out at full reach, then drawn back.
@@ -81,23 +81,50 @@ const STROKES = {
     null, // the second beat is the first, mirrored
     [K(0.15, -18, 118, 0, -3, "crouch", eOut), K(0.2, 0, 6, 9, 7, "stretch", lin), K(0.5, 4, -42, 7, 7, "crouch", oExpo), K(0.6, 4, -42, 7, 7, "", lin), K(1, 10, -22, 4, 3, "", oBack)],
   ],
-  // the dagger: quick stabs, a backhand cut across, a lunge
+  // Dagger: tucked jab, high backhand across the chest, low finishing lunge.
   dagger: [
-    [K(0.15, -14, 10, -3, -1, "crouch", eOut), K(0.2, 0, 0, 14, 3, "stretch", lin), K(0.32, 2, -2, 12, 3, "", oExpo), K(0.5, 12, 6, 4, 1, "", eOut), K(0.6, 14, 8, 4, 1, "", lin), K(1, 24, 14, 2, 0, "", oBack)],
-    [K(0.15, -84, 16, 4, -1, "crouch", eOut), K(0.2, 0, 0, 8, 2, "stretch", lin), K(0.5, 96, -14, 4, 1, "", oExpo), K(0.6, 98, -14, 4, 1, "", lin), K(1, 70, 0, 3, 0, "", oBack)],
-    [K(0.15, -10, 14, -5, -2, "crouch", eOut), K(0.2, 0, -2, 18, 8, "stretch", lin), K(0.34, 0, -4, 16, 8, "", oExpo), K(0.52, 8, 4, 6, 5, "", eOut), K(0.62, 8, 4, 6, 5, "", lin), K(1, 18, 10, 3, 2, "", oBack)],
+    [K(0.11, -26, 29, -3, -1, "crouch", eOut, 3),
+      K(IMPACT, 0, 2, 8, 3, "stretch", eIn, 1),
+      K(0.37, 3, 0, 7, 2.5, "stretch", eOut, 1),
+      K(0.68, 15, -12, 3, 0, "", eIO, -1), K(1, 22, 17, 1, 0, "", oBack)],
+    [K(0.11, -92, 30, 1, -1.5, "crouch", eOut, 4),
+      K(IMPACT, 0, 3, 6, 2, "stretch", lin, 3),
+      K(0.39, 88, -13, 5, 1.5, "", oExpo, -1),
+      K(0.58, 91, -13, 5, 0.5, "", lin, -1), K(1, 55, 13, 1, 0, "", oBack)],
+    [K(0.11, -18, 19, -5, -2, "crouch", eOut, -1),
+      K(IMPACT, 0, -4, 10, 6, "stretch", eIn),
+      K(0.43, 1, -5, 9, 5, "stretch", eOut),
+      K(0.72, 9, -16, 4, 1, "crouch", eIO, -2), K(1, 19, 11, 2, 0, "", oBack)],
   ],
-  // the spear: thrusts that use its reach, a sweep of the shaft, a long lunge
+  // Spear: level thrust from the hip, braced shaft sweep, extended finishing thrust.
   spear: [
-    [K(0.15, -6, 6, -6, -2, "crouch", eOut), K(0.2, 0, -3, 18, 4, "stretch", lin), K(0.34, 0, -4, 17, 4, "", oExpo), K(0.52, 4, 2, 6, 2, "", eOut), K(0.62, 4, 2, 6, 2, "", lin), K(1, 10, 8, 4, 0, "", oBack)],
-    [K(0.15, -112, 12, 4, -1, "crouch", eOut), K(0.2, 0, 0, 7, 2, "stretch", lin), K(0.5, 104, -12, 5, 1, "", oExpo), K(0.6, 106, -12, 5, 1, "", lin), K(1, 80, 0, 4, 0, "", oBack)],
-    [K(0.15, -8, 12, -8, -3, "crouch", eOut), K(0.2, 0, -4, 25, 9, "stretch", lin), K(0.36, 0, -5, 23, 9, "", oExpo), K(0.54, 4, 2, 8, 5, "", eOut), K(0.64, 4, 2, 8, 5, "", lin), K(1, 10, 8, 4, 2, "", oBack)],
+    [K(0.1, -5, -9, -7, -2, "crouch", eOut, -2),
+      K(IMPACT, 0, -2, 9, 4, "stretch", eIn, 1),
+      K(0.43, 1, -2, 8, 4, "stretch", eOut, 1),
+      K(0.73, 3, 13, 4, 1, "", eIO, 2), K(1, 9, 16, 2, 0, "", oBack)],
+    [K(0.1, -98, 15, 0, -1.5, "crouch", eOut, 2),
+      K(IMPACT, 0, 1, 6, 2.5, "stretch", lin),
+      K(0.46, 101, -9, 5, 2, "crouch", oExpo, -2),
+      K(0.65, 101, -9, 5, 1, "", lin, -2), K(1, 70, 10, 2, 0, "", oBack)],
+    [K(0.09, -9, 5, -8, -3, "crouch", eOut, -2),
+      K(IMPACT, 0, -3, 12, 6, "stretch", eIn, 1),
+      K(0.45, 0, -4, 11, 5.5, "stretch", eOut, 1),
+      K(0.73, 5, 16, 6, 1, "", eIO, 2), K(1, 9, 12, 3, 0, "", oBack)],
   ],
-  // the staff: raised, then brought down to point at the target as the spell leaves; the finisher twirls it first
+  // Staff: lift the focus, flick it out, or lower it from an overhead flourish for a skill.
   staff: [
-    [K(0.15, -40, 76, 0, -2, "crouch", eOut), K(0.2, 0, 14, 7, 2, "stretch", lin), K(0.34, 4, 0, 7, 2, "", oExpo), K(0.5, 8, -8, 6, 1, "", eOut), K(0.6, 8, -8, 6, 1, "", lin), K(1, 14, 6, 4, 0, "", oBack)],
-    null,
-    [K(0.08, -100, 34, 2, -1, "crouch", eOut), K(0.2, 0, 12, 8, 4, "stretch", eIO), K(0.34, 0, 0, 9, 4, "", oExpo), K(0.5, 6, -10, 7, 2, "", eOut), K(0.6, 6, -10, 7, 2, "", lin), K(1, 12, 4, 4, 0, "", oBack)],
+    [K(0.08, -30, 60, -1, -1.5, "stretch", eOut, 5),
+      K(IMPACT, 0, 10, 5, 2, "stretch", eIn, 2),
+      K(0.34, 1, 15, 4, 1, "stretch", eOut, 2),
+      K(0.66, 5, 39, 2, 0, "", eIO, 1), K(1, 12, 50, 0, 0, "", oBack)],
+    [K(0.08, -62, 37, 1, -1, "", eOut, 3),
+      K(IMPACT, 0, 7, 6, 2, "stretch", lin, 1),
+      K(0.32, 8, 17, 5, 1, "", eOut, 2),
+      K(0.66, 7, 40, 2, 0, "", eIO, 1), K(1, 10, 50, 0, 0, "", oBack)],
+    [K(0.07, -64, 82, 0, -2, "stretch", eOut, 7),
+      K(IMPACT, 0, 13, 8, 4, "stretch", eIn, 2),
+      K(0.39, 5, 19, 7, 2, "stretch", eOut, 3),
+      K(0.7, 8, 42, 3, 0, "", eIO, 2), K(1, 14, 54, 0, 0, "", oBack)],
   ],
   // the bow: raised and drawn in one quick pull while the body rocks back to the anchor; the string
   // is let go at IMPACT (the arrow leaves then: scene2d fx.arrow's `delay`), the bow kicks forward
@@ -114,9 +141,6 @@ const STROKES = {
     [K(0.15, 0, 52, -1, -2, "crouch", eOut), K(0.2, 0, 50, -1, -2, "crouch", lin), K(0.27, 0, 62, 2, 0.5, "stretch", oExpo), K(0.5, 0, 54, -1, 0, "", eOut), K(0.6, 0, 54, -1, 0, "", lin), K(1, 0, 24, 0, 0, "", oBack)],
   ],
 };
-/** Staff finisher: a whole extra turn between the wind-up and the release. */
-const TWIRL = { staff: 360 * D };
-
 /**
  * The pose of a stroke at k (0–1), or null before it starts. `side` is ±1:
  * which way round the sweep goes (the second beat comes back the other way).
@@ -131,17 +155,17 @@ export function pose(wk, beat, k, side) {
     const a = keys[i - 1], b = keys[i];
     if (k <= b.k) {
       const u = b.ease((k - a.k) / (b.k - a.k));
-      const twirl = beat === 2 && i === 1 && TWIRL[wk] ? -TWIRL[wk] * (1 - u) : 0;
       return {
-        yaw: side * (a.yaw + (b.yaw - a.yaw) * u + twirl), pitch: a.pitch + (b.pitch - a.pitch) * u,
+        yaw: side * (a.yaw + (b.yaw - a.yaw) * u), pitch: a.pitch + (b.pitch - a.pitch) * u,
         reach: a.reach + (b.reach - a.reach) * u, lean: a.lean + (b.lean - a.lean) * u,
+        lift: a.lift + (b.lift - a.lift) * u,
         fr: u < 0.5 ? a.fr : b.fr, strike: i === 1 || i === 2,
       };
     }
   }
   return out(keys[keys.length - 1], side, 0);
 }
-const out = (p, side) => ({ yaw: side * p.yaw, pitch: p.pitch, reach: p.reach, lean: p.lean, fr: p.fr, strike: false });
+const out = (p, side) => ({ yaw: side * p.yaw, pitch: p.pitch, reach: p.reach, lean: p.lean, lift: p.lift, fr: p.fr, strike: false });
 
 /**
  * The bow's shot at k (the strokes' clock; side as in pose): the pose, plus `pull` (the string:
@@ -170,17 +194,19 @@ export const BOW_READY = { pull: 0.12, arrow: true };
 
 /** The book's travel, lift and recoil at k (the stroke's clock). */
 export function bookPose(beat, k) {
-  const fin = beat === 2, W = WIND, I = IMPACT;
-  let o;
-  if (k < W) o = -0.2 * eOut(k / W);
-  else if (k < I) o = -0.2 + 1.2 * eIn((k - W) / (I - W));
-  else if (k < SNAP) o = 1 - 0.75 * oExpo((k - I) / (SNAP - I));
-  else if (k < 0.6) o = 0.25;
-  else o = 0.25 * (1 - oBack((k - 0.6) / 0.4));
-  // drawn up over the shoulder on the wind-up rather than back into the reader
-  const lift = k < W ? 4 * eOut(k / W) : k < I ? 4 * (1 - eIn((k - W) / (I - W))) : 0;
-  const lean = k < W ? -1.5 * eOut(k / W) : k < I ? -1.5 + 4 * eIn((k - W) / (I - W)) : k < 0.6 ? 2.5 * (1 - oExpo((k - I) / (0.6 - I))) : 0;
-  return { out: o * (fin ? 2.2 : 1) * (beat === 1 ? -0.6 : 1), lift, lean, fr: k < W ? "crouch" : k < 0.3 ? "stretch" : "" };
+  const fin = beat === 2, side = beat === 1 ? -1 : 1, wind = 0.085, hold = 0.37;
+  const send = k < wind ? 0 : k < IMPACT ? eIn((k - wind) / (IMPACT - wind)) : 1;
+  const charged = k < wind ? eOut(k / wind) : 1 - send;
+  const released = k < IMPACT ? send : k < hold ? 1 - 0.24 * eOut((k - IMPACT) / (hold - IMPACT))
+    : 0.76 * (1 - oBack((k - hold) / (1 - hold)));
+  return {
+    out: (fin ? 1.36 : 1) * released - 0.3 * charged,
+    cross: side * (2 * released - 2.5 * charged),
+    lift: (fin ? 7 : 5) * charged + 1.5 * released,
+    roll: side * (0.12 * released - 0.22 * charged),
+    lean: 2.5 * released - 1.5 * charged,
+    fr: k < wind ? "crouch" : k >= IMPACT && k < hold ? "stretch" : "",
+  };
 }
 
 /** How far the drawn weapon reaches from its grip, measured once from its own pixels. */

@@ -81,6 +81,81 @@ function pixelLine(g, ax, ay, bx, by, color, width = 1) {
   for (let i = 0; i <= n; i++) px(g, ax + (bx - ax) * i / n, ay + (by - ay) * i / n, width, width, color);
 }
 
+/** A broken wake following the server's actual blink or charge path. */
+function streakWake(ax, ay, bx, by, edge, light, width) {
+  const [sx, sy] = at(ax, ay, 13), [ex, ey] = at(bx, by, 13);
+  const dx = ex - sx, dy = ey - sy, length = Math.hypot(dx, dy);
+  if (length < 2) return;
+  const nx = -dy / length, ny = dx / length;
+  S3.fxCustom((g, k) => {
+    const back = k ** 1.4, front = Math.min(1, 0.65 + k * 3);
+    for (let i = Math.ceil(back * length); i < front * length; i += 2) {
+      const u = i / length, taper = width * Math.sin(Math.PI * u) * (1 - k);
+      for (const side of [-1, 1]) {
+        if ((i + (side < 0 ? 2 : 0)) % 20 > 13) continue;
+        const offset = side * (1 + taper);
+        px(g, sx + dx * u + nx * offset, sy + dy * u + ny * offset, 2, k < 0.34 ? 2 : 1, k < 0.42 && u > 0.5 ? light : edge);
+      }
+    }
+  }, 230);
+}
+
+/** A small blade shape crosses its lane before the paired trail burns away. */
+function shadowDart(ax, ay, bx, by) {
+  const [sx, sy] = at(ax, ay, 11), [ex, ey] = at(bx, by, 11);
+  const dx = ex - sx, dy = ey - sy, length = Math.hypot(dx, dy);
+  if (length < 2) return;
+  const ux = dx / length, uy = dy / length;
+  S3.fxCustom((g, k) => {
+    const u = Math.min(1, 0.21 + k * 2.6), x = sx + dx * u, y = sy + dy * u;
+    const tail = Math.min(length * u, 26 * (1 - k));
+    for (let i = 2; i < tail; i += 2) {
+      const spread = Math.min(4, i / 5);
+      for (const side of [-1, 1]) px(g, x - ux * i - uy * spread * side, y - uy * i + ux * spread * side, 2, 2, i < 10 ? "#ae78da" : "#6d518b");
+    }
+    if (u === 1) return;
+    for (let i = 0; i <= Math.min(12, length * u); i++) {
+      const w = Math.min(4, i, (12 - i) / 2);
+      pixelLine(g, x - ux * i + uy * w, y - uy * i - ux * w, x - ux * i - uy * w, y - uy * i + ux * w, INK, 2);
+      if (i > 1 && i < 11) px(g, x - ux * i, y - uy * i, 2, 2, i < 7 ? "#f4dcff" : "#ae78da");
+    }
+  }, 185);
+}
+
+function ambushCuts(wx, wy, ang) {
+  const [x, y] = at(wx, wy, 12);
+  const heading = S3.sAng(Math.cos(ang), Math.sin(ang));
+  S3.fxCustom((g, k) => {
+    for (const [offset, span, color] of [[-0.63, 13, "#e8c0ff"], [0.63, 9, "#a070cc"]]) {
+      const a = heading + offset, ux = Math.cos(a), uy = Math.sin(a);
+      const start = span * (k * 1.35 - 0.65), end = span * (0.7 + k * 0.18);
+      pixelLine(g, x + ux * start, y + uy * start, x + ux * end, y + uy * end, color, k < 0.44 ? 3 : 1);
+      if (k < 0.29) pixelLine(g, x + ux * start, y + uy * start, x + ux * end, y + uy * end, "#fff0ff");
+    }
+  }, 140);
+}
+
+/** The spear's straight reach and two moving twists, bounded by the transmitted endpoint. */
+function spiralThrust(ax, ay, bx, by) {
+  const [sx, sy] = at(ax, ay, 13), [ex, ey] = at(bx, by, 13);
+  const dx = ex - sx, dy = ey - sy, length = Math.hypot(dx, dy);
+  if (length < 2) return;
+  const nx = -dy / length, ny = dx / length;
+  S3.fxCustom((g, k) => {
+    const from = k ** 1.8, to = Math.min(1, 0.76 + k * 4);
+    if (k < 0.47) {
+      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, "#356c72", 4);
+      pixelLine(g, sx + dx * from, sy + dy * from + 1, sx + dx * to, sy + dy * to + 1, "#e5fff0", 2);
+    }
+    for (let i = Math.ceil(length * from); i < length * to; i += 2) {
+      const u = i / length, spread = 7 * Math.sin(Math.PI * u) * (1 - k * 0.6);
+      const twist = Math.sin(u * Math.PI * 5 - k * 5) * spread;
+      px(g, sx + dx * u + nx * twist, sy + dy * u + ny * twist, 2, 2, k < 0.52 ? "#b3f0d5" : "#5dc8b1");
+      if (k < 0.64) px(g, sx + dx * u - nx * twist, sy + dy * u - ny * twist, 2, 2, "#4b9d99");
+    }
+  }, 215);
+}
+
 /** Segmented light at the exact world radius, on the ground behind actors and danger markers. */
 function rim(x, y, r, edge, light, ms, spread = 0.25) {
   if (!(r > 0)) return;
@@ -731,6 +806,7 @@ export function skillEvent(e, ctx) {
       if (PASSIVE.has(kind)) { passive(kind, src, eid, tx, ty + 6, G); return true; }
       if (eid !== G.you) { src.atkT = t; src.dir = e[5]; src.atkN = 2; }
       else { G.me.dir = e[5]; G.me.atkN = 2; }
+      if (kind === 84 || kind === 85 || kind === 87 || kind === 88) src.skillFxT = src.atkT;
       src.aim = [tx, ty + 6];
       G.hitFrom = [src.x, src.y];
       cast(kind, src, eid, tx, ty + 6, e[7], G);
@@ -828,29 +904,32 @@ export function skillEvent(e, ctx) {
         S3.fx.proj(ax, ay, 0.7, bx, by, 0.5, "#fff6b0", 0.07, 70);
         f.beam(ax, ay, bx, by, "#bfe8ff", 0.6); f.bolt(ax, ay, bx, by, "#fff27a", 240);
       } else if (kind === 3) {
-        // the comet's dash: a streak and the dust it kicks up
-        f.beam(ax, ay, bx, by, "#ffffff", 0.6); f.beam(ax, ay + 3, bx, by + 3, "#5ad0b8", 0.5);
-        for (const [x, y] of along(ax, ay, bx, by, 22)) f.sparkle(x, y, 0.4, "#c8fff0", 3);
-        f.burst(ax, ay, 0.1, "#b8a878", 10, 1.6);
+        streakWake(ax, ay, bx, by, "#559c8a", "#fff1c3", 8);
+        S3.fx.burst(ax, ay, 0.1, "#b8a878", 6, 1.4);
       } else if (kind === 4) { f.bolt(ax, ay + 8, bx, by + 8, "#fff27a", 260); f.spark(bx, by + 6, "#fff6b0", 1.3); Sound.play("bolt"); }
       else if (kind === 5) { f.beam(ax, ay - 8, bx, by - 8, "#7a4ac8", 0.5); f.burst(ax, ay, 0.6, "#3a2a58", 8, 1.2); Sound.play("dance"); }
-      else if (kind === 6) { f.beam(ax, ay - 8, bx, by - 8, "#a070e0", 0.5); f.burst(ax, ay, 0.6, "#3a2a58", 14, 1.4); f.burst(bx, by, 0.6, "#6a4a9a", 12, 1.4); }
+      else if (kind === 6) {
+        streakWake(ax, ay, bx, by, "#72528e", "#cb9cfa", 5);
+        S3.fx.burst(ax, ay, 0.45, "#795891", 6, 1.2);
+      }
       else if (kind === 7) {
-        // a shadow blade spinning down its line; 원소 비수's three (fx 124 just before them) come in fire, ice, lightning
-        const el = fan.n > 0 && now() - fan.at < 80 ? 4 - fan.n-- : 0, col = el ? ELEM_COL[el] : "#c8a0ff";
-        const far = Math.hypot(bx - ax, by - ay), ms = Math.max(120, far * 2.4);
+        // 원소 비수 sends three blades coloured fire, ice and lightning after its cast.
+        const el = fan.n > 0 && now() - fan.at < 80 ? 4 - fan.n-- : 0;
+        if (!el) {
+          shadowDart(ax, ay, bx, by);
+          return true;
+        }
+        const col = ELEM_COL[el], far = Math.hypot(bx - ax, by - ay), ms = Math.max(120, far * 2.4);
         S3.fxCustom((g, k) => {
           const [x, y] = at(ax + (bx - ax) * k, ay + (by - ay) * k, 10);
           const a = k * 18;
           g.translate(Math.round(x), Math.round(y)); g.rotate(a);
           px(g, -5, -1, 10, 3, INK); px(g, -4, 0, 8, 1, col); px(g, 3, -1, 2, 1, "#ffffff");
         }, ms);
-        if (el) {
-          // each leaves its element along the way and a puff of it at the end
-          f.beam(ax, ay, bx, by, col, 0.45);
-          along(ax, ay, bx, by, 26).forEach(([x, y], i, all) => later((i / all.length) * ms, () => S3.fx.sparkle(x, y, 0.4, col, 2)));
-          later(ms, () => { S3.fx.ring(bx, by, 10, col, 240); S3.fx.burst(bx, by, 0.4, col, 6, 1.6); });
-        } else f.beam(ax, ay, bx, by, "rgba(160,112,224,.5)", 0.45);
+        // each leaves its element along the way and a puff of it at the end
+        f.beam(ax, ay, bx, by, col, 0.45);
+        along(ax, ay, bx, by, 26).forEach(([x, y], i, all) => later((i / all.length) * ms, () => S3.fx.sparkle(x, y, 0.4, col, 2)));
+        later(ms, () => { S3.fx.ring(bx, by, 10, col, 240); S3.fx.burst(bx, by, 0.4, col, 6, 1.6); });
       } else if (kind === 8) { f.beam(ax, ay - 4, bx, by - 4, "#d8c8a0", 0.3); f.burst(ax, ay, 0.1, "#b8a878", 12, 1.6); }
       else if (kind === 9) {
         // up and over: a dotted arc and the dust where they left
@@ -1124,21 +1203,41 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       break;
     }
     // ── 단검
-    case 84: f.slash(tx, ty, ang, "#c890ff", 1.1); f.spark(tx, ty, "#f0d0ff", 1.3); B.shake(4); play("swap"); break;
-    case 85: f.burst(src.x, src.y, 0.6, "#3a2a58", 10, 1.4); play("shade"); break;
+    case 84: {
+      // The blink is a separate line event; these cuts belong only to the struck target.
+      ambushCuts(tx, ty, ang);
+      S3.fx.arrowHit(tx, ty, ang, "#d5a2ff", true, 12);
+      if (near) B.shake(3.5);
+      play("swap"); break;
+    }
+    case 85: {
+      // The three blade lanes arrive immediately after this cast; keep the release local.
+      S3.fx.arrowHit(src.x + Math.cos(ang) * 8, src.y + Math.sin(ang) * 8, ang, "#c89bea", false, 14);
+      S3.fx.burst(src.x, src.y, 0.55, "#8860ac", 5, 1.1);
+      play("shade"); break;
+    }
     case 86:
       if (extra === 1) { f.slash(tx, ty, ang + 0.8, "#c070ff", 1.1); f.slash(tx, ty, ang - 0.8, "#c070ff", 1.1, true); f.spark(tx, ty, "#f0d0ff", 1.5); B.shake(3); play("crit"); }
       else { f.burst(src.x, src.y, 0.6, "#2a2040", 30, 1.8); f.storm(src.x, src.y, 24, "#a070e0", 300, 3); play("dance"); if (mine) text(G, "무영난무!", src.x, src.y, 2.2, "#d8b0ff", true); }
       break;
     // ── 창
     case 87: {
-      // the twist: a white-hot line with a spiral of the spear's green wound round it
-      f.beam(src.x, src.y, tx, ty, "#ffffff", 0.55);
-      along(src.x, src.y, tx, ty, 10).forEach(([x, y], i) => { const a = i * 1.3, o = 3; f.sparkle(x - Math.sin(ang) * Math.cos(a) * o, y + Math.cos(ang) * Math.cos(a) * o, 0.55, i % 2 ? "#5ad0b8" : "#c8fff0", 2); });
-      f.spark(tx, ty, "#c8fff0", 1.3); B.shake(5); play("spiral");
+      spiralThrust(src.x, src.y, tx, ty);
+      if (near) B.shake(3.5);
+      play("spiral");
       break;
     }
-    case 88: f.ring(src.x, src.y, 26, "#5ad0b8", 360, true); f.burst(src.x, src.y, 0.2, "#c8fff0", 20, 2.4); B.shake(8); play("hundred"); break;
+    case 88: {
+      const line = lineOf(3);
+      const a = line && Math.hypot(line.bx - tx, line.by - ty) < 2
+        ? Math.atan2(line.by - line.ay, line.bx - line.ax) : ang;
+      S3.fx.arrowHit(tx, ty, a, "#ffe5a8", true, 11);
+      S3.fx.flash(tx, ty, 6, 0, 0.47);
+      S3.fx.burst(tx, ty, 0.2, "#83c4aa", 7, 1.9);
+      if (near) B.shake(5, a);
+      play("hundred");
+      break;
+    }
     case 89: {
       const r = extra || 64;
       S3.fx.zap(tx, ty, "#b6e6ff", 240);

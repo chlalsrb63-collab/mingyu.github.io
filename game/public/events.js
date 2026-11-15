@@ -113,17 +113,20 @@ export function onEvent(e, t) {
         }
       } else {
         const hammer = cue === HIT_CUE.hammer; // the accompanying hm event plays the one landing cue
-        floatText(crit ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : crit ? "#ffd84a" : "#ffffff", crit, true);
+        const critical = crit === 1, grazing = crit === 2;
+        floatText(critical ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : critical ? "#ffd84a" : "#ffffff", critical, true);
         tgt.hurtT = t; tgt.hsMs = 0;
-        let wk;   // my own weapon kind, when it is my blow: the impact sound follows the weapon
+        let wk, fin = false; // my own weapon kind, when it is my blow: the impact sound follows the weapon
         // recoil away from whoever struck last
         if (!isPlayer && G.hitFrom) {
           tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]);
           // was this my own blow landing? then it gets the full treatment: a held frame, a kick, a burst
-          const mine = t - G.lastAtk < 420, fin = mine && (G.me.atkN === 2 || (G.self?.wk === "sword" && G.me.atkN === 1)), heavy = crit || fin;
+          const mine = t - G.lastAtk < 420;
+          fin = mine && !grazing && (G.me.atkN === 2 || (G.self?.wk === "sword" && G.me.atkN === 1));
+          const heavy = critical || fin;
           tgt.hurtP = heavy ? 1.6 : 1;
-          S3.fx.spark(tgt.x, tgt.y, crit ? "#ffe04a" : "#ffffff", heavy ? 1.7 : 1.1);
-          S3.fx.ring(tgt.x, tgt.y - 4, heavy ? 20 : 11, crit ? "#ffe04a" : "#ffffff", heavy ? 220 : 150);
+          S3.fx.spark(tgt.x, tgt.y, critical ? "#ffe04a" : "#ffffff", heavy ? 1.7 : 1.1);
+          S3.fx.ring(tgt.x, tgt.y - 4, heavy ? 20 : 11, critical ? "#ffe04a" : "#ffffff", heavy ? 220 : 150);
           if (mine) {
             // a local hitstop: the blow and what it struck hold still for a beat (2–3 frames on a
             // crit, a finisher or a skill; barely one on a plain hit, so the tempo stays high)
@@ -132,12 +135,13 @@ export function onEvent(e, t) {
             if (!G.me.hs || t > G.me.hs.at + G.me.hs.dur) G.me.hs = { at: t, dur: stop };
             tgt.hsMs = stop;
             if (!hammer) S3.shake(heavy ? 5 : 1.5, heavy ? tgt.hurtA : undefined);
-            if (heavy) { G.punch = 1; if (!hammer) Sound.play(fin ? "finisher" : "crit", wk); }
+            if (heavy) G.punch = 1;
           }
         }
         if (id === G.you) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
-        else if (!isPlayer && !hammer) Sound.play(crit ? "crit" : "hit", wk);
-        S3.fx.burst(tgt.x, tgt.y, h * 0.55, isPlayer ? "#ff7a7a" : "#ffffff", crit ? 14 : 8, crit ? 2.6 : 2);
+        // Play one damage cue; hammer, healing and swing cues have their own events.
+        else if (!isPlayer && !hammer) Sound.play(critical ? "crit" : grazing ? "graze" : fin ? "finisher" : "hit", wk);
+        S3.fx.burst(tgt.x, tgt.y, h * 0.55, isPlayer ? "#ff7a7a" : "#ffffff", critical ? 14 : 8, critical ? 2.6 : 2);
       }
       break;
     }
