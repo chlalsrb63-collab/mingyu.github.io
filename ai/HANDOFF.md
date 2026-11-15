@@ -32,26 +32,30 @@ agent notification re-read it, and 6–7 agents of 120k–400k tokens each ran a
 7. Unused MCP servers/plugins (Unity, Summer Engine, Higgsfield, Notion, PixelLab, Blender, fullstory…) add ~25k tokens
    to every call — the owner may turn them off for this folder. Ponytail (lazy-senior-dev rules) is installed.
 
-## 0.1 State (2026-11-15, third integrator session — `main` sheet v17, rules suite green, nothing pushed)
+## 0.1 State (2026-11-15, end of the third integrator session — `main` sheet v18, rules suite 42/42, nothing pushed)
 
-Merged this session: `rift-tiers` (tiers 1–100, weekly 4-player boss + stagger; scale-and-rift §H.6) · boss art for
-bloodhorn/clubshrimp/cloakbat/bloomwhale (`mobart_f.js`, phase keys `_p2/_ch/_dive`) · **boss-script runner**
-(`56-boss-script.js`, `MOBS[k].script`; mob row ends `phase,state`; bosses-2 §8) · `codex/hammer` (merged by Codex,
-v16) · **boss trophies + solo story fights** (`67-trophies.js`, sheet v17, `docs/design/boss-trophies.md`: field bosses
-stand at a fixed spot, 10-min respawn; 14 trophies all active; 8 main-quest boss steps) · HUD: job-level row under the
-weapon mastery, equal HP/MP bars (99999), weapon-passive gauge floats bottom-centre (owner dropped the job gauge).
-UX audit of the skill/job UI: `ux-audit.md` in the session notes folder (3 proposals sent to the owner, no answer yet).
+Merged this session: `rift-tiers` (tiers 1–100, weekly 4-player boss + stagger) · boss art bloodhorn/clubshrimp/
+cloakbat/bloomwhale (`mobart_f.js`, keys `_p2/_ch/_dive`) · boss-script runner (`56-boss-script.js`) · `codex/hammer`
+(Codex merged it, v16) · boss trophies + solo story fights (`67-trophies.js`, v17, `docs/design/boss-trophies.md`) ·
+HUD: job-level row under weapon mastery, equal HP/MP bars (99999), weapon-passive gauge floats bottom-centre (owner
+dropped the job special gauge) · skill/job UI cleanup (owner-approved audit; `jobtree.js`/`mastery.js`/아르센) ·
+**job freedom rules** (`47-job-freedom.js`, v18; contract + as-built in `docs/design/job-freedom.md`).
 
-**Running / next, in order:** 1) `claude/job-freedom` (agent; contract `docs/design/job-freedom.md`: no 15-cap on
-hybrids, job/level reset with scrolls + gold, per-job progress kept, loadout 5 active + 4 passive in town/campfire,
-Lv.150 off-job passive quest; sheet v18). 2) **모닥불 피우기**: the 앉기 button lights a temporary campfire in the field when
-out of combat with no monster near (all campfire actions work there). 3) Client: trophy window (like the charm board),
-quest tracker lines, skill loadout UI + the audit fixes the owner picks. 4) **Skill enhancement +10** (owner's rules in
-job-freedom.md §7: +1..+3 safe, then chance, failure eats the material only, ≈2–3 %/step). 5) Gear + cosmetics content
-(hook the "곧 열립니다" cosmetic sources to rift tiers/weekly boss/quests; boss drops bosses-2 §7; hammer gear/skins).
-6) bosses-2 patterns donut/cone/mark/adds + the four data rows/arenas; then screenshots of each boss to the owner.
-Known: field bosses have no stagger bar yet; boss `dc` events share a code with the tracker decoy in `skillfx.js`;
-rift tier 5+ needs balance (test runs tiers 1,3); `party` test flakes under load (passes alone).
+**Next, in order (owner's queue; contracts in `docs/design/job-freedom.md` §7–9 and as-built):**
+1) **Gear enhancement rebalance** (§8): safe to +3, curve to +27.5 % at +10, crit 0.5/step, each try uses 강화석; a
+   failure drops one step and **curses** the gear (new 저주 해제 item lifts it, next try +10 %p). Touches 10/40/45/63/75.
+2) **Two main weapons for everyone** (§9): Ⅰ/Ⅱ buttons above the weapon slot + hotkey; swap-slot weapon earns 30 %
+   mastery XP (same kind: +10 % only).
+3) **모닥불 피우기**: the 앉기 button lights a temporary campfire in the field when out of combat with no monster near.
+4) Client: skill loadout editor (5 active + 4 passive, `self.lo`), 전직관 reset buttons + off-job slot picker, the
+   보스전리품 window (like the charm board) + quest tracker lines; fix "전직은 되돌릴 수 없습니다" in `jobtree.js`
+   79/154/268 and `infocard.js:152`.
+5) **Skill enhancement +10** (§7: +1..+3 safe, failure eats the material only, ≈2–3 %/step; propose rates).
+6) Gear + cosmetics content (cosmetic sources "곧 열립니다" → rift/weekly/quests; boss drops bosses-2 §7; hammer gear;
+   scroll + 저주 해제 sources). 7) bosses-2 patterns donut/cone/mark/adds + data rows/arenas, then boss screenshots.
+Known: field bosses have no stagger bar; boss `dc` events share a code with the tracker decoy (`skillfx.js`); rift tier
+5+ needs balance; `party` test flakes under load; 6 field bosses (oasis, coast, dunesea, cloudtemple, mesa, jungle) have
+no main-quest step yet; job/level reset gold costs are placeholders. Codex commits to `main` directly at times.
 **Agent worktrees from `isolation: "worktree"` start at origin/main (stale) — first step of every brief: `git rebase main`.**
 Only the owner adds jobs.
 

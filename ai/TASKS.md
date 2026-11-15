@@ -18,7 +18,6 @@
 | Codex | 레벨대별 사냥 동선과 Lv.200 전용 사냥터 | `codex/hunt-routes` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | N1 NPC 일과 서버 규칙 (`docs/design/npc-life.md` B–D, K) | `codex/npc-life` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Claude | 맵 그림 1단계 (수정굴·벽돌 회랑·폭포 고원 타일, `docs/design/maps-v2.md` 표 C) | `claude/maps-art-1` · 에이전트 워크트리 | 2026-11-15 |
-| Claude | 직업 자유: 전직·레벨 초기화(주문서+골드), 직업별 경험치 유지, 스킬 설정 액티브 5·패시브 4, Lv.150 타 직업 패시브 퀘스트 (`docs/design/job-freedom.md`) | `claude/job-freedom` · 에이전트 워크트리 | 2026-11-15 |
 
 ## 이식 — `codex/combat-effects`(`c62b345`, 옛 v11 규칙 위)에서 지금 `main`(v12)으로 옮길 것
 

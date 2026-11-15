@@ -32,6 +32,12 @@ Goal (owner): one character can eventually play every job. Builds on Codex's job
    The curse lives on the gear (persisted field; default in normalise, sheet bump). Source of the 저주 해제 item: shop
    for gold + rift/weekly boss drops (gear task).
 
+9. **Two main weapons for everyone** (owner, 2026-11-15; today `weapon2` is hybrid-only, Tab swaps, no stats): anyone
+   may wear a second main weapon. Small Roman **Ⅰ / Ⅱ** buttons above the weapon slot in the equipment window swap
+   them, plus a rebindable hotkey (reuse the existing swap action in `keymap.js`). Mastery XP: the weapon in hand gets
+   full XP; the weapon in the swap slot gets **30 %** of it — but if both are the **same kind**, that kind gets only
+   **+10 %** extra (so a different kind in the swap slot is the efficient choice). Hybrids keep working as now.
+
 ## Open (decide while building, report to the owner)
 - Exact gold costs and scroll drop rates; whether the loadout is saved per job (recommended: yes).
 
