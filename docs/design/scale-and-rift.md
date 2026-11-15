@@ -819,3 +819,17 @@ Numbers live in `31-maps-dim.js` `DIM_TIER` / `DIM_CHAL`; rules in `64-dim.js`. 
   `defs().dim.tier`, `defs().dim.chal.bosses = [[k, name, minLv, cast, pattern names]…]`; rank rows carry `dt` (best tier).
 - Client (`dimrift.js`): keeper window tier ◀ ▶ (to `dimr[0]`), record line, a [도전] per boss; HUD title shows the tier / boss,
   the boss bar shows tries/enrage/fury and the stagger gauge. Not drawn yet: `dr` (the toasts say it), a tier leaderboard.
+
+### H.7 3단 레이드 floors — as built (2026-11-15, owner: "5배 이상", varied, richly dressed)
+- **Size**: every floor 106 × 74 on a 6 × 5 grid of 17 × 14 cells (`DIM.grid`). Walkable tiles, 60 seeds: 1단 2520 · 2단 2536 · 3단 3479
+  (old 56 × 40: 465 → 5.4× / 5.5× / 7.5×); build 2.5 ms median, p99 6.5 ms.
+- **Concepts** (`DIM_FLOORS`, each floor's look seeded from its list): 1단 **무너진 지하 회랑** (crypt/sewer; rooms in 8 shapes — plain, cross,
+  round, octagon, ell, ring, pillared, ragged — some over two cells, corridors 3 wide, 2 at 25 %), 2단 **수정 동굴** (cave; blob / dome / fissure
+  caverns on wandering 2–3-wide tunnels, smoothed twice), 3단 **핏빛 심연** (abyss; an open field over 16–19 cells, ragged at the rock, ridges
+  with a 3–4-tile gap on most loop edges, rock pillars, pits and blood pools). All: spanning tree + 3–8 loops, 2–3 vaults (guardian + chest)
+  and 1–2 elite dens as dead ends off the far half, rooms dressed by type (`DIM_THEMES[t].rooms`: ossuary, chapel, crystal garden, grotto,
+  blood altar …; wall-hugging props, clusters, rows, rings, pools, ground patches; fields' rocks `R` and pillars `q`). The start → hall route
+  keeps 3 tiles clear; anything cut off is cleared or walled. No raised shelves (the cave's `lv` art) yet.
+- **Gauge**: fixed `DIM.gK` 2.5 × (0.9 kill · 4 elite · 3 orb) — 100 % ≈ 26 kills, of 70–110 monsters on a floor. 3단's 100 % also opens
+  균열의 문 beside a party > `hallR` 30 steps from the hall (→ `dim.ck`); while the gauge fills the fallen get up beside a standing member.
+- **Bots** (4 × Lv 17/32/44 × 4 draws): 11/12 clear in 8.1–11.4 min, avg 9.9, ≤ 4 deaths a run; HUD title `n단 · <concept>` from `defs().dim.raid.names`.
