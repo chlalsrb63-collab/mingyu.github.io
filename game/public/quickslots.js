@@ -128,6 +128,11 @@ export function press(i) {
   if (v[0] === "s") C.castSkill(v[1]);
   else useItem(v[1]);
 }
+/** A slot key let go: a held-charge skill (산 가르기, `holdMs`) is released now (`{t:"skr"}`, 57 holdGo). */
+export function release(i) {
+  const v = slots()[i], sk = v && v[0] === "s" && C.G.defs.skills[v[1]];
+  if (sk && sk.holdMs) C.act({ t: "skr" });
+}
 let emptyAt = 0;
 function emptyHint() {
   const t = performance.now();

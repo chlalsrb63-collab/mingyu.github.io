@@ -240,7 +240,11 @@ export function setupInput() {
       case "chat": e.preventDefault(); $("#chat-in").focus(); break;
     }
   });
-  addEventListener("keyup", (e) => keys.delete(e.code));
+  addEventListener("keyup", (e) => {
+    keys.delete(e.code);
+    const a = Keymap.actionOf(e);
+    if (/^slot[1-9]$/.test(a)) QS.release(Number(a.slice(4)) - 1);
+  });
   addEventListener("blur", () => { keys.clear(); held.atk = false; });
   world.addEventListener("pointerdown", (e) => {
     if (!G.playing || !G.map || G.me.dead) return;

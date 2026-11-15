@@ -1997,7 +1997,7 @@ export function bloodhornJet(x0, y0, pts, r = 13, ms = 900) {
 }
 
 export function skillEvent(e, ctx) {
-  if (e[0] === "cb" || (e[0] === "a" && e[2] >= 140 && e[2] <= 145)) return comboEvent(e, ctx);
+  if (e[0] === "cb" || (e[0] === "a" && e[2] >= 140 && e[2] <= 159)) return comboEvent(e, ctx);
   const { G, entityPos } = ctx;
   // the skills' effects go through the scaled-up set (scene2d big): denser, bigger, a core flash, shockwaves
   const B = S3.big(), f = B.fx, t = ctx.t;
