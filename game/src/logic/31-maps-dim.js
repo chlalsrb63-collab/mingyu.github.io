@@ -1,8 +1,9 @@
 // ───────────────────────────── 차원 균열: the party instance's map ─────────────────────────────
 // docs/design/scale-and-rift.md D. A party's own dungeon, made on the spot from a seed: a small
-// underground (56 × 40 tiles) of 7–9 rooms on a jittered 4 × 3 grid, joined by a spanning tree of
-// corridors with a loop or two, the way in at one end, the master's hall at the far end, and two or
-// three dead-end vaults (a guardian and a chest each) hanging off the far half. Floors, walls and
+// underground (56 × 40 tiles) of 5–6 rooms on a jittered 4 × 3 grid, joined by a spanning tree of
+// corridors with a loop or two, the way in at one end, the master's hall at the far end, and one or
+// two dead-end vaults (a guardian and a chest each) hanging off the far half. A run is three of them
+// in a row (3단 레이드): each floor a fresh map from the run's seed. Floors, walls and
 // furniture are one of the four underground themes, so the browser draws it with the art it has.
 // Monsters come from the theme's own kinds near the party's level (or, if the theme has none that
 // close, from every hunting ground's kinds nearest that level). Pure: no world state, no MAPS.
@@ -10,8 +11,14 @@
 /** Every number of the instance in one place (balance edits are data-only; the manager is 64-dim.js). */
 const DIM = {
   max: 4, party: 4,                       // instances per channel room, players inside one
-  w: 56, h: 40, path: 52, rooms: [7, 9], vaults: [2, 3], packs: [12, 16], pack: [3, 6], mobCap: 70, cap: 90,
-  limit: 900000, warn: 180000,            // 15 minutes from the open; a warning with 3 minutes left
+  w: 56, h: 40, path: 36, rooms: [5, 6], vaults: [1, 2], packs: [7, 9], pack: [3, 5], mobCap: 40, cap: 52,
+  limit: 900000, warn: 180000,            // the whole three-floor run: 15 minutes from the open; a warning with 3 minutes left
+  // 3단 레이드 (owner, 2026-11-15): three floors in a row, ≈ 10 minutes for a party of four. At 100% floors 1–2 open
+  // 하강의 문 (everyone inside goes down after `downMs`, sooner once all standing stepped within `downR`); floor 3's 100%
+  // wakes the final boss in its hall at the far end. Per floor: monster health and blows ×, pack leaders made elite,
+  // elite traits; `boss` the final boss's traits.
+  floors: 3, downMs: 10000, downR: 16,
+  floor: [{ hp: 1, atk: 1, elites: 0, traits: 1 }, { hp: 1.15, atk: 1.08, elites: 1, traits: 1 }, { hp: 1.3, atk: 1.15, elites: 2, traits: 2, boss: 2 }],
   emptyMs: 20000, portalMs: 90000, failMs: 8000, memberMs: 180000, rcMs: 20000, near: 80,
   // the gauge: a kill, an elite (guardians too), an orb an elite leaves behind; a rift with fewer monsters scales
   // these up so that everything together is worth `full` (64-dim.js dim.gK)
@@ -30,8 +37,16 @@ const DIM = {
   // Trim about 1% at the mid-band after the profession and ladder merge, before the tier multiplier.
   hpBase: 4.9, hpLow: [24, 0.85], hpMid: [32, 8, -0.05], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
   reviveMs: 25000,
-  // the master's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then
-  reward: { gold: 60, xp: 0.05, gearQ: 3, stone: 2, rune: 0.6 }, dailyFull: 3, failGold: 30, lootGold: 0.5,
+  // the final boss's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then (what the old
+  // ladder's tier 3 paid); a failed run's consolation is `failGold` × lv a floor reached
+  reward: { gold: 67, xp: 0.054, gearQ: 3, stone: 2, rune: 0.64 }, dailyFull: 3, failGold: 30, lootGold: 0.5,
+  // loot tables read a tier (LOOT_X): the old ladder's tier 15 keeps the economy review's supply of skill stones and uncurse scrolls
+  lootTier: 15,
+  // the week's first full clear (Monday 06:00 KST): `gold` × lv, `stone`, `unc` 저주 해제 주문서 and a job reset scroll
+  weekly: { gold: 240, stone: 6, unc: 2 },
+  // carry guard: a member more than `carryLv` world tiers under the party's best, or who dealt under `carryShare` of an even
+  // share of the damage, gets `carryK` of the gold and experience and no gear, record or weekly bonus
+  carryLv: 6, carryShare: 0.2, carryK: 0.4,
 };
 /** The four looks: their floor deco (object chars from that theme's own map) and the name players see. */
 const DIM_THEMES = {
@@ -290,32 +305,10 @@ function dimBuild(cfg, seed) {
   return m;
 }
 
-// ───────────────────────────── 균열 단수 and 주간 보스 도전 (docs/design/scale-and-rift.md H.6) ─────────────────────────────
+// ───────────────────────────── 3단 레이드 floors and 주간 보스 도전 (docs/design/scale-and-rift.md H.6) ─────────────────────────────
 
-/**
- * 균열 단수: an endless ladder on the party rift. Tier 1 is the rift as it always was; each tier above multiplies
- * monster health by `hp` and their blows by `atk` (compounding), makes one more pack leader an elite every `eliteEvery`
- * tiers (at most `eliteMax`), gives elites a second trait from `trait2` and the master a third from `trait3`.
- * The chest grows gently (`gold`/`xp` per tier up to `goldMax`/`xpMax` times, a stone more every `stoneEvery` tiers,
- * rune chance + `rune` per tier) — only for the day's full-reward clears (DIM.dailyFull).
- * Carry guard: a member more than `carryLv` world tiers under the party's best, or who dealt under `carryShare` of an
- * even share of the damage, gets `carryK` of the gold and experience and no unlock, record or weekly bonus.
- * `weekly`: the first clear of each bracket of `every` tiers in a week (Monday 06:00 KST) pays `gold` × rift level and `stone`.
- */
-const DIM_TIER = {
-  max: 100, hp: 1.08, atk: 1.05, eliteEvery: 3, eliteMax: 6, trait2: 10, trait3: 20,
-  gold: 0.06, goldMax: 3, xp: 0.04, xpMax: 2, stoneEvery: 5, stoneMax: 4, rune: 0.02,
-  carryLv: 6, carryShare: 0.2, carryK: 0.4,
-  weekly: { every: 5, max: 20, gold: 120, stone: 3 },
-};
-/** What tier `n` does to a rift: `{ hp, atk, elites, traits, boss }` — every one non-decreasing in n. */
-function dimTierK(n) {
-  const t = clamp(n | 0, 1, DIM_TIER.max) - 1;
-  return {
-    hp: Math.pow(DIM_TIER.hp, t), atk: Math.pow(DIM_TIER.atk, t), elites: Math.min(DIM_TIER.eliteMax, Math.floor(t / DIM_TIER.eliteEvery)),
-    traits: t + 1 >= DIM_TIER.trait2 ? 2 : 1, boss: t + 1 >= DIM_TIER.trait3 ? 3 : 2,
-  };
-}
+/** What floor `n` (1..DIM.floors) does to a rift: `{ hp, atk, elites, traits, boss }` (DIM.floor; a boss challenge reads floor 1's). */
+const dimFloorK = (n) => DIM.floor[clamp(n | 0, 1, DIM.floors) - 1];
 
 /**
  * 주간 보스 도전: a four-player arena for the two big bosses. Each has three telegraphed patterns made of the old

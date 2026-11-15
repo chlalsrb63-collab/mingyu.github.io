@@ -48,7 +48,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 21, name, job: "adventurer", jp: null,
+    v: 22, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -185,6 +185,8 @@ function migrate(ch) {
   // the 차원 균열 daily count (v9)
   // (v14: the unlocked 균열 단수, the best tier and its time, the week's brackets and boss flags — 64-dim.js dimClean)
   ch.dim = dimClean(ch.dim);
+  // (v22: the 3-floor raid replaced the tier ladder — an older sheet's best tier, its time and weekly brackets meant tiers)
+  if ((ch.v | 0) < 22) Object.assign(ch.dim, { best: 0, ms: 0, wb: 0 });
   // ── bag expansion and housing (v10): the bag 40..100 (old bags were 30), the house cleaned ──
   bagClean(ch);
   ch.house = houseClean(ch.house, fix);
@@ -205,7 +207,7 @@ function migrate(ch) {
   // skill enhancement (v19): { [active skill id]: 1..10 } (48-skill-enh.js)
   skeClean(ch);
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
-  ch.v = Math.max(ch.v | 0, 21);
+  ch.v = Math.max(ch.v | 0, 22);
   return ch;
 }
 

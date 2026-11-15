@@ -5,12 +5,12 @@
  * way home and the chest in the world (scene2d props), their sounds, and the minimap marks.
  * The server decides everything; this only draws `dim`, `rc` and `dj` from the snapshots.
  *
- * Wire: dim = [gauge×10, secs, state 0 run · 1 master · 2 cleared · 3 failed, masterId, lv,
+ * Wire: dim = [gauge×10, secs (the run's clock; the door's or the way down's countdown), state 0 run · 1 final boss · 2 cleared · 3 failed · 4 way down open, masterId, lv,
  *   [[eid, hp%, alive]…], [[id, kind, x, y, secs]…] shrines, [[id, x, y]…] orbs, [x, y]|0 way home,
  *   [x, y, 0 yours · 1 opened · 2 not yours]|0 chest, theme, [x, y]|0 master's hall, ward secs, revive secs]
- *   , tier (0: a boss challenge), challenge 0 | [boss index, 0 · 1 casting · 2 staggered, stagger gauge left %, half-secs left, enrage steps, tries, fury]]
- * rc = [id, secs, [[eid, name, 0 asked · 1 yes · 2 no · 3 away]…], lv, leader?, tier, boss index + 1 | 0]
- * dj = [secs, inside, gauge×10, lv, tier, boss index + 1 | 0]; self.dimr = [unlocked tier, best, its secs, full clears left today, weekly brackets, weekly boss bits, best step + 1 per boss, rotation index]
+ *   , floor 1..3 (0: a boss challenge), challenge 0 | [boss index, 0 · 1 casting · 2 staggered, stagger gauge left %, half-secs left, enrage steps, tries, fury]]
+ * rc = [id, secs, [[eid, name, 0 asked · 1 yes · 2 no · 3 away]…], lv, leader?, 0, boss index + 1 | 0, step]
+ * dj = [secs, inside, gauge×10, lv, floor, boss index + 1 | 0, step]; self.dimr = [floors in a run, most floors cleared, best full clear secs, full clears left today, weekly bonus taken 0/1, weekly boss bits, best step + 1 per boss, rotation index]
  * (dr, the chest's result, is not drawn: the server's toasts say it)
  */
 import * as Art from "./dimart.js";
@@ -19,7 +19,7 @@ const $ = (s) => document.querySelector(s);
 const now = () => performance.now();
 const T = 16;
 let A = null;                       // { G, S3, Sound, act, openWin, closeWin, isOpen, toast }
-const st = { dim: null, at: 0, rc: null, rcAt: 0, rcId: 0, dj: null, props: new Set(), state: -1, hud: false, warned: false, tier: 0 };
+const st = { dim: null, at: 0, rc: null, rcAt: 0, rcId: 0, dj: null, props: new Set(), state: -1, hud: false, warned: false };
 
 export function init(api) { A = api; window.__dim = st; }   // st exposed for automation (like window.__game)
 const D = () => (A.G.defs && A.G.defs.dim) || { themes: {}, pylons: {}, limit: 900000, party: 4, max: 4, rcMs: 20000 };
@@ -29,9 +29,10 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 const chalDef = (i) => ((D().chal || {}).bosses || [])[i];
 /** A challenge's difficulty in words: "어려움 Lv.150" (`s` the step index of boss `i`). */
 const stepWord = (i, s) => { const c = D().chal || {}, st = ((chalDef(i) || [])[5] || [])[s | 0]; return st ? `${(c.stepNames || [])[s | 0] || ""} Lv.${st[0]}` : ""; };
-/** The tier this hero has unlocked (self.dimr), and the one picked in the keeper's window (the highest, until changed). */
-const unlocked = () => Math.max(1, ((A.G.self && A.G.self.dimr) || [1])[0] | 0);
-const pickedTier = () => Math.max(1, Math.min(unlocked(), st.tier || unlocked()));
+/** Floors in a run (defs().dim.raid). */
+const floors = () => (D().raid && D().raid.floors) || 3;
+/** The clock's text: the way home's or the way down's countdown, a failing rift's seconds, else the run's time left. */
+const clock = (state, s) => (state === 2 ? `문 ${mmss(s)}` : state === 4 ? `하강 ${s}초` : state === 3 ? `${s}초` : mmss(s));
 export const inside = () => !!(A && A.G.map && String(A.G.map.id).startsWith("dim:"));
 
 // ───────────────────────────── snapshots ─────────────────────────────
@@ -139,12 +140,12 @@ function renderHud() {
   const secs = Math.max(0, d[1] - Math.floor((now() - st.at) / 1000));
   const pct = Math.min(100, d[0] / 10);
   const name = D().themes[d[10]] || "차원 균열";
-  const label = ["", "균열의 주인 출현!", "정화 완료 — 귀환의 문까지", "균열이 닫힙니다…"][d[2]];
+  const label = ["", "최종 보스 출현! 가장 먼 방으로", "정화 완료 — 귀환의 문까지", "균열이 닫힙니다…", "하강의 문 — 다음 단으로"][d[2]];
   // (the wire carries the rift's world tier; players see levels as 4·tier − 3, like monsters and doors)
   const chal = d[15], bossName = chal && chalDef(chal[0]) ? `${chalDef(chal[0])[1]} · ${stepWord(chal[0], chal[7])}` : "";
-  $("#dim-title").textContent = chal ? `보스 도전 · ${bossName}` : `차원 균열 Lv.${4 * d[4] - 3}${d[14] > 1 ? ` · ${d[14]}단` : ""} · ${name}`;
-  $("#dim-time").textContent = d[2] === 2 ? `문 ${mmss(secs)}` : d[2] === 3 ? `${secs}초` : mmss(secs);
-  $("#dim-time").classList.toggle("low", d[2] <= 1 && secs <= 180);
+  $("#dim-title").textContent = chal ? `보스 도전 · ${bossName}` : `차원 균열 Lv.${4 * d[4] - 3} · ${d[14]}/${floors()}단 · ${name}`;
+  $("#dim-time").textContent = clock(d[2], secs);
+  $("#dim-time").classList.toggle("low", (d[2] <= 1 && secs <= 180) || d[2] === 4);
   $("#dim-fill").style.width = `${pct}%`;
   $("#dim-pct").textContent = d[2] === 0 ? `${pct.toFixed(1)}%` : d[15] && d[2] === 1 ? "보스를 쓰러뜨리세요!" : label;
   box.classList.toggle("boss", d[2] === 1);
@@ -163,7 +164,7 @@ function renderHud() {
   if (m && A.G.defs.mobs[m.k]) {
     const def = A.G.defs.mobs[m.k], max = def.hp * (A.G.defs.eliteHp[m.el] || 1);
     bar.hidden = false;
-    $("#dim-boss-name").textContent = chal ? `${def.name} · ${chal[5]}번째 시도${chal[4] ? ` · 광폭 ${chal[4]}` : ""}${chal[6] ? ` · 분노 ${chal[6]}` : ""}` : `균열의 주인 · ${def.name}`;
+    $("#dim-boss-name").textContent = chal ? `${def.name} · ${chal[5]}번째 시도${chal[4] ? ` · 광폭 ${chal[4]}` : ""}${chal[6] ? ` · 분노 ${chal[6]}` : ""}` : `최종 보스 · ${def.name}`;
     $("#dim-boss-fill").style.width = `${Math.max(0, Math.min(100, (100 * m.hp) / max))}%`;
   } else bar.hidden = true;
   // the stagger gauge of a marked cast: empty it with damage before the time runs out
@@ -192,7 +193,7 @@ function renderStory(box) {
   $("#dim-boss").hidden = true;
 }
 /** Every frame (cheap): keep the clock ticking between snapshots. */
-export function frame() { if (!st.dim && st.sty && inside()) { const el = $("#dim-time"), want = mmss(storyLeft()); if (el && el.textContent !== want) el.textContent = want; return; } if (st.dim && inside()) { const s = Math.max(0, st.dim[1] - Math.floor((now() - st.at) / 1000)); const el = $("#dim-time"); const want = st.dim[2] === 2 ? `문 ${mmss(s)}` : st.dim[2] === 3 ? `${s}초` : mmss(s); if (el && el.textContent !== want) el.textContent = want; } }
+export function frame() { if (!st.dim && st.sty && inside()) { const el = $("#dim-time"), want = mmss(storyLeft()); if (el && el.textContent !== want) el.textContent = want; return; } if (st.dim && inside()) { const s = Math.max(0, st.dim[1] - Math.floor((now() - st.at) / 1000)); const el = $("#dim-time"); const want = clock(st.dim[2], s); if (el && el.textContent !== want) el.textContent = want; } }
 
 // ───────────────────────────── the ready check ─────────────────────────────
 
@@ -203,7 +204,7 @@ function renderRc() {
   const me = rc[2].find((r) => r[0] === A.G.you);
   const WORD = ["대기 중", "수락", "거절", "마을 밖"];
   $("#rc-lv").textContent = rc[6] ? `보스 도전 · ${(chalDef(rc[6] - 1) || [])[1] || "?"} · ${stepWord(rc[6] - 1, rc[7])} · 최대 ${D().party}명`
-    : `차원 균열 Lv.${4 * rc[3] - 3}${rc[5] > 1 ? ` · ${rc[5]}단` : ""} · 최대 ${D().party}명`;
+    : `차원 균열 Lv.${4 * rc[3] - 3} · ${floors()}단 레이드 · 최대 ${D().party}명`;
   $("#rc-time").textContent = `${left}초`;
   $("#rc-fill").style.width = `${(100 * left) / Math.max(1, D().rcMs / 1000)}%`;
   const rows = rc[2].map(([eid, name, s]) => `<li class="rc-${s}"><span class="rc-mark"></span><b>${esc(name)}</b><em>${WORD[s]}</em></li>`).join("");
@@ -218,12 +219,11 @@ export function bindUi() {
   $("#rc-yes").addEventListener("click", () => { if (st.rc) { A.act({ t: "dim_ready", id: st.rc[0], ok: 1 }); A.Sound.play("ui"); } });
   $("#rc-no").addEventListener("click", () => { if (st.rc) { A.act({ t: "dim_ready", id: st.rc[0], ok: 0 }); A.Sound.play("ui"); } });
   $("#rc-cancel").addEventListener("click", () => { A.act({ t: "dim_cancel" }); A.Sound.play("ui"); });
-  $("#dim-open").addEventListener("click", () => { A.act({ t: "dim_open", tier: pickedTier() }); A.Sound.play("ui"); });
+  $("#dim-open").addEventListener("click", () => { A.act({ t: "dim_open" }); A.Sound.play("ui"); });
   $("#dim-pick").addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-a]");
+    const b = e.target.closest("button[data-a=boss]");
     if (!b) return;
-    if (b.dataset.a === "boss") A.act({ t: "dim_open", boss: b.dataset.k, step: +b.dataset.s || 0 });
-    else { st.tier = Math.max(1, Math.min(unlocked(), pickedTier() + (b.dataset.a === "up" ? 1 : -1))); renderKeeper(); }
+    A.act({ t: "dim_open", boss: b.dataset.k, step: +b.dataset.s || 0 });
     A.Sound.play("ui");
   });
   $("#dim-join").addEventListener("click", () => { A.act({ t: "dim_join" }); A.Sound.play("ui"); });
@@ -242,11 +242,14 @@ function renderKeeper() {
   const d = D(), s = A.G.self, party = A.G.party || [], dj = st.dj;
   const lead = !party.length || party[0][0] === A.G.you;
   const pyl = Object.values(d.pylons || {}).map(([n]) => n).join(" · ");
-  $("#dim-info").innerHTML = `파티장이 균열을 열면 마을에 있는 파티원 모두에게 입장 준비 창이 뜹니다. 수락한 사람만 함께 들어갑니다.<br>` +
-    `<b>${Math.round(d.limit / 60000)}분</b> 안에 몬스터를 쓰러뜨려 균열 게이지를 채우면 <b>균열의 주인</b>이 나타납니다. 정예가 남긴 <b>균열의 구슬</b>과 기둥(${pyl})을 놓치지 마세요.<br>` +
-    `주인을 쓰러뜨리면 파티원마다 보상 상자가 열립니다. 하루 첫 3번은 경험치를 모두 받습니다.` + (s && s.st ? `<br><span class="dim-n">정화한 균열: ${s.st.dim | 0}번</span>` : "");
-  // 균열 단수 (up to what this hero has unlocked; the server checks the party) and the weekly boss challenge
-  const r = (s && s.dimr) || [1, 0, 0, 0, 0, 0], tier = pickedTier(), ch = d.chal || { bosses: [] }, lvl = (s && s.lvl) || 0;
+  const n = floors();
+  $("#dim-info").innerHTML = `<b>${n}단 레이드 · 약 10분 · 파티 최대 ${d.party}명</b><br>` +
+    `파티장이 균열을 열면 마을에 있는 파티원 모두에게 입장 준비 창이 뜹니다. 수락한 사람만 함께 들어갑니다.<br>` +
+    `단마다 몬스터를 쓰러뜨려 균열 게이지를 채우면 <b>하강의 문</b>이 열리고, ${n}단 끝의 가장 먼 방에서 <b>최종 보스</b>가 깨어납니다. ` +
+    `전체 <b>${Math.round(d.limit / 60000)}분</b> 제한. 정예가 남긴 <b>균열의 구슬</b>과 기둥(${pyl})을 놓치지 마세요.<br>` +
+    `최종 보스를 쓰러뜨리면 파티원마다 보상 상자가 열립니다. 하루 첫 ${(d.raid && d.raid.daily) || 3}번은 경험치를 모두 받고, 주마다 첫 정화에 보너스가 붙습니다.` + (s && s.st ? `<br><span class="dim-n">정화한 균열: ${s.st.dim | 0}번</span>` : "");
+  // the record and the weekly boss challenge
+  const r = (s && s.dimr) || [n, 0, 0, 0, 0, 0], ch = d.chal || { bosses: [] }, lvl = (s && s.lvl) || 0;
   // dimr[6]: best step + 1 per boss; dimr[7]: this week's rotating boss. Row: [k, name, need, cast, pats, steps, reward bit, rotating]
   const challenges = ch.bosses.map(([k, name, need, cast, , steps, bit, rotating], i) => {
     if (rotating && i !== r[7]) return "";
@@ -258,8 +261,7 @@ function renderKeeper() {
         `title="Lv.${min}부터 · 골드·경험치 Lv.${L} 기준${s && ch.stepR ? ` · 큰 보상 강화석 +${Math.floor(ch.stepR.stone * s)}${Math.floor(ch.stepR.rune * s) ? ` · 룬 +${Math.floor(ch.stepR.rune * s)}` : ""}${Math.floor(ch.stepR.gear * s) ? ` · 장비 +${Math.floor(ch.stepR.gear * s)}` : ""}` : ""} · [${esc(cast)}]을(를) 무력화하세요">${esc((ch.stepNames || [])[s] || "도전")} ${L ? `Lv.${L}` : ""}</button>`).join("") + `</div>`;
   }).join("") +
     (ch.stepR ? `<div class="dim-step">난이도가 오를수록 보스가 강해지고 골드·경험치는 그 레벨 기준 · 큰 보상에 단계마다 강화석 +${ch.stepR.stone}</div>` : "");
-  const pick = dj ? "" : `<div class="dim-tier"><button class="btn small" data-a="down"${tier <= 1 ? " disabled" : ""}>◀</button><b>${tier}단</b><button class="btn small" data-a="up"${tier >= r[0] ? " disabled" : ""}>▶</button></div>` +
-    `<div class="dim-rec">해금 ${r[0]}단 · 최고 ${r[1] ? `${r[1]}단 (${mmss(r[2])})` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음${r[4] ? ` · 주간 보너스 ${r[4] * ((d.tier && d.tier.every) || 5)}단까지 받음` : ""}</div>` +
+  const pick = dj ? "" : `<div class="dim-rec">최고 기록 ${r[1] >= r[0] ? mmss(r[2]) : r[1] ? `${r[1]}단까지` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음 · 주간 첫 정화 보너스 ${r[4] ? "받음" : "남음"}</div>` +
     challenges;
   if ($("#dim-pick").dataset.k !== pick) { $("#dim-pick").innerHTML = pick; $("#dim-pick").dataset.k = pick; }
   $("#dim-open").hidden = !!dj;
@@ -267,7 +269,7 @@ function renderKeeper() {
   $("#dim-open").textContent = party.length ? (lead ? "균열 열기 (파티 입장 준비)" : "파티장만 열 수 있습니다") : "혼자 균열 열기";
   $("#dim-join").hidden = !dj;
   if (dj) $("#dim-join").textContent = dj[5] ? `합류하기 — 보스 도전 · ${(chalDef(dj[5] - 1) || [])[1] || "?"} · ${stepWord(dj[5] - 1, dj[6])} · ${dj[1]}명 · ${mmss(dj[0])}`
-    : `합류하기 — Lv.${4 * dj[3] - 3}${dj[4] > 1 ? ` · ${dj[4]}단` : ""} · ${dj[1]}명 · ${(dj[2] / 10).toFixed(0)}% · ${mmss(dj[0])}`;
+    : `합류하기 — Lv.${4 * dj[3] - 3} · ${dj[4]}/${floors()}단 · ${dj[1]}명 · ${(dj[2] / 10).toFixed(0)}% · ${mmss(dj[0])}`;
 }
 
 // ───────────────────────────── the minimap ─────────────────────────────

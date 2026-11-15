@@ -609,10 +609,8 @@ body.touch kbd { display: none; }
 #w-dim .say { margin: 0 0 8px; line-height: 1.55; }
 #w-dim .dim-n { color: var(--b-hi); }
 .dim-btns { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
-/* 균열 단수 and the weekly boss challenge (dimrift.js renderKeeper), the stagger gauge (renderHud) */
+/* the raid record and the weekly boss challenge (dimrift.js renderKeeper), the stagger gauge (renderHud) */
 #dim-pick { margin: 0 0 8px; font: var(--t11) var(--pix); }
-#dim-pick .dim-tier { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px; }
-#dim-pick .dim-tier b { min-width: 52px; text-align: center; color: var(--b-hi); }
 #dim-pick .dim-rec { text-align: center; color: #a898b8; margin-bottom: 6px; }
 #dim-pick .dim-chal { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 2px 0; }
 #dim-pick .dim-step { color: #a898b8; font-size: 11px; }
