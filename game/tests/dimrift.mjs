@@ -101,7 +101,9 @@ const THEMES = Object.keys(X.DIM_THEMES);
 let now;
 function world() {
   const S = L.setup();
-  now = 5_000_000;
+  // between two world events (EVT: every 30 min, called 2 min ahead, 8 min long): a 16-minute rift run never shares its
+  // draws with an invasion, so which ground the event picks (the list grows with every new ground) cannot sway it
+  now = 2_281_000;
   S.now = now; S.last = now;
   return S;
 }

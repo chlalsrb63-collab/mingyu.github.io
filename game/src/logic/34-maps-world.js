@@ -279,7 +279,7 @@ function buildTown() {
 // know without building anything (names, bands, monster lists) is read from here into MAP_META.
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
-const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa"];
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa", "inklake"];
 const REGIONAL_BEASTS = {
   meadow: ["wickhare", "gutfrog"], forest: ["burrlynx", "ribdeer"], crypt: ["bellnewt", "bonehound"],
   city: ["spoolsnipe", "doghead"], sewer: ["sluiceeel", "gatorhalf"], cave: ["prismmole", "bearmaw"],
@@ -372,7 +372,7 @@ const GEN = {
   maple: { make: wilds, route: "frostkeep", band: [40, 50], stones: 5, stoneNames: ["숲 어귀", "단풍 숲길", "금빛 숲", "무너진 성문", "얼음 왕릉 앞"], cfg: () => ({
     id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 196, h: 136, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.2, merge: 0.22, cliff: 0.2, gap: 2, stoneFr: [0.2, 0.4, 0.6, 0.8],
     ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 3, lakeR: 4, vaults: 14, ruins: 6, tpm: 15,
-    walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3], ["ice", "s", 0.86]], exit: "east",
+    walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3], ["ice", "s", 0.86]], exit: "east", doors: [["ink", "s", 0.3]],
     mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose", "shroomboar_frost", "rotstag", "bogcrown", "crowscare_frost", "hollowowl", "rootwarden"], pondMob: null, chest: "chest_maple",
     campPiece: "cottage", lair: { piece: "chapel", guard: "rotstag", pack: "rotstag" },
     vaultKinds: ["graveyard", "watchtower", "kinggate", "leafmound", "scarefield", "treetunnel"],
@@ -533,7 +533,7 @@ const GEN = {
       tiers: 4, tierOpen: 0.1, ramp: 2, roadW: 3, pools: 3, level: true, hard: "=", stoneFr: [], stonesAt: [[0.74, 0.3]], widen: "TPBRulYAeΣΘOq",
       river: true, riverAt: [0.46, 0.05], gorge: { first: 12, every: 22, open: true, ford: "~" }, wet: 60,
       ground: "s", edge: "C", treeCh: "Σ", treeCh2: "Θ", road: "p", shore: "t", lakes: 0, lakeR: 5, vaults: 7, ruins: 2, tpm: 15.5,
-      walls: [["rocks", 1]], rocks: ["Θ", "R"], gates: [["west", "w", 0.3], ["ledge", "n", 0.78]], exit: "ledge",
+      walls: [["rocks", 1]], rocks: ["Θ", "R"], gates: [["west", "w", 0.3], ["ledge", "n", 0.78]], exit: "ledge", doors: [["north", "n", 0.3]],
       mobs: [SPIDER, FOX, OWL, GOAT, SOW, HORSE, LION], pondMob: null, chest: "chest_mesa", boss: "bloodhorn",
       campPiece: "templetown", vaultKinds: ["mistfall", "ledgeshrine", "pillartop", "colonnade", "cache", "menhir"], vaultMobs: { mistfall: "serpentwing_bone" },
       vaultAt: (r, t) => (t === 0 ? "mistfall" : t === 1 ? "ledgeshrine" : t === 2 ? "pillartop" : "colonnade"),
@@ -557,6 +557,41 @@ const GEN = {
         : b === "tops" ? (h < 0.02 ? "Θ" : h < 0.028 ? "Σ" : null)
         : b === "palace" ? (h < 0.012 ? "q" : h < 0.022 ? "Σ" : h < 0.03 ? "3" : null)
         : h < 0.015 ? "Σ" : h < 0.025 ? "R" : null),
+    };
+  } },
+  // ── maps-batch2, batch 2 (docs/design/maps-batch2.md §6): 먹빛 호수, the quiet second ground for the top band, between the
+  // red mesa (south door) and the old kingdom (north door). The whole inner ground is walkable mirror shallows; the barriers
+  // are deep ink pools ringed by grey sand bars, and chains of rock-and-pine islets. South to north: A the ferry landing,
+  // B the open mirror shallows, C the pine islets (west) and D the red plum banks (east), E the reed mist (elite ground),
+  // F the ink pools (pockets), G the lone pagoda's isle (the field boss). Few monsters, each strong (DENSITY 17).
+  // Theme `mist` (grey on paper, pagodas on Π) until the art step gives it an `ink` theme of its own.
+  inklake: { make: wilds, route: "maple", band: [40, 46], stones: 3, stoneNames: ["나루터", "붉은 매화 둔덕", "외딴 탑 섬"], cfg: () => {
+    const W = 176, H = 120;
+    const LEECH = "leechmaw_ash", FISH = "fishwalker_ash", CRANE = "wingcrane_ash", MOTH = "mothface_ash", SPIDER = "spiderhand_blood", ROSE = "gravrose_blood";
+    // the region a place lies in, by how far north it is (and east of the middle for the plum banks)
+    const area = (x, y) => { const f = y / H; return f > 0.8 ? "A" : f > 0.6 ? "B" : f > 0.4 ? (x < 0.5 * W ? "C" : "D") : f > 0.2 ? "E" : x < 0.36 * W || x > 0.64 * W ? "F" : "G"; };
+    const ROSTER = { A: [LEECH], B: [LEECH, FISH], C: [FISH, CRANE], D: [MOTH, SPIDER], E: [SPIDER, ROSE], F: [ROSE], G: [ROSE] };
+    return {
+      id: "inklake", name: "먹빛 호수", theme: "mist", bgm: "autumn", seed: 47251, w: W, h: H, r: 9.6, warp: 9, wind: 0.6, loops: 0.3, merge: 0.3, cliff: 0.2, gap: 2,
+      stoneFr: [], widen: "TPBRulYAeΣΘO",
+      ground: "~", edge: "Θ", treeCh: "Σ", treeCh2: "T", road: "~", shore: "S", river: false, lakes: 9, lakeR: 7, vaults: 12, ruins: 2, tpm: 15.5,
+      walls: [["rocks", 0.5], ["bramble", 0.3], ["trees", 0.2]], rocks: ["Θ", "R"], gates: [["south", "s", 0.5], ["north", "n", 0.5]], exit: "north",
+      mobs: [LEECH, FISH, CRANE, MOTH, SPIDER, ROSE], pondMob: null, chest: "chest_inklake",
+      // the rare kind keeps the plum banks' pagoda court (its chest) until the rare-spawn rule exists
+      campPiece: "pilgrimcamp", vaultKinds: ["pavilion", "lanterncourt", "mistfall", "pillartop", "pavilion", "cache"], vaultMobs: { mistfall: ROSE },
+      courts: [{ piece: "belltower", at: [0.5, 0.12], field: true, guards: [ROSE, 2], stone: 2 }, { piece: "pagoda", at: [0.74, 0.5], guards: ["foxtwine_frost", 1], stone: 1 }],
+      biomes: { plain: "landing" }, featureP: 0.45, features: ["boulders", "cairn", "stones", "boulders"],
+      rosterAt: (x, y) => ROSTER[area(x, y)],
+      biome: (e, mo, rr, t, r) => { const a = area(r.px, r.py); return a === "C" ? "islet" : a === "D" ? "plum" : a === "E" ? "reeds" : a === "F" || a === "G" ? "pools" : "mirror"; },
+      // the open middle and the reeds are shallows with grey sand bars; the islets, banks, pool rims and the landing are dry
+      // ground (rock, sand, earth with red petals) — a set piece never stands in the water
+      paint: (b, n1, n2) => (b === "islet" ? (n1 > 0.55 ? "r" : "S") : b === "plum" ? (n1 > 0.62 ? "%" : ":") : b === "pools" ? (n1 > 0.62 ? "r" : "S")
+        : b === "reeds" ? (n1 > 0.5 ? "t" : n1 > 0.3 ? "S" : null) : b === "landing" ? "S" : n2 > 0.84 ? "S" : null),
+      scatter: (b, h, n1) => (b === "islet" ? ((n1 > 0.55 ? h < 0.09 : h < 0.02) ? "Σ" : h < 0.035 ? "Θ" : null)
+        : b === "plum" ? (h < 0.05 ? "T" : h < 0.058 ? "3" : h < 0.064 ? "Σ" : null)
+        : b === "reeds" ? ((n1 > 0.5 ? h < 0.08 : h < 0.02) ? "B" : h < 0.03 ? "Θ" : null)
+        : b === "pools" ? (h < 0.02 ? "Θ" : h < 0.028 ? "Σ" : null)
+        : h < 0.006 ? "Θ" : h < 0.009 ? "3" : null),
     };
   } },
   abyss: { make: abyssal, route: "maple", band: [32, 40], stones: 3, cfg: () => ({
@@ -634,6 +669,8 @@ const CAMP_KEEPERS = {
     lines: ["산문에서 꼭대기 법당까지 다섯 층이야. 구름 바다에 빠지면 처음부터 다시 올라야 하지.", "종루의 종이 울리면 조심하게. 꼭대기엔 안개 범이 산다네."] },
   mesa: { id: "camp_mesa", name: "협곡 짐꾼 바위", role: "shop", look: [7, 0, 0, "#a8583a"], goods: FIELD_GOODS,
     lines: ["협곡 바닥은 미로야. 물소리를 따라가면 폭포 웅덩이가 나오지.", "황금 지붕 궁 앞마당엔 큰 짐승이 버티고, 남동쪽 성벽 안엔 혈루 왕도마뱀이 산다네."] },
+  inklake: { id: "camp_inklake", name: "나루지기 먹선", role: "shop", look: [4, 1, 0, "#5a5a62"], goods: FIELD_GOODS,
+    lines: ["물이 얕아 보여도 검은 웅덩이는 바닥이 없어. 모래톱만 밟고 건너.", "북쪽 외딴 탑 섬에 먹빛 구렁이가 산다네. 그 너머가 단풍 왕도야."] },
 };
 for (const [id, n] of Object.entries(CAMP_KEEPERS)) GEN[id].npcs = [[n.id, n.name]];
 /** Stand a ground's keeper beside its camp's fire, on open ground (no camp, no keeper). */
@@ -650,7 +687,7 @@ function campKeeper(m, n) {
 /** Every monster kind a generated map places, read from its settings alone (the map tests check it against the built map). */
 function genKinds(id) {
   const g = GEN[id], c = g.cfg();
-  const ks = [...c.mobs, c.pondMob, c.guard, c.lair && c.lair.guard, c.lair && c.lair.pack, ...Object.values(c.vaultMobs || {}), c.boss, ...(g.kinds || []), c.chest, REGIONAL_BEASTS[id]?.[0]];
+  const ks = [...c.mobs, c.pondMob, c.guard, c.lair && c.lair.guard, c.lair && c.lair.pack, ...Object.values(c.vaultMobs || {}), ...(c.courts || []).map((q) => q.guards && q.guards[0]), c.boss, ...(g.kinds || []), c.chest, REGIONAL_BEASTS[id]?.[0]];
   return [...new Set(ks.filter((k) => k && Object.hasOwn(MOBS, k)))];
 }
 /**
@@ -671,6 +708,8 @@ const GATE_LINKS = [
   ["oasis", "south", "dunesea", "north", 1], ["coast", "west", "dunesea", "east", 1],
   // maps-batch2, batch 1: up the cave's shaft to the cloud temple, down its south cape to the red mesa's ledge, and east out of the oasis to the mesa
   ["cave", "shaft", "cloudtemple", "west", 1], ["cloudtemple", "south", "mesa", "ledge", 1], ["oasis", "east", "mesa", "west", 1],
+  // maps-batch2, batch 2: north out of the red mesa to the ink lake, and on north into the old kingdom by its south edge
+  ["mesa", "north", "inklake", "south", 1], ["maple", "ink", "inklake", "north", 1],
 ];
 /** A generated map's own doors out (in GATE_LINKS order, as the generators always laid them). */
 function gateDoors(m) {

@@ -35,7 +35,7 @@ const LIFE_UNLOCK = { 10: "2등급", 20: "3등급", 30: "4등급", 40: "5등급"
  */
 const GRADE_TIER = [1, 8, 14, 24, 40];
 /** A map whose grade is not its band's (P7: 붉은바위 황금궁, Lv 36–42, is the grade-5 door before 왕도). */
-const GRADE_MAP = { mesa: 5 };
+const GRADE_MAP = { mesa: 5, inklake: 5 };
 const GRADE_NAME = ["1등급", "2등급", "3등급", "4등급", "5등급"];
 
 // ── materials (B.3): herb / ore / wood of each grade; gathered from L2 on, kept in the 재료 주머니 (pouch)
@@ -265,7 +265,7 @@ Object.assign(ITEMS, {
   fish_mtrout: { name: "단풍 송어", type: "fish", grade: 5, price: 650, desc: "단풍 왕도의 붉은 물에 사는 송어. 물고기 도감에 오른다." },
   fish_ssog: { name: "붉은바위 쏘가리", type: "fish", grade: 5, price: 700, desc: "붉은바위 황금궁의 바위틈에 숨은 얼룩 쏘가리. 물고기 도감에 오른다." },
 });
-const FISH_MAP = { jungle: "fish_jcat", coast: "fish_bream", dunesea: "fish_eel", oasis: "fish_eel", cloudtemple: "fish_ayu", maple: "fish_mtrout", mesa: "fish_ssog" };
+const FISH_MAP = { jungle: "fish_jcat", coast: "fish_bream", dunesea: "fish_eel", oasis: "fish_eel", cloudtemple: "fish_ayu", maple: "fish_mtrout", mesa: "fish_ssog", inklake: "fish_mtrout" };
 const FISH_LOCAL = 0.4;
 /**
  * 물고기 도감 (P8): each species' length range in cm; a catch rolls u = 0.75·rnd + 0.25·score (0–1), the length

@@ -193,6 +193,7 @@ const slotOf = (k, id) => P(k).ch.inv.findIndex((s) => s.id === id);
   assert.ok(P("a").toast.some((m) => /멀어져/.test(m)));
   P("b").x -= X.SX_TRADE_KEEP + 4;
   openTrade();
+  L.runtime(S, "meadow");   // (the map b steps onto runs, whichever ground the world event happened to pick)
   P("b").map = "meadow";
   tick();
   assert.equal(P("b").trade, null);

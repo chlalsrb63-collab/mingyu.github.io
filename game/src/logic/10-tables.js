@@ -214,7 +214,7 @@ const BOUNTY_N = 25;
 /** A hunting ground's field boss stands at its fixed spot from the start and is back there this long after it falls (ms). */
 const FB_RESP = 600000;
 /** Each hunting ground's field boss, by map (its trophy: TROPHIES, 67-trophies.js). */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "clubshrimp", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "clubshrimp", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock", inklake: "serpentwing_ash" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -257,7 +257,7 @@ const TRICK_EL = [1, 0.75, 0.6];
 const MV_GRACE = 1200;
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 17 };
 const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
@@ -409,6 +409,18 @@ const MOBS = {
   serpentwing_bone: { name: "백골 날개 구렁이", sp: "serpentwing", tint: "bone", lv: 40, hp: 3200, atk: 120, def: 22, spd: 46, xp: 2000, gold: [130, 220], aggro: 100, range: 78, cd: 1800, fly: true, volley: true },
   horsehalf_gold: { name: "황금 반쪽 말", sp: "horsehalf", tint: "gold", lv: 41, hp: 3300, atk: 120, def: 26, spd: 60, xp: 1560, gold: [98, 170], aggro: 100, range: 20, cd: 1000, leap: 110 },
   lionhand_gold: { name: "황금 손갈기 사자", sp: "lionhand", tint: "gold", lv: 42, hp: 3900, atk: 124, def: 30, spd: 52, xp: 1620, gold: [100, 174], aggro: 100, range: 21, cd: 1100, fan: 150, charge: 120, pool: 28, poolKind: 1 },
+  // 먹빛 호수 (maps-batch2 §6): the quiet lake between the red mesa and the old kingdom — ink-grey and blood-red kin of
+  // existing bodies (the design's fallbacks), one level step each from 157 to 177, a second ground beside the old kingdom;
+  // 흰 꼬인 여우 is the rare kind (a pocket keeper until the rare-spawn rule), 먹빛 날개 구렁이 the field boss (Lv.181:
+  // the design's tier 45 is the frost boar's now). Placeholders, balanced later with the other new grounds
+  leechmaw_ash: { name: "먹 거머리 아가리", sp: "leechmaw", tint: "ash", lv: 40, hp: 2500, atk: 114, def: 18, spd: 40, xp: 1500, gold: [96, 168], aggro: 90, range: 19, cd: 1100, leap: 96 },
+  fishwalker_ash: { name: "먹빛 다리 달린 생선", sp: "fishwalker", tint: "ash", lv: 41, hp: 3300, atk: 118, def: 30, spd: 30, xp: 1560, gold: [98, 170], aggro: 80, range: 22, cd: 1500, slam: 40 },
+  wingcrane_ash: { name: "먹빛 겹날개 두루미", sp: "wingcrane", tint: "ash", lv: 42, hp: 2700, atk: 120, def: 18, spd: 44, xp: 1620, gold: [100, 174], aggro: 98, range: 74, cd: 1700, fly: true, volley: true },
+  mothface_ash: { name: "인면 먹나방", sp: "mothface", tint: "ash", lv: 43, hp: 2900, atk: 124, def: 20, spd: 44, xp: 1700, gold: [104, 180], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 26 },
+  spiderhand_blood: { name: "매화 손가락 거미", sp: "spiderhand", tint: "blood", lv: 44, hp: 3200, atk: 128, def: 22, spd: 56, xp: 1780, gold: [108, 186], aggro: 96, range: 18, cd: 1000, leap: 100, pool: 28 },
+  gravrose_blood: { name: "붉은 묘지 매화", sp: "gravrose", tint: "blood", lv: 45, hp: 3400, atk: 132, def: 24, spd: 22, xp: 1980, gold: [110, 190], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
+  foxtwine_frost: { name: "흰 꼬인 여우", sp: "foxtwine", tint: "frost", lv: 44, hp: 3500, atk: 128, def: 22, spd: 62, xp: 2400, gold: [150, 250], aggro: 98, range: 17, cd: 850, leap: 100 },
+  serpentwing_ash: { name: "먹빛 날개 구렁이", sp: "serpentwing", tint: "ash", lv: 46, hp: 5000, atk: 136, def: 30, spd: 46, xp: 2200, gold: [120, 204], aggro: 100, range: 78, cd: 1500, fly: true, fan: 150, pool: 30, poolKind: 2, charge: 130 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes
   blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
@@ -502,7 +514,7 @@ const MOBS = {
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
   ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]],
   ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 30, 1250, [440, 775]], ["dunesea", 34, 1420, [490, 840]],
-  ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]]]) {
+  ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]], ["inklake", 42, 1750, [580, 980]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {

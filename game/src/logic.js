@@ -715,7 +715,7 @@ const BOUNTY_N = 25;
 /** A hunting ground's field boss stands at its fixed spot from the start and is back there this long after it falls (ms). */
 const FB_RESP = 600000;
 /** Each hunting ground's field boss, by map (its trophy: TROPHIES, 67-trophies.js). */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "clubshrimp", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "clubshrimp", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock", inklake: "serpentwing_ash" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -758,7 +758,7 @@ const TRICK_EL = [1, 0.75, 0.6];
 const MV_GRACE = 1200;
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 17 };
 const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
@@ -910,6 +910,18 @@ const MOBS = {
   serpentwing_bone: { name: "백골 날개 구렁이", sp: "serpentwing", tint: "bone", lv: 40, hp: 3200, atk: 120, def: 22, spd: 46, xp: 2000, gold: [130, 220], aggro: 100, range: 78, cd: 1800, fly: true, volley: true },
   horsehalf_gold: { name: "황금 반쪽 말", sp: "horsehalf", tint: "gold", lv: 41, hp: 3300, atk: 120, def: 26, spd: 60, xp: 1560, gold: [98, 170], aggro: 100, range: 20, cd: 1000, leap: 110 },
   lionhand_gold: { name: "황금 손갈기 사자", sp: "lionhand", tint: "gold", lv: 42, hp: 3900, atk: 124, def: 30, spd: 52, xp: 1620, gold: [100, 174], aggro: 100, range: 21, cd: 1100, fan: 150, charge: 120, pool: 28, poolKind: 1 },
+  // 먹빛 호수 (maps-batch2 §6): the quiet lake between the red mesa and the old kingdom — ink-grey and blood-red kin of
+  // existing bodies (the design's fallbacks), one level step each from 157 to 177, a second ground beside the old kingdom;
+  // 흰 꼬인 여우 is the rare kind (a pocket keeper until the rare-spawn rule), 먹빛 날개 구렁이 the field boss (Lv.181:
+  // the design's tier 45 is the frost boar's now). Placeholders, balanced later with the other new grounds
+  leechmaw_ash: { name: "먹 거머리 아가리", sp: "leechmaw", tint: "ash", lv: 40, hp: 2500, atk: 114, def: 18, spd: 40, xp: 1500, gold: [96, 168], aggro: 90, range: 19, cd: 1100, leap: 96 },
+  fishwalker_ash: { name: "먹빛 다리 달린 생선", sp: "fishwalker", tint: "ash", lv: 41, hp: 3300, atk: 118, def: 30, spd: 30, xp: 1560, gold: [98, 170], aggro: 80, range: 22, cd: 1500, slam: 40 },
+  wingcrane_ash: { name: "먹빛 겹날개 두루미", sp: "wingcrane", tint: "ash", lv: 42, hp: 2700, atk: 120, def: 18, spd: 44, xp: 1620, gold: [100, 174], aggro: 98, range: 74, cd: 1700, fly: true, volley: true },
+  mothface_ash: { name: "인면 먹나방", sp: "mothface", tint: "ash", lv: 43, hp: 2900, atk: 124, def: 20, spd: 44, xp: 1700, gold: [104, 180], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 26 },
+  spiderhand_blood: { name: "매화 손가락 거미", sp: "spiderhand", tint: "blood", lv: 44, hp: 3200, atk: 128, def: 22, spd: 56, xp: 1780, gold: [108, 186], aggro: 96, range: 18, cd: 1000, leap: 100, pool: 28 },
+  gravrose_blood: { name: "붉은 묘지 매화", sp: "gravrose", tint: "blood", lv: 45, hp: 3400, atk: 132, def: 24, spd: 22, xp: 1980, gold: [110, 190], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
+  foxtwine_frost: { name: "흰 꼬인 여우", sp: "foxtwine", tint: "frost", lv: 44, hp: 3500, atk: 128, def: 22, spd: 62, xp: 2400, gold: [150, 250], aggro: 98, range: 17, cd: 850, leap: 100 },
+  serpentwing_ash: { name: "먹빛 날개 구렁이", sp: "serpentwing", tint: "ash", lv: 46, hp: 5000, atk: 136, def: 30, spd: 46, xp: 2200, gold: [120, 204], aggro: 100, range: 78, cd: 1500, fly: true, fan: 150, pool: 30, poolKind: 2, charge: 130 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes
   blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
@@ -1003,7 +1015,7 @@ const MOBS = {
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
   ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]],
   ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 30, 1250, [440, 775]], ["dunesea", 34, 1420, [490, 840]],
-  ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]]]) {
+  ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]], ["inklake", 42, 1750, [580, 980]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {
@@ -1247,6 +1259,16 @@ const MOB_LORE = {
   hermitskull_frost: "낮에도 녹지 않는 푸른 소라에 밤의 찬 공기를 모아 둔다.",
   sandmaw: "모래에 동그란 구멍이 생기면 아래에서 아가리가 오므라든다.",
 
+  // 먹빛 호수
+  leechmaw_ash: "물빛에 먹이 번지면 그 아래에 아가리가 벌어져 있다.",
+  fishwalker_ash: "얕은 여울을 걸어 다니며 지나간 자리에 먹 줄기를 남긴다.",
+  wingcrane_ash: "붉은 정수리만 남기고 온몸이 먹으로 그린 듯 번져 있다.",
+  mothface_ash: "날개의 얼굴이 물에 비칠 때만 눈을 뜬다.",
+  spiderhand_blood: "배에 핀 매화 가지를 흔들어 꽃잎을 떨구고, 그 꽃잎을 밟은 것을 덮친다.",
+  gravrose_blood: "호수에 떨어진 붉은 꽃잎이 모두 이 나무로 돌아간다고들 한다.",
+  foxtwine_frost: "매화 그늘에서만 보인다. 꼬리 매듭이 풀릴 때 서리가 핀다.",
+  serpentwing_ash: "한 획으로 그린 듯한 몸이 여울에서 솟을 때, 눈자리에 연분홍 해가 뜬다.",
+
   // Cloud temple and mesa
   beadmonkey: "염주알을 하나씩 굴리며 닫힌 절문이 열릴 때를 센다.",
   splitboar_ash: "몸의 틈에 향재가 쌓일수록 발굽 소리는 잦아든다.",
@@ -1319,6 +1341,7 @@ const MOB_LORE = {
   chest_dunesea: "모래 밑에서 오래 굴러 장식 한쪽만 반들반들하다.",
   chest_cloudtemple: "잠금쇠에 끼인 염주알 하나가 맑게 울린다.",
   chest_mesa: "열을 먹은 금박이 갈라져 가느다란 벼랑 무늬를 이룬다.",
+  chest_inklake: "뚜껑에 번진 먹물 자국이 볼 때마다 다른 산 모양이다.",
   bloodhorn: "뿔관 아래 눈가에서 붉은 즙을 쏘아 낸다. 그 즙이 굳은 자리마다 결정이 자란다.",
   bloodshard: "왕도마뱀의 피눈물이 굳어 기어 나온 것. 꼬리 끝이 아직 따뜻하다.",
   clubshrimp: "주먹을 내지르면 물이 먼저 터진다. 그 소리에 해안의 게들이 모래 속으로 숨는다.",
@@ -1364,7 +1387,7 @@ const LIFE_UNLOCK = { 10: "2등급", 20: "3등급", 30: "4등급", 40: "5등급"
  */
 const GRADE_TIER = [1, 8, 14, 24, 40];
 /** A map whose grade is not its band's (P7: 붉은바위 황금궁, Lv 36–42, is the grade-5 door before 왕도). */
-const GRADE_MAP = { mesa: 5 };
+const GRADE_MAP = { mesa: 5, inklake: 5 };
 const GRADE_NAME = ["1등급", "2등급", "3등급", "4등급", "5등급"];
 
 // ── materials (B.3): herb / ore / wood of each grade; gathered from L2 on, kept in the 재료 주머니 (pouch)
@@ -1594,7 +1617,7 @@ Object.assign(ITEMS, {
   fish_mtrout: { name: "단풍 송어", type: "fish", grade: 5, price: 650, desc: "단풍 왕도의 붉은 물에 사는 송어. 물고기 도감에 오른다." },
   fish_ssog: { name: "붉은바위 쏘가리", type: "fish", grade: 5, price: 700, desc: "붉은바위 황금궁의 바위틈에 숨은 얼룩 쏘가리. 물고기 도감에 오른다." },
 });
-const FISH_MAP = { jungle: "fish_jcat", coast: "fish_bream", dunesea: "fish_eel", oasis: "fish_eel", cloudtemple: "fish_ayu", maple: "fish_mtrout", mesa: "fish_ssog" };
+const FISH_MAP = { jungle: "fish_jcat", coast: "fish_bream", dunesea: "fish_eel", oasis: "fish_eel", cloudtemple: "fish_ayu", maple: "fish_mtrout", mesa: "fish_ssog", inklake: "fish_mtrout" };
 const FISH_LOCAL = 0.4;
 /**
  * 물고기 도감 (P8): each species' length range in cm; a catch rolls u = 0.75·rnd + 0.25·score (0–1), the length
@@ -6233,7 +6256,7 @@ function buildTown() {
 // know without building anything (names, bands, monster lists) is read from here into MAP_META.
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
-const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa"];
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa", "inklake"];
 const REGIONAL_BEASTS = {
   meadow: ["wickhare", "gutfrog"], forest: ["burrlynx", "ribdeer"], crypt: ["bellnewt", "bonehound"],
   city: ["spoolsnipe", "doghead"], sewer: ["sluiceeel", "gatorhalf"], cave: ["prismmole", "bearmaw"],
@@ -6326,7 +6349,7 @@ const GEN = {
   maple: { make: wilds, route: "frostkeep", band: [40, 50], stones: 5, stoneNames: ["숲 어귀", "단풍 숲길", "금빛 숲", "무너진 성문", "얼음 왕릉 앞"], cfg: () => ({
     id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 196, h: 136, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.2, merge: 0.22, cliff: 0.2, gap: 2, stoneFr: [0.2, 0.4, 0.6, 0.8],
     ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 3, lakeR: 4, vaults: 14, ruins: 6, tpm: 15,
-    walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3], ["ice", "s", 0.86]], exit: "east",
+    walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3], ["ice", "s", 0.86]], exit: "east", doors: [["ink", "s", 0.3]],
     mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose", "shroomboar_frost", "rotstag", "bogcrown", "crowscare_frost", "hollowowl", "rootwarden"], pondMob: null, chest: "chest_maple",
     campPiece: "cottage", lair: { piece: "chapel", guard: "rotstag", pack: "rotstag" },
     vaultKinds: ["graveyard", "watchtower", "kinggate", "leafmound", "scarefield", "treetunnel"],
@@ -6487,7 +6510,7 @@ const GEN = {
       tiers: 4, tierOpen: 0.1, ramp: 2, roadW: 3, pools: 3, level: true, hard: "=", stoneFr: [], stonesAt: [[0.74, 0.3]], widen: "TPBRulYAeΣΘOq",
       river: true, riverAt: [0.46, 0.05], gorge: { first: 12, every: 22, open: true, ford: "~" }, wet: 60,
       ground: "s", edge: "C", treeCh: "Σ", treeCh2: "Θ", road: "p", shore: "t", lakes: 0, lakeR: 5, vaults: 7, ruins: 2, tpm: 15.5,
-      walls: [["rocks", 1]], rocks: ["Θ", "R"], gates: [["west", "w", 0.3], ["ledge", "n", 0.78]], exit: "ledge",
+      walls: [["rocks", 1]], rocks: ["Θ", "R"], gates: [["west", "w", 0.3], ["ledge", "n", 0.78]], exit: "ledge", doors: [["north", "n", 0.3]],
       mobs: [SPIDER, FOX, OWL, GOAT, SOW, HORSE, LION], pondMob: null, chest: "chest_mesa", boss: "bloodhorn",
       campPiece: "templetown", vaultKinds: ["mistfall", "ledgeshrine", "pillartop", "colonnade", "cache", "menhir"], vaultMobs: { mistfall: "serpentwing_bone" },
       vaultAt: (r, t) => (t === 0 ? "mistfall" : t === 1 ? "ledgeshrine" : t === 2 ? "pillartop" : "colonnade"),
@@ -6511,6 +6534,41 @@ const GEN = {
         : b === "tops" ? (h < 0.02 ? "Θ" : h < 0.028 ? "Σ" : null)
         : b === "palace" ? (h < 0.012 ? "q" : h < 0.022 ? "Σ" : h < 0.03 ? "3" : null)
         : h < 0.015 ? "Σ" : h < 0.025 ? "R" : null),
+    };
+  } },
+  // ── maps-batch2, batch 2 (docs/design/maps-batch2.md §6): 먹빛 호수, the quiet second ground for the top band, between the
+  // red mesa (south door) and the old kingdom (north door). The whole inner ground is walkable mirror shallows; the barriers
+  // are deep ink pools ringed by grey sand bars, and chains of rock-and-pine islets. South to north: A the ferry landing,
+  // B the open mirror shallows, C the pine islets (west) and D the red plum banks (east), E the reed mist (elite ground),
+  // F the ink pools (pockets), G the lone pagoda's isle (the field boss). Few monsters, each strong (DENSITY 17).
+  // Theme `mist` (grey on paper, pagodas on Π) until the art step gives it an `ink` theme of its own.
+  inklake: { make: wilds, route: "maple", band: [40, 46], stones: 3, stoneNames: ["나루터", "붉은 매화 둔덕", "외딴 탑 섬"], cfg: () => {
+    const W = 176, H = 120;
+    const LEECH = "leechmaw_ash", FISH = "fishwalker_ash", CRANE = "wingcrane_ash", MOTH = "mothface_ash", SPIDER = "spiderhand_blood", ROSE = "gravrose_blood";
+    // the region a place lies in, by how far north it is (and east of the middle for the plum banks)
+    const area = (x, y) => { const f = y / H; return f > 0.8 ? "A" : f > 0.6 ? "B" : f > 0.4 ? (x < 0.5 * W ? "C" : "D") : f > 0.2 ? "E" : x < 0.36 * W || x > 0.64 * W ? "F" : "G"; };
+    const ROSTER = { A: [LEECH], B: [LEECH, FISH], C: [FISH, CRANE], D: [MOTH, SPIDER], E: [SPIDER, ROSE], F: [ROSE], G: [ROSE] };
+    return {
+      id: "inklake", name: "먹빛 호수", theme: "mist", bgm: "autumn", seed: 47251, w: W, h: H, r: 9.6, warp: 9, wind: 0.6, loops: 0.3, merge: 0.3, cliff: 0.2, gap: 2,
+      stoneFr: [], widen: "TPBRulYAeΣΘO",
+      ground: "~", edge: "Θ", treeCh: "Σ", treeCh2: "T", road: "~", shore: "S", river: false, lakes: 9, lakeR: 7, vaults: 12, ruins: 2, tpm: 15.5,
+      walls: [["rocks", 0.5], ["bramble", 0.3], ["trees", 0.2]], rocks: ["Θ", "R"], gates: [["south", "s", 0.5], ["north", "n", 0.5]], exit: "north",
+      mobs: [LEECH, FISH, CRANE, MOTH, SPIDER, ROSE], pondMob: null, chest: "chest_inklake",
+      // the rare kind keeps the plum banks' pagoda court (its chest) until the rare-spawn rule exists
+      campPiece: "pilgrimcamp", vaultKinds: ["pavilion", "lanterncourt", "mistfall", "pillartop", "pavilion", "cache"], vaultMobs: { mistfall: ROSE },
+      courts: [{ piece: "belltower", at: [0.5, 0.12], field: true, guards: [ROSE, 2], stone: 2 }, { piece: "pagoda", at: [0.74, 0.5], guards: ["foxtwine_frost", 1], stone: 1 }],
+      biomes: { plain: "landing" }, featureP: 0.45, features: ["boulders", "cairn", "stones", "boulders"],
+      rosterAt: (x, y) => ROSTER[area(x, y)],
+      biome: (e, mo, rr, t, r) => { const a = area(r.px, r.py); return a === "C" ? "islet" : a === "D" ? "plum" : a === "E" ? "reeds" : a === "F" || a === "G" ? "pools" : "mirror"; },
+      // the open middle and the reeds are shallows with grey sand bars; the islets, banks, pool rims and the landing are dry
+      // ground (rock, sand, earth with red petals) — a set piece never stands in the water
+      paint: (b, n1, n2) => (b === "islet" ? (n1 > 0.55 ? "r" : "S") : b === "plum" ? (n1 > 0.62 ? "%" : ":") : b === "pools" ? (n1 > 0.62 ? "r" : "S")
+        : b === "reeds" ? (n1 > 0.5 ? "t" : n1 > 0.3 ? "S" : null) : b === "landing" ? "S" : n2 > 0.84 ? "S" : null),
+      scatter: (b, h, n1) => (b === "islet" ? ((n1 > 0.55 ? h < 0.09 : h < 0.02) ? "Σ" : h < 0.035 ? "Θ" : null)
+        : b === "plum" ? (h < 0.05 ? "T" : h < 0.058 ? "3" : h < 0.064 ? "Σ" : null)
+        : b === "reeds" ? ((n1 > 0.5 ? h < 0.08 : h < 0.02) ? "B" : h < 0.03 ? "Θ" : null)
+        : b === "pools" ? (h < 0.02 ? "Θ" : h < 0.028 ? "Σ" : null)
+        : h < 0.006 ? "Θ" : h < 0.009 ? "3" : null),
     };
   } },
   abyss: { make: abyssal, route: "maple", band: [32, 40], stones: 3, cfg: () => ({
@@ -6588,6 +6646,8 @@ const CAMP_KEEPERS = {
     lines: ["산문에서 꼭대기 법당까지 다섯 층이야. 구름 바다에 빠지면 처음부터 다시 올라야 하지.", "종루의 종이 울리면 조심하게. 꼭대기엔 안개 범이 산다네."] },
   mesa: { id: "camp_mesa", name: "협곡 짐꾼 바위", role: "shop", look: [7, 0, 0, "#a8583a"], goods: FIELD_GOODS,
     lines: ["협곡 바닥은 미로야. 물소리를 따라가면 폭포 웅덩이가 나오지.", "황금 지붕 궁 앞마당엔 큰 짐승이 버티고, 남동쪽 성벽 안엔 혈루 왕도마뱀이 산다네."] },
+  inklake: { id: "camp_inklake", name: "나루지기 먹선", role: "shop", look: [4, 1, 0, "#5a5a62"], goods: FIELD_GOODS,
+    lines: ["물이 얕아 보여도 검은 웅덩이는 바닥이 없어. 모래톱만 밟고 건너.", "북쪽 외딴 탑 섬에 먹빛 구렁이가 산다네. 그 너머가 단풍 왕도야."] },
 };
 for (const [id, n] of Object.entries(CAMP_KEEPERS)) GEN[id].npcs = [[n.id, n.name]];
 /** Stand a ground's keeper beside its camp's fire, on open ground (no camp, no keeper). */
@@ -6604,7 +6664,7 @@ function campKeeper(m, n) {
 /** Every monster kind a generated map places, read from its settings alone (the map tests check it against the built map). */
 function genKinds(id) {
   const g = GEN[id], c = g.cfg();
-  const ks = [...c.mobs, c.pondMob, c.guard, c.lair && c.lair.guard, c.lair && c.lair.pack, ...Object.values(c.vaultMobs || {}), c.boss, ...(g.kinds || []), c.chest, REGIONAL_BEASTS[id]?.[0]];
+  const ks = [...c.mobs, c.pondMob, c.guard, c.lair && c.lair.guard, c.lair && c.lair.pack, ...Object.values(c.vaultMobs || {}), ...(c.courts || []).map((q) => q.guards && q.guards[0]), c.boss, ...(g.kinds || []), c.chest, REGIONAL_BEASTS[id]?.[0]];
   return [...new Set(ks.filter((k) => k && Object.hasOwn(MOBS, k)))];
 }
 /**
@@ -6625,6 +6685,8 @@ const GATE_LINKS = [
   ["oasis", "south", "dunesea", "north", 1], ["coast", "west", "dunesea", "east", 1],
   // maps-batch2, batch 1: up the cave's shaft to the cloud temple, down its south cape to the red mesa's ledge, and east out of the oasis to the mesa
   ["cave", "shaft", "cloudtemple", "west", 1], ["cloudtemple", "south", "mesa", "ledge", 1], ["oasis", "east", "mesa", "west", 1],
+  // maps-batch2, batch 2: north out of the red mesa to the ink lake, and on north into the old kingdom by its south edge
+  ["mesa", "north", "inklake", "south", 1], ["maple", "ink", "inklake", "north", 1],
 ];
 /** A generated map's own doors out (in GATE_LINKS order, as the generators always laid them). */
 function gateDoors(m) {
@@ -16150,6 +16212,8 @@ const TROPHIES = {
   rotstag: { name: "썩은 사슴왕의 관", fx: { xp: 3, crit: 3 } },
   // the coast's field boss since bosses-2 (coralturtle's trophy stays: sheets may hold it)
   clubshrimp: { name: "공동 갯가재 눈자루", fx: { aspd: 3, hp: 2 } },
+  // the ink lake's field boss (maps-batch2 §6)
+  serpentwing_ash: { name: "먹빛 구렁이 비늘", fx: { move: 2, drop: 2 } },
 };
 const TROPHY_CAP = { gold: 8, xp: 8, move: 5, aspd: 5, drop: 6, hp: 5, crit: 4 };
 const TROPHY_P = 0.05, TROPHY_GOLD = 40;
@@ -19954,7 +20018,7 @@ const WORLD_MAP_POS = {
   willow: [170, 233], town: [327, 205], meadow: [348, 93], forest: [548, 124], crypt: [723, 133],
   city: [367, 334], sewer: [552, 320], cave: [710, 302], abyss: [928, 335], maple: [824, 229],
   jungle: [203, 417], coast: [370, 528], oasis: [622, 470], dunesea: [838, 516], frostkeep: [915, 91],
-  airship: [622, 389], mesa: [764, 386],
+  airship: [622, 389], mesa: [764, 386], inklake: [850, 300],
 };
 const WORLD_MAP_ART = { willow: "willow", frostkeep: "frostkeep", dunesea: "dunesea", airship: "airship" };
 
