@@ -78,7 +78,7 @@ const smithy = (k) => k === "forge" || k === "alch";
 function setStations(k) {
   const j = D().jobs[k], sts = j && j[7];
   if (!sts) return;
-  const icons = k === "alch" ? [["herbs", 13]] : smithy(k) ? [["crate", 10], ...(sts.quench || []).map((t, i) => ["quench" + i, 12, t])]
+  const icons = k === "alch" ? [["herbs", 13]] : smithy(k) ? [...(Array.isArray(sts.crate[0]) ? sts.crate : [sts.crate]).map((t, i) => ["crate" + i, 16 + i, t]), ...(sts.quench || []).map((t, i) => ["quench" + i, 12, t])]
     : [["veg", 0], ["fish", 1], ["meat", 2], ["trash", 9], ["sink", 15], ...(sts.board || []).map((t, i) => ["board" + i, 8, t])];
   for (const [k, code, t] of icons) {
     const [tx, ty] = t || sts[k], key = "cs" + k;
@@ -150,6 +150,11 @@ function drawIcon(g, x, y, code) {
   else if (code === 2) { px(g, x - 3, y - 2, 7, 5, "#3a1a1a"); px(g, x - 2, y - 1, 5, 3, "#d86a6a"); px(g, x - 1, y, 2, 1, "#f0c0b0"); }
   else if (code === 8) { px(g, x - 4, y - 1, 8, 3, "#5a3a1a"); px(g, x - 3, y - 1, 6, 1, "#b08a5a"); px(g, x + 1, y - 4, 1, 3, "#c8d0d8"); }
   else if (code === 9) { px(g, x - 3, y - 3, 7, 7, "#1a1e28"); px(g, x - 2, y - 2, 5, 5, "#6a7a8a"); px(g, x - 3, y - 4, 7, 1, "#9aaaba"); }
+  else if (code >= 16 && code <= 19) {   // an ingot crate: a stack of ingots in the metal's colour and its name
+    const m = code - 16, c = metalCol(m, now()), name = ((D().metals || [])[m] || ["주괴"])[0].replace("주괴", "");
+    px(g, x - 7, y - 3, 14, 7, "#1a1a20"); px(g, x - 6, y - 2, 6, 2, c); px(g, x + 1, y - 2, 5, 2, c); px(g, x - 3, y + 1, 6, 2, c);
+    g.font = "8px Galmuri11, monospace"; g.textAlign = "center"; g.fillStyle = "#1a1a20"; g.fillText(name, x + 1, y - 5); g.fillStyle = c; g.fillText(name, x, y - 6); g.textAlign = "left";
+  }
   else if (code === 10) { px(g, x - 5, y - 2, 10, 4, "#1a1a20"); px(g, x - 4, y - 1, 8, 2, "#7a7e8a"); px(g, x - 4, y - 1, 8, 1, "#a8acb8"); }   // 쇠막대
   else if (code === 11) { px(g, x - 1, y - 4, 3, 5, "#2a1e16"); px(g, x, y - 4, 1, 4, "#ffd860"); px(g, x - 3, y, 7, 2, "#2a1e16"); px(g, x - 2, y, 5, 1, "#ffd860"); }   // 납품 ↓
   else if (code === 12) { px(g, x - 2, y - 3, 5, 6, "#10203a"); px(g, x - 1, y - 2, 3, 4, "#5aa0e0"); px(g, x, y - 4, 1, 1, "#10203a"); }   // 담금질 물
@@ -174,10 +179,16 @@ function drawBrew(g, x, y, kind, s, t) {
 }
 /** A piece of iron by its heat 0–100 (100 hot): grey → red → orange → yellow-white. */
 const heatCol = (h) => (h >= 100 ? "#fff0a0" : h >= 70 ? "#ff9a30" : h >= 40 ? "#d0402a" : h >= 15 ? "#7a3a30" : "#6a6e7a");
-/** A forge piece in hand, on the anvil or on show by its state (1 cold bar · 2 hot · 3 shaped · 4 quenched) and kind (0 편자 · 1 단검 · 2 검날 · 3 투구 · 4 냄비 · 5 방패 · 6 갑옷). */
-function drawPiece(g, x, y, kind, s, t) {
+/** The four ingots' colours (owner: 철 grey · 은 white-blue · 금 yellow · 미스릴 teal, glowing). */
+const METAL = ["#8a909a", "#dce8f8", "#f0c840", "#40d8c0"];
+const metalCol = (m, t) => (m === 3 && Math.floor(t / 300) % 3 === 0 ? "#a8fff0" : METAL[m] || METAL[0]);
+/**
+ * A forge piece in hand, on the anvil or on show by its state (1 cold ingot · 2 hot · 3 shaped · 4 quenched), kind (0 편자 · 1 단검 ·
+ * 2 검날 · 3 투구 · 4 냄비 · 5 방패 · 6 갑옷) and ingot m (its colour once cold and finished).
+ */
+function drawPiece(g, x, y, kind, s, t, m = 0) {
   if (jobOf() === "alch") return drawBrew(g, x, y, kind, s, t);
-  const c = s === 2 ? (Math.floor(t / 200) % 2 ? "#fff0a0" : "#ffb040") : s === 4 ? "#a8b8c8" : s === 3 ? "#d0602a" : "#6a6e7a";
+  const c = s === 2 ? (Math.floor(t / 200) % 2 ? "#fff0a0" : "#ffb040") : s === 4 ? metalCol(m, t) : s === 3 ? "#d0602a" : metalCol(m, t);
   if (s <= 2 || kind < 0) { px(g, x - 5, y - 2, 10, 4, "#1a1a20"); px(g, x - 4, y - 1, 8, 2, c); return; }
   px(g, x - 5, y - 4, 10, 7, "#1a1a20");
   if (kind === 0) { px(g, x - 4, y - 3, 2, 5, c); px(g, x + 2, y - 3, 2, 5, c); px(g, x - 4, y - 3, 8, 2, c); }                                   // 편자
@@ -190,9 +201,9 @@ function drawPiece(g, x, y, kind, s, t) {
 }
 /** A piece on the 진열대 [id, 10, x, y, kind, grade]: on a cloth, 걸작 twinkling. */
 function drawShelved(g, t, sx, sy, row) {
-  const [, , , , k, gi] = row;
+  const [, , , , k, gi, m] = row;
   px(g, sx - 7, sy - 14, 14, 2, ["#e8c040", "#c84a3a", "#5a7ab0", "#6a6a70"][gi] || "#6a6a70");
-  drawPiece(g, sx, sy - 16, k, 4, t);
+  drawPiece(g, sx, sy - 16, k, 4, t, m);
   if (!gi && Math.floor((t + row[0] * 137) / 300) % 4 === 0) { px(g, sx + 4, sy - 23, 1, 3, "#ffffff"); px(g, sx + 3, sy - 22, 3, 1, "#ffffff"); }
 }
 /** Where a customer stands now: walking in from the door, at their seat, or walking out (48 px/s like the rules' `walk`). */
@@ -217,7 +228,8 @@ function drawCustomer(g, t, sx, sy, row) {
   if (moving) return;
   const f = Math.max(0, Math.min(1, dsLeft(left) / (dur * 100))), y = sy - 30;
   px(g, sx - 9, y - 9, 18, 13, "#2a2a30"); px(g, sx - 8, y - 8, 16, 11, "#fff8e8"); px(g, sx - 1, y + 4, 3, 2, "#2a2a30");
-  drawPiece(g, sx, y - 2, k, 4, t);
+  drawPiece(g, sx, y - 2, k, 4, t, row[10]);
+  if (row[10] !== undefined) px(g, sx + 6, y - 7, 2, 2, metalCol(row[10], t));   // the ingot it needs, a pip in the corner
   px(g, sx - 8, y + 7, 16, 3, "#2a2a30");
   px(g, sx - 7, y + 8, Math.max(1, Math.round(14 * f)), 1, f > 0.5 ? "#6ad050" : f > 0.25 ? "#e8c040" : "#e05040");
 }
@@ -253,7 +265,7 @@ function drawLane(g, t, sx, sy, row) {
 function drawForge(g, t, sx, sy, row) {
   const [id, kind] = row, F = D().forge || [60, 80, 90, 4], al = jobOf() === "alch";
   if (kind === 6) {
-    const T = Math.max(0, row[4] - (F[3] * (now() - (st.entsAt || 0))) / 1000), bars = row.slice(5);
+    const T = Math.max(0, row[4] - (F[3] * (now() - (st.entsAt || 0))) / 1000), ns = al ? row.length - 5 : (row.length - 5) / 2, bars = row.slice(5, 5 + ns), mts = row.slice(5 + ns);
     if (al) {   // 가마: a brick dome over the furnace furniture, its mouth glowing green/purple with the heat
       px(g, sx - 10, sy - 30, 20, 4, "#2a1a14"); px(g, sx - 12, sy - 26, 24, 14, "#2a1a14"); px(g, sx - 9, sy - 29, 18, 3, "#a0583a");
       px(g, sx - 11, sy - 25, 22, 12, "#8a4a30"); for (let i = 0; i < 3; i++) px(g, sx - 11, sy - 22 + i * 4, 22, 1, "#5a2e1e");
@@ -265,7 +277,7 @@ function drawForge(g, t, sx, sy, row) {
     px(g, x - 2, y + 20 - Math.round((F[1] / 100) * 20), 7, 1, "#8fd060"); px(g, x - 2, y + 20 - Math.round((F[0] / 100) * 20), 7, 1, "#8fd060");
     const h = Math.round((T / 100) * 20);
     px(g, x, y + 20 - h, 3, h, T > F[2] ? "#ff4030" : T >= F[0] ? "#ffb040" : "#5a8ad0");
-    bars.forEach((b, i) => { if (b >= 0) { px(g, sx - 8 + i * 9, sy - 14, 7, 3, "#1a1a20"); px(g, sx - 7 + i * 9, sy - 13, 5, 1, al ? brewCol(b, t) : b >= 100 && Math.floor(t / 250) % 2 ? "#ffffff" : heatCol(b)); } });
+    bars.forEach((b, i) => { if (b >= 0) { px(g, sx - 8 + i * 9, sy - 14, 7, 3, "#1a1a20"); px(g, sx - 7 + i * 9, sy - 13, 5, 1, al ? brewCol(b, t) : b >= 100 && Math.floor(t / 250) % 2 ? "#ffffff" : heatCol(b)); if (!al && mts[i] >= 0) px(g, sx - 7 + i * 9, sy - 12, 5, 1, metalCol(mts[i], t)); } });
     if (T > F[2] && Math.floor(t / 200) % 2) px(g, sx - 1, sy - 44, 3, 5, "#ff4030");   // scorching
   } else {
     const [, , , , s, k, n] = row;
@@ -275,7 +287,7 @@ function drawForge(g, t, sx, sy, row) {
     }
     if (!s) return;
     const need = (((al ? D().alchOrders : D().orders) || [])[k] || [0, 8])[1];
-    drawPiece(g, sx, sy - 16, k, s === 1 ? 2 : s === 2 ? 1 : 3, t);
+    drawPiece(g, sx, sy - 16, k, s === 1 ? 2 : s === 2 ? 1 : 3, t, row[11]);
     for (let i = 0; i < need; i++) px(g, Math.round(sx - need * 1.5) + i * 3, sy - 24, 2, 2, i < n ? "#ffd860" : "#2a2e3a");   // strikes
     if (s === 2 && Math.floor(t / 400) % 2) px(g, sx - 1, sy - 32, 3, 5, "#5a8ad0");   // cooled: reheat
     if (s === 1 && row.length >= 11) return drawLane(g, t, sx, sy, row);   // forge v2: the rhythm lane instead of the ring
@@ -434,7 +446,8 @@ function drawTool(g, t, sx, sy, eid) {
   } else if (jobOf() === "forge") {
     if (row[1] === 0) { px(g, x - 1, y - 6, 2, 9, "#1a1a20"); px(g, x + 2, y - 6, 2, 9, "#1a1a20"); px(g, x - 1, y - 5, 1, 7, "#8a8e9a"); px(g, x + 2, y - 5, 1, 7, "#8a8e9a"); }   // tongs
     else { px(g, x, y - 2, 2, 8, "#2a1e16"); px(g, x, y - 1, 1, 6, "#b08a5a"); px(g, x - 3, y - 6, 8, 5, "#1a1a20"); px(g, x - 2, y - 5, 6, 3, "#7a7e8a"); }                 // hammer
-    for (const code of row[4] || []) drawPiece(g, x + 1, y - 9, Math.floor(code / 5) - 1, code % 5, t);
+    // what you carry, held up over your head (the ingot in its colour)
+    (row[4] || []).forEach((code, i) => drawPiece(g, sx, sy - 50, Math.floor(code / 5) - 1, code % 5, t, (row[5] || [])[i]));
   } else if (row[1] === 0) {   // broom
     px(g, x - 1, y - 8, 2, 9, "#2a1e16"); px(g, x, y - 7, 1, 7, "#b08a5a");
     px(g, x - 3, y, 7, 4, "#2a1e16"); px(g, x - 2, y + 1, 5, 2, "#e0c060");
@@ -487,8 +500,9 @@ function frame() {
 }
 /** The forge's open orders, most urgent first: "검날 1:12 · 편자 0:40" (the client counts the deciseconds down). */
 function forgeOrders() {
-  const sk = (D().jobs[jobOf()] || [])[8], names = sk ? sk.orders.map((n) => [n]) : D().orders || [], rows = st.ents.filter((r) => r[1] === 8 && !r[8]).map((r) => [r[4], Math.max(0, Math.ceil(dsLeft(r[5]) / 1000))]).sort((a, b) => a[1] - b[1]);
-  return rows.length ? rows.map(([k, s]) => `${(names[k] || ["?"])[0]} ${mmss(s)}`).join(" · ") : "없음";
+  const sk = (D().jobs[jobOf()] || [])[8], names = sk ? sk.orders.map((n) => [n]) : D().orders || [], rows = st.ents.filter((r) => r[1] === 8 && !r[8]).map((r) => [r[4], Math.max(0, Math.ceil(dsLeft(r[5]) / 1000)), r[10]]).sort((a, b) => a[1] - b[1]);
+  const col = (m) => (m === undefined ? "" : ((D().metals || [])[m] || ["", ""])[1] + " ");
+  return rows.length ? rows.map(([k, s, m]) => `${col(m)}${(names[k] || ["?"])[0]} ${mmss(s)}`).join(" · ") : "없음";
 }
 const SKILL = { apt: "배달", diner: "요리", forge: "제작", alch: "연금" };
 const CARD_TIP = { apt: " 낡은 소파는 두 명이 함께 들어요.", diner: " 손님이 기다리다 지치면 화내며 떠나요!", forge: " 음표가 선에 닿을 때 두드리세요! 물건마다 리듬이 달라요 — 갑옷은 둘이 번갈아.",
@@ -515,7 +529,7 @@ function renderCard() {
     `<p class="cc-day">${done ? "오늘 보수 수령 완료 · 보수 없이 다시 참여할 수 있어요. 조건을 충족한 미수령 팀원은 보수를 받아요."
       : `참여 조건을 충족하고 C 등급 이상이면 골드·강화석·장비·${SKILL[k] || "생활"} 경험치를 받아요.`}</p>` +
     (done ? "" : `<p class="cc-day">등급별 보수 ${gradePct()}</p>`) +
-    (party > 1 ? `<button class="btn gold">파티와 ${done ? "다시 근무" : "근무 시작"} (파티장)</button>` : `<p class="cc-day">협동 알바는 2명 이상 파티로만 할 수 있어요. 파티원과 함께 와 주세요.</p>`);
+    (party > 1 ? `<button class="btn gold">파티와 ${done ? "다시 근무" : "근무 시작"} (파티장)</button><p class="cc-day">파티장만 시작할 수 있어요.</p>` : `<p class="cc-day">협동 알바는 2~4명 파티로만 할 수 있어요. 파티원과 함께 와 주세요.</p>`);
   const btn = b.querySelector("button");
   if (btn) btn.addEventListener("click", () => A.act({ t: "coop_start", k }));
   b.hidden = false;
