@@ -22,7 +22,15 @@ in your own git worktree (`.work/gemini`, branch `gemini/work`).
    - **`ai/proposals/gemini-<axis-or-topic>.md`**: 3–6 follow-up tasks for Codex, each ONE line in
      board format `- [ ] …` that a developer can do in under an hour: what to change, which file(s),
      the exact Korean text/numbers to use, and how to test it. Order them by value.
-5. **Do not change game code.** Bugs you find go into the proposals file with file + suggested fix.
+5. **Do not change game code** — except tasks tagged **[ART]** or **[VFX]** (owner, 2026-11-15): those you build yourself.
+   - [VFX]: code-drawn effects in the client art files the task names (e.g. `game/public/skillfx.js`, `mobart*.js`), following
+     `.claude/skills/pixel-art/rules/` (crisp pixels, no blur/AA, one shadow tone, dark outline). Never touch `game/src/logic/`
+     or the wire. Check with the preview pages (`node game/scripts/shot.mjs --page mobs --q "k=<key>&z=4" --out shots/<x>.png`,
+     `--page scene ...`) and `node --check` on every file you change; put the shot paths in your report.
+   - [ART]: image drafts go to `asset/generated/<topic>/` with the prompt text next to them (`<name>.prompt.md`) and a line in
+     `asset/CREDITS.md` ("AI-generated (Gemini, prompt file)"); then `node game/scripts/import-art.mjs` (see `docs/RECIPES.md`
+     "External assets") to normalise them. Never `--install`: the owner approves in the gallery first.
+   Bugs you find elsewhere go into the proposals file with file + suggested fix.
 6. Write `ai/reports/gemini-<short-task-name>.md` in Korean: 무엇을 했나, 핵심 발견, 만든 문서/제안 파일.
    Quote the exact task line you took.
 7. Commit on `gemini/work` (stage by path; do NOT commit `ai/TASKS.current.md`). Do not push and do
