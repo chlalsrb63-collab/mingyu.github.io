@@ -5,6 +5,48 @@ Development is **local first**: work and test on the PC; the owner decides when 
 Read this, `AGENTS.md` (loaded), `ai/BRIEF.md`, `docs/design/README.md`, `docs/systems/README.md`; then continue.
 Reply to the owner in Korean; they want reports **with screenshots** ("다 끝나면 화면과 함께 알려줘").
 
+## 0. Token budget — owner's order (2026-11-15: "토큰 소모량을 줄이도록 해")
+
+The previous integrator session grew to 750k tokens and ran 6–7 agents at once; every agent notification re-read the
+whole context and the 5-hour limit ran out twice. Rules for every Claude session from now on:
+- **Integrator stays small.** Start a new session (update this file first) when the context passes ~250k tokens.
+  Don't read agent screenshots or long diffs in the integrator; trust the report + run the tests, look at ≤ 2 shots per merge.
+- **≤ 2 agents at once** (3 only if they touch disjoint files). One agent ≈ ≤ 100 tool calls / ~100k tokens; split bigger work.
+- **Order by files, not by wish list.** Never run two agents on the same files at once (map generators `30/32/34-*`,
+  `10-tables.js` MOBS, `hud.*`/`windows.js`, `70/75/90`): run them one after another. Conflicts cost a whole rebase agent.
+- **Model per task** (`ai/BRIEF.md`): art, data rows, Korean text, docs, reviews → `model: "sonnet"` (pure text/data → `"haiku"`);
+  rules cores, cross-system work, integration → default. Mechanical backlog → Codex via `ai/TASKS.md` (no Claude tokens).
+- **Agent briefs**: ≤ 40 lines, point at files instead of pasting specs, ask for reports ≤ 15 lines, ≤ 3 screenshots,
+  only the relevant tests while working and the full suite once at the end. Reuse the main checkout's `node_modules`
+  in worktrees (junction) instead of `npm install`.
+- Turn off MCP servers/plugins this project never uses (Higgsfield, Notion, PixelLab, Summer Engine, Blender, Unity) for
+  this folder — ask the owner before changing settings.
+
+## 0.1 State on 2026-11-15 (end of the long session) and what to do next
+
+`main` = everything merged and tested (34–35 suites): life L2 client, side panel (one window at a time), gear-slot icons,
+charms C1+C2 (Juana, board), maps v2 M1–M3 + art (meadow falls, forest gorge, jade cave, brick halls, jungle/coast/oasis),
+wide dungeons, `dunesea` (288×192), Codex's `codex/local-play` (NPC routines, hunting routes, frost keep Lv.200, BGM),
+starter-weapon pick at creation, solid aim arrowhead, job emblems + icon-first HUD with click detail cards (`infocard.js`).
+Nothing since `500891d` is pushed (push = deploy; push only with `[skip ci]` when the owner asks for a backup).
+
+**Paused agent branches** (stopped by the usage limit; worktrees under `.claude/worktrees/`; unfinished work saved as a
+`WIP:` commit — untested; resume each in its own fresh agent, one or two at a time, in this order):
+1. `claude/dash` — Space = dash (≈72 px, 4 s cd, short invulnerability), basic attack → X. Owner asked for it.
+2. `claude/social-weekly` (1 commit) — friends/whisper/block, weekly book (7 of 12), enhancement pity, key rebinding,
+   text size. Then wire dash/attack into the key-rebinding table.
+3. `claude/rift-tiers` (WIP) — endless rift tiers + weekly 4-player boss challenge with a stagger gauge.
+4. `claude/new-monsters` (WIP) — real species for coast/desert/jungle (+ mesa/cloudtemple) replacing tinted variants.
+5. `claude/cosmetics-2` (1 commit + WIP) — 30+ cosmetics (seaside, desert, jungle, temple, delver, life-mastery outfits, trust gifts).
+6. `claude/maps-b2-1` (3 commits) — `mesa` 붉은바위 황금궁 + `cloudtemple` 운해 사원 (`docs/design/maps-batch2.md`).
+Owner's priority: **HUD and user-friendly UI/UX first, then content.** Auction house is **on hold** (don't start).
+Still to do after those: life → combat loop + 알바/협동 알바 polish (`life-and-coop.md` C1–C3), skill design/FX cleanup,
+more quests, maps batch 2 pairs 2–3 (`maps-batch2.md`), level balancing only after the maps exist (`level-bands.md`).
+Owner is waiting for **UI screenshots** (HUD with emblems, stats + a detail card, job emblems, creation weapon picker,
+arrow, phone) — take them on current `main` and send them first.
+Codex: designing the 7th weapon `hammer` + job `destroyer` (spec `codex/rift-beasts:ai/prompts/hammer-destroyer.md`);
+our UI is already data-driven for it. Codex's world map prompt was given to the owner (start it after the maps land).
+
 ## 0. Token budget — owner's order: "토큰 소모량을 줄이도록 해" (2026-11-15)
 
 The previous integrator session hit the 5-hour limit twice: its own context grew to 750k tokens and every
