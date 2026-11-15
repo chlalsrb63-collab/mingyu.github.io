@@ -1011,6 +1011,10 @@ body.touch #wm .wm-tab { display: none; }
 .wp-row .chips { display: flex; gap: 2px; }
 .chip { position: relative; width: 22px; height: 22px; display: grid; place-items: center; background: #1a1622; border: 2px solid var(--ink); }
 .chip img { width: 16px; height: 16px; image-rendering: pixelated; }
+/* skill chips: the 32×32 skill icons at 1× (skillicons.js) */
+.wp-row .chips { grid-column: 2 / -1; }   /* under the name: four 36-px chips do not fit beside it in the side panel */
+.chips .chip { width: 36px; height: 36px; }
+.chips .chip img { width: 32px; height: 32px; }
 .chip.pas { border-color: #3a5a8a; }
 .chip.sig { border-color: #7a5a22; }
 .chip.off img { filter: grayscale(1) brightness(.45); }
@@ -1066,8 +1070,8 @@ body.touch #wm .wm-tab { display: none; }
 .jt-need { display: flex; flex-wrap: wrap; gap: 0 10px; margin-top: 3px; font: var(--t12) var(--pix); }
 .jt-need .ok { color: #9af0ae; }
 .jt-need .no { color: #ff9a8a; }
-.jt-sig { display: grid; grid-template-columns: 22px 1fr; gap: 0 6px; margin-top: 4px; }
-.jt-sig .ic { width: 22px; height: 22px; padding: 1px; image-rendering: pixelated; background: #1a1622; border: 2px solid #7a5a22; box-sizing: border-box; }
+.jt-sig { display: grid; grid-template-columns: 38px 1fr; gap: 0 6px; margin-top: 4px; }
+.jt-sig .ic { width: 38px; height: 38px; padding: 1px; image-rendering: pixelated; background: #1a1622; border: 2px solid #7a5a22; box-sizing: border-box; }
 .jt-sig b { font: var(--t12) var(--pix); color: #e8c27a; }
 .jt-sig small { color: #8ab4ff; }
 .window .jt-sig p { margin: 1px 0 0; line-height: 1.45; color: #cfc8b8; }
@@ -1475,8 +1479,8 @@ body.touch .set-keys { display: none !important; }
 .wp-list .wp-skills .skill .qs-put:disabled { opacity: .4; }
 .window .wp-row:not(.sel) .sc { display: none; }
 .wp-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; margin: 4px 0 0; font: var(--t10)/1.3 var(--pix9); color: #a898b8; }
-.wp-legend .chip { width: 18px; height: 18px; }
-.wp-legend .chip img { width: 12px; height: 12px; }
+.wp-legend .chip { width: 20px; height: 20px; }
+.wp-legend .chip img { width: 16px; height: 16px; image-rendering: auto; }
 .wp-legend kbd { font: inherit; padding: 0 3px; color: var(--b-hi); border: 1px solid #5a4426; }
 .jt-slot { height: 196px; overflow-y: auto; overflow-x: hidden; margin-bottom: 6px; }
 .jt-slot .jt-card { margin-top: 0; }
@@ -1507,7 +1511,7 @@ body[data-lay="full"] #panel .jt-grid .jt-node img.ji { margin: 0 auto; }
 .lo-slot, .lo-chip { display: inline-flex; align-items: center; gap: 3px; min-width: 52px; min-height: 36px; padding: 2px 4px; background: #231d30; border: 2px solid #3a3150; color: #a8a0b4; font: var(--t11) var(--pix); cursor: pointer; }
 .lo-slot.full, .lo-chip { color: #e8dcc0; }
 .lo-slot.sel { border-color: #ffd84a; }
-.lo-slot .ic, .lo-chip .ic { width: 24px; height: 24px; image-rendering: pixelated; }
+.lo-slot .ic, .lo-chip .ic { width: 32px; height: 32px; image-rendering: pixelated; }
 .lo-chip.used { opacity: .4; cursor: default; }
 .lo-pool { display: flex; flex-wrap: wrap; gap: 3px; margin: 6px 0; padding: 4px; border: 2px solid #2c2537; }
 .lo-bar { display: flex; gap: 4px; margin-top: 6px; }
