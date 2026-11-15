@@ -1098,6 +1098,10 @@ const SFX = {
   stir_perfect() { const p = this.vary(); this.arp("sine", [880 * p, 1320 * p, 1760 * p], 0.05, 0.12, 0.07); this.tone("sine", 2640 * p, 2640 * p, 0.2, 0.025, 0.1); },
   stir_good() { const p = this.vary(); this.arp("sine", [660 * p, 880 * p], 0.06, 0.1, 0.07); },
   stir_miss() { const p = this.vary(); this.tone("sine", 240 * p, 90 * p, 0.2, 0.14); this.tone("sine", 180 * p, 80 * p, 0.12, 0.08, 0.08); this.noise(0.1, 0.03, 500, "lowpass"); },
+  /** The kiln roars up: a joint 풀무 note (합동 풀무). */
+  kiln_roar() { this.noise(0.5, 0.1, 220, "lowpass", 0, 600); this.tone("sawtooth", 70, 110, 0.4, 0.05); this.noise(0.25, 0.05, 1400, "bandpass", 0.08, 500); },
+  /** A brew boiling over: wet bubbling glugs. */
+  boil_over() { const p = this.vary(); for (let i = 0; i < 4; i++) this.tone("sine", (180 + i * 40) * p, (420 + i * 60) * p, 0.06, 0.12, i * 0.07); this.noise(0.3, 0.06, 700, "lowpass", 0, 900); },
   bottle_pop() { const p = this.vary(); this.tone("sine", 300 * p, 1100 * p, 0.07, 0.16); this.noise(0.03, 0.1, 2400, "bandpass"); this.tone("sine", 900 * p, 700 * p, 0.1, 0.04, 0.05); },
   /** Oil in a hot pan, now and then while cooking; `heat` 0–1 makes it fiercer as time runs out. */
   sizzle(heat = 0) { this.noise(0.35 + heat * 0.2, 0.05 + heat * 0.05, 5200, "highpass", 0, 3000); this.noise(0.12, 0.025, 2200, "bandpass", 0.12); },
