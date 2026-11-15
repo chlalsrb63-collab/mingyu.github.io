@@ -210,3 +210,16 @@ are crowd tools with low single damage — intended. No active is now worth less
   Flag bit 128 in `me[8]` / `P[i][8]`: 정신 집중 ready (a soft glow over the caster). Today the client ignores these silently.
 - Not every proc needs a big effect: 144/147 can reuse the crit spark tinted with the owner accent; 146/143 a small swirl on
   the hotbar; 141/151/153 deserve a visible ground ring / line / second arrow.
+
+### As built (client, icons and effects)
+- `public/jobpal.js`: `setJobDefs(defs)` at welcome (net.js); `jobPal(job)` / `skillPal(id, casterJob)` / `fxPal(code, G, eid)` give a
+  cached `{w l m md d a al ad}` (four colours + mixes). A hybrid using one of its weapons' skills lends the skill its accent.
+- Icons (`skillicons.js`): job-dark backing, 1-px main rim — square (clipped corners) for actives, round medal for passives,
+  accent corners for signatures, a hybrid's rim split between its two weapons' mains; glyph `#` light, `o` main, `+` accent,
+  dark outline; combo pips (2×1 in the state's colour) top-right = puts the state on, bottom-right = spends it.
+- Effects (`skillfx.js`): the old literal colours of every skill helper / cast case / line / prop became palette roles (by hue
+  and lightness; an element's second hue on the accent); `PAL` is set where the event comes in and carried through delayed
+  beats. Every cast ends on `jobBeat` (accent motes, a signature's rings, `audio.js job_note` — one sound per job).
+- New: `ps` 140–154 procs (flash + Korean word for one's own), `ln` 10 brand hop, flag 128 star (정신 집중), sanctuary in
+  암흑기사 colours; `skillfx_combo.js` actives in palette, distinct `cb` payoffs (파쇄, 추가타, 점화, 결집). Hammer code untouched.
+- Left: bow arrow looks (`ARROW_LOOK`), book/staff missiles and the support pennant/folio keep their fixed colours.
