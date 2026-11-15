@@ -1,13 +1,22 @@
 /**
- * Skill icons: one 16×16 glyph per weapon skill (03-skills.js ids), mostly in two greys for an
- * engraved look. `#` is the light tone, `o` the dim one, and support icons have an accent (`+`).
- * One feature per icon, a pixel of margin, light read from the upper left.
+ * Skill icons: one 16×16 glyph per skill (03-skills.js ids) drawn in its job's palette (jobpal.js, skills-v2.md §6),
+ * so a job's skills read as one family at a glance. A frame first — actives a square with clipped corners,
+ * passives a round medal, signatures with accent corners, a hybrid's rim split between its two weapons' colours —
+ * on the job's dark; then the glyph: `#` light, `o` main (the one shadow tone), `+` accent, ringed by a dark
+ * outline so it never melts into the rim. A combo state the skill puts on a monster is a pip top-right, one it
+ * spends is a pip bottom-right (skill-combos.md §2). One feature per icon, light read from the upper left.
  */
-const LIGHT = "#e6e0d0", DIM = "#8f8b80";
-const INK = { "#": LIGHT, o: DIM };
-const SUPPORT_INK = {
-  rally_banner: { "#": "#f2d28b", o: "#418281", "+": "#70d5bf" },
-  revive_binding: { "#": "#e5c8ff", o: "#8665af", "+": "#fff0c6" },
+import { skillPal, skillOwner, skillDef, hybridParts, jobPal, onJobDefs } from "./jobpal.js";
+
+const INK = "#120e16";
+/** Combo states (skill-combos.md §2, colours as skillfx_combo.js pops them). */
+const STATE = { stag: "#ffd86a", air: "#fff2a8", frz: "#bfe8ff", mk: "#ff7ad0", brand: "#c890ff", brn: "#ff9a3a", drag: "#9fe0c0" };
+/** skill → [state it puts on, state it spends] (either may be empty). */
+const COMBO = {
+  slash: ["stag", "drag"], rend: ["air"], hook: ["drag"], comet: ["drag"], dragon: ["stag"], frostring: ["frz", "drag"],
+  frostspire: ["frz"], shade: ["mk"], elemfan: ["mk"], soulbolt: ["brand"], gravity: ["drag"], fireball: ["brn"], meteor: ["brn"],
+  cleave: ["", "stag"], snipe: ["", "stag"], ambush: ["", "air"], spiral: ["", "frz"], rupture: ["", "mk"], drain: ["", "brand"],
+  ignite: ["", "brn"], hammer_stamp: ["stag"],
 };
 
 // Integer-pixel clusters, applied in order so holes and shadow planes stay crisp at 1×.
@@ -880,24 +889,47 @@ const GLYPH = {
   ]),
 };
 
-const cache = {};
-/** A 16×16 canvas for one skill id; unknown ids get an empty one. */
+const cache = {}, urls = {};
+onJobDefs(() => { for (const k in cache) delete cache[k]; for (const k in urls) delete urls[k]; });
+// a round medal's left inset per row; a square's clipped corners
+const ROUND = [5, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3, 5];
+const SQUARE = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+const BASE_PASSIVE = new Set(["inertia", "vitals", "tip", "reso", "brand", "hawk"]);
+/** A 16×16 canvas for one skill id; unknown ids get an empty frame in 모험가's colours. */
 export function skillIcon(id) {
   if (cache[id]) return cache[id];
   const c = document.createElement("canvas");
   c.width = c.height = 16;
   const g = c.getContext("2d");
-  const rows = GLYPH[id] || [];
-  const ink = SUPPORT_INK[id] || INK;
-  rows.forEach((row, y) => {
-    for (let x = 0; x < 16; x++) {
-      const color = ink[row[x]];
-      if (color) { g.fillStyle = color; g.fillRect(x, y, 1, 1); }
-    }
-  });
+  const p = skillPal(id), kind = skillDef(id)?.kind || (BASE_PASSIVE.has(id) || /\d0$/.test(id) ? "p" : "a");
+  const inset = kind === "p" ? ROUND : SQUARE, sig = kind === "j" || kind === "h";
+  const parts = hybridParts(skillOwner(id)), rimA = parts ? jobPal(parts[0]).m : p.m, rimB = parts ? jobPal(parts[1]).m : p.m;
+  const put = (x, y, col) => { g.fillStyle = col; g.fillRect(x, y, 1, 1); };
+  const inside = (x, y) => y >= 0 && y < 16 && x >= inset[y] && x < 16 - inset[y];
+  // the frame: the job's dark, a one-pixel rim of its main (a hybrid's split corner to corner), an accent glint top-left
+  for (let y = 0; y < 16; y++) for (let x = inset[y]; x < 16 - inset[y]; x++) {
+    const rim = !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1);
+    put(x, y, rim ? (x + y < 15 ? rimA : rimB) : p.d);
+  }
+  if (sig) for (const [x, y] of [[1, 1], [2, 1], [1, 2], [14, 1], [13, 1], [14, 2], [1, 14], [2, 14], [1, 13], [14, 14], [13, 14], [14, 13]]) put(x, y, p.a);
+  else put(kind === "p" ? 4 : 2, kind === "p" ? 3 : 2, p.al);
+  // the glyph, outlined
+  const rows = GLYPH[id] || [], ink = { "#": p.l, o: p.m, "+": p.a };
+  const on = (x, y) => !!ink[rows[y]?.[x]];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (on(x, y) || !(on(x - 1, y) || on(x + 1, y) || on(x, y - 1) || on(x, y + 1))) continue;
+    if (inside(x, y)) put(x, y, INK);
+  }
+  rows.forEach((row, y) => { for (let x = 0; x < 16; x++) if (ink[row[x]]) put(x, y, ink[row[x]]); });
+  // combo pips: a state it puts on (top-right), one it spends (bottom-right)
+  const [give, take] = COMBO[id] || [];
+  for (const [st, y] of [[give, 1], [take, 12]]) {
+    if (!st) continue;
+    g.fillStyle = INK; g.fillRect(11, y, 4, 3);
+    g.fillStyle = STATE[st]; g.fillRect(12, y + 1, 2, 1);
+  }
   return (cache[id] = c);
 }
-const urls = {};
 export const skillIconUrl = (id) => urls[id] || (urls[id] = skillIcon(id).toDataURL());
 /** Rows that are not sixteen wide, for the preview page to complain about. */
 export function badRows() {

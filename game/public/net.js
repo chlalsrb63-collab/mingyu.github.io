@@ -24,6 +24,7 @@ import * as Gather from "./gather.js";
 import * as Radar from "./radar.js";
 import * as Housing from "./housing.js";
 import * as Coop from "./coop.js";
+import { setJobDefs } from "./jobpal.js";
 import { G, el, $, resize, $$, tg, text, now, T } from "./state.js";
 import { JOB_ALIAS, onEvent, onGain } from "./events.js";
 import { countItem, usePotion, castSkill } from "./actions.js";
@@ -113,6 +114,7 @@ function onMessage(msg) {
         for (const [old, id] of Object.entries(JOB_ALIAS)) if (!G.defs.classes[old]) G.defs.classes[old] = G.defs.classes[id];
         for (const id of Object.keys(G.defs.jobs)) { const k = G.defs.jobs[id].wk[0] || "dagger"; CLASS_ICON[id] = k === "book" ? "book" : k; }
         Sky.configure(G.defs.sky);
+        setJobDefs(G.defs);
         G.icons = Growth.icons(Art.buildIcons(G.defs.items));
         Growth.init({ G, act, el, iconImg, itemSlot, section, countItem, usePotion, isGear: (id) => isGear(id), sellPrice: (e) => sellPrice(e) });
         Wardrobe.init({ G, act, el, hoverTip });
