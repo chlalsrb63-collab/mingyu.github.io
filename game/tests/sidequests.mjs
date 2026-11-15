@@ -453,6 +453,46 @@ function chainShape(ids, lo, hi, maps, scaled = ids) {
   done(W, "sq_ullo_sky", "trail_echo");
   assert.equal(W.ch.sq.done.sq_ullo_sky, 1);
 }
+{
+  // Q5 바스's arc as a story: the song to 솔 → the leaves → the old guard → charms singed on a campfire → the frost road (Lv.195)
+  const BAS = ["sq_bas_roses", "sq_bas_leaves", "sq_bas_elites", "sq_bas_wardens", "sq_bas_frost"];
+  chainShape(BAS, 168, 199, BAS.map(() => "maple"), ["sq_bas_frost"]);
+  assert.ok(BAS.every((id) => D.side.find((q) => q.id === id).goal.type !== "kill"), "no kill step left in 바스's arc");
+  const W = world("교대병");
+  W.ch.lvl = 168;
+  take(W, "sq_bas_roses", "hermit");
+  assert.equal(bag(W, "q_thornsong"), 1, "바스 hands over the thorn");
+  done(W, "sq_bas_roses", "willow_bard");
+  W.ch.lvl = 170;
+  take(W, "sq_bas_leaves", "hermit");
+  W.ch.inv.push({ id: "m_h5", n: 8 });
+  done(W, "sq_bas_leaves", "hermit");
+  W.ch.lvl = 180;
+  take(W, "sq_bas_elites", "hermit");
+  W.to("maple", ...L.atlas().maps.maple.entry);
+  for (let i = 0; i < 5; i++) W.kill("blightsquirrel", 1);
+  done(W, "sq_bas_elites", "hermit");
+  W.ch.lvl = 190;
+  W.meet("hermit"); W.ch.life.cook.lv = 20;
+  assert.match(W.act({ t: "craft_open", r: "q_mapcharm" }).error, /퀘스트/, "the charm is singed only for 바스's quest");
+  take(W, "sq_bas_wardens", "hermit");
+  make(W, "sq_bas_wardens", "q_mapcharm", "hermit", [["m_h5", 30]], "cook");
+  done(W, "sq_bas_wardens", "hermit");
+  assert.equal(bag(W, "q_mapcharm"), 0, "the charms go to the wardens");
+  W.ch.lvl = 194;
+  assert.equal(sqOf(W.self(), "sq_bas_frost").st, 0, "the frost road waits for Lv.195");
+  W.ch.lvl = 195;
+  take(W, "sq_bas_frost", "hermit");
+  talk(W, "maple_frostgate");
+  done(W, "sq_bas_frost", "hermit");
+  assert.ok(W.ch.ach.includes("t_sq_bas_frost"), "「마지막 교대병」");
+  // an old sheet mid-way through the retired kill steps loads clean: the thorn is handed over, the count fits the new goal
+  const old = L.newChar("옛파수꾼", "warrior", []);
+  old.sq = { on: { sq_bas_roses: 7, sq_bas_wardens: 5 }, done: { sq_bas_elites: 1 } };
+  const O = world("옛파수꾼", old);
+  assert.equal(bag(O, "q_thornsong"), 1, "the thorn for 솔 is in the bag");
+  assert.ok(O.ch.sq.on.sq_bas_wardens <= 3, "the kill count is clamped to the charm count");
+}
 // every arc step is 추적-resolvable: a giver and hand-in NPC on a real map, a target the client can walk to
 for (const q of D.side.filter((o) => /^sq_(chomi|aru|noeul_stone|sora|elder_chart|eunha|samak|norang|galpi|borum_ink|bogle_(shards|essence|hand)|borum_(rubbing|krion)|toruk_|ullo_|bas_|yeoul_)/.test(o.id))) {
   assert.ok(q.giverMapId && L.atlas().maps[q.giverMapId].npcs.some((n) => n.id === q.giver), `${q.id}: giver stands on ${q.giverMapId}`);

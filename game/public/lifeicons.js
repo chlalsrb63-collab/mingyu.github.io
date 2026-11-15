@@ -945,6 +945,42 @@ export const LIFE_ICONS = {
       "............",
     ],
   },
+  // Thorn with a song (Q5): a grave-rose sprig, one red bloom, pale thorns on the stem.
+  q_thornsong: {
+    palette: { h: "#e8e0c8", m: "#6a8a3a", d: "#3a4a22", a: "#a8303c", b: "#e86a78" },
+    rows: [
+      "............",
+      "......aa....",
+      ".....abba...",
+      ".....aaba...",
+      "......aa....",
+      ".......d....",
+      "......dm....",
+      "....hdm.....",
+      ".....dmh....",
+      "....dm......",
+      "...dm.......",
+      "............",
+    ],
+  },
+  // Maple charm (Q5): a red maple leaf on a knotted straw cord.
+  q_mapcharm: {
+    palette: { h: "#f8b070", m: "#c84a2a", d: "#c8a050", a: "#a83a2a", b: "#e8643a" },
+    rows: [
+      "............",
+      ".....aa.....",
+      "..a.abba.a..",
+      "..aabbbbaa..",
+      "...abhbba...",
+      ".aabbbbbbaa.",
+      "..aabbmbaa..",
+      "....abba....",
+      ".....dd.....",
+      "....d..d....",
+      ".....dd.....",
+      "............",
+    ],
+  },
   // Wind-lantern compass: brass case, cream face, a red needle pointing off north.
   kp_compass: {
     palette: { h: "#f8dc7a", m: "#c89a3a", d: "#6a4a1a", a: "#f4ead2", b: "#c84a3a" },

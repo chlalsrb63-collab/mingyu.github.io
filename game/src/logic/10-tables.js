@@ -91,6 +91,9 @@ const ITEMS = {
   q_upwater: { name: "거꾸로 담긴 물", type: "quest", price: 0, desc: "하수도 배수관에서 받은 물 한 병. 병을 뒤집어도 물이 마개 쪽에 붙어 있다." },
   q_silt: { name: "수정 앙금", type: "quest", price: 0, desc: "거꾸로 오른 물이 남긴 반짝이는 앙금. 귀에 대면 아주 작게 노래한다." },
   q_wedge: { name: "수문 쐐기", type: "quest", price: 0, desc: "네온 고철에 기름 먹은 판자를 덧대 깎은 쐐기. 배수문이 위로 밀려 열리지 않게 박는다." },
+  // 은자 바스's arc as a story (Q5): the guard-change song and the 단풍 부적
+  q_thornsong: { name: "노래 걸린 가시", type: "quest", price: 0, desc: "왕릉 길에서 꺾은 묘지 장미 가지. 귀에 대면 가시 끝에서 옛 가락이 웅웅댄다." },
+  q_mapcharm: { name: "단풍 부적", type: "quest", price: 0, desc: "붉은 단풍잎 잎맥을 세 번 꼬아 모닥불에 그을린 부적. 교대할 차례가 왔다는 표시다." },
   // keepsakes (기념품): no stats, never in the bag — kept forever in ch.keep; 루루 의상실 will sew them into outfits later
   kp_reed_float: { name: "갈대의 낡은 찌", type: "keep", price: 0, arc: "갈대의 송사리 도시락", desc: "갈대가 딸과 처음 낚시하던 날 쓰던 빨간 찌. \"이제 나한텐 필요 없어. 네가 가져.\"" },
   kp_willow_key: { name: "버드나무 새집 열쇠", type: "keep", price: 0, arc: "버드나무의 새 식구", desc: "도란네 오두막의 여벌 열쇠. 콩알이 도토리 모자를 씌워 놨다. \"언제든 놀러 와도 된대!\"" },

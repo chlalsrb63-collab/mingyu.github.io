@@ -117,6 +117,15 @@ gold = 30 × Lv (last step × 2), keepsakes and titles for arc ends. 알바 stay
 - Change the steps at 168 and 190 from kill to talk/deliver/make (a hermit's 단풍 부적 recipe), and keep the elite at
   180. Add one step at Lv.195 that leads into 성에왕, which fills the Lv.191–199 gap.
 - Files: `quests.json`. Test: `data:check` and `content.mjs`.
+- **As built:** same ids, no kill step left. `sq_bas_roses` (168) is now a delivery: a thorn that hums the old
+  guard-change song goes to 음유시인 솔 in 버드나무 마을, who names it. `sq_bas_leaves` (170, collect) and
+  `sq_bas_elites` (180, elite) keep their goals with new lines. `sq_bas_wardens` (190) is now make 3 단풍 부적, a
+  quest-only 요리 Lv.20 recipe made on any campfire (3 붉은 단풍잎 each). New `sq_bas_frost` (195): talk to a new thing,
+  `maple_frostgate` 「서리 덮인 경계석」 by the ice gate to frostkeep. It ends on the title 「마지막 교대병」 and leaves
+  open whether the king called the frost or was caught by it. The old rewards stay as they were (they are above the
+  audit scale; cutting them is an owner call), and the new step is on the scale (30 % / × 2). An old sheet with a
+  roses or wardens kill count loads clean: the thorn is given, and the count is clamped to 3, so that step may be ready
+  at once.
 
 ### Q6 — Late field-boss 기록 (weekly, repeatable) · size M · **owner decision** (repeat cadence)
 - Each late field giver (노랑, 갈피, the Q1 giver) holds one weekly side quest against their ground's boss. Its text

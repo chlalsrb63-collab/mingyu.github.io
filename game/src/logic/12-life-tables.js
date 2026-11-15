@@ -172,6 +172,7 @@ Object.assign(RECIPES, {
   fd_carrot: recipeRow("cook", 3, "fire", [["m_c2", 2], ["staple", 1]], "fd_carrot", 1, 0),
   fd_veg: recipeRow("cook", 10, "cook", [["m_c3", 1], ["m_c4", 1], ["staple", 1]], "fd_veg", 1, 0),
   fd_corn: recipeRow("cook", 20, "cook", [["m_c5", 1], ["m_c6", 1], ["staple", 1]], "fd_corn", 1, 0),
+  q_mapcharm: recipeRow("cook", 20, "fire", [["m_h5", 3]], "q_mapcharm", 1, 0, { sq: "sq_bas_wardens" }),   // Q5: 바스's charm, singed on any campfire, only while his quest is on
   // 연금: potions in threes, elixirs, feathers, runes
   hp_s: recipeRow("alch", 1, "alch", [["m_h1", 2], ["flask", 3]], "hp_s", 3, 18),
   mp_s: recipeRow("alch", 1, "alch", [["m_h1", 2], ["flask", 3]], "mp_s", 3, 27),
