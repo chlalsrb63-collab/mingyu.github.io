@@ -1655,7 +1655,7 @@ const LIFE_MASTER = ["명인 낚시꾼", "명인 요리사", "명인 채집꾼",
 
 // ── fields the later phases fill (the sheet carries them from L1 on, so they never bump it again)
 /** The co-op part-time jobs (C1–C3), by the building they run in. */
-const COOP_KINDS = ["apt", "diner", "forge", "alch", "pipe"];
+const COOP_KINDS = ["apt", "diner", "forge", "alch", "pipe", "lib"];
 /** The 재료 주머니 holds materials (ingots too), staples and flasks, up to this many of each. */
 const POUCH_MAX = 999;
 
@@ -1672,7 +1672,7 @@ const COOP_T = {
   base: { gold: 200, xp: 0.20, life: 0.60, stone: 3, gearQ: 1 }, gradeK: [1, 1.05, 1.1, 1.2],
   rep: 5,
 };
-const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무", pipein: "급수 담당", pipeout: "배수 담당" };
+const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무", pipein: "급수 담당", pipeout: "배수 담당", desk: "접수 담당", sort: "분류 담당" };
 /**
  * 캉캉's big forge hall (forge v2 + ingots; owner, 2026-11-15: "전용 인스턴스 공간은 지금 크기보다 훨씬 크게"): 64×44 like 보글's
  * (the v1 room was 30×16). West: four ingot crates `]` (철 · 은 · 금 · 미스릴, north to south) and the rack `>`; two furnaces `<`
@@ -1960,6 +1960,65 @@ const COOP_APT = {
   dirt: [0.62, 0.86], sweepN: 5, pileMax: 40, pileR: 48, binCap: 10, binUnit: 40, holdK: 0.6,
   dustMs: { 2: 6000, 3: 4500, 4: 3500 }, dustN: 2, litterMs: { 2: 15000, 3: 11000, 4: 8500 }, litterN: 6, feverK: 1.5,
   sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaUnits: 12, sofaPiles: 3,
+};
+/**
+ * 올빼미 도서관 책 분류 (owner, 2026-11-15: "사서가 모두 휴가를 떠나서 … 끊임없이 밀려 들어오는 반납 도서를 각 도서가 꽂혀야할 장르의
+ * 책장으로 가져가서 꽂아주세요 … 책 반납을 하러 온 NPC를 맞이하고, 책 반납을 받아서 반납대 위로 올려 두는 역할을 하는 플레이어도 필수!").
+ * Its own 64×44 hall, built in code like HALL: the 반납대 (ten counter tiles `m`, x 27–36, y 32; books lie on its slots x 28–35)
+ * faces the returners' queue (x 31 from y 33 south towards their door at y 42); the rack `>` (21, 31) west of it; eight genre
+ * shelves of six bookcases `b` in two rows of four (y 10 and y 22), shelf i = genre i, used from either side; reading tables between.
+ */
+const LIBH = { W: 64, H: 44, desk: [27, 36, 32], slots: [28, 32], queue: [31, 33], door: [31, 42], rack: [21, 31],
+  shelves: [10, 22].flatMap((y) => [5, 18, 40, 53].map((x) => [x, y])) };
+const COOP_LIB_MAP = (() => {
+  const { W, H } = LIBH, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
+  const g = Array.from({ length: H }, () => "l".repeat(W).split(""));
+  const put = (ch, x, y) => { o[y][x] = ch; };
+  for (let x = LIBH.desk[0]; x <= LIBH.desk[1]; x++) put("m", x, LIBH.desk[2]);
+  for (const [x0, y] of LIBH.shelves) for (let x = x0; x < x0 + 6; x++) { put("b", x, y); g[y + 1][x] = "y"; g[y - 1][x] = "y"; }
+  // the returners' carpet from the door to the desk, the reading tables between the shelf rows, lamps and plants
+  for (let y = LIBH.queue[1]; y < H - 1; y++) for (let x = 30; x <= 32; x++) g[y][x] = "y";
+  for (const [x, y] of [[29, 14], [35, 14], [29, 18], [35, 18], [12, 16], [47, 16]]) { put("k", x - 1, y); put("o", x, y); put("k", x + 1, y); }
+  put(">", ...LIBH.rack);
+  for (const [x, y] of [[1, 1], [W - 2, 1], [1, H - 2], [W - 2, H - 2], [26, 41], [36, 41], [14, 28], [49, 28]]) put("g", x, y);
+  for (let x = 4; x <= 12; x++) put("-", x, 36);
+  for (let x = 51; x <= 59; x++) put("-", x, 36);
+  return { ground: g.map((r) => r.join("")), objects: o.map((r) => r.join("")) };
+})();
+COOP.lib = {
+  name: "올빼미 도서관 책 분류", npc: "lib_borum", lobby: "owl_library", mins: 5, tools: ["desk", "sort"], combo: 20000, skill: "deliver",
+  // cut-offs tuned on walking bots (tests/coop.mjs, hard): quick and accurate (an act every 300 ms) 1,181 · 2,338 · 3,145, just over
+  // S (1,126 · 2,226 · 2,992); realistic (every 400 ms, walking at 90 %, 8 % wrong shelves) 817 · 1,508 · 2,187, B
+  par: 1000, parN: { 2: 1.28, 3: 2.53, 4: 3.4 },
+  hint: "접수 담당은 반납대에서 줄 선 손님의 책을 받아 반납대에 올리고, 분류 담당은 반납대의 책을 (한 번에 3권까지) 들고 같은 장르의 책장에 꽂으세요! 손님이 줄지어 와요.",
+  // stations (tiles): the 반납대's ten tiles, the 48 shelf tiles (shelf i = tiles 6i … 6i+5), the rack
+  st: { desk: Array.from({ length: 10 }, (_, i) => [LIBH.desk[0] + i, LIBH.desk[2]]), shelf: LIBH.shelves.flatMap(([x, y]) => [0, 1, 2, 3, 4, 5].map((i) => [x + i, y])), rack: LIBH.rack, door: LIBH.door },
+  start: [[29, 30], [33, 30], [27, 29], [35, 29]],
+  tpl: { name: "올빼미 도서관 · 대형 서고 (작업 중)", theme: "interior", style: "library", bgm: "cafe", safe: true, w: LIBH.W, h: LIBH.H, entry: [31, 30], ground: COOP_LIB_MAP.ground, objects: COOP_LIB_MAP.objects },
+};
+/**
+ * The library's numbers. Returners arrive every `arriveMs[n]` (÷feverK in fever: the crowd), each with `books` [min, max] books, and
+ * queue up to `queueCap[n]`; one not greeted to the end within `patience` leaves angry (−angryPen, combo 0, its books go home). The
+ * 접수 takes one book a press onto the 반납대 (`deskCap` slots; full → refused, so slow sorting blocks intake): +intakePts, and
+ * +servedPts when a returner's last book is in. The 분류 carries up to `carry` books; at a shelf a press shelves a held book of that
+ * genre (+shelvePts, sortK to the sorter, the rest to the one who took it in); with none, the first held book goes in wrong
+ * (−wrongPen, combo 0) and marks the shelf until someone pulls it back out. Titles are original (10 a genre).
+ */
+const COOP_LIB = {
+  genres: ["추리소설", "SF소설", "과학소설", "로맨스소설", "웹소설", "판타지소설", "공포소설", "개그소설"],
+  cols: ["#4a6ad0", "#40c8d8", "#5ab050", "#f070a8", "#f0a040", "#a070e0", "#b83838", "#f0d840"],
+  titles: [
+    ["안개 낀 등대의 세 번째 열쇠", "사라진 찻잔의 행방", "새벽 기차의 목격자", "붉은 우체통 사건", "탐정 올리의 마지막 수첩", "거꾸로 걸린 초상화", "열세 번째 손님", "비 오는 날의 알리바이", "잠긴 온실의 비밀", "고양이만 아는 범인"],
+    ["목성 정거장 7호", "은하 택배 기사의 하루", "기억을 파는 로봇", "별빛 엔진 수리공", "화성 감자 농장 일지", "시간 우체국", "궤도 위의 도서관", "안드로이드의 첫 휴가", "달 뒷면의 신호", "우주 고래를 따라서"],
+    ["꿀벌 박사의 실험 노트", "번개를 병에 담은 소녀", "화석 발굴단의 여름", "현미경 속 작은 왕국", "빙하 연구소의 겨울", "공룡 뼈를 맞춰라", "무지개를 쪼갠 프리즘", "바닷속 화산 탐사기", "씨앗 은행의 수호자", "별자리 지도를 그린 소년"],
+    ["벚꽃 정류장에서 만나요", "편지는 일요일에 도착한다", "우산을 나눠 쓴 오후", "빵집 2층의 그 사람", "첫눈 오는 날의 약속", "여름밤 불꽃 아래서", "서툰 고백의 계절", "단골손님의 비밀 메모", "노을빛 자전거", "두 번째 봄의 너"],
+    ["회귀한 청소부는 만렙이다", "알고 보니 마왕의 집사", "던전 앞 편의점 사장님", "레벨 1 농부의 성공 일지", "망한 길드 살리는 법", "악역 영애는 낮잠이 좋아", "100층 탑의 막내 사서", "환생했더니 고양이 기사", "무한 회귀 알바생", "별 다섯 개 요리사의 귀환"],
+    ["용의 알을 품은 마을", "은빛 숲의 마법사", "구름 섬의 마지막 기사", "잃어버린 왕관의 노래", "여우 마법학교 입학기", "별을 삼킨 드래곤", "바람의 지도", "마법 빗자루 수리점", "검은 탑의 견습생", "요정 왕국 우편배달부"],
+    ["자정의 엘리베이터", "웃지 않는 인형", "지하 3층 보일러실", "창밖의 발자국", "불 꺼진 학교의 종소리", "거울 속 두 번째 나", "안개 숲의 노래", "열리지 않는 서랍", "목 없는 허수아비", "끝나지 않는 복도"],
+    ["방귀 뀌는 용", "우리 집 고양이는 사장님", "엉망진창 요리 대회", "양말 한 짝의 대모험", "대머리 마법사의 머리카락 찾기", "펭귄 택시 기사", "재채기 왕국", "냉장고 속 작은 파티", "엉덩이 춤 경연 대회", "게으른 닭의 하루"],
+  ],
+  deskCap: 8, carry: 3, books: [1, 3], arriveMs: { 2: 7000, 3: 4200, 4: 3200 }, feverK: 2, queueCap: { 2: 6, 3: 7, 4: 8 }, patience: 60000,
+  intakePts: 2, servedPts: 5, shelvePts: 10, sortK: 0.7, angryPen: 15, wrongPen: 10,
 };
 // ───────────────────────────── helpers ─────────────────────────────
 
@@ -7413,7 +7472,7 @@ const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest"
   // top of a boss's damage ranking (50 dmgBoard; added 2026-11-15, old sheets start at 0)
   "mvp",
   // co-op part-time shifts finished (68-coop.js coopPay) and S grades per job (added 2026-11-15, old sheets start at 0)
-  "coop", "coopS_apt", "coopS_diner", "coopS_forge", "coopS_alch"];
+  "coop", "coopS_apt", "coopS_diner", "coopS_forge", "coopS_alch", "coopS_lib"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {
@@ -12000,6 +12059,7 @@ const ACH = [
   ["coopS_diner", "생활", "서빙의 달인", "쥬쥬식당 서빙 S 등급", 20, (c) => c.cnt.coopS_diner >= 1, "서빙의 달인"],
   ["coopS_forge", "생활", "단조의 달인", "캉캉대장간 단조 S 등급", 20, (c) => c.cnt.coopS_forge >= 1, "단조의 달인"],
   ["coopS_alch", "생활", "가마의 달인", "보글연금공방 가마 S 등급", 20, (c) => c.cnt.coopS_alch >= 1, "가마의 달인"],
+  ["coopS_lib", "생활", "서고의 달인", "올빼미 도서관 책 분류 S 등급", 20, (c) => c.cnt.coopS_lib >= 1, "서고의 달인"],
   ["coop20", "생활", "단골 알바생", "협동 알바 20번 완수", 30, (c) => c.cnt.coop >= 20, "단골 알바생"],
   ...LIFE.map((k, i) => [`life50_${k}`, "생활", LIFE_MASTER[i], `${LIFE_NAME[i]} Lv.50 달성`, 30, (c) => !!c.life && c.life[k].lv >= LIFE_MAX, LIFE_MASTER[i]]),
   ["gat100", "생활", "부지런한 채집꾼", "채집 100번", 5, (c) => c.cnt.gat >= 100],
@@ -14783,6 +14843,7 @@ const COSMETICS = Object.fromEntries([
   ["back_tray", 106, "back", "쥬쥬 서빙 쟁반", 2, "ach", "coopS_diner", "뚜껑 덮인 은쟁반. 무엇이 들었는지는 쥬쥬만 안다.", "coop"],
   ["face_forge", 107, "face", "캉캉 단조 보안경", 2, "ach", "coopS_forge", "불똥이 튀어도 끄떡없는 검은 보안경.", "coop"],
   ["back_cauldron", 108, "back", "보글 꼬마 가마솥", 2, "ach", "coopS_alch", "등에 멘 꼬마 가마솥. 초록 거품이 보글보글.", "coop"],
+  ["back_booksatchel", 130, "back", "올빼미 사서 책가방", 2, "ach", "coopS_lib", "장르별 색띠를 두른 보라색 책가방. 반납 도서가 늘 한 권쯤 들어 있다.", "coop"],
   // Willow patrol, coastal traders and brass survey crew
   ["hat_willow_patrol", 109, "hat", "버들잎 순찰모", 0, "shop", 1400, "가지 사이를 지날 때 귀가 걸리지 않도록 챙을 짧게 댔다.", "willowpatrol"],
   ["top_willow_patrol", 110, "top", "버들 순찰 조끼", 1, "shop", 2100, "등에는 버들잎을 수놓고 앞에는 호루라기를 매달았다.", "willowpatrol"],
@@ -16699,6 +16760,117 @@ COOP_JOB.alch = {
 /** Herb names by colour index (↑ → ↓ ←). */
 const BREW_HERBS = ["붉은 꽃잎(↑)", "푸른 이끼(→)", "황금 뿌리(↓)", "보라 버섯(←)"];
 
+// ── 올빼미 도서관 책 분류 (the owner's design; COOP_LIB, H11): ents t 13 a returner in the queue (books: [{ g, ti }], due = patience
+// end), t 14 a book on the 반납대 (g, ti, slot, cred), t 15 a wrong book in shelf sh (g, ti, cred); a sorter's hold [{ g, ti, cred }].
+
+const libTitle = (b) => `『${COOP_LIB.titles[b.g][b.ti]}』(${COOP_LIB.genres[b.g]})`;
+/** The queue in arrival order from the desk down towards the door. */
+function libLine(c) {
+  c.ents.filter((e) => e.t === 13).sort((a, b) => a.id - b.id).forEach((e, i) => { [e.x, e.y] = tilePx([LIBH.queue[0], LIBH.queue[1] + i]); });
+  c.ver++;
+}
+COOP_JOB.lib = {
+  init(S, dim, c) { c.shelved = 0; c.angry = 0; c.wrongN = 0; c.next = { arrive: c.runAt + 1500 }; },
+  tick(S, dim, c, now) {
+    const L = COOP_LIB, line = c.ents.filter((e) => e.t === 13);
+    // returners keep coming (a crowd in fever), each with one to three books
+    if (now >= c.next.arrive) {
+      c.next.arrive = now + L.arriveMs[c.n] / (c.state === "fever" ? L.feverK : 1);
+      if (line.length < L.queueCap[c.n]) {
+        const books = Array.from({ length: ri(c.box, L.books[0], L.books[1]) }, () => ({ g: ri(c.box, 0, L.genres.length - 1), ti: ri(c.box, 0, 9) }));
+        c.ents.push({ id: c.nid++, t: 13, x: 0, y: 0, hp: 0, books, due: now + L.patience, pat: L.patience, cred: {} });
+        libLine(c);
+        coopEv(S, dim, 90, ...tilePx(LIBH.door), books.length);
+      }
+    }
+    for (const e of line) {
+      if (now < e.due) continue;
+      c.ents.splice(c.ents.indexOf(e), 1); c.angry++;
+      coopFail(c, L.angryPen); coopEv(S, dim, 91, e.x, e.y);
+      coopToastAll(S, dim, `[민원] 기다리다 지친 손님이 책을 들고 돌아갔어요! 점수 -${L.angryPen}`);
+      libLine(c);
+    }
+  },
+  act(S, dim, c, p, q) {
+    const L = COOP_LIB, desk = coopSt(c, p, "desk") >= 0, si = coopSt(c, p, "shelf"), sh = si >= 0 ? Math.floor(si / 6) : -1;
+    const onDesk = c.ents.filter((e) => e.t === 14);
+    if (q.tool === "desk") {
+      if (desk) {
+        const front = c.ents.filter((e) => e.t === 13).sort((a, b) => a.id - b.id)[0];
+        if (!front) return "줄 선 손님이 없어요 — 곧 와요!";
+        if (onDesk.length >= L.deskCap) return `반납대가 꽉 찼어요 (${L.deskCap}/${L.deskCap}) — 분류 담당이 책을 가져가야 해요!`;
+        // one book a press onto the first free slot of the 반납대
+        const b = front.books.shift(), used = new Set(onDesk.map((e) => e.slot)), slot = [...Array(L.deskCap).keys()].find((i) => !used.has(i));
+        const [x, y] = tilePx([LIBH.slots[0] + slot, LIBH.slots[1]]);
+        c.ents.push({ id: c.nid++, t: 14, x, y, hp: 0, g: b.g, ti: b.ti, slot, cred: { [p.pid]: 1 } });
+        coopGood(S, c, L.intakePts, { [p.pid]: 1 });
+        coopEv(S, dim, 92, x, y, b.g);
+        if (!front.books.length) {
+          c.ents.splice(c.ents.indexOf(front), 1);
+          coopGood(S, c, L.servedPts, { [p.pid]: 1 });
+          coopEv(S, dim, 93, front.x, front.y);
+          libLine(c);
+        }
+        c.ver++;
+        return true;
+      }
+    } else {
+      if (sh >= 0) {
+        const mark = c.ents.find((e) => e.t === 15 && e.sh === sh), i = q.hold.findIndex((b) => b.g === sh), [x, y] = tilePx(COOP[c.k].st.shelf[sh * 6 + 2]);
+        // a wrong book in this shelf comes out first (with a book of this genre in hand, it goes in in the same press: a swap)
+        if (mark) {
+          if (i < 0 && q.hold.length >= L.carry) return "손이 꽉 찼어요 — 이 장르의 책이 있거나 손이 비어야 잘못 꽂힌 책을 뺄 수 있어요";
+          c.ents.splice(c.ents.indexOf(mark), 1); c.ver++;
+          q.hold.push({ g: mark.g, ti: mark.ti, cred: mark.cred });
+          coopEv(S, dim, 96, mark.x, mark.y, mark.g);
+          toast(p, `잘못 꽂힌 ${libTitle(mark)}을(를) 뺐어요`);
+          if (i < 0) return true;
+        }
+        if (q.hold.length) {
+          if (i >= 0) {
+            const b = q.hold.splice(i, 1)[0], cred = { [p.pid]: L.sortK };
+            for (const pid of Object.keys(b.cred)) cred[pid] = (cred[pid] || 0) + (1 - L.sortK) * b.cred[pid];
+            coopGood(S, c, L.shelvePts, cred); c.shelved++; c.ver++;
+            coopEv(S, dim, 94, x, y, sh);
+            return true;
+          }
+          // no book of this genre in hand: the first one goes in wrong and marks the shelf
+          const b = q.hold.shift();
+          c.ents.push({ id: c.nid++, t: 15, x, y, hp: 0, sh, g: b.g, ti: b.ti, cred: b.cred });
+          coopFail(c, L.wrongPen); c.wrongN++; c.ver++;
+          coopEv(S, dim, 95, x, y, b.g);
+          toast(p, `잘못 꽂았어요! ${libTitle(b)} — 여기는 ${L.genres[sh]} 책장이에요 (점수 -${L.wrongPen})`);
+          return true;
+        }
+      }
+      if (desk) {
+        if (!onDesk.length) return "반납대에 책이 없어요 — 접수 담당을 기다리세요";
+        if (q.hold.length >= L.carry) return `한 번에 ${L.carry}권까지 들 수 있어요 — 책장에 꽂고 오세요`;
+        const e = onDesk.sort((a, b) => a.id - b.id)[0];
+        c.ents.splice(c.ents.indexOf(e), 1); c.ver++;
+        q.hold.push({ g: e.g, ti: e.ti, cred: e.cred });
+        coopEv(S, dim, 97, e.x, e.y, e.g);
+        return true;
+      }
+    }
+    // the rack: swap roles (hands empty)
+    if (!q.hold.length && aptStation(c, p, "rack")) {
+      q.tool = q.tool === "desk" ? "sort" : "desk";
+      coopEv(S, dim, 23, p.x, p.y);
+      toast(p, `${COOP_TOOLS[q.tool]}${pp(COOP_TOOLS[q.tool], "을를")} 맡았습니다.`);
+      return true;
+    }
+    if (q.tool === "desk" && sh >= 0) return "책은 분류 담당이 꽂아요 — 접수 담당은 반납대로!";
+    if (q.tool === "desk") return "반납대(남쪽)에서 줄 선 손님의 책을 받으세요";
+    if (q.hold.length) return `들고 있는 책: ${q.hold.map(libTitle).join(", ")} — 같은 장르의 책장으로!`;
+    return "반납대에서 책을 가져오세요";
+  },
+  /** The HUD's sum: books shelved, angry returners. */
+  sum: (c) => [c.shelved, c.angry],
+  /** Team rows' `what`: the books in hand, genre·16 + title. */
+  what: (q) => q.hold.map((b) => b.g * 16 + b.ti),
+};
+
 // ── actions (validated in 70-validate.js, applied in 75-apply.js)
 
 COOP_JOB.pipe = { init: pipeInit, sum: () => [0, 0] };
@@ -16793,6 +16965,11 @@ const coopRow = (now, c) => (e) => {
     const due = e.st === 3 ? e.at + B.ruinMs : e.st === 2 ? e.at + B.doneMs : e.hotAt ? e.hotAt + B.overMs : 0;
     return [...at, pc ? pc.r : -1, e.st, pc ? Math.min(100, Math.floor((100 * pc.prog) / O.hold)) : 0, pc ? brewGrade(pc) : -1, e.st === 3 ? e.foam : 0, due ? Math.max(0, ds(due)) : 0, forgeKind(c)];
   }
+  // the library: a returner [.., books left, ds of patience left, ds patience, first book's genre] · a book on the desk [.., genre,
+  // title] · a wrong book [.., shelf, genre, title]
+  if (e.t === 13) return [...at, e.books.length, Math.max(0, ds(e.due)), Math.round(e.pat / 100), e.books[0] ? e.books[0].g : -1];
+  if (e.t === 14) return [...at, e.g, e.ti];
+  if (e.t === 15) return [...at, e.sh, e.g, e.ti];
   if (e.t >= 6) return forgeRow(e, at, now, ds);
   return e.t < 3 ? [...at, e.hp] : e.t === 3 ? [...at, e.r, ds(e.until), Math.round(e.pat / 100)] : e.t === 4 ? [...at, e.r, ds(e.doneAt), ds(e.burnAt)] : [...at, e.r];
 };
@@ -16806,7 +16983,8 @@ function coopDefs() {
     dishes: COOP_DINER.dishes.map((d) => d.name), cook: COOP_DINER.dishes.map((d) => d.cook), trayCap: COOP_DINER.trayCap, washN: COOP_DINER.washN,
     orders: COOP_FORGE.orders.map((o, i) => [COOP.forge.skin.orders[i], o.pat.length, o.pts, o.per, o.pat]), door: tilePx(COOP.forge.door), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP.forge.skin.grades,
     metals: COOP_FORGE.metals.map((o) => [o.name, o.col, o.heat, o.tempo, o.win, o.price]),
-    brew: { orders: COOP_BREW.orders.map((o, i) => [COOP.alch.skin.orders[i], o.lo, o.hi, o.hold, o.herbs, o.pts]), chart: COOP_BREW.chart, loop: COOP_BREW.loop, amb: COOP_BREW.amb, herbs: BREW_HERBS, foam: COOP_BREW.foam } };
+    brew: { orders: COOP_BREW.orders.map((o, i) => [COOP.alch.skin.orders[i], o.lo, o.hi, o.hold, o.herbs, o.pts]), chart: COOP_BREW.chart, loop: COOP_BREW.loop, amb: COOP_BREW.amb, herbs: BREW_HERBS, foam: COOP_BREW.foam },
+    lib: { genres: COOP_LIB.genres, cols: COOP_LIB.cols, titles: COOP_LIB.titles, deskCap: COOP_LIB.deskCap, carry: COOP_LIB.carry, shelves: LIBH.shelves } };
 }
 // ───────────────────────────── town hall pipe repair ─────────────────────────────
 

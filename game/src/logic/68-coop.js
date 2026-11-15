@@ -957,6 +957,117 @@ COOP_JOB.alch = {
 /** Herb names by colour index (↑ → ↓ ←). */
 const BREW_HERBS = ["붉은 꽃잎(↑)", "푸른 이끼(→)", "황금 뿌리(↓)", "보라 버섯(←)"];
 
+// ── 올빼미 도서관 책 분류 (the owner's design; COOP_LIB, H11): ents t 13 a returner in the queue (books: [{ g, ti }], due = patience
+// end), t 14 a book on the 반납대 (g, ti, slot, cred), t 15 a wrong book in shelf sh (g, ti, cred); a sorter's hold [{ g, ti, cred }].
+
+const libTitle = (b) => `『${COOP_LIB.titles[b.g][b.ti]}』(${COOP_LIB.genres[b.g]})`;
+/** The queue in arrival order from the desk down towards the door. */
+function libLine(c) {
+  c.ents.filter((e) => e.t === 13).sort((a, b) => a.id - b.id).forEach((e, i) => { [e.x, e.y] = tilePx([LIBH.queue[0], LIBH.queue[1] + i]); });
+  c.ver++;
+}
+COOP_JOB.lib = {
+  init(S, dim, c) { c.shelved = 0; c.angry = 0; c.wrongN = 0; c.next = { arrive: c.runAt + 1500 }; },
+  tick(S, dim, c, now) {
+    const L = COOP_LIB, line = c.ents.filter((e) => e.t === 13);
+    // returners keep coming (a crowd in fever), each with one to three books
+    if (now >= c.next.arrive) {
+      c.next.arrive = now + L.arriveMs[c.n] / (c.state === "fever" ? L.feverK : 1);
+      if (line.length < L.queueCap[c.n]) {
+        const books = Array.from({ length: ri(c.box, L.books[0], L.books[1]) }, () => ({ g: ri(c.box, 0, L.genres.length - 1), ti: ri(c.box, 0, 9) }));
+        c.ents.push({ id: c.nid++, t: 13, x: 0, y: 0, hp: 0, books, due: now + L.patience, pat: L.patience, cred: {} });
+        libLine(c);
+        coopEv(S, dim, 90, ...tilePx(LIBH.door), books.length);
+      }
+    }
+    for (const e of line) {
+      if (now < e.due) continue;
+      c.ents.splice(c.ents.indexOf(e), 1); c.angry++;
+      coopFail(c, L.angryPen); coopEv(S, dim, 91, e.x, e.y);
+      coopToastAll(S, dim, `[민원] 기다리다 지친 손님이 책을 들고 돌아갔어요! 점수 -${L.angryPen}`);
+      libLine(c);
+    }
+  },
+  act(S, dim, c, p, q) {
+    const L = COOP_LIB, desk = coopSt(c, p, "desk") >= 0, si = coopSt(c, p, "shelf"), sh = si >= 0 ? Math.floor(si / 6) : -1;
+    const onDesk = c.ents.filter((e) => e.t === 14);
+    if (q.tool === "desk") {
+      if (desk) {
+        const front = c.ents.filter((e) => e.t === 13).sort((a, b) => a.id - b.id)[0];
+        if (!front) return "줄 선 손님이 없어요 — 곧 와요!";
+        if (onDesk.length >= L.deskCap) return `반납대가 꽉 찼어요 (${L.deskCap}/${L.deskCap}) — 분류 담당이 책을 가져가야 해요!`;
+        // one book a press onto the first free slot of the 반납대
+        const b = front.books.shift(), used = new Set(onDesk.map((e) => e.slot)), slot = [...Array(L.deskCap).keys()].find((i) => !used.has(i));
+        const [x, y] = tilePx([LIBH.slots[0] + slot, LIBH.slots[1]]);
+        c.ents.push({ id: c.nid++, t: 14, x, y, hp: 0, g: b.g, ti: b.ti, slot, cred: { [p.pid]: 1 } });
+        coopGood(S, c, L.intakePts, { [p.pid]: 1 });
+        coopEv(S, dim, 92, x, y, b.g);
+        if (!front.books.length) {
+          c.ents.splice(c.ents.indexOf(front), 1);
+          coopGood(S, c, L.servedPts, { [p.pid]: 1 });
+          coopEv(S, dim, 93, front.x, front.y);
+          libLine(c);
+        }
+        c.ver++;
+        return true;
+      }
+    } else {
+      if (sh >= 0) {
+        const mark = c.ents.find((e) => e.t === 15 && e.sh === sh), i = q.hold.findIndex((b) => b.g === sh), [x, y] = tilePx(COOP[c.k].st.shelf[sh * 6 + 2]);
+        // a wrong book in this shelf comes out first (with a book of this genre in hand, it goes in in the same press: a swap)
+        if (mark) {
+          if (i < 0 && q.hold.length >= L.carry) return "손이 꽉 찼어요 — 이 장르의 책이 있거나 손이 비어야 잘못 꽂힌 책을 뺄 수 있어요";
+          c.ents.splice(c.ents.indexOf(mark), 1); c.ver++;
+          q.hold.push({ g: mark.g, ti: mark.ti, cred: mark.cred });
+          coopEv(S, dim, 96, mark.x, mark.y, mark.g);
+          toast(p, `잘못 꽂힌 ${libTitle(mark)}을(를) 뺐어요`);
+          if (i < 0) return true;
+        }
+        if (q.hold.length) {
+          if (i >= 0) {
+            const b = q.hold.splice(i, 1)[0], cred = { [p.pid]: L.sortK };
+            for (const pid of Object.keys(b.cred)) cred[pid] = (cred[pid] || 0) + (1 - L.sortK) * b.cred[pid];
+            coopGood(S, c, L.shelvePts, cred); c.shelved++; c.ver++;
+            coopEv(S, dim, 94, x, y, sh);
+            return true;
+          }
+          // no book of this genre in hand: the first one goes in wrong and marks the shelf
+          const b = q.hold.shift();
+          c.ents.push({ id: c.nid++, t: 15, x, y, hp: 0, sh, g: b.g, ti: b.ti, cred: b.cred });
+          coopFail(c, L.wrongPen); c.wrongN++; c.ver++;
+          coopEv(S, dim, 95, x, y, b.g);
+          toast(p, `잘못 꽂았어요! ${libTitle(b)} — 여기는 ${L.genres[sh]} 책장이에요 (점수 -${L.wrongPen})`);
+          return true;
+        }
+      }
+      if (desk) {
+        if (!onDesk.length) return "반납대에 책이 없어요 — 접수 담당을 기다리세요";
+        if (q.hold.length >= L.carry) return `한 번에 ${L.carry}권까지 들 수 있어요 — 책장에 꽂고 오세요`;
+        const e = onDesk.sort((a, b) => a.id - b.id)[0];
+        c.ents.splice(c.ents.indexOf(e), 1); c.ver++;
+        q.hold.push({ g: e.g, ti: e.ti, cred: e.cred });
+        coopEv(S, dim, 97, e.x, e.y, e.g);
+        return true;
+      }
+    }
+    // the rack: swap roles (hands empty)
+    if (!q.hold.length && aptStation(c, p, "rack")) {
+      q.tool = q.tool === "desk" ? "sort" : "desk";
+      coopEv(S, dim, 23, p.x, p.y);
+      toast(p, `${COOP_TOOLS[q.tool]}${pp(COOP_TOOLS[q.tool], "을를")} 맡았습니다.`);
+      return true;
+    }
+    if (q.tool === "desk" && sh >= 0) return "책은 분류 담당이 꽂아요 — 접수 담당은 반납대로!";
+    if (q.tool === "desk") return "반납대(남쪽)에서 줄 선 손님의 책을 받으세요";
+    if (q.hold.length) return `들고 있는 책: ${q.hold.map(libTitle).join(", ")} — 같은 장르의 책장으로!`;
+    return "반납대에서 책을 가져오세요";
+  },
+  /** The HUD's sum: books shelved, angry returners. */
+  sum: (c) => [c.shelved, c.angry],
+  /** Team rows' `what`: the books in hand, genre·16 + title. */
+  what: (q) => q.hold.map((b) => b.g * 16 + b.ti),
+};
+
 // ── actions (validated in 70-validate.js, applied in 75-apply.js)
 
 COOP_JOB.pipe = { init: pipeInit, sum: () => [0, 0] };
@@ -1051,6 +1162,11 @@ const coopRow = (now, c) => (e) => {
     const due = e.st === 3 ? e.at + B.ruinMs : e.st === 2 ? e.at + B.doneMs : e.hotAt ? e.hotAt + B.overMs : 0;
     return [...at, pc ? pc.r : -1, e.st, pc ? Math.min(100, Math.floor((100 * pc.prog) / O.hold)) : 0, pc ? brewGrade(pc) : -1, e.st === 3 ? e.foam : 0, due ? Math.max(0, ds(due)) : 0, forgeKind(c)];
   }
+  // the library: a returner [.., books left, ds of patience left, ds patience, first book's genre] · a book on the desk [.., genre,
+  // title] · a wrong book [.., shelf, genre, title]
+  if (e.t === 13) return [...at, e.books.length, Math.max(0, ds(e.due)), Math.round(e.pat / 100), e.books[0] ? e.books[0].g : -1];
+  if (e.t === 14) return [...at, e.g, e.ti];
+  if (e.t === 15) return [...at, e.sh, e.g, e.ti];
   if (e.t >= 6) return forgeRow(e, at, now, ds);
   return e.t < 3 ? [...at, e.hp] : e.t === 3 ? [...at, e.r, ds(e.until), Math.round(e.pat / 100)] : e.t === 4 ? [...at, e.r, ds(e.doneAt), ds(e.burnAt)] : [...at, e.r];
 };
@@ -1064,5 +1180,6 @@ function coopDefs() {
     dishes: COOP_DINER.dishes.map((d) => d.name), cook: COOP_DINER.dishes.map((d) => d.cook), trayCap: COOP_DINER.trayCap, washN: COOP_DINER.washN,
     orders: COOP_FORGE.orders.map((o, i) => [COOP.forge.skin.orders[i], o.pat.length, o.pts, o.per, o.pat]), door: tilePx(COOP.forge.door), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP.forge.skin.grades,
     metals: COOP_FORGE.metals.map((o) => [o.name, o.col, o.heat, o.tempo, o.win, o.price]),
-    brew: { orders: COOP_BREW.orders.map((o, i) => [COOP.alch.skin.orders[i], o.lo, o.hi, o.hold, o.herbs, o.pts]), chart: COOP_BREW.chart, loop: COOP_BREW.loop, amb: COOP_BREW.amb, herbs: BREW_HERBS, foam: COOP_BREW.foam } };
+    brew: { orders: COOP_BREW.orders.map((o, i) => [COOP.alch.skin.orders[i], o.lo, o.hi, o.hold, o.herbs, o.pts]), chart: COOP_BREW.chart, loop: COOP_BREW.loop, amb: COOP_BREW.amb, herbs: BREW_HERBS, foam: COOP_BREW.foam },
+    lib: { genres: COOP_LIB.genres, cols: COOP_LIB.cols, titles: COOP_LIB.titles, deskCap: COOP_LIB.deskCap, carry: COOP_LIB.carry, shelves: LIBH.shelves } };
 }

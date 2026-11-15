@@ -136,6 +136,7 @@ const COSMETICS = Object.fromEntries([
   ["back_tray", 106, "back", "쥬쥬 서빙 쟁반", 2, "ach", "coopS_diner", "뚜껑 덮인 은쟁반. 무엇이 들었는지는 쥬쥬만 안다.", "coop"],
   ["face_forge", 107, "face", "캉캉 단조 보안경", 2, "ach", "coopS_forge", "불똥이 튀어도 끄떡없는 검은 보안경.", "coop"],
   ["back_cauldron", 108, "back", "보글 꼬마 가마솥", 2, "ach", "coopS_alch", "등에 멘 꼬마 가마솥. 초록 거품이 보글보글.", "coop"],
+  ["back_booksatchel", 130, "back", "올빼미 사서 책가방", 2, "ach", "coopS_lib", "장르별 색띠를 두른 보라색 책가방. 반납 도서가 늘 한 권쯤 들어 있다.", "coop"],
   // Willow patrol, coastal traders and brass survey crew
   ["hat_willow_patrol", 109, "hat", "버들잎 순찰모", 0, "shop", 1400, "가지 사이를 지날 때 귀가 걸리지 않도록 챙을 짧게 댔다.", "willowpatrol"],
   ["top_willow_patrol", 110, "top", "버들 순찰 조끼", 1, "shop", 2100, "등에는 버들잎을 수놓고 앞에는 호루라기를 매달았다.", "willowpatrol"],

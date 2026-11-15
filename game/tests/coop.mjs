@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { COOP, COOP_T, COOP_APT, coopCut, coopGrade, dayOf, mapOf, tilePx, NPC_MAP, lifeNeed, stats, COOP_DINER, COOP_FORGE, COOP_BREW, COOP_JOB, forgeCustomer, forgeKind, forgeOpen, brewGrade, coopPay };\n";
+  "\nexport const __t = { COOP, COOP_T, COOP_APT, coopCut, coopGrade, dayOf, mapOf, tilePx, NPC_MAP, lifeNeed, stats, COOP_DINER, COOP_FORGE, COOP_BREW, COOP_JOB, forgeCustomer, forgeKind, forgeOpen, brewGrade, coopPay, COOP_LIB };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, J = X.COOP.apt, A = X.COOP_APT;
 const VERBOSE = process.argv.includes("-v"), TUNE = process.argv.includes("--tune");   // --tune: log the bot scores without the cut-off asserts
@@ -1324,5 +1324,146 @@ for (let g = 1; g <= 4; g++) {
   assert.ok(ch.lvl > 1 || ch.xp > xp, "XP");
 }
 assert.deepEqual(L.defs().coop.gradeK, [1, 1.05, 1.1, 1.2]);
+
+// ───────────────────────────── 올빼미 도서관 책 분류 (COOP_LIB, H11) ─────────────────────────────
+
+const JL = X.COOP.lib, LB = X.COOP_LIB;
+function lworld(n, t0 = 1000, seed = 20251111) {
+  const w = world(n, t0, seed), lob = X.mapOf(JL.lobby), bo = lob.npcs.find((o) => o.id === JL.npc);
+  for (const pid of w.pids) { const p = w.S.players[pid]; L.runtime(w.S, p.map).n--; p.map = JL.lobby; L.runtime(w.S, JL.lobby).n++; at(p, bo.x * T + 8, bo.y * T + 12 + 16); }
+  return w;
+}
+// where workers stand: the desk worker and the sorters behind the 반납대, the rack's east side, a shelf's south side
+const DESKN = [32, 31], DESKS = [30, 31], RACKL = [JL.st.rack[0] + 1, JL.st.rack[1]], spot = (g) => below(JL.st.shelf[g * 6 + 2]);
+const books = (c, t) => c.ents.filter((e) => e.t === t);
+
+// ── the hall, the titles, validation
+{
+  const w = lworld(2);
+  assert.match(act(world(2), "c0", { t: "coop_start", k: "lib" }).error, /보름에게 다가가/, "started at 사서 보름 in the library");
+  assert.match(act(lworld(1), "c0", { t: "coop_start", k: "lib" }).error, /2명 이상 파티로만/, "party-only");
+  assert.ok(act(w, "c0", { t: "coop_start", k: "lib" }).ok);
+  const dim = shiftOf(w), m = dim.map, c = dim.coop;
+  assert.deepEqual([m.w, m.h, m.theme, m.safe, m.name], [64, 44, "interior", true, "올빼미 도서관 · 대형 서고 (작업 중)"]);
+  assert.deepEqual(w.pids.map((pid) => c.pl[pid].tool), ["desk", "sort"]);
+  for (const [x, y] of [...JL.st.desk, ...JL.st.shelf, JL.st.rack]) assert.ok(m.solid[y * m.w + x], `${x},${y} is furniture`);
+  const Wk = walker(dim);
+  for (const t of [DESKN, DESKS, RACKL, ...JL.start, ...[0, 1, 2, 3, 4, 5, 6, 7].map(spot), ...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => [31, 33 + i])]) assert.ok(Wk.steps(w.S.players.c0, t) >= 0, `${t} reachable`);
+  assert.equal(LB.genres.length, 8);
+  assert.deepEqual(LB.genres, ["추리소설", "SF소설", "과학소설", "로맨스소설", "웹소설", "판타지소설", "공포소설", "개그소설"]);
+  const all = LB.titles.flat();
+  assert.ok(LB.titles.every((g) => g.length === 10) && new Set(all).size === 80, "ten different titles a genre");
+  const d = L.defs().coop;
+  assert.equal(d.kinds.indexOf("lib"), 5, "appended to the kinds (the wire's job index)");
+  assert.deepEqual([d.lib.genres.length, d.lib.titles[3][0], d.lib.deskCap, d.lib.carry, d.jobs.lib[4], d.jobs.lib[5]], [8, LB.titles[3][0], 8, 3, "lib_borum", "owl_library"]);
+}
+
+// ── the loop: returners queue, the 접수 puts their books on the 반납대 (full → refused), the 분류 carries up to 3 to the right
+// shelf; a wrong shelf costs points and stays marked until the book is pulled back out; a returner left waiting goes home angry
+{
+  const w = lworld(2), S = w.S, [a, b] = [S.players.c0, S.players.c1];
+  act(w, "c0", { t: "coop_start", k: "lib" });
+  const c = shiftOf(w).coop, qa = c.pl.c0, qb = c.pl.c1;
+  step(w, X.COOP_T.briefMs + 2000);
+  const r0 = books(c, 13)[0];
+  assert.ok(r0 && r0.books.length >= LB.books[0], "a returner in the queue");
+  assert.deepEqual([r0.x, r0.y], X.tilePx([31, 33]), "at the front, facing the desk");
+  atTile(a, DESKN); atTile(b, DESKS);
+  const n0 = r0.books.length, s0 = c.score;
+  for (let i = 0; i < n0; i++) { assert.ok(act(w, "c0", { t: "coop_act" }).ok); step(w, 300); }
+  assert.equal(books(c, 14).length, n0, "each press puts one book on the 반납대");
+  assert.ok(!c.ents.includes(r0), "served: the returner leaves");
+  assert.ok(c.score > s0 && qa.pts > 0, "intake points");
+  // the sorter takes them (up to 3), the desk keeps the rest
+  const want = Math.min(n0, LB.carry);
+  for (let i = 0; i < want; i++) { assert.ok(act(w, "c1", { t: "coop_act" }).ok); step(w, 300); }
+  assert.equal(qb.hold.length, want);
+  // the right shelf
+  const bk = qb.hold[0], before = [c.score, qa.pts, qb.pts];
+  atTile(b, spot(bk.g)); assert.ok(act(w, "c1", { t: "coop_act" }).ok);
+  assert.equal(c.shelved, 1, "shelved");
+  assert.ok(c.score - before[0] >= LB.shelvePts && qb.pts - before[2] > qa.pts - before[1], "the sorter gets most of it, the 접수 a share");
+  step(w, 300);
+  // a wrong shelf: −wrongPen, combo 0, marked; shelving there waits until the wrong book is pulled
+  qb.hold = [{ g: 0, ti: 1, cred: { c1: 1 } }, { g: 2, ti: 4, cred: { c1: 1 } }];
+  atTile(b, spot(2)); qb.hintAt = 0; b.toast.length = 0;
+  c.score = 100; c.combo = 3;
+  act(w, "c1", { t: "coop_act" });
+  assert.deepEqual([qb.hold.length, qb.hold[0].g, c.score], [1, 0, 100 + Math.round(LB.shelvePts * (1 + 0.1 * (c.combo)))], "a genre that fits goes first");
+  step(w, 300); atTile(b, spot(5)); c.score = 100; act(w, "c1", { t: "coop_act" });
+  const mark = books(c, 15)[0];
+  assert.ok(mark && mark.sh === 5 && mark.g === 0 && qb.hold.length === 0, "the 추리소설 went into the 판타지 shelf");
+  assert.deepEqual([c.score, c.combo, c.wrongN], [100 - LB.wrongPen, 0, 1], "a penalty, the combo gone");
+  assert.ok(b.toast.some((t) => /잘못 꽂았어요/.test(t) && t.includes(LB.titles[0][1])), "says which book: " + b.toast.join(" / "));
+  qb.hold = [{ g: 5, ti: 0, cred: { c1: 1 } }]; step(w, 300); const sh0 = c.shelved;
+  act(w, "c1", { t: "coop_act" });
+  assert.ok(!c.ents.includes(mark) && qb.hold.length === 1 && qb.hold[0].g === 0 && c.shelved === sh0 + 1, "a swap: the wrong book out, the 판타지소설 in");
+  // the 반납대 is full at deskCap: intake waits
+  for (const e of books(c, 14)) c.ents.splice(c.ents.indexOf(e), 1);
+  for (let i = 0; i < LB.deskCap; i++) c.ents.push({ id: 900 + i, t: 14, x: 0, y: 0, hp: 0, g: 1, ti: 1, slot: i, cred: { c0: 1 } });
+  c.ents.push({ id: 990, t: 13, x: 0, y: 0, hp: 0, books: [{ g: 3, ti: 3 }], due: w.now + 60000, pat: 60000, cred: {} });
+  step(w, 300); qa.hintAt = 0; a.toast.length = 0; act(w, "c0", { t: "coop_act" });
+  assert.ok(a.toast.some((t) => /반납대가 꽉 찼어요/.test(t)), "a full desk refuses: " + a.toast.join(" / "));
+  // the wire: rows for returners, desk books, wrong books; the sorter's books in its team row
+  qb.hold = [{ g: 6, ti: 2, cred: {} }]; c.ver++; step(w, 200);
+  const cj = lastOf("c1", "cj"), C = lastOf("c1", "C") || [];
+  assert.equal(cj[0], 5); assert.deepEqual(cj[10].find((r) => r[0] === b.eid)[4], [6 * 16 + 2], "held books: genre·16 + title");
+  assert.ok(C.some((r) => r[1] === 14 && r.length === 6) && C.some((r) => r[1] === 13 && r.length === 8), "desk books and returners on the wire");
+  // patience: nobody greets them, they leave angry
+  for (const e of books(c, 14)) c.ents.splice(c.ents.indexOf(e), 1);
+  const angry0 = c.angry; c.score = 50; at(a, 100, 100);
+  step(w, LB.patience + 1000);
+  assert.ok(c.angry > angry0 && !c.ents.some((e) => e.id === 990), "a returner left waiting goes home angry");
+  // the rack swaps roles with empty hands
+  qb.hold = []; atTile(b, RACKL); step(w, 300); act(w, "c1", { t: "coop_act" });
+  assert.equal(qb.tool, "desk");
+}
+
+/**
+ * Library bots: the first worker takes the desk, everyone else sorts (a third/fourth swaps at the rack first). Sorters fill their
+ * hands at the 반납대 (up to 3 while books are there) and walk each book to its shelf; `miss` of the time a realistic bot walks to
+ * a wrong shelf, puts the book in, then pulls it back out.
+ */
+function libBot(w, MS = 300, spdK = 1, miss = 0) {
+  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), target = {};
+  let seed = 12345;
+  const rnd = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 4294967296;
+  step(w, X.COOP_T.briefMs + 100);
+  while (c.state !== "end") {
+    w.pids.forEach((pid, i) => {
+      const o = S.players[pid], q = c.pl[pid], go = (t) => W.go(o, t, MS * spdK), act = () => act0(w, pid), role = i === 0 ? "desk" : "sort";
+      if (!o || o.map !== dim.id) return;
+      if (q.tool !== role) { if (go(RACKL)) act(); return; }
+      if (q.tool === "desk") { if (go(DESKN)) act(); return; }
+      const onDesk = books(c, 14).length, g = target[pid];
+      // on the way to a shelf (or back at one to pull a wrong book out): go on until it is done
+      if (g !== undefined) { if (go(spot(g))) { const k = q.hold.length; act(); if (!c.ents.some((e) => e.t === 15 && e.sh === g) || (q.hold.length === k && k >= LB.carry)) target[pid] = undefined; } return; }
+      if (q.hold.length < LB.carry && onDesk && (!q.hold.length || W.steps(o, DESKS) === 0)) { if (go(DESKS)) act(); return; }
+      if (!q.hold.length) { go(DESKS); return; }
+      const m = (q.hold[0].g + 1 + Math.floor(rnd() * 7)) % 8;
+      target[pid] = rnd() < miss && !c.ents.some((e) => e.t === 15 && e.sh === m) ? m : q.hold[0].g;
+    });
+    if (VERBOSE && miss && w.now % 30000 < MS) log("  t", Math.round((w.now - c.runAt) / 1000), "queue", books(c, 13).length, "desk", books(c, 14).length, "marks", books(c, 15).map((e) => e.sh).join(""), "held", w.pids.map((pid) => c.pl[pid].tool[0] + c.pl[pid].hold.map((b) => b.g).join("") + ":" + target[pid] + "@" + W.tileOf(S.players[pid])).join(" "));
+    step(w, MS);
+  }
+  return c;
+}
+
+// ── walking bots 2–4 (hard): quick and accurate just over S; realistic (every 400 ms, walking at 90 %, 8 % wrong shelves) B–A
+for (const n of [2, 3, 4]) {
+  const w = lworld(n); act(w, "c0", { t: "coop_start", k: "lib" });
+  const c = libBot(w);
+  log(`lib ${n}: score`, Math.round(c.score), "grade", X.coopGrade(c), "cuts", [0, 1, 2, 3].map((i) => X.coopCut(c, i)), "shelved", c.shelved, "angry", c.angry, "wrong", c.wrongN);
+  if (!TUNE) assert.ok(X.coopGrade(c) === 4 && c.score < X.coopCut(c, 3) * 1.2, `${n} quick bots just over S: ${Math.round(c.score)} vs ${X.coopCut(c, 3)}`);
+  const w2 = lworld(n); act(w2, "c0", { t: "coop_start", k: "lib" });
+  const c2 = libBot(w2, 400, 0.9, 0.08);
+  log(`lib ${n} realistic: score`, Math.round(c2.score), "grade", X.coopGrade(c2), "shelved", c2.shelved, "angry", c2.angry, "wrong", c2.wrongN);
+  if (!TUNE) assert.ok(X.coopGrade(c2) >= 2 && X.coopGrade(c2) <= 3, `${n} realistic bots land B–A: ${Math.round(c2.score)}`);
+  if (n === 2 && !TUNE) {
+    // paid once a day; an S earns 서고의 달인 and its 책가방
+    const p = w.S.players.c0;
+    assert.ok(p.ch.coopDone.includes("lib") && p.ch.cnt.coopS_lib === 1 && p.ch.ach.includes("coopS_lib"), "S: the achievement");
+  }
+}
 
 console.log("coop: ok");
