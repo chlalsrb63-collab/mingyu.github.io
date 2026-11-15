@@ -864,4 +864,19 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.ok(kinds.has("dagger") && kinds.size >= 4, "weapons of many kinds drop: " + [...kinds]);
 }
 
+{
+  // sheet v16 joins two v15 shapes: main's (rift tiers, no job level) and codex/hammer's (job level, the old rift record)
+  const job = Object.keys(D.jobs).find((k) => k !== "adventurer");
+  const S = L.setup(); S.now = 1_000_000;
+  const mainV15 = L.newChar("본판열다섯", []); mainV15.v = 15; mainV15.job = job; delete mainV15.jp;
+  const codexV15 = L.newChar("망치열다섯", []); codexV15.v = 15; codexV15.job = job; codexV15.jp = { lv: 12, xp: 3 }; codexV15.dim = { day: 20000, n: 2 };
+  L.addPlayer(S, "m15", mainV15); L.addPlayer(S, "c15", codexV15);
+  const a = S.players.m15.ch, b = S.players.c15.ch;
+  assert.deepEqual([a.v, b.v], [16, 16]);
+  assert.deepEqual(a.jp, { lv: 5, xp: 0 }, "a changed job without a job level starts at the signature level");
+  assert.deepEqual(b.jp, { lv: 12, xp: 3 }, "a job level survives");
+  assert.deepEqual(b.dim, { day: 20000, n: 2, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0 }, "the old rift record gains the tier ladder");
+  assert.deepEqual(a.dim, L.newChar("새", []).dim);
+}
+
 console.log("jobs ok");
