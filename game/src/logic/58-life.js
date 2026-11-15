@@ -589,6 +589,7 @@ function jbPay(S, p) {
     // a village chore's produce (P8): one, two from 보통 up
     const gift = t.kind === "chore" && CHORES[t.job].gift;
     if (gift && addItem(ch, gift, g ? 2 : 1)) p.gain.push(["item", gift, g ? 2 : 1, 0]);
+    if (t.kind === "chore") ch.cnt.chore++;
     fast = rush > 0 && now <= a.expAt;
     if (fast) gold = Math.round(gold * JB_RUSH.bonus);
     addRep(S, p, t.npc, Math.round(JB_PAY.rep * k));

@@ -42,7 +42,8 @@ for (const id of ids) {
   const c = D.cos[id];
   assert.equal(D.cosN[c.n], id, "a code maps back to its id");
   assert.ok(c.name && c.desc && c.q >= 0 && c.q <= 4, id + " has a name, a description and a rarity");
-  assert.ok(["shop", "token", "chest", "boss", "rareBoss", "daily", "rift", "ach", "quest", "weekly"].includes(c.src), id + " comes from somewhere");
+  assert.ok(["shop", "token", "chest", "boss", "rareBoss", "daily", "rift", "ach", "quest", "weekly", "sew"].includes(c.src), id + " comes from somewhere");
+  if (c.src === "sew") assert.ok(Object.values(D.keepSew).includes(id), id + " is sewn from a real keepsake");
   assert.ok(c.set === "" || D.cosSets[c.set], id + " is in a real set, or in none");
   if (c.src === "shop" || c.src === "token") assert.ok(c.price > 0, id + " has a price");
   if (c.src === "ach") assert.ok(D.achievements.some((a) => a.id === c.ach), id + " is earned by a real achievement");
@@ -73,7 +74,11 @@ for (const k of D.life.keys) assert.equal(achCos("life50_" + k).length, 1, "a ma
 const repAch = D.achievements.filter((a) => a.id.startsWith("rep_")).map((a) => a.id);
 assert.ok(repAch.length >= 5);
 for (const a of repAch) assert.equal(achCos(a).length, 1, "a 가족 gift for " + a);
-assert.equal(new Set(ids.filter((id) => D.cos[id].ach).map((id) => D.cos[id].ach)).size, ids.filter((id) => D.cos[id].ach).length, "one cosmetic per achievement");
+// an achievement may pay several pieces, all of one set (P10: 협동 알바 왕's three)
+for (const a of new Set(ids.map((id) => D.cos[id].ach).filter(Boolean))) {
+  const of = achCos(a);
+  assert.ok(of.length === 1 || (of[0] && D.cos[of[0]].set && of.every((id) => D.cos[id].set === D.cos[of[0]].set)), a + " pays one piece, or pieces of one set");
+}
 assert.ok(shopNpc, "the costume shop stands in town");
 assert.ok(town.npcs.every((n) => n === shopNpc || Math.hypot(n.x - shopNpc.x, n.y - shopNpc.y) >= 3), "with room around it");
 assert.equal(town.o[shopNpc.y][shopNpc.x], " ", "on open ground");
@@ -423,6 +428,56 @@ for (const [kind, designs] of Object.entries(SIL)) {
   assert.ok(ch.cos.own.includes("hat_halo") && ch.keep.kp_bell, "sewn; the keepsake stays");
   assert.equal(sew("kp_bell").error, "이미 지어 받은 외형입니다");
   D.keepSew.kp_bell = was;
+}
+
+// ── P10 sets: 버드나무 마을, 협동 알바 왕, 낚시 기록가 — each piece's source pays it
+{
+  const X = (await import("data:text/javascript;base64," + Buffer.from(readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") + "\nexport const __t = { checkAch, addRep, FISH_CM };\n").toString("base64"))).__t;
+  const W = world("마을옷");
+  const p = W.S.players.A, ch = p.ch;
+  W.step();
+  const has = (...l) => l.every((id) => ch.cos.own.includes(id));
+  for (const [set, n] of [["willow", 4], ["coopking", 3], ["fishlog", 3]]) assert.equal(ids.filter((id) => D.cos[id].set === set).length, n, set + " pieces");
+  // the A1 keepsake: 루루 sews the straw bonnet
+  assert.equal(D.keepSew.kp_willow_key, "hat_willow_straw");
+  W.to("A", shopNpc.x, shopNpc.y + 1);
+  ch.keep.kp_willow_key = 1;
+  assert.ok(W.act({ t: "cos_sew", k: "kp_willow_key" }).ok && has("hat_willow_straw"), "the willow key sews into the 밀짚 두건");
+  assert.ok(!W.act({ t: "cos_buy", id: "hat_willow_straw" }).ok, "not for sale");
+  // a hundred chores: the basket and the blush together
+  ch.cnt.chore = 99; X.checkAch(W.S, p);
+  assert.ok(!has("back_willow_basket"));
+  ch.cnt.chore = 100; X.checkAch(W.S, p);
+  assert.ok(has("back_willow_basket", "face_willow_blush"), "chores 100: 장바구니 + 볼터치");
+  // three 버드나무 villagers at 친구 (others do not count)
+  X.addRep(W.S, p, "willow_farmer", 30); X.addRep(W.S, p, "willow_fisher", 30); X.addRep(W.S, p, "juju", 30);
+  assert.ok(!has("top_willow_apron"), "two villagers are not enough");
+  X.addRep(W.S, p, "willow_florist", 30);
+  assert.ok(has("top_willow_apron"), "three villagers at 친구: 덧댄 앞치마");
+  // an S in every co-op shift: all three 알바 왕 pieces
+  for (const k of Object.keys(ch.cnt).filter((k) => k.startsWith("coopS_")).slice(1)) ch.cnt[k] = 1;
+  X.checkAch(W.S, p);
+  assert.ok(!has("top_coop_vest"), "one shift short");
+  for (const k of Object.keys(ch.cnt).filter((k) => k.startsWith("coopS_"))) ch.cnt[k] = 1;
+  X.checkAch(W.S, p);
+  assert.ok(has("top_coop_vest", "hat_coop_cap", "back_coop_tag") && ch.ach.includes("coopall"), "협동 알바 왕");
+  // ten species written in at 대: the sou'wester
+  const fish = Object.keys(X.FISH_CM).slice(0, 10);
+  for (const [i, id] of fish.entries()) ch.fbook[id] = [30, i < 9 ? 4 : 3];
+  X.checkAch(W.S, p);
+  assert.ok(!has("hat_fish_souwester"), "nine record-size fish are not enough");
+  ch.fbook[fish[9]][1] = 4; X.checkAch(W.S, p);
+  assert.ok(has("hat_fish_souwester"), "ten record-size fish: 어부 방수모");
+  // all five pieces wear together, dyed by their trim
+  for (const id of ["hat_willow_straw", "top_willow_apron", "back_willow_basket", "face_willow_blush"]) assert.ok(W.act({ t: "cos_eq", id }).ok, id);
+  for (const id of ids.filter((id) => ["willow", "coopking", "fishlog"].includes(D.cos[id].set))) assert.ok("b" in ART[id][2] || ART[id][0] === "face", id + " has a trim to dye");
+  // an old sheet that finished the fish book before the set: the raincoat and the scroll catch up; its chore count starts at 0
+  const old = JSON.parse(JSON.stringify(L.exportChar(W.S, "A")));
+  old.cos = { own: [], on: {} }; old.ach = ["fbook"]; delete old.cnt.chore;
+  const q = W.join("B", "", "warrior", old);
+  assert.ok(q.ch.cos.own.includes("top_fish_raincoat") && q.ch.cos.own.includes("back_fish_scroll"), "fbook pays the raincoat and the scroll");
+  assert.equal(q.ch.cnt.chore, 0, "old sheets start with no chores counted");
+  assert.equal(L.newChar("새내기", "warrior", []).cnt.chore, 0);
 }
 
 console.log("wardrobe: ok —", ids.length, "cosmetics,", Object.keys(D.wkinds).length * 5, "weapon designs,", MOTIFS.length, "motifs");

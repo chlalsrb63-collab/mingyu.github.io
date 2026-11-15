@@ -179,14 +179,18 @@ const ACH = [
   ["coopS_forge", "생활", "단조의 달인", "캉캉대장간 단조 S 등급", 20, (c) => c.cnt.coopS_forge >= 1, "단조의 달인"],
   ["coopS_alch", "생활", "가마의 달인", "보글연금공방 가마 S 등급", 20, (c) => c.cnt.coopS_alch >= 1, "가마의 달인"],
   ["coopS_lib", "생활", "서고의 달인", "올빼미 도서관 책 분류 S 등급", 20, (c) => c.cnt.coopS_lib >= 1, "서고의 달인"],
+  ["coopall", "생활", "협동 알바 왕", "모든 협동 알바에서 S 등급", 40, (c) => CNT_KEYS.every((k) => !k.startsWith("coopS_") || c.cnt[k] >= 1), "협동 알바 왕"],
   ["coop20", "생활", "단골 알바생", "협동 알바 20번 완수", 30, (c) => c.cnt.coop >= 20, "단골 알바생"],
   ...LIFE.map((k, i) => [`life50_${k}`, "생활", LIFE_MASTER[i], `${LIFE_NAME[i]} Lv.50 달성`, 30, (c) => !!c.life && c.life[k].lv >= LIFE_MAX, LIFE_MASTER[i]]),
   ["gat100", "생활", "부지런한 채집꾼", "채집 100번", 5, (c) => c.cnt.gat >= 100],
   ["craft50", "생활", "솜씨 좋은 손", "제작·연금·요리 50번 성공", 10, (c) => c.cnt.craft >= 50],
   ["fbook", "생활", "물고기 박사", "물고기 도감 33칸을 모두 채우기", 20, (c) => fbookN(c) >= FISH_BOOK[FISH_BOOK.length - 1][0], "물고기 박사"],
+  ["fbig10", "생활", "월척 기록가", "물고기 10종을 대(大) 크기로 도감에 올리기", 15, (c) => Object.values(c.fbook || {}).filter((e) => e[1] & 4).length >= 10],
+  ["chore100", "생활", "버드나무 일꾼", "버드나무 마을 잡일 100번", 15, (c) => c.cnt.chore >= 100, "버드나무 일꾼"],
   ["deliver20", "생활", "믿음직한 배달부", "배달 20번 성공", 10, (c) => c.cnt.deliver >= 20],
   // trust 60 (가족) with an NPC who has perks: their title
   ...Object.keys(REP_PERK).map((id) => [`rep_${id}`, "함께", REP_PERK[id].title, `${REP_PERK[id].who}의 신뢰 ${REP_TIER[2]} (${REP_NAME[2]})`, 10, (c) => !!c.rep && (c.rep[id] | 0) >= REP_TIER[2], REP_PERK[id].title]),
+  ["repwillow", "함께", "버드나무 이웃", `버드나무 마을 이웃 셋과 ${REP_NAME[1]} (신뢰 ${REP_TIER[1]})`, 10, (c) => !!c.rep && Object.keys(c.rep).filter((id) => id.startsWith("willow_") && c.rep[id] >= REP_TIER[1]).length >= 3],
   ["leg", "장비", "첫 전설", "전설 장비 획득", 10, (c) => c.cnt.leg >= 1],
   ["set", "장비", "세트 수집가", "세트 장비 획득", 10, (c) => c.cnt.set >= 1],
   ["enh7", "장비", "강화의 손길", "장비 +7 강화 성공", 10, (c) => c.cnt.enh >= 7],
@@ -233,7 +237,7 @@ function checkAch(S, p) {
     ch.ach.push(a.id);
     toast(p, `업적 달성: [${a.name}] +${a.pts}점${a.title ? ` — 칭호 「${a.title}」 획득` : ""}`);
     S.maps[p.map].ev.push(["ac", p.eid, a.id]);
-    if (COS_ACH[a.id]) giveCos(S, p, COS_ACH[a.id], `업적 [${a.name}]`);
+    for (const id of COS_ACH[a.id] || []) giveCos(S, p, id, `업적 [${a.name}]`);
     if (a.pts >= 30) sys(S, `${ch.name}님이 업적 [${a.name}]${pp(a.name, "을를")} 달성했습니다!`);
     if (SERVER_FIRST.includes(a.id)) (S.firsts || (S.firsts = [])).push([ch.name, a.id]);
     p.dirty = true;

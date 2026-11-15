@@ -267,7 +267,9 @@ const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest"
   // top of a boss's damage ranking (50 dmgBoard; added 2026-11-15, old sheets start at 0)
   "mvp",
   // co-op part-time shifts finished (68-coop.js coopPay) and S grades per job (added 2026-11-15, old sheets start at 0)
-  "coop", "coopS_apt", "coopS_diner", "coopS_forge", "coopS_alch", "coopS_lib"];
+  "coop", "coopS_apt", "coopS_diner", "coopS_forge", "coopS_alch", "coopS_lib",
+  // 버드나무 마을 chores handed in (58-life.js jbPay; added 2026-11-16, old sheets start at 0)
+  "chore"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {

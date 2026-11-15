@@ -7776,7 +7776,9 @@ const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest"
   // top of a boss's damage ranking (50 dmgBoard; added 2026-11-15, old sheets start at 0)
   "mvp",
   // co-op part-time shifts finished (68-coop.js coopPay) and S grades per job (added 2026-11-15, old sheets start at 0)
-  "coop", "coopS_apt", "coopS_diner", "coopS_forge", "coopS_alch", "coopS_lib"];
+  "coop", "coopS_apt", "coopS_diner", "coopS_forge", "coopS_alch", "coopS_lib",
+  // 버드나무 마을 chores handed in (58-life.js jbPay; added 2026-11-16, old sheets start at 0)
+  "chore"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {
@@ -11951,6 +11953,7 @@ function jbPay(S, p) {
     // a village chore's produce (P8): one, two from 보통 up
     const gift = t.kind === "chore" && CHORES[t.job].gift;
     if (gift && addItem(ch, gift, g ? 2 : 1)) p.gain.push(["item", gift, g ? 2 : 1, 0]);
+    if (t.kind === "chore") ch.cnt.chore++;
     fast = rush > 0 && now <= a.expAt;
     if (fast) gold = Math.round(gold * JB_RUSH.bonus);
     addRep(S, p, t.npc, Math.round(JB_PAY.rep * k));
@@ -12654,14 +12657,18 @@ const ACH = [
   ["coopS_forge", "생활", "단조의 달인", "캉캉대장간 단조 S 등급", 20, (c) => c.cnt.coopS_forge >= 1, "단조의 달인"],
   ["coopS_alch", "생활", "가마의 달인", "보글연금공방 가마 S 등급", 20, (c) => c.cnt.coopS_alch >= 1, "가마의 달인"],
   ["coopS_lib", "생활", "서고의 달인", "올빼미 도서관 책 분류 S 등급", 20, (c) => c.cnt.coopS_lib >= 1, "서고의 달인"],
+  ["coopall", "생활", "협동 알바 왕", "모든 협동 알바에서 S 등급", 40, (c) => CNT_KEYS.every((k) => !k.startsWith("coopS_") || c.cnt[k] >= 1), "협동 알바 왕"],
   ["coop20", "생활", "단골 알바생", "협동 알바 20번 완수", 30, (c) => c.cnt.coop >= 20, "단골 알바생"],
   ...LIFE.map((k, i) => [`life50_${k}`, "생활", LIFE_MASTER[i], `${LIFE_NAME[i]} Lv.50 달성`, 30, (c) => !!c.life && c.life[k].lv >= LIFE_MAX, LIFE_MASTER[i]]),
   ["gat100", "생활", "부지런한 채집꾼", "채집 100번", 5, (c) => c.cnt.gat >= 100],
   ["craft50", "생활", "솜씨 좋은 손", "제작·연금·요리 50번 성공", 10, (c) => c.cnt.craft >= 50],
   ["fbook", "생활", "물고기 박사", "물고기 도감 33칸을 모두 채우기", 20, (c) => fbookN(c) >= FISH_BOOK[FISH_BOOK.length - 1][0], "물고기 박사"],
+  ["fbig10", "생활", "월척 기록가", "물고기 10종을 대(大) 크기로 도감에 올리기", 15, (c) => Object.values(c.fbook || {}).filter((e) => e[1] & 4).length >= 10],
+  ["chore100", "생활", "버드나무 일꾼", "버드나무 마을 잡일 100번", 15, (c) => c.cnt.chore >= 100, "버드나무 일꾼"],
   ["deliver20", "생활", "믿음직한 배달부", "배달 20번 성공", 10, (c) => c.cnt.deliver >= 20],
   // trust 60 (가족) with an NPC who has perks: their title
   ...Object.keys(REP_PERK).map((id) => [`rep_${id}`, "함께", REP_PERK[id].title, `${REP_PERK[id].who}의 신뢰 ${REP_TIER[2]} (${REP_NAME[2]})`, 10, (c) => !!c.rep && (c.rep[id] | 0) >= REP_TIER[2], REP_PERK[id].title]),
+  ["repwillow", "함께", "버드나무 이웃", `버드나무 마을 이웃 셋과 ${REP_NAME[1]} (신뢰 ${REP_TIER[1]})`, 10, (c) => !!c.rep && Object.keys(c.rep).filter((id) => id.startsWith("willow_") && c.rep[id] >= REP_TIER[1]).length >= 3],
   ["leg", "장비", "첫 전설", "전설 장비 획득", 10, (c) => c.cnt.leg >= 1],
   ["set", "장비", "세트 수집가", "세트 장비 획득", 10, (c) => c.cnt.set >= 1],
   ["enh7", "장비", "강화의 손길", "장비 +7 강화 성공", 10, (c) => c.cnt.enh >= 7],
@@ -12708,7 +12715,7 @@ function checkAch(S, p) {
     ch.ach.push(a.id);
     toast(p, `업적 달성: [${a.name}] +${a.pts}점${a.title ? ` — 칭호 「${a.title}」 획득` : ""}`);
     S.maps[p.map].ev.push(["ac", p.eid, a.id]);
-    if (COS_ACH[a.id]) giveCos(S, p, COS_ACH[a.id], `업적 [${a.name}]`);
+    for (const id of COS_ACH[a.id] || []) giveCos(S, p, id, `업적 [${a.name}]`);
     if (a.pts >= 30) sys(S, `${ch.name}님이 업적 [${a.name}]${pp(a.name, "을를")} 달성했습니다!`);
     if (SERVER_FIRST.includes(a.id)) (S.firsts || (S.firsts = [])).push([ch.name, a.id]);
     p.dirty = true;
@@ -15377,7 +15384,8 @@ const COS_SLOT_NAME = { hat: "모자", top: "상의", back: "등", face: "얼굴
  * id → [wire code, slot, name, rarity 0–4, source, price or achievement id, description].
  * Sources: shop (sold for `price` gold), token (Willow tokens), chest, boss, rareBoss, daily, rift, ach (earned with achievement `price`: the
  * Lv-50 life masters' outfits and the NPCs' 가족 gifts are these), quest (a chance on every quest hand-in) and weekly
- * (a chance with a boss challenge's weekly big reward). An optional ninth field is the themed set (COS_SETS).
+ * (a chance with a boss challenge's weekly big reward) and sew (루루 sews a story keepsake, KEEP_SEW). An optional ninth
+ * field is the themed set (COS_SETS). One achievement may pay several pieces of one set (COS_ACH).
  * Codes are what the wire carries: never reuse or renumber one.
  */
 const COSMETICS = Object.fromEntries([
@@ -15523,12 +15531,28 @@ const COSMETICS = Object.fromEntries([
   // 백자 청화 어전무구: one skin, drawn per weapon kind by public/weapons_porcelain.js
   ["ws_porcelain", 129, "wskin", "백자 청화 무기 외형", 2, "shop", 8000, "백자 유약에 청화 구름문과 주사 인장을 새긴 어전 무구. 어떤 무기든 도자기처럼 빚어낸다."],
   ["face_maple_glasses", 128, "face", "호박색 사각테 안경", 1, "token", 12, "호박색 두꺼운 테와 솔빛 연결쇠. 산길 지도를 펼칠 때 쓴다.", "mapleramblers"],
+  // 버드나무 마을 (P10): the A1 keepsake sewn by 루루, three villagers' trust, a hundred chores
+  ["hat_willow_straw", 131, "hat", "밀짚 두건", 2, "sew", 0, "도란이 엮은 밀짚 두건. 콩알이 버들잎 핀을 꽂아 줬다.", "willow"],
+  ["top_willow_apron", 132, "top", "덧댄 앞치마", 1, "ach", "repwillow", "이웃들이 한 조각씩 덧대 준 앞치마. 주머니 바늘땀이 삐뚤빼뚤하다.", "willow"],
+  ["back_willow_basket", 133, "back", "장바구니", 1, "ach", "chore100", "버드나무 마을 심부름 백 번의 증표. 빵 한 덩이와 대파가 삐죽.", "willow"],
+  ["face_willow_blush", 134, "face", "볼터치", 0, "ach", "chore100", "햇볕 아래 부지런히 뛰어다닌 볼. 발그레하다.", "willow"],
+  // 협동 알바 왕 (P10): an S grade in every co-op shift
+  ["top_coop_vest", 135, "top", "알바 왕 조끼", 2, "ach", "coopall", "줄무늬 작업 조끼. 가슴 주머니에 볼펜 두 자루.", "coopking"],
+  ["hat_coop_cap", 136, "hat", "알바 왕 모자", 2, "ach", "coopall", "앞에 작은 왕관 배지를 단 작업 모자.", "coopking"],
+  ["back_coop_tag", 137, "back", "알바 왕 명찰", 2, "ach", "coopall", "목에 거는 금테 명찰. 이름 칸에는 「왕」 한 글자.", "coopking"],
+  // 낚시 기록가 (P10): the whole fish book, and ten record-size fish
+  ["hat_fish_souwester", 138, "hat", "어부 방수모", 1, "ach", "fbig10", "뒤챙이 긴 노란 방수모. 빗물이 목으로 흐르지 않는다.", "fishlog"],
+  ["top_fish_raincoat", 139, "top", "기록가 비옷", 2, "ach", "fbook", "솔기마다 박음질한 노란 비옷. 단추는 나무 찌.", "fishlog"],
+  ["back_fish_scroll", 140, "back", "어탁 두루마리", 2, "ach", "fbook", "가장 큰 물고기를 먹으로 떠 낸 두루마리. 등에 비스듬히 멘다.", "fishlog"],
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" || src === "token" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
-const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근", coop: "협동 알바", willowpatrol: "버들 순찰대", coraltrade: "산호 항구 상단", brasssurvey: "황동 탐사대", moonarchive: "달빛 기록원", mapleramblers: "단풍길 탐험대" };
+const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근", coop: "협동 알바", willowpatrol: "버들 순찰대", coraltrade: "산호 항구 상단", brasssurvey: "황동 탐사대", moonarchive: "달빛 기록원", mapleramblers: "단풍길 탐험대",
+  willow: "버드나무 마을", coopking: "협동 알바 왕", fishlog: "낚시 기록가" };
 const COS_IDS = Object.keys(COSMETICS);
 const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
-const COS_ACH = Object.fromEntries(COS_IDS.filter((id) => COSMETICS[id].ach).map((id) => [COSMETICS[id].ach, id]));
+/** achievement id → the cosmetic ids it pays. */
+const COS_ACH = {};
+for (const id of COS_IDS) if (COSMETICS[id].ach) (COS_ACH[COSMETICS[id].ach] ||= []).push(id);
 /** The chance a looted chest, or a downed field boss or guardian, holds a cosmetic. */
 const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_RIFT_TOP3 = 0.3, COS_WEEKLY = 0.35, COS_QUEST = 0.12;
 const COS_RARE_BOSS = 0.005, COS_TOKEN_MAX = 9999;
@@ -15552,13 +15576,13 @@ function cosDyeClean(d, ch) {
  * 기념품 재봉 (P9): 루루 sews a story keepsake into its outfit piece; the keepsake stays in ch.keep.
  * Hook: "" means its piece is not drawn yet (P11, 이야기 기념품 set) — put a COSMETICS id here once it is.
  */
-const KEEP_SEW = { kp_reed_float: "", kp_willow_key: "", kp_neon_lamp: "", kp_compass: "", kp_bell: "", kp_quill: "", kp_shardjar: "" };
+const KEEP_SEW = { kp_reed_float: "", kp_willow_key: "hat_willow_straw", kp_neon_lamp: "", kp_compass: "", kp_bell: "", kp_quill: "", kp_shardjar: "" };
 const cosEmpty = () => ({ own: [], on: {}, tokens: 0 });
 function cosClean(c, ch) {
   const src = isObj(c) ? c : {};
   const own = [...new Set((Array.isArray(src.own) ? src.own : []).filter((id) => typeof id === "string" && Object.hasOwn(COSMETICS, id)))];
   // what was earned through an achievement before the wardrobe existed comes along
-  for (const id of ch.ach || []) if (COS_ACH[id] && !own.includes(COS_ACH[id])) own.push(COS_ACH[id]);
+  for (const a of ch.ach || []) for (const id of COS_ACH[a] || []) if (!own.includes(id)) own.push(id);
   const on = {};
   const was = isObj(src.on) ? src.on : {};
   for (const s of COS_SLOTS) if (typeof was[s] === "string" && own.includes(was[s]) && COSMETICS[was[s]].slot === s) on[s] = was[s];
