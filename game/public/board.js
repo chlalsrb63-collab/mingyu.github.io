@@ -23,6 +23,7 @@ import { countItem } from "./actions.js";
 import { iconImg } from "./uiicons.js";
 import * as Info from "./infocard.js";
 import { floatText } from "./events.js";
+import * as Track from "./track.js";
 
 /** The map each 알바 NPC stands on (static NPCs of the town, its interiors and 버드나무 마을). */
 const HOME = {
@@ -175,15 +176,30 @@ export function render(s) {
     else if (mine) card.append(el("small", "ok", "맡은 알바입니다"));
     else {
       const why = a ? "이미 맡은 알바가 있습니다" : done.length >= per ? `알바는 하루에 ${per}개까지입니다` : !near ? "포포나 마을 알바 게시판 곁에서 맡을 수 있습니다" : "";
-      const btns = el("div", "btns"), b = el("button", "btn gold", "맡기");
+      const btns = el("div", "btns"), b = el("button", "btn gold", "수락");
       b.disabled = !!why;
       if (why) b.title = why;
       b.addEventListener("click", () => { act({ t: "jb", a: "take", id }); Sound.play("ui"); });
       btns.append(b);
       if (why) btns.append(el("small", "why", why));
+      // away from the board: [추적] walks to 포포 to take it (track.js)
+      const go = !near && !a && Track.button("popo", "알바 중개인 포포");
+      if (go) btns.append(go);
       card.append(btns);
     }
     box.append(card);
+  }
+  // the co-op shifts: each owner's lobby, with a [추적] to it (coop.js runs the shift itself)
+  const coop = Object.entries((G.defs.coop && G.defs.coop.jobs) || {});
+  if (coop.length) {
+    box.append(el("div", "section", "협동 알바"));
+    for (const [k, j] of coop) {
+      const row = el("div", "trk-row");
+      row.append(el("small", "", `${j[0]} · ${npcLabel(j[4]) === j[4] ? "" : npcLabel(j[4]) + " · "}${placeOf(j[4]) || mapName(j[5])}`));
+      const b = Track.button(`coop:${k}`, j[0]);
+      if (b) row.append(b);
+      box.append(row);
+    }
   }
   const extra = done.filter((id) => !offers.some((o) => o[0] === id));
   if (extra.length) {
@@ -214,6 +230,8 @@ function jobCard(s, a, full) {
     b.title = "맡은 알바를 내려놓습니다 (오늘 횟수에 들지 않습니다)";
     b.addEventListener("click", () => { act({ t: "jb", a: "drop" }); Sound.play("close"); });
     btns.append(b);
+    const go = Track.button("job", "맡은 알바");
+    if (go) btns.append(go);
     card.append(btns);
   }
   return card;
@@ -309,6 +327,27 @@ export function trackRows(s, qt, goal) {
   if (pr) qt.append(goal(pr[0], pr[1], pr[2], `${npcLabel(nx.npc)}에게 ${a.t.item ? "전하기" : "보고하기"}`));
   qt.append(el("div", "qp", `→ ${npcLabel(nx.npc)}${a.t.kind === "deliver" ? `에게 ${nx.verb}` : ""} · ${placeOf(nx.npc)}`));
   return true;
+}
+/**
+ * Where the job in hand wants me now (track.js targets): the hunt's monster or the scout's map until done, a chore's
+ * well (an empty can) or nearest spot left, else the NPC of its next step (pick up, hand over, report).
+ */
+export function trackTarget(s) {
+  const a = active(s);
+  if (!a) return null;
+  const nx = nextStep(a), who = { k: "npc", id: nx.npc, name: npcLabel(nx.npc) };
+  if (a.t.kind === "hunt" && a.got < a.n) return { k: "mob", id: a.t.mob };
+  if (a.t.kind === "scout" && a.got < 1) return { k: "map", id: a.t.map[Math.min(gradeOf(s, a.id), a.t.map.length - 1)] };
+  const c = chOf(a);
+  if (!c || a.got >= a.n || (c.src === "npc" && !a.fill)) return who;
+  const m = D().chore.map, here = G.map && G.map.id === m;
+  if (c.src === "water" && !a.fill && here) {
+    const w = (G.map.big || []).filter((b) => b.t === "prop" && b.k === "well").sort((p, q) => dist(G.me.x, G.me.y, p.x * T, p.y * T) - dist(G.me.x, G.me.y, q.x * T, q.y * T))[0];
+    if (w) return { k: "spot", map: m, x: w.x, y: w.y + 1, name: "우물" };
+  }
+  const left = (a.spots || []).filter((p) => !p[2]);
+  if (here) left.sort((p, q) => dist(G.me.x, G.me.y, p[0] * T, p[1] * T) - dist(G.me.x, G.me.y, q[0] * T, q[1] * T));
+  return left.length ? { k: "spot", map: m, x: left[0][0], y: left[0][1], name: c.spot } : who;
 }
 
 // ───────────────────────────── the parcel ─────────────────────────────

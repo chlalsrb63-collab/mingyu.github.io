@@ -24,6 +24,7 @@ import { openWin, isOpen, hoverTip, hideTip } from "./windows.js";
 import { iconImg } from "./uiicons.js";
 import { refreshUi } from "./hud.js";
 import { floatText } from "./events.js";
+import * as Track from "./track.js";
 
 const ST_NAME = { str: "힘", wil: "의지", dex: "민첩", int: "지능", wis: "지혜", luk: "행운" };
 const ST_KEYS = ["str", "wil", "dex", "int", "wis", "luk"];
@@ -484,6 +485,8 @@ export function renderJuana(s) {
       if (!done) btns.append(el("small", "", "내 수준에 맞는 사냥터의 몬스터만 셉니다"));
       else if (far) btns.append(el("small", "why", far));
     }
+    const go = Track.button("charm", def.title);   // the hunt: a ground for my level (track.js)
+    if (go) btns.append(go);
     card.append(btns);
     box.append(card);
   }

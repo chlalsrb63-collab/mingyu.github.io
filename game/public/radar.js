@@ -176,8 +176,8 @@ export function loadMap(m) {
   for (const p of m.portals || []) {
     const q = portals.find((o) => o.to === p.to && Math.abs(o.x0 - p.x) <= 2 && Math.abs(o.y0 - p.y) <= 2);
     const target = labelled.find(([x, y]) => x === p.x && y === p.y)?.[2];
-    if (q) { q.sx += p.x; q.sy += p.y; q.n++; if (target) q.mapIds.push(target); }
-    else portals.push({ x0: p.x, y0: p.y, sx: p.x, sy: p.y, n: 1, to: p.to, door: !!p.door, mapIds: target ? [target] : [] });
+    if (q) { q.sx += p.x; q.sy += p.y; q.n++; q.tiles.push([p.x, p.y]); if (target) q.mapIds.push(target); }
+    else portals.push({ x0: p.x, y0: p.y, sx: p.x, sy: p.y, n: 1, to: p.to, door: !!p.door, mapIds: target ? [target] : [], tiles: [[p.x, p.y]] });
   }
   for (const p of portals) { p.x = p.sx / p.n; p.y = p.sy / p.n; }
   const shrines = [];
@@ -408,6 +408,15 @@ function refreshResidents() {
   if (!NPC.needsWhere()) return;
   NPC.markWhereAsked();
   D.act({ t: "nw" });
+}
+
+/** The door group of this map (its `tiles`) on the shortest level-allowed route toward map `target`, or null (track.js). */
+export function gateToward(target) {
+  if (!M || !D || !D.G.map || M.m.id !== D.G.map.id) return null;
+  const chart = currentChart(), level = D.G.self?.lvl || 1, me = D.G.me;
+  const route = shortestRoute(chart.graph, M.m.id, target, (id) => level >= (chart.nodes.get(id).d.minLv || 1));
+  const next = route.length > 1 && chart.nodes.get(route[1])?.d;
+  return next ? nextGate(M.portals, next, me.x / T, me.y / T) : null;
 }
 
 function residentPoint(id) {

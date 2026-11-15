@@ -58,6 +58,16 @@ Moved out of `AGENTS.md`; read the one recipe your task needs.
 3. `npm run data:check`, then `npm run test:rules` (rebuilds logic.js; commit data + logic.js together).
    Playtest: `npm run dev:local`, open `http://localhost:8787/?dev=1&map=<id>&x=<tx>&y=<ty>`.
 
+**추적 / 자동 이동 (track an objective) and the dialogue keys**
+- A new kind of objective: a key in `public/track.js getter` returning a target — `{k:"npc", id}` (map from
+  `defs.npcMap` / the life schedule), `{k:"mob", id}` (fewest doors to a ground listing it in `defs.maps[].mobs`/`bosses`,
+  stops ~6 tiles from the pack), `{k:"map", id}`, `{k:"fit"}` (ground for my level), `{k:"spot", map, x, y}` — then put
+  `Track.button(key, label)` where the objective is listed. The getter is read again at every leg (progress moves it on).
+- Walking is plain `G.path` (server-checked steps); other maps go door by door (`radar.js gateToward` → `walkToDoor`).
+- Keys (`keymap.js`): `track` Shift+G; `talkNext` F / `talkEnd` C live in their own "대화" namespace, read only while
+  `#w-talk` is open (`actions.js talkKey`: next line → on the last one its gold button or close), so they share keys
+  with interact / the character window. Test: `tests/worldmap.mjs` (every objective NPC on a reachable map).
+
 **Add a sound / music**
 - Effect: a function in `public/audio.js SFX` (synth: `this.tone`, `this.noise`), optional level in
   `BOOST`, rate limit in `THROTTLE`, priority in `IMPORTANT`; play with `Sound.play("name")`. Server-driven sounds are

@@ -1514,3 +1514,13 @@ body[data-lay="full"] #panel .jt-grid .jt-node img.ji { margin: 0 auto; }
 #coop-res td { padding: 0 3px; }
 #coop-res td:last-child { color: #ff9a80; }
 #coop-res .cr-cut, #coop-res .cr-note { color: #a89c80; }
+/* 추적 (track.js): the [추적] buttons and the "추적 중" line; quest and job rows keep their buttons on the right */
+.window .jb-card .btns, #w-talk .sq-card .btns, #w-juana .cm-quest .btns, #quest-body .qdetail .btns { justify-content: flex-end; }
+#daily-body .df .trk { margin-left: auto; }
+.window .jb-card .btns .why, #w-talk .sq-card .btns .ds, #w-juana .cm-quest .btns small, #quest-body .qdetail .btns .ds { order: -1; margin-right: auto; }
+.window .trk-row { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 3px; font: var(--t11) var(--pix); color: #cfc8b8; }
+.window .trk-row > small { margin-right: auto; }
+#quest-track .trk, #tut .trk { float: right; margin-left: 4px; padding: 0 4px; font: var(--t10)/14px var(--pix); }
+#track-ind { left: calc(var(--vpw) / 2); transform: translateX(-50%); top: calc(var(--vph) - 80px); z-index: 7; display: flex; align-items: center; gap: 8px; padding: 3px 6px 3px 12px;
+  font: var(--t12) var(--pix); color: #ffe08a; white-space: nowrap; }
+#track-ind[hidden] { display: none; }
