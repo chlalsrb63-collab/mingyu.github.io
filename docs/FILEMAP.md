@@ -218,6 +218,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `shot.mjs` [181] | Playwright preview/live captures. `--serve` serves previews, `--hour` pins the visual clock, and `--el` crops to a selector. |
 | `bake-check.mjs` [36] | Compares chunked and whole ground bakes and measures time and canvas memory. |
 | `balance-probe.mjs` [211] | Runs template characters against their level band and prints kills/min, damage and deaths, including hybrid weapon comparisons. |
+| `bench-tick.mjs` [152] | Headless 43-bot load run of the rules (town, hunting grounds, three rifts, a co-op shift): ms per `tick`/`viewFor`, snapshot bytes, heap; `--golden` hashes every snapshot, the world and every sheet so an optimisation can prove it changed nothing; `--spikes` lists the slowest ticks. Not in `tests/LIST`. |
 | `bots.mjs` [47] | Runs disposable local players at the plaza fire for browser shots. |
 | `artkit.mjs` [183] | Shared browser launch, static serving and PNG I/O for art tools. |
 | `export-art.mjs` [150] | Exports code-drawn art into `asset/_export/`. |
