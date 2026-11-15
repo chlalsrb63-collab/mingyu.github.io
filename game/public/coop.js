@@ -7,7 +7,8 @@
  *   button) send `coop_act`; [그만두기] `coop_leave`.
  * - Events `["cb", anvil id, ms to the first beat, beat ms]` (the forge's beat ring) and `["cj", code, x, y, a]`: 4 sweep · 5 burn · 6 bin pick · 14 fever · 15 complaint · 18 spread · 19 lift ·
  *   20 tied · 21 the end · 22 recycle · 23 tool swap · diner 30 off the stove · 31 on the stove · 32 angry · 33 burnt ·
- *   34 chop · 35 plated · 36 trash · 37 from a crate · 38 served · 39 onto the tray · 40 a new order · forge 9/10/11 strike
+ *   34 chop · 35 plated · 36 trash · 37 from a crate · 38 served · 39 onto the tray · 40 a new order · 41 a plate into the sink / a scrub ·
+ *   42 washed clean · 43 a dirty plate onto the tray · forge 9/10/11 strike
  *   perfect/good/miss · 12 quench · 13 deliver · 17 pump · 50 bar from the crate · 51 into the fire · 53 hot · 54 out hot ·
  *   55 onto the anvil · 56 cooled piece taken · 57 shaped piece taken · 58 shaped · 61 late order · 62 new order · 64 cooled ·
  *   65 furnace in the band.
@@ -57,7 +58,7 @@ function setStations(k) {
   const j = D().jobs[k], sts = j && j[7];
   if (!sts) return;
   const al = k === "alch", icons = smithy(k) ? [["crate", al ? 13 : 10], ["chute", 11], ...(sts.quench || []).map((t, i) => ["quench" + i, al ? 14 : 12, t])]
-    : [["veg", 0], ["fish", 1], ["meat", 2], ["trash", 9], ...(sts.board || []).map((t, i) => ["board" + i, 8, t])];
+    : [["veg", 0], ["fish", 1], ["meat", 2], ["trash", 9], ["sink", 15], ...(sts.board || []).map((t, i) => ["board" + i, 8, t])];
   for (const [k, code, t] of icons) {
     const [tx, ty] = t || sts[k], key = "cs" + k;
     st.keys.push(key);
@@ -74,7 +75,7 @@ function setEnts(rows) {
     if (t === 8) continue;   // forge orders: on the HUD only
     if (t === 7 && row[4] === 1) st.beat[id] = [st.entsAt + row[7], row[8]];
     st.keys.push(key);
-    A.S3.props.set(key, { x, y, until: Infinity, draw(g, tt, sx, sy) { t >= 6 ? drawForge(g, tt, Math.round(sx), Math.round(sy), row) : t >= 3 ? drawDiner(g, tt, Math.round(sx), Math.round(sy), row) : drawEnt(g, tt, Math.round(sx), Math.round(sy), t, hp, id); } });
+    A.S3.props.set(key, { x, y, until: Infinity, draw(g, tt, sx, sy) { t >= 6 && t < 9 ? drawForge(g, tt, Math.round(sx), Math.round(sy), row) : t >= 3 ? drawDiner(g, tt, Math.round(sx), Math.round(sy), row) : drawEnt(g, tt, Math.round(sx), Math.round(sy), t, hp, id); } });
   }
   if (jobOf() === "diner" || smithy(jobOf())) setStations(jobOf());
   // a tool over each worker's head (a prop that follows them)
@@ -131,6 +132,7 @@ function drawIcon(g, x, y, code) {
   else if (code === 12) { px(g, x - 2, y - 3, 5, 6, "#10203a"); px(g, x - 1, y - 2, 3, 4, "#5aa0e0"); px(g, x, y - 4, 1, 1, "#10203a"); }   // 담금질 물
   else if (code === 13) { px(g, x - 4, y - 1, 9, 4, "#3a2a1a"); px(g, x - 3, y, 7, 2, "#b08a5a"); px(g, x - 3, y - 3, 2, 2, "#5ab04a"); px(g, x, y - 4, 2, 3, "#3a8a3a"); px(g, x + 2, y - 3, 2, 2, "#8fd060"); }   // 약재 바구니
   else if (code === 14) drawBrew(g, x, y + 1, 3, 4, 0);   // 병입대: an empty bottle
+  else if (code === 15) { px(g, x - 5, y - 1, 11, 5, "#1a1e28"); px(g, x - 4, y, 9, 3, "#8a9aaa"); px(g, x - 3, y, 7, 2, "#5aa0e0"); px(g, x + 2, y - 5, 2, 4, "#1a1e28"); px(g, x, y - 5, 3, 1, "#1a1e28"); px(g, x + 2, y - 4, 1, 3, "#c8d0d8"); }   // 개수대
 }
 /** 보글's brews: order colours (빨간 물약 · 파란 물약 · 엘릭서 · 묘약; −1 herbs) and the kiln's green/purple boil by heat. */
 const BREW = ["#e04848", "#4878e0", "#e8c040", "#a050d0"];
@@ -205,8 +207,14 @@ function drawDish(g, x, y, r) {
 /** What a worker holds (dish · 3 + stage): ready dishes on a plate, the rest as the raw ingredient (chopped: a knife mark). */
 function drawHeld(g, x, y, code) {
   const r = Math.floor(code / 3), stage = code % 3;
-  if (!stage) drawDish(g, x, y, r);
+  if (r === 3) drawPlate(g, x, y);
+  else if (!stage) drawDish(g, x, y, r);
   else { drawIcon(g, x, y, r); if (stage === 2) px(g, x - 3, y - 4, 1, 1, "#ffffff"); }
+}
+/** An empty dirty plate: crumbs and a smear. */
+function drawPlate(g, x, y) {
+  px(g, x - 5, y, 10, 2, "#2a2a30"); px(g, x - 4, y, 8, 1, "#d8d0c0");
+  px(g, x - 2, y, 2, 1, "#8a6a3a"); px(g, x + 2, y, 1, 1, "#6a4a2a"); px(g, x - 3, y - 1, 1, 1, "#8a6a3a");
 }
 const dsLeft = (ds) => ds * 100 - (now() - (st.entsAt || 0));
 function drawDiner(g, t, sx, sy, row) {
@@ -227,6 +235,13 @@ function drawDiner(g, t, sx, sy, row) {
     else if (Math.floor(t / (toBurn < 3000 ? 150 : 400)) % 2) drawDish(g, sx, y - 6, r);
     if (toDone <= 0 && toBurn < 3000) { px(g, sx - 1, y - 12, 3, 3, "#e05040"); }
     if (Math.floor(t / 300) % 2) px(g, sx - 2 + (Math.floor(t / 600) % 3), y - 7, 1, 2, "#c8c8d0");   // steam
+  } else if (kind === 9) {
+    // a plate: the dish being eaten at the table, then dirty; at the sink a stack with the washes done as pips
+    const [, , , , eat, left, sink] = row;
+    if (!sink) { drawPlate(g, sx, sy - 14); if (dsLeft(eat) > 0) px(g, sx - 2, sy - 16, 4 - (Math.floor(t / 1500) % 3), 2, "#c89050"); return; }
+    const i = st.ents.filter((e) => e[1] === 9 && e[6]).indexOf(row), n = (D().washN || 3);
+    drawPlate(g, sx - 1, sy - 24 - i * 2);
+    if (!i) for (let k = 0; k < n; k++) px(g, sx - 4 + k * 3, sy - 30 - k, 2, 2, k < n - left ? "#a8d8ff" : "#2a2e3a");
   } else drawDish(g, sx, sy - 14, r);   // plated, on the pass
 }
 function drawTool(g, t, sx, sy, eid) {
@@ -340,11 +355,11 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 // ───────────────────────────── events, each frame ─────────────────────────────
 
 const SND = { 4: "swing", 5: "coin", 6: "pop", 14: "quest", 15: "fail", 18: "warn", 19: "hit", 20: "pop", 22: "coin", 23: "ui",
-  30: "pop", 31: "hit", 32: "fail", 33: "warn", 34: "swing", 35: "pop", 36: "ui", 37: "ui", 38: "coin", 39: "pop", 40: "ui",
+  30: "pop", 31: "hit", 32: "fail", 33: "warn", 34: "swing", 35: "pop", 36: "ui", 37: "ui", 38: "coin", 39: "pop", 40: "ui", 41: "swing", 42: "coin", 43: "pop",
   9: "hit", 10: "hit", 11: "fail", 12: "pop", 13: "coin", 17: "swing", 50: "ui", 51: "pop", 53: "craft_ok", 54: "pop", 55: "hit", 56: "ui", 57: "pop", 58: "craft_ok",
   61: "fail", 62: "ui", 64: "warn", 65: "ui" };
 const COL = { 4: "#c8a070", 5: "#ff9a40", 6: "#8fd060", 18: "#7a5a3a", 19: "#e8d070", 20: "#6a8a6a", 22: "#60c0ff",
-  32: "#e05040", 33: "#4a4a50", 34: "#8fd060", 38: "#ffd860", 12: "#a8d8ff", 13: "#ffd860", 17: "#ff9a40", 53: "#fff0a0", 58: "#ffb040" };
+  32: "#e05040", 33: "#4a4a50", 34: "#8fd060", 38: "#ffd860", 41: "#a8d8ff", 42: "#e8f4ff", 12: "#a8d8ff", 13: "#ffd860", 17: "#ff9a40", 53: "#fff0a0", 58: "#ffb040" };
 /** cj and cb events; true when the event was ours. */
 export function onEvent(e) {
   if (e[0] === "cb") { st.beat[e[1]] = [now() + e[2], e[3]]; return true; }   // an anvil's beat: [id, ms to the first, beat ms]

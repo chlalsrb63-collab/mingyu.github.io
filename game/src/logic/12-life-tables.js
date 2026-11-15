@@ -348,12 +348,13 @@ const COOP = {
   diner: {
     name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan", "tray"], combo: 25000, skill: "cook",
     hint: "프라이팬 담당은 상자에서 재료를 꺼내 도마·화덕을 거쳐 패스대에, 쟁반 담당은 패스대의 요리를 주문한 테이블로!",
-    // cut-offs tuned on walking bots like the apartment's (tests/coop.mjs: 1–4 bots score ≈ 464 · 992 · 2,390 · 2,965 serving
-    // 12 · 20 · 33 · 42 orders, just over S); a real party lands on B–A. Two cooks (3–4 players) is where the score jumps.
-    par: 1000, parN: { 1: 0.48, 2: 1.0, 3: 2.4, 4: 3.0 },
+    // cut-offs tuned on walking bots like the apartment's (tests/coop.mjs: 1–4 bots, clearing and washing plates, score ≈ 414 ·
+    // 855 · 1,231 · 2,618 serving 11 · 19 · 22 · 34 orders, just over S); a real party lands on B–A. A lone tray (3 players)
+    // is the bottleneck now that it also carries the plates; two trays (4) is where the score jumps.
+    par: 1000, parN: { 1: 0.46, 2: 0.96, 3: 1.38, 4: 2.95 },
     // stations (tiles; solid furniture, used from a neighbouring tile): stoves `:` and boards `-` on the kitchen's back
-    // wall, crates (채소 `]` · 생선 `w` · 고기 `]`), the trash `w`; the pass is four counter tiles, the rack sits in the counter
-    st: { stove: [[6, 1], [9, 1], [12, 1]], board: [[17, 1], [20, 1]], veg: [25, 1], fish: [28, 1], meat: [31, 1], trash: [37, 1],
+    // wall, crates (채소 `]` · 생선 `w` · 고기 `]`), the trash `w`, the sink (the `r` east of the trash); the pass is four counter tiles, the rack sits in the counter
+    st: { stove: [[6, 1], [9, 1], [12, 1]], board: [[17, 1], [20, 1]], veg: [25, 1], fish: [28, 1], meat: [31, 1], trash: [37, 1], sink: [40, 1],
       pass: [[18, 7], [19, 7], [24, 7], [25, 7]], rack: [21, 7] },
     // twelve tables in the hall (3 rows × 4), 4 to 16 tiles from the pass
     tables: [[6, 11], [16, 11], [26, 11], [36, 11], [6, 15], [16, 15], [26, 15], [36, 15], [6, 19], [16, 19], [26, 19], [36, 19]],
@@ -429,10 +430,12 @@ const COOP_FORGE = {
   grades: [[1.6, 1.6], [1.0, 1.3], [0.4, 1.0], [-1e9, 0.5]], timeK: 0.3, tongsK: 0.45, hammerK: 0.55, offK: 0.25, syncMs: 1000,
 };
 /**
- * 쥬쥬식당 서빙 (C.5, v1: no plates to wash, three dishes). By the party size n at the start: at most `seats[n − 1]` tables
+ * 쥬쥬식당 서빙 (C.5, v1 + dirty plates, three dishes). By the party size n at the start: at most `seats[n − 1]` tables
  * order at once, a new order every `orderMs[n − 1]` (n of them at the open), patience `patience[n − 1]` (×feverK in fever).
  * A dish: from its crate, `chop` acts at a board, then `cook` ms on a stove (burnt `burnMs` after it is done), plated
  * at the pass; a tray carries 2 to the table that ordered it. Pay `pts × (1 + 0.5·patience left)`, cook 50 % / server 50 %.
+ * The customers eat `eatMs`, then leave a dirty plate that keeps the table closed until a tray takes it (one tray slot) to the
+ * sink; `washN` acts there wash it for `washPts`. Plating needs no clean plate (washing only pays and frees tables).
  */
 const COOP_DINER = {
   dishes: [
@@ -441,7 +444,7 @@ const COOP_DINER = {
     { name: "고기 스튜", crate: "meat", chop: 4, cook: 8000, pts: 45, at: 90000 },
   ],
   seats: [3, 4, 6, 8], orderMs: [16000, 12000, 8000, 6500], patience: [90000, 75000, 70000, 65000], feverK: 0.8, firstMs: 3000,
-  burnMs: 8000, burnPen: 5, angryPen: 15, eatMs: 6000, trayCap: 2, passCap: 6, serveK: 0.5, cookK: 0.5,
+  burnMs: 8000, burnPen: 5, angryPen: 15, eatMs: 6000, washN: 3, washPts: 5, trayCap: 2, passCap: 6, serveK: 0.5, cookK: 0.5,
 };
 /**
  * 동동아파트 청소 (C.4, without pests and dust in v1): piles, bundles, the two-person sofa, the mess meter. By the party

@@ -402,6 +402,35 @@ const below = ([x, y]) => [x, y + 1], above = ([x, y]) => [x, y - 1];
   assert.equal(cj[0], 1, "diner is job index 1"); assert.equal(cj[8], c.served); assert.equal(cj[9], c.miss);
 }
 
+// ── plates: a served table eats, leaves a dirty plate that keeps it closed; a tray takes it to the sink, 3 scrubs wash it
+{
+  const w = dworld(1), p = w.S.players.c0;
+  act(w, "c0", { t: "coop_start", k: "diner" });
+  const c = shiftOf(w).coop, q = c.pl.c0;
+  step(w, X.COOP_T.briefMs + 100);
+  c.ents = c.ents.filter((e) => e.t !== 3);
+  const [x, y] = X.tilePx(JD.tables[11]);
+  c.ents.push({ id: c.nid++, t: 3, r: 0, ti: 11, x, y, until: w.now + 60000, pat: 60000 });
+  q.tool = "tray"; q.hold = [{ r: 0, cred: { c0: 1 } }];
+  atTile(p, above(JD.tables[11])); act(w, "c0", { t: "coop_act" });
+  const plate = c.ents.find((e) => e.t === 9);
+  assert.ok(plate && plate.ti === 11 && c.served === 1 && !q.hold.length, "served: a plate on the table");
+  step(w, 300); act(w, "c0", { t: "coop_act" });
+  assert.ok(c.ents.includes(plate) && !q.hold.length, "still eating: not taken yet");
+  for (let i = 0; i < 200; i++) { step(w, 300); assert.ok(!c.ents.some((e) => e.t === 3 && e.ti === 11), "no order at a table with a plate"); }
+  act(w, "c0", { t: "coop_act" });
+  assert.ok(!c.ents.includes(plate) && q.hold.length === 1 && q.hold[0].r === 3, "the dirty plate on the tray");
+  step(w, 300); atTile(p, below(JD.st.sink)); act(w, "c0", { t: "coop_act" });
+  assert.ok(!q.hold.length && c.ents.some((e) => e.t === 9 && e.ti < 0), "into the sink");
+  p.cVer = -1; step(w, 100);
+  assert.deepEqual(lastOf("c0", "C").find((r) => r[1] === 9).slice(4), [0, R.washN, 1], "wire: [.., ds eating, washes left, at the sink]");
+  const s0 = c.score;
+  for (let i = 0; i < R.washN; i++) { step(w, 300); p.toast = []; act(w, "c0", { t: "coop_act" }); assert.ok(p.toast.some((m) => m.includes(`설거지 ${i + 1}/${R.washN}`)), "설거지 n/3"); }
+  assert.ok(!c.ents.some((e) => e.t === 9) && c.score - s0 >= R.washPts, `washed: +${c.score - s0}`);
+  step(w, 300); act(w, "c0", { t: "coop_act" });
+  assert.ok(p.toast.some((m) => /씻을 접시/.test(m)), "nothing left to wash");
+}
+
 /** Diner bots walking at player speed: pans cook what the tables want, trays carry it; alone, one swaps at the rack. */
 function dinerBot(w) {
   const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), MS = 300, D = R.dishes;
@@ -412,6 +441,10 @@ function dinerBot(w) {
     // what is already on its way: plated, on the stoves, in hands
     const coming = [...pass.map((e) => e.r), ...c.ents.filter((e) => e.t === 4).map((e) => e.r), ...Object.values(c.pl).flatMap((q) => q.hold.map((h) => h.r))];
     const want = []; { const left = [...coming]; for (const o of orders) { const i = left.indexOf(o.r); if (i >= 0) left.splice(i, 1); else want.push(o.r); } }
+    // plates: dirty on the tables, waiting at the sink
+    const dirty = c.ents.filter((e) => e.t === 9 && e.ti >= 0 && e.due <= w.now), sinkQ = c.ents.filter((e) => e.t === 9 && e.ti < 0);
+    // trays clear plates only when the free tables run short (a walk to the sink costs dishes)
+    const short = JD.tables.length - orders.length - c.ents.filter((e) => e.t === 9 && e.ti >= 0).length < R.seats[c.n - 1] + 2;
     const claimed = new Set();
     for (const o of work) {
       const q = c.pl[o.pid], h = q.hold[0], kitchen = W.tileOf(o)[1] < 7;
@@ -426,12 +459,17 @@ function dinerBot(w) {
         } else if (done) { claimed.add(done.id); goal = below(JD.st.stove[done.si]); }
         else if (solo && pass.length && (pass.length >= 2 || !want.length)) goal = kitchen ? above(JD.st.rack) : below(JD.st.rack);
         else if (want.length) { const r = want.shift(); goal = below(JD.st[D[r].crate]); }
+        else if (sinkQ.length) goal = below(JD.st.sink);
+        else if (solo && short && dirty.length) goal = kitchen ? above(JD.st.rack) : below(JD.st.rack);
         if (!goal) continue;
       } else {
         const match = orders.find((e) => q.hold.some((d) => d.r === e.r) && !claimed.has(e.id));
         if (match && (q.hold.length >= R.trayCap || !pass.some((d) => orders.some((e) => e.r === d.r)) || pass.length === 0)) { claimed.add(match.id); goal = above(JD.tables[match.ti]); }
         else if (pass.length && q.hold.length < R.trayCap) goal = below(JD.st.pass[0]);
         else if (match) { claimed.add(match.id); goal = above(JD.tables[match.ti]); }
+        else if (short && q.hold.length < R.trayCap && dirty.some((e) => !claimed.has(e.id))) { const e = dirty.find((e) => !claimed.has(e.id)); claimed.add(e.id); goal = above(JD.tables[e.ti]); }
+        else if (q.hold.some((h) => h.r === 3)) goal = below(JD.st.sink);
+        else if (!q.hold.length && sinkQ.length) goal = below(JD.st.sink);
         else if (solo && !q.hold.length) goal = kitchen ? above(JD.st.rack) : below(JD.st.rack);
         if (!goal) continue;
       }
