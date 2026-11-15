@@ -73,6 +73,7 @@ const OBJECT_NAME = {
     ":": "화덕 (요리·가마솥)", "'": "전신 거울", "`": "수련 인형",
   // maps-v2 M3 (남서 해안)
   "Ψ": "야자수", "Φ": "산호 암초", "Ω": "검은 해안 바위", "Δ": "진흙 오두막",
+  "Σ": "굽은 소나무", "Π": "전각 자리 (탑 · 황금 지붕)", "Θ": "바위기둥",
 };
 /** The colours the minimap uses (public/art.js renderMini), read from the client source so they never drift. */
 function miniColours() {

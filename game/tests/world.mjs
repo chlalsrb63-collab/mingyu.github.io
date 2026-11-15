@@ -31,7 +31,7 @@ for (const q of D.quests) {
   lastLv = D.mobs[q.mob].tier;
 }
 // retired stand-ins stay as rows for old collections; the mesa / cloudtemple species wait for their maps
-const NOT_PLACED = new Set("catsplit_gold toadbrood_poison mothface_bile ribdeer_bile lambmaw_bone eyecrow_ash twingoat_gold bearmaw_gold crabskull_blood fishwalker_frost eelknot_frost squidrat_blood gatorhalf_steel spiderhand_bone owlstare_gold fishwalker_blood crabskull_frost moleworm_gold beadmonkey wingcrane mistiger spinescorp ribvulture crownpeacock".split(" "));
+const NOT_PLACED = new Set("catsplit_gold toadbrood_poison mothface_bile ribdeer_bile lambmaw_bone eyecrow_ash twingoat_gold bearmaw_gold crabskull_blood fishwalker_frost eelknot_frost squidrat_blood gatorhalf_steel spiderhand_bone owlstare_gold fishwalker_blood crabskull_frost moleworm_gold spinescorp ribvulture crownpeacock".split(" "));
 for (const k of Object.keys(D.mobs)) assert.ok(homes[k] || NOT_PLACED.has(k), "every monster is placed on some map: " + k);
 
 // ── walk the whole world: from each arrival point, every door of that map can be reached on foot,
@@ -79,7 +79,7 @@ while (todo.length) {
   }
 }
 assert.deepEqual(Object.keys(seen).sort(), D.maps.map((m) => m.id).sort(), "every map can be reached from town");
-for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
+for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
 
 // ── the dungeons: harder the deeper you go, a camp on the way, a guardian at the end
 for (const id of ["crypt", "sewer", "abyss"]) {
@@ -180,5 +180,46 @@ JSON.stringify(L.removePlayer(S, PID));
   assert.ok(m.g.some((r) => r.includes("~")) && m.g.some((r) => r.includes("-")) && m.g.some((r) => r.includes("r")), "shallows, a surf line and the dry riverbed");
   // the field boss rises in the buried ruin
   assert.ok(m.ruin && m.bossAt && m.bossAt[0] >= m.ruin.x && m.bossAt[0] < m.ruin.x + m.ruin.w && m.bossAt[1] >= m.ruin.y && m.bossAt[1] < m.ruin.y + m.ruin.h && m.reach[m.bossAt[1] * W + m.bossAt[0]], "the boss's ground is the ruin");
+}
+// ── maps-batch2, batch 1 (docs/design/maps-batch2.md): 운해 사원 and 붉은바위 황금궁 — doors both ways (cave shaft ↔ cloud temple ↔
+// mesa ledge, oasis east ↔ mesa west), courts laid by place, the field bosses' grounds, the summit arena, the rare kinds
+{
+  const { maps } = L.atlas();
+  for (const [a, b] of [["cave", "cloudtemple"], ["cloudtemple", "mesa"], ["oasis", "mesa"]]) for (const [from, to] of [[a, b], [b, a]]) {
+    assert.ok(maps[from].portals.some((p) => p.to === to), `${from} has a door to ${to}`);
+    assert.ok(D.maps.find((q) => q.id === from).to.includes(to), `${from} lists ${to} as a way on`);
+  }
+  const want = { cloudtemple: { band: [30, 36], courts: ["summithall", "belltower", "pagoda", "pagoda"], boss: "belltower", falls: 2, rare: "ribdeer_frost", names: ["산문", "탑전 마당", "종루"] },
+    mesa: { band: [36, 42], courts: ["thronecourt", "goldhall", "goldhall", "lowertown"], boss: "thronecourt", falls: 3, rare: "serpentwing_bone", names: ["협곡 아랫마을", "황금 지붕 궁", "소나무 벼랑길"] } };
+  for (const id of Object.keys(want)) {
+    const m = maps[id], W = m.w, w = want[id], meta = D.maps.find((q) => q.id === id);
+    assert.deepEqual(meta.band, w.band.map((t) => 4 * t - 3), id + ": its band");
+    assert.deepEqual(m.courts.map((c) => c.piece), w.courts, id + ": every court found its place");
+    const bc = m.courts.find((c) => c.piece === w.boss);
+    assert.ok(m.bossAt && m.bossAt[0] >= bc.x && m.bossAt[0] < bc.x + bc.w && m.bossAt[1] >= bc.y && m.bossAt[1] < bc.y + bc.h && m.reach[m.bossAt[1] * W + m.bossAt[0]], id + ": the field boss rises in its court");
+    assert.ok(m.falls.length >= w.falls, `${id}: the river falls at its level steps (${m.falls.length})`);
+    assert.deepEqual(D.waypoints.find((q) => q.id === id).names, w.names);
+    // a hall's footprint is four by two with open ground under it (the client stands one picture on it)
+    let halls = 0;
+    for (let y = 1; y < m.h - 2; y++) for (let x = 1; x < W - 4; x++) if (m.o[y][x] === "Π" && m.o[y][x - 1] !== "Π" && m.o[y - 1][x] !== "Π") {
+      halls++;
+      for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) assert.equal(m.o[y + j][x + i], "Π", `${id}: a whole footprint at ${x},${y}`);
+      assert.ok([0, 1, 2, 3].filter((i) => m.reach[(y + 2) * W + x + i]).length >= 3, `${id}: open ground before the hall at ${x},${y}`);
+    }
+    assert.equal(halls, 4, id + ": four halls");
+    for (const k of new Set(m.spawns.map((sp) => sp.k))) assert.ok(D.mobs[k].chest || (D.mobs[k].tier >= w.band[0] && D.mobs[k].tier <= w.band[1]), `${id}: ${k} fits the band`);
+    assert.ok(m.spawns.some((sp) => sp.k === w.rare), id + ": the rare kind keeps a chest");
+  }
+  // the cloud temple: no cloud can be walked on, the south door stands on a cape in the cloud, the summit's boss waits behind one neck
+  const ct = maps.cloudtemple, hall = ct.courts[0], boss = ct.spawns.find((sp) => sp.k === "mistiger");
+  for (let y = 0; y < ct.h; y++) for (let x = 0; x < ct.w; x++) if (ct.reach[y * ct.w + x]) assert.ok(ct.g[y][x] !== "w", `cloudtemple: reachable cloud at ${x},${y}`);
+  assert.ok([...ct.g[ct.h - 6]].filter((c) => c === "w").length > ct.w * 0.6 && ct.gates.south.a[0][1] > ct.h - 8, "the cloud sea fills the south but for the cape");
+  assert.ok(D.mobs.mistiger.boss && boss && boss.r[0] > hall.x && boss.r[0] < hall.x + hall.w && boss.r[1] > hall.y && boss.r[1] < hall.y + hall.h, "the summit's boss stands in the hall");
+  let mouth = 0;
+  for (let x = hall.x; x < hall.x + hall.w; x++) { if (ct.o[hall.y + hall.h - 1][x] === " ") mouth++; assert.equal(ct.o[hall.y][x], "C"); }
+  for (let y = hall.y; y < hall.y + hall.h; y++) assert.ok(ct.o[y][hall.x] === "C" && ct.o[y][hall.x + hall.w - 1] === "C", "the summit hall is walled");
+  assert.equal(mouth, 3, "one neck, three wide");
+  // the mesa: plank bridges between the mesa tops, made crossings on the river
+  assert.ok(maps.mesa.g.some((r) => r.includes("b")) && maps.mesa.crossings.length >= 4);
 }
 console.log("world ok — maps", Object.keys(seen).join(","));

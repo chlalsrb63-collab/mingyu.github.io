@@ -10,10 +10,10 @@ const L = await import("../src/logic.js");
 const { maps, fires } = L.atlas();
 const D = L.defs();
 const VERBOSE = process.argv.includes("-v");
-const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea"];
+const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "cloudtemple", "mesa"];
 /** Maps held to the rules, and their own minimum loop count (cycle rank of the coarse graph). */
 const STRICT = { meadow: { loops: 12 }, forest: { loops: 10 }, cave: { loops: 6 }, crypt: { loops: 6 }, sewer: { loops: 6 }, abyss: { loops: 6 },
-  jungle: { loops: 10 }, oasis: { loops: 12 }, coast: { loops: 12 }, dunesea: { loops: 30 } };
+  jungle: { loops: 10 }, oasis: { loops: 12 }, coast: { loops: 12 }, dunesea: { loops: 30 }, cloudtemple: { loops: 12 }, mesa: { loops: 14 } };
 /**
  * Dungeon widening (maps-v2 "K"): a dungeon is roomy enough for a party of four — `open` of the map is ground,
  * `party` of that ground lies where a 7 × 7 square fits, and ground `route` tiles wide joins the entry to every

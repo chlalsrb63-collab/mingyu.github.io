@@ -739,7 +739,9 @@ function make(m, x, y, theme, S) {
   }
   // the cave's shelf rims stand as tall as their level (m.lv): a low step, a high wall of rock
   const L = ch === "C" ? levels(m) : null;
-  const hOf = (i, j) => (o(i, j) !== ch ? 0 : ch === "U" ? ruinH(i, j) : L ? (L[j * m.w + i] >= 2 ? 30 : 16) : HEIGHT[ch]);
+  // (maps-batch2: on the red mesa and the cloud temple a cliff stands taller level by level — five heights)
+  const crag = theme === "mesa" || theme === "mist";
+  const hOf = (i, j) => (o(i, j) !== ch ? 0 : ch === "U" ? ruinH(i, j) : L ? (crag ? 16 + 5 * L[j * m.w + i] : L[j * m.w + i] >= 2 ? 30 : 16) : HEIGHT[ch]);
   const h = hOf(x, y);
   const nh = [hOf(x, y - 1), hOf(x + 1, y), hOf(x, y + 1), hOf(x - 1, y)], nd = hOf(x + 1, y + 1);
   if (ch === "C") return cliff(m, x, y, theme, h, nh, nd);
@@ -786,7 +788,7 @@ function rockWall(m, x, y, theme, S, g) {
  */
 function cliff(m, x, y, theme, h, nh, nd) {
   if (theme === "cave") return caveShelf(m, x, y, h, nh, nd);
-  if (theme === "desert" || theme === "coast") return sandstone(m, x, y, theme, h, nh, nd);
+  if (theme === "desert" || theme === "coast" || theme === "mesa") return sandstone(m, x, y, theme, h, nh, nd);
   const G = materials(theme)._grass, gHex = GRASS[theme] || GRASS.meadow;
   const lip = C(light(gHex, 1.2)), gD = C(shade(gHex, 0.72));
   const F = faces("#8e9390", "#b0b5b0", "#5c625f");
@@ -814,8 +816,10 @@ function cliff(m, x, y, theme, h, nh, nd) {
  */
 function sandstone(m, x, y, theme, h, nh, nd) {
   const G = materials(theme)._grass, des = theme === "desert";
-  const F = des ? faces("#cc9258", "#e8b878", "#8e5a36") : faces("#d4b282", "#eed4a6", "#9a7a54");
-  const B = des ? faces("#b87844", "#cc9258", "#8e5a36") : faces("#c09a68", "#d4b282", "#9a7a54");
+  // (maps-batch2: the mesa's rock is red, banded darker red and here and there a pale course)
+  const red = theme === "mesa";
+  const F = red ? faces("#c4603a", "#e4885a", "#82361e") : des ? faces("#cc9258", "#e8b878", "#8e5a36") : faces("#d4b282", "#eed4a6", "#9a7a54");
+  const B = red ? faces("#a2442a", "#c4603a", "#6e2a18") : des ? faces("#b87844", "#cc9258", "#8e5a36") : faces("#c09a68", "#d4b282", "#9a7a54");
   const lip = C(light(G.hex, 1.08));
   const face = (side, s, z) => {
     const ws = (side === 2 ? x : y) * 16 + s;

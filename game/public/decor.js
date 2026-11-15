@@ -351,7 +351,50 @@ export function sprites() {
     ivy(b, 22, 24, 84, 4); ivy(b, 98, 44, 86, 1);
     for (let i = 0; i < 12; i++) b.r(44 + i, 84 + Math.round(Math.sin(i * 0.9)), 1, 1, BLI[0]); b.r(56, 84, 2, 2, BLI[1]);
   });
-  SPR = { chapel, cottage, ktower, kgate, waypoint, RUNE, sign: [sign(-1), sign(0), sign(1)], tower, oak, shrine, lip, board, metro, crystals, nave, culvert, heart, stall: [0, 1, 2].map(stall), notice, statue };
+  // ── maps-batch2 art, step 1: the cloud temple's pagoda and the red mesa's gold-roofed hall, each standing on a hall's
+  // footprint (Π, four by two). A hipped roof in tile courses, its eave line turned up at the tips.
+  const eave = (b, cx, y, half, hgt, c, cD, cL) => {
+    b.tri([[cx - half, y + hgt], [cx + half, y + hgt], [cx + half * 0.5, y], [cx - half * 0.5, y]], c);
+    for (let r = 3; r < hgt; r += 3) { const k = 0.5 + 0.5 * (r / hgt); b.r(cx - half * k, y + r, half * 2 * k, 1, cD); }
+    for (let x = cx - half + 4; x < cx + half - 2; x += 6) b.r(x, y + hgt - 4, 1, 4, cD);
+    b.r(cx - half * 0.5 - 1, y - 1, half + 2, 3, cL); b.r(cx - half * 0.5 - 1, y + 2, half + 2, 1, cD);
+    b.r(cx - half - 2, y + hgt - 1, half * 2 + 4, 2, cD);
+    b.r(cx - half - 5, y + hgt - 3, 5, 2, c); b.r(cx + half, y + hgt - 3, 5, 2, c);
+    b.r(cx - half - 7, y + hgt - 6, 3, 3, cL); b.r(cx + half + 4, y + hgt - 6, 3, 3, cL);
+  };
+  const storey = (b, cx, y, half, h, wall, wallD, post, dark) => {
+    b.r(cx - half, y, half * 2, h, wall); b.r(cx + half - 4, y, 4, h, wallD); b.r(cx - half, y, half * 2, 2, dark);
+    for (let x = cx - half; x <= cx + half - 3; x += Math.max(8, Math.round((half * 2 - 3) / Math.max(2, Math.round(half / 7))))) { b.r(x, y, 3, h, post); b.r(x + 2, y, 1, h, dark); }
+    b.r(cx + half - 3, y, 3, h, post);
+  };
+  const pagoda = prop(124, 132, (b) => {
+    const R = ["#5c6c7e", "#3e4c5e", "#8c9cae"], wall = "#ebe3cf", wallD = "#c9bfa6", post = "#b8402c", dark = "#3a2a2a", st = ["#b0aea2", "#8a887c", "#cfcdc0"];
+    b.oval(62, 128, 60, 4, "#5a6a5a");
+    b.r(12, 116, 100, 12, st[0]); b.r(12, 116, 100, 2, st[2]); b.r(12, 126, 100, 2, st[1]);
+    for (let s = 0; s < 3; s++) { b.r(48 - s * 2, 119 + s * 3, 28 + s * 4, 3, st[2]); b.r(48 - s * 2, 121 + s * 3, 28 + s * 4, 1, st[1]); }
+    storey(b, 62, 92, 42, 24, wall, wallD, post, dark); b.r(54, 98, 16, 18, dark); b.r(55, 99, 6, 17, "#6a3a26"); b.r(63, 99, 6, 17, "#5a3020");
+    eave(b, 62, 76, 56, 16, R[0], R[1], R[2]);
+    storey(b, 62, 60, 30, 16, wall, wallD, post, dark); b.r(56, 64, 12, 8, "#3e4c5e");
+    eave(b, 62, 46, 42, 14, R[0], R[1], R[2]);
+    storey(b, 62, 34, 20, 12, wall, wallD, post, dark);
+    eave(b, 62, 18, 30, 16, R[0], R[1], R[2]);
+    b.r(61, 4, 3, 14, "#d8a838"); b.oval(62, 8, 3.4, 3, "#f0c850"); b.r(62, 2, 1, 4, "#fff0a0");
+  });
+  const goldhall = prop(128, 112, (b) => {
+    const G = ["#e8b83c", "#b4822a", "#ffe07a"], wall = "#c8523a", wallD = "#9e3a28", post = "#7e2a1e", dark = "#3a1e1a", st = ["#d8b48a", "#a88660", "#f0d4a8"];
+    b.oval(64, 108, 62, 4, "#7a3c22");
+    b.r(6, 94, 116, 14, st[0]); b.r(6, 94, 116, 2, st[2]); b.r(6, 106, 116, 2, st[1]);
+    for (let s = 0; s < 3; s++) { b.r(46 - s * 3, 97 + s * 3, 36 + s * 6, 3, st[2]); b.r(46 - s * 3, 99 + s * 3, 36 + s * 6, 1, st[1]); }
+    storey(b, 64, 62, 50, 32, wall, wallD, post, dark);
+    b.r(52, 70, 24, 24, dark); b.r(53, 71, 10, 23, "#8a5a2a"); b.r(65, 71, 10, 23, "#7a4e24"); b.r(62, 80, 4, 4, G[2]);
+    for (const x of [22, 34, 86, 98]) { b.r(x, 70, 8, 12, "#f2e2b8"); b.r(x, 70, 8, 1, G[1]); b.r(x + 3, 70, 1, 12, G[1]); b.r(x, 75, 8, 1, G[1]); }
+    b.r(14, 60, 100, 3, G[0]); b.r(14, 63, 100, 1, G[1]);
+    eave(b, 64, 34, 60, 26, G[0], G[1], G[2]);
+    storey(b, 64, 24, 26, 10, wall, wallD, post, dark);
+    eave(b, 64, 8, 36, 16, G[0], G[1], G[2]);
+    b.r(63, 0, 3, 8, G[2]); b.oval(64, 3, 3.4, 3, G[0]);
+  });
+  SPR = { pagoda, goldhall, chapel, cottage, ktower, kgate, waypoint, RUNE, sign: [sign(-1), sign(0), sign(1)], tower, oak, shrine, lip, board, metro, crystals, nave, culvert, heart, stall: [0, 1, 2].map(stall), notice, statue };
   return SPR;
 }
 
@@ -369,6 +412,9 @@ const LANDMARKS = {
   crypt: [["nave", 4, 3, 0.55, 0.45, { on: "W" }]],
   sewer: [["falls", 2, 1, 0.4, 0.5, { on: "W", water: "#6a9a3a", foam: "#b0dc70", culvert: true }], ["falls", 2, 1, 0.7, 0.3, { on: "W", water: "#6a9a3a", foam: "#b0dc70", culvert: true }]],
   abyss: [["heart", 4, 3, 0.5, 0.5, { on: "W" }]],
+  // maps-batch2: a pagoda (the cloud temple) or a gold-roofed hall (the red mesa) on every hall footprint Π
+  mist: [0, 1, 2, 3, 4, 5].map(() => ["pagoda", 4, 2, 0.5, 0.5, { on: "Π", exact: true }]),
+  mesa: [0, 1, 2, 3, 4, 5].map(() => ["goldhall", 4, 2, 0.5, 0.5, { on: "Π", exact: true }]),
   // the old kingdom's ruins stand on the footprints the set pieces leave for them (exact: nothing else may move them)
   autumn: [["chapel", 4, 2, 0.5, 0.5, { on: "N", exact: true }], ["cottage", 3, 2, 0.5, 0.5, { on: "d", exact: true }],
     ["ktower", 3, 2, 0.5, 0.5, { on: "i", exact: true }], ["ktower", 3, 2, 0.5, 0.5, { on: "i", exact: true }],
