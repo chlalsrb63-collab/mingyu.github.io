@@ -231,7 +231,7 @@ function gainXp(S, p, n) {
 }
 
 // Optional presentation tag at h[6]. h[5] is reserved for HP costs.
-const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3 };
+const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3, rally: 4, binding: 5 };
 
 /** Take `dmg` off a monster on behalf of `p`; true if that killed it. */
 function dealMob(S, rt, mob, p, dmg, crit, cue) {

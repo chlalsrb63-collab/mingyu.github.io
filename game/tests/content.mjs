@@ -594,7 +594,8 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
     assert.equal(ch.eq.weapon.id, `w_${cls}_1`, tag + ": the weapon stays");
     assert.deepEqual(ch.qs[1], ["i", "hp_s"], tag + ": items stay on the bar");
     const sks = ch.qs.filter((v) => v && v[0] === "s").map((v) => v[1]);
-    assert.equal(sks.length, [1, 10, 20].filter((lv) => lv <= L0).length, tag + ": the old kit's entries go, the weapon's skills the mastery holds (and the job's signature) come onto the bar");
+    const unlocks = cls === "lancer" ? [1, 10, 15, 20] : [1, 10, 20];
+    assert.equal(sks.length, unlocks.filter((lv) => lv <= L0).length, tag + ": the old kit's entries go, the weapon's skills the mastery holds (and the job's signature) come onto the bar");
     assert.ok(sks.every((id) => typeof id === "string" && D.skills[id]), tag + ": skills on the bar by id");
   }
   // the class's stat shape: a warrior leans on STR and WIL, a rogue on DEX and LUK, a mage on INT

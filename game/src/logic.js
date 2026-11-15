@@ -258,9 +258,9 @@ const SK_GROW = 0.004;
 
 const SKILL = {
   // ── 대검 sword
-  slash: { kind: "a", wk: "sword", need: 1, name: "파워 슬래쉬", mp: 8, cd: 5000, mult: 1.9, r: 46, arc: 75, stag: [600, 360], knock: 14, fx: 80,
+  slash: { kind: "a", wk: "sword", need: 1, name: "파워 슬래쉬", mp: 4, hpPct: 0.02, autoHp: 0.35, cd: 5000, mult: 1.9, r: 46, arc: 75, stag: [600, 360], knock: 14, fx: 80,
     desc: "대검을 크게 휘둘러 앞쪽 부채꼴의 적을 모두 벤다. 맞은 적은 크게 휘청이며 밀려난다." },
-  rend: { kind: "a", wk: "sword", need: 10, name: "대지 가르기", mp: 14, cd: 9000, leap: 60, r: 38, mult: 1.7, len: 120, half: 14, wave: 1.2, fx: 81,
+  rend: { kind: "a", wk: "sword", need: 10, name: "대지 가르기", mp: 7, hpPct: 0.03, autoHp: 0.35, cd: 9000, leap: 60, r: 38, mult: 1.7, len: 120, half: 14, wave: 1.2, fx: 81,
     desc: "앞으로 뛰어올라 내려찍고(범위), 착지한 자리에서 일직선으로 땅을 가르는 충격파를 보낸다. 벽은 넘지 못한다." },
   inertia: { kind: "p", wk: "sword", need: 10, name: "거검의 관성", max: 5, ms: 2500, reach: 0.06, critd: 0.06, fx: 110, borrow: ["atk", 4],
     desc: "대검으로 적을 맞힐 때마다 관성이 1 쌓인다(최대 5). 관성 1당 사거리 +6%, 치명타 피해 +8%. 2.5초 동안 맞히지 못하면 사라진다." },
@@ -273,9 +273,9 @@ const SKILL = {
   sword_edge50: { kind: "p", wk: "sword", need: 50, name: "칼끝의 결단", perk: ["critd", 8],
     desc: "한 번 드러난 급소를 끝까지 벤다. 치명타 피해 배율이 8%p 증가한다." },
   // ── 단검 dagger
-  ambush: { kind: "a", wk: "dagger", need: 1, name: "암습", mp: 7, cd: 6000, len: 110, mult: 1.3, behind: 16, crit: 30, fx: 84,
+  ambush: { kind: "a", wk: "dagger", need: 1, name: "암습", mp: 4, hpPct: 0.015, autoHp: 0.35, cd: 6000, len: 110, mult: 1.3, behind: 16, crit: 30, fx: 84,
     desc: "겨눈 적의 등 뒤로 순간이동해 찌른다. 나를 노리지 않던 적에게는 반드시 치명타, 아니면 치명타 확률 +30%." },
-  shade: { kind: "a", wk: "dagger", need: 10, name: "그림자 칼날", mp: 12, cd: 8000, n: 3, spread: 15, len: 120, half: 10, mult: 0.5, fx: 85,
+  shade: { kind: "a", wk: "dagger", need: 10, name: "그림자 칼날", mp: 6, hpPct: 0.022, autoHp: 0.35, cd: 8000, n: 3, spread: 15, len: 120, half: 10, mult: 0.5, fx: 85,
     desc: "그림자 칼날 세 자루를 부채꼴로 던진다. 칼날은 적을 꿰뚫고, 맞은 적마다 표식을 하나씩 남긴다." },
   vitals: { kind: "p", wk: "dagger", need: 10, name: "급소 도려내기", max: 5, crit: 3, bleed: 0.08, ms: 4000, spd: 0.2, spdMs: 2000, fx: 111, borrow: ["crit", 3],
     desc: "단검 기본 공격이 표식을 남긴다(최대 5, 10초). 표식 1개당 치명타 확률 +4%. 표식 있는 적을 베면 4초간 출혈(초당 공격력의 12%)을 일으키고 2초간 이동 속도 +20%." },
@@ -288,12 +288,14 @@ const SKILL = {
   dagger_fang50: { kind: "p", wk: "dagger", need: 50, name: "피를 머금은 날", perk: ["ls", 1.5],
     desc: "상처에서 빼낸 기운으로 숨을 고른다. 공격 적중 시 생명력 흡수 비율이 1.5%p 증가한다." },
   // ── 창 spear
-  spiral: { kind: "a", wk: "spear", need: 1, name: "나선 찌르기", mp: 8, cd: 5000, len: 110, half: 12, mult: 1.3, far: 0.72, fx: 87,
+  spiral: { kind: "a", wk: "spear", need: 1, name: "나선 찌르기", mp: 4, hpPct: 0.018, autoHp: 0.35, cd: 5000, len: 110, half: 12, mult: 1.3, far: 0.72, fx: 87,
     desc: "창을 비틀어 일직선을 모두 꿰뚫는다. 끝부분(28%)에 걸린 적은 창끝으로 맞는다." },
-  comet: { kind: "a", wk: "spear", need: 10, name: "유성창", mp: 14, cd: 10000, len: 130, half: 20, mult: 0.9, stun: 500, fx: 88,
+  comet: { kind: "a", wk: "spear", need: 10, name: "유성창", mp: 7, hpPct: 0.026, autoHp: 0.35, cd: 10000, len: 130, half: 20, mult: 0.9, stun: 500, fx: 88,
     desc: "겨눈 쪽으로 130만큼 돌진한다. 길 위의 적을 끝까지 끌고 가 꿰뚫고 0.5초 기절시킨다." },
   tip: { kind: "p", wk: "spear", need: 10, name: "창끝의 거리", at: 0.72, mult: 1.5, ign: 0.35, borrow: ["critd", 6],
     desc: "사거리의 72% 이상 떨어진 적을 맞히면 창끝 일격 — 피해 ×1.5, 방어력의 35%를 무시한다." },
+  rally_banner: { kind: "a", wk: "spear", need: 15, name: "전열 구호기", mp: 12, cd: 16000, r: 76, ms: 6000, every: 1000, heal: 0.023, atkHeal: 0.06, haste: 0.10, creditMs: 10000, support: true, noAuto: true, fx: 135,
+    desc: "6초 동안 깃발 주변의 파티원을 매초 최대 HP 2.3%와 공격력의 6%만큼 회복시키고 기본 공격 속도를 10% 높인다. 시전자 회복은 절반이며 깃발 효과는 겹치지 않는다." },
   spear_guard20: { kind: "p", wk: "spear", need: 20, name: "전열의 간격", perk: ["def", 7],
     desc: "창대를 세워 들고 방어할 틈을 벌린다. 방어력이 7% 증가한다." },
   spear_advance30: { kind: "p", wk: "spear", need: 30, name: "한 걸음 더", perk: ["spd", 4],
@@ -324,6 +326,8 @@ const SKILL = {
     desc: "앞쪽에 4초간 중력의 소용돌이를 연다. 0.5초마다 안의 적을 가운데로 끌어당기며 피해를 준다." },
   brand: { kind: "p", wk: "book", need: 10, name: "금서의 낙인", ms: 6000, k: 0.15, fx: 114, borrow: ["cdr", 3],
     desc: "마도서 스킬에 맞은 적에게 6초간 낙인을 새긴다. 낙인 찍힌 적은 누구에게서나 피해를 15% 더 받는다." },
+  revive_binding: { kind: "a", wk: "book", need: 15, name: "되살림 제본", mp: 19, cd: 18000, r: 105, heal: 0.19, atkHeal: 0.30, creditMs: 10000, support: true, noAuto: true, fx: 136,
+    desc: "가까이에서 가장 위급한 파티원을 최대 HP 19%와 공격력의 30%만큼, 다음 파티원을 절반만큼 즉시 회복시킨다. 회복할 파티원이 없으면 자신이 절반을 회복한다." },
   book_margin20: { kind: "p", wk: "book", need: 20, name: "널찍한 여백", perk: ["hp", 6],
     desc: "여백에 회복 주문을 적어 몸에 새긴다. 최대 HP가 6% 증가한다." },
   book_clause30: { kind: "p", wk: "book", need: 30, name: "한 줄로 묶기", perk: ["cdr", 4],
@@ -349,11 +353,11 @@ const SKILL = {
     desc: "화살 깃을 다듬어 바람 속에서도 힘을 잃지 않는다. 공격력이 5% 증가한다." },
 
   // ── single-job signatures
-  verdict: { kind: "j", job: "swordsman", wk: "sword", need: 20, name: "단죄의 일격", mp: 30, cd: 36000, r: 70, mult: 1.3, miss: 0.9, knock: 20, fx: 83,
+  verdict: { kind: "j", job: "swordsman", wk: "sword", need: 20, name: "단죄의 일격", mp: 16, hpPct: 0.05, autoHp: 0.35, cd: 36000, r: 70, mult: 1.3, miss: 0.9, knock: 20, fx: 83,
     desc: "대검전사의 기술 · 대검을 한 바퀴 휘둘러 주변을 모두 벤다. 잃은 HP가 많을수록 강하다(최대 +90%)." },
-  flurry: { kind: "j", job: "thief", wk: "dagger", need: 20, name: "무영난무", mp: 36, cd: 36000, n: 7, every: 220, r: 90, mult: 1.2, per: 0.3, fx: 86,
+  flurry: { kind: "j", job: "thief", wk: "dagger", need: 20, name: "무영난무", mp: 18, hpPct: 0.035, autoHp: 0.35, cd: 36000, n: 7, every: 220, r: 90, mult: 1.2, per: 0.3, fx: 86,
     desc: "도적의 기술 · 그림자가 되어 주변의 적 사이를 일곱 번 넘나들며 벤다(표식 있는 적부터, 표식 1개당 +30%). 그동안 피해를 입지 않는다." },
-  dragon: { kind: "j", job: "lancer", wk: "spear", need: 20, name: "뇌룡승천", mp: 34, cd: 32000, at: 80, r: 64, pull: 20, n: 3, every: 400, mult: 0.4, fin: 0.8, stun: [1500, 600], el: "l", fx: 89,
+  dragon: { kind: "j", job: "lancer", wk: "spear", need: 20, name: "뇌룡승천", mp: 17, hpPct: 0.04, autoHp: 0.35, cd: 32000, at: 80, r: 64, pull: 20, n: 3, every: 400, mult: 0.4, fin: 0.8, stun: [1500, 600], el: "l", fx: 89,
     desc: "창술사의 기술 · 앞쪽에 번개 용의 기둥을 세워 적을 끌어당기고 세 번 몰아친 뒤, 마지막 일격으로 기절시킨다. 번개 원소." },
   meteor: { kind: "j", job: "wizard", wk: "staff", need: 20, name: "메테오 스톰", mp: 42, cd: 40000, at: 120, r: 80, n: 6, every: 400, hr: 30, mult: 0.6, chain: 0.35, el: "f", mag: 1, fx: 90,
     desc: "마법사의 기술 · 앞쪽에 운석 여섯 개를 떨어뜨린다. 운석마다 번개가 한 적에게 튀어 원소 반응을 일으킨다." },
@@ -6916,10 +6920,11 @@ function stats(p) {
   const now = p.S.now;
   const food = p.food && p.food.until > now ? p.food : null;
   const scr = p.ch.scr || {};
+  const rally = p.rallyAt > now ? 1 + SKILL.rally_banner.haste : 1;
   return {
     mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf, wk: c.wk, mag: c.mag,
-    eva: c.eva, aspd: c.aspd, sneak: c.sneak, cdr: c.cdr, mpReg: c.mpReg, burst: c.burst, proc: c.proc, kbr: c.kbr, poise: c.poise, res: c.res,
-    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: c.acd,
+    eva: c.eva, aspd: rally === 1 ? c.aspd : 1 - (1 - c.aspd) / rally, sneak: c.sneak, cdr: c.cdr, mpReg: c.mpReg, burst: c.burst, proc: c.proc, kbr: c.kbr, poise: c.poise, res: c.res,
+    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: Math.round(c.acd / rally),
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
     spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.vitSpd > now ? 1 + SKILL.vitals.spd : 1) * (p.slowed > now ? SLOW : 1), spd0: c.spd0,
@@ -7476,7 +7481,7 @@ function newAct(p, skill) {
   p.actN = (p.actN | 0) + 1;
   p.actGain = skill ? WM_GAIN.skill : WM_GAIN.hit;
 }
-/** A kill gives weapon mastery to attackers and job experience to attackers and active Paladin support. */
+/** A kill gives weapon mastery to attackers and job experience to attackers and nearby healers. */
 function wmKill(S, rt, mob) {
   const d = MOBS[mob.k];
   if (d.chest || d.still) return;
@@ -7489,9 +7494,11 @@ function wmKill(S, rt, mob) {
     if (!p || p.map !== rt.id || p.dead) continue;
     if (wmEligible(p, d)) { gainWm(S, p, n, bonus); jobCredit.add(p); }
     if (!p.party) continue;
-    for (const healer of allies(S, p)) {
-      const support = healer.oathSupport;
-      if (support?.until > S.now && support.party === p.party && support.map === rt.id && support.healed.includes(pid) && wmEligible(healer, d)) {
+    const range = S.dims[rt.id] ? PARTY_RANGE : FIELD_PARTY_RANGE;
+    for (const healer of allies(S, p, range)) {
+      const support = healer.healCredit;
+      if (support?.targets.get(pid) > S.now && support.party === p.party && support.map === rt.id
+        && dist(healer.x, healer.y, mob.x, mob.y) <= range && wmEligible(healer, d)) {
         jobCredit.add(healer);
       }
     }
@@ -7864,15 +7871,17 @@ function jfClean(ch) {
 }
 
 /**
- * The current job's loadout: the one set at a safe place, else the first learned, those the hand can use first
- * (one weapon, or a hybrid's pair, never has more than 5 actives, so nobody loses a skill they use).
+ * The current job's loadout: an explicit loadout, else the hand's or hybrid pair's learned skills first.
+ * Default to the offensive kit. A support skill uses a free spot or can be set as part of an explicit loadout.
  */
 function loOf(ch) {
   if (ch.lo[ch.job]) return ch.lo[ch.job];
   const pair = JOBS[ch.job].kind === "hybrid" ? JOBS[ch.job].wk : [inHand(ch)];
   const now = (id) => skWks(SKILL[id]).some((k) => pair.includes(k));
   const learned = skillsFor(ch), order = [...learned.filter(now), ...learned.filter((id) => !now(id))];
-  return { a: order.filter((id) => SKILL[id].kind !== "p").slice(0, LO_MAX.a), p: order.filter((id) => SKILL[id].kind === "p").slice(0, LO_MAX.p), x: "", y: "" };
+  const actives = order.filter((id) => SKILL[id].kind !== "p"), home = actives.filter(now);
+  const a = [...home.filter((id) => !SKILL[id].support), ...home.filter((id) => SKILL[id].support), ...actives.filter((id) => !now(id))];
+  return { a: a.slice(0, LO_MAX.a), p: order.filter((id) => SKILL[id].kind === "p").slice(0, LO_MAX.p), x: "", y: "" };
 }
 /** A passive in the cross-weapon slots must come from mastery outside the current job's weapon pair. */
 function loOffOk(ch, id) {
@@ -8244,7 +8253,7 @@ function gainXp(S, p, n) {
 }
 
 // Optional presentation tag at h[6]. h[5] is reserved for HP costs.
-const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3 };
+const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3, rally: 4, binding: 5 };
 
 /** Take `dmg` off a monster on behalf of `p`; true if that killed it. */
 function dealMob(S, rt, mob, p, dmg, crit, cue) {
@@ -9016,12 +9025,6 @@ function startHammer(S, p, move, skill = null, power = 1, hpSpent = 0) {
   S.maps[p.map].ev.push(["a", p.eid, move.fx, Math.round(x), Math.round(y), p.dir, 0, move.wind, p.aim | 0]);
 }
 
-function hammerHpCost(p, sk) {
-  if (!sk.hpPct) return 0;
-  const pct = sk.hpPct - (pasOn(p, "hammer_breath") ? SKILL.hammer_breath.discount : 0);
-  return Math.ceil(stats(p).mhp * Math.max(0.01, pct));
-}
-
 function hammerBracing(p, now) {
   if (!p.hammer || now >= p.hammer.at) return 0;
   return Math.max(p.hammer.move.brace || 0, pasOn(p, "hammer_brace") ? SKILL.hammer_brace.brace : 0);
@@ -9125,6 +9128,11 @@ const skJobBonus = (p, sk) => sk.job === p.ch.job ? JOB_SKILL_RANKS[jobSkillRank
 /** What a skill costs right now. */
 const skMp = (p, sk) => resoReady(p, sk) ? 0 : Math.ceil(sk.mp * (100 - (skJobBonus(p, sk)?.mp || 0)) / 100);
 const skCooldown = (p, sk) => Math.round(sk.cd * (1 - stats(p).cdr) * (100 - (skJobBonus(p, sk)?.cd || 0)) / 100);
+function skillHpCost(p, sk) {
+  if (!sk.hpPct) return 0;
+  const discount = sk.wk === "hammer" && pasOn(p, "hammer_breath") ? SKILL.hammer_breath.discount : 0;
+  return Math.ceil(stats(p).mhp * Math.max(0.01, sk.hpPct - discount));
+}
 /** Inertia stacks still held (they fall away 2.5 s after the last sword hit). */
 const inertOf = (p) => (p.inert && p.S.now - p.inertAt <= SKILL.inertia.ms ? p.inert : 0);
 
@@ -9212,6 +9220,21 @@ function healP(rt, p, n, cue) {
   if (cue) event.push(0, cue);
   rt.ev.push(event);
   return amt;
+}
+
+/** A healed ally's next nearby kill can share job XP with the caster. */
+function healSupport(rt, healer, ally, amount, cue, creditMs) {
+  const restored = healP(rt, ally, amount, cue);
+  if (restored && ally !== healer && healer.party && healer.party === ally.party) {
+    const now = healer.S.now;
+    let support = healer.healCredit;
+    if (!support || support.map !== healer.map || support.party !== healer.party) {
+      support = healer.healCredit = { map: healer.map, party: healer.party, targets: new Map() };
+    }
+    for (const [pid, expires] of support.targets) if (expires <= now) support.targets.delete(pid);
+    support.targets.set(ally.pid, now + creditMs);
+  }
+  return restored;
 }
 
 /** Lingering skill things in a map: lures, vortices, beasts, storms, traps, a sanctuary. */
@@ -9338,6 +9361,21 @@ function propPulse(S, rt, m, p, o, now) {
       else o.held = e;
       return false;
     }
+    case "banner": {
+      if (p.party !== o.party) { propEnd(S, rt, m, p, o); return true; }
+      rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y), ++o.i]);
+      for (const ally of members(S, p)) {
+        if (ally.dead || ally.map !== p.map || dist(ally.x, ally.y, o.x, o.y) > o.r) continue;
+        if (!(ally.rallyAt > now)) ally.dirty = true;
+        ally.rallyAt = now + o.every + 150;
+        if (ally.rallyMendAt > now) continue;
+        const heal = (stats(ally).mhp * o.sk.heal + o.atk * o.sk.atkHeal) * o.k;
+        if (healSupport(rt, p, ally, ally === p ? heal / 2 : heal, HIT_CUE.rally, o.sk.creditMs)) {
+          ally.rallyMendAt = now + o.every - 100;
+        }
+      }
+      return false;
+    }
     case "sanct": {
       // blood sanctuary: the party inside is warded, the monsters inside bleed into the most hurt of them
       o.x = p.x; o.y = p.y;
@@ -9458,7 +9496,7 @@ function skWire(p, now) {
     const sk = SKILL[id];
     if (sk.kind === "p") return [id, 0, 0, pasNative(ch, id, lo, hand) || loOff(ch, id, lo) ? 1 : 0];
     const row = [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(ch, sk) || !lo.a.includes(id) ? 0 : 1];
-    if (sk.hpPct || sk.job) row.push(sk.hpPct ? hammerHpCost(p, sk) : 0);
+    if (sk.hpPct || sk.job) row.push(skillHpCost(p, sk));
     if (sk.job) row.push(skCooldown(p, sk));
     return row;
   });
@@ -9494,7 +9532,7 @@ function castSkill(S, p, id) {
     else if ((p.reso = (p.reso | 0) + 1) >= SKILL.reso.n) ev(113, p.x, p.y - 6);
   }
   p.mp -= cost;
-  const hpSpent = sk.hpPct ? hammerHpCost(p, sk) : 0;
+  const hpSpent = skillHpCost(p, sk);
   if (hpSpent) { p.hp -= hpSpent; rt.ev.push(["h", p.eid, hpSpent, 0, 1, 1]); }
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1, 1]); } }
   // WIS shortens every wait; an echo (legendary) may give it straight back
@@ -9530,12 +9568,24 @@ function castSkill(S, p, id) {
         const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
         if (!d || hammerLine(m, p.x, p.y, dx / d, dy / d, d) >= d) hit(o, sk.mult, { mag: 1 });
       }
-      const healed = [];
       for (const ally of members(S, p)) if (ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= sk.healR) {
-        const restored = healP(rt, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal, HIT_CUE.oath);
-        if (restored && ally !== p) healed.push(ally.pid);
+        healSupport(rt, p, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal, HIT_CUE.oath, sk.creditMs);
       }
-      if (healed.length) p.oathSupport = { until: now + sk.creditMs, party: p.party, map: p.map, healed };
+      break;
+    }
+    case "rally_banner": {
+      ev(sk.fx, p.x, p.y, sk.r);
+      prop({ kind: "banner", x: p.x, y: p.y, r: sk.r, i: 0, party: p.party, atk: st.atk,
+        every: sk.every, next: now + 500, until: now + sk.ms, wire: true });
+      break;
+    }
+    case "revive_binding": {
+      ev(sk.fx, p.x, p.y, sk.r);
+      const injured = allies(S, p, sk.r).filter((ally) => ally !== p && ally.hp < stats(ally).mhp);
+      injured.sort((a, b) => a.hp / stats(a).mhp - b.hp / stats(b).mhp || a.eid - b.eid);
+      const mend = (ally, share) => healSupport(rt, p, ally, (stats(ally).mhp * sk.heal + st.atk * sk.atkHeal) * k * share, HIT_CUE.binding, sk.creditMs);
+      if (injured.length) injured.slice(0, 2).forEach((ally, i) => mend(ally, i ? 0.5 : 1));
+      else mend(p, 0.5);
       break;
     }
     // ── 대검
@@ -15327,7 +15377,7 @@ export function validateAction(S, pid, a) {
       if (now < (p.stag || 0)) return bad("stag");
       if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
       if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");
-      if (sk.hpPct && p.hp <= hammerHpCost(p, sk)) return bad("HP가 부족합니다");
+      if (sk.hpPct && p.hp <= skillHpCost(p, sk)) return bad("HP가 부족합니다");
       return OK;
     }
     case "use": {
@@ -16729,6 +16779,7 @@ export function tick(S, now) {
     // life skills: gathering channels, parcels, node cooldowns, the 알바 board's day (58-life.js)
     lifeTick(S, p, now);
     windTouch(S, p, now);
+    if (p.rallyAt && now >= p.rallyAt) { p.rallyAt = 0; p.dirty = true; }
     if (!p.dead) weaponTick(S, p, now);
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;

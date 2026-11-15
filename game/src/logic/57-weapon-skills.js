@@ -48,6 +48,11 @@ const skJobBonus = (p, sk) => sk.job === p.ch.job ? JOB_SKILL_RANKS[jobSkillRank
 /** What a skill costs right now. */
 const skMp = (p, sk) => resoReady(p, sk) ? 0 : Math.ceil(sk.mp * (100 - (skJobBonus(p, sk)?.mp || 0)) / 100);
 const skCooldown = (p, sk) => Math.round(sk.cd * (1 - stats(p).cdr) * (100 - (skJobBonus(p, sk)?.cd || 0)) / 100);
+function skillHpCost(p, sk) {
+  if (!sk.hpPct) return 0;
+  const discount = sk.wk === "hammer" && pasOn(p, "hammer_breath") ? SKILL.hammer_breath.discount : 0;
+  return Math.ceil(stats(p).mhp * Math.max(0.01, sk.hpPct - discount));
+}
 /** Inertia stacks still held (they fall away 2.5 s after the last sword hit). */
 const inertOf = (p) => (p.inert && p.S.now - p.inertAt <= SKILL.inertia.ms ? p.inert : 0);
 
@@ -135,6 +140,21 @@ function healP(rt, p, n, cue) {
   if (cue) event.push(0, cue);
   rt.ev.push(event);
   return amt;
+}
+
+/** A healed ally's next nearby kill can share job XP with the caster. */
+function healSupport(rt, healer, ally, amount, cue, creditMs) {
+  const restored = healP(rt, ally, amount, cue);
+  if (restored && ally !== healer && healer.party && healer.party === ally.party) {
+    const now = healer.S.now;
+    let support = healer.healCredit;
+    if (!support || support.map !== healer.map || support.party !== healer.party) {
+      support = healer.healCredit = { map: healer.map, party: healer.party, targets: new Map() };
+    }
+    for (const [pid, expires] of support.targets) if (expires <= now) support.targets.delete(pid);
+    support.targets.set(ally.pid, now + creditMs);
+  }
+  return restored;
 }
 
 /** Lingering skill things in a map: lures, vortices, beasts, storms, traps, a sanctuary. */
@@ -261,6 +281,21 @@ function propPulse(S, rt, m, p, o, now) {
       else o.held = e;
       return false;
     }
+    case "banner": {
+      if (p.party !== o.party) { propEnd(S, rt, m, p, o); return true; }
+      rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y), ++o.i]);
+      for (const ally of members(S, p)) {
+        if (ally.dead || ally.map !== p.map || dist(ally.x, ally.y, o.x, o.y) > o.r) continue;
+        if (!(ally.rallyAt > now)) ally.dirty = true;
+        ally.rallyAt = now + o.every + 150;
+        if (ally.rallyMendAt > now) continue;
+        const heal = (stats(ally).mhp * o.sk.heal + o.atk * o.sk.atkHeal) * o.k;
+        if (healSupport(rt, p, ally, ally === p ? heal / 2 : heal, HIT_CUE.rally, o.sk.creditMs)) {
+          ally.rallyMendAt = now + o.every - 100;
+        }
+      }
+      return false;
+    }
     case "sanct": {
       // blood sanctuary: the party inside is warded, the monsters inside bleed into the most hurt of them
       o.x = p.x; o.y = p.y;
@@ -381,7 +416,7 @@ function skWire(p, now) {
     const sk = SKILL[id];
     if (sk.kind === "p") return [id, 0, 0, pasNative(ch, id, lo, hand) || loOff(ch, id, lo) ? 1 : 0];
     const row = [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(ch, sk) || !lo.a.includes(id) ? 0 : 1];
-    if (sk.hpPct || sk.job) row.push(sk.hpPct ? hammerHpCost(p, sk) : 0);
+    if (sk.hpPct || sk.job) row.push(skillHpCost(p, sk));
     if (sk.job) row.push(skCooldown(p, sk));
     return row;
   });
@@ -417,7 +452,7 @@ function castSkill(S, p, id) {
     else if ((p.reso = (p.reso | 0) + 1) >= SKILL.reso.n) ev(113, p.x, p.y - 6);
   }
   p.mp -= cost;
-  const hpSpent = sk.hpPct ? hammerHpCost(p, sk) : 0;
+  const hpSpent = skillHpCost(p, sk);
   if (hpSpent) { p.hp -= hpSpent; rt.ev.push(["h", p.eid, hpSpent, 0, 1, 1]); }
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1, 1]); } }
   // WIS shortens every wait; an echo (legendary) may give it straight back
@@ -453,12 +488,24 @@ function castSkill(S, p, id) {
         const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
         if (!d || hammerLine(m, p.x, p.y, dx / d, dy / d, d) >= d) hit(o, sk.mult, { mag: 1 });
       }
-      const healed = [];
       for (const ally of members(S, p)) if (ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= sk.healR) {
-        const restored = healP(rt, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal, HIT_CUE.oath);
-        if (restored && ally !== p) healed.push(ally.pid);
+        healSupport(rt, p, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal, HIT_CUE.oath, sk.creditMs);
       }
-      if (healed.length) p.oathSupport = { until: now + sk.creditMs, party: p.party, map: p.map, healed };
+      break;
+    }
+    case "rally_banner": {
+      ev(sk.fx, p.x, p.y, sk.r);
+      prop({ kind: "banner", x: p.x, y: p.y, r: sk.r, i: 0, party: p.party, atk: st.atk,
+        every: sk.every, next: now + 500, until: now + sk.ms, wire: true });
+      break;
+    }
+    case "revive_binding": {
+      ev(sk.fx, p.x, p.y, sk.r);
+      const injured = allies(S, p, sk.r).filter((ally) => ally !== p && ally.hp < stats(ally).mhp);
+      injured.sort((a, b) => a.hp / stats(a).mhp - b.hp / stats(b).mhp || a.eid - b.eid);
+      const mend = (ally, share) => healSupport(rt, p, ally, (stats(ally).mhp * sk.heal + st.atk * sk.atkHeal) * k * share, HIT_CUE.binding, sk.creditMs);
+      if (injured.length) injured.slice(0, 2).forEach((ally, i) => mend(ally, i ? 0.5 : 1));
+      else mend(p, 0.5);
       break;
     }
     // ── 대검

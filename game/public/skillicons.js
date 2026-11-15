@@ -1,9 +1,14 @@
 /**
- * Skill icons: one 16×16 glyph per weapon skill (03-skills.js ids), in two greys and nothing else — the
- * plain engraved look of an old spell book. `#` is the light tone, `o` the dim one.
+ * Skill icons: one 16×16 glyph per weapon skill (03-skills.js ids), mostly in two greys for an
+ * engraved look. `#` is the light tone, `o` the dim one, and support icons have an accent (`+`).
  * One feature per icon, a pixel of margin, light read from the upper left.
  */
 const LIGHT = "#e6e0d0", DIM = "#8f8b80";
+const INK = { "#": LIGHT, o: DIM };
+const SUPPORT_INK = {
+  rally_banner: { "#": "#f2d28b", o: "#418281", "+": "#70d5bf" },
+  revive_binding: { "#": "#e5c8ff", o: "#8665af", "+": "#fff0c6" },
+};
 
 // Integer-pixel clusters, applied in order so holes and shadow planes stay crisp at 1×.
 function blockGlyph(blocks) {
@@ -16,6 +21,42 @@ function blockGlyph(blocks) {
 const hammerHead = [[3, 3, 10, 4, "#"], [2, 4, 12, 2, "#"], [4, 6, 8, 1, "o"], [7, 7, 2, 5, "#"], [6, 12, 4, 2, "o"]];
 
 const GLYPH = {
+  rally_banner: [
+    "................",
+    "...##...........",
+    "...##++.........",
+    "...##++++++.....",
+    "...##++###++++..",
+    "...##++###++o...",
+    "...##++++++o....",
+    "...##+oooo......",
+    "...##...........",
+    "...##...o.......",
+    "...##..o#o......",
+    "...##...o.......",
+    "...##...........",
+    "..o##o..........",
+    ".oooooo.........",
+    "................",
+  ],
+  revive_binding: [
+    "................",
+    ".......++.......",
+    ".......++.......",
+    ".....++++++.....",
+    ".......++.......",
+    ".......++.......",
+    "..###......###..",
+    "..####....####..",
+    "..#oo##..##oo#..",
+    "..#ooo####ooo#..",
+    "..####o##o####..",
+    "..####o##o####..",
+    "..oooo####oooo..",
+    "...oooo##oooo...",
+    "................",
+    "................",
+  ],
   ironsiege: blockGlyph([...hammerHead, [1, 10, 4, 1, "o"], [2, 12, 4, 1, "o"], [10, 11, 4, 2, "#"], [12, 10, 2, 4, "#"]]),
   oathward: [ // A lit gate with an opening and a cross above its arch.
     "................",
@@ -822,10 +863,11 @@ export function skillIcon(id) {
   c.width = c.height = 16;
   const g = c.getContext("2d");
   const rows = GLYPH[id] || [];
+  const ink = SUPPORT_INK[id] || INK;
   rows.forEach((row, y) => {
     for (let x = 0; x < 16; x++) {
-      const ch = row[x];
-      if (ch === "#" || ch === "o") { g.fillStyle = ch === "#" ? LIGHT : DIM; g.fillRect(x, y, 1, 1); }
+      const color = ink[row[x]];
+      if (color) { g.fillStyle = color; g.fillRect(x, y, 1, 1); }
     }
   });
   return (cache[id] = c);

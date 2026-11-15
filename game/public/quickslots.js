@@ -75,6 +75,7 @@ export function skillWhy(id) {
   if (sk.jobNeed && (s.jp?.[0] || 0) < sk.jobNeed) return `직업 Lv.${sk.jobNeed}에 배웁니다`;
   const wk = sk.wk || (G.defs.jobs[sk.job] ? G.defs.jobs[sk.job].wk[0] : "");
   if (!sk.job && !r) return `[${G.defs.wkName[sk.wk]}] 숙련 ${sk.need}에 배웁니다`;
+  if (r && s.lo?.[0] && !s.lo[0].includes(id)) return "스킬 칸에 넣지 않은 스킬입니다";
   const name = G.defs.wkName[wk] || "무기";
   return `[${name}]${PP(name, "을", "를")} 들어야 쓸 수 있습니다`;
 }

@@ -44,15 +44,17 @@ function jfClean(ch) {
 }
 
 /**
- * The current job's loadout: the one set at a safe place, else the first learned, those the hand can use first
- * (one weapon, or a hybrid's pair, never has more than 5 actives, so nobody loses a skill they use).
+ * The current job's loadout: an explicit loadout, else the hand's or hybrid pair's learned skills first.
+ * Default to the offensive kit. A support skill uses a free spot or can be set as part of an explicit loadout.
  */
 function loOf(ch) {
   if (ch.lo[ch.job]) return ch.lo[ch.job];
   const pair = JOBS[ch.job].kind === "hybrid" ? JOBS[ch.job].wk : [inHand(ch)];
   const now = (id) => skWks(SKILL[id]).some((k) => pair.includes(k));
   const learned = skillsFor(ch), order = [...learned.filter(now), ...learned.filter((id) => !now(id))];
-  return { a: order.filter((id) => SKILL[id].kind !== "p").slice(0, LO_MAX.a), p: order.filter((id) => SKILL[id].kind === "p").slice(0, LO_MAX.p), x: "", y: "" };
+  const actives = order.filter((id) => SKILL[id].kind !== "p"), home = actives.filter(now);
+  const a = [...home.filter((id) => !SKILL[id].support), ...home.filter((id) => SKILL[id].support), ...actives.filter((id) => !now(id))];
+  return { a: a.slice(0, LO_MAX.a), p: order.filter((id) => SKILL[id].kind === "p").slice(0, LO_MAX.p), x: "", y: "" };
 }
 /** A passive in the cross-weapon slots must come from mastery outside the current job's weapon pair. */
 function loOffOk(ch, id) {

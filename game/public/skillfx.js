@@ -2,7 +2,7 @@
  * The weapon skills as the player sees them (docs/design/jobs-and-stats.md C.5, H.4): what each skill looks and
  * sounds like (fx codes 70–102 and the nine later hybrids' 120–128 on an "a" event), the passives' little
  * flashes (110–115), the things skills leave standing (a vortex, a phantom beast, a rain of arrows, traps, a
- * storm, a blood sanctuary, a rune circle: "pr" placed, "pp" a beat, "pe" gone), the tracker's lure, the bow's
+ * storm, a blood sanctuary, a rune circle, a support pennant: "pr" placed, "pp" a beat, "pe" gone), the tracker's lure, the bow's
  * arrows ("ar"/"ae": plain, piercing, and the element and ink arrows of kinds 4–7), and the signs drawn over
  * creatures — a dagger's marks, a book's brand, a frozen monster, a superconducted one.
  *
@@ -148,6 +148,62 @@ function oathSeal(x, y, r) {
   }, 565);
 }
 
+const BANNER_COLOR = { cloth: "#427c76", shade: "#235954", light: "#a4ecd2", metal: "#d9b468", shine: "#fff0b0" };
+const BINDING_COLOR = { edge: "#9176ba", page: "#f1dcff", ribbon: "#be9cee", clasp: "#f6d484" };
+
+/** Two pages unfold above the caster, releasing ribbons that never imply a target. */
+function bindingFolio(x, y, radius) {
+  const [cx, cy] = at(x, y, 30);
+  const c = BINDING_COLOR;
+  S3.fx.wave(x, y, radius * 0.49, c.ribbon, 350);
+  S3.fxCustom((g, k) => {
+    const spread = Math.round(5 + 6 * Math.min(1, k * 5));
+    const lift = Math.round(k * 15), yy = cy - lift;
+    g.globalAlpha = Math.min(1, 0.4 + k * 9, (1 - k) * 3);
+    for (const side of [-1, 1]) {
+      const x0 = side < 0 ? cx - spread : cx + 1;
+      px(g, x0 - 1, yy - 5, spread + 2, 13, INK);
+      px(g, x0, yy - 5, spread, 2, c.edge);
+      px(g, x0, yy - 3, spread, 8, c.page);
+      px(g, x0 + 1, yy - 1, spread - 2, 1, c.ribbon);
+      px(g, x0 + 1, yy + 2, spread - 3, 1, c.ribbon);
+      px(g, x0, yy + 5, spread, 2, c.edge);
+      // The last pixels race out after the thick ribbon leaves the spine.
+      const n = Math.min(28, Math.floor(k * 72));
+      for (let i = Math.max(0, n - 17); i <= n; i++) {
+        const u = i / 28, xx = cx + side * (spread + u * radius * 0.38);
+        const ry = yy + 4 + u * 22 - Math.sin(u * Math.PI * 2) * 9;
+        const size = i < n - 4 ? 2 : 1;
+        px(g, xx, ry, size, size + 1, i % 7 === 0 ? c.clasp : c.ribbon);
+      }
+    }
+    px(g, cx - 1, yy - 4, 2, 12, "#55426e");
+    px(g, cx - 1, yy + 1, 2, 4, c.clasp);
+  }, 560);
+}
+
+/** Only a positive heal produces these short marks, pinned to the recipient. */
+export function supportMend(target, cue) {
+  const banner = cue === 4, color = banner ? BANNER_COLOR.light : BINDING_COLOR.page;
+  S3.fx.wave(target.x, target.y, banner ? 14 : 18, color, 295);
+  S3.fxCustom((g, k) => {
+    const [x, y] = at(target.x, target.y, 19 + k * 14);
+    g.globalAlpha = Math.min(1, (1 - k) * 3);
+    if (banner) {
+      px(g, x - 2, y - 5, 5, 11, INK); px(g, x - 5, y - 2, 11, 5, INK);
+      px(g, x - 1, y - 4, 3, 9, color); px(g, x - 4, y - 1, 9, 3, color);
+      px(g, x - 1, y - 1, 2, 2, BANNER_COLOR.shine);
+    } else {
+      for (const side of [-1, 1]) for (let i = 0; i <= 10; i++) {
+        const a = Math.PI * i / 10;
+        px(g, x + side * (Math.cos(a) * (8 + k * 3)), y + side * Math.sin(a) * 4, 2, 2, color);
+      }
+      px(g, x - 1, y - 5, 3, 11, BINDING_COLOR.clasp);
+      px(g, x - 4, y - 1, 9, 3, color);
+    }
+  }, banner ? 330 : 420);
+}
+
 function soulTrail(ax, ay, bx, by, ms) {
   const [x0, y0] = at(ax, ay, 19), [x1, y1] = at(bx, by, 11);
   const d = Math.max(1, Math.hypot(x1 - x0, y1 - y0)), ux = (x1 - x0) / d, uy = (y1 - y0) / d;
@@ -239,6 +295,45 @@ function arrowRain(x, y, r, ms) {
     }
   }, ms);
 }
+
+/** A brass spear with a teal pennant marks the fixed point of the party's recovery area. */
+function rallyPennant(o, id, ms) {
+  const { x, y, r } = o, c = BANNER_COLOR, t0 = now();
+  S3.fxCustom((g, k) => {
+    if (placed.get(id) !== o) return;
+    const a = Math.min(1, k * 55, (1 - k) * 10);
+    g.globalAlpha = 0.05 * a;
+    g.fillStyle = c.light;
+    g.beginPath(); g.arc(x * P, y * P, r * P, 0, 7); g.fill();
+    g.globalAlpha = 0.54 * a;
+    for (let i = 0; i < 64; i++) {
+      if (i % 8 > 4) continue;
+      const arc = i * Math.PI / 32;
+      px(g, (x + Math.cos(arc) * r) * P, (y + Math.sin(arc) * r) * P, 4, 4, i % 8 === 0 ? c.shine : c.light);
+    }
+  }, ms, true);
+  S3.props.set("pr" + id, {
+    x, y, until: t0 + ms,
+    draw(g, t, sx, sy) {
+      const top = sy - 27 - Math.round(Math.max(0, 1 - (t - t0) / 105) * 12);
+      const lit = o.pulseUntil > t;
+      const furl = Math.round(Math.sin((t - t0) / 140) * 2);
+      g.globalAlpha = Math.min(1, Math.max(0, (this.until - t) / 170));
+      px(g, sx - 4, sy - 1, 9, 3, INK); px(g, sx - 2, sy - 2, 5, 3, "#856543");
+      px(g, sx - 1, top + 4, 4, sy - top - 4, INK);
+      px(g, sx, top + 4, 2, sy - top - 4, c.metal);
+      px(g, sx - 1, top - 2, 4, 8, INK); px(g, sx, top - 4, 2, 9, c.shine);
+      for (let j = 0; j < 12; j++) {
+        const width = 22 - Math.floor(j / 2) - (j > 8 ? 4 : 0) + furl;
+        px(g, sx + 3, top + 6 + j, width, 1, j === 0 || j === 11 ? INK : j >= 8 ? c.shade : c.cloth);
+        if (j > 0 && j < 11) px(g, sx + width + 2, top + 6 + j, 1, 1, INK);
+      }
+      const ink = lit ? c.shine : c.light;
+      px(g, sx + 8, top + 8, 2, 7, ink); px(g, sx + 6, top + 10, 6, 3, ink);
+    },
+  });
+}
+
 function placeProp(G, B, f, id, kind, x, y, r, ms, eid) {
   placed.set(id, { kind, x, y, r, eid });
   if (placed.size > 60) placed.delete(placed.keys().next().value);
@@ -293,6 +388,7 @@ function placeProp(G, B, f, id, kind, x, y, r, ms, eid) {
     }
     case "sanct": follow.set(id, { eid, r, until: now() + ms, t0: now() }); break;
     case "rune": runeCircle(placed.get(id), x, y, r, ms); break;
+    case "banner": rallyPennant(placed.get(id), id, ms); break;
   }
 }
 /** The six marks of 메아리 법진, 3×3 each (a few strokes apiece: never a letter of any real script). */
@@ -372,6 +468,12 @@ function propBeat(G, B, f, e) {
       break;
     }
     case "storm": B.fx.zap(x + rand(-o.r, o.r) * 0.7, y + rand(-o.r, o.r) * 0.5, "#bfe8ff", 220); break;
+    case "banner": {
+      o.pulseUntil = now() + 250;
+      S3.fx.wave(x, y, o.r, BANNER_COLOR.light, 330);
+      rim(x, y, o.r, BANNER_COLOR.cloth, BANNER_COLOR.shine, 290, 0.19);
+      break;
+    }
     case "rune": {
       // the beat's element floods the circle (the flat drawing reads o.el), and shows in the air over it
       const el = extra >= 1 && extra <= 3 ? extra : 1, col = ELEM_COL[el];
@@ -582,6 +684,18 @@ export function skillEvent(e, ctx) {
       const [, eid, , tx, ty] = e;
       const src = entityPos(eid);
       if (!src) return true;
+      if (kind === 135 || kind === 136) {
+        const y = ty + 6, near = eid === G.you || skillNear(G, tx, y);
+        if (kind === 135) {
+          S3.fx.wave(tx, y, (e[7] || 76) * 0.52, BANNER_COLOR.light, 260);
+          S3.fx.sparkle(tx, y, 0.25, BANNER_COLOR.shine, 6);
+          if (near) Sound.play("rally_banner");
+        } else {
+          bindingFolio(tx, y, e[7] || 105);
+          if (near) Sound.play("revive_binding");
+        }
+        return true;
+      }
       if (kind === 133 || kind === 134) {
         const ward = kind === 134, color = ward ? "#ffe3a0" : "#9ce6d8", y = ty + 6, dir = e[5];
         const radius = e[7] || (ward ? 34 : 23), flat = S3.fx;

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8");
 const { __hammer: H, ...L } = await import("data:text/javascript;base64," + Buffer.from(src + `
-export const __hammer = { canStand, mapOf, changeMap, newMob, stats, deriveStats, fall, hammerHpCost, hammerBracing, plain, gainJob, grazeChance, jobNeed };`).toString("base64"));
+export const __hammer = { canStand, mapOf, changeMap, newMob, stats, deriveStats, fall, skillHpCost, hammerBracing, plain, gainJob, grazeChance, jobNeed };`).toString("base64"));
 const D = L.defs();
 const S = L.setup();
 S.now = 1_000_000;
@@ -87,7 +87,7 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
   assert.equal(p.hammerCracks.get(first).n, 2);
   const fault = D.skills.hammer_fault;
   ready(); p.hitAt = S.now;
-  const hp = p.hp, spent = H.hammerHpCost(p, fault);
+  const hp = p.hp, spent = H.skillHpCost(p, fault);
   assert.ok(actions(p, { t: "sk", id: "hammer_fault", a: 0 }).ok);
   assert.equal(p.hp, hp - spent, "the full cost is paid at cast");
   advance(200);
@@ -105,7 +105,7 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
 
 {
   const target = m(16, 0), old = p.ch.eq.weapon;
-  const cost = H.hammerHpCost(p, D.skills.hammer_stamp);
+  const cost = H.skillHpCost(p, D.skills.hammer_stamp);
   ready(); p.hp = cost;
   assert.equal(actions(p, stamp).ok, false, "HP cost cannot kill the caster");
   ready(); const hp = p.hp;

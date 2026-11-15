@@ -681,6 +681,7 @@ const IMPACT = { sword: [330, 118, 2500, 1900], dagger: [420, 130, 3300, 2600], 
 /** Minimum seconds between two plays of the same effect. */
 const THROTTLE = { gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.035, magic_hit: 0.04, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5,
   hammer_land: 0.065, merc_dash: 0.1, oath_cast: 0.15, oath_heal: 0.28,
+  rally_banner: 0.18, rally_mend: 0.26, revive_binding: 0.22, revive_mend: 0.4,
   cross_cut: 0.1, element_dagger: 0.12, frost_lance: 0.12, rune_circle: 0.18, inkshot: 0.12,
 };
 /** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
@@ -806,6 +807,28 @@ const SFX = {
   oath_heal() {
     this.arp("sine", [784, 1047], 0.056, 0.15, 0.049);
     this.tone("triangle", 1568, 1568, 0.13, 0.021, 0.06);
+  },
+  // A planted staff and a short flap of cloth, followed by a warm two-note heal.
+  rally_banner() {
+    this.tone("triangle", 174, 105, 0.11, 0.13);
+    this.noise(0.14, 0.069, 980, "bandpass", 0.022, 2360);
+    this.tone("triangle", 330, 330, 0.21, 0.06, 0.06);
+    this.tone("sine", 659, 630, 0.16, 0.036, 0.082);
+  },
+  rally_mend() {
+    this.arp("sine", [698, 880], 0.064, 0.17, 0.066);
+    this.tone("triangle", 523, 523, 0.15, 0.024, 0.064);
+  },
+  // A loose page snaps into the binding. The confirmed receiver hears a separate rising chord.
+  revive_binding() {
+    this.noise(0.11, 0.084, 2420, "bandpass", 0, 880);
+    this.tone("sine", 220, 165, 0.18, 0.07);
+    this.arp("triangle", [330, 494, 659], 0.057, 0.23, 0.057, 0.048);
+  },
+  revive_mend() {
+    this.tone("sine", 220, 440, 0.19, 0.075);
+    this.arp("sine", [440, 659, 880, 1047], 0.057, 0.27, 0.071, 0.035);
+    this.tone("triangle", 1319, 1319, 0.22, 0.029, 0.2);
   },
   cross_cut() {
     const p = this.vary();

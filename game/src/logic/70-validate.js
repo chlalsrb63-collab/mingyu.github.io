@@ -224,7 +224,7 @@ export function validateAction(S, pid, a) {
       if (now < (p.stag || 0)) return bad("stag");
       if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
       if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");
-      if (sk.hpPct && p.hp <= hammerHpCost(p, sk)) return bad("HP가 부족합니다");
+      if (sk.hpPct && p.hp <= skillHpCost(p, sk)) return bad("HP가 부족합니다");
       return OK;
     }
     case "use": {

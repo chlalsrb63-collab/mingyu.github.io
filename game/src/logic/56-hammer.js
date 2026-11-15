@@ -18,12 +18,6 @@ function startHammer(S, p, move, skill = null, power = 1, hpSpent = 0) {
   S.maps[p.map].ev.push(["a", p.eid, move.fx, Math.round(x), Math.round(y), p.dir, 0, move.wind, p.aim | 0]);
 }
 
-function hammerHpCost(p, sk) {
-  if (!sk.hpPct) return 0;
-  const pct = sk.hpPct - (pasOn(p, "hammer_breath") ? SKILL.hammer_breath.discount : 0);
-  return Math.ceil(stats(p).mhp * Math.max(0.01, pct));
-}
-
 function hammerBracing(p, now) {
   if (!p.hammer || now >= p.hammer.at) return 0;
   return Math.max(p.hammer.move.brace || 0, pasOn(p, "hammer_brace") ? SKILL.hammer_brace.brace : 0);

@@ -42,10 +42,10 @@ const gear = (id, q = 0, enh = 0) => ({ id, q, enh, af: [], sk: 0, ru: [] });
 const count = (ch, id) => ch.inv.reduce((a, s) => a + (s.id === id ? s.n || 1 : 0), 0);
 
 // ── definitions
-// (weapon skills: two actives and five mastery passives per weapon; tests/skills.mjs has the rest)
+// (weapon skills: two attack skills and five passives per weapon; spear and book add party support)
 for (const wk of D.wkOrder) {
   const own = D.skillOrder.filter((id) => D.skills[id].wk === wk && "ap".includes(D.skills[id].kind));
-  const expected = [["a", 1], ["a", 10], ...[10, 20, 30, 40, 50].map((lv) => ["p", lv])];
+  const expected = [["a", 1], ["a", 10], ["p", 10], ...(["spear", "book"].includes(wk) ? [["a", 15]] : []), ...[20, 30, 40, 50].map((lv) => ["p", lv])];
   assert.deepEqual(own.map((id) => [D.skills[id].kind, D.skills[id].need]), expected, wk + "'s mastery unlocks");
 }
 assert.equal(D.whSlots, 60);

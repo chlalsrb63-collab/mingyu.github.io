@@ -193,7 +193,7 @@ function newAct(p, skill) {
   p.actN = (p.actN | 0) + 1;
   p.actGain = skill ? WM_GAIN.skill : WM_GAIN.hit;
 }
-/** A kill gives weapon mastery to attackers and job experience to attackers and active Paladin support. */
+/** A kill gives weapon mastery to attackers and job experience to attackers and nearby healers. */
 function wmKill(S, rt, mob) {
   const d = MOBS[mob.k];
   if (d.chest || d.still) return;
@@ -206,9 +206,11 @@ function wmKill(S, rt, mob) {
     if (!p || p.map !== rt.id || p.dead) continue;
     if (wmEligible(p, d)) { gainWm(S, p, n, bonus); jobCredit.add(p); }
     if (!p.party) continue;
-    for (const healer of allies(S, p)) {
-      const support = healer.oathSupport;
-      if (support?.until > S.now && support.party === p.party && support.map === rt.id && support.healed.includes(pid) && wmEligible(healer, d)) {
+    const range = S.dims[rt.id] ? PARTY_RANGE : FIELD_PARTY_RANGE;
+    for (const healer of allies(S, p, range)) {
+      const support = healer.healCredit;
+      if (support?.targets.get(pid) > S.now && support.party === p.party && support.map === rt.id
+        && dist(healer.x, healer.y, mob.x, mob.y) <= range && wmEligible(healer, d)) {
         jobCredit.add(healer);
       }
     }

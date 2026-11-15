@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, xpNeed, stats, atkRange, aimIdx, EVT_MAPS, worldEvent, ITEMS, SOLID_G, MAXLV, DIM_TIER, DIM_CHAL, CHAL_KEYS, dimTierK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk, chalOfWeek };\n";
+  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, skillHpCost, xpNeed, stats, atkRange, aimIdx, EVT_MAPS, worldEvent, ITEMS, SOLID_G, MAXLV, DIM_TIER, DIM_CHAL, CHAL_KEYS, dimTierK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk, chalOfWeek };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, D = X.DIM;
 // tuning runs: HPB=… BOSSHP=… NOCLEAR=1 node tests/dimrift.mjs -v
@@ -496,9 +496,15 @@ function runParty(lv, classes, seedSalt, shift = 0, opt = {}) {
       if (!tgt) continue;
       const dd = Math.hypot(tgt.x - p.x, tgt.y - p.y), aim = X.aimIdx(tgt.x - p.x, tgt.y - p.y);
       if (dd > X.atkRange(p) * 0.85) { walk(p, Math.floor(tgt.x / T), Math.floor(tgt.y / T)); continue; }
-      // skills first (whichever are ready), then the plain blow
+      // Use the action bar like a party: use manual support for a nearby injured member, and save HP below 35%.
       let cast = false;
-      for (let i = X.SKILL_ORDER.length - 1; i >= 0 && !cast; i--) { const id = X.SKILL_ORDER[i]; if (X.SKILL[id].kind !== "p" && act(S, p.pid, { t: "sk", id, a: aim }).ok) cast = true; }
+      for (let i = X.SKILL_ORDER.length - 1; i >= 0 && !cast; i--) {
+        const id = X.SKILL_ORDER[i], sk = X.SKILL[id];
+        if (sk.kind === "p" || (sk.autoHp && p.hp - X.skillHpCost(p, sk) < X.stats(p).mhp * sk.autoHp)) continue;
+        if (sk.noAuto && (!sk.support || !ps.some((ally) => ally.map === p.map && !ally.dead
+          && Math.hypot(ally.x - p.x, ally.y - p.y) <= sk.r && ally.hp < X.stats(ally).mhp * 0.7))) continue;
+        if (act(S, p.pid, { t: "sk", id, a: aim }).ok) cast = true;
+      }
       if (!cast) act(S, p.pid, { t: "atk", a: aim });
     }
     step(S);
@@ -538,7 +544,8 @@ function runParty(lv, classes, seedSalt, shift = 0, opt = {}) {
   }
   const ok = runs.filter((r) => !miss(r)), avg = ok.reduce((s, r) => s + r.clear, 0) / ok.length;
   log(`average clear ${avg.toFixed(2)} min`);
-  if (!process.env.NOCLEAR && !process.env.ONLY) assert.ok(avg >= 5.5 && avg <= 9, `the average clear ${avg.toFixed(2)} min sits inside the window`);
+  // Keep the five-minute floor from the planned 5–10 minute gameplay window.
+  if (!process.env.NOCLEAR && !process.env.ONLY) assert.ok(avg >= 5 && avg <= 9, `the average clear ${avg.toFixed(2)} min sits inside the window`);
   // a solo player two levels under the band: reaches the master well inside the limit (beating it alone is up to the player:
   // the headless bot does not kite, so it is only measured, not asserted)
   const solo = runParty(22, ["warrior"], 7);

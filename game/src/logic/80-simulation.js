@@ -493,6 +493,7 @@ export function tick(S, now) {
     // life skills: gathering channels, parcels, node cooldowns, the 알바 board's day (58-life.js)
     lifeTick(S, p, now);
     windTouch(S, p, now);
+    if (p.rallyAt && now >= p.rallyAt) { p.rallyAt = 0; p.dirty = true; }
     if (!p.dead) weaponTick(S, p, now);
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;

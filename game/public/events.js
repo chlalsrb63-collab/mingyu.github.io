@@ -26,7 +26,7 @@ import { entityPos } from "./net.js";
 import { addChat, banner, chatLog } from "./windows.js";
 import { fadeIn } from "./win_world.js";
 
-const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3 }; // h[6], on selected impacts or healing spells
+const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3, banner: 4, binding: 5 }; // h[6], on selected impacts or healing spells
 
 const MOB_COL = { twinhare: "#a83848", gutfrog: "#7a9a4a", eyecrow: "#5c3c6c", splitboar: "#a83848", ribdeer: "#e0d8c8", hydrasnake: "#5a8a4a", mothface: "#b8a890", ratking: "#c87a8a", bonehound: "#a83848", batcluster: "#5c3c6c", pigeonmass: "#7a8aa0", doghead: "#7a5a48", catsplit: "#a83848", fishwalker: "#8ab0c0", leechmaw: "#b4cc3c", gatorhalf: "#5a7a4a", eelknot: "#4a5a6a", spiderhand: "#e0d8c8", bearmaw: "#a83848", owlstare: "#7a5a48", twingoat: "#e0d8c8", horsehalf: "#a83848", serpentwing: "#b4cc3c", boss: "#e050b8", abyssboss: "#b4cc3c", chest_meadow: "#f0c040", chest_forest: "#f0c040", chest_city: "#f0c040", chest_cave: "#f0c040", chest_crypt: "#f0c040", chest_sewer: "#f0c040", chest_abyss: "#f0c040" , lambmaw: "#a83848", foxtwine: "#c8643c", toadbrood: "#7a8a4a", squidrat: "#8a6a7a", crabskull: "#c85a3a", moleworm: "#5a566a", lionhand: "#b8905a", sowseer: "#d8a0a8", twinhare_bone: "#e0d8c8", gutfrog_poison: "#8ad84a", ratking_bile: "#b4cc3c", splitboar_frost: "#8ad8ff", hydrasnake_steel: "#a8b4c8", bonehound_ash: "#5a5a66", batcluster_blood: "#b02838", doghead_fire: "#ff8a3a" };
 export const mobMax = (m) => Math.round(G.defs.mobs[m.k].hp * G.defs.eliteHp[m.el | 0]);
@@ -107,6 +107,9 @@ export function onEvent(e, t) {
           S3.fx.wave(tgt.x, tgt.y, oath ? 15 : 10, color, 350);
           S3.fx.burst(tgt.x, tgt.y, 0.3, color, oath ? 7 : 4, 1.1);
           if (id === G.you) Sound.play(oath ? "oath_heal" : "heal");
+        } else if (cue === HIT_CUE.banner || cue === HIT_CUE.binding) {
+          SkillFx.supportMend(tgt, cue);
+          if (id === G.you) Sound.play(cue === HIT_CUE.banner ? "rally_mend" : "revive_mend");
         }
       } else {
         const hammer = cue === HIT_CUE.hammer; // the accompanying hm event plays the one landing cue

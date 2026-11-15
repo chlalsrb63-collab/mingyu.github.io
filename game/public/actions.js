@@ -49,7 +49,9 @@ export function castSkill(id) {
   if (t < (G.cdEnd[id] || 0) || G.me.mp < mpc) { if (G.me.mp < mpc && !G.auto) toast("MP가 부족합니다"); return false; }
   act({ t: "sk", id, a: G.me.aimI });
   G.cdEnd[id] = t + (G.skw?.get(id)?.[5] ?? sk.cd * (1 - (s.dv ? s.dv[3] : 0) / 100));
-  G.me.atkT = t; G.me.atkN = 2; G.lastAtk = t; G.lastSkill = t; G.comboWeapon = null;
+  G.lastSkill = t; G.comboWeapon = null;
+  if (sk.support) return true;
+  G.me.atkT = t; G.me.atkN = 2; G.lastAtk = t;
   if (sk.wk === "hammer") { G.me.hammerWind = sk.wind; G.me.atkN = 0; preHammerAim(); }
   else preAim(aimCone());
   return true;

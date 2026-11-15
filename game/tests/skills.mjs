@@ -66,7 +66,7 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
 
 // ═════════ the tables
 {
-  assert.equal(D.skillOrder.length, 68, "33 actives and 35 mastery passives");
+  assert.equal(D.skillOrder.length, 70, "35 actives and 35 mastery passives");
   assert.deepEqual(Object.keys(SK), D.skillOrder);
   for (const wk of D.wkOrder) {
     const perks = Object.values(SK).filter((sk) => sk.wk === wk && sk.kind === "p");
@@ -77,7 +77,7 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
     const s = SK[id];
     assert.equal(s.id, id);
     assert.ok(s.name && s.desc && s.desc.length > 20, id + " is named and described in Korean");
-    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 134)), id + " costs, waits and has an fx code");
+    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 136)), id + " costs, waits and has an fx code");
     if (s.kind === "j") { assert.equal(D.jobs[s.job].kind, "single"); assert.equal(D.jobs[s.job].wk[0], s.wk); assert.equal(s.need, 20); }
     if (s.kind === "h") { assert.equal(D.jobs[s.job].kind, "hybrid"); assert.equal(s.need, D.hybWm, id + " grows from mastery 15"); }
   }
@@ -95,6 +95,7 @@ for (const [id, hand] of CASTS) {
   const wk = s.kind === "h" ? HYB[s.job][hand] : s.wk;
   const W = world("시전" + id + hand, { wk, wm: { [wk]: 30, ...(s.kind === "h" ? { [HYB[s.job][1 - hand]]: 30 } : {}) }, job: s.job || undefined });
   const p = W.p;
+  if (s.support) p.hp = 10;
   // a crowd in front (the aim is east), spread a little: something is in reach of every skill
   const ms = W.mobs([[24, 0], [40, 6], [56, -6], [72, 0], [90, 4], [110, -4]]);
   // the tracker's traps need something to walk into them: one stands on a trap's ring
@@ -108,7 +109,10 @@ for (const [id, hand] of CASTS) {
   const row = vs[0].self.sk.find((x) => x[0] === id);
   assert.ok(row && row[2] > 0 && row[3] === 1, id + " is on the wire, cooling down, usable in hand");
   assert.ok(fx(vs, p.eid).includes(s.fx), `${id} shows fx ${s.fx} (${[...new Set(fx(vs, p.eid))]})`);
-  assert.ok(ms.some((m) => hurt(m)), id + " lands");
+  if (s.support) {
+    assert.ok(vs.some(v => evts(v, "h").some(e => e[1] === p.eid && e[2] < 0)), id + " heals a solo caster");
+    assert.ok(!ms.some((m) => hurt(m)), id + " deals no damage");
+  } else assert.ok(ms.some((m) => hurt(m)), id + " lands");
 }
 
 // ═════════ gating: the weapon in hand, its mastery, the job; cooldown and MP
@@ -464,4 +468,4 @@ for (const [id, hand] of CASTS) {
   }
   assert.ok(!("legacyCls" in D) && D.mech && !("grit" in D.mech), "no class kit left in defs");
 }
-console.log(`skills ok — ${D.skillOrder.length} skills, passives, signatures, ten hybrids, the bar and the wire`);
+console.log(`skills ok — ${D.skillOrder.length} skills, ${Object.keys(HYB).length} hybrids, the bar and the wire`);
