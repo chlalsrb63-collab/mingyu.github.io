@@ -24,6 +24,7 @@ import * as Info from "./infocard.js";
 import { skillIconUrl } from "./skillicons.js";
 import { scaleText, gradeOf } from "./statwin.js";
 import { K } from "./keymap.js";
+import { countItem } from "./actions.js";
 
 let C = null;
 /** deps: { G, act, el, section, Sound, hoverTip, redraw, openTree } */
@@ -70,15 +71,15 @@ const STATE_TEXT = { cur: "현재 직업", ok: "전직 가능", half: "한 무�
 
 // ── the confirm (shared by the tree card and 아르센's list) ──
 let ask = "";
-export const key = () => ask;
+export const key = () => ask + "|" + rask;
 /** [전직] → the question → `job_change`. `atJob`: standing at 아르센 (else the button says where to go). */
 function changeButton(host, s, j, atJob) {
   const job = D().jobs[j];
   if (ask === j) {
     const cf = el("div", "confirm");
-    cf.append(el("p", "", `[${job.name}]${ro(job.name)} 전직합니다. 전직은 되돌릴 수 없습니다. 계속할까요? (${fmt(job.cost)}G)`));
+    cf.append(el("p", "", `[${job.name}]${ro(job.name)} 전직합니다. 전직관에서 전직 초기화 주문서로 모험가로 되돌릴 수 있고, 걸었던 직업은 그 레벨을 이어받습니다. 계속할까요? (${s.jobs?.some((r) => r[0] === j) ? "걸었던 길 — 무료" : fmt(job.cost) + "G"})`));
     const yes = el("button", "btn small gold", "전직"), no = el("button", "btn small", "취소");
-    yes.disabled = !atJob || s.gold < job.cost;
+    yes.disabled = !atJob || (s.gold < job.cost && !s.jobs?.some((r) => r[0] === j));
     yes.addEventListener("click", () => { ask = ""; C.act({ t: "job_change", j }); C.Sound.play("ok"); C.redraw(); });
     no.addEventListener("click", () => { ask = ""; C.Sound.play("close"); C.redraw(); });
     cf.append(yes, no);
@@ -151,7 +152,7 @@ function jobCard(s, j, atJob) {
   card.append(sc);
   const foot = el("div", "jt-foot");
   if (st === "cur") foot.append(el("small", "", "지금 걷고 있는 길입니다."));
-  else if (st === "shut") foot.append(el("small", "", "이미 전직한 몸입니다. 전직은 되돌릴 수 없습니다."));
+  else if (st === "shut") foot.append(el("small", "", "이미 다른 길을 걷는 몸입니다. 전직관에서 전직 초기화 주문서로 모험가로 돌아가면 다시 고를 수 있습니다."));
   else if (st === "ok") { if (!atJob) foot.append(el("small", "", "버드나무광장의 전직관 아르센에게 가면 전직할 수 있습니다.")); changeButton(foot, s, j, atJob); }
   else foot.append(el("small", "", job.kind === "hybrid" ? `모험가로 남아 두 무기(${job.wk.map((k) => d.wkName[k]).join(" · ")})를 모두 숙련 ${needOf(j)}까지 다루면 열립니다. 한 무기의 길로 먼저 전직하면 닫힙니다.` : `[${d.wkName[job.wk[0]]}] 숙련 ${needOf(j)}을 채우면 열립니다. 그 무기를 들고 싸우세요.`));
   card.append(foot);
@@ -265,7 +266,7 @@ export function renderTree(box, s, { atJob }) {
   // the root: where this character stands
   const root = el("div", "jt-root" + (adv ? " cur" : ""));
   root.append(Info.jobMark(s.job), el("b", "", adv ? "모험가" : `모험가 ▸ ${jobs[s.job].name}`));
-  root.append(el("small", "", adv ? "아이콘이 있는 조합에서 전직할 수 있습니다. 전직은 한 번뿐입니다." : `지금 [${jobs[s.job].name}] — 전직은 되돌릴 수 없습니다`));
+  root.append(el("small", "", adv ? "아이콘이 있는 조합에서 전직할 수 있습니다. 전직관에서 전직 초기화 주문서로 되돌릴 수 있습니다." : `지금 [${jobs[s.job].name}] — 전직관의 전직 초기화 주문서로 모험가로 돌아갈 수 있습니다`));
   if (s.jp) {
     root.append(jobProgress(s.jp));
     const next = signatureProgress(d, s.jp[0])?.next;
@@ -323,7 +324,7 @@ export function renderJobNpc(box, s, { atJob }) {
   const d = D(), jobs = d.jobs;
   box.textContent = "";
   if (s.job !== "adventurer") {
-    box.append(el("p", "say", `이미 [${jobs[s.job].name}]의 길을 걷고 있군. 전직은 되돌릴 수 없다네. 그 길 끝까지 가 보게.`));
+    box.append(el("p", "say", `이미 [${jobs[s.job].name}]의 길을 걷고 있군. 전직 초기화 주문서가 있으면 모험가로 돌려 주지. 걸었던 직업의 레벨은 남아서, 다시 그 길에 서면 이어진다네.`));
   } else {
     box.append(el("p", "say", `무기 하나를 숙련 ${d.jobWm}까지 다뤘다면 그 무기의 길을, 두 무기를 모두 ${d.hybWm || d.jobWm}까지 다뤘다면 두 갈래 길을 열어 주지. 전직 초기화 주문서가 있으면 다시 고를 수 있고, 걸었던 직업의 레벨은 남는다네.`));
     const ids = Object.keys(jobs).filter((j) => jobs[j].kind !== "none");
@@ -361,15 +362,49 @@ export function renderJobNpc(box, s, { atJob }) {
       }
     }
   }
+  resetSection(box, s, atJob);
   const b = el("button", "btn small", `전직의 길 보기 (${K("skill")})`);
   b.addEventListener("click", () => C.openTree());
   const f = el("div", "jt-more");
   f.append(b);
   box.append(f);
 }
-let foldOpen = false;
+let foldOpen = false, rask = "";
+const bagCount = (id) => countItem(id);
+
+/** 전직 초기화 / 레벨 초기화 (docs/design/job-freedom.md): a button each, with a confirm that states cost and what stays. */
+function resetSection(box, s, atJob) {
+  const jf = D().jf; if (!jf) return;
+  box.append(C.section("초기화", "up"));
+  const kinds = [
+    ["job", "전직 초기화", "job_reset", s.job !== "adventurer", "모험가로 돌아갑니다. 걸었던 직업의 레벨은 남고, 다시 그 길에 서면 이어집니다. 두 무기 직업이었다면 두 번째 무기는 가방으로 갑니다(빈 칸 필요)."],
+    ["lvl", "레벨 초기화", "lv_reset", true, "능력치는 5로, 레벨은 1로 돌아갑니다. 쓴 경험치는 돌려받지 못합니다. 남는 것: 미사용 경험치 · 무기 숙련 · 장비 · 골드 · 퀘스트 · 전리품 · 외형 · 직업 레벨. 레벨 제한이 있는 착용 장비는 가방으로 갑니다."],
+  ];
+  for (const [k, label, t, can, keep] of kinds) {
+    const [base, per] = jf.cost[k], gold = base + per * (s.lvl || 1), sid = jf.scroll[k];
+    const name = D().items?.[sid]?.name || sid, have = bagCount(sid);
+    const row = el("div", "jt-reset");
+    if (rask === k) {
+      const cf = el("div", "confirm");
+      cf.append(el("p", "", `${label}: ${name} 1개 + ${fmt(gold)}G가 듭니다. ${keep} 계속할까요?`));
+      const yes = el("button", "btn small gold", label), no = el("button", "btn small", "취소");
+      yes.disabled = !atJob || s.gold < gold || have < 1;
+      yes.addEventListener("click", () => { rask = ""; C.act({ t }); C.Sound.play("ok"); C.redraw(); });
+      no.addEventListener("click", () => { rask = ""; C.Sound.play("close"); C.redraw(); });
+      cf.append(yes, no);
+      if (have < 1) cf.append(el("small", "", `${name}가 없습니다.`));
+      row.append(cf);
+    } else {
+      const b = el("button", "btn small", `${label} (${fmt(gold)}G + ${name})`);
+      b.disabled = !can;
+      b.addEventListener("click", () => { rask = k; C.Sound.play("tab"); C.redraw(); });
+      row.append(b, el("small", "", can ? ` 보유 ${name} ${have}개` : " 이미 모험가입니다."));
+    }
+    box.append(row);
+  }
+}
 /** Forget a half-asked question when the window closes. */
-export function reset() { ask = ""; }
+export function reset() { ask = ""; rask = ""; }
 
 function jobProgress([level, xp, need]) {
   const row = el("div", "jt-progress"), bar = document.createElement("progress");

@@ -1455,3 +1455,21 @@ body[data-lay="full"] #panel .jt-root > small { display: none; }
 body[data-lay="full"] #panel .jt-grid { grid-template-rows: 28px repeat(var(--weapon-count, 7), 28px); }
 body[data-lay="full"] #panel .jt-grid .jt-node { padding-top: 1px; }
 body[data-lay="full"] #panel .jt-grid .jt-node img.ji { margin: 0 auto; }
+
+/* 스킬 칸 (loadout.js), 전직관 초기화 (jobtree.js), 보스 전리품 (trophies.js) */
+.skill.off { opacity: .5; }
+.lo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; margin: 4px 0; }
+.lo-row > b, .lo-pool > b { flex: 0 0 100%; font: var(--t12) var(--pix); color: #c8b896; }
+.lo-slot, .lo-chip { display: inline-flex; align-items: center; gap: 3px; min-width: 52px; min-height: 36px; padding: 2px 4px; background: #231d30; border: 2px solid #3a3150; color: #a8a0b4; font: var(--t11) var(--pix); cursor: pointer; }
+.lo-slot.full, .lo-chip { color: #e8dcc0; }
+.lo-slot.sel { border-color: #ffd84a; }
+.lo-slot .ic, .lo-chip .ic { width: 24px; height: 24px; image-rendering: pixelated; }
+.lo-chip.used { opacity: .4; cursor: default; }
+.lo-pool { display: flex; flex-wrap: wrap; gap: 3px; margin: 6px 0; padding: 4px; border: 2px solid #2c2537; }
+.lo-bar { display: flex; gap: 4px; margin-top: 6px; }
+.jt-reset { margin: 4px 0; } .jt-reset small { color: #c8b896; }
+#trophy-body .hint { font: var(--t11)/1.4 var(--pix); color: #a8a0b4; margin: 3px 0; }
+.tr-sum { display: flex; flex-direction: column; gap: 2px; margin: 4px 0; padding: 4px; border: 2px solid #2c2537; font: var(--t11) var(--pix); }
+.tr-row { display: flex; flex-direction: column; padding: 3px 5px; margin: 2px 0; background: #1c1726; border-left: 3px solid #3a3150; opacity: .5; font: var(--t12) var(--pix); }
+.tr-row.on { opacity: 1; border-left-color: #ffd84a; background: #2a2236; }
+.tr-row small { color: #c8b896; }
