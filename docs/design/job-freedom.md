@@ -71,7 +71,8 @@ Goal (owner): one character can eventually play every job. Builds on Codex's job
   45 weapon atk); weapon crit `ENH_CRIT` 0.5/step. Each try still costs gold + 강화석 1/2/3 (`enhCost`).
 - Failure: one step down and `g.cu = 1` (cursed; `enh` refused). `{t:"uncurse", k}` at the smith with 1 `uncurse`
   저주 해제 주문서 (잡화점 2,500G) → `cu = 2`: the next try +`ENH_UNCURSE` 10 %p, then `cu` goes. Cursed gear still works.
-  A 축복 강화석 failure keeps the step and brings no curse (chosen — tell the owner). Pity gauges unchanged.
+  A 축복 강화석 failure keeps the step and brings no curse, so the player can try again at once (owner confirmed
+  2026-11-15: "축복 강화석은 강화 실패 시 저주안붙어서 그냥 다시 강화 시도 가능하게 해줘"). Pity gauges unchanged.
 - Wire: gear objects carry `cu`; `defs.enhPct / enhCrit / enhUc`. Client: smith rows (저주 해제 button), "저주받은" name prefix.
 
 ## As built — skill enhancement (§7; `48-skill-enh.js`, sheet v19)

@@ -112,6 +112,8 @@ assert.equal(act({ t: "enh", k: "ring1" }).ok, false);
   let blessFail = false;
   for (let i = 0; i < 200 && !blessFail; i++) { ch.eq.boots.enh = 9; delete ch.eq.boots.cu; ch.pity.fill(0); assert.ok(act({ t: "enh", k: "boots", b: 1 }).ok); blessFail = ch.eq.boots.enh === 9; }
   assert.ok(blessFail && !ch.eq.boots.cu, "blessed failure: same step, no curse");
+  // owner (2026-11-15): after a blessed failure the very next try is open — no 저주 해제 needed
+  assert.ok(act({ t: "enh", k: "boots" }).ok, "a blessed failure can be retried at once");
   // the curse survives a save, and an old sheet's gear has none
   ch.eq.boots.cu = 1;
   const S2 = L.setup(); L.addPlayer(S2, "cu@s1", JSON.parse(JSON.stringify(L.exportChar(S, PID))));
