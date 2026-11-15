@@ -875,16 +875,47 @@ function campIcon() {
   outline(c, g, "#111118");
   return c;
 }
+const HELM_ART = [
+  // Cloth hood: a bent peak, an open face, and its draped collar.
+  { palette: { l: "#e3d4b4", m: "#b9a78d", s: "#85718a", d: "#4b3b51" }, rows: [
+    ".....ll.......", "...lllmm......", "..llmmmmms....", "..lmmmlllsm...",
+    ".lmmll.ddsm...", ".lmml...dss...", ".lmml...dss...", ".mmml..dss....",
+    "..mmmlssss....", "..mmllmmsss...", "..lmmmmmmsss..", ".mmmmmsssssss.",
+    ".mmmmssssss...", "....ss........",
+  ] },
+  // Leather cap: raised seams over a long brim and one buckled ear flap.
+  { palette: { l: "#d09a62", m: "#a16a43", s: "#6c4540", d: "#453241", a: "#eee0a4" }, rows: [
+    "..............", "..............", "....lllll.....", "...lmmmlms....",
+    "..lmmmmlmss...", "..lmmmmsmss...", "..lmmmmssss...", ".lllmmmmmmml..",
+    ".ssssssssssss.", "..smms........", "...mss........", "...sas........", "....s.........",
+  ] },
+  // Steel helm: a forged ridge, dark visor slit and a pointed faceplate.
+  { palette: { l: "#d8e1ec", m: "#91a7bf", s: "#5c6a8a", d: "#37354e", a: "#eddca1" }, rows: [
+    ".....ll.......", "....llms......", "...llmmsm.....", "..llmmmmsm....",
+    ".llmmmmmmms...", ".lmmmmllllls..", ".lmmmaadddds..", ".lmmmlmmmmds..",
+    ".smmmlmdmdss..", "..smmlmdmsms..", "...smllmmsm...", "...ssmmmss....",
+    ".....ss.......",
+  ] },
+  // Tactical helmet: low armor shell, comms plate and a protruding cyan sight.
+  { palette: { l: "#9bafaa", m: "#5b716c", s: "#3e4d56", d: "#2e3445", a: "#79e9ee" }, rows: [
+    "..............", "..............", "...llll.s.....", "..lmmmmsss....",
+    ".llmmmmmmss...", ".lmmssmmmsss..", ".lmssslmmsddd.", ".lmssslmmsaaa.",
+    ".lmssslssdddd.", ".lmslmssss....", "..lmss.sss....", "..ssss..ss....",
+    "...ds...d.....",
+  ] },
+  // Rift crown: three uneven crystal blades set around an exposed jewel.
+  { palette: { l: "#e3b9fb", m: "#a16dd0", s: "#67458c", d: "#482e73", a: "#9bfff2" }, rows: [
+    "......l.......", "......ll......", ".....llm......", ".l...lmm..l...",
+    ".ll..lms.lm...", ".lmm.lmslms...", ".lmmslmllms...", "..lmslassms...",
+    "..lmsaaasmsl..", "..lmmlasmmls..", "...lllllllls..", "...lmmmmsms...",
+    "....sdddds....",
+  ] },
+];
 function helmIcon(tier) {
   const [c, g] = canvas(16, 16);
-  const [m, md] = tier === 1 ? ["#b8ac90", "#8e8468"] : tier === 2 ? ["#8a6238", "#5e4022"] : METAL[tier];
-  disc(g, 8, 8, 5.5, 5, m);
-  g.clearRect(2, 9, 12, 6);
-  g.fillStyle = m; g.fillRect(3, 9, 10, 3);
-  g.fillStyle = md; g.fillRect(9, 4, 4, 5); g.fillRect(3, 11, 10, 1);
-  g.fillStyle = "#1a1c24"; g.fillRect(5, 9, 6, 2);
-  if (tier >= 3) { g.fillStyle = md; g.fillRect(7, 1, 2, 3); }
-  outline(c, g, "#111118");
+  const { rows, palette } = HELM_ART[tier - 1];
+  paint(g, rows, palette, 1, 1);
+  outline(c, g, "#2b2233");
   return c;
 }
 function glovesIcon(tier) {
