@@ -223,3 +223,17 @@ Merged, each from its own worktree agent (nothing pushed; play server 8830 still
   monster's spawn area when none is in sight (`map.sp`, 34-maps-world.js `spawnHints`; test in worldmap.mjs).
 Open from QA: 경비병 토비 lines 1/4 repeat; 리나's window says "어서 와요!" while she is away; auto-hunt leaves gold.
 Next: P10 outfit set 1 (64px art) → fills `KEEP_SEW`; P12 장날 after P10.
+
+## 0.5 Round 3 (2026-11-16) — main green 60/60, sheet v26
+- **P10 outfit set 1** (codes 131–140): 버드나무 마을 (kp_willow_key sewn, repwillow, chore100 → `cnt.chore`), 협동 알바 왕
+  (`coopall` = all 5 coopS_*), 낚시 기록가 (fbook, fbig10). `COS_ACH` maps one achievement to a list. `brush.fp` half-pixel
+  details only on the 64px rig. Not done: 견습 장인 ×6, 명인 redraw.
+- **Mid-game 2-player QA**: npctalk repeat line, 무인 판매함 greeting, auto-hunt grabs drops on the way, tip box vs player menu
+  z-order, co-op card position, "(Space / F)". The library is **올빼미 도서관** everywhere (owner's name; data + docs renamed).
+- Mine: co-op start button only for the leader; **party rejoin within 60 s** after a reload (`partyRejoin`, tests/party.mjs);
+  join toasts in your own voice; guild invite uses [길드].
+- **P12 장날** (`63-festival.js`, tests/festival.mjs): season from S.now (epoch 2026-03-01 KST, 91-day blocks; now 가을);
+  `dn` = [wx, clock, season, 장날]; Sunday 10–22 KST: 4 fair 알바 rows (tokens, cap 8/day), pan contest (60/90 → +1),
+  장꾼 다래 (willow 53,23) sells a season piece for 20; P11 season ids `hat_/top_/back_/ws_ssn_<sakura|sea|maple|snow>` are
+  listed disabled ("곧 들어옵니다") until P11 adds them to COSMETICS.
+Next: P11 (season set art + story keepsake pieces → fills the rest of KEEP_SEW); stalls only on Sundays (art).
