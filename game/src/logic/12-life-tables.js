@@ -307,7 +307,7 @@ const COOP_T = {
   xp: [0.08, 0.14, 0.20, 0.28], gold: [40, 60, 80, 110], gearQ: [0, 1, 1, 2], stone: [1, 2, 3, 5], life: [0.30, 0.45, 0.60, 0.80],
   tip: 10, tipLife: 0.1, helpTip: 15, helpLife: 0.25, rep: 5,
 };
-const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통" };
+const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반" };
 /** The jobs: name, owner NPC and lobby, shift minutes, the two tools (rotation A B A B), par, combo window, life skill, template. */
 const COOP = {
   apt: {
@@ -340,6 +340,54 @@ const COOP = {
         "_____________________________________________"],
     },
   },
+  diner: {
+    name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan", "tray"], combo: 25000, skill: "cook",
+    hint: "프라이팬 담당은 상자에서 재료를 꺼내 도마·화덕을 거쳐 패스대에, 쟁반 담당은 패스대의 요리를 주문한 테이블로!",
+    // cut-offs tuned on walking bots like the apartment's (tests/coop.mjs: 1–4 bots score ≈ 464 · 992 · 2,390 · 2,965 serving
+    // 12 · 20 · 33 · 42 orders, just over S); a real party lands on B–A. Two cooks (3–4 players) is where the score jumps.
+    par: 1000, parN: { 1: 0.48, 2: 1.0, 3: 2.4, 4: 3.0 },
+    // stations (tiles; solid furniture, used from a neighbouring tile): stoves `:` and boards `-` on the kitchen's back
+    // wall, crates (채소 `]` · 생선 `w` · 고기 `]`), the trash `w`; the pass is four counter tiles, the rack sits in the counter
+    st: { stove: [[6, 1], [9, 1], [12, 1]], board: [[17, 1], [20, 1]], veg: [25, 1], fish: [28, 1], meat: [31, 1], trash: [37, 1],
+      pass: [[18, 7], [19, 7], [24, 7], [25, 7]], rack: [21, 7] },
+    // twelve tables in the hall (3 rows × 4), 4 to 16 tiles from the pass
+    tables: [[6, 11], [16, 11], [26, 11], [36, 11], [6, 15], [16, 15], [26, 15], [36, 15], [6, 19], [16, 19], [26, 19], [36, 19]],
+    start: [[20, 4], [20, 9], [23, 4], [23, 9]],
+    tpl: {
+      name: "쥬쥬식당 (영업 중)", theme: "interior", style: "tavern", bgm: "juju", safe: true, w: 44, h: 24, entry: [21, 9],
+      ground: ["llllllllllllllllllllllllllllllllllllllllllll", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl",
+        "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl",
+        "lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxl", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll",
+        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll",
+        "llllllllllllllllllllllllllllllllllllllllllll", "lyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyl", "llllllllllllllllllllllllllllllllllllllllllll",
+        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "lyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyl",
+        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll",
+        "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll", "llllllllllllllllllllllllllllllllllllllllllll"],
+      objects: ["+===^===+===^===+===^===+===^===+===^===+===", "= r   :  :  :    -  -    ]  w  ]     w  r  _", "=                                          _",
+        "=                                          _", "=                                          _", "=                                          _",
+        "=                                          _", "=mmmmmmmmm  mmmmmmmmm>jmmmmmmmmm  mmmmmmmmm_", "=g                                        g_",
+        "=                                          _", "=                                          _", "=    kok       kok       kok       kok     _",
+        "=                                          _", "=                                          _", "=                                          _",
+        "=    kok       kok       kok       kok     _", "=                                          _", "=                                          _",
+        "=                                          _", "=    kok       kok       kok       kok     _", "=                                          _",
+        "=                                          _", "=g         s         #         s          g_", "____________________________________________"],
+    },
+  },
+};
+/**
+ * 쥬쥬식당 서빙 (C.5, v1: no plates to wash, three dishes). By the party size n at the start: at most `seats[n − 1]` tables
+ * order at once, a new order every `orderMs[n − 1]` (n of them at the open), patience `patience[n − 1]` (×feverK in fever).
+ * A dish: from its crate, `chop` acts at a board, then `cook` ms on a stove (burnt `burnMs` after it is done), plated
+ * at the pass; a tray carries 2 to the table that ordered it. Pay `pts × (1 + 0.5·patience left)`, cook 50 % / server 50 %.
+ */
+const COOP_DINER = {
+  dishes: [
+    { name: "채소 샐러드", crate: "veg", chop: 4, cook: 0, pts: 20, at: 0 },
+    { name: "생선구이", crate: "fish", chop: 0, cook: 6000, pts: 30, at: 0 },
+    { name: "고기 스튜", crate: "meat", chop: 4, cook: 8000, pts: 45, at: 90000 },
+  ],
+  seats: [3, 4, 6, 8], orderMs: [16000, 12000, 8000, 6500], patience: [90000, 75000, 70000, 65000], feverK: 0.8, firstMs: 3000,
+  burnMs: 8000, burnPen: 5, angryPen: 15, eatMs: 6000, trayCap: 2, passCap: 6, serveK: 0.5, cookK: 0.5,
 };
 /**
  * 동동아파트 청소 (C.4, without pests and dust in v1): piles, bundles, the two-person sofa, the mess meter. By the party

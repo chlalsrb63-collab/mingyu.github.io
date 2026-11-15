@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { COOP, COOP_T, COOP_APT, coopCut, coopGrade, dayOf, mapOf, tilePx, NPC_MAP, lifeNeed, stats };\n";
+  "\nexport const __t = { COOP, COOP_T, COOP_APT, coopCut, coopGrade, dayOf, mapOf, tilePx, NPC_MAP, lifeNeed, stats, COOP_DINER };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, J = X.COOP.apt, A = X.COOP_APT;
 const VERBOSE = process.argv.includes("-v");
@@ -319,6 +319,159 @@ for (const n of [1, 2, 3, 4]) {
   botShift(w);
   log(`apt ${n}: score`, c.score, "grade", X.coopGrade(c), [0, 1, 2, 3].map((i) => X.coopCut(c, i)));
   assert.ok(X.coopGrade(c) >= 3 && X.coopGrade(c) <= 4, `${n} walking bot(s) reach A–S: ${c.score}`);
+}
+
+// ───────────────────────────── 쥬쥬식당 서빙 (C.5) ─────────────────────────────
+
+const JD = X.COOP.diner, R = X.COOP_DINER;
+/** A world with `n` players by 쥬쥬 in her diner (one party when n ≥ 2). */
+function dworld(n, t0 = 1000, seed = 20251111) {
+  const w = world(n, t0, seed), lob = X.mapOf(JD.lobby), jj = lob.npcs.find((o) => o.id === "juju");
+  for (const pid of w.pids) { const p = w.S.players[pid]; L.runtime(w.S, p.map).n--; p.map = JD.lobby; L.runtime(w.S, JD.lobby).n++; at(p, jj.x * T + 8, jj.y * T + 12 + 16); }
+  return w;
+}
+const below = ([x, y]) => [x, y + 1], above = ([x, y]) => [x, y - 1];
+
+// ── the map: big enough for four, every station and table usable
+{
+  const w = dworld(1), p = w.S.players.c0;
+  assert.ok(act(w, "c0", { t: "coop_start", k: "diner" }).ok, "the diner opens at 쥬쥬");
+  const dim = shiftOf(w), m = dim.map, open = m.reach.reduce((n, v) => n + v, 0);
+  log("diner open tiles", open);
+  assert.deepEqual([m.w, m.h, m.safe], [44, 24, true]);
+  for (const r of [...JD.tpl.ground, ...JD.tpl.objects]) assert.equal(r.length, 44);
+  assert.ok(open >= 700, `a big hall: ${open} open tiles`);
+  assert.equal(JD.tables.length, 12);
+  const usable = ([x, y]) => m.solid[y * m.w + x] && [[1, 0], [-1, 0], [0, -1], [0, 1]].some(([dx, dy]) => m.reach[(y + dy) * m.w + x + dx]);
+  for (const k of Object.keys(JD.st)) for (const t of Array.isArray(JD.st[k][0]) ? JD.st[k] : [JD.st[k]]) assert.ok(usable(t), `${k} ${t} usable`);
+  for (const t of JD.tables) assert.ok(usable(t) && m.reach[(t[1] - 1) * m.w + t[0]], `table ${t}`);
+  assert.equal(dim.coop.pl.c0.tool, "pan");
+  assert.equal(p.map, dim.id);
+}
+
+// ── alone: a salad from crate to table, the wrong dish refused, a pot that burns, a customer who leaves angry
+{
+  const w = dworld(1), S = w.S, p = S.players.c0;
+  act(w, "c0", { t: "coop_start", k: "diner" });
+  const dim = shiftOf(w), c = dim.coop, q = c.pl.c0;
+  step(w, X.COOP_T.briefMs + 100);
+  // salad: veg → 4 chops → pass
+  atTile(p, below(JD.st.veg)); act(w, "c0", { t: "coop_act" });
+  assert.deepEqual([q.hold.length, q.hold[0].r], [1, 0], "veg in hand");
+  step(w, 300); atTile(p, above(JD.st.pass[0])); act(w, "c0", { t: "coop_act" });
+  assert.ok(p.toast.some((m) => /도마/.test(m)), "has to be chopped first");
+  atTile(p, below(JD.st.board[0]));
+  for (let i = 0; i < R.dishes[0].chop; i++) { step(w, 300); act(w, "c0", { t: "coop_act" }); }
+  assert.equal(q.hold[0].chop, 0);
+  step(w, 300); atTile(p, above(JD.st.pass[0])); act(w, "c0", { t: "coop_act" });
+  assert.equal(c.ents.filter((e) => e.t === 5).length, 1, "plated at the pass");
+  // fish: on the stove, then forgotten → burnt
+  step(w, 300); atTile(p, below(JD.st.fish)); act(w, "c0", { t: "coop_act" });
+  step(w, 300); atTile(p, below(JD.st.stove[0])); act(w, "c0", { t: "coop_act" });
+  const pot = c.ents.find((e) => e.t === 4);
+  assert.ok(pot && !q.hold.length, "on the stove");
+  step(w, 300); act(w, "c0", { t: "coop_act" });
+  assert.ok(c.ents.includes(pot), "not done yet");
+  const s0 = c.score; step(w, R.dishes[1].cook + R.burnMs + 200);
+  assert.ok(!c.ents.includes(pot), "burnt away");
+  // swap to the tray, take the salad, serve it to the salad table (a fish table refuses it)
+  atTile(p, below(JD.st.rack)); act(w, "c0", { t: "coop_act" });
+  assert.equal(q.tool, "tray");
+  step(w, 300); atTile(p, below(JD.st.pass[0])); act(w, "c0", { t: "coop_act" });
+  assert.equal(q.hold.length, 1, "salad on the tray");
+  const orders = c.ents.filter((e) => e.t === 3);
+  assert.ok(orders.length >= 1 && orders.length <= R.seats[0], `orders: ${orders.length}`);
+  const wrong = orders.find((e) => e.r !== 0);
+  if (wrong) { step(w, 1300); atTile(p, above(JD.tables[wrong.ti])); act(w, "c0", { t: "coop_act" }); assert.ok(p.toast.some((m) => /주문과 다른/.test(m)), "the wrong table says so"); }
+  let salad = c.ents.find((e) => e.t === 3 && e.r === 0);
+  if (!salad) { salad = { id: 9999, t: 3, r: 0, ti: 11, x: X.tilePx(JD.tables[11])[0], y: X.tilePx(JD.tables[11])[1], until: w.now + 60000, pat: 60000 }; c.ents.push(salad); }
+  const before = c.score; step(w, 300); atTile(p, above(JD.tables[salad.ti])); act(w, "c0", { t: "coop_act" });
+  assert.ok(!c.ents.includes(salad) && c.score > before && c.served === 1, `served: ${c.score - before}`);
+  assert.ok(c.score - before >= R.dishes[0].pts, "at least the dish's points");
+  log("diner alone, burnt", s0, "→ served", c.score);
+  // nobody serves now: someone leaves angry
+  const miss = c.miss; step(w, R.patience[0] + 1000);
+  assert.ok(c.miss > miss, "an angry customer");
+  // the wire: orders and pots carry a dish and deciseconds
+  p.cVer = -1; step(w, 100);
+  const C = lastOf("c0", "C"), o = C.find((r) => r[1] === 3);
+  if (o) assert.equal(o.length, 7);
+  const cj = lastOf("c0", "cj");
+  assert.equal(cj[0], 1, "diner is job index 1"); assert.equal(cj[8], c.served); assert.equal(cj[9], c.miss);
+}
+
+/** Diner bots walking at player speed: pans cook what the tables want, trays carry it; alone, one swaps at the rack. */
+function dinerBot(w) {
+  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), MS = 300, D = R.dishes;
+  step(w, X.COOP_T.briefMs + 100);
+  while (c.state !== "end") {
+    const work = w.pids.map((pid) => S.players[pid]).filter((o) => o && o.map === dim.id), solo = work.length === 1;
+    const orders = c.ents.filter((e) => e.t === 3).sort((a, b) => a.until - b.until), pass = c.ents.filter((e) => e.t === 5);
+    // what is already on its way: plated, on the stoves, in hands
+    const coming = [...pass.map((e) => e.r), ...c.ents.filter((e) => e.t === 4).map((e) => e.r), ...Object.values(c.pl).flatMap((q) => q.hold.map((h) => h.r))];
+    const want = []; { const left = [...coming]; for (const o of orders) { const i = left.indexOf(o.r); if (i >= 0) left.splice(i, 1); else want.push(o.r); } }
+    const claimed = new Set();
+    for (const o of work) {
+      const q = c.pl[o.pid], h = q.hold[0], kitchen = W.tileOf(o)[1] < 7;
+      let goal = null;
+      if (q.tool === "pan") {
+        const done = c.ents.filter((e) => e.t === 4 && e.doneAt <= w.now + 600 && !claimed.has(e.id))[0];
+        if (h) {
+          const need = h.chop > 0 ? 1 : D[h.r].cook && !h.cooked ? 2 : 0;
+          if (need === 1) goal = below(JD.st.board[0]);
+          else if (need === 2) { const s = JD.st.stove.findIndex((t, i) => !c.ents.some((e) => e.t === 4 && e.si === i) && !claimed.has("s" + i)); if (s >= 0) { claimed.add("s" + s); goal = below(JD.st.stove[s]); } }
+          else goal = above(JD.st.pass[pass.length % JD.st.pass.length]);
+        } else if (done) { claimed.add(done.id); goal = below(JD.st.stove[done.si]); }
+        else if (solo && pass.length && (pass.length >= 2 || !want.length)) goal = kitchen ? above(JD.st.rack) : below(JD.st.rack);
+        else if (want.length) { const r = want.shift(); goal = below(JD.st[D[r].crate]); }
+        if (!goal) continue;
+      } else {
+        const match = orders.find((e) => q.hold.some((d) => d.r === e.r) && !claimed.has(e.id));
+        if (match && (q.hold.length >= R.trayCap || !pass.some((d) => orders.some((e) => e.r === d.r)) || pass.length === 0)) { claimed.add(match.id); goal = above(JD.tables[match.ti]); }
+        else if (pass.length && q.hold.length < R.trayCap) goal = below(JD.st.pass[0]);
+        else if (match) { claimed.add(match.id); goal = above(JD.tables[match.ti]); }
+        else if (solo && !q.hold.length) goal = kitchen ? above(JD.st.rack) : below(JD.st.rack);
+        if (!goal) continue;
+      }
+      if (W.go(o, goal, MS)) act0(w, o.pid);
+    }
+    step(w, MS);
+  }
+  return c;
+}
+
+// ── walking bots 1–4: tables, the order rate and patience scale with the party; the cut-offs land them on A–S
+for (const n of [1, 2, 3, 4]) {
+  const w = dworld(n), S = w.S;
+  act(w, "c0", { t: "coop_start", k: "diner" });
+  const c = shiftOf(w).coop;
+  assert.deepEqual(w.pids.map((pid) => c.pl[pid].tool), ["pan", "tray", "pan", "tray"].slice(0, n));
+  dinerBot(w);
+  log(`diner ${n}: score`, Math.round(c.score), "served", c.served, "missed", c.miss, "grade", X.coopGrade(c), [0, 1, 2, 3].map((i) => X.coopCut(c, i)));
+  assert.ok(X.coopGrade(c) >= 3, `${n} walking bot(s) reach A–S: ${c.score}`);
+  // rewards: the day's pay once (cook life XP, trust with 쥬쥬), the report card
+  const a = S.players.c0, cr = lastOf("c0", "cr");
+  assert.equal(cr[0], X.coopGrade(c)); assert.equal(cr[3].length, n);
+  assert.deepEqual(a.ch.coopDone, ["diner"]);
+  assert.ok(a.ch.life.cook.xp > 0 || a.ch.life.cook.lv > 1, "life XP (요리)");
+  assert.ok(a.ch.inv.some((s) => s.id === "stone"), "강화석");
+  if (n === 4) {
+    // the same day again: helpers' tips only
+    step(w, X.COOP_T.endMs + 200);
+    const jj = X.mapOf(JD.lobby).npcs.find((o) => o.id === "juju");
+    for (const pid of w.pids) at(S.players[pid], jj.x * T + 8, jj.y * T + 28);
+    const gold = a.ch.gold;
+    assert.ok(act(w, "c0", { t: "coop_start", k: "diner" }).ok);
+    dinerBot(w);
+    assert.equal(a.ch.gold - gold, X.COOP_T.helpTip, "a helper's tip the second time");
+    assert.deepEqual(a.ch.coopDone, ["diner"]);
+  }
+}
+
+// ── the diner's numbers grow with the party
+for (let i = 1; i < 4; i++) {
+  assert.ok(R.seats[i] > R.seats[i - 1] && R.orderMs[i] < R.orderMs[i - 1] && R.patience[i] <= R.patience[i - 1], "harder with more hands");
+  assert.ok(X.COOP_APT.pileMs[i] < X.COOP_APT.pileMs[i - 1], "the apartment too");
 }
 
 // ── leaving mid-shift: no reward, back in the lobby; the empty shift closes in 20 s

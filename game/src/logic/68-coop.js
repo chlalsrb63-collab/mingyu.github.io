@@ -175,6 +175,28 @@ function aptSpawn(S, dim, c, t) {
   }
   return null;
 }
+// ── 쥬쥬식당 서빙 (C.5, v1)
+
+/** Which of a job's stations `key` p stands by (its index; 0 for a single tile), or -1. */
+function coopSt(c, p, key) {
+  const v = COOP[c.k].st[key], list = Array.isArray(v[0]) ? v : [v];
+  return list.findIndex((t) => { const [x, y] = tilePx(t); return dist(p.x, p.y, x, y) <= COOP_T.station + 8; });
+}
+/** A dish in a cook's hands: 0 ready to plate · 1 to chop · 2 to cook. */
+const dinerNeed = (h) => (h.chop > 0 ? 1 : COOP_DINER.dishes[h.r].cook && !h.cooked ? 2 : 0);
+/** Customers sit at a free table (seeded) and order a dish the shift has unlocked. */
+function dinerOrder(S, dim, c, now) {
+  const R = COOP_DINER, J = COOP[c.k];
+  const free = J.tables.map((t, i) => i).filter((i) => now >= c.tbl[i] && !c.ents.some((e) => e.t === 3 && e.ti === i));
+  if (!free.length) return;
+  const ti = free[ri(c.box, 0, free.length - 1)], menu = R.dishes.map((d, i) => i).filter((i) => now - c.runAt >= R.dishes[i].at);
+  const r = menu[ri(c.box, 0, menu.length - 1)], pat = Math.round(R.patience[c.n - 1] * (c.state === "fever" ? R.feverK : 1));
+  const [x, y] = tilePx(J.tables[ti]);
+  c.ents.push({ id: c.nid++, t: 3, x, y, r, ti, until: now + pat, pat });
+  c.ver++;
+  coopEv(S, dim, 40, x, y, r);
+}
+
 const COOP_JOB = {
   apt: {
     init(S, dim, c) {
@@ -273,6 +295,128 @@ const COOP_JOB = {
     /** The HUD's job summary: mess, its cap. */
     sum: (c) => [aptMess(c), aptCap(c)],
   },
+  diner: {
+    init(S, dim, c) {
+      const R = COOP_DINER;
+      c.tbl = COOP[c.k].tables.map(() => 0);   // a table is free again at this time (after the customers eat)
+      c.served = 0; c.miss = 0;
+      c.next = { order: c.runAt + R.firstMs };
+      c.openN = c.n;                           // the opening rush: n orders as the doors open
+    },
+    tick(S, dim, c, now) {
+      const R = COOP_DINER, J = COOP[c.k];
+      if (now >= c.next.order) {
+        const rush = c.openN > 0;
+        c.next.order = now + (rush ? 1500 : R.orderMs[c.n - 1]);
+        if (rush) c.openN--;
+        if (c.ents.filter((e) => e.t === 3).length < R.seats[c.n - 1]) dinerOrder(S, dim, c, now);
+      }
+      for (const e of [...c.ents]) {
+        if (e.t === 3 && now >= e.until) {
+          // patience ran out: they leave angry
+          c.ents.splice(c.ents.indexOf(e), 1); c.ver++; c.miss++;
+          c.tbl[e.ti] = now;
+          coopFail(c, R.angryPen); coopEv(S, dim, 32, e.x, e.y);
+          coopToastAll(S, dim, `[화난 손님] ${R.dishes[e.r].name}${pp(R.dishes[e.r].name, "을를")} 못 받고 떠났어요! 점수 -${R.angryPen}`);
+        } else if (e.t === 4 && now >= e.burnAt) {
+          c.ents.splice(c.ents.indexOf(e), 1); c.ver++;
+          coopFail(c, R.burnPen); coopEv(S, dim, 33, e.x, e.y);
+          coopToastAll(S, dim, `[탔어요!] ${R.dishes[e.r].name}${pp(R.dishes[e.r].name, "이가")} 새까맣게 탔어요. 점수 -${R.burnPen}`);
+        }
+      }
+    },
+    act(S, dim, c, p, q) {
+      const R = COOP_DINER, D = R.dishes, now = S.now, J = COOP[c.k];
+      const h = q.hold[0], si = (key) => coopSt(c, p, key);
+      if (q.tool === "pan") {
+        // the stove: take what is done (hands empty), or put on what needs cooking
+        const s = si("stove");
+        if (s >= 0) {
+          const pot = c.ents.find((e) => e.t === 4 && e.si === s);
+          if (pot && !h) {
+            if (now < pot.doneAt) return "아직 익는 중이에요";
+            c.ents.splice(c.ents.indexOf(pot), 1); c.ver++;
+            q.hold = [{ r: pot.r, chop: 0, cooked: true, cred: pot.cred }];
+            coopEv(S, dim, 30, p.x, p.y, pot.r);
+            return true;
+          }
+          if (h && dinerNeed(h) === 2) {
+            if (pot) return "이 화덕은 사용 중이에요 — 옆 화덕으로!";
+            const [x, y] = tilePx(J.st.stove[s]);
+            c.ents.push({ id: c.nid++, t: 4, x, y, r: h.r, si: s, doneAt: now + D[h.r].cook, burnAt: now + D[h.r].cook + R.burnMs, cred: h.cred });
+            c.ver++; q.hold = [];
+            coopEv(S, dim, 31, x, y, h.r);
+            return true;
+          }
+        }
+        if (h && dinerNeed(h) === 1 && si("board") >= 0) {
+          h.chop--; c.ver++;
+          coopEv(S, dim, 34, p.x, p.y, h.chop);
+          return true;
+        }
+        if (h && dinerNeed(h) === 0 && si("pass") >= 0) {
+          const on = c.ents.filter((e) => e.t === 5);
+          if (on.length >= R.passCap) return "패스대가 꽉 찼어요 — 쟁반 담당을 기다리세요!";
+          const slot = [0, 1, 2, 3, 4, 5].find((i) => !on.some((e) => e.slot === i)), [x, y] = tilePx(J.st.pass[slot % J.st.pass.length]);
+          c.ents.push({ id: c.nid++, t: 5, x: x + (slot >= J.st.pass.length ? 4 : -2), y: y - 4, r: h.r, slot, cred: h.cred });
+          c.ver++; q.hold = [];
+          coopEv(S, dim, 35, x, y, h.r);
+          return true;
+        }
+        if (h && si("trash") >= 0) { q.hold = []; c.ver++; coopEv(S, dim, 36, p.x, p.y); return true; }
+        if (!h) {
+          const r = D.findIndex((d) => si(d.crate) >= 0);
+          if (r >= 0) { q.hold = [{ r, chop: D[r].chop, cooked: false, cred: { [p.pid]: 1 } }]; c.ver++; coopEv(S, dim, 37, p.x, p.y, r); return true; }
+        }
+      } else {
+        // the tray: serve a table that ordered what we carry, else take from the pass
+        const tables = c.ents.filter((e) => e.t === 3 && dist(p.x, p.y, e.x, e.y) <= COOP_T.reach + 8);
+        if (tables.length && q.hold.length) {
+          const o = tables.find((e) => q.hold.some((d) => d.r === e.r));
+          if (!o) return "주문과 다른 요리예요";
+          const d = q.hold.splice(q.hold.findIndex((x) => x.r === o.r), 1)[0];
+          c.ents.splice(c.ents.indexOf(o), 1); c.ver++; c.served++;
+          c.tbl[o.ti] = now + R.eatMs;
+          const w = Object.values(d.cred).reduce((s, v) => s + v, 0) || 1, cred = { [p.pid]: R.serveK };
+          for (const pid of Object.keys(d.cred)) cred[pid] = (cred[pid] || 0) + (R.cookK * d.cred[pid]) / w;
+          const pts = coopGood(S, c, D[o.r].pts * (1 + 0.5 * Math.max(0, o.until - now) / o.pat), cred);
+          coopEv(S, dim, 38, o.x, o.y, pts);
+          return true;
+        }
+        if (si("pass") >= 0) {
+          const on = c.ents.filter((e) => e.t === 5).sort((a, b) => a.id - b.id);
+          if (on.length) {
+            if (q.hold.length >= R.trayCap) return `쟁반에는 ${R.trayCap}개까지만 올라가요 — 테이블로!`;
+            // what a table is waiting for (and not on a tray yet) first, else the oldest
+            const want = c.ents.filter((e) => e.t === 3).map((e) => e.r);
+            for (const x of q.hold) { const i = want.indexOf(x.r); if (i >= 0) want.splice(i, 1); }
+            const d = on.find((e) => want.includes(e.r)) || on[0];
+            c.ents.splice(c.ents.indexOf(d), 1); c.ver++;
+            q.hold.push({ r: d.r, cred: d.cred });
+            coopEv(S, dim, 39, p.x, p.y, d.r);
+            return true;
+          }
+        }
+      }
+      // the rack: swap tools (hands empty)
+      if (si("rack") >= 0) {
+        if (q.hold.length) return "들고 있는 것을 먼저 내려놓으세요";
+        q.tool = q.tool === "pan" ? "tray" : "pan";
+        coopEv(S, dim, 23, p.x, p.y);
+        toast(p, `${COOP_TOOLS[q.tool]}${pp(COOP_TOOLS[q.tool], "을를")} 들었습니다.`);
+        return true;
+      }
+      if (q.tool === "pan") {
+        if (!h) return "재료 상자(채소·생선·고기)에서 재료를 꺼내세요";
+        return ["패스대에 올리세요", "도마에서 썰어야 해요", "화덕에 올려 익히세요"][dinerNeed(h)];
+      }
+      return q.hold.length ? "주문한 테이블로 가져가세요 (말풍선의 요리)" : "패스대에서 요리를 받아 오세요";
+    },
+    /** The HUD's job summary: served, missed. */
+    sum: (c) => [c.served, c.miss],
+    /** What each worker carries, for the HUD and the sprites: dish · 3 + stage (0 ready · 1 to chop · 2 to cook). */
+    what: (q) => q.hold.map((h) => h.r * 3 + (q.tool === "tray" ? 0 : dinerNeed(h))),
+  },
 };
 
 // ── actions (validated in 70-validate.js, applied in 75-apply.js)
@@ -317,8 +461,10 @@ function coopApply(S, p, a) {
 
 /**
  * Inside a shift: `cj` [job index, state 0 brief · 1 run · 2 fever · 3 end, seconds left, score, combo, mult ×10, grade 0–4,
- * next cut-off (0 at S), mess, mess cap, [[eid, tool 0 broom · 1 bin, held, zzz]…]] when it changes; `C` [[id, type
- * 0 pile · 1 bundle · 2 sofa, x, y, hp]…] when the entities change; `cr` the report card once: [grade, score, channel best,
+ * next cut-off (0 at S), job sum (apt: mess, mess cap · diner: served, missed), [[eid, tool (index in the job's two), held,
+ * zzz, what (diner: dish·3 + stage per thing held; else 0)]…]] when it changes; `C` when the entities change: [id, type
+ * 0 pile · 1 bundle · 2 sofa, x, y, hp], diner [id, 3 order, x, y, dish, ds left, ds patience] · [id, 4 pot, x, y, dish,
+ * ds to done, ds to burnt] · [id, 5 plated dish on the pass, x, y, dish]; `cr` the report card once: [grade, score, channel best,
  * [[name, pts, tool, eligible]…], [C B A S cut-offs]]. `cj: 0` once on the way out.
  */
 function coopView(S, p, out) {
@@ -326,18 +472,24 @@ function coopView(S, p, out) {
   if (c) {
     const now = S.now, g = coopGrade(c), J = COOP[c.k];
     const secs = Math.max(0, Math.ceil(((c.state === "brief" ? c.runAt : c.state === "end" ? c.doneAt : c.endAt) - now) / 1000));
-    const team = dimInside(S, dim.id).filter((o) => c.pl[o.pid]).map((o) => { const q = c.pl[o.pid]; return [o.eid, J.tools.indexOf(q.tool), q.hold.length, now - q.idleAt >= COOP_T.zzzMs ? 1 : 0]; });
+    const team = dimInside(S, dim.id).filter((o) => c.pl[o.pid]).map((o) => { const q = c.pl[o.pid]; return [o.eid, J.tools.indexOf(q.tool), q.hold.length, now - q.idleAt >= COOP_T.zzzMs ? 1 : 0, COOP_JOB[c.k].what ? COOP_JOB[c.k].what(q) : 0]; });
     const v = [COOP_KINDS.indexOf(c.k), COOP_STATE.indexOf(c.state), secs, Math.round(c.score), c.combo, Math.round(coopMult(c) * 10), g, g < 4 ? coopCut(c, g) : 0, ...COOP_JOB[c.k].sum(c), team];
     const key = JSON.stringify(v);
     if (key !== p.cjKey || p.sendMap) { out.cj = v; p.cjKey = key; }
-    if (p.cVer !== c.ver || p.sendMap) { out.C = c.ents.map((e) => [e.id, e.t, Math.round(e.x), Math.round(e.y), e.hp]); p.cVer = c.ver; }
+    if (p.cVer !== c.ver || p.sendMap) { out.C = c.ents.map(coopRow(now)); p.cVer = c.ver; }
   } else if (p.cjKey) { out.cj = 0; out.C = []; p.cjKey = null; p.cVer = -1; }
   if (p.coopRes) { out.cr = p.coopRes; p.coopRes = null; }
 }
+/** One entity on the wire; the diner’s carry a dish and, for orders and pots, deciseconds left (the client counts down). */
+const coopRow = (now) => (e) => {
+  const at = [e.id, e.t, Math.round(e.x), Math.round(e.y)], ds = (t) => Math.ceil((t - now) / 100);
+  return e.t < 3 ? [...at, e.hp] : e.t === 3 ? [...at, e.r, ds(e.until), Math.round(e.pat / 100)] : e.t === 4 ? [...at, e.r, ds(e.doneAt), ds(e.burnAt)] : [...at, e.r];
+};
 /** `self.coop`: the jobs done today (their day's pay taken). */
 const coopSelf = (p) => (p.ch.coopDay === dayOf(p.S.now) ? p.ch.coopDone : []);
-/** defs().coop: { jobs: { k: [name, minutes, tools, par, npc, lobby] }, cuts, parN, tools, binCap }. */
+/** defs().coop: { jobs: { k: [name, minutes, tools, par, npc, lobby, hint, stations] }, kinds, cuts, parN, tools, binCap, near, dishes, cook (ms), trayCap }. */
 function coopDefs() {
-  return { jobs: Object.fromEntries(Object.keys(COOP).map((k) => [k, [COOP[k].name, COOP[k].mins, COOP[k].tools, COOP[k].par, COOP[k].npc, COOP[k].lobby]])),
-    kinds: COOP_KINDS, cuts: COOP_T.cuts, parN: COOP_T.parN, tools: COOP_TOOLS, binCap: COOP_APT.binCap, near: COOP_T.near };
+  return { jobs: Object.fromEntries(Object.keys(COOP).map((k) => [k, [COOP[k].name, COOP[k].mins, COOP[k].tools, COOP[k].par, COOP[k].npc, COOP[k].lobby, COOP[k].hint, COOP[k].st]])),
+    kinds: COOP_KINDS, cuts: COOP_T.cuts, parN: COOP_T.parN, tools: COOP_TOOLS, binCap: COOP_APT.binCap, near: COOP_T.near,
+    dishes: COOP_DINER.dishes.map((d) => d.name), cook: COOP_DINER.dishes.map((d) => d.cook), trayCap: COOP_DINER.trayCap };
 }
