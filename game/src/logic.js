@@ -11323,7 +11323,9 @@ const COS_SLOTS = ["hat", "top", "back", "face", "wskin"];
 const COS_SLOT_NAME = { hat: "모자", top: "상의", back: "등", face: "얼굴", wskin: "무기 외형" };
 /**
  * id → [wire code, slot, name, rarity 0–4, source, price or achievement id, description].
- * Sources: shop (sold for `price` gold), chest, boss, daily, rift, ach (earned with achievement `price`).
+ * Sources: shop (sold for `price` gold), chest, boss, daily, rift, ach (earned with achievement `price`: the
+ * Lv-50 life masters' outfits and the NPCs' 가족 gifts are these), and quest / weekly, which name systems
+ * still to come (nothing grants those yet). An optional ninth field is the themed set (COS_SETS).
  * Codes are what the wire carries: never reuse or renumber one.
  */
 const COSMETICS = Object.fromEntries([
@@ -11387,7 +11389,59 @@ const COSMETICS = Object.fromEntries([
   ["ws_bone", 58, "wskin", "해골 무기 외형", 2, "chest", 0, "뼈로 깎은 듯한 무기."],
   ["ws_star", 59, "wskin", "별빛 무기 외형", 3, "rift", 0, "밤하늘을 담은 무기."],
   ["ws_flame", 60, "wskin", "화염 무기 외형", 3, "ach", "enh10", "명장의 무기는 불꽃을 두른다."],
-].map(([id, n, slot, name, q, src, price, desc]) => [id, { n, slot, name, q, src, price: src === "shop" ? price : 0, ach: src === "ach" ? price : "", desc }]));
+  // ── themed sets (the ninth field is the set, COS_SETS): the seaside
+  ["hat_sunhat", 61, "hat", "해변 밀짚모자", 1, "shop", 2400, "챙이 축 늘어진 큰 모자. 꽃 한 송이를 꽂았다.", "sea"],
+  ["face_snorkel", 62, "face", "스노클", 1, "shop", 2000, "물안경과 숨대롱. 뭍에서도 쓰고 다닌다.", "sea"],
+  ["top_shell", 63, "top", "조개 목걸이", 0, "shop", 1200, "바닷가에서 주운 조개를 꿴 목걸이.", "sea"],
+  ["top_swim", 64, "top", "줄무늬 수영복", 1, "shop", 2600, "파란 줄무늬 수영복.", "sea"],
+  ["back_surf", 65, "back", "서핑보드", 2, "shop", 7000, "제 키보다 큰 보드를 등에 멨다.", "sea"],
+  ["ws_coral", 66, "wskin", "산호 무기 외형", 2, "shop", 8000, "산호빛 날에 물거품이 맺힌다.", "sea"],
+  // the desert
+  ["hat_turban", 67, "hat", "사막 터번", 1, "shop", 3000, "모래바람을 막는 터번. 이마에 보석 하나.", "desert"],
+  ["hat_goggles", 68, "hat", "모래바람 고글", 1, "chest", 0, "이마에 올려 쓴 놋쇠 고글.", "desert"],
+  ["back_cape_sand", 69, "back", "모래 망토", 1, "shop", 4000, "모래 언덕 빛깔의 망토.", "desert"],
+  ["back_gourd", 70, "back", "물 호리병", 0, "shop", 1500, "사막을 건널 때는 물부터.", "desert"],
+  ["ws_dune", 71, "wskin", "모래바람 무기 외형", 2, "boss", 0, "모래 물결이 날을 타고 흐른다.", "desert"],
+  // the jungle
+  ["hat_pith", 72, "hat", "탐험가 모자", 1, "shop", 2800, "밀림 탐험가의 둥근 모자.", "jungle"],
+  ["top_safari", 73, "top", "탐험가 셔츠", 1, "shop", 2800, "주머니 많은 셔츠와 빨간 목수건.", "jungle"],
+  ["face_paint", 74, "face", "밀림 얼굴 분장", 0, "shop", 600, "양 볼에 그은 풀빛 줄무늬.", "jungle"],
+  // the eastern temple
+  ["hat_bamboo", 75, "hat", "삿갓", 1, "shop", 3200, "대나무로 엮은 넓은 삿갓.", "temple"],
+  ["top_dopo", 76, "top", "쪽빛 도포", 2, "shop", 6500, "허리띠를 맨 긴 쪽빛 도포.", "temple"],
+  ["top_beads", 77, "top", "염주", 1, "chest", 0, "오래된 사원의 나무 염주.", "temple"],
+  ["face_fox", 78, "face", "여우 탈", 2, "quest", 0, "붉은 무늬를 그린 흰 여우 탈.", "temple"],
+  ["ws_bamboo", 79, "wskin", "대나무 무기 외형", 2, "shop", 8000, "마디가 진 푸른 대나무 무기.", "temple"],
+  // the brick dungeon
+  ["hat_miner", 80, "hat", "광부 안전모", 1, "shop", 2600, "이마에 등불을 단 노란 안전모.", "delver"],
+  ["back_lantern", 81, "back", "탐험 등불", 2, "boss", 0, "등 뒤 장대 끝에서 흔들리는 등불.", "delver"],
+  ["top_delver", 82, "top", "가죽 멜빵", 1, "chest", 0, "주머니가 줄줄이 달린 탐험가의 멜빵.", "delver"],
+  // life skill masters: one per skill at Lv 50 (ACH life50_<skill>)
+  ["hat_fisher", 83, "hat", "명인의 낚시 모자", 3, "ach", "life50_fish", "낚시 명인의 벙거지. 찌 하나를 꽂았다.", "master"],
+  ["top_chefcoat", 84, "top", "명인의 조리복", 3, "ach", "life50_cook", "단추가 두 줄인 새하얀 조리복.", "master"],
+  ["back_basket", 85, "back", "명인의 채집 바구니", 3, "ach", "life50_gather", "약초가 넘치는 등바구니.", "master"],
+  ["top_smith", 86, "top", "명인의 대장 앞치마", 3, "ach", "life50_craft", "불똥 자국이 남은 두꺼운 가죽 앞치마.", "master"],
+  ["top_alch", 87, "top", "명인의 연금 외투", 3, "ach", "life50_alch", "약병 띠를 두른 연금술사의 외투.", "master"],
+  ["back_satchel", 88, "back", "명인의 배달 가방", 3, "ach", "life50_deliver", "편지가 삐죽 나온 배달부의 가방.", "master"],
+  // NPC trust: a gift at 가족 (ACH rep_<npc>)
+  ["top_apron_juju", 89, "top", "쥬쥬의 앞치마", 2, "ach", "rep_juju", "쥬쥬가 손수 지어 준 분홍 앞치마.", "family"],
+  ["back_hammer", 90, "back", "캉캉의 큰 망치", 2, "ach", "rep_kangkang", "캉캉이 쓰던 망치. 등에 메면 든든하다.", "family"],
+  ["hat_goggles_bogle", 91, "hat", "보글의 실험 고글", 2, "ach", "rep_bogle", "보글이 물려준 초록 고글.", "family"],
+  ["top_apron_moka", 92, "top", "모카의 카페 앞치마", 2, "ach", "rep_cafe_moka", "커피 향이 밴 갈색 앞치마.", "family"],
+  ["hat_nightcap", 93, "hat", "마루의 나이트캡", 2, "ach", "rep_inn_maru", "마루네 여관의 푹신한 잠자리 모자.", "family"],
+  // the rift and the weekly challenge (weekly, quest: sources of systems still to come; nothing grants them yet)
+  ["hat_shard", 94, "hat", "균열 파편 고리", 3, "rift", 0, "머리 위를 맴도는 균열의 파편.", "rift"],
+  ["back_trophy", 95, "back", "우두머리 전리품", 3, "weekly", 0, "쓰러뜨린 우두머리의 뿔 달린 해골.", "rift"],
+  ["ws_shard", 96, "wskin", "균열 파편 무기 외형", 3, "weekly", 0, "균열의 파편이 날에 박혀 빛난다.", "rift"],
+  // just cute
+  ["hat_wreath_blue", 97, "hat", "수국 화관", 1, "shop", 2000, "파란 수국을 엮은 화관.", "cute"],
+  ["hat_wreath_white", 98, "hat", "데이지 화관", 1, "daily", 0, "하얀 데이지를 엮은 화관.", "cute"],
+  ["top_scarf", 99, "top", "빨간 목도리", 0, "shop", 900, "한쪽 끝이 길게 늘어진 목도리.", "cute"],
+  ["back_plush", 100, "back", "곰 인형 배낭", 1, "shop", 3500, "어깨 너머로 빼꼼 내다보는 곰 인형.", "cute"],
+  ["ws_bee", 101, "wskin", "꿀벌 무기 외형", 1, "daily", 0, "노랑과 검정 줄무늬.", "cute"],
+].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
+/** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
+const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근" };
 const COS_IDS = Object.keys(COSMETICS);
 const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
 const COS_ACH = Object.fromEntries(COS_IDS.filter((id) => COSMETICS[id].ach).map((id) => [COSMETICS[id].ach, id]));
@@ -13828,7 +13882,7 @@ export function defs() {
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
     waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: stoneNames(id), minLv: MAP_META[id].minLv || undefined })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
-    cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N,
+    cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N, cosSets: COS_SETS,
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
     collection: Object.fromEntries(REGIONS.map((id) => [id, { mobs: COL_MOBS[id], bonus: REGION_BONUS[id] }])), colNeed: MASTERY[0],
     event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },
