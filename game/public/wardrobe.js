@@ -118,11 +118,13 @@ function brush(g, A, scale) {
   /** The same rect on both sides of the head's centre, `off` pixels out. */
   const sym = (off, y, w, h, col, colR = col) => { r(c0 + off, y, w, h, colR); r(c0 - off - w, y, w, h, col); };
   const px = (x, y, col) => r(x, y, 1, 1, col);
+  /** One native pixel (half a logical one) at 64px; nothing on the 32px sheet, so the small art stays clean. */
+  const fp = (x, y, col) => { if (scale >= 2) r(x, y, 0.5, 0.5, col); };
   /** A pixel template: `rows` of characters looked up in `pal` ('.' or a missing key: nothing); `flip` mirrors it. */
   const grid = (x, y, rows, pal, flip = false) => rows.forEach((s, j) => {
     for (let i = 0; i < s.length; i++) { const col = pal[s[i]]; if (col) r(flip ? x + s.length - 1 - i : x + i, y + j, 1, 1, col); }
   });
-  return { r, cr, sym, px, grid, c0, g };
+  return { r, cr, sym, px, fp, grid, c0, g };
 }
 
 const HARD_HATS = new Set(["crown", "horncrown", "helm", "halo", "horns", "goggles", "miner", "surveycap", "shards"]);
@@ -551,6 +553,64 @@ const HAT = {
       else if (A.side) { b.px(A.x0 - 1, T - 1, p.c); b.px(A.x0 - 2, T, p.c); b.px(A.x0 - 2, T + 1, dk); }
     },
   },
+  // 버드나무 마을: a woven straw bonnet, a green ribbon band, a willow-leaf pin; ears through, knotted at the nape
+  strawhood: {
+    ears: "through",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1, dk = sh(p.c, 0.3), lt = li(p.c, 0.3);
+      b.cr(T, W + 2, 1, lt); b.cr(T - 1, W, 1, p.b); b.cr(T - 2, W - 2, 1, p.c); b.cr(T - 3, Math.max(2, W - 6), 1, p.c);
+      for (let x = A.x0; x <= A.x1 + 1; x += 3) b.px(x, T, dk);
+      b.r(A.x1 - 2, T - 2, 2, 1, dk); b.r(A.x0 + 2, T - 3, 2, 1, lt);
+      // the weave: a native over-under check across the crown
+      for (let x = A.x0 + 1; x < A.x1; x++) for (const y of [T - 2, T - 3]) b.fp(x + ((x + y) & 1) * 0.5, y + 0.5, dk);
+      // from behind: a bow on the brim, one tail trailing (two straight tails would read as eyes)
+      if (A.back) { b.r(b.c0 - 2, T, 5, 1, p.b); b.px(b.c0, T, sh(p.b, 0.35)); b.px(b.c0, T + 1, sh(p.b, 0.2)); b.px(b.c0 + 1, T + 2, sh(p.b, 0.35)); }
+      else if (A.side) { b.px(A.x0 - 1, T - 1, p.b); b.px(A.x0 - 2, T, p.b); b.px(A.x0 - 2, T + 1, sh(p.b, 0.3)); }
+    },
+    over(b, A, p) {
+      if (A.back) return;
+      const x = A.side ? b.c0 + 1 : A.x1 - 3, y = A.top - 2, lf = "#5aa84a";
+      b.grid(x, y, [".l", "lv"], { l: li(lf, 0.25), v: sh(lf, 0.3) });
+      b.fp(x + 1, y + 0.5, li(lf, 0.6));
+    },
+  },
+  // 협동 알바 왕: a work cap, a visor in the trim colour, a little gold crown badge on the front
+  coopcap: {
+    ears: "through",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1;
+      b.cr(T - 2, W - 2, 1, p.c); b.cr(T - 1, W, 2, p.c); b.r(A.x1 - 2, T - 2, 2, 3, sh(p.c));
+      b.r(A.x0 + 1, T - 2, 2, 1, li(p.c, 0.3)); b.cr(T - 3, 2, 1, p.b);
+      if (A.front) b.cr(T + 1, W - 2, 1, p.b);
+      if (A.side) { b.r(A.x1 - 1, T, 5, 1, p.b); b.r(A.x1 + 1, T + 1, 3, 1, sh(p.b, 0.3)); }
+      if (A.back) { b.cr(T, 4, 1, sh(p.c, 0.5)); b.cr(T, 2, 1, p.b); }
+    },
+    over(b, A, p) {
+      if (A.back) return;
+      const x = A.side ? A.x1 - 4 : b.c0 - 2, y = A.top - 2;
+      b.grid(x, y, ["y.y.y", "yyyyy"], { y: GOLD });
+      b.fp(x + 2.25, y + 1, "#e04a4a");
+    },
+  },
+  // 낚시 기록가: a yellow sou'wester, a band, the back brim long so the rain runs off behind; it covers the ears
+  souwester: {
+    ears: "behind",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1, dk = sh(p.c, 0.3), lt = li(p.c, 0.35);
+      b.cr(T - 4, W - 4, 1, p.c); b.cr(T - 3, W - 2, 2, p.c); b.cr(T - 1, W - 2, 1, p.b);
+      b.r(A.x1 - 3, T - 4, 2, 3, dk); b.r(A.x0 + 2, T - 4, 2, 1, lt);
+      // native stitched panel seams down the crown
+      for (let y = T - 4; y < T - 1; y += 0.5) { b.fp(b.c0 - 1.5, y, dk); b.fp(b.c0 + 1, y, dk); }
+      if (A.side) {
+        b.r(A.x0 - 3, T, W + 5, 1, p.c); b.r(A.x0 - 4, T + 1, 4, 1, dk); b.px(A.x0 - 4, T + 2, dk);
+        b.r(A.x1 - 1, T, 3, 1, lt);
+      } else if (A.back) {
+        b.cr(T, W + 4, 1, p.c); b.cr(T + 1, W + 2, 1, dk); b.cr(T + 2, W - 2, 1, dk);
+      } else {
+        b.cr(T, W + 4, 1, lt); b.sym(W / 2 + 1, T + 1, 1, 1, dk);
+      }
+    },
+  },
   // a short leaf-brimmed patrol cap, a folded tidal brim, and an aviator helmet
   willowcap: {
     ears: "through",
@@ -731,6 +791,38 @@ const TOP = {
   scarf: {
     front: ["cccccccc", ".....cs.", ".....b.."], side: [".cccccc.", "cs......", "b......."], back: ["cccccccc", ".cs.....", ".b......"],
   },
+  // 버드나무 마을: a linen bib apron patched by the neighbours (p, q); the pocket's stitches at 64px
+  patchApron: {
+    pal: () => ({ p: "#e8845a", q: "#6a9ad8" }),
+    front: [".bccccb.", ".cppccc.", ".ccccqc.", "...cc..."], side: [".bbcccc.", "..bcppc.", "...ccqc."], back: [".b....b.", "..bbbb..", "...bb..."],
+    fine(b, A, pal, y0) {
+      if (A.back) return;
+      const x = A.side ? 16 : 13, y = y0 + 1;
+      for (let i = 0; i < 4; i++) b.fp(x + i * 0.5, y, WHITE);
+      b.fp(x, y + 0.5, WHITE); b.fp(x + 1.5, y + 0.5, WHITE);
+    },
+  },
+  // 협동 알바 왕: a pinstriped work vest, two pens in the chest pocket
+  coopVest: {
+    pal: (p) => ({ p: sh(p.c, 0.3), e: "#e04a4a", f: "#4a8ae0" }),
+    front: [".cbcbef.", ".cbcbpp.", ".sBsBss."], side: [".scbcbe.", ".scbcbp.", ".ssBsBs."], back: [".cbcbcb.", ".cbcbcb.", ".sBsBsB."],
+    fine(b, A, pal, y0) {
+      if (A.back) return;
+      const x = A.side ? 18 : 17;
+      b.fp(x, y0, WHITE); b.fp(A.side ? 18.5 : 18.5, y0, GOLD);
+    },
+  },
+  // 낚시 기록가: a long yellow raincoat, a trim collar, float buttons, every seam stitched (64px)
+  raincoat: {
+    front: [".lcbbcs.", ".lccrcs.", ".lccrcd.", "..sccs.."], side: [".lcccbb.", ".scccrc.", ".sccsrd.", "...ccs.."], back: [".lbbbbc.", ".lcclcs.", ".lccccd.", "..sccs.."],
+    fine(b, A, pal, y0) {
+      const seam = sh(pal.c, 0.45);
+      for (let y = y0 + 1; y < A.foot; y += 0.5) {
+        if (!A.side) { b.fp(13.5, y, seam); b.fp(18, y, seam); } else b.fp(14, y, seam);
+      }
+      if (!A.back) for (let y = y0 + 1; y < A.foot; y++) b.fp(A.side ? 17 : 16, y, WHITE);
+    },
+  },
   patrolVest: {
     front: [".lbcccs.", ".scbccs.", ".dcybcd."],
     side: [".lscccs.", ".scybcs.", ".ddcbcd."],
@@ -768,6 +860,7 @@ function wearTop(t) {
     const body = n <= 2 ? [M, B] : n === 3 ? [T, M, B] : [T, T, M, B];
     body.forEach((s, i) => b.grid(12, A.foot - body.length + i, [s], pal));
     if (F) b.grid(12, A.foot, [F], pal);
+    if (t.fine) t.fine(b, A, pal, A.foot - body.length);
     if (A.back && t.nape) b.grid(12, A.bt - 1, [t.nape], pal);
   };
 }
@@ -1003,6 +1096,49 @@ const BACK = {
       b.grid(x, A.bt - 4, [".bb.", "lccs", "lggs", "lccs", "lcbs", ".ss."], pal);
     }
   },
+  // 버드나무 마을: a wicker shopping basket with a gingham cloth (trim), a loaf and a leek sticking out
+  marketBasket: (b, A, p) => {
+    const y = A.bt, last = A.foot - 1, dk = sh(p.c, 0.32), lt = li(p.c, 0.3);
+    const bread = "#e0a050", leek = "#6ac04a", stalk = "#eef0dc";
+    const weave = (x0, w) => { for (let yy = y + 1; yy <= last; yy++) for (let x = x0; x < x0 + w; x++) b.fp(x + ((x + yy) & 1) * 0.5, yy + 0.5, dk); };
+    if (A.back) {
+      b.r(13, y, 7, last - y + 1, p.c); b.r(13, y, 7, 1, lt); b.r(13, last, 7, 1, dk);
+      for (let x = 14; x < 20; x += 2) b.px(x, y + 1, dk);
+      b.r(14, y, 3, 1, p.b); b.px(15, y, li(p.b, 0.5));
+      b.r(20, y - 1, 1, 2, stalk); b.r(21, y - 2, 1, 2, stalk); b.r(22, y - 4, 1, 2, leek); b.px(21, y - 3, leek); b.r(11, y, 2, 1, bread); b.px(11, y - 1, li(bread, 0.3));
+      weave(13, 7);
+    } else if (A.side) {
+      b.r(8, y - 1, 5, last - y + 2, p.c); b.r(8, y - 1, 5, 1, lt); b.r(8, last, 5, 1, dk); b.px(9, y + 1, dk); b.px(11, y + 1, dk);
+      b.r(9, y - 2, 2, 1, p.b); b.px(8, y - 3, stalk); b.px(7, y - 4, leek); b.px(8, y - 4, leek); b.r(11, y - 2, 2, 1, bread);
+      weave(8, 5);
+    } else {
+      b.r(10, y, 12, last - y + 1, p.c); b.r(10, y, 12, 1, lt); b.r(10, last, 12, 1, dk); b.px(11, y + 1, dk); b.px(20, y + 1, dk);
+      b.r(8, y - 1, 3, 1, bread); b.px(9, y - 2, li(bread, 0.3)); b.r(21, y - 2, 1, 2, stalk); b.r(22, y - 4, 1, 2, leek); b.px(21, y - 3, leek);
+    }
+  },
+  // 협동 알바 왕: the name tag hangs in front (BACK_FRONT); from behind only its cord shows at the nape
+  coopTag: (b, A, p) => {
+    if (A.back) { b.r(14, A.bt, 4, 1, p.b); b.px(14, A.bt, sh(p.b, 0.3)); b.px(17, A.bt, sh(p.b, 0.3)); }
+  },
+  // 낚시 기록가: a hanging scroll of a fish print (ink fish, red seal) between two wooden rollers
+  fishScroll: (b, A, p) => {
+    const y = A.bt, last = A.foot - 1, paper = "#f4ecd8", ink = "#3a3440", wood = p.b, knob = sh(p.b, 0.35);
+    if (A.back) {
+      const x = 12 + sway(A);
+      b.r(x, y, 8, 1, wood); b.px(x, y, knob); b.px(x + 7, y, knob);
+      b.r(x + 1, y + 1, 6, last - y, paper);
+      b.r(x + 2, y + 1, 3, 1, ink); b.px(x + 6, y + 1, ink); b.px(x + 5, y + 1, sh(paper, 0.2));
+      if (last > y + 1) b.px(x + 6, last, "#e04a4a");
+      // the print at 64px: an eye, a gill line, a forked tail
+      b.fp(x + 2.5, y + 1, paper); b.fp(x + 4, y + 1.5, sh(ink, -0.3)); b.fp(x + 6.5, y + 1.5, paper);
+      return;
+    }
+    if (A.side) {
+      b.r(10, y - 3, 2, 1, knob); b.r(10, y - 2, 2, last - y + 2, paper); b.px(11, y - 1, ink); b.px(11, y, ink); b.r(10, last + 0, 2, 1, wood);
+      return;
+    }
+    b.px(11, y, knob); b.px(20, y, knob); b.r(12, y, 1, 1, wood); b.r(19, y, 1, 1, wood);
+  },
   moonCape: (b, A, p) => {
     const pal = { c: p.c, s: sh(p.c, 0.5), l: li(p.c, 0.22), g: p.b };
     const sw = sway(A), y = A.bt;
@@ -1035,7 +1171,17 @@ const sling = (b, A, p) => {
 /** What a back piece shows in front of the body (a cape's collar and clasp, a pack's straps), front and side views. */
 const BACK_FRONT = {
   surf: sling, gourd: sling, lantern: sling, satchel: sling, hammer: sling, trophy: sling,
-  mapcase: sling, tradeJar: sling,
+  mapcase: sling, tradeJar: sling, fishScroll: sling,
+  marketBasket: (b, A, p) => BACK_FRONT.pack(b, A, p),
+  // the name tag on the chest: a gold-rimmed card on a cord, a red 「왕」 stroke for a name (64px)
+  coopTag: (b, A, p) => {
+    const y = A.bt, x = A.side ? 16 : 14, w = A.side ? 2 : 3;
+    if (!A.side) { b.px(14, y, p.b); b.px(17, y, p.b); } else b.px(16, y, p.b);
+    // a card and its gold rim, kept off the gap between the feet on a sinking breath
+    if (y + 2 < A.foot) { b.r(x, y + 2, w, 1, GOLD); b.px(x, y + 2, sh(GOLD, 0.3)); }
+    b.r(x, y + 1, w, 1, p.c); b.px(x + w - 1, y + 1, GOLD);
+    b.fp(x + 0.5, y + 1.5, "#e04a4a"); b.fp(x + 1, y + 1.5, "#e04a4a"); b.fp(x + 1, y + 1, "#e04a4a");
+  },
   surveyTanks: (b, A, p) => BACK_FRONT.pack(b, A, { c: p.b }),
   basket: (b, A, p) => BACK_FRONT.pack(b, A, p), plush: (b, A, p) => BACK_FRONT.pack(b, A, p),
   cauldron: (b, A, p) => BACK_FRONT.pack(b, A, { c: "#6a4434" }),
@@ -1240,6 +1386,14 @@ const FACE = {
       b.r(A.side ? A.nx : 15, A.top, 2, 1, c);
     },
   },
+  // 버드나무 마을: sun-warmed cheeks, a soft rosy dash on each with a native glint
+  blush: {
+    draw(b, A, p) {
+      if (A.back) return;
+      const y = A.ny, c = rim(A, p.c);
+      for (const x of A.side ? [A.cheekR - 3] : [A.cheekL, A.cheekR - 2]) { b.r(x, y, 3, 1, c); b.fp(x + 0.5, y, li(p.c, 0.6)); b.fp(x + 2, y + 0.5, sh(p.c, 0.2)); }
+    },
+  },
   // a fox mask over the eyes and the nose: slit eyes, red brows, whiskers and a mark on the brow
   fox: {
     covers: true, back: true,
@@ -1408,6 +1562,17 @@ export const ART = {
   top_maple_ramblers: ["top", "ramblerVest", { c: "#a35e47", b: "#e1b976" }],
   back_maple_cape: ["back", "leafCape", { c: "#bc6944", b: "#e4bc75" }],
   face_maple_glasses: ["face", "amberFrames", { c: "#b67e49", b: "#426a65" }],
+  // 버드나무 마을, 협동 알바 왕, 낚시 기록가 (P10)
+  hat_willow_straw: ["hat", "strawhood", { c: "#e8c272", b: "#6aa84a" }],
+  top_willow_apron: ["top", "patchApron", { c: "#f0e4c8", b: "#7a9a4a" }],
+  back_willow_basket: ["back", "marketBasket", { c: "#c8945a", b: "#e05a5a" }],
+  face_willow_blush: ["face", "blush", { c: "#ff8aa0" }],
+  top_coop_vest: ["top", "coopVest", { c: "#3a4a7a", b: "#f0c048" }],
+  hat_coop_cap: ["hat", "coopcap", { c: "#3a4a7a", b: "#f0c048" }],
+  back_coop_tag: ["back", "coopTag", { c: "#f6f4fa", b: "#e04a4a" }],
+  hat_fish_souwester: ["hat", "souwester", { c: "#f0c838", b: "#3a5a8a" }],
+  top_fish_raincoat: ["top", "raincoat", { c: "#f0c838", b: "#3a5a8a" }],
+  back_fish_scroll: ["back", "fishScroll", { c: "#f4ecd8", b: "#8a5a3a" }],
 };
 /** The cosmetic slots, in the order the wire sends them. */
 export const SLOTS = ["hat", "top", "back", "face", "wskin"];

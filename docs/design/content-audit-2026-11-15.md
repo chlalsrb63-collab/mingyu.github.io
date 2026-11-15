@@ -312,6 +312,14 @@ Consumables with roles, village produce, fish, crafted furniture. No combat stat
 | 명인 (existing 6) re-drawn | life L50 (unchanged) | trims and badge embroidery; dye-ready |
 | 협동 알바 왕 (조끼 · 모자 · 명찰) | co-op S grade in all 4 shifts | name-tag text pixel, pocket pens, stripe pattern |
 | 낚시 기록가 (어부 모자 · 비옷 · 어탁 두루마리 등장식) | fish book complete / record fish | raincoat seams, scroll with fish print |
+- **As built (2026-11-16, sets 1–3; 견습 장인 and the 명인 redraw not done):** codes 131–140, sets `willow` `coopking`
+  `fishlog`. `COS_ACH` is now achievement → [ids] (one achievement may pay several pieces of one set). 버드나무 마을:
+  밀짚 두건 src `sew` (`KEEP_SEW.kp_willow_key`), 덧댄 앞치마 ACH `repwillow` (three `willow_*` villagers at 친구),
+  장바구니 + 볼터치 ACH `chore100` (new `ch.cnt.chore`, counted in `jbPay`; old sheets 0, no v bump — as `mvp`).
+  협동 알바 왕: all three from ACH `coopall` (every `coopS_*` counter ≥ 1; 68-coop.js untouched). 낚시 기록가: 비옷 +
+  두루마리 from the existing `fbook`, 방수모 from `fbig10` (ten species at 대). 64px-only detail through `brush.fp`
+  (a half-pixel dot, nothing at 32px) and an optional `TOP[k].fine`; every piece has a trim `b` except the blush
+  (its dye is its colour). Wardrobe source text for `sew` names the keepsake. Tests: wardrobe.mjs P10 block.
 
 ### P11 — 외형 세트 2: 이야기와 계절 (after 64×64; art) · size M–L
 | set | earned by | what 64×64 adds |

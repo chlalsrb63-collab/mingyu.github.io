@@ -149,6 +149,11 @@ function iconCanvas(id) {
   if (id) g.drawImage(iconOf(id), 0, 0);
   return c;
 }
+/** A sewn piece's source: the keepsake 루루 sews it from (defs.keepSew). */
+function sewText(d) {
+  const D = C.G.defs, k = Object.keys(D.keepSew || {}).find((k) => D.keepSew[k] && D.cos[D.keepSew[k]] === d);
+  return k ? `이야기 기념품 [${D.items[k].name}] — 루루에게 재봉 맡기기` : "루루의 기념품 재봉";
+}
 function srcText(d) {
   const ach = d.src === "ach" && C.G.defs.achievements.find((a) => a.id === d.ach);
   return {
@@ -156,7 +161,7 @@ function srcText(d) {
     token: `의상실에서 버드나무토큰 ${d.price.toLocaleString()}개`, rareBoss: "우두머리 토벌 시 매우 낮은 확률로 미보유 희귀 외형 한 점 획득",
     daily: "일일 과제 보상 상자", rift: "균열 침공 1위 (3위 안이면 가끔)",
     ach: ach ? `${ach.desc} (업적 「${ach.name}」)` : `업적 「${d.ach}」 달성`,
-    quest: "의뢰·퀘스트를 마치면 가끔", weekly: "주간 보스 도전 큰 보상에서 가끔",
+    quest: "의뢰·퀘스트를 마치면 가끔", weekly: "주간 보스 도전 큰 보상에서 가끔", sew: sewText(d),
   }[d.src] || "";
 }
 /** The catalogue in groups: each themed set (in the catalogue's order), then everything that is in no set. */
