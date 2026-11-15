@@ -10,7 +10,13 @@ let C = null;
 export function init(ctx) { C = ctx; }
 
 const side = () => (C && C.G.defs && C.G.defs.side) || [];
-const states = (s) => new Map(((s && s.sq) || []).map(([id, st, n, need]) => [id, { st, n, need }]));
+// built once per self.sq (a snapshot replaces the array, never edits it): mark() asks for every NPC every frame
+let stSq, stMap;
+const states = (s) => {
+  const sq = (s && s.sq) || null;
+  if (sq !== stSq || !stMap) { stSq = sq; stMap = new Map((sq || []).map(([id, st, n, need]) => [id, { st, n, need }])); }
+  return stMap;
+};
 
 export function goalText(q) {
   const g = q.goal;
