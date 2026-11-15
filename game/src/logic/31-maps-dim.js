@@ -333,6 +333,33 @@ const DIM_CHAL = {
   bosses: {
     boss: { theme: "crypt", cast: "차원 붕괴", pats: [["균열 탄막", "fan2"], ["붕괴의 고리", "rings"], ["균열 웅덩이", "pools"]] },
     abyssboss: { theme: "abyss", cast: "심연의 포효", pats: [["연쇄 돌진", "charge2"], ["도약 강타", "leapslam"], ["촉수 탄막", "fan3"]] },
+    // bosses-2 §4–5: the two designed raids — phases, shaped patterns, adds, a harder stagger window (vuln) and a hard enrage.
+    // Any key here overrides DIM_CHAL's (and BOSS_SCRIPT's) numbers; `big` its weekly reward; `w`/`h` its arena.
+    cloakbat: { theme: "abyss", cast: "심장의 포효", vuln: 0.3, enrage: 300000, hard: 420000, hardEvery: 3000, hardK: 3,
+      big: { gold: 400, xp: 0.25, stone: 8, rune: 2, gear: 3, gearQ: 3 },
+      pats: [["장막 휘감기", "cone", { half: 1.309, r: 60, k: 2 }], ["초음파 고리", "rings"], ["거꾸로 낙하", "leapslam"], ["날개 탄막", "fan2"]],
+      phases: [
+        // 비행: it flies — the shared mark, its bats every third turn, blood pools
+        { at: 0.7, pats: [["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3500, k: 5 }], ["핏빛 메아리", "pools"], ["박쥐떼", "adds", { kind: "nightbat", n: 4, cap: 4, d: 56, feed: 20000, heal: 0.02 }],
+          ["장막 휘감기", "cone", { half: 1.309, r: 60, k: 2 }], ["날개 탄막", "fan2"], ["박쥐떼", "adds", { kind: "nightbat", n: 4, cap: 4, d: 56, feed: 20000, heal: 0.02 }]] },
+        // 장막 붕괴: pools round the rim for good, two cones, a quicker beat, its cast hits harder
+        { at: 0.35, gap: 3900, blast: 4, rim: { n: 8, pr: 30 }, pats: [["장막 휘감기", "cone", { half: 1.309, r: 60, k: 2, both: 1 }], ["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3500, k: 5 }],
+          ["초음파 고리", "rings"], ["박쥐떼", "adds", { kind: "nightbat", n: 4, cap: 4, d: 56, feed: 20000, heal: 0.02 }], ["거꾸로 낙하", "leapslam"], ["날개 탄막", "fan2"]] },
+      ] },
+    bloomwhale: { theme: "cave", cast: "고래의 장송곡", w: 40, h: 28, castMs: 7000, stunMs: 6000, blast: 6, vuln: 0.3, diveMs: 1800, diveR: 70, diveK: 6,
+      enrage: 360000, hard: 480000, hardEvery: 4000, hardK: 10, big: { gold: 600, xp: 0.375, stone: 12, rune: 3, gear: 4, gearQ: 3 },
+      pats: [["고래 낙하", "dive"], ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }]],
+      // four burst windows (65 %, 45 %, 30 %, 10 %): each phase opens with the song; heads come first at 65 % and 45 %
+      phases: [
+        { at: 0.65, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 3, cap: 3, d: 96, shield: 1 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 4000, k: 2.5 }], ["서리 결정 웅덩이", "pools"],
+          ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }], ["고래 낙하", "dive"]] },
+        { at: 0.45, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 3, cap: 3, d: 96, shield: 1 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 4000, k: 2.5 }], ["서리 결정 웅덩이", "pools"],
+          ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }], ["고래 낙하", "dive"]] },
+        // 꽃무덤: the shared mark in place of the spread, a dive every third turn
+        { at: 0.3, cast: 1, pats: [["혼꽃 표식", "mark", { share: 1, n: 1, r: 40, ms: 4000, k: 5 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }], ["고래 낙하", "dive"],
+          ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["고래 낙하", "dive"]] },
+        { at: 0.1, cast: 1 },
+      ] },
   },
 };
 const CHAL_KEYS = Object.keys(DIM_CHAL.bosses);
@@ -342,7 +369,7 @@ const chalMinLv = (k) => shownLv(MOBS[k].lv - DIM_CHAL.minGap);
 /** A boss challenge's arena: one oval hall, the party at its west end, the boss in the middle. Pure. */
 function dimArena(cfg) {
   // (also a story fight's arena, 67-trophies.js: any boss kind, the ground's theme and its own name)
-  const W = DIM_CHAL.w, H = DIM_CHAL.h, k = cfg.k, theme = cfg.theme || DIM_CHAL.bosses[k].theme;
+  const k = cfg.k, own = (Object.hasOwn(DIM_CHAL.bosses, k) && DIM_CHAL.bosses[k]) || {}, W = own.w || DIM_CHAL.w, H = own.h || DIM_CHAL.h, theme = cfg.theme || own.theme;
   const m = blank(cfg.id || "dim:0", cfg.name || `보스 도전: ${MOBS[k].name}`, W, H, "W");
   m.theme = theme; m.bgm = "dim"; m.band = null; m.marks = [];
   const cx = W >> 1, cy = H >> 1, rx = cx - 3, ry = cy - 3;

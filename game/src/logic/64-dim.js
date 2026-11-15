@@ -343,7 +343,7 @@ function dimChest(S, dim, p) {
   let fl = ((dim.res && dim.res[p.pid]) || 0) | (carried ? 4 : 0), wkN = 0, r, msg;
   if (dim.chal) {
     // a boss challenge: the big reward once a week per boss, a small one after (and for someone carried, who keeps the week's)
-    const bit = 1 << CHAL_KEYS.indexOf(dim.chal.k), big = !carried && !(d.bw & bit), R = big ? DIM_CHAL.big : DIM_CHAL.small;
+    const bit = 1 << CHAL_KEYS.indexOf(dim.chal.k), big = !carried && !(d.bw & bit), R = big ? DIM_CHAL.bosses[dim.chal.k].big || DIM_CHAL.big : DIM_CHAL.small;
     if (big) { d.bw |= bit; fl |= 8; }
     r = { gold: R.gold * lv, xp: Math.round(R.xp * xpNeed(lv)), stone: R.stone, rune: !!R.rune, gear: R.gear ? 1 : 0, gearQ: R.gearQ };
     payout(S, p, r);
@@ -514,6 +514,7 @@ function chalReset(S, dim, mob) {
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   mob.stun = now + 3000; mob.castAt = now + 7000; mob.ak = c.ak; mob.stag = 0;
   dim.rt.tele.length = 0; dim.rt.pools.length = 0;
+  for (const a of dim.rt.mobs) if (a.add === mob.id) a.dead = true;   // its adds go with the fight
   // everyone gets up together in DIM_CHAL.reviveMs (chalTick); the boss sleeps till then
   Object.assign(c, bsNew(c.ak), { tries: c.tries + 1, upAt: now + DIM_CHAL.reviveMs });
   dim.rt.ev.push(["r", mob.id]);

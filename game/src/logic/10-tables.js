@@ -80,6 +80,21 @@ Object.assign(ITEMS, {
   w_bloodcrown: { ...ITEMS.w_lancer_5, name: "혈루 왕관 창", uniq: 1 },
   w_cavhammer: { ...ITEMS.w_h_5, name: "공동 망치", uniq: 1 },
 });
+// bosses-2 §7: the weekly raids' own finds (MOBS[k].drops) — a 4-piece set each (`set`: always that set, never rolled
+// elsewhere) and their legendary weapons. 밤장막 is mid-game (tier 4), 꽃무덤 end-game (tier 5).
+Object.assign(ITEMS, {
+  veil_h: { ...ITEMS.h_4, name: "박쥐 가면", set: "nightveil" },
+  veil_a: { ...ITEMS.a_4, name: "장막 망토", set: "nightveil" },
+  veil_r: { ...ITEMS.r_4, name: "송곳니 반지", set: "nightveil" },
+  veil_n: { ...ITEMS.n_4, name: "흉곽 부적", set: "nightveil" },
+  bloom_h: { ...ITEMS.h_5, name: "고래뼈 투구", set: "bloomgrave" },
+  bloom_a: { ...ITEMS.a_5, name: "갈비 흉갑", set: "bloomgrave" },
+  bloom_r: { ...ITEMS.r_5, name: "혼꽃 반지", set: "bloomgrave" },
+  bloom_n: { ...ITEMS.n_5, name: "결정 심장", set: "bloomgrave" },
+  w_ribbook: { ...ITEMS.w_book_4, name: "흉곽 등불", uniq: 1 },
+  w_whalebow: { ...ITEMS.w_bow_5, name: "고래뼈 활", uniq: 1 },
+  w_bloomstaff: { ...ITEMS.w_mage_5, name: "혼꽃 지팡이", uniq: 1 },
+});
 for (const type of Object.keys(GEAR)) {
   const d = GEAR[type];
   for (let t = 1; t <= 5; t++) {
@@ -133,6 +148,9 @@ const SETS = {
   pioneer: { name: "개척자", tiers: [1, 2], types: ["helm", "armor", "gloves", "boots"], bonus: [[2, [["hp", 60]]], [4, [["spd", 10], ["xp", 12]]]] },
   runner: { name: "네온 러너", tiers: [3, 4], types: ["gloves", "boots", "ring", "amulet"], bonus: [[2, [["crit", 6]]], [4, [["atkp", 15], ["spd", 8]]]] },
   rift: { name: "균열 추적자", tiers: [4, 5], types: ["weapon", "helm", "armor", "ring", "amulet"], bonus: [[2, [["mf", 25]]], [3, [["atkp", 12]]], [5, [["ls", 4], ["critd", 40]]]] },
+  // the weekly raids' sets (bosses-2 §7): no tiers, so no ordinary piece rolls into them — only their own rows (ITEMS `set`)
+  nightveil: { name: "밤장막", tiers: [], types: ["helm", "armor", "ring", "amulet"], bonus: [[2, [["ls", 3]]], [4, [["atkp", 12], ["crit", 5]]]] },
+  bloomgrave: { name: "꽃무덤", tiers: [], types: ["helm", "armor", "ring", "amulet"], bonus: [[2, [["hp", 150]]], [4, [["atkp", 15], ["critd", 35]]]] },
 };
 
 /** A warehouse (창고) holds this many slots per character, besides gold. */
@@ -390,6 +408,15 @@ const MOBS = {
         { at: 0.25, cast: 1, gap: 3750, steps: [{ f: "pool", dt: 400 }], pats: [["혈루 사출", "jet"], ["뿔관 연속 돌진", "charge2"], ["결정 가시 폭풍", "fan3"], ["모래 잠행", "leapslam"],
           ["꼬리 휩쓸기", "cone", { back: 1 }], ["붉은 결정 성장", "adds", { kind: "bloodshard", n: 3, cap: 3, d: 48 }], ["피의 비", "blast"]] },
       ] } },
+  // bosses-2 §4–5: the weekly raids (DIM_CHAL.bosses holds their scripts). 밤장막 박쥐군주 at tier 25 (owner, mid-game: the
+  // design's tier-45 figures scaled to 크리온's row one band up), 꽃무덤 고래 at the cap; their adds: bats that feed it, hagfish
+  // heads that shield it (shortcut: tinted batcluster / eelknot art stands in until they have their own).
+  cloakbat: { name: "밤장막 박쥐군주", lv: 25, hp: 21000, atk: 120, def: 22, spd: 36, xp: 7000, gold: [1200, 2000], aggro: 140, range: 30, cd: 1400, boss: true, gear: 1,
+    fan: 150, pool: 30, poolKind: 0, drops: [["veil_h", 0.03], ["veil_a", 0.03], ["veil_r", 0.03], ["veil_n", 0.03], ["w_ribbook", 0.04]] },
+  nightbat: { name: "밤장막 흡혈박쥐", sp: "batcluster", tint: "blood", lv: 25, hp: 500, atk: 40, def: 8, spd: 54, xp: 300, gold: [20, 40], aggro: 220, range: 18, cd: 1100, fly: true },
+  bloomwhale: { name: "꽃무덤 고래", lv: 50, hp: 60000, atk: 165, def: 52, spd: 30, xp: 90000, gold: [6000, 9000], aggro: 170, range: 34, cd: 1500, boss: true, gear: 1,
+    fan: 160, pool: 34, poolKind: 2, drops: [["bloom_h", 0.025], ["bloom_a", 0.025], ["bloom_r", 0.025], ["bloom_n", 0.025], ["w_whalebow", 0.015], ["w_bloomstaff", 0.015]] },
+  hagfishhead: { name: "먹장어 머리", sp: "eelknot", tint: "frost", lv: 50, hp: 9000, atk: 150, def: 30, spd: 8, xp: 2000, gold: [60, 120], aggro: 300, range: 76, cd: 1500, shot: true },
   // its phase-2 adds (shortcut: a blood-tinted scorpion stands in for the design's still crystals until they have art)
   bloodshard: { name: "혈루 결정 전갈", sp: "spinescorp", tint: "blood", lv: 41, hp: 1000, atk: 110, def: 20, spd: 40, xp: 420, gold: [20, 40], aggro: 140, range: 19, cd: 1100, slam: 34 },
   clubshrimp: { name: "망치 갯가재", lv: 39, hp: 4400, atk: 120, def: 30, spd: 42, xp: 1700, gold: [96, 166], aggro: 92, range: 22, cd: 1200, charge: 120, pool: 26, poolKind: 2,

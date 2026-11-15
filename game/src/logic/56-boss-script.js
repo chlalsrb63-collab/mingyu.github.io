@@ -13,21 +13,24 @@
 // and the shaped ones donut cone mark adds (bosses-2 §8), written `[name, kind, { …BS_PAT[kind] overrides }]`.
 // State `mob.bs` (bsNew; a challenge's boss shares it with `dim.chal`). Events `["bc", id, i]` pattern i, 9 cast, 8 broken,
 // 7 failed ("bc", not "dc": that is the tracker's lure); `["bt", shape, x, y, r, ms, …]` a shaped telegraph (bsShape).
-// Scripted rows: bloodhorn (mesa's lair boss) and clubshrimp (the coast's field boss), 10-tables.js — tests/bosses2.mjs.
-// R2 꽃무덤 고래's heads would be a pattern ["먹장어 머리", "adds", { kind: "<its hagfish row>", n: 3, cap: 3 }].
+// Scripted rows: bloodhorn (mesa's lair boss) and clubshrimp (the coast's field boss), 10-tables.js; the weekly raids
+// cloakbat and bloomwhale (DIM_CHAL.bosses, 31-maps-dim.js) — tests/bosses2.mjs. A phase may also carry `blast` (its cast's
+// fail), `rim` {n, r} (slow pools round the arena's rim for the rest of the fight); each phase starts its pattern list from the top.
 
 /** The defaults every script may override. `reach`: how near a hero must stand to be in a field boss's fight. */
 const BOSS_SCRIPT = {
   every: 4, castMs: 6000, stunMs: 5000, stag: 0.03, blast: 2.4, fury: 0.15, gap: 5200, vuln: 0.3,
-  enrage: 240000, enrageStep: 10000, enrageK: 0.12, hard: 0, hardEvery: 3000, hardK: 3, reach: 320, diveMs: 1800, diveR: 70,
+  enrage: 240000, enrageStep: 10000, enrageK: 0.12, hard: 0, hardEvery: 3000, hardK: 3, reach: 320, diveMs: 1800, diveR: 70, diveK: 2,
 };
 /** The shaped kinds' defaults: `ms` until it lands, reach `r` (a donut is safe inside `r0`), a cone's `half` angle (rad)
- *  and `back` (aimed away from its target), `k` × atk; a mark on `n` heroes; adds: `n` of `kind` at `d` px, `cap` alive. */
+ *  and `back` (aimed away from its target; `both`: front and back at once), `k` × atk; `rings` after a donut: the in-then-out
+ *  rings at once; a mark on `n` heroes (`share`: its burst split between everyone inside); adds: `n` of `kind` at `d` px,
+ *  `cap` alive, `shield` (the boss takes half while any lives), `feed` ms (still alive then, it flies into the boss: + `heal`). */
 const BS_PAT = {
-  donut: { ms: 1400, r0: 30, r: 90, k: 2 },
-  cone: { ms: 1000, r: 56, half: 1.047, back: 0, k: 1.5 },
-  mark: { ms: 3000, r: 36, n: 4, k: 1.6 },
-  adds: { kind: "", n: 3, cap: 6, d: 40 },
+  donut: { ms: 1400, r0: 30, r: 90, k: 2, rings: 0 },
+  cone: { ms: 1000, r: 56, half: 1.047, back: 0, both: 0, k: 1.5 },
+  mark: { ms: 3000, r: 36, n: 4, k: 1.6, share: 0 },
+  adds: { kind: "", n: 3, cap: 6, d: 40, shield: 0, feed: 0, heal: 0.02 },
   // bosses-2's F1/F2 vocabulary: a ring on every hero (the party blast), a lane of `n` rings over `len` px with burn pools on
   // every other one (혈루 사출), and a punch on `n` heroes: ring `r` after `ms`, then the bubble's ring `r2` `ms2` later (공동 펀치)
   blast: { ms: 1300, r: 32, k: 1.3 },
@@ -89,14 +92,24 @@ function bsShape(S, rt, mob, h, ms, dmg, shape, extra) {
   mob.bs.q.push({ at: S.now + ms, f: "hit", h, dmg });
   rt.ev.push(["bt", shape, Math.round(h.x), Math.round(h.y), h.r, ms, ...extra]);
 }
-/** It lands (a mark where its hero stands now): everyone on the map inside is hit; a dash's i-frames still save. */
+/** It lands (a mark where its hero stands now): everyone on the map inside is hit (a shared mark: split between them);
+ *  a dash's i-frames still save. */
 function bsHit(S, rt, mob, st) {
   const h = st.h, v = h.pid && S.players[h.pid];
   if (v && v.map === rt.id && !v.dead) { h.x = v.x; h.y = v.y; }
-  for (const pid of Object.keys(S.players)) {
-    const o = S.players[pid];
-    if (o.map === rt.id && !o.dead && bsInside(h, o.x, o.y)) mobHit(S, rt, o, st.dmg, mob, "tele");
-  }
+  const hit = Object.values(S.players).filter((o) => o.map === rt.id && !o.dead && bsInside(h, o.x, o.y));
+  for (const o of hit) mobHit(S, rt, o, h.share ? st.dmg / hit.length : st.dmg, mob, "tele");
+}
+/** A ring round itself, then four rings round that: in, then out. */
+function bsRings(S, rt, mob, atk) {
+  bsRing(S, rt, mob, mob.x, mob.y, 58, 1200, atk * 1.6);
+  for (const [dx, dy] of [[84, 0], [-84, 0], [0, 58], [0, -58]]) bsRing(S, rt, mob, mob.x + dx, mob.y + dy, 44, 2100, atk * 1.4);
+}
+/** The damage a scripted boss takes: more while stagger-stunned (vuln), half while one of its shielding adds lives. */
+function bsTaken(S, rt, mob, dmg) {
+  if (mob.stag > S.now) dmg = Math.round(dmg * (1 + bsDef(mob).vuln));
+  if (rt.mobs.some((a) => a.add === mob.id && a.shield && !a.dead)) dmg = Math.round(dmg / 2);
+  return dmg;
 }
 const bsFarthest = (mob, alive, tgt) => alive.reduce((a, b) => (dist(mob.x, mob.y, b.x, b.y) > dist(mob.x, mob.y, a.x, a.y) ? b : a), tgt);
 
@@ -148,8 +161,7 @@ function bsCast(S, rt, mob, tgt) {
       bsVolley(S, rt, mob, tgt, atk, 5, 0); q.push({ at: now + 800, f: "fan", off: 0.28 }, { at: now + 1600, f: "fan", off: -0.28 }, { at: now + 400, f: "pool" });
       dur = 1600 + VOLLEY_MS; break;
     case "rings":     // a ring round itself, then four rings round that: in, then out
-      bsRing(S, rt, mob, mob.x, mob.y, 58, 1200, atk * 1.6);
-      for (const [dx, dy] of [[84, 0], [-84, 0], [0, 58], [0, -58]]) bsRing(S, rt, mob, mob.x + dx, mob.y + dy, 44, 2100, atk * 1.4);
+      bsRings(S, rt, mob, atk);
       mob.stun = now + 1200; dur = 2100; break;
     case "pools":     // a puddle under every one of the party: spread out, keep moving
       for (const o of alive) bsPool(S, rt, mob, o, atk);
@@ -165,7 +177,7 @@ function bsCast(S, rt, mob, tgt) {
     case "dive": {    // out of reach (not hit, not aimed at), then down on the middle of the party: walk or dash out
       const n = Math.max(1, alive.length), x = alive.reduce((s, o) => s + o.x, 0) / n || tgt.x, y = alive.reduce((s, o) => s + o.y, 0) / n || tgt.y;
       mob.dive = 1;
-      bsRing(S, rt, mob, x, y, B.diveR, B.diveMs, atk * 2);
+      bsRing(S, rt, mob, x, y, B.diveR, B.diveMs, atk * B.diveK);
       q.push({ at: now + B.diveMs - 50, f: "land", x, y });
       mob.stun = now + B.diveMs; dur = B.diveMs + 600; break;
     }
@@ -181,12 +193,14 @@ function bsCast(S, rt, mob, tgt) {
         mob.dir = Math.cos(h.ang) < 0 ? 1 : 2;
       }
       bsShape(S, rt, mob, h, o.ms, atk * o.k, pats[i][1] === "donut" ? 0 : 1, extra);
-      mob.stun = now + o.ms; dur = o.ms + 300; break;
+      if (o.both) { const am = extra[0] + (extra[0] > 0 ? -3142 : 3142); bsShape(S, rt, mob, { ...h, ang: am / 1000 }, o.ms, atk * o.k, 1, [am, extra[1]]); }
+      if (o.rings) q.push({ at: now + o.ms, f: "rings" });
+      mob.stun = now + o.ms + (o.rings ? 1200 : 0); dur = o.ms + (o.rings ? 2100 : 300); break;
     }
     case "mark":      // heroes marked: after `ms` a burst where each then stands hits everyone inside — spread out
       for (let j = 0; j < Math.min(o.n, alive.length); j++) {
         const v = alive[(c.pi + j) % alive.length];
-        bsShape(S, rt, mob, { x: v.x, y: v.y, r: o.r, r0: 0, half: 0, pid: v.pid }, o.ms, atk * o.k, 2, [v.eid]);
+        bsShape(S, rt, mob, { x: v.x, y: v.y, r: o.r, r0: 0, half: 0, pid: v.pid, share: o.share }, o.ms, atk * o.k, 2, [v.eid]);
       }
       dur = o.ms; break;
     case "adds": {    // minions of `kind` round it, never more than `cap` of its own alive at once
@@ -196,7 +210,7 @@ function bsCast(S, rt, mob, tgt) {
         if (!canStand(m, x, y)) continue;
         const tx = Math.floor(x / T), ty = Math.floor(y / T), add = newMob(S, o.kind, [tx, ty, tx, ty], { elite: 0 });
         add.x = add.hx = x; add.y = add.hy = y; readyMob(S, add);
-        add.temp = true; add.add = mob.id;
+        add.temp = true; add.add = mob.id; add.shield = o.shield; add.feedAt = o.feed ? now + o.feed : 0; add.heal = o.heal;
         rt.mobs.push(add); rt.ev.push(["r", add.id]);
       }
       dur = 800; break;
@@ -214,8 +228,10 @@ function bsTick(S, m, rt, mob, folk, alive) {
   if (!c || !c.engAt) return;
   const ph = bsPhaseAt(B, mob);
   if (ph > c.ph) {
-    c.ph = ph;
-    if (B.phases[ph - 2].cast && !mob.cast) { c.force = 1; mob.castAt = Math.min(mob.castAt, now); }
+    c.ph = ph; c.pi = 0;
+    const P = B.phases[ph - 2];
+    if (P.rim) bsRim(S, rt, mob, P.rim);
+    if (P.cast && !mob.cast) { c.force = 1; mob.castAt = Math.min(mob.castAt, now); }
     for (const o of folk) toast(o, `${d.name}${pp(d.name, "이가")} 더욱 사나워집니다! (${ph}단계)`);
   }
   if (mob.cast) {
@@ -224,7 +240,8 @@ function bsTick(S, m, rt, mob, folk, alive) {
       // nobody broke it: everyone standing pays, and it comes back angrier
       mob.cast = null; c.fury++;
       rt.ev.push(["bc", mob.id, 7]);
-      for (const o of alive) mobHit(S, rt, o, d.atk * B.blast, mob, "tele");
+      const P = c.ph > 1 ? B.phases[c.ph - 2] : null;
+      for (const o of alive) mobHit(S, rt, o, d.atk * ((P && P.blast) || B.blast), mob, "tele");
       for (const o of folk) toast(o, `[${B.cast}]${pp(B.cast, "을를")} 막지 못했습니다! 보스가 더 사나워집니다.`);
     }
   }
@@ -232,11 +249,17 @@ function bsTick(S, m, rt, mob, folk, alive) {
     const st = c.q.shift(), tgt = S.players[mob.tgt];
     // a dive always comes down, whatever happened meanwhile
     if (st.f === "hit") { bsHit(S, rt, mob, st); continue; }
+    if (st.f === "rings") { bsRings(S, rt, mob, d.atk); continue; }
     if (st.f === "land") { if (canStand(m, st.x, st.y)) { mob.x = st.x; mob.y = st.y; rt.ev.push(["m", mob.id]); } mob.dive = 0; continue; }
     if (mob.cast || !tgt || tgt.dead) continue;
     if (st.f === "fan") bsVolley(S, rt, mob, tgt, d.atk, 5, st.off || 0);
     else if (st.f === "pool") bsPool(S, rt, mob, tgt, d.atk);
     else if (st.f === "charge" && !mob.act) bsCharge(S, rt, mob, bsFarthest(mob, alive, tgt));
+  }
+  // its feeding adds still alive after `feed` fly into it and heal it
+  for (const a of rt.mobs) if (a.add === mob.id && a.feedAt && now >= a.feedAt && !a.dead) {
+    a.dead = true; a.hp = 0; mob.hp = Math.min(mobMax(mob), mob.hp + Math.round(a.heal * mobMax(mob)));
+    rt.ev.push(["bc", mob.id, 6]);
   }
   // the soft enrage: past `enrage` of a fight its blows grow every `enrageStep`
   const over = now - c.engAt - B.enrage, steps = B.enrage && over >= 0 ? 1 + Math.floor(over / B.enrageStep) : 0;
@@ -249,6 +272,16 @@ function bsTick(S, m, rt, mob, folk, alive) {
     c.hard = now + B.hardEvery;
     rt.ev.push(["bc", mob.id, 7]);
     for (const o of alive) mobHit(S, rt, o, d.atk * B.hardK, mob, "tele");
+  }
+}
+/** `n` slow pools round the arena's rim (a challenge's oval; else `r` px round its home) that last the rest of the fight. */
+function bsRim(S, rt, mob, rim) {
+  const rm = mob.chal && mapOfS(S, rt.id).dim.rooms[0], now = S.now, r = rim.pr || 30;
+  const rx = rm ? ((rm.x1 - rm.x0) / 2 - 1.5) * T : rim.r, ry = rm ? ((rm.y1 - rm.y0) / 2 - 1.5) * T : rim.r;
+  for (let j = 0; j < rim.n; j++) {
+    const a = (j / rim.n) * 2 * Math.PI, x = Math.round(mob.hx + Math.cos(a) * rx), y = Math.round(mob.hy + Math.sin(a) * ry);
+    rt.pools.push({ x, y, r, next: now + POOL_FLY, until: now + 600000, dmg: MOBS[mob.k].atk * 0.4, atk: MOBS[mob.k].atk, kind: 2 });
+    rt.ev.push(["g", mob.id, x, y, r, POOL_FLY, 600000, 2]);
   }
 }
 /** A field boss's tick (tickMob): its fight begins with a target and is forgotten when it gives up and walks home. */

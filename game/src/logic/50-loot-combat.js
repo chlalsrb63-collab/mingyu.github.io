@@ -128,6 +128,7 @@ function sellPrice(s) {
 }
 /** The set a base item can belong to, if any. */
 function setFor(it) {
+  if (it.set) return it.set;   // a boss's own set piece (10-tables.js, bosses-2 §7)
   for (const id of Object.keys(SETS)) {
     if (SETS[id].types.includes(it.type) && SETS[id].tiers.includes(it.tier)) return id;
   }
@@ -199,7 +200,8 @@ function lootFor(S, rt, mob, p) {
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
   // a kind's own finds (MOBS[k].drops: [item, chance, min, max]); its weapon always drops legendary
-  for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(ITEMS[it].type === "weapon" ? { g: rollGear(S, it, 3, d.lv) } : { it, n: ri(S, lo, hi) });
+  // (a boss set's own piece always drops as that set)
+  for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(ITEMS[it].set ? { g: rollGear(S, it, 4, d.lv) } : ITEMS[it].type === "weapon" ? { g: rollGear(S, it, 3, d.lv) } : { it, n: ri(S, lo, hi) });
   if (rnd(S) < 0.1) out.push({ it: d.lv < 8 ? "hp_s" : d.lv < 26 ? "hp_m" : "hp_l", n: 1 });
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   for (const o of out) {
@@ -232,8 +234,8 @@ function gainXp(S, p, n) {
 function dealMob(S, rt, mob, p, dmg, crit) {
   // a boss that dived out of reach is not hit at all (56-boss-script.js)
   if (mob.dead || mob.dive) return false;
-  // a scripted boss stunned by a broken cast takes more (its script's vuln)
-  if (mob.stag > S.now && mob.bs) dmg = Math.round(dmg * (1 + bsDef(mob).vuln));
+  // a scripted boss stunned by a broken cast takes more (its script's vuln), half behind its shielding adds
+  if (mob.bs) dmg = bsTaken(S, rt, mob, dmg);
   // a rift's monster is made tougher for a bigger or stronger party (64-dim.js dimHk)
   if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
   mob.hp -= dmg;
