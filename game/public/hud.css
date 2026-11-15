@@ -157,20 +157,26 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #status .face { flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: #2a2433; border: 2px solid var(--ink); border-image: none; box-shadow: inset 0 0 0 1px #3e344b; }
 #st-face { width: 40px; height: 40px; }
 /* the unit frame stays short: name and level on one line, two slim bars with tiny numbers, then the purse */
-.st-main { flex: 0 1 164px; min-width: 116px; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+.st-main { flex: 0 0 184px; min-width: 184px; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
 #status .row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; line-height: 1.1; }
 #st-name { font: 700 var(--t12) var(--pix); color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #st-lv { flex: none; max-width: 70%; overflow: hidden; text-overflow: ellipsis; color: var(--b-hi); font: 700 var(--t12) var(--pix); white-space: nowrap; }
-#status .meter { display: grid; grid-template-columns: 12px minmax(40px, 1fr) auto; align-items: center; gap: 3px; height: 8px; }
+#status .meter { display: grid; grid-template-columns: calc(var(--t10) * 2.4 + 2px) minmax(40px, 1fr) calc(var(--t10) * 6.3); align-items: center; gap: 3px; height: 8px; }
 #status .meter em { font: var(--t10)/8px var(--pix9); font-style: normal; color: var(--hp-hi); text-shadow: 1px 1px 0 #000; }
 #status .meter.mp em { color: var(--mp-hi); }
 #status .meter b { font: var(--t10)/8px var(--pix9); font-weight: normal; color: var(--cream); text-align: right; white-space: nowrap; text-shadow: 1px 1px 0 #000; }
 #status .bar { position: relative; height: 8px; margin: 0; background: #000; border: 1px solid var(--ink); box-shadow: none; border-radius: 0; }
 #status .bar.hp i:not(.trail) { background: linear-gradient(var(--hp-hi) 0 1px, var(--hp) 1px 4px, var(--hp-lo) 4px); }
-#status .meter.jb[hidden] { display: none; }
-#status .meter.jb em { font: 700 var(--t10)/8px var(--pix); color: #8fe39a; }
-#status .bar.jb i { background: linear-gradient(#b6f5bd 0 1px, #4fb86a 1px 4px, #2c7a45 4px); }
-#status .meter.jb.pop { animation: jb-pop .9s steps(6); }
+#status .meter.gg[hidden] { display: none; }
+#status .meter.gg { --gg: #ff8a3a; }
+#status .meter.gg em { color: var(--gg); }
+#status .bar.gg i { background: var(--gg); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), inset 0 -2px 0 rgba(0,0,0,.35); }
+/* the job level row under the weapon mastery: same size and look as one mastery cell, in brass */
+#jr { --wm: #d8aa4a; --wm-hi: #f6dc98; --wm-lo: #8a6a24; flex: 0 0 100%; max-width: 200px; display: grid; grid-template-columns: 20px 1fr; grid-template-rows: 12px 6px; gap: 2px 4px; align-items: center; cursor: help; }
+#jr .wi { grid-row: 1 / 3; width: 20px; height: 20px; padding: 1px; box-sizing: border-box; image-rendering: pixelated; background: var(--scr); border: 1px solid var(--b-mid); }
+#jr .wt { font: 700 var(--t12)/12px var(--pix); color: var(--wm-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 1px 1px 0 #000; }
+#jr.off { opacity: .5; }
+#jr.pop { animation: jb-pop .9s steps(6); }
 @keyframes jb-pop { 0%, 40%, 80% { filter: brightness(2.2); } 20%, 60%, 100% { filter: none; } }
 #status .bar.mp i { background: linear-gradient(var(--mp-hi) 0 1px, var(--mp) 1px 4px, var(--mp-lo) 4px); }
 #st-gold { position: relative; display: flex; align-items: center; gap: 4px; height: 12px; font: 700 var(--t12)/12px var(--pix); color: var(--b-hi); white-space: nowrap; text-shadow: 1px 1px 0 #000; }
@@ -203,8 +209,8 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #wm .wm-c:not(.on) { opacity: .62; }
 #wm .wt { font: 700 var(--t12)/12px var(--pix); color: var(--wm-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 1px 1px 0 #000; }
 #wm .wl { font: var(--t10)/12px var(--pix9); font-weight: normal; color: #c9bfa8; }
-#wm .wb, .wm-tip .wb { position: relative; display: block; height: 6px; background: #000; border: 1px solid var(--ink); }
-#wm .wb i, .wm-tip .wb i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(var(--wm-hi, #d4ffe4) 0 1px, var(--wm, #8fe0b4) 1px 3px, var(--wm-lo, #2f7a5c) 3px); }
+#wm .wb, #jr .wb, .wm-tip .wb { position: relative; display: block; height: 6px; background: #000; border: 1px solid var(--ink); }
+#wm .wb i, #jr .wb i, .wm-tip .wb i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(var(--wm-hi, #d4ffe4) 0 1px, var(--wm, #8fe0b4) 1px 3px, var(--wm-lo, #2f7a5c) 3px); }
 #wm .wm-none { font: var(--t10)/20px var(--pix9); color: #9a90a8; }
 #wm.up .wm-c.on { animation: wm-flash .2s steps(2) 6; }
 @keyframes wm-flash { 50% { filter: brightness(1.8) drop-shadow(0 0 0 #fff); } }
@@ -1347,7 +1353,7 @@ img.ji { width: 16px; height: 16px; flex: none; image-rendering: pixelated; vert
 #st-job { flex: none; display: flex; align-self: center; margin-right: -2px; }
 #status .row #st-name { flex: 1 1 auto; }
 #st-job img.ji { vertical-align: 0; margin: -2px 0; }
-#status .meter em { display: flex; align-items: center; justify-content: center; }
+#status .meter em { display: flex; white-space: nowrap; overflow: visible; align-items: center; justify-content: center; }
 #status .meter em img.gi { width: 12px; height: 12px; image-rendering: pixelated; margin-top: -2px; }
 #st-gold.info { width: max-content; }
 /* the tracker: a kind glyph in place of the word */
