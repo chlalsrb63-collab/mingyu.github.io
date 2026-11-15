@@ -1627,9 +1627,9 @@ const COOP = {
       b: ["모루 위 달군 쇠를 음표에 맞춰 두드리세요", "담금질 통에 식히세요", "진열대(동쪽)에 올리세요"], full: "진열대가 꽉 찼어요 — 손님을 기다리세요!",
       flip: "뒤집기! 화살표 음표는 방향키로", noflip: "방향키는 화살표 음표에서만!", duet: "갑옷은 번갈아 쳐요 — 받는 음표는 다른 사람이!" } },
     // cut-offs tuned on walking bots that hit ≈ 55 % perfect · 30 % good · 15 % missed notes (tests/coop.mjs: 2–4 bots score
-    // ≈ 958 · 1,969 · 2,570 selling 13 · 21 · 25 pieces, just over S; bots at 35 · 30 · 35 % score ≈ 790 · 1,511 · 1,846, A–B);
+    // ≈ 870 · 2,276 · 2,831 selling 14 · 23 · 26 pieces, just over S; bots at 35 · 30 · 35 % score ≈ 727 · 1,837 · 2,243, A);
     // a real party, less steady and slower to decide, lands on B–A
-    par: 1000, parN: { 2: 1.03, 3: 2.1, 4: 2.75 },
+    par: 1000, parN: { 2: 0.94, 3: 2.45, 4: 3.05 },
     // stations (tiles; solid furniture, used from a neighbouring tile): the iron crate `]`, furnaces `<` and anvils `&` in two
     // rows, quench barrels `w`, the 진열대 (six counter tiles `m`, east) and the rack `>` by the west wall; customers come in
     // at `door` and wait in the aisle east of the counter (`seats`, one per shelf slot)
