@@ -6,7 +6,8 @@
  */
 
 import { Sound } from "./audio.js";
-import { iconImg, iconUrl, BUFF_ICON } from "./uiicons.js";
+import { iconImg, iconUrl, BUFF_ICON, TRAIT } from "./uiicons.js";
+import { mobMax, RANK_NAME, DUNGEONS } from "./events.js";
 import * as SP from "./sprites.js";
 import * as Growth from "./growth.js";
 import * as Wardrobe from "./wardrobe_ui.js";
@@ -330,6 +331,7 @@ export function hudTick(t) {
   if (cgBox.hidden !== !s.cr) cgBox.hidden = !s.cr;
   QS.tick(t);
   dashTick(t);
+  targetFrame(t);
   if (tip.from && (!tip.from.isConnected || tip.from.closest("[hidden]"))) hideTip();
   Info.tick();
   if (isOpen("char")) drawPortrait(t);
@@ -366,6 +368,38 @@ export function hudTick(t) {
       buffs.append(sp);
     }
   }
+}
+
+/** The target frame: the monster I last struck, for 8 s after the blow or until it falls. Traits name what they do. */
+function targetFrame(t) {
+  const box = $("#tgt"), m = G.tgt && G.mobs.get(G.tgt);
+  const live = !!m && t - G.tgtT < 8000;
+  if (box.hidden === live) box.hidden = !live;
+  if (!live) return;
+  const d = G.defs.mobs[m.k], max = mobMax(m), tr = m.tr || [], traits = G.defs.traits || {};
+  const key = `${G.tgt}|${m.el}|${tr.join()}`;
+  if (box.dataset.k !== key) {
+    box.dataset.k = key;
+    const rank = m.el === 2 && DUNGEONS.has(G.map.id) ? "수문장 " : RANK_NAME[m.el | 0];
+    const nm = box.querySelector(".tn");
+    nm.textContent = `Lv.${d.lv} ${rank}${d.name}`;
+    nm.style.color = d.boss ? "#ff9ae0" : m.el === 2 ? "#ff8a4a" : m.el ? "#ffbe3c" : "";
+    const tt = box.querySelector(".tt");
+    tt.textContent = "";
+    for (const k of tr) {
+      const tk = TRAIT[k], info = traits[k];
+      if (!info) continue;
+      const chip = el("span", "", info[0]);
+      if (tk) chip.prepend(iconImg(tk[0], tk[1]));
+      chip.title = info[1];
+      tt.append(chip);
+    }
+    tt.hidden = !tt.children.length;
+  }
+  const pct = clamp(m.hp / max, 0, 1);
+  box.querySelector(".tb i").style.width = `${(pct * 100).toFixed(1)}%`;
+  const txt = `${Math.ceil(pct * 100)}%`, b = box.querySelector(".tb b");
+  if (b.textContent !== txt) b.textContent = txt;
 }
 
 /** A buff's card with the time left as the chip showed it (the chip is rebuilt as the time runs, the card is not). */

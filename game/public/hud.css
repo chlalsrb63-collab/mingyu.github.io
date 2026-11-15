@@ -1752,6 +1752,17 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr)
 #tip .dl { font: var(--t10)/1.4 var(--pix9); color: var(--tx3, #8a8296); }
 #tip .dl.up { color: var(--tx-ok, #9af0ae); }
 #tip .dl.dn { color: var(--tx-bad, #ffb4a0); }
+/* the target frame under the party frames (hud.js targetFrame): name, an HP bar with its %, the traits by name */
+#tgt { padding: 4px 8px 5px; font: var(--t12)/1.35 var(--pix); color: var(--cream); pointer-events: auto; }
+#tgt[hidden] { display: none; }
+#tgt .tn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tgt .tb { position: relative; height: 10px; margin-top: 3px; background: #000; border: 2px solid var(--ink); }
+#tgt .tb i { position: absolute; left: 0; top: 0; bottom: 0; background: #d8404c; transition: width .15s linear; }
+#tgt .tb b { position: absolute; right: 3px; top: -3px; font: var(--t10)/14px var(--pix9); font-weight: 400; color: #fff; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
+#tgt .tt { display: flex; flex-wrap: wrap; gap: 2px 6px; margin-top: 3px; font: var(--t10) var(--pix9); color: var(--tx2, #c8b896); }
+#tgt .tt[hidden] { display: none; }
+#tgt .tt span { display: inline-flex; align-items: center; gap: 2px; cursor: help; }
+#tgt .tt img { width: 12px; height: 12px; image-rendering: pixelated; }
 /* potion buttons: amber count when 2 or fewer, red and greyed when none (hud.js hotbar) */
 .act.pot.low .n { color: #ffbe4a; }
 .act.pot.none .n { color: #ff7a6a; }

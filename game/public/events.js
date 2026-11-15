@@ -126,6 +126,7 @@ export function onEvent(e, t) {
           tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]);
           // was this my own blow landing? then it gets the full treatment: a held frame, a kick, a burst
           const mine = t - G.lastAtk < 420;
+          if ((mine || t - G.lastSkill < 700) && G.mobs.has(id)) { G.tgt = id; G.tgtT = t; }   // the target frame follows my last blow (hud.js)
           fin = mine && !grazing && (G.me.atkN === 2 || (G.self?.wk === "sword" && G.me.atkN === 1));
           const heavy = critical || fin;
           tgt.hurtP = heavy ? 1.6 : 1;
