@@ -53,6 +53,13 @@ const compact = () => VP.lay !== "full";
  */
 export const PANEL = ["inv", "char", "skill", "quest", "party", "guild", "life", "daily", "week", "achieve", "collect", "rank", "settings", "help", "charm", "trophy", "alba"];
 const BAG_WITH = ["shop", "smith", "craft", "hstore"];
+/**
+ * The side column's standing stack (desktop): under the minimap and the quest tracker, the character (portrait
+ * and gear; its 상세 · 능력치 · 외형 tabs take the bag's room) and the bag, which fills the rest and scrolls.
+ * They are always shown; another panel window (skills, party…) covers them until it is closed.
+ */
+const STACK = ["char", "inv"];
+const stacked = (id) => VP.lay === "full" && STACK.includes(id);
 const panelBox = $("#panel"), winBox = $("#windows");
 let panelId = null, autoBag = false, wasDocked = null;
 /** Is this window docked (in the side panel, or the bag in the phone drawer)? Docked windows are never placed, dragged or folded. */
@@ -60,6 +67,9 @@ const paned = (id) => winEl(id).classList.contains("docked");
 /** The window shown in the side panel, or null (the quest tracker). */
 export const panelWin = () => panelId;
 function setPanel(id) { panelId = id; panelBox.classList.toggle("on", !!id); }
+/** The character's tab row (wardrobe_ui.js owns its clicks): `t` is gear · info · stat · cos. */
+function charTab(t) { const b = $(`#w-char .wr-tabs button[data-t="${t}"]`); if (b && !b.classList.contains("on")) b.click(); }
+const charGear = () => charTab("gear");
 function dockPanel() {
   const full = VP.lay === "full";
   if (full === wasDocked) return;
@@ -67,16 +77,18 @@ function dockPanel() {
   const inv = winEl("inv");
   if (full) {
     // the top floating panel window (if any) keeps its place in the panel, the others close
-    const open = PANEL.filter((id) => id !== "inv" && !winEl(id).hidden)
+    const open = PANEL.filter((id) => !STACK.includes(id) && !winEl(id).hidden)
       .sort((a, b) => (+winEl(b).style.zIndex || 0) - (+winEl(a).style.zIndex || 0));
     for (const id of PANEL) {
       if (id === "inv") continue;
       const w = winEl(id);
       w.classList.remove("mini", "top"); w.title = ""; w.style.zIndex = "";
-      panelBox.append(w); w.classList.add("docked");
-      if (open.indexOf(id) > 0) w.hidden = true;
+      if (id === "char") inv.before(w); else panelBox.append(w);
+      w.classList.add("docked");
+      if (id === "char") w.hidden = false;
+      else if (open.indexOf(id) > 0) w.hidden = true;
     }
-    inv.hidden = true;   // the bag opens with I (or a shop) on a desktop
+    inv.hidden = false;   // the character and the bag stand in the side column on a desktop
     setPanel(open[0] || null);
     layTabs();
   } else {
@@ -85,6 +97,7 @@ function dockPanel() {
       if (id === "inv") continue;
       const w = winEl(id);
       w.classList.remove("docked"); winBox.append(w);
+      if (id === "char") w.hidden = true;
     }
     inv.hidden = false;
     setPanel(null);
@@ -244,10 +257,23 @@ function front(id) {
   }
   for (const o of WIN) if (!paned(o)) winEl(o).classList.toggle("top", o === id);
 }
-function syncMenu() { for (const b of $$("#menu button[data-win]")) b.classList.toggle("on", b.dataset.win === "inv" && compact() ? drawerOpen() : isOpen(b.dataset.win)); }
+function syncMenu() {
+  for (const b of $$("#menu button[data-win]")) {
+    const id = b.dataset.win;
+    b.classList.toggle("on", id === "inv" && compact() ? drawerOpen() : stacked(id) ? !panelId : isOpen(id));
+  }
+}
 export function openWin(id) {
   if (id === "inv" && compact()) { setDrawer(true); tutTry("bag"); refreshUi(); syncMenu(); return; }
   const w = winEl(id), was = !w.hidden;
+  if (stacked(id)) {
+    // the character and the bag always stand in the column: opening one uncovers them
+    if (panelId) closeWin(panelId);
+    delete shown[id];
+    if (id === "inv") tutTry("bag");
+    refreshUi(); syncMenu();
+    return;
+  }
   if (paned(id) && panelId !== id) {
     // the side panel shows one window: this one takes the place of whatever was there
     if (panelId) closeWin(panelId);
@@ -284,6 +310,13 @@ export function closeWin(id) {
     syncMenu();
     return;
   }
+  if (stacked(id)) {
+    // they never close in the column: the bag lets go of its pick, the character goes back to its 장비 tab
+    if (id === "inv" && G.sel >= 0) { G.sel = -1; refreshUi(); }
+    if (id === "char") charGear();
+    syncMenu();
+    return;
+  }
   const w = winEl(id);
   if (w.hidden) return;
   w.hidden = true;
@@ -304,6 +337,12 @@ export function closeDrawer() { if (compact()) closeWin("inv"); }
 export function toggleWin(id) {
   if (id === "inv" && compact()) { if (drawerOpen()) closeWin("inv"); else { Sound.play("open"); openWin("inv"); } return; }
   if (isOpen(id) && !paned(id) && folded(id)) { Sound.play("open"); unfold(id); syncMenu(); return; }
+  if (stacked(id)) {
+    // covered by another panel window: uncover; else C flips the character between 장비 and 상세
+    if (panelId) { Sound.play("open"); openWin(id); return; }
+    if (id === "char") { Sound.play("tab"); charTab(G.charTab && G.charTab !== "gear" ? "gear" : "info"); }
+    return;
+  }
   Sound.play(isOpen(id) ? "close" : "open"); isOpen(id) ? closeWin(id) : openWin(id);
 }
 export function closeAll() { for (const id of WIN) closeWin(id); }
@@ -314,6 +353,7 @@ export function closeTop() {
   for (const id of WIN) if (!paned(id) && isOpen(id)) { const z = (+winEl(id).style.zIndex || 0) + (folded(id) ? 0 : 1e6); if (z > bz) { bz = z; best = id; } }
   if (best) { closeWin(best); Sound.play("close"); }
   else if (panelId) { closeWin(panelId); Sound.play("close"); }
+  else if (VP.lay === "full" && G.charTab && G.charTab !== "gear") { charGear(); Sound.play("close"); }
   else if (drawerOpen() || G.sel >= 0) closeWin("inv");
 }
 /**
@@ -327,7 +367,7 @@ let restoredFor = null;
 export function saveOpen(leaving) {
   const s = G.self;
   if (s && restoredFor === s.name) {
-    const list = KEEP.filter((id) => !(id === "inv" && compact()) && !winEl(id).hidden)
+    const list = KEEP.filter((id) => !(id === "inv" && compact()) && !stacked(id) && !winEl(id).hidden)
       .sort((a, b) => (+winEl(a).style.zIndex || 0) - (+winEl(b).style.zIndex || 0))
       .map((id) => (paned(id) ? [id] : [id, parseFloat(winEl(id).style.left) || 0, parseFloat(winEl(id).style.top) || 0, folded(id) ? 1 : 0]));
     try { localStorage.setItem(OPEN_KEY(s.name), JSON.stringify(list)); } catch { /* private mode */ }

@@ -184,9 +184,11 @@ const STAT_GROUPS = [
 ];
 export function renderChar(s) {
   // three tabs (the row is wardrobe_ui.js's): 장비 (the paper-doll and the sheet), 능력치 (statwin.js: buying points), 외형.
-  const tab = G.charTab || "gear";
+  // 상세 (info) is the 장비 tab with the sheet: in the desktop side column 장비 shows only the doll (hud.css)
+  const tab = G.charTab || "gear", gear = tab === "gear" || tab === "info";
+  $("#w-char").dataset.tab = tab;
   charTabBtn.classList.toggle("ready", s.lvl < G.defs.maxLv && s.xp >= StatWin.cheapest(s));
-  $("#char-gear").hidden = tab !== "gear";
+  $("#char-gear").hidden = !gear;
   $("#char-stat").hidden = tab !== "stat";
   const role = G.near && G.near.role;
   if (tab === "cos") return;
@@ -319,7 +321,7 @@ function skillRows(box, s, k) {
   }
 }
 // the C window's tab row is the wardrobe's (장비 · 외형, wardrobe_ui.js shows and hides its parts); 능력치 joins it
-const charTabs = $("#w-char .wr-tabs"), charTabBtn = el("button", "", "능력치");
+const charTabs = $("#w-char .wr-tabs"), charTabBtn = el("button", "", "능력치"), infoTabBtn = el("button", "wr-info", "상세");
 /** The C window on its 능력치 tab (the HUD's EXP bar, 카이, a campfire hint). */
 export function openStats() { openCharTab("stat"); }
 /** The C window on tab `t` (gear · stat · cos), through the tab row so the wardrobe's own state follows. */
@@ -334,7 +336,9 @@ export function openTree() { G.skTab = "tree"; if (!isOpen("skill")) Sound.play(
 /** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */
 export function setupWinChar() {
   charTabBtn.dataset.t = "stat";
-  charTabs.children[0].after(charTabBtn);
+  infoTabBtn.dataset.t = "info";
+  infoTabBtn.title = "상세 능력치 — 공격 · 방어 · 능력치 · 세트 (C)";
+  charTabs.children[0].after(infoTabBtn, charTabBtn);
   charTabs.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { G.charTab = b.dataset.t; refreshUi(); } });
   for (const b of $$("#skill-tabs button")) b.addEventListener("click", () => { G.skTab = b.dataset.tab; Sound.play("tab"); refreshUi(); });
 }

@@ -709,7 +709,40 @@ body[data-lay="full"] #panel .qwin { grid-template-columns: 1fr; gap: 6px; min-h
 body[data-lay="full"] #panel .qlist { max-height: 34vh; }
 /* the job tree's legend has no free cells to sit in at this width (the note above the grid says the same) */
 body[data-lay="full"] #panel .jt-key { display: none; }
-body[data-lay="full"] #inv-grid { flex: 0 1 auto; min-height: 44px; overflow-y: auto; overflow-x: hidden; align-content: start; }
+body[data-lay="full"] #inv-grid { flex: none; overflow: visible; align-content: start; }
+/* the standing stack (windows.js STACK): tracker (capped) · the character (portrait and gear) · the bag, which takes
+   the rest and scrolls as a whole. The character's 상세 · 능력치 · 외형 tabs take the bag's room; another panel
+   window covers both until it closes. */
+body[data-lay="full"] #panel > #quest-track { flex: 0 1 auto; max-height: 20vh; }
+body[data-lay="full"] #panel.on > #w-char, body[data-lay="full"] #panel.on > #w-inv { display: none; }
+body[data-lay="full"] #panel > #w-char.docked { flex: none; }
+body[data-lay="full"] #panel > #w-char.docked > header { display: none; }
+body[data-lay="full"] #panel > #w-char.docked > .body { overflow: visible; padding: 0 2px 4px; border-bottom: 2px solid var(--sf3, #2c2537); }
+body[data-lay="full"] #panel > #w-char.docked .wr-tabs { margin-bottom: 4px; }
+body[data-lay="full"] #panel > #w-char.docked .wr-tabs button { padding: 2px 0; }
+body[data-lay="full"] #panel > #w-char[data-tab="gear"] :is(#char-stats, #char-sets) { display: none; }
+body[data-lay="full"] #panel > #w-char[data-tab="gear"] .doll { gap: 4px; }
+body[data-lay="full"] #panel > #w-char[data-tab="gear"] .doll .col { gap: 3px; }
+body[data-lay="full"] #panel > #w-char[data-tab="gear"] #char-cv { width: auto; height: clamp(64px, calc(24vh - 72px), 150px); }
+body[data-lay="full"] #panel > #w-char.docked:not([data-tab="gear"]) { flex: 1 1 0; min-height: 0; }
+body[data-lay="full"] #panel > #w-char.docked:not([data-tab="gear"]) > .body { overflow-y: auto; border-bottom: 0; }
+body[data-lay="full"] #panel > #w-char:not([data-tab="gear"]) ~ #w-inv { display: none; }
+body[data-lay="full"] #panel > #w-inv.docked { min-height: 112px; }
+body[data-lay="full"] #panel > #w-inv.docked > .body { overflow-y: auto; }
+body[data-lay="full"] #w-inv.docked > header .x { display: none; }
+body:not([data-lay="full"]) #w-char .wr-tabs .wr-info { display: none; }
+/* short desktop screens (≤ 760 px): smaller gear slots and tracker; where the bag still has no room, the
+   tracker, the character and the bag scroll together as one column (the bag's own scroll is not needed then) */
+@media (max-height: 760px) {
+  body[data-lay="full"] #panel:not(.on) { overflow-y: auto; overflow-x: hidden; }
+  body[data-lay="full"] #panel:not(.on) > #w-inv.docked { flex: none; min-height: 0; }
+  body[data-lay="full"] #panel:not(.on) > #w-inv.docked > .body { overflow: visible; }
+  body[data-lay="full"] #panel > #quest-track { flex: none; max-height: 12vh; }
+  body[data-lay="full"] #panel > #w-char[data-tab="gear"] .doll .slot { width: 34px; height: 34px; }
+  body[data-lay="full"] #panel > #w-char[data-tab="gear"] .doll .slot img { left: 1px; top: 1px; }
+  body[data-lay="full"] #panel > #w-char[data-tab="gear"] .doll { grid-template-columns: 34px minmax(0, 1fr) 34px; }
+  body[data-lay="full"] #panel > #w-char[data-tab="gear"] .doll .slot.empty .cap { display: none; }
+}
 body[data-lay="full"] #inv-detail { flex: none; max-height: 45%; overflow-y: auto; }
 #w-inv.docked > header { flex: none; min-width: 0; }
 #w-inv.docked > header .t { flex: none; }

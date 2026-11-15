@@ -595,30 +595,31 @@ export function drawFx(now, ground2) {
 
 // ───────────────────────────── the aim mark ─────────────────────────────
 
-// ── the aim mark: a small solid arrowhead lying on the ground just in front of your own feet,
+// ── the aim mark: a small V-shaped arrowhead (a chevron) lying on the ground close in front of your own feet,
 // its sharp tip toward where your blows and skills will go (G.me.aimI, the server's aim steps). A
 // dark triangle inside a thin pale rim, so it reads on grass, sand, stone, crypt and abyss alike.
 const AIM_STEPS = 64, aimSprites = new Map(), aimArrow = { a: null };
 const AIM_FILL = "#1a1320", AIM_RIM = "rgba(255,246,218,.92)", AIM_C = 6;
 /**
  * The arrowhead for screen angle step `k`, worked out pixel by pixel (no smoothed edges): a filled
- * triangle LEN px from tip to its flat back, HALF° to each side of the aim at the back corners, its
- * flanks drawn in a little (power BOW) so the tip stays a one-pixel point at every angle — a plain
- * near-equilateral triangle this small reads as pointing three ways at once. Squashed a little so it
- * lies on the floor, a one-pixel rim all round: about 8 px long, rim and all.
+ * triangle LEN px from tip to its back corners, HALF° to each side of the aim, its flanks drawn in a
+ * little (power BOW) so the tip stays a one-pixel point at every angle, and its back cut in NOTCH px
+ * along the middle so it reads as a sharp V (a chevron) rather than a wedge pointing three ways.
+ * Squashed a little so it lies on the floor, a one-pixel rim all round: about 9 px long, rim and all.
  * The sprite's centre is (AIM_C, AIM_C); the tip is TIP px ahead of it.
  */
 function aimSprite(k) {
   let c = aimSprites.get(k);
   if (c) return c;
   const ang = (k / AIM_STEPS) * 2 * Math.PI, ax = Math.cos(ang), ay = Math.sin(ang);
-  const TIP = 3.6, LEN = 6.6, HALF = (20 * Math.PI) / 180, BOW = 1.25, SQ = 0.9, N = AIM_C * 2 + 1;
+  const TIP = 3.8, LEN = 7.2, HALF = (25 * Math.PI) / 180, BOW = 1.15, NOTCH = 3.4, SQ = 0.9, N = AIM_C * 2 + 1;
   const hw = LEN * Math.tan(HALF);
   const fill = [];
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     // into the mark's own frame: d behind the tip along the aim, v across it
     const px = i - AIM_C, py = (j - AIM_C) / SQ, d = TIP - (px * ax + py * ay), v = Math.abs(-px * ay + py * ax);
-    fill[j * N + i] = d >= -0.25 && d <= LEN && v <= hw * (Math.max(0, d) / LEN) ** BOW + 0.3;
+    const w = hw * (Math.max(0, d) / LEN) ** BOW + 0.3;
+    fill[j * N + i] = d >= -0.25 && d <= LEN && v <= w && d <= LEN - NOTCH * (1 - Math.min(1, v / hw));
   }
   const on = (i, j) => i >= 0 && j >= 0 && i < N && j < N && fill[j * N + i];
   let x;
@@ -650,7 +651,7 @@ export function drawAimArrow(t, dt, top) {
   if (up !== top) return;
   const [fx, fy] = iso(me.x, me.y - 1);
   // out along the ground: wider across the screen than up and down, as a ring on the floor looks
-  const ux = Math.cos(s) * 11, uy = Math.sin(s) * (7.5 + 12 * Math.max(0, -Math.sin(s)) ** 3);
+  const ux = Math.cos(s) * 8, uy = Math.sin(s) * (5.5 + 9 * Math.max(0, -Math.sin(s)) ** 3);
   const k = ((Math.round((s / (2 * Math.PI)) * AIM_STEPS) % AIM_STEPS) + AIM_STEPS) % AIM_STEPS;
   const hit = t - Math.max(G.aimFlash || -1e9, G.lastSkill || -1e9);
   const flash = hit >= 0 && hit < 300 ? 1 - hit / 300 : 0;

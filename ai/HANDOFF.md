@@ -247,3 +247,11 @@ Next: P11 (season set art + story keepsake pieces → fills the rest of KEEP_SEW
   **Owner decisions pending:** Q3 (late main-chain kill counts 24/28/32 + beats), Q4 (party-only side goals),
   Q6 (weekly field-boss 기록, reset cadence), Q7 (what a Lv.200 player repeats). Q5's old rewards are above scale.
 - Open: Q1 has no keepsake (needs a wardrobe piece); 장날 stalls stand all week; bench-tick 43 players ≈ 1 ms/tick.
+
+## 0.7 Side column and aim mark (2026-11-15, cloud session)
+- Desktop side column is now a standing stack (`windows.js STACK`): minimap · quest tracker (capped 20vh) · character
+  (portrait + gear; tabs 장비 · **상세** (the stat sheet) · 능력치 · 외형 — any tab but 장비 takes the bag's room) · bag
+  (fills the rest, scrolls). C flips 장비↔상세, I/C uncover the stack when another panel window (K, P…) covers it, Esc
+  goes back to 장비. ≤760px tall: smaller slots and the whole column scrolls. Phones unchanged.
+- Aim mark (`scene_fx.js aimSprite`): a notched V chevron, ~30 % closer to the feet.
+- The desktop's `claude/side-dock` worktree branch never reached the cloud; this is a fresh rebuild of that request.
