@@ -195,7 +195,7 @@ const bloomwhale = (ph) => ({
     const dive = ph === 4, open = ph === 2 || ph === 3, bloom = ph >= 3;
     const A = bloom ? FLW : CYN, AC = bloom ? FLWC : CYNC;
     const sw = p.walk ? Math.sin(p.ph * 6.28) * 3 : p.idle ? Math.sin(p.ph * 6.28) * 1 : 0;
-    const f0 = lf * 0.5, u0 = (dive ? 1 : 12) + lu * 0.5 + bob(p, 1.2) - dead * 6 + (wind ? 5 : 0);
+    const f0 = lf * 0.5, u0 = (dive ? 10 : 12) + lu * 0.5 + bob(p, 1.2) - dead * 6 + (wind ? 5 : 0); // dive sits 10 up: lower is cut off at the canvas edge (tests/mobart)
     // body: a long near-black barrel, belly hanging lower than the back
     M.G("body");
     M.e([f0, u0 + 1, 0], [34, 11, 12.5], WH);
