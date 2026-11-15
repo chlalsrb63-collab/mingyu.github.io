@@ -69,7 +69,7 @@ const smithy = (k) => k === "forge" || k === "alch";
 function setStations(k) {
   const j = D().jobs[k], sts = j && j[7];
   if (!sts) return;
-  const al = k === "alch", icons = smithy(k) ? [["crate", al ? 13 : 10], ...(sts.chute ? [["chute", 11]] : []), ...(sts.quench || []).map((t, i) => ["quench" + i, al ? 14 : 12, t])]
+  const icons = k === "alch" ? [["herbs", 13]] : smithy(k) ? [["crate", 10], ...(sts.quench || []).map((t, i) => ["quench" + i, 12, t])]
     : [["veg", 0], ["fish", 1], ["meat", 2], ["trash", 9], ["sink", 15], ...(sts.board || []).map((t, i) => ["board" + i, 8, t])];
   for (const [k, code, t] of icons) {
     const [tx, ty] = t || sts[k], key = "cs" + k;
@@ -88,7 +88,7 @@ function setEnts(rows) {
     if (t === 7 && row[4] === 1) st.beat[id] = [st.entsAt + row[7], row[8]];
     st.keys.push(key);
     if (t === 8) { A.S3.props.set(key, { x, y, until: Infinity, cust: row, draw(g, tt, sx, sy) { drawCustomer(g, tt, Math.round(sx), Math.round(sy), row); } }); continue; }
-    A.S3.props.set(key, { x, y, until: Infinity, draw(g, tt, sx, sy) { t === 10 ? drawShelved(g, tt, Math.round(sx), Math.round(sy), row) : t >= 6 && t < 9 ? drawForge(g, tt, Math.round(sx), Math.round(sy), row) : t >= 3 ? drawDiner(g, tt, Math.round(sx), Math.round(sy), row) : drawEnt(g, tt, Math.round(sx), Math.round(sy), t, hp, id); } });
+    A.S3.props.set(key, { x, y, until: Infinity, draw(g, tt, sx, sy) { t === 11 ? drawKiln(g, tt, Math.round(sx), Math.round(sy), row) : t === 12 ? drawPot(g, tt, Math.round(sx), Math.round(sy), row) : t === 10 ? drawShelved(g, tt, Math.round(sx), Math.round(sy), row) : t >= 6 && t < 9 ? drawForge(g, tt, Math.round(sx), Math.round(sy), row) : t >= 3 ? drawDiner(g, tt, Math.round(sx), Math.round(sy), row) : drawEnt(g, tt, Math.round(sx), Math.round(sy), t, hp, id); } });
   }
   if (jobOf() === "diner" || smithy(jobOf())) setStations(jobOf());
   // a tool over each worker's head (a prop that follows them)
@@ -148,13 +148,16 @@ function drawIcon(g, x, y, code) {
   else if (code === 15) { px(g, x - 5, y - 1, 11, 5, "#1a1e28"); px(g, x - 4, y, 9, 3, "#8a9aaa"); px(g, x - 3, y, 7, 2, "#5aa0e0"); px(g, x + 2, y - 5, 2, 4, "#1a1e28"); px(g, x, y - 5, 3, 1, "#1a1e28"); px(g, x + 2, y - 4, 1, 3, "#c8d0d8"); }   // 개수대
 }
 /** 보글's brews: order colours (빨간 물약 · 파란 물약 · 엘릭서 · 묘약; −1 herbs) and the kiln's green/purple boil by heat. */
-const BREW = ["#e04848", "#4878e0", "#e8c040", "#a050d0"];
+const BREW = ["#e04848", "#4878e0", "#e8c040", "#a050d0", "#5ac060"];
+/** Herb colours by arrow (↑ 붉은 꽃잎 · → 푸른 이끼 · ↓ 황금 뿌리 · ← 보라 버섯); 무지개 물약 (5) cycles through them. */
+const HERB_COL = ["#e04848", "#4878e0", "#e8c040", "#a050d0"];
+const brewC = (k, t) => (k === 5 ? HERB_COL[Math.floor(t / 200) % 4] : BREW[k] || BREW[0]);
 const brewCol = (h, t) => (h >= 100 ? (Math.floor(t / 250) % 2 ? "#e0ffb0" : "#c890ff") : h >= 70 ? "#8fe070" : h >= 40 ? "#b070e0" : h >= 15 ? "#5a3a6a" : "#4a5a3a");
 /** A brew in hand or in the cauldron by state (1 herbs · 2 boiling · 3 stirred · 4 bottled) and kind. */
 function drawBrew(g, x, y, kind, s, t) {
   if (s <= 1) { px(g, x - 4, y - 3, 8, 4, "#1a2a14"); px(g, x - 3, y - 2, 2, 2, "#5ab04a"); px(g, x - 1, y - 3, 2, 3, "#3a8a3a"); px(g, x + 1, y - 2, 2, 2, "#8fd060"); return; }
   if (s === 2 || kind < 0) { px(g, x - 4, y - 2, 8, 4, "#1a1a20"); px(g, x - 3, y - 1, 6, 2, Math.floor(t / 200) % 2 ? "#8fe070" : "#b070e0"); px(g, x - 1 + (Math.floor(t / 300) % 3), y - 4, 1, 1, "#e0ffb0"); return; }
-  const c = BREW[kind] || BREW[0];
+  const c = brewC(kind, t);
   if (s === 3) { px(g, x - 4, y - 2, 8, 4, "#1a1a20"); px(g, x - 3, y - 1, 6, 2, c); return; }
   px(g, x - 3, y - 4, 6, 8, "#1a1a20"); px(g, x - 1, y - 6, 2, 2, "#1a1a20");   // a bottle
   px(g, x - 2, y - 1, 4, 4, c); px(g, x - 2, y - 3, 4, 2, "#d8e8f0"); px(g, x - 1, y - 7, 2, 1, "#8a5a2a");
@@ -275,6 +278,89 @@ function drawForge(g, t, sx, sy, row) {
     }
   }
 }
+// ── 보글's kiln v2: rows t 11 kiln [.., heat ×10, ms to beat 0, beat ms, cooling ‰/s], t 12 cauldron [.., recipe, state, %, grade,
+// foam, ds to trouble, next recipe]; the chart and recipes in defs.coop.brew. Your lane is st.lane (the kiln's id, or "herb").
+const BR = () => D().brew || { orders: [], chart: [], loop: 8, amb: 20, herbs: [], foam: 5 };
+const potRow = () => st.ents.find((r) => r[1] === 12);
+/** The recipe the kiln works for: the cauldron's brew, else the one the next herbs make. */
+const kilnRecipe = () => { const p = potRow(); return p ? (p[4] >= 0 && p[5] !== 2 ? p[4] : p[10]) : 0; };
+/** The kiln's heat now: the snapshot's, cooled toward the room's since. */
+const kilnHeat = (row) => { const amb = BR().amb; return amb + (row[4] / 10 - amb) * Math.exp(-(row[7] / 1000) * ((now() - (st.entsAt || 0)) / 1000)); };
+function drawArrow(g, x, y, d, c) {
+  px(g, x - 3, y - 4, 7, 7, "#1a1a20"); px(g, x - 2, y - 3, 5, 5, c);
+  if (d === 0 || d === 2) { px(g, x, y - 2, 1, 4, "#ffffff"); px(g, x - 1, d ? y + 1 : y - 2, 3, 1, "#ffffff"); }
+  else { px(g, x - 2, y, 4, 1, "#ffffff"); px(g, d === 1 ? x + 1 : x - 2, y - 1, 1, 3, "#ffffff"); }
+}
+/** The big kiln: a brick dome glowing with the heat, a tall thermometer with the brew's band, the shared note lane above. */
+function drawKiln(g, t, sx, sy, row) {
+  const H = kilnHeat(row), r = kilnRecipe(), O = BR().orders[r] || ["", 0, 100], bc = brewC(r, t);
+  px(g, sx - 14, sy - 37, 28, 5, "#2a1a14"); px(g, sx - 17, sy - 32, 34, 21, "#2a1a14"); px(g, sx - 12, sy - 36, 24, 3, "#a0583a");
+  px(g, sx - 16, sy - 31, 32, 19, "#8a4a30"); for (let i = 0; i < 4; i++) px(g, sx - 16, sy - 28 + i * 4, 32, 1, "#5a2e1e");
+  px(g, sx - 3, sy - 44, 6, 8, "#2a1a14"); px(g, sx - 2, sy - 43, 4, 7, "#6a3a24");   // chimney
+  const mouth = H >= 80 ? "#fff0a0" : H >= 60 ? "#ffb040" : H >= 40 ? "#ff7030" : H >= 28 ? "#a0402a" : "#3a2a2a";
+  px(g, sx - 10, sy - 22, 20, 9, "#1a1014"); px(g, sx - 9, sy - 21, 18, 7, H >= 40 && Math.floor(t / 160) % 3 === 0 ? "#ffe080" : mouth);
+  if (H >= 55 && Math.floor(t / 240) % 2) px(g, sx - 1, sy - 48 - (Math.floor(t / 120) % 3), 2, 2, "#c8c8d0");   // smoke
+  // thermometer: 40 px, the brew's band as brackets in its colour, the level blue below · gold in band · red over
+  const x = sx + 21, y = sy - 52, Hh = 40, lv = (v) => y + Hh - Math.round((Math.max(0, Math.min(100, v)) / 100) * Hh);
+  px(g, x - 1, y - 1, 7, Hh + 7, "#1a1a20"); px(g, x, y, 5, Hh, "#3a3a44");
+  px(g, x - 3, lv(O[2]), 2, lv(O[1]) - lv(O[2]) + 1, bc); px(g, x + 6, lv(O[2]), 2, lv(O[1]) - lv(O[2]) + 1, bc);
+  const col = H > O[2] + 6 ? (Math.floor(t / 150) % 2 ? "#ff4030" : "#ffd0a0") : H >= O[1] && H <= O[2] ? "#ffd860" : H > O[2] ? "#ff9a40" : "#5a8ad0";
+  px(g, x + 1, lv(H), 3, y + Hh - lv(H), col); px(g, x - 1, y + Hh, 7, 5, "#1a1a20"); px(g, x, y + Hh + 1, 5, 3, col);
+  if (st.joint && now() - st.joint[0] < 900) { g.fillStyle = "#ffe060"; g.font = "8px Galmuri11, monospace"; g.fillText(`합동 풀무! ×${st.joint[1]}`, sx - 28, sy - 70 - Math.round((now() - st.joint[0]) / 90)); }
+  drawBrewLane(g, sx, sy - 62, row);
+}
+/** The shared chart sliding onto the hit line (2 s ahead), arrows in their herb colours; yours brighter and flashing on your notes. */
+function drawBrewLane(g, sx, y, row) {
+  const [id, , , , , b0, per] = row, B = BR(), L = B.chart.length;
+  if (!L || !(st.cj && (st.cj[1] === 1 || st.cj[1] === 2))) return;
+  const nowL = now() < st.stop ? st.stopAt : now(), base = (st.entsAt || 0) + b0, W = 96, x0 = sx - 48, hit = x0 + 10, span = 2000, mine = st.lane === id;
+  px(g, x0 - 1, y - 7, W + 2, 14, "#1a1a20"); px(g, x0, y - 6, W, 12, mine ? "#2a2440" : "#221e2a");
+  const fl = st.flash[id], fla = fl && now() - fl[0] < 160 ? fl[1] : -1;
+  px(g, hit - 1, y - 6, 3, 12, fla === 0 ? "#ffffff" : fla === 1 ? "#ffd860" : fla === 2 ? "#e05040" : "#c8a070");
+  const k0 = Math.max(0, Math.floor((nowL - base) / (per * B.loop)) - 1);
+  for (let k = k0; k < k0 + 3; k++) for (const [b, d] of B.chart) {
+    const dt = base + (k * B.loop + b) * per - nowL, x = Math.round(hit + (dt / span) * (W - 12));
+    if (dt < -200 || x > x0 + W - 4) continue;
+    drawArrow(g, x, y, d, mine ? HERB_COL[d] : "#5a5a68");
+  }
+}
+/** The cauldron: a big black pot; the brew's colour, bubbles then steam by its progress, sparkling when done, foaming over when it boils over. */
+function drawPot(g, t, sx, sy, row) {
+  const [, , , , r, s, prog, gi, foam, due] = row, c = r >= 0 ? brewC(r, t) : "#2a3a2a";
+  px(g, sx - 13, sy - 20, 26, 14, "#14141a"); px(g, sx - 14, sy - 21, 28, 3, "#2a2a34"); px(g, sx - 11, sy - 7, 3, 4, "#14141a"); px(g, sx + 8, sy - 7, 3, 4, "#14141a");
+  px(g, sx - 12, sy - 20, 24, 2, s ? c : "#2a3a2a");
+  if (!s) return;
+  if (prog >= 33 || s >= 2) for (let i = 0; i < 3; i++) { const ph = Math.floor((t + i * 170) / 260) % 3; px(g, sx - 8 + i * 7, sy - 22 - ph, 2, 2, "#e8f0ff"); }   // bubbles
+  if (prog >= 66 || s >= 2) for (let i = 0; i < 2; i++) px(g, sx - 5 + i * 9 + (Math.floor(t / 300 + i) % 2), sy - 28 - (Math.floor(t / 200 + i * 2) % 4), 2, 3, "#c8c8d0");   // steam
+  px(g, sx - 12, sy, 24, 3, "#1a1a20"); px(g, sx - 11, sy + 1, Math.max(1, Math.round((22 * prog) / 100)), 1, c);   // progress
+  if (gi >= 0) px(g, sx + 14, sy - 24, 3, 3, ["#e8c040", "#c84a3a", "#5a7ab0", "#6a6a70"][gi]);   // the grade so far
+  if (s === 2 && Math.floor(t / 250) % 2) { px(g, sx - 1, sy - 34, 3, 1, "#ffffff"); px(g, sx, sy - 35, 1, 3, "#ffffff"); }
+  if (s === 3) {
+    for (let i = 0; i < 6; i++) { const f = Math.floor((t + i * 90) / 180) % 3; px(g, sx - 14 + i * 5, sy - 22 + f * 3, 4, 3 + f, i % 2 ? "#e0ffe0" : c); }   // foam spilling over
+    const n = BR().foam || 5;
+    for (let i = 0; i < n; i++) px(g, sx - n * 2 + i * 4, sy - 30, 3, 3, i < foam ? "#e05040" : "#2a2e3a");
+  }
+  if ((s === 2 || s === 3 || due) && due && dsLeft(due) < 3000 && Math.floor(t / 150) % 2) px(g, sx + 15, sy - 34, 2, 6, "#e05040");
+}
+/** Your lane in the lab: the kiln's (holding a 풀무 beside it) or the herb shelf's (mid-pick). */
+function brewLaneOf() {
+  const me = G().me, my = st.team.find((r) => r[0] === G().you);
+  if (!me || !my) return null;
+  if (my[5] >= 10) return "herb";
+  const k = st.ents.find((r) => r[1] === 11);
+  return my[5] === 1 && !my[2] && k && Math.hypot(me.x - k[2], me.y - k[3]) <= 34 ? k[0] : null;
+}
+/** The lab's HUD line: the kiln's heat and target band, then what your keys do. */
+function brewHud(me) {
+  const k = st.ents.find((r) => r[1] === 11), B = BR(), r = kilnRecipe(), O = B.orders[r];
+  if (!k || !O) return "";
+  let s = `\n가마 ${Math.round(kilnHeat(k))}° · 목표 ${O[0]} ${O[1]}~${O[2]}°`;
+  if (st.lane === "herb" && me) {
+    const code = (me[4] || [])[0], hr = B.orders[Math.floor(code / 5) - 1], i = me[5] - 10;
+    if (hr) s += ` · 약재: ${hr[4].map((h, j) => (j < i ? "✓" : j === i ? `[${B.herbs[h]}]` : B.herbs[h])).join(" → ")}`;
+  } else if (st.lane) s += "  ♪ 화살표 음표에 맞춰 방향키 · F 풀무 놓기";
+  return s;
+}
 /** A ready dish on its plate: 0 채소 샐러드 · 1 생선구이 · 2 고기 스튜. */
 function drawDish(g, x, y, r) {
   px(g, x - 5, y, 10, 2, "#2a2a30"); px(g, x - 4, y, 8, 1, "#f0f0f0");
@@ -331,8 +417,9 @@ function drawTool(g, t, sx, sy, eid) {
     else { px(g, x - 6, y + 2, 13, 2, "#3a2a1a"); px(g, x - 5, y + 2, 11, 1, "#b08a5a"); }                                       // tray
     (row[4] || []).forEach((code, i) => drawHeld(g, x - (row[1] ? 3 - i * 7 : 0), y - (row[1] ? 1 : 4), code));
   } else if (jobOf() === "alch") {
-    if (row[1] === 0) { px(g, x, y - 1, 2, 6, "#2a1e16"); px(g, x - 3, y - 7, 8, 6, "#1a2a14"); px(g, x - 2, y - 6, 6, 4, "#8fd060"); px(g, x - 2, y - 6, 1, 4, "#5ab04a"); px(g, x + 1, y - 6, 1, 4, "#5ab04a"); }   // fan
-    else { px(g, x, y - 6, 2, 12, "#2a1e16"); px(g, x, y - 5, 1, 8, "#c8a070"); px(g, x - 1, y + 3, 4, 4, "#2a1e16"); px(g, x, y + 4, 2, 2, "#c8a070"); }                       // paddle
+    if (row[1] === 1) { px(g, x, y - 1, 2, 6, "#2a1e16"); px(g, x - 3, y - 7, 8, 6, "#1a2a14"); px(g, x - 2, y - 6, 6, 4, "#8fd060"); px(g, x - 2, y - 6, 1, 4, "#5ab04a"); px(g, x + 1, y - 6, 1, 4, "#5ab04a"); }   // fan
+    else { px(g, x - 4, y - 3, 8, 7, "#2a1e16"); px(g, x - 3, y - 2, 6, 5, "#8a5a3a"); px(g, x - 3, y, 6, 1, "#5a3a24"); px(g, x + 4, y, 3, 2, "#a8a8b0"); px(g, x - 6, y - 2, 2, 1, "#c8a070"); }   // 풀무 (bellows)
+    if (row[5] === 1) px(g, x - 1, y - 6, 2, 2, Math.floor(t / 200) % 2 ? "#ffe060" : "#ff9a40");   // on the 풀무
     for (const code of row[4] || []) drawPiece(g, x + 1, y - 9, Math.floor(code / 5) - 1, code % 5, t);
   } else if (jobOf() === "forge") {
     if (row[1] === 0) { px(g, x - 1, y - 6, 2, 9, "#1a1a20"); px(g, x + 2, y - 6, 2, 9, "#1a1a20"); px(g, x - 1, y - 5, 1, 7, "#8a8e9a"); px(g, x + 2, y - 5, 1, 7, "#8a8e9a"); }   // tongs
@@ -377,9 +464,9 @@ function frame() {
   const me = st.team.find((r) => r[0] === G().you), tools = (job[2] || []).map((t) => D().tools[t] || t);
   const phase = ["준비", "근무", "피버!", "끝"][state];
   const txt = `${job[0]} · ${phase} ${state === 0 ? `${s}초 뒤 시작` : mmss(s)} | 점수 ${score}${mult > 10 ? ` ×${(mult / 10).toFixed(1)}` : ""}${combo > 1 ? ` (콤보 ${combo})` : ""}` +
-    ` | 등급 ${GRADE[grade]}${next ? ` (다음 ${next})` : ""} | ${k === "forge" ? `판매 ${mess} · 화난 손님 ${cap}` : smithy(k) ? `납품 ${mess} · 납기 초과 ${cap}` : k === "diner" ? `서빙 ${mess} · 화난 손님 ${cap}` : `지저분함 ${mess}/${cap}`}` +
+    ` | 등급 ${GRADE[grade]}${next ? ` (다음 ${next})` : ""} | ${smithy(k) ? `판매 ${mess} · 화난 손님 ${cap}` : k === "diner" ? `서빙 ${mess} · 화난 손님 ${cap}` : `지저분함 ${mess}/${cap}`}` +
     `${me ? ` | ${tools[me[1]] || ""}${me[1] === 1 && !smithy(k) ? ` ${me[2]}/${k === "diner" ? D().trayCap : D().binCap}` : ""}` : ""}` +
-    (smithy(k) ? `\n${k === "forge" ? "손님" : "주문"} ${forgeOrders()}` : "") + (st.lane ? "  ♪ 음표에 맞춰 Space · 화살표 음표는 방향키" : "");   // the forge's and kiln's open orders on a line of their own (the top line ran out of room)
+    (smithy(k) ? `\n손님 ${forgeOrders()}` : "") + (k === "alch" ? brewHud(me) : st.lane ? "  ♪ 음표에 맞춰 Space · 화살표 음표는 방향키" : "");   // the forge's and kiln's open orders on a line of their own (the top line ran out of room)
   const l = b.querySelector(".ch-l");
   if (l.textContent !== txt) l.textContent = txt;
   b.classList.toggle("fever", state === 2);
@@ -395,7 +482,9 @@ function forgeOrders() {
 }
 const SKILL = { apt: "배달", diner: "요리", forge: "제작", alch: "연금" };
 const CARD_TIP = { apt: " 낡은 소파는 두 명이 함께 들어요.", diner: " 손님이 기다리다 지치면 화내며 떠나요!", forge: " 음표가 선에 닿을 때 두드리세요! 물건마다 리듬이 달라요 — 갑옷은 둘이 번갈아.",
-  alch: " 가마솥의 고리가 닫힐 때 저으면 명약이 나와요!" };
+  alch: " 풀무는 다 함께! 같은 음표를 같이 치면 합동 풀무. 온도계의 띠를 지키고, 넘치면 부채로 F 연타!" };
+/** The pay share by grade, "C 100% · B 105% · A 110% · S 120%". */
+const gradePct = () => (D().gradeK || [1, 1.05, 1.1, 1.2]).map((k, i) => `${"CBAS"[i]} ${Math.round(k * 100)}%`).join(" · ");
 /** By the job's owner in the lobby: the card with [근무 시작]. */
 function renderCard() {
   const m = G().map, me = G().me, b = st.card || (st.card = box("coop-card", "frame"));
@@ -412,7 +501,7 @@ function renderCard() {
   const j = D().jobs[k];
   b.innerHTML = `<b>협동 아르바이트 · ${j[0]}</b><p>${n.name}: "일손이 필요해요! 2~4명 파티로, ${j[1]}분 근무예요."</p>` +
     `<p>${esc(j[6] || "")}${CARD_TIP[k] || ""}</p>` +
-    `<p class="cc-day">${done ? "✓ 오늘 보수를 받았어요 (다시 하면 도와준 수고비만)" : `오늘의 보수: 등급 C 이상이면 골드·강화석·장비·${SKILL[k] || "생활"} 경험치`}</p>` +
+    `<p class="cc-day">${done ? "✓ 오늘 보수를 받았어요 (다시 하면 도와준 수고비만)" : `오늘의 보수: 등급 C 이상이면 골드·강화석·장비·${SKILL[k] || "생활"} 경험치`}</p><p class="cc-day">등급별 보상 ${gradePct()} (S는 어려워요!)</p>` +
     (party > 1 ? `<button class="btn gold">파티와 근무 시작 (파티장)</button>` : `<p class="cc-day">협동 알바는 2명 이상 파티로만 할 수 있어요. 파티원과 함께 와 주세요.</p>`);
   const btn = b.querySelector("button");
   if (btn) btn.addEventListener("click", () => A.act({ t: "coop_start", k }));
@@ -424,6 +513,7 @@ function showReport(cr) {
   const tools = ((D().jobs[jobOf()] || [])[2] || ["broom", "bin"]).map((t) => D().tools[t] || t);
   b.innerHTML = `<div class="cr-g g${grade}">${GRADE[grade]}</div><b>${grade ? "근무 완료!" : "근무 평가 미달"}</b>` +
     `<p>점수 ${score} · 이 채널 최고 ${best}</p><p class="cr-cut">C ${cuts[0]} · B ${cuts[1]} · A ${cuts[2]} · S ${cuts[3]}</p>` +
+    (grade ? `<p class="cr-cut">보상 ${Math.round((D().gradeK || [1, 1.05, 1.1, 1.2])[grade - 1] * 100)}% (${gradePct()})</p>` : "") +
     `<table>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${tools[r[2]] || ""}</td><td>${r[1]}점</td><td>${r[3] ? "" : "보상 없음"}</td></tr>`).join("")}</table>` +
     `<p class="cr-note">잠시 뒤 로비로 돌아갑니다.</p><button class="btn">확인</button>`;
   b.querySelector("button").addEventListener("click", () => { b.hidden = true; });
@@ -445,7 +535,17 @@ export function onEvent(e) {
   if (e[0] === "cb") { st.beat[e[1]] = [now() + e[2], e[3]]; return true; }   // an anvil's beat: [id, ms to the first, beat ms]
   if (e[0] !== "cj") return false;
   const [, code, x, y] = e;
-  const own = smithy(jobOf()) && (jobOf() === "alch" ? { 9: "stir_perfect", 10: "stir_good", 11: "stir_miss", 12: "bottle_pop", 13: "order_done", 17: "kiln_whoosh", 51: "kiln_whoosh", 61: "order_late" }
+  if (jobOf() === "alch" && code >= 70 && code <= 73) {
+    // 풀무 notes (a = the player's eid): yours flash the lane; a perfect one puffs in the brew's colour with a short lane freeze
+    const kiln = st.ents.find((r) => r[1] === 11), mine = e[4] === G().you, col = brewC(kilnRecipe(), now());
+    if (code === 73) { st.joint = [now(), e[4]]; A.Sound.play("kiln_roar"); A.S3.fx.burst(x, y - 16, 0.6, "#ffe060", 14, 1.3); return true; }
+    if (mine && kiln) st.flash[kiln[0]] = [now(), code - 70];
+    if (mine || code === 70) A.Sound.play(["stir_perfect", "stir_good", "stir_miss"][code - 70]);
+    if (code === 70) { A.S3.fx.burst(x, y - 12, 0.5, col, mine ? 10 : 4, 1); if (mine) { st.stopAt = now(); st.stop = now() + 60; } }
+    else if (code === 72 && mine) A.S3.fx.spark(x, y - 8, "#6a6e7a", 1);
+    return true;
+  }
+  const own = smithy(jobOf()) && (jobOf() === "alch" ? { 13: "order_done", 61: "order_late", 66: "pop", 74: "pop", 75: "craft_ok", 76: "fail", 77: "kiln_whoosh", 78: "pop", 79: "craft_ok", 80: "boil_over", 81: "kiln_whoosh", 82: "fail", 83: "bottle_pop", 84: "kiln_whoosh" }
     : { 9: "anvil_perfect", 10: "anvil_good", 11: "anvil_miss", 12: "quench_hiss", 13: "order_done", 17: "bellows_puff", 61: "order_late", 65: "furnace_roar" })[code];
   if (own || SND[code]) A.Sound.play(own || SND[code]);
   if (code >= 9 && code <= 11) {
@@ -476,7 +576,7 @@ export function tick() {
   if (inside()) {
     for (const [eid] of st.team) { const pr = A.S3.props.get("ct" + eid), e = A.entityPos(eid); if (pr && e) { pr.x = e.x; pr.y = e.y + 1; } }
     for (const row of st.ents) if (row[1] === 8 && row.length >= 10) { const pr = A.S3.props.get("cp" + row[0]); if (pr) [pr.x, pr.y] = custPos(row); }
-    st.lane = jobOf() === "forge" ? laneOf() : null;
+    st.lane = jobOf() === "forge" ? laneOf() : jobOf() === "alch" ? brewLaneOf() : null;
     frame();
   }
   if (st.res && !st.res.hidden && !inside()) st.res.hidden = true;
