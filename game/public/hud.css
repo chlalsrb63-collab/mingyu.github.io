@@ -468,6 +468,8 @@ body[data-lay="land"] .st-side { grid-column: 1 / -1; flex-direction: row; justi
 body[data-lay="land"] #cgauge { width: 120px; height: 20px; }
 body[data-lay="land"] .st-side #st-buffs { max-width: 96px; }
 body[data-lay="land"] #wm .wl { display: none; }
+body[data-lay="land"] #jr { flex: 1 1 0; min-width: 0; }   /* the job row shares the line with the mastery strip, or the mastery is cut to one letter */
+body[data-lay="land"] .st-main { min-width: 0; }   /* the desktop 184px floor overflows the 226px frame here and pushes "Lv." out */
 body[data-lay="land"] #exp { position: fixed; left: 0; right: 0; bottom: 0; height: 8px; border-width: 1px; z-index: 6; }
 body[data-lay="land"] #exp b { display: none; }
 body[data-lay="land"] #topleft { top: 112px; width: 180px; }
@@ -1528,6 +1530,8 @@ body[data-lay="full"] #panel .jt-grid .jt-node img.ji { margin: 0 auto; }
 /* 추적 (track.js): the [추적] buttons and the "추적 중" line; quest and job rows keep their buttons on the right */
 .window .jb-card .btns, #w-talk .sq-card .btns, #w-juana .cm-quest .btns, #quest-body .qdetail .btns { justify-content: flex-end; }
 #daily-body .df .trk { margin-left: auto; }
+/* the main action (수락 · 완료 · 받기, gold) is the rightmost button of a row, after 추적, as in 일일 의뢰; the death panel too */
+.window .jb-card .btns .btn.gold, #w-talk .sq-card .btns .btn.gold, #w-juana .cm-quest .btns .btn.gold, #quest-body .btns .btn.gold, #dead .dead-btns .btn.gold { order: 1; }
 .window .jb-card .btns .why, #w-talk .sq-card .btns .ds, #w-juana .cm-quest .btns small, #quest-body .qdetail .btns .ds { order: -1; margin-right: auto; }
 .window .trk-row { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 3px; font: var(--t11) var(--pix); color: #cfc8b8; }
 .window .trk-row > small { margin-right: auto; }

@@ -194,7 +194,7 @@ function questBody(s) {
     det.append(el("div", "q-title", `Lv.${d.lv} ${d.name} 토벌`));
     det.append(el("p", "say", `${d.name} ${G.defs.bounty}마리를 잡아 오면 보상을 주지. 다 잡으면 곧바로 같은 의뢰가 다시 시작된다네.${s.bq ? " (지금 받은 반복 의뢰와 바뀝니다)" : ""}`));
     det.append(el("div", "q-reward", `보상: EXP ${Math.round(d.xp * G.defs.bounty * 0.5).toLocaleString()} + 골드`));
-    button(s.bq ? "이 의뢰로 바꾸기" : "의뢰 받기", () => act({ t: "bq", a: "take", k: arg }), true);
+    button(s.bq ? "이 의뢰로 바꾸기" : "의뢰 수락", () => act({ t: "bq", a: "take", k: arg }), true);
   } else {
     det.append(el("div", "q-title", "토벌 숙련"));
     det.append(el("p", "ds", "같은 몬스터를 많이 잡을수록 그 몬스터에게 주는 피해(단계당 +3%)와 얻는 경험치(+2%)가 늘어납니다."));

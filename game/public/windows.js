@@ -305,13 +305,16 @@ const winSize = typeof ResizeObserver === "function" ? new ResizeObserver((es) =
 
 /** Toasts stack under the tutorial card while it shows, never over it (every layout). */
 export function placeToasts() {
-  const box = $("#toasts"), card = $("#tut");
+  const box = $("#toasts");
   box.style.top = "";
-  if (card.hidden) return;
-  // both are position: fixed children of #hud, so viewport coordinates are their own
-  const r = card.getBoundingClientRect();
-  if (!r.height) return;
-  const base = parseFloat(getComputedStyle(box).top) || 0, below = Math.ceil(r.bottom) + 6;
+  // under whatever top-of-screen card shows (첫걸음, the co-op shift, the house, the rift): all position: fixed children
+  // of #hud, so viewport coordinates are their own
+  let below = 0;
+  for (const id of ["#tut", "#coop-hud", "#house-hud", "#dim-hud"]) {
+    const n = $(id), r = n && !n.hidden && n.getBoundingClientRect();
+    if (r && r.height && r.top < 120) below = Math.max(below, Math.ceil(r.bottom) + 6);
+  }
+  const base = parseFloat(getComputedStyle(box).top) || 0;
   if (below > base) box.style.top = `${below}px`;
 }
 export function toast(m) {
@@ -356,7 +359,7 @@ export function addChat(m, cls, name) {
   if (stick) chatLog.scrollTop = chatLog.scrollHeight;
   return p;
 }
-const CHAT_HINT = { all: "Enter 로 채팅 · /p 파티 · /g 길드 · /w 이름 귓속말", party: "Enter 로 파티 채팅", guild: "Enter 로 길드 채팅", sys: "Enter 로 채팅" };
+const CHAT_HINT = { all: "Enter 채팅 · /p 파티 · /g 길드", party: "Enter 로 파티 채팅", guild: "Enter 로 길드 채팅", sys: "Enter 로 채팅" };
 /** Put a line in the chat box ready to finish (the friend list's 귓속말 button, a click on a whisper). */
 export function chatTo(prefix) {
   const input = $("#chat-in");
