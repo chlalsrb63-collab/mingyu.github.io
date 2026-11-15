@@ -1031,6 +1031,20 @@ const SFX = {
   landed() { this.noise(0.25, 0.22, 1400, "lowpass", 0, 300); this.noise(0.1, 0.1, 3000, "bandpass", 0.18); this.noise(0.1, 0.1, 3000, "bandpass", 0.3); this.arp("triangle", [659, 880, 1175], 0.07, 0.16, 0.1, 0.25); },
   /** Something snapped. */
   snap() { this.tone(0.5, 1800, 400, 0.05, 0.08); this.noise(0.3, 0.1, 900, "lowpass", 0.05, 200); },
+  // ── forge (캉캉대장간) and alchemy kiln (보글연금공방) shifts: all short and soft next to combat hits ──
+  bellows_puff() { this.noise(0.22, 0.09, 500, "bandpass", 0, 1800); this.noise(0.12, 0.04, 2500, "highpass", 0.1); },
+  furnace_roar() { this.noise(0.65, 0.12, 160, "lowpass", 0, 420); this.tone("sawtooth", 55, 80, 0.6, 0.05); this.noise(0.4, 0.04, 900, "bandpass", 0.1, 300); },
+  anvil_perfect() { const p = this.vary(); this.punch(p, 520, 140, 3200, 0.8); this.tone("sine", 1760 * p, 1700 * p, 0.38, 0.06, 0.005); this.tone("sine", 2640 * p, 2600 * p, 0.3, 0.035, 0.005); this.tone("sine", 3980 * p, 3900 * p, 0.2, 0.02, 0.005); },
+  anvil_good() { const p = this.vary(); this.punch(p, 380, 120, 1500, 0.7); this.tone("sine", 1100 * p, 1040 * p, 0.14, 0.05, 0.005); },
+  anvil_miss() { const p = this.vary(); this.tone("sine", 110 * p, 60 * p, 0.12, 0.2); this.noise(0.05, 0.1, 400, "lowpass"); },
+  quench_hiss() { this.noise(0.38, 0.12, 6500, "highpass", 0, 1200); this.noise(0.2, 0.05, 3000, "bandpass", 0.04, 800); },
+  order_done() { this.arp("triangle", [784, 1047, 1319], 0.07, 0.14, 0.09); this.tone("sine", 2093, 2093, 0.18, 0.025, 0.14); },
+  order_late() { this.tone("square", 196, 190, 0.16, 0.06); this.tone("square", 147, 140, 0.2, 0.06, 0.17); },
+  kiln_whoosh() { this.noise(0.3, 0.07, 350, "bandpass", 0, 1100); this.noise(0.18, 0.03, 1800, "bandpass", 0.08, 600); },
+  stir_perfect() { const p = this.vary(); this.arp("sine", [880 * p, 1320 * p, 1760 * p], 0.05, 0.12, 0.07); this.tone("sine", 2640 * p, 2640 * p, 0.2, 0.025, 0.1); },
+  stir_good() { const p = this.vary(); this.arp("sine", [660 * p, 880 * p], 0.06, 0.1, 0.07); },
+  stir_miss() { const p = this.vary(); this.tone("sine", 240 * p, 90 * p, 0.2, 0.14); this.tone("sine", 180 * p, 80 * p, 0.12, 0.08, 0.08); this.noise(0.1, 0.03, 500, "lowpass"); },
+  bottle_pop() { const p = this.vary(); this.tone("sine", 300 * p, 1100 * p, 0.07, 0.16); this.noise(0.03, 0.1, 2400, "bandpass"); this.tone("sine", 900 * p, 700 * p, 0.1, 0.04, 0.05); },
   /** Oil in a hot pan, now and then while cooking; `heat` 0–1 makes it fiercer as time runs out. */
   sizzle(heat = 0) { this.noise(0.35 + heat * 0.2, 0.05 + heat * 0.05, 5200, "highpass", 0, 3000); this.noise(0.12, 0.025, 2200, "bandpass", 0.12); },
   /** An ingredient set down in the pan: a soft thunk and a burst of sizzle. */
