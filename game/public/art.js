@@ -761,7 +761,7 @@ export function buildIcons(items) {
     else if (it.type === "ring") cv[id] = ringIcon(it.tier);
     else if (it.type === "amulet") cv[id] = amuletIcon(it.tier);
     else if (it.type === "rune") cv[id] = runeIcon(it.rune);
-    else if (it.type === "furn") cv[id] = furnIcon(id) || gem();
+    else if (it.type === "furn") cv[id] = furnIcon(id) || cv[id] || gem();   // crafted pieces (P8) draw in lifeicons.js
     // the 재료 주머니's goods: herbs, ores, woods and ingots by grade, 식재료 꾸러미, 빈 병 (gatherart.js)
     else if (it.type === "lmat" || id === "staple" || id === "flask") { const m = matIcon(id, it); if (m) cv[id] = m; }
   }

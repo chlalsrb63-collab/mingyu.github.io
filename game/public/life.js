@@ -29,7 +29,7 @@ function greatAt(L) {
 }
 
 export function refresh(s) {
-  A.draw("life", () => [s.life, G().map && G().map.id, A.pouchKey ? A.pouchKey(s) : "", s.jb, s.rep], render);
+  A.draw("life", () => [s.life, G().map && G().map.id, A.pouchKey ? A.pouchKey(s) : "", s.jb, s.rep, s.fbook], render);
 }
 
 export function onEvent(e) {
@@ -72,6 +72,25 @@ function render(s) {
     box.append(card);
   });
   box.append(el("p", "hint", "낚시: 사냥터마다 물의 등급이 다르고, 낚시 레벨이 오를수록 높은 등급의 물고기가 입질합니다. 요리: 쥬쥬식당의 화덕이나 모닥불 곁에서 F. 숙련될수록 덜 타고, 대성공하면 두 접시가 나옵니다. 채집: 캐는 도중 \"반짝!\" 할 때 " + K("interact") + "나 " + K("dash") + "를 누르면 대성공하기 쉽습니다."));
+  renderBook(box, s);
   if (A.renderJobs) A.renderJobs(box, s);
   if (A.renderPouch) A.renderPouch($("#life-pouch"), s, { where: "life" });
+}
+
+/** 물고기 도감 (P8; self.fbook {id: [best cm, size bits 소 1 · 중 2 · 대 4]}, defs.life.fbook): each species' record, the next reward. */
+function renderBook(box, s) {
+  const B = D().fbook, mine = s.fbook || {}, el = A.el;
+  if (!B) return;
+  const ids = Object.keys(B.cm), bits = (id) => (mine[id] ? mine[id][1] : 0);
+  const n = ids.reduce((k, id) => k + [0, 1, 2].filter((z) => (bits(id) >> z) & 1).length, 0);
+  const card = el("div", "dcard life-card"), hd = el("div", "dh");
+  hd.append(el("b", "", "물고기 도감"), el("span", "lv", `${n} / ${ids.length * 3}`));
+  card.append(hd);
+  for (const id of ids) {
+    const e = mine[id], marks = B.size.map((z, i) => ((bits(id) >> i) & 1 ? z : "·")).join(" ");
+    card.append(el("small", e ? "" : "soon", e ? `${(G().defs.items[id] || { name: id }).name} — ${e[0]}cm · ${marks}` : `??? (${marks})`));
+  }
+  const next = B.at.find((a) => a[0] > n), last = B.at[B.at.length - 1];
+  if (next) card.append(el("small", "next", `${next[0]}칸: ${next[1].toLocaleString("ko-KR")}G${next[2] ? ` · ${(G().defs.items[next[2]] || {}).name || next[2]}` : ""}${next === last ? " · 칭호 [물고기 박사]" : ""}`));
+  box.append(card);
 }
