@@ -425,15 +425,15 @@ const MOBS = {
       ] } },
   // bosses-2 §4–5: the weekly raids (DIM_CHAL.bosses holds their scripts). 밤장막 박쥐군주 at tier 25 (owner, mid-game: the
   // design's tier-45 figures scaled to 크리온's row one band up), 꽃무덤 고래 at the cap; their adds: bats that feed it, hagfish
-  // heads that shield it (shortcut: tinted batcluster / eelknot art stands in until they have their own).
+  // heads that shield it.
   cloakbat: { name: "밤장막 박쥐군주", lv: 25, hp: 21000, atk: 120, def: 22, spd: 36, xp: 7000, gold: [1200, 2000], aggro: 140, range: 30, cd: 1400, boss: true, gear: 1,
     fan: 150, pool: 30, poolKind: 0, drops: [["veil_h", 0.03], ["veil_a", 0.03], ["veil_r", 0.03], ["veil_n", 0.03], ["w_ribbook", 0.04]] },
-  nightbat: { name: "밤장막 흡혈박쥐", sp: "batcluster", tint: "blood", lv: 25, hp: 500, atk: 40, def: 8, spd: 54, xp: 300, gold: [20, 40], aggro: 220, range: 18, cd: 1100, fly: true },
+  nightbat: { name: "밤장막 흡혈박쥐", sp: "nightbat", lv: 25, hp: 500, atk: 40, def: 8, spd: 54, xp: 300, gold: [20, 40], aggro: 220, range: 18, cd: 1100, fly: true },
   bloomwhale: { name: "꽃무덤 고래", lv: 50, hp: 60000, atk: 165, def: 52, spd: 30, xp: 90000, gold: [6000, 9000], aggro: 170, range: 34, cd: 1500, boss: true, gear: 1,
     fan: 160, pool: 34, poolKind: 2, drops: [["bloom_h", 0.025], ["bloom_a", 0.025], ["bloom_r", 0.025], ["bloom_n", 0.025], ["w_whalebow", 0.015], ["w_bloomstaff", 0.015], ["pet_hagfish", 0.02]] },
-  hagfishhead: { name: "먹장어 머리", sp: "eelknot", tint: "frost", lv: 50, hp: 9000, atk: 150, def: 30, spd: 8, xp: 2000, gold: [60, 120], aggro: 300, range: 76, cd: 1500, shot: true },
-  // its phase-2 adds (shortcut: a blood-tinted scorpion stands in for the design's still crystals until they have art)
-  bloodshard: { name: "혈루 결정 전갈", sp: "spinescorp", tint: "blood", lv: 41, hp: 1000, atk: 110, def: 20, spd: 40, xp: 420, gold: [20, 40], aggro: 140, range: 19, cd: 1100, slam: 34 },
+  hagfishhead: { name: "먹장어 머리", sp: "hagfishhead", lv: 50, hp: 9000, atk: 150, def: 30, spd: 8, xp: 2000, gold: [60, 120], aggro: 300, range: 76, cd: 1500, shot: true },
+  // its phase-2 adds.
+  bloodshard: { name: "혈루 결정 전갈", sp: "bloodshard", lv: 41, hp: 1000, atk: 110, def: 20, spd: 40, xp: 420, gold: [20, 40], aggro: 140, range: 19, cd: 1100, slam: 34 },
   clubshrimp: { name: "망치 갯가재", lv: 39, hp: 4400, atk: 120, def: 30, spd: 42, xp: 1700, gold: [96, 166], aggro: 92, range: 22, cd: 1200, charge: 120, pool: 26, poolKind: 2,
     drops: [["mat_clubclaw", 1, 1, 3], ["w_cavhammer", 0.03]],
     script: { cast: "초공동 일격", castMs: 5000, stunMs: 5000, stag: 0.04, blast: 2.4, gap: 5000, enrage: 150000,
