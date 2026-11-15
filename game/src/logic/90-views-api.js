@@ -224,7 +224,7 @@ function sideDef(q) {
     turnIn: to, turnInName: npcName(to), turnInMap: MAP_META[NPC_MAP[to]].name,
     targetMap: q.id === AIRSHIP_QUEST ? AIRSHIP_MAP : g.type === "talk" || g.type === "deliver" ? NPC_MAP[g.npc] : g.type === "visit" || g.map ? g.map || null : null,
     // make: where the recipe is made ("fire" = any campfire, else the station's NPC)
-    ...(r ? { station: r.at === "fire" ? "fire" : SQ_STATION[r.at] || null } : {}),
+    ...(r ? { station: r.at === "fire" ? "fire" : SQ_STATION[r.at] || null, ...(SQ_STATION[r.at] ? { stationName: npcName(SQ_STATION[r.at]) } : {}) } : {}),
     target: g.type === "kill" ? MOBS[g.mob].name : g.type === "collect" || g.type === "make" || g.type === "deliver" ? ITEMS[g.item].name : g.type === "talk" ? npcName(g.npc)
       : g.type === "elite" || g.type === "fb" ? g.named || `${g.map ? MAP_META[g.map].name + " " : ""}${g.type === "fb" ? "우두머리" : g.mob ? `정예 ${MOBS[g.mob].name}` : "정예 몬스터"}`
         : g.type === "choice" ? npcName(q.giver) : MAP_META[g.map].name };
