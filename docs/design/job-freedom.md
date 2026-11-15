@@ -29,4 +29,3 @@ Goal (owner): one character can eventually play every job. Builds on Codex's job
 
 ## Open (decide while building, report to the owner)
 - Exact gold costs and scroll drop rates; whether the loadout is saved per job (recommended: yes).
-- Per-job special gauge (HUD slot exists, `JOB_GAUGES` in `hud.js`): what fills/spends it — owner or Codex designs.
