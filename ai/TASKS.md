@@ -48,7 +48,10 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 - [x] 광장 주민 17명 일과를 마을·지도·대화에 연결. [주민 일과 인계](reports/codex-npc-life-client.md)
 - [x] 광장 장식 주민과 포포·모카를 포함한 34명 일과, 협동 보상 쟁반·가마솥 착용 개선. [광장 인계](reports/codex-plaza-routines.md)
 - [x] 가방에서 요구 레벨을 충족한 장비로 빈 슬롯을 채울 수 있으면 ▲와 부위를 표시. 실제 서버에서 갑옷을 벗긴 뒤 `#w-inv`로 확인.
-- [ ] `docs/FILEMAP.md` 파일 지도와 실제 파일을 대조해 틀린 줄·빠진 파일을 고치기 (줄 수 `[N]` 갱신 포함, 문서만 수정)
+- [x] `docs/FILEMAP.md` 파일 지도와 실제 파일을 대조해 틀린 줄·빠진 파일을 고치기 (줄 수 `[N]` 갱신 포함, 문서만 수정). [검수](reports/codex-filemap.md)
+- [x] 바람등호 Lv.100 구조 의뢰와 안전 갑판, 루넬샤 지도 표기와 작은꼬리들 서사. [인계](reports/codex-oasis-airship.md)
+- [x] 단검·창 스킬 4종 연출, 단검·창·스태프·마도서 모션, 단검·창 타격음. [검수](reports/codex-skill-feedback-round2.md)
+- [ ] 클로드의 버드나무마을 확장본이 로컬 `main`에 들어오면 동선을 잰 뒤 재료 납품 2종·요리 1종·배달 1종부터 연결. [의뢰 설계](../docs/design/willow-job-economy.md)
 
 ## GEMINI (분석 · 문서 · 콘텐츠 · [ART]/[VFX] 그림과 이펙트 — `ai/gemini.md` 5번)
 
