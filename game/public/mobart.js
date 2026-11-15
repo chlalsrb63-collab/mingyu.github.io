@@ -27,6 +27,7 @@ import { BEASTS_C } from "./mobart_c.js";
 import { BEASTS_D } from "./mobart_d.js";
 import { BEASTS_E } from "./mobart_e.js";
 import { BEASTS_F } from "./mobart_f.js";
+import { BEASTS_G } from "./mobart_g.js";
 import { RIFT_BEAST_ART } from "./mobart_rift_beasts.js";
 import { RIFT_BOSS_ART } from "./mobart_rift_bosses.js";
 import { BOSSES2_ADD_ART } from "./mobart_bosses2_adds.js";
@@ -355,7 +356,7 @@ function raster(model, N, foot, dir, k, tint, p, rollK = 1) {
 
 // ───────────────────────────── the cast ─────────────────────────────
 
-const BEASTS = { ...BEASTS_A, ...BEASTS_B, ...BEASTS_C, ...BEASTS_D, ...BEASTS_E, ...BEASTS_F, ...RIFT_BEAST_ART, ...RIFT_BOSS_ART, ...BOSSES2_ADD_ART, ...NAMED_ART };
+const BEASTS = { ...BEASTS_A, ...BEASTS_B, ...BEASTS_C, ...BEASTS_D, ...BEASTS_E, ...BEASTS_F, ...BEASTS_G, ...RIFT_BEAST_ART, ...RIFT_BOSS_ART, ...BOSSES2_ADD_ART, ...NAMED_ART };
 /** Names from earlier rosters, so a stale server still draws something sensible. */
 const ALIAS = {
   acorn: "twinhare", potcrab: "gutfrog", puff: "eyecrow", capfrog: "gutfrog", stump: "ribdeer", lantern: "mothface", yarn: "spiderhand",

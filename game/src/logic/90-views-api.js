@@ -91,7 +91,8 @@ export function viewFor(S, pid) {
   for (const mob of rt.mobs) {
     // a field boss (or the rift invasion's lord) is shown on the radar wherever it stands on the map
     if (mob.temp && mob.el === 2 && !mob.dim && !mob.dead) (out.fb || (out.fb = [])).push([Math.round(mob.x), Math.round(mob.y)]);
-    if (mob.dead || !near(mob)) continue;
+    // (a burrowing monster is underground: not shown until it comes up, 80-simulation.js special)
+    if (mob.dead || !near(mob) || (mob.dive && !bsDef(mob))) continue;
     // then, only when there is one: the dagger's marks on it, and 1 when it bears a book's brand
     const mk = marksOf(S, mob), br = mob.brand > S.now ? 1 : 0;
     const row = [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || []];

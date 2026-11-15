@@ -43,7 +43,9 @@ function mobHit(S, rt, p, raw, mob, how = "blow") {
   // a rift's master hits softer than its wild kin (64-dim.js)
   if (mob && mob.ak) raw *= mob.ak;
   hurtPlayer(S, rt, p, raw, src);
-  if (!p.dead && (how === "charge" || (how === "tele" && mob) || (src && (src.el >= 1 || MOBS[src.k].boss)))) staggerPlayer(S, rt, p, mob);
+  // a telegraphed trick ("mv", special) only makes a player reel who has not just reeled: no chain of them stun-locks
+  const reel = how === "mv" ? !(p.stag > S.now - MV_GRACE) : how === "charge" || (how === "tele" && mob) || (src && (src.el >= 1 || MOBS[src.k].boss));
+  if (!p.dead && reel) staggerPlayer(S, rt, p, mob);
   if (!src || src.dead || !src.tr || !src.tr.length) return;
   const atk = MOBS[src.k].atk * ELITE[src.el].atk;
   if (!p.dead) {
@@ -114,7 +116,59 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
     volley(S, rt, mob, tgt, atk, d.boss ? 5 : 3);
     return true;
   }
-  return false;
+  // the telegraphed tricks (TRICKS): each warns for A.ms where it will land; it hits "mv" (no chained reeling)
+  const A = TRICKS[k], at = now + A.ms, tx = Math.round(tgt.x), ty = Math.round(tgt.y);
+  if (k === "breath") {
+    // a cone of breath the way it faces: it stands and gathers, then everyone in the cone is caught
+    if (dd > d.breath) return false;
+    const ang = Math.atan2(tgt.y - mob.y, tgt.x - mob.x);
+    mob.act = { at, f: k, h: { x: mob.x, y: mob.y, r: d.breath, r0: 0, ang, half: A.half } };
+    rt.ev.push(["bt", 1, Math.round(mob.x), Math.round(mob.y), d.breath, A.ms, Math.round(ang * 1000), Math.round(A.half * 1000)]);
+  } else if (k === "pounce" || k === "burrow") {
+    // a ring where the target stands; it comes down there (a burrower underground meanwhile: not hit, not shown)
+    if (dd <= d.range + 16 || dd > d[k]) return false;
+    mob.act = { at, f: k, x: tgt.x, y: tgt.y };
+    rt.tele.push({ x: tgt.x, y: tgt.y, r: A.r, at, dmg: atk * A.k, by: mob, how: "mv" });
+    if (k === "burrow") { mob.dive = 2; rt.ev.push(["b", Math.round(mob.x), Math.round(mob.y), 10, 1]); }
+    rt.ev.push(["t", tx, ty, A.r, A.ms]);
+  } else if (k === "spit") {
+    // one lobbed glob, landing on the spot it was aimed at
+    if (dd < 40 || dd > d.spit) return false;
+    rt.tele.push({ x: tgt.x, y: tgt.y, r: A.r, at, dmg: atk * A.k, by: mob, ev: "q", how: "mv" });
+    rt.ev.push(["m", mob.id], ["v", mob.id, A.ms, tx, ty]);
+    mob.atkAt = Math.max(mob.atkAt, now + 500);
+  } else if (k === "howl") {
+    // a rallying cry: its kin near (and itself) bite harder and run faster for a while
+    const pack = rt.mobs.filter((o) => o !== mob && !o.dead && !o.dive && !MOBS[o.k].still && !(o.rage > now) && dist(o.x, o.y, mob.x, mob.y) <= d.howl);
+    if (!pack.length) return false;
+    for (const o of pack.concat(mob)) o.rage = now + A.dur;
+    rt.ev.push(["m", mob.id], ["t", Math.round(mob.x), Math.round(mob.y), d.howl, A.ms, 1]);
+  } else if (k === "cloud") {
+    // a mist round itself that lingers (kind as its pool's; slowing unless it says otherwise)
+    if (dd > 60) return false;
+    const kind = d.poolKind ?? 2;
+    rt.pools.push({ x: mob.x, y: mob.y, r: d.cloud, next: at, until: at + A.dur, dmg: atk * A.k, atk, kind });
+    rt.ev.push(["g", mob.id, Math.round(mob.x), Math.round(mob.y), d.cloud, A.ms, A.dur, kind]);
+  } else return false;
+  mob.dir = tgt.x < mob.x ? 1 : 2;
+  mob.castAt = now + A.cd * TRICK_EL[mob.el || 0];
+  return true;
+}
+/** A telegraphed trick going off (mob.act.f): the breath catches its cone; a pounce or a burrow comes down on its mark. */
+function landMove(S, m, rt, mob, atk) {
+  const a = mob.act;
+  mob.act = null;
+  if (a.f === "breath") {
+    for (const pid of Object.keys(S.players)) {
+      const o = S.players[pid];
+      if (o.map === m.id && !o.dead && bsInside(a.h, o.x, o.y)) mobHit(S, rt, o, atk * TRICKS.breath.k, mob, "mv");
+    }
+  } else {
+    mob.dive = 0;
+    if ((MOBS[mob.k].fly ? canFly : canStand)(m, a.x, a.y)) { mob.x = a.x; mob.y = a.y; }
+  }
+  rt.ev.push(["m", mob.id]);
+  mob.atkAt = Math.max(mob.atkAt, S.now + 500);
 }
 /** The run at the end of a charge: as far along the line as the ground allows, through whoever is on it. */
 function dash(S, m, rt, mob, atk) {
@@ -157,15 +211,18 @@ function tickMob(S, m, rt, mob, dt, here) {
   // a scripted field boss: its phases, the marked cast, the enrage (a challenge's boss: chalTick, 64-dim.js)
   if (d.script && !mob.chal) bsField(S, m, rt, mob);
   if (d.still) return;
-  const atk = d.atk * ELITE[mob.el].atk;
+  // (a howl's rally: TRICKS.howl)
+  const rage = mob.rage > now, atk = d.atk * ELITE[mob.el].atk * (rage ? TRICKS.howl.k : 1);
   // a charge already wound up goes off whatever is done to the charger in the meantime
   if (mob.act) {
-    if (now >= mob.act.at) dash(S, m, rt, mob, atk);
+    if (now >= mob.act.at) (mob.act.f ? landMove : dash)(S, m, rt, mob, atk);
     return;
   }
+  // (a burrower whose trick was cut short, by a rift's reset say, comes back up)
+  if (mob.dive === 2) mob.dive = 0;
   if (mob.stun > now) return;
   const swift = has(mob, "swift");
-  const speed = d.spd * (mob.slow > now ? 0.5 : 1) * (swift ? 1.35 : 1);
+  const speed = d.spd * (mob.slow > now ? 0.5 : 1) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1);
   if (mob.dec) {
     // a rogue's puppet: walk up to it and strike it, which sets it off
     const dc = mob.dec;
@@ -417,7 +474,7 @@ export function tick(S, now) {
       for (const pid of pids) {
         const p = S.players[pid];
         if (p.map !== id || p.dead || dist(p.x, p.y, t.x, t.y) > t.r) continue;
-        mobHit(S, rt, p, t.dmg, t.by, t.ev === "q" ? "shot" : "tele");
+        mobHit(S, rt, p, t.dmg, t.by, t.how || (t.ev === "q" ? "shot" : "tele"));
       }
     }
     for (let i = rt.pools.length - 1; i >= 0; i--) {
