@@ -44,7 +44,8 @@ reset buttons, 보스 전리품 window (`trophies.js`, Shift+T), job-reset wordi
 **타격감** (owner, mid-session): per-weapon layered impact sounds (`audio.js` `IMPACT`), own big-hit hit-stop 45→60 ms,
 plain-hit shake 2.5→1.5 so crits stand out. Server hitstun lengthened on the owner's order ("경직 더 길게"):
 140/200 → 220/320 ms, elites ×0.65, bosses immune, budget 340 → 520 ms per 2.4 s (`STAGGER`/`HOLD` in 50). Test expectations moved:
-`dimrift.mjs` judges a clear rate over 5 draws (≥ 90 % in 3.5–10.5 min), `balance.mjs` hybrid hand floor ×0.62. Sounds not heard by a human yet.
+`dimrift.mjs` judges a clear rate over 5 draws (≥ 90 % in 3.5–10.5 min), `balance.mjs` hand floor stays ×0.7 —
+runearcher's bow hand got DEX ×0.95 instead (`hand` in 02, read by `scaleOf`; T25 ×0.73). Sounds not heard by a human yet.
 
 **Next, in order:**
 1) Gear + cosmetics content: sources for `ske_stone` (none yet!), `uncurse` and reset scrolls from rift/weekly boss
