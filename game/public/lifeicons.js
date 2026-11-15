@@ -1416,3 +1416,23 @@ export const LIFE_ICONS = {
     ],
   },
 };
+// 염료 (P9): a squat jar of dye with a cork and a drip down its side, one colour each (wardrobe.js DYES).
+const DYE_JAR = [
+  "....aaaa....",
+  "....aaaa....",
+  "...bbbbbb...",
+  "..bhmmmmmd..",
+  ".bhhmmmmmmd.",
+  ".bhmmmmmmmd.",
+  ".bhmmmmmmmd.",
+  ".bmmmmmmmmd.",
+  ".bmmmmmmmdd.",
+  "..ddddddddm.",
+  "..........m.",
+  "............",
+];
+for (const [id, h, m, d] of [
+  ["dye_pink", "#ffc4dc", "#f08ab4", "#b85a84"], ["dye_green", "#a8d890", "#5c9e4a", "#3a6a30"],
+  ["dye_teal", "#a0f0e8", "#38c4b8", "#24867e"], ["dye_violet", "#cbb0f0", "#9a6ad8", "#664096"],
+  ["dye_orange", "#ffb48a", "#e8663a", "#a84426"], ["dye_black", "#8a8696", "#4a4652", "#33303a"],
+]) LIFE_ICONS[id] = { palette: { h, m, d, a: "#c8a070", b: "#e8f4ff" }, rows: DYE_JAR };

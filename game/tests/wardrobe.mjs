@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import * as L from "../src/logic.js";
-import { ART, SLOTS as ART_SLOTS, skinMotif } from "../public/wardrobe.js";
+import { ART, SLOTS as ART_SLOTS, skinMotif, dyed, DYES } from "../public/wardrobe.js";
 import { DESIGNS, MOTIFS, SIL, MOTIF_SIL } from "../public/weapons.js";
 
 const D = L.defs();
@@ -347,6 +347,11 @@ for (const [kind, designs] of Object.entries(SIL)) {
 // ── 염색 and 기념품 재봉 at 루루's (P9)
 {
   assert.equal(D.cosDyes.length, 6, "six dyes");
+  assert.equal(DYES.length, D.cosDyes.length, "wardrobe.js draws every dye");
+  assert.equal(dyed(ART.hat_beanie_red, 0), ART.hat_beanie_red, "dye 0 is the very same art (undyed draws as before)");
+  assert.equal(dyed(ART.hat_beanie_red, 2)[2].b, DYES[1], "a trim takes the dye");
+  assert.equal(dyed(ART.back_cape_red, 6)[2].c, DYES[5], "no trim: the main colour does");
+  assert.equal(ART.hat_beanie_red[2].b, "#f07a7a", "the catalogue art is not touched");
   for (const [i, id] of D.cosDyes.entries()) {
     const r = D.life.recipes.find((x) => x.out[0] === id);
     assert.ok(D.items[id] && r && r.sk === "alch" && r.lv >= 5 && r.lv <= 40, id + ": an alchemy recipe at L5–40");

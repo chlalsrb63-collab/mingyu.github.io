@@ -321,7 +321,8 @@ export function personSheet(o, density = o.bone || o.mask ? 1 : PERSON_SIZE / S)
 export function playerLook(cls, look = [], gear = {}) {
   const o = SPC.lookOf(look);
   // cosmetics worn (ids), so others see the outfit too
-  return gear && gear.cos && gear.cos.length ? { ...o, cos: gear.cos } : o;
+  // (a dyed piece adds `dye` { id: 1–6 }, wardrobe.js DYES; left out when nothing is dyed so the cache key is as before)
+  return gear && gear.cos && gear.cos.length ? { ...o, cos: gear.cos, ...(gear.dye ? { dye: gear.dye } : {}) } : o;
 }
 /** Townsfolk wear a tunic in their trade's colour. */
 export function npcLook(look, role) {
