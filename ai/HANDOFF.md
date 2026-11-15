@@ -32,7 +32,7 @@ agent notification re-read it, and 6–7 agents of 120k–400k tokens each ran a
 7. Unused MCP servers/plugins (Unity, Summer Engine, Higgsfield, Notion, PixelLab, Blender, fullstory…) add ~25k tokens
    to every call — the owner may turn them off for this folder. Ponytail (lazy-senior-dev rules) is installed.
 
-## 0.1 State (2026-11-15, end of the fourth integrator session — `main` sheet v19, rules suite 42/42, nothing pushed)
+## 0.1 State (2026-11-15 15:30 play build, tag `play-2026-11-15-1530` — `main` sheet v20, rules suite all green, nothing pushed)
 
 Done this session (contracts + as-built in `docs/design/job-freedom.md` §7–9): **gear enhancement rebalance** (safe to
 +3, +27.5 % at +10, crit 0.5/step, failure = one step down + 저주받은 `g.cu`, 저주 해제 주문서 `uncurse` in the shop 2,500G,
@@ -47,16 +47,31 @@ plain-hit shake 2.5→1.5 so crits stand out. Server hitstun lengthened on the o
 `dimrift.mjs` judges a clear rate over 5 draws (≥ 90 % in 3.5–10.5 min), `balance.mjs` hand floor stays ×0.7 —
 runearcher's bow hand got DEX ×0.95 instead (`hand` in 02, read by `scaleOf`; T25 ×0.73). Sounds not heard by a human yet.
 
+Afternoon (owner: "3시 30분까지 … 완성도 높게", hunting/job first, then life): **loot sources** `LOOT_X` (64-dim; ske_stone from rift
+tier 5, uncurse, reset scrolls from rift/weekly/field boss; numbers from `docs/design/economy-review-2026-11-15.md`; level reset
+250 G/lv) · 축복 강화석 failure = same step, no curse, retry at once (owner confirmed) · **알바 board v2** (grades 쉬움/보통/어려움,
+긴급, hunt/scout kinds, night/rain + trust rows, 55 rows) · **boss patterns** donut/cone/mark/adds/share/shield/feed/jet/punch…
+(56-boss-script, event `bt`; boss turn events are `bc`) · **bosses-2**: 망치 갯가재 = coast field boss, 혈루 왕도마뱀 = mesa lair
+boss, 밤장막 박쥐군주 + 꽃무덤 고래 = weekly raid challenges (`DIM_CHAL.bosses`, sets 밤장막/꽃무덤, 3 legendaries; tuned
+down from §6 so 4 geared bots win) + first-kill titles · **main quest** steps for jungle/oasis/cloudtemple/dunesea field
+bosses (sheet v20, `questV20` remaps a v17–19 chain index) · Codex `region-beasts-refresh` merged.
+**Co-op** (`68-coop.js`, `public/coop.js`, doc life-and-coop H7): 동동아파트 청소 (45×19, piles 3+3n, spawn by party) and
+쥬쥬식당 서빙 (44×24, 12 tables, cook/server split; tables/orders/patience by party) — targets from a walking bot, retune after
+playtests. **Weekly challenge difficulty steps** 보통…심연 up to Lv.200 (`DIM_CHAL.steps`, gate step−10, `dim.bs` best step) +
+Codex rotating regional bosses (`chalOfWeek`, `rotationBig`); wire `dimr` [6 old, bs, rotation idx]. **Boss/elite HP numbers**
+on bars incl. rift toughness (snapshot `HK`). Rift party scaling `DIM.hpN` [0.3,0.6,0.8,1] already existed (owner asked).
+Other session: dash 72→36 px (f8b955a).
+
 **Next, in order:**
-1) Gear + cosmetics content: sources for `ske_stone` (none yet!), `uncurse` and reset scrolls from rift/weekly boss
-   drops; cosmetic sources "곧 열립니다" → rift/weekly/quests; boss drops bosses-2 §7; hammer gear.
-2) bosses-2 patterns donut/cone/mark/adds + data rows/arenas, then boss screenshots.
-3) Small follow-ups: 앉기 keymap label could say 모닥불; the char window's right column is clipped at 960×600 (old);
-   trophies: story-arena [떠나기]/countdown and a radar mark for the solo-fight boss not done; off-job slot list is a
-   client guess (server checks).
-Known: field bosses have no stagger bar; boss `dc` events share a code with the tracker decoy (`skillfx.js`); rift tier
-5+ needs balance; `party` test flakes under load; 6 field bosses (oasis, coast, dunesea, cloudtemple, mesa, jungle) have
-no main-quest step yet; job/level reset gold costs are placeholders. Codex commits to `main` directly at times.
+1) Play-test the co-op jobs and the four new bosses live and retune (R1 is fury-sensitive); first-kill server notice for R2; add art for
+   bloodshard/nightbat/hagfishhead; 박쥐 망토 cosmetic, 먹장어 pet; uses for 피눈물 결정 / 갯가재 집게.
+2) Cosmetic sources "곧 열립니다" (wardrobe_ui.js) → rift/weekly/quests. Field-boss stagger bar (gauge not on the wire).
+3) Co-op jobs 2–4 (diner, forge/alch) on the co-op engine; economy check of the 알바 board ceiling (~4,000 G/day at life 50).
+4) Economy review leftovers: uncurse price by gear tier (1,200 G + 400 × tier fee), stone_b recipe if blessing supply > 2/week.
+5) Small: 앉기 label could say 모닥불; char window right column clipped at 960×600; trophies story-arena [떠나기]/countdown.
+Known: rift tier 5+ needs balance; `party` test flakes under load; job reset gold costs placeholders. Codex commits to
+`main` directly at times; old `codex/combat-effects`, `rift-beasts`, `world-map` branches hold commits not on main
+(superseded by later merges — check before reviving).
 **Agent worktrees from `isolation: "worktree"` start at origin/main (stale) — first step of every brief: `git rebase main`.**
 Typed agents (`ui-programmer` etc.) stop at 20 turns — use `general-purpose` for anything bigger. Only the owner adds jobs.
 
