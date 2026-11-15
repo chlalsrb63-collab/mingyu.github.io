@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import * as MA from "../public/mobart.js";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { MOBS, BOSS_SCRIPT, newMob, mobMax, dealMob, mobsWithin, aimMob, canStand, mapOfS, bsDef };\n";
+  "\nexport const __t = { MOBS, BOSS_SCRIPT, newMob, mobMax, dealMob, mobsWithin, aimMob, canStand, mapOfS, bsDef, bsCast, bsInside };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, B0 = X.BOSS_SCRIPT;
 
@@ -48,7 +48,7 @@ const evs = [];
 const tough = () => { p.dead = false; p.hp = 1e7; p.x = spot[0]; p.y = spot[1]; p.mvAt = now; };
 const step = (n = 1) => { for (let i = 0; i < n; i++) { tough(); now += 100; L.tick(S, now); view = JSON.parse(JSON.stringify(L.viewFor(S, "p1"))); for (const e of rt.ev) evs.push(e); L.endTick(S); } };
 const row = () => view.M.find((r) => r[0] === mob.id);
-const dcs = () => evs.filter((e) => e[0] === "dc" && e[1] === mob.id).map((e) => e[2]);
+const dcs = () => evs.filter((e) => e[0] === "bc" && e[1] === mob.id).map((e) => e[2]);
 
 // it notices the hero and the fight begins; the wire row ends with phase 1, state 0
 step(3);
@@ -72,7 +72,7 @@ assert.equal(row()[11], 1, "casting on the wire");
 assert.deepEqual(dcs().slice(-1), [9]);
 X.dealMob(S, rt, mob, p, Math.ceil(mob.cast.need), 0);
 assert.ok(!mob.cast && mob.stag > now && mob.stun >= now + B.stunMs - 1, "broken: stunned");
-assert.ok(rt.ev.some((e) => e[0] === "dc" && e[1] === mob.id && e[2] === 8), "the break shown");
+assert.ok(rt.ev.some((e) => e[0] === "bc" && e[1] === mob.id && e[2] === 8), "the break shown");
 step();
 assert.equal(row()[11], 0);
 const hp1 = mob.hp;
@@ -109,6 +109,68 @@ mob.tgt = null; mob.st = 2; p.x = spot[0] + 3000;
 const ak = mob.bs.ak;
 now += 100; L.tick(S, now); L.endTick(S);
 assert.equal(mob.bs, null); assert.equal(mob.ak, ak); assert.equal(mob.dive, 0);
+
+// the shaped kinds (bosses-2 §8): the same geometry the client draws, damage only on whoever is inside when it lands
+const I = X.bsInside;
+const dn = { x: 0, y: 0, r: 90, r0: 30, half: 0 };
+assert.ok(!I(dn, 10, 0) && I(dn, 30, 0) && I(dn, 0, 60) && I(dn, 90, 0) && !I(dn, 91, 0), "donut: safe in the middle and outside");
+const cn = { x: 0, y: 0, r: 56, r0: 0, ang: 0, half: Math.PI / 3 };
+assert.ok(I(cn, 50, 0) && I(cn, 20, 30) && !I(cn, 20, 40) && !I(cn, -20, 0) && !I(cn, 57, 0) && I(cn, 0, 0), "cone: 120° ahead, r 56");
+X.MOBS.bs_pat = {
+  ...X.MOBS.lambmaw, name: "모양 보스", hp: 1e6, atk: 20, aggro: 0,
+  script: { cast: "없음", every: 1000, pats: [["도넛", "donut"], ["부채꼴", "cone"], ["표식", "mark", { ms: 2000 }], ["소환", "adds", { kind: "lambmaw", n: 3, cap: 4 }]] },
+};
+for (const o of rt.mobs) { o.dead = true; o.respAt = now + 1e12; }
+const pm = X.newMob(S, "bs_pat", [0, 0, 0, 0]);
+pm.el = 2; pm.temp = true; pm.tr = [];
+pm.x = pm.hx = pm.wx = spot[0]; pm.y = pm.hy = pm.wy = spot[1]; pm.hp = X.mobMax(pm);
+rt.mobs.push(pm);
+/** Cast pattern `i` with the hero at `at` (offset from the boss), move them to `to`, run until it has landed: hp lost. */
+const trial = (i, at, to = at) => {
+  p.dead = false; p.dodge = 0; p.x = pm.x + at[0]; p.y = pm.y + at[1];
+  if (pm.bs) { pm.bs.pi = i; pm.bs.q = []; }
+  X.bsCast(S, rt, pm, p);
+  p.x = pm.x + to[0]; p.y = pm.y + to[1];
+  let lost = 0;
+  for (let k = 0; k < 35; k++) { pm.stun = now + 1e9; p.hp = 1e7; now += 100; L.tick(S, now); lost += 1e7 - p.hp; L.endTick(S); }
+  return lost;
+};
+assert.ok(trial(0, [60, 0]) > 0, "donut: hit in the band");
+assert.equal(trial(0, [60, 0], [12, 0]), 0, "donut: stepped into the middle");
+assert.equal(trial(0, [60, 0], [100, 0]), 0, "donut: stepped out past its reach");
+assert.ok(trial(1, [40, 0]) > 0, "cone: hit in front");
+assert.equal(trial(1, [40, 0], [0, 45]), 0, "cone: stepped aside");
+assert.equal(trial(1, [40, 0], [-30, 0]), 0, "cone: behind it is safe");
+const lastBt = [];
+const grab = () => { const e = rt.ev.find((q) => q[0] === "bt"); if (e) lastBt.push(e); };
+p.x = pm.x + 40; p.y = pm.y; pm.bs.pi = 1; pm.bs.q = []; X.bsCast(S, rt, pm, p); grab();
+assert.deepEqual(lastBt[0].slice(0, 7), ["bt", 1, Math.round(pm.x), Math.round(pm.y), 56, 1000, 0], "cone on the wire: facing in mrad");
+assert.equal(lastBt[0][7], 1047); L.endTick(S); pm.bs.q = [];
+assert.ok(trial(2, [80, 0], [80, 80]) > 0, "mark: the burst follows its hero and lands where they stand");
+// spread: a mark on one of two heroes hits the other only if they stand inside it
+L.addPlayer(S, "p2", L.hero("동료", { wk: "sword", lvl: 120, migrate: true }));
+const q = S.players.p2;
+L.runtime(S, q.map).n--; q.map = "meadow"; rt.n++;
+const spread = (gap) => {
+  for (const o of [p, q]) { o.dead = false; o.dodge = 0; }
+  p.x = pm.x + 80; p.y = pm.y; q.x = pm.x - 80; q.y = pm.y;
+  pm.bs.pi = 2; pm.bs.q = [];
+  X.MOBS.bs_pat.script.pats[2][2].n = 1;
+  X.bsCast(S, rt, pm, p);
+  const e = rt.ev.filter((v) => v[0] === "bt" && v[1] === 2).pop(), [mk, other] = e[6] === p.eid ? [p, q] : [q, p];
+  other.x = mk.x + gap; other.y = mk.y;
+  let lost = 0;
+  for (let k = 0; k < 25; k++) { pm.stun = now + 1e9; other.hp = mk.hp = 1e7; now += 100; L.tick(S, now); lost += 1e7 - other.hp; L.endTick(S); }
+  return lost;
+};
+assert.ok(spread(20) > 0, "mark: whoever stands inside is hit too");
+assert.equal(spread(60), 0, "mark: spread out, not hit");
+q.x = pm.x + 3000;
+const add0 = rt.mobs.filter((a) => a.add === pm.id && !a.dead).length;
+trial(3, [200, 0]); trial(3, [200, 0]);
+const adds = rt.mobs.filter((a) => a.add === pm.id && !a.dead);
+assert.ok(add0 === 0 && adds.length === 4 && adds.every((a) => a.k === "lambmaw" && a.temp && a.el === 0), "adds: three, then capped at four");
+assert.ok(!evs.some((e) => e[0] === "dc"), "a boss no longer sends the tracker lure's code");
 
 // the client's look of the moment: only art that exists is picked
 assert.equal(MA.artKind("bloomwhale", { bst: 2, bph: 2 }), "bloomwhale_dive");
