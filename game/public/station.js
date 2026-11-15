@@ -62,6 +62,7 @@ function lockWhy(s, r) {
     const who = D().rep.perk[r.rep].who, last = who.charCodeAt(who.length - 1) - 0xac00;
     return `${who}${last >= 0 && last % 28 ? "과" : "와"} 친구가 되어야 배울 수 있습니다`;
   }
+  if (r.sq && !(s.sq || []).some((row) => row[0] === r.sq && (row[1] === 2 || row[1] === 3))) return "퀘스트를 받아야 만들 수 있습니다";
   return "";
 }
 /** Why `k` crafts cannot start here and now (inputs, fee), or "". */

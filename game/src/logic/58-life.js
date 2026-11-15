@@ -55,7 +55,7 @@ function lifeStepText(k, lv) {
   const made = new Set();
   for (const id of Object.keys(RECIPES)) {
     const r = RECIPES[id];
-    if (r.sk !== k || r.lv !== lv || r.any) continue;
+    if (r.sk !== k || r.lv !== lv || r.any || r.sq) continue;
     made.add(r.gear ? `${ITEMS[r.out[0]].tier}단계 장비` : r.out[0] === "rune*" ? "룬 변환" : ITEMS[r.out[0]].name);
   }
   if (made.size) return `새 제작법: ${[...made].join(", ")}`;
@@ -334,10 +334,11 @@ const stationNear = (S, p, at) => (at === "fire" ? !!fireNear(S.maps[p.map], p) 
 const recipeOf = (id) => (typeof id === "string" && Object.hasOwn(RECIPES, id) ? RECIPES[id] : null);
 /** Trust with an NPC (0..100). */
 const repOf = (ch, id) => (ch.rep && Object.hasOwn(ch.rep, id) ? ch.rep[id] : 0);
-/** Why a recipe is not known yet (Korean), or "" — its level (a fish on a fire: any level) and its teacher's trust. */
+/** Why a recipe is not known yet (Korean), or "" — its level (a fish on a fire: any level), its teacher's trust, its quest. */
 function recipeWhy(ch, r) {
   if (!r.any && ch.life[r.sk].lv < r.lv) return `${LIFE_NAME[LIFE.indexOf(r.sk)]} 레벨이 부족합니다 (Lv.${r.lv} 필요)`;
   if (r.rep && repOf(ch, r.rep) < REP_TIER[1]) return `${REP_PERK[r.rep].who}${pp(REP_PERK[r.rep].who, "과와")} 친구가 되어야 배울 수 있습니다`;
+  if (r.sq && !Object.hasOwn(ch.sq.on, r.sq)) return "퀘스트를 받아야 만들 수 있습니다";   // a quest's own recipe (arc A5's 기록 보존액)
   return "";
 }
 const runeCount = (ch) => RUNE_KEYS.reduce((n, k) => n + countItem(ch, `ru_${k}`), 0);

@@ -34,7 +34,8 @@ function sqReward(rw) {
 const SIDE = DATA.quests.side.filter((q) => typeof q.id === "string" && SQ_ID.test(q.id) && typeof q.giver === "string" && q.goal && SQ_GOALS.includes(q.goal.type)).map((q) => {
   const g = q.goal, req = q.req && typeof q.req === "object" ? q.req : {};
   const goal = { type: g.type, n: SQ_COUNTED.includes(g.type) ? clamp((g.n ?? 1) | 0, 1, 999) : 1 };
-  if (g.type === "kill" || (g.type === "elite" && typeof g.mob === "string")) goal.mob = g.mob;
+  if (g.type === "kill" || ((g.type === "elite" || (g.type === "collect" && isQuestItem(g.item))) && typeof g.mob === "string")) goal.mob = g.mob;
+  if (g.type === "collect" && isQuestItem(g.item) && g.rift === true) goal.rift = true;
   if (g.type === "collect" || g.type === "make" || g.type === "deliver") goal.item = g.item;
   if (g.type === "talk" || g.type === "deliver") goal.npc = g.npc;
   if (g.type === "deliver" && (g.time | 0) > 0) goal.time = clamp(g.time | 0, 30, 3600);
@@ -131,6 +132,20 @@ function sqProgress(S, p, type, match, n = 1) {
     else if (type !== "talk" && type !== "visit") toast(p, `[${q.title}] ${ch.sq.on[id]}/${q.goal.n}`);
   }
 }
+/**
+ * Quest-only finds: a collect goal of a quest item may name where it comes from — `mob` (a kill of that kind drops
+ * one now and then, straight into the bag) or `rift` (each cleared 차원 균열's chest gives one). `from` = the kind
+ * killed, or "rift". Only while the quest is under way and short of its count.
+ */
+const SQ_FIND = 0.35;
+function sqFind(S, p, from) {
+  for (const id of Object.keys(p.ch.sq.on)) {
+    const q = SQ_BY[id], g = q && q.goal;
+    if (!g || g.type !== "collect" || !(from === "rift" ? g.rift : g.mob === from) || sqHave(p.ch, q) >= g.n) continue;
+    if (from !== "rift" && rnd(S) >= SQ_FIND) continue;
+    if (addItem(p.ch, g.item, 1)) { p.gain.push(["item", g.item, 1, 0]); p.dirty = true; sqPicked(p, g.item); }
+  }
+}
 /** Something the player made with a recipe (58-life.js): make goals count it. */
 const sqMade = (S, p, id, n) => sqProgress(S, p, "make", (g) => g.item === id, n);
 /** A picked-up item that a collect quest wants says so. */
@@ -202,6 +217,7 @@ function sqApply(S, p, a) {
   }
   // hand in: collected or carried items are given over, the answer remembered, then the reward
   if (q.goal.type === "collect" || q.goal.type === "deliver") takeItem(ch, q.goal.item, q.goal.n);
+  else if (q.goal.type === "make" && isQuestItem(q.goal.item)) takeItem(ch, q.goal.item, countItem(ch, q.goal.item));   // a made quest item goes to whoever asked
   delete ch.sq.on[q.id]; delete ch.sq.t[q.id];
   ch.sq.done[q.id] = (ch.sq.done[q.id] | 0) + 1;
   if (q.choice) ch.sq.flags[q.id] = a.pick;

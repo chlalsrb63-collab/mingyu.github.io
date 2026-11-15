@@ -77,10 +77,23 @@ const ITEMS = {
   q_kong_drawing: { name: "콩알의 그림", type: "quest", price: 0, desc: "크레용으로 그린 꼬리 긴 다람쥐와 반짝이는 등. 밑에 삐뚤빼뚤 '우리 아빠'." },
   q_photo: { name: "가족사진", type: "quest", price: 0, desc: "모서리가 그을린 사진 한 장. 다람쥐 셋이 간판등 아래서 웃고 있다." },
   q_neon_ember: { name: "간판등 불씨", type: "quest", price: 0, desc: "도톨의 간판등에서 옮겨 담은 작은 불씨 병. 흔들어도 꺼지지 않는다." },
+  // arcs A3–A6 (docs/design/arcs.md): 바람등호의 항해일지, 종과 별, 마지막 사관, 균열을 적는 자
+  q_logpage: { name: "젖은 일지 낱장", type: "quest", price: 0, desc: "바람등호 항해일지의 찢긴 한 장. 소금기에 번진 글씨 사이로 별자리 같은 문양이 보인다." },
+  q_chart: { name: "옛 항로 사본", type: "quest", price: 0, desc: "초미가 밤새 옮겨 그린 옛 항로. 표지석과 등대와 사원이 한 줄로 이어진다." },
+  q_bellrub: { name: "종 무늬 탁본", type: "quest", price: 0, desc: "은하가 빈 종걸이에 남은 자국을 떠 낸 종이. 별 일곱 개가 둥글게 새겨져 있다." },
+  q_bell: { name: "모래 속의 종", type: "quest", price: 0, desc: "모래바다 밑에서 건져 올린 손바닥만 한 종. 흔들지 않아도 가끔 혼자 운다." },
+  q_record: { name: "썩어 가는 왕실 기록", type: "quest", price: 0, desc: "보랏빛 곰팡이가 핀 양피지. 단풍 왕도의 옛 사관이 남긴 글씨가 반쯤 남아 있다." },
+  q_ink: { name: "기록 보존액", type: "quest", price: 0, desc: "보름이 알려 준 대로 끓인 맑은 약. 바르면 썩어 가던 종이가 단풍잎처럼 단단해진다." },
+  q_lastrec: { name: "왕도의 마지막 기록", type: "quest", price: 0, desc: "갈피가 끈으로 묶어 건넨 기록 한 다발. 맨 끝 장은 반쯤 타 있다." },
+  q_shard: { name: "균열 조각", type: "quest", price: 0, desc: "닫힌 차원 균열 가장자리에서 떨어져 나온 검은 유리. 안쪽에 글자 같은 금이 나 있다." },
   // keepsakes (기념품): no stats, never in the bag — kept forever in ch.keep; 루루 의상실 will sew them into outfits later
   kp_reed_float: { name: "갈대의 낡은 찌", type: "keep", price: 0, arc: "갈대의 송사리 도시락", desc: "갈대가 딸과 처음 낚시하던 날 쓰던 빨간 찌. \"이제 나한텐 필요 없어. 네가 가져.\"" },
   kp_willow_key: { name: "버드나무 새집 열쇠", type: "keep", price: 0, arc: "버드나무의 새 식구", desc: "도란네 오두막의 여벌 열쇠. 콩알이 도토리 모자를 씌워 놨다. \"언제든 놀러 와도 된대!\"" },
   kp_neon_lamp: { name: "마지막 불빛 등", type: "keep", price: 0, arc: "마지막 불빛", desc: "도톨이 함락된 거리에서 끝까지 켜 두던 간판등의 작은 쌍둥이. 켜면 길 잃은 이가 집 쪽을 본다." },
+  kp_compass: { name: "바람등호 나침반", type: "keep", price: 0, arc: "바람등호의 항해일지", desc: "선장 아루가 첫 비행 때부터 쓰던 놋쇠 나침반. 바늘이 북쪽이 아니라 옛 표지석 쪽을 가리킨다." },
+  kp_bell: { name: "작은 사원 종", type: "keep", price: 0, arc: "종과 별", desc: "되찾은 종과 같은 쇠로 은하가 부어 만든 새끼 종. 흔들면 구름이 잠깐 비켜선다." },
+  kp_quill: { name: "사관의 깃펜", type: "keep", price: 0, arc: "마지막 사관", desc: "갈피가 마지막 줄을 적은 회색 깃펜. 잉크 없이도 종이에 닿으면 희미한 등불 빛이 남는다." },
+  kp_shardjar: { name: "균열 표본병", type: "keep", price: 0, arc: "균열을 적는 자", desc: "보글이 균열 조각을 녹여 담은 작은 병. 기울이면 안쪽 금이 글자처럼 줄을 맞춘다." },
 };
 for (const wk of Object.keys(WEAPON_NAMES)) {
   for (let t = 1; t <= G_REQ.length; t++) {

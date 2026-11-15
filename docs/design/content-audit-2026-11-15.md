@@ -192,6 +192,7 @@ items), `12-life-tables.js` (1 jb row). **Tests:** `tests/arcs.mjs` (new, in `te
 **Art:** 3 NPC looks via existing `look` arrays (species + colours) — no new art.
 
 ### P4 — Arcs A3 + A4: 하늘길과 사원 (data, new field givers) · size M
+**Built 2026-11-16 — see [arcs.md](arcs.md)** (camp keepers stand in for 소라 and 바람; tests in `tests/sidequests.mjs`).
 Retires nothing (these bands are empty); adds a giver to 산호 해안, 운해 사원, 모래바다, 붉은바위.
 
 **A3 「바람등호의 항해일지」 Lv 100–125** — follows the Lv 100 reveal: the anomaly follows an old road.
@@ -212,6 +213,7 @@ Last reward: keep `kp_bell` 작은 사원 종 (→ P9 운해 종지기 등장식
 **Touches/Tests/Art:** as P3 (`npcs.json` 4 new NPCs, map spots in custom-map data, `tests/arcs.mjs`). No new art.
 
 ### P5 — Arcs A5 + A6: 왕도의 사관, 균열을 적는 자 (data) · size M
+**Built 2026-11-16 — see [arcs.md](arcs.md)** (A5's last page hints §6.1 without settling it).
 Retires: `sq_borum_blight` (its 1.02 M XP is the outlier), `sq_bawi_deer`, `sq_dongdong_pigeons`, `sq_bogle_crows`
 (kill duplicates of main 7, 12, 2).
 

@@ -1,5 +1,6 @@
 // Side-quest engine (P1, docs/design/content-audit-2026-11-15.md §3): make, deliver (timed), elite of one kind,
-// choice with branches and per-pick rewards, quest items, keepsakes (기념품), quest titles, old sheets, data:check.
+// choice with branches and per-pick rewards, quest items, keepsakes (기념품), quest titles, old sheets, data:check;
+// the story arcs A1–A6 (docs/design/arcs.md) walked start to end through every answer.
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -9,25 +10,25 @@ import { checkData, DATA_DIR } from "../scripts/editor-lib.mjs";
 
 const T = 16;
 const BASE = Date.UTC(2026, 10, 15, 1, 0, 0);
-function world(name = "심부름꾼", sheet = null) {
-  const S = L.setup();
+function world(name = "심부름꾼", sheet = null, M = L) {
+  const S = M.setup();
   let now = BASE;
   S.now = now;
   const PID = "pid-" + name;
-  L.addPlayer(S, PID, sheet || L.newChar(name, "warrior", []));
+  M.addPlayer(S, PID, sheet || M.newChar(name, "warrior", []));
   const W = {
     S, PID, toasts: [],
-    step(ms = 100) { now += ms; L.tick(S, now); const v = JSON.parse(JSON.stringify(L.viewFor(S, PID))); if (v.toast) W.toasts.push(...v.toast); L.endTick(S); return v; },
+    step(ms = 100) { now += ms; M.tick(S, now); const v = JSON.parse(JSON.stringify(M.viewFor(S, PID))); if (v.toast) W.toasts.push(...v.toast); M.endTick(S); return v; },
     wait(ms) { now += ms; S.now = now; },
-    act(a) { S.now = now; const v = L.validateAction(S, PID, a); if (v.ok) L.applyAction(S, PID, a); return v; },
+    act(a) { S.now = now; const v = M.validateAction(S, PID, a); if (v.ok) M.applyAction(S, PID, a); return v; },
     ok(a) { const r = W.act(a); assert.ok(r.ok, `${JSON.stringify(a)}: ${r.error}`); },
     self() { S.players[PID].dirty = true; return W.step().self; },
     get p() { return S.players[PID]; },
     get ch() { return S.players[PID].ch; },
-    to(id, tx, ty) { const p = W.p; L.runtime(S, p.map).n--; p.map = id; L.runtime(S, id).n++; p.x = tx * T + 8; p.y = ty * T + 10; p.mvAt = now; p.sendMap = true; },
-    meet(id) { for (const mid of Object.keys(L.atlas().maps)) { const n = L.atlas().maps[mid].npcs.find((o) => o.id === id); if (n) { W.to(mid, n.x, n.y + 1); W.p.y -= 4; return; } } assert.fail(`no NPC ${id}`); },
+    to(id, tx, ty) { const p = W.p; M.runtime(S, p.map).n--; p.map = id; M.runtime(S, id).n++; p.x = tx * T + 8; p.y = ty * T + 10; p.mvAt = now; p.sendMap = true; },
+    meet(id) { for (const mid of Object.keys(M.atlas().maps)) { const n = M.atlas().maps[mid].npcs.find((o) => o.id === id); if (n) { W.to(mid, n.x, n.y + 1); W.p.y -= 4; return; } } assert.fail(`no NPC ${id}`); },
     kill(k, el = 0) {
-      const p = W.p, rt = L.runtime(S, p.map);
+      const p = W.p, rt = M.runtime(S, p.map);
       const find = () => rt.mobs.find((x) => x.k === k && !x.dead && !x.evt) || rt.mobs.find((x) => x.k === k && !x.evt);
       if (!find()) W.step();
       const m = find();
@@ -278,8 +279,153 @@ function arcA2(pick) {
   const s = W.self();
   for (const id of ["sq_willow_frogs", "sq_merc_hares", "sq_borum_frogs"]) assert.equal(sqOf(s, id), undefined, `${id} is gone`);
   assert.equal(sqOf(s, "sq_merc_boar").st, 1, "용병단장's boar hunt no longer waits for the hares");
-  assert.equal(sqOf(s, "sq_borum_blight").st, 1, "보름's blight no longer waits for the frogs");
   assert.equal(sqOf(s, "sq_doran_blanket").st, 0, "the refugee arc still waits for the flower letter");
+}
+// ── arcs A3–A6 (P4/P5, docs/design/arcs.md): scripted start-to-end runs, every answer of every choice
+const LX = await import("data:text/javascript;base64," + Buffer.from(readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
+  "\nexport const __t = { dimChest };").toString("base64"));
+const take = (W, id, at) => { if (at) W.meet(at); W.ok({ t: "sq", a: "take", id }); };
+const done = (W, id, at, pick) => { if (at) W.meet(at); W.ok({ t: "sq", a: "done", id, ...(pick === undefined ? {} : { pick }) }); };
+const talk = (W, npc) => { W.meet(npc); W.ok({ t: "sq", a: "talk", npc }); };
+/** Brew / cook / smelt at the recipe's station until the quest's make goal is met (only the player's own crafts count). */
+function make(W, id, r, at, inputs, sk) {
+  W.meet(at);
+  W.ch.life[sk].lv = Math.max(W.ch.life[sk].lv, 30);
+  W.ch.gold += 50000;
+  for (const [it, n] of inputs) W.ch.inv.push({ id: it, n });
+  for (let i = 0; i < 12 && sqOf(W.self(), id).st !== 3; i++) { W.ok({ t: "craft_open", r }); W.wait(13000); W.ok({ t: "craft", r, s: 90 }); }
+  assert.equal(sqOf(W.self(), id).st, 3, `${id}: made`);
+}
+/** Kill `k` on its map until a quest-only drop has filled the collect goal (35 % a kill, only while the quest is on). */
+function hunt(W, id, map, k) {
+  W.to(map, ...L.atlas().maps[map].entry);
+  for (let i = 0; i < 80 && sqOf(W.self(), id).st !== 3; i++) W.kill(k);
+  assert.equal(sqOf(W.self(), id).st, 3, `${id}: the drops came`);
+}
+function arcA3(W, pick) {
+  W.ch.lvl = 125; W.ch.sq.done.sq_airship_logbook = 1;
+  assert.equal(D.side.find((q) => q.id === "sq_chomi_pages").goal.mob, "hermitskull", "추적 walks to the hermit crabs");
+  W.to("coast", ...L.atlas().maps.coast.entry);
+  for (let i = 0; i < 20; i++) W.kill("hermitskull");
+  assert.equal(bag(W, "q_logpage"), 0, "no page drops before the quest is taken");
+  take(W, "sq_chomi_pages", "airship_scout");
+  hunt(W, "sq_chomi_pages", "coast", "hermitskull");
+  for (let i = 0; i < 10; i++) W.kill("hermitskull");
+  assert.equal(bag(W, "q_logpage"), 3, "no more than the quest needs");
+  done(W, "sq_chomi_pages", "airship_scout");
+  assert.equal(bag(W, "q_logpage"), 0);
+  take(W, "sq_aru_tonic", "airship_captain");
+  make(W, "sq_aru_tonic", "el_spd", "bogle", [["m_h4", 20], ["m_w4", 20], ["flask", 20]], "alch");
+  done(W, "sq_aru_tonic", "airship_captain");
+  take(W, "sq_noeul_stone", "airship_signal");
+  talk(W, "camp_jungle");
+  done(W, "sq_noeul_stone", "airship_signal");
+  take(W, "sq_sora_light", "camp_coast");
+  W.kill("coralturtle", 0);
+  assert.equal(sqOf(W.self(), "sq_sora_light").n, 0, "a plain turtle is not the one");
+  W.kill("coralturtle", 1);
+  done(W, "sq_sora_light", "camp_coast");
+  take(W, "sq_chomi_chart", "airship_scout");
+  done(W, "sq_chomi_chart", null, pick);
+  assert.ok(W.ch.keep.kp_compass && W.ch.ach.includes(`t_sq_chomi_chart_${pick}`), "the compass and this answer's title");
+  assert.ok(!W.ch.ach.includes(`t_sq_chomi_chart_${1 - pick}`), "not the other answer's");
+  const s = W.self();
+  assert.equal(sqOf(s, "sq_elder_chart")?.st, pick === 0 ? 1 : undefined, "the copy goes to 엘더윈 only on 「보고하자」");
+  if (pick === 0) { take(W, "sq_elder_chart"); assert.equal(bag(W, "q_chart"), 1); done(W, "sq_elder_chart", "elder"); }
+}
+function arcA4(W) {
+  W.ch.lvl = 165;
+  take(W, "sq_eunha_bear", "temple_eunha");
+  W.to("cloudtemple", ...L.atlas().maps.cloudtemple.entry);
+  W.kill("bearmaw_ash");
+  done(W, "sq_eunha_bear", "temple_eunha");
+  take(W, "sq_eunha_rubbing");
+  done(W, "sq_eunha_rubbing", "camp_dunesea");
+  take(W, "sq_samak_sieve");
+  W.ch.inv.push({ id: "m_o4", n: 6 });
+  done(W, "sq_samak_sieve");
+  take(W, "sq_samak_ingot");
+  make(W, "sq_samak_ingot", "ing_4", "kangkang", [["m_o4", 40]], "craft");
+  done(W, "sq_samak_ingot", "camp_dunesea");
+  take(W, "sq_samak_bell");
+  done(W, "sq_samak_bell", "mesa_norang");
+  take(W, "sq_norang_bell");
+  assert.equal(bag(W, "q_bell"), 1, "노랑 hands the cleaned bell back");
+  done(W, "sq_norang_bell", "temple_eunha");
+  assert.ok(W.ch.keep.kp_bell && W.ch.ach.includes("t_sq_norang_bell") && bag(W, "q_bell") === 0, "the small bell and 「종을 되찾은 자」");
+}
+function arcA5(W, pick, a3) {
+  W.ch.lvl = 190;
+  take(W, "sq_galpi_records", "maple_galpi");
+  hunt(W, "sq_galpi_records", "maple", "blightsquirrel");
+  done(W, "sq_galpi_records", "maple_galpi");
+  // A3's 「옛 지도는 우리만 알자」 opens a hint step here; 「보고하자」 closes it
+  assert.equal(sqOf(W.self(), "sq_galpi_chart")?.st, a3 === 1 ? 1 : undefined, "the sky-road hint follows A3's answer");
+  if (a3 === 1) { take(W, "sq_galpi_chart"); talk(W, "hermit"); done(W, "sq_galpi_chart", "maple_galpi"); }
+  take(W, "sq_galpi_chapel");
+  talk(W, "maple_altar");
+  done(W, "sq_galpi_chapel", "maple_galpi");
+  W.meet("bogle");
+  assert.match(W.act({ t: "craft_open", r: "q_ink" }).error, /퀘스트/, "the preserving ink is brewed only for 보름's quest");
+  take(W, "sq_borum_ink", "lib_borum");
+  make(W, "sq_borum_ink", "q_ink", "bogle", [["m_h4", 30], ["flask", 15]], "alch");
+  done(W, "sq_borum_ink", "lib_borum");
+  assert.equal(bag(W, "q_ink"), 0, "the made ink goes to 보름");
+  take(W, "sq_galpi_stag", "maple_galpi");
+  W.to("maple", ...L.atlas().maps.maple.entry);
+  W.kill("rotstag", 1);
+  done(W, "sq_galpi_stag", "maple_galpi");
+  take(W, "sq_galpi_end");
+  done(W, "sq_galpi_end", null, pick);
+  assert.ok(W.ch.keep.kp_quill && W.ch.ach.includes(`t_sq_galpi_end_${pick}`), "the quill and this answer's title");
+  const s = W.self();
+  assert.equal(sqOf(s, "sq_galpi_archive")?.st, pick === 0 ? 1 : undefined, "the records go to the library only on 「도서관에」");
+  assert.equal(sqOf(s, "sq_galpi_rest")?.st, pick === 1 ? 1 : undefined, "바스's farewell only on 「묻어요」");
+  if (pick === 0) { take(W, "sq_galpi_archive"); done(W, "sq_galpi_archive", "lib_borum"); }
+  else { take(W, "sq_galpi_rest", "hermit"); talk(W, "maple_altar"); done(W, "sq_galpi_rest", "hermit"); }
+}
+for (const pick of [0, 1]) { const W = world("항해사" + pick); arcA3(W, pick); arcA4(W); arcA5(W, pick, pick); }
+{
+  // A6 「균열을 적는 자」: a rift sample from each cleared rift's chest (the real chest, 64-dim.js), the rubbing, the elixir, 크리온, the same hand
+  const W = world("균열학자", null, LX);
+  W.ch.lvl = 157; W.ch.sq.done.sq_kong_parcel = 1;
+  take(W, "sq_bogle_shards", "bogle");
+  const chest = () => LX.__t.dimChest(W.S, { lv: 30, got: {}, res: {}, carry: {}, opened: W.S.now - 6e5, clearAt: W.S.now, floor: 3, rt: LX.runtime(W.S, W.p.map), chest: { x: W.p.x, y: W.p.y } }, W.p);
+  for (let i = 0; i < 4; i++) chest();
+  assert.equal(bag(W, "q_shard"), 3, "one shard a rift, never more than three");
+  done(W, "sq_bogle_shards", "bogle");
+  take(W, "sq_borum_rubbing", "lib_borum");
+  talk(W, "trail_crown");
+  done(W, "sq_borum_rubbing", "lib_borum");
+  take(W, "sq_bogle_essence", "bogle");
+  make(W, "sq_bogle_essence", "el_xp", "bogle", [["m_h3", 30], ["m_o3", 15], ["flask", 15]], "alch");
+  done(W, "sq_bogle_essence", "bogle");
+  take(W, "sq_borum_krion", "lib_borum");
+  W.to("cave", ...LX.atlas().maps.cave.entry);
+  W.kill("boss");
+  done(W, "sq_borum_krion", "lib_borum");
+  take(W, "sq_bogle_hand", "bogle");
+  talk(W, "lib_borum");
+  done(W, "sq_bogle_hand", "bogle");
+  assert.ok(W.ch.keep.kp_shardjar && W.ch.ach.includes("t_sq_bogle_hand"), "the shard jar and 「균열 기록관」");
+}
+// every arc step is 추적-resolvable: a giver and hand-in NPC on a real map, a target the client can walk to
+for (const q of D.side.filter((o) => /^sq_(chomi|aru|noeul_stone|sora|elder_chart|eunha|samak|norang|galpi|borum_ink|bogle_(shards|essence|hand)|borum_(rubbing|krion))/.test(o.id))) {
+  assert.ok(q.giverMapId && L.atlas().maps[q.giverMapId].npcs.some((n) => n.id === q.giver), `${q.id}: giver stands on ${q.giverMapId}`);
+  assert.ok(q.turnInMap && q.target, `${q.id}: hand-in and target named`);
+  if (q.goal.mob) assert.ok(D.maps.some((m) => m.mobs.includes(q.goal.mob)), `${q.id}: ${q.goal.mob} lives somewhere`);
+}
+// ── retired kill quests (P5): an old sheet mid-way or done loads clean
+{
+  const old = L.newChar("옛기록자", "warrior", []);
+  old.sq = { on: { sq_borum_blight: 7, sq_bogle_crows: 3 }, done: { sq_bawi_deer: 1, sq_dongdong_pigeons: 2 } };
+  const W = world("옛기록자", old);
+  W.ch.lvl = 160;
+  assert.deepEqual(W.ch.sq.on, {}, "a retired quest under way is dropped");
+  assert.deepEqual([W.ch.sq.done.sq_bawi_deer, W.ch.sq.done.sq_dongdong_pigeons], [1, 2], "finished ones stay remembered");
+  const s = W.self();
+  for (const id of ["sq_borum_blight", "sq_bogle_crows", "sq_bawi_deer", "sq_dongdong_pigeons"]) assert.equal(sqOf(s, id), undefined, `${id} is gone`);
+  assert.equal(sqOf(s, "sq_galpi_records").st, 1, "단풍 왕도's records are the blight quest's place now");
 }
 // ── data:check rejects bad quest data (and accepts the shipped data)
 {
