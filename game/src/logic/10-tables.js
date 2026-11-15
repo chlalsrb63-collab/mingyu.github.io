@@ -305,7 +305,7 @@ const MOBS = {
   dropsloth: { name: "낙하 나무늘보", lv: 22, hp: 820, atk: 70, def: 12, spd: 24, xp: 360, gold: [38, 74], aggro: 80, range: 20, cd: 1500, pounce: 100 },
   gigglehyena: { name: "웃는 하이에나", lv: 23, hp: 880, atk: 74, def: 14, spd: 48, xp: 400, gold: [42, 80], aggro: 90, range: 19, cd: 1100, howl: 110 },
   dunescarab: { name: "해골 쇠똥구리", lv: 30, hp: 1500, atk: 96, def: 26, spd: 32, xp: 720, gold: [60, 108], aggro: 86, range: 20, cd: 1400, burrow: 110 },
-  rimewalrus: { name: "서리숨 바다코끼리", lv: 50, hp: 5200, atk: 140, def: 36, spd: 30, xp: 3800, gold: [140, 214], aggro: 84, range: 22, cd: 1600, breath: 64 },
+  rimewalrus: { name: "서리숨 바다코끼리", lv: 50, hp: 5200, atk: 140, def: 36, spd: 30, xp: 2800, gold: [140, 214], aggro: 84, range: 22, cd: 1600, breath: 64 },
   // Weekly arena opponents, separate from the field boss roster and story fights.
   wickregent: { name: "밀랍굴의 여왕 심지귀", lv: 19, hp: 6200, atk: 105, def: 17, spd: 35, xp: 1800, gold: [130, 230], aggro: 130, range: 24, cd: 1500, boss: true },
   knotwidow: { name: "등불매듭 뿌리거미", lv: 22, hp: 8500, atk: 110, def: 21, spd: 38, xp: 2300, gold: [155, 270], aggro: 132, range: 27, cd: 1450, boss: true },
@@ -418,14 +418,14 @@ const MOBS = {
   gravrose: { name: "묘지 장미", lv: 44, hp: 3000, atk: 128, def: 22, spd: 22, xp: 1780, gold: [108, 186], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
   // level design 2026-11-15: the inner kingdom freezing from the frost keep down fills the old gaps at Lv 177 and 189
   shroomboar_frost: { name: "서리 버섯등 멧돼지", sp: "shroomboar", tint: "frost", lv: 45, hp: 3700, atk: 130, def: 30, spd: 46, xp: 1980, gold: [110, 190], aggro: 92, range: 20, cd: 1100, charge: 118, pool: 26, cloud: 34 },
-  crowscare_frost: { name: "서리 까마귀 허수아비", sp: "crowscare", tint: "frost", lv: 48, hp: 3500, atk: 142, def: 24, spd: 30, xp: 3320, gold: [120, 192], aggro: 100, range: 78, cd: 1600, shot: true, fan: 100 },
+  crowscare_frost: { name: "서리 까마귀 허수아비", sp: "crowscare", tint: "frost", lv: 48, hp: 3500, atk: 142, def: 24, spd: 30, xp: 2450, gold: [120, 192], aggro: 100, range: 78, cd: 1600, shot: true, fan: 100 },
   rotstag: { name: "썩은 관 사슴왕", lv: 46, hp: 5200, atk: 136, def: 32, spd: 42, xp: 2200, gold: [120, 204], aggro: 92, range: 22, cd: 1300, charge: 124, slam: 42, fan: 100 },
-  bogcrown: { name: "검은 왕관 뿌리짐승", sp: "bogcrown", lv: 47, hp: 4250, atk: 138, def: 35, spd: 28, xp: 3100, gold: [118, 184], aggro: 82, range: 22, cd: 1600, slam: 42 },
-  hollowowl: { name: "눈먼 문지기 올빼미", sp: "hollowowl", lv: 49, hp: 4050, atk: 144, def: 30, spd: 34, xp: 3550, gold: [122, 195], aggro: 94, range: 68, cd: 1800, fly: true, fan: 105, breath: 70 },
-  rootwarden: { name: "얼어붙은 왕릉 파수꾼", sp: "rootwarden", lv: 50, hp: 5500, atk: 155, def: 42, spd: 39, xp: 3950, gold: [134, 210], aggro: 90, range: 22, cd: 1450, charge: 128, slam: 43 },
+  bogcrown: { name: "검은 왕관 뿌리짐승", sp: "bogcrown", lv: 47, hp: 4250, atk: 138, def: 35, spd: 28, xp: 2300, gold: [118, 184], aggro: 82, range: 22, cd: 1600, slam: 42 },
+  hollowowl: { name: "눈먼 문지기 올빼미", sp: "hollowowl", lv: 49, hp: 4050, atk: 144, def: 30, spd: 34, xp: 2600, gold: [122, 195], aggro: 94, range: 68, cd: 1800, fly: true, fan: 105, breath: 70 },
+  rootwarden: { name: "얼어붙은 왕릉 파수꾼", sp: "rootwarden", lv: 50, hp: 5500, atk: 155, def: 42, spd: 39, xp: 2900, gold: [134, 210], aggro: 90, range: 22, cd: 1450, charge: 128, slam: 43 },
   // 성에왕의 성채: the open approach, the paired galleries and the crown chamber
-  rimehare: { name: "서리창 쌍두토끼", lv: 50, hp: 4600, atk: 142, def: 30, spd: 52, xp: 3400, gold: [132, 204], aggro: 80, range: 18, cd: 1350, leap: 92 },
-  frostmoth: { name: "갈라진 유리날개", lv: 50, hp: 4500, atk: 149, def: 33, spd: 37, xp: 3900, gold: [142, 218], aggro: 92, range: 32, cd: 1900, fly: true, fan: 96, cloud: 30 },
+  rimehare: { name: "서리창 쌍두토끼", lv: 50, hp: 4600, atk: 142, def: 30, spd: 52, xp: 2450, gold: [132, 204], aggro: 80, range: 18, cd: 1350, leap: 92 },
+  frostmoth: { name: "갈라진 유리날개", lv: 50, hp: 4500, atk: 149, def: 33, spd: 37, xp: 2700, gold: [142, 218], aggro: 92, range: 32, cd: 1900, fly: true, fan: 96, cloud: 30 },
   crownstag: { name: "성에왕 유리뿔", lv: 50, hp: 520000, atk: 205, def: 50, spd: 34, xp: 74000, gold: [5200, 7600], aggro: 124, range: 30, cd: 1500, resp: 300000, boss: true, gear: 1, charge: 148, slam: 48, fan: 144, pool: 34, poolKind: 2 },
   // ── new species (public/mobart_e.js). Each took the row of the tinted stand-in it replaced, so the grounds weigh what
   //    they did; the stand-ins' rows stay above for old collections (the ones no longer met: catsplit_gold, toadbrood_poison,
