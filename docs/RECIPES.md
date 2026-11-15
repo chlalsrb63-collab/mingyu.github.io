@@ -87,6 +87,18 @@ Moved out of `AGENTS.md`; read the one recipe your task needs.
 - Music: a track in `audio.js TRACKS`; a map picks it with `bgm` in its cfg.
 - External file instead: the External assets section below + `Assets.play(ctx, "sfx.<key>")` (fall back to the synth).
 
+**HD-2D post-fx (그래픽 효과, `public/postfx.js`)**
+- `frame(...)` runs last in `scene2d.js render` (and after `roomLight` indoors); level 0 (끔) returns before touching canvas or DOM,
+  so 끔 is the old frame pixel for pixel. Setting: `#opt-gfx` in index.html, wired by `input.js` (`bindSetting`).
+- Never read the world canvas back (drawImage of it, getImageData): it finishes the frame on the spot (~8 ms here).
+  Canvas sources and ImageBitmaps drawn every frame cost 2–9 ms too; use cached gradients through a transform, fills, and
+  only `lighter`/`screen` blends (soft-light/multiply/overlay copy the frame: +2 ms each).
+- Depth of field = masked `backdrop-filter: blur()` divs inserted after the canvas (compositor, ~free); warmth/richness =
+  `filter: sepia saturate contrast` on the canvas, restyled only when region/hour changes. Haze stays in `scene_depth.js`.
+- Tune per level in `LV` (blur/band/ramp per layer, bloom, beams, grade), per region in `GRADE` (shadow tint, warmth, beam).
+- Check: `_scene.html?map=town&gfx=2` (preview pages default to 끔); perf = rAF gaps with vsync off, levels interleaved.
+  New light that should bloom: give its `skyLights` entry a `bloom` radius.
+
 # External assets (외부 에셋)
 
 - Library: repo-root `asset/` (Korean guide `asset/README.md`), never deployed. `incoming/` raw packs ·
