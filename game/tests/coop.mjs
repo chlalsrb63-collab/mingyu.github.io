@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { COOP, COOP_T, COOP_APT, coopCut, coopGrade, dayOf, mapOf, tilePx, NPC_MAP, lifeNeed, stats, COOP_DINER, COOP_FORGE };\n";
+  "\nexport const __t = { COOP, COOP_T, COOP_APT, coopCut, coopGrade, dayOf, mapOf, tilePx, NPC_MAP, lifeNeed, stats, COOP_DINER, COOP_FORGE, coopPay };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, J = X.COOP.apt, A = X.COOP_APT;
 const VERBOSE = process.argv.includes("-v");
@@ -740,6 +740,35 @@ for (const n of [1, 2]) {
   const bad = L.newChar("엉망", []); bad.coopDay = "x"; bad.coopDone = ["apt", "apt", "zzz"];
   L.addPlayer(S, "b", bad);
   assert.deepEqual([S.players.b.ch.coopDay, S.players.b.ch.coopDone], [0, ["apt"]]);
+  // an old sheet without the co-op counters starts them at 0
+  const oc = L.newChar("옛카운터", []);
+  for (const k of ["coop", "coopS_apt", "coopS_diner", "coopS_forge", "coopS_alch"]) delete oc.cnt[k];
+  L.addPlayer(S, "oc", oc);
+  assert.deepEqual(["coop", "coopS_apt", "coopS_alch"].map((k) => S.players.oc.ch.cnt[k]), [0, 0, 0]);
+}
+
+// ── S-grade rewards: the first S in a job gives its achievement and cosmetic once; 20 shifts give 「단골 알바생」
+{
+  const w = world(1), S = w.S, p = S.players.c0, ch = p.ch;
+  X.coopPay(S, p, { k: "diner" }, 3);
+  assert.equal(ch.cnt.coop, 1); assert.equal(ch.cnt.coopS_diner, 0); assert.ok(!ch.ach.includes("coopS_diner"), "A is not S");
+  X.coopPay(S, p, { k: "diner" }, 4);
+  assert.equal(ch.cnt.coopS_diner, 1); assert.ok(ch.ach.includes("coopS_diner"));
+  assert.ok(ch.cos.own.includes("back_tray"), "the S cosmetic");
+  X.coopPay(S, p, { k: "diner" }, 4);
+  assert.equal(ch.cos.own.filter((id) => id === "back_tray").length, 1, "only once");
+  assert.equal(ch.ach.filter((id) => id === "coopS_diner").length, 1);
+  for (const [k, id] of [["apt", "hat_kerchief"], ["forge", "face_forge"], ["alch", "back_cauldron"]]) {
+    X.coopPay(S, p, { k }, 4);
+    assert.ok(ch.ach.includes("coopS_" + k) && ch.cos.own.includes(id), k);
+  }
+  assert.ok(!ch.ach.includes("coop20"));
+  while (ch.cnt.coop < 20) X.coopPay(S, p, { k: "apt" }, 0);
+  assert.ok(ch.ach.includes("coop20"), "20 shifts");
+  // a saved sheet keeps them: migrate re-grants an achievement's cosmetic
+  const back = L.newChar("복원", []); back.ach = ["coopS_forge"];
+  L.addPlayer(S, "r", back);
+  assert.ok(S.players.r.ch.cos.own.includes("face_forge"));
 }
 
 console.log("coop: ok");

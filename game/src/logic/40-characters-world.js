@@ -255,7 +255,9 @@ const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest"
   // life skills L2: gathered, crafted (any station), delivered
   "gat", "craft", "deliver",
   // top of a boss's damage ranking (50 dmgBoard; added 2026-11-15, old sheets start at 0)
-  "mvp"];
+  "mvp",
+  // co-op part-time shifts finished (68-coop.js coopPay) and S grades per job (added 2026-11-15, old sheets start at 0)
+  "coop", "coopS_apt", "coopS_diner", "coopS_forge", "coopS_alch"];
 function runeword(g) {
   if (!g.sk || g.ru.length !== g.sk) return null;
   for (const rw of RUNEWORDS) {

@@ -465,6 +465,19 @@ const HAT = {
       if (!A.back) { const x = b.c0 + (A.side ? 3 : 2); b.px(x, T - 2, p.l); b.px(x, T - 3, "#ffffff"); b.px(x, T - 1, p.l); }
     },
   },
+  // a cleaner's polka-dot kerchief snug over the crown, knotted at the back with two short tails
+  kerchief: {
+    ears: "through",
+    draw(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1, dk = sh(p.c, 0.3);
+      b.cr(T, W + 2, 1, dk); b.cr(T - 1, W, 1, p.c); b.cr(T - 2, W - 2, 1, p.c); b.cr(T - 3, Math.max(2, W - 6), 1, p.c);
+      b.r(A.x1 - 2, T - 2, 2, 2, sh(p.c)); b.r(A.x0 + 2, T - 2, 2, 1, li(p.c, 0.3));
+      for (let x = A.x0 + 1; x <= A.x1 - 1; x += 3) b.px(x, T - 1, p.b);
+      b.px(b.c0, T - 2, p.b);
+      if (A.back) { b.cr(T, 2, 1, p.c); b.px(b.c0 - 2, T + 1, p.c); b.px(b.c0 + 1, T + 1, dk); b.px(b.c0 - 2, T + 2, dk); b.px(b.c0 + 1, T + 2, p.c); }
+      else if (A.side) { b.px(A.x0 - 1, T - 1, p.c); b.px(A.x0 - 2, T, p.c); b.px(A.x0 - 2, T + 1, dk); }
+    },
+  },
   // shards of the rift circling over the head and the ears, drifting with the walk
   shards: {
     ink: "#3b2a66",
@@ -770,6 +783,19 @@ const BACK = {
     else if (A.side) { b.r(8, y, 5, 3, p.c); b.r(8, y + 2, 5, 1, pal.s); b.r(8, y, 4, 1, p.b); b.grid(6, y - 4, head, pal); }
     else { b.grid(6, y - 4, head, pal); b.r(8, y, 4, 1, p.c); b.r(7, y, 3, 1, p.b); }
   },
+  // a waiter's silver tray balanced on the shoulder, a domed lid on it; it bobs with the step
+  tray: (b, A, p) => {
+    const y = A.bt - 6 - (sway(A) ? 1 : 0), x = A.front ? 18 : A.side ? 6 : 4;   // from behind it sits out past the widest heads
+    b.grid(x, y, ["...y...", "..lcc..", ".lcccs.", ".ccccs.", "bbbbbbb", ".BBBBB."], { c: p.c, l: li(p.c, 0.6), s: sh(p.c, 0.3), y: GOLD, b: p.b, B: sh(p.b, 0.35) }, A.back);
+  },
+  // a little cauldron worn like a pack, green brew bubbling over its rim
+  cauldron: (b, A, p) => {
+    const y = A.bt, last = A.foot - 1, dk = sh(p.c, 0.35), lt = li(p.c, 0.3), brew = p.b, foam = li(p.b, 0.5), up = A.f & 1;
+    const x0 = A.back ? 12 : A.side ? 7 : 10, w = A.back ? 8 : A.side ? 6 : 12;
+    b.r(x0, y, w, last - y + 1, p.c); b.r(x0, y, w, 1, lt); b.r(x0, last, w, 1, dk); b.r(x0 + w - 2, y + 1, 2, last - y - 1, dk);
+    b.r(x0 + 1, y - 1, w - 2, 1, brew); b.px(x0 + 2, y - 1, foam);
+    b.px(x0 + 2, y - 3 - up, foam); b.px(x0 + w - 3, y - 2 - (1 - up), brew); if (A.back) b.px(x0 + 4, y - 4 + up, foam);
+  },
 };
 /** A strap from one shoulder to the other hip, for what is slung on the back. */
 const sling = (b, A, p) => {
@@ -781,6 +807,7 @@ const sling = (b, A, p) => {
 const BACK_FRONT = {
   surf: sling, gourd: sling, lantern: sling, satchel: sling, hammer: sling, trophy: sling,
   basket: (b, A, p) => BACK_FRONT.pack(b, A, p), plush: (b, A, p) => BACK_FRONT.pack(b, A, p),
+  cauldron: (b, A, p) => BACK_FRONT.pack(b, A, { c: "#6a4434" }),
   cape: (b, A, p) => {
     const y = A.bt;
     if (A.side) { b.r(14, y, 4, 1, p.c); b.px(17, y, GOLD); return; }
@@ -836,6 +863,18 @@ const FACE = {
       for (const x of [A.lx - 1, A.rx - 1]) { b.r(x, e, 4, 2, lens); b.px(x + 1, e, li(lens, 0.75)); b.r(x, e - 1, 4, 1, fr); }
       b.r(A.lx + 3, e, A.rx - A.lx - 4, 1, fr);
       if (A.side) b.r(16 - A.halfAt(e), e, A.lx - 1 - (16 - A.halfAt(e)), 1, fr);
+    },
+  },
+  // a smith's welding goggles: round smoked lenses in brass rims, a thick strap round the head
+  forge: {
+    covers: true, back: true,
+    draw(b, A, p) {
+      const e = A.eye, st = rim(A, p.s);
+      if (A.back) { b.r(A.x0, e, A.x1 - A.x0 + 1, 1, st); return; }
+      const fr = rim(A, p.b);
+      for (const x of [A.lx - 1, A.rx - 1]) { b.r(x, e - 1, 4, 1, fr); b.r(x, e, 4, 2, p.c); b.r(x, e + 2, 4, 1, fr); b.px(x + 1, e, li(p.c, 0.6)); b.px(x + 2, e + 1, sh(p.c, 0.3)); }
+      b.r(A.lx + 3, e, A.rx - A.lx - 4, 1, fr);
+      if (A.side) b.r(16 - A.halfAt(e), e, A.lx - 1 - (16 - A.halfAt(e)), 1, st);
     },
   },
   patch: {
@@ -1049,6 +1088,11 @@ export const ART = {
   back_batcape: ["back", "batcape", { c: "#4a1a2e" }],   // 밤장막 crimson, bat-wing hem
   ws_bee: ["wskin", "bee", {}],
   ws_clubclaw: ["wskin", "clubclaw", {}],
+  // the co-op part-time jobs' S grades
+  hat_kerchief: ["hat", "kerchief", { c: "#5a9ae0", b: "#f6f4fa" }],
+  back_tray: ["back", "tray", { c: "#d8dce8", b: "#a8acb8" }],
+  face_forge: ["face", "forge", { c: "#3a4a40", b: "#c89a40", s: "#4a3a34" }],
+  back_cauldron: ["back", "cauldron", { c: "#4a4a58", b: "#7ae07a" }],
 };
 /** The cosmetic slots, in the order the wire sends them. */
 export const SLOTS = ["hat", "top", "back", "face", "wskin"];
