@@ -416,6 +416,9 @@ const MOBS = {
   crowscare: { name: "까마귀 허수아비", lv: 42, hp: 2600, atk: 120, def: 18, spd: 30, xp: 1620, gold: [100, 174], aggro: 100, range: 78, cd: 1600, shot: true, fan: 96 },
   shroomboar: { name: "버섯등 멧돼지", lv: 43, hp: 3300, atk: 124, def: 28, spd: 48, xp: 1700, gold: [104, 180], aggro: 92, range: 20, cd: 1100, charge: 116, pool: 26, cloud: 34 },
   gravrose: { name: "묘지 장미", lv: 44, hp: 3000, atk: 128, def: 22, spd: 22, xp: 1780, gold: [108, 186], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
+  // level design 2026-11-15: the inner kingdom freezing from the frost keep down fills the old gaps at Lv 177 and 189
+  shroomboar_frost: { name: "서리 버섯등 멧돼지", sp: "shroomboar", tint: "frost", lv: 45, hp: 3700, atk: 130, def: 30, spd: 46, xp: 1980, gold: [110, 190], aggro: 92, range: 20, cd: 1100, charge: 118, pool: 26, cloud: 34 },
+  crowscare_frost: { name: "서리 까마귀 허수아비", sp: "crowscare", tint: "frost", lv: 48, hp: 3500, atk: 142, def: 24, spd: 30, xp: 3320, gold: [120, 192], aggro: 100, range: 78, cd: 1600, shot: true, fan: 100 },
   rotstag: { name: "썩은 관 사슴왕", lv: 46, hp: 5200, atk: 136, def: 32, spd: 42, xp: 2200, gold: [120, 204], aggro: 92, range: 22, cd: 1300, charge: 124, slam: 42, fan: 100 },
   bogcrown: { name: "검은 왕관 뿌리짐승", sp: "bogcrown", lv: 47, hp: 4250, atk: 138, def: 35, spd: 28, xp: 3100, gold: [118, 184], aggro: 82, range: 22, cd: 1600, slam: 42 },
   hollowowl: { name: "눈먼 문지기 올빼미", sp: "hollowowl", lv: 49, hp: 4050, atk: 144, def: 30, spd: 34, xp: 3550, gold: [122, 195], aggro: 94, range: 68, cd: 1800, fly: true, fan: 105, breath: 70 },

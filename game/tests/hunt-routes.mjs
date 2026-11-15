@@ -63,4 +63,18 @@ assert.equal(keep.reach[boss.r[1] * keep.w + boss.r[0]], 1);
 assert.ok(keep.stones.length === 3 && fires.frostkeep.length > 0, "the keep has a camp and three standing stones");
 assert.ok(stats(keep, "rimehare").mean < stats(keep, "frostmoth").mean, "the ranged packs start farther in");
 assert.ok(maps.maple.portals.some((p) => p.to === keep.id), "the endgame threshold is in the old kingdom");
+
+// ── level design 2026-11-15 (docs/design/maps-review-2026-11-15.md): the top band has a monster at every level step,
+// the old kingdom's two frost kinds sit between their neighbours along the route, and every open ground has a camp keeper
+const mapleKinds = new Set(maps.maple.spawns.map((sp) => sp.k));
+for (let lv = 153; lv <= 197; lv += 4) assert.ok(Object.keys(D.mobs).some((k) => D.mobs[k].lv === lv && !D.mobs[k].boss && !D.mobs[k].chest && Object.values(maps).some((m) => !m.safe && m.spawns.some((sp) => sp.k === k))), `a ground holds a Lv.${lv} monster`);
+assert.ok(mapleKinds.has("shroomboar_frost") && mapleKinds.has("crowscare_frost"), "the frost kinds live in the old kingdom");
+increasing(maps.maple, ["gravrose", "shroomboar_frost", "bogcrown", "crowscare_frost", "rootwarden"]);
+assert.equal(maps.maple.stones.length, 5, "the old kingdom has five stones");
+for (const id of ["jungle", "coast", "dunesea", "cloudtemple", "mesa"]) {
+  const m = maps[id], n = m.npcs.find((o) => o.id === "camp_" + id);
+  assert.ok(n && m.reach[n.y * m.w + n.x], `${id}: a keeper stands at the camp`);
+  assert.ok(n.role === "shop" && n.goods.length && n.goods.every((g) => D.items[g] && D.items[g].price > 0), `${id}: the keeper sells field goods`);
+  assert.equal(D.npcMap[n.id], id, `${id}: the keeper is in the NPC registry`);
+}
 console.log("hunt routes: safe arrivals, adjacent bands, starter and late progression, capped arena");

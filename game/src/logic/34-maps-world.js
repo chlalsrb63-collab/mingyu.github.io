@@ -331,7 +331,7 @@ const GEN = {
       : b === "fern" ? (h < 0.04 ? "P" : h < 0.055 ? "B" : h < 0.065 ? "R" : null)
       : (n1 > 0.55 ? h < 0.24 : h < 0.09) ? "P" : h < 0.1 ? "B" : h < 0.107 ? "l" : h < 0.113 ? "u" : null),
   }) },
-  cave: { make: cavern, after: (m) => corridorGate(m, "drain", 10, 34), route: "abyss", band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
+  cave: { make: cavern, after: (m) => corridorGate(m, "drain", 10 / 132, 34 / 100), route: "abyss", band: [24, 32], stones: 3, theme: "cave", kinds: ["boss"], cfg: () => ({
     id: "cave", name: "수정 동굴", seed: 44093, w: 132, h: 100, r: 8, vaults: 10, tpm: 16, chest: "chest_cave",
     // maps-v2 비취 수정굴: the moss way (sites `r` apart, half-width `w`), shelves where the swell passes `shelf`
     // dungeon widening (`wide`): bigger caverns (`fill`), pillars only in the biggest halls, the moss way 9 wide
@@ -342,8 +342,8 @@ const GEN = {
     shaft: 0.6,
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
-  city: { make: metro, after: (m) => corridorGate(m, "ossuary", 129, 72), route: "sewer", band: [14, 21], stones: 3, theme: "city", cfg: () => ({
-    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 152, h: 102, gate: "east", gateY: 0.5, south: 0.3, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
+  city: { make: metro, after: (m) => corridorGate(m, "ossuary", 129 / 152, 72 / 102), route: "sewer", band: [14, 21], stones: 3, theme: "city", cfg: () => ({
+    id: "city", name: "네온 시티", seed: 55071, bgm: "city", w: 160, h: 120, gate: "east", gateY: 0.5, south: 0.3, stair: "sewer", wind: 0.5, loops: 0.14, tpm: 5.5,
     mobs: ["pigeonmass", "gutfrog_poison", "doghead", "squidrat", "catsplit", "fishwalker"], chest: "chest_city",
   }) },
   // the dungeons: each grown its own way, with its own inhabitants and its own furniture
@@ -358,7 +358,7 @@ const GEN = {
   }) },
   sewer: { make: sewers, route: "cave", band: [22, 27], stones: 3, cfg: () => ({
     // maps-v2 벽돌 회랑 (`halls`): flagstone plazas, channel tunnels with a walkway three wide, dry side ways
-    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 152, h: 102, r: 25, wind: 0.5, loops: 0.55, n: 3,
+    id: "sewer", name: "하수도", theme: "sewer", seed: 77029, w: 160, h: 120, r: 25, wind: 0.5, loops: 0.55, n: 3,
     // dungeon widening (`plaza`): plazas 15 × 11 to 21 × 15, walkways 5 wide on the critical path and 4 elsewhere
     halls: true, soft: "67x4n", light: "3", plaza: true, dead: 4,
     mobs: ["leechmaw", "ratking_bile", "gatorhalf", "crabskull", "eelknot"], guard: "gatorhalf", chest: "chest_sewer",
@@ -366,11 +366,14 @@ const GEN = {
   // 단풍 왕도: the forest that grew over a fallen kingdom, east of the whispering wood. Its royal road runs from the
   // wood to the chasm that swallowed the capital (a ledge down into the abyss, behind the mother). Crimson maple
   // groves on red litter, golden stands on gold, pine on the heights, clearings, and hollows where the blight fruits
-  maple: { make: wilds, route: "frostkeep", band: [40, 50], stones: 3, npcs: [["hermit", "은자 바스"]], after: (m) => { hermitAt(m); corridorGate(m, "ice", 137, 81); }, cfg: () => ({
-    id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 160, h: 112, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.12, merge: 0.22, cliff: 0.2, gap: 2,
-    ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 2, lakeR: 4, vaults: 10, ruins: 4, tpm: 15,
-    walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3]], exit: "east",
-    mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose", "rotstag", "bogcrown", "hollowowl", "rootwarden"], pondMob: null, chest: "chest_maple",
+  // level design 2026-11-15 (docs/design/maps-review-2026-11-15.md): the only ground for Lv 157–197 grew from 160 × 112 to
+  // 196 × 136 with five stones, more loops and pockets, the frost variants at Lv 177 and 189, and the frost keep's door
+  // on the south edge where the inner kingdom freezes (it was a hallway door fixed to one tile of the old layout)
+  maple: { make: wilds, route: "frostkeep", band: [40, 50], stones: 5, stoneNames: ["숲 어귀", "단풍 숲길", "금빛 숲", "무너진 성문", "얼음 왕릉 앞"], cfg: () => ({
+    id: "maple", name: "단풍 왕도", theme: "autumn", bgm: "autumn", seed: 99067, w: 196, h: 136, r: 9.4, padMin: 1, warp: 10, wind: 0.62, loops: 0.2, merge: 0.22, cliff: 0.2, gap: 2, stoneFr: [0.2, 0.4, 0.6, 0.8],
+    ground: ".", edge: "T", treeCh: "T", treeCh2: "P", road: "=", trail: "p", shore: "%", river: true, lakes: 3, lakeR: 4, vaults: 14, ruins: 6, tpm: 15,
+    walls: [["trees", 0.48], ["ruin", 0.2], ["rocks", 0.14], ["bramble", 0.18]], gates: [["west", "w", 0.56], ["east", "e", 0.3], ["ice", "s", 0.86]], exit: "east",
+    mobs: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose", "shroomboar_frost", "rotstag", "bogcrown", "crowscare_frost", "hollowowl", "rootwarden"], pondMob: null, chest: "chest_maple",
     campPiece: "cottage", lair: { piece: "chapel", guard: "rotstag", pack: "rotstag" },
     vaultKinds: ["graveyard", "watchtower", "kinggate", "leafmound", "scarefield", "treetunnel"],
     vaultMobs: { graveyard: "gravrose", scarefield: "crowscare", leafmound: "shroomboar", treetunnel: "stumpmaw" },
@@ -567,8 +570,20 @@ const GEN = {
     mobs: ["rimehare", "rimehare", "frostmoth"], boss: "crownstag",
   }) },
 };
-/** A paired threshold across an existing open hallway, with its arrival two tiles off the door. */
-function corridorGate(m, name, x, y) {
+/**
+ * A paired threshold across an existing open hallway, with its arrival two tiles off the door: at (x, y) as fractions
+ * of the map (so a ground can grow without its door landing in a wall), or the nearest open spot to it.
+ */
+function corridorGate(m, name, fx, fy) {
+  const free = (x, y) => x > 0 && y > 0 && x + 2 < m.w - 1 && y + 1 < m.h - 1 && [[x, y], [x, y + 1], [x + 2, y], [x + 2, y + 1]].every(([a, b]) => m.o[b][a] === " " && !SOLID_G.includes(m.g[b][a]));
+  const x0 = Math.round(fx * m.w), y0 = Math.round(fy * m.h);
+  let at = [x0, y0];
+  for (let r = 1; r <= 30 && !free(...at); r++) {
+    const ring = [];
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (Math.max(Math.abs(dx), Math.abs(dy)) === r && free(x0 + dx, y0 + dy)) ring.push([dx * dx + dy * dy, x0 + dx, y0 + dy]);
+    if (ring.length) at = ring.sort((a, b) => a[0] - b[0] || a[2] - b[2] || a[1] - b[1])[0].slice(1);
+  }
+  const [x, y] = at;
   m.gates[name] = { t: [[x, y], [x, y + 1]], a: [[x + 2, y], [x + 2, y + 1]] };
 }
 
@@ -600,13 +615,37 @@ function frostkeep(cfg) {
   m.widenDig = "c";
   return m;
 }
-/** A hermit keeps the maple cottage fire. */
-function hermitAt(maple) {
-  if (!maple.camp) return;
-  const [fx, fy] = FIRES.maple[0];
-  const at = [[2, 0], [-2, 0], [0, 2], [2, 1], [-2, 1], [1, 2], [-1, 2]].map(([dx, dy]) => [fx + dx, fy + dy]).find(([x, y]) => maple.o[y][x] === " " && !SOLID_G.includes(maple.g[y][x]));
-  if (at) maple.npcs.push({ id: "hermit", name: "은자 바스", role: "talk", x: at[0], y: at[1], look: [2, 4, 0, "#8a5a2a"],
-    say: "이 숲은 옛 단풍 왕국의 왕도였지. 심연이 열리던 밤 왕성은 통째로 가라앉고, 남은 것들은 보랏빛 병에 물들었다네. 무너진 예배당엔 왕관 쓴 사슴이 지키고 있으니, 불을 쬐고 가게." });
+/**
+ * Who keeps a ground's camp fire (genMap stands them beside it): the maple hermit, and since the level-design pass
+ * (docs/design/maps-review-2026-11-15.md) a field merchant on each of the grounds that had nobody at all. A keeper
+ * with `goods` sells them (goodsNear in 70-validate.js): the potions and travel things a long hunt runs out of.
+ */
+const FIELD_GOODS = ["hp_m", "hp_l", "mp_m", "mp_l", "recall", "camp", "feather"];
+const CAMP_KEEPERS = {
+  maple: { id: "hermit", name: "은자 바스", role: "talk", look: [2, 4, 0, "#8a5a2a"],
+    say: "이 숲은 옛 단풍 왕국의 왕도였지. 심연이 열리던 밤 왕성은 통째로 가라앉고, 남은 것들은 보랏빛 병에 물들었다네. 무너진 예배당엔 왕관 쓴 사슴이 지키고 있으니, 불을 쬐고 가게." },
+  jungle: { id: "camp_jungle", name: "길잡이 망고", role: "shop", look: [6, 2, 0, "#5a7a3a"], goods: FIELD_GOODS,
+    lines: ["네온 시티 사람들이 깐 길인데, 덩굴이 밤마다 한 뼘씩 되찾아 가.", "남쪽 끝에서 바다 냄새가 나면 산호 해안이야. 물약은 여기서 채워 가."] },
+  coast: { id: "camp_coast", name: "조개잡이 소라", role: "shop", look: [9, 1, 0, "#3a7a9a"], goods: FIELD_GOODS,
+    lines: ["밀물이 들면 여울길이 끊겨. 모래톱 위로만 건너.", "동쪽 언덕을 넘으면 오아시스, 서쪽 해변을 따라가면 모래바다야."] },
+  dunesea: { id: "camp_dunesea", name: "대상 몰이꾼 사막", role: "shop", look: [12, 2, 0, "#b8904a"], goods: FIELD_GOODS,
+    lines: ["마른 강바닥만 따라가면 오아시스 마을이 나와. 물은 없어도 길은 남았지.", "서쪽에 반쯤 묻힌 유적이 있어. 거길 지키는 놈은 혼자 상대하지 마."] },
+  cloudtemple: { id: "camp_cloudtemple", name: "순례자 무명", role: "shop", look: [11, 3, 0, "#8a8a9a"], goods: FIELD_GOODS,
+    lines: ["산문에서 꼭대기 법당까지 다섯 층이야. 구름 바다에 빠지면 처음부터 다시 올라야 하지.", "종루의 종이 울리면 조심하게. 꼭대기엔 안개 범이 산다네."] },
+  mesa: { id: "camp_mesa", name: "협곡 짐꾼 바위", role: "shop", look: [7, 0, 0, "#a8583a"], goods: FIELD_GOODS,
+    lines: ["협곡 바닥은 미로야. 물소리를 따라가면 폭포 웅덩이가 나오지.", "황금 지붕 궁 앞마당엔 큰 짐승이 버티고, 남동쪽 성벽 안엔 혈루 왕도마뱀이 산다네."] },
+};
+for (const [id, n] of Object.entries(CAMP_KEEPERS)) GEN[id].npcs = [[n.id, n.name]];
+/** Stand a ground's keeper beside its camp's fire, on open ground (no camp, no keeper). */
+function campKeeper(m, n) {
+  const c = m.camp;
+  if (!c) return;
+  const f = FIRES[m.id].find(([x, y]) => x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h) || FIRES[m.id][0];
+  const at = f && [[2, 0], [-2, 0], [0, 2], [2, 1], [-2, 1], [1, 2], [-1, 2]].map(([dx, dy]) => [f[0] + dx, f[1] + dy]).find(([x, y]) => m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]));
+  if (!at) return;
+  const out = { ...n, x: at[0], y: at[1] };
+  if (n.lines) out.say = n.lines[0];
+  m.npcs.push(out);
 }
 /** Every monster kind a generated map places, read from its settings alone (the map tests check it against the built map). */
 function genKinds(id) {
@@ -653,6 +692,7 @@ function genMap(id) {
   const cfg = g.cfg();
   const m = g.make(cfg);
   if (g.after) g.after(m);
+  if (CAMP_KEEPERS[id]) campKeeper(m, CAMP_KEEPERS[id]);
   if (g.wayOn) m.wayOn = g.wayOn;
   m.band = g.band.slice();
   gateDoors(m);
