@@ -163,6 +163,7 @@ in line with the 등불 steps, well under one day of 알바 (≈ 12–13 k G), s
   `hud.css`. **Art:** keepsake icons code-drawn 12×12 in the existing item-icon style (not hero art).
 
 ### P3 — Arcs A1 + A2: 버드나무와 네온 시티의 피난민 (data) · size M
+**Built 2026-11-15 — see [arcs.md](arcs.md)** (steps, branches, retired quests, new NPC lore; tests in `tests/sidequests.mjs`).
 Retires: `sq_willow_frogs`, `sq_merc_hares`, `sq_borum_frogs` (three duplicate kill quests). New 피난민 NPCs are data
 rows in `willow.json` / `npcs.json` with `npclife` entries (homes in the village's empty cots).
 
