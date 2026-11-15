@@ -354,7 +354,7 @@ const LIFE_MASTER = ["명인 낚시꾼", "명인 요리사", "명인 채집꾼",
 
 // ── fields the later phases fill (the sheet carries them from L1 on, so they never bump it again)
 /** The co-op part-time jobs (C1–C3), by the building they run in. */
-const COOP_KINDS = ["apt", "diner", "forge", "alch", "pipe"];
+const COOP_KINDS = ["apt", "diner", "forge", "alch", "pipe", "lib"];
 /** The 재료 주머니 holds materials (ingots too), staples and flasks, up to this many of each. */
 const POUCH_MAX = 999;
 
@@ -371,7 +371,7 @@ const COOP_T = {
   base: { gold: 200, xp: 0.20, life: 0.60, stone: 3, gearQ: 1 }, gradeK: [1, 1.05, 1.1, 1.2],
   rep: 5,
 };
-const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무", pipein: "급수 담당", pipeout: "배수 담당" };
+const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무", pipein: "급수 담당", pipeout: "배수 담당", desk: "접수 담당", sort: "분류 담당" };
 /**
  * 캉캉's big forge hall (forge v2 + ingots; owner, 2026-11-15: "전용 인스턴스 공간은 지금 크기보다 훨씬 크게"): 64×44 like 보글's
  * (the v1 room was 30×16). West: four ingot crates `]` (철 · 은 · 금 · 미스릴, north to south) and the rack `>`; two furnaces `<`
@@ -391,6 +391,45 @@ const COOP_HALL = (() => {
   for (let x = 16; x <= 23; x++) put("-", x, 36);
   for (let x = 34; x <= 41; x++) put("-", x, 36);
   return o.map((r) => r.join(""));
+})();
+/**
+ * 동동아파트 (apt v3; owner, 2026-11-15: "전용 인스턴스 공간은 지금 크기보다 훨씬 크게"): 64×37 (was 45×19), built in code like HALL.
+ * Two wings: 윗동 (ten flats north and south of corridor A, y 8–10) and 아랫동 (eight flats round corridor B, y 26–28), joined by
+ * the stairwell (x 27–30, y 11–25) where the tool rack stands; the bins empty at the dumpster in the back yard (뒷마당, x 53–62,
+ * y 19–35) through the back door at corridor B's east end, the far end from 윗동. `rows`: [y0, y1, door row, flats]; the
+ * middle rows give their third column to the stairwell (a flat x 32–38 beside it).
+ */
+const APT = { W: 64, H: 37, cols: [[1, 12], [14, 25], [27, 38], [40, 51], [53, 62]], stair: [27, 30, 11, 25], yard: [53, 19, 62, 35],
+  rows: [[1, 6, 7, 5], [12, 17, 11, 5], [19, 24, 25, 4], [30, 35, 29, 4]], dump: [60, 27], rack: [29, 12] };
+const APT_MAP = (() => {
+  const { W, H } = APT, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
+  const g = Array.from({ length: H }, () => "f".repeat(W).split("")), rooms = [];
+  const put = (ch, x, y) => { o[y][x] = ch; };
+  const [sx0, sx1, sy0, sy1] = APT.stair, stair = (x, y) => x >= sx0 && x <= sx1 && y >= sy0 && y <= sy1;
+  for (let x = 1; x < W - 1; x++) if (!stair(x, 18)) put("b", x, 18);
+  APT.rows.forEach(([y0, y1, dr, n], ri) => {
+    const east = n === 5 ? W - 2 : APT.yard[0] - 2;
+    for (let x = 1; x <= east; x++) if (!stair(x, dr)) put("m", x, dr);
+    const cols = APT.cols.slice(0, n).map((c, i) => (i === 2 && (ri === 1 || ri === 2) ? [sx1 + 2, c[1]] : c));
+    cols.forEach(([x0, x1], i) => {
+      rooms.push([x0, y0, x1, y1]);
+      const cx = (x0 + x1) >> 1, back = dr > y1 ? y0 : y1;
+      for (let y = y0; y <= y1; y++) { if (x1 + 1 < W - 1) put("b", x1 + 1, y); if (x0 - 1 > 0) put("b", x0 - 1, y); }
+      put(" ", cx, dr); put(" ", cx + 1, dr);
+      for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) g[y][x] = "uqlu"[(ri + i) % 4];
+      put("p", x0 + 1, back); put("p", x0 + 2, back); put("r", x1 - 1, back); put("o", cx, (y0 + y1) >> 1);
+      if (x1 - x0 > 8) put("s", cx + 2, (y0 + y1) >> 1);
+    });
+  });
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) if (stair(x, y)) { o[y][x] = " "; g[y][x] = "y"; }
+  for (const [y0, y1] of [[8, 10], [26, 28]]) for (let y = y0; y <= y1; y++) for (let x = 1; x < W - 1; x++) if (o[y][x] === " ") g[y][x] = "h";
+  // the back yard: flagstones, the dumpster `]` (station dump), barrels and plants; the back door at corridor B's east end
+  const [yx0, yy0, yx1, yy1] = APT.yard;
+  for (let y = yy0; y <= yy1; y++) { put("b", yx0 - 1, y); for (let x = yx0; x <= yx1; x++) { o[y][x] = " "; g[y][x] = "x"; } }
+  for (let y = 26; y <= 28; y++) { put(" ", yx0 - 1, y); g[y][yx0 - 1] = "e"; }
+  put("]", ...APT.dump); put("w", 62, 20); put("w", 62, 21); put("w", 62, 34); put("g", 53, 19); put("g", 53, 35); put("]", 61, 23);
+  put(">", ...APT.rack); put("g", 1, 8); put("g", 62, 8); put("g", 1, 28);
+  return { ground: g.map((r) => r.join("")), objects: o.map((r) => r.join("")), rooms };
 })();
 /**
  * 쥬쥬식당's hall (diner v2; owner, 2026-11-15: "훨씬 크게 … 손님이 계속 몰려오게"): 64×36 (was 44×24), built in code. The kitchen
@@ -418,33 +457,16 @@ const DIN_MAP = (() => {
 const COOP = {
   apt: {
     name: "동동아파트 청소", npc: "dongdong", lobby: "dongdong_apt", mins: 5, tools: ["broom", "bin"], combo: 20000, skill: "deliver",
-    // cut-offs: par · parN[n] · cuts, tuned on quick walking bots (an act every 300 ms; owner, 2026-11-15: hard, piles flood in): ≈ 2,345 · 4,993 ·
-    // 7,300, just over S; realistic ones (every 400 ms) ≈ 1,809 · 4,004 · 6,711, A (tests/coop.mjs)
-    par: 1000, parN: { 2: 2.49, 3: 5.3, 4: 7.9 },
-    hint: "빗자루로 쓸고, 쓰레기통으로 모아 소각로(서쪽 끝)·재활용함(동쪽 끝)에 버리세요.",
-    // stations (tiles; solid furniture, used from a neighbouring tile): 소각로 `<` at the corridor's west end, 재활용함 `w`
-    // at its east end (44 tiles apart, so the bins really walk), the tool rack `>` in the middle
-    st: { burn: [1, 9], recycle: [43, 9], rack: [22, 9] },
-    start: [[21, 8], [23, 8], [21, 10], [23, 10]],
-    // eight flats (spawn rooms, tile rects): four north of the corridor (y 8–10), four south, a 2-tile door each
-    rooms: [[1, 1, 10, 6], [12, 1, 21, 6], [23, 1, 32, 6], [34, 1, 43, 6], [1, 12, 10, 17], [12, 12, 21, 17], [23, 12, 32, 17], [34, 12, 43, 17]],
-    tpl: {
-      name: "동동아파트 (근무 중)", theme: "interior", style: "lobby", bgm: "clean", safe: true, w: 45, h: 19, entry: [22, 8],
-      ground: ["fffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff",
-        "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff",
-        "fffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffff", "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf",
-        "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf", "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf", "fffffffffffffffffffffffffffffffffffffffffffff",
-        "fffffffffffffffffffffffffffffffffffffffffffff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff",
-        "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "fffffffffffffffffffffffffffffffffffffffffffff",
-        "fffffffffffffffffffffffffffffffffffffffffffff"],
-      objects: ["===+==~===+==~===+==~===+==~===+==~===+==~===", "=pp      r b r      ppbpp      r b r      pp_", "=          b          b          b          _",
-        "=    o     b     o    b    o     b     o    _", "=          b          b          b          _", "=      s   b   s      b      s   b   s      _",
-        "=         gbg         b         gbg         _", "=mmmm  mmmmmmmmm  mmmmmmmmm  mmmmmmmmm  mmmm_", "=                                           _",
-        "=<                    >                    w_", "=                                           _", "=mmmm  mmmmmmmmm  mmmmmmmmm  mmmmmmmmm  mmmm_",
-        "=g         b         gbg         b         g_", "=   s      b      s   b   s      b      s   _", "=          b          b          b          _",
-        "=     o    b    o     b     o    b    o     _", "=          b          b          b          _", "= r      ppbpp      r b r      ppbpp      r _",
-        "_____________________________________________"],
-    },
+    // the score is the 청소율 in ‰ (1000 = spotless), so the cut-offs are shares of it: par 1000 · parN[n] · cuts, tuned on walking
+    // bots (tests/coop.mjs, owner 2026-11-15: hard, mess keeps coming): quick bots (an act every 300 ms) 604 · 650 · 766 ‰, just over S
+    // (581 · 625 · 739); realistic ones (every 400 ms, walking at 90 %) 448 · 473 · 520, B
+    par: 1000, parN: { 2: 0.66, 3: 0.71, 4: 0.84 },
+    hint: "빗자루로 먼지를 쓸어 모으면, 쓰레기통 담당이 주워 담아 뒷마당(아랫동 동쪽 끝 뒷문)의 버리는 곳에 버려요. 청소율을 최대한 올리세요!",
+    // stations (tiles; solid furniture, used from a neighbouring tile): the dumpster in the back yard, the tool rack in the stairwell
+    st: { dump: APT.dump, rack: APT.rack },
+    start: [[28, 14], [29, 14], [28, 16], [29, 16]],
+    rooms: APT_MAP.rooms,
+    tpl: { name: "동동아파트 (근무 중)", theme: "interior", style: "lobby", bgm: "clean", safe: true, w: APT.W, h: APT.H, entry: [28, 15], ground: APT_MAP.ground, objects: APT_MAP.objects },
   },
   diner: {
     name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan", "tray"], combo: 25000, skill: "cook",
@@ -624,11 +646,76 @@ const COOP_DINER = {
   burnMs: 8000, burnPen: 5, angryPen: 15, eatMs: 6000, washN: 3, washPts: 5, trayCap: 2, passCap: 6, serveK: 0.5, cookK: 0.5,
 };
 /**
- * 동동아파트 청소 (C.4, without pests and dust in v1): piles, bundles, the two-person sofa, the mess meter. By the party
- * size n at the start: an opening spread of `open[0] + open[1]·n` piles over the flats, a new pile every `pileMs[n]`,
- * at most `pileCap[0] + pileCap[1]·n` piles at once, the mess cap `messCap[0] + messCap[1]·n`.
+ * 동동아파트 청소 v3 (owner, 2026-11-15: "한명은 빗자루, 다른 한명은 쓰레기통 … 아파트 공간을 최대한 많이 치워야함 (%로 표시) …
+ * 쓰레기통은 일정량 채우면 꽉 차므로, 중간중간 버리는장소로 가서 비워줘야함"). Every floor tile of the flats, corridors and stairwell
+ * starts dirty: dust (1) below `dirt[0]`, litter (2) below `dirt[1]`, else clean. A broom act takes `sweepN` units off the 3×3
+ * round its worker into the nearest pile within `pileR` px with room (up to `pileMax` units), else a new one; a bin holds `binCap` 칸 of
+ * `binUnit` units each (a pile too big for the room left is taken in part) and only emptying it at the dumpster
+ * takes the dirt away. 청소율 = 1 − (dirt + piles + bins) / the opening dirt. New mess by the party size n: `dustN` tiles every
+ * `dustMs[n]` (dust drifting) and a resident's `litterN`-tile mess every `litterMs[n]` (×feverK faster in fever); the sofa
+ * (`sofaUnits`, two lift it `sofaHp` times) breaks into `sofaPiles` piles. The bin holder gets `holdK` of a load's credit.
  */
 const COOP_APT = {
-  open: [3, 3], pileMs: { 2: 3800, 3: 2800, 4: 2200 }, pileHp: 3, pileCap: [8, 6], spreadMs: 40000, binCap: 5, bundlePts: 10, recycleK: 1.5, holdK: 0.6,
-  sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaBundles: 3, complainMs: 10000, complainPen: 20, messCap: [16, 8],
+  dirt: [0.62, 0.86], sweepN: 5, pileMax: 40, pileR: 48, binCap: 10, binUnit: 40, holdK: 0.6,
+  dustMs: { 2: 6000, 3: 4500, 4: 3500 }, dustN: 2, litterMs: { 2: 15000, 3: 11000, 4: 8500 }, litterN: 6, feverK: 1.5,
+  sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaUnits: 12, sofaPiles: 3,
+};
+/**
+ * 올빼미 도서관 책 분류 (owner, 2026-11-15: "사서가 모두 휴가를 떠나서 … 끊임없이 밀려 들어오는 반납 도서를 각 도서가 꽂혀야할 장르의
+ * 책장으로 가져가서 꽂아주세요 … 책 반납을 하러 온 NPC를 맞이하고, 책 반납을 받아서 반납대 위로 올려 두는 역할을 하는 플레이어도 필수!").
+ * Its own 64×44 hall, built in code like HALL: the 반납대 (ten counter tiles `m`, x 27–36, y 32; books lie on its slots x 28–35)
+ * faces the returners' queue (x 31 from y 33 south towards their door at y 42); the rack `>` (21, 31) west of it; eight genre
+ * shelves of six bookcases `b` in two rows of four (y 10 and y 22), shelf i = genre i, used from either side; reading tables between.
+ */
+const LIBH = { W: 64, H: 44, desk: [27, 36, 32], slots: [28, 32], queue: [31, 33], door: [31, 42], rack: [21, 31],
+  shelves: [10, 22].flatMap((y) => [5, 18, 40, 53].map((x) => [x, y])) };
+const COOP_LIB_MAP = (() => {
+  const { W, H } = LIBH, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
+  const g = Array.from({ length: H }, () => "l".repeat(W).split(""));
+  const put = (ch, x, y) => { o[y][x] = ch; };
+  for (let x = LIBH.desk[0]; x <= LIBH.desk[1]; x++) put("m", x, LIBH.desk[2]);
+  for (const [x0, y] of LIBH.shelves) for (let x = x0; x < x0 + 6; x++) { put("b", x, y); g[y + 1][x] = "y"; g[y - 1][x] = "y"; }
+  // the returners' carpet from the door to the desk, the reading tables between the shelf rows, lamps and plants
+  for (let y = LIBH.queue[1]; y < H - 1; y++) for (let x = 30; x <= 32; x++) g[y][x] = "y";
+  for (const [x, y] of [[29, 14], [35, 14], [29, 18], [35, 18], [12, 16], [47, 16]]) { put("k", x - 1, y); put("o", x, y); put("k", x + 1, y); }
+  put(">", ...LIBH.rack);
+  for (const [x, y] of [[1, 1], [W - 2, 1], [1, H - 2], [W - 2, H - 2], [26, 41], [36, 41], [14, 28], [49, 28]]) put("g", x, y);
+  for (let x = 4; x <= 12; x++) put("-", x, 36);
+  for (let x = 51; x <= 59; x++) put("-", x, 36);
+  return { ground: g.map((r) => r.join("")), objects: o.map((r) => r.join("")) };
+})();
+COOP.lib = {
+  name: "올빼미 도서관 책 분류", npc: "lib_borum", lobby: "owl_library", mins: 5, tools: ["desk", "sort"], combo: 20000, skill: "deliver",
+  // cut-offs tuned on walking bots (tests/coop.mjs, hard): quick and accurate (an act every 300 ms) 1,181 · 2,338 · 3,145, just over
+  // S (1,126 · 2,226 · 2,992); realistic (every 400 ms, walking at 90 %, 8 % wrong shelves) 817 · 1,508 · 2,187, B
+  par: 1000, parN: { 2: 1.28, 3: 2.53, 4: 3.4 },
+  hint: "접수 담당은 반납대에서 줄 선 손님의 책을 받아 반납대에 올리고, 분류 담당은 반납대의 책을 (한 번에 3권까지) 들고 같은 장르의 책장에 꽂으세요! 손님이 줄지어 와요.",
+  // stations (tiles): the 반납대's ten tiles, the 48 shelf tiles (shelf i = tiles 6i … 6i+5), the rack
+  st: { desk: Array.from({ length: 10 }, (_, i) => [LIBH.desk[0] + i, LIBH.desk[2]]), shelf: LIBH.shelves.flatMap(([x, y]) => [0, 1, 2, 3, 4, 5].map((i) => [x + i, y])), rack: LIBH.rack, door: LIBH.door },
+  start: [[29, 30], [33, 30], [27, 29], [35, 29]],
+  tpl: { name: "올빼미 도서관 · 대형 서고 (작업 중)", theme: "interior", style: "library", bgm: "cafe", safe: true, w: LIBH.W, h: LIBH.H, entry: [31, 30], ground: COOP_LIB_MAP.ground, objects: COOP_LIB_MAP.objects },
+};
+/**
+ * The library's numbers. Returners arrive every `arriveMs[n]` (÷feverK in fever: the crowd), each with `books` [min, max] books, and
+ * queue up to `queueCap[n]`; one not greeted to the end within `patience` leaves angry (−angryPen, combo 0, its books go home). The
+ * 접수 takes one book a press onto the 반납대 (`deskCap` slots; full → refused, so slow sorting blocks intake): +intakePts, and
+ * +servedPts when a returner's last book is in. The 분류 carries up to `carry` books; at a shelf a press shelves a held book of that
+ * genre (+shelvePts, sortK to the sorter, the rest to the one who took it in); with none, the first held book goes in wrong
+ * (−wrongPen, combo 0) and marks the shelf until someone pulls it back out. Titles are original (10 a genre).
+ */
+const COOP_LIB = {
+  genres: ["추리소설", "SF소설", "과학소설", "로맨스소설", "웹소설", "판타지소설", "공포소설", "개그소설"],
+  cols: ["#4a6ad0", "#40c8d8", "#5ab050", "#f070a8", "#f0a040", "#a070e0", "#b83838", "#f0d840"],
+  titles: [
+    ["안개 낀 등대의 세 번째 열쇠", "사라진 찻잔의 행방", "새벽 기차의 목격자", "붉은 우체통 사건", "탐정 올리의 마지막 수첩", "거꾸로 걸린 초상화", "열세 번째 손님", "비 오는 날의 알리바이", "잠긴 온실의 비밀", "고양이만 아는 범인"],
+    ["목성 정거장 7호", "은하 택배 기사의 하루", "기억을 파는 로봇", "별빛 엔진 수리공", "화성 감자 농장 일지", "시간 우체국", "궤도 위의 도서관", "안드로이드의 첫 휴가", "달 뒷면의 신호", "우주 고래를 따라서"],
+    ["꿀벌 박사의 실험 노트", "번개를 병에 담은 소녀", "화석 발굴단의 여름", "현미경 속 작은 왕국", "빙하 연구소의 겨울", "공룡 뼈를 맞춰라", "무지개를 쪼갠 프리즘", "바닷속 화산 탐사기", "씨앗 은행의 수호자", "별자리 지도를 그린 소년"],
+    ["벚꽃 정류장에서 만나요", "편지는 일요일에 도착한다", "우산을 나눠 쓴 오후", "빵집 2층의 그 사람", "첫눈 오는 날의 약속", "여름밤 불꽃 아래서", "서툰 고백의 계절", "단골손님의 비밀 메모", "노을빛 자전거", "두 번째 봄의 너"],
+    ["회귀한 청소부는 만렙이다", "알고 보니 마왕의 집사", "던전 앞 편의점 사장님", "레벨 1 농부의 성공 일지", "망한 길드 살리는 법", "악역 영애는 낮잠이 좋아", "100층 탑의 막내 사서", "환생했더니 고양이 기사", "무한 회귀 알바생", "별 다섯 개 요리사의 귀환"],
+    ["용의 알을 품은 마을", "은빛 숲의 마법사", "구름 섬의 마지막 기사", "잃어버린 왕관의 노래", "여우 마법학교 입학기", "별을 삼킨 드래곤", "바람의 지도", "마법 빗자루 수리점", "검은 탑의 견습생", "요정 왕국 우편배달부"],
+    ["자정의 엘리베이터", "웃지 않는 인형", "지하 3층 보일러실", "창밖의 발자국", "불 꺼진 학교의 종소리", "거울 속 두 번째 나", "안개 숲의 노래", "열리지 않는 서랍", "목 없는 허수아비", "끝나지 않는 복도"],
+    ["방귀 뀌는 용", "우리 집 고양이는 사장님", "엉망진창 요리 대회", "양말 한 짝의 대모험", "대머리 마법사의 머리카락 찾기", "펭귄 택시 기사", "재채기 왕국", "냉장고 속 작은 파티", "엉덩이 춤 경연 대회", "게으른 닭의 하루"],
+  ],
+  deskCap: 8, carry: 3, books: [1, 3], arriveMs: { 2: 7000, 3: 4200, 4: 3200 }, feverK: 2, queueCap: { 2: 6, 3: 7, 4: 8 }, patience: 60000,
+  intakePts: 2, servedPts: 5, shelvePts: 10, sortK: 0.7, angryPen: 15, wrongPen: 10,
 };

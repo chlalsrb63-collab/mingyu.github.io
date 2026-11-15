@@ -4,7 +4,7 @@
 // the sofa, what a bin holds — so nothing can be duped or traded out. Numbers: COOP, COOP_T, COOP_APT (12-life-tables.js).
 //
 // dim.coop = { k, state: brief|run|fever|end, t0, runAt, endAt, doneAt, n (party size at the start), box (seeded rnd),
-//   score, combo, comboAt, ents: [{ id, t: 0 pile · 1 bundle · 2 sofa, x, y, hp, due, cred: {pid: n}, lift }], nid, ver,
+//   score, combo, comboAt, ents: [{ id, t: 0 pile (hp = dirt units) · 2 sofa, x, y, hp, cred: {pid: n}, lift }], nid, ver,
 //   pl: { pid: { name, tool, hold: [cred…], pts, idleAt, x, y, actAt, hintAt, ok } }, home: [map, x, y], next, compAt }
 
 const COOP_STATE = ["brief", "run", "fever", "end"];
@@ -160,14 +160,14 @@ function coopTick(S, now) {
   }
 }
 
-// ── 동동아파트 청소 (C.4)
+// ── 동동아파트 청소 v3 (C.4 + the owner's 청소율, H7): c.dirt (a level 0–2 per tile), c.cells (the floor that can get dirty: not
+// the back yard), c.out (dirt units left anywhere: the floor, piles, bins, the sofa), c.u0 (the opening dirt); piles are ents
+// t 0 with hp = their units; a bin holds [{ amt, cred }]. c.dlog/c.dbase: every dirt change since the shift began (the wire's deltas).
 
 const aptStation = (c, p, key) => { const [x, y] = tilePx(COOP[c.k].st[key]); return dist(p.x, p.y, x, y) <= COOP_T.station + 8; };
-const aptMess = (c) => c.ents.reduce((s, e) => s + (e.t === 0 ? 2 : e.t === 1 ? 1 : 3), 0);
-const aptCap = (c) => COOP_APT.messCap[0] + COOP_APT.messCap[1] * c.n;
 const aptFree = (m, c, tx, ty) => tx >= 0 && ty >= 0 && tx < m.w && ty < m.h && m.reach[ty * m.w + tx] && !c.ents.some((e) => Math.abs(e.x - (tx * T + 8)) < 8 && Math.abs(e.y - (ty * T + 10)) < 8);
 function aptAdd(c, t, tx, ty, hp, cred = {}) {
-  const e = { id: c.nid++, t, x: tx * T + 8, y: ty * T + 10, hp, due: 0, cred, lift: null };
+  const e = { id: c.nid++, t, x: tx * T + 8, y: ty * T + 10, hp, cred, lift: null };
   c.ents.push(e); c.ver++;
   return e;
 }
@@ -178,18 +178,37 @@ function aptNear(m, c, tx, ty, r) {
   }
   return null;
 }
-/** A new mess in the flat with the least mess (seeded tie-break), on a free tile. */
+/** A bin's load in dirt units, and in 칸 (binUnit units each; the HUD's "쓰레기통 n/10"). */
+const aptLoad = (q) => q.hold.reduce((s, h) => s + h.amt, 0);
+const aptFill = (q) => Math.ceil(aptLoad(q) / COOP_APT.binUnit);
+/** The 청소율 in ‰: how much of the opening dirt is gone (new mess pushes it back down, never below 0). */
+const aptPct = (c) => Math.max(0, Math.round(1000 * (1 - c.out / c.u0)));
+/** Tile i's dirt becomes lv (logged for the wire). */
+function aptDirt(c, i, lv) {
+  c.dirt[i] = lv; c.dlog.push(i * 4 + lv);
+  if (c.dlog.length > 8000) { c.dlog = c.dlog.slice(4000); c.dbase += 4000; }
+}
+/** One unit of new mess on tile i (up to litter). */
+function aptSoil(c, i) { if (c.dirt[i] < 2) { aptDirt(c, i, c.dirt[i] + 1); c.out++; } }
+/** A resident drops litter: `litterN` units round a seeded spot in a seeded flat. */
+function aptLitter(S, dim, c) {
+  const J = COOP[c.k], m = dim.map, [x0, y0, x1, y1] = J.rooms[ri(c.box, 0, J.rooms.length - 1)], cx = ri(c.box, x0, x1), cy = ri(c.box, y0, y1);
+  let n = 0;
+  for (let k = 0; k < COOP_APT.litterN * 4 && n < COOP_APT.litterN; k++) {
+    const i = (cy + ri(c.box, -2, 2)) * m.w + cx + ri(c.box, -2, 2);
+    if (c.cell[i] && c.dirt[i] < 2) { aptSoil(c, i); n++; }
+  }
+  if (n) coopEv(S, dim, 18, cx * T + 8, cy * T + 10, n);
+}
+/** The sofa in the flat with the fewest piles (seeded tie-break), on a free tile. */
 function aptSpawn(S, dim, c, t) {
-  const J = COOP[c.k], m = dim.map, now = S.now;
+  const J = COOP[c.k], m = dim.map;
   const load = J.rooms.map(([x0, y0, x1, y1], i) => [c.ents.filter((e) => e.x >= x0 * T && e.x < (x1 + 1) * T && e.y >= y0 * T && e.y < (y1 + 1) * T).length + rnd(c.box) * 0.5, i]);
   load.sort((a, b) => a[0] - b[0]);
   const [x0, y0, x1, y1] = J.rooms[load[0][1]];
   for (let i = 0; i < 30; i++) {
     const tx = ri(c.box, x0, x1), ty = ri(c.box, y0, y1);
-    if (!aptFree(m, c, tx, ty)) continue;
-    const e = aptAdd(c, t, tx, ty, t === 2 ? COOP_APT.sofaHp : COOP_APT.pileHp);
-    e.due = now + COOP_APT.spreadMs;
-    return e;
+    if (aptFree(m, c, tx, ty)) return aptAdd(c, t, tx, ty, COOP_APT.sofaHp);
   }
   return null;
 }
@@ -282,46 +301,45 @@ function forgeCred(F, h) {
 const COOP_JOB = {
   apt: {
     init(S, dim, c) {
-      const A = COOP_APT;
-      c.next = { pile: c.runAt + A.pileMs[c.n], sofa: c.runAt + A.sofaMs / COOP_T.parN[c.n] };
-      // the opening mess, more with each worker; staggered so it doesn't all spread at once
-      for (let i = 0; i < A.open[0] + A.open[1] * c.n; i++) { const e = aptSpawn(S, dim, c, 0); if (e) e.due = c.runAt + A.spreadMs + i * 1500; }
+      const A = COOP_APT, m = dim.map;
+      c.dirt = new Uint8Array(m.w * m.h); c.cell = new Uint8Array(m.w * m.h); c.cells = []; c.dlog = []; c.dbase = 0; c.out = 0;
+      const [yx, yy] = APT.yard, [rx, ry] = tilePx(COOP[c.k].st.rack);
+      // the opening mess: every floor tile but the back yard's and the rack's corner (a swap there wins over a sweep), seeded
+      for (let i = 0; i < m.w * m.h; i++) {
+        if (!m.reach[i] || (i % m.w >= yx && Math.floor(i / m.w) >= yy) || dist((i % m.w) * T + 8, Math.floor(i / m.w) * T + 8, rx, ry) <= COOP_T.station + 8) continue;
+        c.cell[i] = 1; c.cells.push(i);
+        const r = rnd(c.box), lv = r < A.dirt[0] ? 1 : r < A.dirt[1] ? 2 : 0;
+        c.dirt[i] = lv; c.out += lv;
+      }
+      c.u0 = c.out;
+      c.next = { dust: c.runAt + A.dustMs[c.n], litter: c.runAt + A.litterMs[c.n], sofa: c.runAt + A.sofaMs / COOP_T.parN[c.n] };
     },
     tick(S, dim, c, now) {
-      const A = COOP_APT, k = COOP_T.parN[c.n], piles = c.ents.filter((e) => e.t === 0), pileCap = A.pileCap[0] + A.pileCap[1] * c.n;
-      if (now >= c.next.pile) { c.next.pile = now + A.pileMs[c.n]; if (piles.length < pileCap) aptSpawn(S, dim, c, 0); }
-      // the sofa needs two people: it only comes to a shift that started with two or more
-      if (c.n >= 2 && now >= c.next.sofa) { c.next.sofa = now + A.sofaMs / k; if (!c.ents.some((e) => e.t === 2)) { const e = aptSpawn(S, dim, c, 2); if (e) coopToastAll(S, dim, "낡은 소파가 나왔어요! 두 명이 함께 들어야 해요."); } }
-      // a pile left alone spreads
-      for (const e of piles) {
-        if (now < e.due) continue;
-        e.due = now + A.spreadMs;
-        if (c.ents.filter((q) => q.t === 0).length >= pileCap) continue;
-        const at = aptNear(dim.map, c, Math.floor(e.x / T), Math.floor(e.y / T), 2);
-        if (at) { const n = aptAdd(c, 0, at[0], at[1], A.pileHp); n.due = now + A.spreadMs; coopEv(S, dim, 18, n.x, n.y); }
+      const A = COOP_APT, k = c.state === "fever" ? A.feverK : 1;
+      // the mess keeps coming: dust drifts onto the floor, residents drop litter (faster with more hands, faster in fever)
+      if (now >= c.next.dust) { c.next.dust = now + A.dustMs[c.n] / k; for (let j = 0; j < A.dustN; j++) aptSoil(c, c.cells[ri(c.box, 0, c.cells.length - 1)]); }
+      if (now >= c.next.litter) { c.next.litter = now + A.litterMs[c.n] / k; aptLitter(S, dim, c); }
+      // the sofa needs two people
+      if (now >= c.next.sofa) {
+        c.next.sofa = now + A.sofaMs / COOP_T.parN[c.n];
+        if (!c.ents.some((e) => e.t === 2) && aptSpawn(S, dim, c, 2)) { c.out += A.sofaUnits; coopToastAll(S, dim, "낡은 소파가 버려졌어요! 두 명이 함께 들어야 해요."); }
       }
-      // the mess meter: over the cap, a complaint every 10 s
-      if (aptMess(c) > aptCap(c)) {
-        if (!c.compAt) c.compAt = now + A.complainMs;
-        else if (now >= c.compAt) { c.compAt = now + A.complainMs; coopFail(c, A.complainPen); coopEv(S, dim, 15, 0, 0); coopToastAll(S, dim, `[민원] 동동: 너무 지저분해요! 점수 -${A.complainPen}`); }
-      } else c.compAt = 0;
+      c.score = aptPct(c);
     },
     /** One context action: true when something happened, else the quiet reason. */
     act(S, dim, c, p, q) {
-      const A = COOP_APT, now = S.now, R = COOP_T.reach;
+      const A = COOP_APT, now = S.now, R = COOP_T.reach, m = dim.map, tx = Math.floor(p.x / T), ty = Math.floor(p.y / T);
       const near = (t) => c.ents.filter((e) => e.t === t && dist(p.x, p.y, e.x, e.y) <= R + (t === 2 ? 8 : 0)).sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y) || a.id - b.id)[0];
-      // the bin: chutes first
-      if (q.tool === "bin" && q.hold.length) {
-        const rec = aptStation(c, p, "recycle");
-        if (rec || aptStation(c, p, "burn")) {
-          const n = q.hold.length, base = n * A.bundlePts * (1 + 0.1 * (n - 1)) * (rec ? A.recycleK : 1);
-          const cred = { [p.pid]: A.holdK * n };
-          for (const b of q.hold) { const w = Object.values(b).reduce((s, v) => s + v, 0) || 1; for (const pid of Object.keys(b)) cred[pid] = (cred[pid] || 0) + ((1 - A.holdK) * b[pid]) / w; }
-          q.hold = [];
-          const pts = coopGood(S, c, base, cred);
-          coopEv(S, dim, rec ? 22 : 5, p.x, p.y, pts);
-          return true;
-        }
+      // the dirty tiles round you (3×3), dirtiest and nearest first
+      const round = () => { const o = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const i = (ty + dy) * m.w + tx + dx; if (c.cell[i] && c.dirt[i]) o.push([i, dx * dx + dy * dy]); } return o.sort((a, b) => c.dirt[b[0]] - c.dirt[a[0]] || a[1] - b[1] || a[0] - b[0]); };
+      // the bin: the dumpster first — only this takes the dirt away
+      if (q.tool === "bin" && q.hold.length && aptStation(c, p, "dump")) {
+        const units = q.hold.reduce((s, h) => s + h.amt, 0), cred = { [p.pid]: A.holdK * units };
+        for (const h of q.hold) { const w = Object.values(h.cred).reduce((s, v) => s + v, 0) || 1; for (const pid of Object.keys(h.cred)) cred[pid] = (cred[pid] || 0) + ((1 - A.holdK) * h.amt * h.cred[pid]) / w; }
+        for (const pid of Object.keys(cred)) if (c.pl[pid]) c.pl[pid].pts += cred[pid];
+        q.hold = []; c.out -= units; c.score = aptPct(c); c.ver++;
+        coopEv(S, dim, 5, p.x, p.y, units);
+        return true;
       }
       // the sofa: two people, any tools, within 1.5 s of each other
       const sofa = near(2);
@@ -333,7 +351,8 @@ const COOP_JOB = {
           coopEv(S, dim, 19, sofa.x, sofa.y, sofa.hp);
           if (sofa.hp <= 0) {
             c.ents.splice(c.ents.indexOf(sofa), 1);
-            for (let i = 0; i < A.sofaBundles; i++) { const at = aptNear(dim.map, c, Math.floor(sofa.x / T), Math.floor(sofa.y / T), 3); if (at) aptAdd(c, 1, at[0], at[1], 1, { ...sofa.cred }); }
+            // broken up into piles for the bins (the units stay in c.out until they are dumped)
+            for (let i = 0; i < A.sofaPiles; i++) { const at = aptNear(m, c, Math.floor(sofa.x / T), Math.floor(sofa.y / T), 3); if (at) aptAdd(c, 0, at[0], at[1], A.sofaUnits / A.sofaPiles, { ...sofa.cred }); else c.out -= A.sofaUnits / A.sofaPiles; }
           }
           c.ver++;
           return true;
@@ -341,41 +360,50 @@ const COOP_JOB = {
         sofa.lift = { pid: p.pid, at: now };
         return "혼자서는 못 들어요 — 한 명 더 소파 곁에서 함께 누르세요!";
       }
-      if (q.tool === "broom") {
-        const pile = near(0);
-        if (pile) {
-          pile.hp--; pile.due = now + A.spreadMs;
-          pile.cred[p.pid] = (pile.cred[p.pid] || 0) + 1;
-          if (pile.hp <= 0) { pile.t = 1; pile.hp = 1; coopEv(S, dim, 20, pile.x, pile.y); }
-          coopEv(S, dim, 4, pile.x, pile.y);
-          c.ver++;
-          return true;
-        }
-      } else {
-        const b = near(1);
-        if (b) {
-          if (q.hold.length >= A.binCap) return "쓰레기통이 꽉 찼어요 — 소각로나 재활용함에 비우세요!";
-          c.ents.splice(c.ents.indexOf(b), 1); c.ver++;
-          q.hold.push(b.cred);
-          coopEv(S, dim, 6, b.x, b.y, q.hold.length);
-          return true;
-        }
-      }
-      // the rack: swap tools (hands empty). shortcut: no per-tool stock on the rack (C.3's ceil(n/2)), add it if tools get fought over
-      if (aptStation(c, p, "rack")) {
-        if (q.hold.length) return "들고 있는 것을 먼저 비우세요";
+      // the rack: swap tools (hands empty; its corner never gets dirty, so this never hides a sweep). shortcut: no per-tool
+      // stock on the rack (C.3's ceil(n/2)), add it if tools get fought over
+      if (!q.hold.length && aptStation(c, p, "rack")) {
         q.tool = q.tool === "broom" ? "bin" : "broom";
         coopEv(S, dim, 23, p.x, p.y);
         toast(p, `${COOP_TOOLS[q.tool]}${pp(COOP_TOOLS[q.tool], "을를")} 들었습니다.`);
         return true;
       }
-      if (q.tool === "broom" && near(1)) return "빗자루로는 쓰레기를 치울 수 없어요 — 쓰레기통 담당에게!";
-      if (q.tool === "bin" && near(0)) return "쓰레기통으로는 쓸 수 없어요 — 빗자루 담당에게!";
-      if (q.tool === "bin" && q.hold.length) return "소각로(서쪽)나 재활용함(동쪽, ×1.5)에 비우세요";
+      if (q.tool === "broom") {
+        const dirty = round();
+        if (dirty.length) {
+          // sweep `sweepN` units off the floor round you into the nearest pile with room, else a new pile at your feet
+          let n = 0;
+          for (let pass = 0; pass < 2 && n < A.sweepN; pass++) for (const [i] of dirty) if (n < A.sweepN && c.dirt[i]) { aptDirt(c, i, c.dirt[i] - 1); n++; }
+          let pile = c.ents.filter((e) => e.t === 0 && e.hp + n <= A.pileMax && dist(p.x, p.y, e.x, e.y) <= A.pileR).sort((a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y) || a.id - b.id)[0];
+          if (!pile) { const at = aptNear(m, c, tx, ty, 2) || [tx, ty]; pile = aptAdd(c, 0, at[0], at[1], 0); coopEv(S, dim, 20, pile.x, pile.y); }
+          pile.hp += n; pile.cred[p.pid] = (pile.cred[p.pid] || 0) + n;
+          coopEv(S, dim, 4, p.x, p.y, n);
+          c.ver++;
+          return true;
+        }
+      } else {
+        const b = near(0), room = A.binCap * A.binUnit - aptLoad(q);
+        if (b) {
+          if (room <= 0) return `쓰레기통이 꽉 찼어요 (${A.binCap}/${A.binCap}) — 뒷마당 버리는 곳에 비우세요!`;
+          // a pile bigger than the room left: the bin takes what fits, the rest stays
+          const amt = Math.min(b.hp, room);
+          if (amt < b.hp) b.hp -= amt; else c.ents.splice(c.ents.indexOf(b), 1);
+          c.ver++;
+          q.hold.push({ amt, cred: { ...b.cred } });
+          coopEv(S, dim, 6, b.x, b.y, aptFill(q));
+          return true;
+        }
+      }
+      if (aptStation(c, p, "rack")) return "쓰레기통을 먼저 비우세요";
+      if (q.tool === "broom" && near(0)) return "빗자루로는 담을 수 없어요 — 쓰레기통 담당에게!";
+      if (q.tool === "bin" && round().length) return "쓰레기통으로는 쓸 수 없어요 — 빗자루 담당에게!";
+      if (q.tool === "bin" && q.hold.length) return "뒷마당(아랫동 동쪽 끝 뒷문)의 버리는 곳에 비우세요";
       return "주변에 치울 것이 없어요";
     },
-    /** The HUD's job summary: mess, its cap. */
-    sum: (c) => [aptMess(c), aptCap(c)],
+    /** The HUD's job summary: dirt units left, the opening dirt. */
+    sum: (c) => [c.out, c.u0],
+    /** Team rows' `what`: how full the bin is, 0–binCap 칸. */
+    what: (q) => aptFill(q),
   },
   diner: {
     init(S, dim, c) {
@@ -929,6 +957,117 @@ COOP_JOB.alch = {
 /** Herb names by colour index (↑ → ↓ ←). */
 const BREW_HERBS = ["붉은 꽃잎(↑)", "푸른 이끼(→)", "황금 뿌리(↓)", "보라 버섯(←)"];
 
+// ── 올빼미 도서관 책 분류 (the owner's design; COOP_LIB, H11): ents t 13 a returner in the queue (books: [{ g, ti }], due = patience
+// end), t 14 a book on the 반납대 (g, ti, slot, cred), t 15 a wrong book in shelf sh (g, ti, cred); a sorter's hold [{ g, ti, cred }].
+
+const libTitle = (b) => `『${COOP_LIB.titles[b.g][b.ti]}』(${COOP_LIB.genres[b.g]})`;
+/** The queue in arrival order from the desk down towards the door. */
+function libLine(c) {
+  c.ents.filter((e) => e.t === 13).sort((a, b) => a.id - b.id).forEach((e, i) => { [e.x, e.y] = tilePx([LIBH.queue[0], LIBH.queue[1] + i]); });
+  c.ver++;
+}
+COOP_JOB.lib = {
+  init(S, dim, c) { c.shelved = 0; c.angry = 0; c.wrongN = 0; c.next = { arrive: c.runAt + 1500 }; },
+  tick(S, dim, c, now) {
+    const L = COOP_LIB, line = c.ents.filter((e) => e.t === 13);
+    // returners keep coming (a crowd in fever), each with one to three books
+    if (now >= c.next.arrive) {
+      c.next.arrive = now + L.arriveMs[c.n] / (c.state === "fever" ? L.feverK : 1);
+      if (line.length < L.queueCap[c.n]) {
+        const books = Array.from({ length: ri(c.box, L.books[0], L.books[1]) }, () => ({ g: ri(c.box, 0, L.genres.length - 1), ti: ri(c.box, 0, 9) }));
+        c.ents.push({ id: c.nid++, t: 13, x: 0, y: 0, hp: 0, books, due: now + L.patience, pat: L.patience, cred: {} });
+        libLine(c);
+        coopEv(S, dim, 90, ...tilePx(LIBH.door), books.length);
+      }
+    }
+    for (const e of line) {
+      if (now < e.due) continue;
+      c.ents.splice(c.ents.indexOf(e), 1); c.angry++;
+      coopFail(c, L.angryPen); coopEv(S, dim, 91, e.x, e.y);
+      coopToastAll(S, dim, `[민원] 기다리다 지친 손님이 책을 들고 돌아갔어요! 점수 -${L.angryPen}`);
+      libLine(c);
+    }
+  },
+  act(S, dim, c, p, q) {
+    const L = COOP_LIB, desk = coopSt(c, p, "desk") >= 0, si = coopSt(c, p, "shelf"), sh = si >= 0 ? Math.floor(si / 6) : -1;
+    const onDesk = c.ents.filter((e) => e.t === 14);
+    if (q.tool === "desk") {
+      if (desk) {
+        const front = c.ents.filter((e) => e.t === 13).sort((a, b) => a.id - b.id)[0];
+        if (!front) return "줄 선 손님이 없어요 — 곧 와요!";
+        if (onDesk.length >= L.deskCap) return `반납대가 꽉 찼어요 (${L.deskCap}/${L.deskCap}) — 분류 담당이 책을 가져가야 해요!`;
+        // one book a press onto the first free slot of the 반납대
+        const b = front.books.shift(), used = new Set(onDesk.map((e) => e.slot)), slot = [...Array(L.deskCap).keys()].find((i) => !used.has(i));
+        const [x, y] = tilePx([LIBH.slots[0] + slot, LIBH.slots[1]]);
+        c.ents.push({ id: c.nid++, t: 14, x, y, hp: 0, g: b.g, ti: b.ti, slot, cred: { [p.pid]: 1 } });
+        coopGood(S, c, L.intakePts, { [p.pid]: 1 });
+        coopEv(S, dim, 92, x, y, b.g);
+        if (!front.books.length) {
+          c.ents.splice(c.ents.indexOf(front), 1);
+          coopGood(S, c, L.servedPts, { [p.pid]: 1 });
+          coopEv(S, dim, 93, front.x, front.y);
+          libLine(c);
+        }
+        c.ver++;
+        return true;
+      }
+    } else {
+      if (sh >= 0) {
+        const mark = c.ents.find((e) => e.t === 15 && e.sh === sh), i = q.hold.findIndex((b) => b.g === sh), [x, y] = tilePx(COOP[c.k].st.shelf[sh * 6 + 2]);
+        // a wrong book in this shelf comes out first (with a book of this genre in hand, it goes in in the same press: a swap)
+        if (mark) {
+          if (i < 0 && q.hold.length >= L.carry) return "손이 꽉 찼어요 — 이 장르의 책이 있거나 손이 비어야 잘못 꽂힌 책을 뺄 수 있어요";
+          c.ents.splice(c.ents.indexOf(mark), 1); c.ver++;
+          q.hold.push({ g: mark.g, ti: mark.ti, cred: mark.cred });
+          coopEv(S, dim, 96, mark.x, mark.y, mark.g);
+          toast(p, `잘못 꽂힌 ${libTitle(mark)}을(를) 뺐어요`);
+          if (i < 0) return true;
+        }
+        if (q.hold.length) {
+          if (i >= 0) {
+            const b = q.hold.splice(i, 1)[0], cred = { [p.pid]: L.sortK };
+            for (const pid of Object.keys(b.cred)) cred[pid] = (cred[pid] || 0) + (1 - L.sortK) * b.cred[pid];
+            coopGood(S, c, L.shelvePts, cred); c.shelved++; c.ver++;
+            coopEv(S, dim, 94, x, y, sh);
+            return true;
+          }
+          // no book of this genre in hand: the first one goes in wrong and marks the shelf
+          const b = q.hold.shift();
+          c.ents.push({ id: c.nid++, t: 15, x, y, hp: 0, sh, g: b.g, ti: b.ti, cred: b.cred });
+          coopFail(c, L.wrongPen); c.wrongN++; c.ver++;
+          coopEv(S, dim, 95, x, y, b.g);
+          toast(p, `잘못 꽂았어요! ${libTitle(b)} — 여기는 ${L.genres[sh]} 책장이에요 (점수 -${L.wrongPen})`);
+          return true;
+        }
+      }
+      if (desk) {
+        if (!onDesk.length) return "반납대에 책이 없어요 — 접수 담당을 기다리세요";
+        if (q.hold.length >= L.carry) return `한 번에 ${L.carry}권까지 들 수 있어요 — 책장에 꽂고 오세요`;
+        const e = onDesk.sort((a, b) => a.id - b.id)[0];
+        c.ents.splice(c.ents.indexOf(e), 1); c.ver++;
+        q.hold.push({ g: e.g, ti: e.ti, cred: e.cred });
+        coopEv(S, dim, 97, e.x, e.y, e.g);
+        return true;
+      }
+    }
+    // the rack: swap roles (hands empty)
+    if (!q.hold.length && aptStation(c, p, "rack")) {
+      q.tool = q.tool === "desk" ? "sort" : "desk";
+      coopEv(S, dim, 23, p.x, p.y);
+      toast(p, `${COOP_TOOLS[q.tool]}${pp(COOP_TOOLS[q.tool], "을를")} 맡았습니다.`);
+      return true;
+    }
+    if (q.tool === "desk" && sh >= 0) return "책은 분류 담당이 꽂아요 — 접수 담당은 반납대로!";
+    if (q.tool === "desk") return "반납대(남쪽)에서 줄 선 손님의 책을 받으세요";
+    if (q.hold.length) return `들고 있는 책: ${q.hold.map(libTitle).join(", ")} — 같은 장르의 책장으로!`;
+    return "반납대에서 책을 가져오세요";
+  },
+  /** The HUD's sum: books shelved, angry returners. */
+  sum: (c) => [c.shelved, c.angry],
+  /** Team rows' `what`: the books in hand, genre·16 + title. */
+  what: (q) => q.hold.map((b) => b.g * 16 + b.ti),
+};
+
 // ── actions (validated in 70-validate.js, applied in 75-apply.js)
 
 COOP_JOB.pipe = { init: pipeInit, sum: () => [0, 0] };
@@ -979,7 +1118,7 @@ function coopApply(S, p, a) {
 
 /**
  * Inside a shift: `cj` [job index, state 0 brief · 1 run · 2 fever · 3 end, seconds left, score, combo, mult ×10, grade 0–4,
- * next cut-off (0 at S), job sum (apt: mess, mess cap · diner: served, missed · forge and alch: sold, angry customers), [[eid, tool (index in the job's two), held,
+ * next cut-off (0 at S), job sum (apt: dirt units left, the opening dirt (the 청소율 is the score, ‰); `cd` the dirt itself, aptWire · diner: served, missed · forge and alch: sold, angry customers), [[eid, tool (index in the job's two), held,
  * zzz, what (diner: dish·3 + stage per thing held; forge: (kind + 1)·5 + state; alch: (kind + 1)·5 + 0 picking · 1 herbs · 4 potion; else 0), alch only: mode (1 on the 풀무 ·
  * 10 + herbs picked)]…]] when it changes; `C` when the entities change: [id, type
  * 0 pile · 1 bundle · 2 sofa, x, y, hp], diner [id, 3 order, x, y, dish, ds left, ds patience] · [id, 4 pot, x, y, dish,
@@ -999,8 +1138,19 @@ function coopView(S, p, out) {
     const key = JSON.stringify(v);
     if (key !== p.cjKey || p.sendMap) { out.cj = v; p.cjKey = key; }
     if (p.cVer !== c.ver || p.sendMap) { out.C = c.ents.map(coopRow(now, c)); p.cVer = c.ver; }
-  } else if (p.cjKey) { out.cj = 0; out.C = []; p.cjKey = null; p.cVer = -1; }
+    if (c.dirt) aptWire(dim, c, p, out);
+  } else if (p.cjKey) { out.cj = 0; out.C = []; p.cjKey = null; p.cVer = -1; p.cdN = null; }
   if (p.coopRes) { out.cr = p.coopRes; p.coopRes = null; }
+}
+/**
+ * apt's dirt (`cd`): on the way in (or after a resync) a string of every tile's level, one digit each (row-major, the
+ * shift map's w); then only the changes since, [tile·4 + level…] from c.dlog. p.cdN counts what this player has.
+ */
+function aptWire(dim, c, p, out) {
+  const n = c.dbase + c.dlog.length;
+  if (p.cdN == null || p.cdN < c.dbase || p.cdK !== dim.id || p.sendMap) out.cd = c.dirt.join("");
+  else if (p.cdN < n) out.cd = c.dlog.slice(p.cdN - c.dbase);
+  p.cdN = n; p.cdK = dim.id;
 }
 /** One entity on the wire; the diner’s carry a dish and, for orders and pots, deciseconds left (the client counts down). */
 const coopRow = (now, c) => (e) => {
@@ -1012,6 +1162,11 @@ const coopRow = (now, c) => (e) => {
     const due = e.st === 3 ? e.at + B.ruinMs : e.st === 2 ? e.at + B.doneMs : e.hotAt ? e.hotAt + B.overMs : 0;
     return [...at, pc ? pc.r : -1, e.st, pc ? Math.min(100, Math.floor((100 * pc.prog) / O.hold)) : 0, pc ? brewGrade(pc) : -1, e.st === 3 ? e.foam : 0, due ? Math.max(0, ds(due)) : 0, forgeKind(c)];
   }
+  // the library: a returner [.., books left, ds of patience left, ds patience, first book's genre] · a book on the desk [.., genre,
+  // title] · a wrong book [.., shelf, genre, title]
+  if (e.t === 13) return [...at, e.books.length, Math.max(0, ds(e.due)), Math.round(e.pat / 100), e.books[0] ? e.books[0].g : -1];
+  if (e.t === 14) return [...at, e.g, e.ti];
+  if (e.t === 15) return [...at, e.sh, e.g, e.ti];
   if (e.t >= 6) return forgeRow(e, at, now, ds);
   return e.t < 3 ? [...at, e.hp] : e.t === 3 ? [...at, e.r, ds(e.until), Math.round(e.pat / 100)] : e.t === 4 ? [...at, e.r, ds(e.doneAt), ds(e.burnAt)] : [...at, e.r];
 };
@@ -1025,5 +1180,6 @@ function coopDefs() {
     dishes: COOP_DINER.dishes.map((d) => d.name), cook: COOP_DINER.dishes.map((d) => d.cook), trayCap: COOP_DINER.trayCap, washN: COOP_DINER.washN,
     orders: COOP_FORGE.orders.map((o, i) => [COOP.forge.skin.orders[i], o.pat.length, o.pts, o.per, o.pat]), door: tilePx(COOP.forge.door), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP.forge.skin.grades,
     metals: COOP_FORGE.metals.map((o) => [o.name, o.col, o.heat, o.tempo, o.win, o.price]),
-    brew: { orders: COOP_BREW.orders.map((o, i) => [COOP.alch.skin.orders[i], o.lo, o.hi, o.hold, o.herbs, o.pts]), chart: COOP_BREW.chart, loop: COOP_BREW.loop, amb: COOP_BREW.amb, herbs: BREW_HERBS, foam: COOP_BREW.foam } };
+    brew: { orders: COOP_BREW.orders.map((o, i) => [COOP.alch.skin.orders[i], o.lo, o.hi, o.hold, o.herbs, o.pts]), chart: COOP_BREW.chart, loop: COOP_BREW.loop, amb: COOP_BREW.amb, herbs: BREW_HERBS, foam: COOP_BREW.foam },
+    lib: { genres: COOP_LIB.genres, cols: COOP_LIB.cols, titles: COOP_LIB.titles, deskCap: COOP_LIB.deskCap, carry: COOP_LIB.carry, shelves: LIBH.shelves } };
 }

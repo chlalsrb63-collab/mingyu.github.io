@@ -1096,6 +1096,12 @@ const SFX = {
   /** The kiln roars up: a joint 풀무 note (합동 풀무). */
   kiln_roar() { this.noise(0.5, 0.1, 220, "lowpass", 0, 600); this.tone("sawtooth", 70, 110, 0.4, 0.05); this.noise(0.25, 0.05, 1400, "bandpass", 0.08, 500); },
   /** A brew boiling over: wet bubbling glugs. */
+  /** A book put down (on the 반납대 or into a shelf): a soft, papery thunk. */
+  book_thunk() { const p = this.vary(); this.tone("triangle", 150 * p, 90 * p, 0.08, 0.16); this.noise(0.06, 0.06, 900, "lowpass"); },
+  /** A book in the wrong shelf: a flat double buzz. */
+  wrong_buzz() { this.tone("square", 140, 130, 0.12, 0.06); this.tone("square", 140, 120, 0.14, 0.06, 0.16); },
+  /** The 반납대's desk bell: one bright ding with a ring-out. */
+  desk_bell() { const p = this.vary(); this.tone("sine", 1760 * p, 1760 * p, 0.6, 0.08); this.tone("sine", 2640 * p, 2640 * p, 0.3, 0.03); },
   boil_over() { const p = this.vary(); for (let i = 0; i < 4; i++) this.tone("sine", (180 + i * 40) * p, (420 + i * 60) * p, 0.06, 0.12, i * 0.07); this.noise(0.3, 0.06, 700, "lowpass", 0, 900); },
   bottle_pop() { const p = this.vary(); this.tone("sine", 300 * p, 1100 * p, 0.07, 0.16); this.noise(0.03, 0.1, 2400, "bandpass"); this.tone("sine", 900 * p, 700 * p, 0.1, 0.04, 0.05); },
   /** Oil in a hot pan, now and then while cooking; `heat` 0–1 makes it fiercer as time runs out. */

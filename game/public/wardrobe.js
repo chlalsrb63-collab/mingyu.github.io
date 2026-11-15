@@ -1386,6 +1386,7 @@ export const ART = {
   back_tray: ["back", "tray", { c: "#d8dce8", b: "#a8acb8" }],
   face_forge: ["face", "forge", { c: "#3a4a40", b: "#c89a40", s: "#4a3a34" }],
   back_cauldron: ["back", "cauldron", { c: "#4a4a58", b: "#7ae07a" }],
+  back_booksatchel: ["back", "satchel", { c: "#6a4a9a", b: "#f0c860" }],
   // Willow patrol, coral traders and the brass survey crew
   hat_willow_patrol: ["hat", "willowcap", { c: "#5b734b", b: "#b5c975" }],
   top_willow_patrol: ["top", "patrolVest", { c: "#62794d", b: "#c99755" }],
