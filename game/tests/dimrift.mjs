@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, xpNeed, stats, atkRange, aimIdx, EVT_MAPS, worldEvent, ITEMS, SOLID_G, MAXLV, DIM_TIER, DIM_CHAL, CHAL_KEYS, dimTierK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk };\n";
+  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, xpNeed, stats, atkRange, aimIdx, EVT_MAPS, worldEvent, ITEMS, SOLID_G, MAXLV, DIM_TIER, DIM_CHAL, CHAL_KEYS, dimTierK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk, chalOfWeek };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, D = X.DIM;
 // tuning runs: HPB=… BOSSHP=… NOCLEAR=1 node tests/dimrift.mjs -v
@@ -396,10 +396,10 @@ const dimIds = (S) => Object.keys(S.dims);
   // a character saved inside wakes in town; the old sheet (v8) gains a rift record
   const old = L.newChar("옛날", "mage", []); delete old.dim; old.v = 8;
   L.addPlayer(S, "old", old);
-  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: [0, 0, 0, 0] }); assert.equal(S.players.old.ch.v, 20);
+  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: X.CHAL_KEYS.map(() => 0) }); assert.equal(S.players.old.ch.v, 20);
   const odd = L.newChar("이상", "mage", []); odd.dim = { day: "x", n: -5 };
   L.addPlayer(S, "odd", odd);
-  assert.deepEqual(S.players.odd.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: [0, 0, 0, 0] });
+  assert.deepEqual(S.players.odd.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: X.CHAL_KEYS.map(() => 0) });
 }
 
 // ───────────── 5. the invasion never picks an instance
@@ -601,13 +601,14 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   assert.equal(X.dayOf(MONDAY - 1) + 1, X.dayOf(MONDAY));
   for (let d = 1; d < 7; d++) assert.equal(X.weekOf(MONDAY + d * 86400000), X.weekOf(MONDAY), "one week, seven days");
   // old sheets (v13: a daily count only) and odd ones
-  const fresh = { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: [0, 0, 0, 0] };
+  const fresh = { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: X.CHAL_KEYS.map(() => 0) };
   assert.deepEqual(L.newChar("새단수", []).dim, fresh); assert.equal(L.newChar("새단수", []).v, 20);
   const S = world();
   const old = L.newChar("옛단수", []); old.v = 13; old.dim = { day: 20000, n: 2 };
   L.addPlayer(S, "o13", old);
   assert.deepEqual(S.players.o13.ch.dim, { ...fresh, day: 20000, n: 2 }, "a v13 sheet keeps its count and starts the ladder at 1"); assert.equal(S.players.o13.ch.v, 20);
-  assert.deepEqual(X.dimClean({ t: 50, best: 3, ms: 9e9, wb: 99, bw: 99, wk: -3 }), { ...fresh, t: 4, best: 3, ms: D.limit, wb: TR.weekly.max, bw: (1 << X.CHAL_KEYS.length) - 1 }, "never more unlocked than one past the best");
+  const rewardMask = L.defs().dim.chal.bosses.reduce((mask, boss) => mask | boss[6], 0);
+  assert.deepEqual(X.dimClean({ t: 50, best: 3, ms: 9e9, wb: 99, bw: 99, wk: -3 }), { ...fresh, t: 4, best: 3, ms: D.limit, wb: TR.weekly.max, bw: rewardMask }, "unlocks and weekly reward bits are clamped");
   assert.deepEqual(X.dimClean({ t: "x", best: 5000, ms: 1234 }), { ...fresh, t: 1, best: TR.max, ms: 1234 });
   assert.deepEqual(X.dimClean({ ms: 5000 }), fresh, "no time without a clear"); assert.deepEqual(X.dimClean("junk"), fresh);
 }
@@ -645,7 +646,9 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   assert.equal(res.t2[6], 1); assert.equal(res.t2[4], X.dimReward(dim.lv, 3, true, false).gold + TR.weekly.gold * dim.lv, "the chest and one bracket");
   assert.deepEqual([a.ch.dim.wb, b.ch.dim.wb, b.ch.dim.n], [1, 1, 1]);
   step(S);
-  assert.deepEqual(last("t2", "self").dimr, [4, 3, Math.round(b.ch.dim.ms / 1000), D.dailyFull - 1, 1, 0, [0, 0, 0, 0]], "the sheet's record on the wire");
+  const dimr = last("t2", "self").dimr;
+  assert.deepEqual(dimr.slice(0, 7), [4, 3, Math.round(b.ch.dim.ms / 1000), D.dailyFull - 1, 1, 0, X.CHAL_KEYS.map(() => 0)], "the sheet's record on the wire, best steps at 6");
+  assert.equal(dimr[7], X.CHAL_KEYS.indexOf(X.chalOfWeek(S.now)), "this week's rotating boss at 7");
   leave(S, ["t1", "t2"]);
   // the same tier again, quicker: a better time; no second weekly bonus
   assert.ok(act(S, "t1", { t: "dim_open", tier: 3 }).ok); act(S, "t2", { t: "dim_ready", id: S.parties[a.party].rc.id, ok: 1 });
@@ -883,7 +886,7 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   const r0 = run(0);
   assert.equal(r0.gold, CH.small.gold * X.MOBS.cloakbat.lv, "the base step again: the small reward at the boss's own level");
   assert.equal(a.ch.dim.bs[ci], 3, "a lower step keeps the record");
-  assert.deepEqual(X.dimClean({ bs: [9, -2, "x"] }).bs, [X.chalSteps("boss").length, 0, 0, 0], "an odd record is clamped");
+  assert.deepEqual(X.dimClean({ bs: [9, -2, "x"] }).bs, [X.chalSteps("boss").length, ...X.CHAL_KEYS.slice(1).map(() => 0)], "an odd record is clamped");
   assert.equal(L.defs().dim.chal.bosses[ci][5].length, 5, "the picker gets the steps");
 }
 {

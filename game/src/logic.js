@@ -625,6 +625,13 @@ const MOBS = {
   spoolsnipe: { name: "실패부리 도요", lv: 16, hp: 368, atk: 44, def: 5, spd: 42, xp: 172, gold: [20, 42], aggro: 80, range: 52, cd: 1800, shot: true, fan: 92, bonusOptional: true },
   sluiceeel: { name: "쇠살 장어", lv: 24, hp: 945, atk: 77, def: 15, spd: 36, xp: 440, gold: [42, 80], aggro: 76, range: 20, cd: 1600, pool: 22, bonusOptional: true },
   prismmole: { name: "겹렌즈 두더지", lv: 27, hp: 1310, atk: 93, def: 18, spd: 34, xp: 600, gold: [54, 98], aggro: 84, range: 21, cd: 1500, fan: 100, slam: 32, bonusOptional: true },
+  // Weekly arena opponents, separate from the field boss roster and story fights.
+  wickregent: { name: "밀랍굴의 여왕 심지귀", lv: 19, hp: 6200, atk: 105, def: 17, spd: 35, xp: 1800, gold: [130, 230], aggro: 130, range: 24, cd: 1500, boss: true },
+  knotwidow: { name: "등불매듭 뿌리거미", lv: 22, hp: 8500, atk: 110, def: 21, spd: 38, xp: 2300, gold: [155, 270], aggro: 132, range: 27, cd: 1450, boss: true },
+  knellkeeper: { name: "장례종지기 툼벨", lv: 25, hp: 10000, atk: 125, def: 25, spd: 32, xp: 3100, gold: [195, 310], aggro: 134, range: 29, cd: 1600, boss: true },
+  loomcolossus: { name: "찢어진 직조탑 베틀부리", lv: 28, hp: 13000, atk: 136, def: 28, spd: 36, xp: 4100, gold: [225, 375], aggro: 136, range: 28, cd: 1450, boss: true },
+  sluiceleviathan: { name: "배수문을 삼킨 잠류아귀", lv: 32, hp: 15500, atk: 145, def: 31, spd: 34, xp: 5200, gold: [265, 435], aggro: 138, range: 30, cd: 1500, boss: true },
+  prismcantor: { name: "쌍결정 성가박쥐", lv: 36, hp: 19600, atk: 164, def: 34, spd: 38, xp: 6700, gold: [315, 510], aggro: 140, range: 28, cd: 1380, fly: true, boss: true },
   // 바람초원
   twinhare: { name: "쌍두 토끼", lv: 1, hp: 28, atk: 5, def: 0, spd: 26, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300 },
   gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80 },
@@ -951,6 +958,12 @@ const MOB_LORE = {
   spoolsnipe: "부리에 감은 실 끝마다 버려진 태엽 파편이 매달려 있다.",
   sluiceeel: "녹슨 살들이 움직일 때마다 독물이 배수구로 새어 나온다.",
   prismmole: "이마의 렌즈를 돌려 같은 불빛을 여러 갈래로 꺾는다.",
+  wickregent: "엉킨 심지에 불을 붙이면 녹은 밀랍이 굴 입구까지 흐른다.",
+  knotwidow: "등불을 훔쳐 만든 매듭마다 먹잇감의 마지막 발자국이 남는다.",
+  knellkeeper: "마지막 종소리가 울리고 나서야 관 뚜껑이 닫힌다.",
+  loomcolossus: "찢어진 직조기 속에서 반대 방향으로 감기는 두 그림자.",
+  sluiceleviathan: "배수문을 씹을 때마다 등 뒤 녹슨 문짝이 맞부딪친다.",
+  prismcantor: "두 수정이 어긋나게 울면 어둠 속에서도 균열이 드러난다.",
   // Meadow
   twinhare: "두 머리가 서로 다른 밭에서 같은 풀을 뜯으려 한다.",
   gutfrog: "뛰어오르기 직전 발밑 웅덩이에 붉은 테가 번진다.",
@@ -3716,6 +3729,7 @@ const DIM_CHAL = {
   // `stepGap` levels under a step. Gold and experience follow the step's level; each step past the boss's own adds `stepR` × step.
   steps: [125, 150, 175, 200], stepMin: 3, stepGap: 10, stepR: { stone: 2, rune: 0.5, gear: 0.34 },
   stepNames: ["보통", "어려움", "지옥", "악몽", "심연"],
+  rotationBig: { gold: 220, xp: 0.16, stone: 5, rune: 1, gear: 1, gearQ: 2 },
   bosses: {
     boss: { theme: "crypt", cast: "차원 붕괴", pats: [["균열 탄막", "fan2"], ["붕괴의 고리", "rings"], ["균열 웅덩이", "pools"]] },
     abyssboss: { theme: "abyss", cast: "심연의 포효", pats: [["연쇄 돌진", "charge2"], ["도약 강타", "leapslam"], ["촉수 탄막", "fan3"]] },
@@ -3746,9 +3760,20 @@ const DIM_CHAL = {
           ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["고래 낙하", "dive"]] },
         { at: 0.1, cast: 1 },
       ] },
+    wickregent: { rotation: true, theme: "crypt", cast: "심지 태우기", pats: [["밀랍 돌진", "charge2"], ["녹아내린 심지", "pools"], ["불쏘시개", "cone", { ms: 1200, r: 88, half: 0.72 }]] },
+    knotwidow: { rotation: true, theme: "crypt", cast: "등불 삼키기", pats: [["가시 매듭", "adds", { kind: "burrlynx", n: 2, cap: 4 }], ["조여 드는 그물", "donut", { r0: 35, r: 98 }], ["천장 습격", "leapslam"]] },
+    knellkeeper: { rotation: true, theme: "crypt", cast: "마지막 장례종", pats: [["겹쳐 울리는 종", "rings"], ["메아리 탄막", "fan2"], ["장례 행렬", "mark", { ms: 2400, r: 29, n: 2 }]] },
+    loomcolossus: { rotation: true, theme: "cave", cast: "베틀 과부하", pats: [["태엽 사출", "fan2"], ["가로 절단", "cone", { r: 110, half: 0.5 }], ["세로 날실", "cone", { r: 94, half: 0.35, back: 1 }]] },
+    sluiceleviathan: { rotation: true, theme: "sewer", cast: "배수문 파열", pats: [["넘치는 독물", "pools"], ["휘감는 꼬리", "cone", { ms: 1300, r: 86, half: 1.1 }], ["솟구치는 잠류", "dive"]] },
+    prismcantor: { rotation: true, theme: "cave", cast: "공명 파쇄", pats: [["수정 세 갈래", "fan3"], ["공명 표식", "mark", { ms: 2600, r: 37, n: 3 }], ["갈라진 성가", "donut", { r0: 32, r: 108 }]] },
   },
 };
 const CHAL_KEYS = Object.keys(DIM_CHAL.bosses);
+const CHAL_ROTATION = CHAL_KEYS.filter(k => DIM_CHAL.bosses[k].rotation);
+const chalOfWeek = (now) => CHAL_ROTATION[((weekOf(now) % CHAL_ROTATION.length) + CHAL_ROTATION.length) % CHAL_ROTATION.length];
+// The original bosses retain their own bits. The rotation shares one weekly reward bit.
+const chalRewardBit = (k) => 1 << CHAL_KEYS.indexOf(DIM_CHAL.bosses[k].rotation ? CHAL_ROTATION[0] : k);
+const CHAL_REWARD_MASK = CHAL_KEYS.reduce((mask, k) => mask | chalRewardBit(k), 0);
 /** The level a hero needs for a boss challenge: `minGap` world tiers under the boss's own. */
 const chalMinLv = (k, s = 0) => (s > 0 ? chalSteps(k)[s][1] - DIM_CHAL.stepGap : shownLv(MOBS[k].lv - DIM_CHAL.minGap));
 /** A boss's difficulty ladder: [world tier, hero level shown] — its own level first, then each step far enough above it. */
@@ -12027,7 +12052,7 @@ function dimClean(d) {
   const o = isObj(d) ? d : {}, best = clamp(o.best | 0, 0, DIM_TIER.max);
   return {
     day: Math.max(0, o.day | 0), n: clamp(o.n | 0, 0, 999), t: clamp(o.t | 0, 1, Math.min(DIM_TIER.max, best + 1)), best, ms: best ? clamp(o.ms | 0, 0, DIM.limit) : 0,
-    wk: Math.max(0, o.wk | 0), wb: clamp(o.wb | 0, 0, DIM_TIER.weekly.max), bw: clamp(o.bw | 0, 0, (1 << CHAL_KEYS.length) - 1),
+    wk: Math.max(0, o.wk | 0), wb: clamp(o.wb | 0, 0, DIM_TIER.weekly.max), bw: clamp(o.bw | 0, 0, CHAL_REWARD_MASK),
     // per boss: the highest difficulty step cleared, + 1 (0 none)
     bs: CHAL_KEYS.map((k, i) => clamp((Array.isArray(o.bs) ? o.bs[i] : 0) | 0, 0, chalSteps(k).length)),
   };
@@ -12050,6 +12075,8 @@ function dimBar(o, ask) {
 }
 /** What is being opened, in words. */
 const dimWhat = (ask) => (ask.boss ? `보스 도전 [${MOBS[ask.boss].name} · ${DIM_CHAL.stepNames[ask.step | 0]}]` : ask.tier > 1 ? `차원 균열 ${ask.tier}단` : "차원 균열");
+const chalOpen = (k, now) => !DIM_CHAL.bosses[k].rotation || k === chalOfWeek(now);
+const CHAL_ROTATED = "이번 주 보스가 바뀌었습니다. 균열지기에게서 다시 선택하세요.";
 
 const inDim = (p) => typeof p.map === "string" && p.map.startsWith("dim:");
 const dimAt = (S, id) => (S.dims && Object.hasOwn(S.dims, id) ? S.dims[id] : null);
@@ -12100,6 +12127,7 @@ function rcEnd(S, party, why) {
 /** A ready check's every tick: the party as it is now, answers in, time up — then go in, or not. */
 function rcCheck(S, party) {
   const rc = party.rc;
+  if (rc.boss && !chalOpen(rc.boss, S.now)) { rcEnd(S, party, CHAL_ROTATED); return; }
   for (const pid of Object.keys(rc.resp)) if (!party.m.includes(pid) || !S.players[pid]) delete rc.resp[pid];
   // the leader gone, or no longer leading: nothing happens
   if (party.m[0] !== rc.leader || !S.players[rc.leader]) { rcEnd(S, party, "파티장이 자리를 비워 차원 균열 준비가 취소되었습니다."); return; }
@@ -12130,6 +12158,7 @@ function dimStart(S, ps, partyId, ask) {
   if (open >= DIM.max) { for (const o of ps) toast(o, `차원 균열이 모두 사용 중입니다 (${open}/${DIM.max}).`); return null; }
   // a boss challenge (no tier), or a rift at the asked tier — never above what everyone going in has unlocked
   const boss = ask && ask.boss && Object.hasOwn(DIM_CHAL.bosses, ask.boss) ? ask.boss : "";
+  if (boss && !chalOpen(boss, S.now)) { for (const o of ps) toast(o, CHAL_ROTATED); return null; }
   const tier = boss ? 0 : clamp(Math.min((ask && ask.tier) | 0 || 1, dimTierCap(ps)), 1, DIM_TIER.max);
   const tk = dimTierK(tier || 1);
   // a boss challenge stands at its chosen step's level (no longer the party's best: that is what the step is for)
@@ -12348,8 +12377,11 @@ function dimChest(S, dim, p) {
   const d = dimRec(ch, S.now), carried = !!(dim.carry && dim.carry[p.pid]);
   let fl = ((dim.res && dim.res[p.pid]) || 0) | (carried ? 4 : 0), wkN = 0, r, msg;
   if (dim.chal) {
-    // a boss challenge: the big reward once a week per boss, a small one after (and for someone carried, who keeps the week's)
-    const bit = 1 << CHAL_KEYS.indexOf(dim.chal.k), big = !carried && !(d.bw & bit), R = big ? DIM_CHAL.bosses[dim.chal.k].big || DIM_CHAL.big : DIM_CHAL.small;
+    // Fixed bosses pay once a week each. Rotating bosses share their reward for the week of entry.
+    const config = DIM_CHAL.bosses[dim.chal.k], rotating = config.rotation, bit = chalRewardBit(dim.chal.k);
+    const expired = rotating && weekOf(dim.opened) !== weekOf(S.now);
+    const big = !carried && !expired && !(d.bw & bit);
+    const R = big ? (rotating ? DIM_CHAL.rotationBig : config.big || DIM_CHAL.big) : DIM_CHAL.small;
     if (big) { d.bw |= bit; fl |= 8; }
     // each difficulty step past the boss's own adds stones, runes and gear (the big reward's) on top of the level's gold and experience
     const s = dim.chal.s | 0, ki = CHAL_KEYS.indexOf(dim.chal.k), K = DIM_CHAL.stepR, runes = (R.rune | 0) + (big ? Math.floor(K.rune * s) : 0), gears = (R.gear | 0) + (big ? Math.floor(K.gear * s) : 0);
@@ -12358,9 +12390,11 @@ function dimChest(S, dim, p) {
     payout(S, p, r);
     for (let i = 1; i < runes; i++) payout(S, p, { rune: true });
     for (let i = 1; i < gears; i++) payout(S, p, { gear: 1, gearQ: R.gearQ });
-    if (big) { charmChest(S, dim, p); jfScroll(p, "lvl"); }
-    giveX(S, p, big ? "big" : carried ? "" : "small");
-    msg = big ? "주간 보스 도전 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다." : "보스 도전 반복 보상을 받았습니다. 큰 보상은 월요일 06:00에 다시 열립니다.";
+    if (big) { charmChest(S, dim, p); if (!rotating) jfScroll(p, "lvl"); }
+    giveX(S, p, big && !rotating ? "big" : carried ? "" : "small");
+    msg = big ? "주간 보스 도전 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다."
+      : expired ? "지난주 도전의 반복 보상을 받았습니다. 이번 주 보상은 새 보스에게서 받을 수 있습니다."
+      : "보스 도전 반복 보상을 받았습니다. 큰 보상은 월요일 06:00에 다시 열립니다.";
   } else {
     d.n++;
     const full = d.n <= DIM.dailyFull, W = DIM_TIER.weekly;
@@ -12590,6 +12624,7 @@ function dimValidate(S, p, a) {
       if (a.boss !== undefined) {
         if (typeof a.boss !== "string" || !Object.hasOwn(DIM_CHAL.bosses, a.boss)) return bad("알 수 없는 보스 도전입니다");
         if (a.step !== undefined && (!Number.isInteger(a.step) || a.step < 0 || a.step >= chalSteps(a.boss).length)) return bad("잘못된 난이도입니다");
+        if (!chalOpen(a.boss, S.now)) return bad(CHAL_ROTATED);
         // the party's members in town are asked in dimOpen; a member under the step's level is not asked (dimBar)
         const bar = dimBar(p, dimAsk(a));
         if (bar) return bad(bar);
@@ -12697,19 +12732,20 @@ function chalView(S, dim) {
   return [CHAL_KEYS.indexOf(c.k), mode, cast ? Math.ceil(100 * (1 - cast.got / cast.need)) : 0,
     cast ? Math.ceil((cast.until - now) / 500) : mode === 2 ? Math.ceil((mob.stag - now) / 500) : 0, c.rage, c.tries, c.fury, c.s | 0];
 }
-/** `self.dimr`: [unlocked tier, best tier, its clear seconds, full-reward clears left today, weekly brackets taken, weekly boss flags]. */
+/** `self.dimr`: [unlocked tier, best tier, its clear seconds, full-reward clears left today, weekly brackets taken, weekly boss flags,
+ *  best step + 1 per boss (CHAL_KEYS order), this week's rotating boss (its CHAL_KEYS index)]. */
 function dimSelf(p) {
   const d = p.ch.dim, now = p.S.now, wk = d.wk === weekOf(now);
-  return [d.t, d.best, Math.round(d.ms / 1000), Math.max(0, DIM.dailyFull - (d.day === dayOf(now) ? d.n : 0)), wk ? d.wb : 0, wk ? d.bw : 0, d.bs];
+  return [d.t, d.best, Math.round(d.ms / 1000), Math.max(0, DIM.dailyFull - (d.day === dayOf(now) ? d.n : 0)), wk ? d.wb : 0, wk ? d.bw : 0, d.bs, CHAL_KEYS.indexOf(chalOfWeek(now))];
 }
 /** The tables the browser needs for rifts (defs().dim). */
 function dimDefs() {
   return {
     themes: Object.fromEntries(Object.keys(DIM_THEMES).map((k) => [k, DIM_THEMES[k].name])), pylons: DIM.pylons, limit: DIM.limit, party: DIM.party, max: DIM.max,
     rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near,
-    // the ladder and the boss challenge: [key, name, level needed, the marked cast, pattern names, steps [[level shown, level needed]…]]
+    // the ladder and the boss challenge: [key, name, level needed, the marked cast, pattern names, steps [[level shown, level needed]…], weekly reward bit, rotating 0/1]
     tier: { max: DIM_TIER.max, hp: DIM_TIER.hp, atk: DIM_TIER.atk, every: DIM_TIER.weekly.every, daily: DIM.dailyFull },
-    chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)])]), stepNames: DIM_CHAL.stepNames,
+    chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0]), stepNames: DIM_CHAL.stepNames,
       stepR: DIM_CHAL.stepR },
   };
 }
