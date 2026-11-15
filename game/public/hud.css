@@ -1724,3 +1724,7 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#menu but
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"])[data-lay="full"] #status .meter b { text-shadow: none; }
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"])[data-lay="full"] #st-gold { color: var(--tx-hd); text-shadow: none; }
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr) .wt { color: color-mix(in srgb, var(--wm-lo), var(--ink) 30%); text-shadow: none; }
+
+/* ── UX pass 2026-11-15 (docs/design/ux-audit-2026-11-15.md) ── */
+/* notices and prompts draw over the windows (21–35, windows.js front), under the minigame (40) and the tooltip (80) */
+#toasts, #banner, #prompt, #dl, #cast, #invite, #sx-ask, #pmenu { z-index: 36; }

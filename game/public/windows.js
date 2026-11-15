@@ -230,6 +230,13 @@ function front(id) {
   if (paned(id)) return;
   const w = winEl(id);
   if (+w.style.zIndex !== zTop) w.style.zIndex = ++zTop;
+  // windows live in z 21–35: past that, re-stack them in their order, so they never climb over the
+  // HUD cues (36), the minigame (40), the drag ghost (60) or the tooltip (80)
+  if (zTop > 34) {
+    const open = WIN.filter((o) => !paned(o) && winEl(o).style.zIndex).sort((a, b) => winEl(a).style.zIndex - winEl(b).style.zIndex);
+    zTop = 20;
+    for (const o of open) winEl(o).style.zIndex = ++zTop;
+  }
   for (const o of WIN) if (!paned(o)) winEl(o).classList.toggle("top", o === id);
 }
 function syncMenu() { for (const b of $$("#menu button[data-win]")) b.classList.toggle("on", b.dataset.win === "inv" && compact() ? drawerOpen() : isOpen(b.dataset.win)); }
