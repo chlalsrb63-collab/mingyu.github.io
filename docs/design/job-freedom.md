@@ -22,10 +22,15 @@ Goal (owner): one character can eventually play every job. Builds on Codex's job
    Success rates per step still to propose (steep, e.g. 80 % at +4 down to ~10 % at +10).
 
 8. **Gear enhancement rebalance** (owner, 2026-11-15; after job-freedom merges — touches 45/40 stat code): same feel as
-   skills. +10 max; +1..+3 safe (`ENH_RATE` 100/100/100), ≈4 %/step; +4..+6 ≈2.5 %/step; +7..+10 ≈2 %/step → cumulative
-   [0,4,8,12,14.5,17,19.5,21.5,23.5,25.5,27.5] % on base stats (today: +10 % per step, +100 % at +10). A failure only
-   consumes the material (no step drop at +5 and up); pity gauges and the blessing (+10 % rate) stay. Weapon crit per
-   step 1 → 0.5. Keep low/high enhancement players close.
+   skills in strength only. +10 max; +1..+3 safe (`ENH_RATE` 100/100/100, the rest unchanged: 80 70 55 45 35 25 15),
+   ≈4 %/step; +4..+6 ≈2.5 %/step; +7..+10 ≈2 %/step → cumulative [0,4,8,12,14.5,17,19.5,21.5,23.5,25.5,27.5] % on base
+   stats (today: +10 % per step, +100 % at +10). Weapon crit per step 1 → 0.5. Keep low/high players close.
+   Each try consumes **강화석**. **Failure (owner, overrides "material only")**: the gear drops ONE step below where it
+   stood (trying +4→+5 and failing leaves it at +3) and becomes **저주받은** (cursed): it can't be enhanced until a new
+   **저주 해제** item is used on it; after lifting the curse its next try gets **+10 %p** success (stacks with the
+   blessing, capped at 100). Cursed gear still works when worn (assumption — tell the owner). Pity gauges stay.
+   The curse lives on the gear (persisted field; default in normalise, sheet bump). Source of the 저주 해제 item: shop
+   for gold + rift/weekly boss drops (gear task).
 
 ## Open (decide while building, report to the owner)
 - Exact gold costs and scroll drop rates; whether the loadout is saved per job (recommended: yes).
