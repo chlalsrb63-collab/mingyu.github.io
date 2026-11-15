@@ -48,7 +48,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 22, name, job: "adventurer", jp: null,
+    v: 23, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -66,7 +66,7 @@ export function newChar(name, look, wk) {
     dim: dimClean(null),
     wh:{ items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     // the first skill of the weapon in hand is on the bar from the start (filled below)
-    qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
+    qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(), keep: {},
     // the bag's size and a house of one's own (v10: 46-bag.js, 64-housing.js)
     bagCap: INV_BASE, house: homeEmpty(),
     // life skills (v12, 58-life.js): life {6 × {lv, xp}}, jobBoard, rep, coopDay, coopDone, pouch
@@ -182,6 +182,8 @@ function migrate(ch) {
   ch.cos = cosClean(ch.cos, ch);
   // side quests from the world map editor (v8): what is under way and what is done
   ch.sq = sqClean(ch.sq);
+  // keepsakes (v23): 기념품 from quests, kept forever
+  ch.keep = keepClean(ch.keep);
   // the 차원 균열 daily count (v9)
   // (v14: the unlocked 균열 단수, the best tier and its time, the week's brackets and boss flags — 64-dim.js dimClean)
   ch.dim = dimClean(ch.dim);
@@ -207,7 +209,9 @@ function migrate(ch) {
   // skill enhancement (v19): { [active skill id]: 1..10 } (48-skill-enh.js)
   skeClean(ch);
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
-  ch.v = Math.max(ch.v | 0, 22);
+  // quest items (v23): a delivery under way has its parcel, nothing else carries one (62-side-quests.js; after the bag is cleaned)
+  sqItemsFix(ch);
+  ch.v = Math.max(ch.v | 0, 23);
   return ch;
 }
 

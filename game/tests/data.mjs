@@ -137,16 +137,15 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   W.meet("willow_elder");
   assert.ok(W.act({ t: "sq", a: "take", id: "sq_willow_letter" }).ok);
   assert.ok(!W.act({ t: "sq", a: "take", id: "sq_willow_letter" }).ok, "not twice");
-  assert.ok(!W.act({ t: "sq", a: "done", id: "sq_willow_letter" }).ok, "not done yet");
-  assert.ok(!W.act({ t: "sq", a: "talk", npc: "shop" }).ok, "the shopkeeper is far away");
-  W.meet("shop");
-  assert.ok(W.act({ t: "sq", a: "talk", npc: "shop" }).ok);
+  // a delivery: the letter is in the bag at once, and the shopkeeper (not the elder) takes it
   s = W.self();
-  assert.equal(sqOf(s, "sq_willow_letter").st, 3, "delivered: ready to hand in");
-  assert.ok(W.toasts.some((t) => t.includes("촌장 버들에게 돌아가세요")));
-  W.meet("willow_elder");
+  assert.equal(sqOf(s, "sq_willow_letter").st, 3, "the letter in the bag: ready to deliver");
+  assert.equal(W.p.ch.inv.find((it) => it.id === "q_flower_letter")?.n, 1);
+  assert.match(W.act({ t: "sq", a: "done", id: "sq_willow_letter" }).error, /리나/, "the elder does not take his own letter");
+  W.meet("shop");
   const gold = W.p.ch.gold, xp = W.p.ch.xp;
   assert.ok(W.act({ t: "sq", a: "done", id: "sq_willow_letter" }).ok);
+  assert.ok(!W.p.ch.inv.some((it) => it.id === "q_flower_letter"), "the letter is handed over");
   assert.equal(W.p.ch.gold, gold + 80);
   assert.ok(W.p.ch.xp > xp || W.p.ch.lvl > 1, "experience paid");
   s = W.self();
@@ -438,14 +437,15 @@ const cloneData = () => JSON.parse(JSON.stringify(EMPTY_DATA()));
   delete old.sq; old.v = 7;
   const S = L.setup();
   L.addPlayer(S, "old", old);
-  assert.deepEqual(S.players.old.ch.sq, { on: {}, done: {} });
-  assert.equal(S.players.old.ch.v, 22);
+  assert.deepEqual(S.players.old.ch.sq, { on: {}, done: {}, flags: {}, t: {} });
+  assert.equal(S.players.old.ch.v, 23);
   const messy = L.newChar("엉망", "rogue", []);
   messy.sq = { on: { sq_willow_letter: 99, sq_gone: 3, "Bad Id": 1 }, done: { sq_willow_frogs: 2, sq_retired: 1, "x y": 1 } };
   L.addPlayer(S, "messy", messy);
   assert.deepEqual(S.players.messy.ch.sq.on, { sq_willow_letter: 1 }, "progress clamped, unknown quests dropped");
   assert.deepEqual(S.players.messy.ch.sq.done, { sq_willow_frogs: 2, sq_retired: 1 }, "finished quests remembered");
-  assert.equal(L.newChar("새내기", "warrior", []).v, 22);
+  assert.equal(S.players.messy.ch.inv.find((it) => it.id === "q_flower_letter")?.n, 1, "a letter errand from before deliveries (v22) gets its letter");
+  assert.equal(L.newChar("새내기", "warrior", []).v, 23);
 }
 
 // ── the playtest spot (room.ts, local dev only) lands on ground a player can stand on

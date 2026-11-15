@@ -7,8 +7,8 @@
       "giver": "willow_elder",
       "title": "꽃 편지 심부름",
       "text": "버드나무광장의 보급상 리나에게 이 꽃 편지를 전해 주겠나? 봄이가 정성껏 쓴 편지라네.",
-      "done": "리나가 기뻐했다고? 허허, 고맙네. 이건 수고비일세.",
-      "goal": { "type": "talk", "npc": "shop" },
+      "done": "어머, 봄이 편지네! 꽃잎까지 붙였어. 고마워. 이건 촌장님이 맡겨 두신 수고비야.",
+      "goal": { "type": "deliver", "npc": "shop", "item": "q_flower_letter", "n": 1 },
       "req": { "lv": 1, "quest": null },
       "reward": { "xp": 120, "gold": 80, "items": [["hp_s", 3]] },
       "repeat": false
@@ -417,7 +417,8 @@
       "title": "새참은 주먹밥",
       "text": "아이고 허리야… 텃밭 일하다 보니 새참 먹을 틈이 없네. 공동 부엌 화덕에서 들꽃 주먹밥 3개만 지어다 주겠니?",
       "done": "음~ 들꽃 향이 솔솔! 힘이 불끈 나는구먼.",
-      "goal": { "type": "collect", "item": "fd_rice", "n": 3 },
+      "hint": "요리 Lv 5 · 공동 부엌 화덕이나 모닥불",
+      "goal": { "type": "make", "item": "fd_rice", "n": 3 },
       "req": { "lv": 5, "quest": null },
       "reward": { "xp": 380, "gold": 170, "items": [["staple", 3], ["hp_s", 3]] },
       "repeat": false
@@ -459,9 +460,9 @@
       "id": "sq_lumi_elites",
       "giver": "cafe_lumi",
       "title": "숲의 마지막 장",
-      "text": "마지막 장에는 '빛나는 눈의 짐승들'이 숲의 심장을 지킨대. 속삭임 숲의 정예 몬스터 3마리를 이기면 책의 결말을 내가 새로 쓸 수 있을 거야!",
+      "text": "마지막 장에는 '빛나는 눈의 세머리 뱀'이 숲의 심장을 지킨대. 속삭임 숲에서 눈이 빛나는 정예 세머리 뱀을 이기면 책의 결말을 내가 새로 쓸 수 있을 거야!",
       "done": "결말은 이렇게 쓸래. '작은 꼬리 영웅이 숲에 아침을 돌려주었다.' 헤헤, 이건 감사의 주문서야.",
-      "goal": { "type": "elite", "map": "forest", "n": 3 },
+      "goal": { "type": "elite", "map": "forest", "mob": "hydrasnake", "named": "빛나는 눈의 세머리 뱀", "n": 1 },
       "req": { "lv": 40, "quest": "sq_lumi_snakes" },
       "reward": { "xp": 14050, "gold": 1090, "items": [["sc_xp", 1], ["stone", 1]] },
       "repeat": false
@@ -761,6 +762,56 @@
       "goal": { "type": "kill", "mob": "rootwarden", "n": 6 },
       "req": { "lv": 190, "quest": "sq_bas_elites" },
       "reward": { "xp": 4515800, "gold": 6630, "items": [["ske_stone", 1], ["uncurse", 1], ["stone_b", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_reed_quiet",
+      "giver": "willow_bard",
+      "title": "찌만 보는 낚시꾼",
+      "text": "♪ 연못가의 갈대 아저씨, 사흘째 한 마리도 안 낚네 ♪ …노래로는 안 되겠어. 아저씨한테 무슨 일인지 물어봐 줄래?",
+      "done": "딸 생일이라고? 광장에서 장사하는 그 리나가? …아저씨, 한 번도 말 안 했었는데.",
+      "goal": { "type": "talk", "npc": "willow_fisher" },
+      "req": { "lv": 3, "quest": null },
+      "reward": { "xp": 150, "gold": 60, "items": [] },
+      "repeat": false
+    },
+    {
+      "id": "sq_reed_grill",
+      "giver": "willow_fisher",
+      "title": "송사리 구이 두 마리",
+      "text": "오늘이 우리 리나 생일이야. 어릴 때 그 애가 제일 좋아하던 게 송사리 구이였는데… 내 손으론 도저히 못 굽겠어. 연못에서 송사리를 낚아 모닥불에 두 마리만 구워 줄래?",
+      "done": "이 냄새야. 리나가 꼬리까지 다 먹던 그 냄새.",
+      "hint": "연못에서 낚시 · 모닥불에서 요리",
+      "goal": { "type": "make", "item": "food_s", "n": 2 },
+      "req": { "lv": 3, "quest": "sq_reed_quiet" },
+      "reward": { "xp": 300, "gold": 120, "items": [["hp_s", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_reed_lunch",
+      "giver": "willow_fisher",
+      "title": "식기 전에",
+      "text": "도시락에 담았어. 광장의 리나한테 전해 줘. 식기 전에! …내가 보냈다는 말은, 네가 알아서 해.",
+      "done": "",
+      "hint": "15분 안에 버드나무광장의 리나에게",
+      "goal": { "type": "deliver", "npc": "shop", "item": "q_reed_box", "n": 1, "time": 900 },
+      "req": { "lv": 3, "quest": "sq_reed_grill" },
+      "choice": [
+        {"label": "「아버지가 보내셨어요.」", "done": "…아빠가? (리나가 도시락을 한참 내려다본다) 바보 같은 아빠. 잠깐만, 답장 쓸게.", "reward": {"xp": 450, "gold": 200, "items": [], "keep": "kp_reed_float", "title": "부녀의 심부름꾼"}},
+        {"label": "「마을에서 보낸 생일 선물이에요.」", "done": "와, 송사리 구이! 어릴 때 아빠가 자주 구워 줬는데… 고마워, 잘 먹을게.", "reward": {"xp": 450, "gold": 200, "items": [], "keep": "kp_reed_float"}}
+      ],
+      "reward": { "xp": 450, "gold": 200, "items": [], "keep": "kp_reed_float" },
+      "repeat": false
+    },
+    {
+      "id": "sq_reed_reply",
+      "giver": "shop",
+      "title": "아빠에게",
+      "text": "이거, 아빠한테 전해 줄래? 직접 가긴… 아직 좀 그래.",
+      "done": "'생일 축하해 줘서 고마워요, 아빠.' …허허. 내일은 낚싯대를 다시 들어야겠다.",
+      "goal": { "type": "deliver", "npc": "willow_fisher", "item": "q_rina_reply", "n": 1 },
+      "req": { "lv": 3, "quest": null, "flag": ["sq_reed_lunch", 0] },
+      "reward": { "xp": 250, "gold": 100, "items": [["food_s", 2]] },
       "repeat": false
     }
   ]

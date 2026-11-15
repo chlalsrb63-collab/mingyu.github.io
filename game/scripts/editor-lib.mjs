@@ -25,7 +25,7 @@ import { checkNpcLife } from "../editor/validate.js";
 export { DATA_DIR, ROOT };
 
 // (MAPS: every map built — the rules build the generated ones only on first use)
-const EXTRA = "\nexport const __editor = { get MAPS() { return allMaps(); }, MAP_META, FIRES, WP, FIELD_BOSS, MOBS, ITEMS, QUESTS, SOLID_G, THEMES, CROP, NPC_ROLES, BUILTIN_MAPS, NPC_MAP, DATA, COL_MOBS, npcLifeProblems, SIDE: typeof SIDE === 'undefined' ? [] : SIDE, mapPayload };\n";
+const EXTRA = "\nexport const __editor = { get MAPS() { return allMaps(); }, MAP_META, FIRES, WP, FIELD_BOSS, MOBS, ITEMS, QUESTS, SOLID_G, THEMES, CROP, NPC_ROLES, BUILTIN_MAPS, NPC_MAP, DATA, COL_MOBS, RECIPES, npcLifeProblems, SIDE: typeof SIDE === 'undefined' ? [] : SIDE, mapPayload };\n";
 const cache = new Map();
 
 /** The rules evaluated with a data set (default: data/**); cached by content. */
@@ -171,12 +171,13 @@ export async function defsForEditor(dataDir = DATA_DIR) {
   return {
     mobs, items, roles: E.NPC_ROLES.slice(), themes: E.THEMES.slice(), bgm: BGM_KEYS,
     maps: Object.keys(E.MAPS).map((id) => ({ id, name: E.MAPS[id].name, builtin: E.BUILTIN_MAPS.includes(id), w: E.MAPS[id].w, h: E.MAPS[id].h })),
-    npcs, quests: E.QUESTS.map((q) => ({ mob: q.mob, n: q.n, title: q.title })), goals: ["kill", "collect", "talk", "visit", "elite", "fb"],
+    npcs, quests: E.QUESTS.map((q) => ({ mob: q.mob, n: q.n, title: q.title })), goals: SQ_GOALS,
   };
 }
 
 // ───────────────────────────── the full check ─────────────────────────────
 
+const SQ_GOALS = ["kill", "collect", "talk", "visit", "elite", "fb", "make", "deliver", "choice"];
 const ID_RE = /^[a-z][a-z0-9_]{1,23}$/, NPC_ID_RE = /^[a-z][a-z0-9_]{1,31}$/, SQ_ID_RE = /^[a-z][a-z0-9_]{2,31}$/;
 const isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 const isInt = Number.isInteger;
@@ -228,6 +229,8 @@ export async function checkData(dataDir = DATA_DIR) {
   const solidG = G.SOLID_G;
   const mob = (k) => typeof k === "string" && Object.hasOwn(G.MOBS, k);
   const item = (id) => typeof id === "string" && Object.hasOwn(G.ITEMS, id);
+  const itemOf = (id, type) => item(id) && G.ITEMS[id].type === type;
+  const made = (id) => Object.values(G.RECIPES).some((r) => r.out[0] === id);
 
   // ── which ids exist once the data is in: built-in, replaced, new (and a file's own id as an alias)
   const fileOf = {}, alias = {}, custom = {};
@@ -443,16 +446,49 @@ export async function checkData(dataDir = DATA_DIR) {
     else if (g.type === "collect") { if (!item(g.item)) err(qf, `${p}.goal.item`, `알 수 없는 아이템 "${g.item}"`); if (!isInt(g.n) || g.n < 1) err(qf, `${p}.goal.n`, "n은 1 이상이어야 합니다"); }
     else if (g.type === "talk") { if (!npcIds.has(g.npc)) err(qf, `${p}.goal.npc`, `알 수 없는 NPC "${g.npc}"`); }
     else if (g.type === "visit") { if (!real(g.map) && !mapIds.has(g.map)) err(qf, `${p}.goal.map`, `알 수 없는 지도 "${g.map}"`); }
-    else if (g.type === "elite" || g.type === "fb") { if (g.map != null && !real(g.map) && !mapIds.has(g.map)) err(qf, `${p}.goal.map`, `알 수 없는 지도 "${g.map}"`); if (!isInt(g.n) || g.n < 1) err(qf, `${p}.goal.n`, "n은 1 이상이어야 합니다"); }
-    else err(qf, `${p}.goal.type`, `알 수 없는 목표 종류 "${g.type}" (kill, collect, talk, visit, elite, fb)`);
+    else if (g.type === "elite" || g.type === "fb") {
+      if (g.map != null && !real(g.map) && !mapIds.has(g.map)) err(qf, `${p}.goal.map`, `알 수 없는 지도 "${g.map}"`);
+      if (!isInt(g.n) || g.n < 1) err(qf, `${p}.goal.n`, "n은 1 이상이어야 합니다");
+      if (g.mob != null && (g.type !== "elite" || !mob(g.mob))) err(qf, `${p}.goal.mob`, g.type === "elite" ? `알 수 없는 몬스터 "${g.mob}"` : "우두머리 목표에는 mob을 쓰지 않습니다");
+    }
+    else if (g.type === "make") { if (!item(g.item) || !made(g.item)) err(qf, `${p}.goal.item`, `"${g.item}"을(를) 만드는 생활 레시피가 없습니다`); if (!isInt(g.n) || g.n < 1) err(qf, `${p}.goal.n`, "n은 1 이상이어야 합니다"); }
+    else if (g.type === "deliver") {
+      if (!npcIds.has(g.npc)) err(qf, `${p}.goal.npc`, `알 수 없는 NPC "${g.npc}"`);
+      else if (g.npc === q.giver) err(qf, `${p}.goal.npc`, "받는 사람이 의뢰인과 같습니다");
+      if (!itemOf(g.item, "quest")) err(qf, `${p}.goal.item`, `"${g.item}"은(는) 퀘스트 아이템(type quest)이 아닙니다`);
+      if (g.n != null && (!isInt(g.n) || g.n < 1 || g.n > 99)) err(qf, `${p}.goal.n`, "n은 1–99여야 합니다");
+      if (g.time != null && (!isInt(g.time) || g.time < 30 || g.time > 3600)) err(qf, `${p}.goal.time`, "time(초)은 30–3600이어야 합니다");
+    }
+    else if (g.type === "choice") { if (!Array.isArray(q.choice)) err(qf, `${p}.choice`, "choice 목표에는 선택지(choice)가 있어야 합니다"); }
+    else err(qf, `${p}.goal.type`, `알 수 없는 목표 종류 "${g.type}" (${SQ_GOALS.join(", ")})`);
+    if (q.choice != null) {
+      if (!Array.isArray(q.choice) || q.choice.length < 2 || q.choice.length > 3) err(qf, `${p}.choice`, "선택지는 2–3개여야 합니다");
+      else q.choice.forEach((o, j) => {
+        if (!isObj(o) || typeof o.label !== "string" || !o.label.trim()) err(qf, `${p}.choice[${j}].label`, "선택지 문구가 비어 있습니다");
+        else if (o.reward != null) checkReward(o.reward, `${p}.choice[${j}].reward`);
+      });
+    }
     const req = isObj(q.req) ? q.req : {};
     if (req.lv !== undefined && req.lv !== null && (!isInt(req.lv) || req.lv < 1)) err(qf, `${p}.req.lv`, "req.lv는 1 이상의 정수여야 합니다");
     if (req.quest != null && !sids.has(req.quest)) err(qf, `${p}.req.quest`, `선행 퀘스트 "${req.quest}"가 없습니다`);
     if (req.quest != null && req.quest === q.id) err(qf, `${p}.req.quest`, "자기 자신을 선행 퀘스트로 둘 수 없습니다");
-    const rw = isObj(q.reward) ? q.reward : {};
-    for (const k of ["xp", "gold"]) if (rw[k] !== undefined && (!isInt(rw[k]) || rw[k] < 0)) err(qf, `${p}.reward.${k}`, `${k}는 0 이상의 정수여야 합니다`);
-    (Array.isArray(rw.items) ? rw.items : []).forEach((it, j) => { if (!Array.isArray(it) || !item(it[0])) err(qf, `${p}.reward.items[${j}]`, `알 수 없는 아이템 "${Array.isArray(it) ? it[0] : it}"`); });
+    if (req.flag != null) {
+      const f = req.flag, src = Array.isArray(f) && data.quests.side.find((o) => o.id === f[0]);
+      if (!src || !Array.isArray(src.choice)) err(qf, `${p}.req.flag`, "req.flag는 [선택지가 있는 퀘스트 id, 번호]여야 합니다");
+      else if (!isInt(f[1]) || f[1] < 0 || f[1] >= src.choice.length) err(qf, `${p}.req.flag`, `"${f[0]}"에는 ${f[1]}번 선택지가 없습니다`);
+    }
+    checkReward(q.reward, `${p}.reward`);
   });
+  function checkReward(rw, at) {
+    rw = isObj(rw) ? rw : {};
+    for (const k of ["xp", "gold"]) if (rw[k] !== undefined && (!isInt(rw[k]) || rw[k] < 0)) err(qf, `${at}.${k}`, `${k}는 0 이상의 정수여야 합니다`);
+    (Array.isArray(rw.items) ? rw.items : []).forEach((it, j) => {
+      if (!Array.isArray(it) || !item(it[0])) err(qf, `${at}.items[${j}]`, `알 수 없는 아이템 "${Array.isArray(it) ? it[0] : it}"`);
+      else if (itemOf(it[0], "keep") || itemOf(it[0], "quest")) err(qf, `${at}.items[${j}]`, `"${it[0]}"은(는) 보상 아이템으로 줄 수 없습니다 (기념품은 keep에)`);
+    });
+    if (rw.keep != null && !itemOf(rw.keep, "keep")) err(qf, `${at}.keep`, `"${rw.keep}"은(는) 기념품(type keep)이 아닙니다`);
+    if (rw.title != null && (typeof rw.title !== "string" || !rw.title.trim() || rw.title.length > 16)) err(qf, `${at}.title`, "칭호는 1–16자여야 합니다");
+  }
 
   // ── finally the rules themselves must load with this data
   if (!errors.length) {

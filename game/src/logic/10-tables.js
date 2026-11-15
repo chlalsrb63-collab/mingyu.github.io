@@ -68,6 +68,12 @@ const ITEMS = {
   pet_bat: { name: "꼬마 박쥐 펫", type: "pet", radius: 76, price: 9000, desc: "사용하면 곁을 따라다니며 내 전리품을 반경 76 안에서 주워 온다. 다시 사용하면 돌려보낸다." },
   pet_wisp: { name: "도깨비불 펫", type: "pet", radius: 96, price: 24000, desc: "사용하면 곁을 따라다니며 내 전리품을 반경 96 안에서 주워 온다. 다시 사용하면 돌려보낸다." },
   pet_hagfish: { name: "꼬마 먹장어 펫", type: "pet", radius: 104, price: 30000, desc: "꽃무덤 고래에게서 떨어져 나온 꼬마 먹장어. 곁을 따라다니며 내 전리품을 반경 104 안에서 주워 온다. 상점에서는 팔지 않는다." },
+  // quest items (62-side-quests.js): given by a quest, never sold, stored or quick-slotted, taken back when the quest ends
+  q_flower_letter: { name: "봄이의 꽃 편지", type: "quest", price: 0, desc: "꽃잎을 눌러 붙인 편지. 버드나무광장의 보급상 리나에게 전해야 한다." },
+  q_reed_box: { name: "갈대의 송사리 도시락", type: "quest", price: 0, desc: "아직 따뜻한 송사리 구이 두 마리. 식기 전에 광장의 리나에게." },
+  q_rina_reply: { name: "리나의 답장", type: "quest", price: 0, desc: "꼭꼭 접은 쪽지. 겉봉에 서툰 글씨로 '아빠에게'." },
+  // keepsakes (기념품): no stats, never in the bag — kept forever in ch.keep; 루루 의상실 will sew them into outfits later
+  kp_reed_float: { name: "갈대의 낡은 찌", type: "keep", price: 0, arc: "갈대의 송사리 도시락", desc: "갈대가 딸과 처음 낚시하던 날 쓰던 빨간 찌. \"이제 나한텐 필요 없어. 네가 가져.\"" },
 };
 for (const wk of Object.keys(WEAPON_NAMES)) {
   for (let t = 1; t <= 5; t++) {

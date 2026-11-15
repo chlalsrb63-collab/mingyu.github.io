@@ -595,7 +595,7 @@ function appraised(W, src, want) {
   const old = L.hero("옛모험가", { lvl: 45, wk: "staff" });
   delete old.charms; old.v = 12;
   const W = world({ ch: clone(old) });
-  assert.equal(W.ch.v, 22); assert.deepEqual(W.cs, X.charmsEmpty());
+  assert.equal(W.ch.v, 23); assert.deepEqual(W.cs, X.charmsEmpty());
   assert.equal(W.self().charms.un, 0);
   // rubbish in the field
   for (const junk of [null, 7, "x", [], { placed: "no", pending: 5, rec: {}, openN: 99, unlocked: 1, nextUid: -4, fu: "x" }]) {
