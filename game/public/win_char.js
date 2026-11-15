@@ -23,6 +23,7 @@ import { isOpen, touch, hideTip, closeDrawer, openWin, hoverTip } from "./window
 import { invOrder, itemSlot, QS_USE, useSlot, isGear, sellPrice, itemTip, itemName, SLOT_NAME, SLOT_GLYPH, setWorn, statText } from "./items.js";
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
 import * as Charms from "./charms.js";
+import * as Loadout from "./loadout.js";
 
 // ── the bag ──
 export function renderInv(s) {
@@ -191,10 +192,11 @@ function renderSheet(s) {
 
 // ── K: 무기 · 스킬 and 전직의 길 (jobtree.js draws the weapon rows and the tree; the skill rows are here, with the quick-slot drag) ──
 export function renderSkills(s) {
-  const tab = G.skTab === "tree" ? "tree" : "wpn";
+  const tab = G.skTab === "tree" || G.skTab === "lo" ? G.skTab : "wpn";
   for (const b of $$("#skill-tabs button")) b.classList.toggle("on", b.dataset.tab === tab);
   const box = $("#skill-body");
-  if (tab === "tree") JobTree.renderTree(box, s, { atJob: G.near && G.near.role === "job" });
+  if (tab === "lo") Loadout.renderLoadout(box, s);
+  else if (tab === "tree") JobTree.renderTree(box, s, { atJob: G.near && G.near.role === "job" });
   else JobTree.renderWeapons(box, s, { skills: (host, k) => skillRows(host, s, k) });
 }
 /** Weapon `k`'s skills (L1, L10, the passive), then the job signatures it carries; the hand's basic attack first. */
@@ -237,6 +239,7 @@ function skillRows(box, s, k) {
     // one line here (css ellipsis); the whole text is the hover card
     const desc = el("p", "", sk.desc);
     row.append(ic, hd, desc);
+    if (!pas && w && w[3] === 0) { row.classList.add("off"); hd.append(el("small", "", "스킬 칸에 없음")); }   // learned but not in the loadout (loadout.js)
     hoverTip(row, (n) => {
       n.append(el("div", "nm", sk.name), el("div", "", sk.desc));
       if (rank?.current && rank.next) n.append(el("small", "", `다음 · ${rank.next}`));

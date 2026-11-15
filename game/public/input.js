@@ -186,6 +186,7 @@ export function setupInput() {
       case "swap": { const j = G.self && G.defs.jobs[G.self.job]; if (j && j.kind === "hybrid") { act({ t: "wsw" }); Sound.play("ui"); } break; }
       case "char": toggleWin("char"); break;
       case "charm": toggleWin("charm"); break;   // the 참 보드
+      case "trophy": toggleWin("trophy"); break;   // the 보스 전리품 (trophies.js)
       case "quest": toggleWin("quest"); break;
       case "life": toggleWin("life"); break;   // the 생활 window (life skills, life.js)
       case "auto": toggleAuto(); break;

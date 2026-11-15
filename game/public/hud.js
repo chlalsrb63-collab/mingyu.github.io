@@ -26,6 +26,8 @@ import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
 import * as Charms from "./charms.js";
+import * as Loadout from "./loadout.js";
+import * as Trophies from "./trophies.js";
 import * as Info from "./infocard.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
 import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn } from "./windows.js";
@@ -188,6 +190,7 @@ function tracker(s) {
     if (quest && s.q.st === 1) {
       const t = el("div", "qt"); t.append(Info.questMark("main"), quest.title);
       qt.append(t, goal(G.defs.mobs[quest.mob].name, s.q.n, quest.n, "완료! 엘더윈에게 돌아가세요"));
+      if (quest.fb && s.q.n < quest.n) qt.append(el("div", "qp", `우두머리 [${G.defs.mobs[quest.mob].name}] 홀로 쓰러뜨리기 — 그 자리로 가세요`));
     } else if (quest) {
       const t = el("div", "qt"); t.append(Info.questMark("main"), "엘더윈에게 새 의뢰가 있습니다");
       qt.append(t);
@@ -227,7 +230,8 @@ export function refreshUi() {
     ? ["stat", s.st, s.lvl, s.xp, s.xpt, s.nx, s.rs, s.dv, s.atk, s.mhp, s.mmp, s.def, s.crit, s.critd, s.mf, s.job, s.wk, s.eq.weapon && s.eq.weapon.id, s.dead, fireNear(), near, StatWin.key()]
     : ["gear", s.xp, s.nx, s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.lvl, s.name, s.guild], renderChar);
   // K: 무기 · 스킬 or 전직의 길
-  draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.jp?.join(), s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey()], renderSkills);
+  draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.jp?.join(), s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey(), G.skTab === "lo" && [Loadout.key(), G.near && G.near.role]], renderSkills);
+  draw("trophy", Trophies.key, Trophies.render);   // 보스 전리품 (trophies.js)
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near, s.rep], renderShop);
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone"), s.pity], renderSmith);
   draw("train", () => [s.xp, s.xpt, s.nx, s.rs, s.sw, s.lvl, s.inv.length, near, StatWin.trainerKey()], (s) => StatWin.renderTrainer($("#train-body"), s, { atTrainer: near === "train" }));

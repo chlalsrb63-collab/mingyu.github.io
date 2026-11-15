@@ -149,7 +149,7 @@ export function jobCard(id) {
   else text.push(`${job.wk.map((k) => wkName[k]).join("와(과) ")}, 두 무기를 ${K("swap")}으로 바꿔 가며 싸우는 직업입니다.`);
   return {
     icon: jobImg(key), title: job.name, tag: KIND[job.kind] || "", text, rows,
-    how: "전직관 아르센 앞에서 한 번만 할 수 있고 되돌릴 수 없습니다.", howLabel: "전직",
+    how: "전직관 아르센 앞에서 합니다. 전직 초기화 주문서로 되돌릴 수 있고, 걸었던 직업은 그 레벨을 이어받습니다.", howLabel: "전직",
     btn: hooks.openTree && G.self ? [`전직의 길 보기 (${K("skill")})`, () => hooks.openTree()] : null,
   };
 }
