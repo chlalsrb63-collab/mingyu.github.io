@@ -62,9 +62,8 @@ function goalMap(t) {
 function goalPoint(t) {
   const m = G.map;
   if (t.k === "npc") {
-    const b = NPC.at(t.id);
+    const n = onMap(t.id), b = !(t.post && n) && NPC.at(t.id);
     if (b) return { x: b.x, y: b.y, r: 34, moving: true };
-    const n = onMap(t.id);
     return n ? { x: n.x * T + 8, y: n.y * T + 12, r: 34 } : null;
   }
   if (t.k === "mob") {
@@ -122,7 +121,7 @@ export function start(get, label) {
 function arrive(t, p) {
   const name = targetName(t);
   if (p) G.mark = { at: now(), pos: [p.x, p.y] };
-  stop(t.k === "mob" && !p ? `도착했습니다 · ${mapName(G.map.id)} — 이곳에서 ${name}을(를) 찾으세요` : `도착했습니다 · ${name}`);
+  stop(t.k === "mob" && !p ? `도착했습니다 · ${mapName(G.map.id)} — 이곳에서 ${name}${(name.charCodeAt(name.length - 1) - 0xac00) % 28 > 0 ? "을" : "를"} 찾으세요` : `도착했습니다 · ${name}`);
 }
 function go(path) {
   G.path = path;
@@ -188,7 +187,9 @@ export function tick() {
 // ───────────────────────────── objectives ─────────────────────────────
 
 const npc = (id, name) => id && { k: "npc", id, name };
-const elder = () => npc((G.defs.questTurnIn && G.defs.questTurnIn.npc) || "elder");
+// a service (quests, shop, training) works at its post even while its keeper is out walking: go to the post, not the body
+const post = (id) => ({ ...npc(id), post: true });
+const elder = () => post((G.defs.questTurnIn && G.defs.questTurnIn.npc) || "elder");
 /** The main quest's target now (elder to take or hand in, else its monster). */
 function mainTarget(s) {
   const q = G.defs.quests[s.q.i];
@@ -209,8 +210,8 @@ function sideTarget(s, id) {
   if (g.type === "visit") return { k: "map", id: g.map };
   return g.mob ? { k: "mob", id: g.mob } : npc(q.giver, q.giverName);   // collect: the giver (where to find it is in the text)
 }
-const TUT = { talk: () => elder(), equip: () => npc("train"), buy: () => npc("shop"), hunt: () => ({ k: "mob", id: "twinhare" }),
-  skill: () => ({ k: "mob", id: "twinhare" }), rest: () => ({ k: "fire" }), level: () => npc("train") };
+const TUT = { talk: () => elder(), equip: () => post("train"), buy: () => post("shop"), hunt: () => ({ k: "mob", id: "twinhare" }),
+  skill: () => ({ k: "mob", id: "twinhare" }), rest: () => ({ k: "fire" }), level: () => post("train") };
 function charmTarget(s) {
   const q = s.charms && s.charms.quest, d = G.defs.charms;
   if (!q || !d) return null;

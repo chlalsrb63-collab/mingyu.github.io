@@ -170,7 +170,7 @@ export function renderTalk(box, npc, s, say) {
     card.append(btns);
     box.append(card);
   }
-  if (!shown && !box.querySelector(".ds")) box.append(el("p", "ds", "지금은 부탁할 일이 없다네."));
+  if (!shown && !box.querySelector(".ds")) box.append(el("p", "ds", "지금은 부탁할 일이 없습니다."));
 }
 
 /** Entries for the quest window's list: the side quests under way (and ready to hand in). */
