@@ -728,10 +728,13 @@ export const MOTIF_SIL = {
   bow: { chain: "fork", nova: "horn", greed: "recurve", haste: "recurve", thorn: "fork", feast: "horn", echo: "wave", giant: "wave" },
   sword: { chain: "flamberge", nova: "cleaver", greed: "sabre", haste: "rapier", thorn: "serrated", feast: "bone", echo: "crystal", giant: "cleaver" },
   dagger: { chain: "kris", nova: "tanto", greed: "parrying", haste: "tanto", thorn: "hook", feast: "hook", echo: "kris", giant: "parrying" },
-  spear: { chain: "trident", nova: "glaive", greed: "partisan", haste: "glaive", thorn: "trident", feast: "scythe", echo: "partisan", giant: "scythe", w_bloodcrown: "trident" },
-  staff: { chain: "fork", nova: "cage", greed: "crook", haste: "crook", thorn: "fork", feast: "crescent", echo: "cage", giant: "crescent", w_bloomstaff: "crescent" },
+  spear: { chain: "trident", nova: "glaive", greed: "partisan", haste: "glaive", thorn: "trident", feast: "scythe", echo: "partisan", giant: "scythe" },
+  staff: { chain: "fork", nova: "cage", greed: "crook", haste: "crook", thorn: "fork", feast: "crescent", echo: "cage", giant: "crescent" },
   book: { chain: "chained", nova: "grimoire", greed: "atlas", haste: "atlas", thorn: "grimoire", feast: "skull", echo: "chained", giant: "skull" },
 };
+
+/** The bosses-2 uniques that take another silhouette of their kind (their motif is keyed by item id). */
+const UNIQ_SIL = { w_bloodcrown: "trident", w_bloomstaff: "crescent" };
 
 /** One legendary rendering of each silhouette for previews and exports. */
 export function silhouetteSamples(kind) {
@@ -867,7 +870,7 @@ function outline(c, inks) {
 /** The design for a kind and tier, with a motif (legendary, set or skin) applied. */
 function build(kind, tier, motif, icon, o) {
   const list = DESIGNS[kind] || DESIGNS.sword;
-  const name = MOTIF_SIL[kind]?.[motif];
+  const name = MOTIF_SIL[kind]?.[motif] || UNIQ_SIL[motif];
   const design = name ? SIL[kind][name] : list[Math.max(0, Math.min(list.length - 1, tier - 1))];
   const d = design(icon, o);
   const mats = {};
