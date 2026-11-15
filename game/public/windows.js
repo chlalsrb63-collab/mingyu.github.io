@@ -329,11 +329,21 @@ export function placeToasts() {
 }
 export function toast(m) {
   const box = $("#toasts");
+  // the same notice again while it shows (a key mashed, a wall walked into): one line counts up instead of a stack
+  const same = [...box.children].find((o) => o.dataset.m === m);
+  if (same) {
+    same.dataset.n = +same.dataset.n + 1;
+    same.textContent = `${m} ×${same.dataset.n}`;
+    same.style.animation = "none"; void same.offsetWidth; same.style.animation = "";
+    clearTimeout(same.tm); same.tm = setTimeout(() => same.remove(), 3300);
+    return;
+  }
   const p = el("p", "", m);
+  p.dataset.m = m; p.dataset.n = 1;
   if (!box.children.length) placeToasts();
   box.append(p);
   while (box.children.length > 4) box.firstChild.remove();
-  setTimeout(() => p.remove(), 3300);
+  p.tm = setTimeout(() => p.remove(), 3300);
   // party and guild news also goes in the log, under its own tab
   if (/파티/.test(m)) addChat(m, "sys party");
   else if (/길드/.test(m)) addChat(m, "sys guild");
