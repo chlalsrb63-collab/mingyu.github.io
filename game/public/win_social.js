@@ -181,7 +181,7 @@ export function renderInvite() {
   box.hidden = !G.pinv && !G.ginv;
   if (box.hidden) return;
   if (G.pinv) $("#invite-text").textContent = `${G.pinv}님이 파티에 초대했습니다.`;
-  else { const [from, g] = G.ginv.split("|"); $("#invite-text").textContent = `${from}님이 길드 ‹${g}›에 초대했습니다.`; }
+  else { const [from, g] = G.ginv.split("|"); $("#invite-text").textContent = `${from}님이 길드 [${g}]에 초대했습니다.`; }
   Sound.play("ok");
 }
 
