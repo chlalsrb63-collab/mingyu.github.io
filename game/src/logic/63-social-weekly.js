@@ -27,7 +27,7 @@ function chatFor(S, p, pid) {
     if (c.pt && c.pt !== p.party) continue;
     if (c.to !== undefined && c.to !== pid) continue;
     if (c.n && !c.sys && c.w !== 2 && p.ch.blk.length && blocked(p.ch, c.n)) continue;
-    out.push(c.to !== undefined ? { n: c.n, m: c.m, w: c.w } : c);
+    out.push(c.to !== undefined ? (c.sys ? { sys: 1, m: c.m } : { n: c.n, m: c.m, w: c.w }) : c);
   }
   return out;
 }

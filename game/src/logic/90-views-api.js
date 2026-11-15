@@ -152,6 +152,7 @@ export function viewFor(S, pid) {
   if (p.gain.length) out.gain = p.gain;
   dimView(S, p, out);
   coopView(S, p, out);   // 협동 아르바이트: cj, C, cr (68-coop.js)
+  sxView(S, p, out);     // requests, trade window, mini-game: sx when it changes (69-social-play.js)
   // this map's gathering nodes the player has spent, when that changes (58-life.js)
   lifeSnap(S, p, out);
   npcLifeSnap(S, p, out);
@@ -277,6 +278,7 @@ export function defs() {
     charms: charmDefs(),
     // 협동 아르바이트: the jobs, cut-offs, tools (68-coop.js)
     coop: coopDefs(),
+    sx: sxDefs(),
     // boss trophies: { list: { kind: { name, fx } }, cap, p, gold, story: { r, limit } } (67-trophies.js)
     trophies: trophyDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: worldMapDefs(),

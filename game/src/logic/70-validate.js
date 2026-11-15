@@ -468,6 +468,8 @@ export function validateAction(S, pid, a) {
     case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": return charmValidate(S, p, a);
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": return coopValidate(S, p, a);
+    // player to player: requests, trade, mini-games (69-social-play.js)
+    case "sx": return sxValidate(S, p, a);
     default:
       return bad("알 수 없는 행동");
   }

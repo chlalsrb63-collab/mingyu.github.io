@@ -618,6 +618,7 @@ export function removePlayer(S, pid) {
   const p = S.players[pid];
   if (!p) return null;
   const ch = exportChar(S, pid);
+  sxLeave(S, p);
   leaveParty(S, p);
   dropAggro(S, p);
   S.maps[p.map].n--;
