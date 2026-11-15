@@ -655,6 +655,10 @@ export const Sound = {
   step(ground) { this.play(`step_${ground}`); },
 };
 
+/** A blow's colour by weapon: [punch drop Hz, thud Hz, metal ring Hz (0: none), crack Hz]. Blades ring, blunt things thump. */
+const IMPACT0 = [300, 112, 2300, 1600];
+const IMPACT = { sword: [330, 118, 2500, 1900], dagger: [420, 130, 3300, 2600], spear: [360, 112, 2100, 1700], hammer: [220, 82, 0, 900], staff: [260, 96, 0, 1200], book: [280, 100, 0, 1300] };
+
 /** Minimum seconds between two plays of the same effect. */
 const THROTTLE = { gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.035, magic_hit: 0.04, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5 };
 /** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
@@ -761,8 +765,10 @@ const SFX = {
   overload() { this.noise(0.45, 0.38, 2000, "lowpass", 0, 90); this.tone("square", 220, 40, 0.35, 0.18); this.noise(0.1, 0.2, 4000, "highpass"); },
   // ── hits ──
   // hits: the punch (pitch-drop + 80–140 Hz thud + metallic click), each ±5% apart
-  hit() { const p = this.vary(); this.punch(p, 300, 120, 2300, 0.8); this.noise(0.04, 0.1, 1600 * p, "bandpass"); },
-  crit() { const p = this.vary(); this.punch(p, 620, 140, 2900, 1.15); this.noise(0.09, 0.2, 1200 * p, "bandpass"); this.tone("sine", 1400 * p, 1100 * p, 0.08, 0.05, 0.02); },
+  // a blow landing on a monster: the punch, a sub thump for weight and a crack, coloured by my weapon (`wk`, my own blows only)
+  hit(wk) { const p = this.vary(), [d, th, m, cr] = IMPACT[wk] || IMPACT0; this.punch(p, d, th, m, 1); this.tone("sine", 64 * p, 40 * p, 0.13, 0.2); this.noise(0.045, 0.15, cr * p, "bandpass"); },
+  // a crit: higher, harder and louder — a deeper boom, a sharp snap on top, the glint
+  crit(wk) { const p = this.vary(), [d, th, m, cr] = IMPACT[wk] || IMPACT0; this.punch(p, d * 1.9, th * 1.2, m ? m * 1.15 : 2900, 1.3); this.tone("sine", 58 * p, 32 * p, 0.2, 0.3); this.noise(0.018, 0.32, 6500 * p, "highpass"); this.noise(0.1, 0.22, cr * 0.8 * p, "bandpass"); this.tone("sine", 1400 * p, 1100 * p, 0.08, 0.06, 0.02); },
   finisher() { const p = this.vary(); this.punch(p, 260, 95, 1700, 1.25); this.noise(0.2, 0.28, 2400 * p, "lowpass", 0, 200); this.tone("sine", 85 * p, 40 * p, 0.28, 0.26); },
   hurt() { this.tone("sawtooth", 190, 70, 0.16, 0.17); this.noise(0.08, 0.1, 900, "bandpass"); },
   // ── monsters ──
