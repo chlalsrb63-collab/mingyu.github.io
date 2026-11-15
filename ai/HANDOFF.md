@@ -32,32 +32,32 @@ agent notification re-read it, and 6–7 agents of 120k–400k tokens each ran a
 7. Unused MCP servers/plugins (Unity, Summer Engine, Higgsfield, Notion, PixelLab, Blender, fullstory…) add ~25k tokens
    to every call — the owner may turn them off for this folder. Ponytail (lazy-senior-dev rules) is installed.
 
-## 0.1 State (2026-11-15, end of the third integrator session — `main` sheet v18, rules suite 42/42, nothing pushed)
+## 0.1 State (2026-11-15, end of the fourth integrator session — `main` sheet v19, rules suite 42/42, nothing pushed)
 
-Merged this session: `rift-tiers` (tiers 1–100, weekly 4-player boss + stagger) · boss art bloodhorn/clubshrimp/
-cloakbat/bloomwhale (`mobart_f.js`, keys `_p2/_ch/_dive`) · boss-script runner (`56-boss-script.js`) · `codex/hammer`
-(Codex merged it, v16) · boss trophies + solo story fights (`67-trophies.js`, v17, `docs/design/boss-trophies.md`) ·
-HUD: job-level row under weapon mastery, equal HP/MP bars (99999), weapon-passive gauge floats bottom-centre (owner
-dropped the job special gauge) · skill/job UI cleanup (owner-approved audit; `jobtree.js`/`mastery.js`/아르센) ·
-**job freedom rules** (`47-job-freedom.js`, v18; contract + as-built in `docs/design/job-freedom.md`).
+Done this session (contracts + as-built in `docs/design/job-freedom.md` §7–9): **gear enhancement rebalance** (safe to
++3, +27.5 % at +10, crit 0.5/step, failure = one step down + 저주받은 `g.cu`, 저주 해제 주문서 `uncurse` in the shop 2,500G,
+blessed failure keeps the step and brings no curse) · **two main weapons for everyone** (Ⅰ/Ⅱ above the weapon slot,
+`wsw` + Tab for anyone, swap-slot kind 30 % mastery XP, same kind +10 %) · **모닥불 피우기** (앉기 in the field, calm 5 s,
+no live monster within 160 px → 2-minute fire, `fieldFire` in 62) · **client**: 스킬 칸 loadout tab (`loadout.js`), 전직관
+reset buttons, 보스 전리품 window (`trophies.js`, Shift+T), job-reset wording · **skill enhancement +10** (`48-skill-enh.js`,
+`ske_stone`, rates 100×3 80 65 50 35 25 15 10 — proposed, UI under the 스킬 칸 tab).
+**타격감** (owner, mid-session): per-weapon layered impact sounds (`audio.js` `IMPACT`), own big-hit hit-stop 45→60 ms,
+plain-hit shake 2.5→1.5 so crits stand out. Server hitstun already existed (140/210 ms, elites ×0.65, bosses immune, cap
+340 ms per 2.4 s; `tests/feel.mjs`); a longer one broke `balance.mjs`/`dimrift.mjs` bot sims — owner to decide. Sounds not
+heard by a human yet.
 
-**Next, in order (owner's queue; contracts in `docs/design/job-freedom.md` §7–9 and as-built):**
-1) **Gear enhancement rebalance** (§8): safe to +3, curve to +27.5 % at +10, crit 0.5/step, each try uses 강화석; a
-   failure drops one step and **curses** the gear (new 저주 해제 item lifts it, next try +10 %p). Touches 10/40/45/63/75.
-2) **Two main weapons for everyone** (§9): Ⅰ/Ⅱ buttons above the weapon slot + hotkey; swap-slot weapon earns 30 %
-   mastery XP (same kind: +10 % only).
-3) **모닥불 피우기**: the 앉기 button lights a temporary campfire in the field when out of combat with no monster near.
-4) Client: skill loadout editor (5 active + 4 passive, `self.lo`), 전직관 reset buttons + off-job slot picker, the
-   보스전리품 window (like the charm board) + quest tracker lines; fix "전직은 되돌릴 수 없습니다" in `jobtree.js`
-   79/154/268 and `infocard.js:152`.
-5) **Skill enhancement +10** (§7: +1..+3 safe, failure eats the material only, ≈2–3 %/step; propose rates).
-6) Gear + cosmetics content (cosmetic sources "곧 열립니다" → rift/weekly/quests; boss drops bosses-2 §7; hammer gear;
-   scroll + 저주 해제 sources). 7) bosses-2 patterns donut/cone/mark/adds + data rows/arenas, then boss screenshots.
+**Next, in order:**
+1) Gear + cosmetics content: sources for `ske_stone` (none yet!), `uncurse` and reset scrolls from rift/weekly boss
+   drops; cosmetic sources "곧 열립니다" → rift/weekly/quests; boss drops bosses-2 §7; hammer gear.
+2) bosses-2 patterns donut/cone/mark/adds + data rows/arenas, then boss screenshots.
+3) Small follow-ups: 앉기 keymap label could say 모닥불; the char window's right column is clipped at 960×600 (old);
+   trophies: story-arena [떠나기]/countdown and a radar mark for the solo-fight boss not done; off-job slot list is a
+   client guess (server checks).
 Known: field bosses have no stagger bar; boss `dc` events share a code with the tracker decoy (`skillfx.js`); rift tier
 5+ needs balance; `party` test flakes under load; 6 field bosses (oasis, coast, dunesea, cloudtemple, mesa, jungle) have
 no main-quest step yet; job/level reset gold costs are placeholders. Codex commits to `main` directly at times.
 **Agent worktrees from `isolation: "worktree"` start at origin/main (stale) — first step of every brief: `git rebase main`.**
-Only the owner adds jobs.
+Typed agents (`ui-programmer` etc.) stop at 20 turns — use `general-purpose` for anything bigger. Only the owner adds jobs.
 
 **Owner's priorities:** content + HUD + user-friendly UI/UX first. The 경매장 (auction house) is **on hold**.
 
