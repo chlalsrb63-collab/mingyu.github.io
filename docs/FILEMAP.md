@@ -125,6 +125,7 @@ banner or function it names. **When you add, move or split a file, update its ro
 | `frames.js` [85] | HUD 9-slice frame art → CSS custom properties |
 | `audio.js`, `bgm.js`, `bgm-arrangements.js` | Web Audio score player, map/day-night themes and acoustic arrangements, `SFX` catalogue (gathering: `gat_start gat_work gat_tap gat_hit gat_great gat_break`; stations: `forge_hit forge_quench brew_stir brew_bubble brew_done craft_ok craft_great craft_fail`), `Sound.play(name)`. Score authoring and offline previews in `.agents/skills/tales-tales-bgm/`. |
 | `bgm-regions.js` | original jungle, coral coast and oasis scores imported by `bgm.js` |
+| `assets/music/<map>.mp3` · `assets/manifest.json` → `bgm` · `scripts/import-bgm.mjs` | local file drop via `/__local-bgm/` in the Worker, optional registered loop offsets, existing music mix; prompt in `ai/prompts/gemini-bgm.md` |
 | `titlescene.js` [604] | title-screen diorama, pixel logo `logo(S)` and subtitle wordmark `subtitle(S)` (Fantasy Life in forest) |
 | `assetlib.js` [131] | external asset loader, `ready()` awaited at client start-up; `canvas meta has loadImage loadAudio loadSounds play`. Used by weapons.js and art.js `buildIcons` (`icon.item.<id>`) |
 | `style.css` [351] · `hud.css` [1149] · `lobby.css` [225] | base + CRT, HUD/windows (the "responsive" section: breakpoints ≤1100 wide / ≤640 high / ≤860 phones, the window safe zone, scrolling bodies, folded tabs, text wrapping; docked windows `.window.docked` and the desktop side panel `#panel`), lobby |

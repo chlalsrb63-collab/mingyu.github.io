@@ -1,5 +1,5 @@
 /**
- * The game's Web Audio score player and synthesised effects. No audio files.
+ * The game's Web Audio score player and synthesised effects.
  *
  * Music: every map has its own composed loop (melody, bass, chords, drums),
  * plus a title theme, a boss theme and a rift-invasion theme. Notes are
@@ -9,6 +9,7 @@
 
 import { TRACKS } from "./bgm.js";
 import { arrangedTrack, DEFAULT_MUSIC_STYLE, MUSIC_STYLES } from "./bgm-arrangements.js";
+import { ready as assetsReady } from "./assetlib.js";
 
 // ───────────────────────────── notes and chords ─────────────────────────────
 
@@ -114,7 +115,8 @@ export const Sound = {
   /** Kept for older callers: both follow `muted`. */
   sfxOn: true, bgmOn: true,
   vol: { music: 0.7, sfx: 0.85, mute: false, style: DEFAULT_MUSIC_STYLE },
-  base: null, theme: null, playing: [], timer: 0,
+  base: null, mapScore: null, theme: null, playing: [], timer: 0,
+  recordings: null, recordingRequest: null,
   voices: 0, last: {}, k: 1, amb: 0, ambNext: 0, noiseBuf: null, waves: {},
 
   /** Browsers only allow audio after a gesture — call this from a click/keypress. */
@@ -130,6 +132,10 @@ export const Sound = {
     });
     this.timer = setInterval(() => this.pump(), 50);
     this.pick();
+    assetsReady().then(manifest => {
+      this.recordings = manifest.bgm;
+      this.pick();
+    }).catch(() => {});
   },
   resume() {
     if (!document.hidden && this.ctx.state !== "running" && this.ctx.state !== "closed") this.ctx.resume().catch(() => {});
@@ -184,6 +190,7 @@ export const Sound = {
   /** The map's own music: its id has a track, or else its `fallback` name does. */
   bgm(name, fallback) {
     const own = (k) => Object.hasOwn(TRACKS, k) ? k : Object.hasOwn(ALIAS, k) ? ALIAS[k] : null;
+    this.mapScore = name;
     this.base = own(name) || own(fallback) || "meadow";
     this.pick();
   },
@@ -191,13 +198,63 @@ export const Sound = {
   setTheme(name) { if (this.theme === name) return; this.theme = name; this.pick(); },
   /** Night falls (or lifts) outdoors: the map's music crossfades to its night variant and back. */
   setNight(on) { on = !!on; if (this.night === on) return; this.night = on; this.pick(); },
+  fadeOut(track, time, fade) {
+    if (!track) return;
+    const gain = track.gain.gain;
+    if (gain.cancelAndHoldAtTime) gain.cancelAndHoldAtTime(time);
+    else { const value = gain.value; gain.cancelScheduledValues(time); gain.setValueAtTime(value, time); }
+    gain.linearRampToValueAtTime(0, time + fade);
+    track.dying = time + fade + 0.1;
+  },
+  queueRecording(key, entry) {
+    if (this.recordingRequest?.key === key) return;
+    this.recordingRequest?.controller.abort();
+    this.recordingRequest = null;
+    if (!entry || !/^(?:assets\/music\/[a-z][a-z0-9_]*-[a-f0-9]{12}\.(mp3|ogg|wav)|\/__local-bgm\/[a-z][a-z0-9_]*\.mp3)$/.test(entry.src || "")) return;
+    const request = { key, controller: new AbortController() };
+    this.recordingRequest = request;
+    const c = this.ctx;
+    fetch(new URL(entry.src, import.meta.url), { signal: request.controller.signal }).then(r => {
+      if (r.status === 204 || (r.status === 404 && entry.loose)) return null;
+      if (!r.ok) throw new Error("Music recording unavailable");
+      return r.arrayBuffer();
+    }).then(data => data && c.decodeAudioData(data)).then(buffer => {
+      if (!buffer || this.recordingRequest !== request) return;
+      const start = entry.start ?? 0, end = entry.end ?? buffer.duration;
+      if (!(buffer.duration <= 210 && start >= 0 && end - start >= 1 && end <= buffer.duration + 0.02)) throw new Error("Invalid music duration or loop range");
+      const t = c.currentTime, gain = c.createGain(), source = c.createBufferSource();
+      source.buffer = buffer; source.loop = true; source.loopStart = start; source.loopEnd = Math.min(end, buffer.duration);
+      source.connect(gain); gain.connect(this.music);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(Math.max(0.05, Math.min(1, entry.gain ?? 0.65)), t + FADE);
+      this.fadeOut(this.playing.find(p => !p.dying), t, FADE);
+      this.playing.push({ key, source, gain, dying: 0 });
+      source.start(t, start);
+    }).catch(error => {
+      if (this.recordingRequest === request) console.warn(`[BGM] ${key}: ${error.message}`);
+    });
+  },
   /** Crossfade to whichever track should be playing now. */
   pick() {
-    const want = this.theme || (this.night && NIGHT[this.base]) || this.base || "title";
     const c = this.ctx;
     if (!c) return;
-    const style = styleOf(this.vol.style), { def, song } = SCORES[style][want];
+    const style = styleOf(this.vol.style), records = style === DEFAULT_MUSIC_STYLE ? this.recordings : null;
+    const mapScore = this.base && this.mapScore;
+    const exact = Object.hasOwn(records || {}, mapScore);
+    const night = this.night && (NIGHT[mapScore] || (!exact && NIGHT[this.base]));
+    const day = this.base || "title", want = this.theme || night || day;
+    const { def, song } = SCORES[style][want];
+    // Keep the map's recording in the evening until a separate night version is installed.
+    const recordedNight = night && Object.hasOwn(records || {}, night) ? night : null;
+    const recording = this.theme || recordedNight || (exact ? mapScore : day);
     const live = this.playing.find((p) => !p.dying);
+    const registered = records && Object.hasOwn(records, recording) ? records[recording] : null;
+    const loose = style === DEFAULT_MUSIC_STYLE && this.recordings !== null && typeof location !== "undefined"
+      && ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname);
+    const key = registered ? recording : this.theme || mapScore || day;
+    const entry = registered || (loose ? { src: `/__local-bgm/${key}.mp3`, loose: true } : null);
+    if (entry && live?.source && live.key === key) return;
+    this.queueRecording(entry ? key : null, entry);
     if (live?.name === want && live.style === style) return;
     const t = c.currentTime;
     let step = 0, next = t + 0.12;
@@ -207,13 +264,7 @@ export const Sound = {
       next = Math.max(t + 0.05, live.next);
     }
     const fade = live?.name === want ? 0.8 : FADE;
-    if (live) {
-      const gain = live.gain.gain;
-      if (gain.cancelAndHoldAtTime) gain.cancelAndHoldAtTime(t);
-      else { const value = gain.value; gain.cancelScheduledValues(t); gain.setValueAtTime(value, t); }
-      gain.linearRampToValueAtTime(0, t + fade);
-      live.dying = t + fade + 0.1;
-    }
+    this.fadeOut(live, t, fade);
     const g = c.createGain();
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(def.trim ?? TRIM[want] ?? 1, t + fade);
     g.connect(this.music);
@@ -227,7 +278,11 @@ export const Sound = {
     const now = c.currentTime;
     for (let i = this.playing.length - 1; i >= 0; i--) {
       const p = this.playing[i];
-      if (p.dying && now > p.dying) { p.gain.disconnect(); p.send.disconnect(); this.playing.splice(i, 1); continue; }
+      if (p.dying && now > p.dying) {
+        if (p.source) { p.source.stop(); p.source.disconnect(); }
+        p.gain.disconnect(); p.send?.disconnect(); this.playing.splice(i, 1); continue;
+      }
+      if (p.source) continue;
       const sixteenth = 60 / p.def.bpm / 4;
       if (p.next < now - 0.5) p.next = now + 0.05;          // woke from a long sleep: don't rush to catch up
       while (p.next < now + LOOKAHEAD) {
@@ -246,7 +301,7 @@ export const Sound = {
       }
     }
     // under an autumn track, a breeze through dry leaves now and then
-    if (!this.vol.mute && this.playing.some((p) => !p.dying && p.def.rustle)) {
+    if (!this.vol.mute && this.playing.some((p) => !p.dying && p.def?.rustle)) {
       if (!this.rustleNext || this.rustleNext < now) this.rustleNext = now + 1 + Math.random() * 3;
       if (this.rustleNext < now + LOOKAHEAD) { this.rustle(this.rustleNext); this.rustleNext += 2.5 + Math.random() * 5; }
     }

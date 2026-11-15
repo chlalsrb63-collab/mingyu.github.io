@@ -8,6 +8,8 @@ package-lock.json
 # Their map data is generated (node scripts/dump-maps.mjs); _*.js are old local experiments.
 public/_maps.json
 public/_*.js
+# Reviewed on the local build before installing in a release.
+public/assets/music/
 # screenshots (scripts/shot.mjs writes to shots/, plus its throwaway login)
 shots*/
 # editor backups of game/data files (scripts/editor-server.mjs)

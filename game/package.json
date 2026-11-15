@@ -24,6 +24,7 @@
     "art:export": "node scripts/export-art.mjs",
     "art:gallery": "node scripts/gallery.mjs",
     "art:import": "node scripts/import-art.mjs",
+    "bgm:import": "node scripts/import-bgm.mjs",
     "editor": "node scripts/editor-server.mjs"
   },
   "devDependencies": {
