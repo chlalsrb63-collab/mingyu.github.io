@@ -7,8 +7,9 @@ Reply to the owner in Korean; they want reports **with screenshots** ("다 끝�
 
 ## 현재 인계 · 직업 성장, 해머, 월드맵, 로컬 BGM
 
+- 17:00 로컬 `main`의 게임 변경 기준은 `ccbd26c`다. 파티 공유 거리, 창·마도서 회복, 교차 패시브 2칸, 주민 일과 34명, 되새김 인장, 협동 근무 4곳이 함께 적용됐다. [현황과 검수](reports/codex-local-status-2026-11-15.md)
 - `codex/hammer` 통합 묶음은 해머·파괴자, 머서너리·성기사, 직업 Lv.1–50, 전용기 4단계, 지형 월드맵과 해금 돌 이동을 포함한다. 성문 서약의 유효 파티 회복도 직업 XP에 기여한다. [직업 규칙과 UI](reports/codex-job-skill-ranks.md) · [파티 밸런스와 연출](reports/codex-party-balance-fx.md)
-- 통합 저장 시트는 **v16**이다. `cleanJobs`가 직업·해머 숙련을, `dimClean`이 균열 단계·주간 보스 기록을 각각 보정한다. 기존 v15 두 형식의 데이터를 보존한다. 통합 빌드의 기본 공격은 `X`, 대시는 `Space`이며 사용자 키 설정을 따른다.
+- 현재 저장 시트는 **v21**이다. `cleanJobs`가 직업·해머 숙련 및 교차 패시브를, `dimClean`이 균열 단계·주간 보스 기록을 보정한다. 기본 공격은 `X`, 대시는 `Space`이며 사용자 키 설정을 따른다.
 - 로컬 MP3는 `game/public/assets/music/<map>.mp3`로 재생한다. 개발 폴더의 개인 세이브와 MP3는 각 워크트리에 보관한다. [지역별 Gemini 프롬프트](prompts/gemini-map-bgm.md)
 - 이어서 확인할 부분은 장기 사냥의 직업 Lv.20·35·50 도달 시간과 상위 파티의 전용기 MP 유지율이다.
 
