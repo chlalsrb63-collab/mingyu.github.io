@@ -278,3 +278,18 @@ Suggested split: T1 = 1 · T2 = 2+3 · T3 = 4 · T4 = 5 · T5 = F1+F2 data/art �
 3. Coast instead of cloudtemple for F2 (cloudtemple already has `운해의 범`) — OK?
 4. Raids in the weekly boss challenge requires un-pausing `claude/rift-tiers` (or extracting its boss script). Go?
 5. R2 home: weekly rotation only, or also the end boss of the planned 빙하 납골당 (replacing the "얼음 왕" idea)?
+
+## 10. As built — follow-ups (2026-11-15 afternoon)
+
+- **Trophy uses** (`12-life-tables.js` RECIPES, 캉캉): `stone_b_bt` 강화석 2 + 피눈물 결정 1 → 축복 강화석 (fee 200);
+  `punch_cc` 갯가재 집게 2 + 강철 광석(m_o3) 2 → 홈 송곳 (fee 1,300, Lv 25). Both pass the economy guard (lifeskills).
+- **Pet** `pet_hagfish` 꼬마 먹장어 (radius 104, not sold) from 꽃무덤 고래's drops at 2 % (design said 1 %; raised — weekly boss).
+- **Cosmetics**: `back_batcape` (weekly), `hat_bloodcrown`, `ws_clubclaw` (boss pool); quest/weekly sources now grant
+  (`COS_QUEST` 12 % per quest hand-in, `COS_WEEKLY` 35 % with a challenge's big reward).
+- **Server first** (§7 R2 "announced to all"): the four bosses' first personal kill (their achievement) queues
+  `[name, kind]` (`takeFirsts`); `room.ts` asks the vault op `first` (key `first:<server>:<boss>`, written once) and on a
+  yes `firstNotice` posts `[서버 최초] …` to that channel (the other channel of the server does not hear it).
+- **Stagger gauge for scripted field bosses**: `M` row [12] = gauge left % while casting; bar + "무력화 n%" under the HP.
+- **Damage ranking** (`dmgBoard`, 50): a boss or guardian (el 2) fallen to 2+ hitters toasts the top 3 and your place.
+- **Adds' own art** `mobart_bosses2_adds.js` (bloodshard, nightbat, hagfishhead); 바위 (merc_bawi) side-quest chain
+  `sq_bawi_shrimp → sq_bawi_bloodhorn → sq_bawi_tears` (repeatable 피눈물 결정 → 저주 해제 주문서) + `sq_bawi_bats`.
