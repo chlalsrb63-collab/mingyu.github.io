@@ -17,6 +17,7 @@ import * as JobTree from "./jobtree.js";
 import * as Lobby from "./lobby.js";
 import * as Dim from "./dimrift.js";
 import * as Radar from "./radar.js";
+import * as Track from "./track.js";
 import * as Housing from "./housing.js";
 import { $, VP, G, clamp, $$, el, setLayoutHook } from "./state.js";
 import { act, channelName } from "./net.js";
@@ -455,7 +456,7 @@ export const chatLog = $("#chat-log");
 export function addChat(m, cls, name, its) {
   const stick = chatLog.scrollTop + chatLog.clientHeight >= chatLog.scrollHeight - 12;
   const p = el("p", cls || "");
-  p.title = new Date().toTimeString().slice(0, 5);   // hover a line: when it was said
+  p.title = p.dataset.t = new Date().toTimeString().slice(0, 5);   // when it was said: hover, or shown in front with [시각]
   if (name) {
     const who = el("span", "who", `${name}: `);
     // the speaker's job, when they stand in this place (chat carries a name only)
@@ -619,6 +620,7 @@ export function setupWindows({ walkToDoor }) {
   Radar.init({
     G, act, toggleWin, isOpen, wpWoke, npcOut: S3.npcOut, miniDots: Dim.miniDots, play: (n) => Sound.play(n),
     walkToDoor, closeMap: () => closeWin("map"), toast,
+    track: (id, name) => Track.start(() => ({ k: "map", id }), name),
     canWarp: () => stoneNear() || !!(G.near && G.near.role === "warp"),
     info: () => `${channelName()} · ${G.map.safe ? "안전 지대" : "사냥터"} · ${G.who.size}명`,
   });
@@ -651,9 +653,23 @@ export function setupWindows({ walkToDoor }) {
     Sound.play("ui");
   });
   $("#btn-hints").addEventListener("click", () => { resetHints(); toast("처음 안내 카드를 다시 보여 드립니다"); Sound.play("ui"); });
-  for (const b of $$("#chat-tabs button")) {
+  // [시각]: every line's HH:MM in front (C3), remembered per browser
+  const timeBtn = $("#chat-time"), showTimes = (on) => {
+    chatLog.classList.toggle("times", on);
+    timeBtn.classList.toggle("on", on);
+    timeBtn.setAttribute("aria-pressed", String(on));
+    timeBtn.title = on ? "채팅 시각 숨기기" : "채팅 줄마다 시각 보이기";
+  };
+  showTimes(localStorage.getItem("lumentale:chattime") === "1");
+  timeBtn.addEventListener("click", () => {
+    const on = !chatLog.classList.contains("times");
+    localStorage.setItem("lumentale:chattime", on ? "1" : "0");
+    showTimes(on);
+    Sound.play("ui");
+  });
+  for (const b of $$("#chat-tabs button[data-tab]")) {
     b.addEventListener("click", () => {
-      for (const o of $$("#chat-tabs button")) o.classList.toggle("on", o === b);
+      for (const o of $$("#chat-tabs button[data-tab]")) o.classList.toggle("on", o === b);
       chatLog.dataset.tab = b.dataset.tab;
       chatHint();
       chatLog.scrollTop = chatLog.scrollHeight;
@@ -665,7 +681,7 @@ export function setupWindows({ walkToDoor }) {
     const input = $("#chat-in");
     const m = input.value.trim();
     const a = m && chatAction(m);
-    const it = a && ["chat", "pchat", "gchat"].includes(a.t) ? linkRefs(a.m) : (links = [], []);
+    const it = a && ["chat", "pchat", "gchat", "w"].includes(a.t) ? linkRefs(a.m) : (links = [], []);
     if (it.length) a.it = it;
     if (a) act(a);
     if (m && sent[sent.length - 1] !== m) { sent.push(m); if (sent.length > 20) sent.shift(); }

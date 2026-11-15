@@ -225,6 +225,23 @@ function walkToBuilding(building) {
   D.play("ui");
 }
 
+/** 월드맵 → 걸어서 이동: the quest tracker's auto-walk to a whole map (track.js); a locked or unreachable region only says so. */
+function walkToMap(id) {
+  const G = D.G, chart = currentChart(), d = chart.nodes.get(id)?.d;
+  if (!d) return;
+  const lvl = G.self?.lvl || 1;
+  if (id === G.map?.id) { D.toast("지금 이 지역에 있습니다"); return; }
+  if (unlockState(d, G.self) !== 4) { D.toast(`아직 열리지 않은 지역입니다 · ${d.name}`); return; }
+  if (d.minLv && lvl < d.minLv) { D.toast(`Lv.${d.minLv}부터 갈 수 있습니다 · ${d.name}`); return; }
+  if (!shortestRoute(chart.graph, G.map?.id, id, (m) => lvl >= (chart.nodes.get(m).d.minLv || 1)).length) {
+    D.toast(`${d.name}(으)로 가는 길을 찾지 못했습니다`);
+    return;
+  }
+  D.closeMap();
+  D.track(id, d.name);
+  D.play("ui");
+}
+
 function updateBuildings(rebuild = false) {
   const buildings = M?.buildings || [], panel = $("#map-buildings");
   panel.hidden = view.tab !== "here" || !buildings.length;
@@ -717,7 +734,7 @@ function drawWorld(g, W, H, t) {
   const canWarp = !!D.canWarp(), key = JSON.stringify([d.id, state.current, state.route, state.quests.get(d.id), G.self?.wp?.[d.id], G.self?.lvl, canWarp, state.seen.has(d.id), unlockState(d, G.self)]);
   if (key === world.detailKey) return;
   world.detailKey = key;
-  mapDetail(detail, d, { defs: G.defs, chart, state, canWarp, select: selectWorld, travel: (to, i) => {
+  mapDetail(detail, d, { defs: G.defs, chart, state, canWarp, select: selectWorld, walk: walkToMap, travel: (to, i) => {
     D.act({ t: "warp", to, i }); D.play("ui");
   } });
 }
@@ -871,6 +888,8 @@ export function init(deps) {
     if (h && h.click) h.click();
   };
   cv.addEventListener("pointerup", end);
+  // a double click on a region of the world chart walks there, like the detail's [걸어서 이동]
+  cv.addEventListener("dblclick", (e) => { if (view.tab !== "world") return; const [x, y] = local(e), h = hitAt(x, y); if (h && h.id) walkToMap(h.id); });
   cv.addEventListener("pointercancel", end);
   cv.addEventListener("pointerleave", () => { if (!view.drag && view.hover) { view.hover = null; showHover(); } });
 }

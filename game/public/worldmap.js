@@ -246,7 +246,7 @@ export function paintChart(g, chart, base, cam, state) {
 }
 
 export function mapDetail(host, d, ctx) {
-  const { defs, chart, state, canWarp, travel, select } = ctx;
+  const { defs, chart, state, canWarp, travel, select, walk } = ctx;
   const { current, route, quests, self, woke, seen } = state;
   const E = (tag, text, cls) => { const n = document.createElement(tag); n.textContent = text; if (cls) n.className = cls; return n; };
   const nameOf = id => chart.nodes.get(id)?.d.name || "";
@@ -256,6 +256,12 @@ export function mapDetail(host, d, ctx) {
   const unlock = unlockState(d, self), chapter = defs.side?.find(q => q.id === d.unlockQuest);
   const path = route.length > 1 ? route.map(nameOf).join(" → ") : d.id === current ? "지금 이 지역에 있습니다" : "현재 갈 수 있는 문 경로가 없습니다";
   const guide = E("p", path, "map-guide");
+  if (walk && d.id !== current) {
+    const go = E("button", "걸어서 이동", "btn small");
+    go.type = "button"; go.title = "문을 따라 자동으로 걸어갑니다 (움직이면 취소) · 지역을 두 번 눌러도 됩니다";
+    go.addEventListener("click", () => walk(d.id));
+    guide.append(" ", go);
+  }
   const open = wokeStones(d, self, woke), ways = defs.waypoints?.find(w => w.id === d.id);
   const stones = E("div", "", "map-detail-buttons map-fast-travel");
   if (d.wpn) {
