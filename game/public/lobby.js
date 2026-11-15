@@ -71,13 +71,14 @@ let playtestSent = false;
  */
 export function init(ctx) {
   C = ctx;
+  const intro = $("#studio-intro");
   TS.init($("#title-cv"));
   drawLogo();
   addEventListener("resize", () => { drawLogo(); sizeStage(); });
   $("#t-ver").textContent = `${VERSION} · © 2026 테일즈테일즈`;
   // press start: a click, a tap or any key
   const start = (e) => {
-    if (view !== "title") return;
+    if (view !== "title" || !intro.hidden) return;
     if (e && e.type === "keydown" && (e.metaKey || e.ctrlKey || e.altKey || e.key === "Tab" || /^F\d+$/.test(e.key))) return;
     Sound.unlock(); Sound.play("ok");
     if (Account.session()) showServers(); else showAuth("login");
@@ -85,6 +86,7 @@ export function init(ctx) {
   $("#t-press").addEventListener("click", start);
   $("#title-cv").addEventListener("pointerdown", (e) => { if (view === "title") { e.preventDefault(); start(e); } });
   addEventListener("keydown", (e) => {
+    if (!intro.hidden) return;
     if (view === "title" && !$("#title").hidden && !e.metaKey && !e.ctrlKey && !e.altKey && !/^F\d+$/.test(e.key)) { e.preventDefault(); start(e); }
     else if (e.key === "Escape" && view === "auth") show("title");
   });
@@ -94,6 +96,44 @@ export function init(ctx) {
   setInterval(() => { if (view === "servers" && !pending && !document.hidden) refreshServers(); }, 20000);
   wireSettings();
   show("title");
+  playStudioIntro(intro);
+}
+
+function playStudioIntro(overlay) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const video = $("#studio-intro-video"), skip = $("#studio-intro-skip"), sound = $("#studio-intro-sound");
+  const title = $("#title");
+  const listeners = new AbortController();
+  const { signal } = listeners;
+  const finish = () => {
+    if (overlay.hidden) return;
+    const focusWasInside = overlay.contains(document.activeElement);
+    overlay.hidden = true;
+    title.inert = false;
+    listeners.abort();
+    clearTimeout(timeout);
+    video.pause();
+    if (focusWasInside) $("#t-press").focus({ preventScroll: true });
+  };
+  // Limit time on the overlay even when a stalled or unavailable video never fires `ended`.
+  const timeout = setTimeout(finish, 6500);
+  video.addEventListener("ended", finish, { signal });
+  video.addEventListener("error", finish, { signal });
+  skip.addEventListener("click", finish, { signal });
+  sound.addEventListener("click", () => {
+    video.muted = !video.muted;
+    sound.setAttribute("aria-pressed", String(!video.muted));
+    sound.textContent = video.muted ? "소리 켜기" : "소리 끄기";
+  }, { signal });
+  addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); finish(); }
+  }, { signal });
+  title.inert = true;
+  overlay.hidden = false;
+  skip.focus({ preventScroll: true });
+  video.muted = true;
+  video.src = "./assets/intro/studio-goguma.mp4";
+  video.play().catch(finish);
 }
 
 /** Show one of the lobby's screens (or none: "game"). */
@@ -103,6 +143,7 @@ function show(v, msg) {
   $("#title").hidden = !inTitle;
   $("#create").hidden = v !== "create";
   $("#t-press").hidden = v !== "title";
+  $("#t-credits").hidden = v !== "title";
   $("#t-auth").hidden = v !== "auth";
   $("#t-servers").hidden = v !== "servers";
   document.body.dataset.lobby = inTitle ? v : v === "create" ? "create" : "";

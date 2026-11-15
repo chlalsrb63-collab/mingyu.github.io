@@ -16,6 +16,17 @@
 #t-sub { display: block; image-rendering: pixelated; max-width: calc(100vw - 20px); height: auto; }
 .t-stack { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; flex: none; }
 
+/* Studio splash and title credit. Keep the controls outside the picture. */
+#studio-intro { position: fixed; inset: 0; z-index: 100; display: grid; grid-template-rows: minmax(0, 1fr) auto; background: #000; }
+#studio-intro-video { display: block; width: 100%; height: 100%; min-height: 0; object-fit: contain; }
+.studio-intro-controls { display: flex; justify-content: flex-end; gap: 8px;
+  padding: 0 max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+.studio-intro-controls .btn { min-height: 44px; touch-action: manipulation; }
+.studio-intro-controls .btn:focus-visible { outline: 2px solid #fff4c0; outline-offset: 2px; }
+#t-credits { margin: 0; padding: 4px 9px; max-width: 100%; background: #2b2136; border: 1px solid #9a734d;
+  color: #eadabc; font: 12px/1.45 var(--pix); text-align: center; }
+#t-credits b { color: #fff4c0; }
+
 /* press start */
 #t-press { margin-top: 3vh; padding: 10px 22px 8px; border: 0; background: none; color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 #t-press b { font: 700 22px/1 var(--pix); letter-spacing: 3px; color: #fff4c0; animation: t-blink 1.1s steps(1, end) infinite;

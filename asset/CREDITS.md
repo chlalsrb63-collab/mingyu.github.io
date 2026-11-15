@@ -8,6 +8,7 @@ CC-BY 계열은 게임 안에도 크레딧을 보여야 합니다 ("게임 안 �
 
 | 이름 | 만든 사람 | 출처 URL | 라이선스 | 받은 날 | 사용 중 (어디에) | 게임 안 표기 |
 | --- | --- | --- | --- | --- | --- | --- |
+| Studio Goguma 시작 영상 | 민규 / studio goguma (제공) | 프로젝트 소유자가 제공한 `Intro.mp4` | 소유자 요청에 따른 게임 시작 영상 사용 | 2026-11-15 | `game/public/assets/intro/studio-goguma.mp4` | 타이틀 · 만든이 민규 / studio goguma |
 | Galmuri (갈무리) 픽셀 폰트 | Lee Minseo (quiple) | https://github.com/quiple/galmuri | SIL OFL 1.1 | 2026-11 | HUD · 창 글꼴 (`public/fonts/`, 라이선스 `public/fonts/Galmuri-OFL.txt`) | 필요 없음 (OFL) |
 | Pretendard | Kil Hyung-jin (orioncactus) | https://github.com/orioncactus/pretendard | SIL OFL 1.1 | — | 본문 글꼴, CDN으로 불러옴 (`public/index.html`) | 필요 없음 (OFL) |
 | 쥬쥬식당 협동 알바 아이콘 시안 6종 (`generated/coop-diner`: `pan`, `tray`, `salad`, `grilled_fish`, `stew`, `dirty_plate`) | Gemini (`import-art.mjs` 정규화) | `asset/generated/coop-diner/*.prompt.md` | AI-generated (Gemini, prompt file) | 2026-11-15 | `asset/generated/coop-diner/` 시안 보관 (미설치, 주인 승인 대기) | 필요 없음 |

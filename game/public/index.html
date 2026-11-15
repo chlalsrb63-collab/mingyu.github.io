@@ -430,6 +430,13 @@
     </div>
 
     <!-- ── title, account, servers (lobby.js) ──────────── -->
+    <div id="studio-intro" role="dialog" aria-modal="true" aria-label="스튜디오 고구마 인트로" hidden>
+      <video id="studio-intro-video" playsinline muted preload="none" aria-label="스튜디오 고구마 인트로 영상"></video>
+      <div class="studio-intro-controls">
+        <button type="button" id="studio-intro-sound" class="btn" aria-pressed="false">소리 켜기</button>
+        <button type="button" id="studio-intro-skip" class="btn gold">건너뛰기</button>
+      </div>
+    </div>
     <div id="title">
       <canvas id="title-cv" aria-hidden="true"></canvas>
       <div class="t-wrap">
@@ -439,6 +446,7 @@
         </div>
         <div class="t-stack">
           <button id="t-press" type="button"><b>PRESS START</b><small>화면을 누르거나 아무 키나 누르세요</small></button>
+          <p id="t-credits">만든이 <span aria-hidden="true">·</span> <b>민규 / <span lang="en">studio goguma</span></b></p>
 
           <section id="t-auth" class="t-panel" hidden>
             <div class="t-tabs" role="tablist"><button type="button" data-mode="login" class="on">로그인</button><button type="button" data-mode="signup">회원가입</button></div>
