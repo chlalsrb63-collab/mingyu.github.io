@@ -62,6 +62,10 @@ const NIGHT = { town: "town_night", meadow: "field_night", forest: "field_night"
 const TRIM = { cafe: 1.2, hall: 1.2, inn: 1.15, city: 1.6, rift: 1.55, boss: 1.45, cave: 1.5, crypt: 1.15 };
 /** Old names some maps still carry. */
 const ALIAS = { field: "meadow" };
+const DIM_RECORDINGS = new Set(["crypt", "sewer", "cave", "abyss"]);
+const RECORDING_KEY = /^[a-z][a-z0-9_]*$/;
+const RECORDING_SRC = /^(?:assets\/music\/[a-z][a-z0-9_]*-[a-f0-9]{12}\.(mp3|ogg|wav)|\/__local-bgm\/(?:inside\/)?[a-z0-9][a-z0-9_.-]*\.mp3)$/i;
+const localTrack = ([file, start, end]) => ({ src: `/__local-bgm/${file}`, start, end, loose: true });
 
 /** Unroll a track into bars: [{ chord: [midi…], notes: [[hz, step, len]…] }]. */
 function compile(def) {
@@ -116,7 +120,7 @@ export const Sound = {
   sfxOn: true, bgmOn: true,
   vol: { music: 0.7, sfx: 0.85, mute: false, style: DEFAULT_MUSIC_STYLE },
   base: null, mapScore: null, theme: null, playing: [], timer: 0,
-  recordings: null, recordingRequest: null,
+  recordings: null, localScores: {}, recordingRequest: null,
   voices: 0, last: {}, k: 1, amb: 0, ambNext: 0, noiseBuf: null, waves: {},
 
   /** Browsers only allow audio after a gesture — call this from a click/keypress. */
@@ -133,7 +137,8 @@ export const Sound = {
     this.timer = setInterval(() => this.pump(), 50);
     this.pick();
     assetsReady().then(manifest => {
-      this.recordings = manifest.bgm;
+      this.recordings = manifest.bgm || {};
+      this.localScores = manifest.bgmLocal || {};
       this.pick();
     }).catch(() => {});
   },
@@ -188,9 +193,10 @@ export const Sound = {
 
   // ── music ──
   /** The map's own music: its id has a track, or else its `fallback` name does. */
-  bgm(name, fallback) {
+  bgm(name, fallback, terrain) {
     const own = (k) => Object.hasOwn(TRACKS, k) ? k : Object.hasOwn(ALIAS, k) ? ALIAS[k] : null;
-    this.mapScore = name;
+    this.mapScore = fallback === "dim" && name?.startsWith("dim:") && DIM_RECORDINGS.has(terrain)
+      ? `dim_${terrain}` : RECORDING_KEY.test(name) ? name : fallback;
     this.base = own(name) || own(fallback) || "meadow";
     this.pick();
   },
@@ -206,33 +212,40 @@ export const Sound = {
     gain.linearRampToValueAtTime(0, time + fade);
     track.dying = time + fade + 0.1;
   },
-  queueRecording(key, entry) {
+  async queueRecording(key, first, variants, fallback) {
     if (this.recordingRequest?.key === key) return;
     this.recordingRequest?.controller.abort();
     this.recordingRequest = null;
-    if (!entry || !/^(?:assets\/music\/[a-z][a-z0-9_]*-[a-f0-9]{12}\.(mp3|ogg|wav)|\/__local-bgm\/[a-z][a-z0-9_]*\.mp3)$/.test(entry.src || "")) return;
+    if (!key) return;
+    const offset = variants.length > 1 ? Math.floor(Math.random() * variants.length) : 0;
+    const candidates = first.concat(variants.slice(offset).concat(variants.slice(0, offset)).map(localTrack), fallback);
     const request = { key, controller: new AbortController() };
     this.recordingRequest = request;
     const c = this.ctx;
-    fetch(new URL(entry.src, import.meta.url), { signal: request.controller.signal }).then(r => {
-      if (r.status === 204 || (r.status === 404 && entry.loose)) return null;
-      if (!r.ok) throw new Error("Music recording unavailable");
-      return r.arrayBuffer();
-    }).then(data => data && c.decodeAudioData(data)).then(buffer => {
-      if (!buffer || this.recordingRequest !== request) return;
-      const start = entry.start ?? 0, end = entry.end ?? buffer.duration;
-      if (!(buffer.duration <= 210 && start >= 0 && end - start >= 1 && end <= buffer.duration + 0.02)) throw new Error("Invalid music duration or loop range");
-      const t = c.currentTime, gain = c.createGain(), source = c.createBufferSource();
-      source.buffer = buffer; source.loop = true; source.loopStart = start; source.loopEnd = Math.min(end, buffer.duration);
-      source.connect(gain); gain.connect(this.music);
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(Math.max(0.05, Math.min(1, entry.gain ?? 0.65)), t + FADE);
-      this.fadeOut(this.playing.find(p => !p.dying), t, FADE);
-      this.playing.push({ key, source, gain, dying: 0 });
-      source.start(t, start);
-    }).catch(error => {
-      if (this.recordingRequest === request) console.warn(`[BGM] ${key}: ${error.message}`);
-    });
+    for (const entry of candidates) {
+      if (this.recordingRequest !== request) return;
+      if (!RECORDING_SRC.test(entry?.src || "")) continue;
+      try {
+        const r = await fetch(new URL(entry.src, import.meta.url), { signal: request.controller.signal });
+        if (r.status === 204 || (r.status === 404 && entry.loose)) continue;
+        if (!r.ok) throw new Error("Music recording unavailable");
+        const buffer = await c.decodeAudioData(await r.arrayBuffer());
+        if (this.recordingRequest !== request) return;
+        const start = entry.start ?? 0, end = entry.end ?? buffer.duration;
+        if (!(buffer.duration <= 210 && start >= 0 && end - start >= 1 && end <= buffer.duration + 0.02)) throw new Error("Invalid music duration or loop range");
+        const t = c.currentTime, gain = c.createGain(), source = c.createBufferSource();
+        source.buffer = buffer; source.loop = true; source.loopStart = start; source.loopEnd = Math.min(end, buffer.duration);
+        source.connect(gain); gain.connect(this.music);
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(Math.max(0.05, Math.min(1, entry.gain ?? 0.65)), t + FADE);
+        this.fadeOut(this.playing.find(p => !p.dying), t, FADE);
+        this.playing.push({ key, src: entry.src, source, gain, dying: 0 });
+        source.start(t, start);
+        return;
+      } catch (error) {
+        if (this.recordingRequest === request) console.warn(`[BGM] ${key}: ${error.message}`);
+      }
+    }
   },
   /** Crossfade to whichever track should be playing now. */
   pick() {
@@ -246,15 +259,19 @@ export const Sound = {
     const { def, song } = SCORES[style][want];
     // Keep the map's recording in the evening until a separate night version is installed.
     const recordedNight = night && Object.hasOwn(records || {}, night) ? night : null;
-    const recording = this.theme || recordedNight || (exact ? mapScore : day);
+    const recording = this.theme || recordedNight || mapScore || day;
     const live = this.playing.find((p) => !p.dying);
-    const registered = records && Object.hasOwn(records, recording) ? records[recording] : null;
     const loose = style === DEFAULT_MUSIC_STYLE && this.recordings !== null && typeof location !== "undefined"
       && ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname);
-    const key = registered ? recording : this.theme || mapScore || day;
-    const entry = registered || (loose ? { src: `/__local-bgm/${key}.mp3`, loose: true } : null);
-    if (entry && live?.source && live.key === key) return;
-    this.queueRecording(entry ? key : null, entry);
+    const named = loose ? this.localScores[recording] : null;
+    const tracks = typeof named === "string" ? this.localScores[named] : named;
+    const variants = Array.isArray(tracks) ? tracks : [];
+    const looseEntry = loose && RECORDING_KEY.test(recording) ? localTrack([`${recording}.mp3`]) : null;
+    const fallback = !this.theme && recording !== day && records?.[day] ? [records[day]] : [];
+    const first = [records?.[recording], looseEntry].filter(Boolean);
+    const key = first.length || variants.length || fallback.length ? recording : null;
+    if (key && live?.source && live.key === key) return;
+    this.queueRecording(key, first, variants, fallback);
     if (live?.name === want && live.style === style) return;
     const t = c.currentTime;
     let step = 0, next = t + 0.12;

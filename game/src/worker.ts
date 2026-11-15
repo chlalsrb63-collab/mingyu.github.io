@@ -81,10 +81,10 @@ export default {
     const url = new URL(request.url);
 
     // A loose recording is a local playtest convenience. An absent file keeps the synth playing.
-    const music = url.pathname.match(/^\/__local-bgm\/([a-z][a-z0-9_]*)\.mp3$/);
+    const music = url.pathname.match(/^\/__local-bgm\/((?:inside\/)?[a-z0-9][a-z0-9_.-]*\.mp3)$/i);
     if (music && request.method === "GET" && env.PLAYTEST === "1" && env.HF_ENV !== "prod"
         && ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) {
-      const asset = await env.ASSETS.fetch(new Request(new URL(`/assets/music/${music[1]}.mp3`, url)));
+      const asset = await env.ASSETS.fetch(new Request(new URL(`/assets/music/${music[1]}`, url)));
       return asset.ok ? asset : new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
     }
 

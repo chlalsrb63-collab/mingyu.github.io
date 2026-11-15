@@ -33,6 +33,9 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 
 ## CODEX (구현 · 테스트)
 
+- [x] 제미나이 실외·실내 BGM과 균열 테마별 재생 연결. [BGM 인계](reports/codex-recorded-map-bgm.md)
+- [x] 양손해머의 머리 위 내려찍기, 월드 스프라이트 크기 및 원형 타격 범위 확대.
+
 - [x] 양손해머·직업 성장·월드맵·파티 밸런스·스킬 연출과 로컬 BGM을 통합하고 [직업 성장 인계](reports/codex-job-skill-ranks.md)를 남김.
 
 - [x] 거울(외형 변경)을 골드가 부족할 때 시도하면 거절되고 골드·외형이 그대로인지 확인하는 테스트를 `game/tests/looks.mjs`에 추가

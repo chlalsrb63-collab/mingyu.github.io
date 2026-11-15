@@ -185,7 +185,7 @@ function loadMap(m) {
   G.snapCam = true;
   $("#mini-name").textContent = m.band ? `${m.name} · Lv.${m.band[0]}–${m.band[1]}` : m.name;
   $("#mini-name").title = $("#mini-name").textContent;
-  Sound.bgm(m.id, m.bgm); Sound.setTheme(null); snd.bossT = 0;
+  Sound.bgm(m.id, m.bgm, m.theme); Sound.setTheme(null); snd.bossT = 0;
   banner(m.name, true);
   // walking into a band above you: say so once, at the door
   const lv = G.self && G.self.lvl;
