@@ -1728,3 +1728,9 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr)
 /* ── UX pass 2026-11-15 (docs/design/ux-audit-2026-11-15.md) ── */
 /* notices and prompts draw over the windows (21–35, windows.js front), under the minigame (40) and the tooltip (80) */
 #toasts, #banner, #prompt, #dl, #cast, #invite, #sx-ask, #pmenu { z-index: 36; }
+/* the gear tooltip's comparison with the worn piece (items.js itemTip) */
+#tip .cmp { margin-top: 5px; padding-top: 4px; color: var(--tx2, #c8b896); }
+#tip .cmp b { font-weight: 400; }
+#tip .dl { font: var(--t10)/1.4 var(--pix9); color: var(--tx3, #8a8296); }
+#tip .dl.up { color: var(--tx-ok, #9af0ae); }
+#tip .dl.dn { color: var(--tx-bad, #ffb4a0); }
