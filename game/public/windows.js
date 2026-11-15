@@ -32,7 +32,7 @@ import { renderParty, renderGuild } from "./win_social.js";
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 export const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board", "charm", "juana", "week", "trophy", "alba"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board", "charm", "juana", "week", "trophy", "alba", "trade"];
 export const winEl = (id) => $(`#w-${id}`);
 /** On a phone the bag lives in the drawer, so it always counts as open; on a desktop it opens in the side panel. */
 export const isOpen = (id) => (id === "inv" && compact()) || !winEl(id).hidden;
@@ -261,6 +261,8 @@ export function openWin(id) {
   if (BAG_WITH.includes(id) && !compact() && panelId !== "inv") { openWin("inv"); autoBag = true; }
   syncMenu();
 }
+/** Hooks a module sets for its own window being closed (the trade window cancels the trade: sxwin.js). */
+export const onClose = {};
 export function closeWin(id) {
   if (id === "inv" && compact()) {
     if (tip.from && winEl("inv").contains(tip.from)) hideTip();
@@ -276,6 +278,7 @@ export function closeWin(id) {
   if (id === "inv" && G.sel >= 0) { G.sel = -1; refreshUi(); }
   if (folded(id)) { w.classList.remove("mini"); w.title = ""; layTabs(); }
   Housing.onWinClose(id);
+  if (onClose[id]) onClose[id]();
   if (id === "train") StatWin.reset();
   if (id === "job" || id === "skill") JobTree.reset();
   if (tip.from && w.contains(tip.from)) hideTip();

@@ -151,3 +151,13 @@ export function pick(clientX, clientY) {
   if (best) return best;
   return [Y / K + X / (2 * K), Y / K - X / (2 * K)];
 }
+/** The other player whose body is under a screen position (the front one), or null: their entry in G.players. */
+export function pickPlayer(clientX, clientY) {
+  const X = clientX / Z + (cam.ox ?? cam.x), Y = clientY / Z + (cam.oy ?? cam.y);
+  let best = null, bd = -1e9;
+  if (G && map) for (const o of G.players.values()) {
+    const [x, y] = iso(o.x, o.y);
+    if (X > x - 9 && X < x + 9 && Y > y - 28 && Y < y + 4 && y > bd) { bd = y; best = o; }
+  }
+  return best;
+}
