@@ -9761,14 +9761,15 @@ function hammerTick(S, p, now) {
   rt.ev.push(["hm", p.eid, Math.round(x), Math.round(y), move.r, +!!primary, +critical, move.fx]);
 }
 
-/** 땅울림 발구르기 (no wind-up): the ground round the bearer jumps — the small go up, elites reel, a boss's gauge drops. */
+/** 땅울림 발구르기 (no wind-up): the ground round the bearer jumps — the small go up, elites reel, a boss in its marked cast loses gauge. */
 function hammerStomp(S, p, sk, k) {
   const rt = S.maps[p.map], now = S.now;
   rt.ev.push(["a", p.eid, sk.fx, Math.round(p.x), Math.round(p.y) - 6, p.dir, 2, sk.r]);
   for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
     hurtMob(S, rt, o, p, sk.mult * k, false, { sk, cue: HIT_CUE.hammer });
     if (o.dead) continue;
-    if (MOBS[o.k].boss) gaugeHit(S, rt, o, sk.gauge);
+    if (o.cast) gaugeHit(S, rt, o, sk.gauge);
+    else if (MOBS[o.k].boss) continue;
     else if (o.el) { holdMob(S, o, sk.stg); o.stg = now + STG_MS; }
     else launch(S, rt, o, sk.air);
   }
@@ -9934,8 +9935,8 @@ function parryOk(S, rt, p, mob) {
   const sk = SKILL.parry, now = S.now, k = p.parry.k;
   p.parry = null;
   rt.ev.push(["a", p.eid, sk.fx, Math.round(p.x), Math.round(p.y) - 6, p.dir, 2, 1]);
-  if (MOBS[mob.k].boss) gaugeHit(S, rt, mob, sk.gauge);
-  else { holdMob(S, mob, sk.stg); mob.stg = now + STG_MS; }
+  if (mob.cast) gaugeHit(S, rt, mob, sk.gauge);
+  else if (!MOBS[mob.k].boss && mob.el !== 2) { mob.stun = Math.max(mob.stun, now + sk.stg * (mob.el ? 0.5 : 1)); mob.stg = now + STG_MS; }
   for (const o of mobsWithin(rt, p.x, p.y, sk.r)) if (inArc(p, o, sk.arc)) hurtMob(S, rt, o, p, sk.mult * k, false, { sk });
   if (pasOn(p, "inertia")) { p.inert = Math.min(SKILL.inertia.max, inertOf(p) + sk.inert); p.inertAt = now; }
   if (p.cds.parry > now) p.cds.parry = now + Math.round((p.cds.parry - now) * sk.cdCut);
