@@ -5,8 +5,10 @@
  *   on-screen hint reads (`data-key="<id>"` in index.html is refreshed by `apply()`).
  *   shortcut: labels assume a QWERTY key cap; on other layouts the cap and the label can differ.
  * - 글자 크기: body[data-ts="s|m|l"] swaps the --t10/--t11/--t12 integer font sizes of hud.css.
+ * - HUD 색상: body[data-hud=<theme>] picks a colour theme block of hud.css; frames.js redraws the 9-slices.
  */
 import { $ } from "./state.js";
+import { installFrames } from "./frames.js";
 
 // [id, Korean name, default (Shift+)code, group]
 const A = [
@@ -29,7 +31,8 @@ const TALK = new Set(["talkNext", "talkEnd"]);
 const space = (id) => (TALK.has(id) ? 1 : 0);
 const DEF = Object.fromEntries(A.map(([id, , d]) => [id, d]));
 const NAME = Object.fromEntries(A.map(([id, n]) => [id, n]));
-const LS = "lumentale:keys", LS_TS = "lumentale:ts";
+const LS = "lumentale:keys", LS_TS = "lumentale:ts", LS_HUD = "lumentale:hud";
+const HUD_THEMES = ["brass", "linen", "sand", "olive", "mocha", "contrast"];   // hud.css "HUD colour themes", index.html #opt-hud
 let bind = { ...DEF };
 const rev = (t = 0) => Object.fromEntries(Object.entries(bind).filter(([id]) => space(id) === t).map(([id, c]) => [c, id]));
 let byCode = rev(), byTalk = rev(1);
@@ -100,6 +103,15 @@ function assign(id, code) {
   byCode = rev(); byTalk = rev(1); save(); Sound.play("ui");
 }
 
+/** Apply a HUD colour theme (unknown names fall back to the default brass) and redraw the frames in its colours. */
+export function hudTheme(v) {
+  if (!HUD_THEMES.includes(v)) v = "brass";
+  document.body.dataset.hud = v;
+  installFrames();
+  return v;
+}
+hudTheme(localStorage.getItem(LS_HUD));
+
 /** Build the 단축키 list and the 글자 크기 buttons in the settings window (index.html #keys-list, #opt-ts). */
 load();   // module-level hint strings elsewhere read the saved bindings at import time
 let toast = () => {}, Sound = { play() {} };   // injected by setupKeymap: importing windows.js/audio.js here would make an import cycle
@@ -139,4 +151,6 @@ export function setupKeymap(api) {
   };
   ts(localStorage.getItem(LS_TS));
   for (const b of document.querySelectorAll("#opt-ts button")) b.addEventListener("click", () => { localStorage.setItem(LS_TS, ts(b.dataset.ts)); Sound.play("ui"); });
+  const sel = $("#opt-hud");
+  if (sel) { sel.value = document.body.dataset.hud; sel.addEventListener("change", () => { localStorage.setItem(LS_HUD, hudTheme(sel.value)); Sound.play("ui"); }); }
 }

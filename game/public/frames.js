@@ -10,12 +10,27 @@
  *  --fr-screen  sunken "screens" (minimap, chat log, bag, portrait): shade on
  *               the top and left, a lit lip on the bottom and right.
  *  --fr-plate   the small brass name plates that title a panel.
+ *
+ * Colours follow the HUD colour theme (hud.css, "HUD colour themes"): the
+ * default set (--fr-*) is drawn from the :root values for the title screen,
+ * the themed set (--frt-*) from #hud's, which the HUD containers use.
+ * installFrames() runs again whenever the theme changes (keymap.js).
  */
 const S = 2;   // every art pixel is S×S screen pixels
 
 const INK = "#0d0b12";
-const BRASS = { hi: "#f4dfa4", mid: "#cf9f55", lo: "#7c5326", sh: "#4a2e14" };
 export const FACE = "#211c2a";
+
+/** The frame colours of an element's theme; each fallback is the original brass look. */
+function palette(cs) {
+  const v = (name, d) => cs.getPropertyValue(name).trim() || d;
+  return {
+    ink: v("--fr-ink", INK), face: v("--face", FACE), line: v("--sf3", "#2c2537"),
+    hi: v("--b-hi", "#f4dfa4"), mid: v("--b-mid", "#cf9f55"), lo: v("--b-lo", "#7c5326"), sh: v("--b-sh", "#4a2e14"),
+    shine: v("--b-w", "#fff6d8"), warm: v("--b-m", "#e2b868"),
+    scr: v("--scr", "#120f18"), lip: v("--sf4", "#3d3448"), deep: v("--sf0", "#07060b"), rim: v("--sf3", "#2a2433"),
+  };
+}
 
 function grid(n) {
   const px = Array.from({ length: n }, () => Array(n).fill(null));
@@ -48,38 +63,40 @@ function rings(n, list, face) {
   return G;
 }
 
-function brass() {
-  const n = 18;
-  const G = rings(n, [[INK, INK], [BRASS.hi, BRASS.lo], [BRASS.mid, BRASS.mid], [BRASS.mid, BRASS.mid], [BRASS.lo, BRASS.hi], [INK, INK]], FACE);
+function brass(P) {
+  const n = 18, INK = P.ink;
+  const G = rings(n, [[INK, INK], [P.hi, P.lo], [P.mid, P.mid], [P.mid, P.mid], [P.lo, P.hi], [INK, INK]], P.face);
   // round the outer corners by one pixel
   for (const [x, y] of [[0, 0], [n - 1, 0], [0, n - 1], [n - 1, n - 1]]) G.set(x, y, null);
   for (const [x, y] of [[1, 1], [n - 2, 1], [1, n - 2], [n - 2, n - 2]]) G.set(x, y, INK);
   // a domed rivet sits in each corner on the brass band
   const RIV = ["._hm.", "_hwmL", "hwhmL", "mmmLs", ".LLs."];
-  const C = { _: BRASS.mid, h: BRASS.hi, w: "#fff6d8", m: "#e2b868", L: BRASS.lo, s: BRASS.sh };
+  const C = { _: P.mid, h: P.hi, w: P.shine, m: P.warm, L: P.lo, s: P.sh };
   for (const [ox, oy] of [[1, 1], [n - 6, 1], [1, n - 6], [n - 6, n - 6]]) {
     RIV.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== ".") G.set(ox + x, oy + y, C[ch]); }));
   }
-  // a faint lit line just inside, so the face reads as a raised board
-  for (let i = 6; i < n - 6; i++) { G.set(i, 6, "#2c2537"); G.set(6, i, "#2c2537"); }
+  // a faint line just inside, so the face reads as a raised board
+  for (let i = 6; i < n - 6; i++) { G.set(i, 6, P.line); G.set(6, i, P.line); }
   return toUrl(G);
 }
-function screen() {
+function screen(P) {
   const n = 8;
-  const G = rings(n, [[INK, "#3d3448"], ["#07060b", "#2a2433"]], "#120f18");
+  const G = rings(n, [[P.ink, P.lip], [P.deep, P.rim]], P.scr);
   for (const [x, y] of [[0, 0], [n - 1, 0], [0, n - 1], [n - 1, n - 1]]) G.set(x, y, null);
   return toUrl(G);
 }
-function plate() {
+function plate(P) {
   const n = 8;
-  const G = rings(n, [[INK, INK], [BRASS.hi, BRASS.lo]], BRASS.mid);
+  const G = rings(n, [[P.ink, P.ink], [P.hi, P.lo]], P.mid);
   for (const [x, y] of [[0, 0], [n - 1, 0], [0, n - 1], [n - 1, n - 1]]) G.set(x, y, null);
   return toUrl(G);
 }
 
 export function installFrames() {
-  const r = document.documentElement.style;
-  r.setProperty("--fr-brass", brass());
-  r.setProperty("--fr-screen", screen());
-  r.setProperty("--fr-plate", plate());
+  const root = document.documentElement, r = root.style, hud = document.getElementById("hud");
+  for (const [pre, P] of [["--fr-", palette(getComputedStyle(root))], ["--frt-", palette(getComputedStyle(hud || root))]]) {
+    r.setProperty(pre + "brass", brass(P));
+    r.setProperty(pre + "screen", screen(P));
+    r.setProperty(pre + "plate", plate(P));
+  }
 }
