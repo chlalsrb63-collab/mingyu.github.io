@@ -483,8 +483,6 @@ const HAMMER = [
 ];
 
 export const DESIGNS = { sword: SWORD, dagger: DAGGER, spear: SPEAR, staff: STAFF, book: BOOK, bow: BOW, hammer: HAMMER };
-/** Extra designs other modules can register (new weapon kinds): kind → [tier1…tier5] design functions. */
-export function registerKind(kind, designs) { DESIGNS[kind] = designs; }
 
 // Legendary silhouettes share each weapon's grip position and canvas.
 export const SIL = {

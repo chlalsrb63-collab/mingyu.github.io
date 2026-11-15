@@ -89,7 +89,6 @@ const G = {
 G.eq_off = G.sword.map((r) => [...r].reverse().join(""));
 
 /** What each stat, menu button, buff and elite trait is drawn with. */
-export const STAT_ICON = { atk: "sword", def: "shield", hp: "heart", mp: "drop", crit: "target", critd: "burst", ls: "fang", xp: "up", mf: "gem", gold: "coin", acd: "clock", kills: "skull" };
 export const MENU_ICON = { charm: "gem", inv: "bag", char: "person", skill: "book", quest: "scroll", party: "party", guild: "banner", rank: "crown", help: "help", settings: "gear", sit: "fire", emo: "smile", sound: "note", auto: "auto", daily: "cal", week: "clock", achieve: "trophy", collect: "paw", life: "life", warp: "stone", event: "rift", bank: "bag", map: "map" };
 /** Each class is marked by its weapon. */
 export const CLASS_ICON = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" };

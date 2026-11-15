@@ -26,7 +26,6 @@ export function bez(a, c, b, n = 6) {
   return out;
 }
 export const lerp3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-export const add3 = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 
 /**
  * Where a foot is in its step: [forward swing −1…1, lift 0…1]. `off` shifts the

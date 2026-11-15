@@ -1217,8 +1217,6 @@ const TINT = {
 };
 /** The tints a monster sheet can be asked for. */
 export const MOB_TINTS = Object.keys(TINT);
-/** The light a tinted creature gives off in dark places (only some tints glow). */
-export const TINT_GLOW = { fire: "#ff9040", poison: "#9adc50", frost: "#bfe6ff", bile: "#b4cc3c", gold: "#ffd860" };
 
 function toHsl(r, g, b) {
   r /= 255; g /= 255; b /= 255;

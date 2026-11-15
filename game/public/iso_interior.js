@@ -37,7 +37,6 @@ import { daylight } from "./decor.js";
 
 export const WALLS = "=+^~@!", STUB = "_", FURN = "okmj$br#g*v-pstw]%[{}()?&<>|;:'`";
 export const OBJECTS = WALLS + STUB + FURN;
-export const FLOORS = "flxhquye";
 const INK = C("#2b2233");
 /** How tall the back walls stand, in pixels. */
 const WH = 46, STUB_H = 7;

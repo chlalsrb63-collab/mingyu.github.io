@@ -134,7 +134,6 @@ function easeWeather(dt, outdoor) {
   for (let i = 0; i < wk.length; i++) wk[i] = Math.max(0, Math.min(1, wk[i] + ((i === w ? 1 : 0) - wk[i]) * u));
   snapNext = false;
 }
-export const weatherK = (i) => wk[i];
 
 /**
  * Grade the view: multiply it by the hour's light with every light source cut in as a

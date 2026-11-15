@@ -1118,8 +1118,6 @@ export function seenFrom(id) {
 }
 /** Is the item made to cover an eye (shades, a patch)? Everything else must leave the eyes alone. */
 export const coversEyes = (id) => !!(ART[id] && ART[id][0] === "face" && FACE[ART[id][1]] && FACE[ART[id][1]].covers);
-/** How a hat treats the ears: "through", "behind", or "" for small pieces in front of them. */
-export const hatEars = (id) => (ART[id] && ART[id][0] === "hat" && HAT[ART[id][1]] ? HAT[ART[id][1]].ears || "" : "");
 
 /**
  * Dress one frame: `base` is the plain frame from sprites.js, `o.cos` a list of
