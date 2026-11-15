@@ -157,10 +157,10 @@ button:disabled { filter: grayscale(1); opacity: .45; cursor: default; }
 .gold-line { color: var(--gold); margin: 0 0 8px; font-weight: 600; }
 
 /* the character sheet: a paper-doll, then stats in groups */
-.doll { display: grid; grid-template-columns: 44px 1fr 44px; gap: 8px; align-items: center; }
+.doll { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 6px; align-items: center; }   /* minmax: the portrait shrinks in a narrow docked panel instead of pushing the right column out */
 .doll .col { display: flex; flex-direction: column; gap: 6px; }
 .portrait { text-align: center; }
-#char-cv { width: 132px; height: 168px; display: block; margin: 0 auto; border: 1px solid #000; border-radius: 3px; image-rendering: pixelated;
+#char-cv { width: 132px; max-width: 100%; height: auto; aspect-ratio: 132 / 168; display: block; margin: 0 auto; border: 1px solid #000; border-radius: 3px; image-rendering: pixelated;
   background: radial-gradient(ellipse at 50% 72%, rgba(226, 196, 134, .16), rgba(0, 0, 0, .25) 70%), var(--well); box-shadow: inset 0 0 0 1px var(--line); }
 #char-title { margin-top: 5px; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 5px; }
 #char-title small { color: var(--gold); font-weight: 600; font-size: 11px; }

@@ -18,7 +18,7 @@ const A = [
   ["daily", "일일 의뢰", "KeyU", "창"], ["achieve", "업적 · 칭호", "KeyY", "창"], ["collect", "몬스터 도감", "KeyJ", "창"],
   ["life", "생활 기술", "Shift+KeyL", "창"], ["week", "주간 수첩", "Shift+KeyU", "창"], ["charm", "참 보드", "Shift+KeyC", "창"], ["trophy", "보스 전리품", "Shift+KeyT", "창"], ["party", "파티", "KeyP", "창"], ["guild", "길드", "KeyG", "창"], ["rank", "랭킹", "KeyN", "창"],
   ["map", "지도", "KeyM", "창"], ["settings", "설정", "KeyO", "창"], ["help", "도움말", "KeyH", "창"],
-  ["sit", "앉기 · 일어서기", "KeyZ", "기타"], ["emote", "감정표현", "KeyT", "기타"], ["jamB", "연주 (앉은 채)", "KeyB", "기타"], ["jamZ", "건배 (앉은 채)", "Shift+KeyB", "기타"],
+  ["sit", "앉기 · 일어서기 (사냥터: 모닥불)", "KeyZ", "기타"], ["emote", "감정표현", "KeyT", "기타"], ["jamB", "연주 (앉은 채)", "KeyB", "기타"], ["jamZ", "건배 (앉은 채)", "Shift+KeyB", "기타"],
   ["sound", "소리 켜기/끄기", "Shift+KeyM", "기타"], ["crt", "CRT 효과", "KeyV", "기타"], ["chat", "채팅 입력", "Enter", "기타"],
 ];
 const DEF = Object.fromEntries(A.map(([id, , d]) => [id, d]));
