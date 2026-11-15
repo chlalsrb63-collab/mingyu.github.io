@@ -20,7 +20,7 @@ outer: for (let y = 8; y < m.h - 8; y++) for (let x = 8; x < m.w - 8; x++) {
 }
 const me = { x: fx * 16 + 8, y: fy * 16 + 8, dir: 0, moving: false, atkT: -1e9, dead: false, aim: null, atkN: 0 };
 const mob = { id: 1, k: q.get("mob") || "twinhare", x: me.x + 34, y: me.y + 4, moving: false, atkT: -1e9, hurtT: -1e9, el: 0 };
-const G = { you: 1, me, players: new Map(), mobs: new Map(), drops: new Map(), who: new Map(), defs: { mobs: { [mob.k]: { sp: mob.k, lv: 1 } } }, icons: { cv: {} }, self: null, fires: new Map(), bobs: new Map() };
+const G = { you: 1, me, players: new Map(), mobs: new Map(), drops: new Map(), who: new Map(), defs: { mobs: { [mob.k]: { sp: mob.k, lv: 1 } }, skills: { oathward: { healR: 88 } } }, icons: { cv: {} }, self: null, fires: new Map(), bobs: new Map() };
 G.who.set(1, { cls: q.get("cls") || "warrior", look: [1, 0, 0, 0, 0, 0, 1], gear: { wk: q.get("wk") || "sword", wt: 3, wq: 0 } });
 const cv = document.getElementById("c");
 S.init(cv); S.resize(400, 260, 1); S.loadMap(m); S.sync(G);
@@ -40,8 +40,11 @@ const setup = {
   walk() { me.moving = true; me.v = 48; },
   dash() { me.moving = true; me.v = 110; },
 };
+const previewWeapons = { 70: "staff", 71: "staff", 80: "sword", 89: "spear", 91: "book", 130: "hammer", 131: "hammer", 132: "hammer", 133: "spear", 134: "hammer" };
 for (let r = 0; r < rows.length; r++) {
   const row = rows[r];
+  const codeOfRow = Number(row.match(/^sk(\d+)/)?.[1]);
+  G.who.get(1).gear.wk = q.get("wk") || previewWeapons[codeOfRow] || "sword";
   S.fx.clear(); G.mobs.clear(); me.moving = false; me.aim = null; me.atkT = -1e9; me.hs = null; me.x = fx * 16 + 8; me.y = fy * 16 + 8; me.v = 0;
   for (let i = 0; i < 30; i++) { t += 16; frame(); }
   if (setup[row]) setup[row]();
@@ -50,11 +53,15 @@ for (let r = 0; r < rows.length; r++) {
     const [code, extra] = row.slice(2).split(":").map(Number);
     G.mobs.set(1, mob); G.texts = G.texts || [];
     const ctx = { G, S3: S, entityPos: (id) => (id === 1 ? me : mob), heightOf: () => 1.3, t };
-    me.atkT = t;
+    if (code < 130 || code > 132) me.atkT = t;
     // the hybrid expansion (fx 120–128) with the events the server sends round each: sk120 … sk128
     const ev = (...e) => SkillFx.skillEvent(e, ctx), rad = (d) => (d * Math.PI) / 180;
     if (code === 120) for (const [i, dx, dy] of [[2, 44, -18], [3, 30, 26]]) G.mobs.set(i, { ...mob, id: i, x: me.x + dx, y: me.y + dy });
-    if (code === 121 || code === 123) {
+    if (code >= 130 && code <= 132) {
+      ev("hm", 1, mob.x, mob.y, extra || 21, 1, +(code === 132), code);
+    } else if (code === 134) {
+      ev("a", 1, code, me.x, me.y - 6, 2, 2, 34);
+    } else if (code === 121 || code === 123) {
       // a run that started 70 behind: the hero has landed where they stand
       ev("ln", code === 121 ? 3 : 6, me.x - 70, me.y, me.x, me.y);
       ev("a", 1, code, me.x, me.y - 6, 2, 2, code === 121 ? 56 : 70);

@@ -9,11 +9,11 @@ function hammerLine(m, x, y, ux, uy, len) {
   return far;
 }
 
-function startHammer(S, p, move, skill = null, power = 1) {
+function startHammer(S, p, move, skill = null, power = 1, hpSpent = 0) {
   const m = mapOfS(S, p.map), [ux, uy] = AIM_V[p.aim | 0];
   const far = hammerLine(m, p.x, p.y, ux, uy, move.center);
   const x = p.x + ux * far, y = p.y + uy * far;
-  p.hammer = { move, skill, power, x, y, ox: p.x, oy: p.y, ux, uy,
+  p.hammer = { move, skill, power, hpSpent, x, y, ox: p.x, oy: p.y, ux, uy,
     map: p.map, hand: p.ch.eq.weapon, at: S.now + move.wind };
   S.maps[p.map].ev.push(["a", p.eid, move.fx, Math.round(x), Math.round(y), p.dir, 0, move.wind, p.aim | 0]);
 }
@@ -37,7 +37,7 @@ function hammerTick(S, p, now) {
   p.hammer = null;
   if (p.dead || p.map !== cast.map || p.ch.eq.weapon !== cast.hand || inHand(p.ch) !== "hammer") return;
 
-  const { move, skill, power, x, y, ox, oy, ux, uy } = cast;
+  const { move, skill, power, hpSpent, x, y, ox, oy, ux, uy } = cast;
   const m = mapOfS(S, p.map), rt = S.maps[p.map], st = stats(p);
   const distance = (mob) => dist(x, y, mob.x, mob.y);
   const targets = rt.mobs.filter(mob => {
@@ -50,11 +50,13 @@ function hammerTick(S, p, now) {
   if (primary) {
     let mult = move.mult;
     const mark = cracks?.get(primary);
-    if (move.crackMult && mark?.n === SKILL.hammer_crack.max) {
+    const rupture = move.crackMult && mark?.n === SKILL.hammer_crack.max;
+    if (rupture) {
       cracks.delete(primary);
       mult *= move.crackMult * (pasOn(p, "hammer_heart") ? SKILL.hammer_heart.bonus : 1);
     }
     critical = hurtMob(S, rt, primary, p, mult * power, false, skill ? { sk: skill } : null) === true;
+    if (rupture && move.hpRefund) healP(rt, p, Math.floor(hpSpent * move.hpRefund));
     if (!skill && !primary.dead && !MOBS[primary.k].chest && pasOn(p, "hammer_crack")) {
       const ms = pasOn(p, "hammer_hold") ? SKILL.hammer_hold.ms : SKILL.hammer_crack.ms;
       (p.hammerCracks ||= new Map()).set(primary, { n: Math.min(SKILL.hammer_crack.max, (mark?.n || 0) + 1), until: now + ms });

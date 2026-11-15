@@ -81,7 +81,18 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
   ready(other); assert.ok(actions(other, atk).ok); advance(200);
   assert.equal(other.hammerCracks.get(first).n, 1);
   assert.equal(p.hammerCracks.get(first).n, 2);
-  ready(); assert.ok(actions(p, { t: "sk", id: "hammer_fault", a: 0 }).ok); advance(200);
+  const fault = D.skills.hammer_fault;
+  ready(); p.hitAt = S.now;
+  const hp = p.hp, spent = H.hammerHpCost(p, fault);
+  assert.ok(actions(p, { t: "sk", id: "hammer_fault", a: 0 }).ok);
+  assert.equal(p.hp, hp - spent, "the full cost is paid at cast");
+  advance(200);
+  assert.equal(p.hp, hp - spent + Math.floor(spent / 2), "a landed rupture returns half the paid HP");
+  ready();
+  const beforeMiss = p.hp;
+  assert.ok(actions(p, { t: "sk", id: "hammer_fault", a: 4 }).ok);
+  advance(200);
+  assert.equal(p.hp, beforeMiss - spent, "a hit without two marks returns nothing");
   assert.equal(p.hammerCracks.has(first), false);
   advance(5001); assert.equal(other.hammerCracks.size, 0);
   for (const o of [first, second, edge, extra, behind, out]) o.dead = true;
@@ -224,13 +235,23 @@ for (const duo of [false, true]) {
   merc.ch.wm.hammer.lv = expert; merc.stc = null;
 
   H.gainJob(S, paladin, 300);
-  assert.ok(actions(paladin, { t: "pinv", e: merc.eid }).ok);
-  assert.ok(actions(merc, { t: "pacc" }).ok);
-  ready(merc); ready(paladin); ready();
-  merc.hp = 5; p.hp = 5;
+  const far = player("far", "spear", 20, 29), nearby = player("nearby", "dagger", 20, 29);
+  for (const ally of [merc, nearby, far]) {
+    assert.ok(actions(paladin, { t: "pinv", e: ally.eid }).ok);
+    assert.ok(actions(ally, { t: "pacc" }).ok);
+  }
+  const oath = D.skills.oathward, power = H.stats(paladin).atk;
+  const heal = ally => Math.round(H.stats(ally).mhp * oath.heal + power * oath.atkHeal);
+  merc.x = paladin.x + oath.healR; merc.y = paladin.y;
+  nearby.x = paladin.x - 12; nearby.y = paladin.y;
+  far.x = paladin.x + oath.healR + 1; far.y = paladin.y;
+  ready(paladin);
+  for (const o of [paladin, merc, nearby, far, p]) o.hp = 5;
   assert.ok(actions(paladin, { t: "sk", id: "oathward", a: 0 }).ok);
-  assert.ok(merc.hp > 5 && p.hp === 5, "the oath heals party members only");
-  L.removePlayer(S, merc.pid); L.removePlayer(S, paladin.pid);
+  for (const o of [paladin, merc, nearby]) assert.equal(o.hp, 5 + heal(o));
+  assert.equal(far.hp, 5, "a distant party member is outside the healing radius");
+  assert.equal(p.hp, 5, "an outsider is never healed");
+  for (const o of [merc, nearby, far, paladin]) L.removePlayer(S, o.pid);
 
   const old = L.newChar("옛전직", [], "hammer");
   old.v = 14; old.job = "destroyer"; delete old.jp;

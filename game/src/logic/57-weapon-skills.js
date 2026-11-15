@@ -409,7 +409,8 @@ function castSkill(S, p, id) {
     else if ((p.reso = (p.reso | 0) + 1) >= SKILL.reso.n) ev(113, p.x, p.y - 6);
   }
   p.mp -= cost;
-  if (sk.hpPct) { const hp = hammerHpCost(p, sk); p.hp -= hp; rt.ev.push(["h", p.eid, hp, 0, 1, 1]); }
+  const hpSpent = sk.hpPct ? hammerHpCost(p, sk) : 0;
+  if (hpSpent) { p.hp -= hpSpent; rt.ev.push(["h", p.eid, hpSpent, 0, 1, 1]); }
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1]); } }
   // WIS shortens every wait; an echo (legendary) may give it straight back
   p.cds[id] = now + Math.round(sk.cd * (1 - st.cdr));
@@ -417,7 +418,7 @@ function castSkill(S, p, id) {
   p.atkAt = now;
   p.swordBeat = null;
   p.dirty = true;
-  if (sk.wk === "hammer") { startHammer(S, p, sk, sk, k); return; }
+  if (sk.wk === "hammer") { startHammer(S, p, sk, sk, k, hpSpent); return; }
   const opt = { mag: sk.mag, sk };
   const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult * k, !!(more && more.sure), more ? { ...opt, ...more } : opt);
   const [aimX, aimY] = AIM_V[p.aim | 0];

@@ -95,12 +95,12 @@ const SKILL = {
     desc: "룬술사의 기술 · 앞쪽에 5초간 룬 법진을 새긴다. 1초마다 안의 적을 치고 낙인을 새기며, 불·얼음·번개가 번갈아 깃들어 두 박동마다 법진 안에서 원소 반응이 메아리친다." },
   inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.8, per: 2, brandK: 0.4, mag: 1, fx: 128,
     desc: "각인궁사의 기술 · 룬 먹물을 먹인 화살 다섯 대를 부채꼴로 쏜다. 꿰뚫린 적마다 낙인이 새겨지고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 한 적은 최대 두 대까지 맞는다." },
-  hammer_stamp: { kind: "a", wk: "hammer", need: 1, name: "쐐기찍기", mp: 3, hpPct: 0.03, autoHp: 0.35, cd: 6000, center: 16, r: 16, wind: 200, mult: 2.55, splashMult: 1, stun: 180, fx: 130,
+  hammer_stamp: { kind: "a", wk: "hammer", need: 1, name: "쐐기찍기", mp: 3, hpPct: 0.02, autoHp: 0.35, cd: 6000, center: 16, r: 16, wind: 200, mult: 2.55, splashMult: 1, stun: 180, fx: 130,
     desc: "앞쪽을 내려찍어 가장 가까운 적에게 정타를 가하고 두 적까지 충격을 준다. 맞은 일반 적은 잠깐 휘청인다." },
-  hammer_fault: { kind: "a", wk: "hammer", need: 10, name: "금맥 벌리기", mp: 5, hpPct: 0.05, autoHp: 0.35, cd: 10000, center: 16, r: 18, wind: 200, mult: 2.85, splashMult: 1.10, crackMult: 1.25, fx: 131,
-    desc: "해머로 땅을 갈라 세 적까지 맞힌다. 정타 대상에 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 25% 늘어난다." },
-  hammer_final: { kind: "j", job: "destroyer", wk: "hammer", need: 20, name: "파성추", mp: 10, hpPct: 0.08, autoHp: 0.35, cd: 32000, center: 14, r: 21, wind: 400, mult: 4.5, splashMult: 1.60, crackMult: 1.35, brace: 0.25, fx: 132,
-    desc: "파괴자의 기술. 잠시 버티고 크게 내려찍는다. 준비 중 경직이 25% 줄며 균열 두 개를 터뜨리면 정타 피해가 35% 늘어난다." },
+  hammer_fault: { kind: "a", wk: "hammer", need: 10, name: "금맥 벌리기", mp: 5, hpPct: 0.03, autoHp: 0.35, cd: 10000, center: 16, r: 18, wind: 200, mult: 2.85, splashMult: 1.10, crackMult: 1.25, hpRefund: 0.5, fx: 131,
+    desc: "해머로 땅을 갈라 세 적까지 맞힌다. 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 25% 늘고 소모한 HP의 절반을 돌려받는다." },
+  hammer_final: { kind: "j", job: "destroyer", wk: "hammer", need: 20, name: "파성추", mp: 10, hpPct: 0.05, autoHp: 0.35, cd: 32000, center: 14, r: 21, wind: 400, mult: 4.5, splashMult: 1.60, crackMult: 1.35, hpRefund: 0.5, brace: 0.25, fx: 132,
+    desc: "파괴자의 기술. 준비 중 경직이 25% 줄어든다. 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 35% 늘고 소모한 HP의 절반을 돌려받는다." },
   hammer_crack: { kind: "p", wk: "hammer", need: 10, name: "균열 새기기", max: 2, ms: 5000,
     desc: "해머 기본 공격 정타에 맞은 적에게 5초 동안 내 균열을 남긴다. 최대 두 개까지 쌓인다." },
   hammer_brace: { kind: "p", wk: "hammer", need: 20, name: "버팀발", brace: 0.20,
@@ -113,8 +113,8 @@ const SKILL = {
     desc: "해머 기술로 내 균열 두 개를 실제로 터뜨리면 정타 피해가 추가로 8% 늘어난다." },
   ironsiege: { kind: "h", job: "mercenary", need: HYB_WM, name: "철쇄 돌진", mp: 24, cd: 28000, len: 48, half: 11, r: 23, mult: 2.45, sweep: 1.05, fx: 133,
     desc: "창으로 열린 길을 따라 전진하고 끝에서 해머를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다." },
-  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 28, cd: 32000, r: 34, mult: 1.55, healR: 70, heal: 0.08, atkHeal: 0.25, fx: 134,
-    desc: "성문을 지키는 망치로 주변을 내리친다. 자신과 가까운 파티원의 최대 HP 8%에 성기사 공격력의 25%를 더해 회복시킨다." },
+  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, fx: 134,
+    desc: "성문을 지키는 망치로 주변을 내리친다. 자신과 반경 88 안의 파티원 각각에게 최대 HP 10%에 성기사 공격력의 30%를 더해 회복시킨다." },
 };
 for (const [id, sk] of Object.entries(SKILL)) {
   sk.id = id;

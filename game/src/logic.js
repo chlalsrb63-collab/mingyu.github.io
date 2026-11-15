@@ -326,12 +326,12 @@ const SKILL = {
     desc: "룬술사의 기술 · 앞쪽에 5초간 룬 법진을 새긴다. 1초마다 안의 적을 치고 낙인을 새기며, 불·얼음·번개가 번갈아 깃들어 두 박동마다 법진 안에서 원소 반응이 메아리친다." },
   inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.8, per: 2, brandK: 0.4, mag: 1, fx: 128,
     desc: "각인궁사의 기술 · 룬 먹물을 먹인 화살 다섯 대를 부채꼴로 쏜다. 꿰뚫린 적마다 낙인이 새겨지고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 한 적은 최대 두 대까지 맞는다." },
-  hammer_stamp: { kind: "a", wk: "hammer", need: 1, name: "쐐기찍기", mp: 3, hpPct: 0.03, autoHp: 0.35, cd: 6000, center: 16, r: 16, wind: 200, mult: 2.55, splashMult: 1, stun: 180, fx: 130,
+  hammer_stamp: { kind: "a", wk: "hammer", need: 1, name: "쐐기찍기", mp: 3, hpPct: 0.02, autoHp: 0.35, cd: 6000, center: 16, r: 16, wind: 200, mult: 2.55, splashMult: 1, stun: 180, fx: 130,
     desc: "앞쪽을 내려찍어 가장 가까운 적에게 정타를 가하고 두 적까지 충격을 준다. 맞은 일반 적은 잠깐 휘청인다." },
-  hammer_fault: { kind: "a", wk: "hammer", need: 10, name: "금맥 벌리기", mp: 5, hpPct: 0.05, autoHp: 0.35, cd: 10000, center: 16, r: 18, wind: 200, mult: 2.85, splashMult: 1.10, crackMult: 1.25, fx: 131,
-    desc: "해머로 땅을 갈라 세 적까지 맞힌다. 정타 대상에 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 25% 늘어난다." },
-  hammer_final: { kind: "j", job: "destroyer", wk: "hammer", need: 20, name: "파성추", mp: 10, hpPct: 0.08, autoHp: 0.35, cd: 32000, center: 14, r: 21, wind: 400, mult: 4.5, splashMult: 1.60, crackMult: 1.35, brace: 0.25, fx: 132,
-    desc: "파괴자의 기술. 잠시 버티고 크게 내려찍는다. 준비 중 경직이 25% 줄며 균열 두 개를 터뜨리면 정타 피해가 35% 늘어난다." },
+  hammer_fault: { kind: "a", wk: "hammer", need: 10, name: "금맥 벌리기", mp: 5, hpPct: 0.03, autoHp: 0.35, cd: 10000, center: 16, r: 18, wind: 200, mult: 2.85, splashMult: 1.10, crackMult: 1.25, hpRefund: 0.5, fx: 131,
+    desc: "해머로 땅을 갈라 세 적까지 맞힌다. 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 25% 늘고 소모한 HP의 절반을 돌려받는다." },
+  hammer_final: { kind: "j", job: "destroyer", wk: "hammer", need: 20, name: "파성추", mp: 10, hpPct: 0.05, autoHp: 0.35, cd: 32000, center: 14, r: 21, wind: 400, mult: 4.5, splashMult: 1.60, crackMult: 1.35, hpRefund: 0.5, brace: 0.25, fx: 132,
+    desc: "파괴자의 기술. 준비 중 경직이 25% 줄어든다. 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 35% 늘고 소모한 HP의 절반을 돌려받는다." },
   hammer_crack: { kind: "p", wk: "hammer", need: 10, name: "균열 새기기", max: 2, ms: 5000,
     desc: "해머 기본 공격 정타에 맞은 적에게 5초 동안 내 균열을 남긴다. 최대 두 개까지 쌓인다." },
   hammer_brace: { kind: "p", wk: "hammer", need: 20, name: "버팀발", brace: 0.20,
@@ -344,8 +344,8 @@ const SKILL = {
     desc: "해머 기술로 내 균열 두 개를 실제로 터뜨리면 정타 피해가 추가로 8% 늘어난다." },
   ironsiege: { kind: "h", job: "mercenary", need: HYB_WM, name: "철쇄 돌진", mp: 24, cd: 28000, len: 48, half: 11, r: 23, mult: 2.45, sweep: 1.05, fx: 133,
     desc: "창으로 열린 길을 따라 전진하고 끝에서 해머를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다." },
-  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 28, cd: 32000, r: 34, mult: 1.55, healR: 70, heal: 0.08, atkHeal: 0.25, fx: 134,
-    desc: "성문을 지키는 망치로 주변을 내리친다. 자신과 가까운 파티원의 최대 HP 8%에 성기사 공격력의 25%를 더해 회복시킨다." },
+  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, fx: 134,
+    desc: "성문을 지키는 망치로 주변을 내리친다. 자신과 반경 88 안의 파티원 각각에게 최대 HP 10%에 성기사 공격력의 30%를 더해 회복시킨다." },
 };
 for (const [id, sk] of Object.entries(SKILL)) {
   sk.id = id;
@@ -7459,11 +7459,11 @@ function hammerLine(m, x, y, ux, uy, len) {
   return far;
 }
 
-function startHammer(S, p, move, skill = null, power = 1) {
+function startHammer(S, p, move, skill = null, power = 1, hpSpent = 0) {
   const m = mapOfS(S, p.map), [ux, uy] = AIM_V[p.aim | 0];
   const far = hammerLine(m, p.x, p.y, ux, uy, move.center);
   const x = p.x + ux * far, y = p.y + uy * far;
-  p.hammer = { move, skill, power, x, y, ox: p.x, oy: p.y, ux, uy,
+  p.hammer = { move, skill, power, hpSpent, x, y, ox: p.x, oy: p.y, ux, uy,
     map: p.map, hand: p.ch.eq.weapon, at: S.now + move.wind };
   S.maps[p.map].ev.push(["a", p.eid, move.fx, Math.round(x), Math.round(y), p.dir, 0, move.wind, p.aim | 0]);
 }
@@ -7487,7 +7487,7 @@ function hammerTick(S, p, now) {
   p.hammer = null;
   if (p.dead || p.map !== cast.map || p.ch.eq.weapon !== cast.hand || inHand(p.ch) !== "hammer") return;
 
-  const { move, skill, power, x, y, ox, oy, ux, uy } = cast;
+  const { move, skill, power, hpSpent, x, y, ox, oy, ux, uy } = cast;
   const m = mapOfS(S, p.map), rt = S.maps[p.map], st = stats(p);
   const distance = (mob) => dist(x, y, mob.x, mob.y);
   const targets = rt.mobs.filter(mob => {
@@ -7500,11 +7500,13 @@ function hammerTick(S, p, now) {
   if (primary) {
     let mult = move.mult;
     const mark = cracks?.get(primary);
-    if (move.crackMult && mark?.n === SKILL.hammer_crack.max) {
+    const rupture = move.crackMult && mark?.n === SKILL.hammer_crack.max;
+    if (rupture) {
       cracks.delete(primary);
       mult *= move.crackMult * (pasOn(p, "hammer_heart") ? SKILL.hammer_heart.bonus : 1);
     }
     critical = hurtMob(S, rt, primary, p, mult * power, false, skill ? { sk: skill } : null) === true;
+    if (rupture && move.hpRefund) healP(rt, p, Math.floor(hpSpent * move.hpRefund));
     if (!skill && !primary.dead && !MOBS[primary.k].chest && pasOn(p, "hammer_crack")) {
       const ms = pasOn(p, "hammer_hold") ? SKILL.hammer_hold.ms : SKILL.hammer_crack.ms;
       (p.hammerCracks ||= new Map()).set(primary, { n: Math.min(SKILL.hammer_crack.max, (mark?.n || 0) + 1), until: now + ms });
@@ -7935,7 +7937,8 @@ function castSkill(S, p, id) {
     else if ((p.reso = (p.reso | 0) + 1) >= SKILL.reso.n) ev(113, p.x, p.y - 6);
   }
   p.mp -= cost;
-  if (sk.hpPct) { const hp = hammerHpCost(p, sk); p.hp -= hp; rt.ev.push(["h", p.eid, hp, 0, 1, 1]); }
+  const hpSpent = sk.hpPct ? hammerHpCost(p, sk) : 0;
+  if (hpSpent) { p.hp -= hpSpent; rt.ev.push(["h", p.eid, hpSpent, 0, 1, 1]); }
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1]); } }
   // WIS shortens every wait; an echo (legendary) may give it straight back
   p.cds[id] = now + Math.round(sk.cd * (1 - st.cdr));
@@ -7943,7 +7946,7 @@ function castSkill(S, p, id) {
   p.atkAt = now;
   p.swordBeat = null;
   p.dirty = true;
-  if (sk.wk === "hammer") { startHammer(S, p, sk, sk, k); return; }
+  if (sk.wk === "hammer") { startHammer(S, p, sk, sk, k, hpSpent); return; }
   const opt = { mag: sk.mag, sk };
   const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult * k, !!(more && more.sure), more ? { ...opt, ...more } : opt);
   const [aimX, aimY] = AIM_V[p.aim | 0];
