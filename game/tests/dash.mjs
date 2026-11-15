@@ -8,7 +8,7 @@ const D = L.defs();
 const T = 16;
 const [AIM_N] = D.aim;
 const [PX, MS, CD, INV] = D.dash;
-assert.deepEqual(D.dash, [72, 180, 4000, 60], "the dash as designed: 72 px in 180 ms, every 4 s, 60 ms more of safety");
+assert.deepEqual(D.dash, [36, 180, 4000, 60], "the dash as designed: 36 px in 180 ms, every 4 s, 60 ms more of safety");
 
 function world(name, mapId) {
   const S = L.setup();
@@ -56,7 +56,7 @@ function openSpot(W, r) {
 }
 const dirOf = (i) => [Math.cos((i / AIM_N) * 2 * Math.PI), Math.sin((i / AIM_N) * 2 * Math.PI)];
 
-// ── 1. all eight facings: 72 px, straight along the aim, one event for the trail ──
+// ── 1. all eight facings: 36 px, straight along the aim, one event for the trail ──
 {
   const W = world("eight", "meadow");
   const [hx, hy] = openSpot(W, 6);
@@ -318,7 +318,7 @@ for (const mapId of ["meadow", "crypt", "town"]) {
 // in town it works too (movement only)
 {
   const W = world("town", "town");
-  // the square is busy (stalls, trees, fountains): any spot with 72 px of clear street to the south
+  // the square is busy (stalls, trees, fountains): any spot with 36 px of clear street to the south
   let hx = 0, hy = 0;
   const clearSouth = (x, y) => { for (let d = 0; d <= PX; d += 4) if (!W.canStand(x, y + d) || W.gate(x, y + d)) return false; return true; };
   for (let ty = 2; ty < W.map.h - 8 && !hx; ty++) for (let tx = 2; tx < W.map.w - 2 && !hx; tx++) if (clearSouth(tx * T + 8, ty * T + 10)) { hx = tx * T + 8; hy = ty * T + 10; }

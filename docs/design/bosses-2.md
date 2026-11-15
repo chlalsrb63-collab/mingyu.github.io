@@ -30,7 +30,7 @@ Contents: 0 Ground rules · 1 Shared numbers · 2 F1 혈루 왕도마뱀 (mesa) 
   dark outline, bone-white mask/ribs `#e8dfcf` with shadow `#a89c8a`. Glow = accent pixels + a 1-px lighter core,
   no blur (pixel-art rules).
 - **Telegraph rule**: a ring of radius r with telegraph t is a *walk-out* if t ≥ r / walk speed + 300 ms, otherwise
-  it is a *dash check* (Space dash, 72 px, i-frames, 4 s cd). Never two dash checks on the same player inside 4.5 s.
+  it is a *dash check* (Space dash, 36 px since 2026-11-15 — was 72, i-frames 240 ms, 4 s cd). Never two dash checks on the same player inside 4.5 s.
   Existing timings stay the vocabulary: charge 850 ms, slam 1100, blast 1300, volley 650, pool fly 600 / lie 5000.
 - **Prefer existing pattern kinds.** Server today: `charge` (lane + run), `leap`, `slam` (ring round itself),
   `pool` (kind 0 poison, 1 burn, 2 slow), `fan` (3/5 landing circles), `volley`/`shot` (basic ranged), `burst` (on

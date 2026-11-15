@@ -10278,7 +10278,8 @@ function lifeDefs() {
 // a breath longer, nothing a monster throws lands. Others see it as `["ds", eid, x0, y0, x1, y1]`; a blow slipped is `["dg", eid]` ("회피!").
 
 /** `px` far in `ms`, once every `cd`; `inv` more ms of safety after it ends; swept `step` px at a time. */
-const DASH = { px: 72, ms: 180, cd: 4000, inv: 60, step: 4 };
+// owner (2026-11-15): the dodge went too far — 72 → 36 px (same time and invulnerable window)
+const DASH = { px: 36, ms: 180, cd: 4000, inv: 60, step: 4 };
 const DASH_CD = DASH.cd;
 
 /** Would a walker standing here be taken through a gate, or the "내 집" door? A dash stops short of those. */
