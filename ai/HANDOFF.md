@@ -206,3 +206,20 @@ Next:
 - Cosmetics, after Codex's 64 px heroes.
 - Owner lore picks: the spell origin, whether 도톨/갈피 move, the seven-star mark.
 The play server on 8830 still serves the frozen alpha-1.0.1 worktree (C:/Users/mankyu/Desktop/tt-play-101).
+
+## 0.4 Round 2 after the limit (2026-11-16, integrator session 2) — main green 59/59, sheet v25
+Merged, each from its own worktree agent (nothing pushed; play server 8830 still on alpha-1.0.1 in tt-play-101):
+- **UX pass 3** (ux-audit §Pass 3): world-map [걸어서 이동] / double-click → `Track` walk; chat [시각] toggle
+  (`lumentale:chattime`); item links in whispers (validated by `chatLinks`, carried across channels as `whisperItems`);
+  trade walked live with two players (particle + "거래를 취소했습니다" fixes).
+- **먹빛 호수 art**: inkleech, inkfish, inkmoth, plumspider, inkrose redrawn bigger (mobart_inklake.js).
+- **Main quest texts**: 10 flat main rows rewritten in 엘더윈's voice (arcs.md P6). Owner check: row 22 (moleworm) echoes
+  "함락되던 밤" — only an echo, not lore.
+- **P9 dye** (v25): `ch.cosDye {id: 1–6}`, six 연금 dyes, `cos_dye` / `cos_sew` at 루루; worn code `n + 1000 × dye`;
+  `KEEP_SEW` is a hook (all `kp_*` → "" until P11 draws the pieces).
+- **New-player QA** (sign-up → Lv.7): tutorial bag step sent twice, 추적 to 리나 at night, empty chore rows, last-line
+  dialogue button, particles.
+- Mine: tier-6 arrow colours (scene_fx.js), job text shows the grade's count (board.js `sayN`), tracker walks to a
+  monster's spawn area when none is in sight (`map.sp`, 34-maps-world.js `spawnHints`; test in worldmap.mjs).
+Open from QA: 경비병 토비 lines 1/4 repeat; 리나's window says "어서 와요!" while she is away; auto-hunt leaves gold.
+Next: P10 outfit set 1 (64px art) → fills `KEEP_SEW`; P12 장날 after P10.
