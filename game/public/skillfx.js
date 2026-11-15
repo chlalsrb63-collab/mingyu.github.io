@@ -16,6 +16,7 @@ import * as SP from "./sprites.js";
 import { Sound } from "./audio.js";
 import { HAMMER_IMPACT } from "./swing.js";
 import { comboEvent } from "./skillfx_combo.js";
+import { fxPal, jobPal, skillPal, fxSkill, skillDef, skillOwner } from "./jobpal.js";
 
 const P = 2;                       // world unit → world pixel, as in scene2d (flat effects are drawn in these)
 /** Server units → iso pixels, lifted `up` pixels: where things in the air are drawn. */
@@ -26,6 +27,12 @@ export const live = { G: null };
 const signs = new Map();
 const sign = (id, key, until) => { const s = signs.get(id) || {}; s[key] = until; signs.set(id, s); };
 const now = () => performance.now();
+/** The palette the skill being drawn uses (jobpal.js): set where a skill's event comes in, read by the helpers as `p`. */
+let PAL = jobPal("adventurer");
+/** Which job's palette a line ("ln" kind) or a placed thing ("pr" kind) is drawn in. */
+const LN_JOB = { 2: "lancer", 3: "lancer", 4: "wizard", 5: "thief", 6: "thief", 7: "trickster", 8: "archer", 9: "swordsman", 10: "warlock" };
+const PROP_JOB = { grav: "warlock", phantom: "warlock", rain: "archer", trap: "tracker", pillar: "lancer", meteor: "wizard", storm: "lancer",
+  field: "dragoon", burst: "hexblade", sanct: "darkknight", rune: "runesage", banner: "lancer" };
 
 /** After every snapshot: flags and the gauge number on the rows, marks and brands on monsters. */
 export function onSnap(s, G, t) {
@@ -46,7 +53,7 @@ const px = (g, x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Ma
 const INK = "#2b2233";
 const rand = (a, b) => a + Math.random() * (b - a);
 /** Do `fn` in `ms`, on the effects' own clock (so the preview pages that step time by hand see it too). */
-const later = (ms, fn) => S3.fx.add({ k: "custom", draw() {}, dur: Math.max(1, ms), done: fn });
+const later = (ms, fn) => { const q = PAL; S3.fx.add({ k: "custom", draw() {}, dur: Math.max(1, ms), done: () => { const o = PAL; PAL = q; fn(); PAL = o; } }); };
 /** A filled ring flat on the ground for `ms`, gently pulsing, its edge marching: the reach of something standing. */
 function groundRing(wx, wy, r, ms, col, fill = 0.16) {
   S3.fxCustom((g, k) => {
@@ -103,6 +110,7 @@ function streakWake(ax, ay, bx, by, edge, light, width) {
 
 /** A small blade shape crosses its lane before the paired trail burns away. */
 function shadowDart(ax, ay, bx, by) {
+  const p = PAL;
   const [sx, sy] = at(ax, ay, 11), [ex, ey] = at(bx, by, 11);
   const dx = ex - sx, dy = ey - sy, length = Math.hypot(dx, dy);
   if (length < 2) return;
@@ -112,24 +120,25 @@ function shadowDart(ax, ay, bx, by) {
     const tail = Math.min(length * u, 26 * (1 - k));
     for (let i = 2; i < tail; i += 2) {
       const spread = Math.min(4, i / 5);
-      for (const side of [-1, 1]) px(g, x - ux * i - uy * spread * side, y - uy * i + ux * spread * side, 2, 2, i < 10 ? "#ae78da" : "#6d518b");
+      for (const side of [-1, 1]) px(g, x - ux * i - uy * spread * side, y - uy * i + ux * spread * side, 2, 2, i < 10 ? p.m : p.md);
     }
     if (u === 1) return;
     for (let i = 0; i <= Math.min(12, length * u); i++) {
       const w = Math.min(4, i, (12 - i) / 2);
       pixelLine(g, x - ux * i + uy * w, y - uy * i - ux * w, x - ux * i - uy * w, y - uy * i + ux * w, INK, 2);
-      if (i > 1 && i < 11) px(g, x - ux * i, y - uy * i, 2, 2, i < 7 ? "#f4dcff" : "#ae78da");
+      if (i > 1 && i < 11) px(g, x - ux * i, y - uy * i, 2, 2, i < 7 ? p.w : p.m);
     }
   }, 185);
 }
 
 function ambushCuts(wx, wy, ang) {
+  const p = PAL;
   const [x, y] = at(wx, wy, 12);
   const heading = S3.sAng(Math.cos(ang), Math.sin(ang));
   S3.fx.flash(wx, wy, 9, 0, 0.14);
-  shards(wx, wy, 18, 5, 14, "#6d3b9c", "#f3d8ff", 210);
+  shards(wx, wy, 18, 5, 14, p.md, p.w, 210);
   S3.fxCustom((g, k) => {
-    for (const [offset, span, edge, core] of [[-0.68, 19, "#9d5ce0", "#f8e6ff"], [0.64, 15, "#c44b8c", "#ffd6ef"]]) {
+    for (const [offset, span, edge, core] of [[-0.68, 19, p.m, p.w], [0.64, 15, p.a, p.al]]) {
       const a = heading + offset, ux = Math.cos(a), uy = Math.sin(a);
       const start = span * (k * 1.25 - 0.72), end = span * (0.78 + k * 0.22);
       const ax = x + ux * start, ay = y + uy * start, bx = x + ux * end, by = y + uy * end;
@@ -141,8 +150,8 @@ function ambushCuts(wx, wy, ang) {
       const r = Math.max(2, Math.round(6 * (1 - k)));
       px(g, x - r - 1, y - 1, r * 2 + 3, 3, INK);
       px(g, x - 1, y - r - 1, 3, r * 2 + 3, INK);
-      px(g, x - r, y, r * 2 + 1, 1, "#ff6a9a");
-      px(g, x, y - r, 1, r * 2 + 1, "#ff6a9a");
+      px(g, x - r, y, r * 2 + 1, 1, p.a);
+      px(g, x, y - r, 1, r * 2 + 1, p.a);
       px(g, x - 1, y - 1, 3, 3, "#ffffff");
     }
   }, 190);
@@ -150,27 +159,29 @@ function ambushCuts(wx, wy, ang) {
 
 /** A shadow clone silhouette left behind where a rogue blinked or danced from. */
 function shadowAfterimage(wx, wy, ms = 240) {
+  const p = PAL;
   const [sx, sy] = at(wx, wy);
   S3.fxCustom((g, k) => {
     const lift = Math.round(k * 5);
     g.globalAlpha = Math.max(0, (1 - k) * 0.85);
     px(g, sx - 5, sy - 14 - lift, 10, 13, INK);
-    px(g, sx - 4, sy - 13 - lift, 8, 11, "#2a1b42");
-    px(g, sx - 3, sy - 12 - lift, 6, 4, "#5c3b88");
-    px(g, sx - 2, sy - 11 - lift, 2, 1, "#e8c8ff");
-    px(g, sx + 1, sy - 11 - lift, 2, 1, "#e8c8ff");
+    px(g, sx - 4, sy - 13 - lift, 8, 11, p.d);
+    px(g, sx - 3, sy - 12 - lift, 6, 4, p.md);
+    px(g, sx - 2, sy - 11 - lift, 2, 1, p.l);
+    px(g, sx + 1, sy - 11 - lift, 2, 1, p.l);
     g.globalAlpha = 1;
   }, ms);
 }
 
 /** 무영난무's single strike: a bold dark-outlined violet X-gash and bursting shadow petals. */
 function flurrySlash(wx, wy, ang) {
+  const p = PAL;
   const [x, y] = at(wx, wy, 12);
   const heading = S3.sAng(Math.cos(ang), Math.sin(ang));
   S3.fx.flash(wx, wy, 8, 0, 0.12);
-  shards(wx, wy, 20, 4, 13, "#5a328a", "#f0d4ff", 190);
+  shards(wx, wy, 20, 4, 13, p.md, p.w, 190);
   S3.fxCustom((g, k) => {
-    for (const [offset, span, shade, light] of [[-0.78, 22, "#7c42c4", "#f5dfff"], [0.78, 20, "#a844a0", "#ffe0f7"]]) {
+    for (const [offset, span, shade, light] of [[-0.78, 22, p.m, p.w], [0.78, 20, p.m, p.al]]) {
       const a = heading + offset, ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
       const s0 = -span * (0.85 - k * 0.4), s1 = span * (0.65 + k * 0.35);
       for (let q = Math.floor(s0); q <= Math.ceil(s1); q += 2) {
@@ -182,7 +193,7 @@ function flurrySlash(wx, wy, ang) {
     }
     if (k < 0.45) {
       px(g, x - 5, y - 1, 11, 3, INK); px(g, x - 1, y - 5, 3, 11, INK);
-      px(g, x - 4, y, 9, 1, "#f5dfff"); px(g, x, y - 4, 1, 9, "#f5dfff");
+      px(g, x - 4, y, 9, 1, p.w); px(g, x, y - 4, 1, 9, p.w);
       px(g, x - 1, y - 1, 3, 3, "#ffffff");
     }
   }, 185);
@@ -194,6 +205,7 @@ function flurrySlash(wx, wy, ang) {
  * with clear `±half` lane ticks, 72% sweet-spot collar, and an unmistakable barbed spearhead + target chevron at (bx, by).
  */
 export function meleeSpearThrust(ax, ay, bx, by, half = 12, farRatio = 0.72) {
+  const p = PAL;
   const [sx, sy] = at(ax, ay, 13), [ex, ey] = at(bx, by, 13);
   const dx = ex - sx, dy = ey - sy, length = Math.hypot(dx, dy);
   if (length < 2) return;
@@ -209,7 +221,7 @@ export function meleeSpearThrust(ax, ay, bx, by, half = 12, farRatio = 0.72) {
       for (const side of [-1, 1]) {
         const [gx, gy] = at(ax - wux * pull + wnx * side * half * (1.15 - 0.25 * ak), ay - wuy * pull + wny * side * half * (1.15 - 0.25 * ak), 0);
         px(g, gx - 2, gy - 1, 4, 3, INK);
-        px(g, gx - 1, gy, 2, 1, "#fff6b8");
+        px(g, gx - 1, gy, 2, 1, p.al);
       }
       return;
     }
@@ -221,7 +233,7 @@ export function meleeSpearThrust(ax, ay, bx, by, half = 12, farRatio = 0.72) {
       for (const side of [-1, 1]) {
         const [gx, gy] = at(ax + wdx * u + wnx * side * half, ay + wdy * u + wny * side * half, 0);
         px(g, gx - 2, gy - 1, 4, 3, INK);
-        px(g, gx - 1, gy, 2, 1, u >= farRatio ? "#fff6b8" : "#5dc8b1");
+        px(g, gx - 1, gy, 2, 1, u >= farRatio ? p.al : p.m);
       }
     }
   }, 260);
@@ -233,12 +245,12 @@ export function meleeSpearThrust(ax, ay, bx, by, half = 12, farRatio = 0.72) {
       const ak = k / 0.18, back = (1 - ak) * 8;
       const bx0 = sx - ux * (back + 10), by0 = sy - uy * (back + 10), tx0 = sx + ux * (8 - back), ty0 = sy + uy * (8 - back);
       pixelLine(g, bx0, by0, tx0, ty0, INK, 5);
-      pixelLine(g, bx0, by0, tx0, ty0, "#356c72", 3);
-      pixelLine(g, bx0, by0, tx0, ty0, "#fff6b8", 1);
+      pixelLine(g, bx0, by0, tx0, ty0, p.md, 3);
+      pixelLine(g, bx0, by0, tx0, ty0, p.al, 1);
       const r = Math.round(6 * (1 - ak * 0.5));
       for (const s of [-1, 1]) {
         px(g, sx - ux * back + nx * s * r - 1, sy - uy * back + ny * s * r - 1, 3, 3, INK);
-        px(g, sx - ux * back + nx * s * r, sy - uy * back + ny * s * r, 2, 2, "#7ef5d8");
+        px(g, sx - ux * back + nx * s * r, sy - uy * back + ny * s * r, 2, 2, p.l);
       }
       px(g, tx0 - 1, ty0 - 1, 3, 3, "#ffffff");
       return;
@@ -253,14 +265,14 @@ export function meleeSpearThrust(ax, ay, bx, by, half = 12, farRatio = 0.72) {
     // Straight spear shaft (solid in Phase 2, breaking into dashes in Phase 3)
     if (inStrike) {
       pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, INK, 6);
-      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, "#2f666c", 4);
-      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, "#7ef5d8", 2);
+      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, p.md, 4);
+      pixelLine(g, sx + dx * from, sy + dy * from, sx + dx * to, sy + dy * to, p.l, 2);
       pixelLine(g, sx + dx * Math.max(from, farRatio), sy + dy * Math.max(from, farRatio), sx + dx * to, sy + dy * to, "#ffffff", 1);
     } else {
       for (let i = Math.ceil(length * from); i < length * to; i += 6) {
         const u0 = i / length, u1 = Math.min(to, (i + 3) / length);
         pixelLine(g, sx + dx * u0, sy + dy * u0, sx + dx * u1, sy + dy * u1, INK, 4);
-        pixelLine(g, sx + dx * u0, sy + dy * u0, sx + dx * u1, sy + dy * u1, u0 >= farRatio ? "#fff2a8" : "#5dc8b1", 2);
+        pixelLine(g, sx + dx * u0, sy + dy * u0, sx + dx * u1, sy + dy * u1, u0 >= farRatio ? p.al : p.m, 2);
       }
     }
 
@@ -271,10 +283,10 @@ export function meleeSpearThrust(ax, ay, bx, by, half = 12, farRatio = 0.72) {
       const spread = (inTip ? 8 : 6) * Math.sin(Math.PI * u) * (1 - sk * 0.55);
       const twist = Math.sin(u * Math.PI * 5 - sk * 5.5) * spread;
       px(g, sx + dx * u + nx * twist - 1, sy + dy * u + ny * twist - 1, 4, 4, INK);
-      px(g, sx + dx * u + nx * twist, sy + dy * u + ny * twist, 2, 2, inTip ? "#fff6b8" : "#b3f0d5");
+      px(g, sx + dx * u + nx * twist, sy + dy * u + ny * twist, 2, 2, inTip ? p.al : p.l);
       if (k < 0.76) {
         px(g, sx + dx * u - nx * twist - 1, sy + dy * u - ny * twist - 1, 4, 4, INK);
-        px(g, sx + dx * u - nx * twist, sy + dy * u - ny * twist, 2, 2, inTip ? "#7ef5d8" : "#4b9d99");
+        px(g, sx + dx * u - nx * twist, sy + dy * u - ny * twist, 2, 2, inTip ? p.l : p.m);
       }
     }
 
@@ -282,7 +294,7 @@ export function meleeSpearThrust(ax, ay, bx, by, half = 12, farRatio = 0.72) {
     if (to >= farRatio && k < 0.78) {
       const cx = sx + dx * farRatio, cy = sy + dy * farRatio, collar = Math.round(7 * (1 - sk * 0.45));
       pixelLine(g, cx - nx * collar, cy - ny * collar, cx + nx * collar, cy + ny * collar, INK, 4);
-      pixelLine(g, cx - nx * collar, cy - ny * collar, cx + nx * collar, cy + ny * collar, "#fff2a8", 2);
+      pixelLine(g, cx - nx * collar, cy - ny * collar, cx + nx * collar, cy + ny * collar, p.al, 2);
     }
 
     // Distinct endpoint spearhead + target chevron at (ex, ey) so 1x scale clearly reads the exact tip
@@ -292,17 +304,17 @@ export function meleeSpearThrust(ax, ay, bx, by, half = 12, farRatio = 0.72) {
       const w = Math.max(1, Math.round((1 - q / (headLen * scale + 1)) * 5 * scale));
       const px0 = hx - ux * q, py0 = hy - uy * q;
       pixelLine(g, px0 - nx * (w + 1), py0 - ny * (w + 1), px0 + nx * (w + 1), py0 + ny * (w + 1), INK, 2);
-      pixelLine(g, px0 - nx * w, py0 - ny * w, px0 + nx * w, py0 + ny * w, q < 5 ? "#ffffff" : q < 11 ? "#fff6b8" : "#6adbc2", 2);
+      pixelLine(g, px0 - nx * w, py0 - ny * w, px0 + nx * w, py0 + ny * w, q < 5 ? "#ffffff" : q < 11 ? p.al : p.m, 2);
     }
     // Endpoint lock chevron & compact point spark at (ex, ey)
     if (to >= 0.95) {
       const wing = Math.round(8 * scale);
       for (const s of [-1, 1]) {
         pixelLine(g, ex + ux * 3, ey + uy * 3, ex - ux * 5 + nx * s * wing, ey - uy * 5 + ny * s * wing, INK, 4);
-        pixelLine(g, ex + ux * 3, ey + uy * 3, ex - ux * 5 + nx * s * wing, ey - uy * 5 + ny * s * wing, inStrike ? "#fff6b8" : "#5dc8b1", 2);
+        pixelLine(g, ex + ux * 3, ey + uy * 3, ex - ux * 5 + nx * s * wing, ey - uy * 5 + ny * s * wing, inStrike ? p.al : p.m, 2);
       }
       px(g, ex - 2, ey - 2, 5, 5, INK);
-      px(g, ex - 1, ey - 1, 3, 3, inStrike ? "#ffffff" : "#fff6b8");
+      px(g, ex - 1, ey - 1, 3, 3, inStrike ? "#ffffff" : p.al);
     }
   }, 260);
 }
@@ -313,6 +325,7 @@ function spiralThrust(ax, ay, bx, by) {
 
 /** 유성창 (comet): wide drag corridor (`half = 20`) + blazing spear comet + landing stun crater. */
 function cometCharge(ax, ay, bx, by, half = 20) {
+  const p = PAL;
   const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy) || 1;
   const ux = dx / d, uy = dy / d, nx = -uy, ny = ux;
   // Ground corridor rails showing exact `half = 20` drag width
@@ -324,12 +337,12 @@ function cometCharge(ax, ay, bx, by, half = 20) {
       for (const side of [-1, 1]) {
         const wx = (ax + dx * u + nx * side * half) * P, wy = (ay + dy * u + ny * side * half) * P;
         px(g, wx - 2, wy - 2, 6, 6, INK);
-        px(g, wx - 1, wy - 1, 4, 4, k < 0.45 ? "#fff2b2" : "#56bfa8");
+        px(g, wx - 1, wy - 1, 4, 4, k < 0.45 ? p.l : p.a);
         // Inward chevron teeth showing enemy pull toward center line
         if (i % 2 === 0 && k < 0.65) {
           const ix = (ax + dx * Math.min(1, u + 0.08) + nx * side * half * 0.48) * P;
           const iy = (ay + dy * Math.min(1, u + 0.08) + ny * side * half * 0.48) * P;
-          pixelLine(g, wx, wy, ix, iy, "#9ef5dc", 3);
+          pixelLine(g, wx, wy, ix, iy, p.al, 3);
         }
       }
     }
@@ -345,29 +358,30 @@ function cometCharge(ax, ay, bx, by, half = 20) {
       const w = Math.max(1, Math.round((1 - q / Math.max(1, tail)) * 7 * (1 - k * 0.4)));
       const px0 = hx - sux * q, py0 = hy - suy * q;
       pixelLine(g, px0 - snx * (w + 1), py0 - sny * (w + 1), px0 + snx * (w + 1), py0 + sny * (w + 1), INK, 2);
-      pixelLine(g, px0 - snx * w, py0 - sny * w, px0 + snx * w, py0 + sny * w, q < 10 ? "#fff6c8" : q < 24 ? "#7ce8cc" : "#2f7870", 2);
+      pixelLine(g, px0 - snx * w, py0 - sny * w, px0 + snx * w, py0 + sny * w, q < 10 ? p.l : q < 24 ? p.a : p.ad, 2);
     }
     if (k < 0.72) {
       // Stun star burst at landing endpoint
       for (let i = 0; i < 4; i++) {
         const a = i * Math.PI / 4 + k * 1.2, r = (10 + (i % 2) * 5) * (1 - k * 0.4);
         pixelLine(g, ex - Math.cos(a) * r, ey - Math.sin(a) * r * 0.75, ex + Math.cos(a) * r, ey + Math.sin(a) * r * 0.75, INK, 4);
-        pixelLine(g, ex - Math.cos(a) * r, ey - Math.sin(a) * r * 0.75, ex + Math.cos(a) * r, ey + Math.sin(a) * r * 0.75, i % 2 ? "#7ce8cc" : "#fff4bd", 2);
+        pixelLine(g, ex - Math.cos(a) * r, ey - Math.sin(a) * r * 0.75, ex + Math.cos(a) * r, ey + Math.sin(a) * r * 0.75, i % 2 ? p.a : p.l, 2);
       }
     }
   }, 280);
   S3.fx.flash(bx, by, 11, 0, 0.2);
-  S3.fx.wave(bx, by, half, "#9ef5dc", 290);
-  rim(bx, by, half, "#2f7870", "#fff2b8", 340, 0.34);
-  shards(bx, by, half * 0.9, 8, 22, "#357a72", "#fff4bd", 300);
+  S3.fx.wave(bx, by, half, p.al, 290);
+  rim(bx, by, half, p.ad, p.l, 340, 0.34);
+  shards(bx, by, half * 0.9, 8, 22, p.ad, p.l, 300);
 }
 
 /** 대지 가르기 (rend): landing slam (`r = 38`) + forward earth-splitting corridor (`len = 120, half = 14`). */
 function rendSlam(wx, wy, r) {
+  const p = PAL;
   S3.fx.flash(wx, wy, 12, 0, 0.18);
-  S3.fx.wave(wx, wy, r, "#f5d376", 300);
-  rim(wx, wy, r, "#7a5b34", "#ffe680", 390, 0.35);
-  shards(wx, wy, r * 0.86, 9, 24, "#6e4f2c", "#ffe27a", 340);
+  S3.fx.wave(wx, wy, r, p.m, 300);
+  rim(wx, wy, r, p.md, p.l, 390, 0.35);
+  shards(wx, wy, r * 0.86, 9, 24, p.md, p.l, 340);
   S3.fxCustom((g, k) => {
     const reach = r * Math.min(1, 0.35 + k * 2.4);
     for (let i = 0; i < 6; i++) {
@@ -376,13 +390,14 @@ function rendSlam(wx, wy, r) {
         const jag = ((d + i * 5) % 6 - 3) * 0.7;
         const gx = (wx + ux * d + nx * jag) * P, gy = (wy + uy * d + ny * jag) * P;
         px(g, gx - 2, gy - 2, 6, 6, INK);
-        px(g, gx - 1, gy - 1, 4, 4, k < 0.45 && d < reach * 0.7 ? "#ffe680" : "#b88c52");
+        px(g, gx - 1, gy - 1, 4, 4, k < 0.45 && d < reach * 0.7 ? p.l : p.m);
       }
     }
   }, 420, true);
 }
 
 function rendWave(ax, ay, bx, by, half = 14) {
+  const p = PAL;
   const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
   const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
   // Ground fault corridor matching exact `len` and `half = 14`
@@ -396,11 +411,11 @@ function rendWave(ax, ay, bx, by, half = 14) {
       const jag = ((i * 7) % 5 - 2) * 1.4;
       const cx = (ax + dx * u + nx * jag) * P, cy = (ay + dy * u + ny * jag) * P;
       px(g, cx - 3, cy - 3, 7, 7, INK);
-      px(g, cx - 2, cy - 2, 5, 5, age < 0.25 ? "#fff099" : "#d4a259");
+      px(g, cx - 2, cy - 2, 5, 5, age < 0.25 ? p.l : p.m);
       for (const side of [-1, 1]) {
         const rx = (ax + dx * u + nx * side * half) * P, ry = (ay + dy * u + ny * side * half) * P;
         px(g, rx - 2, ry - 2, 5, 5, INK);
-        px(g, rx - 1, ry - 1, 3, 3, age < 0.22 ? "#ffe27a" : "#8c683a");
+        px(g, rx - 1, ry - 1, 3, 3, age < 0.22 ? p.l : p.md);
       }
     }
   }, 430, true);
@@ -419,28 +434,29 @@ function rendWave(ax, ay, bx, by, half = 14) {
       for (let j = 0; j < h; j++) {
         const hw = Math.max(1, Math.round(w * (1 - j / (h + 2))));
         px(g, sx - hw - 1, sy - j - 1, hw * 2 + 3, 2, INK);
-        px(g, sx - hw, sy - j - 1, hw * 2 + 1, 1, j > h - 4 ? "#ffe888" : "#b88e56");
-        if (hw > 1) px(g, sx - hw, sy - j - 1, hw, 1, "#7a5b34");
+        px(g, sx - hw, sy - j - 1, hw * 2 + 1, 1, j > h - 4 ? p.l : p.m);
+        if (hw > 1) px(g, sx - hw, sy - j - 1, hw, 1, p.md);
       }
     }
   }, 390);
   along(ax, ay, bx, by, 18).forEach(([x, y], i) => later(i * 32, () => {
-    S3.fx.burst(x, y, 0.08, "#b89058", 5, 1.5);
+    S3.fx.burst(x, y, 0.08, p.m, 5, 1.5);
   }));
 }
 
 /** 단죄의 일격 (verdict): full 360° pixel great-blade whirlwind covering `r = 70`. */
 function verdictSpin(wx, wy, ang, r = 70) {
+  const p = PAL;
   S3.fx.flash(wx, wy, 14, 0, 0.2);
-  S3.fx.wave(wx, wy, r, "#ff6a3a", 340);
-  rim(wx, wy, r, "#9e2424", "#ffe680", 430, 0.3);
-  rim(wx, wy, r * 0.62, "#b83228", "#ff9a52", 340, 0.25);
-  shards(wx, wy, r * 0.88, 12, 26, "#a82828", "#ffd84a", 370);
+  S3.fx.wave(wx, wy, r, p.m, 340);
+  rim(wx, wy, r, p.md, p.a, 430, 0.3);
+  rim(wx, wy, r * 0.62, p.md, p.m, 340, 0.25);
+  shards(wx, wy, r * 0.88, 12, 26, p.md, p.a, 370);
   S3.fxCustom((g, k) => {
     const spin = ang + k * Math.PI * 2.4;
     for (const [bandR, thick0, colEdge, colMid, colHot] of [
-      [r * 0.94, 12, "#8f1d1d", "#ff5a3a", "#ffe878"],
-      [r * 0.58, 8, "#6e1828", "#d83a2a", "#ffd060"],
+      [r * 0.94, 12, p.md, p.m, p.a],
+      [r * 0.58, 8, p.md, p.m, p.a],
     ]) {
       for (let step = 0; step < 56; step++) {
         const u = step / 56;
@@ -461,7 +477,7 @@ function verdictSpin(wx, wy, ang, r = 70) {
         const [p0x, p0y] = at(wx + ca * r * 0.68, wy + sa * r * 0.68, 11);
         const [p1x, p1y] = at(wx + ca * r * 1.02, wy + sa * r * 1.02, 11);
         pixelLine(g, p0x, p0y, p1x, p1y, INK, 4);
-        pixelLine(g, p0x, p0y, p1x, p1y, i % 2 ? "#ffd84a" : "#ff5a3a", 2);
+        pixelLine(g, p0x, p0y, p1x, p1y, i % 2 ? p.a : p.m, 2);
       }
     }
   }, 330);
@@ -469,10 +485,11 @@ function verdictSpin(wx, wy, ang, r = 70) {
 
 /** 십자 난도 (crosscut): wide `r = 64, arc = 100°` sword crescent + crossing violet dagger arc. */
 function crossCutFx(wx, wy, ang, r = 64) {
+  const p = PAL;
   const halfArc = (50 * Math.PI) / 180; // 100° total cone
   const fx = wx + Math.cos(ang) * r * 0.62, fy = wy + Math.sin(ang) * r * 0.62;
   S3.fx.flash(fx, fy, 11, 0, 0.16);
-  shards(fx, fy, r * 0.48, 8, 18, "#5868a8", "#f0d8ff", 280);
+  shards(fx, fy, r * 0.48, 8, 18, p.m, p.al, 280);
   S3.fxCustom((g, k) => {
     // Great blade sweeping crescent (-halfArc → +halfArc)
     for (let s = -22; s <= 22; s++) {
@@ -482,12 +499,12 @@ function crossCutFx(wx, wy, ang, r = 64) {
       const [ax, ay] = at(wx + Math.cos(a) * (reach - thick), wy + Math.sin(a) * (reach - thick), 11);
       const [bx, by] = at(wx + Math.cos(a) * reach, wy + Math.sin(a) * reach, 11);
       pixelLine(g, ax, ay, bx, by, INK, 4);
-      pixelLine(g, ax, ay, bx, by, k < 0.42 ? "#bfd8ff" : "#648bc9", 2);
-      px(g, bx - 1, by - 1, 2, 2, k < 0.35 ? "#ffffff" : "#d8ecff");
+      pixelLine(g, ax, ay, bx, by, k < 0.42 ? p.l : p.m, 2);
+      px(g, bx - 1, by - 1, 2, 2, k < 0.35 ? "#ffffff" : p.w);
     }
     // Crossing violet dagger slash forming an X across the cone
     const [cx, cy] = at(fx, fy, 12), sa = S3.sAng(Math.cos(ang), Math.sin(ang));
-    for (const [off, span, col, core] of [[-0.62, r * 0.68, "#7c9cff", "#ffffff"], [0.62, r * 0.64, "#b86cff", "#f6e0ff"]]) {
+    for (const [off, span, col, core] of [[-0.62, r * 0.68, p.l, "#ffffff"], [0.62, r * 0.64, p.a, p.al]]) {
       const a = sa + off, ux = Math.cos(a), uy = Math.sin(a);
       const ax = cx - ux * span * 0.85, ay = cy - uy * span * 0.85;
       const bx = cx + ux * span * 0.85, by = cy + uy * span * 0.85;
@@ -500,12 +517,13 @@ function crossCutFx(wx, wy, ang, r = 64) {
 
 /** 심연의 강림 (dive): high-altitude abyssal spear pillar + `r = 110` crater rim & shards. */
 function abyssDive(wx, wy, r = 110) {
+  const p = PAL;
   const [sx, sy] = at(wx, wy);
   S3.fx.flash(wx, wy, 15, 0, 0.22);
-  S3.fx.wave(wx, wy, r, "#c87aff", 380);
-  rim(wx, wy, r, "#5a2882", "#ffb0d8", 460, 0.3);
-  rim(wx, wy, 70, "#9e2448", "#ff6a9a", 410, 0.24);
-  shards(wx, wy, r * 0.82, 12, 28, "#4c2070", "#ff8ab8", 390);
+  S3.fx.wave(wx, wy, r, p.a, 380);
+  rim(wx, wy, r, p.ad, p.l, 460, 0.3);
+  rim(wx, wy, 70, p.md, p.m, 410, 0.24);
+  shards(wx, wy, r * 0.82, 12, 28, p.ad, p.l, 390);
   // Descending abyssal dragon-spear pillar + 8 radial ground fissures
   S3.fxCustom((g, k) => {
     if (k < 0.65) {
@@ -513,7 +531,7 @@ function abyssDive(wx, wy, r = 110) {
       for (let j = 0; j < h; j += 3) {
         const hw = Math.max(1, Math.round(w * (1 - j / (h + 20))));
         px(g, sx - hw - 1, sy - j - 2, hw * 2 + 3, 4, INK);
-        px(g, sx - hw, sy - j - 2, hw * 2 + 1, 3, j < 28 ? "#ff6a9a" : "#7a3ec8");
+        px(g, sx - hw, sy - j - 2, hw * 2 + 1, 3, j < 28 ? p.m : p.a);
         if (k < 0.38) px(g, sx - Math.max(1, hw >> 1), sy - j - 2, Math.max(2, hw), 3, "#ffffff");
       }
     }
@@ -523,7 +541,7 @@ function abyssDive(wx, wy, r = 110) {
       for (let j = 0; j < H; j += 2) {
         const hw = Math.max(1, Math.round(cw * (1 - j / H)));
         px(g, sx + dx - hw - 1, sy - j - 1, hw * 2 + 3, 2, INK);
-        px(g, sx + dx - hw, sy - j - 1, hw * 2 + 1, 2, j > H - 5 ? "#ffb8e0" : "#5a2882");
+        px(g, sx + dx - hw, sy - j - 1, hw * 2 + 1, 2, j > H - 5 ? p.l : p.ad);
       }
     }
   }, 380);
@@ -572,6 +590,7 @@ function shards(x, y, r, count, height, edge, light, ms, delay = 0) {
  * - Phase 3 (0.60..1.0): Segmented pixel steel-qi fragments drifting outward and vanishing cleanly without hiding boss telegraphs.
  */
 export function meleeSwordArc(x, y, ang, r = 46, arcDeg = 75) {
+  const p = PAL;
   const halfArc = (arcDeg * Math.PI) / 360;
   S3.fxCustom((g, k) => {
     // Phase 1 (0..0.19): Anticipation at back-swing edge (-halfArc)
@@ -581,8 +600,8 @@ export function meleeSwordArc(x, y, ang, r = 46, arcDeg = 75) {
       const [p0x, p0y] = at(x + u * r * 0.34, y + v * r * 0.34, 11);
       const [p1x, p1y] = at(x + u * r * (0.72 + 0.16 * ak), y + v * r * (0.72 + 0.16 * ak), 11);
       pixelLine(g, p0x, p0y, p1x, p1y, INK, 5);
-      pixelLine(g, p0x, p0y, p1x, p1y, "#5a7fb8", 3);
-      pixelLine(g, p0x, p0y, p1x, p1y, "#ecfdff", 1);
+      pixelLine(g, p0x, p0y, p1x, p1y, p.m, 3);
+      pixelLine(g, p0x, p0y, p1x, p1y, p.w, 1);
       px(g, p1x - 2, p1y - 2, 5, 5, INK);
       px(g, p1x - 1, p1y - 1, 3, 3, "#ffffff");
       return;
@@ -602,7 +621,7 @@ export function meleeSwordArc(x, y, ang, r = 46, arcDeg = 75) {
         const [gx0, gy0] = at(x + Math.cos(aLim) * r * 0.68, y + Math.sin(aLim) * r * 0.68, 0);
         const [gx1, gy1] = at(x + Math.cos(aLim) * r, y + Math.sin(aLim) * r, 0);
         pixelLine(g, gx0, gy0, gx1, gy1, INK, 3);
-        pixelLine(g, gx0, gy0, gx1, gy1, "#7da6dc", 1);
+        pixelLine(g, gx0, gy0, gx1, gy1, p.m, 1);
       }
     }
 
@@ -620,12 +639,12 @@ export function meleeSwordArc(x, y, ang, r = 46, arcDeg = 75) {
       const [ax, ay] = at(x + ca * (reach - thick), y + sa * (reach - thick), 10);
       const [bx, by] = at(x + ca * reach, y + sa * reach, 10);
       pixelLine(g, ax, ay, bx, by, INK, 4);
-      pixelLine(g, ax, ay, bx, by, u > 0.58 && inStrike ? "#8eb4e6" : "#5376ab", 2);
+      pixelLine(g, ax, ay, bx, by, u > 0.58 && inStrike ? p.l : p.m, 2);
       // Outer cutting edge & leading specular ridge
       px(g, bx - 2, by - 2, 4, 4, INK);
-      px(g, bx - 1, by - 1, 2, 2, u > 0.52 && inStrike ? "#ffffff" : "#bce4ff");
+      px(g, bx - 1, by - 1, 2, 2, u > 0.52 && inStrike ? "#ffffff" : p.l);
       if (inStrike && u > 0.35 && u < 0.88) {
-        px(g, (ax + bx) * 0.5 - 1, (ay + by) * 0.5 - 1, 2, 2, "#d6f2ff");
+        px(g, (ax + bx) * 0.5 - 1, (ay + by) * 0.5 - 1, 2, 2, p.w);
       }
     }
 
@@ -645,8 +664,8 @@ export function meleeSwordArc(x, y, ang, r = 46, arcDeg = 75) {
       const sr = Math.round(7 * (1 - (k - 0.22) / 0.24));
       px(g, ix - sr - 1, iy - 1, sr * 2 + 3, 3, INK);
       px(g, ix - 1, iy - sr - 1, 3, sr * 2 + 3, INK);
-      px(g, ix - sr, iy, sr * 2 + 1, 1, "#d6f2ff");
-      px(g, ix, iy - sr, 1, sr * 2 + 1, "#d6f2ff");
+      px(g, ix - sr, iy, sr * 2 + 1, 1, p.w);
+      px(g, ix, iy - sr, 1, sr * 2 + 1, p.w);
       px(g, ix - 1, iy - 1, 3, 3, "#ffffff");
     }
   }, 275);
@@ -730,6 +749,7 @@ export function supportMend(target, cue) {
 }
 
 function soulTrail(ax, ay, bx, by, ms) {
+  const p = PAL;
   const [x0, y0] = at(ax, ay, 19), [x1, y1] = at(bx, by, 11);
   const d = Math.max(1, Math.hypot(x1 - x0, y1 - y0)), ux = (x1 - x0) / d, uy = (y1 - y0) / d;
   S3.fxCustom((g, k) => {
@@ -739,19 +759,19 @@ function soulTrail(ax, ay, bx, by, ms) {
       const o = Math.sin(i * 0.31 - k * 8) * Math.min(6, i * 0.35);
       const sx = x - ux * i, sy = y - uy * i;
       px(g, sx + uy * o - 1, sy - ux * o - 1, 4, 4, INK);
-      px(g, sx + uy * o, sy - ux * o, 2, 2, i < 10 ? "#f0c4ff" : i < 18 ? "#b44cff" : "#4b237a");
+      px(g, sx + uy * o, sy - ux * o, 2, 2, i < 10 ? p.l : i < 18 ? p.m : p.md);
       if (i < 16) {
         px(g, sx - uy * o - 1, sy + ux * o - 1, 3, 3, INK);
-        px(g, sx - uy * o, sy + ux * o, 2, 2, "#7a3ec8");
+        px(g, sx - uy * o, sy + ux * o, 2, 2, p.m);
       }
     }
     // Outlined dark-element diamond head with abyssal core and magenta-violet rim
     for (let j = -5; j <= 5; j++) {
       const w = 5 - Math.abs(j);
       px(g, x - w - 1, y + j, 2 * w + 3, 1, INK);
-      if (w >= 1) px(g, x - w, y + j, 2 * w + 1, 1, "#b44cff");
+      if (w >= 1) px(g, x - w, y + j, 2 * w + 1, 1, p.m);
       if (w >= 2) px(g, x - w + 1, y + j, 2 * w - 1, 1, "#12091f");
-      if (w >= 3) px(g, x - w + 2, y + j, 2 * w - 3, 1, "#f0c4ff");
+      if (w >= 3) px(g, x - w + 2, y + j, 2 * w - 3, 1, p.l);
     }
   }, ms);
 }
@@ -762,6 +782,7 @@ function soulTrail(ax, ay, bx, by, ms) {
  * followed by an r=30 8-tongue pixel fire crown detonation and scorched ground embers.
  */
 export function fireballOrb(ax, ay, bx, by, r = 30) {
+  const p = PAL;
   const dist = Math.hypot(bx - ax, by - ay);
   const flightMs = Math.max(110, Math.min(210, Math.round(dist * 1.35)));
   const [x0, y0] = at(ax, ay, 16), [x1, y1] = at(bx, by, 6);
@@ -775,24 +796,24 @@ export function fireballOrb(ax, ay, bx, by, r = 30) {
       const tx = x - ux * i + nx * sway, ty = y - uy * i + ny * sway;
       const sz = i < 12 ? 3 : 2;
       px(g, tx - 2, ty - 2, sz + 2, sz + 2, INK);
-      px(g, tx - 1, ty - 1, sz, sz, i < 9 ? "#ffb83b" : i < 18 ? "#ff5a26" : "#8f251e");
+      px(g, tx - 1, ty - 1, sz, sz, i < 9 ? p.m : i < 18 ? p.m : p.md);
     }
     // 9x9 outlined pixel fireball head
     for (let dy = -4; dy <= 4; dy++) {
       const w = 4 - (Math.abs(dy) > 2 ? Math.abs(dy) - 1 : 0);
       px(g, x - w - 1, y + dy, w * 2 + 3, 1, INK);
-      px(g, x - w, y + dy, w * 2 + 1, 1, dy > 1 ? "#8f251e" : "#ff5a26");
-      if (w >= 2) px(g, x - w + 1, y + dy, w * 2 - 1, 1, "#ffb83b");
-      if (Math.abs(dy) <= 1) px(g, x - 1, y + dy, 3, 1, "#fff6cc");
+      px(g, x - w, y + dy, w * 2 + 1, 1, dy > 1 ? p.md : p.m);
+      if (w >= 2) px(g, x - w + 1, y + dy, w * 2 - 1, 1, p.m);
+      if (Math.abs(dy) <= 1) px(g, x - 1, y + dy, 3, 1, p.al);
     }
   }, flightMs);
 
   // 2. Detonation at (bx, by) with radius r = 30
   later(Math.max(0, flightMs - 30), () => {
     S3.fx.flash(bx, by, 10, 0, 0.18);
-    S3.fx.wave(bx, by, r, "#ffb83b", 250);
-    rim(bx, by, r, "#8f251e", "#fff6cc", 310, 0.52);
-    shards(bx, by, r * 0.9, 8, 22, "#8f251e", "#ffb83b", 300, 12);
+    S3.fx.wave(bx, by, r, p.m, 250);
+    rim(bx, by, r, p.md, p.al, 310, 0.52);
+    shards(bx, by, r * 0.9, 8, 22, p.md, p.m, 300, 12);
     S3.fxCustom((g, k) => {
       const expand = 0.25 + 0.75 * (1 - (1 - Math.min(1, k * 1.5)) ** 2);
       // 8 rising pixel flame tongues around the r=30 blast perimeter
@@ -805,7 +826,7 @@ export function fireballOrb(ax, ay, bx, by, r = 30) {
           const w = step < h * 0.45 ? 3 : step < h * 0.8 ? 2 : 1;
           const sway = Math.round(Math.sin(step * 0.5 + i) * 1.2);
           px(g, fx0 + sway - w, fy0 - step - 1, w * 2 + 1, 3, INK);
-          px(g, fx0 + sway - w + 1, fy0 - step, w * 2 - 1, 2, step < 4 ? "#fff6cc" : step < h * 0.6 ? "#ffb83b" : "#ff5a26");
+          px(g, fx0 + sway - w + 1, fy0 - step, w * 2 - 1, 2, step < 4 ? p.al : step < h * 0.6 ? p.m : p.m);
         }
       }
     }, 320);
@@ -814,15 +835,16 @@ export function fireballOrb(ax, ay, bx, by, r = 30) {
 
 /** [불 Fire] 화상 장판 틱 (`b` kind 10): pixel ground embers and small flame tongues inside `r`. */
 function fireBurnPatch(x, y, r = 30) {
-  rim(x, y, r, "#8f251e", "#ff5a26", 260, 0.18);
+  const p = PAL;
+  rim(x, y, r, p.md, p.m, 260, 0.18);
   S3.fxCustom((g, k) => {
     for (let i = 0; i < 6; i++) {
       const a = i * 1.047 + (Math.round(x + y) % 5) * 0.3, d = r * (0.28 + (i % 3) * 0.24);
       const [sx, sy] = at(x + Math.cos(a) * d, y + Math.sin(a) * d, Math.round(k * 9));
       const h = k < 0.65 ? 5 : 3;
       px(g, sx - 2, sy - h, 5, h + 2, INK);
-      px(g, sx - 1, sy - h + 1, 3, h, "#ff5a26");
-      px(g, sx, sy - h + 2, 1, Math.max(1, h - 2), "#fff6cc");
+      px(g, sx - 1, sy - h + 1, 3, h, p.m);
+      px(g, sx, sy - h + 2, 1, Math.max(1, h - 2), p.al);
     }
   }, 260);
 }
@@ -833,10 +855,11 @@ function fireBurnPatch(x, y, r = 30) {
  * and crisp hexagonal frost facets (#2b5c8f -> #7be0ff -> #dbfaff -> #ffffff).
  */
 export function frostNovaRing(x, y, r = 56) {
+  const p = PAL;
   S3.fx.flash(x, y, 10);
-  S3.fx.wave(x, y, r, "#dbfaff", 360);
-  rim(x, y, r, "#2b5c8f", "#ffffff", 430, 0.55);
-  shards(x, y, r * 0.9, 12, 18, "#2b5c8f", "#dbfaff", 370, 30);
+  S3.fx.wave(x, y, r, p.al, 360);
+  rim(x, y, r, p.ad, "#ffffff", 430, 0.55);
+  shards(x, y, r * 0.9, 12, 18, p.ad, p.al, 370, 30);
   S3.fxCustom((g, k) => {
     const grow = Math.min(1, k / 0.22);
     const fade = k < 0.72 ? 1 : (1 - k) / 0.28;
@@ -850,9 +873,9 @@ export function frostNovaRing(x, y, r = 56) {
       for (let row = 0; row < tall; row++) {
         const hw = Math.max(0, Math.round((1 - row / tall) * (i % 2 ? 2.5 : 3.5)));
         px(g, ix - hw - 1, iy - row - 1, hw * 2 + 3, 1, INK);
-        px(g, ix - hw, iy - row - 1, hw * 2 + 1, 1, "#7be0ff");
-        px(g, ix - hw, iy - row - 1, Math.max(1, hw), 1, row > tall * 0.6 ? "#ffffff" : "#dbfaff");
-        if (hw >= 1) px(g, ix + hw, iy - row - 1, 1, 1, "#2b5c8f");
+        px(g, ix - hw, iy - row - 1, hw * 2 + 1, 1, p.a);
+        px(g, ix - hw, iy - row - 1, Math.max(1, hw), 1, row > tall * 0.6 ? "#ffffff" : p.al);
+        if (hw >= 1) px(g, ix + hw, iy - row - 1, 1, 1, p.ad);
       }
       px(g, ix - 1, iy - tall - 1, 3, 1, INK);
     }
@@ -861,7 +884,7 @@ export function frostNovaRing(x, y, r = 56) {
       for (let i = 0; i < 6; i++) {
         const a = i * (Math.PI / 3) + 0.26, [sx, sy] = at(x + Math.cos(a) * r * 0.52 * grow, y + Math.sin(a) * r * 0.52 * grow, 4);
         px(g, sx - 1, sy - 4, 3, 9, INK); px(g, sx - 4, sy - 1, 9, 3, INK);
-        px(g, sx, sy - 3, 1, 7, "#dbfaff"); px(g, sx - 3, sy, 7, 1, "#dbfaff");
+        px(g, sx, sy - 3, 1, 7, p.al); px(g, sx - 3, sy, 7, 1, p.al);
         px(g, sx, sy, 1, 1, "#ffffff");
       }
     }
@@ -874,6 +897,7 @@ export function frostNovaRing(x, y, r = 56) {
  * INK-outlined jagged pixel lightning arc with forked branches and high-voltage yellow/cyan-blue flash.
  */
 export function chainLightningArc(ax, ay, bx, by) {
+  const p = PAL;
   const [x0, y0] = at(ax, ay, 10), [x1, y1] = at(bx, by, 10);
   const dx = x1 - x0, dy = y1 - y0, len = Math.max(1, Math.hypot(dx, dy));
   const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
@@ -890,18 +914,18 @@ export function chainLightningArc(ax, ay, bx, by) {
       pixelLine(g, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], INK, 5);
     }
     for (let i = 0; i < pts.length - 1; i++) {
-      pixelLine(g, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], "#8cf0ff", 3);
-      pixelLine(g, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], i % 2 ? "#ffffff" : "#ffe852", 1);
+      pixelLine(g, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], p.l, 3);
+      pixelLine(g, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], i % 2 ? "#ffffff" : p.a, 1);
       if (i % 2 === 1 && k < 0.7) {
         const side = i % 4 === 1 ? 1 : -1;
         const fx = pts[i][0] + ux * 7 + nx * side * 7, fy = pts[i][1] + uy * 7 + ny * side * 7;
         pixelLine(g, pts[i][0], pts[i][1], fx, fy, INK, 3);
-        pixelLine(g, pts[i][0], pts[i][1], fx, fy, "#ffe852", 1);
+        pixelLine(g, pts[i][0], pts[i][1], fx, fy, p.a, 1);
       }
     }
     // Electric impact star at (x1, y1)
     px(g, x1 - 2, y1 - 5, 5, 11, INK); px(g, x1 - 5, y1 - 2, 11, 5, INK);
-    px(g, x1 - 1, y1 - 4, 3, 9, "#ffe852"); px(g, x1 - 4, y1 - 1, 9, 3, "#8cf0ff");
+    px(g, x1 - 1, y1 - 4, 3, 9, p.a); px(g, x1 - 4, y1 - 1, 9, 3, p.l);
     px(g, x1 - 1, y1 - 1, 3, 3, "#ffffff");
   }, 240);
 }
@@ -912,7 +936,8 @@ export function chainLightningArc(ax, ay, bx, by) {
  * (replaces the anti-aliased Canvas2D `g.arc` vortex).
  */
 export function gravityWell(x, y, r = 60, ms = 4000) {
-  groundRing(x, y, r, ms, "#7a3ec8", 0.18);
+  const p = PAL;
+  groundRing(x, y, r, ms, p.m, 0.18);
   S3.fxCustom((g, k) => {
     const t = k * ms, fade = Math.min(1, k * 10, (1 - k) * 8);
     const [cx, cy] = at(x, y, 0);
@@ -923,7 +948,7 @@ export function gravityWell(x, y, r = 60, ms = 4000) {
       const a = (i / 48) * Math.PI * 2 - t / 1800;
       const [bx, by] = at(x + Math.cos(a) * r, y + Math.sin(a) * r, 0);
       px(g, bx - 2, by - 1, 4, 3, INK);
-      px(g, bx - 1, by, 2, 1, i % 4 === 0 ? "#f0c4ff" : i % 2 ? "#b44cff" : "#4b237a");
+      px(g, bx - 1, by, 2, 1, i % 4 === 0 ? p.l : i % 2 ? p.m : p.md);
     }
     // 2. Two inward-contracting pixel octagons + 8 inward suction chevrons showing pull toward center
     for (let ring = 0; ring < 2; ring++) {
@@ -935,8 +960,8 @@ export function gravityWell(x, y, r = 60, ms = 4000) {
         const [px0, py0] = at(x + ux * rad, y + uy * rad, 0);
         const [px1, py1] = at(x + ux * (rad + 5) + nx * 4, y + uy * (rad + 5) + ny * 4, 0);
         pixelLine(g, px0, py0, px1, py1, INK, 3);
-        pixelLine(g, px0, py0, px1, py1, ring === 0 ? "#b44cff" : "#4b237a", 1);
-        px(g, px0 - 1, py0 - 1, 3, 3, "#f0c4ff");
+        pixelLine(g, px0, py0, px1, py1, ring === 0 ? p.m : p.md, 1);
+        px(g, px0 - 1, py0 - 1, 3, 3, p.l);
       }
     }
     // 3. 10 dark-matter pixel shards spiraling inward and getting crushed into the singularity
@@ -946,28 +971,29 @@ export function gravityWell(x, y, r = 60, ms = 4000) {
       const lift = Math.round(Math.sin(u * Math.PI) * 9);
       const [sx, sy] = at(x + Math.cos(a) * d, y + Math.sin(a) * d, lift);
       px(g, sx - 2, sy - 2, 5, 4, INK);
-      px(g, sx - 1, sy - 1, 3, 2, i % 2 ? "#b44cff" : "#4b237a");
-      px(g, sx, sy - 1, 1, 1, "#f0c4ff");
+      px(g, sx - 1, sy - 1, 3, 2, i % 2 ? p.m : p.md);
+      px(g, sx, sy - 1, 1, 1, p.l);
     }
     // 4. Central pixel black-hole core (abyssal void #12091f ringed by #b44cff and #f0c4ff)
     const pulse = Math.floor(t / 140) % 2;
     for (let dy = -5; dy <= 5; dy++) {
       const w = Math.max(2, 7 - Math.abs(dy));
       px(g, cx - w - 1, cy + dy, w * 2 + 2, 1, INK);
-      px(g, cx - w, cy + dy, w * 2, 1, Math.abs(dy) >= 4 ? "#b44cff" : "#4b237a");
+      px(g, cx - w, cy + dy, w * 2, 1, Math.abs(dy) >= 4 ? p.m : p.md);
       if (Math.abs(dy) <= 3) px(g, cx - w + 2, cy + dy, w * 2 - 4, 1, "#12091f");
     }
-    px(g, cx - 6 - pulse, cy, 2, 1, "#f0c4ff");
-    px(g, cx + 5 + pulse, cy, 2, 1, "#f0c4ff");
-    px(g, cx, cy - 5 - pulse, 1, 2, "#f0c4ff");
-    px(g, cx, cy + 4 + pulse, 1, 2, "#f0c4ff");
+    px(g, cx - 6 - pulse, cy, 2, 1, p.l);
+    px(g, cx + 5 + pulse, cy, 2, 1, p.l);
+    px(g, cx, cy - 5 - pulse, 1, 2, p.l);
+    px(g, cx, cy + 4 + pulse, 1, 2, p.l);
     g.globalAlpha = 1;
   }, ms, false);
 }
 
 /** [암흑 Dark] 중력 왜곡진 틱 파동 (`pp` `"grav"`): radial pixel pull streaks snapping into center. */
 function gravityPulse(x, y, r = 60) {
-  rim(x, y, r * 0.82, "#4b237a", "#f0c4ff", 260, 0.25);
+  const p = PAL;
+  rim(x, y, r * 0.82, p.md, p.l, 260, 0.25);
   S3.fxCustom((g, k) => {
     const [cx, cy] = at(x, y, 2);
     for (let i = 0; i < 8; i++) {
@@ -976,7 +1002,7 @@ function gravityPulse(x, y, r = 60) {
       const [ax, ay] = at(x + Math.cos(a) * d0, y + Math.sin(a) * d0, 3);
       const [bx, by] = at(x + Math.cos(a) * d1, y + Math.sin(a) * d1, 2);
       pixelLine(g, ax, ay, bx, by, INK, 3);
-      pixelLine(g, ax, ay, bx, by, i % 2 ? "#f0c4ff" : "#b44cff", 1);
+      pixelLine(g, ax, ay, bx, by, i % 2 ? p.l : p.m, 1);
     }
     px(g, cx - 3, cy - 2, 7, 5, INK);
     px(g, cx - 2, cy - 1, 5, 3, "#12091f");
@@ -989,6 +1015,7 @@ function gravityPulse(x, y, r = 60) {
  * pairing a roaring crimson-gold flame edge with a coiling high-voltage yellow/cyan lightning wake.
  */
 export function crimsonArcWave(ax, ay, bx, by, half = 20) {
+  const p = PAL;
   const dist = Math.max(1, Math.hypot(bx - ax, by - ay));
   const ux = (bx - ax) / dist, uy = (by - ay) / dist, nx = -uy, ny = ux;
   const ang = Math.atan2(uy, ux), dur = Math.max(180, Math.min(320, Math.round(dist * 1.8)));
@@ -1004,9 +1031,9 @@ export function crimsonArcWave(ax, ay, bx, by, half = 20) {
       const [lx, ly] = at(tx0 + nx * boltOff, ty0 + ny * boltOff, 10);
       const [fx, fy] = at(tx0 - nx * boltOff * 0.7, ty0 - ny * boltOff * 0.7, 8);
       px(g, fx - 2, fy - 2, 4, 4, INK);
-      px(g, fx - 1, fy - 1, 2, 2, s < 5 ? "#ffb83b" : "#ff5a26");
+      px(g, fx - 1, fy - 1, 2, 2, s < 5 ? p.m : p.a);
       px(g, lx - 2, ly - 2, 4, 4, INK);
-      px(g, lx - 1, ly - 1, 2, 2, s % 2 ? "#ffe852" : "#8cf0ff");
+      px(g, lx - 1, ly - 1, 2, 2, s % 2 ? p.m : p.a);
     }
     // 2. Full-width (half=20) outlined Fire + Lightning crescent blade
     for (let i = -9; i <= 9; i++) {
@@ -1014,13 +1041,13 @@ export function crimsonArcWave(ax, ay, bx, by, half = 20) {
       const thick = Math.max(2, Math.round((1 - Math.abs(u) * 0.65) * 6));
       const rx = cx + Math.cos(a) * half, ry = cy + Math.sin(a) * half * 0.82;
       px(g, rx - (thick >> 1) - 1, ry - (thick >> 1) - 1, thick + 2, thick + 2, INK);
-      px(g, rx - (thick >> 1), ry - (thick >> 1), thick, thick, i < 0 ? "#ff5a26" : "#ffb83b");
-      if (Math.abs(i) <= 4) px(g, rx - 1, ry - 1, 2, 2, "#fff6cc");
+      px(g, rx - (thick >> 1), ry - (thick >> 1), thick, thick, i < 0 ? p.a : p.m);
+      if (Math.abs(i) <= 4) px(g, rx - 1, ry - 1, 2, 2, p.l);
       // Lightning barbs crackling across the inner curve
       if (i % 3 === 0) {
         const ix = cx + Math.cos(a) * (half - 6), iy = cy + Math.sin(a) * (half - 6) * 0.82;
         pixelLine(g, rx, ry, ix, iy, INK, 3);
-        pixelLine(g, rx, ry, ix, iy, i % 2 ? "#ffe852" : "#8cf0ff", 1);
+        pixelLine(g, rx, ry, ix, iy, i % 2 ? p.m : p.a, 1);
       }
     }
   }, dur);
@@ -1031,6 +1058,7 @@ export function crimsonArcWave(ax, ay, bx, by, half = 20) {
  * Outlined pixel wind-shear shock rings and directional rails showing the `r = 8` (16px wide) high-velocity pierce corridor.
  */
 export function pierceMuzzle(x, y, tx, ty) {
+  const p = PAL;
   const ang = Math.atan2(ty - y, tx - x), ux = Math.cos(ang), uy = Math.sin(ang), nx = -uy, ny = ux;
   S3.fxCustom((g, k) => {
     const [sx, sy] = at(x + ux * 10, y + uy * 10, 11);
@@ -1042,11 +1070,11 @@ export function pierceMuzzle(x, y, tx, ty) {
         const px0 = rx + nx * j - ux * Math.abs(j) * 0.35;
         const py0 = ry + ny * j - uy * Math.abs(j) * 0.35;
         px(g, px0 - 1, py0 - 1, 3, 3, INK);
-        px(g, px0, py0, 2, 2, Math.abs(j) <= 2 ? "#ffffff" : "#5ce6c8");
+        px(g, px0, py0, 2, 2, Math.abs(j) <= 2 ? "#ffffff" : p.m);
       }
     }
     pixelLine(g, sx, sy, ex, ey, INK, 3);
-    pixelLine(g, sx, sy, ex, ey, "#d8fff4", 1);
+    pixelLine(g, sx, sy, ex, ey, p.w, 1);
   }, 210);
 }
 
@@ -1055,7 +1083,8 @@ export function pierceMuzzle(x, y, tx, ty) {
  * Replaces the flat ground line with an airborne pixel jump arc (`lift` up to 32px), launch dust ring, and wind-feather wake.
  */
 export function leapShotArc(ax, ay, bx, by) {
-  rim(ax, ay, 18, "#328a48", "#fff2a6", 240, 0.32);
+  const p = PAL;
+  rim(ax, ay, 18, p.ad, p.l, 240, 0.32);
   S3.fxCustom((g, k) => {
     const steps = 12;
     for (let i = 0; i <= steps; i++) {
@@ -1065,11 +1094,11 @@ export function leapShotArc(ax, ay, bx, by) {
       const [sx, sy] = at(ax + (bx - ax) * u, ay + (by - ay) * u, lift);
       if (k > 0.65 && (i & 1)) continue;
       px(g, sx - 2, sy - 2, 5, 4, INK);
-      px(g, sx - 1, sy - 1, 3, 2, i % 2 ? "#8ee874" : "#fff2a6");
+      px(g, sx - 1, sy - 1, 3, 2, i % 2 ? p.a : p.l);
       if (i % 3 === 0) px(g, sx, sy - 3, 2, 2, "#ffffff");
     }
   }, 340);
-  later(160, () => rim(bx, by, 15, "#328a48", "#8ee874", 220, 0.25));
+  later(160, () => rim(bx, by, 15, p.ad, p.a, 220, 0.25));
 }
 
 // ───────────────────────────── props: what skills leave standing ─────────────────────────────
@@ -1091,6 +1120,7 @@ function lure(id, eid, x, y, ms) {
 }
 /** The phantom beast of 심연의 계약: a hunched shape of dark smoke with two eyes, padding after its prey. */
 function phantom(id, x, y, ms) {
+  const p = PAL;
   const t0 = now();
   S3.props.set("pr" + id, {
     x, y, tx: x, ty: y, until: t0 + ms,
@@ -1103,43 +1133,45 @@ function phantom(id, x, y, ms) {
       // body: rows of a hunched beast, outlined
       const rows = [[-7, 7], [-9, 9], [-10, 9], [-10, 8], [-9, 8], [-8, 9], [-6, 10], [-4, 10]];
       rows.forEach(([a, b], j) => { const y = sy - 3 - j * 2 - breathe; px(g, sx + a - 1 + lean, y - 1, b - a + 2, 3, INK); });
-      rows.forEach(([a, b], j) => { const y = sy - 3 - j * 2 - breathe; px(g, sx + a + lean, y, b - a, 2, j > 5 ? "#3a2a5a" : "#24183c"); });
+      rows.forEach(([a, b], j) => { const y = sy - 3 - j * 2 - breathe; px(g, sx + a + lean, y, b - a, 2, j > 5 ? p.md : p.d); });
       // wisps trailing off its back
-      for (let i = 0; i < 4; i++) { const ph = (t / 600 + i / 4) % 1; g.globalAlpha = 1 - ph; px(g, sx - 9 - ph * 8, sy - 10 - i * 3 - ph * 6, 2, 2, "#5a3a8a"); }
+      for (let i = 0; i < 4; i++) { const ph = (t / 600 + i / 4) % 1; g.globalAlpha = 1 - ph; px(g, sx - 9 - ph * 8, sy - 10 - i * 3 - ph * 6, 2, 2, p.md); }
       g.globalAlpha = 1;
       // the eyes: two hot pixels, flaring when it bites
-      const eye = this.bite > t ? "#ffffff" : "#ff5a8a";
+      const eye = this.bite > t ? "#ffffff" : p.a;
       px(g, sx + 5 + lean, sy - 16 - breathe, 2, 1, eye); px(g, sx + 8 + lean, sy - 16 - breathe, 2, 1, eye);
-      if (t - t0 < 300) { g.globalAlpha = 1 - (t - t0) / 300; px(g, sx - 12, sy - 22, 24, 22, "#8a5ad8"); g.globalAlpha = 1; }
+      if (t - t0 < 300) { g.globalAlpha = 1 - (t - t0) / 300; px(g, sx - 12, sy - 22, 24, 22, p.m); g.globalAlpha = 1; }
     },
   });
 }
 /** A shadow trap: a small dark sigil on the ground, its corners blinking. */
 function trap(id, x, y, ms) {
+  const p = PAL;
   S3.props.set("pr" + id, {
     x, y, until: now() + ms,
     draw(g, t, sx, sy) {
       sx = Math.round(sx); sy = Math.round(sy);
       g.globalAlpha = 0.85;
       px(g, sx - 6, sy - 1, 13, 3, INK); px(g, sx - 4, sy - 2, 9, 5, INK);
-      px(g, sx - 5, sy, 11, 1, "#3a2a58"); px(g, sx - 3, sy - 1, 7, 3, "#3a2a58");
+      px(g, sx - 5, sy, 11, 1, p.md); px(g, sx - 3, sy - 1, 7, 3, p.md);
       const on = Math.sin(t / 200) > 0;
-      for (const [dx, dy] of [[-6, 0], [6, 0], [0, -2], [0, 2]]) px(g, sx + dx, sy + dy, 1, 1, on ? "#c890ff" : "#6a4a9a");
+      for (const [dx, dy] of [[-6, 0], [6, 0], [0, -2], [0, 2]]) px(g, sx + dx, sy + dy, 1, 1, on ? p.l : p.md);
       g.globalAlpha = 1;
     },
   });
 }
 /** Arrows falling out of the sky over a round patch for `ms` (화살비). */
 function arrowRain(x, y, r, ms) {
-  groundRing(x, y, r, ms, "#e8c070", 0.1);
+  const p = PAL;
+  groundRing(x, y, r, ms, p.m, 0.1);
   const drops = Array.from({ length: 26 }, () => ({ a: Math.random() * 6.28, d: Math.sqrt(Math.random()) * r, ph: Math.random() }));
   S3.fxCustom((g, k) => {
     const t = k * ms;
     for (const o of drops) {
       const u = ((t / 340 + o.ph) % 1), [sx, sy] = at(x + Math.cos(o.a) * o.d, y + Math.sin(o.a) * o.d);
       const top = sy - 70 * (1 - u);
-      if (u < 0.9) { px(g, sx, top - 6, 1, 6, "#fff4dc"); px(g, sx - 1, top, 3, 1, "#c8c8d8"); }
-      else { px(g, sx - 1, sy - 2, 1, 3, "#e8c070"); px(g, sx - 2, sy, 3, 1, "#a07a3a"); }
+      if (u < 0.9) { px(g, sx, top - 6, 1, 6, p.w); px(g, sx - 1, top, 3, 1, p.al); }
+      else { px(g, sx - 1, sy - 2, 1, 3, p.m); px(g, sx - 2, sy, 3, 1, p.md); }
     }
   }, ms);
 }
@@ -1183,6 +1215,7 @@ function rallyPennant(o, id, ms) {
 }
 
 function placeProp(G, B, f, id, kind, x, y, r, ms, eid) {
+  const p = (PAL = jobPal(PROP_JOB[kind] || "adventurer"));
   placed.set(id, { kind, x, y, r, eid });
   if (placed.size > 60) placed.delete(placed.keys().next().value);
   switch (kind) {
@@ -1190,36 +1223,36 @@ function placeProp(G, B, f, id, kind, x, y, r, ms, eid) {
       gravityWell(x, y, r, ms);
       break;
     }
-    case "phantom": phantom(id, x, y, ms); f.burst(x, y, 0.4, "#3a2a58", 24, 1.8); f.ring(x, y, 22, "#8a5ad8", 360, true); break;
+    case "phantom": phantom(id, x, y, ms); f.burst(x, y, 0.4, p.md, 24, 1.8); f.ring(x, y, 22, p.m, 360, true); break;
     case "rain": arrowRain(x, y, r, ms); break;
     case "trap": trap(id, x, y, ms); break;
-    case "pillar": groundRing(x, y, r, ms, "#9fdcff", 0.14); break;
-    case "meteor": groundRing(x, y, r, ms, "#ff5a3a", 0.12); break;
+    case "pillar": groundRing(x, y, r, ms, p.l, 0.14); break;
+    case "meteor": groundRing(x, y, r, ms, p.m, 0.12); break;
     case "storm": {
-      groundRing(x, y, r, ms, "#bfe8ff", 0.12);
+      groundRing(x, y, r, ms, p.l, 0.12);
       // a low spinning cloud over it
       S3.fxCustom((g, k) => {
         const t = k * ms, [cx, cy] = at(x, y, 34);
-        for (let i = 0; i < 9; i++) { const a = t / 400 + (i / 9) * 6.28, ox = Math.cos(a) * r * 0.9, oy = Math.sin(a) * r * 0.3; g.globalAlpha = 0.55; px(g, cx + ox - 4, cy + oy - 2, 8, 4, i % 2 ? "#5a6a8a" : "#3a4a6a"); }
+        for (let i = 0; i < 9; i++) { const a = t / 400 + (i / 9) * 6.28, ox = Math.cos(a) * r * 0.9, oy = Math.sin(a) * r * 0.3; g.globalAlpha = 0.55; px(g, cx + ox - 4, cy + oy - 2, 8, 4, i % 2 ? p.md : p.md); }
         g.globalAlpha = 1;
       }, ms);
       break;
     }
     case "field": {
-      groundRing(x, y, r, ms, "#c8324a", 0.18);
+      groundRing(x, y, r, ms, p.m, 0.18);
       S3.fxCustom((g, k) => {
         const t = k * ms;
         for (let i = 0; i < 12; i++) {
           const a = i * (Math.PI / 6) + t / 1800, [rx, ry] = at(x + Math.cos(a) * r * 0.92, y + Math.sin(a) * r * 0.92);
           px(g, rx - 2, ry - 2, 4, 4, INK);
-          px(g, rx - 1, ry - 1, 2, 2, i % 2 ? "#ff6a9a" : "#8a3ec8");
+          px(g, rx - 1, ry - 1, 2, 2, i % 2 ? p.m : p.a);
         }
         for (let i = 0; i < 10; i++) {
           const ph = ((t / 650 + i / 10) % 1), a = i * 0.628;
           const [sx, sy] = at(x + Math.cos(a) * r * 0.76 * (1 - ph * 0.45), y + Math.sin(a) * r * 0.76 * (1 - ph * 0.45), 4 + ph * 20);
           g.globalAlpha = 1 - ph;
           px(g, sx - 1, sy - 1, 4, 5, INK);
-          px(g, sx, sy, 2, 3, i % 2 ? "#ff6a8a" : "#c87aff");
+          px(g, sx, sy, 2, 3, i % 2 ? p.m : p.a);
         }
         g.globalAlpha = 1;
       }, ms);
@@ -1229,9 +1262,9 @@ function placeProp(G, B, f, id, kind, x, y, r, ms, eid) {
       // the binding: a red sigil tightening on the ground until the blood bursts
       S3.fxCustom((g, k) => {
         const rr = r * P * (1 - 0.7 * k);
-        g.globalAlpha = 0.7; g.strokeStyle = "#c8324a"; g.lineWidth = 4; g.setLineDash([16, 10]); g.lineDashOffset = k * 120;
+        g.globalAlpha = 0.7; g.strokeStyle = p.m; g.lineWidth = 4; g.setLineDash([16, 10]); g.lineDashOffset = k * 120;
         g.beginPath(); g.arc(x * P, y * P, rr, 0, 7); g.stroke();
-        g.globalAlpha = 0.18; g.fillStyle = "#c8324a"; g.fill(); g.globalAlpha = 1;
+        g.globalAlpha = 0.18; g.fillStyle = p.m; g.fill(); g.globalAlpha = 1;
       }, ms, true);
       break;
     }
@@ -1248,11 +1281,12 @@ const RUNES = ["#.#.#.#.#", ".#.###.#.", "##..#..##", "#.####..#", ".#.#.#.#.", 
  * and the flood drains again before the next.
  */
 function runeCircle(o, x, y, r, ms) {
+  const p = PAL;
   let beatT = -1e9;
   S3.fxCustom((g, k) => {
     const t = k * ms, a = Math.min(1, k * 10, (1 - k) * 8), R = r * P, cx = x * P, cy = y * P;
     if (o.beatNew) { o.beatNew = false; beatT = t; }
-    const beat = Math.max(0, 1 - (t - beatT) / 340), col = ELEM_COL[o.el] || "#c8a0ff";
+    const beat = Math.max(0, 1 - (t - beatT) / 340), col = ELEM_COL[o.el] || p.l;
     g.globalAlpha = (0.16 + 0.3 * beat) * a; g.fillStyle = col;
     g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
     g.globalAlpha = (0.8 + 0.2 * beat) * a; g.strokeStyle = beat > 0.6 ? "#ffffff" : col;
@@ -1277,22 +1311,23 @@ const follow = new Map();
 function propBeat(G, B, f, e) {
   const [, id, x, y, extra] = e, o = placed.get(id);
   if (!o) return;
+  const p = (PAL = jobPal(PROP_JOB[o.kind] || "adventurer"));
   const canHear = o.eid === G.you || skillNear(G, x, y);
   const play = (key) => { if (canHear) Sound.play(key); };
   switch (o.kind) {
-    case "grav": gravityPulse(x, y, o.r); f.sparkle(x, y, 0.3, "#b44cff", 4); play("gravity_tick"); break;
+    case "grav": gravityPulse(x, y, o.r); f.sparkle(x, y, 0.3, p.m, 4); play("gravity_tick"); break;
     case "phantom": {
       const pr = S3.props.get("pr" + id);
       if (pr) { pr.tx = x; pr.ty = y; pr.bite = now() + 220; }
       const m = G.mobs.get(extra);
-      if (m) { f.slash(m.x, m.y, Math.atan2(m.y - y, m.x - x), "#8a5ad8", 0.9); f.slash(m.x, m.y, Math.atan2(m.y - y, m.x - x) + 0.6, "#ff5a8a", 0.7, true); }
+      if (m) { f.slash(m.x, m.y, Math.atan2(m.y - y, m.x - x), p.m, 0.9); f.slash(m.x, m.y, Math.atan2(m.y - y, m.x - x) + 0.6, p.a, 0.7, true); }
       play("phantom_bite");
       break;
     }
     case "pillar": {
       const last = extra === 1;
-      B.fx.zap(x + rand(-10, 10), y + rand(-6, 6), "#bfe8ff", 260);
-      if (last) { B.fx.zap(x, y, "#ffffff", 360); B.fx.ring(x, y, o.r, "#9fdcff", 360, true); f.crack(x, y, o.r * 0.6, "#bfe8ff", 600); B.shake(9); play("dragon_final"); }
+      B.fx.zap(x + rand(-10, 10), y + rand(-6, 6), p.l, 260);
+      if (last) { B.fx.zap(x, y, "#ffffff", 360); B.fx.ring(x, y, o.r, p.l, 360, true); f.crack(x, y, o.r * 0.6, p.l, 600); B.shake(9); play("dragon_final"); }
       else play("bolt");
       break;
     }
@@ -1304,19 +1339,19 @@ function propBeat(G, B, f, e) {
         const h = Math.round(72 * (1 - k)), w = Math.ceil(7 * (1 - k));
         for (let j = 0; j < h; j += 3) {
           const offset = -Math.floor(j / 7), width = Math.max(1, w - (j >> 4));
-          px(g, sx + offset - width, sy - j - 2, width * 2, 3, j < 24 ? "#ffaf64" : "#ad543a");
-          if (k < 0.42) px(g, sx + offset, sy - j - 2, 2, 3, "#fff2cc");
+          px(g, sx + offset - width, sy - j - 2, width * 2, 3, j < 24 ? p.m : p.m);
+          if (k < 0.42) px(g, sx + offset, sy - j - 2, 2, 3, p.l);
         }
       }, 145);
       flat.flash(x, y, 13, 0, 0.12);
-      flat.wave(x, y, r, "#ffad56", 260);
-      flat.crack(x, y, r * 0.78, "#b35b42", 400);
-      shards(x, y, r, 7, 23, "#b65b39", "#ffcf7a", 270);
+      flat.wave(x, y, r, p.m, 260);
+      flat.crack(x, y, r * 0.78, p.m, 400);
+      shards(x, y, r, 7, 23, p.m, p.l, 270);
       if (canHear) B.shake(4);
       play("meteor_hit");
       break;
     }
-    case "storm": B.fx.zap(x + rand(-o.r, o.r) * 0.7, y + rand(-o.r, o.r) * 0.5, "#bfe8ff", 220); break;
+    case "storm": B.fx.zap(x + rand(-o.r, o.r) * 0.7, y + rand(-o.r, o.r) * 0.5, p.l, 220); break;
     case "banner": {
       o.pulseUntil = now() + 250;
       S3.fx.wave(x, y, o.r, BANNER_COLOR.light, 330);
@@ -1328,14 +1363,14 @@ function propBeat(G, B, f, e) {
       const el = extra >= 1 && extra <= 3 ? extra : 1, col = ELEM_COL[el];
       o.el = el; o.beatNew = true;
       S3.fx.wave(x, y, o.r, col, 340); S3.fx.wave(x, y, o.r * 0.6, "#ffffff", 260, 40);
-      if (el === 1) { for (let i = 0; i < 5; i++) { const a = rand(0, 6.28), d = rand(0.2, 0.8) * o.r; f.burst(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, 0.1, i % 2 ? "#ffd84a" : "#ff8a3a", 4, 1.6); } play("ember"); }
-      else if (el === 2) { for (let i = 0; i < 6; i++) { const a = rand(0, 6.28), d = rand(0.2, 0.85) * o.r; f.sparkle(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, 0.2, i % 2 ? "#e8f8ff" : "#9fe8ff", 3); } play("frost"); }
-      else { for (let i = 0; i < 2; i++) { const a = rand(0, 6.28), d = rand(0.25, 0.75) * o.r; S3.fx.zap(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, "#fff27a", 200, i * 70); } play("bolt"); }
+      if (el === 1) { for (let i = 0; i < 5; i++) { const a = rand(0, 6.28), d = rand(0.2, 0.8) * o.r; f.burst(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, 0.1, i % 2 ? p.m : p.m, 4, 1.6); } play("ember"); }
+      else if (el === 2) { for (let i = 0; i < 6; i++) { const a = rand(0, 6.28), d = rand(0.2, 0.85) * o.r; f.sparkle(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, 0.2, i % 2 ? p.al : p.al, 3); } play("frost"); }
+      else { for (let i = 0; i < 2; i++) { const a = rand(0, 6.28), d = rand(0.25, 0.75) * o.r; S3.fx.zap(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, p.l, 200, i * 70); } play("bolt"); }
       break;
     }
     case "burst": {
-      B.fx.ring(x, y, o.r, "#c8324a", 380, true);
-      for (let i = 0; i < 10; i++) { const a = (i / 10) * 6.28; f.burst(x + Math.cos(a) * o.r * 0.5, y + Math.sin(a) * o.r * 0.5, 0.3, "#c8324a", 6, 2.4); }
+      B.fx.ring(x, y, o.r, p.m, 380, true);
+      for (let i = 0; i < 10; i++) { const a = (i / 10) * 6.28; f.burst(x + Math.cos(a) * o.r * 0.5, y + Math.sin(a) * o.r * 0.5, 0.3, p.m, 6, 2.4); }
       B.shake(9); play("blood_burst");
       break;
     }
@@ -1347,11 +1382,12 @@ function propEnd(G, B, f, e) {
   S3.props.delete("pr" + id);
   follow.delete(id);
   if (!o) return;
+  const p = (PAL = jobPal(PROP_JOB[o.kind] || "adventurer"));
   if (o.kind === "trap" && how === 1) {
     // sprung: a shadow of the tracker bursts out of the ground at it — three stabs and two shots
     const m = G.mobs.get(mid), tx = m ? m.x : o.x, ty = m ? m.y : o.y;
-    f.burst(o.x, o.y, 0.2, "#3a2a58", 26, 2.2);
-    for (let i = 0; i < 3; i++) setTimeout(() => f.slash(tx, ty, rand(0, 6.28), "#c890ff", 0.9, i % 2 === 1), i * 90);
+    f.burst(o.x, o.y, 0.2, p.md, 26, 2.2);
+    for (let i = 0; i < 3; i++) setTimeout(() => f.slash(tx, ty, rand(0, 6.28), p.l, 0.9, i % 2 === 1), i * 90);
     for (let i = 0; i < 2; i++) setTimeout(() => { S3.fx.arrowHit(tx, ty, rand(0, 6.28), "#ffffff", true); }, 280 + i * 90);
     B.shake(4); Sound.play("decoy_pop");
   }
@@ -1401,10 +1437,11 @@ function overlay(g, t) {
     const e = o.eid === G.you ? G.me : G.players.get(o.eid);
     if (!e) continue;
     const [x, y] = at(e.x, e.y), a = Math.min(1, (t - o.t0) / 200, (o.until - t) / 200), rx = o.r * Math.SQRT2, ry = o.r / Math.SQRT2;
-    g.globalAlpha = 0.14 * a; g.fillStyle = "#c8324a"; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.fill();
-    g.globalAlpha = 0.7 * a; g.strokeStyle = "#ff6a8a"; g.lineWidth = 2; g.setLineDash([6, 6]); g.lineDashOffset = -t / 40;
+    const p = jobPal("darkknight");
+    g.globalAlpha = 0.14 * a; g.fillStyle = p.d; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.fill();
+    g.globalAlpha = 0.7 * a; g.strokeStyle = p.m; g.lineWidth = 2; g.setLineDash([6, 6]); g.lineDashOffset = -t / 40;
     g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.stroke(); g.setLineDash([]);
-    for (let i = 0; i < 6; i++) { const ph = ((t / 900 + i / 6) % 1), ang = i * 1.05; g.globalAlpha = a * (1 - ph); px(g, x + Math.cos(ang) * rx * 0.8, y + Math.sin(ang) * ry * 0.8 - ph * 22, 2, 3, "#ff3a5a"); }
+    for (let i = 0; i < 6; i++) { const ph = ((t / 900 + i / 6) % 1), ang = i * 1.05; g.globalAlpha = a * (1 - ph); px(g, x + Math.cos(ang) * rx * 0.8, y + Math.sin(ang) * ry * 0.8 - ph * 22, 2, 3, p.a); }
     g.globalAlpha = 1;
   }
   // players at work: untouchable in the air, a staff's full resonance, the element a staff holds
@@ -1413,6 +1450,12 @@ function overlay(g, t) {
   for (const [p, me] of people) {
     const fl = p.fl | 0, [x, y] = at(p.x, p.y);
     if (fl & 4) { g.globalAlpha = 0.5 + 0.3 * Math.sin(t / 50); g.strokeStyle = "#e8e0ff"; g.lineWidth = 1; g.beginPath(); g.ellipse(x, y - 12, 12, 16, 0, 0, 7); g.stroke(); g.globalAlpha = 1; }
+    if (fl & 128) {
+      const q = jobPal("wizard"), k = 0.5 + 0.5 * Math.sin(t / 160), hx = Math.round(x), hy = Math.round(y - 44 - k * 2);
+      g.globalAlpha = 0.25 + 0.25 * k; g.fillStyle = q.m; g.beginPath(); g.ellipse(x, y - 14, 11, 15, 0, 0, 7); g.fill();
+      g.globalAlpha = 1; px(g, hx - 1, hy - 3, 3, 7, INK); px(g, hx - 3, hy - 1, 7, 3, INK);
+      px(g, hx, hy - 2, 1, 5, q.l); px(g, hx - 2, hy, 5, 1, q.l); px(g, hx, hy, 1, 1, k > 0.5 ? "#ffffff" : q.a);
+    }
     if (fl & 32) for (let i = 1; i <= 3; i++) { const a = t / 260 + i * 2.094; orb(g, x + Math.cos(a) * 14, y - 14 + Math.sin(a) * 6, i, t); }
     // the element held (only one's own is sent): live number = resonance + 4 × element
     const e = me && G.self && G.self.cr && G.self.cr.k === "reso" ? (G.me.cv | 0) >> 2 : 0;
@@ -2039,7 +2082,7 @@ export function skillEvent(e, ctx) {
       return true;
     }
     case "b": {
-      if ((e[4] | 0) === 10) { fireBurnPatch(e[1], e[2], e[3] || 30); return true; }
+      if ((e[4] | 0) === 10) { PAL = jobPal("wizard"); fireBurnPatch(e[1], e[2], e[3] || 30); return true; }
       return false;
     }
     // ── the bow's arrows (docs/design/jobs-and-stats.md D.2): fired ["ar", id, x0, y0, ux·1000, uy·1000,
@@ -2085,6 +2128,7 @@ export function skillEvent(e, ctx) {
     case "pr": { const [, id, kind, x, y, r, ms, eid] = e; placeProp(G, B, f, id, kind, x, y, r, ms, eid); return true; }
     case "pp": propBeat(G, B, f, e); return true;
     case "pe": propEnd(G, B, f, e); return true;
+    case "ps": procFx(G, e); return true;
     case "bw": {
       const [, x, y, r, kind] = e;
       // 검기 화살's crescent bursts when its arrow gets there, not when the string lets go
@@ -2149,25 +2193,26 @@ export function skillEvent(e, ctx) {
     }
     case "ln": {
       const [, kind, ax, ay, bx, by] = e;
+      const p = (PAL = jobPal(LN_JOB[kind] || "adventurer"));
       lastLn = { kind, ax, ay, bx, by, at: now() };
       if (kind === 2) {
         // the thunder javelin: a bolt of a spear down the line
-        S3.fx.proj(ax, ay, 0.7, bx, by, 0.5, "#fff6b0", 0.07, 70);
-        f.beam(ax, ay, bx, by, "#bfe8ff", 0.6); f.bolt(ax, ay, bx, by, "#fff27a", 240);
+        S3.fx.proj(ax, ay, 0.7, bx, by, 0.5, p.l, 0.07, 70);
+        f.beam(ax, ay, bx, by, p.al, 0.6); f.bolt(ax, ay, bx, by, p.l, 240);
       } else if (kind === 3) {
-        streakWake(ax, ay, bx, by, "#559c8a", "#fff1c3", 10);
-        S3.fx.burst(ax, ay, 0.1, "#b8a878", 8, 1.6);
+        streakWake(ax, ay, bx, by, p.a, p.l, 10);
+        S3.fx.burst(ax, ay, 0.1, p.m, 8, 1.6);
       } else if (kind === 4) { chainLightningArc(ax, ay, bx, by); Sound.play("bolt"); }
       else if (kind === 5) {
         shadowAfterimage(ax, ay, 240);
-        streakWake(ax, ay, bx, by, "#4a2a78", "#e8c8ff", 7);
-        f.burst(ax, ay, 0.6, "#3a2a58", 8, 1.3);
+        streakWake(ax, ay, bx, by, p.md, p.l, 7);
+        f.burst(ax, ay, 0.6, p.md, 8, 1.3);
         Sound.play("dance");
       }
       else if (kind === 6) {
         shadowAfterimage(ax, ay, 220);
-        streakWake(ax, ay, bx, by, "#72528e", "#cb9cfa", 7);
-        S3.fx.burst(ax, ay, 0.45, "#795891", 7, 1.3);
+        streakWake(ax, ay, bx, by, p.md, p.l, 7);
+        S3.fx.burst(ax, ay, 0.45, p.m, 7, 1.3);
       }
       else if (kind === 7) {
         // 원소 비수 sends three blades coloured fire, ice and lightning after its cast.
@@ -2187,7 +2232,21 @@ export function skillEvent(e, ctx) {
         f.beam(ax, ay, bx, by, col, 0.45);
         along(ax, ay, bx, by, 26).forEach(([x, y], i, all) => later((i / all.length) * ms, () => S3.fx.sparkle(x, y, 0.4, col, 2)));
         later(ms, () => { S3.fx.ring(bx, by, 10, col, 240); S3.fx.burst(bx, by, 0.4, col, 6, 1.6); });
-      } else if (kind === 8) { leapShotArc(ax, ay, bx, by); f.burst(ax, ay, 0.1, "#b8a878", 10, 1.6); }
+      } else if (kind === 10) {
+        // 낙인 전염: the brand leaps from the fallen to its next host in a hopping arc, landing with a stamp
+        S3.fxCustom((g, k) => {
+          for (let i = 0; i <= 12; i++) {
+            const u = i / 12;
+            if (u > k * 1.6) break;
+            const [x, y] = at(ax + (bx - ax) * u, ay + (by - ay) * u, 14 + Math.sin(u * Math.PI) * 30);
+            g.globalAlpha = Math.max(0, 1 - k);
+            px(g, x - 2, y - 2, 4, 4, INK); px(g, x - 1, y - 1, 2, 2, i % 3 ? p.m : p.a);
+          }
+          g.globalAlpha = 1;
+        }, 380);
+        later(240, () => { S3.fx.ring(bx, by, 14, p.m, 260); S3.fx.spark(bx, by, p.a, 1); });
+        Sound.play("brand");
+      } else if (kind === 8) { leapShotArc(ax, ay, bx, by); f.burst(ax, ay, 0.1, p.m, 10, 1.6); }
       else if (kind === 9) {
         // up and over: an inked pixel leap arc and launch dust
         S3.fxCustom((g, k) => {
@@ -2197,11 +2256,11 @@ export function skillEvent(e, ctx) {
             const [x, y] = at(ax + (bx - ax) * u, ay + (by - ay) * u, 10 + Math.sin(u * Math.PI) * 38);
             g.globalAlpha = Math.max(0, 1 - k * 1.05);
             px(g, x - 2, y - 2, 4, 4, INK);
-            px(g, x - 1, y - 1, 2, 2, i > 9 ? "#ffe888" : "#f0e8d0");
+            px(g, x - 1, y - 1, 2, 2, i > 9 ? p.l : p.l);
           }
           g.globalAlpha = 1;
         }, 420);
-        f.burst(ax, ay, 0.1, "#b8a878", 10, 1.6);
+        f.burst(ax, ay, 0.1, p.m, 10, 1.6);
       }
       return true;
     }
@@ -2427,18 +2486,20 @@ export function bowFire(G, src, beat = 0, up = false) {
 
 /** A passive showing itself where it happened: no swing, a sign and a small sound. */
 function passive(kind, src, eid, tx, ty, G) {
+  const p = (PAL = fxPal(kind, G, eid));
   const f = S3.fx, mine = eid === G.you;
   switch (kind) {
-    case 110: f.ring(src.x, src.y, 22, "#ffb04a", 300); f.sparkle(src.x, src.y, 0.6, "#ffd84a", 10); if (mine) { text(G, "관성 최대", src.x, src.y, 1.9, "#ffd84a"); Sound.play("inertia_full"); } break;
-    case 111: f.burst(tx, ty, 0.5, "#c8324a", 10, 1.6); f.spark(tx, ty, "#ff6a8a", 0.9); if (mine) Sound.play("bleed"); break;
-    case 113: f.ring(src.x, src.y, 20, "#b08aff", 360); f.sparkle(src.x, src.y, 0.8, "#e0c8ff", 14); if (mine) { text(G, "공명!", src.x, src.y, 1.9, "#e0c8ff"); Sound.play("reso_ready"); } break;
-    case 114: f.spark(tx, ty, "#c8a0ff", 1); f.ring(tx, ty, 12, "#ff6a8a", 260); if (mine) Sound.play("brand"); break;
-    case 115: f.spark(tx, ty, "#ffd84a", 1.1); if (mine) text(G, "원거리!", tx, ty, 1.5, "#ffd84a"); break;
+    case 110: f.ring(src.x, src.y, 22, p.m, 300); f.sparkle(src.x, src.y, 0.6, p.m, 10); if (mine) { text(G, "관성 최대", src.x, src.y, 1.9, p.m); Sound.play("inertia_full"); } break;
+    case 111: f.burst(tx, ty, 0.5, p.m, 10, 1.6); f.spark(tx, ty, p.m, 0.9); if (mine) Sound.play("bleed"); break;
+    case 113: f.ring(src.x, src.y, 20, p.l, 360); f.sparkle(src.x, src.y, 0.8, p.l, 14); if (mine) { text(G, "공명!", src.x, src.y, 1.9, p.l); Sound.play("reso_ready"); } break;
+    case 114: f.spark(tx, ty, p.al, 1); f.ring(tx, ty, 12, p.m, 260); if (mine) Sound.play("brand"); break;
+    case 115: f.spark(tx, ty, p.m, 1.1); if (mine) text(G, "원거리!", tx, ty, 1.5, p.m); break;
   }
 }
 
 /** A skill being used: what it looks like at the caster and where it lands. */
 function cast(kind, src, eid, tx, ty, extra, G) {
+  const p = (PAL = fxPal(kind, G, eid));
   const ang = Math.hypot(tx - src.x, ty - src.y) > 2 ? Math.atan2(ty - src.y, tx - src.x) : [Math.PI / 2, Math.PI, 0, -Math.PI / 2][src.dir] || 0;
   // scaled-up effects, and a shake that kicks along the skill's aim
   const B = S3.big(ang), f = B.fx, mine = eid === G.you;
@@ -2457,13 +2518,13 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       frostNovaRing(src.x, src.y, r);
       B.shake(4); play("frost"); break;
     }
-    case 90: f.sparkle(src.x, src.y, 1.2, "#ff8a3a", 18); f.ring(tx, ty, extra || 80, "#ff5a3a", 500); if (mine) text(G, "메테오 스톰!", src.x, src.y, 2.2, "#ffb04a", true); play("meteor_cast"); break;
+    case 90: f.sparkle(src.x, src.y, 1.2, p.m, 18); f.ring(tx, ty, extra || 80, p.m, 500); if (mine) text(G, "메테오 스톰!", src.x, src.y, 2.2, p.m, true); play("meteor_cast"); break;
     // ── 대검
     case 80: {
       // a wide crescent of steel thrown off the swing, and everything in it reels
       const r = extra || 46;
       swordCrescent(src.x, src.y, ang, r);
-      shards(tx, ty, r * 0.32, 5, 12, "#739aca", "#deefff", 240, 96);
+      shards(tx, ty, r * 0.32, 5, 12, p.m, p.w, 240, 96);
       B.shake(6); play("power_slash");
       break;
     }
@@ -2484,21 +2545,21 @@ function cast(kind, src, eid, tx, ty, extra, G) {
     case 83: {
       verdictSpin(src.x, src.y, ang, extra || 70);
       B.shake(12); play("verdict");
-      if (mine) text(G, "단죄의 일격!", src.x, src.y, 2.3, "#ffb04a", true);
+      if (mine) text(G, "단죄의 일격!", src.x, src.y, 2.3, p.m, true);
       break;
     }
     // ── 단검
     case 84: {
       // The blink is a separate line event; these cuts belong only to the struck target.
       ambushCuts(tx, ty, ang);
-      S3.fx.arrowHit(tx, ty, ang, "#d5a2ff", true, 12);
+      S3.fx.arrowHit(tx, ty, ang, p.l, true, 12);
       if (near) B.shake(3.5);
       play("swap"); break;
     }
     case 85: {
       // The three blade lanes arrive immediately after this cast; keep the release local.
-      S3.fx.arrowHit(src.x + Math.cos(ang) * 8, src.y + Math.sin(ang) * 8, ang, "#c89bea", false, 14);
-      S3.fx.burst(src.x, src.y, 0.55, "#8860ac", 5, 1.1);
+      S3.fx.arrowHit(src.x + Math.cos(ang) * 8, src.y + Math.sin(ang) * 8, ang, p.l, false, 14);
+      S3.fx.burst(src.x, src.y, 0.55, p.m, 5, 1.1);
       play("shade"); break;
     }
     case 86:
@@ -2507,14 +2568,14 @@ function cast(kind, src, eid, tx, ty, extra, G) {
         B.shake(3.5); play("crit");
       } else {
         const r = G.defs?.skills?.flurry?.r || 90;
-        rim(src.x, src.y, r, "#4a2c78", "#d8a8ff", 420, 0.2);
+        rim(src.x, src.y, r, p.md, p.l, 420, 0.2);
         for (let i = 0; i < 4; i++) {
           const a = i * (Math.PI / 2) + 0.4;
           shadowAfterimage(src.x + Math.cos(a) * 18, src.y + Math.sin(a) * 18, 280);
         }
-        f.burst(src.x, src.y, 0.6, "#2a2040", 28, 1.8);
+        f.burst(src.x, src.y, 0.6, p.d, 28, 1.8);
         play("dance");
-        if (mine) text(G, "무영난무!", src.x, src.y, 2.2, "#d8b0ff", true);
+        if (mine) text(G, "무영난무!", src.x, src.y, 2.2, p.l, true);
       }
       break;
     // ── 창
@@ -2537,11 +2598,11 @@ function cast(kind, src, eid, tx, ty, extra, G) {
     }
     case 89: {
       const r = extra || 64;
-      S3.fx.zap(tx, ty, "#b6e6ff", 240);
-      rim(tx, ty, r, "#649add", "#d2f7ff", 500, 0.72);
-      rim(tx, ty, r * 0.61, "#7063b5", "#a1bfff", 340, 0.4);
-      shards(tx, ty, r * 0.7, 8, 28, "#5e77d6", "#bae8ff", 325, 27);
-      B.shake(6); play("dragon"); if (mine) text(G, "뇌룡승천!", src.x, src.y, 2.2, "#bfe8ff", true); break;
+      S3.fx.zap(tx, ty, p.l, 240);
+      rim(tx, ty, r, p.m, p.w, 500, 0.72);
+      rim(tx, ty, r * 0.61, p.m, p.l, 340, 0.4);
+      shards(tx, ty, r * 0.7, 8, 28, p.m, p.l, 325, 27);
+      B.shake(6); play("dragon"); if (mine) text(G, "뇌룡승천!", src.x, src.y, 2.2, p.l, true); break;
     }
     // ── 마도서
     case 91: {
@@ -2550,50 +2611,50 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       soulTrail(src.x, src.y, tx, ty, ms);
       later(ms, () => {
         S3.fx.flash(tx, ty, 6);
-        rim(tx, ty, 16, "#4b237a", "#f0c4ff", 260, 0.6);
-        shards(tx, ty, 15, 6, 14, "#4b237a", "#b44cff", 240);
+        rim(tx, ty, 16, p.md, p.l, 260, 0.6);
+        shards(tx, ty, 15, 6, 14, p.md, p.m, 240);
       });
-      S3.fx.sparkle(src.x, src.y, 0.8, "#b44cff", 6); play("soulbolt");
+      S3.fx.sparkle(src.x, src.y, 0.8, p.m, 6); play("soulbolt");
       break;
     }
     case 92: {
       const r = extra || 60;
-      rim(tx, ty, r, "#4b237a", "#f0c4ff", 340, 0.45);
+      rim(tx, ty, r, p.md, p.l, 340, 0.45);
       f.burst(tx, ty, 0.3, "#12091f", 20, 1.8);
       B.shake(4); play("gravity");
       break;
     }
-    case 93: f.sparkle(src.x, src.y, 1, "#8a5ad8", 20); play("pact"); if (mine) text(G, "심연의 계약", src.x, src.y, 2.2, "#c8a0ff", true); break;
+    case 93: f.sparkle(src.x, src.y, 1, p.m, 20); play("pact"); if (mine) text(G, "심연의 계약", src.x, src.y, 2.2, p.l, true); break;
     // ── 활 (the pose and the twang: bowFire; the arrows come as "ar")
     case 94: SkillFx_bow(G, src, false); pierceMuzzle(src.x, src.y, tx, ty); play("pierce"); break;
     case 95: {
       SkillFx_bow(G, src, false);
       for (let j = -2; j <= 2; j++) {
         const a = ang + j * 0.13;
-        S3.fx.spark(src.x + Math.cos(a) * 10, src.y + Math.sin(a) * 10, j % 2 ? "#8ee874" : "#fff2a6", 0.9);
+        S3.fx.spark(src.x + Math.cos(a) * 10, src.y + Math.sin(a) * 10, j % 2 ? p.m : p.al, 0.9);
       }
-      f.burst(src.x, src.y, 0.1, "#8ee874", 10, 1.5);
+      f.burst(src.x, src.y, 0.1, p.m, 10, 1.5);
       play("leapshot");
       break;
     }
-    case 96: SkillFx_bow(G, src, true); f.sparkle(src.x, src.y, 1.4, "#fff4dc", 10); play("rain"); if (mine) text(G, "화살비!", src.x, src.y, 2.2, "#ffe9a0", true); break;
+    case 96: SkillFx_bow(G, src, true); f.sparkle(src.x, src.y, 1.4, p.w, 10); play("rain"); if (mine) text(G, "화살비!", src.x, src.y, 2.2, p.l, true); break;
     // ── hybrid signatures
     case 97: {
       // 원소 마검: 홍련참 — full-width (half=20) Fire + Lightning crescent wave
       crimsonArcWave(src.x, src.y, tx, ty, G.defs?.skills?.crimson?.half || 20);
       B.shake(8); play("crimson");
-      if (mine) text(G, "홍련참!", src.x, src.y, 2.2, "#ff8a5a", true);
+      if (mine) text(G, "홍련참!", src.x, src.y, 2.2, p.m, true);
       break;
     }
-    case 98: f.burst(tx, ty, 0.6, "#2a2040", 30, 1.6); f.ring(tx, ty, 45, "#8a5ad8", 400); play("decoy"); break;
+    case 98: f.burst(tx, ty, 0.6, p.d, 30, 1.6); f.ring(tx, ty, 45, p.m, 400); play("decoy"); break;
     case 99: {
       abyssDive(tx, ty, extra || 110);
       B.shake(10); play("dive");
-      if (mine) text(G, "심연의 강림!", src.x, src.y, 2.3, "#e0c8ff", true);
+      if (mine) text(G, "심연의 강림!", src.x, src.y, 2.3, p.l, true);
       break;
     }
-    case 100: f.ring(src.x, src.y, extra || 100, "#c8324a", 400); f.sparkle(src.x, src.y, 0.8, "#ff3a5a", 16); play("blood_bind"); break;
-    case 101: f.zap(tx, ty, "#fff27a", 300); f.ring(tx, ty, 40, "#bfe8ff", 360, true); B.shake(9); play("thunder"); if (mine) text(G, "천뢰!", src.x, src.y, 2.2, "#fff27a", true); break;
+    case 100: f.ring(src.x, src.y, extra || 100, p.m, 400); f.sparkle(src.x, src.y, 0.8, p.m, 16); play("blood_bind"); break;
+    case 101: f.zap(tx, ty, p.l, 300); f.ring(tx, ty, 40, p.al, 360, true); B.shake(9); play("thunder"); if (mine) text(G, "천뢰!", src.x, src.y, 2.2, p.l, true); break;
     // ── the hybrid expansion (docs/design/jobs-and-stats.md H.4)
     case 120: {
       // 십자 난도: the great blade's crescent across everything ahead, then a dagger's X on each one it swept
@@ -2609,20 +2670,20 @@ function cast(kind, src, eid, tx, ty, extra, G) {
           flurrySlash(src.x + Math.cos(ang) * r * 0.58, src.y + Math.sin(ang) * r * 0.58, ang);
         }
       });
-      if (mine) text(G, "십자 난도!", src.x, src.y, 2.2, "#d8c8ff", true);
+      if (mine) text(G, "십자 난도!", src.x, src.y, 2.2, p.l, true);
       break;
     }
     case 121: {
       // 파진돌격: the charge's streak is the "ln 3" before this; here the great blade comes down where it
       // stopped (the cracks and the ring are the "bw" after) and the spear's reach shows on the rim
       const r = extra || 56, l = lineOf(3), a = l ? Math.atan2(l.by - l.ay, l.bx - l.ax) : ang;
-      if (l) { f.beam(l.ax, l.ay - 3, l.bx, l.by - 3, "#e0c890", 0.5); for (const [x, y] of along(l.ax, l.ay, l.bx, l.by, 16)) f.burst(x, y, 0.05, "#a89068", 3, 1.4); }
-      f.fall(tx, ty, "#e8f0ff", 90);
-      f.slash(tx, ty, a, "#ffd84a", 1.7); f.slash(tx, ty, a + Math.PI, "#e8f0ff", 1.3, true);
-      for (let i = 0; i < 10; i++) { const q = (i / 10) * 6.28; S3.fx.sparkle(tx + Math.cos(q) * r * 0.86, ty + Math.sin(q) * r * 0.86, 0.2, i % 2 ? "#5ad0b8" : "#c8fff0", 2); }
-      S3.fx.ring(tx, ty, r * 0.86, "#5ad0b8", 320, false, 60);
+      if (l) { f.beam(l.ax, l.ay - 3, l.bx, l.by - 3, p.l, 0.5); for (const [x, y] of along(l.ax, l.ay, l.bx, l.by, 16)) f.burst(x, y, 0.05, p.m, 3, 1.4); }
+      f.fall(tx, ty, p.al, 90);
+      f.slash(tx, ty, a, p.m, 1.7); f.slash(tx, ty, a + Math.PI, p.al, 1.3, true);
+      for (let i = 0; i < 10; i++) { const q = (i / 10) * 6.28; S3.fx.sparkle(tx + Math.cos(q) * r * 0.86, ty + Math.sin(q) * r * 0.86, 0.2, i % 2 ? p.a : p.al, 2); }
+      S3.fx.ring(tx, ty, r * 0.86, p.a, 320, false, 60);
       B.shake(11, a); play("verdict");
-      if (mine) text(G, "파진돌격!", tx, ty, 2.3, "#ffd84a", true);
+      if (mine) text(G, "파진돌격!", tx, ty, 2.3, p.m, true);
       break;
     }
     case 122: {
@@ -2632,16 +2693,16 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       const [sx0, sy0] = at(ax, ay, 11), [sx1, sy1] = at(tx, ty, 11), sl = Math.hypot(sx1 - sx0, sy1 - sy0) || 1, ux = (sx1 - sx0) / sl, uy = (sy1 - sy0) / sl, sa = Math.atan2(uy, ux);
       S3.fxCustom((g, k) => {
         const x = sx0 + (sx1 - sx0) * k, y = sy0 + (sy1 - sy0) * k, back = Math.min(sl * k, 46);
-        for (let q = 3; q < back; q++) { g.globalAlpha = 1 - q / 46; const w = q < 14 ? 3 : q < 28 ? 2 : 1; px(g, x - ux * q - (w >> 1), y - uy * q - (w >> 1), w, w, q < 10 ? "#ffffff" : q % 3 ? "#ffe9a0" : "#ffc23a"); }
+        for (let q = 3; q < back; q++) { g.globalAlpha = 1 - q / 46; const w = q < 14 ? 3 : q < 28 ? 2 : 1; px(g, x - ux * q - (w >> 1), y - uy * q - (w >> 1), w, w, q < 10 ? "#ffffff" : q % 3 ? p.l : p.m); }
         g.globalAlpha = 1;
         // the head: a crescent bowed forward, inked gold round a white edge
-        for (const [rr, c, w] of [[11, "#ffc23a", 3], [10, "#ffffff", 2]]) for (let i = -7; i <= 7; i++) { const q = sa + (i / 7) * 1.15; px(g, x + Math.cos(q) * rr - ux * 7 - 1, y + Math.sin(q) * rr * 0.85 - uy * 7 - 1, w, w, c); }
+        for (const [rr, c, w] of [[11, p.m, 3], [10, "#ffffff", 2]]) for (let i = -7; i <= 7; i++) { const q = sa + (i / 7) * 1.15; px(g, x + Math.cos(q) * rr - ux * 7 - 1, y + Math.sin(q) * rr * 0.85 - uy * 7 - 1, w, w, c); }
       }, ms);
-      f.beam(ax, ay, tx, ty, "#ffe9a0", 0.5);
-      along(ax, ay, tx, ty, 24).forEach(([x, y], i, all) => later((i / all.length) * ms, () => S3.fx.sparkle(x, y, 0.5, i % 2 ? "#ffffff" : "#ffd84a", 2)));
+      f.beam(ax, ay, tx, ty, p.l, 0.5);
+      along(ax, ay, tx, ty, 24).forEach(([x, y], i, all) => later((i / all.length) * ms, () => S3.fx.sparkle(x, y, 0.5, i % 2 ? "#ffffff" : p.m, 2)));
       qi.at = now(); qi.ms = ms;
       f.flash(src.x, src.y, 12); B.shake(7); play("pierce"); play("power_slash");
-      if (mine) text(G, "검기 화살!", src.x, src.y, 2.2, "#ffe9a0", true);
+      if (mine) text(G, "검기 화살!", src.x, src.y, 2.2, p.l, true);
       break;
     }
     case 123: {
@@ -2654,62 +2715,107 @@ function cast(kind, src, eid, tx, ty, extra, G) {
         if (k > 0.3) g.globalAlpha = Math.max(0, 1 - (k - 0.3) / 0.7);
         // an inked shaft, a violet core, a pale head with two barbs
         for (let q = 0; q < L; q++) px(g, hx - ux * q - 1, hy - uy * q - 1, 3, 3, INK);
-        for (let q = 0; q < L; q++) px(g, hx - ux * q, hy - uy * q, 1, 1, q < 7 ? "#f0d0ff" : q % 4 === 3 ? "#6a4a9a" : "#a070e0");
-        for (const o of [-1, 1]) for (let q = 3; q < 7; q++) px(g, hx - ux * q - uy * o * (q - 2) * 0.7, hy - uy * q + ux * o * (q - 2) * 0.7, 1, 1, "#f0d0ff");
+        for (let q = 0; q < L; q++) px(g, hx - ux * q, hy - uy * q, 1, 1, q < 7 ? p.w : q % 4 === 3 ? p.md : p.m);
+        for (const o of [-1, 1]) for (let q = 3; q < 7; q++) px(g, hx - ux * q - uy * o * (q - 2) * 0.7, hy - uy * q + ux * o * (q - 2) * 0.7, 1, 1, p.w);
       }, 420);
-      along(ax, ay, tx, ty, 26).forEach(([x, y], i) => { f.burst(x, y, 0.5, i % 2 ? "#3a2a58" : "#6a4a9a", 4, 0.9); });
-      f.burst(tx, ty, 0.5, "#a070e0", 10, 1.8); S3.fx.spark(tx + Math.cos(a) * 10, ty + Math.sin(a) * 10, "#f0d0ff", 1.2);
+      along(ax, ay, tx, ty, 26).forEach(([x, y], i) => { f.burst(x, y, 0.5, i % 2 ? p.md : p.md, 4, 0.9); });
+      f.burst(tx, ty, 0.5, p.m, 10, 1.8); S3.fx.spark(tx + Math.cos(a) * 10, ty + Math.sin(a) * 10, p.w, 1.2);
       B.shake(7, a); play("shade"); play("spiral");
-      if (mine) text(G, "그림자 관통!", tx, ty, 2.2, "#d8b0ff", true);
+      if (mine) text(G, "그림자 관통!", tx, ty, 2.2, p.l, true);
       break;
     }
     case 124: {
       // 원소 비수: the three blades are the "ln 7"s that follow (the ln case colours them); here, the throw
       fan.n = 3; fan.at = now();
       [1, 2, 3].forEach((el, j) => { const a = ang + (j - 1) * 0.32; S3.fx.spark(src.x + Math.cos(a) * 12, src.y + Math.sin(a) * 12, ELEM_COL[el], 0.8); });
-      f.slash(src.x, src.y, ang, "#f0d0ff", 0.9);
+      f.slash(src.x, src.y, ang, p.w, 0.9);
       B.shake(5); play("element_dagger");
-      if (mine) text(G, "원소 비수!", src.x, src.y, 2.2, "#f0d0ff", true);
+      if (mine) text(G, "원소 비수!", src.x, src.y, 2.2, p.w, true);
       break;
     }
     case 125: {
       // 빙결창: a line of frost down the thrust, and ice standing up out of the ground where the point stopped
-      f.beam(src.x, src.y, tx, ty, "#ffffff", 0.55); f.beam(src.x, src.y + 2, tx, ty + 2, "#9fe8ff", 0.5);
-      along(src.x, src.y, tx, ty, 12).forEach(([x, y], i) => f.sparkle(x, y, 0.5, i % 2 ? "#e8f8ff" : "#9fe8ff", 2));
-      f.ring(tx, ty, 44, "#9fe8ff", 380, true); f.burst(tx, ty, 0.3, "#e8f8ff", 16, 2.6);
+      f.beam(src.x, src.y, tx, ty, "#ffffff", 0.55); f.beam(src.x, src.y + 2, tx, ty + 2, p.l, 0.5);
+      along(src.x, src.y, tx, ty, 12).forEach(([x, y], i) => f.sparkle(x, y, 0.5, i % 2 ? p.w : p.l, 2));
+      f.ring(tx, ty, 44, p.l, 380, true); f.burst(tx, ty, 0.3, p.w, 16, 2.6);
       iceSpire(tx, ty);
       B.shake(8); play("frost_lance");
-      if (mine) text(G, "빙결창!", src.x, src.y, 2.2, "#bfe8ff", true);
+      if (mine) text(G, "빙결창!", src.x, src.y, 2.2, p.l, true);
       break;
     }
-    case 126: f.sparkle(src.x, src.y, 1, "#c8a0ff", 14); f.ring(tx, ty, extra || 64, "#c8a0ff", 420, true); f.burst(tx, ty, 0.2, "#8a5ad8", 16, 2); B.shake(4); play("rune_circle"); if (mine) text(G, "메아리 법진", src.x, src.y, 2.2, "#e0c8ff", true); break;
+    case 126: f.sparkle(src.x, src.y, 1, p.l, 14); f.ring(tx, ty, extra || 64, p.l, 420, true); f.burst(tx, ty, 0.2, p.m, 16, 2); B.shake(4); play("rune_circle"); if (mine) text(G, "메아리 법진", src.x, src.y, 2.2, p.l, true); break;
     case 127: {
       // 삼원소 화살: the three arrows come as "ar" kinds 4–6; here the string's glow in all three
       SkillFx_bow(G, src, false);
       [1, 2, 3].forEach((el, j) => S3.fx.sparkle(src.x + Math.cos(ang + (j - 1) * 0.5) * 8, src.y + Math.sin(ang + (j - 1) * 0.5) * 8, 0.8, ELEM_COL[el], 5));
       f.flash(src.x, src.y, 12); B.shake(5); play("pierce"); play("ember");
-      if (mine) text(G, "삼원소 화살!", src.x, src.y, 2.2, "#fff4dc", true);
+      if (mine) text(G, "삼원소 화살!", src.x, src.y, 2.2, p.w, true);
       break;
     }
     case 128: {
       // 룬 먹화살: five arrows as "ar" kind 7; here ink thrown off the string
       SkillFx_bow(G, src, false);
-      f.burst(src.x, src.y, 0.6, "#2a2040", 14, 1.8); S3.fx.sparkle(src.x, src.y, 0.9, "#b46aff", 8);
-      S3.fx.ring(src.x, src.y, 16, "#b46aff", 280);
+      f.burst(src.x, src.y, 0.6, p.d, 14, 1.8); S3.fx.sparkle(src.x, src.y, 0.9, p.m, 8);
+      S3.fx.ring(src.x, src.y, 16, p.m, 280);
       B.shake(5); play("inkshot");
-      if (mine) text(G, "룬 먹화살!", src.x, src.y, 2.2, "#d8a8ff", true);
+      if (mine) text(G, "룬 먹화살!", src.x, src.y, 2.2, p.l, true);
       break;
     }
-    case 102: f.ring(src.x, src.y, extra || 90, "#c8324a", 500, true); f.sparkle(src.x, src.y, 1, "#ff6a8a", 20); B.shake(5); play("sanctuary"); if (mine) text(G, "불멸의 성역", src.x, src.y, 2.2, "#ff8a9a", true); break;
+    case 102: f.ring(src.x, src.y, extra || 90, p.m, 500, true); f.sparkle(src.x, src.y, 1, p.m, 20); B.shake(5); play("sanctuary"); if (mine) text(G, "불멸의 성역", src.x, src.y, 2.2, p.l, true); break;
   }
+  jobBeat(kind, src, tx, ty, p, near);
+}
+/** The job's own note under every skill (skills-v2.md §6): accent motes at the target, a signature's palette ring. */
+function jobBeat(kind, src, tx, ty, p, near) {
+  const id = fxSkill(kind), sig = /^[jh]$/.test(skillDef(id)?.kind || "");
+  S3.fx.sparkle(tx, ty, 0.5, p.a, sig ? 8 : 4);
+  if (sig) { S3.fx.ring(src.x, src.y, 20, p.l, 240); S3.fx.ring(src.x, src.y, 30, p.m, 320, true); }
+  if (near && id) Sound.play("job_note", { job: skillOwner(id), sig });
+}
+
+// ───────────────────────────── passive procs ("ps", eid, code, x, y: skills-v2.md §4) ─────────────────────────────
+
+/** code → [passive, the word popped over the one who has it]. */
+const PS = {
+  140: ["sword_fortify30", "벼랑 끝 투지!"], 141: ["sword_weight40", ""], 142: ["sword_edge50", ""], 143: ["dagger_snap30", "회수"],
+  144: ["dagger_edge40", "빈틈!"], 145: ["dagger_fang50", "피의 갈증"], 146: ["spear_advance30", ""], 147: ["spear_edge50", "일점!"],
+  148: ["staff_chant30", "증폭!"], 149: ["staff_spark40", "집중!"], 150: ["staff_flood50", ""], 151: ["book_clause30", "낙인 전염"],
+  152: ["book_return50", ""], 153: ["bow_string30", ""], 154: ["bow_quill50", "약점 포착!"],
+};
+const PS_SOUND = { 140: "inertia_full", 141: "quake", 143: "reso_ready", 144: "tip", 145: "bleed", 147: "tip", 148: "reso_ready", 149: "reso_ready", 151: "brand", 152: "brand", 154: "tip" };
+function procFx(G, e) {
+  const [, eid, code, x, y] = e, d = PS[code];
+  if (!d) return;
+  const p = skillPal(d[0], G.who?.get(eid)?.cls), f = S3.fx, mine = eid === G.you;
+  const who = mine ? G.me : G.players.get(eid);
+  switch (code) {
+    case 140: if (who) { f.ring(who.x, who.y, 22, p.m, 360, true); f.burst(who.x, who.y, 0.4, p.l, 12, 1.8); } break;
+    case 141: S3.big().fx.ring(x, y, 36, p.m, 300, true); f.crack(x, y, 22, p.l, 420); f.burst(x, y, 0.1, p.md, 10, 1.6); if (mine) S3.shake(2.5); break;
+    case 142: f.spark(x, y, p.a, 0.8); break;
+    case 143: if (who) { f.ring(who.x, who.y, 12, p.l, 220); f.sparkle(who.x, who.y, 0.6, p.a, 6); } break;
+    case 144: case 147: f.spark(x, y, p.a, 1.3); f.ring(x, y, 10, p.l, 200); break;
+    case 145: if (who) { f.sparkle(who.x, who.y, 0.9, p.a, 12); f.ring(who.x, who.y, 18, p.l, 300); } break;
+    case 146: if (who) f.sparkle(who.x, who.y, 0.6, p.a, 3); break;
+    case 148: f.ring(x, y, 24, p.a, 300, true); f.sparkle(x, y, 0.6, p.l, 8); break;
+    case 149: if (who) { f.ring(who.x, who.y, 16, p.l, 240); f.sparkle(who.x, who.y, 1, p.a, 8); } break;
+    case 150: if (who) f.sparkle(who.x, who.y, 0.8, p.a, 4); break;
+    case 151: f.ring(x, y, 16, p.m, 280); f.burst(x, y, 0.5, p.a, 8, 1.6); break;
+    case 152: if (who) f.proj(x, y, 0.6, who.x, who.y, 0.8, p.a, 0.04, 30); break;
+    case 153: f.spark(x, y, p.l, 0.9); break;
+    case 154: f.ring(x, y, 14, p.a, 280, true); f.spark(x, y, p.a, 1.2); break;
+  }
+  const word = d[1], at0 = code === 144 || code === 147 || code === 154 || code === 151 ? [x, y] : who ? [who.x, who.y] : [x, y];
+  if (mine && word) text(G, word, at0[0], at0[1], 1.9, code === 154 || code === 144 ? p.a : p.l);
+  if (mine && PS_SOUND[code]) Sound.play(PS_SOUND[code]);
 }
 /** 빙결창's ice: three crystals shooting up out of the ground at (wx, wy), standing a moment, blinking out as they break. */
 function iceSpire(wx, wy) {
+  const p = PAL;
   let broke = false;
   S3.fxCustom((g, k) => {
     const [x0, y0] = at(wx, wy), x = Math.round(x0), y = Math.round(y0), up = Math.min(1, k / 0.1);
     if (k > 0.8) {
-      if (!broke) { broke = true; S3.fx.burst(wx, wy, 0.8, "#e8f8ff", 14, 2.2); S3.fx.burst(wx, wy, 0.4, "#9fe8ff", 10, 1.6); }
+      if (!broke) { broke = true; S3.fx.burst(wx, wy, 0.8, p.w, 14, 2.2); S3.fx.burst(wx, wy, 0.4, p.l, 10, 1.6); }
       if (Math.floor(k * 50) % 2) return;
     }
     // [dx, half width, height]: the small ones first, the tall one in front of them
@@ -2721,10 +2827,10 @@ function iceSpire(wx, wy) {
       px(g, x + dx - 1, y - H - 1, 3, 1, INK);
       for (let j = 0; j < H; j++) {
         const a = half(j);
-        px(g, x + dx - a, y - j - 1, a * 2 + 1, 1, "#9fe8ff");
-        px(g, x + dx - a, y - j - 1, a + 1, 1, "#e8f8ff");
+        px(g, x + dx - a, y - j - 1, a * 2 + 1, 1, p.l);
+        px(g, x + dx - a, y - j - 1, a + 1, 1, p.w);
         if (a > 1) px(g, x + dx - a + 1, y - j - 1, 1, 1, "#ffffff");
-        if (a > 0) px(g, x + dx + a, y - j - 1, 1, 1, "#5aa8e0");
+        if (a > 0) px(g, x + dx + a, y - j - 1, 1, 1, p.m);
       }
     }
   }, 900);

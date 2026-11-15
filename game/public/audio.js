@@ -679,7 +679,7 @@ const IMPACT0 = [300, 112, 2300, 1600];
 const IMPACT = { sword: [330, 118, 2500, 1900], dagger: [420, 130, 3300, 2600], spear: [360, 112, 2100, 1700], hammer: [220, 82, 0, 900], staff: [260, 96, 0, 1200], book: [280, 100, 0, 1300] };
 
 /** Minimum seconds between two plays of the same effect. */
-const THROTTLE = { gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.035, magic_hit: 0.04, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5,
+const THROTTLE = { job_note: 0.06, gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.035, magic_hit: 0.04, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5,
   hammer_land: 0.065, graze: 0.045, merc_dash: 0.1, oath_cast: 0.15, oath_heal: 0.28,
   rally_banner: 0.18, rally_mend: 0.26, revive_binding: 0.22, revive_mend: 0.4,
   cross_cut: 0.1, element_dagger: 0.12, frost_lance: 0.12, rune_circle: 0.18, inkshot: 0.12,
@@ -698,7 +698,23 @@ const BOOST = {
 const IMPORTANT = new Set(["verdict", "steam", "overload", "supercon", "dragon_final", "meteor_cast", "crimson", "dive", "thunder", "sanctuary", "pact", "hundred", "oath_cast", "level", "achieve", "death", "rift_start", "rift_boss", "rc_ping", "dim_boss", "dim_clear", "announce", "enh_ok", "enh_fail", "warp", "loot"]);
 
 /** The catalogue. `this` is Sound. */
+/** Each job's note under its skills (skills-v2.md §6): [wave, from Hz, to Hz, noise Hz, noise filter] — steel rings, shadows hiss,
+ * thunder cracks, embers rise, the abyss growls, the forest whistles; hybrids lean on their own touch. */
+const JOB_NOTE = {
+  adventurer: ["triangle", 520, 520, 0, ""], swordsman: ["triangle", 880, 830, 2600, "bandpass"], thief: ["sine", 1500, 2100, 6000, "highpass"],
+  lancer: ["square", 220, 110, 900, "lowpass"], wizard: ["sine", 440, 1320, 3400, "bandpass"], warlock: ["sawtooth", 98, 82, 500, "lowpass"],
+  archer: ["sine", 1800, 1250, 5000, "highpass"], spellblade: ["triangle", 660, 1320, 1800, "bandpass"], tracker: ["sine", 1250, 900, 4200, "highpass"],
+  dragoon: ["sawtooth", 147, 98, 700, "lowpass"], hexblade: ["sawtooth", 196, 131, 1200, "bandpass"], darkknight: ["square", 110, 98, 600, "lowpass"],
+  bladedancer: ["triangle", 1175, 1568, 5200, "highpass"], trickster: ["sine", 784, 1175, 3000, "bandpass"], spellspear: ["sine", 1320, 1980, 7000, "highpass"],
+  runesage: ["triangle", 523, 784, 2200, "bandpass"], runearcher: ["sine", 990, 660, 3600, "bandpass"],
+};
 const SFX = {
+  job_note({ job, sig } = {}) {
+    const [w, f0, f1, fc, ft] = JOB_NOTE[job] || JOB_NOTE.adventurer, v = sig ? 0.07 : 0.035, p = this.vary();
+    this.tone(w, f0 * p, f1 * p, sig ? 0.32 : 0.16, v, 0.03);
+    if (sig) this.tone(w, f0 * 1.5 * p, f1 * 1.5 * p, 0.28, v * 0.5, 0.09);
+    if (fc) this.noise(sig ? 0.16 : 0.08, v * 0.8, fc * p, ft, 0.02);
+  },
   // ── weapons ──
   swing() { this.noise(0.1, 0.22, 1800, "bandpass", 0, 600); },
   // the dash (Space): a rush of air rising, a scuff of the feet; a blow slipped: a quick bright flick
