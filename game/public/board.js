@@ -18,12 +18,14 @@ import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
 import { G, $, el, dist, T, now, clamp } from "./state.js";
 import { act, entityPos } from "./net.js";
-import { openWin, isOpen } from "./windows.js";
+import { openWin, isOpen, toggleWin } from "./windows.js";
 import { countItem } from "./actions.js";
 import { iconImg } from "./uiicons.js";
 import * as Info from "./infocard.js";
 import { floatText } from "./events.js";
 import * as Track from "./track.js";
+import * as Keymap from "./keymap.js";
+import * as Mini from "./minigames.js";
 
 /** The map each 알바 NPC stands on (static NPCs of the town, its interiors and 버드나무 마을). */
 const HOME = {
@@ -46,7 +48,7 @@ const WHEN = { night: "밤 한정", rain: "비 오는 날" };
 const GLYPH = ["fish", "fire", "life", "anvil", "drop", "bag"];
 const INK = "#2b2233";
 
-const st = { until: 0, full: 0, ref: null, carriers: new Set(), hooked: false, sent: 0 };
+const st = { until: 0, full: 0, urgUntil: 0, ref: null, carriers: new Set(), hooked: false, sent: 0 };
 window.__board = st;
 
 const D = () => G.defs && G.defs.life;
@@ -216,6 +218,114 @@ export function render(s) {
   }
   box.append(el("p", "hint", `하루에 ${per}개까지 · 매일 아침 6시에 새 의뢰 · 끝낸 알바마다 그 주민의 신뢰가 쌓입니다 (${D().rep.name[0]}: 가게 5% 할인, 보수 +10%).`));
 }
+// ───────────────────────────── the 알바 window (Shift+J) ─────────────────────────────
+
+/** 1:05 or, past an hour, 9:01:05. */
+const mmss = (ms) => { const x = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(x / 3600), m = Math.floor((x % 3600) / 60), sec = String(x % 60).padStart(2, "0"); return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`; };
+/** The clock of the job in hand, as the #dl bar counts it: { name, left ms } or null. */
+function clockOf(t = now()) {
+  const a = st.until > t && active();
+  if (!a) return null;
+  const name = delivering(a) ? `배달 — ${npcLabel(a.t.to)}에게` : onClock(a) ? chOf(a).name : a.urg > 0 ? `긴급 — ${npcLabel(a.t.npc)}` : "";
+  return name ? { name, left: st.until - t } : null;
+}
+/** Each frame: the countdown lines of the 알바 window (#alba-clock, #alba-rush) and the tracker (#qt-jbclock); red under a minute. */
+function clockLines(t) {
+  const c = clockOf(t);
+  for (const id of ["#qt-jbclock", "#alba-clock"]) {
+    const n = $(id);
+    if (!n) continue;
+    const v = c ? `${c.name} · 남은 시간 ${mmss(c.left)}` : "";
+    if (n.textContent !== v) n.textContent = v;
+    if (n.hidden === !!c) n.hidden = !c;
+    n.classList.toggle("late", !!c && c.left < 60000);
+  }
+  const r = $("#alba-rush");
+  if (r) {
+    const left = st.urgUntil - t, v = left > 0 ? `긴급 보너스 ×${D().jbRush.bonus} · ${mmss(left)} 남음` : "";
+    if (r.textContent !== v) { r.textContent = v; r.hidden = !v; }
+    r.classList.toggle("late", left > 0 && left < 60000);
+  }
+  const d = $("#alba-reset");
+  if (d) { const v = `초기화까지 ${mmss(nextReset() - Date.now())}`; if (d.textContent !== v) d.textContent = v; }
+}
+/** The next 6 AM (KST) daily reset in wall-clock ms, as 60-content.js nextReset (the client may read the clock). */
+function nextReset(t = Date.now()) {
+  const DAY = 86400000, K = 9 * 3600000, R = 6 * 3600000;
+  return (Math.floor((t + K - R) / DAY) + 1) * DAY - K + R;
+}
+export const albaKey = () => [key(), G.self.coop];
+/** The 알바 window: the job in hand with its clock, today's count, the co-op shifts, trust with the 알바 NPCs. */
+export function renderAlba(s) {
+  const box = $("#alba-body");
+  box.textContent = "";
+  if (!s.jb || !D()) { box.append(el("p", "hint", "불러오는 중…")); return; }
+  const [, offers, done] = s.jb, per = D().jbPay.perDay, a = active(s);
+  const top = el("div", "daily-top");
+  const rs = el("b", ""); rs.id = "alba-reset";
+  top.append(iconImg("note", "#e2c486"), el("span", "", `오늘의 알바 ${done.length}/${per}`), rs);
+  box.append(top);
+  box.append(el("div", "section", "수행 중인 알바"));
+  if (a) {
+    const card = jobCard(s, a, true), o = offers.find((r) => r[0] === a.id), g = o ? o[6] || 0 : 0;
+    const info = el("small", "where", `의뢰인 ${a.t.npcName || npcLabel(a.t.npc)} · ${(KIND[a.t.kind] || [a.t.kind])[0]} · ${(D().jbGrade || { name: ["쉬움"] }).name[g]}`);
+    card.querySelector(".say").after(info);
+    const ck = el("div", "alba-clock"); ck.id = "alba-clock"; ck.hidden = true;
+    const ru = el("div", "alba-clock"); ru.id = "alba-rush"; ru.hidden = true;
+    info.after(ck, ru);
+    if (a.t.kind === "deliver" && a.prog !== 1) ru.after(el("small", "hint", "꾸러미를 받는 순간부터 제한 시간이 흐릅니다."));
+    box.append(card);
+  } else {
+    box.append(el("p", "hint", done.length >= per ? `오늘의 알바 ${per}개를 모두 끝냈습니다. 아침 6시에 새 의뢰가 붙습니다.` : "맡은 알바가 없습니다. 포포나 마을 알바 게시판에서 맡을 수 있습니다."));
+  }
+  const btns = el("div", "btns"), b = el("button", "btn", "알바 게시판 보기");
+  b.addEventListener("click", () => { open(); Sound.play("open"); });
+  btns.append(b);
+  const go = !a && done.length < per && !nearPopo() && Track.button("popo", "알바 중개인 포포");
+  if (go) btns.append(go);
+  box.append(btns);
+  const fin = done.map(J).filter(Boolean);
+  if (fin.length) {
+    box.append(el("div", "section", `오늘 끝낸 알바 ${fin.length}`));
+    for (const t of fin) box.append(el("p", "ds", `✓ ${t.npcName} — ${t.text.replace(/[.!].*$/, "")}`));
+  }
+  const coop = Object.entries((G.defs.coop && G.defs.coop.jobs) || {});
+  if (coop.length) {
+    const paid = s.coop || [];
+    box.append(el("div", "section", `협동 알바 · 오늘 보수 ${coop.filter(([k]) => paid.includes(k)).length}/${coop.length}`));
+    for (const [k, j] of coop) {
+      const row = el("div", "trk-row"), got = paid.includes(k);
+      row.append(el("small", got ? "ok" : "", `${got ? "✓ " : ""}${j[0]} · ${placeOf(j[4]) || mapName(j[5])} · ${got ? "보수는 아침 6시 뒤에 다시" : "오늘 보수 받을 수 있음"}`));
+      const tb = Track.button(`coop:${k}`, j[0]);
+      if (tb) row.append(tb);
+      box.append(row);
+    }
+  }
+  box.append(el("div", "section", "알바 주민의 신뢰"));
+  trustList(box, s);
+  clockLines(now());
+}
+/** Each trusted NPC's badge, most trusted first (the 생활 window and the 알바 window). */
+function trustList(box, s) {
+  const rows = (Array.isArray(s.rep) ? s.rep : Object.entries(s.rep || {})).slice().sort((x, y) => y[1] - x[1]);
+  if (!rows.length) { box.append(el("p", "hint", "아직 신뢰를 쌓은 주민이 없습니다. 알바를 끝내면 그 주민과 가까워집니다.")); return; }
+  const list = el("div", "rep-list");
+  for (const [id] of rows) {
+    const row = el("div", "rep-row");
+    row.append(el("b", "", npcLabel(id)));
+    const badge = repBadge(s, id);
+    if (badge) row.append(badge);
+    list.append(row);
+  }
+  box.append(list);
+}
+// the hotkey (Shift+J by default): input.js's key switch does not know this window, so it listens itself (as coop.js does)
+addEventListener("keydown", (e) => {
+  if (!G.playing || e.repeat || Mini.active() || !Keymap.is(e, "alba")) return;
+  if (document.activeElement && ["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+  toggleWin("alba");
+});
+
 /** The job in hand: what, where, progress, and 그만두기. `full` adds the drop button. */
 function jobCard(s, a, full) {
   const card = el("div", "dcard jb-card on");
@@ -308,17 +418,7 @@ export function renderLife(box, s) {
   btns.append(b);
   box.append(btns);
   box.append(el("div", "section", "신뢰"));
-  const rows = (Array.isArray(s.rep) ? s.rep : Object.entries(s.rep || {})).slice().sort((x, y) => y[1] - x[1]);
-  if (!rows.length) { box.append(el("p", "hint", "아직 신뢰를 쌓은 주민이 없습니다. 알바를 끝내면 그 주민과 가까워집니다.")); return; }
-  const list = el("div", "rep-list");
-  for (const [id] of rows) {
-    const row = el("div", "rep-row");
-    row.append(el("b", "", npcLabel(id)));
-    const badge = repBadge(s, id);
-    if (badge) row.append(badge);
-    list.append(row);
-  }
-  box.append(list);
+  trustList(box, s);
 }
 
 // ───────────────────────────── the quest tracker ─────────────────────────────
@@ -329,11 +429,13 @@ export function trackRows(s, qt, goal) {
   const a = active(s);
   if (!a) return false;
   const t = el("div", "qt"); t.append(Info.questMark("job"), a.t.text.replace(/[.!].*$/, ""));
-  qt.append(t);
+  const ck = el("div", "qp jb-clock"); ck.id = "qt-jbclock"; ck.hidden = true;   // the clock right under the title, filled each frame by clockLines
+  qt.append(t, ck);
   const nx = nextStep(a);
   const pr = progOf(s, a);
   if (pr) qt.append(goal(pr[0], pr[1], pr[2], `${npcLabel(nx.npc)}에게 ${a.t.item ? "전하기" : "보고하기"}`));
   qt.append(el("div", "qp", `→ ${npcLabel(nx.npc)}${a.t.kind === "deliver" ? `에게 ${nx.verb}` : ""} · ${placeOf(nx.npc)}`));
+  clockLines(now());
   return true;
 }
 /**
@@ -370,7 +472,9 @@ export function tick(t) {
     const a = active(s), secs = delivering(a) || onClock(a) ? a.secs : a && a.urg > 0 ? a.urg : 0;
     if (secs > 0) { if (st.id !== a.id) st.full = 0; st.id = a.id; st.until = t + secs * 1000; st.full = Math.max(st.full, secs * 1000); }
     else { st.until = 0; st.full = 0; }
+    st.urgUntil = a && a.urg > 0 ? t + a.urg * 1000 : 0;
   }
+  clockLines(t);
   // the same bar counts down a parcel or a 긴급 job
   const box = $("#dl"), a = st.until > t && active(s);
   if (!a || !(delivering(a) || onClock(a) || a.urg > 0)) { if (box && !box.hidden) box.hidden = true; return; }
