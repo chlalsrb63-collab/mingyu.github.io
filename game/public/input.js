@@ -13,10 +13,11 @@ import * as Gather from "./gather.js";
 import * as Charms from "./charms.js";
 import { G, $, dist, T, clamp, world, now, resize } from "./state.js";
 import { act } from "./net.js";
-import { usePotion, interact, stoneNear, aimAtPoint, attack } from "./actions.js";
+import { usePotion, interact, stoneNear, aimAtPoint, attack, dash } from "./actions.js";
 import { autoSt } from "./update.js";
 import { toggleWin, closeTop, openWin, toast } from "./windows.js";
 import { openEmotes } from "./win_social.js";
+import * as Keymap from "./keymap.js";
 
 // ───────────────────────────── input ─────────────────────────────
 
@@ -34,10 +35,10 @@ export const typing = () => document.activeElement && ["INPUT", "TEXTAREA"].incl
 export function moveVector() {
   let x = 0, y = 0;
   if (Mini.active()) { keys.clear(); G.path = null; return [0, 0]; }
-  if (keys.has("ArrowLeft") || keys.has("a") || keys.has("ㅁ")) x -= 1;
-  if (keys.has("ArrowRight") || keys.has("d") || keys.has("ㅇ")) x += 1;
-  if (keys.has("ArrowUp") || keys.has("w") || keys.has("ㅈ")) y -= 1;
-  if (keys.has("ArrowDown") || keys.has("s") || keys.has("ㄴ")) y += 1;
+  if (Keymap.held(keys, "left")) x -= 1;
+  if (Keymap.held(keys, "right")) x += 1;
+  if (Keymap.held(keys, "up")) y -= 1;
+  if (Keymap.held(keys, "down")) y += 1;
   if (joy.on) { x = joy.x; y = joy.y; }
   if (x || y) { G.path = null; [x, y] = [x + y, y - x]; }
   else if (G.path) {
@@ -148,54 +149,62 @@ export function toggleAuto() {
 
 /** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */
 export function setupInput() {
+  Keymap.setupKeymap({ toast, Sound });
 
   addEventListener("keydown", (e) => {
     Sound.unlock();
     if (!G.playing) return;
     if (typing()) { if (e.key === "Escape") document.activeElement.blur(); return; }
     if (Mini.active()) return;               // a mini-game has the keyboard
-    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();
+    const act1 = Keymap.actionOf(e);
+    if (e.code.startsWith("Arrow") || act1 === "dash" || act1 === "swap") e.preventDefault();
     if (e.repeat) return;
+    // Housing and Gather still speak in the old key letters: translate the bound action back for them
+    const k = act1 === "interact" ? "f" : act1 === "dash" ? " " : act1 === "auto" ? "r" : e.key;
     // decorating a house: R turns the piece in hand, Esc lets go of it, Delete picks a piece up (housing.js)
     if (Housing.onKey(k)) { e.preventDefault(); return; }
     // gathering: F and Space are the "반짝!" tap, not a talk or a blow (gather.js)
     if (Gather.onKey(k)) { e.preventDefault(); return; }
     // the 참 보드 with a charm in hand: R turns it, Esc lets go of it (charms.js)
     if (Charms.onKey(k)) { e.preventDefault(); return; }
-    keys.add(k);
-    switch (k) {
-      case "1": case "2": case "3": case "4": case "5": case "6": case "7": case "8": case "9": QS.press(Number(k) - 1); break;
-      case "q": case "ㅂ": usePotion("hp"); break;
-      case "e": case "ㄷ": usePotion("mp"); break;
-      case "f": case "ㄹ": interact(); break;
-      case "x": case "ㅌ": act({ t: "sit" }); break;
-      case "b": case "ㅠ": if (G.me.sit) act({ t: "jam", k: 0 }); break;
-      case "z": case "ㅋ": if (G.me.sit) act({ t: "jam", k: 1 }); break;
-      case "g": case "ㅎ": toggleWin("guild"); break;
-      case "t": case "ㅅ": openEmotes("emote"); break;
-      case "i": case "ㅑ": toggleWin("inv"); break;
+    keys.add(e.code);
+    if (e.key === "Escape") { closeTop(); return; }
+    if (/^slot[1-9]$/.test(act1)) { QS.press(Number(act1.slice(4)) - 1); return; }
+    switch (act1) {
+      case "hp": usePotion("hp"); break;
+      case "mp": usePotion("mp"); break;
+      case "interact": interact(); break;
+      // the basic attack is a held key (update.js); the dash and sit/stand are keys of their own
+      case "dash": dash(); break;
+      case "sit": act({ t: "sit" }); break;
+      case "jamB": if (G.me.sit) act({ t: "jam", k: 0 }); break;   // 연주
+      case "jamZ": if (G.me.sit) act({ t: "jam", k: 1 }); break;   // 건배
+      case "guild": toggleWin("guild"); break;
+      case "emote": openEmotes("emote"); break;
+      case "inv": toggleWin("inv"); break;
       // a hybrid job swaps its two weapons
-      case "Tab": { e.preventDefault(); const j = G.self && G.defs.jobs[G.self.job]; if (j && j.kind === "hybrid") { act({ t: "wsw" }); Sound.play("ui"); } break; }
-      case "c": case "ㅊ": toggleWin(e.shiftKey ? "charm" : "char"); break;   // Shift+C: 참 보드
-      // Shift+L: the 생활 window (life skills, life.js); L alone: quests
-      case "l": case "ㅣ": toggleWin(e.shiftKey ? "life" : "quest"); break;
-      case "r": case "ㄱ": toggleAuto(); break;
-      case "p": case "ㅔ": toggleWin("party"); break;
-      case "k": case "ㅏ": toggleWin("skill"); break;
-      case "n": case "ㅜ": toggleWin("rank"); break;
-      case "u": case "ㅕ": toggleWin(e.shiftKey ? "week" : "daily"); break;   // Shift+U: 주간 수첩
-      case "y": case "ㅛ": toggleWin("achieve"); break;
-      case "j": case "ㅓ": toggleWin("collect"); break;
-      case "h": case "ㅗ": toggleWin("help"); break;
-      case "o": case "ㅐ": toggleWin("settings"); break;
-      case "m": case "ㅡ": if (e.shiftKey) toggleSound(); else toggleWin("map"); break;
-      case "v": case "ㅍ": setCrt(!document.body.classList.contains("crt")); break;
-      case "Enter": e.preventDefault(); $("#chat-in").focus(); break;
-      case "Escape": closeTop(); break;
+      case "swap": { const j = G.self && G.defs.jobs[G.self.job]; if (j && j.kind === "hybrid") { act({ t: "wsw" }); Sound.play("ui"); } break; }
+      case "char": toggleWin("char"); break;
+      case "charm": toggleWin("charm"); break;   // the 참 보드
+      case "quest": toggleWin("quest"); break;
+      case "life": toggleWin("life"); break;   // the 생활 window (life skills, life.js)
+      case "auto": toggleAuto(); break;
+      case "party": toggleWin("party"); break;
+      case "skill": toggleWin("skill"); break;
+      case "rank": toggleWin("rank"); break;
+      case "daily": toggleWin("daily"); break;
+      case "week": toggleWin("week"); break;   // the 주간 수첩
+      case "achieve": toggleWin("achieve"); break;
+      case "collect": toggleWin("collect"); break;
+      case "help": toggleWin("help"); break;
+      case "settings": toggleWin("settings"); break;
+      case "map": toggleWin("map"); break;
+      case "sound": toggleSound(); break;
+      case "crt": setCrt(!document.body.classList.contains("crt")); break;
+      case "chat": e.preventDefault(); $("#chat-in").focus(); break;
     }
   });
-  addEventListener("keyup", (e) => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
+  addEventListener("keyup", (e) => keys.delete(e.code));
   addEventListener("blur", () => { keys.clear(); held.atk = false; });
   world.addEventListener("pointerdown", (e) => {
     if (!G.playing || !G.map || G.me.dead) return;
@@ -226,6 +235,7 @@ export function setupInput() {
   addEventListener("touchstart", () => { document.body.classList.add("touch"); Sound.unlock(); resize(); }, { once: true, passive: true });
   addEventListener("pointerdown", () => Sound.unlock(), { once: true });
   press($("#b-atk"), () => { held.atk = true; }, () => { held.atk = false; });
+  press($("#b-dash"), () => dash());
   press($("#b-hp"), () => usePotion("hp"));
   press($("#b-mp"), () => usePotion("mp"));
   press($("#b-auto"), () => toggleAuto());

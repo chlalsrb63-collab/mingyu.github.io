@@ -53,11 +53,11 @@ if (mode === "art") {
   window.__done = true;
 }
 
-if (mode === "draw" || mode === "arrows" || mode === "fight") {
+if (mode === "draw" || mode === "arrows" || mode === "fight" || mode === "missile") {
   const S = await import("./scene2d.js");
   const maps = await (await fetch("./_maps.json")).json();
   const m = maps[q.get("map") || "meadow"] || maps.town;
-  globalThis.__skyHour = 12; globalThis.__skyWx = 0;
+  globalThis.__skyHour = +(q.get("hour") ?? 12); globalThis.__skyWx = 0;
   // stand by the waypoint stone (open, flat ground: nothing behind to hide the hero), or at ?x=&y= (tiles)
   const wp = (m.marks || []).find((k) => k.kind === "waypoint");
   const fx = +(q.get("x") || (wp ? wp.x + 2 : m.w >> 1)), fy = +(q.get("y") || (wp ? wp.y + 3 : m.h >> 1));
@@ -117,6 +117,17 @@ if (mode === "draw" || mode === "arrows" || mode === "fight") {
       o.drawImage(cv, 0, 0, W, H, 10, y0 + c * (H * 2 + 10), W * 2, H * 2);
       label(`${name} (+${after} ms)`, 16, y0 + c * (H * 2 + 10) + 18);
     });
+  }
+
+  if (mode === "missile") {
+    // kinds 8 (staff) and 9 (book) flying east, mid-flight then struck: ?hour=2 for night · ?z=3
+    const SF = await import("./skillfx.js"), z = +(q.get("z") || 3);
+    out.width = 400 * z; out.height = 260 * z; o.imageSmoothingEnabled = false;
+    settle(20);
+    [[8, -24, 0], [9, 24, 1]].forEach(([kind, dy, id]) => SF.missile(G, 100 + kind, me.x, me.y + dy, 0.87, 0.5, 200, kind, 0));
+    step(+(q.get("after") || 330));
+    if (q.get("hit")) { SF.missileEnd(S.fx, 108, me.x + 60, me.y - 12, 0, 0); SF.missileEnd(S.fx, 109, me.x + 60, me.y + 36, 0, 30); step(+q.get("hit")); }
+    o.drawImage(cv, 0, 0, 400, 260, 0, 0, 400 * z, 260 * z);
   }
 
   if (mode === "fight") {

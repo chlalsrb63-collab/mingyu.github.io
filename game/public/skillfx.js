@@ -558,6 +558,8 @@ export function skillEvent(e, ctx) {
     // and ended ["ae", id, x, y, how] (0 struck or ran out, 1 stuck in a wall, 2 ran out of range)
     case "ar": {
       const [, id, x0, y0, ux, uy, spd, kind, pid] = e, n = Math.hypot(ux, uy) || 1;
+      // a staff's missile or a book's orb (kinds 8, 9; the 10th field the monster it homes on): no bow drawn for it
+      if (MISSILE_LOOK[kind]) { missile(G, id, x0, y0, ux / n, uy / n, spd, kind, e[9]); return true; }
       let sh = null, best = 40;
       for (const s of bowShots) {
         if (t - s.t > 700 || (pid !== undefined && s.eid !== pid)) continue;
@@ -579,6 +581,7 @@ export function skillEvent(e, ctx) {
     }
     case "ae": {
       const [, id, x, y, how] = e, from = arrowFrom.get(id);
+      if (missiles.has(id)) { missileEnd(f, id, x, y, how, e[5] | 0); return true; }
       arrowFrom.delete(id);
       // struck nothing and simply ran its whole range: it drops out of sight, no spark
       const spent = how === 2 || (!how && from && Math.hypot(x - from[0], y - from[1]) >= from[2] - 6);
@@ -666,9 +669,38 @@ export function skillEvent(e, ctx) {
       }
       return true;
     }
+    case "ds": {
+      // the dash (59-dash.js, Space): ghosts of the body left down the run, wind streaks, dust kicked up at both
+      // ends; the hero itself is put at the far end by the snapshot's position fix (never predicted here)
+      const [, eid, x0, y0, x1, y1] = e, mine = eid === G.you;
+      if (!mine && dist2(G.me, x1, y1) > 360 * 360) return true;
+      const [sx0, sy0] = at(x0, y0), [sx1, sy1] = at(x1, y1), sl = Math.hypot(sx1 - sx0, sy1 - sy0) || 1, ux = (sx1 - sx0) / sl, uy = (sy1 - sy0) / sl;
+      S3.fxCustom((g, k) => {
+        for (let i = 1; i <= 3; i++) {
+          const q = i / 4, gx = sx0 + (sx1 - sx0) * q, gy = sy0 + (sy1 - sy0) * q;
+          g.globalAlpha = Math.max(0, (0.2 + q * 0.35) * (1 - k * (1.6 - q)));
+          px(g, gx - 4, gy - 13, 8, 12, INK); px(g, gx - 3, gy - 12, 6, 10, "#9ad0ff"); px(g, gx - 3, gy - 12, 6, 2, "#e8f6ff");
+        }
+        g.globalAlpha = Math.max(0, 1 - k * 1.5);
+        const L = Math.min(sl, 34) * (1 - k * 0.6);
+        for (const o of [-5, 0, 5]) for (let q = 0; q < L; q++) if (q % 7 < 4) px(g, sx1 - ux * (q + 7) - uy * o, sy1 - 6 - uy * (q + 7) + ux * o * 0.5, 1, 1, o ? "#9ad0ff" : "#ffffff");
+        g.globalAlpha = 1;
+      }, 340);
+      f.burst(x0, y0, 0, "#c8b898", 7, 0.8); f.burst(x1, y1, 0, "#c8b898", 4, 0.6);
+      Sound.play("dash");
+      return true;
+    }
+    case "dg": {
+      // a monster's blow slipped mid-dash
+      const src = entityPos(e[1]);
+      if (src) text(G, "회피!", src.x, src.y, 2, "#9ad0ff", e[1] === G.you);
+      if (e[1] === G.you) Sound.play("dodge");
+      return true;
+    }
   }
   return false;
 }
+const dist2 = (a, x, y) => (a.x - x) ** 2 + (a.y - y) ** 2;
 
 // ── the bow's shot: client.js attackFx calls bowFire for fx code 6 (the "a" event of a bow's basic
 // attack); the bow skills call it too. The arrow itself comes on its own ("ar", above): it is held on
@@ -725,6 +757,90 @@ function dressArrow(g, f, look) {
     for (let i = 0; i < 6; i++) dot(5 + i * 3, i % 2 ? 1 : -1, i < 3 ? 2 : 1, i % 2 ? T[0] : T[3]);
     dot(-3 - (n % 2), 0, 1, T[0]);
   }
+}
+/**
+ * The basic attacks' magic missiles (45-jobs.js magicShot): kind 8 the staff's violet bolt with a short
+ * sparkling tail, 9 the book's bigger lilac orb. `r` the glow's half-size in px, `hot` its core,
+ * `glow` the body, `rim` the dark edge that keeps it readable on bright ground, `tail` nearest first.
+ */
+const MISSILE_LOOK = {
+  8: { r: 4, hot: "#ffffff", glow: "#c8a8ff", rim: "#5a3aa8", tail: ["#e8dcff", "#b08aff", "#8a5ad8", "#5a3aa8"] },
+  9: { r: 6, hot: "#ffffff", glow: "#e0c8ff", rim: "#7a4ac8", tail: ["#e0c8ff", "#c8a0ff", "#a07ae0"] },
+};
+/** A pixel disc (rows of fillRect, no anti-aliasing) of radius r centred on (x, y). */
+function disc(g, x, y, r, c) {
+  g.fillStyle = c;
+  for (let dy = -r; dy <= r; dy++) { const hw = Math.round(Math.sqrt(r * r + r - dy * dy)); g.fillRect(Math.round(x) - hw, Math.round(y) + dy, hw * 2 + 1, 1); }
+}
+/** One missile frame: the tail's sparks and motes, then the head (stepped halo, dark rim, body, white-hot core). */
+function drawMissile(g, m, L) {
+  const T = L.tail, n = m.n, r = L.r, nine = m.kind === 9;
+  for (let i = 1; i < m.trail.length; i++) {
+    const [tx, ty] = m.trail[i], j = ((n + i * 3) % 3) - 1, c = T[Math.min(T.length - 1, i >> 1)];
+    px(g, tx + j * 2, ty - j, 2, 2, c);
+    if (i < (nine ? 7 : 6)) px(g, tx - 1, ty - 1, 3, 3, c);
+  }
+  // loose motes drifting off the path
+  for (let k = 0; k < 3; k++) { const i = 3 + k * 3; if (i >= m.trail.length) break; const [tx, ty] = m.trail[i], s = (n + k * 5) % 6 - 3; px(g, tx + s * 2, ty + (k % 2 ? 4 : -4) + s, 1, 1, "#ffffff"); }
+  const [x, y] = m.trail[0], pulse = n % 4 < 2 ? 0 : 1;
+  g.globalAlpha = 0.22; disc(g, x, y, r + 3, L.glow);
+  g.globalAlpha = 0.45; disc(g, x, y, r + 1 + pulse, L.glow);
+  g.globalAlpha = 1;
+  disc(g, x, y, r, L.rim); disc(g, x, y, r - 1, L.glow); disc(g, x, y, Math.max(1, r >> 1), L.tail[0]); disc(g, x, y, Math.max(1, (r >> 2) + pulse), L.hot);
+}
+/** Missiles in flight: id → { x, y, ux, uy, spd, kind, home, trail, end }. */
+const missiles = new Map();
+/**
+ * A magic missile cast at (x0, y0): flies at `spd`, steering at monster `home` (where it is drawn now)
+ * while there is one, until the server's "ae" says where it ended (or it gives up after a while).
+ * It is drawn again over the night grade (S3.glows) so the dark never swallows it.
+ */
+export function missile(G, id, x0, y0, ux, uy, spd, kind, home) {
+  const L = MISSILE_LOOK[kind], m = { x: x0, y: y0, ux, uy, spd: spd || 300, kind, home, trail: [], end: false, t: 0, n: 0 };
+  missiles.set(id, m);
+  if (missiles.size > 48) missiles.delete(missiles.keys().next().value);
+  const dur = 1600, lit = (g) => { if (m.trail.length) { g.globalCompositeOperation = "screen"; drawMissile(g, m, L); g.globalCompositeOperation = "source-over"; drawMissile(g, m, L); } };
+  S3.glows.add(lit);
+  S3.fx.spark(x0, y0, "#ffffff", kind === 9 ? 1 : 0.8); S3.fx.ring(x0, y0, kind === 9 ? 12 : 9, L.glow, 160);   // launch flash
+  S3.fxCustom((g, k) => {
+    if (m.end || k >= 0.99) { S3.glows.delete(lit); if (m.end) return; }
+    const t = k * dur, dt = Math.min(60, t - m.t) / 1000;
+    m.t = t; m.n++;
+    const o = m.home && G.mobs.get(m.home);
+    let step = m.spd * dt;
+    if (o) {
+      const dx = o.x - m.x, dy = o.y - 6 - m.y, d = Math.hypot(dx, dy) || 1;
+      m.ux = dx / d; m.uy = dy / d; step = Math.min(step, d);   // (it waits on its monster for the server's word)
+    }
+    m.x += m.ux * step; m.y += m.uy * step;
+    m.trail.unshift(at(m.x, m.y, 9));
+    if (m.trail.length > 11) m.trail.pop();
+    drawMissile(g, m, L);
+  }, dur);
+}
+/** The server ended missile `id` at (x, y): 0 struck (a burst; `ring` the book's splash or a finisher's), 1 a wall, 2 spent. */
+export function missileEnd(f, id, x, y, how, ring) {
+  const m = missiles.get(id), L = MISSILE_LOOK[m.kind];
+  missiles.delete(id);
+  m.end = true;
+  if (how === 2) { f.burst(x, y, 0.4, L.tail[1], 3, 0.6); return; }
+  f.burst(x, y, 0.4, L.glow, m.kind === 9 ? 14 : 9, 1.8);
+  f.burst(x, y, 0.4, "#ffffff", 5, 1.1);
+  f.spark(x, y, "#ffffff", m.kind === 9 ? 1.4 : 1.1);
+  f.ring(x, y, m.kind === 9 ? 16 : 11, L.tail[1], 240);
+  // the flash itself shines over the night grade for a moment: stepped discs shrinking away
+  const t0 = now(), [hx, hy] = at(x, y, 9), R = m.kind === 9 ? 12 : 9;
+  const flash = (g) => {
+    const k = (now() - t0) / 260;
+    if (k >= 1) { S3.glows.delete(flash); return; }
+    const r = Math.round(R * (1 - k * 0.5));
+    g.globalCompositeOperation = "screen"; g.globalAlpha = 0.5; disc(g, hx, hy, r + 3, L.glow);
+    g.globalAlpha = 0.9; disc(g, hx, hy, r, L.glow); g.globalAlpha = 1; disc(g, hx, hy, r >> 1, "#ffffff");
+    g.globalCompositeOperation = "source-over";
+  };
+  S3.glows.add(flash);
+  if (ring) { f.ring(x, y, ring, "#ffffff", 260, true); f.ring(x, y, ring * 0.7, "#c8a0ff", 300, true, 40); }
+  Sound.play("magic_hit", m.kind === 9 || ring > 0);
 }
 /** Bows drawn in the last moments, waiting for their arrows: { eid, x, y, t, at (release time), wt (tier) }. */
 const bowShots = [];

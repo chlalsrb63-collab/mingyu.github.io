@@ -387,7 +387,7 @@ const say = (k, a) => { now += 800; return act(k, a); };
   old.daily = { day: 5, tasks: [{ kind: "kill", k: X.HUNTED[0], n: 3, need: 30 }, { kind: "fish", k: null, n: 0, need: 4 }, { kind: "cook", k: null, n: 0, need: 2 }], claimed: [false, false, false], bonus: false };
   old.cnt.elite = 40;
   const ch = X.migrate(old);
-  assert.equal(ch.v, 15);
+  assert.equal(ch.v, 16);
   assert.deepEqual(ch.blk, []); assert.deepEqual(ch.pity, [0, 0, 0, 0, 0]);
   assert.equal(ch.wk.w, 0); assert.deepEqual(ch.wk.got, [0, 0, 0]); assert.deepEqual(ch.wk.n, { hunt: 0, fish: 0 });
   assert.equal(ch.daily.rest, 0, "an old day's record has no rest bonus");
@@ -397,7 +397,7 @@ const say = (k, a) => { now += 800; return act(k, a); };
   const o = S2.players["o@s1"].ch;
   assert.equal(o.wk.w, X.weekOf(S2.now)); assert.equal(o.wk.b.elite, 40);
   assert.deepEqual(X.weekVals(o), new Array(12).fill(0));
-  assert.equal(L.exportChar(S2, "o@s1").v, 15);
+  assert.equal(L.exportChar(S2, "o@s1").v, 16);
 
   const bad = JSON.parse(JSON.stringify(L.newChar("엉망", [])));
   bad.blk = ["나래", "나래", "NARAE", "narae", 7, null, "!!", "x".repeat(40), ...Array.from({ length: 80 }, (_, i) => `차단${i}`)];

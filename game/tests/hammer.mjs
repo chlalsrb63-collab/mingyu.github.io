@@ -146,7 +146,7 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
   const old = L.newChar("옛망치", []); old.v = 13; delete old.wm.hammer;
   L.addPlayer(S, "migration", old);
   assert.deepEqual(S.players.migration.ch.wm.hammer, { lv: 1, xp: 0 });
-  assert.equal(S.players.migration.ch.v, 15);
+  assert.equal(S.players.migration.ch.v, 16);
   assert.equal(D.wkOrder.at(-1), "hammer");
   assert.equal(Object.values(D.items).filter(it => it.wk === "hammer").length, 5);
   assert.equal(Object.values(D.skills).filter(sk => sk.wk === "hammer" && sk.kind === "p").length, 5);
@@ -282,6 +282,31 @@ for (const duo of [false, true]) {
   L.addPlayer(S, "oldjob", old);
   assert.deepEqual(S.players.oldjob.ch.jp, { lv: 5, xp: 0 });
   L.removePlayer(S, "oldjob");
+
+  const rift = L.newChar("균열기록", [], "hammer");
+  rift.v = 15;
+  rift.job = "destroyer";
+  delete rift.jp;
+  rift.dim.t = 8; rift.dim.best = 7;
+  L.addPlayer(S, "rift15", rift);
+  const merged = L.exportChar(S, "rift15");
+  assert.equal(merged.v, 16);
+  assert.deepEqual(merged.jp, { lv: 5, xp: 0 });
+  assert.equal(merged.dim.t, 8);
+  assert.equal(merged.dim.best, 7);
+  L.removePlayer(S, "rift15");
+
+  const profession = L.newChar("직업기록", [], "hammer");
+  profession.v = 15;
+  profession.job = "destroyer";
+  profession.jp = { lv: 35, xp: 11 };
+  delete profession.dim;
+  L.addPlayer(S, "job15", profession);
+  const upgraded = L.exportChar(S, "job15");
+  assert.equal(upgraded.v, 16);
+  assert.deepEqual(upgraded.jp, { lv: 35, xp: 11 });
+  assert.equal(upgraded.dim.t, 1);
+  L.removePlayer(S, "job15");
 }
 
 console.log("hammer: repeat, timing, shape, cap, wall, costs, cracks, cancellation, migration and Destroyer verified");

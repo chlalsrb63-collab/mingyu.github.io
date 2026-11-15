@@ -14,6 +14,9 @@ const PIECE = {
   "~": ["w", " "],
   // maps-v2 M3, the south-west coast: palm Ψ, reef rock Φ, shore boulder Ω, mud hut Δ (Greek: every ASCII mark is taken by the rooms' furniture); shallows (walkable), white sand, dune sand
   "Ψ": [undefined, "Ψ"], "Φ": [undefined, "Φ"], "Ω": [undefined, "Ω"], "Δ": [undefined, "Δ"], ",": ["~", " "], _: ["S", " "], ":": ["z", " "],
+  // maps-batch2 (the cloud temple, the red mesa): twisted pine Σ, a hall's footprint Π (a pagoda or a gold-roofed hall
+  // stands on four by two of them), rock pillar Θ, a crag, planks
+  "Σ": [undefined, "Σ"], "Π": [undefined, "Π"], "Θ": [undefined, "Θ"], C: [undefined, "C"], b: ["b", " "],
 };
 const PIECES = {
   // 바람초원 · 속삭임 숲
@@ -73,8 +76,45 @@ const PIECES = {
     "......===......",
   ],
 };
+// maps-batch2 (docs/design/maps-batch2.md, batch 1): the cloud temple's and the red mesa's pieces. A hall's footprint Π is
+// four by two with open ground below it (the client stands one big picture on it), so those pieces are never turned.
+/** A paved court w × h: flagstones inside a one-tile margin, then the marks [x, y, characters] over it. */
+function courtRows(w, h, marks, fill = "=") {
+  const g = [];
+  for (let y = 0; y < h; y++) { const row = []; for (let x = 0; x < w; x++) row.push(x === 0 || y === 0 || x === w - 1 || y === h - 1 ? "." : fill); g.push(row); }
+  for (const [x, y, chs] of marks) for (let i = 0; i < chs.length; i++) g[y][x + i] = chs[i];
+  return g.map((r) => r.join(""));
+}
+Object.assign(PIECES, {
+  // 운해 사원: a pagoda over its court, a court of stone lanterns, a lookout pavilion on a spur (a hidden pocket), the
+  // pilgrims' camp, the bell tower's terrace (the field boss's ground), the walled summit hall (the arena: one neck, three wide)
+  pagoda: ["Σ.=====.Σ", "..ΠΠΠΠ=..", "..ΠΠΠΠ=..", ".3=====3.", "..==*==..", "..=====..", "........."],
+  lanterncourt: ["3.....3", ".=====.", ".==*==.", ".=====.", "3.....3", "......."],
+  pavilion: [".Σ...Σ.", "..rrr..", "O.r*r.O", "..rrr..", "......."],
+  pilgrimcamp: [".E...3.", "..ppp..", ".pp#pp.", "Σ.ppp.l", "......."],
+  belltower: courtRows(13, 10, [[0, 0, "Σ"], [12, 0, "Σ"], [4, 0, "ΠΠΠΠ"], [4, 1, "ΠΠΠΠ"], [1, 3, "3"], [11, 3, "3"], [1, 7, "3"], [11, 7, "3"], [6, 3, "*"], [6, 6, "@"]]),
+  summithall: (() => {
+    const rows = courtRows(21, 17, [[9, 1, "ΠΠΠΠ"], [9, 2, "ΠΠΠΠ"], [3, 4, "3"], [17, 4, "3"], [3, 12, "3"], [17, 12, "3"], [10, 8, "@"]]).map((r) => r.split(""));
+    for (let y = 0; y < 17; y++) for (let x = 0; x < 21; x++) {
+      const rim = x === 0 || x === 20 || y === 0 || y >= 15 || ((x < 2 || x > 18) && (y < 2 || y > 12));
+      if (rim) rows[y][x] = y >= 15 && Math.abs(x - 10) <= 1 ? "=" : "C";
+    }
+    return rows.map((r) => r.join(""));
+  })(),
+  // 붉은바위 황금궁: a gold-roofed hall over its court, the lower town's houses on their stair (the camp), the houses by
+  // the west gate, a pool under a fall walled by rock (a hidden pocket), a shrine on a ledge, a colonnade, a bare mesa
+  // top, the throne hall's forecourt (the field boss's ground)
+  goldhall: courtRows(11, 8, [[0, 0, "q"], [10, 0, "q"], [3, 0, "ΠΠΠΠ"], [3, 1, "ΠΠΠΠ"], [0, 3, "q"], [10, 3, "q"], [5, 4, "*"], [0, 6, "q"], [10, 6, "q"]]),
+  templetown: [".Δ...Δ.", "..ppp..", ".pp#pp.", "Δ.ppp.l", "......."],
+  lowertown: courtRows(11, 7, [[1, 0, "Δ"], [9, 0, "Δ"], [4, 0, "ΠΠΠΠ"], [4, 1, "ΠΠΠΠ"], [0, 3, "Δ"], [10, 3, "Δ"], [5, 4, "3"]], "r"),
+  mistfall: ["ΘΘ.ΘΘ", "Θ,,,Θ", ",,*,,", "Θ,,,.", ".Θ.Θ."],
+  ledgeshrine: ["..Σ..", ".rrr.", "3r*r3", ".rrr.", "....."],
+  colonnade: ["q.q.q.q", ".=====.", ".==*==.", ".=====.", "q.q.q.q", "......."],
+  pillartop: ["Θ...Θ", ".....", "..*..", ".....", "Θ...Θ"],
+  thronecourt: courtRows(15, 13, [[0, 0, "q"], [14, 0, "q"], [5, 0, "ΠΠΠΠ"], [5, 1, "ΠΠΠΠ"], [0, 4, "q"], [14, 4, "q"], [7, 3, "*"], [7, 7, "@"], [0, 8, "q"], [14, 8, "q"], [0, 12, "q"], [14, 12, "q"]]),
+});
 /** Pieces whose ruin is one big picture standing on its footprint: never turned (a mirror is fine). */
-const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate", "temple"]);
+const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate", "temple", "pagoda", "belltower", "summithall", "goldhall", "lowertown", "thronecourt"]);
 /** Stamp a set piece and return where its tags landed: { chest: [[x, y]], fire: [...], ... }. */
 function piece(m, name, x, y, rot, flip) {
   const rows = PIECES[name], out = {};
@@ -128,7 +168,9 @@ function wilds(cfg) {
     const p1 = rnd(box) * 6.28, p2 = rnd(box) * 6.28;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const u = sea.side === "w" ? y : x, out = sea.side === "w" ? x : H - 1 - y;
-      sd[y * W + x] = sea.at + Math.sin(u / 13 + p1) * sea.amp * 0.55 + Math.sin(u / 5.3 + p2) * sea.amp * 0.2 + (N1[y * W + x] - 0.5) * sea.amp * 0.5 - out;
+      sd[y * W + x] = sea.at + Math.sin(u / 13 + p1) * sea.amp * 0.55 + Math.sin(u / 5.3 + p2) * sea.amp * 0.2 + (N1[y * W + x] - 0.5) * sea.amp * 0.5 - out
+        // (maps-batch2: a cape — sea.cape [fx, half-width] — where the land runs out to the rim, for a door on the sea's own side)
+        - (sea.cape ? 90 * clamp(1.6 - Math.abs(x - sea.cape[0] * W) / sea.cape[1], 0, 1) : 0);
     }
     const lim = Math.max(0, Math.ceil(sea.at + sea.amp - dz)) + 2;
     if (sea.side === "w") sx0 += lim; else sy1 -= lim;
@@ -221,6 +263,8 @@ function wilds(cfg) {
     if (cfg.tierOf) for (const r of R) tier[r.k] = cfg.tierOf(r);
     else for (const k of Object.values(gateIdx)) tier[k] = 0;
     m.tier = tier;
+    // (maps-batch2: the level under every tile goes to the client — the cliffs stand as tall as their level; artWire `lv`)
+    if (cfg.level) { m.level = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) m.level[i] = lab[i] >= 0 ? tier[lab[i]] : 0; }
   }
   // and what grows there
   const biome = R.map((r) => (role[r.k] === "gate" || role[r.k] === "camp" ? cfg.biomes.plain : cfg.biome(r.e, r.mo, rnd(box), tier ? tier[r.k] : 0, r)));
@@ -273,8 +317,10 @@ function wilds(cfg) {
       // (a dead end that keeps a chest stays shut but for one way in, three tiles wide: a hidden pocket)
       const nook = ["vault", "lair", "stair"].includes(role[e.a]) || ["vault", "lair", "stair"].includes(role[e.b]);
       if (tier[e.a] !== tier[e.b]) { kind = "cliff"; gr = nook ? 1 : cfg.ramp || 2; }
-      else if (!nook && (linked || rnd(box) < (typeof cfg.tierOpen === "function" ? cfg.tierOpen(R[e.a], R[e.b]) : cfg.tierOpen))) continue;
-      else { kind = wallKind(); gr = nook ? 1 : cfg.gap; }
+      // (maps-batch2, cfg.shut(a, b): canyon country — a wall stands even where the tree links two regions, with a gap through it)
+      else if (!nook && !(cfg.shut && cfg.shut(R[e.a], R[e.b])) && (linked || rnd(box) < (typeof cfg.tierOpen === "function" ? cfg.tierOpen(R[e.a], R[e.b]) : cfg.tierOpen))) continue;
+      // (maps-batch2, cfg.nookWall: what shuts a dead end that keeps a chest — rock, where a belt of trees would be cut through by the widening)
+      else { kind = wallKind(); if (nook && cfg.nookWall) kind = cfg.nookWall; gr = nook ? 1 : cfg.gap; }
     } else {
       if (linked && rnd(box) < cfg.merge && dE < cfg.cliff) continue;
       kind = dE >= cfg.cliff && rnd(box) < 0.85 ? "cliff" : wallKind();
@@ -294,6 +340,28 @@ function wilds(cfg) {
   }
   // where a way climbs a cliff, it climbs steps
   for (const t of steps) { const [x, y] = at(t); m.o[y][x] = " "; m.g[y][x] = "v"; }
+  // maps-batch2: rock in the mass — cfg.thick(x, y) more tiles of cliff grow out from every cliff face there (never over
+  // a gap, a ramp or a door), so the ways between are canyons; and where cfg.bridge(x, y) says, a slot left through
+  // the rock is decked with planks (the mesa tops joined by rope bridges)
+  if (cfg.thick) {
+    for (let pass = 0; pass < 3; pass++) {
+      const add = [];
+      for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
+        const i = y * W + x;
+        if (m.o[y][x] !== " " || keep[i] || lab[i] < 0 || cfg.thick(x, y) <= pass || N1[i] < 0.22) continue;
+        if (D4.some(([dx, dy]) => m.o[y + dy][x + dx] === "C")) add.push(i);
+      }
+      for (const i of add) m.o[(i - (i % W)) / W][i % W] = "C";
+    }
+  }
+  if (cfg.bridge) {
+    const rock = (x, y) => x >= 0 && y >= 0 && x < W && y < H && m.o[y][x] === "C";
+    const reach = (x, y, dx, dy) => { for (let s = 1; s <= 3; s++) if (rock(x + dx * s, y + dy * s)) return s; return 9; };
+    for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
+      if (m.o[y][x] !== " " || m.g[y][x] === "v" || !cfg.bridge(x, y)) continue;
+      if (reach(x, y, -1, 0) + reach(x, y, 1, 0) <= 6 || reach(x, y, 0, -1) + reach(x, y, 0, 1) <= 6) m.g[y][x] = "b";
+    }
+  }
 
   // the rim: a ragged fringe of the edge wood, thicker where the noise says
   border(m, cfg.edge, 2);
@@ -346,14 +414,16 @@ function wilds(cfg) {
   const water = (x, y) => { if (x < 2 || y < 1 || x >= W - 2 || y >= H - 1 || (sd && sd[y * W + x] > 0)) return; m.g[y][x] = "w"; m.o[y][x] = " "; };
   if (cfg.river) {
     // a meandering centre line — two sine waves of different length and some noise — from the top edge to the bottom
-    const sx = W * (0.38 + rnd(box) * 0.24), a1 = 4 + rnd(box) * 2.5, l1 = 11 + rnd(box) * 5, p1 = rnd(box) * 6.28, a2 = 1.5 + rnd(box), l2 = 4.5 + rnd(box) * 2;
-    let px = null;
+    const sx = W * (cfg.riverAt ? cfg.riverAt[0] + rnd(box) * cfg.riverAt[1] : 0.38 + rnd(box) * 0.24), a1 = 4 + rnd(box) * 2.5, l1 = 11 + rnd(box) * 5, p1 = rnd(box) * 6.28, a2 = 1.5 + rnd(box), l2 = 4.5 + rnd(box) * 2;
+    let px = null, pt = -1;
     for (let y = 1; y < H - 1; y++) {
       const x = Math.round(clamp(sx + Math.sin(y / l1 + p1) * a1 + Math.sin(y / l2 + p1 * 2) * a2 + (N1[y * W + Math.round(sx)] - 0.5) * 3, 7, W - 9));
       // fill across from where the last row ended, so the bank never breaks
       const from = px === null ? x : Math.min(px, x), to = px === null ? x : Math.max(px, x);
       const wide = 2 + (N2[y * W + x] > 0.6 ? 1 : 0) + (cfg.riverW || 0);
-      for (let X = from; X <= to + wide - 1; X++) { if (m.o[y][X] === "C") falls.push([X, y]); water(X, y); if (X >= 0 && X < W) riverAt[y * W + X] = 1; }
+      for (let X = from; X <= to + wide - 1; X++) { if (m.o[y][X] === "C" && !cfg.level) falls.push([X, y]); water(X, y); if (X >= 0 && X < W) riverAt[y * W + X] = 1; }
+      // (maps-batch2, a ground whose levels go to the client: a fall exactly where the river steps from one level to the next)
+      if (cfg.level && tier) { const k = lab[y * W + x], tk = k >= 0 ? tier[k] : -1; if (tk >= 0 && pt >= 0 && tk !== pt) falls.push([x, y]); if (tk >= 0) pt = tk; }
       px = x;
     }
   }
@@ -363,6 +433,7 @@ function wilds(cfg) {
     const done = [];
     for (const [fx, fy] of falls) {
       if (done.some(([x, y]) => Math.abs(x - fx) + Math.abs(y - fy) < 8)) continue;
+      if (cfg.level && (fy < 6 || fy > H - 7 || (sd && sd[fy * W + fx] > -4))) continue;         // (maps-batch2: never a fall on the rim or in the sea)
       done.push([fx, fy]);
       const tAt = (y) => { const k = lab[clamp(y, 0, H - 1) * W + fx]; return k >= 0 ? tier[k] : 9; };
       const dir = tAt(fy + 3) <= tAt(fy - 3) ? 1 : -1, low = tAt(fy + 3 * dir);
@@ -422,17 +493,24 @@ function wilds(cfg) {
     const isW = (x, y) => x >= 0 && y >= 0 && x < W && y < H && riverAt[y * W + x] === 1 && m.g[y][x] === "w";
     const nearW = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (isW(x + dx, y + dy)) return true; return false; };
     const bank = [];
-    for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) if (!isW(x, y) && !keep[y * W + x] && nearW(x, y) && m.g[y][x] !== "b") bank.push(y * W + x);
-    for (const i of bank) { const [x, y] = at(i); m.o[y][x] = "C"; }
+    // (maps-batch2: where the river has run out into the sea there is no bank)
+    for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) if (!isW(x, y) && !keep[y * W + x] && nearW(x, y) && m.g[y][x] !== "b" && !(sd && sd[y * W + x] > -1)) bank.push(y * W + x);
+    if (!cfg.gorge.open) for (const i of bank) { const [x, y] = at(i); m.o[y][x] = "C"; }
     // the crossings: evenly down the river, each a band five rows tall; bridges and fords by turns,
     // and the bank's cliff comes down in steps on either side
     for (let j = 0, y0 = cfg.gorge.first; y0 < H - 6; j++, y0 += cfg.gorge.every) {
       const yc = clamp(y0 + ri(box, -2, 2), 4, H - 5), ford = j % 2 === 1;
+      if (sd) { let wet = false; for (let x = 3; x < W - 3 && !wet; x++) if (riverAt[yc * W + x] && sd[(yc + 3) * W + x] > -3) wet = true; if (wet) continue; }   // (no crossing out in the sea)
       for (let y = yc - 2; y <= yc + 2; y++) {
         const xs = [];
-        for (let x = 3; x < W - 3; x++) if (riverAt[y * W + x]) { m.g[y][x] = ford ? "s" : "b"; m.o[y][x] = " "; xs.push(x); }
+        for (let x = 3; x < W - 3; x++) if (riverAt[y * W + x]) { m.g[y][x] = ford ? cfg.gorge.ford || "s" : cfg.gorge.deck || "b"; m.o[y][x] = " "; xs.push(x); }
         if (!xs.length) continue;
-        const lo = Math.min(...xs), hi = Math.max(...xs);
+        let lo = Math.min(...xs), hi = Math.max(...xs);
+        // (maps-batch2, an open river: the crossing runs on over a pool or a widening beside the channel)
+        if (cfg.gorge.open) {
+          while (lo > 4 && m.g[y][lo - 1] === "w") { lo--; m.g[y][lo] = ford ? cfg.gorge.ford || "s" : cfg.gorge.deck || "b"; m.o[y][lo] = " "; }
+          while (hi < W - 5 && m.g[y][hi + 1] === "w") { hi++; m.g[y][hi] = ford ? cfg.gorge.ford || "s" : cfg.gorge.deck || "b"; m.o[y][hi] = " "; }
+        }
         for (let x = lo - 2; x <= hi + 2; x++) if (m.o[y][x] === "C") { m.o[y][x] = " "; m.g[y][x] = "v"; }
         keepBox(lo - 3, y, hi + 3, y);
       }
@@ -498,7 +576,8 @@ function wilds(cfg) {
       }
     } else if (role[k] === "vault") {
       // the piece meant for it, or failing that whichever of the others fits, smallest last
-      const want = cfg.vaultKinds[vn++ % cfg.vaultKinds.length];
+      // (maps-batch2: a ground laid out by place names the piece a dead end there should keep — cfg.vaultAt(region, level))
+      const want = (cfg.vaultAt && cfg.vaultAt(r, tier ? tier[k] : 0)) || cfg.vaultKinds[vn++ % cfg.vaultKinds.length];
       const used = (q) => m.pieces.filter((x) => x === q).length;
       const kinds = [want, ...cfg.vaultKinds.filter((q) => q !== want).sort((a, b) => used(a) - used(b) || PIECES[b].length * PIECES[b][0].length - PIECES[a].length * PIECES[a][0].length)];
       let p = null;
@@ -584,6 +663,54 @@ function wilds(cfg) {
     }
   }
 
+  // maps-batch2: courts — big pieces laid by place (cfg.courts [{ piece, at: [fx, fy], boss, field, guards: [kind, n], stone }]):
+  // a pagoda's court, the bell tower, the throne hall's forecourt, the walled summit arena. Like the temple a court clears
+  // what stood on its ground and a ring round it. `boss` stands that monster on the piece's mark, `field` makes the mark
+  // the field boss's ground (m.bossAt), `guards` are elites that keep it, `stone` (1, 2 …: their order) asks for a
+  // waypoint stone beside the walk there (markRoutes)
+  m.courts = [];
+  const courtStones = [];
+  for (const c of cfg.courts || []) {
+    const rows = PIECES[c.piece], tw = rows[0].length, th = rows.length, tx = c.at[0] * W, ty = c.at[1] * H;
+    const cand = R.map((r) => r.k).filter((k) => role[k] === "field" && D[k] >= 0)
+      .sort((a, b) => Math.hypot(R[a].px - tx, R[a].py - ty) - Math.hypot(R[b].px - tx, R[b].py - ty) || a - b).slice(0, 10);
+    const OFF = [];
+    for (let dy = -9; dy <= 9; dy += 3) for (let dx = -9; dx <= 9; dx += 3) OFF.push([dx, dy]);
+    OFF.sort((p, q) => Math.hypot(p[0], p[1]) - Math.hypot(q[0], q[1]));
+    const clearAt = (x0, y0) => {
+      for (let y = y0 - 2; y < y0 + th + 2; y++) for (let x = x0 - 2; x < x0 + tw + 2; x++) if (hold[y * W + x] || "wbv".includes(m.g[y][x]) || lab[y * W + x] < 0) return false;
+      return true;
+    };
+    let at0 = null;
+    for (const k of cand) {
+      for (const [dx, dy] of OFF) {
+        const x0 = clamp(Math.round(R[k].px - tw / 2) + dx, 5, W - tw - 5), y0 = clamp(Math.round(R[k].py - th / 2) + dy, 5, H - th - 5);
+        if (clearAt(x0, y0)) { at0 = [x0, y0]; break; }
+      }
+      if (at0) break;
+    }
+    if (!at0) continue;
+    const [x0, y0] = at0;
+    for (let y = y0 - 1; y <= y0 + th; y++) for (let x = x0 - 1; x <= x0 + tw; x++) { m.o[y][x] = " "; if (y < y0 || y >= y0 + th || x < x0 || x >= x0 + tw) m.g[y][x] = "r"; }
+    const tags = piece(m, c.piece, x0, y0, 0, false);
+    m.pieces.push(c.piece);
+    keepBox(x0 - 1, y0 - 1, x0 + tw, y0 + th);
+    m.courts.push({ piece: c.piece, x: x0, y: y0, w: tw, h: th });
+    // (the crags a court is walled with stand for good: the widening never cuts them into steps)
+    for (let y = y0; y < y0 + th; y++) for (let x = x0; x < x0 + tw; x++) if (m.o[y][x] === "C") (m.noCut || (m.noCut = new Uint8Array(W * H)))[y * W + x] = 1;
+    if (tags.chest) { const [cx, cy] = tags.chest[0]; spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] }); special.push([cx, cy]); }
+    const mark = tags.boss ? tags.boss[0] : tags.chest ? tags.chest[0] : [x0 + (tw >> 1), y0 + th - 1];
+    if (tags.boss) {
+      if (c.boss) spawns.push({ k: c.boss, n: 1, r: [mark[0], mark[1], mark[0], mark[1]] });
+      if (c.field) m.bossAt = mark;
+      special.push(mark);
+    }
+    if (c.guards) spawns.push({ k: c.guards[0], n: c.guards[1], r: [x0 + 1, y0 + 2, x0 + tw - 2, y0 + th - 2], el: 1 });
+    doors.push(mark);
+    if (c.stone) courtStones.push([c.stone, [x0 + (tw >> 1), y0 + th]]);
+  }
+  for (const [, p] of courtStones.sort((a, b) => a[0] - b[0])) (m.stonesAt || (m.stonesAt = [])).push(p);
+
   // small things that make a region its own: a pond, a ring of stones, a lone great tree, an old pen ...
   const ok = (k, x, y) => x > 2 && y > 2 && x < W - 3 && y < H - 3 && lab[y * W + x] === k && inner[y * W + x] >= 2 && free(x, y);
   const obj = (k, x, y, o) => { if (ok(k, x, y)) { m.o[y][x] = o; keep[y * W + x] = 1; } };
@@ -665,10 +792,12 @@ function wilds(cfg) {
     const [x, y] = at(j);
     if (x < 2 || y < 2 || x >= W - 2 || y >= H - 2 || m.o[y][x] !== " ") return Infinity;
     const g0 = m.g[y][x];
-    let c = g0 === "w" ? 14 : g0 === "b" || g0 === cfg.road ? 0.55 : g0 === "v" ? 1 : 1 + N1[j] * 2.2 + (g0 === "t" ? 0.6 : 0);
+    let c = g0 === "w" ? cfg.wet || 14 : g0 === "b" || g0 === cfg.road ? 0.55 : g0 === "v" ? 1 : 1 + N1[j] * 2.2 + (g0 === "t" ? 0.6 : 0);
     if (back >= 0 && j - i !== i - back) c += 0.4;
     return c;
   };
+  // (ground a road never repaints: planks and steps, and what a ground names — cfg.hard: the flagstones of a court or a stone bridge)
+  const HARD = "bv" + (cfg.hard || "");
   const pave = (path, wide, ch = cfg.road) => {
     for (let s = 0; s < path.length; s++) {
       const t = path[s], [x, y] = at(t), nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
@@ -680,8 +809,8 @@ function wilds(cfg) {
           // (a way over the shallows is a sand bar, shoulders and all; a painted road keeps its edge lines)
           const bar = sea && sea.bar && "~-".includes(m.g[Y][X]);
           if (bar) m.g[Y][X] = sea.bar;
-          else if (!shoulder && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch;
-          else if (edge && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = edge;
+          else if (!shoulder && !HARD.includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch;
+          else if (edge && !HARD.includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = edge;
           m.o[Y][X] = " ";
         }
         keep[Y * W + X] = 1;
@@ -761,9 +890,11 @@ function wilds(cfg) {
   // a door cut into a finished ground (cfg.doors [[name, side, f]]: the oasis's and the coast's doors to dunesea): nothing
   // is laid out round it — the rim behind it is cleared four wide, and the widening below joins it to the ways
   for (const [name, side, f] of cfg.doors || []) {
-    const g = side === "w" ? Math.round(f * H) : Math.round(f * W);
-    gates[name] = side === "w" ? { t: [[1, g], [1, g + 1]], a: [[4, g], [4, g + 1]] } : { t: [[g, H - 2], [g + 1, H - 2]], a: [[g, H - 5], [g + 1, H - 5]] };
-    const [x0, y0, x1, y1] = side === "w" ? [1, g - 1, 7, g + 2] : [g - 1, H - 8, g + 2, H - 2];
+    // (maps-batch2: on any side — the oasis's east door to the red mesa)
+    const g = side === "w" || side === "e" ? Math.round(f * H) : Math.round(f * W);
+    gates[name] = side === "w" ? { t: [[1, g], [1, g + 1]], a: [[4, g], [4, g + 1]] } : side === "e" ? { t: [[W - 2, g], [W - 2, g + 1]], a: [[W - 5, g], [W - 5, g + 1]] }
+      : side === "n" ? { t: [[g, 1], [g + 1, 1]], a: [[g, 4], [g + 1, 4]] } : { t: [[g, H - 2], [g + 1, H - 2]], a: [[g, H - 5], [g + 1, H - 5]] };
+    const [x0, y0, x1, y1] = side === "w" ? [1, g - 1, 7, g + 2] : side === "e" ? [W - 8, g - 1, W - 2, g + 2] : side === "n" ? [g - 1, 1, g + 2, 7] : [g - 1, H - 8, g + 2, H - 2];
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { m.o[y][x] = " "; if (m.g[y][x] === "w") m.g[y][x] = "b"; }
   }
   if (cfg.stonesAt) m.stonesAt = (m.stonesAt || []).concat(cfg.stonesAt.map(([fx, fy]) => [Math.round(fx * W), Math.round(fy * H)]));

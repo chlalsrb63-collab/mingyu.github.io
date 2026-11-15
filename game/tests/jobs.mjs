@@ -71,7 +71,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 // ═════════ the sheet ═════════
 {
   const ch = L.newChar("새싹", [1, 2]);
-  assert.equal(ch.v, 15); assert.equal(ch.job, "adventurer"); assert.equal(ch.lvl, 1); assert.equal(ch.xp, 0); assert.equal(ch.xpt, 0);
+  assert.equal(ch.v, 16); assert.equal(ch.job, "adventurer"); assert.equal(ch.lvl, 1); assert.equal(ch.xp, 0); assert.equal(ch.xpt, 0);
   assert.deepEqual(ch.st, { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 });
   assert.deepEqual(Object.keys(ch.wm), ["sword", "dagger", "spear", "staff", "book", "bow", "hammer"]);
   assert.ok(Object.values(ch.wm).every((r) => r.lv === 1 && r.xp === 0));
@@ -793,6 +793,59 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   let gone = null;
   for (let i = 0; i < 3 && !gone; i++) { Wl.step(); gone = L.viewFor(Wl.S, "pid-stay").ev?.find((e) => e[0] === "ae" && e[1] === sid); L.endTick(Wl.S); }
   assert.equal(rtm.shots.length, 0, "no arrow is left behind");
+}
+// a staff's and a book's basic attacks fly as homing missiles (shot kinds 8 and 9): the blow lands when it gets there
+{
+  const W = world({ wk: "staff", lvl: 37, wm: { staff: 30 } });
+  const mobs = arena(W);
+  const p = W.p;
+  let [m] = mobs([[90, 0]]), v;
+  ready(W);
+  assert.ok(W.act({ t: "atk", a: 0 }).ok);
+  const ar = W.rt.ev.find((e) => e[0] === "ar");
+  assert.ok(W.rt.ev.some((e) => e[0] === "a" && e[1] === p.eid && e[2] === 2), "the staff's cast is still fx 2");
+  assert.deepEqual([ar[6], ar[7], ar[8], ar[9]], [320, 8, p.eid, m.id], "a staff missile: spd 320, kind 8, homing on its monster");
+  assert.equal(m.hp, 50000, "nothing the moment it is cast");
+  W.step();
+  assert.equal(m.hp, 50000, "one tick: 32 px of 90");
+  let hitAt = 0;
+  for (let i = 2; i <= 5 && !hitAt; i++) { v = W.step(); if (m.hp < 50000) hitAt = i; }
+  assert.ok(hitAt >= 3, "it lands after its flight: tick " + hitAt);
+  assert.ok((v.ev || []).some((e) => e[0] === "ae" && e[1] === ar[1] && e[4] === 0), "and ends struck");
+  // homing: a monster that steps aside after the cast is still hit
+  W.step(1000);
+  [m] = mobs([[90, 0]]);
+  ready(W);
+  W.act({ t: "atk", a: 0 });
+  W.step();
+  m.y += 40; m.wy = m.y; m.hy = m.y;
+  for (let i = 0; i < 6; i++) W.step();
+  assert.ok(m.hp < 50000, "the missile follows the monster that moved");
+  // nothing aimed at: it flies straight and fades at the reach
+  W.step(1000);
+  [m] = mobs([[0, 60]]);
+  ready(W);
+  W.act({ t: "atk", a: 0 });
+  const ar2 = W.rt.ev.find((e) => e[0] === "ar");
+  assert.equal(ar2.length, 9, "no monster to home on");
+  let end = null;
+  for (let i = 0; i < 8 && !end; i++) { v = W.step(); end = (v.ev || []).find((e) => e[0] === "ae" && e[1] === ar2[1]); }
+  assert.ok(end && end[4] === 2 && m.hp === 50000, "it fades at the reach");
+  // a book's orb (kind 9, slower) bursts where it lands: what stands within its splash takes 60% too
+  const B = world({ wk: "book", lvl: 37, wm: { book: 30 } });
+  const bm = arena(B);
+  const ring = bm([[70, 0], [85, 18], [85, -18], [90, 0], [200, 0]]);
+  ready(B);
+  B.act({ t: "atk", a: 0 });
+  const bar = B.rt.ev.find((e) => e[0] === "ar");
+  assert.deepEqual([bar[6], bar[7], bar[9]], [240, 9, ring[0].id], "a book orb: spd 240, kind 9");
+  B.step();
+  assert.ok(ring.every((o) => o.hp === 50000), "nothing on the cast");
+  let bend = null;
+  for (let i = 0; i < 6 && !bend; i++) { v = B.step(); bend = (v.ev || []).find((e) => e[0] === "ae" && e[1] === bar[1]); }
+  assert.ok(bend && bend[4] === 0 && bend[5] === 26, "it bursts with the splash ring: " + JSON.stringify(bend));
+  assert.equal(ring.filter((o) => o.hp < 50000).length, 4, "the target and three beside it");
+  assert.equal(ring[4].hp, 50000, "not one far off");
 }
 
 // ═════════ loot: any weapon kind drops for anyone ═════════

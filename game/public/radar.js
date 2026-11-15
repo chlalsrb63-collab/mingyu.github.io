@@ -402,7 +402,7 @@ function drawHere(g, W, H, t) {
     hit(x, y, 9, cur ? `${name} — 지금 여기` : !open ? `${name} — 미개방 (돌에 다가가면 깨어납니다)` : ok ? `${name} — 클릭하면 이동합니다` : `${name} — 이동의 돌 곁에서만 이동할 수 있습니다`,
       ok ? () => { D.act(st.i ? { t: "warp", to: G.map.id, i: st.i } : { t: "warp", to: G.map.id }); D.play("ui"); } : null);
   }
-  for (const c of m.camps || []) { const [x, y] = P(c.x, c.y); blit(g, spr("fire", COL.fire), x, y); hit(x, y, 8, "모닥불 — 앉아서(X) 쉬면 온기를 얻습니다"); }
+  for (const c of m.camps || []) { const [x, y] = P(c.x, c.y); blit(g, spr("fire", COL.fire), x, y); hit(x, y, 8, "모닥불 — 앉아서(Z) 쉬면 온기를 얻습니다"); }
   for (const f of G.fires.values()) { const [x, y] = P(f.x, f.y); blit(g, spr("fire", "#ffb050"), x, y); }
   for (const [sx, sy] of M.shrines) { const [x, y] = Pt(sx, sy); blit(g, spr("wind", COL.wind), x, y - 2); hit(x, y, 8, "질주의 바람 — 바람 신단"); }
   if (M.obelisk) { const [x, y] = Pt(...M.obelisk); blit(g, spr("rift", COL.obelisk), x, y - 3); tag("차원의 오벨리스크", x, y - 15, "#e0c8ff", 10, 4); hit(x, y, 9, "차원의 오벨리스크 — 균열 지기에게 말을 걸어 차원 균열을 엽니다"); }

@@ -3,6 +3,7 @@
 // where cosmetics come from — plus the weapon art's coverage of every kind, tier and motif:
 // node tests/wardrobe.mjs
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import * as L from "../src/logic.js";
 import { ART, SLOTS as ART_SLOTS, skinMotif } from "../public/wardrobe.js";
 import { DESIGNS, MOTIFS, SIL, MOTIF_SIL } from "../public/weapons.js";
@@ -41,7 +42,8 @@ for (const id of ids) {
   const c = D.cos[id];
   assert.equal(D.cosN[c.n], id, "a code maps back to its id");
   assert.ok(c.name && c.desc && c.q >= 0 && c.q <= 4, id + " has a name, a description and a rarity");
-  assert.ok(["shop", "chest", "boss", "daily", "rift", "ach"].includes(c.src), id + " comes from somewhere");
+  assert.ok(["shop", "chest", "boss", "daily", "rift", "ach", "quest", "weekly"].includes(c.src), id + " comes from somewhere");
+  assert.ok(c.set === "" || D.cosSets[c.set], id + " is in a real set, or in none");
   if (c.src === "shop") assert.ok(c.price > 0, id + " has a price");
   if (c.src === "ach") assert.ok(D.achievements.some((a) => a.id === c.ach), id + " is earned by a real achievement");
   // and the browser can draw it
@@ -51,6 +53,27 @@ for (const id of ids) {
 }
 for (const id of Object.keys(ART)) assert.ok(D.cos[id], id + " (art) is in the catalogue");
 for (const src of ["shop", "chest", "boss", "daily", "rift", "ach"]) assert.ok(ids.some((id) => D.cos[id].src === src), "something comes from " + src);
+// the shop's prices follow rarity (a gold sink that stays in its lane: nothing epic is for sale)
+const BAND = [[300, 1500], [1800, 4000], [6000, 8000]];
+for (const id of ids.filter((k) => D.cos[k].src === "shop")) {
+  const c = D.cos[id];
+  assert.ok(BAND[c.q], id + ": the shop sells nothing above rare");
+  assert.ok(c.price >= BAND[c.q][0] && c.price <= BAND[c.q][1], id + ": " + c.price + " G is in the band of its rarity");
+}
+// themed sets: every set has pieces in two slots or more
+assert.ok(ids.length >= 100, "a hundred cosmetics");
+for (const [k, name] of Object.entries(D.cosSets)) {
+  const of = ids.filter((id) => D.cos[id].set === k);
+  assert.ok(name && of.length >= 3, "set " + k + " has three pieces or more");
+  assert.ok(new Set(of.map((id) => D.cos[id].slot)).size >= 2, "set " + k + " spans slots");
+}
+// every life skill at Lv 50 and every perk NPC at 가족 pays out one cosmetic of its own
+const achCos = (a) => ids.filter((id) => D.cos[id].ach === a);
+for (const k of D.life.keys) assert.equal(achCos("life50_" + k).length, 1, "a master outfit for " + k);
+const repAch = D.achievements.filter((a) => a.id.startsWith("rep_")).map((a) => a.id);
+assert.ok(repAch.length >= 5);
+for (const a of repAch) assert.equal(achCos(a).length, 1, "a 가족 gift for " + a);
+assert.equal(new Set(ids.filter((id) => D.cos[id].ach).map((id) => D.cos[id].ach)).size, ids.filter((id) => D.cos[id].ach).length, "one cosmetic per achievement");
 assert.ok(shopNpc, "the costume shop stands in town");
 assert.ok(town.npcs.every((n) => n === shopNpc || Math.hypot(n.x - shopNpc.x, n.y - shopNpc.y) >= 3), "with room around it");
 assert.equal(town.o[shopNpc.y][shopNpc.x], " ", "on open ground");
@@ -241,6 +264,42 @@ for (const [kind, designs] of Object.entries(SIL)) {
   assert.equal(got.length, 1, "one cosmetic from the daily box");
   const v = W2.step();
   assert.ok((v.toast || []).some((m) => m.includes("외형 획득")), "with a notice");
+}
+
+// ── life masters and trusted NPCs: the outfit comes with the title, and old sheets catch up
+{
+  // the rules' own helpers, from a second copy of logic.js that exports them (the world is plain data: both copies read it alike)
+  const X = (await import("data:text/javascript;base64," + Buffer.from(readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") + "\nexport const __t = { gainLife, addRep, cosFrom };\n").toString("base64"))).__t;
+  const W = world("명인");
+  const p = W.S.players.A, ch = p.ch;
+  W.step();
+  ch.life.fish = { lv: 49, xp: 0 };
+  X.gainLife(W.S, p, "fish", 1e6);
+  assert.ok(ch.ach.includes("life50_fish") && ch.cos.own.includes("hat_fisher"), "Lv 50 in fishing: the master fisher's hat");
+  assert.ok(!ch.cos.own.includes("top_chefcoat"), "and only that skill's");
+  assert.ok(W.act({ t: "cos_eq", id: "hat_fisher" }).ok);
+  X.addRep(W.S, p, "kangkang", 500);
+  assert.ok(ch.ach.includes("rep_kangkang") && ch.cos.own.includes("back_hammer"), "가족 with 캉캉: his hammer");
+  assert.ok(!ch.cos.own.includes("top_apron_juju"));
+  assert.ok(p.gain.some((g) => g[0] === "cos" && g[1] === "back_hammer"), "and it shows in what was gained");
+  // a sheet that earned the titles before the outfits existed gets them on its next visit
+  const old = JSON.parse(JSON.stringify(L.exportChar(W.S, "A")));
+  old.cos = { own: [], on: {} };
+  old.ach = [...new Set([...old.ach, "life50_cook", "rep_bogle"])];
+  const q = W.join("B", "", "warrior", old);
+  for (const id of ["hat_fisher", "back_hammer", "top_chefcoat", "hat_goggles_bogle"]) assert.ok(q.ch.cos.own.includes(id), id + " caught up");
+  // quest and weekly cosmetics are named but nothing gives them yet: the shop refuses, no pool rolls them
+  for (const src of ["quest", "weekly"]) {
+    const of = ids.filter((id) => D.cos[id].src === src);
+    assert.ok(of.length >= 1, "a placeholder from " + src);
+    for (const id of of) assert.ok(!W.act({ t: "cos_buy", id }).ok, id + " is not for sale");
+  }
+  const before = ch.cos.own.filter((id) => !["chest", "boss", "daily", "rift"].includes(D.cos[id].src)).length;
+  for (let i = 0; i < 400; i++) for (const src of ["chest", "boss", "daily", "rift", "quest", "weekly"]) X.cosFrom(W.S, p, src, "");
+  assert.ok(ids.filter((id) => ["chest", "boss", "daily", "rift"].includes(D.cos[id].src)).every((id) => ch.cos.own.includes(id)), "the four pools empty out");
+  assert.ok(ids.filter((id) => ["quest", "weekly"].includes(D.cos[id].src)).every((id) => ch.cos.own.includes(id)), "a later system can hand its own out with cosFrom");
+  assert.equal(ch.cos.own.filter((id) => D.cos[id].src === "shop").length, 0, "nothing sold was given away");
+  assert.ok(before >= 2);
 }
 
 console.log("wardrobe: ok —", ids.length, "cosmetics,", Object.keys(D.wkinds).length * 5, "weapon designs,", MOTIFS.length, "motifs");

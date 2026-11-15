@@ -5,90 +5,57 @@ Development is **local first**: work and test on the PC; the owner decides when 
 Read this, `AGENTS.md` (loaded), `ai/BRIEF.md`, `docs/design/README.md`, `docs/systems/README.md`; then continue.
 Reply to the owner in Korean; they want reports **with screenshots** ("다 끝나면 화면과 함께 알려줘").
 
-## 0. Token budget — owner's order (2026-11-15: "토큰 소모량을 줄이도록 해")
+## 현재 인계 · 직업 성장, 해머, 월드맵, 로컬 BGM
 
-The previous integrator session grew to 750k tokens and ran 6–7 agents at once; every agent notification re-read the
-whole context and the 5-hour limit ran out twice. Rules for every Claude session from now on:
-- **Integrator stays small.** Start a new session (update this file first) when the context passes ~250k tokens.
-  Don't read agent screenshots or long diffs in the integrator; trust the report + run the tests, look at ≤ 2 shots per merge.
-- **≤ 2 agents at once** (3 only if they touch disjoint files). One agent ≈ ≤ 100 tool calls / ~100k tokens; split bigger work.
-- **Order by files, not by wish list.** Never run two agents on the same files at once (map generators `30/32/34-*`,
-  `10-tables.js` MOBS, `hud.*`/`windows.js`, `70/75/90`): run them one after another. Conflicts cost a whole rebase agent.
-- **Model per task** (`ai/BRIEF.md`): art, data rows, Korean text, docs, reviews → `model: "sonnet"` (pure text/data → `"haiku"`);
-  rules cores, cross-system work, integration → default. Mechanical backlog → Codex via `ai/TASKS.md` (no Claude tokens).
-- **Agent briefs**: ≤ 40 lines, point at files instead of pasting specs, ask for reports ≤ 15 lines, ≤ 3 screenshots,
-  only the relevant tests while working and the full suite once at the end. Reuse the main checkout's `node_modules`
-  in worktrees (junction) instead of `npm install`.
-- Turn off MCP servers/plugins this project never uses (Higgsfield, Notion, PixelLab, Summer Engine, Blender, Unity) for
-  this folder — ask the owner before changing settings.
-
-## 0.1 State on 2026-11-15 (end of the long session) and what to do next
-
-`main` = everything merged and tested (34–35 suites): life L2 client, side panel (one window at a time), gear-slot icons,
-charms C1+C2 (Juana, board), maps v2 M1–M3 + art (meadow falls, forest gorge, jade cave, brick halls, jungle/coast/oasis),
-wide dungeons, `dunesea` (288×192), Codex's `codex/local-play` (NPC routines, hunting routes, frost keep Lv.200, BGM),
-starter-weapon pick at creation, solid aim arrowhead, job emblems + icon-first HUD with click detail cards (`infocard.js`).
-Nothing since `500891d` is pushed (push = deploy; push only with `[skip ci]` when the owner asks for a backup).
-
-**Paused agent branches** (stopped by the usage limit; worktrees under `.claude/worktrees/`; unfinished work saved as a
-`WIP:` commit — untested; resume each in its own fresh agent, one or two at a time, in this order):
-1. `claude/dash` — Space = dash (≈72 px, 4 s cd, short invulnerability), basic attack → X. Owner asked for it.
-2. `claude/social-weekly` (1 commit) — friends/whisper/block, weekly book (7 of 12), enhancement pity, key rebinding,
-   text size. Then wire dash/attack into the key-rebinding table.
-3. `claude/rift-tiers` (WIP) — endless rift tiers + weekly 4-player boss challenge with a stagger gauge.
-4. `claude/new-monsters` (WIP) — real species for coast/desert/jungle (+ mesa/cloudtemple) replacing tinted variants.
-5. `claude/cosmetics-2` (1 commit + WIP) — 30+ cosmetics (seaside, desert, jungle, temple, delver, life-mastery outfits, trust gifts).
-6. `claude/maps-b2-1` (3 commits) — `mesa` 붉은바위 황금궁 + `cloudtemple` 운해 사원 (`docs/design/maps-batch2.md`).
-Owner's priority: **HUD and user-friendly UI/UX first, then content.** Auction house is **on hold** (don't start).
-Still to do after those: life → combat loop + 알바/협동 알바 polish (`life-and-coop.md` C1–C3), skill design/FX cleanup,
-more quests, maps batch 2 pairs 2–3 (`maps-batch2.md`), level balancing only after the maps exist (`level-bands.md`).
-Owner is waiting for **UI screenshots** (HUD with emblems, stats + a detail card, job emblems, creation weapon picker,
-arrow, phone) — take them on current `main` and send them first.
-Codex: designing the 7th weapon `hammer` + job `destroyer` (spec `codex/rift-beasts:ai/prompts/hammer-destroyer.md`);
-our UI is already data-driven for it. Codex's world map prompt was given to the owner (start it after the maps land).
+- `codex/hammer` 통합 묶음은 해머·파괴자, 머서너리·성기사, 직업 Lv.1–50, 전용기 4단계, 지형 월드맵과 해금 돌 이동을 포함한다. 성문 서약의 유효 파티 회복도 직업 XP에 기여한다. [직업 규칙과 UI](reports/codex-job-skill-ranks.md) · [파티 밸런스와 연출](reports/codex-party-balance-fx.md)
+- 통합 저장 시트는 **v16**이다. `cleanJobs`가 직업·해머 숙련을, `dimClean`이 균열 단계·주간 보스 기록을 각각 보정한다. 기존 v15 두 형식의 데이터를 보존한다. 통합 빌드의 기본 공격은 `X`, 대시는 `Space`이며 사용자 키 설정을 따른다.
+- 로컬 MP3는 `game/public/assets/music/<map>.mp3`로 재생한다. 개발 폴더의 개인 세이브와 MP3는 각 워크트리에 보관한다. [지역별 Gemini 프롬프트](prompts/gemini-map-bgm.md)
+- 이어서 확인할 부분은 장기 사냥의 직업 Lv.20·35·50 도달 시간과 상위 파티의 전용기 MP 유지율이다.
 
 ## 0. Token budget — owner's order: "토큰 소모량을 줄이도록 해" (2026-11-15)
 
-The previous integrator session hit the 5-hour limit twice: its own context grew to 750k tokens and every
-agent notification re-read it, while 6–7 agents of 120k–400k tokens each ran at once. Rules from now on:
+The integrator session that ran on 2026-11-14/15 hit the 5-hour limit twice: its own context grew to 750k tokens, every
+agent notification re-read it, and 6–7 agents of 120k–400k tokens each ran at once. Rules from now on:
 1. **Keep the integrator session short.** When its context passes ~250k tokens, update this file and continue in a
-   fresh session. Don't re-read big files or screenshots you already summarised.
+   fresh session (never a fork of a long session). Don't re-read big files or screenshots you already summarised.
 2. **At most 2–3 agents at a time**, each scoped to ≤ ~100k tokens (≤ ~80 tool calls). Split bigger work.
 3. **Never run two agents on the same files** (map generators `30/32/34`, `10-tables.js`, HUD `hud.*`/`windows.js`,
    `70/75/90`): sequence them. Conflicts cost a whole rebase agent.
 4. **Model by job** (`ai/BRIEF.md`): art, data rows, docs, reviews, mechanical ports → `model: "sonnet"` (pure
    text/data → `"haiku"`); rule cores, integration, design → default. Small well-specified items → Codex via `ai/TASKS.md`.
-5. Agents: reuse the main checkout's `node_modules` via a junction instead of `npm install`; relevant tests while
-   working, the full suite once at the end; ≤ 3 screenshots; reports ≤ 15 lines.
-6. Unused MCP servers/plugins (Unity, Summer Engine, Higgsfield, Notion, PixelLab, Blender…) add ~25k tokens to
-   every call — the owner may turn them off for this folder.
+5. Agents: reuse the main checkout's `node_modules` (junction) instead of `npm install`; relevant tests while working,
+   the full suite once at the end; ≤ 3 screenshots; reports ≤ 15 lines. The integrator trusts the report, runs the
+   related tests after each merge and the full suite once per batch, and looks at ≤ 2 screenshots per merge.
+6. **Dev servers:** several sessions run `wrangler dev` at once; sharing `game/.wrangler/state` stops room snapshots
+   (black screen). Live checks use their own `--port` + `--persist-to .wrangler/<name>` (`.claude/launch.json`
+   "game-shots" = port 8823).
+7. Unused MCP servers/plugins (Unity, Summer Engine, Higgsfield, Notion, PixelLab, Blender, fullstory…) add ~25k tokens
+   to every call — the owner may turn them off for this folder. Ponytail (lazy-senior-dev rules) is installed.
 
-## 0.1 State at the handoff (2026-11-15, `main` 0a49f58, 35 rule suites)
+## 0.1 State (2026-11-15, end of the second integrator session — `main` full suite 37/37, nothing pushed)
 
-Merged today (see `ai/LOG.md`): unified Claude+Codex `main` (incl. Codex NPC routines, hunting routes, frost keep),
-title subtitle, side panel (one window at a time), gear-slot silhouettes, L2 life client (gathering, stations,
-알바 board, delivery, trust), charms C1+C2 (주아나), maps v2: meadow/forest/cave/crypt/sewer/abyss reworked and
-widened for 4-player parties, new jungle/coast/oasis/dunesea with art, onboarding fixes, starter weapon at
-creation, solid arrowhead aim mark, job emblems + icon-first HUD with click detail cards (`infocard.js`).
-**Not yet done after that last merge:** run the full tests on `main`, then send the owner the UI screenshots he asked
-for (HUD, stat chips + detail card, job emblems, job tree, party, creation picker, arrow, phone portrait).
+Merged today: `new-monsters` (18 real species), `social-weekly` (friends/whisper/block, 주간 수첩 Shift+U, enhancement
+pity; sheet v14), `cosmetics-2` (41 pieces), `maps-b2-1` (mesa 붉은바위 황금궁 Lv.36–42 via oasis east, cloudtemple
+운해 사원 Lv.30–36 via cave shaft; their species placed), `dash` (Space = dash 72 px / 4 s / i-frames, X = attack, Z =
+sit, Shift+B = 건배; `me[11]` = dash cooldown), `magic-missile` + `missile-glow` (staff/book basic attacks are homing
+shots kinds 8/9 that deal the blow on impact; glow survives the night grade; preview `_bow.html?m=missile`),
+`keys-textsize` (`keymap.js`: 46 rebindable actions stored as `e.code`, hints via `K(id)`/`data-key`; 작게/보통/크게).
+Designed (not built): `docs/design/bosses-2.md` — 2 field bosses + 2 weekly raids; the owner's decisions are at its top
+(raids at tier 25 ≈ Lv.100 and tier 50; lizard lair in mesa; mantis shrimp on the coast).
 
-**Paused branches** (stopped by the usage limit; worktrees under `.claude/worktrees/`; unfinished work saved as a
-`WIP` commit — resume each in its own small agent, finish, test, merge; one at a time where files overlap):
-| branch | what | state |
-| --- | --- | --- |
-| `claude/maps-b2-1` | new maps `mesa` 붉은바위 황금궁 + `cloudtemple` 운해 사원 (`docs/design/maps-batch2.md` batch 1) | 3 commits, unverified |
-| `claude/dash` | Space = dash (4 s cd, ~72 px, i-frames), X = basic attack | WIP |
-| `claude/rift-tiers` | 균열 단수 ladder + weekly 4-player boss with stagger gauge | WIP (rules mostly, tests in progress) |
-| `claude/social-weekly` | friends/whisper/block, 주간 수첩, enhancement pity, key rebinding/text size | 1 commit |
-| `claude/new-monsters` | real species for coast/desert/jungle (+ mesa/cloudtemple) replacing tinted variants | WIP |
-| `claude/cosmetics-2` | 30+ outfits incl. life-mastery and 가족-trust rewards | 1 commit + WIP |
+**Next, in order:** 1) `claude/rift-tiers` (WIP, worktree `agent-ad45f810f36043d75`, 83+ commits behind: rebase on main
+first; touches 31/40/50/64/70/80/90 + accounts) — its weekly 4-player boss + stagger gauge is the base for the raids.
+2) bosses-2 in the 7 small tasks of its §8 (boss-script runner first, then donut/cone/mark/adds, data, 4 art tasks).
+3) Owner priorities below. Small leftovers: infocard tooltips and lobby text pick up rebinding only after reload; chat
+placeholder literal; friends/whisper untested with two real players; dash trail faint; the preview pages log a 404.
+**Agent worktrees from `isolation: "worktree"` start at origin/main (stale) — first step of every brief: `git rebase main`.**
+Only the owner adds jobs (Codex deleted several and builds the hammer jobs).
 
 **Owner's priorities:** content + HUD + user-friendly UI/UX first. The 경매장 (auction house) is **on hold**. After the
-paused work: life → combat links and co-op part-time jobs (C1–C3), skill design/effects cleanup, more quests,
-then the remaining batch-2 maps. Codex is designing the 7th weapon **해머 / 파괴자** (`codex/rift-beasts`,
-`ai/prompts/hammer-destroyer.md`); our UI is already data-driven for a 7th weapon. Level balancing waits until more
-maps exist (`docs/design/level-bands.md`).
+paused work: life → combat links and co-op part-time jobs (`life-and-coop.md` C1–C3), skill
+design/effects cleanup, more quests, then the remaining batch-2 maps. Codex is designing the 7th weapon **해머 / 파괴자**
+(`ai/prompts/hammer-destroyer.md`); our UI is already data-driven for it. Level balancing waits until more maps exist
+(`docs/design/level-bands.md`).
 
 ## 1. One project, one line — how Claude and Codex work together (owner's decision, 2026-11-15)
 

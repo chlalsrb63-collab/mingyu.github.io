@@ -31,6 +31,7 @@ import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, 
 import { openTree, openStats, renderInv, renderChar, renderSkills } from "./win_char.js";
 import { renderWarp, renderDaily, renderWeek, renderAchieve, renderCollect, tutCard, eventWidget, castBar, tickDaily } from "./win_world.js";
 import { renderShop, renderSmith, renderQuest } from "./win_shop.js";
+import { K } from "./keymap.js";
 
 // ── the unit frame and the bars ──
 export const look = () => G.who.get(G.you);
@@ -145,7 +146,7 @@ function hotbar(s) {
   // the attack button carries the weapon in hand
   const wpn = s.eq.weapon;
   setSrc($("#b-atk img"), wpn ? G.icons.url[wpn.id] : iconUrl("sword"));
-  $("#b-atk").title = `공격 (Space) — ${G.defs.wkinds[s.wk]?.name || ""} · 세 번째 타격은 마무리 일격`;
+  $("#b-atk").title = `공격 (${K("attack")}) — ${G.defs.wkinds[s.wk]?.name || ""} · 세 번째 타격은 마무리 일격`;
 }
 function tracker(s) {
   const quest = G.defs.quests[s.q.i], mobs = G.defs.mobs;
@@ -257,6 +258,18 @@ function skyTick(t) {
   $("#sky-t").textContent = text;
   Sky.drawIcon($("#sky-ic"), h);
 }
+/** The dash slot (Space): its cooldown swept and counted down like a skill's (me[11] → G.dashEnd, net.js). */
+function dashTick(t) {
+  const b = $("#b-dash");
+  if (!b) return;
+  const full = (G.defs.dash && G.defs.dash[2]) || 4000, left = (G.dashEnd || 0) - t;
+  const cd = left > 0 ? Math.min(1, left / full).toFixed(3) : "0";
+  if (b.dataset.cd !== cd) { b.dataset.cd = cd; b.style.setProperty("--cd", cd); }
+  const txt = left > 0 ? (left / 1000).toFixed(1) : "";
+  const cdt = b.querySelector(".cdt");
+  if (cdt.textContent !== txt) cdt.textContent = txt;
+}
+
 export function hudTick(t) {
   eventWidget(t);
   skyTick(t);
@@ -268,6 +281,7 @@ export function hudTick(t) {
   // the weapon gauge (weapongauge.js); a fault there must never stop the frame
   try { drawWeaponGauge(cgauge, s, G.defs, t); } catch (err) { if (!hudTick.warned) { hudTick.warned = true; console.warn("weapon gauge:", err); } }
   QS.tick(t);
+  dashTick(t);
   if (tip.from && (!tip.from.isConnected || tip.from.closest("[hidden]"))) hideTip();
   Info.tick();
   if (isOpen("char")) drawPortrait(t);
@@ -324,7 +338,7 @@ export function setupHud() {
   $("#wm").addEventListener("mouseleave", () => { if (tip.from === $("#wm")) hideTip(); });
   // a click (a tap) opens 전직의 길: every weapon's mastery and where it leads
   $("#wm").addEventListener("click", () => { if (!G.self) return; hideTip(); openTree(); });
-  $("#wm").title = "눌러서 전직의 길 보기 (K)";
+  $("#wm").title = `눌러서 전직의 길 보기 (${K("skill")})`;
   // the EXP bar: a click opens the 능력치 tab
   $("#exp").addEventListener("click", () => { if (G.self) openStats(); });
   $("#exp").title = "눌러서 능력치 열기 — 모닥불 곁이나 수련관 앞에서 레벨을 올립니다";

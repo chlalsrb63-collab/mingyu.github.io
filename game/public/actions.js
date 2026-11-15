@@ -90,6 +90,17 @@ export function attack() {
   G.aimFlash = t;
   act({ t: "atk", a: G.me.aimI });
 }
+/**
+ * Space: the dash (59-dash.js) the way the aim points. Only the clock lives here: the server moves the hero
+ * and snaps the position (me[5]); the trail is drawn from its "ds" event (skillfx.js). me[11] keeps the clock true.
+ */
+export function dash() {
+  const me = G.me, t = now();
+  if (me.dead || !G.self || t < (G.dashEnd || 0)) return;
+  G.dashEnd = t + ((G.defs.dash && G.defs.dash[2]) || 4000); G.dashSent = t;
+  G.path = null;
+  act({ t: "dash", a: me.aimI });
+}
 // ── aim: the server counts AIM_N steps round the compass on the ground (0 = +x, a quarter = +y)
 const aimN = () => (G.defs && G.defs.aim ? G.defs.aim[0] : 64);
 const aimCone = () => (G.defs && G.defs.aim ? G.defs.aim[1] : 40);

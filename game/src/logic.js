@@ -50,15 +50,16 @@ const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 /**
  * A weapon kind decides how a basic attack lands. Attack no longer depends on a class, so the
  * per-hit mults follow the old classes' attack ratios (jobs-and-stats D.1). `crit` adds to the
- * critical chance, `mag` makes it magic (half the monster's armour counts), `shot` fires arrows.
+ * critical chance, `mag` makes it magic (half the monster's armour counts), `shot` fires arrows (a staff's
+ * and a book's are homing missiles, shot kinds 8 and 9: 45-jobs.js magicShot, 50-loot-combat.js magicLand).
  */
 const WKIND = {
   // unhurried, weighty blows: each lands harder than a quick one would
   sword: { name: "대검", cd: 920, range: 34, fx: 0, cleave: 3, kb: 9, mult: 1.45, arc: 65, crit: 3 },
   dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 1.1, arc: 35, crit: 10 },
   spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.4, arc: 25, crit: 5 },
-  staff: { name: "스태프", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.25, arc: 40, crit: 3, mag: 1 },
-  book: { name: "마도서", cd: 800, range: 84, fx: 5, splash: 26, mult: 1.05, kb: 4, arc: 40, crit: 3, mag: 1 },
+  staff: { name: "스태프", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.25, arc: 40, crit: 3, mag: 1, shot: { spd: 320, r: 5, kind: 8 } },
+  book: { name: "마도서", cd: 800, range: 84, fx: 5, splash: 26, mult: 1.05, kb: 4, arc: 40, crit: 3, mag: 1, shot: { spd: 240, r: 7, kind: 9 } },
   // an arrow flies (45-jobs.js shots): the finisher hits 1.4× and goes through one more
   bow: { name: "활", cd: 760, range: 150, fx: 6, kb: 3, mult: 0.9, arc: 20, crit: 6, shot: { spd: 420, r: 6 } },
   hammer: { name: "양손해머", cd: 1100, range: 30, fx: 7, center: 16, r: 14, wind: 200, mult: 2.23, crit: 3 },
@@ -524,7 +525,7 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -549,7 +550,7 @@ const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 const MOVES = ["charge", "leap", "slam", "pool", "fan"];
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6 };
 const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
@@ -660,6 +661,24 @@ const MOBS = {
   fishwalker_blood: { name: "붉은 다리 달린 생선", sp: "fishwalker", tint: "blood", lv: 35, hp: 2500, atk: 106, def: 24, spd: 32, xp: 1120, gold: [80, 140], aggro: 80, range: 22, cd: 1500, slam: 38 },
   crabskull_frost: { name: "푸른 두개골 게", sp: "crabskull", tint: "frost", lv: 36, hp: 2600, atk: 108, def: 30, spd: 34, xp: 1220, gold: [86, 150], aggro: 84, range: 20, cd: 1400, charge: 118 },
   moleworm_gold: { name: "모래 두더지", sp: "moleworm", tint: "gold", lv: 37, hp: 2800, atk: 112, def: 22, spd: 44, xp: 1300, gold: [90, 158], aggro: 90, range: 19, cd: 1200, leap: 100, slam: 40 },
+  // 운해 사원 · 붉은바위 황금궁 (maps-batch2, batch 1) — existing bodies in new tints with the fallback names of the design
+  // doc; the new species (염주 원숭이, 겹날개 두루미, 운해의 범 · 전갈 등뼈, 독수리 갈비, 금관 공작) are a later step. Placeholders,
+  // (a recoloured kind must outrank the body it borrows — tests/hard.mjs — so the temple's lowest and its flyer are a hound and an owl,
+  // not the doc's squirrels and winged serpent; the mesa's owl is in fire because owlstare_gold is the dune sea's)
+  // to be balanced later (docs/design/level-bands.md). ribdeer_frost and serpentwing_bone are the rare kinds (pocket keepers for now)
+  splitboar_ash: { name: "먹빛 반쪽 멧돼지", sp: "splitboar", tint: "ash", lv: 31, hp: 1850, atk: 100, def: 16, spd: 48, xp: 850, gold: [66, 118], aggro: 92, range: 19, cd: 1100, charge: 112 },
+  ribdeer_gold: { name: "단풍 갈비뼈 사슴", sp: "ribdeer", tint: "gold", lv: 33, hp: 2100, atk: 102, def: 24, spd: 32, xp: 980, gold: [74, 130], aggro: 84, range: 20, cd: 1400, slam: 40 },
+  eelknot_gold: { name: "비단 뱀장어 매듭", sp: "eelknot", tint: "gold", lv: 34, hp: 1900, atk: 106, def: 16, spd: 40, xp: 1050, gold: [78, 136], aggro: 98, range: 76, cd: 1800, volley: true },
+  ribdeer_frost: { name: "흰 갈비뼈 사슴", sp: "ribdeer", tint: "frost", lv: 34, hp: 2300, atk: 106, def: 26, spd: 34, xp: 1400, gold: [110, 190], aggro: 86, range: 20, cd: 1400, slam: 42 },
+  bearmaw_ash: { name: "종지기 곰", sp: "bearmaw", tint: "ash", lv: 35, hp: 2700, atk: 108, def: 28, spd: 28, xp: 1130, gold: [82, 144], aggro: 80, range: 21, cd: 1500, slam: 42, pool: 26, poolKind: 1, charge: 110 },
+  spinescorp_fire: { name: "붉은 전갈 등뼈", sp: "spinescorp", tint: "fire", lv: 36, hp: 2500, atk: 110, def: 20, spd: 58, xp: 1200, gold: [86, 150], aggro: 96, range: 18, cd: 950, charge: 114 },
+  ribvulture_fire: { name: "붉은 독수리 갈비", sp: "ribvulture", tint: "fire", lv: 38, hp: 2400, atk: 114, def: 18, spd: 46, xp: 1350, gold: [90, 158], aggro: 98, range: 76, cd: 1400, fly: true, shot: true },
+  foxtwine_fire: { name: "붉은 꼬인 여우", sp: "foxtwine", tint: "fire", lv: 37, hp: 2600, atk: 112, def: 18, spd: 62, xp: 1300, gold: [90, 158], aggro: 98, range: 17, cd: 850, leap: 96 },
+  twingoat_blood: { name: "벼랑 붉은 염소", sp: "twingoat", tint: "blood", lv: 39, hp: 3100, atk: 116, def: 28, spd: 44, xp: 1450, gold: [95, 166], aggro: 90, range: 20, cd: 1100, charge: 112 },
+  sowseer_gold: { name: "금박 암퇘지", sp: "sowseer", tint: "gold", lv: 40, hp: 3400, atk: 118, def: 32, spd: 30, xp: 1500, gold: [96, 168], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
+  serpentwing_bone: { name: "백골 날개 구렁이", sp: "serpentwing", tint: "bone", lv: 40, hp: 3200, atk: 120, def: 22, spd: 46, xp: 2000, gold: [130, 220], aggro: 100, range: 78, cd: 1800, fly: true, volley: true },
+  horsehalf_gold: { name: "황금 반쪽 말", sp: "horsehalf", tint: "gold", lv: 41, hp: 3300, atk: 120, def: 26, spd: 60, xp: 1560, gold: [98, 170], aggro: 100, range: 20, cd: 1000, leap: 110 },
+  lionhand_gold: { name: "황금 손갈기 사자", sp: "lionhand", tint: "gold", lv: 42, hp: 3900, atk: 124, def: 30, spd: 52, xp: 1620, gold: [100, 174], aggro: 100, range: 21, cd: 1100, fan: 150, charge: 120, pool: 28, poolKind: 1 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes
   blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
@@ -712,7 +731,8 @@ const MOBS = {
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
   ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]],
-  ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 30, 1250, [440, 775]], ["dunesea", 34, 1420, [490, 840]]]) {
+  ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 30, 1250, [440, 775]], ["dunesea", 34, 1420, [490, 840]],
+  ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {
@@ -1637,7 +1657,8 @@ function widen(m, pts, soft, dig, r = m.widenR || 1) {
       const X = x + dx, Y = y + dy, o = m.o[Y][X];
       if (dig && m.g[Y][X] === "W" && o === " ") { if (m.noDig && m.noDig[Y * W + X]) return Infinity; c += 4; continue; }
       if (SOLID_G.includes(m.g[Y][X]) || (o !== " " && !soft.includes(o) && o !== "C")) return Infinity;
-      if (o === "C") c += 8;
+      // (a crag that walls a boss in is never cut into steps: m.noCut, the summit hall of the cloud temple)
+      if (o === "C") { if (m.noCut && m.noCut[Y * W + X]) return Infinity; c += 8; }
       else if (o !== " ") c += 3;
     }
     return c;
@@ -1660,6 +1681,7 @@ function widen(m, pts, soft, dig, r = m.widenR || 1) {
       for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
         if (dig && m.g[y + dy][x + dx] === "W") { m.g[y + dy][x + dx] = dig; cut++; }
         // (five wide: the swath round the first step may hold the stone or the sign the way is cut for — those stay)
+        if (m.noCut && m.noCut[(y + dy) * W + x + dx]) continue;
         if (m.o[y + dy][x + dx] !== " " && (r === 1 || soft.includes(m.o[y + dy][x + dx]) || m.o[y + dy][x + dx] === "C")) { if (m.o[y + dy][x + dx] === "C") m.g[y + dy][x + dx] = "v"; m.o[y + dy][x + dx] = " "; cut++; }
       }
     }
@@ -1785,6 +1807,9 @@ const PIECE = {
   "~": ["w", " "],
   // maps-v2 M3, the south-west coast: palm Ψ, reef rock Φ, shore boulder Ω, mud hut Δ (Greek: every ASCII mark is taken by the rooms' furniture); shallows (walkable), white sand, dune sand
   "Ψ": [undefined, "Ψ"], "Φ": [undefined, "Φ"], "Ω": [undefined, "Ω"], "Δ": [undefined, "Δ"], ",": ["~", " "], _: ["S", " "], ":": ["z", " "],
+  // maps-batch2 (the cloud temple, the red mesa): twisted pine Σ, a hall's footprint Π (a pagoda or a gold-roofed hall
+  // stands on four by two of them), rock pillar Θ, a crag, planks
+  "Σ": [undefined, "Σ"], "Π": [undefined, "Π"], "Θ": [undefined, "Θ"], C: [undefined, "C"], b: ["b", " "],
 };
 const PIECES = {
   // 바람초원 · 속삭임 숲
@@ -1844,8 +1869,45 @@ const PIECES = {
     "......===......",
   ],
 };
+// maps-batch2 (docs/design/maps-batch2.md, batch 1): the cloud temple's and the red mesa's pieces. A hall's footprint Π is
+// four by two with open ground below it (the client stands one big picture on it), so those pieces are never turned.
+/** A paved court w × h: flagstones inside a one-tile margin, then the marks [x, y, characters] over it. */
+function courtRows(w, h, marks, fill = "=") {
+  const g = [];
+  for (let y = 0; y < h; y++) { const row = []; for (let x = 0; x < w; x++) row.push(x === 0 || y === 0 || x === w - 1 || y === h - 1 ? "." : fill); g.push(row); }
+  for (const [x, y, chs] of marks) for (let i = 0; i < chs.length; i++) g[y][x + i] = chs[i];
+  return g.map((r) => r.join(""));
+}
+Object.assign(PIECES, {
+  // 운해 사원: a pagoda over its court, a court of stone lanterns, a lookout pavilion on a spur (a hidden pocket), the
+  // pilgrims' camp, the bell tower's terrace (the field boss's ground), the walled summit hall (the arena: one neck, three wide)
+  pagoda: ["Σ.=====.Σ", "..ΠΠΠΠ=..", "..ΠΠΠΠ=..", ".3=====3.", "..==*==..", "..=====..", "........."],
+  lanterncourt: ["3.....3", ".=====.", ".==*==.", ".=====.", "3.....3", "......."],
+  pavilion: [".Σ...Σ.", "..rrr..", "O.r*r.O", "..rrr..", "......."],
+  pilgrimcamp: [".E...3.", "..ppp..", ".pp#pp.", "Σ.ppp.l", "......."],
+  belltower: courtRows(13, 10, [[0, 0, "Σ"], [12, 0, "Σ"], [4, 0, "ΠΠΠΠ"], [4, 1, "ΠΠΠΠ"], [1, 3, "3"], [11, 3, "3"], [1, 7, "3"], [11, 7, "3"], [6, 3, "*"], [6, 6, "@"]]),
+  summithall: (() => {
+    const rows = courtRows(21, 17, [[9, 1, "ΠΠΠΠ"], [9, 2, "ΠΠΠΠ"], [3, 4, "3"], [17, 4, "3"], [3, 12, "3"], [17, 12, "3"], [10, 8, "@"]]).map((r) => r.split(""));
+    for (let y = 0; y < 17; y++) for (let x = 0; x < 21; x++) {
+      const rim = x === 0 || x === 20 || y === 0 || y >= 15 || ((x < 2 || x > 18) && (y < 2 || y > 12));
+      if (rim) rows[y][x] = y >= 15 && Math.abs(x - 10) <= 1 ? "=" : "C";
+    }
+    return rows.map((r) => r.join(""));
+  })(),
+  // 붉은바위 황금궁: a gold-roofed hall over its court, the lower town's houses on their stair (the camp), the houses by
+  // the west gate, a pool under a fall walled by rock (a hidden pocket), a shrine on a ledge, a colonnade, a bare mesa
+  // top, the throne hall's forecourt (the field boss's ground)
+  goldhall: courtRows(11, 8, [[0, 0, "q"], [10, 0, "q"], [3, 0, "ΠΠΠΠ"], [3, 1, "ΠΠΠΠ"], [0, 3, "q"], [10, 3, "q"], [5, 4, "*"], [0, 6, "q"], [10, 6, "q"]]),
+  templetown: [".Δ...Δ.", "..ppp..", ".pp#pp.", "Δ.ppp.l", "......."],
+  lowertown: courtRows(11, 7, [[1, 0, "Δ"], [9, 0, "Δ"], [4, 0, "ΠΠΠΠ"], [4, 1, "ΠΠΠΠ"], [0, 3, "Δ"], [10, 3, "Δ"], [5, 4, "3"]], "r"),
+  mistfall: ["ΘΘ.ΘΘ", "Θ,,,Θ", ",,*,,", "Θ,,,.", ".Θ.Θ."],
+  ledgeshrine: ["..Σ..", ".rrr.", "3r*r3", ".rrr.", "....."],
+  colonnade: ["q.q.q.q", ".=====.", ".==*==.", ".=====.", "q.q.q.q", "......."],
+  pillartop: ["Θ...Θ", ".....", "..*..", ".....", "Θ...Θ"],
+  thronecourt: courtRows(15, 13, [[0, 0, "q"], [14, 0, "q"], [5, 0, "ΠΠΠΠ"], [5, 1, "ΠΠΠΠ"], [0, 4, "q"], [14, 4, "q"], [7, 3, "*"], [7, 7, "@"], [0, 8, "q"], [14, 8, "q"], [0, 12, "q"], [14, 12, "q"]]),
+});
 /** Pieces whose ruin is one big picture standing on its footprint: never turned (a mirror is fine). */
-const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate", "temple"]);
+const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate", "temple", "pagoda", "belltower", "summithall", "goldhall", "lowertown", "thronecourt"]);
 /** Stamp a set piece and return where its tags landed: { chest: [[x, y]], fire: [...], ... }. */
 function piece(m, name, x, y, rot, flip) {
   const rows = PIECES[name], out = {};
@@ -1899,7 +1961,9 @@ function wilds(cfg) {
     const p1 = rnd(box) * 6.28, p2 = rnd(box) * 6.28;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const u = sea.side === "w" ? y : x, out = sea.side === "w" ? x : H - 1 - y;
-      sd[y * W + x] = sea.at + Math.sin(u / 13 + p1) * sea.amp * 0.55 + Math.sin(u / 5.3 + p2) * sea.amp * 0.2 + (N1[y * W + x] - 0.5) * sea.amp * 0.5 - out;
+      sd[y * W + x] = sea.at + Math.sin(u / 13 + p1) * sea.amp * 0.55 + Math.sin(u / 5.3 + p2) * sea.amp * 0.2 + (N1[y * W + x] - 0.5) * sea.amp * 0.5 - out
+        // (maps-batch2: a cape — sea.cape [fx, half-width] — where the land runs out to the rim, for a door on the sea's own side)
+        - (sea.cape ? 90 * clamp(1.6 - Math.abs(x - sea.cape[0] * W) / sea.cape[1], 0, 1) : 0);
     }
     const lim = Math.max(0, Math.ceil(sea.at + sea.amp - dz)) + 2;
     if (sea.side === "w") sx0 += lim; else sy1 -= lim;
@@ -1992,6 +2056,8 @@ function wilds(cfg) {
     if (cfg.tierOf) for (const r of R) tier[r.k] = cfg.tierOf(r);
     else for (const k of Object.values(gateIdx)) tier[k] = 0;
     m.tier = tier;
+    // (maps-batch2: the level under every tile goes to the client — the cliffs stand as tall as their level; artWire `lv`)
+    if (cfg.level) { m.level = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) m.level[i] = lab[i] >= 0 ? tier[lab[i]] : 0; }
   }
   // and what grows there
   const biome = R.map((r) => (role[r.k] === "gate" || role[r.k] === "camp" ? cfg.biomes.plain : cfg.biome(r.e, r.mo, rnd(box), tier ? tier[r.k] : 0, r)));
@@ -2044,8 +2110,10 @@ function wilds(cfg) {
       // (a dead end that keeps a chest stays shut but for one way in, three tiles wide: a hidden pocket)
       const nook = ["vault", "lair", "stair"].includes(role[e.a]) || ["vault", "lair", "stair"].includes(role[e.b]);
       if (tier[e.a] !== tier[e.b]) { kind = "cliff"; gr = nook ? 1 : cfg.ramp || 2; }
-      else if (!nook && (linked || rnd(box) < (typeof cfg.tierOpen === "function" ? cfg.tierOpen(R[e.a], R[e.b]) : cfg.tierOpen))) continue;
-      else { kind = wallKind(); gr = nook ? 1 : cfg.gap; }
+      // (maps-batch2, cfg.shut(a, b): canyon country — a wall stands even where the tree links two regions, with a gap through it)
+      else if (!nook && !(cfg.shut && cfg.shut(R[e.a], R[e.b])) && (linked || rnd(box) < (typeof cfg.tierOpen === "function" ? cfg.tierOpen(R[e.a], R[e.b]) : cfg.tierOpen))) continue;
+      // (maps-batch2, cfg.nookWall: what shuts a dead end that keeps a chest — rock, where a belt of trees would be cut through by the widening)
+      else { kind = wallKind(); if (nook && cfg.nookWall) kind = cfg.nookWall; gr = nook ? 1 : cfg.gap; }
     } else {
       if (linked && rnd(box) < cfg.merge && dE < cfg.cliff) continue;
       kind = dE >= cfg.cliff && rnd(box) < 0.85 ? "cliff" : wallKind();
@@ -2065,6 +2133,28 @@ function wilds(cfg) {
   }
   // where a way climbs a cliff, it climbs steps
   for (const t of steps) { const [x, y] = at(t); m.o[y][x] = " "; m.g[y][x] = "v"; }
+  // maps-batch2: rock in the mass — cfg.thick(x, y) more tiles of cliff grow out from every cliff face there (never over
+  // a gap, a ramp or a door), so the ways between are canyons; and where cfg.bridge(x, y) says, a slot left through
+  // the rock is decked with planks (the mesa tops joined by rope bridges)
+  if (cfg.thick) {
+    for (let pass = 0; pass < 3; pass++) {
+      const add = [];
+      for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
+        const i = y * W + x;
+        if (m.o[y][x] !== " " || keep[i] || lab[i] < 0 || cfg.thick(x, y) <= pass || N1[i] < 0.22) continue;
+        if (D4.some(([dx, dy]) => m.o[y + dy][x + dx] === "C")) add.push(i);
+      }
+      for (const i of add) m.o[(i - (i % W)) / W][i % W] = "C";
+    }
+  }
+  if (cfg.bridge) {
+    const rock = (x, y) => x >= 0 && y >= 0 && x < W && y < H && m.o[y][x] === "C";
+    const reach = (x, y, dx, dy) => { for (let s = 1; s <= 3; s++) if (rock(x + dx * s, y + dy * s)) return s; return 9; };
+    for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
+      if (m.o[y][x] !== " " || m.g[y][x] === "v" || !cfg.bridge(x, y)) continue;
+      if (reach(x, y, -1, 0) + reach(x, y, 1, 0) <= 6 || reach(x, y, 0, -1) + reach(x, y, 0, 1) <= 6) m.g[y][x] = "b";
+    }
+  }
 
   // the rim: a ragged fringe of the edge wood, thicker where the noise says
   border(m, cfg.edge, 2);
@@ -2117,14 +2207,16 @@ function wilds(cfg) {
   const water = (x, y) => { if (x < 2 || y < 1 || x >= W - 2 || y >= H - 1 || (sd && sd[y * W + x] > 0)) return; m.g[y][x] = "w"; m.o[y][x] = " "; };
   if (cfg.river) {
     // a meandering centre line — two sine waves of different length and some noise — from the top edge to the bottom
-    const sx = W * (0.38 + rnd(box) * 0.24), a1 = 4 + rnd(box) * 2.5, l1 = 11 + rnd(box) * 5, p1 = rnd(box) * 6.28, a2 = 1.5 + rnd(box), l2 = 4.5 + rnd(box) * 2;
-    let px = null;
+    const sx = W * (cfg.riverAt ? cfg.riverAt[0] + rnd(box) * cfg.riverAt[1] : 0.38 + rnd(box) * 0.24), a1 = 4 + rnd(box) * 2.5, l1 = 11 + rnd(box) * 5, p1 = rnd(box) * 6.28, a2 = 1.5 + rnd(box), l2 = 4.5 + rnd(box) * 2;
+    let px = null, pt = -1;
     for (let y = 1; y < H - 1; y++) {
       const x = Math.round(clamp(sx + Math.sin(y / l1 + p1) * a1 + Math.sin(y / l2 + p1 * 2) * a2 + (N1[y * W + Math.round(sx)] - 0.5) * 3, 7, W - 9));
       // fill across from where the last row ended, so the bank never breaks
       const from = px === null ? x : Math.min(px, x), to = px === null ? x : Math.max(px, x);
       const wide = 2 + (N2[y * W + x] > 0.6 ? 1 : 0) + (cfg.riverW || 0);
-      for (let X = from; X <= to + wide - 1; X++) { if (m.o[y][X] === "C") falls.push([X, y]); water(X, y); if (X >= 0 && X < W) riverAt[y * W + X] = 1; }
+      for (let X = from; X <= to + wide - 1; X++) { if (m.o[y][X] === "C" && !cfg.level) falls.push([X, y]); water(X, y); if (X >= 0 && X < W) riverAt[y * W + X] = 1; }
+      // (maps-batch2, a ground whose levels go to the client: a fall exactly where the river steps from one level to the next)
+      if (cfg.level && tier) { const k = lab[y * W + x], tk = k >= 0 ? tier[k] : -1; if (tk >= 0 && pt >= 0 && tk !== pt) falls.push([x, y]); if (tk >= 0) pt = tk; }
       px = x;
     }
   }
@@ -2134,6 +2226,7 @@ function wilds(cfg) {
     const done = [];
     for (const [fx, fy] of falls) {
       if (done.some(([x, y]) => Math.abs(x - fx) + Math.abs(y - fy) < 8)) continue;
+      if (cfg.level && (fy < 6 || fy > H - 7 || (sd && sd[fy * W + fx] > -4))) continue;         // (maps-batch2: never a fall on the rim or in the sea)
       done.push([fx, fy]);
       const tAt = (y) => { const k = lab[clamp(y, 0, H - 1) * W + fx]; return k >= 0 ? tier[k] : 9; };
       const dir = tAt(fy + 3) <= tAt(fy - 3) ? 1 : -1, low = tAt(fy + 3 * dir);
@@ -2193,17 +2286,24 @@ function wilds(cfg) {
     const isW = (x, y) => x >= 0 && y >= 0 && x < W && y < H && riverAt[y * W + x] === 1 && m.g[y][x] === "w";
     const nearW = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (isW(x + dx, y + dy)) return true; return false; };
     const bank = [];
-    for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) if (!isW(x, y) && !keep[y * W + x] && nearW(x, y) && m.g[y][x] !== "b") bank.push(y * W + x);
-    for (const i of bank) { const [x, y] = at(i); m.o[y][x] = "C"; }
+    // (maps-batch2: where the river has run out into the sea there is no bank)
+    for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) if (!isW(x, y) && !keep[y * W + x] && nearW(x, y) && m.g[y][x] !== "b" && !(sd && sd[y * W + x] > -1)) bank.push(y * W + x);
+    if (!cfg.gorge.open) for (const i of bank) { const [x, y] = at(i); m.o[y][x] = "C"; }
     // the crossings: evenly down the river, each a band five rows tall; bridges and fords by turns,
     // and the bank's cliff comes down in steps on either side
     for (let j = 0, y0 = cfg.gorge.first; y0 < H - 6; j++, y0 += cfg.gorge.every) {
       const yc = clamp(y0 + ri(box, -2, 2), 4, H - 5), ford = j % 2 === 1;
+      if (sd) { let wet = false; for (let x = 3; x < W - 3 && !wet; x++) if (riverAt[yc * W + x] && sd[(yc + 3) * W + x] > -3) wet = true; if (wet) continue; }   // (no crossing out in the sea)
       for (let y = yc - 2; y <= yc + 2; y++) {
         const xs = [];
-        for (let x = 3; x < W - 3; x++) if (riverAt[y * W + x]) { m.g[y][x] = ford ? "s" : "b"; m.o[y][x] = " "; xs.push(x); }
+        for (let x = 3; x < W - 3; x++) if (riverAt[y * W + x]) { m.g[y][x] = ford ? cfg.gorge.ford || "s" : cfg.gorge.deck || "b"; m.o[y][x] = " "; xs.push(x); }
         if (!xs.length) continue;
-        const lo = Math.min(...xs), hi = Math.max(...xs);
+        let lo = Math.min(...xs), hi = Math.max(...xs);
+        // (maps-batch2, an open river: the crossing runs on over a pool or a widening beside the channel)
+        if (cfg.gorge.open) {
+          while (lo > 4 && m.g[y][lo - 1] === "w") { lo--; m.g[y][lo] = ford ? cfg.gorge.ford || "s" : cfg.gorge.deck || "b"; m.o[y][lo] = " "; }
+          while (hi < W - 5 && m.g[y][hi + 1] === "w") { hi++; m.g[y][hi] = ford ? cfg.gorge.ford || "s" : cfg.gorge.deck || "b"; m.o[y][hi] = " "; }
+        }
         for (let x = lo - 2; x <= hi + 2; x++) if (m.o[y][x] === "C") { m.o[y][x] = " "; m.g[y][x] = "v"; }
         keepBox(lo - 3, y, hi + 3, y);
       }
@@ -2269,7 +2369,8 @@ function wilds(cfg) {
       }
     } else if (role[k] === "vault") {
       // the piece meant for it, or failing that whichever of the others fits, smallest last
-      const want = cfg.vaultKinds[vn++ % cfg.vaultKinds.length];
+      // (maps-batch2: a ground laid out by place names the piece a dead end there should keep — cfg.vaultAt(region, level))
+      const want = (cfg.vaultAt && cfg.vaultAt(r, tier ? tier[k] : 0)) || cfg.vaultKinds[vn++ % cfg.vaultKinds.length];
       const used = (q) => m.pieces.filter((x) => x === q).length;
       const kinds = [want, ...cfg.vaultKinds.filter((q) => q !== want).sort((a, b) => used(a) - used(b) || PIECES[b].length * PIECES[b][0].length - PIECES[a].length * PIECES[a][0].length)];
       let p = null;
@@ -2355,6 +2456,54 @@ function wilds(cfg) {
     }
   }
 
+  // maps-batch2: courts — big pieces laid by place (cfg.courts [{ piece, at: [fx, fy], boss, field, guards: [kind, n], stone }]):
+  // a pagoda's court, the bell tower, the throne hall's forecourt, the walled summit arena. Like the temple a court clears
+  // what stood on its ground and a ring round it. `boss` stands that monster on the piece's mark, `field` makes the mark
+  // the field boss's ground (m.bossAt), `guards` are elites that keep it, `stone` (1, 2 …: their order) asks for a
+  // waypoint stone beside the walk there (markRoutes)
+  m.courts = [];
+  const courtStones = [];
+  for (const c of cfg.courts || []) {
+    const rows = PIECES[c.piece], tw = rows[0].length, th = rows.length, tx = c.at[0] * W, ty = c.at[1] * H;
+    const cand = R.map((r) => r.k).filter((k) => role[k] === "field" && D[k] >= 0)
+      .sort((a, b) => Math.hypot(R[a].px - tx, R[a].py - ty) - Math.hypot(R[b].px - tx, R[b].py - ty) || a - b).slice(0, 10);
+    const OFF = [];
+    for (let dy = -9; dy <= 9; dy += 3) for (let dx = -9; dx <= 9; dx += 3) OFF.push([dx, dy]);
+    OFF.sort((p, q) => Math.hypot(p[0], p[1]) - Math.hypot(q[0], q[1]));
+    const clearAt = (x0, y0) => {
+      for (let y = y0 - 2; y < y0 + th + 2; y++) for (let x = x0 - 2; x < x0 + tw + 2; x++) if (hold[y * W + x] || "wbv".includes(m.g[y][x]) || lab[y * W + x] < 0) return false;
+      return true;
+    };
+    let at0 = null;
+    for (const k of cand) {
+      for (const [dx, dy] of OFF) {
+        const x0 = clamp(Math.round(R[k].px - tw / 2) + dx, 5, W - tw - 5), y0 = clamp(Math.round(R[k].py - th / 2) + dy, 5, H - th - 5);
+        if (clearAt(x0, y0)) { at0 = [x0, y0]; break; }
+      }
+      if (at0) break;
+    }
+    if (!at0) continue;
+    const [x0, y0] = at0;
+    for (let y = y0 - 1; y <= y0 + th; y++) for (let x = x0 - 1; x <= x0 + tw; x++) { m.o[y][x] = " "; if (y < y0 || y >= y0 + th || x < x0 || x >= x0 + tw) m.g[y][x] = "r"; }
+    const tags = piece(m, c.piece, x0, y0, 0, false);
+    m.pieces.push(c.piece);
+    keepBox(x0 - 1, y0 - 1, x0 + tw, y0 + th);
+    m.courts.push({ piece: c.piece, x: x0, y: y0, w: tw, h: th });
+    // (the crags a court is walled with stand for good: the widening never cuts them into steps)
+    for (let y = y0; y < y0 + th; y++) for (let x = x0; x < x0 + tw; x++) if (m.o[y][x] === "C") (m.noCut || (m.noCut = new Uint8Array(W * H)))[y * W + x] = 1;
+    if (tags.chest) { const [cx, cy] = tags.chest[0]; spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] }); special.push([cx, cy]); }
+    const mark = tags.boss ? tags.boss[0] : tags.chest ? tags.chest[0] : [x0 + (tw >> 1), y0 + th - 1];
+    if (tags.boss) {
+      if (c.boss) spawns.push({ k: c.boss, n: 1, r: [mark[0], mark[1], mark[0], mark[1]] });
+      if (c.field) m.bossAt = mark;
+      special.push(mark);
+    }
+    if (c.guards) spawns.push({ k: c.guards[0], n: c.guards[1], r: [x0 + 1, y0 + 2, x0 + tw - 2, y0 + th - 2], el: 1 });
+    doors.push(mark);
+    if (c.stone) courtStones.push([c.stone, [x0 + (tw >> 1), y0 + th]]);
+  }
+  for (const [, p] of courtStones.sort((a, b) => a[0] - b[0])) (m.stonesAt || (m.stonesAt = [])).push(p);
+
   // small things that make a region its own: a pond, a ring of stones, a lone great tree, an old pen ...
   const ok = (k, x, y) => x > 2 && y > 2 && x < W - 3 && y < H - 3 && lab[y * W + x] === k && inner[y * W + x] >= 2 && free(x, y);
   const obj = (k, x, y, o) => { if (ok(k, x, y)) { m.o[y][x] = o; keep[y * W + x] = 1; } };
@@ -2436,10 +2585,12 @@ function wilds(cfg) {
     const [x, y] = at(j);
     if (x < 2 || y < 2 || x >= W - 2 || y >= H - 2 || m.o[y][x] !== " ") return Infinity;
     const g0 = m.g[y][x];
-    let c = g0 === "w" ? 14 : g0 === "b" || g0 === cfg.road ? 0.55 : g0 === "v" ? 1 : 1 + N1[j] * 2.2 + (g0 === "t" ? 0.6 : 0);
+    let c = g0 === "w" ? cfg.wet || 14 : g0 === "b" || g0 === cfg.road ? 0.55 : g0 === "v" ? 1 : 1 + N1[j] * 2.2 + (g0 === "t" ? 0.6 : 0);
     if (back >= 0 && j - i !== i - back) c += 0.4;
     return c;
   };
+  // (ground a road never repaints: planks and steps, and what a ground names — cfg.hard: the flagstones of a court or a stone bridge)
+  const HARD = "bv" + (cfg.hard || "");
   const pave = (path, wide, ch = cfg.road) => {
     for (let s = 0; s < path.length; s++) {
       const t = path[s], [x, y] = at(t), nx = path[s + 1] ?? path[s - 1], horiz = Math.abs(nx - t) === 1;
@@ -2451,8 +2602,8 @@ function wilds(cfg) {
           // (a way over the shallows is a sand bar, shoulders and all; a painted road keeps its edge lines)
           const bar = sea && sea.bar && "~-".includes(m.g[Y][X]);
           if (bar) m.g[Y][X] = sea.bar;
-          else if (!shoulder && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch;
-          else if (edge && !"bv".includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = edge;
+          else if (!shoulder && !HARD.includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = ch;
+          else if (edge && !HARD.includes(m.g[Y][X]) && m.g[Y][X] !== cfg.road) m.g[Y][X] = edge;
           m.o[Y][X] = " ";
         }
         keep[Y * W + X] = 1;
@@ -2532,9 +2683,11 @@ function wilds(cfg) {
   // a door cut into a finished ground (cfg.doors [[name, side, f]]: the oasis's and the coast's doors to dunesea): nothing
   // is laid out round it — the rim behind it is cleared four wide, and the widening below joins it to the ways
   for (const [name, side, f] of cfg.doors || []) {
-    const g = side === "w" ? Math.round(f * H) : Math.round(f * W);
-    gates[name] = side === "w" ? { t: [[1, g], [1, g + 1]], a: [[4, g], [4, g + 1]] } : { t: [[g, H - 2], [g + 1, H - 2]], a: [[g, H - 5], [g + 1, H - 5]] };
-    const [x0, y0, x1, y1] = side === "w" ? [1, g - 1, 7, g + 2] : [g - 1, H - 8, g + 2, H - 2];
+    // (maps-batch2: on any side — the oasis's east door to the red mesa)
+    const g = side === "w" || side === "e" ? Math.round(f * H) : Math.round(f * W);
+    gates[name] = side === "w" ? { t: [[1, g], [1, g + 1]], a: [[4, g], [4, g + 1]] } : side === "e" ? { t: [[W - 2, g], [W - 2, g + 1]], a: [[W - 5, g], [W - 5, g + 1]] }
+      : side === "n" ? { t: [[g, 1], [g + 1, 1]], a: [[g, 4], [g + 1, 4]] } : { t: [[g, H - 2], [g + 1, H - 2]], a: [[g, H - 5], [g + 1, H - 5]] };
+    const [x0, y0, x1, y1] = side === "w" ? [1, g - 1, 7, g + 2] : side === "e" ? [W - 8, g - 1, W - 2, g + 2] : side === "n" ? [g - 1, 1, g + 2, 7] : [g - 1, H - 8, g + 2, H - 2];
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { m.o[y][x] = " "; if (m.g[y][x] === "w") m.g[y][x] = "b"; }
   }
   if (cfg.stonesAt) m.stonesAt = (m.stonesAt || []).concat(cfg.stonesAt.map(([fx, fy]) => [Math.round(fx * W), Math.round(fy * H)]));
@@ -2859,8 +3012,7 @@ const DIM = {
   // → 5.4 with J2's weapon skills, which lost the old kits' party heals, taunts and guards:
   // bot clears 5.2 / 5.6 / 6.3 / 7.0 min at tiers 17 / 24 / 32 / 40; → 4.9 and a low-band step of 0.85 once the test
   // ran five draws of each rift (a hard seed at 24 and at 17 wiped the party): clears 4.7–8.2 min, 6.2 on average)
-  // Mid-band parties gain enough job levels to shorten the rift. Taper the adjustment before 24 and after 40.
-  hpBase: 4.9, hpLow: [24, 0.85], hpMid: [32, 8, 0.6], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
+  hpBase: 4.9, hpLow: [24, 0.85], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
   reviveMs: 25000,
   // the master's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then
   reward: { gold: 60, xp: 0.05, gearQ: 3, stone: 2, rune: 0.6 }, dailyFull: 3, failGold: 30, lootGold: 0.5,
@@ -3117,6 +3269,78 @@ function dimBuild(cfg, seed) {
     rooms: rooms.map(({ x0, y0, x1, y1, cx, cy, kind, shape, area }) => ({ x0, y0, x1, y1, cx, cy, kind, shape, area })),
     start: [st.cx, st.cy], boss: [bs.cx, bs.cy], bossRoom: bossK, startRoom: startK, door, dead, spawns, pool,
     bossK: dimBossKind(theme, lv, pool), path: dS[tileOf(bs)], elites, cap: DIM.cap, links: links.map(([a, b]) => [a, b]),
+  };
+  finalize(m);
+  return m;
+}
+
+// ───────────────────────────── 균열 단수 and 주간 보스 도전 (docs/design/scale-and-rift.md H.6) ─────────────────────────────
+
+/**
+ * 균열 단수: an endless ladder on the party rift. Tier 1 is the rift as it always was; each tier above multiplies
+ * monster health by `hp` and their blows by `atk` (compounding), makes one more pack leader an elite every `eliteEvery`
+ * tiers (at most `eliteMax`), gives elites a second trait from `trait2` and the master a third from `trait3`.
+ * The chest grows gently (`gold`/`xp` per tier up to `goldMax`/`xpMax` times, a stone more every `stoneEvery` tiers,
+ * rune chance + `rune` per tier) — only for the day's full-reward clears (DIM.dailyFull).
+ * Carry guard: a member more than `carryLv` world tiers under the party's best, or who dealt under `carryShare` of an
+ * even share of the damage, gets `carryK` of the gold and experience and no unlock, record or weekly bonus.
+ * `weekly`: the first clear of each bracket of `every` tiers in a week (Monday 06:00 KST) pays `gold` × rift level and `stone`.
+ */
+const DIM_TIER = {
+  max: 100, hp: 1.08, atk: 1.05, eliteEvery: 3, eliteMax: 6, trait2: 10, trait3: 20,
+  gold: 0.06, goldMax: 3, xp: 0.04, xpMax: 2, stoneEvery: 5, stoneMax: 4, rune: 0.02,
+  carryLv: 6, carryShare: 0.2, carryK: 0.4,
+  weekly: { every: 5, max: 20, gold: 120, stone: 3 },
+};
+/** What tier `n` does to a rift: `{ hp, atk, elites, traits, boss }` — every one non-decreasing in n. */
+function dimTierK(n) {
+  const t = clamp(n | 0, 1, DIM_TIER.max) - 1;
+  return {
+    hp: Math.pow(DIM_TIER.hp, t), atk: Math.pow(DIM_TIER.atk, t), elites: Math.min(DIM_TIER.eliteMax, Math.floor(t / DIM_TIER.eliteEvery)),
+    traits: t + 1 >= DIM_TIER.trait2 ? 2 : 1, boss: t + 1 >= DIM_TIER.trait3 ? 3 : 2,
+  };
+}
+
+/**
+ * 주간 보스 도전: a four-player arena for the two big bosses. Each has three telegraphed patterns made of the old
+ * moves (`pats`: [name, kind]), a marked cast every `every`-th turn that the party breaks by dealing `stag` of the
+ * boss's health while it lasts (`castMs`; broken: stunned `stunMs`; not broken: a blast of `blast` × attack and one
+ * more `fury`), and a soft enrage (`enrage` ms into a fight, then + `enrageK` damage every `enrageStep`).
+ * A wipe resets the boss and the party tries again until `limit`. `big` once a week per boss, `small` after.
+ * Toughness: `hp` × DIM.hpN (party size) × (1 + `lvK` per world tier the party's best outranks the boss), blows
+ * × (1 + `atkLv` per such tier) — measured with the bot party in tests/dimrift.mjs.
+ */
+const DIM_CHAL = {
+  w: 32, h: 22, limit: 600000, reviveMs: 4000, gap: 5200, every: 4, castMs: 6000, stunMs: 5000, stag: 0.03, blast: 2.4, fury: 0.15,
+  enrage: 240000, enrageStep: 10000, enrageK: 0.12, hp: 14, lvK: 0.1, atkLv: 0.05, minGap: 3,
+  big: { gold: 400, xp: 0.25, stone: 8, rune: 2, gear: 2, gearQ: 3 }, small: { gold: 40, xp: 0.02, stone: 1 },
+  bosses: {
+    boss: { theme: "crypt", cast: "차원 붕괴", pats: [["균열 탄막", "fan2"], ["붕괴의 고리", "rings"], ["균열 웅덩이", "pools"]] },
+    abyssboss: { theme: "abyss", cast: "심연의 포효", pats: [["연쇄 돌진", "charge2"], ["도약 강타", "leapslam"], ["촉수 탄막", "fan3"]] },
+  },
+};
+const CHAL_KEYS = Object.keys(DIM_CHAL.bosses);
+/** The level a hero needs for a boss challenge: `minGap` world tiers under the boss's own. */
+const chalMinLv = (k) => shownLv(MOBS[k].lv - DIM_CHAL.minGap);
+
+/** A boss challenge's arena: one oval hall, the party at its west end, the boss in the middle. Pure. */
+function dimArena(cfg) {
+  const W = DIM_CHAL.w, H = DIM_CHAL.h, k = cfg.k, B = DIM_CHAL.bosses[k], theme = B.theme;
+  const m = blank(cfg.id || "dim:0", `보스 도전: ${MOBS[k].name}`, W, H, "W");
+  m.theme = theme; m.bgm = "dim"; m.band = null; m.marks = [];
+  const cx = W >> 1, cy = H >> 1, rx = cx - 3, ry = cy - 3;
+  let area = 0;
+  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+    if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1) continue;
+    m.g[y][x] = fbm(x, y, cfg.seed | 0, 5) > 0.6 ? "d" : "c"; area++;
+  }
+  const start = [cx - rx + 3, cy], door = [cx - rx + 1, cy - 1];
+  m.g[door[1]][door[0]] = "c";
+  m.entry = start;
+  // no door that works: a boss that never leashes would drag the fight onto it — the HUD's [떠나기] (dim_leave) is the way out
+  m.dim = {
+    rooms: [{ x0: cx - rx, y0: cy - ry, x1: cx + rx, y1: cy + ry, cx, cy, kind: "boss", shape: "plain", area }],
+    start, boss: [cx, cy], bossRoom: 0, startRoom: 0, door, dead: [], spawns: [], pool: [], bossK: k, path: rx - 2, elites: 0, cap: 1, links: [],
   };
   finalize(m);
   return m;
@@ -3537,6 +3761,16 @@ function cavern(cfg) {
     for (let y = top; y <= H - 3; y++) for (const x of [gx - 1, gx, gx + 1]) { digAt(m, x, y); if (m.g[y][x] === "w") m.g[y][x] = "c"; }
     m.gates.south = { t: [[gx, H - 3], [gx + 1, H - 3]], a: [[gx, H - 6], [gx + 1, H - 6]] };
     pass.push(m.gates.south.a[0], [gx, top]);
+  }
+  // maps-batch2: a shaft three wide in the north wall at cfg.shaft of the width, down to the first open floor (the climb
+  // out to the cloud temple; a door in the east wall was a straight walk from the way in, which the path-quality rules refuse)
+  if (cfg.shaft) {
+    const gx = Math.round(W * cfg.shaft);
+    let bot = 4;
+    while (bot < 30 && !(m.g[bot][gx] !== "W" && m.o[bot][gx] === " " && m.g[bot][gx] !== "w")) bot++;
+    for (let y = 3; y <= bot; y++) for (const x of [gx - 1, gx, gx + 1]) { digAt(m, x, y); if (m.g[y][x] === "w") m.g[y][x] = "c"; }
+    m.gates.shaft = { t: [[gx, 3], [gx + 1, 3]], a: [[gx, 6], [gx + 1, 6]] };
+    pass.push(m.gates.shaft.a[0], [gx, bot]);
   }
   for (const name of Object.keys(m.gates)) for (const [x, y] of m.gates[name].t.concat(m.gates[name].a)) digAt(m, x, y);
   for (let x = 3; x <= start[0]; x++) for (const y of WD ? [start[1] - 2, start[1] - 1, start[1], start[1] + 1, start[1] + 2] : [start[1] - 1, start[1]]) { digAt(m, x, y); if (WD && !"ha".includes(m.o[y][x])) m.o[y][x] = " "; }
@@ -4683,7 +4917,7 @@ function buildTown() {
 // know without building anything (names, bands, monster lists) is read from here into MAP_META.
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
-const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep"];
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa"];
 /**
  * Every generated hunting ground: `make` the generator, `band` the level a character should
  * be to walk in (shown on every door that leads there), `stones` how many waypoint stones stand
@@ -4738,6 +4972,8 @@ const GEN = {
     moss: { r: 15, w: 4, wind: 0.55, loops: 0.55, shelf: [0.63, 0.77], rings: 7, stream: 0.018 }, wide: { fill: 0.55, plant: 0, pillar: [6, 0.74], ridges: [[24, 27, 13, 2.5, 41, 11], [38, 68, 10, 2.5, 69, 94]] },
     // maps-v2 M3: a crack in the south wall climbs out to the desert (the oasis)
     south: 0.52,
+    // maps-batch2: a shaft in the east wall climbs out to the cloud temple
+    shaft: 0.6,
     mobs: ["spiderhand", "splitboar_frost", "moleworm", "owlstare", "hydrasnake_steel", "bearmaw"],
   }) },
   city: { make: metro, after: (m) => corridorGate(m, "ossuary", 129, 72), route: "sewer", band: [14, 21], stones: 3, theme: "city", cfg: () => ({
@@ -4810,7 +5046,7 @@ const GEN = {
     id: "oasis", name: "모래바람 오아시스", theme: "desert", bgm: "oasis", seed: 52711, w: 168, h: 116, r: 10.2, warp: 9, wind: 0.55, loops: 0.28, merge: 0.3, cliff: 0.16, gap: 2,
     tiers: 3, tierOpen: 0.55, ramp: 2, roadW: 3, widen: "TPBRulYAeΨΩΦ", green: { r: 3, palm: 0.2 },
     ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 6, lakeR: 7, vaults: 9, ruins: 4, tpm: 15.5,
-    walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north", doors: [["south", "s", 0.2143]],
+    walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north", doors: [["south", "s", 0.2143], ["east", "e", 0.36]],
     mobs: ["foxtwine_gold", "hydrasnake_gold", "spinescorp_gold", "ribvulture_bone", "cactushog", "mummycamel"], pondMob: "ribvulture_bone", chest: "chest_oasis",
     campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "hamlet"], biomes: { plain: "flat" }, featureP: 0.65, features: ["pond", "boulders", "cairn", "stones", "dead"],
     // by level: scrub and flats below, rippled dunes on the middle shelves, bare stony ridges on top
@@ -4875,6 +5111,81 @@ const GEN = {
         : b === "scrub" ? (h < 0.04 ? "B" : h < 0.058 ? "Ψ" : h < 0.068 ? "A" : null)
         : b === "beach" ? (h < 0.03 ? "Ψ" : h < 0.036 ? "l" : h < 0.042 ? "Ω" : null)
         : b === "sea" ? null : h < 0.008 ? "Ψ" : h < 0.018 ? "R" : h < 0.024 ? "A" : null),
+    };
+  } },
+  // ── maps-batch2, batch 1 (docs/design/maps-batch2.md §4–5): cave → 운해 사원 → 붉은바위 황금궁 ← oasis. Both are laid out by
+  // place (levels, habitats, courts), their numbers placeholders to be balanced later with the other new grounds.
+  // 운해 사원: five levels of crag rising from the mountain gate in the south-west to the summit in the north-east, over a sea
+  // of cloud (rule-wise deep water) in the south; a gorge full of mist down the middle under three stone bridges, a fall at
+  // every step; pagoda courts on the middle levels, the bell tower's terrace (field boss) and the walled summit hall (the
+  // arena boss) on the top. The south door stands on a cape in the cloud.
+  cloudtemple: { make: wilds, route: "mesa", band: [30, 36], stones: 3, stoneNames: ["산문", "탑전 마당", "종루"], cfg: () => {
+    const W = 176, H = 128;
+    const tierAt = (x, y, e = 0.5) => { const f = 0.55 * (x / W) + 0.6 * (1 - y / H) + (e - 0.5) * 0.06; return f < 0.34 ? 0 : f < 0.5 ? 1 : f < 0.66 ? 2 : f < 0.84 ? 3 : 4; };
+    const SQ = "beadmonkey", BOAR = "splitboar_ash", CRANE = "wingcrane", DEER = "ribdeer_gold", EEL = "eelknot_gold", BEAR = "bearmaw_ash";
+    return {
+      id: "cloudtemple", name: "운해 사원", theme: "mist", bgm: "autumn", seed: 60539, w: W, h: H, r: 9.4, warp: 9, wind: 0.6, loops: 0.34, merge: 0.3, cliff: 0.18, gap: 2,
+      tiers: 5, tierOpen: 0.15, ramp: 2, roadW: 3, pools: 2.6, level: true, hard: "=", stoneFr: [], widen: "TPBRulYAeΣΘO",
+      sea: { side: "s", at: 20, amp: 8, surf: 0, shallow: 0, beach: 0, sand: "r", reef: 0, cape: [0.74, 9] },
+      river: true, riverAt: [0.4, 0.06], gorge: { first: 20, every: 30, deck: "=" }, thick: () => 1,
+      ground: ":", edge: "C", treeCh: "T", treeCh2: "Σ", road: "r", trail: "p", shore: "r", lakes: 7, lakeR: 7, vaults: 13, ruins: 2, tpm: 15.5,
+      walls: [["trees", 0.45], ["rocks", 0.35], ["bramble", 0.2]], rocks: ["R", "Θ"], nookWall: "cliff", gates: [["west", "w", 0.62], ["south", "s", 0.74]], exit: "south",
+      mobs: [SQ, BOAR, CRANE, DEER, EEL, BEAR], pondMob: null, chest: "chest_cloudtemple", boss: "mistiger",
+      // the rare kind keeps the pavilion pockets until the rare-spawn rule exists (maps-batch2 "shared rules")
+      campPiece: "pilgrimcamp", vaultKinds: ["pavilion", "lanterncourt", "pavilion", "cache", "menhir", "lanterncourt"], vaultMobs: { pavilion: "ribdeer_frost" },
+      courts: [{ piece: "summithall", at: [0.88, 0.13], boss: "mistiger" }, { piece: "belltower", at: [0.76, 0.3], field: true, guards: [BEAR, 2], stone: 2 },
+        { piece: "pagoda", at: [0.6, 0.46], stone: 1 }, { piece: "pagoda", at: [0.52, 0.16] }],
+      biomes: { plain: "gate" }, featureP: 0.55, features: ["boulders", "cairn", "stones", "leafpile", "statue", "logs", "bigtree"],
+      tierOf: (r) => tierAt(r.px, r.py, r.e),
+      // A the mountain gate (level 0), B the stair terraces (1), C the gorge, D the pagoda courts (2–3), E the ledge walk by the cloud, F the bell tower (4)
+      rosterAt: (x, y) => { const t = tierAt(x, y); return t === 0 ? [SQ] : t === 4 ? [EEL, BEAR] : Math.abs(x - 0.43 * W) < 13 ? [BOAR, CRANE] : t === 1 ? [SQ, BOAR] : y > 84 ? [DEER, EEL] : [CRANE, DEER]; },
+      biome: (e, mo, rr, t, r) => (r.sd > -12 ? "ledge" : t === 0 ? "gate" : t === 1 ? "stairs" : t === 4 ? "summit" : rr < 0.5 ? "court" : "grove"),
+      paint: (b, n1, n2) => (b === "ledge" ? (n1 > 0.4 ? "r" : null) : b === "stairs" ? (n1 > 0.55 ? "%" : n2 > 0.7 ? "," : null) : b === "grove" ? (n1 > 0.45 ? "%" : null)
+        : b === "court" ? (n1 > 0.62 ? "=" : n1 < 0.2 ? "r" : null) : b === "summit" ? (n1 > 0.35 ? "r" : null) : n2 > 0.7 ? "," : null),
+      scatter: (b, h, n1) => (b === "ledge" ? (h < 0.03 ? "Σ" : h < 0.04 ? "R" : h < 0.046 ? "O" : null)
+        : b === "stairs" ? ((n1 > 0.55 ? h < 0.1 : h < 0.03) ? "T" : h < 0.045 ? "B" : h < 0.05 ? "Σ" : null)
+        : b === "grove" ? ((n1 > 0.5 ? h < 0.14 : h < 0.04) ? "T" : h < 0.05 ? "Σ" : h < 0.058 ? "l" : null)
+        : b === "court" ? (h < 0.012 ? "Σ" : h < 0.02 ? "3" : h < 0.03 ? "T" : null)
+        : b === "summit" ? (h < 0.025 ? "Σ" : h < 0.035 ? "R" : null)
+        : h < 0.02 ? "T" : h < 0.035 ? "B" : h < 0.042 ? "Σ" : null),
+    };
+  } },
+  // 붉은바위 황금궁: four levels of red sandstone rising from the canyon floor in the north-west to the palace in the south-east.
+  // The floor is a maze of slot canyons (rock in the mass, every way a gap through it), the river comes down three falls
+  // into pools, pine ledges climb in the north-east (the door to the cloud temple), the third level is mesa tops joined
+  // by plank bridges, and on top stand the gold-roofed halls and the throne hall's forecourt (the field boss's ground).
+  mesa: { make: wilds, band: [36, 42], stones: 3, wayOn: "cloudtemple", stoneNames: ["협곡 아랫마을", "황금 지붕 궁", "소나무 벼랑길"], cfg: () => {
+    const W = 184, H = 124;
+    const tierAt = (x, y, e = 0.5) => { const f = 0.45 * (x / W) + 0.65 * (y / H) + (e - 0.5) * 0.06; return f < 0.36 ? 0 : f < 0.58 ? 1 : f < 0.8 ? 2 : 3; };
+    const maze = (x, y) => tierAt(x, y) === 0 && x > 0.14 * W, tops = (x, y) => tierAt(x, y) === 2;
+    const SPIDER = "spinescorp_fire", FOX = "foxtwine_fire", OWL = "ribvulture_fire", GOAT = "twingoat_blood", SOW = "sowseer_gold", HORSE = "horsehalf_gold", LION = "lionhand_gold";
+    return {
+      id: "mesa", name: "붉은바위 황금궁", theme: "mesa", bgm: "oasis", seed: 84223, w: W, h: H, r: 9.6, warp: 9, wind: 0.6, loops: 0.4, merge: 0.3, cliff: 0.16, gap: 2,
+      tiers: 4, tierOpen: 0.1, ramp: 2, roadW: 3, pools: 3, level: true, hard: "=", stoneFr: [], stonesAt: [[0.74, 0.3]], widen: "TPBRulYAeΣΘOq",
+      river: true, riverAt: [0.46, 0.05], gorge: { first: 12, every: 22, open: true, ford: "~" }, wet: 60,
+      ground: "s", edge: "C", treeCh: "Σ", treeCh2: "Θ", road: "p", shore: "t", lakes: 0, lakeR: 5, vaults: 7, ruins: 2, tpm: 15.5,
+      walls: [["rocks", 1]], rocks: ["Θ", "R"], gates: [["west", "w", 0.3], ["ledge", "n", 0.78]], exit: "ledge",
+      mobs: [SPIDER, FOX, OWL, GOAT, SOW, HORSE, LION], pondMob: null, chest: "chest_mesa",
+      campPiece: "templetown", vaultKinds: ["mistfall", "ledgeshrine", "pillartop", "colonnade", "cache", "menhir"], vaultMobs: { mistfall: "serpentwing_bone" },
+      vaultAt: (r, t) => (t === 0 ? "mistfall" : t === 1 ? "ledgeshrine" : t === 2 ? "pillartop" : "colonnade"),
+      courts: [{ piece: "thronecourt", at: [0.86, 0.84], field: true, guards: [LION, 2] }, { piece: "goldhall", at: [0.68, 0.88], stone: 1 }, { piece: "goldhall", at: [0.93, 0.62] },
+        { piece: "lowertown", at: [0.1, 0.3] }],
+      biomes: { plain: "town" }, featureP: 0.5, features: ["boulders", "cairn", "stones", "dead", "boulders"],
+      tierOf: (r) => tierAt(r.px, r.py, r.e),
+      // every barrier is red rock, but on the pine ledges (level 1) a belt of pines; the floor and the tops are canyon country
+      wallAt: (kind, x, y) => (tierAt(x, y) === 1 ? "trees" : "cliff"),
+      shut: (a, b) => (maze(a.px, a.py) && maze(b.px, b.py)) || (tops(a.px, a.py) && tops(b.px, b.py)),
+      thick: (x, y) => (maze(x, y) || tops(x, y) ? 2 : 1), bridge: tops,
+      // A the lower town, B the slot canyons (level 0), C the falls, D the pine ledges (1), E the mesa tops (2), F the palace (3)
+      rosterAt: (x, y) => { const t = tierAt(x, y); return Math.abs(x - 0.485 * W) < 13 && t <= 1 ? [FOX, OWL] : t === 0 ? (x < 0.16 * W ? [SPIDER] : [SPIDER, FOX]) : t === 1 ? [OWL, GOAT] : t === 2 ? [GOAT, SOW] : [SOW, HORSE]; },
+      biome: (e, mo, rr, t, r) => (t === 0 ? (r.px < 0.14 * W ? "town" : "canyon") : t === 1 ? "ledge" : t === 2 ? "tops" : "palace"),
+      paint: (b, n1, n2) => (b === "canyon" ? (n1 > 0.62 ? "z" : n1 < 0.16 ? "r" : null) : b === "ledge" ? (n1 > 0.6 ? "," : n1 < 0.3 ? "r" : null) : b === "tops" ? (n1 > 0.4 ? "z" : "r")
+        : b === "palace" ? (n1 > 0.5 ? "=" : n1 < 0.2 ? "r" : null) : n2 > 0.75 ? "z" : null),
+      scatter: (b, h) => (b === "canyon" ? (h < 0.012 ? "Θ" : h < 0.02 ? "R" : h < 0.026 ? "A" : null)
+        : b === "ledge" ? (h < 0.06 ? "Σ" : h < 0.07 ? "B" : h < 0.076 ? "R" : null)
+        : b === "tops" ? (h < 0.02 ? "Θ" : h < 0.028 ? "Σ" : null)
+        : b === "palace" ? (h < 0.012 ? "q" : h < 0.022 ? "Σ" : h < 0.03 ? "3" : null)
+        : h < 0.015 ? "Σ" : h < 0.025 ? "R" : null),
     };
   } },
   abyss: { make: abyssal, route: "maple", band: [32, 40], stones: 3, cfg: () => ({
@@ -4951,6 +5262,8 @@ const GATE_LINKS = [
   ["city", "south", "jungle", "north", 1], ["jungle", "south", "coast", "north", 1], ["coast", "east", "oasis", "west", 1], ["oasis", "north", "cave", "south", 1],
   // the dune sea: south out of the oasis into the high dunes, and west along the shore from the coral coast
   ["oasis", "south", "dunesea", "north", 1], ["coast", "west", "dunesea", "east", 1],
+  // maps-batch2, batch 1: up the cave's shaft to the cloud temple, down its south cape to the red mesa's ledge, and east out of the oasis to the mesa
+  ["cave", "shaft", "cloudtemple", "west", 1], ["cloudtemple", "south", "mesa", "ledge", 1], ["oasis", "east", "mesa", "west", 1],
 ];
 /** A generated map's own doors out (in GATE_LINKS order, as the generators always laid them). */
 function gateDoors(m) {
@@ -5749,7 +6062,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 15, name, job: "adventurer", jp: null,
+    v: 16, name, job: "adventurer", jp: null,
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -5762,7 +6075,7 @@ export function newChar(name, look, wk) {
     // waypoint stones woken, per map a bitmask of its stones (bit 0 = its first stone)
     wp: { town: 1 }, seen: ["town"], ach: [], title: "", cnt: Object.fromEntries(CNT_KEYS.map((k) => [k, 0])), daily: null, tut: { i: 0, n: 0 },
     // 차원 균열 clears today (Phase 2: the daily count), by the day number they were made on
-    dim: { day: 0, n: 0 },
+    dim: dimClean(null),
     wh:{ items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     // the first skill of the weapon in hand is on the bar from the start (filled below)
     qs: QS_EMPTY(), cos: cosEmpty(), sq: sqEmpty(),
@@ -5875,7 +6188,8 @@ function migrate(ch) {
   // side quests from the world map editor (v8): what is under way and what is done
   ch.sq = sqClean(ch.sq);
   // the 차원 균열 daily count (v9)
-  ch.dim = isObj(ch.dim) ? { day: Math.max(0, ch.dim.day | 0), n: clamp(ch.dim.n | 0, 0, 999) } : { day: 0, n: 0 };
+  // (v14: the unlocked 균열 단수, the best tier and its time, the week's brackets and boss flags — 64-dim.js dimClean)
+  ch.dim = dimClean(ch.dim);
   // ── bag expansion and housing (v10): the bag 40..100 (old bags were 30), the house cleaned ──
   bagClean(ch);
   ch.house = houseClean(ch.house, fix);
@@ -5889,8 +6203,9 @@ function migrate(ch) {
   charmsClean(ch);
   // social, the weekly book, enhancement pity (v14): block list, gauge, the week's baselines, the day's rest bonus (63-social-weekly.js)
   socialSheetClean(ch, dl);
-  // cleanJobs adds the hammer mastery slot to saves made before v14.
-  ch.v = Math.max(ch.v | 0, 15);
+  // rift tiers and the weekly boss challenge (v15): the 균열 record was cleaned above (dimClean, 64-dim.js)
+  // The integrated sheet (v16) holds rift and profession records. cleanJobs also adds hammer mastery.
+  ch.v = Math.max(ch.v | 0, 16);
   return ch;
 }
 
@@ -6582,18 +6897,20 @@ function staggerPlayer(S, rt, p, mob) {
  * client's trail); `pierce` how many monsters it passes through before it stops.
  */
 function fireArrow(S, rt, p, mob, mult, pierce, kind, o = {}) {
-  const arm = deriveStats(p).arm, sh = arm.shot || WKIND.bow.shot;
+  const arm = deriveStats(p).arm, sh = arm.mag ? WKIND.bow.shot : arm.shot || WKIND.bow.shot;
   if (!rt.shots) rt.shots = [];
   const mine = rt.shots.filter((s) => s.pid === p.pid);
   // (a skill's volley may have more in the air at once)
   if (mine.length >= SHOT_MAX + (kind >= 2 ? 6 : 0)) { const q = mine[0]; rt.shots.splice(rt.shots.indexOf(q), 1); rt.ev.push(["ae", q.id, Math.round(q.x), Math.round(q.y), 2]); }
   // `o` (skills): spd, len, r, a direction ux/uy of its own, a `cap` {n, h} shared by a volley (at most n arrows a monster);
   // `opt` hurtMob's options (the skill: a book's brand, magic), `el` an element left where it first strikes (weave, power `k`),
-  // `brandK` more on a monster already branded
+  // `brandK` more on a monster already branded, `home` a monster id it steers at while that lives, `blow` a staff's or a
+  // book's basic blow ({ wk, fin }: it lands as magicLand, not as an arrow)
   const [ux, uy] = o.ux !== undefined ? [o.ux, o.uy] : aimVec(p, mob);
-  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: o.spd || sh.spd, left: o.len || arm.range || 150, r: o.r || sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0, cap: o.cap || null, opt: o.opt || null, el: o.el || "", k: o.k || 1, brandK: o.brandK || 0 };
+  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: o.spd || sh.spd, left: o.len || arm.range || 150, r: o.r || sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0, cap: o.cap || null, opt: o.opt || null, el: o.el || "", k: o.k || 1, brandK: o.brandK || 0, home: o.home || 0, blow: o.blow || null, ring: 0 };
   rt.shots.push(shot);
-  rt.ev.push(["ar", shot.id, Math.round(shot.x), Math.round(shot.y), Math.round(ux * 1000), Math.round(uy * 1000), shot.spd, kind, p.eid]);
+  const ar = ["ar", shot.id, Math.round(shot.x), Math.round(shot.y), Math.round(ux * 1000), Math.round(uy * 1000), shot.spd, kind, p.eid];
+  rt.ev.push(shot.home ? [...ar, shot.home] : ar);   // (a homing one names its monster)
   return shot;
 }
 /**
@@ -6616,9 +6933,15 @@ function shotTick(S, rt, dt) {
   const m = mapOfS(S, rt.id);
   for (let i = rt.shots.length - 1; i >= 0; i--) {
     const s = rt.shots[i], p = S.players[s.pid];
-    const end = (how) => { rt.shots.splice(i, 1); rt.ev.push(["ae", s.id, Math.round(s.x), Math.round(s.y), how]); };
+    // (a magic blow's burst adds its ring's radius: the book's splash, the staff's finisher)
+    const end = (how) => { rt.shots.splice(i, 1); rt.ev.push(s.ring ? ["ae", s.id, Math.round(s.x), Math.round(s.y), how, s.ring] : ["ae", s.id, Math.round(s.x), Math.round(s.y), how]); };
     // a shooter who fell or left takes their arrows with them
     if (!p || p.dead || p.map !== rt.id) { end(2); continue; }
+    // a homing missile turns toward where its monster stands now; once that is gone it flies straight on
+    if (s.home) {
+      const t = rt.mobs.find((o) => o.id === s.home && !o.dead);
+      if (t) { const d = dist(s.x, s.y, t.x, t.y - 6) || 1; s.ux = (t.x - s.x) / d; s.uy = (t.y - 6 - s.y) / d; } else s.home = 0;
+    }
     const seg = Math.min(s.left, s.spd * dt);
     // how far along the segment it gets before a wall (flying height: the ground point is 6 px below)
     let free = seg, wall = false;
@@ -6636,7 +6959,8 @@ function shotTick(S, rt, dt) {
       s.hit.push(o.id);
       if (s.cap) s.cap.h[o.id] = (s.cap.h[o.id] | 0) + 1;
       p.hitAct = [s.act, s.gain];
-      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
+      if (s.blow) magicLand(S, rt, p, s, o);
+      else hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
       p.hitAct = null;
       // 길별의 렌즈참: a 관통 화살 that strikes a second target marks it (66-charms.js)
       if (s.cl && s.hit.length === 2) charmLens(S, rt, p, o);
@@ -6658,6 +6982,22 @@ function bowShot(S, rt, p, fin) {
   const far = mob ? dist(p.x, p.y, mob.x, mob.y) : c.range * 0.7;
   rt.ev.push(["a", p.eid, 6, Math.round(p.x + ux * far), Math.round(p.y - 6 + uy * far), p.dir, p.combo]);
   fireArrow(S, rt, p, mob, (c.mult || 1) * (fin ? FINISH.mult : 1), fin ? 1 : 0, fin ? 1 : 0);
+}
+
+/**
+ * A staff's or a book's basic attack: a missile (kind 8) or an orb (kind 9) that steers at the aimed
+ * monster and lands as the blow (50-loot-combat.js magicLand); with nothing aimed at it flies straight
+ * and fades at the weapon's reach. Chasing a monster that moves, it may fly a little past the reach.
+ */
+function magicShot(S, rt, p, fin) {
+  const st = deriveStats(p), c = st.arm;
+  const mob = aimMob(rt, p, atkRange(p), c.arc || AIM_CONE);
+  if (mob) face(p, mob);
+  const [ux, uy] = aimVec(p, mob);
+  const far = mob ? dist(p.x, p.y, mob.x, mob.y) : c.range * 0.7;
+  rt.ev.push(["a", p.eid, c.fx, Math.round(p.x + ux * far), Math.round(p.y - 6 + uy * far), p.dir, p.combo]);
+  fireArrow(S, rt, p, mob, (c.mult || 1) * (fin ? FINISH.mult : 1), 0, c.shot.kind,
+    { spd: c.shot.spd, r: c.shot.r, len: c.range * (mob ? 1.6 : 1), home: mob ? mob.id : 0, blow: { wk: st.wk, fin }, opt: { mag: 1 } });
 }
 
 // ── migration of the four-class sheets (B.11) and the test hero
@@ -7070,6 +7410,7 @@ function dealMob(S, rt, mob, p, dmg, crit) {
   if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
   mob.hp -= dmg;
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
+  if (mob.dim) dimDealt(S, rt, mob, p, dmg);   // the carry guard's damage share, a boss's stagger gauge (64-dim.js)
   if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
   if (!mob.tgt) mob.tgt = p.pid;
   rt.ev.push(["h", mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0]);
@@ -7410,8 +7751,8 @@ function basicAttack(S, p) {
   const beat = p.swordBeat ?? p.combo;
   p.atkAt = now;
   newAct(p, false);
-  // a bow looses an arrow that flies (45-jobs.js): it lands, or not, a few ticks later
-  if (c.shot) { bowShot(S, rt, p, fin); return; }
+  // a bow looses an arrow, a staff or a book a homing missile, that flies (45-jobs.js): it lands, or not, a few ticks later
+  if (c.shot) { (c.mag ? magicShot : bowShot)(S, rt, p, fin); return; }
   const range = atkRange(p);
   // the blow goes where you aim: the nearest monster inside the weapon's arc, or nothing
   const arc = c.arc || AIM_CONE;
@@ -7428,21 +7769,15 @@ function basicAttack(S, p) {
   rt.ev.push(["a", p.eid, c.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir, beat]);
   const mult = (c.mult || 1) * (fin ? FINISH.mult : 1);
   // a greatsword's arc catches what stands beside the target, a spear runs through
-  // what stands behind it, and a spellbook's burst splashes around it
-  // (only ever in front: nothing behind the swing is caught by it)
+  // what stands behind it (only ever in front: nothing behind the swing is caught by it)
   let extra = [];
   const near = (a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y);
   if (c.cleave) extra = mobsWithin(rt, p.x, p.y, range + (fin ? 10 : 4)).filter((o) => o !== mob && inArc(p, o, arc * (fin ? 1.25 : 1))).sort(near).slice(0, c.cleave + (fin ? 1 : 0));
   else if (c.line) { const [ux, uy] = aimVec(p, mob); extra = mobsInLine(rt, p.x, p.y, ux, uy, c.range + 10, fin ? 16 : 11).slice(0, c.line + (fin ? 1 : 0)); }
-  else if (c.splash) { const [ux, uy] = aimVec(p, mob); extra = mobsWithin(rt, mob.x, mob.y, c.splash + (fin ? 8 : 0)).filter((o) => (o.x - p.x) * ux + (o.y - p.y) * uy > -4).slice(0, 4); }
   const zx = mob.x, zy = mob.y;
   // the blow lands with weight: whatever it hits is shoved back and reels, the
   // finisher most of all. Elites only reel; bosses and field bosses stand firm.
-  const shove = (o, k) => {
-    if (MOBS[o.k].boss || o.el === 2 || steady(S, o)) return;
-    if (!o.el) { const [ux, uy] = aimVec(p, o); knock(mapOfS(p.S, p.map), o, ux, uy, c.kb * k * (fin ? FINISH.kb : 1)); }
-    holdMob(S, o, (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + (tip && o === mob ? TIP.flinch : 0));   // reels: cooldowns paused
-  };
+  const shove = (o, k) => { const [ux, uy] = aimVec(p, o); shoveMob(S, p, o, ux, uy, c.kb * k, fin, tip && o === mob ? TIP.flinch : 0); };
   shove(mob, 1);
   // 급소 도려내기: a stab on a marked monster opens it up (bleeding, and a burst of speed); every stab marks
   const vit = c === WKIND.dagger && pasOn(p, "vitals") ? SKILL.vitals : null;
@@ -7457,12 +7792,40 @@ function basicAttack(S, p) {
     addMarks(S, mob, 1);
   }
   for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6); }
-  if (st.lg.chain && rnd(S) < 0.25 * st.proc) {
-    for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
-      rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
-      hurtMob(S, rt, o, p, 0.6);
-    }
+  chainBlow(S, rt, p, st, mob, zx, zy);
+}
+/**
+ * A basic blow lands with weight: whatever it hits is shoved back along (ux, uy) and reels, the
+ * finisher most of all. Elites only reel; bosses and field bosses stand firm. `more` ms more reeling.
+ */
+function shoveMob(S, p, o, ux, uy, kb, fin, more) {
+  if (MOBS[o.k].boss || o.el === 2 || steady(S, o)) return;
+  if (!o.el) knock(mapOfS(p.S, p.map), o, ux, uy, kb * (fin ? FINISH.kb : 1));
+  holdMob(S, o, (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + more);   // reels: cooldowns paused
+}
+/** 연쇄 (legendary): now and then a basic blow on `mob` leaps on to two more near (zx, zy). */
+function chainBlow(S, rt, p, st, mob, zx, zy) {
+  if (!(st.lg.chain && rnd(S) < 0.25 * st.proc)) return;
+  for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
+    rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
+    hurtMob(S, rt, o, p, 0.6);
   }
+}
+/**
+ * A staff's missile or a book's orb (45-jobs.js magicShot) strikes `mob`: the basic blow lands now,
+ * magic, shoved along its flight. A book's orb bursts and splashes ≤ 4 more within `splash` px (the
+ * finisher's wider), never behind where it was cast; the finisher's burst shows its ring (`s.ring`).
+ */
+function magicLand(S, rt, p, s, mob) {
+  const st = stats(p), c = WKIND[s.blow.wk] || WKIND.staff, fin = s.blow.fin, zx = mob.x, zy = mob.y, mag = { mag: 1 };
+  shoveMob(S, p, mob, s.ux, s.uy, c.kb, fin, 0);
+  hurtMob(S, rt, mob, p, s.mult * charmMarkK(S, rt, p, mob), false, mag);
+  if (c.splash) {
+    s.ring = c.splash + (fin ? 8 : 0);
+    const by = mobsWithin(rt, zx, zy, s.ring).filter((o) => o !== mob && (o.x - s.x0) * s.ux + (o.y - s.y0) * s.uy > -4).slice(0, 4);
+    for (const o of by) { shoveMob(S, p, o, s.ux, s.uy, c.kb * 0.6, fin, 0); hurtMob(S, rt, o, p, s.mult * 0.6, false, mag); }
+  } else if (fin) s.ring = 18;
+  chainBlow(S, rt, p, st, mob, zx, zy);
 }
 
 // Hammer impacts are locked to the place and direction shown at the start of the stroke.
@@ -9078,6 +9441,67 @@ function lifeDefs() {
     master: LIFE_MASTER,
   };
 }
+// ───────────────────────────── the dash (Space) ─────────────────────────────
+// A short dash the way you aim, for getting about and for slipping a monster's heavy blow. The server moves
+// you and sends the end point as a position fix (the client only draws the trail); for as long as it lasts, and
+// a breath longer, nothing a monster throws lands. Others see it as `["ds", eid, x0, y0, x1, y1]`; a blow slipped is `["dg", eid]` ("회피!").
+
+/** `px` far in `ms`, once every `cd`; `inv` more ms of safety after it ends; swept `step` px at a time. */
+const DASH = { px: 72, ms: 180, cd: 4000, inv: 60, step: 4 };
+const DASH_CD = DASH.cd;
+
+/** Would a walker standing here be taken through a gate, or the "내 집" door? A dash stops short of those. */
+function gateAt(p, m, x, y) {
+  for (const pt of m.portals) if (dist(x, y - 3, pt.x * T + 8, pt.y * T + 8) < 12) return true;
+  return p.map === HOUSE_TOWN.map && HOUSE_TOWN.door.some(([dx, dy]) => dist(x, y - 3, dx * T + 8, dy * T + 8) < 12);
+}
+/**
+ * Where a dash from the player's feet along (ux, uy) ends: swept a few px at a time with the walker's own
+ * collision, so it never passes a wall, water, a cliff or the map's edge; it slides along what it grazes
+ * (as walking does) and stops dead at what it meets head-on.
+ */
+function dashEnd(p, m, ux, uy) {
+  let x = p.x, y = p.y;
+  const free = (nx, ny) => canStand(m, nx, ny) && !gateAt(p, m, nx, ny);
+  const slant = Math.abs(ux) > 0.01 && Math.abs(uy) > 0.01;
+  for (let k = DASH.step; k <= DASH.px; k += DASH.step) {
+    const nx = x + ux * DASH.step, ny = y + uy * DASH.step;
+    if (free(nx, ny)) { x = nx; y = ny; }
+    else if (slant && free(nx, y)) x = nx;
+    else if (slant && free(x, ny)) y = ny;
+    else break;
+  }
+  return [x, y];
+}
+/** Why a dash is refused now, or "" — quiet codes, never a toast (the client keeps its own clock). */
+function dashWhy(S, p) {
+  if (p.dead || p.dance) return "dash";
+  if (S.now < (p.stag || 0)) return "stag";
+  return S.now < (p.dashAt || 0) + DASH_CD - 60 ? "dash" : "";
+}
+/** The dash itself: stands you up, drops the line, the gathering and a recall, and moves you. */
+function dashGo(S, p, m, a) {
+  const now = S.now, rt = S.maps[p.map];
+  if (validAim(a)) setAim(p, a);
+  rouse(S, p);
+  if (p.gat) gatStop(S, p, "채집이 끊겼습니다.");
+  const [ux, uy] = AIM_V[p.aim | 0], x0 = p.x, y0 = p.y;
+  const [x, y] = dashEnd(p, m, ux, uy);
+  p.x = x; p.y = y; p.mvAt = now; p.fix = true;
+  p.dashAt = now;
+  p.dodge = now + DASH.ms + DASH.inv;
+  rt.ev.push(["ds", p.eid, Math.round(x0), Math.round(y0), Math.round(x), Math.round(y)]);
+}
+/** Mid-dash nothing a monster throws lands — a blow, a charge, a slam, a volley, a puddle: true, and "회피!". */
+function dodged(S, rt, p) {
+  if (S.now >= (p.dodge || 0)) return false;
+  if (p.dgAt !== S.now) { p.dgAt = S.now; rt.ev.push(["dg", p.eid]); }
+  return true;
+}
+/** Ms until the next dash may go (the last `me` field, rounded to 100 ms): 0 when ready. */
+function dashLeft(S, p) {
+  return p.dashAt ? Math.max(0, Math.ceil((p.dashAt + DASH_CD - S.now) / 100) * 100) : 0;
+}
 // ───────────────────────────── content: the long game ─────────────────────────────
 // What keeps a character coming back, each after a live game that does it well:
 // waypoints (Diablo II), a return scroll (Baram, Lineage), daily tasks (Lost Ark),
@@ -9417,8 +9841,8 @@ const TUT = [
   { id: "equip", title: "무기 받기", hint: "수련관 카이에게 F로 말을 걸어 무기를 하나 받으세요. 받은 무기를 바로 손에 듭니다.", reward: { gold: 20 } },
   { id: "bag", title: "가방 열기", hint: "I를 눌러 가방을 열어 보세요.", reward: { gold: 20 } },
   { id: "buy", title: "물약 사기", hint: "보급상 리나에게 F로 말을 걸고 빨간 물약을 사 보세요.", reward: { gold: 40 } },
-  { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. Space로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
-  { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 X로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
+  { id: "hunt", title: "쌍두 토끼 3마리 처치", hint: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. X로 공격, R로 자동 사냥.", need: 3, reward: { gold: 60 } },
+  { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 Z로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
   { id: "skill", title: "스킬 써 보기", hint: "든 무기의 첫 스킬은 숙련 1부터 단축칸 1번에 있습니다. 몬스터 곁에서 1을 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
   // appended (the index is persisted): spending experience on a stat point
   { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁이나 수련관 카이 앞에서 C 창 → 능력치를 한 칸 올려 보세요. 한 칸이 1레벨입니다.", reward: { gold: 50 } },
@@ -9482,6 +9906,8 @@ const WX_ODDS = {
   city: [40, 30, 24, 6, 0, 0],
   autumn: [34, 22, 14, 16, 14, 0],
   jungle: [30, 22, 30, 12, 6, 0], coast: [46, 14, 16, 0, 24, 0], desert: [62, 8, 0, 0, 30, 0],
+  // maps-batch2: the cloud temple is fog first; the red mesa is dry and windy
+  mist: [18, 24, 14, 36, 6, 2], mesa: [56, 12, 4, 6, 22, 0],
 };
 /** Small flavour: rain brings the fish up sooner, fog hides you a little from monsters. */
 const WX_FISH = 0.75, WX_FOG_AGGRO = 0.9;
@@ -10504,12 +10930,34 @@ const dimCnt = (ch) => ch.cnt;
 /** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
 const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), 10, TIER_MAX - 1);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
-function dimHk(n, lv, mlv) {
-  const [mid, width, bonus] = DIM.hpMid;
-  const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv);
-  const extra = bonus * Math.max(0, 1 - Math.abs(lv - mid) / width);
-  return (DIM.hpBase + low + extra) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
+const dimHk = (n, lv, mlv) => (DIM.hpBase + DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv)) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
+
+/** A sheet's rift record made whole (newChar, migrate): today's count, unlocked tier `t`, best tier and its time, the week's brackets `wb` and boss flags `bw`. */
+function dimClean(d) {
+  const o = isObj(d) ? d : {}, best = clamp(o.best | 0, 0, DIM_TIER.max);
+  return {
+    day: Math.max(0, o.day | 0), n: clamp(o.n | 0, 0, 999), t: clamp(o.t | 0, 1, Math.min(DIM_TIER.max, best + 1)), best, ms: best ? clamp(o.ms | 0, 0, DIM.limit) : 0,
+    wk: Math.max(0, o.wk | 0), wb: clamp(o.wb | 0, 0, DIM_TIER.weekly.max), bw: clamp(o.bw | 0, 0, (1 << CHAL_KEYS.length) - 1),
+  };
 }
+/** The record brought to today and to this week (a new day clears the count; a new week the brackets and boss flags). */
+function dimRec(ch, now) {
+  const d = ch.dim, day = dayOf(now), wk = weekOf(now);
+  if (d.day !== day) { d.day = day; d.n = 0; }
+  if (d.wk !== wk) { d.wk = wk; d.wb = 0; d.bw = 0; }
+  return d;
+}
+/** What a leader asked for (`dim_open`), made safe: a boss challenge has no tier. */
+const dimAsk = (a) => (a && a.boss ? { tier: 0, boss: a.boss } : { tier: (a && a.tier) | 0 || 1, boss: "" });
+/** The highest tier every one of `ps` has unlocked. */
+const dimTierCap = (ps) => Math.min(...ps.map((o) => o.ch.dim.t));
+/** Why `o` may not go into what was asked ("" when they may): the tier not unlocked, the level short of the boss. */
+function dimBar(o, ask) {
+  if (ask.boss) return o.ch.lvl < chalMinLv(ask.boss) ? `보스 도전은 Lv.${chalMinLv(ask.boss)}부터 참가할 수 있습니다.` : "";
+  return o.ch.dim.t < ask.tier ? `아직 균열 ${ask.tier}단을 열지 못했습니다. (해금 ${o.ch.dim.t}단)` : "";
+}
+/** What is being opened, in words. */
+const dimWhat = (ask) => (ask.boss ? `보스 도전 [${MOBS[ask.boss].name}]` : ask.tier > 1 ? `차원 균열 ${ask.tier}단` : "차원 균열");
 
 const inDim = (p) => typeof p.map === "string" && p.map.startsWith("dim:");
 const dimAt = (S, id) => (S.dims && Object.hasOwn(S.dims, id) ? S.dims[id] : null);
@@ -10538,14 +10986,18 @@ function dimSpot(m, i) {
 // ── the ready check
 
 /** Open a rift: alone at once; with a party, ask everyone of it who is in town. */
-function dimOpen(S, p) {
-  const party = S.parties[p.party];
-  if (!party) { dimStart(S, [p], 0); return; }
-  const rc = { id: S.nextId++, leader: p.pid, until: S.now + DIM.rcMs, resp: {} };
-  // 0 asked, 1 yes, 2 no (or no answer in time), 3 not in town
-  for (const pid of party.m) { const o = S.players[pid]; rc.resp[pid] = pid === p.pid ? 1 : o && o.map === START.map ? 0 : 3; }
+function dimOpen(S, p, a) {
+  const party = S.parties[p.party], ask = dimAsk(a);
+  if (!party) { dimStart(S, [p], 0, ask); return; }
+  const rc = { id: S.nextId++, leader: p.pid, until: S.now + DIM.rcMs, resp: {}, tier: ask.tier, boss: ask.boss };
+  // 0 asked, 1 yes, 2 no (or no answer in time), 3 not in town (or barred: the tier not unlocked, the level short)
+  for (const pid of party.m) {
+    const o = S.players[pid], bar = o && pid !== p.pid && o.map === START.map ? dimBar(o, ask) : "";
+    rc.resp[pid] = pid === p.pid ? 1 : o && o.map === START.map && !bar ? 0 : 3;
+    if (bar) toast(o, bar);
+  }
   party.rc = rc;
-  for (const pid of party.m) { const o = S.players[pid]; if (o && pid !== p.pid && rc.resp[pid] === 0) toast(o, `${p.ch.name}님이 차원 균열을 열려고 합니다. 입장을 수락하시겠습니까?`); }
+  for (const pid of party.m) { const o = S.players[pid]; if (o && pid !== p.pid && rc.resp[pid] === 0) toast(o, `${p.ch.name}님이 ${dimWhat(ask)}${pp(dimWhat(ask), "을를")} 열려고 합니다. 입장을 수락하시겠습니까?`); }
   rcCheck(S, party);
 }
 function rcEnd(S, party, why) {
@@ -10570,7 +11022,7 @@ function rcCheck(S, party) {
   const go = Object.keys(rc.resp).filter((pid) => rc.resp[pid] === 1).map((pid) => S.players[pid]);
   party.rc = null;
   if (!go.length) return;
-  const dim = dimStart(S, go, party.id);
+  const dim = dimStart(S, go, party.id, { tier: rc.tier, boss: rc.boss });
   if (!dim) return;
   for (const pid of party.m) {
     const o = S.players[pid];
@@ -10581,38 +11033,51 @@ function rcCheck(S, party) {
 // ── an instance's life
 
 /** Make an instance for `ps` (all in town) and take them in. Null when every slot of the room is taken. */
-function dimStart(S, ps, partyId) {
+function dimStart(S, ps, partyId, ask) {
   const open = Object.keys(S.dims).length;
   if (open >= DIM.max) { for (const o of ps) toast(o, `차원 균열이 모두 사용 중입니다 (${open}/${DIM.max}).`); return null; }
-  const lv = dimLvOf(ps);
+  // a boss challenge (no tier), or a rift at the asked tier — never above what everyone going in has unlocked
+  const boss = ask && ask.boss && Object.hasOwn(DIM_CHAL.bosses, ask.boss) ? ask.boss : "";
+  const tier = boss ? 0 : clamp(Math.min((ask && ask.tier) | 0 || 1, dimTierCap(ps)), 1, DIM_TIER.max);
+  const tk = dimTierK(tier || 1);
+  const lv = boss ? Math.max(MOBS[boss].lv, dimLvOf(ps)) : dimLvOf(ps);
   S.dimN = (S.dimN | 0) + 1;
   const id = "dim:" + S.dimN;
   const seed = (Math.imul(S.seed ^ S.nextId++, 2654435761) ^ Math.imul(partyId + 1, 40503) ^ Math.floor(S.now / 1024)) | 0;
-  const theme = dimTheme(seed >>> 0, lv);
-  const map = dimension({ id, seed, theme, lv });
-  const dim = registerDim(S, { id, map, party: partyId, seed, lv, theme, expire: S.now + DIM.limit });
+  const theme = boss ? DIM_CHAL.bosses[boss].theme : dimTheme(seed >>> 0, lv);
+  const map = boss ? dimArena({ id, seed, k: boss }) : dimension({ id, seed, theme, lv });
+  const dim = registerDim(S, { id, map, party: partyId, seed, lv, theme, expire: S.now + (boss ? DIM_CHAL.limit : DIM.limit) });
   Object.assign(dim, { prog: 0, boss: 0, n: ps.length, members: {}, hit: {}, got: {}, pylons: [], orbs: [], portal: null, chest: null, elites: 0, emptyAt: 0, endAt: 0, warned: false, kills: 0, opened: S.now, bossAt: 0, clearAt: 0 });
+  // the ladder: the tier and what it does, the best hero going in (the carry guard), damage dealt, who was carried, each one's result flags
+  Object.assign(dim, { tier, tk, top: Math.max(...ps.map((o) => toTier(o.ch.lvl))), dmg: {}, carry: {}, res: {}, chal: null });
+  // from tier 4 on, the leader of one more pack (the last packs listed) is an elite every DIM_TIER.eliteEvery tiers
+  const packs = map.dim.spawns.filter((sp) => !sp.el && !sp.chest);
+  const lead = new Set(packs.slice(packs.length - Math.min(packs.length, tk.elites)));
   // a layout with few monsters fills the gauge faster, so a full clear always gives about DIM.full (no rift can stall short of 100%)
-  const normalN = map.dim.spawns.filter((sp) => !sp.el && !sp.chest).reduce((n, sp) => n + sp.n, 0);
-  dim.gK = Math.max(1, DIM.full / (normalN * DIM.normal + map.dim.elites * (DIM.elite + DIM.orb)));
+  const normalN = packs.reduce((n, sp) => n + sp.n, 0) - lead.size;
+  dim.gK = boss ? 1 : Math.max(1, DIM.full / (normalN * DIM.normal + (map.dim.elites + lead.size) * (DIM.elite + DIM.orb)));
   if (partyId && S.parties[partyId]) S.parties[partyId].dim = id;
   const rt = dim.rt;
   for (const sp of map.dim.spawns) {
     for (let i = 0; i < sp.n; i++) {
-      const mob = newMob(S, sp.k, [sp.at[0], sp.at[1], sp.at[0], sp.at[1]], { el: sp.el, elite: 0 });
+      const mob = newMob(S, sp.k, [sp.at[0], sp.at[1], sp.at[0], sp.at[1]], { el: sp.el || (i === 0 && lead.has(sp) ? 1 : 0), elite: 0 });
       dimPlace(S, map, mob, sp.at, sp.chest ? 0 : 2);
       mob.temp = true; mob.dim = 1;
       if (sp.guard) mob.guard = 1;
-      if (!sp.chest) mob.hk = dimHk(ps.length, lv, MOBS[sp.k].lv);
+      if (!sp.chest) mob.hk = dimHk(ps.length, lv, MOBS[sp.k].lv) * tk.hp;
+      if (tk.atk > 1) mob.ak = tk.atk;
+      if (mob.el === 1 && tk.traits > 1) mob.tr = rollTraits(S, tk.traits);
       rt.mobs.push(mob);
     }
   }
+  if (boss) chalSpawn(S, dim, boss, ps.length);
   ps.forEach((o, i) => {
     o.dead = false;
     const [x, y] = dimSpot(map, i);
     changeMap(S, o, id, x, y);
     dim.members[o.pid] = S.now;
-    toast(o, `[${DIM_THEMES[theme].name}] 차원 균열 Lv.${shownLv(lv)}에 들어왔습니다. 15분 안에 균열을 정화하세요!`);
+    toast(o, boss ? `[보스 도전] ${MOBS[boss].name} — ${DIM_CHAL.limit / 60000}분 안에 쓰러뜨리세요. 전멸해도 다시 도전할 수 있습니다.`
+      : `[${DIM_THEMES[theme].name}] 차원 균열 Lv.${shownLv(lv)}${tier > 1 ? ` ${tier}단` : ""}에 들어왔습니다. 15분 안에 균열을 정화하세요!`);
     o.dirty = true;
   });
   rt.ev.push(["dm", "open", ...tilePx(map.dim.start)]);
@@ -10684,10 +11149,10 @@ function dimBoss(S, dim) {
   const [tx, ty] = bossSpot(S, m, anchor[0], anchor[1], 0, away);
   const mob = newMob(S, m.dim.bossK, [tx, ty, tx, ty]);
   mob.el = 2; mob.temp = true; mob.dim = 1;
-  mob.tr = rollTraits(S, 2);
+  mob.tr = rollTraits(S, dim.tk.boss);
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
-  mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp;
-  mob.ak = DIM.bossAtk;
+  mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp;
+  mob.ak = DIM.bossAtk * dim.tk.atk;
   mob.hp = mobMax(mob);
   mob.castAt = now + 4000;
   mob.stun = now + FB_WARN;
@@ -10706,24 +11171,81 @@ function dimClear(S, dim, mob) {
   dim.portal = { x: pt[0] * T + 8, y: pt[1] * T + 10 };
   for (const o of dimInside(S, dim.id)) if (dist(o.x, o.y, mob.x, mob.y) <= PARTY_RANGE) dim.hit[o.pid] = 1;
   dim.rt.ev.push(["dp", dim.portal.x, dim.portal.y]);
+  const ms = now - dim.opened;
   for (const o of dimInside(S, dim.id)) {
-    toast(o, "차원 균열을 정화했습니다! 보상 상자를 열고 귀환의 문으로 돌아가세요.");
-    if (dim.hit[o.pid]) { dimCnt(o.ch).dim = (dimCnt(o.ch).dim | 0) + 1; checkAch(S, o); saveSoon(o); }
+    toast(o, dim.chal ? `${MOBS[mob.k].name}${pp(MOBS[mob.k].name, "을를")} 쓰러뜨렸습니다! 보상 상자를 열고 귀환의 문으로 돌아가세요.` : "차원 균열을 정화했습니다! 보상 상자를 열고 귀환의 문으로 돌아가세요.");
+    if (!dim.hit[o.pid]) continue;
+    if (!dim.chal) dimCnt(o.ch).dim = (dimCnt(o.ch).dim | 0) + 1;
+    // the ladder: a real clear records the tier and opens the next — never for someone carried through it
+    if (dimCarried(dim, o)) dim.carry[o.pid] = 1;
+    else if (dim.tier) dimRecord(dim, o, ms);
+    checkAch(S, o); saveSoon(o);
   }
+}
+/**
+ * Carried through: more than DIM_TIER.carryLv world tiers under the best hero who went in, or (in company) under
+ * DIM_TIER.carryShare of an even share of the damage dealt. Reduced reward, no unlock, no record, no weekly bonus.
+ */
+function dimCarried(dim, p) {
+  if (toTier(p.ch.lvl) < dim.top - DIM_TIER.carryLv) return true;
+  const pids = Object.keys(dim.hit), all = pids.reduce((s, pid) => s + (dim.dmg[pid] || 0), 0);
+  return pids.length > 1 && all > 0 && (dim.dmg[p.pid] || 0) < (all * DIM_TIER.carryShare) / pids.length;
+}
+/** A clear of tier `dim.tier` on `p`'s sheet: the best tier (and the quickest time at it), the next tier for whoever stood at this one. */
+function dimRecord(dim, p, ms) {
+  const d = p.ch.dim, n = dim.tier;
+  let fl = 0;
+  if (n > d.best || (n === d.best && (!d.ms || ms < d.ms))) { d.best = n; d.ms = ms; fl |= 1; }
+  if (d.t >= n && d.t < n + 1 && n < DIM_TIER.max) { d.t = n + 1; fl |= 2; toast(p, `균열 ${n + 1}단이 열렸습니다!`); }
+  dim.res[p.pid] = fl;
+  p.dirty = true;
+}
+/**
+ * The master's chest at rift level `lv`, tier `tier`: what `payout` takes, `rune` a chance. The tier's extra is for
+ * the day's full-reward clears only; someone carried gets DIM_TIER.carryK of the gold and experience and no gear.
+ */
+function dimReward(lv, tier, full, carried) {
+  const R = DIM.reward, K = DIM_TIER, t = full && !carried ? Math.max(0, (tier | 0) - 1) : 0, ck = carried ? K.carryK : 1;
+  return {
+    gold: Math.round(R.gold * lv * Math.min(K.goldMax, 1 + K.gold * t) * ck), stone: R.stone + Math.min(K.stoneMax, Math.floor(t / K.stoneEvery)),
+    rune: Math.min(1, R.rune + K.rune * t), gear: carried ? 0 : 1, gearQ: R.gearQ,
+    xp: Math.round(R.xp * xpNeed(lv) * Math.min(K.xpMax, 1 + K.xp * t) * (full ? 1 : 0.5) * ck),
+  };
 }
 /** Each member's own reward from the master's chest, once; full experience for the first few clears of the day. */
 function dimChest(S, dim, p) {
-  const ch = p.ch, lv = dim.lv, R = DIM.reward;
+  const ch = p.ch, lv = dim.lv;
   if (charmChestHold(S, p)) return;   // a charm already waits at 주아나 and the bag is full (66-charms.js)
   dim.got[p.pid] = 1;
-  const day = dayOf(S.now);
-  if (!ch.dim || ch.dim.day !== day) ch.dim = { day, n: 0 };
-  ch.dim.n++;
-  const full = ch.dim.n <= DIM.dailyFull;
-  payout(S, p, { gold: R.gold * lv, stone: R.stone, rune: rnd(S) < R.rune, gear: 1, gearQ: R.gearQ, xp: Math.round(R.xp * xpNeed(lv) * (full ? 1 : 0.5)) });
-  charmChest(S, dim, p);
+  const d = dimRec(ch, S.now), carried = !!(dim.carry && dim.carry[p.pid]);
+  let fl = ((dim.res && dim.res[p.pid]) || 0) | (carried ? 4 : 0), wkN = 0, r, msg;
+  if (dim.chal) {
+    // a boss challenge: the big reward once a week per boss, a small one after (and for someone carried, who keeps the week's)
+    const bit = 1 << CHAL_KEYS.indexOf(dim.chal.k), big = !carried && !(d.bw & bit), R = big ? DIM_CHAL.big : DIM_CHAL.small;
+    if (big) { d.bw |= bit; fl |= 8; }
+    r = { gold: R.gold * lv, xp: Math.round(R.xp * xpNeed(lv)), stone: R.stone, rune: !!R.rune, gear: R.gear ? 1 : 0, gearQ: R.gearQ };
+    payout(S, p, r);
+    for (let i = 1; i < (R.rune | 0); i++) payout(S, p, { rune: true });
+    for (let i = 1; i < (R.gear | 0); i++) payout(S, p, { gear: 1, gearQ: R.gearQ });
+    if (big) charmChest(S, dim, p);
+    msg = big ? "주간 보스 도전 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다." : "보스 도전 반복 보상을 받았습니다. 큰 보상은 월요일 06:00에 다시 열립니다.";
+  } else {
+    d.n++;
+    const full = d.n <= DIM.dailyFull, W = DIM_TIER.weekly;
+    r = dimReward(lv, dim.tier, full, carried);
+    r.rune = rnd(S) < r.rune;
+    // the week's first clear of each bracket of tiers (everything up to this one at once)
+    const b = Math.min(W.max, Math.floor(((dim.tier || 1) - 1) / W.every) + 1);
+    if (!carried && b > d.wb) { wkN = b - d.wb; d.wb = b; r.gold += W.gold * lv * wkN; r.stone += W.stone * wkN; fl |= 8; }
+    payout(S, p, r);
+    charmChest(S, dim, p);
+    msg = carried ? "기여가 부족해 균열의 보상이 줄었습니다. (단수 기록·주간 보너스 없음)"
+      : (full ? `균열의 보상을 받았습니다! (오늘 ${d.n}번째)` : `균열의 보상을 받았습니다. 오늘 ${DIM.dailyFull}번을 넘겨 경험치는 절반입니다.`) + (wkN ? ` 주간 첫 정화 보너스 ×${wkN}!` : "");
+  }
+  // the result panel: [0 rift / 1 boss, tier or boss index, clear seconds, flags (1 record, 2 next tier, 4 carried, 8 weekly), gold, experience, weekly brackets]
+  p.dimRes = [dim.chal ? 1 : 0, dim.chal ? CHAL_KEYS.indexOf(dim.chal.k) : dim.tier, Math.round(((dim.clearAt | 0) - (dim.opened | 0)) / 1000), fl, r.gold, r.xp, wkN];
   dim.rt.ev.push(["dm", "chest", dim.chest.x, dim.chest.y]);
-  toast(p, full ? `균열의 보상을 받았습니다! (오늘 ${ch.dim.n}번째)` : `균열의 보상을 받았습니다. 오늘 ${DIM.dailyFull}번을 넘겨 경험치는 절반입니다.`);
+  toast(p, msg);
   saveSoon(p);
 }
 function dimFail(S, dim, why) {
@@ -10786,6 +11308,7 @@ function dimTick(S, now) {
     }
     if ((dim.state === "fail" || dim.state === "clear") && now >= dim.endAt) { dimEnd(S, dim); continue; }
     const alive = inside.filter((o) => !o.dead);
+    if (dim.chal && dim.state === "boss") chalTick(S, dim, inside, alive);
     // orbs fly to whoever comes near; shrines answer a step on them
     for (let i = dim.orbs.length - 1; i >= 0; i--) {
       const b = dim.orbs[i];
@@ -10832,7 +11355,169 @@ function dimRespawn(S, p) {
   return true;
 }
 /** Seconds `p` must still wait to get up in an instance (0: may). */
-const dimReviveWait = (S, p) => (inDim(p) ? Math.max(0, Math.ceil(((p.dimDeadAt || S.now) + DIM.reviveMs - S.now) / 1000)) : 0);
+function dimReviveWait(S, p) {
+  if (!inDim(p)) return 0;
+  const dim = dimAt(S, p.map), chal = dim && dim.chal;
+  // a boss challenge: nobody gets up while the fight is on (99: until it ends — a wipe resets the boss)
+  if (chal && dim.state === "boss" && chal.engAt) return 99;
+  if (chal && chal.upAt) return Math.max(1, Math.ceil((chal.upAt - S.now) / 1000));
+  return Math.max(0, Math.ceil(((p.dimDeadAt || S.now) + (chal ? DIM_CHAL.reviveMs : DIM.reviveMs) - S.now) / 1000));
+}
+
+// ── 주간 보스 도전: the boss's script (docs/design/scale-and-rift.md H.6)
+
+/** The boss of a challenge, in the middle of its arena, asleep until someone comes near or strikes it. */
+function chalSpawn(S, dim, k, n) {
+  const [tx, ty] = dim.map.dim.boss, d = MOBS[k], now = S.now, up = Math.max(0, dim.lv - d.lv);
+  const mob = newMob(S, k, [tx, ty, tx, ty]);
+  readyMob(S, mob);
+  mob.temp = true; mob.dim = 1; mob.chal = 1; mob.tr = [];
+  mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
+  mob.hk = DIM_CHAL.hp * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM_CHAL.lvK * up);
+  dim.chal = { k, n: 0, pi: 0, q: [], fury: 0, engAt: 0, rage: 0, tries: 1, upAt: 0, ak: 1 + DIM_CHAL.atkLv * up };
+  mob.ak = dim.chal.ak;
+  mob.castAt = now + 5000; mob.stun = now + 3000;
+  dim.rt.mobs.push(mob);
+  dim.boss = mob.id; dim.state = "boss"; dim.bossAt = now;
+}
+/** A wipe: the boss is whole again in the middle, its fury and its clock forgotten; the party gets up and tries again. */
+function chalReset(S, dim, mob) {
+  const c = dim.chal, [tx, ty] = dim.map.dim.boss, now = S.now;
+  mob.hp = mobMax(mob); mob.by = {}; mob.tgt = null; mob.st = 0; mob.cast = null; mob.act = null; mob.dot = null; mob.slow = 0;
+  mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
+  mob.stun = now + 3000; mob.castAt = now + 7000; mob.ak = c.ak; mob.stag = 0;
+  dim.rt.tele.length = 0; dim.rt.pools.length = 0;
+  // everyone gets up together in DIM_CHAL.reviveMs (chalTick); the boss sleeps till then
+  Object.assign(c, { n: 0, pi: 0, q: [], fury: 0, engAt: 0, rage: 0, tries: c.tries + 1, upAt: now + DIM_CHAL.reviveMs });
+  dim.rt.ev.push(["r", mob.id]);
+}
+/** A volley of `n` turned `off` radians from the line to `tgt`. */
+function chalVolley(S, rt, mob, tgt, dmg, n, off) {
+  const dx = tgt.x - mob.x, dy = tgt.y - mob.y, c = Math.cos(off), s = Math.sin(off);
+  volley(S, rt, mob, { x: mob.x + dx * c - dy * s, y: mob.y + dx * s + dy * c }, dmg, n);
+}
+/** A marked line toward `o`, then the run (tickMob's dash). */
+function chalCharge(S, rt, mob, o) {
+  const d = MOBS[mob.k], dd = Math.max(1, dist(mob.x, mob.y, o.x, o.y)), ux = (o.x - mob.x) / dd, uy = (o.y - mob.y) / dd, len = Math.min(dd + 36, (d.charge || 150) + 20);
+  mob.act = { at: S.now + CHARGE_MS, ux, uy, len };
+  mob.dir = ux < 0 ? 1 : 2;
+  rt.ev.push(["c", mob.id, Math.round(mob.x), Math.round(mob.y), Math.round(mob.x + ux * len), Math.round(mob.y + uy * len), CHARGE_MS]);
+}
+const chalRing = (S, rt, mob, x, y, r, ms, dmg) => { rt.tele.push({ x, y, r, at: S.now + ms, dmg, by: mob }); rt.ev.push(["t", Math.round(x), Math.round(y), r, ms]); };
+/** The boss's turn (tickMob, in place of a monster's own tricks): every DIM_CHAL.every-th the marked cast, else its next pattern. */
+function chalCast(S, rt, mob, tgt) {
+  const dim = dimAt(S, rt.id), c = dim && dim.chal;
+  if (!c) { mob.castAt = S.now + 5000; return; }
+  const C = DIM_CHAL, B = C.bosses[mob.k], d = MOBS[mob.k], now = S.now, atk = d.atk, q = c.q;
+  const folk = dimInside(S, dim.id), alive = folk.filter((o) => !o.dead);
+  c.n++;
+  if (c.n % C.every === 0) {
+    // the marked cast: it stands still and gathers; the party breaks it with damage, or pays
+    mob.cast = { until: now + C.castMs, need: Math.max(1, C.stag * mobMax(mob)), got: 0 };
+    mob.stun = now + C.castMs; mob.castAt = now + C.castMs + C.gap / 2;
+    rt.ev.push(["dc", mob.id, 9, C.castMs]);
+    for (const o of folk) toast(o, `${d.name}${pp(d.name, "이가")} [${B.cast}]${pp(B.cast, "을를")} 준비합니다! 몰아쳐서 무력화하세요!`);
+    return;
+  }
+  const i = c.pi++ % B.pats.length;
+  let dur = 1500;
+  switch (B.pats[i][1]) {
+    case "fan2":      // two volleys, the second through the gaps of the first
+      chalVolley(S, rt, mob, tgt, atk, 5, 0); q.push({ at: now + 900, f: "fan", off: 0.21 }); dur = 900 + VOLLEY_MS; break;
+    case "fan3":      // three sweeping volleys and a puddle under the target
+      chalVolley(S, rt, mob, tgt, atk, 5, 0); q.push({ at: now + 800, f: "fan", off: 0.28 }, { at: now + 1600, f: "fan", off: -0.28 }, { at: now + 400, f: "pool" });
+      dur = 1600 + VOLLEY_MS; break;
+    case "rings":     // a ring round itself, then four rings round that: in, then out
+      chalRing(S, rt, mob, mob.x, mob.y, 58, 1200, atk * 1.6);
+      for (const [dx, dy] of [[84, 0], [-84, 0], [0, 58], [0, -58]]) chalRing(S, rt, mob, mob.x + dx, mob.y + dy, 44, 2100, atk * 1.4);
+      mob.stun = now + 1200; dur = 2100; break;
+    case "pools":     // a puddle under every one of the party: spread out, keep moving
+      for (const o of alive) chalPool(S, rt, mob, o, atk);
+      dur = POOL_FLY; break;
+    case "charge2":   // a run at its target, then at whoever stands farthest
+      chalCharge(S, rt, mob, tgt); q.push({ at: now + CHARGE_MS + 1000, f: "charge" }); dur = 2 * CHARGE_MS + 1600; break;
+    case "leapslam": {  // a bound onto the farthest of the party: the ring shows where it lands
+      const o = alive.reduce((a, b) => (dist(mob.x, mob.y, b.x, b.y) > dist(mob.x, mob.y, a.x, a.y) ? b : a), tgt);
+      chalRing(S, rt, mob, o.x, o.y, 54, 1300, atk * 1.8);
+      q.push({ at: now + 1250, f: "land", x: o.x, y: o.y });
+      mob.stun = now + 1250; dur = 1900; break;
+    }
+  }
+  q.sort((a, b) => a.at - b.at);
+  mob.castAt = now + dur + C.gap;
+  rt.ev.push(["dc", mob.id, i]);
+}
+function chalPool(S, rt, mob, o, atk) {
+  const d = MOBS[mob.k], now = S.now, kind = d.poolKind || 0, r = d.pool || 30;
+  rt.pools.push({ x: o.x, y: o.y, r, next: now + POOL_FLY, until: now + POOL_FLY + POOL_MS, dmg: atk * 0.4, atk, kind });
+  rt.ev.push(["g", mob.id, Math.round(o.x), Math.round(o.y), r, POOL_FLY, POOL_MS, kind]);
+}
+/** Every tick of a challenge's fight: a wipe, the boss never losing interest, the marked cast running out, queued steps, the enrage. */
+function chalTick(S, dim, inside, alive) {
+  const c = dim.chal, C = DIM_CHAL, now = S.now, rt = dim.rt, mob = rt.mobs.find((q) => q.id === dim.boss);
+  if (!mob || mob.dead) return;
+  const d = MOBS[mob.k];
+  if (c.engAt && inside.length && !alive.length) {
+    chalReset(S, dim, mob);
+    for (const o of inside) toast(o, `전멸했습니다… ${d.name}${pp(d.name, "이가")} 기력을 되찾았습니다. 일어나 다시 도전하세요! (${c.tries}번째 시도)`);
+    return;
+  }
+  // after a wipe: the whole party gets up at once, then the boss may wake
+  if (c.upAt) {
+    if (now < c.upAt) { mob.tgt = null; mob.mvAt = now + 5000; return; }
+    c.upAt = 0;
+    for (const o of inside) if (o.dead) dimRespawn(S, o);
+  }
+  // asleep in the middle until someone comes near or strikes it
+  if (!c.engAt) { if (!mob.tgt) { mob.mvAt = now + 5000; mob.wx = mob.hx; mob.wy = mob.hy; return; } c.engAt = now; }
+  // it never walks home to heal: its target down or gone, it turns on the nearest still standing
+  const cur = S.players[mob.tgt];
+  if (!cur || cur.dead || cur.map !== dim.id || mob.st === 2) {
+    const o = alive.reduce((a, b) => (!a || dist(mob.x, mob.y, b.x, b.y) < dist(mob.x, mob.y, a.x, a.y) ? b : a), null);
+    mob.tgt = o ? o.pid : null;
+    if (o) mob.st = 0;
+  }
+  if (mob.cast) {
+    if (now < mob.cast.until) mob.stun = Math.max(mob.stun, mob.cast.until);
+    else {
+      // nobody broke it: everyone standing pays, and it comes back angrier
+      mob.cast = null; c.fury++;
+      rt.ev.push(["dc", mob.id, 7]);
+      for (const o of alive) mobHit(S, rt, o, d.atk * C.blast, mob, "tele");
+      for (const o of inside) toast(o, `[${C.bosses[mob.k].cast}]${pp(C.bosses[mob.k].cast, "을를")} 막지 못했습니다! 보스가 더 사나워집니다.`);
+    }
+  }
+  while (c.q.length && c.q[0].at <= now) {
+    const st = c.q.shift(), tgt = S.players[mob.tgt];
+    if (mob.cast || !tgt || tgt.dead) continue;
+    if (st.f === "fan") chalVolley(S, rt, mob, tgt, d.atk, 5, st.off);
+    else if (st.f === "pool") chalPool(S, rt, mob, tgt, d.atk);
+    else if (st.f === "charge" && !mob.act) chalCharge(S, rt, mob, alive.reduce((a, b) => (dist(mob.x, mob.y, b.x, b.y) > dist(mob.x, mob.y, a.x, a.y) ? b : a), tgt));
+    else if (st.f === "land" && canStand(dim.map, st.x, st.y)) { mob.x = st.x; mob.y = st.y; rt.ev.push(["m", mob.id]); }
+  }
+  // the soft enrage: past DIM_CHAL.enrage of a fight its blows grow every DIM_CHAL.enrageStep
+  const over = now - c.engAt - C.enrage, steps = over >= 0 ? 1 + Math.floor(over / C.enrageStep) : 0;
+  if (steps && !c.rage) for (const o of inside) toast(o, `${d.name}${pp(d.name, "이가")} 광폭화합니다! 공격이 점점 거세집니다.`);
+  c.rage = steps;
+  mob.ak = c.ak * (1 + C.fury * c.fury) * (1 + C.enrageK * steps);
+}
+/**
+ * A blow on a rift's monster (dealMob): the striker's share of the damage (the carry guard), and during a boss's
+ * marked cast the stagger gauge — DIM_CHAL.stag of its health dealt in time breaks the cast and stuns it.
+ */
+function dimDealt(S, rt, mob, p, dmg) {
+  const dim = dimAt(S, rt.id);
+  if (!dim || !dim.dmg) return;
+  dim.dmg[p.pid] = (dim.dmg[p.pid] || 0) + dmg;
+  const cast = mob.cast;
+  if (!cast) return;
+  cast.got += dmg;
+  if (cast.got < cast.need) return;
+  mob.cast = null; mob.stag = mob.stun = S.now + DIM_CHAL.stunMs; mob.castAt = S.now + DIM_CHAL.stunMs + 1500;
+  if (dim.chal) dim.chal.q = [];
+  rt.ev.push(["dc", mob.id, 8, DIM_CHAL.stunMs]);
+  for (const o of dimInside(S, dim.id)) toast(o, "무력화 성공! 보스가 비틀거립니다 — 지금 몰아치세요!");
+}
 /** The running instance `p` (in town) may walk back into, or null: one they were in lately, or their party's. */
 function dimJoinable(S, p) {
   for (const id of Object.keys(S.dims)) {
@@ -10858,6 +11543,16 @@ function dimValidate(S, p, a) {
       if (dimJoinable(S, p)) return bad("이미 열린 차원 균열이 있습니다. [합류]하세요.");
       const open = Object.keys(S.dims).length;
       if (open >= DIM.max) return bad(`차원 균열이 모두 사용 중입니다 (${open}/${DIM.max}).`);
+      // a boss challenge (the leader's own level), or a tier nobody of the party in town is short of
+      if (a.boss !== undefined) {
+        if (typeof a.boss !== "string" || !Object.hasOwn(DIM_CHAL.bosses, a.boss)) return bad("알 수 없는 보스 도전입니다");
+        const bar = dimBar(p, dimAsk(a));
+        if (bar) return bad(bar);
+      } else if (a.tier !== undefined) {
+        if (!Number.isInteger(a.tier) || a.tier < 1 || a.tier > DIM_TIER.max) return bad("잘못된 단수입니다");
+        const cap = dimTierCap(party ? party.m.map((pid) => S.players[pid]).filter((o) => o && o.map === START.map) : [p]);
+        if (a.tier > cap) return bad(party && p.ch.dim.t >= a.tier ? `일행 중 ${a.tier}단을 열지 못한 사람이 있습니다. (파티 최고 ${cap}단)` : `아직 균열 ${a.tier}단을 열지 못했습니다. (해금 ${cap}단)`);
+      }
       return OK;
     }
     case "dim_ready": {
@@ -10880,6 +11575,8 @@ function dimValidate(S, p, a) {
       const dim = dimJoinable(S, p);
       if (!dim) return bad("합류할 수 있는 차원 균열이 없습니다");
       if (dimInside(S, dim.id).length >= DIM.party) return bad(`차원 균열 안이 가득 찼습니다 (${DIM.party}명).`);
+      const bar = dimBar(p, { tier: dim.tier | 0, boss: dim.chal ? dim.chal.k : "" });
+      if (bar) return bad(bar);
       return OK;
     }
   }
@@ -10888,7 +11585,7 @@ function dimValidate(S, p, a) {
 function dimApply(S, p, a) {
   const party = S.parties[p.party];
   switch (a.t) {
-    case "dim_open": dimOpen(S, p); break;
+    case "dim_open": dimOpen(S, p, a); break;
     case "dim_ready":
       party.rc.resp[p.pid] = a.ok ? 1 : 2;
       for (const pid of party.m) { const o = S.players[pid]; if (o && o !== p && party.rc.resp[pid] !== 3) toast(o, `${p.ch.name}님이 입장을 ${a.ok ? "수락" : "거절"}했습니다.`); }
@@ -10902,6 +11599,7 @@ function dimApply(S, p, a) {
       const [x, y] = dimSpot(dim.map, dimInside(S, dim.id).length);
       dim.members[p.pid] = S.now;
       changeMap(S, p, dim.id, x, y);
+      dim.top = Math.max(dim.top || 0, toTier(p.ch.lvl));
       toast(p, `차원 균열 Lv.${shownLv(dim.lv)}에 합류했습니다.`);
       for (const o of dimInside(S, dim.id)) if (o !== p) toast(o, `${p.ch.name}님이 균열에 합류했습니다.`);
       p.dirty = true;
@@ -10922,7 +11620,10 @@ function dimView(S, p, out) {
     const v = [Math.floor(dim.prog * 10), secs, DIM_STATE[dim.state], dim.state === "boss" ? dim.boss : 0, dim.lv, team,
       dim.pylons.map((s) => [s.id, s.kind, s.x, s.y, Math.ceil((s.until - now) / 1000)]), dim.orbs.map((b) => [b.id, b.x, b.y]),
       dim.portal ? [dim.portal.x, dim.portal.y] : 0, dim.chest ? [dim.chest.x, dim.chest.y, dim.got[p.pid] ? 1 : dim.hit[p.pid] ? 0 : 2] : 0,
-      dim.theme, dim.state === "boss" ? dim.map.dim.boss : 0, Math.max(0, Math.ceil(((p.dimWard || 0) - now) / 1000)), dimReviveWait(S, p)];
+      dim.theme, dim.state === "boss" ? dim.map.dim.boss : 0, Math.max(0, Math.ceil(((p.dimWard || 0) - now) / 1000)), dimReviveWait(S, p),
+      // appended: the tier (0 in a boss challenge), then the challenge — [boss index, 0 / 1 casting / 2 staggered, stagger gauge left %,
+      // half-seconds left of that, enrage steps, tries, fury]
+      dim.tier | 0, dim.chal ? chalView(S, dim) : 0];
     const key = JSON.stringify(v);
     if (key !== p.dimKey || p.sendMap) { out.dim = v; p.dimKey = key; }
   } else if (p.dimKey) { out.dim = 0; p.dimKey = null; }
@@ -10930,21 +11631,38 @@ function dimView(S, p, out) {
   const party = S.parties[p.party], rc = party && party.rc;
   if (rc && rc.resp[p.pid] !== undefined && rc.resp[p.pid] !== 3) {
     const rows = party.m.filter((pid) => S.players[pid] && rc.resp[pid] !== undefined).map((pid) => [S.players[pid].eid, S.players[pid].ch.name, rc.resp[pid]]);
-    const v = [rc.id, Math.max(0, Math.ceil((rc.until - now) / 1000)), rows, dimLvOf(party.m.map((pid) => S.players[pid]).filter((o) => o && o.map === START.map)), rc.leader === p.pid ? 1 : 0];
+    const v = [rc.id, Math.max(0, Math.ceil((rc.until - now) / 1000)), rows, dimLvOf(party.m.map((pid) => S.players[pid]).filter((o) => o && o.map === START.map)), rc.leader === p.pid ? 1 : 0,
+      rc.tier | 0, rc.boss ? CHAL_KEYS.indexOf(rc.boss) + 1 : 0];
     const key = JSON.stringify(v);
     if (key !== p.rcKey) { out.rc = v; p.rcKey = key; }
   } else if (p.rcKey) { out.rc = 0; p.rcKey = null; }
   // in town: a rift to walk back into — [seconds left, inside, gauge ×10, level]
   const j = p.map === START.map ? dimJoinable(S, p) : null;
-  const dj = j ? [Math.max(0, Math.ceil((j.expire - now) / 1000)), dimInside(S, j.id).length, Math.floor(j.prog * 10), j.lv] : 0;
+  const dj = j ? [Math.max(0, Math.ceil((j.expire - now) / 1000)), dimInside(S, j.id).length, Math.floor(j.prog * 10), j.lv, j.tier | 0, j.chal ? CHAL_KEYS.indexOf(j.chal.k) + 1 : 0] : 0;
   const dk = dj ? dj.join(",") : "";
   if (dk !== (p.djKey || "")) { out.dj = dj; p.djKey = dk; }
+  // a chest just opened: the result panel, once
+  if (p.dimRes) { out.dr = p.dimRes; p.dimRes = null; }
+}
+function chalView(S, dim) {
+  const c = dim.chal, now = S.now, mob = dim.state === "boss" ? dim.rt.mobs.find((q) => q.id === dim.boss) : null, cast = mob && mob.cast;
+  const mode = cast ? 1 : mob && !mob.dead && mob.stag > now ? 2 : 0;
+  return [CHAL_KEYS.indexOf(c.k), mode, cast ? Math.ceil(100 * (1 - cast.got / cast.need)) : 0,
+    cast ? Math.ceil((cast.until - now) / 500) : mode === 2 ? Math.ceil((mob.stag - now) / 500) : 0, c.rage, c.tries, c.fury];
+}
+/** `self.dimr`: [unlocked tier, best tier, its clear seconds, full-reward clears left today, weekly brackets taken, weekly boss flags]. */
+function dimSelf(p) {
+  const d = p.ch.dim, now = p.S.now, wk = d.wk === weekOf(now);
+  return [d.t, d.best, Math.round(d.ms / 1000), Math.max(0, DIM.dailyFull - (d.day === dayOf(now) ? d.n : 0)), wk ? d.wb : 0, wk ? d.bw : 0];
 }
 /** The tables the browser needs for rifts (defs().dim). */
 function dimDefs() {
   return {
     themes: Object.fromEntries(Object.keys(DIM_THEMES).map((k) => [k, DIM_THEMES[k].name])), pylons: DIM.pylons, limit: DIM.limit, party: DIM.party, max: DIM.max,
     rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near,
+    // the ladder and the boss challenge: [key, name, level needed, the marked cast, pattern names]
+    tier: { max: DIM_TIER.max, hp: DIM_TIER.hp, atk: DIM_TIER.atk, every: DIM_TIER.weekly.every, daily: DIM.dailyFull },
+    chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0])]) },
   };
 }
 // ───────────────────────────── housing: a house of one's own ─────────────────────────────
@@ -11439,7 +12157,9 @@ const COS_SLOTS = ["hat", "top", "back", "face", "wskin"];
 const COS_SLOT_NAME = { hat: "모자", top: "상의", back: "등", face: "얼굴", wskin: "무기 외형" };
 /**
  * id → [wire code, slot, name, rarity 0–4, source, price or achievement id, description].
- * Sources: shop (sold for `price` gold), chest, boss, daily, rift, ach (earned with achievement `price`).
+ * Sources: shop (sold for `price` gold), chest, boss, daily, rift, ach (earned with achievement `price`: the
+ * Lv-50 life masters' outfits and the NPCs' 가족 gifts are these), and quest / weekly, which name systems
+ * still to come (nothing grants those yet). An optional ninth field is the themed set (COS_SETS).
  * Codes are what the wire carries: never reuse or renumber one.
  */
 const COSMETICS = Object.fromEntries([
@@ -11503,7 +12223,59 @@ const COSMETICS = Object.fromEntries([
   ["ws_bone", 58, "wskin", "해골 무기 외형", 2, "chest", 0, "뼈로 깎은 듯한 무기."],
   ["ws_star", 59, "wskin", "별빛 무기 외형", 3, "rift", 0, "밤하늘을 담은 무기."],
   ["ws_flame", 60, "wskin", "화염 무기 외형", 3, "ach", "enh10", "명장의 무기는 불꽃을 두른다."],
-].map(([id, n, slot, name, q, src, price, desc]) => [id, { n, slot, name, q, src, price: src === "shop" ? price : 0, ach: src === "ach" ? price : "", desc }]));
+  // ── themed sets (the ninth field is the set, COS_SETS): the seaside
+  ["hat_sunhat", 61, "hat", "해변 밀짚모자", 1, "shop", 2400, "챙이 축 늘어진 큰 모자. 꽃 한 송이를 꽂았다.", "sea"],
+  ["face_snorkel", 62, "face", "스노클", 1, "shop", 2000, "물안경과 숨대롱. 뭍에서도 쓰고 다닌다.", "sea"],
+  ["top_shell", 63, "top", "조개 목걸이", 0, "shop", 1200, "바닷가에서 주운 조개를 꿴 목걸이.", "sea"],
+  ["top_swim", 64, "top", "줄무늬 수영복", 1, "shop", 2600, "파란 줄무늬 수영복.", "sea"],
+  ["back_surf", 65, "back", "서핑보드", 2, "shop", 7000, "제 키보다 큰 보드를 등에 멨다.", "sea"],
+  ["ws_coral", 66, "wskin", "산호 무기 외형", 2, "shop", 8000, "산호빛 날에 물거품이 맺힌다.", "sea"],
+  // the desert
+  ["hat_turban", 67, "hat", "사막 터번", 1, "shop", 3000, "모래바람을 막는 터번. 이마에 보석 하나.", "desert"],
+  ["hat_goggles", 68, "hat", "모래바람 고글", 1, "chest", 0, "이마에 올려 쓴 놋쇠 고글.", "desert"],
+  ["back_cape_sand", 69, "back", "모래 망토", 1, "shop", 4000, "모래 언덕 빛깔의 망토.", "desert"],
+  ["back_gourd", 70, "back", "물 호리병", 0, "shop", 1500, "사막을 건널 때는 물부터.", "desert"],
+  ["ws_dune", 71, "wskin", "모래바람 무기 외형", 2, "boss", 0, "모래 물결이 날을 타고 흐른다.", "desert"],
+  // the jungle
+  ["hat_pith", 72, "hat", "탐험가 모자", 1, "shop", 2800, "밀림 탐험가의 둥근 모자.", "jungle"],
+  ["top_safari", 73, "top", "탐험가 셔츠", 1, "shop", 2800, "주머니 많은 셔츠와 빨간 목수건.", "jungle"],
+  ["face_paint", 74, "face", "밀림 얼굴 분장", 0, "shop", 600, "양 볼에 그은 풀빛 줄무늬.", "jungle"],
+  // the eastern temple
+  ["hat_bamboo", 75, "hat", "삿갓", 1, "shop", 3200, "대나무로 엮은 넓은 삿갓.", "temple"],
+  ["top_dopo", 76, "top", "쪽빛 도포", 2, "shop", 6500, "허리띠를 맨 긴 쪽빛 도포.", "temple"],
+  ["top_beads", 77, "top", "염주", 1, "chest", 0, "오래된 사원의 나무 염주.", "temple"],
+  ["face_fox", 78, "face", "여우 탈", 2, "quest", 0, "붉은 무늬를 그린 흰 여우 탈.", "temple"],
+  ["ws_bamboo", 79, "wskin", "대나무 무기 외형", 2, "shop", 8000, "마디가 진 푸른 대나무 무기.", "temple"],
+  // the brick dungeon
+  ["hat_miner", 80, "hat", "광부 안전모", 1, "shop", 2600, "이마에 등불을 단 노란 안전모.", "delver"],
+  ["back_lantern", 81, "back", "탐험 등불", 2, "boss", 0, "등 뒤 장대 끝에서 흔들리는 등불.", "delver"],
+  ["top_delver", 82, "top", "가죽 멜빵", 1, "chest", 0, "주머니가 줄줄이 달린 탐험가의 멜빵.", "delver"],
+  // life skill masters: one per skill at Lv 50 (ACH life50_<skill>)
+  ["hat_fisher", 83, "hat", "명인의 낚시 모자", 3, "ach", "life50_fish", "낚시 명인의 벙거지. 찌 하나를 꽂았다.", "master"],
+  ["top_chefcoat", 84, "top", "명인의 조리복", 3, "ach", "life50_cook", "단추가 두 줄인 새하얀 조리복.", "master"],
+  ["back_basket", 85, "back", "명인의 채집 바구니", 3, "ach", "life50_gather", "약초가 넘치는 등바구니.", "master"],
+  ["top_smith", 86, "top", "명인의 대장 앞치마", 3, "ach", "life50_craft", "불똥 자국이 남은 두꺼운 가죽 앞치마.", "master"],
+  ["top_alch", 87, "top", "명인의 연금 외투", 3, "ach", "life50_alch", "약병 띠를 두른 연금술사의 외투.", "master"],
+  ["back_satchel", 88, "back", "명인의 배달 가방", 3, "ach", "life50_deliver", "편지가 삐죽 나온 배달부의 가방.", "master"],
+  // NPC trust: a gift at 가족 (ACH rep_<npc>)
+  ["top_apron_juju", 89, "top", "쥬쥬의 앞치마", 2, "ach", "rep_juju", "쥬쥬가 손수 지어 준 분홍 앞치마.", "family"],
+  ["back_hammer", 90, "back", "캉캉의 큰 망치", 2, "ach", "rep_kangkang", "캉캉이 쓰던 망치. 등에 메면 든든하다.", "family"],
+  ["hat_goggles_bogle", 91, "hat", "보글의 실험 고글", 2, "ach", "rep_bogle", "보글이 물려준 초록 고글.", "family"],
+  ["top_apron_moka", 92, "top", "모카의 카페 앞치마", 2, "ach", "rep_cafe_moka", "커피 향이 밴 갈색 앞치마.", "family"],
+  ["hat_nightcap", 93, "hat", "마루의 나이트캡", 2, "ach", "rep_inn_maru", "마루네 여관의 푹신한 잠자리 모자.", "family"],
+  // the rift and the weekly challenge (weekly, quest: sources of systems still to come; nothing grants them yet)
+  ["hat_shard", 94, "hat", "균열 파편 고리", 3, "rift", 0, "머리 위를 맴도는 균열의 파편.", "rift"],
+  ["back_trophy", 95, "back", "우두머리 전리품", 3, "weekly", 0, "쓰러뜨린 우두머리의 뿔 달린 해골.", "rift"],
+  ["ws_shard", 96, "wskin", "균열 파편 무기 외형", 3, "weekly", 0, "균열의 파편이 날에 박혀 빛난다.", "rift"],
+  // just cute
+  ["hat_wreath_blue", 97, "hat", "수국 화관", 1, "shop", 2000, "파란 수국을 엮은 화관.", "cute"],
+  ["hat_wreath_white", 98, "hat", "데이지 화관", 1, "daily", 0, "하얀 데이지를 엮은 화관.", "cute"],
+  ["top_scarf", 99, "top", "빨간 목도리", 0, "shop", 900, "한쪽 끝이 길게 늘어진 목도리.", "cute"],
+  ["back_plush", 100, "back", "곰 인형 배낭", 1, "shop", 3500, "어깨 너머로 빼꼼 내다보는 곰 인형.", "cute"],
+  ["ws_bee", 101, "wskin", "꿀벌 무기 외형", 1, "daily", 0, "노랑과 검정 줄무늬.", "cute"],
+].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
+/** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
+const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근" };
 const COS_IDS = Object.keys(COSMETICS);
 const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
 const COS_ACH = Object.fromEntries(COS_IDS.filter((id) => COSMETICS[id].ach).map((id) => [COSMETICS[id].ach, id]));
@@ -12204,7 +12976,7 @@ export function validateAction(S, pid, a) {
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");
       if (a.here && countItem(ch, "feather") < 1) return bad("부활 깃털이 없습니다");
-      if (!a.here && dimReviveWait(S, p) > 0) return bad(`${dimReviveWait(S, p)}초 뒤에 시작 지점에서 일어날 수 있습니다`);
+      if (!a.here && dimReviveWait(S, p) > 0) return bad(dimReviveWait(S, p) >= 99 ? "전투가 끝나야 일어날 수 있습니다 (전멸하면 다시 도전합니다)" : `${dimReviveWait(S, p)}초 뒤에 시작 지점에서 일어날 수 있습니다`);
       return OK;
     case "opt": {
       // settings kept with the character: loot filter, auto-potion thresholds (percent)
@@ -12343,6 +13115,12 @@ export function validateAction(S, pid, a) {
       if (now < (p.stag || 0)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
+    case "dash": {
+      // Space (59-dash.js): refused in silence while it cools, while reeling, when down
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
+      const why = dashWhy(S, p);
+      return why ? bad(why) : OK;
+    }
     case "warp": {
       // a big ground has several stones: `i` picks one (0, the first, when left out)
       const i = a.i === undefined ? 0 : a.i;
@@ -12621,6 +13399,7 @@ export function applyAction(S, pid, a) {
     }
     case "atk": if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); break;
     case "sk": if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.id); break;
+    case "dash": dashGo(S, p, m, a.a); break;
     case "use": {
       if (lifeUse(a.id)) { lifeUseApply(S, p, a); break; }
       const it = ITEMS[a.id];
@@ -13273,7 +14052,7 @@ function afflict(S, p, kind, atk) {
  * or any blow of an elite or a boss — shove the player back and make them reel (45-jobs.js).
  */
 function mobHit(S, rt, p, raw, mob, how = "blow") {
-  if (p.dead) return;
+  if (p.dead || dodged(S, rt, p)) return;
   if ((how === "blow" || how === "shot") && evadeBlow(S, rt, p)) return;
   const before = p.hp;
   const src = mob && !mob.dead ? mob : null;
@@ -13428,6 +14207,8 @@ function tickMob(S, m, rt, mob, dt) {
   }
   if (tgt) {
     const dd = dist(mob.x, mob.y, tgt.x, tgt.y);
+    // a boss challenge's boss follows its own script (64-dim.js chalCast)
+    if (now >= mob.castAt && mob.chal) { chalCast(S, rt, mob, tgt); return; }
     if (now >= mob.castAt) {
       const big = d.boss || mob.el === 2;
       // each kind has its own tricks: it tries them in turn and uses the first that suits the moment.
@@ -13660,7 +14441,7 @@ export function tick(S, now) {
         const p = S.players[pid];
         if (p.map !== id || p.dead || dist(p.x, p.y, q.x, q.y) > q.r) continue;
         // overlapping puddles do not add up: one bite at a time
-        if (now < (p.poolAt || 0) + 600) continue;
+        if (now < (p.poolAt || 0) + 600 || dodged(S, rt, p)) continue;
         p.poolAt = now;
         p.blame = { by: q.kind === 1 ? "불길" : q.kind === 2 ? "얼음 웅덩이" : "독 웅덩이", lv: 0, el: 0 };
         hurtPlayer(S, rt, p, q.dmg);
@@ -13810,6 +14591,8 @@ function selfPayload(p) {
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.job, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
     // the bag's size (46-bag.js) and the house (64-housing.js homeSelf)
     bagCap: bagCap(ch), house: homeSelf(p),
+    // 균열 단수 and the weekly boss flags (64-dim.js dimSelf)
+    dimr: dimSelf(p),
     // charms (66-charms.js): the board, what waits at 주아나, her quest; a sealed charm's seal never leaves the server
     charms: charmSelf(p),
     // life skills (58-life.js): [lv, xp, need] per skill in LIFE order; L2: the 알바 board, trust, the 재료 주머니
@@ -13830,7 +14613,7 @@ export function viewFor(S, pid) {
   const near = (o) => Math.abs(o.x - p.x) < VIEW_X && Math.abs(o.y - p.y) < VIEW_Y;
   const out = {
     type: "snap",
-    me: [Math.round(p.x), Math.round(p.y), Math.round(p.hp), Math.round(p.mp), p.dead ? 1 : 0, p.fix ? 1 : 0, p.dir, p.sit ? 1 : 0, flagsOf(p, S.now), crValue(p, S.now), p.aim | 0],
+    me: [Math.round(p.x), Math.round(p.y), Math.round(p.hp), Math.round(p.mp), p.dead ? 1 : 0, p.fix ? 1 : 0, p.dir, p.sit ? 1 : 0, flagsOf(p, S.now), crValue(p, S.now), p.aim | 0, dashLeft(S, p)],
     P: [], M: [], D: [], F: [],
   };
   for (const oid of Object.keys(S.players)) {
@@ -13975,11 +14758,11 @@ export function defs() {
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
     affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbKills: FB_KILLS,
-    traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
+    traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], dash: [DASH.px, DASH.ms, DASH.cd, DASH.inv], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
     waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: stoneNames(id), minLv: MAP_META[id].minLv || undefined })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code
-    cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N,
+    cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N, cosSets: COS_SETS,
     achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
     collection: Object.fromEntries(REGIONS.map((id) => [id, { mobs: COL_MOBS[id], bonus: REGION_BONUS[id] }])), colNeed: MASTERY[0],
     event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },

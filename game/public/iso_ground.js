@@ -26,7 +26,7 @@ export const UG = {
   abyss: { floor: ["#7c2f3c", "#5c1e2b", "#9e4855"], rock: "#19070c", face: ["#5a1622", "#8c2c3a", "#ba4e5a", "#330e18"], wet: ["#a81c2c", "#8e1424", "#e4606c", "#560a16", "#d04858"] },
   cave: { floor: ["#40606a", "#344f5a", "#527680"], rock: "#101a26", face: ["#2e4458", "#4a6a7c", "#5a7c8c", "#22343f"], wet: ["#26a08e", "#1e8a7a", "#8af4dc", "#145a50", "#58d6be"] },
 };
-export const GRASS = { meadow: "#6cbf5e", town: "#6cbf5e", city: "#6cbf5e", forest: "#3f8a5c", autumn: "#71843a", jungle: "#35944a", coast: "#74c060", desert: "#8ab850" };
+export const GRASS = { meadow: "#6cbf5e", town: "#6cbf5e", city: "#6cbf5e", forest: "#3f8a5c", autumn: "#71843a", jungle: "#35944a", coast: "#74c060", desert: "#8ab850", mesa: "#a4a058", mist: "#6f9a6a" };
 export const underground = (theme) => !!UG[theme];
 /**
  * The cave's shelf level (0/1/2) per tile from the map payload's `lv` (runs "<level><count>" joined by ","),
@@ -240,7 +240,8 @@ export function materials(theme) {
   // water: shallow and deep; the bank under a far shore
   const wet = U ? U.wet : theme === "autumn" ? ["#3f86b8", "#336fa0", "#80bede", "#285c8a", "#6aa8d0"]
     : theme === "jungle" || theme === "coast" ? ["#2a9cae", "#17748c", "#7adcd8", "#125a74", "#5cc4c8"]
-    : theme === "desert" ? ["#3aa8bc", "#2c90a8", "#8adcde", "#207890", "#74ccd4"] : ["#4aa2e2", "#3f8ad2", "#8accf6", "#2f78c0", "#86c8f4"];
+    : theme === "desert" || theme === "mesa" ? ["#3aa8bc", "#2c90a8", "#8adcde", "#207890", "#74ccd4"]
+    : theme === "mist" ? ["#e4ebf3", "#cdd8e6", "#ffffff", "#aebccf", "#f6f9fc"] : ["#4aa2e2", "#3f8ad2", "#8accf6", "#2f78c0", "#86c8f4"];
   const water = mk(MID.water, 10, wet[0], { pal: [wet[0], wet[1], mix(wet[0], 1.08)], style: "bank", line: wet[3] });
   water.tex = theme === "sewer" ? organic(water, SHP.water, SHP.sludge, 61, 0.42, 0.3, 9, 5) : organic(water, SHP.water, null, 61, 0.2, 0, 11, 6);
   water.foam = C(U ? wet[2] : "#d8f0ff"); water.foam2 = C(wet[4]);
@@ -377,6 +378,35 @@ export function materials(theme) {
     jg.tex = organic(jg, ["44./444/.11", "1.1/.1.", "22/.2", "444/.44", "11", "5/1", "2.2/.2."].map(shape), SHP.grass2, 11, 0.7, 0.34, 6, 5);
     for (const ch of '.,"t:;') T[ch] = jg;
     T._grass = jg;
+  }
+  // ── maps-batch2 art, step 1. The red mesa: red sand in long ripples, redder dune crests, slabs of bare sandstone,
+  // pale gold flagstones in the palace courts. The cloud temple: every water tile is cloud — pale billows with a blue
+  // shadow under each and a white lit top — and the stone is cool grey.
+  if (theme === "mesa") {
+    const rsand = mk(MID.sand, 7, "#d98a5a", { pal: ["#d98a5a", "#c2703f", "#eeaa78", "#cc7c4c", "#a85a34"], line: "#8e4a2a" });
+    rsand.tex = dunes(rsand, 261, 38, 0.2, 4);
+    const rdune = mk(MID.dune, 6.5, "#e29a62", { pal: ["#e29a62", "#c47840", "#f6be88", "#d28a52", "#a85e34"], line: "#964e28" });
+    rdune.tex = dunes(rdune, 263, 22, 0.42, 3);
+    const slab = mk(MID.ruin, 4, "#b86a48", { pal: ["#b86a48", "#8e4a32", "#d48a62", "#a85c3e", "#c87a54"], straight: true, depth: 1, line: "#6e3624" });
+    slab.tex = laid(slab, 14, 9, 6, 265, { crack: true });
+    const court = mk(MID.royal, 1, "#e2ca92", { pal: ["#e2ca92", "#b89a62", "#f6e4b4", "#d2b87e", "#ead6a2"], amp: 2.6, depth: 2, line: "#8a6a3a" });
+    court.tex = laid(court, 11, 7, 5, 267, { crack: true });
+    T.s = rsand; T.z = rdune; T.r = slab; T["="] = court; T._grass = rsand;
+  } else if (theme === "mist") {
+    const cloud = mk(MID.water, 10, "#e4ebf3", { pal: ["#e4ebf3", "#cdd8e6", "#ffffff", "#aebccf"], style: "bank", line: "#aebccf" });
+    cloud.tex = (A, B) => {
+      // billows lying across the screen: a white top, the body, a blue-grey underside where the next one begins
+      const SX = A - B, SY = (A + B) >> 1;
+      const n = vnoise(SX, SY * 2, 44, 271) * 0.7 + vnoise(SX, SY * 2, 14, 272) * 0.3, band = (n * 6) % 1;
+      if (band < 0.1) return cloud.pal[3];
+      if (band < 0.22 && (SX + SY) & 1) return cloud.pal[3];
+      return band > 0.72 ? cloud.pal[2] : band > 0.4 ? cloud.pal[0] : cloud.pal[1];
+    };
+    cloud.foam = C("#ffffff"); cloud.foam2 = C("#f6f9fc");
+    cloud.bank = ["#9aa4b2", "#7c8696", "#5e6878"].map(C);
+    const crag = mk(MID.ruin, 4, "#9a9e9c", { pal: ["#9a9e9c", "#72787a", "#b8bcb8", "#888c8a", "#a6aaa6"], straight: true, depth: 1, line: "#565c5e" });
+    crag.tex = laid(crag, 13, 8, 5, 273, { moss: C("#6f9a6a"), crack: true });
+    T.w = cloud; T.b = cloud; T._water = cloud; T.r = crag;
   }
   if (cave) Object.assign(T, cave);
   // a ford out of doors (maps-v2 A.6, the forest's crossings `m.cross`): clear shallows over sand, flat grey

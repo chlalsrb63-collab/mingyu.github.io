@@ -47,7 +47,7 @@ import { g, vw, vh, G, iso, tI, K, clamp, cam, FLAT, T, playerLook, sAng, P, she
 import { drawSkirt, drawGround, drawLayer, drawPulseParts, lazyLeft, lazyTall } from "./scene_ground.js";
 import { wpLit, lights, map, ground, theme, artGround, drawWater, pulseCv, pulseParts, falls, smokers, statics, npcs, OUTDOOR, emit, strings, critters, roomL, drawAmbient, camps } from "./scene_map.js";
 import { npcOut, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, seatOf, drawPerson, drawJam } from "./scene_people.js";
-import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, drawAimArrow, props, TRAIT_TINT, hooks } from "./scene_fx.js";
+import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, drawAimArrow, props, TRAIT_TINT, hooks, glows } from "./scene_fx.js";
 
 // ───────────────────────────── the frame ─────────────────────────────
 
@@ -116,6 +116,7 @@ function glowAfterDark(n, t, ox, oy) {
     g.globalAlpha = n * 0.75;
     g.drawImage(fr, Math.round(X - SP.FOOT[0]), Math.round(Y - SP.FOOT[1] + 2));
   }
+  for (const fn of glows) fn(g);
   // the pot still hangs in front of the flame, lit by it
   g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
   for (const st of lights) if (st.pot) g.drawImage(Math.floor(t / 380) % 3 === 0 ? st.sp1 : st.sp, st.dx, st.dy);
@@ -414,6 +415,6 @@ const ghost = { s: null, gz: 1 };
 export { iso, sAng, PARTS, playerLook, init, resize, sync, project, pick } from "./scene_view.js";
 export { loadMap, labels } from "./scene_map.js";
 export { tintWhite, petFetch, npcOut } from "./scene_people.js";
-export { props, hooks, personFrame, FOOT, fxCustom, qiBurst, arrowSprite, fx, big, shake } from "./scene_fx.js";
+export { props, hooks, personFrame, FOOT, fxCustom, glows, qiBurst, arrowSprite, fx, big, shake } from "./scene_fx.js";
 export { pulseBoth, groundInfo } from "./scene_ground.js";
 export { figure, drawFigure } from "./scene_stage.js";

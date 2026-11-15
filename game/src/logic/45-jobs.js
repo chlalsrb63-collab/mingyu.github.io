@@ -238,18 +238,20 @@ function staggerPlayer(S, rt, p, mob) {
  * client's trail); `pierce` how many monsters it passes through before it stops.
  */
 function fireArrow(S, rt, p, mob, mult, pierce, kind, o = {}) {
-  const arm = deriveStats(p).arm, sh = arm.shot || WKIND.bow.shot;
+  const arm = deriveStats(p).arm, sh = arm.mag ? WKIND.bow.shot : arm.shot || WKIND.bow.shot;
   if (!rt.shots) rt.shots = [];
   const mine = rt.shots.filter((s) => s.pid === p.pid);
   // (a skill's volley may have more in the air at once)
   if (mine.length >= SHOT_MAX + (kind >= 2 ? 6 : 0)) { const q = mine[0]; rt.shots.splice(rt.shots.indexOf(q), 1); rt.ev.push(["ae", q.id, Math.round(q.x), Math.round(q.y), 2]); }
   // `o` (skills): spd, len, r, a direction ux/uy of its own, a `cap` {n, h} shared by a volley (at most n arrows a monster);
   // `opt` hurtMob's options (the skill: a book's brand, magic), `el` an element left where it first strikes (weave, power `k`),
-  // `brandK` more on a monster already branded
+  // `brandK` more on a monster already branded, `home` a monster id it steers at while that lives, `blow` a staff's or a
+  // book's basic blow ({ wk, fin }: it lands as magicLand, not as an arrow)
   const [ux, uy] = o.ux !== undefined ? [o.ux, o.uy] : aimVec(p, mob);
-  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: o.spd || sh.spd, left: o.len || arm.range || 150, r: o.r || sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0, cap: o.cap || null, opt: o.opt || null, el: o.el || "", k: o.k || 1, brandK: o.brandK || 0 };
+  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: o.spd || sh.spd, left: o.len || arm.range || 150, r: o.r || sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0, cap: o.cap || null, opt: o.opt || null, el: o.el || "", k: o.k || 1, brandK: o.brandK || 0, home: o.home || 0, blow: o.blow || null, ring: 0 };
   rt.shots.push(shot);
-  rt.ev.push(["ar", shot.id, Math.round(shot.x), Math.round(shot.y), Math.round(ux * 1000), Math.round(uy * 1000), shot.spd, kind, p.eid]);
+  const ar = ["ar", shot.id, Math.round(shot.x), Math.round(shot.y), Math.round(ux * 1000), Math.round(uy * 1000), shot.spd, kind, p.eid];
+  rt.ev.push(shot.home ? [...ar, shot.home] : ar);   // (a homing one names its monster)
   return shot;
 }
 /**
@@ -272,9 +274,15 @@ function shotTick(S, rt, dt) {
   const m = mapOfS(S, rt.id);
   for (let i = rt.shots.length - 1; i >= 0; i--) {
     const s = rt.shots[i], p = S.players[s.pid];
-    const end = (how) => { rt.shots.splice(i, 1); rt.ev.push(["ae", s.id, Math.round(s.x), Math.round(s.y), how]); };
+    // (a magic blow's burst adds its ring's radius: the book's splash, the staff's finisher)
+    const end = (how) => { rt.shots.splice(i, 1); rt.ev.push(s.ring ? ["ae", s.id, Math.round(s.x), Math.round(s.y), how, s.ring] : ["ae", s.id, Math.round(s.x), Math.round(s.y), how]); };
     // a shooter who fell or left takes their arrows with them
     if (!p || p.dead || p.map !== rt.id) { end(2); continue; }
+    // a homing missile turns toward where its monster stands now; once that is gone it flies straight on
+    if (s.home) {
+      const t = rt.mobs.find((o) => o.id === s.home && !o.dead);
+      if (t) { const d = dist(s.x, s.y, t.x, t.y - 6) || 1; s.ux = (t.x - s.x) / d; s.uy = (t.y - 6 - s.y) / d; } else s.home = 0;
+    }
     const seg = Math.min(s.left, s.spd * dt);
     // how far along the segment it gets before a wall (flying height: the ground point is 6 px below)
     let free = seg, wall = false;
@@ -292,7 +300,8 @@ function shotTick(S, rt, dt) {
       s.hit.push(o.id);
       if (s.cap) s.cap.h[o.id] = (s.cap.h[o.id] | 0) + 1;
       p.hitAct = [s.act, s.gain];
-      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
+      if (s.blow) magicLand(S, rt, p, s, o);
+      else hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
       p.hitAct = null;
       // 길별의 렌즈참: a 관통 화살 that strikes a second target marks it (66-charms.js)
       if (s.cl && s.hit.length === 2) charmLens(S, rt, p, o);
@@ -314,6 +323,22 @@ function bowShot(S, rt, p, fin) {
   const far = mob ? dist(p.x, p.y, mob.x, mob.y) : c.range * 0.7;
   rt.ev.push(["a", p.eid, 6, Math.round(p.x + ux * far), Math.round(p.y - 6 + uy * far), p.dir, p.combo]);
   fireArrow(S, rt, p, mob, (c.mult || 1) * (fin ? FINISH.mult : 1), fin ? 1 : 0, fin ? 1 : 0);
+}
+
+/**
+ * A staff's or a book's basic attack: a missile (kind 8) or an orb (kind 9) that steers at the aimed
+ * monster and lands as the blow (50-loot-combat.js magicLand); with nothing aimed at it flies straight
+ * and fades at the weapon's reach. Chasing a monster that moves, it may fly a little past the reach.
+ */
+function magicShot(S, rt, p, fin) {
+  const st = deriveStats(p), c = st.arm;
+  const mob = aimMob(rt, p, atkRange(p), c.arc || AIM_CONE);
+  if (mob) face(p, mob);
+  const [ux, uy] = aimVec(p, mob);
+  const far = mob ? dist(p.x, p.y, mob.x, mob.y) : c.range * 0.7;
+  rt.ev.push(["a", p.eid, c.fx, Math.round(p.x + ux * far), Math.round(p.y - 6 + uy * far), p.dir, p.combo]);
+  fireArrow(S, rt, p, mob, (c.mult || 1) * (fin ? FINISH.mult : 1), 0, c.shot.kind,
+    { spd: c.shot.spd, r: c.shot.r, len: c.range * (mob ? 1.6 : 1), home: mob ? mob.id : 0, blow: { wk: st.wk, fin }, opt: { mag: 1 } });
 }
 
 // ── migration of the four-class sheets (B.11) and the test hero

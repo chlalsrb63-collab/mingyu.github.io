@@ -291,6 +291,12 @@ export function floatText(str, x, y, h, col, big, dmg = false) {
   // a damage number bounces off to one side (dmg: true), the rest rise straight up
   G.texts.push({ str, x, y, h, col, big: !!big, t0: now(), dmg, vx: dmg ? (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8) : 0 });
 }
+/** A spark of magic gathering at the staff's or the book's tip, a few px from `src` toward (tx, ty). */
+function castFlash(f, src, tx, ty, col, fin) {
+  const d = Math.hypot(tx - src.x, ty - src.y) || 1, x = src.x + ((tx - src.x) / d) * 9, y = src.y + ((ty - src.y) / d) * 9;
+  f.burst(x, y, 0.75, "#ffffff", fin ? 4 : 2, 0.5);
+  f.burst(x, y, 0.75, col, fin ? 6 : 3, 0.7);
+}
 /** `src` is the attacker, (tx, ty) the point of impact on the ground. */
 function attackFx(kind, src, tx, ty, beat = 0) {
   const fin = beat === 2;
@@ -299,10 +305,11 @@ function attackFx(kind, src, tx, ty, beat = 0) {
     // (the blades' crescents and thrust waves are thrown off by the stroke itself at its snap: scene2d qiBurst)
     case 0: Sound.play("swing_sword", beat === 1); break;
     case 1: f.proj(src.x, src.y, 0.75, tx, ty, 0.5, "#fff0c0", 0.04, 42); f.burst(src.x + (tx - src.x) * 0.15, src.y + (ty - src.y) * 0.15, 0.75, "#ffd84a", 4, 0.8); Sound.play("shoot"); break;
-    case 2: f.proj(src.x, src.y, 1.1, tx, ty, 0.5, "#b08aff", fin ? 0.15 : 0.09, 15, fin ? () => f.ring(tx, ty, 18, "#b08aff", 220, true) : undefined); Sound.play("swing_staff"); break;
+    // the staff and the book: a flash at the tip as it casts; the missile comes as its own event ("ar" kinds 8, 9: skillfx.js)
+    case 2: castFlash(f, src, tx, ty, "#b08aff", fin); Sound.play("swing_staff"); break;
     case 3: Sound.play("swing_dagger"); break;
     case 4: Sound.play("swing_spear", fin); break;
-    case 5: f.proj(src.x, src.y, 0.9, tx, ty, 0.5, "#c8a0ff", 0.07, 20, () => { f.ring(tx, ty, fin ? 34 : 26, "#c8a0ff", 220, true); }); Sound.play("swing_book"); break;
+    case 5: castFlash(f, src, tx, ty, "#c8a0ff", fin); Sound.play("swing_book"); break;
     // the bow: drawn and loosed by the stroke itself; its arrow comes as its own event ("ar", skillfx.js)
     case 6: SkillFx.bowFire(G, src, beat); break;
     case 19: f.burst(src.x, src.y, 0.6, "#4a4468", 10, 1); break;

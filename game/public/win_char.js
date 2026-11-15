@@ -11,6 +11,7 @@ import { skillIconUrl } from "./skillicons.js";
 import { iconImg, iconUrl } from "./uiicons.js";
 import * as Info from "./infocard.js";
 import * as QS from "./quickslots.js";
+import { K } from "./keymap.js";
 import * as StatWin from "./statwin.js";
 import * as JobTree from "./jobtree.js";
 import * as Housing from "./housing.js";
@@ -204,8 +205,11 @@ function skillRows(box, s, k) {
     const basic = el("div", "skill basic");
     const bi = el("img", "ic"); bi.alt = ""; bi.src = G.icons.url[s.eq.weapon.id] || iconUrl("sword");
     const bh = el("div", "hd");
-    bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), el("kbd", "", "Space"), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
-    const description = s.wk === "hammer" ? `해머를 살짝 든 뒤 앞쪽 ${wk.center}px 지점을 내려찍습니다. 반경 ${wk.r}px의 적을 최대 세 마리까지 맞힙니다.` : "가장 가까운 적을 겨냥합니다. 이어 치면 세 번째 타격이 마무리 일격이 됩니다.";
+    bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), el("kbd", "", K("attack")), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
+    const description = {
+      hammer: `해머를 살짝 든 뒤 앞쪽 ${wk.center}px 지점을 내려찍습니다. 반경 ${wk.r}px의 적을 최대 세 마리까지 맞힙니다.`,
+      sword: "대검을 좌우로 번갈아 휘둘러 두 번 이어 벱니다.",
+    }[s.wk] || "가장 가까운 적을 겨냥합니다. 이어 치면 세 번째 타격이 마무리 일격이 됩니다.";
     basic.append(bi, bh, el("p", "", description));
     box.append(basic);
   }

@@ -539,7 +539,8 @@ function widen(m, pts, soft, dig, r = m.widenR || 1) {
       const X = x + dx, Y = y + dy, o = m.o[Y][X];
       if (dig && m.g[Y][X] === "W" && o === " ") { if (m.noDig && m.noDig[Y * W + X]) return Infinity; c += 4; continue; }
       if (SOLID_G.includes(m.g[Y][X]) || (o !== " " && !soft.includes(o) && o !== "C")) return Infinity;
-      if (o === "C") c += 8;
+      // (a crag that walls a boss in is never cut into steps: m.noCut, the summit hall of the cloud temple)
+      if (o === "C") { if (m.noCut && m.noCut[Y * W + X]) return Infinity; c += 8; }
       else if (o !== " ") c += 3;
     }
     return c;
@@ -562,6 +563,7 @@ function widen(m, pts, soft, dig, r = m.widenR || 1) {
       for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
         if (dig && m.g[y + dy][x + dx] === "W") { m.g[y + dy][x + dx] = dig; cut++; }
         // (five wide: the swath round the first step may hold the stone or the sign the way is cut for — those stay)
+        if (m.noCut && m.noCut[(y + dy) * W + x + dx]) continue;
         if (m.o[y + dy][x + dx] !== " " && (r === 1 || soft.includes(m.o[y + dy][x + dx]) || m.o[y + dy][x + dx] === "C")) { if (m.o[y + dy][x + dx] === "C") m.g[y + dy][x + dx] = "v"; m.o[y + dy][x + dx] = " "; cut++; }
       }
     }

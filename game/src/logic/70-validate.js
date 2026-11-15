@@ -45,7 +45,7 @@ export function validateAction(S, pid, a) {
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");
       if (a.here && countItem(ch, "feather") < 1) return bad("부활 깃털이 없습니다");
-      if (!a.here && dimReviveWait(S, p) > 0) return bad(`${dimReviveWait(S, p)}초 뒤에 시작 지점에서 일어날 수 있습니다`);
+      if (!a.here && dimReviveWait(S, p) > 0) return bad(dimReviveWait(S, p) >= 99 ? "전투가 끝나야 일어날 수 있습니다 (전멸하면 다시 도전합니다)" : `${dimReviveWait(S, p)}초 뒤에 시작 지점에서 일어날 수 있습니다`);
       return OK;
     case "opt": {
       // settings kept with the character: loot filter, auto-potion thresholds (percent)
@@ -184,6 +184,12 @@ export function validateAction(S, pid, a) {
       if (now < (p.stag || 0)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
+    case "dash": {
+      // Space (59-dash.js): refused in silence while it cools, while reeling, when down
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
+      const why = dashWhy(S, p);
+      return why ? bad(why) : OK;
+    }
     case "warp": {
       // a big ground has several stones: `i` picks one (0, the first, when left out)
       const i = a.i === undefined ? 0 : a.i;

@@ -39,6 +39,8 @@ export function personFrame(eid) {
 }
 export const FOOT = SP.FOOT;
 /** A custom effect: draw(g, k, f) is called with k running 0 → 1 over `dur` ms. */
+/** Draw callbacks laid over the night grade again (scene2d glowAfterDark): things that shine by their own light. */
+export const glows = new Set();
 export function fxCustom(draw, dur, flat = false, delay = 0) { fx.add({ k: "custom", draw, dur, flat, delay }); }
 /** The effects' clock: the time of the frame being drawn (so previews that step time by hand animate them too). */
 let fxClock = null;

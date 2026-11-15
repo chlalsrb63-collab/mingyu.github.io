@@ -233,6 +233,7 @@ function dealMob(S, rt, mob, p, dmg, crit) {
   if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
   mob.hp -= dmg;
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
+  if (mob.dim) dimDealt(S, rt, mob, p, dmg);   // the carry guard's damage share, a boss's stagger gauge (64-dim.js)
   if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
   if (!mob.tgt) mob.tgt = p.pid;
   rt.ev.push(["h", mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0]);
@@ -573,8 +574,8 @@ function basicAttack(S, p) {
   const beat = p.swordBeat ?? p.combo;
   p.atkAt = now;
   newAct(p, false);
-  // a bow looses an arrow that flies (45-jobs.js): it lands, or not, a few ticks later
-  if (c.shot) { bowShot(S, rt, p, fin); return; }
+  // a bow looses an arrow, a staff or a book a homing missile, that flies (45-jobs.js): it lands, or not, a few ticks later
+  if (c.shot) { (c.mag ? magicShot : bowShot)(S, rt, p, fin); return; }
   const range = atkRange(p);
   // the blow goes where you aim: the nearest monster inside the weapon's arc, or nothing
   const arc = c.arc || AIM_CONE;
@@ -591,21 +592,15 @@ function basicAttack(S, p) {
   rt.ev.push(["a", p.eid, c.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir, beat]);
   const mult = (c.mult || 1) * (fin ? FINISH.mult : 1);
   // a greatsword's arc catches what stands beside the target, a spear runs through
-  // what stands behind it, and a spellbook's burst splashes around it
-  // (only ever in front: nothing behind the swing is caught by it)
+  // what stands behind it (only ever in front: nothing behind the swing is caught by it)
   let extra = [];
   const near = (a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y);
   if (c.cleave) extra = mobsWithin(rt, p.x, p.y, range + (fin ? 10 : 4)).filter((o) => o !== mob && inArc(p, o, arc * (fin ? 1.25 : 1))).sort(near).slice(0, c.cleave + (fin ? 1 : 0));
   else if (c.line) { const [ux, uy] = aimVec(p, mob); extra = mobsInLine(rt, p.x, p.y, ux, uy, c.range + 10, fin ? 16 : 11).slice(0, c.line + (fin ? 1 : 0)); }
-  else if (c.splash) { const [ux, uy] = aimVec(p, mob); extra = mobsWithin(rt, mob.x, mob.y, c.splash + (fin ? 8 : 0)).filter((o) => (o.x - p.x) * ux + (o.y - p.y) * uy > -4).slice(0, 4); }
   const zx = mob.x, zy = mob.y;
   // the blow lands with weight: whatever it hits is shoved back and reels, the
   // finisher most of all. Elites only reel; bosses and field bosses stand firm.
-  const shove = (o, k) => {
-    if (MOBS[o.k].boss || o.el === 2 || steady(S, o)) return;
-    if (!o.el) { const [ux, uy] = aimVec(p, o); knock(mapOfS(p.S, p.map), o, ux, uy, c.kb * k * (fin ? FINISH.kb : 1)); }
-    holdMob(S, o, (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + (tip && o === mob ? TIP.flinch : 0));   // reels: cooldowns paused
-  };
+  const shove = (o, k) => { const [ux, uy] = aimVec(p, o); shoveMob(S, p, o, ux, uy, c.kb * k, fin, tip && o === mob ? TIP.flinch : 0); };
   shove(mob, 1);
   // 급소 도려내기: a stab on a marked monster opens it up (bleeding, and a burst of speed); every stab marks
   const vit = c === WKIND.dagger && pasOn(p, "vitals") ? SKILL.vitals : null;
@@ -620,11 +615,39 @@ function basicAttack(S, p) {
     addMarks(S, mob, 1);
   }
   for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6); }
-  if (st.lg.chain && rnd(S) < 0.25 * st.proc) {
-    for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
-      rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
-      hurtMob(S, rt, o, p, 0.6);
-    }
+  chainBlow(S, rt, p, st, mob, zx, zy);
+}
+/**
+ * A basic blow lands with weight: whatever it hits is shoved back along (ux, uy) and reels, the
+ * finisher most of all. Elites only reel; bosses and field bosses stand firm. `more` ms more reeling.
+ */
+function shoveMob(S, p, o, ux, uy, kb, fin, more) {
+  if (MOBS[o.k].boss || o.el === 2 || steady(S, o)) return;
+  if (!o.el) knock(mapOfS(p.S, p.map), o, ux, uy, kb * (fin ? FINISH.kb : 1));
+  holdMob(S, o, (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + more);   // reels: cooldowns paused
+}
+/** 연쇄 (legendary): now and then a basic blow on `mob` leaps on to two more near (zx, zy). */
+function chainBlow(S, rt, p, st, mob, zx, zy) {
+  if (!(st.lg.chain && rnd(S) < 0.25 * st.proc)) return;
+  for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
+    rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
+    hurtMob(S, rt, o, p, 0.6);
   }
+}
+/**
+ * A staff's missile or a book's orb (45-jobs.js magicShot) strikes `mob`: the basic blow lands now,
+ * magic, shoved along its flight. A book's orb bursts and splashes ≤ 4 more within `splash` px (the
+ * finisher's wider), never behind where it was cast; the finisher's burst shows its ring (`s.ring`).
+ */
+function magicLand(S, rt, p, s, mob) {
+  const st = stats(p), c = WKIND[s.blow.wk] || WKIND.staff, fin = s.blow.fin, zx = mob.x, zy = mob.y, mag = { mag: 1 };
+  shoveMob(S, p, mob, s.ux, s.uy, c.kb, fin, 0);
+  hurtMob(S, rt, mob, p, s.mult * charmMarkK(S, rt, p, mob), false, mag);
+  if (c.splash) {
+    s.ring = c.splash + (fin ? 8 : 0);
+    const by = mobsWithin(rt, zx, zy, s.ring).filter((o) => o !== mob && (o.x - s.x0) * s.ux + (o.y - s.y0) * s.uy > -4).slice(0, 4);
+    for (const o of by) { shoveMob(S, p, o, s.ux, s.uy, c.kb * 0.6, fin, 0); hurtMob(S, rt, o, p, s.mult * 0.6, false, mag); }
+  } else if (fin) s.ring = 18;
+  chainBlow(S, rt, p, st, mob, zx, zy);
 }
 

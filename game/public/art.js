@@ -245,7 +245,9 @@ const MINI_OBJ = { "=": "#3a2620", "+": "#bfe0ee", "^": "#2a3a34", "~": "#c89a3a
   // the town's stone terrace wall and the new interior pieces (docs/design/town.md E)
   W: "#9a9080", "&": "#5a5e6c", "<": "#d8603a", ">": "#8a6a4a", "|": "#7a5a3a", ";": "#9ad0c8", ":": "#b8a898", "'": "#bfe0ee", "`": "#c8a060",
   // maps-v2 M3: palm, reef rock, black shore boulder, mud hut
-  "Ψ": "#3a9a50", "Φ": "#6a8a80", "Ω": "#2e2e36", "Δ": "#b88a58" };
+  "Ψ": "#3a9a50", "Φ": "#6a8a80", "Ω": "#2e2e36", "Δ": "#b88a58",
+  // maps-batch2: twisted pine, a hall's footprint (gold roof / pagoda), rock pillar
+  "Σ": "#2f6e4e", "Π": "#d8a838", "Θ": "#9a7a6a" };
 /** The old kingdom's canopy turns: maples red, the rest gold; pines stay dark. */
 const AUTUMN_OBJ = { T: "#b4442a", P: "#24503a", B: "#a8582a" };
 /** Dungeons share the cave's tiles but not its colours. */
@@ -257,6 +259,8 @@ const MINI_THEME = {
   jungle: { w: "#1f7f92", ":": "#2f7a40", ";": "#2a6a3a", r: "#6a6a70", m: "#c8a838", T: "#1f5a2c" },
   coast: { w: "#1f7f92", z: "#e4c890" },
   desert: { s: "#e2c88a", w: "#3aa0b8", r: "#a89878" },
+  mesa: { s: "#d98a5a", z: "#e29a62", r: "#b86a48", w: "#3aa0b8", "=": "#e2ca92", ",": "#a4a058", t: "#8a9a50" },
+  mist: { w: "#dfe7f0", b: "#b8bcb8", ":": "#5f8a5c", ";": "#5f8a5c", ",": "#6a9464", r: "#9a9e9c", "%": "#b4622e" },
 };
 /** A zoned hunting ground's minimap tint by 4 × 4 block (m.zq): the safe plaza cool, the elite ground red; hidden pockets stay hidden. */
 const ZONE_TINT = { 0: "rgba(120,220,255,0.22)", 2: "rgba(255,70,60,0.2)" };

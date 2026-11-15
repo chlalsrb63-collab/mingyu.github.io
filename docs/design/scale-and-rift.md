@@ -793,3 +793,34 @@ dim_boss dim_clear dim_portal`, track `dim`), `index.html` (`#dim-hud #w-dim #w-
 - `tests/dimrift.mjs` takes ≈ 20 s (the bot runs, three draws a level). Its pool depends on `MAP_META.kinds`: Phase 1 adding kinds may
   move clear times; rerun with `-v`.
 - Editor towns that `replace` the town must place the obelisk (`big` `obelisk`) and an NPC with role `dim` themselves.
+
+### H.6 Rift tiers + boss challenge — as built
+
+Numbers live in `31-maps-dim.js` `DIM_TIER` / `DIM_CHAL`; rules in `64-dim.js`. Sheet **v15**: `ch.dim = {day, n, t, best, ms, wk, wb, bw}`
+(`dimClean` in `newChar` and `migrate`; `dimRec` turns the day/week over — `weekOf` from `63-social-weekly.js`, Monday 06:00 KST).
+- **Ladder** (1–100, `dim_open {tier}`; capped by the lowest `t` of everyone going in). Tier n: monster `hk` × 1.08^(n−1), blows × 1.05^(n−1),
+  +1 pack leader made elite per 3 tiers (≤ 6), elites 2 traits from tier 10, the master 3 traits from tier 20. A clear sets `best`/`ms`
+  and opens n+1 (`dimRecord`). Chest extra for the day's full clears: gold +6 %/tier (≤ ×3), xp +4 %/tier (≤ ×2), +1 stone/5 tiers (≤ 4),
+  rune +2 %/tier. Weekly: the first clear of each 5-tier bracket pays 120 × lv gold + 3 stones per bracket (`wb`, ≤ 20).
+- **Carry guard** (`dimCarried`): > 6 world tiers under the best who went in, or (in company) < 20 % of an even damage share
+  (`dim.dmg`, fed by `dimDealt` from `dealMob`) → 40 % gold/xp, no gear, no unlock/record/weekly bonus.
+- Bots (4 × Lv.32, q1 gear, no training; three draws): tier 1 5.9 min avg, tier 3 6.8, tier 5 7.7 (2/3 cleared); tier 8 is a wall
+  for them (trained, enhanced heroes climb on). Tier 60 fails. Test: `TIERS=… SHIFTS=… node tests/dimrift.mjs -v`.
+- **Weekly boss challenge** (`dim_open {boss: "boss"|"abyssboss"}`, Lv. = `shownLv(boss.lv − 3)`): `dimArena` (32 × 22 oval, no door tile —
+  leave with [떠나기]), the boss alone, asleep until struck/approached, never leashes. 10 min limit; `hk = 14 × hpN[n] × (1 + 0.1/tier above)`.
+  A wipe resets the boss (hp, fury, enrage, pattern count) and gets the whole party up together after 4 s (`chal.upAt`); nobody gets up
+  mid-fight (`dimReviveWait` → 99). Reward: `big` (400 × lv gold, 25 % level xp, 8 stones, 2 runes, 2 q3 gear, a charm roll) once a week
+  per boss (`bw` bit), `small` after or when carried. Bots: crypt boss 2.8 min, 0 wipes; 심연의 어미 9.0 min, 1 wipe, fury 7.
+- **Boss-script API** (to generalise next into a runner for any mob): `DIM_CHAL.bosses[k] = {theme, cast, pats: [[name, kind]…]}`.
+  `tickMob` hands a `mob.chal` mob's turn to `chalCast(S, rt, mob, tgt)`: every `every` (4)-th turn the **marked cast**
+  (`mob.cast = {until, need, got}`, 6 s, stunned while casting), else the next pattern in turn; follow-up steps go in `chal.q`
+  (`{at, f: "fan"|"pool"|"charge"|"land", …}`), played by `chalTick` each tick, which also handles wipe/reset, re-targeting, the cast
+  running out (2.4 × atk to all standing, `fury` +15 % blows) and the soft enrage (240 s, +12 % per 10 s). **Stagger**: `dimDealt` adds
+  damage to `mob.cast.got`; ≥ `need` (3 % max hp) breaks it → `mob.stag` = 5 s stun. Kinds: `fan2 fan3 rings pools charge2 leapslam`
+  (built from `volley`, `rt.tele` rings, `rt.pools`, `mob.act` charges). Events `["dc", id, i]` (pattern i), `9` cast, `8` broken, `7` failed.
+- **Wire** (appended): `dim[14]` tier (0 = boss), `dim[15]` 0 | `[boss idx, 0·1 casting·2 staggered, gauge left %, half-secs left, enrage
+  steps, tries, fury]`; `rc[5..6]` tier, boss idx+1; `dj[4..5]` same; `self.dimr = [t, best, secs, full clears left, wb, bw]`;
+  `dr` once per chest `[0 rift·1 boss, tier|boss idx, secs, flags 1 record·2 next·4 carried·8 weekly, gold, xp, brackets]`;
+  `defs().dim.tier`, `defs().dim.chal.bosses = [[k, name, minLv, cast, pattern names]…]`; rank rows carry `dt` (best tier).
+- Client (`dimrift.js`): keeper window tier ◀ ▶ (to `dimr[0]`), record line, a [도전] per boss; HUD title shows the tier / boss,
+  the boss bar shows tries/enrage/fury and the stagger gauge. Not drawn yet: `dr` (the toasts say it), a tier leaderboard.

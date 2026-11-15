@@ -4,6 +4,7 @@
  * does not repeat the same thing. The server only knows each NPC's role and a
  * single greeting; this is flavour and advice, nothing it has to agree with.
  */
+import { K } from "./keymap.js";
 
 /** Lines by role; `{n}` is the player's name. A function gets the player's sheet. */
 const LINES = {
@@ -38,7 +39,7 @@ const LINES = {
     "막다른 길엔 보물 상자나 모닥불이 있을 때가 많아. 샛길을 그냥 지나치지 마.",
     "엘리트는 몸 색이 다르고 머리 위에 표식이 있어. 혼자라면 물러서는 것도 용기지.",
     "파티를 맺으면 /p 로 파티원끼리만 이야기할 수 있어. 채팅창의 파티 탭에서 써도 되고.",
-    (s) => (s.lvl >= 15 ? "요즘 균열 침공이 잦아. 알림이 뜨면 이동의 돌로 달려가!" : "물가에서 F를 누르면 낚시를 할 수 있어. 구운 생선은 꽤 든든하다고."),
+    (s) => (s.lvl >= 15 ? "요즘 균열 침공이 잦아. 알림이 뜨면 이동의 돌로 달려가!" : `물가에서 ${K("interact")}를 누르면 낚시를 할 수 있어. 구운 생선은 꽤 든든하다고.`),
   ],
   warp: [
     "돌은 한 번 깨우면 잊지 않는다네. 새 사냥터에 가면 입구 근처부터 살펴보게.",

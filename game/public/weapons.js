@@ -765,8 +765,15 @@ const MOTIF = {
   bone: { name: "해골", blade: M.bone, fit: M.black, add: (h) => [D(h[0] + 2, (h[2] + h[3]) / 2 - 0.5, "ink"), D(h[0] + 4, (h[2] + h[3]) / 2 - 0.5, "ink")] },
   star: { name: "별빛", blade: ["#8a9af0", "#3a4aa0", "#1e2460"], add: (h) => along(h, 3, (s, i) => D(s, h[2] + 1 + (i % 2), "spark")) },
   flame: { name: "화염", blade: ["#fff0a0", "#ffa040", "#c8402a"], add: (h) => along(h, 3, (s) => P([[s - 1.5, h[2] + 0.5], [s + 1, h[2] + 0.5], [s + 1.5, h[2] - 2.5]], "orange")) },
+  // weapon skins of the themed sets (a motif recolours whatever design it is laid on, so a skin fits every
+  // weapon kind there is or will be: nothing here is keyed by kind)
+  coral: { name: "산호", blade: ["#fff4ec", "#ffa890", "#d0586a"], fit: ["#9ae8e0", "#3aa8a8", "#1e6a7a"], add: (h) => along(h, 3, (s, i) => C(s, i % 2 ? h[2] : h[3], 1.1, "foam", { top: true })) },
+  dune: { name: "모래바람", blade: ["#fff2c4", "#e8b860", "#a8703a"], fit: ["#b48a64", "#8a5a3a", "#5a3a34"], add: (h) => along(h, 3, (s, i) => L(s - 1.5, (h[2] + h[3]) / 2 - 1 + (i % 2), s + 1.5, (h[2] + h[3]) / 2 - (i % 2), "sand")) },
+  bamboo: { name: "대나무", blade: M.bamboo, fit: ["#c8a878", "#8a6a4a", "#5a4030"], add: (h) => [...along(h, 3, (s) => L(s, h[2], s, h[3] - 1, "node")), P([[h[1] - 3, h[2] + 0.5], [h[1], h[2] + 0.5], [h[1] - 1, h[2] - 2.5]], "green")] },
+  shard: { name: "균열 파편", blade: ["#8a6ad0", "#4a2e8a", "#241650"], fit: M.void, add: (h) => along(h, 3, (s, i) => P([[s - 1.2, (h[2] + h[3]) / 2 + 1], [s + 0.2, (h[2] + h[3]) / 2 - 2 - (i % 2)], [s + 1.4, (h[2] + h[3]) / 2 + 1]], "energy")) },
+  bee: { name: "꿀벌", blade: ["#fff4a8", "#f4c440", "#b8842a"], fit: M.black, add: (h) => along(h, 3, (s) => L(s, h[2], s, h[3] - 1, "bee")) },
 };
-const EXTRA = { petal: "#ff9ac0", ice: "#e8fbff", candy: "#e8485a" };
+const EXTRA = { petal: "#ff9ac0", ice: "#e8fbff", candy: "#e8485a", foam: "#f4ffff", sand: "#fff8dc", node: "#4a7a3a", bee: "#3a3040" };
 export const MOTIFS = Object.keys(MOTIF);
 export const motifName = (k) => (MOTIF[k] ? MOTIF[k].name : "");
 

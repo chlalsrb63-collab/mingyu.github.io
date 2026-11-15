@@ -23,6 +23,7 @@ import { jobImg } from "./jobicons.js";
 import * as Info from "./infocard.js";
 import { skillIconUrl } from "./skillicons.js";
 import { scaleText, gradeOf } from "./statwin.js";
+import { K } from "./keymap.js";
 
 let C = null;
 /** deps: { G, act, el, section, Sound, hoverTip, redraw, openTree } */
@@ -339,7 +340,7 @@ export function renderJobNpc(box, s, { atJob }) {
       box.append(list);
     }
   }
-  const b = el("button", "btn small", "전직의 길 보기 (K)");
+  const b = el("button", "btn small", `전직의 길 보기 (${K("skill")})`);
   b.addEventListener("click", () => C.openTree());
   const f = el("div", "jt-more");
   f.append(b);
