@@ -7,7 +7,7 @@ import { Sound } from "./audio.js";
 import { iconImg } from "./uiicons.js";
 import * as Info from "./infocard.js";
 import * as Emo from "./emoticons.js";
-import { el, clamp, $, G } from "./state.js";
+import { el, clamp, $, G, T } from "./state.js";
 import { act } from "./net.js";
 import { isOpen, keepIn, chatTo } from "./windows.js";
 import { section, look } from "./hud.js";
@@ -21,10 +21,21 @@ function hpBar(hp, mhp) {
 }
 /** A player's job, as its emblem (hover: the job's name, click: its card). */
 function classMark(cls) { const c = el("span", "cg"); c.append(Info.jobMark(cls)); return c; }
+/** The party position is advisory here; the server checks the actual attacker and monster on a kill. */
+function partyWhere(member, radius) {
+  const [eid, , , , , , mapName, x, y] = member;
+  if (mapName || !radius || eid === G.you || !Number.isFinite(x) || !Number.isFinite(y)) return mapName;
+  return Math.hypot(G.me.x - x, G.me.y - y) > radius ? "공유 거리 밖" : "";
+}
+function partyHuntRadius() {
+  return G.defs?.maps?.some((map) => map.id === G.map?.id && !map.safe) ? (G.defs.fieldParty?.tiles || 0) * T : 0;
+}
 export function renderPartyHud() {
   const box = $("#party-hud");
   box.textContent = "";
-  G.party.forEach(([eid, name, cls, lvl, hp, mhp, where], i) => {
+  const radius = partyHuntRadius();
+  G.party.forEach((member, i) => {
+    const [eid, name, cls, lvl, hp, mhp] = member, where = partyWhere(member, radius);
     if (eid === G.you) return;
     const row = el("div", "pm frame" + (i === 0 ? " lead" : "") + (where ? " away" : ""));
     const nm = el("span", "nm", name);
@@ -50,7 +61,9 @@ export function renderParty() {
   const s = G.self, mine = G.party.length > 0;
   box.append(section(mine ? `파티원 ${G.party.length} / ${G.defs.partyMax}` : "파티 없음", "party"));
   if (mine) {
-    G.party.forEach(([eid, name, cls, lvl, hp, mhp, where], i) => {
+    const radius = partyHuntRadius();
+    G.party.forEach((member, i) => {
+      const [eid, name, cls, lvl, hp, mhp] = member, where = partyWhere(member, radius);
       box.append(memberRow(eid, name, cls, `Lv.${lvl}${where ? ` · ${where}` : ""}`, i === 0, hpBar(hp, mhp)));
     });
     const hunt = G.defs.fieldParty;
