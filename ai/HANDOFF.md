@@ -32,7 +32,7 @@ agent notification re-read it, and 6–7 agents of 120k–400k tokens each ran a
 7. Unused MCP servers/plugins (Unity, Summer Engine, Higgsfield, Notion, PixelLab, Blender, fullstory…) add ~25k tokens
    to every call — the owner may turn them off for this folder. Ponytail (lazy-senior-dev rules) is installed.
 
-## 0.1 State (2026-11-15 17:00 play build, tag `play-2026-11-15-1700` — `main` sheet v20, rules suite all green, nothing pushed)
+## 0.1 State (2026-11-15 17:00 play build, tag `play-2026-11-15-1700` — `main` sheet v21 (Codex mastery passives cc71714), rules suite all green, nothing pushed)
 
 Done this session (contracts + as-built in `docs/design/job-freedom.md` §7–9): **gear enhancement rebalance** (safe to
 +3, +27.5 % at +10, crit 0.5/step, failure = one step down + 저주받은 `g.cu`, 저주 해제 주문서 `uncurse` in the shop 2,500G,
