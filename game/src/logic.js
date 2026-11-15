@@ -12723,6 +12723,12 @@ function dimView(S, p, out) {
     const key = JSON.stringify(v);
     if (key !== p.dimKey || p.sendMap) { out.dim = v; p.dimKey = key; }
   } else if (p.dimKey) { out.dim = 0; p.dimKey = null; }
+  // a solo story fight (67-trophies.js): `sty` [seconds left, won, boss kind] when it begins or is won, 0 on leaving; the client counts down
+  const sty = dim && dim.story, sk = sty ? `${dim.id}:${sty.won}` : null;
+  if (sk !== (p.styKey || null) || (sty && p.sendMap)) {
+    out.sty = sty ? [Math.max(0, Math.ceil(((sty.won ? sty.endAt : dim.expire) - now) / 1000)), sty.won, sty.k] : 0;
+    p.styKey = sk;
+  }
   // the ready check: [id, seconds left, [[eid, name, answer]…], level, am I the leader]
   const party = S.parties[p.party], rc = party && party.rc;
   if (rc && rc.resp[p.pid] !== undefined && rc.resp[p.pid] !== 3) {

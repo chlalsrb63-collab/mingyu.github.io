@@ -58,6 +58,7 @@ export function onSnap(s) {
     renderRc();
   }
   if ("dj" in s) { st.dj = s.dj || null; if (A.isOpen("dim")) renderKeeper(); }
+  if ("sty" in s) { st.sty = s.sty || null; st.styAt = t; }
   document.body.classList.toggle("in-dim", inside());
   renderHud();
   if (A.isOpen("rc")) renderRc();
@@ -131,8 +132,10 @@ export function onEvent(e) {
 function renderHud() {
   const box = $("#dim-hud"), d = st.dim;
   if (!box) return;
+  if (!d && st.sty && inside()) { renderStory(box); return; }
   if (!d || !inside()) { if (!box.hidden) box.hidden = true; return; }
   box.hidden = false;
+  box.classList.remove("story");
   const secs = Math.max(0, d[1] - Math.floor((now() - st.at) / 1000));
   const pct = Math.min(100, d[0] / 10);
   const name = D().themes[d[10]] || "차원 균열";
@@ -174,8 +177,22 @@ function renderHud() {
   }
   if (d[2] <= 1 && secs <= 180 && !st.warned) { st.warned = true; A.Sound.play("rift_warn"); }
 }
+/** A solo story fight (67-trophies.js `sty`): the boss's name, the time left, and the same [떠나기]. */
+const storyLeft = () => Math.max(0, st.sty[0] - Math.floor((now() - st.styAt) / 1000));
+function renderStory(box) {
+  const [, won, k] = st.sty, def = A.G.defs.mobs[k];
+  box.hidden = false;
+  box.classList.add("story"); box.classList.remove("boss", "clear");
+  $("#dim-title").textContent = `홀로 도전 · ${def ? def.name : "우두머리"}`;
+  $("#dim-time").textContent = mmss(storyLeft());
+  $("#dim-time").classList.toggle("low", !won && storyLeft() <= 60);
+  $("#dim-fill").style.width = won ? "100%" : "0%";
+  $("#dim-pct").textContent = won ? "승리! 전리품을 줍고 곧 돌아갑니다" : "쓰러뜨리면 보스 전리품을 얻습니다";
+  if ($("#dim-team").dataset.k) { $("#dim-team").innerHTML = ""; $("#dim-team").dataset.k = ""; }
+  $("#dim-boss").hidden = true;
+}
 /** Every frame (cheap): keep the clock ticking between snapshots. */
-export function frame() { if (st.dim && inside()) { const s = Math.max(0, st.dim[1] - Math.floor((now() - st.at) / 1000)); const el = $("#dim-time"); const want = st.dim[2] === 2 ? `문 ${mmss(s)}` : st.dim[2] === 3 ? `${s}초` : mmss(s); if (el && el.textContent !== want) el.textContent = want; } }
+export function frame() { if (!st.dim && st.sty && inside()) { const el = $("#dim-time"), want = mmss(storyLeft()); if (el && el.textContent !== want) el.textContent = want; return; } if (st.dim && inside()) { const s = Math.max(0, st.dim[1] - Math.floor((now() - st.at) / 1000)); const el = $("#dim-time"); const want = st.dim[2] === 2 ? `문 ${mmss(s)}` : st.dim[2] === 3 ? `${s}초` : mmss(s); if (el && el.textContent !== want) el.textContent = want; } }
 
 // ───────────────────────────── the ready check ─────────────────────────────
 
@@ -210,7 +227,10 @@ export function bindUi() {
     A.Sound.play("ui");
   });
   $("#dim-join").addEventListener("click", () => { A.act({ t: "dim_join" }); A.Sound.play("ui"); });
-  $("#dim-leave").addEventListener("click", () => { if (confirm("차원 균열을 떠나 마을로 돌아갈까요? (나중에 오벨리스크에서 다시 합류할 수 있습니다)")) A.act({ t: "dim_leave" }); });
+  $("#dim-leave").addEventListener("click", () => {
+    const ask = st.sty && !st.dim ? "도전을 그만두고 원래 자리로 돌아갈까요? (그 자리로 다시 다가가면 재도전할 수 있습니다)" : "차원 균열을 떠나 마을로 돌아갈까요? (나중에 오벨리스크에서 다시 합류할 수 있습니다)";
+    if (confirm(ask)) A.act({ t: "dim_leave" });
+  });
 }
 /** Seconds left on the ready check, ticking between snapshots. */
 export function tick() { if (st.rc && A.isOpen("rc")) renderRc(); frame(); }

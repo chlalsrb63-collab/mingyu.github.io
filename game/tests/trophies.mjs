@@ -88,9 +88,13 @@ const dim = S.dims[a.map], copy = dim.rt.mobs.find((m) => m.id === dim.boss);
 assert.ok(dim.story && copy.k === "lambmaw" && copy.el === 2 && copy.story, "the boss's copy");
 assert.equal(copy.hk, X.STORY.hp); assert.equal(copy.ak, X.STORY.atk); assert.deepEqual(copy.tr, []);
 assert.equal(dim.map.theme, X.mapOfS(S, "meadow").theme, "with the ground's theme");
+// the HUD line: time left, not won, the boss kind — once, then 0 on leaving
+{ const v = L.viewFor(S, "a").sty; assert.ok(v && v[0] > 590 && v[0] <= X.STORY.limit / 1000 && v[1] === 0 && v[2] === "lambmaw", JSON.stringify(v)); }
+assert.ok(!("sty" in L.viewFor(S, "a")), "sent once");
 // [떠나기]: back where they stepped in; the arena is gone
 assert.ok(act("a", { t: "dim_leave" }).ok);
 assert.equal(a.map, "meadow"); assert.ok(!S.dims[dim.id], "closed");
+assert.equal(L.viewFor(S, "a").sty, 0, "the HUD line cleared");
 assert.equal(a.ch.q.i, qi, "the quest still to do");
 
 /** A bot alone in its story arena: walks up to the boss and strikes, drinks under 45%. Returns { won, ms }. */
