@@ -38,10 +38,11 @@ function coopGood(S, c, base, cred) {
 }
 function coopFail(c, pen) { c.score = Math.max(0, c.score - pen); c.combo = 0; }
 
-/** The leader (or someone alone) starts a shift: everyone of the party in the lobby goes in (1–4). */
+/** Who goes in with `p`: the party's members in the same lobby, alive (at most 4). */
+const coopCrew = (S, p) => { const party = S.parties[p.party]; return (party ? party.m.map((pid) => S.players[pid]) : [p]).filter((o) => o && o.map === p.map && !o.dead).slice(0, 4); };
+/** The leader starts a shift: everyone of the party in the lobby goes in (2–4: co-op jobs are party-only). */
 function coopStart(S, p, k) {
-  const J = COOP[k], party = S.parties[p.party];
-  const crew = (party ? party.m.map((pid) => S.players[pid]) : [p]).filter((o) => o && o.map === p.map && !o.dead).slice(0, 4);
+  const J = COOP[k], party = S.parties[p.party], crew = coopCrew(S, p);
   S.dimN = (S.dimN | 0) + 1;
   const id = "dim:" + S.dimN, seed = Math.imul(S.seed ^ S.nextId++, 2654435761) | 0;
   const map = fromEditor(J.tpl, id);
@@ -193,7 +194,7 @@ function dinerOrder(S, dim, c, now) {
   const free = J.tables.map((t, i) => i).filter((i) => now >= c.tbl[i] && !c.ents.some((e) => (e.t === 3 || e.t === 9) && e.ti === i));
   if (!free.length) return;
   const ti = free[ri(c.box, 0, free.length - 1)], menu = R.dishes.map((d, i) => i).filter((i) => now - c.runAt >= R.dishes[i].at);
-  const r = menu[ri(c.box, 0, menu.length - 1)], pat = Math.round(R.patience[c.n - 1] * (c.state === "fever" ? R.feverK : 1));
+  const r = menu[ri(c.box, 0, menu.length - 1)], pat = Math.round(R.patience[c.n] * (c.state === "fever" ? R.feverK : 1));
   const [x, y] = tilePx(J.tables[ti]);
   c.ents.push({ id: c.nid++, t: 3, x, y, r, ti, until: now + pat, pat });
   c.ver++;
@@ -208,11 +209,11 @@ function dinerOrder(S, dim, c, now) {
 
 const forgeEnt = (c, t, key, i) => c.ents.find((e) => e.t === t && e[key] === i);
 const forgeCr = (o, pid) => { o[pid] = (o[pid] || 0) + 1; };
-/** Every piece in the shift (furnaces, anvils, hands). */
-const forgePieces = (c) => [...c.ents.flatMap((e) => (e.t === 6 ? e.bars.filter(Boolean) : e.t === 7 && e.pc ? [e.pc] : [])), ...Object.values(c.pl).flatMap((q) => q.hold)];
-/** The kind a new piece on an anvil becomes: the most urgent open order no piece is already for (else the most urgent, else 편자). */
+/** Every piece in the shift (furnaces, anvils, the 진열대, hands). */
+const forgePieces = (c) => [...c.ents.flatMap((e) => (e.t === 6 ? e.bars.filter(Boolean) : (e.t === 7 || e.t === 10) && e.pc ? [e.pc] : [])), ...Object.values(c.pl).flatMap((q) => q.hold)];
+/** The kind a new piece on an anvil becomes: the most urgent open order (a waiting customer) no piece is already for (else the most urgent, else 편자). */
 function forgeKind(c) {
-  const ords = c.ents.filter((e) => e.t === 8).sort((a, b) => a.until - b.until), busy = forgePieces(c).filter((h) => h.r >= 0).map((h) => h.r);
+  const ords = c.ents.filter((e) => e.t === 8 && !e.gone).sort((a, b) => a.until - b.until), busy = forgePieces(c).filter((h) => h.r >= 0).map((h) => h.r);
   for (const o of ords) { const i = busy.indexOf(o.r); if (i < 0) return o.r; busy.splice(i, 1); }
   return ords.length ? ords[0].r : 0;
 }
@@ -222,15 +223,21 @@ function forgeKind(c) {
  */
 function forgeRow(e, at, now, ds) {
   if (e.t === 6) return [...at, Math.round(e.T), ...e.bars.map((b) => (b ? Math.floor(b.heat) : -1))];
-  if (e.t === 8) return [...at, e.r, ds(e.until), Math.round(e.dur / 100)];
+  // forge v2: a customer [.., ds to arrive, 0 waiting · 1 bought · 2 angry, ds to gone] · a piece on the 진열대 [id, 10, x, y, kind, grade]
+  if (e.t === 8) return e.spot === undefined ? [...at, e.r, ds(e.until), Math.round(e.dur / 100)] : [...at, e.r, ds(e.until), Math.round(e.dur / 100), Math.max(0, ds(e.at)), e.gone, e.gone ? Math.max(0, ds(e.goneAt)) : 0];
+  if (e.t === 10) return [...at, e.pc.r, forgeGrade(COOP_FORGE, e.pc)];
   const pc = e.pc, hot = pc && pc.st === "bar" && pc.hot > now;
   const next = hot ? e.beat0 + Math.max(0, Math.ceil((now - e.beat0) / e.per)) * e.per - now : 0;
-  return [...at, !pc ? 0 : pc.st !== "bar" ? 3 : hot ? 1 : 2, pc ? pc.r : -1, pc ? pc.n : 0, next, e.per];
+  const row = [...at, !pc ? 0 : pc.st !== "bar" ? 3 : hot ? 1 : 2, pc ? pc.r : -1, pc ? pc.n : 0, next, e.per];
+  // forge v2 anvils: [.., ms from now to the pattern's beat 0, ms of heat left] (the notes are in defs: orders[kind][4])
+  return e.v2 ? [...row, hot ? Math.round(e.beat0 - now) : 0, hot ? Math.round(pc.hot - now) : 0] : row;
 }
 const forgeMed = (a) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
-/** One hammer blow, judged against the anvil's nearest beat after p's own offset (C.6). */
-function forgeStrike(S, dim, c, p, q, a) {
-  const F = COOP_FORGE, now = S.now, pc = a.pc, O = F.orders[pc.r];
+/** A piece's grade index (0 걸작 … 3 하) by its quality against its strikes or notes. */
+const forgeGrade = (F, h) => F.grades.findIndex(([m]) => h.q >= m * (F.orders[h.r].pat ? F.orders[h.r].pat.length : F.orders[h.r].n));
+/** 보글's alch (the forge v1 rules): one stir, judged against the cauldron's nearest beat after p's own offset (C.6). */
+function alchStrike(S, dim, c, p, q, a) {
+  const F = COOP_ALCH, now = S.now, pc = a.pc, O = F.orders[pc.r];
   const since = now - a.beat0, k = Math.max(0, Math.round(since / a.per)), d = since - k * a.per, dup = k === a.lastK;
   q.offs = q.offs || [];
   const lat = clamp(forgeMed(q.offs), -F.latMax, F.latMax), off = Math.abs(d - lat);
@@ -248,14 +255,19 @@ function forgeStrike(S, dim, c, p, q, a) {
   c.ver++;
   return true;
 }
-/** The chute: a quenched piece for the most urgent open order of its kind (no order: ×offK). */
-function forgeDeliver(S, dim, c, p, q, h) {
-  const F = COOP_FORGE, now = S.now, O = F.orders[h.r], o = c.ents.filter((e) => e.t === 8 && e.r === h.r).sort((a, b) => a.until - b.until)[0];
-  const gi = F.grades.findIndex(([m]) => h.q >= m * O.n), G = F.grades[gi], K = COOP[c.k].skin, name = K.orders[h.r], cred = {};
+/** Tongs and hammer shares of a piece's pay ({pid: weight}). */
+function forgeCred(F, h) {
+  const cred = {};
   for (const [part, k] of [[h.ct, F.tongsK], [h.ch, F.hammerK]]) {
     const w = Object.values(part).reduce((s, v) => s + v, 0) || 1;
     for (const pid of Object.keys(part)) cred[pid] = (cred[pid] || 0) + (k * part[pid]) / w;
   }
+  return cred;
+}
+/** 보글's chute: a bottled brew for the most urgent open order of its kind (no order: ×offK). */
+function alchDeliver(S, dim, c, p, q, h) {
+  const F = COOP_ALCH, now = S.now, O = F.orders[h.r], o = c.ents.filter((e) => e.t === 8 && e.r === h.r).sort((a, b) => a.until - b.until)[0];
+  const gi = forgeGrade(F, h), G = F.grades[gi], K = COOP[c.k].skin, name = K.orders[h.r], cred = forgeCred(F, h);
   let base = O.pts * G[1];
   if (o) { c.ents.splice(c.ents.indexOf(o), 1); c.done++; base *= 1 + (F.timeK * Math.max(0, o.until - now)) / o.dur; } else base *= F.offK;
   q.hold = []; c.ver++;
@@ -269,13 +281,13 @@ const COOP_JOB = {
   apt: {
     init(S, dim, c) {
       const A = COOP_APT;
-      c.next = { pile: c.runAt + A.pileMs[c.n - 1], sofa: c.runAt + A.sofaMs / COOP_T.parN[c.n] };
+      c.next = { pile: c.runAt + A.pileMs[c.n], sofa: c.runAt + A.sofaMs / COOP_T.parN[c.n] };
       // the opening mess, more with each worker; staggered so it doesn't all spread at once
       for (let i = 0; i < A.open[0] + A.open[1] * c.n; i++) { const e = aptSpawn(S, dim, c, 0); if (e) e.due = c.runAt + A.spreadMs + i * 1500; }
     },
     tick(S, dim, c, now) {
       const A = COOP_APT, k = COOP_T.parN[c.n], piles = c.ents.filter((e) => e.t === 0), pileCap = A.pileCap[0] + A.pileCap[1] * c.n;
-      if (now >= c.next.pile) { c.next.pile = now + A.pileMs[c.n - 1]; if (piles.length < pileCap) aptSpawn(S, dim, c, 0); }
+      if (now >= c.next.pile) { c.next.pile = now + A.pileMs[c.n]; if (piles.length < pileCap) aptSpawn(S, dim, c, 0); }
       // the sofa needs two people: it only comes to a shift that started with two or more
       if (c.n >= 2 && now >= c.next.sofa) { c.next.sofa = now + A.sofaMs / k; if (!c.ents.some((e) => e.t === 2)) { const e = aptSpawn(S, dim, c, 2); if (e) coopToastAll(S, dim, "낡은 소파가 나왔어요! 두 명이 함께 들어야 해요."); } }
       // a pile left alone spreads
@@ -375,9 +387,9 @@ const COOP_JOB = {
       const R = COOP_DINER, J = COOP[c.k];
       if (now >= c.next.order) {
         const rush = c.openN > 0;
-        c.next.order = now + (rush ? 1500 : R.orderMs[c.n - 1]);
+        c.next.order = now + (rush ? 1500 : R.orderMs[c.n]);
         if (rush) c.openN--;
-        if (c.ents.filter((e) => e.t === 3).length < R.seats[c.n - 1]) dinerOrder(S, dim, c, now);
+        if (c.ents.filter((e) => e.t === 3).length < R.seats[c.n]) dinerOrder(S, dim, c, now);
       }
       for (const e of [...c.ents]) {
         if (e.t === 3 && now >= e.until) {
@@ -513,17 +525,17 @@ const COOP_JOB = {
     /** What each worker carries, for the HUD and the sprites: dish · 3 + stage (0 ready · 1 to chop · 2 to cook). */
     what: (q) => q.hold.map((h) => h.r * 3 + (q.tool === "tray" ? 0 : dinerNeed(h))),
   },
-  forge: {
+  alch: {
     init(S, dim, c) {
-      const F = COOP_FORGE, J = COOP[c.k];
+      const F = COOP_ALCH, J = COOP[c.k];
       J.st.furnace.forEach((t, fi) => { const [x, y] = tilePx(t); c.ents.push({ id: c.nid++, t: 6, x, y, fi, T: F.T0, bars: Array(F.slots).fill(null) }); });
       J.st.anvil.forEach((t, ai) => { const [x, y] = tilePx(t); c.ents.push({ id: c.nid++, t: 7, x, y, ai, pc: null, beat0: 0, per: F.beatMs, lastK: -1 }); });
       c.done = 0; c.late = 0; c.lastAt = c.runAt;
       c.next = { order: c.runAt + F.firstMs, sync: c.runAt };
-      c.openN = Math.min(c.n + 1, F.open[c.n - 1]);   // the opening orders, 1.5 s apart
+      c.openN = Math.min(c.n + 1, F.open[c.n]);   // the opening orders, 1.5 s apart
     },
     tick(S, dim, c, now) {
-      const F = COOP_FORGE, dt = Math.max(0, now - c.lastAt) / 1000;
+      const F = COOP_ALCH, dt = Math.max(0, now - c.lastAt) / 1000;
       c.lastAt = now;
       for (const e of c.ents) {
         if (e.t === 6) {
@@ -540,9 +552,9 @@ const COOP_JOB = {
       }
       if (now >= c.next.order) {
         const rush = c.openN > 0;
-        c.next.order = now + (rush ? 1500 : F.orderMs[c.n - 1]);
+        c.next.order = now + (rush ? 1500 : F.orderMs[c.n]);
         if (rush) c.openN--;
-        if (c.ents.filter((e) => e.t === 8).length < F.open[c.n - 1]) {
+        if (c.ents.filter((e) => e.t === 8).length < F.open[c.n]) {
           const r = ri(c.box, 0, F.orders.length - 1);
           c.ents.push({ id: c.nid++, t: 8, x: 0, y: 0, r, until: now + F.deadMs, dur: F.deadMs });
           c.ver++; coopEv(S, dim, 62, 0, 0, r);
@@ -557,7 +569,7 @@ const COOP_JOB = {
       if (now >= c.next.sync) { c.next.sync = now + F.syncMs; c.ver++; }
     },
     act(S, dim, c, p, q) {
-      const F = COOP_FORGE, now = S.now, h = q.hold[0], si = (key) => coopSt(c, p, key), J = COOP[c.k], X = J.skin.txt;
+      const F = COOP_ALCH, now = S.now, h = q.hold[0], si = (key) => coopSt(c, p, key), J = COOP[c.k], X = J.skin.txt;
       if (q.tool === J.tools[0]) {   // tongs (alch: fan)
         const fi = si("furnace");
         if (fi >= 0) {
@@ -604,12 +616,12 @@ const COOP_JOB = {
           if (a.pc && a.pc.st === "bar") {
             if (h) return X.first;
             if (!(a.pc.hot > now)) return X.cooled;
-            return forgeStrike(S, dim, c, p, q, a);
+            return alchStrike(S, dim, c, p, q, a);
           }
           if (a.pc && !h) { q.hold = [a.pc]; a.pc = null; c.ver++; coopEv(S, dim, 57, a.x, a.y); return true; }
         }
         if (h && h.st === "shaped" && si("quench") >= 0) { h.st = "quenched"; forgeCr(h.ch, p.pid); c.ver++; coopEv(S, dim, 12, p.x, p.y); return true; }
-        if (h && h.st === "quenched" && si("chute") >= 0) return forgeDeliver(S, dim, c, p, q, h);
+        if (h && h.st === "quenched" && si("chute") >= 0) return alchDeliver(S, dim, c, p, q, h);
       }
       // the rack: swap tools (hands empty)
       if (si("rack") >= 0) {
@@ -628,8 +640,213 @@ const COOP_JOB = {
     what: (q, now) => q.hold.map((h) => (h.r + 1) * 5 + (h.st === "quenched" ? 4 : h.st === "shaped" ? 3 : h.hot > now ? 2 : 1)),
   },
 };
-/** 보글연금공방 가마: the forge's engine as is; only COOP.alch's names, tools and skin differ. */
-COOP_JOB.alch = COOP_JOB.forge;
+
+// ── 캉캉대장간 단조 v2 (the owner's concept; COOP_FORGE, H8): heat → each piece's rhythm pattern on the anvil (flips; 갑옷's
+// answers by a second worker) → quench → the 진열대; customers walk in, look, and buy the piece they came for.
+// Ents: furnaces t 6 (as the alch's), anvils { t: 7, v2, ai, pc, beat0 (ms of the pattern's beat 0), per }, customers { t: 8, r,
+// until, dur, at (arrives), spot, gone 0 · 1 bought · 2 angry, goneAt }, pieces on the shelf { t: 10, slot, pc }. A piece
+// { r, q, n (notes judged), heat, hot, heats, st, ct, ch, ha (갑옷: who calls) } is in one place: furnace, anvil, shelf or hands.
+
+const FORGE_DIR = ["↑", "→", "↓", "←"];
+const forgeNote = (a, i) => a.beat0 + COOP_FORGE.orders[a.pc.r].pat[i][0] * a.per;
+const forgeDuet = (pc) => COOP_FORGE.orders[pc.r].pat.some((n) => n[1] === 1);
+/** A hot piece goes on an anvil (or back on it after a reheat): its next note `leadMs` from now, hot for the rest of the pattern. */
+function forgeLane(S, dim, c, a, now) {
+  const F = COOP_FORGE, pc = a.pc, P = F.orders[pc.r].pat;
+  a.per = Math.round(F.orders[pc.r].per * (c.state === "fever" ? F.feverK : 1));
+  a.beat0 = now + F.leadMs - P[pc.n][0] * a.per;
+  pc.hot = now + F.leadMs + (P[P.length - 1][0] - P[pc.n][0]) * a.per + F.slackMs;
+  dim.rt.ev.push(["cb", a.id, F.leadMs, a.per]);
+}
+/** One note judged (0 perfect +2 · 1 good +1 · 2 miss −1, and the bar cools faster); the last one shapes the piece. */
+function forgeJudge(S, dim, c, a, j, pid) {
+  const F = COOP_FORGE, pc = a.pc;
+  pc.q += [2, 1, -1][j]; pc.n++;
+  if (j === 2) pc.hot -= F.missCool;
+  if (pid) forgeCr(pc.ch, pid);
+  coopEv(S, dim, 9 + j, a.x, a.y, pc.n);
+  if (pc.n >= F.orders[pc.r].pat.length) { pc.st = "shaped"; coopEv(S, dim, 58, a.x, a.y, pc.r); }
+  c.ver++;
+}
+/** Notes nobody struck in time (a late ping's included) are misses. */
+function forgeLapse(S, dim, c, a, now) {
+  const F = COOP_FORGE;
+  while (a.pc && a.pc.st === "bar" && a.pc.hot > now && now - forgeNote(a, a.pc.n) > F.good + F.latMax) forgeJudge(S, dim, c, a, 2, 0);
+}
+/** A blow (d −1) or a flip (d 0–3: ↑ → ↓ ←) on the anvil's lane, judged against its next note after p's own offset. */
+function forgeHit(S, dim, c, p, q, a, d) {
+  const F = COOP_FORGE, now = S.now, pc = a.pc, P = F.orders[pc.r].pat, X = COOP[c.k].skin.txt;
+  forgeLapse(S, dim, c, a, now);
+  if (pc.st !== "bar" || !(pc.hot > now)) return true;
+  q.offs = q.offs || [];
+  const lat = clamp(forgeMed(q.offs), -F.latMax, F.latMax), off = (i) => now - lat - forgeNote(a, i);
+  // past the next note's window and nearer the one after: the one before it was skipped
+  if (pc.n + 1 < P.length && off(pc.n) > F.good && Math.abs(off(pc.n + 1)) < off(pc.n)) { forgeJudge(S, dim, c, a, 2, 0); if (!(pc.hot > now)) return true; }
+  const i = pc.n, dd = off(i), note = P[i][1], want = note >= 2 ? note - 2 : -1;
+  // too early: a stray blow costs quality and heat, the note still waits
+  if (dd < -F.good) { pc.q--; pc.hot -= F.missCool; c.ver++; coopEv(S, dim, 11, a.x, a.y, pc.n); return true; }
+  let j = Math.abs(dd) <= F.perfect ? 0 : Math.abs(dd) <= F.good ? 1 : 2, why = "";
+  if (d !== want) { j = 2; why = want >= 0 ? `${X.flip} (${FORGE_DIR[want]})` : X.noflip; }
+  else if (note < 2 && forgeDuet(pc)) {
+    // 갑옷: the calls by one worker, the answers by someone else
+    if (note === 0 && !pc.ha) pc.ha = p.pid;
+    if (note === 0 ? p.pid !== pc.ha : p.pid === pc.ha) { j = 2; why = X.duet; }
+  }
+  const raw = now - forgeNote(a, i);
+  if (!why && Math.abs(raw) <= F.good + F.latMax) { q.offs.push(raw); if (q.offs.length > 5) q.offs.shift(); }
+  forgeJudge(S, dim, c, a, j, p.pid);
+  if (why && now >= q.hintAt) { q.hintAt = now + 1200; toast(p, why); }
+  return true;
+}
+/** A quenched piece onto the first free slot of the 진열대. */
+function forgeShelve(S, dim, c, p, q, h) {
+  const J = COOP[c.k], on = c.ents.filter((e) => e.t === 10);
+  if (on.length >= J.st.shelf.length) return J.skin.txt.full;
+  const slot = J.st.shelf.findIndex((t, i) => !on.some((e) => e.slot === i)), [x, y] = tilePx(J.st.shelf[slot]);
+  c.ents.push({ id: c.nid++, t: 10, x, y, slot, pc: h });
+  q.hold = []; c.ver++;
+  coopEv(S, dim, 66, x, y, h.r);
+  return true;
+}
+/** A customer buys: the item × its grade × patience left × mult, shared by the tongs and the hammers; then they go. */
+function forgeSell(S, dim, c, e, s, now) {
+  const F = COOP_FORGE, K = COOP[c.k].skin, h = s.pc, gi = forgeGrade(F, h), name = K.orders[h.r];
+  c.ents.splice(c.ents.indexOf(s), 1);
+  e.gone = 1; e.goneAt = now + F.leaveMs; c.done++; c.ver++;
+  const pts = coopGood(S, c, F.orders[h.r].pts * F.grades[gi][1] * (1 + (F.timeK * Math.max(0, e.until - now)) / e.dur), forgeCred(F, h));
+  coopEv(S, dim, 13, s.x, s.y, pts);
+  coopToastAll(S, dim, `[${K.grades[gi]}] 손님이 ${name}${pp(name, "을를")} 사 갔어요! +${pts}`);
+}
+/** A customer walks in for a piece: one on the shelf nobody waits for first, else a kind the shift has unlocked (seeded). */
+function forgeCustomer(S, dim, c, now) {
+  const F = COOP_FORGE, J = COOP[c.k], spot = J.seats.findIndex((t, i) => !c.ents.some((e) => e.t === 8 && e.spot === i));
+  if (spot < 0) return;
+  const want = c.ents.filter((e) => e.t === 8 && !e.gone).map((e) => e.r), left = [];
+  for (const s of c.ents.filter((e) => e.t === 10)) { const i = want.indexOf(s.pc.r); if (i >= 0) want.splice(i, 1); else left.push(s.pc.r); }
+  const menu = F.orders.map((o, i) => i).filter((i) => now - c.runAt >= (F.orders[i].at || 0));
+  const r = left.length ? left[0] : menu[ri(c.box, 0, menu.length - 1)];
+  const [x, y] = tilePx(J.seats[spot]), [dx, dy] = tilePx(J.door);
+  c.ents.push({ id: c.nid++, t: 8, x, y, r, until: now + F.deadMs, dur: F.deadMs, at: now + Math.round((dist(x, y, dx, dy) / F.walk) * 1000), spot, gone: 0, goneAt: 0 });
+  c.ver++; coopEv(S, dim, 62, dx, dy, r);
+}
+/** Standing at an anvil whose piece is on its lane, free to play it (a hammer, or anyone empty-handed for 갑옷's answers). */
+function forgeOnLane(S, c, p, q) {
+  const ai = coopSt(c, p, "anvil"), a = ai >= 0 ? forgeEnt(c, 7, "ai", ai) : null;
+  return a && a.pc && a.pc.st === "bar" && a.pc.hot > S.now && !q.hold.length && (q.tool === "hammer" || forgeDuet(a.pc)) ? a : null;
+}
+COOP_JOB.forge = {
+  init(S, dim, c) {
+    const F = COOP_FORGE, J = COOP[c.k];
+    J.st.furnace.forEach((t, fi) => { const [x, y] = tilePx(t); c.ents.push({ id: c.nid++, t: 6, x, y, fi, T: F.T0, bars: Array(F.slots).fill(null) }); });
+    J.st.anvil.forEach((t, ai) => { const [x, y] = tilePx(t); c.ents.push({ id: c.nid++, t: 7, v2: 1, x, y, ai, pc: null, beat0: 0, per: 700, lastK: -1 }); });
+    c.done = 0; c.late = 0; c.lastAt = c.runAt;
+    c.next = { order: c.runAt + F.firstMs, sync: c.runAt };
+    c.openN = Math.min(c.n + 1, F.open[c.n]);   // the opening customers, 1.5 s apart
+  },
+  tick(S, dim, c, now) {
+    const F = COOP_FORGE, K = COOP[c.k].skin, dt = Math.max(0, now - c.lastAt) / 1000;
+    c.lastAt = now;
+    for (const e of [...c.ents]) {
+      if (e.t === 6) {
+        e.T = Math.max(0, e.T - F.decay * dt);
+        for (const b of e.bars) {
+          if (!b) continue;
+          if (b.heat < 100) {
+            b.heat = Math.min(100, b.heat + (e.T >= F.lo ? F.heatIn : e.T >= 30 ? F.heatLo : 0) * dt);
+            if (b.heat >= 100) { c.ver++; coopEv(S, dim, 53, e.x, e.y); }
+          }
+          if (e.T > F.scorch) b.q -= F.scorchQ * dt;
+        }
+      } else if (e.t === 7 && e.pc && e.pc.st === "bar" && e.pc.hot) {
+        forgeLapse(S, dim, c, e, now);
+        if (e.pc.st === "bar" && now >= e.pc.hot) { e.pc.hot = 0; c.ver++; coopEv(S, dim, 64, e.x, e.y); }
+      } else if (e.t === 8) {
+        if (e.gone) { if (now >= e.goneAt) { c.ents.splice(c.ents.indexOf(e), 1); c.ver++; } }
+        else if (now >= e.until) {
+          e.gone = 2; e.goneAt = now + F.leaveMs; c.late++; c.ver++;
+          coopFail(c, F.latePen); coopEv(S, dim, 61, e.x, e.y, e.r);
+          coopToastAll(S, dim, `[화난 손님] ${K.orders[e.r]}${pp(K.orders[e.r], "을를")} 못 사고 떠났어요! 점수 -${F.latePen}`);
+        } else if (now >= e.at + F.browseMs) {
+          const s = c.ents.filter((o) => o.t === 10 && o.pc.r === e.r).sort((a, b) => b.pc.q - a.pc.q || a.id - b.id)[0];
+          if (s) forgeSell(S, dim, c, e, s, now);
+        }
+      }
+    }
+    if (now >= c.next.order) {
+      const rush = c.openN > 0;
+      c.next.order = now + (rush ? 1500 : F.orderMs[c.n]);
+      if (rush) c.openN--;
+      if (c.ents.filter((e) => e.t === 8 && !e.gone).length < F.open[c.n]) forgeCustomer(S, dim, c, now);
+    }
+    // furnace temperatures and heats drift every tick: resend them once a second (the client extrapolates the decay)
+    if (now >= c.next.sync) { c.next.sync = now + F.syncMs; c.ver++; }
+  },
+  act(S, dim, c, p, q, d) {
+    const F = COOP_FORGE, now = S.now, h = q.hold[0], si = (key) => coopSt(c, p, key), J = COOP[c.k], X = J.skin.txt;
+    const ai = si("anvil"), a = ai >= 0 ? forgeEnt(c, 7, "ai", ai) : null, live = !!(a && a.pc && a.pc.st === "bar" && a.pc.hot > now);
+    if (d >= 0 && !live) return "";   // a direction key off the lane does nothing
+    if (q.tool === "tongs") {
+      if (live && !h && forgeDuet(a.pc)) return forgeHit(S, dim, c, p, q, a, d);   // 갑옷: the tongs answer the hammer
+      const fi = si("furnace");
+      if (fi >= 0) {
+        const f = forgeEnt(c, 6, "fi", fi);
+        // put a cold bar in, take a hot one out, else pump the bellows
+        if (h && h.st === "bar" && !(h.hot > now)) {
+          const s = f.bars.indexOf(null);
+          if (s >= 0) { h.heat = h.n ? F.reheat : 0; f.bars[s] = h; q.hold = []; forgeCr(h.ct, p.pid); c.ver++; coopEv(S, dim, 51, f.x, f.y); return true; }
+        }
+        if (!h) {
+          const s = f.bars.findIndex((b) => b && b.heat >= 100);
+          if (s >= 0) { const b = f.bars[s]; f.bars[s] = null; b.hot = now + F.hotMs; b.heats++; q.hold = [b]; forgeCr(b.ct, p.pid); c.ver++; coopEv(S, dim, 54, f.x, f.y); return true; }
+        }
+        if (now - (q.pumpAt || 0) < F.pumpMs) return "";
+        const was = f.T;
+        f.T = Math.min(100, f.T + F.pump); q.pumpAt = now; c.ver++;
+        coopEv(S, dim, was < F.lo && f.T >= F.lo ? 65 : 17, f.x, f.y, Math.round(f.T));
+        return true;
+      }
+      if (a) {
+        if (h && h.st === "bar" && h.hot > now) {
+          if (a.pc) return X.busy;
+          if (h.r < 0) h.r = forgeKind(c);
+          a.pc = h; q.hold = [];
+          forgeLane(S, dim, c, a, now); forgeCr(h.ct, p.pid); c.ver++;
+          coopEv(S, dim, 55, a.x, a.y, h.r);
+          return true;
+        }
+        if (!h && a.pc && a.pc.st === "bar" && !live) { q.hold = [a.pc]; a.pc = null; c.ver++; coopEv(S, dim, 56, a.x, a.y); return true; }
+      }
+      if (!h && si("crate") >= 0) {
+        q.hold = [{ r: -1, q: 0, n: 0, heat: 0, hot: 0, heats: 0, st: "bar", ct: { [p.pid]: 1 }, ch: {} }];
+        c.ver++; coopEv(S, dim, 50, p.x, p.y);
+        return true;
+      }
+    } else {
+      if (a && a.pc && a.pc.st === "bar") {
+        if (h) return X.first;
+        if (!live) return X.cooled;
+        return forgeHit(S, dim, c, p, q, a, d);
+      }
+      if (a && a.pc && !h) { q.hold = [a.pc]; a.pc = null; c.ver++; coopEv(S, dim, 57, a.x, a.y); return true; }
+      if (h && h.st === "shaped" && si("quench") >= 0) { h.st = "quenched"; forgeCr(h.ch, p.pid); c.ver++; coopEv(S, dim, 12, p.x, p.y); return true; }
+      if (h && h.st === "quenched" && si("shelf") >= 0) return forgeShelve(S, dim, c, p, q, h);
+    }
+    // the rack: swap tools (hands empty; a worker left alone after a drop does both jobs)
+    if (si("rack") >= 0) {
+      if (q.hold.length) return "들고 있는 것을 먼저 내려놓으세요";
+      q.tool = q.tool === "tongs" ? "hammer" : "tongs";
+      coopEv(S, dim, 23, p.x, p.y);
+      toast(p, `${COOP_TOOLS[q.tool]}${pp(COOP_TOOLS[q.tool], "을를")} 들었습니다.`);
+      return true;
+    }
+    if (q.tool === "tongs") return X.a[!h ? 0 : h.hot > now ? 1 : 2];
+    return X.b[!h ? 0 : h.st === "shaped" ? 1 : 2];
+  },
+  lane: (S, c, p, q) => !!forgeOnLane(S, c, p, q),
+  /** The HUD's job summary: sold, customers who left angry. */
+  sum: (c) => [c.done, c.late],
+  what: COOP_JOB.alch.what,
+};
 
 // ── actions (validated in 70-validate.js, applied in 75-apply.js)
 
@@ -643,12 +860,15 @@ function coopValidate(S, p, a) {
       if (party && party.m[0] !== p.pid) return bad("파티장만 근무를 시작할 수 있습니다");
       if (party && party.coop && dimAt(S, party.coop)) return bad("파티가 이미 근무 중입니다");
       if (party && party.rc) return bad("차원 균열 입장 준비 중입니다");
+      // the owner's rule: a co-op job is the one you do with a party of 2–4, unlike the solo 알바 board
+      if (coopCrew(S, p).length < 2) return bad(party ? "협동 알바는 2명 이상 파티로만 할 수 있어요. 파티원과 함께 이 방에 와 주세요." : "협동 알바는 2명 이상 파티로만 할 수 있어요. 파티원과 함께 와 주세요.");
       if (coopLive(S) >= COOP_T.max) return bad(`지금은 일손이 꽉 찼습니다 (${COOP_T.max}/${COOP_T.max})`);
       if (Object.keys(S.dims).length >= DIM.max) return bad("지금은 빈 자리가 없습니다. 잠시 뒤 다시 오세요");
       return OK;
     }
     case "coop_act":
       if (!c || !c.pl[p.pid]) return bad("근무 중이 아닙니다");
+      if (a.d !== undefined && !(Number.isInteger(a.d) && a.d >= 0 && a.d <= 3)) return bad("알 수 없는 행동");
       if (c.state === "brief") return bad("곧 근무가 시작됩니다!");
       if (c.state === "end") return bad("근무가 끝났습니다");
       return OK;
@@ -661,10 +881,11 @@ function coopApply(S, p, a) {
   if (a.t === "coop_start") { coopStart(S, p, a.k); return; }
   const c = coopOf(S, p);
   if (a.t === "coop_leave") { toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다"); coopHome(S, p, c); return; }
-  const q = c.pl[p.pid];
-  if (S.now - q.actAt < COOP_T.actMs) return;
+  const q = c.pl[p.pid], job = COOP_JOB[c.k];
+  // a rhythm lane's notes come faster than the work key's 250 ms
+  if (S.now - q.actAt < (job.lane && job.lane(S, c, p, q) ? COOP_FORGE.laneMs : COOP_T.actMs)) return;
   q.actAt = S.now;
-  const r = COOP_JOB[c.k].act(S, dimAt(S, p.map), c, p, q);
+  const r = job.act(S, dimAt(S, p.map), c, p, q, a.d === undefined ? -1 : a.d);
   if (r === true) q.idleAt = S.now;
   else if (r && S.now >= q.hintAt) { q.hintAt = S.now + 1200; toast(p, r); }
 }
@@ -673,10 +894,10 @@ function coopApply(S, p, a) {
 
 /**
  * Inside a shift: `cj` [job index, state 0 brief · 1 run · 2 fever · 3 end, seconds left, score, combo, mult ×10, grade 0–4,
- * next cut-off (0 at S), job sum (apt: mess, mess cap · diner: served, missed · forge: delivered, late), [[eid, tool (index in the job's two), held,
+ * next cut-off (0 at S), job sum (apt: mess, mess cap · diner: served, missed · forge: sold, angry customers · alch: delivered, late), [[eid, tool (index in the job's two), held,
  * zzz, what (diner: dish·3 + stage per thing held; forge: (kind + 1)·5 + state; else 0)]…]] when it changes; `C` when the entities change: [id, type
  * 0 pile · 1 bundle · 2 sofa, x, y, hp], diner [id, 3 order, x, y, dish, ds left, ds patience] · [id, 4 pot, x, y, dish,
- * ds to done, ds to burnt] · [id, 5 plated dish on the pass, x, y, dish] · [id, 9 plate, x, y, ds still eating (0 dirty), washes left, at the sink 0/1], forge rows 6 furnace · 7 anvil · 8 order (forgeRow); `cr` the report card once: [grade, score, channel best,
+ * ds to done, ds to burnt] · [id, 5 plated dish on the pass, x, y, dish] · [id, 9 plate, x, y, ds still eating (0 dirty), washes left, at the sink 0/1], forge rows 6 furnace · 7 anvil · 8 customer (alch: order) · 10 a piece on the 진열대 (forgeRow); `cr` the report card once: [grade, score, channel best,
  * [[name, pts, tool, eligible]…], [C B A S cut-offs]]. `cj: 0` once on the way out.
  */
 function coopView(S, p, out) {
@@ -701,11 +922,11 @@ const coopRow = (now) => (e) => {
 };
 /** `self.coop`: the jobs done today (their day's pay taken). */
 const coopSelf = (p) => (p.ch.coopDay === dayOf(p.S.now) ? p.ch.coopDone : []);
-/** defs().coop: { jobs: { k: [name, minutes, tools, par, npc, lobby, hint, stations, skin {orders, grades} names or 0] }, kinds, cuts, parN, tools, binCap, near, dishes, cook (ms), trayCap, washN, orders [forge name, strikes, pts, heats], forge [band lo, hi, scorch, decay/s], grades (forge piece grade names) }. */
+/** defs().coop: { jobs: { k: [name, minutes, tools, par, npc, lobby, hint, stations, skin {orders, grades} names or 0] }, kinds, cuts, parN, tools, binCap, near, dishes, cook (ms), trayCap, washN, orders (forge v2) [name, notes, pts, beat ms, pattern [[beat, note 0 blow · 1 answer · 2–5 flip ↑→↓←]…]], alchOrders [name, strikes, pts, heats], door (the forge customers' door, px), forge [band lo, hi, scorch, decay/s], grades (forge piece grade names) }. */
 function coopDefs() {
   const J = (k) => COOP[k], skin = (k) => (J(k).skin ? { orders: J(k).skin.orders, grades: J(k).skin.grades } : 0);
   return { jobs: Object.fromEntries(Object.keys(COOP).map((k) => [k, [J(k).name, J(k).mins, J(k).tools, J(k).par, J(k).npc, J(k).lobby, J(k).hint, J(k).st, skin(k)]])),
     kinds: COOP_KINDS, cuts: COOP_T.cuts, parN: COOP_T.parN, tools: COOP_TOOLS, binCap: COOP_APT.binCap, near: COOP_T.near,
     dishes: COOP_DINER.dishes.map((d) => d.name), cook: COOP_DINER.dishes.map((d) => d.cook), trayCap: COOP_DINER.trayCap, washN: COOP_DINER.washN,
-    orders: COOP_FORGE.orders.map((o, i) => [COOP.forge.skin.orders[i], o.n, o.pts, o.heats]), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP.forge.skin.grades };
+    orders: COOP_FORGE.orders.map((o, i) => [COOP.forge.skin.orders[i], o.pat.length, o.pts, o.per, o.pat]), alchOrders: COOP_ALCH.orders.map((o, i) => [COOP.alch.skin.orders[i], o.n, o.pts, o.heats]), door: tilePx(COOP.forge.door), forge: [COOP_FORGE.lo, COOP_FORGE.hi, COOP_FORGE.scorch, COOP_FORGE.decay], grades: COOP.forge.skin.grades };
 }
