@@ -532,7 +532,7 @@ const APT_MAP = (() => {
       if (x1 - x0 > 8) put("s", cx + 2, (y0 + y1) >> 1);
     });
   });
-  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) if (stair(x, y)) { o[y][x] = " "; g[y][x] = "y"; }
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) if (stair(x, y)) { o[y][x] = " "; g[y][x] = "n"; }
   for (const [y0, y1] of [[8, 10], [26, 28]]) for (let y = y0; y <= y1; y++) for (let x = 1; x < W - 1; x++) if (o[y][x] === " ") g[y][x] = "h";
   // the back yard: flagstones, the dumpster `]` (station dump), barrels and plants; the back door at corridor B's east end
   const [yx0, yy0, yx1, yy1] = APT.yard;
@@ -577,7 +577,7 @@ const COOP = {
     st: { dump: APT.dump, rack: APT.rack },
     start: [[28, 14], [29, 14], [28, 16], [29, 16]],
     rooms: APT_MAP.rooms,
-    tpl: { name: "동동아파트 (근무 중)", theme: "interior", style: "lobby", bgm: "clean", safe: true, w: APT.W, h: APT.H, entry: [28, 15], ground: APT_MAP.ground, objects: APT_MAP.objects },
+    tpl: { name: "동동아파트 (근무 중)", theme: "interior", style: "apt", bgm: "clean", safe: true, w: APT.W, h: APT.H, entry: [28, 15], ground: APT_MAP.ground, objects: APT_MAP.objects },
   },
   diner: {
     name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan", "tray"], combo: 25000, skill: "cook",
