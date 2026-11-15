@@ -14145,7 +14145,7 @@ export function validateAction(S, pid, a) {
       if (ch.lvl < it.req) return bad(`레벨 ${it.req}부터 착용할 수 있습니다`);
       if (a.k === "weapon2") {
         // a second main weapon for everyone (§9); a hybrid's is one of its pair
-        if (it.type !== "weapon") return bad("무기만 보조 무기로 들 수 있습니다");
+        if (it.type !== "weapon") return bad("무기만 Ⅱ에 장착할 수 있습니다");
         if (isHybrid(ch) && !JOBS[ch.job].wk.includes(it.wk)) return bad(`${JOBS[ch.job].wk.map((k) => WK_NAME[k]).join("이나 ")}만 들 수 있습니다`);
         return OK;
       }
@@ -14333,7 +14333,7 @@ export function validateAction(S, pid, a) {
     case "ske": return skeValidate(S, p, a);
     case "wsw": {
       if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
-      if (!ch.eq.weapon2) return bad("보조 무기가 없습니다");
+      if (!ch.eq.weapon2) return bad("Ⅱ에 장착한 무기가 없습니다");
       if (now < (p.wswAt || 0)) return bad("wsw");
       return OK;
     }
@@ -14956,7 +14956,7 @@ export function applyAction(S, pid, a) {
       afterGear(S, p);
       S.maps[p.map].ev.push(["jc", p.eid]);
       sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
-      toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸에 두 무기 중 하나를 들고 Tab으로 바꿔 듭니다.` : `[${job.name}] 전직!`);
+      toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 두 무기를 Ⅰ/Ⅱ에 하나씩 장착하고 Tab으로 바꿔 듭니다.` : `[${job.name}] 전직!`);
       // the job's signature skill onto the bar
       const signature = SKILL[JOB_SKILL[a.j]];
       if (back) toast(p, `[${job.name}] 직업 Lv.${back.lv}부터 이어서 걷습니다.`);

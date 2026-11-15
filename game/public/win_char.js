@@ -108,7 +108,7 @@ export function renderInv(s) {
       for (const k of ["ring1", "ring2"]) add(`${SLOT_NAME[k]}에 장착`, () => { act({ t: "eq", s: G.sel, k }); G.sel = -1; }, off, true);
     } else add("장착", () => { act({ t: "eq", s: G.sel }); G.sel = -1; }, off, true);
     // anyone carries a second weapon (Tab swaps; a hybrid's must be one of its pair — the server says so)
-    if (d.type === "weapon") add("보조 무기로", () => { act({ t: "eq", s: G.sel, k: "weapon2" }); G.sel = -1; }, off, true);
+    if (d.type === "weapon") add("Ⅱ에 장착", () => { act({ t: "eq", s: G.sel, k: "weapon2" }); G.sel = -1; }, off, true);
     if (isOpen("smith")) add("분해", () => { act({ t: "salv", s: G.sel }); G.sel = -1; Sound.play("salvage"); });
   }
   if (d.type === "rune") {
@@ -159,14 +159,15 @@ export function renderDoll(s) {
   title.append(Info.jobMark(s.job), s.name, el("small", "", `Lv.${s.lvl} ${G.defs.classes[s.cls].name}`));
   for (const k of G.defs.slots) {
     const host = $(`#eq-${k}`);
-    if (!host) continue;
+    // the swap weapon has no slot of its own (owner): it lives behind the Ⅱ button
+    if (!host || k === "weapon2") continue;
     const g = s.eq[k];
     const slot = itemSlot(g, g ? { worn: true, onClick: () => { hideTip(); act({ t: "uneq", k }); Sound.play("ui"); }, hint: `${SLOT_NAME[k]} · 클릭하면 벗습니다` } : {});
     slot.id = `eq-${k}`;
     if (!g) {
       // an empty slot: the silhouette of what goes there and a tiny caption with the slot's name
       const ph = el("span", "ph"); ph.append(iconImg(SLOT_GLYPH[k]));
-      slot.append(ph, el("span", "cap", k === "weapon2" ? "Ⅱ 보조" : SLOT_NAME[k]));
+      slot.append(ph, el("span", "cap", SLOT_NAME[k]));
       slot.title = `${SLOT_NAME[k]} — 비어 있음`;
     }
     host.replaceWith(slot);
@@ -177,7 +178,7 @@ export function renderDoll(s) {
   wsw.textContent = "";
   const one = el("button", "btn small gold", "Ⅰ"), two = el("button", "btn small", "Ⅱ");
   one.title = "Ⅰ 손에 든 무기";
-  two.title = `Ⅱ 보조 무기와 바꿔 듭니다 (${K("swap")})`;
+  two.title = s.eq.weapon2 ? `Ⅱ ${itemName(s.eq.weapon2)} — 눌러서 바꿔 듭니다 (${K("swap")})` : "Ⅱ 비어 있음 — 가방에서 무기를 골라 [Ⅱ에 장착]";
   two.disabled = !s.eq.weapon2;
   two.onclick = () => { act({ t: "wsw" }); Sound.play("ui"); };
   for (const b of [one, two]) b.style.cssText = "padding:0 4px;min-width:0;line-height:1.2";

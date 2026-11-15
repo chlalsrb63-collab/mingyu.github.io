@@ -248,7 +248,7 @@ export function validateAction(S, pid, a) {
       if (ch.lvl < it.req) return bad(`레벨 ${it.req}부터 착용할 수 있습니다`);
       if (a.k === "weapon2") {
         // a second main weapon for everyone (§9); a hybrid's is one of its pair
-        if (it.type !== "weapon") return bad("무기만 보조 무기로 들 수 있습니다");
+        if (it.type !== "weapon") return bad("무기만 Ⅱ에 장착할 수 있습니다");
         if (isHybrid(ch) && !JOBS[ch.job].wk.includes(it.wk)) return bad(`${JOBS[ch.job].wk.map((k) => WK_NAME[k]).join("이나 ")}만 들 수 있습니다`);
         return OK;
       }
@@ -436,7 +436,7 @@ export function validateAction(S, pid, a) {
     case "ske": return skeValidate(S, p, a);
     case "wsw": {
       if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
-      if (!ch.eq.weapon2) return bad("보조 무기가 없습니다");
+      if (!ch.eq.weapon2) return bad("Ⅱ에 장착한 무기가 없습니다");
       if (now < (p.wswAt || 0)) return bad("wsw");
       return OK;
     }

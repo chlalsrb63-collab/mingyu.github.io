@@ -162,5 +162,5 @@ export function gaugeTip(self) {
     brand: "금서의 낙인 — 마도서 스킬에 맞은 적은 6초간 누구에게서나 피해를 15% 더 받습니다.",
     hawk: "매의 시야 — 쏜 자리에서 멀리 날아간 화살일수록 셉니다(150에서 최대).",
   }[cr.k];
-  return cr.o ? `${line} · 보조 무기의 패시브도 함께 켜져 있습니다.` : line;
+  return cr.o ? `${line} · Ⅱ 무기의 패시브도 함께 켜져 있습니다.` : line;
 }

@@ -144,7 +144,7 @@ function jobCard(s, j, atJob) {
   if (job.kind === "hybrid") {
     const names = Object.fromEntries(d.stats.map(([a, b]) => [a, b]));
     sc.append(el("span", "", `두 무기 모두 — ${Object.entries(job.scale).sort((a, b) => b[1] - a[1]).map(([k, c]) => `${names[k]} ${gradeOf(c)}`).join(" · ")}`));
-    sc.append(el("small", "", `보조 무기 칸이 열리고 ${K("swap")}으로 두 무기를 바꿔 듭니다. 두 무기의 패시브가 늘 켜집니다.`));
+    sc.append(el("small", "", `두 무기를 Ⅰ/Ⅱ에 하나씩 장착하고 ${K("swap")}으로 바꿔 듭니다. 두 무기의 패시브가 늘 켜집니다.`));
   } else {
     sc.append(el("span", "", `${d.wkName[job.wk[0]]} — ${scaleText({ ...s, job: j }, job.wk[0])}`));
     sc.append(el("small", "", "그 무기의 능력치 등급이 한 칸쯤 오릅니다."));

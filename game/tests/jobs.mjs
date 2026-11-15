@@ -546,7 +546,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(W.act({ t: "job_change", j: "swordsman" }).error, "모험가만 전직할 수 있습니다");
   // the swap: hybrids only, a second weapon of the pair, Tab-quick but not instant
   ch.inv.push({ id: "w_mage_1", q: 0, enh: 0, af: [], sk: 0, ru: [] }, { id: "w_bow_1", q: 0, enh: 0, af: [], sk: 0, ru: [] });
-  assert.equal(W.act({ t: "wsw" }).error, "보조 무기가 없습니다");
+  assert.equal(W.act({ t: "wsw" }).error, "Ⅱ에 장착한 무기가 없습니다");
   assert.equal(W.act({ t: "eq", s: ch.inv.findIndex((s) => s.id === "w_bow_1"), k: "weapon2" }).error, "대검이나 스태프만 들 수 있습니다");
   assert.ok(W.act({ t: "eq", s: ch.inv.findIndex((s) => s.id === "w_mage_1"), k: "weapon2" }).ok);
   assert.equal(ch.eq.weapon.id, "w_warrior_1"); assert.equal(ch.eq.weapon2.id, "w_mage_1");
@@ -563,7 +563,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   // §9: a single job holds any second weapon too, and swaps it like a re-equip
   const W2 = world({ wk: "dagger", job: "thief" });
   W2.ch.inv.push({ id: "w_bow_1", q: 0, enh: 0, af: [], sk: 0, ru: [] }, { id: "h_1", q: 0, enh: 0, af: [], sk: 0, ru: [] });
-  assert.equal(W2.act({ t: "eq", s: W2.ch.inv.length - 1, k: "weapon2" }).error, "무기만 보조 무기로 들 수 있습니다");
+  assert.equal(W2.act({ t: "eq", s: W2.ch.inv.length - 1, k: "weapon2" }).error, "무기만 Ⅱ에 장착할 수 있습니다");
   assert.ok(W2.act({ t: "eq", s: W2.ch.inv.findIndex((s) => s.id === "w_bow_1"), k: "weapon2" }).ok);
   assert.ok(W2.act({ t: "wsw" }).ok);
   assert.equal(W2.ch.eq.weapon.id, "w_bow_1"); assert.equal(W2.ch.eq.weapon2.id, "w_rogue_1");
