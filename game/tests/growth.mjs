@@ -43,9 +43,11 @@ const count = (ch, id) => ch.inv.reduce((a, s) => a + (s.id === id ? s.n || 1 : 
 
 // ── definitions
 // (weapon skills: two attack skills and five passives per weapon; spear and book add party support)
+// the first wave of new skills (skill-ideas.md §9), in table order: their mastery levels
+const WAVE1 = { sword: [15, 5, 30], dagger: [40, 5], bow: [5, 45, 40, 30], staff: [15], hammer: [40] };
 for (const wk of D.wkOrder) {
   const own = D.skillOrder.filter((id) => D.skills[id].wk === wk && "ap".includes(D.skills[id].kind));
-  const expected = [["a", 1], ["a", 10], ["p", 10], ...(["spear", "book"].includes(wk) ? [["a", 15]] : []), ...[20, 30, 40, 50].map((lv) => ["p", lv]), ...(wk === "hammer" ? [] : [["a", 25]])];   // the combo active sits after the passives (skill-combos.md)
+  const expected = [["a", 1], ["a", 10], ["p", 10], ...(["spear", "book"].includes(wk) ? [["a", 15]] : []), ...[20, 30, 40, 50].map((lv) => ["p", lv]), ...(wk === "hammer" ? [] : [["a", 25]]), ...(WAVE1[wk] || []).map((n) => ["a", n])];   // the combo active sits after the passives (skill-combos.md), then the new wave
   assert.deepEqual(own.map((id) => [D.skills[id].kind, D.skills[id].need]), expected, wk + "'s mastery unlocks");
 }
 assert.equal(D.whSlots, 60);

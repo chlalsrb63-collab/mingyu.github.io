@@ -42,10 +42,13 @@ function mobHit(S, rt, p, raw, mob, how = "blow") {
   const src = mob && !mob.dead ? mob : null;
   // a rift's master hits softer than its wild kin (64-dim.js)
   if (mob && mob.ak) raw *= mob.ak;
+  // a parry, a braced charge, the smoke (57-weapon-skills.js skGuard)
+  raw = skGuard(S, rt, p, raw, src, how);
+  if (!raw) return;
   hurtPlayer(S, rt, p, raw, src);
   // a telegraphed trick ("mv", special) only makes a player reel who has not just reeled: no chain of them stun-locks
   const reel = how === "mv" ? !(p.stag > S.now - MV_GRACE) : how === "charge" || (how === "tele" && mob) || (src && (src.el >= 1 || MOBS[src.k].boss));
-  if (!p.dead && reel) staggerPlayer(S, rt, p, mob);
+  if (!p.dead && reel && p.braceAt !== S.now) staggerPlayer(S, rt, p, mob);
   if (!src || src.dead || !src.tr || !src.tr.length) return;
   const atk = MOBS[src.k].atk * ELITE[src.el].atk;
   if (!p.dead) {
@@ -238,7 +241,7 @@ function tickMob(S, m, rt, mob, dt, here) {
   if (tgt && (tgt.map !== m.id || tgt.dead || dist(mob.x, mob.y, mob.hx, mob.hy) > leash + 60 || dist(mob.x, mob.y, tgt.x, tgt.y) > leash)) {
     tgt = null; mob.tgt = null; mob.st = 2; mob.by = {};
   }
-  if (!tgt && d.aggro > 0 && mob.st !== 2) {
+  if (!tgt && d.aggro > 0 && mob.st !== 2 && !(mob.daze > now)) {
     // fog: monsters see a little less far
     let bd = d.aggro * (rt.wx === WX.fog ? WX_FOG_AGGRO : 1);
     for (const p of here) {

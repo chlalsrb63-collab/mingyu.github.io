@@ -32,6 +32,7 @@ export function applyAction(S, pid, a) {
     }
     case "atk": if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); break;
     case "sk": if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.id); break;
+    case "skr": holdGo(S, p); break;
     case "dash": dashGo(S, p, m, a.a); break;
     case "use": {
       if (lifeUse(a.id)) { lifeUseApply(S, p, a); break; }
