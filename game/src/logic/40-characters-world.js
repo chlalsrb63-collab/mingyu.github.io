@@ -616,7 +616,27 @@ export function addPlayer(S, pid, ch) {
   explore(S, p);
   if (TUT[ch.tut.i] && tutDone(ch, TUT[ch.tut.i].id)) tutStep(S, p, TUT[ch.tut.i].id);
   checkAch(S, p);
+  partyRejoin(S, p);
   return p.eid;
+}
+
+/** A reload or a dropped line: back within PARTY_REJOIN_MS, the player rejoins a party mate who is still here. */
+const PARTY_REJOIN_MS = 60000;
+function partyRejoin(S, p) {
+  const hold = S.rejoin && S.rejoin[p.pid];
+  if (!hold) return;
+  delete S.rejoin[p.pid];
+  if (S.now - hold.at > PARTY_REJOIN_MS) return;
+  const mates = hold.with.map((pid) => S.players[pid]).filter(Boolean);
+  // their party still stands (3–4 before): join it; it disbanded (2 before): the mate who is alone takes us back
+  const inParty = mates.find((o) => o.party && S.parties[o.party] && S.parties[o.party].m.length < 4);
+  const alone = mates.find((o) => !o.party);
+  if (!inParty && !alone) return;
+  let party = inParty && S.parties[inParty.party];
+  if (!party) { party = { id: S.nextId++, m: [alone.pid] }; S.parties[party.id] = party; alone.party = party.id; }
+  party.m.push(p.pid);
+  p.party = party.id;
+  for (const o of members(S, p)) { toast(o, o === p ? "파티에 다시 합류했습니다." : `${p.ch.name}님이 파티에 돌아왔습니다.`); S.maps[o.map].who = true; }
 }
 
 /** Take a player out of the world; returns the sheet to persist. */
@@ -625,6 +645,11 @@ export function removePlayer(S, pid) {
   if (!p) return null;
   const ch = exportChar(S, pid);
   sxLeave(S, p);
+  // remember the party for a quick return (addPlayer → partyRejoin); stale holds are dropped on the next leave
+  if (S.parties[p.party]) {
+    S.rejoin = Object.fromEntries(Object.entries(S.rejoin || {}).filter(([, h]) => S.now - h.at <= PARTY_REJOIN_MS));
+    S.rejoin[pid] = { with: S.parties[p.party].m.filter((x) => x !== pid), at: S.now };
+  }
   leaveParty(S, p);
   dropAggro(S, p);
   S.maps[p.map].n--;

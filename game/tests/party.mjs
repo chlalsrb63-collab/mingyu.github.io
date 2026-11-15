@@ -106,6 +106,18 @@ assert.ok(act(A, { t: "rune", s: slot("ru_acu"), k: "weapon", i: 1 }).ok);
 assert.deepEqual(pa.ch.eq.weapon.ru, ["ign", "acu"]);
 assert.equal(L.viewFor(S, A).self.critd, critd0 + 25, "runeword 섬광 adds critical damage");
 
+// ── a reload: back within a minute, the party is whole again; later than that, it stays gone
+let chB = L.removePlayer(S, B);
+assert.equal(S.players[A].party, 0, "a two-person party disbands while B is away");
+now += 30000; S.now = now;
+L.addPlayer(S, B, chB);
+assert.ok(S.players[A].party && S.players[A].party === S.players[B].party, "B rejoins A within the minute");
+chB = L.removePlayer(S, B);
+now += 61000; S.now = now;
+L.addPlayer(S, B, chB);
+assert.equal(S.players[B].party, 0, "too late: no party");
+assert.ok(act(A, { t: "pinv", e: S.players[B].eid }).ok && act(B, { t: "pacc" }).ok);
+
 // ── leaving disbands a two-person party
 assert.ok(act(B, { t: "pleave" }).ok);
 [va] = step(A);
