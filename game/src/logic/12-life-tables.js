@@ -260,7 +260,30 @@ const JB = {
   jb_dl_tale: { kind: "deliver", npc: "story", to: "inn_lira", lv: 5, sk: "deliver", when: "night", text: "이야기꾼 할머니 소담의 옛이야기 책을 여관의 리라에게 갖다주세요. 밤이 깊기 전에!" },
   jb_dl_kong: { kind: "deliver", npc: "store_kong", to: "merc_mimi", lv: 15, sk: "deliver", text: "심부름꾼 콩콩이 깜빡한 장부를 늑대발 용병사무소 미미에게 전해 주세요." },
   jb_dl_lunch: { kind: "deliver", npc: "juju", to: "willow_fisher", lv: 20, sk: "deliver", rep: 10, text: "쥬쥬가 단골에게만 맡기는 배달이에요. 낚시꾼 갈대의 도시락을 버드나무 마을까지!" },
+  // 버드나무 마을 chores (H10, 59-chores.js): `job` a CHORES key, `n` spots (× grade) on CHORE_MAP; JB_PAY.chores a day
+  jb_ch_milk: { kind: "chore", job: "milk", npc: "willow_dairy", lv: 1, sk: "deliver", n: 4, text: "목장 주인 음메의 아침 우유를 집집마다 우편함에 넣어 주세요. 우유가 미지근해지기 전에!" },
+  jb_ch_weed: { kind: "chore", job: "weed", npc: "willow_farmer", lv: 1, sk: "gather", n: 6, text: "텃밭 농부 감자의 텃밭과 뒷마당 풀숲에서 잡초를 뽑아 주세요. 뿌리까지 쏙!" },
+  jb_ch_flyer: { kind: "chore", job: "flyer", npc: "willow_flyer", lv: 3, sk: "deliver", n: 5, text: "전단지 아저씨 팔랑의 장터 전단지를 가로등과 게시판, 표지판에 붙여 주세요." },
+  jb_ch_litter: { kind: "chore", job: "litter", npc: "willow_sweeper", lv: 1, sk: "gather", n: 6, text: "환경미화원 쓱싹이 길가와 광장에 떨어진 쓰레기를 주워 달래요." },
+  jb_ch_water: { kind: "chore", job: "water", npc: "willow_granny", lv: 5, sk: "gather", n: 5, text: "꽃집 할머니 수국의 꽃밭에 물을 주세요. 물뿌리개는 우물이나 물가에서 채워요." },
+  jb_ch_dog: { kind: "chore", job: "dog", npc: "willow_florist", lv: 8, sk: "deliver", n: 4, text: "꽃집 아이 봄이의 강아지 콩떡이를 산책시켜 주세요. 나무 냄새 맡는 걸 좋아해요." },
 };
+/**
+ * The village chores (H10). `spot`: what one act is done to (the toast); `src`: what to fetch before the acts —
+ * "npc" from the giver (all the acts at once: the milk bottles, the dog's leash) or "water" (a well or the water's
+ * edge, `carry` acts a fill); `timed`: the fetch starts a parcel-like clock and running out fails the job (never
+ * 긴급). CHORE: act reach (px), the least ms between two acts, the reach of a water source (tiles).
+ */
+const CHORE_MAP = "willow";
+const CHORES = {
+  milk: { name: "우유 배달", spot: "우편함", src: "npc", timed: true, get: "우유병을 받았습니다" },
+  weed: { name: "제초", spot: "잡초" },
+  flyer: { name: "전단지 붙이기", spot: "전단지" },
+  litter: { name: "쓰레기 줍기", spot: "쓰레기" },
+  water: { name: "꽃밭 물주기", spot: "꽃밭", src: "water", carry: 3, get: "물뿌리개를 가득 채웠습니다" },
+  dog: { name: "강아지 산책", spot: "나무", src: "npc", get: "콩떡이의 목줄을 잡았습니다" },
+};
+const CHORE = { range: 28, gap: 500, src: 1 };
 /**
  * Board v2 grades, rolled per offer from (name, day, id): 0 쉬움 · 1 보통 · 2 어려움 by weight `odds`. Items and
  * monsters × n (rounded up), a parcel's time × lim, scouting goes to map[grade]; gold, life XP and trust × pay.
@@ -271,12 +294,13 @@ const JB_RUSH = { odds: 4, min: 15, bonus: 1.5 };
 /**
  * What a board job pays (B.8, B.9): gold gold[0] + gold[1]·L (deliveries dGold, plus up to `tip` more by the time
  * left), life XP lifeNeed(L)·xp in the job's skill, trust `rep` with the NPC (deliveries: repTo with the
- * recipient, repFrom with the sender); `perDay` jobs a day from `offers` offers; L is the job's skill level.
+ * recipient, repFrom with the sender); `perDay` jobs a day from `offers` offers plus `chores` village chores; L is
+ * the job's skill level (perDay 3 → 4 with the chores, 2026-11-15).
  * A parcel's time limit is path·T / (BASE_SPD·limit[0]) × limit[1] + limit[2] ms (a door counts `door` tiles);
  * carrying it you move at spd[0] + spd[1]·L (0.85 at 1, 1.0 at 25, 1.15 at 50).
  */
 const JB_PAY = { gold: [120, 24], dGold: [80, 16],   // ×4 on 2026-11-15: 알바 is a main gold source (hunting gold × HUNT_GOLD)
-  tip: 0.5, xp: 0.25, rep: 2, repTo: 3, repFrom: 1, perDay: 3, offers: 4, limit: [0.85, 1.8, 20000], spd: [0.85, 0.006], door: 2 };
+  tip: 0.5, xp: 0.25, rep: 2, repTo: 3, repFrom: 1, perDay: 4, offers: 4, chores: 2, limit: [0.85, 1.8, 20000], spd: [0.85, 0.006], door: 2 };
 /** A delivery's path in tiles, worked out on first use by `jbRoute` (58-life.js) and kept here. */
 const JB_ROUTES = {};
 /**

@@ -1458,7 +1458,30 @@ const JB = {
   jb_dl_tale: { kind: "deliver", npc: "story", to: "inn_lira", lv: 5, sk: "deliver", when: "night", text: "이야기꾼 할머니 소담의 옛이야기 책을 여관의 리라에게 갖다주세요. 밤이 깊기 전에!" },
   jb_dl_kong: { kind: "deliver", npc: "store_kong", to: "merc_mimi", lv: 15, sk: "deliver", text: "심부름꾼 콩콩이 깜빡한 장부를 늑대발 용병사무소 미미에게 전해 주세요." },
   jb_dl_lunch: { kind: "deliver", npc: "juju", to: "willow_fisher", lv: 20, sk: "deliver", rep: 10, text: "쥬쥬가 단골에게만 맡기는 배달이에요. 낚시꾼 갈대의 도시락을 버드나무 마을까지!" },
+  // 버드나무 마을 chores (H10, 59-chores.js): `job` a CHORES key, `n` spots (× grade) on CHORE_MAP; JB_PAY.chores a day
+  jb_ch_milk: { kind: "chore", job: "milk", npc: "willow_dairy", lv: 1, sk: "deliver", n: 4, text: "목장 주인 음메의 아침 우유를 집집마다 우편함에 넣어 주세요. 우유가 미지근해지기 전에!" },
+  jb_ch_weed: { kind: "chore", job: "weed", npc: "willow_farmer", lv: 1, sk: "gather", n: 6, text: "텃밭 농부 감자의 텃밭과 뒷마당 풀숲에서 잡초를 뽑아 주세요. 뿌리까지 쏙!" },
+  jb_ch_flyer: { kind: "chore", job: "flyer", npc: "willow_flyer", lv: 3, sk: "deliver", n: 5, text: "전단지 아저씨 팔랑의 장터 전단지를 가로등과 게시판, 표지판에 붙여 주세요." },
+  jb_ch_litter: { kind: "chore", job: "litter", npc: "willow_sweeper", lv: 1, sk: "gather", n: 6, text: "환경미화원 쓱싹이 길가와 광장에 떨어진 쓰레기를 주워 달래요." },
+  jb_ch_water: { kind: "chore", job: "water", npc: "willow_granny", lv: 5, sk: "gather", n: 5, text: "꽃집 할머니 수국의 꽃밭에 물을 주세요. 물뿌리개는 우물이나 물가에서 채워요." },
+  jb_ch_dog: { kind: "chore", job: "dog", npc: "willow_florist", lv: 8, sk: "deliver", n: 4, text: "꽃집 아이 봄이의 강아지 콩떡이를 산책시켜 주세요. 나무 냄새 맡는 걸 좋아해요." },
 };
+/**
+ * The village chores (H10). `spot`: what one act is done to (the toast); `src`: what to fetch before the acts —
+ * "npc" from the giver (all the acts at once: the milk bottles, the dog's leash) or "water" (a well or the water's
+ * edge, `carry` acts a fill); `timed`: the fetch starts a parcel-like clock and running out fails the job (never
+ * 긴급). CHORE: act reach (px), the least ms between two acts, the reach of a water source (tiles).
+ */
+const CHORE_MAP = "willow";
+const CHORES = {
+  milk: { name: "우유 배달", spot: "우편함", src: "npc", timed: true, get: "우유병을 받았습니다" },
+  weed: { name: "제초", spot: "잡초" },
+  flyer: { name: "전단지 붙이기", spot: "전단지" },
+  litter: { name: "쓰레기 줍기", spot: "쓰레기" },
+  water: { name: "꽃밭 물주기", spot: "꽃밭", src: "water", carry: 3, get: "물뿌리개를 가득 채웠습니다" },
+  dog: { name: "강아지 산책", spot: "나무", src: "npc", get: "콩떡이의 목줄을 잡았습니다" },
+};
+const CHORE = { range: 28, gap: 500, src: 1 };
 /**
  * Board v2 grades, rolled per offer from (name, day, id): 0 쉬움 · 1 보통 · 2 어려움 by weight `odds`. Items and
  * monsters × n (rounded up), a parcel's time × lim, scouting goes to map[grade]; gold, life XP and trust × pay.
@@ -1469,12 +1492,13 @@ const JB_RUSH = { odds: 4, min: 15, bonus: 1.5 };
 /**
  * What a board job pays (B.8, B.9): gold gold[0] + gold[1]·L (deliveries dGold, plus up to `tip` more by the time
  * left), life XP lifeNeed(L)·xp in the job's skill, trust `rep` with the NPC (deliveries: repTo with the
- * recipient, repFrom with the sender); `perDay` jobs a day from `offers` offers; L is the job's skill level.
+ * recipient, repFrom with the sender); `perDay` jobs a day from `offers` offers plus `chores` village chores; L is
+ * the job's skill level (perDay 3 → 4 with the chores, 2026-11-15).
  * A parcel's time limit is path·T / (BASE_SPD·limit[0]) × limit[1] + limit[2] ms (a door counts `door` tiles);
  * carrying it you move at spd[0] + spd[1]·L (0.85 at 1, 1.0 at 25, 1.15 at 50).
  */
 const JB_PAY = { gold: [120, 24], dGold: [80, 16],   // ×4 on 2026-11-15: 알바 is a main gold source (hunting gold × HUNT_GOLD)
-  tip: 0.5, xp: 0.25, rep: 2, repTo: 3, repFrom: 1, perDay: 3, offers: 4, limit: [0.85, 1.8, 20000], spd: [0.85, 0.006], door: 2 };
+  tip: 0.5, xp: 0.25, rep: 2, repTo: 3, repFrom: 1, perDay: 4, offers: 4, chores: 2, limit: [0.85, 1.8, 20000], spd: [0.85, 0.006], door: 2 };
 /** A delivery's path in tiles, worked out on first use by `jbRoute` (58-life.js) and kept here. */
 const JB_ROUTES = {};
 /**
@@ -10308,11 +10332,13 @@ function lifeSheetClean(ch) {
     ch.life = l;
   }
   const jb = isObj(ch.jobBoard) ? ch.jobBoard : {};
-  const done = Array.isArray(jb.done) ? [...new Set(jb.done.filter((id) => typeof id === "string" && Object.hasOwn(JB, id)))].slice(0, 3) : [];
+  const done = Array.isArray(jb.done) ? [...new Set(jb.done.filter((id) => typeof id === "string" && Object.hasOwn(JB, id)))].slice(0, JB_PAY.perDay) : [];
   const a = isObj(jb.active) ? jb.active : null;
   const active = a && typeof a.id === "string" && Object.hasOwn(JB, a.id) && typeof a.npc === "string" && Object.hasOwn(NPC_MAP, a.npc)
     // a parcel is never saved: a delivery loaded mid-way goes back to "pick it up"
-    ? (JB[a.id].kind === "deliver" ? { id: a.id, npc: a.npc, prog: 0, expAt: 0 } : { id: a.id, npc: a.npc, prog: Math.max(0, a.prog | 0), expAt: Math.max(0, num(a.expAt) ? Math.floor(a.expAt) : 0) })
+    ? (JB[a.id].kind === "deliver" ? { id: a.id, npc: a.npc, prog: 0, expAt: 0 }
+      // a chore keeps the spots done; what was carried (milk, the leash, water) is not saved, so its clock stops too
+      : JB[a.id].kind === "chore" ? choreClean(ch, Math.max(0, jb.day | 0), a) : { id: a.id, npc: a.npc, prog: Math.max(0, a.prog | 0), expAt: Math.max(0, num(a.expAt) ? Math.floor(a.expAt) : 0) })
     : null;
   ch.jobBoard = { day: Math.max(0, jb.day | 0), done, active };
   const rep = {};
@@ -10546,7 +10572,7 @@ const jbQual = (ch, t) => (t.kind === "hunt" ? ch.lvl : ch.life[t.sk].lv) >= t.l
  */
 function jbOffers(ch, day) {
   const box = { seed: strHash(`${ch.name}:${day}:jb`) | 0 };
-  const pool = Object.keys(JB).filter((id) => !JB[id].when && jbQual(ch, JB[id]));
+  const pool = Object.keys(JB).filter((id) => !JB[id].when && JB[id].kind !== "chore" && jbQual(ch, JB[id]));
   const out = [], kinds = new Set();
   while (out.length < JB_PAY.offers && pool.length) {
     const fresh = pool.filter((id) => !kinds.has(JB[id].kind)), from = fresh.length ? fresh : pool;
@@ -10555,6 +10581,9 @@ function jbOffers(ch, day) {
     out.push(id);
     kinds.add(JB[id].kind);
   }
+  // and JB_PAY.chores of 버드나무 마을's chores (H10), each a different one
+  const chores = Object.keys(JB).filter((id) => JB[id].kind === "chore" && jbQual(ch, JB[id]));
+  for (let i = 0; i < JB_PAY.chores && chores.length; i++) out.push(chores.splice(ri(box, 0, chores.length - 1), 1)[0]);
   return out;
 }
 /** The town's situation now: "night", "rain" (either, both or none). */
@@ -10579,7 +10608,7 @@ function jbRoll(ch, day, id) {
   const box = { seed: strHash(`${ch.name}:${day}:${id}:g`) | 0 }, t = JB[id], O = JB_GRADE.odds;
   let r = rnd(box) * O.reduce((a, b) => a + b, 0), g = 0;
   while (g < O.length - 1 && r >= O[g]) { r -= O[g]; g++; }
-  const urgent = t.kind !== "deliver" && (t.rush > 0 || ri(box, 1, JB_RUSH.odds) === 1);
+  const urgent = t.kind !== "deliver" && !(t.kind === "chore" && CHORES[t.job].timed) && (t.rush > 0 || ri(box, 1, JB_RUSH.odds) === 1);
   return { g, rush: urgent ? t.rush || JB_RUSH.min : 0 };
 }
 /** What the job needs by its grade: items or monsters (n × grade, rounded up), or 0 (deliveries, scouting). */
@@ -10811,6 +10840,8 @@ function lifeValidate(S, p, a) {
         return OK;
       }
       if (a.a === "drop") return act ? OK : bad("맡은 알바가 없습니다");
+      if (t && t.kind === "chore" && (a.a === "pick" || a.a === "do" || a.a === "give")) return choreValidate(S, p, a, act);
+      if (a.a === "do") return bad("맡은 마을 알바가 없습니다");
       if (a.a === "pick") {
         if (!t || t.kind !== "deliver") return bad("맡은 배달이 없습니다");
         if (act.prog !== 0) return bad("이미 꾸러미를 받았습니다");
@@ -10876,13 +10907,15 @@ function lifeApply(S, p, a) {
         const t = JB[a.id], { g, rush } = jbRoll(ch, jb.day, a.id);
         // a hunt keeps the kill count it starts from in `prog`; 긴급 keeps its deadline in `expAt`
         jb.active = { id: a.id, npc: t.npc, prog: t.kind === "hunt" ? ch.mk[t.mob] | 0 : 0, expAt: rush ? now + rush * 60000 : 0 };
+        if (t.kind === "chore") Object.assign(jb.active, { got: 0, fill: 0 });
         p.jbSeen = 0; p.jbLate = 0;
         toast(p, `[${JB_GRADE.name[g]}${rush ? ` · 긴급 ${rush}분` : ""}] 알바를 맡았습니다: ${t.text}`);
       } else if (a.a === "drop") {
         if (p.parcel) { p.parcel = null; p.stc = null; }
         jb.active = null;
         toast(p, "알바를 그만두었습니다.");
-      } else if (a.a === "pick") {
+      } else if (JB[jb.active.id].kind === "chore" && a.a !== "give") choreApply(S, p, a, jb.active);
+      else if (a.a === "pick") {
         const t = JB[jb.active.id], limit = jbLimit(jb.active.id, jbRoll(ch, jb.day, jb.active.id).g);
         p.parcel = { id: jb.active.id, from: t.npc, to: t.to, until: now + limit, limit };
         p.stc = null;
@@ -10910,6 +10943,7 @@ function lifeTick(S, p, now) {
     else if (!g.sent && now >= g.tapAt) { g.sent = true; S.maps[p.map].ev.push(["gt", p.eid, NODE.tap]); }
   }
   if (p.parcel && (p.dead || now > p.parcel.until)) jbFail(S, p);
+  choreTick(S, p, now);
   jbWatch(S, p, now);
   if (p.ng) for (const id of Object.keys(p.ng)) {
     const o = p.ng[id];
@@ -10940,7 +10974,7 @@ function jbWatch(S, p, now) {
       }
     }
   }
-  if (t && t.kind !== "deliver" && a.expAt && now > a.expAt && p.jbLate !== a.expAt) {
+  if (t && t.kind !== "deliver" && !(t.kind === "chore" && CHORES[t.job].timed) && a.expAt && now > a.expAt && p.jbLate !== a.expAt) {
     if (p.jbLate !== undefined) toast(p, "긴급 시간이 지났습니다. 지금 마쳐도 기본 보수는 받습니다.");
     p.jbLate = a.expAt;
     p.dirty = true;
@@ -10953,15 +10987,18 @@ function jbWatch(S, p, now) {
 
 /**
  * self.jb: [day, offers [[id, kind, npc name, text, gold, skill index, grade, need n, 긴급 minutes]…], done ids,
- * active ? [id, prog, need n, parcel secs left, 긴급 secs left (0 none, -1 missed), done so far (hunt kills, scout 0/1)] : 0].
+ * active ? [id, prog, need n, parcel secs left (a timed chore's too), 긴급 secs left (0 none, -1 missed), done so far (hunt kills,
+ * scout 0/1, chore acts), …a chore's spots [[x, y, done]…] and acts carried (59-chores.js choreView)] : 0].
  */
 function jbView(p) {
   const ch = p.ch, day = ch.jobBoard.day, offers = jbOffersOf(p.S, p), a = ch.jobBoard.active, now = p.S.now;
-  const ar = a && jbRoll(ch, day, a.id), at = a && JB[a.id];
+  const ar = a && jbRoll(ch, day, a.id), at = a && JB[a.id], timed = at && at.kind === "chore" && CHORES[at.job].timed && a.fill > 0;
   return [day, offers.map((id) => { const t = JB[id], r = jbRoll(ch, day, id); return [id, t.kind, npcName(t.npc), t.text, jbGold(ch, t, r.g), LIFE.indexOf(t.sk), r.g, jbNeed(t, r.g), r.rush]; }),
-    ch.jobBoard.done.slice(), a ? [a.id, a.prog, jbNeed(at, ar.g), p.parcel ? Math.max(0, Math.ceil((p.parcel.until - now) / 1000)) : 0,
-      a.expAt && at.kind !== "deliver" ? (now <= a.expAt ? Math.max(1, Math.ceil((a.expAt - now) / 1000)) : -1) : 0,
-      at.kind === "hunt" ? Math.min(jbNeed(at, ar.g), jbKills(ch, a)) : at.kind === "scout" ? Math.min(1, a.prog) : 0] : 0];
+    ch.jobBoard.done.slice(), a ? [a.id, a.prog, jbNeed(at, ar.g),
+      p.parcel ? Math.max(0, Math.ceil((p.parcel.until - now) / 1000)) : timed ? Math.max(0, Math.ceil((a.expAt - now) / 1000)) : 0,
+      a.expAt && at.kind !== "deliver" && !timed ? (now <= a.expAt ? Math.max(1, Math.ceil((a.expAt - now) / 1000)) : -1) : 0,
+      at.kind === "hunt" ? Math.min(jbNeed(at, ar.g), jbKills(ch, a)) : at.kind === "scout" ? Math.min(1, a.prog) : at.kind === "chore" ? a.prog : 0,
+      ...choreView(ch, a)] : 0];
 }
 /** self.rep: [[npcId, trust]…] (only NPCs above 0). */
 const repView = (ch) => Object.keys(ch.rep).map((id) => [id, ch.rep[id]]);
@@ -10987,11 +11024,140 @@ function lifeDefs() {
     nodes: { kinds: NODE_KINDS, names: NODE_NAME, cd: NODE.cd, ch: NODE.ch, range: NODE.range, tap: NODE.tap },
     mg: MG, craft: CRAFT, bless: ENH_BLESS, gearCraft: { q: GEAR_CRAFT.q },
     jb: Object.fromEntries(Object.keys(JB).map((id) => [id, { ...JB[id], npcName: npcName(JB[id].npc), toName: JB[id].to ? npcName(JB[id].to) : "" }])),
-    jbPay: JB_PAY, jbGrade: JB_GRADE, jbRush: JB_RUSH,
+    jbPay: JB_PAY, jbGrade: JB_GRADE, jbRush: JB_RUSH, chores: CHORES, chore: { map: CHORE_MAP, range: CHORE.range, src: CHORE.src },
     rep: { tier: REP_TIER, name: REP_NAME, disc: REP_DISC, tip: REP_TIP, perk: REP_PERK },
     pouch: { max: POUCH_MAX, ids: Object.keys(ITEMS).filter(pouchOk) },
     master: LIFE_MASTER,
   };
+}
+// ───────────────────────────── 버드나무 마을 chores (docs/design/life-and-coop.md H10) ─────────────────────────────
+// Board jobs of kind "chore" (JB rows with `job`, CHORES in 12-life-tables.js): spots on CHORE_MAP drawn per player,
+// day and template from a pool the map's own tiles give (mailboxes before the houses, long grass, flower beds, lamp
+// posts and boards, paths, trees); one act a spot, in reach, not too fast; some fetch first (the giver's milk or
+// leash, water from a well). The sheet keeps `active.got` (a bitmask of spots done) and `active.fill` (acts carried).
+// 58-life.js routes `jb {a:"pick"|"do"|"give"}` here for chores and pays through jbPay.
+
+/** Each job's candidate tiles [x, y] on CHORE_MAP, worked out on first use. */
+const CHORE_POOL = {};
+function chorePool(job) {
+  if (Object.hasOwn(CHORE_POOL, job)) return CHORE_POOL[job];
+  const m = mapOf(CHORE_MAP), W = m.w, H = m.h, out = [];
+  const ok = (x, y) => inMap(m, x, y) && !!m.reach[y * W + x];
+  const side = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => ok(x + dx, y + dy));
+  // litter keeps off the doorways and the waypoint, and every third paving tile is enough to choose from
+  const far = (x, y) => m.portals.every((d) => Math.abs(d.x - x) + Math.abs(d.y - y) > 4) && m.npcs.every((n) => n.x !== x || n.y !== y);
+  if (job === "milk") { for (const b of m.big) if (b.t === "house" && ok(b.x + 1, b.y + 3)) out.push([b.x + 1, b.y + 3]); }
+  else for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const g = m.g[y][x], o = m.o[y][x];
+    if (job === "weed" ? g === "t" && ok(x, y)
+      : job === "litter" ? (g === "p" || g === "o") && ok(x, y) && far(x, y) && (x * 7 + y * 13) % 3 === 0
+      : job === "water" ? g === "\"" && ok(x, y)
+      : job === "flyer" ? (o === "L" || o === "v" || o === "G") && side(x, y)
+      : job === "dog" ? o === "T" && side(x, y) && x > 3 && y > 3 && x < W - 4 && y < H - 4
+      : false) out.push([x, y]);
+  }
+  CHORE_POOL[job] = out;
+  return out;
+}
+/** A chore's spots for this sheet, day and grade: jbNeed(t, g) tiles from its pool, seeded by name, day and id. */
+function choreSpots(ch, day, id, g) {
+  const pool = chorePool(JB[id].job).slice(), n = Math.min(jbNeed(JB[id], g), pool.length), out = [];
+  const box = { seed: strHash(`${ch.name}:${day}:${id}:s`) | 0 };
+  while (out.length < n) out.push(pool.splice(ri(box, 0, pool.length - 1), 1)[0]);
+  return out;
+}
+/** How many acts the job needs (its spots: a pool smaller than the need caps it). */
+const choreNeed = (ch, day, id, g) => Math.min(jbNeed(JB[id], g), chorePool(JB[id].job).length);
+/** Is a well or the water's edge within CHORE.src tiles of the player? */
+function choreWater(S, p) {
+  const m = mapOfS(S, p.map), tx = Math.floor(p.x / T), ty = Math.floor(p.y / T), r = CHORE.src;
+  for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (inMap(m, tx + dx, ty + dy) && m.g[ty + dy][tx + dx] === "w") return true;
+  return m.big.some((b) => b.t === "prop" && b.k === "well" && Math.abs(b.x - tx) <= r + 1 && Math.abs(b.y - ty) <= r + 1);
+}
+/** A timed chore's clock (ms): the giver → each spot left (nearest first) as a parcel's limit is figured (jbLimit). */
+function choreLimit(ch, a, g) {
+  const m = mapOf(CHORE_MAP), at = lifePostAt(JB[a.id].npc), sp = choreSpots(ch, ch.jobBoard.day, a.id, g).filter((_, i) => !(a.got & (1 << i)));
+  let x = at ? at.x : m.entry[0], y = at ? at.y : m.entry[1], tiles = 0;
+  while (sp.length) {
+    let k = 0;
+    sp.forEach((s, i) => { if (Math.abs(s[0] - x) + Math.abs(s[1] - y) < Math.abs(sp[k][0] - x) + Math.abs(sp[k][1] - y)) k = i; });
+    const [nx, ny] = sp.splice(k, 1)[0], leg = legTiles(m, x, y, nx, ny);
+    tiles += Number.isFinite(leg) ? leg : Math.abs(nx - x) + Math.abs(ny - y);
+    x = nx; y = ny;
+  }
+  return Math.round(((tiles * T) / (BASE_SPD * JB_PAY.limit[0])) * JB_PAY.limit[1] * JB_GRADE.lim[g] * 1000 + JB_PAY.limit[2]);
+}
+
+/** `jb` pick / do / give for a chore in hand (58-life.js lifeValidate): OK or why not. */
+function choreValidate(S, p, a, act) {
+  const ch = p.ch, t = JB[act.id], c = CHORES[t.job], day = ch.jobBoard.day, g = jbRoll(ch, day, act.id).g, need = choreNeed(ch, day, act.id, g);
+  if (p.dead) return bad("쓰러진 상태입니다");
+  if (a.a === "give" && !npcReach(p, t.npc)) return bad(`${npcName(t.npc)}에게 가서 알려 주세요`);
+  if (a.a === "give") return act.prog >= need ? OK : bad(`${c.name}${pp(c.name, "이가")} 아직 남았습니다 (${act.prog}/${need})`);
+  if (p.map !== CHORE_MAP) return bad("버드나무 마을에서 하는 알바입니다");
+  if (a.a === "pick") {
+    if (!c.src) return bad("받아 올 것이 없습니다");
+    if (act.prog >= need) return bad(`다 했습니다. ${npcName(t.npc)}에게 알려 주세요`);
+    if (c.src === "npc") {
+      if (act.fill > 0) return bad("이미 받았습니다");
+      return npcReach(p, t.npc) ? OK : bad(`${npcName(t.npc)}에게 가서 받으세요`);
+    }
+    if (act.fill >= c.carry) return bad("물뿌리개가 가득 찼습니다");
+    return choreWater(S, p) ? OK : bad("우물이나 물가로 가세요");
+  }
+  // a:"do", i — one spot of this chore
+  const sp = choreSpots(ch, day, act.id, g);
+  if (!Number.isInteger(a.i) || a.i < 0 || a.i >= sp.length) return bad("그곳이 아닙니다");
+  if (act.got & (1 << a.i)) return bad("이미 끝낸 곳입니다");
+  if (dist(p.x, p.y, sp[a.i][0] * T + 8, sp[a.i][1] * T + 8) > CHORE.range) return bad("너무 멉니다");
+  if (S.now - (p.choAt || 0) < CHORE.gap) return bad("너무 서둘렀습니다");
+  if (c.src && !(act.fill > 0)) return bad(c.src === "water" ? "물뿌리개가 비었습니다. 우물이나 물가에서 채우세요" : `먼저 ${npcName(t.npc)}에게 가서 받아 오세요`);
+  return OK;
+}
+/** `jb` pick / do for a chore (58-life.js lifeApply; give goes to jbPay). */
+function choreApply(S, p, a, act) {
+  const ch = p.ch, t = JB[act.id], c = CHORES[t.job], day = ch.jobBoard.day, g = jbRoll(ch, day, act.id).g, need = choreNeed(ch, day, act.id, g);
+  if (a.a === "pick") {
+    if (c.src === "water") { act.fill = c.carry; toast(p, `${c.get} (${c.carry}번)`); return; }
+    act.fill = need - act.prog;
+    if (c.timed) {
+      const limit = choreLimit(ch, act, g);
+      act.expAt = S.now + limit;
+      toast(p, `${c.get}! ${Math.ceil(limit / 1000)}초 안에 ${c.spot} ${act.fill}곳을 돌아 주세요.`);
+    } else toast(p, `${c.get}!`);
+    return;
+  }
+  act.got |= 1 << a.i;
+  act.prog++;
+  if (c.src) act.fill = Math.max(0, act.fill - 1);
+  p.choAt = S.now;
+  S.maps[p.map].ev.push(["co", p.eid, a.i]);
+  toast(p, act.prog >= need ? `[알바] ${c.name} ${act.prog}/${need} — 다 했습니다! ${npcName(t.npc)}에게 알려 주세요.`
+    : c.src === "water" && !act.fill ? `[알바] ${c.name} ${act.prog}/${need} — 물뿌리개가 비었어요.` : `[알바] ${c.name} ${act.prog}/${need}`);
+}
+/** Once a tick (lifeTick): a timed chore whose clock ran out with acts still carried fails. */
+function choreTick(S, p, now) {
+  const a = p.ch.jobBoard.active, t = a && JB[a.id];
+  if (!t || t.kind !== "chore" || !CHORES[t.job].timed || !(a.fill > 0) || now <= a.expAt) return;
+  p.ch.jobBoard.active = null;
+  toast(p, "우유가 미지근해졌습니다… 마을 알바 실패.");
+  S.maps[p.map].ev.push(["dl", p.eid, 0]);
+  p.dirty = true;
+}
+/** A saved chore in hand, cleaned (lifeSheetClean): the spots done kept (only bits of real spots; prog = how many), nothing carried. */
+function choreClean(ch, day, a) {
+  const got = (a.got >>> 0) & ((1 << jbNeed(JB[a.id], jbRoll(ch, day, a.id).g)) - 1);
+  let prog = 0;
+  for (let b = got; b; b &= b - 1) prog++;
+  const expAt = !CHORES[JB[a.id].job].timed && num(a.expAt) ? Math.max(0, Math.floor(a.expAt)) : 0;
+  return { id: a.id, npc: a.npc, prog, expAt, got, fill: 0 };
+}
+/** self.jb's active row tail for a chore: [[x, y, done 0/1]…, fill]; [] for any other job. */
+function choreView(ch, a) {
+  const t = JB[a.id];
+  if (t.kind !== "chore") return [];
+  const g = jbRoll(ch, ch.jobBoard.day, a.id).g;
+  return [choreSpots(ch, ch.jobBoard.day, a.id, g).map(([x, y], i) => [x, y, a.got & (1 << i) ? 1 : 0]), a.fill | 0];
 }
 // ───────────────────────────── the dash (Space) ─────────────────────────────
 // A short dash the way you aim, for getting about and for slipping a monster's heavy blow. The server moves
