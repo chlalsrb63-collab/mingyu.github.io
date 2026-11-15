@@ -59,6 +59,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 ## GEMINI (분석 · 문서 · 콘텐츠 · [ART]/[VFX] 그림과 이펙트 — `ai/gemini.md` 5번)
 
 **[보류] 표시가 붙은 작업은 건너뛸 것** — 다른 세션이 `game/public/skillfx.js`·`skillfx_combo.js`·`swing.js`를 정리 중 (끝나면 Claude가 [보류]를 지움).
+그동안 [SFX] 작업은 `game/public/audio.js`에 소리만 만들고, skillfx/swing에 연결하지 말 것 — 보고서에 "어느 이벤트에 어떤 소리"를 적으면 Claude가 연결함.
 **스킬 완성도 우선 (Owner, 2026-11-15)** — 아래 [SKILL] 표시 작업부터. 스킬 색은 직업 팔레트(`defs().jobPal`, `game/src/logic/04-job-palettes.js`)를 따를 것. 스킬 조합 규칙은 `docs/design/skill-combos.md` (상태 7종과 `["cb", mobId, code]` 이벤트).
 - [ ] [보류] [VFX] 같은 방식으로 해머와 직업 스킬(파괴자·머서너리·성기사 등, `hammer_*`, `ironsiege`, `oathward` …)
 - [ ] [SFX] `docs/fx-audit.md`에서 전용 소리가 없는 스킬마다 시전음·타격음을 `game/public/audio.js`에 코드로 만들고 연결 (무기 종류별로 결이 다르게: 금속·둔기·마법·활시위). 지금 가장 큰 타격음보다 크지 않게, 보고서에 새 소리 이름 목록
