@@ -417,6 +417,7 @@ function killMob(S, rt, mob) {
     charmKill(S, rt, mob, p);   // 주아나's quests, sealed charms (66-charms.js)
     // a field boss, a guardian or a boss may leave something to wear
     if ((el === 2 || d.boss) && cosRoll(S, p, "boss") < COS_BOSS) cosFrom(S, p, "boss", d.name);
+    if (el === 2 && mob.temp && !mob.evt && !mob.story && !mob.dim) fbLoot(S, rt, p);   // a field boss (64-dim.js LOOT_X)
   }
   if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   if (el === 2) {

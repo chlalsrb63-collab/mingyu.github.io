@@ -8,7 +8,7 @@ import * as So from "../src/social.js";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
   "\nexport const __t = { WEEK, PITY, weekOf, nextWeek, dayOf, nextReset, restCarry, restK, weekVals, weekDone, weekReward, weekTick, dailyProg, dailyReward, dailyBonus, ensureDaily, enhWin, enhCost," +
-  " ENH_RATE, rollGear, migrate, MOBS, HUNTED, toTier, countItem, ITEMS, BLOCK_MAX, npcNear, NPC_MAP, mapOf };\n";
+  " ENH_RATE, rollGear, migrate, MOBS, HUNTED, toTier, countItem, ITEMS, BLOCK_MAX, npcNear, NPC_MAP, mapOf, LOOT_X, lootX, giveX };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs();
 const VERBOSE = process.argv.includes("-v");
@@ -540,6 +540,34 @@ class FakeStore {
   const fresh = [...store.m.keys()].filter((k) => !before.has(k) && !/^(n:|c:|m:)/.test(k));
   assert.ok(fresh.length > 0 && fresh.every((k) => /^fr:[a-z0-9_]{4,16}@s[12]$/.test(k)), fresh.join(" "));
   assert.ok(!So.KS.friends(a).startsWith("f:"), "fr: is not one of the f:<x>: throttle counters");
+}
+
+// ── rare loot sources (64-dim.js LOOT_X): skill stones, uncurse scrolls, reset scrolls — rates over fixed-seed rolls
+{
+  const R = { seed: 12345 }, N = 20000;
+  const rate = (src, tier, id) => { let n = 0; for (let i = 0; i < N; i++) for (const [k, c] of X.lootX(R, src, tier)) if (k === id) n += c; return n / N; };
+  const near = (got, want, msg) => assert.ok(Math.abs(got - want) < Math.max(0.006, want * 0.15), `${msg}: ${got} vs ${want}`);
+  assert.equal(rate("rift", 9, "ske_stone"), 0, "no skill stone under rift tier 10");
+  near(rate("rift", 10, "ske_stone"), 0.01, "tier 10 stone");
+  near(rate("rift", 20, "ske_stone"), 0.11, "tier 20 stone");
+  near(rate("rift", 40, "ske_stone"), X.LOOT_X.rift.skeMax, "the stone's cap");
+  near(rate("rift", 10, "uncurse"), 0.09, "tier 10 uncurse");
+  for (const t of [10, 20, 30, 40]) assert.ok(rate("rift", t, "uncurse") > rate("rift", t, "ske_stone"), `uncurse beats the stone at tier ${t}`);
+  near(rate("fb", 0, "ske_stone"), 0.03, "field boss stone"); near(rate("fb", 0, "uncurse"), 0.08, "field boss uncurse");
+  near(rate("fb", 0, "scr_job"), 0.02, "field boss job scroll"); near(rate("fb", 0, "scr_lvl"), 0.01, "field boss level scroll");
+  for (let i = 0; i < 200; i++) {
+    const big = Object.fromEntries(X.lootX(R, "big"));
+    assert.ok(big.ske_stone >= 1 && big.ske_stone <= 2 && big.uncurse === 1, JSON.stringify(big));
+  }
+  near(rate("small", 0, "uncurse"), 0.1, "repeat challenge uncurse"); assert.equal(rate("small", 0, "ske_stone"), 0);
+  assert.deepEqual(X.lootX(R, "", 30, 2), [["uncurse", 2]], "weekly brackets: one scroll each, nothing rolled");
+  // into the bag (the pouch takes materials) and onto the gain list
+  const p = { ch: L.newChar("돌줍기", "warrior", []), gain: [], fullAt: 0 };
+  for (let i = 0; i < 3; i++) X.giveX({ ...R, now }, p, "big");
+  assert.ok(X.countItem(p.ch, "ske_stone") >= 3 && X.countItem(p.ch, "uncurse") === 3, "challenge loot lands");
+  assert.ok(p.gain.length === 6 && p.gain.every((g) => g[0] === "item"));
+  for (const id of ["ske_stone", "uncurse", "scr_job", "scr_lvl"]) assert.ok(X.ITEMS[id], id);
+  if (VERBOSE) console.log("loot sources ok");
 }
 
 console.log("social ok");
