@@ -981,6 +981,24 @@ export const LIFE_ICONS = {
       "............",
     ],
   },
+  // Clear lamp oil (Q1): a squat corked flask of gold oil, one bright bead on top.
+  q_lampoil: {
+    palette: { h: "#e4f0f4", m: "#9ab4c0", d: "#3a3a48", a: "#e8c040", b: "#8a5a3a" },
+    rows: [
+      "............",
+      "............",
+      ".....bb.....",
+      ".....bb.....",
+      "....dmmd....",
+      "...dhmmmd...",
+      "..dhhaaamd..",
+      "..dhaaaaad..",
+      "..dmaaaaad..",
+      "..dmmaaamd..",
+      "...dddddd...",
+      "............",
+    ],
+  },
   // Wind-lantern compass: brass case, cream face, a red needle pointing off north.
   kp_compass: {
     palette: { h: "#f8dc7a", m: "#c89a3a", d: "#6a4a1a", a: "#f4ead2", b: "#c84a3a" },

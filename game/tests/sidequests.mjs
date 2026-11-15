@@ -493,6 +493,48 @@ function chainShape(ids, lo, hi, maps, scaled = ids) {
   assert.equal(bag(O, "q_thornsong"), 1, "the thorn for 솔 is in the bag");
   assert.ok(O.ch.sq.on.sq_bas_wardens <= 3, "the kill count is clamped to the charm count");
 }
+for (const pick of [0, 1]) {
+  // Q1 「나루터의 먹물」: 사공 여울 at the 먹빛 호수 landing — 먹선, the lone pagoda, the clear oil, the lamp in the reeds, where to hang it
+  const YEOUL = ["sq_yeoul_ferry", "sq_yeoul_tower", "sq_yeoul_oil", "sq_yeoul_lamp", "sq_yeoul_end"];
+  chainShape(YEOUL, 157, 181, YEOUL.map(() => "inklake"));
+  assert.ok(YEOUL.filter((id) => ["kill", "elite", "fb"].includes(D.side.find((q) => q.id === id).goal.type)).length <= 1, "at most one fight in five");
+  const ink = L.atlas().maps.inklake, at = (id) => ink.npcs.find((n) => n.id === id);
+  const stone = ink.stones[0];
+  assert.ok(Math.hypot(at("ink_yeoul").x - stone.x, at("ink_yeoul").y - stone.y) <= 4, "여울 stands by the 나루터 stone");
+  assert.ok(Math.hypot(at("ink_pagoda").x - ink.stones[2].x, at("ink_pagoda").y - ink.stones[2].y) <= 4, "the lamp hook is on the 외딴 탑 섬");
+  const W = world("나룻손님" + pick);
+  W.ch.lvl = 158;
+  take(W, "sq_yeoul_ferry", "ink_yeoul");
+  talk(W, "camp_inklake");
+  done(W, "sq_yeoul_ferry", "ink_yeoul");
+  W.ch.lvl = 163;
+  take(W, "sq_yeoul_tower", "ink_yeoul");
+  talk(W, "ink_pagoda");
+  done(W, "sq_yeoul_tower", "ink_yeoul");
+  W.ch.lvl = 168;
+  W.meet("bogle"); W.ch.life.alch.lv = 30;
+  assert.match(W.act({ t: "craft_open", r: "q_lampoil" }).error, /퀘스트/, "the lamp oil is brewed only for 여울's quest");
+  take(W, "sq_yeoul_oil", "ink_yeoul");
+  make(W, "sq_yeoul_oil", "q_lampoil", "bogle", [["m_h4", 15], ["m_h5", 15], ["flask", 15]], "alch");
+  done(W, "sq_yeoul_oil", "ink_yeoul");
+  assert.equal(bag(W, "q_lampoil"), 0, "the oil goes to 여울");
+  W.ch.lvl = 174;
+  take(W, "sq_yeoul_lamp", "ink_yeoul");
+  W.to("inklake", ...ink.entry);
+  W.kill("spiderhand_blood", 0);
+  W.kill("gravrose_blood", 1);
+  assert.equal(sqOf(W.self(), "sq_yeoul_lamp").n, 0, "a plain spider or another elite is not the one");
+  W.kill("spiderhand_blood", 1);
+  done(W, "sq_yeoul_lamp", "ink_yeoul");
+  W.ch.lvl = 179;
+  assert.equal(sqOf(W.self(), "sq_yeoul_end").st, 0, "the last answer waits for Lv.180");
+  W.ch.lvl = 180;
+  take(W, "sq_yeoul_end");
+  done(W, "sq_yeoul_end", null, pick);
+  assert.ok(W.ch.ach.includes(`t_sq_yeoul_end_${pick}`) && !W.ch.ach.includes(`t_sq_yeoul_end_${1 - pick}`), "this answer's title only");
+}
+// every new quest item is asked for by some quest (no orphans)
+for (const id of ["q_upwater", "q_silt", "q_wedge", "q_thornsong", "q_mapcharm", "q_lampoil"]) assert.ok(D.side.some((q) => q.goal.item === id), `${id} is used`);
 // every arc step is 추적-resolvable: a giver and hand-in NPC on a real map, a target the client can walk to
 for (const q of D.side.filter((o) => /^sq_(chomi|aru|noeul_stone|sora|elder_chart|eunha|samak|norang|galpi|borum_ink|bogle_(shards|essence|hand)|borum_(rubbing|krion)|toruk_|ullo_|bas_|yeoul_)/.test(o.id))) {
   assert.ok(q.giverMapId && L.atlas().maps[q.giverMapId].npcs.some((n) => n.id === q.giver), `${q.id}: giver stands on ${q.giverMapId}`);

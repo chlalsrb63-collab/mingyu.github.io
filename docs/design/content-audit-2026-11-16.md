@@ -88,6 +88,17 @@ gold = 30 × Lv (last step × 2), keepsakes and titles for arc ends. 알바 stay
 - Files: `game/data/npcs.json`, `game/data/quests.json`, and a keepsake row in `ITEMS` (`10-tables.js`) if a new
   one is needed.
 - Test: `npm run data:check`, plus a chain case in `tests/content.mjs` (req.quest order, rewards in scale).
+- **As built:** a new giver, 사공 여울 (`ink_yeoul`, `npcs.json`), stands beside the 나루터 stone. A thing, 「외딴 탑의
+  빈 등걸이」 (`ink_pagoda`), stands by the 외딴 탑 섬 stone and serves as the visit step: `visit` only knows whole
+  maps, so the step is a talk to the thing, the same way as A5's chapel stone. The ground already had a camp keeper
+  (나루지기 먹선, `camp_inklake`), and she is the first talk. Steps: `sq_yeoul_ferry` (158, talk to 먹선),
+  `sq_yeoul_tower` (163, talk to the pagoda hook), `sq_yeoul_oil` (168, make 맑은 등기름, a quest-only 연금 Lv.30
+  recipe at 보글), `sq_yeoul_lamp` (174, the named elite 매화 손가락 거미 on inklake, the only fight), and
+  `sq_yeoul_end` (180, a choice: hang the lamp on the tower or on 여울's bow). The titles are 「외딴 탑의 등불지기」 and
+  「먹물 위의 길손」. Rewards are on the scale. **No keepsake:** every keepsake needs a sewn wardrobe piece
+  (`KEEP_SEW`, `65-cosmetics.js`, and its art). Those files were off limits for this pass, so the keepsake is a
+  follow-up for the wardrobe owner. Placement, both answers and the levels are checked in `tests/sidequests.mjs`
+  (the doc's `content.mjs` case lives there, next to the other arcs). The ink itself is not explained or cured.
 
 ### Q2 — Bridge Lv.85–99: 토룩 and 울로, 「거꾸로 흐르는 물」 · size S · data only
 - Four steps (Lv.86, 90, 94, 98), sewer to cave: deliver to 울로, collect, make, talk. They lead into the airship
