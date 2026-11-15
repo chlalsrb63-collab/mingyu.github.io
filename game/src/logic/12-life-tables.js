@@ -217,6 +217,7 @@ const CRAFT = { batch: 10, batchS: 70, batchD: 20, failXp: 0.5 };
  * `npc`). `lv` is otherwise the level of skill `sk` the offer needs. Board v2: `rep` = trust with `npc` needed
  * before it is offered; `when` "night" | "rain" = an extra offer only while it is night / raining in the town;
  * `rush` = always 긴급 with that many minutes. `npc`/`to` are static NPC ids (town, its interiors, 버드나무 마을).
+ * `flag` = [questId, pick]: offered only after that side quest was answered with that pick (arc A2).
  */
 const JB_WILLOW = {
   jb_willow_wood: { kind: "bring", npc: "willow_repair", lv: 1, sk: "gather", item: "m_w1", n: 6, text: "젖은 마룻널 말리기 · 바닥을 말릴 아궁이의 땔감으로 [마른 가지]를 버들의 수리대에 가져다주세요." },
@@ -225,6 +226,7 @@ const JB_WILLOW = {
   jb_willow_potato: { kind: "bring", npc: "willow_farmer", lv: 1, sk: "gather", item: "m_c1", n: 6, text: "수확 돕기 · 텃밭 농부 감자의 밭고랑에서 [감자]를 캐서 가져다주세요. 올해 감자는 알이 굵대요!" },
   jb_willow_radish: { kind: "bring", npc: "willow_farmer", lv: 10, sk: "gather", item: "m_c4", n: 4, text: "김장 준비 · 텃밭 농부 감자가 [무] 4뿌리를 뽑아 달래요. 허리가 아프대요." },
   jb_willow_notice: { kind: "deliver", npc: "willow_bard", to: "willow_florist", lv: 1, sk: "deliver", text: "솔의 공연 통지 · 음유시인 솔의 공연 안내문을 받아 꽃집 아이 봄이에게 전해 주세요." },
+  jb_neon_supply: { kind: "make", npc: "willow_doran", lv: 10, sk: "cook", item: "fd_veg", n: 2, flag: ["sq_doran_light", 1], text: "네온 시티 보급 · 도란이 시티에 남은 도톨에게 보낼 [채소 볶음] 2접시를 꾸려요. 불빛 아래 혼자 먹는 저녁이래요." },
 };
 const JB = {
   ...JB_WILLOW,

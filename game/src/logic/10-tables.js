@@ -72,8 +72,15 @@ const ITEMS = {
   q_flower_letter: { name: "봄이의 꽃 편지", type: "quest", price: 0, desc: "꽃잎을 눌러 붙인 편지. 버드나무광장의 보급상 리나에게 전해야 한다." },
   q_reed_box: { name: "갈대의 송사리 도시락", type: "quest", price: 0, desc: "아직 따뜻한 송사리 구이 두 마리. 식기 전에 광장의 리나에게." },
   q_rina_reply: { name: "리나의 답장", type: "quest", price: 0, desc: "꼭꼭 접은 쪽지. 겉봉에 서툰 글씨로 '아빠에게'." },
+  // arcs A1 「버드나무의 새 식구」 and A2 「마지막 불빛」 (docs/design/arcs.md)
+  q_blanket: { name: "낡은 담요", type: "quest", price: 0, desc: "촌장 버들이 장롱 깊숙이 아껴 둔 누비 담요. 해진 귀퉁이를 몇 번이나 기웠다." },
+  q_kong_drawing: { name: "콩알의 그림", type: "quest", price: 0, desc: "크레용으로 그린 꼬리 긴 다람쥐와 반짝이는 등. 밑에 삐뚤빼뚤 '우리 아빠'." },
+  q_photo: { name: "가족사진", type: "quest", price: 0, desc: "모서리가 그을린 사진 한 장. 다람쥐 셋이 간판등 아래서 웃고 있다." },
+  q_neon_ember: { name: "간판등 불씨", type: "quest", price: 0, desc: "도톨의 간판등에서 옮겨 담은 작은 불씨 병. 흔들어도 꺼지지 않는다." },
   // keepsakes (기념품): no stats, never in the bag — kept forever in ch.keep; 루루 의상실 will sew them into outfits later
   kp_reed_float: { name: "갈대의 낡은 찌", type: "keep", price: 0, arc: "갈대의 송사리 도시락", desc: "갈대가 딸과 처음 낚시하던 날 쓰던 빨간 찌. \"이제 나한텐 필요 없어. 네가 가져.\"" },
+  kp_willow_key: { name: "버드나무 새집 열쇠", type: "keep", price: 0, arc: "버드나무의 새 식구", desc: "도란네 오두막의 여벌 열쇠. 콩알이 도토리 모자를 씌워 놨다. \"언제든 놀러 와도 된대!\"" },
+  kp_neon_lamp: { name: "마지막 불빛 등", type: "keep", price: 0, arc: "마지막 불빛", desc: "도톨이 함락된 거리에서 끝까지 켜 두던 간판등의 작은 쌍둥이. 켜면 길 잃은 이가 집 쪽을 본다." },
 };
 for (const wk of Object.keys(WEAPON_NAMES)) {
   for (let t = 1; t <= 5; t++) {

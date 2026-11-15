@@ -580,6 +580,7 @@ body.touch kbd { display: none; }
 .keep-row { padding: 6px; border: 2px solid #2c2537; background: #1c1824; color: #8c8496; }
 .keep-row.ok { border-color: #8a6a3a; color: inherit; }
 .keep-row small { margin-left: 6px; color: #c9a86a; }
+.keep-row img.ic { width: 32px; height: 32px; float: left; margin-right: 6px; image-rendering: pixelated; }
 
 
 

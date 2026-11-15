@@ -105,7 +105,7 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   const D = L.defs();
   assert.ok(D.waypoints.some((w) => w.id === "willow") && D.maps.some((x) => x.id === "willow"));
   assert.ok(!D.event.maps.includes("willow") && !D.collection.willow, "no rift or collection in a safe village");
-  assert.ok(D.side.some((q) => q.id === "sq_willow_letter") && D.side.some((q) => q.id === "sq_willow_frogs"), "the sample village keeps both errands");
+  assert.ok(D.side.some((q) => q.id === "sq_willow_letter") && D.side.some((q) => q.id === "sq_doran_blanket"), "the sample village keeps both errands");
 
   // walk it: down the town's south road into the village, and back out through its north door
   const W = world(L, "나그네");
@@ -127,7 +127,7 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   const W = world(L, "심부름꾼");
   let s = W.self();
   assert.equal(sqOf(s, "sq_willow_letter").st, 1, "the letter can be taken");
-  assert.equal(sqOf(s, "sq_willow_frogs").st, 0, "the frogs wait for the letter and level 5");
+  assert.equal(sqOf(s, "sq_doran_blanket").st, 0, "the refugees' blanket waits for the letter and level 5");
   const lease = "sq_lantern_lease";
   W.meet("lamplighter_mori");
   assert.equal(sqOf(s, lease).st, 0, "Mori waits for the completed letter");
@@ -164,15 +164,11 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   W.meet("willow_elder");
   if (W.p.ch.lvl < 5) W.p.ch.lvl = 5;   // levels went 1–200 with jobs: the old Lv.2 is 5
   s = W.self();
-  assert.equal(sqOf(s, "sq_willow_frogs").st, 1, "the hunt opens");
-  assert.ok(W.act({ t: "sq", a: "take", id: "sq_willow_frogs" }).ok);
-  W.to("meadow", ...L.atlas().maps.meadow.entry);
-  for (let i = 0; i < 6; i++) W.kill("gutfrog");
-  s = W.self();
-  assert.deepEqual(sqOf(s, "sq_willow_frogs"), { st: 3, n: 6, need: 6 });
-  W.meet("willow_elder");
-  assert.ok(W.act({ t: "sq", a: "done", id: "sq_willow_frogs" }).ok);
-  assert.equal(W.p.ch.sq.done.sq_willow_frogs, 1);
+  assert.equal(sqOf(s, "sq_doran_blanket").st, 1, "the refugees' errand opens");
+  assert.ok(W.act({ t: "sq", a: "take", id: "sq_doran_blanket" }).ok);
+  W.meet("willow_doran");
+  assert.ok(W.act({ t: "sq", a: "done", id: "sq_doran_blanket" }).ok, "the blanket reaches 도란");
+  assert.equal(W.p.ch.sq.done.sq_doran_blanket, 1);
   assert.deepEqual(W.p.ch.sq.on, {});
 }
 

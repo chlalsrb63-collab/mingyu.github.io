@@ -14,35 +14,13 @@
       "repeat": false
     },
     {
-      "id": "sq_willow_frogs",
-      "giver": "willow_elder",
-      "title": "버드나무의 근심",
-      "text": "바람초원의 창자 개구리들이 마을 연못까지 내려오려 한다네. 6마리만 쫓아 주겠나?",
-      "done": "고맙네! 이제 밤에 잠 좀 자겠군.",
-      "goal": { "type": "kill", "mob": "gutfrog", "n": 6 },
-      "req": { "lv": 5, "quest": "sq_willow_letter" },
-      "reward": { "xp": 300, "gold": 120, "items": [["mp_s", 3]] },
-      "repeat": false
-    },
-    {
-      "id": "sq_merc_hares",
-      "giver": "merc_grey",
-      "title": "초원의 두 머리",
-      "text": "바람초원의 쌍두 토끼가 울타리까지 내려온다. 10마리만 쫓아내 주게. 첫 의뢰로 딱이지.",
-      "done": "깔끔하군. 늑대발의 일원이 될 자격이 있어.",
-      "goal": { "type": "kill", "mob": "twinhare", "n": 10 },
-      "req": { "lv": 1, "quest": null },
-      "reward": { "xp": 150, "gold": 100, "items": [["hp_s", 5]] },
-      "repeat": false
-    },
-    {
       "id": "sq_merc_boar",
       "giver": "merc_grey",
       "title": "반쪽 멧돼지 사냥",
       "text": "몸이 반으로 갈라진 멧돼지들이 길을 막고 있다. 8마리만 부탁하지. 돌진하면 옆으로 피하게.",
       "done": "잘했다. 그 녀석들 돌진은 우리 단원들도 무서워하지.",
       "goal": { "type": "kill", "mob": "splitboar", "n": 8 },
-      "req": { "lv": 10, "quest": "sq_merc_hares" },
+      "req": { "lv": 10, "quest": null },
       "reward": { "xp": 900, "gold": 400, "items": [["hp_m", 5], ["stone", 1]] },
       "repeat": false
     },
@@ -66,17 +44,6 @@
       "goal": { "type": "talk", "npc": "bogle" },
       "req": { "lv": 1, "quest": null },
       "reward": { "xp": 120, "gold": 90, "items": [["hp_s", 3]] },
-      "repeat": false
-    },
-    {
-      "id": "sq_borum_frogs",
-      "giver": "lib_borum",
-      "title": "표본 채집",
-      "text": "괴수 도감에 창자 개구리 항목이 비어 있어요. 바람초원에서 8마리를 잡아 와 주세요. 조용히, 도서관에서는 비명 금지!",
-      "done": "좋아요, 표본이 충분하네요. 도감이 한 장 두꺼워졌어요.",
-      "goal": { "type": "kill", "mob": "gutfrog", "n": 8 },
-      "req": { "lv": 3, "quest": null },
-      "reward": { "xp": 250, "gold": 170, "items": [["hp_s", 5], ["mp_s", 3]] },
       "repeat": false
     },
     {
@@ -163,7 +130,7 @@
       "text": "단풍 왕도의 다람쥐들이 가을 열병에 걸렸다는 소문이 있어요. 한 꼬리 다람쥐떼 12마리를 기록해 와 주세요. 위험하면 도망쳐도 좋아요!",
       "done": "멋진 기록이에요. 이 한 장이 도감의 마지막 쪽을 채웠어요.",
       "goal": { "type": "kill", "mob": "blightsquirrel", "n": 12 },
-      "req": { "lv": 150, "quest": "sq_borum_frogs" },
+      "req": { "lv": 150, "quest": null },
       "reward": { "xp": 1017960, "gold": 4210, "items": [["hp_l", 5], ["mp_l", 3], ["stone", 3], ["sc_xp", 1]] },
       "repeat": false
     },
@@ -812,6 +779,167 @@
       "goal": { "type": "deliver", "npc": "willow_fisher", "item": "q_rina_reply", "n": 1 },
       "req": { "lv": 3, "quest": null, "flag": ["sq_reed_lunch", 0] },
       "reward": { "xp": 250, "gold": 100, "items": [["food_s", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_doran_blanket",
+      "giver": "willow_elder",
+      "title": "낡은 담요",
+      "text": "광장에서 밤새 걸어 넘어온 다람쥐 식구가 있다네. 서쪽 빈 오두막에 짐을 풀었는데, 짐이라 해 봐야 꼬리 두 개뿐이야. 이 담요 좀 전해 주겠나? 내가 가면 자꾸 고맙다고 절을 해서 말일세.",
+      "done": "담요… 이런 걸 받아도 될까요. (꼬리로 아이를 감싸며) 저는 도란이에요. 네온 시티 성문 앞에서 사람들한테 떠밀리다 남편 손을 놓쳤어요. 돌아보니 없었어요.",
+      "hint": "버드나무 마을 서쪽 오두막의 도란에게",
+      "goal": { "type": "deliver", "npc": "willow_doran", "item": "q_blanket", "n": 1 },
+      "req": { "lv": 5, "quest": "sq_willow_letter" },
+      "reward": { "xp": 155, "gold": 150, "items": [["hp_s", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_doran_wood",
+      "giver": "willow_doran",
+      "title": "젖은 오두막 바닥",
+      "text": "오두막 바닥이 젖어서 콩알이가 밤새 콜록거려요. 아궁이에 불을 때서 말리면 좋겠는데… 마른 가지 8개만 구해 줄 수 있을까요? 쓱싹 씨가 어디에 많은지 안대요.",
+      "done": "따뜻해요. 바닥에서 나무 냄새가 나요. 콩알아, 오늘은 양말 벗고 자도 돼.",
+      "hint": "통나무에서 채집 · 환경미화원 쓱싹이 자리를 안다",
+      "goal": { "type": "collect", "item": "m_w1", "n": 8 },
+      "req": { "lv": 7, "quest": "sq_doran_blanket" },
+      "reward": { "xp": 217, "gold": 210, "items": [["mp_s", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_gamja_kong",
+      "giver": "willow_farmer",
+      "title": "감자구이 세 알",
+      "text": "그 집 꼬마 말이야, 사흘째 아무것도 안 먹는대. 그런데 아까 내 밭 앞에서 감자를 한참 쳐다보더라고. 아빠가 구워 주던 감자구이가 생각났나 봐. 밭에서 감자 캐서 세 알만 구워다 줄래? 껍질은 까맣게, 속은 포슬포슬하게!",
+      "done": "콩알이가 먹었다고? 두 알이나? …한 알은 아빠 몫이라고 남겨 뒀대. 아이고, 왜 눈이 맵지. 양파도 안 깠는데.",
+      "hint": "텃밭에서 감자 캐기 · 모닥불이나 공동 부엌 화덕에서 요리",
+      "goal": { "type": "make", "item": "fd_potato", "n": 3 },
+      "req": { "lv": 9, "quest": "sq_doran_wood" },
+      "reward": { "xp": 289, "gold": 270, "items": [["staple", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_kong_wait",
+      "giver": "willow_kong",
+      "title": "아빠를 찾으러",
+      "text": "나 이제 밥도 먹었고 힘도 세. 그러니까 초원에 가서 아빠 찾아올 거야. 엄마한테는 비밀이야. …형아, 같이 안 갈 거면 말리지 마.",
+      "done": "",
+      "goal": { "type": "choice" },
+      "req": { "lv": 12, "quest": "sq_gamja_kong" },
+      "choice": [
+        { "label": "「여기서 같이 기다리자.」", "done": "…기다리면 와? 진짜로? (콩알이 도토리 세 개를 꼭 쥔다) 그럼 솔 아저씨 노래 들으면서 기다릴래. 엄마가 울 때 불러 줄 거야." },
+        { "label": "「내가 대신 찾아볼게.」", "done": "약속이야! 꼬리 걸고! (콩알이 주머니에서 꼬깃꼬깃한 종이를 꺼낸다) 이거 우리 아빠야. 보여 주면 다들 알 거야." }
+      ],
+      "reward": { "xp": 416, "gold": 360, "items": [] },
+      "repeat": false
+    },
+    {
+      "id": "sq_doran_fence",
+      "giver": "willow_doran",
+      "title": "울타리 너머 소식",
+      "text": "콩알이한테 들었어요. 아이를 붙잡아 줘서 고마워요. 바람초원 울타리지기 마루 씨가 피난길을 다 지켜봤대요. 꼬리 끝이 하얀 다람쥐를 봤는지 물어봐 줄래요? 도톨이라고 해요.",
+      "done": "시티 쪽으로… 되돌아갔다고요? 불을 지키러? 바보 같아요. 그래서 그 사람다워요. 시티의 종지기 치치 씨가 밤마다 불빛을 본대요. (도란이 열쇠를 쥐여 준다) 우리 집 여벌 열쇠예요. 이제 당신도 식구예요.",
+      "hint": "바람초원 서쪽 울타리의 마루",
+      "goal": { "type": "talk", "npc": "trail_fence" },
+      "req": { "lv": 15, "quest": "sq_kong_wait" },
+      "reward": { "xp": 1129, "gold": 900, "items": [["hp_s", 5]], "keep": "kp_willow_key", "title": "버드나무 이웃" },
+      "repeat": false
+    },
+    {
+      "id": "sq_sol_lullaby",
+      "giver": "willow_bard",
+      "title": "버드나무 자장가",
+      "text": "콩알이가 기다리기로 했다며? 기다림엔 노래가 필요하지. ♪ 꼬리를 말고 눈을 감으면, 등불 하나가 길을 비추네 ♪ …쉽지? 콩알이한테 불러 줘.",
+      "done": "잠들었다고? 엄마 꼬리를 꼭 잡고? 그 노래, 우리 할머니가 피난길에 부르던 거야. 이제 콩알이 노래네.",
+      "goal": { "type": "talk", "npc": "willow_kong" },
+      "req": { "lv": 12, "quest": null, "flag": ["sq_kong_wait", 0] },
+      "reward": { "xp": 277, "gold": 180, "items": [["fd_potato", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_kong_drawing",
+      "giver": "willow_kong",
+      "title": "우리 아빠 그림",
+      "text": "형아, 광장에 등불 고치는 할아버지 있지? 그 할아버지 친구들이 길마다 서 있대. 내 그림 보여 주면 아빠 찾아 줄 거야. 구기면 안 돼!",
+      "done": "꼬리 긴 다람쥐에 반짝이는 등이라… 허허, 간판장이 도톨이로구먼. 내 등불지기들에게 돌려 보마. 시티의 종지기 치치가 보면 종을 두 번 울려 줄 걸세. 자네가 시티에 갈 만큼 단단해지면 그 종소리를 따라가 보게.",
+      "hint": "버드나무광장의 등불수리공 모리에게",
+      "goal": { "type": "deliver", "npc": "lamplighter_mori", "item": "q_kong_drawing", "n": 1 },
+      "req": { "lv": 12, "quest": null, "flag": ["sq_kong_wait", 1] },
+      "reward": { "xp": 277, "gold": 180, "items": [["hp_s", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_neon_bell",
+      "giver": "trail_clock",
+      "title": "두 번 우는 종",
+      "text": "버드나무 마을 다람쥐 아줌마 얘기? 응, 들었어. 그래서 밤마다 종탑에서 봐. 내 종이 두 번 울릴 때마다 광장 쪽 성문 옆에서 불빛이 깜빡여. 꺼질 듯 말 듯, 그래도 안 꺼져. 가 봐. 들개 조심하고.",
+      "done": "만났어? 진짜 살아 있었어? …다음엔 종을 세 번 울려야겠다. 좋은 소식은 세 번이거든.",
+      "hint": "네온 시티 동쪽, 광장으로 나가는 성문 옆",
+      "goal": { "type": "talk", "npc": "city_dotol" },
+      "req": { "lv": 55, "quest": "sq_doran_fence" },
+      "reward": { "xp": 8073, "gold": 1650, "items": [["hp_m", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_dotol_sign",
+      "giver": "city_dotol",
+      "title": "깜빡이는 간판등",
+      "text": "도란이랑 콩알이가… 버드나무 마을에? 살아서? (한참 말이 없다) …미안, 손이 떨려서. 이 간판등 전선이 삭아서 자꾸 깜빡여. 꺼지면 아직 오는 이들이 길을 잃어. 네온 고철 6개만 구해 줄래? 난 여길 못 떠나.",
+      "done": "됐다. 글씨는 반쯤 나갔어도 '도톨 네온' 불빛은 또렷하지. 콩알이가 이 간판 아래서 처음 걸었어.",
+      "hint": "네온 시티 광맥에서 채집 (3등급 광석)",
+      "goal": { "type": "collect", "item": "m_o3", "n": 6 },
+      "req": { "lv": 58, "quest": "sq_neon_bell" },
+      "reward": { "xp": 9579, "gold": 1740, "items": [["mp_m", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_dotol_hound",
+      "giver": "city_dotol",
+      "title": "철문 들개",
+      "text": "불빛이 밝아지니까 그놈이 또 와. 철문을 들이받던 세 머리 들개, 한 머리가 목에 쇠사슬을 감고 있어. 피난민이 지날 때마다 그 녀석이 길목을 막아. 내 망치로는 안 돼. 부탁해.",
+      "done": "철문 앞이 조용해. …오늘 밤엔 두 사람이 무사히 광장으로 건너갔어. 네 덕분이야.",
+      "hint": "네온 시티의 정예 세 머리 들개",
+      "goal": { "type": "elite", "n": 1, "map": "city", "mob": "doghead", "named": "쇠사슬을 감은 철문 들개" },
+      "req": { "lv": 63, "quest": "sq_dotol_sign" },
+      "reward": { "xp": 12815, "gold": 1890, "items": [["stone", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_dotol_photo",
+      "giver": "city_dotol",
+      "title": "간판등 아래 사진",
+      "text": "이걸 도란에게 전해 줘. 불 끄고 나올 때 딱 하나 챙긴 거야. 뒷면에 적어 뒀어. …읽지는 마. 아니, 읽어도 돼.",
+      "done": "(사진을 뒤집는다) '불은 내가 지킬게. 콩알이 잠들면 이걸 보여 줘.' …그 사람 글씨예요. 콩알이가 이제 매일 밤 사진한테 인사하고 자겠네요.",
+      "hint": "버드나무 마을의 도란에게",
+      "goal": { "type": "deliver", "npc": "willow_doran", "item": "q_photo", "n": 1 },
+      "req": { "lv": 67, "quest": "sq_dotol_hound" },
+      "reward": { "xp": 15832, "gold": 2010, "items": [["hp_m", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_doran_light",
+      "giver": "willow_doran",
+      "title": "마지막 불빛",
+      "text": "하나만 물어볼게요. 당신이 본 그 사람, 거기서 어때 보였어요? 돌아오라고 하면 올까요, 아니면 그 불 옆에 있어야 그 사람일까요. 당신이 정해 줘요. 나는 어느 쪽이든 기다릴 수 있어요.",
+      "done": "",
+      "goal": { "type": "choice" },
+      "req": { "lv": 72, "quest": "sq_dotol_photo" },
+      "choice": [
+        { "label": "「돌아오라고 전할게요.」", "done": "…네. 이번엔 손을 놓지 말라고 전해 줘요. 불씨는 광장의 모리 영감님이 맡아 주실 거예요. (작은 등을 내민다) 사진 상자 밑에 이게 있었어요. 그 사람이 당신 주라고 넣어 둔 거예요." },
+        { "label": "「그 불빛을 지키게 둬요.」", "done": "…그래요. 그 불이 꺼지면 그 사람도 꺼질 거예요. 대신 밥을 보낼게요. 게시판에 부탁 한 줄 붙여 둘 테니 가끔 들러 줘요. (작은 등을 내민다) 사진 상자 밑에 이게 있었어요. 당신 주라고 넣어 둔 거래요." }
+      ],
+      "reward": { "xp": 40350, "gold": 4320, "items": [], "keep": "kp_neon_lamp", "title": "불빛을 지킨 자" },
+      "repeat": false
+    },
+    {
+      "id": "sq_dotol_ember",
+      "giver": "city_dotol",
+      "title": "불씨를 맡기다",
+      "text": "도란이 그랬어? 돌아오라고? (간판등 뚜껑을 열어 불씨를 병에 옮긴다) 광장의 모리 영감님께 이걸 맡겨 줘. 일곱 길목 등불지기들이면 나보다 잘 지킬 거야. 난 짐 싸서 바로 뒤따라갈게.",
+      "done": "도톨의 불씨로군. 일곱 길목에 나눠 켜 두마. 길 잃은 이가 하나라도 있는 동안은 안 꺼질 걸세. …그 친구, 이제야 집에 가는구먼.",
+      "hint": "버드나무광장의 등불수리공 모리에게",
+      "goal": { "type": "deliver", "npc": "lamplighter_mori", "item": "q_neon_ember", "n": 1 },
+      "req": { "lv": 72, "quest": null, "flag": ["sq_doran_light", 0] },
+      "reward": { "xp": 13450, "gold": 1080, "items": [["hp_m", 3]] },
       "repeat": false
     }
   ]

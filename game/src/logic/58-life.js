@@ -383,8 +383,9 @@ function jbEnsure(S, p) {
   p.jbOff = null;
   p.dirty = true;
 }
-/** Does a sheet qualify for template `t`: its level (hunts: the character's) and, for a trust row, the NPC's trust. */
-const jbQual = (ch, t) => (t.kind === "hunt" ? ch.lvl : ch.life[t.sk].lv) >= t.lv && !(t.rep > repOf(ch, t.npc));
+/** Does a sheet qualify for template `t`: its level (hunts: the character's), for a trust row the NPC's trust, for a story row the quest answer. */
+const jbQual = (ch, t) => (t.kind === "hunt" ? ch.lvl : ch.life[t.sk].lv) >= t.lv && !(t.rep > repOf(ch, t.npc))
+  && (!t.flag || (!!ch.sq.done[t.flag[0]] && (ch.sq.flags[t.flag[0]] | 0) === t.flag[1]));
 /**
  * Today's offers for a sheet: up to JB_PAY.offers templates it qualifies for (not the night / rain extras), seeded
  * by name and day; each draw prefers a kind not drawn yet, so a day is a mix.

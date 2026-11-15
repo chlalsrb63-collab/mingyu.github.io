@@ -172,6 +172,115 @@ function chainTo(W, pick) {
   assert.deepEqual(W2.ch.sq, { on: { sq_gamja_rice: 2 }, done: {}, flags: {}, t: {} });
   assert.equal(D.side.find((o) => o.id === "sq_gamja_rice").station, "fire", "추적 walks to a campfire");
 }
+// ── arc A1 「버드나무의 새 식구」 start to end, both answers of 콩알's choice
+function arcA1(W, pick) {
+  W.ch.lvl = 15; W.ch.sq.done.sq_willow_letter = 1;
+  W.meet("willow_elder");
+  W.ok({ t: "sq", a: "take", id: "sq_doran_blanket" });
+  W.meet("willow_doran");
+  W.ok({ t: "sq", a: "done", id: "sq_doran_blanket" });
+  W.ok({ t: "sq", a: "take", id: "sq_doran_wood" });
+  W.ch.inv.push({ id: "m_w1", n: 8 });
+  W.ok({ t: "sq", a: "done", id: "sq_doran_wood" });
+  assert.equal(bag(W, "m_w1"), 0, "the firewood is handed over");
+  W.meet("willow_farmer");
+  W.ok({ t: "sq", a: "take", id: "sq_gamja_kong" });
+  W.ch.inv.push({ id: "fd_potato", n: 3 });
+  assert.equal(sqOf(W.self(), "sq_gamja_kong").n, 0, "bought potatoes are not made");
+  L.runtime(W.S, W.p.map).fires.push({ x: W.p.x, y: W.p.y, until: BASE + 864e5, by: "test" });
+  W.ch.inv.push({ id: "m_c1", n: 12 });
+  for (let i = 0; i < 9 && sqOf(W.self(), "sq_gamja_kong").st !== 3; i++) { W.ok({ t: "craft_open", r: "fd_potato" }); W.wait(13000); W.ok({ t: "craft", r: "fd_potato", s: 90 }); }
+  assert.equal(sqOf(W.self(), "sq_gamja_kong").st, 3, "three baked at the fire");
+  W.ok({ t: "sq", a: "done", id: "sq_gamja_kong" });
+  W.meet("willow_kong");
+  W.ok({ t: "sq", a: "take", id: "sq_kong_wait" });
+  W.ok({ t: "sq", a: "done", id: "sq_kong_wait", pick });
+  const s = W.self();
+  assert.equal(sqOf(s, "sq_sol_lullaby")?.st, pick === 0 ? 1 : undefined, "the lullaby only after 「기다리자」");
+  assert.equal(sqOf(s, "sq_kong_drawing")?.st, pick === 1 ? 1 : undefined, "the drawing only after 「찾아볼게」");
+  if (pick === 0) {
+    W.meet("willow_bard");
+    W.ok({ t: "sq", a: "take", id: "sq_sol_lullaby" });
+    W.meet("willow_kong");
+    W.ok({ t: "sq", a: "talk", npc: "willow_kong" });
+    W.meet("willow_bard");
+    W.ok({ t: "sq", a: "done", id: "sq_sol_lullaby" });
+  } else {
+    W.ok({ t: "sq", a: "take", id: "sq_kong_drawing" });
+    assert.equal(bag(W, "q_kong_drawing"), 1);
+    W.meet("lamplighter_mori");
+    W.ok({ t: "sq", a: "done", id: "sq_kong_drawing" });
+  }
+  // both answers finish the arc: 마루 at the meadow fence, then home to 도란
+  W.meet("willow_doran");
+  W.ok({ t: "sq", a: "take", id: "sq_doran_fence" });
+  W.meet("trail_fence");
+  W.ok({ t: "sq", a: "talk", npc: "trail_fence" });
+  W.meet("willow_doran");
+  W.ok({ t: "sq", a: "done", id: "sq_doran_fence" });
+  assert.ok(W.ch.keep.kp_willow_key && W.ch.ach.includes("t_sq_doran_fence"), "the spare key and 「버드나무 이웃」");
+}
+for (const pick of [0, 1]) arcA1(world("콩알친구" + pick), pick);
+// ── arc A2 「마지막 불빛」: 치치 → 도톨 (scrap, the named elite, the photo) → 도란's choice; each answer's own epilogue
+function arcA2(pick) {
+  const W = world("불빛" + pick);
+  W.ch.lvl = 55; W.ch.sq.done.sq_doran_fence = 1;
+  W.meet("trail_clock");
+  W.ok({ t: "sq", a: "take", id: "sq_neon_bell" });
+  W.meet("city_dotol");
+  W.ok({ t: "sq", a: "talk", npc: "city_dotol" });
+  W.meet("trail_clock");
+  W.ok({ t: "sq", a: "done", id: "sq_neon_bell" });
+  W.ch.lvl = 72;
+  W.meet("city_dotol");
+  W.ok({ t: "sq", a: "take", id: "sq_dotol_sign" });
+  W.ch.inv.push({ id: "m_o3", n: 6 });
+  W.ok({ t: "sq", a: "done", id: "sq_dotol_sign" });
+  W.ok({ t: "sq", a: "take", id: "sq_dotol_hound" });
+  assert.equal(D.side.find((o) => o.id === "sq_dotol_hound").target, "쇠사슬을 감은 철문 들개");
+  W.kill("doghead", 0);
+  assert.equal(sqOf(W.self(), "sq_dotol_hound").n, 0, "a plain hound is not the one");
+  W.kill("doghead", 1);
+  W.meet("city_dotol");
+  W.ok({ t: "sq", a: "done", id: "sq_dotol_hound" });
+  W.ok({ t: "sq", a: "take", id: "sq_dotol_photo" });
+  W.meet("willow_doran");
+  W.ok({ t: "sq", a: "done", id: "sq_dotol_photo" });
+  W.ok({ t: "sq", a: "take", id: "sq_doran_light" });
+  W.ok({ t: "sq", a: "done", id: "sq_doran_light", pick });
+  assert.ok(W.ch.keep.kp_neon_lamp && W.ch.ach.includes("t_sq_doran_light"), "the lamp and 「불빛을 지킨 자」 on either answer");
+  const s = W.self();
+  assert.equal(sqOf(s, "sq_dotol_ember")?.st, pick === 0 ? 1 : undefined, "the ember goes to 모리 only if 도톨 comes home");
+  if (pick === 0) {
+    W.meet("city_dotol");
+    W.ok({ t: "sq", a: "take", id: "sq_dotol_ember" });
+    W.meet("lamplighter_mori");
+    W.ok({ t: "sq", a: "done", id: "sq_dotol_ember" });
+    assert.equal(bag(W, "q_neon_ember"), 0);
+  }
+  return W;
+}
+{
+  // the supply contract for 도톨 appears on the board only after 「불빛을 지키게 둬요」
+  const home = arcA2(0), stay = arcA2(1);
+  for (const W of [home, stay]) W.ch.life.cook.lv = 10;
+  const has = (W) => W.self().jb[1].some((r) => r[0] === "jb_neon_supply");
+  assert.ok(!has(home) && has(stay), "jb_neon_supply follows the answer");
+}
+// ── retired kill quests (P3): an old sheet mid-way or done loads clean; the quests they gated open on their own
+{
+  const old = L.newChar("옛사냥꾼", "warrior", []);
+  old.sq = { on: { sq_merc_hares: 4, sq_borum_frogs: 2, sq_willow_frogs: 6 }, done: { sq_willow_frogs: 1 } };
+  const W = world("옛사냥꾼", old);
+  W.ch.lvl = 150;
+  assert.deepEqual(W.ch.sq.on, {}, "a retired quest under way is dropped (kill progress paid nothing yet)");
+  assert.equal(W.ch.sq.done.sq_willow_frogs, 1, "a finished one stays remembered");
+  const s = W.self();
+  for (const id of ["sq_willow_frogs", "sq_merc_hares", "sq_borum_frogs"]) assert.equal(sqOf(s, id), undefined, `${id} is gone`);
+  assert.equal(sqOf(s, "sq_merc_boar").st, 1, "용병단장's boar hunt no longer waits for the hares");
+  assert.equal(sqOf(s, "sq_borum_blight").st, 1, "보름's blight no longer waits for the frogs");
+  assert.equal(sqOf(s, "sq_doran_blanket").st, 0, "the refugee arc still waits for the flower letter");
+}
 // ── data:check rejects bad quest data (and accepts the shipped data)
 {
   const dir = mkdtempSync(join(tmpdir(), "tt-sq-"));

@@ -154,8 +154,8 @@ const hallNpcs = mapOf("town_hall").npcs, lib = mapOf("owl_library").npcs;
 assert.ok(lib.some((n) => n.id === "hall_pipi" && n.role === "collector") && lib.some((n) => n.id === "hall_momo" && n.role === "achieve"), "피피 and 모모 moved to the library");
 assert.ok(!hallNpcs.some((n) => n.id === "hall_pipi" || n.id === "hall_momo"), "and are no longer in the hall");
 assert.ok(hallNpcs.some((n) => n.id === "hall_bori") && hallNpcs.some((n) => n.id === "hall_hana"), "the hall keeps 보리 and 해나");
-// the mercenaries' captain gives three side quests
-assert.equal(D.side.filter((q) => q.giver === "merc_grey").length, 3, "그레이 has three side quests");
+// the mercenaries' captain gives two side quests (the hare hunt was retired with arc A1, docs/design/arcs.md)
+assert.equal(D.side.filter((q) => q.giver === "merc_grey").length, 2, "그레이 has two side quests");
 // ── the cafe and the inn sell their own goods, and only theirs
 const buyAt = (id, npcId, item) => {
   const m = mapOf(id), n = m.npcs.find((o) => o.id === npcId);
