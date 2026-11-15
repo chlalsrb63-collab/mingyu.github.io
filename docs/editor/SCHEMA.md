@@ -166,6 +166,8 @@ The routines add no character sheet fields.
   "v": 1,
   "main": null,          // null = built-in chain; or a full replacement array in the built-in format:
                          // { "mob", "n", "title", "text", "xp", "gold", "items": [[id, n]] }
+                         // optional: "fb": 1 (solo story fight), "chap"+"intro" (a chapter starts here),
+                         // "sq": "<mainChapter side quest>" (its story beat: opens on this row, must be done to accept it)
   "side": [
     {
       "id": "sq_willow_1",                       // unique, [a-z][a-z0-9_]{2,31}

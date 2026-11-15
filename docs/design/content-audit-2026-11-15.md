@@ -235,6 +235,7 @@ Last reward: keep `kp_shardjar` 균열 표본병 (→ P9 균열 연구원 고글
 **Touches:** as P3 + rift close hook in `64-dim.js` (grant `q_shard` when quest active). **Tests:** `tests/arcs.mjs`.
 
 ### P6 — 주요 의뢰 막간 장 (main story chapters) · size M
+**Built 2026-11-16 — see [arcs.md](arcs.md)** (8 chapters, 6 beats; 망치 갯가재 left out of the chain; §6.1 still open).
 - **Goal:** story beats between the kill quests, the two skipped maps, and one voice besides 엘더윈. Added as
   `mainChapter` side quests (pattern of `sq_job_free`), so the `QUESTS` order and XP curve stay.
 

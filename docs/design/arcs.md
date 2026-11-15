@@ -63,3 +63,29 @@ under way → dropped, finished → remembered. Camp keepers reused (소라, 사
 - **Open lore (audit §6.1, undecided):** A5's last page hints all three options and settles none — "a cold wind from the
   north ice castle (b), all night iron hammering under the western ground (a), and that night the long-sleeping thing
   opened its…" — burnt; "the rest the northern 비석 knows" (c). Rewrite one line once the owner picks.
+
+## P6 — main-story chapters (as built, 2026-11-16)
+**Engine choice:** the main chain stays a kill/boss list (`ch.q = {i, n, st}` untouched); each chapter's story beat is a
+`mainChapter` side quest (talk / visit / deliver on the side engine) named by its first row's `sq`. The beat opens when the
+chain reaches that row (`SQ_MAIN`, `62-side-quests.js`) and 엘더윈 refuses the row until it is done (`70-validate.js`).
+Cleaner than teaching the main chain new goals: no new progress code, tracker, UI or save field; a sheet already past a
+row can still hear its beat, a step already under way is never blocked. Rows carry `chap` + `intro`, shown in the quest
+window (the 주요 의뢰 group label and the step's page, `win_shop.js`).
+
+| ch. | rows (1-based) | grounds | beat (`sq`, Lv, goal) |
+| --- | --- | --- | --- |
+| 1 「광장의 등불」 | 1–5 | meadow | — (the tutorial starts it) |
+| 2 「속삭임 숲의 피난길」 | 6–13 | forest, crypt | `sq_mc_winter` 20 · talk 촌장 버들 (피난 첫 겨울) |
+| 3 「함락의 밤」 | 14–22 | city, sewer, cave | `sq_mc_fall` 50 · visit 네온 시티 (치치's bell; the ground split first) |
+| 4 「바다로 난 길」 | 23–26 | jungle, **coast**, oasis | `sq_mc_coast` 100 · deliver 엘더윈의 편지 to 조개잡이 소라 (on row 24) |
+| 5 「균열의 군주」 | 27–33 | 크리온 … 심연의 어미 | — (A6 tells it) |
+| 6 「붉은바위 황금궁」 | 34–35 | **mesa** | `sq_mc_script` 145 · talk 노랑: the 어미's iron is older than 크리온 and the rift |
+| 7 「단풍 왕도」 | 36–39 | maple | `sq_mc_maple` 150 · visit 단풍 왕도 (points at 갈피's lamp) |
+| 8 「왕도의 겨울」 | 40–43 | maple, frostkeep | `sq_mc_frost` 175 · talk 갈피 (the king went north; called the frost or caught by it: unknown) |
+
+**New rows (`v24`):** 눈알을 단 갈매기 (eyegull × 12), 등을 뚫은 산호 (coralturtle × 10) after the jungle boss; 벼랑의 붉은 뿔
+(twingoat_blood × 12), 금관을 쓴 깃 (crownpeacock, the mesa's field boss, solo story fight) after 심연의 어미. XP 1.2–1.3 levels
+(kill) and 1.7 (boss) like the neighbours; beats pay 15 % of a level, 30 × Lv gold (§3). Not added: the coast's field boss
+망치 갯가재 (Lv 153, above the band). Sheet v24: `questV24` maps an older index past the four rows (the v17/v20 maps skip them
+too); `tests/chapters.mjs`. Open lore stays open: no beat says who or what woke the spell. Not done: audit's rewrite of six
+bland main texts.
