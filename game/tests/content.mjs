@@ -286,7 +286,7 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   const W = world("도감");
   L.addPlayer(W.S, W.PID, L.newChar("도감", "warrior", []));
   W.step();
-  const kinds = D.collection.meadow.mobs;
+  const kinds = D.collection.meadow.mobs.filter(k => !D.mobs[k].optional);
   for (const k of kinds) W.p.ch.mk[k] = D.colNeed;
   W.p.ch.mk[kinds[0]] = D.colNeed - 1;
   W.p.stc = null;

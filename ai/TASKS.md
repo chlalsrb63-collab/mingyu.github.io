@@ -13,6 +13,7 @@
 
 | 누가 | 일 | 브랜치 · 폴더 | 시작 |
 | --- | --- | --- | --- |
+| Codex | 지역 몬스터 6종과 선택 보스 도전 적용 | `codex/region-beasts-refresh` · `~/.codex/worktrees/world-map` | 2026-11-15 |
 | Codex | 로컬 런타임 검수, 캐릭터 생성 화면과 몬스터 도감 개선 | `codex/local-polish` · `~/.codex/worktrees/world-map` | 2026-11-15 |
 | Codex | 레퍼런스 기반 낚시·요리·연금·대장 아이콘 | `codex/item-reference-art` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | 초반 캐릭터 Lv.30 ↔ 무기 숙련도 Lv.20 도달 구간 검증 및 조정 | `codex/early-mastery` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |

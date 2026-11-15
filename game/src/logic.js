@@ -593,6 +593,13 @@ const AGGRO_CAP = 3;
  * the same beast, grown worse. Listed in the order a character meets them.
  */
 const MOBS = {
+  // Additional beasts share established hunting sites on their home maps.
+  wickhare: { name: "밀랍귀 토끼", lv: 4, hp: 69, atk: 10, def: 1, spd: 30, xp: 23, gold: [5, 11], aggro: 0, range: 17, cd: 1500, pool: 16, poolKind: 1, bonusOptional: true },
+  burrlynx: { name: "가시깍지 삵", lv: 9, hp: 186, atk: 24, def: 3, spd: 48, xp: 73, gold: [11, 24], aggro: 78, range: 17, cd: 1200, leap: 86, bonusOptional: true },
+  bellnewt: { name: "뼈종 도롱뇽", lv: 14, hp: 322, atk: 38, def: 6, spd: 31, xp: 146, gold: [18, 37], aggro: 78, range: 18, cd: 1500, slam: 28, bonusOptional: true },
+  spoolsnipe: { name: "실패부리 도요", lv: 16, hp: 368, atk: 44, def: 5, spd: 42, xp: 172, gold: [20, 42], aggro: 80, range: 52, cd: 1800, shot: true, fan: 92, bonusOptional: true },
+  sluiceeel: { name: "쇠살 장어", lv: 24, hp: 945, atk: 77, def: 15, spd: 36, xp: 440, gold: [42, 80], aggro: 76, range: 20, cd: 1600, pool: 22, bonusOptional: true },
+  prismmole: { name: "겹렌즈 두더지", lv: 27, hp: 1310, atk: 93, def: 18, spd: 34, xp: 600, gold: [54, 98], aggro: 84, range: 21, cd: 1500, fan: 100, slam: 32, bonusOptional: true },
   // 바람초원
   twinhare: { name: "쌍두 토끼", lv: 1, hp: 28, atk: 5, def: 0, spd: 26, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300 },
   gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80 },
@@ -881,6 +888,12 @@ const HOUSE_TOWN = { map: "town", house: [14, 43], door: [[15, 46], [16, 46]], o
 
 // Bestiary notes keyed by stable monster ID, including retired variants and treasure chests.
 const MOB_LORE = {
+  wickhare: "귀 끝이 녹기 전에는 공격하지 않는다. 녹은 끝은 풀밭에 번진다.",
+  burrlynx: "등 가시를 오므린 틈에 그늘로 숨었다가 낮게 도약한다.",
+  bellnewt: "가슴 속 조그만 뼈종이 울리면 가까운 관도 화답한다.",
+  spoolsnipe: "부리에 감은 실 끝마다 버려진 태엽 파편이 매달려 있다.",
+  sluiceeel: "녹슨 살들이 움직일 때마다 독물이 배수구로 새어 나온다.",
+  prismmole: "이마의 렌즈를 돌려 같은 불빛을 여러 갈래로 꺾는다.",
   // Meadow
   twinhare: "두 머리가 서로 다른 밭에서 같은 풀을 뜯으려 한다.",
   gutfrog: "뛰어오르기 직전 발밑 웅덩이에 붉은 테가 번진다.",
@@ -3253,7 +3266,7 @@ const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
  * hunting ground nearest lv-1 (4 of them), lowest level first. Never chests or bosses.
  */
 function dimPool(theme, lv) {
-  const ok = (k) => MOBS[k] && !MOBS[k].chest && !MOBS[k].boss;
+  const ok = (k) => MOBS[k] && !MOBS[k].chest && !MOBS[k].boss && !MOBS[k].bonusOptional;
   const own = [];
   for (const id of Object.keys(MAP_META)) if (MAP_META[id].theme === theme && !MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
   let pool = own.filter((k) => MOBS[k].lv >= lv - DIM.poolLv[0] && MOBS[k].lv <= lv + DIM.poolLv[1]);
@@ -5137,6 +5150,10 @@ function buildTown() {
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
 const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa"];
+const REGIONAL_BEASTS = {
+  meadow: ["wickhare", "gutfrog"], forest: ["burrlynx", "ribdeer"], crypt: ["bellnewt", "bonehound"],
+  city: ["spoolsnipe", "doghead"], sewer: ["sluiceeel", "gatorhalf"], cave: ["prismmole", "bearmaw"],
+};
 /**
  * Every generated hunting ground: `make` the generator, `band` the level a character should
  * be to walk in (shown on every door that leads there), `stones` how many waypoint stones stand
@@ -5462,7 +5479,7 @@ function hermitAt(maple) {
 /** Every monster kind a generated map places, read from its settings alone (the map tests check it against the built map). */
 function genKinds(id) {
   const g = GEN[id], c = g.cfg();
-  const ks = [...c.mobs, c.pondMob, c.guard, c.lair && c.lair.guard, c.lair && c.lair.pack, ...Object.values(c.vaultMobs || {}), c.boss, ...(g.kinds || []), c.chest];
+  const ks = [...c.mobs, c.pondMob, c.guard, c.lair && c.lair.guard, c.lair && c.lair.pack, ...Object.values(c.vaultMobs || {}), c.boss, ...(g.kinds || []), c.chest, REGIONAL_BEASTS[id]?.[0]];
   return [...new Set(ks.filter((k) => k && Object.hasOwn(MOBS, k)))];
 }
 /**
@@ -5510,6 +5527,15 @@ function genMap(id) {
   // zones by how far in, then who lives in each (33-maps-zones.js)
   zoneMap(m);
   zoneSpawns(m, cfg);
+  if (REGIONAL_BEASTS[id]) {
+    const [kind, host] = REGIONAL_BEASTS[id];
+    const packs = m.spawns.filter(sp => sp.k === host && !sp.el && sp.n > 0);
+    const count = Math.min(6, packs.length);
+    for (let i = 0; i < count; i++) {
+      const sp = packs[Math.floor((i + 0.5) * packs.length / count)];
+      m.spawns.push({ ...sp, k: kind, n: Math.min(3, sp.n) });
+    }
+  }
   m.stonesWant = g.stones || 1;
   const lo = m.band[0];
   // the way on is the next step up, not a door far beyond the ground's own level (the wood's door to the old kingdom)
@@ -10486,7 +10512,7 @@ const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def"
 for (const id of Object.keys(COL_MOBS)) if (!REGION_BONUS[id]) REGION_BONUS[id] = [];
 for (const id of Object.keys(REGION_BONUS)) if (!COL_MOBS[id]) delete REGION_BONUS[id];
 const REGIONS = Object.keys(REGION_BONUS);
-const regionDone = (ch, id) => COL_MOBS[id].every((k) => (ch.mk[k] || 0) >= MASTERY[0]);
+const regionDone = (ch, id) => COL_MOBS[id].every((k) => MOBS[k].bonusOptional || (ch.mk[k] || 0) >= MASTERY[0]);
 function registered(S, p, k) {
   const ch = p.ch;
   toast(p, `몬스터 도감 등록: ${MOBS[k].name}`);
@@ -10544,7 +10570,7 @@ const evtStone = (id) => ((MAP_META[id] && MAP_META[id].wpn) >= 2 ? 1 : 0);
 const evtSpot = (id) => { const w = stonesOf(mapOf(id))[evtStone(id)] || wpOf(id); return [w.ax, w.ay]; };
 function spawnWave(S, e) {
   const m = mapOf(e.map), rt = runtime(S, e.map), [cx, cy] = evtSpot(e.map);
-  const kinds = COL_MOBS[e.map].slice().sort((a, b) => MOBS[b].lv - MOBS[a].lv).slice(0, 2);
+  const kinds = COL_MOBS[e.map].filter(k => !MOBS[k].bonusOptional).sort((a, b) => MOBS[b].lv - MOBS[a].lv).slice(0, 2);
   const n = clamp(5 + 2 * rt.n, 5, 14);
   for (let i = 0; i < n; i++) {
     const mob = newMob(S, kinds[i % kinds.length], [Math.max(2, cx - 6), Math.max(2, cy - 6), Math.min(m.w - 3, cx + 6), Math.min(m.h - 3, cy + 6)]);
@@ -15679,6 +15705,7 @@ export function defs() {
     const d = MOBS[k];
     // levels as players see them (4·tier − 3); `tier` the world's own
     mobs[k] = { name: d.name, lore: d.lore || MOB_LORE[k] || "", sp: d.sp, tint: d.tint || null, lv: shownLv(d.lv), tier: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0, aggro: d.aggro || 0 };
+    if (d.bonusOptional) mobs[k].optional = 1;
   }
   const affix = {};
   for (const [k, label, prefix] of AFFIX) affix[k] = [label, prefix];

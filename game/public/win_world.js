@@ -239,7 +239,8 @@ export function renderCollect(s) {
     const cell = el("div", "col-cell" + (ok ? " ok" : ""));
     const im = el("img"); im.alt = ""; im.src = mobThumb(k, ok);
     const bar = el("div", "bar"), f = el("i"); f.style.width = `${clamp((n / need) * 100, 0, 100)}%`; bar.append(f);
-    cell.append(im, el("b", "", name), el("small", "", ok ? `Lv.${d.lv} · 등록됨` : `${n} / ${need}`), bar);
+    const progress = ok ? `Lv.${d.lv} · 등록됨` : `${n} / ${need}`;
+    cell.append(im, el("b", "", name), el("small", "", d.optional ? `${progress} · 선택` : progress), bar);
     if (ok && d.lore) cell.append(el("p", "col-lore", d.lore));
     cell.title = `${name} — ${ok ? "등록됨" : `${need}마리를 잡으면 등록됩니다`} (처치 ${n})`;
     grid.append(cell);

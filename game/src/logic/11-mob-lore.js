@@ -1,5 +1,11 @@
 // Bestiary notes keyed by stable monster ID, including retired variants and treasure chests.
 const MOB_LORE = {
+  wickhare: "귀 끝이 녹기 전에는 공격하지 않는다. 녹은 끝은 풀밭에 번진다.",
+  burrlynx: "등 가시를 오므린 틈에 그늘로 숨었다가 낮게 도약한다.",
+  bellnewt: "가슴 속 조그만 뼈종이 울리면 가까운 관도 화답한다.",
+  spoolsnipe: "부리에 감은 실 끝마다 버려진 태엽 파편이 매달려 있다.",
+  sluiceeel: "녹슨 살들이 움직일 때마다 독물이 배수구로 새어 나온다.",
+  prismmole: "이마의 렌즈를 돌려 같은 불빛을 여러 갈래로 꺾는다.",
   // Meadow
   twinhare: "두 머리가 서로 다른 밭에서 같은 풀을 뜯으려 한다.",
   gutfrog: "뛰어오르기 직전 발밑 웅덩이에 붉은 테가 번진다.",

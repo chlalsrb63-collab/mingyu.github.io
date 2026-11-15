@@ -51,7 +51,7 @@ const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
  * hunting ground nearest lv-1 (4 of them), lowest level first. Never chests or bosses.
  */
 function dimPool(theme, lv) {
-  const ok = (k) => MOBS[k] && !MOBS[k].chest && !MOBS[k].boss;
+  const ok = (k) => MOBS[k] && !MOBS[k].chest && !MOBS[k].boss && !MOBS[k].bonusOptional;
   const own = [];
   for (const id of Object.keys(MAP_META)) if (MAP_META[id].theme === theme && !MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
   let pool = own.filter((k) => MOBS[k].lv >= lv - DIM.poolLv[0] && MOBS[k].lv <= lv + DIM.poolLv[1]);
