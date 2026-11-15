@@ -234,26 +234,36 @@ export function applyAction(S, pid, a) {
       const c = enhCost(g);
       ch.gold -= c.gold;
       takeItem(ch, "stone", c.stone);
-      // a 축복 강화석 (b: 1): +ENH_BLESS %p, and a failure keeps the step
+      // a 축복 강화석 (b: 1): +ENH_BLESS %p, and a failure keeps the step and brings no curse
       const bless = a.b === 1;
       if (bless) takeItem(ch, "stone_b", 1);
       // the roll, with the pity gauge (63-social-weekly.js enhWin: failures from +5 fill it, a full gauge is a sure try)
       const win = enhWin(S, ch, g, bless);
+      // a lifted curse (cu 2) helps this one try only
+      if (g.cu === 2) delete g.cu;
       if (win) {
         g.enh++;
         toast(p, `${gearFull(g)} 강화 성공!`);
         if (g.enh >= 7) sys(S, `${ch.name}님이 ${gearFull(g)} 강화에 성공했습니다!`);
         ch.cnt.enh = Math.max(ch.cnt.enh, g.enh);
         checkAch(S, p);
-      } else if (g.enh >= 5 && bless) {
-        toast(p, `${gearFull(g)} 강화 실패... 축복 덕분에 단계는 그대로입니다.`);
-      } else if (g.enh >= 5) {
-        g.enh--;
-        toast(p, `강화 실패... ${gearFull(g)}${pp(gearFull(g), "으로")} 단계가 내려갔습니다.`);
+      } else if (bless) {
+        toast(p, `${gearFull(g)} 강화 실패... 축복 덕분에 단계도 그대로, 저주도 없습니다.`);
       } else {
-        toast(p, `${gearFull(g)} 강화 실패... 장비는 무사합니다.`);
+        // owner (job-freedom.md §8): a failure drops one step and curses the piece until a 저주 해제 주문서 lifts it
+        g.enh = Math.max(0, g.enh - 1);
+        g.cu = 1;
+        toast(p, `강화 실패... ${gearFull(g)}${pp(gearFull(g), "으로")} 내려가고 저주를 받았습니다. 저주 해제 주문서로 풀 수 있습니다.`);
       }
       S.maps[p.map].ev.push(["e", p.eid, win ? 1 : 0]);
+      afterGear(S, p);
+      break;
+    }
+    case "uncurse": {
+      const g = ch.eq[a.k];
+      takeItem(ch, "uncurse", 1);
+      g.cu = 2;
+      toast(p, `${gearFull(g)}의 저주가 풀렸습니다 — 다음 강화는 성공 확률 +${ENH_UNCURSE}%p`);
       afterGear(S, p);
       break;
     }

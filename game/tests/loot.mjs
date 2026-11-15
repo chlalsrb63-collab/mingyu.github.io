@@ -83,12 +83,43 @@ assert.ok(act({ t: "enh", k: "helm" }).ok);
   assert.ok(said.includes(full + " 강화 성공!") || said.startsWith(full + " 강화 실패"), said);
   // an affixed rare piece is named by its first affix, as the client names it
   ch.eq.boots = gear("b_2", { q: 2, enh: 5, af: [["critd", 10]] });
-  for (let i = 0; i < 40 && ch.eq.boots.enh === 5; i++) { S.players[PID].toast.length = 0; ch.eq.boots.enh = 5; assert.ok(act({ t: "enh", k: "boots" }).ok); }
+  for (let i = 0; i < 40 && ch.eq.boots.enh === 5; i++) { S.players[PID].toast.length = 0; ch.eq.boots.enh = 5; delete ch.eq.boots.cu; assert.ok(act({ t: "enh", k: "boots" }).ok); }
   const b = S.players[PID].toast.at(-1);
   assert.ok(b.includes(`희귀 잔혹한 ${D.items.b_2.name} +${ch.eq.boots.enh}`), b);
   delete ch.eq.boots;
 }
 assert.equal(act({ t: "enh", k: "ring1" }).ok, false);
+{
+  // the curve (owner, job-freedom.md §8): +1..+3 never fail; a failure drops one step and curses the piece
+  assert.deepEqual(D.enh.slice(0, 4), [100, 100, 100, 80]);
+  assert.equal(D.enhPct[10], 27.5);
+  ch.eq.boots = gear("b_2");
+  for (let i = 0; i < 3; i++) assert.ok(act({ t: "enh", k: "boots" }).ok);
+  assert.equal(ch.eq.boots.enh, 3, "safe to +3");
+  const countSt = () => ch.inv.filter((s) => s.id === "stone").reduce((n, s) => n + s.n, 0), st0 = countSt();
+  for (let i = 0; i < 80 && !ch.eq.boots.cu; i++) { ch.eq.boots.enh = 6; ch.pity.fill(0); assert.ok(act({ t: "enh", k: "boots" }).ok); }
+  assert.ok(countSt() < st0, "every try uses stones");
+  assert.equal(ch.eq.boots.cu, 1, "a failure curses");
+  assert.equal(ch.eq.boots.enh, 5, "+6 → +7 failed: one step down");
+  assert.equal(act({ t: "enh", k: "boots" }).ok, false, "cursed gear can't be enhanced");
+  assert.equal(act({ t: "uncurse", k: "boots" }).ok, false, "needs the scroll");
+  ch.inv.push({ id: "uncurse", n: 1 });
+  assert.ok(act({ t: "uncurse", k: "boots" }).ok);
+  assert.equal(ch.eq.boots.cu, 2, "lifted: the next try gets +10 %p");
+  assert.equal(act({ t: "uncurse", k: "boots" }).ok, false, "not cursed any more");
+  // a blessed failure keeps the step and brings no curse
+  ch.inv.push({ id: "stone_b", n: 99 });
+  let blessFail = false;
+  for (let i = 0; i < 200 && !blessFail; i++) { ch.eq.boots.enh = 9; delete ch.eq.boots.cu; ch.pity.fill(0); assert.ok(act({ t: "enh", k: "boots", b: 1 }).ok); blessFail = ch.eq.boots.enh === 9; }
+  assert.ok(blessFail && !ch.eq.boots.cu, "blessed failure: same step, no curse");
+  // the curse survives a save, and an old sheet's gear has none
+  ch.eq.boots.cu = 1;
+  const S2 = L.setup(); L.addPlayer(S2, "cu@s1", JSON.parse(JSON.stringify(L.exportChar(S, PID))));
+  const back = S2.players["cu@s1"].ch;
+  assert.equal(back.eq.boots.cu, 1);
+  assert.equal(back.eq.helm.cu, undefined);
+  delete ch.eq.boots;
+}
 const stones = () => ch.inv.filter((s) => s.id === "stone").reduce((n, s) => n + s.n, 0);
 const s0 = stones();
 assert.ok(act({ t: "salv", s: 1 }).ok);

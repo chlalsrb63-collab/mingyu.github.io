@@ -405,7 +405,8 @@ const ITEMS = {
   charm_nail: { name: "참틀 확장못", type: "mat", price: 0, desc: "주아나에게 가져가면 골드와 함께 참 보드의 칸을 하나 연다." },
   scr_job: { name: "전직 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 모험가로 돌아간다. 걸었던 직업의 직업 레벨은 그대로 남는다." },
   scr_lvl: { name: "레벨 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 레벨과 능력치가 1로 돌아간다. 숙련, 장비, 골드, 직업 레벨은 남는다." },
-  stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
+  stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다. 강화할 때마다 쓴다." },
+  uncurse: { name: "저주 해제 주문서", type: "mat", price: 2500, desc: "대장장이에게 가져가면 강화에 실패해 저주받은 장비를 푼다. 풀린 장비의 다음 강화는 성공 확률이 10%p 오른다." },
   recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 버드나무광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
   fish_s: { name: "송사리", type: "fish", cook: "food_s", price: 30, desc: "흔한 물고기. 모닥불에서 구울 수 있다." },
@@ -501,8 +502,14 @@ const FILTER_Q = [0, 1, 2];
 /** How often a pet runs for something. */
 const PET_MS = 300;
 
-const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1", "w_h_1", "h_1", "a_1", "g_1", "b_1"];
-const ENH_RATE = [100, 95, 90, 80, 70, 55, 45, 35, 25, 15];
+const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "uncurse", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1", "w_h_1", "h_1", "a_1", "g_1", "b_1"];
+// success % of the try from +n to +n+1: up to +3 always succeeds (owner, job-freedom.md §8)
+const ENH_RATE = [100, 100, 100, 80, 70, 55, 45, 35, 25, 15];
+// base-stat bonus % at +n: ~4 %/step to +3, ~2.5 % to +6, ~2 % to +10 (low and high players stay close)
+const ENH_PCT = [0, 4, 8, 12, 14.5, 17, 19.5, 21.5, 23.5, 25.5, 27.5];
+const enhMul = (e) => 1 + ENH_PCT[e | 0] / 100;
+// weapon crit % per step; a lifted curse gives the next try this many %p
+const ENH_CRIT = 0.5, ENH_UNCURSE = 10;
 
 // ── the cosy side: campfires, fishing, guilds
 /** Campfires that always burn, by map, in tiles. */
@@ -6074,7 +6081,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 18, name, job: "adventurer", jp: null,
+    v: 19, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -6129,6 +6136,8 @@ function migrate(ch) {
     if (id === "charm") return charmFix(g);
     if (!isGear(id)) return { id, n: g.n | 0 || 1 };
     const out = { id, q: clamp(g.q | 0, 0, 4), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
+    // cu: 1 cursed by a failed enhancement (no more tries until lifted), 2 lifted (the next try +ENH_UNCURSE %p) — v19
+    if ((g.cu | 0) > 0) out.cu = clamp(g.cu | 0, 1, 2);
     if (LEGEND[g.lg]) out.lg = g.lg;
     if (SETS[g.set]) out.set = g.set;
     return out;
@@ -6226,7 +6235,7 @@ function migrate(ch) {
   // boss trophies (v17): known kinds only, each once (67-trophies.js)
   ch.tro = Array.isArray(ch.tro) ? [...new Set(ch.tro.filter((k) => typeof k === "string" && Object.hasOwn(TROPHIES, k)))] : [];
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
-  ch.v = Math.max(ch.v | 0, 18);
+  ch.v = Math.max(ch.v | 0, 19);
   return ch;
 }
 
@@ -6303,8 +6312,8 @@ function gearBonus(ch) {
     const g = ch.eq[k];
     if (!g || k === "weapon2") continue;
     const base = ITEMS[g.id].base;
-    // each enhancement level is worth a tenth of the piece's own stats
-    for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : 1 + 0.1 * g.enh));
+    // enhancement raises the piece's own stats along ENH_PCT
+    for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : enhMul(g.enh)));
     for (const [s, v] of g.af) add(s, v);
     for (const r of g.ru) if (r && RUNES[r]) add(RUNES[r][1], RUNES[r][2]);
     const rw = runeword(g);
@@ -6356,7 +6365,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {
@@ -6787,7 +6796,7 @@ function deriveStats(p) {
   // boss trophies (67-trophies.js): fixed % on gold, experience, speed, attack speed, magic find, HP, crit
   const tf = trophySum(ch);
   for (const k of ST_ORDER) E[k] = eff(ch.st[k]) + cm.st[k];
-  const wAtk = w ? (ITEMS[w.id].base.atk || 0) * (1 + 0.1 * w.enh) : 0;
+  const wAtk = w ? (ITEMS[w.id].base.atk || 0) * enhMul(w.enh) : 0;
   const sc = scaleOf(ch, wk);
   let core = SFX.atk[0] + SFX.atk[1] * lv;
   for (const k of Object.keys(sc)) core += sc[k] * E[k];
@@ -6800,7 +6809,7 @@ function deriveStats(p) {
     atk0: ((core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk) * (1 + JOB_PROGRESS.atk * jl),
     core, cm,
     def: Math.round((Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def)) * (1 + JOB_PROGRESS.def * jl)),
-    crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh : 0) + b.crit + tf.crit),
+    crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh * ENH_CRIT : 0) + b.crit + tf.crit),
     critd: SFX.critd[0] + SFX.critd[1] * luk + b.critd / 100,
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
     ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + (Math.min(40, b.spd) + tf.move) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
@@ -11170,7 +11179,7 @@ const pityNeed = (g) => PITY.need[g.enh - PITY.from] * ITEMS[g.id].tier;
 function enhWin(S, ch, g, bless) {
   const roll = rnd(S) * 100, i = g.enh - PITY.from;
   if (i >= 0 && ch.pity[i] >= pityNeed(g)) { ch.pity[i] = 0; return true; }
-  const win = roll < ENH_RATE[g.enh] + (bless ? ENH_BLESS : 0);
+  const win = roll < ENH_RATE[g.enh] + (bless ? ENH_BLESS : 0) + (g.cu === 2 ? ENH_UNCURSE : 0);
   if (!win && i >= 0) ch.pity[i] = Math.min(PITY_CAP, ch.pity[i] + ITEMS[g.id].tier);
   return win;
 }
@@ -13701,6 +13710,7 @@ export function validateAction(S, pid, a) {
       if (!g) return bad("장착한 장비가 없습니다");
       if (isJewel(g.id)) return bad("장신구는 강화할 수 없습니다");
       if (g.enh >= 10) return bad("최대 강화 단계입니다");
+      if (g.cu === 1) return bad("저주받은 장비는 강화할 수 없습니다 — 저주 해제 주문서로 먼저 풀어 주세요");
       if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
       const c = enhCost(g);
       if (ch.gold < c.gold) return bad("골드가 부족합니다");
@@ -13708,6 +13718,13 @@ export function validateAction(S, pid, a) {
       // b: 1 adds a 축복 강화석 (+10 %p, a failure never drops a step)
       if (a.b !== undefined && a.b !== 0 && a.b !== 1) return bad("잘못된 요청입니다");
       if (a.b === 1 && countItem(ch, "stone_b") < 1) return bad("축복 강화석이 없습니다");
+      return OK;
+    }
+    case "uncurse": {
+      const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
+      if (!g || g.cu !== 1) return bad("저주받은 장비가 아닙니다");
+      if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
+      if (countItem(ch, "uncurse") < 1) return bad("저주 해제 주문서가 없습니다");
       return OK;
     }
     case "sit": return OK;
@@ -14043,26 +14060,36 @@ export function applyAction(S, pid, a) {
       const c = enhCost(g);
       ch.gold -= c.gold;
       takeItem(ch, "stone", c.stone);
-      // a 축복 강화석 (b: 1): +ENH_BLESS %p, and a failure keeps the step
+      // a 축복 강화석 (b: 1): +ENH_BLESS %p, and a failure keeps the step and brings no curse
       const bless = a.b === 1;
       if (bless) takeItem(ch, "stone_b", 1);
       // the roll, with the pity gauge (63-social-weekly.js enhWin: failures from +5 fill it, a full gauge is a sure try)
       const win = enhWin(S, ch, g, bless);
+      // a lifted curse (cu 2) helps this one try only
+      if (g.cu === 2) delete g.cu;
       if (win) {
         g.enh++;
         toast(p, `${gearFull(g)} 강화 성공!`);
         if (g.enh >= 7) sys(S, `${ch.name}님이 ${gearFull(g)} 강화에 성공했습니다!`);
         ch.cnt.enh = Math.max(ch.cnt.enh, g.enh);
         checkAch(S, p);
-      } else if (g.enh >= 5 && bless) {
-        toast(p, `${gearFull(g)} 강화 실패... 축복 덕분에 단계는 그대로입니다.`);
-      } else if (g.enh >= 5) {
-        g.enh--;
-        toast(p, `강화 실패... ${gearFull(g)}${pp(gearFull(g), "으로")} 단계가 내려갔습니다.`);
+      } else if (bless) {
+        toast(p, `${gearFull(g)} 강화 실패... 축복 덕분에 단계도 그대로, 저주도 없습니다.`);
       } else {
-        toast(p, `${gearFull(g)} 강화 실패... 장비는 무사합니다.`);
+        // owner (job-freedom.md §8): a failure drops one step and curses the piece until a 저주 해제 주문서 lifts it
+        g.enh = Math.max(0, g.enh - 1);
+        g.cu = 1;
+        toast(p, `강화 실패... ${gearFull(g)}${pp(gearFull(g), "으로")} 내려가고 저주를 받았습니다. 저주 해제 주문서로 풀 수 있습니다.`);
       }
       S.maps[p.map].ev.push(["e", p.eid, win ? 1 : 0]);
+      afterGear(S, p);
+      break;
+    }
+    case "uncurse": {
+      const g = ch.eq[a.k];
+      takeItem(ch, "uncurse", 1);
+      g.cu = 2;
+      toast(p, `${gearFull(g)}의 저주가 풀렸습니다 — 다음 강화는 성공 확률 +${ENH_UNCURSE}%p`);
       afterGear(S, p);
       break;
     }
@@ -15202,7 +15229,7 @@ export function defs() {
     jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.kind === "hybrid" ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {}, wm: j.kind === "none" ? 0 : jobWmOf(id), sig: JOB_SKILL[id] || "" };
   }
   return {
-    items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
+    items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
     jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest

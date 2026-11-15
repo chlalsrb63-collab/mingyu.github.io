@@ -177,7 +177,7 @@ const pityNeed = (g) => PITY.need[g.enh - PITY.from] * ITEMS[g.id].tier;
 function enhWin(S, ch, g, bless) {
   const roll = rnd(S) * 100, i = g.enh - PITY.from;
   if (i >= 0 && ch.pity[i] >= pityNeed(g)) { ch.pity[i] = 0; return true; }
-  const win = roll < ENH_RATE[g.enh] + (bless ? ENH_BLESS : 0);
+  const win = roll < ENH_RATE[g.enh] + (bless ? ENH_BLESS : 0) + (g.cu === 2 ? ENH_UNCURSE : 0);
   if (!win && i >= 0) ch.pity[i] = Math.min(PITY_CAP, ch.pity[i] + ITEMS[g.id].tier);
   return win;
 }

@@ -48,7 +48,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 18, name, job: "adventurer", jp: null,
+    v: 19, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -103,6 +103,8 @@ function migrate(ch) {
     if (id === "charm") return charmFix(g);
     if (!isGear(id)) return { id, n: g.n | 0 || 1 };
     const out = { id, q: clamp(g.q | 0, 0, 4), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
+    // cu: 1 cursed by a failed enhancement (no more tries until lifted), 2 lifted (the next try +ENH_UNCURSE %p) — v19
+    if ((g.cu | 0) > 0) out.cu = clamp(g.cu | 0, 1, 2);
     if (LEGEND[g.lg]) out.lg = g.lg;
     if (SETS[g.set]) out.set = g.set;
     return out;
@@ -200,7 +202,7 @@ function migrate(ch) {
   // boss trophies (v17): known kinds only, each once (67-trophies.js)
   ch.tro = Array.isArray(ch.tro) ? [...new Set(ch.tro.filter((k) => typeof k === "string" && Object.hasOwn(TROPHIES, k)))] : [];
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
-  ch.v = Math.max(ch.v | 0, 18);
+  ch.v = Math.max(ch.v | 0, 19);
   return ch;
 }
 
@@ -277,8 +279,8 @@ function gearBonus(ch) {
     const g = ch.eq[k];
     if (!g || k === "weapon2") continue;
     const base = ITEMS[g.id].base;
-    // each enhancement level is worth a tenth of the piece's own stats
-    for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : 1 + 0.1 * g.enh));
+    // enhancement raises the piece's own stats along ENH_PCT
+    for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : enhMul(g.enh)));
     for (const [s, v] of g.af) add(s, v);
     for (const r of g.ru) if (r && RUNES[r]) add(RUNES[r][1], RUNES[r][2]);
     const rw = runeword(g);
@@ -330,7 +332,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {

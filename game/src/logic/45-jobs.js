@@ -91,7 +91,7 @@ function deriveStats(p) {
   // boss trophies (67-trophies.js): fixed % on gold, experience, speed, attack speed, magic find, HP, crit
   const tf = trophySum(ch);
   for (const k of ST_ORDER) E[k] = eff(ch.st[k]) + cm.st[k];
-  const wAtk = w ? (ITEMS[w.id].base.atk || 0) * (1 + 0.1 * w.enh) : 0;
+  const wAtk = w ? (ITEMS[w.id].base.atk || 0) * enhMul(w.enh) : 0;
   const sc = scaleOf(ch, wk);
   let core = SFX.atk[0] + SFX.atk[1] * lv;
   for (const k of Object.keys(sc)) core += sc[k] * E[k];
@@ -104,7 +104,7 @@ function deriveStats(p) {
     atk0: ((core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk) * (1 + JOB_PROGRESS.atk * jl),
     core, cm,
     def: Math.round((Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def)) * (1 + JOB_PROGRESS.def * jl)),
-    crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh : 0) + b.crit + tf.crit),
+    crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh * ENH_CRIT : 0) + b.crit + tf.crit),
     critd: SFX.critd[0] + SFX.critd[1] * luk + b.critd / 100,
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
     ls: Math.min(15, b.ls), spd0: BASE_SPD * (1 + (Math.min(40, b.spd) + tf.move) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,

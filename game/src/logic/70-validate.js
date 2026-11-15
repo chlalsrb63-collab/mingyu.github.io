@@ -337,6 +337,7 @@ export function validateAction(S, pid, a) {
       if (!g) return bad("장착한 장비가 없습니다");
       if (isJewel(g.id)) return bad("장신구는 강화할 수 없습니다");
       if (g.enh >= 10) return bad("최대 강화 단계입니다");
+      if (g.cu === 1) return bad("저주받은 장비는 강화할 수 없습니다 — 저주 해제 주문서로 먼저 풀어 주세요");
       if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
       const c = enhCost(g);
       if (ch.gold < c.gold) return bad("골드가 부족합니다");
@@ -344,6 +345,13 @@ export function validateAction(S, pid, a) {
       // b: 1 adds a 축복 강화석 (+10 %p, a failure never drops a step)
       if (a.b !== undefined && a.b !== 0 && a.b !== 1) return bad("잘못된 요청입니다");
       if (a.b === 1 && countItem(ch, "stone_b") < 1) return bad("축복 강화석이 없습니다");
+      return OK;
+    }
+    case "uncurse": {
+      const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
+      if (!g || g.cu !== 1) return bad("저주받은 장비가 아닙니다");
+      if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
+      if (countItem(ch, "uncurse") < 1) return bad("저주 해제 주문서가 없습니다");
       return OK;
     }
     case "sit": return OK;

@@ -38,13 +38,13 @@ export function itemName(entry) {
   if (Charms.isCharm(entry)) return Charms.charmName(entry);       // a charm's name comes from its wire, not ITEMS (charms.js)
   const it = G.defs.items[entry.id];
   const word = entry.lg ? G.defs.legend[entry.lg][0] : entry.set ? G.defs.sets[entry.set].name : entry.af && entry.af.length ? G.defs.affix[entry.af[0][0]][1] : "";
-  return (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name;
+  return (entry.cu === 1 ? "저주받은 " : "") + (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name;
 }
 export function itemDesc(entry) {
   const it = G.defs.items[entry.id];
   const e = entry.enh || 0;
   if (it.base) {
-    const base = Object.keys(it.base).map((k) => statText(k, k === "spd" || k === "crit" ? it.base[k] : Math.round(it.base[k] * (1 + 0.1 * e))));
+    const base = Object.keys(it.base).map((k) => statText(k, k === "spd" || k === "crit" ? it.base[k] : Math.round(it.base[k] * (1 + (G.defs.enhPct ? G.defs.enhPct[e] : 10 * e) / 100))));
     if (it.cls) base.push(`${G.defs.wkinds[it.wk].name} · ${G.defs.classes[it.cls].name} 전용`);
     base.push(`Lv.${it.req}`);
     return base.join(" · ");

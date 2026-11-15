@@ -59,7 +59,7 @@ export function renderShop(s) {
 export function renderSmith(s) {
   const it = G.defs.items, list = $("#smith-list");
   list.textContent = "";
-  const stones = countItem("stone");
+  const stones = countItem("stone"), scrolls = countItem("uncurse");
   let any = false;
   for (const k of G.defs.slots) {
     const g = s.eq[k];
@@ -71,9 +71,17 @@ export function renderSmith(s) {
     tx.style.color = Art.RARITY_COL[g.q || 0];
     row.append(img, tx);
     if (g.enh >= 10) tx.append(el("small", "", "최대 강화 단계입니다"));
-    else {
+    else if (g.cu === 1) {
+      // a failed try cursed it (rules 75 "enh"): only a 저주 해제 주문서 opens it again
+      const cl = el("small", "", `저주받음 · 저주 해제 주문서가 있어야 다시 강화할 수 있습니다 (보유 ${scrolls})`);
+      cl.style.color = "#ff9a8a"; tx.append(cl);
+      const b = el("button", "", "저주 해제");
+      b.disabled = scrolls < 1;
+      b.addEventListener("click", () => act({ t: "uncurse", k }));
+      row.append(b);
+    } else {
       const c = s.enh[k];
-      tx.append(el("small", "", `${SLOT_NAME[k]} · 성공률 ${G.defs.enh[g.enh]}% · ${c.gold.toLocaleString()}G · 강화석 ${c.stone}개 (보유 ${stones})`));
+      tx.append(el("small", "", `${SLOT_NAME[k]} · 성공률 ${Math.min(100, G.defs.enh[g.enh] + (g.cu === 2 ? G.defs.enhUc || 10 : 0))}%${g.cu === 2 ? " (저주 해제 보너스)" : ""} · ${c.gold.toLocaleString()}G · 강화석 ${c.stone}개 (보유 ${stones})`));
       const pv = pityLine(s, g);
       if (pv) tx.append(pv);
       const b = el("button", "", "강화");

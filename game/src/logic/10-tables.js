@@ -37,7 +37,8 @@ const ITEMS = {
   charm_nail: { name: "참틀 확장못", type: "mat", price: 0, desc: "주아나에게 가져가면 골드와 함께 참 보드의 칸을 하나 연다." },
   scr_job: { name: "전직 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 모험가로 돌아간다. 걸었던 직업의 직업 레벨은 그대로 남는다." },
   scr_lvl: { name: "레벨 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 레벨과 능력치가 1로 돌아간다. 숙련, 장비, 골드, 직업 레벨은 남는다." },
-  stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다." },
+  stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다. 강화할 때마다 쓴다." },
+  uncurse: { name: "저주 해제 주문서", type: "mat", price: 2500, desc: "대장장이에게 가져가면 강화에 실패해 저주받은 장비를 푼다. 풀린 장비의 다음 강화는 성공 확률이 10%p 오른다." },
   recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 버드나무광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
   fish_s: { name: "송사리", type: "fish", cook: "food_s", price: 30, desc: "흔한 물고기. 모닥불에서 구울 수 있다." },
@@ -133,8 +134,14 @@ const FILTER_Q = [0, 1, 2];
 /** How often a pet runs for something. */
 const PET_MS = 300;
 
-const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1", "w_h_1", "h_1", "a_1", "g_1", "b_1"];
-const ENH_RATE = [100, 95, 90, 80, 70, 55, 45, 35, 25, 15];
+const SHOP = ["hp_s", "hp_m", "hp_l", "mp_s", "mp_m", "mp_l", "recall", "camp", "stone", "uncurse", "feather", "sc_atk", "sc_def", "sc_xp", "pet_chick", "pet_bat", "pet_wisp", "w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1", "w_h_1", "h_1", "a_1", "g_1", "b_1"];
+// success % of the try from +n to +n+1: up to +3 always succeeds (owner, job-freedom.md §8)
+const ENH_RATE = [100, 100, 100, 80, 70, 55, 45, 35, 25, 15];
+// base-stat bonus % at +n: ~4 %/step to +3, ~2.5 % to +6, ~2 % to +10 (low and high players stay close)
+const ENH_PCT = [0, 4, 8, 12, 14.5, 17, 19.5, 21.5, 23.5, 25.5, 27.5];
+const enhMul = (e) => 1 + ENH_PCT[e | 0] / 100;
+// weapon crit % per step; a lifted curse gives the next try this many %p
+const ENH_CRIT = 0.5, ENH_UNCURSE = 10;
 
 // ── the cosy side: campfires, fishing, guilds
 /** Campfires that always burn, by map, in tiles. */

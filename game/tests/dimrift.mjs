@@ -396,7 +396,7 @@ const dimIds = (S) => Object.keys(S.dims);
   // a character saved inside wakes in town; the old sheet (v8) gains a rift record
   const old = L.newChar("옛날", "mage", []); delete old.dim; old.v = 8;
   L.addPlayer(S, "old", old);
-  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0 }); assert.equal(S.players.old.ch.v, 18);
+  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0 }); assert.equal(S.players.old.ch.v, 19);
   const odd = L.newChar("이상", "mage", []); odd.dim = { day: "x", n: -5 };
   L.addPlayer(S, "odd", odd);
   assert.deepEqual(S.players.odd.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0 });
@@ -595,11 +595,11 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   for (let d = 1; d < 7; d++) assert.equal(X.weekOf(MONDAY + d * 86400000), X.weekOf(MONDAY), "one week, seven days");
   // old sheets (v13: a daily count only) and odd ones
   const fresh = { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0 };
-  assert.deepEqual(L.newChar("새단수", []).dim, fresh); assert.equal(L.newChar("새단수", []).v, 18);
+  assert.deepEqual(L.newChar("새단수", []).dim, fresh); assert.equal(L.newChar("새단수", []).v, 19);
   const S = world();
   const old = L.newChar("옛단수", []); old.v = 13; old.dim = { day: 20000, n: 2 };
   L.addPlayer(S, "o13", old);
-  assert.deepEqual(S.players.o13.ch.dim, { ...fresh, day: 20000, n: 2 }, "a v13 sheet keeps its count and starts the ladder at 1"); assert.equal(S.players.o13.ch.v, 18);
+  assert.deepEqual(S.players.o13.ch.dim, { ...fresh, day: 20000, n: 2 }, "a v13 sheet keeps its count and starts the ladder at 1"); assert.equal(S.players.o13.ch.v, 19);
   assert.deepEqual(X.dimClean({ t: 50, best: 3, ms: 9e9, wb: 99, bw: 99, wk: -3 }), { ...fresh, t: 4, best: 3, ms: D.limit, wb: TR.weekly.max, bw: 3 }, "never more unlocked than one past the best");
   assert.deepEqual(X.dimClean({ t: "x", best: 5000, ms: 1234 }), { ...fresh, t: 1, best: TR.max, ms: 1234 });
   assert.deepEqual(X.dimClean({ ms: 5000 }), fresh, "no time without a clear"); assert.deepEqual(X.dimClean("junk"), fresh);

@@ -65,3 +65,11 @@ Goal (owner): one character can eventually play every job. Builds on Codex's job
   `self.sk` row[3] is 0 for actives out of the loadout; a passive row's flag follows the loadout.
   `defs.jf = { lo: [5, 4], scroll: {job, lvl}, cost: {job: [base, perLv], lvl: [base, perLv]}, quest }`.
 - Client to do: loadout editor in the skill window, the two reset buttons at the 전직관, the off-slot picker.
+
+## As built — gear enhancement (§8; sheet v19)
+- `ENH_RATE` 100 100 100 80 70 55 45 35 25 15; `ENH_PCT` [0,4,8,12,14.5,17,19.5,21.5,23.5,25.5,27.5] via `enhMul` (40 stats,
+  45 weapon atk); weapon crit `ENH_CRIT` 0.5/step. Each try still costs gold + 강화석 1/2/3 (`enhCost`).
+- Failure: one step down and `g.cu = 1` (cursed; `enh` refused). `{t:"uncurse", k}` at the smith with 1 `uncurse`
+  저주 해제 주문서 (잡화점 2,500G) → `cu = 2`: the next try +`ENH_UNCURSE` 10 %p, then `cu` goes. Cursed gear still works.
+  A 축복 강화석 failure keeps the step and brings no curse (chosen — tell the owner). Pity gauges unchanged.
+- Wire: gear objects carry `cu`; `defs.enhPct / enhCrit / enhUc`. Client: smith rows (저주 해제 button), "저주받은" name prefix.
