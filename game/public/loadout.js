@@ -5,13 +5,14 @@
  */
 import { G, el } from "./state.js";
 import { act } from "./net.js";
+import { countItem } from "./actions.js";
 import { Sound } from "./audio.js";
 import { skillIconUrl } from "./skillicons.js";
 import { hoverTip } from "./windows.js";
 import { refreshUi } from "./hud.js";
 
 let draft = null, from = "", pick = "";   // pick: "a3" | "p0" | "x" — the slot waiting for a skill
-export const key = () => JSON.stringify([G.self?.lo, draft, pick]);
+export const key = () => JSON.stringify([G.self?.lo, G.self?.ske, G.defs.ske && countItem(G.defs.ske.item), draft, pick]);
 
 export function renderLoadout(box, s) {
   box.textContent = "";
@@ -67,4 +68,25 @@ export function renderLoadout(box, s) {
   go.addEventListener("click", () => { Sound.play("ok"); const m = { t: "lo", a: draft.a, p: draft.p }; if (lo[4]) m.x = draft.x; act(m); });
   rs.addEventListener("click", () => { draft = null; Sound.play("close"); refreshUi(); });
   const bar = el("div", "lo-bar"); bar.append(go, rs); box.append(bar);
+  skeSection(box, s, actives);
+}
+/** 스킬 강화 (rules 48-skill-enh.js): +n per active skill, a 스킬 강화석 a try, town or campfire only (the server decides). */
+function skeSection(box, s, actives) {
+  const D = G.defs.ske, SK = G.defs.skills;
+  if (!D || !actives.length) return;
+  const have = countItem(D.item), stoneName = G.defs.items[D.item] ? G.defs.items[D.item].name : D.item;
+  box.append(el("b", "lo-head", "스킬 강화"), el("p", "hint", `${stoneName} 1개로 한 번 (보유 ${have}). +3까지는 반드시 성공, 그 뒤 실패하면 돌만 사라집니다. 한 단계마다 위력 +${D.pct}%.`));
+  for (const id of actives) {
+    const n = (s.ske && s.ske[id]) | 0, r = el("div", "lo-row");
+    const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(id);
+    r.append(ic, el("span", "", `${SK[id].name} ${n ? "+" + n : ""}`));
+    if (n >= D.max) r.append(el("small", "", "최대"));
+    else {
+      const b = el("button", "btn small", `강화 ${D.rate[n]}%`);
+      b.disabled = have < 1;
+      b.addEventListener("click", () => { Sound.play("ok"); act({ t: "ske", id }); });
+      r.append(b);
+    }
+    box.append(r);
+  }
 }

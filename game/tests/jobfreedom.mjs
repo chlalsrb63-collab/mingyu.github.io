@@ -165,4 +165,34 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
 
 // ── the scrolls exist, in Korean
 assert.equal(D.items.scr_job.name, "전직 초기화 주문서"); assert.equal(D.items.scr_lvl.name, "레벨 초기화 주문서");
+// ── 스킬 강화 (§7): +1..+3 sure, a failure eats only the stone, +2.5 % a step, town or campfire only
+{
+  const W = world({ wk: "sword" });
+  const act = W.self().sk.find((r) => D.skills[r[0]].kind !== "p");
+  assert.ok(act, "a sword hero knows an active");
+  const id = act[0];
+  W.npc("smith");
+  assert.equal(W.act({ t: "ske", id }).ok, false, "needs the stone");
+  W.ch.inv.push({ id: "ske_stone", n: 99 });
+  const passive = Object.keys(D.skills).find((k) => D.skills[k].kind === "p");
+  assert.equal(W.act({ t: "ske", id: passive }).ok, false, "passives can't be enhanced");
+  for (let i = 0; i < 3; i++) assert.ok(W.act({ t: "ske", id }).ok);
+  assert.equal(W.ch.ske[id], 3, "safe to +3");
+  let fails = 0;
+  for (let i = 0; i < 300 && W.ch.ske[id] < 10; i++) { const n = W.ch.ske[id]; W.act({ t: "ske", id }); if (W.ch.ske[id] === n) fails++; else assert.equal(W.ch.ske[id], n + 1); }
+  assert.ok(fails > 0, "from +4 it can fail, and a failure keeps the level");
+  assert.equal(W.ch.ske[id], 10);
+  assert.equal(W.act({ t: "ske", id }).ok, false, "+10 is the top");
+  assert.deepEqual(W.self().ske, { [id]: 10 });
+  assert.equal(D.ske.rate.length, 10); assert.equal(D.ske.pct * 10, 25);
+  // the field is no place for it; an old sheet gets an empty book, junk is cleaned
+  W.go("meadow"); W.ch.ske[id] = 5;
+  assert.equal(W.act({ t: "ske", id }).ok, false, "town or campfire only");
+  const S2 = L.setup(), old = JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID)));
+  old.ske = { [id]: 99, [passive]: 3, nope: 2 };
+  L.addPlayer(S2, "old@s1", old);
+  assert.deepEqual(S2.players["old@s1"].ch.ske, { [id]: 10 });
+  delete old.ske; L.addPlayer(S2, "older@s1", old);
+  assert.deepEqual(S2.players["older@s1"].ch.ske, {});
+}
 console.log("jobfreedom: ok");

@@ -619,6 +619,7 @@ export function applyAction(S, pid, a) {
     // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
     case "blk": case "w": case "wk": socialApply(S, p, a); break;
     case "job_reset": case "lv_reset": case "lo": jfApply(S, p, a); break;
+    case "ske": skeApply(S, p, a); break;
     case "wsw": {
       // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops
       [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];

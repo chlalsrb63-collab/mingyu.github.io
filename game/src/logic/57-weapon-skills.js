@@ -42,7 +42,7 @@ function pasOn(p, id) {
 function skGrow(ch, sk) {
   const m = Math.min(...skWks(sk).map((k) => ch.wm[k].lv));
   const rank = Math.max(0, (ch.jp?.lv || 0) - (sk.jobNeed || 0));
-  return (1 + SK_GROW * Math.max(0, m - sk.need)) * (sk.job ? 1 + rank * SK_GROW : 1);
+  return (1 + SK_GROW * Math.max(0, m - sk.need)) * (sk.job ? 1 + rank * SK_GROW : 1) * skeMul(ch, sk);
 }
 /** Resonance full: the next staff skill is free and hits harder. */
 const resoReady = (p, sk) => skOf(sk, "staff") && (p.reso | 0) >= SKILL.reso.n && pasOn(p, "reso");

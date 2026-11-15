@@ -406,6 +406,7 @@ const ITEMS = {
   scr_job: { name: "전직 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 모험가로 돌아간다. 걸었던 직업의 직업 레벨은 그대로 남는다." },
   scr_lvl: { name: "레벨 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 레벨과 능력치가 1로 돌아간다. 숙련, 장비, 골드, 직업 레벨은 남는다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다. 강화할 때마다 쓴다." },
+  ske_stone: { name: "스킬 강화석", type: "mat", price: 0, desc: "마을이나 모닥불 곁에서 액티브 스킬을 강화한다 (+10까지, +3까지는 반드시 성공). 실패하면 이 돌만 사라진다." },
   uncurse: { name: "저주 해제 주문서", type: "mat", price: 2500, desc: "대장장이에게 가져가면 강화에 실패해 저주받은 장비를 푼다. 풀린 장비의 다음 강화는 성공 확률이 10%p 오른다." },
   recall: { name: "귀환 주문서", type: "scroll", price: 60, desc: "2초 동안 읽으면 버드나무광장으로 돌아간다. 움직이거나 피해를 입으면 취소된다." },
   camp: { name: "모닥불 꾸러미", type: "camp", price: 120, desc: "사용하면 그 자리에 3분 동안 모닥불을 피운다. 곁에 앉아 쉬면 빠르게 회복하고 온기를 얻는다." },
@@ -6083,7 +6084,7 @@ export function newChar(name, look, wk) {
   const ch = {
     v: 19, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
-    jobs: {}, lo: {},
+    jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
@@ -6234,6 +6235,8 @@ function migrate(ch) {
   // The integrated sheet (v16) holds rift and profession records. cleanJobs also adds hammer mastery.
   // boss trophies (v17): known kinds only, each once (67-trophies.js)
   ch.tro = Array.isArray(ch.tro) ? [...new Set(ch.tro.filter((k) => typeof k === "string" && Object.hasOwn(TROPHIES, k)))] : [];
+  // skill enhancement (v19): { [active skill id]: 1..10 } (48-skill-enh.js)
+  skeClean(ch);
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
   ch.v = Math.max(ch.v | 0, 19);
   return ch;
@@ -6365,7 +6368,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {
@@ -7354,6 +7357,45 @@ function jfApply(S, p, a) {
 function jfScroll(p, k) {
   if (addItem(p.ch, JF_SCROLL[k], 1)) p.gain.push(["item", JF_SCROLL[k], 1, 0]);
 }
+// ─────────────────────────────────────────────────────────────────────────────
+// 스킬 강화 — active skill enhancement +1..+10 (owner, docs/design/job-freedom.md §7)
+// A rare 스킬 강화석 per try; +1..+3 always succeed; a failure eats the stone only (the level stays).
+// Each step adds a flat SKE_PCT % to the skill's power (+10 = +25 %). Sheet: ch.ske = { [skill id]: 1..10 }.
+// ─────────────────────────────────────────────────────────────────────────────
+// success % of the try from +n to +n+1 (proposed to the owner: steep, for hardcore players)
+const SKE_RATE = [100, 100, 100, 80, 65, 50, 35, 25, 15, 10];
+const SKE_PCT = 2.5, SKE_MAX = 10, SKE_ITEM = "ske_stone";
+const skeOf = (ch, id) => (ch.ske && ch.ske[id]) | 0;
+/** Skill power from enhancement (57 skGrow multiplies by it). */
+const skeMul = (ch, sk) => 1 + (SKE_PCT / 100) * skeOf(ch, sk.id);
+/** migrate(): learned-or-not is not checked (a job reset keeps it); known active skills, whole steps 1..10. */
+function skeClean(ch) {
+  const out = {};
+  if (isObj(ch.ske)) for (const id of Object.keys(ch.ske)) {
+    const n = Math.floor(Number(ch.ske[id]) || 0);
+    if (Object.hasOwn(SKILL, id) && SKILL[id].kind !== "p" && n > 0) out[id] = clamp(n, 1, SKE_MAX);
+  }
+  ch.ske = out;
+}
+/** {t:"ske", id}: a learned active skill, in a safe place (town or by a campfire), with a stone. */
+function skeValidate(S, p, a) {
+  const ch = p.ch, sk = typeof a.id === "string" && Object.hasOwn(SKILL, a.id) ? SKILL[a.id] : null;
+  if (!sk || sk.kind === "p" || !skillsFor(ch).includes(a.id)) return { ok: false, error: "배운 액티브 스킬만 강화할 수 있습니다" };
+  if (skeOf(ch, a.id) >= SKE_MAX) return { ok: false, error: "최대 강화 단계입니다" };
+  if (!jfSafe(S, p)) return { ok: false, error: "마을이나 모닥불 곁에서 강화할 수 있습니다" };
+  if (countItem(ch, SKE_ITEM) < 1) return { ok: false, error: "스킬 강화석이 없습니다" };
+  return { ok: true };
+}
+function skeApply(S, p, a) {
+  const ch = p.ch, n = skeOf(ch, a.id), name = SKILL[a.id].name;
+  takeItem(ch, SKE_ITEM, 1);
+  if (rnd(S) * 100 < SKE_RATE[n]) {
+    ch.ske[a.id] = n + 1;
+    toast(p, `[${name}] +${n + 1} 강화 성공! 위력 +${(SKE_PCT * (n + 1)).toFixed(1)}%`);
+    if (n + 1 >= 7) sys(S, `${ch.name}님이 [${name}] +${n + 1} 스킬 강화에 성공했습니다!`);
+  } else toast(p, `[${name}] 강화 실패... 스킬 강화석만 사라지고 단계는 그대로입니다.`);
+  p.dirty = true;
+}
 // ───────────────────────────── inventory & loot ─────────────────────────────
 
 /** Old clients asked for "W<tier>": the weapon of that tier of the kind in hand. */
@@ -8309,7 +8351,7 @@ function pasOn(p, id) {
 function skGrow(ch, sk) {
   const m = Math.min(...skWks(sk).map((k) => ch.wm[k].lv));
   const rank = Math.max(0, (ch.jp?.lv || 0) - (sk.jobNeed || 0));
-  return (1 + SK_GROW * Math.max(0, m - sk.need)) * (sk.job ? 1 + rank * SK_GROW : 1);
+  return (1 + SK_GROW * Math.max(0, m - sk.need)) * (sk.job ? 1 + rank * SK_GROW : 1) * skeMul(ch, sk);
 }
 /** Resonance full: the next staff skill is free and hits harder. */
 const resoReady = (p, sk) => skOf(sk, "staff") && (p.reso | 0) >= SKILL.reso.n && pasOn(p, "reso");
@@ -13819,6 +13861,7 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "job_reset": case "lv_reset": case "lo": return jfValidate(S, p, a);
+    case "ske": return skeValidate(S, p, a);
     case "wsw": {
       if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 무기를 바꿔 들 수 있습니다");
       if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
@@ -14458,6 +14501,7 @@ export function applyAction(S, pid, a) {
     // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
     case "blk": case "w": case "wk": socialApply(S, p, a); break;
     case "job_reset": case "lv_reset": case "lo": jfApply(S, p, a); break;
+    case "ske": skeApply(S, p, a); break;
     case "wsw": {
       // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops
       [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];
@@ -15047,6 +15091,8 @@ function selfPayload(p) {
     wk2: ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "",
     // 직업 자유 (47-job-freedom.js): [[job, lv, xp]] every job walked; the loadout [actives, passives, off-job passive, set 1/0, off slot open 1/0]
     jobs: Object.keys(ch.jobs).map((j) => [j, ch.jobs[j].lv, ch.jobs[j].xp]),
+    // skill enhancement { [id]: +n } (48-skill-enh.js)
+    ske: ch.ske,
     lo: (() => { const lo = loOf(ch); return [lo.a, lo.p, lo.x, ch.lo[ch.job] ? 1 : 0, loOpen(ch) ? 1 : 0]; })(),
     gold: ch.gold,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
@@ -15246,6 +15292,7 @@ export function defs() {
     jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
+    ske: { rate: SKE_RATE, pct: SKE_PCT, max: SKE_MAX, item: SKE_ITEM },
     jf: { lo: [LO_MAX.a, LO_MAX.p], scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST },
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)

@@ -73,3 +73,9 @@ Goal (owner): one character can eventually play every job. Builds on Codex's job
   저주 해제 주문서 (잡화점 2,500G) → `cu = 2`: the next try +`ENH_UNCURSE` 10 %p, then `cu` goes. Cursed gear still works.
   A 축복 강화석 failure keeps the step and brings no curse (chosen — tell the owner). Pity gauges unchanged.
 - Wire: gear objects carry `cu`; `defs.enhPct / enhCrit / enhUc`. Client: smith rows (저주 해제 button), "저주받은" name prefix.
+
+## As built — skill enhancement (§7; `48-skill-enh.js`, sheet v19)
+- `{t:"ske", id}`: a learned active, town or by a campfire (`jfSafe`), 1 `ske_stone` 스킬 강화석 per try. `SKE_RATE`
+  (proposed) 100 100 100 80 65 50 35 25 15 10; a failure eats the stone only. `skGrow` × (1 + 2.5 % × n) → +10 = +25 %.
+- Sheet `ch.ske = { [id]: 1..10 }` (kept through job/level resets); wire `self.ske`, `defs.ske = {rate, pct, max, item}`.
+- Client: "스킬 강화" list under the K window's 스킬 칸 tab. Stone sources: none yet (gear/content task, §6 of HANDOFF).

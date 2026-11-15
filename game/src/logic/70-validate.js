@@ -433,6 +433,7 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "job_reset": case "lv_reset": case "lo": return jfValidate(S, p, a);
+    case "ske": return skeValidate(S, p, a);
     case "wsw": {
       if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 무기를 바꿔 들 수 있습니다");
       if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
