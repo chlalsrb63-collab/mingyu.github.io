@@ -167,10 +167,6 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #status .meter b { font: var(--t10)/8px var(--pix9); font-weight: normal; color: var(--cream); text-align: right; white-space: nowrap; text-shadow: 1px 1px 0 #000; }
 #status .bar { position: relative; height: 8px; margin: 0; background: #000; border: 1px solid var(--ink); box-shadow: none; border-radius: 0; }
 #status .bar.hp i:not(.trail) { background: linear-gradient(var(--hp-hi) 0 1px, var(--hp) 1px 4px, var(--hp-lo) 4px); }
-#status .meter.gg[hidden] { display: none; }
-#status .meter.gg { --gg: #ff8a3a; }
-#status .meter.gg em { color: var(--gg); }
-#status .bar.gg i { background: var(--gg); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), inset 0 -2px 0 rgba(0,0,0,.35); }
 /* the job level row under the weapon mastery: same size and look as one mastery cell, in brass */
 #jr { --wm: #d8aa4a; --wm-hi: #f6dc98; --wm-lo: #8a6a24; flex: 0 0 100%; max-width: 200px; display: grid; grid-template-columns: 20px 1fr; grid-template-rows: 12px 6px; gap: 2px 4px; align-items: center; cursor: help; }
 #jr .wi { grid-row: 1 / 3; width: 20px; height: 20px; padding: 1px; box-sizing: border-box; image-rendering: pixelated; background: var(--scr); border: 1px solid var(--b-mid); }
@@ -194,6 +190,7 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 /* the side of the unit frame never gets narrower than the class gauge, so the gauge always shows whole */
 .st-side { flex: 1 1 124px; min-width: 124px; display: flex; flex-wrap: wrap; gap: 3px 4px; align-items: center; align-content: center; }
 #cg-box { flex: none; background: var(--scr); line-height: 0; cursor: help; border-width: 2px; border-image-width: 2px; }
+#cg-box[hidden] { display: none; }
 #cgauge { width: 120px; height: 20px; image-rendering: pixelated; display: block; }
 #st-buffs { flex: 1 1 60px; display: flex; flex-wrap: wrap; gap: 2px; min-width: 0; max-height: 38px; overflow: hidden; }
 #st-buffs:empty { display: none; }

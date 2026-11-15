@@ -76,7 +76,6 @@ export function hudBars() {
   $("#st-mp").style.width = `${clamp((me.mp / s.mmp) * 100, 0, 100)}%`;
   $("#st-hpt").textContent = `${me.hp}/${s.mhp}`;
   $("#st-mpt").textContent = `${me.mp}/${s.mmp}`;
-  hudGauge(...(me.gg || [0, 0]));
 }
 /** The purse under the bars: the coin and the sum, with a short +N / -N that floats off when it changes. */
 let hudGold = null;
@@ -133,25 +132,6 @@ function hudJobBar(s) {
   jr.title = `직업 Lv.${lv} · ${need > 0 ? `${xp.toLocaleString()} / ${need.toLocaleString()}` : "최대"}`;
   if (jobLv && lv > jobLv) { jr.classList.remove("pop"); void jr.offsetWidth; jr.classList.add("pop"); }
   jobLv = lv;
-}
-/** Job special gauge (특수게이지) under the mana bar: the gauge each job spends. No rules yet: the server will append
- *  `[cur, max]` as me[12], me[13] at the END of the `me` snapshot array (net.js turns it into G.me.gg = [cur, max]);
- *  until then (or for a job not listed) the row stays hidden. name <= 2 Korean chars (label column). */
-const GA = { swordsman: ["분노", "#ff8a3a"], thief: ["집중", "#c9a0ff"], lancer: ["기세", "#ff7ab8"], wizard: ["마력", "#35d6c4"], warlock: ["저주", "#a35cf0"], archer: ["조준", "#e8e05a"], hammer: ["투지", "#ffa0a0"] };
-export const JOB_GAUGES = {
-  ...GA, mercenary: GA.hammer, paladin: ["신앙", "#9ad0ff"], destroyer: ["파괴", "#ff6a3a"],
-  spellblade: GA.wizard, tracker: GA.archer, dragoon: GA.lancer, hexblade: GA.warlock, darkknight: GA.swordsman,
-  bladedancer: GA.swordsman, trickster: GA.thief, spellspear: GA.lancer, runesage: GA.wizard, runearcher: GA.archer,
-};
-export function hudGauge(cur, max) {
-  const gg = $("#st-gg"), def = JOB_GAUGES[G.self && G.self.job];
-  gg.hidden = !def || !(max > 0);
-  if (gg.hidden) return;
-  gg.style.setProperty("--gg", def[1]);
-  $("#st-gg-n").textContent = def[0];
-  $("#st-gg-fill").style.width = `${clamp((cur / max) * 100, 0, 100)}%`;
-  $("#st-gg-t").textContent = `${Math.floor(cur)}/${max}`;
-  gg.title = `${def[0]} ${Math.floor(cur)} / ${max}`;
 }
 /** The weapon-mastery strip beside the bars (mastery.js); a level gained flashes it and chimes. */
 function hudMastery(s) {
@@ -277,6 +257,7 @@ export function section(text, glyph) {
 }
 
 const cgauge = $("#cgauge");
+const cgBox = $("#cg-box");
 /** The sky widget over the minimap: the phase and hour (sun or moon), and the weather. */
 const skyHud = { at: 0, key: "" };
 function skyTick(t) {
@@ -316,6 +297,8 @@ export function hudTick(t) {
   if (!s) return;
   // the weapon gauge (weapongauge.js); a fault there must never stop the frame
   try { drawWeaponGauge(cgauge, s, G.defs, t); } catch (err) { if (!hudTick.warned) { hudTick.warned = true; console.warn("weapon gauge:", err); } }
+  // no weapon passive learned yet (mastery 10): no empty black box under the job row
+  if (cgBox.hidden !== !s.cr) cgBox.hidden = !s.cr;
   QS.tick(t);
   dashTick(t);
   if (tip.from && (!tip.from.isConnected || tip.from.closest("[hidden]"))) hideTip();
