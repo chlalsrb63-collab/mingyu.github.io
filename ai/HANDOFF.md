@@ -177,3 +177,14 @@ cosmetics are titles only (need wardrobe art) · no side quests yet from service
 - PC plugins (superpowers, frontend-design) are welcome; for game UI the pixel-art rules
   (`.claude/skills/pixel-art/rules/`) and the GBA HUD style win over generic web design.
 - Local tools: `graphify update game` once (AGENTS token rule 0); codebase-memory per `docs/LOCAL_SETUP.md` §6.
+
+## 0.2 Paused at the usage limit (2026-11-15 night, integrator session 2)
+Main is green (last full run 58/58). The play server on 8830 is the frozen worktree `C:\Users\mankyu\Desktop\tt-play-101` (tag alpha-1.0.1),
+using the persist dir `game/.wrangler/play`, so merges to main don't touch it. Unmerged agent branches, stopped mid-way (check each, finish, test, merge):
+- `worktree-agent-aff621ff5bf7e238a` UX pass 2: window-state memory, tracker collapse, minimap filters, whisper key, first-time hints, settings tabs,
+  drag & drop, chat item links, theme contrast (8 commits plus 2 uncommitted files: hud.css theme contrast fixes).
+- `worktree-agent-a8d048b05e7609c67` HD-2D post-fx (`public/postfx.js`: bloom, tilt-shift, grading, shafts, a 끔/보통/높음 setting), 3 commits; docs not written.
+- `worktree-agent-a6f4a39dde6fb34e3` life balance P7 + life items P8, 3 commits.
+- `worktree-agent-a95efc88d42be57df` balance 2 (smooth the Lv.69–109 ramp keeping ≈45 h total; gear tier 6 at Lv.181), only 1 uncommitted file — redo.
+Owner decisions this evening: co-op rewards are once a day, unpaid replays allowed; ~45 h to Lv.200; tier 6 at Lv.181; 칼날 소용돌이 hits 3;
+the 도적's high single-target is intended. Next after those: story arcs A3–A6 (audit P4–P5), main chapters (P6), the cosmetics packages after Codex's 64 px heroes.
