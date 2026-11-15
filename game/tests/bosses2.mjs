@@ -189,7 +189,7 @@ function rewards(F, k, set, weapons) {
 
 {
   // 밤장막 박쥐군주
-  assert.deepEqual(X.CHAL_KEYS, ["boss", "abyssboss", "cloakbat", "bloomwhale"], "the rotation, new bosses last (their week bits)");
+  assert.deepEqual(X.CHAL_KEYS.slice(0, 4), ["boss", "abyssboss", "cloakbat", "bloomwhale"], "the rotation, new bosses last (their week bits)");
   const F = scripted("cloakbat", 25), { W, ps, rt, mob, max, B } = F;
   assert.ok(F.ev().some((e) => e[0] === "bt" && e[1] === 1 && e[7] === 1309), "장막 휘감기: a 150° cone");
   // 비행 under 70 %: the shared mark, bats that feed it

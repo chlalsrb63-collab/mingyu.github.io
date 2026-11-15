@@ -1,4 +1,4 @@
-<!doctype html><meta charset="utf-8"><title>monsters</title>
+<!doctype html><meta charset="utf-8"><title>monsters</title><link rel="icon" href="data:,">
 <body style="margin:0;background:#1c1a22;color:#ddd;font:12px monospace"><canvas id="c"></canvas>
 <script type="module">
 import * as MA from "./mobart.js";
@@ -7,9 +7,9 @@ const q = new URLSearchParams(location.search);
 const mode = q.get("m") || "frames", z = +(q.get("z") || 3);
 const ZONE = { meadow: "#6aa864", forest: "#3f6a48", crypt: "#4a4658", city: "#565a68", sewer: "#3c4a46", cave: "#39406a", abyss: "#2a1c2c", maple: "#6a5a2c", frostkeep: "#708299", coast: "#c8b88a", desert: "#c89a5a", jungle: "#3a6a4a", east: "#8a6a6a" };
 const ZK = {
-  meadow: ["twinhare", "gutfrog", "eyecrow", "lambmaw"], forest: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface"],
-  crypt: ["ratking", "bonehound", "toadbrood", "batcluster"], city: ["pigeonmass", "doghead", "squidrat", "catsplit", "fishwalker"],
-  sewer: ["leechmaw", "gatorhalf", "crabskull", "eelknot"], cave: ["spiderhand", "moleworm", "bearmaw", "owlstare", "boss"],
+  meadow: ["twinhare", "gutfrog", "eyecrow", "lambmaw", "wickhare", "wickregent"], forest: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface", "burrlynx", "knotwidow"],
+  crypt: ["ratking", "bonehound", "toadbrood", "batcluster", "bellnewt", "knellkeeper"], city: ["pigeonmass", "doghead", "squidrat", "catsplit", "fishwalker", "spoolsnipe", "loomcolossus"],
+  sewer: ["leechmaw", "gatorhalf", "crabskull", "eelknot", "sluiceeel", "sluiceleviathan"], cave: ["spiderhand", "moleworm", "bearmaw", "owlstare", "boss", "prismmole", "prismcantor"],
   abyss: ["twingoat", "horsehalf", "lionhand", "serpentwing", "sowseer", "abyssboss", "chest"],
   maple: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose", "rotstag"],
   frostkeep: ["rimehare", "frostmoth", "crownstag"],
@@ -59,7 +59,8 @@ if (mode === "frames") {
   const off = document.createElement("canvas"); off.width = W; off.height = H;
   const o = off.getContext("2d");
   const el = +(q.get("el") || 0), tint = q.get("t") || null;
-  const defs = {}; for (const k of kinds) defs[k] = { sp: k, boss: k === "boss" || k === "abyssboss", tint };
+  const bosses = new Set(["boss", "abyssboss", "wickregent", "knotwidow", "knellkeeper", "loomcolossus", "sluiceleviathan", "prismcantor"]);
+  const defs = {}; for (const k of kinds) defs[k] = { sp: k, boss: bosses.has(k), tint };
   const props = new Map(), S3 = { props };
   const G = { me: { x: 0, y: 200, dead: false }, players: new Map(), mobs: new Map(), gone: new Map(), defs: { mobs: defs } };
   const cols = Math.min(kinds.length, +(q.get("cols") || 4));

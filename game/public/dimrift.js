@@ -10,7 +10,7 @@
  *   [x, y, 0 yours · 1 opened · 2 not yours]|0 chest, theme, [x, y]|0 master's hall, ward secs, revive secs]
  *   , tier (0: a boss challenge), challenge 0 | [boss index, 0 · 1 casting · 2 staggered, stagger gauge left %, half-secs left, enrage steps, tries, fury]]
  * rc = [id, secs, [[eid, name, 0 asked · 1 yes · 2 no · 3 away]…], lv, leader?, tier, boss index + 1 | 0]
- * dj = [secs, inside, gauge×10, lv, tier, boss index + 1 | 0]; self.dimr = [unlocked tier, best, its secs, full clears left today, weekly brackets, weekly boss bits]
+ * dj = [secs, inside, gauge×10, lv, tier, boss index + 1 | 0]; self.dimr = [unlocked tier, best, its secs, full clears left today, weekly brackets, weekly boss bits, best step + 1 per boss, rotation index]
  * (dr, the chest's result, is not drawn: the server's toasts say it)
  */
 import * as Art from "./dimart.js";
@@ -25,7 +25,7 @@ export function init(api) { A = api; window.__dim = st; }   // st exposed for au
 const D = () => (A.G.defs && A.G.defs.dim) || { themes: {}, pylons: {}, limit: 900000, party: 4, max: 4, rcMs: 20000 };
 const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, "0")}`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-/** defs().dim.chal.bosses row `i`: [key, name, level needed, the marked cast, pattern names]. */
+/** defs().dim.chal.bosses row `i`: [key, name, level needed, marked cast, patterns, reward bit, rotating]. */
 const chalDef = (i) => ((D().chal || {}).bosses || [])[i];
 /** A challenge's difficulty in words: "어려움 Lv.150" (`s` the step index of boss `i`). */
 const stepWord = (i, s) => { const c = D().chal || {}, st = ((chalDef(i) || [])[5] || [])[s | 0]; return st ? `${(c.stepNames || [])[s | 0] || ""} Lv.${st[0]}` : ""; };
@@ -227,13 +227,20 @@ function renderKeeper() {
     `주인을 쓰러뜨리면 파티원마다 보상 상자가 열립니다. 하루 첫 3번은 경험치를 모두 받습니다.` + (s && s.st ? `<br><span class="dim-n">정화한 균열: ${s.st.dim | 0}번</span>` : "");
   // 균열 단수 (up to what this hero has unlocked; the server checks the party) and the weekly boss challenge
   const r = (s && s.dimr) || [1, 0, 0, 0, 0, 0], tier = pickedTier(), ch = d.chal || { bosses: [] }, lvl = (s && s.lvl) || 0;
-  const pick = dj ? "" : `<div class="dim-tier"><button class="btn small" data-a="down"${tier <= 1 ? " disabled" : ""}>◀</button><b>${tier}단</b><button class="btn small" data-a="up"${tier >= r[0] ? " disabled" : ""}>▶</button></div>` +
-    `<div class="dim-rec">해금 ${r[0]}단 · 최고 ${r[1] ? `${r[1]}단 (${mmss(r[2])})` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음${r[4] ? ` · 주간 보너스 ${r[4] * ((d.tier && d.tier.every) || 5)}단까지 받음` : ""}</div>` +
-    ch.bosses.map(([k, name, need, cast, , steps], i) => `<div class="dim-chal"><span>주간 보스 도전 · <b>${esc(name)}</b> <em>${r[5] & (1 << i) ? "이번 주 큰 보상 받음" : "큰 보상 남음"}${r[6] && r[6][i] ? ` · 최고 ${esc((ch.stepNames || [])[r[6][i] - 1] || "")}` : ""}</em></span>` +
+  // dimr[6]: best step + 1 per boss; dimr[7]: this week's rotating boss. Row: [k, name, need, cast, pats, steps, reward bit, rotating]
+  const challenges = ch.bosses.map(([k, name, need, cast, , steps, bit, rotating], i) => {
+    if (rotating && i !== r[7]) return "";
+    const label = rotating ? "이번 주 순환 보스" : "주간 보스 도전";
+    const claimed = r[5] & (bit ?? (1 << i));
+    return `<div class="dim-chal"><span>${label} · <b>${esc(name)}</b> <em>${claimed ? "이번 주 큰 보상 받음" : "큰 보상 남음"}${r[6] && r[6][i] ? ` · 최고 ${esc((ch.stepNames || [])[r[6][i] - 1] || "")}` : ""}</em></span>` +
       // one button a difficulty step: its level, what it adds; greyed under the step's level (the server checks every member)
       (steps || [[0, need]]).map(([L, min], s) => `<button class="btn small" data-a="boss" data-k="${esc(k)}" data-s="${s}"${!lead || (lvl && lvl < min) ? " disabled" : ""} ` +
-        `title="Lv.${min}부터 · 골드·경험치 Lv.${L} 기준${s && ch.stepR ? ` · 큰 보상 강화석 +${Math.floor(ch.stepR.stone * s)}${Math.floor(ch.stepR.rune * s) ? ` · 룬 +${Math.floor(ch.stepR.rune * s)}` : ""}${Math.floor(ch.stepR.gear * s) ? ` · 장비 +${Math.floor(ch.stepR.gear * s)}` : ""}` : ""} · [${esc(cast)}]을(를) 무력화하세요">${esc((ch.stepNames || [])[s] || "도전")} ${L ? `Lv.${L}` : ""}</button>`).join("") + `</div>`).join("") +
+        `title="Lv.${min}부터 · 골드·경험치 Lv.${L} 기준${s && ch.stepR ? ` · 큰 보상 강화석 +${Math.floor(ch.stepR.stone * s)}${Math.floor(ch.stepR.rune * s) ? ` · 룬 +${Math.floor(ch.stepR.rune * s)}` : ""}${Math.floor(ch.stepR.gear * s) ? ` · 장비 +${Math.floor(ch.stepR.gear * s)}` : ""}` : ""} · [${esc(cast)}]을(를) 무력화하세요">${esc((ch.stepNames || [])[s] || "도전")} ${L ? `Lv.${L}` : ""}</button>`).join("") + `</div>`;
+  }).join("") +
     (ch.stepR ? `<div class="dim-step">난이도가 오를수록 보스가 강해지고 골드·경험치는 그 레벨 기준 · 큰 보상에 단계마다 강화석 +${ch.stepR.stone}</div>` : "");
+  const pick = dj ? "" : `<div class="dim-tier"><button class="btn small" data-a="down"${tier <= 1 ? " disabled" : ""}>◀</button><b>${tier}단</b><button class="btn small" data-a="up"${tier >= r[0] ? " disabled" : ""}>▶</button></div>` +
+    `<div class="dim-rec">해금 ${r[0]}단 · 최고 ${r[1] ? `${r[1]}단 (${mmss(r[2])})` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음${r[4] ? ` · 주간 보너스 ${r[4] * ((d.tier && d.tier.every) || 5)}단까지 받음` : ""}</div>` +
+    challenges;
   if ($("#dim-pick").dataset.k !== pick) { $("#dim-pick").innerHTML = pick; $("#dim-pick").dataset.k = pick; }
   $("#dim-open").hidden = !!dj;
   $("#dim-open").disabled = !lead;

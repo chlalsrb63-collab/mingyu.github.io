@@ -257,6 +257,13 @@ const MOBS = {
   spoolsnipe: { name: "실패부리 도요", lv: 16, hp: 368, atk: 44, def: 5, spd: 42, xp: 172, gold: [20, 42], aggro: 80, range: 52, cd: 1800, shot: true, fan: 92, bonusOptional: true },
   sluiceeel: { name: "쇠살 장어", lv: 24, hp: 945, atk: 77, def: 15, spd: 36, xp: 440, gold: [42, 80], aggro: 76, range: 20, cd: 1600, pool: 22, bonusOptional: true },
   prismmole: { name: "겹렌즈 두더지", lv: 27, hp: 1310, atk: 93, def: 18, spd: 34, xp: 600, gold: [54, 98], aggro: 84, range: 21, cd: 1500, fan: 100, slam: 32, bonusOptional: true },
+  // Weekly arena opponents, separate from the field boss roster and story fights.
+  wickregent: { name: "밀랍굴의 여왕 심지귀", lv: 19, hp: 6200, atk: 105, def: 17, spd: 35, xp: 1800, gold: [130, 230], aggro: 130, range: 24, cd: 1500, boss: true },
+  knotwidow: { name: "등불매듭 뿌리거미", lv: 22, hp: 8500, atk: 110, def: 21, spd: 38, xp: 2300, gold: [155, 270], aggro: 132, range: 27, cd: 1450, boss: true },
+  knellkeeper: { name: "장례종지기 툼벨", lv: 25, hp: 10000, atk: 125, def: 25, spd: 32, xp: 3100, gold: [195, 310], aggro: 134, range: 29, cd: 1600, boss: true },
+  loomcolossus: { name: "찢어진 직조탑 베틀부리", lv: 28, hp: 13000, atk: 136, def: 28, spd: 36, xp: 4100, gold: [225, 375], aggro: 136, range: 28, cd: 1450, boss: true },
+  sluiceleviathan: { name: "배수문을 삼킨 잠류아귀", lv: 32, hp: 15500, atk: 145, def: 31, spd: 34, xp: 5200, gold: [265, 435], aggro: 138, range: 30, cd: 1500, boss: true },
+  prismcantor: { name: "쌍결정 성가박쥐", lv: 36, hp: 19600, atk: 164, def: 34, spd: 38, xp: 6700, gold: [315, 510], aggro: 140, range: 28, cd: 1380, fly: true, boss: true },
   // 바람초원
   twinhare: { name: "쌍두 토끼", lv: 1, hp: 28, atk: 5, def: 0, spd: 26, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300 },
   gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80 },

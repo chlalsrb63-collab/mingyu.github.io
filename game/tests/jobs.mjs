@@ -905,7 +905,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.deepEqual([a.v, b.v], [20, 20]);
   assert.deepEqual(a.jp, { lv: 5, xp: 0 }, "a changed job without a job level starts at the signature level");
   assert.deepEqual(b.jp, { lv: 12, xp: 3 }, "a job level survives");
-  assert.deepEqual(b.dim, { day: 20000, n: 2, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: [0, 0, 0, 0] }, "the old rift record gains the tier ladder");
+  assert.deepEqual(b.dim, { day: 20000, n: 2, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }, "the old rift record gains the tier ladder");
   assert.deepEqual(a.dim, L.newChar("새", []).dim);
 }
 

@@ -334,6 +334,7 @@ const DIM_CHAL = {
   // `stepGap` levels under a step. Gold and experience follow the step's level; each step past the boss's own adds `stepR` × step.
   steps: [125, 150, 175, 200], stepMin: 3, stepGap: 10, stepR: { stone: 2, rune: 0.5, gear: 0.34 },
   stepNames: ["보통", "어려움", "지옥", "악몽", "심연"],
+  rotationBig: { gold: 220, xp: 0.16, stone: 5, rune: 1, gear: 1, gearQ: 2 },
   bosses: {
     boss: { theme: "crypt", cast: "차원 붕괴", pats: [["균열 탄막", "fan2"], ["붕괴의 고리", "rings"], ["균열 웅덩이", "pools"]] },
     abyssboss: { theme: "abyss", cast: "심연의 포효", pats: [["연쇄 돌진", "charge2"], ["도약 강타", "leapslam"], ["촉수 탄막", "fan3"]] },
@@ -364,9 +365,20 @@ const DIM_CHAL = {
           ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["고래 낙하", "dive"]] },
         { at: 0.1, cast: 1 },
       ] },
+    wickregent: { rotation: true, theme: "crypt", cast: "심지 태우기", pats: [["밀랍 돌진", "charge2"], ["녹아내린 심지", "pools"], ["불쏘시개", "cone", { ms: 1200, r: 88, half: 0.72 }]] },
+    knotwidow: { rotation: true, theme: "crypt", cast: "등불 삼키기", pats: [["가시 매듭", "adds", { kind: "burrlynx", n: 2, cap: 4 }], ["조여 드는 그물", "donut", { r0: 35, r: 98 }], ["천장 습격", "leapslam"]] },
+    knellkeeper: { rotation: true, theme: "crypt", cast: "마지막 장례종", pats: [["겹쳐 울리는 종", "rings"], ["메아리 탄막", "fan2"], ["장례 행렬", "mark", { ms: 2400, r: 29, n: 2 }]] },
+    loomcolossus: { rotation: true, theme: "cave", cast: "베틀 과부하", pats: [["태엽 사출", "fan2"], ["가로 절단", "cone", { r: 110, half: 0.5 }], ["세로 날실", "cone", { r: 94, half: 0.35, back: 1 }]] },
+    sluiceleviathan: { rotation: true, theme: "sewer", cast: "배수문 파열", pats: [["넘치는 독물", "pools"], ["휘감는 꼬리", "cone", { ms: 1300, r: 86, half: 1.1 }], ["솟구치는 잠류", "dive"]] },
+    prismcantor: { rotation: true, theme: "cave", cast: "공명 파쇄", pats: [["수정 세 갈래", "fan3"], ["공명 표식", "mark", { ms: 2600, r: 37, n: 3 }], ["갈라진 성가", "donut", { r0: 32, r: 108 }]] },
   },
 };
 const CHAL_KEYS = Object.keys(DIM_CHAL.bosses);
+const CHAL_ROTATION = CHAL_KEYS.filter(k => DIM_CHAL.bosses[k].rotation);
+const chalOfWeek = (now) => CHAL_ROTATION[((weekOf(now) % CHAL_ROTATION.length) + CHAL_ROTATION.length) % CHAL_ROTATION.length];
+// The original bosses retain their own bits. The rotation shares one weekly reward bit.
+const chalRewardBit = (k) => 1 << CHAL_KEYS.indexOf(DIM_CHAL.bosses[k].rotation ? CHAL_ROTATION[0] : k);
+const CHAL_REWARD_MASK = CHAL_KEYS.reduce((mask, k) => mask | chalRewardBit(k), 0);
 /** The level a hero needs for a boss challenge: `minGap` world tiers under the boss's own. */
 const chalMinLv = (k, s = 0) => (s > 0 ? chalSteps(k)[s][1] - DIM_CHAL.stepGap : shownLv(MOBS[k].lv - DIM_CHAL.minGap));
 /** A boss's difficulty ladder: [world tier, hero level shown] — its own level first, then each step far enough above it. */
