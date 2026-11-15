@@ -130,12 +130,12 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   for (const id of ["w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1"]) assert.ok(D.shop.includes(id), "the shop sells " + id);
   assert.ok(!D.shop.includes("W1"));
   assert.ok(Object.values(D.items).every((it) => !("cls" in it)), "no item is locked to a class");
-  assert.deepEqual([1, 2, 3, 4, 5].map((t) => D.items[`h_${t}`].req), [1, 29, 61, 101, 149], "gear asks for levels on the 1–200 scale");
+  assert.deepEqual([1, 2, 3, 4, 5, 6].map((t) => D.items[`h_${t}`].req), [1, 29, 61, 101, 149, 181], "gear asks for levels on the 1–200 scale");
 }
 
 // ═════════ what a level costs (B.2) ═════════
 {
-  const golden = { 1: 74, 2: 97, 10: 438, 20: 1206, 50: 9206, 77: 40324, 100: 132911, 150: 514121, 181: 827216, 199: 1039966 };
+  const golden = { 1: 74, 2: 97, 10: 438, 20: 1206, 50: 9206, 77: 40192, 100: 102441, 150: 526238, 181: 928545, 199: 1357430 };
   for (const [n, c] of Object.entries(golden)) assert.equal(D.lvc[n - 1], c, `step ${n} → ${+n + 1}`);
   for (let i = 1; i < 200; i++) assert.ok(D.lvc[i] > D.lvc[i - 1]);
   // the stat surcharge: ×1.12 at 60, ×1.276 at 99
@@ -147,12 +147,12 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(s.nx[1], D.lvc[80], "a stat at 30 pays the base price");
   W.ch.st.str = 99; W.ch.lvl = 120;
   assert.equal(W.self().nx[0], 0, "a stat at 99 has no next point");
-  // cumulative experience of a typical build lands on the old level's (±4 %): Lv.37 ≈ old 10, Lv.157 ≈ old 40
+  // cumulative experience of a typical build (the 2026-11-16 curve: cheaper Lv.80–130, dearer past 150)
   const cum = (lvl) => L.hero("누적", { wk: "sword", lvl }).xpt;
   near(cum(37) / 48000, 1, 0.08, "to Lv.37");
-  near(cum(77) / 673000, 1, 0.06, "to Lv.77");
-  near(cum(157) / 23.0e6, 1, 0.06, "to Lv.157");
-  near(cum(200) / 62.5e6, 1, 0.06, "to Lv.200");
+  near(cum(77) / 719000, 1, 0.06, "to Lv.77");
+  near(cum(157) / 22.1e6, 1, 0.06, "to Lv.157");
+  near(cum(200) / 67.8e6, 1, 0.06, "to Lv.200");
 }
 
 // ═════════ train: one point = one level (B.1) ═════════
@@ -699,11 +699,14 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   W.npc("elder");
   assert.equal(W.act({ t: "bq", a: "take", k: "ribdeer" }).error, "아직 감당하기 어려운 상대입니다", "tier 10 at tier 4");
   assert.ok(W.act({ t: "bq", a: "take", k: "splitboar" }).ok, "tier 8 at tier 4");
-  // daily rewards are exactly what the old level paid
+  // daily rewards are 12 % of the tier's experience (tierXp)
   for (const old of [4, 10, 25, 40]) {
     const Wd = world({ wk: "sword", lvl: 4 * old - 3 });
     const d = Wd.self().daily;
-    const xpK = old <= 7 ? 6 : old <= 10 ? 6 + (2 * (old - 7)) / 3 : old <= 15 ? 8 + (3 * (old - 10)) / 5 : old <= 19 ? 11 + (6 * (old - 15)) / 4 : old <= 24 ? 17 + (17 * (old - 19)) / 5 : old <= 30 ? 34 + (28 * (old - 24)) / 6 : old <= 35 ? 62 + 2 * (old - 30) : 72 + 2 * (old - 35);
+    // XP_STEPS (20-helpers-mapkit.js, the 2026-11-16 curve), interpolated
+    const K = [[1, 6], [7, 6], [10, 8], [15, 11], [17, 16], [19, 19], [22, 23], [25, 29], [28, 43], [31, 56], [35, 68], [40, 87], [45, 95], [50, 124]];
+    const i = K.findIndex(([l]) => old <= l), [[l0, k0], [l1, k1]] = [K[Math.max(0, i - 1)], K[i]];
+    const xpK = l1 === l0 ? k1 : k0 + ((k1 - k0) * (old - l0)) / (l1 - l0);
     const oldNeed = Math.round((34 * Math.pow(old, 1.85) + 20) * xpK);
     assert.equal(d.tasks[0].reward.xp, Math.round(oldNeed * 0.12), `old Lv.${old}'s daily experience`);
     assert.equal(d.tasks[0].reward.gold, 60 + 25 * old, `and gold`);

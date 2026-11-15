@@ -28,7 +28,9 @@ const num = (v) => typeof v === "number" && Number.isFinite(v);
  * so every band is lived in for a while — about a quarter hour to Lv.7 and ten or
  * eleven hours of steady hunting to Lv.40 (measured with a headless bot, see README).
  */
-const XP_STEPS = [[1, 6], [7, 6], [10, 8], [15, 11], [19, 17], [24, 34], [30, 62], [35, 72], [40, 82], [50, 95]];
+// 2026-11-16 (owner): Lv.200 still ≈ 45 h of kills, but minutes per level now rise ×1.9 → ×1.1 per 20 levels with no
+// cliff (was ×2.5 over Lv.81–100 then ×1.6); fitted to the balance-probe pace, tier-6 gear included (balance-2026-11-15 §8).
+const XP_STEPS = [[1, 6], [7, 6], [10, 8], [15, 11], [17, 16], [19, 19], [22, 23], [25, 29], [28, 43], [31, 56], [35, 68], [40, 87], [45, 95], [50, 124]];
 function XP_K(lv) {
   for (let i = 1; i < XP_STEPS.length; i++) {
     const [l1, k1] = XP_STEPS[i], [l0, k0] = XP_STEPS[i - 1];
