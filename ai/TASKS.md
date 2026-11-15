@@ -56,14 +56,19 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 
 ## GEMINI (분석 · 문서 · 콘텐츠 · [ART]/[VFX] 그림과 이펙트 — `ai/gemini.md` 5번)
 
+**스킬 완성도 우선 (Owner, 2026-11-15)** — 아래 [SKILL] 표시 작업부터. 스킬 조합 규칙은 `docs/design/skill-combos.md` (상태 7종과 `["cb", mobId, code]` 이벤트).
+- [ ] [VFX] 같은 방식으로 해머와 직업 스킬(파괴자·머서너리·성기사 등, `hammer_*`, `ironsiege`, `oathward` …)
+- [ ] [SFX] `docs/fx-audit.md`에서 전용 소리가 없는 스킬마다 시전음·타격음을 `game/public/audio.js`에 코드로 만들고 연결 (무기 종류별로 결이 다르게: 금속·둔기·마법·활시위). 지금 가장 큰 타격음보다 크지 않게, 보고서에 새 소리 이름 목록
+- [ ] [SFX] 치명타·스킬 마무리 타격음과 몬스터 피격/사망음을 크기별(일반·정예·보스)로 다르게
+- [ ] [VFX] [SKILL] 스킬 아이콘 손보기: `game/public/skillicons.js`에서 아이콘끼리 비슷하거나 무엇을 하는지 안 보이는 스킬을 골라 다시 그리기(16×16, 무기별 색 계열 유지). 새로 생긴 스킬(`03-skills.js`에 있는데 아이콘이 기본 모양인 것)도 포함. 미리보기 `--page icons` 스크린샷
+- [ ] [VFX] [SKILL] 조합 상태 표시: 몬스터에게 걸린 경직·공중·빙결·표식·낙인·화상(1~3중첩)·끌림을 머리 위 작은 도트 표시/오라로 (한 몬스터에 여러 개가 겹쳐도 읽히게), 그리고 `["cb", mobId, code]`로 상태를 터뜨릴 때 코드별 폭발 연출(파쇄 얼음 조각, 점화 불꽃, 표식 폭발…). **`game/public/skillfx_combo.js`가 main에 생긴 뒤에만** — 없으면 건너뛰고 다음 작업으로
+- [ ] [VFX] [SKILL] 새 시전 동작 연출: 차지(모을수록 커지는 빛), 집중(채널링 줄기), 도약·후퇴 잔상, 지정 위치 마법진. 위와 같은 조건(`skillfx_combo.js`가 생긴 뒤)
+- [ ] [SFX] [SKILL] 조합 터뜨리기 소리 7종(상태별)과 차지 완료·집중 유지음. 위와 같은 조건
 - [x] [VFX] 새 보스 졸개 3종의 전용 그림: 혈루 결정 전갈 `bloodshard`(지금은 붉게 칠한 전갈), 밤장막 박쥐 `nightbat`(지금은 batcluster 색만 바꿈), 먹장어 머리 `hagfishhead`(지금은 eelknot). `game/public/mobart_f.js`의 보스 그림 방식 그대로, 지옥 괴수 느낌(귀엽지 않게), 16색 이내·외곽선. `--page mobs --q "k=bloodshard,nightbat,hagfishhead&z=4"` 스크린샷 1장
 - [x] [VFX] 꽃무덤 고래 `bloomwhale`의 잠수/떠오름 이펙트와 혈루 왕도마뱀 `bloodhorn`의 혈루 사출(jet) 물줄기를 `game/public/skillfx.js`에 코드로 그리기 (서버 이벤트 `bt`/`bc`는 그대로, 그림만). 바닥 경고와 겹쳐도 잘 보이게
 - [x] [VFX] 스킬 이펙트·타격음 점검표: 모든 액티브 스킬 35개와 직업 스킬(`game/src/logic/03-skills.js`·`02-jobs-stats.js`의 `fx` 번호)마다 지금 화면에 무엇이 그려지고(`game/public/skillfx.js`, `swing.js`, `events.js`, `growth.js`) 어떤 소리가 나는지(`game/public/audio.js`) 표로 정리하고, "약함/보통/좋음"과 이유를 매겨 `docs/fx-audit.md`에 작성. 맨 아래에 고칠 순서(약한 것부터) 목록. 코드는 고치지 말 것
 - [x] [VFX] `docs/fx-audit.md`에서 "약함"인 검·단검·창 스킬 이펙트를 다시 그리기 (휘두름 궤적, 타격 순간 섬광·파편, 바닥 충격). 서버 이벤트·판정 범위는 그대로, 그림이 실제 판정 범위와 맞게. 스킬마다 미리보기 스크린샷
-- [ ] [VFX] 같은 방식으로 지팡이·마도서·활 스킬 (원소별 색: 불·얼음·번개·암흑 구분이 한눈에)
-- [ ] [VFX] 같은 방식으로 해머와 직업 스킬(파괴자·머서너리·성기사 등, `hammer_*`, `ironsiege`, `oathward` …)
-- [ ] [SFX] `docs/fx-audit.md`에서 전용 소리가 없는 스킬마다 시전음·타격음을 `game/public/audio.js`에 코드로 만들고 연결 (무기 종류별로 결이 다르게: 금속·둔기·마법·활시위). 지금 가장 큰 타격음보다 크지 않게, 보고서에 새 소리 이름 목록
-- [ ] [SFX] 치명타·스킬 마무리 타격음과 몬스터 피격/사망음을 크기별(일반·정예·보스)로 다르게
+- [x] [VFX] 같은 방식으로 지팡이·마도서·활 스킬 (원소별 색: 불·얼음·번개·암흑 구분이 한눈에)
 - [x] [ART] 쥬쥬식당 협동 알바 도구·요리 아이콘 시안 6개(프라이팬, 쟁반, 샐러드, 생선구이, 스튜, 더러운 접시) 16×16 → `asset/generated/coop-diner/`, 프롬프트 파일 포함. 설치는 하지 말 것 (Owner 승인 후 Claude가 설치)
 - [ ] [VFX] 몬스터 기본 공격 이펙트: 근접(물기·할퀴기·들이받기)은 휘두름 호와 타격 섬광, 원거리(침·뼈·깃털·독)는 날아가는 도트 투사체와 착탄, 공격 직전 0.2초 예비 동작 번쩍임. 몬스터를 생김새별 무리로 묶어 무리마다 하나씩 (`game/public/events.js`·`skillfx.js`에서 몬스터 공격 이벤트를 찾아 그림만). 지옥 괴수답게 거칠게
 - [ ] [VFX] 몬스터 피격·사망 이펙트를 크기별로: 일반(작은 살점·핏방울 도트), 정예(파편+짧은 충격파), 보스(사망 연출 2초: 균열·섬광·잔해). 지금 피격 흰 번쩍임·밀림은 유지
@@ -72,7 +77,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 - [ ] [VFX] 보상 연출: 바닥 드롭 등급별 빛기둥(매직·레어·전설·세트), 장비 강화 성공·실패·저주, 스킬 강화 성공, 레벨업, 업적 달성
 - [ ] [VFX] 옛 보스와 필드 보스(크리온·심연의 어미, 각 사냥터 필드 보스)의 공격 이펙트 점검 후 약한 것부터 다시 그리기 — `docs/fx-audit.md`에 보스 섹션 추가 후 작업
 - [ ] [SFX] 몬스터 공격음을 생김새 무리별로(물기·할퀴기·침·포효), 정예·보스는 더 무겁게. 기존 믹스보다 크지 않게, 보고서에 새 소리 이름 목록
-- [ ] [ART] 보스 세트 장비 아이콘 8개 (16×16, 지금은 일반 5단계 그림을 같이 씀): 밤장막 세트 `veil_h` 박쥐 가면 · `veil_a` 장막 망토 · `veil_r` 송곳니 반지 · `veil_n` 흉곽 부적 (검보라·뼈·자홍 심장), 꽃무덤 세트 `bloom_h` 고래뼈 투구 · `bloom_a` 갈비 흉갑 · `bloom_r` 혼꽃 반지 · `bloom_n` 결정 심장 (청록 수정·백골·꽃잎). 파일 이름 = 아이템 id (`asset/generated/gear-sets/veil_h.png` …), 프롬프트 파일, `asset/CREDITS.md` 한 줄, `import-art.mjs`로 16×16 정리까지. 설치는 하지 말 것
+- [x] [ART] 보스 세트 장비 아이콘 8개 (16×16, 지금은 일반 5단계 그림을 같이 씀): 밤장막 세트 `veil_h` 박쥐 가면 · `veil_a` 장막 망토 · `veil_r` 송곳니 반지 · `veil_n` 흉곽 부적 (검보라·뼈·자홍 심장), 꽃무덤 세트 `bloom_h` 고래뼈 투구 · `bloom_a` 갈비 흉갑 · `bloom_r` 혼꽃 반지 · `bloom_n` 결정 심장 (청록 수정·백골·꽃잎). 파일 이름 = 아이템 id (`asset/generated/gear-sets/veil_h.png` …), 프롬프트 파일, `asset/CREDITS.md` 한 줄, `import-art.mjs`로 16×16 정리까지. 설치는 하지 말 것
 - [ ] [ART] 보스 전설 무기 5종의 가방 아이콘(16×16)과 손에 드는 월드 스프라이트(크기·방향은 `asset/README.md` 2번 표): `w_bloodcrown` 혈루 왕관 창, `w_cavhammer` 공동 망치, `w_ribbook` 흉곽 등불(책), `w_whalebow` 고래뼈 활, `w_bloomstaff` 혼꽃 지팡이 → `asset/generated/boss-legendaries/`. 설치는 하지 말 것
 - [ ] [ART] 보스 재료 아이콘 2개: `mat_bloodtear` 피눈물 결정, `mat_clubclaw` 망치 갯가재 집게 → `asset/generated/boss-mats/`
 - [ ] [ART] 일반 장비 리디자인 시안 1: 투구·갑옷·장갑 각 1~5단계(15개, 단계가 오를수록 재질이 가죽→철→강철→문양→전설 느낌으로) → `asset/generated/gear-t/`, 파일 이름 `h_1.png`…`g_5.png`. 지금 코드 그림(`game/public/art.js` `helmIcon` 등)과 갤러리에서 나란히 비교할 수 있게
