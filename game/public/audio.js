@@ -956,14 +956,14 @@ const SFX = {
   // ── gathering (gather.js): kind 0 herb · 1 ore · 2 wood ──
   /** Kneeling to a herb, setting a pick to the rock, an axe to the log. */
   gat_start(k = 0) {
-    if (k === 0) { this.noise(0.18, 0.07, 2600, "bandpass", 0, 4200); this.tone("triangle", 520, 620, 0.08, 0.04); }
+    if (k === 0 || k === 3) { this.noise(0.18, 0.07, 2600, "bandpass", 0, 4200); this.tone("triangle", 520, 620, 0.08, 0.04); }
     else if (k === 1) { this.tone("square", 1180 * this.vary(), 900, 0.05, 0.05); this.noise(0.06, 0.08, 3000, "highpass"); }
     else { this.tone("triangle", 180, 120, 0.09, 0.09); this.noise(0.08, 0.1, 900, "lowpass"); }
   },
   /** One beat of the work: a leafy rustle, a clink of iron on stone, a chop. */
   gat_work(k = 0) {
     const v = this.vary();
-    if (k === 0) this.noise(0.12, 0.05, 3200 * v, "bandpass", 0, 1800);
+    if (k === 0 || k === 3) this.noise(0.12, 0.05, 3200 * v, "bandpass", 0, 1800);
     else if (k === 1) { this.tone("square", 1480 * v, 1100, 0.04, 0.05); this.tone("sine", 2960 * v, 2600, 0.12, 0.025, 0.01); this.noise(0.04, 0.06, 4000, "highpass"); }
     else { this.tone("triangle", 150 * v, 90, 0.08, 0.1); this.noise(0.07, 0.1, 1100 * v, "lowpass"); }
   },
