@@ -87,8 +87,8 @@ function jfValidate(S, p, a) {
   if (k === "lvl" && ch.lvl <= 1) return bad("이미 레벨 1입니다");
   if (countItem(ch, JF_SCROLL[k]) < 1) return bad(`[${ITEMS[JF_SCROLL[k]].name}]${pp(ITEMS[JF_SCROLL[k]].name, "이가")} 필요합니다`);
   if (ch.gold < jfGold(ch, k)) return bad("골드가 부족합니다");
-  // what comes off goes to the bag: a hybrid's second weapon, or gear above level 1
-  const off = k === "job" ? (ch.eq.weapon2 ? 1 : 0) : SLOTS.filter((s) => ch.eq[s] && (ITEMS[ch.eq[s].id].req || 0) > 1).length;
+  // what comes off goes to the bag: gear above level 1 on a level reset (a job reset keeps both weapons, §9)
+  const off = k === "job" ? 0 : SLOTS.filter((s) => ch.eq[s] && (ITEMS[ch.eq[s].id].req || 0) > 1).length;
   if (ch.inv.length + off > bagCap(ch)) return bad(`가방에 빈칸이 ${off}칸 필요합니다`);
   return OK;
 }
@@ -109,7 +109,6 @@ function jfApply(S, p, a) {
     if (ch.jp) ch.jobs[ch.job] = ch.jp;
     ch.job = "adventurer";
     ch.jp = null;
-    if (ch.eq.weapon2) { ch.inv.push(ch.eq.weapon2); ch.eq.weapon2 = null; }
     toast(p, `전직 초기화 — [${was}]의 직업 레벨은 그대로 남습니다. 다시 전직하면 이어서 걷습니다. (${gold.toLocaleString()} G)`);
   } else {
     // stats back to 5 and the level to 1; the experience they cost is not given back (망각의 의식 does that)

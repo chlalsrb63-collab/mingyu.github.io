@@ -247,9 +247,9 @@ export function validateAction(S, pid, a) {
       const it = ITEMS[s.id];
       if (ch.lvl < it.req) return bad(`레벨 ${it.req}부터 착용할 수 있습니다`);
       if (a.k === "weapon2") {
-        // a hybrid's second weapon: one of the pair
-        if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 보조 무기를 들 수 있습니다");
-        if (it.type !== "weapon" || !JOBS[ch.job].wk.includes(it.wk)) return bad(`${JOBS[ch.job].wk.map((k) => WK_NAME[k]).join("이나 ")}만 들 수 있습니다`);
+        // a second main weapon for everyone (§9); a hybrid's is one of its pair
+        if (it.type !== "weapon") return bad("무기만 보조 무기로 들 수 있습니다");
+        if (isHybrid(ch) && !JOBS[ch.job].wk.includes(it.wk)) return bad(`${JOBS[ch.job].wk.map((k) => WK_NAME[k]).join("이나 ")}만 들 수 있습니다`);
         return OK;
       }
       if (a.k !== undefined && !slotsFor(it.type).includes(a.k)) return bad("그 부위에는 착용할 수 없습니다");
@@ -434,7 +434,6 @@ export function validateAction(S, pid, a) {
     }
     case "job_reset": case "lv_reset": case "lo": return jfValidate(S, p, a);
     case "wsw": {
-      if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 무기를 바꿔 들 수 있습니다");
       if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
       if (!ch.eq.weapon2) return bad("보조 무기가 없습니다");
       if (now < (p.wswAt || 0)) return bad("wsw");

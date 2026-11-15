@@ -6037,7 +6037,7 @@ const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
-/** Where gear is worn. Two rings; everything else one of a kind. `weapon2` is a hybrid's second weapon (Tab swaps; adds no stats). */
+/** Where gear is worn. Two rings; everything else one of a kind. `weapon2` is anyone's second weapon (Tab swaps; adds no stats; learns a mastery share, §9). */
 const SLOTS = ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet", "weapon2"];
 const GEAR_TYPES = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet"];
 const isGear = (id) => GEAR_TYPES.includes(ITEMS[id].type);
@@ -6832,11 +6832,23 @@ function deriveStats(p) {
 
 // ── weapon mastery
 
-/** Mastery experience for the weapon in hand; levels it up (events, toasts, the skills it opens go on the bar). */
+/** Share of the hand's mastery the second weapon learns (§9); the same kind twice gets only `same` extra instead. */
+const WM_SWAP = { other: 0.3, same: 0.1 };
+/**
+ * Mastery for the weapon in hand plus a share for the second weapon (§9: everyone, hybrids included — they had
+ * no pair share before, so nothing counts twice). A share may be fractional; migrate and the view floor it.
+ */
 function gainWm(S, p, n, bonus) {
   const ch = p.ch, wk = inHand(ch);
   if (!wk || !(n > 0)) return;
-  const r = ch.wm[wk];
+  const wk2 = ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "";
+  if (wk2 === wk) return wmAdd(S, p, wk, n * (1 + WM_SWAP.same), bonus * (1 + WM_SWAP.same));
+  wmAdd(S, p, wk, n, bonus);
+  if (wk2) wmAdd(S, p, wk2, n * WM_SWAP.other, bonus * WM_SWAP.other);
+}
+/** One kind's mastery: levels it up (events, toasts, the skills it opens go on the bar). */
+function wmAdd(S, p, wk, n, bonus) {
+  const ch = p.ch, r = ch.wm[wk];
   if (r.lv >= WM_MAX) return;
   const gain = n + (r.lv < JOB_WM ? bonus : 0);
   r.xp += gain;
@@ -7314,8 +7326,8 @@ function jfValidate(S, p, a) {
   if (k === "lvl" && ch.lvl <= 1) return bad("이미 레벨 1입니다");
   if (countItem(ch, JF_SCROLL[k]) < 1) return bad(`[${ITEMS[JF_SCROLL[k]].name}]${pp(ITEMS[JF_SCROLL[k]].name, "이가")} 필요합니다`);
   if (ch.gold < jfGold(ch, k)) return bad("골드가 부족합니다");
-  // what comes off goes to the bag: a hybrid's second weapon, or gear above level 1
-  const off = k === "job" ? (ch.eq.weapon2 ? 1 : 0) : SLOTS.filter((s) => ch.eq[s] && (ITEMS[ch.eq[s].id].req || 0) > 1).length;
+  // what comes off goes to the bag: gear above level 1 on a level reset (a job reset keeps both weapons, §9)
+  const off = k === "job" ? 0 : SLOTS.filter((s) => ch.eq[s] && (ITEMS[ch.eq[s].id].req || 0) > 1).length;
   if (ch.inv.length + off > bagCap(ch)) return bad(`가방에 빈칸이 ${off}칸 필요합니다`);
   return OK;
 }
@@ -7336,7 +7348,6 @@ function jfApply(S, p, a) {
     if (ch.jp) ch.jobs[ch.job] = ch.jp;
     ch.job = "adventurer";
     ch.jp = null;
-    if (ch.eq.weapon2) { ch.inv.push(ch.eq.weapon2); ch.eq.weapon2 = null; }
     toast(p, `전직 초기화 — [${was}]의 직업 레벨은 그대로 남습니다. 다시 전직하면 이어서 걷습니다. (${gold.toLocaleString()} G)`);
   } else {
     // stats back to 5 and the level to 1; the experience they cost is not given back (망각의 의식 does that)
@@ -13620,9 +13631,9 @@ export function validateAction(S, pid, a) {
       const it = ITEMS[s.id];
       if (ch.lvl < it.req) return bad(`레벨 ${it.req}부터 착용할 수 있습니다`);
       if (a.k === "weapon2") {
-        // a hybrid's second weapon: one of the pair
-        if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 보조 무기를 들 수 있습니다");
-        if (it.type !== "weapon" || !JOBS[ch.job].wk.includes(it.wk)) return bad(`${JOBS[ch.job].wk.map((k) => WK_NAME[k]).join("이나 ")}만 들 수 있습니다`);
+        // a second main weapon for everyone (§9); a hybrid's is one of its pair
+        if (it.type !== "weapon") return bad("무기만 보조 무기로 들 수 있습니다");
+        if (isHybrid(ch) && !JOBS[ch.job].wk.includes(it.wk)) return bad(`${JOBS[ch.job].wk.map((k) => WK_NAME[k]).join("이나 ")}만 들 수 있습니다`);
         return OK;
       }
       if (a.k !== undefined && !slotsFor(it.type).includes(a.k)) return bad("그 부위에는 착용할 수 없습니다");
@@ -13807,7 +13818,6 @@ export function validateAction(S, pid, a) {
     }
     case "job_reset": case "lv_reset": case "lo": return jfValidate(S, p, a);
     case "wsw": {
-      if (!isHybrid(ch)) return bad("두 무기를 쓰는 직업만 무기를 바꿔 들 수 있습니다");
       if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
       if (!ch.eq.weapon2) return bad("보조 무기가 없습니다");
       if (now < (p.wswAt || 0)) return bad("wsw");
@@ -14432,7 +14442,7 @@ export function applyAction(S, pid, a) {
       afterGear(S, p);
       S.maps[p.map].ev.push(["jc", p.eid]);
       sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
-      toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸이 열렸습니다 — Tab으로 두 무기를 바꿔 듭니다.` : `[${job.name}] 전직!`);
+      toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 보조 무기 칸에 두 무기 중 하나를 들고 Tab으로 바꿔 듭니다.` : `[${job.name}] 전직!`);
       // the job's signature skill onto the bar
       const signature = SKILL[JOB_SKILL[a.j]];
       if (back) toast(p, `[${job.name}] 직업 Lv.${back.lv}부터 이어서 걷습니다.`);
@@ -14446,10 +14456,12 @@ export function applyAction(S, pid, a) {
     case "blk": case "w": case "wk": socialApply(S, p, a); break;
     case "job_reset": case "lv_reset": case "lo": jfApply(S, p, a); break;
     case "wsw": {
-      // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops
+      // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops. Anyone else: as a re-equip.
+      const was = inHand(ch);
       [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];
       p.wswAt = S.now + WSW_MS;
       p.dance = null;
+      if (!isHybrid(ch) && inHand(ch) !== was) handChanged(p);
       afterGear(S, p);
       S.maps[p.map].ev.push(["ws", p.eid]);
       break;
@@ -15029,7 +15041,7 @@ function selfPayload(p) {
     // what the next point in each costs (0 at a cap), resets left, the starter pick taken, mastery
     // [lv, xp, need] per kind (WK_ORDER), the kinds in hand and on the back
     name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, st: ch.st, nx: nextCosts(ch), rs: ch.rs, sw: ch.sw,
-    wm: WK_ORDER.map((k) => [ch.wm[k].lv, ch.wm[k].xp, ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
+    wm: WK_ORDER.map((k) => [ch.wm[k].lv, Math.floor(ch.wm[k].xp),ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
     jp: ch.jp ? [ch.jp.lv, ch.jp.xp, ch.jp.lv >= JOB_PROGRESS.cap ? 0 : jobNeed(ch.jp.lv)] : null,
     wk2: ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "",
     // 직업 자유 (47-job-freedom.js): [[job, lv, xp]] every job walked; the loadout [actives, passives, off-job passive, set 1/0, off slot open 1/0]

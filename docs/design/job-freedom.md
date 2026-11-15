@@ -73,3 +73,12 @@ Goal (owner): one character can eventually play every job. Builds on Codex's job
   저주 해제 주문서 (잡화점 2,500G) → `cu = 2`: the next try +`ENH_UNCURSE` 10 %p, then `cu` goes. Cursed gear still works.
   A 축복 강화석 failure keeps the step and brings no curse (chosen — tell the owner). Pity gauges unchanged.
 - Wire: gear objects carry `cu`; `defs.enhPct / enhCrit / enhUc`. Client: smith rows (저주 해제 button), "저주받은" name prefix.
+
+## As built — two weapons (§9; no sheet change, still v19)
+- `eq weapon2` takes any weapon for anyone (level `req` as the main slot); a hybrid's must still be one of its pair. `wsw`
+  works for everyone (same `WSW_MS` wait; dead/fishing refused); a non-hybrid's swap acts as a re-equip (`handChanged`).
+- Mastery (`45-jobs.js gainWm` → `wmAdd`, `WM_SWAP`): hand 100 %, second weapon's kind 30 % (its own early bonus included);
+  same kind twice → that kind 110 %, no share. **Hybrids use the same rule** — they had no pair share, so nothing doubles.
+  Shares are fractional in play; `migrate` and `self.wm` floor them.
+- Job reset keeps `weapon2` (level reset still bags gear above Lv.1). Client: slot Ⅱ always shown, "보조 무기로" on every
+  weapon, Ⅰ (in hand, lit) / Ⅱ (swap) buttons above the weapon slot; Tab = keymap `swap` "무기 바꾸기 (Ⅰ/Ⅱ)" for anyone.
