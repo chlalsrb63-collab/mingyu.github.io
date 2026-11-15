@@ -152,10 +152,20 @@ for (const mapId of ["meadow", "crypt", "town"]) {
       // never backwards, and never sideways further than a slide along a wall allows
       assert.ok((p.x - x0) * ux + (p.y - y0) * uy >= -0.01, "never backwards");
       if (far < PX - 0.01) short++;
-      // the straight line it swept was open all the way, unless it slid
-      const off = Math.abs((p.x - x0) * uy - (p.y - y0) * ux);
-      if (off > 0.01) slid++;
-      else for (let d = 4; d <= far + 0.01; d += 4) assert.ok(W.canStand(x0 + ux * d, y0 + uy * d), `${mapId} (${tx},${ty}) aim ${a} d ${d} far ${far}: nothing solid on the way ` + [-1,0,1].map((r) => mp.o[ty + r].slice(tx - 5, tx + 6).replace(/ /g, ".") + "|" + mp.g[ty + r].slice(tx - 5, tx + 6)).join(" / "));
+      // the path it swept, re-walked here with the test's own collision: every 4 px standable, the same end
+      // (a slide round a corner can rejoin the straight line, so the end alone says nothing about the path)
+      let sx = x0, sy = y0, slidHere = false;
+      const freeT = (x, y) => W.canStand(x, y) && !W.gate(x, y), slant = Math.abs(ux) > 0.01 && Math.abs(uy) > 0.01;
+      for (let d = 4; d <= PX; d += 4) {
+        const nx = sx + ux * 4, ny = sy + uy * 4;
+        if (freeT(nx, ny)) { sx = nx; sy = ny; }
+        else if (slant && freeT(nx, sy)) { sx = nx; slidHere = true; }
+        else if (slant && freeT(sx, ny)) { sy = ny; slidHere = true; }
+        else break;
+        assert.ok(W.canStand(sx, sy), `${mapId} (${tx},${ty}) aim ${a} d ${d}: every step of the way is standable`);
+      }
+      assert.ok(Math.abs(sx - p.x) < 0.01 && Math.abs(sy - p.y) < 0.01, `${mapId} (${tx},${ty}) aim ${a}: the sweep ends where the server put them`);
+      if (slidHere) slid++;
       // head-on (along a tile axis) it stops dead at the first thing in the way
       if (k % 4 === 0 && far < PX - 0.01) {
         const nx = p.x + ux * 4, ny = p.y + uy * 4;
@@ -251,7 +261,7 @@ for (const mapId of ["meadow", "crypt", "town"]) {
   W.at(hx, hy); W.p.dead = true;
   let v = W.act({ t: "dash", a: 0 });
   assert.equal(v.ok, false, "no dash while down");
-  assert.equal(v.error, "dash");
+  assert.equal(v.error, "쓰러진 상태입니다", "the shared refusal for anything done while down (the client sends none)");
   assert.equal(W.p.x, hx);
   // reeling from a blow: refused with the quiet code the attack uses
   W.at(hx, hy); W.p.stag = W.now + 200;
@@ -299,7 +309,11 @@ for (const mapId of ["meadow", "crypt", "town"]) {
 // in town it works too (movement only)
 {
   const W = world("town", "town");
-  const [hx, hy] = openSpot(W, 5);
+  // the square is busy (stalls, trees, fountains): any spot with 72 px of clear street to the south
+  let hx = 0, hy = 0;
+  const clearSouth = (x, y) => { for (let d = 0; d <= PX; d += 4) if (!W.canStand(x, y + d) || W.gate(x, y + d)) return false; return true; };
+  for (let ty = 2; ty < W.map.h - 8 && !hx; ty++) for (let tx = 2; tx < W.map.w - 2 && !hx; tx++) if (clearSouth(tx * T + 8, ty * T + 10)) { hx = tx * T + 8; hy = ty * T + 10; }
+  assert.ok(hx, "a clear street in town");
   W.at(hx, hy);
   assert.ok(W.act({ t: "dash", a: AIM_N / 4 }).ok, "a dash in town");
   assert.ok(Math.abs(W.p.y - (hy + PX)) < 0.01);
