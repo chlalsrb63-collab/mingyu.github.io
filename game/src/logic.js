@@ -8234,6 +8234,14 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   return crit;
 }
 
+/** A boss or guardian fallen to two or more heroes: each of them hears the damage ranking (top 3, and their own place below it). */
+function dmgBoard(S, rt, by) {
+  const rows = Object.keys(by).filter((pid) => S.players[pid] && S.players[pid].map === rt.id && by[pid] > 0).sort((a, b) => by[b] - by[a]);
+  if (rows.length < 2) return;
+  const sum = rows.reduce((n, pid) => n + by[pid], 0), pct = (pid) => Math.round((100 * by[pid]) / sum);
+  const line = rows.slice(0, 3).map((pid, i) => `${i + 1}. ${S.players[pid].ch.name} ${pct(pid)}%`).join(" · ");
+  rows.forEach((pid, i) => toast(S.players[pid], `피해 기여도 — ${line}${i >= 3 ? ` · 나 ${i + 1}위 ${pct(pid)}%` : ""}`));
+}
 function killMob(S, rt, mob) {
   const d = MOBS[mob.k];
   const el = mob.el;
@@ -8261,6 +8269,7 @@ function killMob(S, rt, mob) {
       if (!o.dead && (!field || o === p || dist(o.x, o.y, mob.x, mob.y) <= range)) looters.add(o);
     }
   }
+  if (d.boss || el === 2) dmgBoard(S, rt, hitters);
   mob.by = {};
   const xp = d.xp * ELITE[el].xp;
   for (const p of looters) {

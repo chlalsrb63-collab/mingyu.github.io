@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { MOBS, ITEMS, FIELD_BOSS, TROPHIES, ELITE, mobMax, dealMob, killMob, bsHit, SETS, DIM_CHAL, CHAL_KEYS, DIM_TOWN, T, SKILL, SKILL_ORDER, stats, atkRange, aimIdx, tierFor, rollGear, GEAR, WK_ID, checkAch };\n";
+  "\nexport const __t = { MOBS, ITEMS, FIELD_BOSS, TROPHIES, ELITE, mobMax, dealMob, killMob, bsHit, SETS, DIM_CHAL, CHAL_KEYS, DIM_TOWN, T, SKILL, SKILL_ORDER, stats, atkRange, aimIdx, tierFor, rollGear, GEAR, WK_ID, checkAch, dmgBoard };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t;
 
@@ -304,4 +304,9 @@ for (const [k, t] of [["cloakbat", 25], ["bloomwhale", 50]]) {
   assert.deepEqual(L.takeFirsts(S), [[p.ch.name, "cloakbat"]], "queued once"); X.checkAch(S, p); assert.deepEqual(L.takeFirsts(S), [], "not again");
   const n = S.chat.length; assert.ok(L.firstNotice(S, p.ch.name, "cloakbat") && S.chat.length === n + 1 && /서버 최초/.test(S.chat[n].m), "announced");
   assert.equal(L.firstNotice(S, "x", "slime"), false, "only the listed bosses"); }
+// the damage ranking after a boss falls to two or more
+{ L.addPlayer(S, "p2", L.hero("둘째", { wk: "bow", lvl: 160, migrate: true })); const p1 = S.players.p1, p2 = S.players.p2; p2.map = p1.map; p1.toast = []; p2.toast = [];
+  X.dmgBoard(S, S.maps[p1.map], { p1: 300, p2: 100 });
+  assert.ok(p2.toast.some((m) => m.includes("피해 기여도 — 1. 시험 75% · 2. 둘째 25%")), JSON.stringify(p2.toast));
+  p1.toast = []; X.dmgBoard(S, S.maps[p1.map], { p1: 300 }); assert.equal(p1.toast.length, 0, "alone: no board"); L.removePlayer(S, "p2"); }
 console.log("bosses2: 밤장막 박쥐군주 and 꽃무덤 고래 (weekly raids) — phases, shapes, shared mark, feeding bats, shielding heads, enrage, rewards, bot win/lose ok");
