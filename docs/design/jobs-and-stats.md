@@ -172,12 +172,12 @@ toast) and the client plays a 2-frame flinch. Lives in `hurtPlayer`/`mobHit` onl
 
 | hybrid | coefficients |
 | --- | --- |
-| 마검사 sword+staff | STR 0.8, INT 0.8, WIL 0.3, WIS 0.3 |
-| 추적자 dagger+bow | DEX 0.8, LUK 0.8 |
-| 용기사 spear+book | STR 0.7, WIL 0.7, INT 0.7, WIS 0.3 |
-| 주술암살자 dagger+book | DEX 0.8, INT 0.8, LUK 0.3, WIL 0.3 |
+| 마검사 sword+staff | STR 0.9, INT 0.9, WIL 0.2, WIS 0.2 (skills-v2) |
+| 추적자 dagger+bow | DEX 0.75, LUK 0.8 (skills-v2) |
+| 용기사 spear+book | STR 0.8, INT 0.8, WIL 0.3, WIS 0.3 (skills-v2) |
+| 주술암살자 dagger+book | DEX 0.5, INT 0.78, LUK 0.3, WIL 0.3 (skills-v2) |
 | 폭풍기수 spear+bow | STR 0.8, DEX 0.8, WIS 0.3, LUK 0.3 |
-| 암흑기사 sword+book | WIL 0.8, STR 0.8, INT 0.3 |
+| 암흑기사 sword+book | WIL 0.9, STR 0.9, INT 0.4 (skills-v2) |
 
 ### B.6 Accuracy and grazes
 
