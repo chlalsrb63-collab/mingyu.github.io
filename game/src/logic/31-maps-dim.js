@@ -27,7 +27,8 @@ const DIM = {
   // → 5.4 with J2's weapon skills, which lost the old kits' party heals, taunts and guards:
   // bot clears 5.2 / 5.6 / 6.3 / 7.0 min at tiers 17 / 24 / 32 / 40; → 4.9 and a low-band step of 0.85 once the test
   // ran five draws of each rift (a hard seed at 24 and at 17 wiped the party): clears 4.7–8.2 min, 6.2 on average)
-  hpBase: 4.9, hpLow: [24, 0.85], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
+  // Trim about 1% at the mid-band after the profession and ladder merge, before the tier multiplier.
+  hpBase: 4.9, hpLow: [24, 0.85], hpMid: [32, 8, -0.05], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
   reviveMs: 25000,
   // the master's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then
   reward: { gold: 60, xp: 0.05, gearQ: 3, stone: 2, rune: 0.6 }, dailyFull: 3, failGold: 30, lootGold: 0.5,

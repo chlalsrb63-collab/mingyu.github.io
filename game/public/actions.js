@@ -122,6 +122,7 @@ function preAim(arcDeg) {
   const me = G.me, reach = (G.self.range || 40) + 24, [ax, ay] = aimVec(me.aimI), half = (arcDeg * Math.PI) / 180 + 0.2;
   let best = null, bd = reach;
   for (const m of G.mobs.values()) {
+    if (m.bst === 2) continue;   // dived out of reach: the server will not aim at it either
     const dx = m.x - me.x, dy = m.y - me.y, d = Math.hypot(dx, dy);
     if (d < bd && (d < 4 || Math.acos(Math.max(-1, Math.min(1, (dx * ax + dy * ay) / d))) <= half)) { bd = d; best = m; }
   }

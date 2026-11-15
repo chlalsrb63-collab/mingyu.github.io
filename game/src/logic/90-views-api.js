@@ -86,8 +86,12 @@ export function viewFor(S, pid) {
     // then, only when there is one: the dagger's marks on it, and 1 when it bears a book's brand
     const mk = marksOf(S, mob), br = mob.brand > S.now ? 1 : 0;
     const row = [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || []];
-    if (mk || br) row.push(mk);
-    if (br) row.push(1);
+    // a scripted boss (56-boss-script.js) always carries both, then its phase and 0 · 1 marked cast · 2 dived out of reach
+    if (bsDef(mob)) row.push(mk || 0, br, mob.bs ? mob.bs.ph : 1, mob.dive ? 2 : mob.cast ? 1 : 0);
+    else {
+      if (mk || br) row.push(mk);
+      if (br) row.push(1);
+    }
     out.M.push(row);
   }
   for (const dr of rt.drops) {

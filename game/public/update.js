@@ -33,7 +33,7 @@ const AUTO_IDLE = 8000;
  */
 function autoOk(m, s, t, d) {
   const md = G.defs.mobs[m.k];
-  if (!md) return false;
+  if (!md || m.bst === 2) return false;   // a boss dived out of reach
   if (t - (m.atkT || -1e9) < 2500 && d < 70) return true;
   if (md.boss || m.el === 2) return false;
   return !(m.el && md.lv >= s.lvl + 12);   // (shown levels: 12 = three old levels)

@@ -12,7 +12,12 @@ const dimCnt = (ch) => ch.cnt;
 /** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
 const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), 10, TIER_MAX - 1);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
-const dimHk = (n, lv, mlv) => (DIM.hpBase + DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv)) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
+function dimHk(n, lv, mlv) {
+  const [mid, width, trim] = DIM.hpMid;
+  const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv);
+  const middle = trim * Math.max(0, 1 - Math.abs(lv - mid) / width);
+  return (DIM.hpBase + low + middle) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
+}
 
 /** A sheet's rift record made whole (newChar, migrate): today's count, unlocked tier `t`, best tier and its time, the week's brackets `wb` and boss flags `bw`. */
 function dimClean(d) {
@@ -456,8 +461,9 @@ function chalSpawn(S, dim, k, n) {
   mob.temp = true; mob.dim = 1; mob.chal = 1; mob.tr = [];
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   mob.hk = DIM_CHAL.hp * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM_CHAL.lvK * up);
-  dim.chal = { k, n: 0, pi: 0, q: [], fury: 0, engAt: 0, rage: 0, tries: 1, upAt: 0, ak: 1 + DIM_CHAL.atkLv * up };
-  mob.ak = dim.chal.ak;
+  // its script's state (56-boss-script.js) is the challenge's own: one object, with the tries and the wipe clock
+  dim.chal = Object.assign(bsNew(1 + DIM_CHAL.atkLv * up), { k, tries: 1, upAt: 0 });
+  mob.bs = dim.chal; mob.ak = dim.chal.ak;
   mob.castAt = now + 5000; mob.stun = now + 3000;
   dim.rt.mobs.push(mob);
   dim.boss = mob.id; dim.state = "boss"; dim.bossAt = now;
@@ -470,73 +476,12 @@ function chalReset(S, dim, mob) {
   mob.stun = now + 3000; mob.castAt = now + 7000; mob.ak = c.ak; mob.stag = 0;
   dim.rt.tele.length = 0; dim.rt.pools.length = 0;
   // everyone gets up together in DIM_CHAL.reviveMs (chalTick); the boss sleeps till then
-  Object.assign(c, { n: 0, pi: 0, q: [], fury: 0, engAt: 0, rage: 0, tries: c.tries + 1, upAt: now + DIM_CHAL.reviveMs });
+  Object.assign(c, bsNew(c.ak), { tries: c.tries + 1, upAt: now + DIM_CHAL.reviveMs });
   dim.rt.ev.push(["r", mob.id]);
-}
-/** A volley of `n` turned `off` radians from the line to `tgt`. */
-function chalVolley(S, rt, mob, tgt, dmg, n, off) {
-  const dx = tgt.x - mob.x, dy = tgt.y - mob.y, c = Math.cos(off), s = Math.sin(off);
-  volley(S, rt, mob, { x: mob.x + dx * c - dy * s, y: mob.y + dx * s + dy * c }, dmg, n);
-}
-/** A marked line toward `o`, then the run (tickMob's dash). */
-function chalCharge(S, rt, mob, o) {
-  const d = MOBS[mob.k], dd = Math.max(1, dist(mob.x, mob.y, o.x, o.y)), ux = (o.x - mob.x) / dd, uy = (o.y - mob.y) / dd, len = Math.min(dd + 36, (d.charge || 150) + 20);
-  mob.act = { at: S.now + CHARGE_MS, ux, uy, len };
-  mob.dir = ux < 0 ? 1 : 2;
-  rt.ev.push(["c", mob.id, Math.round(mob.x), Math.round(mob.y), Math.round(mob.x + ux * len), Math.round(mob.y + uy * len), CHARGE_MS]);
-}
-const chalRing = (S, rt, mob, x, y, r, ms, dmg) => { rt.tele.push({ x, y, r, at: S.now + ms, dmg, by: mob }); rt.ev.push(["t", Math.round(x), Math.round(y), r, ms]); };
-/** The boss's turn (tickMob, in place of a monster's own tricks): every DIM_CHAL.every-th the marked cast, else its next pattern. */
-function chalCast(S, rt, mob, tgt) {
-  const dim = dimAt(S, rt.id), c = dim && dim.chal;
-  if (!c) { mob.castAt = S.now + 5000; return; }
-  const C = DIM_CHAL, B = C.bosses[mob.k], d = MOBS[mob.k], now = S.now, atk = d.atk, q = c.q;
-  const folk = dimInside(S, dim.id), alive = folk.filter((o) => !o.dead);
-  c.n++;
-  if (c.n % C.every === 0) {
-    // the marked cast: it stands still and gathers; the party breaks it with damage, or pays
-    mob.cast = { until: now + C.castMs, need: Math.max(1, C.stag * mobMax(mob)), got: 0 };
-    mob.stun = now + C.castMs; mob.castAt = now + C.castMs + C.gap / 2;
-    rt.ev.push(["dc", mob.id, 9, C.castMs]);
-    for (const o of folk) toast(o, `${d.name}${pp(d.name, "이가")} [${B.cast}]${pp(B.cast, "을를")} 준비합니다! 몰아쳐서 무력화하세요!`);
-    return;
-  }
-  const i = c.pi++ % B.pats.length;
-  let dur = 1500;
-  switch (B.pats[i][1]) {
-    case "fan2":      // two volleys, the second through the gaps of the first
-      chalVolley(S, rt, mob, tgt, atk, 5, 0); q.push({ at: now + 900, f: "fan", off: 0.21 }); dur = 900 + VOLLEY_MS; break;
-    case "fan3":      // three sweeping volleys and a puddle under the target
-      chalVolley(S, rt, mob, tgt, atk, 5, 0); q.push({ at: now + 800, f: "fan", off: 0.28 }, { at: now + 1600, f: "fan", off: -0.28 }, { at: now + 400, f: "pool" });
-      dur = 1600 + VOLLEY_MS; break;
-    case "rings":     // a ring round itself, then four rings round that: in, then out
-      chalRing(S, rt, mob, mob.x, mob.y, 58, 1200, atk * 1.6);
-      for (const [dx, dy] of [[84, 0], [-84, 0], [0, 58], [0, -58]]) chalRing(S, rt, mob, mob.x + dx, mob.y + dy, 44, 2100, atk * 1.4);
-      mob.stun = now + 1200; dur = 2100; break;
-    case "pools":     // a puddle under every one of the party: spread out, keep moving
-      for (const o of alive) chalPool(S, rt, mob, o, atk);
-      dur = POOL_FLY; break;
-    case "charge2":   // a run at its target, then at whoever stands farthest
-      chalCharge(S, rt, mob, tgt); q.push({ at: now + CHARGE_MS + 1000, f: "charge" }); dur = 2 * CHARGE_MS + 1600; break;
-    case "leapslam": {  // a bound onto the farthest of the party: the ring shows where it lands
-      const o = alive.reduce((a, b) => (dist(mob.x, mob.y, b.x, b.y) > dist(mob.x, mob.y, a.x, a.y) ? b : a), tgt);
-      chalRing(S, rt, mob, o.x, o.y, 54, 1300, atk * 1.8);
-      q.push({ at: now + 1250, f: "land", x: o.x, y: o.y });
-      mob.stun = now + 1250; dur = 1900; break;
-    }
-  }
-  q.sort((a, b) => a.at - b.at);
-  mob.castAt = now + dur + C.gap;
-  rt.ev.push(["dc", mob.id, i]);
-}
-function chalPool(S, rt, mob, o, atk) {
-  const d = MOBS[mob.k], now = S.now, kind = d.poolKind || 0, r = d.pool || 30;
-  rt.pools.push({ x: o.x, y: o.y, r, next: now + POOL_FLY, until: now + POOL_FLY + POOL_MS, dmg: atk * 0.4, atk, kind });
-  rt.ev.push(["g", mob.id, Math.round(o.x), Math.round(o.y), r, POOL_FLY, POOL_MS, kind]);
 }
 /** Every tick of a challenge's fight: a wipe, the boss never losing interest, the marked cast running out, queued steps, the enrage. */
 function chalTick(S, dim, inside, alive) {
-  const c = dim.chal, C = DIM_CHAL, now = S.now, rt = dim.rt, mob = rt.mobs.find((q) => q.id === dim.boss);
+  const c = dim.chal, now = S.now, rt = dim.rt, mob = rt.mobs.find((q) => q.id === dim.boss);
   if (!mob || mob.dead) return;
   const d = MOBS[mob.k];
   if (c.engAt && inside.length && !alive.length) {
@@ -559,46 +504,13 @@ function chalTick(S, dim, inside, alive) {
     mob.tgt = o ? o.pid : null;
     if (o) mob.st = 0;
   }
-  if (mob.cast) {
-    if (now < mob.cast.until) mob.stun = Math.max(mob.stun, mob.cast.until);
-    else {
-      // nobody broke it: everyone standing pays, and it comes back angrier
-      mob.cast = null; c.fury++;
-      rt.ev.push(["dc", mob.id, 7]);
-      for (const o of alive) mobHit(S, rt, o, d.atk * C.blast, mob, "tele");
-      for (const o of inside) toast(o, `[${C.bosses[mob.k].cast}]${pp(C.bosses[mob.k].cast, "을를")} 막지 못했습니다! 보스가 더 사나워집니다.`);
-    }
-  }
-  while (c.q.length && c.q[0].at <= now) {
-    const st = c.q.shift(), tgt = S.players[mob.tgt];
-    if (mob.cast || !tgt || tgt.dead) continue;
-    if (st.f === "fan") chalVolley(S, rt, mob, tgt, d.atk, 5, st.off);
-    else if (st.f === "pool") chalPool(S, rt, mob, tgt, d.atk);
-    else if (st.f === "charge" && !mob.act) chalCharge(S, rt, mob, alive.reduce((a, b) => (dist(mob.x, mob.y, b.x, b.y) > dist(mob.x, mob.y, a.x, a.y) ? b : a), tgt));
-    else if (st.f === "land" && canStand(dim.map, st.x, st.y)) { mob.x = st.x; mob.y = st.y; rt.ev.push(["m", mob.id]); }
-  }
-  // the soft enrage: past DIM_CHAL.enrage of a fight its blows grow every DIM_CHAL.enrageStep
-  const over = now - c.engAt - C.enrage, steps = over >= 0 ? 1 + Math.floor(over / C.enrageStep) : 0;
-  if (steps && !c.rage) for (const o of inside) toast(o, `${d.name}${pp(d.name, "이가")} 광폭화합니다! 공격이 점점 거세집니다.`);
-  c.rage = steps;
-  mob.ak = c.ak * (1 + C.fury * c.fury) * (1 + C.enrageK * steps);
+  bsTick(S, dim.map, rt, mob, inside, alive);   // phases, the marked cast, queued steps, the enrage (56-boss-script.js)
 }
-/**
- * A blow on a rift's monster (dealMob): the striker's share of the damage (the carry guard), and during a boss's
- * marked cast the stagger gauge — DIM_CHAL.stag of its health dealt in time breaks the cast and stuns it.
- */
+/** A blow on a rift's monster (dealMob): the striker's share of the damage, for the carry guard. */
 function dimDealt(S, rt, mob, p, dmg) {
   const dim = dimAt(S, rt.id);
   if (!dim || !dim.dmg) return;
   dim.dmg[p.pid] = (dim.dmg[p.pid] || 0) + dmg;
-  const cast = mob.cast;
-  if (!cast) return;
-  cast.got += dmg;
-  if (cast.got < cast.need) return;
-  mob.cast = null; mob.stag = mob.stun = S.now + DIM_CHAL.stunMs; mob.castAt = S.now + DIM_CHAL.stunMs + 1500;
-  if (dim.chal) dim.chal.q = [];
-  rt.ev.push(["dc", mob.id, 8, DIM_CHAL.stunMs]);
-  for (const o of dimInside(S, dim.id)) toast(o, "무력화 성공! 보스가 비틀거립니다 — 지금 몰아치세요!");
 }
 /** The running instance `p` (in town) may walk back into, or null: one they were in lately, or their party's. */
 function dimJoinable(S, p) {

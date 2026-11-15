@@ -228,12 +228,16 @@ function gainXp(S, p, n) {
 
 /** Take `dmg` off a monster on behalf of `p`; true if that killed it. */
 function dealMob(S, rt, mob, p, dmg, crit) {
-  if (mob.dead) return false;
+  // a boss that dived out of reach is not hit at all (56-boss-script.js)
+  if (mob.dead || mob.dive) return false;
+  // a scripted boss stunned by a broken cast takes more (its script's vuln)
+  if (mob.stag > S.now && mob.bs) dmg = Math.round(dmg * (1 + bsDef(mob).vuln));
   // a rift's monster is made tougher for a bigger or stronger party (64-dim.js dimHk)
   if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
   mob.hp -= dmg;
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
-  if (mob.dim) dimDealt(S, rt, mob, p, dmg);   // the carry guard's damage share, a boss's stagger gauge (64-dim.js)
+  if (mob.dim) dimDealt(S, rt, mob, p, dmg);   // the carry guard's damage share (64-dim.js)
+  if (mob.cast) bsDealt(S, rt, mob, dmg);      // a scripted boss's stagger gauge (56-boss-script.js)
   if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
   if (!mob.tgt) mob.tgt = p.pid;
   rt.ev.push(["h", mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0]);
@@ -479,12 +483,12 @@ function fall(S, rt, p) {
 
 const big = (mob) => (MOBS[mob.k].boss ? 12 : mob.el === 2 ? 8 : 0);
 function mobsWithin(rt, x, y, r) {
-  return rt.mobs.filter((mob) => !mob.dead && dist(x, y, mob.x, mob.y) - big(mob) <= r);
+  return rt.mobs.filter((mob) => !mob.dead && !mob.dive && dist(x, y, mob.x, mob.y) - big(mob) <= r);
 }
 /** Monsters standing in a strip `len` long from (x, y) along the unit vector (ux, uy). */
 function mobsInLine(rt, x, y, ux, uy, len, half) {
   return rt.mobs.filter((o) => {
-    if (o.dead) return false;
+    if (o.dead || o.dive) return false;
     const rx = o.x - x, ry = o.y - y;
     const along = rx * ux + ry * uy;
     return along > -4 && along < len && Math.abs(rx * uy - ry * ux) < half + big(o);
@@ -529,7 +533,7 @@ function inArc(p, o, half) {
 function aimMob(rt, p, range, half) {
   let best = null, bd = range;
   for (const mob of rt.mobs) {
-    if (mob.dead) continue;
+    if (mob.dead || mob.dive) continue;
     const d = dist(p.x, p.y, mob.x, mob.y) - big(mob);
     if (d <= bd && inArc(p, mob, half)) { bd = d; best = mob; }
   }
