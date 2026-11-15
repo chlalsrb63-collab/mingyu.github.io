@@ -24,8 +24,8 @@ import { WORDS, DIFF_NAME, FAR_RANGE, FALLBACK, cleanStarters } from "./starter.
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
-// the build players see on the title screen (owner, 2026-11-15: the version line starts at Alpha 1.0.0; git tag alpha-1.0.0)
-const VERSION = "Alpha 1.0.0";
+// the build players see on the title screen (Alpha 1.0.0 = tag alpha-1.0.0; Alpha 1.0.1 = tag alpha-1.0.1)
+const VERSION = "Alpha 1.0.1";
 const LAST = "tales:last";                    // the last channel played: "s1-ch2"
 
 let C = null;
