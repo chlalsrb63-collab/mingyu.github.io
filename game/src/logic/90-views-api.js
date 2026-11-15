@@ -16,7 +16,7 @@ function selfPayload(p) {
     // jobs and stats: the job, the level (1 + points), unspent and spent experience, the six stats and
     // what the next point in each costs (0 at a cap), resets left, the starter pick taken, mastery
     // [lv, xp, need] per kind (WK_ORDER), the kinds in hand and on the back
-    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, st: ch.st, nx: nextCosts(ch), rs: ch.rs, sw: ch.sw,
+    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, st: ch.st, nx: nextCosts(ch), rs: ch.rs, sw: ch.sw, respecCost: statResetCost(ch),
     wm: WK_ORDER.map((k) => [ch.wm[k].lv, Math.floor(ch.wm[k].xp),ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
     jp: ch.jp ? [ch.jp.lv, ch.jp.xp, ch.jp.lv >= JOB_PROGRESS.cap ? 0 : jobNeed(ch.jp.lv)] : null,
     wk2: ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "",
@@ -231,7 +231,7 @@ export function defs() {
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
     ske: { rate: SKE_RATE, pct: SKE_PCT, max: SKE_MAX, item: SKE_ITEM },
-    jf: { lo: [LO_MAX.a, LO_MAX.p], borrow: LO_BORROW, scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST },
+    jf: { lo: [LO_MAX.a, LO_MAX.p], borrow: LO_BORROW, scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST, respecItem: RESPEC_ITEM },
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,

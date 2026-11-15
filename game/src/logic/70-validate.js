@@ -422,6 +422,9 @@ export function validateAction(S, pid, a) {
       if (p.dead) return bad("쓰러진 상태입니다");
       if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
       if (ch.lvl <= 1) return bad("되돌릴 능력치가 없습니다");
+      const gold = statResetCost(ch);
+      if (gold && countItem(ch, RESPEC_ITEM) < 1) return bad("되새김 인장이 필요합니다");
+      if (ch.gold < gold) return bad(`골드가 부족합니다 (${gold.toLocaleString()}G 필요)`);
       return OK;
     }
     case "starter": {

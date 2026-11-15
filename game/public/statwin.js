@@ -248,26 +248,31 @@ export function renderTrainer(box, s, { atTrainer }) {
   lv.append(line);
   box.append(lv);
 
-  // 망각의 의식: back to five in everything, the experience returned (the first is free, then 10 %)
+  // The server quotes the ritual's gold cost at the character's current level.
   const rs = el("div", "tw-sec");
   rs.append(C.section("망각의 의식", "clock"));
-  const fee = s.rs > 0 ? 0 : Math.ceil(0.1 * s.xpt);
+  const fee = s.respecCost || 0, seal = C.G.defs.jf.respecItem;
+  const hasSeal = s.inv.some((st) => st.id === seal);
+  const why = s.lvl <= 1 ? "되돌릴 능력치가 없습니다" : !atTrainer ? "수련관 카이 앞에서 할 수 있습니다"
+    : fee && !hasSeal ? "연금 숙련 Lv.10의 되새김 인장이 필요합니다" : s.gold < fee ? "골드가 부족합니다" : "";
   rs.append(el("p", "tw-txt", `모든 능력치를 5로 되돌리고, 쓴 경험치 ${fmt(s.xpt)}을 돌려받습니다. 무기 숙련과 직업은 그대로입니다.`));
   const row = el("div", "tw-line");
-  row.append(el("span", fee ? "fee" : "free", fee ? `비용: 경험치 ${fmt(fee)} (쓴 경험치의 10%)` : `무료 (${s.rs}회 남음)`));
+  row.append(el("span", fee ? "fee" : "free", fee ? `${fmt(fee)}G · 되새김 인장 1개` : `무료 (${s.rs}회 남음)`));
+  if (fee && !hasSeal) rs.append(el("p", "tw-txt", "되새김 인장은 보글연금공방에서 연금 숙련 Lv.10에 제작할 수 있습니다."));
   if (!sure) {
     const b = el("button", "btn small", "되돌리기");
-    b.disabled = !atTrainer || s.lvl <= 1;
-    b.title = s.lvl <= 1 ? "되돌릴 능력치가 없습니다" : atTrainer ? "" : "수련관 카이 앞에서 할 수 있습니다";
+    b.disabled = !!why;
+    b.title = why;
     b.addEventListener("click", () => { sure = true; C.Sound.play("ui"); C.redraw(); });
     row.append(b);
     rs.append(row);
   } else {
     rs.append(row);
     const cf = el("div", "confirm");
-    cf.append(el("p", "", `Lv.${s.lvl} → Lv.1. 능력치를 모두 되돌릴까요?${fee ? ` 경험치 ${fmt(fee)}이 사라집니다.` : ""}`));
+    cf.append(el("p", "", `Lv.${s.lvl} → Lv.1. 능력치를 되돌리고 경험치 ${fmt(s.xpt)}을 돌려받습니다.${fee ? ` 되새김 인장 1개와 ${fmt(fee)}G를 사용합니다.` : ""}`));
     const yes = el("button", "btn small gold", "되돌리기"), no = el("button", "btn small", "취소");
-    yes.disabled = !atTrainer;
+    yes.disabled = !!why;
+    yes.title = why;
     yes.addEventListener("click", () => { sure = false; C.act({ t: "respec" }); C.Sound.play("ok"); C.redraw(); });
     no.addEventListener("click", () => { sure = false; C.Sound.play("close"); C.redraw(); });
     cf.append(yes, no);

@@ -78,6 +78,10 @@ function gainJob(S, p, n) {
   if (signature && rank > 0 && rank > jobSkillRank(previous)) toast(p, `[${SKILL[signature].name}] 강화 ${rank + 1}단계 달성`);
 }
 
+const RESPEC_ITEM = "stat_seal";
+/** A grant on an older or new sheet pays for the first ritual. Further rituals use the level before reset. */
+const statResetCost = (ch) => ch.rs > 0 ? 0 : 420 + 24 * ch.lvl + 2 * ch.lvl ** 2;
+
 /**
  * Everything about a character that only changes with their sheet (cached in `p.stc` until the sheet
  * changes): the six stats through their soft caps, the weapon's scaling and mastery, gear. `arm` is the

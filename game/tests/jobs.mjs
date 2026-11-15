@@ -262,8 +262,21 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(W.act({ t: "respec" }).error, "되돌릴 능력치가 없습니다");
   assert.ok(W.act({ t: "train", a: [10, 0, 0, 0, 0, 0] }).ok);
   const xpt2 = ch.xpt, xp2 = ch.xp;
+  const fee = W.self().respecCost;
+  assert.equal(fee, 926, "the quoted fee uses the character's pre-reset level");
+  assert.equal(W.act({ t: "respec" }).error, "되새김 인장이 필요합니다");
+  ch.inv.push({ id: D.jf.respecItem, n: 1 });
+  ch.gold = fee - 1;
+  assert.match(W.act({ t: "respec" }).error, /골드가 부족합니다/);
+  assert.equal(ch.inv.find((it) => it.id === D.jf.respecItem).n, 1, "a refused ritual does not consume the item");
+  ch.gold = fee + 30;
   assert.ok(W.act({ t: "respec" }).ok);
-  assert.equal(ch.xp, xp2 + xpt2 - Math.ceil(0.1 * xpt2), "after that, a tenth of what was spent is kept");
+  assert.equal(ch.gold, 30);
+  assert.ok(!ch.inv.some((it) => it.id === D.jf.respecItem));
+  assert.equal(ch.xp, xp2 + xpt2, "the gold and seal preserve the full XP refund");
+  const high = world({ wk: "spear", lvl: 200 });
+  high.ch.rs = 0;
+  assert.equal(high.self().respecCost, 85220);
 }
 
 // ═════════ derived stats (B.4, B.7: golden rows ±1) ═════════

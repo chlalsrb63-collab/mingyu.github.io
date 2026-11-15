@@ -408,6 +408,26 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
 // ── crafting (B.6): station, level, inputs exactly consumed, fee, success / half back on failure, 대성공, ms, batch
 {
   fresh();
+  standBy("bogle");
+  ch.gold = 500;
+  ch.life.alch = { lv: 9, xp: 0 };
+  for (const id of ["m_h2", "stone", "stat_seal"]) wipe(id);
+  const r = X.RECIPES.stat_seal;
+  assert.equal(act({ t: "craft_open", r: "stat_seal" }).error, "연금 레벨이 부족합니다 (Lv.10 필요)");
+  ch.life.alch.lv = 50;
+  assert.equal(act({ t: "craft_open", r: "stat_seal" }).error, "재료가 부족합니다");
+  for (let i = 0; i < 8 && !count("stat_seal"); i++) {
+    give("m_h2", 1); give("stone", 1);
+    assert.ok(act({ t: "craft_open", r: "stat_seal" }).ok);
+    now += Math.ceil(r.ms * X.lifeTime(50));
+    assert.ok(act({ t: "craft", r: "stat_seal", s: 100 }).ok);
+  }
+  assert.ok(count("stat_seal") >= 1, "a crafted seal reaches the inventory");
+  assert.equal(ch.gold, 500 - r.fee, "the successful seal consumes the advertised crafting fee");
+}
+
+{
+  fresh();
   ch.gold = 1e6;
   ch.life.craft = { lv: 1, xp: 0 };
   for (const id of ["m_o1", "m_w1", "stone"]) wipe(id);
@@ -840,7 +860,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   const nc = L.newChar("새싹", []);
   assert.deepEqual([nc.cnt.gat, nc.cnt.craft, nc.cnt.deliver], [0, 0, 0]);
   assert.ok(D.life.jb.jb_dl_cafe.toName && D.life.rep.tier.length === 3 && D.life.pouch.ids.includes("staple") && D.life.nodes.kinds.join("") === "how");
-  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 90 && D.life.recipes.some((r) => r.id === "gr_w_h_5"));
+  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 91 && D.life.recipes.some((r) => r.id === "gr_w_h_5"));
   // the town's hosts: 캉캉 crafts, 보글 brews, 쥬쥬's stove cooks, 포포 runs the board, 쥬쥬 and 보글's shelf sell the staples
   const role = (nid) => X.mapOf(X.NPC_MAP[nid]).npcs.find((n) => n.id === nid);
   assert.deepEqual(["kangkang", "bogle", "juju_stove", "popo"].map((nid) => role(nid).role), ["craft", "alch", "cook", "jobs"]);

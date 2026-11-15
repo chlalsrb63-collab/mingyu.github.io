@@ -87,8 +87,10 @@ ch.xp  = unspent XP (0..2e9)        ch.xpt = total XP spent on points (respec re
   each at the then-current level and that stat's then-current value (deterministic; the client mirrors it from
   `defs().lvc`). Apply: `xp −= cost`, `xpt += cost`, `st += a`, `lvl += Σ`, `p.stc = null`, full HP/MP (as old level
   ups), event `["l", eid]`, `saveSoon`, `checkAch`; `sys` broadcast at Lv.50/100/150/200.
-- **Action `{t:"respec"}`** at 수련관 only: all stats back to 5, `lvl = 1`, `xp += xpt`, `xpt = 0`. Free while `ch.rs > 0`
-  (`rs--`), else costs `ceil(0.1·xpt)` XP taken from the refund ("망각의 의식"). Mastery and job are untouched.
+- **Action `{t:"respec"}`** at 수련관 only: all stats back to 5, `lvl = 1`, refund spent XP, clear `xpt`. Free while
+  `ch.rs > 0` (decrement the free count). Further rituals require one 되새김 인장 (`stat_seal`) and gold
+  `420 + 24 × Lv + 2 × Lv²` at the pre-reset level. Mastery and job progress stay. The seal uses the
+  Lv.10 alchemy recipe: one moss mushroom, one enhancement stone, 100G.
 - `MAXLV = 200`. XP still accrues at 200 (sink: respec; future content).
 
 ### B.2 Point cost (measured)

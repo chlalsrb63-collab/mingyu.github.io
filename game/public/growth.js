@@ -142,6 +142,25 @@ function rowsIcon(rows, pal) {
   outline(c, g);
   return c;
 }
+
+/** A round silver seal with a return mark stamped into green wax. */
+function statSeal() {
+  return rowsIcon([
+    "................", "................", ".....llll.......", "...lllsssll.....",
+    "..llgggggsss....", "..lggggaaagss...", "..lggagaggagds..", "..lgaaaaggagds..",
+    "..lggaggggagds..", "..lggggaaaggds..", "...sggggggdds...", "....sdggddds....",
+    ".....sdddds.....", "................", "................", "................",
+  ], { l: "#e4ebe5", s: "#93a6ab", d: "#556372", g: "#398065", a: "#c6ec91" });
+}
+/** A folded decree held by a teal ribbon with split tails. */
+function jobScroll() {
+  return rowsIcon([
+    "................", "................", ".....lllllll....", "....lmmmmmls....",
+    "....lmmmmmls....", "....lmmmmlms....", "....lmmmmms.....", "....saaaaas.....",
+    "....laaaaam.....", "....lmmammms....", "....lmmammms....", "....lmasamms....",
+    "...llsd.ssss....", "......s.........", "................", "................",
+  ], { l: "#f1e3b9", m: "#c5a976", s: "#8d6e62", a: "#2aa89a" });
+}
 // 밤장막 (bat: violet with crimson) and 꽃무덤 (whale bone with soul-flower pink and blue) set pieces, one kind each.
 const VEIL = { v: "#7a46b8", V: "#4a2a78", l: "#b890f0", r: "#d02a48", k: "#1a1022", w: "#f0e8f0" };
 const BLOOM = { b: "#f0eadc", B: "#b8b0a0", d: "#8a8272", p: "#f0a0c0", P: "#c8648c", u: "#8ac8f0", U: "#4a88c0", w: "#ffffff" };
@@ -199,7 +218,7 @@ export function icons(set) {
     ske_stone: gem("#2ab0d8", "#a8f0ff", "#1a6a90", "#14506e"),   // 스킬 강화석: a cyan cut gem
     mat_bloodtear: teardrop(), mat_clubclaw: clubclaw(),
     sc_atk: scroll("#d84a3a", "#ff9a8a"), sc_def: scroll("#3a6ad8", "#9ab8ff"), sc_xp: scroll("#3aa84a", "#9ae8a0"),
-    scr_job: scroll("#2aa89a", "#a0f0e0"), scr_lvl: scroll("#c02a30", "#ffd060"),   // 전직 / 레벨 초기화 주문서: a teal and a red-gold seal
+    scr_job: jobScroll(), scr_lvl: scroll("#c02a30", "#ffd060"), stat_seal: statSeal(),
     ...Object.fromEntries(Object.entries(SET_ART).map(([id, [rows, pal]]) => [id, rowsIcon(rows, pal)])),
     feather: feather(), pet_chick: petIcon("pet_chick"), pet_bat: petIcon("pet_bat"), pet_wisp: petIcon("pet_wisp"), pet_hagfish: petIcon("pet_hagfish"),
   };

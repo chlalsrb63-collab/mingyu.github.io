@@ -26,7 +26,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 - [ ] 지역 서사·몬스터 41종 이름 검토와 본편 문구 이식 (메인 의뢰 진행 번호 유지). 도감 문구, 지역 목격자 의뢰 7개, 모리 후속 3개는 적용됨.
 - [x] 창 전열 구호기·마도서 되살림 제본과 근접 무기 HP 비용. [지원 기술 인계](reports/codex-field-support-skills.md)
 - [x] 7개 무기별 패시브 5개와 교차 장착 2칸. [숙련 패시브 인계](reports/codex-weapon-mastery-passives.md)
-- [ ] 되새김 인장 제작 + 레벨별 골드 재분배를 `12-life-tables.js` 레시피에
+- [x] 되새김 인장 제작과 레벨별 골드 재분배. [스탯 인계](reports/codex-stat-redistribution.md)
 - [ ] 협동 근무지 5곳 → `life-and-coop.md` F의 C1–C3 순서로 (새 마을의 건물·실내 사용, `coopjobs.js`를 출발점으로)
 - [ ] `89afb18` 스킬 이펙트·타격음 다듬기를 지금의 `skillfx.js` 코드 번호에 맞춰
 

@@ -204,6 +204,7 @@ function appraised(W, src, want) {
   assert.equal(W.act({ t: "charm_quest", a: "accept" }).error, "주아나의 의뢰를 모두 마쳤습니다");
   assert.equal(W.self().charms.quest, null);
   // a stat reset keeps the board (and the level falls back to 1)
+  W.ch.rs = 1;
   W.npc("train");
   assert.ok(W.act({ t: "respec" }).ok);
   assert.equal(W.ch.lvl, 1); assert.equal(W.cs.unlocked, true); assert.equal(W.cs.intro, 2);

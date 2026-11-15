@@ -460,6 +460,7 @@ const ITEMS = {
   charm_nail: { name: "참틀 확장못", type: "mat", price: 0, desc: "주아나에게 가져가면 골드와 함께 참 보드의 칸을 하나 연다." },
   scr_job: { name: "전직 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 모험가로 돌아간다. 걸었던 직업의 직업 레벨은 그대로 남는다." },
   scr_lvl: { name: "레벨 초기화 주문서", type: "mat", price: 0, desc: "전직관에게 골드와 함께 내면 레벨과 능력치가 1로 돌아간다. 숙련, 장비, 골드, 직업 레벨은 남는다." },
+  stat_seal: { name: "되새김 인장", type: "mat", price: 0, desc: "연금공방에서 제작한다. 수련관 카이에게 골드와 함께 내면 능력치를 되돌리고 투자한 경험치를 돌려받는다." },
   stone: { name: "강화석", type: "mat", price: 150, desc: "대장장이에게 가져가면 장비를 강화할 수 있다. 강화할 때마다 쓴다." },
   ske_stone: { name: "스킬 강화석", type: "mat", price: 0, desc: "마을이나 모닥불 곁에서 액티브 스킬을 강화한다 (+10까지, +3까지는 반드시 성공). 실패하면 이 돌만 사라진다." },
   uncurse: { name: "저주 해제 주문서", type: "mat", price: 1200, desc: "대장장이에게 가져가면 강화에 실패해 저주받은 장비를 푼다. 풀린 장비의 다음 강화는 성공 확률이 10%p 오른다." },
@@ -1336,6 +1337,7 @@ Object.assign(RECIPES, {
   mp_s: recipeRow("alch", 1, "alch", [["m_h1", 2], ["flask", 3]], "mp_s", 3, 27),
   hp_m: recipeRow("alch", 10, "alch", [["m_h2", 2], ["flask", 3]], "hp_m", 3, 92),
   mp_m: recipeRow("alch", 10, "alch", [["m_h2", 2], ["flask", 3]], "mp_m", 3, 110),
+  stat_seal: recipeRow("alch", 10, "alch", [["m_h2", 1], ["stone", 1]], "stat_seal", 1, 100),
   el_atk: recipeRow("alch", 15, "alch", [["m_h2", 2], ["m_o2", 1], ["flask", 1]], "el_atk", 1, 136, { eq: ["sc_atk"] }),
   hp_l: recipeRow("alch", 20, "alch", [["m_h3", 2], ["flask", 3]], "hp_l", 3, 204),
   mp_l: recipeRow("alch", 20, "alch", [["m_h3", 2], ["flask", 3]], "mp_l", 3, 240),
@@ -7365,6 +7367,10 @@ function gainJob(S, p, n) {
   const rank = jobSkillRank(jp.lv);
   if (signature && rank > 0 && rank > jobSkillRank(previous)) toast(p, `[${SKILL[signature].name}] 강화 ${rank + 1}단계 달성`);
 }
+
+const RESPEC_ITEM = "stat_seal";
+/** A grant on an older or new sheet pays for the first ritual. Further rituals use the level before reset. */
+const statResetCost = (ch) => ch.rs > 0 ? 0 : 420 + 24 * ch.lvl + 2 * ch.lvl ** 2;
 
 /**
  * Everything about a character that only changes with their sheet (cached in `p.stc` until the sheet
@@ -15575,6 +15581,9 @@ export function validateAction(S, pid, a) {
       if (p.dead) return bad("쓰러진 상태입니다");
       if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
       if (ch.lvl <= 1) return bad("되돌릴 능력치가 없습니다");
+      const gold = statResetCost(ch);
+      if (gold && countItem(ch, RESPEC_ITEM) < 1) return bad("되새김 인장이 필요합니다");
+      if (ch.gold < gold) return bad(`골드가 부족합니다 (${gold.toLocaleString()}G 필요)`);
       return OK;
     }
     case "starter": {
@@ -16196,17 +16205,19 @@ export function applyAction(S, pid, a) {
     case "furn_buy": case "furn_place": case "furn_rot": case "furn_pick": case "h_dep": case "h_wd": case "h_sort": case "h_rest": homeApply(S, p, a); break;
     // ── jobs and stats (45-jobs.js)
     case "respec": {
-      // 망각의 의식: every stat back to 5, the experience they cost back (the first reset is free)
-      const fee = ch.rs > 0 ? 0 : Math.ceil(0.1 * ch.xpt);
-      if (ch.rs > 0) ch.rs--;
-      ch.xp = Math.min(2e9, ch.xp + ch.xpt - fee);
+      const fee = statResetCost(ch);
+      if (fee) {
+        ch.gold -= fee;
+        takeItem(ch, RESPEC_ITEM, 1);
+      } else ch.rs--;
+      ch.xp = Math.min(2e9, ch.xp + ch.xpt);
       ch.xpt = 0;
       ch.st = freshSt();
       ch.lvl = 1;
       if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);
       afterGear(S, p);
       S.maps[p.map].ev.push(["u", p.eid, 2]);
-      toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (경험치 ${fee.toLocaleString()} 소모)` : " (무료)"}`);
+      toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (되새김 인장 1개 · ${fee.toLocaleString()}G)` : " (무료)"}`);
       break;
     }
     case "starter": {
@@ -16834,7 +16845,7 @@ function selfPayload(p) {
     // jobs and stats: the job, the level (1 + points), unspent and spent experience, the six stats and
     // what the next point in each costs (0 at a cap), resets left, the starter pick taken, mastery
     // [lv, xp, need] per kind (WK_ORDER), the kinds in hand and on the back
-    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, st: ch.st, nx: nextCosts(ch), rs: ch.rs, sw: ch.sw,
+    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, st: ch.st, nx: nextCosts(ch), rs: ch.rs, sw: ch.sw, respecCost: statResetCost(ch),
     wm: WK_ORDER.map((k) => [ch.wm[k].lv, Math.floor(ch.wm[k].xp),ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
     jp: ch.jp ? [ch.jp.lv, ch.jp.xp, ch.jp.lv >= JOB_PROGRESS.cap ? 0 : jobNeed(ch.jp.lv)] : null,
     wk2: ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "",
@@ -17049,7 +17060,7 @@ export function defs() {
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
     ske: { rate: SKE_RATE, pct: SKE_PCT, max: SKE_MAX, item: SKE_ITEM },
-    jf: { lo: [LO_MAX.a, LO_MAX.p], borrow: LO_BORROW, scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST },
+    jf: { lo: [LO_MAX.a, LO_MAX.p], borrow: LO_BORROW, scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST, respecItem: RESPEC_ITEM },
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,

@@ -580,17 +580,19 @@ export function applyAction(S, pid, a) {
     case "furn_buy": case "furn_place": case "furn_rot": case "furn_pick": case "h_dep": case "h_wd": case "h_sort": case "h_rest": homeApply(S, p, a); break;
     // ── jobs and stats (45-jobs.js)
     case "respec": {
-      // 망각의 의식: every stat back to 5, the experience they cost back (the first reset is free)
-      const fee = ch.rs > 0 ? 0 : Math.ceil(0.1 * ch.xpt);
-      if (ch.rs > 0) ch.rs--;
-      ch.xp = Math.min(2e9, ch.xp + ch.xpt - fee);
+      const fee = statResetCost(ch);
+      if (fee) {
+        ch.gold -= fee;
+        takeItem(ch, RESPEC_ITEM, 1);
+      } else ch.rs--;
+      ch.xp = Math.min(2e9, ch.xp + ch.xpt);
       ch.xpt = 0;
       ch.st = freshSt();
       ch.lvl = 1;
       if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);
       afterGear(S, p);
       S.maps[p.map].ev.push(["u", p.eid, 2]);
-      toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (경험치 ${fee.toLocaleString()} 소모)` : " (무료)"}`);
+      toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (되새김 인장 1개 · ${fee.toLocaleString()}G)` : " (무료)"}`);
       break;
     }
     case "starter": {

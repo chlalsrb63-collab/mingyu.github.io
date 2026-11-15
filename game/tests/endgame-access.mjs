@@ -67,6 +67,8 @@ const reset = add("reset", 200, "town", townStone);
 for (const p of [returning, reset]) p.ch.wp[endgame] = 1;
 const trainer = maps.town.npcs.find((n) => n.role === "train");
 [reset.x, reset.y] = foot(trainer);
+reset.ch.gold = 85220;
+reset.ch.inv.push({ id: "stat_seal", n: 1 });
 assert.ok(act(reset.pid, { t: "respec" }).ok);
 [reset.x, reset.y] = foot(townStone);
 assert.equal(reset.ch.lvl, 1);

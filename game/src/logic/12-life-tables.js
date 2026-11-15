@@ -151,6 +151,7 @@ Object.assign(RECIPES, {
   mp_s: recipeRow("alch", 1, "alch", [["m_h1", 2], ["flask", 3]], "mp_s", 3, 27),
   hp_m: recipeRow("alch", 10, "alch", [["m_h2", 2], ["flask", 3]], "hp_m", 3, 92),
   mp_m: recipeRow("alch", 10, "alch", [["m_h2", 2], ["flask", 3]], "mp_m", 3, 110),
+  stat_seal: recipeRow("alch", 10, "alch", [["m_h2", 1], ["stone", 1]], "stat_seal", 1, 100),
   el_atk: recipeRow("alch", 15, "alch", [["m_h2", 2], ["m_o2", 1], ["flask", 1]], "el_atk", 1, 136, { eq: ["sc_atk"] }),
   hp_l: recipeRow("alch", 20, "alch", [["m_h3", 2], ["flask", 3]], "hp_l", 3, 204),
   mp_l: recipeRow("alch", 20, "alch", [["m_h3", 2], ["flask", 3]], "mp_l", 3, 240),
