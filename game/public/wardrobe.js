@@ -628,6 +628,19 @@ const BACK = {
       if (y === last) for (let x = x0; x < x0 + w; x += 2) b.px(x, y, dk);
     }
   },
+  // a cape whose hem is cut into three bat-wing points, violet lining showing in the notches
+  batcape: (b, A, p) => {
+    BACK.cape(b, A, p);
+    const last = A.foot - 1, vi = "#6a3a8a", dk = sh(p.c, 0.5);
+    if (A.side) { b.px(13, last, dk); return; }
+    if (!A.back) return;
+    const sw = sway(A), x0 = 11 + sw;
+    for (let k = 0; k < 10; k++) {
+      const notch = k === 3 || k === 6;   // 3 points: 0-2, 4-5, 7-9
+      if (notch) { b.px(x0 + k, last, dk); b.px(x0 + k, last - 1, vi); }
+    }
+    for (let y = A.bt + 2; y < last - 1; y += 2) b.px(16 + sw, y, vi);
+  },
   // feathered: a rounded leading edge up top, three feather tips along the bottom
   angel: wingPair([
     ".ll.....",
@@ -763,6 +776,7 @@ const BACK_FRONT = {
     if (A.side) { b.r(14, y, 4, 1, p.c); b.px(17, y, GOLD); return; }
     b.r(13, y, 6, 1, p.c); b.px(13, y, sh(p.c)); b.px(18, y, sh(p.c)); b.cr(y, 2, 1, GOLD);
   },
+  batcape: (b, A, p) => BACK_FRONT.cape(b, A, p),
   pack: (b, A, p) => {
     const y = A.bt, st = sh(p.c, 0.35);
     if (A.side) { b.r(15, y, 1, A.foot - y, st); return; }
@@ -1021,7 +1035,7 @@ export const ART = {
   hat_wreath_white: ["hat", "wreath", { c: "#f8f8ff", b: "#ffd84a" }],
   top_scarf: ["top", "scarf", { c: "#e0404a", b: "#fff0d0" }],
   back_plush: ["back", "plush", { c: "#c89060", b: "#e0405a" }],
-  back_batcape: ["back", "cape", { c: "#4a1a2e" }],   // shortcut: the plain cape shape in 밤장막 crimson; a scalloped bat-wing hem would read better
+  back_batcape: ["back", "batcape", { c: "#4a1a2e" }],   // 밤장막 crimson, bat-wing hem
   ws_bee: ["wskin", "bee", {}],
 };
 /** The cosmetic slots, in the order the wire sends them. */

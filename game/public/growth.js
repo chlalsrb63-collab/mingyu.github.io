@@ -91,6 +91,50 @@ function feather() {
   outline(c, g);
   return c;
 }
+/** A cut gem (crown, girdle, pavilion) with a white glint and a small rune scratch. */
+function gem(c1, lt, dk, rune) {
+  const [c, g] = canvas16();
+  const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  const rows = [[5, 10], [4, 11], [3, 12], [3, 12], [3, 12], [4, 11], [5, 10], [5, 10], [6, 9], [6, 9], [7, 8]];
+  rows.forEach(([a, b], i) => {
+    const y = 2 + i, gird = i === 4;
+    r(a, y, b - a + 1, 1, gird ? dk : c1);
+    r(a, y, 1, 1, lt); if (!gird) r(b, y, 1, 1, dk);
+  });
+  r(5, 2, 3, 1, lt); r(4, 3, 1, 1, lt);
+  r(8, 7, 1, 2, rune); r(9, 8, 1, 1, rune);                       // the rune scratch on the pavilion
+  r(6, 3, 1, 3, "#ffffff"); r(5, 4, 3, 1, "#ffffff");              // the glint
+  outline(c, g);
+  return c;
+}
+/** A red teardrop crystal. */
+function teardrop() {
+  const [c, g] = canvas16();
+  const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  [[7, 8], [7, 8], [6, 9], [5, 10], [4, 11], [4, 11], [3, 12], [3, 12], [4, 11], [5, 10], [6, 9]].forEach(([a, b], i) => {
+    r(a, 2 + i, b - a + 1, 1, "#c0283a"); r(b, 2 + i, 1, 1, "#7c1428");
+  });
+  r(7, 11, 3, 1, "#7c1428"); r(5, 12, 5, 1, "#7c1428");
+  r(5, 6, 1, 3, "#f06070"); r(6, 5, 1, 1, "#f06070"); r(7, 3, 1, 2, "#f06070");
+  r(6, 7, 1, 1, "#ffffff");
+  outline(c, g);
+  return c;
+}
+/** A mantis shrimp's club claw: a jointed arm ending in a fat orange knuckle. */
+function clubclaw() {
+  const [c, g] = canvas16();
+  const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  for (let i = 0; i < 4; i++) { r(2 + i * 2, 12 - i * 2, 3, 3, "#d85a22"); r(2 + i * 2, 14 - i * 2, 3, 1, "#8c3016"); }
+  for (let y = 1; y <= 10; y++) for (let x = 6; x <= 15; x++) {
+    const dx = (x - 10.5) / 4.6, dy = (y - 5.5) / 4.8;
+    if (dx * dx + dy * dy > 1) continue;
+    r(x, y, 1, 1, dx + dy > 0.7 ? "#a83a1a" : dx + dy < -0.7 ? "#ffa050" : "#e8702a");
+  }
+  r(9, 3, 1, 6, "#a83a1a"); r(12, 4, 1, 5, "#a83a1a");           // the ridges of the club
+  r(8, 3, 1, 1, "#ffe0a0");
+  outline(c, g);
+  return c;
+}
 /** A pet's icon: its resting frame, cut to the middle of its sheet. */
 function petIcon(kind) {
   const [c, g] = canvas16();
@@ -108,7 +152,8 @@ export function icons(set) {
     hp_l: flask("#b8303c", "#f09aa0"), mp_l: flask("#3058c0", "#9ab4f0"),
     recall: scroll("#7a5ad8", "#c8b0ff"),          // the return scroll never had an icon of its own
     uncurse: scroll("#c8a040", "#fff0b0"),         // 저주 해제 주문서: a gold seal
-    ske_stone: scroll("#2a8ab8", "#a8f0ff"),       // 스킬 강화석 (shortcut: a scroll shape, a gem icon when the item gets art)
+    ske_stone: gem("#2ab0d8", "#a8f0ff", "#1a6a90", "#14506e"),   // 스킬 강화석: a cyan cut gem
+    mat_bloodtear: teardrop(), mat_clubclaw: clubclaw(),
     sc_atk: scroll("#d84a3a", "#ff9a8a"), sc_def: scroll("#3a6ad8", "#9ab8ff"), sc_xp: scroll("#3aa84a", "#9ae8a0"),
     feather: feather(), pet_chick: petIcon("pet_chick"), pet_bat: petIcon("pet_bat"), pet_wisp: petIcon("pet_wisp"), pet_hagfish: petIcon("pet_hagfish"),
   };
