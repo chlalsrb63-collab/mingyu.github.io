@@ -22,6 +22,34 @@ import { entityPos } from "./net.js";
 import { mobMax, DUNGEONS, RANK_NAME } from "./events.js";
 /** Quest marks over NPCs (owner): the main chain in yellow, side quests in blue; "!" to take, "?" to hand in (a lighter tint). */
 const MAIN_MARK = "#ffd84a", MAIN_DONE = "#fff0a0", SIDE_MARK = "#5aaaff", SIDE_DONE = "#a8d8ff", JOB_MARK = "#5ee07a", JOB_DONE = "#b4f5c0";   // 알바 in green
+const COOP_MARK = "#c77dff";   // 협동 알바 still open today, over its owner in its building (purple)
+/** The co-op job NPC `n` offers here today (its owner, in its lobby, not yet worked today): a purple "!". */
+function coopMark(n) {
+  const jobs = G.defs && G.defs.coop && G.defs.coop.jobs, done = (G.self && G.self.coop) || [];
+  if (jobs && G.map) for (const k of Object.keys(jobs)) if (jobs[k][4] === n.id && jobs[k][5] === G.map.id && !done.includes(k)) return ["!", COOP_MARK];
+  return null;
+}
+/** The one mark over an NPC, most important first: the main chain (the elder), side quests, today's 협동 알바, 알바 ("!" to take, "?" to hand in). */
+function npcMark(n) {
+  if (n.role === "elder" && G.self) {
+    const q = G.self.q, quest = G.defs.quests[q.i], mk = !quest ? "" : q.st === 0 ? "!" : q.n >= quest.n ? "?" : "";
+    if (mk) return [mk, mk === "!" ? MAIN_MARK : MAIN_DONE];
+  }
+  const sq = SideQ.mark(n, G.self);
+  if (sq) return [sq, sq === "!" ? SIDE_MARK : SIDE_DONE];
+  const co = coopMark(n);
+  if (co) return co;
+  const jm = Board.markFor(n);
+  return jm ? [jm, jm === "!" ? JOB_MARK : JOB_DONE] : null;
+}
+/** A quest mark (owner: bigger and clearer): a 28 px glyph on a dark disc ringed in its colour, bobbing, clear of the name below. */
+function questMark(mk, sx, sy, t) {
+  if (!mk) return;
+  const [str, col] = mk, y = sy - 18 + Math.sin(t / 200) * 3, cx = Math.round(sx * dpr), cy = Math.round((y - 10) * dpr);
+  tg.fillStyle = "rgba(16,14,22,.78)"; tg.beginPath(); tg.arc(cx, cy, 13 * dpr, 0, 7); tg.fill();
+  tg.lineWidth = 1.5 * dpr; tg.strokeStyle = col; tg.stroke();
+  label(str, sx, y, col, 28);
+}
 
 // ───────────────────────────── render ─────────────────────────────
 // The world is drawn by the 3D scene; names, numbers and speech are drawn over
@@ -200,7 +228,7 @@ function renderText(t) {
   for (const n of m.npcs) {
     if (n.thing) {   // a thing's name shows on the F prompt only (town.md E); a 알바 board still wears its green mark
       const jm = Board.markFor(n);
-      if (jm) { const [x, y] = at(n.x * T + 8, n.y * T + 12, 2.6); if (!off(x, y)) label(jm, x, y + Math.sin(t / 200) * 3, jm === "!" ? JOB_MARK : JOB_DONE, 18); }
+      if (jm) { const [x, y] = at(n.x * T + 8, n.y * T + 12, 2.6); if (!off(x, y)) questMark([jm, jm === "!" ? JOB_MARK : JOB_DONE], x, y + 18, t); }
       continue;
     }
     const actor = NPC.cast(n.id), away = actor && !NPC.at(n.id, server)?.onPost;
@@ -208,24 +236,14 @@ function renderText(t) {
     const [x, y] = at(n.x * T + 8, n.y * T + 12, 1.55);
     if (off(x, y)) continue;
     label(away ? `${n.name} 안내판` : n.name, x, y, away ? "#d5bd99" : "#f0d48a");
-    const sqm = SideQ.mark(n, G.self);
-    if (sqm) label(sqm, x, y - 18 + Math.sin(t / 200) * 3, sqm === "!" ? SIDE_MARK : SIDE_DONE, 18);
-    else { const jm = Board.markFor(n); if (jm) label(jm, x, y - 18 + Math.sin(t / 200) * 3, jm === "!" ? JOB_MARK : JOB_DONE, 18); }
-    if (n.role === "elder" && G.self) {
-      const q = G.self.q, quest = G.defs.quests[q.i];
-      const mark = !quest ? "" : q.st === 0 ? "!" : q.n >= quest.n ? "?" : "";
-      if (mark) label(mark, x, y - 18 + Math.sin(t / 200) * 3, mark === "!" ? MAIN_MARK : MAIN_DONE, 18);
-    }
+    questMark(npcMark(n), x, y, t);
   }
   for (const n of NPC.list(server)) {
     if (n.onPost || n.fade < 0.5) continue;
     const [x, y] = at(n.x, n.y, 1.55);
     if (off(x, y)) continue;
     label(n.name, x, y, "#f0d48a");
-    const mark = SideQ.mark(n, G.self);
-    const jm = !mark && Board.markFor(n);
-    if (mark) label(mark, x, y - 18 + Math.sin(t / 200) * 3, mark === "!" ? SIDE_MARK : SIDE_DONE, 18);
-    else if (jm) label(jm, x, y - 18 + Math.sin(t / 200) * 3, jm === "!" ? JOB_MARK : JOB_DONE, 18);
+    questMark(npcMark(n), x, y, t);
   }
   // Residents talking together and ambient conversations close enough to hear.
   for (const b of S3.townBubbles(t)) { const [x, y] = at(b.x, b.y, 1.8); bubble(b.b, x, y, t); }

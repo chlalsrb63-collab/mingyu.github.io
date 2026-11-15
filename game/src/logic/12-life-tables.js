@@ -372,12 +372,26 @@ const COOP_T = {
   rep: 5,
 };
 const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무", pipein: "급수 담당", pipeout: "배수 담당" };
-/** An empty row of the forge template's object layer (wall, 28 open tiles, the cut-down front wall). */
-const COOP_ROW = "=" + " ".repeat(28) + "_";
-/** The v1 smithy's object layer (the forge v2 and 보글's lab build on it). */
-const COOP_SMITHY = ["+===^===+===^===+===^===+=====", "= ]]   <     <" + " ".repeat(13) + "* _", COOP_ROW, "=" + " ".repeat(23) + "w    _", "=*" + " ".repeat(27) + "_",
-  COOP_ROW, COOP_ROW, "= >    &     &     &       m _", COOP_ROW, COOP_ROW, COOP_ROW, "=" + " ".repeat(23) + "w    _", COOP_ROW,
-  "=g" + " ".repeat(25) + "] _", COOP_ROW, "_".repeat(30)];
+/**
+ * 캉캉's big forge hall (forge v2 + ingots; owner, 2026-11-15: "전용 인스턴스 공간은 지금 크기보다 훨씬 크게"): 64×44 like 보글's
+ * (the v1 room was 30×16). West: four ingot crates `]` (철 · 은 · 금 · 미스릴, north to south) and the rack `>`; two furnaces `<`
+ * with lanterns; four anvils `&` in the middle; two quench barrels `w`; the 진열대 (six counter tiles `m`) far east, 12 tiles
+ * from the barrels, with the customers' aisle east of it and their door by the front wall; work benches along the south.
+ */
+const HALL = { W: 64, H: 44, crate: [[8, 13], [8, 17], [8, 21], [8, 25]], furnace: [[13, 15], [13, 23]], anvil: [[22, 13], [22, 25], [29, 13], [29, 25]],
+  quench: [[36, 16], [36, 22]], shelfX: 48, shelfY: 16, door: [49, 41], rack: [4, 32] };
+const COOP_HALL = (() => {
+  const { W, H } = HALL, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
+  const put = (ch, x, y) => { o[y][x] = ch; };
+  for (const [k, ch] of [["crate", "]"], ["furnace", "<"], ["anvil", "&"], ["quench", "w"]]) for (const [x, y] of HALL[k]) put(ch, x, y);
+  for (let i = 0; i < 6; i++) put("m", HALL.shelfX, HALL.shelfY + i);
+  put(">", HALL.rack[0], HALL.rack[1]);
+  for (const [x, y] of HALL.furnace) { put("*", x - 2, y - 1); put("*", x + 2, y - 1); }
+  put("g", 1, 1); put("g", W - 2, 1); put("g", 1, H - 2); put("g", W - 2, H - 2);
+  for (let x = 16; x <= 23; x++) put("-", x, 36);
+  for (let x = 34; x <= 41; x++) put("-", x, 36);
+  return o.map((r) => r.join(""));
+})();
 /** The jobs: name, owner NPC and lobby, shift minutes, the two tools (rotation A B A B), par, combo window, life skill, template. */
 const COOP = {
   apt: {
@@ -446,27 +460,25 @@ const COOP = {
   },
   forge: {
     name: "캉캉대장간 단조", npc: "kangkang", lobby: "kangkang_forge", mins: 5, tools: ["tongs", "hammer"], combo: 40000, skill: "craft",
-    hint: "집게 담당은 철 상자 → 화덕(풀무질로 60~80도) → 달군 쇠를 모루에, 망치 담당은 음표에 맞춰 두드리고(화살표 음표는 방향키) 담금질 → 진열대! 손님이 와서 사 가요.",
+    hint: "집게 담당은 주문의 색을 보고 맞는 주괴(철·은·금·미스릴)를 상자에서 꺼내 화덕(풀무질로 60~80도) → 달군 주괴를 모루에, 망치 담당은 음표에 맞춰 두드리고(화살표 음표는 방향키) 담금질 → 진열대! 손님이 계속 몰려와요.",
     // the forge engine's words (68-coop.js): piece and grade names, messages
     skin: { orders: ["편자", "단검", "검날", "투구", "냄비", "방패", "갑옷"], grades: ["걸작", "상", "중", "하"], txt: {
       busy: "이 모루는 사용 중이에요 — 옆 모루로!", first: "들고 있는 것을 먼저 담금질하고 진열대에 올리세요",
-      cooled: "식었어요 — 집게로 다시 달구세요!", a: ["철 상자에서 쇠막대를 꺼내세요 (화덕 앞에서는 풀무질!)", "달군 쇠를 빈 모루에 올리세요", "화덕에 넣어 달구세요"],
+      cooled: "식었어요 — 집게로 다시 달구세요!", a: ["주문 색에 맞는 주괴 상자에서 주괴를 꺼내세요 (화덕 앞에서는 풀무질!)", "달군 주괴를 빈 모루에 올리세요", "화덕에 넣어 달구세요 (상자에 도로 넣을 수도 있어요)"],
       b: ["모루 위 달군 쇠를 음표에 맞춰 두드리세요", "담금질 통에 식히세요", "진열대(동쪽)에 올리세요"], full: "진열대가 꽉 찼어요 — 손님을 기다리세요!",
       flip: "뒤집기! 화살표 음표는 방향키로", noflip: "방향키는 화살표 음표에서만!", duet: "갑옷은 번갈아 쳐요 — 받는 음표는 다른 사람이!" } },
-    // cut-offs tuned on walking bots that hit ≈ 55 % perfect · 30 % good · 15 % missed notes (tests/coop.mjs: 2–4 bots score
-    // ≈ 870 · 2,276 · 2,831 selling 14 · 23 · 26 pieces, just over S; bots at 35 · 30 · 35 % score ≈ 727 · 1,837 · 2,243, A);
-    // a real party, less steady and slower to decide, lands on B–A
-    par: 1000, parN: { 2: 0.94, 3: 2.45, 4: 3.05 },
-    // stations (tiles; solid furniture, used from a neighbouring tile): the iron crate `]`, furnaces `<` and anvils `&` in two
-    // rows, quench barrels `w`, the 진열대 (six counter tiles `m`, east) and the rack `>` by the west wall; customers come in
-    // at `door` and wait in the aisle east of the counter (`seats`, one per shelf slot)
-    st: { crate: [2, 1], furnace: [[7, 1], [13, 1]], anvil: [[7, 7], [13, 7], [19, 7]], quench: [[24, 3], [24, 11]], shelf: [5, 6, 7, 8, 9, 10].map((y) => [27, y]), rack: [2, 7] },
-    seats: [5, 6, 7, 8, 9, 10].map((y) => [28, y]), door: [28, 14],
-    start: [[5, 4], [9, 4], [11, 4], [15, 4]],
+    // hard cut-offs (owner, 2026-11-15) tuned on walking bots in the 64×44 hall with ingots (tests/coop.mjs): near-perfect bots
+    // (92 % perfect) score ≈ 816 · 2,265 · 2,837, just over S; realistic ones (55 / 30 / 15 %) ≈ 597 · 1,612 · 1,812, B
+    par: 1000, parN: { 2: 0.86, 3: 2.38, 4: 2.99 },
+    // stations (tiles; solid furniture, used from a neighbouring tile; COOP_HALL): the four ingot crates `]` (index = metal),
+    // furnaces `<`, anvils `&`, quench barrels `w`, the 진열대 (six counter tiles `m`, far east) and the rack `>`; customers
+    // come in at `door` and wait in the aisle east of the counter (`seats`, one per shelf slot)
+    st: { crate: HALL.crate, furnace: HALL.furnace, anvil: HALL.anvil, quench: HALL.quench, shelf: [0, 1, 2, 3, 4, 5].map((i) => [HALL.shelfX, HALL.shelfY + i]), rack: HALL.rack },
+    seats: [0, 1, 2, 3, 4, 5].map((i) => [HALL.shelfX + 1, HALL.shelfY + i]), door: HALL.door,
+    start: [[14, 16], [22, 14], [14, 22], [29, 14]],
     tpl: {
-      name: "캉캉대장간 (작업 중)", theme: "interior", style: "forge", bgm: "forge", safe: true, w: 30, h: 16, entry: [14, 10],
-      ground: Array.from({ length: 16 }, () => "x".repeat(30)),
-      objects: COOP_SMITHY.map((r, y) => (y >= 5 && y <= 10 ? r.slice(0, 27) + "m" + r.slice(28) : r)),
+      name: "캉캉대장간 · 대형 단조장 (작업 중)", theme: "interior", style: "forge", bgm: "forge", safe: true, w: HALL.W, h: HALL.H, entry: [20, 19],
+      ground: Array.from({ length: HALL.H }, () => "x".repeat(HALL.W)), objects: COOP_HALL,
     },
   },
 };
@@ -579,11 +591,20 @@ const COOP_FORGE = {
     { pts: 65, per: 900, pat: [[0, 0], [1, 0], [2, 0], [3, 5], [4, 0], [5, 0], [6, 3]] },                                // 방패: slow and heavy, turned ← then →
     { pts: 95, per: 680, at: 60000, pat: [[0, 0], [1, 1], [2, 0], [3, 1], [4, 0], [5, 1], [6, 0], [7, 1], [8, 0], [9, 1]] },   // 갑옷: call and response
   ],
-  open: { 2: 4, 3: 5, 4: 6 }, orderMs: { 2: 12000, 3: 9000, 4: 7000 }, firstMs: 1000, deadMs: 100000, latePen: 20,
-  T0: 60, decay: 4, pump: 9, pumpMs: 300, lo: 60, hi: 80, scorch: 90, heatIn: 12, heatLo: 4, scorchQ: 0.5, hotMs: 12000, reheat: 50, slots: 2,
-  leadMs: 1000, feverK: 0.85, perfect: 130, good: 260, latMax: 150, missCool: 1500, slackMs: 3000, laneMs: 90,
+  // the four ingots (owner, 2026-11-15): every order names its piece's colour (`col` + piece: "금빛 투구" = 금주괴); a dearer
+  // ingot heats `heat`× longer, plays its pattern at `tempo`× the beat with `win`× the judge windows, and sells for `price`×;
+  // `w`: how often customers ask for it
+  metals: [
+    { name: "철주괴", col: "잿빛", heat: 1, tempo: 1, win: 1, price: 1, w: 4 },
+    { name: "은주괴", col: "은빛", heat: 1.25, tempo: 0.96, win: 0.94, price: 1.3, w: 3 },
+    { name: "금주괴", col: "금빛", heat: 1.5, tempo: 0.92, win: 0.88, price: 1.6, w: 2 },
+    { name: "미스릴주괴", col: "청록빛", heat: 1.8, tempo: 0.88, win: 0.82, price: 2, w: 2 },
+  ],
+  open: { 2: 4, 3: 6, 4: 6 }, orderMs: { 2: 8000, 3: 6000, 4: 4500 }, firstMs: 1000, deadMs: 80000, latePen: 15,
+  T0: 60, decay: 4, pump: 9, pumpMs: 300, lo: 60, hi: 80, scorch: 90, heatIn: 14, heatLo: 4, scorchQ: 0.5, hotMs: 12000, reheat: 50, slots: 2,
+  leadMs: 1000, feverK: 0.85, perfect: 130, good: 260, latMax: 150, missCool: 1000, slackMs: 4000, laneMs: 90,
   walk: 48, browseMs: 1200, leaveMs: 2500,
-  grades: [[1.6, 1.6], [1.0, 1.3], [0.4, 1.0], [-1e9, 0.5]], timeK: 0.3, tongsK: 0.45, hammerK: 0.55, syncMs: 1000,
+  grades: [[1.6, 1.5], [1.0, 1.3], [0.4, 1.0], [-1e9, 0.6]], timeK: 0.3, tongsK: 0.45, hammerK: 0.55, syncMs: 1000,
 };
 /**
  * 쥬쥬식당 서빙 (C.5, v1 + dirty plates, three dishes). By the party size n at the start: at most `seats[n]` tables
