@@ -879,6 +879,163 @@ const HOUSE_REST = { hp: 0.5, mp: 0.5, xp: 8, ms: 15 * 60000, cd: 30 * 60000 };
  */
 const HOUSE_TOWN = { map: "town", house: [14, 43], door: [[15, 46], [16, 46]], out: [15, 47], agent: [18, 47] };
 
+// Bestiary notes keyed by stable monster ID, including retired variants and treasure chests.
+const MOB_LORE = {
+  // Meadow
+  twinhare: "두 머리가 서로 다른 밭에서 같은 풀을 뜯으려 한다.",
+  gutfrog: "뛰어오르기 직전 발밑 웅덩이에 붉은 테가 번진다.",
+  eyecrow: "가장 오래 뜬 눈이 감기면 다음 눈이 물가를 살핀다.",
+  lambmaw: "갈비 아래 아가리에서 두 번째 울음이 터지면 땅을 박찬다.",
+  meadowram: "울타리 말뚝이 반쯤 박힌 뿔이 달릴 때마다 땅을 긁는다.",
+
+  // Forest
+  splitboar: "반으로 갈라진 등에는 숲이 채워 넣은 가시가 돋는다.",
+  ribdeer: "일제히 휘어지는 갈비뼈가 발밑의 뿌리를 들어 올린다.",
+  hydrasnake: "한 머리가 고개를 들면 나머지 둘도 같은 곳에 독침을 겨눈다.",
+  foxtwine: "꼬리에 엉킨 매듭이 풀리는 순간 다음 먹이에게 뛰어든다.",
+  mothface: "사람을 닮은 빈 얼굴에서 날갯짓보다 먼저 포자가 닿는다.",
+
+  // Crypt
+  ratking: "왕좌 밑의 꼬리를 따라가면 수십 개의 발자국이 하나로 모인다.",
+  twinhare_bone: "턱 없는 쪽은 아무것도 먹지 못해 뼈를 달각이며 뛴다.",
+  bonehound: "코가 사라진 뒤부터 관 밖의 발소리를 듣고 사냥한다.",
+  toadbrood: "등의 알을 품느라 돌아갈 관까지 통째로 업고 다닌다.",
+  batcluster: "관뚜껑이 들리면 박쥐 수십 마리가 한 날개처럼 펼쳐진다.",
+
+  // City
+  pigeonmass: "깃털 몇 장이 빠진 자리에 태엽 톱니가 겹겹이 돋았다.",
+  gutfrog_poison: "풍선처럼 부푼 배가 폐액을 떨어뜨리며 움직인다.",
+  doghead: "셋째 머리의 경보가 울리면 끊어진 전선도 팽팽해진다.",
+  squidrat: "전선 촉수 끝에 꽂힌 플러그가 발밑의 전기를 빨아들인다.",
+  catsplit: "갈라진 몸의 앞뒤가 서로 다른 지붕으로 뛰려 한다.",
+  fishwalker: "도금된 아가미로 공기를 삼킬 때마다 발밑 철판이 울린다.",
+
+  // Sewer
+  leechmaw: "배관 밑을 기어 다니다 살아 있는 발목의 박동을 듣고 튄다.",
+  ratking_bile: "매듭에 고인 독즙이 가장 느린 쥐부터 적신다.",
+  gatorhalf: "반쪽 턱이 바닥을 치면 굳은 침전물이 사방으로 들린다.",
+  crabskull: "빈 두개골로 만든 갑각 안에서 살아 있는 집게만 달각인다.",
+  eelknot: "매듭이 조여질 때 튀는 전기는 기포보다 빠르게 물을 건넌다.",
+
+  // Cave
+  spiderhand: "수정 틈에 접어 둔 손가락이 동굴 벽을 차고 튄다.",
+  splitboar_frost: "턱의 하얀 성에가 한꺼번에 깨지면 숨을 삼키고 돌진한다.",
+  moleworm: "발밑 진동을 따라 굴을 파다가 한 번에 땅 위로 솟는다.",
+  bearmaw: "곰이 숨을 고를 때 배 안에서는 발굽 같은 울림이 난다.",
+  hydrasnake_steel: "동굴의 가장 가는 광맥이 세 개의 입으로 단단히 굳었다.",
+  owlstare: "꺾인 목을 바로잡을 때마다 부엉이 울음이 수정 속을 돈다.",
+  boss: "크리온의 가슴에는 광부들이 잃어버린 등잔의 불빛이 돈다.",
+
+  // Abyss
+  twingoat: "서로 다른 이마로 박치기하지만 피하는 길은 하나만 남긴다.",
+  bonehound_ash: "잿발이 바닥을 찍는 소리는 발이 땅에 닿기 전에 들린다.",
+  horsehalf: "갈 곳 없는 반쪽 말이 돌아오는 발자국만 기억한다.",
+  batcluster_blood: "갈라진 핏줄로 엮인 날개가 하나씩 펴지며 박자를 맞춘다.",
+  lionhand: "갈기 사이의 손이 움직일 때 발톱보다 먼저 그림자가 달려든다.",
+  serpentwing: "날개막 끝에 찍힌 무늬마다 다른 비늘탄을 숨겨 둔다.",
+  sowseer: "왼쪽 눈이 내일을 잊을 때마다 어제의 침전물이 고인다.",
+  doghead_fire: "세 목구멍에서 일곱 불씨가 차례로 끊어져 바닥에 떨어진다.",
+  abyssboss: "식어 버린 마을 등불을 삼켜 심장 가까이에 심지처럼 모아 둔다.",
+
+  // Jungle and oasis
+  vinemonkey: "나무를 떠난 뒤에도 꼬리 끝 덩굴은 다음 가지를 찾는다.",
+  dartbrood: "등에 매달린 새끼들이 고개를 들면 한꺼번에 독방울이 떨어진다.",
+  hydrasnake_poison: "혓바닥으로 핥고 간 잎맥마다 검은 독이 오른다.",
+  orchidmantis: "머리 위의 난초가 활짝 피면 꽃잎 사이에서 독침이 날아온다.",
+  loggator: "이끼 낀 몸통이 물가에서 꿈틀거리면 통나무 다리가 하나 줄어든다.",
+  foxtwine_gold: "우물가에 꼬리를 묻어 두고 도마뱀이 지날 때까지 기다린다.",
+  hydrasnake_gold: "세 머리가 몸을 엇갈려 흔들며 모래에 세 갈래 흔적을 남긴다.",
+  spinescorp_gold: "볕에 달군 등뼈로 우물 가장자리에 별 모양을 새긴다.",
+  ribvulture_bone: "모래에 꽂은 갈비뼈가 울릴 때마다 목마른 짐승이 모인다.",
+  cactushog: "등의 가시가 우물물 한 모금을 머금으면 한 바퀴씩 뒤집힌다.",
+  mummycamel: "밤이 되면 풀린 붕대가 오래전 대상들의 길을 더듬는다.",
+
+  // Coast and dune sea
+  hermitskull: "빈 소라 하나를 사이에 두고 집게들이 자기 집이라고 다툰다.",
+  barnacleseal: "파도가 멀어지면 등짝의 따개비들이 한꺼번에 입을 다문다.",
+  brainjelly: "투명한 머릿속에서 생각 하나가 번쩍일 때마다 독물이 튄다.",
+  eyegull: "떨어진 눈은 밀물 때 돌아와 몸보다 먼저 먹이를 찾는다.",
+  leechmaw_bone: "산호에 달라붙은 흰 몸이 흔들리면 속의 이빨이 먼저 벌어진다.",
+  coralturtle: "오래된 산호가 등껍질을 뚫고 나와 뿔처럼 앞을 겨눈다.",
+  ratking_gold: "모래 속에 숨은 쥐들의 꼬리가 길 하나처럼 이어져 있다.",
+  spinescorp_bone: "살이 닳아 사라져도 꼬리뼈 끝의 침은 밤마다 돋는다.",
+  bonehound_gold: "모래에 묻힌 유물 소리를 듣고 맨발로 사구를 건넌다.",
+  ribvulture_gold: "펼친 갈비뼈에 모래가 걸리면 사구에 새 울음이 난다.",
+  barnacleseal_blood: "사막에 남은 화석을 등껍데기에 끼우고 낡은 파도 소리를 낸다.",
+  hermitskull_frost: "낮에도 녹지 않는 푸른 소라에 밤의 찬 공기를 모아 둔다.",
+  sandmaw: "모래에 동그란 구멍이 생기면 아래에서 아가리가 오므라든다.",
+
+  // Cloud temple and mesa
+  beadmonkey: "염주알을 하나씩 굴리며 닫힌 절문이 열릴 때를 센다.",
+  splitboar_ash: "몸의 틈에 향재가 쌓일수록 발굽 소리는 잦아든다.",
+  wingcrane: "바깥 날개가 접힐 때 안쪽 날개가 바람을 쳐 올린다.",
+  ribdeer_gold: "갈비뼈마다 끼인 단풍잎이 뛰어갈 때 종잇장처럼 운다.",
+  eelknot_gold: "구름에 젖은 비단을 두르는 동안 몸의 매듭이 한 겹 더 늘어난다.",
+  bearmaw_ash: "배 속 아가리가 오래된 종추를 굴리며 새벽을 알린다.",
+  ribdeer_frost: "찬 구름을 한 모금 들이키면 갈비 사이에 흰 서리가 낀다.",
+  mistiger: "안개가 발밑으로 내려앉는 날에만 겹쳐 있던 발톱이 드러난다.",
+  spinescorp_fire: "달아오른 꼬리뼈를 바위 틈에 세워 두고 밤의 냉기를 피한다.",
+  foxtwine_fire: "꼬리 매듭의 불씨가 흩어질 때마다 벼랑풀이 그을린다.",
+  ribvulture_fire: "골짜기에서 데운 공기가 갈비 사이를 지나며 쇳소리를 낸다.",
+  twingoat_blood: "두 머리가 번갈아 울면 벼랑 반대편에서도 돌이 떨어진다.",
+  sowseer_gold: "눈 위에 붙은 금박을 털어 내도 벼랑 아래에선 같은 눈이 뜬다.",
+  horsehalf_gold: "벽화에서 뜯겨 나온 반쪽 몸이 절벽에 남은 짝을 찾는다.",
+  lionhand_gold: "갈기에 꿴 낡은 금가락지들이 손가락을 펼 때 달그락댄다.",
+  serpentwing_bone: "말라붙은 날개뼈가 바위 그늘의 뜨거운 바람을 낚아챈다.",
+
+  // Maple and frost keep
+  blightsquirrel: "다람쥐 여럿이 꼬리 하나를 당겨 서로 다른 나무로 오른다.",
+  stumpmaw: "베어 낸 나이테가 입술이 되어 떨어진 도토리를 씹는다.",
+  crowscare: "낡은 허수아비의 헛기침이 끝나면 손끝에서 깃털이 날아든다.",
+  shroomboar: "등에 자란 버섯이 눌리면 뛰어간 자리에 포자가 눌어붙는다.",
+  gravrose: "묘비 이름을 따라 뻗은 뿌리가 밤마다 작은 가시를 뱉는다.",
+  rotstag: "왕관 밑의 뿔이 아직 자라 왕이 묻힌 관을 안쪽에서 들어 올린다.",
+  bogcrown: "진흙이 마를 때마다 뿌리 사이의 검은 왕관이 조금씩 조인다.",
+  hollowowl: "눈 대신 왕릉 문고리의 떨림으로 길을 찾아 경비를 돈다.",
+  rootwarden: "성에 낀 뿔로 눈을 쓸어내며 옛 왕의 발자국을 되짚는다.",
+  rimehare: "토끼굴 입구에 얼음창을 쌓아 두고 두 머리로 번갈아 보초를 선다.",
+  frostmoth: "유리처럼 굳은 날개가 부딪힐 때마다 얇은 서리가 흩어진다.",
+  crownstag: "옥좌에 닿은 유리뿔이 울리면 성채의 서리가 왕한테로 기운다.",
+
+  // Variants retained for existing records and shared sprite roots
+  catsplit_gold: "햇볕에 드러난 점무늬만 바위 한쪽에서 다른 쪽으로 건너간다.",
+  toadbrood_poison: "등의 알이 물에 잠기면 숨 쉬듯 독방울을 하나씩 올린다.",
+  mothface_bile: "사람 얼굴 무늬 틈에서 날갯가루가 푸른 이슬로 맺힌다.",
+  ribdeer_bile: "비가 오래 내릴수록 갈비뼈 사이의 이끼가 더 단단하게 엉킨다.",
+  lambmaw_bone: "뼈에 달라붙은 털을 비비며 오래전에 마른 풀을 되새김질한다.",
+  eyecrow_ash: "눈 사이에 쌓인 재를 털 때마다 다른 눈빛이 나타난다.",
+  twingoat_gold: "모래가 눈을 덮으면 두 머리가 같은 길을 두 번 밟는다.",
+  bearmaw_gold: "모래를 머금은 배의 아가리가 걸을 때마다 둔하게 흔들린다.",
+  crabskull_blood: "붉게 물든 껍데기 아래로 갯바위에 박은 집게가 드러난다.",
+  fishwalker_frost: "푸른 다리가 마를 때마다 한 발자국씩 물가로 물러선다.",
+  eelknot_frost: "매듭 한가운데 겨울빛 산호가 숨어 물빛을 푸르게 만든다.",
+  squidrat_blood: "등에 조그만 산호가 자라 갈라진 촉수가 그 틈을 붙든다.",
+  gatorhalf_steel: "잃어버린 반쪽 턱을 대신해 굳은 철제 덮개를 달고 다닌다.",
+  spiderhand_bone: "손끝 뼈마디를 하나씩 접을 때마다 벽에서 똑똑 소리가 난다.",
+  owlstare_gold: "모래 속에서 나온 울음 소리에 고개를 한 바퀴 더 돌린다.",
+  fishwalker_blood: "붉은 비늘 밑에서 다리가 계속 돋아 발자국이 겹친다.",
+  crabskull_frost: "푸른 껍데기를 내놓은 채 조수 시간마다 같은 바위에 몸을 숨긴다.",
+  moleworm_gold: "세 번째 모래언덕의 진동을 듣고 그 뒤를 따라 굴을 판다.",
+  spinescorp: "등뼈를 곧추세우면 집게 아래에도 새 마디가 나타난다.",
+  ribvulture: "날개를 펴도 깃 대신 얇은 갈비뼈 사이로 바람이 샌다.",
+  crownpeacock: "금빛 꼬리에 뜬 눈무늬가 함께 돌아갈 때 깃이 한꺼번에 선다.",
+
+  // Chests
+  chest_meadow: "잠금쇠에 씹힌 풀잎이 끼어 있다.",
+  chest_forest: "뚜껑의 틈새에 수액으로 굳은 싹이 박혀 있다.",
+  chest_crypt: "덮개 안쪽에 오래전에 지워진 묘비 이름이 적혀 있다.",
+  chest_city: "손잡이를 들어 올리면 작은 톱니가 헛돈다.",
+  chest_sewer: "약병 마개를 눌러 붙인 밀랍이 잠금쇠를 감싸고 있다.",
+  chest_cave: "경첩에서 수정 알갱이가 부딪히는 소리가 난다.",
+  chest_abyss: "상자는 가만히 있는데 뚜껑의 그림자는 반쯤 열려 있다.",
+  chest_maple: "왕실 문장 모서리에 단풍잎 하나가 말라붙어 있다.",
+  chest_jungle: "손잡이를 타고 올라온 덩굴 두 가닥이 매듭을 이룬다.",
+  chest_oasis: "잠금쇠 안쪽에 우물물로 씻긴 자국이 남아 있다.",
+  chest_coast: "뚜껑 안에 조가비가 끼어 흔들 때마다 잘그락댄다.",
+  chest_dunesea: "모래 밑에서 오래 굴러 장식 한쪽만 반들반들하다.",
+  chest_cloudtemple: "잠금쇠에 끼인 염주알 하나가 맑게 울린다.",
+  chest_mesa: "열을 먹은 금박이 갈라져 가느다란 벼랑 무늬를 이룬다.",
+};
 // ───────────────────────────── life skills: tables (docs/design/life-and-coop.md B) ─────────────────────────────
 // Six life skills, levels 1–50 on one curve, separate from combat level and weapon mastery. What they give is
 // goods: L1 grew 낚시 and 요리 (graded fish by zone, cooking XP and bonuses); L2 (the second half of this file)
@@ -15521,7 +15678,7 @@ export function defs() {
   for (const k of Object.keys(MOBS)) {
     const d = MOBS[k];
     // levels as players see them (4·tier − 3); `tier` the world's own
-    mobs[k] = { name: d.name, sp: d.sp, tint: d.tint || null, lv: shownLv(d.lv), tier: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0, aggro: d.aggro || 0 };
+    mobs[k] = { name: d.name, lore: d.lore || MOB_LORE[k] || "", sp: d.sp, tint: d.tint || null, lv: shownLv(d.lv), tier: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0, aggro: d.aggro || 0 };
   }
   const affix = {};
   for (const [k, label, prefix] of AFFIX) affix[k] = [label, prefix];

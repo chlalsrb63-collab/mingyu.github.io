@@ -42,7 +42,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 - [x] 거울(외형 변경)을 골드가 부족할 때 시도하면 거절되고 골드·외형이 그대로인지 확인하는 테스트를 `game/tests/looks.mjs`에 추가
 - [x] 더 이상 쓰지 않는 옛 스킬 이펙트 코드 정리: `game/public/growth.js`의 `skillFx` 25–32번·`zoneFx` 4–6번, `game/public/client.js`의 `attackFx` 10–24번, `game/public/scene2d.js`의 `showcase`/`renderStage`/`leaveStage` — 호출하는 곳이 없는지 grep으로 확인한 뒤 삭제, 테스트와 `shot.mjs --live`로 오류 없음 확인
 - [ ] 휴대폰 가로 화면의 캐릭터 생성 페이지에서 추천 모습 버튼에 이름이 안 보이는 문제 수정 (`game/public/lobby.css`), `shot.mjs`로 iPhone 가로 크기 한 장 확인
-- [ ] 몬스터 도감에 몬스터별 한 줄 설명(한국어, 귀엽고 짧게, 괴수는 기괴하게): `game/src/logic/10-tables.js` `MOBS`에 `lore` 필드 + `defs()`로 전달 + 도감 창에 표시, 테스트(모든 몬스터에 lore 있음) 추가
+- [x] 몬스터 도감 설명 129개를 `11-mob-lore.js`에 추가하고 등록 카드에 표시. 지역은 선택 메뉴로 전환하고 설명 데이터·등록 전후 화면 검증.
 - [ ] 일일 과제 종류 2가지 추가 (모닥불에서 요리 1회, 파티로 몬스터 10마리) — `game/src/logic/60-content.js`, 테스트 추가
 - [ ] 가방 장비 칸에 "빈 슬롯에 낄 수 있음 ▲" 표시 (빈 장비 슬롯에 맞는 장비를 들고만 다니는 경우) — 가방 그리기는 `game/public/client.js` `renderBag` 근처, `shot.mjs --live --keys i --el "#w-bag"` 한 장
 - [ ] `docs/FILEMAP.md` 파일 지도와 실제 파일을 대조해 틀린 줄·빠진 파일을 고치기 (줄 수 `[N]` 갱신 포함, 문서만 수정)

@@ -216,14 +216,18 @@ export function renderCollect(s) {
   const head = el("div", "ach-top");
   head.append(iconImg("paw", "#e2c486"), el("span", "", `등록 ${have} / ${total}`), el("small", "", `완성 지역 ${(s.col || []).length} / ${regions.length}`));
   box.append(head);
-  const tabs = el("div", "tabs");
+  const picker = el("label", "col-region", "지역");
+  const select = el("select");
   for (const id of regions) {
-    const done = (s.col || []).includes(id);
-    const b = el("button", (G.colTab === id ? "on" : "") + (done ? " done" : ""), maps[id] ? maps[id].name : id);
-    b.addEventListener("click", () => { G.colTab = id; Sound.play("tab"); refreshUi(); });
-    tabs.append(b);
+    const name = maps[id]?.name || id;
+    const option = el("option", "", (s.col || []).includes(id) ? `${name} · 완성` : name);
+    option.value = id;
+    select.append(option);
   }
-  box.append(tabs);
+  select.value = G.colTab;
+  select.addEventListener("change", () => { G.colTab = select.value; Sound.play("tab"); refreshUi(); });
+  picker.append(select);
+  box.append(picker);
   const reg = col[G.colTab], done = (s.col || []).includes(G.colTab);
   const bonus = el("div", "col-bonus" + (done ? " done" : ""));
   bonus.append(el("b", "", done ? "지역 완성 보너스 적용 중" : "지역을 모두 채우면"), el("span", "", reg.bonus.map(([k, v]) => statText(k, v)).join(", ")));
@@ -231,11 +235,13 @@ export function renderCollect(s) {
   const grid = el("div", "col-grid");
   for (const k of reg.mobs) {
     const d = G.defs.mobs[k], n = s.mk[k] || 0, ok = n >= need;
+    const name = n ? d.name : "???";
     const cell = el("div", "col-cell" + (ok ? " ok" : ""));
     const im = el("img"); im.alt = ""; im.src = mobThumb(k, ok);
     const bar = el("div", "bar"), f = el("i"); f.style.width = `${clamp((n / need) * 100, 0, 100)}%`; bar.append(f);
-    cell.append(im, el("b", "", ok ? d.name : n ? d.name : "???"), el("small", "", ok ? `Lv.${d.lv} · 등록됨` : `${n} / ${need}`), bar);
-    cell.title = `${d.name} — ${ok ? "등록됨" : `${need}마리를 잡으면 등록됩니다`} (처치 ${n})`;
+    cell.append(im, el("b", "", name), el("small", "", ok ? `Lv.${d.lv} · 등록됨` : `${n} / ${need}`), bar);
+    if (ok && d.lore) cell.append(el("p", "col-lore", d.lore));
+    cell.title = `${name} — ${ok ? "등록됨" : `${need}마리를 잡으면 등록됩니다`} (처치 ${n})`;
     grid.append(cell);
   }
   box.append(grid);

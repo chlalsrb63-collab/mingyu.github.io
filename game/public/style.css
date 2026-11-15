@@ -313,10 +313,13 @@ body.crt #text { filter: drop-shadow(1px 0 0 rgba(255, 40, 80, .45)) drop-shadow
 .col-bonus b { color: #d8d2c2; font-weight: 600; } .col-bonus span { margin-left: auto; color: var(--gold); }
 .col-bonus.done { border-style: solid; border-color: #4a8a5a; } .col-bonus.done b { color: #9af0ae; }
 .col-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.col-region { display: flex; align-items: center; gap: 6px; margin: 5px 0; }
+.col-region select { flex: 1; min-width: 0; padding: 3px; background: var(--well); color: inherit; font: inherit; }
 .col-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; background: rgba(255, 255, 255, .03); border: 1px solid rgba(0, 0, 0, .6); border-radius: 3px; text-align: center; }
 .col-cell img { width: 54px; height: 54px; image-rendering: pixelated; background: var(--well); border: 1px solid #000; border-radius: 3px; }
 .col-cell b { font-size: 11px; font-weight: 600; line-height: 1.25; }
 .col-cell small { font-size: 10px; color: var(--muted); }
+.col-lore { margin: 3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
 .col-cell .bar { width: 100%; height: 4px; margin: 2px 0 0; }
 .col-cell .bar i { background: var(--gold); }
 .col-cell.ok { box-shadow: inset 0 0 0 1px rgba(226, 196, 134, .5); } .col-cell.ok small { color: #9af0ae; }
