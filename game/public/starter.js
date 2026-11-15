@@ -26,7 +26,7 @@ export const FALLBACK = [
   ["staff", "스태프", "견습 지팡이", "파이어볼", 100],
   ["book", "마도서", "낡은 주문서", "영혼 화살", 84],
   ["bow", "활", "나무 짧은활", "관통 화살", 150],
-  ["hammer", "양손해머", "말뚝박이 망치", "쐐기찍기", 30],
+  ["hammer", "양손해머", "말뚝박이 망치", "쐐기찍기", 37],
 ];
 /** A list as the server sent it, kept only if it is well-formed (else the fallback). */
 export function cleanStarters(list) {

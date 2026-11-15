@@ -26,8 +26,9 @@ S.init(cv);
 S.resize(320, 200, 1);
 S.loadMap(m);
 S.sync(G); console.log("loaded");
-const ms = +(q.get("ms") || 33), n = +(q.get("n") || 18), Z = Math.max(1, Math.min(4, +q.get("z") || 3)), cw = 80, ch = 84;
 const kinds = (q.get("wk") || "sword,dagger,spear,staff,book,hammer").split(","), cls = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "mage", bow: "lancer", hammer: "destroyer" };
+const ms = +(q.get("ms") || 33), n = +(q.get("n") || 18), Z = Math.max(1, Math.min(4, +q.get("z") || 3));
+const hammerSheet = kinds.includes("hammer"), cw = hammerSheet ? 108 : 80, ch = hammerSheet ? 100 : 84;
 const dirs = (q.get("aim") || "e").split(",");
 const rows = [];
 for (const wk of kinds) for (const d of dirs) for (const beat of (wk === "sword" ? [0, 1] : [0, 1, 2])) rows.push([wk, d, beat]);
@@ -42,7 +43,7 @@ for (let r = 0; r < rows.length; r++) {
   const [ax, ay] = AIMS[d];
   const a = Math.hypot(ax, ay), hammer = wk === "hammer";
   // settle at rest, then the previous beats so each stroke starts where the last one ended
-  me.aim = hammer ? [me.x + ax * 16 / a, me.y + ay * 16 / a] : [me.x + ax * 30, me.y + ay * 30 + 6];
+  me.aim = hammer ? [me.x + ax * 19 / a, me.y + ay * 19 / a] : [me.x + ax * 30, me.y + ay * 30 + 6];
   me.hammerWind = hammer ? S.impactMs(wk, 0) : 0;
   me.hammerYaw = hammer ? Math.atan2(ay, ax) : undefined;
   me.atkT = -1e9;
@@ -56,12 +57,12 @@ for (let r = 0; r < rows.length; r++) {
         const sub = Math.max(1, Math.round(ms / 16));
         for (let k = 0; k < sub; k++) {
           t += ms / sub;
-          if (hammer && !struck && t - me.atkT >= me.hammerWind) { struck = true; hammerImpact(...me.aim, 14, true, false, 7); }
+          if (hammer && !struck && t - me.atkT >= me.hammerWind) { struck = true; hammerImpact(...me.aim, 18, true, false, 7); }
           S.render(me.x, me.y, ms / 1000 / sub, t, true);
         }
       }
       else S.render(me.x, me.y, 0.016, t, true);
-      o.drawImage(cv, cv.width / 2 - cw / 2, cv.height / 2 + 14 - 50, cw, ch, 70 + i * cw * Z, r * ch * Z, cw * Z, ch * Z);
+      o.drawImage(cv, cv.width / 2 - cw / 2, cv.height / 2 + 14 - (hammerSheet ? 60 : 50), cw, ch, 70 + i * cw * Z, r * ch * Z, cw * Z, ch * Z);
     }
     if (!last) { const stroke = { sword: 920, dagger: 520, spear: 780, staff: 980, book: 800, bow: 760, hammer: 1100 }[wk]; for (let k = 0; k < stroke / 16; k++) { t += 16; S.render(me.x, me.y, 0.016, t, true); } }
   }

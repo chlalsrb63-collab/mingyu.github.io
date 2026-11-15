@@ -50,19 +50,21 @@ const oBack = (u) => { const c = 1.70158, v = u - 1; return 1 + (c + 1) * v * v 
 export const WIND = 0.15, IMPACT = 0.2, SNAP = 0.5;
 
 export const HAMMER_IMPACT = 200, HAMMER_RECOVER = 240;
-/** The hammer repeats one forward stroke. The head lifts, drops and recovers in the same plane. */
+/** One overhead stroke for every beat, with the head planted at the server's impact time. */
 export function hammerPose(ms, impact = HAMMER_IMPACT) {
-  const raisedAt = impact - 60;
-  const lift = ms < raisedAt ? eIO(Math.max(0, ms) / raisedAt) : 1 - eIn(Math.min(1, (ms - raisedAt) / 60));
-  const drop = eIn(Math.min(1, Math.max(0, (ms - raisedAt) / 60)));
-  const held = 1 - eIO(Math.min(1, Math.max(0, (ms - impact - 38) / (HAMMER_RECOVER - 38))));
+  const fallMs = 64, plantMs = 60;
+  const fallAt = impact - fallMs;
+  const rise = eIO(Math.max(0, Math.min(1, ms / (fallAt - 26))));
+  const fall = eIn(Math.max(0, Math.min(1, (ms - fallAt) / fallMs)));
+  const held = 1 - eIO(Math.max(0, Math.min(1, (ms - impact - plantMs) / (HAMMER_RECOVER - plantMs))));
+  const raised = rise * (1 - fall), planted = fall * held;
   return {
     yaw: 0,
-    pitch: (20 + 39 * lift - 52 * drop * held) * D,
-    reach: -2 * lift + 4 * drop * held,
-    lift: 4 * lift,
-    lean: -0.5 * lift + 1.5 * drop * held,
-    fr: ms >= impact && ms < impact + 85 ? "crouch" : "",
+    pitch: (20 + 92 * raised - 53 * planted) * D,
+    reach: -2 * raised + 5 * planted,
+    lift: 9 * raised - 2 * planted,
+    lean: -2.5 * raised + 4 * planted,
+    fr: ms >= impact && ms < impact + 94 ? "crouch" : raised > 0.65 ? "stretch" : "",
     strike: false,
   };
 }

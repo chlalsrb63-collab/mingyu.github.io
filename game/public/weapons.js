@@ -436,11 +436,11 @@ const BOW = [
   })),
 ];
 
-// Short wrapped hafts leave room for a broad striking face on the 32×32 world sprite.
+// Short wrapped hafts leave room for a broad striking face.
 function hammerHead(head, blade, shapes, handle = "dwood", fittings = "iron") {
   return () => ({
     sh: [
-      R(-3, 12, -1.5, 2, handle), R(-4, -2, -2, 2.5, fittings),
+      R(-3, 12, -1.5, 2, handle), R(-3.2, -2, -2, 2.5, fittings),
       R(-1, 5, -2, 2.5, "leather"), R(0, 1, -2, 2.5, "wrap"), R(3, 4, -2, 2.5, "wrap"),
       R(8, 11, -2.5, 3, fittings), ...shapes,
     ],
@@ -984,8 +984,8 @@ function sprite(kind, gear, o) {
   const key = `${kind}:${wt}:${wq}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}:${motif}${o ? `:${o.q}:${o.arrow ? 1 : 0}` : ""}`;
   let c = cache.get(key);
   if (c) return c;
-  const book = kind === "book";
-  const W = kind === "spear" ? 52 : kind === "sword" ? 44 : 32, H = 32;
+  const book = kind === "book", hammer = kind === "hammer";
+  const W = kind === "spear" ? 52 : kind === "sword" ? 44 : hammer ? 40 : 32, H = hammer ? 36 : 32;
   const ox = book ? 16 : GRIP[0], oy = 16;
   const ext = fromAsset("weapon." + assetKey(kind, wt, gear), W, H, ox, oy, book);
   if (ext) {
@@ -996,7 +996,9 @@ function sprite(kind, gear, o) {
   }
   const d = build(kind, wt, motif, false, o || undefined);
   const glow = we >= 7 ? { blade: d.blade, col: GLOW7, edgeX: d.edgeX } : null;
-  c = paint(d, W, H, (s, t) => [ox + s, oy + t], (x, y) => [x - ox, y - oy], glow, we >= 10 ? [RARE_INK[wq] || INK, GLOW10] : [RARE_INK[wq] || INK]);
+  // Rasterize at the larger size so the hammer keeps a one-pixel outline and the same grip in every pose.
+  const scale = hammer ? 1.25 : 1;
+  c = paint(d, W, H, (s, t) => [ox + s * scale, oy + t * scale], (x, y) => [(x - ox) / scale, (y - oy) / scale], glow, we >= 10 ? [RARE_INK[wq] || INK, GLOW10] : [RARE_INK[wq] || INK]);
   cache.set(key, c);
   return c;
 }

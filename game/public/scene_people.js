@@ -156,8 +156,10 @@ export function drawPerson(s, e, t, dt, x, y) {
   const turn = (a, b, u) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * u; };
   const held = resting && atk < stroke + 0.6;           // poised at the end of the stroke, ready for the next
   let push = 0, depth = 0;
+  // Keep the overhead arc visible when swinging straight toward or away from the camera.
+  const swingYaw = hammer && Math.abs(Math.cos(aimS)) < 0.18 ? aimYaw - sg * Math.sign(Math.sin(aimS)) * 0.24 : aimYaw;
   const place = (p) => {
-    const [angle, layer] = Sw.project(aimYaw + p.yaw, p.pitch);
+    const [angle, layer] = Sw.project(swingYaw + p.yaw, p.pitch);
     return [angle, layer, p.reach];
   };
   if (P) {
@@ -184,7 +186,7 @@ export function drawPerson(s, e, t, dt, x, y) {
   // at the cheek while shooting (the riser out ahead of it), dropped to the hip at rest
   // (raised at once — a shot has no wind-up to spare — and lowered unhurried)
   if (bowy) s.bw = P ? 1 : (s.bw ?? 0) + ((held ? 1 : 0) - (s.bw ?? 0)) * Math.min(1, dt * 8);
-  const hx0 = bowy ? x - sg * 1.5 * (1 - s.bw) + Math.cos(aimS) * 3 * s.bw : x + sg * (7 - 4 * s.sl);
+  const hx0 = bowy ? x - sg * 1.5 * (1 - s.bw) + Math.cos(aimS) * 3 * s.bw : x + sg * (hammer ? 5 : 7 - 4 * s.sl);
   const hy0 = bowy ? y - 5 - 2 * s.bw + Math.sin(aimS) * 1.5 * s.bw + bob : y - (3 + 2 * s.sl) + bob - (hammer ? P?.lift || 0 : 0);
   const hx = hx0 + Math.cos(s.ang) * push, hy = hy0 + Math.sin(s.ang) * push;
   const long = Sw.bladeLen(s.weapon, SP.GRIP);

@@ -219,7 +219,7 @@ function skillRows(box, s, k) {
     const bh = el("div", "hd");
     bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), el("kbd", "", K("attack")), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
     const description = {
-      hammer: `해머를 살짝 든 뒤 앞쪽 ${wk.center}px 지점을 내려찍습니다. 반경 ${wk.r}px의 적을 최대 세 마리까지 맞힙니다.`,
+      hammer: `해머를 머리 위로 들어 올려 앞쪽 ${wk.center}px 지점을 내려찍습니다. 반경 ${wk.r}px의 적을 최대 세 마리까지 맞힙니다.`,
       sword: "대검을 좌우로 번갈아 휘둘러 두 번 이어 벱니다.",
     }[s.wk] || "가장 가까운 적을 겨냥합니다. 이어 치면 세 번째 타격이 마무리 일격이 됩니다.";
     basic.append(bi, bh, el("p", "", description));

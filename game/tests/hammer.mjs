@@ -48,6 +48,7 @@ assert.equal(initialGold - p.ch.gold, D.jobs.destroyer.cost);
 H.changeMap(S, p, "meadow", ox, oy);
 
 const atk = { t: "atk", a: 0 }, stamp = { t: "sk", id: "hammer_stamp", a: 0 };
+const { center, r: radius, wind } = D.wkinds.hammer;
 const m = (dx, dy, k = "twinhare") => {
   const mob = H.newMob(S, k, [0, 0, 0, 0]);
   rt.mobs.push(mob);
@@ -58,23 +59,24 @@ const dmg = (mob, who = p) => mob.by[who.pid] || 0;
 const impact = () => rt.ev.find(e => e[0] === "hm");
 
 {
-  const first = m(16, 1), second = m(16, -1), edge = m(30, 0), extra = m(16, 14), behind = m(-1, 0), out = m(16, -15);
+  const first = m(center, 1), second = m(center, -1), edge = m(center + radius, 0);
+  const extra = m(center, radius), behind = m(-1, 0), out = m(center, -radius - 1);
   for (let i = 0; i < 3; i++) {
     ready();
     L.endTick(S);
     assert.ok(actions(p, atk).ok);
-    assert.deepEqual(rt.ev.find(e => e[0] === "a").slice(2), [7, ox + 16, oy, p.dir, 0, 200, 0]);
+    assert.deepEqual(rt.ev.find(e => e[0] === "a").slice(2), [7, ox + center, oy, p.dir, 0, wind, 0]);
     const hp = first.hp;
-    advance(199);
+    advance(wind - 1);
     assert.equal(first.hp, hp);
     advance(1);
-    assert.deepEqual(impact().slice(2, 6), [ox + 16, oy, 14, 1]);
+    assert.deepEqual(impact().slice(2, 6), [ox + center, oy, radius, 1]);
     assert.ok(first.hp < hp);
     // Incidental knockback must not move the next cast's fixture.
     for (const o of [first, second, edge, extra, behind, out]) { o.x = o.hx; o.y = o.hy; }
   }
   assert.ok(dmg(first) > dmg(second) && dmg(second) > 0, "entity ID breaks a center tie");
-  assert.ok(dmg(edge) > 0, "14px boundary is included");
+  assert.ok(dmg(edge) > 0, "the wider forward boundary is included");
   assert.equal(dmg(extra) + dmg(behind) + dmg(out), 0);
   assert.equal(p.hammerCracks.get(first).n, 2);
   const other = player("second", "hammer", 20);

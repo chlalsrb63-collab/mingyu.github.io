@@ -474,6 +474,7 @@ export function hammerImpact(x, y, r, hit, crit, kind) {
   const f = S3.fx, col = crit ? "#ffdc75" : final ? "#f3a567" : hit ? "#e4be83" : "#a98c6d";
   const [cx, cy] = at(x, y);
   f.wave(x, y, r, col, final ? 310 : 220);
+  if (kind === 7) rim(x, y, r, "#8d7159", col, 160, 0.1);
   f.burst(x, y, 0.08, col, final ? 19 : hit ? 10 : 5, final ? 2.1 : 1.2);
   if (!hit) return;
   if (kind !== 7) {
