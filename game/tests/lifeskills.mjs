@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
   "\nexport const __t = { gainLife, lifeOdds, lifeTime, lifeGrade, lifeXp, gradeOfMap, fishLand, fishWait, cookDish, cookBurnt, lifeSheetClean, RECIPES, FISH_G, RXP, GRADE_LV, NPC_ROLES, NPC_MAP, ITEMS," +
   // L2
-  " lifeNodes, mapOf, mapPayload, MAP_META, FIRES, NODE, nodeMat, lifeTick, gatDone, craftOnce, JB, JB_PAY, jbOffers, jbRoute, jbLimit, parcelSpd, addRep, REP_TIER, REP_PERK," +
+  " lifeNodes, mapOf, mapPayload, MAP_META, FIRES, NODE, nodeMat, lifeTick, gatDone, craftOnce, JB, JB_PAY, jbOffers, jbOffersOf, jbRoll, jbNeed, jbQual, jbSit, jbGold, JB_GRADE, JB_RUSH, isNight, MOBS, jbRoute, jbLimit, parcelSpd, addRep, REP_TIER, REP_PERK," +
   " CRAFT, GEAR_CRAFT, SHOP, sellPrice, POUCH_MAX, addItem, takeItem, countItem, canAdd, stats, dayOf, lifeNeed, ENH_RATE, ENH_BLESS, AFFIX, rollGear, CNT_KEYS, ACH, DAILY_OTHER, LIFE_MASTER, exportChar };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs(), T = 16;
@@ -596,7 +596,8 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   const o1 = X.jbOffers(ch, day), o2 = X.jbOffers({ ...ch }, day);
   assert.deepEqual(o1, o2, "the same offers for the same name and day");
   assert.equal(o1.length, X.JB_PAY.offers);
-  assert.ok(o1.every((id) => X.JB[id].lv <= 1), "only what a beginner qualifies for");
+  assert.ok(o1.every((id) => X.JB[id].lv <= 1 && !X.JB[id].when && !X.JB[id].rep), "only what a beginner qualifies for");
+  assert.ok(new Set(o1.map((id) => X.JB[id].kind)).size >= 4, "a mix of kinds: " + o1.join());
   assert.notDeepEqual([day, day + 1, day + 2].map((d) => X.jbOffers(ch, d).join()), Array(3).fill(o1.join()), "they change from day to day");
   // 06:00 KST is the boundary (21:00 UTC)
   const six = Date.UTC(2026, 10, 14, 21, 0, 0);
@@ -606,7 +607,10 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
     assert.ok(X.NPC_MAP[t.npc] && (t.kind !== "deliver" || X.NPC_MAP[t.to]), id + ": NPCs exist");
     assert.ok(/[가-힣]/.test(t.text) && D.life.keys.includes(t.sk), id);
     if (t.kind === "deliver") { const r = X.jbRoute(id); assert.ok(r > 5 && r < 400, `${id}: route ${r}`); }
+    else if (t.kind === "hunt") assert.ok(Object.hasOwn(X.MOBS, t.mob) && t.n >= 1 && t.lv >= 1 && t.lv <= 200, id);
+    else if (t.kind === "scout") assert.ok(t.map.length === 3 && t.map.every((m) => Object.hasOwn(X.MAP_META, m) && !X.MAP_META[m].indoor), id);
     else assert.ok(Object.hasOwn(X.ITEMS, t.item) && t.n >= 1, id);
+    assert.ok(["bring", "make", "fish", "deliver", "hunt", "scout"].includes(t.kind) && (!t.when || ["night", "rain"].includes(t.when)) && (!t.rep || X.REP_TIER.includes(t.rep)), id);
     if (t.kind === "make") assert.ok(!X.SHOP.includes(t.item), id + ": no shop sells it");
   }
   // take at 포포 only, one at a time
@@ -618,20 +622,22 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   standBy("popo");
   assert.equal(act({ t: "jb", a: "take", id: "jb_ore5" }).error, "오늘의 알바가 아닙니다");
   assert.ok(act({ t: "jb", a: "take", id: "jb_herb1" }).ok);
-  assert.deepEqual(ch.jobBoard.active, { id: "jb_herb1", npc: "bogle", prog: 0, expAt: 0 });
+  const hr = X.jbRoll(ch, ch.jobBoard.day, "jb_herb1"), hk = X.JB_GRADE.pay[hr.g], hn = X.jbNeed(X.JB.jb_herb1, hr.g);
+  assert.equal(hn, [6, 9, 12][hr.g], "6 × grade (×1 / ×1.5 / ×2)");
+  assert.deepEqual(ch.jobBoard.active, { id: "jb_herb1", npc: "bogle", prog: 0, expAt: hr.rush ? now + hr.rush * 60000 : 0 });
   assert.equal(act({ t: "jb", a: "take", id: o1.find((o) => o !== "jb_herb1") || "jb_herb1" }).error, "이미 맡은 알바가 있습니다");
   // hand in: at the NPC, with the items
   wipe("m_h1");
   standBy("bogle");
-  give("m_h1", 5);
-  assert.equal(act({ t: "jb", a: "give" }).error, "들꽃잎이 부족합니다 (5/6)");
+  give("m_h1", hn - 1);
+  assert.equal(act({ t: "jb", a: "give" }).error, `들꽃잎이 부족합니다 (${hn - 1}/${hn})`);
   give("m_h1", 1);
   const g0 = ch.gold;
   assert.ok(act({ t: "jb", a: "give" }).ok);
-  assert.equal(ch.gold - g0, 30 + 6 * 1, "gold 30 + 6·L");
-  assert.equal(ch.life.gather.xp, Math.round(X.lifeNeed(1) * 0.25), "life XP a quarter level");
+  assert.equal(ch.gold - g0, Math.round(Math.round((30 + 6 * 1) * hk) * (hr.rush ? 1.5 : 1)), "gold (30 + 6·L) × grade (× 1.5 긴급 in time)");
+  assert.equal(ch.life.gather.xp, Math.round(X.lifeNeed(1) * 0.25 * hk), "life XP a quarter level × grade");
   assert.equal(X.countItem(ch, "m_h1"), 0, "items handed over");
-  assert.equal(ch.rep.bogle, 2, "trust +2");
+  assert.equal(ch.rep.bogle, Math.round(2 * hk), "trust +2 × grade");
   assert.deepEqual(ch.jobBoard.done, ["jb_herb1"]);
   standBy("popo");
   assert.equal(act({ t: "jb", a: "take", id: "jb_herb1" }).error, "오늘 이미 끝낸 알바입니다");
@@ -682,9 +688,11 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   standBy(t.npc);
   const spd0 = X.stats(p).spd0;
   assert.ok(act({ t: "jb", a: "pick" }).ok);
-  const lim = X.jbLimit(id);
+  const dg = X.jbRoll(ch, ch.jobBoard.day, id).g, dk = X.JB_GRADE.pay[dg], lim = X.jbLimit(id, dg);
   assert.deepEqual([p.parcel.until, ch.jobBoard.active.prog, ch.jobBoard.active.expAt], [now + lim, 1, now + lim]);
-  assert.equal(lim, Math.round(X.jbRoute(id) * T / (48 * 0.85) * 1.8 * 1000 + 20000));
+  assert.equal(X.jbLimit(id), Math.round(X.jbRoute(id) * T / (48 * 0.85) * 1.8 * 1000 + 20000));
+  assert.equal(lim, Math.round(X.jbRoute(id) * T / (48 * 0.85) * 1.8 * [1, 0.8, 0.65][dg] * 1000 + 20000), "a harder grade, a tighter clock");
+  assert.equal(X.jbRoll(ch, ch.jobBoard.day, id).rush, 0, "deliveries are never 긴급 (they have their own clock)");
   near(X.stats(p).spd0 / spd0, 0.856, 1e-9, "carrying at 배달 1: ×0.856");
   assert.deepEqual([1, 25, 50].map((lv) => Math.round(X.parcelSpd({ life: { deliver: { lv } } }) * 1000) / 1000), [0.856, 1, 1.15]);
   assert.equal(act({ t: "jb", a: "pick" }).error, "이미 꾸러미를 받았습니다");
@@ -711,10 +719,104 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   now += 1000;
   const g1 = ch.gold;
   assert.ok(act({ t: "jb", a: "give" }).ok);
-  const base = 20 + 4 * 1, want = base + Math.round(base * 0.5 * (lim - 1000) / lim);
+  const base = Math.round((20 + 4 * 1) * dk), want = base + Math.round(base * 0.5 * (lim - 1000) / lim);
   assert.equal(ch.gold - g1, want);
-  assert.deepEqual([ch.rep.juju, ch.rep.cafe_moka, ch.cnt.deliver, p.parcel], [3, 1, 1, null]);
+  assert.deepEqual([ch.rep.juju, ch.rep.cafe_moka, ch.cnt.deliver, p.parcel], [Math.round(3 * dk), Math.round(dk), 1, null]);
   assert.deepEqual(ch.jobBoard.done, [id]);
+}
+
+// ── board v2: grades and 긴급 by day, hunts, scouting, trust-gated rows, night / rain extras, migrate
+{
+  fresh();
+  ch.rep = {};
+  ch.lvl = 1;
+  for (const k of ["gather", "cook", "craft", "alch", "fish", "deliver"]) ch.life[k] = { lv: 5, xp: 0 };
+  const day = X.dayOf(now);
+  ch.jobBoard = { day, done: [], active: null };
+  // over many days every grade comes up in about its share, 긴급 about one in four, never for a delivery
+  const seen = [0, 0, 0];
+  let rush = 0, all = 0;
+  for (let d = day; d < day + 200; d++) for (const id of Object.keys(X.JB)) {
+    const r = X.jbRoll(ch, d, id); seen[r.g]++; all++;
+    if (r.rush) { rush++; assert.notEqual(X.JB[id].kind, "deliver"); }
+    if (X.JB[id].rush) assert.equal(r.rush, X.JB[id].rush, id + ": a 긴급 row always is");
+  }
+  assert.ok(seen.every((n, g) => Math.abs(n / all - X.JB_GRADE.odds[g] / 100) < 0.03), "grade shares " + seen);
+  assert.ok(rush / all > 0.15 && rush / all < 0.4, "긴급 share " + rush / all);
+  // each day's draw is a mix: no day of a Lv-5 sheet has fewer than three kinds
+  for (let d = day; d < day + 60; d++) assert.ok(new Set(X.jbOffers(ch, d).map((id) => X.JB[id].kind)).size >= 3, "mix on day " + d);
+  // trust-gated and level-gated rows
+  ch.lvl = 60;
+  assert.equal(X.jbQual(ch, X.JB.jb_hunt_hound), false, "그레이's hunt needs 단골");
+  ch.rep.merc_grey = 10;
+  assert.equal(X.jbQual(ch, X.JB.jb_hunt_hound), true);
+  assert.equal(X.jbQual(ch, X.JB.jb_hunt_bear), false, "and the bear needs 친구 and Lv 104");
+  ch.lvl = 1;
+  assert.equal(X.jbQual(ch, X.JB.jb_hunt_hound), false, "a hunt's lv is the character's level");
+  const take = (id) => { p.jbOff = { day, ids: [id] }; standBy("popo"); const v = act({ t: "jb", a: "take", id }); assert.ok(v.ok, id + ": " + v.error); return X.jbRoll(ch, day, id); };
+  // a hunt: kills counted from the moment it is taken (ch.mk), handed in at the NPC
+  ch.mk.twinhare = 40;
+  let r = take("jb_hunt_hare");
+  const need = X.jbNeed(X.JB.jb_hunt_hare, r.g);
+  assert.deepEqual([ch.jobBoard.active.prog, need], [40, [6, 9, 12][r.g]]);
+  standBy("guard");
+  assert.equal(act({ t: "jb", a: "give" }).error, `쌍두 토끼를 더 잡아야 합니다 (0/${need})`);
+  ch.mk.twinhare += 2;
+  p.toast.length = 0;
+  X.lifeTick(S, p, now);
+  assert.ok(p.toast.includes(`[알바] 쌍두 토끼 2/${need}`), p.toast.join("/"));
+  assert.equal(L.viewFor(S, "a").self.jb[3][5], 2, "the wire carries the kills so far"); L.endTick(S);
+  ch.mk.twinhare += need;
+  let g0 = ch.gold;
+  assert.ok(act({ t: "jb", a: "give" }).ok);
+  assert.equal(ch.gold - g0, Math.round(X.jbGold(ch, X.JB.jb_hunt_hare, r.g) * (r.rush ? 1.5 : 1)));
+  // scouting: walk onto the grade's map, then report back
+  r = take("jb_sc_pipi");
+  const goal = X.JB.jb_sc_pipi.map[r.g];
+  standBy("hall_pipi");
+  assert.equal(act({ t: "jb", a: "give" }).error, `먼저 ${X.MAP_META[goal].name}에 다녀오세요`);
+  const back = p.map;
+  to(goal); X.lifeTick(S, p, now); to(back);
+  assert.equal(ch.jobBoard.active.prog, 1);
+  assert.ok(act({ t: "jb", a: "give" }).ok);
+  // 긴급 late: the job still pays, without the bonus
+  ch.life.deliver = { lv: 15, xp: 0 };
+  r = take("jb_sc_mimi");
+  assert.equal(ch.jobBoard.active.expAt, now + 12 * 60000);
+  ch.jobBoard.active.prog = 1;
+  now += 13 * 60000; S.now = now;
+  p.toast.length = 0;
+  X.lifeTick(S, p, now);
+  assert.ok(p.toast.some((m) => m.startsWith("긴급 시간이 지났습니다")), p.toast.join("/"));
+  const v = L.viewFor(S, "a"); L.endTick(S);
+  if (v.self.jb[0] === day) {
+    assert.equal(v.self.jb[3][4], -1, "the wire says missed");
+    standBy("merc_mimi");
+    g0 = ch.gold;
+    assert.ok(act({ t: "jb", a: "give" }).ok);
+    assert.equal(ch.gold - g0, X.jbGold(ch, X.JB.jb_sc_mimi, r.g), "no 긴급 bonus");
+  }
+  // a hunt or a 긴급 job survives a save (prog = the kill base, expAt = the deadline)
+  ch.jobBoard = { day: X.dayOf(now), done: [], active: { id: "jb_hunt_hare", npc: "guard", prog: 7, expAt: now + 5000 } };
+  const saved = JSON.parse(JSON.stringify(L.exportChar(S, "a")));
+  X.lifeSheetClean(saved);
+  assert.deepEqual(saved.jobBoard.active, { id: "jb_hunt_hare", npc: "guard", prog: 7, expAt: now + 5000 });
+  ch.jobBoard.active = null;
+  // night and rain: one extra offer while it holds (and none by day in fair weather)
+  const nightRows = Object.keys(X.JB).filter((id) => X.JB[id].when === "night" && X.jbQual(ch, X.JB[id]));
+  let tn = 0, td = 0;
+  for (let t = now; t < now + 2 * 86400000 && !(tn && td); t += 60000) { const s = X.jbSit(t); if (s.join() === "night") tn = tn || t; if (!s.length) td = td || t; }
+  assert.ok(tn && td && nightRows.length);
+  p.jbOff = null; S.now = td;
+  const dayIds = X.jbOffersOf(S, p);
+  assert.ok(dayIds.length && dayIds.every((id) => !X.JB[id].when), "no extras by a fair day");
+  S.now = tn;
+  const nightIds = X.jbOffersOf(S, p), extra = nightIds.filter((id) => X.JB[id].when);
+  assert.equal(extra.length, 1, "one night extra: " + nightIds);
+  assert.ok(nightRows.includes(extra[0]) && nightIds[nightIds.length - 1] === extra[0]);
+  S.now = now;
+  X.lifeTick(S, p, now);
+  ch.lvl = 1;
 }
 
 // ── achievements, dailies, counters, the wire

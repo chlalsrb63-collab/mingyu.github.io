@@ -898,3 +898,12 @@ H2's, unchanged. Notes for L2c:
 - Verified live (wrangler dev, fresh account): take at 포포, 마루 → 다리 delivery end to end (pick, 44 s, speed 48 →
   41, door walk, give: +31 G, trust 다리 3 / 마루 1), take a bring job. The 단골 price look and the talk card were
   checked with client-side staged state only (trust 12 and a fake job), not by the server.
+
+## H6. As built — board v2 (grades, 긴급, hunts, scouting, situations; no sheet bump, v19)
+
+- **Grades** per offer from `strHash(name:day:id:g)`: 쉬움/보통/어려움 (odds 45/35/20) — items or kills ×1/×1.5/×2 (rounded up), parcel clock ×1/×0.8/×0.65, scouting map `map[grade]`; gold, life XP, trust ×1/×1.6/×2.5 (`JB_GRADE`).
+- **긴급** (`JB_RUSH`): 1 non-delivery offer in 4, and every `rush` row: finish within `min` (15, or the row's) minutes for gold ×1.5; late still pays the base. Deadline in `active.expAt`.
+- **New kinds**: `hunt` (kill n of `mob`; `lv` = character level; the starting kill count kept in `active.prog`, read from `ch.mk`), `scout` (walk onto the map, report back; `prog` 1). 27 new rows over 17 NPCs (13 new to the board: `HOME` rows added in board.js).
+- **Situations**: `when` night/rain rows are never drawn; one per situation is added while it holds in the town (re-sent when it changes); a taken one stays. `rep` rows need that trust with the NPC (단골 10 / 친구 30).
+- **Mix**: each draw prefers a kind not drawn yet. Wire (appended): offers `[…, grade, need, rushMin]`, active `[…, rushSecs (−1 missed), got]`; defs `jbGrade`, `jbRush`. The `#dl` bar also counts down 긴급.
+- Economy: the board's ceiling rises to ≈ 4,000 G/day at life Lv 50 (어려움 × 긴급 × 단골), but 어려움 also asks twice the goods.
