@@ -51,6 +51,8 @@ export function onEvent(e, t) {
     if (Number.isInteger(aim)) src.hammerYaw = (aim / (G.defs.aim?.[0] || 64)) * Math.PI * 2;
     else if (eid !== G.you || src.hammerYaw === undefined) src.hammerYaw = Math.atan2(y - src.y, x - src.x);
     G.hitFrom = [src.x, src.y];
+    const hRad = e[2] === 132 ? 36 : e[2] === 131 ? 31 : e[2] === 130 ? 28 : 24;
+    SkillFx.hammerWindup?.(x, y, hRad, wind, src.hammerYaw);
     if (eid === G.you || dist(G.me.x, G.me.y, x, y) < 180) Sound.play("swing_hammer");
     return;
   }
