@@ -134,10 +134,11 @@ export function renderTalk(box, npc, s, say) {
       continue;
     }
     shown++;
+    // a finished one is a line, like a locked one: at an arc's end the open quest is not pushed below four done cards
+    if (v.st === 4) { box.append(el("p", "ds", `완료 · ${q.title}`)); continue; }
     const here = turnIn(q) === npc.id, away = !here && v.st >= 2;   // handed in somewhere else
     const card = el("div", `sq-card st${v.st}`);
     card.append(el("div", "q-title", `${q.title}${q.repeat ? " (반복)" : ""}`));
-    if (v.st === 4) { card.append(el("p", "ds", "완료한 퀘스트입니다.")); box.append(card); continue; }
     card.append(el("p", "say", here && v.st === 3 && q.giver !== npc.id ? `${q.giverName}의 부탁으로 왔다.` : q.text));
     if (v.st === 1) card.append(el("div", "q-goal", `목표: ${goalText(q)}`));
     else card.append(goalRow(q, v));
