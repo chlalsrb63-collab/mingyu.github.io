@@ -140,10 +140,12 @@ function renderHud() {
   const secs = Math.max(0, d[1] - Math.floor((now() - st.at) / 1000));
   const pct = Math.min(100, d[0] / 10);
   const name = D().themes[d[10]] || "차원 균열";
-  const label = ["", "최종 보스 출현! 가장 먼 방으로", "정화 완료 — 귀환의 문까지", "균열이 닫힙니다…", "하강의 문 — 다음 단으로"][d[2]];
+  const label = ["", d[8] ? "최종 보스 출현! 균열의 문으로 보스의 방 앞까지" : "최종 보스 출현! 가장 먼 방으로", "정화 완료 — 귀환의 문까지", "균열이 닫힙니다…", "하강의 문 — 다음 단으로"][d[2]];
+  // the floor's own concept (defs().dim.raid.names: 1단 무너진 지하 회랑 …), else the look's name
+  const fname = (D().raid && D().raid.names && D().raid.names[d[14] - 1]) || name;
   // (the wire carries the rift's world tier; players see levels as 4·tier − 3, like monsters and doors)
   const chal = d[15], bossName = chal && chalDef(chal[0]) ? `${chalDef(chal[0])[1]} · ${stepWord(chal[0], chal[7])}` : "";
-  $("#dim-title").textContent = chal ? `보스 도전 · ${bossName}` : `차원 균열 Lv.${4 * d[4] - 3} · ${d[14]}/${floors()}단 · ${name}`;
+  $("#dim-title").textContent = chal ? `보스 도전 · ${bossName}` : `차원 균열 Lv.${4 * d[4] - 3} · ${d[14]}단 · ${fname} (${d[14]}/${floors()})`;
   $("#dim-time").textContent = clock(d[2], secs);
   $("#dim-time").classList.toggle("low", (d[2] <= 1 && secs <= 180) || d[2] === 4);
   $("#dim-fill").style.width = `${pct}%`;

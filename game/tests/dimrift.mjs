@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, skillHpCost, xpNeed, stats, atkRange, aimIdx, EVT_MAPS, worldEvent, ITEMS, SOLID_G, MAXLV, DIM_CHAL, CHAL_KEYS, dimFloorK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk, chalOfWeek };\n";
+  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, DIM_FLOORS, dimTheme, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, skillHpCost, xpNeed, stats, atkRange, aimIdx, EVT_MAPS, worldEvent, ITEMS, SOLID_G, MAXLV, DIM_CHAL, CHAL_KEYS, dimFloorK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk, chalOfWeek };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, D = X.DIM;
 // tuning runs: HPB=… BOSSHP=… NOCLEAR=1 node tests/dimrift.mjs -v
@@ -22,25 +22,27 @@ const THEMES = Object.keys(X.DIM_THEMES);
 
 // ───────────── 1. the generator
 {
-  const times = [];
-  const paths = [];
-  for (let s = 1; s <= 200; s++) for (const theme of THEMES) {
-    const seed = Math.imul(s, 2654435761) | 0, lv = 10 + (s % 39);
+  // the old single-concept floor (56 × 40) walked 465 tiles on average over ten seeds; every concept must give five times that
+  const OLD = 465, times = [], per = {};
+  for (let s = 1; s <= 60; s++) for (let floor = 1; floor <= D.floors; floor++) {
+    const seed = Math.imul(s, 2654435761) | 0, lv = 10 + (s % 39), theme = X.dimTheme(seed >>> 0, floor), cc = X.DIM_FLOORS[floor - 1];
     const t0 = performance.now();
-    const m = X.dimension({ id: "dim:9", seed, theme, lv });
+    const m = X.dimension({ id: "dim:9", seed, theme, lv, floor });
     times.push(performance.now() - t0);
-    const again = X.dimension({ id: "dim:9", seed, theme, lv });
-    assert.deepEqual([again.g, again.o, again.dim.spawns], [m.g, m.o, m.dim.spawns], `seed ${seed} ${theme}: same seed, same rift`);
-    assert.equal(m.w, D.w); assert.equal(m.h, D.h); assert.equal(m.theme, theme);
-    const main = m.dim.rooms.filter((r) => r.kind !== "vault");
-    assert.ok(main.length >= D.rooms[0] && main.length <= D.rooms[1], `${seed}: ${main.length} rooms`);
-    assert.ok(m.dim.dead.length >= D.vaults[0] && m.dim.dead.length <= D.vaults[1], `${seed}: ${m.dim.dead.length} vaults`);
+    if (s <= 12) { const again = X.dimension({ id: "dim:9", seed, theme, lv, floor }); assert.deepEqual([again.g, again.o, again.dim.spawns], [m.g, m.o, m.dim.spawns], `seed ${seed} floor ${floor}: same seed, same floor`); }
+    assert.equal(m.w, D.w); assert.equal(m.h, D.h); assert.equal(m.theme, theme); assert.ok(cc.themes.includes(theme));
+    assert.equal(m.dim.style, cc.style); assert.ok(m.name.includes(cc.name), m.name);
+    const main = m.dim.rooms.filter((r) => r.kind === "room" || r.kind === "start" || r.kind === "boss");
+    assert.ok(main.length >= cc.rooms[0] * 0.6 && main.length <= cc.rooms[1], `${seed}/${floor}: ${main.length} rooms (some over two cells)`);
+    assert.ok(m.dim.dead.length >= D.vaults[0] && m.dim.dead.length <= D.vaults[1], `${seed}/${floor}: ${m.dim.dead.length} vaults`);
     const normal = m.dim.spawns.filter((sp) => !sp.el && !sp.chest).reduce((n, sp) => n + sp.n, 0);
     const all = m.dim.spawns.reduce((n, sp) => n + sp.n, 0);
     assert.ok(normal <= D.mobCap && all <= D.cap, `${seed}: ${normal} monsters, ${all} in all`);
+    // more than the gauge needs (≈ 100 / gK / 0.9 kills): the party picks a route
+    assert.ok((normal * D.normal + m.dim.elites * (D.elite + D.orb)) * D.gK >= 150, `${seed}/${floor}: ${normal} monsters are plenty for the gauge`);
     assert.ok(m.dim.elites >= 2, `${seed}: ${m.dim.elites} elites`);
-    // every room reachable from the way in; every spawn on open ground; the door home too
-    for (const r of m.dim.rooms) assert.ok(m.reach[r.cy * m.w + r.cx], `${seed} ${theme}: room ${r.kind} at ${r.cx},${r.cy} reachable`);
+    // one connected layout: every room, spawn and the door home on ground reachable from the way in
+    for (const r of m.dim.rooms) assert.ok(m.reach[r.cy * m.w + r.cx], `${seed}/${floor}: room ${r.kind} at ${r.cx},${r.cy} reachable`);
     for (const sp of m.dim.spawns) assert.ok(m.reach[sp.at[1] * m.w + sp.at[0]], `${seed}: spawn ${sp.k} on open ground`);
     assert.equal(m.dim.spawns.filter((sp) => sp.chest).length, m.dim.dead.length, "a chest in every vault");
     assert.equal(m.dim.spawns.filter((sp) => sp.guard).length, m.dim.dead.length, "a guardian in every vault");
@@ -48,19 +50,46 @@ const THEMES = Object.keys(X.DIM_THEMES);
     assert.ok(m.dim.spawns.every((sp) => m.dim.rooms[sp.room].kind !== "start" && m.dim.rooms[sp.room].kind !== "boss"), "nothing waits in the way in or the master's hall");
     const [dx, dy] = m.dim.door;
     assert.equal(m.portals[0].to, "town"); assert.ok(m.reach[dy * m.w + dx], "the door home stands on open ground");
-    // the master's hall has an open 5 × 5 core
+    // the master's hall has an open 5 × 5 core, far down the floor
     const [bx, by] = m.dim.boss;
-    for (let y = by - 2; y <= by + 2; y++) for (let x = bx - 2; x <= bx + 2; x++) assert.ok(m.reach[y * m.w + x], `${seed}: boss hall core ${x},${y}`);
-    assert.ok(m.dim.path >= D.path && m.dim.path <= 140, `${seed}: way to the master ${m.dim.path} tiles`);
-    paths.push(m.dim.path);
+    for (let y = by - 2; y <= by + 2; y++) for (let x = bx - 2; x <= bx + 2; x++) assert.ok(m.reach[y * m.w + x], `${seed}/${floor}: boss hall core ${x},${y}`);
+    assert.ok(m.dim.path >= D.path && m.dim.path <= 220, `${seed}: way to the master ${m.dim.path} tiles`);
     assert.ok(X.MOBS[m.dim.bossK] && !X.MOBS[m.dim.bossK].chest);
-    // the rim stays rock: nothing to walk off
     for (let x = 0; x < m.w; x++) { assert.equal(m.g[0][x], "W"); assert.equal(m.g[m.h - 1][x], "W"); }
+    // the variety the owner asked for: loops, a mix of shapes and room types, side rooms, dead ends, props, pools
+    let walk = 0, deco = 0, wet = 0;
+    for (let i = 0; i < m.w * m.h; i++) { walk += m.reach[i]; const y = (i / m.w) | 0, ch = m.o[y][i % m.w]; if (ch !== " ") deco++; if (m.g[y][i % m.w] === "w") wet++; }
+    const deg = m.dim.rooms.map((_, k) => m.dim.links.filter(([a, b]) => a === k || b === k).length);
+    const side = m.dim.rooms.filter((r) => r.kind === "vault" || r.kind === "den").length;
+    const row = { walk, deco, wet, loops: m.dim.loops, shapes: new Set(main.map((r) => r.shape)).size, types: new Set(main.map((r) => r.rt)).size, side, ends: deg.filter((d) => d === 1).length / main.length };
+    assert.ok(row.loops >= 1, `${seed}/${floor}: ${row.loops} loops`);
+    assert.ok(row.types >= 4, `${seed}/${floor}: ${row.types} room types`);
+    assert.ok(row.deco >= 60, `${seed}/${floor}: ${row.deco} props`);
+    assert.ok(walk >= OLD * 4, `${seed}/${floor}: ${walk} walkable tiles`);
+    (per[floor] = per[floor] || []).push(row);
+  }
+  for (let floor = 1; floor <= D.floors; floor++) {
+    const rows = per[floor], avg = (k) => rows.reduce((s, r) => s + r[k], 0) / rows.length;
+    assert.ok(avg("walk") >= OLD * 5, `floor ${floor}: ${avg("walk").toFixed(0)} walkable tiles on average, 5 × ${OLD} wanted`);
+    if (X.DIM_FLOORS[floor - 1].style === "halls") assert.ok(avg("shapes") >= 5, `floor ${floor}: ${avg("shapes")} room shapes`);
+    assert.ok(avg("loops") >= 3 && avg("side") >= 3, `floor ${floor}: loops ${avg("loops")}, side rooms ${avg("side")}`);
+    log(`floor ${floor} ${X.DIM_FLOORS[floor - 1].name}: walkable ${avg("walk").toFixed(0)} (${(avg("walk") / OLD).toFixed(1)} × old), loops ${avg("loops").toFixed(1)}, shapes ${avg("shapes").toFixed(1)}, room types ${avg("types").toFixed(1)}, side rooms ${avg("side").toFixed(1)}, dead-end rooms ${(100 * avg("ends")).toFixed(0)} %, props ${avg("deco").toFixed(0)}, pool tiles ${avg("wet").toFixed(0)}`);
+  }
+  assert.equal(new Set(X.DIM_FLOORS.map((c) => c.style)).size, 3, "three distinct concepts");
+  // seeds look different: no two of five floors of a concept share more than 85 % of their ground
+  for (let floor = 1; floor <= D.floors; floor++) {
+    const maps = [1, 2, 3, 4, 5].map((s) => X.dimension({ id: "dim:9", seed: Math.imul(s, 40503) | 0, theme: X.dimTheme(s, floor), lv: 30, floor }));
+    for (let a = 0; a < maps.length; a++) for (let b = a + 1; b < maps.length; b++) {
+      let same = 0, na = 0;
+      for (let i = 0; i < D.w * D.h; i++) { na += maps[a].reach[i]; if (maps[a].reach[i] && maps[b].reach[i]) same++; }
+      assert.ok(same / na < 0.85, `floor ${floor}: seeds ${a} and ${b} share ${(100 * same / na).toFixed(0)} % of their ground`);
+    }
   }
   times.sort((a, b) => a - b);
-  assert.ok(times[Math.floor(times.length * 0.99)] < 40, "a rift is made in under 40 ms: p99 " + times[Math.floor(times.length * 0.99)].toFixed(1));
-  log(`generator: 800 rifts, median ${times[400].toFixed(2)} ms, max ${times[times.length - 1].toFixed(1)} ms; way to the master ${Math.min(...paths)}–${Math.max(...paths)} tiles`);
-  // the pool follows the level; the theme follows the level band
+  const p99 = times[Math.floor(times.length * 0.99)];
+  assert.ok(p99 < 60, "a floor is made in under 60 ms: p99 " + p99.toFixed(1));
+  log(`generator: ${times.length} floors, median ${times[times.length >> 1].toFixed(2)} ms, p99 ${p99.toFixed(1)} ms, max ${times[times.length - 1].toFixed(1)} ms`);
+  // the pool follows the level
   for (const lv of [10, 20, 30, 40, 49]) for (const t of THEMES) {
     const pool = X.dimPool(t, lv);
     assert.ok(pool.length >= 3, `${t} ${lv}: ${pool}`);
@@ -237,9 +266,9 @@ const dimIds = (S) => Object.keys(S.dims);
   const kill = (mob) => { mob.by = { g1: 1 }; X.killMob(S, rt, mob); };
   const normal = rt.mobs.find((m) => !m.dead && !m.el && !X.MOBS[m.k].chest);
   kill(normal);
-  assert.ok(dim.gK >= 1, "the gauge scale");
+  assert.equal(dim.gK, D.gK, "the gauge weighs a kill the same on every floor, however many monsters it holds");
   const total = dim.map.dim.spawns.filter((sp) => !sp.el && !sp.chest).reduce((n, sp) => n + sp.n, 0) * D.normal + dim.map.dim.elites * (D.elite + D.orb);
-  assert.ok(total * dim.gK >= D.full - 0.01, "everything in the rift is worth enough to fill the gauge: " + total * dim.gK);
+  assert.ok(total * dim.gK >= 150, "far more in the rift than the gauge needs (the party picks a route): " + total * dim.gK);
   assert.ok(+(dim.prog).toFixed(4) === +(D.normal * dim.gK).toFixed(4), "a kill: +0.9");
   const elite = rt.mobs.find((m) => !m.dead && m.el === 1 && !m.guard);
   kill(elite);
@@ -283,7 +312,7 @@ const dimIds = (S) => Object.keys(S.dims);
   assert.equal(vd[2], 4); assert.deepEqual(vd[8], [dim.portal.x, dim.portal.y]); assert.equal(vd[14], 1);
   assert.ok(vd[1] > 0 && vd[1] <= D.downMs / 1000, "the way down counts down: " + vd[1]);
   // stepping in takes everyone standing down at once: a fresh instance, the same run
-  const id1 = dim.id, run0 = [dim.opened, dim.expire, dim.theme, dim.lv, dim.kills];
+  const id1 = dim.id, run0 = [dim.opened, dim.expire, dim.lv, dim.kills];
   p.x = dim.portal.x; p.y = dim.portal.y;
   step(S);
   assert.equal(p.map, id1, "not in the first moment: everyone sees the way down first");
@@ -292,7 +321,8 @@ const dimIds = (S) => Object.keys(S.dims);
   assert.ok(!S.dims[id1] && !S.maps[id1], "floor 1 closed");
   dim = S.dims[p.map]; rt = dim.rt;
   assert.ok(dim && dim.id !== id1 && dim.floor === 2 && dim.state === "run" && dim.prog === 0 && !dim.portal, "floor 2, fresh");
-  assert.deepEqual([dim.opened, dim.expire, dim.theme, dim.lv, dim.kills], run0, "the run's clock, theme, level and count go on");
+  assert.deepEqual([dim.opened, dim.expire, dim.lv, dim.kills], run0, "the run's clock, level and count go on");
+  assert.equal(dim.theme, "cave"); assert.equal(dim.map.dim.style, "caves", "floor 2 is the crystal caves");
   assert.equal(p.ch.dim.best, 1, "a floor cleared is on the sheet");
   const k2 = X.dimFloorK(2);
   for (const m of rt.mobs) if (!X.MOBS[m.k].chest) assert.ok(Math.abs(m.hk - X.dimHk(1, dim.lv, X.MOBS[m.k].lv) * k2.hp) < 1e-9 && Math.abs(m.ak - k2.atk) < 1e-9, "floor 2: health and blows × its row");
@@ -520,6 +550,11 @@ function runParty(lv, classes, seedSalt, shift = 0, opt = {}) {
         continue;
       }
       if (dim.state === "down") { walk(p, Math.floor(dim.portal.x / T), Math.floor(dim.portal.y / T)); continue; }
+      // the last floor's 균열의 문: far from the final boss, step in (it leads to the hall's threshold)
+      if (dim.state === "boss" && dim.portal && !dim.chal) {
+        const b = rt.mobs.find((q) => q.id === dim.boss);
+        if (b && Math.hypot(b.x - p.x, b.y - p.y) > 25 * T && Math.hypot(dim.portal.x - p.x, dim.portal.y - p.y) < 30 * T) { walk(p, Math.floor(dim.portal.x / T), Math.floor(dim.portal.y / T)); continue; }
+      }
       // step out of a ring on the ground before it goes off (players see the warning)
       const ring = rt.tele.find((t) => Math.hypot(t.x - p.x, t.y - p.y) < t.r + 10);
       if (ring) {
