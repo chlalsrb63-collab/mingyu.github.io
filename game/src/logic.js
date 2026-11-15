@@ -50,15 +50,16 @@ const PARTY_SHARE = [1, 0.8, 0.7, 0.65];
 /**
  * A weapon kind decides how a basic attack lands. Attack no longer depends on a class, so the
  * per-hit mults follow the old classes' attack ratios (jobs-and-stats D.1). `crit` adds to the
- * critical chance, `mag` makes it magic (half the monster's armour counts), `shot` fires arrows.
+ * critical chance, `mag` makes it magic (half the monster's armour counts), `shot` fires arrows (a staff's
+ * and a book's are homing missiles, shot kinds 8 and 9: 45-jobs.js magicShot, 50-loot-combat.js magicLand).
  */
 const WKIND = {
   // unhurried, weighty blows: each lands harder than a quick one would
   sword: { name: "대검", cd: 920, range: 34, fx: 0, cleave: 3, kb: 9, mult: 1.45, arc: 65, crit: 3 },
   dagger: { name: "단검", cd: 520, range: 26, fx: 3, kb: 4, mult: 1.1, arc: 35, crit: 10 },
   spear: { name: "창", cd: 780, range: 54, fx: 4, line: 3, kb: 7, mult: 1.4, arc: 25, crit: 5 },
-  staff: { name: "스태프", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.25, arc: 40, crit: 3, mag: 1 },
-  book: { name: "마도서", cd: 800, range: 84, fx: 5, splash: 26, mult: 1.05, kb: 4, arc: 40, crit: 3, mag: 1 },
+  staff: { name: "스태프", cd: 980, range: 100, fx: 2, kb: 6, mult: 1.25, arc: 40, crit: 3, mag: 1, shot: { spd: 320, r: 5, kind: 8 } },
+  book: { name: "마도서", cd: 800, range: 84, fx: 5, splash: 26, mult: 1.05, kb: 4, arc: 40, crit: 3, mag: 1, shot: { spd: 240, r: 7, kind: 9 } },
   // an arrow flies (45-jobs.js shots): the finisher hits 1.4× and goes through one more
   bow: { name: "활", cd: 760, range: 150, fx: 6, kb: 3, mult: 0.9, arc: 20, crit: 6, shot: { spd: 420, r: 6 } },
 };
@@ -6764,18 +6765,20 @@ function staggerPlayer(S, rt, p, mob) {
  * client's trail); `pierce` how many monsters it passes through before it stops.
  */
 function fireArrow(S, rt, p, mob, mult, pierce, kind, o = {}) {
-  const arm = deriveStats(p).arm, sh = arm.shot || WKIND.bow.shot;
+  const arm = deriveStats(p).arm, sh = arm.mag ? WKIND.bow.shot : arm.shot || WKIND.bow.shot;
   if (!rt.shots) rt.shots = [];
   const mine = rt.shots.filter((s) => s.pid === p.pid);
   // (a skill's volley may have more in the air at once)
   if (mine.length >= SHOT_MAX + (kind >= 2 ? 6 : 0)) { const q = mine[0]; rt.shots.splice(rt.shots.indexOf(q), 1); rt.ev.push(["ae", q.id, Math.round(q.x), Math.round(q.y), 2]); }
   // `o` (skills): spd, len, r, a direction ux/uy of its own, a `cap` {n, h} shared by a volley (at most n arrows a monster);
   // `opt` hurtMob's options (the skill: a book's brand, magic), `el` an element left where it first strikes (weave, power `k`),
-  // `brandK` more on a monster already branded
+  // `brandK` more on a monster already branded, `home` a monster id it steers at while that lives, `blow` a staff's or a
+  // book's basic blow ({ wk, fin }: it lands as magicLand, not as an arrow)
   const [ux, uy] = o.ux !== undefined ? [o.ux, o.uy] : aimVec(p, mob);
-  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: o.spd || sh.spd, left: o.len || arm.range || 150, r: o.r || sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0, cap: o.cap || null, opt: o.opt || null, el: o.el || "", k: o.k || 1, brandK: o.brandK || 0 };
+  const shot = { id: S.nextId++, pid: p.pid, x: p.x, y: p.y - 6, ux, uy, spd: o.spd || sh.spd, left: o.len || arm.range || 150, r: o.r || sh.r, pierce, hit: [], mult, kind, x0: p.x, y0: p.y, act: p.actN | 0, gain: p.actGain | 0, cap: o.cap || null, opt: o.opt || null, el: o.el || "", k: o.k || 1, brandK: o.brandK || 0, home: o.home || 0, blow: o.blow || null, ring: 0 };
   rt.shots.push(shot);
-  rt.ev.push(["ar", shot.id, Math.round(shot.x), Math.round(shot.y), Math.round(ux * 1000), Math.round(uy * 1000), shot.spd, kind, p.eid]);
+  const ar = ["ar", shot.id, Math.round(shot.x), Math.round(shot.y), Math.round(ux * 1000), Math.round(uy * 1000), shot.spd, kind, p.eid];
+  rt.ev.push(shot.home ? [...ar, shot.home] : ar);   // (a homing one names its monster)
   return shot;
 }
 /**
@@ -6798,9 +6801,15 @@ function shotTick(S, rt, dt) {
   const m = mapOfS(S, rt.id);
   for (let i = rt.shots.length - 1; i >= 0; i--) {
     const s = rt.shots[i], p = S.players[s.pid];
-    const end = (how) => { rt.shots.splice(i, 1); rt.ev.push(["ae", s.id, Math.round(s.x), Math.round(s.y), how]); };
+    // (a magic blow's burst adds its ring's radius: the book's splash, the staff's finisher)
+    const end = (how) => { rt.shots.splice(i, 1); rt.ev.push(s.ring ? ["ae", s.id, Math.round(s.x), Math.round(s.y), how, s.ring] : ["ae", s.id, Math.round(s.x), Math.round(s.y), how]); };
     // a shooter who fell or left takes their arrows with them
     if (!p || p.dead || p.map !== rt.id) { end(2); continue; }
+    // a homing missile turns toward where its monster stands now; once that is gone it flies straight on
+    if (s.home) {
+      const t = rt.mobs.find((o) => o.id === s.home && !o.dead);
+      if (t) { const d = dist(s.x, s.y, t.x, t.y - 6) || 1; s.ux = (t.x - s.x) / d; s.uy = (t.y - 6 - s.y) / d; } else s.home = 0;
+    }
     const seg = Math.min(s.left, s.spd * dt);
     // how far along the segment it gets before a wall (flying height: the ground point is 6 px below)
     let free = seg, wall = false;
@@ -6818,7 +6827,8 @@ function shotTick(S, rt, dt) {
       s.hit.push(o.id);
       if (s.cap) s.cap.h[o.id] = (s.cap.h[o.id] | 0) + 1;
       p.hitAct = [s.act, s.gain];
-      hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
+      if (s.blow) magicLand(S, rt, p, s, o);
+      else hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
       p.hitAct = null;
       // 길별의 렌즈참: a 관통 화살 that strikes a second target marks it (66-charms.js)
       if (s.cl && s.hit.length === 2) charmLens(S, rt, p, o);
@@ -6840,6 +6850,22 @@ function bowShot(S, rt, p, fin) {
   const far = mob ? dist(p.x, p.y, mob.x, mob.y) : c.range * 0.7;
   rt.ev.push(["a", p.eid, 6, Math.round(p.x + ux * far), Math.round(p.y - 6 + uy * far), p.dir, p.combo]);
   fireArrow(S, rt, p, mob, (c.mult || 1) * (fin ? FINISH.mult : 1), fin ? 1 : 0, fin ? 1 : 0);
+}
+
+/**
+ * A staff's or a book's basic attack: a missile (kind 8) or an orb (kind 9) that steers at the aimed
+ * monster and lands as the blow (50-loot-combat.js magicLand); with nothing aimed at it flies straight
+ * and fades at the weapon's reach. Chasing a monster that moves, it may fly a little past the reach.
+ */
+function magicShot(S, rt, p, fin) {
+  const st = deriveStats(p), c = st.arm;
+  const mob = aimMob(rt, p, atkRange(p), c.arc || AIM_CONE);
+  if (mob) face(p, mob);
+  const [ux, uy] = aimVec(p, mob);
+  const far = mob ? dist(p.x, p.y, mob.x, mob.y) : c.range * 0.7;
+  rt.ev.push(["a", p.eid, c.fx, Math.round(p.x + ux * far), Math.round(p.y - 6 + uy * far), p.dir, p.combo]);
+  fireArrow(S, rt, p, mob, (c.mult || 1) * (fin ? FINISH.mult : 1), 0, c.shot.kind,
+    { spd: c.shot.spd, r: c.shot.r, len: c.range * (mob ? 1.6 : 1), home: mob ? mob.id : 0, blow: { wk: st.wk, fin }, opt: { mag: 1 } });
 }
 
 // ── migration of the four-class sheets (B.11) and the test hero
@@ -7576,8 +7602,8 @@ function basicAttack(S, p) {
   const beat = p.swordBeat ?? p.combo;
   p.atkAt = now;
   newAct(p, false);
-  // a bow looses an arrow that flies (45-jobs.js): it lands, or not, a few ticks later
-  if (c.shot) { bowShot(S, rt, p, fin); return; }
+  // a bow looses an arrow, a staff or a book a homing missile, that flies (45-jobs.js): it lands, or not, a few ticks later
+  if (c.shot) { (c.mag ? magicShot : bowShot)(S, rt, p, fin); return; }
   const range = atkRange(p);
   // the blow goes where you aim: the nearest monster inside the weapon's arc, or nothing
   const arc = c.arc || AIM_CONE;
@@ -7594,21 +7620,15 @@ function basicAttack(S, p) {
   rt.ev.push(["a", p.eid, c.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir, beat]);
   const mult = (c.mult || 1) * (fin ? FINISH.mult : 1);
   // a greatsword's arc catches what stands beside the target, a spear runs through
-  // what stands behind it, and a spellbook's burst splashes around it
-  // (only ever in front: nothing behind the swing is caught by it)
+  // what stands behind it (only ever in front: nothing behind the swing is caught by it)
   let extra = [];
   const near = (a, b) => dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y);
   if (c.cleave) extra = mobsWithin(rt, p.x, p.y, range + (fin ? 10 : 4)).filter((o) => o !== mob && inArc(p, o, arc * (fin ? 1.25 : 1))).sort(near).slice(0, c.cleave + (fin ? 1 : 0));
   else if (c.line) { const [ux, uy] = aimVec(p, mob); extra = mobsInLine(rt, p.x, p.y, ux, uy, c.range + 10, fin ? 16 : 11).slice(0, c.line + (fin ? 1 : 0)); }
-  else if (c.splash) { const [ux, uy] = aimVec(p, mob); extra = mobsWithin(rt, mob.x, mob.y, c.splash + (fin ? 8 : 0)).filter((o) => (o.x - p.x) * ux + (o.y - p.y) * uy > -4).slice(0, 4); }
   const zx = mob.x, zy = mob.y;
   // the blow lands with weight: whatever it hits is shoved back and reels, the
   // finisher most of all. Elites only reel; bosses and field bosses stand firm.
-  const shove = (o, k) => {
-    if (MOBS[o.k].boss || o.el === 2 || steady(S, o)) return;
-    if (!o.el) { const [ux, uy] = aimVec(p, o); knock(mapOfS(p.S, p.map), o, ux, uy, c.kb * k * (fin ? FINISH.kb : 1)); }
-    holdMob(S, o, (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + (tip && o === mob ? TIP.flinch : 0));   // reels: cooldowns paused
-  };
+  const shove = (o, k) => { const [ux, uy] = aimVec(p, o); shoveMob(S, p, o, ux, uy, c.kb * k, fin, tip && o === mob ? TIP.flinch : 0); };
   shove(mob, 1);
   // 급소 도려내기: a stab on a marked monster opens it up (bleeding, and a burst of speed); every stab marks
   const vit = c === WKIND.dagger && pasOn(p, "vitals") ? SKILL.vitals : null;
@@ -7623,12 +7643,40 @@ function basicAttack(S, p) {
     addMarks(S, mob, 1);
   }
   for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6); }
-  if (st.lg.chain && rnd(S) < 0.25 * st.proc) {
-    for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
-      rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
-      hurtMob(S, rt, o, p, 0.6);
-    }
+  chainBlow(S, rt, p, st, mob, zx, zy);
+}
+/**
+ * A basic blow lands with weight: whatever it hits is shoved back along (ux, uy) and reels, the
+ * finisher most of all. Elites only reel; bosses and field bosses stand firm. `more` ms more reeling.
+ */
+function shoveMob(S, p, o, ux, uy, kb, fin, more) {
+  if (MOBS[o.k].boss || o.el === 2 || steady(S, o)) return;
+  if (!o.el) knock(mapOfS(p.S, p.map), o, ux, uy, kb * (fin ? FINISH.kb : 1));
+  holdMob(S, o, (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + more);   // reels: cooldowns paused
+}
+/** 연쇄 (legendary): now and then a basic blow on `mob` leaps on to two more near (zx, zy). */
+function chainBlow(S, rt, p, st, mob, zx, zy) {
+  if (!(st.lg.chain && rnd(S) < 0.25 * st.proc)) return;
+  for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
+    rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
+    hurtMob(S, rt, o, p, 0.6);
   }
+}
+/**
+ * A staff's missile or a book's orb (45-jobs.js magicShot) strikes `mob`: the basic blow lands now,
+ * magic, shoved along its flight. A book's orb bursts and splashes ≤ 4 more within `splash` px (the
+ * finisher's wider), never behind where it was cast; the finisher's burst shows its ring (`s.ring`).
+ */
+function magicLand(S, rt, p, s, mob) {
+  const st = stats(p), c = WKIND[s.blow.wk] || WKIND.staff, fin = s.blow.fin, zx = mob.x, zy = mob.y, mag = { mag: 1 };
+  shoveMob(S, p, mob, s.ux, s.uy, c.kb, fin, 0);
+  hurtMob(S, rt, mob, p, s.mult * charmMarkK(S, rt, p, mob), false, mag);
+  if (c.splash) {
+    s.ring = c.splash + (fin ? 8 : 0);
+    const by = mobsWithin(rt, zx, zy, s.ring).filter((o) => o !== mob && (o.x - s.x0) * s.ux + (o.y - s.y0) * s.uy > -4).slice(0, 4);
+    for (const o of by) { shoveMob(S, p, o, s.ux, s.uy, c.kb * 0.6, fin, 0); hurtMob(S, rt, o, p, s.mult * 0.6, false, mag); }
+  } else if (fin) s.ring = 18;
+  chainBlow(S, rt, p, st, mob, zx, zy);
 }
 
 // ───────────────────────────── weapon skills ─────────────────────────────
