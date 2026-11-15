@@ -58,7 +58,7 @@ import * as Charms from "./charms.js";
 import * as Info from "./infocard.js";
 import { resize, world, $, G, el, $$, now } from "./state.js";
 import { act, entityPos, connect, disconnect, stopGame, channel, ws, setupNet } from "./net.js";
-import { pathTo, setupInput, toggleAuto } from "./input.js";
+import { pathTo, setupInput, toggleAuto, walkToDoor } from "./input.js";
 import { update } from "./update.js";
 import { render } from "./overlay.js";
 import { floatText } from "./events.js";
@@ -91,7 +91,7 @@ Dim.bindUi();
 for (const b of $$("#menu button")) { const g = MENU_ICON[b.dataset.win || b.id.slice(2)]; if (g) b.prepend(iconImg(g)); }
 $("#b-auto").prepend(iconImg(MENU_ICON.auto));
 setupInput();
-setupWindows();
+setupWindows({ walkToDoor });
 setupItems();
 Charms.setup();
 setupHud();

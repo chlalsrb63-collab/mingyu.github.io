@@ -22,7 +22,7 @@
 import * as Art from "./art.js";
 import * as NPC from "./npclife.js";
 import { icon } from "./uiicons.js";
-import { mapChart, shortestRoute, questMaps, nextGate, chartBase, paintChart, mapDetail, unlockState } from "./worldmap.js";
+import { mapChart, buildingDoors, shortestRoute, questMaps, nextGate, chartBase, paintChart, mapDetail, unlockState } from "./worldmap.js";
 
 const T = 16;
 const INK = "#120e18";
@@ -183,6 +183,8 @@ export function loadMap(m) {
   const shrines = [];
   for (let y = 0; y < m.h; y++) { const row = m.o[y]; for (let x = 0; x < m.w; x++) if (row[x] === "/") shrines.push([x, y]); }
   const ob = (m.big || []).find((b) => b.t === "obelisk");
+  const buildings = buildingDoors(m, D?.G.defs.maps || []);
+  const byTile = new Map(buildings.flatMap(b => b.tiles.map(([x, y]) => [`${x},${y}`, b])));
   // the town's buildings: roofs in a muted roof colour, the sign's glyph at the door (town.md G)
   const blds = [];
   const tg = tex.getContext("2d");
@@ -196,10 +198,42 @@ export function loadMap(m) {
     const at = b.door === "e" ? [b.x + w, b.y + b.dx + 0.5] : b.door === "s" ? [b.x + b.dx + 0.5, b.y + h] : [b.x + w / 2 - 0.5, b.y + h];
     blds.push({ x: at[0], y: at[1], icon: b.icon, name: b.name });
   }
-  for (const p of portals) p.bld = blds.some((q) => Math.abs(q.x - p.x) < 1.6 && Math.abs(q.y - p.y) < 1.6);
-  M = { m, tex, stones, portals, shrines, blds, obelisk: ob ? [ob.x, ob.y] : null };
+  for (const p of portals) {
+    p.building = byTile.get(`${p.x0},${p.y0}`);
+    const b = blds.find(q => Math.abs(q.x - p.x) < 1.6 && Math.abs(q.y - p.y) < 1.6);
+    p.bld = !!b;
+    if (b && p.building) b.building = p.building;
+  }
+  M = { m, tex, stones, portals, shrines, blds, buildings, obelisk: ob ? [ob.x, ob.y] : null };
+  if (D) updateBuildings(true);
   view.reset = true;
   view.dirty = true;
+}
+
+function walkToBuilding(building) {
+  if (!D.walkToDoor(building.tiles)) {
+    D.toast("지금은 건물 입구까지 갈 수 없습니다");
+    return;
+  }
+  D.closeMap();
+  D.toast(`${building.name} 입구로 이동합니다`);
+  D.play("ui");
+}
+
+function updateBuildings(rebuild = false) {
+  const buildings = M?.buildings || [], panel = $("#map-buildings");
+  panel.hidden = view.tab !== "here" || !buildings.length;
+  $("#w-map").classList.toggle("map-has-buildings", !panel.hidden);
+  if (!rebuild) return;
+  $("#map-building-list").replaceChildren(...buildings.map(building => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn small";
+    button.textContent = building.name;
+    button.title = `${building.name} 입구까지 길찾기`;
+    button.addEventListener("click", () => walkToBuilding(building));
+    return button;
+  }));
 }
 
 /** Stone `i` of the current map: its name (defs.waypoints) and whether the sheet has woken it. */
@@ -485,14 +519,15 @@ function drawHere(g, W, H, t) {
     const [x, y] = Pt(b.x, b.y);
     blit(g, spr(b.icon, "#f0d8a8"), x, y - 3);
     tag(b.name, x, y - 15, "#f0d8a8", 10, 2);
-    hit(x, y, 9, b.name);
+    hit(x, y, 9, b.building ? `${b.name} · 입구까지 길찾기` : b.name, b.building && (() => walkToBuilding(b.building)));
   }
   for (const p of M.portals) {
     if (p.bld) continue;
     const [x, y] = Pt(p.x, p.y);
     blit(g, spr(p.door ? "door" : "gate", p.door ? COL.door : COL.gate), x, y - 3);
     tag(p.to, x, y - 15, p.door ? "#f0c890" : "#f0c8ff", 11, 2);
-    hit(x, y, 9, `${p.door ? "문" : "관문"} → ${p.to}`);
+    hit(x, y, 9, p.building ? `${p.building.name} · 입구까지 길찾기` : `${p.door ? "문" : "관문"} → ${p.to}`,
+      p.building && (() => walkToBuilding(p.building)));
   }
   // waypoint stones: clickable to warp when woken and the rules allow
   const can = D.canWarp(), here = M.stones.findIndex((st) => Math.hypot(G.me.x - (st.x * T + 8), G.me.y - (st.y * T + 8)) < 40);
@@ -573,8 +608,8 @@ function currentChart() {
     world.detailKey = null;
     const picker = $("#map-region");
     picker.length = 1;
-    for (const { d } of world.chart.nodes.values()) picker.add(new Option(d.name, d.id));
-    if (!world.chart.nodes.has(world.selected)) world.selected = null;
+    for (const { d } of world.chart.outdoor) picker.add(new Option(d.name, d.id));
+    if (world.chart.anchors.get(world.selected) !== world.selected) world.selected = null;
     picker.value = world.selected || "";
   }
   return world.chart;
@@ -589,7 +624,7 @@ function guidePath(chart) {
   return world.route;
 }
 function selectWorld(id, focus = false) {
-  const chart = currentChart(), n = chart.nodes.get(id);
+  const chart = currentChart(), n = chart.anchors.get(id) === id && chart.nodes.get(id);
   world.selected = n ? id : null;
   $("#w-map").classList.toggle("map-has-detail", !!n);
   if (focus && n) world.focus = id;
@@ -621,8 +656,9 @@ function drawWorld(g, W, H, t) {
   if (!world.frame && W < 480) world.z = Math.min(3.5, Math.max(1, 0.68 / fit));
   world.z = world.focus ? Math.max(world.z, 1.25, Math.min(3.5, 0.72 / fit)) : world.z;
   const scale = fit * world.z;
+  const current = chart.anchors.get(G.map?.id);
   if (world.focus || (!world.frame && W < 480)) {
-    const n = chart.nodes.get(world.focus || G.map?.id);
+    const n = chart.nodes.get(world.focus || current);
     world.focus = null;
     if (n) { world.x = (chart.width / 2 - n.x) * scale; world.y = (chart.height / 2 - n.y) * scale; }
   }
@@ -631,12 +667,13 @@ function drawWorld(g, W, H, t) {
   const camp = { scale, ox: (W - chart.width * scale) / 2 + world.x, oy: (H - chart.height * scale) / 2 + world.y };
   const party = new Map();
   (G.party || []).forEach((r, i) => {
-    if (r[0] === G.you || !r[9]) return;
-    if (!party.has(r[9])) party.set(r[9], []);
-    party.get(r[9]).push({ n: i + 1, col: PARTY_COL[i % PARTY_COL.length], name: r[1] });
+    const id = chart.anchors.get(r[9]);
+    if (r[0] === G.you || !id) return;
+    if (!party.has(id)) party.set(id, []);
+    party.get(id).push({ n: i + 1, col: PARTY_COL[i % PARTY_COL.length], name: r[1] });
   });
-  const state = { t, selected: world.selected, current: G.map?.id, route: guidePath(chart), seen: new Set(G.self?.seen),
-    quests: questMaps(G.defs, G.self, chart.nodes), party, self: G.self, woke: D.wpWoke };
+  const state = { t, selected: world.selected, current, route: guidePath(chart), seen: new Set(G.self?.seen),
+    quests: questMaps(G.defs, G.self, chart.nodes, id => chart.anchors.get(id)), party, self: G.self, woke: D.wpWoke };
   view.hits = paintChart(g, chart, world.base, camp, state).map(h => ({ ...h, click: () => selectWorld(h.id) }));
   if (view.hover) view.hover = view.hits.find(h => h.id === view.hover.id) || null;
   const detail = $("#map-detail"), d = chart.nodes.get(world.selected)?.d;
@@ -693,6 +730,7 @@ function setTab(tab) {
   $("#map-detail").hidden = tab !== "world" || !world.selected;
   $("#map-zoom").hidden = $("#map-box").hidden = $("#map-info").hidden = $("#map-legend").hidden = tab === "residents";
   $("#map-residents").hidden = tab !== "residents";
+  updateBuildings();
   if (tab === "residents") drawResidents();
   if (tab === "world") currentChart();
   legend();

@@ -51,7 +51,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 - [x] `docs/FILEMAP.md` 파일 지도와 실제 파일을 대조해 틀린 줄·빠진 파일을 고치기 (줄 수 `[N]` 갱신 포함, 문서만 수정). [검수](reports/codex-filemap.md)
 - [x] 바람등호 Lv.100 구조 의뢰와 안전 갑판, 루넬샤 지도 표기와 작은꼬리들 서사. [인계](reports/codex-oasis-airship.md)
 - [x] 단검·창 스킬 4종 연출, 단검·창·스태프·마도서 모션, 단검·창 타격음. [검수](reports/codex-skill-feedback-round2.md)
-- [ ] 클로드의 버드나무마을 확장본이 로컬 `main`에 들어오면 동선을 잰 뒤 재료 납품 2종·요리 1종·배달 1종부터 연결. [의뢰 설계](../docs/design/willow-job-economy.md)
+- [x] 버드나무마을 확장본에 재료 납품 2종·요리 1종·배달 1종을 연결하고 동선과 순익을 검증. [의뢰 설계](../docs/design/willow-job-economy.md) · [검증 보고서](reports/codex-atlas-navigation.md)
 
 ## GEMINI (분석 · 문서 · 콘텐츠 · [ART]/[VFX] 그림과 이펙트 — `ai/gemini.md` 5번)
 

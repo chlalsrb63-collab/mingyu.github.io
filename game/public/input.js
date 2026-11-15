@@ -55,12 +55,12 @@ export function moveVector() {
  * grid in which a diagonal step costs √2, so routes run straight where they can.
  * If the spot cannot be reached, the route ends at the nearest tile that can.
  */
-export function pathTo(wx, wy) {
+export function pathTo(wx, wy, { exact = false } = {}) {
   const m = G.map, n = m.w * m.h;
   const sx = Math.floor(G.me.x / T), sy = Math.floor((G.me.y - 2) / T);
   const gx = clamp(Math.floor(wx / T), 0, m.w - 1), gy = clamp(Math.floor(wy / T), 0, m.h - 1);
   // a walk goes round doors and gates it is not heading for (a house door sits right on the street)
-  const doors = new Set(m.portals.filter((p) => Math.abs(p.x - gx) + Math.abs(p.y - gy) > 1).map((p) => p.y * m.w + p.x));
+  const doors = new Set(m.portals.filter((p) => Math.abs(p.x - gx) + Math.abs(p.y - gy) > (exact ? 0 : 1)).map((p) => p.y * m.w + p.x));
   const free = (x, y) => x >= 0 && y >= 0 && x < m.w && y < m.h && m.o[y][x] === " " && !"wW".includes(m.g[y][x]) && !doors.has(y * m.w + x);
   const cost = new Float32Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1), done = new Uint8Array(n);
   const start = sy * m.w + sx, goal = gy * m.w + gx;
@@ -87,9 +87,31 @@ export function pathTo(wx, wy) {
       if (c < cost[ni]) { cost[ni] = c; prev[ni] = cur; open.push(ni); }
     }
   }
+  if (exact && best !== goal) return null;
   const path = [];
   for (let cur = best; cur !== start && cur !== -1; cur = prev[cur]) path.unshift([(cur % m.w) * T + 8, Math.floor(cur / m.w) * T + 10]);
   return path.length ? path : null;
+}
+
+/** Follow the shortest walkable route to a portal tile of the selected building. */
+export function walkToDoor(tiles) {
+  if (!G.playing || G.me.dead) return false;
+  let route = null, best = Infinity;
+  for (const [x, y] of tiles) {
+    const path = pathTo(x * T + 8, y * T + 10, { exact: true });
+    if (!path) continue;
+    let wx = G.me.x, wy = G.me.y, length = 0;
+    for (const [px, py] of path) {
+      length += Math.hypot(px - wx, py - wy);
+      wx = px; wy = py;
+    }
+    if (length < best) { route = path; best = length; }
+  }
+  if (!route) return false;
+  if (G.auto) toggleAuto();
+  G.path = route;
+  G.mark = { at: now(), pos: route.at(-1) };
+  return true;
 }
 
 // virtual joystick + touch buttons

@@ -1,9 +1,10 @@
 import { terrainIcon } from "./worldmap_art.js";
 import { paintLandscape, terrainTrail, ATLAS_WIDTH, ATLAS_SOUTH } from "./worldmap_land.js";
 
-const CELL_W = 142, CELL_H = 84, INSET_GAP = 86;
+const CELL_W = 142, CELL_H = 84;
 const names = { town: "마을", field: "사냥터", dun: "던전", in: "실내" };
 const palette = { ink: "#473226", road: "#786a53", track: "#ffe8a0", selected: "#215758" };
+const room = n => n.d.kind === "in";
 
 /** Directed traversal; the chart separately draws each physical pair once. */
 export function shortestRoute(graph, start, end, allowed = () => true) {
@@ -35,7 +36,7 @@ export function mapChart(maps) {
     if (edges.has(key)) continue;
     edges.set(key, { a, b, oneWay: !graph.get(b).includes(a) });
   }
-  const outdoor = [...nodes.values()].filter(n => n.d.kind !== "in");
+  const outdoor = [...nodes.values()].filter(n => !room(n));
   for (const n of outdoor) if (n.d.pos) [n.x, n.y] = n.d.pos;
   if (outdoor.length && !outdoor.some(n => n.x !== undefined)) {
     outdoor[0].x = CELL_W;
@@ -56,24 +57,45 @@ export function mapChart(maps) {
     const a = linked(n) || outdoor[0];
     [n.x, n.y] = free(a.x ?? CELL_W, a.y ?? CELL_H);
   }
-  const inner = [...nodes.values()].filter(n => n.d.kind === "in").sort((a, b) => a.d.name.localeCompare(b.d.name, "ko"));
   const width = Math.max(ATLAS_WIDTH, ...outdoor.map(n => n.x + 78));
   const south = Math.max(ATLAS_SOUTH, ...outdoor.map(n => n.y + 54));
-  const cols = Math.max(1, Math.floor((width - 38) / CELL_W));
-  inner.forEach((n, i) => {
-    n.x = Math.round((i % cols + 0.5) * width / cols);
-    n.y = south + INSET_GAP + Math.floor(i / cols) * 50;
-  });
-  const height = inner.length ? inner[inner.length - 1].y + 40 : south + 26;
-  return { nodes, graph, edges: [...edges.values()], width, height, inset: inner.length ? south + 43 : null };
+  const queue = outdoor.map(({ d }) => d.id);
+  const anchors = new Map(queue.map(id => [id, id]));
+  for (let i = 0; i < queue.length; i++) {
+    const from = queue[i];
+    for (const id of adjacent.get(from)) if (!anchors.has(id)) {
+      anchors.set(id, anchors.get(from));
+      queue.push(id);
+    }
+  }
+  return { nodes, graph, edges: [...edges.values()], outdoor, anchors, width, height: south + 26 };
 }
 
-export function questMaps(defs, self, nodes) {
+/** Resolve regional building destinations against the actual live entrance tiles. */
+export function buildingDoors(map, maps) {
+  const here = maps.find(d => d.id === map.id);
+  if (!map.safe || here?.kind !== "town") return [];
+  const interiors = maps.filter(d => d.kind === "in" && here.to.includes(d.id));
+  const named = new Map((here.doors || []).map(([x, y, to]) => [`${x},${y}`, to]));
+  const buildings = new Map();
+  for (const p of map.portals || []) {
+    if (!p.door) continue;
+    const to = named.get(`${p.x},${p.y}`);
+    const d = interiors.find(d => to ? d.id === to : p.to === d.name || p.to === d.gateLabel);
+    if (!d) continue;
+    if (!buildings.has(d.id)) buildings.set(d.id, { id: d.id, name: d.name, tiles: [] });
+    buildings.get(d.id).tiles.push([p.x, p.y]);
+  }
+  return [...buildings.values()].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+}
+
+export function questMaps(defs, self, nodes, anchor = id => id) {
   const quests = new Map();
   const add = (id, title) => {
+    id = anchor(id);
     if (!nodes.has(id)) return;
     if (!quests.has(id)) quests.set(id, []);
-    quests.get(id).push(title);
+    if (!quests.get(id).includes(title)) quests.get(id).push(title);
   };
   const hunt = (k, title) => { for (const [id, { d }] of nodes) if (d.mobs?.includes(k) || d.bosses?.includes(k)) add(id, title); };
   const main = self?.q, q = main && defs.quests?.[main.i];
@@ -101,7 +123,6 @@ export function questMaps(defs, self, nodes) {
 
 const band = d => d.minLv ? `Lv.${d.minLv} ${d.unlockQuest ? "이상" : "전용"}` : d.band ? `Lv.${d.band[0]}–${d.band[1]}` : d.safe ? "안전 지대" : names[d.kind];
 export const unlockState = (d, self) => d.unlockQuest ? self?.sq?.find(([id]) => id === d.unlockQuest)?.[1] || 0 : 4;
-const room = n => n.d.kind === "in";
 export function wokeStones(d, self, woke) {
   if (unlockState(d, self) !== 4) return [];
   return Array.from({ length: d.wpn || 0 }, (_, i) => i).filter(i => woke(self, d.id, i));
@@ -120,17 +141,6 @@ export function nextGate(portals, target, px, py) {
 
 const pixel = (g, x, y, w, h, color) => { g.fillStyle = color; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
 
-const edgePath = (a, b, chart) => {
-  if (room(a) !== room(b) && chart.inset !== null) {
-    const middle = chart.inset - 8;
-    const outer = room(a) ? b : a, inner = room(a) ? a : b;
-    const rail = Math.max(35, Math.min(...[...chart.nodes.values()].filter(n => !room(n)).map(n => n.x)) - 78);
-    const path = [[outer.x, outer.y], [rail, outer.y + 64], [rail, middle], [inner.x, middle], [inner.x, inner.y]];
-    return room(a) ? path.reverse() : path;
-  }
-  return terrainTrail(a, b);
-};
-
 /** Square brush so diagonal trails stay pixel-art at fractional map zoom. */
 function edge(g, points, col, size, dash = false) {
   let travel = 0;
@@ -148,15 +158,10 @@ function edge(g, points, col, size, dash = false) {
 export function chartBase(chart, makeCanvas) {
   const canvas = makeCanvas(chart.width, chart.height), g = canvas.getContext("2d");
   paintLandscape(g, chart);
-  if (chart.inset !== null) {
-    pixel(g, 10, chart.inset - 2, chart.width - 20, chart.height - chart.inset - 7, "#796447");
-    pixel(g, 14, chart.inset + 2, chart.width - 28, chart.height - chart.inset - 14, "#dfc794");
-    pixel(g, 19, chart.inset + 5, chart.width - 38, 2, "#efdaad");
-  }
   for (const { a, b, oneWay } of chart.edges) {
     const A = chart.nodes.get(a), B = chart.nodes.get(b), inner = room(A) || room(B);
     if (inner) continue;
-    const path = edgePath(A, B, chart);
+    const path = terrainTrail(A, B);
     const tunnel = A.d.kind === "dun" && A.d.id !== "frostkeep" || B.d.kind === "dun" && B.d.id !== "frostkeep";
     edge(g, path, palette.road, tunnel ? 4 : 6, tunnel);
     edge(g, path, tunnel ? "#dec99f" : "#ecdaa7", tunnel ? 2 : 3, tunnel);
@@ -174,12 +179,10 @@ export function paintChart(g, chart, base, cam, state) {
   const { scale, ox, oy } = cam, { selected, current, seen, quests, party, route, woke, self, t } = state;
   const screen = n => [Math.round(ox + n.x * scale), Math.round(oy + n.y * scale)];
   g.drawImage(base, Math.round(ox), Math.round(oy), Math.round(chart.width * scale), Math.round(chart.height * scale));
-  if (chart.inset !== null) {
-    g.font = "bold 11px Galmuri11, sans-serif"; g.fillStyle = palette.ink; g.textAlign = "start"; g.textBaseline = "alphabetic";
-    g.fillText("건물과 실내", ox + 26 * scale, oy + (chart.inset + 18) * scale);
-  }
   for (let i = 1; i < route.length; i++) {
-    const path = edgePath(chart.nodes.get(route[i - 1]), chart.nodes.get(route[i]), chart).map(p => screen({ x: p[0], y: p[1] }));
+    const a = chart.nodes.get(route[i - 1]), b = chart.nodes.get(route[i]);
+    if (room(a) || room(b)) continue;
+    const path = terrainTrail(a, b).map(([x, y]) => screen({ x, y }));
     edge(g, path, palette.selected, 6);
     edge(g, path, palette.track, 2);
   }
@@ -189,41 +192,35 @@ export function paintChart(g, chart, base, cam, state) {
     g.fillStyle = color; g.textAlign = "center"; g.textBaseline = "top";
     g.fillText(s, x, y, width);
   };
-  for (const [id, n] of chart.nodes) {
-    const { d } = n, [x, y] = screen(n), inside = room(n), hitW = Math.min(146, CELL_W * scale - 3);
+  for (const n of chart.outdoor) {
+    const { d } = n, { id } = d, [x, y] = screen(n), hitW = Math.min(146, CELL_W * scale - 3);
     const cur = current === id, known = cur || seen.has(id), sel = selected === id;
     const locked = unlockState(d, self) !== 4;
     const stoneCount = wokeStones(d, self, woke).length;
     const members = party.get(id) || [], todo = quests.get(id) || [];
     const art = terrainIcon(d.art || d.theme, d.kind);
-    const drawW = Math.round((inside ? 35 : 68) * scale), drawH = Math.round(drawW * art.height / art.width);
-    const labelY = inside ? y + 1 : y + Math.round(13 * scale);
-    const top = inside ? y - 20 * scale : y - 39 * scale;
-    const low = labelY + (inside ? 13 : 26);
+    const drawW = Math.round(68 * scale), drawH = Math.round(drawW * art.height / art.width);
+    const labelY = y + Math.round(13 * scale), top = y - 39 * scale, low = labelY + 26;
     const sub = `${band(d)}${locked ? " · 구조 대기" : d.wpn ? ` · ◆${stoneCount}/${d.wpn}` : ""}`;
-    g.font = `bold ${inside ? 10 : 12}px Galmuri11, sans-serif`;
+    g.font = "bold 12px Galmuri11, sans-serif";
     const nameWidth = g.measureText(d.name).width;
     g.font = "10px Galmuri11, sans-serif";
-    const labelW = Math.min(hitW - 4, Math.max(drawW + 10, nameWidth + 10, inside ? 0 : g.measureText(sub).width + 10));
+    const labelW = Math.min(hitW - 4, Math.max(drawW + 10, nameWidth + 10, g.measureText(sub).width + 10));
     const left = x - labelW / 2;
-    if (!inside) {
-      const edge = sel ? palette.selected : cur ? "#8f5d36" : "#9a865f";
-      const cloth = sel ? "#fbebc8" : known ? "#f1dfb3" : "#e6d6b4";
-      pixel(g, left - 1, labelY - 2, labelW + 2, low - labelY + 2, edge);
-      pixel(g, left + 1, labelY - 3, labelW - 2, low - labelY + 4, edge);
-      pixel(g, left + 1, labelY - 1, labelW - 2, low - labelY + 1, cloth);
-      if (sel || cur) {
-        pixel(g, left - 3, labelY + 5, 3, 5, edge);
-        pixel(g, left + labelW, labelY + 5, 3, 5, edge);
-      }
-    } else if (sel || cur) {
-      pixel(g, left, labelY - 2, labelW, low - labelY + 2, "#f3e2b5");
+    const border = sel ? palette.selected : cur ? "#8f5d36" : "#9a865f";
+    const cloth = sel ? "#fbebc8" : known ? "#f1dfb3" : "#e6d6b4";
+    pixel(g, left - 1, labelY - 2, labelW + 2, low - labelY + 2, border);
+    pixel(g, left + 1, labelY - 3, labelW - 2, low - labelY + 4, border);
+    pixel(g, left + 1, labelY - 1, labelW - 2, low - labelY + 1, cloth);
+    if (sel || cur) {
+      pixel(g, left - 3, labelY + 5, 3, 5, border);
+      pixel(g, left + labelW, labelY + 5, 3, 5, border);
     }
     g.globalAlpha = known ? 1 : 0.88;
     g.drawImage(art, Math.round(x - drawW / 2), Math.round(labelY - drawH - 1), drawW, drawH);
     g.globalAlpha = 1;
-    text(d.name, x, labelY, Math.max(1, labelW - 6), known ? palette.ink : "#725a45", inside ? 10 : 12, true);
-    if (!inside) text(sub, x, labelY + 14, Math.max(1, labelW - 5), stoneCount ? "#245a55" : "#6a5038", 10);
+    text(d.name, x, labelY, Math.max(1, labelW - 6), known ? palette.ink : "#725a45", 12, true);
+    text(sub, x, labelY + 14, Math.max(1, labelW - 5), stoneCount ? "#245a55" : "#6a5038", 10);
     const markerY = Math.round(labelY - Math.max(5, drawH - 4));
     if (cur) {
       const p = Math.floor(t / 440) % 2;
@@ -285,6 +282,7 @@ export function mapDetail(host, d, ctx) {
   addRow(body, "의뢰", quests.get(d.id)?.join(", "));
   const doors = E("div", "", "map-detail-buttons");
   for (const id of chart.graph.get(d.id)) {
+    if (room(chart.nodes.get(id))) continue;
     const button = E("button", nameOf(id)); button.addEventListener("click", () => select(id, true)); doors.append(button);
   }
   if (doors.childElementCount) body.append(E("div", "연결", "map-detail-key"), doors);

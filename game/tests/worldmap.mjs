@@ -1,19 +1,28 @@
 import assert from "node:assert/strict";
-import { defs } from "../src/logic.js";
+import { defs, setup, addPlayer, newChar, viewFor, runtime } from "../src/logic.js";
 import { terrainTrail } from "../public/worldmap_land.js";
-import { mapChart, shortestRoute, nextGate, questMaps, wokeStones } from "../public/worldmap.js";
+import { mapChart, buildingDoors, shortestRoute, nextGate, questMaps, wokeStones } from "../public/worldmap.js";
 
 const D = defs(), chart = mapChart(D.maps);
-assert.equal(chart.nodes.size, D.maps.length, "all maps, including interiors, appear");
-assert.equal(new Set([...chart.nodes.values()].map(({ x, y }) => `${x},${y}`)).size, D.maps.length);
+assert.equal(chart.nodes.size, D.maps.length, "the routing graph includes interiors");
+assert.deepEqual(chart.outdoor.map(({ d }) => d.id), D.maps.filter(m => m.kind !== "in").map(m => m.id));
+assert.equal(new Set(chart.outdoor.map(({ x, y }) => `${x},${y}`)).size, chart.outdoor.length);
 for (const m of D.maps) {
-  assert.ok(Number.isFinite(chart.nodes.get(m.id).x) && Number.isFinite(chart.nodes.get(m.id).y));
+  const n = chart.nodes.get(m.id);
+  if (m.kind !== "in") {
+    assert.ok(Number.isFinite(n.x) && Number.isFinite(n.y));
+    assert.equal(chart.anchors.get(m.id), m.id);
+  } else {
+    assert.equal(n.x, undefined, "no world pin is assigned to an interior");
+    assert.notEqual(chart.nodes.get(chart.anchors.get(m.id))?.d.kind, undefined);
+    assert.notEqual(chart.nodes.get(chart.anchors.get(m.id)).d.kind, "in");
+  }
   const path = shortestRoute(chart.graph, "town", m.id);
   assert.equal(path[0], "town", m.id);
   assert.equal(path.at(-1), m.id, m.id);
   for (const to of m.to) {
     const e = chart.edges.find(e => (e.a === m.id && e.b === to) || (e.b === m.id && e.a === to));
-    assert.ok(e, `${m.id} ↔ ${to} has one visible trail`);
+    assert.ok(e, `${m.id} ↔ ${to} has one physical connection`);
     if (e.oneWay) assert.equal(e.a, m.id);
   }
 }
@@ -28,6 +37,27 @@ for (const { a, b } of chart.edges) {
   assert.ok(trail.some(([x, y]) => Math.abs((B.x - A.x) * (y - A.y) - (B.y - A.y) * (x - A.x)) > 2));
 }
 assert.equal(chart.edges.length, new Set(D.maps.flatMap(m => m.to.map(to => JSON.stringify([m.id, to].sort())))).size);
+
+const S = setup();
+addPlayer(S, "test", newChar("길안내", "warrior", []));
+const p = S.players.test;
+for (const id of ["town", "willow", "meadow"]) {
+  runtime(S, id);
+  p.map = id; p.sendMap = true;
+  const { map } = viewFor(S, "test");
+  const buildings = buildingDoors(map, D.maps);
+  const expected = D.maps.find(d => d.id === id).to.filter(to => chart.nodes.get(to)?.d.kind === "in");
+  assert.deepEqual(buildings.map(b => b.id).sort(), expected.sort(), id);
+  for (const b of buildings) assert.ok(b.tiles.every(([x, y]) => map.portals.some(q => q.door && q.x === x && q.y === y)), b.id);
+}
+const portalMaps = [
+  { id: "village", kind: "town", to: ["hall"], doors: [[1, 2, "hall"]] },
+  { id: "hall", kind: "in", name: "회관" },
+];
+assert.deepEqual(buildingDoors({ id: "village", safe: true, portals: [
+  { x: 1, y: 2, to: "맞춤 표지", door: 1 },
+  { x: 1, y: 3, to: "회관", door: 1 },
+] }, portalMaps), [{ id: "hall", name: "회관", tiles: [[1, 2], [1, 3]] }]);
 
 const extra = mapChart([
   { id: "hub", name: "마을", kind: "town", to: ["field", "other"] },

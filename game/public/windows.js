@@ -418,7 +418,7 @@ export function hoverTip(node, fill) {
 }
 
 /** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */
-export function setupWindows() {
+export function setupWindows({ walkToDoor }) {
   for (const id of WIN) {
     const w = winEl(id), head = w.querySelector("header");
     if (winSize) winSize.observe(w);
@@ -443,6 +443,7 @@ export function setupWindows() {
   // the radar over the side column and the map window (radar.js)
   Radar.init({
     G, act, toggleWin, isOpen, wpWoke, npcOut: S3.npcOut, miniDots: Dim.miniDots, play: (n) => Sound.play(n),
+    walkToDoor, closeMap: () => closeWin("map"), toast,
     canWarp: () => stoneNear() || !!(G.near && G.near.role === "warp"),
     info: () => `${channelName()} · ${G.map.safe ? "안전 지대" : "사냥터"} · ${G.who.size}명`,
   });

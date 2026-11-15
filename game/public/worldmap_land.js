@@ -93,22 +93,52 @@ function contains(shape, x, y) {
   return inShape;
 }
 
+function coastNormals(shape) {
+  const normals = shape.map(([x, y], i) => {
+    const [endX, endY] = shape[(i + 1) % shape.length];
+    const dx = endX - x, dy = endY - y, length = Math.hypot(dx, dy);
+    return [dy / length, -dx / length];
+  });
+  return normals.map(([x, y], i) => {
+    const [prevX, prevY] = normals[(i + shape.length - 1) % shape.length];
+    const miter = Math.max(0.7, 1 + x * prevX + y * prevY);
+    return [(prevX + x) / miter, (prevY + y) / miter];
+  });
+}
+
 function coastShelf(g, shape, fill, small = false) {
-  const d = small ? 7 : 13;
-  poly(g, move(expand(shape, small ? 1.30 : 1.052), 0, d), C.swell);
-  poly(g, move(expand(shape, small ? 1.14 : 1.027), 0, d), C.shallow);
-  poly(g, move(expand(shape, small ? 1.06 : 1.011), 0, d), C.wetSand);
-  poly(g, move(shape, 0, d), C.coast);
-  poly(g, move(shape, 0, d - 4), C.cliff);
+  const normals = coastNormals(shape);
+  const cliffDepth = small ? 6 : 12;
+  const shelf = (distance, color) => poly(g, shape.map(([x, y], i) => {
+    const [nx, ny] = normals[i];
+    return [x + nx * distance, y + ny * distance + cliffDepth];
+  }), color);
+  shelf(small ? 10 : 18, "#45707b");
+  shelf(small ? 6 : 12, "#567e84");
+  shelf(small ? 3 : 6, C.shallow);
+  shelf(2, C.wetSand);
+  poly(g, move(shape, 0, cliffDepth), C.coast);
+  poly(g, move(shape, 0, cliffDepth - 3), C.cliff);
   poly(g, move(shape, 0, 3), C.cliffLit);
+  for (const [i, [x, y]] of shape.entries()) {
+    const [endX, endY] = shape[(i + 1) % shape.length];
+    if (endX >= x || x - endX < 10) continue;
+    const a = x + (endX - x) * 0.36, b = y + (endY - y) * 0.36;
+    steppedLine(g, [[a, b + 4], [a - 2, b + cliffDepth - 1]], 2, C.coast);
+    if (!small) steppedLine(g, [[a + 4, b + 4], [a + 2, b + cliffDepth - 2]], 2, C.cliffLit);
+  }
   poly(g, shape, fill);
 }
 
 function seaMarks(g, w, h) {
+  // Quiet bands of open water frame the composition, with short wakes near the shoals.
+  poly(g, [[13, 120], [49, 97], [98, 128], [113, 178], [97, 247], [115, 292], [86, 355], [91, 423], [63, 469], [13, 499]], "#395e6b");
+  poly(g, [[43, 569], [102, 546], [153, 558], [231, 569], [304, 586], [615, 586], [716, 561], [803, 573], [886, 583], [975, 571], [1043, 545], [1043, 581], [13, 581]], "#395c69");
   for (let y = 31; y < h - 14; y += 27) for (let x = 19; x < w - 20; x += 36) {
     const n = hash(x, y), a = x + (n % 21) - 10, b = y + ((n >>> 7) % 13) - 6;
-    rect(g, a, b, 5 + (n % 5), 2, C.swell);
-    if (n % 4 === 0) rect(g, a + 7, b + 4, 11, 2, "#547e85");
+    if (n % 7 < 2) continue;
+    rect(g, a, b, 4 + (n % 7), 2, C.swell);
+    if (n % 4 === 0) rect(g, a + 7, b + 4, 6, 2, "#547e85");
   }
   for (const [x, y] of [[58, 316], [73, 480], [518, 559], [1006, 474]]) {
     poly(g, [[x - 13, y], [x + 15, y - 2], [x + 8, y + 5], [x - 5, y + 6]], "#634d43");
@@ -116,6 +146,8 @@ function seaMarks(g, w, h) {
     poly(g, [[x - 1, y - 21], [x - 1, y - 2], [x - 10, y - 2], [x - 7, y - 9]], "#e2d6b1");
     poly(g, [[x + 2, y - 18], [x + 9, y - 7], [x + 11, y - 3], [x + 2, y - 3]], "#b5a989");
     rect(g, x - 13, y + 8, 15, 2, C.foam);
+    rect(g, x + 7, y + 8, 7, 2, C.shallow);
+    rect(g, x - 21, y + 12, 14, 2, C.swell);
   }
 }
 
@@ -129,6 +161,33 @@ function compass(g) {
   rect(g, x - 3, y - 3, 6, 6, "#635f55");
   g.fillStyle = "#eddfb6"; g.font = "bold 10px Galmuri11, sans-serif"; g.textAlign = "center";
   g.fillText("북", x, y - 43);
+}
+
+function country(g) {
+  // Wide, irregular masses establish the terrain before the small illustration marks.
+  poly(g, turf, C.prairie);
+  poly(g, [[133, 249], [166, 228], [195, 232], [213, 259], [245, 258], [268, 243], [298, 246], [321, 236], [358, 245], [375, 259], [343, 268], [301, 264], [255, 289], [202, 279], [168, 291], [140, 278]], "#adb375");
+  poly(g, [[171, 211], [194, 181], [225, 167], [272, 166], [289, 186], [328, 188], [361, 174], [389, 184], [412, 208], [373, 227], [334, 212], [307, 226], [278, 217], [250, 234], [221, 223], [195, 228]], "#c2ba7e");
+  poly(g, forest, C.grove);
+  poly(g, [[434, 119], [451, 106], [471, 120], [495, 114], [511, 122], [536, 118], [567, 99], [611, 111], [634, 108], [666, 129], [649, 155], [663, 183], [632, 210], [607, 213], [590, 225], [560, 213], [548, 224], [530, 201], [499, 194], [482, 176], [455, 173], [440, 150]], C.woods);
+  poly(g, [[453, 148], [470, 134], [495, 139], [525, 132], [545, 144], [585, 126], [623, 132], [612, 148], [585, 154], [563, 176], [544, 170], [518, 184], [484, 173]], "#768a54");
+  poly(g, jungle, C.jungle);
+  poly(g, [[122, 406], [153, 366], [198, 381], [216, 371], [244, 367], [270, 380], [296, 366], [324, 380], [349, 405], [333, 430], [352, 453], [333, 467], [307, 461], [282, 481], [263, 475], [240, 500], [209, 498], [199, 478], [164, 471], [140, 447], [122, 449]], "#527a64");
+  poly(g, [[144, 426], [173, 404], [191, 405], [217, 389], [234, 396], [266, 387], [282, 399], [296, 395], [320, 415], [303, 438], [271, 442], [253, 465], [235, 454], [216, 468], [195, 457], [164, 463]], "#678855");
+  poly(g, reefs, C.beach);
+  poly(g, [[270, 511], [288, 490], [326, 497], [349, 479], [374, 490], [397, 478], [423, 495], [397, 510], [380, 540], [353, 541], [327, 552], [305, 537], [278, 536]], "#e6cb91");
+  poly(g, sand, C.desert);
+  poly(g, [[517, 461], [557, 442], [588, 450], [626, 421], [651, 431], [670, 424], [699, 443], [739, 442], [769, 455], [809, 445], [854, 459], [884, 484], [856, 505], [823, 506], [797, 487], [758, 497], [730, 480], [702, 491], [678, 467], [647, 471], [615, 494], [580, 493], [554, 483], [525, 489]], "#e0ba7d");
+  poly(g, [[612, 503], [633, 481], [664, 484], [688, 511], [710, 503], [749, 511], [767, 536], [742, 545], [699, 550], [666, 533], [643, 543], [610, 524]], "#cda168");
+  poly(g, northernIce, C.frost);
+  poly(g, [[692, 86], [720, 64], [758, 49], [775, 44], [819, 60], [850, 53], [887, 61], [924, 42], [956, 49], [990, 73], [996, 92], [971, 118], [979, 134], [958, 152], [921, 152], [896, 164], [867, 154], [851, 162], [813, 152], [805, 142], [771, 135], [747, 121], [725, 102]], C.snow);
+  poly(g, [[754, 105], [798, 104], [815, 92], [845, 100], [887, 83], [922, 90], [938, 112], [967, 119], [953, 135], [919, 139], [887, 131], [856, 149], [824, 139], [802, 125], [776, 127]], "#c6d2cc");
+  poly(g, autumn, C.fall);
+  poly(g, [[697, 151], [724, 136], [756, 150], [783, 156], [806, 181], [845, 179], [880, 197], [910, 185], [938, 203], [915, 218], [887, 217], [856, 238], [834, 227], [798, 242], [770, 216], [738, 217], [720, 195], [704, 193]], C.fallLit);
+  poly(g, badlands, C.ash);
+  poly(g, [[833, 344], [863, 313], [895, 300], [930, 269], [954, 260], [979, 273], [965, 292], [988, 314], [978, 341], [1001, 366], [974, 386], [976, 411], [942, 415], [923, 432], [894, 427], [875, 405], [845, 410], [820, 394], [829, 373], [813, 358]], C.slate);
+  poly(g, [[298, 320], [330, 283], [374, 282], [405, 296], [433, 308], [455, 309], [492, 278], [532, 268], [578, 280], [615, 308], [595, 352], [537, 360], [502, 374], [461, 377], [422, 369], [371, 389], [334, 372], [318, 354]], "#9d9882");
+  poly(g, [[315, 338], [353, 299], [382, 303], [419, 322], [450, 325], [472, 312], [514, 287], [556, 287], [582, 299], [590, 325], [549, 335], [529, 348], [500, 345], [457, 360], [419, 348], [382, 370], [343, 362]], "#a7a08a");
 }
 
 function escarpments(g) {
@@ -152,11 +211,14 @@ function mountain(g, x, y, w, h, style) {
   poly(g, [[l, y], [l + w * 0.18, y - h * 0.24], [x - w * 0.20, y - h * 0.42], [x - w * 0.12, y - h * 0.68], [x, y - h], [x + w * 0.08, y - h * 0.85], [x + w * 0.19, y - h * 0.54], [x + w * 0.34, y - h * 0.31], [r, y], [x + 5, y + 6]], base);
   poly(g, [[l, y], [l + w * 0.18, y - h * 0.23], [x - w * 0.20, y - h * 0.40], [x, y - h], [x - w * 0.04, y - h * 0.60], [x + w * 0.08, y - h * 0.32], [x - w * 0.05, y - 2]], light);
   poly(g, [[x, y - h], [x + w * 0.08, y - h * 0.85], [x + w * 0.19, y - h * 0.54], [x + w * 0.34, y - h * 0.31], [r, y], [x + w * 0.18, y + 3], [x + w * 0.08, y - h * 0.32], [x - w * 0.04, y - h * 0.59]], shade);
+  // Narrow buttresses and breaks in the facets give the range an uneven relief.
+  poly(g, [[l + w * 0.08, y - h * 0.08], [x - w * 0.22, y - h * 0.40], [x - w * 0.17, y - h * 0.49], [x - w * 0.21, y - h * 0.25], [x - w * 0.12, y - h * 0.21], [x - w * 0.24, y - h * 0.13], [x - w * 0.29, y]], base);
+  poly(g, [[x + w * 0.06, y - h * 0.76], [x + w * 0.15, y - h * 0.51], [x + w * 0.28, y - h * 0.37], [x + w * 0.19, y - h * 0.37], [x + w * 0.29, y - h * 0.14], [x + w * 0.25, y - h * 0.06], [x + w * 0.16, y - h * 0.32]], base);
+  poly(g, [[x - w * 0.04, y - h * 0.48], [x + w * 0.01, y - h * 0.23], [x + w * 0.13, y - h * 0.11], [x + w * 0.02, y + 3], [x - w * 0.15, y + 1], [x - w * 0.08, y - h * 0.16]], base);
   if (cap) {
     poly(g, [[x, y - h], [x + w * 0.08, y - h * 0.85], [x + w * 0.19, y - h * 0.54], [x + w * 0.09, y - h * 0.62], [x + w * 0.06, y - h * 0.46], [x - w * 0.04, y - h * 0.57]], darkCap);
     poly(g, [[x, y - h], [x - w * 0.04, y - h * 0.57], [x - w * 0.09, y - h * 0.63], [x - w * 0.13, y - h * 0.53], [x - w * 0.24, y - h * 0.43], [x - w * 0.13, y - h * 0.69]], cap);
   }
-  rect(g, x - w * 0.12, y - h * 0.27, w * 0.12, 2, base);
 }
 
 function ranges(g) {
@@ -177,9 +239,21 @@ function stream(g, points, width) {
 }
 
 function waterways(g) {
+  // Alluvial flats step out around the lower course, where it breaks into the sea.
+  poly(g, [[405, 399], [430, 395], [453, 402], [477, 423], [465, 451], [453, 471], [463, 491], [445, 516], [428, 531], [402, 525], [400, 504], [418, 480], [408, 457], [427, 435]], "#9bac75");
+  poly(g, [[408, 480], [423, 469], [444, 476], [452, 492], [439, 511], [426, 526], [411, 520], [411, 501]], "#88a377");
+  poly(g, [[469, 361], [486, 344], [510, 346], [517, 366], [501, 384], [482, 381]], "#89967d");
+  poly(g, [[475, 362], [488, 350], [505, 351], [510, 365], [499, 377], [483, 375]], "#7b9c91");
+  poly(g, [[483, 359], [495, 355], [501, 360], [500, 368], [489, 372], [483, 368]], C.water);
+  stream(g, [[497, 367], [484, 385], [460, 397], [450, 404]], 3);
+  stream(g, [[443, 496], [417, 507], [392, 517], [375, 545], [370, 561]], 4);
+  stream(g, [[425, 530], [436, 532], [448, 519]], 3);
   stream(g, [[495, 84], [489, 115], [455, 136], [427, 154], [429, 189], [398, 210], [375, 248], [396, 269], [395, 285], [424, 313], [456, 336], [462, 355], [444, 393], [462, 419], [455, 441], [430, 465], [444, 498], [425, 530], [417, 542]], 7);
   stream(g, [[597, 120], [578, 147], [584, 176], [564, 197], [539, 203], [507, 225], [472, 235], [442, 257], [395, 269]], 4);
   stream(g, [[139, 214], [166, 212], [202, 240], [244, 246], [268, 229], [294, 238], [324, 253], [360, 249], [375, 248]], 4);
+  stream(g, [[300, 272], [284, 285], [264, 284], [238, 299], [207, 301], [187, 324], [156, 319], [113, 338]], 3);
+  steppedLine(g, [[779, 123], [793, 115], [817, 116], [829, 106]], 3, "#afc3c5");
+  steppedLine(g, [[912, 137], [893, 149], [870, 145], [855, 152], [830, 150]], 4, "#afc5cb");
   // Two ledges break the waterway into a waterfall and a foaming pool.
   rect(g, 423, 150, 10, 22, C.waterLit);
   rect(g, 424, 153, 4, 17, C.waterBright);
@@ -191,6 +265,7 @@ function waterways(g) {
   poly(g, [[549, 470], [563, 456], [582, 453], [599, 460], [607, 468], [596, 478], [574, 484], [554, 479]], "#72a4a0");
   rect(g, 565, 468, 25, 2, C.waterBright);
   rect(g, 579, 472, 16, 2, C.waterBright);
+  for (const [x, y, width] of [[477, 359, 10], [495, 365, 8], [421, 494, 10], [410, 515, 8], [368, 551, 8]]) rect(g, x, y, width, 2, C.waterLit);
 }
 
 function tree(g, x, y, s, [shade, base, light], canopy) {
@@ -220,11 +295,16 @@ function foliage(g, busy) {
 }
 
 function duneField(g, busy) {
+  const dunes = [[504, 479, 38, 8], [650, 494, 47, 11], [717, 515, 46, 11], [768, 472, 39, 9], [840, 504, 48, 11], [907, 505, 55, 13]];
   for (let y = 423; y < 545; y += 22) for (let x = 475; x < 948; x += 42) {
     const n = hash(x, y), a = x + (n % 28) - 14, b = y + ((n >>> 8) % 17) - 8;
-    if (!contains(sand, a, b) || !contains(sand, a + 23, b) || busy(a, b) || n % 5 < 2) continue;
-    const w = 20 + n % 19, h = 6 + (n % 3);
-    poly(g, [[a - w * 0.52, b], [a - w * 0.20, b - h], [a + w * 0.11, b - h * 1.30], [a + w * 0.50, b - h * 0.83], [a + w * 0.36, b + 3], [a + w * 0.04, b + 2], [a - 4, b - h * 0.26]], C.dune);
+    if (!contains(sand, a, b) || !contains(sand, a + 19, b) || n % 5 < 2) continue;
+    if (!dunes.some(([dx, dy]) => Math.abs(dx - a) < 22 && Math.abs(dy - b) < 12)) dunes.push([a, b, 18 + n % 16, 5 + n % 3]);
+  }
+  for (const [a, b, w, h] of dunes) {
+    if (busy(a, b)) continue;
+    poly(g, [[a - w * 0.52, b], [a - w * 0.20, b - h], [a + w * 0.11, b - h * 1.30], [a + w * 0.50, b - h * 0.83], [a + w * 0.36, b + 3], [a + w * 0.04, b + 2], [a - 4, b - h * 0.26]], "#d9b278");
+    poly(g, [[a - w * 0.10, b - h * 0.6], [a + w * 0.11, b - h * 1.30], [a + w * 0.50, b - h * 0.83], [a + w * 0.36, b + 3], [a + w * 0.04, b + 2], [a + w * 0.06, b - h * 0.2]], C.dune);
     steppedLine(g, [[a - w * 0.42, b - 1], [a - w * 0.19, b - h], [a + w * 0.11, b - h * 1.30], [a + w * 0.45, b - h * 0.82]], 2, C.duneLit);
   }
 }
@@ -239,6 +319,14 @@ function landmarks(g) {
   for (const [x, y] of [[333, 557], [360, 566], [300, 548], [399, 547], [410, 554]]) {
     rect(g, x, y, 12, 2, C.waterLit);
     rect(g, x + 3, y + 4, 6, 2, "#c4bca1");
+  }
+  for (const patch of [
+    [[267, 541], [274, 552], [296, 559], [315, 575], [333, 580]],
+    [[341, 589], [364, 587], [379, 579], [390, 566]],
+    [[442, 547], [466, 536], [483, 538], [505, 529]],
+  ]) {
+    steppedLine(g, patch, 5, "#749d9b");
+    steppedLine(g, patch.slice(1, -1), 2, "#a6b6a1");
   }
   // Crystal outcrops alongside the old road and a magma scar across the rift easterly slope.
   for (const [x, y, s] of [[678, 273, 19], [688, 279, 15], [747, 318, 23], [738, 320, 12], [767, 312, 15]]) {
@@ -260,27 +348,15 @@ function landmarks(g) {
 
 /** Draw once into the unscaled chart canvas. The renderer composites routes and game state above it. */
 export function paintLandscape(g, chart) {
-  const w = chart.width, south = chart.inset ?? chart.height - 10;
-  rect(g, 0, 0, w, chart.height, "#b79871");
-  rect(g, 5, 5, w - 10, chart.height - 10, "#4a5654");
-  rect(g, 9, 9, w - 18, south - 12, C.deep);
-  rect(g, 13, 13, w - 26, south - 19, C.sea);
-  seaMarks(g, w, south);
+  const w = chart.width, h = chart.height;
+  rect(g, 0, 0, w, h, "#b79871");
+  rect(g, 5, 5, w - 10, h - 10, "#4a5654");
+  rect(g, 9, 9, w - 18, h - 18, C.deep);
+  rect(g, 13, 13, w - 26, h - 26, C.sea);
+  seaMarks(g, w - 13, h - 13);
   islands.forEach((shape, i) => coastShelf(g, shape, i > 4 ? C.beach : C.grove, true));
   coastShelf(g, outline, C.lowland);
-  poly(g, turf, C.prairie);
-  poly(g, forest, C.grove);
-  poly(g, expand(forest, 0.83), C.woods);
-  poly(g, jungle, C.jungle);
-  poly(g, reefs, C.beach);
-  poly(g, sand, C.desert);
-  poly(g, northernIce, C.frost);
-  poly(g, expand(northernIce, 0.88), C.snow);
-  poly(g, autumn, C.fall);
-  poly(g, move(expand(autumn, 0.87), -8, -5), C.fallLit);
-  poly(g, badlands, C.ash);
-  poly(g, expand(badlands, 0.89), C.slate);
-  poly(g, [[298, 320], [330, 283], [374, 282], [405, 296], [433, 308], [455, 309], [492, 278], [532, 268], [578, 280], [615, 308], [595, 352], [537, 360], [502, 374], [461, 377], [422, 369], [371, 389], [334, 372], [318, 354]], "#9d9882");
+  country(g);
   const nodes = [...chart.nodes.values()].filter(n => n.d.kind !== "in");
   const busy = (x, y) => nodes.some(n => Math.abs(n.x - x) < 45 && y > n.y - 34 && y < n.y + 34);
   // New editor maps outside the curated shore still have ground underneath their markers.
