@@ -299,8 +299,9 @@ function frame() {
   const me = st.team.find((r) => r[0] === G().you), tools = (job[2] || []).map((t) => D().tools[t] || t);
   const phase = ["준비", "근무", "피버!", "끝"][state];
   const txt = `${job[0]} · ${phase} ${state === 0 ? `${s}초 뒤 시작` : mmss(s)} | 점수 ${score}${mult > 10 ? ` ×${(mult / 10).toFixed(1)}` : ""}${combo > 1 ? ` (콤보 ${combo})` : ""}` +
-    ` | 등급 ${GRADE[grade]}${next ? ` (다음 ${next})` : ""} | ${smithy(k) ? `납품 ${mess} · 납기 초과 ${cap} | 주문 ${forgeOrders()}` : k === "diner" ? `서빙 ${mess} · 화난 손님 ${cap}` : `지저분함 ${mess}/${cap}`}` +
-    `${me ? ` | ${tools[me[1]] || ""}${me[1] === 1 && !smithy(k) ? ` ${me[2]}/${k === "diner" ? D().trayCap : D().binCap}` : ""}` : ""}`;
+    ` | 등급 ${GRADE[grade]}${next ? ` (다음 ${next})` : ""} | ${smithy(k) ? `납품 ${mess} · 납기 초과 ${cap}` : k === "diner" ? `서빙 ${mess} · 화난 손님 ${cap}` : `지저분함 ${mess}/${cap}`}` +
+    `${me ? ` | ${tools[me[1]] || ""}${me[1] === 1 && !smithy(k) ? ` ${me[2]}/${k === "diner" ? D().trayCap : D().binCap}` : ""}` : ""}` +
+    (smithy(k) ? `\n주문 ${forgeOrders()}` : "");   // the forge's and kiln's open orders on a line of their own (the top line ran out of room)
   const l = b.querySelector(".ch-l");
   if (l.textContent !== txt) l.textContent = txt;
   b.classList.toggle("fever", state === 2);

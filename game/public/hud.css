@@ -1487,7 +1487,7 @@ body[data-lay="full"] #panel .jt-grid .jt-node img.ji { margin: 0 auto; }
 /* ── 협동 아르바이트 (coop.js): the shift's line at the top, the lobby card, the report card ── */
 #coop-hud { left: calc(var(--vpw) / 2); transform: translateX(-50%); top: 8px; z-index: 6; padding: 4px 10px 5px; max-width: calc(var(--vpw) - 40px);
   font: var(--t12)/1.35 var(--pix); color: #f4ecd0; text-align: center; }
-#coop-hud .ch-l { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#coop-hud .ch-l { white-space: pre; overflow: hidden; text-overflow: ellipsis; }
 #coop-hud .ch-g { height: 3px; margin: 3px 0; background: #2a2418; }
 #coop-hud .ch-g > i { display: block; height: 100%; width: 0; background: #e8c050; }
 #coop-hud .ch-b { display: flex; gap: 6px; justify-content: center; }
