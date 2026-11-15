@@ -74,7 +74,7 @@
 #title-msg.ok { color: #10301a; background: #9ae6a0; }
 #title-msg.info { color: #2a1806; background: #f4dfa4; }
 #title-msg:empty { visibility: hidden; }
-#t-ver { position: absolute; left: 0; right: 0; bottom: 4px; text-align: center; font: 11px/1.2 var(--pix9); color: #fff; text-shadow: 1px 0 0 #2a3a28, -1px 0 0 #2a3a28, 0 1px 0 #2a3a28, 0 -1px 0 #2a3a28; pointer-events: none; }
+#t-ver { position: absolute; right: 8px; bottom: 4px; text-align: right; font: 11px/1.2 var(--pix9); color: #fff; text-shadow: 1px 0 0 #2a3a28, -1px 0 0 #2a3a28, 0 1px 0 #2a3a28, 0 -1px 0 #2a3a28; pointer-events: none; }
 
 /* ── servers ── */
 .sv-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 4px; color: var(--b-hi); }
@@ -222,7 +222,6 @@
   .cr-turn { width: 26px; height: 30px; top: 38%; }
   .cls-mech { display: none; }
   .cr-foot { padding-top: 4px; margin-top: 2px; }
-  #t-ver { display: none; }
 }
 
 /* ── creation (J3): no class to pick; the 모험가 card shows the six weapons and the way on ── */

@@ -24,7 +24,8 @@ import { WORDS, DIFF_NAME, FAR_RANGE, FALLBACK, cleanStarters } from "./starter.
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
-const VERSION = "v1.2";
+// the build players see on the title screen (owner, 2026-11-15: the version line starts at Alpha 1.0.0; git tag alpha-1.0.0)
+const VERSION = "Alpha 1.0.0";
 const LAST = "tales:last";                    // the last channel played: "s1-ch2"
 
 let C = null;
@@ -73,7 +74,7 @@ export function init(ctx) {
   TS.init($("#title-cv"));
   drawLogo();
   addEventListener("resize", () => { drawLogo(); sizeStage(); });
-  $("#t-ver").textContent = `${VERSION} · © 2026 테일즈테일즈 · 그림·음악 모두 코드로 그렸습니다`;
+  $("#t-ver").textContent = `${VERSION} · © 2026 테일즈테일즈`;
   // press start: a click, a tap or any key
   const start = (e) => {
     if (view !== "title") return;
