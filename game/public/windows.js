@@ -32,7 +32,7 @@ import { renderParty, renderGuild } from "./win_social.js";
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 export const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board", "charm", "juana", "week", "trophy"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board", "charm", "juana", "week", "trophy", "alba"];
 export const winEl = (id) => $(`#w-${id}`);
 /** On a phone the bag lives in the drawer, so it always counts as open; on a desktop it opens in the side panel. */
 export const isOpen = (id) => (id === "inv" && compact()) || !winEl(id).hidden;
@@ -46,7 +46,7 @@ const compact = () => VP.lay !== "full";
  * the stations and the house chest put the bag in the panel when they open (selling needs it)
  * and take it away again when they close, if they were what brought it.
  */
-export const PANEL = ["inv", "char", "skill", "quest", "party", "guild", "life", "daily", "week", "achieve", "collect", "rank", "settings", "help", "charm", "trophy"];
+export const PANEL = ["inv", "char", "skill", "quest", "party", "guild", "life", "daily", "week", "achieve", "collect", "rank", "settings", "help", "charm", "trophy", "alba"];
 const BAG_WITH = ["shop", "smith", "craft", "hstore"];
 const panelBox = $("#panel"), winBox = $("#windows");
 let panelId = null, autoBag = false, wasDocked = null;
@@ -305,13 +305,16 @@ const winSize = typeof ResizeObserver === "function" ? new ResizeObserver((es) =
 
 /** Toasts stack under the tutorial card while it shows, never over it (every layout). */
 export function placeToasts() {
-  const box = $("#toasts"), card = $("#tut");
+  const box = $("#toasts");
   box.style.top = "";
-  if (card.hidden) return;
-  // both are position: fixed children of #hud, so viewport coordinates are their own
-  const r = card.getBoundingClientRect();
-  if (!r.height) return;
-  const base = parseFloat(getComputedStyle(box).top) || 0, below = Math.ceil(r.bottom) + 6;
+  // under whatever top-of-screen card shows (첫걸음, the co-op shift, the house, the rift): all position: fixed children
+  // of #hud, so viewport coordinates are their own
+  let below = 0;
+  for (const id of ["#tut", "#coop-hud", "#house-hud", "#dim-hud"]) {
+    const n = $(id), r = n && !n.hidden && n.getBoundingClientRect();
+    if (r && r.height && r.top < 120) below = Math.max(below, Math.ceil(r.bottom) + 6);
+  }
+  const base = parseFloat(getComputedStyle(box).top) || 0;
   if (below > base) box.style.top = `${below}px`;
 }
 export function toast(m) {
@@ -356,7 +359,7 @@ export function addChat(m, cls, name) {
   if (stick) chatLog.scrollTop = chatLog.scrollHeight;
   return p;
 }
-const CHAT_HINT = { all: "Enter 로 채팅 · /p 파티 · /g 길드 · /w 이름 귓속말", party: "Enter 로 파티 채팅", guild: "Enter 로 길드 채팅", sys: "Enter 로 채팅" };
+const CHAT_HINT = { all: "Enter 채팅 · /p 파티 · /g 길드", party: "Enter 로 파티 채팅", guild: "Enter 로 길드 채팅", sys: "Enter 로 채팅" };
 /** Put a line in the chat box ready to finish (the friend list's 귓속말 button, a click on a whisper). */
 export function chatTo(prefix) {
   const input = $("#chat-in");

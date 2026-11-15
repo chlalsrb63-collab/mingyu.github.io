@@ -474,7 +474,7 @@ export function renderJuana(s) {
     const btns = el("div", "btns");
     if (q.st === 0) {
       const why = far || (q.ok ? "" : `Lv.${def.lv}부터 받을 수 있는 의뢰입니다`);
-      button(btns, "의뢰 받기", () => { act({ t: "charm_quest", a: "accept" }); Sound.play("ui"); }, why);
+      button(btns, "의뢰 수락", () => { act({ t: "charm_quest", a: "accept" }); Sound.play("ui"); }, why);
       if (why) btns.append(el("small", "why", why));
     } else {
       const done = q.n >= q.need, bar = el("div", "bar"), fill = el("i");

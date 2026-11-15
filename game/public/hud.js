@@ -265,6 +265,7 @@ export function refreshUi() {
   draw("charm", Charms.boardKey, Charms.renderBoard);   // 참 보드 (charms.js)
   draw("juana", Charms.juanaKey, Charms.renderJuana);   // 참감정사 주아나
   draw("board", Board.key, Board.render);       // the 알바 board (board.js)
+  draw("alba", Board.albaKey, Board.renderAlba);   // the 알바 window: the job in hand, its clock, co-op, trust (board.js)
   tutCard(s);
 }
 export function section(text, glyph) {
