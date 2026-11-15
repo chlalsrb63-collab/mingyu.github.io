@@ -7137,8 +7137,6 @@ function runeword(g) {
 }
 /** The kind of weapon in hand; bare hands fight like the job's weapon, or a dagger. */
 const weaponKind = (ch) => (ch.eq.weapon && ITEMS[ch.eq.weapon.id].wk) || (JOBS[ch.job] && JOBS[ch.job].wk[0]) || "dagger";
-/** How a character's basic attack lands. */
-const armOf = (ch) => WKIND[weaponKind(ch)];
 /** Mastery rank (0–5) against one kind of monster. */
 function masteryRank(ch, k) {
   const n = ch.mk[k] || 0;
@@ -14551,7 +14549,6 @@ function charmChest(S, dim, p) {
 
 // ── actions
 
-const CHARM_ACTS = ["charm_quest", "charm_id", "charm_place", "charm_move", "charm_remove", "charm_expand", "charm_claim", "charm_destroy"];
 /** Charms and 확장못 keep to their own ways: no shop, warehouse or house chest takes them ("" when the action is none of those). */
 function charmGuard(ch, a) {
   if (a.t !== "sell" && a.t !== "h_dep" && !(a.t === "wh" && a.a === "put")) return "";
@@ -15744,6 +15741,8 @@ function goodsNear(p) {
   return out;
 }
 const bad = (error) => ({ ok: false, error });
+/** The bag slot a client names, or undefined: only a whole index ("length" or "__proto__" is no slot). */
+const invAt = (ch, s) => (Number.isInteger(s) ? ch.inv[s] : undefined);
 const OK = { ok: true };
 function enhCost(g) {
   const tier = ITEMS[g.id].tier;
@@ -15980,7 +15979,7 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "eq": {
-      const s = ch.inv[a.s];
+      const s = invAt(ch, a.s);
       if (!s || !isGear(s.id)) return bad("장착할 수 없습니다");
       const it = ITEMS[s.id];
       if (ch.lvl < it.req) return bad(`레벨 ${it.req}부터 착용할 수 있습니다`);
@@ -15999,7 +15998,7 @@ export function validateAction(S, pid, a) {
       if (ch.inv.length >= bagCap(ch)) return bad("가방이 가득 찼습니다");
       return OK;
     case "rune": {
-      const s = ch.inv[a.s];
+      const s = invAt(ch, a.s);
       if (!s || ITEMS[s.id].type !== "rune") return bad("룬이 아닙니다");
       const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
       if (!g) return bad("장착한 장비가 없습니다");
@@ -16063,7 +16062,7 @@ export function validateAction(S, pid, a) {
         if (n < 1 || n > pouchHas(ch, a.pid)) return bad("잘못된 수량");
         return npcNear(p, "shop") ? OK : bad("상인이 너무 멉니다");
       }
-      const s = ch.inv[a.s];
+      const s = invAt(ch, a.s);
       if (!s) return bad("아이템이 없습니다");
       const n = a.n | 0;
       if (n < 1 || n > (s.n || 1)) return bad("잘못된 수량");
@@ -16112,7 +16111,7 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "salv": {
-      const s = ch.inv[a.s];
+      const s = invAt(ch, a.s);
       if (!s || !isGear(s.id)) return bad("분해할 수 없는 아이템");
       if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
       if (!canAdd(ch, "stone", 12)) return bad("가방이 가득 찼습니다");

@@ -402,7 +402,6 @@ function charmChest(S, dim, p) {
 
 // ── actions
 
-const CHARM_ACTS = ["charm_quest", "charm_id", "charm_place", "charm_move", "charm_remove", "charm_expand", "charm_claim", "charm_destroy"];
 /** Charms and 확장못 keep to their own ways: no shop, warehouse or house chest takes them ("" when the action is none of those). */
 function charmGuard(ch, a) {
   if (a.t !== "sell" && a.t !== "h_dep" && !(a.t === "wh" && a.a === "put")) return "";

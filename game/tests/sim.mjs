@@ -22,6 +22,10 @@ assert.equal(v.me[5], 1, "server should flag a position fix");
 const TOWN = L.atlas().maps.town;
 assert.equal(v.me[0], TOWN.entry[0] * 16 + 8);
 
+// a bag slot must be a whole index: names of the array's own properties are refused, not thrown on
+for (const bogus of ["length", "__proto__", "constructor", 0.5, -1])
+  for (const t of ["eq", "rune", "sell", "salv"]) assert.equal(act({ t, s: bogus, n: 1, k: "weapon", i: 0 }).ok, false, `${t} slot ${String(bogus)}`);
+
 // buying far from the merchant is refused
 assert.equal(act({ t: "buy", id: "hp_s", n: 1 }).ok, false);
 assert.equal(act({ t: "sk", i: 0 }).ok, false, "skill is level-locked");
