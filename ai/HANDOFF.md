@@ -188,3 +188,21 @@ using the persist dir `game/.wrangler/play`, so merges to main don't touch it. U
 - `worktree-agent-a95efc88d42be57df` balance 2 (smooth the Lv.69–109 ramp keeping ≈45 h total; gear tier 6 at Lv.181), only 1 uncommitted file — redo.
 Owner decisions this evening: co-op rewards are once a day, unpaid replays allowed; ~45 h to Lv.200; tier 6 at Lv.181; 칼날 소용돌이 hits 3;
 the 도적's high single-target is intended. Next after those: story arcs A3–A6 (audit P4–P5), main chapters (P6), the cosmetics packages after Codex's 64 px heroes.
+
+## 0.3 Resumed after the limit (2026-11-16, integrator session 2) — main green 59/59, sheet v24
+Merged since 0.2:
+- UX pass 2: window memory, tracker fold/pin, minimap filters, Shift+R whisper reply, first-time hints, settings tabs, bag↔warehouse drag,
+  chat item links, theme contrast.
+- HD-2D post-fx: `public/postfx.js`, the 그래픽 효과 끔/보통/높음 setting, auto-drop.
+- Life P7/P8: hours to L50 −27 %, recipes never lose money, 87 board rows, 25 life items, 물고기 도감 `fbook`.
+- Balance 2: curve smoothed, 45.2 h to Lv.200, gear tier 6 운철 at Lv.181.
+- Story arcs A3–A6 (docs/design/arcs.md; lore to review), main chapters P6 (8 chapters, chain 43 steps, `mainChapter` side quests, v24).
+- Maps 2: new ground `inklake` 먹빛 호수 (Lv.157–181); 속삭임 숲 and 뼈의 지하묘지 widened. 바람초원 widening is blocked because the balance tests
+  measure on its layout.
+In flight: co-op polish (apt walls/dumpster, library walk-ins, forge anvil ingot).
+Next:
+- Give the balance/skills/hammer tests a fixed arena, so 바람초원 can widen.
+- inklake ink palette and monster bodies (art).
+- Cosmetics, after Codex's 64 px heroes.
+- Owner lore picks: the spell origin, whether 도톨/갈피 move, the seven-star mark.
+The play server on 8830 still serves the frozen alpha-1.0.1 worktree (C:/Users/mankyu/Desktop/tt-play-101).
