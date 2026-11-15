@@ -126,9 +126,9 @@ export const FRAME = { stand: 0, breathe: 1, stepA: 2, stretch: 3, stepB: 4, bli
  * `o`: ear, eye, nose, fur (a colour), blush (a colour or null), pat, cloth (a
  * colour or null), and for monsters mask / bone.
  */
-function person(o, view, f) {
+function person(o, view, f, seam) {
   // players (any look with a species) are drawn by species.js; townsfolk and monsters below
-  if (o.sp !== undefined) return SPC.animal(o, view, f, { sheet, brush, finish, shade, blend, lt, FRAME });
+  if (o.sp !== undefined) return SPC.animal(o, view, f, { sheet, brush, finish, shade, blend, lt, FRAME }, seam);
   const [c, g] = sheet(S);
   const b = brush(g);
   const side = view === "side", back = view === "back";
@@ -306,8 +306,9 @@ export function personSheet(o, density = o.bone || o.mask ? 1 : PERSON_SIZE / S)
   else {
     // worn cosmetics (wardrobe.js) are layered over each plain frame
     const frames = (view) => [0, 1, 2, 3, 4, 5].map((f) => {
-      const base = person(o, view, f);
-      const native = density === 1 ? null : refinePerson(base, o, view, f);
+      const seam = density === 1 ? null : {};
+      const base = person(o, view, f, seam);
+      const native = seam ? refinePerson(base, o, view, f, seam) : null;
       return WR.dress(base, o, view, f, native);
     });
     s = { front: frames("front"), side: frames("side"), back: frames("back") };

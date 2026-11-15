@@ -244,12 +244,17 @@ function paintTail(behind, rows, y, palette, sway) {
   });
 }
 
+function markRows(rows, x, y, w, h, remove = false) {
+  const mask = ((1 << w) - 1) << x;
+  for (let j = y; j < y + h; j++) rows[j] = remove ? rows[j] & ~mask : rows[j] | mask;
+}
+
 /**
  * One frame of a player: `o` from lookOf, `view` front / side / back, `f` a FRAME
  * index, `T` the pixel tools of sprites.js { sheet, brush, finish, shade, blend, lt, FRAME }.
  * With species 0 and the original options it draws exactly what sprites.js always drew.
  */
-export function animal(o, view, f, T) {
+export function animal(o, view, f, T, seam) {
   const [c, g] = T.sheet(32);
   const b = T.brush(g);
   const { shade, blend, FRAME } = T;
@@ -262,14 +267,26 @@ export function animal(o, view, f, T) {
   const darkFur = lum(fur) < 0.36;
   const EYE = darkFur ? "#f8e4a0" : DARK, NOSE = darkFur ? "#f0a8b4" : "#4a3640";
   const H = HEAD_BOB[f] || 0;
-  const r = (x, y, w, h, col) => b.r(x, y + H, w, h, col);
+  const tail = o.tail ? o.tail : (o.ear | 0) <= 5 ? [3, 5, 2, 4, 6, 7][o.ear | 0] : sp.def.tail || 2;
+  const raisedTail = seam && (tail === 4 || tail === 8);
+  if (raisedTail) {
+    seam.head = new Uint32Array(32);
+    seam.tail = new Uint32Array(32);
+  }
+  const r = (x, y, w, h, col) => {
+    b.r(x, y + H, w, h, col);
+    if (raisedTail) markRows(seam.head, x, y + H, w, h);
+  };
   const both = (x, y, w, h, col, colR = col) => { r(x, y, w, h, col); r(32 - x - w, y, w, h, colR); };
-  const behind = (x, y, w, h, col) => b.r(side ? 32 - x - w : x, y, w, h, col);
+  const behind = (x, y, w, h, col) => {
+    const tx = side ? 32 - x - w : x;
+    b.r(tx, y, w, h, col);
+    if (raisedTail) markRows(seam.tail, tx, y, w, h);
+  };
   const top = sp.top, rows = sp.rows, wAt = (y) => rows[clamp(y - top, 0, rows.length - 1)];
 
   // ── tail (0: as the ears suggest, as it always was)
   const tc = pat === 3 || pat === 12 ? deep : fur;
-  const tail = o.tail ? o.tail : (o.ear | 0) <= 5 ? [3, 5, 2, 4, 6, 7][o.ear | 0] : sp.def.tail || 2;
   const sway = f === FRAME.stepA ? -1 : 0;
   [
     null, () => {},
@@ -288,6 +305,7 @@ export function animal(o, view, f, T) {
   // ── body: a tiny lump on two feet; a step lifts one of them
   const bt = 24 + H, cloth = o.cloth;
   const foot = pat === 6 || pat === 12 ? deep : fur;
+  if (raisedTail) markRows(seam.tail, 13, bt, 6, 28 - bt, true);
   b.r(13, bt, 6, 27 - bt, fur);
   if (f !== FRAME.stepB) b.r(13, 27, 2, 1, foot);
   if (f !== FRAME.stepA) b.r(17, 27, 2, 1, foot);
