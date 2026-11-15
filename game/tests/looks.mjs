@@ -129,7 +129,7 @@ assert.equal(heads.size, SPC.SPECIES.length, "every animal has a face of its own
   const h = createHash("sha1");
   for (let ear = 0; ear < 6; ear++) for (let eye = 0; eye < 6; eye++) for (let nose = 0; nose < 5; nose++)
     for (const view of views) for (const f of [0, 1, 2, 5]) h.update(JSON.stringify(draw([ear, eye, nose, (ear + eye) % 10, nose % 4, (eye + nose) % 4, ear], view, f)));
-  assert.equal(h.digest("hex"), "c6ce20b1137ce864db387620b35e2c04b30fccf8", "the original looks are drawn as before");
+  assert.equal(h.digest("hex"), "645b15185ae0498e8e6b252a982406d40df24f72", "the original looks are drawn as before (hash moved with 67017af, the fox brush and squirrel curl redraw)");
 }
 
 // ── presets, species defaults and the hat anchor
