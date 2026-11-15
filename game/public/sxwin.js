@@ -11,8 +11,8 @@
 import { Sound } from "./audio.js";
 import { G, $, el, now } from "./state.js";
 import { act } from "./net.js";
-import { openWin, closeWin, isOpen, onClose, winEl } from "./windows.js";
-import { itemSlot } from "./items.js";
+import { openWin, closeWin, isOpen, onClose, winEl, ask } from "./windows.js";
+import { itemSlot, itemName } from "./items.js";
 
 const HAND = ["가위", "바위", "보"];
 const gStr = (n) => String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -74,12 +74,17 @@ function renderTrade() {
   body.append(sides);
   // my bag: what is not up yet
   const up = new Set(t.m.map(([i]) => i));
-  body.append(el("p", "hint", "가방 — 눌러서 올리기 (Shift+클릭: 1개) · 장착 · 퀘스트 · 참은 거래할 수 없습니다"));
+  body.append(el("p", "hint", "가방 — 눌러서 올리기 (묶음은 개수를 묻습니다 · Shift+클릭: 1개) · 장착 · 퀘스트 · 참은 거래할 수 없습니다"));
   const bag = el("div", "grid tr-bag");
   s.inv.forEach((entry, i) => {
     if (up.has(i)) return;
     const ok = tradable(entry);
-    const d = itemSlot(entry, { hint: ok ? "눌러서 올리기" : "거래할 수 없는 아이템", onClick: (e) => { if (ok) act({ t: "sx", a: "put", s: i, n: e.shiftKey && !entry.uid ? 1 : entry.n || 1 }); } });
+    const d = itemSlot(entry, { hint: ok ? "눌러서 올리기" : "거래할 수 없는 아이템", onClick: (e) => {
+      if (!ok) return;
+      const n = entry.n || 1;
+      if (e.shiftKey || n < 2 || entry.uid) act({ t: "sx", a: "put", s: i, n: e.shiftKey && !entry.uid ? 1 : n });
+      else ask(`몇 개 올릴까요? (가진 수 ${n}개)\n「${itemName(entry)}」`, "올리기", (k) => act({ t: "sx", a: "put", s: i, n: k }), "", { max: n });
+    } });
     if (!ok) d.classList.add("off");
     bag.append(d);
   });

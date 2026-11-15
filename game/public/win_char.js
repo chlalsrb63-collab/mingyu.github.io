@@ -152,7 +152,14 @@ export function renderInv(s) {
       if (precious(entry)) ask(`판매할까요? 상점에 판 장비는 되찾을 수 없습니다.\n「${itemName(entry)}」 · ${each.toLocaleString()}G`, "판매", go, "sell");
       else go();
     });
-    if (entry.n > 1) add(`전부 판매 ${(each * entry.n).toLocaleString()}G`, () => act({ t: "sell", s: G.sel, n: entry.n }));
+    if (entry.n > 1) {
+      // how many: a box with −/+/최대 and the total, all of the stack to start with
+      add("여러 개 판매…", () => {
+        const i = G.sel;
+        ask(`몇 개 판매할까요? (가진 수 ${entry.n}개)\n「${itemName(entry)}」 개당 ${each.toLocaleString()}G`, "판매", (n) => act({ t: "sell", s: i, n }), "", { max: entry.n, note: (n) => `${(each * n).toLocaleString()}G` });
+      });
+      add(`전부 판매 ${(each * entry.n).toLocaleString()}G`, () => act({ t: "sell", s: G.sel, n: entry.n }));
+    }
   }
   if (btns.children.length) det.append(btns);
 }

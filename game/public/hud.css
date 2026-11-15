@@ -1738,6 +1738,13 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr)
 #ask label[hidden] { display: none; }
 #ask .btns { display: flex; justify-content: flex-end; gap: 8px; }
 #ask .btn { min-height: 28px; padding: 3px 10px; }
+#ask-qty { display: flex; align-items: center; gap: 4px; }
+#ask-qty[hidden] { display: none; }
+#ask-qty .btn { min-width: 28px; min-height: 28px; padding: 0 6px; }
+#ask-qty input { width: 64px; height: 26px; box-sizing: border-box; padding: 0 6px; text-align: right; font: var(--t12) var(--pix); color: var(--cream); background: var(--scr, #0c0a10); border: 2px solid var(--ink); border-radius: 0; }
+#ask-qty input { appearance: textfield; -moz-appearance: textfield; }
+#ask-qty input::-webkit-inner-spin-button, #ask-qty input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+#ask-qty .note { margin-left: auto; font: var(--t12) var(--pix); color: var(--tx-gold, #ffe08a); white-space: nowrap; }
 #ask .btn kbd, #inv-detail .btns kbd { margin-left: 5px; font: var(--t10) var(--pix9); opacity: .7; }
 /* the gear tooltip's comparison with the worn piece (items.js itemTip) */
 #tip .cmp { margin-top: 5px; padding-top: 4px; color: var(--tx2, #c8b896); }

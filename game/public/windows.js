@@ -365,15 +365,25 @@ export function banner(str, small) {
  */
 const NOASK = (key) => `lumentale:noask:${key}`;
 let asking = null;
-export function ask(text, yes, onYes, key) {
-  if (key && localStorage.getItem(NOASK(key)) === "1") { onYes(); return; }
+export function ask(text, yes, onYes, key, qty) {
+  if (key && !qty && localStorage.getItem(NOASK(key)) === "1") { onYes(); return; }
   if (asking) asking(false);
-  const box = $("#ask");
+  const box = $("#ask"), num = $("#ask-qty input"), note = $("#ask-qty .note");
   $("#ask-text").textContent = text;
   $("#ask-yes").textContent = yes;
   $("#ask-yes").append(el("kbd", "", "Enter"));
-  $("#ask-skip").hidden = !key;
+  $("#ask-skip").hidden = !key || !!qty;
   $("#ask-skip input").checked = false;
+  // with `qty` ({ max, n, note(n) }): how many, typed or stepped, the note (a total price) kept up to date
+  $("#ask-qty").hidden = !qty;
+  const count = () => clamp(Math.floor(+num.value) || 1, 1, qty.max);
+  const show = () => { note.textContent = qty.note ? qty.note(count()) : ""; };
+  if (qty) {
+    num.max = qty.max; num.value = qty.n || qty.max;
+    num.oninput = show;
+    for (const b of $$("#ask-qty button")) b.onclick = () => { num.value = b.dataset.d === "max" ? qty.max : clamp(count() + +b.dataset.d, 1, qty.max); show(); };
+    show();
+  }
   box.hidden = false;
   Sound.play("open");
   const done = (ok) => {
@@ -382,10 +392,10 @@ export function ask(text, yes, onYes, key) {
     removeEventListener("keydown", onKey, true);
     $("#ask-yes").onclick = $("#ask-no").onclick = null;
     if (!ok) { Sound.play("close"); return; }
-    if (key && $("#ask-skip input").checked) localStorage.setItem(NOASK(key), "1");
-    onYes();
+    if (key && !qty && $("#ask-skip input").checked) localStorage.setItem(NOASK(key), "1");
+    onYes(qty ? count() : undefined);
   };
-  // the box answers Enter and Esc before the game's own keys see them
+  // the box answers Enter and Esc before the game's own keys see them (digits reach the number box: it has the focus)
   const onKey = (e) => {
     if (e.key === "Enter") done(true);
     else if (e.key === "Escape") done(false);
@@ -396,7 +406,7 @@ export function ask(text, yes, onYes, key) {
   $("#ask-yes").onclick = () => done(true);
   $("#ask-no").onclick = () => done(false);
   asking = done;
-  $("#ask-yes").focus();
+  if (qty) { num.focus(); num.select(); } else $("#ask-yes").focus();
 }
 
 // ── chat ──
