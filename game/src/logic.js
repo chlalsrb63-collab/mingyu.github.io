@@ -3609,6 +3609,10 @@ const DIM_CHAL = {
   w: 32, h: 22, limit: 600000, reviveMs: 4000, gap: 5200, every: 4, castMs: 6000, stunMs: 5000, stag: 0.03, blast: 2.4, fury: 0.15,
   enrage: 240000, enrageStep: 10000, enrageK: 0.12, hp: 14, lvK: 0.1, atkLv: 0.05, minGap: 3,
   big: { gold: 400, xp: 0.25, stone: 8, rune: 2, gear: 2, gearQ: 3 }, small: { gold: 40, xp: 0.02, stone: 1 },
+  // 난이도: hero levels above each boss's own (a step must be `stepMin` world tiers past the last one); a hero may go in from
+  // `stepGap` levels under a step. Gold and experience follow the step's level; each step past the boss's own adds `stepR` × step.
+  steps: [125, 150, 175, 200], stepMin: 3, stepGap: 10, stepR: { stone: 2, rune: 0.5, gear: 0.34 },
+  stepNames: ["보통", "어려움", "지옥", "악몽", "심연"],
   bosses: {
     boss: { theme: "crypt", cast: "차원 붕괴", pats: [["균열 탄막", "fan2"], ["붕괴의 고리", "rings"], ["균열 웅덩이", "pools"]] },
     abyssboss: { theme: "abyss", cast: "심연의 포효", pats: [["연쇄 돌진", "charge2"], ["도약 강타", "leapslam"], ["촉수 탄막", "fan3"]] },
@@ -3643,7 +3647,16 @@ const DIM_CHAL = {
 };
 const CHAL_KEYS = Object.keys(DIM_CHAL.bosses);
 /** The level a hero needs for a boss challenge: `minGap` world tiers under the boss's own. */
-const chalMinLv = (k) => shownLv(MOBS[k].lv - DIM_CHAL.minGap);
+const chalMinLv = (k, s = 0) => (s > 0 ? chalSteps(k)[s][1] - DIM_CHAL.stepGap : shownLv(MOBS[k].lv - DIM_CHAL.minGap));
+/** A boss's difficulty ladder: [world tier, hero level shown] — its own level first, then each step far enough above it. */
+function chalSteps(k) {
+  const out = [[MOBS[k].lv, shownLv(MOBS[k].lv)]];
+  for (const L of DIM_CHAL.steps) {
+    const t = Math.min(TIER_MAX, Math.round(toTier(L)));
+    if (t >= out[out.length - 1][0] + DIM_CHAL.stepMin) out.push([t, L]);
+  }
+  return out;
+}
 
 /** A boss challenge's arena: one oval hall, the party at its west end, the boss in the middle. Pure. */
 function dimArena(cfg) {
@@ -11912,6 +11925,8 @@ function dimClean(d) {
   return {
     day: Math.max(0, o.day | 0), n: clamp(o.n | 0, 0, 999), t: clamp(o.t | 0, 1, Math.min(DIM_TIER.max, best + 1)), best, ms: best ? clamp(o.ms | 0, 0, DIM.limit) : 0,
     wk: Math.max(0, o.wk | 0), wb: clamp(o.wb | 0, 0, DIM_TIER.weekly.max), bw: clamp(o.bw | 0, 0, (1 << CHAL_KEYS.length) - 1),
+    // per boss: the highest difficulty step cleared, + 1 (0 none)
+    bs: CHAL_KEYS.map((k, i) => clamp((Array.isArray(o.bs) ? o.bs[i] : 0) | 0, 0, chalSteps(k).length)),
   };
 }
 /** The record brought to today and to this week (a new day clears the count; a new week the brackets and boss flags). */
@@ -11922,16 +11937,16 @@ function dimRec(ch, now) {
   return d;
 }
 /** What a leader asked for (`dim_open`), made safe: a boss challenge has no tier. */
-const dimAsk = (a) => (a && a.boss ? { tier: 0, boss: a.boss } : { tier: (a && a.tier) | 0 || 1, boss: "" });
+const dimAsk = (a) => (a && a.boss ? { tier: 0, boss: a.boss, step: a.step | 0 } : { tier: (a && a.tier) | 0 || 1, boss: "", step: 0 });
 /** The highest tier every one of `ps` has unlocked. */
 const dimTierCap = (ps) => Math.min(...ps.map((o) => o.ch.dim.t));
 /** Why `o` may not go into what was asked ("" when they may): the tier not unlocked, the level short of the boss. */
 function dimBar(o, ask) {
-  if (ask.boss) return o.ch.lvl < chalMinLv(ask.boss) ? `보스 도전은 Lv.${chalMinLv(ask.boss)}부터 참가할 수 있습니다.` : "";
+  if (ask.boss) { const need = chalMinLv(ask.boss, ask.step | 0); return o.ch.lvl < need ? `보스 도전${ask.step ? ` [${DIM_CHAL.stepNames[ask.step]}]` : ""}은 Lv.${need}부터 참가할 수 있습니다.` : ""; }
   return o.ch.dim.t < ask.tier ? `아직 균열 ${ask.tier}단을 열지 못했습니다. (해금 ${o.ch.dim.t}단)` : "";
 }
 /** What is being opened, in words. */
-const dimWhat = (ask) => (ask.boss ? `보스 도전 [${MOBS[ask.boss].name}]` : ask.tier > 1 ? `차원 균열 ${ask.tier}단` : "차원 균열");
+const dimWhat = (ask) => (ask.boss ? `보스 도전 [${MOBS[ask.boss].name} · ${DIM_CHAL.stepNames[ask.step | 0]}]` : ask.tier > 1 ? `차원 균열 ${ask.tier}단` : "차원 균열");
 
 const inDim = (p) => typeof p.map === "string" && p.map.startsWith("dim:");
 const dimAt = (S, id) => (S.dims && Object.hasOwn(S.dims, id) ? S.dims[id] : null);
@@ -11963,7 +11978,7 @@ function dimSpot(m, i) {
 function dimOpen(S, p, a) {
   const party = S.parties[p.party], ask = dimAsk(a);
   if (!party) { dimStart(S, [p], 0, ask); return; }
-  const rc = { id: S.nextId++, leader: p.pid, until: S.now + DIM.rcMs, resp: {}, tier: ask.tier, boss: ask.boss };
+  const rc = { id: S.nextId++, leader: p.pid, until: S.now + DIM.rcMs, resp: {}, tier: ask.tier, boss: ask.boss, step: ask.step };
   // 0 asked, 1 yes, 2 no (or no answer in time), 3 not in town (or barred: the tier not unlocked, the level short)
   for (const pid of party.m) {
     const o = S.players[pid], bar = o && pid !== p.pid && o.map === START.map ? dimBar(o, ask) : "";
@@ -11996,7 +12011,7 @@ function rcCheck(S, party) {
   const go = Object.keys(rc.resp).filter((pid) => rc.resp[pid] === 1).map((pid) => S.players[pid]);
   party.rc = null;
   if (!go.length) return;
-  const dim = dimStart(S, go, party.id, { tier: rc.tier, boss: rc.boss });
+  const dim = dimStart(S, go, party.id, { tier: rc.tier, boss: rc.boss, step: rc.step });
   if (!dim) return;
   for (const pid of party.m) {
     const o = S.players[pid];
@@ -12014,7 +12029,8 @@ function dimStart(S, ps, partyId, ask) {
   const boss = ask && ask.boss && Object.hasOwn(DIM_CHAL.bosses, ask.boss) ? ask.boss : "";
   const tier = boss ? 0 : clamp(Math.min((ask && ask.tier) | 0 || 1, dimTierCap(ps)), 1, DIM_TIER.max);
   const tk = dimTierK(tier || 1);
-  const lv = boss ? Math.max(MOBS[boss].lv, dimLvOf(ps)) : dimLvOf(ps);
+  // a boss challenge stands at its chosen step's level (no longer the party's best: that is what the step is for)
+  const step = boss ? clamp((ask && ask.step) | 0, 0, chalSteps(boss).length - 1) : 0, lv = boss ? chalSteps(boss)[step][0] : dimLvOf(ps);
   S.dimN = (S.dimN | 0) + 1;
   const id = "dim:" + S.dimN;
   const seed = (Math.imul(S.seed ^ S.nextId++, 2654435761) ^ Math.imul(partyId + 1, 40503) ^ Math.floor(S.now / 1024)) | 0;
@@ -12044,13 +12060,13 @@ function dimStart(S, ps, partyId, ask) {
       rt.mobs.push(mob);
     }
   }
-  if (boss) chalSpawn(S, dim, boss, ps.length);
+  if (boss) { chalSpawn(S, dim, boss, ps.length); dim.chal.s = step; }
   ps.forEach((o, i) => {
     o.dead = false;
     const [x, y] = dimSpot(map, i);
     changeMap(S, o, id, x, y);
     dim.members[o.pid] = S.now;
-    toast(o, boss ? `[보스 도전] ${MOBS[boss].name} — ${DIM_CHAL.limit / 60000}분 안에 쓰러뜨리세요. 전멸해도 다시 도전할 수 있습니다.`
+    toast(o, boss ? `[보스 도전 · ${DIM_CHAL.stepNames[step]} Lv.${chalSteps(boss)[step][1]}] ${MOBS[boss].name} — ${DIM_CHAL.limit / 60000}분 안에 쓰러뜨리세요. 전멸해도 다시 도전할 수 있습니다.`
       : `[${DIM_THEMES[theme].name}] 차원 균열 Lv.${shownLv(lv)}${tier > 1 ? ` ${tier}단` : ""}에 들어왔습니다. 15분 안에 균열을 정화하세요!`);
     o.dirty = true;
   });
@@ -12232,10 +12248,13 @@ function dimChest(S, dim, p) {
     // a boss challenge: the big reward once a week per boss, a small one after (and for someone carried, who keeps the week's)
     const bit = 1 << CHAL_KEYS.indexOf(dim.chal.k), big = !carried && !(d.bw & bit), R = big ? DIM_CHAL.bosses[dim.chal.k].big || DIM_CHAL.big : DIM_CHAL.small;
     if (big) { d.bw |= bit; fl |= 8; }
-    r = { gold: R.gold * lv, xp: Math.round(R.xp * xpNeed(lv)), stone: R.stone, rune: !!R.rune, gear: R.gear ? 1 : 0, gearQ: R.gearQ };
+    // each difficulty step past the boss's own adds stones, runes and gear (the big reward's) on top of the level's gold and experience
+    const s = dim.chal.s | 0, ki = CHAL_KEYS.indexOf(dim.chal.k), K = DIM_CHAL.stepR, runes = (R.rune | 0) + (big ? Math.floor(K.rune * s) : 0), gears = (R.gear | 0) + (big ? Math.floor(K.gear * s) : 0);
+    if (!carried && s + 1 > d.bs[ki]) d.bs[ki] = s + 1;
+    r = { gold: R.gold * lv, xp: Math.round(R.xp * xpNeed(lv)), stone: R.stone + Math.floor(K.stone * s), rune: runes > 0, gear: gears ? 1 : 0, gearQ: R.gearQ };
     payout(S, p, r);
-    for (let i = 1; i < (R.rune | 0); i++) payout(S, p, { rune: true });
-    for (let i = 1; i < (R.gear | 0); i++) payout(S, p, { gear: 1, gearQ: R.gearQ });
+    for (let i = 1; i < runes; i++) payout(S, p, { rune: true });
+    for (let i = 1; i < gears; i++) payout(S, p, { gear: 1, gearQ: R.gearQ });
     if (big) { charmChest(S, dim, p); jfScroll(p, "lvl"); }
     giveX(S, p, big ? "big" : carried ? "" : "small");
     msg = big ? "주간 보스 도전 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다." : "보스 도전 반복 보상을 받았습니다. 큰 보상은 월요일 06:00에 다시 열립니다.";
@@ -12467,6 +12486,8 @@ function dimValidate(S, p, a) {
       // a boss challenge (the leader's own level), or a tier nobody of the party in town is short of
       if (a.boss !== undefined) {
         if (typeof a.boss !== "string" || !Object.hasOwn(DIM_CHAL.bosses, a.boss)) return bad("알 수 없는 보스 도전입니다");
+        if (a.step !== undefined && (!Number.isInteger(a.step) || a.step < 0 || a.step >= chalSteps(a.boss).length)) return bad("잘못된 난이도입니다");
+        // the party's members in town are asked in dimOpen; a member under the step's level is not asked (dimBar)
         const bar = dimBar(p, dimAsk(a));
         if (bar) return bad(bar);
       } else if (a.tier !== undefined) {
@@ -12496,7 +12517,7 @@ function dimValidate(S, p, a) {
       const dim = dimJoinable(S, p);
       if (!dim) return bad("합류할 수 있는 차원 균열이 없습니다");
       if (dimInside(S, dim.id).length >= DIM.party) return bad(`차원 균열 안이 가득 찼습니다 (${DIM.party}명).`);
-      const bar = dimBar(p, { tier: dim.tier | 0, boss: dim.chal ? dim.chal.k : "" });
+      const bar = dimBar(p, { tier: dim.tier | 0, boss: dim.chal ? dim.chal.k : "", step: dim.chal ? dim.chal.s | 0 : 0 });
       if (bar) return bad(bar);
       return OK;
     }
@@ -12555,13 +12576,13 @@ function dimView(S, p, out) {
   if (rc && rc.resp[p.pid] !== undefined && rc.resp[p.pid] !== 3) {
     const rows = party.m.filter((pid) => S.players[pid] && rc.resp[pid] !== undefined).map((pid) => [S.players[pid].eid, S.players[pid].ch.name, rc.resp[pid]]);
     const v = [rc.id, Math.max(0, Math.ceil((rc.until - now) / 1000)), rows, dimLvOf(party.m.map((pid) => S.players[pid]).filter((o) => o && o.map === START.map)), rc.leader === p.pid ? 1 : 0,
-      rc.tier | 0, rc.boss ? CHAL_KEYS.indexOf(rc.boss) + 1 : 0];
+      rc.tier | 0, rc.boss ? CHAL_KEYS.indexOf(rc.boss) + 1 : 0, rc.step | 0];
     const key = JSON.stringify(v);
     if (key !== p.rcKey) { out.rc = v; p.rcKey = key; }
   } else if (p.rcKey) { out.rc = 0; p.rcKey = null; }
   // in town: a rift to walk back into — [seconds left, inside, gauge ×10, level]
   const j = p.map === START.map ? dimJoinable(S, p) : null;
-  const dj = j ? [Math.max(0, Math.ceil((j.expire - now) / 1000)), dimInside(S, j.id).length, Math.floor(j.prog * 10), j.lv, j.tier | 0, j.chal ? CHAL_KEYS.indexOf(j.chal.k) + 1 : 0] : 0;
+  const dj = j ? [Math.max(0, Math.ceil((j.expire - now) / 1000)), dimInside(S, j.id).length, Math.floor(j.prog * 10), j.lv, j.tier | 0, j.chal ? CHAL_KEYS.indexOf(j.chal.k) + 1 : 0, j.chal ? j.chal.s | 0 : 0] : 0;
   const dk = dj ? dj.join(",") : "";
   if (dk !== (p.djKey || "")) { out.dj = dj; p.djKey = dk; }
   // a chest just opened: the result panel, once
@@ -12571,21 +12592,22 @@ function chalView(S, dim) {
   const c = dim.chal, now = S.now, mob = dim.state === "boss" ? dim.rt.mobs.find((q) => q.id === dim.boss) : null, cast = mob && mob.cast;
   const mode = cast ? 1 : mob && !mob.dead && mob.stag > now ? 2 : 0;
   return [CHAL_KEYS.indexOf(c.k), mode, cast ? Math.ceil(100 * (1 - cast.got / cast.need)) : 0,
-    cast ? Math.ceil((cast.until - now) / 500) : mode === 2 ? Math.ceil((mob.stag - now) / 500) : 0, c.rage, c.tries, c.fury];
+    cast ? Math.ceil((cast.until - now) / 500) : mode === 2 ? Math.ceil((mob.stag - now) / 500) : 0, c.rage, c.tries, c.fury, c.s | 0];
 }
 /** `self.dimr`: [unlocked tier, best tier, its clear seconds, full-reward clears left today, weekly brackets taken, weekly boss flags]. */
 function dimSelf(p) {
   const d = p.ch.dim, now = p.S.now, wk = d.wk === weekOf(now);
-  return [d.t, d.best, Math.round(d.ms / 1000), Math.max(0, DIM.dailyFull - (d.day === dayOf(now) ? d.n : 0)), wk ? d.wb : 0, wk ? d.bw : 0];
+  return [d.t, d.best, Math.round(d.ms / 1000), Math.max(0, DIM.dailyFull - (d.day === dayOf(now) ? d.n : 0)), wk ? d.wb : 0, wk ? d.bw : 0, d.bs];
 }
 /** The tables the browser needs for rifts (defs().dim). */
 function dimDefs() {
   return {
     themes: Object.fromEntries(Object.keys(DIM_THEMES).map((k) => [k, DIM_THEMES[k].name])), pylons: DIM.pylons, limit: DIM.limit, party: DIM.party, max: DIM.max,
     rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near,
-    // the ladder and the boss challenge: [key, name, level needed, the marked cast, pattern names]
+    // the ladder and the boss challenge: [key, name, level needed, the marked cast, pattern names, steps [[level shown, level needed]…]]
     tier: { max: DIM_TIER.max, hp: DIM_TIER.hp, atk: DIM_TIER.atk, every: DIM_TIER.weekly.every, daily: DIM.dailyFull },
-    chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0])]) },
+    chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)])]), stepNames: DIM_CHAL.stepNames,
+      stepR: DIM_CHAL.stepR },
   };
 }
 // ───────────────────────────── housing: a house of one's own ─────────────────────────────

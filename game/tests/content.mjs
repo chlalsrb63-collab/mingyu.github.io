@@ -507,7 +507,7 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   L.addPlayer(W.S, W.PID, old);
   const ch = W.S.players[W.PID].ch;
   assert.deepEqual(ch.wp, { town: 1, meadow: 1, forest: 1 }, "each map it had keeps its first stone");
-  assert.deepEqual(ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0 });
+  assert.deepEqual(ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: [0, 0, 0, 0] });
   assert.equal(ch.tw, 2, "it is moved onto the current town layout (TOWN_REV)");
   assert.equal(ch.v, 20);
   assert.deepEqual(W.step().self.wp, { town: 1, meadow: 1, forest: 1 }, "the wire carries the masks");
@@ -518,7 +518,7 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   L.addPlayer(W.S, "pid-odd", odd);
   const oc = W.S.players["pid-odd"].ch;
   assert.deepEqual(oc.wp, { meadow: 5, town: 1 }, "unknown maps, empty and out-of-range masks go; the town's stone is always known");
-  assert.deepEqual(oc.dim, { day: 0, n: 999, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0 });
+  assert.deepEqual(oc.dim, { day: 0, n: 999, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: [0, 0, 0, 0] });
   // warping needs the destination's first stone
   W.S.players[W.PID].ch.wp = { town: 1 };
   assert.equal(L.validateAction(W.S, W.PID, { t: "warp", to: "meadow" }).ok, false);
