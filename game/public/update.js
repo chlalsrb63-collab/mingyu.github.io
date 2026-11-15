@@ -17,6 +17,7 @@ import { aimAtPoint, castSkill, usePotion, aimIdx, canStand, attack, nearestNpc,
 import * as Gather from "./gather.js";
 import * as Board from "./board.js";
 import * as Chores from "./chores.js";
+import * as Hints from "./hints.js";
 import { toast, closeWin, isOpen, shown } from "./windows.js";
 import { refreshUi } from "./hud.js";
 
@@ -252,6 +253,7 @@ export function update(dt, t) {
   if (near !== G.near || gat !== G.gatLabel || jb !== G.jbLabel) {
     const moved = near !== G.near;
     G.near = near; G.gatLabel = gat; G.jbLabel = jb;
+    Hints.meet(near, cho);                         // the first co-op owner, chore, 알바 board or obelisk: a card says what it is (hints.js)
     const p = $("#prompt");
     p.hidden = !near && !gat;
     p.classList.toggle("jb", !!jb);

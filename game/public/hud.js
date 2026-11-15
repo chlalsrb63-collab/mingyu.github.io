@@ -201,29 +201,60 @@ function tracker(s) {
     };
     // each objective's [추적] button walks there (track.js)
     const tb = (node, k, label) => { const b = Track.button(k, label); if (b) node.append(b); };
-    if (Board.trackRows(s, qt, goal)) tb(qt.querySelector(".qt"), "job", "알바");   // the 알바 in hand comes first: a parcel is on the clock (board.js)
+    if (Board.trackRows(s, qt, goal)) { const h = qt.querySelector(".qt"); h.dataset.sec = "job"; tb(h, "job", "알바"); }   // the 알바 in hand comes first: a parcel is on the clock (board.js)
     if (chapter) {
-      const t = el("div", "qt"); t.append(Info.questMark("main"), chapter.title); tb(t, `sq:${chapter.id}`, chapter.title);
+      const t = el("div", "qt"); t.dataset.sec = "sq"; t.append(Info.questMark("main"), chapter.title); tb(t, `sq:${chapter.id}`, chapter.title);
       qt.append(t, el("div", "qp", chapter.goal.type === "kill" ? `${chapter.giverMap} 승선장 · 침입자 격퇴` : SideQ.goalText(chapter)));
     }
     if (quest && s.q.st === 1) {
-      const t = el("div", "qt"); t.append(Info.questMark("main"), quest.title); tb(t, `main:${s.q.i}`, quest.title);
+      const t = el("div", "qt"); t.dataset.sec = "main"; t.append(Info.questMark("main"), quest.title); tb(t, `main:${s.q.i}`, quest.title);
       qt.append(t, goal(G.defs.mobs[quest.mob].name, s.q.n, quest.n, "완료! 엘더윈에게 돌아가세요"));
       if (quest.fb && s.q.n < quest.n) qt.append(el("div", "qp", `우두머리 [${G.defs.mobs[quest.mob].name}] 홀로 쓰러뜨리기 — 그 자리로 가세요`));
     } else if (quest) {
-      const t = el("div", "qt"); t.append(Info.questMark("main"), "엘더윈에게 새 의뢰가 있습니다"); tb(t, `main:${s.q.i}`, "새 의뢰");
+      const t = el("div", "qt"); t.dataset.sec = "main"; t.append(Info.questMark("main"), "엘더윈에게 새 의뢰가 있습니다"); tb(t, `main:${s.q.i}`, "새 의뢰");
       qt.append(t);
     }
     if (s.bq) {
-      const t = el("div", "qt"); t.append(Info.questMark("repeat"), `${mobs[s.bq.k].name} 토벌`); tb(t, "bq", "반복 의뢰");
+      const t = el("div", "qt"); t.dataset.sec = "bq"; t.append(Info.questMark("repeat"), `${mobs[s.bq.k].name} 토벌`); tb(t, "bq", "반복 의뢰");
       qt.append(t, goal(mobs[s.bq.k].name, s.bq.n, s.bq.need, "완료! 엘더윈에게 보고하세요"));
     }
     if (dl && dl.length) {
-      const t = el("div", "qt"); t.append(Info.questMark("daily"), `오늘의 과제 ${3 - dl.length}/3`);
+      const t = el("div", "qt"); t.dataset.sec = "daily"; t.append(Info.questMark("daily"), `오늘의 과제 ${3 - dl.length}/3`);
       qt.append(t);
       for (const d of dl) { const row = goal(d.text, d.n, d.need, `${d.text} — 완료! (U)`); tb(row, `daily:${s.daily.tasks.indexOf(d)}`, d.text); qt.append(row); }
     }
+    // every section folds under its heading (▾ / ▸, remembered); a click on the arrow is not a click on the tracker
+    let fold = false;
+    for (const n of [...qt.children]) {
+      if (!n.dataset.sec) { n.classList.toggle("qf", fold); continue; }
+      const sec = n.dataset.sec;
+      fold = qtFold.has(sec);
+      const b = el("button", "qt-fold", fold ? "▸" : "▾");
+      b.type = "button"; b.title = fold ? "펼치기" : "접기";
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (qtFold.has(sec)) qtFold.delete(sec); else qtFold.add(sec);
+        localStorage.setItem(QT_FOLD, JSON.stringify([...qtFold]));
+        qt.dataset.k = ""; Sound.play("ui"); refreshUi();
+      });
+      n.prepend(b);
+      n.classList.toggle("folded", fold);
+    }
+    // 고정: on a desktop the tracker stays over the side panel's window (hud.css #panel.pin)
+    const pin = el("button", "btn small qt-pin", "고정");
+    pin.type = "button";
+    pin.addEventListener("click", (e) => { e.stopPropagation(); setPin(!$("#panel").classList.contains("pin")); Sound.play("ui"); });
+    qt.prepend(pin);
+    setPin($("#panel").classList.contains("pin"));
   });
+}
+const QT_FOLD = "lumentale:qtfold", QT_PIN = "lumentale:qtpin";
+const qtFold = new Set((() => { try { const v = JSON.parse(localStorage.getItem(QT_FOLD) || "[]"); return Array.isArray(v) ? v.filter((k) => typeof k === "string") : []; } catch { return []; } })());
+function setPin(on) {
+  $("#panel").classList.toggle("pin", on);
+  if (on) localStorage.setItem(QT_PIN, "1"); else localStorage.removeItem(QT_PIN);
+  const b = $("#quest-track .qt-pin");
+  if (b) { b.classList.toggle("on", on); b.title = on ? "고정 풀기 — 가방이나 다른 창을 열면 의뢰 목록이 그 창에 자리를 내줍니다" : "고정 — 가방이나 다른 창을 열어도 의뢰 목록을 그 위에 남겨 둡니다"; }
 }
 
 export function draw(id, keyOf, fn) {
@@ -244,7 +275,7 @@ export function refreshUi() {
   const near = G.near && G.near.role;
   trackNew(s);                                  // 새로 얻은 bag items (win_char.js)
   Charms.sync(s);                               // what the server confirmed: a charm set down, a seal broken (charms.js)
-  draw("inv", () => [Charms.bagKey(s), s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), fireNear(), touch(), s.pet, s.qs, s.bagCap, Gather.pouchKey(s)], renderInv);
+  draw("inv", () => [Charms.bagKey(s), s.inv, s.gold, s.eq, s.lvl, G.sel, near, isOpen("shop"), isOpen("smith"), isOpen("bank"), fireNear(), touch(), s.pet, s.qs, s.bagCap, Gather.pouchKey(s)], renderInv);
   // the C window: 장비 or 능력치 (points can be bought by a campfire or at 수련관 카이)
   draw("char", () => G.charTab === "cos" ? ["cos", s.xp, s.nx] : G.charTab === "stat"
     ? ["stat", s.st, s.lvl, s.xp, s.xpt, s.nx, s.rs, s.dv, s.atk, s.mhp, s.mmp, s.def, s.crit, s.critd, s.mf, s.job, s.wk, s.eq.weapon && s.eq.weapon.id, s.dead, fireNear(), near, StatWin.key()]
@@ -425,6 +456,7 @@ export function setupHud() {
   $("#exp").addEventListener("click", () => { if (G.self) openStats(); });
   $("#exp").title = "눌러서 능력치 열기 — 모닥불 곁이나 수련관 앞에서 레벨을 올립니다";
   $("#quest-track").addEventListener("click", () => toggleWin("quest"));
+  $("#panel").classList.toggle("pin", localStorage.getItem(QT_PIN) === "1");
   // a clicked button lets go of the focus, so Space and Enter go back to the game
   addEventListener("click", (e) => { const b = e.target.closest && e.target.closest("button"); if (b && document.activeElement === b) b.blur(); });
 }

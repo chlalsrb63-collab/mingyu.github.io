@@ -22,7 +22,7 @@ const A = [
   ["map", "지도", "KeyM", "창"], ["settings", "설정", "KeyO", "창"], ["help", "도움말", "KeyH", "창"],
   ["sit", "앉기 · 일어서기 (사냥터: 모닥불)", "KeyZ", "기타"], ["emote", "감정표현", "KeyT", "기타"], ["jamB", "연주 (앉은 채)", "KeyB", "기타"], ["jamZ", "건배 (앉은 채)", "Shift+KeyB", "기타"],
   ["sound", "소리 켜기/끄기", "Shift+KeyM", "기타"], ["crt", "CRT 효과", "KeyV", "기타"], ["chat", "채팅 입력", "Enter", "기타"],
-  ["track", "추적 (목표로 자동 이동)", "Shift+KeyG", "기타"],
+  ["track", "추적 (목표로 자동 이동)", "Shift+KeyG", "기타"], ["reply", "귓속말 답장 (마지막 보낸 이에게)", "Shift+KeyR", "기타"],
   // only while a talk window is open: their keys may be the same as the game's (F, C) — see TALK
   ["talkNext", "대화 다음 · 확인", "KeyF", "대화"], ["talkEnd", "대화 끝내기", "KeyC", "대화"],
 ];

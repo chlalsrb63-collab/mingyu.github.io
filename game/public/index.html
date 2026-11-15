@@ -81,7 +81,8 @@
         <div id="mini">
           <div id="mini-name" class="plate"></div>
           <div class="sunk"><canvas id="mini-cv"></canvas><div id="sky" hidden><canvas id="sky-ic" width="12" height="12"></canvas><span id="sky-t"></span></div></div>
-          <div id="mini-bar"><span id="mini-xy"></span><span id="mini-pct" title="미니맵 배율"></span><button id="mini-zo" class="mini-b" title="축소 (더 넓게)">−</button><button id="mini-zi" class="mini-b" title="확대 (더 가까이)">+</button><button id="mini-map" class="mini-b" title="지도 (M)">지도 <kbd data-key="map">M</kbd></button></div>
+          <div id="mini-bar"><span id="mini-xy"></span><span id="mini-pct" title="미니맵 배율"></span><button id="mini-zo" class="mini-b" title="축소 (더 넓게)">−</button><button id="mini-zi" class="mini-b" title="확대 (더 가까이)">+</button><button id="mini-fb" class="mini-b" title="미니맵에 보일 것 고르기">▾</button><button id="mini-map" class="mini-b" title="지도 (M)">지도 <kbd data-key="map">M</kbd></button></div>
+          <div id="mini-fl" hidden></div>
           <div id="mini-info"></div>
         </div>
         <!-- the side panel: the quest tracker by default; on a desktop the window whose hotkey or menu button
@@ -378,26 +379,29 @@
       <section class="window" id="w-settings" hidden>
         <header><span class="t">설정</span><kbd data-key="settings">O</kbd><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body">
-          <div class="set-row"><span><b id="set-sv"></b> 채널</span><span id="set-ch" class="set-ch"></span></div>
-          <div class="set-row"><span>계정 <b id="set-acc"></b></span><button id="btn-servers" class="btn">서버 선택</button><button id="btn-logout" class="btn">로그아웃</button></div>
-          <div class="set-row"><span>소리</span><kbd data-key="sound">Shift+M</kbd><button id="btn-sound" class="btn toggle">켜짐</button></div>
-          <div class="set-row"><span>배경음악</span><input type="range" id="vol-bgm" class="vol" min="0" max="100" step="1" value="70" aria-label="배경음악 음량"></div>
-          <div class="set-row"><span>효과음</span><input type="range" id="vol-sfx" class="vol" min="0" max="100" step="1" value="85" aria-label="효과음 음량"></div>
-          <div class="set-row"><span>CRT 화면 효과</span><kbd data-key="crt">V</kbd><button id="btn-crt" class="btn toggle">켜짐</button></div>
-          <div class="set-row"><span id="depth-label">원근감·광원</span><button type="button" id="btn-depth" class="btn toggle" aria-labelledby="depth-label" aria-pressed="true">켜짐</button></div>
-          <div class="set-row"><span id="gfx-label">그래픽 효과</span><span id="opt-gfx" class="seg" role="group" aria-labelledby="gfx-label"><button type="button" class="btn" data-gfx="0">끔</button><button type="button" class="btn" data-gfx="1">보통</button><button type="button" class="btn" data-gfx="2">높음</button></span></div>
-          <div class="set-row"><span>조준 화살표</span><button id="btn-aim" class="btn toggle">켜짐</button></div>
-          <div class="set-row"><span>글자 크기</span><span id="opt-ts" class="seg"><button type="button" class="btn" data-ts="s">작게</button><button type="button" class="btn" data-ts="m">보통</button><button type="button" class="btn" data-ts="l">크게</button></span></div>
-          <div class="set-row"><label for="opt-hud">HUD 색상</label><select id="opt-hud" class="sel"><option value="brass">기본 황동</option><option value="linen">베이지 리넨</option><option value="sand">모래 크림</option><option value="olive">올리브 차</option><option value="mocha">밤 모카 · 밤에 보기 편한</option><option value="contrast">고대비</option></select></div>
-          <div class="set-row set-keys"><span>단축키 설정</span><button id="btn-keys-reset" type="button" class="btn small">기본값으로</button></div>
-          <div id="keys-list" class="set-keys"></div>
-          <p class="hint set-keys">키 이름을 누른 뒤 바꿀 키를 누르세요. 이미 쓰는 키면 두 동작이 서로 바뀌고, Esc 는 취소입니다. 방향키는 항상 이동에도 쓰입니다.</p>
-          <div class="set-row"><span>창 위치</span><button id="btn-winreset" class="btn">처음 자리로</button></div>
-          <div class="set-row"><span>아이템 필터</span><select id="opt-filter" class="sel" aria-label="아이템 필터"><option value="0">모두</option><option value="1">마법 이상</option><option value="2">희귀 이상</option></select></div>
-          <div class="set-row"><span>자동 HP 물약</span><input type="range" id="opt-ahp" class="vol" min="0" max="90" step="5" value="0" aria-label="자동 HP 물약"><b id="opt-ahp-v" class="pct">끔</b></div>
-          <div class="set-row"><span>자동 MP 물약</span><input type="range" id="opt-amp" class="vol" min="0" max="90" step="5" value="0" aria-label="자동 MP 물약"><b id="opt-amp-v" class="pct">끔</b></div>
-          <p class="hint">아이템 필터는 땅에 떨어진 장비의 이름 표시와 펫이 주워 오는 장비에 함께 적용됩니다. 자동 물약은 HP·MP가 정한 비율 아래로 내려가면 알맞은 크기의 물약을 마십니다.</p>
-          <p class="hint">창은 제목 줄을 끌어 옮길 수 있고, 옮긴 자리는 기억됩니다.</p>
+          <div class="tabs" id="set-tabs"><button type="button" data-sec="view" class="on">화면</button><button type="button" data-sec="sound">소리</button><button type="button" data-sec="keys" class="set-keys">조작</button><button type="button" data-sec="game">게임</button></div>
+          <div class="set-row" data-sec="game"><span><b id="set-sv"></b> 채널</span><span id="set-ch" class="set-ch"></span></div>
+          <div class="set-row" data-sec="game"><span>계정 <b id="set-acc"></b></span><button id="btn-servers" class="btn">서버 선택</button><button id="btn-logout" class="btn">로그아웃</button></div>
+          <div class="set-row" data-sec="sound"><span>소리</span><kbd data-key="sound">Shift+M</kbd><button id="btn-sound" class="btn toggle">켜짐</button></div>
+          <div class="set-row" data-sec="sound"><span>배경음악</span><input type="range" id="vol-bgm" class="vol" min="0" max="100" step="1" value="70" aria-label="배경음악 음량"></div>
+          <div class="set-row" data-sec="sound"><span>효과음</span><input type="range" id="vol-sfx" class="vol" min="0" max="100" step="1" value="85" aria-label="효과음 음량"></div>
+          <div class="set-row" data-sec="view"><span>CRT 화면 효과</span><kbd data-key="crt">V</kbd><button id="btn-crt" class="btn toggle">켜짐</button></div>
+          <div class="set-row" data-sec="view"><span id="depth-label">원근감·광원</span><button type="button" id="btn-depth" class="btn toggle" aria-labelledby="depth-label" aria-pressed="true">켜짐</button></div>
+          <div class="set-row" data-sec="view"><span id="gfx-label">그래픽 효과</span><span id="opt-gfx" class="seg" role="group" aria-labelledby="gfx-label"><button type="button" class="btn" data-gfx="0">끔</button><button type="button" class="btn" data-gfx="1">보통</button><button type="button" class="btn" data-gfx="2">높음</button></span></div>
+          <div class="set-row" data-sec="view"><span>조준 화살표</span><button id="btn-aim" class="btn toggle">켜짐</button></div>
+          <div class="set-row" data-sec="view"><span>글자 크기</span><span id="opt-ts" class="seg"><button type="button" class="btn" data-ts="s">작게</button><button type="button" class="btn" data-ts="m">보통</button><button type="button" class="btn" data-ts="l">크게</button></span></div>
+          <div class="set-row" data-sec="view"><label for="opt-hud">HUD 색상</label><select id="opt-hud" class="sel"><option value="brass">기본 황동</option><option value="linen">베이지 리넨</option><option value="sand">모래 크림</option><option value="olive">올리브 차</option><option value="mocha">밤 모카 · 밤에 보기 편한</option><option value="contrast">고대비</option></select></div>
+          <div class="set-row set-keys" data-sec="keys"><span>단축키 설정</span><button id="btn-keys-reset" type="button" class="btn small">기본값으로</button></div>
+          <div id="keys-list" class="set-keys" data-sec="keys"></div>
+          <p class="hint set-keys" data-sec="keys">키 이름을 누른 뒤 바꿀 키를 누르세요. 이미 쓰는 키면 두 동작이 서로 바뀌고, Esc 는 취소입니다. 방향키는 항상 이동에도 쓰입니다.</p>
+          <div class="set-row" data-sec="view"><span>창 위치</span><button id="btn-winreset" class="btn">처음 자리로</button></div>
+          <div class="set-row" data-sec="game"><span>아이템 필터</span><select id="opt-filter" class="sel" aria-label="아이템 필터"><option value="0">모두</option><option value="1">마법 이상</option><option value="2">희귀 이상</option></select></div>
+          <div class="set-row" data-sec="game"><span>자동 HP 물약</span><input type="range" id="opt-ahp" class="vol" min="0" max="90" step="5" value="0" aria-label="자동 HP 물약"><b id="opt-ahp-v" class="pct">끔</b></div>
+          <div class="set-row" data-sec="game"><span>자동 MP 물약</span><input type="range" id="opt-amp" class="vol" min="0" max="90" step="5" value="0" aria-label="자동 MP 물약"><b id="opt-amp-v" class="pct">끔</b></div>
+          <p class="hint" data-sec="game">아이템 필터는 땅에 떨어진 장비의 이름 표시와 펫이 주워 오는 장비에 함께 적용됩니다. 자동 물약은 HP·MP가 정한 비율 아래로 내려가면 알맞은 크기의 물약을 마십니다.</p>
+          <div class="set-row" data-sec="game"><span>확인 창</span><button id="btn-noask" type="button" class="btn" title="판매·분해 때 '다시 묻지 않기'로 끈 확인 창을 다시 띄웁니다">다시 보기</button></div>
+          <div class="set-row" data-sec="game"><span>처음 안내 카드</span><button id="btn-hints" type="button" class="btn" title="협동 알바·마을 일거리·균열 같은 첫 안내 카드를 이 캐릭터에서 다시 띄웁니다">다시 보기</button></div>
+          <p class="hint" data-sec="view">창은 제목 줄을 끌어 옮길 수 있고, 옮긴 자리와 열어 둔 창은 다음 접속 때도 기억됩니다.</p>
         </div>
       </section>
 
@@ -411,7 +415,7 @@
           <p><b>이동의 돌</b> 맵마다 하나씩 있는 돌비석에 다가가면 깨어납니다. 깨운 돌끼리는 <span data-key="interact">F</span>로 말을 걸어 순간이동할 수 있습니다. <b>귀환 주문서</b>는 2초 동안 읽으면 광장으로 돌아갑니다(움직이거나 맞으면 취소).</p>
           <p><b>매일</b> 아침 6시에 일일 의뢰 세 개가 새로 주어지고, 모두 끝내면 보너스 상자를 받습니다. 매시 정각과 30분에는 한 사냥터에 <b>균열 침공</b>이 열립니다(오른쪽 위에 남은 시간).</p>
           <p><b>수집</b> 같은 몬스터를 30마리 잡으면 도감에 등록되고, 한 지역을 모두 채우면 영구 보너스. 업적을 이루면 칭호를 달 수 있습니다.</p>
-          <p><b>대화</b> <span data-key="interact">F</span> 말 걸기 · <span data-key="chat">Enter</span> 채팅 (/p 메시지는 파티, /g 메시지는 길드 채팅 · 채팅창의 파티·길드 탭에서는 그 채널로) · <span data-key="emote">T</span> 감정표현 · <span data-key="sit">Z</span> 앉기 (앉아서 <span data-key="jamB">B</span> 연주 · <span data-key="jamZ">Shift+B</span> 건배)</p>
+          <p><b>대화</b> <span data-key="interact">F</span> 말 걸기 · <span data-key="chat">Enter</span> 채팅 (/p 메시지는 파티, /g 메시지는 길드 채팅 · 채팅창의 파티·길드 탭에서는 그 채널로) · <span data-key="reply">Shift+R</span> 귓속말 답장 · 가방에서 Shift+클릭 아이템을 채팅에 링크 · <span data-key="emote">T</span> 감정표현 · <span data-key="sit">Z</span> 앉기 (앉아서 <span data-key="jamB">B</span> 연주 · <span data-key="jamZ">Shift+B</span> 건배)</p>
           <p><b>사냥</b> 쉬지 않고 잡으면 <b>연속 처치</b>로 경험치가 최대 +50%. 사냥터에서 60마리를 잡으면 <b>우두머리</b>가 나타납니다. 정예는 이름 위 아이콘으로 특성을 보여 줍니다.</p>
           <p><b>쉬어 가기</b> 모닥불 곁에서 <span data-key="sit">Z</span>로 앉으면 빠르게 회복하고, 잠시 쉬면 경험치 보너스(온기)를 얻습니다. 물가에서 <span data-key="interact">F</span>로 낚시, 입질이 오면 다시 <span data-key="interact">F</span> — 물결이 찌에 닿는 박자에 맞춰 누를수록 좋은 물고기가 나옵니다. 잡은 물고기는 모닥불 곁에서 <b>굽기</b>.</p>
           <p><b>장비</b> 무기 · 투구 · 갑옷 · 장갑 · 신발 · 반지 2 · 목걸이. 일반 · <span style="color:#6a9cff">마법</span> · <span style="color:#f0d050">희귀</span> · <span style="color:#ff8a30">전설</span> · <span style="color:#5fd47a">세트</span>. 홈이 있는 장비에 <b>룬</b>을 순서대로 끼우면 <b>룬어</b>가 완성됩니다.</p>

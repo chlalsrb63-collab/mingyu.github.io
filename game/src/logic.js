@@ -13488,6 +13488,28 @@ function playerByName(S, name) {
   for (const pid in S.players) if (lowName(S.players[pid].ch.name) === k) return S.players[pid];
   return null;
 }
+/**
+ * Item links on a chat line (Shift+click in the bag): `it` = [[bag slot, item id]…], at most CHAT_LINKS, each still
+ * that item in the sender's bag when the line is sent. The bag entries themselves, or null when any is not.
+ */
+const CHAT_LINKS = 2;
+function chatLinks(ch, it) {
+  if (it === undefined) return [];
+  if (!Array.isArray(it) || it.length > CHAT_LINKS) return null;
+  const out = [];
+  for (const r of it) {
+    if (!Array.isArray(r) || !Number.isInteger(r[0]) || typeof r[1] !== "string") return null;
+    const e = ch.inv[r[0]];
+    if (!e || e.id !== r[1]) return null;
+    out.push(e);
+  }
+  return out;
+}
+/** A chat line `{n, m}` plus copies of its linked items (`it`, as the bag holds them: the reader's tooltip shows them). */
+function chatLine(ch, m, a, extra) {
+  const it = chatLinks(ch, a.it) || [];
+  return { n: ch.name, m, ...extra, ...(it.length ? { it: it.map((e) => JSON.parse(JSON.stringify(e))) } : {}) };
+}
 /** The chat lines one player may read: guild and party lines of their own, whispers addressed to them, nothing from a blocked name. */
 function chatFor(S, p, pid) {
   const out = [];
@@ -17873,6 +17895,7 @@ export function validateAction(S, pid, a) {
     case "chat":
       if (typeof a.m !== "string" || !a.m.trim()) return bad("빈 메시지");
       if (now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
+      if (!chatLinks(ch, a.it)) return bad("링크한 물건이 가방에 없습니다");
       return OK;
     case "pinv": {
       const o = byEid(S, a.e);
@@ -17918,11 +17941,13 @@ export function validateAction(S, pid, a) {
       if (!ch.guild) return bad("길드에 속해 있지 않습니다");
       if (typeof a.m !== "string" || !a.m.trim()) return bad("빈 메시지");
       if (now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
+      if (!chatLinks(ch, a.it)) return bad("링크한 물건이 가방에 없습니다");
       return OK;
     case "pchat":
       if (!S.parties[p.party]) return bad("파티에 속해 있지 않습니다");
       if (typeof a.m !== "string" || !a.m.trim()) return bad("빈 메시지");
       if (now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
+      if (!chatLinks(ch, a.it)) return bad("링크한 물건이 가방에 없습니다");
       return OK;
     case "qs": {
       // set slot i to v, or swap slots i and j
@@ -18706,7 +18731,7 @@ export function applyAction(S, pid, a) {
     case "chat": {
       const text = a.m.trim().slice(0, 80);
       p.chatAt = now;
-      S.chat.push({ n: ch.name, m: text });
+      S.chat.push(chatLine(ch, text, a));
       S.maps[p.map].ev.push(["s", p.eid, text]);
       break;
     }
@@ -18767,11 +18792,11 @@ export function applyAction(S, pid, a) {
       break;
     case "gchat":
       p.chatAt = now;
-      S.chat.push({ n: ch.name, m: a.m.trim().slice(0, 80), g: ch.guild });
+      S.chat.push(chatLine(ch, a.m.trim().slice(0, 80), a, { g: ch.guild }));
       break;
     case "pchat":
       p.chatAt = now;
-      S.chat.push({ n: ch.name, m: a.m.trim().slice(0, 80), pt: p.party });
+      S.chat.push(chatLine(ch, a.m.trim().slice(0, 80), a, { pt: p.party }));
       break;
     case "qs":
       if (a.j !== undefined) [ch.qs[a.i], ch.qs[a.j]] = [ch.qs[a.j], ch.qs[a.i]];

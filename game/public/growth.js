@@ -16,6 +16,7 @@
 import { Sound } from "./audio.js";
 import * as SP from "./sprites.js";
 import { K } from "./keymap.js";
+import * as QS from "./quickslots.js";
 
 /** What client.js lends us: its state, its helpers, its windows. */
 let C = null;
@@ -340,15 +341,21 @@ export function renderBank(s) {
   box.append(top);
   const panes = el("div", "bank-panes");
   const pane = (title, list, size, a) => {
-    const p = el("div", "pane");
+    const p = el("div", `pane ${a}`);
     p.append(el("div", "pt", `${title}  ${list.length} / ${size}`));
     const grid = el("div", "grid bank-grid");
+    // a click moves a stack (Shift: one); a drag onto the other pane does the same (a bag stack also from the side bag)
+    const there = a === "put" ? "#w-bank .pane.take" : "#w-bank .pane.put, #w-inv";
     for (let i = 0; i < size; i++) {
       const e = list[i];
-      grid.append(e ? itemSlot(e, {
-        onClick: (ev) => { act({ t: "wh", a, s: i, n: ev.shiftKey ? 1 : e.n || 1 }); Sound.play("item"); },
-        hint: a === "put" ? "클릭: 맡기기 (Shift+클릭: 1개)" : "클릭: 찾기 (Shift+클릭: 1개)",
-      }) : itemSlot(null));
+      if (!e) { grid.append(itemSlot(null)); continue; }
+      const move = (n) => { act({ t: "wh", a, s: i, n }); Sound.play("item"); };
+      const node = itemSlot(e, {
+        onClick: (ev) => move(ev.shiftKey ? 1 : e.n || 1),
+        hint: a === "put" ? "클릭: 맡기기 (Shift+클릭: 1개) · 창고 칸으로 끌어 놓아도 됩니다" : "클릭: 찾기 (Shift+클릭: 1개) · 가방 칸으로 끌어 놓아도 됩니다",
+      });
+      QS.dragSource(node, ["i", e.id], { qs: false, drop: (hit) => { if (hit && hit.closest(there)) move(e.n || 1); } });
+      grid.append(node);
     }
     p.append(grid);
     return p;

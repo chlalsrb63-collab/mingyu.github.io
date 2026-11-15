@@ -14,6 +14,7 @@ import * as Track from "./track.js";
 import { G, $, el, dist, T, now } from "./state.js";
 import { act } from "./net.js";
 import { toast, chatTo } from "./windows.js";
+import { show as hint } from "./hints.js";
 import { pathTo, walkToDoor, toggleAuto } from "./input.js";
 
 const box = () => $("#pmenu");
@@ -63,6 +64,7 @@ export function open(eid) {
   if (!w) return;
   menu = { eid, name: w.name };
   render();
+  hint("pmenu");   // the first time: what this menu does (hints.js)
 }
 export function close() {
   if (!menu) return;

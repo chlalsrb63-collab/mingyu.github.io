@@ -24,6 +24,10 @@ import { stoneNear } from "./actions.js";
 import { wpWoke } from "./overlay.js";
 import { refreshUi } from "./hud.js";
 import { tutTry } from "./win_world.js";
+import { K } from "./keymap.js";
+import { resetHints } from "./hints.js";
+import { itemName, itemTip } from "./items.js";
+import { RARITY_COL } from "./art.js";
 import * as Info from "./infocard.js";
 import { renderParty, renderGuild } from "./win_social.js";
 
@@ -311,6 +315,43 @@ export function closeTop() {
   else if (panelId) { closeWin(panelId); Sound.play("close"); }
   else if (drawerOpen() || G.sel >= 0) closeWin("inv");
 }
+/**
+ * Which windows were open (W2): per character, saved when the page goes away (or the game is left), opened again
+ * at the first snapshot, bottom-most first, where they stood (folded ones fold again). Only the player's own
+ * windows: an NPC's (a shop, the smith, a talk, the warehouse…) needs the NPC beside you.
+ */
+const KEEP = [...PANEL, "map"];
+const OPEN_KEY = (name) => `lumentale:open:${name}`;
+let restoredFor = null;
+export function saveOpen(leaving) {
+  const s = G.self;
+  if (s && restoredFor === s.name) {
+    const list = KEEP.filter((id) => !(id === "inv" && compact()) && !winEl(id).hidden)
+      .sort((a, b) => (+winEl(a).style.zIndex || 0) - (+winEl(b).style.zIndex || 0))
+      .map((id) => (paned(id) ? [id] : [id, parseFloat(winEl(id).style.left) || 0, parseFloat(winEl(id).style.top) || 0, folded(id) ? 1 : 0]));
+    try { localStorage.setItem(OPEN_KEY(s.name), JSON.stringify(list)); } catch { /* private mode */ }
+  }
+  if (leaving) restoredFor = null;
+}
+/** Called with every self snapshot: does its work once per character per game. */
+export function restoreOpen() {
+  const s = G.self;
+  if (!s || restoredFor === s.name) return;
+  restoredFor = s.name;
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(OPEN_KEY(s.name)) || "[]"); } catch { /* a damaged entry: open nothing */ }
+  if (!Array.isArray(list)) return;
+  for (const r of list) {
+    const id = Array.isArray(r) ? r[0] : "";
+    if (!KEEP.includes(id) || isOpen(id)) continue;
+    openWin(id);
+    if (paned(id)) continue;
+    if (Number.isFinite(r[1]) && Number.isFinite(r[2])) keepIn(id, r[1], r[2]);
+    if (r[3] === 1) fold(id);
+  }
+}
+addEventListener("pagehide", () => saveOpen());
+
 // a window whose content grows or shrinks (a list arriving, a tab switched) is kept inside the zone
 const winSize = typeof ResizeObserver === "function" ? new ResizeObserver((es) => { for (const e of es) keepIn(e.target.id.slice(2)); }) : null;
 
@@ -411,7 +452,7 @@ export function ask(text, yes, onYes, key, qty) {
 
 // ── chat ──
 export const chatLog = $("#chat-log");
-export function addChat(m, cls, name) {
+export function addChat(m, cls, name, its) {
   const stick = chatLog.scrollTop + chatLog.clientHeight >= chatLog.scrollHeight - 12;
   const p = el("p", cls || "");
   p.title = new Date().toTimeString().slice(0, 5);   // hover a line: when it was said
@@ -421,11 +462,33 @@ export function addChat(m, cls, name) {
     for (const w of G.who.values()) if (w.name === name) { who.prepend(Info.jobMark(w.cls)); break; }
     p.append(who);
   }
-  if (typeof m === "string") {
-    for (const seg of Emo.parse(m)) {
+  const text = (s) => {
+    for (const seg of Emo.parse(s)) {
       if (seg.e === undefined) { p.append(seg.s); continue; }
       const im = el("img", "emo"); im.alt = Emo.token(seg.e); im.src = Emo.emoUrl(seg.e); p.append(im);
     }
+  };
+  if (typeof m === "string") {
+    // linked items (`its`, copies of the sender's bag entries): their [이름] in the line becomes the link, else it goes at the end
+    let rest = m;
+    const tail = [];
+    for (const e of its || []) {
+      if (!e || !G.defs.items[e.id]) continue;
+      const a = el("span", "ilink", `[${itemName(e)}]`), at = rest.indexOf(a.textContent);
+      a.style.color = RARITY_COL[e.q || 0] || "";
+      // its tooltip above the link, so the rest of the line stays readable
+      a.addEventListener("mouseenter", () => {
+        if (touch()) return;
+        showTip(a, (n) => itemTip(e, n));
+        const r = a.getBoundingClientRect();
+        tipBox.style.left = `${Math.round(clamp(r.left, 4, innerWidth - tipBox.offsetWidth - 4))}px`;
+        tipBox.style.top = `${Math.round(Math.max(4, r.top - tipBox.offsetHeight - 6))}px`;
+      });
+      a.addEventListener("mouseleave", () => { if (tip.from === a) hideTip(); });
+      if (at < 0) { tail.push(" ", a); continue; }
+      text(rest.slice(0, at)); p.append(a); rest = rest.slice(at + a.textContent.length);
+    }
+    text(rest); p.append(...tail);
   } else p.append(m);
   chatLog.append(p);
   while (chatLog.children.length > 150) chatLog.firstChild.remove();
@@ -433,6 +496,42 @@ export function addChat(m, cls, name) {
   return p;
 }
 const CHAT_HINT = { all: "Enter 채팅 · /p 파티 · /g 길드", party: "Enter 로 파티 채팅", guild: "Enter 로 길드 채팅", sys: "Enter 로 채팅" };
+/** The chat box's grey hint: the open tab's, led by the 답장 key once someone has whispered to me. */
+export function chatHint() {
+  const input = $("#chat-in"), base = CHAT_HINT[chatLog.dataset.tab] || CHAT_HINT.all, who = G.lastWhisper;
+  input.placeholder = who ? `${K("reply")} → ${who}에게 답장 · ${base}` : base;
+  input.title = `Enter 로 채팅 · /p 파티 · /g 길드 · /w 이름 귓속말 · ${K("reply")} 마지막 귓속말에 답장 · Shift+클릭(가방) 아이템 링크`;
+}
+/**
+ * Item links (WoW's Shift+click): a bag item's [이름] goes into the chat box; the line is sent with `it` =
+ * [[bag slot, id]…] (≤ 2) for the links still in the text — the server checks they are still in the bag
+ * (63-social-weekly.js chatLinks). The slot is looked up again at send time, in case the bag moved.
+ */
+let links = [];
+export function chatLink(slot, entry) {
+  const input = $("#chat-in"), tok = `[${itemName(entry)}]`, sep = input.value && !/\s$/.test(input.value) ? " " : "";
+  links = links.filter((l) => input.value.includes(l.tok));
+  if (links.length >= 2) { toast("아이템 링크는 한 줄에 두 개까지입니다"); input.focus(); return; }
+  if (input.value.length + sep.length + tok.length > input.maxLength) { toast("채팅이 너무 길어 링크를 넣을 수 없습니다"); input.focus(); return; }
+  links.push({ s: slot, id: entry.id, tok, sig: JSON.stringify(entry) });
+  input.value += sep + tok;
+  input.focus();
+  Sound.play("ui");
+}
+function linkRefs(m) {
+  const inv = (G.self && G.self.inv) || [];
+  const it = links.filter((l) => m.includes(l.tok)).map((l) => {
+    const i = inv.findIndex((e) => e && JSON.stringify(e) === l.sig);
+    return [i >= 0 ? i : l.s, l.id];
+  });
+  links = [];
+  return it;
+}
+/** The 답장 key (keymap `reply`, WoW's R): the chat box opens as `/w <who whispered last> `. */
+export function replyWhisper() {
+  if (!G.lastWhisper) { toast("답할 귓속말이 없습니다"); return; }
+  chatTo(`/w ${G.lastWhisper} `);
+}
 /** Put a line in the chat box ready to finish (the friend list's 귓속말 button, a click on a whisper). */
 export function chatTo(prefix) {
   const input = $("#chat-in");
@@ -535,11 +634,28 @@ export function setupWindows({ walkToDoor }) {
     toast("창을 처음 자리로 옮겼습니다");
   });
   addEventListener("resize", placeToasts);
+  // the settings in four tabs (화면 · 소리 · 조작 · 게임), the last one remembered; no 조작 on a touch screen
+  const setTab = (sec) => {
+    if (!["view", "sound", "keys", "game"].includes(sec) || (sec === "keys" && touch())) sec = "view";
+    for (const b of $$("#set-tabs button")) b.classList.toggle("on", b.dataset.sec === sec);
+    for (const n of $$("#w-settings .body > [data-sec]")) n.hidden = n.dataset.sec !== sec;
+    localStorage.setItem("lumentale:settab", sec);
+  };
+  for (const b of $$("#set-tabs button")) b.addEventListener("click", () => { setTab(b.dataset.sec); Sound.play("ui"); });
+  setTab(localStorage.getItem("lumentale:settab"));
+  // the 다시 묻지 않기 choices (ask) and the first-time cards (hints.js), back on
+  $("#btn-noask").addEventListener("click", () => {
+    const ks = Object.keys(localStorage).filter((k) => k.startsWith("lumentale:noask:"));
+    for (const k of ks) localStorage.removeItem(k);
+    toast(ks.length ? `꺼 두었던 확인 창 ${ks.length}가지를 다시 띄웁니다` : "꺼 둔 확인 창이 없습니다");
+    Sound.play("ui");
+  });
+  $("#btn-hints").addEventListener("click", () => { resetHints(); toast("처음 안내 카드를 다시 보여 드립니다"); Sound.play("ui"); });
   for (const b of $$("#chat-tabs button")) {
     b.addEventListener("click", () => {
       for (const o of $$("#chat-tabs button")) o.classList.toggle("on", o === b);
       chatLog.dataset.tab = b.dataset.tab;
-      $("#chat-in").placeholder = CHAT_HINT[b.dataset.tab];
+      chatHint();
       chatLog.scrollTop = chatLog.scrollHeight;
       Sound.play("ui");
     });
@@ -549,12 +665,16 @@ export function setupWindows({ walkToDoor }) {
     const input = $("#chat-in");
     const m = input.value.trim();
     const a = m && chatAction(m);
+    const it = a && ["chat", "pchat", "gchat"].includes(a.t) ? linkRefs(a.m) : (links = [], []);
+    if (it.length) a.it = it;
     if (a) act(a);
     if (m && sent[sent.length - 1] !== m) { sent.push(m); if (sent.length > 20) sent.shift(); }
     back = sent.length;
     input.value = "";
     input.blur();
   });
+  chatHint();
+  $("#chat-in").addEventListener("blur", chatHint);   // (a key rebound in the settings shows here next time)
   // ↑ / ↓ in the chat box: the last 20 lines sent (a /w 이름 or a long party call, again)
   const sent = [];
   let back = 0;

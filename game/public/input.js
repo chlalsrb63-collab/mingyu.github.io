@@ -17,7 +17,7 @@ import { G, $, dist, T, clamp, world, now, resize } from "./state.js";
 import { act } from "./net.js";
 import { usePotion, interact, stoneNear, aimAtPoint, attack, dash, talkKey } from "./actions.js";
 import { autoSt } from "./update.js";
-import { toggleWin, closeTop, openWin, toast, isOpen } from "./windows.js";
+import { toggleWin, closeTop, openWin, toast, isOpen, replyWhisper } from "./windows.js";
 import * as Track from "./track.js";
 import * as PMenu from "./pmenu.js";
 import * as SX from "./sxwin.js";
@@ -255,6 +255,7 @@ export function setupInput() {
       case "sound": toggleSound(); break;
       case "crt": setCrt(!document.body.classList.contains("crt")); break;
       case "chat": e.preventDefault(); $("#chat-in").focus(); break;
+      case "reply": e.preventDefault(); replyWhisper(); break;   // 답장: /w <who whispered last> (windows.js)
     }
   });
   addEventListener("keyup", (e) => {

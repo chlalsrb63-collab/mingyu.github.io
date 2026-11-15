@@ -22,6 +22,7 @@
 import * as Art from "./art.js";
 import * as NPC from "./npclife.js";
 import { icon } from "./uiicons.js";
+import { spent as nodeSpent } from "./gather.js";
 import { mapChart, buildingDoors, shortestRoute, questMaps, nextGate, chartBase, paintChart, mapDetail, unlockState } from "./worldmap.js";
 
 const T = 16;
@@ -54,6 +55,8 @@ const roleOf = (n) => ROLE[n.role] || ROLE.talk;
 const PARTY_COL = ["#4ad0ff", "#3fe08c", "#8ac4ff", "#9af0c8"];
 /** Roofs on the radar and the map window, a shade under the buildings' own (iso_tall.js BSTYLE). */
 const ROOF = { hall: "#4e7a40", library: "#4a5a86", dojo: "#8e4a2a", store: "#a8643a", smithy: "#444c5c", merc: "#4a3a30", lab: "#3e8474", diner: "#a83c34", cafe: "#348686", inn: "#3456a0", boutique: "#c06a8c", pet: "#5a9040", apt: "#7a5034", home: "#b85444", barn: "#6a3a2e" };
+/** Gathering nodes by kind (약초 · 광맥 · 통나무 · 작물), gatherart.js KIND_COL. */
+const NODE_COL = ["#8fd060", "#d07a3a", "#c8a070", "#a8784a"];
 const COL = { gate: "#d890ff", door: "#e0a868", stone: "#8ad8ff", stoneOff: "#7a7468", fire: "#ff9a3a", obelisk: "#c890ff", wind: "#5ae4a0", boss: "#ff4a4a", me: "#ffd84a", resident: "#f0c7ef", track: "#ffbfe6" };
 
 const sprites = {};
@@ -287,7 +290,9 @@ export function draw(t) {
   }
   // monsters and fires the server lets me see
   const mobs = G.defs.mobs || {};
-  for (const mob of G.mobs.values()) {
+  // gathering nodes, in their kind's colour (dim once spent here)
+  if (!hide.has("gather")) (m.nodes || []).forEach((n, i) => { const [x, y] = Pt(n[2], n[3]); if (inView(x, y)) dotAt(g, x, y, nodeSpent(i) ? "#5a5650" : NODE_COL[n[0]] || NODE_COL[0], 2); });
+  if (!hide.has("mob")) for (const mob of G.mobs.values()) {
     const [x, y] = P(mob.x, mob.y);
     if (!inView(x, y)) continue;
     const d = mobs[mob.k] || {};
@@ -301,12 +306,13 @@ export function draw(t) {
   for (const [sx, sy] of M.shrines) { const [x, y] = Pt(sx, sy); if (inView(x, y)) blit(g, spr("wind", COL.wind), x, y - 2); }
   for (const n of m.npcs || []) {
     if (n.thing || (NPC.cast(n.id) ? !servicePost(n) : !D.npcOut(n)) || (n.role === "dim" && M.obelisk)) continue;
+    if (hide.has(questNpc(n) ? "quest" : "npc")) continue;
     const [x, y] = Pt(n.x, n.y);
     if (!inView(x, y)) continue;
     const [gl, col] = roleOf(n);
     if (n.role === "talk") dotAt(g, x, y, "#ffe08a", 3); else blit(g, spr(gl, col), x, y - 3);
   }
-  for (const n of NPC.list()) {
+  if (!hide.has("npc")) for (const n of NPC.list()) {
     if (n.onPost && n.post && servicePost(n.post)) continue;
     const [x, y] = P(n.x, n.y);
     if (inView(x, y)) dotAt(g, x, y, COL.resident, 3);
@@ -338,9 +344,9 @@ export function draw(t) {
     blit(g, rimArrow(ang, col), px + Math.cos(ang) * 2, py + Math.sin(ang) * 2);
     blit(g, what, px - Math.cos(ang) * 8, py - Math.sin(ang) * 8);
   };
-  if (G.fb) for (const [bx, by] of G.fb) { const [x, y] = P(bx, by); if (Math.floor(t / 350) % 3) pin(x, y, COL.boss, spr("skull", COL.boss)); }
-  for (const q of party) { const [x, y] = P(q.x, q.y); pin(x, y, q.col, disc(q.col, q.n)); }
-  const tracked = residentPoint(resident);
+  if (G.fb && !hide.has("mob")) for (const [bx, by] of G.fb) { const [x, y] = P(bx, by); if (Math.floor(t / 350) % 3) pin(x, y, COL.boss, spr("skull", COL.boss)); }
+  if (!hide.has("party")) for (const q of party) { const [x, y] = P(q.x, q.y); pin(x, y, q.col, disc(q.col, q.n)); }
+  const tracked = !hide.has("quest") && residentPoint(resident);
   if (tracked) {
     const [x, y] = P(tracked.x, tracked.y);
     if (Math.floor(t / 280) % 3) pin(x, y, COL.track, spr("talk", COL.track));
@@ -376,6 +382,23 @@ function partyHere() {
   return out;
 }
 
+/** The radar's mark filters: [key, chip name, swatch]. Me, doors, stones, fires and buildings always show. */
+const FILTERS = [["npc", "NPC", "#f0d8a8"], ["quest", "의뢰", "#ffe060"], ["gather", "채집", "#8fd060"], ["party", "파티", "#4ad0ff"], ["mob", "몬스터", "#ff5050"]];
+const HKEY = "lumentale:radar-hide";
+const hide = new Set((() => { try { const v = JSON.parse(localStorage.getItem(HKEY) || "[]"); return Array.isArray(v) ? v.filter((k) => FILTERS.some((f) => f[0] === k)) : []; } catch { return []; } })());
+function setHide() {
+  try { localStorage.setItem(HKEY, JSON.stringify([...hide])); } catch { /* private mode */ }
+  for (const b of document.querySelectorAll("#mini-fl button")) {
+    const off = hide.has(b.dataset.f);
+    b.classList.toggle("off", off);
+    b.setAttribute("aria-pressed", String(!off));
+    b.title = `${b.textContent} ${off ? "숨김 — 눌러서 보이기" : "보임 — 눌러서 숨기기"}`;
+  }
+  $("#mini-fb").title = hide.size ? `미니맵에 보일 것 고르기 (${hide.size}개 숨김)` : "미니맵에 보일 것 고르기";
+  $("#mini-fb").classList.toggle("some", hide.size > 0);
+}
+/** Quest givers' marks (의뢰 · 일일 의뢰 · the side-quest givers) are the 의뢰 filter's; every other NPC the NPC filter's. */
+const questNpc = (n) => n.role === "elder" || n.role === "quest" || n.role === "daily" || !!D.G.defs.side?.some((q) => q.giver === n.id);
 function setZoom(i) {
   zi = Math.max(0, Math.min(ZOOMS.length - 1, i));
   try { localStorage.setItem(ZKEY, String(zi)); } catch { /* private mode */ }
@@ -783,6 +806,17 @@ export function init(deps) {
   $("#mini-zo").addEventListener("click", (e) => { e.stopPropagation(); setZoom(zi + 1); D.play("ui"); });
   $("#mini-map").addEventListener("click", () => D.toggleWin("map"));
   $("#mini-cv").addEventListener("click", () => D.toggleWin("map"));
+  // 표시: a row of chips under the bar, one per kind of mark (FF/LA minimap filters), remembered
+  const fl = $("#mini-fl");
+  for (const [k, name, col] of FILTERS) {
+    const b = document.createElement("button"), sw = document.createElement("i");
+    b.type = "button"; b.dataset.f = k; sw.style.background = col;
+    b.append(sw, name);
+    b.addEventListener("click", (e) => { e.stopPropagation(); if (hide.has(k)) hide.delete(k); else hide.add(k); setHide(); D.play("ui"); });
+    fl.append(b);
+  }
+  $("#mini-fb").addEventListener("click", (e) => { e.stopPropagation(); fl.hidden = !fl.hidden; $("#mini-fb").classList.toggle("on", !fl.hidden); D.play("ui"); });
+  setHide();
   for (const b of document.querySelectorAll("#map-tabs button[data-tab]")) b.addEventListener("click", () => { setTab(b.dataset.tab); D.play("ui"); });
   for (const b of document.querySelectorAll(".res-filters button")) b.addEventListener("click", () => {
     residentsPanel.filter = b.dataset.filter;

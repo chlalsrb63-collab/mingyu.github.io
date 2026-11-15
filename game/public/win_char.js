@@ -19,7 +19,7 @@ import { G, $, el, now, $$ } from "./state.js";
 import * as Gather from "./gather.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
-import { isOpen, touch, hideTip, closeDrawer, openWin, hoverTip, ask } from "./windows.js";
+import { isOpen, touch, hideTip, closeDrawer, openWin, hoverTip, ask, chatLink } from "./windows.js";
 import { invOrder, itemSlot, QS_USE, useSlot, isGear, emptyEquipSlot, sellPrice, itemTip, itemName, SLOT_NAME, SLOT_GLYPH, setWorn, statText } from "./items.js";
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
 import * as Charms from "./charms.js";
@@ -76,13 +76,19 @@ export function renderInv(s) {
       : usable ? `아래 단축칸(1~9)에 끌어다 놓을 수 있습니다${at ? ` · 지금 ${at}번` : ""}` : "";
     const node = itemSlot(entry, {
       selected: i === G.sel,
-      onClick: () => { G.sel = G.sel === i ? -1 : i; Sound.play("ui"); refreshUi(); },
+      onClick: (ev) => {
+        if (ev.shiftKey && !touch()) { chatLink(i, entry); return; }   // Shift+click: a link to it in the chat box (windows.js)
+        G.sel = G.sel === i ? -1 : i; Sound.play("ui"); refreshUi();
+      },
       onUse: () => useSlot(i),
       hint: [free && `▲ 빈 슬롯에 낄 수 있음 · ${SLOT_NAME[free]}`, hint].filter(Boolean).join(" · "),
       price: isOpen("shop") && !Charms.isCharm(entry) ? `판매가 ${(sellPrice(entry) * (entry.n || 1)).toLocaleString()}G${entry.n > 1 ? ` (개당 ${sellPrice(entry)}G)` : ""}` : "",
     });
     // a usable thing can be dragged onto the quick slots; the slot it sits in shows in the corner
-    if (usable) { QS.dragSource(node, ["i", entry.id]); if (at) node.append(el("span", "qk", at)); }
+    // with the warehouse open, anything can be dragged into it (a whole stack, like a click on its 가방 pane)
+    const bank = isOpen("bank") ? (hit) => { if (hit && hit.closest("#w-bank")) { act({ t: "wh", a: "put", s: i, n: entry.n || 1 }); Sound.play("item"); } } : null;
+    if (usable || bank) QS.dragSource(node, ["i", entry.id], { qs: usable, drop: bank });
+    if (at) node.append(el("span", "qk", at));
     if (free) node.append(el("span", "qk equip-ready", "▲"));
     // 새로 얻음: glows with a 새 tag until hovered (or tapped), sorted, or the bag is closed
     const k = invSig(entry);

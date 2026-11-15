@@ -66,6 +66,7 @@ export function validateAction(S, pid, a) {
     case "chat":
       if (typeof a.m !== "string" || !a.m.trim()) return bad("빈 메시지");
       if (now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
+      if (!chatLinks(ch, a.it)) return bad("링크한 물건이 가방에 없습니다");
       return OK;
     case "pinv": {
       const o = byEid(S, a.e);
@@ -111,11 +112,13 @@ export function validateAction(S, pid, a) {
       if (!ch.guild) return bad("길드에 속해 있지 않습니다");
       if (typeof a.m !== "string" || !a.m.trim()) return bad("빈 메시지");
       if (now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
+      if (!chatLinks(ch, a.it)) return bad("링크한 물건이 가방에 없습니다");
       return OK;
     case "pchat":
       if (!S.parties[p.party]) return bad("파티에 속해 있지 않습니다");
       if (typeof a.m !== "string" || !a.m.trim()) return bad("빈 메시지");
       if (now - p.chatAt < 700) return bad("채팅이 너무 빠릅니다");
+      if (!chatLinks(ch, a.it)) return bad("링크한 물건이 가방에 없습니다");
       return OK;
     case "qs": {
       // set slot i to v, or swap slots i and j

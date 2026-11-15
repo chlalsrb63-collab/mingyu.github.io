@@ -112,6 +112,13 @@ const say = (k, a) => { now += 800; return act(k, a); };
   assert.ok(say("a", { t: "blk", a: "del", name: "나래" }).ok);
   assert.ok(say("b", { t: "chat", m: "다시" }).ok);
   assert.deepEqual(round().a, [{ n: "나래", m: "다시" }]);
+  // item links (Shift+click in the bag): [[slot, id]…] must still be that item in the sender's bag; the line carries a copy
+  const e0 = P("b").ch.inv[0];
+  assert.ok(say("b", { t: "chat", m: "이거 봐 [작은 HP 물약]", it: [[0, e0.id]] }).ok);
+  assert.deepEqual(round().a, [{ n: "나래", m: "이거 봐 [작은 HP 물약]", it: [{ ...e0 }] }]);
+  for (const it of [[[0, "nope"]], [[99, e0.id]], [[0, e0.id], [0, e0.id], [0, e0.id]], "0", [[0.5, e0.id]]])
+    assert.equal(say("b", { t: "chat", m: "x", it }).error, "링크한 물건이 가방에 없습니다", JSON.stringify(it));
+  assert.ok(say("b", { t: "pchat", m: "파티 [물약]", it: [[0, e0.id]] }).error !== "링크한 물건이 가방에 없습니다");
   // the cap
   P("a").ch.blk = Array.from({ length: X.BLOCK_MAX }, (_, i) => `이름${i}`);
   assert.equal(say("a", { t: "blk", a: "add", name: "하나더" }).error, `차단은 ${X.BLOCK_MAX}명까지 할 수 있습니다`);

@@ -27,6 +27,8 @@ const nodeName = (n) => (n[0] === 3 && (G().defs.items[`m_c${n[1]}`] || {}).name
 const myLv = () => { const s = G().self, L = G().defs.life; const i = L ? L.keys.indexOf("gather") : 2; return (s && s.life && s.life[i] && s.life[i][0]) || 1; };
 const VERB = ["채집", "채굴", "벌목", "수확"];
 export const busy = () => !!(st.mine && now() < st.mine.end + 300);
+/** Is node `i` of this map spent for me (the radar dims it)? */
+export const spent = (i) => st.spent.has(i);
 
 // ───────────────────────────── the map's nodes ─────────────────────────────
 
