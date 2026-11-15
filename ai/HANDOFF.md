@@ -81,7 +81,9 @@ now has a bag icon); 혈루 뿔 왕관 + 갯가재 집게 weapon skin (boss pool
 3) Server-first notice reaches only the channel where it happened (the other channel of that server doesn't hear it).
 4) 55 monsters are regional tints of another sprite (deliberate variants); the four that were different creatures now have art.
 5) Town polish (§3): benches to sit on (seats would sit on a solid prop — needs care), spirit-tree canopy over the fountain.
-Known: rift tier 5+ needs balance; `maps` test's build-time assert flakes under load (passes alone); job reset costs as reviewed.
+Known: rift tier 5+ (measured 16:10, 4 plain-geared bots at Lv.32, 3 draws: tier 1 3/3 ~5 min · 5 2/3 ~7 min · 6 0/3 · 7 1/3 ·
+10/15/20 0/3 with 50–85 deaths; no single table step — monster HP ×1.08^t is the lever (tier 10 with HP ×1 clears 2/3), rewards grow
+linearly; owner decision: how far plain gear should climb before enhancement/sets — nothing changed); `maps` test's build-time assert flakes under load (passes alone); job reset costs as reviewed.
 **Agent worktrees from `isolation: "worktree"` start at origin/main (stale) — first step of every brief: `git rebase main`.**
 Typed agents (`ui-programmer` etc.) stop at 20 turns — use `general-purpose` for anything bigger. Only the owner adds jobs.
 
