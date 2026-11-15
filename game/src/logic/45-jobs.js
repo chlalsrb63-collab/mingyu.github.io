@@ -348,6 +348,12 @@ function bowShot(S, rt, p, fin) {
   const far = mob ? dist(p.x, p.y, mob.x, mob.y) : c.range * 0.7;
   rt.ev.push(["a", p.eid, 6, Math.round(p.x + ux * far), Math.round(p.y - 6 + uy * far), p.dir, p.combo]);
   fireArrow(S, rt, p, mob, (c.mult || 1) * (fin ? FINISH.mult : 1), fin ? 1 : 0, fin ? 1 : 0);
+  // 연속 사격 (55-passives.js): every n-th arrow brings one more along
+  const ds = SKILL.bow_string30;
+  if (pasHas(p, "bow_string30") && (p.bowN = ((p.bowN | 0) + 1) % ds.n) === 0) {
+    pasFx(rt, p, "bow_string30", p.x, p.y);
+    fireArrow(S, rt, p, mob, (c.mult || 1) * ds.k, 0, 0);
+  }
 }
 
 /**

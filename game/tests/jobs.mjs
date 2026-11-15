@@ -120,7 +120,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(new Set(names).size, names.length, "every job has its own name");
   assert.ok(names.every((n) => /^[가-힣]{2,5}$/.test(n)), "short Korean names");
   assert.deepEqual(D.jobs.swordsman.scale, { str: 0.95, wil: 0.6 }, "a single job adds 0.1 to its weapon's two grades");
-  assert.deepEqual(D.jobs.spellblade.scale, { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 });
+  assert.deepEqual(D.jobs.spellblade.scale, { str: 0.9, int: 0.9, wil: 0.2, wis: 0.2 }, "skills-v2: its attack stats lifted inside the same budget");
   assert.equal(D.jobs.swordsman.cost, 1000); assert.equal(D.jobs.tracker.cost, 5000);
   assert.equal(D.jobs.adventurer.name, "모험가");
   assert.equal(D.wmNeed.length, 50); assert.equal(D.wmNeed[0], 22); assert.equal(D.wmNeed[9], 2200); assert.equal(D.wmNeed[48], 52822);
@@ -289,11 +289,11 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
     ["swordsman", [49, 40, 10, 5, 10, 15], 79, 840, 160, 22, 10, 5, 3, 4],
     ["thief", [10, 20, 49, 5, 10, 35], 76, 580, 160, 17, 16, 22, 13, 4],
     ["wizard", [5, 25, 5, 49, 35, 10], 76, 645, 389, 18, 8, 3, 2, 14],
-    ["spellblade", [40, 20, 5, 39, 10, 15], 85, 580, 228, 17, 10, 3, 2, 4],
+    ["spellblade", [40, 20, 5, 39, 10, 15], 90, 580, 228, 17, 10, 3, 2, 4],
     ["swordsman", [94, 75, 15, 5, 15, 25], 111, 1269, 250, 37, 13, 8, 5, 6],
     ["thief", [15, 35, 94, 5, 15, 65], 109, 1025, 250, 33, 20, 29, 18, 6],
     ["wizard", [5, 45, 5, 94, 65, 15], 109, 1123, 575, 35, 10, 3, 2, 21],
-    ["spellblade", [75, 35, 5, 74, 15, 25], 124, 1025, 347, 33, 13, 3, 2, 6],
+    ["spellblade", [75, 35, 5, 74, 15, 25], 130, 1025, 347, 33, 13, 3, 2, 6],
     ["adventurer", [99, 14, 44, 14, 14, 44], 81, 752, 262, 28, 18, 21, 13, 6],
   ];
   for (const [job, sv, atk, hp, mp, def, crit, aspd, eva, cdr] of rows) {
@@ -328,7 +328,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   };
   near(atkJob("swordsman", "sword") - atkJob("adventurer", "sword"), 0.1 * 40, 1, "대검전사 +0.1 STR on the sword");
   assert.equal(atkJob("swordsman", "staff"), atkJob("adventurer", "staff"), "but nothing on a staff");
-  near(atkJob("spellblade", "staff") - atkJob("adventurer", "staff"), 0.8 * 40 + 0.8 * 40 - 0.85 * 40 + (0.3 - 0.5) * 5, 1, "마검사's table on the staff");
+  near(atkJob("spellblade", "staff") - atkJob("adventurer", "staff"), 0.9 * 40 + 0.9 * 40 - 0.85 * 40 + (0.2 - 0.5) * 5, 1, "마검사's table on the staff");
 }
 
 // ═════════ weapon mastery (B.10) ═════════

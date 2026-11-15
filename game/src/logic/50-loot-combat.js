@@ -307,7 +307,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const graze = !sure && rnd(S) * 100 < grazeChance(p, mob);
   // 급소 도려내기: a dagger finds the gaps its marks point to (+4% critical chance per mark)
   const vit = st.wk === "dagger" && pasOn(p, "vitals") ? marksOf(S, mob) * SKILL.vitals.crit : 0;
-  const crit = !graze && (sure || rnd(S) * 100 < st.crit + vit + (o.crit || 0));
+  const crit = !graze && (sure || pasFirst(p, mob) || rnd(S) * 100 < st.crit + vit + (o.crit || 0));
   // 거검의 관성: each stack a sword carries adds to its critical damage
   const critd = st.critd + (st.wk === "sword" ? inertOf(p) * SKILL.inertia.critd : 0);
   let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - (o.ign || 0));
@@ -319,6 +319,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (mob.vuln > S.now) dmg *= 1.3;
   // 금서의 낙인: a branded monster takes more from everyone
   if (mob.brand > S.now) dmg *= 1 + SKILL.brand.k;
+  dmg *= pasHurtK(S, p, mob, st);   // the felt passives (55-passives.js)
   // a sword hit builds inertia, once an action
   if (st.wk === "sword" && p.inAct !== p.actN && pasOn(p, "inertia")) {
     p.inAct = p.actN;
@@ -340,7 +341,9 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)));
   const x = mob.x, y = mob.y;
   wmHit(S, p, mob);
-  if (!dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue)) {
+  const brand = mob.brand, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue);
+  pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand);
+  if (!killed) {
     // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
     if (!mob.dead) stagger(S, mob, p, crit);
     return crit;
@@ -476,7 +479,7 @@ function hurtPlayer(S, rt, p, raw, mob) {
   const st = stats(p);
   // inside a dark knight's blood sanctuary a blow lands lighter (57-weapon-skills.js)
   const ward = S.now < (p.sanctAt || 0) ? 1 - SKILL.sanctuary.guard : 1;
-  const dmg = Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard * ward));
+  const dmg = Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard * ward * pasGuard(p)));
   p.hp -= dmg;
   p.hitAt = S.now;
   rouse(S, p);
@@ -573,7 +576,7 @@ function aimVec(p, mob) {
 
 /** How long a basic attack takes now. */
 function atkCd(p) {
-  return stats(p).acd;
+  return Math.round(stats(p).acd * pasAspd(p));
 }
 /** How far a basic attack reaches now: a greatsword with inertia (거검의 관성) reaches further. */
 function atkRange(p) {
@@ -634,7 +637,8 @@ function basicAttack(S, p) {
   // 급소 도려내기: a stab on a marked monster opens it up (bleeding, and a burst of speed); every stab marks
   const vit = c === WKIND.dagger && pasOn(p, "vitals") ? SKILL.vitals : null;
   const marked = vit && marksOf(S, mob) > 0;
-  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1) * charmMarkK(S, rt, p, mob), false, tip ? { ign: SKILL.tip.ign } : null);
+  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1) * charmMarkK(S, rt, p, mob), false, tip ? pasTip(S, rt, p) : null);
+  if (fin && c === WKIND.sword && pasHas(p, "sword_weight40")) pasQuake(S, rt, p, mob, zx, zy);
   if (vit && !mob.dead) {
     if (marked) {
       if (!(mob.dot && mob.dot.until > now && mob.dot.pid === p.pid)) rt.ev.push(["a", p.eid, 111, Math.round(mob.x), Math.round(mob.y - 6), p.dir]);
