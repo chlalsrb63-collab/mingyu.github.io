@@ -314,7 +314,7 @@ function dimChest(S, dim, p) {
     payout(S, p, r);
     for (let i = 1; i < (R.rune | 0); i++) payout(S, p, { rune: true });
     for (let i = 1; i < (R.gear | 0); i++) payout(S, p, { gear: 1, gearQ: R.gearQ });
-    if (big) charmChest(S, dim, p);
+    if (big) { charmChest(S, dim, p); jfScroll(p, "lvl"); }
     msg = big ? "주간 보스 도전 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다." : "보스 도전 반복 보상을 받았습니다. 큰 보상은 월요일 06:00에 다시 열립니다.";
   } else {
     d.n++;
@@ -325,6 +325,8 @@ function dimChest(S, dim, p) {
     const b = Math.min(W.max, Math.floor(((dim.tier || 1) - 1) / W.every) + 1);
     if (!carried && b > d.wb) { wkN = b - d.wb; d.wb = b; r.gold += W.gold * lv * wkN; r.stone += W.stone * wkN; fl |= 8; }
     payout(S, p, r);
+    // shortcut: the reset scrolls' only sources until the gear task places them (job-freedom.md)
+    if (wkN && dim.tier >= 20) jfScroll(p, "job");
     charmChest(S, dim, p);
     msg = carried ? "기여가 부족해 균열의 보상이 줄었습니다. (단수 기록·주간 보너스 없음)"
       : (full ? `균열의 보상을 받았습니다! (오늘 ${d.n}번째)` : `균열의 보상을 받았습니다. 오늘 ${DIM.dailyFull}번을 넘겨 경험치는 절반입니다.`) + (wkN ? ` 주간 첫 정화 보너스 ×${wkN}!` : "");

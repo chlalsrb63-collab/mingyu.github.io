@@ -20,6 +20,9 @@ function selfPayload(p) {
     wm: WK_ORDER.map((k) => [ch.wm[k].lv, ch.wm[k].xp, ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
     jp: ch.jp ? [ch.jp.lv, ch.jp.xp, ch.jp.lv >= JOB_PROGRESS.cap ? 0 : jobNeed(ch.jp.lv)] : null,
     wk2: ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "",
+    // 직업 자유 (47-job-freedom.js): [[job, lv, xp]] every job walked; the loadout [actives, passives, off-job passive, set 1/0, off slot open 1/0]
+    jobs: Object.keys(ch.jobs).map((j) => [j, ch.jobs[j].lv, ch.jobs[j].xp]),
+    lo: (() => { const lo = loOf(ch); return [lo.a, lo.p, lo.x, ch.lo[ch.job] ? 1 : 0, loOpen(ch) ? 1 : 0]; })(),
     gold: ch.gold,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
@@ -217,6 +220,8 @@ export function defs() {
     items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, shop: SHOP, quests: QUESTS, enh: ENH_RATE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
     jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
+    // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
+    jf: { lo: [LO_MAX.a, LO_MAX.p], scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST },
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,

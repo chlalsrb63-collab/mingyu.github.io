@@ -103,7 +103,7 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   const D = L.defs();
   assert.ok(D.waypoints.some((w) => w.id === "willow") && D.maps.some((x) => x.id === "willow"));
   assert.ok(!D.event.maps.includes("willow") && !D.collection.willow, "no rift or collection in a safe village");
-  assert.equal(D.side.length, 15, "the sample village's two side quests, the mercenary captain's three and the ten from the new town hosts");
+  assert.equal(D.side.length, 16, "the sample village's two side quests, the mercenary captain's three, the ten from the new town hosts and the 전직관's Lv.150 one");
 
   // walk it: down the town's south road into the village, and back out through its north door
   const W = world(L, "나그네");
@@ -330,13 +330,13 @@ const cloneData = () => JSON.parse(JSON.stringify(EMPTY_DATA()));
   const S = L.setup();
   L.addPlayer(S, "old", old);
   assert.deepEqual(S.players.old.ch.sq, { on: {}, done: {} });
-  assert.equal(S.players.old.ch.v, 17);
+  assert.equal(S.players.old.ch.v, 18);
   const messy = L.newChar("엉망", "rogue", []);
   messy.sq = { on: { sq_willow_letter: 99, sq_gone: 3, "Bad Id": 1 }, done: { sq_willow_frogs: 2, sq_retired: 1, "x y": 1 } };
   L.addPlayer(S, "messy", messy);
   assert.deepEqual(S.players.messy.ch.sq.on, { sq_willow_letter: 1 }, "progress clamped, unknown quests dropped");
   assert.deepEqual(S.players.messy.ch.sq.done, { sq_willow_frogs: 2, sq_retired: 1 }, "finished quests remembered");
-  assert.equal(L.newChar("새내기", "warrior", []).v, 17);
+  assert.equal(L.newChar("새내기", "warrior", []).v, 18);
 }
 
 // ── the playtest spot (room.ts, local dev only) lands on ground a player can stand on

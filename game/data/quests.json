@@ -166,6 +166,17 @@
       "req": { "lv": 150, "quest": "sq_borum_frogs" },
       "reward": { "xp": 1017960, "gold": 4210, "items": [["hp_l", 5], ["mp_l", 3], ["stone", 3], ["sc_xp", 1]] },
       "repeat": false
+    },
+    {
+      "id": "sq_job_free",
+      "giver": "town_job_arsen",
+      "title": "경계 너머의 길",
+      "text": "레벨 150에 이른 모험가라면 다른 길의 기술도 품을 수 있지. 단풍 왕도의 아가리 그루터기 30마리를 쓰러뜨려 그 각오를 보여 주게.",
+      "done": "좋네. 이제 다른 직업에서 익힌 패시브 하나를 함께 지닐 수 있다네. 스킬 창에서 칸을 채우게.",
+      "goal": { "type": "kill", "mob": "stumpmaw", "n": 30 },
+      "req": { "lv": 150, "quest": null },
+      "reward": { "xp": 0, "gold": 0, "items": [] },
+      "repeat": false
     }
   ]
 }

@@ -325,7 +325,7 @@ export function renderJobNpc(box, s, { atJob }) {
   if (s.job !== "adventurer") {
     box.append(el("p", "say", `이미 [${jobs[s.job].name}]의 길을 걷고 있군. 전직은 되돌릴 수 없다네. 그 길 끝까지 가 보게.`));
   } else {
-    box.append(el("p", "say", `무기 하나를 숙련 ${d.jobWm}까지 다뤘다면 그 무기의 길을, 두 무기를 모두 ${d.hybWm || d.jobWm}까지 다뤘다면 두 갈래 길을 열어 주지. 한 번 걸으면 되돌릴 수 없다네.`));
+    box.append(el("p", "say", `무기 하나를 숙련 ${d.jobWm}까지 다뤘다면 그 무기의 길을, 두 무기를 모두 ${d.hybWm || d.jobWm}까지 다뤘다면 두 갈래 길을 열어 주지. 전직 초기화 주문서가 있으면 다시 고를 수 있고, 걸었던 직업의 레벨은 남는다네.`));
     const ids = Object.keys(jobs).filter((j) => jobs[j].kind !== "none");
     const open = ids.filter((j) => jobState(s, j) === "ok");
     if (open.length) {
