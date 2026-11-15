@@ -797,6 +797,24 @@ body.playing .window.mini:hover { box-shadow: inset 0 0 0 2px var(--b-mid); }
 #mini-bar .mini-b:disabled { opacity: .4; cursor: default; }
 #mini-bar #mini-map { color: #2a1806; background: var(--b-mid); box-shadow: inset 1px 1px 0 var(--b-hi), inset -1px -1px 0 var(--b-lo); }
 #mini-bar #mini-map kbd { font: var(--t9)/1 var(--pix9); color: #5a3a10; }
+#mini-bar #mini-fb { min-width: 18px; padding: 0 3px; }
+#mini-bar #mini-fb.on, #mini-bar #mini-fb.some { color: var(--tx-hd, var(--b-hi)); }
+#mini-bar #mini-fb.some::after { content: ""; width: 3px; height: 3px; margin-left: 1px; background: #ffb040; }
+/* 표시: what the radar draws (radar.js setHide), one chip per kind; a struck chip is hidden */
+#mini-fl { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px 0 1px; }
+#mini-fl[hidden] { display: none; }
+#mini-fl button { flex: 1 1 auto; height: 18px; padding: 0 2px; font: var(--t10)/1 var(--pix9); color: #2a1806; background: var(--b-mid); border: 2px solid var(--ink); border-radius: 0; box-shadow: inset 1px 1px 0 var(--b-hi), inset -1px -1px 0 var(--b-lo); cursor: pointer; }
+#mini-fl button.off { color: var(--tx3, #9a90a8); background: var(--sf2, #1f1a28); box-shadow: none; text-decoration: line-through; }
+#mini-fl button i { display: inline-block; width: 5px; height: 5px; margin-right: 2px; border: 1px solid var(--ink); vertical-align: 0; }
+/* the quest tracker: ▾ / ▸ fold a section, 고정 keeps the tracker over a side-panel window (hud.js tracker) */
+#quest-track .qt-fold { width: 12px; padding: 0; margin: 0 2px 0 0; border: 0; background: none; color: var(--tx-hd2, var(--b-mid)); font: var(--t12)/1 var(--pix); cursor: pointer; vertical-align: 0; }
+#quest-track .qt-fold:hover { color: var(--tx, #fff6dc); }
+#quest-track .qt.folded { opacity: .8; }
+#quest-track .qf { display: none !important; }
+#quest-track .qt-pin { float: right; margin: 2px 0 2px 4px; padding: 1px 4px; font-size: var(--t10); }
+#quest-track .qt-pin.on { color: #2a1806; background: var(--b-mid); box-shadow: inset 1px 1px 0 var(--b-hi), inset -1px -1px 0 var(--b-lo); }
+body:not([data-lay="full"]) #quest-track .qt-pin { display: none; }
+body[data-lay="full"] #panel.on.pin > #quest-track { display: block; flex: 0 1 auto; max-height: 32%; margin-bottom: 4px; border-bottom: 2px solid var(--sf3, #2c2537); }
 body.touch #mini-bar #mini-map kbd { display: none; }
 /* 15 menu buttons: eight to a row */
 #menu { grid-template-columns: repeat(8, 1fr); }
