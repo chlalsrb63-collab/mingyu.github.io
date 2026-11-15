@@ -649,7 +649,25 @@ const SLOW = 0.65, SLOW_MS = 2500;
 /** How long a charge is telegraphed, a volley is in the air, a spat puddle flies and then lies. */
 const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 /** The tricks a monster may have besides its plain attack, in the order it tries them. */
-const MOVES = ["charge", "leap", "slam", "pool", "fan"];
+const MOVES = ["charge", "leap", "slam", "pool", "fan", "pounce", "breath", "spit", "howl", "burrow", "cloud"];
+/**
+ * The telegraphed tricks (80-simulation.js special): a row opts in with its reach — `pounce`/`spit`/`burrow` from that
+ * far, `breath` a cone that long, `howl` rallies kin that near, `cloud` a mist that wide round itself. `ms` the warning
+ * (a dash or a step out of the mark escapes it), `k` × atk, `cd` until its next trick, × TRICK_EL[rank] (elites more
+ * often); a cone's `half` angle (rad), a ring's `r`, a howl's `dur` (its kin hit × k and run × 1.15) and a cloud's.
+ * A recoloured kind (`sp`) has its body's ones unless it names its own.
+ */
+const TRICKS = {
+  pounce: { ms: 750, k: 1.6, cd: 6000, r: 26 },
+  breath: { ms: 800, k: 1.5, cd: 6500, half: 0.6 },
+  spit: { ms: 700, k: 1.25, cd: 4500, r: 15 },
+  howl: { ms: 600, k: 1.25, cd: 12000, dur: 6000 },
+  burrow: { ms: 1000, k: 1.8, cd: 8000, r: 28 },
+  cloud: { ms: 600, k: 0.35, cd: 9000, dur: 4500 },
+};
+const TRICK_EL = [1, 0.75, 0.6];
+/** A trick's blow staggers only a player who has not reeled within this long (no stun-lock). */
+const MV_GRACE = 1200;
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
 const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6 };
@@ -701,8 +719,8 @@ const MOBS = {
   prismcantor: { name: "쌍결정 성가박쥐", lv: 36, hp: 19600, atk: 164, def: 34, spd: 38, xp: 6700, gold: [315, 510], aggro: 140, range: 28, cd: 1380, fly: true, boss: true },
   // 바람초원
   twinhare: { name: "쌍두 토끼", lv: 1, hp: 28, atk: 5, def: 0, spd: 26, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300 },
-  gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80 },
-  eyecrow: { name: "눈알 까마귀", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true },   // circles the pond and minds its own business, so the shore stays a fishing spot
+  gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80, pounce: 90 },
+  eyecrow: { name: "눈알 까마귀", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true, spit: 90 },   // circles the pond and minds its own business, so the shore stays a fishing spot
   lambmaw: { name: "뒤집힌 양", lv: 6, hp: 110, atk: 15, def: 1, spd: 38, xp: 38, gold: [7, 16], aggro: 72, range: 18, cd: 1300, charge: 110 },
   meadowram: { name: "금 간 뿔 숫양", sp: "meadowram", lv: 7, hp: 134, atk: 18, def: 2, spd: 40, xp: 49, gold: [8, 19], aggro: 64, range: 18, cd: 1400, charge: 100 },
   // 속삭임 숲
@@ -710,41 +728,41 @@ const MOBS = {
   ribdeer: { name: "갈비뼈 사슴", lv: 10, hp: 330, atk: 26, def: 8, spd: 26, xp: 92, gold: [12, 26], aggro: 64, range: 18, cd: 1400, slam: 34 },
   hydrasnake: { name: "세 머리 뱀", lv: 11, hp: 200, atk: 29, def: 2, spd: 36, xp: 96, gold: [12, 26], aggro: 92, range: 64, cd: 1700, volley: true },
   foxtwine: { name: "꼬인 여우", lv: 12, hp: 230, atk: 28, def: 3, spd: 62, xp: 108, gold: [13, 28], aggro: 96, range: 17, cd: 800, leap: 90 },
-  mothface: { name: "인면 나방", lv: 13, hp: 210, atk: 34, def: 2, spd: 44, xp: 118, gold: [14, 30], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 22 },
+  mothface: { name: "인면 나방", lv: 13, hp: 210, atk: 34, def: 2, spd: 44, xp: 118, gold: [14, 30], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 22, cloud: 34 },
   // 뼈의 지하묘지
   ratking: { name: "쥐 왕", lv: 12, hp: 260, atk: 29, def: 4, spd: 46, xp: 108, gold: [14, 28], aggro: 86, range: 17, cd: 850 },
   twinhare_bone: { name: "해골 쌍두 토끼", sp: "twinhare", tint: "bone", lv: 13, hp: 240, atk: 33, def: 3, spd: 56, xp: 112, gold: [13, 28], aggro: 90, range: 16, cd: 900 },
-  bonehound: { name: "가죽 벗겨진 사냥개", lv: 14, hp: 300, atk: 40, def: 5, spd: 58, xp: 140, gold: [18, 36], aggro: 100, range: 18, cd: 1000, leap: 100 },
-  toadbrood: { name: "알 밴 두꺼비", lv: 15, hp: 420, atk: 42, def: 8, spd: 28, xp: 160, gold: [20, 40], aggro: 86, range: 20, cd: 1500, pool: 26 },
+  bonehound: { name: "가죽 벗겨진 사냥개", lv: 14, hp: 300, atk: 40, def: 5, spd: 58, xp: 140, gold: [18, 36], aggro: 100, range: 18, cd: 1000, leap: 100, howl: 110 },
+  toadbrood: { name: "알 밴 두꺼비", lv: 15, hp: 420, atk: 42, def: 8, spd: 28, xp: 160, gold: [20, 40], aggro: 86, range: 20, cd: 1500, pool: 26, pounce: 84 },
   batcluster: { name: "박쥐 덩어리", lv: 16, hp: 360, atk: 46, def: 4, spd: 52, xp: 178, gold: [22, 44], aggro: 96, range: 17, cd: 1100, fly: true, burst: 32 },
   // 네온 시티
-  pigeonmass: { name: "비둘기 떼살", lv: 14, hp: 290, atk: 40, def: 5, spd: 56, xp: 140, gold: [18, 36], aggro: 100, range: 70, cd: 1300, fly: true, shot: true },
+  pigeonmass: { name: "비둘기 떼살", lv: 14, hp: 290, atk: 40, def: 5, spd: 56, xp: 140, gold: [18, 36], aggro: 100, range: 70, cd: 1300, fly: true, shot: true, spit: 100 },
   gutfrog_poison: { name: "맹독 창자 개구리", sp: "gutfrog", tint: "poison", lv: 16, hp: 400, atk: 46, def: 5, spd: 32, xp: 180, gold: [22, 44], aggro: 84, range: 17, cd: 1200, leap: 84, pool: 22 },
-  doghead: { name: "세 머리 들개", lv: 17, hp: 460, atk: 52, def: 8, spd: 46, xp: 200, gold: [26, 50], aggro: 84, range: 19, cd: 1000, charge: 110 },
+  doghead: { name: "세 머리 들개", lv: 17, hp: 460, atk: 52, def: 8, spd: 46, xp: 200, gold: [26, 50], aggro: 84, range: 19, cd: 1000, charge: 110, howl: 110 },
   squidrat: { name: "촉수 쥐", lv: 18, hp: 430, atk: 54, def: 6, spd: 54, xp: 225, gold: [26, 52], aggro: 92, range: 18, cd: 1000, pool: 22, poolKind: 2 },
-  catsplit: { name: "갈라진 고양이", lv: 19, hp: 500, atk: 60, def: 6, spd: 54, xp: 250, gold: [28, 54], aggro: 92, range: 18, cd: 1000, leap: 100 },
+  catsplit: { name: "갈라진 고양이", lv: 19, hp: 500, atk: 60, def: 6, spd: 54, xp: 250, gold: [28, 54], aggro: 92, range: 18, cd: 1000, leap: 100, pounce: 96 },
   fishwalker: { name: "다리 달린 생선", lv: 21, hp: 820, atk: 68, def: 18, spd: 30, xp: 330, gold: [40, 80], aggro: 72, range: 22, cd: 1500, slam: 34 },
   // 하수도
   leechmaw: { name: "거머리 아가리", lv: 22, hp: 800, atk: 73, def: 10, spd: 40, xp: 365, gold: [38, 72], aggro: 84, range: 19, cd: 1100, leap: 84 },
   ratking_bile: { name: "썩은 쥐 왕", sp: "ratking", tint: "bile", lv: 23, hp: 780, atk: 74, def: 10, spd: 50, xp: 400, gold: [40, 76], aggro: 90, range: 17, cd: 850, pool: 24 },
-  gatorhalf: { name: "반쪽 악어", lv: 24, hp: 1200, atk: 82, def: 22, spd: 30, xp: 450, gold: [44, 82], aggro: 76, range: 21, cd: 1500, slam: 38 },
+  gatorhalf: { name: "반쪽 악어", lv: 24, hp: 1200, atk: 82, def: 22, spd: 30, xp: 450, gold: [44, 82], aggro: 76, range: 21, cd: 1500, slam: 38, burrow: 100 },
   crabskull: { name: "두개골 게", lv: 25, hp: 1300, atk: 86, def: 24, spd: 34, xp: 490, gold: [48, 88], aggro: 80, range: 20, cd: 1400, charge: 120 },
   eelknot: { name: "뱀장어 매듭", lv: 26, hp: 950, atk: 90, def: 10, spd: 38, xp: 520, gold: [50, 92], aggro: 96, range: 74, cd: 1800, volley: true },
   // 수정 동굴
   spiderhand: { name: "손가락 거미", lv: 24, hp: 900, atk: 82, def: 10, spd: 56, xp: 440, gold: [42, 80], aggro: 92, range: 18, cd: 1000, leap: 96 },
   splitboar_frost: { name: "서리 반쪽 멧돼지", sp: "splitboar", tint: "frost", lv: 25, hp: 1000, atk: 88, def: 12, spd: 48, xp: 480, gold: [46, 86], aggro: 92, range: 19, cd: 1100, charge: 112 },
-  moleworm: { name: "눈먼 두더지", lv: 26, hp: 1100, atk: 92, def: 14, spd: 44, xp: 520, gold: [50, 92], aggro: 90, range: 19, cd: 1200, leap: 100, slam: 36 },
-  bearmaw: { name: "아가리 곰", lv: 27, hp: 1600, atk: 98, def: 26, spd: 27, xp: 640, gold: [56, 100], aggro: 76, range: 21, cd: 1500, slam: 40 },
+  moleworm: { name: "눈먼 두더지", lv: 26, hp: 1100, atk: 92, def: 14, spd: 44, xp: 520, gold: [50, 92], aggro: 90, range: 19, cd: 1200, leap: 100, slam: 36, burrow: 110 },
+  bearmaw: { name: "아가리 곰", lv: 27, hp: 1600, atk: 98, def: 26, spd: 27, xp: 640, gold: [56, 100], aggro: 76, range: 21, cd: 1500, slam: 40, breath: 56 },
   hydrasnake_steel: { name: "강철 비늘 뱀", sp: "hydrasnake", tint: "steel", lv: 28, hp: 1250, atk: 100, def: 28, spd: 36, xp: 680, gold: [58, 104], aggro: 96, range: 70, cd: 1800, volley: true },
-  owlstare: { name: "목 꺾인 올빼미", lv: 29, hp: 1150, atk: 106, def: 12, spd: 40, xp: 720, gold: [60, 108], aggro: 96, range: 76, cd: 1500, fly: true, shot: true },
+  owlstare: { name: "목 꺾인 올빼미", lv: 29, hp: 1150, atk: 106, def: 12, spd: 40, xp: 720, gold: [60, 108], aggro: 96, range: 76, cd: 1500, fly: true, shot: true, breath: 64 },
   boss: { name: "균열의 군주 크리온", lv: 32, hp: 24000, atk: 150, def: 32, spd: 34, xp: 10000, gold: [1500, 2500], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1, fan: 150, pool: 30, poolKind: 1 },
   // 피의 심연 — they bite about a fifth softer than they used to: a plainly geared Lv.32 could not stand at the door (probe: 9–34 deaths in two minutes)
   twingoat: { name: "쌍두 염소", lv: 32, hp: 1900, atk: 96, def: 24, spd: 44, xp: 900, gold: [70, 124], aggro: 88, range: 20, cd: 1100, charge: 110 },
   bonehound_ash: { name: "잿빛 사냥개", sp: "bonehound", tint: "ash", lv: 33, hp: 2000, atk: 100, def: 20, spd: 62, xp: 980, gold: [74, 130], aggro: 104, range: 19, cd: 950, leap: 110 },
   horsehalf: { name: "반쪽 말", lv: 34, hp: 2200, atk: 104, def: 22, spd: 60, xp: 1050, gold: [78, 136], aggro: 100, range: 20, cd: 1000, leap: 110 },
   batcluster_blood: { name: "피 박쥐 덩어리", sp: "batcluster", tint: "blood", lv: 35, hp: 2100, atk: 106, def: 18, spd: 54, xp: 1120, gold: [80, 140], aggro: 100, range: 18, cd: 1100, fly: true, burst: 36 },
-  lionhand: { name: "손갈기 사자", lv: 35, hp: 2600, atk: 108, def: 26, spd: 50, xp: 1140, gold: [82, 144], aggro: 100, range: 21, cd: 1100, slam: 40, fan: 100 },
-  serpentwing: { name: "날개 구렁이", lv: 36, hp: 2000, atk: 110, def: 18, spd: 44, xp: 1220, gold: [86, 150], aggro: 100, range: 78, cd: 1800, fly: true, volley: true },
+  lionhand: { name: "손갈기 사자", lv: 35, hp: 2600, atk: 108, def: 26, spd: 50, xp: 1140, gold: [82, 144], aggro: 100, range: 21, cd: 1100, slam: 40, fan: 100, howl: 120 },
+  serpentwing: { name: "날개 구렁이", lv: 36, hp: 2000, atk: 110, def: 18, spd: 44, xp: 1220, gold: [86, 150], aggro: 100, range: 78, cd: 1800, fly: true, volley: true, breath: 66 },
   sowseer: { name: "눈 달린 암퇘지", lv: 37, hp: 3000, atk: 112, def: 30, spd: 30, xp: 1300, gold: [90, 158], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
   doghead_fire: { name: "불타는 세 머리 들개", sp: "doghead", tint: "fire", lv: 38, hp: 2900, atk: 116, def: 26, spd: 52, xp: 1400, gold: [94, 164], aggro: 100, range: 20, cd: 1000, charge: 116, pool: 24, poolKind: 1 },
   abyssboss: { name: "심연의 어미", lv: 40, hp: 48000, atk: 200, def: 40, spd: 34, xp: 30000, gold: [4000, 6000], aggro: 140, range: 30, cd: 1400, resp: 240000, boss: true, gear: 1, fan: 160, pool: 34, poolKind: 2, charge: 150 },
@@ -800,15 +818,15 @@ const MOBS = {
   blightsquirrel: { name: "한 꼬리 다람쥐떼", lv: 40, hp: 2400, atk: 114, def: 16, spd: 64, xp: 1500, gold: [96, 168], aggro: 104, range: 18, cd: 850, leap: 100 },
   stumpmaw: { name: "아가리 그루터기", lv: 41, hp: 3600, atk: 118, def: 34, spd: 24, xp: 1560, gold: [98, 170], aggro: 80, range: 22, cd: 1500, slam: 40 },
   crowscare: { name: "까마귀 허수아비", lv: 42, hp: 2600, atk: 120, def: 18, spd: 30, xp: 1620, gold: [100, 174], aggro: 100, range: 78, cd: 1600, shot: true, fan: 96 },
-  shroomboar: { name: "버섯등 멧돼지", lv: 43, hp: 3300, atk: 124, def: 28, spd: 48, xp: 1700, gold: [104, 180], aggro: 92, range: 20, cd: 1100, charge: 116, pool: 26 },
+  shroomboar: { name: "버섯등 멧돼지", lv: 43, hp: 3300, atk: 124, def: 28, spd: 48, xp: 1700, gold: [104, 180], aggro: 92, range: 20, cd: 1100, charge: 116, pool: 26, cloud: 34 },
   gravrose: { name: "묘지 장미", lv: 44, hp: 3000, atk: 128, def: 22, spd: 22, xp: 1780, gold: [108, 186], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
   rotstag: { name: "썩은 관 사슴왕", lv: 46, hp: 5200, atk: 136, def: 32, spd: 42, xp: 2200, gold: [120, 204], aggro: 92, range: 22, cd: 1300, charge: 124, slam: 42, fan: 100 },
   bogcrown: { name: "검은 왕관 뿌리짐승", sp: "bogcrown", lv: 47, hp: 4250, atk: 138, def: 35, spd: 28, xp: 3100, gold: [118, 184], aggro: 82, range: 22, cd: 1600, slam: 42 },
-  hollowowl: { name: "눈먼 문지기 올빼미", sp: "hollowowl", lv: 49, hp: 4050, atk: 144, def: 30, spd: 34, xp: 3550, gold: [122, 195], aggro: 94, range: 68, cd: 1800, fly: true, fan: 105 },
+  hollowowl: { name: "눈먼 문지기 올빼미", sp: "hollowowl", lv: 49, hp: 4050, atk: 144, def: 30, spd: 34, xp: 3550, gold: [122, 195], aggro: 94, range: 68, cd: 1800, fly: true, fan: 105, breath: 70 },
   rootwarden: { name: "얼어붙은 왕릉 파수꾼", sp: "rootwarden", lv: 50, hp: 5500, atk: 155, def: 42, spd: 39, xp: 3950, gold: [134, 210], aggro: 90, range: 22, cd: 1450, charge: 128, slam: 43 },
   // 성에왕의 성채: the open approach, the paired galleries and the crown chamber
   rimehare: { name: "서리창 쌍두토끼", lv: 50, hp: 4600, atk: 142, def: 30, spd: 52, xp: 3400, gold: [132, 204], aggro: 80, range: 18, cd: 1350, leap: 92 },
-  frostmoth: { name: "갈라진 유리날개", lv: 50, hp: 4500, atk: 149, def: 33, spd: 37, xp: 3900, gold: [142, 218], aggro: 92, range: 32, cd: 1900, fly: true, fan: 96 },
+  frostmoth: { name: "갈라진 유리날개", lv: 50, hp: 4500, atk: 149, def: 33, spd: 37, xp: 3900, gold: [142, 218], aggro: 92, range: 32, cd: 1900, fly: true, fan: 96, cloud: 30 },
   crownstag: { name: "성에왕 유리뿔", lv: 50, hp: 520000, atk: 205, def: 50, spd: 34, xp: 74000, gold: [5200, 7600], aggro: 124, range: 30, cd: 1500, resp: 300000, boss: true, gear: 1, charge: 148, slam: 48, fan: 144, pool: 34, poolKind: 2 },
   // ── new species (public/mobart_e.js). Each took the row of the tinted stand-in it replaced, so the grounds weigh what
   //    they did; the stand-ins' rows stay above for old collections (the ones no longer met: catsplit_gold, toadbrood_poison,
@@ -816,31 +834,31 @@ const MOBS = {
   //    eelknot_frost, squidrat_blood, gatorhalf_steel; spiderhand_bone, owlstare_gold, moleworm_gold, fishwalker_blood, crabskull_frost).
   // 정글 해안도로
   vinemonkey: { name: "덩굴 원숭이", lv: 20, hp: 600, atk: 64, def: 6, spd: 56, xp: 290, gold: [32, 62], aggro: 94, range: 18, cd: 1000, leap: 100 },
-  dartbrood: { name: "독개구리 떼", lv: 21, hp: 760, atk: 68, def: 14, spd: 30, xp: 330, gold: [36, 70], aggro: 86, range: 20, cd: 1500, pool: 26 },
+  dartbrood: { name: "독개구리 떼", lv: 21, hp: 760, atk: 68, def: 14, spd: 30, xp: 330, gold: [36, 70], aggro: 86, range: 20, cd: 1500, pool: 26, spit: 96 },
   orchidmantis: { name: "난초 사마귀", lv: 24, hp: 880, atk: 82, def: 8, spd: 44, xp: 450, gold: [44, 84], aggro: 96, range: 72, cd: 1400, shot: true, pool: 22 },
   loggator: { name: "악어 통나무", lv: 26, hp: 1500, atk: 92, def: 22, spd: 30, xp: 540, gold: [50, 94], aggro: 80, range: 20, cd: 1400, slam: 38, charge: 110 },
   // 산호 해안
   hermitskull: { name: "집게 소라게 떼", lv: 26, hp: 1370, atk: 92, def: 24, spd: 34, xp: 540, gold: [48, 88], aggro: 84, range: 20, cd: 1400, charge: 118 },
   barnacleseal: { name: "따개비 물개", lv: 27, hp: 1580, atk: 95, def: 22, spd: 32, xp: 590, gold: [52, 92], aggro: 80, range: 22, cd: 1500, slam: 38 },
-  brainjelly: { name: "해파리 뇌", lv: 28, hp: 1320, atk: 99, def: 16, spd: 40, xp: 660, gold: [56, 100], aggro: 98, range: 76, cd: 1800, volley: true },
+  brainjelly: { name: "해파리 뇌", lv: 28, hp: 1320, atk: 99, def: 16, spd: 40, xp: 660, gold: [56, 100], aggro: 98, range: 76, cd: 1800, volley: true, cloud: 32 },
   eyegull: { name: "갈매기 눈알", lv: 29, hp: 1500, atk: 101, def: 18, spd: 56, xp: 715, gold: [59, 105], aggro: 96, range: 18, cd: 1000, fly: true, pool: 24, poolKind: 2 },
   coralturtle: { name: "산호 뿔 거북", lv: 32, hp: 2100, atk: 106, def: 30, spd: 30, xp: 880, gold: [69, 119], aggro: 82, range: 21, cd: 1500, slam: 42, charge: 112 },
   // 모래바람 오아시스
   spinescorp_gold: { name: "모래 전갈 등뼈", sp: "spinescorp", tint: "gold", lv: 30, hp: 1800, atk: 100, def: 16, spd: 40, xp: 790, gold: [64, 114], aggro: 90, range: 19, cd: 1200, charge: 112 },
   ribvulture_bone: { name: "백골 독수리 갈비", sp: "ribvulture", tint: "bone", lv: 31, hp: 1750, atk: 98, def: 12, spd: 46, xp: 850, gold: [66, 118], aggro: 98, range: 18, cd: 1100, fly: true },
-  cactushog: { name: "선인장 고슴도치", lv: 33, hp: 2000, atk: 100, def: 24, spd: 44, xp: 980, gold: [74, 130], aggro: 90, range: 20, cd: 1100, charge: 110 },
-  mummycamel: { name: "미라 낙타", lv: 34, hp: 2600, atk: 104, def: 28, spd: 28, xp: 1060, gold: [78, 136], aggro: 80, range: 21, cd: 1500, slam: 40, charge: 110 },
+  cactushog: { name: "선인장 고슴도치", lv: 33, hp: 2000, atk: 100, def: 24, spd: 44, xp: 980, gold: [74, 130], aggro: 90, range: 20, cd: 1100, charge: 110, spit: 90 },
+  mummycamel: { name: "미라 낙타", lv: 34, hp: 2600, atk: 104, def: 28, spd: 28, xp: 1060, gold: [78, 136], aggro: 80, range: 21, cd: 1500, slam: 40, charge: 110, spit: 100 },
   // 모래바다
   spinescorp_bone: { name: "백골 전갈 등뼈", sp: "spinescorp", tint: "bone", lv: 32, hp: 2250, atk: 102, def: 16, spd: 56, xp: 910, gold: [70, 124], aggro: 94, range: 18, cd: 1000, charge: 112 },
   ribvulture_gold: { name: "모래 독수리 갈비", sp: "ribvulture", tint: "gold", lv: 34, hp: 1900, atk: 108, def: 16, spd: 42, xp: 1050, gold: [78, 136], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
   barnacleseal_blood: { name: "붉은 따개비 물개", sp: "barnacleseal", tint: "blood", lv: 35, hp: 2500, atk: 106, def: 24, spd: 32, xp: 1120, gold: [80, 140], aggro: 80, range: 22, cd: 1500, slam: 38 },
   hermitskull_frost: { name: "푸른 집게 소라게 떼", sp: "hermitskull", tint: "frost", lv: 36, hp: 2600, atk: 108, def: 30, spd: 34, xp: 1220, gold: [86, 150], aggro: 84, range: 20, cd: 1400, charge: 118 },
-  sandmaw: { name: "모래 지렁이 아가리", lv: 37, hp: 2800, atk: 112, def: 22, spd: 44, xp: 1300, gold: [90, 158], aggro: 90, range: 19, cd: 1200, leap: 100, slam: 40 },
+  sandmaw: { name: "모래 지렁이 아가리", lv: 37, hp: 2800, atk: 112, def: 22, spd: 44, xp: 1300, gold: [90, 158], aggro: 90, range: 19, cd: 1200, leap: 100, slam: 40, burrow: 120 },
   // 붉은 협곡 (mesa) and 구름 사원 (cloudtemple) — not met yet: their maps take these when they open (docs/design/maps-batch2.md)
   beadmonkey: { name: "염주 원숭이", lv: 30, hp: 1500, atk: 100, def: 14, spd: 60, xp: 790, gold: [64, 114], aggro: 98, range: 18, cd: 900, leap: 96 },
   wingcrane: { name: "겹날개 두루미", lv: 32, hp: 1700, atk: 104, def: 14, spd: 44, xp: 910, gold: [70, 124], aggro: 98, range: 74, cd: 1700, fly: true, volley: true },
   mistiger: { name: "운해의 범", lv: 36, hp: 30000, atk: 160, def: 34, spd: 40, xp: 14000, gold: [2000, 3200], aggro: 130, range: 30, cd: 1400, resp: 180000, boss: true, gear: 1, charge: 150, leap: 120, fan: 150 },
-  spinescorp: { name: "전갈 등뼈", lv: 29, hp: 1400, atk: 96, def: 14, spd: 48, xp: 700, gold: [58, 104], aggro: 94, range: 19, cd: 1000, charge: 114 },
+  spinescorp: { name: "전갈 등뼈", lv: 29, hp: 1400, atk: 96, def: 14, spd: 48, xp: 700, gold: [58, 104], aggro: 94, range: 19, cd: 1000, charge: 114, spit: 100 },
   ribvulture: { name: "독수리 갈비", lv: 30, hp: 1300, atk: 94, def: 10, spd: 44, xp: 760, gold: [60, 110], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
   airship_gale: { name: "그을린 날개 추격수", lore: "한쪽 날개의 깃이 잿빛으로 굳었다. 바람등호의 신호등이 켜지면 돛줄에 내려앉는다.",
     lv: 26, hp: 840, atk: 74, def: 9, spd: 44, xp: 0, gold: [0, 0], aggro: 105, range: 18, cd: 1250, questOnly: true },
@@ -891,6 +909,7 @@ for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 16
 for (const k of Object.keys(MOBS)) {
   const d = MOBS[k];
   if (!d.sp) d.sp = k;
+  for (const mv in TRICKS) if (d[mv] === undefined && MOBS[d.sp] && MOBS[d.sp][mv]) d[mv] = MOBS[d.sp][mv];
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
   d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]));
   d.moves = MOVES.filter((mv) => d[mv]);
@@ -17218,7 +17237,9 @@ function mobHit(S, rt, p, raw, mob, how = "blow") {
   // a rift's master hits softer than its wild kin (64-dim.js)
   if (mob && mob.ak) raw *= mob.ak;
   hurtPlayer(S, rt, p, raw, src);
-  if (!p.dead && (how === "charge" || (how === "tele" && mob) || (src && (src.el >= 1 || MOBS[src.k].boss)))) staggerPlayer(S, rt, p, mob);
+  // a telegraphed trick ("mv", special) only makes a player reel who has not just reeled: no chain of them stun-locks
+  const reel = how === "mv" ? !(p.stag > S.now - MV_GRACE) : how === "charge" || (how === "tele" && mob) || (src && (src.el >= 1 || MOBS[src.k].boss));
+  if (!p.dead && reel) staggerPlayer(S, rt, p, mob);
   if (!src || src.dead || !src.tr || !src.tr.length) return;
   const atk = MOBS[src.k].atk * ELITE[src.el].atk;
   if (!p.dead) {
@@ -17289,7 +17310,59 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
     volley(S, rt, mob, tgt, atk, d.boss ? 5 : 3);
     return true;
   }
-  return false;
+  // the telegraphed tricks (TRICKS): each warns for A.ms where it will land; it hits "mv" (no chained reeling)
+  const A = TRICKS[k], at = now + A.ms, tx = Math.round(tgt.x), ty = Math.round(tgt.y);
+  if (k === "breath") {
+    // a cone of breath the way it faces: it stands and gathers, then everyone in the cone is caught
+    if (dd > d.breath) return false;
+    const ang = Math.atan2(tgt.y - mob.y, tgt.x - mob.x);
+    mob.act = { at, f: k, h: { x: mob.x, y: mob.y, r: d.breath, r0: 0, ang, half: A.half } };
+    rt.ev.push(["bt", 1, Math.round(mob.x), Math.round(mob.y), d.breath, A.ms, Math.round(ang * 1000), Math.round(A.half * 1000)]);
+  } else if (k === "pounce" || k === "burrow") {
+    // a ring where the target stands; it comes down there (a burrower underground meanwhile: not hit, not shown)
+    if (dd <= d.range + 16 || dd > d[k]) return false;
+    mob.act = { at, f: k, x: tgt.x, y: tgt.y };
+    rt.tele.push({ x: tgt.x, y: tgt.y, r: A.r, at, dmg: atk * A.k, by: mob, how: "mv" });
+    if (k === "burrow") { mob.dive = 1; rt.ev.push(["b", Math.round(mob.x), Math.round(mob.y), 10, 1]); }
+    rt.ev.push(["t", tx, ty, A.r, A.ms]);
+  } else if (k === "spit") {
+    // one lobbed glob, landing on the spot it was aimed at
+    if (dd < 40 || dd > d.spit) return false;
+    rt.tele.push({ x: tgt.x, y: tgt.y, r: A.r, at, dmg: atk * A.k, by: mob, ev: "q", how: "mv" });
+    rt.ev.push(["m", mob.id], ["v", mob.id, A.ms, tx, ty]);
+    mob.atkAt = Math.max(mob.atkAt, now + 500);
+  } else if (k === "howl") {
+    // a rallying cry: its kin near (and itself) bite harder and run faster for a while
+    const pack = rt.mobs.filter((o) => o !== mob && !o.dead && !o.dive && !MOBS[o.k].still && !(o.rage > now) && dist(o.x, o.y, mob.x, mob.y) <= d.howl);
+    if (!pack.length) return false;
+    for (const o of pack.concat(mob)) o.rage = now + A.dur;
+    rt.ev.push(["m", mob.id], ["t", Math.round(mob.x), Math.round(mob.y), d.howl, A.ms, 1]);
+  } else if (k === "cloud") {
+    // a mist round itself that lingers (kind as its pool's; slowing unless it says otherwise)
+    if (dd > 60) return false;
+    const kind = d.poolKind ?? 2;
+    rt.pools.push({ x: mob.x, y: mob.y, r: d.cloud, next: at, until: at + A.dur, dmg: atk * A.k, atk, kind });
+    rt.ev.push(["g", mob.id, Math.round(mob.x), Math.round(mob.y), d.cloud, A.ms, A.dur, kind]);
+  } else return false;
+  mob.dir = tgt.x < mob.x ? 1 : 2;
+  mob.castAt = now + A.cd * TRICK_EL[mob.el || 0];
+  return true;
+}
+/** A telegraphed trick going off (mob.act.f): the breath catches its cone; a pounce or a burrow comes down on its mark. */
+function landMove(S, m, rt, mob, atk) {
+  const a = mob.act;
+  mob.act = null;
+  if (a.f === "breath") {
+    for (const pid of Object.keys(S.players)) {
+      const o = S.players[pid];
+      if (o.map === m.id && !o.dead && bsInside(a.h, o.x, o.y)) mobHit(S, rt, o, atk * TRICKS.breath.k, mob, "mv");
+    }
+  } else {
+    mob.dive = 0;
+    if ((MOBS[mob.k].fly ? canFly : canStand)(m, a.x, a.y)) { mob.x = a.x; mob.y = a.y; }
+  }
+  rt.ev.push(["m", mob.id]);
+  mob.atkAt = Math.max(mob.atkAt, S.now + 500);
 }
 /** The run at the end of a charge: as far along the line as the ground allows, through whoever is on it. */
 function dash(S, m, rt, mob, atk) {
@@ -17332,15 +17405,18 @@ function tickMob(S, m, rt, mob, dt, here) {
   // a scripted field boss: its phases, the marked cast, the enrage (a challenge's boss: chalTick, 64-dim.js)
   if (d.script && !mob.chal) bsField(S, m, rt, mob);
   if (d.still) return;
-  const atk = d.atk * ELITE[mob.el].atk;
+  // (a howl's rally: TRICKS.howl)
+  const rage = mob.rage > now, atk = d.atk * ELITE[mob.el].atk * (rage ? TRICKS.howl.k : 1);
   // a charge already wound up goes off whatever is done to the charger in the meantime
   if (mob.act) {
-    if (now >= mob.act.at) dash(S, m, rt, mob, atk);
+    if (now >= mob.act.at) (mob.act.f ? landMove : dash)(S, m, rt, mob, atk);
     return;
   }
+  // (a burrower whose trick was cut short, by a rift's reset say, comes back up)
+  if (mob.dive && !bsDef(mob)) mob.dive = 0;
   if (mob.stun > now) return;
   const swift = has(mob, "swift");
-  const speed = d.spd * (mob.slow > now ? 0.5 : 1) * (swift ? 1.35 : 1);
+  const speed = d.spd * (mob.slow > now ? 0.5 : 1) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1);
   if (mob.dec) {
     // a rogue's puppet: walk up to it and strike it, which sets it off
     const dc = mob.dec;
@@ -17592,7 +17668,7 @@ export function tick(S, now) {
       for (const pid of pids) {
         const p = S.players[pid];
         if (p.map !== id || p.dead || dist(p.x, p.y, t.x, t.y) > t.r) continue;
-        mobHit(S, rt, p, t.dmg, t.by, t.ev === "q" ? "shot" : "tele");
+        mobHit(S, rt, p, t.dmg, t.by, t.how || (t.ev === "q" ? "shot" : "tele"));
       }
     }
     for (let i = rt.pools.length - 1; i >= 0; i--) {
@@ -17798,7 +17874,8 @@ export function viewFor(S, pid) {
   for (const mob of rt.mobs) {
     // a field boss (or the rift invasion's lord) is shown on the radar wherever it stands on the map
     if (mob.temp && mob.el === 2 && !mob.dim && !mob.dead) (out.fb || (out.fb = [])).push([Math.round(mob.x), Math.round(mob.y)]);
-    if (mob.dead || !near(mob)) continue;
+    // (a burrowing monster is underground: not shown until it comes up, 80-simulation.js special)
+    if (mob.dead || !near(mob) || (mob.dive && !bsDef(mob))) continue;
     // then, only when there is one: the dagger's marks on it, and 1 when it bears a book's brand
     const mk = marksOf(S, mob), br = mob.brand > S.now ? 1 : 0;
     const row = [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || []];
