@@ -17,7 +17,7 @@ function coopNpc(S, p, k) {
   const n = mapOfS(S, p.map).npcs.find((o) => o.id === J.npc);
   return n && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < COOP_T.near ? n : null;
 }
-const coopCut = (c, g) => Math.round(COOP[c.k].par * COOP_T.parN[c.n] * COOP_T.cuts[g]);
+const coopCut = (c, g) => Math.round(COOP[c.k].par * (COOP[c.k].parN || COOP_T.parN)[c.n] * COOP_T.cuts[g]);
 /** 0 below C, 1 C · 2 B · 3 A · 4 S. */
 function coopGrade(c) { let g = 0; while (g < 4 && c.score >= coopCut(c, g)) g++; return g; }
 const coopMult = (c) => (1 + 0.1 * Math.min(c.combo, 10)) * (c.state === "fever" ? 1.5 : 1);
@@ -57,7 +57,7 @@ function coopStart(S, p, k) {
     c.pl[o.pid] = { name: o.ch.name, tool: J.tools[i % 2], hold: [], pts: 0, idleAt: t0, x, y, actAt: 0, hintAt: 0, ok: false };
     changeMap(S, o, id, x, y);
     o.spdBuff = Math.max(o.spdBuff || 0, endAt);
-    toast(o, `[${J.name}] ${crew.length}명 근무 시작! 빗자루로 쓸고, 쓰레기통으로 모아 소각로·재활용함에 버리세요. (공격 키 / F)`);
+    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint} (공격 키 / F)`);
     o.dirty = true;
   });
   COOP_JOB[k].init(S, dim, c);
@@ -177,10 +177,15 @@ function aptSpawn(S, dim, c, t) {
 }
 const COOP_JOB = {
   apt: {
-    init(S, dim, c) { c.next = { pile: c.runAt, sofa: c.runAt + COOP_APT.sofaMs / COOP_T.parN[c.n] }; },
+    init(S, dim, c) {
+      const A = COOP_APT;
+      c.next = { pile: c.runAt + A.pileMs[c.n - 1], sofa: c.runAt + A.sofaMs / COOP_T.parN[c.n] };
+      // the opening mess, more with each worker; staggered so it doesn't all spread at once
+      for (let i = 0; i < A.open[0] + A.open[1] * c.n; i++) { const e = aptSpawn(S, dim, c, 0); if (e) e.due = c.runAt + A.spreadMs + i * 1500; }
+    },
     tick(S, dim, c, now) {
       const A = COOP_APT, k = COOP_T.parN[c.n], piles = c.ents.filter((e) => e.t === 0), pileCap = A.pileCap[0] + A.pileCap[1] * c.n;
-      if (now >= c.next.pile) { c.next.pile = now + A.pileMs / k; if (piles.length < pileCap) aptSpawn(S, dim, c, 0); }
+      if (now >= c.next.pile) { c.next.pile = now + A.pileMs[c.n - 1]; if (piles.length < pileCap) aptSpawn(S, dim, c, 0); }
       // the sofa needs two people: it only comes to a shift that started with two or more
       if (c.n >= 2 && now >= c.next.sofa) { c.next.sofa = now + A.sofaMs / k; if (!c.ents.some((e) => e.t === 2)) { const e = aptSpawn(S, dim, c, 2); if (e) coopToastAll(S, dim, "낡은 소파가 나왔어요! 두 명이 함께 들어야 해요."); } }
       // a pile left alone spreads

@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { COOP, COOP_T, COOP_APT, coopCut, coopGrade, dayOf, mapOf, tilePx, NPC_MAP, lifeNeed };\n";
+  "\nexport const __t = { COOP, COOP_T, COOP_APT, coopCut, coopGrade, dayOf, mapOf, tilePx, NPC_MAP, lifeNeed, stats };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, J = X.COOP.apt, A = X.COOP_APT;
 const VERBOSE = process.argv.includes("-v");
@@ -47,6 +47,8 @@ const lastOf = (pid, key) => { for (let i = views[pid].length - 1; i >= 0; i--) 
 const shiftOf = (w) => { const id = Object.keys(w.S.dims).find((k) => w.S.dims[k].coop); return id ? w.S.dims[id] : null; };
 const at = (p, x, y) => { p.x = x; p.y = y; };
 const atTile = (p, [tx, ty]) => at(p, ...X.tilePx([tx, ty]));
+// where a worker stands to use each station (the tile beside it, in the corridor)
+const RACK = [J.st.rack[0] - 1, J.st.rack[1]], BURN = [J.st.burn[0] + 1, J.st.burn[1]], RECY = [J.st.recycle[0] - 1, J.st.recycle[1]];
 
 // ── the template: stations, start tiles and every flat reachable
 {
@@ -54,15 +56,19 @@ const atTile = (p, [tx, ty]) => at(p, ...X.tilePx([tx, ty]));
   assert.ok(act(w, "c0", { t: "coop_start", k: "apt" }).ok);
   const dim = shiftOf(w), m = dim.map;
   assert.equal(p.map, dim.id);
-  assert.deepEqual([m.w, m.h, m.theme, m.safe], [24, 15, "interior", true]);
-  for (const r of [...J.tpl.ground, ...J.tpl.objects]) assert.equal(r.length, 24);
+  assert.deepEqual([m.w, m.h, m.theme, m.safe], [45, 19, "interior", true]);
+  for (const r of [...J.tpl.ground, ...J.tpl.objects]) assert.equal(r.length, 45);
+  const open = m.reach.reduce((n, v) => n + v, 0);
+  log("apt open tiles", open);
+  assert.ok(open >= 2 * 240, `about 2.5× the old 24×15 flat block (240 open tiles): ${open}`);
+  assert.equal(J.rooms.length, 8, "eight flats");
   for (const [x, y] of J.start) assert.ok(m.reach[y * m.w + x], `start ${x},${y} open`);
   for (const k of Object.keys(J.st)) {
     const [x, y] = J.st[k];
     assert.ok(m.solid[y * m.w + x], `${k} is furniture`);
     assert.ok([[1, 0], [-1, 0], [0, -1], [0, 1]].some(([dx, dy]) => m.reach[(y + dy) * m.w + x + dx]), `${k} usable from a neighbour`);
   }
-  for (const [x0, y0, x1, y1] of J.rooms) { let open = 0; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) open += m.reach[y * m.w + x]; assert.ok(open >= 20, `flat ${x0},${y0}: ${open} open tiles`); }
+  for (const [x0, y0, x1, y1] of J.rooms) { let open = 0; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) open += m.reach[y * m.w + x]; assert.ok(open >= 40, `flat ${x0},${y0}: ${open} open tiles`); }
   assert.equal(m.portals.length, 0, "no way out during the shift but [그만두기]");
 }
 
@@ -70,7 +76,7 @@ const atTile = (p, [tx, ty]) => at(p, ...X.tilePx([tx, ty]));
 {
   const w = world(2), p1 = w.S.players.c1;
   assert.match(act(w, "c1", { t: "coop_start", k: "apt" }).error, /파티장만/);
-  assert.match(act(w, "c0", { t: "coop_start", k: "diner" }).error, /열리지 않은/);
+  assert.match(act(w, "c0", { t: "coop_start", k: "forge" }).error, /열리지 않은/);
   assert.match(act(w, "c0", { t: "coop_act" }).error, /근무 중이 아닙니다/);
   at(w.S.players.c0, 300, 300);
   assert.match(act(w, "c0", { t: "coop_start", k: "apt" }).error, /동동에게 다가가/);
@@ -99,16 +105,16 @@ const atTile = (p, [tx, ty]) => at(p, ...X.tilePx([tx, ty]));
   // a broom can't lift it
   step(w, 300); act(w, "c0", { t: "coop_act" });
   assert.ok(p.toast.some((m) => /빗자루로는/.test(m)), "says why"); step(w, 300);
-  atTile(p, [11, 13]); act(w, "c0", { t: "coop_act" });
+  atTile(p, RACK); act(w, "c0", { t: "coop_act" });
   assert.equal(c.pl.c0.tool, "bin", "the rack swaps the tool");
   step(w, 300);
   at(p, pile.x, pile.y); act(w, "c0", { t: "coop_act" });
   assert.equal(c.pl.c0.hold.length, 1, "binned");
   step(w, 300);
-  atTile(p, [11, 13]); act(w, "c0", { t: "coop_act" });
+  atTile(p, RACK); act(w, "c0", { t: "coop_act" });
   assert.equal(c.pl.c0.tool, "bin", "hands full: no swap");
   step(w, 300);
-  atTile(p, [2, 13]); act(w, "c0", { t: "coop_act" });
+  atTile(p, BURN); act(w, "c0", { t: "coop_act" });
   assert.equal(c.pl.c0.hold.length, 0);
   assert.equal(c.score, A.bundlePts, "one bundle burnt: 10");
   assert.ok(Math.abs(c.pl.c0.pts - 10) < 1e-6, "all of it credited to the one who did the work");
@@ -132,7 +138,7 @@ for (const n of [2, 3, 4]) {
   for (const pid of w.pids) assert.equal(S.players[pid].map, dim.id, `${pid} inside`);
   assert.deepEqual(w.pids.map((pid) => c.pl[pid].tool), ["broom", "bin", "broom", "bin"].slice(0, n));
   assert.equal(c.n, n);
-  assert.equal(X.coopCut(c, 3), Math.round(900 * X.COOP_T.parN[n] * 0.88));
+  assert.equal(X.coopCut(c, 3), Math.round(J.par * (J.parN || X.COOP_T.parN)[n] * 0.88));
   assert.match(act(w, "c0", { t: "coop_start", k: "apt" }).error, /동동에게|이미/, "one shift per party");
   if (n !== 2) continue;
   step(w, X.COOP_T.briefMs + A.sofaMs / X.COOP_T.parN[2] + 200);
@@ -161,7 +167,7 @@ for (const n of [2, 3, 4]) {
   const pile = c.ents.find((e) => e.t === 0), [a, b] = [S.players.c0, S.players.c1];
   at(a, pile.x, pile.y); for (let i = 0; i < 3; i++) { act(w, "c0", { t: "coop_act" }); step(w, 300); }
   at(b, pile.x, pile.y); act(w, "c1", { t: "coop_act" }); step(w, 300);
-  atTile(b, [21, 13]); act(w, "c1", { t: "coop_act" });
+  atTile(b, RECY); act(w, "c1", { t: "coop_act" });
   assert.equal(c.score, Math.round(10 * 1.5), "recycling pays ×1.5");
   while (c.state !== "end") {
     step(w, 1000);
@@ -184,25 +190,89 @@ for (const n of [2, 3, 4]) {
   assert.equal(lastOf("c0", "cj"), 0, "the HUD goes away");
 }
 
-/** A bot shift: brooms sweep the nearest pile, bins carry and dump at the recycling box, both lift the sofa. */
+/**
+ * Walking at a player's own speed (×1.4 in a shift): a BFS distance field over the map's open tiles per goal tile,
+ * then a step of spd·dt along it. `go(o, tile)` is true once o stands on that tile.
+ */
+function walker(dim) {
+  const m = dim.map, W = m.w, fields = new Map();
+  const field = ([gx, gy]) => {
+    const key = gy * W + gx;
+    if (fields.has(key)) return fields.get(key);
+    const d = new Int32Array(W * m.h).fill(-1), q = [key];
+    d[key] = 0;
+    for (let i = 0; i < q.length; i++) {
+      const t = q[i], x = t % W;
+      for (const n of [x + 1 < W ? t + 1 : -1, x > 0 ? t - 1 : -1, t + W < W * m.h ? t + W : -1, t - W]) if (n >= 0 && m.reach[n] && d[n] < 0) { d[n] = d[t] + 1; q.push(n); }
+    }
+    fields.set(key, d);
+    return d;
+  };
+  const tileOf = (o) => [Math.floor(o.x / T), Math.floor(o.y / T)];
+  const steps = (o, goal) => field(goal)[tileOf(o)[1] * W + tileOf(o)[0]];
+  function go(o, goal, ms) {
+    let budget = (X.stats(o).spd * ms) / 1000;
+    const d = field(goal);
+    while (budget > 0) {
+      const [cx, cy] = tileOf(o);
+      let nx = goal[0], ny = goal[1];
+      if (cx !== goal[0] || cy !== goal[1]) {
+        let best = d[cy * W + cx];
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const v = d[(cy + dy) * W + cx + dx]; if (v >= 0 && (best < 0 || v < best)) { best = v; nx = cx + dx; ny = cy + dy; } }
+      }
+      const [px, py] = X.tilePx([nx, ny]), dd = Math.hypot(px - o.x, py - o.y), mv = Math.min(dd, budget);
+      if (dd < 0.01) break;
+      o.x += ((px - o.x) * mv) / dd; o.y += ((py - o.y) * mv) / dd; budget -= mv;
+    }
+    const [cx, cy] = tileOf(o);
+    return cx === goal[0] && cy === goal[1];
+  }
+  const tileAt = (e) => [Math.floor(e.x / T), Math.floor(e.y / T)];
+  return { go, steps, tileOf, tileAt };
+}
+
+/**
+ * A walking bot shift at player speed, acting every 300 ms like a quick human: brooms sweep the nearest unclaimed pile,
+ * bins collect and carry to the 재활용함 (or the 소각로 when it is much nearer), the two nearest lift the sofa; alone, the
+ * one worker swaps tools at the rack. `idle` pids stand still.
+ */
 function botShift(w, idle = []) {
-  const S = w.S, dim = shiftOf(w), c = dim.coop, ps = w.pids.map((pid) => S.players[pid]).filter((o) => o && o.map === dim.id);
+  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), MS = 300;
   step(w, X.COOP_T.briefMs + 100);
   while (c.state !== "end") {
-    const sofa = c.ents.find((e) => e.t === 2), work = ps.filter((o) => o.map === dim.id && !idle.includes(o.pid));
-    if (sofa && work.length >= 2) { for (const o of work.slice(0, 2)) { at(o, sofa.x, sofa.y + 4); act(w, o.pid, { t: "coop_act" }); } }
+    const work = w.pids.map((pid) => S.players[pid]).filter((o) => o && o.map === dim.id && !idle.includes(o.pid));
+    const sofa = c.ents.find((e) => e.t === 2), claimed = new Set();
+    const lifters = sofa && work.length >= 2 ? [...work].sort((a, b) => W.steps(a, W.tileAt(sofa)) - W.steps(b, W.tileAt(sofa))).slice(0, 2) : [];
+    const solo = work.length === 1;
     for (const o of work) {
-      const q = c.pl[o.pid];
-      if (sofa && work.indexOf(o) < 2) continue;
-      const near = (t) => c.ents.filter((e) => e.t === t).sort((x, y) => Math.hypot(x.x - o.x, x.y - o.y) - Math.hypot(y.x - o.x, y.y - o.y))[0];
-      if (q.tool === "broom") { const e = near(0); if (e) { at(o, e.x, e.y); act(w, o.pid, { t: "coop_act" }); } }
-      else if (q.hold.length >= A.binCap || (q.hold.length && !near(1))) { atTile(o, [21, 13]); act(w, o.pid, { t: "coop_act" }); }
-      else { const e = near(1); if (e) { at(o, e.x, e.y); act(w, o.pid, { t: "coop_act" }); } }
+      const q = c.pl[o.pid], act = () => act0(w, o.pid);
+      if (lifters.includes(o)) {
+        if (Math.hypot(o.x - sofa.x, o.y - sofa.y) > X.COOP_T.reach - 4) W.go(o, W.tileAt(sofa), MS);
+        if (lifters.every((l) => Math.hypot(l.x - sofa.x, l.y - sofa.y) <= X.COOP_T.reach)) act();
+        continue;
+      }
+      const nearest = (t) => c.ents.filter((e) => e.t === t && !claimed.has(e.id) && W.steps(o, W.tileAt(e)) >= 0).sort((a, b) => W.steps(o, W.tileAt(a)) - W.steps(o, W.tileAt(b)) || a.id - b.id)[0];
+      const bundles = c.ents.filter((e) => e.t === 1).length;
+      let goal = null, target = null;
+      if (q.tool === "broom") {
+        const pile = nearest(0);
+        if (solo && (bundles >= A.binCap || !pile)) goal = RACK;
+        else if (pile) { claimed.add(pile.id); target = pile; goal = W.tileAt(pile); }
+      } else {
+        const b = nearest(1);
+        if (q.hold.length >= A.binCap || (q.hold.length && !b)) goal = W.steps(o, BURN) * 2 < W.steps(o, RECY) ? BURN : RECY;
+        else if (b) { claimed.add(b.id); target = b; goal = W.tileAt(b); }
+        else if (solo) goal = RACK;
+      }
+      if (!goal) continue;
+      const there = W.go(o, goal, MS);
+      if (there || (target && Math.hypot(o.x - target.x, o.y - target.y) <= X.COOP_T.reach - 4)) act();
     }
-    step(w, 300);
+    step(w, MS);
   }
   return c;
 }
+const act0 = (w, pid) => act(w, pid, { t: "coop_act" });
 
 // ── a bot party clears it; rewards once a day; helpers tip only; the next day pays again
 {
@@ -232,34 +302,23 @@ function botShift(w, idle = []) {
   step(w, X.COOP_T.endMs + 200);
   w.now += DAY;
   for (const o of [a, b]) { const dd = X.mapOf(J.lobby).npcs.find((q) => q.id === "dongdong"); at(o, dd.x * T + 8, dd.y * T + 28); }
-  act(w, "c0", { t: "coop_start", k: "apt" });
+  const r3 = act(w, "c0", { t: "coop_start", k: "apt" }); const c3 = shiftOf(w) && shiftOf(w).coop;
   botShift(w);
+  log("day 2", JSON.stringify(r3), c3 && c3.score, c3 && Object.values(c3.pl).map((q) => [q.pts, q.ok]));
   assert.equal(a.ch.coopDay, X.dayOf(w.now)); assert.deepEqual(a.ch.coopDone, ["apt"]);
   assert.ok(a.ch.inv.filter((s) => s.id === "stone").reduce((n, s) => n + s.n, 0) > stones, "a new day's pay");
 }
 
-// ── solo bot and a full party of 4 both reach a grade (the cut-offs scale)
-for (const n of [1, 4]) {
+// ── walking bots at player speed, 1–4 workers: the opening mess and the spawn rate grow with the party; the cut-offs
+// are set so these bots land on A–S (a real party, slower to decide, lands on B–A)
+for (const n of [1, 2, 3, 4]) {
   const w = world(n);
   act(w, "c0", { t: "coop_start", k: "apt" });
   const c = shiftOf(w).coop;
-  // alone: sweep, then swap to the bin when nothing is left to sweep, and back
-  if (n === 1) {
-    const S = w.S, p = S.players.c0, dim = shiftOf(w);
-    step(w, X.COOP_T.briefMs + 100);
-    while (c.state !== "end") {
-      const q = c.pl.c0, near = (t) => c.ents.filter((e) => e.t === t).sort((x, y) => Math.hypot(x.x - p.x, x.y - p.y) - Math.hypot(y.x - p.x, y.y - p.y))[0];
-      const pile = near(0), bun = near(1);
-      if (q.tool === "broom") { if (pile && c.ents.filter((e) => e.t === 1).length < 5) { at(p, pile.x, pile.y); } else atTile(p, [11, 13]); }
-      else if (q.hold.length >= A.binCap || (q.hold.length && !bun)) atTile(p, [21, 13]);
-      else if (bun) at(p, bun.x, bun.y); else atTile(p, [11, 13]);
-      act(w, "c0", { t: "coop_act" });
-      step(w, 300);
-      assert.equal(p.map, dim.id);
-    }
-  } else botShift(w);
-  log(`${n}: score`, c.score, "grade", X.coopGrade(c), [0, 1, 2, 3].map((i) => X.coopCut(c, i)));
-  assert.ok(X.coopGrade(c) >= 1, `${n} player(s) reach C: ${c.score}`);
+  assert.equal(c.ents.filter((e) => e.t === 0).length, A.open[0] + A.open[1] * n, `${n}: the opening piles`);
+  botShift(w);
+  log(`apt ${n}: score`, c.score, "grade", X.coopGrade(c), [0, 1, 2, 3].map((i) => X.coopCut(c, i)));
+  assert.ok(X.coopGrade(c) >= 3 && X.coopGrade(c) <= 4, `${n} walking bot(s) reach A–S: ${c.score}`);
 }
 
 // ── leaving mid-shift: no reward, back in the lobby; the empty shift closes in 20 s
@@ -303,7 +362,7 @@ for (const n of [1, 4]) {
 // ── defs, and an old sheet's co-op fields cleaned by migrate
 {
   const D = L.defs();
-  assert.deepEqual(D.coop.jobs.apt.slice(0, 4), ["동동아파트 청소", 5, ["broom", "bin"], 900]);
+  assert.deepEqual(D.coop.jobs.apt.slice(0, 4), ["동동아파트 청소", 5, ["broom", "bin"], 1000]);
   assert.deepEqual(D.coop.cuts, [0.3, 0.5, 0.7, 0.88]);
   const S = L.setup(), old = L.newChar("옛알바", []);
   delete old.coopDay; delete old.coopDone; old.v = 11;

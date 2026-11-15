@@ -1426,27 +1426,44 @@ const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통" };
 /** The jobs: name, owner NPC and lobby, shift minutes, the two tools (rotation A B A B), par, combo window, life skill, template. */
 const COOP = {
   apt: {
-    name: "동동아파트 청소", npc: "dongdong", lobby: "dongdong_apt", mins: 5, tools: ["broom", "bin"], par: 900, combo: 20000, skill: "deliver",
-    // stations (tiles; solid furniture, used from a neighbouring tile): 소각로 `<`, 재활용함 `w`, the tool rack `>`
-    st: { burn: [1, 13], recycle: [22, 13], rack: [12, 13] },
-    start: [[11, 12], [13, 12], [11, 13], [13, 13]],
-    // the four flats (spawn rooms, tile rects) above the corridor (y 12–13)
-    rooms: [[1, 2, 9, 5], [14, 2, 22, 5], [1, 7, 9, 10], [14, 7, 22, 10]],
+    name: "동동아파트 청소", npc: "dongdong", lobby: "dongdong_apt", mins: 5, tools: ["broom", "bin"], combo: 20000, skill: "deliver",
+    // cut-offs: par · parN[n] · cuts, tuned on walking bots at player speed (tests/coop.mjs: 1–4 bots score ≈ 265 · 1,960 ·
+    // 3,850 · 4,410, just over S); a real party, slower to decide, lands on B–A. Alone it is slow: one worker swaps tools.
+    par: 1000, parN: { 1: 0.28, 2: 2.0, 3: 3.8, 4: 4.5 },
+    hint: "빗자루로 쓸고, 쓰레기통으로 모아 소각로(서쪽 끝)·재활용함(동쪽 끝)에 버리세요.",
+    // stations (tiles; solid furniture, used from a neighbouring tile): 소각로 `<` at the corridor's west end, 재활용함 `w`
+    // at its east end (44 tiles apart, so the bins really walk), the tool rack `>` in the middle
+    st: { burn: [1, 9], recycle: [43, 9], rack: [22, 9] },
+    start: [[21, 8], [23, 8], [21, 10], [23, 10]],
+    // eight flats (spawn rooms, tile rects): four north of the corridor (y 8–10), four south, a 2-tile door each
+    rooms: [[1, 1, 10, 6], [12, 1, 21, 6], [23, 1, 32, 6], [34, 1, 43, 6], [1, 12, 10, 17], [12, 12, 21, 17], [23, 12, 32, 17], [34, 12, 43, 17]],
     tpl: {
-      name: "동동아파트 (근무 중)", theme: "interior", style: "lobby", bgm: "clean", safe: true, w: 24, h: 15, entry: [12, 12],
-      ground: ["ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "ffuuuuuuuffffffqqqqqqqff", "ffuuuuuuuffffffqqqqqqqff", "ffuuuuuuuffffffqqqqqqqff",
-        "ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "fflllllllffffffuuuuuuuff", "fflllllllffffffuuuuuuuff",
-        "ffffffffffffffffffffffff", "ffffffffffffffffffffffff", "hhhhhhhhhhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhhhhhhhhhh"],
-      objects: ["=+====~===+==+===~====+=", "=pp   g  r    r  g   pp_", "=                      _", "=  o              o    _", "=                      _",
-        "=                      _", "=mmm  mmmm    mmmm  mmm_", "=s                    s_", "=                      _", "=   g              g   _",
-        "=                      _", "=jjj  jjjj    jjjj  jjj_", "=                      _", "=<          >         w_", "________________________"],
+      name: "동동아파트 (근무 중)", theme: "interior", style: "lobby", bgm: "clean", safe: true, w: 45, h: 19, entry: [22, 8],
+      ground: ["fffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff",
+        "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff", "ffuuuuuuuufffqqqqqqqqfffllllllllfffuuuuuuuuff",
+        "fffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffff", "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf",
+        "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf", "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhf", "fffffffffffffffffffffffffffffffffffffffffffff",
+        "fffffffffffffffffffffffffffffffffffffffffffff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff",
+        "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "ffqqqqqqqqfffllllllllfffuuuuuuuufffqqqqqqqqff", "fffffffffffffffffffffffffffffffffffffffffffff",
+        "fffffffffffffffffffffffffffffffffffffffffffff"],
+      objects: ["===+==~===+==~===+==~===+==~===+==~===+==~===", "=pp      r b r      ppbpp      r b r      pp_", "=          b          b          b          _",
+        "=    o     b     o    b    o     b     o    _", "=          b          b          b          _", "=      s   b   s      b      s   b   s      _",
+        "=         gbg         b         gbg         _", "=mmmm  mmmmmmmmm  mmmmmmmmm  mmmmmmmmm  mmmm_", "=                                           _",
+        "=<                    >                    w_", "=                                           _", "=mmmm  mmmmmmmmm  mmmmmmmmm  mmmmmmmmm  mmmm_",
+        "=g         b         gbg         b         g_", "=   s      b      s   b   s      b      s   _", "=          b          b          b          _",
+        "=     o    b    o     b     o    b    o     _", "=          b          b          b          _", "= r      ppbpp      r b r      ppbpp      r _",
+        "_____________________________________________"],
     },
   },
 };
-/** 동동아파트 청소 (C.4, without pests and dust in v1): piles, bundles, the two-person sofa, the mess meter. */
+/**
+ * 동동아파트 청소 (C.4, without pests and dust in v1): piles, bundles, the two-person sofa, the mess meter. By the party
+ * size n at the start: an opening spread of `open[0] + open[1]·n` piles over the flats, a new pile every `pileMs[n − 1]`,
+ * at most `pileCap[0] + pileCap[1]·n` piles at once, the mess cap `messCap[0] + messCap[1]·n`.
+ */
 const COOP_APT = {
-  pileMs: 7000, pileHp: 3, pileCap: [6, 2], spreadMs: 40000, binCap: 5, bundlePts: 10, recycleK: 1.5, holdK: 0.6,
-  sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaBundles: 3, complainMs: 10000, complainPen: 20, messCap: [10, 4],
+  open: [3, 3], pileMs: [9000, 5000, 3600, 2800], pileHp: 3, pileCap: [8, 6], spreadMs: 40000, binCap: 5, bundlePts: 10, recycleK: 1.5, holdK: 0.6,
+  sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaBundles: 3, complainMs: 10000, complainPen: 20, messCap: [16, 8],
 };
 // ───────────────────────────── helpers ─────────────────────────────
 
@@ -14078,7 +14095,7 @@ function coopNpc(S, p, k) {
   const n = mapOfS(S, p.map).npcs.find((o) => o.id === J.npc);
   return n && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < COOP_T.near ? n : null;
 }
-const coopCut = (c, g) => Math.round(COOP[c.k].par * COOP_T.parN[c.n] * COOP_T.cuts[g]);
+const coopCut = (c, g) => Math.round(COOP[c.k].par * (COOP[c.k].parN || COOP_T.parN)[c.n] * COOP_T.cuts[g]);
 /** 0 below C, 1 C · 2 B · 3 A · 4 S. */
 function coopGrade(c) { let g = 0; while (g < 4 && c.score >= coopCut(c, g)) g++; return g; }
 const coopMult = (c) => (1 + 0.1 * Math.min(c.combo, 10)) * (c.state === "fever" ? 1.5 : 1);
@@ -14118,7 +14135,7 @@ function coopStart(S, p, k) {
     c.pl[o.pid] = { name: o.ch.name, tool: J.tools[i % 2], hold: [], pts: 0, idleAt: t0, x, y, actAt: 0, hintAt: 0, ok: false };
     changeMap(S, o, id, x, y);
     o.spdBuff = Math.max(o.spdBuff || 0, endAt);
-    toast(o, `[${J.name}] ${crew.length}명 근무 시작! 빗자루로 쓸고, 쓰레기통으로 모아 소각로·재활용함에 버리세요. (공격 키 / F)`);
+    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint} (공격 키 / F)`);
     o.dirty = true;
   });
   COOP_JOB[k].init(S, dim, c);
@@ -14238,10 +14255,15 @@ function aptSpawn(S, dim, c, t) {
 }
 const COOP_JOB = {
   apt: {
-    init(S, dim, c) { c.next = { pile: c.runAt, sofa: c.runAt + COOP_APT.sofaMs / COOP_T.parN[c.n] }; },
+    init(S, dim, c) {
+      const A = COOP_APT;
+      c.next = { pile: c.runAt + A.pileMs[c.n - 1], sofa: c.runAt + A.sofaMs / COOP_T.parN[c.n] };
+      // the opening mess, more with each worker; staggered so it doesn't all spread at once
+      for (let i = 0; i < A.open[0] + A.open[1] * c.n; i++) { const e = aptSpawn(S, dim, c, 0); if (e) e.due = c.runAt + A.spreadMs + i * 1500; }
+    },
     tick(S, dim, c, now) {
       const A = COOP_APT, k = COOP_T.parN[c.n], piles = c.ents.filter((e) => e.t === 0), pileCap = A.pileCap[0] + A.pileCap[1] * c.n;
-      if (now >= c.next.pile) { c.next.pile = now + A.pileMs / k; if (piles.length < pileCap) aptSpawn(S, dim, c, 0); }
+      if (now >= c.next.pile) { c.next.pile = now + A.pileMs[c.n - 1]; if (piles.length < pileCap) aptSpawn(S, dim, c, 0); }
       // the sofa needs two people: it only comes to a shift that started with two or more
       if (c.n >= 2 && now >= c.next.sofa) { c.next.sofa = now + A.sofaMs / k; if (!c.ents.some((e) => e.t === 2)) { const e = aptSpawn(S, dim, c, 2); if (e) coopToastAll(S, dim, "낡은 소파가 나왔어요! 두 명이 함께 들어야 해요."); } }
       // a pile left alone spreads
