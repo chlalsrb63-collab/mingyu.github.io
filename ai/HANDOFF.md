@@ -25,19 +25,27 @@ agent notification re-read it, and 6–7 agents of 120k–400k tokens each ran a
 7. Unused MCP servers/plugins (Unity, Summer Engine, Higgsfield, Notion, PixelLab, Blender, fullstory…) add ~25k tokens
    to every call — the owner may turn them off for this folder. Ponytail (lazy-senior-dev rules) is installed.
 
-## 0.1 State (2026-11-15, second integrator session)
+## 0.1 State (2026-11-15, end of the second integrator session — `main` full suite 37/37, nothing pushed)
 
-Done this session: full suite 35/35 on `main`; UI screenshots sent to the owner (`game/shots/ui/`); merged
-`claude/new-monsters` (18 real species for jungle/coast/oasis/dunesea; mesa/cloudtemple species have art + rows),
-`claude/social-weekly` (friends/whisper/block, 주간 수첩 Shift+U, enhancement pity in the smith; sheet v14),
-`claude/cosmetics-2` (41 pieces, nine sets; quest/weekly sources still "곧 열립니다").
-In progress / next: `claude/dash` (Space = dash, X = attack) and `claude/maps-b2-1` (mesa + cloudtemple, placing the
-waiting species), then `claude/rift-tiers` (WIP: rift tiers + weekly 4-player boss). Nothing is pushed.
-Left from the merged work: friend/whisper not tested with two real players; chat placeholder still from `index.html`;
-key rebinding + text size (separate UI task, then wire dash/attack into it).
+Merged today: `new-monsters` (18 real species), `social-weekly` (friends/whisper/block, 주간 수첩 Shift+U, enhancement
+pity; sheet v14), `cosmetics-2` (41 pieces), `maps-b2-1` (mesa 붉은바위 황금궁 Lv.36–42 via oasis east, cloudtemple
+운해 사원 Lv.30–36 via cave shaft; their species placed), `dash` (Space = dash 72 px / 4 s / i-frames, X = attack, Z =
+sit, Shift+B = 건배; `me[11]` = dash cooldown), `magic-missile` + `missile-glow` (staff/book basic attacks are homing
+shots kinds 8/9 that deal the blow on impact; glow survives the night grade; preview `_bow.html?m=missile`),
+`keys-textsize` (`keymap.js`: 46 rebindable actions stored as `e.code`, hints via `K(id)`/`data-key`; 작게/보통/크게).
+Designed (not built): `docs/design/bosses-2.md` — 2 field bosses + 2 weekly raids; the owner's decisions are at its top
+(raids at tier 25 ≈ Lv.100 and tier 50; lizard lair in mesa; mantis shrimp on the coast).
+
+**Next, in order:** 1) `claude/rift-tiers` (WIP, worktree `agent-ad45f810f36043d75`, 83+ commits behind: rebase on main
+first; touches 31/40/50/64/70/80/90 + accounts) — its weekly 4-player boss + stagger gauge is the base for the raids.
+2) bosses-2 in the 7 small tasks of its §8 (boss-script runner first, then donut/cone/mark/adds, data, 4 art tasks).
+3) Owner priorities below. Small leftovers: infocard tooltips and lobby text pick up rebinding only after reload; chat
+placeholder literal; friends/whisper untested with two real players; dash trail faint; the preview pages log a 404.
+**Agent worktrees from `isolation: "worktree"` start at origin/main (stale) — first step of every brief: `git rebase main`.**
+Only the owner adds jobs (Codex deleted several and builds the hammer jobs).
 
 **Owner's priorities:** content + HUD + user-friendly UI/UX first. The 경매장 (auction house) is **on hold**. After the
-paused work: key rebinding/text size, life → combat links and co-op part-time jobs (`life-and-coop.md` C1–C3), skill
+paused work: life → combat links and co-op part-time jobs (`life-and-coop.md` C1–C3), skill
 design/effects cleanup, more quests, then the remaining batch-2 maps. Codex is designing the 7th weapon **해머 / 파괴자**
 (`ai/prompts/hammer-destroyer.md`); our UI is already data-driven for it. Level balancing waits until more maps exist
 (`docs/design/level-bands.md`).
