@@ -31,7 +31,7 @@ for (const q of D.quests) {
   lastLv = D.mobs[q.mob].tier;
 }
 // retired stand-ins stay as rows for old collections; the mesa / cloudtemple species wait for their maps
-const NOT_PLACED = new Set("catsplit_gold toadbrood_poison mothface_bile ribdeer_bile lambmaw_bone eyecrow_ash twingoat_gold bearmaw_gold crabskull_blood fishwalker_frost eelknot_frost squidrat_blood gatorhalf_steel spiderhand_bone owlstare_gold fishwalker_blood crabskull_frost moleworm_gold beadmonkey wingcrane mistiger spinescorp ribvulture crownpeacock".split(" "));
+const NOT_PLACED = new Set("catsplit_gold toadbrood_poison mothface_bile ribdeer_bile lambmaw_bone eyecrow_ash twingoat_gold bearmaw_gold crabskull_blood fishwalker_frost eelknot_frost squidrat_blood gatorhalf_steel spiderhand_bone owlstare_gold fishwalker_blood crabskull_frost moleworm_gold spinescorp ribvulture crownpeacock".split(" "));
 for (const k of Object.keys(D.mobs)) assert.ok(homes[k] || NOT_PLACED.has(k), "every monster is placed on some map: " + k);
 
 // ── walk the whole world: from each arrival point, every door of that map can be reached on foot,
@@ -211,10 +211,10 @@ JSON.stringify(L.removePlayer(S, PID));
     assert.ok(m.spawns.some((sp) => sp.k === w.rare), id + ": the rare kind keeps a chest");
   }
   // the cloud temple: no cloud can be walked on, the south door stands on a cape in the cloud, the summit's boss waits behind one neck
-  const ct = maps.cloudtemple, hall = ct.courts[0], boss = ct.spawns.find((sp) => sp.k === "lionhand_frost");
+  const ct = maps.cloudtemple, hall = ct.courts[0], boss = ct.spawns.find((sp) => sp.k === "mistiger");
   for (let y = 0; y < ct.h; y++) for (let x = 0; x < ct.w; x++) if (ct.reach[y * ct.w + x]) assert.ok(ct.g[y][x] !== "w", `cloudtemple: reachable cloud at ${x},${y}`);
   assert.ok([...ct.g[ct.h - 6]].filter((c) => c === "w").length > ct.w * 0.6 && ct.gates.south.a[0][1] > ct.h - 8, "the cloud sea fills the south but for the cape");
-  assert.ok(D.mobs.lionhand_frost.boss && boss && boss.r[0] > hall.x && boss.r[0] < hall.x + hall.w && boss.r[1] > hall.y && boss.r[1] < hall.y + hall.h, "the summit's boss stands in the hall");
+  assert.ok(D.mobs.mistiger.boss && boss && boss.r[0] > hall.x && boss.r[0] < hall.x + hall.w && boss.r[1] > hall.y && boss.r[1] < hall.y + hall.h, "the summit's boss stands in the hall");
   let mouth = 0;
   for (let x = hall.x; x < hall.x + hall.w; x++) { if (ct.o[hall.y + hall.h - 1][x] === " ") mouth++; assert.equal(ct.o[hall.y][x], "C"); }
   for (let y = hall.y; y < hall.y + hall.h; y++) assert.ok(ct.o[y][hall.x] === "C" && ct.o[y][hall.x + hall.w - 1] === "C", "the summit hall is walled");

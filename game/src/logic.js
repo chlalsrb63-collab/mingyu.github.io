@@ -503,7 +503,7 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "lionhand_gold" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -644,17 +644,14 @@ const MOBS = {
   // (a recoloured kind must outrank the body it borrows — tests/hard.mjs — so the temple's lowest and its flyer are a hound and an owl,
   // not the doc's squirrels and winged serpent; the mesa's owl is in fire because owlstare_gold is the dune sea's)
   // to be balanced later (docs/design/level-bands.md). ribdeer_frost and serpentwing_bone are the rare kinds (pocket keepers for now)
-  bonehound_frost: { name: "안개 사냥개", sp: "bonehound", tint: "frost", lv: 30, hp: 1700, atk: 100, def: 16, spd: 60, xp: 790, gold: [64, 114], aggro: 100, range: 18, cd: 950, leap: 104 },
   splitboar_ash: { name: "먹빛 반쪽 멧돼지", sp: "splitboar", tint: "ash", lv: 31, hp: 1850, atk: 100, def: 16, spd: 48, xp: 850, gold: [66, 118], aggro: 92, range: 19, cd: 1100, charge: 112 },
-  owlstare_frost: { name: "흰 목 꺾인 올빼미", sp: "owlstare", tint: "frost", lv: 32, hp: 1700, atk: 102, def: 14, spd: 42, xp: 910, gold: [70, 124], aggro: 98, range: 76, cd: 1700, fly: true, volley: true },
   ribdeer_gold: { name: "단풍 갈비뼈 사슴", sp: "ribdeer", tint: "gold", lv: 33, hp: 2100, atk: 102, def: 24, spd: 32, xp: 980, gold: [74, 130], aggro: 84, range: 20, cd: 1400, slam: 40 },
   eelknot_gold: { name: "비단 뱀장어 매듭", sp: "eelknot", tint: "gold", lv: 34, hp: 1900, atk: 106, def: 16, spd: 40, xp: 1050, gold: [78, 136], aggro: 98, range: 76, cd: 1800, volley: true },
   ribdeer_frost: { name: "흰 갈비뼈 사슴", sp: "ribdeer", tint: "frost", lv: 34, hp: 2300, atk: 106, def: 26, spd: 34, xp: 1400, gold: [110, 190], aggro: 86, range: 20, cd: 1400, slam: 42 },
   bearmaw_ash: { name: "종지기 곰", sp: "bearmaw", tint: "ash", lv: 35, hp: 2700, atk: 108, def: 28, spd: 28, xp: 1130, gold: [82, 144], aggro: 80, range: 21, cd: 1500, slam: 42, pool: 26, poolKind: 1, charge: 110 },
-  lionhand_frost: { name: "운해의 범", sp: "lionhand", tint: "frost", lv: 36, hp: 36000, atk: 176, def: 36, spd: 40, xp: 20000, gold: [2800, 4200], aggro: 135, range: 30, cd: 1400, resp: 210000, boss: true, gear: 1, charge: 150, leap: 120, fan: 150, pool: 30, poolKind: 2 },
-  spiderhand_fire: { name: "붉은 손가락 거미", sp: "spiderhand", tint: "fire", lv: 36, hp: 2500, atk: 108, def: 18, spd: 56, xp: 1220, gold: [86, 150], aggro: 94, range: 18, cd: 1000, leap: 96 },
+  spinescorp_fire: { name: "붉은 전갈 등뼈", sp: "spinescorp", tint: "fire", lv: 36, hp: 2500, atk: 110, def: 20, spd: 58, xp: 1200, gold: [86, 150], aggro: 96, range: 18, cd: 950, charge: 114 },
+  ribvulture_fire: { name: "붉은 독수리 갈비", sp: "ribvulture", tint: "fire", lv: 38, hp: 2400, atk: 114, def: 18, spd: 46, xp: 1350, gold: [90, 158], aggro: 98, range: 76, cd: 1400, fly: true, shot: true },
   foxtwine_fire: { name: "붉은 꼬인 여우", sp: "foxtwine", tint: "fire", lv: 37, hp: 2600, atk: 112, def: 18, spd: 62, xp: 1300, gold: [90, 158], aggro: 98, range: 17, cd: 850, leap: 96 },
-  owlstare_fire: { name: "붉은바위 목 꺾인 올빼미", sp: "owlstare", tint: "fire", lv: 38, hp: 2500, atk: 116, def: 18, spd: 42, xp: 1400, gold: [94, 164], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
   twingoat_blood: { name: "벼랑 붉은 염소", sp: "twingoat", tint: "blood", lv: 39, hp: 3100, atk: 116, def: 28, spd: 44, xp: 1450, gold: [95, 166], aggro: 90, range: 20, cd: 1100, charge: 112 },
   sowseer_gold: { name: "금박 암퇘지", sp: "sowseer", tint: "gold", lv: 40, hp: 3400, atk: 118, def: 32, spd: 30, xp: 1500, gold: [96, 168], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
   serpentwing_bone: { name: "백골 날개 구렁이", sp: "serpentwing", tint: "bone", lv: 40, hp: 3200, atk: 120, def: 22, spd: 46, xp: 2000, gold: [130, 220], aggro: 100, range: 78, cd: 1800, fly: true, volley: true },
@@ -5031,7 +5028,7 @@ const GEN = {
   cloudtemple: { make: wilds, route: "mesa", band: [30, 36], stones: 3, stoneNames: ["산문", "탑전 마당", "종루"], cfg: () => {
     const W = 176, H = 128;
     const tierAt = (x, y, e = 0.5) => { const f = 0.55 * (x / W) + 0.6 * (1 - y / H) + (e - 0.5) * 0.06; return f < 0.34 ? 0 : f < 0.5 ? 1 : f < 0.66 ? 2 : f < 0.84 ? 3 : 4; };
-    const SQ = "bonehound_frost", BOAR = "splitboar_ash", CRANE = "owlstare_frost", DEER = "ribdeer_gold", EEL = "eelknot_gold", BEAR = "bearmaw_ash";
+    const SQ = "beadmonkey", BOAR = "splitboar_ash", CRANE = "wingcrane", DEER = "ribdeer_gold", EEL = "eelknot_gold", BEAR = "bearmaw_ash";
     return {
       id: "cloudtemple", name: "운해 사원", theme: "mist", bgm: "autumn", seed: 60539, w: W, h: H, r: 9.4, warp: 9, wind: 0.6, loops: 0.34, merge: 0.3, cliff: 0.18, gap: 2,
       tiers: 5, tierOpen: 0.15, ramp: 2, roadW: 3, pools: 2.6, level: true, hard: "=", stoneFr: [], widen: "TPBRulYAeΣΘO",
@@ -5039,10 +5036,10 @@ const GEN = {
       river: true, riverAt: [0.4, 0.06], gorge: { first: 20, every: 30, deck: "=" }, thick: () => 1,
       ground: ":", edge: "C", treeCh: "T", treeCh2: "Σ", road: "r", trail: "p", shore: "r", lakes: 7, lakeR: 7, vaults: 13, ruins: 2, tpm: 15.5,
       walls: [["trees", 0.45], ["rocks", 0.35], ["bramble", 0.2]], rocks: ["R", "Θ"], nookWall: "cliff", gates: [["west", "w", 0.62], ["south", "s", 0.74]], exit: "south",
-      mobs: [SQ, BOAR, CRANE, DEER, EEL, BEAR], pondMob: null, chest: "chest_cloudtemple", boss: "lionhand_frost",
+      mobs: [SQ, BOAR, CRANE, DEER, EEL, BEAR], pondMob: null, chest: "chest_cloudtemple", boss: "mistiger",
       // the rare kind keeps the pavilion pockets until the rare-spawn rule exists (maps-batch2 "shared rules")
       campPiece: "pilgrimcamp", vaultKinds: ["pavilion", "lanterncourt", "pavilion", "cache", "menhir", "lanterncourt"], vaultMobs: { pavilion: "ribdeer_frost" },
-      courts: [{ piece: "summithall", at: [0.88, 0.13], boss: "lionhand_frost" }, { piece: "belltower", at: [0.76, 0.3], field: true, guards: [BEAR, 2], stone: 2 },
+      courts: [{ piece: "summithall", at: [0.88, 0.13], boss: "mistiger" }, { piece: "belltower", at: [0.76, 0.3], field: true, guards: [BEAR, 2], stone: 2 },
         { piece: "pagoda", at: [0.6, 0.46], stone: 1 }, { piece: "pagoda", at: [0.52, 0.16] }],
       biomes: { plain: "gate" }, featureP: 0.55, features: ["boulders", "cairn", "stones", "leafpile", "statue", "logs", "bigtree"],
       tierOf: (r) => tierAt(r.px, r.py, r.e),
@@ -5067,7 +5064,7 @@ const GEN = {
     const W = 184, H = 124;
     const tierAt = (x, y, e = 0.5) => { const f = 0.45 * (x / W) + 0.65 * (y / H) + (e - 0.5) * 0.06; return f < 0.36 ? 0 : f < 0.58 ? 1 : f < 0.8 ? 2 : 3; };
     const maze = (x, y) => tierAt(x, y) === 0 && x > 0.14 * W, tops = (x, y) => tierAt(x, y) === 2;
-    const SPIDER = "spiderhand_fire", FOX = "foxtwine_fire", OWL = "owlstare_fire", GOAT = "twingoat_blood", SOW = "sowseer_gold", HORSE = "horsehalf_gold", LION = "lionhand_gold";
+    const SPIDER = "spinescorp_fire", FOX = "foxtwine_fire", OWL = "ribvulture_fire", GOAT = "twingoat_blood", SOW = "sowseer_gold", HORSE = "horsehalf_gold", LION = "lionhand_gold";
     return {
       id: "mesa", name: "붉은바위 황금궁", theme: "mesa", bgm: "oasis", seed: 84223, w: W, h: H, r: 9.6, warp: 9, wind: 0.6, loops: 0.4, merge: 0.3, cliff: 0.16, gap: 2,
       tiers: 4, tierOpen: 0.1, ramp: 2, roadW: 3, pools: 3, level: true, hard: "=", stoneFr: [], stonesAt: [[0.74, 0.3]], widen: "TPBRulYAeΣΘOq",

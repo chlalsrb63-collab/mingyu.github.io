@@ -484,7 +484,7 @@ const GEN = {
   cloudtemple: { make: wilds, route: "mesa", band: [30, 36], stones: 3, stoneNames: ["산문", "탑전 마당", "종루"], cfg: () => {
     const W = 176, H = 128;
     const tierAt = (x, y, e = 0.5) => { const f = 0.55 * (x / W) + 0.6 * (1 - y / H) + (e - 0.5) * 0.06; return f < 0.34 ? 0 : f < 0.5 ? 1 : f < 0.66 ? 2 : f < 0.84 ? 3 : 4; };
-    const SQ = "bonehound_frost", BOAR = "splitboar_ash", CRANE = "owlstare_frost", DEER = "ribdeer_gold", EEL = "eelknot_gold", BEAR = "bearmaw_ash";
+    const SQ = "beadmonkey", BOAR = "splitboar_ash", CRANE = "wingcrane", DEER = "ribdeer_gold", EEL = "eelknot_gold", BEAR = "bearmaw_ash";
     return {
       id: "cloudtemple", name: "운해 사원", theme: "mist", bgm: "autumn", seed: 60539, w: W, h: H, r: 9.4, warp: 9, wind: 0.6, loops: 0.34, merge: 0.3, cliff: 0.18, gap: 2,
       tiers: 5, tierOpen: 0.15, ramp: 2, roadW: 3, pools: 2.6, level: true, hard: "=", stoneFr: [], widen: "TPBRulYAeΣΘO",
@@ -492,10 +492,10 @@ const GEN = {
       river: true, riverAt: [0.4, 0.06], gorge: { first: 20, every: 30, deck: "=" }, thick: () => 1,
       ground: ":", edge: "C", treeCh: "T", treeCh2: "Σ", road: "r", trail: "p", shore: "r", lakes: 7, lakeR: 7, vaults: 13, ruins: 2, tpm: 15.5,
       walls: [["trees", 0.45], ["rocks", 0.35], ["bramble", 0.2]], rocks: ["R", "Θ"], nookWall: "cliff", gates: [["west", "w", 0.62], ["south", "s", 0.74]], exit: "south",
-      mobs: [SQ, BOAR, CRANE, DEER, EEL, BEAR], pondMob: null, chest: "chest_cloudtemple", boss: "lionhand_frost",
+      mobs: [SQ, BOAR, CRANE, DEER, EEL, BEAR], pondMob: null, chest: "chest_cloudtemple", boss: "mistiger",
       // the rare kind keeps the pavilion pockets until the rare-spawn rule exists (maps-batch2 "shared rules")
       campPiece: "pilgrimcamp", vaultKinds: ["pavilion", "lanterncourt", "pavilion", "cache", "menhir", "lanterncourt"], vaultMobs: { pavilion: "ribdeer_frost" },
-      courts: [{ piece: "summithall", at: [0.88, 0.13], boss: "lionhand_frost" }, { piece: "belltower", at: [0.76, 0.3], field: true, guards: [BEAR, 2], stone: 2 },
+      courts: [{ piece: "summithall", at: [0.88, 0.13], boss: "mistiger" }, { piece: "belltower", at: [0.76, 0.3], field: true, guards: [BEAR, 2], stone: 2 },
         { piece: "pagoda", at: [0.6, 0.46], stone: 1 }, { piece: "pagoda", at: [0.52, 0.16] }],
       biomes: { plain: "gate" }, featureP: 0.55, features: ["boulders", "cairn", "stones", "leafpile", "statue", "logs", "bigtree"],
       tierOf: (r) => tierAt(r.px, r.py, r.e),
@@ -520,7 +520,7 @@ const GEN = {
     const W = 184, H = 124;
     const tierAt = (x, y, e = 0.5) => { const f = 0.45 * (x / W) + 0.65 * (y / H) + (e - 0.5) * 0.06; return f < 0.36 ? 0 : f < 0.58 ? 1 : f < 0.8 ? 2 : 3; };
     const maze = (x, y) => tierAt(x, y) === 0 && x > 0.14 * W, tops = (x, y) => tierAt(x, y) === 2;
-    const SPIDER = "spiderhand_fire", FOX = "foxtwine_fire", OWL = "owlstare_fire", GOAT = "twingoat_blood", SOW = "sowseer_gold", HORSE = "horsehalf_gold", LION = "lionhand_gold";
+    const SPIDER = "spinescorp_fire", FOX = "foxtwine_fire", OWL = "ribvulture_fire", GOAT = "twingoat_blood", SOW = "sowseer_gold", HORSE = "horsehalf_gold", LION = "lionhand_gold";
     return {
       id: "mesa", name: "붉은바위 황금궁", theme: "mesa", bgm: "oasis", seed: 84223, w: W, h: H, r: 9.6, warp: 9, wind: 0.6, loops: 0.4, merge: 0.3, cliff: 0.16, gap: 2,
       tiers: 4, tierOpen: 0.1, ramp: 2, roadW: 3, pools: 3, level: true, hard: "=", stoneFr: [], stonesAt: [[0.74, 0.3]], widen: "TPBRulYAeΣΘOq",

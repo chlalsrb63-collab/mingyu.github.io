@@ -156,7 +156,7 @@ const BOUNTY_N = 25;
 /** After this many kills in a hunting ground, its field boss appears. */
 const FB_KILLS = 60;
 /** The monster a hunting ground's kills call out, by map. */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "lionhand_gold" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "coralturtle", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -297,17 +297,14 @@ const MOBS = {
   // (a recoloured kind must outrank the body it borrows — tests/hard.mjs — so the temple's lowest and its flyer are a hound and an owl,
   // not the doc's squirrels and winged serpent; the mesa's owl is in fire because owlstare_gold is the dune sea's)
   // to be balanced later (docs/design/level-bands.md). ribdeer_frost and serpentwing_bone are the rare kinds (pocket keepers for now)
-  bonehound_frost: { name: "안개 사냥개", sp: "bonehound", tint: "frost", lv: 30, hp: 1700, atk: 100, def: 16, spd: 60, xp: 790, gold: [64, 114], aggro: 100, range: 18, cd: 950, leap: 104 },
   splitboar_ash: { name: "먹빛 반쪽 멧돼지", sp: "splitboar", tint: "ash", lv: 31, hp: 1850, atk: 100, def: 16, spd: 48, xp: 850, gold: [66, 118], aggro: 92, range: 19, cd: 1100, charge: 112 },
-  owlstare_frost: { name: "흰 목 꺾인 올빼미", sp: "owlstare", tint: "frost", lv: 32, hp: 1700, atk: 102, def: 14, spd: 42, xp: 910, gold: [70, 124], aggro: 98, range: 76, cd: 1700, fly: true, volley: true },
   ribdeer_gold: { name: "단풍 갈비뼈 사슴", sp: "ribdeer", tint: "gold", lv: 33, hp: 2100, atk: 102, def: 24, spd: 32, xp: 980, gold: [74, 130], aggro: 84, range: 20, cd: 1400, slam: 40 },
   eelknot_gold: { name: "비단 뱀장어 매듭", sp: "eelknot", tint: "gold", lv: 34, hp: 1900, atk: 106, def: 16, spd: 40, xp: 1050, gold: [78, 136], aggro: 98, range: 76, cd: 1800, volley: true },
   ribdeer_frost: { name: "흰 갈비뼈 사슴", sp: "ribdeer", tint: "frost", lv: 34, hp: 2300, atk: 106, def: 26, spd: 34, xp: 1400, gold: [110, 190], aggro: 86, range: 20, cd: 1400, slam: 42 },
   bearmaw_ash: { name: "종지기 곰", sp: "bearmaw", tint: "ash", lv: 35, hp: 2700, atk: 108, def: 28, spd: 28, xp: 1130, gold: [82, 144], aggro: 80, range: 21, cd: 1500, slam: 42, pool: 26, poolKind: 1, charge: 110 },
-  lionhand_frost: { name: "운해의 범", sp: "lionhand", tint: "frost", lv: 36, hp: 36000, atk: 176, def: 36, spd: 40, xp: 20000, gold: [2800, 4200], aggro: 135, range: 30, cd: 1400, resp: 210000, boss: true, gear: 1, charge: 150, leap: 120, fan: 150, pool: 30, poolKind: 2 },
-  spiderhand_fire: { name: "붉은 손가락 거미", sp: "spiderhand", tint: "fire", lv: 36, hp: 2500, atk: 108, def: 18, spd: 56, xp: 1220, gold: [86, 150], aggro: 94, range: 18, cd: 1000, leap: 96 },
+  spinescorp_fire: { name: "붉은 전갈 등뼈", sp: "spinescorp", tint: "fire", lv: 36, hp: 2500, atk: 110, def: 20, spd: 58, xp: 1200, gold: [86, 150], aggro: 96, range: 18, cd: 950, charge: 114 },
+  ribvulture_fire: { name: "붉은 독수리 갈비", sp: "ribvulture", tint: "fire", lv: 38, hp: 2400, atk: 114, def: 18, spd: 46, xp: 1350, gold: [90, 158], aggro: 98, range: 76, cd: 1400, fly: true, shot: true },
   foxtwine_fire: { name: "붉은 꼬인 여우", sp: "foxtwine", tint: "fire", lv: 37, hp: 2600, atk: 112, def: 18, spd: 62, xp: 1300, gold: [90, 158], aggro: 98, range: 17, cd: 850, leap: 96 },
-  owlstare_fire: { name: "붉은바위 목 꺾인 올빼미", sp: "owlstare", tint: "fire", lv: 38, hp: 2500, atk: 116, def: 18, spd: 42, xp: 1400, gold: [94, 164], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
   twingoat_blood: { name: "벼랑 붉은 염소", sp: "twingoat", tint: "blood", lv: 39, hp: 3100, atk: 116, def: 28, spd: 44, xp: 1450, gold: [95, 166], aggro: 90, range: 20, cd: 1100, charge: 112 },
   sowseer_gold: { name: "금박 암퇘지", sp: "sowseer", tint: "gold", lv: 40, hp: 3400, atk: 118, def: 32, spd: 30, xp: 1500, gold: [96, 168], aggro: 88, range: 22, cd: 1500, pool: 30, poolKind: 2 },
   serpentwing_bone: { name: "백골 날개 구렁이", sp: "serpentwing", tint: "bone", lv: 40, hp: 3200, atk: 120, def: 22, spd: 46, xp: 2000, gold: [130, 220], aggro: 100, range: 78, cd: 1800, fly: true, volley: true },
