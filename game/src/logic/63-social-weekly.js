@@ -19,6 +19,28 @@ function playerByName(S, name) {
   for (const pid in S.players) if (lowName(S.players[pid].ch.name) === k) return S.players[pid];
   return null;
 }
+/**
+ * Item links on a chat line (Shift+click in the bag): `it` = [[bag slot, item id]…], at most CHAT_LINKS, each still
+ * that item in the sender's bag when the line is sent. The bag entries themselves, or null when any is not.
+ */
+const CHAT_LINKS = 2;
+function chatLinks(ch, it) {
+  if (it === undefined) return [];
+  if (!Array.isArray(it) || it.length > CHAT_LINKS) return null;
+  const out = [];
+  for (const r of it) {
+    if (!Array.isArray(r) || !Number.isInteger(r[0]) || typeof r[1] !== "string") return null;
+    const e = ch.inv[r[0]];
+    if (!e || e.id !== r[1]) return null;
+    out.push(e);
+  }
+  return out;
+}
+/** A chat line `{n, m}` plus copies of its linked items (`it`, as the bag holds them: the reader's tooltip shows them). */
+function chatLine(ch, m, a, extra) {
+  const it = chatLinks(ch, a.it) || [];
+  return { n: ch.name, m, ...extra, ...(it.length ? { it: it.map((e) => JSON.parse(JSON.stringify(e))) } : {}) };
+}
 /** The chat lines one player may read: guild and party lines of their own, whispers addressed to them, nothing from a blocked name. */
 function chatFor(S, p, pid) {
   const out = [];

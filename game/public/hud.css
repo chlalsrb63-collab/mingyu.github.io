@@ -348,6 +348,8 @@ body.item-drag, body.item-drag * { cursor: grabbing !important; }
 #hint .x::after { transform: rotate(-45deg); }
 #hint p { margin: 4px 0 0; font-size: var(--t12); line-height: 1.45; color: var(--tx2, #d8cfb8); }
 #hint .btns { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 5px; }
+/* an item link in a chat line (windows.js addChat): the rarity colour, the tooltip on hover */
+#chat-log .ilink { cursor: help; text-decoration: underline dotted; text-underline-offset: 2px; }
 #hint .more { flex: 1; min-width: 0; font: var(--t10) var(--pix9); color: var(--tx-hd2, var(--b-mid)); }
 body:not([data-lay="full"]) #hint { top: 64px; }
 #tut p { margin: 3px 0 0; font-size: var(--t12); line-height: 1.4; color: var(--tx2, #d8cfb8); }

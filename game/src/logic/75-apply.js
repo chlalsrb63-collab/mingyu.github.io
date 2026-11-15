@@ -415,7 +415,7 @@ export function applyAction(S, pid, a) {
     case "chat": {
       const text = a.m.trim().slice(0, 80);
       p.chatAt = now;
-      S.chat.push({ n: ch.name, m: text });
+      S.chat.push(chatLine(ch, text, a));
       S.maps[p.map].ev.push(["s", p.eid, text]);
       break;
     }
@@ -476,11 +476,11 @@ export function applyAction(S, pid, a) {
       break;
     case "gchat":
       p.chatAt = now;
-      S.chat.push({ n: ch.name, m: a.m.trim().slice(0, 80), g: ch.guild });
+      S.chat.push(chatLine(ch, a.m.trim().slice(0, 80), a, { g: ch.guild }));
       break;
     case "pchat":
       p.chatAt = now;
-      S.chat.push({ n: ch.name, m: a.m.trim().slice(0, 80), pt: p.party });
+      S.chat.push(chatLine(ch, a.m.trim().slice(0, 80), a, { pt: p.party }));
       break;
     case "qs":
       if (a.j !== undefined) [ch.qs[a.i], ch.qs[a.j]] = [ch.qs[a.j], ch.qs[a.i]];
