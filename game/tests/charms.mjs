@@ -559,7 +559,7 @@ function appraised(W, src, want) {
   while (!W.cs.pending) { full(); delete dim.got[W.PID]; X.dimChest(W.S, dim, W.p); opened++; assert.ok(opened < 200); }
   assert.equal(dim.got[W.PID], 1);
   assert.equal(W.cs.pending.src, 3); assert.equal(W.cs.pending.tier, 20); assert.equal(W.cs.pending.rev, 0);
-  assert.equal(W.ch.inv.length, 40);
+  assert.equal(W.ch.inv.length, 41, "the chest's gear is kept in an extra slot, not lost (60-content.js rewardGear)");
   // the box is taken and the bag is full: the chest stays shut, nothing is rolled, nothing is marked
   W.p.toast.length = 0;
   const day = clone(W.ch.dim), gold = W.ch.gold, chN = W.S.chN;
