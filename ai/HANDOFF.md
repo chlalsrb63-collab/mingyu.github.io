@@ -294,3 +294,7 @@ the scroll only fits slots its prefix may roll on; set pieces excluded; **costs 
 shown in the window, validated server-side).
 **Enchant NPC (owner):** name **지선** — a cute 햄스터 NPC who stays at the 대장간 (forge) and is **대장장이 볼칸's younger sister** (owner wrote 불칸 = the town smith `smith` "대장장이 볼칸", 34-maps-world.js:231).
 Give her a look (햄스터 species), a few talk lines mentioning 볼칸 as her older brother, and a one-line mention in 볼칸's own talk if cheap.
+**Collaboration with Codex (owner 2026-11-16):** the whole item/prefix/enchant overhaul is written up in `docs/design/item-system-spec-2026-11-16.md`
+(requirements, contracts, who does what). **Claude agents:** W0 infrastructure (running) and W3-B (defense 39 + helm 8 + phase-2 hooks 8).
+**Codex:** W5 content plan (start now), W1 affix categories, W2 enchant + NPC 지선, W3-A offense 48, W4 balance — tasks are in ai/TASKS.md CODEX.
+After W0 merges, remove its claim row from ai/TASKS.md and write "P1a merged <hash>" here so Codex starts W1/W2/W3-A.

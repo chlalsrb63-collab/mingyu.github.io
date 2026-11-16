@@ -20,6 +20,8 @@
 | Codex | 초반 캐릭터 Lv.30 ↔ 무기 숙련도 Lv.20 도달 구간 검증 및 조정 | `codex/early-mastery` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | 레벨대별 사냥 동선과 Lv.200 전용 사냥터 | `codex/hunt-routes` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Claude | 맵 그림 1단계 (수정굴·벽돌 회랑·폭포 고원 타일, `docs/design/maps-v2.md` 표 C) | `claude/maps-art-1` · 에이전트 워크트리 | 2026-11-15 |
+| Claude (통합 세션 2) | **접두사 기반 공사 W0** (`docs/design/item-system-spec-2026-11-16.md` §4) — `LEGEND/PFX/PFX_FN`, `51-prefix.js`, 디스패처, 중복 방지. 끝나기 전엔 `10-tables.js` LEGEND·AFFIX, `50-loot-combat.js` rollGear·lootFor·hurtMob·hurtPlayer, `gearBonus`, `80-simulation.js`를 건드리지 말 것 | 에이전트 워크트리 | 2026-11-16 |
+| Claude (통합 세션 2) | **접두사 효과 W3-B** — 방어형 39 + 투구 8 + 2단계 훅 8종 (W0 병합 뒤 시작; 새 파트 파일 ≥ 52) | 에이전트 워크트리 | 2026-11-16 |
 
 ## 이식 — `codex/combat-effects`(`c62b345`, 옛 v11 규칙 위)에서 지금 `main`(v12)으로 옮길 것
 
@@ -34,6 +36,12 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 - [ ] (Claude·Gemini 스킬 이펙트 작업 중 — Codex 건너뛸 것) `89afb18` 스킬 이펙트·타격음 다듬기를 지금의 `skillfx.js` 코드 번호에 맞춰
 
 ## CODEX (구현 · 테스트)
+
+- [ ] **[아이템 개편 W5] 추가 컨텐츠 기획 문서** `docs/design/item-content-plan-2026-11-16.md` (≤ 250줄, 코드 없음). 먼저 `docs/design/item-system-spec-2026-11-16.md`와 `prefix-effects.md`를 읽고 §6의 주제(새 공격형 옵션 키, 스크롤 입수처, 인챈트 확장, 유니크 요소, 엔드게임 싱크, 테마 세트, 지선·볼칸 이야기, UI)를 기획. 오너 결정이 필요한 것은 끝에 "결정 필요" 표. 브랜치 `codex/item-content-plan`. 지금 시작 가능.
+- [ ] **[아이템 개편 W1] 보조 옵션 3분류와 공격형 쿼터** (spec §3.1). `AFFIX`에 `cat`(공격/방어/보조), `AFF_O_QUOTA`(무기 1/2/3 · 장갑 1/2/2 · 반지 1/1/2 · 방어 부위 1/1/1), 어떤 장비든 공격형 ≥ 1줄, 숫돌 재굴림은 분류 유지, 정보창 줄 분류 표시. 시트 모양 변경 없음(옛 장비 줄 그대로). 테스트 `tests/itemlevel.mjs` 확장. **W0 병합 신호 뒤에** 시작(`ai/HANDOFF.md §0.11`에 "P1a merged"). 브랜치 `codex/affix-categories`.
+- [ ] **[아이템 개편 W2] 인챈트 스크롤 · NPC 지선 · 창 · 골드 비용** (spec §3.3). `es_<key>` 스크롤(늦은 파트에서 `LEGEND`로 생성), 낮은 확률 드랍, 희귀 이상만 · 전설/유니크는 접두사 덮어쓰기 · 희귀는 랜덤 줄 +1 후 전설 승급, 슬롯 제한, 같은 접두사 거절, **아이템 레벨에 비례한 골드**, 대장간 상주 햄스터 NPC **지선**(볼칸의 여동생), 인챈트 창(미리보기 → 확인). 테스트 필수. W0·W1 병합 뒤. 브랜치 `codex/enchant`.
+- [ ] **[아이템 개편 W3-A] 접두사 효과 공격형 48종 구현** (`docs/design/prefix-effects.md` §3.1, 무기·반지·장갑). W0가 정한 레시피(파트 파일 ≥ 52, `Object.assign`)로 효과군(BLOW → HIT → KILL → SKILL …)마다 브랜치 하나·테스트 하나(`tests/prefix-offense-*.mjs`). 수치는 첫 추정 — 밸런스는 W4. W0 병합 뒤. 브랜치 `codex/prefix-offense-<군>`.
+- [ ] **[아이템 개편 W4] 아이템 밸런스 패스** (spec §5). 접두사 S/M/L 시뮬레이션 검증, 카테고리 상한 테스트, 단련의·약탈의·스크롤 드랍·인챈트 수수료 경제 점검, 유니크/전설/스크롤 드랍 체감(시간당 개수) 제안, 도적 단일 대상 정책 유지. 기록 `docs/design/balance-items-2026-11.md`. W3 첫 병합부터 병행. 브랜치 `codex/item-balance`.
 
 - [x] 녹음 BGM만 재생하고 LAN에서도 같은 음원 사용. [검증 및 2.5D 검토](reports/codex-recordings-only.md)
 
