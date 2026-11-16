@@ -266,7 +266,7 @@ function arcA2(pick) {
   const home = arcA2(0), stay = arcA2(1);
   for (const W of [home, stay]) W.ch.life.cook.lv = 10;
   const has = (W) => W.self().jb[1].some((r) => r[0] === "jb_neon_supply");
-  assert.ok(!has(home) && has(stay), "jb_neon_supply follows the answer");
+  assert.ok(!has(home) && !has(stay), "jb_neon_supply is a retired carry job: no board offers it (알바 is the mini-games now, 2026-11-17)");
 }
 // ── retired kill quests (P3): an old sheet mid-way or done loads clean; the quests they gated open on their own
 {

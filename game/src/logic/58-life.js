@@ -440,7 +440,9 @@ function jbEnsure(S, p) {
   p.dirty = true;
 }
 /** Does a sheet qualify for template `t`: its level (hunts: the character's), for a trust row the NPC's trust, for a story row the quest answer. */
-const jbQual = (ch, t) => (t.kind === "hunt" ? ch.lvl : ch.life[t.sk].lv) >= t.lv && !(t.rep > repOf(ch, t.npc))
+/** 2026-11-17 (owner): the carry / make / fish / deliver / scout / chore jobs are retired — 알바 is now the 일일 아르바이트 mini-games (66-alba.js); hunts live in the 토벌 의뢰 window, 장날 rows stay. A job already in hand can still be finished. */
+const JB_RETIRED = new Set(["bring", "make", "fish", "deliver", "scout", "chore"]);
+const jbQual = (ch, t) => (t.fair || !JB_RETIRED.has(t.kind)) && (t.kind === "hunt" ? ch.lvl : ch.life[t.sk].lv) >= t.lv && !(t.rep > repOf(ch, t.npc))
   && (!t.flag || (!!ch.sq.done[t.flag[0]] && (ch.sq.flags[t.flag[0]] | 0) === t.flag[1]));
 /** Jobs done today that count toward JB_PAY.perDay (장날 rows do not). */
 const jbDoneN = (jb) => jb.done.filter((id) => !JB[id].fair).length;
