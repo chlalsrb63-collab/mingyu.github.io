@@ -122,15 +122,13 @@ function gearWord(g) {
   const af = Array.isArray(g.af) && g.af.length ? AFFIX.find((x) => x[0] === g.af[0][0]) : null;
   return g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : af ? `${af[2]} ` : "";
 }
-/** What follows the item's name: a unique's suffix. */
-const gearTail = (g) => (g.q === 5 && g.un ? ` ${UNIQ.suf[g.un[0]][0]}` : "");
-/** "+3 뇌명의 강철 양손검" (a unique: "뇌명의 강철 양손검 파멸의 낙인") */
+/** "+3 뇌명의 강철 양손검" (a 유니크 is named like a 전설: by its power's word) */
 function gearName(g) {
-  return (g.enh > 0 ? `+${g.enh} ` : "") + gearWord(g) + ITEMS[g.id].name + gearTail(g);
+  return (g.enh > 0 ? `+${g.enh} ` : "") + gearWord(g) + ITEMS[g.id].name;
 }
 /** "희귀 잔혹한 강철 양손검 +6" — the whole name, rarity first and the level last (enhancement news). */
 function gearFull(g) {
-  return ((g.q | 0) > 0 && RARITY[g.q] ? `${RARITY[g.q]} ` : "") + gearWord(g) + ITEMS[g.id].name + gearTail(g) + (g.enh > 0 ? ` +${g.enh}` : "");
+  return ((g.q | 0) > 0 && RARITY[g.q] ? `${RARITY[g.q]} ` : "") + gearWord(g) + ITEMS[g.id].name + (g.enh > 0 ? ` +${g.enh}` : "");
 }
 /** Plain gear: no rarity, no enhancement, nothing socketed — what "sell all" sells. */
 const junk = (s) => isGear(s.id) && !(s.q | 0) && !(s.enh | 0) && !(s.ru || []).some(Boolean);
@@ -148,14 +146,14 @@ function setFor(it) {
   return null;
 }
 
-/** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`; `hi` rolls in the range's upper half. */
-function rollLine(S, key, ilvl, mul, hi) {
+/** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`. */
+function rollLine(S, key, ilvl, mul) {
   const [, , , min, max, grow] = AFFIX.find((x) => x[0] === key);
-  return [key, Math.max(1, Math.round((min + (hi ? 0.5 + rnd(S) / 2 : rnd(S)) * (max - min) + grow * ilvl) * mul))];
+  return [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * ilvl) * mul))];
 }
 /**
  * Roll one piece of gear: rarity decides how many affixes, `ilvl` (a monster's tier, 1–50) how big and, shown, its item
- * level `il` (+ IL_RANK[rank] for an elite or boss). A 유니크 (q 5) rolls a power (`lg`) and a suffix (`un`), starts with their two strong lines, then two ordinary ones.
+ * level `il` (+ IL_RANK[rank] for an elite or boss). A 전설 or 유니크 also rolls one `lg` power (a 유니크: 4 stronger lines, AFFIX_MUL[5]).
  */
 function rollGear(S, id, q, ilvl, rank = 0) {
   const it = ITEMS[id];
@@ -164,20 +162,9 @@ function rollGear(S, id, q, ilvl, rank = 0) {
   g.q = q;
   g.il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(it.tier | 0) - 1] || 1), 1, 200);
   const pool = AFFIX.slice();
-  if (q === 5) {
-    const keys = Object.keys(LEGEND);
-    g.lg = keys[ri(S, 0, keys.length - 1)];
-    const pk = UNIQ.fx[g.lg];
-    const ok = UNIQ.suf.map((_, i) => i).filter((i) => UNIQ.suf[i][1] !== pk), si = ok[ri(S, 0, ok.length - 1)];
-    g.un = [si];
-    for (const key of [pk, UNIQ.suf[si][1]]) {
-      pool.splice(pool.findIndex((x) => x[0] === key), 1);
-      g.af.push(rollLine(S, key, ilvl, UNIQ_MUL, true));
-    }
-  }
   const [lo, hi] = RARITY_AFFIX[q];
   for (let n = ri(S, lo, hi); n > 0 && pool.length; n--) g.af.push(rollLine(S, pool.splice(ri(S, 0, pool.length - 1), 1)[0][0], ilvl, AFFIX_MUL[q]));
-  if (q === 3) { const keys = Object.keys(LEGEND); g.lg = keys[ri(S, 0, keys.length - 1)]; }
+  if (q === 3 || q === 5) { const keys = Object.keys(LEGEND); g.lg = keys[ri(S, 0, keys.length - 1)]; }
   if (q === 4) g.set = setFor(it);
   if (!isJewel(id)) {
     const r = rnd(S);

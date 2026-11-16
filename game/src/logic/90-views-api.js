@@ -294,9 +294,9 @@ export function defs() {
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: worldMapDefs(),
     // ITEM LEVEL (owner 2026-11-16). A gear entry on the wire carries `il` (shown 1–200 scale); the level it can be worn from is
     //   max(1, entry.il − ilGap)   (what validateAction "eq" checks; an entry without `il` = items[id].req + ilGap, or 1 for req 1)
-    // `rarity` has 6 names (index = entry.q, 0–5; 5 = 유니크, beige). A q 5 entry carries a legendary's power `lg` (legend[lg]) and
-    // `un: [suffix index]` into uniq.suf; its name reads `<legend[lg][0]> <item name> <suf>`, and af[0] / af[1] are the power's and the
-    // suffix's own lines (고유 옵션). Ordinary lines: 마법 2, 희귀 3, 전설 4 (+ lg), 세트 2–3, 유니크 2 after its own 2 (+ lg).
-    ilGap: IL_GAP, uniq: { suf: UNIQ.suf.map((x) => x[0]) },
+    // `rarity` has 6 names (index = entry.q, 0–5; 5 = 유니크, beige). A q 5 entry carries a legendary's power `lg` (legend[lg]) like a
+    // 전설 and is named like one (`<legend[lg][0]> <item name>`); rarities differ only by the number of lines (마법 2, 희귀 3, 전설 4 + lg, 세트 2–3,
+    // 유니크 4 + lg, stronger) and only an item with an `lg` has a name prefix word.
+    ilGap: IL_GAP,
   };
 }

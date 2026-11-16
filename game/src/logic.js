@@ -679,25 +679,19 @@ const AFFIX = [
   ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
 ];
 const RARITY = ["일반", "마법", "희귀", "전설", "세트", "유니크"];
-/** How many ordinary affix lines each rarity rolls: [min, max] (owner 2026-11-16: 마법 exactly 2, 희귀 3, 전설 4; a 유니크 adds its own 2, see UNIQ). */
-const RARITY_AFFIX = [[0, 0], [2, 2], [3, 3], [4, 4], [2, 3], [2, 2]];
-/** What an ordinary line is multiplied by, by rarity: 마법 weak (x0.85), 희귀 as rolled, 전설 and above x1.3. */
-const AFFIX_MUL = [1, 0.85, 1, 1.3, 1.3, 1.3];
 /**
- * 유니크 (rarity 5, beige): a legendary's power PLUS very strong supporting lines (owner 2026-11-16 redesign), never weaker than a 전설
- * in any respect. A piece named `[the power's LEGEND word] item [suffix]`. The entry carries `lg` (one of the LEGEND powers, exactly as a
- * 전설 does, so every power works the same in combat) and `un: [suffix index]`. Its FIRST TWO `af` lines are its own (the client marks
- * them 고유 옵션), each rolled strong (UNIQ_MUL x the normal range, in the upper half): the power's line (`fx`: each power is tied to
- * one affix key) first, then the suffix's. Two ordinary lines follow. The suffix is never drawn on the power's key.
+ * How many ordinary affix lines each rarity rolls: [min, max] (owner 2026-11-16: 마법 exactly 2, 희귀 3, 전설 4, 유니크 4).
+ * Rarities are told apart by the NUMBER of lines only; just an item with a separate strong effect (`lg`, see LEGEND) gets a name prefix.
  */
-const UNIQ = {
-  fx: { chain: "critd", nova: "atkp", greed: "gold", haste: "spd", thorn: "def", feast: "hp", echo: "mp", giant: "atk" },
-  suf: [["파멸의 낙인", "critd"], ["황금왕의 탐욕", "gold"], ["학살의 서약", "atk"], ["철옹성의 맹세", "def"], ["불사의 맹약", "hp"],
-    ["맹금의 눈", "crit"], ["파괴의 의지", "atkp"], ["갈증의 입맞춤", "ls"], ["별무리의 속삭임", "mp"], ["질풍의 발걸음", "spd"]],
-};
-/** The first 유니크 sheets (earlier on 2026-11-16) were `un: [prefix, suffix]` with no power; the prefix index picks the power it loads with (migrate). */
+const RARITY_AFFIX = [[0, 0], [2, 2], [3, 3], [4, 4], [2, 3], [4, 4]];
+/**
+ * What an ordinary line is multiplied by, by rarity: 마법 weak (x0.85), 희귀 as rolled, 전설 and 세트 x1.3.
+ * 유니크 (rarity 5, beige) = a 전설's power (`lg`, named by its LEGEND word, works the same in combat) plus stronger lines: x1.45,
+ * which makes its 4 lines about 11 % over a 전설's 4 (owner: 10-15 %).
+ */
+const AFFIX_MUL = [1, 0.85, 1, 1.3, 1.3, 1.45];
+/** The first 유니크 sheets (earlier on 2026-11-16) were `un: [prefix, suffix]` with no power; the prefix index picks the power they load with (migrate). `un` is dropped now. */
 const UNIQ_OLD_LG = ["nova", "giant", "thorn", "feast", "echo", "chain", "haste", "feast", "greed", "echo"];
-const UNIQ_MUL = 1.4;
 /** The chance a gear roll is a 유니크, by rank (0 ordinary monster, 1 elite or chest, 2 boss): about 1/12 to 1/20 of the 전설/세트 chance at each rank, x (1 + MF/100). */
 const UNIQ_P = [0.001, 0.004, 0.01];
 /**
@@ -7669,12 +7663,11 @@ function migrate(ch) {
     // item level (no sheet version bump: a missing `il` is derived, so an old piece asks what it always did — gearIl)
     out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, 200) : gearIl(out);
     if (LEGEND[g.lg]) out.lg = g.lg;
-    // a 유니크 keeps its power (`lg`) and suffix word `un: [s]`; the first sheets had `un: [prefix, suffix]` and no power: the prefix picks one (UNIQ_OLD_LG).
-    // One without a valid power or suffix is no unique (it stays a 희귀 with its lines, no power).
-    if (out.q === 5) {
-      const u = Array.isArray(g.un) ? g.un : [], old = u.length > 1, s = u[old ? 1 : 0], lg = out.lg || (old ? UNIQ_OLD_LG[u[0]] : "");
-      if (Number.isInteger(s) && s >= 0 && s < UNIQ.suf.length && lg) { out.lg = lg; out.un = [s]; }
-      else { out.q = 2; delete out.lg; }
+    // a 유니크 keeps its lines, `il` and power (`lg`); `un` (words of the first 유니크 sheets) is dropped. The first sheets had `un: [prefix, suffix]`
+    // and no power: the prefix picks one (UNIQ_OLD_LG). One with no power to keep or derive is no unique (it stays a 희귀 with its lines).
+    if (out.q === 5 && !out.lg) {
+      const p = Array.isArray(g.un) && g.un.length > 1 ? g.un[0] : -1, lg = Number.isInteger(p) ? UNIQ_OLD_LG[p] : "";
+      if (lg) out.lg = lg; else out.q = 2;
     }
     // cu: 1 cursed by a failed enhancement (no more tries until lifted), 2 lifted (the next try +ENH_UNCURSE %p) — v19
     if ((g.cu | 0) > 0) out.cu = clamp(g.cu | 0, 1, 2);
@@ -9166,15 +9159,13 @@ function gearWord(g) {
   const af = Array.isArray(g.af) && g.af.length ? AFFIX.find((x) => x[0] === g.af[0][0]) : null;
   return g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : af ? `${af[2]} ` : "";
 }
-/** What follows the item's name: a unique's suffix. */
-const gearTail = (g) => (g.q === 5 && g.un ? ` ${UNIQ.suf[g.un[0]][0]}` : "");
-/** "+3 뇌명의 강철 양손검" (a unique: "뇌명의 강철 양손검 파멸의 낙인") */
+/** "+3 뇌명의 강철 양손검" (a 유니크 is named like a 전설: by its power's word) */
 function gearName(g) {
-  return (g.enh > 0 ? `+${g.enh} ` : "") + gearWord(g) + ITEMS[g.id].name + gearTail(g);
+  return (g.enh > 0 ? `+${g.enh} ` : "") + gearWord(g) + ITEMS[g.id].name;
 }
 /** "희귀 잔혹한 강철 양손검 +6" — the whole name, rarity first and the level last (enhancement news). */
 function gearFull(g) {
-  return ((g.q | 0) > 0 && RARITY[g.q] ? `${RARITY[g.q]} ` : "") + gearWord(g) + ITEMS[g.id].name + gearTail(g) + (g.enh > 0 ? ` +${g.enh}` : "");
+  return ((g.q | 0) > 0 && RARITY[g.q] ? `${RARITY[g.q]} ` : "") + gearWord(g) + ITEMS[g.id].name + (g.enh > 0 ? ` +${g.enh}` : "");
 }
 /** Plain gear: no rarity, no enhancement, nothing socketed — what "sell all" sells. */
 const junk = (s) => isGear(s.id) && !(s.q | 0) && !(s.enh | 0) && !(s.ru || []).some(Boolean);
@@ -9192,14 +9183,14 @@ function setFor(it) {
   return null;
 }
 
-/** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`; `hi` rolls in the range's upper half. */
-function rollLine(S, key, ilvl, mul, hi) {
+/** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`. */
+function rollLine(S, key, ilvl, mul) {
   const [, , , min, max, grow] = AFFIX.find((x) => x[0] === key);
-  return [key, Math.max(1, Math.round((min + (hi ? 0.5 + rnd(S) / 2 : rnd(S)) * (max - min) + grow * ilvl) * mul))];
+  return [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * ilvl) * mul))];
 }
 /**
  * Roll one piece of gear: rarity decides how many affixes, `ilvl` (a monster's tier, 1–50) how big and, shown, its item
- * level `il` (+ IL_RANK[rank] for an elite or boss). A 유니크 (q 5) rolls a power (`lg`) and a suffix (`un`), starts with their two strong lines, then two ordinary ones.
+ * level `il` (+ IL_RANK[rank] for an elite or boss). A 전설 or 유니크 also rolls one `lg` power (a 유니크: 4 stronger lines, AFFIX_MUL[5]).
  */
 function rollGear(S, id, q, ilvl, rank = 0) {
   const it = ITEMS[id];
@@ -9208,20 +9199,9 @@ function rollGear(S, id, q, ilvl, rank = 0) {
   g.q = q;
   g.il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(it.tier | 0) - 1] || 1), 1, 200);
   const pool = AFFIX.slice();
-  if (q === 5) {
-    const keys = Object.keys(LEGEND);
-    g.lg = keys[ri(S, 0, keys.length - 1)];
-    const pk = UNIQ.fx[g.lg];
-    const ok = UNIQ.suf.map((_, i) => i).filter((i) => UNIQ.suf[i][1] !== pk), si = ok[ri(S, 0, ok.length - 1)];
-    g.un = [si];
-    for (const key of [pk, UNIQ.suf[si][1]]) {
-      pool.splice(pool.findIndex((x) => x[0] === key), 1);
-      g.af.push(rollLine(S, key, ilvl, UNIQ_MUL, true));
-    }
-  }
   const [lo, hi] = RARITY_AFFIX[q];
   for (let n = ri(S, lo, hi); n > 0 && pool.length; n--) g.af.push(rollLine(S, pool.splice(ri(S, 0, pool.length - 1), 1)[0][0], ilvl, AFFIX_MUL[q]));
-  if (q === 3) { const keys = Object.keys(LEGEND); g.lg = keys[ri(S, 0, keys.length - 1)]; }
+  if (q === 3 || q === 5) { const keys = Object.keys(LEGEND); g.lg = keys[ri(S, 0, keys.length - 1)]; }
   if (q === 4) g.set = setFor(it);
   if (!isJewel(id)) {
     const r = rnd(S);
@@ -12106,11 +12086,10 @@ function jbPay(S, p) {
 const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (ITEMS[id].type === "tool" || ITEMS[id].el === 1);
 /** How many sockets a piece can ever have (as rollGear: gloves and boots 1, the rest 3; jewellery none). */
 const sockCap = (g) => (isJewel(g.id) ? 0 : ITEMS[g.id].type === "gloves" || ITEMS[g.id].type === "boots" ? 1 : 3);
-/** The weakest affix of a piece (value against its range's top), by index; −1 without one. A 유니크's own two lines (the first two) are never re-rolled. */
+/** The weakest affix of a piece (value against its range's top), by index; −1 without one. */
 function weakAffix(g) {
   let best = -1, bv = Infinity;
   (g.af || []).forEach(([k, v], i) => {
-    if (g.q === 5 && i < 2) return;
     const a = AFFIX.find((x) => x[0] === k);
     const r = a ? v / Math.max(1, a[4]) : 0;
     if (r < bv) { bv = r; best = i; }
@@ -20621,9 +20600,9 @@ export function defs() {
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: worldMapDefs(),
     // ITEM LEVEL (owner 2026-11-16). A gear entry on the wire carries `il` (shown 1–200 scale); the level it can be worn from is
     //   max(1, entry.il − ilGap)   (what validateAction "eq" checks; an entry without `il` = items[id].req + ilGap, or 1 for req 1)
-    // `rarity` has 6 names (index = entry.q, 0–5; 5 = 유니크, beige). A q 5 entry carries a legendary's power `lg` (legend[lg]) and
-    // `un: [suffix index]` into uniq.suf; its name reads `<legend[lg][0]> <item name> <suf>`, and af[0] / af[1] are the power's and the
-    // suffix's own lines (고유 옵션). Ordinary lines: 마법 2, 희귀 3, 전설 4 (+ lg), 세트 2–3, 유니크 2 after its own 2 (+ lg).
-    ilGap: IL_GAP, uniq: { suf: UNIQ.suf.map((x) => x[0]) },
+    // `rarity` has 6 names (index = entry.q, 0–5; 5 = 유니크, beige). A q 5 entry carries a legendary's power `lg` (legend[lg]) like a
+    // 전설 and is named like one (`<legend[lg][0]> <item name>`); rarities differ only by the number of lines (마법 2, 희귀 3, 전설 4 + lg, 세트 2–3,
+    // 유니크 4 + lg, stronger) and only an item with an `lg` has a name prefix word.
+    ilGap: IL_GAP,
   };
 }

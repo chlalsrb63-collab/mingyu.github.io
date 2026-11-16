@@ -279,7 +279,7 @@ Bots ≈ 4–5 min, real play expected 6–8 (QA duo took 12.5 before). If still
 ## 0.10 Diablo-style item system + tooltips (2026-11-16) — main green 61/61
 Owner's spec: item level 1–200 (`il` on every gear entry; worn from `il − 10`, legacy pieces derive `il = req + 10` so nothing moves;
 crafts keep their old levels, tier 6 still Lv.181), affix lines 마법 2 / 희귀 3 / 전설 4 (+ the legend power), new **유니크** (q5, beige
-#D2B48C, a legendary power `lg` + `[효과 접두사] 이름 [접미사]` (prefix = the power word, `un:[suffix]`), 4 lines: 2 own = `af[0..1]` (power key from `UNIQ.fx`, suffix key; ×`UNIQ_MUL` 1.4) + 2 ordinary; drop 0.1/0.4/1 % by rank × MF).
+#D2B48C, a legendary's power `lg` named like a 전설 (`[효과 접두사] 이름`, no suffix, no `un`) + 4 ordinary lines ×1.45 (`AFFIX_MUL[5]`, ≈ +12 % over a 전설); drop 0.1/0.4/1 % by rank × MF).
 Client: items.js `itemTip` Diablo card + side-by-side `[장착 중]` compare, `public/_tip.html` (`shot.mjs --page tip`) preview,
 HUD menu icons now show a label under the glyph (desktop glyph 24→12 px) + hover tooltip name (key). Sheet stays v26 (`il` additive).
 Unverified: unique drop rate and strength in real play; server wear gate vs client `reqLv` agree in tests only.

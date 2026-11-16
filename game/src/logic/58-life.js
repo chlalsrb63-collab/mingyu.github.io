@@ -618,11 +618,10 @@ function jbPay(S, p) {
 const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (ITEMS[id].type === "tool" || ITEMS[id].el === 1);
 /** How many sockets a piece can ever have (as rollGear: gloves and boots 1, the rest 3; jewellery none). */
 const sockCap = (g) => (isJewel(g.id) ? 0 : ITEMS[g.id].type === "gloves" || ITEMS[g.id].type === "boots" ? 1 : 3);
-/** The weakest affix of a piece (value against its range's top), by index; −1 without one. A 유니크's own two lines (the first two) are never re-rolled. */
+/** The weakest affix of a piece (value against its range's top), by index; −1 without one. */
 function weakAffix(g) {
   let best = -1, bv = Infinity;
   (g.af || []).forEach(([k, v], i) => {
-    if (g.q === 5 && i < 2) return;
     const a = AFFIX.find((x) => x[0] === k);
     const r = a ? v / Math.max(1, a[4]) : 0;
     if (r < bv) { bv = r; best = i; }
