@@ -13,13 +13,11 @@
 
 | 누가 | 일 | 브랜치 · 폴더 | 시작 |
 | --- | --- | --- | --- |
-| Codex | Lv.1 기본 무기 7종 도트와 이름 개선 | `codex/starter-weapons` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
-| Codex | 스튜디오 고구마 오프닝 재생과 타이틀 전환 | `codex/studio-opening` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
-| Codex | 8대 피해 속성 · 전직별 복합 속성 · 용기사 착지와 장판 · 마을 모험가 NPC | `codex/elemental-combat` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
-| Codex | 장비 세트 제거 · 룬 소켓과 세트 룬 | `codex/rune-sockets` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
 | Claude (통합 세션 2) | **협동 알바 전체** — 동동아파트 청소 개편, 쥬쥬식당 큰 홀, 대장간 v3, 새 알바 올빼미 도서관. `game/src/logic/68-coop.js`, `game/public/coop.js`, `12-life-tables.js`의 협동(COOP) 블록은 **Codex 손대지 말 것** (보상 1일 1회·재도전 가능 정책은 Codex 1998f06 그대로) | main | 2026-11-15 22:00 |
 | Claude (통합 세션 1·2) | 스킬 이펙트·아이콘(`skillfx.js`, `skillfx_combo.js`, `skillicons.js`, `jobpal.js`, `swing.js`) — Codex 손대지 말 것 | main | 2026-11-15 |
 | Claude (통합 세션 2) | **HD-2D 후처리** — 새 모듈 `game/public/postfx.js`(빛 번짐, 틸트시프트 초점 흐림, 시간대·지역 색감, 빛줄기, 설정 끔/보통/높음). `scene2d.js`에는 호출 1~2줄만. Codex의 `scene_depth.js`·`scene2d.js` 본체·`scene_map.js`는 Codex 담당 그대로 | main | 2026-11-15 |
+| Codex | 전직 전용기 19종 연출·전투 규칙 개선 및 이동 버벅임 확인 (`57-weapon-skills.js`, `update.js` — Claude 손대지 말 것) | `codex/job-skill-polish` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
+| Claude (통합 세션 3) | 완성도 패스 — 몬스터 공격 다양화(`10-tables.js` MOBS 행), 맵 휴식처·밀도, 외형 검수, 성능 | main | 2026-11-16 22:00 |
 | Codex | 레퍼런스 기반 낚시·요리·연금·대장 아이콘 | `codex/item-reference-art` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | 초반 캐릭터 Lv.30 ↔ 무기 숙련도 Lv.20 도달 구간 검증 및 조정 | `codex/early-mastery` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | 레벨대별 사냥 동선과 Lv.200 전용 사냥터 | `codex/hunt-routes` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
@@ -40,11 +38,15 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 
 ## CODEX (구현 · 테스트)
 
-- [ ] **[아이템 개편 W5] 추가 컨텐츠 기획 문서** `docs/design/item-content-plan-2026-11-16.md` (≤ 250줄, 코드 없음). 먼저 `docs/design/item-system-spec-2026-11-16.md`와 `prefix-effects.md`를 읽고 §6의 주제(새 공격형 옵션 키, 스크롤 입수처, 인챈트 확장, 유니크 요소, 엔드게임 싱크, 테마 세트, 지선·볼칸 이야기, UI)를 기획. 오너 결정이 필요한 것은 끝에 "결정 필요" 표. 브랜치 `codex/item-content-plan`. 지금 시작 가능.
+- [x] **[아이템 개편 W5] 추가 컨텐츠 기획 문서** (ai/reports/codex-item-content-plan.md) `docs/design/item-content-plan-2026-11-16.md` (≤ 250줄, 코드 없음). 먼저 `docs/design/item-system-spec-2026-11-16.md`와 `prefix-effects.md`를 읽고 §6의 주제(새 공격형 옵션 키, 스크롤 입수처, 인챈트 확장, 유니크 요소, 엔드게임 싱크, 테마 세트, 지선·볼칸 이야기, UI)를 기획. 오너 결정이 필요한 것은 끝에 "결정 필요" 표. 브랜치 `codex/item-content-plan`. 지금 시작 가능.
 - [ ] **[아이템 개편 W1] 보조 옵션 3분류와 공격형 쿼터** (spec §3.1). `AFFIX`에 `cat`(공격/방어/보조), `AFF_O_QUOTA`(무기 1/2/3 · 장갑 1/2/2 · 반지 1/1/2 · 방어 부위 1/1/1), 어떤 장비든 공격형 ≥ 1줄, 숫돌 재굴림은 분류 유지, 정보창 줄 분류 표시. 시트 모양 변경 없음(옛 장비 줄 그대로). 테스트 `tests/itemlevel.mjs` 확장. **W0 병합 신호 뒤에** 시작(`ai/HANDOFF.md §0.11`에 "P1a merged"). 브랜치 `codex/affix-categories`.
 - [ ] **[아이템 개편 W2] 인챈트 스크롤(공격 붉은색·방어 녹색·유틸 파랑 도트 아이콘) · NPC 지선(햄스터, 볼칸의 여동생, 대장간 상주) · 인챈트 창(미리보기→확인) · 아이템 레벨 비례 골드 · 추출의 마법망치(전설/유니크 접두사 → 스크롤, 퀘스트 보상 또는 아주 낮은 확률 드랍, 지선 [추출], 망치 1개 + 골드).** **오너 결정: Codex가 구현** (2026-11-16). 규칙과 계약은 `docs/design/item-system-spec-2026-11-16.md` §3.3·§3.4(추출·아이콘 포함), `docs/design/prefix-effects.md`, `ai/HANDOFF.md §0.11`(레지스트리·훅). `codex/item-content-plan`의 설계 메모(§2·3·5·7·8)를 그대로 반영. 스크롤은 늦은 파트(`6x-enchant.js`)에서 `LEGEND` 전체로 생성해 새 접두사가 자동으로 스크롤을 갖게 할 것. 테스트 `tests/enchant.mjs`. 브랜치 `codex/enchant`.
 - [ ] **[아이템 개편 W3-A] 접두사 효과 공격형 구현 — 표의 `단`=1인 행만** (`docs/design/prefix-effects.md` §3.1, 무기·반지·장갑; `단`=2 행은 Claude가 `54-prefix-util.js`에서). 훅 서명·헬퍼는 `ai/HANDOFF.md §0.11`. W0가 정한 레시피(파트 파일 ≥ 52, `Object.assign`)로 효과군(BLOW → HIT → KILL → SKILL …)마다 브랜치 하나·테스트 하나(`tests/prefix-offense-*.mjs`). 수치는 첫 추정 — 밸런스는 W4. W0 병합 뒤. 브랜치 `codex/prefix-offense-<군>`.
 - [ ] **[아이템 개편 W4] 아이템 밸런스 패스** (spec §5). 접두사 S/M/L 시뮬레이션 검증, 카테고리 상한 테스트, 단련의·약탈의·스크롤 드랍·인챈트 수수료 경제 점검, 유니크/전설/스크롤 드랍 체감(시간당 개수) 제안, 도적 단일 대상 정책 유지. 기록 `docs/design/balance-items-2026-11.md`. W3 첫 병합부터 병행. 브랜치 `codex/item-balance`.
+
+- [x] 장비 세트 종료 · 룬 소켓과 세트 룬 88종 · 룬 천공석. (ai/reports/codex-rune-sockets.md)
+- [x] 8대 피해 속성 · 상태이상 · 전직 전용기 복합 속성 · 버드나무 모험가 NPC 8명. (ai/reports/codex-elemental-combat.md)
+- [x] 스튜디오 오프닝 단독 재생, Lv.1 기본 무기 7종 도트와 이름. (ai/reports/codex-studio-intro.md, ai/reports/codex-starter-weapons.md)
 
 - [x] 녹음 BGM만 재생하고 LAN에서도 같은 음원 사용. [검증 및 2.5D 검토](reports/codex-recordings-only.md)
 
