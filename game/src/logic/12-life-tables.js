@@ -605,7 +605,7 @@ const COOP = {
     hint: "프라이팬 담당은 상자에서 재료를 꺼내 도마·화덕을 거쳐 패스대에, 쟁반 담당은 패스대의 요리를 주문한 테이블로! 손님이 계속 몰려와요.",
     // cut-offs tuned on walking bots in the 64×36 hall (tests/coop.mjs: clearing and washing plates; owner 2026-11-15: hard, customers flood in):
     // quick bots (an act every 300 ms) 391 · 804 · 1,467, just over S; realistic ones (every 600 ms, walking at 90 %) 414 · 719 · 985 (S · A · B)
-    par: 1000, parN: { 2: 0.43, 3: 0.89, 4: 1.62 },
+    par: 1000, parN: { 2: 0.43, 3: 0.89, 4: 1.45 },
     // stations (tiles; solid furniture on the kitchen's back wall, used from the tile below; the pass and the rack on the counter at y 7)
     st: { stove: DIN.stove, board: DIN.board, veg: DIN.veg, fish: DIN.fish, meat: DIN.meat, trash: DIN.trash, sink: DIN.sink, pass: DIN.pass, rack: DIN.rack },
     tables: DIN.tables,

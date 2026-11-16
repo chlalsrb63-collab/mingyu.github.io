@@ -347,4 +347,17 @@ for (const [left, grade] of [[135_000, 4], [134_999, 3], [90_000, 3], [89_999, 2
   }
 }
 
+// a side left with no worker (its only hand quit): the one who stayed may lay there too, instead of a shift nobody can finish
+{
+  const w = world(2), dim = open(w), c = dim.coop, pipe = c.pipe;
+  advance(w, c.runAt);
+  const [stay, gone] = [w.pids.find(pid => pipe.seats[pid].zone === 0), w.pids.find(pid => pipe.seats[pid].zone === 1)];
+  const far = pipe.board.findIndex((v, i) => v === 0 && ZONE(i) === 1);
+  if (pipe.seats[stay].tool !== HAMMER) {
+    assert.equal(task(w, dim, stay, far).ok, false, "the other side is someone's while they are here");
+    assert.ok(action(w, gone, { t: "coop_leave" }).ok, "the drain hand quits");
+    assert.ok(task(w, dim, stay, far).ok, "now the one who stayed may work the empty side");
+  }
+}
+
 console.log("coop pipes: boards and decks, legal inputs, shared deltas, early success, timeout, contributor credit and daily rewards verified");

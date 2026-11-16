@@ -2090,7 +2090,7 @@ const COOP = {
     hint: "프라이팬 담당은 상자에서 재료를 꺼내 도마·화덕을 거쳐 패스대에, 쟁반 담당은 패스대의 요리를 주문한 테이블로! 손님이 계속 몰려와요.",
     // cut-offs tuned on walking bots in the 64×36 hall (tests/coop.mjs: clearing and washing plates; owner 2026-11-15: hard, customers flood in):
     // quick bots (an act every 300 ms) 391 · 804 · 1,467, just over S; realistic ones (every 600 ms, walking at 90 %) 414 · 719 · 985 (S · A · B)
-    par: 1000, parN: { 2: 0.43, 3: 0.89, 4: 1.62 },
+    par: 1000, parN: { 2: 0.43, 3: 0.89, 4: 1.45 },
     // stations (tiles; solid furniture on the kitchen's back wall, used from the tile below; the pass and the rack on the counter at y 7)
     st: { stove: DIN.stove, board: DIN.board, veg: DIN.veg, fish: DIN.fish, meat: DIN.meat, trash: DIN.trash, sink: DIN.sink, pass: DIN.pass, rack: DIN.rack },
     tables: DIN.tables,
@@ -20086,7 +20086,13 @@ function coopValidate(S, p, a) {
 function coopApply(S, p, a) {
   if (a.t === "coop_start") { coopStart(S, p, a.k); return; }
   const c = coopOf(S, p);
-  if (a.t === "coop_leave") { toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다"); coopHome(S, p, c); return; }
+  if (a.t === "coop_leave") {
+    const dim = dimAt(S, p.map), z = c.k === "pipe" && c.state !== "end" && c.pipe ? c.pipe.seats[p.pid]?.zone : undefined;
+    toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다"); coopHome(S, p, c);
+    // 배관: the side they worked is empty now, so the ones who stayed are told they may lay both (69-coop-pipes.js pipeVacant)
+    if (z !== undefined && dim && pipeVacant(S, c.pipe, z)) coopToastAll(S, dim, `${z ? "배수" : "급수"} 구역 담당이 자리를 비웠습니다. 남은 인원이 양쪽 구역을 모두 작업할 수 있습니다.`);
+    return;
+  }
   if (c.k === "pipe") { pipeApply(S, dimAt(S, p.map), c, p, a); return; }
   const q = c.pl[p.pid], job = COOP_JOB[c.k];
   // a rhythm lane's notes come faster than the work key's 250 ms
@@ -20290,6 +20296,10 @@ function pipeTrace(state) {
   return path;
 }
 
+/** A side nobody is left to work (its workers quit or dropped): the ones who stayed may lay both sides, and a path of theirs alone wins. */
+function pipeVacant(S, state, z) {
+  return !Object.keys(state.seats).some((pid) => state.seats[pid].zone === z && S.players[pid] && S.players[pid].map === state.id);
+}
 function pipeValidate(S, p, c, a) {
   const state = c && c.pipe, seat = state && state.seats[p.pid], member = c && c.pl[p.pid];
   if (!seat || !member || p.map !== state.id || p.dead) return bad("배관 근무 좌석에 참여하고 있지 않습니다");
@@ -20297,7 +20307,7 @@ function pipeValidate(S, p, c, a) {
   if ((c.state !== "run" && c.state !== "fever") || S.now >= c.endAt || state.wonAt !== null) return bad("배관 근무가 끝났습니다");
   if (a.t !== "coop_act" || Object.keys(a).some((k) => k !== "t" && k !== "i" && k !== "handRev")) return bad("손에 든 도구를 칸에 사용해 주세요");
   if (!Number.isInteger(a.i) || a.i < 0 || a.i >= PIPE_CELLS) return bad("배관 칸을 골라 주세요");
-  if (pipeZone(a.i) !== seat.zone) return bad("담당 구역에서만 작업할 수 있습니다");
+  if (pipeZone(a.i) !== seat.zone && !pipeVacant(S, state, pipeZone(a.i))) return bad("담당 구역에서만 작업할 수 있습니다");
   if (a.handRev !== seat.handRev) return bad("손에 든 도구가 바뀌었습니다");
   const cell = state.board[a.i];
   if (seat.tool === PIPE_HAMMER && cell !== PIPE_ROCK) return bad("망치로는 바위만 깰 수 있습니다");
@@ -20307,7 +20317,7 @@ function pipeValidate(S, p, c, a) {
 
 function pipeApply(S, dim, c, p, a) {
   if (!pipeValidate(S, p, c, a).ok) return false;
-  const state = c.pipe, seat = state.seats[p.pid], i = a.i, z = seat.zone;
+  const state = c.pipe, seat = state.seats[p.pid], i = a.i, z = pipeZone(i);   // the side worked on (a vacant side may be someone else's)
   const hammer = seat.tool === PIPE_HAMMER;
   state.board[i] = hammer ? 0 : seat.tool;
   if (hammer) {
@@ -20319,7 +20329,7 @@ function pipeApply(S, dim, c, p, a) {
   member.actAt = member.idleAt = S.now;
   pipeHand(c, seat, !hammer);
   if (hammer && !state.rocks[z]) for (const q of Object.values(state.seats)) {
-    if (q.zone === z && q.tool === PIPE_HAMMER) pipeHand(c, q, false);
+    if ((q.zone === z || q === seat) && q.tool === PIPE_HAMMER) pipeHand(c, q, false);
   }
   state.changes.push([++state.rev, i, state.board[i]]);
   if (state.changes.length > PIPE_CHANGES) state.changes.shift();
@@ -20331,7 +20341,7 @@ function pipeApply(S, dim, c, p, a) {
     const owner = state.owners[cell], side = pipeZone(cell);
     if (state.seats[owner]?.zone === side) (side ? right : left).add(owner);
   }
-  if (![...left].some((a) => [...right].some((b) => a !== b))) return true;
+  if (![...left].some((a) => [...right].some((b) => a !== b)) && !pipeVacant(S, state, 0) && !pipeVacant(S, state, 1)) return true;
 
   state.finished = path;
   state.wonAt = S.now;

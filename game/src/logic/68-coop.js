@@ -1104,7 +1104,13 @@ function coopValidate(S, p, a) {
 function coopApply(S, p, a) {
   if (a.t === "coop_start") { coopStart(S, p, a.k); return; }
   const c = coopOf(S, p);
-  if (a.t === "coop_leave") { toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다"); coopHome(S, p, c); return; }
+  if (a.t === "coop_leave") {
+    const dim = dimAt(S, p.map), z = c.k === "pipe" && c.state !== "end" && c.pipe ? c.pipe.seats[p.pid]?.zone : undefined;
+    toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다"); coopHome(S, p, c);
+    // 배관: the side they worked is empty now, so the ones who stayed are told they may lay both (69-coop-pipes.js pipeVacant)
+    if (z !== undefined && dim && pipeVacant(S, c.pipe, z)) coopToastAll(S, dim, `${z ? "배수" : "급수"} 구역 담당이 자리를 비웠습니다. 남은 인원이 양쪽 구역을 모두 작업할 수 있습니다.`);
+    return;
+  }
   if (c.k === "pipe") { pipeApply(S, dimAt(S, p.map), c, p, a); return; }
   const q = c.pl[p.pid], job = COOP_JOB[c.k];
   // a rhythm lane's notes come faster than the work key's 250 ms
