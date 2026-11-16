@@ -13,6 +13,7 @@ import * as MobArt from "./mobart.js";
 import * as Growth from "./growth.js";
 import * as SkillFx from "./skillfx.js";
 import { jobSkillFx } from "./job-skill-fx.js";
+import { skillFinisherFx } from "./skill-finisher-fx.js";
 import { HAMMER_IMPACT } from "./swing.js";
 import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
@@ -44,8 +45,25 @@ const heightOf = (e) => e.h3 || 1.3;
 /** A monster's shot takes its element's colour (a plain one stays red: it is a threat, not a spark). */
 const shotColor = (k) => { const ty = G.defs.mobs[k]?.element; return ty && ty !== "physical" ? elementInfo(ty)?.color || "#ff5a4a" : "#ff5a4a"; };
 
+const hitVisualAt = new WeakMap();
+function drawDamageImpact(tgt, t, height, damage, parts, critical, heavy, grazing) {
+  if (document.hidden || !G.me || dist(G.me.x, G.me.y, tgt.x, tgt.y) > 245 || t - (hitVisualAt.get(tgt) ?? -Infinity) < 75) return;
+  const types = G.defs?.elements?.types;
+  let element = "physical", peak = damage * 0.24;
+  if (types && !grazing) for (const [index, amount] of parts || []) {
+    const type = types[index];
+    if (!type || type === "physical" || amount < peak) continue;
+    element = type;
+    peak = amount;
+  }
+  hitVisualAt.set(tgt, t);
+  const color = element === "physical" ? (critical ? "#ffe075" : "#c6deef") : elementInfo(element)?.color || "#c6deef";
+  S3.fx.hitImpact(tgt.x, tgt.y, height * 0.55, element, color, heavy, grazing);
+}
+
 export function onEvent(e, t) {
   jobSkillFx(e, G, S3, entityPos);
+  skillFinisherFx(e, G, S3, entityPos);
   if (e[0] === "a" && (e[2] === 7 || (e[2] >= 130 && e[2] <= 132))) {
     const [, eid, , x, y, dir, , wind = HAMMER_IMPACT, aim] = e;
     const src = entityPos(eid);
@@ -135,7 +153,7 @@ export function onEvent(e, t) {
         const critical = crit === 1, grazing = crit === 2;
         floatDamage(dmg, parts, tgt, h, critical);
         tgt.hurtT = t; tgt.hsMs = 0;
-        let wk, fin = false; // my own weapon kind, when it is my blow: the impact sound follows the weapon
+        let wk, fin = false, heavy = critical; // my own weapon kind, when it is my blow: the impact sound follows the weapon
         // recoil away from whoever struck last
         if (!isPlayer && G.hitFrom) {
           tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]);
@@ -143,10 +161,8 @@ export function onEvent(e, t) {
           const mine = t - G.lastAtk < 420;
           if ((mine || t - G.lastSkill < 700) && G.mobs.has(id)) { G.tgt = id; G.tgtT = t; }   // the target frame follows my last blow (hud.js)
           fin = mine && !grazing && (G.me.atkN === 2 || (G.self?.wk === "sword" && G.me.atkN === 1));
-          const heavy = critical || fin;
+          heavy = critical || fin;
           tgt.hurtP = heavy ? 1.6 : 1;
-          S3.fx.spark(tgt.x, tgt.y, critical ? "#ffe04a" : "#ffffff", heavy ? 1.7 : 1.1);
-          S3.fx.ring(tgt.x, tgt.y - 4, heavy ? 20 : 11, critical ? "#ffe04a" : "#ffffff", heavy ? 220 : 150);
           if (mine) {
             // a local hitstop: the blow and what it struck hold still for a beat (2–3 frames on a
             // crit, a finisher or a skill; barely one on a plain hit, so the tempo stays high)
@@ -158,10 +174,11 @@ export function onEvent(e, t) {
             if (heavy) G.punch = 1;
           }
         }
+        if (isPlayer) S3.fx.burst(tgt.x, tgt.y, h * 0.55, "#ff7a7a", critical ? 14 : 8, critical ? 2.6 : 2);
+        else if (!hammer && dmg > 0) drawDamageImpact(tgt, t, h, dmg, parts, critical, heavy, grazing);
         if (id === G.you) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
         // Play one damage cue; hammer, healing and swing cues have their own events.
         else if (!isPlayer && !hammer) Sound.play(critical ? "crit" : grazing ? "graze" : fin ? "finisher" : "hit", wk);
-        S3.fx.burst(tgt.x, tgt.y, h * 0.55, isPlayer ? "#ff7a7a" : "#ffffff", critical ? 14 : 8, critical ? 2.6 : 2);
       }
       break;
     }

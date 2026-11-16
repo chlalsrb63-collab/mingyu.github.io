@@ -10,6 +10,7 @@ import * as SP from "./sprites.js";
 import * as Sw from "./swing.js";
 import { G, playerLook, sheet, g, INK, iso, P, sAng, K, sqI, clamp } from "./scene_view.js";
 import { personState } from "./scene_people.js";
+import { drawImpact, impactLook } from "./pixel-impact.js";
 
 export let shakeAmt = 0;
 /** The view's shake, eased back by the frame (`render`). */
@@ -351,6 +352,11 @@ export const fx = {
   },
   /** An impact: spokes thrown out from a point a little above the ground. */
   spark(wx, wy, color = "#ffffff", size = 1) { const [x, y] = iso(wx, wy); this.add({ k: "spark", x, y: y - 6, color, r: 13 * size, n: size > 1.3 ? 8 : 6, a0: Math.random() * 6.28, dur: 190 }); },
+  hitImpact(wx, wy, height, type, color, big, graze) {
+    if (document.hidden || this.list.length >= 100) return;
+    const [x, y] = iso(wx, wy, height);
+    this.add({ k: "hit-impact", x, y, color, big, graze, look: impactLook(type, color), dur: big ? 250 : 185 });
+  },
   /** A blade's crescent, centred on the attacker and opening toward `ang` (an angle on the ground). */
   slash(wx, wy, ang, color, size = 0.8, rev = false) { const [x, y] = iso(wx, wy); this.add({ k: "slash", x, y: y - 8, ang: sAng(Math.cos(ang), Math.sin(ang)), color, r: size * 30, rev, dur: 260, delay: 90 }); },
   beam(ax, ay, bx, by, color, h = 0.6) { const [x0, y0] = iso(ax, ay), [x1, y1] = iso(bx, by); this.add({ k: "beam", x0, y0: y0 - h * 22, x1, y1: y1 - h * 22, color, dur: 260 }); },
@@ -505,6 +511,7 @@ export function drawFx(now, ground2) {
     if (f.k === "custom") { g.save(); f.draw(g, k, f); g.restore(); continue; }
     if (f.k === "qi") { g.globalAlpha = 1; drawQi(f, k); continue; }
     if (f.k === "arrow") { g.globalAlpha = 1; drawArrow(f, k); continue; }
+    if (f.k === "hit-impact") { drawImpact(g, f, k); continue; }
     if (f.k === "ahit") {
       // pixel spokes thrown on along the flight (a cone of five, one kicked back), a white core for the first frames
       g.globalAlpha = 1;

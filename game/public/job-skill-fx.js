@@ -1,4 +1,4 @@
-import { fxPal, fxSkill } from "./jobpal.js";
+import { fxPal, fxSkill, skillPal } from "./jobpal.js";
 
 // One short accent per cast. The marks sit inside the primary effect and never draw a filled warning area.
 // Each placement is [forward, side, height, lift during fade, phase offset].
@@ -56,10 +56,6 @@ const accents = {
     pixels: ["...l...", "..ala..", ".am.ma.", "am.o.ma", ".am.ma.", "..ama..", "...o..."],
     spots: [[0, -14, 0.55, 5, 0], [9, 0, 0.61, 7, 0.07], [0, 14, 0.56, 5, 0.14]],
   },
-  frostspire: {
-    pixels: ["...w...", "...lm..", "..wmo..", "..lmm..", ".alomo.", "omlmomo", ".ooooo."],
-    spots: [[-3, -10, 0.28, 8, 0], [0, 2, 0.36, 15, 0.1], [-4, 13, 0.24, 8, 0.23]],
-  },
   runecircle: {
     pixels: ["...l...", "..a.a..", ".a.l.a.", "l.mom.l", ".a.l.a.", "..a.a..", "...l..."],
     spots: [[-17, 0, 0.06, 7, 0], [12, -12, 0.06, 7, 0.1], [12, 12, 0.06, 7, 0.21]],
@@ -88,6 +84,46 @@ const accents = {
   musou: {
     pixels: ["..al...", "...la..", "..la...", ".al....", "alla...", ".a..m..", ".....o."],
     spots: [[11, -9, 0.67, 15, 0], [11, 11, 0.67, 15, 0.11]],
+  },
+};
+
+// [screen x, screen y, outward drift, lift, delay] from the authoritative contact point.
+const contacts = {
+  meteor: {
+    skill: "meteor", duration: 270,
+    pixels: [".....o.", "....oo.", "...oma.", "..omal.", "..omww.", ".omwl..", "omal..."],
+    spots: [[-6, 0, -17, 10, 0], [7, 2, 23, 13, 0.08], [0, -3, 4, 21, 0.1]],
+  },
+  pillar: {
+    skill: "dragon", duration: 240,
+    pixels: ["l......", ".l..a..", "..w.a..", "..www..", "....wl.", "...lm..", ".....ll"],
+    spots: [[-8, -17, -12, 11, 0], [8, -13, 13, 8, 0.09]],
+    last: [[-12, -28, -15, 10, 0], [12, -25, 16, 16, 0], [-10, -4, -16, 8, 0.14], [12, -2, 20, 10, 0.21]],
+  },
+  phantom: {
+    skill: "pact", duration: 260,
+    pixels: ["....moo", "..moomm", ".mmoa..", ".m.l...", "omwl...", "owm....", "o......"],
+    spots: [[-17, -18, 13, 1, 0], [17, -19, -13, 1, 0.05]],
+  },
+  rune: {
+    skill: "runecircle", duration: 280,
+    pixels: ["...w...", "..lol..", ".lo.ol.", "w.am.aw", ".lo.ol.", "..lom..", "...w..."],
+    // Each element takes a different pair of points on the circle.
+    phases: [
+      [[-23, 4, -4, 14, 0], [13, 9, 3, 15, 0.13]],
+      [[-20, -10, -3, 13, 0], [13, 11, 3, 15, 0.13]],
+      [[17, -8, 3, 15, 0], [-24, 2, -3, 13, 0.13]],
+    ],
+  },
+  burst: {
+    skill: "bloodburst", duration: 290,
+    pixels: ["o......", "mo.....", ".lmo...", "..lwmo.", "...almo", ".....lm", "......a"],
+    spots: [[-16, -7, -16, 11, 0.07], [21, 3, 19, 9, 0], [-10, 7, -10, 16, 0.2]],
+  },
+  frostspire: {
+    duration: 330,
+    pixels: ["..l....", "..wm...", ".lwoo..", ".lmo...", ".oml...", "owlmw..", "omlmoo."],
+    spots: [[-13, 1, -5, 12, 0.1], [1, -1, 1, 23, 0], [13, 4, 6, 13, 0.21]],
   },
 };
 
@@ -125,19 +161,79 @@ const START_ONLY = new Set(["whirl", "musou"]);
 const DURATION = 350;
 const MAX_FX_FOR_ACCENT = 96;
 const NEAR_SQ = 220 ** 2;
+const MAX_TRACKED_PROPS = 64;
+const contactProps = new WeakMap();
+
+function drawContact(S3, contact, spots, palette, x, y, own) {
+  const [ox, oy] = S3.iso(x, y);
+  const sprite = bitmap(contact, palette);
+  const opacity = own ? 0.95 : 0.7;
+  S3.fxCustom((g, k) => {
+    g.imageSmoothingEnabled = false;
+    for (const [sx, sy, drift, lift, delay] of spots) {
+      const t = (k - delay) / (1 - delay);
+      if (t < 0) continue;
+      const travel = 1 - (1 - t) ** 2;
+      const px = Math.round(ox + sx + drift * travel);
+      const py = Math.round(oy + sy - lift * Math.sin(Math.PI * 0.76 * travel));
+      const frame = (t < 0.2 ? 2 : 0) + Number(sx < 0);
+      g.globalAlpha = opacity * Math.min(1, (1 - t) * 1.8);
+      g.drawImage(sprite, frame * WIDTH, 0, WIDTH, sprite.height,
+        px - 3 * SIZE, py - (sprite.height - 1) * SIZE, WIDTH * SIZE, sprite.height * SIZE);
+    }
+  }, contact.duration);
+}
+
+function propContact(e, G, S3, entityPos) {
+  let state = contactProps.get(G);
+  if (!state || state.map !== G.map) {
+    state = { map: G.map, props: new Map() };
+    contactProps.set(G, state);
+  }
+  const { props } = state;
+  const id = e[1];
+  if (e[0] === "pr") {
+    const kind = e[2];
+    if (!Object.hasOwn(contacts, kind) || !contacts[kind].skill) return;
+    if (props.size >= MAX_TRACKED_PROPS && !props.has(id)) props.delete(props.keys().next().value);
+    props.set(id, { kind, eid: e[7] });
+    return;
+  }
+  if (e[0] === "pe") { props.delete(id); return; }
+  const prop = props.get(id);
+  if (!prop || document.hidden || S3.fx.list.length >= MAX_FX_FOR_ACCENT) return;
+
+  const { kind, eid } = prop;
+  const target = kind === "phantom" ? entityPos(e[4]) : null;
+  const x = target?.x ?? e[2], y = target?.y ?? e[3];
+  const own = eid === G.you;
+  if (!own && (!G.me || (x - G.me.x) ** 2 + (y - G.me.y) ** 2 > NEAR_SQ)) return;
+  const contact = contacts[kind];
+  const spots = e[4] === 1 && contact.last || contact.phases?.[e[4] - 1] || contact.spots;
+  if (spots) drawContact(S3, contact, spots, skillPal(contact.skill, G.who?.get(eid)?.cls), x, y, own);
+}
 
 export function jobSkillFx(e, G, S3, entityPos) {
+  if (e[0] === "pr" || e[0] === "pp" || e[0] === "pe") {
+    propContact(e, G, S3, entityPos);
+    return;
+  }
   const impact = e[0] === "hm";
   if ((e[0] !== "a" && !impact) || document.hidden) return;
   const code = impact ? e[7] : e[2], id = fxSkill(code);
   const accent = accents[id];
-  if (!accent || (id === "hammer_final") !== impact || S3.fx.list.length >= MAX_FX_FOR_ACCENT) return;
+  if ((!accent && id !== "frostspire") || (id === "hammer_final") !== impact || S3.fx.list.length >= MAX_FX_FOR_ACCENT) return;
   if ((id === "flurry" && e[7] !== undefined) || (START_ONLY.has(id) && e[7] !== 0)) return;
   const eid = e[1], x = impact ? e[2] : e[3];
   // Three long casts already carry a ground point. Other "a" events report the regular body-height offset.
   const ground = impact || id === "crimson" || id === "elemfan" || id === "inkshot";
   const y = impact ? e[3] : e[4] + (ground ? 0 : 6);
   if (eid !== G.you && (!G.me || (x - G.me.x) ** 2 + (y - G.me.y) ** 2 > NEAR_SQ)) return;
+  if (id === "frostspire") {
+    const contact = contacts.frostspire;
+    drawContact(S3, contact, contact.spots, fxPal(code, G, eid), x, y, eid === G.you);
+    return;
+  }
 
   const src = entityPos(eid);
   if (id === "inkshot" && !src) return;
