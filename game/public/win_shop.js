@@ -65,6 +65,11 @@ export function renderSmith(s) {
   const list = $("#smith-list");
   list.textContent = "";
   const stones = countItem("stone"), scrolls = countItem("uncurse");
+  const drillItem = G.defs.sockItem, drillName = G.defs.items[drillItem]?.name;
+  const drillStones = drillItem ? countItem(drillItem) : 0;
+  const stock = $("#smith-socket-stock");
+  stock.hidden = !drillName;
+  if (drillName) stock.textContent = `${drillName} ${drillStones.toLocaleString()}개 보유`;
   let any = false;
   for (const k of G.defs.slots) {
     const g = s.eq[k];
@@ -98,11 +103,15 @@ export function renderSmith(s) {
       b.addEventListener("click", () => act({ t: "enh", k }));
       actions.append(b);
     }
-    if (cap) {
+    if (cap && drillName) {
       const cost = G.defs.sockCost[drilled];
-      tx.append(el("small", "smith-socket", `소켓 ${drilled}/${cap}${drilled >= cap ? " · 최대" : ` · ${cost.toLocaleString()}G`}`));
+      const full = drilled >= cap;
+      const blocked = full ? "소켓 최대" : s.dead ? "쓰러진 상태" : !drillStones ? `${drillName} 부족` : s.gold < cost ? "골드 부족" : "";
+      tx.append(el("small", "smith-socket", `소켓 ${drilled}/${cap}${full ? " · 최대" : ` · ${drillName} 1개 + ${cost.toLocaleString()}G`}`));
+      if (blocked && !full) tx.append(el("small", "smith-socket", blocked));
       const b = el("button", "", "소켓 +1");
-      b.disabled = drilled >= cap || s.gold < cost || !!s.dead;
+      b.disabled = !!blocked;
+      b.title = blocked || "소켓을 1개 엽니다";
       b.addEventListener("click", () => act({ t: "socket", k }));
       actions.append(b);
     }

@@ -330,7 +330,7 @@ export function onGain([kind, a, b, q]) {
     if (q) p.style.color = Art.RARITY_COL[q];
     lootLine(`i:${a}:${q | 0}`, (n) => `${RARITY_MARK[q | 0]}${rarity}${d.name}${n > 1 ? ` ×${n}` : ""}`, q ? Art.RARITY_COL[q] : "#f0e6d0", b || 1);
     Sound.play("loot", q | 0);
-    if (q >= 3) banner(`${rarityLabel(a, q)}${d.type === "rune" ? " 룬" : ""} 획득!`, true);
+    if (q >= 3) banner(`${d.q ? d.name : `${rarityLabel(a, q)}${d.type === "rune" ? " 룬" : ""}`} 획득!`, true);
   } else if (kind === "cos") { const d = G.defs.cos[a]; const p = addChat(`외형 획득: ${d ? d.name : a}`, "loot"); if (d) p.style.color = Art.RARITY_COL[d.q]; lootLine(`c:${a}`, () => `외형 · ${d ? d.name : a}`, d ? Art.RARITY_COL[d.q] : "#f0e6d0", 1); Sound.play("loot", d ? d.q : 1);
   } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y, h + 0.9, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a} 달성!`, "sys"); }
 }

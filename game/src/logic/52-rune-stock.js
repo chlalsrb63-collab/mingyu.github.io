@@ -29,9 +29,12 @@ function rollRuneId(S, rank = 0) {
   return pool[ri(S, 0, pool.length - 1)];
 }
 
+const stackQuality = (id) => RUNES[id]?.q || ITEMS[id]?.q || 0;
+
 function foundItem(S, p, id, n) {
   const rune = RUNES[id];
-  p.gain.push(["item", id, n, rune?.q || 0]);
+  p.gain.push(["item", id, n, stackQuality(id)]);
+  if (id === SOCK_ITEM) saveSoon(p);
   if (rune?.set) {
     p.ch.cnt.rune_find += n;
     checkAch(S, p);

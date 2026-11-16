@@ -205,16 +205,21 @@ function lootFor(S, rt, mob, p) {
     out.push({ g: rollGear(S, id, q, d.lv, rank) });
   }
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: rollRuneId(S, rank), n: 1 });
-  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
+  const stoneRoll = rnd(S);
+  if (stoneRoll < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
   if (fx.stone) out.push({ it: "stone", n: 1 });   // (a power's extra stone: at most one a kill)
   // A kind's own finds (MOBS[k].drops: [item, chance, min, max]); its signature gear always drops legendary.
   for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(isGear(it) ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
   if (rnd(S) < 0.1) out.push({ it: d.lv < 8 ? "hp_s" : d.lv < 26 ? "hp_m" : "hp_l", n: 1 });
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
+  // Use the high end of the material roll without drawing more combat randomness.
+  if (!d.chest && stoneRoll >= 1 - SOCK_DROP[rank]) out.push({ it: SOCK_ITEM, n: 1 });
   for (const o of out) {
+    const atCorpse = o.it === SOCK_ITEM;
     rt.drops.push({
-      id: S.nextId++, it: o.g ? o.g.id : o.it, g: o.g || null, n: o.n || 1, q: o.g ? o.g.q : RUNES[o.it]?.q || 0,
-      x: mob.x + ri(S, -14, 14), y: mob.y + ri(S, -8, 10), own: p.pid, freeAt: S.now + 20000, dieAt: S.now + 60000,
+      id: S.nextId++, it: o.g ? o.g.id : o.it, g: o.g || null, n: o.n || 1, q: o.g ? o.g.q : stackQuality(o.it),
+      x: mob.x + (atCorpse ? 0 : ri(S, -14, 14)), y: mob.y + (atCorpse ? 0 : ri(S, -8, 10)),
+      own: p.pid, freeAt: S.now + 20000, dieAt: S.now + 60000,
     });
   }
 }

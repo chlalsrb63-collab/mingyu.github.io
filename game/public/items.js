@@ -11,7 +11,7 @@ import { entryIconUrl } from "./weapons.js";
 import { G, el, $ } from "./state.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
-import { hoverTip, hideTip, closeDrawer, toast } from "./windows.js";
+import { hoverTip, hideTip, closeDrawer, openWin, toast } from "./windows.js";
 import { refreshUi } from "./hud.js";
 import * as Charms from "./charms.js";
 
@@ -36,7 +36,7 @@ const rarName = (q) => G.defs.rarity[q || 0] || (q === 5 ? "유니크" : "일반
 /** A legendary or 유니크 power: [name word, what it does], or null while `defs.legend` lacks it. */
 const legendOf = (k) => (k && G.defs.legend && G.defs.legend[k]) || null;
 const runeOf = (id) => G.defs.runes?.[id];
-export const itemRarity = (entry) => runeOf(entry.id)?.q || entry.q || 0;
+export const itemRarity = (entry) => runeOf(entry.id)?.q || entry.q || G.defs.items[entry.id]?.q || 0;
 export const rarityLabel = (id, q) => runeOf(id) ? G.defs.runeRarity[q] : rarName(q);
 export const socketCap = (entry) => G.defs.sockCaps?.[G.defs.items[entry.id].type] || 0;
 export const runeSetMax = () => G.defs.runeSetMax ?? 2;
@@ -111,6 +111,7 @@ function card(entry, o = {}) {
     if (entry.il > 0) r.append(el("span", "tc-il", `아이템 레벨 ${entry.il}`));
     head.append(r);
   } else if (rune) head.append(el("div", "tc-sub", `${rarityLabel(entry.id, q)} 룬`));
+  else if (it.q) head.append(el("div", "tc-sub", `${rarityLabel(entry.id, q)} 소모품`));
   if (it.base) {
     const base = sec();
     for (const [k, v] of baseStats(entry)) base.append(statRow(k, v, "base"));
@@ -241,12 +242,19 @@ export function itemSlot(entry, o = {}) {
   hoverTip(d, (h) => itemTip(entry, h, o));
   return d;
 }
+/** Show the smith's gear list when close enough. The server validates and consumes the stone. */
+export function openSocketSmith() {
+  if (G.near?.role !== "smith") { toast("룬 천공석은 대장장이 볼칸에게서 사용하세요"); return; }
+  openWin("smith");
+}
+
 /** Double-click or right-click in the bag: drink, eat, light, cook or put on. */
 export function useSlot(i) {
   const s = G.self, entry = s.inv[i];
   if (!entry) return;
   const d = G.defs.items[entry.id];
   hideTip();
+  if (entry.id === G.defs.sockItem) { openSocketSmith(); return; }
   if (d.type === "pot" || d.type === "food" || d.type === "scroll" || d.type === "buff" || d.type === "pet") act({ t: "use", id: entry.id });
   else if (d.type === "camp") { act({ t: "use", id: entry.id }); closeDrawer(); }
   else if (d.type === "fish") {

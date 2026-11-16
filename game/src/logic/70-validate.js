@@ -19,6 +19,18 @@ const bad = (error) => ({ ok: false, error });
 /** The bag slot a client names, or undefined: only a whole index ("length" or "__proto__" is no slot). */
 const invAt = (ch, s) => (Number.isInteger(s) ? ch.inv[s] : undefined);
 const OK = { ok: true };
+
+function socketValidate(p, slot) {
+  const ch = p.ch;
+  const g = SLOTS.includes(slot) ? ch.eq[slot] : null;
+  if (!g) return bad("장착한 장비를 골라 주세요");
+  if (p.dead) return bad("쓰러진 상태입니다");
+  if (!npcNear(p, "smith")) return bad("대장장이 볼칸에게 가까이 가야 합니다");
+  if (g.sk >= sockCap(g)) return bad("더 이상 홈을 뚫을 수 없습니다");
+  if (countItem(ch, SOCK_ITEM) < 1) return bad("룬 천공석이 1개 필요합니다");
+  if (ch.gold < SOCK_COST[g.sk]) return bad(`골드가 부족합니다 (${gStr(SOCK_COST[g.sk])}G 필요)`);
+  return OK;
+}
 function enhCost(g) {
   const tier = ITEMS[g.id].tier;
   return { gold: 60 * tier * (g.enh + 1), stone: g.enh < 3 ? 1 : g.enh < 6 ? 2 : 3 };
@@ -263,7 +275,8 @@ export function validateAction(S, pid, a) {
       return OK;
     }
     case "use": {
-      // elixirs, the punch and the whetstone (life skills, 58-life.js)
+      if (a.id === SOCK_ITEM) return socketValidate(p, a.k);
+      // Elixirs and the whetstone (life skills, 58-life.js).
       if (lifeUse(a.id)) return lifeUseValidate(S, p, a);
       const it = ITEMS[a.id];
       if (!it || !["pot", "food", "camp", "scroll", "buff", "pet"].includes(it.type)) return bad("사용할 수 없는 아이템");
@@ -316,15 +329,7 @@ export function validateAction(S, pid, a) {
       if (g.ru[a.i] && a.r !== 1) return bad("끼워진 룬을 교체하면 사라집니다. 교체를 확인하세요");
       return OK;
     }
-    case "socket": {
-      const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
-      if (!g) return bad("장착한 장비가 없습니다");
-      if (p.dead) return bad("쓰러진 상태입니다");
-      if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
-      if (g.sk >= sockCap(g)) return bad("더 이상 홈을 뚫을 수 없습니다");
-      if (ch.gold < SOCK_COST[g.sk]) return bad(`골드가 부족합니다 (${gStr(SOCK_COST[g.sk])}G 필요)`);
-      return OK;
-    }
+    case "socket": return socketValidate(p, a.k);
     case "train": {
       // stat points bought with experience, at a campfire or at 수련관 카이: a = [str, wil, dex, int, wis, luk]
       if (!Array.isArray(a.a) || a.a.length !== ST_ORDER.length || !a.a.every((v) => Number.isInteger(v) && v >= 0 && v <= 50)) return bad("잘못된 능력치");

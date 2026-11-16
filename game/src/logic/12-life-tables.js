@@ -145,7 +145,6 @@ Object.assign(ITEMS, {
   el_spd: { name: "신속의 물약", type: "buff", buff: "spd", sec: 60, el: 1, price: 400, desc: "60초간 이동속도가 40% 빨라진다." },
   el_all: { name: "연금 정수", type: "buff", buff: "all", min: 20, el: 1, price: 1650, desc: "20분간 공격력 +10%, 받는 피해 -12%, 경험치 +20%. 세 주문서의 힘을 한 병에." },
   stone_b: { name: "축복 강화석", type: "mat", price: 1000, desc: "강화할 때 함께 쓰면 성공 확률이 10%p 오르고, 실패해도 단계가 내려가지 않는다." },
-  punch: { name: "홈 송곳", type: "tool", price: 4000, desc: "장착한 장비에 홈을 하나 더 뚫는다 (부위의 최대치까지). 한 번 쓰면 사라진다." },
   whet: { name: "명장의 숫돌", type: "tool", price: 10000, desc: "장착한 장비의 가장 약한 옵션 하나를 새로 굴린다. 한 번 쓰면 사라진다." },
 });
 /** Blessed stone: +ENH_BLESS %p on the enhancement roll, and a failure never drops a step. */
@@ -190,16 +189,14 @@ Object.assign(RECIPES, {
   feather: recipeRow("alch", 35, "alch", [["m_h4", 1], ["m_w2", 1]], "feather", 1, 80),   // P7: was 2 수정꽃 + 심연 결정 + 판자 (525 G of goods for a 250 G feather)
   ru_mix: recipeRow("alch", 40, "alch", [["rune*", 3], ["m_h5", 1]], "rune*", 1, 200),
   el_all: recipeRow("alch", 50, "alch", [["m_h5", 2], ["m_o5", 1], ["m_w5", 1], ["flask", 1]], "el_all", 1, 400, { eq: ["sc_atk", "sc_def", "sc_xp"] }),
-  // 제작: the stone (the main sink), camp kits, blessed stones, the punch, the whetstone (ingots and gear below)
+  // 제작: enhancement stones, camp kits and whetstones (ingots and gear below).
   stone: recipeRow("craft", 1, "craft", [["m_o1", 4], ["m_w1", 1]], "stone", 1, 60),
   camp: recipeRow("craft", 5, "craft", [["m_w1", 5]], "camp", 1, 42),
   stone_x2: recipeRow("craft", 10, "craft", [["m_o1", 7], ["m_w1", 2]], "stone", 2, 126, { rep: "kangkang" }),
   stone_b: recipeRow("craft", 20, "craft", [["stone", 3], ["m_o3", 2]], "stone_b", 1, 300),
   q_wedge: recipeRow("craft", 20, "craft", [["m_o3", 2], ["m_w3", 2]], "q_wedge", 1, 40, { sq: "sq_toruk_wedge" }),   // Q2's quest recipe: only while 토룩's quest is on
-  punch: recipeRow("craft", 30, "craft", [["m_o4", 3], ["m_w4", 2]], "punch", 1, 2000),
-  // the bosses-2 trophies: 피눈물 결정 (혈루 왕도마뱀) and 망치 갯가재 집게 make the two dear tools a cheaper way
+  // A bloodtear from the 혈루 왕도마뱀 is an alternative ingredient for blessed stones.
   stone_b_bt: recipeRow("craft", 20, "craft", [["stone", 2], ["mat_bloodtear", 1]], "stone_b", 1, 200),
-  punch_cc: recipeRow("craft", 25, "craft", [["mat_clubclaw", 2], ["m_o3", 2]], "punch", 1, 1300),
   whet: recipeRow("craft", 50, "craft", [["m_o5", 4], ["m_w5", 2], ["stone_b", 1]], "whet", 1, 5000),
 });
 const ING_FEE = [5, 10, 20, 40, 60];

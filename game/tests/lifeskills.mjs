@@ -523,7 +523,8 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   standBy("kangkang");
   wipe("m_w1");
   assert.equal(act({ t: "craft_open", r: "stone" }).error, "재료가 부족합니다");
-  assert.equal(act({ t: "craft_open", r: "punch" }).error, "제작 레벨이 부족합니다 (Lv.30 필요)");
+  assert.equal(act({ t: "craft_open", r: "punch" }).error, "그런 제작법은 없습니다");
+  assert.equal(act({ t: "craft_open", r: "punch_cc" }).error, "그런 제작법은 없습니다");
   const gold0 = ch.gold;
   ch.gold = 10;
   give("m_w1", 1);
@@ -974,7 +975,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   const nc = L.newChar("새싹", []);
   assert.deepEqual([nc.cnt.gat, nc.cnt.craft, nc.cnt.deliver], [0, 0, 0]);
   assert.ok(D.life.jb.jb_dl_cafe.toName && D.life.rep.tier.length === 3 && D.life.pouch.ids.includes("staple") && D.life.nodes.kinds.join("") === "howc");
-  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 135 && D.life.recipes.some((r) => r.id === "gr_w_h_6"));
+  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 133 && D.life.recipes.some((r) => r.id === "gr_w_h_6"));
   // the town's hosts: 캉캉 crafts, 보글 brews, 쥬쥬's stove cooks, 포포 runs the board, 쥬쥬 and 보글's shelf sell the staples
   const role = (nid) => X.mapOf(X.NPC_MAP[nid]).npcs.find((n) => n.id === nid);
   assert.deepEqual(["kangkang", "bogle", "juju_stove", "popo"].map((nid) => role(nid).role), ["craft", "alch", "cook", "jobs"]);

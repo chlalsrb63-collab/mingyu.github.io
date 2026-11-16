@@ -266,7 +266,7 @@ export function defs() {
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
-    affix, runes: RUNES, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST,
+    affix, runes: RUNES, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
     rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     fieldParty: { tiles: FIELD_PARTY_RANGE / T, share: PARTY_SHARE },
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, mastery: MASTERY, bounty: BOUNTY_N, fbResp: FB_RESP,

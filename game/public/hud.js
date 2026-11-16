@@ -288,7 +288,7 @@ export function refreshUi() {
   draw("trophy", Trophies.key, Trophies.render);   // 보스 전리품 (trophies.js)
   draw("dex", Dex.key, Dex.render);               // 아이템도감: the prefixes (dex.js)
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near, s.rep], renderShop);
-  draw("smith", () => [s.eq, s.enh, s.gold, s.dead, countItem("stone"), countItem("uncurse"), s.pity], renderSmith);
+    draw("smith", () => [s.eq, s.enh, s.gold, s.dead, countItem("stone"), countItem("uncurse"), countItem(G.defs.sockItem), s.pity], renderSmith);
   draw("train", () => [s.xp, s.xpt, s.nx, s.rs, s.sw, s.lvl, s.gold, s.respecCost, s.inv.length,
     s.inv.some((item) => item.id === G.defs.jf.respecItem), near, StatWin.trainerKey()],
   (s) => StatWin.renderTrainer($("#train-body"), s, { atTrainer: near === "train" }));

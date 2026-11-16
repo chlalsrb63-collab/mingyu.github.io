@@ -121,7 +121,7 @@ for (const wk of Object.keys(WEAPON_NAMES)) {
 // bosses-2 §7: the two field bosses' own finds — a material each (for crafting to come) and a top-tier weapon (drops legendary)
 Object.assign(ITEMS, {
   mat_bloodtear: { name: "피눈물 결정", type: "mat", price: 400, desc: "혈루 왕도마뱀이 흘린 붉은 결정. 캉캉대장간에서 강화석 두 개와 함께 축복 강화석으로 굳힐 수 있다." },
-  mat_clubclaw: { name: "망치 갯가재 집게", type: "mat", price: 380, desc: "물을 끓게 하던 갯가재의 집게. 캉캉대장간에서 강철 광석과 함께 홈 송곳으로 벼릴 수 있다." },
+  mat_clubclaw: { name: "망치 갯가재 집게", type: "mat", price: 380, desc: "물을 끓게 하던 망치 갯가재의 단단한 집게. 상인에게 팔 수 있다." },
   w_bloodcrown: { ...ITEMS.w_lancer_5, name: "혈루 왕관 창", uniq: 1 },
   w_cavhammer: { ...ITEMS.w_h_5, name: "공동 망치", uniq: 1 },
 });

@@ -241,7 +241,7 @@ function sqApply(S, p, a) {
   const rw = sqPay(q, a.pick);
   if (q.id === JF_QUEST) afterGear(S, p);
   if (rw.gold) { ch.gold += rw.gold; p.gain.push(["gold", rw.gold]); }
-  for (const [id, n] of rw.items) if (addItem(ch, id, n)) p.gain.push(["item", id, n, 0]);
+  for (const [id, n] of rw.items) if (addItem(ch, id, n)) foundItem(S, p, id, n);
   toast(p, `퀘스트 완료: ${q.title}`);
   if (rw.keep && !ch.keep[rw.keep]) { ch.keep[rw.keep] = 1; toast(p, `기념품 [${ITEMS[rw.keep].name}]${pp(ITEMS[rw.keep].name, "을를")} 간직했습니다 (도감 · 기념품)`); }
   if (rw.ach) checkAch(S, p);

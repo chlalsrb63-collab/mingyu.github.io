@@ -615,9 +615,9 @@ function jbPay(S, p) {
   p.dirty = true;
 }
 
-// ── items with a life use (B.11): elixirs, the punch, the whetstone
+// ── items with a life use (B.11): elixirs and the whetstone
 
-const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (ITEMS[id].type === "tool" || ITEMS[id].el === 1);
+const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (id === "whet" || ITEMS[id].el === 1);
 /** The weakest affix of a piece (value against its range's top), by index; −1 without one. */
 function weakAffix(g) {
   let best = -1, bv = Infinity;
@@ -635,8 +635,7 @@ function lifeUseValidate(S, p, a) {
   if (it.type !== "tool") return OK;
   const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
   if (!g) return bad("장착한 장비를 골라 주세요");
-  if (a.id === "punch" && g.sk >= sockCap(g)) return bad("더 이상 홈을 뚫을 수 없습니다");
-  if (a.id === "whet" && weakAffix(g) < 0) return bad("새로 굴릴 옵션이 없습니다");
+  if (weakAffix(g) < 0) return bad("새로 굴릴 옵션이 없습니다");
   return OK;
 }
 function lifeUseApply(S, p, a) {
@@ -651,16 +650,11 @@ function lifeUseApply(S, p, a) {
     toast(p, `${it.name}${pp(it.name, "을를")} 마셨습니다. ${it.desc.split(".")[0]}.`);
   } else {
     const g = ch.eq[a.k];
-    if (a.id === "punch") {
-      g.sk++;
-      toast(p, `${gearName(g)}에 홈을 뚫었습니다 (${g.sk}/${sockCap(g)}).`);
-    } else {
-      // the weakest affix goes; a fresh one (not already on the piece) takes its place, rolled at the tier's level
-      const i = weakAffix(g), t = ITEMS[g.id].tier || 1;
-      const pool = AFFIX.filter((x) => !g.af.some(([k], j) => j !== i && k === x[0]));
-      g.af[i] = rollLine(S, pool[ri(S, 0, pool.length - 1)][0], GEAR_CRAFT.ilvl[t - 1], AFFIX_MUL[g.q | 0]);
-      toast(p, `${gearName(g)}의 옵션을 새로 다듬었습니다.`);
-    }
+    // Replace the weakest affix with a different line rolled at the gear's tier.
+    const i = weakAffix(g), t = ITEMS[g.id].tier || 1;
+    const pool = AFFIX.filter((x) => !g.af.some(([k], j) => j !== i && k === x[0]));
+    g.af[i] = rollLine(S, pool[ri(S, 0, pool.length - 1)][0], GEAR_CRAFT.ilvl[t - 1], AFFIX_MUL[g.q | 0]);
+    toast(p, `${gearName(g)}의 옵션을 새로 다듬었습니다.`);
     S.maps[p.map].ev.push(["e", p.eid, 1]);
     afterGear(S, p);
   }

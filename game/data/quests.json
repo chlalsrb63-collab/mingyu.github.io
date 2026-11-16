@@ -36,6 +36,17 @@
       "repeat": false
     },
     {
+      "id": "sq_volkan_socket_stone",
+      "giver": "smith",
+      "title": "숲길을 막은 꼬인 여우",
+      "text": "숲 너머로 보낼 장비가 쌓였는데, 운반꾼들이 꼬인 여우 떼 때문에 발이 묶였어. 속삭임 숲의 꼬인 여우 12마리를 잡아 주게. 길이 열리면 룬 천공석 하나를 주지.",
+      "done": "운반꾼들이 무사히 돌아왔어. 약속한 룬 천공석이야. 장비에 소켓이 필요할 때 가져오게.",
+      "goal": { "type": "kill", "mob": "foxtwine", "n": 12 },
+      "req": { "lv": 40, "quest": null },
+      "reward": { "xp": 10000, "gold": 1200, "items": [["punch", 1]] },
+      "repeat": false
+    },
+    {
       "id": "sq_kong_parcel",
       "giver": "store_kong",
       "title": "콩콩의 급한 배달",

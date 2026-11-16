@@ -1,6 +1,12 @@
 // Socket limits, rune variants and deterministic drops. A variant has fixed lines so identical runes stack.
 const SOCK_CAPS = { weapon: 2, armor: 2, helm: 1, gloves: 1, boots: 1, ring: 1, amulet: 1 };
 const SOCK_COST = [1200, 3500];
+const SOCK_ITEM = "punch"; // Retain the id of the old socket tool in bags, storage and trade.
+const SOCK_DROP = [0.0001, 0.0008, 0.004]; // Normal, elite, boss or guardian, per eligible looter.
+ITEMS[SOCK_ITEM] = {
+  name: "룬 천공석", type: "tool", q: 3, price: 4000,
+  desc: "대장장이 볼칸에게 골드와 함께 건네면 장착한 장비의 룬 소켓 하나를 엽니다. 볼칸의 의뢰 보상과 희귀 사냥 전리품으로 얻으며 거래할 수 있습니다.",
+};
 const sockCap = (g) => SOCK_CAPS[ITEMS[g.id].type];
 const RUNE_RARITY = { 1: "마법", 2: "희귀", 3: "전설", 4: "세트" };
 const RUNE_PRICE = { 1: 500, 2: 900, 3: 1650, 4: 850 };

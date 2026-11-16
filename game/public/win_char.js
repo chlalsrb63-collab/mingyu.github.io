@@ -20,7 +20,7 @@ import * as Gather from "./gather.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
 import { isOpen, touch, hideTip, closeDrawer, openWin, hoverTip, ask, chatLink } from "./windows.js";
-import { invOrder, itemSlot, QS_USE, useSlot, isGear, emptyEquipSlot, reqLv, sellPrice, itemTip, itemName, itemRarity, SLOT_NAME, SLOT_GLYPH, runeSetStatus, runeSetMax } from "./items.js";
+import { invOrder, itemSlot, QS_USE, useSlot, openSocketSmith, isGear, emptyEquipSlot, reqLv, sellPrice, itemTip, itemName, itemRarity, SLOT_NAME, SLOT_GLYPH, runeSetStatus, runeSetMax } from "./items.js";
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
@@ -119,6 +119,10 @@ export function renderInv(s) {
   if (d.type === "pet") add(s.pet === entry.id ? "돌려보내기" : "데리고 다니기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "food") add("먹기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "camp") add("모닥불 피우기", () => { act({ t: "use", id: entry.id }); closeDrawer(); }, false, true);
+  if (entry.id === G.defs.sockItem) {
+    if (G.near?.role === "smith") add("소켓 천공", openSocketSmith, false, true);
+    else if (!touch()) det.append(el("div", "ds", "대장장이 볼칸에게 가져가면 장착 장비에 소켓을 열 수 있습니다."));
+  }
   if (QS_USE.includes(d.type)) add("단축칸", () => QS.pick(["i", entry.id]));
   if (d.type === "fish") {
     add("굽기", () => { const id = entry.id; closeDrawer(); Mini.cooking(G.defs.items[d.cook].name, (score) => act({ t: "cook", id, s: score })); }, !fireNear(), true);

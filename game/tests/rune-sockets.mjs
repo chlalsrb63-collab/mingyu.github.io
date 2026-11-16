@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const runeTest = { T, gearBonus, lootFor, migrate, newMob, plain, rollGear };\n";
+  "\nexport const runeTest = { T, MOBS, SOCK_DROP, gearBonus, lootFor, migrate, newMob, pickUp, plain, rollGear };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
-const { T, gearBonus, lootFor, migrate, newMob, plain, rollGear } = L.runeTest;
+const { T, MOBS, SOCK_DROP, gearBonus, lootFor, migrate, newMob, pickUp, plain, rollGear } = L.runeTest;
 const D = L.defs();
 const runeId = (set) => Object.keys(D.runes).find((id) => D.runes[id].set === set);
 
@@ -51,8 +51,14 @@ const drill = (k) => act({ t: "socket", k });
 ch.eq.weapon = plain(bases.weapon);
 ch.gold = 20_000;
 const before = ch.gold;
+assert.equal(D.items[D.sockItem].name, "룬 천공석");
+assert.equal(D.items[D.sockItem].q, 3);
+ch.inv = [{ id: D.sockItem, n: 4 }];
+const stones = () => ch.inv.find((stack) => stack.id === D.sockItem)?.n || 0;
 assert.equal(drill("weapon").ok, false, "the smith must be in reach");
+assert.equal(act({ t: "use", id: D.sockItem, k: "weapon" }).ok, false, "the inventory route requires the smith too");
 assert.equal(ch.gold, before);
+assert.equal(stones(), 4);
 const smith = L.viewFor(S, pid).map.npcs.find((n) => n.role === "smith");
 p.x = smith.x * T + 8; p.y = smith.y * T + 20;
 assert.equal(drill("__proto__").ok, false);
@@ -62,17 +68,29 @@ p.dead = false;
 assert.equal(drill("weapon").ok, true);
 assert.equal(ch.eq.weapon.sk, 1);
 assert.equal(ch.gold, before - D.sockCost[0]);
+assert.equal(stones(), 3);
 assert.equal(drill("weapon").ok, true);
 assert.equal(ch.eq.weapon.sk, 2);
 assert.equal(drill("weapon").ok, false, "retries never overshoot the cap");
 assert.equal(ch.gold, before - D.sockCost[0] - D.sockCost[1]);
+assert.equal(stones(), 2, "the capped request does not consume a third stone");
 ch.eq.ring1 = plain(bases.ring1);
 ch.gold = D.sockCost[0] - 1;
 assert.equal(drill("ring1").ok, false, "insufficient gold");
+assert.equal(stones(), 2);
 ch.gold++;
 assert.equal(drill("ring1").ok, true);
 assert.equal(ch.eq.ring1.sk, 1);
 assert.equal(drill("ring1").ok, false);
+assert.equal(stones(), 1);
+ch.inv.length = 0;
+ch.gold = before;
+assert.equal(drill("weapon2").ok, false);
+assert.equal(drill("ring2").ok, false);
+ch.eq.ring2 = plain(bases.ring2);
+assert.equal(drill("ring2").ok, false, "gold alone is insufficient");
+assert.equal(ch.eq.ring2.sk, 0);
+assert.equal(ch.gold, before);
 
 const twos = Object.keys(D.runeSets).filter((id) => D.runeSets[id].need === 2);
 const four = Object.keys(D.runeSets).find((id) => D.runeSets[id].need === 4);
@@ -145,4 +163,33 @@ for (let i = 0; i < 1000; i++) {
 }
 assert.deepEqual([...rarities].sort(), [1, 2, 3, 4]);
 assert.equal(foundSets.size, 15, "all rune sets occur in real drops");
+
+assert.deepEqual(SOCK_DROP, [0.0001, 0.0008, 0.004]);
+assert.ok(!D.shop.includes(D.sockItem));
+assert.ok(!D.life.recipes.some((recipe) => recipe.id === D.sockItem || recipe.id === `${D.sockItem}_cc`));
+let stoneDrop = null;
+for (const [rank, tries] of [[0, 100_000], [1, 40_000], [2, 20_000]]) {
+  const mob = newMob(S, rank === 2 ? "boss" : "twinhare", null, null);
+  mob.el = rank;
+  let drops = 0;
+  for (let i = 0; i < tries; i++) {
+    rt.drops.length = 0;
+    lootFor(S, rt, mob, p);
+    for (const dr of rt.drops) if (dr.it === D.sockItem) { drops++; stoneDrop = dr; }
+  }
+  const expected = tries * SOCK_DROP[rank];
+  assert.ok(drops > 0 && Math.abs(drops - expected) < 5 * Math.sqrt(expected), `rank ${rank} drops: ${drops}/${tries}`);
+}
+const chest = newMob(S, Object.keys(MOBS).find((id) => MOBS[id].chest), null, null);
+for (let i = 0; i < 5000; i++) {
+  rt.drops.length = 0;
+  lootFor(S, rt, chest, p);
+  assert.ok(!rt.drops.some((dr) => dr.it === D.sockItem), "treasure chests are not hunting drops");
+}
+assert.equal(stoneDrop.q, 3);
+p.save = false;
+assert.equal(pickUp(S, p, stoneDrop), true);
+assert.equal(p.save, true, "persist the rare drop promptly");
+assert.equal(stones(), 1);
+assert.deepEqual(p.gain.at(-1), ["item", D.sockItem, 1, 3]);
 console.log("rune sockets: caps, payments, rune drops, equipped bonuses, priority and old sheets");

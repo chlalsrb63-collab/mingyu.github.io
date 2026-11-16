@@ -1,3 +1,14 @@
+function socketApply(S, p, slot) {
+  const ch = p.ch, g = ch.eq[slot];
+  takeItem(ch, SOCK_ITEM, 1);
+  ch.gold -= SOCK_COST[g.sk];
+  g.sk++;
+  toast(p, `[${gearName(g)}]에 홈을 뚫었습니다 (${g.sk}/${sockCap(g)}).`);
+  S.maps[p.map].ev.push(["e", p.eid, 1]);
+  p.dirty = true;
+  saveSoon(p);
+}
+
 export function applyAction(S, pid, a) {
   const p = S.players[pid];
   const ch = p.ch;
@@ -35,6 +46,7 @@ export function applyAction(S, pid, a) {
     case "skr": holdGo(S, p); break;
     case "dash": dashGo(S, p, m, a.a); break;
     case "use": {
+      if (a.id === SOCK_ITEM) { socketApply(S, p, a.k); break; }
       if (lifeUse(a.id)) { lifeUseApply(S, p, a); break; }
       const it = ITEMS[a.id];
       const st = stats(p);
@@ -127,15 +139,7 @@ export function applyAction(S, pid, a) {
       afterGear(S, p);
       break;
     }
-    case "socket": {
-      const g = ch.eq[a.k];
-      ch.gold -= SOCK_COST[g.sk];
-      g.sk++;
-      toast(p, `[${gearName(g)}]에 홈을 뚫었습니다 (${g.sk}/${sockCap(g)}).`);
-      S.maps[p.map].ev.push(["e", p.eid, 1]);
-      p.dirty = true;
-      break;
-    }
+    case "socket": socketApply(S, p, a.k); break;
     case "train": {
       // one point = one level: the stats rise, a full heal as of old, the news at every fifty
       const cost = batchCost(ch, a.a), from = ch.lvl;
