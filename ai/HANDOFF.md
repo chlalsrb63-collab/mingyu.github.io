@@ -324,3 +324,8 @@ Known: 추적(trace) +25 % xp is cut to +15 % by the prefix xp cap (tooltip over
 **장날 market merged (2026-11-16, suite 65/65, sheet v27):** `FAIR` = Tue+Sat 19:00–21:00 KST (`63-festival.js`), merchants `fm_leg fm_scr fm_rune fm_cos fm_food fm_dye` (`64-fair-market.js`, `public/fairmkt.js`),
 once per player per product per day (`ch.fairBuy`), prices in `FAIR_PRICE` (legendary 15k×(il/30)^1.35, scroll 40k, costume 60k …). 몽실 (scroll vendor) fills itself once `es_*` items exist (Codex W2).
 **Sheet `v` is now 27:** Codex's branches that bump `v` must rebase and re-pin the ~16 tests that assert it. Help/Guide read days from `defs.fair.days`.
+
+## 0.12 Smartphone UI + local play server (2026-11-16)
+Merged: smartphone menu (`public/phone.js/.css`, setting "메뉴 방식", key `phone` = Backquote, "내 핸드폰" tag over the pocket button). **Local play server:** frozen worktree `../tt-play-current` at 644a4d8,
+launch config `play-local` (port 8830, LAN http://192.168.31.58:8830, saves in `game/.wrangler/play`). To update the build: `git -C ../tt-play-current checkout --detach <commit>` then restart `play-local`.
+Weekly usage of the integrator was ~10 % left at this point: new sessions should start from this file, run ≤ 1 agent at a time, and leave heavy work (W1/W2/W3-A/W4/W5, prompts in the item spec) to Codex.
