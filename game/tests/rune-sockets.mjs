@@ -136,6 +136,11 @@ assert.deepEqual([migrated.eq.armor.il, migrated.eq.armor.enh, migrated.eq.armor
 assert.deepEqual(migrated.eq.armor.ru, ["ru_ign", "ru_acu"]);
 assert.equal(migrated.inv.find((entry) => entry.id === "ru_ign").n, 4, "the third rune returns to the bag");
 assert.deepEqual(migrate(structuredClone(migrated)), migrated, "loading the upgraded sheet twice is idempotent");
+const fairLegacy = L.newChar("장날기록", []);
+fairLegacy.v = 27; // the fair market and the rune migration both used v27
+fairLegacy.cnt = { set: 2, rw: 1 };
+migrate(fairLegacy);
+assert.deepEqual([fairLegacy.cnt.rune_find, fairLegacy.cnt.rune_bond], [2, 1]);
 
 const full = L.newChar("가득찬가방", []);
 full.v = 26;

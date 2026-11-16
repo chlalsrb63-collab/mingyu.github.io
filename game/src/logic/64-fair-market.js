@@ -6,7 +6,7 @@
 // the newest day kept. Goods are dear — every figure is in FAIR_PRICE below.
 //   leg   전설 장비 (4–6 legendary pieces of different slots, item levels spread over 30–190, rolled by rollGear at q3)
 //   scr   인챈트 스크롤 (every `es_*` item that exists; none yet → an empty counter, no error)
-//   rune  룬 (the game has no "set"/"legendary" runes; the rarest are the six that make the 3-rune words: the day's word's runes + 2)
+//   rune  룬 (three variants from one three-piece set, plus a rare rune and a legendary rune)
 //   cos   의상 (off-season 장날 pieces: COSMETICS src "fair", the ones 장꾼 다래 sells for tokens only in their own season)
 //   food  음식 (five rare dishes in packs of five)
 //   dye   염료 (four of 루루's six dyes in packs of three)
@@ -61,11 +61,13 @@ function fairGear(box) {
     return { id: `l${i}`, g, price: fairGearPrice(g.il) };
   });
 }
-/** 룬: the three runes of one of the 3-rune words (피의 맹세, 불멸) and two others. */
+/** 룬: rotate a full three-piece set alongside two standalone runes. */
 function fairRunes(box) {
-  const words = RUNEWORDS.filter((w) => w.seq.length === 3), word = words[ri(box, 0, words.length - 1)];
-  const more = fairPick(box, RUNE_KEYS.filter((k) => !word.seq.includes(k)), 2);
-  return [...word.seq, ...more].map((k) => fairPack(`ru_${k}`, 1, FAIR_PRICE.rune));
+  const sets = Object.keys(RUNE_SETS).filter((id) => RUNE_SETS[id].need === 3);
+  const set = sets[ri(box, 0, sets.length - 1)];
+  const matching = fairPick(box, RUNE_POOLS[4][3].filter((id) => RUNES[id].set === set), RUNE_SETS[set].need);
+  const standalone = [2, 3].map((grade) => RUNE_POOLS[grade][ri(box, 0, RUNE_POOLS[grade].length - 1)]);
+  return [...matching, ...standalone].map((id) => fairPack(id, 1, FAIR_PRICE.rune));
 }
 /** The rows vendor `v` sells on KST day `day`: { id (product), price, and g (a gear piece) | it + n (items) | cos (a cosmetic) }. */
 function fairStock(day, v) {

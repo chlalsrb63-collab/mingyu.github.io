@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { FAIR, FAIR_VENDORS, FAIR_PRICE, FAIR_GEAR, fairStock, fairGearPrice, fairBuyClean, fairOpen, kstDay, mapOf, blockedAt, ITEMS, COSMETICS, LEGEND, PFX, bagCap, G_REQ, RUNEWORDS, COS_IDS };\n";
+  "\nexport const __t = { FAIR, FAIR_VENDORS, FAIR_PRICE, FAIR_GEAR, fairStock, fairGearPrice, fairBuyClean, fairOpen, kstDay, mapOf, blockedAt, ITEMS, COSMETICS, LEGEND, PFX, bagCap, G_REQ, RUNES, RUNE_SETS, COS_IDS };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, H = 3600000;
 const kst = (s) => Date.parse(s + ":00+09:00");
@@ -107,9 +107,12 @@ const slotOf = (id) => X.ITEMS[id].type;
   assert.equal(X.fairGearPrice(30), X.FAIR_PRICE.gear.base, "il 30 costs the base");
   assert.ok(X.fairGearPrice(190) > 10 * X.fairGearPrice(30) && X.fairGearPrice(190) <= 250000, "il 190 is about twelve times the base");
   // the other counters
-  const rune = X.fairStock(DAY, "rune"), words = X.RUNEWORDS.filter((r) => r.seq.length === 3);
+  const rune = X.fairStock(DAY, "rune"), [first, second, third, rare, legendary] = rune.map((r) => X.RUNES[r.it]);
   assert.equal(rune.length, 5);
-  assert.ok(words.some((wd) => wd.seq.every((k) => rune.some((r) => r.it === `ru_${k}`))), "a whole 3-rune word is on the counter");
+  assert.equal(new Set(rune.map((r) => r.it)).size, 5);
+  assert.equal(X.RUNE_SETS[first.set].need, 3);
+  assert.deepEqual([second.set, third.set], [first.set, first.set], "a whole three-piece set is on the counter");
+  assert.deepEqual([rare.q, legendary.q], [2, 3]);
   assert.ok(rune.every((r) => r.n === 1 && r.price === X.FAIR_PRICE.rune));
   const food = X.fairStock(DAY, "food");
   assert.equal(food.length, 5);
