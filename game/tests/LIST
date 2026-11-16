@@ -5,6 +5,7 @@ party
 loot
 itemlevel
 prefix
+prefix-util
 life
 lifeskills
 jobaudit
