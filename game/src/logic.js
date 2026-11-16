@@ -695,7 +695,7 @@ const UNIQ = {
   suf: [["파멸의 낙인", "critd"], ["황금왕의 탐욕", "gold"], ["학살의 서약", "atk"], ["철옹성의 맹세", "def"], ["불사의 맹약", "hp"],
     ["맹금의 눈", "crit"], ["파괴의 의지", "atkp"], ["갈증의 입맞춤", "ls"], ["별무리의 속삭임", "mp"], ["질풍의 발걸음", "spd"]],
 };
-const UNIQ_MUL = 1.6;
+const UNIQ_MUL = 2.2;
 /** The chance a gear roll is a 유니크, by rank (0 ordinary monster, 1 elite or chest, 2 boss): about 1/12 to 1/20 of the 전설/세트 chance at each rank, x (1 + MF/100). */
 const UNIQ_P = [0.001, 0.004, 0.01];
 /**
@@ -11887,6 +11887,7 @@ function craftOnce(S, p, r, s) {
     let q = clamp(rollRarity(S, 0, 0), GEAR_CRAFT.q[0], GEAR_CRAFT.q[1]);
     if (roll.great) q = Math.min(GEAR_CRAFT.q[1], q + 1);
     const g = rollGear(S, r.out[0], q, GEAR_CRAFT.ilvl[t - 1]);
+    g.il = Math.min(200, G_REQ[t - 1] + 10);   // worn from the tier's own level as before (il − 10; tier 6 stays at Lv.181)
     ch.inv.push(g);
     p.gain.push(["item", g.id, 1, g.q]);
   } else {

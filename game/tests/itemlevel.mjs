@@ -52,7 +52,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   near(mean(lines(2)), 1.0, 0.05, "희귀 as rolled");
   near(mean(lines(3)), 1.3, 0.06, "전설 ×1.3");
   near(mean(lines(5, 2)), 1.3, 0.06, "a 유니크's two ordinary lines are ×1.3 as well");
-  // the unique's own two: tied to its words, rolled strong (×1.6 on the upper half of the range)
+  // the unique's own two: tied to its words, rolled strong (×2.2 on the upper half of the range)
   for (const g of by[5]) {
     assert.ok(Array.isArray(g.un) && g.un[0] >= 0 && g.un[0] < 10 && g.un[1] >= 0 && g.un[1] < 10);
     assert.equal(g.af[0][0], X.UNIQ.pre[g.un[0]][1], "af[0] is the prefix's line");
@@ -60,10 +60,10 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
     assert.notEqual(g.af[0][0], g.af[1][0]);
   }
   const own = by[5].flatMap((g) => g.af.slice(0, 2).map((a) => rel(a, 30)));
-  assert.ok(mean(own) > 1.7 && mean(own) < 2.1, `own lines strong: ${mean(own)}`);
+  assert.ok(mean(own) > 2.3 && mean(own) < 2.9, `own lines strong: ${mean(own)}`);
   // clearly stronger than a legendary of the same level, before the legendary's power is even counted
   const tot = (q) => mean(by[q].map((g) => g.af.reduce((s, a) => s + rel(a, 30), 0)));
-  assert.ok(tot(5) > tot(3) * 1.15, `unique ${tot(5).toFixed(2)} vs legendary ${tot(3).toFixed(2)}`);
+  assert.ok(tot(5) > tot(3) * 1.35, `unique ${tot(5).toFixed(2)} vs legendary ${tot(3).toFixed(2)}`);
   assert.ok(tot(3) > tot(2) && tot(2) > tot(1));
   // every word is drawn, and the sockets follow the rarity as for the others (≥ 1 for a piece that can have any)
   assert.equal(new Set(by[5].map((g) => g.un[0])).size, 10); assert.equal(new Set(by[5].map((g) => g.un[1])).size, 10);

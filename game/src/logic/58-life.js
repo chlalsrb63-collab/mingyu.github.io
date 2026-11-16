@@ -403,6 +403,7 @@ function craftOnce(S, p, r, s) {
     let q = clamp(rollRarity(S, 0, 0), GEAR_CRAFT.q[0], GEAR_CRAFT.q[1]);
     if (roll.great) q = Math.min(GEAR_CRAFT.q[1], q + 1);
     const g = rollGear(S, r.out[0], q, GEAR_CRAFT.ilvl[t - 1]);
+    g.il = Math.min(200, G_REQ[t - 1] + 10);   // worn from the tier's own level as before (il − 10; tier 6 stays at Lv.181)
     ch.inv.push(g);
     p.gain.push(["item", g.id, 1, g.q]);
   } else {
