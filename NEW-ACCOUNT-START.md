@@ -52,6 +52,43 @@
 - **새 계정에서는** 위 정리가 적용되지 않을 수 있습니다(계정 커넥터는 계정별). 새 계정의 설정 > 커넥터에서 Notion·Higgsfield 등을 끄세요 — 매 턴 읽는 도구 목록이 줄어 토큰이 절약됩니다(약 5%).
 - 전역 지침 `C:\Users\mankyu\.claude\CLAUDE.md`(gstack, graphify)는 같은 PC면 그대로 적용됩니다. 프로젝트 지침은 저장소의 `CLAUDE.md`/`AGENTS.md`.
 
+## 5b. 새 계정에서도 같은 MCP · 스킬 · 플러그인(Ponytail 등)을 쓰려면
+
+**핵심: Claude Code의 도구 설정은 "계정"이 아니라 "이 PC의 윈도우 사용자 폴더"에 저장됩니다.** 그래서:
+
+| 항목 | 저장 위치 | 같은 PC에서 계정만 바꿀 때 | 다른 PC로 옮길 때 |
+| --- | --- | --- | --- |
+| 플러그인 (ponytail, superpowers, claudex-loop, frontend-design, code-review …) | `C:\Users\mankyu\.claude\settings.json` `enabledPlugins` + `plugins\` | **그대로 사용 가능** | 아래 명령으로 재설치 |
+| 스킬 (gstack, graphify, codebase-memory 등 약 150개) | `C:\Users\mankyu\.claude\skills\` (약 1.3GB) | **그대로 사용 가능** | 폴더 통째로 복사(또는 gstack은 아래 `git clone`) |
+| 에이전트·명령·훅 (`codebase-memory-*.md`, `gameskill.md`, `cbm-*.cmd`) | `.claude\agents` `commands` `hooks` | **그대로** | 폴더 복사 |
+| MCP 서버 `codebase-memory-mcp` | `C:\Users\mankyu\.claude.json` `mcpServers` + 실행 파일 `...\AppData\Local\Programs\codebase-memory-mcp\` | **그대로** | 실행 파일 설치 후 `claude mcp add` |
+| 전역 지침 (gstack, graphify, 한국어 응답) | `C:\Users\mankyu\.claude\CLAUDE.md`, `settings.json`(`language: korean`) | **그대로** | 두 파일 복사 |
+| 프로젝트 지침 | 저장소의 `CLAUDE.md` `AGENTS.md` | 그대로 | 폴더 복사 |
+| claude.ai **커넥터**(Notion 등), 계정별 앱 설정 | **계정에 묶임** | 새 계정에서 따로 설정 (이 프로젝트엔 불필요 — 꺼 둔 상태가 정상) | 동일 |
+
+→ **같은 PC·같은 윈도우 로그인에서 Claude 계정만 바꿔 로그인하면 Ponytail, 스킬, 코드 그래프 MCP까지 전부 그대로 보입니다.** 새 채팅에서 `/ponytail` 이나 스킬 목록이 보이면 정상. 안 보이면 Claude Code를 완전히 종료 후 다시 시작하세요.
+
+**다른 PC로 옮길 때(복구 순서, PowerShell 또는 터미널):**
+```
+# 1) 폴더 복사: 이 PC의 사용자폴더\.claude 중 CLAUDE.md, settings.json, skills\, agents\, commands\, hooks\, ponytail-modes\, ponytail-statusline.ps1 을 새 PC의 같은 위치로
+# 2) 플러그인 마켓과 설치 (한 줄씩)
+claude plugin marketplace add anthropics/claude-plugins-official
+claude plugin marketplace add obra/superpowers
+claude plugin marketplace add anthropics/claude-code
+claude plugin marketplace add chaseai-yt/claudex-loop
+claude plugin marketplace add DietrichGebert/ponytail
+claude plugin install ponytail@ponytail
+claude plugin install superpowers@superpowers-dev
+claude plugin install claudex-loop@claudex-loop
+claude plugin install frontend-design@claude-plugins-official
+claude plugin install code-review@claude-plugins-official
+# (이미 꺼 둔 것: github, fullstory, claude-mem — 필요 없으면 설치하지 않기)
+# 3) 코드 그래프 MCP: codebase-memory-mcp 실행 파일을 설치한 뒤 (경로 예시)
+claude mcp add -s user codebase-memory-mcp -- "C:/Users/<사용자>/AppData/Local/Programs/codebase-memory-mcp/codebase-memory-mcp.exe"
+# 4) gstack을 직접 받고 싶다면 (이미 복사했다면 생략): git clone https://github.com/garrytan/gstack.git <사용자폴더>\.claude\skills\gstack  → 그 폴더에서 ./setup --no-plan-tune-hooks
+```
+확인: `claude mcp list` 에 `codebase-memory-mcp` 가 Connected, `claude plugin list` 에 위 플러그인이 보이면 완료. 새 PC에서는 코드 그래프 색인이 처음부터 만들어지므로(몇 분) `index_repository`로 `Tales Tales` 폴더를 한 번 색인하세요.
+
 ## 6. 새 계정 첫 30분 체크리스트
 
 1. 폴더 열기 → `git status`(깨끗해야 함; `.claude/launch.json`, `.wrangler/`, `Intro.mp4` 등은 추적 안 되는 로컬 파일) → `git log -5`.
