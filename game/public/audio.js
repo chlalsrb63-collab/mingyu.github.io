@@ -921,6 +921,8 @@ const SFX = {
   die_small() { this.tone(0.25, 420, 90, 0.16, 0.1); this.noise(0.1, 0.09, 1200, "bandpass", 0.02); },
   die_big() { this.tone("sawtooth", 220, 45, 0.4, 0.13); this.noise(0.3, 0.18, 1800, "lowpass", 0, 150); },
   die_boss() { this.tone("sawtooth", 160, 30, 1.4, 0.16); this.noise(1.2, 0.26, 2400, "lowpass", 0, 80); this.arp("triangle", [392, 330, 262, 196], 0.18, 0.4, 0.1, 0.3); },
+  /** A rallying cry: a low growl that climbs. */
+  mob_howl() { this.tone("sawtooth", 150, 300, 0.38, 0.09); this.tone("sawtooth", 110, 84, 0.42, 0.06, 0.04); },
   mob_shot() { this.tone("square", 700, 300, 0.1, 0.06); this.noise(0.05, 0.08, 3000); },
   charge() { this.tone("sawtooth", 90, 260, 0.6, 0.08); this.noise(0.6, 0.08, 300, "bandpass", 0, 1600); },
   volley() { this.arp(0.25, [880, 740, 620], 0.05, 0.08, 0.06); this.noise(0.15, 0.1, 2800); },

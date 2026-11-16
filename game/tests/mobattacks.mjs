@@ -154,4 +154,8 @@ for (const [k, d] of Object.entries(X.MOBS)) for (const mv of Object.keys(X.TRIC
   assert.ok(d.moves.includes(mv) || k.startsWith("t_"), `${k}: ${mv} is in its moves`);
 }
 assert.equal(X.MOBS.gutfrog_poison.pounce, X.MOBS.gutfrog.pounce, "a recoloured kind pounces like its body");
+// the 2026-11-16 variety pass: no early kind is left with a bare bite, a bone hare burrows instead of pouncing
+for (const k of ["twinhare", "lambmaw", "meadowram", "splitboar", "ribdeer", "hydrasnake", "gnawbadger", "ratking", "batcluster"]) assert.ok(X.MOBS[k].moves.length >= (["twinhare", "ratking", "batcluster", "hydrasnake"].includes(k) ? 1 : 2), `${k}: has a trick of its own`);
+assert.deepEqual(X.MOBS.twinhare_bone.moves, ["burrow"], "the bone hare burrows (and does not inherit the pounce)");
+assert.ok(src.includes("POOL_OF[monsterElement") && src.includes("5500 * TRICK_EL"),"puddles follow the maker's element; elites charge more often too");
 console.log("mobattacks: ok");

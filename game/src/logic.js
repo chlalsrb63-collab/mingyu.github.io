@@ -851,7 +851,7 @@ const MOBS = {
   prismmole: { name: "겹렌즈 두더지", lv: 27, hp: 1310, atk: 93, def: 18, spd: 34, xp: 600, gold: [54, 98], aggro: 84, range: 21, cd: 1500, fan: 100, slam: 32, bonusOptional: true },
   // The second wave of beasts (art: mobart_g.js), each with a telegraphed trick and a home ground (ZONE_EXTRA, 33-maps-zones.js).
   slugtongue: { name: "혀 민달팽이", lv: 9, hp: 190, atk: 22, def: 2, spd: 16, xp: 66, gold: [10, 22], aggro: 60, range: 16, cd: 1500, cloud: 30 },
-  gnawbadger: { name: "이빨굴 오소리", lv: 11, hp: 250, atk: 28, def: 4, spd: 40, xp: 100, gold: [12, 27], aggro: 88, range: 17, cd: 1100, burrow: 100 },
+  gnawbadger: { name: "이빨굴 오소리", lv: 11, hp: 250, atk: 28, def: 4, spd: 40, xp: 100, gold: [12, 27], aggro: 88, range: 17, cd: 1100, burrow: 100, cloud: 36 },
   gravecricket: { name: "무덤 귀뚜라미", lv: 14, hp: 290, atk: 38, def: 4, spd: 50, xp: 135, gold: [17, 34], aggro: 96, range: 17, cd: 1000, pounce: 96 },
   smoggecko: { name: "매연 도마뱀붙이", lv: 18, hp: 470, atk: 54, def: 6, spd: 44, xp: 230, gold: [26, 52], aggro: 90, range: 18, cd: 1200, breath: 58 },
   dropsloth: { name: "낙하 나무늘보", lv: 22, hp: 820, atk: 70, def: 12, spd: 24, xp: 360, gold: [38, 74], aggro: 80, range: 20, cd: 1500, pounce: 100 },
@@ -866,23 +866,23 @@ const MOBS = {
   sluiceleviathan: { name: "배수문을 삼킨 잠류아귀", lv: 32, hp: 15500, atk: 145, def: 31, spd: 34, xp: 5200, gold: [265, 435], aggro: 138, range: 30, cd: 1500, boss: true },
   prismcantor: { name: "쌍결정 성가박쥐", lv: 36, hp: 19600, atk: 164, def: 34, spd: 38, xp: 6700, gold: [315, 510], aggro: 140, range: 28, cd: 1380, fly: true, boss: true },
   // 바람초원
-  twinhare: { name: "쌍두 토끼", lv: 1, hp: 28, atk: 5, def: 0, spd: 26, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300 },
+  twinhare: { name: "쌍두 토끼", lv: 1, hp: 28, atk: 5, def: 0, spd: 26, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300, pounce: 70 },   // the second head springs first: the first ring a new player learns to step out of
   gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80, pounce: 90 },
   eyecrow: { name: "눈알 까마귀", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true, spit: 90 },   // circles the pond and minds its own business, so the shore stays a fishing spot
-  lambmaw: { name: "뒤집힌 양", lv: 6, hp: 110, atk: 15, def: 1, spd: 38, xp: 38, gold: [7, 16], aggro: 72, range: 18, cd: 1300, charge: 110 },
-  meadowram: { name: "금 간 뿔 숫양", sp: "meadowram", lv: 7, hp: 134, atk: 18, def: 2, spd: 40, xp: 49, gold: [8, 19], aggro: 64, range: 18, cd: 1400, charge: 100 },
+  lambmaw: { name: "뒤집힌 양", lv: 6, hp: 110, atk: 15, def: 1, spd: 38, xp: 38, gold: [7, 16], aggro: 72, range: 18, cd: 1300, charge: 110, spit: 100 },
+  meadowram: { name: "금 간 뿔 숫양", sp: "meadowram", lv: 7, hp: 134, atk: 18, def: 2, spd: 40, xp: 49, gold: [8, 19], aggro: 64, range: 18, cd: 1400, charge: 100, howl: 90 },
   // 속삭임 숲
-  splitboar: { name: "반쪽 멧돼지", lv: 8, hp: 170, atk: 23, def: 2, spd: 44, xp: 60, gold: [10, 22], aggro: 80, range: 18, cd: 1100, charge: 104 },
-  ribdeer: { name: "갈비뼈 사슴", lv: 10, hp: 330, atk: 26, def: 8, spd: 26, xp: 92, gold: [12, 26], aggro: 64, range: 18, cd: 1400, slam: 34 },
-  hydrasnake: { name: "세 머리 뱀", lv: 11, hp: 200, atk: 29, def: 2, spd: 36, xp: 96, gold: [12, 26], aggro: 92, range: 64, cd: 1700, volley: true },
+  splitboar: { name: "반쪽 멧돼지", lv: 8, hp: 170, atk: 23, def: 2, spd: 44, xp: 60, gold: [10, 22], aggro: 80, range: 18, cd: 1100, charge: 104, slam: 36 },
+  ribdeer: { name: "갈비뼈 사슴", lv: 10, hp: 330, atk: 26, def: 8, spd: 26, xp: 92, gold: [12, 26], aggro: 64, range: 18, cd: 1400, slam: 34, charge: 110 },
+  hydrasnake: { name: "세 머리 뱀", lv: 11, hp: 200, atk: 29, def: 2, spd: 36, xp: 96, gold: [12, 26], aggro: 92, range: 64, cd: 1700, volley: true, pool: 30 },
   foxtwine: { name: "꼬인 여우", lv: 12, hp: 230, atk: 28, def: 3, spd: 62, xp: 108, gold: [13, 28], aggro: 96, range: 17, cd: 800, leap: 90 },
   mothface: { name: "인면 나방", lv: 13, hp: 210, atk: 34, def: 2, spd: 44, xp: 118, gold: [14, 30], aggro: 96, range: 72, cd: 1400, fly: true, shot: true, pool: 22, cloud: 34 },
   // 뼈의 지하묘지
-  ratking: { name: "쥐 왕", lv: 12, hp: 260, atk: 29, def: 4, spd: 46, xp: 108, gold: [14, 28], aggro: 86, range: 17, cd: 850 },
-  twinhare_bone: { name: "해골 쌍두 토끼", sp: "twinhare", tint: "bone", lv: 13, hp: 240, atk: 33, def: 3, spd: 56, xp: 112, gold: [13, 28], aggro: 90, range: 16, cd: 900 },
+  ratking: { name: "쥐 왕", lv: 12, hp: 260, atk: 29, def: 4, spd: 46, xp: 108, gold: [14, 28], aggro: 86, range: 17, cd: 850, howl: 80 },
+  twinhare_bone: { name: "해골 쌍두 토끼", sp: "twinhare", tint: "bone", lv: 13, hp: 240, atk: 33, def: 3, spd: 56, xp: 112, gold: [13, 28], aggro: 90, range: 16, cd: 900, pounce: 0, burrow: 90 },   // the bones sink and come up under the feet
   bonehound: { name: "가죽 벗겨진 사냥개", lv: 14, hp: 300, atk: 40, def: 5, spd: 58, xp: 140, gold: [18, 36], aggro: 100, range: 18, cd: 1000, leap: 100, howl: 110 },
   toadbrood: { name: "알 밴 두꺼비", lv: 15, hp: 420, atk: 42, def: 8, spd: 28, xp: 160, gold: [20, 40], aggro: 86, range: 20, cd: 1500, pool: 26, pounce: 84 },
-  batcluster: { name: "박쥐 덩어리", lv: 16, hp: 360, atk: 46, def: 4, spd: 52, xp: 178, gold: [22, 44], aggro: 96, range: 17, cd: 1100, fly: true, burst: 32 },
+  batcluster: { name: "박쥐 덩어리", lv: 16, hp: 360, atk: 46, def: 4, spd: 52, xp: 178, gold: [22, 44], aggro: 96, range: 17, cd: 1100, fly: true, burst: 32, fan: 90 },
   // 네온 시티
   pigeonmass: { name: "비둘기 떼살", lv: 14, hp: 290, atk: 40, def: 5, spd: 56, xp: 140, gold: [18, 36], aggro: 100, range: 70, cd: 1300, fly: true, shot: true, spit: 100 },
   gutfrog_poison: { name: "맹독 창자 개구리", sp: "gutfrog", tint: "poison", lv: 16, hp: 400, atk: 46, def: 5, spd: 32, xp: 180, gold: [22, 44], aggro: 84, range: 17, cd: 1200, leap: 84, pool: 22 },
@@ -1024,7 +1024,7 @@ const MOBS = {
   spinescorp: { name: "전갈 등뼈", lv: 29, hp: 1400, atk: 96, def: 14, spd: 48, xp: 700, gold: [58, 104], aggro: 94, range: 19, cd: 1000, charge: 114, spit: 100 },
   ribvulture: { name: "독수리 갈비", lv: 30, hp: 1300, atk: 94, def: 10, spd: 44, xp: 760, gold: [60, 110], aggro: 98, range: 76, cd: 1500, fly: true, shot: true },
   airship_gale: { name: "그을린 날개 추격수", lore: "한쪽 날개의 깃이 잿빛으로 굳었다. 바람등호의 신호등이 켜지면 돛줄에 내려앉는다.",
-    lv: 26, hp: 840, atk: 74, def: 9, spd: 44, xp: 0, gold: [0, 0], aggro: 105, range: 18, cd: 1250, questOnly: true },
+    lv: 26, hp: 840, atk: 74, def: 9, spd: 44, xp: 0, gold: [0, 0], aggro: 105, range: 18, cd: 1250, questOnly: true, breath: 100 },
   airship_lookout: { name: "흑기수 외눈수리", lore: "깃이 찢어진 외눈수리가 정찰등 하나를 낚아채 매달고 다닌다. 빛을 본 조류 떼가 그 뒤를 따른다.",
     lv: 28, hp: 4300, atk: 101, def: 13, spd: 36, xp: 0, gold: [0, 0], aggro: 125, range: 70, cd: 1500, shot: true, boss: true, questOnly: true,
     fan: 112, script: { gap: 5800, reach: 148, pats: [["검댕 깃털", "fan"], ["돛대 덮치기", "leapslam"]] } },
@@ -21882,7 +21882,9 @@ function volley(S, rt, mob, tgt, dmg, n) {
   }
   rt.ev.push(ev);
 }
-/** One of a monster's tricks, if the moment suits it. True when it was used. */
+/** A puddle or a mist takes after its maker's element unless the row names a kind (0 poison, 1 fire, 2 frost). */
+const POOL_OF = { poison: 0, fire: 1, cold: 2 };
+/** One of a monster's tricks, if the moment suits it. True when it was used. Elites use every trick more often (TRICK_EL). */
 function special(S, m, rt, mob, tgt, dd, atk, k) {
   const d = MOBS[mob.k], now = S.now;
   if (k === "charge") {
@@ -21892,21 +21894,21 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
     mob.act = { at: now + CHARGE_MS, ux, uy, len };
     mob.dir = ux < 0 ? 1 : 2;
     rt.ev.push(["c", mob.id, Math.round(mob.x), Math.round(mob.y), Math.round(mob.x + ux * len), Math.round(mob.y + uy * len), CHARGE_MS]);
-    mob.castAt = now + 5500;
+    mob.castAt = now + 5500 * TRICK_EL[mob.el || 0];
     return true;
   }
   if (k === "leap") {
     // pounce: land beside the target in one bound
     if (dd <= d.range + 16 || dd >= d.leap) return false;
-    mob.castAt = now + 4500;
+    mob.castAt = now + 4500 * TRICK_EL[mob.el || 0];
     const nx = tgt.x - ((tgt.x - mob.x) / dd) * 14, ny = tgt.y - ((tgt.y - mob.y) / dd) * 14;
-    if (canStand(m, nx, ny)) { mob.x = nx; mob.y = ny; mob.atkAt = Math.max(mob.atkAt, now + 350); }
+    if (canStand(m, nx, ny)) { mob.x = nx; mob.y = ny; mob.atkAt = Math.max(mob.atkAt, now + 350); rt.ev.push(["m", mob.id]); }   // the client lunges it: a bound is seen, not a blink
     return true;
   }
   if (k === "slam") {
     // pound the ground: a ring to step out of
     if (dd >= 70) return false;
-    mob.castAt = now + 6000;
+    mob.castAt = now + 6000 * TRICK_EL[mob.el || 0];
     rt.tele.push({ x: mob.x, y: mob.y, r: d.slam, at: now + 1100, dmg: atk * 1.5, by: mob });
     rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), d.slam, 1100]);
     return true;
@@ -21914,15 +21916,15 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
   if (k === "pool") {
     // spit a puddle under the target's feet; it lies there for a while
     if (dd >= 110) return false;
-    mob.castAt = now + 6500;
-    const kind = d.poolKind || 0;
+    mob.castAt = now + 6500 * TRICK_EL[mob.el || 0];
+    const kind = d.poolKind ?? POOL_OF[monsterElement(mob.k).type] ?? 0;
     rt.pools.push({ x: tgt.x, y: tgt.y, r: d.pool, next: now + POOL_FLY, until: now + POOL_FLY + POOL_MS, dmg: atk * 0.4, atk, kind });
     rt.ev.push(["g", mob.id, Math.round(tgt.x), Math.round(tgt.y), d.pool, POOL_FLY, POOL_MS, kind]);
     return true;
   }
   if (k === "fan") {
     if (dd < 24 || dd >= d.fan) return false;
-    mob.castAt = now + 5000;
+    mob.castAt = now + 5000 * TRICK_EL[mob.el || 0];
     volley(S, rt, mob, tgt, atk, d.boss ? 5 : 3);
     return true;
   }
@@ -21956,7 +21958,7 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
   } else if (k === "cloud") {
     // a mist round itself that lingers (kind as its pool's; slowing unless it says otherwise)
     if (dd > 60) return false;
-    const kind = d.poolKind ?? 2;
+    const kind = d.poolKind ?? POOL_OF[monsterElement(mob.k).type] ?? 2;
     rt.pools.push({ x: mob.x, y: mob.y, r: d.cloud, next: at, until: at + A.dur, dmg: atk * A.k, atk, kind });
     rt.ev.push(["g", mob.id, Math.round(mob.x), Math.round(mob.y), d.cloud, A.ms, A.dur, kind]);
   } else return false;

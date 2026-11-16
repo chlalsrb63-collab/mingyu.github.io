@@ -88,7 +88,9 @@ function volley(S, rt, mob, tgt, dmg, n) {
   }
   rt.ev.push(ev);
 }
-/** One of a monster's tricks, if the moment suits it. True when it was used. */
+/** A puddle or a mist takes after its maker's element unless the row names a kind (0 poison, 1 fire, 2 frost). */
+const POOL_OF = { poison: 0, fire: 1, cold: 2 };
+/** One of a monster's tricks, if the moment suits it. True when it was used. Elites use every trick more often (TRICK_EL). */
 function special(S, m, rt, mob, tgt, dd, atk, k) {
   const d = MOBS[mob.k], now = S.now;
   if (k === "charge") {
@@ -98,21 +100,21 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
     mob.act = { at: now + CHARGE_MS, ux, uy, len };
     mob.dir = ux < 0 ? 1 : 2;
     rt.ev.push(["c", mob.id, Math.round(mob.x), Math.round(mob.y), Math.round(mob.x + ux * len), Math.round(mob.y + uy * len), CHARGE_MS]);
-    mob.castAt = now + 5500;
+    mob.castAt = now + 5500 * TRICK_EL[mob.el || 0];
     return true;
   }
   if (k === "leap") {
     // pounce: land beside the target in one bound
     if (dd <= d.range + 16 || dd >= d.leap) return false;
-    mob.castAt = now + 4500;
+    mob.castAt = now + 4500 * TRICK_EL[mob.el || 0];
     const nx = tgt.x - ((tgt.x - mob.x) / dd) * 14, ny = tgt.y - ((tgt.y - mob.y) / dd) * 14;
-    if (canStand(m, nx, ny)) { mob.x = nx; mob.y = ny; mob.atkAt = Math.max(mob.atkAt, now + 350); }
+    if (canStand(m, nx, ny)) { mob.x = nx; mob.y = ny; mob.atkAt = Math.max(mob.atkAt, now + 350); rt.ev.push(["m", mob.id]); }   // the client lunges it: a bound is seen, not a blink
     return true;
   }
   if (k === "slam") {
     // pound the ground: a ring to step out of
     if (dd >= 70) return false;
-    mob.castAt = now + 6000;
+    mob.castAt = now + 6000 * TRICK_EL[mob.el || 0];
     rt.tele.push({ x: mob.x, y: mob.y, r: d.slam, at: now + 1100, dmg: atk * 1.5, by: mob });
     rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), d.slam, 1100]);
     return true;
@@ -120,15 +122,15 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
   if (k === "pool") {
     // spit a puddle under the target's feet; it lies there for a while
     if (dd >= 110) return false;
-    mob.castAt = now + 6500;
-    const kind = d.poolKind || 0;
+    mob.castAt = now + 6500 * TRICK_EL[mob.el || 0];
+    const kind = d.poolKind ?? POOL_OF[monsterElement(mob.k).type] ?? 0;
     rt.pools.push({ x: tgt.x, y: tgt.y, r: d.pool, next: now + POOL_FLY, until: now + POOL_FLY + POOL_MS, dmg: atk * 0.4, atk, kind });
     rt.ev.push(["g", mob.id, Math.round(tgt.x), Math.round(tgt.y), d.pool, POOL_FLY, POOL_MS, kind]);
     return true;
   }
   if (k === "fan") {
     if (dd < 24 || dd >= d.fan) return false;
-    mob.castAt = now + 5000;
+    mob.castAt = now + 5000 * TRICK_EL[mob.el || 0];
     volley(S, rt, mob, tgt, atk, d.boss ? 5 : 3);
     return true;
   }
@@ -162,7 +164,7 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
   } else if (k === "cloud") {
     // a mist round itself that lingers (kind as its pool's; slowing unless it says otherwise)
     if (dd > 60) return false;
-    const kind = d.poolKind ?? 2;
+    const kind = d.poolKind ?? POOL_OF[monsterElement(mob.k).type] ?? 2;
     rt.pools.push({ x: mob.x, y: mob.y, r: d.cloud, next: at, until: at + A.dur, dmg: atk * A.k, atk, kind });
     rt.ev.push(["g", mob.id, Math.round(mob.x), Math.round(mob.y), d.cloud, A.ms, A.dur, kind]);
   } else return false;

@@ -24,6 +24,7 @@ import * as Coop from "./coop.js";
 import * as Charms from "./charms.js";
 import { G, dist, T, now, $, el } from "./state.js";
 import { entityPos } from "./net.js";
+import { elementInfo } from "./elements.js";
 import { addChat, banner, chatLog } from "./windows.js";
 import { fadeIn } from "./win_world.js";
 import { rarityLabel } from "./items.js";
@@ -40,6 +41,8 @@ export const JOB_ALIAS = { warrior: "swordsman", rogue: "thief", mage: "wizard",
 export const DUNGEONS = new Set(["crypt", "sewer", "abyss"]);
 
 const heightOf = (e) => e.h3 || 1.3;
+/** A monster's shot takes its element's colour (a plain one stays red: it is a threat, not a spark). */
+const shotColor = (k) => { const ty = G.defs.mobs[k]?.element; return ty && ty !== "physical" ? elementInfo(ty)?.color || "#ff5a4a" : "#ff5a4a"; };
 
 export function onEvent(e, t) {
   if (e[0] === "a" && (e[2] === 7 || (e[2] >= 130 && e[2] <= 132))) {
@@ -170,12 +173,12 @@ export function onEvent(e, t) {
       const m = G.mobs.get(e[1]);
       if (m) {
         m.atkT = t;
-        if (e.length > 2) { S3.fx.proj(m.x, m.y, heightOf(m) * 0.75, e[2], e[3] + 8, 0.7, "#ff5a4a", 0.05, 34); Sound.play("mob_shot"); }
+        if (e.length > 2) { S3.fx.proj(m.x, m.y, heightOf(m) * 0.75, e[2], e[3] + 8, 0.7, shotColor(m.k), 0.05, 34); Sound.play("mob_shot"); }
       }
       break;
     }
     case "d": S3.fx.beam(e[2], e[3] + 8, e[4], e[5] + 8, "#8a78c8", 0.6); S3.fx.burst(e[2], e[3] + 8, 0.6, "#4a4468", 10, 1); break;
-    case "t": if (e[5]) { S3.fx.ring(e[1], e[2], e[3], "#ffe08a", e[4]); break; } S3.fx.tele(e[1], e[2], e[3], e[4]); Sound.play("warn"); break;
+    case "t": if (e[5]) { S3.fx.ring(e[1], e[2], e[3], "#ffe08a", e[4]); Sound.play("mob_howl"); break; } S3.fx.tele(e[1], e[2], e[3], e[4]); Sound.play("warn"); break;
     case "b": {
       // a blast on the ground: a monster's (pink, it hurts) or a player's skill landing
       const col = [null, "#ffb04a", "#ff8a3a", "#cfe4ff"][e[4] | 0];
