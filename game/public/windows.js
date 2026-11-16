@@ -678,9 +678,10 @@ export function setupWindows({ walkToDoor }) {
       e.preventDefault();
       if (folded(id)) { Sound.play("open"); unfold(id); syncMenu(); return; }
       const r = w.getBoundingClientRect(), ox = e.clientX - r.left, oy = e.clientY - r.top;
-      head.setPointerCapture(e.pointerId);
+      head.setPointerCapture(e.pointerId); w.classList.add("drag");
       const move = (ev) => keepIn(id, ev.clientX - ox, ev.clientY - oy);
       const up = () => {
+        w.classList.remove("drag");
         head.removeEventListener("pointermove", move); head.removeEventListener("pointerup", up); head.removeEventListener("pointercancel", up);
         if (roomy()) localStorage.setItem(WIN_KEY(id), JSON.stringify([parseFloat(w.style.left), parseFloat(w.style.top)]));
       };

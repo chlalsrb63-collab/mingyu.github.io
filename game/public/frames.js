@@ -92,6 +92,14 @@ function plate(P) {
   return toUrl(G);
 }
 
+/** `c` (#rgb / #rrggbb) at opacity `a`; anything else comes back as it is. */
+function fade(c, a) {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
+  if (!m || a >= 1) return c;
+  const h = m[1].length === 3 ? [...m[1]].map((d) => d + d).join("") : m[1];
+  return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
+}
+
 export function installFrames() {
   const root = document.documentElement, r = root.style, hud = document.getElementById("hud");
   for (const [pre, P] of [["--fr-", palette(getComputedStyle(root))], ["--frt-", palette(getComputedStyle(hud || root))]]) {
@@ -99,4 +107,8 @@ export function installFrames() {
     r.setProperty(pre + "screen", screen(P));
     r.setProperty(pre + "plate", plate(P));
   }
+  // the HUD's see-through faces (설정 HUD 투명도: --hud-a on :root, hud.css "HUD transparency"): same frames, the face at that opacity
+  const P = palette(getComputedStyle(hud || root)), a = parseFloat(getComputedStyle(root).getPropertyValue("--hud-a")) || 1;
+  r.setProperty("--frt-brass-a", brass({ ...P, face: fade(P.face, a) }));
+  r.setProperty("--frt-screen-a", screen({ ...P, scr: fade(P.scr, a) }));
 }

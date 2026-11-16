@@ -5,6 +5,7 @@
  *   on-screen hint reads (`data-key="<id>"` in index.html is refreshed by `apply()`).
  *   shortcut: labels assume a QWERTY key cap; on other layouts the cap and the label can differ.
  * - 글자 크기: body[data-ts="s|m|l"] swaps the --t10/--t11/--t12 integer font sizes of hud.css.
+ * - HUD 투명도: --hud-a on :root (100/90/80/70 %, default 90): hud.css fades the floating windows, frames.js and hud.css the panel faces.
  * - HUD 색상: body[data-hud=<theme>] picks a colour theme block of hud.css; frames.js redraws the 9-slices.
  */
 import { $ } from "./state.js";
@@ -31,7 +32,8 @@ const TALK = new Set(["talkNext", "talkEnd"]);
 const space = (id) => (TALK.has(id) ? 1 : 0);
 const DEF = Object.fromEntries(A.map(([id, , d]) => [id, d]));
 const NAME = Object.fromEntries(A.map(([id, n]) => [id, n]));
-const LS = "lumentale:keys", LS_TS = "lumentale:ts", LS_HUD = "lumentale:hud";
+const LS = "lumentale:keys", LS_TS = "lumentale:ts", LS_HUD = "lumentale:hud", LS_HA = "lumentale:huda";
+const HUD_ALPHAS = [100, 90, 80, 70];   // 설정 → HUD 투명도 (index.html #opt-hud-a); the minimap, tooltips, minigames and the death panel never fade
 const HUD_THEMES = ["brass", "linen", "sand", "olive", "mocha", "contrast"];   // hud.css "HUD colour themes", index.html #opt-hud
 let bind = { ...DEF };
 const rev = (t = 0) => Object.fromEntries(Object.entries(bind).filter(([id]) => space(id) === t).map(([id, c]) => [c, id]));
@@ -112,6 +114,16 @@ export function hudTheme(v) {
 }
 hudTheme(localStorage.getItem(LS_HUD));
 
+/** Set the HUD panels' opacity (a step of HUD_ALPHAS, anything else → 90 %) on :root, redraw the see-through frames, mark the 설정 button. */
+function hudAlpha(v) {
+  v = HUD_ALPHAS.includes(+v) ? +v : 90;
+  document.documentElement.style.setProperty("--hud-a", v / 100);
+  installFrames();
+  for (const b of document.querySelectorAll("#opt-hud-a button")) b.classList.toggle("on", +b.dataset.a === v);
+  return v;
+}
+hudAlpha(localStorage.getItem(LS_HA));
+
 /** Build the 단축키 list and the 글자 크기 buttons in the settings window (index.html #keys-list, #opt-ts). */
 load();   // module-level hint strings elsewhere read the saved bindings at import time
 let toast = () => {}, Sound = { play() {} };   // injected by setupKeymap: importing windows.js/audio.js here would make an import cycle
@@ -151,6 +163,12 @@ export function setupKeymap(api) {
   };
   ts(localStorage.getItem(LS_TS));
   for (const b of document.querySelectorAll("#opt-ts button")) b.addEventListener("click", () => { localStorage.setItem(LS_TS, ts(b.dataset.ts)); Sound.play("ui"); });
+  // the settings window is hovered while a step is picked, so for a moment every floating window shows its see-through look (body.hud-peek)
+  let peek = 0;
+  for (const b of document.querySelectorAll("#opt-hud-a button")) b.addEventListener("click", () => {
+    localStorage.setItem(LS_HA, hudAlpha(b.dataset.a)); Sound.play("ui");
+    document.body.classList.add("hud-peek"); clearTimeout(peek); peek = setTimeout(() => document.body.classList.remove("hud-peek"), 1500);
+  });
   const sel = $("#opt-hud");
   if (sel) { sel.value = document.body.dataset.hud; sel.addEventListener("change", () => { localStorage.setItem(LS_HUD, hudTheme(sel.value)); Sound.play("ui"); }); }
 }

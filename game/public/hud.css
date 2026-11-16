@@ -112,7 +112,7 @@ body:not([data-lay="full"]) #w-inv.docked > header .x { display: none; }
 /* the menu: a grid of plain glyph buttons */
 #menu { flex: none; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding-top: 4px; border-top: 2px solid var(--sf3, #2c2537); }
 #menu button { position: relative; height: 36px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  font: var(--t10)/1 var(--pix9); color: var(--tx2, #d8cfb8); background: var(--sf3, #2a2433); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--sf4, #3e344b), inset -2px -2px 0 var(--sf1, #17131d); }
+  font: var(--t10)/1 var(--pix9); color: var(--tx2, #d8cfb8); background: var(--sf3-a, var(--sf3, #2a2433)); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--sf4, #3e344b), inset -2px -2px 0 var(--sf1, #17131d); }
 #menu button img.gi { width: 12px; height: 12px; }
 #menu button kbd { position: absolute; right: 1px; top: 1px; font-size: var(--t10); color: var(--tx3, #7d7290); display: none; }
 #menu button:hover { color: var(--tx-hd, var(--b-hi)); background: var(--sf4, #352d40); }
@@ -124,7 +124,7 @@ body:not([data-lay="full"]) #w-inv.docked > header .x { display: none; }
 #dock { left: 0; bottom: 0; right: var(--side); height: var(--dock); display: flex; gap: 8px; }
 #chat { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 #chat-tabs { display: flex; gap: 2px; flex: none; }
-#chat-tabs button { padding: 2px 8px; font: var(--t12)/1.2 var(--pix); color: var(--tx3, #9a90a8); background: var(--sf3, #2a2433); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--sf4, #3e344b); }
+#chat-tabs button { padding: 2px 8px; font: var(--t12)/1.2 var(--pix); color: var(--tx3, #9a90a8); background: var(--sf3-a, var(--sf3, #2a2433)); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--sf4, #3e344b); }
 #chat-tabs button.on { color: #2a1806; background: var(--b-mid); box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px 0 0 var(--b-lo); }
 #chat-fold { display: none; margin-left: auto; width: 26px; }
 #chat-fold::before { content: "▾"; color: var(--cream); }
@@ -147,7 +147,7 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #chat-log[data-tab="all"] p.far, #chat-log[data-tab="party"] p:not(.party), #chat-log[data-tab="guild"] p:not(.guild), #chat-log[data-tab="sys"] p:not(.sys):not(.loot):not(.err) { display: none; }
 #chat-form { display: flex; gap: 3px; align-items: center; flex: none; }
 #chat-in { flex: 1; min-width: 0; height: 24px; padding: 2px 6px; outline: none; font: var(--t12) var(--pix); color: var(--cream); user-select: text; -webkit-user-select: text;
-  background: var(--scr); border: 2px solid var(--ink); border-radius: 0; box-shadow: inset 2px 2px 0 var(--sf0, #07060b); }
+  background: var(--scr-a, var(--scr)); border: 2px solid var(--ink); border-radius: 0; box-shadow: inset 2px 2px 0 var(--sf0, #07060b); }
 #chat-in:focus { border-color: var(--b-mid); }
 #chat-emo { width: 24px; height: 24px; flex: none; padding: 0; border-radius: 0;
   background: #2a2433 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='4' y='2' width='8' height='12' fill='%23ffd75a'/><rect x='2' y='4' width='12' height='8' fill='%23ffd75a'/><rect x='5' y='6' width='2' height='2' fill='%232b2233'/><rect x='9' y='6' width='2' height='2' fill='%232b2233'/><rect x='5' y='10' width='6' height='1' fill='%232b2233'/></svg>") center / 16px no-repeat;
@@ -159,7 +159,7 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 /* the centre keeps its natural width (min-width: auto = everything in it fits whole); the chat takes what is left */
 #center { flex: 0 1 clamp(400px, 41%, 620px); display: flex; flex-direction: column; gap: 4px; justify-content: space-between; }
 #status { display: flex; gap: 6px; align-items: center; min-height: 0; }
-#status .face { flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: var(--sf3, #2a2433); border: 2px solid var(--ink); border-image: none; box-shadow: inset 0 0 0 1px var(--sf4, #3e344b); }
+#status .face { flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: var(--sf3-a, var(--sf3, #2a2433)); border: 2px solid var(--ink); border-image: none; box-shadow: inset 0 0 0 1px var(--sf4, #3e344b); }
 #st-face { width: 40px; height: 40px; }
 /* the unit frame stays short: name and level on one line, two slim bars with tiny numbers, then the purse */
 .st-main { flex: 0 0 184px; min-width: 184px; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
@@ -200,7 +200,7 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #cgauge { width: 240px; height: 40px; image-rendering: pixelated; display: block; }
 #st-buffs { flex: 1 1 60px; display: flex; flex-wrap: wrap; gap: 2px; min-width: 0; max-height: 38px; overflow: hidden; }
 #st-buffs:empty { display: none; }
-#st-buffs span { display: inline-flex; align-items: center; gap: 2px; padding: 0 3px; height: 18px; font: var(--t10) var(--pix9); color: var(--tx-hd, var(--b-hi)); background: var(--scr); border: 2px solid var(--ink); }
+#st-buffs span { display: inline-flex; align-items: center; gap: 2px; padding: 0 3px; height: 18px; font: var(--t10) var(--pix9); color: var(--tx-hd, var(--b-hi)); background: var(--scr-a, var(--scr)); border: 2px solid var(--ink); }
 #st-buffs span.bad { color: var(--tx-bad, #ffb0a8); border-color: #5a1c1c; }
 #st-buffs span.scr { color: var(--tx-info, #bfe6ff); border-color: #1c3a5a; }
 /* weapon mastery at a glance (mastery.js): the weapon in hand, "숙련 Lv.N", a thin bar to the next level;
@@ -241,7 +241,7 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #actions .sep { width: 2px; height: 36px; margin: 0 3px; background: var(--sf4, #3e344b); }
 .act {
   position: relative; width: 48px; height: 48px; padding: 0; overflow: hidden; flex: none; border-radius: 0;
-  background: var(--scr); border: 2px solid var(--ink); color: var(--cream); font: var(--t10) var(--pix9);
+  background: var(--scr-a, var(--scr)); border: 2px solid var(--ink); color: var(--cream); font: var(--t10) var(--pix9);
   box-shadow: inset 2px 2px 0 var(--sf0, #07060b), inset -2px -2px 0 var(--sf3, #2c2537);
 }
 .act:hover { border-color: var(--b-mid); }
@@ -257,7 +257,7 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #actions .act img { margin-top: calc((var(--act) - 36px) / 2); }
 .act.qs img.ic { width: 32px; height: 32px; }
 .act.qs .mp { position: absolute; right: 2px; bottom: 1px; font: var(--t10) var(--pix9); color: var(--mp-hi); text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; }
-.act.qs.empty { background: var(--sf1, #1a1622); box-shadow: inset 2px 2px 0 var(--sf0, #07060b), inset -2px -2px 0 var(--sf2, #241e2d); }
+.act.qs.empty { background: var(--sf1-a, var(--sf1, #1a1622)); box-shadow: inset 2px 2px 0 var(--sf0, #07060b), inset -2px -2px 0 var(--sf2, #241e2d); }
 .act.qs.empty kbd { left: 0; right: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; color: #4e4560; font-size: var(--t12); }
 .act.qs.empty::before { content: ""; position: absolute; inset: 5px; border: 1px dashed var(--sf4, #3a3247); pointer-events: none; }
 /* the cooldown: a hard-edged sweep, no soft fade */
@@ -288,7 +288,7 @@ body.item-drag, body.item-drag * { cursor: grabbing !important; }
 .skill.qs-src { cursor: grab; }
 .skill.ult .hd b { color: var(--tx-gold, #e8c27a); }
 #actions > .sep:first-child { display: none; }
-.act.atk, #actions .act.atk { width: 46px; height: 46px; background: #3a1c22; box-shadow: inset 2px 2px 0 #1a0a0e, inset -2px -2px 0 #6a2a30; }
+.act.atk, #actions .act.atk { width: 46px; height: 46px; background: color-mix(in srgb, #3a1c22 var(--hud-pct), transparent); box-shadow: inset 2px 2px 0 #1a0a0e, inset -2px -2px 0 #6a2a30; }
 .act.atk img, #actions .act.atk img { width: 32px; height: 32px; margin-top: 4px; }
 /* bigger slots where the centre is wide (it is 41 % of the dock: ≥ 520 px from 1580 wide, ≥ 600 from 1760) */
 @media (min-width: 1580px) { body[data-lay="full"] #actions { --act: 42px; gap: 3px; } body[data-lay="full"] #actions .act.atk { width: 50px; height: 50px; } body[data-lay="full"] #actions .act.atk img { margin-top: 6px; } }
@@ -296,7 +296,7 @@ body.item-drag, body.item-drag * { cursor: grabbing !important; }
 #actions .act.auto img.gi { margin-top: 3px; }
 .act.atk .nm { color: #ffd2c4; }
 /* the dash (Space): a wind-swept boot, its 4 s cooldown swept like a skill's (hud.js dashTick) */
-.act.dash { background: #1c2a3a; box-shadow: inset 2px 2px 0 #0a121a, inset -2px -2px 0 #2e4c66; }
+.act.dash { background: color-mix(in srgb, #1c2a3a var(--hud-pct), transparent); box-shadow: inset 2px 2px 0 #0a121a, inset -2px -2px 0 #2e4c66; }
 .act.dash .nm { color: #c4e4ff; }
 .act.dash .gl { display: block; margin: 4px auto 0; font: 16px/1 var(--pix); color: #9ad0ff; text-shadow: 1px 1px 0 #000; font-style: normal; pointer-events: none; }
 .act.dash .cd { position: absolute; inset: 0; pointer-events: none; background: conic-gradient(rgba(6, 4, 10, .8) calc(var(--cd, 0) * 360deg), transparent 0); }
@@ -315,7 +315,7 @@ body.item-drag, body.item-drag * { cursor: grabbing !important; }
 #topleft { left: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; width: 196px; }
 #party-hud { display: flex; flex-direction: column; gap: 3px; }
 #party-hud:empty { display: none; }
-#party-hud .pm { display: grid; grid-template-columns: 14px 1fr; gap: 0 5px; align-items: center; padding: 3px 6px 4px; font-size: var(--t12); background: var(--frame-bg, rgba(18, 15, 24, .86)); border: 2px solid var(--ink); box-shadow: inset 0 0 0 1px var(--sf4, #4a3a24); }
+#party-hud .pm { display: grid; grid-template-columns: 14px 1fr; gap: 0 5px; align-items: center; padding: 3px 6px 4px; font-size: var(--t12); background: var(--frame-a, var(--frame-bg, rgba(18, 15, 24, .86))); border: 2px solid var(--ink); box-shadow: inset 0 0 0 1px var(--sf4, #4a3a24); }
 #party-hud .pm .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--t12); font-weight: 400; }
 #party-hud .pm .nm small { color: var(--tx3, #9a90a8); margin-left: 4px; font: var(--t10) var(--pix9); }
 #party-hud .pm .bar { grid-column: 1 / -1; height: 6px; margin-top: 2px; background: #000; border: 1px solid #000; }
@@ -323,7 +323,7 @@ body.item-drag, body.item-drag * { cursor: grabbing !important; }
 #party-hud .pm.away { opacity: .6; }
 
 /* the little floating boxes: same pixel box, no shadows */
-#hud .frame { background: var(--frame-bg, rgba(24, 20, 31, .94)); border: 2px solid var(--ink); border-radius: 0; box-shadow: inset 0 0 0 2px var(--rim, #5a4426); }
+#hud .frame { background: var(--frame-a, var(--frame-bg, rgba(24, 20, 31, .94))); border: 2px solid var(--ink); border-radius: 0; box-shadow: inset 0 0 0 2px var(--rim, #5a4426); }
 #evt { width: 196px; padding: 5px 8px; font-size: var(--t12); line-height: 1.4; text-align: left; color: var(--tx2, #d8cfb8); cursor: pointer; }
 #evt > span { display: block; }
 #evt { position: relative; }
@@ -364,7 +364,7 @@ body:not([data-lay="full"]) #hint { top: 64px; }
 #invite { left: calc(var(--vpw) / 2); top: 92px; transform: translateX(-50%); padding: 6px 10px; display: flex; gap: 8px; align-items: center; white-space: nowrap; z-index: 15; }
 #toasts { left: calc(var(--vpw) / 2); top: 52px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 3px; pointer-events: none; z-index: 14; }
 #toasts p { margin: 0; padding: 3px 12px; white-space: nowrap; font: var(--t12) var(--pix); color: var(--cream); animation: toast 3.2s steps(16) forwards;
-  background: var(--frame-bg, rgba(24, 20, 31, .94)); border: 2px solid var(--ink); box-shadow: inset 0 0 0 2px var(--rim, #5a4426); }
+  background: var(--frame-a, var(--frame-bg, rgba(24, 20, 31, .94))); border: 2px solid var(--ink); box-shadow: inset 0 0 0 2px var(--rim, #5a4426); }
 @keyframes toast { 0% { opacity: 0; } 8%, 80% { opacity: 1; } 100% { opacity: 0; } }
 #banner { left: calc(var(--vpw) / 2); top: calc(var(--vph) * .24); transform: translateX(-50%); pointer-events: none; white-space: nowrap; animation: banner 2.2s forwards;
   font: 700 24px/1.2 var(--pix); letter-spacing: 2px; color: #fff0c8; text-shadow: 2px 0 0 #2a1806, -2px 0 0 #2a1806, 0 2px 0 #2a1806, 0 -2px 0 #2a1806, 2px 2px 0 #2a1806, 4px 4px 0 rgba(0, 0, 0, .5); }
@@ -424,7 +424,7 @@ body[data-lay="land"] #mini .sunk { height: 96px !important; }
 body[data-lay="port"] #b-drawer, body[data-lay="land"] #b-drawer {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; z-index: 17;
   right: 6px; top: 6px; width: 44px; height: 44px; padding: 0; font: var(--t10) var(--pix9); color: var(--cream);
-  background: var(--sf4, #3a3146); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--sf5, #5b4d6c), inset -2px -2px 0 var(--sf2, #1f1a28);
+  background: var(--sf4-a, var(--sf4, #3a3146)); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--sf5, #5b4d6c), inset -2px -2px 0 var(--sf2, #1f1a28);
 }
 #b-drawer i { width: 18px; height: 14px; background: linear-gradient(var(--cream) 0 2px, transparent 2px 6px, var(--cream) 6px 8px, transparent 8px 12px, var(--cream) 12px 14px); }
 body.drawer #b-drawer { background: var(--b-mid); color: #2a1806; }
@@ -484,7 +484,7 @@ body[data-lay="port"] #b-drawer { top: auto; bottom: calc(var(--dock) + 6px); }
 body[data-lay="land"] #vp-frame { display: none; }
 body[data-lay="land"] #dock { display: contents; }
 body[data-lay="land"] #center { display: contents; }
-body[data-lay="land"] #status { display: grid; align-items: stretch; position: fixed; left: 6px; top: 6px; z-index: 6; width: 226px; grid-template-columns: auto 1fr; gap: 3px 6px; padding: 4px; background: var(--frame-bg, rgba(18, 15, 24, .86)); border: 2px solid var(--ink); box-shadow: inset 0 0 0 1px var(--rim, #5a4426); }
+body[data-lay="land"] #status { display: grid; align-items: stretch; position: fixed; left: 6px; top: 6px; z-index: 6; width: 226px; grid-template-columns: auto 1fr; gap: 3px 6px; padding: 4px; background: var(--frame-a, var(--frame-bg, rgba(18, 15, 24, .86))); border: 2px solid var(--ink); box-shadow: inset 0 0 0 1px var(--rim, #5a4426); }
 body[data-lay="land"] #status .face { width: 48px; height: 48px; }
 body[data-lay="land"] .st-side { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
 body[data-lay="land"] #cgauge { width: 120px; height: 20px; }
@@ -521,6 +521,13 @@ body.touch kbd { display: none; }
   border: 14px solid transparent; border-image: var(--fr-brass) 14 fill / 14px / 0 stretch; image-rendering: pixelated;
 }
 .window:not(.docked).top { box-shadow: none; }
+/* HUD transparency (설정 > 화면 > HUD 투명도, keymap.js sets --hud-a on :root): floating windows fade as a whole (frame, face and text,
+   no blur); hover, a drag (.drag, windows.js) or keyboard / text-input focus makes one opaque again, and body.hud-peek (a moment after
+   the setting changes) shows them all see-through. The always-on HUD fades only its panel faces: see "HUD transparency" at the end. */
+:root { --hud-a: .9; --hud-pct: calc(var(--hud-a) * 100%); }
+.window:not(.docked) { opacity: var(--hud-a); transition: opacity 120ms; }
+.window:not(.docked):is(:hover, .drag, :has(:focus-visible)) { opacity: 1; }
+body.hud-peek .window:not(.docked) { opacity: var(--hud-a) !important; }
 .window, #tip, #dead, #minigame .mg { font-family: var(--pix); font-size: var(--t12); line-height: 1.45; letter-spacing: 0; }
 .window > header { height: 26px; padding: 0 0 4px; gap: 6px; background: none; border-bottom: 2px solid var(--sf3, #2c2537); margin: -4px 0 0; }
 .window > header .t { color: #2a1806; font: 700 var(--t12)/1.2 var(--pix); padding: 1px 8px; border: 4px solid transparent; border-image: var(--fr-plate) 4 fill / 4px / 0 stretch; }
@@ -548,7 +555,7 @@ body:not([data-lay="full"]) .window > header .pop, body.playing .window.mini > h
 .window .section, .window .q-title, .window h4, #dead h2 { font-family: var(--pix); font-weight: 700; letter-spacing: 0; color: var(--tx-hd, var(--b-hi)); border-bottom: 2px solid var(--sf3, #2c2537); }
 #dead h2 { font-size: 24px; border: 0; }
 .window .stats, .window .detail, .window .say, .window .well, .window .list .it, .window .list .rk, .window .skill, .window .pframe, .window .dcard, .window .col-cell, .window .qlist {
-  background: var(--scr); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--sf0, #07060b), inset -2px -2px 0 var(--sf3, #2a2433);
+  background: var(--scr-a, var(--scr)); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--sf0, #07060b), inset -2px -2px 0 var(--sf3, #2a2433);
 }
 .window .list .it img, .window .skill .ic, .window .pframe .cg, .window .col-cell img { border: 2px solid var(--ink); box-shadow: none; background: var(--sf1, #1a1622); }
 .window .bar, #tip .bar { background: #000; border: 2px solid var(--ink); box-shadow: none; }
@@ -730,7 +737,7 @@ body[data-lay="full"] #menu button[data-win="inv"] { display: flex; }
 
 /* the buffs sit under the party frames on a desktop and a phone on its side (client.js layout moves them into #topleft) */
 #topleft > #st-buffs { flex: none; max-height: none; overflow: visible; gap: 2px; }
-#topleft > #st-buffs span { background: var(--frame-bg, rgba(18, 15, 24, .9)); }
+#topleft > #st-buffs span { background: var(--frame-a, var(--frame-bg, rgba(18, 15, 24, .9))); }
 
 /* the dock: the chat gives way to the centre, never the other way round */
 #chat { min-width: 150px; }
@@ -1732,6 +1739,24 @@ body[data-lay="full"] #panel .jt-grid .jt-node img.ji { margin: 0 auto; }
 :is(#hud, #tip, #windows, #dead, #info, #mirror) { --fr-brass: var(--frt-brass); --fr-screen: var(--frt-screen); --fr-plate: var(--frt-plate); }
 /* body sets its colour from the default --text, so the HUD containers re-read it in their theme (zero specificity: any own rule wins) */
 :where(#hud, #tip, #windows, #dead, #info, #mirror) { color: var(--text); }
+
+/* ─────────── HUD transparency (설정 → HUD 투명도; --hud-a / --hud-pct on :root, keymap.js) ───────────
+   The always-on HUD (side column, dock, hotbar, bars' panels, chat, cards over the world, docked windows) fades only its panel
+   FACES; icons, bar fills, cooldowns, outlines and text stay crisp. frames.js draws --frt-brass-a / --frt-screen-a (the 9-slices with a
+   see-through face), and #hud gets the -a colours below (the themed sunken screen / surfaces / small boxes at --hud-a) for the inner fills.
+   Opaque on purpose: the minimap block (#mini), minigames, the death overlay and tooltips (outside #hud). Floating windows use
+   plain opacity instead (see .window:not(.docked) above). Where #hud's panels sit outside the world (a desktop's side column and dock)
+   the face shows the page behind it; over the world (the cards at the top left, the phone layouts) the world shows through. */
+#hud {
+  --fr-brass: var(--frt-brass-a); --fr-screen: var(--frt-screen-a);
+  --scr-a: color-mix(in srgb, var(--scr) var(--hud-pct), transparent);
+  --sf1-a: color-mix(in srgb, var(--sf1, #1a1622) var(--hud-pct), transparent);
+  --sf3-a: color-mix(in srgb, var(--sf3, #2a2433) var(--hud-pct), transparent);
+  --sf4-a: color-mix(in srgb, var(--sf4, #3a3146) var(--hud-pct), transparent);
+  --frame-a: color-mix(in srgb, var(--frame-bg, rgba(24, 20, 31, .94)) var(--hud-pct), transparent);
+}
+#hud :is(#mini, #minigame) { --fr-brass: var(--frt-brass); --fr-screen: var(--frt-screen); }
+#mini { background: var(--face); }
 
 /* (UX pass 2, theme audit) the selected quest's tag (새 의뢰 · 진행 중) on its gold row: dark like the row's text */
 .window .qlist button.on small { color: #5a3a10; }
