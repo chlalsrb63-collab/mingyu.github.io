@@ -95,70 +95,35 @@ export function init(ctx) {
   $("#sv-re").addEventListener("click", () => { Sound.play("ui"); refreshServers(); });
   setInterval(() => { if (view === "servers" && !pending && !document.hidden) refreshServers(); }, 20000);
   wireSettings();
-  show("title");
   playStudioIntro(intro);
 }
 
-function playStudioIntro(overlay) {
-  const video = $("#studio-intro-video"), skip = $("#studio-intro-skip"), sound = $("#studio-intro-sound");
-  const play = $("#studio-intro-play"), standby = $("#studio-intro-standby"), status = $("#studio-intro-status");
-  const title = $("#title");
+function playStudioIntro(video) {
   const listeners = new AbortController();
   const { signal } = listeners;
   let timeout;
   const finish = () => {
-    if (overlay.hidden) return;
-    const focusWasInside = overlay.contains(document.activeElement);
-    overlay.hidden = true;
-    title.inert = false;
+    if (video.hidden) return;
+    video.hidden = true;
     listeners.abort();
     clearTimeout(timeout);
     video.pause();
-    if (focusWasInside) $("#t-press").focus({ preventScroll: true });
+    show("title");
   };
   const limit = (ms) => {
     clearTimeout(timeout);
     timeout = setTimeout(finish, ms);
   };
-  const offerPlay = () => {
-    clearTimeout(timeout);
-    status.textContent = "";
-    play.hidden = false;
-    play.focus({ preventScroll: true });
-  };
-  const begin = () => {
-    play.hidden = true;
-    status.textContent = "영상을 불러오는 중";
-    skip.focus({ preventScroll: true });
-    limit(6500);
-    if (!video.getAttribute("src")) video.src = "./assets/intro/studio-goguma.mp4";
-    video.play().catch((err) => {
-      if (overlay.hidden) return;
-      if (err.name === "NotAllowedError") offerPlay(); else finish();
-    });
-  };
   video.addEventListener("playing", () => {
-    standby.hidden = true;
-    sound.hidden = false;
     const remaining = (video.duration - video.currentTime) * 1000;
     limit(Number.isFinite(remaining) ? Math.max(0, remaining) + 4000 : 6500);
   }, { signal });
   video.addEventListener("ended", finish, { signal });
   video.addEventListener("error", finish, { signal });
-  skip.addEventListener("click", finish, { signal });
-  play.addEventListener("click", begin, { signal });
-  sound.addEventListener("click", () => {
-    video.muted = !video.muted;
-    sound.setAttribute("aria-pressed", String(!video.muted));
-    sound.textContent = video.muted ? "소리 켜기" : "소리 끄기";
-  }, { signal });
-  addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { e.preventDefault(); finish(); }
-  }, { signal });
-  title.inert = true;
-  overlay.hidden = false;
+  video.hidden = false;
   video.muted = true;
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) offerPlay(); else begin();
+  limit(6500);
+  video.play().catch(finish);
 }
 
 /** Show one of the lobby's screens (or none: "game"). */
