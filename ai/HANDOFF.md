@@ -247,3 +247,17 @@ Next: P11 (season set art + story keepsake pieces → fills the rest of KEEP_SEW
   **Owner decisions pending:** Q3 (late main-chain kill counts 24/28/32 + beats), Q4 (party-only side goals),
   Q6 (weekly field-boss 기록, reset cadence), Q7 (what a Lv.200 player repeats). Q5's old rewards are above scale.
 - Open: Q1 has no keepsake (needs a wardrobe piece); 장날 stalls stand all week; bench-tick 43 players ≈ 1 ms/tick.
+
+## 0.7 Token-saving rules in force (owner's order, 2026-11-16, after the usage breakdown)
+Session 404739f1 spent ~75 % of its tokens in 64 agents (2–6 M each, all on the big model) and ~20 % on an integrator
+context that sat at ~380 k per turn. From now on:
+1. **Hand over at ~250 k context:** update this file (§0.x), then start a fresh integrator session from it.
+2. **≤ 2 agents at a time, `model: "sonnet"`** for QA, text, data, art and docs. The big model only for rules design.
+3. **One full-suite run per merge, by the integrator.** Agents run only the tests for their own files (`node scripts/test-all.mjs <names>`);
+   `maps` flakes under load — rerun it alone, never twice the whole suite.
+4. **Agent briefs are short** (goal, files, "done" test, ≤ 20-line report). Don't paste whole docs into briefs.
+5. **Screenshots from worktrees work out of the box** — `scripts/artkit.mjs` now falls back to the main checkout's
+   playwright, so `node scripts/shot.mjs …` runs in any worktree (no custom harness, no node_modules link).
+6. Prune merged agent worktrees after each round (`git worktree remove` only if clean and merged into `main`).
+7. The owner can also cut ~5 % of every turn by disabling unused MCP connectors (pixellab, summer-engine, blender, notion,
+   ads tool, unity) in the app's settings — an app setting, not ours to change.
