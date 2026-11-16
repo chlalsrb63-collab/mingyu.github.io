@@ -25,7 +25,7 @@ function roomIn(list, cap, id, n) {
  */
 function sortSlots(list) {
   const rank = (e) => { const r = SORT_KIND.indexOf(ITEMS[e.id].type); return r < 0 ? 99 : r; };
-  const order = list.map((e, i) => [e, i]).sort(([a1, i1], [b1, i2]) => rank(a1) - rank(b1) || (b1.q || 0) - (a1.q || 0) || (ITEMS[b1.id].req || 0) - (ITEMS[a1.id].req || 0) || (a1.id < b1.id ? -1 : a1.id > b1.id ? 1 : 0) || i1 - i2).map(([e]) => e);
+  const order = list.map((e, i) => [e, i]).sort(([a1, i1], [b1, i2]) => rank(a1) - rank(b1) || (b1.q || 0) - (a1.q || 0) || (isGear(b1.id) ? gearIl(b1) : 0) - (isGear(a1.id) ? gearIl(a1) : 0) || (a1.id < b1.id ? -1 : a1.id > b1.id ? 1 : 0) || i1 - i2).map(([e]) => e);
   const out = [];
   for (const e of order) {
     const top = out[out.length - 1];

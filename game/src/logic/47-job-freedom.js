@@ -115,7 +115,7 @@ function jfValidate(S, p, a) {
   if (countItem(ch, JF_SCROLL[k]) < 1) return bad(`[${ITEMS[JF_SCROLL[k]].name}]${pp(ITEMS[JF_SCROLL[k]].name, "이가")} 필요합니다`);
   if (ch.gold < jfGold(ch, k)) return bad("골드가 부족합니다");
   // what comes off goes to the bag: gear above level 1 on a level reset (a job reset keeps both weapons, §9)
-  const off = k === "job" ? 0 : SLOTS.filter((s) => ch.eq[s] && (ITEMS[ch.eq[s].id].req || 0) > 1).length;
+  const off = k === "job" ? 0 : SLOTS.filter((s) => ch.eq[s] && gearReq(ch.eq[s]) > 1).length;
   if (ch.inv.length + off > bagCap(ch)) return bad(`가방에 빈칸이 ${off}칸 필요합니다`);
   return OK;
 }
@@ -142,7 +142,7 @@ function jfApply(S, p, a) {
     // stats back to 5 and the level to 1; the experience they cost is not given back (망각의 의식 does that)
     const hand = inHand(ch);
     ch.st = freshSt(); ch.lvl = 1; ch.xpt = 0;
-    for (const s of SLOTS) if (ch.eq[s] && (ITEMS[ch.eq[s].id].req || 0) > 1) { ch.inv.push(ch.eq[s]); ch.eq[s] = null; }
+    for (const s of SLOTS) if (ch.eq[s] && gearReq(ch.eq[s]) > 1) { ch.inv.push(ch.eq[s]); ch.eq[s] = null; }
     if (inHand(ch) !== hand) handChanged(p);
     if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);
     toast(p, `레벨 초기화 — 레벨 1부터 다시 걷습니다. 레벨이 모자란 장비는 가방에 넣었습니다. (${gold.toLocaleString()} G)`);

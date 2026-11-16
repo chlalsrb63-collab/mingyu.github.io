@@ -339,7 +339,7 @@ export function applyAction(S, pid, a) {
       const s = ch.inv[a.s];
       ch.inv.splice(a.s, 1);
       // better pieces break down into more stones; enhancement gives some back
-      const n = [rnd(S) < 0.35 ? 1 : 0, 1, 2, 5, 5][s.q | 0] + Math.floor((s.enh | 0) / 2);
+      const n = [rnd(S) < 0.35 ? 1 : 0, 1, 2, 5, 5, 8][s.q | 0] + Math.floor((s.enh | 0) / 2);
       if (n > 0) { addItem(ch, "stone", n); p.gain.push(["item", "stone", n, 0]); }
       toast(p, n > 0 ? `${gearName(s)} 분해 — 강화석 ${n}개` : `${gearName(s)} 분해 — 건진 것이 없습니다`);
       p.dirty = true;

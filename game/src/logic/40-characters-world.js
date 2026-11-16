@@ -10,7 +10,8 @@ const GEAR_TYPES = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amule
 const isGear = (id) => GEAR_TYPES.includes(ITEMS[id].type);
 const isJewel = (id) => ITEMS[id].type === "ring" || ITEMS[id].type === "amulet";
 const slotsFor = (type) => (type === "ring" ? ["ring1", "ring2"] : [type]);
-const plain = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
+// `il` = the item level (shown scale): a plain piece counts as what its base always asked for, plus IL_GAP (gearIl, 50-loot-combat.js)
+const plain = (id) => { const g = { id, q: 0, enh: 0, af: [], sk: 0, ru: [] }; g.il = gearIl(g); return g; };
 
 /**
  * The highest choice allowed for each part of a character's look (public/species.js
@@ -104,7 +105,15 @@ function migrate(ch) {
     if (!ITEMS[id]) return null;
     if (id === "charm") return charmFix(g);
     if (!isGear(id)) return { id, n: g.n | 0 || 1 };
-    const out = { id, q: clamp(g.q | 0, 0, 4), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
+    const out = { id, q: clamp(g.q | 0, 0, 5), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
+    // item level (no sheet version bump: a missing `il` is derived, so an old piece asks what it always did — gearIl)
+    out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, 200) : gearIl(out);
+    // a 유니크 keeps its [prefix, suffix] words; one without valid words is no unique (it stays a 희귀 with its lines)
+    if (out.q === 5) {
+      const u = g.un;
+      if (Array.isArray(u) && Number.isInteger(u[0]) && Number.isInteger(u[1]) && u[0] >= 0 && u[0] < UNIQ.pre.length && u[1] >= 0 && u[1] < UNIQ.suf.length) out.un = [u[0], u[1]];
+      else out.q = 2;
+    }
     // cu: 1 cursed by a failed enhancement (no more tries until lifted), 2 lifted (the next try +ENH_UNCURSE %p) — v19
     if ((g.cu | 0) > 0) out.cu = clamp(g.cu | 0, 1, 2);
     if (LEGEND[g.lg]) out.lg = g.lg;

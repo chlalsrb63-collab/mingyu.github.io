@@ -127,15 +127,8 @@ Object.assign(ITEMS, {
 });
 // bosses-2 §7: the weekly raids' own finds (MOBS[k].drops) — a 4-piece set each (`set`: always that set, never rolled
 // elsewhere) and their legendary weapons. 밤장막 is mid-game (tier 4), 꽃무덤 end-game (tier 5).
+// (the armour and jewellery rows are copied after the gear loop below: they did not exist yet here, so these were empty stubs)
 Object.assign(ITEMS, {
-  veil_h: { ...ITEMS.h_4, name: "박쥐 가면", set: "nightveil" },
-  veil_a: { ...ITEMS.a_4, name: "장막 망토", set: "nightveil" },
-  veil_r: { ...ITEMS.r_4, name: "송곳니 반지", set: "nightveil" },
-  veil_n: { ...ITEMS.n_4, name: "흉곽 부적", set: "nightveil" },
-  bloom_h: { ...ITEMS.h_5, name: "고래뼈 투구", set: "bloomgrave" },
-  bloom_a: { ...ITEMS.a_5, name: "갈비 흉갑", set: "bloomgrave" },
-  bloom_r: { ...ITEMS.r_5, name: "혼꽃 반지", set: "bloomgrave" },
-  bloom_n: { ...ITEMS.n_5, name: "결정 심장", set: "bloomgrave" },
   w_ribbook: { ...ITEMS.w_book_4, name: "흉곽 등불", uniq: 1 },
   w_whalebow: { ...ITEMS.w_bow_5, name: "고래뼈 활", uniq: 1 },
   w_bloomstaff: { ...ITEMS.w_mage_5, name: "혼꽃 지팡이", uniq: 1 },
@@ -148,6 +141,16 @@ for (const type of Object.keys(GEAR)) {
     ITEMS[`${d.pre}_${t}`] = { name: d.names[t - 1], type, tier: t, base, req: G_REQ[t - 1], price: Math.round(G_PRICE[t - 1] * d.cost) };
   }
 }
+Object.assign(ITEMS, {
+  veil_h: { ...ITEMS.h_4, name: "박쥐 가면", set: "nightveil" },
+  veil_a: { ...ITEMS.a_4, name: "장막 망토", set: "nightveil" },
+  veil_r: { ...ITEMS.r_4, name: "송곳니 반지", set: "nightveil" },
+  veil_n: { ...ITEMS.n_4, name: "흉곽 부적", set: "nightveil" },
+  bloom_h: { ...ITEMS.h_5, name: "고래뼈 투구", set: "bloomgrave" },
+  bloom_a: { ...ITEMS.a_5, name: "갈비 흉갑", set: "bloomgrave" },
+  bloom_r: { ...ITEMS.r_5, name: "혼꽃 반지", set: "bloomgrave" },
+  bloom_n: { ...ITEMS.n_5, name: "결정 심장", set: "bloomgrave" },
+});
 
 /** Runes: one stat each. Socket them into equipped gear; the right sequence forms a runeword. */
 const RUNES = {
@@ -174,9 +177,34 @@ const AFFIX = [
   ["critd", "치명타 피해 %", "잔혹한", 8, 20, 0], ["ls", "흡혈 %", "흡혈의", 1, 3, 0], ["spd", "이동속도 %", "신속의", 3, 7, 0],
   ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
 ];
-const RARITY = ["일반", "마법", "희귀", "전설", "세트"];
-/** How many affixes each rarity rolls: [min, max]. */
-const RARITY_AFFIX = [[0, 0], [1, 2], [3, 4], [4, 4], [2, 3]];
+const RARITY = ["일반", "마법", "희귀", "전설", "세트", "유니크"];
+/** How many ordinary affix lines each rarity rolls: [min, max] (owner 2026-11-16: 마법 exactly 2, 희귀 3, 전설 4; a 유니크 adds its own 2, see UNIQ). */
+const RARITY_AFFIX = [[0, 0], [2, 2], [3, 3], [4, 4], [2, 3], [2, 2]];
+/** What an ordinary line is multiplied by, by rarity: 마법 weak (x0.85), 희귀 as rolled, 전설 and above x1.3. */
+const AFFIX_MUL = [1, 0.85, 1, 1.3, 1.3, 1.3];
+/**
+ * 유니크 (rarity 5, beige). A piece named `[pre] item [suf]`; each word is tied to ONE affix key and that line rolls strong:
+ * UNIQ_MUL x the normal range, in the range's upper half (owner 2026-11-16). The entry carries `un: [pre index, suf index]` and
+ * its FIRST TWO `af` lines are the prefix's and the suffix's (the client marks them 고유 옵션); two ordinary lines follow, no LEGEND power.
+ * The suffix is never drawn on the prefix's key.
+ */
+const UNIQ = {
+  pre: [["폭풍을 삼킨", "atkp"], ["불꽃을 두른", "atk"], ["성벽을 닮은", "def"], ["끝없이 샘솟는", "hp"], ["달빛을 머금은", "mp"],
+    ["번개 같은", "crit"], ["바람을 탄", "spd"], ["피에 굶주린", "ls"], ["행운을 쥔", "mf"], ["깨달음을 얻은", "xp"]],
+  suf: [["파멸의 낙인", "critd"], ["황금왕의 탐욕", "gold"], ["학살의 서약", "atk"], ["철옹성의 맹세", "def"], ["불사의 맹약", "hp"],
+    ["맹금의 눈", "crit"], ["파괴의 의지", "atkp"], ["갈증의 입맞춤", "ls"], ["별무리의 속삭임", "mp"], ["질풍의 발걸음", "spd"]],
+};
+const UNIQ_MUL = 1.6;
+/** The chance a gear roll is a 유니크, by rank (0 ordinary monster, 1 elite or chest, 2 boss): about 1/12 to 1/20 of the 전설/세트 chance at each rank, x (1 + MF/100). */
+const UNIQ_P = [0.001, 0.004, 0.01];
+/**
+ * Item level (`il`, the shown 1–200 scale): a drop gets the shown level of the monster that left it plus IL_RANK[rank]
+ * (one monster level = 4 shown levels), never below its base's own tier level (G_REQ), capped at 200.
+ * A piece can be worn from player level il - IL_GAP (min 1). A piece without `il` (an old sheet, shop stock) counts as
+ * req + IL_GAP (1 for a req-1 piece), so what it asks for does not change.
+ */
+const IL_RANK = [0, 4, 8];
+const IL_GAP = 10;
 /** A legendary piece carries one power no affix can give: [name word, what it does]. */
 const LEGEND = {
   chain: ["뇌명의", "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)"],

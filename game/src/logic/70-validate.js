@@ -288,7 +288,9 @@ export function validateAction(S, pid, a) {
       const s = invAt(ch, a.s);
       if (!s || !isGear(s.id)) return bad("장착할 수 없습니다");
       const it = ITEMS[s.id];
-      if (ch.lvl < it.req) return bad(`레벨 ${it.req}부터 착용할 수 있습니다`);
+      // worn from item level − 10 (an entry without `il` asks what its base always asked: gearReq, 50-loot-combat.js)
+      const need = gearReq(s);
+      if (ch.lvl < need) return bad(`레벨 ${need}부터 착용할 수 있습니다`);
       if (a.k === "weapon2") {
         // a second main weapon for everyone (§9); a hybrid's is one of its pair
         if (it.type !== "weapon") return bad("무기만 Ⅱ에 장착할 수 있습니다");

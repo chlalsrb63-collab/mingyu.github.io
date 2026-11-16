@@ -121,7 +121,7 @@ function rewardGear(S, p, ilvl, minQ) {
   let id;
   if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
   else id = `${GEAR[type].pre}_${tier}`;
-  const g = rollGear(S, id, Math.max(minQ, rollRarity(S, 1, 0)), ilvl);
+  const g = rollGear(S, id, Math.max(minQ, Math.min(4, rollRarity(S, 1, 0))), ilvl);   // (never a 유니크: those are monster drops)
   p.ch.inv.push(g);
   p.gain.push(["item", g.id, 1, g.q]);
 }

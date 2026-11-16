@@ -79,7 +79,8 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   ch.jp = { lv: 9, xp: 0 };
   ch.jobs = { swordsman: ch.jp, thief: { lv: 4, xp: 2 } };
   ch.gold = 100000; ch.xp = 777; ch.tro = ["hogking"].filter((k) => k in (D.trophies || {})); ch.sq.done.sq_willow_letter = 1;
-  ch.eq.armor = { ...ch.eq.armor, id: "a_3" };
+  // (the id changes under the entry, so its stamped item level goes too: a legacy piece asks the level of its base, Lv.61)
+  ch.eq.armor = { ...ch.eq.armor, id: "a_3" }; delete ch.eq.armor.il;
   const lvl = ch.lvl, wm = JSON.stringify(ch.wm), tro = JSON.stringify(ch.tro), cos = JSON.stringify(ch.cos);
   W.npc("job");
   assert.match(W.act({ t: "lv_reset" }).error, /레벨 초기화 주문서/);

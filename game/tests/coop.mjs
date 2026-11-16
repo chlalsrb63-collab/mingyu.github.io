@@ -1208,6 +1208,9 @@ for (const n of [2, 3, 4]) {
   step(w, X.COOP_T.endMs + 200);
   const bg = X.mapOf(JA.lobby).npcs.find((o) => o.id === "bogle");
   for (const pid of w.pids) at(S.players[pid], bg.x * T + 8, bg.y * T + 28);
+  // the second kiln's dice come from S.seed, which the first payout's gear roll (rewardGear) advances by a number of draws that depends
+  // on the lines it rolled; this is the stream the realistic run is tuned to (a party of three used to leave it here, before 마법 / 희귀 got fixed line counts)
+  if (n === 3) S.seed = 1659993333;
   const gold = a.ch.gold;
   assert.ok(act(w, "c0", { t: "coop_start", k: "alch" }).ok);
   const c2 = brewBot(w);

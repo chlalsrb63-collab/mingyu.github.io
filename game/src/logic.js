@@ -628,15 +628,8 @@ Object.assign(ITEMS, {
 });
 // bosses-2 §7: the weekly raids' own finds (MOBS[k].drops) — a 4-piece set each (`set`: always that set, never rolled
 // elsewhere) and their legendary weapons. 밤장막 is mid-game (tier 4), 꽃무덤 end-game (tier 5).
+// (the armour and jewellery rows are copied after the gear loop below: they did not exist yet here, so these were empty stubs)
 Object.assign(ITEMS, {
-  veil_h: { ...ITEMS.h_4, name: "박쥐 가면", set: "nightveil" },
-  veil_a: { ...ITEMS.a_4, name: "장막 망토", set: "nightveil" },
-  veil_r: { ...ITEMS.r_4, name: "송곳니 반지", set: "nightveil" },
-  veil_n: { ...ITEMS.n_4, name: "흉곽 부적", set: "nightveil" },
-  bloom_h: { ...ITEMS.h_5, name: "고래뼈 투구", set: "bloomgrave" },
-  bloom_a: { ...ITEMS.a_5, name: "갈비 흉갑", set: "bloomgrave" },
-  bloom_r: { ...ITEMS.r_5, name: "혼꽃 반지", set: "bloomgrave" },
-  bloom_n: { ...ITEMS.n_5, name: "결정 심장", set: "bloomgrave" },
   w_ribbook: { ...ITEMS.w_book_4, name: "흉곽 등불", uniq: 1 },
   w_whalebow: { ...ITEMS.w_bow_5, name: "고래뼈 활", uniq: 1 },
   w_bloomstaff: { ...ITEMS.w_mage_5, name: "혼꽃 지팡이", uniq: 1 },
@@ -649,6 +642,16 @@ for (const type of Object.keys(GEAR)) {
     ITEMS[`${d.pre}_${t}`] = { name: d.names[t - 1], type, tier: t, base, req: G_REQ[t - 1], price: Math.round(G_PRICE[t - 1] * d.cost) };
   }
 }
+Object.assign(ITEMS, {
+  veil_h: { ...ITEMS.h_4, name: "박쥐 가면", set: "nightveil" },
+  veil_a: { ...ITEMS.a_4, name: "장막 망토", set: "nightveil" },
+  veil_r: { ...ITEMS.r_4, name: "송곳니 반지", set: "nightveil" },
+  veil_n: { ...ITEMS.n_4, name: "흉곽 부적", set: "nightveil" },
+  bloom_h: { ...ITEMS.h_5, name: "고래뼈 투구", set: "bloomgrave" },
+  bloom_a: { ...ITEMS.a_5, name: "갈비 흉갑", set: "bloomgrave" },
+  bloom_r: { ...ITEMS.r_5, name: "혼꽃 반지", set: "bloomgrave" },
+  bloom_n: { ...ITEMS.n_5, name: "결정 심장", set: "bloomgrave" },
+});
 
 /** Runes: one stat each. Socket them into equipped gear; the right sequence forms a runeword. */
 const RUNES = {
@@ -675,9 +678,34 @@ const AFFIX = [
   ["critd", "치명타 피해 %", "잔혹한", 8, 20, 0], ["ls", "흡혈 %", "흡혈의", 1, 3, 0], ["spd", "이동속도 %", "신속의", 3, 7, 0],
   ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
 ];
-const RARITY = ["일반", "마법", "희귀", "전설", "세트"];
-/** How many affixes each rarity rolls: [min, max]. */
-const RARITY_AFFIX = [[0, 0], [1, 2], [3, 4], [4, 4], [2, 3]];
+const RARITY = ["일반", "마법", "희귀", "전설", "세트", "유니크"];
+/** How many ordinary affix lines each rarity rolls: [min, max] (owner 2026-11-16: 마법 exactly 2, 희귀 3, 전설 4; a 유니크 adds its own 2, see UNIQ). */
+const RARITY_AFFIX = [[0, 0], [2, 2], [3, 3], [4, 4], [2, 3], [2, 2]];
+/** What an ordinary line is multiplied by, by rarity: 마법 weak (x0.85), 희귀 as rolled, 전설 and above x1.3. */
+const AFFIX_MUL = [1, 0.85, 1, 1.3, 1.3, 1.3];
+/**
+ * 유니크 (rarity 5, beige). A piece named `[pre] item [suf]`; each word is tied to ONE affix key and that line rolls strong:
+ * UNIQ_MUL x the normal range, in the range's upper half (owner 2026-11-16). The entry carries `un: [pre index, suf index]` and
+ * its FIRST TWO `af` lines are the prefix's and the suffix's (the client marks them 고유 옵션); two ordinary lines follow, no LEGEND power.
+ * The suffix is never drawn on the prefix's key.
+ */
+const UNIQ = {
+  pre: [["폭풍을 삼킨", "atkp"], ["불꽃을 두른", "atk"], ["성벽을 닮은", "def"], ["끝없이 샘솟는", "hp"], ["달빛을 머금은", "mp"],
+    ["번개 같은", "crit"], ["바람을 탄", "spd"], ["피에 굶주린", "ls"], ["행운을 쥔", "mf"], ["깨달음을 얻은", "xp"]],
+  suf: [["파멸의 낙인", "critd"], ["황금왕의 탐욕", "gold"], ["학살의 서약", "atk"], ["철옹성의 맹세", "def"], ["불사의 맹약", "hp"],
+    ["맹금의 눈", "crit"], ["파괴의 의지", "atkp"], ["갈증의 입맞춤", "ls"], ["별무리의 속삭임", "mp"], ["질풍의 발걸음", "spd"]],
+};
+const UNIQ_MUL = 1.6;
+/** The chance a gear roll is a 유니크, by rank (0 ordinary monster, 1 elite or chest, 2 boss): about 1/12 to 1/20 of the 전설/세트 chance at each rank, x (1 + MF/100). */
+const UNIQ_P = [0.001, 0.004, 0.01];
+/**
+ * Item level (`il`, the shown 1–200 scale): a drop gets the shown level of the monster that left it plus IL_RANK[rank]
+ * (one monster level = 4 shown levels), never below its base's own tier level (G_REQ), capped at 200.
+ * A piece can be worn from player level il - IL_GAP (min 1). A piece without `il` (an old sheet, shop stock) counts as
+ * req + IL_GAP (1 for a req-1 piece), so what it asks for does not change.
+ */
+const IL_RANK = [0, 4, 8];
+const IL_GAP = 10;
 /** A legendary piece carries one power no affix can give: [name word, what it does]. */
 const LEGEND = {
   chain: ["뇌명의", "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)"],
@@ -7540,7 +7568,8 @@ const GEAR_TYPES = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amule
 const isGear = (id) => GEAR_TYPES.includes(ITEMS[id].type);
 const isJewel = (id) => ITEMS[id].type === "ring" || ITEMS[id].type === "amulet";
 const slotsFor = (type) => (type === "ring" ? ["ring1", "ring2"] : [type]);
-const plain = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
+// `il` = the item level (shown scale): a plain piece counts as what its base always asked for, plus IL_GAP (gearIl, 50-loot-combat.js)
+const plain = (id) => { const g = { id, q: 0, enh: 0, af: [], sk: 0, ru: [] }; g.il = gearIl(g); return g; };
 
 /**
  * The highest choice allowed for each part of a character's look (public/species.js
@@ -7634,7 +7663,15 @@ function migrate(ch) {
     if (!ITEMS[id]) return null;
     if (id === "charm") return charmFix(g);
     if (!isGear(id)) return { id, n: g.n | 0 || 1 };
-    const out = { id, q: clamp(g.q | 0, 0, 4), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
+    const out = { id, q: clamp(g.q | 0, 0, 5), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
+    // item level (no sheet version bump: a missing `il` is derived, so an old piece asks what it always did — gearIl)
+    out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, 200) : gearIl(out);
+    // a 유니크 keeps its [prefix, suffix] words; one without valid words is no unique (it stays a 희귀 with its lines)
+    if (out.q === 5) {
+      const u = g.un;
+      if (Array.isArray(u) && Number.isInteger(u[0]) && Number.isInteger(u[1]) && u[0] >= 0 && u[0] < UNIQ.pre.length && u[1] >= 0 && u[1] < UNIQ.suf.length) out.un = [u[0], u[1]];
+      else out.q = 2;
+    }
     // cu: 1 cursed by a failed enhancement (no more tries until lifted), 2 lifted (the next try +ENH_UNCURSE %p) — v19
     if ((g.cu | 0) > 0) out.cu = clamp(g.cu | 0, 1, 2);
     if (LEGEND[g.lg]) out.lg = g.lg;
@@ -8771,7 +8808,7 @@ function roomIn(list, cap, id, n) {
  */
 function sortSlots(list) {
   const rank = (e) => { const r = SORT_KIND.indexOf(ITEMS[e.id].type); return r < 0 ? 99 : r; };
-  const order = list.map((e, i) => [e, i]).sort(([a1, i1], [b1, i2]) => rank(a1) - rank(b1) || (b1.q || 0) - (a1.q || 0) || (ITEMS[b1.id].req || 0) - (ITEMS[a1.id].req || 0) || (a1.id < b1.id ? -1 : a1.id > b1.id ? 1 : 0) || i1 - i2).map(([e]) => e);
+  const order = list.map((e, i) => [e, i]).sort(([a1, i1], [b1, i2]) => rank(a1) - rank(b1) || (b1.q || 0) - (a1.q || 0) || (isGear(b1.id) ? gearIl(b1) : 0) - (isGear(a1.id) ? gearIl(a1) : 0) || (a1.id < b1.id ? -1 : a1.id > b1.id ? 1 : 0) || i1 - i2).map(([e]) => e);
   const out = [];
   for (const e of order) {
     const top = out[out.length - 1];
@@ -8924,7 +8961,7 @@ function jfValidate(S, p, a) {
   if (countItem(ch, JF_SCROLL[k]) < 1) return bad(`[${ITEMS[JF_SCROLL[k]].name}]${pp(ITEMS[JF_SCROLL[k]].name, "이가")} 필요합니다`);
   if (ch.gold < jfGold(ch, k)) return bad("골드가 부족합니다");
   // what comes off goes to the bag: gear above level 1 on a level reset (a job reset keeps both weapons, §9)
-  const off = k === "job" ? 0 : SLOTS.filter((s) => ch.eq[s] && (ITEMS[ch.eq[s].id].req || 0) > 1).length;
+  const off = k === "job" ? 0 : SLOTS.filter((s) => ch.eq[s] && gearReq(ch.eq[s]) > 1).length;
   if (ch.inv.length + off > bagCap(ch)) return bad(`가방에 빈칸이 ${off}칸 필요합니다`);
   return OK;
 }
@@ -8951,7 +8988,7 @@ function jfApply(S, p, a) {
     // stats back to 5 and the level to 1; the experience they cost is not given back (망각의 의식 does that)
     const hand = inHand(ch);
     ch.st = freshSt(); ch.lvl = 1; ch.xpt = 0;
-    for (const s of SLOTS) if (ch.eq[s] && (ITEMS[ch.eq[s].id].req || 0) > 1) { ch.inv.push(ch.eq[s]); ch.eq[s] = null; }
+    for (const s of SLOTS) if (ch.eq[s] && gearReq(ch.eq[s]) > 1) { ch.inv.push(ch.eq[s]); ch.eq[s] = null; }
     if (inHand(ch) !== hand) handChanged(p);
     if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);
     toast(p, `레벨 초기화 — 레벨 1부터 다시 걷습니다. 레벨이 모자란 장비는 가방에 넣었습니다. (${gold.toLocaleString()} G)`);
@@ -9085,7 +9122,7 @@ function pickUp(S, p, dr) {
   } else if (dr.g) {
     p.ch.inv.push(dr.g);
     p.gain.push(["item", dr.it, 1, dr.q]);
-    if (dr.q === 3) p.ch.cnt.leg++;
+    if (dr.q === 3 || dr.q === 5) p.ch.cnt.leg++;   // a 유니크 counts as a legendary find (the 첫 전설 achievement)
     if (dr.q === 4) p.ch.cnt.set++;
     if (dr.q >= 3) checkAch(S, p);
     if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]${pp(gearName(dr.g), "을를")} 획득했습니다!`);
@@ -9110,18 +9147,32 @@ function takeItem(ch, id, n) {
   // (what the bag did not have comes out of the pouch)
   if (n > 0) pouchTake(ch, id, n);
 }
-/** A piece's name word: a legendary's power, a set's name, or its first affix (as the client shows it). */
+/**
+ * The item level (shown 1–200 scale) of a piece: its `il`, or for a piece without one (an old sheet, shop stock)
+ * the level it always asked for plus IL_GAP, so wearing it needs the same level as before (10-tables.js IL_RANK).
+ */
+function gearIl(g) {
+  if ((g.il | 0) > 0) return g.il | 0;
+  const r = ITEMS[g.id].req | 0;
+  return r > 1 ? r + IL_GAP : 1;
+}
+/** The player level a piece can be worn from: its item level minus IL_GAP (at least 1). */
+const gearReq = (g) => Math.max(1, gearIl(g) - IL_GAP);
+/** A piece's name word: a unique's prefix, a legendary's power, a set's name, or its first affix (as the client shows it). */
 function gearWord(g) {
+  if (g.q === 5 && g.un) return `${UNIQ.pre[g.un[0]][0]} `;
   const af = Array.isArray(g.af) && g.af.length ? AFFIX.find((x) => x[0] === g.af[0][0]) : null;
   return g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : af ? `${af[2]} ` : "";
 }
-/** "+3 뇌명의 강철 양손검" */
+/** What follows the item's name: a unique's suffix. */
+const gearTail = (g) => (g.q === 5 && g.un ? ` ${UNIQ.suf[g.un[1]][0]}` : "");
+/** "+3 뇌명의 강철 양손검" (a unique: "폭풍을 삼킨 강철 양손검 파멸의 낙인") */
 function gearName(g) {
-  return (g.enh > 0 ? `+${g.enh} ` : "") + gearWord(g) + ITEMS[g.id].name;
+  return (g.enh > 0 ? `+${g.enh} ` : "") + gearWord(g) + ITEMS[g.id].name + gearTail(g);
 }
 /** "희귀 잔혹한 강철 양손검 +6" — the whole name, rarity first and the level last (enhancement news). */
 function gearFull(g) {
-  return ((g.q | 0) > 0 && RARITY[g.q] ? `${RARITY[g.q]} ` : "") + gearWord(g) + ITEMS[g.id].name + (g.enh > 0 ? ` +${g.enh}` : "");
+  return ((g.q | 0) > 0 && RARITY[g.q] ? `${RARITY[g.q]} ` : "") + gearWord(g) + ITEMS[g.id].name + gearTail(g) + (g.enh > 0 ? ` +${g.enh}` : "");
 }
 /** Plain gear: no rarity, no enhancement, nothing socketed — what "sell all" sells. */
 const junk = (s) => isGear(s.id) && !(s.q | 0) && !(s.enh | 0) && !(s.ru || []).some(Boolean);
@@ -9139,18 +9190,33 @@ function setFor(it) {
   return null;
 }
 
-/** Roll one piece of gear: rarity decides how many affixes, item level how big. */
-function rollGear(S, id, q, ilvl) {
+/** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`; `hi` rolls in the range's upper half. */
+function rollLine(S, key, ilvl, mul, hi) {
+  const [, , , min, max, grow] = AFFIX.find((x) => x[0] === key);
+  return [key, Math.max(1, Math.round((min + (hi ? 0.5 + rnd(S) / 2 : rnd(S)) * (max - min) + grow * ilvl) * mul))];
+}
+/**
+ * Roll one piece of gear: rarity decides how many affixes, `ilvl` (a monster's tier, 1–50) how big and, shown, its item
+ * level `il` (+ IL_RANK[rank] for an elite or boss). A 유니크 (q 5) starts with its prefix's and suffix's lines (`un`), then two ordinary ones.
+ */
+function rollGear(S, id, q, ilvl, rank = 0) {
   const it = ITEMS[id];
   if (q === 4 && !setFor(it)) q = 3;
   const g = plain(id);
   g.q = q;
-  const [lo, hi] = RARITY_AFFIX[q];
+  g.il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(it.tier | 0) - 1] || 1), 1, 200);
   const pool = AFFIX.slice();
-  for (let n = ri(S, lo, hi); n > 0 && pool.length; n--) {
-    const [key, , , min, max, grow] = pool.splice(ri(S, 0, pool.length - 1), 1)[0];
-    g.af.push([key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * ilvl) * (q >= 3 ? 1.3 : 1)))]);
+  if (q === 5) {
+    const pi = ri(S, 0, UNIQ.pre.length - 1), pk = UNIQ.pre[pi][1];
+    const ok = UNIQ.suf.map((_, i) => i).filter((i) => UNIQ.suf[i][1] !== pk), si = ok[ri(S, 0, ok.length - 1)];
+    g.un = [pi, si];
+    for (const key of [pk, UNIQ.suf[si][1]]) {
+      pool.splice(pool.findIndex((x) => x[0] === key), 1);
+      g.af.push(rollLine(S, key, ilvl, UNIQ_MUL, true));
+    }
   }
+  const [lo, hi] = RARITY_AFFIX[q];
+  for (let n = ri(S, lo, hi); n > 0 && pool.length; n--) g.af.push(rollLine(S, pool.splice(ri(S, 0, pool.length - 1), 1)[0][0], ilvl, AFFIX_MUL[q]));
   if (q === 3) { const keys = Object.keys(LEGEND); g.lg = keys[ri(S, 0, keys.length - 1)]; }
   if (q === 4) g.set = setFor(it);
   if (!isJewel(id)) {
@@ -9163,7 +9229,11 @@ function rollGear(S, id, q, ilvl) {
 /** `rank`: 0 for ordinary monsters, 1 elite, 2 field boss or boss. */
 function rollRarity(S, rank, mf) {
   const k = 1 + mf / 100;
-  const r = rnd(S);
+  let r = rnd(S);
+  // a 유니크 first (the lowest slice of the one roll); the rest keep their own odds
+  const uq = UNIQ_P[rank] * k;
+  if (r < uq) return 5;
+  r -= uq;
   const top = [0.012, 0.07, 0.2][rank] * k;       // legendary or set
   const rare = [0.09, 0.3, 0.55][rank] * k;
   const magic = 0.36 * k;
@@ -9199,13 +9269,13 @@ function lootFor(S, rt, mob, p) {
     else id = `${GEAR[type].pre}_${tier}`;
     let q = rollRarity(S, rank, st.mf);
     if (isJewel(id) && q === 0) q = 1;
-    out.push({ g: rollGear(S, id, q, d.lv) });
+    out.push({ g: rollGear(S, id, q, d.lv, rank) });
   }
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
   // a kind's own finds (MOBS[k].drops: [item, chance, min, max]); its weapon always drops legendary
   // (a boss set's own piece always drops as that set)
-  for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(ITEMS[it].set ? { g: rollGear(S, it, 4, d.lv) } : ITEMS[it].type === "weapon" ? { g: rollGear(S, it, 3, d.lv) } : { it, n: ri(S, lo, hi) });
+  for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(ITEMS[it].set ? { g: rollGear(S, it, 4, d.lv, rank) } : ITEMS[it].type === "weapon" ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
   if (rnd(S) < 0.1) out.push({ it: d.lv < 8 ? "hp_s" : d.lv < 26 ? "hp_m" : "hp_l", n: 1 });
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   for (const o of out) {
@@ -12031,10 +12101,11 @@ function jbPay(S, p) {
 const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (ITEMS[id].type === "tool" || ITEMS[id].el === 1);
 /** How many sockets a piece can ever have (as rollGear: gloves and boots 1, the rest 3; jewellery none). */
 const sockCap = (g) => (isJewel(g.id) ? 0 : ITEMS[g.id].type === "gloves" || ITEMS[g.id].type === "boots" ? 1 : 3);
-/** The weakest affix of a piece (value against its range's top), by index; −1 without one. */
+/** The weakest affix of a piece (value against its range's top), by index; −1 without one. A 유니크's own two lines (the first two) are never re-rolled. */
 function weakAffix(g) {
   let best = -1, bv = Infinity;
   (g.af || []).forEach(([k, v], i) => {
+    if (g.q === 5 && i < 2) return;
     const a = AFFIX.find((x) => x[0] === k);
     const r = a ? v / Math.max(1, a[4]) : 0;
     if (r < bv) { bv = r; best = i; }
@@ -12071,8 +12142,7 @@ function lifeUseApply(S, p, a) {
       // the weakest affix goes; a fresh one (not already on the piece) takes its place, rolled at the tier's level
       const i = weakAffix(g), t = ITEMS[g.id].tier || 1;
       const pool = AFFIX.filter((x) => !g.af.some(([k], j) => j !== i && k === x[0]));
-      const [key, , , min, max, grow] = pool[ri(S, 0, pool.length - 1)];
-      g.af[i] = [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * GEAR_CRAFT.ilvl[t - 1]) * ((g.q | 0) >= 3 ? 1.3 : 1)))];
+      g.af[i] = rollLine(S, pool[ri(S, 0, pool.length - 1)][0], GEAR_CRAFT.ilvl[t - 1], AFFIX_MUL[g.q | 0]);
       toast(p, `${gearName(g)}의 옵션을 새로 다듬었습니다.`);
     }
     S.maps[p.map].ev.push(["e", p.eid, 1]);
@@ -12657,7 +12727,7 @@ function rewardGear(S, p, ilvl, minQ) {
   let id;
   if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
   else id = `${GEAR[type].pre}_${tier}`;
-  const g = rollGear(S, id, Math.max(minQ, rollRarity(S, 1, 0)), ilvl);
+  const g = rollGear(S, id, Math.max(minQ, Math.min(4, rollRarity(S, 1, 0))), ilvl);   // (never a 유니크: those are monster drops)
   p.ch.inv.push(g);
   p.gain.push(["item", g.id, 1, g.q]);
 }
@@ -18733,7 +18803,9 @@ export function validateAction(S, pid, a) {
       const s = invAt(ch, a.s);
       if (!s || !isGear(s.id)) return bad("장착할 수 없습니다");
       const it = ITEMS[s.id];
-      if (ch.lvl < it.req) return bad(`레벨 ${it.req}부터 착용할 수 있습니다`);
+      // worn from item level − 10 (an entry without `il` asks what its base always asked: gearReq, 50-loot-combat.js)
+      const need = gearReq(s);
+      if (ch.lvl < need) return bad(`레벨 ${need}부터 착용할 수 있습니다`);
       if (a.k === "weapon2") {
         // a second main weapon for everyone (§9); a hybrid's is one of its pair
         if (it.type !== "weapon") return bad("무기만 Ⅱ에 장착할 수 있습니다");
@@ -19296,7 +19368,7 @@ export function applyAction(S, pid, a) {
       const s = ch.inv[a.s];
       ch.inv.splice(a.s, 1);
       // better pieces break down into more stones; enhancement gives some back
-      const n = [rnd(S) < 0.35 ? 1 : 0, 1, 2, 5, 5][s.q | 0] + Math.floor((s.enh | 0) / 2);
+      const n = [rnd(S) < 0.35 ? 1 : 0, 1, 2, 5, 5, 8][s.q | 0] + Math.floor((s.enh | 0) / 2);
       if (n > 0) { addItem(ch, "stone", n); p.gain.push(["item", "stone", n, 0]); }
       toast(p, n > 0 ? `${gearName(s)} 분해 — 강화석 ${n}개` : `${gearName(s)} 분해 — 건진 것이 없습니다`);
       p.dirty = true;
@@ -20542,5 +20614,11 @@ export function defs() {
     // boss trophies: { list: { kind: { name, fx } }, cap, p, gold, story: { r, limit } } (67-trophies.js)
     trophies: trophyDefs(),
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: worldMapDefs(),
+    // ITEM LEVEL (owner 2026-11-16). A gear entry on the wire carries `il` (shown 1–200 scale); the level it can be worn from is
+    //   max(1, entry.il − ilGap)   (what validateAction "eq" checks; an entry without `il` = items[id].req + ilGap, or 1 for req 1)
+    // `rarity` has 6 names (index = entry.q, 0–5; 5 = 유니크, beige). A q 5 entry has `un: [prefix index, suffix index]` into
+    // uniq.pre / uniq.suf, its name reads `<pre> <item name> <suf>`, and af[0] / af[1] are the prefix's and the suffix's own lines (고유 옵션).
+    // Ordinary lines: 마법 2, 희귀 3, 전설 4 (+ lg), 세트 2–3, 유니크 2 after its own 2.
+    ilGap: IL_GAP, uniq: { pre: UNIQ.pre.map((x) => x[0]), suf: UNIQ.suf.map((x) => x[0]) },
   };
 }

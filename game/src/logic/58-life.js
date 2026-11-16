@@ -617,10 +617,11 @@ function jbPay(S, p) {
 const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (ITEMS[id].type === "tool" || ITEMS[id].el === 1);
 /** How many sockets a piece can ever have (as rollGear: gloves and boots 1, the rest 3; jewellery none). */
 const sockCap = (g) => (isJewel(g.id) ? 0 : ITEMS[g.id].type === "gloves" || ITEMS[g.id].type === "boots" ? 1 : 3);
-/** The weakest affix of a piece (value against its range's top), by index; −1 without one. */
+/** The weakest affix of a piece (value against its range's top), by index; −1 without one. A 유니크's own two lines (the first two) are never re-rolled. */
 function weakAffix(g) {
   let best = -1, bv = Infinity;
   (g.af || []).forEach(([k, v], i) => {
+    if (g.q === 5 && i < 2) return;
     const a = AFFIX.find((x) => x[0] === k);
     const r = a ? v / Math.max(1, a[4]) : 0;
     if (r < bv) { bv = r; best = i; }
@@ -657,8 +658,7 @@ function lifeUseApply(S, p, a) {
       // the weakest affix goes; a fresh one (not already on the piece) takes its place, rolled at the tier's level
       const i = weakAffix(g), t = ITEMS[g.id].tier || 1;
       const pool = AFFIX.filter((x) => !g.af.some(([k], j) => j !== i && k === x[0]));
-      const [key, , , min, max, grow] = pool[ri(S, 0, pool.length - 1)];
-      g.af[i] = [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * GEAR_CRAFT.ilvl[t - 1]) * ((g.q | 0) >= 3 ? 1.3 : 1)))];
+      g.af[i] = rollLine(S, pool[ri(S, 0, pool.length - 1)][0], GEAR_CRAFT.ilvl[t - 1], AFFIX_MUL[g.q | 0]);
       toast(p, `${gearName(g)}의 옵션을 새로 다듬었습니다.`);
     }
     S.maps[p.map].ev.push(["e", p.eid, 1]);
