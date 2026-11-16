@@ -6044,6 +6044,8 @@ function abyssal(cfg) {
 // where (zoneSpawns: monsters per 8 × 8 block of each zone), and markRoutes reads them for the
 // extra waypoint stones, the wind shrines and the signs. Editor maps are never zoned.
 
+/** The packed dungeons whose campfires get a quiet ring like a gate's (open fields keep their measured routes: tests/hunt-routes.mjs). */
+const FIRE_QUIET = ["crypt", "sewer", "abyss"];
 const Z_SAFE = 0, Z_NORMAL = 1, Z_ELITE = 2, Z_HIDDEN = 3;
 /**
  * Zone cuts, as a share of the farthest walk D from the entrance: the safe plaza is ZONE_SAFE D deep
@@ -6106,7 +6108,8 @@ function zoneMap(m) {
     const g = b === m.id ? m.gates[gb] : both && a === m.id ? m.gates[ga] : null;
     if (g) for (const t of g.a) gateA.push(t);
   }
-  const near = flood(gateA, GATE_SAFE);
+  // … and so does every campfire: a place to sit down is not a place a pack stands on (the crypt's, the sewer's and the abyss's fires had ~46 monsters within 7 tiles)
+  const near = flood(FIRE_QUIET.includes(m.id) ? gateA.concat(FIRES[m.id] || []) : gateA, GATE_SAFE);
   const zone = new Uint8Array(N);
   for (let i = 0; i < N; i++) {
     if (d[i] < 0) continue;

@@ -82,3 +82,5 @@ for (const id of ["jungle", "coast", "dunesea", "cloudtemple", "mesa", "inklake"
   assert.equal(D.npcMap[n.id], id, `${id}: the keeper is in the NPC registry`);
 }
 console.log("hunt routes: safe arrivals, adjacent bands, starter and late progression, capped arena");
+// the packed dungeons' campfires are quiet ground: no pack is laid on a place to sit (33-maps-zones.js FIRE_QUIET)
+for (const id of ["crypt", "sewer", "abyss"]) for (const [x, y] of fires[id]) assert.equal(maps[id].zone[y * maps[id].w + x], 0, `${id}: the campfire at ${x},${y} is safe ground`);
